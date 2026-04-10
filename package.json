@@ -1,0 +1,43 @@
+{
+  "name": "r-plus-clinical",
+  "version": "1.0.0",
+  "description": "R+ Clinical — Laboratoriazo + Notas de Evolución",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win"
+  },
+  "author": "Mauricio Salas",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "electron": "^41.2.0",
+    "electron-builder": "^26.8.1"
+  },
+  "build": {
+    "appId": "com.hospitaluniversitario.rplusclinical",
+    "productName": "R+ Clinical",
+    "mac": {
+      "category": "public.app-category.medical",
+      "target": [{ "target": "dmg", "arch": ["arm64", "x64"] }]
+    },
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }]
+    },
+    "nsis": { "oneClick": true, "perMachine": false },
+    "files": [
+      "main.js",
+      "server.js",
+      "generate_note.py",
+      "generate_indicaciones.py",
+      "template.docx",
+      "template_indicaciones.docx",
+      "public/**/*",
+      "node_modules/**/*",
+      "!node_modules/.cache"
+    ]
+  }
+}
