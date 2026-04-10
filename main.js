@@ -2,9 +2,6 @@ const { app, BrowserWindow, shell } = require('electron');
 const path = require('path');
 
 let server;
-function startServer() {
-  server = require('./server');
-}
 
 let mainWindow;
 function createWindow() {
@@ -24,9 +21,9 @@ function createWindow() {
   mainWindow.on('closed', () => { mainWindow = null; });
 }
 
-app.whenReady().then(() => {
-  startServer();
-  setTimeout(createWindow, 500);
+app.whenReady().then(async () => {
+  server = await require('./server');
+  createWindow();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
