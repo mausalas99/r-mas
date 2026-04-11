@@ -1,9 +1,13 @@
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, Menu, shell, dialog, ipcMain } = require('electron');
 const path = require('path');
+const { autoUpdater } = require('electron-updater');
+
+autoUpdater.autoDownload = true;
+autoUpdater.autoInstallOnAppQuit = true;
 
 let server;
-
 let mainWindow;
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -18,12 +22,78 @@ function createWindow() {
     shell.openExternal(url);
     return { action: 'deny' };
   });
+  mainWindow.once('ready-to-show', () => {
+    autoUpdater.checkForUpdates().catch(() => {});
+  });
   mainWindow.on('closed', () => { mainWindow = null; });
 }
 
+// ── Auto-updater events ───────────────────────────────────────────
+autoUpdater.on('update-downloaded', (info) => {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  dialog.showMessageBox(mainWindow, {
+    type: 'info',
+    title: 'Actualización lista',
+    message: `R+ Clinical v${info.version} descargada.`,
+    detail: '¿Instalar y reiniciar ahora?',
+    buttons: ['Instalar y reiniciar', 'Más tarde'],
+    defaultId: 0,
+    cancelId: 1,
+  }).then(({ response }) => {
+    if (response === 0) autoUpdater.quitAndInstall();
+  });
+});
+
+autoUpdater.on('error', (err) => {
+  console.error('AutoUpdater error:', err.message);
+});
+
+// ── App menu ──────────────────────────────────────────────────────
+function buildMenu() {
+  const version = app.getVersion();
+  const isMac = process.platform === 'darwin';
+
+  const checkUpdate = () => autoUpdater.checkForUpdates().catch(() => {});
+
+  const template = [
+    ...(isMac ? [{
+      label: app.name,
+      submenu: [
+        { label: `R+ Clinical v${version}`, enabled: false },
+        { type: 'separator' },
+        { label: 'Buscar actualizaciones…', click: checkUpdate },
+        { type: 'separator' },
+        { role: 'quit', label: 'Salir' },
+      ],
+    }] : []),
+    { role: 'editMenu' },
+    {
+      label: 'Aplicación',
+      submenu: [
+        ...(!isMac ? [
+          { label: `R+ Clinical v${version}`, enabled: false },
+          { type: 'separator' },
+          { label: 'Buscar actualizaciones…', click: checkUpdate },
+          { type: 'separator' },
+        ] : []),
+        { role: 'reload', label: 'Recargar' },
+        ...(!isMac ? [
+          { type: 'separator' },
+          { role: 'quit', label: 'Salir' },
+        ] : []),
+      ],
+    },
+  ];
+
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
+
+// ── Startup ───────────────────────────────────────────────────────
 app.whenReady().then(async () => {
   server = await require('./server');
+  buildMenu();
   createWindow();
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });

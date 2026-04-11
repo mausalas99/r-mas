@@ -11,6 +11,7 @@
   "author": "Mauricio Salas",
   "license": "ISC",
   "dependencies": {
+    "electron-updater": "^6.8.3",
     "express": "^5.2.1"
   },
   "devDependencies": {
@@ -22,12 +23,35 @@
     "productName": "R+ Clinical",
     "mac": {
       "category": "public.app-category.medical",
-      "target": [{ "target": "dmg", "arch": ["arm64", "x64"] }]
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ]
     },
     "win": {
-      "target": [{ "target": "nsis", "arch": ["x64"] }]
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
     },
-    "nsis": { "oneClick": true, "perMachine": false },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "mausalas99",
+      "repo": "r-plus-clinical"
+    },
     "files": [
       "main.js",
       "server.js",
