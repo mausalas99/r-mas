@@ -1304,8 +1304,8 @@ function sp(x,y,lbl,obj,anchor){
   var vc=isAb?'#cc0000':'#111111';
   var vt=obj?escTxt(obj.val):'—';
   var dec=isAb?' text-decoration="underline"':'';
-  return '<text x="'+x+'" y="'+y+'" text-anchor="'+anchor+'" font-size="10" fill="#888" font-family="Figtree,Arial,sans-serif">'+lbl+'</text>'
-        +'<text x="'+x+'" y="'+(y+15)+'" text-anchor="'+anchor+'" font-size="13" fill="'+vc+'" font-weight="bold" font-family="Figtree,Arial,sans-serif"'+dec+'>'+vt+'</text>';
+  return '<text x="'+x+'" y="'+y+'" text-anchor="'+anchor+'" font-size="10" fill="#888" font-family="Arial,sans-serif">'+lbl+'</text>'
+        +'<text x="'+x+'" y="'+(y+15)+'" text-anchor="'+anchor+'" font-size="13" fill="'+vc+'" font-weight="bold" font-family="Arial,sans-serif"'+dec+'>'+vt+'</text>';
 }
 
 function svgBH(secs){
@@ -1343,8 +1343,8 @@ function svgGamble(secs){
     var dec = obj&&obj.ab ? ' text-decoration="underline"' : '';
     var ly = isTop ? 27 : 78;
     var vy = isTop ? 42 : 96;
-    return '<text x="'+x+'" y="'+ly+'" text-anchor="middle" font-size="10" fill="#888" font-family="Figtree,Arial,sans-serif">'+lbl+'</text>'
-          +'<text x="'+x+'" y="'+vy+'" text-anchor="middle" font-size="14" fill="'+vc+'" font-weight="bold" font-family="Figtree,Arial,sans-serif"'+dec+'>'+vt+'</text>';
+    return '<text x="'+x+'" y="'+ly+'" text-anchor="middle" font-size="10" fill="#888" font-family="Arial,sans-serif">'+lbl+'</text>'
+          +'<text x="'+x+'" y="'+vy+'" text-anchor="middle" font-size="14" fill="'+vc+'" font-weight="bold" font-family="Arial,sans-serif"'+dec+'>'+vt+'</text>';
   }
 
   return '<svg viewBox="0 0 470 130" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">'
@@ -1381,8 +1381,8 @@ function svgPFH(secs){
     var vc = obj&&obj.ab ? '#cc0000' : '#111';
     var vt = obj ? escTxt(obj.val) : '—';
     var dec = obj&&obj.ab ? ' text-decoration="underline"' : '';
-    return '<text x="'+x+'" y="'+y_lbl+'" text-anchor="middle" font-size="10" fill="#888" font-family="Figtree,Arial,sans-serif">'+lbl+'</text>'
-          +'<text x="'+x+'" y="'+(y_lbl+15)+'" text-anchor="middle" font-size="14" fill="'+vc+'" font-weight="bold" font-family="Figtree,Arial,sans-serif"'+dec+'>'+vt+'</text>';
+    return '<text x="'+x+'" y="'+y_lbl+'" text-anchor="middle" font-size="10" fill="#888" font-family="Arial,sans-serif">'+lbl+'</text>'
+          +'<text x="'+x+'" y="'+(y_lbl+15)+'" text-anchor="middle" font-size="14" fill="'+vc+'" font-weight="bold" font-family="Arial,sans-serif"'+dec+'>'+vt+'</text>';
   }
 
   var midLeft = pcr || ldh;
@@ -1422,8 +1422,8 @@ function svgGases(secs){
     var vc = obj&&obj.ab ? '#cc0000' : '#111';
     var vt = obj ? escTxt(obj.val) : '—';
     var dec = obj&&obj.ab ? ' text-decoration="underline"' : '';
-    return '<text x="'+x+'" y="'+y_lbl+'" text-anchor="middle" font-size="10" fill="#888" font-family="Figtree,Arial,sans-serif">'+lbl+'</text>'
-          +'<text x="'+x+'" y="'+(y_lbl+15)+'" text-anchor="middle" font-size="14" fill="'+vc+'" font-weight="bold" font-family="Figtree,Arial,sans-serif"'+dec+'>'+vt+'</text>';
+    return '<text x="'+x+'" y="'+y_lbl+'" text-anchor="middle" font-size="10" fill="#888" font-family="Arial,sans-serif">'+lbl+'</text>'
+          +'<text x="'+x+'" y="'+(y_lbl+15)+'" text-anchor="middle" font-size="14" fill="'+vc+'" font-weight="bold" font-family="Arial,sans-serif"'+dec+'>'+vt+'</text>';
   }
 
   return '<svg viewBox="0 0 270 162" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">'
@@ -1472,7 +1472,7 @@ function copiarDiagrama(svgStr, vw, vh, title, btn) {
   var url = URL.createObjectURL(blob);
   var img = new Image();
   img.onload = function() {
-    ctx.font = 'bold 9px Figtree,Arial,sans-serif';
+    ctx.font = 'bold 9px Arial,sans-serif';
     ctx.fillStyle = '#aaaaaa';
     ctx.textAlign = 'left';
     ctx.fillText(title.toUpperCase(), MARGIN, MARGIN + 9);
