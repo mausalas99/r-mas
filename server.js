@@ -23,9 +23,13 @@ function safeName(str) {
   return (str || '').replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9]/g, '_');
 }
 
+const SCRIPTS_DIR = __dirname.includes('app.asar')
+  ? __dirname.replace('app.asar', 'app.asar.unpacked')
+  : __dirname;
+
 function runPython(script, payload) {
   return new Promise((resolve, reject) => {
-    const py = spawn(PYTHON, [path.join(__dirname, script)]);
+    const py = spawn(PYTHON, [path.join(SCRIPTS_DIR, script)]);
     const chunks = [];
     let err = '';
     py.on('error', reject);
