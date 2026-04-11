@@ -984,7 +984,7 @@ function enviarLabsANota() {
   }
   // Format: strip \t → space, strip * markers, join sections with \n
   var lines = [];
-  if (activeLab.patient && activeLab.patient.fecha) lines.push(activeLab.patient.fecha);
+  if (activeLab.patient && activeLab.patient.fecha) lines.push(activeLab.patient.fecha.slice(0, 5));
   activeLab.resLabs.forEach(function(entry) {
     var cleaned = entry.replace(/\t/g, ' ').replace(/\*+/g, '').replace(/  +/g, ' ').trim();
     lines.push(cleaned);
