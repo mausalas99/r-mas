@@ -34,17 +34,17 @@ function createWindow() {
     return { action: 'deny' };
   });
 
-  mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
-    autoUpdater.checkForUpdates().catch(() => {});
-  });
-
-  // Fallback: forzar show si ready-to-show nunca se dispara
-  setTimeout(() => {
+  const showFallback = setTimeout(() => {
     if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) {
       mainWindow.show();
     }
   }, 5000);
+
+  mainWindow.once('ready-to-show', () => {
+    clearTimeout(showFallback);
+    mainWindow.show();
+    autoUpdater.checkForUpdates().catch(() => {});
+  });
 
   mainWindow.on('closed', () => { mainWindow = null; });
 }
