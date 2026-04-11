@@ -22,7 +22,7 @@
     "appId": "com.hospitaluniversitario.rplusclinical",
     "productName": "R+",
     "artifactName": "${productName}-${version}-${arch}.${ext}",
-    "icon": "build/AppIcon.icns",
+    "icon": "build/icon.ico",
     "mac": {
       "icon": "build/AppIcon.icns",
       "category": "public.app-category.medical",
