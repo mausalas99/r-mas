@@ -984,7 +984,13 @@ function enviarLabsANota() {
   }
   // Format: strip \t → space, strip * markers, join sections with \n
   var lines = [];
-  if (activeLab.patient && activeLab.patient.fecha) lines.push(activeLab.patient.fecha.slice(0, 5));
+  if (activeLab.patient && activeLab.patient.fecha) {
+    var _f = activeLab.patient.fecha;
+    var _meses = {ene:'01',feb:'02',mar:'03',abr:'04',may:'05',jun:'06',jul:'07',ago:'08',sep:'09',oct:'10',nov:'11',dic:'12'};
+    var _mF = _f.match(/^([A-Za-z]{3})\s+(\d{1,2})\s+\d{4}$/);
+    var _fechaAbrev = (_mF && _meses[_mF[1].toLowerCase()]) ? _mF[2].padStart(2,'0') + '/' + _meses[_mF[1].toLowerCase()] : _f.slice(0, 5);
+    lines.push(_fechaAbrev);
+  }
   activeLab.resLabs.forEach(function(entry) {
     var cleaned = entry.replace(/\t/g, ' ').replace(/\*+/g, '').replace(/  +/g, ' ').trim();
     lines.push(cleaned);
