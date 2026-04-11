@@ -21,6 +21,26 @@
     --shadow:       0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06);
     --shadow-md:    0 4px 6px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.05);
   }
+  html.dark {
+    --primary:      #3B82F6;
+    --action:       #60A5FA;
+    --action-hover: #3B82F6;
+    --bg:           #0F1117;
+    --surface:      #1A1D27;
+    --border:       #2D3142;
+    --text:         #E2E8F0;
+    --text-muted:   #94A3B8;
+    --error:        #F87171;
+    --success:      #4ADE80;
+    --lab-chip-bg:  #1E3A5F;
+    --lab-chip-txt: #93C5FD;
+    --shadow:       0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
+    --shadow-md:    0 4px 6px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.3);
+  }
+  html.dark .patient-card:hover { background: #1a2744; }
+  html.dark .patient-card.active { background: #1e2f55; border-left-color: var(--action); }
+  html.dark .dcard-copy:hover { border-color: var(--action); color: var(--action); background: #1e3a5f; }
+  html.dark .dcard-copy.copied { border-color: #4ade80; color: #4ade80; background: #14532d; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
@@ -189,6 +209,7 @@
 <header>
   <h1>R+</h1>
   <span id="today-date"></span>
+  <button id="theme-toggle" onclick="toggleTheme()" style="background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:background 0.15s;flex-shrink:0;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'" title="Cambiar tema">☀️</button>
 </header>
 
 <div class="app-tabs">
@@ -897,6 +918,26 @@ var activeId     = null;
 var activeInner  = 'notas';
 var activeAppTab = 'lab';
 var activeLab    = null;
+
+// ── Theme ──────────────────────────────────────────────────────────
+(function() {
+  if (localStorage.getItem('theme') === 'dark') {
+    document.documentElement.classList.add('dark');
+  }
+})();
+
+function toggleTheme() {
+  var isDark = document.documentElement.classList.toggle('dark');
+  localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  document.getElementById('theme-toggle').textContent = isDark ? '🌙' : '☀️';
+}
+
+// Set correct icon on load
+(function() {
+  if (document.documentElement.classList.contains('dark')) {
+    document.getElementById('theme-toggle').textContent = '🌙';
+  }
+})();
 
 document.getElementById('today-date').textContent =
   new Date().toLocaleDateString('es-MX', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
