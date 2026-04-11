@@ -177,6 +177,9 @@
   .otros-item textarea:focus { outline:none; border-color:var(--action); box-shadow:0 0 0 3px rgba(37,99,235,0.12); }
   .btn-remove-otro { position:absolute; top:8px; right:8px; background:none; border:none; color:var(--text-muted); font-size:18px; cursor:pointer; padding:2px 6px; border-radius:4px; line-height:1; }
   .btn-remove-otro:hover { color:#dc2626; background:#fee2e2; }
+  .diagrams-wrap { display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; }
+  .dcard { background:#fff; border:1px solid var(--border); border-radius:8px; padding:14px 16px; flex-shrink:0; }
+  .dcard-title { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#9ca3af; margin-bottom:8px; }
   @media (max-width: 700px) { aside { width: 220px; } .vitals-grid { grid-template-columns: repeat(3, 1fr); } }
 </style>
 </head>
@@ -248,6 +251,16 @@
           </div>
         </div>
 
+        <div id="lab-diagrams-section" class="card" style="display:none;overflow-x:auto;">
+          <div class="card-header" style="background:#1e3a5f;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            Diagramas
+          </div>
+          <div class="card-body" style="padding:16px 18px;">
+            <div id="diagrams-grid" class="diagrams-wrap"></div>
+          </div>
+        </div>
+
         <div id="lab-output-section" class="card" style="display:none;">
           <div class="card-header" style="background:#312E81;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
@@ -292,11 +305,22 @@
     <div id="modal-prefilled" style="display:none;">
       <div class="modal-section-label">Del reporte de laboratorio</div>
       <div class="modal-section" style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;">
-        <div class="field-group"><label>Nombre</label><input id="m-nombre" type="text" class="field-readonly" readonly></div>
-        <div class="field-group"><label>Registro</label><input id="m-registro" type="text" class="field-readonly" readonly></div>
+        <div class="field-group"><label>Nombre</label><input id="m-nombre" type="text" style="text-transform:uppercase;"></div>
+        <div class="field-group"><label>Registro</label><input id="m-registro" type="text"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <div class="field-group"><label>Edad</label><input id="m-edad" type="text" class="field-readonly" readonly></div>
-          <div class="field-group"><label>Sexo</label><input id="m-sexo-ro" type="text" class="field-readonly" readonly></div>
+          <div class="field-group"><label>Edad</label>
+            <div style="display:flex;gap:4px;">
+              <input id="m-edad-num" type="text" placeholder="0" style="width:50px;min-width:0;">
+              <select id="m-edad-unit" style="flex:1;min-width:0;">
+                <option value="años">Años</option>
+                <option value="meses">Meses</option>
+                <option value="días">Días</option>
+              </select>
+            </div>
+          </div>
+          <div class="field-group"><label>Sexo</label>
+            <select id="m-sexo-ro"><option value="F">F</option><option value="M">M</option></select>
+          </div>
         </div>
       </div>
       <hr class="modal-divider">
@@ -309,9 +333,18 @@
           <label>Nombre completo *</label>
           <input id="m-nombre-manual" type="text" placeholder="APELLIDO APELLIDO, Nombre" style="text-transform:uppercase;">
         </div>
-        <div style="display:grid;grid-template-columns:1fr 80px 60px;gap:10px;margin-bottom:12px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 60px;gap:10px;margin-bottom:12px;">
           <div class="field-group"><label>Registro</label><input id="m-registro-manual" type="text" placeholder="0000000-0"></div>
-          <div class="field-group"><label>Edad</label><input id="m-edad-manual" type="text" placeholder="00"></div>
+          <div class="field-group"><label>Edad</label>
+            <div style="display:flex;gap:4px;">
+              <input id="m-edad-manual-num" type="text" placeholder="0" style="width:50px;min-width:0;">
+              <select id="m-edad-manual-unit" style="flex:1;min-width:0;">
+                <option value="años">Años</option>
+                <option value="meses">Meses</option>
+                <option value="días">Días</option>
+              </select>
+            </div>
+          </div>
           <div class="field-group"><label>Sexo</label>
             <select id="m-sexo"><option value="F">F</option><option value="M">M</option></select>
           </div>
@@ -749,7 +782,22 @@ function procesarLabs(textoBruto) {
   var mSexo  =textoBruto.match(/Sexo:\s*([^\n\r]+)/i);
   var mEdad  =textoBruto.match(/Edad:\s*([^\n\r]+)/i);
   var mFechaR=textoBruto.match(/Fecha\s+Registro:\s*\r?\n?\s*([A-Za-z]{3}\s+\d{1,2}\s+\d{4})/i);
-  var patient={ name:mNombre?mNombre[1].split(/Fecha|Sexo|Edad/i)[0].trim():'', expediente:mExp?mExp[1].trim():'', sexo:mSexo?mSexo[1].trim():'', edad:mEdad?mEdad[1].trim():'', fecha:mFechaR?mFechaR[1].trim():'' };
+  // Clean expediente: stop before Solicitud/Medico/Fecha/Sexo/Edad keywords
+  var expRaw = mExp ? mExp[1].split(/\s+(?:Solicitud|Medico|Médico|Fecha|Sexo|Edad|Ubicaci)/i)[0].trim() : '';
+  // Clean edad: only first number
+  var edadRaw = mEdad ? (mEdad[1].match(/^\d+/)||[''])[0] : '';
+  var edadUnidad = mEdad ? (mEdad[1].match(/\b(años|meses|dias|días|semanas)\b/i)||['años'])[0].toLowerCase() : 'años';
+  if (edadUnidad==='dias'||edadUnidad==='días') edadUnidad='días';
+  // Clean sexo: extract only first recognized word, normalize to M/F
+  var sexoRaw = '';
+  if (mSexo) {
+    var sm = mSexo[1].match(/^(MASCULINO|FEMENINO|HOMBRE|MUJER|MALE|FEMALE|M\b|F\b)/i);
+    if (sm) {
+      var sv = sm[1].toUpperCase();
+      sexoRaw = (sv==='MASCULINO'||sv==='HOMBRE'||sv==='MALE'||sv==='M') ? 'M' : 'F';
+    }
+  }
+  var patient={ name:mNombre?mNombre[1].split(/Fecha|Sexo|Edad/i)[0].trim():'', expediente:expRaw, sexo:sexoRaw, edad:edadRaw?(edadRaw+' '+edadUnidad):'', fecha:mFechaR?mFechaR[1].trim():'' };
 
   var mGaso=tNorm.match(/GASOMETRIA.*?(?=BIOMETRIA|CITOLOGIA|QUIMICA|ELECTROLITOS|PFH|COAGULACION|CITOQUIMICO|$)/i);
   var bloqueGaso=mGaso?mGaso[0]:'';
@@ -890,6 +938,8 @@ function showToast(msg, type) {
 function limpiarReporte() {
   document.getElementById('lab-input').value = '';
   document.getElementById('lab-banner').style.display = 'none';
+  document.getElementById('lab-diagrams-section').style.display = 'none';
+  document.getElementById('diagrams-grid').innerHTML = '';
   document.getElementById('lab-output-section').style.display = 'none';
   document.getElementById('lab-output-box').innerHTML = '';
   activeLab = null;
@@ -901,6 +951,7 @@ function procesarReporte() {
   try {
     var result = procesarLabs(text);
     renderOutput(result);
+    renderDiagramas(result.resLabs);
     if (!result.resLabs.length) showToast('No se encontraron resultados de laboratorio','error');
   } catch(e) { showToast('Error al procesar el reporte','error'); console.error(e); }
 }
@@ -912,7 +963,7 @@ function renderOutput(result) {
     document.getElementById('lab-patient-name').textContent = patient.name;
     document.getElementById('lab-patient-meta').textContent = [
       patient.expediente ? 'Exp: '+patient.expediente : '',
-      patient.sexo, patient.edad ? patient.edad+' años' : '', patient.fecha
+      patient.sexo, patient.edad || '', patient.fecha
     ].filter(Boolean).join('  |  ');
     document.getElementById('lab-banner').style.display = 'block';
   }
@@ -933,9 +984,11 @@ function openAddModal() {
   document.getElementById('modal-title').textContent = 'Nuevo Paciente';
   document.getElementById('modal-prefilled').style.display = 'none';
   document.getElementById('modal-manual-full').style.display = 'block';
-  ['nombre-manual','registro-manual','edad-manual','area','servicio','cuarto','cama'].forEach(function(f){
+  ['nombre-manual','registro-manual','area','servicio','cuarto','cama'].forEach(function(f){
     var el = document.getElementById('m-'+f); if(el) el.value='';
   });
+  document.getElementById('m-edad-manual-num').value = '';
+  document.getElementById('m-edad-manual-unit').value = 'años';
   document.getElementById('m-sexo').value = 'F';
   document.getElementById('modal').classList.add('open');
   setTimeout(function(){ document.getElementById('m-nombre-manual').focus(); }, 120);
@@ -949,8 +1002,12 @@ function openAddModalFromLab() {
   document.getElementById('modal-manual-full').style.display = 'none';
   document.getElementById('m-nombre').value   = p.name || '';
   document.getElementById('m-registro').value = p.expediente || '';
-  document.getElementById('m-edad').value     = p.edad || '';
-  document.getElementById('m-sexo-ro').value  = p.sexo || '';
+  // Populate edad: split "52 años" → num=52, unit=años
+  var edadParts = (p.edad||'').split(' ');
+  document.getElementById('m-edad-num').value  = edadParts[0] || '';
+  document.getElementById('m-edad-unit').value = edadParts[1] || 'años';
+  // Populate sexo dropdown
+  document.getElementById('m-sexo-ro').value = (p.sexo==='M') ? 'M' : 'F';
   ['area','servicio','cuarto','cama'].forEach(function(f){ document.getElementById('m-'+f).value=''; });
   document.getElementById('modal').classList.add('open');
   setTimeout(function(){ document.getElementById('m-area').focus(); }, 120);
@@ -979,12 +1036,16 @@ function savePatient() {
   if (isFromLab) {
     nombre   = (document.getElementById('m-nombre').value||'').trim().toUpperCase();
     registro = (document.getElementById('m-registro').value||'').trim();
-    edad     = (document.getElementById('m-edad').value||'').trim();
-    sexo     = (document.getElementById('m-sexo-ro').value||'').trim() || 'F';
+    var edNum = (document.getElementById('m-edad-num').value||'').trim();
+    var edUnit = document.getElementById('m-edad-unit').value || 'años';
+    edad = edNum ? (edNum + ' ' + edUnit) : '';
+    sexo = document.getElementById('m-sexo-ro').value || 'F';
   } else {
     nombre   = (document.getElementById('m-nombre-manual').value||'').trim().toUpperCase();
     registro = (document.getElementById('m-registro-manual').value||'').trim();
-    edad     = (document.getElementById('m-edad-manual').value||'').trim();
+    var edNumM = (document.getElementById('m-edad-manual-num').value||'').trim();
+    var edUnitM = document.getElementById('m-edad-manual-unit').value || 'años';
+    edad = edNumM ? (edNumM + ' ' + edUnitM) : '';
     sexo     = document.getElementById('m-sexo').value;
   }
   if (!nombre) { showToast('Ingresa el nombre del paciente','error'); return; }
@@ -1119,7 +1180,7 @@ function renderIndicaForm() {
     '<div class="card"><div class="card-header" style="background:#374151;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Fecha, Hora y Médicos</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:12px;">' +
     '<div class="field-group"><label>Fecha</label><input type="text" value="' + esc(ind.fecha) + '" placeholder="DD/MM/AAAA" oninput="updateIndica(\'fecha\',this.value)"></div>' +
     '<div class="field-group"><label>Hora</label><input type="text" value="' + esc(ind.hora) + '" placeholder="HH:MM" oninput="updateIndica(\'hora\',this.value)"></div>' +
-    '<div class="field-group"><label>Médicos (uno por línea)</label><textarea rows="3" placeholder="R3 KARLA MONCADA" oninput="updateIndica(\'medicos\',this.value)">' + esc(ind.medicos) + '</textarea></div>' +
+    '<div class="field-group"><label>Médicos (uno por línea)</label><textarea rows="3" placeholder="R3 NOMBRE APELLIDO" oninput="updateIndica(\'medicos\',this.value)">' + esc(ind.medicos) + '</textarea></div>' +
     '</div></div></div>' +
 
     SECTIONS.map(function(s){ return '<div class="indica-section"><div class="indica-section-header">'+s.label+'</div><div class="indica-section-body"><textarea rows="3" placeholder="'+s.placeholder+'" oninput="updateIndica(\''+s.key+'\',this.value)">'+esc(ind[s.key])+'</textarea></div></div>'; }).join('') +
@@ -1149,6 +1210,219 @@ function removeOtro(i) {
   indicaciones[activeId].otros.splice(i, 1);
   saveState();
   renderIndicaForm();
+}
+
+// ── Diagrams (ported from Laboratoriazo) ─────────────────────────
+function parsearSecciones(resLabs){
+  var secs={};
+  resLabs.forEach(function(linea){
+    var primera=linea.split('\n')[0].trim().replace('\t',' ');
+    var tokens=primera.split(' ');
+    var key=tokens[0].replace(':','');
+    var vals={};
+    var i=1;
+    while(i<tokens.length){
+      var tok=tokens[i];
+      if(!tok||tok==='-'){i++;continue;}
+      var next=tokens[i+1];
+      if(next!==undefined && !isNaN(parseFloat(next.replace('*','')))){
+        vals[tok]={val:next.replace('*',''), ab:next.endsWith('*')};
+        i+=2;
+      } else { i++; }
+    }
+    secs[key]=vals;
+  });
+  return secs;
+}
+
+function g(secs,sec,key){
+  var s=secs[sec]; if(!s)return null;
+  var v=s[key]; if(!v||v.val==='---')return null;
+  return v;
+}
+
+var LINE='stroke="#555" stroke-width="1.5"';
+
+function sp(x,y,lbl,obj,anchor){
+  anchor=anchor||'middle';
+  var isAb=obj&&obj.ab;
+  var vc=isAb?'#cc0000':'#111111';
+  var vt=obj?escTxt(obj.val):'—';
+  var dec=isAb?' text-decoration="underline"':'';
+  return '<text x="'+x+'" y="'+y+'" text-anchor="'+anchor+'" font-size="10" fill="#888" font-family="Figtree,Arial,sans-serif">'+lbl+'</text>'
+        +'<text x="'+x+'" y="'+(y+15)+'" text-anchor="'+anchor+'" font-size="13" fill="'+vc+'" font-weight="bold" font-family="Figtree,Arial,sans-serif"'+dec+'>'+vt+'</text>';
+}
+
+function svgBH(secs){
+  var hb =g(secs,'BH','Hb'),  hto=g(secs,'BH','Hto');
+  var leu=g(secs,'BH','Leu'), neu=g(secs,'BH','Neu');
+  var plt=g(secs,'BH','Plt');
+  if(!hb)return null;
+  return '<svg viewBox="0 0 300 170" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">'
+    +'<line x1="50"  y1="18"  x2="250" y2="182" '+LINE+'/>'
+    +'<line x1="250" y1="18"  x2="50"  y2="182" '+LINE+'/>'
+    +'<line x1="28"  y1="79"  x2="78"  y2="79"  '+LINE+'/>'
+    +sp(150, 33, 'HB',   hb,  'middle')
+    +sp(150,122, 'HCTO', hto, 'middle')
+    +sp(204, 75, 'PLT',  plt, 'start')
+    +sp(75,  55, 'LEU',  leu, 'end')
+    +sp(75,  94, 'NEU',  neu, 'end')
+    +'</svg>';
+}
+
+function svgGamble(secs){
+  var na  =g(secs,'ESC','Na'),  k   =g(secs,'ESC','K');
+  var cl  =g(secs,'ESC','Cl'),  hco3=g(secs,'GASES','Bica')||g(secs,'ESC','HCO3');
+  var f   =g(secs,'ESC','F'),   ca  =g(secs,'ESC','Ca');
+  var bun =g(secs,'QS','BUN'),  cr  =g(secs,'QS','Cr');
+  var glu =g(secs,'QS','Glu'),  mg  =g(secs,'ESC','Mg');
+  if(!na&&!k&&!cl&&!bun&&!cr&&!glu)return null;
+
+  var sy=65, dT=12, dB=118;
+  var d1=104, d2=192, d3=280, forkX=365;
+  var c1=61, c2=148, c3=236, c4=323;
+
+  function cell(x, lbl, obj, isTop){
+    var vc = obj&&obj.ab ? '#cc0000' : '#111';
+    var vt = obj ? escTxt(obj.val) : '—';
+    var dec = obj&&obj.ab ? ' text-decoration="underline"' : '';
+    var ly = isTop ? 27 : 78;
+    var vy = isTop ? 42 : 96;
+    return '<text x="'+x+'" y="'+ly+'" text-anchor="middle" font-size="10" fill="#888" font-family="Figtree,Arial,sans-serif">'+lbl+'</text>'
+          +'<text x="'+x+'" y="'+vy+'" text-anchor="middle" font-size="14" fill="'+vc+'" font-weight="bold" font-family="Figtree,Arial,sans-serif"'+dec+'>'+vt+'</text>';
+  }
+
+  return '<svg viewBox="0 0 470 130" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">'
+    +'<line x1="18"    y1="'+sy+'" x2="'+forkX+'" y2="'+sy+'" '+LINE+'/>'
+    +'<line x1="'+d1+'" y1="'+dT+'" x2="'+d1+'" y2="'+dB+'" '+LINE+'/>'
+    +'<line x1="'+d2+'" y1="'+dT+'" x2="'+d2+'" y2="'+dB+'" '+LINE+'/>'
+    +'<line x1="'+d3+'" y1="'+dT+'" x2="'+d3+'" y2="'+dB+'" '+LINE+'/>'
+    +'<line x1="'+forkX+'" y1="'+sy+'" x2="448" y2="18"  '+LINE+'/>'
+    +'<line x1="'+forkX+'" y1="'+sy+'" x2="448" y2="112" '+LINE+'/>'
+    +cell(c1,'Na', na, true)+cell(c2,'Cl',  cl,   true)
+    +cell(c3,'P',  f,  true)+cell(c4,'BUN', bun,  true)
+    +cell(c1,'K',    k,    false)+cell(c2,'HCO3', hco3, false)
+    +cell(c3,'Ca',   ca,   false)+cell(c4,'Cr',   cr,   false)
+    +sp(406, 53, 'Glu', glu, 'middle')
+    +'</svg>';
+}
+
+function svgPFH(secs){
+  var ca  = g(secs,'ESC','Ca');
+  var ast = g(secs,'PFHs','AST');
+  var ldh = g(secs,'PFHs','LDH');
+  var pcr = g(secs,'QS','PCR');
+  var alt = g(secs,'PFHs','ALT');
+  var alb = g(secs,'PFHs','Alb');
+  var fa  = g(secs,'PFHs','FA');
+  var bt  = g(secs,'PFHs','BT');
+  var bd  = g(secs,'PFHs','BD');
+  var bi  = g(secs,'PFHs','BI');
+  if(!ast&&!alt&&!fa&&!bt&&!alb)return null;
+
+  var cx=135, lx=67, rx=202;
+
+  function gcell(x, lbl, obj, y_lbl){
+    var vc = obj&&obj.ab ? '#cc0000' : '#111';
+    var vt = obj ? escTxt(obj.val) : '—';
+    var dec = obj&&obj.ab ? ' text-decoration="underline"' : '';
+    return '<text x="'+x+'" y="'+y_lbl+'" text-anchor="middle" font-size="10" fill="#888" font-family="Figtree,Arial,sans-serif">'+lbl+'</text>'
+          +'<text x="'+x+'" y="'+(y_lbl+15)+'" text-anchor="middle" font-size="14" fill="'+vc+'" font-weight="bold" font-family="Figtree,Arial,sans-serif"'+dec+'>'+vt+'</text>';
+  }
+
+  var midLeft = pcr || ldh;
+  var midLbl  = pcr ? 'Prot' : 'LDH';
+
+  return '<svg viewBox="0 0 270 230" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">'
+    +'<line x1="'+cx+'" y1="10"  x2="'+cx+'" y2="145" '+LINE+'/>'
+    +'<line x1="22"    y1="52"   x2="248"   y2="52"   '+LINE+'/>'
+    +'<line x1="22"    y1="104"  x2="248"   y2="104"  '+LINE+'/>'
+    +'<line x1="22"    y1="145"  x2="248"   y2="145"  '+LINE+'/>'
+    +'<line x1="'+cx+'" y1="145" x2="45"  y2="210" '+LINE+'/>'
+    +'<line x1="'+cx+'" y1="145" x2="225" y2="210" '+LINE+'/>'
+    +gcell(lx, 'Ca',  ca,  20)
+    +gcell(rx, 'AST', ast, 20)
+    +(midLeft ? gcell(lx, midLbl, midLeft, 65) : '')
+    +gcell(rx, 'ALT', alt, 65)
+    +gcell(lx, 'Alb', alb, 117)
+    +gcell(rx, 'FA',  fa,  117)
+    +gcell(cx,       'BT', bt,  165)
+    +gcell(cx - 35,  'BD', bd,  195)
+    +gcell(cx + 35,  'BI', bi,  195)
+    +'</svg>';
+}
+
+function svgGases(secs){
+  var ph   = g(secs,'GASES','pH');
+  var pco2 = g(secs,'GASES','pCO2');
+  var po2  = g(secs,'GASES','pO2');
+  var lac  = g(secs,'GASES','Lactato');
+  var bica = g(secs,'GASES','Bica');
+  if(!ph)return null;
+
+  var cx=135, lx=67, rx=202;
+  var jY=65;
+
+  function gcell(x, lbl, obj, y_lbl){
+    var vc = obj&&obj.ab ? '#cc0000' : '#111';
+    var vt = obj ? escTxt(obj.val) : '—';
+    var dec = obj&&obj.ab ? ' text-decoration="underline"' : '';
+    return '<text x="'+x+'" y="'+y_lbl+'" text-anchor="middle" font-size="10" fill="#888" font-family="Figtree,Arial,sans-serif">'+lbl+'</text>'
+          +'<text x="'+x+'" y="'+(y_lbl+15)+'" text-anchor="middle" font-size="14" fill="'+vc+'" font-weight="bold" font-family="Figtree,Arial,sans-serif"'+dec+'>'+vt+'</text>';
+  }
+
+  return '<svg viewBox="0 0 270 162" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">'
+    +'<line x1="'+cx+'" y1="'+jY+'" x2="22"  y2="10" '+LINE+'/>'
+    +'<line x1="'+cx+'" y1="'+jY+'" x2="248" y2="10" '+LINE+'/>'
+    +'<line x1="'+cx+'" y1="'+jY+'" x2="'+cx+'" y2="158" '+LINE+'/>'
+    +'<line x1="22" y1="'+jY+'"  x2="248" y2="'+jY+'"  '+LINE+'/>'
+    +'<line x1="22" y1="118" x2="248" y2="118" '+LINE+'/>'
+    +gcell(cx,  'pH',   ph,   20)
+    +gcell(lx,  'pCO2', pco2, 76)
+    +gcell(rx,  'pO2',  po2,  76)
+    +gcell(lx,  'Lact', lac,  126)
+    +gcell(rx,  'HCO3', bica, 126)
+    +'</svg>';
+}
+
+function svgCoag(secs){
+  var tp  = g(secs,'BH','TP');
+  var ttp = g(secs,'BH','TTP');
+  var inr = g(secs,'BH','INR');
+  if(!tp&&!ttp&&!inr)return null;
+  var cx=135, jY=68;
+  return '<svg viewBox="0 0 270 172" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">'
+    +'<line x1="'+cx+'" y1="10"  x2="'+cx+'" y2="'+jY+'" '+LINE+'/>'
+    +'<line x1="'+cx+'" y1="'+jY+'" x2="28"  y2="148" '+LINE+'/>'
+    +'<line x1="'+cx+'" y1="'+jY+'" x2="242" y2="148" '+LINE+'/>'
+    +sp(cx-52, 30, 'TP',  tp,  'middle')
+    +sp(cx+52, 30, 'TTP', ttp, 'middle')
+    +sp(cx,   148, 'INR', inr, 'middle')
+    +'</svg>';
+}
+
+function renderDiagramas(resLabs){
+  var secs = parsearSecciones(resLabs);
+  var grid = document.getElementById('diagrams-grid');
+  grid.innerHTML = '';
+  var cards = [
+    { title:'Biometría Hemática', svg:svgBH(secs),     w:200 },
+    { title:'Coagulación',        svg:svgCoag(secs),   w:180 },
+    { title:'Electrolitos / QS',  svg:svgGamble(secs), w:320 },
+    { title:'Función Hepática',   svg:svgPFH(secs),    w:180 },
+    { title:'Gasometría',         svg:svgGases(secs),  w:180 },
+  ];
+  var any = false;
+  cards.forEach(function(c){
+    if (!c.svg) return;
+    any = true;
+    var div = document.createElement('div');
+    div.className = 'dcard';
+    div.style.width = c.w + 'px';
+    div.innerHTML = '<div class="dcard-title">'+c.title+'</div>'+c.svg;
+    grid.appendChild(div);
+  });
+  document.getElementById('lab-diagrams-section').style.display = any ? 'block' : 'none';
 }
 
 function generateIndicaciones() {
