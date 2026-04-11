@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>R+ Clinical</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary:      #1E3A5F;
+    --action:       #2563EB;
+    --action-hover: #1D4ED8;
+    --bg:           #F8FAFC;
+    --surface:      #FFFFFF;
+    --border:       #CBD5E1;
+    --text:         #1E293B;
+    --text-muted:   #64748B;
+    --error:        #DC2626;
+    --success:      #16A34A;
+    --lab-chip-bg:  #EFF6FF;
+    --lab-chip-txt: #1D4ED8;
+    --shadow:       0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-md:    0 4px 6px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.05);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text); height: 100vh;
+    display: flex; flex-direction: column; overflow: hidden; font-size: 16px; line-height: 1.5;
+  }
+  header {
+    background: var(--primary); color: white; padding: 0 24px; height: 52px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0; box-shadow: var(--shadow-md); z-index: 10;
+  }
+  header h1 { font-size: 16px; font-weight: 700; letter-spacing: 0.2px; }
+  header span { font-size: 12px; opacity: 0.65; }
+  .app-tabs {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    display: flex; padding: 0 24px; flex-shrink: 0; gap: 4px;
+  }
+  .app-tab {
+    padding: 10px 18px; font-size: 14px; font-weight: 600; color: var(--text-muted);
+    background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px;
+    cursor: pointer; transition: color 0.15s, border-color 0.15s; display: flex;
+    align-items: center; gap: 6px; font-family: inherit;
+  }
+  .app-tab:hover { color: var(--action); }
+  .app-tab.active { color: var(--action); border-bottom-color: var(--action); }
+  .app { display: flex; flex: 1; overflow: hidden; }
+  aside {
+    width: 280px; background: var(--surface); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; flex-shrink: 0;
+  }
+  .sidebar-header {
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .sidebar-header h2 { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; }
+  .btn-add {
+    background: var(--action); color: white; border: none; border-radius: 6px;
+    padding: 6px 12px; font-size: 13px; font-weight: 600; font-family: inherit;
+    cursor: pointer; display: flex; align-items: center; gap: 4px; transition: background 0.15s; min-height: 32px;
+  }
+  .btn-add:hover { background: var(--action-hover); }
+  .patient-list { overflow-y: auto; flex: 1; }
+  .patient-card {
+    padding: 12px 16px; border-bottom: 1px solid #f1f5f9; cursor: pointer;
+    transition: background 0.1s; position: relative; border-left: 3px solid transparent;
+  }
+  .patient-card:hover { background: #F0F7FF; }
+  .patient-card.active { background: #EFF6FF; border-left-color: var(--action); }
+  .patient-card .p-name { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 3px; padding-right: 28px; line-height: 1.3; }
+  .patient-card .p-meta { font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .lab-chip {
+    background: var(--lab-chip-bg); color: var(--lab-chip-txt); font-size: 10px; font-weight: 700;
+    letter-spacing: 0.4px; padding: 1px 6px; border-radius: 999px; border: 1px solid #BFDBFE;
+  }
+  .btn-delete-card {
+    position: absolute; top: 10px; right: 10px; background: none; border: none;
+    color: var(--text-muted); font-size: 16px; cursor: pointer; opacity: 0;
+    transition: opacity 0.1s, color 0.1s; padding: 2px 5px; border-radius: 4px;
+    line-height: 1; min-width: 24px; min-height: 24px;
+  }
+  .patient-card:hover .btn-delete-card { opacity: 1; }
+  .btn-delete-card:hover { color: var(--error); background: #fee2e2; }
+  main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+  .empty-state {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; color: var(--text-muted); gap: 12px; padding: 40px;
+  }
+  .empty-state svg { opacity: 0.25; }
+  .empty-state p { font-size: 15px; }
+  .inner-tab-bar {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    display: flex; padding: 0 24px; flex-shrink: 0; gap: 4px;
+  }
+  .inner-tab {
+    padding: 10px 18px; font-size: 13px; font-weight: 600; color: var(--text-muted);
+    background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px;
+    cursor: pointer; font-family: inherit; transition: color 0.15s, border-color 0.15s;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .inner-tab:hover { color: var(--action); }
+  .inner-tab.active { color: var(--action); border-bottom-color: var(--action); }
+  .tab-content { display: none; flex-direction: column; overflow-y: auto; padding: 24px; flex: 1; gap: 20px; }
+  .tab-content.active { display: flex; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); overflow: hidden; }
+  .card-header {
+    background: var(--primary); color: white; padding: 11px 18px; font-size: 12px;
+    font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; display: flex; align-items: center; gap: 8px;
+  }
+  .card-body { padding: 18px; }
+  .field-group { display: flex; flex-direction: column; gap: 4px; }
+  .field-group label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .field-group input, .field-group select, .field-group textarea {
+    border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 14px;
+    font-family: inherit; color: var(--text); background: #F8FAFC;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s; line-height: 1.5;
+  }
+  .field-group input:focus, .field-group select:focus, .field-group textarea:focus {
+    outline: none; border-color: var(--action); background: white; box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+  }
+  .field-group textarea { resize: vertical; min-height: 90px; }
+  .field-readonly { border: none !important; background: #F1F5F9 !important; color: var(--text-muted) !important; box-shadow: none !important; cursor: default; }
+  .vitals-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .vital-box { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; text-align: center; }
+  .vital-label { background: #EFF6FF; padding: 5px; font-size: 10px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid var(--border); }
+  .vital-box input { border: none; padding: 10px 8px; font-size: 16px; font-weight: 700; text-align: center; width: 100%; background: white; color: var(--text); font-family: inherit; }
+  .vital-box input:focus { outline: none; background: #EFF6FF; }
+  .list-rows { display: flex; flex-direction: column; gap: 6px; }
+  .list-row { display: flex; gap: 8px; align-items: center; }
+  .list-row input { flex: 1; border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; font-size: 14px; font-family: inherit; background: #F8FAFC; transition: border-color 0.15s, background 0.15s; color: var(--text); }
+  .list-row input:focus { outline: none; border-color: var(--action); background: white; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+  .list-num { font-size: 13px; font-weight: 700; color: var(--action); min-width: 22px; text-align: right; padding: 8px 0; }
+  .btn-remove { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; padding: 4px 6px; border-radius: 4px; line-height: 1; transition: color 0.1s, background 0.1s; min-width: 28px; min-height: 28px; }
+  .btn-remove:hover { color: var(--error); background: #fee2e2; }
+  .btn-add-row { background: none; border: 1px dashed var(--border); border-radius: 6px; padding: 7px 14px; font-size: 13px; font-family: inherit; color: var(--text-muted); cursor: pointer; transition: all 0.15s; margin-top: 4px; }
+  .btn-add-row:hover { border-color: var(--action); color: var(--action); background: #EFF6FF; }
+  .action-bar { background: white; border-top: 1px solid var(--border); padding: 14px 24px; display: flex; justify-content: flex-end; gap: 10px; flex-shrink: 0; box-shadow: 0 -2px 8px rgba(0,0,0,0.06); }
+  .btn-generate { background: var(--action); color: white; border: none; border-radius: 8px; padding: 10px 22px; font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.15s, transform 0.1s; min-height: 44px; }
+  .btn-generate:hover { background: var(--action-hover); }
+  .btn-generate:active { transform: scale(0.98); }
+  .btn-generate.loading { opacity: 0.65; cursor: not-allowed; }
+  .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; align-items: center; justify-content: center; }
+  .modal-backdrop.open { display: flex; animation: fade-in 0.15s ease-out; }
+  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+  .modal { background: white; border-radius: 12px; padding: 28px; width: 500px; max-width: 95vw; box-shadow: 0 20px 60px rgba(0,0,0,0.2); animation: modal-in 0.15s ease-out; }
+  @keyframes modal-in { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
+  .modal h3 { font-size: 18px; font-weight: 700; margin-bottom: 20px; color: var(--primary); }
+  .modal-section { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+  .modal-divider { border: none; border-top: 1px dashed var(--border); margin: 12px 0 16px; }
+  .modal-section-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+  .btn-cancel { background: #F1F5F9; color: var(--text-muted); border: 1px solid var(--border); border-radius: 8px; padding: 9px 20px; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; min-height: 44px; transition: background 0.15s; }
+  .btn-cancel:hover { background: var(--border); }
+  .btn-save { background: var(--action); color: white; border: none; border-radius: 8px; padding: 9px 20px; font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer; min-height: 44px; transition: background 0.15s; }
+  .btn-save:hover { background: var(--action-hover); }
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--text); color: white; padding: 12px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; box-shadow: var(--shadow-md); transform: translateY(80px); opacity: 0; transition: transform 0.25s ease-out, opacity 0.25s; z-index: 200; max-width: 320px; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { background: var(--success); }
+  .toast.error { background: var(--error); }
+  .out-line   { font-family: 'Courier New', monospace; line-height: 1.9; white-space: pre-wrap; font-size: 13px; }
+  .out-indent { font-family: 'Courier New', monospace; line-height: 1.9; padding-left: 2rem; white-space: pre-wrap; font-size: 13px; }
+  .out-line strong, .out-indent strong { font-weight: 700; color: var(--error); background: rgba(220,38,38,0.07); padding: 0 3px; border-radius: 3px; }
+  .section-lbl { color: #4F46E5; font-weight: 700; letter-spacing: 0.04em; }
+  .indica-section { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .indica-section-header { background: #EFF6FF; padding: 8px 14px; font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); }
+  .indica-section-body { padding: 12px 14px; background: white; }
+  .indica-section-body textarea { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 13px; font-family: inherit; color: var(--text); background: #F8FAFC; resize: vertical; min-height: 70px; line-height: 1.6; width: 100%; transition: border-color 0.15s, background 0.15s; }
+  .indica-section-body textarea:focus { outline: none; border-color: var(--action); background: white; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+  @media (max-width: 700px) { aside { width: 220px; } .vitals-grid { grid-template-columns: repeat(3, 1fr); } }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>R+ Clinical</h1>
+  <span id="today-date"></span>
+</header>
+
+<div class="app-tabs">
+  <button class="app-tab active" id="apptab-lab" onclick="switchAppTab('lab')">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+    Laboratorio
+  </button>
+  <button class="app-tab" id="apptab-nota" onclick="switchAppTab('nota')">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+    Nota de Evolución
+  </button>
+</div>
+
+<div class="app">
+  <aside>
+    <div class="sidebar-header">
+      <h2>Pacientes</h2>
+      <button class="btn-add" onclick="openAddModal()">+ Agregar</button>
+    </div>
+    <div class="patient-list" id="patient-list"></div>
+  </aside>
+
+  <main id="main-area">
+
+    <div id="appcontent-lab" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
+      <div style="flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:20px;">
+
+        <div class="card">
+          <div class="card-header">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+            Reporte de Laboratorio
+          </div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
+            <div class="field-group">
+              <label>Pega el texto del reporte aquí</label>
+              <textarea id="lab-input" rows="10" placeholder="Copia y pega el texto completo del reporte de laboratorio del sistema HIS..."></textarea>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <button class="btn-generate" onclick="procesarReporte()" style="min-width:140px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                Procesar
+              </button>
+              <button onclick="limpiarReporte()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:9px 16px;font-size:13px;font-family:inherit;color:var(--text-muted);cursor:pointer;min-height:44px;" onmouseover="this.style.background='#F1F5F9'" onmouseout="this.style.background='none'">
+                Limpiar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="lab-banner" class="card" style="display:none;border-left:4px solid var(--action);">
+          <div class="card-body" style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;">
+            <div style="flex:1;">
+              <div style="font-size:11px;font-weight:700;color:var(--action);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Paciente detectado</div>
+              <div id="lab-patient-name" style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px;"></div>
+              <div id="lab-patient-meta" style="font-size:13px;color:var(--text-muted);"></div>
+            </div>
+            <button class="btn-generate" onclick="openAddModalFromLab()" style="white-space:nowrap;flex-shrink:0;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+              Agregar Paciente
+            </button>
+          </div>
+        </div>
+
+        <div id="lab-output-section" class="card" style="display:none;">
+          <div class="card-header" style="background:#312E81;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Resultados
+          </div>
+          <div class="card-body" style="padding:16px 18px;">
+            <div id="lab-output-box" style="line-height:2;"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div id="appcontent-nota" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+      <div class="empty-state" id="empty-state">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+        <p>Selecciona o agrega un paciente para comenzar</p>
+      </div>
+      <div id="patient-view" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+        <div class="inner-tab-bar">
+          <button class="inner-tab active" id="itab-notas" onclick="switchInnerTab('notas')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+            Nota de Evolución
+          </button>
+          <button class="inner-tab" id="itab-indica" onclick="switchInnerTab('indica')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+            Indicaciones
+          </button>
+        </div>
+        <div id="itab-content-notas" class="tab-content active"><div id="note-form" style="display:flex;flex-direction:column;gap:20px;"></div></div>
+        <div id="itab-content-indica" class="tab-content"><div id="indica-form" style="display:flex;flex-direction:column;gap:20px;"></div></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="modal-backdrop" id="modal">
+  <div class="modal">
+    <h3 id="modal-title">Nuevo Paciente</h3>
+
+    <div id="modal-prefilled" style="display:none;">
+      <div class="modal-section-label">Del reporte de laboratorio</div>
+      <div class="modal-section" style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;">
+        <div class="field-group"><label>Nombre</label><input id="m-nombre" type="text" class="field-readonly" readonly></div>
+        <div class="field-group"><label>Registro</label><input id="m-registro" type="text" class="field-readonly" readonly></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div class="field-group"><label>Edad</label><input id="m-edad" type="text" class="field-readonly" readonly></div>
+          <div class="field-group"><label>Sexo</label><input id="m-sexo-ro" type="text" class="field-readonly" readonly></div>
+        </div>
+      </div>
+      <hr class="modal-divider">
+      <div class="modal-section-label">Completar manualmente</div>
+    </div>
+
+    <div id="modal-manual" class="modal-section">
+      <div id="modal-manual-full" style="display:none;">
+        <div class="field-group" style="margin-bottom:12px;">
+          <label>Nombre completo *</label>
+          <input id="m-nombre-manual" type="text" placeholder="APELLIDO APELLIDO, Nombre" style="text-transform:uppercase;">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 80px 60px;gap:10px;margin-bottom:12px;">
+          <div class="field-group"><label>Registro</label><input id="m-registro-manual" type="text" placeholder="0000000-0"></div>
+          <div class="field-group"><label>Edad</label><input id="m-edad-manual" type="text" placeholder="00"></div>
+          <div class="field-group"><label>Sexo</label>
+            <select id="m-sexo"><option value="F">F</option><option value="M">M</option></select>
+          </div>
+        </div>
+      </div>
+      <div class="field-group"><label>Área / Departamento *</label><input id="m-area" type="text" placeholder="ej. CIRUGÍA AB" style="text-transform:uppercase;"></div>
+      <div class="field-group"><label>Servicio *</label><input id="m-servicio" type="text" placeholder="ej. MEDICINA INTERNA" style="text-transform:uppercase;"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="field-group"><label>Cuarto *</label><input id="m-cuarto" type="text" placeholder="440"></div>
+        <div class="field-group"><label>Cama *</label><input id="m-cama" type="text" placeholder="05"></div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" onclick="savePatient()">Agregar Paciente</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════════════
+// LAB PARSER — ported from ~/Laboratoriazo App/index.html
+// ════════════════════════════════════════════════════════════════════
+
+function extraer(nombres, bloque) {
+  if (!bloque) return '---';
+  for (var i = 0; i < nombres.length; i++) {
+    var regex = new RegExp(nombres[i] + '[^0-9-]{0,60}(-?\\d+\\.?\\d*)', 'i');
+    var m = bloque.match(regex);
+    if (m) return m[1];
+  }
+  return '---';
+}
+
+function extraerConRango(nombres, texto) {
+  if (!texto) return { valor: '---', min: null, max: null };
+  var t = texto.toUpperCase();
+  for (var i = 0; i < nombres.length; i++) {
+    var nombre = nombres[i].toUpperCase();
+    var idx = t.indexOf(nombre);
+    if (idx === -1) continue;
+    // Start AFTER the test name to avoid matching digits within it
+    var start = idx + nombre.length;
+    var sub = texto.substring(start, start + 220);
+    var mValor = sub.match(/(-?\d+[.,]?\d*)/);
+    if (!mValor) continue;
+    var valorStr = mValor[1];
+    var mRango = sub.match(/(\d+[.,]?\d*)\s*-\s*(\d+[.,]?\d*)/);
+    if (!mRango) return { valor: valorStr, min: null, max: null };
+    return { valor: valorStr,
+             min: parseFloat(mRango[1].replace(',','.')),
+             max: parseFloat(mRango[2].replace(',','.')) };
+  }
+  return { valor: '---', min: null, max: null };
+}
+
+function marcarSegunRango(valorStr, min, max) {
+  if (valorStr === '---' || valorStr == null) return valorStr;
+  var v = parseFloat(String(valorStr).replace(',','.'));
+  if (isNaN(v) || min == null || max == null) return valorStr;
+  return (v < min || v > max) ? valorStr + '*' : valorStr;
+}
+
+function fmt(val) {
+  if (!val || val === '---') return val;
+  var star = val.endsWith('*');
+  var n = parseFloat((star ? val.slice(0,-1) : val).replace(',','.'));
+  if (isNaN(n)) return val;
+  return String(n) + (star ? '*' : '');
+}
+
+function parseBH_(tNorm) {
+  var hbData  = extraerConRango(['HGB','HEMOGLOBINA TOTAL','HEMOGLOBINA'], tNorm);
+  if (hbData.valor === '---') return '';
+  var htoData = extraerConRango(['HCT ','HEMATOCRITO'], tNorm);
+  var vcmData = extraerConRango(['MCV ','VCM '], tNorm);
+  var hcmData = extraerConRango(['MCH ','HCM '], tNorm);
+  var leuData = extraerConRango(['WBC '], tNorm);
+  var neuData = extraerConRango(['NEU '], tNorm);
+  var eosData = extraerConRango(['EOS '], tNorm);
+  var pltData = extraerConRango(['PLT '], tNorm);
+  var retData = extraerConRango(['RETICULOCITOS'], tNorm);
+  var tpData  = extraerConRango(['TIEMPO DE PROTROMBINA'], tNorm);
+  var ttpData = extraerConRango(['TIEMPO DE TROMBOPLASTINA'], tNorm);
+  var inrData = extraerConRango(['INR '], tNorm);
+
+  var Hb  = fmt(marcarSegunRango(hbData.valor,  hbData.min,  hbData.max));
+  var Hto = fmt(marcarSegunRango(htoData.valor, htoData.min, htoData.max));
+  var VCM = fmt(marcarSegunRango(vcmData.valor, vcmData.min, vcmData.max));
+  var HCM = fmt(marcarSegunRango(hcmData.valor, hcmData.min, hcmData.max));
+  var Leu = fmt(marcarSegunRango(leuData.valor, leuData.min, leuData.max));
+  var Neu = fmt(marcarSegunRango(neuData.valor, neuData.min, neuData.max));
+  var Eos = fmt(marcarSegunRango(eosData.valor, eosData.min, eosData.max));
+  var Plt = fmt(marcarSegunRango(pltData.valor, pltData.min, pltData.max));
+  var Ret = fmt(marcarSegunRango(retData.valor, retData.min, retData.max));
+  var TP  = fmt(marcarSegunRango(tpData.valor,  tpData.min,  tpData.max));
+  var TTP = fmt(marcarSegunRango(ttpData.valor, ttpData.min, ttpData.max));
+  var INR = fmt(marcarSegunRango(inrData.valor, inrData.min, inrData.max));
+
+  var p = ['BH'];
+  p.push('Hb', Hb);
+  if (Hto !== '---') p.push('Hto', Hto);
+  if (VCM !== '---') p.push('VCM', VCM);
+  if (HCM !== '---') p.push('HCM', HCM);
+  if (Leu !== '---') p.push('Leu', Leu);
+  if (Neu !== '---') p.push('Neu', Neu);
+  if (Eos !== '---') p.push('Eos', Eos);
+  if (Plt !== '---') p.push('Plt', Plt);
+  if (Ret !== '---') p.push('Ret', Ret);
+  var coag = [];
+  if (TP  !== '---') coag.push('TP',  TP);
+  if (TTP !== '---') coag.push('TTP', TTP);
+  if (INR !== '---') coag.push('INR', INR);
+  if (coag.length) { p.push('-'); p = p.concat(coag); }
+  return p[0]+'\t'+p.slice(1).join(' ');
+}
+
+function parseQS_(texto) {
+  var gluData = extraerConRango(['GLUCOSA EN SANGRE','GLUCOSA EN','GLUCOSA'], texto);
+  var crData  = extraerConRango(['CREATININA EN SANGRE','CREATININA'], texto);
+  var bunData = extraerConRango(['NITROGENO DE LA UREA EN SANGRE','NITROGENO DE LA UREA','UREA'], texto);
+  var pcrData = extraerConRango(['PROTEINA C REACTIVA','PROTEÍNA C REACTIVA'], texto);
+  var auData  = extraerConRango(['ACIDO URICO EN SANGRE','ACIDO URICO','ÁCIDO ÚRICO'], texto);
+  var tglData = extraerConRango(['TRIGLICERIDOS','TRIGLICÉRIDOS'], texto);
+  var colData = extraerConRango(['COLESTEROL'], texto);
+  var vsgData = extraerConRango(['VSG ','VELOCIDAD DE SEDIMENTACION'], texto);
+  var cpkData = extraerConRango(['CPK CREATIN FOSFO QUINASA','CPK '], texto);
+
+  var Glu = fmt(marcarSegunRango(gluData.valor, gluData.min, gluData.max));
+  var Cr  = fmt(marcarSegunRango(crData.valor,  crData.min,  crData.max));
+  var BUN = fmt(marcarSegunRango(bunData.valor, bunData.min, bunData.max));
+  var PCR = fmt(marcarSegunRango(pcrData.valor, pcrData.min, pcrData.max));
+  var AU  = fmt(marcarSegunRango(auData.valor,  auData.min,  auData.max));
+  var TGL = fmt(marcarSegunRango(tglData.valor, tglData.min, tglData.max));
+  var COL = fmt(marcarSegunRango(colData.valor, colData.min, colData.max));
+  var VSG = fmt(marcarSegunRango(vsgData.valor, vsgData.min, vsgData.max));
+  var CPK = fmt(marcarSegunRango(cpkData.valor, cpkData.min, cpkData.max));
+
+  if ([Glu,Cr,BUN,PCR,AU,TGL,COL,VSG,CPK].every(function(v){return v==='---';})) return '';
+
+  var p = ['QS'];
+  if (Glu !== '---') p.push('Glu', Glu);
+  if (Cr  !== '---') p.push('Cr',  Cr);
+  if (BUN !== '---') p.push('BUN', BUN);
+  if (PCR !== '---') p.push('PCR', PCR);
+  if (AU  !== '---') p.push('AU',  AU);
+  if (TGL !== '---') p.push('TGL', TGL);
+  if (COL !== '---') p.push('COL', COL);
+  if (VSG !== '---') p.push('VSG', VSG);
+  if (CPK !== '---') p.push('CPK', CPK);
+  return p[0]+'\t'+p.slice(1).join(' ');
+}
+
+function parseESC_(texto) {
+  var naData = extraerConRango(['SODIO'], texto);
+  if (naData.valor === '---') return '';
+  var clData = extraerConRango(['CLORO'], texto);
+  var kData  = extraerConRango(['POTASIO'], texto);
+  var caData = extraerConRango(['CALCIO EN SUERO','CALCIO'], texto);
+  var fData  = extraerConRango(['FOSFORO EN SANGRE','FOSFORO','FÓSFORO'], texto);
+  var mgData = extraerConRango(['MAGNESIO'], texto);
+
+  var Na = fmt(marcarSegunRango(naData.valor, naData.min, naData.max));
+  var Cl = fmt(marcarSegunRango(clData.valor, clData.min, clData.max));
+  var K  = fmt(marcarSegunRango(kData.valor,  kData.min,  kData.max));
+  var Ca = fmt(marcarSegunRango(caData.valor, caData.min, caData.max));
+  var F  = fmt(marcarSegunRango(fData.valor,  fData.min,  fData.max));
+  var Mg = fmt(marcarSegunRango(mgData.valor, mgData.min, mgData.max));
+
+  var p = ['ESC'];
+  p.push('Na', Na);
+  if (Cl !== '---') p.push('Cl', Cl);
+  if (K  !== '---') p.push('K',  K);
+  if (Ca !== '---') p.push('Ca', Ca);
+  if (F  !== '---') p.push('F',  F);
+  if (Mg !== '---') p.push('Mg', Mg);
+  return p[0]+'\t'+p.slice(1).join(' ');
+}
+
+function parsePFH_(tNorm) {
+  var albData  = extraerConRango(['ALBUMINA'], tNorm);
+  var astData  = extraerConRango(['AST(ASPARTATO AMINOTRANSFERASA)','AST '], tNorm);
+  var altData  = extraerConRango(['ALT ALANIN AMINO TRANSFERASA','ALT '], tNorm);
+  var alpData  = extraerConRango(['ALP FOSFATASA ALCALINA','FOSFATASA ALCALINA'], tNorm);
+  var btData   = extraerConRango(['BILIRRUBINA TOTAL'], tNorm);
+  var bdData   = extraerConRango(['BILIRRUBINA DIRECTA'], tNorm);
+  var biData   = extraerConRango(['BILIRRUBINA INDIRECTA'], tNorm);
+  var ldhData  = extraerConRango(['LDH DESHIDROGENASA LACTICA','LDH '], tNorm);
+  var amilData = extraerConRango(['AMILASA SERICA','AMILASA'], tNorm);
+
+  var Alb  = fmt(marcarSegunRango(albData.valor,  albData.min,  albData.max));
+  var AST  = fmt(marcarSegunRango(astData.valor,  astData.min,  astData.max));
+  var ALT  = fmt(marcarSegunRango(altData.valor,  altData.min,  altData.max));
+  var FA   = fmt(marcarSegunRango(alpData.valor,  alpData.min,  alpData.max));
+  var BT   = fmt(marcarSegunRango(btData.valor,   btData.min,   btData.max));
+  var BD   = fmt(marcarSegunRango(bdData.valor,   bdData.min,   bdData.max));
+  var BI   = fmt(marcarSegunRango(biData.valor,   biData.min,   biData.max));
+  var LDH  = fmt(marcarSegunRango(ldhData.valor,  ldhData.min,  ldhData.max));
+  var Amil = fmt(marcarSegunRango(amilData.valor, amilData.min, amilData.max));
+
+  if ([Alb,AST,ALT,FA,BT,BD,BI,LDH,Amil].every(function(v){return v==='---';})) return '';
+  var p = ['PFHs'];
+  if (Alb  !== '---') p.push('Alb',  Alb);
+  if (AST  !== '---') p.push('AST',  AST);
+  if (ALT  !== '---') p.push('ALT',  ALT);
+  if (FA   !== '---') p.push('FA',   FA);
+  if (BT   !== '---') p.push('BT',   BT);
+  if (BD   !== '---') p.push('BD',   BD);
+  if (BI   !== '---') p.push('BI',   BI);
+  if (LDH  !== '---') p.push('LDH',  LDH);
+  if (Amil !== '---') p.push('Amil', Amil);
+  return p[0]+'\t'+p.slice(1).join(' ');
+}
+
+function parseGaso_(bloqueGaso) {
+  if (!bloqueGaso) return '';
+  var phData   = extraerConRango(['PH '], bloqueGaso);
+  if (phData.valor === '---') return '';
+  var pco2Data = extraerConRango(['PCO2'], bloqueGaso);
+  var po2Data  = extraerConRango(['PO2 '], bloqueGaso);
+  var naData   = extraerConRango(['SODIO'], bloqueGaso);
+  var kData    = extraerConRango(['POTASIO'], bloqueGaso);
+  var gluData  = extraerConRango(['GLUCOSA'], bloqueGaso);
+  var lacData  = extraerConRango(['LACTATO'], bloqueGaso);
+  var hco3Data = extraerConRango(['HCO3'], bloqueGaso);
+
+  var pH   = fmt(marcarSegunRango(phData.valor,   phData.min,   phData.max));
+  var pCO2 = fmt(marcarSegunRango(pco2Data.valor, pco2Data.min, pco2Data.max));
+  var pO2  = fmt(marcarSegunRango(po2Data.valor,  po2Data.min,  po2Data.max));
+  var Na   = fmt(marcarSegunRango(naData.valor,   naData.min,   naData.max));
+  var K    = fmt(marcarSegunRango(kData.valor,    kData.min,    kData.max));
+  var GLU  = fmt(marcarSegunRango(gluData.valor,  gluData.min,  gluData.max));
+  var Lac  = fmt(marcarSegunRango(lacData.valor,  lacData.min,  lacData.max));
+  var Bica = fmt(marcarSegunRango(hco3Data.valor, hco3Data.min, hco3Data.max));
+
+  var p = ['GASES'];
+  p.push('pH', pH);
+  if (pCO2 !== '---') p.push('pCO2', pCO2);
+  if (pO2  !== '---') p.push('pO2',  pO2);
+  if (Na   !== '---') p.push('Na',   Na);
+  if (K    !== '---') p.push('K',    K);
+  if (GLU  !== '---') p.push('GLU',  GLU);
+  if (Lac  !== '---') p.push('Lactato', Lac);
+  if (Bica !== '---') p.push('Bica', Bica);
+  return p[0]+'\t'+p.slice(1).join(' ');
+}
+
+function parsePIE_(tNorm) {
+  if (!/PRUEBA DE EMBARAZO/i.test(tNorm)) return '';
+  var idx = tNorm.toUpperCase().indexOf('PRUEBA DE EMBARAZO');
+  var sub = tNorm.substring(idx, idx + 300);
+  var m = sub.match(/\b(NEGATIVO|POSITIVO)\b/i);
+  if (!m) return '';
+  return 'PIE\t' + m[1].toUpperCase() + '*';
+}
+
+function parsearLCR(textoBruto) {
+  var tUp = textoBruto.toUpperCase();
+  if (tUp.indexOf('CITOQUIMICO DE LCR')===-1 && tUp.indexOf('CITOQUIMICO LIQ. LCR')===-1 && tUp.indexOf('CITOQUIMICO LCR')===-1) return '';
+  var lineas = textoBruto.split(/\r?\n/).map(function(l){return l.trim();});
+  var pH='',aspecto='',leu='',glu='',prot='',cl='',gram='',tinta='';
+  for (var i=0; i<lineas.length; i++) {
+    var linUp=lineas[i].toUpperCase();
+    if (linUp.indexOf('PH')===0){for(var j=i+1;j<Math.min(i+4,lineas.length);j++){var m=lineas[j].match(/(\d+(\.\d+)?)/);if(m){pH=m[1];break;}}}
+    if (linUp.indexOf('ASPECTO')===0){for(var j=i+1;j<Math.min(i+4,lineas.length);j++){var txt=lineas[j].replace(/\*/g,'').trim();if(txt&&!/ESTUDIO|RESULTADO|UNIDADES|VALOR DE REFERENCIA/i.test(txt)){aspecto=txt.toUpperCase();break;}}}
+    if (linUp.indexOf('RECUENTO CELULAR')===0||linUp.indexOf('LEUCOCITOS')===0){for(var j=i+1;j<Math.min(i+5,lineas.length);j++){var m=lineas[j].match(/(\d+)\s*$/);if(m){leu=m[1];break;}}}
+    if (linUp.indexOf('GLUCOSA')===0){for(var j=i+1;j<Math.min(i+4,lineas.length);j++){var m=lineas[j].match(/(\d+(\.\d+)?)/);if(m){glu=m[1];break;}}}
+    if (linUp.indexOf('PROTEINAS')===0){var mL=lineas[i].match(/PROTEINAS\s*([A-Z])\s*$/i);var letra=mL?mL[1].toUpperCase():'';for(var j=i+1;j<Math.min(i+4,lineas.length);j++){var m=lineas[j].match(/(\d+(\.\d+)?)/);if(m){prot=m[1]+letra;break;}}}
+    if (linUp.indexOf('CLORURO')===0){for(var j=i+1;j<Math.min(i+4,lineas.length);j++){var m=lineas[j].match(/(\d+(\.\d+)?)/);if(m){cl=m[1];break;}}}
+    if (linUp.indexOf('GRAM')===0){for(var j=i+1;j<Math.min(i+4,lineas.length);j++){var txt=lineas[j].replace(/\*/g,'').trim();if(txt){gram=txt.toUpperCase();break;}}}
+    if (linUp.indexOf('TINTA CHINA')===0){for(var j=i+1;j<Math.min(i+4,lineas.length);j++){var txt=lineas[j].replace(/\*/g,'').trim();if(txt){tinta=txt.toUpperCase();break;}}}
+  }
+  if (!aspecto&&!leu&&!glu&&!prot&&!cl&&!gram&&!tinta) return '';
+  var p=['LCR:'];
+  if(pH)     p.push('pH',pH);
+  if(aspecto)p.push('Asp',aspecto);
+  if(leu)    p.push('Leu',leu);
+  if(glu)    p.push('Glu',glu);
+  if(prot)   p.push('Prot',prot);
+  if(cl)     p.push('Cl',cl);
+  if(gram)   p.push('Gram',gram);
+  if(tinta)  p.push('Tinta',tinta);
+  return p[0]+'\t'+p.slice(1).join(' ');
+}
+
+function parseEGO_(textoBruto) {
+  var tUp=textoBruto.toUpperCase();
+  var pos=tUp.indexOf('EXAMEN GENERAL DE ORINA')!==-1?tUp.indexOf('EXAMEN GENERAL DE ORINA'):
+          tUp.indexOf('ANALISIS DE ORINA')!==-1?tUp.indexOf('ANALISIS DE ORINA'):
+          tUp.indexOf('URIANALISIS')!==-1?tUp.indexOf('URIANALISIS'):-1;
+  if(pos===-1)return '';
+  var fin=tUp.search(/BACTERIOLOGIA|CULTIVO|COMENTARIO DE MUESTRA/);
+  var bloque=(fin!==-1&&fin>pos)?textoBruto.substring(pos,fin):textoBruto.substring(pos);
+  var lineas=bloque.split(/\r?\n/).map(function(l){return l.replace(/\*/g,'').trim();});
+  function esUnidad(l){return /^(Hem\/uL|Leucocitos\/uL|E\.U\.\/dL|mOsm\/L|mg\/dL|mmol\/L|g\/dL|\/CAMPO|K\/uL|fL|pg|uL|U\/L|SEG\.?)$/i.test(l)||/^[a-zA-Z]+\/[a-zA-Z]+$/.test(l);}
+  function buscarValor(nombres){
+    for(var n=0;n<nombres.length;n++)for(var i=0;i<lineas.length;i++)if(lineas[i].toUpperCase()===nombres[n].toUpperCase()){
+      for(var j=i+1;j<Math.min(i+8,lineas.length);j++){var l=lineas[j].trim();
+        if(!l)continue;if(/^[ABHL]$/.test(l))continue;if(/^[:\-\/\.\s]+$/.test(l))continue;
+        if(/^(N\/A|EstudioResultado|ESTUDIO|SEDIMENTO|QUIMICO|FISICO|MICROSCOPICO|URIANALISIS|EXAMEN GENERAL|OBSERVACIONES)/i.test(l))continue;
+        var mApr=l.match(/^(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d+)/i);if(mApr)return mApr[1];
+        if(esUnidad(l))continue;if(/^\d[\d\.,]*\s+[\-–]\s+\d[\d\.,]*$/.test(l))continue;
+        if(/^\d+[\-–]\d+\//.test(l))continue;if(/^\d+[\-–]\d+$/.test(l))return l;
+        var mNum=l.match(/^(-?\d+[.,]?\d*)/);if(mNum)return mNum[1].replace(',','.');
+        if(l.length<=30&&!/\d{4,}/.test(l)&&!/VALOR DE REF/i.test(l))return l.toUpperCase();
+      }
+    }
+    return '---';
+  }
+  var color=buscarValor(['COLOR']),aspecto=buscarValor(['ASPECTO']),ph=buscarValor(['PH']),dens=buscarValor(['DENSIDAD','GRAVEDAD ESPECIFICA']);
+  var prot=buscarValor(['PROTEINAS','PROTEINURIA']),glu=buscarValor(['GLUCOSA']),cet=buscarValor(['CETONAS','CUERPOS CETONICOS']);
+  var bilis=buscarValor(['BILIRRUBINAS','BILIRRUBINA']),sangre=buscarValor(['SANGRE']),nitr=buscarValor(['NITRITOS']);
+  var urobil=buscarValor(['UROBILINOGENO','UROBILINÓGENO']),estLeu=buscarValor(['ESTERASA LEUCOCITARIA']);
+  var leu=buscarValor(['LEUCOCITOS']),eri=buscarValor(['ERITROCITOS','HEMATIES']),bact=buscarValor(['BACTERIAS']);
+  var celEpit=buscarValor(['CELULAS EPITELIALES']),cilinG=buscarValor(['CILINDROS GRANOLOSOS']),cilinH=buscarValor(['CILINDROS HIALINOS']);
+  var levad=buscarValor(['LEVADURAS']),moco=buscarValor(['MOCO']);
+  if(color==='---'&&aspecto==='---'&&ph==='---'&&leu==='---'&&eri==='---')return '';
+  function abreviar(val){if(!val||val==='---')return '---';var v=val.toUpperCase().trim();
+    if(v==='NEGATIVO'||v==='NEGATIVE')return 'NEG';if(v==='POSITIVO'||v==='POSITIVE')return 'POS';
+    if(v==='AUSENTES'||v==='AUSENTE')return 'AUS';if(v==='ESCASAS'||v==='ESCASO')return 'ESC';
+    if(v==='MODERADAS'||v==='MODERADO')return 'MOD';if(v==='ABUNDANTES'||v==='ABUNDANTE')return 'ABD';
+    if(v==='AMARILLO')return 'AMAR';if(v==='TURBIO')return 'TURB';if(v==='CLARO')return 'CLARO';return v;}
+  function marcarEGO(val,tipo){if(!val||val==='---')return '---';var ab=abreviar(val);
+    if(['PROT','GLU','CET','BILI','NITR','ESTLEU'].indexOf(tipo)!==-1)return(ab!=='NEG'&&ab!=='AUS')?ab+'*':ab;
+    if(tipo==='SANG'){var v=parseFloat(val);if(!isNaN(v))return v>0?val+'*':'NEG';return(ab!=='NEG'&&ab!=='AUS')?ab+'*':ab;}
+    if(tipo==='UROBIL'){var v=parseFloat(val);return(!isNaN(v)&&v>1)?ab+'*':ab;}
+    if(tipo==='PH'){var v=parseFloat(val);return(!isNaN(v)&&(v<5.5||v>6.5))?ab+'*':ab;}
+    if(tipo==='DENS'){var v=parseFloat(val);return(!isNaN(v)&&(v<1.005||v>1.025))?ab+'*':ab;}
+    if(tipo==='LEU'){var mR=val.match(/^(\d+)[\-–](\d+)$/);if(mR)return parseInt(mR[1])>5?ab+'*':ab;var v=parseFloat(val);return(!isNaN(v)&&v>5)?ab+'*':ab;}
+    if(tipo==='ERI'){var mR=val.match(/^(\d+)[\-–](\d+)$/);if(mR)return parseInt(mR[1])>2?ab+'*':ab;var v=parseFloat(val);return(!isNaN(v)&&v>2)?ab+'*':ab;}
+    if(['BACT','CELEP','CLING','CLINH','LEVAD','MOCO'].indexOf(tipo)!==-1)return(ab!=='AUS')?ab+'*':ab;return ab;}
+  var fisico=[],quimico=[],sedimento=[];
+  if(color!=='---')fisico.push(marcarEGO(color,'COLOR'));if(aspecto!=='---')fisico.push(marcarEGO(aspecto,'ASPECTO'));
+  if(ph!=='---')fisico.push('pH '+marcarEGO(ph,'PH'));if(dens!=='---')fisico.push('D '+marcarEGO(dens,'DENS'));
+  if(prot!=='---')quimico.push('Prot '+marcarEGO(prot,'PROT'));if(glu!=='---')quimico.push('Glu '+marcarEGO(glu,'GLU'));
+  if(cet!=='---')quimico.push('Cet '+marcarEGO(cet,'CET'));if(bilis!=='---')quimico.push('Bili '+marcarEGO(bilis,'BILI'));
+  if(sangre!=='---')quimico.push('Sang '+marcarEGO(sangre,'SANG'));if(nitr!=='---')quimico.push('Nitr '+marcarEGO(nitr,'NITR'));
+  if(urobil!=='---')quimico.push('Urobil '+marcarEGO(urobil,'UROBIL'));if(estLeu!=='---')quimico.push('EstLeu '+marcarEGO(estLeu,'ESTLEU'));
+  if(leu!=='---')sedimento.push('Leu '+marcarEGO(leu,'LEU'));if(eri!=='---')sedimento.push('Eri '+marcarEGO(eri,'ERI'));
+  if(bact!=='---'&&abreviar(bact)!=='AUS')sedimento.push('Bact '+marcarEGO(bact,'BACT'));
+  if(celEpit!=='---'&&abreviar(celEpit)!=='AUS')sedimento.push('CelEp '+marcarEGO(celEpit,'CELEP'));
+  if(cilinG!=='---'&&abreviar(cilinG)!=='AUS')sedimento.push('CilinG '+marcarEGO(cilinG,'CLING'));
+  if(cilinH!=='---'&&abreviar(cilinH)!=='AUS')sedimento.push('CilinH '+marcarEGO(cilinH,'CLINH'));
+  if(levad!=='---'&&abreviar(levad)!=='AUS')sedimento.push('Levad '+marcarEGO(levad,'LEVAD'));
+  if(moco!=='---'&&abreviar(moco)!=='AUS')sedimento.push('Moco '+marcarEGO(moco,'MOCO'));
+  if(!fisico.length&&!quimico.length&&!sedimento.length)return '';
+  var sub=['EGO:'];
+  if(fisico.length)sub.push('  '+fisico.join('  '));
+  if(quimico.length)sub.push('  '+quimico.join('  '));
+  if(sedimento.length)sub.push('  '+sedimento.join('  '));
+  return sub.join('\n');
+}
+
+function parseCuantOrina_(textoBruto) {
+  var tUp = textoBruto.toUpperCase();
+  var startIdx = tUp.indexOf('CUANTIFICACION PROTEINAS');
+  if (startIdx === -1) return '';
+
+  var bloque = textoBruto.substring(startIdx);
+  var nextSec = bloque.search(/\n(?:HEMATOLOGIA|BACTERIOLOGIA|CULTIVO|EXAMEN GENERAL|GASOMETRIA|BIOMETRIA)\b/i);
+  if (nextSec > 0) bloque = bloque.substring(0, nextSec);
+
+  var lineas = bloque.split(/\r?\n/).map(function(l) {
+    return l.replace(/\*/g, '').replace(/\t.*/, '').trim();
+  });
+
+  var vol = '---', res = '---';
+  var tipo = /orina\s+de\s+12/i.test(bloque) ? '12h' : '24h';
+
+  for (var i = 0; i < lineas.length; i++) {
+    var lUp = lineas[i].toUpperCase();
+
+    if (lUp.indexOf('VOLUMEN') !== -1) {
+      for (var j = i + 1; j < Math.min(i + 6, lineas.length); j++) {
+        var v = lineas[j];
+        if (!v || /^[A-Z]$/.test(v)) continue;
+        var m = v.match(/^(\d+\.?\d*)/);
+        if (m) { vol = m[1]; break; }
+      }
+    }
+
+    if (lUp === 'RESULTADO') {
+      for (var j = i + 1; j < Math.min(i + 6, lineas.length); j++) {
+        var v = lineas[j];
+        if (!v || /^[A-Z]$/.test(v)) continue;
+        var m = v.match(/^(\d+\.?\d*)/);
+        if (m) { res = m[1]; break; }
+      }
+    }
+  }
+
+  if (res === '---') return '';
+  var parts = ['Prot' + tipo];
+  if (vol !== '---') parts.push('Vol ' + vol + 'ml');
+  parts.push(res + '*'); // reference is NEGATIVO — always abnormal
+  parts.push('gr/vol');
+  return parts[0] + '\t' + parts.slice(1).join(' ');
+}
+
+function parseCultivo_(textoBruto,tNorm){
+  var tUpper=tNorm.toUpperCase();
+  if(tUpper.indexOf('HEMOCULTIVO')===-1&&tUpper.indexOf('CULTIVO')===-1&&tUpper.indexOf('MICROORGANISMO')===-1&&tUpper.indexOf('MYCOBACTERIAS')===-1&&tUpper.indexOf('BACILOSCOPIA')===-1)return '';
+  var germen='',cuenta='',sitio='CULTIVO',fechaC='N/D';
+  var mFecha=tNorm.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if(mFecha)fechaC=mFecha[1].padStart(2,'0')+'/'+mFecha[2].padStart(2,'0');
+  var lineasTexto=textoBruto.split('\n').map(function(l){return l.replace(/\r/g,'');});
+  for(var i=0;i<lineasTexto.length;i++){if(lineasTexto[i].toUpperCase().indexOf('PRODUCTO')!==-1){for(var j=i+1;j<lineasTexto.length;j++){var s=lineasTexto[j].replace(/\*/g,'').trim();if(s){sitio=s.toUpperCase();break;}}break;}}
+  var idxMicro=-1;for(var i=0;i<lineasTexto.length;i++){if(lineasTexto[i].toUpperCase().indexOf('MICROORGANISMO')!==-1){idxMicro=i;break;}}
+  if(idxMicro!==-1){for(var k=idxMicro+1;k<Math.min(idxMicro+6,lineasTexto.length);k++){var cand=lineasTexto[k].replace(/\*/g,'').trim();if(!cand)continue;if(/COMENTARIO/i.test(cand))break;if(/MICROORGANISMO/i.test(cand))continue;if(!/MALDI|IDENTIF|ESPECTRO/i.test(cand)){germen=cand.toUpperCase();break;}}}
+  var pCuenta=tUpper.indexOf('CUENTA');if(pCuenta!==-1){var fragC=tNorm.substring(pCuenta+6,pCuenta+80);if(!/ANTIBIOGRAMA/i.test(fragC)){var mC=fragC.match(/([<>]=?\s?\d+(\.\d+)?\s*[A-Z%\/]*)/i);if(mC)cuenta=mC[1].trim().toUpperCase();}}
+  function abreviarAb(n){n=n.toUpperCase().trim();if(/PIPERACILINA.?TAZOBACTAM|PIP\/TAZ/.test(n))return 'PIP/TAZO';if(/TRIMETROPRIM.?SULFAMETOXAZOL|TMP\/SMX|TRIMET\/SULFA/.test(n))return 'TMP/SMX';if(/CLINDAMICINA/.test(n))return 'CLINDA';var base=n.replace(/\bSODICO\b|\bSODIUM\b|\bDISODICO\b/g,'').trim().split('(')[0].trim().split(/\s+/)[0];return base.length>10?base.substring(0,10):base;}
+  if(germen){
+    var res=sitio+' '+fechaC+': '+germen;
+    var idxAb=textoBruto.toUpperCase().indexOf('ANTIBIOGRAMA');
+    if(idxAb!==-1){var lineasAb=textoBruto.substring(idxAb).split('\n').map(function(l){return l.replace(/\r/g,'').replace(/\*/g,'').trim();});var sensCrudas=[];
+      for(var i=0;i<lineasAb.length-1;i++){var nL=lineasAb[i],vL=lineasAb[i+1];if(!nL||nL.length<=3||/ANTIBIOGRAMA|MICROORGANISMO|COMENTARIO:|CUENTA|PRODUCTO|ESTADO|MUESTRA|GRAM|IDENTIFICACION|ESTUDIO\s+RESULTADO/i.test(nL))continue;var mic='',interp='';var mV=vL.match(/([<>]=?\s?\d+(\.\d+)?)[\s\t]+(S|R|I|NEG|POS)$/i);if(mV){mic=mV[1].replace(/\s/g,'');interp=mV[3].toUpperCase();}else{var lim=vL.toUpperCase();if(/^(S|R|I)$/.test(lim))interp=lim;else if(/NO SUSCEPTIBLE/.test(lim))interp='NO SUSCEPTIBLE';}if(interp)sensCrudas.push({med:nL.toUpperCase(),mic:mic,interp:interp});}
+      var sensFmt=sensCrudas.map(function(s){return abreviarAb(s.med)+': '+(s.mic?s.mic+' ':'')+s.interp;});
+      var filas=[];for(var i=0;i<sensFmt.length;i+=3){filas.push((sensFmt[i]?'• '+sensFmt[i]:'')+(sensFmt[i+1]?'  • '+sensFmt[i+1]:'')+(sensFmt[i+2]?'  • '+sensFmt[i+2]:''));}
+      if(filas.length)res+='\n'+filas.join('\n');}
+    if(cuenta)res+='\nCuenta: '+cuenta;return res;
+  } else {
+    if(tNorm.toUpperCase().indexOf('BACILOSCOPIA')!==-1&&tNorm.toUpperCase().indexOf('POSITIVO')!==-1){var mPos=tNorm.match(/BACILOSCOPIA[^\.\n]*POSITIVO[^\n\.]*/i);return 'BACILOSCOPIA '+fechaC+': '+(mPos?mPos[0].trim():'BACILOSCOPIA POSITIVA');}
+    var estado='NEGATIVO';var pEst=tUpper.indexOf('ESTADO');if(pEst!==-1){var fEst=tNorm.substring(pEst+17,pEst+80).split('*')[1]||tNorm.substring(pEst+17,pEst+80);estado=fEst.split('MICRO')[0].split('PRODUCTO')[0].trim().toUpperCase();}
+    return sitio+' '+fechaC+': '+estado;
+  }
+}
+
+function procesarLabs(textoBruto) {
+  var tNorm = textoBruto.replace(/\s+/g,' ');
+  var mNombre=textoBruto.match(/Nombre:\s*([^\n\r]+)/i);
+  var mExp   =textoBruto.match(/Expediente:\s*([^\n\r]+)/i);
+  var mSexo  =textoBruto.match(/Sexo:\s*([^\n\r]+)/i);
+  var mEdad  =textoBruto.match(/Edad:\s*([^\n\r]+)/i);
+  var mFechaR=textoBruto.match(/Fecha\s+Registro:\s*\r?\n?\s*([A-Za-z]{3}\s+\d{1,2}\s+\d{4})/i);
+  var patient={ name:mNombre?mNombre[1].split(/Fecha|Sexo|Edad/i)[0].trim():'', expediente:mExp?mExp[1].trim():'', sexo:mSexo?mSexo[1].trim():'', edad:mEdad?mEdad[1].trim():'', fecha:mFechaR?mFechaR[1].trim():'' };
+
+  var mGaso=tNorm.match(/GASOMETRIA.*?(?=BIOMETRIA|CITOLOGIA|QUIMICA|ELECTROLITOS|PFH|COAGULACION|CITOQUIMICO|$)/i);
+  var bloqueGaso=mGaso?mGaso[0]:'';
+  var mLCR=textoBruto.match(/CITOQUIMICO\s+DE\s+LCR.*?(?=BACTERIOLOGIA|CUADERNILLO|$)/i)||textoBruto.match(/CITOQUIMICO\s+LIQ\.?\s+LCR.*?(?=BACTERIOLOGIA|CUADERNILLO|$)/i)||textoBruto.match(/CITOQUIMICO\s+LCR.*?(?=BACTERIOLOGIA|CUADERNILLO|$)/i);
+  var bloqueLCR=mLCR?mLCR[0]:'';
+  var mEGO=tNorm.match(/(?:URIANALISIS|EXAMEN GENERAL DE ORINA|ANALISIS DE ORINA).*?(?=BACTERIOLOGIA|CULTIVO|COMENTARIO DE MUESTRA|$)/i);
+  var bloqueEGO=mEGO?mEGO[0]:'';
+  var textoQS=tNorm.replace(bloqueGaso,' ').replace(bloqueEGO,' ').replace(bloqueLCR?bloqueLCR.replace(/\s+/g,' '):'', ' ');
+  var esSoloGaso=/GASOMETRIA/i.test(tNorm)&&!/BIOMETRIA|QUIMICA|ELECTROLITOS|PFH|COAGULACION|CULTIVO/i.test(tNorm);
+
+  var resLabs=[];
+  if(!esSoloGaso){
+    var bh=parseBH_(tNorm);    if(bh)resLabs.push(bh);
+    var qs=parseQS_(textoQS);  if(qs)resLabs.push(qs);
+    var esc=parseESC_(textoQS);if(esc)resLabs.push(esc);
+    var pfh=parsePFH_(tNorm);  if(pfh)resLabs.push(pfh);
+  }
+  var gaso=parseGaso_(bloqueGaso);if(gaso)resLabs.push(gaso);
+  var pie=parsePIE_(tNorm);      if(pie)resLabs.push(pie);
+  var lcr=parsearLCR(textoBruto);if(lcr)resLabs.push(lcr);
+  var ego=parseEGO_(textoBruto); if(ego)resLabs.push(ego);
+  var cuant=parseCuantOrina_(textoBruto);if(cuant)resLabs.push(cuant);
+  var cult=parseCultivo_(textoBruto,tNorm);if(cult)resLabs.push(cult);
+
+  return { patient:patient, resLabs:resLabs };
+}
+
+function renderToken(tok){
+  if(!tok)return tok;
+  return tok.endsWith('*') ? '<strong>'+tok.slice(0,-1)+'</strong>' : tok;
+}
+
+function renderEntry(text){
+  return text.split('\n').map(function(line,li){
+    var tabIdx=line.indexOf('\t');
+    if(tabIdx>=0){
+      var label=line.substring(0,tabIdx);
+      var rest=line.substring(tabIdx+1);
+      var lh=li===0?'<span class="section-lbl">'+label+'</span>':label;
+      var rh=rest.split(' ').map(function(tok){
+        if(!tok)return tok;
+        if(tok==='-')return '<span class="text-gray-500">-</span>';
+        return renderToken(tok);
+      }).join(' ');
+      return lh+'\t'+rh;
+    }
+    return line.split(' ').map(function(tok,ti){
+      if(!tok)return tok;
+      if(li===0&&ti===0)return '<span class="section-lbl">'+tok+'</span>';
+      if(tok==='-')return '<span class="text-gray-500">-</span>';
+      return renderToken(tok);
+    }).join(' ');
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════════════
+var patients     = JSON.parse(localStorage.getItem('rpc-patients')     || '[]');
+var notes        = JSON.parse(localStorage.getItem('rpc-notes')        || '{}');
+var indicaciones = JSON.parse(localStorage.getItem('rpc-indicaciones') || '{}');
+var activeId     = null;
+var activeInner  = 'notas';
+var activeAppTab = 'lab';
+var activeLab    = null;
+
+document.getElementById('today-date').textContent =
+  new Date().toLocaleDateString('es-MX', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
+renderPatientList();
+if (patients.length > 0) selectPatient(patients[0].id);
+
+function switchAppTab(tab) {
+  activeAppTab = tab;
+  document.getElementById('apptab-lab').classList.toggle('active', tab === 'lab');
+  document.getElementById('apptab-nota').classList.toggle('active', tab === 'nota');
+  document.getElementById('appcontent-lab').style.display  = tab === 'lab'  ? 'flex' : 'none';
+  document.getElementById('appcontent-nota').style.display = tab === 'nota' ? 'flex' : 'none';
+}
+
+function switchInnerTab(tab) {
+  activeInner = tab;
+  document.getElementById('itab-notas').classList.toggle('active', tab === 'notas');
+  document.getElementById('itab-indica').classList.toggle('active', tab === 'indica');
+  document.getElementById('itab-content-notas').classList.toggle('active', tab === 'notas');
+  document.getElementById('itab-content-indica').classList.toggle('active', tab === 'indica');
+}
+
+function renderPatientList() {
+  var list = document.getElementById('patient-list');
+  if (!patients.length) { list.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">Sin pacientes aún</div>'; return; }
+  list.innerHTML = patients.map(function(p) { return (
+    '<div class="patient-card ' + (p.id===activeId?'active':'') + '" onclick="selectPatient(\'' + p.id + '\')">' +
+    '<div class="p-name">' + esc(p.nombre||'Sin nombre') + '</div>' +
+    '<div class="p-meta"><span>Cto. ' + esc(p.cuarto||'-') + '</span><span>Cama ' + esc(p.cama||'-') + '</span><span>' + esc(p.servicio||'-') + '</span>' +
+    (p.fromLab ? '<span class="lab-chip">LAB</span>' : '') + '</div>' +
+    '<button class="btn-delete-card" onclick="deletePatient(event,\'' + p.id + '\')" aria-label="Eliminar">×</button></div>'
+  ); }).join('');
+}
+
+function selectPatient(id) {
+  activeId = id;
+  renderPatientList();
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('patient-view').style.display = 'flex';
+  renderNoteForm();
+  renderIndicaForm();
+}
+
+function deletePatient(e, id) {
+  e.stopPropagation();
+  if (!confirm('¿Eliminar este paciente y sus notas?')) return;
+  patients = patients.filter(function(p){ return p.id !== id; });
+  delete notes[id]; delete indicaciones[id];
+  saveState();
+  if (activeId === id) activeId = patients.length ? patients[0].id : null;
+  renderPatientList();
+  if (activeId) selectPatient(activeId);
+  else { document.getElementById('patient-view').style.display='none'; document.getElementById('empty-state').style.display='flex'; }
+}
+
+function saveState() {
+  localStorage.setItem('rpc-patients', JSON.stringify(patients));
+  localStorage.setItem('rpc-notes', JSON.stringify(notes));
+  localStorage.setItem('rpc-indicaciones', JSON.stringify(indicaciones));
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function showToast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show' + (type ? ' '+type : '');
+  setTimeout(function(){ t.className = 'toast'; }, 3500);
+}
+
+// ── Lab ───────────────────────────────────────────────────────────
+function limpiarReporte() {
+  document.getElementById('lab-input').value = '';
+  document.getElementById('lab-banner').style.display = 'none';
+  document.getElementById('lab-output-section').style.display = 'none';
+  document.getElementById('lab-output-box').innerHTML = '';
+  activeLab = null;
+}
+
+function procesarReporte() {
+  var text = document.getElementById('lab-input').value.trim();
+  if (!text) { showToast('Pega el texto del reporte primero','error'); return; }
+  try {
+    var result = procesarLabs(text);
+    renderOutput(result);
+    if (!result.resLabs.length) showToast('No se encontraron resultados de laboratorio','error');
+  } catch(e) { showToast('Error al procesar el reporte','error'); console.error(e); }
+}
+
+function renderOutput(result) {
+  var patient = result.patient, resLabs = result.resLabs;
+  activeLab = result;
+  if (patient.name) {
+    document.getElementById('lab-patient-name').textContent = patient.name;
+    document.getElementById('lab-patient-meta').textContent = [
+      patient.expediente ? 'Exp: '+patient.expediente : '',
+      patient.sexo, patient.edad ? patient.edad+' años' : '', patient.fecha
+    ].filter(Boolean).join('  |  ');
+    document.getElementById('lab-banner').style.display = 'block';
+  }
+  var box = document.getElementById('lab-output-box');
+  box.innerHTML = '';
+  resLabs.forEach(function(text) {
+    renderEntry(text).forEach(function(html, idx) {
+      var div = document.createElement('div');
+      div.className = idx===0 ? 'out-line' : 'out-indent';
+      div.innerHTML = html; box.appendChild(div);
+    });
+  });
+  document.getElementById('lab-output-section').style.display = 'block';
+}
+
+// ── Modal ─────────────────────────────────────────────────────────
+function openAddModal() {
+  document.getElementById('modal-title').textContent = 'Nuevo Paciente';
+  document.getElementById('modal-prefilled').style.display = 'none';
+  document.getElementById('modal-manual-full').style.display = 'block';
+  ['nombre-manual','registro-manual','edad-manual','area','servicio','cuarto','cama'].forEach(function(f){
+    var el = document.getElementById('m-'+f); if(el) el.value='';
+  });
+  document.getElementById('m-sexo').value = 'F';
+  document.getElementById('modal').classList.add('open');
+  setTimeout(function(){ document.getElementById('m-nombre-manual').focus(); }, 120);
+}
+
+function openAddModalFromLab() {
+  if (!activeLab) { openAddModal(); return; }
+  var p = activeLab.patient;
+  document.getElementById('modal-title').textContent = 'Agregar Paciente del Lab';
+  document.getElementById('modal-prefilled').style.display = 'block';
+  document.getElementById('modal-manual-full').style.display = 'none';
+  document.getElementById('m-nombre').value   = p.name || '';
+  document.getElementById('m-registro').value = p.expediente || '';
+  document.getElementById('m-edad').value     = p.edad || '';
+  document.getElementById('m-sexo-ro').value  = p.sexo || '';
+  ['area','servicio','cuarto','cama'].forEach(function(f){ document.getElementById('m-'+f).value=''; });
+  document.getElementById('modal').classList.add('open');
+  setTimeout(function(){ document.getElementById('m-area').focus(); }, 120);
+}
+
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+document.getElementById('modal').addEventListener('click', function(e) {
+  if (e.target !== document.getElementById('modal')) return;
+  var hasData = ['m-area','m-servicio','m-cuarto','m-cama'].some(function(id){ return document.getElementById(id).value.trim(); });
+  if (hasData && !confirm('¿Cerrar sin guardar?')) return;
+  closeModal();
+});
+
+document.addEventListener('keydown', function(e) {
+  if (e.key==='Escape' && document.getElementById('modal').classList.contains('open')) closeModal();
+});
+
+document.getElementById('modal').addEventListener('keydown', function(e) {
+  if (e.key==='Enter' && e.target.tagName!=='TEXTAREA' && e.target.tagName!=='SELECT') savePatient();
+});
+
+function savePatient() {
+  var isFromLab = document.getElementById('modal-prefilled').style.display !== 'none';
+  var nombre, registro, edad, sexo;
+  if (isFromLab) {
+    nombre   = (document.getElementById('m-nombre').value||'').trim().toUpperCase();
+    registro = (document.getElementById('m-registro').value||'').trim();
+    edad     = (document.getElementById('m-edad').value||'').trim();
+    sexo     = (document.getElementById('m-sexo-ro').value||'').trim() || 'F';
+  } else {
+    nombre   = (document.getElementById('m-nombre-manual').value||'').trim().toUpperCase();
+    registro = (document.getElementById('m-registro-manual').value||'').trim();
+    edad     = (document.getElementById('m-edad-manual').value||'').trim();
+    sexo     = document.getElementById('m-sexo').value;
+  }
+  if (!nombre) { showToast('Ingresa el nombre del paciente','error'); return; }
+  var area     = (document.getElementById('m-area').value||'').trim().toUpperCase();
+  var servicio = (document.getElementById('m-servicio').value||'').trim().toUpperCase();
+  var cuarto   = (document.getElementById('m-cuarto').value||'').trim();
+  var cama     = (document.getElementById('m-cama').value||'').trim();
+  if (!cuarto || !cama) { showToast('Ingresa cuarto y cama','error'); return; }
+  var today = new Date();
+  var fecha = String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0')+'/'+today.getFullYear();
+  var hora  = String(today.getHours()).padStart(2,'0')+':'+String(today.getMinutes()).padStart(2,'0');
+  var patient = { id:Date.now().toString(), nombre:nombre, registro:registro, edad:edad, sexo:sexo, area:area, servicio:servicio, cuarto:cuarto, cama:cama, fromLab:isFromLab };
+  notes[patient.id] = { fecha:fecha, hora:hora, interrogatorio:'', evolucion:'', estudios:'', diagnosticos:[''], tratamiento:[''], ta:'', fr:'', fc:'', temp:'', peso:'', medico:'', profesor:'' };
+  indicaciones[patient.id] = { fecha:fecha, hora:hora, medicos:'', dieta:'', cuidados:'', estudios:'', medicamentos:'', interconsultas:'', otros:[] };
+  patients.push(patient);
+  saveState(); closeModal();
+  if (isFromLab) {
+    activeLab = null;
+    document.getElementById('lab-banner').style.display = 'none';
+    document.getElementById('lab-output-section').style.display = 'none';
+    document.getElementById('lab-output-box').innerHTML = '';
+    document.getElementById('lab-input').value = '';
+    switchAppTab('nota');
+  }
+  renderPatientList(); selectPatient(patient.id); showToast('Paciente agregado','success');
+}
+
+// ── Note Form ─────────────────────────────────────────────────────
+function renderNoteForm() {
+  var patient = patients.find(function(p){ return p.id===activeId; });
+  if (!patient) return;
+  var note = notes[activeId] || {};
+  document.getElementById('note-form').innerHTML = (
+    '<div class="card"><div class="card-header"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Datos del Paciente</div><div class="card-body"><div style="display:flex;flex-direction:column;gap:10px;">' +
+    '<div class="field-group"><label>Nombre</label><input type="text" value="' + esc(patient.nombre) + '" oninput="updatePatient(\'nombre\',this.value)" style="text-transform:uppercase;"></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 80px 60px;gap:10px;">' +
+    '<div class="field-group"><label>Registro</label><input type="text" value="' + esc(patient.registro) + '" oninput="updatePatient(\'registro\',this.value)"></div>' +
+    '<div class="field-group"><label>Edad</label><input type="text" value="' + esc(patient.edad) + '" oninput="updatePatient(\'edad\',this.value)"></div>' +
+    '<div class="field-group"><label>Sexo</label><select onchange="updatePatient(\'sexo\',this.value)"><option value="M"' + (patient.sexo==='M'?' selected':'') + '>M</option><option value="F"' + (patient.sexo==='F'?' selected':'') + '>F</option></select></div></div>' +
+    '<div class="field-group"><label>Área</label><input type="text" value="' + esc(patient.area) + '" oninput="updatePatient(\'area\',this.value)" style="text-transform:uppercase;"></div>' +
+    '<div class="field-group"><label>Servicio</label><input type="text" value="' + esc(patient.servicio) + '" oninput="updatePatient(\'servicio\',this.value)" style="text-transform:uppercase;"></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+    '<div class="field-group"><label>Cuarto</label><input type="text" value="' + esc(patient.cuarto) + '" oninput="updatePatient(\'cuarto\',this.value)"></div>' +
+    '<div class="field-group"><label>Cama</label><input type="text" value="' + esc(patient.cama) + '" oninput="updatePatient(\'cama\',this.value)"></div></div>' +
+    '</div></div></div>' +
+
+    '<div class="card"><div class="card-header" style="background:#374151;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Fecha y Hora</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
+    '<div class="field-group"><label>Fecha</label><input type="text" value="' + esc(note.fecha) + '" oninput="updateNote(\'fecha\',this.value)" placeholder="DD/MM/AAAA"></div>' +
+    '<div class="field-group"><label>Hora</label><input type="text" value="' + esc(note.hora) + '" oninput="updateNote(\'hora\',this.value)" placeholder="HH:MM"></div>' +
+    '</div></div></div>' +
+
+    '<div class="card"><div class="card-header"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Resumen de Interrogatorio, Exploración Física y Estado Mental</div><div class="card-body"><div class="field-group"><textarea rows="5" placeholder="Ingresa el resumen de interrogatorio, exploración física y estado mental..." oninput="updateNote(\'interrogatorio\',this.value)">' + esc(note.interrogatorio) + '</textarea></div></div></div>' +
+
+    '<div class="card"><div class="card-header" style="background:#065f46;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Evolución y Actualización del Cuadro Clínico</div><div class="card-body"><div class="field-group"><textarea rows="7" placeholder="N: [Neurológico]&#10;V: [Ventilatorio]&#10;HD: [Hemodinámico]&#10;HI: [Infeccioso]&#10;NM: [Nutricional/Metabólico]" oninput="updateNote(\'evolucion\',this.value)">' + esc(note.evolucion) + '</textarea></div></div></div>' +
+
+    '<div class="card"><div class="card-header" style="background:#3730a3;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>Resultados de Estudios Auxiliares</div><div class="card-body"><div class="field-group"><textarea rows="9" placeholder="Una línea por renglón del documento:&#10;FECHA (ej. 09.04.26)&#10;QS Glu Cr BUN..." oninput="updateNote(\'estudios\',this.value)">' + esc(note.estudios) + '</textarea></div></div></div>' +
+
+    '<div class="card"><div class="card-header" style="background:#881337;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>Diagnóstico(s)</div><div class="card-body">' +
+    '<div class="list-rows" id="dx-list">' +
+    (note.diagnosticos||['']).map(function(dx,i){ return '<div class="list-row"><input type="text" value="' + esc(dx) + '" placeholder="Diagnóstico ' + (i+1) + '" oninput="updateDx(' + i + ',this.value)" style="text-transform:uppercase;"><button class="btn-remove" onclick="removeDx(' + i + ')"' + ((note.diagnosticos||['']).length<=1?' style="visibility:hidden"':'') + ' aria-label="Eliminar">×</button></div>'; }).join('') +
+    '</div><button class="btn-add-row" onclick="addDx()">+ Agregar diagnóstico</button></div></div>' +
+
+    '<div class="card"><div class="card-header" style="background:#78350f;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Signos Vitales</div><div class="card-body"><div class="vitals-grid">' +
+    '<div class="vital-box"><div class="vital-label">T.A.</div><input type="text" value="' + esc(note.ta) + '" placeholder="120/80" oninput="updateNote(\'ta\',this.value)"></div>' +
+    '<div class="vital-box"><div class="vital-label">F.R.</div><input type="text" value="' + esc(note.fr) + '" placeholder="16" oninput="updateNote(\'fr\',this.value)"></div>' +
+    '<div class="vital-box"><div class="vital-label">F.C.</div><input type="text" value="' + esc(note.fc) + '" placeholder="72" oninput="updateNote(\'fc\',this.value)"></div>' +
+    '<div class="vital-box"><div class="vital-label">Temperatura</div><input type="text" value="' + esc(note.temp) + '" placeholder="36.6" oninput="updateNote(\'temp\',this.value)"></div>' +
+    '<div class="vital-box"><div class="vital-label">Peso (kg)</div><input type="text" value="' + esc(note.peso) + '" placeholder="70.0" oninput="updateNote(\'peso\',this.value)"></div>' +
+    '</div></div></div>' +
+
+    '<div class="card"><div class="card-header" style="background:#134e4a;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>Tratamiento e Indicaciones Médicas</div><div class="card-body">' +
+    '<div class="list-rows" id="tx-list">' +
+    (note.tratamiento||['']).map(function(tx,i){ return '<div class="list-row"><span class="list-num">' + (i+1) + '.</span><input type="text" value="' + esc(tx) + '" placeholder="Indicación, dosis, vía y periodicidad" oninput="updateTx(' + i + ',this.value)"><button class="btn-remove" onclick="removeTx(' + i + ')"' + ((note.tratamiento||['']).length<=1?' style="visibility:hidden"':'') + ' aria-label="Eliminar">×</button></div>'; }).join('') +
+    '</div><button class="btn-add-row" onclick="addTx()">+ Agregar indicación</button></div></div>' +
+
+    '<div class="card"><div class="card-header" style="background:#4a1d96;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Médico y Profesor</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
+    '<div class="field-group"><label>Médico Tratante</label><input type="text" value="' + esc(note.medico) + '" placeholder="Nombre completo" oninput="updateNote(\'medico\',this.value)"></div>' +
+    '<div class="field-group"><label>Profesor Responsable</label><input type="text" value="' + esc(note.profesor) + '" placeholder="Nombre completo" oninput="updateNote(\'profesor\',this.value)"></div>' +
+    '</div></div></div>' +
+
+    '<div class="action-bar"><button class="btn-generate" onclick="generateWord()" id="btn-gen"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Nota (.docx)</button></div>'
+  );
+}
+
+function updatePatient(field, value) {
+  var p = patients.find(function(p){ return p.id===activeId; });
+  if (p) { p[field] = (field==='nombre'||field==='area'||field==='servicio') ? value.toUpperCase() : value; saveState(); renderPatientList(); }
+}
+function updateNote(field, value) { if (!notes[activeId]) notes[activeId]={}; notes[activeId][field]=value; saveState(); }
+function updateDx(i, val) { if (!notes[activeId]) return; notes[activeId].diagnosticos[i]=val.toUpperCase(); saveState(); }
+function addDx() { if (!notes[activeId]) return; notes[activeId].diagnosticos.push(''); saveState(); renderNoteForm(); }
+function removeDx(i) { if (!notes[activeId]||notes[activeId].diagnosticos.length<=1) return; notes[activeId].diagnosticos.splice(i,1); saveState(); renderNoteForm(); }
+function updateTx(i, val) { if (!notes[activeId]) return; notes[activeId].tratamiento[i]=val; saveState(); }
+function addTx() { if (!notes[activeId]) return; notes[activeId].tratamiento.push(''); saveState(); renderNoteForm(); }
+function removeTx(i) { if (!notes[activeId]||notes[activeId].tratamiento.length<=1) return; notes[activeId].tratamiento.splice(i,1); saveState(); renderNoteForm(); }
+
+function generateWord() {
+  var patient = patients.find(function(p){ return p.id===activeId; }); if (!patient) return;
+  var note = notes[activeId]; if (!note) return;
+  var btn = document.getElementById('btn-gen'); btn.classList.add('loading'); btn.disabled=true;
+  fetch('/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({patient:patient,note:note})})
+  .then(function(r){ return r.json(); })
+  .then(function(d){ if(d.ok) showToast('Nota guardada: '+d.fileName,'success'); else showToast('Error: '+d.error,'error'); })
+  .catch(function(){ showToast('Error de conexión','error'); })
+  .finally(function(){ btn.classList.remove('loading'); btn.disabled=false; });
+}
+
+// ── Indicaciones Form ─────────────────────────────────────────────
+function renderIndicaForm() {
+  var patient = patients.find(function(p){ return p.id===activeId; }); if (!patient) return;
+  if (!indicaciones[activeId]) {
+    var today = new Date();
+    indicaciones[activeId] = { fecha:String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0')+'/'+today.getFullYear(), hora:String(today.getHours()).padStart(2,'0')+':'+String(today.getMinutes()).padStart(2,'0'), medicos:'',dieta:'',cuidados:'',estudios:'',medicamentos:'',interconsultas:'',otros:[] };
+  }
+  var ind = indicaciones[activeId];
+  var SECTIONS = [
+    {key:'dieta',label:'Dieta',placeholder:'DIETA NORMAL DIABÉTICA ALTA EN FIBRA...'},
+    {key:'cuidados',label:'Cuidados',placeholder:'COLOCAR SONDA FOLEY.\nCUANTIFICACIÓN ESTRICTA DE INGRESOS Y EGRESOS...'},
+    {key:'estudios',label:'Estudios',placeholder:'BH, QS, EGO...'},
+    {key:'medicamentos',label:'Medicamentos',placeholder:'PARACETAMOL 1G VO CADA 8 HORAS PRN...'},
+    {key:'interconsultas',label:'Interconsultas',placeholder:'CONTINUAR INDICACIONES DE INFECTOLOGÍA...'},
+  ];
+  document.getElementById('indica-form').innerHTML = (
+    '<div class="card"><div class="card-header"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Datos del Paciente</div><div class="card-body"><div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:10px;align-items:end;">' +
+    '<div class="field-group"><label>Nombre</label><input type="text" value="' + esc(patient.nombre) + '" class="field-readonly" readonly></div>' +
+    '<div class="field-group"><label>Registro</label><input type="text" value="' + esc(patient.registro) + '" class="field-readonly" readonly></div>' +
+    '<div class="field-group"><label>Edad/Sexo</label><input type="text" value="' + esc(patient.edad)+' / '+esc(patient.sexo) + '" class="field-readonly" readonly></div>' +
+    '<div class="field-group"><label>Cuarto</label><input type="text" value="' + esc(patient.cuarto) + '" class="field-readonly" readonly></div>' +
+    '<div class="field-group"><label>Cama</label><input type="text" value="' + esc(patient.cama) + '" class="field-readonly" readonly></div>' +
+    '</div></div></div>' +
+
+    '<div class="card"><div class="card-header" style="background:#374151;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Fecha, Hora y Médicos</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:12px;">' +
+    '<div class="field-group"><label>Fecha</label><input type="text" value="' + esc(ind.fecha) + '" placeholder="DD/MM/AAAA" oninput="updateIndica(\'fecha\',this.value)"></div>' +
+    '<div class="field-group"><label>Hora</label><input type="text" value="' + esc(ind.hora) + '" placeholder="HH:MM" oninput="updateIndica(\'hora\',this.value)"></div>' +
+    '<div class="field-group"><label>Médicos (uno por línea)</label><textarea rows="3" placeholder="R3 KARLA MONCADA" oninput="updateIndica(\'medicos\',this.value)">' + esc(ind.medicos) + '</textarea></div>' +
+    '</div></div></div>' +
+
+    SECTIONS.map(function(s){ return '<div class="indica-section"><div class="indica-section-header">'+s.label+'</div><div class="indica-section-body"><textarea rows="3" placeholder="'+s.placeholder+'" oninput="updateIndica(\''+s.key+'\',this.value)">'+esc(ind[s.key])+'</textarea></div></div>'; }).join('') +
+
+    '<div class="action-bar"><button class="btn-generate" onclick="generateIndicaciones()" id="btn-gen-ind"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Indicaciones (.docx)</button></div>'
+  );
+}
+
+function updateIndica(field, value) { if (!indicaciones[activeId]) return; indicaciones[activeId][field]=value; saveState(); }
+
+function generateIndicaciones() {
+  var patient = patients.find(function(p){ return p.id===activeId; }); if (!patient) return;
+  var ind = indicaciones[activeId]; if (!ind) return;
+  var btn = document.getElementById('btn-gen-ind'); btn.classList.add('loading'); btn.disabled=true;
+  fetch('/generate-indicaciones',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({patient:patient,indicaciones:ind})})
+  .then(function(r){ return r.json(); })
+  .then(function(d){ if(d.ok) showToast('Indicaciones guardadas: '+d.fileName,'success'); else showToast('Error: '+d.error,'error'); })
+  .catch(function(){ showToast('Error de conexión','error'); })
+  .finally(function(){ btn.classList.remove('loading'); btn.disabled=false; });
+}
+</script>
+</body>
+</html>
