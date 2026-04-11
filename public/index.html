@@ -605,7 +605,28 @@ function parseGaso_(bloqueGaso) {
 }
 
 function parsePIE_(tNorm) {
-  if (!/PRUEBA DE EMBARAZO/i.test(tNorm)) return '';
+  var hasPIEInmuno = /PRUEBA INMUNOLOGICA DE EMBARAZO/i.test(tNorm);
+  var hasPrueba    = /PRUEBA DE EMBARAZO/i.test(tNorm);
+  if (!hasPIEInmuno && !hasPrueba) return '';
+
+  if (hasPIEInmuno) {
+    var idx = tNorm.toUpperCase().indexOf('PRUEBA INMUNOLOGICA DE EMBARAZO');
+    var sub = tNorm.substring(idx, idx + 400);
+    var subUp = sub.toUpperCase();
+    // Preferir resultado del bloque SUERO (más confiable clínicamente)
+    var sueroIdx = subUp.indexOf('SUERO');
+    var searchIn = sueroIdx !== -1 ? sub.substring(sueroIdx, sueroIdx + 100) : sub;
+    var m = searchIn.match(/\b(NEGATIVO|POSITIVO)\b/i);
+    if (!m) {
+      // Fallback: buscar en bloque ORINA
+      var orinaIdx = subUp.indexOf('ORINA');
+      if (orinaIdx !== -1) m = sub.substring(orinaIdx, orinaIdx + 100).match(/\b(NEGATIVO|POSITIVO)\b/i);
+    }
+    if (!m) return '';
+    return 'PIE\t' + m[1].toUpperCase() + '*';
+  }
+
+  // Formato original: "PRUEBA DE EMBARAZO"
   var idx = tNorm.toUpperCase().indexOf('PRUEBA DE EMBARAZO');
   var sub = tNorm.substring(idx, idx + 300);
   var m = sub.match(/\b(NEGATIVO|POSITIVO)\b/i);
