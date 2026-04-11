@@ -1,5 +1,4 @@
 const { app, BrowserWindow, Menu, shell, dialog } = require('electron');
-const path = require('path');
 const { autoUpdater } = require('electron-updater');
 
 // Reducir uso de GPU — elimina proceso GPU en idle (~50-100 MB RAM)
@@ -39,6 +38,13 @@ function createWindow() {
     mainWindow.show();
     autoUpdater.checkForUpdates().catch(() => {});
   });
+
+  // Fallback: forzar show si ready-to-show nunca se dispara
+  setTimeout(() => {
+    if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) {
+      mainWindow.show();
+    }
+  }, 5000);
 
   mainWindow.on('closed', () => { mainWindow = null; });
 }
