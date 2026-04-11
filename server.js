@@ -10,14 +10,24 @@ appExpress.use(express.static(path.join(__dirname, 'public')));
 
 const DOWNLOADS = path.join(os.homedir(), 'Downloads');
 
-const PYTHON_PATHS = [
-  '/usr/local/bin/python3',
-  '/opt/homebrew/bin/python3',
-  '/usr/bin/python3',
-];
-const PYTHON = PYTHON_PATHS.find(p => {
-  try { return fs.statSync(p).isFile(); } catch { return false; }
-}) || 'python3';
+function resolvePython() {
+  if (process.platform === 'win32') {
+    // Check bundled Python first (production: resourcesPath, dev: project root)
+    for (const base of [process.resourcesPath, __dirname].filter(Boolean)) {
+      const bundled = path.join(base, 'python-runtime', 'win-x64', 'python.exe');
+      try { if (fs.statSync(bundled).isFile()) return bundled; } catch { /* not found */ }
+    }
+  }
+  const systemPaths = [
+    '/usr/local/bin/python3',
+    '/opt/homebrew/bin/python3',
+    '/usr/bin/python3',
+  ];
+  return systemPaths.find(p => {
+    try { return fs.statSync(p).isFile(); } catch { return false; }
+  }) || 'python3';
+}
+const PYTHON = resolvePython();
 
 function safeName(str) {
   return (str || '').replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9]/g, '_');

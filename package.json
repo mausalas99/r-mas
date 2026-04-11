@@ -6,6 +6,7 @@
   "scripts": {
     "start": "electron .",
     "build:mac": "electron-builder --mac",
+    "prebuild:win": "node scripts/fetch-python.js",
     "build:win": "electron-builder --win"
   },
   "author": "Mauricio Salas",
@@ -45,6 +46,9 @@
             "x64"
           ]
         }
+      ],
+      "extraResources": [
+        { "from": "python-runtime/win-x64", "to": "python-runtime/win-x64" }
       ]
     },
     "nsis": {

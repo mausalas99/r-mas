@@ -433,7 +433,7 @@
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" tabindex="-1"></div>
 
 <script>
 // ════════════════════════════════════════════════════════════════════
@@ -1040,8 +1040,10 @@ function saveState() {
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function showToast(msg, type) {
+  var focused = document.activeElement;
   var t = document.getElementById('toast');
   t.textContent = msg; t.className = 'toast show' + (type ? ' '+type : '');
+  if (focused && focused.tagName !== 'BODY') setTimeout(function(){ focused.focus(); }, 0);
   setTimeout(function(){ t.className = 'toast'; }, 3500);
 }
 
