@@ -1261,7 +1261,7 @@ function svgBH(secs){
   var leu=g(secs,'BH','Leu'), neu=g(secs,'BH','Neu');
   var plt=g(secs,'BH','Plt');
   if(!hb)return null;
-  return '<svg viewBox="0 0 300 170" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">'
+  return '<svg viewBox="0 0 300 192" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">'
     +'<line x1="50"  y1="18"  x2="250" y2="182" '+LINE+'/>'
     +'<line x1="250" y1="18"  x2="50"  y2="182" '+LINE+'/>'
     +'<line x1="28"  y1="79"  x2="78"  y2="79"  '+LINE+'/>'
@@ -1455,11 +1455,11 @@ function renderDiagramas(resLabs){
   var grid = document.getElementById('diagrams-grid');
   grid.innerHTML = '';
   var cards = [
-    { title:'Biometría Hemática', svg:svgBH(secs),     w:200, vw:300, vh:170 },
-    { title:'Coagulación',        svg:svgCoag(secs),   w:180, vw:270, vh:172 },
-    { title:'Electrolitos / QS',  svg:svgGamble(secs), w:320, vw:470, vh:130 },
-    { title:'Función Hepática',   svg:svgPFH(secs),    w:180, vw:270, vh:230 },
-    { title:'Gasometría',         svg:svgGases(secs),  w:180, vw:270, vh:162 },
+    { title:'Biometría Hemática', svg:svgBH(secs),     w:260, vw:300, vh:192 },
+    { title:'Coagulación',        svg:svgCoag(secs),   w:240, vw:270, vh:172 },
+    { title:'Electrolitos / QS',  svg:svgGamble(secs), w:480, vw:470, vh:130 },
+    { title:'Función Hepática',   svg:svgPFH(secs),    w:220, vw:270, vh:230 },
+    { title:'Gasometría',         svg:svgGases(secs),  w:240, vw:270, vh:162 },
   ];
   var any = false;
   cards.forEach(function(c){
