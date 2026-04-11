@@ -21,6 +21,7 @@
   "build": {
     "appId": "com.hospitaluniversitario.rplusclinical",
     "productName": "R+",
+    "artifactName": "${productName}-${version}-${arch}.${ext}",
     "mac": {
       "category": "public.app-category.medical",
       "target": [
@@ -50,7 +51,7 @@
     "publish": {
       "provider": "github",
       "owner": "mausalas99",
-      "repo": "r-plus-clinical"
+      "repo": "r-mas"
     },
     "files": [
       "main.js",
