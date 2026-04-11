@@ -311,23 +311,23 @@
 
     <div id="modal-prefilled" style="display:none;">
       <div class="modal-section-label">Del reporte de laboratorio</div>
-      <div class="modal-section" style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;">
+      <div class="modal-section" style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:10px;">
         <div class="field-group"><label>Nombre</label><input id="m-nombre" type="text" style="text-transform:uppercase;"></div>
         <div class="field-group"><label>Registro</label><input id="m-registro" type="text"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <div class="field-group"><label>Edad</label>
-            <div style="display:flex;gap:4px;">
-              <input id="m-edad-num" type="text" placeholder="0" style="width:50px;min-width:0;">
-              <select id="m-edad-unit" style="flex:1;min-width:0;">
-                <option value="años">Años</option>
-                <option value="meses">Meses</option>
-                <option value="días">Días</option>
-              </select>
-            </div>
+      </div>
+      <div class="modal-section" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="field-group"><label>Edad</label>
+          <div style="display:flex;gap:4px;">
+            <input id="m-edad-num" type="text" placeholder="0" style="width:50px;min-width:0;">
+            <select id="m-edad-unit" style="flex:1;min-width:0;">
+              <option value="años">Años</option>
+              <option value="meses">Meses</option>
+              <option value="días">Días</option>
+            </select>
           </div>
-          <div class="field-group"><label>Sexo</label>
-            <select id="m-sexo-ro"><option value="F">F</option><option value="M">M</option></select>
-          </div>
+        </div>
+        <div class="field-group"><label>Sexo</label>
+          <select id="m-sexo-ro"><option value="F">F</option><option value="M">M</option></select>
         </div>
       </div>
       <hr class="modal-divider">
@@ -340,8 +340,10 @@
           <label>Nombre completo *</label>
           <input id="m-nombre-manual" type="text" placeholder="APELLIDO APELLIDO, Nombre" style="text-transform:uppercase;">
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 60px;gap:10px;margin-bottom:12px;">
+        <div style="margin-bottom:12px;">
           <div class="field-group"><label>Registro</label><input id="m-registro-manual" type="text" placeholder="0000000-0"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
           <div class="field-group"><label>Edad</label>
             <div style="display:flex;gap:4px;">
               <input id="m-edad-manual-num" type="text" placeholder="0" style="width:50px;min-width:0;">
