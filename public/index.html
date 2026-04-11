@@ -218,7 +218,7 @@
     <div id="appcontent-lab" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
       <div style="flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:20px;min-height:0;">
 
-        <div class="card">
+        <div class="card" style="flex-shrink:0;">
           <div class="card-header">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
             Reporte de Laboratorio
@@ -240,7 +240,7 @@
           </div>
         </div>
 
-        <div id="lab-banner" class="card" style="display:none;border-left:4px solid var(--action);">
+        <div id="lab-banner" class="card" style="display:none;border-left:4px solid var(--action);flex-shrink:0;">
           <div class="card-body" style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;">
             <div style="flex:1;">
               <div style="font-size:11px;font-weight:700;color:var(--action);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Paciente detectado</div>
@@ -254,7 +254,7 @@
           </div>
         </div>
 
-        <div id="lab-diagrams-section" class="card" style="display:none;overflow-x:auto;">
+        <div id="lab-diagrams-section" class="card" style="display:none;overflow-x:auto;flex-shrink:0;">
           <div class="card-header" style="background:#1e3a5f;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
             Diagramas
@@ -264,7 +264,7 @@
           </div>
         </div>
 
-        <div id="lab-output-section" class="card" style="display:none;">
+        <div id="lab-output-section" class="card" style="display:none;flex-shrink:0;">
           <div class="card-header" style="background:#312E81;display:flex;align-items:center;justify-content:space-between;">
             <span style="display:flex;align-items:center;gap:8px;">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
