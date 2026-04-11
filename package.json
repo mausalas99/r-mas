@@ -22,9 +22,9 @@
     "appId": "com.hospitaluniversitario.rplusclinical",
     "productName": "R+",
     "artifactName": "${productName}-${version}-${arch}.${ext}",
-    "icon": "build/icon.png",
+    "icon": "build/AppIcon.icns",
     "mac": {
-      "icon": "build/icon.icns",
+      "icon": "build/AppIcon.icns",
       "category": "public.app-category.medical",
       "target": [
         {
@@ -64,11 +64,8 @@
       "template.docx",
       "template_indicaciones.docx",
       "public/**/*",
-      "build/icon.icns",
-      "build/icon.ico",
-      "build/icon.png",
-      "node_modules/**/*",
-      "!node_modules/.cache"
+      "build/AppIcon.icns",
+      "build/icon.ico"
     ]
   }
 }
