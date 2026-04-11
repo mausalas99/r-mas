@@ -1,6 +1,10 @@
-const { app, BrowserWindow, Menu, shell, dialog, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, shell, dialog } = require('electron');
 const path = require('path');
 const { autoUpdater } = require('electron-updater');
+
+// Reducir uso de GPU — elimina proceso GPU en idle (~50-100 MB RAM)
+// Llamar ANTES de app.whenReady()
+app.disableHardwareAcceleration();
 
 autoUpdater.autoDownload = true;
 autoUpdater.autoInstallOnAppQuit = true;
@@ -15,16 +19,27 @@ function createWindow() {
     minWidth: 960,
     minHeight: 700,
     title: 'R+',
-    webPreferences: { nodeIntegration: false, contextIsolation: true },
+    show: false, // mostrar solo cuando esté listo (sin flash blanco)
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      backgroundThrottling: true, // throttle renderer cuando window no está en foco
+      spellcheck: false,          // deshabilitar corrector ortográfico (innecesario)
+    },
   });
+
   mainWindow.loadURL('http://localhost:3738');
+
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: 'deny' };
   });
+
   mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
     autoUpdater.checkForUpdates().catch(() => {});
   });
+
   mainWindow.on('closed', () => { mainWindow = null; });
 }
 
@@ -52,7 +67,6 @@ autoUpdater.on('error', (err) => {
 function buildMenu() {
   const version = app.getVersion();
   const isMac = process.platform === 'darwin';
-
   const checkUpdate = () => autoUpdater.checkForUpdates().catch(() => {});
 
   const template = [
