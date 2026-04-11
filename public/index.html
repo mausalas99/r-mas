@@ -232,6 +232,17 @@
 </head>
 <body>
 
+<div id="update-banner" style="display:none;background:#166534;color:#bbf7d0;padding:8px 16px;font-size:13px;font-weight:600;align-items:center;gap:12px;flex-shrink:0;">
+  <span id="update-banner-text">Descargando actualización…</span>
+  <div id="update-progress-track" style="flex:1;height:4px;background:rgba(255,255,255,0.2);border-radius:2px;overflow:hidden;">
+    <div id="update-progress-fill" style="height:100%;width:0%;background:#4ade80;border-radius:2px;transition:width 0.3s;"></div>
+  </div>
+  <div id="update-actions" style="display:none;gap:8px;flex-shrink:0;">
+    <button onclick="installUpdate()" style="background:white;color:#166534;border:none;border-radius:5px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Instalar y reiniciar</button>
+    <button onclick="document.getElementById('update-banner').style.display='none'" style="background:transparent;color:#bbf7d0;border:1px solid rgba(255,255,255,0.4);border-radius:5px;padding:4px 12px;font-size:12px;cursor:pointer;font-family:inherit;">Más tarde</button>
+  </div>
+</div>
+
 <header>
   <h1>R+</h1>
   <span id="today-date"></span>
@@ -1615,6 +1626,28 @@ function generateIndicaciones() {
   .then(function(d){ if(d.ok) showToast('Indicaciones guardadas: '+d.fileName,'success'); else showToast('Error: '+d.error,'error'); })
   .catch(function(){ showToast('Error de conexión','error'); })
   .finally(function(){ btn.classList.remove('loading'); btn.disabled=false; });
+}
+
+// ── Auto-updater UI ───────────────────────────────────────────────
+function installUpdate() {
+  if (window.electronAPI) window.electronAPI.installUpdate();
+}
+
+if (window.electronAPI) {
+  window.electronAPI.onUpdateProgress(function(pct) {
+    var banner = document.getElementById('update-banner');
+    banner.style.display = 'flex';
+    document.getElementById('update-banner-text').textContent = 'Descargando actualización… ' + pct + '%';
+    document.getElementById('update-progress-fill').style.width = pct + '%';
+  });
+
+  window.electronAPI.onUpdateReady(function(version) {
+    var banner = document.getElementById('update-banner');
+    banner.style.display = 'flex';
+    document.getElementById('update-progress-track').style.display = 'none';
+    document.getElementById('update-banner-text').textContent = 'R+ v' + version + ' lista para instalar.';
+    document.getElementById('update-actions').style.display = 'flex';
+  });
 }
 </script>
 </body>

@@ -1,4 +1,5 @@
-const { app, BrowserWindow, Menu, shell, dialog } = require('electron');
+const { app, BrowserWindow, Menu, shell, dialog, ipcMain } = require('electron');
+const path = require('path');
 const { autoUpdater } = require('electron-updater');
 
 // Reducir uso de GPU — elimina proceso GPU en idle (~50-100 MB RAM)
@@ -22,6 +23,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js'),
       backgroundThrottling: true, // throttle renderer cuando window no está en foco
       spellcheck: false,          // deshabilitar corrector ortográfico (innecesario)
     },
@@ -50,24 +52,21 @@ function createWindow() {
 }
 
 // ── Auto-updater events ───────────────────────────────────────────
+autoUpdater.on('download-progress', (p) => {
+  if (mainWindow && !mainWindow.isDestroyed())
+    mainWindow.webContents.send('update-progress', Math.round(p.percent));
+});
+
 autoUpdater.on('update-downloaded', (info) => {
-  if (!mainWindow || mainWindow.isDestroyed()) return;
-  dialog.showMessageBox(mainWindow, {
-    type: 'info',
-    title: 'Actualización lista',
-    message: `R+ v${info.version} descargada.`,
-    detail: '¿Instalar y reiniciar ahora?',
-    buttons: ['Instalar y reiniciar', 'Más tarde'],
-    defaultId: 0,
-    cancelId: 1,
-  }).then(({ response }) => {
-    if (response === 0) autoUpdater.quitAndInstall();
-  });
+  if (mainWindow && !mainWindow.isDestroyed())
+    mainWindow.webContents.send('update-ready', info.version);
 });
 
 autoUpdater.on('error', (err) => {
   console.error('AutoUpdater error:', err.message);
 });
+
+ipcMain.on('install-update', () => autoUpdater.quitAndInstall());
 
 // ── App menu ──────────────────────────────────────────────────────
 function buildMenu() {
