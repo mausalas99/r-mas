@@ -12,6 +12,9 @@ autoUpdater.autoInstallOnAppQuit = true;
 let server;
 let mainWindow;
 
+// Cache update state so renderer can receive it even if events fired before page loaded
+let pendingUpdate = null; // { type: 'available'|'progress'|'ready', version, pct }
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -45,25 +48,54 @@ function createWindow() {
   mainWindow.once('ready-to-show', () => {
     clearTimeout(showFallback);
     mainWindow.show();
-    autoUpdater.checkForUpdates().catch(() => {});
+  });
+
+  // Wait for renderer JS to fully load before checking for updates
+  mainWindow.webContents.once('did-finish-load', () => {
+    // Replay any update events that fired before the renderer was ready
+    if (pendingUpdate) {
+      if (pendingUpdate.type === 'available')
+        mainWindow.webContents.send('update-available', pendingUpdate.version);
+      else if (pendingUpdate.type === 'progress')
+        mainWindow.webContents.send('update-progress', pendingUpdate.pct);
+      else if (pendingUpdate.type === 'ready')
+        mainWindow.webContents.send('update-ready', pendingUpdate.version);
+    }
+    // Small delay to ensure renderer IPC listeners are registered
+    setTimeout(() => autoUpdater.checkForUpdates().catch(() => {}), 1500);
   });
 
   mainWindow.on('closed', () => { mainWindow = null; });
 }
 
 // ── Auto-updater events ───────────────────────────────────────────
+autoUpdater.on('update-available', (info) => {
+  pendingUpdate = { type: 'available', version: info.version };
+  if (mainWindow && !mainWindow.isDestroyed())
+    mainWindow.webContents.send('update-available', info.version);
+});
+
 autoUpdater.on('download-progress', (p) => {
+  pendingUpdate = { type: 'progress', pct: Math.round(p.percent) };
   if (mainWindow && !mainWindow.isDestroyed())
     mainWindow.webContents.send('update-progress', Math.round(p.percent));
 });
 
 autoUpdater.on('update-downloaded', (info) => {
+  pendingUpdate = { type: 'ready', version: info.version };
   if (mainWindow && !mainWindow.isDestroyed())
     mainWindow.webContents.send('update-ready', info.version);
 });
 
+autoUpdater.on('update-not-available', () => {
+  if (mainWindow && !mainWindow.isDestroyed())
+    mainWindow.webContents.send('update-not-available');
+});
+
 autoUpdater.on('error', (err) => {
   console.error('AutoUpdater error:', err.message);
+  if (mainWindow && !mainWindow.isDestroyed())
+    mainWindow.webContents.send('update-error', err.message);
 });
 
 ipcMain.on('install-update', () => autoUpdater.quitAndInstall());

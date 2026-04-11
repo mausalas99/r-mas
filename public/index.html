@@ -1635,6 +1635,12 @@ function installUpdate() {
 }
 
 if (window.electronAPI) {
+  window.electronAPI.onUpdateAvailable(function(version) {
+    var banner = document.getElementById('update-banner');
+    banner.style.display = 'flex';
+    document.getElementById('update-banner-text').textContent = 'Descargando actualización v' + version + '…';
+    document.getElementById('update-progress-fill').style.width = '0%';
+  });
   window.electronAPI.onUpdateProgress(function(pct) {
     var banner = document.getElementById('update-banner');
     banner.style.display = 'flex';
@@ -1648,6 +1654,30 @@ if (window.electronAPI) {
     document.getElementById('update-progress-track').style.display = 'none';
     document.getElementById('update-banner-text').textContent = 'R+ v' + version + ' lista para instalar.';
     document.getElementById('update-actions').style.display = 'flex';
+  });
+
+  window.electronAPI.onUpdateNotAvailable(function() {
+    var banner = document.getElementById('update-banner');
+    banner.style.background = '#1e3a5f';
+    banner.style.borderBottom = '1px solid #1d4ed8';
+    banner.style.color = '#bfdbfe';
+    banner.style.display = 'flex';
+    document.getElementById('update-progress-track').style.display = 'none';
+    document.getElementById('update-actions').style.display = 'none';
+    document.getElementById('update-banner-text').textContent = 'R+ está actualizado.';
+    setTimeout(function() { banner.style.display = 'none'; }, 3000);
+  });
+
+  window.electronAPI.onUpdateError(function(msg) {
+    var banner = document.getElementById('update-banner');
+    banner.style.background = '#7f1d1d';
+    banner.style.borderBottom = '1px solid #991b1b';
+    banner.style.color = '#fecaca';
+    banner.style.display = 'flex';
+    document.getElementById('update-progress-track').style.display = 'none';
+    document.getElementById('update-actions').style.display = 'none';
+    document.getElementById('update-banner-text').textContent = 'Error al buscar actualizaciones.';
+    setTimeout(function() { banner.style.display = 'none'; }, 4000);
   });
 }
 </script>
