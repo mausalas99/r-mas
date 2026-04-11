@@ -615,10 +615,12 @@ function parsePIE_(tNorm) {
     var subUp = sub.toUpperCase();
     // Preferir resultado del bloque SUERO (más confiable clínicamente)
     var sueroIdx = subUp.indexOf('SUERO');
-    var searchIn = sueroIdx !== -1 ? sub.substring(sueroIdx, sueroIdx + 100) : sub;
-    var m = searchIn.match(/\b(NEGATIVO|POSITIVO)\b/i);
+    var m = null;
+    if (sueroIdx !== -1) {
+      m = sub.substring(sueroIdx, sueroIdx + 100).match(/\b(NEGATIVO|POSITIVO)\b/i);
+    }
+    // Fallback: buscar en bloque ORINA
     if (!m) {
-      // Fallback: buscar en bloque ORINA
       var orinaIdx = subUp.indexOf('ORINA');
       if (orinaIdx !== -1) m = sub.substring(orinaIdx, orinaIdx + 100).match(/\b(NEGATIVO|POSITIVO)\b/i);
     }
