@@ -777,9 +777,11 @@ function procesarLabs(textoBruto) {
   return { patient:patient, resLabs:resLabs };
 }
 
+function escTxt(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
 function renderToken(tok){
   if(!tok)return tok;
-  return tok.endsWith('*') ? '<strong>'+tok.slice(0,-1)+'</strong>' : tok;
+  return tok.endsWith('*') ? '<strong>'+escTxt(tok.slice(0,-1))+'</strong>' : escTxt(tok);
 }
 
 function renderEntry(text){
@@ -788,7 +790,7 @@ function renderEntry(text){
     if(tabIdx>=0){
       var label=line.substring(0,tabIdx);
       var rest=line.substring(tabIdx+1);
-      var lh=li===0?'<span class="section-lbl">'+label+'</span>':label;
+      var lh=li===0?'<span class="section-lbl">'+escTxt(label)+'</span>':escTxt(label);
       var rh=rest.split(' ').map(function(tok){
         if(!tok)return tok;
         if(tok==='-')return '<span class="text-gray-500">-</span>';
@@ -798,7 +800,7 @@ function renderEntry(text){
     }
     return line.split(' ').map(function(tok,ti){
       if(!tok)return tok;
-      if(li===0&&ti===0)return '<span class="section-lbl">'+tok+'</span>';
+      if(li===0&&ti===0)return '<span class="section-lbl">'+escTxt(tok)+'</span>';
       if(tok==='-')return '<span class="text-gray-500">-</span>';
       return renderToken(tok);
     }).join(' ');
@@ -994,7 +996,7 @@ function savePatient() {
   var today = new Date();
   var fecha = String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0')+'/'+today.getFullYear();
   var hora  = String(today.getHours()).padStart(2,'0')+':'+String(today.getMinutes()).padStart(2,'0');
-  var patient = { id:Date.now().toString(), nombre:nombre, registro:registro, edad:edad, sexo:sexo, area:area, servicio:servicio, cuarto:cuarto, cama:cama, fromLab:isFromLab };
+  var patient = { id:Date.now().toString(36)+Math.random().toString(36).slice(2), nombre:nombre, registro:registro, edad:edad, sexo:sexo, area:area, servicio:servicio, cuarto:cuarto, cama:cama, fromLab:isFromLab };
   notes[patient.id] = { fecha:fecha, hora:hora, interrogatorio:'', evolucion:'', estudios:'', diagnosticos:[''], tratamiento:[''], ta:'', fr:'', fc:'', temp:'', peso:'', medico:'', profesor:'' };
   indicaciones[patient.id] = { fecha:fecha, hora:hora, medicos:'', dieta:'', cuidados:'', estudios:'', medicamentos:'', interconsultas:'', otros:[] };
   patients.push(patient);
@@ -1124,7 +1126,7 @@ function renderIndicaForm() {
 
     '<div class="card"><div class="card-header" style="background:#4a1d96;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 4v16m8-8H4"/></svg>Otros</div><div class="card-body" style="display:flex;flex-direction:column;gap:10px;"><div id="otros-list">' +
     (ind.otros||[]).map(function(o,i){ return '<div class="otros-item"><button class="btn-remove-otro" onclick="removeOtro('+i+')">×</button><input type="text" placeholder="TÍTULO DE LA SECCIÓN" value="'+esc(o.titulo)+'" oninput="updateOtro('+i+',\'titulo\',this.value)"><textarea rows="2" placeholder="Indicaciones..." oninput="updateOtro('+i+',\'contenido\',this.value)">'+esc(o.contenido)+'</textarea></div>'; }).join('') +
-    '</div><button class="btn-add-dx" onclick="addOtro()">+ Agregar sección</button></div></div>' +
+    '</div><button class="btn-add-row" onclick="addOtro()">+ Agregar sección</button></div></div>' +
 
     '<div class="action-bar"><button class="btn-generate" onclick="generateIndicaciones()" id="btn-gen-ind"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Indicaciones (.docx)</button></div>'
   );
