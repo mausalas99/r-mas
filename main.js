@@ -14,7 +14,7 @@ function createWindow() {
     height: 900,
     minWidth: 960,
     minHeight: 700,
-    title: 'R+ Clinical',
+    title: 'R+',
     webPreferences: { nodeIntegration: false, contextIsolation: true },
   });
   mainWindow.loadURL('http://localhost:3738');
@@ -34,7 +34,7 @@ autoUpdater.on('update-downloaded', (info) => {
   dialog.showMessageBox(mainWindow, {
     type: 'info',
     title: 'Actualización lista',
-    message: `R+ Clinical v${info.version} descargada.`,
+    message: `R+ v${info.version} descargada.`,
     detail: '¿Instalar y reiniciar ahora?',
     buttons: ['Instalar y reiniciar', 'Más tarde'],
     defaultId: 0,
@@ -59,7 +59,7 @@ function buildMenu() {
     ...(isMac ? [{
       label: app.name,
       submenu: [
-        { label: `R+ Clinical v${version}`, enabled: false },
+        { label: `R+ v${version}`, enabled: false },
         { type: 'separator' },
         { label: 'Buscar actualizaciones…', click: checkUpdate },
         { type: 'separator' },
@@ -71,7 +71,7 @@ function buildMenu() {
       label: 'Aplicación',
       submenu: [
         ...(!isMac ? [
-          { label: `R+ Clinical v${version}`, enabled: false },
+          { label: `R+ v${version}`, enabled: false },
           { type: 'separator' },
           { label: 'Buscar actualizaciones…', click: checkUpdate },
           { type: 'separator' },

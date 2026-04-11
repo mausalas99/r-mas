@@ -69,12 +69,12 @@ appExpress.post('/generate-indicaciones', async (req, res) => {
 
 const PORT = 3738;
 const server = appExpress.listen(PORT, () => {
-  console.log(`R+ Clinical → http://localhost:${PORT}`);
+  console.log(`R+ → http://localhost:${PORT}`);
 });
 
 server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
-    console.error(`Port ${PORT} already in use. Close other instances of R+ Clinical and try again.`);
+    console.error(`Port ${PORT} already in use. Close other instances of R+ and try again.`);
     process.exit(1);
   }
 });

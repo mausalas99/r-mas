@@ -1,7 +1,7 @@
 {
   "name": "r-plus-clinical",
   "version": "1.0.0",
-  "description": "R+ Clinical — Laboratoriazo + Notas de Evolución",
+  "description": "R+ — Laboratoriazo + Notas de Evolución",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -20,7 +20,7 @@
   },
   "build": {
     "appId": "com.hospitaluniversitario.rplusclinical",
-    "productName": "R+ Clinical",
+    "productName": "R+",
     "mac": {
       "category": "public.app-category.medical",
       "target": [
