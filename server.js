@@ -5,7 +5,7 @@ const os      = require('os');
 const { spawn } = require('child_process');
 
 const appExpress = express();
-appExpress.use(express.json({ limit: '10mb' }));
+appExpress.use(express.json({ limit: '1mb' }));
 appExpress.use(express.static(path.join(__dirname, 'public')));
 
 const DOWNLOADS = path.join(os.homedir(), 'Downloads');
