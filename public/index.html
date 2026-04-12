@@ -1058,21 +1058,57 @@ function limpiarReporte() {
   activeLab = null;
 }
 
+function openLabPatientPicker() {
+  var overlay = document.createElement('div');
+  overlay.id = 'lab-picker-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#1f2937;border-radius:10px;padding:20px;min-width:260px;max-width:360px;width:90%;';
+  var title = document.createElement('div');
+  title.textContent = '¿A qué paciente enviar los labs?';
+  title.style.cssText = 'color:#f9fafb;font-size:14px;font-weight:600;margin-bottom:14px;';
+  box.appendChild(title);
+  patients.forEach(function(p) {
+    var btn = document.createElement('button');
+    btn.textContent = p.nombre + (p.registro ? '  •  ' + p.registro : '');
+    btn.style.cssText = 'display:block;width:100%;text-align:left;background:#374151;color:#f3f4f6;border:none;border-radius:6px;padding:10px 12px;margin-bottom:8px;cursor:pointer;font-size:13px;';
+    btn.onmouseenter = function(){ this.style.background='#4b5563'; };
+    btn.onmouseleave = function(){ this.style.background='#374151'; };
+    btn.onclick = function() {
+      document.body.removeChild(overlay);
+      selectPatient(p.id);
+      enviarLabsANota();
+    };
+    box.appendChild(btn);
+  });
+  var cancelBtn = document.createElement('button');
+  cancelBtn.textContent = 'Cancelar';
+  cancelBtn.style.cssText = 'display:block;width:100%;background:transparent;color:#9ca3af;border:1px solid #374151;border-radius:6px;padding:8px;cursor:pointer;font-size:13px;margin-top:4px;';
+  cancelBtn.onclick = function() { document.body.removeChild(overlay); };
+  box.appendChild(cancelBtn);
+  overlay.appendChild(box);
+  overlay.onclick = function(e){ if(e.target===overlay) document.body.removeChild(overlay); };
+  document.body.appendChild(overlay);
+}
+
 function enviarLabsANota() {
   if (!activeLab || !activeLab.resLabs || !activeLab.resLabs.length) {
     showToast('No hay resultados procesados', 'error'); return;
   }
   if (!activeId) {
-    showToast('Selecciona un paciente en Nota de Evolución primero', 'error'); return;
+    if (!patients.length) { showToast('Agrega un paciente primero', 'error'); return; }
+    if (patients.length === 1) { selectPatient(patients[0].id); }
+    else { openLabPatientPicker(); return; }
   }
   // Format: strip \t → space, strip * markers, join sections with \n
   var lines = [];
   if (activeLab.patient && activeLab.patient.fecha) {
     var fechaRaw = activeLab.patient.fecha;
-    var mesesMap = {ene:'01',feb:'02',mar:'03',abr:'04',may:'05',jun:'06',jul:'07',ago:'08',sep:'09',oct:'10',nov:'11',dic:'12'};
-    var mFechaLab = fechaRaw.match(/^([A-Za-z]{3})\s+(\d{1,2})\s+\d{4}$/);
+    var mesesMap = {ene:'01',feb:'02',mar:'03',abr:'04',may:'05',jun:'06',jul:'07',ago:'08',sep:'09',oct:'10',nov:'11',dic:'12',jan:'01',apr:'04',aug:'08',dec:'12'};
+    var mFechaLab = fechaRaw.trim().match(/([A-Za-z]{3})\s+(\d{1,2})\s+\d{4}/);
     var monNum = mFechaLab && mesesMap[mFechaLab[1].toLowerCase()];
-    lines.push(monNum ? mFechaLab[2].padStart(2,'0') + '/' + monNum : fechaRaw.slice(0, 5));
+    var todayFb = new Date(); var fbStr = String(todayFb.getDate()).padStart(2,'0')+'/'+String(todayFb.getMonth()+1).padStart(2,'0');
+    lines.push(monNum ? mFechaLab[2].padStart(2,'0') + '/' + monNum : fbStr);
   }
   activeLab.resLabs.forEach(function(entry) {
     var cleaned = entry.replace(/\t/g, ' ').replace(/\*+/g, '').replace(/  +/g, ' ').trim();
@@ -1206,7 +1242,9 @@ function savePatient() {
   indicaciones[patient.id] = { fecha:fecha, hora:hora, medicos:'', dieta:'', cuidados:'', estudios:'', medicamentos:'', interconsultas:'', otros:[] };
   patients.push(patient);
   saveState(); closeModal();
+  var pendingLab = null;
   if (isFromLab) {
+    pendingLab = activeLab;
     activeLab = null;
     document.getElementById('lab-banner').style.display = 'none';
     document.getElementById('lab-output-section').style.display = 'none';
@@ -1215,6 +1253,11 @@ function savePatient() {
     switchAppTab('nota');
   }
   renderPatientList(); selectPatient(patient.id); showToast('Paciente agregado','success');
+  if (pendingLab) {
+    activeLab = pendingLab;
+    enviarLabsANota();
+    activeLab = null;
+  }
 }
 
 // ── Note Form ─────────────────────────────────────────────────────

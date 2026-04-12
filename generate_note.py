@@ -93,19 +93,22 @@ def main():
     # Template has 8 study paragraphs (date + BH/QS/ESC/PFHs lines) — duplicated
     ORIG_ESTUDIOS_LINES = [
         '07.04.26',
-        'QSGlu  Cr 0.4 BUN 9    AU 2.3  COL 171',
-        'ESCNa 137.7 Cl 101.2 K 3.3 Ca 8.1 F 3.7 Mg 1.63',
+        'Glu  Cr 0.4 BUN 9    AU 2.3  COL 171',
+        'Na 137.7 Cl 101.2 K 3.3 Ca 8.1 F 3.7 Mg 1.63',
         '06.04.26',
-        'BHHb 11.4 Hto 34.8 VCM 86 HCM 28.2 Leu 4.92 Neu 2.76 Eos 0.275 Plt 198   ',
-        'QSGlu 190 Cr 0.4 BUN 8 PCR 0.3   AU 2.6 TGL 153 COL 166',
-        'ESCNa 139.8 Cl 105 K 3.2 Ca 7.9 F 3.4 ',
-        'PFHsAlb 2.5 AST 11 ALT 6 FA 103 BT 0.3 BD 0.1 BI 0.2 LDH 120 Amil 25',
+        'Hb 11.4 Hto 34.8 VCM 86 HCM 28.2 Leu 4.92 Neu 2.76 Eos 0.275 Plt 198   ',
+        'Glu 190 Cr 0.4 BUN 8 PCR 0.3   AU 2.6 TGL 153 COL 166',
+        'Na 139.8 Cl 105 K 3.2 Ca 7.9 F 3.4 ',
+        'Alb 2.5 AST 11 ALT 6 FA 103 BT 0.3 BD 0.1 BI 0.2 LDH 120 Amil 25',
     ]
     estudios_raw = note.get('estudios') or ''
     estudios_lines = [l.upper() for l in estudios_raw.split('\n') if l.strip()]
     for i, orig in enumerate(ORIG_ESTUDIOS_LINES):
         new_val = estudios_lines[i] if i < len(estudios_lines) else ''
         xml = replace_t(xml, orig, new_val)
+    # Clear prefix nodes (split from value nodes in template XML)
+    for prefix in ['QS', 'ESC', 'BH', 'PFHs']:
+        xml = clear_t(xml, prefix)
 
     # ── Diagnósticos ─────────────────────────────────────────────────────────
     diagnosticos = note.get('diagnosticos') or []
