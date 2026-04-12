@@ -229,6 +229,122 @@
   .dcard-copy:hover { border-color:var(--action); color:var(--action); background:#EFF6FF; }
   .dcard-copy.copied { border-color:#16a34a; color:#16a34a; background:#f0fdf4; }
   @media (max-width: 700px) { aside { width: 220px; } .vitals-grid { grid-template-columns: repeat(3, 1fr); } }
+  /* ── Mi Perfil ─────────────────────────────────────────── */
+  .profile-section { border-top: 1px solid var(--border); flex-shrink: 0; }
+  .profile-toggle {
+    width: 100%; display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; background: none; border: none; cursor: pointer;
+    font-family: inherit; color: var(--text-muted); font-size: 12px; font-weight: 500;
+    transition: background 0.15s;
+  }
+  .profile-toggle:hover { background: var(--border); }
+  .profile-toggle-left { display: flex; align-items: center; gap: 6px; }
+  .profile-body { padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; }
+  .profile-field-label {
+    color: var(--text-muted); font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px;
+  }
+  .profile-input {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    border-radius: 5px; padding: 5px 8px; color: var(--text);
+    font-size: 11px; font-family: inherit; box-sizing: border-box;
+  }
+  .profile-input:focus { outline: none; border-color: var(--action); box-shadow: 0 0 0 2px rgba(37,99,235,0.15); }
+  .profile-divider { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
+  .profile-defaults-title {
+    color: var(--text-muted); font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;
+  }
+  .profile-default-preview {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 5px;
+    padding: 5px 8px; font-size: 10px; color: var(--text-muted); font-style: italic; margin-bottom: 4px;
+  }
+  .profile-default-preview .preview-label { font-style: normal; font-weight: 600; color: var(--text-muted); margin-bottom: 2px; font-size: 9px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .btn-edit-templates {
+    width: 100%; background: var(--lab-chip-bg); color: var(--action);
+    border: none; border-radius: 5px; padding: 5px; font-size: 11px;
+    font-family: inherit; cursor: pointer; margin-top: 4px; font-weight: 600;
+  }
+  .btn-edit-templates:hover { opacity: 0.85; }
+  .btn-save-profile {
+    width: 100%; background: var(--action); color: white; border: none;
+    border-radius: 5px; padding: 6px; font-size: 11px; font-family: inherit;
+    cursor: pointer; font-weight: 700; margin-top: 4px;
+  }
+  .btn-save-profile:hover { background: var(--action-hover); }
+  /* Templates modal */
+  .templates-modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9990;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .templates-modal {
+    background: var(--surface); border-radius: 10px; padding: 20px;
+    width: 90%; max-width: 440px; display: flex; flex-direction: column; gap: 12px;
+    box-shadow: var(--shadow-md);
+  }
+  .templates-modal h3 { font-size: 15px; color: var(--text); }
+  .templates-modal label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; display: block; margin-bottom: 4px; }
+  .templates-modal textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; font-size: 12px; font-family: inherit; color: var(--text); resize: vertical; min-height: 60px; box-sizing: border-box; }
+  .templates-modal textarea:focus { outline: none; border-color: var(--action); }
+  .templates-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+  /* ── Lab conflict modal ───────────────────────────────── */
+  .lab-conflict-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 9995;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .lab-conflict-modal {
+    background: var(--surface); border-radius: 10px; padding: 20px;
+    width: 90%; max-width: 400px; box-shadow: var(--shadow-md);
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .lab-conflict-modal h3 { font-size: 14px; font-weight: 700; color: var(--text); }
+  .lab-conflict-modal p  { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+  .lab-conflict-actions  { display: flex; flex-direction: column; gap: 8px; }
+  .btn-conflict-primary {
+    background: #166534; color: #bbf7d0; border: none; border-radius: 7px;
+    padding: 10px 14px; font-size: 13px; font-weight: 700; font-family: inherit;
+    cursor: pointer; text-align: left; transition: background 0.15s;
+  }
+  .btn-conflict-primary:hover { background: #14532d; }
+  .btn-conflict-secondary {
+    background: var(--bg); color: var(--text); border: 1px solid var(--border);
+    border-radius: 7px; padding: 10px 14px; font-size: 13px; font-family: inherit;
+    cursor: pointer; text-align: left; transition: background 0.15s;
+  }
+  .btn-conflict-secondary:hover { background: var(--border); }
+  .btn-conflict-cancel {
+    background: none; border: none; color: var(--text-muted); font-size: 12px;
+    font-family: inherit; cursor: pointer; padding: 4px; align-self: center;
+  }
+  /* ── Onboarding ───────────────────────────────────────── */
+  #onboarding-banner {
+    background: #1e3a5f; color: #bfdbfe; padding: 10px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0; gap: 12px; border-bottom: 1px solid #1d4ed8;
+    flex-wrap: wrap;
+  }
+  #onboarding-banner .ob-text { font-size: 13px; font-weight: 500; flex: 1; min-width: 200px; }
+  #onboarding-banner .ob-text strong { color: white; }
+  #onboarding-banner .ob-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .btn-ob-next {
+    background: #2563eb; color: white; border: none; border-radius: 6px;
+    padding: 6px 14px; font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer;
+  }
+  .btn-ob-next:hover { background: #1d4ed8; }
+  .btn-ob-skip {
+    background: transparent; color: #93c5fd; border: 1px solid rgba(147,197,253,0.4);
+    border-radius: 6px; padding: 6px 10px; font-size: 12px; font-family: inherit; cursor: pointer;
+  }
+  .btn-ob-skip:hover { background: rgba(255,255,255,0.1); }
+  @keyframes confetti-fall {
+    0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+  .confetti-piece {
+    position: fixed; width: 8px; height: 8px; border-radius: 2px;
+    animation: confetti-fall 2.5s ease-in forwards;
+    pointer-events: none; z-index: 99999;
+  }
 </style>
 </head>
 <body>
@@ -261,6 +377,17 @@
   </button>
 </div>
 
+<!-- Onboarding banner — hidden until first launch -->
+<div id="onboarding-banner" style="display:none;">
+  <div class="ob-text" id="ob-text">
+    <strong>Bienvenido a R+.</strong> Hemos cargado un paciente de ejemplo para mostrarte el flujo.
+  </div>
+  <div class="ob-actions">
+    <button class="btn-ob-next" id="ob-next-btn" onclick="onboardingNext()">Empezar →</button>
+    <button class="btn-ob-skip" onclick="skipOnboarding()">Omitir tutorial</button>
+  </div>
+</div>
+
 <div class="app">
   <aside>
     <div class="sidebar-header">
@@ -268,6 +395,46 @@
       <button class="btn-add" onclick="openAddModal()">+ Agregar</button>
     </div>
     <div class="patient-list" id="patient-list"></div>
+    <div class="profile-section" id="profile-section">
+      <button class="profile-toggle" onclick="toggleProfileSection()" id="profile-toggle-btn">
+        <div class="profile-toggle-left">
+          <span>👤</span>
+          <span id="profile-toggle-label">Mi Perfil</span>
+        </div>
+        <span id="profile-toggle-arrow">▾</span>
+      </button>
+      <div class="profile-body" id="profile-body" style="display:none;">
+        <div>
+          <div class="profile-field-label">Médico Tratante</div>
+          <input class="profile-input" id="profile-doctor" type="text" placeholder="Dr. Nombre Apellido">
+        </div>
+        <div>
+          <div class="profile-field-label">Profesor / Responsable</div>
+          <input class="profile-input" id="profile-profesor" type="text" placeholder="Dr. Nombre Apellido">
+        </div>
+        <div>
+          <div class="profile-field-label">Grado / Servicio</div>
+          <input class="profile-input" id="profile-grado" type="text" placeholder="R3MI · Medicina Interna">
+        </div>
+        <hr class="profile-divider">
+        <div class="profile-defaults-title">Indicaciones por defecto</div>
+        <div class="profile-default-preview">
+          <div class="preview-label">Dieta</div>
+          <span id="profile-preview-dieta-txt">(vacío)</span>
+        </div>
+        <div class="profile-default-preview">
+          <div class="preview-label">Cuidados</div>
+          <span id="profile-preview-cuidados-txt">(vacío)</span>
+        </div>
+        <div class="profile-default-preview">
+          <div class="preview-label">Medicamentos</div>
+          <span id="profile-preview-meds-txt">(vacío)</span>
+        </div>
+        <button class="btn-edit-templates" onclick="openTemplatesModal()">✏️ Editar plantillas…</button>
+        <button class="btn-save-profile" onclick="saveSettings()">Guardar perfil</button>
+        <button class="btn-edit-templates" style="margin-top:2px;" onclick="resetAndStartOnboarding()">🎓 Ver tutorial</button>
+      </div>
+    </div>
   </aside>
 
   <main id="main-area">
@@ -434,6 +601,29 @@
 </div>
 
 <div class="toast" id="toast" tabindex="-1"></div>
+
+<!-- Templates modal -->
+<div class="templates-modal-backdrop" id="templates-modal" style="display:none;">
+  <div class="templates-modal">
+    <h3>Plantillas de indicaciones por defecto</h3>
+    <div>
+      <label>Dieta</label>
+      <textarea id="tmpl-dieta" rows="3" placeholder="DIETA NORMAL DIABÉTICA…"></textarea>
+    </div>
+    <div>
+      <label>Cuidados</label>
+      <textarea id="tmpl-cuidados" rows="3" placeholder="CSV c/8h, glucometrías c/6h…"></textarea>
+    </div>
+    <div>
+      <label>Medicamentos</label>
+      <textarea id="tmpl-meds" rows="3" placeholder="(vacío por defecto)"></textarea>
+    </div>
+    <div class="templates-modal-actions">
+      <button class="btn-cancel" onclick="closeTemplatesModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveTemplates()">Guardar plantillas</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ════════════════════════════════════════════════════════════════════
