@@ -1329,6 +1329,121 @@ function applyDefaultsToNewIndicaciones(patientId) {
   if (settings.defaultMedicamentos && !indicaciones[patientId].medicamentos) indicaciones[patientId].medicamentos = settings.defaultMedicamentos;
 }
 
+// ── Onboarding ────────────────────────────────────────────────────
+function startOnboarding() {
+  var today = new Date();
+  var fecha = String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0')+'/'+today.getFullYear();
+  var hora  = String(today.getHours()).padStart(2,'0')+':'+String(today.getMinutes()).padStart(2,'0');
+  var demoPatient = {
+    id: DEMO_PATIENT_ID, nombre: 'DEMO PÉREZ', registro: '0000001',
+    edad: '67 años', sexo: 'M', area: 'MEDICINA INTERNA',
+    servicio: 'MEDICINA INTERNA', cuarto: '101', cama: '1',
+    fromLab: false, isDemo: true
+  };
+  notes[DEMO_PATIENT_ID] = {
+    fecha:fecha, hora:hora, interrogatorio:'', evolucion:'', estudios:'',
+    diagnosticos:['DM2, IRC estadio 3, HAS'], tratamiento:[''],
+    ta:'', fr:'', fc:'', temp:'', peso:'', medico:'', profesor:''
+  };
+  indicaciones[DEMO_PATIENT_ID] = {
+    fecha:fecha, hora:hora, medicos:'', dieta:'', cuidados:'',
+    estudios:'', medicamentos:'', interconsultas:'', otros:[]
+  };
+  // Prepend demo patient (not persisted — saveState filters isDemo)
+  patients = patients.filter(function(p){ return p.id !== DEMO_PATIENT_ID; });
+  patients.unshift(demoPatient);
+  onboardingStep = 1;
+  renderPatientList();
+  selectPatient(DEMO_PATIENT_ID);
+  switchAppTab('lab');
+  document.getElementById('lab-input').value = DEMO_LAB_REPORT;
+  var banner = document.getElementById('onboarding-banner');
+  banner.style.display = 'flex';
+  document.getElementById('ob-text').innerHTML = '<strong>Bienvenido a R+.</strong> Hemos cargado un paciente de ejemplo. Sigue los pasos para conocer el flujo completo.';
+  document.getElementById('ob-next-btn').textContent = 'Empezar →';
+  document.getElementById('ob-next-btn').style.display = 'inline-block';
+  document.getElementById('ob-next-btn').onclick = onboardingNext;
+}
+
+function onboardingNext() {
+  if (onboardingStep === 1) {
+    onboardingStep = 2;
+    switchAppTab('lab');
+    document.getElementById('ob-text').innerHTML = '<strong>Paso 1 de 3</strong> — Haz click en <strong>"Procesar"</strong> para extraer los valores de laboratorio del reporte de ejemplo.';
+    document.getElementById('ob-next-btn').style.display = 'none';
+  }
+}
+
+function onboardingAdvanceAfterParse() {
+  if (onboardingStep !== 2) return;
+  onboardingStep = 3;
+  document.getElementById('ob-text').innerHTML = '<strong>Paso 2 de 3</strong> — Excelente. Ahora haz click en <strong>"Enviar a nota"</strong> para cargar los labs en la nota del paciente.';
+}
+
+function onboardingAdvanceAfterSend() {
+  if (onboardingStep !== 3) return;
+  onboardingStep = 4;
+  document.getElementById('ob-text').innerHTML = '<strong>Paso 3 de 3</strong> — Los labs ya están en la nota. Llena los campos clínicos y haz click en <strong>"Generar Nota (.docx)"</strong>.';
+}
+
+function finishOnboarding() {
+  if (onboardingStep !== 4) return;
+  onboardingStep = 0;
+  localStorage.setItem('rpc-onboarding-done', '1');
+  document.getElementById('ob-text').innerHTML = '<strong>🎉 ¡Listo!</strong> Ya sabes usar R+. Ahora agrega a tus propios pacientes.';
+  var nextBtn = document.getElementById('ob-next-btn');
+  nextBtn.textContent = 'Cerrar tutorial';
+  nextBtn.style.display = 'inline-block';
+  nextBtn.onclick = destroyDemoAndClose;
+  launchConfetti();
+}
+
+function skipOnboarding() {
+  onboardingStep = 0;
+  localStorage.setItem('rpc-onboarding-done', '1');
+  destroyDemoAndClose();
+}
+
+function destroyDemoAndClose() {
+  patients = patients.filter(function(p){ return p.id !== DEMO_PATIENT_ID; });
+  delete notes[DEMO_PATIENT_ID];
+  delete indicaciones[DEMO_PATIENT_ID];
+  if (activeId === DEMO_PATIENT_ID) {
+    activeId = patients.length ? patients[0].id : null;
+  }
+  document.getElementById('onboarding-banner').style.display = 'none';
+  limpiarReporte();
+  renderPatientList();
+  if (activeId) selectPatient(activeId);
+  else { document.getElementById('patient-view').style.display = 'none'; document.getElementById('empty-state').style.display = 'flex'; }
+}
+
+function resetAndStartOnboarding() {
+  localStorage.removeItem('rpc-onboarding-done');
+  patients = patients.filter(function(p){ return p.id !== DEMO_PATIENT_ID; });
+  delete notes[DEMO_PATIENT_ID]; delete indicaciones[DEMO_PATIENT_ID];
+  startOnboarding();
+}
+
+function launchConfetti() {
+  var colors = ['#60a5fa','#34d399','#fbbf24','#f87171','#a78bfa','#fb7185'];
+  for (var i = 0; i < 40; i++) {
+    (function(idx) {
+      setTimeout(function() {
+        var el = document.createElement('div');
+        el.className = 'confetti-piece';
+        el.style.left = (Math.random() * 100) + 'vw';
+        el.style.top  = '-10px';
+        el.style.background = colors[Math.floor(Math.random() * colors.length)];
+        el.style.animationDelay = (Math.random() * 0.5) + 's';
+        el.style.transform = 'rotate(' + (Math.random() * 360) + 'deg)';
+        document.body.appendChild(el);
+        setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 3500);
+      }, idx * 40);
+    })(i);
+  }
+}
+
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function showToast(msg, type) {
@@ -1509,6 +1624,7 @@ function procesarReporte() {
 function renderOutput(result) {
   var patient = result.patient, resLabs = result.resLabs;
   activeLab = result;
+  onboardingAdvanceAfterParse();
   if (patient.name) {
     document.getElementById('lab-patient-name').textContent = patient.name;
     document.getElementById('lab-patient-meta').textContent = [
@@ -1707,7 +1823,7 @@ function generateWord() {
   var btn = document.getElementById('btn-gen'); btn.classList.add('loading'); btn.disabled=true;
   fetch('/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({patient:patient,note:note})})
   .then(function(r){ return r.json(); })
-  .then(function(d){ if(d.ok) showToast('Nota guardada: '+d.fileName,'success'); else showToast('Error: '+d.error,'error'); })
+  .then(function(d){ if(d.ok) { showToast('Nota guardada: '+d.fileName,'success'); finishOnboarding(); } else showToast('Error: '+d.error,'error'); })
   .catch(function(){ showToast('Error de conexión','error'); })
   .finally(function(){ btn.classList.remove('loading'); btn.disabled=false; });
 }
