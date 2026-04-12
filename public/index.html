@@ -1392,29 +1392,107 @@ function enviarLabsANota() {
     if (patients.length === 1) { selectPatient(patients[0].id); }
     else { openLabPatientPicker(); return; }
   }
-  // Format: strip \t → space, strip * markers, join sections with \n
+  checkStudiosAndInsertLabs();
+}
+
+// ── Multilab ──────────────────────────────────────────────────────
+function buildLabLines() {
   var lines = [];
   if (activeLab.patient && activeLab.patient.fecha) {
     var fechaRaw = activeLab.patient.fecha;
     var mesesMap = {ene:'01',feb:'02',mar:'03',abr:'04',may:'05',jun:'06',jul:'07',ago:'08',sep:'09',oct:'10',nov:'11',dic:'12',jan:'01',apr:'04',aug:'08',dec:'12'};
     var mFechaLab = fechaRaw.trim().match(/([A-Za-z]{3})\s+(\d{1,2})\s+\d{4}/);
     var monNum = mFechaLab && mesesMap[mFechaLab[1].toLowerCase()];
-    var todayFb = new Date(); var fbStr = String(todayFb.getDate()).padStart(2,'0')+'/'+String(todayFb.getMonth()+1).padStart(2,'0');
+    var todayFb = new Date();
+    var fbStr = String(todayFb.getDate()).padStart(2,'0')+'/'+String(todayFb.getMonth()+1).padStart(2,'0');
     lines.push(monNum ? mFechaLab[2].padStart(2,'0') + '/' + monNum : fbStr);
   }
   activeLab.resLabs.forEach(function(entry) {
     var cleaned = entry.replace(/\t/g, ' ').replace(/\*+/g, '').replace(/  +/g, ' ').trim();
     lines.push(cleaned);
   });
-  var texto = lines.join('\n');
+  return lines;
+}
+
+function checkStudiosAndInsertLabs() {
+  var lines = buildLabLines();
+  var existing = (notes[activeId] && notes[activeId].estudios) ? notes[activeId].estudios : '';
+  var existingLines = existing.split('\n');
+  var recentDate = existingLines[3] ? existingLines[3].trim() : '';
+  if (!recentDate) {
+    insertLabsAsRecent(lines);
+  } else {
+    showLabConflictModal(lines, recentDate);
+  }
+}
+
+function insertLabsAsRecent(lines) {
   if (!notes[activeId]) notes[activeId] = {};
-  notes[activeId].estudios = texto;
+  var existing = (notes[activeId].estudios || '').split('\n');
+  var anterior = existing.slice(0, 3);
+  while (anterior.length < 3) anterior.push('');
+  notes[activeId].estudios = anterior.concat(lines).join('\n');
   saveState();
-  // Update textarea live if note-form is rendered
   var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
-  if (el) el.value = texto;
+  if (el) el.value = notes[activeId].estudios;
+  onboardingAdvanceAfterSend();
   showToast('Labs enviados a la nota ✓', 'success');
   switchAppTab('nota');
+}
+
+function insertLabsAsAnteriorThenRecent(newLines) {
+  if (!notes[activeId]) notes[activeId] = {};
+  var existing = (notes[activeId].estudios || '').split('\n');
+  // Move slots 3,5,6 from current recent to anterior: date/QS/ESC
+  var anteriorDate = existing[3] || '';
+  var anteriorQS   = existing[5] || '';
+  var anteriorESC  = existing[6] || '';
+  var anteriorBlock = [anteriorDate, anteriorQS, anteriorESC];
+  notes[activeId].estudios = anteriorBlock.concat(newLines).join('\n');
+  saveState();
+  var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
+  if (el) el.value = notes[activeId].estudios;
+  onboardingAdvanceAfterSend();
+  showToast('Fecha anterior guardada + nuevos labs agregados ✓', 'success');
+  switchAppTab('nota');
+}
+
+function showLabConflictModal(newLines, existingDate) {
+  var backdrop = document.createElement('div');
+  backdrop.className = 'lab-conflict-backdrop';
+  backdrop.id = 'lab-conflict-backdrop';
+  backdrop.innerHTML = (
+    '<div class="lab-conflict-modal">' +
+    '<h3>Los estudios ya tienen datos</h3>' +
+    '<p>El bloque reciente ya tiene labs del <strong>' + esc(existingDate) + '</strong>. ¿Qué hago con los nuevos labs?</p>' +
+    '<div class="lab-conflict-actions">' +
+    '<button class="btn-conflict-primary" id="btn-conflict-move">📋 Mover anterior + agregar reciente<br><span style="font-size:11px;font-weight:400;opacity:0.8;">Los labs actuales pasan al bloque anterior y los nuevos quedan como recientes</span></button>' +
+    '<button class="btn-conflict-secondary" id="btn-conflict-replace">🔄 Reemplazar fecha reciente<br><span style="font-size:11px;font-weight:400;opacity:0.7;">Los labs actuales se borran, se escriben los nuevos</span></button>' +
+    '<button class="btn-conflict-cancel" id="btn-conflict-cancel">Cancelar</button>' +
+    '</div></div>'
+  );
+  document.body.appendChild(backdrop);
+  document.getElementById('btn-conflict-move').onclick = function() {
+    document.body.removeChild(backdrop);
+    insertLabsAsAnteriorThenRecent(newLines);
+  };
+  document.getElementById('btn-conflict-replace').onclick = function() {
+    document.body.removeChild(backdrop);
+    if (!notes[activeId]) notes[activeId] = {};
+    var existing = (notes[activeId].estudios || '').split('\n');
+    var anterior = existing.slice(0, 3);
+    while (anterior.length < 3) anterior.push('');
+    notes[activeId].estudios = anterior.concat(newLines).join('\n');
+    saveState();
+    var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
+    if (el) el.value = notes[activeId].estudios;
+    onboardingAdvanceAfterSend();
+    showToast('Fecha reciente reemplazada ✓', 'success');
+    switchAppTab('nota');
+  };
+  document.getElementById('btn-conflict-cancel').onclick = function() {
+    document.body.removeChild(backdrop);
+  };
 }
 
 function procesarReporte() {
