@@ -6,6 +6,7 @@
   "scripts": {
     "start": "electron .",
     "build:mac": "electron-builder --mac",
+    "prebuild:mac": "node scripts/fetch-python-mac.js",
     "prebuild:win": "node scripts/fetch-python.js",
     "build:win": "electron-builder --win"
   },
@@ -27,6 +28,10 @@
     "mac": {
       "icon": "build/AppIcon.icns",
       "category": "public.app-category.medical",
+      "extraResources": [
+        { "from": "python-runtime/mac-arm64", "to": "python-runtime/mac-arm64" },
+        { "from": "python-runtime/mac-x64",   "to": "python-runtime/mac-x64"   }
+      ],
       "target": [
         {
           "target": "dmg",

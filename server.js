@@ -12,10 +12,19 @@ const DOWNLOADS = path.join(os.homedir(), 'Downloads');
 
 function resolvePython() {
   if (process.platform === 'win32') {
-    // Check bundled Python first (production: resourcesPath, dev: project root)
     for (const base of [process.resourcesPath, __dirname].filter(Boolean)) {
       const bundled = path.join(base, 'python-runtime', 'win-x64', 'python.exe');
       try { if (fs.statSync(bundled).isFile()) return bundled; } catch { /* not found */ }
+    }
+  }
+  if (process.platform === 'darwin') {
+    const arch = process.arch === 'arm64' ? 'mac-arm64' : 'mac-x64';
+    for (const base of [process.resourcesPath, __dirname].filter(Boolean)) {
+      const binDir = path.join(base, 'python-runtime', arch, 'bin');
+      for (const name of ['python3', 'python3.12', 'python3.13']) {
+        const bundled = path.join(binDir, name);
+        try { if (fs.statSync(bundled).isFile()) return bundled; } catch { /* not found */ }
+      }
     }
   }
   const systemPaths = [
