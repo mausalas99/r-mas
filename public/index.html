@@ -1146,6 +1146,23 @@ var activeId     = null;
 var activeInner  = 'notas';
 var activeAppTab = 'lab';
 var activeLab    = null;
+var settings     = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
+var onboardingStep = 0; // 0=inactive 1=welcome 2=parse 3=send 4=generate
+var DEMO_PATIENT_ID = 'demo-onboarding';
+var DEMO_LAB_REPORT = 'LABORATORIO CLÍNICO — Hospital General\n' +
+  'Paciente: DEMO PÉREZ Juan\nFecha: Apr 11 2026\n\n' +
+  'BIOMETRÍA HEMÁTICA\n' +
+  'Hemoglobina: 11.4 g/dL\nHematocrito: 34.8%\nVCM: 86 fL\nHCM: 28.2 pg\n' +
+  'Leucocitos: 4.92 x10³/µL\nNeutrófilos: 2.76 x10³/µL\nEosinófilos: 0.275 x10³/µL\nPlaquetas: 198 x10³/µL\n\n' +
+  'QUÍMICA SANGUÍNEA\n' +
+  'Glucosa: 190 mg/dL\nCreatinina: 1.8 mg/dL\nBUN: 28 mg/dL\nPCR: 0.3 mg/dL\n' +
+  'Ácido Úrico: 6.2 mg/dL\nTriglicéridos: 153 mg/dL\nColesterol Total: 166 mg/dL\n\n' +
+  'ELECTROLITOS SÉRICOS\n' +
+  'Sodio: 139.8 mEq/L\nCloro: 105 mEq/L\nPotasio: 3.2 mEq/L\nCalcio: 7.9 mg/dL\nFósforo: 3.4 mg/dL\n\n' +
+  'PERFIL DE FUNCIÓN HEPÁTICA\n' +
+  'Albúmina: 2.5 g/dL\nAST: 11 U/L\nALT: 6 U/L\nFosfatasa Alcalina: 103 U/L\n' +
+  'Bilirrubina Total: 0.3 mg/dL\nBilirrubina Directa: 0.1 mg/dL\nBilirrubina Indirecta: 0.2 mg/dL\n' +
+  'LDH: 120 U/L\nAmilasa: 25 U/L';
 
 // ── Theme ──────────────────────────────────────────────────────────
 (function() {
@@ -1171,6 +1188,11 @@ document.getElementById('today-date').textContent =
   new Date().toLocaleDateString('es-MX', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
 renderPatientList();
 if (patients.length > 0) selectPatient(patients[0].id);
+loadSettings();
+// Auto-start onboarding on first launch (no patients yet and not completed before)
+if (!localStorage.getItem('rpc-onboarding-done') && patients.length === 0) {
+  setTimeout(startOnboarding, 50);
+}
 
 function switchAppTab(tab) {
   activeAppTab = tab;
@@ -1222,9 +1244,89 @@ function deletePatient(e, id) {
 }
 
 function saveState() {
-  localStorage.setItem('rpc-patients', JSON.stringify(patients));
+  localStorage.setItem('rpc-patients', JSON.stringify(patients.filter(function(p){ return !p.isDemo; })));
   localStorage.setItem('rpc-notes', JSON.stringify(notes));
   localStorage.setItem('rpc-indicaciones', JSON.stringify(indicaciones));
+}
+
+// ── Settings ──────────────────────────────────────────────────────
+function loadSettings() {
+  if (!settings) settings = {};
+  var docEl = document.getElementById('profile-doctor');
+  var proEl = document.getElementById('profile-profesor');
+  var grEl  = document.getElementById('profile-grado');
+  if (docEl) docEl.value = settings.doctorName || '';
+  if (proEl) proEl.value = settings.profesorName || '';
+  if (grEl)  grEl.value  = settings.grado || '';
+  var lbl = document.getElementById('profile-toggle-label');
+  if (lbl) {
+    if (settings.doctorName || settings.grado) {
+      var parts = [];
+      if (settings.doctorName) parts.push(settings.doctorName);
+      if (settings.grado) parts.push(settings.grado);
+      lbl.textContent = parts.join(' · ');
+    } else {
+      lbl.textContent = 'Mi Perfil';
+    }
+  }
+  var dEl = document.getElementById('profile-preview-dieta-txt');
+  var cEl = document.getElementById('profile-preview-cuidados-txt');
+  var mEl = document.getElementById('profile-preview-meds-txt');
+  function preview(val) { return val ? (val.slice(0,40) + (val.length > 40 ? '…' : '')) : '(vacío)'; }
+  if (dEl) dEl.textContent = preview(settings.defaultDieta);
+  if (cEl) cEl.textContent = preview(settings.defaultCuidados);
+  if (mEl) mEl.textContent = preview(settings.defaultMedicamentos);
+}
+
+function saveSettings() {
+  settings.doctorName   = (document.getElementById('profile-doctor').value   || '').trim();
+  settings.profesorName = (document.getElementById('profile-profesor').value || '').trim();
+  settings.grado        = (document.getElementById('profile-grado').value    || '').trim();
+  localStorage.setItem('rpc-settings', JSON.stringify(settings));
+  loadSettings();
+  showToast('Perfil guardado ✓', 'success');
+}
+
+function toggleProfileSection() {
+  var body  = document.getElementById('profile-body');
+  var arrow = document.getElementById('profile-toggle-arrow');
+  var open  = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'flex';
+  arrow.textContent  = open ? '▾' : '▴';
+}
+
+function openTemplatesModal() {
+  document.getElementById('tmpl-dieta').value    = settings.defaultDieta    || '';
+  document.getElementById('tmpl-cuidados').value = settings.defaultCuidados || '';
+  document.getElementById('tmpl-meds').value     = settings.defaultMedicamentos || '';
+  document.getElementById('templates-modal').style.display = 'flex';
+}
+
+function closeTemplatesModal() {
+  document.getElementById('templates-modal').style.display = 'none';
+}
+
+function saveTemplates() {
+  settings.defaultDieta        = document.getElementById('tmpl-dieta').value.trim();
+  settings.defaultCuidados     = document.getElementById('tmpl-cuidados').value.trim();
+  settings.defaultMedicamentos = document.getElementById('tmpl-meds').value.trim();
+  localStorage.setItem('rpc-settings', JSON.stringify(settings));
+  closeTemplatesModal();
+  loadSettings();
+  showToast('Plantillas guardadas ✓', 'success');
+}
+
+function applyDefaultsToNewPatient(patientId) {
+  if (!notes[patientId]) return;
+  if (settings.doctorName   && !notes[patientId].medico)   notes[patientId].medico   = settings.doctorName;
+  if (settings.profesorName && !notes[patientId].profesor) notes[patientId].profesor = settings.profesorName;
+}
+
+function applyDefaultsToNewIndicaciones(patientId) {
+  if (!indicaciones[patientId]) return;
+  if (settings.defaultDieta        && !indicaciones[patientId].dieta)        indicaciones[patientId].dieta        = settings.defaultDieta;
+  if (settings.defaultCuidados     && !indicaciones[patientId].cuidados)     indicaciones[patientId].cuidados     = settings.defaultCuidados;
+  if (settings.defaultMedicamentos && !indicaciones[patientId].medicamentos) indicaciones[patientId].medicamentos = settings.defaultMedicamentos;
 }
 
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -1430,6 +1532,8 @@ function savePatient() {
   var patient = { id:Date.now().toString(36)+Math.random().toString(36).slice(2), nombre:nombre, registro:registro, edad:edad, sexo:sexo, area:area, servicio:servicio, cuarto:cuarto, cama:cama, fromLab:isFromLab };
   notes[patient.id] = { fecha:fecha, hora:hora, interrogatorio:'', evolucion:'', estudios:'', diagnosticos:[''], tratamiento:[''], ta:'', fr:'', fc:'', temp:'', peso:'', medico:'', profesor:'' };
   indicaciones[patient.id] = { fecha:fecha, hora:hora, medicos:'', dieta:'', cuidados:'', estudios:'', medicamentos:'', interconsultas:'', otros:[] };
+  applyDefaultsToNewPatient(patient.id);
+  applyDefaultsToNewIndicaciones(patient.id);
   patients.push(patient);
   saveState(); closeModal();
   var pendingLab = null;
