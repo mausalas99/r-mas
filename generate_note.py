@@ -106,9 +106,13 @@ def main():
     for i, orig in enumerate(ORIG_ESTUDIOS_LINES):
         new_val = estudios_lines[i] if i < len(estudios_lines) else ''
         xml = replace_t(xml, orig, new_val)
-    # Clear prefix nodes (split from value nodes in template XML)
+    # Clear prefix nodes AND the <w:tab/> that follows each one in the template
     for prefix in ['QS', 'ESC', 'BH', 'PFHs']:
-        xml = clear_t(xml, prefix)
+        xml = re.sub(
+            r'<w:t(?:\s[^>]*)?' + r'>' + re.escape(prefix) + r'</w:t>\s*<w:tab/>',
+            '<w:t></w:t>',
+            xml
+        )
 
     # ── Diagnósticos ─────────────────────────────────────────────────────────
     diagnosticos = note.get('diagnosticos') or []
