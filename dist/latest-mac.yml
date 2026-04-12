@@ -1,0 +1,11 @@
+version: 1.4.0
+files:
+  - url: R+-1.4.0-arm64.zip
+    sha512: L1WpApfyAKMOXhjA88pKLIqDxQpGdLyjFZV/9xeER3/OVX1altyhWHHHNpCVKiUy3iVIPAdx3AnmUK5tuh61nA==
+    size: 141131346
+  - url: R+-1.4.0-x64.zip
+    sha512: Qum2oP9p98OiZdkCs7KETpB/NKQIfTuqwyYTjQiQNYvRmZe5mz4SFuyeJtxIVIq4sbpbKTDV9VBDstOmFj6eIQ==
+    size: 149157435
+path: R+-1.4.0-arm64.zip
+sha512: L1WpApfyAKMOXhjA88pKLIqDxQpGdLyjFZV/9xeER3/OVX1altyhWHHHNpCVKiUy3iVIPAdx3AnmUK5tuh61nA==
+releaseDate: '2026-04-12T14:01:38.594Z'

@@ -1,0 +1,8 @@
+version: 1.4.0
+files:
+  - url: R+-1.4.0-x64.exe
+    sha512: mmMRi8610fY7QcnhUiITIck5M7LEhKJ7hsugA0fjF4fQw274GN6Os8SXS5j+7sIDXZXQX7AGWz9KZUxnW7FWkQ==
+    size: 109848224
+path: R+-1.4.0-x64.exe
+sha512: mmMRi8610fY7QcnhUiITIck5M7LEhKJ7hsugA0fjF4fQw274GN6Os8SXS5j+7sIDXZXQX7AGWz9KZUxnW7FWkQ==
+releaseDate: '2026-04-12T13:53:51.992Z'
