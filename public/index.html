@@ -1721,8 +1721,8 @@ if (window.electronAPI) {
     banner.style.display = 'flex';
     document.getElementById('update-progress-track').style.display = 'none';
     document.getElementById('update-actions').style.display = 'none';
-    document.getElementById('update-banner-text').textContent = 'Error al buscar actualizaciones.';
-    setTimeout(function() { banner.style.display = 'none'; }, 4000);
+    document.getElementById('update-banner-text').textContent = 'Error al buscar actualizaciones: ' + (msg || '');
+    setTimeout(function() { banner.style.display = 'none'; }, 8000);
   });
 }
 </script>
