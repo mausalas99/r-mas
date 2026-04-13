@@ -409,7 +409,18 @@
     animation: confetti-fall 2.5s ease-in forwards;
     pointer-events: none; z-index: 99999;
   }
+  /* ── Tendencias de Lab ─────────────────────────────────────── */
+  .tend-empty { text-align:center; color:var(--muted); font-size:14px; padding:40px 20px; }
+  .tend-grid  { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:14px; padding:4px; }
+  .tend-card  { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px; cursor:pointer; transition:box-shadow 0.15s; }
+  .tend-card:hover { box-shadow:0 2px 8px rgba(0,0,0,0.12); }
+  .tend-card-header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
+  .tend-param-name  { font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; }
+  .tend-param-value { font-size:18px; font-weight:700; color:var(--text); }
+  .tend-param-value.tend-abnormal { color:#dc2626; }
+  .tend-unit  { font-size:10px; color:var(--muted); margin-top:2px; }
 </style>
+<script src="vendor/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -592,9 +603,13 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
             Indicaciones
           </button>
+          <button class="inner-tab" id="itab-tend" onclick="switchInnerTab('tend')">
+            Tendencias
+          </button>
         </div>
         <div id="itab-content-notas" class="tab-content active"><div id="note-form" style="display:flex;flex-direction:column;gap:20px;"></div></div>
         <div id="itab-content-indica" class="tab-content"><div id="indica-form" style="display:flex;flex-direction:column;gap:20px;"></div></div>
+        <div id="itab-content-tend" class="tab-content"><div id="tendencias-container"></div></div>
       </div>
     </div>
 
@@ -1212,11 +1227,29 @@ function renderEntry(text){
 var patients     = JSON.parse(localStorage.getItem('rpc-patients')     || '[]');
 var notes        = JSON.parse(localStorage.getItem('rpc-notes')        || '{}');
 var indicaciones = JSON.parse(localStorage.getItem('rpc-indicaciones') || '{}');
+var labHistory   = JSON.parse(localStorage.getItem('rpc-labHistory')   || '{}');
 var activeId     = null;
 var activeInner  = 'notas';
 var activeAppTab = 'lab';
 var activeLab    = null;
 var settings     = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
+var sparkCharts  = {};
+var detailChart  = null;
+
+var TEND_UNITS = {
+  Hb:'g/dL',  Hto:'%',    Leu:'K/μL', Plt:'K/μL',
+  Glu:'mg/dL',Cr:'mg/dL', BUN:'mg/dL',PCR:'mg/dL',
+  AU:'mg/dL', TGL:'mg/dL',COL:'mg/dL',
+  Na:'mEq/L', K:'mEq/L',  Cl:'mEq/L', HCO3:'mEq/L',Ca:'mg/dL',
+  AST:'U/L',  ALT:'U/L',  FA:'U/L',   BT:'mg/dL'
+};
+var TEND_PARAMS = ['Hb','Hto','Leu','Plt','Glu','Cr','BUN','PCR','Na','K','Cl','HCO3','Ca','AST','ALT','FA','BT'];
+var TEND_REF = {
+  Hb:[12,17.5], Hto:[36,53], Leu:[4,11], Plt:[150,400],
+  Glu:[70,100], Cr:[0.5,1.3], BUN:[7,20], PCR:[0,0.5],
+  Na:[136,145], K:[3.5,5.0], Cl:[96,106], HCO3:[22,28], Ca:[8.5,10.5],
+  AST:[10,40], ALT:[7,56], FA:[44,147], BT:[0.1,1.2]
+};
 var onboardingStep = 0; // 0=inactive 1=welcome 2=parse 3=send 4=generate
 var DEMO_PATIENT_ID = 'demo-onboarding';
 var DEMO_LAB_REPORT = 'LABORATORIO CLÍNICO — Hospital General\n' +
@@ -1233,6 +1266,38 @@ var DEMO_LAB_REPORT = 'LABORATORIO CLÍNICO — Hospital General\n' +
   'Albúmina: 2.5 g/dL\nAST: 11 U/L\nALT: 6 U/L\nFosfatasa Alcalina: 103 U/L\n' +
   'Bilirrubina Total: 0.3 mg/dL\nBilirrubina Directa: 0.1 mg/dL\nBilirrubina Indirecta: 0.2 mg/dL\n' +
   'LDH: 120 U/L\nAmilasa: 25 U/L';
+
+// ── Lab History Migration ─────────────────────────────────────────
+(function migrateLabHistory() {
+  if (localStorage.getItem('rpc-labHistory')) return;
+  patients.forEach(function(p) {
+    if (!notes[p.id] || !notes[p.id].estudios) return;
+    var lines = notes[p.id].estudios.split('\n');
+    var anteriorLines = lines.slice(0, 3).filter(function(l){ return l.trim(); });
+    var recentLines   = lines.slice(3).filter(function(l){ return l.trim(); });
+    var sets = [];
+    if (anteriorLines.length) {
+      sets.push({
+        id: 'migrated-anterior',
+        fecha: 'Anterior',
+        hora: '',
+        resLabs: anteriorLines.filter(function(l){ return l.indexOf('\t') !== -1; }),
+        parsed: {}
+      });
+    }
+    if (recentLines.length) {
+      sets.push({
+        id: 'migrated-recent',
+        fecha: recentLines[0] || notes[p.id].fecha || '',
+        hora: notes[p.id].hora || '',
+        resLabs: recentLines.filter(function(l){ return l.indexOf('\t') !== -1; }),
+        parsed: {}
+      });
+    }
+    if (sets.length) labHistory[p.id] = sets;
+  });
+  localStorage.setItem('rpc-labHistory', JSON.stringify(labHistory));
+}());
 
 // ── Theme ──────────────────────────────────────────────────────────
 (function() {
@@ -1276,8 +1341,11 @@ function switchInnerTab(tab) {
   activeInner = tab;
   document.getElementById('itab-notas').classList.toggle('active', tab === 'notas');
   document.getElementById('itab-indica').classList.toggle('active', tab === 'indica');
+  document.getElementById('itab-tend').classList.toggle('active', tab === 'tend');
   document.getElementById('itab-content-notas').classList.toggle('active', tab === 'notas');
   document.getElementById('itab-content-indica').classList.toggle('active', tab === 'indica');
+  document.getElementById('itab-content-tend').classList.toggle('active', tab === 'tend');
+  if (tab === 'tend') renderTendencias();
 }
 
 function renderPatientList() {
@@ -1299,6 +1367,7 @@ function selectPatient(id) {
   document.getElementById('patient-view').style.display = 'flex';
   renderNoteForm();
   renderIndicaForm();
+  if (activeInner === 'tend') renderTendencias();
 }
 
 function deletePatient(e, id) {
@@ -1317,6 +1386,7 @@ function saveState() {
   localStorage.setItem('rpc-patients', JSON.stringify(patients.filter(function(p){ return !p.isDemo; })));
   localStorage.setItem('rpc-notes', JSON.stringify(notes));
   localStorage.setItem('rpc-indicaciones', JSON.stringify(indicaciones));
+  localStorage.setItem('rpc-labHistory', JSON.stringify(labHistory));
 }
 
 // ── Settings ──────────────────────────────────────────────────────
@@ -1711,13 +1781,29 @@ function checkStudiosAndInsertLabs() {
   }
 }
 
+function pushLabHistory(patientId, resLabs, fecha, hora) {
+  if (!patientId || !resLabs || !resLabs.length) return;
+  if (!labHistory[patientId]) labHistory[patientId] = [];
+  var set = {
+    id: Date.now().toString(),
+    fecha: fecha || '',
+    hora: hora || '',
+    resLabs: resLabs,
+    parsed: extractParsedValues(resLabs)
+  };
+  labHistory[patientId].push(set);
+}
+
 function insertLabsAsRecent(lines) {
   if (!notes[activeId]) notes[activeId] = {};
   var existing = (notes[activeId].estudios || '').split('\n');
   var anterior = existing.slice(0, 3);
   while (anterior.length < 3) anterior.push('');
   notes[activeId].estudios = anterior.concat(lines).join('\n');
+  pushLabHistory(activeId, activeLab.resLabs,
+    activeLab.patient && activeLab.patient.fecha ? activeLab.patient.fecha : '', '');
   saveState();
+  if (activeInner === 'tend' && activeAppTab === 'nota') renderTendencias();
   var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
   if (el) el.value = notes[activeId].estudios;
   onboardingAdvanceAfterSend();
@@ -1734,7 +1820,10 @@ function insertLabsAsAnteriorThenRecent(newLines) {
   var anteriorESC  = existing[6] || '';
   var anteriorBlock = [anteriorDate, anteriorQS, anteriorESC];
   notes[activeId].estudios = anteriorBlock.concat(newLines).join('\n');
+  pushLabHistory(activeId, activeLab.resLabs,
+    activeLab.patient && activeLab.patient.fecha ? activeLab.patient.fecha : '', '');
   saveState();
+  if (activeInner === 'tend' && activeAppTab === 'nota') renderTendencias();
   var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
   if (el) el.value = notes[activeId].estudios;
   onboardingAdvanceAfterSend();
@@ -1768,7 +1857,10 @@ function showLabConflictModal(newLines, existingDate) {
     var anterior = existing.slice(0, 3);
     while (anterior.length < 3) anterior.push('');
     notes[activeId].estudios = anterior.concat(newLines).join('\n');
+    pushLabHistory(activeId, activeLab.resLabs,
+      activeLab.patient && activeLab.patient.fecha ? activeLab.patient.fecha : '', '');
     saveState();
+    if (activeInner === 'tend' && activeAppTab === 'nota') renderTendencias();
     var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
     if (el) el.value = notes[activeId].estudios;
     onboardingAdvanceAfterSend();
@@ -2078,6 +2170,149 @@ function parsearSecciones(resLabs){
     secs[key]=vals;
   });
   return secs;
+}
+
+function extractParsedValues(resLabs) {
+  var secs = parsearSecciones(resLabs);
+  function num(sec, key) {
+    var v = g(secs, sec, key);
+    return v ? parseFloat(v.val) : null;
+  }
+  return {
+    Hb:  num('BH','Hb'),   Hto: num('BH','Hto'),
+    Leu: num('BH','Leu'),  Plt: num('BH','Plt'),
+    Glu: num('QS','Glu'),  Cr:  num('QS','Cr'),
+    BUN: num('QS','BUN'),  PCR: num('QS','PCR'),
+    AU:  num('QS','AU'),   TGL: num('QS','TGL'),  COL: num('QS','COL'),
+    Na:  num('ESC','Na'),  K:   num('ESC','K'),
+    Cl:  num('ESC','Cl'),  HCO3:num('ESC','HCO3'), Ca: num('ESC','Ca'),
+    AST: num('PFHs','AST'),ALT: num('PFHs','ALT'),
+    FA:  num('PFHs','FA'), BT:  num('PFHs','BT')
+  };
+}
+
+function renderTendencias() {
+  var container = document.getElementById('tendencias-container');
+  if (!container) return;
+  Object.keys(sparkCharts).forEach(function(k) {
+    if (sparkCharts[k]) { sparkCharts[k].destroy(); delete sparkCharts[k]; }
+  });
+  if (!activeId) {
+    container.innerHTML = '<p class="tend-empty">Selecciona un paciente.</p>';
+    return;
+  }
+  var history = labHistory[activeId] || [];
+  if (history.length < 2) {
+    container.innerHTML = '<p class="tend-empty">Agrega al menos 2 sets de laboratorio para ver tendencias.</p>';
+    return;
+  }
+  var available = TEND_PARAMS.filter(function(p) {
+    return history.filter(function(s){ return s.parsed && s.parsed[p] !== null && s.parsed[p] !== undefined; }).length >= 2;
+  });
+  if (!available.length) {
+    container.innerHTML = '<p class="tend-empty">No hay parámetros con suficientes datos para graficar.</p>';
+    return;
+  }
+  container.innerHTML = '<div class="tend-grid">' + available.map(function(param) {
+    var sets = history.filter(function(s){ return s.parsed && s.parsed[param] !== null && s.parsed[param] !== undefined; });
+    var latest = sets[sets.length - 1].parsed[param];
+    var ref = TEND_REF[param];
+    var isAb = ref && (latest < ref[0] || latest > ref[1]);
+    return '<div class="tend-card" onclick="openTendDetail(\'' + param + '\')" data-param="' + param + '">'
+      + '<div class="tend-card-header">'
+      + '<span class="tend-param-name">' + param + '</span>'
+      + '<span class="tend-param-value' + (isAb ? ' tend-abnormal' : '') + '">' + latest + '</span>'
+      + '</div>'
+      + '<div class="tend-unit">' + (TEND_UNITS[param] || '') + '</div>'
+      + '<canvas id="spark-' + param + '" height="60"></canvas>'
+      + '</div>';
+  }).join('') + '</div>';
+  available.forEach(function(param) {
+    var sets = history.filter(function(s){ return s.parsed && s.parsed[param] !== null && s.parsed[param] !== undefined; });
+    var labels = sets.map(function(s){ return s.fecha ? s.fecha.substring(0,5) : ''; });
+    var values = sets.map(function(s){ return s.parsed[param]; });
+    var canvas = document.getElementById('spark-' + param);
+    if (!canvas) return;
+    sparkCharts[param] = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{ data: values, borderColor: '#10b981', borderWidth: 2,
+          pointRadius: 3, pointBackgroundColor: '#10b981', tension: 0.3, fill: false }]
+      },
+      options: {
+        responsive: false, animation: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: { x: { display: false }, y: { display: false } }
+      }
+    });
+  });
+}
+
+function openTendDetail(param) {
+  if (!activeId) return;
+  var history = labHistory[activeId] || [];
+  var sets = history.filter(function(s){ return s.parsed && s.parsed[param] !== null && s.parsed[param] !== undefined; });
+  if (sets.length < 2) return;
+  var labels = sets.map(function(s){ return s.fecha ? s.fecha.substring(0,5) : ''; });
+  var values = sets.map(function(s){ return s.parsed[param]; });
+  var ref = TEND_REF[param];
+  var unit = TEND_UNITS[param] || '';
+  document.getElementById('tend-detail-title').textContent = param + (unit ? ' (' + unit + ')' : '');
+  var backdrop = document.getElementById('tend-detail-backdrop');
+  backdrop.style.display = 'flex';
+  var canvas = document.getElementById('tend-detail-canvas');
+  if (detailChart) { detailChart.destroy(); detailChart = null; }
+  var datasets = [{
+    label: param,
+    data: values,
+    borderColor: '#10b981',
+    backgroundColor: 'rgba(16,185,129,0.08)',
+    borderWidth: 2.5,
+    pointRadius: 5,
+    pointBackgroundColor: '#10b981',
+    tension: 0.3,
+    fill: false
+  }];
+  if (ref) {
+    datasets.push({
+      label: 'Ref min', data: Array(values.length).fill(ref[0]),
+      borderColor: 'rgba(0,0,0,0.12)', borderWidth: 1, borderDash: [4,4],
+      pointRadius: 0, fill: false
+    });
+    datasets.push({
+      label: 'Ref max', data: Array(values.length).fill(ref[1]),
+      borderColor: 'rgba(0,0,0,0.12)', borderWidth: 1, borderDash: [4,4],
+      pointRadius: 0, fill: '-1',
+      backgroundColor: 'rgba(0,0,0,0.04)'
+    });
+  }
+  detailChart = new Chart(canvas, {
+    type: 'line',
+    data: { labels: labels, datasets: datasets },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              return ctx.datasetIndex === 0 ? param + ': ' + ctx.parsed.y + ' ' + unit : null;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { font: { size: 12 } } },
+        y: { ticks: { font: { size: 12 } }, title: { display: true, text: unit, font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+function closeTendDetail() {
+  document.getElementById('tend-detail-backdrop').style.display = 'none';
+  if (detailChart) { detailChart.destroy(); detailChart = null; }
 }
 
 function g(secs,sec,key){
@@ -2554,6 +2789,16 @@ if (window.electronAPI) {
         Insertar en evolución
       </button>
     </div>
+  </div>
+</div>
+
+<div id="tend-detail-backdrop" onclick="if(event.target===this)closeTendDetail()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1100;align-items:center;justify-content:center;">
+  <div id="tend-detail-modal" style="background:var(--surface);border-radius:12px;padding:24px;width:min(90vw,640px);max-height:80vh;overflow-y:auto;position:relative;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <span id="tend-detail-title" style="font-size:16px;font-weight:700;color:var(--text);"></span>
+      <button onclick="closeTendDetail()" style="background:transparent;border:1px solid var(--border);border-radius:6px;padding:4px 12px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text);">Cerrar</button>
+    </div>
+    <canvas id="tend-detail-canvas" style="width:100%;height:320px;"></canvas>
   </div>
 </div>
 
