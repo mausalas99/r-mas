@@ -1873,7 +1873,7 @@ function renderTourStep() {
   switch (tourStep) {
     case TOUR_STEP_MAP:
       badgeText(1, 'vista general');
-      bodyEl.innerHTML = 'A la <strong>izquierda</strong> está la lista de pacientes (el demo <strong>DEMO PÉREZ</strong> no se guarda). Arriba alterna <strong>Laboratorio</strong> (reportes y gráficas) y <strong>Expediente</strong> (nota clínica, indicaciones y tendencias).';
+      bodyEl.innerHTML = 'A la <strong>izquierda</strong> está la lista de pacientes (el demo <strong>DEMO PÉREZ</strong> no se guarda). Arriba alterna <strong>Laboratorio</strong> (reportes y gráficas) y <strong>Expediente</strong> (nota clínica, indicaciones y tendencias). Si agregas un paciente con nombre o registro similar a uno existente, la app te avisará.';
       nextBtn.textContent = 'Siguiente';
       break;
     case TOUR_STEP_LAB_PARSE:
@@ -1908,7 +1908,7 @@ function renderTourStep() {
       break;
     case TOUR_STEP_PROFILE:
       badgeText(8, 'perfil');
-      bodyEl.innerHTML = 'En <strong>Mi Perfil</strong> (abajo en la barra lateral) guardas médico, grado y textos por defecto para pacientes nuevos.';
+      bodyEl.innerHTML = 'En <strong>Mi Perfil</strong> (abajo en la barra lateral) guardas médico, grado y textos por defecto para pacientes nuevos. Aquí también puedes elegir dónde se guardan tus documentos.';
       nextBtn.textContent = 'Siguiente';
       break;
     case TOUR_STEP_WRAP:
