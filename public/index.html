@@ -2294,5 +2294,178 @@ if (window.electronAPI) {
   });
 }
 </script>
+
+<!-- ── SOAP Evolution Modal ──────────────────────────── -->
+<div class="soap-modal-backdrop" id="soap-modal-backdrop">
+  <div class="soap-modal">
+    <div class="soap-modal-header">
+      <div class="soap-modal-header-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Plantilla de Evolución
+      </div>
+      <button onclick="closeSOAPModal()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.35);color:white;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">× Cerrar</button>
+    </div>
+    <div class="soap-modal-body">
+      <!-- S: Subjetivo -->
+      <div class="soap-section" style="flex-shrink:0;">
+        <div class="soap-section-header">S — Subjetivo</div>
+        <div class="soap-section-body">
+          <textarea id="soap-s" rows="2" placeholder="Paciente refiere mejoría del dolor, tolera vía oral…"></textarea>
+        </div>
+      </div>
+      <!-- N: Neurológico -->
+      <div class="soap-section">
+        <div class="soap-section-header">N — Neurológico</div>
+        <div class="soap-section-body">
+          <div style="display:grid;grid-template-columns:140px 120px 1fr;gap:10px;">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">FOUR Score</div>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <input type="number" id="soap-four" placeholder="16" style="width:64px;text-align:center;">
+                <span style="font-size:12px;color:var(--text-muted);white-space:nowrap;">/16 pts</span>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Esferas</div>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <input type="number" id="soap-esferas" placeholder="3" style="width:64px;text-align:center;">
+                <span style="font-size:12px;color:var(--text-muted);">esf.</span>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Analgesia</div>
+              <input type="text" id="soap-analgesia" placeholder="Paracetamol 1g IV c/8h">
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- V: Ventilatorio -->
+      <div class="soap-section">
+        <div class="soap-section-header">V — Ventilatorio</div>
+        <div class="soap-section-body">
+          <div style="display:grid;grid-template-columns:100px 100px 1fr;gap:10px;">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">FR (rpm)</div>
+              <input type="number" id="soap-fr" placeholder="18" style="text-align:center;">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">SatO2 (%)</div>
+              <input type="number" id="soap-sat" placeholder="97" style="text-align:center;">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Soporte O2</div>
+              <select id="soap-soporte">
+                <option value="Aire ambiente">Aire ambiente</option>
+                <option value="Puntillas nasales">Puntillas nasales</option>
+                <option value="Alto flujo">Alto flujo</option>
+                <option value="VM no invasiva">VM no invasiva</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- HD: Hemodinámico -->
+      <div class="soap-section">
+        <div class="soap-section-header">HD — Hemodinámico</div>
+        <div class="soap-section-body">
+          <div style="display:grid;grid-template-columns:100px 100px 100px;gap:10px;">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">TAS (mmHg)</div>
+              <input type="number" id="soap-tas" placeholder="120" style="text-align:center;">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">TAD (mmHg)</div>
+              <input type="number" id="soap-tad" placeholder="80" style="text-align:center;">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">FC (lpm)</div>
+              <input type="number" id="soap-fc" placeholder="76" style="text-align:center;">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Antihipertensivos</div>
+              <input type="text" id="soap-antihta" placeholder="Ninguno">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Vasopresores</div>
+              <input type="text" id="soap-vasop" placeholder="Ninguno">
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- HI: Infeccioso -->
+      <div class="soap-section">
+        <div class="soap-section-header">HI — Infeccioso / Térmico</div>
+        <div class="soap-section-body">
+          <div style="display:grid;grid-template-columns:140px 1fr;gap:10px;">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Temperatura (°C)</div>
+              <input type="number" id="soap-temp" placeholder="36.6" step="0.1" style="text-align:center;">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Antibióticos</div>
+              <input type="text" id="soap-abx" placeholder="Ninguno  |  Med dosis vía c/Xh día X de X">
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- NM: Nutricional/Metabólico -->
+      <div class="soap-section">
+        <div class="soap-section-header">NM — Nutricional / Metabólico</div>
+        <div class="soap-section-body">
+          <div style="display:grid;grid-template-columns:1fr 80px 80px 80px;gap:10px;">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Dieta</div>
+              <input type="text" id="soap-dieta" placeholder="Blanda hipograsa">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Kcal/kg</div>
+              <input type="number" id="soap-kcalkg" placeholder="25" style="text-align:center;">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Total Kcal</div>
+              <input type="number" id="soap-kcal" placeholder="1500" style="text-align:center;">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Peso (kg)</div>
+              <input type="number" id="soap-peso" placeholder="60" style="text-align:center;">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Ingresos (cc)</div>
+              <input type="number" id="soap-ing" placeholder="1200" oninput="updateSOAPBalance()" style="text-align:center;">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Egresos (cc)</div>
+              <input type="number" id="soap-egr" placeholder="950" oninput="updateSOAPBalance()" style="text-align:center;">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Balance (cc)</div>
+              <input type="text" id="soap-balance" class="soap-field-readonly" readonly placeholder="auto" style="text-align:center;">
+            </div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Glucometrías capilares (mg/dL)</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+              <input type="number" id="soap-glu1" placeholder="1ª" style="text-align:center;">
+              <input type="number" id="soap-glu2" placeholder="2ª" style="text-align:center;">
+              <input type="number" id="soap-glu3" placeholder="3ª" style="text-align:center;">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /soap-modal-body -->
+    <div class="soap-modal-footer">
+      <button onclick="closeSOAPModal()" style="background:white;border:1px solid var(--border);color:var(--text-muted);border-radius:6px;padding:7px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Cancelar</button>
+      <button onclick="insertSOAPText()" style="background:#065F46;color:white;border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:5px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Insertar en evolución
+      </button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
