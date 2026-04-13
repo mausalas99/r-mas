@@ -316,6 +316,70 @@
     background: none; border: none; color: var(--text-muted); font-size: 12px;
     font-family: inherit; cursor: pointer; padding: 4px; align-self: center;
   }
+  /* ── SOAP Evolution modal ────────────────────────────── */
+  .soap-modal-backdrop {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+    z-index: 9995; align-items: center; justify-content: center;
+  }
+  .soap-modal-backdrop.open { display: flex; animation: fade-in 0.15s ease-out; }
+  .soap-modal {
+    background: var(--surface); border-radius: 12px; width: 620px;
+    max-width: 95vw; max-height: 90vh; display: flex; flex-direction: column;
+    overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    animation: modal-in 0.15s ease-out;
+  }
+  .soap-modal-header {
+    background: #065F46; color: white; padding: 11px 18px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
+  }
+  .soap-modal-header-title { display: flex; align-items: center; gap: 8px; }
+  .soap-modal-body {
+    padding: 18px; overflow-y: auto; flex: 1;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .soap-section {
+    border: 1px solid var(--border); border-radius: 8px;
+    overflow: hidden; flex-shrink: 0; box-shadow: var(--shadow);
+  }
+  .soap-section-header {
+    background: #EFF6FF; border-bottom: 1px solid var(--border);
+    padding: 7px 14px; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.6px; color: var(--primary);
+  }
+  .soap-section-body {
+    padding: 14px; background: var(--surface);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .soap-modal-footer {
+    padding: 14px 18px; border-top: 1px solid var(--border);
+    display: flex; justify-content: flex-end; gap: 10px;
+    background: var(--surface); flex-shrink: 0;
+  }
+  .soap-modal input[type="text"],
+  .soap-modal input[type="number"],
+  .soap-modal select,
+  .soap-modal textarea {
+    border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px;
+    font-size: 13px; font-family: inherit; color: var(--text); background: #F8FAFC;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    line-height: 1.5; width: 100%; box-sizing: border-box; text-transform: uppercase;
+  }
+  .soap-modal input[type="text"]:focus,
+  .soap-modal input[type="number"]:focus,
+  .soap-modal select:focus,
+  .soap-modal textarea:focus {
+    outline: none; border-color: var(--action); background: white;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+  }
+  .soap-modal select { text-transform: none; }
+  .soap-modal textarea { text-transform: none; resize: vertical; min-height: 58px; }
+  .soap-modal input::placeholder,
+  .soap-modal textarea::placeholder { color: #94A3B8; font-style: italic; text-transform: none; }
+  .soap-field-readonly {
+    border: none !important; background: #F1F5F9 !important;
+    color: var(--text-muted) !important; box-shadow: none !important; cursor: default;
+  }
   /* ── Onboarding ───────────────────────────────────────── */
   #onboarding-banner {
     background: #1e3a5f; color: #bfdbfe; padding: 10px 20px;
