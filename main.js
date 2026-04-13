@@ -100,6 +100,18 @@ autoUpdater.on('error', (err) => {
 
 ipcMain.on('install-update', () => autoUpdater.quitAndInstall());
 
+ipcMain.handle('get-app-version', () => app.getVersion());
+
+ipcMain.handle('select-output-dir', async () => {
+  if (!mainWindow || mainWindow.isDestroyed()) return undefined;
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Elegir carpeta para documentos',
+    properties: ['openDirectory', 'createDirectory'],
+  });
+  if (result.canceled || !result.filePaths.length) return undefined;
+  return result.filePaths[0];
+});
+
 // ── App menu ──────────────────────────────────────────────────────
 function buildMenu() {
   const version = app.getVersion();
@@ -119,6 +131,14 @@ function buildMenu() {
     }] : []),
     { role: 'editMenu' },
     {
+      label: 'Ver',
+      submenu: [
+        { role: 'toggleDevTools', label: 'Herramientas de desarrollador' },
+        { role: 'reload', label: 'Recargar' },
+        { role: 'forceReload', label: 'Forzar recarga' },
+      ],
+    },
+    {
       label: 'Aplicación',
       submenu: [
         ...(!isMac ? [
@@ -127,7 +147,6 @@ function buildMenu() {
           { label: 'Buscar actualizaciones…', click: checkUpdate },
           { type: 'separator' },
         ] : []),
-        { role: 'reload', label: 'Recargar' },
         ...(!isMac ? [
           { type: 'separator' },
           { role: 'quit', label: 'Salir' },
@@ -141,7 +160,17 @@ function buildMenu() {
 
 // ── Startup ───────────────────────────────────────────────────────
 app.whenReady().then(async () => {
-  server = await require('./server');
+  try {
+    server = await require('./server');
+  } catch (e) {
+    const detail = e && e.message ? e.message : String(e);
+    dialog.showErrorBox(
+      'R+ no pudo iniciar',
+      detail
+    );
+    app.quit();
+    return;
+  }
   buildMenu();
   createWindow();
 

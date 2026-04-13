@@ -19,4 +19,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   installUpdate: function() {
     ipcRenderer.send('install-update');
   },
+  getAppVersion: function() {
+    return ipcRenderer.invoke('get-app-version');
+  },
+  selectOutputDir: function() {
+    return ipcRenderer.invoke('select-output-dir');
+  },
 });
