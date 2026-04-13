@@ -2549,6 +2549,47 @@ document.getElementById('modal').addEventListener('keydown', function(e) {
   if (e.key==='Enter' && e.target.tagName!=='TEXTAREA' && e.target.tagName!=='SELECT') savePatient();
 });
 
+function normalizeName(str) {
+  return (str || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function findDuplicatePatient(nombre, registro) {
+  var nombreNorm = normalizeName(nombre);
+  return patients.find(function(p) {
+    if (p.isDemo) return false;
+    if (registro && p.registro && registro === p.registro) return true;
+    return normalizeName(p.nombre) === nombreNorm;
+  });
+}
+
+function showDuplicateWarning(existing, onConfirm) {
+  var fecha = notes[existing.id] ? notes[existing.id].fecha : '';
+  var body = '<strong>' + existing.nombre + '</strong>';
+  body += '<br>Cto. ' + (existing.cuarto || '—') + ' Cama ' + (existing.cama || '—');
+  if (existing.registro) body += '<br>Registro: ' + existing.registro;
+  if (fecha) body += '<br>Ingreso: ' + fecha;
+  var backdrop = document.createElement('div');
+  backdrop.className = 'lab-conflict-backdrop';
+  backdrop.id = 'dup-confirm-backdrop';
+  backdrop.innerHTML =
+    '<div class="lab-conflict-modal">' +
+    '<h3>Paciente similar encontrado</h3>' +
+    '<p>' + body + '</p>' +
+    '<div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;">' +
+    '<button onclick="document.getElementById(\'dup-confirm-backdrop\').remove()" style="background:#F3F4F6;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:#1f2937;">Cancelar</button>' +
+    '<button id="dup-confirm-btn" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Agregar de todas formas</button>' +
+    '</div></div>';
+  document.body.appendChild(backdrop);
+  document.getElementById('dup-confirm-btn').onclick = function() {
+    document.getElementById('dup-confirm-backdrop').remove();
+    onConfirm();
+  };
+}
+
 function savePatient() {
   var isFromLab = document.getElementById('modal-prefilled').style.display !== 'none';
   var nombre, registro, edad, sexo;
@@ -2573,6 +2614,18 @@ function savePatient() {
   var cuarto   = (document.getElementById('m-cuarto').value||'').trim();
   var cama     = (document.getElementById('m-cama').value||'').trim();
   if (!cuarto || !cama) { showToast('Ingresa cuarto y cama','error'); return; }
+
+  var dup = findDuplicatePatient(nombre, registro);
+  if (dup) {
+    showDuplicateWarning(dup, function() {
+      commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cama, isFromLab);
+    });
+    return;
+  }
+  commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cama, isFromLab);
+}
+
+function commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cama, isFromLab) {
   var today = new Date();
   var fecha = String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0')+'/'+today.getFullYear();
   var hora  = String(today.getHours()).padStart(2,'0')+':'+String(today.getMinutes()).padStart(2,'0');
