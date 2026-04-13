@@ -1,11 +1,12 @@
 {
   "name": "r-plus-clinical",
-  "version": "1.6.0",
+  "version": "1.8.0",
   "description": "R+ — Laboratoriazo + Notas de Evolución",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "build:mac": "electron-builder --mac",
+    "build:mac:unsigned": "node scripts/fetch-python-mac.js && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac",
     "prebuild:mac": "node scripts/fetch-python-mac.js",
     "prebuild:win": "node scripts/fetch-python.js",
     "build:win": "electron-builder --win",
@@ -26,9 +27,9 @@
     "appId": "com.hospitaluniversitario.rplusclinical",
     "productName": "R+",
     "artifactName": "${productName}-${version}-${arch}.${ext}",
-    "icon": "build/AppIcon.icns",
+    "icon": "AppIcon.icns",
     "mac": {
-      "icon": "build/AppIcon.icns",
+      "icon": "AppIcon.icns",
       "category": "public.app-category.medical",
       "extraResources": [
         {
@@ -58,7 +59,8 @@
       ]
     },
     "win": {
-      "icon": "build/icon.ico",
+      "icon": "icon.ico",
+      "artifactName": "${name}-setup-${version}.exe",
       "target": [
         {
           "target": "nsis",

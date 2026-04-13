@@ -10,6 +10,8 @@ Herramienta clínica de escritorio para generación de **notas de evolución**, 
 - **Nota de Evolución** — Formulario estructurado que genera un archivo `.docx` listo para imprimir, con membrete y formato clínico.
 - **Indicaciones médicas** — Generación de hoja de indicaciones en `.docx` con secciones configurables.
 - **Auto-actualización** — La app detecta nuevas versiones automáticamente y se actualiza con un clic.
+- **Búsqueda de pacientes** — Campo de búsqueda en la barra lateral (nombre, registro, cuarto, etc.).
+- **Atajos** — **Cmd+1** (Mac) o **Ctrl+1** (Windows) → Laboratorio; **Cmd+2** / **Ctrl+2** → Expediente.
 
 ---
 
@@ -36,11 +38,12 @@ Descarga `R+ Setup x.x.x.exe` desde [Releases](https://github.com/mausalas99/r-m
 
 ## Requisitos
 
-- **Python 3** instalado en el sistema (para generación de documentos `.docx`)
-  - Mac: viene preinstalado o instala con `brew install python3`
-  - Windows: descarga desde [python.org](https://www.python.org/downloads/) — marcar "Add to PATH"
+- **Instalación desde el instalador oficial** (`.dmg` / `.exe` en [Releases](https://github.com/mausalas99/r-mas/releases/latest)): no necesitas instalar Python; la app incluye un runtime empaquetado para generar los `.docx`.
+- **Desarrollo desde el código fuente** (`npm start` / compilar tú mismo): hace falta **Python 3** en el PATH para la generación de documentos (o el runtime en `python-runtime/` tras ejecutar los scripts de build).
+  - Mac: `brew install python3` o el Python del sistema.
+  - Windows: [python.org](https://www.python.org/downloads/) — marcar "Add to PATH".
 
-Los documentos generados se guardan automáticamente en tu carpeta **Descargas**.
+Los documentos generados se guardan en tu carpeta **Descargas** por defecto. Puedes cambiar la carpeta de salida desde **Mi Perfil → Carpeta de documentos → Cambiar**. Al agregar un paciente, la app te avisará si ya existe uno con el mismo nombre o registro. Puedes hacer una **copia de seguridad** de tus datos desde la app: **Mi Perfil → Exportar copia de seguridad** (archivo JSON).
 
 ---
 
