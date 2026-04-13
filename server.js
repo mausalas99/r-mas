@@ -67,7 +67,7 @@ function runPython(script, payload) {
 appExpress.post('/generate', async (req, res) => {
   const { patient, note, outputDir } = req.body;
   if (!patient || !note) return res.status(400).json({ error: 'Missing patient or note' });
-  const dest = outputDir || DOWNLOADS;
+  const dest = (outputDir || '').trim() || DOWNLOADS;
   if (!fs.existsSync(dest)) return res.status(400).json({ error: 'La carpeta seleccionada ya no existe. Cambia la ruta en Mi Perfil.' });
   try { fs.accessSync(dest, fs.constants.W_OK); } catch (_) {
     return res.status(400).json({ error: 'No se puede escribir en la carpeta seleccionada.' });
@@ -85,7 +85,7 @@ appExpress.post('/generate', async (req, res) => {
 appExpress.post('/generate-indicaciones', async (req, res) => {
   const { patient, indicaciones, outputDir } = req.body;
   if (!patient || !indicaciones) return res.status(400).json({ error: 'Missing patient or indicaciones' });
-  const dest = outputDir || DOWNLOADS;
+  const dest = (outputDir || '').trim() || DOWNLOADS;
   if (!fs.existsSync(dest)) return res.status(400).json({ error: 'La carpeta seleccionada ya no existe. Cambia la ruta en Mi Perfil.' });
   try { fs.accessSync(dest, fs.constants.W_OK); } catch (_) {
     return res.status(400).json({ error: 'No se puede escribir en la carpeta seleccionada.' });

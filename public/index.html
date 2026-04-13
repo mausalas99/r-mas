@@ -1689,7 +1689,7 @@ function loadSettings() {
   var dirEl = document.getElementById('profile-output-dir');
   if (dirEl) {
     if (settings.outputDir) {
-      var parts = settings.outputDir.split('/');
+      var parts = settings.outputDir.replace(/\\/g, '/').split('/');
       dirEl.textContent = parts[parts.length - 1] || settings.outputDir;
       dirEl.title = settings.outputDir;
     } else {
@@ -2568,10 +2568,10 @@ function findDuplicatePatient(nombre, registro) {
 
 function showDuplicateWarning(existing, onConfirm) {
   var fecha = notes[existing.id] ? notes[existing.id].fecha : '';
-  var body = '<strong>' + existing.nombre + '</strong>';
-  body += '<br>Cto. ' + (existing.cuarto || '—') + ' Cama ' + (existing.cama || '—');
-  if (existing.registro) body += '<br>Registro: ' + existing.registro;
-  if (fecha) body += '<br>Ingreso: ' + fecha;
+  var body = '<strong>' + esc(existing.nombre) + '</strong>';
+  body += '<br>Cto. ' + esc(existing.cuarto || '—') + ' Cama ' + esc(existing.cama || '—');
+  if (existing.registro) body += '<br>Registro: ' + esc(existing.registro);
+  if (fecha) body += '<br>Ingreso: ' + esc(fecha);
   var backdrop = document.createElement('div');
   backdrop.className = 'lab-conflict-backdrop';
   backdrop.id = 'dup-confirm-backdrop';
