@@ -2,12 +2,25 @@
 
 // DOM element cache
 const DOM = {
+  // Main containers
   patientList: null,
   mainContent: null,
   tabContent: null,
   noteForm: null,
   indicaForm: null,
   tendContainer: null,
+
+  // Tab buttons
+  tabButtons: null,
+  innerTabButtons: null,
+
+  // Form inputs
+  noteInput: null,
+  indicaInput: null,
+
+  // Detail modals
+  tendDetailBackdrop: null,
+  tendDetailCanvas: null,
 
   init() {
     this.patientList = document.querySelector('.patient-list');
@@ -16,6 +29,17 @@ const DOM = {
     this.noteForm = document.getElementById('note-form');
     this.indicaForm = document.getElementById('indica-form');
     this.tendContainer = document.getElementById('tend-container');
+    this.tabButtons = document.querySelectorAll('.tab-button');
+    this.innerTabButtons = document.querySelectorAll('.inner-tab-button');
+    this.noteInput = document.getElementById('note-input');
+    this.indicaInput = document.getElementById('indica-input');
+    this.tendDetailBackdrop = document.getElementById('tend-detail-backdrop');
+    this.tendDetailCanvas = document.getElementById('tend-detail-canvas');
+  },
+
+  // Refresh cache after DOM updates
+  refresh() {
+    this.init();
   }
 };
 
@@ -32,11 +56,8 @@ export function debounce(fn, delay) {
 DOM.init();
 
 export function switchTab(tabName) {
-  const tabs = document.querySelectorAll('.tab-button');
-  const contents = document.querySelectorAll('.tab-content');
-
-  tabs.forEach(t => t.classList.remove('active'));
-  contents.forEach(c => c.classList.remove('active'));
+  DOM.tabButtons.forEach(t => t.classList.remove('active'));
+  DOM.tabContent.forEach(c => c.classList.remove('active'));
 
   document.querySelector(`[data-tab="${tabName}"]`)?.classList.add('active');
   document.getElementById(`tab-${tabName}`)?.classList.add('active');
