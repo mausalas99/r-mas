@@ -2678,7 +2678,7 @@ function generateWord() {
   var patient = patients.find(function(p){ return p.id===activeId; }); if (!patient) return;
   var note = notes[activeId]; if (!note) return;
   var btn = document.getElementById('btn-gen'); btn.classList.add('loading'); btn.disabled=true;
-  fetch('/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({patient:patient,note:note})})
+  fetch('/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({patient:patient,note:note,outputDir:settings.outputDir||''})})
   .then(function(r){ return r.json(); })
   .then(function(d){
     if (d.ok) {
@@ -3203,7 +3203,7 @@ function generateIndicaciones() {
   var patient = patients.find(function(p){ return p.id===activeId; }); if (!patient) return;
   var ind = indicaciones[activeId]; if (!ind) return;
   var btn = document.getElementById('btn-gen-ind'); btn.classList.add('loading'); btn.disabled=true;
-  fetch('/generate-indicaciones',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({patient:patient,indicaciones:ind})})
+  fetch('/generate-indicaciones',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({patient:patient,indicaciones:ind,outputDir:settings.outputDir||''})})
   .then(function(r){ return r.json(); })
   .then(function(d){
     if (d.ok) {
