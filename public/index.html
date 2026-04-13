@@ -1498,6 +1498,16 @@ function openLabPatientPicker() {
   document.body.appendChild(overlay);
 }
 
+function copiarLabsAlPortapapeles() {
+  if (!activeLab || !activeLab.resLabs || !activeLab.resLabs.length) {
+    showToast('No hay resultados procesados', 'error'); return;
+  }
+  var text = buildLabLines().join('\n');
+  navigator.clipboard.writeText(text)
+    .then(function() { showToast('Labs copiados al portapapeles ✓', 'success'); })
+    .catch(function() { showToast('Error al copiar al portapapeles', 'error'); });
+}
+
 function enviarLabsANota() {
   if (!activeLab || !activeLab.resLabs || !activeLab.resLabs.length) {
     showToast('No hay resultados procesados', 'error'); return;
