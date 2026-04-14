@@ -65,12 +65,17 @@ function runPython(script, payload) {
 }
 
 appExpress.post('/generate', async (req, res) => {
-  const { patient, note } = req.body;
+  const { patient, note, outputDir } = req.body;
   if (!patient || !note) return res.status(400).json({ error: 'Missing patient or note' });
+  const dest = (outputDir || '').trim() || DOWNLOADS;
+  if (!fs.existsSync(dest)) return res.status(400).json({ error: 'La carpeta seleccionada ya no existe. Cambia la ruta en Mi Perfil.' });
+  try { fs.accessSync(dest, fs.constants.W_OK); } catch (_) {
+    return res.status(400).json({ error: 'No se puede escribir en la carpeta seleccionada.' });
+  }
   try {
     const buf = await runPython('generate_note.py', JSON.stringify({ patient, note }));
     const fileName = `Nota_Evolucion_${safeName(patient.nombre)}_${safeName(note.fecha||'')}.docx`;
-    fs.writeFileSync(path.join(DOWNLOADS, fileName), buf);
+    fs.writeFileSync(path.join(dest, fileName), buf);
     res.json({ ok: true, fileName });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -78,12 +83,17 @@ appExpress.post('/generate', async (req, res) => {
 });
 
 appExpress.post('/generate-indicaciones', async (req, res) => {
-  const { patient, indicaciones } = req.body;
+  const { patient, indicaciones, outputDir } = req.body;
   if (!patient || !indicaciones) return res.status(400).json({ error: 'Missing patient or indicaciones' });
+  const dest = (outputDir || '').trim() || DOWNLOADS;
+  if (!fs.existsSync(dest)) return res.status(400).json({ error: 'La carpeta seleccionada ya no existe. Cambia la ruta en Mi Perfil.' });
+  try { fs.accessSync(dest, fs.constants.W_OK); } catch (_) {
+    return res.status(400).json({ error: 'No se puede escribir en la carpeta seleccionada.' });
+  }
   try {
     const buf = await runPython('generate_indicaciones.py', JSON.stringify({ patient, indicaciones }));
     const fileName = `Indicaciones_${safeName(patient.nombre)}_${safeName(indicaciones.fecha||'')}.docx`;
-    fs.writeFileSync(path.join(DOWNLOADS, fileName), buf);
+    fs.writeFileSync(path.join(dest, fileName), buf);
     res.json({ ok: true, fileName });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -95,13 +105,15 @@ const server = appExpress.listen(PORT, () => {
   console.log(`R+ → http://localhost:${PORT}`);
 });
 
-server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(`Port ${PORT} already in use. Close other instances of R+ and try again.`);
-    process.exit(1);
-  }
-});
-
-module.exports = new Promise((resolve) => {
+module.exports = new Promise((resolve, reject) => {
   server.once('listening', () => resolve(server));
+  server.once('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      reject(new Error(
+        `El puerto ${PORT} ya está en uso. Cierra otra instancia de R+ o el proceso que use ese puerto y vuelve a abrir la aplicación.`
+      ));
+    } else {
+      reject(err);
+    }
+  });
 });
