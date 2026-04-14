@@ -1,17 +1,17 @@
-version: 1.8.3
+version: 1.8.3.1
 files:
-  - url: R+-1.8.3-arm64.zip
+  - url: R+-1.8.3.1-arm64.zip
     sha512: S3D+R0wiaCX+1/AmDwgoEA1IhbCAAeRqjfHk3WmUcoCzVdLZ+pzTJYIYihdXn2kClvrn6X1YqVIlaA8oeptCRg==
     size: 141216276
-  - url: R+-1.8.3-x64.zip
+  - url: R+-1.8.3.1-x64.zip
     sha512: seLc4lxnL6hGA+cT1RNg2dEEmdCyoR9iPaRFiaNMYazezGskCMNNQWTBr2uq3J7zD5djXsoOWiRsqXaW8Ud6SQ==
     size: 149242375
-  - url: R+-1.8.3-arm64.dmg
+  - url: R+-1.8.3.1-arm64.dmg
     sha512: Ht3R2kYC5iUGdd79P4qKidGNc056SB0ymAcqgQOc9ssms7ApJMAY2ubz4y3EnzUVWQT4L7dm1BypJiyk0fBlVA==
     size: 145894052
-  - url: R+-1.8.3-x64.dmg
+  - url: R+-1.8.3.1-x64.dmg
     sha512: bS3Y8/0raDjF6/KSZzBztsQFthWN/wc1wJzMrdk8Mn7BaiA+XcI6DQ/m0LZbKUXmBgvTV137TT6zj332kLQ8Iw==
     size: 153991012
-path: R+-1.8.3-arm64.zip
+path: R+-1.8.3.1-arm64.zip
 sha512: S3D+R0wiaCX+1/AmDwgoEA1IhbCAAeRqjfHk3WmUcoCzVdLZ+pzTJYIYihdXn2kClvrn6X1YqVIlaA8oeptCRg==
 releaseDate: '2026-04-14T03:04:55.000Z'
