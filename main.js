@@ -94,8 +94,13 @@ autoUpdater.on('update-not-available', () => {
 
 autoUpdater.on('error', (err) => {
   console.error('AutoUpdater error:', err.message);
+  let msg = err.message;
+  if (process.platform === 'darwin' && /Code signature|did not pass validation/i.test(msg)) {
+    msg +=
+      ' En macOS, la actualización automática exige la misma firma e identificador de app que la instalación actual; si cambió el build, descarga el DMG desde GitHub e instálalo manualmente.';
+  }
   if (mainWindow && !mainWindow.isDestroyed())
-    mainWindow.webContents.send('update-error', err.message);
+    mainWindow.webContents.send('update-error', msg);
 });
 
 ipcMain.on('install-update', () => autoUpdater.quitAndInstall());
