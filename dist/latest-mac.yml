@@ -1,17 +1,17 @@
 version: 1.8.2
 files:
   - url: R+-1.8.2-arm64.zip
-    sha512: VDcBG3jObN2PzB2gJnll4COhc/pPiFn0XvHaDnMZUt1o1Vm862ncHcCudgVClCAEVlAn85YJPUjfndW9mlyK8g==
-    size: 141106644
+    sha512: 0HmcVdYjDYbfiurnzyu8Pi9OEVfSFT4dM/QGFsOzLBu31QClMVzw+BODpvid+bDY1s6QlCW+xNwOlnaNCSq6yQ==
+    size: 141215054
   - url: R+-1.8.2-x64.zip
-    sha512: RKdyC0JP5qLwM6QLMd+TJEsmpfiJqNvti737J4u/c5cmYSdIuIvCEo9r4H8yIudbvkfdih8w3dERE9AXNV6XGQ==
-    size: 147076117
-  - url: R+-1.8.2-x64.dmg
-    sha512: qO6uLT8Hd+s/WskexBYL1VFa1tIAp6V3BQBbKHAUBaqFRtP55SUvAqK9IjbJQQr2uu7HFvjA2tfvdrKP6Dadjg==
-    size: 150915223
+    sha512: DdqYYB4LwWYjKBMieU4oqOygv09iWAnWy1Qdua7IQsNyRv3T3w+24jy7ysT/+EodKObNnctdv9Dy2Dhvpsxrmg==
+    size: 149241212
   - url: R+-1.8.2-arm64.dmg
-    sha512: OUT3o3IpqpwsvaQhO1NGJmHy2Y4wlkNkaxPkNGq9vsM4bPD8XQoz0NytMqUC+u5znfoMAszT+USZRCg4J1ozBQ==
-    size: 144915803
+    sha512: Ho80FXTTZ+V75PWtD01nVlytTcbWY2rf6hdGjrCDWXueFekXtruBWuAOl13kCHGVZwuVc+5b0wU/i4rWRAqYEQ==
+    size: 145906369
+  - url: R+-1.8.2-x64.dmg
+    sha512: TdACW2ZvzgFNLtkhZ5bZeC9jzlNaXWgrvw6iP0E0GpQ6gVKHu0zMrh6CCzzWO9nq4gS+wbxMOgGNCMFjAIaqmQ==
+    size: 154002436
 path: R+-1.8.2-arm64.zip
-sha512: VDcBG3jObN2PzB2gJnll4COhc/pPiFn0XvHaDnMZUt1o1Vm862ncHcCudgVClCAEVlAn85YJPUjfndW9mlyK8g==
-releaseDate: '2026-04-14T01:13:59.722Z'
+sha512: 0HmcVdYjDYbfiurnzyu8Pi9OEVfSFT4dM/QGFsOzLBu31QClMVzw+BODpvid+bDY1s6QlCW+xNwOlnaNCSq6yQ==
+releaseDate: '2026-04-14T02:11:41.000Z'
