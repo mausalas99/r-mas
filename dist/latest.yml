@@ -1,8 +1,8 @@
-version: 1.8.1
+version: 1.8.2
 files:
-  - url: R+-1.8.1-x64.exe
-    sha512: 94wpsstPkEhsFIFOx4+znLP886/dZRVrVJzLpMH96FmhBdAA4v1EKnAMIv0s7WVhxKVnk4LjF4wSSdF/z8defw==
-    size: 109921602
-path: R+-1.8.1-x64.exe
-sha512: 94wpsstPkEhsFIFOx4+znLP886/dZRVrVJzLpMH96FmhBdAA4v1EKnAMIv0s7WVhxKVnk4LjF4wSSdF/z8defw==
-releaseDate: '2026-04-14T00:58:31.190Z'
+  - url: R+-1.8.2-x64.exe
+    sha512: mN+I1f68cXurPSwtXT207eT9Gjd2+uzYOFaqVchEUxVIoyn6nWTYa5Oiv6U/4OZSxTF9hGHkmglLr0lt7o92Dw==
+    size: 109921596
+path: R+-1.8.2-x64.exe
+sha512: mN+I1f68cXurPSwtXT207eT9Gjd2+uzYOFaqVchEUxVIoyn6nWTYa5Oiv6U/4OZSxTF9hGHkmglLr0lt7o92Dw==
+releaseDate: '2026-04-14T01:12:56.444Z'

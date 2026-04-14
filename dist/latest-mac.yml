@@ -1,17 +1,17 @@
-version: 1.8.1
+version: 1.8.2
 files:
-  - url: R+-1.8.1-arm64.zip
-    sha512: mVWvB4YlIzbHCkaxX6GFYfQ6ceEPSCFIcMHhhzZqE8Q6BZHRSIQppjO+m8JhqQLIarUuS32nG+TyDHfIMmBeNA==
-    size: 141106521
-  - url: R+-1.8.1-x64.zip
-    sha512: R5xztXQe4f5sfR9bdm/QXbCH9NcxbXpWaKADdpXlNoKAoi6NfHfsL3L6jqv9rFtz2E5Rn8jGqHtrb8tbMjqEBw==
-    size: 147075991
-  - url: R+-1.8.1-arm64.dmg
-    sha512: UEDx3uXJYltYYaxva2SdAAvFmxUsuVIj8KO33udFgACFGZW7LLHeM0xtvLnhy+ZObAUiq17JDJcwJ9dWU6IOHw==
-    size: 144915459
-  - url: R+-1.8.1-x64.dmg
-    sha512: HtFNhGi2GT+Iv6LASrQOF/Iiw6U/uZ4MLGrSf62G39Qu1jqS6lCp6f2ZfiDtrN+5s+OBSI0JooIYtrEiSY2d9g==
-    size: 150915241
-path: R+-1.8.1-arm64.zip
-sha512: mVWvB4YlIzbHCkaxX6GFYfQ6ceEPSCFIcMHhhzZqE8Q6BZHRSIQppjO+m8JhqQLIarUuS32nG+TyDHfIMmBeNA==
-releaseDate: '2026-04-14T00:59:52.433Z'
+  - url: R+-1.8.2-arm64.zip
+    sha512: VDcBG3jObN2PzB2gJnll4COhc/pPiFn0XvHaDnMZUt1o1Vm862ncHcCudgVClCAEVlAn85YJPUjfndW9mlyK8g==
+    size: 141106644
+  - url: R+-1.8.2-x64.zip
+    sha512: RKdyC0JP5qLwM6QLMd+TJEsmpfiJqNvti737J4u/c5cmYSdIuIvCEo9r4H8yIudbvkfdih8w3dERE9AXNV6XGQ==
+    size: 147076117
+  - url: R+-1.8.2-x64.dmg
+    sha512: qO6uLT8Hd+s/WskexBYL1VFa1tIAp6V3BQBbKHAUBaqFRtP55SUvAqK9IjbJQQr2uu7HFvjA2tfvdrKP6Dadjg==
+    size: 150915223
+  - url: R+-1.8.2-arm64.dmg
+    sha512: OUT3o3IpqpwsvaQhO1NGJmHy2Y4wlkNkaxPkNGq9vsM4bPD8XQoz0NytMqUC+u5znfoMAszT+USZRCg4J1ozBQ==
+    size: 144915803
+path: R+-1.8.2-arm64.zip
+sha512: VDcBG3jObN2PzB2gJnll4COhc/pPiFn0XvHaDnMZUt1o1Vm862ncHcCudgVClCAEVlAn85YJPUjfndW9mlyK8g==
+releaseDate: '2026-04-14T01:13:59.722Z'
