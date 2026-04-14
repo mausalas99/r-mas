@@ -60,7 +60,7 @@
     },
     "win": {
       "icon": "icon.ico",
-      "artifactName": "${name}-setup-${version}.exe",
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
       "target": [
         {
           "target": "nsis",
