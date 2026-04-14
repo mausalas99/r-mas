@@ -84,6 +84,7 @@
   }
   header h1 { font-size: 16px; font-weight: 700; letter-spacing: 0.2px; }
   header span { font-size: 12px; opacity: 0.65; }
+  .main-col { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-width: 0; }
   .app-tabs {
     background: var(--surface); border-bottom: 1px solid var(--border);
     display: flex; padding: 0 24px; flex-shrink: 0; gap: 4px;
@@ -297,6 +298,25 @@
     background: var(--action); color: white; border-color: var(--action-hover);
   }
   html.dark .settings-theme-btn.active { background: var(--action); color: #fff; }
+  /* ── Header settings dropdown ──────────────────────────── */
+  .header-right { display: flex; align-items: center; gap: 8px; position: relative; }
+  .btn-header-icon {
+    background: rgba(255,255,255,0.15); border: none; border-radius: 50%; width: 32px; height: 32px;
+    cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s; flex-shrink: 0; color: white;
+  }
+  .btn-header-icon:hover { background: rgba(255,255,255,0.25); }
+  .settings-dropdown {
+    display: none; position: absolute; top: calc(100% + 8px); right: 0; z-index: 100;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: var(--shadow-lg, 0 10px 25px rgba(0,0,0,0.15)); width: 280px;
+    padding: 14px; flex-direction: column; gap: 8px;
+  }
+  .settings-dropdown.open { display: flex; }
+  .settings-dropdown-backdrop {
+    display: none; position: fixed; inset: 0; z-index: 99;
+  }
+  .settings-dropdown-backdrop.open { display: block; }
   .profile-field-label {
     color: var(--text-muted); font-size: 10px; font-weight: 700;
     text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px;
@@ -582,19 +602,39 @@
 <header>
   <h1>R+</h1>
   <span id="today-date"></span>
-  <button id="theme-toggle" onclick="toggleTheme()" style="background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:background 0.15s;flex-shrink:0;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'" title="Cambiar tema">☀️</button>
+  <div class="header-right">
+    <button class="btn-header-icon" onclick="toggleSettingsDropdown()" title="Ajustes">&#9881;</button>
+    <button id="theme-toggle" class="btn-header-icon" onclick="toggleTheme()" title="Cambiar tema">☀️</button>
+    <div class="settings-dropdown-backdrop" id="settings-dropdown-backdrop" onclick="closeSettingsDropdown()"></div>
+    <div class="settings-dropdown" id="settings-dropdown">
+      <div class="profile-defaults-title">Apariencia</div>
+      <div class="settings-theme-row">
+        <button type="button" class="settings-theme-btn" id="settings-theme-light" onclick="setThemeMode('light')">Claro</button>
+        <button type="button" class="settings-theme-btn" id="settings-theme-dark" onclick="setThemeMode('dark')">Oscuro</button>
+      </div>
+      <hr class="profile-divider">
+      <div class="profile-defaults-title">Carpeta de documentos</div>
+      <p style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;">Los .docx generados se guardan aquí (si no eliges carpeta, se usa Descargas).</p>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span id="settings-output-dir" style="font-size:13px;color:var(--text-muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="">Descargas (predeterminado)</span>
+        <button type="button" class="btn-edit-templates" style="margin:0;white-space:nowrap;" onclick="chooseOutputDir()">Cambiar</button>
+      </div>
+      <hr class="profile-divider">
+      <div class="profile-defaults-title">Respaldo local</div>
+      <p style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;">Exporta o restaura pacientes, notas e indicaciones (JSON).</p>
+      <button type="button" class="btn-edit-templates" onclick="exportDataBackup()">Exportar copia de seguridad…</button>
+      <button type="button" class="btn-edit-templates" style="margin-top:2px;" onclick="triggerImportBackup()">Importar copia de seguridad…</button>
+      <input type="file" id="backup-file-input" accept="application/json,.json" style="display:none" onchange="onBackupFileChosen(event)">
+      <hr class="profile-divider">
+      <div class="profile-defaults-title">Aplicación</div>
+      <div class="profile-field-label" style="margin-top:2px;">Versión</div>
+      <div id="settings-app-version" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">—</div>
+      <button type="button" class="btn-edit-templates" id="settings-check-updates-btn" onclick="checkForAppUpdates()">Buscar actualizaciones…</button>
+      <p id="settings-updates-hint" style="font-size:10px;color:var(--text-muted);line-height:1.35;margin:4px 0 0 0;display:none;">También en el menú de la aplicación (Mac: R+, Windows: Aplicación).</p>
+    </div>
+  </div>
 </header>
 
-<div class="app-tabs">
-  <button class="app-tab active" id="apptab-lab" onclick="switchAppTab('lab')">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
-    Laboratorio
-  </button>
-  <button class="app-tab" id="apptab-nota" onclick="switchAppTab('nota')">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
-    Expediente
-  </button>
-</div>
 
 <div id="onboarding-intro-backdrop" aria-hidden="true">
   <div class="onboarding-intro-modal" role="dialog" aria-modal="true" aria-labelledby="intro-modal-title">
@@ -670,44 +710,20 @@
         <button class="btn-edit-templates" style="margin-top:2px;" onclick="resetAndStartOnboarding()">🎓 Ver tutorial</button>
       </div>
     </div>
-        <span id="settings-toggle-arrow">▾</span>
-      <button type="button" class="settings-toggle" onclick="toggleSettingsSection()" id="settings-toggle-btn">
-        <div class="settings-toggle-left">
-          <span aria-hidden="true">&#9881;</span>
-          <span>Ajustes</span>
-        </div>
-        <span id="settings-toggle-arrow">▾</span>
-      </button>
-      <div class="settings-body" id="settings-body" style="display:none;">
-        <div class="profile-defaults-title">Apariencia</div>
-        <div class="settings-theme-row">
-          <button type="button" class="settings-theme-btn" id="settings-theme-light" onclick="setThemeMode('light')">Claro</button>
-          <button type="button" class="settings-theme-btn" id="settings-theme-dark" onclick="setThemeMode('dark')">Oscuro</button>
-        </div>
-        <hr class="profile-divider">
-        <div class="profile-defaults-title">Carpeta de documentos</div>
-        <p style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;">Los .docx generados se guardan aquí (si no eliges carpeta, se usa Descargas).</p>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span id="settings-output-dir" style="font-size:13px;color:var(--text-muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="">Descargas (predeterminado)</span>
-          <button type="button" class="btn-edit-templates" style="margin:0;white-space:nowrap;" onclick="chooseOutputDir()">Cambiar</button>
-        </div>
-        <hr class="profile-divider">
-        <div class="profile-defaults-title">Respaldo local</div>
-        <p style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;">Exporta o restaura pacientes, notas e indicaciones (JSON).</p>
-        <button type="button" class="btn-edit-templates" onclick="exportDataBackup()">Exportar copia de seguridad…</button>
-        <button type="button" class="btn-edit-templates" style="margin-top:2px;" onclick="triggerImportBackup()">Importar copia de seguridad…</button>
-        <input type="file" id="backup-file-input" accept="application/json,.json" style="display:none" onchange="onBackupFileChosen(event)">
-        <hr class="profile-divider">
-        <div class="profile-defaults-title">Aplicación</div>
-        <div class="profile-field-label" style="margin-top:2px;">Versión</div>
-        <div id="settings-app-version" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">—</div>
-        <button type="button" class="btn-edit-templates" id="settings-check-updates-btn" onclick="checkForAppUpdates()">Buscar actualizaciones…</button>
-        <p id="settings-updates-hint" style="font-size:10px;color:var(--text-muted);line-height:1.35;margin:4px 0 0 0;display:none;">También en el menú de la aplicación (Mac: R+, Windows: Aplicación).</p>
-      </div>
-    </div>
   </aside>
 
-  <main id="main-area">
+  <div class="main-col">
+    <div class="app-tabs">
+      <button class="app-tab active" id="apptab-lab" onclick="switchAppTab('lab')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+        Laboratorio
+      </button>
+      <button class="app-tab" id="apptab-nota" onclick="switchAppTab('nota')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+        Expediente
+      </button>
+    </div>
+    <main id="main-area">
 
     <div id="appcontent-lab" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
       <div style="flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:20px;min-height:0;">
@@ -799,6 +815,7 @@
             Indicaciones
           </button>
           <button class="inner-tab" id="itab-tend" onclick="switchInnerTab('tend')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             Tendencias
           </button>
         </div>
@@ -809,6 +826,7 @@
     </div>
 
   </main>
+  </div>
 </div>
 
 <div class="modal-backdrop" id="modal">

@@ -1,8 +1,8 @@
 version: 1.8.3
 files:
   - url: R+-1.8.3-x64.exe
-    sha512: xNM77tomxHmzW7dU3K2Qcem85gNh41nFATZz568ox4xc5kgft1rWBxWFtXZdRFyiAzNjrihZ5VLoKWpWPZTN5Q==
-    size: 109922499
+    sha512: N338SCcizZm8AO6DeSHfUZ7WOzjS3AMQR5nDPl3QFfin8+cVYHkLF7sfqRlvBusD8tfenXEr8O+dlpgYHgk1kw==
+    size: 109922596
 path: R+-1.8.3-x64.exe
-sha512: xNM77tomxHmzW7dU3K2Qcem85gNh41nFATZz568ox4xc5kgft1rWBxWFtXZdRFyiAzNjrihZ5VLoKWpWPZTN5Q==
-releaseDate: '2026-04-14T02:41:00.000Z'
+sha512: N338SCcizZm8AO6DeSHfUZ7WOzjS3AMQR5nDPl3QFfin8+cVYHkLF7sfqRlvBusD8tfenXEr8O+dlpgYHgk1kw==
+releaseDate: '2026-04-14T03:04:55.000Z'

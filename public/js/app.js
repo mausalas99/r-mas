@@ -436,12 +436,21 @@ function toggleProfileSection() {
 }
 
 function toggleSettingsSection() {
-  var body = document.getElementById('settings-body');
-  var arrow = document.getElementById('settings-toggle-arrow');
-  if (!body || !arrow) return;
-  var open = body.style.display !== 'none';
-  body.style.display = open ? 'none' : 'flex';
-  arrow.textContent = open ? '▾' : '▴';
+  toggleSettingsDropdown();
+}
+function toggleSettingsDropdown() {
+  var dd = document.getElementById('settings-dropdown');
+  var bg = document.getElementById('settings-dropdown-backdrop');
+  if (!dd) return;
+  var open = dd.classList.contains('open');
+  dd.classList.toggle('open', !open);
+  if (bg) bg.classList.toggle('open', !open);
+}
+function closeSettingsDropdown() {
+  var dd = document.getElementById('settings-dropdown');
+  var bg = document.getElementById('settings-dropdown-backdrop');
+  if (dd) dd.classList.remove('open');
+  if (bg) bg.classList.remove('open');
 }
 
 function checkForAppUpdates() {
@@ -577,9 +586,9 @@ function ensureProfileExpandedForTour() {
 }
 
 function ensureSettingsExpandedForTour() {
-  var body = document.getElementById('settings-body');
-  if (!body) return;
-  if (body.style.display === 'none') toggleSettingsSection();
+  var dd = document.getElementById('settings-dropdown');
+  if (!dd) return;
+  if (!dd.classList.contains('open')) toggleSettingsDropdown();
 }
 
 function renderTourStep() {
@@ -2058,6 +2067,8 @@ Object.assign(window, {
   onPatientSearchInput,
   toggleProfileSection,
   toggleSettingsSection,
+  toggleSettingsDropdown,
+  closeSettingsDropdown,
   checkForAppUpdates,
   chooseOutputDir,
   openTemplatesModal,
