@@ -81,9 +81,9 @@ export function marcarSegunRango(valorStr, min, max) {
   const minNum = parseFloat(min);
   const maxNum = parseFloat(max);
   if (isNaN(val) || isNaN(minNum) || isNaN(maxNum)) return valorStr;
-  if (val < minNum) return `<span class="lab-low">${valorStr}</span>`;
-  if (val > maxNum) return `<span class="lab-high">${valorStr}</span>`;
-  return valorStr;
+  if (val < minNum) return `<span class="lab-value-altered">${valorStr}</span>`;
+  if (val > maxNum) return `<span class="lab-value-altered">${valorStr}</span>`;
+  return `<span class="lab-value-normal">${valorStr}</span>`;
 }
 
 function fmt(val) {
@@ -108,7 +108,7 @@ export function parseBH_(tNorm) {
 
   if ([Hb, Hto, Leuc, Neut, Linf, Plaq].every(v => v === '---')) return '';
 
-  return `<div class="lab-section"><div class="lab-title">Biometría Hemática</div><div class="lab-grid"><div><span class="lab-label">Hb:</span> ${Hb}</div><div><span class="lab-label">Hto:</span> ${Hto}</div><div><span class="lab-label">Leucocitos:</span> ${Leuc}</div><div><span class="lab-label">Neutrófilos:</span> ${Neut}</div><div><span class="lab-label">Linfocitos:</span> ${Linf}</div><div><span class="lab-label">Plaquetas:</span> ${Plaq}</div></div></div>`;
+  return `<div class="lab-section"><div class="lab-title">Biometría Hemática</div><div class="lab-grid"><div class="lab-item"><div class="lab-label">Hb</div><div class="lab-value">${Hb}</div></div><div class="lab-item"><div class="lab-label">Hto</div><div class="lab-value">${Hto}</div></div><div class="lab-item"><div class="lab-label">Leucocitos</div><div class="lab-value">${Leuc}</div></div><div class="lab-item"><div class="lab-label">Neutrófilos</div><div class="lab-value">${Neut}</div></div><div class="lab-item"><div class="lab-label">Linfocitos</div><div class="lab-value">${Linf}</div></div><div class="lab-item"><div class="lab-label">Plaquetas</div><div class="lab-value">${Plaq}</div></div></div></div>`;
 }
 
 /**
@@ -127,7 +127,7 @@ export function parseQS_(texto) {
 
   if ([Glu, Cr, BUN, PCR, AU, TGL, COL].every(v => v === '---')) return '';
 
-  return `<div class="lab-section"><div class="lab-title">Química Sanguínea</div><div class="lab-grid"><div><span class="lab-label">Glucosa:</span> ${Glu}</div><div><span class="lab-label">Creatinina:</span> ${Cr}</div><div><span class="lab-label">BUN:</span> ${BUN}</div><div><span class="lab-label">PCR:</span> ${PCR}</div><div><span class="lab-label">Ác. Úrico:</span> ${AU}</div><div><span class="lab-label">Triglicéridos:</span> ${TGL}</div><div><span class="lab-label">Colesterol:</span> ${COL}</div></div></div>`;
+  return `<div class="lab-section"><div class="lab-title">Química Sanguínea</div><div class="lab-grid"><div class="lab-item"><div class="lab-label">Glucosa</div><div class="lab-value">${Glu}</div></div><div class="lab-item"><div class="lab-label">Creatinina</div><div class="lab-value">${Cr}</div></div><div class="lab-item"><div class="lab-label">BUN</div><div class="lab-value">${BUN}</div></div><div class="lab-item"><div class="lab-label">PCR</div><div class="lab-value">${PCR}</div></div><div class="lab-item"><div class="lab-label">Ác. Úrico</div><div class="lab-value">${AU}</div></div><div class="lab-item"><div class="lab-label">Triglicéridos</div><div class="lab-value">${TGL}</div></div><div class="lab-item"><div class="lab-label">Colesterol</div><div class="lab-value">${COL}</div></div></div></div>`;
 }
 
 /**
@@ -145,7 +145,7 @@ export function parseESC_(texto) {
 
   if ([Na, K, Cl, Ca, Mg, P].every(v => v === '---')) return '';
 
-  return `<div class="lab-section"><div class="lab-title">Electrolitos Séricos</div><div class="lab-grid"><div><span class="lab-label">Na:</span> ${Na}</div><div><span class="lab-label">K:</span> ${K}</div><div><span class="lab-label">Cl:</span> ${Cl}</div><div><span class="lab-label">Ca:</span> ${Ca}</div><div><span class="lab-label">Mg:</span> ${Mg}</div><div><span class="lab-label">P:</span> ${P}</div></div></div>`;
+  return `<div class="lab-section"><div class="lab-title">Electrolitos Séricos</div><div class="lab-grid"><div class="lab-item"><div class="lab-label">Na</div><div class="lab-value">${Na}</div></div><div class="lab-item"><div class="lab-label">K</div><div class="lab-value">${K}</div></div><div class="lab-item"><div class="lab-label">Cl</div><div class="lab-value">${Cl}</div></div><div class="lab-item"><div class="lab-label">Ca</div><div class="lab-value">${Ca}</div></div><div class="lab-item"><div class="lab-label">Mg</div><div class="lab-value">${Mg}</div></div><div class="lab-item"><div class="lab-label">P</div><div class="lab-value">${P}</div></div></div></div>`;
 }
 
 /**
@@ -162,7 +162,7 @@ export function parsePFH_(tNorm) {
 
   if ([Alb, AST, ALT, FA, BT].every(v => v === '---')) return '';
 
-  return `<div class="lab-section"><div class="lab-title">Pruebas de Función Hepática</div><div class="lab-grid"><div><span class="lab-label">Albúmina:</span> ${Alb}</div><div><span class="lab-label">AST:</span> ${AST}</div><div><span class="lab-label">ALT:</span> ${ALT}</div><div><span class="lab-label">FA:</span> ${FA}</div><div><span class="lab-label">BT:</span> ${BT}</div></div></div>`;
+  return `<div class="lab-section"><div class="lab-title">Pruebas de Función Hepática</div><div class="lab-grid"><div class="lab-item"><div class="lab-label">Albúmina</div><div class="lab-value">${Alb}</div></div><div class="lab-item"><div class="lab-label">AST</div><div class="lab-value">${AST}</div></div><div class="lab-item"><div class="lab-label">ALT</div><div class="lab-value">${ALT}</div></div><div class="lab-item"><div class="lab-label">FA</div><div class="lab-value">${FA}</div></div><div class="lab-item"><div class="lab-label">BT</div><div class="lab-value">${BT}</div></div></div></div>`;
 }
 
 /**
@@ -178,7 +178,7 @@ export function parseGaso_(bloqueGaso) {
 
   if ([pH, pCO2, pO2, HCO3].every(v => v === '---')) return '';
 
-  return `<div class="lab-section"><div class="lab-title">Gasometría</div><div class="lab-grid"><div><span class="lab-label">pH:</span> ${pH}</div><div><span class="lab-label">pCO2:</span> ${pCO2}</div><div><span class="lab-label">pO2:</span> ${pO2}</div><div><span class="lab-label">HCO3:</span> ${HCO3}</div></div></div>`;
+  return `<div class="lab-section"><div class="lab-title">Gasometría</div><div class="lab-grid"><div class="lab-item"><div class="lab-label">pH</div><div class="lab-value">${pH}</div></div><div class="lab-item"><div class="lab-label">pCO2</div><div class="lab-value">${pCO2}</div></div><div class="lab-item"><div class="lab-label">pO2</div><div class="lab-value">${pO2}</div></div><div class="lab-item"><div class="lab-label">HCO3</div><div class="lab-value">${HCO3}</div></div></div></div>`;
 }
 
 /**
