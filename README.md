@@ -67,6 +67,41 @@ npm run build:win
 
 ---
 
+## Architecture
+
+R+ is organized into modular components for maintainability and performance:
+
+### Module Structure
+
+```
+public/
+├── index.html (core UI shell, ~800 lines)
+├── js/
+│   ├── storage.js (localStorage persistence)
+│   ├── labs.js (lab data parsing)
+│   ├── charts.js (Chart.js rendering)
+│   └── ui.js (DOM interactions with caching)
+└── vendor/
+    └── chart.umd.min.js (Chart.js library)
+```
+
+### Module Responsibilities
+
+- **storage.js**: Wraps localStorage with consistent interface for patients, notes, indicaciones, lab history
+- **labs.js**: Pure parsing functions for lab data extraction (no DOM dependencies)
+- **charts.js**: Chart.js lifecycle management with lazy-loading and memory cleanup
+- **ui.js**: DOM interactions with element caching and debounced handlers
+
+### Performance Optimizations
+
+- DOM query caching: Frequently accessed elements cached at module load
+- Parse caching: Lab text parsing results cached by hash
+- Request batching: Multiple /generate calls batched within 100ms window
+- Debounced inputs: Form input handlers debounced to 300ms
+- Lazy chart loading: Chart.js only loaded when Tendencias tab active
+
+---
+
 ## Actualizaciones
 
 La app busca actualizaciones automáticamente al iniciar. También puedes verificar manualmente desde el menú **R+ → Buscar actualizaciones…** (Mac) o **Aplicación → Buscar actualizaciones…** (Windows).
