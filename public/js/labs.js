@@ -81,9 +81,9 @@ export function marcarSegunRango(valorStr, min, max) {
   const minNum = parseFloat(min);
   const maxNum = parseFloat(max);
   if (isNaN(val) || isNaN(minNum) || isNaN(maxNum)) return valorStr;
-  if (val < minNum) return `<span class="lab-low">${valorStr}</span>`;
-  if (val > maxNum) return `<span class="lab-high">${valorStr}</span>`;
-  return valorStr;
+  if (val < minNum) return `<span class="lab-value-altered">${valorStr}</span>`;
+  if (val > maxNum) return `<span class="lab-value-altered">${valorStr}</span>`;
+  return `<span class="lab-value-normal">${valorStr}</span>`;
 }
 
 function fmt(val) {
@@ -99,16 +99,23 @@ function fmt(val) {
  * @returns {string} HTML string with formatted results or empty string if no data
  */
 export function parseBH_(tNorm) {
-  const Hb = extraer(['Hemoglobina', 'HGB'], tNorm);
-  const Hto = extraer(['Hematocrito', 'HCT'], tNorm);
-  const Leuc = extraer(['Leucocitos', 'WBC'], tNorm);
-  const Neut = extraer(['Neutrófilos', 'Neutrofilos', 'NEU'], tNorm);
-  const Linf = extraer(['Linfocitos', 'LYM'], tNorm);
-  const Plaq = extraer(['Plaquetas', 'PLT'], tNorm);
+  const HbData = extraerConRango(['Hemoglobina', 'HGB'], tNorm);
+  const HtoData = extraerConRango(['Hematocrito', 'HCT'], tNorm);
+  const LeucData = extraerConRango(['Leucocitos', 'WBC'], tNorm);
+  const NeutData = extraerConRango(['Neutrófilos', 'Neutrofilos', 'NEU'], tNorm);
+  const LinfData = extraerConRango(['Linfocitos', 'LYM'], tNorm);
+  const PlaqData = extraerConRango(['Plaquetas', 'PLT'], tNorm);
 
-  if ([Hb, Hto, Leuc, Neut, Linf, Plaq].every(v => v === '---')) return '';
+  if ([HbData.valor, HtoData.valor, LeucData.valor, NeutData.valor, LinfData.valor, PlaqData.valor].every(v => v === '---')) return '';
 
-  return `<div class="lab-section"><div class="lab-title">Biometría Hemática</div><div class="lab-grid"><div><span class="lab-label">Hb:</span> ${Hb}</div><div><span class="lab-label">Hto:</span> ${Hto}</div><div><span class="lab-label">Leucocitos:</span> ${Leuc}</div><div><span class="lab-label">Neutrófilos:</span> ${Neut}</div><div><span class="lab-label">Linfocitos:</span> ${Linf}</div><div><span class="lab-label">Plaquetas:</span> ${Plaq}</div></div></div>`;
+  const Hb = marcarSegunRango(HbData.valor, HbData.min, HbData.max);
+  const Hto = marcarSegunRango(HtoData.valor, HtoData.min, HtoData.max);
+  const Leuc = marcarSegunRango(LeucData.valor, LeucData.min, LeucData.max);
+  const Neut = marcarSegunRango(NeutData.valor, NeutData.min, NeutData.max);
+  const Linf = marcarSegunRango(LinfData.valor, LinfData.min, LinfData.max);
+  const Plaq = marcarSegunRango(PlaqData.valor, PlaqData.min, PlaqData.max);
+
+  return `<div class="lab-section"><div class="lab-title">Biometría Hemática</div><div class="lab-grid"><div class="lab-item"><div class="lab-label">Hb</div><div class="lab-value">${Hb}</div></div><div class="lab-item"><div class="lab-label">Hto</div><div class="lab-value">${Hto}</div></div><div class="lab-item"><div class="lab-label">Leucocitos</div><div class="lab-value">${Leuc}</div></div><div class="lab-item"><div class="lab-label">Neutrófilos</div><div class="lab-value">${Neut}</div></div><div class="lab-item"><div class="lab-label">Linfocitos</div><div class="lab-value">${Linf}</div></div><div class="lab-item"><div class="lab-label">Plaquetas</div><div class="lab-value">${Plaq}</div></div></div></div>`;
 }
 
 /**
@@ -117,17 +124,25 @@ export function parseBH_(tNorm) {
  * @returns {string} HTML string with formatted results or empty string if no data
  */
 export function parseQS_(texto) {
-  const Glu = extraer(['Glucosa', 'GLU'], texto);
-  const Cr = extraer(['Creatinina', 'CREA'], texto);
-  const BUN = extraer(['BUN', 'Urea'], texto);
-  const PCR = extraer(['Proteína C Reactiva', 'PCR', 'CRP'], texto);
-  const AU = extraer(['Ácido Úrico', 'Acido Urico', 'UA'], texto);
-  const TGL = extraer(['Triglicéridos', 'Trigliceridos', 'TG'], texto);
-  const COL = extraer(['Colesterol', 'CHOL'], texto);
+  const GluData = extraerConRango(['Glucosa', 'GLU'], texto);
+  const CrData = extraerConRango(['Creatinina', 'CREA'], texto);
+  const BUNData = extraerConRango(['BUN', 'Urea'], texto);
+  const PCRData = extraerConRango(['Proteína C Reactiva', 'PCR', 'CRP'], texto);
+  const AUData = extraerConRango(['Ácido Úrico', 'Acido Urico', 'UA'], texto);
+  const TGLData = extraerConRango(['Triglicéridos', 'Trigliceridos', 'TG'], texto);
+  const COLData = extraerConRango(['Colesterol', 'CHOL'], texto);
 
-  if ([Glu, Cr, BUN, PCR, AU, TGL, COL].every(v => v === '---')) return '';
+  if ([GluData.valor, CrData.valor, BUNData.valor, PCRData.valor, AUData.valor, TGLData.valor, COLData.valor].every(v => v === '---')) return '';
 
-  return `<div class="lab-section"><div class="lab-title">Química Sanguínea</div><div class="lab-grid"><div><span class="lab-label">Glucosa:</span> ${Glu}</div><div><span class="lab-label">Creatinina:</span> ${Cr}</div><div><span class="lab-label">BUN:</span> ${BUN}</div><div><span class="lab-label">PCR:</span> ${PCR}</div><div><span class="lab-label">Ác. Úrico:</span> ${AU}</div><div><span class="lab-label">Triglicéridos:</span> ${TGL}</div><div><span class="lab-label">Colesterol:</span> ${COL}</div></div></div>`;
+  const Glu = marcarSegunRango(GluData.valor, GluData.min, GluData.max);
+  const Cr = marcarSegunRango(CrData.valor, CrData.min, CrData.max);
+  const BUN = marcarSegunRango(BUNData.valor, BUNData.min, BUNData.max);
+  const PCR = marcarSegunRango(PCRData.valor, PCRData.min, PCRData.max);
+  const AU = marcarSegunRango(AUData.valor, AUData.min, AUData.max);
+  const TGL = marcarSegunRango(TGLData.valor, TGLData.min, TGLData.max);
+  const COL = marcarSegunRango(COLData.valor, COLData.min, COLData.max);
+
+  return `<div class="lab-section"><div class="lab-title">Química Sanguínea</div><div class="lab-grid"><div class="lab-item"><div class="lab-label">Glucosa</div><div class="lab-value">${Glu}</div></div><div class="lab-item"><div class="lab-label">Creatinina</div><div class="lab-value">${Cr}</div></div><div class="lab-item"><div class="lab-label">BUN</div><div class="lab-value">${BUN}</div></div><div class="lab-item"><div class="lab-label">PCR</div><div class="lab-value">${PCR}</div></div><div class="lab-item"><div class="lab-label">Ác. Úrico</div><div class="lab-value">${AU}</div></div><div class="lab-item"><div class="lab-label">Triglicéridos</div><div class="lab-value">${TGL}</div></div><div class="lab-item"><div class="lab-label">Colesterol</div><div class="lab-value">${COL}</div></div></div></div>`;
 }
 
 /**
@@ -136,16 +151,23 @@ export function parseQS_(texto) {
  * @returns {string} HTML string with formatted results or empty string if no data
  */
 export function parseESC_(texto) {
-  const Na = extraer(['Sodio', 'NA'], texto);
-  const K = extraer(['Potasio', 'K'], texto);
-  const Cl = extraer(['Cloro', 'CL'], texto);
-  const Ca = extraer(['Calcio', 'CA'], texto);
-  const Mg = extraer(['Magnesio', 'MG'], texto);
-  const P = extraer(['Fósforo', 'Fosforo', 'P'], texto);
+  const NaData = extraerConRango(['Sodio', 'NA'], texto);
+  const KData = extraerConRango(['Potasio', 'K'], texto);
+  const ClData = extraerConRango(['Cloro', 'CL'], texto);
+  const CaData = extraerConRango(['Calcio', 'CA'], texto);
+  const MgData = extraerConRango(['Magnesio', 'MG'], texto);
+  const PData = extraerConRango(['Fósforo', 'Fosforo', 'P'], texto);
 
-  if ([Na, K, Cl, Ca, Mg, P].every(v => v === '---')) return '';
+  if ([NaData.valor, KData.valor, ClData.valor, CaData.valor, MgData.valor, PData.valor].every(v => v === '---')) return '';
 
-  return `<div class="lab-section"><div class="lab-title">Electrolitos Séricos</div><div class="lab-grid"><div><span class="lab-label">Na:</span> ${Na}</div><div><span class="lab-label">K:</span> ${K}</div><div><span class="lab-label">Cl:</span> ${Cl}</div><div><span class="lab-label">Ca:</span> ${Ca}</div><div><span class="lab-label">Mg:</span> ${Mg}</div><div><span class="lab-label">P:</span> ${P}</div></div></div>`;
+  const Na = marcarSegunRango(NaData.valor, NaData.min, NaData.max);
+  const K = marcarSegunRango(KData.valor, KData.min, KData.max);
+  const Cl = marcarSegunRango(ClData.valor, ClData.min, ClData.max);
+  const Ca = marcarSegunRango(CaData.valor, CaData.min, CaData.max);
+  const Mg = marcarSegunRango(MgData.valor, MgData.min, MgData.max);
+  const P = marcarSegunRango(PData.valor, PData.min, PData.max);
+
+  return `<div class="lab-section"><div class="lab-title">Electrolitos Séricos</div><div class="lab-grid"><div class="lab-item"><div class="lab-label">Na</div><div class="lab-value">${Na}</div></div><div class="lab-item"><div class="lab-label">K</div><div class="lab-value">${K}</div></div><div class="lab-item"><div class="lab-label">Cl</div><div class="lab-value">${Cl}</div></div><div class="lab-item"><div class="lab-label">Ca</div><div class="lab-value">${Ca}</div></div><div class="lab-item"><div class="lab-label">Mg</div><div class="lab-value">${Mg}</div></div><div class="lab-item"><div class="lab-label">P</div><div class="lab-value">${P}</div></div></div></div>`;
 }
 
 /**
@@ -154,15 +176,21 @@ export function parseESC_(texto) {
  * @returns {string} HTML string with formatted results or empty string if no data
  */
 export function parsePFH_(tNorm) {
-  const Alb = extraer(['Albúmina', 'Albumina', 'ALB'], tNorm);
-  const AST = extraer(['AST', 'TGO'], tNorm);
-  const ALT = extraer(['ALT', 'TGP'], tNorm);
-  const FA = extraer(['Fosfatasa Alcalina', 'ALP'], tNorm);
-  const BT = extraer(['Bilirrubina Total', 'TBIL'], tNorm);
+  const AlbData = extraerConRango(['Albúmina', 'Albumina', 'ALB'], tNorm);
+  const ASTData = extraerConRango(['AST', 'TGO'], tNorm);
+  const ALTData = extraerConRango(['ALT', 'TGP'], tNorm);
+  const FAData = extraerConRango(['Fosfatasa Alcalina', 'ALP'], tNorm);
+  const BTData = extraerConRango(['Bilirrubina Total', 'TBIL'], tNorm);
 
-  if ([Alb, AST, ALT, FA, BT].every(v => v === '---')) return '';
+  if ([AlbData.valor, ASTData.valor, ALTData.valor, FAData.valor, BTData.valor].every(v => v === '---')) return '';
 
-  return `<div class="lab-section"><div class="lab-title">Pruebas de Función Hepática</div><div class="lab-grid"><div><span class="lab-label">Albúmina:</span> ${Alb}</div><div><span class="lab-label">AST:</span> ${AST}</div><div><span class="lab-label">ALT:</span> ${ALT}</div><div><span class="lab-label">FA:</span> ${FA}</div><div><span class="lab-label">BT:</span> ${BT}</div></div></div>`;
+  const Alb = marcarSegunRango(AlbData.valor, AlbData.min, AlbData.max);
+  const AST = marcarSegunRango(ASTData.valor, ASTData.min, ASTData.max);
+  const ALT = marcarSegunRango(ALTData.valor, ALTData.min, ALTData.max);
+  const FA = marcarSegunRango(FAData.valor, FAData.min, FAData.max);
+  const BT = marcarSegunRango(BTData.valor, BTData.min, BTData.max);
+
+  return `<div class="lab-section"><div class="lab-title">Pruebas de Función Hepática</div><div class="lab-grid"><div class="lab-item"><div class="lab-label">Albúmina</div><div class="lab-value">${Alb}</div></div><div class="lab-item"><div class="lab-label">AST</div><div class="lab-value">${AST}</div></div><div class="lab-item"><div class="lab-label">ALT</div><div class="lab-value">${ALT}</div></div><div class="lab-item"><div class="lab-label">FA</div><div class="lab-value">${FA}</div></div><div class="lab-item"><div class="lab-label">BT</div><div class="lab-value">${BT}</div></div></div></div>`;
 }
 
 /**
@@ -171,14 +199,19 @@ export function parsePFH_(tNorm) {
  * @returns {string} HTML string with formatted results or empty string if no data
  */
 export function parseGaso_(bloqueGaso) {
-  const pH = extraer(['pH'], bloqueGaso);
-  const pCO2 = extraer(['pCO2', 'PCO2'], bloqueGaso);
-  const pO2 = extraer(['pO2', 'PO2'], bloqueGaso);
-  const HCO3 = extraer(['HCO3', 'Bicarbonato'], bloqueGaso);
+  const pHData = extraerConRango(['pH'], bloqueGaso);
+  const pCO2Data = extraerConRango(['pCO2', 'PCO2'], bloqueGaso);
+  const pO2Data = extraerConRango(['pO2', 'PO2'], bloqueGaso);
+  const HCO3Data = extraerConRango(['HCO3', 'Bicarbonato'], bloqueGaso);
 
-  if ([pH, pCO2, pO2, HCO3].every(v => v === '---')) return '';
+  if ([pHData.valor, pCO2Data.valor, pO2Data.valor, HCO3Data.valor].every(v => v === '---')) return '';
 
-  return `<div class="lab-section"><div class="lab-title">Gasometría</div><div class="lab-grid"><div><span class="lab-label">pH:</span> ${pH}</div><div><span class="lab-label">pCO2:</span> ${pCO2}</div><div><span class="lab-label">pO2:</span> ${pO2}</div><div><span class="lab-label">HCO3:</span> ${HCO3}</div></div></div>`;
+  const pH = marcarSegunRango(pHData.valor, pHData.min, pHData.max);
+  const pCO2 = marcarSegunRango(pCO2Data.valor, pCO2Data.min, pCO2Data.max);
+  const pO2 = marcarSegunRango(pO2Data.valor, pO2Data.min, pO2Data.max);
+  const HCO3 = marcarSegunRango(HCO3Data.valor, HCO3Data.min, HCO3Data.max);
+
+  return `<div class="lab-section"><div class="lab-title">Gasometría</div><div class="lab-grid"><div class="lab-item"><div class="lab-label">pH</div><div class="lab-value">${pH}</div></div><div class="lab-item"><div class="lab-label">pCO2</div><div class="lab-value">${pCO2}</div></div><div class="lab-item"><div class="lab-label">pO2</div><div class="lab-value">${pO2}</div></div><div class="lab-item"><div class="lab-label">HCO3</div><div class="lab-value">${HCO3}</div></div></div></div>`;
 }
 
 /**
