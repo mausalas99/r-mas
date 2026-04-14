@@ -229,10 +229,25 @@ function buildTendChartLabels(sets) {
   }
 })();
 
-function toggleTheme() {
-  var isDark = document.documentElement.classList.toggle('dark');
+function syncThemeSettingsButtons() {
+  var isDark = document.documentElement.classList.contains('dark');
+  var lightBtn = document.getElementById('settings-theme-light');
+  var darkBtn = document.getElementById('settings-theme-dark');
+  if (lightBtn) lightBtn.classList.toggle('active', !isDark);
+  if (darkBtn) darkBtn.classList.toggle('active', isDark);
+}
+
+function setThemeMode(mode) {
+  var isDark = mode === 'dark';
+  document.documentElement.classList.toggle('dark', isDark);
   localStorage.setItem('theme', isDark ? 'dark' : 'light');
-  document.getElementById('theme-toggle').textContent = isDark ? '🌙' : '☀️';
+  var themeBtn = document.getElementById('theme-toggle');
+  if (themeBtn) themeBtn.textContent = isDark ? '🌙' : '☀️';
+  syncThemeSettingsButtons();
+}
+
+function toggleTheme() {
+  setThemeMode(document.documentElement.classList.contains('dark') ? 'light' : 'dark');
 }
 
 // Set correct icon on load
@@ -247,6 +262,7 @@ document.getElementById('today-date').textContent =
 renderPatientList();
 if (patients.length > 0) selectPatient(patients[0].id);
 loadSettings();
+syncThemeSettingsButtons();
 initGuidedTourGate();
 
 function switchAppTab(tab) {
@@ -357,17 +373,29 @@ function loadSettings() {
   if (dEl) dEl.textContent = preview(settings.defaultDieta);
   if (cEl) cEl.textContent = preview(settings.defaultCuidados);
   if (mEl) mEl.textContent = preview(settings.defaultMedicamentos);
-  var dirEl = document.getElementById('profile-output-dir');
+  var dirEl = document.getElementById('settings-output-dir');
   if (dirEl) {
     if (settings.outputDir) {
-      var parts = settings.outputDir.replace(/\\/g, '/').split('/');
-      dirEl.textContent = parts[parts.length - 1] || settings.outputDir;
+      var pathParts = settings.outputDir.replace(/\\/g, '/').split('/');
+      dirEl.textContent = pathParts[pathParts.length - 1] || settings.outputDir;
       dirEl.title = settings.outputDir;
     } else {
       dirEl.textContent = 'Descargas (predeterminado)';
       dirEl.title = '';
     }
   }
+  var verEl = document.getElementById('settings-app-version');
+  if (verEl) {
+    if (window.electronAPI && typeof window.electronAPI.getAppVersion === 'function') {
+      window.electronAPI.getAppVersion().then(function(v) {
+        verEl.textContent = v || '—';
+      }).catch(function() { verEl.textContent = '—'; });
+    } else {
+      verEl.textContent = 'Web / desarrollo';
+    }
+  }
+  var hintEl = document.getElementById('settings-updates-hint');
+  if (hintEl) hintEl.style.display = window.electronAPI ? 'block' : 'none';
 }
 
 function saveSettings() {
@@ -405,6 +433,24 @@ function toggleProfileSection() {
   var open  = body.style.display !== 'none';
   body.style.display = open ? 'none' : 'flex';
   arrow.textContent  = open ? '▾' : '▴';
+}
+
+function toggleSettingsSection() {
+  var body = document.getElementById('settings-body');
+  var arrow = document.getElementById('settings-toggle-arrow');
+  if (!body || !arrow) return;
+  var open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'flex';
+  arrow.textContent = open ? '▾' : '▴';
+}
+
+function checkForAppUpdates() {
+  if (!window.electronAPI || typeof window.electronAPI.checkForUpdates !== 'function') {
+    showToast('Las actualizaciones automáticas solo están en la app de escritorio.', 'error');
+    return;
+  }
+  window.electronAPI.checkForUpdates();
+  showToast('Buscando actualizaciones…', 'success');
 }
 
 function openTemplatesModal() {
@@ -478,7 +524,7 @@ function showTourIntroModal() {
   document.getElementById('intro-modal-title').textContent =
     ver ? ('R+ · versión ' + ver) : 'Bienvenido a R+';
   document.getElementById('intro-modal-body').innerHTML =
-    'Cada versión nueva ofrece este recorrido para repasar <strong>Laboratorio</strong>, <strong>Expediente</strong> (nota, indicaciones y tendencias) y tu perfil. Usaremos un paciente de ejemplo que <strong>no se guarda</strong> en tus datos.';
+    'Cada versión nueva ofrece este recorrido para repasar <strong>Laboratorio</strong>, <strong>Expediente</strong> (nota, indicaciones y tendencias), <strong>Mi Perfil</strong> y <strong>Ajustes</strong>. Usaremos un paciente de ejemplo que <strong>no se guarda</strong> en tus datos.';
   el.classList.add('open');
   el.setAttribute('aria-hidden', 'false');
 }
@@ -530,6 +576,12 @@ function ensureProfileExpandedForTour() {
   if (body.style.display === 'none') toggleProfileSection();
 }
 
+function ensureSettingsExpandedForTour() {
+  var body = document.getElementById('settings-body');
+  if (!body) return;
+  if (body.style.display === 'none') toggleSettingsSection();
+}
+
 function renderTourStep() {
   if (!guidedTourActive) return;
   var badge = document.getElementById('tour-step-badge');
@@ -578,13 +630,13 @@ function renderTourStep() {
       nextBtn.textContent = 'Siguiente';
       break;
     case TOUR_STEP_PROFILE:
-      badgeText(8, 'perfil');
-      bodyEl.innerHTML = 'En <strong>Mi Perfil</strong> (abajo en la barra lateral) guardas médico, grado y textos por defecto para pacientes nuevos. Aquí también puedes elegir dónde se guardan tus documentos.';
+      badgeText(8, 'perfil y ajustes');
+      bodyEl.innerHTML = 'En <strong>Mi Perfil</strong> defines médico, grado y plantillas por defecto. En <strong>Ajustes</strong> (debajo) están la carpeta de documentos, respaldos JSON, tema claro/oscuro, versión y búsqueda de actualizaciones.';
       nextBtn.textContent = 'Siguiente';
       break;
     case TOUR_STEP_WRAP:
       badgeText(9, 'listo');
-      bodyEl.innerHTML = 'Usa el ícono junto a la fecha para el <strong>tema</strong> claro/oscuro. Las <strong>actualizaciones</strong> se anuncian arriba. Puedes repetir este tutorial desde <strong>Mi Perfil</strong>.';
+      bodyEl.innerHTML = 'El <strong>tema</strong> también está en <strong>Ajustes</strong> o en el ícono junto a la fecha. Las <strong>actualizaciones</strong> se anuncian arriba. Puedes repetir el tutorial desde <strong>Mi Perfil</strong>.';
       nextBtn.textContent = 'Finalizar';
       break;
     default:
@@ -614,6 +666,7 @@ function guidedTourClickNext() {
     switchAppTab('nota');
     switchInnerTab('notas');
     ensureProfileExpandedForTour();
+    ensureSettingsExpandedForTour();
     renderTourStep();
     return;
   }
@@ -1994,6 +2047,7 @@ if (window.electronAPI) {
 Object.assign(window, {
   installUpdate,
   toggleTheme,
+  setThemeMode,
   switchAppTab,
   switchInnerTab,
   guidedTourIntroStart,
@@ -2003,6 +2057,8 @@ Object.assign(window, {
   openAddModal,
   onPatientSearchInput,
   toggleProfileSection,
+  toggleSettingsSection,
+  checkForAppUpdates,
   chooseOutputDir,
   openTemplatesModal,
   saveSettings,

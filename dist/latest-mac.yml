@@ -1,17 +1,17 @@
-version: 1.8.2
+version: 1.8.3
 files:
-  - url: R+-1.8.2-arm64.zip
-    sha512: 0HmcVdYjDYbfiurnzyu8Pi9OEVfSFT4dM/QGFsOzLBu31QClMVzw+BODpvid+bDY1s6QlCW+xNwOlnaNCSq6yQ==
-    size: 141215054
-  - url: R+-1.8.2-x64.zip
-    sha512: DdqYYB4LwWYjKBMieU4oqOygv09iWAnWy1Qdua7IQsNyRv3T3w+24jy7ysT/+EodKObNnctdv9Dy2Dhvpsxrmg==
-    size: 149241212
-  - url: R+-1.8.2-arm64.dmg
-    sha512: Ho80FXTTZ+V75PWtD01nVlytTcbWY2rf6hdGjrCDWXueFekXtruBWuAOl13kCHGVZwuVc+5b0wU/i4rWRAqYEQ==
-    size: 145906369
-  - url: R+-1.8.2-x64.dmg
-    sha512: TdACW2ZvzgFNLtkhZ5bZeC9jzlNaXWgrvw6iP0E0GpQ6gVKHu0zMrh6CCzzWO9nq4gS+wbxMOgGNCMFjAIaqmQ==
-    size: 154002436
-path: R+-1.8.2-arm64.zip
-sha512: 0HmcVdYjDYbfiurnzyu8Pi9OEVfSFT4dM/QGFsOzLBu31QClMVzw+BODpvid+bDY1s6QlCW+xNwOlnaNCSq6yQ==
-releaseDate: '2026-04-14T02:11:41.000Z'
+  - url: R+-1.8.3-arm64.zip
+    sha512: RhpF5khmiq4hrKCKiv/I6WH+CH69VKoPJy4E8OF/8mCTvZISP83ZXEeemNiFiMSOi5uRPxukOTrc3cGLxViF9Q==
+    size: 141216030
+  - url: R+-1.8.3-x64.zip
+    sha512: I5C8JmbZ2qodQ35ne7XRR6GSL2Piap1j4ppmplGTbflXaydjwkrNWdyE6TxyetKFtHGjsS0NoAf0QitEgJtbfQ==
+    size: 149242179
+  - url: R+-1.8.3-arm64.dmg
+    sha512: QUpw5XH3/S2y/QN5NH45uoY1UgZRE0sChrFKombP05qOYTL2WGUFBP1X8lsVOcr43vQRN8WhYhORzWQA6b4tpA==
+    size: 145902157
+  - url: R+-1.8.3-x64.dmg
+    sha512: ajNzUCPizrWnvrmG8jgs1YMnFxasjhmJXVsphRWX8GcwboYSWBrHHwbtdEGg1XGSWywQigpK7mDUpn4jgXH+QQ==
+    size: 153988340
+path: R+-1.8.3-arm64.zip
+sha512: RhpF5khmiq4hrKCKiv/I6WH+CH69VKoPJy4E8OF/8mCTvZISP83ZXEeemNiFiMSOi5uRPxukOTrc3cGLxViF9Q==
+releaseDate: '2026-04-14T02:41:00.000Z'

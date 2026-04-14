@@ -34,6 +34,16 @@ const STRIP_DIRS = [
   'share',
 ];
 
+/** Static archives (.a) are unused at runtime; electron-builder codesign can fail on some of them. */
+function pruneStaticArchives(rootDir) {
+  if (!fs.existsSync(rootDir)) return;
+  try {
+    execSync(`find "${rootDir}" -name '*.a' -type f -delete`);
+  } catch (e) {
+    console.warn(`[${path.basename(rootDir)}] prune *.a: ${e.message}`);
+  }
+}
+
 function download(url, dest, redirects = 10) {
   return new Promise((resolve, reject) => {
     if (redirects === 0) return reject(new Error('Too many redirects'));
@@ -58,6 +68,7 @@ async function fetchBuild({ arch, triple }) {
   const marker = path.join(outDir, 'bin', 'python3');
   if (fs.existsSync(marker)) {
     console.log(`[${arch}] Already present, skipping.`);
+    pruneStaticArchives(outDir);
     return;
   }
 
@@ -95,6 +106,8 @@ async function fetchBuild({ arch, triple }) {
       execSync(`rm -rf "${target}"`);
     }
   }
+
+  pruneStaticArchives(installSrc);
 
   // Move to final location
   if (fs.existsSync(outDir)) execSync(`rm -rf "${outDir}"`);

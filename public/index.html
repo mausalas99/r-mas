@@ -275,17 +275,28 @@
   .dcard-copy:hover { border-color:var(--action); color:var(--action); background:#EFF6FF; }
   .dcard-copy.copied { border-color:#16a34a; color:#16a34a; background:#f0fdf4; }
   @media (max-width: 700px) { aside { width: 220px; } .vitals-grid { grid-template-columns: repeat(3, 1fr); } }
-  /* ── Mi Perfil ─────────────────────────────────────────── */
-  .profile-section { border-top: 1px solid var(--border); flex-shrink: 0; }
-  .profile-toggle {
+  /* ── Mi Perfil / Ajustes (barra lateral) ───────────────── */
+  .profile-section, .settings-section { border-top: 1px solid var(--border); flex-shrink: 0; }
+  .profile-toggle, .settings-toggle {
     width: 100%; display: flex; align-items: center; justify-content: space-between;
     padding: 10px 14px; background: none; border: none; cursor: pointer;
     font-family: inherit; color: var(--text-muted); font-size: 12px; font-weight: 500;
     transition: background 0.15s;
   }
-  .profile-toggle:hover { background: var(--border); }
-  .profile-toggle-left { display: flex; align-items: center; gap: 6px; }
-  .profile-body { padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; }
+  .profile-toggle:hover, .settings-toggle:hover { background: var(--border); }
+  .profile-toggle-left, .settings-toggle-left { display: flex; align-items: center; gap: 6px; }
+  .profile-body, .settings-body { padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; }
+  .settings-theme-row { display: flex; gap: 6px; }
+  .settings-theme-btn {
+    flex: 1; margin: 0 !important; font-size: 11px; padding: 6px 4px;
+    background: var(--lab-chip-bg); color: var(--action); border: 1px solid transparent;
+    border-radius: 5px; font-family: inherit; font-weight: 600; cursor: pointer;
+  }
+  .settings-theme-btn:hover { opacity: 0.9; }
+  .settings-theme-btn.active {
+    background: var(--action); color: white; border-color: var(--action-hover);
+  }
+  html.dark .settings-theme-btn.active { background: var(--action); color: #fff; }
   .profile-field-label {
     color: var(--text-muted); font-size: 10px; font-weight: 700;
     text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px;
@@ -654,18 +665,44 @@
           <div class="preview-label">Medicamentos</div>
           <span id="profile-preview-meds-txt">(vacío)</span>
         </div>
-        <hr class="profile-divider">
-        <div class="profile-defaults-title">Carpeta de documentos</div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span id="profile-output-dir" style="font-size:13px;color:var(--text-muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="">Descargas (predeterminado)</span>
-          <button type="button" class="btn-edit-templates" style="margin:0;white-space:nowrap;" onclick="chooseOutputDir()">Cambiar</button>
-        </div>
         <button class="btn-edit-templates" onclick="openTemplatesModal()">✏️ Editar plantillas…</button>
         <button class="btn-save-profile" onclick="saveSettings()">Guardar perfil</button>
         <button class="btn-edit-templates" style="margin-top:2px;" onclick="resetAndStartOnboarding()">🎓 Ver tutorial</button>
-        <button type="button" class="btn-edit-templates" style="margin-top:2px;" onclick="exportDataBackup()">Exportar copia de seguridad…</button>
+      </div>
+    </div>
+        <span id="settings-toggle-arrow">▾</span>
+      <button type="button" class="settings-toggle" onclick="toggleSettingsSection()" id="settings-toggle-btn">
+        <div class="settings-toggle-left">
+          <span aria-hidden="true">&#9881;</span>
+          <span>Ajustes</span>
+        </div>
+        <span id="settings-toggle-arrow">▾</span>
+      </button>
+      <div class="settings-body" id="settings-body" style="display:none;">
+        <div class="profile-defaults-title">Apariencia</div>
+        <div class="settings-theme-row">
+          <button type="button" class="settings-theme-btn" id="settings-theme-light" onclick="setThemeMode('light')">Claro</button>
+          <button type="button" class="settings-theme-btn" id="settings-theme-dark" onclick="setThemeMode('dark')">Oscuro</button>
+        </div>
+        <hr class="profile-divider">
+        <div class="profile-defaults-title">Carpeta de documentos</div>
+        <p style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;">Los .docx generados se guardan aquí (si no eliges carpeta, se usa Descargas).</p>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span id="settings-output-dir" style="font-size:13px;color:var(--text-muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="">Descargas (predeterminado)</span>
+          <button type="button" class="btn-edit-templates" style="margin:0;white-space:nowrap;" onclick="chooseOutputDir()">Cambiar</button>
+        </div>
+        <hr class="profile-divider">
+        <div class="profile-defaults-title">Respaldo local</div>
+        <p style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;">Exporta o restaura pacientes, notas e indicaciones (JSON).</p>
+        <button type="button" class="btn-edit-templates" onclick="exportDataBackup()">Exportar copia de seguridad…</button>
         <button type="button" class="btn-edit-templates" style="margin-top:2px;" onclick="triggerImportBackup()">Importar copia de seguridad…</button>
         <input type="file" id="backup-file-input" accept="application/json,.json" style="display:none" onchange="onBackupFileChosen(event)">
+        <hr class="profile-divider">
+        <div class="profile-defaults-title">Aplicación</div>
+        <div class="profile-field-label" style="margin-top:2px;">Versión</div>
+        <div id="settings-app-version" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">—</div>
+        <button type="button" class="btn-edit-templates" id="settings-check-updates-btn" onclick="checkForAppUpdates()">Buscar actualizaciones…</button>
+        <p id="settings-updates-hint" style="font-size:10px;color:var(--text-muted);line-height:1.35;margin:4px 0 0 0;display:none;">También en el menú de la aplicación (Mac: R+, Windows: Aplicación).</p>
       </div>
     </div>
   </aside>

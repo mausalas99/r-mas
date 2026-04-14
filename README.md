@@ -43,7 +43,7 @@ Descarga `R+ Setup x.x.x.exe` desde [Releases](https://github.com/mausalas99/r-m
   - Mac: `brew install python3` o el Python del sistema.
   - Windows: [python.org](https://www.python.org/downloads/) — marcar "Add to PATH".
 
-Los documentos generados se guardan en tu carpeta **Descargas** por defecto. Puedes cambiar la carpeta de salida desde **Mi Perfil → Carpeta de documentos → Cambiar**. Al agregar un paciente, la app te avisará si ya existe uno con el mismo nombre o registro. Puedes hacer una **copia de seguridad** de tus datos desde la app: **Mi Perfil → Exportar copia de seguridad** (archivo JSON).
+Los documentos generados se guardan en tu carpeta **Descargas** por defecto. Puedes cambiar la carpeta de salida en **Ajustes** (barra lateral) → **Carpeta de documentos → Cambiar**. Al agregar un paciente, la app te avisará si ya existe uno con el mismo nombre o registro. **Exportar / importar copia de seguridad** (JSON), **tema claro/oscuro**, **versión** y **buscar actualizaciones** están en el mismo apartado **Ajustes**.
 
 ---
 
@@ -56,12 +56,28 @@ npm install
 # Ejecutar en modo desarrollo
 npm start
 
-# Compilar para Mac (arm64 + x64)
+# Compilar para Mac (arm64 + x64). Con certificado de firma en el llavero, electron-builder firma automáticamente.
 npm run build:mac
 
-# Compilar para Windows (x64)
-npm run build:win
+# Igual que build:mac (nombre explícito para releases firmados)
+npm run build:mac:signed
+
+# Mac sin firma de desarrollador (ad-hoc; útil en CI o pruebas locales)
+npm run build:mac:unsigned
+
+# Mac más rápido: solo arm64 (omitir universal / segunda arquitectura)
+npm run build:mac:arm64-only
 ```
+
+Para **notarizar** tras firmar, exporta en la misma terminal antes de `build:mac:signed`:
+
+- `APPLE_ID` — Apple ID
+- `APPLE_APP_SPECIFIC_PASSWORD` — contraseña específica de app
+- `APPLE_TEAM_ID` — identificador del equipo (10 caracteres)
+
+Y en `package.json`, dentro de `build.mac`, añade `"notarize": true` (sin eso, el build firmado no pasa por notarización automática de electron-builder).
+
+Firmar y notarizar **no acelera** el build: suele tardar más que un build sin notarizar. Para iterar más rápido en tu Mac Apple Silicon, `npm run build:mac:arm64-only` evita empaquetar la segunda arquitectura.
 
 **Stack:** Electron 41 · Express 5 · electron-builder 26 · electron-updater 6 · Python 3 (python-docx)
 

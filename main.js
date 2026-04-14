@@ -105,6 +105,10 @@ autoUpdater.on('error', (err) => {
 
 ipcMain.on('install-update', () => autoUpdater.quitAndInstall());
 
+ipcMain.on('check-for-updates', () => {
+  autoUpdater.checkForUpdates().catch(() => {});
+});
+
 ipcMain.handle('get-app-version', () => app.getVersion());
 
 ipcMain.handle('select-output-dir', async () => {

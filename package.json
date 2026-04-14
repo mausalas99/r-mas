@@ -1,15 +1,19 @@
 {
   "name": "r-plus",
-  "version": "1.8.2",
+  "version": "1.8.3",
   "description": "R+ — Laboratoriazo + Notas de Evolución",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build:mac": "electron-builder --mac",
-    "build:mac:unsigned": "node scripts/fetch-python-mac.js && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac",
+    "build:mac": "npm run prebuild:mac && electron-builder --mac",
+    "build:mac:signed": "npm run build:mac",
+    "build:mac:unsigned": "npm run prebuild:mac && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac",
+    "build:mac:arm64-only": "npm run prebuild:mac && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac --arm64",
     "prebuild:mac": "node scripts/fetch-python-mac.js",
     "prebuild:win": "node scripts/fetch-python.js",
     "build:win": "electron-builder --win",
+    "release:write-yml": "node scripts/write-release-yml.js",
+    "release:write-yml:mac": "node scripts/write-release-yml.js --mac-only",
     "build": "electron-builder"
   },
   "author": "Mauricio Salas",
@@ -31,6 +35,9 @@
     "mac": {
       "icon": "AppIcon.icns",
       "category": "public.app-category.medical",
+      "hardenedRuntime": true,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
       "extraResources": [
         {
           "from": "python-runtime/mac-arm64",

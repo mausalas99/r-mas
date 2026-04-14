@@ -19,6 +19,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   installUpdate: function() {
     ipcRenderer.send('install-update');
   },
+  checkForUpdates: function() {
+    ipcRenderer.send('check-for-updates');
+  },
   getAppVersion: function() {
     return ipcRenderer.invoke('get-app-version');
   },
