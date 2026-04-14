@@ -1,6 +1,23 @@
 // labs.js — Lab data parsing and extraction
 // Pure functions with no DOM dependencies
 
+// Parse cache to avoid re-parsing same lab text
+const parseCache = new Map();
+
+function hashString(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return hash.toString(36);
+}
+
+export function clearParseCache() {
+  parseCache.clear();
+}
+
 export function extraer(nombres, bloque) {
   if (!bloque) return '---';
   const lineas = bloque.split(/\r?\n/).map(l => l.trim());
@@ -123,6 +140,11 @@ export function parseGaso_(bloqueGaso) {
 export function procesarLabs(textoBruto) {
   if (!textoBruto || !textoBruto.trim()) return '';
 
+  const hash = hashString(textoBruto);
+  if (parseCache.has(hash)) {
+    return parseCache.get(hash);
+  }
+
   const tNorm = textoBruto.replace(/\*/g, '');
 
   let html = '';
@@ -132,5 +154,8 @@ export function procesarLabs(textoBruto) {
   html += parsePFH_(tNorm);
   html += parseGaso_(tNorm);
 
-  return html || '<div class="lab-empty">No se detectaron laboratorios</div>';
+  const result = html || '<div class="lab-empty">No se detectaron laboratorios</div>';
+  parseCache.set(hash, result);
+
+  return result;
 }
