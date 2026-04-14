@@ -44,6 +44,12 @@ const DOM = {
 };
 
 // Debounce utility
+/**
+ * Create a debounced version of a function that delays execution
+ * @param {Function} fn - Function to debounce
+ * @param {number} delay - Delay in milliseconds
+ * @returns {Function} Debounced function
+ */
 export function debounce(fn, delay) {
   let timeout;
   return function(...args) {
@@ -55,6 +61,10 @@ export function debounce(fn, delay) {
 // Initialize DOM cache on module load
 DOM.init();
 
+/**
+ * Switch active tab and display corresponding content
+ * @param {string} tabName - Name of the tab to activate
+ */
 export function switchTab(tabName) {
   DOM.tabButtons.forEach(t => t.classList.remove('active'));
   DOM.tabContent.forEach(c => c.classList.remove('active'));
@@ -63,6 +73,10 @@ export function switchTab(tabName) {
   document.getElementById(`tab-${tabName}`)?.classList.add('active');
 }
 
+/**
+ * Switch active inner tab and display corresponding content
+ * @param {string} tabName - Name of the inner tab to activate
+ */
 export function switchInnerTab(tabName) {
   const innerTabs = document.querySelectorAll('.inner-tab-button');
   const innerContents = document.querySelectorAll('.inner-tab-content');
@@ -74,6 +88,10 @@ export function switchInnerTab(tabName) {
   document.getElementById(`inner-tab-${tabName}`)?.classList.add('active');
 }
 
+/**
+ * Render list of patients in the sidebar
+ * @param {Array} patients - Array of patient objects
+ */
 export function renderPatientList(patients) {
   if (!DOM.patientList) return;
 
@@ -89,6 +107,10 @@ export function renderPatientList(patients) {
   DOM.patientList.innerHTML = html;
 }
 
+/**
+ * Select a patient and render their detail view
+ * @param {string} patientId - ID of the patient to select
+ */
 export function selectPatient(patientId) {
   window.currentPatient = window.patients.find(p => p.id === patientId);
   if (window.currentPatient) {
@@ -96,6 +118,10 @@ export function selectPatient(patientId) {
   }
 }
 
+/**
+ * Render detailed view of a patient with tabs for notes, indicaciones, and tendencias
+ * @param {Object} patient - Patient object to display
+ */
 export function renderPatientDetail(patient) {
   if (!DOM.mainContent) return;
 
@@ -118,6 +144,10 @@ export function renderPatientDetail(patient) {
   DOM.mainContent.innerHTML = html;
 }
 
+/**
+ * Delete a patient after confirmation
+ * @param {string} patientId - ID of the patient to delete
+ */
 export function deletePatient(patientId) {
   if (!confirm('¿Eliminar este paciente?')) return;
 
@@ -127,6 +157,12 @@ export function deletePatient(patientId) {
   window.currentPatient = null;
 }
 
+/**
+ * Add a new patient and render updated patient list
+ * @param {string} name - Patient name
+ * @param {string} expediente - Patient medical record number
+ * @returns {Object} The newly created patient object
+ */
 export function addPatient(name, expediente) {
   const newPatient = {
     id: Date.now().toString(),
@@ -144,6 +180,12 @@ export function addPatient(name, expediente) {
   return newPatient;
 }
 
+/**
+ * Update a patient field and persist to storage
+ * @param {string} patientId - ID of the patient to update
+ * @param {string} field - Field name to update
+ * @param {string} value - New value for the field
+ */
 export function updatePatientField(patientId, field, value) {
   const patient = window.patients.find(p => p.id === patientId);
   if (patient) {
@@ -153,6 +195,12 @@ export function updatePatientField(patientId, field, value) {
 }
 
 // Debounced form input handler
+/**
+ * Debounced handler for form input changes (300ms delay)
+ * @param {string} patientId - ID of the patient being edited
+ * @param {string} field - Field name being updated
+ * @param {string} value - New field value
+ */
 export const handleFormInput = debounce((patientId, field, value) => {
   updatePatientField(patientId, field, value);
 }, 300);

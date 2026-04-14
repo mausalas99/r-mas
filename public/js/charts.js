@@ -3,6 +3,11 @@
 let sparkCharts = {};
 let detailChart = null;
 
+/**
+ * Build date labels for trend charts from lab history entries
+ * @param {Array} sets - Array of lab history entries with timestamp property
+ * @returns {Array<string>} Array of formatted date labels (MM/DD)
+ */
 export function buildTendChartLabels(sets) {
   if (!sets || sets.length === 0) return [];
   return sets.map(s => {
@@ -13,6 +18,10 @@ export function buildTendChartLabels(sets) {
   });
 }
 
+/**
+ * Render trend cards with sparkline charts for current patient's lab history
+ * Displays key parameters (Hb, Leucocitos, Plaquetas, Glucosa, Creatinina, Na, K)
+ */
 export function renderTendencias() {
   const container = document.getElementById('tend-container');
   if (!container) return;
@@ -94,6 +103,10 @@ export function renderTendencias() {
   });
 }
 
+/**
+ * Open detail modal with full-size trend chart for a specific parameter
+ * @param {string} param - Lab parameter name (e.g., 'Hb', 'Glucosa')
+ */
 export function openTendDetail(param) {
   const backdrop = document.getElementById('tend-detail-backdrop');
   const canvas = document.getElementById('tend-detail-canvas');
@@ -144,6 +157,9 @@ export function openTendDetail(param) {
   });
 }
 
+/**
+ * Close detail modal and destroy the detail chart
+ */
 export function closeTendDetail() {
   const backdrop = document.getElementById('tend-detail-backdrop');
   if (backdrop) backdrop.style.display = 'none';
@@ -154,6 +170,9 @@ export function closeTendDetail() {
   }
 }
 
+/**
+ * Destroy all sparkline and detail charts to free resources
+ */
 export function destroyAllCharts() {
   Object.keys(sparkCharts).forEach(k => {
     if (sparkCharts[k]) {
