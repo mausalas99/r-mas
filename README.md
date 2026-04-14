@@ -75,30 +75,25 @@ R+ is organized into modular components for maintainability and performance:
 
 ```
 public/
-├── index.html (core UI shell, ~800 lines)
+├── index.html (UI shell: layout, styles, markup)
 ├── js/
+│   ├── app.js (main application: state, UI handlers, Chart.js tendencias, tours)
 │   ├── storage.js (localStorage persistence)
-│   ├── labs.js (lab data parsing)
-│   ├── charts.js (Chart.js rendering)
-│   └── ui.js (DOM interactions with caching)
+│   └── labs.js (lab text parsing and line rendering helpers)
 └── vendor/
     └── chart.umd.min.js (Chart.js library)
 ```
 
 ### Module Responsibilities
 
-- **storage.js**: Wraps localStorage with consistent interface for patients, notes, indicaciones, lab history
-- **labs.js**: Pure parsing functions for lab data extraction (no DOM dependencies)
-- **charts.js**: Chart.js lifecycle management with lazy-loading and memory cleanup
-- **ui.js**: DOM interactions with element caching and debounced handlers
+- **app.js**: Single ES module entry; loads data via `storage`, lab parsing from `labs`, and exposes handlers on `window` for `index.html` inline `onclick` / `oninput` attributes
+- **storage.js**: Wraps localStorage with consistent interface for patients, notes, indicaciones, lab history, settings, and optional `batchFetch` / `flushBatch` helpers for future request batching
+- **labs.js**: Lab report parsing (`procesarLabs`, section parsers, `renderEntry`, etc.); no application state
 
-### Performance Optimizations
+### Performance Notes
 
-- DOM query caching: Frequently accessed elements cached at module load
-- Parse caching: Lab text parsing results cached by hash
-- Request batching: Multiple /generate calls batched within 100ms window
-- Debounced inputs: Form input handlers debounced to 300ms
-- Lazy chart loading: Chart.js only loaded when Tendencias tab active
+- Chart.js is loaded from `vendor/` in the document head; tendencias sparklines destroy/recreate charts when the tab refreshes
+- `storage.saveAll` centralizes persisted writes from the main save path
 
 ---
 

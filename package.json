@@ -1,6 +1,6 @@
 {
-  "name": "r-plus-clinical",
-  "version": "1.8.0",
+  "name": "r-plus",
+  "version": "1.8.1",
   "description": "R+ — Laboratoriazo + Notas de Evolución",
   "main": "main.js",
   "scripts": {
@@ -24,7 +24,7 @@
     "electron-builder": "^26.8.1"
   },
   "build": {
-    "appId": "com.hospitaluniversitario.rplusclinical",
+    "appId": "com.hospitaluniversitario.rplus",
     "productName": "R+",
     "artifactName": "${productName}-${version}-${arch}.${ext}",
     "icon": "AppIcon.icns",

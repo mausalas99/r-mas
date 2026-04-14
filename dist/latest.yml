@@ -1,8 +1,8 @@
-version: 1.4.0
+version: 1.8.1
 files:
-  - url: R+-1.4.0-x64.exe
-    sha512: mmMRi8610fY7QcnhUiITIck5M7LEhKJ7hsugA0fjF4fQw274GN6Os8SXS5j+7sIDXZXQX7AGWz9KZUxnW7FWkQ==
-    size: 109848224
-path: R+-1.4.0-x64.exe
-sha512: mmMRi8610fY7QcnhUiITIck5M7LEhKJ7hsugA0fjF4fQw274GN6Os8SXS5j+7sIDXZXQX7AGWz9KZUxnW7FWkQ==
-releaseDate: '2026-04-12T13:53:51.992Z'
+  - url: r-plus-clinical-setup-1.8.1.exe
+    sha512: 94wpsstPkEhsFIFOx4+znLP886/dZRVrVJzLpMH96FmhBdAA4v1EKnAMIv0s7WVhxKVnk4LjF4wSSdF/z8defw==
+    size: 109921602
+path: r-plus-clinical-setup-1.8.1.exe
+sha512: 94wpsstPkEhsFIFOx4+znLP886/dZRVrVJzLpMH96FmhBdAA4v1EKnAMIv0s7WVhxKVnk4LjF4wSSdF/z8defw==
+releaseDate: '2026-04-14T00:58:31.190Z'

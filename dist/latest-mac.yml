@@ -1,11 +1,17 @@
-version: 1.4.0
+version: 1.8.1
 files:
-  - url: R+-1.4.0-arm64.zip
-    sha512: L1WpApfyAKMOXhjA88pKLIqDxQpGdLyjFZV/9xeER3/OVX1altyhWHHHNpCVKiUy3iVIPAdx3AnmUK5tuh61nA==
-    size: 141131346
-  - url: R+-1.4.0-x64.zip
-    sha512: Qum2oP9p98OiZdkCs7KETpB/NKQIfTuqwyYTjQiQNYvRmZe5mz4SFuyeJtxIVIq4sbpbKTDV9VBDstOmFj6eIQ==
-    size: 149157435
-path: R+-1.4.0-arm64.zip
-sha512: L1WpApfyAKMOXhjA88pKLIqDxQpGdLyjFZV/9xeER3/OVX1altyhWHHHNpCVKiUy3iVIPAdx3AnmUK5tuh61nA==
-releaseDate: '2026-04-12T14:01:38.594Z'
+  - url: R+-1.8.1-arm64.zip
+    sha512: mVWvB4YlIzbHCkaxX6GFYfQ6ceEPSCFIcMHhhzZqE8Q6BZHRSIQppjO+m8JhqQLIarUuS32nG+TyDHfIMmBeNA==
+    size: 141106521
+  - url: R+-1.8.1-x64.zip
+    sha512: R5xztXQe4f5sfR9bdm/QXbCH9NcxbXpWaKADdpXlNoKAoi6NfHfsL3L6jqv9rFtz2E5Rn8jGqHtrb8tbMjqEBw==
+    size: 147075991
+  - url: R+-1.8.1-arm64.dmg
+    sha512: UEDx3uXJYltYYaxva2SdAAvFmxUsuVIj8KO33udFgACFGZW7LLHeM0xtvLnhy+ZObAUiq17JDJcwJ9dWU6IOHw==
+    size: 144915459
+  - url: R+-1.8.1-x64.dmg
+    sha512: HtFNhGi2GT+Iv6LASrQOF/Iiw6U/uZ4MLGrSf62G39Qu1jqS6lCp6f2ZfiDtrN+5s+OBSI0JooIYtrEiSY2d9g==
+    size: 150915241
+path: R+-1.8.1-arm64.zip
+sha512: mVWvB4YlIzbHCkaxX6GFYfQ6ceEPSCFIcMHhhzZqE8Q6BZHRSIQppjO+m8JhqQLIarUuS32nG+TyDHfIMmBeNA==
+releaseDate: '2026-04-14T00:59:52.433Z'
