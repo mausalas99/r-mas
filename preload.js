@@ -2,13 +2,13 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
   onUpdateAvailable: function(cb) {
-    ipcRenderer.on('update-available', function(_e, version) { cb(version); });
+    ipcRenderer.on('update-available', function(_e, payload) { cb(payload); });
   },
   onUpdateProgress: function(cb) {
-    ipcRenderer.on('update-progress', function(_e, pct) { cb(pct); });
+    ipcRenderer.on('update-progress', function(_e, payload) { cb(payload); });
   },
   onUpdateReady: function(cb) {
-    ipcRenderer.on('update-ready', function(_e, version) { cb(version); });
+    ipcRenderer.on('update-ready', function(_e, payload) { cb(payload); });
   },
   onUpdateNotAvailable: function(cb) {
     ipcRenderer.on('update-not-available', function() { cb(); });
@@ -18,6 +18,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   installUpdate: function() {
     ipcRenderer.send('install-update');
+  },
+  openExternal: function(url) {
+    return ipcRenderer.invoke('open-external', url);
   },
   checkForUpdates: function() {
     ipcRenderer.send('check-for-updates');

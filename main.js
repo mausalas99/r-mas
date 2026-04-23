@@ -13,7 +13,21 @@ let server;
 let mainWindow;
 
 // Cache update state so renderer can receive it even if events fired before page loaded
-let pendingUpdate = null; // { type: 'available'|'progress'|'ready', version, pct }
+let pendingUpdate = null;
+
+function serializeReleaseNotes(info) {
+  if (info == null) return '';
+  const n = info.releaseNotes;
+  if (n == null) return '';
+  if (typeof n === 'string') return n;
+  if (Array.isArray(n)) {
+    return n
+      .map((x) => (typeof x === 'string' ? x : x && x.note ? String(x.note) : ''))
+      .filter(Boolean)
+      .join('\n');
+  }
+  return String(n);
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -55,11 +69,19 @@ function createWindow() {
     // Replay any update events that fired before the renderer was ready
     if (pendingUpdate) {
       if (pendingUpdate.type === 'available')
-        mainWindow.webContents.send('update-available', pendingUpdate.version);
+        mainWindow.webContents.send('update-available', {
+          version: pendingUpdate.version,
+          releaseNotes: pendingUpdate.releaseNotes || '',
+        });
       else if (pendingUpdate.type === 'progress')
-        mainWindow.webContents.send('update-progress', pendingUpdate.pct);
+        mainWindow.webContents.send('update-progress', {
+          percent: pendingUpdate.percent,
+          transferred: pendingUpdate.transferred,
+          total: pendingUpdate.total,
+          bytesPerSecond: pendingUpdate.bytesPerSecond,
+        });
       else if (pendingUpdate.type === 'ready')
-        mainWindow.webContents.send('update-ready', pendingUpdate.version);
+        mainWindow.webContents.send('update-ready', { version: pendingUpdate.version });
     }
     // Small delay to ensure renderer IPC listeners are registered
     setTimeout(() => autoUpdater.checkForUpdates().catch(() => {}), 1500);
@@ -70,21 +92,28 @@ function createWindow() {
 
 // ── Auto-updater events ───────────────────────────────────────────
 autoUpdater.on('update-available', (info) => {
-  pendingUpdate = { type: 'available', version: info.version };
+  const releaseNotes = serializeReleaseNotes(info);
+  pendingUpdate = { type: 'available', version: info.version, releaseNotes };
   if (mainWindow && !mainWindow.isDestroyed())
-    mainWindow.webContents.send('update-available', info.version);
+    mainWindow.webContents.send('update-available', { version: info.version, releaseNotes });
 });
 
 autoUpdater.on('download-progress', (p) => {
-  pendingUpdate = { type: 'progress', pct: Math.round(p.percent) };
+  const payload = {
+    percent: Math.round(p.percent),
+    transferred: p.transferred,
+    total: p.total,
+    bytesPerSecond: p.bytesPerSecond,
+  };
+  pendingUpdate = { type: 'progress', ...payload };
   if (mainWindow && !mainWindow.isDestroyed())
-    mainWindow.webContents.send('update-progress', Math.round(p.percent));
+    mainWindow.webContents.send('update-progress', payload);
 });
 
 autoUpdater.on('update-downloaded', (info) => {
   pendingUpdate = { type: 'ready', version: info.version };
   if (mainWindow && !mainWindow.isDestroyed())
-    mainWindow.webContents.send('update-ready', info.version);
+    mainWindow.webContents.send('update-ready', { version: info.version });
 });
 
 autoUpdater.on('update-not-available', () => {
@@ -107,6 +136,12 @@ ipcMain.on('install-update', () => autoUpdater.quitAndInstall());
 
 ipcMain.on('check-for-updates', () => {
   autoUpdater.checkForUpdates().catch(() => {});
+});
+
+ipcMain.handle('open-external', async (_e, url) => {
+  if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) return false;
+  await shell.openExternal(url);
+  return true;
 });
 
 ipcMain.handle('get-app-version', () => app.getVersion());
