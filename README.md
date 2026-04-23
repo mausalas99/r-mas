@@ -94,6 +94,7 @@ public/
 ├── index.html (UI shell: layout, styles, markup)
 ├── js/
 │   ├── app.js (main application: state, UI handlers, Chart.js tendencias, tours)
+│   ├── update-helpers.mjs (formato MB/velocidad para el modal de actualización)
 │   ├── storage.js (localStorage persistence)
 │   └── labs.js (lab text parsing and line rendering helpers)
 └── vendor/
@@ -118,6 +119,17 @@ public/
 La app busca actualizaciones automáticamente al iniciar. También puedes verificar manualmente desde el menú **R+ → Buscar actualizaciones…** (Mac) o **Aplicación → Buscar actualizaciones…** (Windows).
 
 En **macOS**, el instalador automático (Squirrel) solo acepta actualizaciones firmadas de forma compatible con la app ya instalada; el **identificador de paquete** (`appId`) debe mantenerse entre versiones. El nombre visible sigue siendo «R+»; el id interno no afecta el título de la ventana.
+
+### Volver a una versión anterior (rollback manual)
+
+No hay reversión automática del binario instalado. Para usar una versión anterior:
+
+1. Cierra R+ por completo.
+2. Abre [Releases](https://github.com/mausalas99/r-mas/releases) y descarga el `.dmg` o el `.exe` de la versión que necesites (no la “Latest”).
+3. **Mac:** abre el `.dmg` y arrastra R+ a Aplicaciones; si macOS ofrece **Reemplazar**, acéptalo. Si falla la firma o la validación de la actualización automática, elimina R+ de Aplicaciones y vuelve a instalar desde el `.dmg` descargado.
+4. **Windows:** ejecuta el instalador de la versión anterior; en la mayoría de los casos sobrescribe la instalación actual.
+
+Tus datos locales (pacientes, notas, respaldos JSON) no dependen del número de versión del instalador; no se borran al instalar una build anterior, salvo que una release documente un cambio de formato incompatible.
 
 ---
 
