@@ -4,6 +4,7 @@
   "description": "R+ — Laboratoriazo + Notas de Evolución",
   "main": "main.js",
   "scripts": {
+    "test": "node --test public/js/update-helpers.test.mjs",
     "start": "electron .",
     "build:mac": "npm run prebuild:mac && electron-builder --mac",
     "build:mac:signed": "npm run build:mac",
