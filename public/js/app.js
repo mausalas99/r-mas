@@ -19,6 +19,7 @@ import {
   renderToken,
   renderEntry
 } from './labs.js';
+import { formatProgressLine } from './update-helpers.mjs';
 
 
 // ════════════════════════════════════════════════════════════════════
@@ -389,6 +390,12 @@ function loadSettings() {
     if (window.electronAPI && typeof window.electronAPI.getAppVersion === 'function') {
       window.electronAPI.getAppVersion().then(function(v) {
         verEl.textContent = v || '—';
+        var LAST_SEEN_VERSION_KEY = 'rplus-last-seen-app-version';
+        var prev = localStorage.getItem(LAST_SEEN_VERSION_KEY);
+        if (prev && v && prev !== v) {
+          showToast('Actualizado a v' + v + '. Consulta Ajustes o el menú para buscar actualizaciones.', 'success');
+        }
+        if (v) localStorage.setItem(LAST_SEEN_VERSION_KEY, v);
       }).catch(function() { verEl.textContent = '—'; });
     } else {
       verEl.textContent = 'Web / desarrollo';
@@ -2001,55 +2008,219 @@ function generateIndicaciones() {
   .finally(function(){ btn.classList.remove('loading'); btn.disabled=false; });
 }
 
-// ── Auto-updater UI ───────────────────────────────────────────────
+// ── Auto-updater UI (modal) ───────────────────────────────────────
+var UPDATE_SNOOZE_KEY = 'rplus-update-snooze-until';
+var UPDATE_DISMISS_VER_KEY = 'rplus-update-dismiss-version';
+var pendingUpdaterTargetVersion = null;
+
+function getUpdateSnoozeUntil() {
+  var raw = localStorage.getItem(UPDATE_SNOOZE_KEY);
+  var n = raw ? parseInt(raw, 10) : 0;
+  return Number.isFinite(n) ? n : 0;
+}
+
+function setUpdateSnooze(hours) {
+  var h = hours || 24;
+  localStorage.setItem(UPDATE_SNOOZE_KEY, String(Date.now() + h * 3600000));
+}
+
+function isSnoozeActiveForVersion(version) {
+  var dismissed = localStorage.getItem(UPDATE_DISMISS_VER_KEY);
+  if (dismissed !== version) return false;
+  return Date.now() < getUpdateSnoozeUntil();
+}
+
+function markDismissedVersion(version) {
+  localStorage.setItem(UPDATE_DISMISS_VER_KEY, version || '');
+  setUpdateSnooze(24);
+}
+
+function showUpdateModal() {
+  var el = document.getElementById('update-modal-backdrop');
+  if (!el) return;
+  el.style.display = 'flex';
+  el.setAttribute('aria-hidden', 'false');
+  var modal = document.getElementById('update-modal');
+  if (modal) setTimeout(function() { try { modal.focus(); } catch (_e) {} }, 50);
+}
+
+function hideUpdateModal() {
+  var el = document.getElementById('update-modal-backdrop');
+  if (!el) return;
+  el.style.display = 'none';
+  el.setAttribute('aria-hidden', 'true');
+}
+
+function resetUpdateModalPanels() {
+  var err = document.getElementById('update-modal-error');
+  var wrap = document.getElementById('update-modal-progress-wrap');
+  if (err) { err.style.display = 'none'; err.textContent = ''; }
+  if (wrap) wrap.style.display = 'block';
+}
+
+function renderUpdateError(msg) {
+  resetUpdateModalPanels();
+  var box = document.getElementById('update-modal-error');
+  var state = document.getElementById('update-modal-state');
+  var wrap = document.getElementById('update-modal-progress-wrap');
+  var label = document.getElementById('update-modal-progress-label');
+  var pill = document.getElementById('update-modal-version-pill');
+  var notes = document.getElementById('update-modal-notes');
+  if (box) { box.style.display = 'block'; box.textContent = msg || 'Error desconocido'; }
+  if (state) state.textContent = '';
+  if (wrap) wrap.style.display = 'none';
+  if (label) label.textContent = '';
+  if (pill) pill.style.display = 'none';
+  if (notes) notes.textContent = '';
+  var title = document.getElementById('update-modal-title');
+  if (title && title.firstChild && title.firstChild.nodeType === 3) {
+    title.firstChild.textContent = 'Actualizaciones';
+  }
+  var actions = document.getElementById('update-modal-actions-primary');
+  var sec = document.getElementById('update-modal-actions-secondary');
+  if (actions) {
+    actions.innerHTML = '';
+    var retry = document.createElement('button');
+    retry.className = 'btn-primary';
+    retry.textContent = 'Reintentar';
+    retry.onclick = function() {
+      resetUpdateModalPanels();
+      if (window.electronAPI && window.electronAPI.checkForUpdates) window.electronAPI.checkForUpdates();
+      hideUpdateModal();
+    };
+    actions.appendChild(retry);
+    var close = document.createElement('button');
+    close.className = 'btn-secondary';
+    close.textContent = 'Cerrar';
+    close.onclick = function() { hideUpdateModal(); };
+    actions.appendChild(close);
+  }
+  if (sec) sec.innerHTML = '';
+  showUpdateModal();
+}
+
 function installUpdate() {
   if (window.electronAPI) window.electronAPI.installUpdate();
 }
 
 if (window.electronAPI) {
-  window.electronAPI.onUpdateAvailable(function(version) {
-    var banner = document.getElementById('update-banner');
-    banner.style.display = 'flex';
-    document.getElementById('update-banner-text').textContent = 'Descargando actualización v' + version + '…';
-    document.getElementById('update-progress-fill').style.width = '0%';
-  });
-  window.electronAPI.onUpdateProgress(function(pct) {
-    var banner = document.getElementById('update-banner');
-    banner.style.display = 'flex';
-    document.getElementById('update-banner-text').textContent = 'Descargando actualización… ' + pct + '%';
-    document.getElementById('update-progress-fill').style.width = pct + '%';
+  window.electronAPI.onUpdateAvailable(function(payload) {
+    var version = (payload && payload.version) ? payload.version : String(payload || '');
+    var releaseNotes = (payload && payload.releaseNotes) ? String(payload.releaseNotes) : '';
+    pendingUpdaterTargetVersion = version;
+    if (isSnoozeActiveForVersion(version)) return;
+    resetUpdateModalPanels();
+    var title = document.getElementById('update-modal-title');
+    if (title && title.firstChild && title.firstChild.nodeType === 3) {
+      title.firstChild.textContent = 'Nueva versión';
+    }
+    var pill = document.getElementById('update-modal-version-pill');
+    if (pill) {
+      pill.textContent = 'v' + version;
+      pill.style.display = 'inline-block';
+    }
+    var notes = document.getElementById('update-modal-notes');
+    if (notes) notes.textContent = releaseNotes;
+    var state = document.getElementById('update-modal-state');
+    if (state) state.textContent = 'Conectando… La descarga comenzará en breve.';
+    var fill = document.getElementById('update-modal-progress-fill');
+    if (fill) fill.style.width = '0%';
+    var label = document.getElementById('update-modal-progress-label');
+    if (label) label.textContent = '';
+    var actions = document.getElementById('update-modal-actions-primary');
+    if (actions) {
+      actions.innerHTML = '';
+      var later = document.createElement('button');
+      later.className = 'btn-secondary';
+      later.textContent = 'Más tarde';
+      later.onclick = function() {
+        markDismissedVersion(version);
+        hideUpdateModal();
+      };
+      actions.appendChild(later);
+    }
+    var sec = document.getElementById('update-modal-actions-secondary');
+    if (sec) {
+      sec.innerHTML = '';
+      var link = document.createElement('button');
+      link.type = 'button';
+      link.className = 'btn-link';
+      link.textContent = 'Ver notas en GitHub';
+      link.onclick = function() {
+        if (window.electronAPI && window.electronAPI.openExternal) {
+          window.electronAPI.openExternal('https://github.com/mausalas99/r-mas/releases');
+        }
+      };
+      sec.appendChild(link);
+    }
+    showUpdateModal();
   });
 
-  window.electronAPI.onUpdateReady(function(version) {
-    var banner = document.getElementById('update-banner');
-    banner.style.display = 'flex';
-    document.getElementById('update-progress-track').style.display = 'none';
-    document.getElementById('update-banner-text').textContent = 'R+ v' + version + ' lista para instalar.';
-    document.getElementById('update-actions').style.display = 'flex';
+  window.electronAPI.onUpdateProgress(function(payload) {
+    var pct = typeof payload === 'number' ? payload : (payload && payload.percent != null ? payload.percent : 0);
+    var transferred = payload && payload.transferred;
+    var total = payload && payload.total;
+    var bps = payload && payload.bytesPerSecond;
+    if (pendingUpdaterTargetVersion && isSnoozeActiveForVersion(pendingUpdaterTargetVersion)) return;
+    resetUpdateModalPanels();
+    var state = document.getElementById('update-modal-state');
+    if (state) state.textContent = 'Descargando…';
+    var fill = document.getElementById('update-modal-progress-fill');
+    if (fill) fill.style.width = pct + '%';
+    var label = document.getElementById('update-modal-progress-label');
+    if (label) {
+      if (transferred != null && total != null) {
+        label.textContent = formatProgressLine({
+          transferred: transferred,
+          total: total,
+          bytesPerSecond: bps,
+        });
+      } else {
+        label.textContent = 'Progreso: ' + pct + '%';
+      }
+    }
+    showUpdateModal();
+  });
+
+  window.electronAPI.onUpdateReady(function(payload) {
+    var version = (payload && payload.version) ? payload.version : String(payload || '');
+    if (isSnoozeActiveForVersion(version)) return;
+    resetUpdateModalPanels();
+    var state = document.getElementById('update-modal-state');
+    if (state) {
+      state.textContent =
+        'Listo para instalar. También se instalará al cerrar la aplicación si eliges esperar.';
+    }
+    var fill = document.getElementById('update-modal-progress-fill');
+    if (fill) fill.style.width = '100%';
+    var label = document.getElementById('update-modal-progress-label');
+    if (label) label.textContent = 'Descarga completa.';
+    var actions = document.getElementById('update-modal-actions-primary');
+    if (actions) {
+      actions.innerHTML = '';
+      var go = document.createElement('button');
+      go.className = 'btn-primary';
+      go.textContent = 'Instalar y reiniciar';
+      go.onclick = function() { installUpdate(); };
+      actions.appendChild(go);
+      var later = document.createElement('button');
+      later.className = 'btn-secondary';
+      later.textContent = 'Instalar al cerrar';
+      later.onclick = function() { hideUpdateModal(); };
+      actions.appendChild(later);
+    }
+    var sec = document.getElementById('update-modal-actions-secondary');
+    if (sec) sec.innerHTML = '';
+    showUpdateModal();
   });
 
   window.electronAPI.onUpdateNotAvailable(function() {
-    var banner = document.getElementById('update-banner');
-    banner.style.background = '#1e3a5f';
-    banner.style.borderBottom = '1px solid #1d4ed8';
-    banner.style.color = '#bfdbfe';
-    banner.style.display = 'flex';
-    document.getElementById('update-progress-track').style.display = 'none';
-    document.getElementById('update-actions').style.display = 'none';
-    document.getElementById('update-banner-text').textContent = 'R+ está actualizado.';
-    setTimeout(function() { banner.style.display = 'none'; }, 3000);
+    pendingUpdaterTargetVersion = null;
+    showToast('R+ está actualizado.', 'success');
   });
 
   window.electronAPI.onUpdateError(function(msg) {
-    var banner = document.getElementById('update-banner');
-    banner.style.background = '#7f1d1d';
-    banner.style.borderBottom = '1px solid #991b1b';
-    banner.style.color = '#fecaca';
-    banner.style.display = 'flex';
-    document.getElementById('update-progress-track').style.display = 'none';
-    document.getElementById('update-actions').style.display = 'none';
-    document.getElementById('update-banner-text').textContent = 'Error al buscar actualizaciones: ' + (msg || '');
-    setTimeout(function() { banner.style.display = 'none'; }, 8000);
+    renderUpdateError(msg);
   });
 }
 
