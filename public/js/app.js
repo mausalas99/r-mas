@@ -991,6 +991,108 @@ function triggerImportBackup() {
   document.getElementById('backup-file-input').click();
 }
 
+function triggerImportActivePatientBackup() {
+  var input = document.getElementById('patient-backup-file-input');
+  if (input) input.click();
+}
+
+function generatePatientId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+function findPatientByRegistro(registro) {
+  var r = String(registro || '').trim();
+  if (!r) return null;
+  return patients.find(function(p) {
+    return String(p.registro || '').trim() === r;
+  }) || null;
+}
+
+function ensureUniquePatientName(base) {
+  var desired = String(base || '').trim() || 'PACIENTE SIN NOMBRE';
+  var normalized = desired.toUpperCase();
+  var has = patients.some(function(p) {
+    return String(p.nombre || '').trim().toUpperCase() === normalized;
+  });
+  if (!has) return desired;
+  var i = 2;
+  while (i < 9999) {
+    var candidate = desired + ' (' + i + ')';
+    var exists = patients.some(function(p) {
+      return String(p.nombre || '').trim().toUpperCase() === candidate.toUpperCase();
+    });
+    if (!exists) return candidate;
+    i += 1;
+  }
+  return desired + ' (COPIA)';
+}
+
+function onPatientBackupFileChosen(ev) {
+  var f = ev.target.files && ev.target.files[0];
+  ev.target.value = '';
+  if (!f) return;
+  var reader = new FileReader();
+  reader.onload = function() {
+    try {
+      var payload = JSON.parse(reader.result);
+      if (!payload || payload.format !== 'r-plus-patient-export' || payload.version !== 1 || !payload.patient) {
+        showToast('El archivo no es una exportación válida de paciente.', 'error');
+        return;
+      }
+      var imported = payload.patient || {};
+      var registro = String(imported.registro || '').trim();
+      var existsByRegistro = findPatientByRegistro(registro);
+      var msg = existsByRegistro
+        ? ('Ya existe un paciente con el registro ' + registro + '. Esto sobrescribirá su nota, indicaciones y labs. ¿Continuar?')
+        : ('Se importará el paciente "' + (imported.nombre || 'Sin nombre') + '". ¿Continuar?');
+      if (!confirm(msg)) return;
+
+      if (existsByRegistro) {
+        var targetId = existsByRegistro.id;
+        existsByRegistro.nombre = imported.nombre || existsByRegistro.nombre;
+        existsByRegistro.edad = imported.edad || existsByRegistro.edad;
+        existsByRegistro.sexo = imported.sexo || existsByRegistro.sexo;
+        existsByRegistro.area = imported.area || existsByRegistro.area;
+        existsByRegistro.servicio = imported.servicio || existsByRegistro.servicio;
+        existsByRegistro.cuarto = imported.cuarto || existsByRegistro.cuarto;
+        existsByRegistro.cama = imported.cama || existsByRegistro.cama;
+        existsByRegistro.registro = imported.registro || existsByRegistro.registro;
+        notes[targetId] = payload.note || notes[targetId] || {};
+        indicaciones[targetId] = payload.indicaciones || indicaciones[targetId] || {};
+        labHistory[targetId] = Array.isArray(payload.labHistory) ? payload.labHistory : [];
+        activeId = targetId;
+      } else {
+        var newId = generatePatientId();
+        var newPatient = {
+          id: newId,
+          nombre: ensureUniquePatientName(imported.nombre || 'PACIENTE SIN NOMBRE'),
+          area: imported.area || '',
+          servicio: imported.servicio || '',
+          cuarto: imported.cuarto || '',
+          cama: imported.cama || '',
+          edad: imported.edad || '',
+          sexo: imported.sexo || 'F',
+          registro: imported.registro || '',
+          fromLab: !!imported.fromLab,
+        };
+        patients.unshift(newPatient);
+        notes[newId] = payload.note || {};
+        indicaciones[newId] = payload.indicaciones || {};
+        labHistory[newId] = Array.isArray(payload.labHistory) ? payload.labHistory : [];
+        activeId = newId;
+      }
+
+      saveState();
+      renderPatientList();
+      if (activeId) selectPatient(activeId);
+      showToast('Paciente importado correctamente.', 'success');
+    } catch (_err) {
+      showToast('No se pudo leer la exportación de paciente.', 'error');
+    }
+  };
+  reader.readAsText(f);
+}
+
 function onBackupFileChosen(ev) {
   var f = ev.target.files && ev.target.files[0];
   ev.target.value = '';
@@ -2405,7 +2507,9 @@ Object.assign(window, {
   resetAndStartOnboarding,
   exportDataBackup,
   exportActivePatientBackup,
+  triggerImportActivePatientBackup,
   triggerImportBackup,
+  onPatientBackupFileChosen,
   onBackupFileChosen,
   procesarReporte,
   limpiarReporte,

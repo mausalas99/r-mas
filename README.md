@@ -12,6 +12,7 @@ Herramienta clínica de escritorio para generación de **notas de evolución**, 
 - **Auto-actualización** — La app detecta nuevas versiones automáticamente y se actualiza con un clic.
 - **Búsqueda de pacientes** — Campo de búsqueda en la barra lateral (nombre, registro, cuarto, etc.).
 - **Atajos** — **⌘/Ctrl+1** Laboratorio; **⌘/Ctrl+2** Expediente; **⌘/Ctrl+3** abre **Mi Perfil** en la barra lateral; **⌘/Ctrl+4** abre **Ajustes**.
+- **Portabilidad por paciente** — Exporta e importa un solo paciente (`r-plus-patient-export`) sin reemplazar toda la base local.
 
 ---
 

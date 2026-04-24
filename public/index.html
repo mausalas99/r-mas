@@ -710,8 +710,10 @@
       <p style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;">Exporta o restaura pacientes, notas e indicaciones (JSON).</p>
       <button type="button" class="btn-edit-templates" onclick="exportDataBackup()">Exportar copia de seguridad…</button>
       <button type="button" class="btn-edit-templates" style="margin-top:2px;" onclick="exportActivePatientBackup()">Exportar paciente actual…</button>
+      <button type="button" class="btn-edit-templates" style="margin-top:2px;" onclick="triggerImportActivePatientBackup()">Importar paciente…</button>
       <button type="button" class="btn-edit-templates" style="margin-top:2px;" onclick="triggerImportBackup()">Importar copia de seguridad…</button>
       <input type="file" id="backup-file-input" accept="application/json,.json" style="display:none" onchange="onBackupFileChosen(event)">
+      <input type="file" id="patient-backup-file-input" accept="application/json,.json" style="display:none" onchange="onPatientBackupFileChosen(event)">
       <hr class="profile-divider">
       <div class="profile-defaults-title">Datos en esta computadora</div>
       <p style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;">R+ guarda pacientes y notas en el almacenamiento local de Electron (archivos del perfil de la app).</p>
