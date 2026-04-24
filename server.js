@@ -6,6 +6,9 @@ const { spawn } = require('child_process');
 
 const appExpress = express();
 appExpress.use(express.json({ limit: '2mb' }));
+appExpress.get('/health', (_req, res) => {
+  res.json({ ok: true, app: 'r-plus' });
+});
 appExpress.use(express.static(path.join(__dirname, 'public')));
 
 const DOWNLOADS = path.join(os.homedir(), 'Downloads');

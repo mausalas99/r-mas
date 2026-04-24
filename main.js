@@ -146,6 +146,14 @@ ipcMain.handle('open-external', async (_e, url) => {
 
 ipcMain.handle('get-app-version', () => app.getVersion());
 
+ipcMain.handle('get-user-data-path', () => app.getPath('userData'));
+
+ipcMain.handle('open-user-data-folder', async () => {
+  const p = app.getPath('userData');
+  const err = await shell.openPath(p);
+  return { ok: !err, path: p, error: err || null };
+});
+
 ipcMain.handle('select-output-dir', async () => {
   if (!mainWindow || mainWindow.isDestroyed()) return undefined;
   const result = await dialog.showOpenDialog(mainWindow, {

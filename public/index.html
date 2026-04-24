@@ -72,6 +72,26 @@
   html.dark .btn-remove-otro:hover { color: var(--error); background: rgba(248,113,113,0.15); }
   html.dark #update-banner { background: #14532d; border-bottom: 1px solid #166534; }
   #update-banner { display: none !important; }
+  .rpc-offline-banner {
+    display: none;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    background: #7f1d1d;
+    color: #fecaca;
+    border-bottom: 1px solid #991b1b;
+    text-align: center;
+  }
+  html.dark .rpc-offline-banner {
+    background: #450a0a;
+    color: #fca5a5;
+    border-bottom-color: #7f1d1d;
+  }
+  .rpc-offline-banner.visible { display: flex; }
   #update-modal-backdrop {
     display: none;
     position: fixed;
@@ -671,6 +691,13 @@
         <button type="button" class="settings-theme-btn" id="settings-theme-light" onclick="setThemeMode('light')">Claro</button>
         <button type="button" class="settings-theme-btn" id="settings-theme-dark" onclick="setThemeMode('dark')">Oscuro</button>
       </div>
+      <div class="profile-field-label" style="margin-top:10px;">Tamaño de texto</div>
+      <p style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;">Escala toda la interfaz (útil en pantallas pequeñas).</p>
+      <div class="settings-theme-row" id="settings-font-zoom-row">
+        <button type="button" class="settings-theme-btn" id="settings-font-100" onclick="setFontZoom(100)">Normal</button>
+        <button type="button" class="settings-theme-btn" id="settings-font-110" onclick="setFontZoom(110)">Grande</button>
+        <button type="button" class="settings-theme-btn" id="settings-font-125" onclick="setFontZoom(125)">Más grande</button>
+      </div>
       <hr class="profile-divider">
       <div class="profile-defaults-title">Carpeta de documentos</div>
       <p style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;">Los .docx generados se guardan aquí (si no eliges carpeta, se usa Descargas).</p>
@@ -682,10 +709,20 @@
       <div class="profile-defaults-title">Respaldo local</div>
       <p style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;">Exporta o restaura pacientes, notas e indicaciones (JSON).</p>
       <button type="button" class="btn-edit-templates" onclick="exportDataBackup()">Exportar copia de seguridad…</button>
+      <button type="button" class="btn-edit-templates" style="margin-top:2px;" onclick="exportActivePatientBackup()">Exportar paciente actual…</button>
       <button type="button" class="btn-edit-templates" style="margin-top:2px;" onclick="triggerImportBackup()">Importar copia de seguridad…</button>
       <input type="file" id="backup-file-input" accept="application/json,.json" style="display:none" onchange="onBackupFileChosen(event)">
       <hr class="profile-divider">
+      <div class="profile-defaults-title">Datos en esta computadora</div>
+      <p style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;">R+ guarda pacientes y notas en el almacenamiento local de Electron (archivos del perfil de la app).</p>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span id="settings-user-data-path" style="font-size:11px;color:var(--text-muted);flex:1;min-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="">—</span>
+        <button type="button" class="btn-edit-templates" style="margin:0;white-space:nowrap;" id="settings-open-userdata-btn" onclick="openUserDataFolderFromSettings()">Abrir carpeta…</button>
+      </div>
+      <p id="settings-userdata-web-hint" style="font-size:10px;color:var(--text-muted);line-height:1.35;margin:6px 0 0 0;display:none;">Solo disponible en la aplicación de escritorio.</p>
+      <hr class="profile-divider">
       <div class="profile-defaults-title">Aplicación</div>
+      <button type="button" class="btn-edit-templates" onclick="openQuickHelp()">Ayuda rápida y atajos</button>
       <div class="profile-field-label" style="margin-top:2px;">Versión</div>
       <div id="settings-app-version" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">—</div>
       <button type="button" class="btn-edit-templates" id="settings-check-updates-btn" onclick="checkForAppUpdates()">Buscar actualizaciones…</button>
@@ -694,6 +731,32 @@
   </div>
 </header>
 
+<div id="rpc-offline-banner" class="rpc-offline-banner" role="alert" aria-live="assertive">
+  Sin conexión con el servidor local. No podrás generar documentos hasta reiniciar R+ o recuperar el servicio en segundo plano.
+</div>
+
+<div id="help-quick-backdrop" class="modal-backdrop" aria-hidden="true" onclick="if(event.target===this)closeQuickHelp()">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="help-quick-title" onclick="event.stopPropagation()">
+    <h3 id="help-quick-title">Ayuda rápida</h3>
+    <div class="modal-section">
+      <div class="modal-section-label">Atajos de teclado</div>
+      <p style="font-size:13px;line-height:1.55;color:var(--text);"><strong>Ctrl/⌘ + 1</strong> — Laboratorio<br><strong>Ctrl/⌘ + 2</strong> — Expediente<br><strong>Ctrl/⌘ + 3</strong> — Abrir Mi Perfil (barra lateral)<br><strong>Ctrl/⌘ + 4</strong> — Abrir Ajustes</p>
+    </div>
+    <div class="modal-divider"></div>
+    <div class="modal-section">
+      <div class="modal-section-label">Respaldo</div>
+      <p style="font-size:13px;line-height:1.55;color:var(--text-muted);">Usa <strong>Exportar copia de seguridad</strong> para un JSON completo. <strong>Exportar paciente actual</strong> solo incluye al paciente seleccionado (nota, indicaciones e historial de labs en esta app).</p>
+    </div>
+    <div class="modal-divider"></div>
+    <div class="modal-section">
+      <div class="modal-section-label">Datos locales</div>
+      <p style="font-size:13px;line-height:1.55;color:var(--text-muted);">En la app de escritorio, <strong>Abrir carpeta…</strong> en Ajustes muestra dónde Electron guarda el perfil (incluye datos de R+). No compartas esa carpeta si contiene información sensible.</p>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn-save-profile" onclick="closeQuickHelp()">Cerrar</button>
+    </div>
+  </div>
+</div>
 
 <div id="onboarding-intro-backdrop" aria-hidden="true">
   <div class="onboarding-intro-modal" role="dialog" aria-modal="true" aria-labelledby="intro-modal-title">
@@ -957,7 +1020,7 @@
   </div>
 </div>
 
-<div class="toast" id="toast" tabindex="-1"></div>
+<div class="toast" id="toast" tabindex="-1" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <!-- Templates modal -->
 <div class="templates-modal-backdrop" id="templates-modal" style="display:none;">

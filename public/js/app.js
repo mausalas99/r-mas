@@ -247,6 +247,31 @@ function setThemeMode(mode) {
   syncThemeSettingsButtons();
 }
 
+var FONT_ZOOM_LS = 'rpc-font-zoom';
+
+function applyFontZoom() {
+  var p = parseInt(localStorage.getItem(FONT_ZOOM_LS) || '100', 10);
+  if (!Number.isFinite(p)) p = 100;
+  if (p < 90) p = 90;
+  if (p > 140) p = 140;
+  document.documentElement.style.zoom = String(p / 100);
+}
+
+function syncFontZoomButtons() {
+  var p = parseInt(localStorage.getItem(FONT_ZOOM_LS) || '100', 10);
+  if (p !== 100 && p !== 110 && p !== 125) p = 100;
+  ['100', '110', '125'].forEach(function(v) {
+    var btn = document.getElementById('settings-font-' + v);
+    if (btn) btn.classList.toggle('active', p === parseInt(v, 10));
+  });
+}
+
+function setFontZoom(pct) {
+  localStorage.setItem(FONT_ZOOM_LS, String(pct));
+  applyFontZoom();
+  syncFontZoomButtons();
+}
+
 function toggleTheme() {
   setThemeMode(document.documentElement.classList.contains('dark') ? 'light' : 'dark');
 }
@@ -262,9 +287,11 @@ document.getElementById('today-date').textContent =
   new Date().toLocaleDateString('es-MX', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
 renderPatientList();
 if (patients.length > 0) selectPatient(patients[0].id);
+applyFontZoom();
 loadSettings();
 syncThemeSettingsButtons();
 initGuidedTourGate();
+initRpcServerHealthWatch();
 
 function switchAppTab(tab) {
   activeAppTab = tab;
@@ -403,6 +430,24 @@ function loadSettings() {
   }
   var hintEl = document.getElementById('settings-updates-hint');
   if (hintEl) hintEl.style.display = window.electronAPI ? 'block' : 'none';
+  var udEl = document.getElementById('settings-user-data-path');
+  var udHint = document.getElementById('settings-userdata-web-hint');
+  var udBtn = document.getElementById('settings-open-userdata-btn');
+  if (window.electronAPI && typeof window.electronAPI.getUserDataPath === 'function') {
+    if (udHint) udHint.style.display = 'none';
+    if (udBtn) udBtn.disabled = false;
+    window.electronAPI.getUserDataPath().then(function(p) {
+      if (udEl) {
+        udEl.textContent = p || '—';
+        udEl.title = p || '';
+      }
+    }).catch(function() { if (udEl) udEl.textContent = '—'; });
+  } else {
+    if (udEl) udEl.textContent = 'Navegador / modo desarrollo';
+    if (udHint) udHint.style.display = 'block';
+    if (udBtn) udBtn.disabled = true;
+  }
+  syncFontZoomButtons();
 }
 
 function saveSettings() {
@@ -817,6 +862,65 @@ function resetAndStartOnboarding() {
   showTourIntroModal();
 }
 
+function setRpcOfflineVisible(show) {
+  var b = document.getElementById('rpc-offline-banner');
+  if (!b) return;
+  b.classList.toggle('visible', !!show);
+}
+
+function checkRpcServerHealth() {
+  fetch('/health', { method: 'GET', cache: 'no-store' })
+    .then(function(r) {
+      if (!r.ok) throw new Error('bad status');
+      return r.json();
+    })
+    .then(function(j) {
+      if (!j || !j.ok) throw new Error('bad payload');
+      setRpcOfflineVisible(false);
+    })
+    .catch(function() {
+      setRpcOfflineVisible(true);
+    });
+}
+
+function initRpcServerHealthWatch() {
+  checkRpcServerHealth();
+  setInterval(checkRpcServerHealth, 15000);
+}
+
+function openUserDataFolderFromSettings() {
+  if (!window.electronAPI || !window.electronAPI.openUserDataFolder) {
+    showToast('Solo disponible en la aplicación de escritorio.', 'error');
+    return;
+  }
+  window.electronAPI.openUserDataFolder().then(function(res) {
+    if (res && res.ok) showToast('Carpeta abierta', 'success');
+    else showToast((res && res.error) || 'No se pudo abrir la carpeta', 'error');
+  }).catch(function() {
+    showToast('No se pudo abrir la carpeta', 'error');
+  });
+}
+
+function openQuickHelp() {
+  var el = document.getElementById('help-quick-backdrop');
+  if (!el) return;
+  el.classList.add('open');
+  el.setAttribute('aria-hidden', 'false');
+  closeSettingsDropdown();
+}
+
+function closeQuickHelp() {
+  var el = document.getElementById('help-quick-backdrop');
+  if (!el) return;
+  el.classList.remove('open');
+  el.setAttribute('aria-hidden', 'true');
+}
+
+function safeExportSlug(str) {
+  var s = (str || 'paciente').replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9]+/g, '_').replace(/^_|_$/g, '');
+  return (s || 'paciente').slice(0, 48);
+}
+
 // ── Respaldo local (exportar / importar JSON) ─────────────────────
 function exportDataBackup() {
   saveState();
@@ -846,6 +950,41 @@ function exportDataBackup() {
   document.body.removeChild(a);
   URL.revokeObjectURL(a.href);
   showToast('Respaldo descargado', 'success');
+}
+
+function exportActivePatientBackup() {
+  if (!activeId) {
+    showToast('Selecciona un paciente en la lista.', 'error');
+    return;
+  }
+  if (activeId === DEMO_PATIENT_ID) {
+    showToast('El paciente de demostración no se exporta.', 'error');
+    return;
+  }
+  var patient = patients.find(function(p) { return p.id === activeId; });
+  if (!patient) return;
+  saveState();
+  var payload = {
+    format: 'r-plus-patient-export',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    appVersion: window.__RPC_APP_VERSION__ || null,
+    patient: patient,
+    note: notes[activeId] || null,
+    indicaciones: indicaciones[activeId] || null,
+    labHistory: labHistory[activeId] || [],
+  };
+  var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  var d = new Date();
+  var ds = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  a.download = 'R-plus-paciente-' + safeExportSlug(patient.nombre) + '-' + ds + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+  showToast('Paciente exportado', 'success');
 }
 
 function triggerImportBackup() {
@@ -1276,12 +1415,27 @@ document.getElementById('modal').addEventListener('click', function(e) {
 });
 
 document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    var hq = document.getElementById('help-quick-backdrop');
+    if (hq && hq.classList.contains('open')) {
+      closeQuickHelp();
+      return;
+    }
+  }
   if (e.key === 'Escape' && document.getElementById('modal').classList.contains('open')) closeModal();
   var mod = e.metaKey || e.ctrlKey;
-  if (mod && (e.key === '1' || e.key === '2')) {
+  if (mod && (e.key === '1' || e.key === '2' || e.key === '3' || e.key === '4')) {
     e.preventDefault();
     if (e.key === '1') switchAppTab('lab');
     if (e.key === '2') switchAppTab('nota');
+    if (e.key === '3') {
+      var pb = document.getElementById('profile-body');
+      if (pb && pb.style.display === 'none') toggleProfileSection();
+    }
+    if (e.key === '4') {
+      var dd = document.getElementById('settings-dropdown');
+      if (dd && !dd.classList.contains('open')) toggleSettingsDropdown();
+    }
   }
 });
 
@@ -2228,6 +2382,10 @@ Object.assign(window, {
   installUpdate,
   toggleTheme,
   setThemeMode,
+  setFontZoom,
+  openUserDataFolderFromSettings,
+  openQuickHelp,
+  closeQuickHelp,
   switchAppTab,
   switchInnerTab,
   guidedTourIntroStart,
@@ -2246,6 +2404,7 @@ Object.assign(window, {
   saveSettings,
   resetAndStartOnboarding,
   exportDataBackup,
+  exportActivePatientBackup,
   triggerImportBackup,
   onBackupFileChosen,
   procesarReporte,

@@ -28,6 +28,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getAppVersion: function() {
     return ipcRenderer.invoke('get-app-version');
   },
+  getUserDataPath: function() {
+    return ipcRenderer.invoke('get-user-data-path');
+  },
+  openUserDataFolder: function() {
+    return ipcRenderer.invoke('open-user-data-folder');
+  },
   selectOutputDir: function() {
     return ipcRenderer.invoke('select-output-dir');
   },

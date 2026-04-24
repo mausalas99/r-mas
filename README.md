@@ -11,7 +11,7 @@ Herramienta clínica de escritorio para generación de **notas de evolución**, 
 - **Indicaciones médicas** — Generación de hoja de indicaciones en `.docx` con secciones configurables.
 - **Auto-actualización** — La app detecta nuevas versiones automáticamente y se actualiza con un clic.
 - **Búsqueda de pacientes** — Campo de búsqueda en la barra lateral (nombre, registro, cuarto, etc.).
-- **Atajos** — **Cmd+1** (Mac) o **Ctrl+1** (Windows) → Laboratorio; **Cmd+2** / **Ctrl+2** → Expediente.
+- **Atajos** — **⌘/Ctrl+1** Laboratorio; **⌘/Ctrl+2** Expediente; **⌘/Ctrl+3** abre **Mi Perfil** en la barra lateral; **⌘/Ctrl+4** abre **Ajustes**.
 
 ---
 
@@ -111,6 +111,7 @@ public/
 
 - Chart.js is loaded from `vendor/` in the document head; tendencias sparklines destroy/recreate charts when the tab refreshes
 - `storage.saveAll` centralizes persisted writes from the main save path
+- `server.js` expone `GET /health` para que el front compruebe si el servidor local sigue respondiendo
 
 ---
 
