@@ -25,6 +25,7 @@ import {
   parseMedicationPaste,
   resolveFechaActualizacion,
   buildMedRecetaCopyText,
+  formatMedicationEgresoLine,
 } from './med-receta-core.mjs';
 
 
@@ -36,6 +37,33 @@ var notes        = storage.getNotes();
 var indicaciones = storage.getIndicaciones();
 var labHistory   = storage.getLabHistory();
 var medRecetaByPatient = storage.getMedRecetaByPatient();
+var medNotaSelectionByPatient = {};
+var medCatalogStaging = [];
+
+var MED_SOAP_CATALOG = {
+  analgesia: [
+    'PARACETAMOL 1 G IV C/8H',
+    'KETOROLACO 30 MG IV C/8H PRN',
+    'METAMIZOL 1 G IV C/8H PRN',
+    'MORFINA 2 MG IV PRN',
+    'TRAMADOL 100 MG IV C/12H',
+  ],
+  abx: [
+    'CEFTRIAXONA 1 G IV C/24H',
+    'ERTAPENEM 1 G IV C/24H',
+    'MEROPENEM 1 G IV C/8H',
+    'PIPERACILINA-TAZOBACTAM 4.5 G IV C/6H',
+    'VANCOMICINA 1 G IV C/12H (AJUSTAR SEGÚN FUNCIÓN RENAL)',
+    'METRONIDAZOL 500 MG IV C/8H',
+  ],
+  antihta: [
+    'LOSARTAN 50 MG VO C/24H',
+    'ENALAPRIL 10 MG VO C/12H',
+    'AMLODIPINO 5 MG VO C/24H',
+    'LABETALOL 200 MG VO C/12H',
+    'HIDROCLOROTIAZIDA 25 MG VO C/24H',
+  ],
+};
 var activeId     = null;
 var activeInner  = 'notas';
 var activeAppTab = 'lab';
@@ -655,6 +683,7 @@ function deletePatient(e, id) {
   delete notes[id]; delete indicaciones[id];
   if (labHistory && labHistory[id]) delete labHistory[id];
   if (medRecetaByPatient && medRecetaByPatient[id]) delete medRecetaByPatient[id];
+  if (medNotaSelectionByPatient[id]) delete medNotaSelectionByPatient[id];
   saveState();
   addAuditEntry('patient-delete', 'ok', 1, target ? (target.registro || target.nombre || '') : '');
   if (activeId === id) activeId = patients.length ? patients[0].id : null;
@@ -2968,6 +2997,89 @@ function openLabPatientPicker() {
   document.body.appendChild(overlay);
 }
 
+function getMedNotaSelMap(patientId) {
+  if (!medNotaSelectionByPatient[patientId]) medNotaSelectionByPatient[patientId] = {};
+  return medNotaSelectionByPatient[patientId];
+}
+
+function isMedNotaSelected(patientId, itemId) {
+  return !!getMedNotaSelMap(patientId)[itemId];
+}
+
+function setMedNotaSelected(patientId, itemId, on) {
+  var m = getMedNotaSelMap(patientId);
+  if (on) m[itemId] = true;
+  else delete m[itemId];
+}
+
+function renderMedNotaFooter() {
+  var foot = document.getElementById('med-nota-footer');
+  if (!foot) return;
+  foot.style.display = 'block';
+
+  function catButtons(catKey, label) {
+    var phrases = MED_SOAP_CATALOG[catKey] || [];
+    return (
+      '<div style="margin:6px 0;">' +
+      '<span style="font-size:11px;font-weight:700;color:var(--text-muted);">' +
+      esc(label) +
+      ':</span> ' +
+      phrases
+        .map(function (ph) {
+          return (
+            '<button type="button" class="btn-lab-history" style="margin:3px 4px 3px 0;" onclick="addMedSoapCatalogPhrase(\'' +
+            catKey +
+            "','" +
+            safeAttrJsString(ph) +
+            "')\">" +
+            esc(ph) +
+            '</button>'
+          );
+        })
+        .join('') +
+      '</div>'
+    );
+  }
+
+  var stagingHtml =
+    medCatalogStaging.length > 0
+      ? '<div style="margin:10px 0;font-size:12px;">' +
+        '<strong>Pendientes (catálogo → SOAP):</strong> ' +
+        medCatalogStaging
+          .map(function (s, i) {
+            return (
+              '<span style="display:inline-flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:2px 8px;margin:2px;">' +
+              esc(s.text) +
+              '<button type="button" onclick="removeMedCatalogStagingRow(' +
+              i +
+              ')" style="border:none;background:none;cursor:pointer;color:var(--error);padding:0 4px;line-height:1;" aria-label="Quitar">×</button></span>'
+            );
+          })
+          .join('') +
+        '</div>'
+      : '';
+
+  foot.innerHTML =
+    '<p style="font-size:12px;color:var(--text-muted);margin:0 0 10px 0;">Marca <strong>Nota</strong> en la receta y/o añade frases rápidas; luego <strong>Añadir a Tratamiento</strong> o <strong>Llevar a SOAP</strong> (rellena Analgesia / ABX / AntiHTA en el modal).</p>' +
+    catButtons('analgesia', 'Analgésicos') +
+    catButtons('abx', 'Antibióticos') +
+    catButtons('antihta', 'Antihipertensivos') +
+    stagingHtml +
+    '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">' +
+    '<button type="button" class="btn-generate" onclick="mediAnadirATratamiento()">Añadir a Tratamiento</button>' +
+    '<button type="button" class="btn-generate" style="background:#065F46;" onclick="mediLlevarASOAP()">Llevar a SOAP</button>' +
+    '<button type="button" onclick="limpiarSeleccionMedNota()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:13px;font-family:inherit;color:var(--text-muted);cursor:pointer;">Limpiar selección</button>' +
+    '</div>';
+}
+
+function hideMedNotaFooter() {
+  var foot = document.getElementById('med-nota-footer');
+  if (foot) {
+    foot.style.display = 'none';
+    foot.innerHTML = '';
+  }
+}
+
 function renderMedRecetaPanel() {
   var hintEl = document.getElementById('med-hint');
   var fechaEl = document.getElementById('med-fecha-actualizacion');
@@ -2982,6 +3094,7 @@ function renderMedRecetaPanel() {
     listEl.innerHTML = '';
     outPre.textContent = '';
     if (outCard) outCard.style.display = 'none';
+    hideMedNotaFooter();
     return;
   }
   var block = medRecetaByPatient[activeId];
@@ -2992,6 +3105,7 @@ function renderMedRecetaPanel() {
     listEl.innerHTML = '';
     outPre.textContent = '';
     if (outCard) outCard.style.display = 'none';
+    hideMedNotaFooter();
     return;
   }
   hintEl.style.display = 'none';
@@ -3001,26 +3115,41 @@ function renderMedRecetaPanel() {
   }
   listEl.innerHTML = block.items
     .map(function (it) {
-      var sid = esc(it.id || '');
+      var sid = String(it.id || '');
       var label = esc((it.nombreRaw || '').slice(0, 120));
       var chk = it.suspendido ? ' checked' : '';
+      var paraNota = isMedNotaSelected(activeId, sid) ? ' checked' : '';
+      var diaBadge =
+        it.diaTratamiento != null
+          ? '<span style="flex-shrink:0;font-size:11px;font-weight:700;background:var(--lab-chip-bg);color:var(--lab-chip-txt);padding:2px 8px;border-radius:999px;white-space:nowrap;">Día ' +
+            esc(String(it.diaTratamiento)) +
+            '</span>'
+          : '';
       return (
-        '<div class="lab-history-row" style="align-items:flex-start;">' +
-        '<label style="display:flex;gap:10px;cursor:pointer;flex:1;min-width:0;">' +
-        '<input type="checkbox" data-med-susp="' +
-        sid +
-        '"' +
+        '<div class="lab-history-row" style="align-items:center;flex-wrap:wrap;gap:8px;">' +
+        '<label style="display:flex;gap:6px;cursor:pointer;align-items:center;flex-shrink:0;" title="Suspender del texto de egreso">' +
+        '<input type="checkbox"' +
         chk +
         ' onchange="toggleMedRecetaSuspendido(\'' +
-        sid +
-        '\', this.checked)" aria-label="Suspender"/>' +
-        '<span style="font-size:13px;line-height:1.4;">' +
+        safeAttrJsString(sid) +
+        '\', this.checked)"/>' +
+        '<span style="font-size:11px;color:var(--text-muted);">Susp.</span></label>' +
+        '<label style="display:flex;gap:6px;cursor:pointer;align-items:center;flex-shrink:0;" title="Incluir al enviar a Tratamiento o SOAP">' +
+        '<input type="checkbox"' +
+        paraNota +
+        ' onchange="toggleMedRecetaParaNota(\'' +
+        safeAttrJsString(sid) +
+        '\', this.checked)"/>' +
+        '<span style="font-size:11px;color:var(--text-muted);">Nota</span></label>' +
+        '<span style="font-size:13px;line-height:1.4;flex:1;min-width:140px;">' +
         label +
-        '</span></label>' +
-        '<span style="font-size:12px;color:var(--text-muted);flex-shrink:0;">Suspender</span></div>'
+        '</span>' +
+        diaBadge +
+        '</div>'
       );
     })
     .join('');
+  renderMedNotaFooter();
   var txt = buildMedRecetaCopyText(block.items);
   outPre.textContent = txt;
   if (outCard) outCard.style.display = txt.trim() ? 'block' : 'none';
@@ -3034,6 +3163,175 @@ function toggleMedRecetaSuspendido(itemId, suspended) {
   if (!it) return;
   it.suspendido = !!suspended;
   saveState();
+  renderMedRecetaPanel();
+}
+
+function toggleMedRecetaParaNota(itemId, selected) {
+  if (!activeId) return;
+  setMedNotaSelected(activeId, String(itemId), !!selected);
+  renderMedRecetaPanel();
+}
+
+function addMedSoapCatalogPhrase(catKey, text) {
+  var c = String(catKey || '').trim();
+  if (c !== 'analgesia' && c !== 'abx' && c !== 'antihta') return;
+  var t = String(text || '').trim();
+  if (!t) return;
+  medCatalogStaging.push({ cat: c, text: t });
+  renderMedRecetaPanel();
+  showToast('Frase añadida a pendientes SOAP', 'success');
+}
+
+function removeMedCatalogStagingRow(index) {
+  var i = parseInt(index, 10);
+  if (isNaN(i) || i < 0 || i >= medCatalogStaging.length) return;
+  medCatalogStaging.splice(i, 1);
+  renderMedRecetaPanel();
+}
+
+function limpiarSeleccionMedNota() {
+  if (activeId) medNotaSelectionByPatient[activeId] = {};
+  medCatalogStaging = [];
+  renderMedRecetaPanel();
+  showToast('Selección limpiada', 'success');
+}
+
+function classifyMedSoapCategory(item) {
+  var n = (item.nombreRaw || '').toUpperCase();
+  if (
+    /(ERTAPENEM|MEROPENEM|CEFTRIAX|CEFEPIME|PIPERACILINA|TAZOBACTAM|VANCOMICINA|AMIKACINA|LEVOFLOX|CIPROFLOX|MOXIFLOX|METRONIDAZOL|LINEZOLID|DAPTOMICINA|CEFAZOLINA|AZTREONAM|COLISTIN|IMIPENEM|PENICILINA|AMOXICILINA|TRIMETOPRIM|SEFOTAXIMA|CEFUROXIMA|AMPICILINA|CLINDAMICINA|BACTRIM|SULFAMETOXAZOL)/i.test(
+      n
+    )
+  ) {
+    return 'abx';
+  }
+  if (
+    /(PARACETAMOL|ACETAMINOFEN|METAMIZOL|DIPIRONA|KETOROLAC|MORFINA|TRAMADOL|IBUPROFENO|NAPROXENO|DICLOFENACO|ACETILSALICILICO|ONDANSETRON)/i.test(
+      n
+    )
+  ) {
+    return 'analgesia';
+  }
+  if (
+    /(LOSARTAN|ENALAPRIL|LISINOPRIL|AMLODIPINO|NIFEDIPINO|CARVEDILOL|METOPROLOL|LABETALOL|HIDROCLOROTIAZ|ESMOLOL|CLEVUDIPINO|NICARDIPINO|IRBESARTAN|TELMISARTAN|VALSARTAN|CAPTOPRIL|CLONIDINA|RAMIPRIL|OLMESARTAN)/i.test(
+      n
+    )
+  ) {
+    return 'antihta';
+  }
+  return 'abx';
+}
+
+function medInstructionFragmentForSoap(it) {
+  var full = formatMedicationEgresoLine(it);
+  var parts = full.split('||');
+  if (parts.length < 2) return full.replace(/\.\s*$/, '').trim();
+  return parts[1].replace(/^\s+/, '').replace(/\.\s*$/, '').trim();
+}
+
+function mergeSoapMedField(fieldId, fragment) {
+  var el = document.getElementById(fieldId);
+  if (!el || !fragment) return;
+  var f = String(fragment).trim();
+  if (!f) return;
+  var cur = el.value.trim();
+  el.value = cur ? cur + ' | ' + f : f;
+}
+
+function openSOAPModalDirect() {
+  var bd = document.getElementById('soap-modal-backdrop');
+  if (bd) bd.classList.add('open');
+}
+
+function mediAnadirATratamiento() {
+  if (!activeId) {
+    showToast('Selecciona un paciente', 'error');
+    return;
+  }
+  var block = medRecetaByPatient[activeId];
+  if (!block || !block.items || !block.items.length) {
+    showToast('No hay medicamentos en la receta', 'error');
+    return;
+  }
+  var sel = getMedNotaSelMap(activeId);
+  var lines = block.items
+    .filter(function (it) {
+      return sel[it.id] && !it.suspendido;
+    })
+    .map(function (it) {
+      return formatMedicationEgresoLine(it);
+    });
+  if (!lines.length) {
+    showToast('Marca «Nota» en al menos un medicamento activo', 'error');
+    return;
+  }
+  if (!notes[activeId]) notes[activeId] = {};
+  var tx = notes[activeId].tratamiento;
+  if (!Array.isArray(tx) || !tx.length) tx = [''];
+  var firstEmpty = tx.length === 1 && !(tx[0] || '').trim();
+  if (firstEmpty) {
+    notes[activeId].tratamiento = lines.slice();
+  } else {
+    lines.forEach(function (L) {
+      tx.push(L);
+    });
+    notes[activeId].tratamiento = tx;
+  }
+  saveState();
+  switchAppTab('nota');
+  switchInnerTab('notas');
+  renderNoteForm();
+  showToast(lines.length + ' línea(s) añadidas a Tratamiento', 'success');
+}
+
+function mediLlevarASOAP() {
+  if (!activeId) {
+    showToast('Selecciona un paciente', 'error');
+    return;
+  }
+  var block = medRecetaByPatient[activeId];
+  var sel = getMedNotaSelMap(activeId);
+  var hasReceta =
+    block &&
+    block.items &&
+    block.items.some(function (it) {
+      return sel[it.id] && !it.suspendido;
+    });
+  var hasCat = medCatalogStaging.length > 0;
+  if (!hasReceta && !hasCat) {
+    showToast('Marca «Nota» en la receta o añade frases del catálogo', 'error');
+    return;
+  }
+  var buckets = { analgesia: [], abx: [], antihta: [] };
+  if (block && block.items) {
+    block.items.forEach(function (it) {
+      if (!sel[it.id] || it.suspendido) return;
+      var cat = classifyMedSoapCategory(it);
+      buckets[cat].push(medInstructionFragmentForSoap(it));
+    });
+  }
+  medCatalogStaging.forEach(function (s) {
+    if (buckets[s.cat]) buckets[s.cat].push(s.text);
+  });
+  if (!buckets.analgesia.length && !buckets.abx.length && !buckets.antihta.length) {
+    showToast('No quedó nada que volcar', 'error');
+    return;
+  }
+  buckets.analgesia.forEach(function (t) {
+    mergeSoapMedField('soap-analgesia', t);
+  });
+  buckets.abx.forEach(function (t) {
+    mergeSoapMedField('soap-abx', t);
+  });
+  buckets.antihta.forEach(function (t) {
+    mergeSoapMedField('soap-antihta', t);
+  });
+  medCatalogStaging = [];
+  switchAppTab('nota');
+  switchInnerTab('notas');
+  renderNoteForm();
+  openSOAPModalDirect();
+  showToast('Campos SOAP actualizados · completa e Insertar en evolución', 'success');
   renderMedRecetaPanel();
 }
 
@@ -3061,6 +3359,8 @@ function procesarRecetaMed() {
     fechaActualizacion: fecha,
     items: parsed.items,
   };
+  medNotaSelectionByPatient[activeId] = {};
+  medCatalogStaging = [];
   saveState();
   renderMedRecetaPanel();
   var msg = 'Receta actualizada (' + parsed.items.length + ' medicamentos)';
@@ -5407,6 +5707,12 @@ Object.assign(window, {
   limpiarRecetaInput,
   copiarMedicamentosAlPortapapeles,
   toggleMedRecetaSuspendido,
+  toggleMedRecetaParaNota,
+  addMedSoapCatalogPhrase,
+  removeMedCatalogStagingRow,
+  limpiarSeleccionMedNota,
+  mediAnadirATratamiento,
+  mediLlevarASOAP,
   enviarLabsANota,
   closeModal,
   savePatient,
