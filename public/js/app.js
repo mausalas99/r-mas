@@ -2144,6 +2144,13 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '2.0.1': [
+    {
+      title: 'Modal de actualización',
+      body:
+        'Las notas de la nueva versión se muestran como texto legible dentro de la app, sin etiquetas HTML visibles.',
+    },
+  ],
   '2.0.0': [
     {
       title: 'Medicamentos y plantilla SOAP',
@@ -5383,6 +5390,27 @@ function resetUpdateModalPanels() {
   if (wrap) wrap.style.display = 'block';
 }
 
+/** Convierte notas de release (HTML o texto) a texto plano para el modal; evita mostrar etiquetas crudas. */
+function stripHtmlToPlainText(html) {
+  if (html == null || html === '') return '';
+  var raw = String(html).trim();
+  if (!raw) return '';
+  try {
+    var doc = new DOMParser().parseFromString(raw, 'text/html');
+    var t = (doc.body && doc.body.textContent) ? doc.body.textContent : '';
+    t = t.replace(/\n{3,}/g, '\n\n').replace(/[ \t]+\n/g, '\n').trim();
+    if (t) return t;
+  } catch (_e) { /* fallback below */ }
+  return raw
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function renderUpdateError(msg) {
   resetUpdateModalPanels();
   var box = document.getElementById('update-modal-error');
@@ -5432,7 +5460,8 @@ if (window.electronAPI) {
   window.electronAPI.onUpdateAvailable(function(payload) {
     try {
       var version = (payload && payload.version) ? payload.version : String(payload || '');
-      var releaseNotes = '';
+      var rawNotes = (payload && payload.releaseNotes != null) ? String(payload.releaseNotes) : '';
+      var releaseNotes = stripHtmlToPlainText(rawNotes);
       pendingUpdaterTargetVersion = version;
       if (isSnoozeActiveForVersion(version)) return;
       resetUpdateModalPanels();
