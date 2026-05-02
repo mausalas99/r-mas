@@ -14,7 +14,7 @@ Herramienta clínica de escritorio para generación de **notas de evolución**, 
 - **Laboratorio e historial** — Mejoras en historial de laboratorio y detección de duplicados.
 - **Tutorial** — Recorridos **Sala** e **Interconsulta** con guías más claras.
 
-Notas extendidas: [`docs/RELEASE_NOTES_2.0.0.md`](docs/RELEASE_NOTES_2.0.0.md).
+Notas extendidas en el repo: docs/RELEASE_NOTES_2.0.0.txt (texto plano).
 
 ---
 

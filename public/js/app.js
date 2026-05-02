@@ -2148,17 +2148,17 @@ var RELEASE_NOTES_HIGHLIGHTS = {
     {
       title: 'Medicamentos y plantilla SOAP',
       body:
-        'Nueva pestaña <strong>Medicamentos</strong>: importa la receta en TSV, copia desde SOME, vuelca a tratamiento o a la plantilla SOAP. Catálogo de clasificación exportable/importable desde Ajustes.',
+        'Nueva pestaña Medicamentos: importa la receta en TSV, copia desde SOME, vuelca a tratamiento o a la plantilla SOAP. Catálogo de clasificación exportable e importable desde Ajustes.',
     },
     {
       title: 'Ajustes y recuperación de datos',
       body:
-        'Panel en <strong>secciones plegables</strong>, centro de ayuda arriba, scroll corregido. <strong>Deshacer</strong> usa copia en memoria fiable; respaldo automático <strong>antes de importar todo</strong> restaurable desde Respaldos.',
+        'Panel en secciones plegables, centro de ayuda arriba, scroll corregido. Deshacer usa copia en memoria fiable; respaldo automático antes de importar todo, restaurable desde Respaldos.',
     },
     {
       title: 'Laboratorio y tutorial',
       body:
-        'Mejoras en historial de laboratorio y recorridos <strong>Sala / Interconsulta</strong> con guías más claras en el centro de ayuda.',
+        'Mejoras en historial de laboratorio y recorridos Sala e Interconsulta, con guías más claras en el centro de ayuda.',
     },
   ],
 };
@@ -2192,9 +2192,9 @@ function showReleaseNotesModal(version) {
       var strong = document.createElement('strong');
       strong.textContent = n.title;
       li.appendChild(strong);
-      li.appendChild(document.createTextNode(' '));
+      li.appendChild(document.createTextNode(' — '));
       var span = document.createElement('span');
-      span.innerHTML = n.body || '';
+      span.textContent = n.body || '';
       li.appendChild(span);
       list.appendChild(li);
     });
