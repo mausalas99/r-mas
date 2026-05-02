@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   parseMedicationPaste,
@@ -6,7 +6,13 @@ import {
   formatMedicationEgresoLine,
   buildMedRecetaCopyText,
   extractDiaTratamiento,
+  classifyMedicationSoapCategory,
+  applyMedCatalogOverlay,
 } from './med-receta-core.mjs';
+
+beforeEach(() => {
+  applyMedCatalogOverlay({ accents: {}, soapTokens: { vasop: [], abx: [], analgesia: [], antihta: [] } });
+});
 
 test('parseMedicationPaste extrae nombre, via, dosis, frecuencia y diaTratamiento null sin DIA#', () => {
   var line =
@@ -165,4 +171,23 @@ test('bloque dorado — 12 medicamentos del spec', () => {
     var got = formatMedicationEgresoLine(parsed.items[i]);
     assert.equal(got, expected[i], 'fila ' + i);
   }
+});
+
+test('classifyMedicationSoapCategory — ejemplos hospitalarios', () => {
+  assert.equal(classifyMedicationSoapCategory('ERTAPENEM 1 G'), 'abx');
+  assert.equal(classifyMedicationSoapCategory('PARACETAMOL 1 G'), 'analgesia');
+  assert.equal(classifyMedicationSoapCategory('LOSARTAN 50 MG'), 'antihta');
+  assert.equal(classifyMedicationSoapCategory('NORADRENALINA 4 MG'), 'vasop');
+  assert.equal(classifyMedicationSoapCategory('ENOXAPARINA 40 MG'), 'otros');
+  assert.equal(classifyMedicationSoapCategory('OMEPRAZOL 40 MG'), 'otros');
+  assert.equal(classifyMedicationSoapCategory('FÁRMACO SIN LISTA XYZ'), 'otros');
+  assert.equal(classifyMedicationSoapCategory('ONDANSETRÓN 8 MG'), 'analgesia');
+});
+
+test('applyMedCatalogOverlay clasifica tokens personalizados antes que listas internas', () => {
+  applyMedCatalogOverlay({
+    accents: {},
+    soapTokens: { vasop: [], abx: [], analgesia: ['FARMACOX'], antihta: [] },
+  });
+  assert.equal(classifyMedicationSoapCategory('FARMACOX 500 MG'), 'analgesia');
 });

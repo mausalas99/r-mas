@@ -37,4 +37,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   selectOutputDir: function() {
     return ipcRenderer.invoke('select-output-dir');
   },
+  setUpdateChannel: function(channel) {
+    ipcRenderer.send('set-update-channel', channel);
+  },
+  getPlatform: function() {
+    return ipcRenderer.invoke('get-platform');
+  },
+  relaunchApp: function() {
+    ipcRenderer.send('relaunch-app');
+  },
 });

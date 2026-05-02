@@ -1,17 +1,17 @@
-version: 1.8.4
+version: 2.0.0
 files:
-  - url: R+-1.8.4-arm64.zip
-    sha512: ecqgpb4NKU3ZF47LzBj7WGjuViQv0653xuLWTJfdJnro7h5VxaMeM/E4fp1iKj0wUt1brJsqTNv7C59O5/le4A==
-    size: 141216211
-  - url: R+-1.8.4-x64.zip
-    sha512: kZ4QF8GwEBrvVIlv3+FoYtq3KMRmjCyL7eQiZEe8knZm0mneh7kPYjNuOouC3kAhF6ubfGeaKX8Y6xLLuiidIA==
-    size: 149242316
-  - url: R+-1.8.4-arm64.dmg
-    sha512: zH/j9EC8eR3Hguv4978cVndKqVsPmiKkhyFOS1+1hzp70e7CmxRmScbUlElfAulombOQmbRwYjgeP8jhcb/P8w==
-    size: 145898567
-  - url: R+-1.8.4-x64.dmg
-    sha512: mws7XhaffQAKTAXhT4SSrjNE6nY8Za5X/DtoMjfVbDNfhvM+sfrSwWmNhMnkYr9oPBPEvFAQT0R9TA1pVY4ocA==
-    size: 153983589
-path: R+-1.8.4-arm64.zip
-sha512: ecqgpb4NKU3ZF47LzBj7WGjuViQv0653xuLWTJfdJnro7h5VxaMeM/E4fp1iKj0wUt1brJsqTNv7C59O5/le4A==
-releaseDate: '2026-04-14T04:15:17.000Z'
+  - url: R+-2.0.0-arm64.zip
+    sha512: THgv66UU44qJUhgFfXA5gy4bhQXkNd19MD+l9KRoCMl62ETX58G+SV3VXxTk528dCbci7u70KMqE2uvP/kUxHA==
+    size: 141273510
+  - url: R+-2.0.0-x64.zip
+    sha512: VUdphBrExz1rMGCVoRBB1ZTBvrD82unFH4Ccx8Wl9dOZTDfzmhKy0kYKBoXVeIV9dJDTAgdaNOxVVVYs0nVm+g==
+    size: 149299743
+  - url: R+-2.0.0-arm64.dmg
+    sha512: 5fCqeO6zZTphld1LhzdmJ7/OU03DPvOwRACWxT8q6TxDqlxzn9PqNGBzUGqhu6Yx952Zx/mOrSPxZS9B5QaQHQ==
+    size: 145956484
+  - url: R+-2.0.0-x64.dmg
+    sha512: T+EZoqerMdiw/H6qk/DzX01MDBBz+0PNsaIqD9ZGfjrIEolSn9X4qpLuDMzmsjfdIiFpMXPEZrz+0z9XLtJgmw==
+    size: 154043305
+path: R+-2.0.0-arm64.zip
+sha512: THgv66UU44qJUhgFfXA5gy4bhQXkNd19MD+l9KRoCMl62ETX58G+SV3VXxTk528dCbci7u70KMqE2uvP/kUxHA==
+releaseDate: '2026-05-02T18:57:50.000Z'

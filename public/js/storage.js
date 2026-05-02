@@ -112,6 +112,44 @@ export const storage = {
   },
 
   /**
+   * Catálogo personalizado de medicamentos (acentos + tokens SOAP por categoría).
+   * @returns {{ v: number, accents: Object, soapTokens: { vasop: string[], abx: string[], analgesia: string[], antihta: string[] } }}
+   */
+  getMedCatalog() {
+    const o = safeParseObject(localStorage.getItem('rpc-medCatalog'));
+    const st = o.soapTokens && typeof o.soapTokens === 'object' ? o.soapTokens : {};
+    return {
+      v: typeof o.v === 'number' ? o.v : 1,
+      accents: o.accents && typeof o.accents === 'object' ? o.accents : {},
+      soapTokens: {
+        vasop: Array.isArray(st.vasop) ? st.vasop : [],
+        abx: Array.isArray(st.abx) ? st.abx : [],
+        analgesia: Array.isArray(st.analgesia) ? st.analgesia : [],
+        antihta: Array.isArray(st.antihta) ? st.antihta : [],
+      },
+    };
+  },
+
+  /**
+   * @param {{ accents?: Object, soapTokens?: Object }} catalog
+   */
+  saveMedCatalog(catalog) {
+    const c = catalog && typeof catalog === 'object' ? catalog : {};
+    const st = c.soapTokens && typeof c.soapTokens === 'object' ? c.soapTokens : {};
+    const payload = {
+      v: 1,
+      accents: c.accents && typeof c.accents === 'object' ? c.accents : {},
+      soapTokens: {
+        vasop: Array.isArray(st.vasop) ? st.vasop : [],
+        abx: Array.isArray(st.abx) ? st.abx : [],
+        analgesia: Array.isArray(st.analgesia) ? st.analgesia : [],
+        antihta: Array.isArray(st.antihta) ? st.antihta : [],
+      },
+    };
+    localStorage.setItem('rpc-medCatalog', JSON.stringify(payload));
+  },
+
+  /**
    * Add a lab entry to a patient's lab history
    * @param {string} patientId - Patient ID
    * @param {Object} labEntry - Lab entry object with test results

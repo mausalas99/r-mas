@@ -26,6 +26,8 @@ import {
   resolveFechaActualizacion,
   buildMedRecetaCopyText,
   formatMedicationEgresoLine,
+  classifyMedicationSoapCategory,
+  applyMedCatalogOverlay,
 } from './med-receta-core.mjs';
 
 
@@ -37,33 +39,8 @@ var notes        = storage.getNotes();
 var indicaciones = storage.getIndicaciones();
 var labHistory   = storage.getLabHistory();
 var medRecetaByPatient = storage.getMedRecetaByPatient();
+applyMedCatalogOverlay(storage.getMedCatalog());
 var medNotaSelectionByPatient = {};
-var medCatalogStaging = [];
-
-var MED_SOAP_CATALOG = {
-  analgesia: [
-    'PARACETAMOL 1 G IV C/8H',
-    'KETOROLACO 30 MG IV C/8H PRN',
-    'METAMIZOL 1 G IV C/8H PRN',
-    'MORFINA 2 MG IV PRN',
-    'TRAMADOL 100 MG IV C/12H',
-  ],
-  abx: [
-    'CEFTRIAXONA 1 G IV C/24H',
-    'ERTAPENEM 1 G IV C/24H',
-    'MEROPENEM 1 G IV C/8H',
-    'PIPERACILINA-TAZOBACTAM 4.5 G IV C/6H',
-    'VANCOMICINA 1 G IV C/12H (AJUSTAR SEGÚN FUNCIÓN RENAL)',
-    'METRONIDAZOL 500 MG IV C/8H',
-  ],
-  antihta: [
-    'LOSARTAN 50 MG VO C/24H',
-    'ENALAPRIL 10 MG VO C/12H',
-    'AMLODIPINO 5 MG VO C/24H',
-    'LABETALOL 200 MG VO C/12H',
-    'HIDROCLOROTIAZIDA 25 MG VO C/24H',
-  ],
-};
 var activeId     = null;
 var activeInner  = 'notas';
 var activeAppTab = 'lab';
@@ -100,18 +77,11 @@ var TEND_REF = {
   Na:[136,145], K:[3.5,5.0], Cl:[96,106], HCO3:[22,28], Ca:[8.5,10.5],
   AST:[10,40], ALT:[7,56], FA:[44,147], BT:[0.1,1.2]
 };
-var TOUR_STEP_IDLE = 0;
-var TOUR_STEP_MAP = 1;
-var TOUR_STEP_LAB_PARSE = 2;
-var TOUR_STEP_LAB_VIEW = 3;
-var TOUR_STEP_LAB_SEND = 4;
-var TOUR_STEP_NOTA_GEN = 5;
-var TOUR_STEP_INDICA_GEN = 6;
-var TOUR_STEP_TEND = 7;
-var TOUR_STEP_PROFILE = 8;
-var TOUR_STEP_WRAP = 9;
 var guidedTourActive = false;
-var tourStep = TOUR_STEP_IDLE;
+/** @type {'sala'|'interconsulta'|null} */
+var guidedTourBranch = null;
+/** @type {string|null} paso actual del tour guiado (null = inactivo) */
+var tourStepId = null;
 var DEMO_PATIENT_ID = 'demo-onboarding';
 var DEMO_LAB_REPORT = 'LABORATORIO CLÍNICO — Hospital General\n' +
   'Paciente: DEMO PÉREZ Juan\nFecha: Apr 11 2026\n\n' +
@@ -683,7 +653,7 @@ function deletePatient(e, id) {
   delete notes[id]; delete indicaciones[id];
   if (labHistory && labHistory[id]) delete labHistory[id];
   if (medRecetaByPatient && medRecetaByPatient[id]) delete medRecetaByPatient[id];
-  if (medNotaSelectionByPatient[id]) delete medNotaSelectionByPatient[id];
+  if (medNotaSelectionByPatient && medNotaSelectionByPatient[id]) delete medNotaSelectionByPatient[id];
   saveState();
   addAuditEntry('patient-delete', 'ok', 1, target ? (target.registro || target.nombre || '') : '');
   if (activeId === id) activeId = patients.length ? patients[0].id : null;
@@ -809,6 +779,7 @@ function loadSettings() {
   if (typeof syncUpdateChannelUI === 'function') syncUpdateChannelUI();
   if (typeof syncUpdateTelemetryUI === 'function') syncUpdateTelemetryUI();
   syncIdleLockSelectUi();
+  syncPreimportBackupUi();
 }
 
 function saveSettings() {
@@ -874,6 +845,7 @@ function toggleSettingsDropdown() {
   if (bg) bg.classList.toggle('open', !open);
   var trigger = document.getElementById('btn-open-settings');
   if (trigger) trigger.setAttribute('aria-expanded', !open ? 'true' : 'false');
+  if (!open && typeof syncPreimportBackupUi === 'function') syncPreimportBackupUi();
 }
 function closeSettingsDropdown() {
   var dd = document.getElementById('settings-dropdown');
@@ -961,10 +933,8 @@ function initGuidedTourGate() {
 function showTourIntroModal() {
   var el = document.getElementById('onboarding-intro-backdrop');
   var ver = window.__RPC_APP_VERSION__ || '';
-  document.getElementById('intro-modal-title').textContent =
-    ver ? ('R+ · versión ' + ver) : 'Bienvenido a R+';
-  document.getElementById('intro-modal-body').innerHTML =
-    'Cada versión nueva ofrece este recorrido para repasar <strong>Laboratorio</strong>, <strong>Expediente</strong> (nota, indicaciones y tendencias), <strong>Mi Perfil</strong> y <strong>Ajustes</strong>. Usaremos un paciente de ejemplo que <strong>no se guarda</strong> en tus datos.';
+  var h2 = document.getElementById('intro-modal-title');
+  if (h2) h2.textContent = ver ? ('R+ · versión ' + ver) : 'Bienvenido a R+';
   el.classList.add('open');
   el.setAttribute('aria-hidden', 'false');
 }
@@ -984,9 +954,14 @@ function guidedTourIntroSkip() {
   hideTourIntroModal();
 }
 
-function guidedTourIntroStart() {
+function guidedTourIntroChooseSala() {
   hideTourIntroModal();
-  startOnboarding();
+  startOnboarding('sala');
+}
+
+function guidedTourIntroChooseInterconsulta() {
+  hideTourIntroModal();
+  startOnboarding('interconsulta');
 }
 
 function showTourDock() {
@@ -1022,124 +997,303 @@ function ensureSettingsExpandedForTour() {
   if (!dd.classList.contains('open')) toggleSettingsDropdown();
 }
 
+function clearTourSoapButtonHighlight() {
+  var b = document.getElementById('btn-soap-template');
+  if (b) b.classList.remove('tour-spotlight-soap');
+}
+
+function syncTourSoapButtonHighlight() {
+  clearTourSoapButtonHighlight();
+  if (!guidedTourActive || tourStepId !== 'sala_soap') return;
+  setTimeout(function () {
+    var btn = document.getElementById('btn-soap-template');
+    if (btn && guidedTourActive && tourStepId === 'sala_soap') {
+      btn.classList.add('tour-spotlight-soap');
+    }
+  }, 120);
+}
+
+function getGuidedTourSteps() {
+  if (guidedTourBranch === 'interconsulta') {
+    return [
+      'map',
+      'lab_parse',
+      'lab_view',
+      'lab_send',
+      'sala_tend',
+      'sala_soap',
+      'sala_med',
+      'ic_nota',
+      'ic_indica',
+      'ic_exports',
+      'profile',
+      'wrap',
+    ];
+  }
+  return ['map', 'lab_parse', 'lab_view', 'lab_send', 'sala_tend', 'sala_soap', 'sala_med', 'wrap'];
+}
+
+function guidedTourStepIndex() {
+  var steps = getGuidedTourSteps();
+  var i = steps.indexOf(tourStepId);
+  return i < 0 ? 0 : i;
+}
+
+function applyTourNavigationForStep(id) {
+  switch (id) {
+    case 'map':
+      switchAppTab('lab');
+      var li = document.getElementById('lab-input');
+      if (li) li.value = DEMO_LAB_REPORT;
+      break;
+    case 'lab_parse':
+      switchAppTab('lab');
+      if (document.getElementById('lab-input')) document.getElementById('lab-input').value = DEMO_LAB_REPORT;
+      break;
+    case 'lab_view':
+    case 'lab_send':
+      switchAppTab('lab');
+      break;
+    case 'ic_nota':
+      switchAppTab('nota');
+      switchInnerTab('notas');
+      renderNoteForm();
+      break;
+    case 'ic_indica':
+      switchAppTab('nota');
+      switchInnerTab('indica');
+      renderIndicaForm();
+      break;
+    case 'ic_exports':
+      ensureSettingsExpandedForTour();
+      break;
+    case 'profile':
+      switchAppTab('nota');
+      switchInnerTab('notas');
+      renderNoteForm();
+      ensureProfileExpandedForTour();
+      ensureSettingsExpandedForTour();
+      break;
+    case 'sala_tend':
+      switchAppTab('nota');
+      switchInnerTab('tend');
+      renderTendencias();
+      break;
+    case 'sala_soap':
+      switchAppTab('nota');
+      switchInnerTab('notas');
+      renderNoteForm();
+      break;
+    case 'sala_med':
+      switchAppTab('med');
+      renderMedRecetaPanel();
+      break;
+    case 'wrap':
+      break;
+    default:
+      break;
+  }
+}
+
 function renderTourStep() {
   if (!guidedTourActive) return;
   var badge = document.getElementById('tour-step-badge');
   var bodyEl = document.getElementById('tour-dock-body');
   var nextBtn = document.getElementById('tour-btn-next');
-  var total = TOUR_STEP_WRAP;
-  function badgeText(n, label) {
-    badge.textContent = 'Paso ' + n + ' de ' + total + (label ? ' · ' + label : '');
+  var steps = getGuidedTourSteps();
+  var total = steps.length;
+  var idx = guidedTourStepIndex() + 1;
+  var branchLabel = guidedTourBranch === 'interconsulta' ? 'Interconsulta' : 'Sala';
+  function setBadge(sub) {
+    badge.textContent = 'Paso ' + idx + ' de ' + total + ' · ' + branchLabel + (sub ? ' · ' + sub : '');
   }
   nextBtn.style.display = '';
   nextBtn.disabled = false;
-  switch (tourStep) {
-    case TOUR_STEP_MAP:
-      badgeText(1, 'vista general');
-      bodyEl.innerHTML = 'A la <strong>izquierda</strong> está la lista de pacientes (el demo <strong>DEMO PÉREZ</strong> no se guarda). Arriba alterna <strong>Laboratorio</strong> (reportes y gráficas) y <strong>Expediente</strong> (nota clínica, indicaciones y tendencias). Si agregas un paciente con nombre o registro similar a uno existente, la app te avisará.';
+
+  switch (tourStepId) {
+    case 'map':
+      setBadge('mapa de la app');
+      if (guidedTourBranch === 'interconsulta') {
+        bodyEl.innerHTML =
+          '<p style="margin:0 0 10px 0;">Recorrido <strong>completo</strong> (laboratorio, tendencias, SOAP, medicamentos). La diferencia es el <strong>énfasis al final</strong>: exportar <strong>Nota de evolución</strong> e <strong>Indicaciones</strong> a <strong>Word (.docx)</strong>, carpeta de salida y Salida rápida.</p>' +
+          '<ul style="margin:0;padding-left:1.15rem;line-height:1.5;">' +
+          '<li><strong>Izquierda:</strong> lista de pacientes. El demo <strong>DEMO PÉREZ</strong> no se guarda en tu historial real.</li>' +
+          '<li><strong>Arriba:</strong> <strong>Laboratorio</strong>, <strong>Expediente</strong> (nota, indicaciones, tendencias) y <strong>Medicamentos</strong>.</li>' +
+          '<li>R+ avisa si creas un paciente duplicado por nombre o registro.</li>' +
+          '</ul>';
+      } else {
+        bodyEl.innerHTML =
+          '<p style="margin:0 0 10px 0;">Recorrido <strong>sala / hospitalización</strong>: laboratorio, tendencias, <strong>plantilla SOAP</strong> para la evolución y <strong>Medicamentos</strong> (receta → nota / SOAP).</p>' +
+          '<ul style="margin:0;padding-left:1.15rem;line-height:1.5;">' +
+          '<li><strong>Laboratorio</strong> interpreta el reporte pegado y arma diagramas.</li>' +
+          '<li><strong>Tendencias</strong> comparan varios labs en el tiempo.</li>' +
+          '<li><strong>SOAP</strong> rellena analgesia, antibióticos, antiHTA, vasopresores, etc., para pegar en la evolución.</li>' +
+          '<li><strong>Medicamentos</strong> clasifica lo que marques y lo manda a la plantilla SOAP o al tratamiento.</li>' +
+          '</ul>';
+      }
       nextBtn.textContent = 'Siguiente';
       break;
-    case TOUR_STEP_LAB_PARSE:
-      badgeText(2, 'laboratorio');
-      bodyEl.innerHTML = 'Pulsa <strong>Procesar</strong> para leer el reporte de ejemplo y generar diagramas.';
+    case 'lab_parse':
+      setBadge('laboratorio · procesar');
+      bodyEl.innerHTML =
+        '<p style="margin:0 0 8px 0;">Ya tienes un reporte de ejemplo pegado. Pulsa <strong>Procesar</strong> para que R+ lea biometría, química, electrolitos, función hepática y más.</p>' +
+        '<p style="margin:0;font-size:13px;color:var(--text-muted);">Se generan diagramas (Gamble, BH, etc.) y una tabla con alteraciones en rojo. Cada diagrama tiene <strong>Copiar</strong> por si lo quieres en otro sistema.</p>';
       nextBtn.style.display = 'none';
       break;
-    case TOUR_STEP_LAB_VIEW:
-      badgeText(3, 'resultados');
-      bodyEl.innerHTML = 'Revisa <strong>Diagramas</strong> y la tabla de <strong>Resultados</strong>. Después podrás usar <strong>Enviar a nota</strong> (arriba a la derecha en resultados).';
+    case 'lab_view':
+      setBadge('laboratorio · revisar');
+      bodyEl.innerHTML =
+        '<p style="margin:0 0 8px 0;">Revisa <strong>Diagramas</strong> y la tarjeta de <strong>Resultados</strong>. Cuando quieras volcar todo al expediente, usa <strong>Enviar a nota</strong> (arriba a la derecha en resultados).</p>' +
+        '<p style="margin:0;font-size:13px;color:var(--text-muted);">Eso alimenta el bloque de estudios, el historial de labs y las tendencias.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
-    case TOUR_STEP_LAB_SEND:
-      badgeText(4, 'enviar a nota');
-      bodyEl.innerHTML = 'Pulsa <strong>Enviar a nota</strong> para volcar estos labs al expediente.';
+    case 'lab_send':
+      setBadge('laboratorio · enviar');
+      bodyEl.innerHTML =
+        '<p style="margin:0;">Pulsa <strong>Enviar a nota</strong> para guardar este conjunto en el paciente demo y seguir el flujo.</p>';
       nextBtn.style.display = 'none';
       break;
-    case TOUR_STEP_NOTA_GEN:
-      badgeText(5, 'nota');
-      bodyEl.innerHTML = 'En <strong>Nota de Evolución</strong>, completa lo que quieras y genera el Word con <strong>Generar Nota (.docx)</strong>. El archivo va a <strong>Descargas</strong>.';
+    case 'ic_nota':
+      setBadge('énfasis · Nota .docx');
+      bodyEl.innerHTML =
+        '<p style="margin:0 0 8px 0;"><strong>Enfoque interconsulta:</strong> dejar la <strong>Nota de evolución</strong> lista y generar el <strong>.docx</strong> para informe, archivo o envío. Ya repasaste laboratorio, tendencias, SOAP y medicamentos.</p>' +
+        '<ul style="margin:0;padding-left:1.15rem;line-height:1.5;">' +
+        '<li><strong>Generar Nota (.docx)</strong>: documento con membrete y bloques clínicos; ruta en <strong>Ajustes → Carpeta de documentos</strong> (o Descargas por defecto).</li>' +
+        '<li><strong>Salida rápida</strong> (gris): un clic según formato docx / html / txt configurado en Ajustes.</li>' +
+        '<li>Si falta texto, usa de nuevo la <strong>plantilla SOAP</strong> o edita interrogatorio y evolución antes de generar.</li>' +
+        '</ul>' +
+        '<p style="margin:10px 0 0 0;font-size:13px;color:var(--text-muted);">Pulsa <strong>Generar Nota (.docx)</strong> para avanzar (si el servidor local no responde, <strong>Omitir tutorial</strong>).</p>';
       nextBtn.style.display = 'none';
       break;
-    case TOUR_STEP_INDICA_GEN:
-      badgeText(6, 'indicaciones');
-      bodyEl.innerHTML = 'En <strong>Indicaciones</strong> arma la hoja por secciones y usa <strong>Generar Indicaciones (.docx)</strong>.';
+    case 'ic_indica':
+      setBadge('énfasis · Indicaciones .docx');
+      bodyEl.innerHTML =
+        '<p style="margin:0 0 8px 0;"><strong>Enfoque interconsulta:</strong> la hoja de <strong>Indicaciones</strong> en .docx es lo que suele imprimirse o entregarse al paciente / servicio.</p>' +
+        '<ul style="margin:0;padding-left:1.15rem;line-height:1.5;">' +
+        '<li><strong>Generar Indicaciones (.docx)</strong>: mismas reglas de carpeta que la nota.</li>' +
+        '<li><strong>Plantillas por defecto</strong> (Mi Perfil) agilizan dieta, cuidados y medicamentos en cada paciente nuevo.</li>' +
+        '<li><strong>Salida rápida</strong> desde esta pestaña respeta el mismo formato global del paciente activo.</li>' +
+        '</ul>' +
+        '<p style="margin:10px 0 0 0;font-size:13px;color:var(--text-muted);">Pulsa <strong>Generar Indicaciones (.docx)</strong> para continuar.</p>';
       nextBtn.style.display = 'none';
       break;
-    case TOUR_STEP_TEND:
-      badgeText(7, 'tendencias');
-      bodyEl.innerHTML = 'Con varios labs en el tiempo aparecen mini-gráficas. Este demo ya incluye dos fechas de ejemplo además de los que agregues.';
+    case 'ic_exports':
+      setBadge('exportación y carpeta');
+      bodyEl.innerHTML =
+        '<p style="margin:0 0 8px 0;">Abre <strong>Ajustes</strong> (icono ⚙ arriba a la derecha). Ahí defines:</p>' +
+        '<ul style="margin:0;padding-left:1.15rem;line-height:1.5;">' +
+        '<li><strong>Carpeta de documentos</strong>: donde caen los .docx de <strong>Generar Nota</strong> y <strong>Generar Indicaciones</strong>.</li>' +
+        '<li><strong>Salida rápida</strong>: formato docx, html o txt para el botón gris del expediente.</li>' +
+        '<li><strong>Copias de seguridad</strong> JSON, exportar paciente o rango, auto-respaldo y <strong>Paquete sync</strong> entre equipos.</li>' +
+        '</ul>' +
+        '<p style="margin:10px 0 0 0;font-size:13px;color:var(--text-muted);">En interconsulta conviene dejar la carpeta lista antes de atender.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
-    case TOUR_STEP_PROFILE:
-      badgeText(8, 'perfil y ajustes');
-      bodyEl.innerHTML = 'En <strong>Mi Perfil</strong> defines médico, grado y plantillas por defecto. En <strong>Ajustes</strong> (debajo) están la carpeta de documentos, respaldos JSON, tema claro/oscuro, versión y búsqueda de actualizaciones.';
+    case 'sala_tend':
+      setBadge('tendencias');
+      bodyEl.innerHTML =
+        '<p style="margin:0 0 8px 0;">En <strong>Expediente → Tendencias</strong> ves mini-gráficas cuando hay varios laboratorios en el tiempo.</p>' +
+        '<p style="margin:0;font-size:13px;color:var(--text-muted);">Este demo ya trae <strong>dos fechas</strong> de ejemplo; el envío que acabas de hacer suma otro punto en la serie. Así comparas creatinina, hemoglobina, leucocitos, etc.' +
+        (guidedTourBranch === 'interconsulta'
+          ? ' En interconsulta suele ser el contexto numérico antes de redactar y exportar la nota.'
+          : '') +
+        '</p>';
       nextBtn.textContent = 'Siguiente';
       break;
-    case TOUR_STEP_WRAP:
-      badgeText(9, 'listo');
-      bodyEl.innerHTML = 'El <strong>tema</strong> también está en <strong>Ajustes</strong> o en el ícono junto a la fecha. Las <strong>actualizaciones</strong> se anuncian arriba. Puedes repetir el tutorial desde <strong>Mi Perfil</strong>.';
+    case 'sala_soap':
+      setBadge('plantilla SOAP');
+      bodyEl.innerHTML =
+        '<p><strong>Dónde está el botón:</strong> en <strong>Expediente → Nota de evolución</strong>, mira la tarjeta verde titulada <strong>«Evolución y Actualización del Cuadro Clínico»</strong>. El botón <strong>Plantilla SOAP</strong> (icono de documento) está en la <strong>esquina derecha de esa misma franja verde</strong>, alineado con el título — no está abajo junto al cuadro de texto gris.</p>' +
+        '<p class="tour-dock-hint">Mientras dure este paso, el botón lleva un <strong>resaltado animado</strong> para que lo ubiques al instante.</p>' +
+        '<ul>' +
+        '<li>Al abrirlo verás campos de <strong>S / O</strong>, <strong>FOUR / esferas</strong>, analgesia, FR/Sat/soporte, TA/FC, antiHTA, vasopresores, temperatura, antibióticos, dieta, balance y glucometrías.</li>' +
+        '<li><strong>Insertar en evolución</strong> pega el texto en el área grande debajo del encabezado verde.</li>' +
+        '<li>' +
+        (guidedTourBranch === 'interconsulta'
+          ? 'En interconsulta este párrafo suele preparar la parte objetiva antes de <strong>Generar Nota (.docx)</strong>.'
+          : 'En sala suele bastar con SOAP + tendencias; Word es opcional.') +
+        '</li>' +
+        '</ul>';
+      nextBtn.textContent = 'Siguiente';
+      break;
+    case 'sala_med':
+      setBadge('medicamentos');
+      bodyEl.innerHTML =
+        '<p>En la pestaña <strong>Medicamentos</strong> pegas el bloque en formato TSV (tabuladores) del hospital y pulsas <strong>Receta</strong>.</p>' +
+        '<p><strong>SOME y el bloque de indicaciones:</strong> si en <strong>SOME</strong> debes replicar el listado de medicamentos tal como en el expediente electrónico, allí copia <strong>desde la columna «Fecha y hora»</strong> (primera columna del cuadro de medicamentos) <strong>hasta el final de esa sección</strong> (última fila del bloque). Pega ese mismo rango en R+ y procesa con <strong>Receta</strong>.</p>' +
+        '<ul>' +
+        '<li><strong>Excl.</strong> quita el fármaco del texto de egreso; <strong>SOAP</strong> elige qué filas van a la plantilla SOAP o al tratamiento.</li>' +
+        '<li>La vista previa agrupa por tipo (analgésicos, ABX, antiHTA, vasopresores, otros).</li>' +
+        '<li><strong>Añadir a Tratamiento</strong> envía líneas al apartado de tratamiento de la nota.</li>' +
+        '<li><strong>Abrir plantilla SOAP</strong> rellena analgesia / ABX / antiHTA / vasopresores según el nombre del medicamento.</li>' +
+        '</ul>' +
+        '<p class="tour-dock-hint">El demo trae dos fármacos ya marcados para SOAP.' +
+        (guidedTourBranch === 'interconsulta' ? ' Después verás el bloque dedicado a exportar nota e indicaciones en Word.' : '') +
+        '</p>';
+      nextBtn.textContent = 'Siguiente';
+      break;
+    case 'profile':
+      setBadge('perfil y respaldo');
+      bodyEl.innerHTML =
+        '<p style="margin:0 0 8px 0;"><strong>Mi Perfil</strong> (barra lateral): médico tratante, profesor, grado, plantillas por defecto de indicaciones y edición de plantillas SOAP / nota.</p>' +
+        '<p style="margin:0 0 8px 0;"><strong>Ajustes</strong>: carpeta de documentos, tema, respaldos, sync, ayuda y actualizaciones.</p>' +
+        '<p style="margin:0;font-size:13px;color:var(--text-muted);">Todo queda en local en este equipo; revisa privacidad en la política de la app.</p>';
+      nextBtn.textContent = 'Siguiente';
+      break;
+    case 'wrap':
+      setBadge('listo');
+      if (guidedTourBranch === 'interconsulta') {
+        bodyEl.innerHTML =
+          '<p style="margin:0 0 8px 0;">Resumen <strong>interconsulta</strong>: recorrido completo (labs → tendencias → <strong>SOAP</strong> → medicamentos) y al final el <strong>énfasis</strong> en <strong>Generar Nota (.docx)</strong>, <strong>Generar Indicaciones (.docx)</strong>, carpeta de documentos y <strong>Salida rápida</strong>.</p>' +
+          '<p style="margin:0;font-size:13px;color:var(--text-muted);">Repite el tutorial desde <strong>Mi Perfil → Ver tutorial</strong>. Tema claro/oscuro: Ajustes o icono junto a la fecha.</p>';
+      } else {
+        bodyEl.innerHTML =
+          '<p style="margin:0 0 8px 0;">Resumen <strong>sala</strong>: laboratorio → <strong>tendencias</strong> → evolución con <strong>SOAP</strong> → <strong>Medicamentos</strong> hacia tratamiento o SOAP.</p>' +
+          '<p style="margin:0;font-size:13px;color:var(--text-muted);">Puedes repetir el recorrido cuando quieras. Las actualizaciones se anuncian arriba al iniciar.</p>';
+      }
       nextBtn.textContent = 'Finalizar';
       break;
     default:
       hideTourDock();
   }
+  syncTourSoapButtonHighlight();
 }
 
 function guidedTourClickNext() {
   if (miniTourActive) { miniTourNext(); return; }
   if (!guidedTourActive) return;
-  if (tourStep === TOUR_STEP_WRAP) {
+  var steps = getGuidedTourSteps();
+  var i = steps.indexOf(tourStepId);
+  if (i < 0) return;
+  if (tourStepId === 'wrap') {
     completeGuidedTourWithCelebration();
     return;
   }
-  if (tourStep === TOUR_STEP_MAP) {
-    tourStep = TOUR_STEP_LAB_PARSE;
-    switchAppTab('lab');
-    renderTourStep();
-    return;
-  }
-  if (tourStep === TOUR_STEP_LAB_VIEW) {
-    tourStep = TOUR_STEP_LAB_SEND;
-    renderTourStep();
-    return;
-  }
-  if (tourStep === TOUR_STEP_TEND) {
-    tourStep = TOUR_STEP_PROFILE;
-    switchAppTab('nota');
-    switchInnerTab('notas');
-    ensureProfileExpandedForTour();
-    ensureSettingsExpandedForTour();
-    renderTourStep();
-    return;
-  }
-  if (tourStep === TOUR_STEP_PROFILE) {
-    tourStep = TOUR_STEP_WRAP;
-    renderTourStep();
-    return;
-  }
+  tourStepId = steps[i + 1];
+  applyTourNavigationForStep(tourStepId);
+  renderTourStep();
 }
 
 function guidedTourAdvanceAfterNotaGenerated() {
-  if (!guidedTourActive || tourStep !== TOUR_STEP_NOTA_GEN) return;
-  tourStep = TOUR_STEP_INDICA_GEN;
-  switchAppTab('nota');
-  switchInnerTab('indica');
-  renderIndicaForm();
+  if (!guidedTourActive || tourStepId !== 'ic_nota') return;
+  tourStepId = 'ic_indica';
+  applyTourNavigationForStep('ic_indica');
   renderTourStep();
 }
 
 function guidedTourAdvanceAfterIndicaGenerated() {
-  if (!guidedTourActive || tourStep !== TOUR_STEP_INDICA_GEN) return;
-  tourStep = TOUR_STEP_TEND;
-  switchAppTab('nota');
-  switchInnerTab('tend');
-  renderTendencias();
+  if (!guidedTourActive || tourStepId !== 'ic_indica') return;
+  tourStepId = 'ic_exports';
+  applyTourNavigationForStep('ic_exports');
   renderTourStep();
 }
 
 function completeGuidedTourWithCelebration() {
+  clearTourSoapButtonHighlight();
   markGuidedTourVersionDone();
   guidedTourActive = false;
-  tourStep = TOUR_STEP_IDLE;
+  tourStepId = null;
+  guidedTourBranch = null;
   hideTourDock();
   launchConfetti();
   destroyDemoAndClose();
@@ -1148,14 +1302,17 @@ function completeGuidedTourWithCelebration() {
 
 function skipGuidedTour() {
   if (miniTourActive) { endMiniTour(); return; }
+  clearTourSoapButtonHighlight();
   markGuidedTourVersionDone();
   guidedTourActive = false;
-  tourStep = TOUR_STEP_IDLE;
+  tourStepId = null;
+  guidedTourBranch = null;
   hideTourDock();
   destroyDemoAndClose();
 }
 
-function startOnboarding() {
+function startOnboarding(branch) {
+  guidedTourBranch = branch === 'interconsulta' ? 'interconsulta' : 'sala';
   var today = new Date();
   var fecha = String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0')+'/'+today.getFullYear();
   var hora  = String(today.getHours()).padStart(2,'0')+':'+String(today.getMinutes()).padStart(2,'0');
@@ -1175,41 +1332,69 @@ function startOnboarding() {
     estudios:'', medicamentos:'', interconsultas:'', otros:[]
   };
   seedDemoTrendHistory();
+  delete medRecetaByPatient[DEMO_PATIENT_ID];
+  if (medNotaSelectionByPatient[DEMO_PATIENT_ID]) delete medNotaSelectionByPatient[DEMO_PATIENT_ID];
+  medRecetaByPatient[DEMO_PATIENT_ID] = {
+    fechaActualizacion: fecha,
+    items: [
+      {
+        id: 'tour-med-1',
+        nombreRaw: 'PARACETAMOL 1 G SOL INY (*)',
+        viaRaw: 'VIA INTRAVENOSA',
+        dosisRaw: '1 G //',
+        frecuenciaRaw: 'CADA 8 HORAS',
+        suspendido: false,
+        diaTratamiento: null,
+      },
+      {
+        id: 'tour-med-2',
+        nombreRaw: 'CEFTRIAXONA 1 G SOL INY (*)',
+        viaRaw: 'VIA INTRAVENOSA',
+        dosisRaw: '1 G // *DIA# 2*',
+        frecuenciaRaw: 'CADA 24 HORAS',
+        suspendido: false,
+        diaTratamiento: 2,
+      },
+    ],
+  };
+  medNotaSelectionByPatient[DEMO_PATIENT_ID] = { 'tour-med-1': true, 'tour-med-2': true };
   patients = patients.filter(function(p){ return p.id !== DEMO_PATIENT_ID; });
   patients.unshift(demoPatient);
   guidedTourActive = true;
-  tourStep = TOUR_STEP_MAP;
+  tourStepId = 'map';
   renderPatientList();
   selectPatient(DEMO_PATIENT_ID);
-  switchAppTab('lab');
-  document.getElementById('lab-input').value = DEMO_LAB_REPORT;
+  applyTourNavigationForStep('map');
   showTourDock();
   renderTourStep();
 }
 
 function onboardingAdvanceAfterParse() {
-  if (!guidedTourActive || tourStep !== TOUR_STEP_LAB_PARSE) return;
-  tourStep = TOUR_STEP_LAB_VIEW;
+  if (!guidedTourActive || tourStepId !== 'lab_parse') return;
+  tourStepId = 'lab_view';
   renderTourStep();
 }
 
 function onboardingAdvanceAfterSend() {
   if (!guidedTourActive) return;
-  // Permitir envío en paso 3 (vista resultados) o 4 (enviar): evita softlock si el usuario
-  // pulsa "Enviar a nota" antes de "Siguiente".
-  if (tourStep === TOUR_STEP_LAB_VIEW || tourStep === TOUR_STEP_LAB_SEND) {
-    tourStep = TOUR_STEP_NOTA_GEN;
+  if (tourStepId === 'lab_view' || tourStepId === 'lab_send') {
+    tourStepId = 'sala_tend';
+    applyTourNavigationForStep(tourStepId);
     renderTourStep();
   }
 }
 
 function destroyDemoAndClose() {
+  clearTourSoapButtonHighlight();
   patients = patients.filter(function(p){ return p.id !== DEMO_PATIENT_ID; });
   delete notes[DEMO_PATIENT_ID];
   delete indicaciones[DEMO_PATIENT_ID];
   delete labHistory[DEMO_PATIENT_ID];
+  delete medRecetaByPatient[DEMO_PATIENT_ID];
+  if (medNotaSelectionByPatient[DEMO_PATIENT_ID]) delete medNotaSelectionByPatient[DEMO_PATIENT_ID];
   guidedTourActive = false;
-  tourStep = TOUR_STEP_IDLE;
+  tourStepId = null;
+  guidedTourBranch = null;
   hideTourDock();
   if (activeId === DEMO_PATIENT_ID) {
     activeId = patients.length ? patients[0].id : null;
@@ -1226,8 +1411,11 @@ function resetAndStartOnboarding() {
   delete notes[DEMO_PATIENT_ID];
   delete indicaciones[DEMO_PATIENT_ID];
   delete labHistory[DEMO_PATIENT_ID];
+  delete medRecetaByPatient[DEMO_PATIENT_ID];
+  if (medNotaSelectionByPatient[DEMO_PATIENT_ID]) delete medNotaSelectionByPatient[DEMO_PATIENT_ID];
   guidedTourActive = false;
-  tourStep = TOUR_STEP_IDLE;
+  tourStepId = null;
+  guidedTourBranch = null;
   hideTourDock();
   hideTourIntroModal();
   limpiarReporte();
@@ -1709,13 +1897,15 @@ var HELP_ARTICLES = [
   {
     id: 'nota-evolucion',
     title: 'Nota de evolución',
-    keywords: 'nota evolucion docx generar expediente soap vitales diagnosticos',
+    keywords: 'nota evolucion docx generar expediente soap vitales diagnosticos plantilla',
     html:
       '<p>En <strong>Expediente → Notas</strong> completa fecha, hora, signos vitales, interrogatorio, evolución, estudios, diagnósticos y tratamiento.</p>' +
       '<ul>' +
-      '<li>La plantilla <strong>SOAP</strong> genera un bloque estructurado listo para insertar en evolución.</li>' +
-      '<li><strong>Generar Nota (.docx)</strong> crea un archivo con el formato clínico; la carpeta de destino se configura en Ajustes.</li>' +
-      '<li>Los datos se guardan por paciente y persisten al cerrar R+.</li>' +
+      '<li>La <strong>plantilla SOAP</strong> (modal) concentra subjetivo/objetivo breve, GCS, analgesia, antibióticos, antiHTA, vasopresores, temperatura, dieta, balance hídrico y glucometrías. <strong>Insertar en evolución</strong> pega el párrafo en el cuadro de texto.</li>' +
+      '<li>Desde <strong>Medicamentos</strong> puedes marcar fármacos para SOAP y abrir el modal ya relleno en analgesia / ABX / antiHTA / vasopresores.</li>' +
+      '<li><strong>Generar Nota (.docx)</strong> crea el documento con membrete; la carpeta de salida está en <strong>Ajustes</strong>.</li>' +
+      '<li><strong>Salida rápida</strong> exporta el paciente activo en docx, html o txt según el formato elegido.</li>' +
+      '<li>Los datos se guardan por paciente en este equipo.</li>' +
       '</ul>'
   },
   {
@@ -1728,6 +1918,20 @@ var HELP_ARTICLES = [
       '<li>Define <strong>plantillas por defecto</strong> en Mi Perfil para prellenar dieta, cuidados y medicamentos.</li>' +
       '<li><strong>Generar Indicaciones (.docx)</strong> produce la hoja final con el membrete del hospital.</li>' +
       '<li>La <strong>Salida rápida</strong> (Ajustes) exporta el paciente activo en docx, html o txt de un solo clic.</li>' +
+      '</ul>'
+  },
+  {
+    id: 'medicamentos-receta',
+    title: 'Medicamentos (receta hospitalaria)',
+    keywords: 'medicamentos receta tsv hospital soap tratamiento analgesia abx antihta vasopresores copiar',
+    html:
+      '<p>En la pestaña <strong>Medicamentos</strong> pegas el listado copiado del sistema hospitalario (columnas separadas por tabulador) y pulsas <strong>Receta</strong>.</p>' +
+      '<p>En <strong>SOME</strong>, para reutilizar el mismo bloque, copia normalmente <strong>desde la columna Fecha y hora</strong> hasta el <strong>final de la sección</strong> de medicamentos y pégalo en R+.</p>' +
+      '<ul>' +
+      '<li><strong>Excl.</strong> excluye el fármaco del texto de egreso; <strong>SOAP</strong> marca qué filas se volcarán a la plantilla SOAP o al tratamiento.</li>' +
+      '<li>La vista previa inferior agrupa por categoría (analgésicos, antiHTA, antibióticos, vasopresores, otros).</li>' +
+      '<li><strong>Añadir a Tratamiento</strong> inserta líneas en la nota; <strong>Abrir plantilla SOAP</strong> rellena los campos del modal según esa clasificación.</li>' +
+      '<li><strong>Copiar</strong> en la tarjeta inferior genera texto tipo nota de egreso.</li>' +
       '</ul>'
   },
   {
@@ -1939,7 +2143,25 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
   }
 ];
 
-var RELEASE_NOTES_HIGHLIGHTS = {};
+var RELEASE_NOTES_HIGHLIGHTS = {
+  '2.0.0': [
+    {
+      title: 'Medicamentos y plantilla SOAP',
+      body:
+        'Nueva pestaña <strong>Medicamentos</strong>: importa la receta en TSV, copia desde SOME, vuelca a tratamiento o a la plantilla SOAP. Catálogo de clasificación exportable/importable desde Ajustes.',
+    },
+    {
+      title: 'Ajustes y recuperación de datos',
+      body:
+        'Panel en <strong>secciones plegables</strong>, centro de ayuda arriba, scroll corregido. <strong>Deshacer</strong> usa copia en memoria fiable; respaldo automático <strong>antes de importar todo</strong> restaurable desde Respaldos.',
+    },
+    {
+      title: 'Laboratorio y tutorial',
+      body:
+        'Mejoras en historial de laboratorio y recorridos <strong>Sala / Interconsulta</strong> con guías más claras en el centro de ayuda.',
+    },
+  ],
+};
 
 function getCuratedReleaseNotes(v) {
   if (v && RELEASE_NOTES_HIGHLIGHTS[v]) return RELEASE_NOTES_HIGHLIGHTS[v];
@@ -2024,7 +2246,7 @@ var SETTINGS_MINI_TOUR_STEPS = [
   },
   {
     badge: 'Ajustes · aplicación',
-    body: 'Desde <strong>Aplicación</strong> accedes a este <strong>centro de ayuda</strong>, ves la versión instalada y puedes <strong>buscar actualizaciones</strong> manualmente.',
+    body: 'Arriba del panel está el acceso directo al <strong>centro de ayuda</strong>. En <strong>Aplicación</strong> (sección inferior) ves la versión y puedes <strong>buscar actualizaciones</strong>.',
     before: function(){ ensureSettingsDropdownOpen(); }
   }
 ];
@@ -2049,6 +2271,11 @@ var LAB_MINI_TOUR_STEPS = [
     badge: 'Laboratorio · tendencias',
     body: 'Cada laboratorio enviado se guarda con su fecha. Con dos o más labs aparecen mini-gráficas en <strong>Expediente → Tendencias</strong>.',
     before: function(){ switchAppTab('lab'); }
+  },
+  {
+    badge: 'Evolución · SOAP y medicamentos',
+    body: 'En <strong>Expediente → Notas</strong> usa la <strong>plantilla SOAP</strong> para párrafos estructurados. La pestaña <strong>Medicamentos</strong> importa la receta del hospital y puede mandar dosis a SOAP o al tratamiento.',
+    before: function(){ switchAppTab('nota'); }
   }
 ];
 
@@ -2159,6 +2386,180 @@ function exportAuditLog() {
     entries: log
   }, 'R-plus-bitacora-' + formatDateSlug(new Date()) + '.json');
   showToast('Bitácora exportada', 'success');
+}
+
+var MED_CATALOG_MERGE_CAP = 400;
+
+function mergeMedCatalogStored(incoming) {
+  var cur = storage.getMedCatalog();
+  var incAcc = incoming.accents && typeof incoming.accents === 'object' ? incoming.accents : {};
+  var accents = Object.assign({}, cur.accents, incAcc);
+  function mergeArr(a, b) {
+    var seen = Object.create(null);
+    var out = [];
+    function add(list) {
+      (list || []).forEach(function (t) {
+        var s = String(t || '').trim();
+        if (!s) return;
+        var k = s.toUpperCase();
+        if (seen[k]) return;
+        seen[k] = 1;
+        out.push(s);
+      });
+    }
+    add(a);
+    add(b);
+    return out.slice(0, MED_CATALOG_MERGE_CAP);
+  }
+  var st = cur.soapTokens || {};
+  var si = incoming.soapTokens && typeof incoming.soapTokens === 'object' ? incoming.soapTokens : {};
+  return {
+    v: 1,
+    accents: accents,
+    soapTokens: {
+      vasop: mergeArr(st.vasop, si.vasop),
+      abx: mergeArr(st.abx, si.abx),
+      analgesia: mergeArr(st.analgesia, si.analgesia),
+      antihta: mergeArr(st.antihta, si.antihta),
+    },
+  };
+}
+
+function exportMedCatalogBundle() {
+  var data = storage.getMedCatalog();
+  downloadJsonPayload(
+    {
+      format: 'r-plus-med-catalog',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      accents: data.accents || {},
+      soapTokens: data.soapTokens || { vasop: [], abx: [], analgesia: [], antihta: [] },
+    },
+    'R-plus-catalogo-medicamentos-' + formatDateSlug(new Date()) + '.json'
+  );
+  addAuditEntry('med-catalog-export', 'ok', Object.keys(data.accents || {}).length, 'soap-export');
+  showToast('Catálogo exportado', 'success');
+}
+
+function triggerImportMedCatalog() {
+  var el = document.getElementById('med-catalog-file-input');
+  if (el) el.click();
+}
+
+function onMedCatalogFileChosen(ev) {
+  var input = ev.target;
+  var f = input.files && input.files[0];
+  input.value = '';
+  if (!f) return;
+  var reader = new FileReader();
+  reader.onload = function () {
+    try {
+      var json = JSON.parse(String(reader.result || ''));
+      var payload = json && typeof json === 'object' ? json : {};
+      var accents = payload.accents;
+      var soapTokens = payload.soapTokens;
+      var hasAcc = accents && typeof accents === 'object';
+      var hasSoap = soapTokens && typeof soapTokens === 'object';
+      if (!hasAcc && !hasSoap) {
+        showToast('El archivo no es un catálogo válido (faltan accents o soapTokens).', 'error');
+        return;
+      }
+      var merged = mergeMedCatalogStored({
+        accents: hasAcc ? accents : {},
+        soapTokens: hasSoap ? soapTokens : {},
+      });
+      storage.saveMedCatalog(merged);
+      applyMedCatalogOverlay(merged);
+      var nAcc = Object.keys(merged.accents || {}).length;
+      var nTok =
+        (merged.soapTokens.vasop || []).length +
+        (merged.soapTokens.abx || []).length +
+        (merged.soapTokens.analgesia || []).length +
+        (merged.soapTokens.antihta || []).length;
+      addAuditEntry('med-catalog-import', 'ok', nTok, 'accents:' + nAcc);
+      showToast('Catálogo importado (fusionado con el tuyo)', 'success');
+    } catch (_err) {
+      showToast('No se pudo leer el catálogo', 'error');
+    }
+  };
+  reader.readAsText(f);
+}
+
+var PREIMPORT_BACKUP_KEY = 'rpc-preimport-backup';
+
+function syncPreimportBackupUi() {
+  var wrap = document.getElementById('settings-preimport-restore-wrap');
+  if (!wrap) return;
+  var raw = localStorage.getItem(PREIMPORT_BACKUP_KEY);
+  var has = false;
+  var meta = '';
+  try {
+    if (raw) {
+      var p = JSON.parse(raw);
+      if (p && p.format === 'r-plus-backup' && p.version === 1 && p.data) {
+        has = true;
+        var n = (p.data.patients || []).length;
+        var when = p.exportedAt ? String(p.exportedAt).slice(0, 19).replace('T', ' ') : '';
+        meta = (when ? when + ' · ' : '') + n + ' paciente(s)';
+      }
+    }
+  } catch (_e) {}
+  wrap.style.display = has ? 'block' : 'none';
+  var el = document.getElementById('settings-preimport-meta');
+  if (el) el.textContent = has ? meta : '—';
+}
+
+function restorePreimportBackupPrompt() {
+  var raw = localStorage.getItem(PREIMPORT_BACKUP_KEY);
+  if (!raw) {
+    showToast(
+      'No hay copia automática previa a una importación. Revisa Descargas por archivos R-plus-respaldo- o R-plus-auto-respaldo-.',
+      'error'
+    );
+    syncPreimportBackupUi();
+    return;
+  }
+  var payload;
+  try {
+    payload = JSON.parse(raw);
+  } catch (_e) {
+    showToast('La copia automática previa está dañada.', 'error');
+    return;
+  }
+  if (!payload || payload.format !== 'r-plus-backup' || payload.version !== 1 || !payload.data) {
+    showToast('Formato de respaldo no válido.', 'error');
+    return;
+  }
+  var n = (payload.data.patients || []).length;
+  if (
+    !confirm(
+      '¿Restaurar la copia guardada automáticamente antes de la última importación completa? (' +
+        n +
+        ' pacientes). La aplicación se recargará.'
+    )
+  ) {
+    return;
+  }
+  if (typeof pushUndoSnapshot === 'function') pushUndoSnapshot('Antes de restaurar copia pre-importación');
+  localStorage.setItem('rpc-patients', JSON.stringify(payload.data.patients || []));
+  localStorage.setItem('rpc-notes', JSON.stringify(payload.data.notes || {}));
+  localStorage.setItem('rpc-indicaciones', JSON.stringify(payload.data.indicaciones || {}));
+  localStorage.setItem('rpc-labHistory', JSON.stringify(payload.data.labHistory || {}));
+  localStorage.setItem('rpc-medRecetaByPatient', JSON.stringify(payload.data.medRecetaByPatient || {}));
+  localStorage.setItem('rpc-settings', JSON.stringify(payload.data.settings || {}));
+  if (payload.data.medCatalog && typeof payload.data.medCatalog === 'object') {
+    storage.saveMedCatalog(payload.data.medCatalog);
+  }
+  if (payload.theme === 'dark' || payload.theme === 'light') {
+    localStorage.setItem('theme', payload.theme);
+  }
+  if (payload.guidedTourDoneForVersion) {
+    localStorage.setItem(GUIDED_TOUR_LS_KEY, payload.guidedTourDoneForVersion);
+  } else {
+    localStorage.removeItem(GUIDED_TOUR_LS_KEY);
+  }
+  addAuditEntry('preimport-restore', 'ok', n, payload.exportedAt || '');
+  location.reload();
 }
 
 function formatDateSlug(d) {
@@ -2298,7 +2699,8 @@ function buildFullBackupPayload() {
       indicaciones: storage.getIndicaciones(),
       labHistory: storage.getLabHistory(),
       medRecetaByPatient: storage.getMedRecetaByPatient(),
-      settings: storage.getSettings()
+      settings: storage.getSettings(),
+      medCatalog: storage.getMedCatalog(),
     }
   };
 }
@@ -2671,6 +3073,9 @@ function onBackupFileChosen(ev) {
       localStorage.setItem('rpc-labHistory', JSON.stringify(payload.data.labHistory || {}));
       localStorage.setItem('rpc-medRecetaByPatient', JSON.stringify(payload.data.medRecetaByPatient || {}));
       localStorage.setItem('rpc-settings', JSON.stringify(payload.data.settings || {}));
+      if (payload.data.medCatalog && typeof payload.data.medCatalog === 'object') {
+        storage.saveMedCatalog(payload.data.medCatalog);
+      }
       if (payload.theme === 'dark' || payload.theme === 'light') {
         localStorage.setItem('theme', payload.theme);
       }
@@ -3017,58 +3422,71 @@ function renderMedNotaFooter() {
   if (!foot) return;
   foot.style.display = 'block';
 
-  function catButtons(catKey, label) {
-    var phrases = MED_SOAP_CATALOG[catKey] || [];
-    return (
-      '<div style="margin:6px 0;">' +
-      '<span style="font-size:11px;font-weight:700;color:var(--text-muted);">' +
-      esc(label) +
-      ':</span> ' +
-      phrases
-        .map(function (ph) {
-          return (
-            '<button type="button" class="btn-lab-history" style="margin:3px 4px 3px 0;" onclick="addMedSoapCatalogPhrase(\'' +
-            catKey +
-            "','" +
-            safeAttrJsString(ph) +
-            "')\">" +
-            esc(ph) +
-            '</button>'
-          );
+  var block = activeId ? medRecetaByPatient[activeId] : null;
+  var sel = activeId ? getMedNotaSelMap(activeId) : {};
+  var soapItems =
+    block && block.items
+      ? block.items.filter(function (it) {
+          return sel[it.id] && !it.suspendido;
         })
-        .join('') +
-      '</div>'
+      : [];
+
+  var groups = { analgesia: [], antihta: [], abx: [], vasop: [], otros: [] };
+  soapItems.forEach(function (it) {
+    var cat = classifyMedicationSoapCategory(it.nombreRaw);
+    if (groups[cat]) groups[cat].push(it);
+    else groups.otros.push(it);
+  });
+
+  function chipsFor(arr) {
+    return arr
+      .map(function (it) {
+        var frag = medInstructionFragmentForSoap(it);
+        return (
+          '<span class="med-soap-preview-chip" title="' +
+          esc((it.nombreRaw || '').slice(0, 220)) +
+          '">' +
+          esc(frag) +
+          '</span>'
+        );
+      })
+      .join('');
+  }
+
+  function section(cat, title) {
+    if (!groups[cat].length) return '';
+    return (
+      '<div class="med-soap-preview-sec med-soap-preview-sec--' +
+      cat +
+      '">' +
+      '<div class="med-soap-preview-sec-title">' +
+      esc(title) +
+      '</div>' +
+      '<div class="med-soap-preview-chips">' +
+      chipsFor(groups[cat]) +
+      '</div></div>'
     );
   }
 
-  var stagingHtml =
-    medCatalogStaging.length > 0
-      ? '<div style="margin:10px 0;font-size:12px;">' +
-        '<strong>Pendientes (catálogo → SOAP):</strong> ' +
-        medCatalogStaging
-          .map(function (s, i) {
-            return (
-              '<span style="display:inline-flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:2px 8px;margin:2px;">' +
-              esc(s.text) +
-              '<button type="button" onclick="removeMedCatalogStagingRow(' +
-              i +
-              ')" style="border:none;background:none;cursor:pointer;color:var(--error);padding:0 4px;line-height:1;" aria-label="Quitar">×</button></span>'
-            );
-          })
-          .join('') +
-        '</div>'
-      : '';
+  var previewHtml = soapItems.length
+    ? '<div class="med-soap-preview">' +
+      section('analgesia', 'Analgésicos / antieméticos') +
+      section('antihta', 'AntiHTA / diuréticos') +
+      section('abx', 'Antibióticos / antifúngicos') +
+      section('vasop', 'Vasopresores / inotrópicos') +
+      section('otros', 'Otros (se copian en Antibióticos — revisar)') +
+      '</div>'
+    : '<p class="med-soap-preview-empty">Marcá <strong>SOAP</strong> en el listado para ver aquí cómo se repartirán en la plantilla.</p>';
 
   foot.innerHTML =
-    '<p style="font-size:12px;color:var(--text-muted);margin:0 0 10px 0;">Marca <strong>Nota</strong> en la receta y/o añade frases rápidas; luego <strong>Añadir a Tratamiento</strong> o <strong>Llevar a SOAP</strong> (rellena Analgesia / ABX / AntiHTA en el modal).</p>' +
-    catButtons('analgesia', 'Analgésicos') +
-    catButtons('abx', 'Antibióticos') +
-    catButtons('antihta', 'Antihipertensivos') +
-    stagingHtml +
-    '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">' +
+    '<div class="med-nota-toolbar">' +
+    '<p class="med-nota-hint">Solo los medicamentos con <strong>SOAP</strong> activo aparecen abajo, clasificados según el nombre del fármaco en la receta.</p>' +
+    previewHtml +
+    '<div class="med-nota-actions">' +
     '<button type="button" class="btn-generate" onclick="mediAnadirATratamiento()">Añadir a Tratamiento</button>' +
-    '<button type="button" class="btn-generate" style="background:#065F46;" onclick="mediLlevarASOAP()">Llevar a SOAP</button>' +
-    '<button type="button" onclick="limpiarSeleccionMedNota()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:13px;font-family:inherit;color:var(--text-muted);cursor:pointer;">Limpiar selección</button>' +
+    '<button type="button" class="btn-generate" style="background:#065F46;" onclick="mediLlevarASOAP()">Abrir plantilla SOAP</button>' +
+    '<button type="button" class="btn-med-secondary" onclick="limpiarSeleccionMedNota()">Limpiar</button>' +
+    '</div>' +
     '</div>';
 }
 
@@ -3113,42 +3531,50 @@ function renderMedRecetaPanel() {
     fechaEl.style.display = 'block';
     fechaEl.textContent = 'Actualizado: ' + (block.fechaActualizacion || '—');
   }
-  listEl.innerHTML = block.items
-    .map(function (it) {
-      var sid = String(it.id || '');
-      var label = esc((it.nombreRaw || '').slice(0, 120));
-      var chk = it.suspendido ? ' checked' : '';
-      var paraNota = isMedNotaSelected(activeId, sid) ? ' checked' : '';
-      var diaBadge =
-        it.diaTratamiento != null
-          ? '<span style="flex-shrink:0;font-size:11px;font-weight:700;background:var(--lab-chip-bg);color:var(--lab-chip-txt);padding:2px 8px;border-radius:999px;white-space:nowrap;">Día ' +
-            esc(String(it.diaTratamiento)) +
-            '</span>'
-          : '';
-      return (
-        '<div class="lab-history-row" style="align-items:center;flex-wrap:wrap;gap:8px;">' +
-        '<label style="display:flex;gap:6px;cursor:pointer;align-items:center;flex-shrink:0;" title="Suspender del texto de egreso">' +
-        '<input type="checkbox"' +
-        chk +
-        ' onchange="toggleMedRecetaSuspendido(\'' +
-        safeAttrJsString(sid) +
-        '\', this.checked)"/>' +
-        '<span style="font-size:11px;color:var(--text-muted);">Susp.</span></label>' +
-        '<label style="display:flex;gap:6px;cursor:pointer;align-items:center;flex-shrink:0;" title="Incluir al enviar a Tratamiento o SOAP">' +
-        '<input type="checkbox"' +
-        paraNota +
-        ' onchange="toggleMedRecetaParaNota(\'' +
-        safeAttrJsString(sid) +
-        '\', this.checked)"/>' +
-        '<span style="font-size:11px;color:var(--text-muted);">Nota</span></label>' +
-        '<span style="font-size:13px;line-height:1.4;flex:1;min-width:140px;">' +
-        label +
-        '</span>' +
-        diaBadge +
-        '</div>'
-      );
-    })
-    .join('');
+  var rows = block.items.map(function (it) {
+    var sid = String(it.id || '');
+    var label = esc((it.nombreRaw || '').slice(0, 120));
+    var chk = it.suspendido ? ' checked' : '';
+    var paraNota = isMedNotaSelected(activeId, sid) ? ' checked' : '';
+    var diaCell =
+      it.diaTratamiento != null
+        ? '<span class="med-receta-dia">Día ' + esc(String(it.diaTratamiento)) + '</span>'
+        : '';
+    return (
+      '<div class="med-receta-row">' +
+      '<div class="med-receta-checkcell">' +
+      '<input type="checkbox"' +
+      chk +
+      ' title="Excluir del texto de egreso"' +
+      ' onchange="toggleMedRecetaSuspendido(\'' +
+      safeAttrJsString(sid) +
+      '\', this.checked)"/>' +
+      '</div>' +
+      '<div class="med-receta-checkcell">' +
+      '<input type="checkbox"' +
+      paraNota +
+      ' title="Incluir en Tratamiento y campos SOAP (Analgesia / ABX / AntiHTA)"' +
+      ' onchange="toggleMedRecetaParaNota(\'' +
+      safeAttrJsString(sid) +
+      '\', this.checked)"/>' +
+      '</div>' +
+      '<div class="med-receta-name">' +
+      label +
+      '</div>' +
+      diaCell +
+      '</div>'
+    );
+  });
+  listEl.innerHTML =
+    '<div class="med-receta-wrap">' +
+    '<div class="med-receta-head">' +
+    '<span>Excl.</span>' +
+    '<span>SOAP</span>' +
+    '<span>Medicamento</span>' +
+    '<span>Día</span>' +
+    '</div>' +
+    rows.join('') +
+    '</div>';
   renderMedNotaFooter();
   var txt = buildMedRecetaCopyText(block.items);
   outPre.textContent = txt;
@@ -3172,54 +3598,10 @@ function toggleMedRecetaParaNota(itemId, selected) {
   renderMedRecetaPanel();
 }
 
-function addMedSoapCatalogPhrase(catKey, text) {
-  var c = String(catKey || '').trim();
-  if (c !== 'analgesia' && c !== 'abx' && c !== 'antihta') return;
-  var t = String(text || '').trim();
-  if (!t) return;
-  medCatalogStaging.push({ cat: c, text: t });
-  renderMedRecetaPanel();
-  showToast('Frase añadida a pendientes SOAP', 'success');
-}
-
-function removeMedCatalogStagingRow(index) {
-  var i = parseInt(index, 10);
-  if (isNaN(i) || i < 0 || i >= medCatalogStaging.length) return;
-  medCatalogStaging.splice(i, 1);
-  renderMedRecetaPanel();
-}
-
 function limpiarSeleccionMedNota() {
   if (activeId) medNotaSelectionByPatient[activeId] = {};
-  medCatalogStaging = [];
   renderMedRecetaPanel();
   showToast('Selección limpiada', 'success');
-}
-
-function classifyMedSoapCategory(item) {
-  var n = (item.nombreRaw || '').toUpperCase();
-  if (
-    /(ERTAPENEM|MEROPENEM|CEFTRIAX|CEFEPIME|PIPERACILINA|TAZOBACTAM|VANCOMICINA|AMIKACINA|LEVOFLOX|CIPROFLOX|MOXIFLOX|METRONIDAZOL|LINEZOLID|DAPTOMICINA|CEFAZOLINA|AZTREONAM|COLISTIN|IMIPENEM|PENICILINA|AMOXICILINA|TRIMETOPRIM|SEFOTAXIMA|CEFUROXIMA|AMPICILINA|CLINDAMICINA|BACTRIM|SULFAMETOXAZOL)/i.test(
-      n
-    )
-  ) {
-    return 'abx';
-  }
-  if (
-    /(PARACETAMOL|ACETAMINOFEN|METAMIZOL|DIPIRONA|KETOROLAC|MORFINA|TRAMADOL|IBUPROFENO|NAPROXENO|DICLOFENACO|ACETILSALICILICO|ONDANSETRON)/i.test(
-      n
-    )
-  ) {
-    return 'analgesia';
-  }
-  if (
-    /(LOSARTAN|ENALAPRIL|LISINOPRIL|AMLODIPINO|NIFEDIPINO|CARVEDILOL|METOPROLOL|LABETALOL|HIDROCLOROTIAZ|ESMOLOL|CLEVUDIPINO|NICARDIPINO|IRBESARTAN|TELMISARTAN|VALSARTAN|CAPTOPRIL|CLONIDINA|RAMIPRIL|OLMESARTAN)/i.test(
-      n
-    )
-  ) {
-    return 'antihta';
-  }
-  return 'abx';
 }
 
 function medInstructionFragmentForSoap(it) {
@@ -3262,7 +3644,7 @@ function mediAnadirATratamiento() {
       return formatMedicationEgresoLine(it);
     });
   if (!lines.length) {
-    showToast('Marca «Nota» en al menos un medicamento activo', 'error');
+    showToast('Marca «SOAP» en al menos un medicamento activo', 'error');
     return;
   }
   if (!notes[activeId]) notes[activeId] = {};
@@ -3297,23 +3679,23 @@ function mediLlevarASOAP() {
     block.items.some(function (it) {
       return sel[it.id] && !it.suspendido;
     });
-  var hasCat = medCatalogStaging.length > 0;
-  if (!hasReceta && !hasCat) {
-    showToast('Marca «Nota» en la receta o añade frases del catálogo', 'error');
+  if (!hasReceta) {
+    showToast('Marca «SOAP» en al menos un medicamento de la receta', 'error');
     return;
   }
-  var buckets = { analgesia: [], abx: [], antihta: [] };
+  var buckets = { analgesia: [], abx: [], antihta: [], vasop: [], otros: [] };
   if (block && block.items) {
     block.items.forEach(function (it) {
       if (!sel[it.id] || it.suspendido) return;
-      var cat = classifyMedSoapCategory(it);
+      var cat = classifyMedicationSoapCategory(it.nombreRaw);
       buckets[cat].push(medInstructionFragmentForSoap(it));
     });
   }
-  medCatalogStaging.forEach(function (s) {
-    if (buckets[s.cat]) buckets[s.cat].push(s.text);
+  var otrosN = buckets.otros.length;
+  buckets.otros.forEach(function (t) {
+    buckets.abx.push(t);
   });
-  if (!buckets.analgesia.length && !buckets.abx.length && !buckets.antihta.length) {
+  if (!buckets.analgesia.length && !buckets.abx.length && !buckets.antihta.length && !buckets.vasop.length) {
     showToast('No quedó nada que volcar', 'error');
     return;
   }
@@ -3326,12 +3708,16 @@ function mediLlevarASOAP() {
   buckets.antihta.forEach(function (t) {
     mergeSoapMedField('soap-antihta', t);
   });
-  medCatalogStaging = [];
+  buckets.vasop.forEach(function (t) {
+    mergeSoapMedField('soap-vasop', t);
+  });
   switchAppTab('nota');
   switchInnerTab('notas');
   renderNoteForm();
   openSOAPModalDirect();
-  showToast('Campos SOAP actualizados · completa e Insertar en evolución', 'success');
+  var toastMsg = 'Campos SOAP actualizados · completa e Insertar en evolución';
+  if (otrosN) toastMsg += ' · Revisa Antibióticos (incluye «Otros»)';
+  showToast(toastMsg, 'success');
   renderMedRecetaPanel();
 }
 
@@ -3360,7 +3746,6 @@ function procesarRecetaMed() {
     items: parsed.items,
   };
   medNotaSelectionByPatient[activeId] = {};
-  medCatalogStaging = [];
   saveState();
   renderMedRecetaPanel();
   var msg = 'Receta actualizada (' + parsed.items.length + ' medicamentos)';
@@ -3911,7 +4296,7 @@ function renderNoteForm() {
 
     '<div class="card"><div class="card-header"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Resumen de Interrogatorio, Exploración Física y Estado Mental</div><div class="card-body"><div class="field-group"><textarea rows="5" placeholder="Ingresa el resumen de interrogatorio, exploración física y estado mental..." oninput="updateNote(\'interrogatorio\',this.value)">' + esc(note.interrogatorio) + '</textarea></div></div></div>' +
 
-    '<div class="card"><div class="card-header" style="background:#065f46;display:flex;align-items:center;justify-content:space-between;"><span style="display:flex;align-items:center;gap:8px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Evolución y Actualización del Cuadro Clínico</span><button onclick="openSOAPModal()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.35);color:white;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:5px;transition:background 0.15s;" onmouseover="this.style.background=\'rgba(255,255,255,0.25)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.15)\'"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>Plantilla SOAP</button></div><div class="card-body"><div class="field-group"><textarea rows="7" placeholder="N: [Neurológico]&#10;V: [Ventilatorio]&#10;HD: [Hemodinámico]&#10;HI: [Infeccioso]&#10;NM: [Nutricional/Metabólico]" oninput="updateNote(\'evolucion\',this.value)">' + esc(note.evolucion) + '</textarea></div></div></div>' +
+    '<div class="card"><div class="card-header" style="background:#065f46;display:flex;align-items:center;justify-content:space-between;"><span style="display:flex;align-items:center;gap:8px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Evolución y Actualización del Cuadro Clínico</span><button type="button" id="btn-soap-template" onclick="openSOAPModal()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.35);color:white;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:5px;transition:background 0.15s;" onmouseover="this.style.background=\'rgba(255,255,255,0.25)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.15)\'"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>Plantilla SOAP</button></div><div class="card-body"><div class="field-group"><textarea rows="7" placeholder="N: [Neurológico]&#10;V: [Ventilatorio]&#10;HD: [Hemodinámico]&#10;HI: [Infeccioso]&#10;NM: [Nutricional/Metabólico]" oninput="updateNote(\'evolucion\',this.value)">' + esc(note.evolucion) + '</textarea></div></div></div>' +
 
     '<div class="card"><div class="card-header" style="background:#3730a3;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>Resultados de Estudios Auxiliares</div><div class="card-body"><div class="field-group"><textarea rows="9" placeholder="Una línea por renglón del documento:&#10;FECHA (ej. 09.04.26)&#10;QS Glu Cr BUN..." oninput="updateNote(\'estudios\',this.value)">' + esc(note.estudios) + '</textarea></div></div></div>' +
 
@@ -5194,6 +5579,14 @@ var UNDO_STACK_KEY = 'rpc-undo-stack';
 var FOCUS_MODE_KEY = 'rpc-focus-mode';
 var UNDO_STACK_MAX = 5;
 
+function cloneForUndo(value) {
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch (_e) {
+    return null;
+  }
+}
+
 function buildUndoSnapshotPayload(label) {
   return {
     label: label || 'operación',
@@ -5201,13 +5594,14 @@ function buildUndoSnapshotPayload(label) {
     theme: localStorage.getItem('theme') || 'light',
     activeId: activeId,
     data: {
-      patients: JSON.parse(localStorage.getItem('rpc-patients') || '[]'),
-      notes: JSON.parse(localStorage.getItem('rpc-notes') || '{}'),
-      indicaciones: JSON.parse(localStorage.getItem('rpc-indicaciones') || '{}'),
-      labHistory: JSON.parse(localStorage.getItem('rpc-labHistory') || '{}'),
-      medRecetaByPatient: JSON.parse(localStorage.getItem('rpc-medRecetaByPatient') || '{}'),
-      settings: JSON.parse(localStorage.getItem('rpc-settings') || '{}')
-    }
+      patients: cloneForUndo(patients) || [],
+      notes: cloneForUndo(notes) || {},
+      indicaciones: cloneForUndo(indicaciones) || {},
+      labHistory: cloneForUndo(labHistory) || {},
+      medRecetaByPatient: cloneForUndo(medRecetaByPatient) || {},
+      settings: cloneForUndo(settings) || {},
+      medCatalog: cloneForUndo(storage.getMedCatalog()) || storage.getMedCatalog(),
+    },
   };
 }
 
@@ -5227,9 +5621,6 @@ function saveUndoStack(stack) {
 }
 
 function pushUndoSnapshot(label) {
-  try {
-    saveState();
-  } catch (_e) { /* continue */ }
   var snap = buildUndoSnapshotPayload(label);
   var stack = getUndoStack();
   stack.unshift(snap);
@@ -5266,6 +5657,9 @@ function undoLastOperation() {
   localStorage.setItem('rpc-labHistory', JSON.stringify(snap.data.labHistory || {}));
   localStorage.setItem('rpc-medRecetaByPatient', JSON.stringify(snap.data.medRecetaByPatient || {}));
   localStorage.setItem('rpc-settings', JSON.stringify(snap.data.settings || {}));
+  if (snap.data.medCatalog && typeof snap.data.medCatalog === 'object') {
+    storage.saveMedCatalog(snap.data.medCatalog);
+  }
   if (snap.theme === 'dark' || snap.theme === 'light') localStorage.setItem('theme', snap.theme);
   addAuditEntry('undo-restore', 'ok', 0, snap.label || '');
   location.reload();
@@ -5663,7 +6057,8 @@ Object.assign(window, {
   wipeAllConfirmed,
   switchAppTab,
   switchInnerTab,
-  guidedTourIntroStart,
+  guidedTourIntroChooseSala,
+  guidedTourIntroChooseInterconsulta,
   guidedTourIntroSkip,
   skipGuidedTour,
   guidedTourClickNext,
@@ -5689,6 +6084,9 @@ Object.assign(window, {
   updateAutoBackupSettingsFromUi,
   runAutoBackupNow,
   exportAuditLog,
+  exportMedCatalogBundle,
+  triggerImportMedCatalog,
+  onMedCatalogFileChosen,
   exportSyncBundlePrompt,
   triggerImportSyncBundle,
   onSyncBundleFileChosen,
@@ -5708,8 +6106,6 @@ Object.assign(window, {
   copiarMedicamentosAlPortapapeles,
   toggleMedRecetaSuspendido,
   toggleMedRecetaParaNota,
-  addMedSoapCatalogPhrase,
-  removeMedCatalogStagingRow,
   limpiarSeleccionMedNota,
   mediAnadirATratamiento,
   mediLlevarASOAP,
@@ -5753,5 +6149,7 @@ Object.assign(window, {
   deleteExtraTemplate,
   saveExtraTemplateFromEditor,
   cancelExtraTemplateEdit,
-  applyExtraTemplateFromIndica
+  applyExtraTemplateFromIndica,
+  restorePreimportBackupPrompt,
+  syncPreimportBackupUi
 });

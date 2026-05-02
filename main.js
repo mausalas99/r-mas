@@ -8,6 +8,7 @@ app.disableHardwareAcceleration();
 
 autoUpdater.autoDownload = true;
 autoUpdater.autoInstallOnAppQuit = true;
+autoUpdater.allowPrerelease = false;
 
 let server;
 let mainWindow;
@@ -66,70 +67,104 @@ function createWindow() {
 
   // Wait for renderer JS to fully load before checking for updates
   mainWindow.webContents.once('did-finish-load', () => {
-    // Replay any update events that fired before the renderer was ready
-    if (pendingUpdate) {
-      if (pendingUpdate.type === 'available')
-        mainWindow.webContents.send('update-available', {
-          version: pendingUpdate.version,
-          releaseNotes: pendingUpdate.releaseNotes || '',
-        });
-      else if (pendingUpdate.type === 'progress')
-        mainWindow.webContents.send('update-progress', {
-          percent: pendingUpdate.percent,
-          transferred: pendingUpdate.transferred,
-          total: pendingUpdate.total,
-          bytesPerSecond: pendingUpdate.bytesPerSecond,
-        });
-      else if (pendingUpdate.type === 'ready')
-        mainWindow.webContents.send('update-ready', { version: pendingUpdate.version });
+    try {
+      // Replay any update events that fired before the renderer was ready
+      if (pendingUpdate) {
+        if (pendingUpdate.type === 'available')
+          mainWindow.webContents.send('update-available', {
+            version: pendingUpdate.version,
+            releaseNotes: pendingUpdate.releaseNotes || '',
+          });
+        else if (pendingUpdate.type === 'progress')
+          mainWindow.webContents.send('update-progress', {
+            percent: pendingUpdate.percent,
+            transferred: pendingUpdate.transferred,
+            total: pendingUpdate.total,
+            bytesPerSecond: pendingUpdate.bytesPerSecond,
+          });
+        else if (pendingUpdate.type === 'ready')
+          mainWindow.webContents.send('update-ready', { version: pendingUpdate.version });
+      }
+    } catch (e) {
+      console.error('did-finish-load replay error:', e && e.message);
     }
     // Small delay to ensure renderer IPC listeners are registered
-    setTimeout(() => autoUpdater.checkForUpdates().catch(() => {}), 1500);
+    setTimeout(() => {
+      try { autoUpdater.checkForUpdates().catch(() => {}); } catch (_e) { /* noop */ }
+    }, 1500);
   });
 
   mainWindow.on('closed', () => { mainWindow = null; });
 }
 
 // ── Auto-updater events ───────────────────────────────────────────
+function safeSendToRenderer(channel, payload) {
+  try {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send(channel, payload);
+    }
+  } catch (e) {
+    console.error('safeSendToRenderer error for', channel, ':', e && e.message);
+  }
+}
+
 autoUpdater.on('update-available', (info) => {
-  const releaseNotes = serializeReleaseNotes(info);
-  pendingUpdate = { type: 'available', version: info.version, releaseNotes };
-  if (mainWindow && !mainWindow.isDestroyed())
-    mainWindow.webContents.send('update-available', { version: info.version, releaseNotes });
+  try {
+    const releaseNotes = serializeReleaseNotes(info);
+    const version = info && info.version ? info.version : '';
+    pendingUpdate = { type: 'available', version, releaseNotes };
+    safeSendToRenderer('update-available', { version, releaseNotes });
+  } catch (e) {
+    console.error('update-available handler error:', e && e.message);
+  }
 });
 
 autoUpdater.on('download-progress', (p) => {
-  const payload = {
-    percent: Math.round(p.percent),
-    transferred: p.transferred,
-    total: p.total,
-    bytesPerSecond: p.bytesPerSecond,
-  };
-  pendingUpdate = { type: 'progress', ...payload };
-  if (mainWindow && !mainWindow.isDestroyed())
-    mainWindow.webContents.send('update-progress', payload);
+  try {
+    const payload = {
+      percent: Math.round((p && p.percent) || 0),
+      transferred: p && p.transferred,
+      total: p && p.total,
+      bytesPerSecond: p && p.bytesPerSecond,
+    };
+    pendingUpdate = { type: 'progress', ...payload };
+    safeSendToRenderer('update-progress', payload);
+  } catch (e) {
+    console.error('download-progress handler error:', e && e.message);
+  }
 });
 
 autoUpdater.on('update-downloaded', (info) => {
-  pendingUpdate = { type: 'ready', version: info.version };
-  if (mainWindow && !mainWindow.isDestroyed())
-    mainWindow.webContents.send('update-ready', { version: info.version });
+  try {
+    const version = info && info.version ? info.version : '';
+    pendingUpdate = { type: 'ready', version };
+    safeSendToRenderer('update-ready', { version });
+  } catch (e) {
+    console.error('update-downloaded handler error:', e && e.message);
+  }
 });
 
 autoUpdater.on('update-not-available', () => {
-  if (mainWindow && !mainWindow.isDestroyed())
-    mainWindow.webContents.send('update-not-available');
+  try {
+    safeSendToRenderer('update-not-available');
+  } catch (e) {
+    console.error('update-not-available handler error:', e && e.message);
+  }
 });
 
 autoUpdater.on('error', (err) => {
-  console.error('AutoUpdater error:', err.message);
-  let msg = err.message;
-  if (process.platform === 'darwin' && /Code signature|did not pass validation/i.test(msg)) {
-    msg +=
-      ' En macOS, la actualización automática exige la misma firma e identificador de app que la instalación actual; si cambió el build, descarga el DMG desde GitHub e instálalo manualmente.';
+  try {
+    const baseMsg = (err && err.message) ? err.message : String(err || 'Error desconocido');
+    console.error('AutoUpdater error:', baseMsg);
+    let msg = baseMsg;
+    if (process.platform === 'darwin' && /Code signature|did not pass validation/i.test(msg)) {
+      msg +=
+        ' En macOS, la actualización automática exige la misma firma e identificador de app que la instalación actual; si cambió el build, descarga el DMG desde GitHub e instálalo manualmente.';
+    }
+    safeSendToRenderer('update-error', msg);
+  } catch (e) {
+    console.error('updater error handler crashed:', e && e.message);
   }
-  if (mainWindow && !mainWindow.isDestroyed())
-    mainWindow.webContents.send('update-error', msg);
 });
 
 ipcMain.on('install-update', () => autoUpdater.quitAndInstall());
@@ -137,6 +172,24 @@ ipcMain.on('install-update', () => autoUpdater.quitAndInstall());
 ipcMain.on('check-for-updates', () => {
   autoUpdater.checkForUpdates().catch(() => {});
 });
+
+ipcMain.on('relaunch-app', () => {
+  try {
+    app.relaunch();
+  } catch (_e) {
+    // ignore — fallback to exit
+  }
+  app.exit(0);
+});
+
+// Canal de actualización (beta | estable). El renderer lo persiste en localStorage
+// y lo informa por IPC al iniciar y al cambiarlo en Ajustes.
+ipcMain.on('set-update-channel', (_e, channel) => {
+  const isBeta = String(channel || '').toLowerCase() === 'beta';
+  autoUpdater.allowPrerelease = isBeta;
+});
+
+ipcMain.handle('get-platform', () => process.platform);
 
 ipcMain.handle('open-external', async (_e, url) => {
   if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) return false;

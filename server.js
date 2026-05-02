@@ -7,7 +7,12 @@ const { spawn } = require('child_process');
 const appExpress = express();
 appExpress.use(express.json({ limit: '2mb' }));
 appExpress.get('/health', (_req, res) => {
-  res.json({ ok: true, app: 'r-plus' });
+  try {
+    res.json({ ok: true, app: 'r-plus' });
+  } catch (e) {
+    try { res.status(500).json({ ok: false, error: (e && e.message) || 'health failed' }); }
+    catch (_inner) { /* response already broken; nothing else to do */ }
+  }
 });
 appExpress.use(express.static(path.join(__dirname, 'public')));
 
