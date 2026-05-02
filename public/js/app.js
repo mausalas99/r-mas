@@ -2191,9 +2191,10 @@ function showReleaseNotesModal(version) {
       var li = document.createElement('li');
       var strong = document.createElement('strong');
       strong.textContent = n.title;
-      var span = document.createElement('span');
-      span.textContent = n.body;
       li.appendChild(strong);
+      li.appendChild(document.createTextNode(' '));
+      var span = document.createElement('span');
+      span.innerHTML = n.body || '';
       li.appendChild(span);
       list.appendChild(li);
     });
