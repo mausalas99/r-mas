@@ -2,18 +2,33 @@
 
 Herramienta clínica de escritorio para generación de **notas de evolución**, **indicaciones médicas** y visualización de **laboratorios** con diagramas automáticos.
 
+**Versión estable actual: [2.0.0](https://github.com/mausalas99/r-mas/releases/tag/v2.0.0)** — descarga desde [Releases (última)](https://github.com/mausalas99/r-mas/releases/latest).
+
+---
+
+## R+ 2.0.0 (resumen)
+
+- **Pestaña Medicamentos** — Importa la receta hospitalaria (TSV), formatea líneas de egreso, envía a **tratamiento** o a la **plantilla SOAP** (analgesia, antibióticos, antiHTA, vasopresores). Catálogo de palabras clave / acentos **exportable e importable** desde **Ajustes → Respaldos, sync y recuperación**.
+- **Ajustes** — Centro de ayuda visible arriba; resto en **acordeones**; scroll corregido; **restaurar copia automática** previa a una importación completa (cuando exista).
+- **Deshacer** — Instantánea coherente en memoria (incluye catálogo SOAP); menos riesgo de perder datos al revertir eliminación de paciente u operaciones de importación.
+- **Laboratorio e historial** — Mejoras en historial de laboratorio y detección de duplicados.
+- **Tutorial** — Recorridos **Sala** e **Interconsulta** con guías más claras.
+
+Notas extendidas: [`docs/RELEASE_NOTES_2.0.0.md`](docs/RELEASE_NOTES_2.0.0.md).
+
 ---
 
 ## Funcionalidades
 
-- **Laboratoriazo** — Interpreta resultados de laboratorio y genera diagramas visuales: Biometría Hemática, Coagulación, Diagrama de Gamble, Química Sanguínea, Gasometría y más.
-- **Nota de Evolución** — Formulario estructurado que genera un archivo `.docx` listo para imprimir, con membrete y formato clínico.
+- **Laboratoriazo** — Interpreta resultados de laboratorio y genera diagramas visuales: Biometría Hemática, Coagulación, Diagrama de Gamble, Química Sanguínea, Gasometría y más. Historial por paciente y **tendencias** con mini-gráficas.
+- **Medicamentos** — Receta hospitalaria (TSV), copia desde sistemas tipo SOME, volcado a nota / SOAP y copia al portapapeles.
+- **Nota de Evolución** — Formulario estructurado que genera un archivo `.docx` listo para imprimir, con membrete y formato clínico. **Plantilla SOAP** integrada.
 - **Indicaciones médicas** — Generación de hoja de indicaciones en `.docx` con secciones configurables.
 - **Salida configurable** — Exportación clínica rápida del paciente actual en `.docx`, `.html` o `.txt` desde Nota/Indicaciones.
 - **Auto-actualización** — La app detecta nuevas versiones automáticamente y se actualiza con un clic.
-- **Búsqueda de pacientes** — Campo de búsqueda en la barra lateral (nombre, registro, cuarto, etc.).
+- **Búsqueda** — Pacientes en la barra lateral; **búsqueda unificada** (⌘/Ctrl+K) sobre notas e indicaciones.
 - **Atajos** — **⌘/Ctrl+1** Laboratorio; **⌘/Ctrl+2** Expediente; **⌘/Ctrl+3** abre **Mi Perfil** en la barra lateral; **⌘/Ctrl+4** abre **Ajustes**.
-- **Portabilidad por paciente** — Exporta e importa un solo paciente (`r-plus-patient-export`) sin reemplazar toda la base local.
+- **Portabilidad** — Exporta / importa copia completa (JSON), **paciente único**, **rango de fechas** o **paquete sync** cifrado.
 
 ---
 
@@ -23,8 +38,8 @@ Herramienta clínica de escritorio para generación de **notas de evolución**, 
 
 Descarga el `.dmg` correspondiente a tu procesador desde [Releases](https://github.com/mausalas99/r-mas/releases/latest):
 
-- `R+-x.x.x-arm64.dmg` — Apple Silicon (M1/M2/M3/M4)
-- `R+-x.x.x-x64.dmg` — Intel
+- `R+-2.0.0-arm64.dmg` — Apple Silicon (M1/M2/M3/M4) *(sustituye `2.0.0` por el número de la última release si lees esto en el futuro)*
+- `R+-2.0.0-x64.dmg` — Intel
 
 Abre el `.dmg`, arrastra R+ a Aplicaciones y ejecútalo.
 
@@ -32,7 +47,7 @@ Abre el `.dmg`, arrastra R+ a Aplicaciones y ejecútalo.
 
 ### Windows
 
-Descarga `R+ Setup x.x.x.exe` desde [Releases](https://github.com/mausalas99/r-mas/releases/latest) y ejecútalo. La instalación es automática.
+Descarga `R+-2.0.0-x64.exe` (nombre `R+-<versión>-x64.exe`) desde [Releases](https://github.com/mausalas99/r-mas/releases/latest) y ejecútalo. La instalación es automática.
 
 > Si Windows SmartScreen advierte sobre el archivo: Más información → Ejecutar de todas formas.
 
@@ -45,7 +60,7 @@ Descarga `R+ Setup x.x.x.exe` desde [Releases](https://github.com/mausalas99/r-m
   - Mac: `brew install python3` o el Python del sistema.
   - Windows: [python.org](https://www.python.org/downloads/) — marcar "Add to PATH".
 
-Los documentos generados se guardan en tu carpeta **Descargas** por defecto. Puedes cambiar la carpeta de salida en **Ajustes** (barra lateral) → **Carpeta de documentos → Cambiar**. En ese mismo panel puedes definir el formato de **Salida rápida** (`docx`, `html` o `txt`) para exportar el contenido clínico activo de forma inmediata. Al agregar un paciente, la app te avisará si ya existe uno con el mismo nombre o registro. **Exportar / importar copia de seguridad** (JSON), **tema claro/oscuro**, **versión** y **buscar actualizaciones** están en el mismo apartado **Ajustes**.
+Los documentos generados se guardan en tu carpeta **Descargas** por defecto. Puedes cambiar la carpeta de salida en **Ajustes** (icono ⚙ arriba a la derecha) → sección **Documentos y salida** → **Cambiar**. Allí también defines **Salida rápida** (`docx`, `html` o `txt`). **Respaldos**, **catálogo medicamentos (SOAP)**, **privacidad** y **actualizaciones** están en las demás secciones del mismo panel. En la barra lateral, **Mi Perfil** concentra médico tratante, plantillas por defecto y tutorial.
 
 ---
 
@@ -95,19 +110,22 @@ R+ is organized into modular components for maintainability and performance:
 public/
 ├── index.html (UI shell: layout, styles, markup)
 ├── js/
-│   ├── app.js (main application: state, UI handlers, Chart.js tendencias, tours)
+│   ├── app.js (main application: state, UI handlers, Chart.js tendencias, tours, medicamentos)
 │   ├── update-helpers.mjs (formato MB/velocidad para el modal de actualización)
-│   ├── storage.js (localStorage persistence)
-│   └── labs.js (lab text parsing and line rendering helpers)
+│   ├── storage.js (localStorage: pacientes, notas, labs, recetas, catálogo SOAP, ajustes)
+│   ├── labs.js (lab text parsing and line rendering helpers)
+│   ├── med-receta-core.mjs (parse/format receta TSV, clasificación SOAP)
+│   └── lab-history-auto-store-core.mjs (deduplicación / utilidades historial labs)
 └── vendor/
     └── chart.umd.min.js (Chart.js library)
 ```
 
 ### Module Responsibilities
 
-- **app.js**: Single ES module entry; loads data via `storage`, lab parsing from `labs`, and exposes handlers on `window` for `index.html` inline `onclick` / `oninput` attributes
-- **storage.js**: Wraps localStorage with consistent interface for patients, notes, indicaciones, lab history, settings, and optional `batchFetch` / `flushBatch` helpers for future request batching
-- **labs.js**: Lab report parsing (`procesarLabs`, section parsers, `renderEntry`, etc.); no application state
+- **app.js**: Single ES module entry; loads data via `storage`, labs desde `labs`, medicamentos desde `med-receta-core.mjs`; expone handlers en `window` para `index.html`
+- **storage.js**: localStorage para pacientes, notas, indicaciones, historial de labs, receta por paciente, catálogo SOAP opcional, ajustes
+- **labs.js**: Parsing de reportes de laboratorio; sin estado de aplicación
+- **med-receta-core.mjs**: Pegado TSV hospitalario, formato de líneas y clasificación para plantilla SOAP
 
 ### Performance Notes
 
@@ -125,7 +143,7 @@ En **macOS**, el instalador automático (Squirrel) solo acepta actualizaciones f
 
 ### Canal de actualizaciones (estable / beta)
 
-En **Ajustes → Aplicación → Canal de actualizaciones** puedes elegir entre:
+En **Ajustes → Aplicación y actualizaciones → Canal de actualizaciones** puedes elegir entre:
 
 - **Estable** (predeterminado): solo recibes releases publicados oficialmente.
 - **Beta**: además recibes pre-releases. El modal de actualización muestra un distintivo **Beta**. Puedes cambiar a Estable en cualquier momento y la próxima verificación solo considerará releases estables.
@@ -134,7 +152,7 @@ El canal se guarda localmente (`rpc-settings.updateChannel`) y se sincroniza con
 
 ### Telemetría anónima de actualización (opcional)
 
-- **Desactivada por defecto.** Se habilita en **Ajustes → Aplicación → Enviar telemetría anónima de actualización**.
+- **Desactivada por defecto.** Se habilita en **Ajustes → Aplicación y actualizaciones → Enviar telemetría anónima de actualización**.
 - Cuando está activa, al completar una actualización (éxito o fallo) se envía un `POST` no bloqueante con exactamente `{ version, result, platform }`.
 - **Nunca** se envían datos clínicos ni identificables del paciente, del usuario, de la red, ni del equipo.
 - Los errores de red son silenciosos; el toggle es la única forma de enviar datos. La URL de telemetría es configurable en `public/js/app.js` (constante `UPDATE_TELEMETRY_URL`).
@@ -164,7 +182,7 @@ No hay reversión automática del binario instalado. Si una versión nueva intro
 2. Abre la página de [Releases](https://github.com/mausalas99/r-mas/releases) y localiza la versión a la que quieres volver (**no uses “Latest”**). Expande **Assets** y descarga el instalador adecuado:
    - **Mac Apple Silicon (M1/M2/M3/M4):** `R+-x.x.x-arm64.dmg`
    - **Mac Intel:** `R+-x.x.x-x64.dmg`
-   - **Windows:** `R+-Setup-x.x.x.exe`
+   - **Windows:** `R+-x.x.x-x64.exe`
 3. Instala la versión descargada:
    - **Mac:** abre el `.dmg` y arrastra **R+** a **Aplicaciones**. Si macOS ofrece **Reemplazar**, acéptalo. Si aparece un aviso de firma inválida, elimina R+ desde `Aplicaciones` (a la Papelera) y vuelve a instalar desde el `.dmg` descargado.
    - **Windows:** ejecuta el `.exe` del instalador; por defecto sobrescribe la instalación actual.
