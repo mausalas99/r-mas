@@ -8,14 +8,25 @@ export function parseFechaDMYFromTimestampCell(cell) {
   return m ? m[1] : '';
 }
 
+function normalizeDiaMarkerText(s) {
+  return String(s == null ? '' : s)
+    .replace(/\u2217/g, '*')
+    .replace(/\u204E/g, '*')
+    .replace(/\uFF0A/g, '*')
+    .replace(/\u00B7/g, ' ');
+}
+
 export function extractDiaTratamiento(dosisRaw) {
-  var t = trimStr(dosisRaw);
-  var m = t.match(/\*?\s*DIA#\s*(\d+)\s*\*?/i);
+  var t = normalizeDiaMarkerText(trimStr(dosisRaw));
+  var m = t.match(/DIA\s*#\s*(\d+)/i);
   return m ? parseInt(m[1], 10) : null;
 }
 
 function stripDiaMarkersFromDosis(dosisPart) {
-  return trimStr(String(dosisPart || '').replace(/\*?\s*DIA#\s*\d+\s*\*?/gi, '').replace(/\s+/g, ' '));
+  var t = normalizeDiaMarkerText(String(dosisPart || ''));
+  return trimStr(
+    t.replace(/\*?\s*DIA\s*#\s*\d+\s*\*?/gi, '').replace(/\s+/g, ' ')
+  );
 }
 
 export function parseMedicationPaste(text) {
@@ -40,6 +51,10 @@ export function parseMedicationPaste(text) {
     var fd = parseFechaDMYFromTimestampCell(cols[0]);
     if (fd) fechas.push(fd);
     var dosisRaw = trimStr(cols[4]);
+    var dia = extractDiaTratamiento(dosisRaw);
+    if (dia == null) {
+      dia = extractDiaTratamiento(lines[i]);
+    }
     items.push({
       id: 'med-' + Date.now().toString(36) + '-' + i + '-' + Math.random().toString(36).slice(2, 5),
       nombreRaw: trimStr(cols[2]),
@@ -47,7 +62,7 @@ export function parseMedicationPaste(text) {
       dosisRaw: dosisRaw,
       frecuenciaRaw: trimStr(cols[5]),
       suspendido: false,
-      diaTratamiento: extractDiaTratamiento(dosisRaw),
+      diaTratamiento: dia,
     });
   }
   return { items: items, fechas: fechas, skipped: skipped };

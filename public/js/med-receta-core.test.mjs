@@ -5,6 +5,7 @@ import {
   resolveFechaActualizacion,
   formatMedicationEgresoLine,
   buildMedRecetaCopyText,
+  extractDiaTratamiento,
 } from './med-receta-core.mjs';
 
 test('parseMedicationPaste extrae nombre, via, dosis, frecuencia y diaTratamiento null sin DIA#', () => {
@@ -27,6 +28,19 @@ test('parseMedicationPaste lee DIA# en dosis', () => {
   var r = parseMedicationPaste(line);
   assert.equal(r.items.length, 1);
   assert.equal(r.items[0].diaTratamiento, 3);
+});
+
+test('parseMedicationPaste lee DIA# en ertapenem (1 G // *DIA# 3*)', () => {
+  var line =
+    '02/05/2026 08:15:29 a.m.\tMEDICAMENTOS\tERTAPENEM 1 G SOL INY (*)\tVIA INTRAVENOSA\t1 G // *DIA# 3*\tCADA 24 HORAS\tNW';
+  var r = parseMedicationPaste(line);
+  assert.equal(r.items.length, 1);
+  assert.equal(r.items[0].diaTratamiento, 3);
+  assert.equal(r.items[0].dosisRaw, '1 G // *DIA# 3*');
+});
+
+test('extractDiaTratamiento acepta DIA # con espacio y sin asteriscos', () => {
+  assert.equal(extractDiaTratamiento('1 G // DIA # 5'), 5);
 });
 
 test('resolveFechaActualizacion usa moda de fechas dd/mm/yyyy', () => {
