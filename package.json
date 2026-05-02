@@ -1,10 +1,10 @@
 {
   "name": "r-plus",
-  "version": "1.8.4",
+  "version": "1.8.6",
   "description": "R+ — Laboratoriazo + Notas de Evolución",
   "main": "main.js",
   "scripts": {
-    "test": "node --test public/js/update-helpers.test.mjs",
+    "test": "node --test public/js/update-helpers.test.mjs public/js/lab-history-auto-store-core.test.mjs public/js/med-receta-core.test.mjs",
     "start": "electron .",
     "build:mac": "npm run prebuild:mac && electron-builder --mac",
     "build:mac:signed": "npm run build:mac",

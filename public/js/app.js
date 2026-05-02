@@ -21,6 +21,11 @@ import {
 } from './labs.js';
 import { formatProgressLine } from './update-helpers.mjs';
 import { isDuplicateAgainstLatest } from './lab-history-auto-store-core.mjs';
+import {
+  parseMedicationPaste,
+  resolveFechaActualizacion,
+  buildMedRecetaCopyText,
+} from './med-receta-core.mjs';
 
 
 // ════════════════════════════════════════════════════════════════════
@@ -573,9 +578,12 @@ function switchAppTab(tab) {
   activeAppTab = tab;
   document.getElementById('apptab-lab').classList.toggle('active', tab === 'lab');
   document.getElementById('apptab-nota').classList.toggle('active', tab === 'nota');
+  document.getElementById('apptab-med').classList.toggle('active', tab === 'med');
   document.getElementById('appcontent-lab').style.display  = tab === 'lab'  ? 'flex' : 'none';
+  document.getElementById('appcontent-med').style.display  = tab === 'med'  ? 'flex' : 'none';
   document.getElementById('appcontent-nota').style.display = tab === 'nota' ? 'flex' : 'none';
   if (tab === 'lab') renderLabHistoryPanel();
+  if (tab === 'med') renderMedRecetaPanel();
 }
 
 function switchInnerTab(tab) {
@@ -634,6 +642,7 @@ function selectPatient(id) {
   renderIndicaForm();
   if (activeInner === 'tend') renderTendencias();
   renderLabHistoryPanel();
+  renderMedRecetaPanel();
 }
 
 function deletePatient(e, id) {
@@ -645,6 +654,7 @@ function deletePatient(e, id) {
   patients = patients.filter(function(p){ return p.id !== id; });
   delete notes[id]; delete indicaciones[id];
   if (labHistory && labHistory[id]) delete labHistory[id];
+  if (medRecetaByPatient && medRecetaByPatient[id]) delete medRecetaByPatient[id];
   saveState();
   addAuditEntry('patient-delete', 'ok', 1, target ? (target.registro || target.nombre || '') : '');
   if (activeId === id) activeId = patients.length ? patients[0].id : null;
@@ -2258,6 +2268,7 @@ function buildFullBackupPayload() {
       notes: storage.getNotes(),
       indicaciones: storage.getIndicaciones(),
       labHistory: storage.getLabHistory(),
+      medRecetaByPatient: storage.getMedRecetaByPatient(),
       settings: storage.getSettings()
     }
   };
@@ -2297,7 +2308,8 @@ function buildPatientEntry(patientId) {
     patient: patient,
     note: notes[patientId] || {},
     indicaciones: indicaciones[patientId] || {},
-    labHistory: Array.isArray(labHistory[patientId]) ? labHistory[patientId] : []
+    labHistory: Array.isArray(labHistory[patientId]) ? labHistory[patientId] : [],
+    medReceta: medRecetaByPatient[patientId] || null
   };
 }
 
@@ -2332,6 +2344,8 @@ function applyImportEntry(entry, action, existing) {
     notes[existing.id] = entry.note || {};
     indicaciones[existing.id] = entry.indicaciones || {};
     labHistory[existing.id] = Array.isArray(entry.labHistory) ? entry.labHistory : [];
+    if (entry.medReceta) medRecetaByPatient[existing.id] = entry.medReceta;
+    else delete medRecetaByPatient[existing.id];
     return existing.id;
   }
   var newId = generatePatientId();
@@ -2350,6 +2364,7 @@ function applyImportEntry(entry, action, existing) {
   notes[newId] = entry.note || {};
   indicaciones[newId] = entry.indicaciones || {};
   labHistory[newId] = Array.isArray(entry.labHistory) ? entry.labHistory : [];
+  if (entry.medReceta) medRecetaByPatient[newId] = entry.medReceta;
   return newId;
 }
 
@@ -2359,6 +2374,7 @@ function importEntriesWithConflicts(entries, actionLabel) {
   var notesBefore = JSON.parse(JSON.stringify(notes));
   var indicacionesBefore = JSON.parse(JSON.stringify(indicaciones));
   var labHistoryBefore = JSON.parse(JSON.stringify(labHistory));
+  var medRecetaBefore = JSON.parse(JSON.stringify(medRecetaByPatient));
   for (var i = 0; i < entries.length; i += 1) {
     var entry = entries[i];
     if (!entry || !entry.patient) continue;
@@ -2383,6 +2399,7 @@ function importEntriesWithConflicts(entries, actionLabel) {
     notes = notesBefore;
     indicaciones = indicacionesBefore;
     labHistory = labHistoryBefore;
+    medRecetaByPatient = medRecetaBefore;
   } else {
     saveState();
     renderPatientList();
@@ -2421,6 +2438,7 @@ function exportActivePatientBackup() {
     note: notes[activeId] || null,
     indicaciones: indicaciones[activeId] || null,
     labHistory: labHistory[activeId] || [],
+    medReceta: medRecetaByPatient[activeId] || null,
   };
   downloadJsonPayload(payload, 'R-plus-paciente-' + safeExportSlug(patient.nombre) + '-' + formatDateSlug(new Date()) + '.json');
   addAuditEntry('backup-patient-export', 'ok', 1, String(patient.registro || ''));
@@ -2562,6 +2580,8 @@ function onPatientBackupFileChosen(ev) {
         notes[targetId] = payload.note || notes[targetId] || {};
         indicaciones[targetId] = payload.indicaciones || indicaciones[targetId] || {};
         labHistory[targetId] = Array.isArray(payload.labHistory) ? payload.labHistory : [];
+        if (payload.medReceta) medRecetaByPatient[targetId] = payload.medReceta;
+        else delete medRecetaByPatient[targetId];
         activeId = targetId;
       } else {
         var newId = generatePatientId();
@@ -2581,6 +2601,7 @@ function onPatientBackupFileChosen(ev) {
         notes[newId] = payload.note || {};
         indicaciones[newId] = payload.indicaciones || {};
         labHistory[newId] = Array.isArray(payload.labHistory) ? payload.labHistory : [];
+        if (payload.medReceta) medRecetaByPatient[newId] = payload.medReceta;
         activeId = newId;
       }
 
@@ -2619,6 +2640,7 @@ function onBackupFileChosen(ev) {
       localStorage.setItem('rpc-notes', JSON.stringify(payload.data.notes || {}));
       localStorage.setItem('rpc-indicaciones', JSON.stringify(payload.data.indicaciones || {}));
       localStorage.setItem('rpc-labHistory', JSON.stringify(payload.data.labHistory || {}));
+      localStorage.setItem('rpc-medRecetaByPatient', JSON.stringify(payload.data.medRecetaByPatient || {}));
       localStorage.setItem('rpc-settings', JSON.stringify(payload.data.settings || {}));
       if (payload.theme === 'dark' || payload.theme === 'light') {
         localStorage.setItem('theme', payload.theme);
@@ -2944,6 +2966,132 @@ function openLabPatientPicker() {
   overlay.appendChild(box);
   overlay.onclick = function(e){ if(e.target===overlay) document.body.removeChild(overlay); };
   document.body.appendChild(overlay);
+}
+
+function renderMedRecetaPanel() {
+  var hintEl = document.getElementById('med-hint');
+  var fechaEl = document.getElementById('med-fecha-actualizacion');
+  var listEl = document.getElementById('med-items-list');
+  var outPre = document.getElementById('med-output');
+  var outCard = document.getElementById('med-output-section');
+  if (!hintEl || !listEl || !outPre) return;
+  if (!activeId) {
+    hintEl.style.display = 'block';
+    hintEl.textContent = 'Selecciona un paciente en la columna izquierda para procesar su receta.';
+    if (fechaEl) fechaEl.style.display = 'none';
+    listEl.innerHTML = '';
+    outPre.textContent = '';
+    if (outCard) outCard.style.display = 'none';
+    return;
+  }
+  var block = medRecetaByPatient[activeId];
+  if (!block || !block.items || !block.items.length) {
+    hintEl.style.display = 'block';
+    hintEl.textContent = 'Pega el listado del hospital arriba y pulsa Receta. Cada día puedes volver a pegar; se guarda la fecha del recorte.';
+    if (fechaEl) fechaEl.style.display = 'none';
+    listEl.innerHTML = '';
+    outPre.textContent = '';
+    if (outCard) outCard.style.display = 'none';
+    return;
+  }
+  hintEl.style.display = 'none';
+  if (fechaEl) {
+    fechaEl.style.display = 'block';
+    fechaEl.textContent = 'Actualizado: ' + (block.fechaActualizacion || '—');
+  }
+  listEl.innerHTML = block.items
+    .map(function (it) {
+      var sid = esc(it.id || '');
+      var label = esc((it.nombreRaw || '').slice(0, 120));
+      var chk = it.suspendido ? ' checked' : '';
+      return (
+        '<div class="lab-history-row" style="align-items:flex-start;">' +
+        '<label style="display:flex;gap:10px;cursor:pointer;flex:1;min-width:0;">' +
+        '<input type="checkbox" data-med-susp="' +
+        sid +
+        '"' +
+        chk +
+        ' onchange="toggleMedRecetaSuspendido(\'' +
+        sid +
+        '\', this.checked)" aria-label="Suspender"/>' +
+        '<span style="font-size:13px;line-height:1.4;">' +
+        label +
+        '</span></label>' +
+        '<span style="font-size:12px;color:var(--text-muted);flex-shrink:0;">Suspender</span></div>'
+      );
+    })
+    .join('');
+  var txt = buildMedRecetaCopyText(block.items);
+  outPre.textContent = txt;
+  if (outCard) outCard.style.display = txt.trim() ? 'block' : 'none';
+}
+
+function toggleMedRecetaSuspendido(itemId, suspended) {
+  if (!activeId || !medRecetaByPatient[activeId] || !medRecetaByPatient[activeId].items) return;
+  var it = medRecetaByPatient[activeId].items.find(function (x) {
+    return String(x.id) === String(itemId);
+  });
+  if (!it) return;
+  it.suspendido = !!suspended;
+  saveState();
+  renderMedRecetaPanel();
+}
+
+function procesarRecetaMed() {
+  if (!activeId) {
+    showToast('Selecciona un paciente primero', 'error');
+    return;
+  }
+  var ta = document.getElementById('med-input');
+  var raw = ta ? ta.value : '';
+  var parsed = parseMedicationPaste(raw || '');
+  if (!parsed.items.length) {
+    showToast('No se encontraron medicamentos válidos', 'error');
+    return;
+  }
+  var today = new Date();
+  var fallback =
+    String(today.getDate()).padStart(2, '0') +
+    '/' +
+    String(today.getMonth() + 1).padStart(2, '0') +
+    '/' +
+    today.getFullYear();
+  var fecha = resolveFechaActualizacion(parsed.fechas, fallback);
+  medRecetaByPatient[activeId] = {
+    fechaActualizacion: fecha,
+    items: parsed.items,
+  };
+  saveState();
+  renderMedRecetaPanel();
+  var msg = 'Receta actualizada (' + parsed.items.length + ' medicamentos)';
+  if (parsed.skipped > 0) msg += '. Omitidas ' + parsed.skipped + ' líneas.';
+  showToast(msg, 'success');
+}
+
+function limpiarRecetaInput() {
+  var ta = document.getElementById('med-input');
+  if (ta) ta.value = '';
+}
+
+function copiarMedicamentosAlPortapapeles() {
+  if (!activeId || !medRecetaByPatient[activeId]) {
+    showToast('No hay medicamentos procesados', 'error');
+    return;
+  }
+  var items = medRecetaByPatient[activeId].items || [];
+  var text = buildMedRecetaCopyText(items);
+  if (!text.trim()) {
+    showToast('No hay medicamentos activos para copiar', 'error');
+    return;
+  }
+  navigator.clipboard
+    .writeText(text)
+    .then(function () {
+      showToast('Medicamentos copiados al portapapeles ✓', 'success');
+    })
+    .catch(function () {
+      showToast('Error al copiar al portapapeles', 'error');
+    });
 }
 
 function copiarLabsAlPortapapeles() {
@@ -4757,6 +4905,7 @@ function buildUndoSnapshotPayload(label) {
       notes: JSON.parse(localStorage.getItem('rpc-notes') || '{}'),
       indicaciones: JSON.parse(localStorage.getItem('rpc-indicaciones') || '{}'),
       labHistory: JSON.parse(localStorage.getItem('rpc-labHistory') || '{}'),
+      medRecetaByPatient: JSON.parse(localStorage.getItem('rpc-medRecetaByPatient') || '{}'),
       settings: JSON.parse(localStorage.getItem('rpc-settings') || '{}')
     }
   };
@@ -4815,6 +4964,7 @@ function undoLastOperation() {
   localStorage.setItem('rpc-notes', JSON.stringify(snap.data.notes || {}));
   localStorage.setItem('rpc-indicaciones', JSON.stringify(snap.data.indicaciones || {}));
   localStorage.setItem('rpc-labHistory', JSON.stringify(snap.data.labHistory || {}));
+  localStorage.setItem('rpc-medRecetaByPatient', JSON.stringify(snap.data.medRecetaByPatient || {}));
   localStorage.setItem('rpc-settings', JSON.stringify(snap.data.settings || {}));
   if (snap.theme === 'dark' || snap.theme === 'light') localStorage.setItem('theme', snap.theme);
   addAuditEntry('undo-restore', 'ok', 0, snap.label || '');
@@ -5253,6 +5403,10 @@ Object.assign(window, {
   toggleLabHistoryPanel,
   openAddModalFromLab,
   copiarLabsAlPortapapeles,
+  procesarRecetaMed,
+  limpiarRecetaInput,
+  copiarMedicamentosAlPortapapeles,
+  toggleMedRecetaSuspendido,
   enviarLabsANota,
   closeModal,
   savePatient,
