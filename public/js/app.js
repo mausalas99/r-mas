@@ -20,6 +20,7 @@ import {
   renderEntry
 } from './labs.js';
 import { formatProgressLine } from './update-helpers.mjs';
+import { isDuplicateAgainstLatest } from './lab-history-auto-store-core.mjs';
 
 
 // ════════════════════════════════════════════════════════════════════
@@ -29,6 +30,7 @@ var patients     = storage.getPatients();
 var notes        = storage.getNotes();
 var indicaciones = storage.getIndicaciones();
 var labHistory   = storage.getLabHistory();
+var medRecetaByPatient = storage.getMedRecetaByPatient();
 var activeId     = null;
 var activeInner  = 'notas';
 var activeAppTab = 'lab';
@@ -37,6 +39,19 @@ var activeLab    = null;
 var settings     = storage.getSettings();
 var sparkCharts  = {};
 var detailChart  = null;
+var autoBackupSchedulerId = null;
+var AUDIT_LOG_KEY = 'rpc-audit-log';
+var AUTO_BACKUP_SETTINGS_KEY = 'rpc-auto-backup-settings';
+var AUTO_BACKUP_INDEX_KEY = 'rpc-auto-backup-index';
+var AUTO_BACKUP_MAX = 14;
+var IDLE_LOCK_LS_KEY = 'rpc-idle-lock';
+var IDLE_LOCK_HASH_LS_KEY = 'rpc-idle-lock-hash';
+var IDLE_LOCK_DEBOUNCE_MS = 500;
+var IDLE_LOCK_VALID_MINUTES = [0, 5, 10, 30];
+var idleLockTimerId = null;
+var idleLockDebounceId = null;
+var idleLockIsActive = false;
+var idleLockEnabledMinutes = 0;
 
 var TEND_UNITS = {
   Hb:'g/dL',  Hto:'%',    Leu:'K/μL', Plt:'K/μL',
@@ -138,10 +153,24 @@ function applyHoraToMs(ms, horaStr) {
   return ms + (parseInt(h[1], 10) * 3600 + parseInt(h[2], 10) * 60) * 1000;
 }
 
+function normalizeHoraLabHistory(horaRaw) {
+  if (horaRaw == null) return '';
+  var t = String(horaRaw).trim();
+  if (!t) return '';
+  var m = t.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (!m) return '';
+  var hh = Math.max(0, Math.min(23, parseInt(m[1], 10)));
+  var mm = Math.max(0, Math.min(59, parseInt(m[2], 10)));
+  var ss = m[3] == null ? null : Math.max(0, Math.min(59, parseInt(m[3], 10)));
+  var out = String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+  if (ss != null) out += ':' + String(ss).padStart(2, '0');
+  return out;
+}
+
 function parseFechaLabToMs(fechaStr, horaStr) {
-  if (!fechaStr) return 0;
+  if (!fechaStr) return null;
   var t = String(fechaStr).trim();
-  if (t === 'Anterior') return -864e8;
+  if (t === 'Anterior') return null;
   var mEn = t.match(/([A-Za-z]{3})\s+(\d{1,2})\s+(\d{4})/i);
   if (mEn) {
     var monStr = TEND_MESES_MAP[mEn[1].toLowerCase().slice(0, 3)];
@@ -158,18 +187,61 @@ function parseFechaLabToMs(fechaStr, horaStr) {
     var ms2 = new Date(y, parseInt(mNum[2], 10) - 1, parseInt(mNum[1], 10)).getTime();
     return applyHoraToMs(ms2, horaStr);
   }
-  return 0;
+  return null;
 }
 
 function sortLabHistoryChronological(hist) {
   return (hist || []).slice().sort(function(a, b) {
+    var aAnterior = !!(a && (a.fecha === 'Anterior' || a.id === 'migrated-anterior'));
+    var bAnterior = !!(b && (b.fecha === 'Anterior' || b.id === 'migrated-anterior'));
+    if (aAnterior !== bAnterior) return aAnterior ? 1 : -1; // "Anterior" siempre al fondo
+
     var ta = parseFechaLabToMs(a.fecha, a.hora);
     var tb = parseFechaLabToMs(b.fecha, b.hora);
-    if (ta !== tb) return ta - tb;
-    var na = parseInt(a.id, 10) || 0;
-    var nb = parseInt(b.id, 10) || 0;
-    return na - nb;
+
+    var aValid = typeof ta === 'number' && isFinite(ta);
+    var bValid = typeof tb === 'number' && isFinite(tb);
+    if (aValid !== bValid) return aValid ? -1 : 1; // no parseables al final
+    if (aValid && bValid && ta !== tb) return tb - ta; // más reciente primero
+
+    var ha = normalizeHoraLabHistory(a && a.hora);
+    var hb = normalizeHoraLabHistory(b && b.hora);
+    if (ha && hb && ha !== hb) return hb.localeCompare(ha); // empate de fecha -> hora desc
+
+    // Empate final estable por captura (no altera orden relativo original).
+    return 0;
   });
+}
+
+function buildLabSetDateLine(set) {
+  if (!set) return '';
+  var rawDate = normalizeFechaLabHistory(set.fecha) || String(set.fecha || '').trim() || inferFechaLabSetFromId(set) || '';
+  var rawHora = normalizeHoraLabHistory(set.hora);
+  if (!rawDate) return '';
+  return rawHora ? (rawDate + ' ' + rawHora.slice(0, 5)) : rawDate;
+}
+
+function rebuildEstudiosFromLabHistory(patientId) {
+  if (!patientId) return;
+  if (!notes[patientId]) notes[patientId] = {};
+  var ordered = sortLabHistoryChronological(ensureParsedLabHistory(patientId));
+  if (!ordered.length) {
+    notes[patientId].estudios = '';
+    return;
+  }
+  var lines = [];
+  ordered.forEach(function(set) {
+    if (!set || !set.resLabs || !set.resLabs.length) return;
+    var dateLine = buildLabSetDateLine(set);
+    if (dateLine) lines.push(dateLine);
+    set.resLabs.forEach(function(row) {
+      var clean = String(row == null ? '' : row).trim();
+      if (clean) lines.push(clean);
+    });
+    lines.push('');
+  });
+  while (lines.length && !String(lines[lines.length - 1]).trim()) lines.pop();
+  notes[patientId].estudios = lines.join('\n');
 }
 
 function buildTendChartLabels(sets) {
@@ -189,38 +261,123 @@ function buildTendChartLabels(sets) {
   });
 }
 
+function toTrendAscendingSets(sets) {
+  return (sets || []).slice().reverse();
+}
+
+function formatDMYDate(d) {
+  if (!d || isNaN(d.getTime())) return '';
+  return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
+}
+
+/** Fecha aproximada desde id numérico (timestamp al guardar el set). */
+function inferFechaLabSetFromId(set) {
+  if (!set || set.fecha === 'Anterior') return '';
+  var id = String(set.id || '');
+  if (!/^\d{10,}$/.test(id)) return '';
+  var ms = parseInt(id, 10);
+  if (id.length === 10) ms *= 1000;
+  return formatDMYDate(new Date(ms));
+}
+
+/**
+ * Bloque "anterior" de estudios (líneas 0–2): suele traer la fecha en la 1.ª línea
+ * o en FECHA/HORA. Si no, se usa la fecha de la nota clínica como último recurso.
+ */
+function inferAnteriorLabDateFromNote(patientId) {
+  var n = notes[patientId];
+  if (!n || !n.estudios) return '';
+  var lines = n.estudios.split('\n');
+  for (var i = 0; i < 3 && i < lines.length; i++) {
+    var t = (lines[i] || '').trim();
+    if (!t) continue;
+    var mFh = t.match(/FECHA[^\d:]*(\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{2,4})?)/i);
+    if (mFh) {
+      var nf0 = normalizeFechaLabHistory(mFh[1]);
+      if (nf0 && nf0 !== 'Anterior' && parseFechaLabToMs(nf0, '') > 0) return nf0;
+    }
+    var mSub = t.match(/(\d{1,2}[\/\-]\d{1,2}(?:[\/\-]\d{2,4})?)/);
+    if (mSub) {
+      var nf1 = normalizeFechaLabHistory(mSub[1]);
+      if (nf1 && nf1 !== 'Anterior' && parseFechaLabToMs(nf1, '') > 0) return nf1;
+    }
+    var nf2 = normalizeFechaLabHistory(t);
+    if (nf2 && nf2 !== 'Anterior' && parseFechaLabToMs(nf2, '') > 0) return nf2;
+  }
+  if (n.fecha) {
+    var nf3 = normalizeFechaLabHistory(n.fecha);
+    if (nf3 && nf3 !== 'Anterior' && parseFechaLabToMs(nf3, '') > 0) return nf3;
+  }
+  return '';
+}
+
+var LAB_HISTORY_COLLAPSED_LS = 'rpc-ui-labHistoryCollapsed';
+
+function labHistoryPanelIsCollapsed() {
+  try { return localStorage.getItem(LAB_HISTORY_COLLAPSED_LS) === '1'; } catch (_e) { return false; }
+}
+
+function setLabHistoryPanelCollapsed(collapsed) {
+  try {
+    if (collapsed) localStorage.setItem(LAB_HISTORY_COLLAPSED_LS, '1');
+    else localStorage.removeItem(LAB_HISTORY_COLLAPSED_LS);
+  } catch (_e) {}
+}
+
+function syncLabHistoryCollapseUI() {
+  var card = document.getElementById('lab-history-card');
+  var btn = document.getElementById('btn-lab-history-toggle');
+  if (!card) return;
+  var collapsed = labHistoryPanelIsCollapsed();
+  card.classList.toggle('is-collapsed', collapsed);
+  if (btn) btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+}
+
+function toggleLabHistoryPanel(ev) {
+  if (ev && ev.stopPropagation) ev.stopPropagation();
+  setLabHistoryPanelCollapsed(!labHistoryPanelIsCollapsed());
+  syncLabHistoryCollapseUI();
+}
+
 // ── Lab History Migration ─────────────────────────────────────────
 (function migrateLabHistory() {
-  if (localStorage.getItem('rpc-labHistory')) return;
+  try {
+    if (localStorage.getItem('rpc-labHistory')) return;
+  } catch (_lsErr) { return; }
   patients.forEach(function(p) {
-    if (!notes[p.id] || !notes[p.id].estudios) return;
-    var lines = notes[p.id].estudios.split('\n');
-    var anteriorLines = lines.slice(0, 3).filter(function(l){ return l.trim(); });
-    var recentLines   = lines.slice(3).filter(function(l){ return l.trim(); });
-    var sets = [];
-    if (anteriorLines.length) {
-      var migratedAnteriorLabs = extractLabDataLines(anteriorLines);
-      sets.push({
-        id: 'migrated-anterior',
-        fecha: 'Anterior',
-        hora: '',
-        resLabs: migratedAnteriorLabs,
-        parsed: extractParsedValues(migratedAnteriorLabs)
-      });
+    try {
+      if (!notes[p.id] || !notes[p.id].estudios) return;
+      var lines = notes[p.id].estudios.split('\n');
+      var anteriorLines = lines.slice(0, 3).filter(function(l){ return l.trim(); });
+      var recentLines   = lines.slice(3).filter(function(l){ return l.trim(); });
+      var sets = [];
+      if (anteriorLines.length) {
+        var migratedAnteriorLabs = extractLabDataLines(anteriorLines);
+        sets.push({
+          id: 'migrated-anterior',
+          fecha: 'Anterior',
+          hora: '',
+          resLabs: migratedAnteriorLabs,
+          parsed: extractParsedValues(migratedAnteriorLabs)
+        });
+      }
+      if (recentLines.length) {
+        var migratedRecentLabs = extractLabDataLines(recentLines);
+        sets.push({
+          id: 'migrated-recent',
+          fecha: normalizeFechaLabHistory(recentLines[0] || notes[p.id].fecha || ''),
+          hora: notes[p.id].hora || '',
+          resLabs: migratedRecentLabs,
+          parsed: extractParsedValues(migratedRecentLabs)
+        });
+      }
+      if (sets.length) labHistory[p.id] = sets;
+    } catch (e) {
+      console.error('migrateLabHistory patient error:', p && p.id, e && e.message);
     }
-    if (recentLines.length) {
-      var migratedRecentLabs = extractLabDataLines(recentLines);
-      sets.push({
-        id: 'migrated-recent',
-        fecha: normalizeFechaLabHistory(recentLines[0] || notes[p.id].fecha || ''),
-        hora: notes[p.id].hora || '',
-        resLabs: migratedRecentLabs,
-        parsed: extractParsedValues(migratedRecentLabs)
-      });
-    }
-    if (sets.length) labHistory[p.id] = sets;
   });
-  localStorage.setItem('rpc-labHistory', JSON.stringify(labHistory));
+  try { localStorage.setItem('rpc-labHistory', JSON.stringify(labHistory)); }
+  catch (e) { console.error('migrateLabHistory write error:', e && e.message); }
 }());
 
 // ── Theme ──────────────────────────────────────────────────────────
@@ -276,6 +433,110 @@ function toggleTheme() {
   setThemeMode(document.documentElement.classList.contains('dark') ? 'light' : 'dark');
 }
 
+// ── Alto contraste ────────────────────────────────────────────────
+var HIGH_CONTRAST_LS = 'rpc-high-contrast';
+
+function isHighContrast() {
+  return localStorage.getItem(HIGH_CONTRAST_LS) === '1';
+}
+
+function applyHighContrast() {
+  document.documentElement.classList.toggle('high-contrast', isHighContrast());
+}
+
+function syncHighContrastButtons() {
+  var on = isHighContrast();
+  var onBtn = document.getElementById('settings-hc-on');
+  var offBtn = document.getElementById('settings-hc-off');
+  if (onBtn) {
+    onBtn.classList.toggle('active', on);
+    onBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  }
+  if (offBtn) {
+    offBtn.classList.toggle('active', !on);
+    offBtn.setAttribute('aria-pressed', !on ? 'true' : 'false');
+  }
+}
+
+function setHighContrast(on) {
+  localStorage.setItem(HIGH_CONTRAST_LS, on ? '1' : '0');
+  applyHighContrast();
+  syncHighContrastButtons();
+}
+
+function toggleHighContrast() {
+  setHighContrast(!isHighContrast());
+}
+
+// ── i18n (etiquetas de Apariencia / ajustes rápidos) ───────────────
+var I18N_ES = {
+  'settings.appearance':      'Apariencia',
+  'settings.themeGroup':      'Tema de la aplicación',
+  'settings.themeLight':      'Claro',
+  'settings.themeDark':       'Oscuro',
+  'settings.fontSize':        'Tamaño de texto',
+  'settings.fontSizeHint':    'Escala toda la interfaz (útil en pantallas pequeñas).',
+  'settings.fontNormal':      'Normal',
+  'settings.fontLarge':       'Grande',
+  'settings.fontXLarge':      'Más grande',
+  'settings.highContrast':    'Alto contraste',
+  'settings.highContrastHint':'Aumenta el contraste de texto y bordes para mejor legibilidad.',
+  'settings.hcOff':           'Desactivado',
+  'settings.hcOn':            'Activado',
+  'settings.docsFolder':      'Carpeta de documentos',
+  'settings.docsFolderHint':  'Los .docx generados se guardan aquí (si no eliges carpeta, se usa Descargas).',
+  'settings.backup':          'Respaldo local',
+  'settings.backupHint':      'Exporta o restaura pacientes, notas e indicaciones (JSON).',
+  'settings.application':     'Aplicación',
+  'settings.quickHelp':       'Centro de ayuda · atajos y tours',
+  'settings.version':         'Versión',
+  'settings.checkUpdates':    'Buscar actualizaciones…',
+  'settings.open':            'Abrir ajustes',
+  'settings.openTitle':       'Ajustes',
+  'theme.toggle':             'Cambiar tema claro u oscuro',
+  'theme.toggleTitle':        'Cambiar tema'
+};
+
+function t(key) {
+  if (I18N_ES && Object.prototype.hasOwnProperty.call(I18N_ES, key)) return I18N_ES[key];
+  return key;
+}
+
+function applyI18n() {
+  var htmlEl = document.documentElement;
+  if (htmlEl && htmlEl.getAttribute('lang') !== 'es') htmlEl.setAttribute('lang', 'es');
+  var textNodes = document.querySelectorAll('[data-i18n]');
+  textNodes.forEach(function(el) {
+    var key = el.getAttribute('data-i18n');
+    if (!key) return;
+    var val = t(key);
+    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+      if (el.type === 'button' || el.type === 'submit' || el.type === 'reset') {
+        el.value = val;
+      } else {
+        el.setAttribute('placeholder', val);
+      }
+    } else {
+      el.textContent = val;
+    }
+  });
+  var ariaNodes = document.querySelectorAll('[data-i18n-aria-label]');
+  ariaNodes.forEach(function(el) {
+    var key = el.getAttribute('data-i18n-aria-label');
+    if (key) el.setAttribute('aria-label', t(key));
+  });
+  var titleNodes = document.querySelectorAll('[data-i18n-title]');
+  titleNodes.forEach(function(el) {
+    var key = el.getAttribute('data-i18n-title');
+    if (key) el.setAttribute('title', t(key));
+  });
+  var placeholderNodes = document.querySelectorAll('[data-i18n-placeholder]');
+  placeholderNodes.forEach(function(el) {
+    var key = el.getAttribute('data-i18n-placeholder');
+    if (key) el.setAttribute('placeholder', t(key));
+  });
+}
+
 // Set correct icon on load
 (function() {
   if (document.documentElement.classList.contains('dark')) {
@@ -283,15 +544,30 @@ function toggleTheme() {
   }
 })();
 
+applyHighContrast();
+applyI18n();
+syncLabHistoryCollapseUI();
+
 document.getElementById('today-date').textContent =
   new Date().toLocaleDateString('es-MX', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
 renderPatientList();
 if (patients.length > 0) selectPatient(patients[0].id);
+else renderLabHistoryPanel();
 applyFontZoom();
 loadSettings();
 syncThemeSettingsButtons();
-initGuidedTourGate();
-initRpcServerHealthWatch();
+function _rpcDeferInit(fn) {
+  if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(function() { try { fn(); } catch (e) { console.error('deferInit error:', e && e.message); } }, { timeout: 1500 });
+  } else {
+    setTimeout(function() { try { fn(); } catch (e) { console.error('deferInit error:', e && e.message); } }, 200);
+  }
+}
+_rpcDeferInit(initGoalGFeatures);
+_rpcDeferInit(initGuidedTourGate);
+_rpcDeferInit(initRpcServerHealthWatch);
+_rpcDeferInit(initIdleLockFeature);
+initUpdateChannelAndGate();
 
 function switchAppTab(tab) {
   activeAppTab = tab;
@@ -299,6 +575,7 @@ function switchAppTab(tab) {
   document.getElementById('apptab-nota').classList.toggle('active', tab === 'nota');
   document.getElementById('appcontent-lab').style.display  = tab === 'lab'  ? 'flex' : 'none';
   document.getElementById('appcontent-nota').style.display = tab === 'nota' ? 'flex' : 'none';
+  if (tab === 'lab') renderLabHistoryPanel();
 }
 
 function switchInnerTab(tab) {
@@ -356,14 +633,20 @@ function selectPatient(id) {
   renderNoteForm();
   renderIndicaForm();
   if (activeInner === 'tend') renderTendencias();
+  renderLabHistoryPanel();
 }
 
 function deletePatient(e, id) {
   e.stopPropagation();
   if (!confirm('¿Eliminar este paciente y sus notas?')) return;
+  var target = patients.find(function(p){ return p.id === id; });
+  var label = target ? ('Eliminar ' + (target.nombre || 'paciente')) : 'Eliminar paciente';
+  if (typeof pushUndoSnapshot === 'function') pushUndoSnapshot(label);
   patients = patients.filter(function(p){ return p.id !== id; });
   delete notes[id]; delete indicaciones[id];
+  if (labHistory && labHistory[id]) delete labHistory[id];
   saveState();
+  addAuditEntry('patient-delete', 'ok', 1, target ? (target.registro || target.nombre || '') : '');
   if (activeId === id) activeId = patients.length ? patients[0].id : null;
   renderPatientList();
   if (activeId) selectPatient(activeId);
@@ -371,12 +654,44 @@ function deletePatient(e, id) {
 }
 
 function saveState() {
-  storage.saveAll(patients, notes, indicaciones, labHistory);
+  storage.saveAll(patients, notes, indicaciones, labHistory, medRecetaByPatient);
 }
 
 // ── Settings ──────────────────────────────────────────────────────
+var _lastLoadSettingsSnapshot = null;
+function _buildLoadSettingsSnapshot() {
+  if (!settings) return '';
+  try {
+    return JSON.stringify({
+      d: settings.doctorName || '',
+      p: settings.profesorName || '',
+      g: settings.grado || '',
+      di: settings.defaultDieta || '',
+      cu: settings.defaultCuidados || '',
+      me: settings.defaultMedicamentos || '',
+      od: settings.outputDir || '',
+      qf: normalizeQuickOutputFormat(settings.quickOutputFormat)
+    });
+  } catch (_e) {
+    return String(Math.random());
+  }
+}
+
 function loadSettings() {
   if (!settings) settings = {};
+  var snapshot = _buildLoadSettingsSnapshot();
+  var snapshotUnchanged = _lastLoadSettingsSnapshot !== null && _lastLoadSettingsSnapshot === snapshot;
+  _lastLoadSettingsSnapshot = snapshot;
+  if (snapshotUnchanged) {
+    // DOM-visible settings didn't change; skip re-painting the heavy bits.
+    // Still run lightweight, idempotent syncers that reflect orthogonal state
+    // (theme/zoom/contrast/update-channel) in case callers expected them.
+    syncFontZoomButtons();
+    syncHighContrastButtons();
+    if (typeof syncUpdateChannelUI === 'function') syncUpdateChannelUI();
+    if (typeof syncUpdateTelemetryUI === 'function') syncUpdateTelemetryUI();
+    return;
+  }
   var docEl = document.getElementById('profile-doctor');
   var proEl = document.getElementById('profile-profesor');
   var grEl  = document.getElementById('profile-grado');
@@ -412,6 +727,8 @@ function loadSettings() {
       dirEl.title = '';
     }
   }
+  var quickFormatEl = document.getElementById('settings-quick-output-format');
+  if (quickFormatEl) quickFormatEl.value = normalizeQuickOutputFormat(settings.quickOutputFormat);
   var verEl = document.getElementById('settings-app-version');
   if (verEl) {
     if (window.electronAPI && typeof window.electronAPI.getAppVersion === 'function') {
@@ -421,6 +738,7 @@ function loadSettings() {
         var prev = localStorage.getItem(LAST_SEEN_VERSION_KEY);
         if (prev && v && prev !== v) {
           showToast('Actualizado a v' + v + '. Consulta Ajustes o el menú para buscar actualizaciones.', 'success');
+          maybeShowReleaseNotesFor(v, prev);
         }
         if (v) localStorage.setItem(LAST_SEEN_VERSION_KEY, v);
       }).catch(function() { verEl.textContent = '—'; });
@@ -448,12 +766,17 @@ function loadSettings() {
     if (udBtn) udBtn.disabled = true;
   }
   syncFontZoomButtons();
+  syncHighContrastButtons();
+  if (typeof syncUpdateChannelUI === 'function') syncUpdateChannelUI();
+  if (typeof syncUpdateTelemetryUI === 'function') syncUpdateTelemetryUI();
+  syncIdleLockSelectUi();
 }
 
 function saveSettings() {
   settings.doctorName   = (document.getElementById('profile-doctor').value   || '').trim();
   settings.profesorName = (document.getElementById('profile-profesor').value || '').trim();
   settings.grado        = (document.getElementById('profile-grado').value    || '').trim();
+  settings.quickOutputFormat = normalizeQuickOutputFormat(settings.quickOutputFormat);
   localStorage.setItem('rpc-settings', JSON.stringify(settings));
   var backfill = false;
   Object.keys(notes).forEach(function(pid) {
@@ -463,6 +786,19 @@ function saveSettings() {
   loadSettings();
   if (activeId) renderNoteForm();
   showToast('Perfil guardado ✓', 'success');
+}
+
+function normalizeQuickOutputFormat(format) {
+  var normalized = String(format || '').trim().toLowerCase();
+  if (normalized !== 'html' && normalized !== 'txt' && normalized !== 'docx') return 'docx';
+  return normalized;
+}
+
+function saveQuickOutputFormat(format) {
+  settings.quickOutputFormat = normalizeQuickOutputFormat(format);
+  localStorage.setItem('rpc-settings', JSON.stringify(settings));
+  loadSettings();
+  showToast('Formato de salida rápida actualizado', 'success');
 }
 
 function chooseOutputDir() {
@@ -497,12 +833,16 @@ function toggleSettingsDropdown() {
   var open = dd.classList.contains('open');
   dd.classList.toggle('open', !open);
   if (bg) bg.classList.toggle('open', !open);
+  var trigger = document.getElementById('btn-open-settings');
+  if (trigger) trigger.setAttribute('aria-expanded', !open ? 'true' : 'false');
 }
 function closeSettingsDropdown() {
   var dd = document.getElementById('settings-dropdown');
   var bg = document.getElementById('settings-dropdown-backdrop');
   if (dd) dd.classList.remove('open');
   if (bg) bg.classList.remove('open');
+  var trigger = document.getElementById('btn-open-settings');
+  if (trigger) trigger.setAttribute('aria-expanded', 'false');
 }
 
 function checkForAppUpdates() {
@@ -706,6 +1046,7 @@ function renderTourStep() {
 }
 
 function guidedTourClickNext() {
+  if (miniTourActive) { miniTourNext(); return; }
   if (!guidedTourActive) return;
   if (tourStep === TOUR_STEP_WRAP) {
     completeGuidedTourWithCelebration();
@@ -767,6 +1108,7 @@ function completeGuidedTourWithCelebration() {
 }
 
 function skipGuidedTour() {
+  if (miniTourActive) { endMiniTour(); return; }
   markGuidedTourVersionDone();
   guidedTourActive = false;
   tourStep = TOUR_STEP_IDLE;
@@ -868,24 +1210,421 @@ function setRpcOfflineVisible(show) {
   b.classList.toggle('visible', !!show);
 }
 
-function checkRpcServerHealth() {
-  fetch('/health', { method: 'GET', cache: 'no-store' })
-    .then(function(r) {
-      if (!r.ok) throw new Error('bad status');
-      return r.json();
-    })
-    .then(function(j) {
-      if (!j || !j.ok) throw new Error('bad payload');
-      setRpcOfflineVisible(false);
-    })
-    .catch(function() {
-      setRpcOfflineVisible(true);
+// ── Cola de tareas en curso (pendingJobs) ─────────────────────────
+var pendingJobs = 0;
+function renderPendingJobsPill() {
+  try {
+    var pill = document.getElementById('pending-jobs-pill');
+    if (!pill) return;
+    if (pendingJobs > 0) {
+      pill.textContent = 'Procesando (' + pendingJobs + ')';
+      pill.classList.add('visible');
+    } else {
+      pill.textContent = '';
+      pill.classList.remove('visible');
+    }
+  } catch (e) {
+    console.error('renderPendingJobsPill error:', e && e.message);
+  }
+}
+function incrementPendingJobs() {
+  pendingJobs += 1;
+  renderPendingJobsPill();
+}
+function decrementPendingJobs() {
+  pendingJobs = Math.max(0, pendingJobs - 1);
+  renderPendingJobsPill();
+}
+
+// ── Modo offline explícito ────────────────────────────────────────
+var rpcOffline = false;
+function syncOfflineButtonStates() {
+  try {
+    ['btn-gen', 'btn-gen-ind'].forEach(function(id) {
+      var b = document.getElementById(id);
+      if (!b) return;
+      if (rpcOffline) {
+        b.disabled = true;
+        b.setAttribute('aria-disabled', 'true');
+        b.dataset.rpcOffline = '1';
+      } else if (b.dataset.rpcOffline) {
+        b.disabled = false;
+        b.removeAttribute('aria-disabled');
+        delete b.dataset.rpcOffline;
+      }
     });
+  } catch (e) {
+    console.error('syncOfflineButtonStates error:', e && e.message);
+  }
+}
+function setRpcOffline(offline) {
+  var prev = rpcOffline;
+  rpcOffline = !!offline;
+  setRpcOfflineVisible(rpcOffline);
+  syncOfflineButtonStates();
+  if (!prev && rpcOffline) {
+    try { showToast('Sin conexión con el servidor local. Generación de documentos desactivada.', 'error'); } catch (_e) {}
+  } else if (prev && !rpcOffline) {
+    try { showToast('Servidor local reconectado.', 'success'); } catch (_e) {}
+  }
+}
+function isRpcOffline() { return rpcOffline; }
+
+function checkRpcServerHealth() {
+  try {
+    fetch('/health', { method: 'GET', cache: 'no-store' })
+      .then(function(r) {
+        if (!r.ok) throw new Error('bad status');
+        return r.json();
+      })
+      .then(function(j) {
+        try {
+          if (!j || !j.ok) throw new Error('bad payload');
+          setRpcOffline(false);
+        } catch (e) {
+          setRpcOffline(true);
+          console.error('health payload error:', e && e.message);
+        }
+      })
+      .catch(function() {
+        try { setRpcOffline(true); } catch (e) { console.error('setRpcOffline error:', e && e.message); }
+      });
+  } catch (e) {
+    console.error('checkRpcServerHealth crashed:', e && e.message);
+    try { setRpcOffline(true); } catch (_e) {}
+  }
 }
 
 function initRpcServerHealthWatch() {
   checkRpcServerHealth();
   setInterval(checkRpcServerHealth, 15000);
+}
+
+// ── Bloqueo por inactividad (Idle lock) ───────────────────────────
+function getIdleLockMinutes() {
+  var raw = parseInt(localStorage.getItem(IDLE_LOCK_LS_KEY) || '0', 10);
+  if (!Number.isFinite(raw)) raw = 0;
+  return IDLE_LOCK_VALID_MINUTES.indexOf(raw) !== -1 ? raw : 0;
+}
+
+function setIdleLockMinutesStored(mins) {
+  var n = IDLE_LOCK_VALID_MINUTES.indexOf(mins) !== -1 ? mins : 0;
+  if (n === 0) localStorage.removeItem(IDLE_LOCK_LS_KEY);
+  else localStorage.setItem(IDLE_LOCK_LS_KEY, String(n));
+}
+
+function getIdleLockPinHash() {
+  return localStorage.getItem(IDLE_LOCK_HASH_LS_KEY) || '';
+}
+
+function setIdleLockPinHash(hashHex) {
+  if (hashHex) localStorage.setItem(IDLE_LOCK_HASH_LS_KEY, hashHex);
+  else localStorage.removeItem(IDLE_LOCK_HASH_LS_KEY);
+}
+
+function isIdleLockPinFormatValid(pin) {
+  return /^\d{4,8}$/.test(String(pin == null ? '' : pin));
+}
+
+async function computeSha256Hex(text) {
+  if (!window.crypto || !window.crypto.subtle) throw new Error('WebCrypto no disponible');
+  var enc = new TextEncoder();
+  var buf = await crypto.subtle.digest('SHA-256', enc.encode(String(text)));
+  var bytes = new Uint8Array(buf);
+  var hex = '';
+  for (var i = 0; i < bytes.length; i += 1) hex += bytes[i].toString(16).padStart(2, '0');
+  return hex;
+}
+
+async function promptForIdleLockPinSetup(reason) {
+  var label = reason === 'change'
+    ? 'Ingresa un nuevo PIN de 4 a 8 dígitos para el bloqueo:'
+    : 'Elige un PIN de 4 a 8 dígitos para el bloqueo por inactividad:';
+  var p1 = prompt(label, '');
+  if (p1 == null) return { ok: false, cancelled: true };
+  if (!isIdleLockPinFormatValid(p1)) {
+    showToast('PIN inválido (solo 4-8 dígitos).', 'error');
+    return { ok: false, cancelled: false };
+  }
+  var p2 = prompt('Confirma el PIN:', '');
+  if (p2 == null) return { ok: false, cancelled: true };
+  if (p1 !== p2) {
+    showToast('Los PIN no coinciden.', 'error');
+    return { ok: false, cancelled: false };
+  }
+  try {
+    var hash = await computeSha256Hex(p1);
+    setIdleLockPinHash(hash);
+    addAuditEntry('idle-lock-pin-set', 'ok', 0, reason === 'change' ? 'changed' : 'created');
+    return { ok: true, cancelled: false };
+  } catch (_err) {
+    showToast('WebCrypto no disponible en este entorno.', 'error');
+    addAuditEntry('idle-lock-pin-set', 'error', 0, 'no-webcrypto');
+    return { ok: false, cancelled: false };
+  }
+}
+
+function syncIdleLockSelectUi() {
+  var sel = document.getElementById('settings-idle-lock');
+  if (sel) sel.value = String(getIdleLockMinutes());
+}
+
+async function onIdleLockSelectChange(value) {
+  var parsed = parseInt(value, 10);
+  if (!Number.isFinite(parsed)) parsed = 0;
+  if (IDLE_LOCK_VALID_MINUTES.indexOf(parsed) === -1) parsed = 0;
+  if (parsed === 0) {
+    setIdleLockMinutesStored(0);
+    addAuditEntry('idle-lock-disable', 'ok', 0, '');
+    restartIdleLockTimer();
+    syncIdleLockSelectUi();
+    showToast('Bloqueo por inactividad desactivado.', 'success');
+    return;
+  }
+  if (!getIdleLockPinHash()) {
+    var setup = await promptForIdleLockPinSetup('create');
+    if (!setup.ok) {
+      syncIdleLockSelectUi();
+      return;
+    }
+  }
+  setIdleLockMinutesStored(parsed);
+  addAuditEntry('idle-lock-enable', 'ok', parsed, '');
+  restartIdleLockTimer();
+  syncIdleLockSelectUi();
+  showToast('Bloqueo activo: ' + parsed + ' min.', 'success');
+}
+
+async function changeIdleLockPin() {
+  var existing = getIdleLockPinHash();
+  if (existing) {
+    var current = prompt('Ingresa el PIN actual para continuar:', '');
+    if (current == null) return;
+    if (!isIdleLockPinFormatValid(current)) {
+      showToast('PIN con formato inválido.', 'error');
+      addAuditEntry('idle-lock-pin-change', 'error', 0, 'invalid-format');
+      return;
+    }
+    try {
+      var hash = await computeSha256Hex(current);
+      if (hash !== existing) {
+        showToast('PIN incorrecto.', 'error');
+        addAuditEntry('idle-lock-pin-change', 'error', 0, 'wrong-pin');
+        return;
+      }
+    } catch (_err) {
+      showToast('WebCrypto no disponible.', 'error');
+      addAuditEntry('idle-lock-pin-change', 'error', 0, 'no-webcrypto');
+      return;
+    }
+  }
+  var setup = await promptForIdleLockPinSetup('change');
+  if (setup.ok) {
+    showToast('PIN actualizado ✓', 'success');
+    restartIdleLockTimer();
+  }
+}
+
+function restartIdleLockTimer() {
+  if (idleLockDebounceId) {
+    clearTimeout(idleLockDebounceId);
+    idleLockDebounceId = null;
+  }
+  if (idleLockTimerId) {
+    clearTimeout(idleLockTimerId);
+    idleLockTimerId = null;
+  }
+  idleLockEnabledMinutes = getIdleLockMinutes();
+  if (idleLockEnabledMinutes <= 0 || idleLockIsActive) return;
+  idleLockTimerId = setTimeout(triggerIdleLock, idleLockEnabledMinutes * 60 * 1000);
+}
+
+function onIdleActivity() {
+  if (idleLockEnabledMinutes <= 0 || idleLockIsActive) return;
+  if (idleLockDebounceId) return;
+  idleLockDebounceId = setTimeout(function() {
+    idleLockDebounceId = null;
+    if (idleLockTimerId) clearTimeout(idleLockTimerId);
+    idleLockTimerId = setTimeout(triggerIdleLock, idleLockEnabledMinutes * 60 * 1000);
+  }, IDLE_LOCK_DEBOUNCE_MS);
+}
+
+function triggerIdleLock() {
+  if (idleLockIsActive) return;
+  if (!getIdleLockPinHash()) return;
+  idleLockIsActive = true;
+  if (idleLockTimerId) { clearTimeout(idleLockTimerId); idleLockTimerId = null; }
+  if (idleLockDebounceId) { clearTimeout(idleLockDebounceId); idleLockDebounceId = null; }
+  showIdleLockOverlay();
+  addAuditEntry('idle-lock-lock', 'ok', idleLockEnabledMinutes, 'inactivity');
+}
+
+function showIdleLockOverlay() {
+  var overlay = document.getElementById('rpc-idle-lock-overlay');
+  if (!overlay) return;
+  overlay.style.display = 'flex';
+  overlay.setAttribute('aria-hidden', 'false');
+  var err = document.getElementById('rpc-idle-lock-error');
+  if (err) { err.style.display = 'none'; err.textContent = ''; }
+  var input = document.getElementById('rpc-idle-lock-pin');
+  if (input) { input.value = ''; setTimeout(function() { try { input.focus(); } catch (_e) {} }, 60); }
+}
+
+function hideIdleLockOverlay() {
+  var overlay = document.getElementById('rpc-idle-lock-overlay');
+  if (!overlay) return;
+  overlay.style.display = 'none';
+  overlay.setAttribute('aria-hidden', 'true');
+}
+
+async function submitIdleLockPin() {
+  var input = document.getElementById('rpc-idle-lock-pin');
+  var err = document.getElementById('rpc-idle-lock-error');
+  var pin = input ? input.value : '';
+  if (!isIdleLockPinFormatValid(pin)) {
+    if (err) { err.style.display = 'block'; err.textContent = 'Formato inválido (4-8 dígitos).'; }
+    addAuditEntry('idle-lock-unlock', 'error', 0, 'invalid-format');
+    if (input) { input.value = ''; input.focus(); }
+    return;
+  }
+  var expected = getIdleLockPinHash();
+  if (!expected) {
+    idleLockIsActive = false;
+    hideIdleLockOverlay();
+    addAuditEntry('idle-lock-unlock', 'ok', 0, 'no-hash-bypass');
+    restartIdleLockTimer();
+    return;
+  }
+  try {
+    var h = await computeSha256Hex(pin);
+    if (h === expected) {
+      idleLockIsActive = false;
+      hideIdleLockOverlay();
+      addAuditEntry('idle-lock-unlock', 'ok', 0, '');
+      restartIdleLockTimer();
+    } else {
+      if (err) { err.style.display = 'block'; err.textContent = 'PIN incorrecto.'; }
+      addAuditEntry('idle-lock-unlock', 'error', 0, 'bad-pin');
+      if (input) { input.value = ''; input.focus(); }
+    }
+  } catch (_err) {
+    if (err) { err.style.display = 'block'; err.textContent = 'WebCrypto no disponible.'; }
+    addAuditEntry('idle-lock-unlock', 'error', 0, 'no-webcrypto');
+  }
+}
+
+function initIdleLockFeature() {
+  idleLockEnabledMinutes = getIdleLockMinutes();
+  syncIdleLockSelectUi();
+  if (idleLockEnabledMinutes > 0 && !getIdleLockPinHash()) {
+    // Recover from an inconsistent state: timer configured but PIN missing.
+    setIdleLockMinutesStored(0);
+    idleLockEnabledMinutes = 0;
+    syncIdleLockSelectUi();
+    addAuditEntry('idle-lock-reset', 'ok', 0, 'missing-hash');
+  }
+  var onActivity = function() { onIdleActivity(); };
+  window.addEventListener('mousemove', onActivity, { passive: true });
+  window.addEventListener('keydown', function(e) {
+    if (idleLockIsActive) {
+      if (e.key === 'Enter') {
+        var overlay = document.getElementById('rpc-idle-lock-overlay');
+        if (overlay && overlay.style.display !== 'none') {
+          e.preventDefault();
+          submitIdleLockPin();
+        }
+      }
+      return;
+    }
+    onActivity();
+  }, true);
+  window.addEventListener('click', onActivity, { passive: true });
+  restartIdleLockTimer();
+}
+
+// ── Borrado de datos (privacidad) ─────────────────────────────────
+function openWipeDataModal() {
+  closeSettingsDropdown();
+  var m = document.getElementById('rpc-wipe-modal');
+  if (!m) return;
+  m.style.display = 'flex';
+  m.setAttribute('aria-hidden', 'false');
+}
+
+function closeWipeDataModal() {
+  var m = document.getElementById('rpc-wipe-modal');
+  if (!m) return;
+  m.style.display = 'none';
+  m.setAttribute('aria-hidden', 'true');
+}
+
+function collectCacheWipeKeys() {
+  var keys = [];
+  for (var i = 0; i < localStorage.length; i += 1) {
+    var k = localStorage.key(i);
+    if (!k) continue;
+    if (k.indexOf('rpc-preimport-') === 0) keys.push(k);
+    else if (k === AUDIT_LOG_KEY) keys.push(k);
+    else if (k.indexOf('rpc-auto-backup-') === 0) keys.push(k);
+    else if (k === IDLE_LOCK_LS_KEY) keys.push(k);
+  }
+  return keys;
+}
+
+function collectFullWipeKeys() {
+  var keys = [];
+  for (var i = 0; i < localStorage.length; i += 1) {
+    var k = localStorage.key(i);
+    if (!k) continue;
+    if (k.indexOf('rpc-') === 0 || k === 'theme' || k === 'rplus-last-seen-app-version') {
+      keys.push(k);
+    }
+  }
+  return keys;
+}
+
+function wipeCacheConfirmed() {
+  var confirmMsg = 'Se eliminarán caché y temporales: respaldo pre-importación, bitácora, auto-respaldos y el recordatorio de tiempo de bloqueo. No se puede deshacer. ¿Continuar?';
+  if (!confirm(confirmMsg)) {
+    addAuditEntry('data-wipe-cache', 'cancelled', 0, 'user-cancelled');
+    return;
+  }
+  var keys = collectCacheWipeKeys();
+  addAuditEntry('data-wipe-cache', 'ok', keys.length, 'pre-wipe');
+  keys.forEach(function(k) {
+    try { localStorage.removeItem(k); } catch (_e) {}
+  });
+  idleLockEnabledMinutes = 0;
+  if (idleLockTimerId) { clearTimeout(idleLockTimerId); idleLockTimerId = null; }
+  if (idleLockDebounceId) { clearTimeout(idleLockDebounceId); idleLockDebounceId = null; }
+  addAuditEntry('data-wipe-cache', 'ok', keys.length, 'completed');
+  closeWipeDataModal();
+  syncIdleLockSelectUi();
+  showToast('Se eliminaron ' + keys.length + ' elementos temporales.', 'success');
+}
+
+function wipeAllConfirmed() {
+  var firstOk = confirm('Esto BORRARÁ todos los pacientes, notas, indicaciones, historial de labs, ajustes y PIN de bloqueo de esta computadora. No se puede deshacer. ¿Continuar?');
+  if (!firstOk) {
+    addAuditEntry('data-wipe-full', 'cancelled', 0, 'first-cancel');
+    return;
+  }
+  var typed = prompt('Escribe BORRAR en mayúsculas para confirmar el borrado completo:', '');
+  if (String(typed == null ? '' : typed).trim().toUpperCase() !== 'BORRAR') {
+    addAuditEntry('data-wipe-full', 'cancelled', 0, 'confirmation-failed');
+    showToast('Borrado cancelado.', 'error');
+    return;
+  }
+  var keys = collectFullWipeKeys();
+  addAuditEntry('data-wipe-full', 'ok', keys.length, 'pre-wipe');
+  keys.forEach(function(k) {
+    try { localStorage.removeItem(k); } catch (_e) {}
+  });
+  closeWipeDataModal();
+  if (window.electronAPI && typeof window.electronAPI.relaunchApp === 'function') {
+    try { window.electronAPI.relaunchApp(); return; } catch (_e) {}
+  }
+  location.reload();
 }
 
 function openUserDataFolderFromSettings() {
@@ -901,12 +1640,129 @@ function openUserDataFolderFromSettings() {
   });
 }
 
+// ── Bloque L · Centro de ayuda embebido ────────────────────────────
+var HELP_ARTICLES = [
+  {
+    id: 'primer-paciente',
+    title: 'Tu primer paciente',
+    keywords: 'agregar paciente nuevo registro edad sexo cuarto cama duplicado',
+    html:
+      '<p>Agrega un paciente desde la barra lateral con <strong>+ Agregar</strong> o directamente desde un reporte de laboratorio procesado (<strong>Agregar paciente del lab</strong>).</p>' +
+      '<ul>' +
+      '<li>Puedes capturar nombre, registro, edad, sexo, área / servicio, cuarto y cama.</li>' +
+      '<li>R+ avisa si detecta un paciente con el mismo nombre o registro para evitar duplicados.</li>' +
+      '<li>El paciente queda guardado solo en esta computadora; no se sube a la nube.</li>' +
+      '</ul>'
+  },
+  {
+    id: 'laboratorio',
+    title: 'Laboratorio: procesar y enviar',
+    keywords: 'lab laboratorio procesar reporte diagrama gamble bh quimica enviar nota copiar',
+    html:
+      '<p>Pega el reporte del laboratorio en el cuadro de texto de la pestaña <strong>Laboratorio</strong> y pulsa <strong>Procesar</strong>. R+ reconoce biometría, química, electrolitos, gasometría, pruebas hepáticas y más.</p>' +
+      '<ul>' +
+      '<li>Cada diagrama tiene un botón <strong>Copiar</strong> para pegarlo como texto en otro sistema.</li>' +
+      '<li>Los valores fuera de rango se resaltan en rojo.</li>' +
+      '<li><strong>Enviar a nota</strong> vuelca el bloque al expediente del paciente activo y alimenta <strong>Tendencias</strong>.</li>' +
+      '<li>En <strong>Historial de labs</strong> ves cada envío guardado; puedes <strong>Ver en Laboratorio</strong> para recuperar diagramas o <strong>Eliminar</strong> un conjunto si fue un error.</li>' +
+      '</ul>'
+  },
+  {
+    id: 'nota-evolucion',
+    title: 'Nota de evolución',
+    keywords: 'nota evolucion docx generar expediente soap vitales diagnosticos',
+    html:
+      '<p>En <strong>Expediente → Notas</strong> completa fecha, hora, signos vitales, interrogatorio, evolución, estudios, diagnósticos y tratamiento.</p>' +
+      '<ul>' +
+      '<li>La plantilla <strong>SOAP</strong> genera un bloque estructurado listo para insertar en evolución.</li>' +
+      '<li><strong>Generar Nota (.docx)</strong> crea un archivo con el formato clínico; la carpeta de destino se configura en Ajustes.</li>' +
+      '<li>Los datos se guardan por paciente y persisten al cerrar R+.</li>' +
+      '</ul>'
+  },
+  {
+    id: 'indicaciones',
+    title: 'Indicaciones médicas',
+    keywords: 'indicaciones dieta cuidados medicamentos estudios interconsultas otros docx',
+    html:
+      '<p>En <strong>Expediente → Indicaciones</strong> arma la hoja por secciones (dieta, cuidados, medicamentos, estudios, interconsultas y otros).</p>' +
+      '<ul>' +
+      '<li>Define <strong>plantillas por defecto</strong> en Mi Perfil para prellenar dieta, cuidados y medicamentos.</li>' +
+      '<li><strong>Generar Indicaciones (.docx)</strong> produce la hoja final con el membrete del hospital.</li>' +
+      '<li>La <strong>Salida rápida</strong> (Ajustes) exporta el paciente activo en docx, html o txt de un solo clic.</li>' +
+      '</ul>'
+  },
+  {
+    id: 'respaldo',
+    title: 'Respaldo y portabilidad',
+    keywords: 'respaldo backup copia seguridad exportar importar paciente rango sync pasarela equipos auditoria',
+    html:
+      '<p>R+ ofrece varias vías para mover o resguardar datos desde <strong>Ajustes</strong>:</p>' +
+      '<ul>' +
+      '<li><strong>Copia de seguridad</strong>: JSON completo de pacientes, notas, indicaciones y labs.</li>' +
+      '<li><strong>Exportar paciente actual</strong> o por <strong>rango de fechas</strong> para mover casos específicos.</li>' +
+      '<li><strong>Copia automática</strong> guarda hasta 14 snapshots locales rotativos.</li>' +
+      '<li><strong>Paquete sync</strong> cifrado con passphrase para combinar datos entre equipos sin pisar los del otro lado.</li>' +
+      '<li><strong>Registro de auditoría</strong>: descarga un JSON con exportaciones e importaciones relevantes.</li>' +
+      '</ul>'
+  },
+  {
+    id: 'actualizacion',
+    title: 'Actualizar R+',
+    keywords: 'actualizacion actualizar update instalar reiniciar rollback version',
+    html:
+      '<p>R+ busca nuevas versiones al iniciar. Cuando hay una disponible, la app muestra un modal con el progreso de descarga.</p>' +
+      '<ul>' +
+      '<li>Puedes buscar manualmente desde <strong>Ajustes → Buscar actualizaciones…</strong> o el menú nativo (Mac: R+; Windows: Aplicación).</li>' +
+      '<li>Al detectar una versión nueva instalada, R+ muestra una ventana de <strong>Novedades</strong> con los cambios relevantes.</li>' +
+      '<li>Para volver a una versión anterior, descarga el instalador correspondiente desde la página de Releases.</li>' +
+      '</ul>'
+  },
+  {
+    id: 'atajos',
+    title: 'Atajos de teclado',
+    keywords: 'atajos shortcuts teclado ctrl cmd escape tab',
+    html:
+      '<p>Ahorra tiempo con estos atajos:</p>' +
+      '<ul>' +
+      '<li><strong>Ctrl/⌘ + 1</strong> — Laboratorio</li>' +
+      '<li><strong>Ctrl/⌘ + 2</strong> — Expediente</li>' +
+      '<li><strong>Ctrl/⌘ + 3</strong> — Abrir Mi Perfil (barra lateral)</li>' +
+      '<li><strong>Ctrl/⌘ + 4</strong> — Abrir Ajustes</li>' +
+      '<li><strong>Esc</strong> — Cerrar modal o el centro de ayuda</li>' +
+      '<li>Dentro del centro de ayuda: <strong>↓</strong> desde el buscador enfoca la lista; <strong>↑ / ↓</strong> navegan artículos.</li>' +
+      '</ul>'
+  },
+  {
+    id: 'privacidad',
+    title: 'Privacidad de datos',
+    keywords: 'privacidad datos locales electron userdata carpeta no subir nube sensibles',
+    html:
+      '<p>R+ guarda toda la información en el <strong>almacenamiento local</strong> de Electron en esta computadora. No envía pacientes ni notas a ningún servidor externo.</p>' +
+      '<ul>' +
+      '<li>En Ajustes, <strong>Abrir carpeta…</strong> muestra la ruta exacta del perfil de la app.</li>' +
+      '<li>No compartas esa carpeta ni los archivos JSON exportados si contienen información sensible sin cifrado.</li>' +
+      '<li>Los paquetes <strong>sync</strong> y las exportaciones pueden cifrarse con una passphrase para intercambio seguro entre equipos.</li>' +
+      '</ul>'
+  }
+];
+
+var helpCurrentArticleId = null;
+
 function openQuickHelp() {
   var el = document.getElementById('help-quick-backdrop');
   if (!el) return;
   el.classList.add('open');
   el.setAttribute('aria-hidden', 'false');
   closeSettingsDropdown();
+  var input = document.getElementById('help-search-input');
+  if (input) input.value = '';
+  renderHelpArticles('');
+  if (!helpCurrentArticleId || !HELP_ARTICLES.some(function(a){ return a.id === helpCurrentArticleId; })) {
+    selectHelpArticle(HELP_ARTICLES[0].id);
+  } else {
+    selectHelpArticle(helpCurrentArticleId);
+  }
+  setTimeout(function(){ if (input) input.focus(); }, 40);
 }
 
 function closeQuickHelp() {
@@ -916,15 +1772,481 @@ function closeQuickHelp() {
   el.setAttribute('aria-hidden', 'true');
 }
 
+function onHelpSearchInput(value) {
+  renderHelpArticles(value);
+}
+
+function onHelpSearchKeydown(e) {
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    var list = document.getElementById('help-articles-list');
+    var first = list && list.querySelector('.help-article-item');
+    if (first) first.focus();
+  } else if (e.key === 'Enter') {
+    var list2 = document.getElementById('help-articles-list');
+    var first2 = list2 && list2.querySelector('.help-article-item');
+    if (first2) {
+      e.preventDefault();
+      selectHelpArticle(first2.getAttribute('data-article-id'));
+      first2.focus();
+    }
+  }
+}
+
+function onHelpListKeydown(e) {
+  var target = e.target;
+  if (!target || !target.classList || !target.classList.contains('help-article-item')) return;
+  var items = Array.prototype.slice.call(document.querySelectorAll('#help-articles-list .help-article-item'));
+  var idx = items.indexOf(target);
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    var next = items[Math.min(items.length - 1, idx + 1)];
+    if (next) { next.focus(); selectHelpArticle(next.getAttribute('data-article-id')); }
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (idx <= 0) {
+      var input = document.getElementById('help-search-input');
+      if (input) input.focus();
+    } else {
+      items[idx - 1].focus();
+      selectHelpArticle(items[idx - 1].getAttribute('data-article-id'));
+    }
+  } else if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    selectHelpArticle(target.getAttribute('data-article-id'));
+  } else if (e.key === 'Home') {
+    e.preventDefault();
+    if (items[0]) { items[0].focus(); selectHelpArticle(items[0].getAttribute('data-article-id')); }
+  } else if (e.key === 'End') {
+    e.preventDefault();
+    var last = items[items.length - 1];
+    if (last) { last.focus(); selectHelpArticle(last.getAttribute('data-article-id')); }
+  }
+}
+
+function renderHelpArticles(query) {
+  var list = document.getElementById('help-articles-list');
+  if (!list) return;
+  var q = String(query || '').toLowerCase().trim();
+  var filtered = HELP_ARTICLES.filter(function(a) {
+    if (!q) return true;
+    var haystack = (a.title + ' ' + a.keywords + ' ' + a.html.replace(/<[^>]+>/g, ' ')).toLowerCase();
+    return haystack.indexOf(q) !== -1;
+  });
+  list.innerHTML = '';
+  if (filtered.length === 0) {
+    var empty = document.createElement('div');
+    empty.className = 'help-empty';
+    empty.textContent = 'Sin resultados para “' + q + '”.';
+    list.appendChild(empty);
+    return;
+  }
+  filtered.forEach(function(a) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'help-article-item';
+    btn.setAttribute('data-article-id', a.id);
+    btn.setAttribute('role', 'option');
+    btn.tabIndex = 0;
+    btn.textContent = a.title;
+    btn.addEventListener('click', function() { selectHelpArticle(a.id); btn.focus(); });
+    if (a.id === helpCurrentArticleId) btn.classList.add('active');
+    list.appendChild(btn);
+  });
+  if (helpCurrentArticleId && !filtered.some(function(a){ return a.id === helpCurrentArticleId; })) {
+    selectHelpArticle(filtered[0].id);
+  }
+}
+
+function selectHelpArticle(id) {
+  var article = HELP_ARTICLES.find(function(a){ return a.id === id; });
+  if (!article) return;
+  helpCurrentArticleId = id;
+  var contentEl = document.getElementById('help-article-content');
+  if (contentEl) {
+    contentEl.innerHTML = '<h4>' + esc(article.title) + '</h4>' + article.html;
+  }
+  var list = document.getElementById('help-articles-list');
+  if (list) {
+    Array.prototype.forEach.call(list.querySelectorAll('.help-article-item'), function(btn) {
+      if (btn.getAttribute('data-article-id') === id) btn.classList.add('active');
+      else btn.classList.remove('active');
+    });
+  }
+}
+
+// ── Bloque L · Novedades in-app (release notes) ────────────────────
+var RELEASE_NOTES_SEEN_PREFIX = 'rpc-release-notes-seen-';
+var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
+  {
+    title: 'Copia automática programada',
+    body: 'R+ puede generar snapshots locales (hasta 14 rotativos) y restaurarlos desde Ajustes → Copias de seguridad.'
+  },
+  {
+    title: 'Exportar por paciente o por rango de fechas',
+    body: 'Respalda solo al paciente activo, o selecciona un rango de fechas (ingreso / última nota) para mover casos acotados entre equipos.'
+  },
+  {
+    title: 'Paquete sync cifrado con passphrase',
+    body: 'Intercambia datos entre equipos sin pisar los del otro lado: el paquete combina cambios y se cifra con una frase que tú eliges.'
+  },
+  {
+    title: 'Registro de auditoría ligero',
+    body: 'Exporta un JSON con exportaciones, importaciones y borrados recientes desde Ajustes, útil para rastrear movimientos.'
+  },
+  {
+    title: 'Salida rápida en varios formatos',
+    body: 'Elige docx, html o txt como formato de la Salida rápida para exportar el contenido clínico del paciente activo de un solo clic.'
+  }
+];
+
+var RELEASE_NOTES_HIGHLIGHTS = {};
+
+function getCuratedReleaseNotes(v) {
+  if (v && RELEASE_NOTES_HIGHLIGHTS[v]) return RELEASE_NOTES_HIGHLIGHTS[v];
+  return RELEASE_NOTES_HIGHLIGHTS_DEFAULT;
+}
+
+function maybeShowReleaseNotesFor(version, prevVersion) {
+  if (!version || !prevVersion || prevVersion === version) return;
+  try {
+    if (localStorage.getItem(RELEASE_NOTES_SEEN_PREFIX + version)) return;
+  } catch (_err) {
+    return;
+  }
+  setTimeout(function(){ showReleaseNotesModal(version); }, 150);
+}
+
+function showReleaseNotesModal(version) {
+  var el = document.getElementById('release-notes-backdrop');
+  if (!el) return;
+  var title = document.getElementById('release-notes-title');
+  if (title) title.textContent = 'Novedades de R+ v' + version;
+  var list = document.getElementById('release-notes-list');
+  if (list) {
+    var notes = getCuratedReleaseNotes(version);
+    list.innerHTML = '';
+    notes.forEach(function(n) {
+      var li = document.createElement('li');
+      var strong = document.createElement('strong');
+      strong.textContent = n.title;
+      var span = document.createElement('span');
+      span.textContent = n.body;
+      li.appendChild(strong);
+      li.appendChild(span);
+      list.appendChild(li);
+    });
+  }
+  el.classList.add('open');
+  el.setAttribute('aria-hidden', 'false');
+  el.setAttribute('data-version', version);
+  setTimeout(function(){
+    var btn = document.getElementById('release-notes-close-btn');
+    if (btn) btn.focus();
+  }, 50);
+}
+
+function closeReleaseNotes() {
+  var el = document.getElementById('release-notes-backdrop');
+  if (!el) return;
+  var v = el.getAttribute('data-version');
+  el.classList.remove('open');
+  el.setAttribute('aria-hidden', 'true');
+  if (v) {
+    try { localStorage.setItem(RELEASE_NOTES_SEEN_PREFIX + v, '1'); } catch (_err) {}
+  }
+}
+
+// ── Bloque L · Tours contextuales (mini tours) ─────────────────────
+var miniTourActive = false;
+var miniTourSteps = null;
+var miniTourIdx = 0;
+
+var SETTINGS_MINI_TOUR_STEPS = [
+  {
+    badge: 'Ajustes · panel',
+    body: 'Abrimos el panel de <strong>Ajustes</strong> (icono ⚙ arriba a la derecha). Desde aquí defines la <strong>carpeta de documentos</strong> y el <strong>formato de Salida rápida</strong> (docx / html / txt) para el paciente activo.',
+    before: function(){ ensureSettingsDropdownOpen(); }
+  },
+  {
+    badge: 'Ajustes · respaldo',
+    body: '<strong>Copias de seguridad</strong>: exporta todo, solo al paciente activo, un rango de fechas, o activa la <strong>copia automática</strong> (hasta 14 snapshots locales rotativos).',
+    before: function(){ ensureSettingsDropdownOpen(); }
+  },
+  {
+    badge: 'Ajustes · sync',
+    body: 'Si usas R+ en más de un equipo, el <strong>Paquete sync</strong> intercambia JSON cifrados con passphrase y combina cambios sin pisar lo que ya tenías.',
+    before: function(){ ensureSettingsDropdownOpen(); }
+  },
+  {
+    badge: 'Ajustes · datos',
+    body: 'En <strong>Datos en esta computadora</strong> puedes abrir la carpeta del perfil donde Electron guarda pacientes y notas. No compartas esa carpeta si contiene información sensible.',
+    before: function(){ ensureSettingsDropdownOpen(); }
+  },
+  {
+    badge: 'Ajustes · aplicación',
+    body: 'Desde <strong>Aplicación</strong> accedes a este <strong>centro de ayuda</strong>, ves la versión instalada y puedes <strong>buscar actualizaciones</strong> manualmente.',
+    before: function(){ ensureSettingsDropdownOpen(); }
+  }
+];
+
+var LAB_MINI_TOUR_STEPS = [
+  {
+    badge: 'Laboratorio · pegar',
+    body: 'Estás en la pestaña <strong>Laboratorio</strong>. Pega el reporte del laboratorio en el cuadro de texto. R+ reconoce biometría, química, electrolitos, gasometría, pruebas hepáticas y más.',
+    before: function(){ switchAppTab('lab'); }
+  },
+  {
+    badge: 'Laboratorio · procesar',
+    body: 'Pulsa <strong>Procesar</strong>: R+ genera diagramas automáticos (Gamble, BH, Química, Coagulación…) y una tabla de resultados con los valores alterados resaltados en rojo.',
+    before: function(){ switchAppTab('lab'); }
+  },
+  {
+    badge: 'Laboratorio · enviar',
+    body: 'Cada diagrama tiene un botón <strong>Copiar</strong> para pegarlo como texto en otro sistema. <strong>Enviar a nota</strong> vuelca el bloque completo al expediente del paciente activo.',
+    before: function(){ switchAppTab('lab'); }
+  },
+  {
+    badge: 'Laboratorio · tendencias',
+    body: 'Cada laboratorio enviado se guarda con su fecha. Con dos o más labs aparecen mini-gráficas en <strong>Expediente → Tendencias</strong>.',
+    before: function(){ switchAppTab('lab'); }
+  }
+];
+
+function ensureSettingsDropdownOpen() {
+  var dd = document.getElementById('settings-dropdown');
+  if (dd && !dd.classList.contains('open')) toggleSettingsDropdown();
+}
+
+function startMiniTour(kind) {
+  if (guidedTourActive) {
+    showToast('Finaliza el tutorial actual antes de iniciar un recorrido breve.', 'error');
+    return;
+  }
+  var steps = null;
+  if (kind === 'ajustes') steps = SETTINGS_MINI_TOUR_STEPS;
+  else if (kind === 'lab') steps = LAB_MINI_TOUR_STEPS;
+  if (!steps || !steps.length) return;
+  closeQuickHelp();
+  miniTourActive = true;
+  miniTourSteps = steps;
+  miniTourIdx = 0;
+  showTourDock();
+  renderMiniTourStep();
+}
+
+function renderMiniTourStep() {
+  if (!miniTourActive || !miniTourSteps) return;
+  var step = miniTourSteps[miniTourIdx];
+  if (!step) { endMiniTour(); return; }
+  if (typeof step.before === 'function') {
+    try { step.before(); } catch (_err) {}
+  }
+  var badge = document.getElementById('tour-step-badge');
+  var body = document.getElementById('tour-dock-body');
+  var nextBtn = document.getElementById('tour-btn-next');
+  var skipBtn = document.querySelector('#tour-dock .btn-tour-skip');
+  if (badge) {
+    badge.textContent = step.badge + ' · ' + (miniTourIdx + 1) + ' / ' + miniTourSteps.length;
+  }
+  if (body) body.innerHTML = step.body;
+  if (nextBtn) {
+    nextBtn.style.display = '';
+    nextBtn.disabled = false;
+    nextBtn.textContent = miniTourIdx === miniTourSteps.length - 1 ? 'Finalizar' : 'Siguiente';
+  }
+  if (skipBtn) skipBtn.textContent = 'Cerrar recorrido';
+}
+
+function miniTourNext() {
+  if (!miniTourActive) return;
+  if (miniTourIdx >= (miniTourSteps ? miniTourSteps.length : 0) - 1) {
+    endMiniTour();
+    return;
+  }
+  miniTourIdx++;
+  renderMiniTourStep();
+}
+
+function endMiniTour() {
+  miniTourActive = false;
+  miniTourSteps = null;
+  miniTourIdx = 0;
+  hideTourDock();
+  var skipBtn = document.querySelector('#tour-dock .btn-tour-skip');
+  if (skipBtn) skipBtn.textContent = 'Omitir tutorial';
+}
+
+function startHelpTourMain() {
+  if (miniTourActive) endMiniTour();
+  closeQuickHelp();
+  resetAndStartOnboarding();
+}
+
 function safeExportSlug(str) {
   var s = (str || 'paciente').replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9]+/g, '_').replace(/^_|_$/g, '');
   return (s || 'paciente').slice(0, 48);
 }
 
 // ── Respaldo local (exportar / importar JSON) ─────────────────────
-function exportDataBackup() {
+function getAuditLog() {
+  try {
+    var raw = JSON.parse(localStorage.getItem(AUDIT_LOG_KEY) || '[]');
+    return Array.isArray(raw) ? raw : [];
+  } catch (_err) {
+    return [];
+  }
+}
+
+function addAuditEntry(action, result, count, detail) {
+  var list = getAuditLog();
+  list.unshift({
+    timestamp: new Date().toISOString(),
+    action: action || 'unknown',
+    result: result || 'ok',
+    count: Number.isFinite(count) ? count : 0,
+    detail: detail || ''
+  });
+  if (list.length > 200) list = list.slice(0, 200);
+  localStorage.setItem(AUDIT_LOG_KEY, JSON.stringify(list));
+}
+
+function exportAuditLog() {
+  var log = getAuditLog();
+  downloadJsonPayload({
+    format: 'r-plus-audit-log',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    entries: log
+  }, 'R-plus-bitacora-' + formatDateSlug(new Date()) + '.json');
+  showToast('Bitácora exportada', 'success');
+}
+
+function formatDateSlug(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function downloadJsonPayload(payload, fileName) {
+  var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+  downloadBlob(blob, fileName);
+}
+
+function downloadBlob(blob, fileName) {
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+
+function downloadTextPayload(content, fileName, mimeType) {
+  var blob = new Blob([content], { type: (mimeType || 'text/plain') + ';charset=utf-8' });
+  downloadBlob(blob, fileName);
+}
+
+function defaultAutoBackupSettings() {
+  return { frequency: 'off', retention: 7, lastRunAt: 0 };
+}
+
+function getAutoBackupSettings() {
+  try {
+    var saved = JSON.parse(localStorage.getItem(AUTO_BACKUP_SETTINGS_KEY) || '{}');
+    var base = defaultAutoBackupSettings();
+    var frequency = saved.frequency === 'daily' || saved.frequency === 'weekly' ? saved.frequency : 'off';
+    var retention = parseInt(saved.retention, 10);
+    if (retention !== 3 && retention !== 7 && retention !== 14) retention = 7;
+    var lastRunAt = parseInt(saved.lastRunAt, 10);
+    return { frequency: frequency, retention: retention, lastRunAt: Number.isFinite(lastRunAt) ? lastRunAt : 0 };
+  } catch (_err) {
+    return defaultAutoBackupSettings();
+  }
+}
+
+function saveAutoBackupSettings(cfg) {
+  localStorage.setItem(AUTO_BACKUP_SETTINGS_KEY, JSON.stringify(cfg));
+}
+
+function getAutoBackupIndex() {
+  try {
+    var list = JSON.parse(localStorage.getItem(AUTO_BACKUP_INDEX_KEY) || '[]');
+    return Array.isArray(list) ? list : [];
+  } catch (_err) {
+    return [];
+  }
+}
+
+function saveAutoBackupIndex(list) {
+  localStorage.setItem(AUTO_BACKUP_INDEX_KEY, JSON.stringify(list.slice(0, AUTO_BACKUP_MAX)));
+}
+
+function syncAutoBackupUi() {
+  var cfg = getAutoBackupSettings();
+  var freqEl = document.getElementById('auto-backup-frequency');
+  var retEl = document.getElementById('auto-backup-retention');
+  if (freqEl) freqEl.value = cfg.frequency;
+  if (retEl) retEl.value = String(cfg.retention);
+}
+
+function updateAutoBackupSettingsFromUi() {
+  var cfg = getAutoBackupSettings();
+  var freqEl = document.getElementById('auto-backup-frequency');
+  var retEl = document.getElementById('auto-backup-retention');
+  cfg.frequency = freqEl ? freqEl.value : cfg.frequency;
+  cfg.retention = retEl ? parseInt(retEl.value, 10) : cfg.retention;
+  if (cfg.retention !== 3 && cfg.retention !== 7 && cfg.retention !== 14) cfg.retention = 7;
+  saveAutoBackupSettings(cfg);
+  addAuditEntry('auto-backup-config', 'ok', cfg.retention, cfg.frequency);
+  maybeRunScheduledAutoBackup();
+}
+
+function shouldRunScheduledBackup(cfg) {
+  if (!cfg || cfg.frequency === 'off') return false;
+  var now = Date.now();
+  var delta = cfg.frequency === 'weekly' ? 7 * 24 * 3600000 : 24 * 3600000;
+  return !cfg.lastRunAt || (now - cfg.lastRunAt) >= delta;
+}
+
+function maybeRunScheduledAutoBackup() {
+  var cfg = getAutoBackupSettings();
+  if (!shouldRunScheduledBackup(cfg)) return;
+  runAutoBackupNow(true);
+}
+
+function restartAutoBackupScheduler() {
+  if (autoBackupSchedulerId) clearInterval(autoBackupSchedulerId);
+  autoBackupSchedulerId = setInterval(function() {
+    maybeRunScheduledAutoBackup();
+  }, 30 * 60 * 1000);
+}
+
+function runAutoBackupNow(isScheduled) {
   saveState();
-  var payload = {
+  var cfg = getAutoBackupSettings();
+  var payload = buildFullBackupPayload();
+  payload.autoBackup = { scheduled: !!isScheduled };
+  var ts = Date.now();
+  var fileName = 'R-plus-auto-respaldo-' + formatDateSlug(new Date(ts)) + '-' + String(ts).slice(-6) + '.json';
+  downloadJsonPayload(payload, fileName);
+  var idx = getAutoBackupIndex();
+  idx.unshift({ id: ts, fileName: fileName, createdAt: new Date(ts).toISOString(), patients: (payload.data.patients || []).length });
+  idx = idx.slice(0, cfg.retention);
+  saveAutoBackupIndex(idx);
+  cfg.lastRunAt = ts;
+  saveAutoBackupSettings(cfg);
+  addAuditEntry('backup-auto', 'ok', (payload.data.patients || []).length, isScheduled ? 'scheduled' : 'manual');
+  showToast('Auto-respaldo generado', 'success');
+}
+
+function initGoalGFeatures() {
+  syncAutoBackupUi();
+  maybeRunScheduledAutoBackup();
+  restartAutoBackupScheduler();
+}
+
+function buildFullBackupPayload() {
+  return {
     format: 'r-plus-backup',
     version: 1,
     exportedAt: new Date().toISOString(),
@@ -932,23 +2254,149 @@ function exportDataBackup() {
     theme: localStorage.getItem('theme') || 'light',
     guidedTourDoneForVersion: localStorage.getItem(GUIDED_TOUR_LS_KEY),
     data: {
-      patients: JSON.parse(localStorage.getItem('rpc-patients') || '[]'),
-      notes: JSON.parse(localStorage.getItem('rpc-notes') || '{}'),
-      indicaciones: JSON.parse(localStorage.getItem('rpc-indicaciones') || '{}'),
-      labHistory: JSON.parse(localStorage.getItem('rpc-labHistory') || '{}'),
-      settings: JSON.parse(localStorage.getItem('rpc-settings') || '{}')
+      patients: storage.getPatients(),
+      notes: storage.getNotes(),
+      indicaciones: storage.getIndicaciones(),
+      labHistory: storage.getLabHistory(),
+      settings: storage.getSettings()
     }
   };
-  var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  var d = new Date();
-  var ds = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-  a.download = 'R-plus-respaldo-' + ds + '.json';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(a.href);
+}
+
+function parseDateDMY(value) {
+  var t = String(value || '').trim();
+  var m = t.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if (!m) return null;
+  var day = parseInt(m[1], 10);
+  var month = parseInt(m[2], 10);
+  var y = parseInt(m[3], 10);
+  if (y < 100) y += 2000;
+  var d = new Date(y, month - 1, day);
+  if (isNaN(d.getTime())) return null;
+  if (d.getFullYear() !== y || d.getMonth() !== (month - 1) || d.getDate() !== day) return null;
+  return d;
+}
+
+function parseDateRangePrompt(raw) {
+  var txt = String(raw || '').trim();
+  var m = txt.match(/^(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})\s+-\s+(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})$/);
+  if (!m) return null;
+  var from = parseDateDMY(m[1]);
+  var to = parseDateDMY(m[2]);
+  if (!from || !to) return null;
+  from.setHours(0, 0, 0, 0);
+  to.setHours(23, 59, 59, 999);
+  if (from.getTime() > to.getTime()) return null;
+  return { from: from, to: to, fromLabel: m[1], toLabel: m[2] };
+}
+
+function buildPatientEntry(patientId) {
+  var patient = patients.find(function(p) { return p.id === patientId; });
+  if (!patient || patient.id === DEMO_PATIENT_ID) return null;
+  return {
+    patient: patient,
+    note: notes[patientId] || {},
+    indicaciones: indicaciones[patientId] || {},
+    labHistory: Array.isArray(labHistory[patientId]) ? labHistory[patientId] : []
+  };
+}
+
+function patientInDateRange(entry, range) {
+  var nDate = entry && entry.note ? parseDateDMY(entry.note.fecha) : null;
+  var iDate = entry && entry.indicaciones ? parseDateDMY(entry.indicaciones.fecha) : null;
+  var nMs = nDate ? nDate.getTime() : null;
+  var iMs = iDate ? iDate.getTime() : null;
+  var min = range.from.getTime();
+  var max = range.to.getTime();
+  return (nMs !== null && nMs >= min && nMs <= max) || (iMs !== null && iMs >= min && iMs <= max);
+}
+
+function askConflictAction(label) {
+  var answer = prompt('Conflicto detectado para "' + label + '". Escribe: O = sobrescribir, D = duplicar, C = cancelar.', 'O');
+  var v = String(answer || '').trim().toUpperCase();
+  if (v === 'O') return 'overwrite';
+  if (v === 'D') return 'duplicate';
+  return 'cancel';
+}
+
+function applyImportEntry(entry, action, existing) {
+  if (action === 'overwrite' && existing) {
+    existing.nombre = entry.patient.nombre || existing.nombre;
+    existing.edad = entry.patient.edad || existing.edad;
+    existing.sexo = entry.patient.sexo || existing.sexo;
+    existing.area = entry.patient.area || existing.area;
+    existing.servicio = entry.patient.servicio || existing.servicio;
+    existing.cuarto = entry.patient.cuarto || existing.cuarto;
+    existing.cama = entry.patient.cama || existing.cama;
+    existing.registro = entry.patient.registro || existing.registro;
+    notes[existing.id] = entry.note || {};
+    indicaciones[existing.id] = entry.indicaciones || {};
+    labHistory[existing.id] = Array.isArray(entry.labHistory) ? entry.labHistory : [];
+    return existing.id;
+  }
+  var newId = generatePatientId();
+  patients.unshift({
+    id: newId,
+    nombre: ensureUniquePatientName(entry.patient.nombre || 'PACIENTE SIN NOMBRE'),
+    area: entry.patient.area || '',
+    servicio: entry.patient.servicio || '',
+    cuarto: entry.patient.cuarto || '',
+    cama: entry.patient.cama || '',
+    edad: entry.patient.edad || '',
+    sexo: entry.patient.sexo || 'F',
+    registro: entry.patient.registro || '',
+    fromLab: !!entry.patient.fromLab,
+  });
+  notes[newId] = entry.note || {};
+  indicaciones[newId] = entry.indicaciones || {};
+  labHistory[newId] = Array.isArray(entry.labHistory) ? entry.labHistory : [];
+  return newId;
+}
+
+function importEntriesWithConflicts(entries, actionLabel) {
+  var out = { imported: 0, overwritten: 0, duplicated: 0, cancelled: false };
+  var patientsBefore = JSON.parse(JSON.stringify(patients));
+  var notesBefore = JSON.parse(JSON.stringify(notes));
+  var indicacionesBefore = JSON.parse(JSON.stringify(indicaciones));
+  var labHistoryBefore = JSON.parse(JSON.stringify(labHistory));
+  for (var i = 0; i < entries.length; i += 1) {
+    var entry = entries[i];
+    if (!entry || !entry.patient) continue;
+    var reg = String(entry.patient.registro || '').trim();
+    var exists = findPatientByRegistro(reg);
+    if (exists) {
+      var action = askConflictAction(entry.patient.nombre || reg || 'sin nombre');
+      if (action === 'cancel') {
+        out.cancelled = true;
+        break;
+      }
+      applyImportEntry(entry, action, exists);
+      if (action === 'overwrite') out.overwritten += 1;
+      if (action === 'duplicate') out.duplicated += 1;
+    } else {
+      applyImportEntry(entry, 'duplicate', null);
+      out.imported += 1;
+    }
+  }
+  if (out.cancelled) {
+    patients = patientsBefore;
+    notes = notesBefore;
+    indicaciones = indicacionesBefore;
+    labHistory = labHistoryBefore;
+  } else {
+    saveState();
+    renderPatientList();
+  }
+  addAuditEntry(actionLabel, out.cancelled ? 'cancelled' : 'ok', out.imported + out.overwritten + out.duplicated,
+    'new:' + out.imported + ',overwrite:' + out.overwritten + ',duplicate:' + out.duplicated);
+  return out;
+}
+
+function exportDataBackup() {
+  saveState();
+  var payload = buildFullBackupPayload();
+  downloadJsonPayload(payload, 'R-plus-respaldo-' + formatDateSlug(new Date()) + '.json');
+  addAuditEntry('backup-full-export', 'ok', (payload.data.patients || []).length, '');
   showToast('Respaldo descargado', 'success');
 }
 
@@ -974,17 +2422,71 @@ function exportActivePatientBackup() {
     indicaciones: indicaciones[activeId] || null,
     labHistory: labHistory[activeId] || [],
   };
-  var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  var d = new Date();
-  var ds = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-  a.download = 'R-plus-paciente-' + safeExportSlug(patient.nombre) + '-' + ds + '.json';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(a.href);
+  downloadJsonPayload(payload, 'R-plus-paciente-' + safeExportSlug(patient.nombre) + '-' + formatDateSlug(new Date()) + '.json');
+  addAuditEntry('backup-patient-export', 'ok', 1, String(patient.registro || ''));
   showToast('Paciente exportado', 'success');
+}
+
+function exportRangeBackupPrompt() {
+  var raw = prompt('Rango de fechas (dd/mm/yyyy - dd/mm/yyyy):', '');
+  if (raw == null) return;
+  var range = parseDateRangePrompt(raw);
+  if (!range) {
+    showToast('Rango inválido. Usa dd/mm/yyyy - dd/mm/yyyy', 'error');
+    return;
+  }
+  var entries = [];
+  patients.forEach(function(p) {
+    var entry = buildPatientEntry(p.id);
+    if (entry && patientInDateRange(entry, range)) entries.push(entry);
+  });
+  if (!entries.length) {
+    showToast('No hay pacientes en ese rango.', 'error');
+    return;
+  }
+  var payload = {
+    format: 'r-plus-range-export',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    from: range.fromLabel,
+    to: range.toLabel,
+    entries: entries
+  };
+  downloadJsonPayload(payload, 'R-plus-rango-' + formatDateSlug(new Date()) + '.json');
+  addAuditEntry('range-export', 'ok', entries.length, payload.from + ' a ' + payload.to);
+  showToast('Rango exportado', 'success');
+}
+
+function triggerImportRangeBackup() {
+  var input = document.getElementById('range-backup-file-input');
+  if (input) input.click();
+}
+
+function onRangeBackupFileChosen(ev) {
+  var f = ev.target.files && ev.target.files[0];
+  ev.target.value = '';
+  if (!f) return;
+  var reader = new FileReader();
+  reader.onload = function() {
+    try {
+      var payload = JSON.parse(reader.result);
+      if (!payload || payload.format !== 'r-plus-range-export' || payload.version !== 1 || !Array.isArray(payload.entries)) {
+        showToast('Archivo de rango inválido.', 'error');
+        return;
+      }
+      if (typeof pushUndoSnapshot === 'function') pushUndoSnapshot('Importar rango (' + payload.entries.length + ')');
+      var res = importEntriesWithConflicts(payload.entries, 'range-import');
+      if (res.cancelled) {
+        showToast('Importación cancelada', 'error');
+      } else {
+        showToast('Rango importado: ' + (res.imported + res.overwritten + res.duplicated), 'success');
+      }
+    } catch (_err) {
+      showToast('No se pudo leer el archivo de rango.', 'error');
+      addAuditEntry('range-import', 'error', 0, 'read-error');
+    }
+  };
+  reader.readAsText(f);
 }
 
 function triggerImportBackup() {
@@ -1085,9 +2587,11 @@ function onPatientBackupFileChosen(ev) {
       saveState();
       renderPatientList();
       if (activeId) selectPatient(activeId);
+      addAuditEntry('backup-patient-import', 'ok', 1, registro || '');
       showToast('Paciente importado correctamente.', 'success');
     } catch (_err) {
       showToast('No se pudo leer la exportación de paciente.', 'error');
+      addAuditEntry('backup-patient-import', 'error', 0, 'read-error');
     }
   };
   reader.readAsText(f);
@@ -1109,6 +2613,8 @@ function onBackupFileChosen(ev) {
       if (!confirm('Esto reemplaza todos los pacientes y datos locales en esta computadora (' + n + ' pacientes en el archivo). No se puede deshacer. ¿Continuar?')) {
         return;
       }
+      if (typeof pushUndoSnapshot === 'function') pushUndoSnapshot('Importar respaldo completo');
+      localStorage.setItem('rpc-preimport-backup', JSON.stringify(buildFullBackupPayload()));
       localStorage.setItem('rpc-patients', JSON.stringify(payload.data.patients || []));
       localStorage.setItem('rpc-notes', JSON.stringify(payload.data.notes || {}));
       localStorage.setItem('rpc-indicaciones', JSON.stringify(payload.data.indicaciones || {}));
@@ -1122,9 +2628,152 @@ function onBackupFileChosen(ev) {
       } else {
         localStorage.removeItem(GUIDED_TOUR_LS_KEY);
       }
+      addAuditEntry('backup-full-import', 'ok', n, '');
       location.reload();
     } catch (err) {
       showToast('No se pudo leer el respaldo', 'error');
+      addAuditEntry('backup-full-import', 'error', 0, 'read-error');
+    }
+  };
+  reader.readAsText(f);
+}
+
+function bytesToBase64(bytes) {
+  var binary = '';
+  for (var i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
+function base64ToBytes(base64) {
+  var binary = atob(base64);
+  var out = new Uint8Array(binary.length);
+  for (var i = 0; i < binary.length; i += 1) out[i] = binary.charCodeAt(i);
+  return out;
+}
+
+async function encryptSyncPayload(obj, passphrase) {
+  if (!window.crypto || !window.crypto.subtle) throw new Error('WebCrypto no disponible');
+  var enc = new TextEncoder();
+  var salt = crypto.getRandomValues(new Uint8Array(16));
+  var iv = crypto.getRandomValues(new Uint8Array(12));
+  var keyMaterial = await crypto.subtle.importKey('raw', enc.encode(passphrase), 'PBKDF2', false, ['deriveKey']);
+  var key = await crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: salt, iterations: 120000, hash: 'SHA-256' },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt']
+  );
+  var plain = enc.encode(JSON.stringify(obj));
+  var encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, plain);
+  return {
+    encrypted: true,
+    alg: 'AES-GCM',
+    kdf: 'PBKDF2-SHA256',
+    iterations: 120000,
+    salt: bytesToBase64(salt),
+    iv: bytesToBase64(iv),
+    ciphertext: bytesToBase64(new Uint8Array(encrypted))
+  };
+}
+
+async function decryptSyncPayload(payload, passphrase) {
+  if (!window.crypto || !window.crypto.subtle) throw new Error('WebCrypto no disponible');
+  var enc = new TextEncoder();
+  var dec = new TextDecoder();
+  var keyMaterial = await crypto.subtle.importKey('raw', enc.encode(passphrase), 'PBKDF2', false, ['deriveKey']);
+  var key = await crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: base64ToBytes(payload.salt), iterations: payload.iterations || 120000, hash: 'SHA-256' },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['decrypt']
+  );
+  var plainBuffer = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: base64ToBytes(payload.iv) },
+    key,
+    base64ToBytes(payload.ciphertext)
+  );
+  return JSON.parse(dec.decode(plainBuffer));
+}
+
+function collectSyncEntries() {
+  var entries = [];
+  patients.forEach(function(p) {
+    var entry = buildPatientEntry(p.id);
+    if (entry) entries.push(entry);
+  });
+  return entries;
+}
+
+async function exportSyncBundlePrompt() {
+  var entries = collectSyncEntries();
+  if (!entries.length) {
+    showToast('No hay datos para sincronizar.', 'error');
+    return;
+  }
+  var passphrase = prompt('Passphrase opcional para cifrar (deja vacío para sin cifrado):', '');
+  var base = {
+    format: 'r-plus-sync-bundle',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    appVersion: window.__RPC_APP_VERSION__ || null
+  };
+  if (passphrase && String(passphrase).trim()) {
+    try {
+      base.payload = await encryptSyncPayload({ entries: entries }, String(passphrase));
+    } catch (_err) {
+      showToast('No se pudo cifrar: WebCrypto no disponible.', 'error');
+      addAuditEntry('sync-export', 'error', 0, 'crypto-unavailable');
+      return;
+    }
+  } else {
+    base.payload = { encrypted: false, entries: entries };
+  }
+  downloadJsonPayload(base, 'R-plus-sync-' + formatDateSlug(new Date()) + '.json');
+  addAuditEntry('sync-export', 'ok', entries.length, base.payload.encrypted ? 'encrypted' : 'plain');
+  showToast('Paquete sync exportado', 'success');
+}
+
+function triggerImportSyncBundle() {
+  var input = document.getElementById('sync-bundle-file-input');
+  if (input) input.click();
+}
+
+function onSyncBundleFileChosen(ev) {
+  var f = ev.target.files && ev.target.files[0];
+  ev.target.value = '';
+  if (!f) return;
+  var reader = new FileReader();
+  reader.onload = async function() {
+    try {
+      var bundle = JSON.parse(reader.result);
+      if (!bundle || bundle.format !== 'r-plus-sync-bundle' || bundle.version !== 1 || !bundle.payload) {
+        showToast('Paquete sync inválido.', 'error');
+        return;
+      }
+      var data = bundle.payload;
+      if (data.encrypted) {
+        var passphrase = prompt('Este paquete está cifrado. Ingresa la passphrase:', '');
+        if (!passphrase) {
+          showToast('Importación cancelada.', 'error');
+          addAuditEntry('sync-import', 'cancelled', 0, 'no-passphrase');
+          return;
+        }
+        data = await decryptSyncPayload(data, passphrase);
+      }
+      if (!data || !Array.isArray(data.entries)) {
+        showToast('Contenido sync inválido.', 'error');
+        addAuditEntry('sync-import', 'error', 0, 'invalid-content');
+        return;
+      }
+      if (typeof pushUndoSnapshot === 'function') pushUndoSnapshot('Importar paquete sync (' + data.entries.length + ')');
+      var res = importEntriesWithConflicts(data.entries, 'sync-import');
+      if (res.cancelled) showToast('Sync cancelado', 'error');
+      else showToast('Sync importado: ' + (res.imported + res.overwritten + res.duplicated), 'success');
+    } catch (_err) {
+      showToast('No se pudo importar el paquete sync.', 'error');
+      addAuditEntry('sync-import', 'error', 0, 'read-error');
     }
   };
   reader.readAsText(f);
@@ -1157,6 +2806,100 @@ function showToast(msg, type) {
   t.textContent = msg; t.className = 'toast show' + (type ? ' '+type : '');
   if (focused && focused.tagName !== 'BODY') setTimeout(function(){ focused.focus(); }, 0);
   setTimeout(function(){ t.className = 'toast'; }, 3500);
+}
+
+function safeAttrJsString(s) {
+  return String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+function renderLabHistoryPanel() {
+  var card = document.getElementById('lab-history-card');
+  var listEl = document.getElementById('lab-history-list');
+  var hintEl = document.getElementById('lab-history-hint');
+  if (!card || !listEl || !hintEl) return;
+  if (!activeId) {
+    hintEl.style.display = 'block';
+    hintEl.textContent = 'Selecciona un paciente en la columna izquierda para ver los estudios que hayas enviado a su nota.';
+    listEl.innerHTML = '';
+    syncLabHistoryCollapseUI();
+    return;
+  }
+  var hist = sortLabHistoryChronological(ensureParsedLabHistory(activeId));
+  if (!hist.length) {
+    hintEl.style.display = 'block';
+    hintEl.textContent = 'Cuando envíes un reporte a la nota con «Enviar a nota», cada conjunto queda guardado aquí (sirve para Tendencias y para volver a ver diagramas).';
+    listEl.innerHTML = '';
+    syncLabHistoryCollapseUI();
+    return;
+  }
+  hintEl.style.display = 'none';
+  listEl.innerHTML = hist.map(function(set) {
+    var n = (set.resLabs && set.resLabs.length) ? set.resLabs.length : 0;
+    var rawFe = set.fecha === 'Anterior' ? '' : (normalizeFechaLabHistory(set.fecha) || String(set.fecha || '').trim() || inferFechaLabSetFromId(set) || '');
+    var fe;
+    if (set.id === 'migrated-anterior') {
+      fe = rawFe ? ('Anterior · ' + rawFe) : 'Anterior (sin fecha en bloque)';
+    } else {
+      fe = rawFe || (set.fecha === 'Anterior' ? 'Anterior' : '—');
+    }
+    var ho = (set.hora && String(set.hora).trim()) ? String(set.hora).trim().slice(0, 8) : '';
+    var parts = [fe];
+    if (ho) parts.push(ho);
+    parts.push(n + ' bloque' + (n === 1 ? '' : 's'));
+    var meta = parts.join(' · ');
+    var sid = safeAttrJsString(set.id);
+    return (
+      '<div class="lab-history-row" role="listitem">' +
+      '<div class="lab-history-meta">' + esc(meta) + '</div>' +
+      '<div class="lab-history-actions">' +
+      '<button type="button" class="btn-lab-history" onclick="replayLabHistorySet(\'' + sid + '\')">Ver en Laboratorio</button>' +
+      '<button type="button" class="btn-lab-history btn-lab-history-del" onclick="deleteLabHistorySet(\'' + sid + '\')">Eliminar</button>' +
+      '</div></div>'
+    );
+  }).join('');
+  syncLabHistoryCollapseUI();
+}
+
+function replayLabHistorySet(setId) {
+  if (!activeId) {
+    showToast('Selecciona un paciente primero', 'error');
+    return;
+  }
+  var sets = labHistory[activeId] || [];
+  var set = sets.find(function(s) { return String(s.id) === String(setId); });
+  if (!set || !set.resLabs || !set.resLabs.length) {
+    showToast('No se encontró ese estudio', 'error');
+    return;
+  }
+  var patient = patients.find(function(p) { return p.id === activeId; });
+  var name = patient ? (patient.nombre || '') : '';
+  var reg = patient ? (patient.registro || '') : '';
+  var result = {
+    patient: { name: name, expediente: reg, sexo: '', edad: '', fecha: set.fecha || '' },
+    resLabs: set.resLabs
+  };
+  activeLab = result;
+  renderOutput(result);
+  renderDiagramas(result.resLabs);
+  addAuditEntry('lab-history-replay', 'ok', 1, String(setId));
+  showToast('Estudio cargado en Laboratorio', 'success');
+  switchAppTab('lab');
+  var diag = document.getElementById('lab-diagrams-section');
+  if (diag && diag.style.display !== 'none') {
+    try { diag.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (_e) { diag.scrollIntoView(true); }
+  }
+}
+
+function deleteLabHistorySet(setId) {
+  if (!activeId || !labHistory[activeId]) return;
+  if (!confirm('¿Eliminar este conjunto del historial? Las tendencias se recalcularán.')) return;
+  labHistory[activeId] = (labHistory[activeId] || []).filter(function(s) { return String(s.id) !== String(setId); });
+  if (!labHistory[activeId].length) delete labHistory[activeId];
+  saveState();
+  addAuditEntry('lab-history-delete', 'ok', 1, String(setId));
+  renderLabHistoryPanel();
+  if (activeInner === 'tend') renderTendencias();
+  showToast('Eliminado del historial', 'success');
 }
 
 // ── Lab ───────────────────────────────────────────────────────────
@@ -1336,10 +3079,9 @@ function insertSOAPText() {
 
 function checkStudiosAndInsertLabs() {
   var lines = buildLabLines();
-  var existing = (notes[activeId] && notes[activeId].estudios) ? notes[activeId].estudios : '';
-  var existingLines = existing.split('\n');
-  var recentDate = existingLines[3] ? existingLines[3].trim() : '';
-  if (!recentDate) {
+  var history = sortLabHistoryChronological(ensureParsedLabHistory(activeId));
+  var recentDate = history.length ? buildLabSetDateLine(history[0]) : '';
+  if (!history.length) {
     insertLabsAsRecent(lines);
   } else {
     showLabConflictModal(lines, recentDate);
@@ -1349,27 +3091,69 @@ function checkStudiosAndInsertLabs() {
 function pushLabHistory(patientId, resLabs, fecha, hora) {
   if (!patientId || !resLabs || !resLabs.length) return;
   if (!labHistory[patientId]) labHistory[patientId] = [];
-  var fechaNorm = normalizeFechaLabHistory(fecha) || (fecha || '');
+  var fechaNorm = normalizeFechaLabHistory(fecha) || String(fecha || '').trim();
+  if (!fechaNorm && notes[patientId] && notes[patientId].fecha) {
+    fechaNorm = normalizeFechaLabHistory(notes[patientId].fecha) || '';
+  }
+  if (!fechaNorm) {
+    var nd = new Date();
+    fechaNorm = String(nd.getDate()).padStart(2, '0') + '/' + String(nd.getMonth() + 1).padStart(2, '0') + '/' + nd.getFullYear();
+  }
+  var horaNorm = normalizeHoraLabHistory(hora);
+  if (!horaNorm && notes[patientId] && notes[patientId].hora) {
+    horaNorm = normalizeHoraLabHistory(notes[patientId].hora);
+  }
   var set = {
     id: Date.now().toString(),
     fecha: fechaNorm,
-    hora: hora || '',
+    hora: horaNorm,
     resLabs: resLabs,
     parsed: extractParsedValues(resLabs)
   };
   labHistory[patientId].push(set);
 }
 
+function isDuplicateLatestLabSet(patientId, resLabs, fecha, hora) {
+  if (!patientId) return false;
+  var list = labHistory[patientId] || [];
+  if (!list.length) return false;
+  var latest = list[list.length - 1];
+  var incoming = {
+    fecha: normalizeFechaLabHistory(fecha) || String(fecha || '').trim(),
+    hora: normalizeHoraLabHistory(hora),
+    resLabs: resLabs || []
+  };
+  var latestNormalized = {
+    fecha: normalizeFechaLabHistory(latest && latest.fecha) || String((latest && latest.fecha) || '').trim(),
+    hora: normalizeHoraLabHistory(latest && latest.hora),
+    resLabs: (latest && latest.resLabs) || []
+  };
+  return isDuplicateAgainstLatest(latestNormalized, incoming);
+}
+
+function autoStoreProcessedLabResult(result) {
+  if (!activeId) return;
+  if (!result || !result.resLabs || !result.resLabs.length) return;
+  var fecha = (result.patient && result.patient.fecha) ? result.patient.fecha : '';
+  var hora = '';
+  if (isDuplicateLatestLabSet(activeId, result.resLabs, fecha, hora)) {
+    showToast('Resultado ya registrado en historial', 'success');
+    return;
+  }
+  pushLabHistory(activeId, result.resLabs, fecha, hora);
+  saveState();
+  renderLabHistoryPanel();
+  if (activeInner === 'tend' && activeAppTab === 'nota') renderTendencias();
+}
+
 function insertLabsAsRecent(lines) {
   if (!notes[activeId]) notes[activeId] = {};
-  var existing = (notes[activeId].estudios || '').split('\n');
-  var anterior = existing.slice(0, 3);
-  while (anterior.length < 3) anterior.push('');
-  notes[activeId].estudios = anterior.concat(lines).join('\n');
   pushLabHistory(activeId, activeLab.resLabs,
     activeLab.patient && activeLab.patient.fecha ? activeLab.patient.fecha : '', '');
+  rebuildEstudiosFromLabHistory(activeId);
   saveState();
   if (activeInner === 'tend' && activeAppTab === 'nota') renderTendencias();
+  renderLabHistoryPanel();
   var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
   if (el) el.value = notes[activeId].estudios;
   onboardingAdvanceAfterSend();
@@ -1379,17 +3163,12 @@ function insertLabsAsRecent(lines) {
 
 function insertLabsAsAnteriorThenRecent(newLines) {
   if (!notes[activeId]) notes[activeId] = {};
-  var existing = (notes[activeId].estudios || '').split('\n');
-  // Move slots 3,5,6 from current recent to anterior: date/QS/ESC
-  var anteriorDate = existing[3] || '';
-  var anteriorQS   = existing[5] || '';
-  var anteriorESC  = existing[6] || '';
-  var anteriorBlock = [anteriorDate, anteriorQS, anteriorESC];
-  notes[activeId].estudios = anteriorBlock.concat(newLines).join('\n');
   pushLabHistory(activeId, activeLab.resLabs,
     activeLab.patient && activeLab.patient.fecha ? activeLab.patient.fecha : '', '');
+  rebuildEstudiosFromLabHistory(activeId);
   saveState();
   if (activeInner === 'tend' && activeAppTab === 'nota') renderTendencias();
+  renderLabHistoryPanel();
   var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
   if (el) el.value = notes[activeId].estudios;
   onboardingAdvanceAfterSend();
@@ -1419,14 +3198,12 @@ function showLabConflictModal(newLines, existingDate) {
   document.getElementById('btn-conflict-replace').onclick = function() {
     document.body.removeChild(backdrop);
     if (!notes[activeId]) notes[activeId] = {};
-    var existing = (notes[activeId].estudios || '').split('\n');
-    var anterior = existing.slice(0, 3);
-    while (anterior.length < 3) anterior.push('');
-    notes[activeId].estudios = anterior.concat(newLines).join('\n');
     pushLabHistory(activeId, activeLab.resLabs,
       activeLab.patient && activeLab.patient.fecha ? activeLab.patient.fecha : '', '');
+    rebuildEstudiosFromLabHistory(activeId);
     saveState();
     if (activeInner === 'tend' && activeAppTab === 'nota') renderTendencias();
+    renderLabHistoryPanel();
     var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
     if (el) el.value = notes[activeId].estudios;
     onboardingAdvanceAfterSend();
@@ -1445,6 +3222,7 @@ function procesarReporte() {
     var result = procesarLabs(text);
     renderOutput(result);
     renderDiagramas(result.resLabs);
+    autoStoreProcessedLabResult(result);
     if (!result.resLabs.length) showToast('No se encontraron resultados de laboratorio','error');
   } catch(e) { showToast('Error al procesar el reporte','error'); console.error(e); }
 }
@@ -1518,6 +3296,11 @@ document.getElementById('modal').addEventListener('click', function(e) {
 
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
+    var rn = document.getElementById('release-notes-backdrop');
+    if (rn && rn.classList.contains('open')) {
+      closeReleaseNotes();
+      return;
+    }
     var hq = document.getElementById('help-quick-backdrop');
     if (hq && hq.classList.contains('open')) {
       closeQuickHelp();
@@ -1707,8 +3490,9 @@ function renderNoteForm() {
     '<div class="field-group"><label>Profesor Responsable</label><input type="text" value="' + esc(note.profesor) + '" placeholder="Nombre completo" oninput="updateNote(\'profesor\',this.value)"></div>' +
     '</div></div></div>' +
 
-    '<div class="action-bar"><button class="btn-generate" onclick="generateWord()" id="btn-gen"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Nota (.docx)</button></div>'
+    '<div class="action-bar"><button class="btn-generate" onclick="quickExportCurrentPatient()" id="btn-quick-export-note" style="background:#475569;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida rápida</button><button class="btn-generate" onclick="generateWord()" id="btn-gen"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Nota (.docx)</button></div>'
   );
+  syncOfflineButtonStates();
 }
 
 function updatePatient(field, value) {
@@ -1723,10 +3507,211 @@ function updateTx(i, val) { if (!notes[activeId]) return; notes[activeId].tratam
 function addTx() { if (!notes[activeId]) return; notes[activeId].tratamiento.push(''); saveState(); renderNoteForm(); }
 function removeTx(i) { if (!notes[activeId]||notes[activeId].tratamiento.length<=1) return; notes[activeId].tratamiento.splice(i,1); saveState(); renderNoteForm(); }
 
+function escHtml(value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function toLines(value) {
+  if (Array.isArray(value)) return value.map(function(v){ return String(v || '').trim(); }).filter(Boolean);
+  return String(value || '').split('\n').map(function(v){ return v.trim(); }).filter(Boolean);
+}
+
+function slugFilePart(value, fallback) {
+  var base = String(value || '').trim().toLowerCase();
+  var slug = base
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+  return slug || fallback;
+}
+
+function getCurrentPatientClinicalData() {
+  var patient = patients.find(function(p){ return p.id === activeId; });
+  if (!patient) return null;
+  return {
+    patient: patient,
+    note: notes[activeId] || {},
+    indicacion: indicaciones[activeId] || {}
+  };
+}
+
+function buildClinicalTextExport(bundle) {
+  var patient = bundle.patient || {};
+  var note = bundle.note || {};
+  var ind = bundle.indicacion || {};
+  var mode = bundle.mode || 'both';
+  var blocks = [];
+  blocks.push('R+ - SALIDA CLINICA');
+  blocks.push('PACIENTE: ' + (patient.nombre || ''));
+  blocks.push('REGISTRO: ' + (patient.registro || ''));
+  blocks.push('SERVICIO: ' + (patient.servicio || ''));
+  blocks.push('CUARTO/CAMA: ' + (patient.cuarto || '') + '/' + (patient.cama || ''));
+  blocks.push('');
+  if (mode !== 'indica') {
+    blocks.push('== NOTA DE EVOLUCION ==');
+    blocks.push('FECHA/HORA: ' + (note.fecha || '') + ' ' + (note.hora || ''));
+    blocks.push('DIAGNOSTICOS:');
+    toLines(note.diagnosticos || []).forEach(function(v, idx){ blocks.push((idx + 1) + '. ' + v); });
+    if (!toLines(note.diagnosticos || []).length) blocks.push('(sin contenido)');
+  }
+  function pushBlock(label, value) {
+    blocks.push(label + ':');
+    var lines = toLines(value);
+    if (!lines.length) blocks.push('(sin contenido)');
+    lines.forEach(function(l){ blocks.push('- ' + l); });
+  }
+  if (mode !== 'indica') {
+    pushBlock('INTERROGATORIO', note.interrogatorio);
+    pushBlock('EXPLORACION FISICA', note.exploracion);
+    pushBlock('ESTUDIOS', note.estudios);
+    pushBlock('ANALISIS', note.analisis);
+    pushBlock('PLAN', note.plan);
+    blocks.push('SIGNOS VITALES: TA ' + (note.ta || '-') + ' | FR ' + (note.fr || '-') + ' | FC ' + (note.fc || '-') + ' | TEMP ' + (note.temp || '-') + ' | PESO ' + (note.peso || '-'));
+    pushBlock('TRATAMIENTO E INDICACIONES', note.tratamiento || []);
+    blocks.push('MEDICO TRATANTE: ' + (note.medico || ''));
+    blocks.push('PROFESOR RESPONSABLE: ' + (note.profesor || ''));
+  }
+  if (mode === 'both') blocks.push('');
+  if (mode !== 'note') {
+    blocks.push('== INDICACIONES ==');
+    blocks.push('FECHA/HORA: ' + (ind.fecha || '') + ' ' + (ind.hora || ''));
+    pushBlock('MEDICOS', ind.medicos);
+    pushBlock('DIETA', ind.dieta);
+    pushBlock('CUIDADOS', ind.cuidados);
+    pushBlock('ESTUDIOS', ind.estudios);
+    pushBlock('MEDICAMENTOS', ind.medicamentos);
+    pushBlock('INTERCONSULTAS', ind.interconsultas);
+    var otros = Array.isArray(ind.otros) ? ind.otros : [];
+    if (otros.length) {
+      blocks.push('OTROS:');
+      otros.forEach(function(item, idx) {
+        if (!item || typeof item !== 'object') return;
+        blocks.push((idx + 1) + '. ' + (item.titulo || 'Seccion sin titulo'));
+        toLines(item.contenido || '').forEach(function(line) { blocks.push('   - ' + line); });
+      });
+    }
+  }
+  return blocks.join('\n');
+}
+
+function buildClinicalHtmlExport(bundle) {
+  var patient = bundle.patient || {};
+  var note = bundle.note || {};
+  var ind = bundle.indicacion || {};
+  var mode = bundle.mode || 'both';
+  function renderList(values) {
+    var lines = toLines(values);
+    if (!lines.length) return '<p><em>Sin contenido</em></p>';
+    return '<ul>' + lines.map(function(line){ return '<li>' + escHtml(line) + '</li>'; }).join('') + '</ul>';
+  }
+  function renderOtherSections() {
+    var otros = Array.isArray(ind.otros) ? ind.otros : [];
+    if (!otros.length) return '<p><em>Sin secciones adicionales</em></p>';
+    return otros.filter(function(item) { return item && typeof item === 'object'; }).map(function(item) {
+      return '<article><h4>' + escHtml(item.titulo || 'Seccion sin titulo') + '</h4>' + renderList(item.contenido || '') + '</article>';
+    }).join('');
+  }
+  var noteHtml = '<section><h2>Nota de evolucion</h2>' +
+    '<p><strong>Fecha/Hora:</strong> ' + escHtml(note.fecha || '') + ' ' + escHtml(note.hora || '') + '</p>' +
+    '<h3>Diagnosticos</h3>' + renderList(note.diagnosticos || []) +
+    '<h3>Interrogatorio</h3>' + renderList(note.interrogatorio) +
+    '<h3>Exploracion fisica</h3>' + renderList(note.exploracion) +
+    '<h3>Estudios</h3>' + renderList(note.estudios) +
+    '<h3>Analisis</h3>' + renderList(note.analisis) +
+    '<h3>Plan</h3>' + renderList(note.plan) +
+    '<h3>Signos vitales</h3><p>TA ' + escHtml(note.ta || '-') + ' | FR ' + escHtml(note.fr || '-') + ' | FC ' + escHtml(note.fc || '-') + ' | TEMP ' + escHtml(note.temp || '-') + ' | PESO ' + escHtml(note.peso || '-') + '</p>' +
+    '<h3>Tratamiento e indicaciones medicas</h3>' + renderList(note.tratamiento || []) +
+    '</section>';
+  var indicaHtml = '<section><h2>Indicaciones</h2>' +
+    '<p><strong>Fecha/Hora:</strong> ' + escHtml(ind.fecha || '') + ' ' + escHtml(ind.hora || '') + '</p>' +
+    '<h3>Medicos</h3>' + renderList(ind.medicos) +
+    '<h3>Dieta</h3>' + renderList(ind.dieta) +
+    '<h3>Cuidados</h3>' + renderList(ind.cuidados) +
+    '<h3>Estudios</h3>' + renderList(ind.estudios) +
+    '<h3>Medicamentos</h3>' + renderList(ind.medicamentos) +
+    '<h3>Interconsultas</h3>' + renderList(ind.interconsultas) +
+    '<h3>Otros</h3>' + renderOtherSections() +
+    '</section>';
+  return '<!doctype html><html lang="es"><head><meta charset="utf-8">' +
+    '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; img-src data:;">' +
+    '<title>R+ salida clinica</title>' +
+    '<style>body{font-family:Arial,sans-serif;line-height:1.45;margin:24px;color:#111}h1,h2{margin-bottom:8px}section{margin:20px 0;padding-top:8px;border-top:1px solid #ddd}h3{margin:14px 0 6px}ul{margin:0 0 8px 20px}p{margin:0 0 8px}</style>' +
+    '</head><body>' +
+    '<h1>R+ - Salida clinica</h1>' +
+    '<p><strong>Paciente:</strong> ' + escHtml(patient.nombre || '') + ' | <strong>Registro:</strong> ' + escHtml(patient.registro || '') + '</p>' +
+    '<p><strong>Servicio:</strong> ' + escHtml(patient.servicio || '') + ' | <strong>Cuarto/Cama:</strong> ' + escHtml(patient.cuarto || '') + '/' + escHtml(patient.cama || '') + '</p>' +
+    (mode !== 'indica' ? noteHtml : '') +
+    (mode !== 'note' ? indicaHtml : '') +
+    '</body></html>';
+}
+
+function exportCurrentPatientAsText() {
+  var bundle = getCurrentPatientClinicalData();
+  if (!bundle) return;
+  bundle.mode = activeInner === 'indica' ? 'indica' : 'note';
+  var fileName = 'R-plus-' + slugFilePart(bundle.patient.nombre, 'paciente') + '-clinico-' + formatDateSlug(new Date()) + '.txt';
+  incrementPendingJobs();
+  try {
+    downloadTextPayload(buildClinicalTextExport(bundle), fileName, 'text/plain');
+    showToast('Salida .txt descargada', 'success');
+  } catch (e) {
+    showToast('No se pudo exportar: ' + (e && e.message ? e.message : 'error'), 'error');
+  } finally {
+    decrementPendingJobs();
+  }
+}
+
+function exportCurrentPatientAsHtml() {
+  var bundle = getCurrentPatientClinicalData();
+  if (!bundle) return;
+  bundle.mode = activeInner === 'indica' ? 'indica' : 'note';
+  var fileName = 'R-plus-' + slugFilePart(bundle.patient.nombre, 'paciente') + '-clinico-' + formatDateSlug(new Date()) + '.html';
+  incrementPendingJobs();
+  try {
+    downloadTextPayload(buildClinicalHtmlExport(bundle), fileName, 'text/html');
+    showToast('Salida .html descargada', 'success');
+  } catch (e) {
+    showToast('No se pudo exportar: ' + (e && e.message ? e.message : 'error'), 'error');
+  } finally {
+    decrementPendingJobs();
+  }
+}
+
+function quickExportCurrentPatient() {
+  if (!activeId) {
+    showToast('Selecciona un paciente primero', 'error');
+    return;
+  }
+  var format = normalizeQuickOutputFormat(settings.quickOutputFormat);
+  if (format === 'html') {
+    exportCurrentPatientAsHtml();
+    return;
+  }
+  if (format === 'txt') {
+    exportCurrentPatientAsText();
+    return;
+  }
+  if (activeInner === 'indica') {
+    generateIndicaciones();
+  } else {
+    generateWord();
+  }
+}
+
 function generateWord() {
+  if (isRpcOffline()) {
+    showToast('Sin conexión con el servidor local. Reinicia R+ para generar documentos.', 'error');
+    return;
+  }
   var patient = patients.find(function(p){ return p.id===activeId; }); if (!patient) return;
   var note = notes[activeId]; if (!note) return;
-  var btn = document.getElementById('btn-gen'); btn.classList.add('loading'); btn.disabled=true;
+  var btn = document.getElementById('btn-gen'); if (btn) { btn.classList.add('loading'); btn.disabled=true; }
+  incrementPendingJobs();
   fetch('/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({patient:patient,note:note,outputDir:settings.outputDir||''})})
   .then(function(r){ return r.json(); })
   .then(function(d){
@@ -1736,7 +3721,11 @@ function generateWord() {
     } else showToast('Error: '+d.error,'error');
   })
   .catch(function(){ showToast('Error de conexión','error'); })
-  .finally(function(){ btn.classList.remove('loading'); btn.disabled=false; });
+  .finally(function(){
+    if (btn) { btn.classList.remove('loading'); btn.disabled=false; }
+    decrementPendingJobs();
+    syncOfflineButtonStates();
+  });
 }
 
 // ── Indicaciones Form ─────────────────────────────────────────────
@@ -1769,14 +3758,17 @@ function renderIndicaForm() {
     '<div class="field-group"><label>Médicos (uno por línea)</label><textarea rows="3" placeholder="R3 NOMBRE APELLIDO" oninput="updateIndica(\'medicos\',this.value)">' + esc(ind.medicos) + '</textarea></div>' +
     '</div></div></div>' +
 
+    buildExtraTemplatesSelectorHtml() +
+
     SECTIONS.map(function(s){ return '<div class="indica-section"><div class="indica-section-header">'+s.label+'</div><div class="indica-section-body"><textarea rows="3" placeholder="'+s.placeholder+'" oninput="updateIndica(\''+s.key+'\',this.value)">'+esc(ind[s.key])+'</textarea></div></div>'; }).join('') +
 
     '<div class="card"><div class="card-header" style="background:#4a1d96;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 4v16m8-8H4"/></svg>Otros</div><div class="card-body" style="display:flex;flex-direction:column;gap:10px;"><div id="otros-list">' +
     (ind.otros||[]).map(function(o,i){ return '<div class="otros-item"><button class="btn-remove-otro" onclick="removeOtro('+i+')">×</button><input type="text" placeholder="TÍTULO DE LA SECCIÓN" value="'+esc(o.titulo)+'" oninput="updateOtro('+i+',\'titulo\',this.value)"><textarea rows="2" placeholder="Indicaciones..." oninput="updateOtro('+i+',\'contenido\',this.value)">'+esc(o.contenido)+'</textarea></div>'; }).join('') +
     '</div><button class="btn-add-row" onclick="addOtro()">+ Agregar sección</button></div></div>' +
 
-    '<div class="action-bar"><button class="btn-generate" onclick="generateIndicaciones()" id="btn-gen-ind"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Indicaciones (.docx)</button></div>'
+    '<div class="action-bar"><button class="btn-generate" onclick="quickExportCurrentPatient()" id="btn-quick-export-indica" style="background:#475569;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida rápida</button><button class="btn-generate" onclick="generateIndicaciones()" id="btn-gen-ind"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Indicaciones (.docx)</button></div>'
   );
+  syncOfflineButtonStates();
 }
 
 function updateIndica(field, value) { if (!indicaciones[activeId]) return; indicaciones[activeId][field]=value; saveState(); }
@@ -1871,6 +3863,18 @@ function ensureParsedLabHistory(patientId) {
       set.fecha = nf;
       changed = true;
     }
+    var nh = normalizeHoraLabHistory(set.hora);
+    if (nh !== (set.hora || '')) {
+      set.hora = nh;
+      changed = true;
+    }
+    if ((!set.fecha || !String(set.fecha).trim()) && set.fecha !== 'Anterior') {
+      var inferred = inferFechaLabSetFromId(set);
+      if (inferred) {
+        set.fecha = inferred;
+        changed = true;
+      }
+    }
   });
   if (changed) saveState();
   return history;
@@ -1899,8 +3903,8 @@ function renderTendencias() {
     return;
   }
   container.innerHTML = '<div class="tend-grid">' + available.map(function(param) {
-    var sets = history.filter(function(s){ return s.parsed && s.parsed[param] !== null && s.parsed[param] !== undefined; });
-    var latest = sets.length ? sets[sets.length - 1].parsed[param] : null;
+    var setsDesc = history.filter(function(s){ return s.parsed && s.parsed[param] !== null && s.parsed[param] !== undefined; });
+    var latest = setsDesc.length ? setsDesc[0].parsed[param] : null;
     var ref = TEND_REF[param];
     var isAb = ref && (latest < ref[0] || latest > ref[1]);
     return '<div class="tend-card" onclick="openTendDetail(\'' + param + '\')" data-param="' + param + '">'
@@ -1913,9 +3917,10 @@ function renderTendencias() {
       + '</div>';
   }).join('') + '</div>';
   available.forEach(function(param) {
-    var sets = history.filter(function(s){ return s.parsed && s.parsed[param] !== null && s.parsed[param] !== undefined; });
-    var labels = buildTendChartLabels(sets);
-    var values = sets.map(function(s){ return s.parsed[param]; });
+    var setsDesc = history.filter(function(s){ return s.parsed && s.parsed[param] !== null && s.parsed[param] !== undefined; });
+    var setsAsc = toTrendAscendingSets(setsDesc);
+    var labels = buildTendChartLabels(setsAsc);
+    var values = setsAsc.map(function(s){ return s.parsed[param]; });
     var canvas = document.getElementById('spark-' + param);
     if (!canvas) return;
     sparkCharts[param] = new Chart(canvas, {
@@ -1944,10 +3949,11 @@ function renderTendencias() {
 function openTendDetail(param) {
   if (!activeId) return;
   var history = sortLabHistoryChronological(ensureParsedLabHistory(activeId));
-  var sets = history.filter(function(s){ return s.parsed && s.parsed[param] !== null && s.parsed[param] !== undefined; });
-  if (sets.length < 2) return;
-  var labels = buildTendChartLabels(sets);
-  var values = sets.map(function(s){ return s.parsed[param]; });
+  var setsDesc = history.filter(function(s){ return s.parsed && s.parsed[param] !== null && s.parsed[param] !== undefined; });
+  if (setsDesc.length < 2) return;
+  var setsAsc = toTrendAscendingSets(setsDesc);
+  var labels = buildTendChartLabels(setsAsc);
+  var values = setsAsc.map(function(s){ return s.parsed[param]; });
   var ref = TEND_REF[param];
   var unit = TEND_UNITS[param] || '';
   document.getElementById('tend-detail-title').textContent = param + (unit ? ' (' + unit + ')' : '');
@@ -2013,16 +4019,23 @@ function g(secs,sec,key){
   return v;
 }
 
-var LINE='stroke="#555" stroke-width="1.5"';
+var LINE='stroke="var(--diagram-line)" stroke-width="1.5"';
 
-function sp(x,y,lbl,obj,anchor){
-  anchor=anchor||'middle';
-  var isAb=obj&&obj.ab;
-  var vc=isAb?'#cc0000':'#111111';
-  var vt=obj?escTxt(obj.val):'—';
-  var dec=isAb?' text-decoration="underline"':'';
-  return '<text x="'+x+'" y="'+y+'" text-anchor="'+anchor+'" font-size="10" fill="#888" font-family="Arial,sans-serif">'+lbl+'</text>'
-        +'<text x="'+x+'" y="'+(y+15)+'" text-anchor="'+anchor+'" font-size="13" fill="'+vc+'" font-weight="bold" font-family="Arial,sans-serif"'+dec+'>'+vt+'</text>';
+/** Etiqueta + valor centrados en (x, cy); anchor = start|middle|end */
+function spBlock(x, cy, lbl, obj, anchor) {
+  anchor = anchor || 'middle';
+  var ax = anchor === 'start' ? 'start' : (anchor === 'end' ? 'end' : 'middle');
+  var isAb = obj && obj.ab;
+  var vc = isAb ? 'var(--error)' : 'var(--diagram-value)';
+  var vt = obj ? escTxt(obj.val) : '—';
+  var dec = isAb ? ' text-decoration="underline"' : '';
+  return (
+    '<g transform="translate('+x+','+cy+')">' +
+    '<text x="0" y="-9" text-anchor="'+ax+'" dominant-baseline="middle" font-size="10" fill="var(--diagram-label)" font-family="Arial,sans-serif">' +
+    lbl + '</text>' +
+    '<text x="0" y="10" text-anchor="'+ax+'" dominant-baseline="middle" font-size="13" fill="'+vc+'" font-weight="bold" font-family="Arial,sans-serif"'+dec+'>'+vt+'</text>' +
+    '</g>'
+  );
 }
 
 function svgBH(secs){
@@ -2033,12 +4046,12 @@ function svgBH(secs){
   return '<svg viewBox="0 0 300 192" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">'
     +'<line x1="50"  y1="18"  x2="250" y2="182" '+LINE+'/>'
     +'<line x1="250" y1="18"  x2="50"  y2="182" '+LINE+'/>'
-    +'<line x1="28"  y1="79"  x2="78"  y2="79"  '+LINE+'/>'
-    +sp(150, 33, 'HB',   hb,  'middle')
-    +sp(150,122, 'HCTO', hto, 'middle')
-    +sp(204, 75, 'PLT',  plt, 'start')
-    +sp(75,  55, 'LEU',  leu, 'end')
-    +sp(75,  94, 'NEU',  neu, 'end')
+    +spBlock(150, 46, 'HB',   hb,  'middle')
+    +spBlock(150, 155, 'HCTO', hto, 'middle')
+    +spBlock(212, 100, 'PLT',  plt, 'start')
+    +spBlock(76, 62, 'LEU',  leu, 'end')
+    +'<line x1="26" y1="87" x2="86" y2="87" '+LINE+'/>'
+    +spBlock(76, 112, 'NEU',  neu, 'end')
     +'</svg>';
 }
 
@@ -2055,13 +4068,17 @@ function svgGamble(secs){
   var c1=61, c2=148, c3=236, c4=323;
 
   function cell(x, lbl, obj, isTop){
-    var vc = obj&&obj.ab ? '#cc0000' : '#111';
+    var cy = isTop ? 40 : 92;
+    var vc = obj&&obj.ab ? 'var(--error)' : 'var(--diagram-value)';
     var vt = obj ? escTxt(obj.val) : '—';
     var dec = obj&&obj.ab ? ' text-decoration="underline"' : '';
-    var ly = isTop ? 27 : 78;
-    var vy = isTop ? 42 : 96;
-    return '<text x="'+x+'" y="'+ly+'" text-anchor="middle" font-size="10" fill="#888" font-family="Arial,sans-serif">'+lbl+'</text>'
-          +'<text x="'+x+'" y="'+vy+'" text-anchor="middle" font-size="14" fill="'+vc+'" font-weight="bold" font-family="Arial,sans-serif"'+dec+'>'+vt+'</text>';
+    return (
+      '<g transform="translate('+x+','+cy+')">' +
+      '<text x="0" y="-10" text-anchor="middle" dominant-baseline="middle" font-size="10" fill="var(--diagram-label)" font-family="Arial,sans-serif">' +
+      lbl + '</text>' +
+      '<text x="0" y="11" text-anchor="middle" dominant-baseline="middle" font-size="14" fill="'+vc+'" font-weight="bold" font-family="Arial,sans-serif"'+dec+'>'+vt+'</text>' +
+      '</g>'
+    );
   }
 
   return '<svg viewBox="0 0 470 130" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">'
@@ -2075,7 +4092,7 @@ function svgGamble(secs){
     +cell(c3,'P',  f,  true)+cell(c4,'BUN', bun,  true)
     +cell(c1,'K',    k,    false)+cell(c2,'HCO3', hco3, false)
     +cell(c3,'Ca',   ca,   false)+cell(c4,'Cr',   cr,   false)
-    +sp(406, 53, 'Glu', glu, 'middle')
+    +spBlock(418, 65, 'Glu', glu, 'middle')
     +'</svg>';
 }
 
@@ -2095,11 +4112,17 @@ function svgPFH(secs){
   var cx=135, lx=67, rx=202;
 
   function gcell(x, lbl, obj, y_lbl){
-    var vc = obj&&obj.ab ? '#cc0000' : '#111';
+    var cy = y_lbl + 7.5;
+    var vc = obj&&obj.ab ? 'var(--error)' : 'var(--diagram-value)';
     var vt = obj ? escTxt(obj.val) : '—';
     var dec = obj&&obj.ab ? ' text-decoration="underline"' : '';
-    return '<text x="'+x+'" y="'+y_lbl+'" text-anchor="middle" font-size="10" fill="#888" font-family="Arial,sans-serif">'+lbl+'</text>'
-          +'<text x="'+x+'" y="'+(y_lbl+15)+'" text-anchor="middle" font-size="14" fill="'+vc+'" font-weight="bold" font-family="Arial,sans-serif"'+dec+'>'+vt+'</text>';
+    return (
+      '<g transform="translate('+x+','+cy+')">' +
+      '<text x="0" y="-10" text-anchor="middle" dominant-baseline="middle" font-size="10" fill="var(--diagram-label)" font-family="Arial,sans-serif">' +
+      lbl + '</text>' +
+      '<text x="0" y="11" text-anchor="middle" dominant-baseline="middle" font-size="14" fill="'+vc+'" font-weight="bold" font-family="Arial,sans-serif"'+dec+'>'+vt+'</text>' +
+      '</g>'
+    );
   }
 
   var midLeft = pcr || ldh;
@@ -2136,11 +4159,17 @@ function svgGases(secs){
   var jY=65;
 
   function gcell(x, lbl, obj, y_lbl){
-    var vc = obj&&obj.ab ? '#cc0000' : '#111';
+    var cy = y_lbl + 7.5;
+    var vc = obj&&obj.ab ? 'var(--error)' : 'var(--diagram-value)';
     var vt = obj ? escTxt(obj.val) : '—';
     var dec = obj&&obj.ab ? ' text-decoration="underline"' : '';
-    return '<text x="'+x+'" y="'+y_lbl+'" text-anchor="middle" font-size="10" fill="#888" font-family="Arial,sans-serif">'+lbl+'</text>'
-          +'<text x="'+x+'" y="'+(y_lbl+15)+'" text-anchor="middle" font-size="14" fill="'+vc+'" font-weight="bold" font-family="Arial,sans-serif"'+dec+'>'+vt+'</text>';
+    return (
+      '<g transform="translate('+x+','+cy+')">' +
+      '<text x="0" y="-10" text-anchor="middle" dominant-baseline="middle" font-size="10" fill="var(--diagram-label)" font-family="Arial,sans-serif">' +
+      lbl + '</text>' +
+      '<text x="0" y="11" text-anchor="middle" dominant-baseline="middle" font-size="14" fill="'+vc+'" font-weight="bold" font-family="Arial,sans-serif"'+dec+'>'+vt+'</text>' +
+      '</g>'
+    );
   }
 
   return '<svg viewBox="0 0 270 162" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">'
@@ -2162,14 +4191,31 @@ function svgCoag(secs){
   var ttp = g(secs,'BH','TTP');
   var inr = g(secs,'BH','INR');
   if(!tp&&!ttp&&!inr)return null;
-  var cx=135, jY=68;
+  var cx = 135, jY = 86, R = 50;
+  var k = 0.8660254037844386;
+  var tx = cx, ty = jY - R;
+  var lx = cx - R * k, ly = jY + R * 0.5;
+  var rx = cx + R * k, ry = jY + R * 0.5;
+  var Jx = cx, Jy = jY;
+  var uTx = 0, uTy = -1;
+  var uLx = -k, uLy = 0.5;
+  var uRx = k, uRy = 0.5;
+  var nL = Math.sqrt((uTx + uLx) * (uTx + uLx) + (uTy + uLy) * (uTy + uLy));
+  var bLx = (uTx + uLx) / nL, bLy = (uTy + uLy) / nL;
+  var nR = Math.sqrt((uTx + uRx) * (uTx + uRx) + (uTy + uRy) * (uTy + uRy));
+  var bRx = (uTx + uRx) / nR, bRy = (uTy + uRy) / nR;
+  var rLbl = R * 0.82;
+  var tpCx = Jx + rLbl * bLx, tpCy = Jy + rLbl * bLy;
+  var ttpCx = Jx + rLbl * bRx, ttpCy = Jy + rLbl * bRy;
+  var inrCx = cx;
+  var inrCy = ly + 16;
   return '<svg viewBox="0 0 270 172" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">'
-    +'<line x1="'+cx+'" y1="10"  x2="'+cx+'" y2="'+jY+'" '+LINE+'/>'
-    +'<line x1="'+cx+'" y1="'+jY+'" x2="28"  y2="148" '+LINE+'/>'
-    +'<line x1="'+cx+'" y1="'+jY+'" x2="242" y2="148" '+LINE+'/>'
-    +sp(cx-52, 30, 'TP',  tp,  'middle')
-    +sp(cx+52, 30, 'TTP', ttp, 'middle')
-    +sp(cx,   148, 'INR', inr, 'middle')
+    +'<line x1="'+Jx+'" y1="'+Jy+'" x2="'+tx+'" y2="'+ty+'" '+LINE+'/>'
+    +'<line x1="'+Jx+'" y1="'+Jy+'" x2="'+lx+'" y2="'+ly+'" '+LINE+'/>'
+    +'<line x1="'+Jx+'" y1="'+Jy+'" x2="'+rx+'" y2="'+ry+'" '+LINE+'/>'
+    +spBlock(tpCx, tpCy, 'TP', tp, 'middle')
+    +spBlock(ttpCx, ttpCy, 'TTP', ttp, 'middle')
+    +spBlock(inrCx, inrCy, 'INR', inr, 'middle')
     +'</svg>';
 }
 
@@ -2249,9 +4295,14 @@ function renderDiagramas(resLabs){
 }
 
 function generateIndicaciones() {
+  if (isRpcOffline()) {
+    showToast('Sin conexión con el servidor local. Reinicia R+ para generar documentos.', 'error');
+    return;
+  }
   var patient = patients.find(function(p){ return p.id===activeId; }); if (!patient) return;
   var ind = indicaciones[activeId]; if (!ind) return;
-  var btn = document.getElementById('btn-gen-ind'); btn.classList.add('loading'); btn.disabled=true;
+  var btn = document.getElementById('btn-gen-ind'); if (btn) { btn.classList.add('loading'); btn.disabled=true; }
+  incrementPendingJobs();
   fetch('/generate-indicaciones',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({patient:patient,indicaciones:ind,outputDir:settings.outputDir||''})})
   .then(function(r){ return r.json(); })
   .then(function(d){
@@ -2261,13 +4312,197 @@ function generateIndicaciones() {
     } else showToast('Error: '+d.error,'error');
   })
   .catch(function(){ showToast('Error de conexión','error'); })
-  .finally(function(){ btn.classList.remove('loading'); btn.disabled=false; });
+  .finally(function(){
+    if (btn) { btn.classList.remove('loading'); btn.disabled=false; }
+    decrementPendingJobs();
+    syncOfflineButtonStates();
+  });
 }
 
 // ── Auto-updater UI (modal) ───────────────────────────────────────
 var UPDATE_SNOOZE_KEY = 'rplus-update-snooze-until';
 var UPDATE_DISMISS_VER_KEY = 'rplus-update-dismiss-version';
+var MIN_VERSION_URL = 'https://raw.githubusercontent.com/mausalas99/r-mas/main/min-version.json';
+var UPDATE_TELEMETRY_URL = 'https://example.invalid/r-plus-update';
+var RELEASES_LATEST_URL = 'https://github.com/mausalas99/r-mas/releases/latest';
 var pendingUpdaterTargetVersion = null;
+var minVersionGateKeydownBound = false;
+
+function getUpdateChannel() {
+  var raw = String((settings && settings.updateChannel) || 'estable').toLowerCase();
+  return raw === 'beta' ? 'beta' : 'estable';
+}
+
+function setUpdateChannel(channel) {
+  var normalized = String(channel || '').toLowerCase() === 'beta' ? 'beta' : 'estable';
+  var previous = getUpdateChannel();
+  settings.updateChannel = normalized;
+  localStorage.setItem('rpc-settings', JSON.stringify(settings));
+  syncUpdateChannelUI();
+  if (window.electronAPI && typeof window.electronAPI.setUpdateChannel === 'function') {
+    try { window.electronAPI.setUpdateChannel(normalized); } catch (_e) {}
+  }
+  if (previous !== normalized) {
+    showToast(
+      normalized === 'beta'
+        ? 'Canal beta activado: recibirás pre-releases.'
+        : 'Canal estable activado.',
+      'success'
+    );
+  }
+}
+
+function syncUpdateChannelUI() {
+  var sel = document.getElementById('rpc-update-channel');
+  if (sel) sel.value = getUpdateChannel();
+  var pill = document.getElementById('update-modal-channel-pill');
+  if (pill) pill.style.display = getUpdateChannel() === 'beta' ? 'inline-block' : 'none';
+}
+
+function getUpdateTelemetryEnabled() {
+  return !!(settings && settings.updateTelemetryEnabled);
+}
+
+function setUpdateTelemetryEnabled(enabled) {
+  var value = !!enabled;
+  settings.updateTelemetryEnabled = value;
+  localStorage.setItem('rpc-settings', JSON.stringify(settings));
+  syncUpdateTelemetryUI();
+  showToast(value ? 'Telemetría de actualización activada.' : 'Telemetría desactivada.', 'success');
+}
+
+function syncUpdateTelemetryUI() {
+  var cb = document.getElementById('rpc-update-telemetry-toggle');
+  if (cb) cb.checked = getUpdateTelemetryEnabled();
+}
+
+function resolvePlatformForTelemetry() {
+  if (window.electronAPI && typeof window.electronAPI.getPlatform === 'function') {
+    return window.electronAPI.getPlatform().catch(function () { return 'unknown'; });
+  }
+  return Promise.resolve('web');
+}
+
+function sendUpdateTelemetry(result, versionHint) {
+  if (!getUpdateTelemetryEnabled()) return;
+  if (typeof fetch !== 'function') return;
+  var normalizedResult = result === 'success' ? 'success' : 'fail';
+  var versionPromise = versionHint
+    ? Promise.resolve(versionHint)
+    : (window.electronAPI && typeof window.electronAPI.getAppVersion === 'function'
+        ? window.electronAPI.getAppVersion().catch(function () { return 'dev'; })
+        : Promise.resolve('dev'));
+  Promise.all([resolvePlatformForTelemetry(), versionPromise]).then(function (vals) {
+    var payload = {
+      version: String(vals[1] || 'unknown'),
+      result: normalizedResult,
+      platform: String(vals[0] || 'unknown'),
+    };
+    try {
+      fetch(UPDATE_TELEMETRY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        keepalive: true,
+        mode: 'no-cors',
+      }).catch(function () {});
+    } catch (_e) {}
+  }).catch(function () {});
+}
+
+function compareSemver(a, b) {
+  function parse(v) {
+    var m = String(v == null ? '' : v).trim().match(/^v?(\d+)\.(\d+)\.(\d+)(?:[-.+].*)?$/);
+    if (!m) return null;
+    return [parseInt(m[1], 10), parseInt(m[2], 10), parseInt(m[3], 10)];
+  }
+  var pa = parse(a); var pb = parse(b);
+  if (!pa || !pb) return 0;
+  for (var i = 0; i < 3; i++) {
+    if (pa[i] > pb[i]) return 1;
+    if (pa[i] < pb[i]) return -1;
+  }
+  return 0;
+}
+
+function showMinVersionBlockingModal(current, minVersion, message) {
+  var bd = document.getElementById('min-version-backdrop');
+  if (!bd) return;
+  var meta = document.getElementById('min-version-meta');
+  var msg = document.getElementById('min-version-message');
+  if (msg && message) msg.textContent = String(message);
+  if (meta) {
+    meta.textContent = 'Versión actual: v' + current + ' · Mínima soportada: v' + minVersion;
+  }
+  var checkBtn = document.getElementById('min-version-check-btn');
+  var relBtn = document.getElementById('min-version-releases-btn');
+  if (checkBtn) {
+    checkBtn.onclick = function () {
+      if (window.electronAPI && typeof window.electronAPI.checkForUpdates === 'function') {
+        try { window.electronAPI.checkForUpdates(); } catch (_e) {}
+        showToast('Buscando actualizaciones…', 'success');
+      } else if (window.electronAPI && typeof window.electronAPI.openExternal === 'function') {
+        window.electronAPI.openExternal(RELEASES_LATEST_URL);
+      }
+    };
+  }
+  if (relBtn) {
+    relBtn.onclick = function () {
+      if (window.electronAPI && typeof window.electronAPI.openExternal === 'function') {
+        window.electronAPI.openExternal(RELEASES_LATEST_URL);
+      } else {
+        try { window.open(RELEASES_LATEST_URL, '_blank'); } catch (_e) {}
+      }
+    };
+  }
+  // Cierra otros modales para evitar interferencia; este gate es bloqueante.
+  var snoozed = document.getElementById('update-modal-backdrop');
+  if (snoozed) { snoozed.style.display = 'none'; snoozed.setAttribute('aria-hidden', 'true'); }
+  bd.classList.add('open');
+  bd.setAttribute('aria-hidden', 'false');
+  if (!minVersionGateKeydownBound) {
+    minVersionGateKeydownBound = true;
+    document.addEventListener('keydown', function (e) {
+      var active = document.getElementById('min-version-backdrop');
+      if (!active || !active.classList.contains('open')) return;
+      if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); }
+    }, true);
+  }
+}
+
+function checkMinVersionGate() {
+  if (typeof fetch !== 'function') return;
+  var currentVersionPromise = (window.electronAPI && typeof window.electronAPI.getAppVersion === 'function')
+    ? window.electronAPI.getAppVersion().catch(function () { return null; })
+    : Promise.resolve(null);
+  var payloadPromise;
+  try {
+    payloadPromise = fetch(MIN_VERSION_URL, { cache: 'no-store' }).then(function (r) {
+      if (!r || !r.ok) throw new Error('bad response');
+      return r.json();
+    }).catch(function () { return null; });
+  } catch (_e) {
+    payloadPromise = Promise.resolve(null);
+  }
+  Promise.all([currentVersionPromise, payloadPromise]).then(function (res) {
+    var currentVersion = res[0];
+    var payload = res[1];
+    if (!currentVersion || !payload || typeof payload !== 'object' || !payload.minVersion) return;
+    if (compareSemver(currentVersion, payload.minVersion) < 0) {
+      showMinVersionBlockingModal(currentVersion, payload.minVersion, payload.message);
+    }
+  }).catch(function () {});
+}
+
+function initUpdateChannelAndGate() {
+  syncUpdateChannelUI();
+  syncUpdateTelemetryUI();
+  if (window.electronAPI && typeof window.electronAPI.setUpdateChannel === 'function') {
+    try { window.electronAPI.setUpdateChannel(getUpdateChannel()); } catch (_e) {}
+  }
+  // Min-version gate: pequeño retraso para no estorbar el render inicial.
+  setTimeout(function () { checkMinVersionGate(); }, 1200);
+}
 
 function getUpdateSnoozeUntil() {
   var raw = localStorage.getItem(UPDATE_SNOOZE_KEY);
@@ -2361,133 +4596,621 @@ function installUpdate() {
 
 if (window.electronAPI) {
   window.electronAPI.onUpdateAvailable(function(payload) {
-    var version = (payload && payload.version) ? payload.version : String(payload || '');
-    var releaseNotes = (payload && payload.releaseNotes) ? String(payload.releaseNotes) : '';
-    pendingUpdaterTargetVersion = version;
-    if (isSnoozeActiveForVersion(version)) return;
-    resetUpdateModalPanels();
-    var title = document.getElementById('update-modal-title');
-    if (title && title.firstChild && title.firstChild.nodeType === 3) {
-      title.firstChild.textContent = 'Nueva versión';
+    try {
+      var version = (payload && payload.version) ? payload.version : String(payload || '');
+      var releaseNotes = '';
+      pendingUpdaterTargetVersion = version;
+      if (isSnoozeActiveForVersion(version)) return;
+      resetUpdateModalPanels();
+      var title = document.getElementById('update-modal-title');
+      if (title && title.firstChild && title.firstChild.nodeType === 3) {
+        title.firstChild.textContent = 'Nueva versión';
+      }
+      var pill = document.getElementById('update-modal-version-pill');
+      if (pill) {
+        pill.textContent = 'v' + version;
+        pill.style.display = 'inline-block';
+      }
+      var channelPill = document.getElementById('update-modal-channel-pill');
+      if (channelPill) channelPill.style.display = getUpdateChannel() === 'beta' ? 'inline-block' : 'none';
+      var notes = document.getElementById('update-modal-notes');
+      if (notes) notes.textContent = releaseNotes;
+      var state = document.getElementById('update-modal-state');
+      if (state) state.textContent = 'Conectando… La descarga comenzará en breve.';
+      var fill = document.getElementById('update-modal-progress-fill');
+      if (fill) fill.style.width = '0%';
+      var label = document.getElementById('update-modal-progress-label');
+      if (label) label.textContent = '';
+      var actions = document.getElementById('update-modal-actions-primary');
+      if (actions) {
+        actions.innerHTML = '';
+        var later = document.createElement('button');
+        later.className = 'btn-secondary';
+        later.textContent = 'Más tarde';
+        later.onclick = function() {
+          markDismissedVersion(version);
+          hideUpdateModal();
+        };
+        actions.appendChild(later);
+      }
+      var sec = document.getElementById('update-modal-actions-secondary');
+      if (sec) {
+        sec.innerHTML = '';
+        var link = document.createElement('button');
+        link.type = 'button';
+        link.className = 'btn-link';
+        link.textContent = 'Ver notas en GitHub';
+        link.onclick = function() {
+          if (window.electronAPI && window.electronAPI.openExternal) {
+            window.electronAPI.openExternal('https://github.com/mausalas99/r-mas/releases');
+          }
+        };
+        sec.appendChild(link);
+      }
+      showUpdateModal();
+    } catch (e) {
+      console.error('onUpdateAvailable callback error:', e && e.message);
     }
-    var pill = document.getElementById('update-modal-version-pill');
-    if (pill) {
-      pill.textContent = 'v' + version;
-      pill.style.display = 'inline-block';
-    }
-    var notes = document.getElementById('update-modal-notes');
-    if (notes) notes.textContent = releaseNotes;
-    var state = document.getElementById('update-modal-state');
-    if (state) state.textContent = 'Conectando… La descarga comenzará en breve.';
-    var fill = document.getElementById('update-modal-progress-fill');
-    if (fill) fill.style.width = '0%';
-    var label = document.getElementById('update-modal-progress-label');
-    if (label) label.textContent = '';
-    var actions = document.getElementById('update-modal-actions-primary');
-    if (actions) {
-      actions.innerHTML = '';
-      var later = document.createElement('button');
-      later.className = 'btn-secondary';
-      later.textContent = 'Más tarde';
-      later.onclick = function() {
-        markDismissedVersion(version);
-        hideUpdateModal();
-      };
-      actions.appendChild(later);
-    }
-    var sec = document.getElementById('update-modal-actions-secondary');
-    if (sec) {
-      sec.innerHTML = '';
-      var link = document.createElement('button');
-      link.type = 'button';
-      link.className = 'btn-link';
-      link.textContent = 'Ver notas en GitHub';
-      link.onclick = function() {
-        if (window.electronAPI && window.electronAPI.openExternal) {
-          window.electronAPI.openExternal('https://github.com/mausalas99/r-mas/releases');
-        }
-      };
-      sec.appendChild(link);
-    }
-    showUpdateModal();
   });
 
   window.electronAPI.onUpdateProgress(function(payload) {
-    var pct = typeof payload === 'number' ? payload : (payload && payload.percent != null ? payload.percent : 0);
-    var transferred = payload && payload.transferred;
-    var total = payload && payload.total;
-    var bps = payload && payload.bytesPerSecond;
-    if (pendingUpdaterTargetVersion && isSnoozeActiveForVersion(pendingUpdaterTargetVersion)) return;
-    resetUpdateModalPanels();
-    var state = document.getElementById('update-modal-state');
-    if (state) state.textContent = 'Descargando…';
-    var fill = document.getElementById('update-modal-progress-fill');
-    if (fill) fill.style.width = pct + '%';
-    var label = document.getElementById('update-modal-progress-label');
-    if (label) {
-      if (transferred != null && total != null) {
-        label.textContent = formatProgressLine({
-          transferred: transferred,
-          total: total,
-          bytesPerSecond: bps,
-        });
-      } else {
-        label.textContent = 'Progreso: ' + pct + '%';
+    try {
+      var pct = typeof payload === 'number' ? payload : (payload && payload.percent != null ? payload.percent : 0);
+      var transferred = payload && payload.transferred;
+      var total = payload && payload.total;
+      var bps = payload && payload.bytesPerSecond;
+      if (pendingUpdaterTargetVersion && isSnoozeActiveForVersion(pendingUpdaterTargetVersion)) return;
+      resetUpdateModalPanels();
+      var state = document.getElementById('update-modal-state');
+      if (state) state.textContent = 'Descargando…';
+      var fill = document.getElementById('update-modal-progress-fill');
+      if (fill) fill.style.width = pct + '%';
+      var label = document.getElementById('update-modal-progress-label');
+      if (label) {
+        if (transferred != null && total != null) {
+          label.textContent = formatProgressLine({
+            transferred: transferred,
+            total: total,
+            bytesPerSecond: bps,
+          });
+        } else {
+          label.textContent = 'Progreso: ' + pct + '%';
+        }
       }
+      showUpdateModal();
+    } catch (e) {
+      console.error('onUpdateProgress callback error:', e && e.message);
     }
-    showUpdateModal();
   });
 
   window.electronAPI.onUpdateReady(function(payload) {
-    var version = (payload && payload.version) ? payload.version : String(payload || '');
-    if (isSnoozeActiveForVersion(version)) return;
-    resetUpdateModalPanels();
-    var state = document.getElementById('update-modal-state');
-    if (state) {
-      state.textContent =
-        'Listo para instalar. También se instalará al cerrar la aplicación si eliges esperar.';
+    try {
+      var version = (payload && payload.version) ? payload.version : String(payload || '');
+      try { sendUpdateTelemetry('success', version); } catch (_te) {}
+      if (isSnoozeActiveForVersion(version)) return;
+      resetUpdateModalPanels();
+      var state = document.getElementById('update-modal-state');
+      if (state) {
+        state.textContent =
+          'Listo para instalar. También se instalará al cerrar la aplicación si eliges esperar.';
+      }
+      var fill = document.getElementById('update-modal-progress-fill');
+      if (fill) fill.style.width = '100%';
+      var label = document.getElementById('update-modal-progress-label');
+      if (label) label.textContent = 'Descarga completa.';
+      var actions = document.getElementById('update-modal-actions-primary');
+      if (actions) {
+        actions.innerHTML = '';
+        var go = document.createElement('button');
+        go.className = 'btn-primary';
+        go.textContent = 'Instalar y reiniciar';
+        go.onclick = function() { installUpdate(); };
+        actions.appendChild(go);
+        var later = document.createElement('button');
+        later.className = 'btn-secondary';
+        later.textContent = 'Instalar al cerrar';
+        later.onclick = function() { hideUpdateModal(); };
+        actions.appendChild(later);
+      }
+      var sec = document.getElementById('update-modal-actions-secondary');
+      if (sec) sec.innerHTML = '';
+      showUpdateModal();
+    } catch (e) {
+      console.error('onUpdateReady callback error:', e && e.message);
     }
-    var fill = document.getElementById('update-modal-progress-fill');
-    if (fill) fill.style.width = '100%';
-    var label = document.getElementById('update-modal-progress-label');
-    if (label) label.textContent = 'Descarga completa.';
-    var actions = document.getElementById('update-modal-actions-primary');
-    if (actions) {
-      actions.innerHTML = '';
-      var go = document.createElement('button');
-      go.className = 'btn-primary';
-      go.textContent = 'Instalar y reiniciar';
-      go.onclick = function() { installUpdate(); };
-      actions.appendChild(go);
-      var later = document.createElement('button');
-      later.className = 'btn-secondary';
-      later.textContent = 'Instalar al cerrar';
-      later.onclick = function() { hideUpdateModal(); };
-      actions.appendChild(later);
-    }
-    var sec = document.getElementById('update-modal-actions-secondary');
-    if (sec) sec.innerHTML = '';
-    showUpdateModal();
   });
 
   window.electronAPI.onUpdateNotAvailable(function() {
-    pendingUpdaterTargetVersion = null;
-    showToast('R+ está actualizado.', 'success');
+    try {
+      pendingUpdaterTargetVersion = null;
+      showToast('R+ está actualizado.', 'success');
+    } catch (e) {
+      console.error('onUpdateNotAvailable callback error:', e && e.message);
+    }
   });
 
   window.electronAPI.onUpdateError(function(msg) {
-    renderUpdateError(msg);
+    try {
+      try { sendUpdateTelemetry('fail'); } catch (_te) {}
+      renderUpdateError(msg);
+    } catch (e) {
+      console.error('onUpdateError callback error:', e && e.message);
+    }
   });
 }
+
+// ════════════════════════════════════════════════════════════════════
+// Bloque F — Undo, Focus Mode, Unified Search, Shortcuts, Extra Templates
+// ════════════════════════════════════════════════════════════════════
+var UNDO_STACK_KEY = 'rpc-undo-stack';
+var FOCUS_MODE_KEY = 'rpc-focus-mode';
+var UNDO_STACK_MAX = 5;
+
+function buildUndoSnapshotPayload(label) {
+  return {
+    label: label || 'operación',
+    at: new Date().toISOString(),
+    theme: localStorage.getItem('theme') || 'light',
+    activeId: activeId,
+    data: {
+      patients: JSON.parse(localStorage.getItem('rpc-patients') || '[]'),
+      notes: JSON.parse(localStorage.getItem('rpc-notes') || '{}'),
+      indicaciones: JSON.parse(localStorage.getItem('rpc-indicaciones') || '{}'),
+      labHistory: JSON.parse(localStorage.getItem('rpc-labHistory') || '{}'),
+      settings: JSON.parse(localStorage.getItem('rpc-settings') || '{}')
+    }
+  };
+}
+
+function getUndoStack() {
+  try {
+    var arr = JSON.parse(localStorage.getItem(UNDO_STACK_KEY) || '[]');
+    return Array.isArray(arr) ? arr : [];
+  } catch (_e) { return []; }
+}
+
+function saveUndoStack(stack) {
+  try {
+    localStorage.setItem(UNDO_STACK_KEY, JSON.stringify((stack || []).slice(0, UNDO_STACK_MAX)));
+  } catch (_e) {
+    // best-effort; storage may be full
+  }
+}
+
+function pushUndoSnapshot(label) {
+  try {
+    saveState();
+  } catch (_e) { /* continue */ }
+  var snap = buildUndoSnapshotPayload(label);
+  var stack = getUndoStack();
+  stack.unshift(snap);
+  saveUndoStack(stack);
+  refreshUndoButtonState();
+  addAuditEntry('undo-snapshot', 'ok', 0, snap.label);
+}
+
+function refreshUndoButtonState() {
+  var btn = document.getElementById('btn-undo-op');
+  if (!btn) return;
+  var stack = getUndoStack();
+  btn.disabled = stack.length === 0;
+  if (stack.length > 0) {
+    btn.textContent = 'Deshacer: ' + (stack[0].label || 'última operación');
+  } else {
+    btn.textContent = 'Deshacer última operación';
+  }
+}
+
+function undoLastOperation() {
+  var stack = getUndoStack();
+  if (!stack.length) {
+    showToast('No hay operaciones para deshacer.', 'error');
+    return;
+  }
+  var snap = stack[0];
+  if (!confirm('¿Revertir "' + (snap.label || 'última operación') + '"? La aplicación se recargará.')) return;
+  var rest = stack.slice(1);
+  saveUndoStack(rest);
+  localStorage.setItem('rpc-patients', JSON.stringify(snap.data.patients || []));
+  localStorage.setItem('rpc-notes', JSON.stringify(snap.data.notes || {}));
+  localStorage.setItem('rpc-indicaciones', JSON.stringify(snap.data.indicaciones || {}));
+  localStorage.setItem('rpc-labHistory', JSON.stringify(snap.data.labHistory || {}));
+  localStorage.setItem('rpc-settings', JSON.stringify(snap.data.settings || {}));
+  if (snap.theme === 'dark' || snap.theme === 'light') localStorage.setItem('theme', snap.theme);
+  addAuditEntry('undo-restore', 'ok', 0, snap.label || '');
+  location.reload();
+}
+
+// ── Focus mode ────────────────────────────────────────────────────
+function applyFocusModeFromStorage() {
+  var on = localStorage.getItem(FOCUS_MODE_KEY) === '1';
+  document.body.classList.toggle('focus-mode', on);
+  var btn = document.getElementById('btn-toggle-focus-mode');
+  if (btn) btn.textContent = on ? 'Desactivar modo enfoque' : 'Activar modo enfoque';
+}
+
+function toggleFocusMode() {
+  var on = document.body.classList.toggle('focus-mode');
+  localStorage.setItem(FOCUS_MODE_KEY, on ? '1' : '0');
+  var btn = document.getElementById('btn-toggle-focus-mode');
+  if (btn) btn.textContent = on ? 'Desactivar modo enfoque' : 'Activar modo enfoque';
+  if (on) closeSettingsDropdown();
+  showToast(on ? 'Modo enfoque activado · F6 para salir' : 'Modo enfoque desactivado', 'success');
+  addAuditEntry('focus-mode', 'ok', 0, on ? 'on' : 'off');
+}
+
+// ── Unified search ────────────────────────────────────────────────
+var _unifiedSearchCurrent = [];
+
+function openUnifiedSearch() {
+  var bd = document.getElementById('unified-search-backdrop');
+  if (!bd) return;
+  bd.classList.add('open');
+  var input = document.getElementById('unified-search-input');
+  if (input) {
+    input.value = '';
+    setTimeout(function(){ input.focus(); }, 30);
+  }
+  updateUnifiedSearchResults();
+}
+
+function closeUnifiedSearch() {
+  var bd = document.getElementById('unified-search-backdrop');
+  if (bd) bd.classList.remove('open');
+}
+
+function snippetAround(text, q, maxLen) {
+  var src = String(text || '');
+  var lc = src.toLowerCase();
+  var idx = lc.indexOf(q);
+  if (idx < 0) return '';
+  var half = Math.max(20, Math.floor((maxLen || 140) / 2));
+  var start = Math.max(0, idx - half);
+  var end = Math.min(src.length, idx + q.length + half);
+  var out = src.slice(start, end);
+  if (start > 0) out = '… ' + out;
+  if (end < src.length) out = out + ' …';
+  return out;
+}
+
+function escapeRegExp(s) {
+  return String(s || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function highlightSnippet(snippet, q) {
+  var safe = esc(snippet);
+  if (!q) return safe;
+  var qEsc = escapeRegExp(q);
+  try {
+    return safe.replace(new RegExp(qEsc, 'ig'), function(m){ return '<mark>' + m + '</mark>'; });
+  } catch (_e) {
+    return safe;
+  }
+}
+
+function collectNoteHaystack(note) {
+  if (!note) return '';
+  var parts = [note.interrogatorio, note.evolucion, note.estudios, note.medico, note.profesor];
+  if (Array.isArray(note.diagnosticos)) parts = parts.concat(note.diagnosticos);
+  if (Array.isArray(note.tratamiento)) parts = parts.concat(note.tratamiento);
+  return parts.filter(Boolean).join('\n');
+}
+
+function collectIndicaHaystack(ind) {
+  if (!ind) return '';
+  var parts = [ind.dieta, ind.cuidados, ind.estudios, ind.medicamentos, ind.interconsultas, ind.medicos];
+  if (Array.isArray(ind.otros)) {
+    ind.otros.forEach(function(o){ if (o && (o.titulo || o.contenido)) parts.push((o.titulo || '') + '\n' + (o.contenido || '')); });
+  }
+  return parts.filter(Boolean).join('\n');
+}
+
+function updateUnifiedSearchResults() {
+  var box = document.getElementById('unified-search-results');
+  var inp = document.getElementById('unified-search-input');
+  if (!box || !inp) return;
+  var q = String(inp.value || '').trim().toLowerCase();
+  if (!q) {
+    box.innerHTML = '<div class="unified-search-empty">Escribe para buscar pacientes, notas o indicaciones.</div>';
+    _unifiedSearchCurrent = [];
+    return;
+  }
+  var out = [];
+  var MAX = 40;
+  for (var i = 0; i < patients.length && out.length < MAX; i += 1) {
+    var p = patients[i];
+    if (p.isDemo) continue;
+    var meta = [p.nombre, p.registro, p.cuarto, p.cama, p.servicio, p.area].filter(Boolean).join(' · ');
+    var metaLc = meta.toLowerCase();
+    var metaStr = 'Cto. ' + (p.cuarto || '-') + ' · Cama ' + (p.cama || '-') + (p.registro ? ' · ' + p.registro : '');
+    if (metaLc.indexOf(q) !== -1) {
+      out.push({ id: p.id, tab: 'nota', inner: 'notas', tag: 'paciente',
+        title: p.nombre || 'Sin nombre', meta: metaStr, snippet: '' });
+      if (out.length >= MAX) break;
+    }
+    var nh = collectNoteHaystack(notes[p.id]);
+    if (nh && nh.toLowerCase().indexOf(q) !== -1) {
+      out.push({ id: p.id, tab: 'nota', inner: 'notas', tag: 'nota',
+        title: p.nombre || 'Sin nombre', meta: metaStr, snippet: snippetAround(nh, q, 140) });
+      if (out.length >= MAX) break;
+    }
+    var ih = collectIndicaHaystack(indicaciones[p.id]);
+    if (ih && ih.toLowerCase().indexOf(q) !== -1) {
+      out.push({ id: p.id, tab: 'nota', inner: 'indica', tag: 'indicaciones',
+        title: p.nombre || 'Sin nombre', meta: metaStr, snippet: snippetAround(ih, q, 140) });
+      if (out.length >= MAX) break;
+    }
+  }
+  _unifiedSearchCurrent = out;
+  if (!out.length) {
+    box.innerHTML = '<div class="unified-search-empty">Sin coincidencias.</div>';
+    return;
+  }
+  box.innerHTML = out.map(function(r, idx) {
+    return '<div class="unified-search-result" onclick="selectUnifiedSearchResult(' + idx + ')">' +
+      '<div class="usr-title"><span>' + esc(r.title) + '</span><span class="usr-tag">' + esc(r.tag) + '</span></div>' +
+      '<div class="usr-meta">' + esc(r.meta) + '</div>' +
+      (r.snippet ? '<div class="usr-snippet">' + highlightSnippet(r.snippet, q) + '</div>' : '') +
+      '</div>';
+  }).join('');
+}
+
+function selectUnifiedSearchResult(idx) {
+  var r = _unifiedSearchCurrent[idx];
+  if (!r) return;
+  selectPatient(r.id);
+  switchAppTab(r.tab);
+  if (r.inner) switchInnerTab(r.inner);
+  closeUnifiedSearch();
+}
+
+// ── Extra templates (reusable indicaciones) ───────────────────────
+var _extraTemplateEditing = null;
+
+function ensureExtraTemplatesArray() {
+  if (!Array.isArray(settings.extraTemplates)) settings.extraTemplates = [];
+  return settings.extraTemplates;
+}
+
+function persistSettings() {
+  localStorage.setItem('rpc-settings', JSON.stringify(settings));
+}
+
+function openExtraTemplatesManager() {
+  var m = document.getElementById('extra-templates-modal');
+  if (!m) return;
+  ensureExtraTemplatesArray();
+  m.style.display = 'flex';
+  renderExtraTemplatesList();
+  cancelExtraTemplateEdit();
+}
+
+function closeExtraTemplatesManager() {
+  var m = document.getElementById('extra-templates-modal');
+  if (m) m.style.display = 'none';
+  cancelExtraTemplateEdit();
+}
+
+function renderExtraTemplatesList() {
+  var list = document.getElementById('extra-templates-list');
+  if (!list) return;
+  var arr = ensureExtraTemplatesArray();
+  if (!arr.length) {
+    list.innerHTML = '<div class="unified-search-empty">Aún no tienes plantillas guardadas.</div>';
+    return;
+  }
+  list.innerHTML = arr.map(function(tmpl) {
+    var id = esc(tmpl.id || '');
+    return '<div class="extra-tmpl-row">' +
+      '<span class="etr-label" title="' + esc(tmpl.label || '') + '">' + esc(tmpl.label || '(sin nombre)') + '</span>' +
+      '<div class="etr-actions">' +
+      '<button type="button" onclick="editExtraTemplate(\'' + id + '\')">Editar</button>' +
+      '<button type="button" class="etr-del" onclick="deleteExtraTemplate(\'' + id + '\')">Eliminar</button>' +
+      '</div></div>';
+  }).join('');
+}
+
+function startNewExtraTemplate() {
+  _extraTemplateEditing = '';
+  var ed = document.getElementById('extra-template-editor');
+  if (ed) ed.style.display = 'flex';
+  var elLabel = document.getElementById('extra-tmpl-label');
+  var elDieta = document.getElementById('extra-tmpl-dieta');
+  var elCui = document.getElementById('extra-tmpl-cuidados');
+  var elMed = document.getElementById('extra-tmpl-meds');
+  if (elLabel) elLabel.value = '';
+  if (elDieta) elDieta.value = '';
+  if (elCui) elCui.value = '';
+  if (elMed) elMed.value = '';
+  setTimeout(function(){ if (elLabel) elLabel.focus(); }, 30);
+}
+
+function editExtraTemplate(id) {
+  var arr = ensureExtraTemplatesArray();
+  var tmpl = arr.find(function(t){ return t.id === id; });
+  if (!tmpl) return;
+  _extraTemplateEditing = id;
+  var ed = document.getElementById('extra-template-editor');
+  if (ed) ed.style.display = 'flex';
+  document.getElementById('extra-tmpl-label').value = tmpl.label || '';
+  document.getElementById('extra-tmpl-dieta').value = tmpl.dieta || '';
+  document.getElementById('extra-tmpl-cuidados').value = tmpl.cuidados || '';
+  document.getElementById('extra-tmpl-meds').value = tmpl.medicamentos || '';
+}
+
+function cancelExtraTemplateEdit() {
+  _extraTemplateEditing = null;
+  var ed = document.getElementById('extra-template-editor');
+  if (ed) ed.style.display = 'none';
+}
+
+function saveExtraTemplateFromEditor() {
+  var label = (document.getElementById('extra-tmpl-label').value || '').trim();
+  if (!label) { showToast('Ingresa un nombre para la plantilla', 'error'); return; }
+  var dieta = (document.getElementById('extra-tmpl-dieta').value || '').trim();
+  var cuidados = (document.getElementById('extra-tmpl-cuidados').value || '').trim();
+  var meds = (document.getElementById('extra-tmpl-meds').value || '').trim();
+  var arr = ensureExtraTemplatesArray();
+  if (_extraTemplateEditing) {
+    var tmpl = arr.find(function(t){ return t.id === _extraTemplateEditing; });
+    if (tmpl) {
+      tmpl.label = label;
+      tmpl.dieta = dieta;
+      tmpl.cuidados = cuidados;
+      tmpl.medicamentos = meds;
+    }
+  } else {
+    arr.push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      label: label, dieta: dieta, cuidados: cuidados, medicamentos: meds
+    });
+  }
+  persistSettings();
+  addAuditEntry('extra-template-save', 'ok', arr.length, label);
+  showToast('Plantilla guardada', 'success');
+  renderExtraTemplatesList();
+  cancelExtraTemplateEdit();
+  if (activeId) renderIndicaForm();
+}
+
+function deleteExtraTemplate(id) {
+  var arr = ensureExtraTemplatesArray();
+  var tmpl = arr.find(function(t){ return t.id === id; });
+  if (!tmpl) return;
+  if (!confirm('¿Eliminar la plantilla "' + (tmpl.label || '') + '"?')) return;
+  settings.extraTemplates = arr.filter(function(t){ return t.id !== id; });
+  persistSettings();
+  addAuditEntry('extra-template-delete', 'ok', settings.extraTemplates.length, tmpl.label || '');
+  renderExtraTemplatesList();
+  cancelExtraTemplateEdit();
+  if (activeId) renderIndicaForm();
+}
+
+function buildExtraTemplatesSelectorHtml() {
+  var arr = (settings && Array.isArray(settings.extraTemplates)) ? settings.extraTemplates : [];
+  if (!arr.length) {
+    return '<div class="indica-extra-tmpl"><span class="iet-hint">Guarda combinaciones reutilizables en Ajustes → Plantillas guardadas.</span></div>';
+  }
+  var opts = '<option value="">— Aplicar plantilla guardada —</option>' +
+    arr.map(function(t){ return '<option value="' + esc(t.id) + '">' + esc(t.label || '(sin nombre)') + '</option>'; }).join('');
+  return '<div class="indica-extra-tmpl">' +
+    '<select id="indica-extra-tmpl-select" aria-label="Seleccionar plantilla guardada">' + opts + '</select>' +
+    '<button type="button" onclick="applyExtraTemplateFromIndica()">Aplicar</button>' +
+    '</div>';
+}
+
+function applyExtraTemplateFromIndica() {
+  var sel = document.getElementById('indica-extra-tmpl-select');
+  if (!sel || !sel.value) { showToast('Elige una plantilla', 'error'); return; }
+  if (!activeId || !indicaciones[activeId]) { showToast('Selecciona un paciente primero', 'error'); return; }
+  var tmpl = (settings.extraTemplates || []).find(function(t){ return t.id === sel.value; });
+  if (!tmpl) return;
+  var target = indicaciones[activeId];
+  var hasExisting = (target.dieta && target.dieta.trim()) ||
+    (target.cuidados && target.cuidados.trim()) ||
+    (target.medicamentos && target.medicamentos.trim());
+  var mode = 'replace';
+  if (hasExisting) {
+    var ans = prompt('Ya hay contenido en las indicaciones.\nEscribe R = reemplazar, A = agregar al final, C = cancelar.', 'A');
+    var v = String(ans || '').trim().toUpperCase();
+    if (v === 'C' || v === '') return;
+    mode = (v === 'R') ? 'replace' : 'append';
+  }
+  function merge(current, addition) {
+    if (!addition) return current || '';
+    if (mode === 'replace') return addition;
+    if (!current) return addition;
+    return current.replace(/\s+$/, '') + '\n' + addition;
+  }
+  target.dieta = merge(target.dieta || '', tmpl.dieta || '');
+  target.cuidados = merge(target.cuidados || '', tmpl.cuidados || '');
+  target.medicamentos = merge(target.medicamentos || '', tmpl.medicamentos || '');
+  saveState();
+  renderIndicaForm();
+  addAuditEntry('extra-template-apply', 'ok', 1, tmpl.label || '');
+  showToast('Plantilla aplicada: ' + (tmpl.label || ''), 'success');
+}
+
+// ── Shortcuts / init ──────────────────────────────────────────────
+function isTypingContext(target) {
+  if (!target) return false;
+  var tag = (target.tagName || '').toUpperCase();
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+  if (target.isContentEditable) return true;
+  return false;
+}
+
+function initBlockFShortcuts() {
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'F6') {
+      e.preventDefault();
+      toggleFocusMode();
+      return;
+    }
+    if (e.key === 'Escape') {
+      var bd = document.getElementById('unified-search-backdrop');
+      if (bd && bd.classList.contains('open')) {
+        e.preventDefault();
+        closeUnifiedSearch();
+        return;
+      }
+      var em = document.getElementById('extra-templates-modal');
+      if (em && em.style.display === 'flex') {
+        e.preventDefault();
+        closeExtraTemplatesManager();
+        return;
+      }
+    }
+    var mod = e.metaKey || e.ctrlKey;
+    if (!mod) return;
+    if (e.altKey || e.shiftKey) return;
+    var k = (e.key || '').toLowerCase();
+    if (k === 'k') {
+      e.preventDefault();
+      var bd2 = document.getElementById('unified-search-backdrop');
+      if (bd2 && bd2.classList.contains('open')) closeUnifiedSearch();
+      else openUnifiedSearch();
+    } else if (k === 'n') {
+      e.preventDefault();
+      openAddModal();
+    } else if (k === 's') {
+      e.preventDefault();
+      if (!activeId) { showToast('Selecciona un paciente primero', 'error'); return; }
+      saveState();
+      addAuditEntry('quick-save', 'ok', 1, String(activeId));
+      showToast('Estado guardado ✓', 'success');
+    }
+  });
+  applyFocusModeFromStorage();
+  refreshUndoButtonState();
+}
+
+_rpcDeferInit(initBlockFShortcuts);
 
 Object.assign(window, {
   installUpdate,
   toggleTheme,
   setThemeMode,
   setFontZoom,
+  setHighContrast,
+  toggleHighContrast,
+  t,
   openUserDataFolderFromSettings,
   openQuickHelp,
   closeQuickHelp,
+  onHelpSearchInput,
+  onHelpSearchKeydown,
+  onHelpListKeydown,
+  closeReleaseNotes,
+  startMiniTour,
+  startHelpTourMain,
+  onIdleLockSelectChange,
+  changeIdleLockPin,
+  submitIdleLockPin,
+  openWipeDataModal,
+  closeWipeDataModal,
+  wipeCacheConfirmed,
+  wipeAllConfirmed,
   switchAppTab,
   switchInnerTab,
   guidedTourIntroStart,
@@ -2501,18 +5224,33 @@ Object.assign(window, {
   toggleSettingsDropdown,
   closeSettingsDropdown,
   checkForAppUpdates,
+  setUpdateChannel,
+  setUpdateTelemetryEnabled,
   chooseOutputDir,
+  saveQuickOutputFormat,
   openTemplatesModal,
   saveSettings,
   resetAndStartOnboarding,
   exportDataBackup,
   exportActivePatientBackup,
+  exportRangeBackupPrompt,
+  triggerImportRangeBackup,
+  onRangeBackupFileChosen,
+  updateAutoBackupSettingsFromUi,
+  runAutoBackupNow,
+  exportAuditLog,
+  exportSyncBundlePrompt,
+  triggerImportSyncBundle,
+  onSyncBundleFileChosen,
   triggerImportActivePatientBackup,
   triggerImportBackup,
   onPatientBackupFileChosen,
   onBackupFileChosen,
   procesarReporte,
   limpiarReporte,
+  replayLabHistorySet,
+  deleteLabHistorySet,
+  toggleLabHistoryPanel,
   openAddModalFromLab,
   copiarLabsAlPortapapeles,
   enviarLabsANota,
@@ -2535,10 +5273,25 @@ Object.assign(window, {
   updateTx,
   removeTx,
   addTx,
+  quickExportCurrentPatient,
   generateWord,
   updateIndica,
   removeOtro,
   addOtro,
   generateIndicaciones,
-  openTendDetail
+  openTendDetail,
+  toggleFocusMode,
+  openUnifiedSearch,
+  closeUnifiedSearch,
+  updateUnifiedSearchResults,
+  selectUnifiedSearchResult,
+  undoLastOperation,
+  openExtraTemplatesManager,
+  closeExtraTemplatesManager,
+  startNewExtraTemplate,
+  editExtraTemplate,
+  deleteExtraTemplate,
+  saveExtraTemplateFromEditor,
+  cancelExtraTemplateEdit,
+  applyExtraTemplateFromIndica
 });

@@ -1,13 +1,33 @@
 // storage.js — Data persistence layer
 // Wraps localStorage with consistent interface
 
+function safeParse(raw, fallback) {
+  if (raw == null || raw === '') return fallback;
+  try {
+    var parsed = JSON.parse(raw);
+    return parsed == null ? fallback : parsed;
+  } catch (_e) {
+    return fallback;
+  }
+}
+
+function safeParseArray(raw) {
+  var parsed = safeParse(raw, []);
+  return Array.isArray(parsed) ? parsed : [];
+}
+
+function safeParseObject(raw) {
+  var parsed = safeParse(raw, {});
+  return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+}
+
 export const storage = {
   /**
    * Get all patients from localStorage
    * @returns {Array} Array of patient objects
    */
   getPatients() {
-    return JSON.parse(localStorage.getItem('rpc-patients') || '[]');
+    return safeParseArray(localStorage.getItem('rpc-patients'));
   },
 
   /**
@@ -24,7 +44,7 @@ export const storage = {
    * @returns {Object} Object mapping patient IDs to note text
    */
   getNotes() {
-    return JSON.parse(localStorage.getItem('rpc-notes') || '{}');
+    return safeParseObject(localStorage.getItem('rpc-notes'));
   },
 
   /**
@@ -44,7 +64,7 @@ export const storage = {
    * @returns {Object} Object mapping patient IDs to indicaciones text
    */
   getIndicaciones() {
-    return JSON.parse(localStorage.getItem('rpc-indicaciones') || '{}');
+    return safeParseObject(localStorage.getItem('rpc-indicaciones'));
   },
 
   /**
@@ -64,7 +84,7 @@ export const storage = {
    * @returns {Object} Object mapping patient IDs to arrays of lab entries
    */
   getLabHistory() {
-    return JSON.parse(localStorage.getItem('rpc-labHistory') || '{}');
+    return safeParseObject(localStorage.getItem('rpc-labHistory'));
   },
 
   /**
@@ -77,6 +97,18 @@ export const storage = {
       if (labHistory[k] && !k.startsWith('demo-')) lhPersist[k] = labHistory[k];
     });
     localStorage.setItem('rpc-labHistory', JSON.stringify(lhPersist));
+  },
+
+  getMedRecetaByPatient() {
+    return safeParseObject(localStorage.getItem('rpc-medRecetaByPatient'));
+  },
+
+  saveMedRecetaByPatient(medRecetaByPatient) {
+    const persist = {};
+    Object.keys(medRecetaByPatient || {}).forEach(k => {
+      if (medRecetaByPatient[k] && !k.startsWith('demo-')) persist[k] = medRecetaByPatient[k];
+    });
+    localStorage.setItem('rpc-medRecetaByPatient', JSON.stringify(persist));
   },
 
   /**
@@ -96,7 +128,7 @@ export const storage = {
    * @returns {Object} Settings object
    */
   getSettings() {
-    return JSON.parse(localStorage.getItem('rpc-settings') || '{}');
+    return safeParseObject(localStorage.getItem('rpc-settings'));
   },
 
   /**
@@ -152,12 +184,14 @@ export const storage = {
    * @param {Object} notes - Object mapping patient IDs to note text
    * @param {Object} indicaciones - Object mapping patient IDs to indicaciones text
    * @param {Object} labHistory - Object mapping patient IDs to arrays of lab entries
+   * @param {Object} medRecetaByPatient - Object mapping patient IDs to med receta payloads
    */
-  saveAll(patients, notes, indicaciones, labHistory) {
+  saveAll(patients, notes, indicaciones, labHistory, medRecetaByPatient) {
     this.savePatients(patients);
     this.saveNotes(notes);
     this.saveIndicaciones(indicaciones);
     this.saveLabHistory(labHistory);
+    this.saveMedRecetaByPatient(medRecetaByPatient || {});
   }
 };
 
