@@ -20,7 +20,10 @@ import {
   renderEntry
 } from './labs.js';
 import { formatProgressLine } from './update-helpers.mjs';
-import { isDuplicateAgainstLatest } from './lab-history-auto-store-core.mjs';
+import {
+  isDuplicateAgainstLatest,
+  findDuplicateLabSetIdsToRemove,
+} from './lab-history-auto-store-core.mjs';
 import {
   parseMedicationPaste,
   resolveFechaActualizacion,
@@ -3388,6 +3391,133 @@ function deleteLabHistorySet(setId) {
   renderLabHistoryPanel();
   if (activeInner === 'tend') renderTendencias();
   showToast('Eliminado del historial', 'success');
+}
+
+function removeDuplicateLabSetsForPatient(patientId) {
+  if (!patientId || !labHistory[patientId] || !labHistory[patientId].length) return 0;
+  var sets = ensureParsedLabHistory(patientId);
+  var ids = findDuplicateLabSetIdsToRemove(sets);
+  if (!ids.length) return 0;
+  var idSet = new Set(ids);
+  var before = labHistory[patientId].length;
+  labHistory[patientId] = labHistory[patientId].filter(function (s) {
+    return !idSet.has(String(s.id));
+  });
+  if (!labHistory[patientId].length) delete labHistory[patientId];
+  rebuildEstudiosFromLabHistory(patientId);
+  return before - (labHistory[patientId] ? labHistory[patientId].length : 0);
+}
+
+function scanLabHistoryDupesAllPatients() {
+  var rows = [];
+  patients.forEach(function (p) {
+    if (p.isDemo) return;
+    var sets = ensureParsedLabHistory(p.id);
+    var ids = findDuplicateLabSetIdsToRemove(sets);
+    if (ids.length) {
+      rows.push({
+        patientId: p.id,
+        nombre: p.nombre || '—',
+        registro: p.registro || '',
+        count: ids.length,
+      });
+    }
+  });
+  return rows;
+}
+
+function showLabDedupeConfirmModal(rows, totalRemovable) {
+  var backdrop = document.createElement('div');
+  backdrop.className = 'lab-conflict-backdrop';
+  backdrop.id = 'lab-dedupe-backdrop';
+  var listHtml = rows
+    .map(function (r) {
+      return (
+        '<li style="margin:6px 0;">' +
+        esc(r.nombre || '—') +
+        (r.registro ? ' <span style="opacity:0.85">· ' + esc(r.registro) + '</span>' : '') +
+        ' — <strong>' +
+        r.count +
+        '</strong> duplicado' +
+        (r.count === 1 ? '' : 's') +
+        '</li>'
+      );
+    })
+    .join('');
+  backdrop.innerHTML =
+    '<div class="lab-conflict-modal" style="max-width:420px;">' +
+    '<h3>Duplicados en historial de labs</h3>' +
+    '<p style="font-size:13px;line-height:1.45;">Se quitarán entradas repetidas (misma fecha, hora y resultados). Se conserva la copia <strong>más antigua</strong> de cada grupo.</p>' +
+    '<p style="font-size:13px;"><strong>Total a eliminar:</strong> ' +
+    totalRemovable +
+    '</p>' +
+    '<ul style="margin:0 0 12px 0;padding-left:18px;max-height:200px;overflow-y:auto;font-size:13px;">' +
+    listHtml +
+    '</ul>' +
+    '<div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;flex-wrap:wrap;">' +
+    '<button type="button" id="lab-dedupe-cancel" style="background:#F3F4F6;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:#1f2937;">Cancelar</button>' +
+    '<button type="button" id="lab-dedupe-ok" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Eliminar duplicados</button>' +
+    '</div></div>';
+  document.body.appendChild(backdrop);
+  document.getElementById('lab-dedupe-cancel').onclick = function () {
+    backdrop.remove();
+  };
+  document.getElementById('lab-dedupe-ok').onclick = function () {
+    backdrop.remove();
+    var removedTotal = 0;
+    rows.forEach(function (r) {
+      removedTotal += removeDuplicateLabSetsForPatient(r.patientId);
+    });
+    saveState();
+    renderLabHistoryPanel();
+    if (activeInner === 'tend' && activeAppTab === 'nota') renderTendencias();
+    var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
+    if (el && activeId && notes[activeId]) el.value = notes[activeId].estudios || '';
+    addAuditEntry('lab-history-dedupe', 'ok', removedTotal, String(rows.length) + ' pacientes');
+    showToast('Eliminados ' + removedTotal + ' duplicados ✓', 'success');
+  };
+}
+
+function openLabHistoryDedupeReview(scope) {
+  scope = scope || 'active';
+  if (scope === 'active') {
+    if (!activeId) {
+      showToast('Selecciona un paciente primero', 'error');
+      return;
+    }
+    var sets = ensureParsedLabHistory(activeId);
+    var ids = findDuplicateLabSetIdsToRemove(sets);
+    if (!ids.length) {
+      showToast('No hay duplicados en el historial de este paciente', 'success');
+      return;
+    }
+    var p = patients.find(function (x) { return x.id === activeId; });
+    showLabDedupeConfirmModal(
+      [
+        {
+          patientId: activeId,
+          nombre: p ? p.nombre : '',
+          registro: p ? p.registro : '',
+          count: ids.length,
+        },
+      ],
+      ids.length
+    );
+    return;
+  }
+  if (scope === 'all') {
+    var rows = scanLabHistoryDupesAllPatients();
+    if (!rows.length) {
+      showToast('No se encontraron duplicados en ningún paciente', 'success');
+      closeSettingsDropdown();
+      return;
+    }
+    var total = rows.reduce(function (acc, r) {
+      return acc + r.count;
+    }, 0);
+    showLabDedupeConfirmModal(rows, total);
+    closeSettingsDropdown();
+  }
 }
 
 // ── Lab ───────────────────────────────────────────────────────────

@@ -679,6 +679,7 @@
   .btn-lab-history-del { color: var(--error); border-color: rgba(220,38,38,0.35); }
   .btn-lab-history-del:hover { background: rgba(220,38,38,0.08); border-color: var(--error); }
   html.dark .btn-lab-history-del:hover { background: rgba(248,113,113,0.12); }
+  .btn-lab-dedupe-sync { margin-left: auto; font-size: 12px; padding: 6px 10px; }
   .dcard { background:#fff; border:1px solid var(--border); border-radius:8px; padding:14px 16px; flex-shrink:0; position:relative; }
   .dcard-title { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#9ca3af; margin-bottom:8px; padding-right:56px; }
   .dcard-copy { position:absolute; top:10px; right:10px; background:none; border:1px solid var(--border); border-radius:5px; padding:3px 8px; font-size:10px; font-family:inherit; color:var(--text-muted); cursor:pointer; transition:all 0.15s; white-space:nowrap; }
@@ -1453,6 +1454,14 @@
       </details>
 
       <details class="settings-accordion">
+        <summary>Laboratorio</summary>
+        <div class="settings-acc-body">
+          <p style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;">Busca en <strong>todos los pacientes</strong> entradas repetidas en el historial de labs (misma fecha, hora y bloques de resultados) y permite eliminarlas conservando la copia más antigua.</p>
+          <button type="button" class="btn-edit-templates" onclick="openLabHistoryDedupeReview('all')">Revisar duplicados en historial…</button>
+        </div>
+      </details>
+
+      <details class="settings-accordion">
         <summary>Documentos y salida</summary>
         <div class="settings-acc-body">
           <p style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;" data-i18n="settings.docsFolderHint">Los .docx generados se guardan aquí (si no eliges carpeta, se usa Descargas).</p>
@@ -1797,6 +1806,7 @@
             </button>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             <span class="lab-history-card-title">Historial de labs (paciente activo)</span>
+            <button type="button" class="btn-lab-history btn-lab-dedupe-sync" onclick="openLabHistoryDedupeReview('active')" title="Detectar y quitar entradas duplicadas (misma fecha, hora y resultados)">Sincronizar</button>
           </div>
           <div id="lab-history-body" class="card-body" style="padding:12px 16px;">
             <p id="lab-history-hint" class="lab-history-hint" style="display:none;"></p>

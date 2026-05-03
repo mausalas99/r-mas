@@ -4,6 +4,8 @@ import {
   normalizeLabLine,
   areLabSetsEquivalent,
   isDuplicateAgainstLatest,
+  areDuplicateLabSets,
+  findDuplicateLabSetIdsToRemove,
 } from './lab-history-auto-store-core.mjs';
 
 test('normalizeLabLine colapsa espacios y trim', () => {
@@ -32,4 +34,37 @@ test('isDuplicateAgainstLatest false cuando cambia una linea', () => {
   var latest = { fecha: '01/05/2026', hora: '08:30', resLabs: ['Hb 12.1', 'Cr 1.0'] };
   var incoming = { fecha: '01/05/2026', hora: '08:30', resLabs: ['Hb 12.1', 'Cr 1.1'] };
   assert.equal(isDuplicateAgainstLatest(latest, incoming), false);
+});
+
+test('areDuplicateLabSets simétrico', () => {
+  var x = { fecha: '01/05/2026', hora: '08:30', resLabs: ['Hb 12.1'] };
+  var y = { fecha: '01/05/2026', hora: '08:30', resLabs: ['Hb 12.1'] };
+  assert.equal(areDuplicateLabSets(x, y), true);
+  assert.equal(areDuplicateLabSets(y, x), true);
+});
+
+test('findDuplicateLabSetIdsToRemove conserva id más antiguo', () => {
+  var sets = [
+    { id: '200', fecha: '01/01/2026', hora: '10:00', resLabs: ['Hb 12.1'] },
+    { id: '100', fecha: '01/01/2026', hora: '10:00', resLabs: ['Hb 12.1'] },
+  ];
+  assert.deepEqual(findDuplicateLabSetIdsToRemove(sets), ['200']);
+});
+
+test('findDuplicateLabSetIdsToRemove cadena triple deja uno', () => {
+  var sets = [
+    { id: '10', fecha: '01/01/2026', hora: '10:00', resLabs: ['A'] },
+    { id: '20', fecha: '01/01/2026', hora: '10:00', resLabs: ['A'] },
+    { id: '30', fecha: '01/01/2026', hora: '10:00', resLabs: ['A'] },
+  ];
+  var rm = findDuplicateLabSetIdsToRemove(sets).sort();
+  assert.deepEqual(rm, ['20', '30']);
+});
+
+test('findDuplicateLabSetIdsToRemove vacío si hora distinta', () => {
+  var sets = [
+    { id: '100', fecha: '01/01/2026', hora: '10:00', resLabs: ['Hb 12.1'] },
+    { id: '200', fecha: '01/01/2026', hora: '11:00', resLabs: ['Hb 12.1'] },
+  ];
+  assert.deepEqual(findDuplicateLabSetIdsToRemove(sets), []);
 });
