@@ -664,7 +664,7 @@ function detectMarcasResistenciaCultivo(lineasTexto) {
   for (i = 0; i < lineasTexto.length; i++) {
     var L = lineasTexto[i].replace(/\*+$/g, '').trim();
     if (/^ANTIBIOGRAMA/i.test(L)) { inAb = true; continue; }
-    if (inAb && /^MICROORGANISMO|^IDENTIFICACION/i.test(L)) break;
+    if (inAb && /^MICROORGANISMO|^IDENTIFICACION/i.test(L)) { inAb = false; continue; }
     if (!inAb) continue;
     var p = parseInterpAntibiograma(L);
     if (!p || !p.interp) continue;
@@ -722,24 +722,88 @@ function compactarLineasAntibiograma(sensCrudas, abreviarFn) {
   return 'ATB ' + parts.join('\n');
 }
 
+/**
+ * Todos los aislamientos con nombre tras MICROORGANISMO (uro/hemo polimicrobiano).
+ * Corta antes del siguiente MICROORGANISMO o de la sección MALDI.
+ */
+function findCultivoGermenRuns(lineasTexto) {
+  var runs = [];
+  for (var i = 0; i < lineasTexto.length; i++) {
+    var L = lineasTexto[i].replace(/\r/g, '').replace(/\*+$/g, '').trim();
+    if (!/^MICROORGANISMO(\s|$)/i.test(L)) continue;
+    var germen = '';
+    var nameEnd = i;
+    for (var k = i + 1; k < Math.min(i + 14, lineasTexto.length); k++) {
+      var cand = lineasTexto[k].replace(/\r/g, '').replace(/\*/g, '').trim();
+      if (!cand) continue;
+      if (/^COMENTARIO/i.test(cand)) break;
+      if (/^MICROORGANISMO/i.test(cand)) break;
+      if (/^ANTIBIOGRAMA/i.test(cand)) break;
+      if (/^CUENTA/i.test(cand)) break;
+      if (!/MALDI|IDENTIF|ESPECTROMETRIA|ESPECTRO/i.test(cand)) {
+        germen = cand.toUpperCase();
+        nameEnd = k;
+        break;
+      }
+    }
+    if (!germen) continue;
+    var end = lineasTexto.length;
+    for (var m = i + 1; m < lineasTexto.length; m++) {
+      var Lm = lineasTexto[m].replace(/\r/g, '').replace(/\*+$/g, '').trim();
+      if (/^MICROORGANISMO(\s|$)/i.test(Lm) && m > nameEnd) {
+        end = m;
+        break;
+      }
+      if (/^IDENTIFICACION\s+POR\s+ESPECTROMETRIA/i.test(Lm)) {
+        end = m;
+        break;
+      }
+    }
+    runs.push({ germen: germen, i0: i, i1: end });
+    i = end - 1;
+  }
+  return runs;
+}
+
+function extractCuentaKassFromLineas(sliceLines) {
+  var tNorm = sliceLines.join(' ').replace(/\s+/g, ' ');
+  var tUpper = tNorm.toUpperCase();
+  var pCuenta = tUpper.indexOf('CUENTA DE KASS');
+  if (pCuenta === -1) pCuenta = tUpper.indexOf('CUENTA');
+  if (pCuenta === -1) return '';
+  var fragC = tNorm.substring(pCuenta, pCuenta + 110);
+  var fragBeforeAb = fragC.split(/\bANTIBIOGRAMA\b/i)[0];
+  var mUfc = fragBeforeAb.match(/\+?\d[\d,]*(?:\.\d+)?\s*UFC/i);
+  if (mUfc) return mUfc[0].replace(/\s+/g, '').toUpperCase();
+  var mC = fragBeforeAb.match(/([<>]=?\s?\d+(\.\d+)?\s*[A-Z%\/]*)/i);
+  if (mC) return mC[1].trim().toUpperCase();
+  return '';
+}
+
+function parseSensCrudasAntibiogramaSlice(lineasAb) {
+  var sensCrudas = [];
+  for (var i = 0; i < lineasAb.length - 1; i++) {
+    var nL = lineasAb[i], vL = lineasAb[i + 1];
+    if (!nL || nL.length <= 3 || /ANTIBIOGRAMA|MICROORGANISMO|COMENTARIO:?|CUENTA|PRODUCTO|ESTADO|MUESTRA|GRAM|IDENTIFICACION|ESTUDIO\s+RESULTADO/i.test(nL)) continue;
+    var parsed = parseInterpAntibiograma(vL);
+    if (!parsed) {
+      var lim = vL.toUpperCase();
+      if (/^(S|R|I)$/.test(lim)) parsed = { mic: '', interp: lim };
+    }
+    if (parsed && parsed.interp) sensCrudas.push({ med: nL.toUpperCase(), mic: parsed.mic, interp: parsed.interp });
+  }
+  return sensCrudas;
+}
+
 export function parseCultivo_(textoBruto,tNorm){
   var tUpper=tNorm.toUpperCase();
   if(tUpper.indexOf('HEMOCULTIVO')===-1&&tUpper.indexOf('CULTIVO')===-1&&tUpper.indexOf('MICROORGANISMO')===-1&&tUpper.indexOf('MYCOBACTERIAS')===-1&&tUpper.indexOf('BACILOSCOPIA')===-1)return '';
-  var germen='',cuenta='',fechaC='N/D';
+  var fechaC='N/D';
   var mFecha=tNorm.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
   if(mFecha)fechaC=mFecha[1].padStart(2,'0')+'/'+mFecha[2].padStart(2,'0');
   var lineasTexto=textoBruto.split('\n').map(function(l){return l.replace(/\r/g,'');});
   var sitio = buildCultivoTipoDisplay(detectTipoCultivoLine(lineasTexto), detectMuestraDesdeProducto(lineasTexto));
-  var idxMicro=-1;for(var i=0;i<lineasTexto.length;i++){if(lineasTexto[i].toUpperCase().indexOf('MICROORGANISMO')!==-1){idxMicro=i;break;}}
-  if(idxMicro!==-1){for(var k=idxMicro+1;k<Math.min(idxMicro+6,lineasTexto.length);k++){var cand=lineasTexto[k].replace(/\*/g,'').trim();if(!cand)continue;if(/COMENTARIO/i.test(cand))break;if(/MICROORGANISMO/i.test(cand))continue;if(!/MALDI|IDENTIF|ESPECTRO/i.test(cand)){germen=cand.toUpperCase();break;}}}
-  var pCuenta=tUpper.indexOf('CUENTA DE KASS');if(pCuenta===-1)pCuenta=tUpper.indexOf('CUENTA');
-  if(pCuenta!==-1){
-    var fragC=tNorm.substring(pCuenta,pCuenta+110);
-    var fragBeforeAb=fragC.split(/\bANTIBIOGRAMA\b/i)[0];
-    var mUfc=fragBeforeAb.match(/\+?\d[\d,]*(?:\.\d+)?\s*UFC/i);
-    if(mUfc)cuenta=mUfc[0].replace(/\s+/g,'').toUpperCase();
-    else{var mC=fragBeforeAb.match(/([<>]=?\s?\d+(\.\d+)?\s*[A-Z%\/]*)/i);if(mC)cuenta=mC[1].trim().toUpperCase();}
-  }
+  var germenRuns = findCultivoGermenRuns(lineasTexto);
   var marcasRes = detectMarcasResistenciaCultivo(lineasTexto);
   function abreviarAb(n){
     n=n.toUpperCase().trim();
@@ -773,15 +837,29 @@ export function parseCultivo_(textoBruto,tNorm){
     var base=n.replace(/\bSODICO\b|\bSODIUM\b|\bDISODICO\b/g,'').trim().split('(')[0].trim().split(/\s+/)[0];
     return base.length>10?base.substring(0,10):base;
   }
-  if(germen){
-    var res=sitio+' '+fechaC+': '+germen;
-    if (marcasRes.length) res += ' · ' + marcasRes.join(' · ');
-    var idxAb=textoBruto.toUpperCase().indexOf('ANTIBIOGRAMA');
-    if(idxAb!==-1){var lineasAb=textoBruto.substring(idxAb).split('\n').map(function(l){return l.replace(/\r/g,'').replace(/\*/g,'').trim();});var sensCrudas=[];
-      for(var i=0;i<lineasAb.length-1;i++){var nL=lineasAb[i],vL=lineasAb[i+1];if(!nL||nL.length<=3||/ANTIBIOGRAMA|MICROORGANISMO|COMENTARIO:?|CUENTA|PRODUCTO|ESTADO|MUESTRA|GRAM|IDENTIFICACION|ESTUDIO\s+RESULTADO/i.test(nL))continue;var parsed=parseInterpAntibiograma(vL);if(!parsed){var lim=vL.toUpperCase();if(/^(S|R|I)$/.test(lim))parsed={mic:'',interp:lim};}if(parsed&&parsed.interp)sensCrudas.push({med:nL.toUpperCase(),mic:parsed.mic,interp:parsed.interp});}
-      var abCompact=compactarLineasAntibiograma(sensCrudas,abreviarAb);
-      if(abCompact)res+='\n'+abCompact;}
-    if(cuenta)res+='\nCuenta: '+cuenta;return res;
+  if(germenRuns.length){
+    var chunks = [];
+    for (var ri = 0; ri < germenRuns.length; ri++) {
+      var run = germenRuns[ri];
+      var sliceLines = lineasTexto.slice(run.i0, run.i1);
+      var subNorm = sliceLines.join('\n');
+      var idxAbLoc = subNorm.toUpperCase().indexOf('ANTIBIOGRAMA');
+      var head = (ri === 0) ? (sitio + ' ' + fechaC + ': ' + run.germen) : run.germen;
+      if (ri === 0 && marcasRes.length) head += ' · ' + marcasRes.join(' · ');
+      var chunk = head;
+      if (idxAbLoc !== -1) {
+        var lineasAb = subNorm.substring(idxAbLoc).split('\n').map(function(l) {
+          return l.replace(/\r/g, '').replace(/\*/g, '').trim();
+        });
+        var sensCrudas = parseSensCrudasAntibiogramaSlice(lineasAb);
+        var abCompact = compactarLineasAntibiograma(sensCrudas, abreviarAb);
+        if (abCompact) chunk += '\n' + abCompact;
+      }
+      var cuentaRun = extractCuentaKassFromLineas(sliceLines);
+      if (cuentaRun) chunk += '\nCuenta: ' + cuentaRun;
+      chunks.push(chunk);
+    }
+    return chunks.join('\n\n');
   } else {
     if(tNorm.toUpperCase().indexOf('BACILOSCOPIA')!==-1&&tNorm.toUpperCase().indexOf('POSITIVO')!==-1){var mPos=tNorm.match(/BACILOSCOPIA[^\.\n]*POSITIVO[^\n\.]*/i);return 'BACILOSCOPIA '+fechaC+': '+(mPos?mPos[0].trim():'BACILOSCOPIA POSITIVA');}
     var estado='NEGATIVO';var pEst=tUpper.indexOf('ESTADO');if(pEst!==-1){var fEst=tNorm.substring(pEst+17,pEst+80).split('*')[1]||tNorm.substring(pEst+17,pEst+80);estado=fEst.split('MICRO')[0].split('PRODUCTO')[0].trim().toUpperCase();}

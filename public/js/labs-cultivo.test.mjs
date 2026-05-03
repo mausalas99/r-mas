@@ -117,6 +117,56 @@ CEFOXITINA
   assert.match(out, /Cuenta:.*100,000.*UFC/i);
 });
 
+test('urocultivo polimicrobiano: Klebsiella y Enterococcus con ATB por germen', () => {
+  const raw = `
+BACTERIOLOGIA
+UROCULTIVO POR SONDA
+PRODUCTO
+*
+MICROORGANISMO
+*
+Klebsiella pneumoniae
+COMENTARIO:
+AISLAMIENTO PRODUCTOR DE BETALACTAMASAS (BLEE)
+CUENTA DE KASS
+*
++100,000 UFC/mL
+ANTIBIOGRAMA
+*
+CEFTRIAXONA
+>32	ESBL
+*
+MICROORGANISMO
+*
+Enterococcus faecium
+COMENTARIO:
+*
+CUENTA DE KASS
+*
++100,000 UFC/mL
+ANTIBIOGRAMA
+*
+AMPICILINA
+>8	R
+*
+VANCOMICINA
+<=0.5	S
+*
+IDENTIFICACION POR ESPECTROMETRIA DE MASAS (MALDI TOF)
+MICROORGANISMO
+*
+`;
+  const tNorm = norm(raw);
+  const out = parseCultivo_(raw, tNorm);
+  assert.match(out, /KLEBSIELLA PNEUMONIAE/i);
+  assert.match(out, /ENTEROCOCCUS FAECIUM/i);
+  assert.match(out, /\bBLEE\b/);
+  const kIdx = out.indexOf('KLEBSIELLA');
+  const eIdx = out.indexOf('ENTEROCOCCUS');
+  assert.ok(kIdx !== -1 && eIdx !== -1 && kIdx < eIdx, 'orden: Klebsiella antes que Enterococcus');
+  assert.match(out, /\bAMP\b|\bAMPICILINA/i);
+});
+
 test('comentario: carbapenemasa NDM y fenotipo Carb-R', () => {
   const raw = `
 BACTERIOLOGIA

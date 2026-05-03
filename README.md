@@ -2,7 +2,15 @@
 
 Herramienta clínica de escritorio para generación de **notas de evolución**, **indicaciones médicas** y visualización de **laboratorios** con diagramas automáticos.
 
-**Versión estable actual: [2.1.0](https://github.com/mausalas99/r-mas/releases/tag/v2.1.0)** — descarga desde [Releases (última)](https://github.com/mausalas99/r-mas/releases/latest).
+**Versión estable actual: [2.1.1](https://github.com/mausalas99/r-mas/releases/tag/v2.1.1)** — descarga desde [Releases (última)](https://github.com/mausalas99/r-mas/releases/latest).
+
+---
+
+## R+ 2.1.1 (parche — cultivos polimicrobianos)
+
+- **Cultivos** — Si el informe trae varios `MICROORGANISMO` con aislamientos distintos (p. ej. Klebsiella y Enterococcus en el mismo urocultivo), el resumen incluye **cada germen** con su antibiograma compacto y cuenta asociada; el bloque MALDI no mezcla resultados posteriores.
+
+Notas: `docs/RELEASE_NOTES_2.1.1.txt`.
 
 ---
 
@@ -56,8 +64,8 @@ Notas extendidas en el repo: docs/RELEASE_NOTES_2.0.0.txt (texto plano).
 
 Descarga el `.dmg` correspondiente a tu procesador desde [Releases](https://github.com/mausalas99/r-mas/releases/latest):
 
-- `R+-2.1.0-arm64.dmg` — Apple Silicon (M1/M2/M3/M4) *(sustituye `2.1.0` por el número de la última release si lees esto en el futuro)*
-- `R+-2.1.0-x64.dmg` — Intel
+- `R+-2.1.1-arm64.dmg` — Apple Silicon (M1/M2/M3/M4) *(sustituye `2.1.1` por el número de la última release si lees esto en el futuro)*
+- `R+-2.1.1-x64.dmg` — Intel
 
 Abre el `.dmg`, arrastra R+ a Aplicaciones y ejecútalo.
 
@@ -65,7 +73,7 @@ Abre el `.dmg`, arrastra R+ a Aplicaciones y ejecútalo.
 
 ### Windows
 
-Descarga `R+-2.1.0-x64.exe` (nombre `R+-<versión>-x64.exe`) desde [Releases](https://github.com/mausalas99/r-mas/releases/latest) y ejecútalo. La instalación es automática.
+Descarga `R+-2.1.1-x64.exe` (nombre `R+-<versión>-x64.exe`) desde [Releases](https://github.com/mausalas99/r-mas/releases/latest) y ejecútalo. La instalación es automática.
 
 > Si Windows SmartScreen advierte sobre el archivo: Más información → Ejecutar de todas formas.
 

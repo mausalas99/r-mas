@@ -1,0 +1,13 @@
+R+ 2.1.1
+
+LABORATORIO — BACTERIOLOGÍA / CULTIVOS
+- Cultivos con más de un microorganismo (p. ej. urocultivo polimicrobiano): cada aislamiento aparece en su propio bloque con su antibiograma compacto y su cuenta UFC cuando el informe los trae separados.
+- Detección de marcas de resistencia y ESBL/BLEE revisada para recorrer todos los tramos de antibiograma del informe, no solo el primero.
+
+INSTALACIÓN
+
+Mac Apple Silicon: R+-2.1.1-arm64.dmg
+Mac Intel: R+-2.1.1-x64.dmg
+Windows: R+-2.1.1-x64.exe
+
+Auto-actualización: latest-mac.yml y latest.yml junto a los binarios.

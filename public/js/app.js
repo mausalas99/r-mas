@@ -2144,6 +2144,13 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '2.1.1': [
+    {
+      title: 'Cultivos polimicrobianos',
+      body:
+        'Cuando el informe lista varios microorganismos (urocultivo u otros), cada aislamiento se resume con su antibiograma y su cuenta UFC.',
+    },
+  ],
   '2.1.0': [
     {
       title: 'Cultivos y antibiograma',
