@@ -2144,6 +2144,23 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '2.1.0': [
+    {
+      title: 'Cultivos y antibiograma',
+      body:
+        'Tipo de cultivo y muestra en el resumen; marcas de resistencia (BLEE, carbapenemasas, etc.); antibiograma compacto solo con R, I y ESBL.',
+    },
+    {
+      title: 'Citoquímico de líquidos',
+      body:
+        'Se procesa el bloque de líquidos corporales (Liq:) sin mezclar esos valores con la química de suero.',
+    },
+    {
+      title: 'Barra lateral',
+      body:
+        'La lista de pacientes hace scroll por dentro; Mi Perfil y Guardar perfil siguen al alcance.',
+    },
+  ],
   '2.0.1': [
     {
       title: 'Modal de actualización',

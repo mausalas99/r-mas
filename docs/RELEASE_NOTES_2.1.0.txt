@@ -1,0 +1,22 @@
+R+ 2.1.0
+
+LABORATORIO — BACTERIOLOGÍA / CULTIVOS
+- Tipo de cultivo explícito en el resumen: urocultivo, hemocultivo, cultivo de catéter, con muestra (PRODUCTO) entre paréntesis cuando aplica.
+- Comentarios y patrones de resistencia: BLEE, ESBL, carbapenemasas (KPC, NDM, VIM, IMP, OXA-48, MBL, etc.), CRE/Carb-R, AmpC, MRSA, VRE, colistina R; deduplicación razonable con el antibiograma.
+- Antibiograma en texto compacto: solo R, I y ESBL (sin listar sensibles); abreviaturas de fármacos; deduplica si hay varios gérmenes.
+- Cuentas UFC (p. ej. +100,000 UFC) y pareo mejorado de interpretaciones (incl. ESBL en columnas).
+
+LABORATORIO — CITOQUÍMICO
+- Procesamiento de CITOQUIMICO DE LIQUIDOS CORPORALES (química + tramo de bacteriología/citología del mismo estudio); salida bajo etiqueta Liq:.
+- La química de ese bloque no contamina QS/PFH del suero (se excluye del texto normalizado antes de parsear).
+
+INTERFAZ
+- Barra lateral: lista de pacientes con scroll propio; Mi Perfil siempre accesible; cuerpo del perfil con altura máxima y scroll si hace falta.
+
+INSTALACIÓN
+
+Mac Apple Silicon: R+-2.1.0-arm64.dmg
+Mac Intel: R+-2.1.0-x64.dmg
+Windows: R+-2.1.0-x64.exe
+
+Auto-actualización: latest-mac.yml y latest.yml junto a los binarios.
