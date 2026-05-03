@@ -2,7 +2,16 @@
 
 Herramienta clínica de escritorio para generación de **notas de evolución**, **indicaciones médicas** y visualización de **laboratorios** con diagramas automáticos.
 
-**Versión estable actual: [2.1.1](https://github.com/mausalas99/r-mas/releases/tag/v2.1.1)** — descarga desde [Releases (última)](https://github.com/mausalas99/r-mas/releases/latest).
+**Versión estable actual: [2.1.2](https://github.com/mausalas99/r-mas/releases/tag/v2.1.2)** — descarga desde [Releases (última)](https://github.com/mausalas99/r-mas/releases/latest).
+
+---
+
+## R+ 2.1.2 (parche — historial y expediente en laboratorio)
+
+- **Historial de labs** — Sincronizar duplicados (misma fecha, hora y bloques de resultados): botón en Laboratorio y revisión global en **Ajustes → Laboratorio**; se conserva la entrada más antigua de cada grupo.
+- **Pegar reporte** — Si el expediente del texto coincide con otro paciente, la selección cambia a ese paciente; si el registro no está en la lista, no se guarda automáticamente en el historial del paciente activo.
+
+Notas: `docs/RELEASE_NOTES_2.1.2.txt`.
 
 ---
 
@@ -64,8 +73,8 @@ Notas extendidas en el repo: docs/RELEASE_NOTES_2.0.0.txt (texto plano).
 
 Descarga el `.dmg` correspondiente a tu procesador desde [Releases](https://github.com/mausalas99/r-mas/releases/latest):
 
-- `R+-2.1.1-arm64.dmg` — Apple Silicon (M1/M2/M3/M4) *(sustituye `2.1.1` por el número de la última release si lees esto en el futuro)*
-- `R+-2.1.1-x64.dmg` — Intel
+- `R+-2.1.2-arm64.dmg` — Apple Silicon (M1/M2/M3/M4) *(sustituye `2.1.2` por el número de la última release si lees esto en el futuro)*
+- `R+-2.1.2-x64.dmg` — Intel
 
 Abre el `.dmg`, arrastra R+ a Aplicaciones y ejecútalo.
 
@@ -73,7 +82,7 @@ Abre el `.dmg`, arrastra R+ a Aplicaciones y ejecútalo.
 
 ### Windows
 
-Descarga `R+-2.1.1-x64.exe` (nombre `R+-<versión>-x64.exe`) desde [Releases](https://github.com/mausalas99/r-mas/releases/latest) y ejecútalo. La instalación es automática.
+Descarga `R+-2.1.2-x64.exe` (nombre `R+-<versión>-x64.exe`) desde [Releases](https://github.com/mausalas99/r-mas/releases/latest) y ejecútalo. La instalación es automática.
 
 > Si Windows SmartScreen advierte sobre el archivo: Más información → Ejecutar de todas formas.
 

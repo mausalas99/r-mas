@@ -2147,6 +2147,18 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '2.1.2': [
+    {
+      title: 'Duplicados en historial de labs',
+      body:
+        'Sincronizar desde Laboratorio o revisar todos los pacientes en Ajustes → Laboratorio; se quitan entradas repetidas y se mantiene la copia más antigua.',
+    },
+    {
+      title: 'Expediente al pegar el reporte',
+      body:
+        'Si el texto trae un registro que coincide con otro paciente, R+ cambia a ese paciente. Si el registro no está en la lista, no se guarda el lab en el historial del activo por error.',
+    },
+  ],
   '2.1.1': [
     {
       title: 'Cultivos polimicrobianos',
