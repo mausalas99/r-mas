@@ -288,6 +288,141 @@ export function parsearLCR(textoBruto) {
   return p[0]+'\t'+p.slice(1).join(' ');
 }
 
+/** Texto completo desde 1.ª aparición hasta fin del 2.º tramo (incluye BACTERIOLOGIA intermedia). */
+function bloqueCitoquimicoLiquidosFull(textoBruto) {
+  var t = textoBruto.replace(/\r/g, '');
+  var u = t.toUpperCase();
+  var key = 'CITOQUIMICO DE LIQUIDOS CORPORALES';
+  var i0 = u.indexOf(key);
+  if (i0 === -1) return '';
+  var i2 = u.indexOf(key, i0 + key.length);
+  if (i2 === -1) return t.substring(i0);
+  var afterSecond = t.substring(i2 + key.length);
+  var stop = afterSecond.search(/\n\n\s*(?:QUIMICA CLINICA|HEMATOLOGIA|INMUNOLOGIA|GASOMETRIA|BANDEJA)\b/i);
+  var end = stop === -1 ? t.length : i2 + key.length + stop;
+  return t.substring(i0, end);
+}
+
+/**
+ * Citoquímico de líquidos corporales (ascitis, pleural, peritoneal, etc.).
+ * No confundir con LCR (parsearLCR).
+ */
+export function parsearCitoquimicoLiquidos(textoBruto) {
+  var bloque = bloqueCitoquimicoLiquidosFull(textoBruto);
+  if (!bloque) return '';
+  var lineas = bloque.split(/\r?\n/).map(function(l) { return l.trim(); });
+  var fluid = '', dens = '', pH = '', glu = '', prot = '', ldh = '', aspecto = '', leu = '',
+    rec = '', pmn = '', eri = '', gram = '', com = '';
+  function nextMeaningful(i0, maxJ) {
+    for (var j = i0 + 1; j < Math.min(i0 + maxJ, lineas.length); j++) {
+      var txt = lineas[j].replace(/\*/g, '').trim();
+      if (!txt) continue;
+      if (/^ESTUDIO|RESULTADO|UNIDADES|VALOR DE REFERENCIA$/i.test(txt)) continue;
+      return txt;
+    }
+    return '';
+  }
+  for (var i = 0; i < lineas.length; i++) {
+    var lin = lineas[i];
+    var linUp = lin.toUpperCase();
+    if (/^CITOQUIMICO DE\s*$/i.test(lin) && !/CORPORALES/i.test(lin)) {
+      var f = nextMeaningful(i, 6);
+      if (f && !/^:$/.test(f)) fluid = f.toUpperCase();
+    }
+    if (linUp.indexOf('DENSIDAD') === 0) {
+      for (var j = i + 1; j < Math.min(i + 5, lineas.length); j++) {
+        var m = lineas[j].match(/(\d+\.\d+|\d+)/);
+        if (m) { dens = m[1]; break; }
+      }
+    }
+    if (linUp === 'PH' || linUp.indexOf('PH\t') === 0) {
+      for (var j = i + 1; j < Math.min(i + 5, lineas.length); j++) {
+        var m = lineas[j].match(/(\d+(\.\d+)?)/);
+        if (m) { pH = m[1]; break; }
+      }
+    }
+    if (linUp.indexOf('GLUCOSA') === 0) {
+      for (var j = i + 1; j < Math.min(i + 5, lineas.length); j++) {
+        var m = lineas[j].match(/(\d+(\.\d+)?)/);
+        if (m) { glu = m[1]; break; }
+      }
+    }
+    if (linUp.indexOf('PROTEINAS') === 0) {
+      var mL = lin.match(/PROTEINAS\s*([A-Z])\s*$/i);
+      var letra = mL ? mL[1].toUpperCase() : '';
+      for (var j = i + 1; j < Math.min(i + 5, lineas.length); j++) {
+        var m = lineas[j].match(/(\d+(\.\d+)?)/);
+        if (m) { prot = m[1] + letra; break; }
+      }
+    }
+    if (linUp.indexOf('LDH') === 0) {
+      for (var j = i + 1; j < Math.min(i + 5, lineas.length); j++) {
+        var m = lineas[j].match(/(\d+(\.\d+)?)/);
+        if (m) { ldh = m[1]; break; }
+      }
+    }
+    if (linUp.indexOf('ASPECTO') === 0) {
+      var a = nextMeaningful(i, 5);
+      if (a && !/^:$/.test(a)) aspecto = a.toUpperCase();
+    }
+    if (linUp.indexOf('RECUENTO') === 0 && linUp.indexOf('LEUCOCITOS') === -1) {
+      var bits = [];
+      for (var j = i + 1; j < Math.min(i + 5, lineas.length); j++) {
+        var c = lineas[j].replace(/\*/g, '').trim();
+        if (!c) continue;
+        if (/^LEUCOCITOS/i.test(c)) break;
+        if (/^\d+[.,]?\d*$/.test(c) || /^[A-Z]$/i.test(c)) bits.push(c.toUpperCase());
+        if (bits.length >= 2) break;
+      }
+      if (bits.length) rec = bits.join(' ');
+    }
+    if (/^LEUCOCITOS/i.test(linUp)) {
+      for (var j = i - 1; j >= Math.max(0, i - 6); j--) {
+        var c = lineas[j].replace(/\*/g, '').trim();
+        if (/^\d+[.,]?\d*$/.test(c)) { leu = c.replace(',', '.'); break; }
+      }
+      if (!leu) {
+        for (var j = i + 1; j < Math.min(i + 8, lineas.length); j++) {
+          var c = lineas[j].replace(/\*/g, '').trim();
+          if (/^\d+[.,]?\d*$/.test(c)) { leu = c.replace(',', '.'); break; }
+        }
+      }
+    }
+    if (linUp.indexOf('POLIMORFONUCLEARES') === 0) {
+      var ptxt = nextMeaningful(i, 5);
+      if (ptxt) pmn = ptxt.toUpperCase();
+    }
+    if (linUp.indexOf('ERITROCITOS') === 0) {
+      var etxt = nextMeaningful(i, 5);
+      if (etxt) eri = etxt.toUpperCase();
+    }
+    if (linUp.indexOf('GRAM') === 0) {
+      var g = nextMeaningful(i, 5);
+      if (g) gram = g.toUpperCase();
+    }
+    if (linUp.indexOf('COMENTARIO') === 0) {
+      var cx = nextMeaningful(i, 4);
+      if (cx && !/^\*+$/.test(cx)) com = cx.toUpperCase();
+    }
+  }
+  if (!fluid && !dens && !pH && !glu && !prot && !ldh && !aspecto && !leu && !rec && !pmn && !eri && !gram && !com) return '';
+  var p = ['Liq:'];
+  if (fluid) p.push('Tipo', fluid);
+  if (dens) p.push('Dens', dens);
+  if (pH) p.push('pH', pH);
+  if (glu) p.push('Glu', glu);
+  if (prot) p.push('Prot', prot);
+  if (ldh) p.push('LDH', ldh);
+  if (aspecto) p.push('Asp', aspecto);
+  if (rec) p.push('Rec', rec);
+  if (leu) p.push('Leu', leu);
+  if (pmn) p.push('PMN', pmn);
+  if (eri) p.push('Eri', eri);
+  if (gram) p.push('Gram', gram);
+  if (com) p.push('Obs', com);
+  return p[0] + '\t' + p.slice(1).join(' ');
+}
+
 export function parseEGO_(textoBruto) {
   var tUp=textoBruto.toUpperCase();
   var pos=tUp.indexOf('EXAMEN GENERAL DE ORINA')!==-1?tUp.indexOf('EXAMEN GENERAL DE ORINA'):
@@ -402,26 +537,250 @@ export function parseCuantOrina_(textoBruto) {
   return parts[0] + '\t' + parts.slice(1).join(' ');
 }
 
+function detectTipoCultivoLine(lineasTexto) {
+  var idxBact = -1;
+  for (var i = 0; i < lineasTexto.length; i++) {
+    if (/BACTERIOLOGIA/i.test(lineasTexto[i])) { idxBact = i; break; }
+  }
+  if (idxBact === -1) return '';
+  for (var i = idxBact + 1; i < Math.min(idxBact + 35, lineasTexto.length); i++) {
+    var l = lineasTexto[i].replace(/\r/g, '').replace(/\*/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!l) continue;
+    var lUp = l.toUpperCase();
+    if (/^BACTERIOLOGIA$/.test(lUp)) continue;
+    if (/^ESTUDIO(\s+RESULTADO)?$/.test(lUp)) continue;
+    if (/^RESULTADO$/.test(lUp) || /^UNIDADES$/.test(lUp) || /^VALOR DE REFERENCIA$/.test(lUp)) continue;
+    if (/^PRODUCTO$/.test(lUp)) break;
+    if (/\bUROCULTIVO\b/i.test(l) || /\bHEMOCULTIVO\b/i.test(l) || /^CATETER(\b|$)/i.test(lUp))
+      return l;
+  }
+  return '';
+}
+
+function detectMuestraDesdeProducto(lineasTexto) {
+  var idxProd = -1;
+  for (var i = 0; i < lineasTexto.length; i++) {
+    if (lineasTexto[i].toUpperCase().indexOf('PRODUCTO') !== -1) { idxProd = i; break; }
+  }
+  if (idxProd === -1) return '';
+  for (var j = idxProd + 1; j < Math.min(idxProd + 14, lineasTexto.length); j++) {
+    var s = lineasTexto[j].replace(/\r/g, '').replace(/\*/g, '').trim();
+    if (!s) continue;
+    if (/^TINCION(\s+DE)?\s*GRAM/i.test(s)) break;
+    if (/^CALIDAD DE LA MUESTRA$/i.test(s)) break;
+    if (/^ESTADO DE CULTIVO$/i.test(s)) break;
+    if (/^REPORTE PRELIMINAR$/i.test(s)) break;
+    if (/^MICROORGANISMO$/i.test(s)) break;
+    if (/^COMENTARIO/i.test(s)) break;
+    return s;
+  }
+  return '';
+}
+
+function buildCultivoTipoDisplay(tipoLine, muestra) {
+  var t = tipoLine ? tipoLine.replace(/\s+/g, ' ').trim().toUpperCase() : '';
+  var m = muestra ? muestra.replace(/\s+/g, ' ').trim().toUpperCase() : '';
+  if (t && m) return t + ' (' + m + ')';
+  if (t) return t;
+  if (m) return 'CULTIVO (' + m + ')';
+  return 'CULTIVO';
+}
+
+function parseInterpAntibiograma(vL) {
+  var vClean = vL.replace(/\*+$/g, '').trim();
+  if (!vClean) return null;
+  var tabs = vClean.split(/\t+/).map(function(x) { return x.trim(); }).filter(Boolean);
+  if (tabs.length >= 2) {
+    var interp = tabs[tabs.length - 1].toUpperCase().replace(/\*+$/, '');
+    var mic = tabs.slice(0, -1).join(' ').trim();
+    if (/^(S|R|I|NEG|POS|ESBL|BLEE|KPC|NDM|VIM|IMP|MBL)$/.test(interp)) return { mic: mic, interp: interp };
+    if (/^NO\s+SUSCEPTIBLE$/i.test(interp)) return { mic: mic, interp: 'NO SUSCEPTIBLE' };
+  }
+  var mV = vClean.match(/^([<>]=?\s*\d+(?:\.\d+)?)\s+(S|R|I|NEG|POS|ESBL|BLEE|KPC|NDM|VIM|IMP|MBL)$/i);
+  if (mV) return { mic: mV[1].replace(/\s/g, ''), interp: mV[2].toUpperCase() };
+  var mN = vClean.match(/^(\d+)\s+(S|R|I|ESBL|BLEE|KPC|NDM|VIM|IMP|MBL)$/i);
+  if (mN) return { mic: mN[1], interp: mN[2].toUpperCase() };
+  var lim = vClean.toUpperCase();
+  if (/^(S|R|I)$/.test(lim)) return { mic: '', interp: lim };
+  if (/NO\s+SUSCEPTIBLE/i.test(vClean)) return { mic: '', interp: 'NO SUSCEPTIBLE' };
+  return null;
+}
+
+/** Orden de visualización: carbapenemasas y mecanismos graves primero. */
+var ORDEN_MARCA_RESISTENCIA = {
+  KPC: 1, NDM: 2, VIM: 3, IMP: 4, 'OXA-48': 5, 'OXA-otras': 6, MBL: 7, SPM: 8, GIM: 9,
+  ESBL: 20, BLEE: 21, CRE: 30, 'Carb-R': 31, AmpC: 40, MRSA: 50, VRE: 51, 'Col-R': 52,
+};
+
+/**
+ * Detecta mecanismos y fenotipos de resistencia en texto de bacteriología (comentarios, notas, MALDI).
+ * Incluye carbapenemasas (KPC, NDM, OXA-48, VIM, IMP, MBL…), ESBL/BLEE, CRE, AmpC, MRSA/VRE, colistin R.
+ */
+function extractMarcasResistenciaDesdeTexto(texto) {
+  var u = texto.toUpperCase().replace(/Á/g, 'A').replace(/É/g, 'E').replace(/Í/g, 'I').replace(/Ó/g, 'O').replace(/Ú/g, 'U');
+  var seen = {};
+  var tags = [];
+  function add(tag) {
+    if (!tag || seen[tag]) return;
+    seen[tag] = 1;
+    tags.push(tag);
+  }
+  if (/\bKPC\b|KPC-/.test(u)) add('KPC');
+  if (/\bNDM\b|NDM-/.test(u)) add('NDM');
+  if (/\bVIM\b|VIM-/.test(u)) add('VIM');
+  if (/\bIMP-\d|\bIMP\s*1\b|\bIMP1\b/.test(u) || /BETALACTAMASA\s+IMP/.test(u)) add('IMP');
+  if (/\bOXA[- ]?48\b|OXA48\b/.test(u)) add('OXA-48');
+  if (/\bOXA[- ]?(23|24|51|58)(?![0-9])\b/i.test(u)) add('OXA-otras');
+  if (/\bMBL\b|METALO\s*BETA|METALOCARBAPENEMAS|METALO-?\s*BETALACTAMASA|BETALACTAMASA\s+DE\s+ZINC/.test(u)) add('MBL');
+  if (/\bSPM\b|SPM-/.test(u)) add('SPM');
+  if (/\bGIM\b|GIM-/.test(u)) add('GIM');
+  if (/\bCPE\b|\bCRE\b|ENTEROBACTER(I)?A\s+RESISTENTE\s+A\s+CARBAPEN|BACILO\s+CARBAPEN/.test(u)) add('CRE');
+  if (/RESISTEN(CIA|TE)\s+.*CARBAPEN|CARBAPEN.*RESIST|NO\s+SUSCEPTIB.*CARBAPEN|ANTICARBAPEN|ANTI-?CARBAPEN|PRODUCTOR\s+DE\s+CARBAPENEMASA|PRODUCTOR(ES)?\s+CARBAPEN/.test(u)) {
+    if (!seen.KPC && !seen.NDM && !seen.VIM && !seen.IMP && !seen['OXA-48'] && !seen.MBL) add('Carb-R');
+  }
+  if (/\bESBL\b|BETALACTAMASAS?\s+DE\s+ESPECTRO|ESPECTRO\s+EXTENDIDO|BLEE\s*\+\s*ESBL/.test(u)) add('ESBL');
+  if (/\(BLEE\)|\bBLEE\b|BETALACTAMASAS?\s*\(?BLEE\)?|PRODUCTOR\s+DE\s+BETALACTAMASAS(?!\s+DE\s+ESPECTRO)/.test(u)) add('BLEE');
+  if (/\bAMPC\b|AMP\s*C\b|BETALACTAMASA\s+AMPC|CEPHAMYCIN/.test(u)) add('AmpC');
+  if (/\bMECA\b|\bMRSA\b|METICILIN(A)?\s*-?\s*RESIST|OXACILIN(A)?\s*:\s*R(?!\s*\d)/.test(u)) add('MRSA');
+  if (/\bVRE\b|VANCOMICIN(A)?\s*-?\s*RESIST|ENTEROCOC.*VANCO\s*R|VANCO\s*[-–]\s*R/.test(u)) add('VRE');
+  if (/COLISTIN(A)?\s*[-–:]?\s*R|POLIMIXIN(A)?\s*[-–:]?\s*R|RESIST.*COLISTIN/.test(u)) add('Col-R');
+  tags.sort(function(a, b) {
+    return (ORDEN_MARCA_RESISTENCIA[a] || 99) - (ORDEN_MARCA_RESISTENCIA[b] || 99);
+  });
+  return tags;
+}
+
+function detectMarcasResistenciaCultivo(lineasTexto) {
+  var b0 = -1;
+  for (var i = 0; i < lineasTexto.length; i++) {
+    if (/BACTERIOLOGIA/i.test(lineasTexto[i])) { b0 = i; break; }
+  }
+  var slice = b0 === -1 ? lineasTexto : lineasTexto.slice(b0, Math.min(b0 + 280, lineasTexto.length));
+  var blob = slice.join('\n');
+  var marcas = extractMarcasResistenciaDesdeTexto(blob);
+  var seen = {};
+  marcas.forEach(function(m) { seen[m] = 1; });
+  var inAb = false;
+  for (i = 0; i < lineasTexto.length; i++) {
+    var L = lineasTexto[i].replace(/\*+$/g, '').trim();
+    if (/^ANTIBIOGRAMA/i.test(L)) { inAb = true; continue; }
+    if (inAb && /^MICROORGANISMO|^IDENTIFICACION/i.test(L)) break;
+    if (!inAb) continue;
+    var p = parseInterpAntibiograma(L);
+    if (!p || !p.interp) continue;
+    var it = p.interp.toUpperCase();
+    if (it === 'ESBL' && !seen.ESBL) { marcas.push('ESBL'); seen.ESBL = 1; }
+    if (it === 'BLEE' && !seen.BLEE) { marcas.push('BLEE'); seen.BLEE = 1; }
+    if (/^(KPC|NDM|VIM|IMP|MBL)$/.test(it) && !seen[it]) { marcas.push(it); seen[it] = 1; }
+  }
+  marcas.sort(function(a, b) {
+    return (ORDEN_MARCA_RESISTENCIA[a] || 99) - (ORDEN_MARCA_RESISTENCIA[b] || 99);
+  });
+  if (marcas.indexOf('BLEE') !== -1) marcas = marcas.filter(function(m) { return m !== 'ESBL'; });
+  if (marcas.some(function(m) { return /^(KPC|NDM|VIM|IMP|OXA-48|OXA-otras|MBL|SPM|GIM)$/.test(m); })) {
+    marcas = marcas.filter(function(m) { return m !== 'Carb-R'; });
+  }
+  if (marcas.indexOf('CRE') !== -1) marcas = marcas.filter(function(m) { return m !== 'Carb-R'; });
+  return marcas;
+}
+
+/**
+ * Resumen ATB sin CMI: solo R | I | ESBL (no lista S).
+ * Deduplica por fármaco; gana la peor categoría al fusionar antibiogramas.
+ */
+function compactarLineasAntibiograma(sensCrudas, abreviarFn) {
+  if (!sensCrudas.length) return '';
+  var rank = { R: 4, 'NO SUSCEPTIBLE': 4, ESBL: 4, BLEE: 4, KPC: 4, NDM: 4, VIM: 4, IMP: 4, MBL: 4, I: 2, S: 1, POS: 1 };
+  var byKey = {};
+  sensCrudas.forEach(function(s) {
+    var key = abreviarFn(s.med);
+    if (!key) return;
+    var it = String(s.interp || '').toUpperCase();
+    var r = rank[it] || 0;
+    if (!byKey[key] || r > byKey[key]._r) byKey[key] = { interp: it, _r: r };
+  });
+  var R = [], I = [], E = [];
+  Object.keys(byKey).sort().forEach(function(k) {
+    var it = byKey[k].interp;
+    if (it === 'S' || it === 'POS') return;
+    if (it === 'I') I.push(k);
+    else if (it === 'ESBL') E.push(k);
+    else R.push(k);
+  });
+  function cap(arr, n) {
+    if (!arr.length) return '';
+    if (arr.length <= n) return arr.join(', ');
+    return arr.slice(0, n).join(', ') + ' +' + (arr.length - n);
+  }
+  var parts = [];
+  if (R.length) parts.push('R: ' + cap(R, 14));
+  if (I.length) parts.push('I: ' + cap(I, 8));
+  if (E.length) parts.push('ESBL: ' + cap(E, 8));
+  if (!parts.length) return 'ATB sin R/I/ESBL';
+  var line = 'ATB ' + parts.join(' | ');
+  if (line.length <= 220) return line;
+  return 'ATB ' + parts.join('\n');
+}
+
 export function parseCultivo_(textoBruto,tNorm){
   var tUpper=tNorm.toUpperCase();
   if(tUpper.indexOf('HEMOCULTIVO')===-1&&tUpper.indexOf('CULTIVO')===-1&&tUpper.indexOf('MICROORGANISMO')===-1&&tUpper.indexOf('MYCOBACTERIAS')===-1&&tUpper.indexOf('BACILOSCOPIA')===-1)return '';
-  var germen='',cuenta='',sitio='CULTIVO',fechaC='N/D';
+  var germen='',cuenta='',fechaC='N/D';
   var mFecha=tNorm.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
   if(mFecha)fechaC=mFecha[1].padStart(2,'0')+'/'+mFecha[2].padStart(2,'0');
   var lineasTexto=textoBruto.split('\n').map(function(l){return l.replace(/\r/g,'');});
-  for(var i=0;i<lineasTexto.length;i++){if(lineasTexto[i].toUpperCase().indexOf('PRODUCTO')!==-1){for(var j=i+1;j<lineasTexto.length;j++){var s=lineasTexto[j].replace(/\*/g,'').trim();if(s){sitio=s.toUpperCase();break;}}break;}}
+  var sitio = buildCultivoTipoDisplay(detectTipoCultivoLine(lineasTexto), detectMuestraDesdeProducto(lineasTexto));
   var idxMicro=-1;for(var i=0;i<lineasTexto.length;i++){if(lineasTexto[i].toUpperCase().indexOf('MICROORGANISMO')!==-1){idxMicro=i;break;}}
   if(idxMicro!==-1){for(var k=idxMicro+1;k<Math.min(idxMicro+6,lineasTexto.length);k++){var cand=lineasTexto[k].replace(/\*/g,'').trim();if(!cand)continue;if(/COMENTARIO/i.test(cand))break;if(/MICROORGANISMO/i.test(cand))continue;if(!/MALDI|IDENTIF|ESPECTRO/i.test(cand)){germen=cand.toUpperCase();break;}}}
-  var pCuenta=tUpper.indexOf('CUENTA');if(pCuenta!==-1){var fragC=tNorm.substring(pCuenta+6,pCuenta+80);if(!/ANTIBIOGRAMA/i.test(fragC)){var mC=fragC.match(/([<>]=?\s?\d+(\.\d+)?\s*[A-Z%\/]*)/i);if(mC)cuenta=mC[1].trim().toUpperCase();}}
-  function abreviarAb(n){n=n.toUpperCase().trim();if(/PIPERACILINA.?TAZOBACTAM|PIP\/TAZ/.test(n))return 'PIP/TAZO';if(/TRIMETROPRIM.?SULFAMETOXAZOL|TMP\/SMX|TRIMET\/SULFA/.test(n))return 'TMP/SMX';if(/CLINDAMICINA/.test(n))return 'CLINDA';var base=n.replace(/\bSODICO\b|\bSODIUM\b|\bDISODICO\b/g,'').trim().split('(')[0].trim().split(/\s+/)[0];return base.length>10?base.substring(0,10):base;}
+  var pCuenta=tUpper.indexOf('CUENTA DE KASS');if(pCuenta===-1)pCuenta=tUpper.indexOf('CUENTA');
+  if(pCuenta!==-1){
+    var fragC=tNorm.substring(pCuenta,pCuenta+110);
+    var fragBeforeAb=fragC.split(/\bANTIBIOGRAMA\b/i)[0];
+    var mUfc=fragBeforeAb.match(/\+?\d[\d,]*(?:\.\d+)?\s*UFC/i);
+    if(mUfc)cuenta=mUfc[0].replace(/\s+/g,'').toUpperCase();
+    else{var mC=fragBeforeAb.match(/([<>]=?\s?\d+(\.\d+)?\s*[A-Z%\/]*)/i);if(mC)cuenta=mC[1].trim().toUpperCase();}
+  }
+  var marcasRes = detectMarcasResistenciaCultivo(lineasTexto);
+  function abreviarAb(n){
+    n=n.toUpperCase().trim();
+    if(/PIPERACILINA|PIP\/TAZ/.test(n))return 'PIP/TAZO';
+    if(/TRIMET|TMP\/SMX|TRIMET\/SULFA/.test(n))return 'TMP/SMX';
+    if(/AMP\S*\/\s*SULB|AMPICILINA.*SULBACTAM|AMP\/SULB/.test(n))return 'AMP-SULB';
+    if(/GENT\.?\s*SINERG|SINERG/.test(n))return 'GENT-SIN';
+    if(/GENTAMICINA/.test(n))return 'GENT';
+    if(/AMIKACINA/.test(n))return 'AMIK';
+    if(/TOBRAMICINA/.test(n))return 'TOBRA';
+    if(/TETRACICLINA/.test(n))return 'TETRA';
+    if(/NITROFURANTOINA/.test(n))return 'NITRO';
+    if(/CIPROFLOXACINA/.test(n))return 'CIPRO';
+    if(/LEVOFLOXACINA/.test(n))return 'LVX';
+    if(/MEROPENEM/.test(n))return 'MERO';
+    if(/ERTAPENEM/.test(n))return 'ERTA';
+    if(/IMIPENEM/.test(n))return 'IMI';
+    if(/CEFTRIAXONA/.test(n))return 'CFTX';
+    if(/CEFOTAXIMA/.test(n))return 'CTX';
+    if(/CEFOXITINA/.test(n))return 'CFXN';
+    if(/CEFAZOLINA/.test(n))return 'CFZ';
+    if(/CEFEPIMA/.test(n))return 'FEP';
+    if(/CEFTAZIDIM.*AVIBACT|AVIBACTAM/.test(n))return 'CAZ-AVI';
+    if(/CEFTAZIDIM|CEFTAZIDIMA/.test(n))return 'CAZ';
+    if(/DAPTOMICINA/.test(n))return 'DAPTO';
+    if(/LINEZOLID/.test(n))return 'LINEZ';
+    if(/VANCOMICINA/.test(n))return 'VANCO';
+    if(/PENICILINA|BENZILPENICILINA/.test(n))return 'PEN';
+    if(/AMPICILINA/.test(n)&&!/SULB/.test(n))return 'AMP';
+    if(/CLINDAMICINA/.test(n))return 'CLINDA';
+    var base=n.replace(/\bSODICO\b|\bSODIUM\b|\bDISODICO\b/g,'').trim().split('(')[0].trim().split(/\s+/)[0];
+    return base.length>10?base.substring(0,10):base;
+  }
   if(germen){
     var res=sitio+' '+fechaC+': '+germen;
+    if (marcasRes.length) res += ' · ' + marcasRes.join(' · ');
     var idxAb=textoBruto.toUpperCase().indexOf('ANTIBIOGRAMA');
     if(idxAb!==-1){var lineasAb=textoBruto.substring(idxAb).split('\n').map(function(l){return l.replace(/\r/g,'').replace(/\*/g,'').trim();});var sensCrudas=[];
-      for(var i=0;i<lineasAb.length-1;i++){var nL=lineasAb[i],vL=lineasAb[i+1];if(!nL||nL.length<=3||/ANTIBIOGRAMA|MICROORGANISMO|COMENTARIO:|CUENTA|PRODUCTO|ESTADO|MUESTRA|GRAM|IDENTIFICACION|ESTUDIO\s+RESULTADO/i.test(nL))continue;var mic='',interp='';var mV=vL.match(/([<>]=?\s?\d+(\.\d+)?)[\s\t]+(S|R|I|NEG|POS)$/i);if(mV){mic=mV[1].replace(/\s/g,'');interp=mV[3].toUpperCase();}else{var lim=vL.toUpperCase();if(/^(S|R|I)$/.test(lim))interp=lim;else if(/NO SUSCEPTIBLE/.test(lim))interp='NO SUSCEPTIBLE';}if(interp)sensCrudas.push({med:nL.toUpperCase(),mic:mic,interp:interp});}
-      var sensFmt=sensCrudas.map(function(s){return abreviarAb(s.med)+': '+(s.mic?s.mic+' ':'')+s.interp;});
-      var filas=[];for(var i=0;i<sensFmt.length;i+=3){filas.push((sensFmt[i]?'• '+sensFmt[i]:'')+(sensFmt[i+1]?'  • '+sensFmt[i+1]:'')+(sensFmt[i+2]?'  • '+sensFmt[i+2]:''));}
-      if(filas.length)res+='\n'+filas.join('\n');}
+      for(var i=0;i<lineasAb.length-1;i++){var nL=lineasAb[i],vL=lineasAb[i+1];if(!nL||nL.length<=3||/ANTIBIOGRAMA|MICROORGANISMO|COMENTARIO:?|CUENTA|PRODUCTO|ESTADO|MUESTRA|GRAM|IDENTIFICACION|ESTUDIO\s+RESULTADO/i.test(nL))continue;var parsed=parseInterpAntibiograma(vL);if(!parsed){var lim=vL.toUpperCase();if(/^(S|R|I)$/.test(lim))parsed={mic:'',interp:lim};}if(parsed&&parsed.interp)sensCrudas.push({med:nL.toUpperCase(),mic:parsed.mic,interp:parsed.interp});}
+      var abCompact=compactarLineasAntibiograma(sensCrudas,abreviarAb);
+      if(abCompact)res+='\n'+abCompact;}
     if(cuenta)res+='\nCuenta: '+cuenta;return res;
   } else {
     if(tNorm.toUpperCase().indexOf('BACILOSCOPIA')!==-1&&tNorm.toUpperCase().indexOf('POSITIVO')!==-1){var mPos=tNorm.match(/BACILOSCOPIA[^\.\n]*POSITIVO[^\n\.]*/i);return 'BACILOSCOPIA '+fechaC+': '+(mPos?mPos[0].trim():'BACILOSCOPIA POSITIVA');}
@@ -458,21 +817,25 @@ export function procesarLabs(textoBruto) {
   var bloqueGaso=mGaso?mGaso[0]:'';
   var mLCR=textoBruto.match(/CITOQUIMICO\s+DE\s+LCR.*?(?=BACTERIOLOGIA|CUADERNILLO|$)/i)||textoBruto.match(/CITOQUIMICO\s+LIQ\.?\s+LCR.*?(?=BACTERIOLOGIA|CUADERNILLO|$)/i)||textoBruto.match(/CITOQUIMICO\s+LCR.*?(?=BACTERIOLOGIA|CUADERNILLO|$)/i);
   var bloqueLCR=mLCR?mLCR[0]:'';
+  var bloqueCitoLC=bloqueCitoquimicoLiquidosFull(textoBruto);
   var mEGO=tNorm.match(/(?:URIANALISIS|EXAMEN GENERAL DE ORINA|ANALISIS DE ORINA).*?(?=BACTERIOLOGIA|CULTIVO|COMENTARIO DE MUESTRA|$)/i);
   var bloqueEGO=mEGO?mEGO[0]:'';
-  var textoQS=tNorm.replace(bloqueGaso,' ').replace(bloqueEGO,' ').replace(bloqueLCR?bloqueLCR.replace(/\s+/g,' '):'', ' ');
+  var tSinLiqCorp=tNorm;
+  if (bloqueCitoLC) tSinLiqCorp=tNorm.replace(bloqueCitoLC.replace(/\r/g,'').replace(/\s+/g,' '),' ');
+  var textoQS=tSinLiqCorp.replace(bloqueGaso,' ').replace(bloqueEGO,' ').replace(bloqueLCR?bloqueLCR.replace(/\s+/g,' '):'', ' ');
   var esSoloGaso=/GASOMETRIA/i.test(tNorm)&&!/BIOMETRIA|QUIMICA|ELECTROLITOS|PFH|COAGULACION|CULTIVO/i.test(tNorm);
 
   var resLabs=[];
   if(!esSoloGaso){
-    var bh=parseBH_(tNorm);    if(bh)resLabs.push(bh);
+    var bh=parseBH_(tSinLiqCorp);    if(bh)resLabs.push(bh);
     var qs=parseQS_(textoQS);  if(qs)resLabs.push(qs);
     var esc=parseESC_(textoQS);if(esc)resLabs.push(esc);
-    var pfh=parsePFH_(tNorm);  if(pfh)resLabs.push(pfh);
+    var pfh=parsePFH_(tSinLiqCorp);  if(pfh)resLabs.push(pfh);
   }
   var gaso=parseGaso_(bloqueGaso);if(gaso)resLabs.push(gaso);
   var pie=parsePIE_(tNorm);      if(pie)resLabs.push(pie);
   var lcr=parsearLCR(textoBruto);if(lcr)resLabs.push(lcr);
+  var liq=parsearCitoquimicoLiquidos(textoBruto);if(liq)resLabs.push(liq);
   var ego=parseEGO_(textoBruto); if(ego)resLabs.push(ego);
   var cuant=parseCuantOrina_(textoBruto);if(cuant)resLabs.push(cuant);
   var cult=parseCultivo_(textoBruto,tNorm);if(cult)resLabs.push(cult);
