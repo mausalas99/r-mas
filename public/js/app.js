@@ -4126,6 +4126,31 @@ function isDuplicateLatestLabSet(patientId, resLabs, fecha, hora) {
   return isDuplicateAgainstLatest(latestNormalized, incoming);
 }
 
+/**
+ * Alinea el paciente activo con el expediente del reporte pegado.
+ * @see docs/superpowers/specs/2026-05-03-lab-auto-switch-active-patient-design.md
+ * @returns {{ shouldAutoStore: boolean }}
+ */
+function applyLabPastePatientResolution(result) {
+  if (!result || !result.patient) return { shouldAutoStore: true };
+  var reg = String(result.patient.expediente || '').trim();
+  if (!reg) return { shouldAutoStore: true };
+  var match = findPatientByRegistro(reg);
+  if (!match) {
+    showToast(
+      'Registro ' + reg + ' no está en la lista. No se guardó en el historial.',
+      'error'
+    );
+    return { shouldAutoStore: false };
+  }
+  if (match.id !== activeId) {
+    selectPatient(match.id);
+    showToast('Paciente: ' + (match.nombre || 'Sin nombre') + ' · Exp ' + reg, 'success');
+    addAuditEntry('lab-patient-auto-switch', 'ok', 1, reg);
+  }
+  return { shouldAutoStore: true };
+}
+
 function autoStoreProcessedLabResult(result) {
   if (!activeId) return;
   if (!result || !result.resLabs || !result.resLabs.length) return;
@@ -4215,9 +4240,10 @@ function procesarReporte() {
   if (!text) { showToast('Pega el texto del reporte primero','error'); return; }
   try {
     var result = procesarLabs(text);
+    var resStore = applyLabPastePatientResolution(result);
     renderOutput(result);
     renderDiagramas(result.resLabs);
-    autoStoreProcessedLabResult(result);
+    if (resStore.shouldAutoStore) autoStoreProcessedLabResult(result);
     if (!result.resLabs.length) showToast('No se encontraron resultados de laboratorio','error');
   } catch(e) { showToast('Error al procesar el reporte','error'); console.error(e); }
 }

@@ -1,6 +1,6 @@
 # Diseño: cambio automático de paciente al pegar laboratorios de otro registro
 
-**Estado:** Aprobado por producto (2026-05-03).  
+**Estado:** Aprobado por producto (2026-05-03); **implementado** en `applyLabPastePatientResolution` + `procesarReporte` (`public/js/app.js`).  
 **Alcance:** Flujo Laboratorio → parseo → historial / envío a nota.
 
 ## Problema
