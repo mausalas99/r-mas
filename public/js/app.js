@@ -72,24 +72,37 @@ var idleLockIsActive = false;
 var idleLockEnabledMinutes = 0;
 
 var TEND_UNITS = {
-  Hb:'g/dL',  Hto:'%',    Leu:'K/μL', Plt:'K/μL',
+  Hb:'g/dL',  Hto:'%',    Leu:'K/μL', Plt:'K/μL', VCM:'fL', HCM:'pg',
+  Neu:'K/μL', Eos:'K/μL', Ret:'%', TP:'s', TTP:'s', INR:'',
   Glu:'mg/dL',Cr:'mg/dL', BUN:'mg/dL',PCR:'mg/dL',
-  AU:'mg/dL', TGL:'mg/dL',COL:'mg/dL',
-  Na:'mEq/L', K:'mEq/L',  Cl:'mEq/L', HCO3:'mEq/L',Ca:'mg/dL',
-  AST:'U/L',  ALT:'U/L',  FA:'U/L',   BT:'mg/dL'
+  AU:'mg/dL', TGL:'mg/dL',COL:'mg/dL', VSG:'mm/h', CPK:'U/L',
+  Na:'mEq/L', K:'mEq/L',  Cl:'mEq/L', HCO3:'mEq/L',Ca:'mg/dL', F:'mg/dL', Mg:'mEq/L',
+  AST:'U/L',  ALT:'U/L',  FA:'U/L',   BT:'mg/dL', Alb:'g/dL', BD:'mg/dL', BI:'mg/dL',
+  LDH:'U/L', Amil:'U/L',
+  Lactato:'mmol/L', Dens:'g/L', Prot:'mg/dL', Vol:'mL', GLU:'mg/dL', Bica:'mEq/L', pH:'', pCO2:'mmHg', pO2:'mmHg'
 };
 var TEND_REF = {
-  Hb:[12,17.5], Hto:[36,53], Leu:[4,11], Plt:[150,400],
+  Hb:[12,17.5], Hto:[36,53], Leu:[4,11], Plt:[150,400], VCM:[80,100], HCM:[27,33],
+  Neu:[1.5,8], Eos:[0,0.6], Ret:[0.5,2.5], TP:[11,14], TTP:[25,35], INR:[0.8,1.2],
   Glu:[70,100], Cr:[0.5,1.3], BUN:[7,20], PCR:[0,0.5],
-  Na:[136,145], K:[3.5,5.0], Cl:[96,106], HCO3:[22,28], Ca:[8.5,10.5],
-  AST:[10,40], ALT:[7,56], FA:[44,147], BT:[0.1,1.2]
+  AU:[3.5,7], TGL:[0,150], COL:[0,200], CPK:[30,200],
+  Na:[136,145], K:[3.5,5.0], Cl:[96,106], HCO3:[22,28], Ca:[8.5,10.5], F:[2.5,4.5], Mg:[1.6,2.6],
+  AST:[10,40], ALT:[7,56], FA:[44,147], BT:[0.1,1.2], Alb:[3.5,5.2], BD:[0,0.3], BI:[0.1,1],
+  LDH:[120,250], Amil:[30,110],
+  LCR_pH:[7.28,7.42], LCR_Leu:[0,5], LCR_Glu:[40,80], LCR_Cl:[118,132], LCR_Prot:[15,45],
+  Liq_pH:[7.1,7.6], Liq_Glu:[20,600], Liq_Leu:[0,5000], Liq_LDH:[0,500], Liq_Dens:[1000,1050], Liq_Prot:[10,50]
 };
-/** Rangos orientativos arteriales (solo tendencias / color; no sustituyen criterio local). */
+/** Rangos orientativos en gasometría (arterial/capilar; solo tendencias / color). */
 var TEND_REF_GASES = {
   pH: [7.35, 7.45],
   pCO2: [35, 45],
-  pO2: [80, 100],
-  Lactato: [0.5, 2.2]
+  pO2: [83, 100],
+  Lactato: [0.5, 2.2],
+  Na: [135, 148],
+  K: [3.5, 5.3],
+  GLU: [70, 110],
+  Hto: [34, 50],
+  Bica: [22, 28]
 };
 var TEND_SECTION_LABELS = {
   BH: 'Biometría hemática',
@@ -97,33 +110,58 @@ var TEND_SECTION_LABELS = {
   ESC: 'Electrolitos séricos',
   PFHs: 'Función hepática',
   GASES: 'Gasometría',
+  LCR: 'LCR (citoquímico)',
+  Liq: 'Líquidos corporales',
+  Prot12h: 'Proteinuria 12 h',
+  Prot24h: 'Proteinuria 24 h',
   PIE: 'Prueba de embarazo',
-  LCR: 'LCR',
   EGO: 'EGO',
   CUANTORINA: 'Cuantificación urinaria'
 };
-var TEND_SECTION_ORDER = ['BH', 'QS', 'ESC', 'PFHs', 'GASES', 'PIE', 'LCR', 'EGO', 'CUANTORINA'];
+var TEND_SECTION_ORDER = [
+  'BH', 'QS', 'ESC', 'PFHs', 'GASES', 'LCR', 'Liq', 'Prot12h', 'Prot24h', 'PIE', 'EGO', 'CUANTORINA'
+];
 /**
- * Series tendibles: cada gráfica es (sectionKey, fieldKey) según bloques del TSV (parsearSecciones).
- * cardTitle se muestra en tarjeta y modal.
+ * Series tendibles declaradas (parsearSecciones / resLabs). Pueden añadirse más vía merge dinámico
+ * si aparecen pares sección/campo numéricos no listados.
  */
 var TEND_SERIES_CATALOG = [
   { sectionKey: 'BH', fieldKey: 'Hb', cardTitle: 'Hb' },
   { sectionKey: 'BH', fieldKey: 'Hto', cardTitle: 'Hto' },
-  { sectionKey: 'BH', fieldKey: 'Leu', cardTitle: 'Leu' },
-  { sectionKey: 'BH', fieldKey: 'Plt', cardTitle: 'Plt' },
-  { sectionKey: 'QS', fieldKey: 'Glu', cardTitle: 'Glu' },
-  { sectionKey: 'QS', fieldKey: 'Cr', cardTitle: 'Cr' },
+  { sectionKey: 'BH', fieldKey: 'VCM', cardTitle: 'VCM' },
+  { sectionKey: 'BH', fieldKey: 'HCM', cardTitle: 'HCM' },
+  { sectionKey: 'BH', fieldKey: 'Leu', cardTitle: 'Leucocitos' },
+  { sectionKey: 'BH', fieldKey: 'Neu', cardTitle: 'Neutrófilos' },
+  { sectionKey: 'BH', fieldKey: 'Eos', cardTitle: 'Eosinófilos' },
+  { sectionKey: 'BH', fieldKey: 'Plt', cardTitle: 'Plaquetas' },
+  { sectionKey: 'BH', fieldKey: 'Ret', cardTitle: 'Reticulocitos' },
+  { sectionKey: 'BH', fieldKey: 'TP', cardTitle: 'TP' },
+  { sectionKey: 'BH', fieldKey: 'TTP', cardTitle: 'TTP' },
+  { sectionKey: 'BH', fieldKey: 'INR', cardTitle: 'INR' },
+  { sectionKey: 'QS', fieldKey: 'Glu', cardTitle: 'Glucosa' },
+  { sectionKey: 'QS', fieldKey: 'Cr', cardTitle: 'Creatinina' },
   { sectionKey: 'QS', fieldKey: 'BUN', cardTitle: 'BUN' },
   { sectionKey: 'QS', fieldKey: 'PCR', cardTitle: 'PCR' },
+  { sectionKey: 'QS', fieldKey: 'AU', cardTitle: 'Ácido úrico' },
+  { sectionKey: 'QS', fieldKey: 'TGL', cardTitle: 'Triglicéridos' },
+  { sectionKey: 'QS', fieldKey: 'COL', cardTitle: 'Colesterol' },
+  { sectionKey: 'QS', fieldKey: 'VSG', cardTitle: 'VSG' },
+  { sectionKey: 'QS', fieldKey: 'CPK', cardTitle: 'CPK' },
   { sectionKey: 'ESC', fieldKey: 'Na', cardTitle: 'Na' },
   { sectionKey: 'ESC', fieldKey: 'K', cardTitle: 'K' },
   { sectionKey: 'ESC', fieldKey: 'Cl', cardTitle: 'Cl' },
   { sectionKey: 'ESC', fieldKey: 'Ca', cardTitle: 'Ca' },
+  { sectionKey: 'ESC', fieldKey: 'F', cardTitle: 'Fósforo' },
+  { sectionKey: 'ESC', fieldKey: 'Mg', cardTitle: 'Mg' },
+  { sectionKey: 'PFHs', fieldKey: 'Alb', cardTitle: 'Albúmina' },
   { sectionKey: 'PFHs', fieldKey: 'AST', cardTitle: 'AST' },
   { sectionKey: 'PFHs', fieldKey: 'ALT', cardTitle: 'ALT' },
   { sectionKey: 'PFHs', fieldKey: 'FA', cardTitle: 'FA' },
-  { sectionKey: 'PFHs', fieldKey: 'BT', cardTitle: 'BT' },
+  { sectionKey: 'PFHs', fieldKey: 'BT', cardTitle: 'Bilirrubina total' },
+  { sectionKey: 'PFHs', fieldKey: 'BD', cardTitle: 'Bilirrubina directa' },
+  { sectionKey: 'PFHs', fieldKey: 'BI', cardTitle: 'Bilirrubina indirecta' },
+  { sectionKey: 'PFHs', fieldKey: 'LDH', cardTitle: 'LDH' },
+  { sectionKey: 'PFHs', fieldKey: 'Amil', cardTitle: 'Amilasa' },
   { sectionKey: 'GASES', fieldKey: 'pH', cardTitle: 'pH (gas)' },
   { sectionKey: 'GASES', fieldKey: 'pCO2', cardTitle: 'pCO₂ (gas)' },
   { sectionKey: 'GASES', fieldKey: 'pO2', cardTitle: 'pO₂ (gas)' },
@@ -132,9 +170,21 @@ var TEND_SERIES_CATALOG = [
   { sectionKey: 'GASES', fieldKey: 'GLU', cardTitle: 'Glu (gas)' },
   { sectionKey: 'GASES', fieldKey: 'Lactato', cardTitle: 'Lactato (gas)' },
   { sectionKey: 'GASES', fieldKey: 'Bica', cardTitle: 'HCO₃⁻ (gas)' },
-  { sectionKey: 'GASES', fieldKey: 'Hto', cardTitle: 'Hto (gas)' }
+  { sectionKey: 'GASES', fieldKey: 'Hto', cardTitle: 'Hto (gas)' },
+  { sectionKey: 'LCR', fieldKey: 'pH', cardTitle: 'pH (LCR)' },
+  { sectionKey: 'LCR', fieldKey: 'Leu', cardTitle: 'Leucocitos (LCR)' },
+  { sectionKey: 'LCR', fieldKey: 'Glu', cardTitle: 'Glucosa (LCR)' },
+  { sectionKey: 'LCR', fieldKey: 'Prot', cardTitle: 'Proteínas (LCR)' },
+  { sectionKey: 'LCR', fieldKey: 'Cl', cardTitle: 'Cl (LCR)' },
+  { sectionKey: 'Liq', fieldKey: 'Dens', cardTitle: 'Densidad (liq.)' },
+  { sectionKey: 'Liq', fieldKey: 'pH', cardTitle: 'pH (liq.)' },
+  { sectionKey: 'Liq', fieldKey: 'Glu', cardTitle: 'Glucosa (liq.)' },
+  { sectionKey: 'Liq', fieldKey: 'Prot', cardTitle: 'Proteínas (liq.)' },
+  { sectionKey: 'Liq', fieldKey: 'LDH', cardTitle: 'LDH (liq.)' },
+  { sectionKey: 'Liq', fieldKey: 'Leu', cardTitle: 'Leucocitos (liq.)' }
 ];
 var TEND_SECTION_EXPANDED_LS = 'rpc-tend-sections-expanded';
+var TEND_HIDDEN_SERIES_LS = 'rpc-tend-hidden-series';
 var guidedTourActive = false;
 /** @type {'sala'|'interconsulta'|null} */
 var guidedTourBranch = null;
@@ -557,20 +607,279 @@ function tendUnitForSeries(sectionKey, fieldKey) {
     if (fieldKey === 'Lactato') return 'mmol/L';
     if (fieldKey === 'pH') return '';
   }
+  if (sectionKey === 'LCR') {
+    if (fieldKey === 'pH') return '';
+    if (fieldKey === 'Leu') return '/μL';
+    if (fieldKey === 'Glu') return TEND_UNITS.Glu || '';
+    if (fieldKey === 'Prot') return 'mg/dL';
+    if (fieldKey === 'Cl') return TEND_UNITS.Cl || '';
+  }
+  if (sectionKey === 'Liq') {
+    if (fieldKey === 'pH') return '';
+    if (fieldKey === 'Dens') return 'g/L';
+    if (fieldKey === 'Glu') return TEND_UNITS.Glu || '';
+    if (fieldKey === 'Prot') return 'mg/dL';
+    if (fieldKey === 'LDH') return TEND_UNITS.LDH || '';
+    if (fieldKey === 'Leu') return '/μL';
+  }
   return TEND_UNITS[fieldKey] || '';
 }
 
 function tendRefForSeries(sectionKey, fieldKey) {
   if (sectionKey === 'GASES') {
+    var gg = TEND_REF_GASES[fieldKey];
+    if (gg) return gg;
     if (fieldKey === 'Bica') return TEND_REF.HCO3;
-    if (fieldKey === 'GLU') return TEND_REF.Glu;
-    if (fieldKey === 'Na') return TEND_REF.Na;
-    if (fieldKey === 'K') return TEND_REF.K;
-    if (fieldKey === 'Hto') return TEND_REF.Hto;
-    var g = TEND_REF_GASES[fieldKey];
-    return g || null;
+    return null;
+  }
+  if (sectionKey === 'LCR') {
+    var lr = {
+      pH: TEND_REF.LCR_pH,
+      Leu: TEND_REF.LCR_Leu,
+      Glu: TEND_REF.LCR_Glu,
+      Cl: TEND_REF.LCR_Cl,
+      Prot: TEND_REF.LCR_Prot
+    };
+    return lr[fieldKey] || null;
+  }
+  if (sectionKey === 'Liq') {
+    var lq = {
+      pH: TEND_REF.Liq_pH,
+      Glu: TEND_REF.Liq_Glu,
+      Leu: TEND_REF.Liq_Leu,
+      LDH: TEND_REF.Liq_LDH,
+      Dens: TEND_REF.Liq_Dens,
+      Prot: TEND_REF.Liq_Prot
+    };
+    return lq[fieldKey] || null;
   }
   return TEND_REF[fieldKey] || null;
+}
+
+function tendCatalogSeriesKey(sectionKey, fieldKey) {
+  return String(sectionKey) + '|' + String(fieldKey);
+}
+
+function tendHiddenSeriesRead() {
+  try {
+    var j = localStorage.getItem(TEND_HIDDEN_SERIES_LS);
+    if (!j) return [];
+    var a = JSON.parse(j);
+    return Array.isArray(a) ? a : [];
+  } catch (_e) {
+    return [];
+  }
+}
+
+function tendHiddenSeriesWrite(arr) {
+  try {
+    localStorage.setItem(TEND_HIDDEN_SERIES_LS, JSON.stringify(arr || []));
+  } catch (_e) {}
+}
+
+function tendSeriesIsUserHidden(sectionKey, fieldKey) {
+  return tendHiddenSeriesRead().indexOf(tendCatalogSeriesKey(sectionKey, fieldKey)) !== -1;
+}
+
+function tendSeriesSetUserHidden(sectionKey, fieldKey, hidden) {
+  var k = tendCatalogSeriesKey(sectionKey, fieldKey);
+  var a = tendHiddenSeriesRead().slice();
+  var i = a.indexOf(k);
+  if (hidden && i === -1) a.push(k);
+  if (!hidden && i !== -1) a.splice(i, 1);
+  tendHiddenSeriesWrite(a);
+}
+
+function tendFindSeriesSpec(sectionKey, fieldKey) {
+  for (var i = 0; i < TEND_SERIES_CATALOG.length; i++) {
+    if (
+      TEND_SERIES_CATALOG[i].sectionKey === sectionKey &&
+      TEND_SERIES_CATALOG[i].fieldKey === fieldKey
+    ) {
+      return TEND_SERIES_CATALOG[i];
+    }
+  }
+  return {
+    sectionKey: sectionKey,
+    fieldKey: fieldKey,
+    cardTitle: fieldKey + ' · ' + sectionKey
+  };
+}
+
+/** Catálogo estático + pares numéricos presentes en historial y no declarados. */
+function buildMergedTrendSeriesCatalog(history) {
+  var mapped = Object.create(null);
+  var out = [];
+  function add(spec) {
+    var k = tendCatalogSeriesKey(spec.sectionKey, spec.fieldKey);
+    if (mapped[k]) return;
+    mapped[k] = true;
+    out.push(spec);
+  }
+  TEND_SERIES_CATALOG.forEach(function (e) {
+    add({ sectionKey: e.sectionKey, fieldKey: e.fieldKey, cardTitle: e.cardTitle });
+  });
+  (history || []).forEach(function (set) {
+    var pb = set && set.parsedBySection;
+    if (!pb) return;
+    Object.keys(pb).forEach(function (sk) {
+      var row = pb[sk];
+      if (!row) return;
+      Object.keys(row).forEach(function (fk) {
+        var k = tendCatalogSeriesKey(sk, fk);
+        if (mapped[k]) return;
+        var v = row[fk];
+        if (!isFinite(Number(v))) return;
+        mapped[k] = true;
+        out.push({
+          sectionKey: sk,
+          fieldKey: fk,
+          cardTitle: fk + ' · ' + sk,
+          _dynamic: true
+        });
+      });
+    });
+  });
+  return out;
+}
+
+function tendCatalogToggleFromCheckbox(el, sectionKey, fieldKey) {
+  tendSeriesSetUserHidden(sectionKey, fieldKey, !el.checked);
+  renderTendencias();
+  if (document.getElementById('tend-catalog-backdrop') && document.getElementById('tend-catalog-backdrop').style.display === 'flex') {
+    renderTendCatalogModalBody();
+  }
+}
+
+function tendResetAllHiddenSeries() {
+  tendHiddenSeriesWrite([]);
+  renderTendencias();
+  var bd = document.getElementById('tend-catalog-backdrop');
+  if (bd && bd.style.display === 'flex') renderTendCatalogModalBody();
+}
+
+function renderTendCatalogModalBody() {
+  var body = document.getElementById('tend-catalog-body');
+  if (!body || !activeId) return;
+  var history = sortLabHistoryChronological(ensureParsedLabHistory(activeId));
+  var merged = buildMergedTrendSeriesCatalog(history);
+  var bySec = Object.create(null);
+  merged.forEach(function (spec) {
+    var sk = spec.sectionKey;
+    if (!bySec[sk]) bySec[sk] = [];
+    bySec[sk].push(spec);
+  });
+  var parts = [];
+  for (var oi = 0; oi < TEND_SECTION_ORDER.length; oi++) {
+    var sec = TEND_SECTION_ORDER[oi];
+    if (!bySec[sec] || !bySec[sec].length) continue;
+    var label = TEND_SECTION_LABELS[sec] || sec;
+    parts.push(
+      '<div class="tend-catalog-group"><div class="tend-catalog-group-title">' +
+        esc(label) +
+        '</div>'
+    );
+    bySec[sec].forEach(function (sp) {
+      var sk = sp.sectionKey;
+      var fk = sp.fieldKey;
+      var title = (sp.cardTitle || fk).replace(/</g, '');
+      var hidden = tendSeriesIsUserHidden(sk, fk);
+      var id =
+        'tend-cat-' +
+        String(sk).replace(/[^a-zA-Z0-9]+/g, '_') +
+        '-' +
+        String(fk).replace(/[^a-zA-Z0-9]+/g, '_');
+      parts.push(
+        '<label class="tend-catalog-row" for="' +
+          id +
+          '">' +
+          '<input type="checkbox" id="' +
+          id +
+          '" ' +
+          (hidden ? '' : 'checked ') +
+          'onchange="tendCatalogToggleFromCheckbox(this,\'' +
+          safeAttrJsString(sk) +
+          "','" +
+          safeAttrJsString(fk) +
+          '\')">' +
+          '<span class="tend-catalog-row-text">' +
+          esc(title) +
+          '</span>' +
+          '</label>'
+      );
+    });
+    parts.push('</div>');
+  }
+  var known = {};
+  for (var ki = 0; ki < TEND_SECTION_ORDER.length; ki++) known[TEND_SECTION_ORDER[ki]] = true;
+  var unknownSecs = Object.keys(bySec)
+    .filter(function (s) {
+      return !known[s];
+    })
+    .sort();
+  for (var ui = 0; ui < unknownSecs.length; ui++) {
+    var secU = unknownSecs[ui];
+    var labelU = TEND_SECTION_LABELS[secU] || secU;
+    parts.push(
+      '<div class="tend-catalog-group"><div class="tend-catalog-group-title">' +
+        esc(labelU) +
+        '</div>'
+    );
+    bySec[secU].forEach(function (sp) {
+      var sk = sp.sectionKey;
+      var fk = sp.fieldKey;
+      var title = sp.cardTitle || fk;
+      var hidden = tendSeriesIsUserHidden(sk, fk);
+      var id =
+        'tend-cat-' +
+        String(sk).replace(/[^a-zA-Z0-9]+/g, '_') +
+        '-' +
+        String(fk).replace(/[^a-zA-Z0-9]+/g, '_');
+      parts.push(
+        '<label class="tend-catalog-row" for="' +
+          id +
+          '">' +
+          '<input type="checkbox" id="' +
+          id +
+          '" ' +
+          (hidden ? '' : 'checked ') +
+          'onchange="tendCatalogToggleFromCheckbox(this,\'' +
+          safeAttrJsString(sk) +
+          "','" +
+          safeAttrJsString(fk) +
+          '\')">' +
+          '<span class="tend-catalog-row-text">' +
+          esc(title) +
+          '</span>' +
+          '</label>'
+      );
+    });
+    parts.push('</div>');
+  }
+  body.innerHTML =
+    parts.join('') ||
+    '<p class="tend-catalog-empty">No hay analitos en catálogo para este paciente.</p>';
+}
+
+function openTendCatalogModal() {
+  if (!activeId) {
+    showToast('Selecciona un paciente', 'error');
+    return;
+  }
+  renderTendCatalogModalBody();
+  var bd = document.getElementById('tend-catalog-backdrop');
+  if (bd) {
+    bd.style.display = 'flex';
+    bd.setAttribute('aria-hidden', 'false');
+  }
+}
+
+function closeTendCatalogModal() {
+  var bd = document.getElementById('tend-catalog-backdrop');
+  if (bd) {
+    bd.style.display = 'none';
+    bd.setAttribute('aria-hidden', 'true');
+  }
 }
 
 function trendSparkDomId(sectionKey, fieldKey) {
@@ -5986,11 +6295,13 @@ function renderTendencias() {
     return;
   }
 
+  var mergedCatalog = buildMergedTrendSeriesCatalog(history);
   var seriesAvail = [];
-  for (var ci = 0; ci < TEND_SERIES_CATALOG.length; ci++) {
-    var sp = TEND_SERIES_CATALOG[ci];
+  for (var ci = 0; ci < mergedCatalog.length; ci++) {
+    var sp = mergedCatalog[ci];
     var sk = sp.sectionKey;
     var fk = sp.fieldKey;
+    if (tendSeriesIsUserHidden(sk, fk)) continue;
     var raw = history.filter(function (s) {
       return getSetTrendValueForSeries(s, sk, fk) != null;
     });
@@ -5998,7 +6309,35 @@ function renderTendencias() {
     seriesAvail.push(sp);
   }
   if (!seriesAvail.length) {
-    container.innerHTML = '<p class="tend-empty">No hay parámetros con suficientes datos para graficar.</p>';
+    var anyData = mergedCatalog.some(function (sp) {
+      var r = history.filter(function (s) {
+        return getSetTrendValueForSeries(s, sp.sectionKey, sp.fieldKey) != null;
+      });
+      return dedupeTrendSetsForSeries(r, sp.sectionKey, sp.fieldKey).length >= 2;
+    });
+    var hiddenAll =
+      anyData &&
+      !mergedCatalog.some(function (sp) {
+        if (tendSeriesIsUserHidden(sp.sectionKey, sp.fieldKey)) return false;
+        var r2 = history.filter(function (s) {
+          return getSetTrendValueForSeries(s, sp.sectionKey, sp.fieldKey) != null;
+        });
+        return dedupeTrendSetsForSeries(r2, sp.sectionKey, sp.fieldKey).length >= 2;
+      });
+    var tb =
+      '<div class="tend-toolbar">' +
+      '<button type="button" class="tend-toolbar-btn" onclick="openTendCatalogModal()">Analitos visibles…</button>' +
+      '<button type="button" class="tend-toolbar-btn tend-toolbar-btn-secondary" onclick="tendResetAllHiddenSeries()">Mostrar todos</button>' +
+      '</div>';
+    if (hiddenAll) {
+      container.innerHTML =
+        tb +
+        '<p class="tend-empty">Los analitos con datos están <strong>ocultos</strong>. Usa «Analitos visibles» para mostrarlos.</p>';
+    } else {
+      container.innerHTML =
+        tb +
+        '<p class="tend-empty">No hay parámetros con suficientes datos para graficar.</p>';
+    }
     return;
   }
 
@@ -6021,6 +6360,13 @@ function renderTendencias() {
     ? false
     : { duration: 600, easing: 'easeOutQuart' };
   var htmlParts = [];
+  htmlParts.push(
+    '<div class="tend-toolbar">' +
+      '<button type="button" class="tend-toolbar-btn" onclick="openTendCatalogModal()">Analitos visibles…</button>' +
+      '<button type="button" class="tend-toolbar-btn tend-toolbar-btn-secondary" onclick="tendResetAllHiddenSeries()">Mostrar todos</button>' +
+      '<span class="tend-toolbar-hint">Desmarca analitos que no quieras ver en las gráficas.</span>' +
+      '</div>'
+  );
   for (var si = 0; si < sectionsOrdered.length; si++) {
     var sectionKey = sectionsOrdered[si];
     var expanded = tendSectionIsExpanded(sectionKey);
@@ -6041,7 +6387,8 @@ function renderTendencias() {
       var ref = tendRefForSeries(sectionKey, fk);
       var isAb = ref && latest != null && (latest < ref[0] || latest > ref[1]);
       var domId = trendSparkDomId(sectionKey, fk);
-      var titleEsc = esc(spec.cardTitle || fk);
+      var disp = tendFindSeriesSpec(sectionKey, fk).cardTitle || fk;
+      var titleEsc = esc(disp);
       cardParts.push(
         '<div class="tend-card" role="button" tabindex="0" onclick="openTendDetail(\'' +
           safeAttrJsString(sectionKey) +
@@ -6168,16 +6515,7 @@ function openTendDetail(sectionKey, fieldKey) {
   var values = setsAsc.map(function (s) {
     return getSetTrendValueForSeries(s, sectionKey, fieldKey);
   });
-  var spec = null;
-  for (var ti = 0; ti < TEND_SERIES_CATALOG.length; ti++) {
-    if (
-      TEND_SERIES_CATALOG[ti].sectionKey === sectionKey &&
-      TEND_SERIES_CATALOG[ti].fieldKey === fieldKey
-    ) {
-      spec = TEND_SERIES_CATALOG[ti];
-      break;
-    }
-  }
+  var spec = tendFindSeriesSpec(sectionKey, fieldKey);
   var title = spec && spec.cardTitle ? spec.cardTitle : String(fieldKey);
   var unit = tendUnitForSeries(sectionKey, fieldKey);
   var latest = setsDesc.length ? getSetTrendValueForSeries(setsDesc[0], sectionKey, fieldKey) : null;
@@ -7537,6 +7875,10 @@ Object.assign(window, {
   updateSOAPBalance,
   closeTendDetail,
   toggleTendSection,
+  openTendCatalogModal,
+  closeTendCatalogModal,
+  tendCatalogToggleFromCheckbox,
+  tendResetAllHiddenSeries,
   selectPatient,
   deletePatient,
   openSOAPModal,
