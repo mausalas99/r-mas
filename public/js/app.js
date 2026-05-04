@@ -743,143 +743,69 @@ function buildMergedTrendSeriesCatalog(history) {
   return out;
 }
 
-function tendCatalogToggleFromCheckbox(el, sectionKey, fieldKey) {
-  tendSeriesSetUserHidden(sectionKey, fieldKey, !el.checked);
-  renderTendencias();
-  if (document.getElementById('tend-catalog-backdrop') && document.getElementById('tend-catalog-backdrop').style.display === 'flex') {
-    renderTendCatalogModalBody();
+function tendEyeVisibilitySvg() {
+  return (
+    '<svg class="tend-eye-svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'
+  );
+}
+
+function buildTendHiddenBarHtml() {
+  var hiddenKeys = tendHiddenSeriesRead();
+  if (!hiddenKeys.length) return '';
+  var svg = tendEyeVisibilitySvg();
+  var chips = [];
+  for (var hi = 0; hi < hiddenKeys.length; hi++) {
+    var entry = hiddenKeys[hi];
+    var pipe = entry.indexOf('|');
+    if (pipe < 1) continue;
+    var sk = entry.slice(0, pipe);
+    var fk = entry.slice(pipe + 1);
+    if (!fk) continue;
+    var label = esc(tendFindSeriesSpec(sk, fk).cardTitle || fk);
+    chips.push(
+      '<span class="tend-hidden-chip">' +
+      '<span class="tend-hidden-chip-label">' +
+      label +
+      '</span>' +
+      '<button type="button" class="tend-hidden-chip-btn" title="Volver a mostrar" aria-label="Mostrar de nuevo" onclick="tendUnhideSeries(\'' +
+      safeAttrJsString(sk) +
+      "','" +
+      safeAttrJsString(fk) +
+      '\')">' +
+      svg +
+      '</button></span>'
+    );
   }
+  if (!chips.length) return '';
+  return (
+    '<div class="tend-hidden-bar">' +
+    '<span class="tend-hidden-bar-label">Ocultos</span>' +
+    '<div class="tend-hidden-chips">' +
+    chips.join('') +
+    '</div>' +
+    '<button type="button" class="tend-toolbar-btn tend-hidden-bar-all" onclick="tendResetAllHiddenSeries()">Mostrar todos</button>' +
+    '</div>'
+  );
+}
+
+function tendHideSeriesFromCard(ev, sectionKey, fieldKey) {
+  if (ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+  }
+  tendSeriesSetUserHidden(sectionKey, fieldKey, true);
+  renderTendencias();
+}
+
+function tendUnhideSeries(sectionKey, fieldKey) {
+  tendSeriesSetUserHidden(sectionKey, fieldKey, false);
+  renderTendencias();
 }
 
 function tendResetAllHiddenSeries() {
   tendHiddenSeriesWrite([]);
   renderTendencias();
-  var bd = document.getElementById('tend-catalog-backdrop');
-  if (bd && bd.style.display === 'flex') renderTendCatalogModalBody();
-}
-
-function renderTendCatalogModalBody() {
-  var body = document.getElementById('tend-catalog-body');
-  if (!body || !activeId) return;
-  var history = sortLabHistoryChronological(ensureParsedLabHistory(activeId));
-  var merged = buildMergedTrendSeriesCatalog(history);
-  var bySec = Object.create(null);
-  merged.forEach(function (spec) {
-    var sk = spec.sectionKey;
-    if (!bySec[sk]) bySec[sk] = [];
-    bySec[sk].push(spec);
-  });
-  var parts = [];
-  for (var oi = 0; oi < TEND_SECTION_ORDER.length; oi++) {
-    var sec = TEND_SECTION_ORDER[oi];
-    if (!bySec[sec] || !bySec[sec].length) continue;
-    var label = TEND_SECTION_LABELS[sec] || sec;
-    parts.push(
-      '<div class="tend-catalog-group"><div class="tend-catalog-group-title">' +
-        esc(label) +
-        '</div>'
-    );
-    bySec[sec].forEach(function (sp) {
-      var sk = sp.sectionKey;
-      var fk = sp.fieldKey;
-      var title = (sp.cardTitle || fk).replace(/</g, '');
-      var hidden = tendSeriesIsUserHidden(sk, fk);
-      var id =
-        'tend-cat-' +
-        String(sk).replace(/[^a-zA-Z0-9]+/g, '_') +
-        '-' +
-        String(fk).replace(/[^a-zA-Z0-9]+/g, '_');
-      parts.push(
-        '<label class="tend-catalog-row" for="' +
-          id +
-          '">' +
-          '<input type="checkbox" id="' +
-          id +
-          '" ' +
-          (hidden ? '' : 'checked ') +
-          'onchange="tendCatalogToggleFromCheckbox(this,\'' +
-          safeAttrJsString(sk) +
-          "','" +
-          safeAttrJsString(fk) +
-          '\')">' +
-          '<span class="tend-catalog-row-text">' +
-          esc(title) +
-          '</span>' +
-          '</label>'
-      );
-    });
-    parts.push('</div>');
-  }
-  var known = {};
-  for (var ki = 0; ki < TEND_SECTION_ORDER.length; ki++) known[TEND_SECTION_ORDER[ki]] = true;
-  var unknownSecs = Object.keys(bySec)
-    .filter(function (s) {
-      return !known[s];
-    })
-    .sort();
-  for (var ui = 0; ui < unknownSecs.length; ui++) {
-    var secU = unknownSecs[ui];
-    var labelU = TEND_SECTION_LABELS[secU] || secU;
-    parts.push(
-      '<div class="tend-catalog-group"><div class="tend-catalog-group-title">' +
-        esc(labelU) +
-        '</div>'
-    );
-    bySec[secU].forEach(function (sp) {
-      var sk = sp.sectionKey;
-      var fk = sp.fieldKey;
-      var title = sp.cardTitle || fk;
-      var hidden = tendSeriesIsUserHidden(sk, fk);
-      var id =
-        'tend-cat-' +
-        String(sk).replace(/[^a-zA-Z0-9]+/g, '_') +
-        '-' +
-        String(fk).replace(/[^a-zA-Z0-9]+/g, '_');
-      parts.push(
-        '<label class="tend-catalog-row" for="' +
-          id +
-          '">' +
-          '<input type="checkbox" id="' +
-          id +
-          '" ' +
-          (hidden ? '' : 'checked ') +
-          'onchange="tendCatalogToggleFromCheckbox(this,\'' +
-          safeAttrJsString(sk) +
-          "','" +
-          safeAttrJsString(fk) +
-          '\')">' +
-          '<span class="tend-catalog-row-text">' +
-          esc(title) +
-          '</span>' +
-          '</label>'
-      );
-    });
-    parts.push('</div>');
-  }
-  body.innerHTML =
-    parts.join('') ||
-    '<p class="tend-catalog-empty">No hay analitos en catálogo para este paciente.</p>';
-}
-
-function openTendCatalogModal() {
-  if (!activeId) {
-    showToast('Selecciona un paciente', 'error');
-    return;
-  }
-  renderTendCatalogModalBody();
-  var bd = document.getElementById('tend-catalog-backdrop');
-  if (bd) {
-    bd.style.display = 'flex';
-    bd.setAttribute('aria-hidden', 'false');
-  }
-}
-
-function closeTendCatalogModal() {
-  var bd = document.getElementById('tend-catalog-backdrop');
-  if (bd) {
-    bd.style.display = 'none';
-    bd.setAttribute('aria-hidden', 'true');
-  }
 }
 
 function trendSparkDomId(sectionKey, fieldKey) {
@@ -6324,18 +6250,14 @@ function renderTendencias() {
         });
         return dedupeTrendSetsForSeries(r2, sp.sectionKey, sp.fieldKey).length >= 2;
       });
-    var tb =
-      '<div class="tend-toolbar">' +
-      '<button type="button" class="tend-toolbar-btn" onclick="openTendCatalogModal()">Analitos visibles…</button>' +
-      '<button type="button" class="tend-toolbar-btn tend-toolbar-btn-secondary" onclick="tendResetAllHiddenSeries()">Mostrar todos</button>' +
-      '</div>';
+    var hb = buildTendHiddenBarHtml();
     if (hiddenAll) {
       container.innerHTML =
-        tb +
-        '<p class="tend-empty">Los analitos con datos están <strong>ocultos</strong>. Usa «Analitos visibles» para mostrarlos.</p>';
+        hb +
+        '<p class="tend-empty">Los analitos con datos están <strong>ocultos</strong>. Pulsa el ojo en la barra o <strong>Mostrar todos</strong>.</p>';
     } else {
       container.innerHTML =
-        tb +
+        hb +
         '<p class="tend-empty">No hay parámetros con suficientes datos para graficar.</p>';
     }
     return;
@@ -6360,13 +6282,8 @@ function renderTendencias() {
     ? false
     : { duration: 600, easing: 'easeOutQuart' };
   var htmlParts = [];
-  htmlParts.push(
-    '<div class="tend-toolbar">' +
-      '<button type="button" class="tend-toolbar-btn" onclick="openTendCatalogModal()">Analitos visibles…</button>' +
-      '<button type="button" class="tend-toolbar-btn tend-toolbar-btn-secondary" onclick="tendResetAllHiddenSeries()">Mostrar todos</button>' +
-      '<span class="tend-toolbar-hint">Desmarca analitos que no quieras ver en las gráficas.</span>' +
-      '</div>'
-  );
+  htmlParts.push(buildTendHiddenBarHtml());
+  var eyeBtnSvg = tendEyeVisibilitySvg();
   for (var si = 0; si < sectionsOrdered.length; si++) {
     var sectionKey = sectionsOrdered[si];
     var expanded = tendSectionIsExpanded(sectionKey);
@@ -6395,6 +6312,13 @@ function renderTendencias() {
           "','" +
           safeAttrJsString(fk) +
           '\')">' +
+          '<button type="button" class="tend-card-eye" title="Ocultar este analito" aria-label="Ocultar de tendencias" onclick="tendHideSeriesFromCard(event,\'' +
+          safeAttrJsString(sectionKey) +
+          "','" +
+          safeAttrJsString(fk) +
+          '\')">' +
+          eyeBtnSvg +
+          '</button>' +
           '<div class="tend-card-header">' +
           '<span class="tend-param-name">' +
           titleEsc +
@@ -7875,9 +7799,8 @@ Object.assign(window, {
   updateSOAPBalance,
   closeTendDetail,
   toggleTendSection,
-  openTendCatalogModal,
-  closeTendCatalogModal,
-  tendCatalogToggleFromCheckbox,
+  tendHideSeriesFromCard,
+  tendUnhideSeries,
   tendResetAllHiddenSeries,
   selectPatient,
   deletePatient,

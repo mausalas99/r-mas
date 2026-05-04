@@ -1388,49 +1388,45 @@
   .tend-section-body--collapsed { display: none !important; }
   .tend-spark-placeholder { min-height: 56px; width: 100%; border-radius: 6px; background: rgba(0,0,0,0.03); }
   html.dark .tend-spark-placeholder { background: rgba(255,255,255,0.04); }
-  .tend-toolbar {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 14px; padding: 2px 2px 0;
-  }
   .tend-toolbar-btn {
     font-family: inherit; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 8px; cursor: pointer;
     border: 1px solid var(--border); background: var(--surface); color: var(--text);
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
   .tend-toolbar-btn:hover { border-color: rgba(37, 99, 235, 0.35); box-shadow: var(--shadow-sm); }
-  .tend-toolbar-btn-secondary { font-weight: 500; color: var(--muted); }
-  .tend-toolbar-hint { font-size: 12px; color: var(--muted); flex: 1 1 180px; min-width: 0; line-height: 1.35; }
-  #tend-catalog-backdrop {
-    display: none; position: fixed; inset: 0; z-index: 1150; background: rgba(0,0,0,0.55);
-    align-items: center; justify-content: center; padding: 16px;
+  .tend-hidden-bar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin-bottom: 14px; padding: 10px 12px;
+    border-radius: 10px; border: 1px solid var(--border); background: var(--lab-chip-bg);
   }
-  #tend-catalog-modal {
-    background: var(--surface); border-radius: 12px; border: 1px solid var(--border);
-    width: min(92vw, 520px); max-height: min(82vh, 640px); display: flex; flex-direction: column;
-    box-shadow: var(--shadow-md);
+  .tend-hidden-bar-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); flex-shrink: 0;
   }
-  .tend-catalog-head {
-    display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
-    padding: 16px 18px; border-bottom: 1px solid var(--border);
+  .tend-hidden-chips { display: flex; flex-wrap: wrap; gap: 8px; flex: 1; min-width: 0; align-items: center; }
+  .tend-hidden-chip {
+    display: inline-flex; align-items: center; gap: 4px; padding: 4px 6px 4px 10px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--surface); font-size: 12px; color: var(--text);
   }
-  .tend-catalog-head h3 { margin: 0; font-size: 16px; font-weight: 700; color: var(--text); }
-  .tend-catalog-head p { margin: 6px 0 0; font-size: 12px; color: var(--muted); line-height: 1.4; }
-  .tend-catalog-actions { display: flex; flex-wrap: wrap; gap: 8px; flex-shrink: 0; }
-  .tend-catalog-body { overflow-y: auto; padding: 10px 14px 16px; flex: 1; min-height: 0; }
-  .tend-catalog-group { margin-bottom: 14px; }
-  .tend-catalog-group-title {
-    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
-    color: var(--primary); margin: 0 0 8px 2px;
+  .tend-hidden-chip-label { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tend-hidden-chip-btn {
+    display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; border: none; border-radius: 999px;
+    background: transparent; color: var(--muted); cursor: pointer; transition: background 0.15s ease, color 0.15s ease;
   }
-  .tend-catalog-row {
-    display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; cursor: pointer;
-    border: 1px solid transparent; margin-bottom: 4px;
+  .tend-hidden-chip-btn:hover { background: rgba(16, 185, 129, 0.15); color: #059669; }
+  html.dark .tend-hidden-chip-btn:hover { color: #34d399; }
+  .tend-hidden-chip-btn .tend-eye-svg { display: block; }
+  .tend-hidden-bar-all { flex-shrink: 0; font-weight: 600; }
+  .tend-card-eye {
+    position: absolute; top: 8px; right: 8px; z-index: 3; width: 32px; height: 32px; padding: 0; margin: 0;
+    display: flex; align-items: center; justify-content: center; border: none; border-radius: 8px; cursor: pointer;
+    background: rgba(255,255,255,0.75); color: var(--muted); box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    transition: color 0.15s ease, background 0.15s ease, transform 0.15s ease;
   }
-  .tend-catalog-row:hover { background: var(--lab-chip-bg); border-color: var(--border); }
-  .tend-catalog-row input { flex-shrink: 0; width: 16px; height: 16px; accent-color: #10b981; cursor: pointer; }
-  .tend-catalog-row-text { font-size: 13px; color: var(--text); flex: 1; min-width: 0; }
-  .tend-catalog-empty { margin: 12px 4px; font-size: 13px; color: var(--muted); text-align: center; }
+  html.dark .tend-card-eye { background: rgba(30,41,59,0.85); }
+  .tend-card-eye:hover { color: var(--text); background: var(--surface); transform: scale(1.05); }
+  .tend-card-eye:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .tend-card .tend-card-header { padding-right: 36px; }
   .tend-grid  { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:14px; padding:4px; }
-  .tend-card  { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px; cursor:pointer; transition:box-shadow 0.22s ease, transform 0.22s ease, border-color 0.2s ease; overflow:visible; min-width:0; }
+  .tend-card  { position:relative; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px; cursor:pointer; transition:box-shadow 0.22s ease, transform 0.22s ease, border-color 0.2s ease; overflow:visible; min-width:0; }
   .tend-card:hover { box-shadow:var(--shadow-md); transform:translateY(-3px); border-color: rgba(37, 99, 235, 0.25); }
   html.dark .tend-card:hover { border-color: rgba(96, 165, 250, 0.35); }
   /* ── Expediente: pestaña Cultivos (tabla) ───────────────────── */
@@ -2556,22 +2552,6 @@
       </div>
       <div id="tend-detail-vbar-slot" class="tend-detail-vbar-slot" aria-hidden="true"></div>
     </div>
-  </div>
-</div>
-
-<div id="tend-catalog-backdrop" onclick="if(event.target===this)closeTendCatalogModal()" style="display:none;" aria-hidden="true">
-  <div id="tend-catalog-modal" role="dialog" aria-modal="true" aria-labelledby="tend-catalog-title" onclick="event.stopPropagation()">
-    <div class="tend-catalog-head">
-      <div>
-        <h3 id="tend-catalog-title">Analitos en tendencias</h3>
-        <p>Marca los analitos que quieres ver. Quitar la marca los oculta en las mini-gráficas (se guarda en este equipo).</p>
-      </div>
-      <div class="tend-catalog-actions">
-        <button type="button" class="tend-toolbar-btn tend-toolbar-btn-secondary" onclick="tendResetAllHiddenSeries()">Mostrar todos</button>
-        <button type="button" class="tend-toolbar-btn" onclick="closeTendCatalogModal()">Cerrar</button>
-      </div>
-    </div>
-    <div id="tend-catalog-body" class="tend-catalog-body"></div>
   </div>
 </div>
 
