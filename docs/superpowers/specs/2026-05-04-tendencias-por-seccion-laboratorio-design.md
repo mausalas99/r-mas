@@ -22,8 +22,9 @@ Hoy `extractParsedValues` aplana resultados a un objeto `parsed` con claves glob
 1. **Identidad de serie:** `seriesId` estable = combinación de `sectionKey` + `fieldKey`, donde `sectionKey` es el token de bloque del parser (alineado con `parsearSecciones`: BH, QS, ESC, PFHs, GASES, etc.) y `fieldKey` es el token del analito en esa sección.
 2. **Elegibilidad para gráfica:** Se muestra mini-gráfica (y detalle al pulsar) solo si existen **al menos dos puntos temporales** con valor numérico finito para **esa misma** `(sectionKey, fieldKey)` tras deduplicación (ver §5).
 3. **Agrupación UI:** Las tarjetas se listan bajo **encabezados por sección** (orden de sección definido en producto; por defecto orden clínico habitual: BH → QS → ESC → PFHs → GASES → otros reconocidos).
-4. **Sin mezcla entre secciones:** Ningún `Chart.js` dataset mezcla puntos de dos `sectionKey` distintos para el mismo `fieldKey`.
-5. **Compatibilidad:** Cualquier código que aún consuma `parsed` plano debe seguir funcionando durante la transición: o bien se mantiene `parsed` como vista derivada “legacy” con la semántica actual documentada, o se actualizan todos los consumidores en el mismo cambio. La implementación elige una sola estrategia y la lista en el plan (preferencia: **una sola migración** que actualice consumidores internos para evitar doble verdad).
+4. **Secciones colapsables:** Cada bloque por estudio es **plegable** (mostrar/ocultar la rejilla de tarjetas de esa sección) mediante control en el encabezado (p. ej. clic o botón chevron), accesible por teclado donde aplique el patrón del resto de la app.
+5. **Sin mezcla entre secciones:** Ningún `Chart.js` dataset mezcla puntos de dos `sectionKey` distintos para el mismo `fieldKey`.
+6. **Compatibilidad:** Cualquier código que aún consuma `parsed` plano debe seguir funcionando durante la transición: o bien se mantiene `parsed` como vista derivada “legacy” con la semántica actual documentada, o se actualizan todos los consumidores en el mismo cambio. La implementación elige una sola estrategia y la lista en el plan (preferencia: **una sola migración** que actualice consumidores internos para evitar doble verdad).
 
 ---
 
@@ -52,11 +53,10 @@ Hoy `extractParsedValues` aplana resultados a un objeto `parsed` con claves glob
 ## 4. UI — Expediente → Tendencias
 
 1. Contenedor principal con **subsecciones** (título = nombre legible de la sección, p. ej. “Biometría hemática”, “Gasometría”).
-2. Dentro de cada subsección, **rejilla** de tarjetas solo para series elegibles (regla §2.2).
-3. Tarjeta: nombre del analito + unidad; valor último; color de anormalidad según rango de **esa** serie; mini-gráfica con eje temporal como hoy (`buildTendChartLabels` o equivalente sobre los conjuntos filtrados por sección).
-4. Modal de detalle: mismo `seriesId`, mismos datasets; título deja claro sección + analito.
-
-**Fase posterior (fuera del MVP de este spec si hace falta recortar):** acordeón colapsable por sección para reducir scroll en pacientes con muchos paneles.
+2. Cada subsección es **colapsable:** el encabezado actúa como control para expandir o contraer la rejilla debajo; estado inicial **todas expandidas** (descubrimiento de contenido); persistencia del estado en `localStorage` u opcional en el plan si se desea conservar entre visitas.
+3. Dentro de cada subsección expandida, **rejilla** de tarjetas solo para series elegibles (regla §2.2). Si una sección está colapsada, las instancias `Chart.js` de sus sparks pueden destruirse o no recrearse hasta reexpandir (el plan elige para rendimiento y consistencia con el patrón actual de `renderTendencias`).
+4. Tarjeta: nombre del analito + unidad; valor último; color de anormalidad según rango de **esa** serie; mini-gráfica con eje temporal como hoy (`buildTendChartLabels` o equivalente sobre los conjuntos filtrados por sección).
+5. Modal de detalle: mismo `seriesId`, mismos datasets; título deja claro sección + analito.
 
 ---
 
@@ -72,7 +72,7 @@ Hoy `extractParsedValues` aplana resultados a un objeto `parsed` con claves glob
 **Incluido**
 
 - Tendencias y modal de detalle en `public/js/app.js` (y estilos asociados si hace falta).
-- Parseo ampliado + catálogo de series + agrupación por sección.
+- Parseo ampliado + catálogo de series + agrupación por sección **con bloques colapsables**.
 - Datos de demo / textos de tour que asuman un solo “Hto” genérico.
 
 **No incluido (salvo decisión explícita posterior)**
@@ -88,6 +88,7 @@ Hoy `extractParsedValues` aplana resultados a un objeto `parsed` con claves glob
 2. Conjunto que solo tiene BH sin GASES ⇒ solo aparece la serie BH correspondiente; no se crean tarjetas vacías para GASES.
 3. Misma fecha dos extracciones distintas con mismo valor en la misma sección y analito ⇒ un solo punto tras dedupe.
 4. Tras recargar la app, pacientes con historial antiguo sin `parsedBySection` ⇒ migración/regeneración al cargar sin pérdida de conjuntos.
+5. Con varias secciones con tarjetas, colapsar una oculta su rejilla y no afecta datos ni series de otras secciones; volver a expandir restaura las mini-gráficas correctamente.
 
 ---
 
