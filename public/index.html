@@ -580,6 +580,17 @@
   .toast.show { transform: translateY(0) scale(1); opacity: 1; }
   .toast.success { background: var(--success); }
   .toast.error { background: var(--error); }
+  .lab-output-fecha {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: 0.02em;
+  }
+  html.dark .lab-output-fecha { color: #93c5fd; border-bottom-color: rgba(148, 163, 184, 0.35); }
   .out-line   { font-family: 'Courier New', monospace; line-height: 1.9; white-space: pre-wrap; font-size: 13px; }
   .out-indent { font-family: 'Courier New', monospace; line-height: 1.9; padding-left: 2rem; white-space: pre-wrap; font-size: 13px; }
   .out-line strong, .out-indent strong { font-weight: 700; color: var(--error); background: rgba(220,38,38,0.07); padding: 0 3px; border-radius: 3px; }
@@ -714,6 +725,9 @@
     .toast { transform: translateY(80px); }
     .toast.show { transform: translateY(0); }
     .modal { animation: none; }
+    .tend-range-vbar-norm,
+    .tend-range-vbar-marker { transition: none !important; transition-delay: 0ms !important; }
+    .tend-range-vbar-norm { transform: scaleY(1) !important; }
   }
   .med-output-tab {
     position: relative;
@@ -745,7 +759,8 @@
   .btn-lab-history-del { color: var(--error); border-color: rgba(220,38,38,0.35); }
   .btn-lab-history-del:hover { background: rgba(220,38,38,0.08); border-color: var(--error); }
   html.dark .btn-lab-history-del:hover { background: rgba(248,113,113,0.12); }
-  .btn-lab-dedupe-sync { margin-left: auto; font-size: 12px; padding: 6px 10px; }
+  .lab-history-card-actions { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .btn-lab-dedupe-sync { font-size: 12px; padding: 6px 10px; }
   .dcard { background:#fff; border:1px solid var(--border); border-radius:8px; padding:14px 16px; flex-shrink:0; position:relative; }
   .dcard-title { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#9ca3af; margin-bottom:8px; padding-right:56px; }
   .dcard-copy { position:absolute; top:10px; right:10px; background:none; border:1px solid var(--border); border-radius:5px; padding:3px 8px; font-size:10px; font-family:inherit; color:var(--text-muted); cursor:pointer; transition:all 0.15s; white-space:nowrap; }
@@ -1356,44 +1371,130 @@
   /* ── Tendencias de Lab ─────────────────────────────────────── */
   .tend-empty { text-align:center; color:var(--muted); font-size:14px; padding:40px 20px; }
   .tend-grid  { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:14px; padding:4px; }
-  .tend-card  { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px; cursor:pointer; transition:box-shadow 0.22s ease, transform 0.22s ease, border-color 0.2s ease; overflow:hidden; min-width:0; }
+  .tend-card  { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px; cursor:pointer; transition:box-shadow 0.22s ease, transform 0.22s ease, border-color 0.2s ease; overflow:visible; min-width:0; }
   .tend-card:hover { box-shadow:var(--shadow-md); transform:translateY(-3px); border-color: rgba(37, 99, 235, 0.25); }
   html.dark .tend-card:hover { border-color: rgba(96, 165, 250, 0.35); }
-  .tend-spark-wrap { width:100%; height:56px; margin-top:8px; overflow:hidden; position:relative; border-radius:6px; }
-  .tend-spark-wrap canvas { display:block; max-width:100% !important; }
+  /* ── Expediente: pestaña Cultivos (tabla) ───────────────────── */
+  .cultivos-neg-strip {
+    font-size: 12px; line-height: 1.45; color: var(--text-muted); margin-bottom: 12px; padding: 10px 12px;
+    border-radius: 10px; border: 1px solid var(--border); background: var(--lab-chip-bg);
+  }
+  .cultivos-neg-strip strong { color: var(--text); margin-right: 6px; }
+  .cultivos-neg-sep { opacity: 0.45; margin: 0 4px; }
+  .cultivos-table-hint { font-size: 12px; color: var(--text-muted); margin: 0 0 10px 0; line-height: 1.4; }
+  .cultivos-section-row td {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--primary); background: var(--lab-chip-bg); border-bottom: 1px solid var(--border);
+    padding: 10px 12px !important;
+  }
+  .cultivos-table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); }
+  .cultivos-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .cultivos-table th {
+    text-align: left; padding: 10px 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em;
+    font-size: 10px; border-bottom: 1px solid var(--border); background: var(--lab-chip-bg); white-space: nowrap;
+  }
+  .cultivos-table td { padding: 10px 12px; vertical-align: top; border-bottom: 1px solid var(--border); color: var(--text); }
+  .cultivos-table tbody tr:last-child td { border-bottom: none; }
+  .cultivos-row-neg { background: rgba(34, 197, 94, 0.06); }
+  html.dark .cultivos-row-neg { background: rgba(34, 197, 94, 0.1); }
+  .cultivos-cell-atb pre {
+    margin: 0; font-family: ui-monospace, monospace; font-size: 11px; line-height: 1.4; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto;
+  }
+  .tend-spark-wrap {
+    width:100%; height:56px; margin-top:8px; position:relative; border-radius:6px; overflow:hidden;
+  }
+  .tend-spark-canvas-cell {
+    position:relative; width:100%; height:100%; overflow:hidden; border-radius:6px;
+  }
+  .tend-spark-canvas-cell canvas { display:block; max-width:100% !important; height:100% !important; }
   .tend-card-header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
   .tend-param-name  { font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em; }
   .tend-param-value { font-size:18px; font-weight:700; color:var(--text); }
   .tend-param-value.tend-abnormal { color:#dc2626; }
   .tend-unit  { font-size:10px; color:var(--muted); margin-top:2px; }
-  .tend-range-bar {
+  /* Barra de rango: modal de tendencia (derecha); sparkline del grid sin barra */
+  .tend-detail-chart-row {
+    display: flex;
+    align-items: stretch;
+    gap: 14px;
+    min-height: 320px;
+  }
+  .tend-detail-chart-cell {
+    flex: 1;
+    min-width: 0;
+    height: 320px;
     position: relative;
-    margin-top: 8px;
-    height: 8px;
-    border-radius: 999px;
-    background: linear-gradient(90deg, rgba(148,163,184,0.25) 0%, rgba(148,163,184,0.2) 100%);
-    overflow: hidden;
   }
-  .tend-range-normal {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    border-radius: 999px;
-    background: rgba(16,185,129,0.45);
+  .tend-detail-chart-cell canvas { display: block; width: 100% !important; height: 100% !important; }
+  .tend-detail-vbar-slot {
+    flex: 0 0 auto;
+    width: 20px;
+    position: relative;
+    align-self: stretch;
+    min-height: 120px;
   }
-  .tend-range-marker {
+  .tend-detail-vbar-slot:empty { display: none; width: 0; min-height: 0; }
+  .tend-detail-vbar-slot .tend-range-vbar.tend-detail-vbar {
     position: absolute;
-    top: 50%;
+    left: auto;
+    right: 0;
+    top: 10px;
+    bottom: 10px;
+    width: 12px;
+  }
+  .tend-range-vbar {
+    position: absolute;
+    left: 3px;
+    top: 8px;
+    bottom: 6px;
+    width: 10px;
+    z-index: 2;
+    border-radius: 5px;
+    pointer-events: auto;
+  }
+  .tend-range-vbar-track {
+    position: absolute;
+    inset: 0;
+    border-radius: 5px;
+    background: linear-gradient(180deg, rgba(148,163,184,0.4) 0%, rgba(148,163,184,0.12) 100%);
+    border: 1px solid rgba(148,163,184,0.25);
+  }
+  html.dark .tend-range-vbar-track {
+    background: linear-gradient(180deg, rgba(148,163,184,0.2) 0%, rgba(148,163,184,0.06) 100%);
+    border-color: rgba(148,163,184,0.2);
+  }
+  .tend-range-vbar-norm {
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    border-radius: 3px;
+    background: rgba(16,185,129,0.55);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);
+    transform: scaleY(0);
+    transform-origin: center bottom;
+    transition: transform 0.55s cubic-bezier(0.34, 1.18, 0.64, 1);
+    transition-delay: var(--tend-vbar-delay, 0ms);
+  }
+  .tend-range-vbar.tend-vbar-ready .tend-range-vbar-norm {
+    transform: scaleY(1);
+  }
+  .tend-range-vbar-marker {
+    position: absolute;
+    left: 50%;
     width: 10px;
     height: 10px;
+    margin-left: -5px;
     border-radius: 50%;
-    transform: translate(-50%, -50%);
-    border: 2px solid #fff;
+    border: 2px solid var(--surface);
     background: #10b981;
-    box-shadow: 0 0 0 1px rgba(15,23,42,0.2);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.22);
+    bottom: 0;
+    z-index: 2;
+    transition: bottom 0.65s cubic-bezier(0.34, 1.22, 0.64, 1);
+    transition-delay: var(--tend-vbar-delay, 0ms);
   }
-  .tend-range-bar.is-abnormal .tend-range-marker { background: #dc2626; }
-  .tend-range-bar.is-abnormal .tend-range-normal { background: rgba(16,185,129,0.3); }
+  .tend-range-vbar.is-abnormal .tend-range-vbar-marker { background: #dc2626; }
+  .tend-range-vbar.is-abnormal .tend-range-vbar-norm { background: rgba(16,185,129,0.35); }
   /* ── Modo enfoque (F6) ─────────────────────────────────────── */
   body.focus-mode aside { display: none !important; }
   body.focus-mode #settings-dropdown,
@@ -1895,13 +1996,16 @@
         </div>
 
         <div id="lab-history-card" class="card" style="flex-shrink:0;">
-          <div class="card-header lab-history-card-header" style="display:flex;align-items:center;gap:8px;">
+          <div class="card-header lab-history-card-header" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
             <button type="button" id="btn-lab-history-toggle" class="lab-history-toggle" aria-expanded="true" aria-controls="lab-history-body" title="Ocultar o mostrar historial" onclick="toggleLabHistoryPanel(event)">
               <svg class="lab-history-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             <span class="lab-history-card-title">Historial de labs (paciente activo)</span>
-            <button type="button" class="btn-lab-history btn-lab-dedupe-sync" onclick="openLabHistoryDedupeReview('active')" title="Detectar y quitar entradas duplicadas (misma fecha, hora y resultados)">Sincronizar</button>
+            <span class="lab-history-card-actions">
+              <button type="button" class="btn-lab-history btn-lab-dedupe-sync" onclick="consolidateLabHistoryByDayAndTipo()" title="Fusionar conjuntos del mismo día: solo laboratorio entre sí y solo cultivos entre sí (los mixtos no se tocan)">Consolidar</button>
+              <button type="button" class="btn-lab-history btn-lab-dedupe-sync" onclick="openLabHistoryDedupeReview('active')" title="Abrir checklist: duplicados exactos y posibles coincidencias por fecha/hora y valores">Sincronizar</button>
+            </span>
           </div>
           <div id="lab-history-body" class="card-body" style="padding:12px 16px;">
             <p id="lab-history-hint" class="lab-history-hint" style="display:none;"></p>
@@ -2025,10 +2129,15 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             Tendencias
           </button>
+          <button class="inner-tab" id="itab-cult" onclick="switchInnerTab('cult')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2C8 6 4 9 4 14a8 8 0 1016 0c0-5-4-8-8-12z"/><circle cx="12" cy="14" r="3"/></svg>
+            Cultivos
+          </button>
         </div>
         <div id="itab-content-notas" class="tab-content active"><div id="note-form" style="display:flex;flex-direction:column;gap:20px;"></div></div>
         <div id="itab-content-indica" class="tab-content"><div id="indica-form" style="display:flex;flex-direction:column;gap:20px;"></div></div>
         <div id="itab-content-tend" class="tab-content"><div id="tendencias-container"></div></div>
+        <div id="itab-content-cult" class="tab-content"><div id="cultivos-table-container"></div></div>
       </div>
     </div>
 
@@ -2380,7 +2489,12 @@
       <span id="tend-detail-title" style="font-size:16px;font-weight:700;color:var(--text);"></span>
       <button onclick="closeTendDetail()" style="background:transparent;border:1px solid var(--border);border-radius:6px;padding:4px 12px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text);">Cerrar</button>
     </div>
-    <canvas id="tend-detail-canvas" style="width:100%;height:320px;"></canvas>
+    <div class="tend-detail-chart-row">
+      <div class="tend-detail-chart-cell">
+        <canvas id="tend-detail-canvas"></canvas>
+      </div>
+      <div id="tend-detail-vbar-slot" class="tend-detail-vbar-slot" aria-hidden="true"></div>
+    </div>
   </div>
 </div>
 

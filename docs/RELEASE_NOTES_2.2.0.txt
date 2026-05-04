@@ -1,0 +1,19 @@
+R+ 2.2.0
+
+EXPEDIENTE — CULTIVOS
+- Nueva pestaña **Cultivos** (junto a Nota, Indicaciones y Tendencias): tabla dinámica desde el historial de laboratorio con sitio/muestra, organismo, resistencias y fecha.
+- Los resultados se agrupan por **tipo de estudio** (hemocultivo, urocultivo, cultivo de catéter, tinción Gram, fungicultivo); dentro de cada grupo el orden es **del más reciente al más antiguo**.
+- Resumen de **cultivos negativos** arriba de la tabla (por tipo y fecha).
+
+LABORATORIO — HISTORIAL
+- **Consolidar** conjuntos del mismo día y tipo homogéneo (solo labs o solo cultivos).
+- Mejoras en clasificación de bloques **cultivo** vs química en el historial.
+- **Tendencias**: deduplicación de puntos con misma fecha/hora y mismo valor; fechas de estudio en copia de labs.
+
+INSTALACIÓN
+
+Mac Apple Silicon: R+-2.2.0-arm64.dmg
+Mac Intel: R+-2.2.0-x64.dmg
+Windows: R+-2.2.0-x64.exe
+
+Auto-actualización: latest-mac.yml y latest.yml junto a los binarios.

@@ -43,7 +43,7 @@ export function areDuplicateLabSets(a, b) {
   return areLabSetsEquivalent(a.resLabs || [], b.resLabs || []);
 }
 
-function compareLabSetIdForDedupe(a, b) {
+export function compareLabSetIdForDedupe(a, b) {
   var sa = String(a.id);
   var sb = String(b.id);
   var na = parseInt(sa, 10);
@@ -56,29 +56,53 @@ function compareLabSetIdForDedupe(a, b) {
   return sa.localeCompare(sb);
 }
 
+function exactSignatureForLabSet(s) {
+  if (!s || s.id == null || String(s.id) === '') return null;
+  var lines = normalizeLabLines(s.resLabs || []);
+  return normalizeDateValue(s.fecha) + '\x01' + normalizeTimeValue(s.hora) + '\x01' + lines.join('\x02');
+}
+
+/**
+ * Grupos de duplicados exactos (misma fecha, hora y líneas de resultado).
+ * En cada grupo se conserva el id más antiguo (menor según compareLabSetIdForDedupe).
+ */
+export function findExactDuplicateLabGroups(sets) {
+  var list = (sets || []).filter(function (s) {
+    return s && s.id != null && String(s.id) !== '';
+  });
+  var bySig = Object.create(null);
+  for (var i = 0; i < list.length; i++) {
+    var s = list[i];
+    var sig = exactSignatureForLabSet(s);
+    if (sig == null) continue;
+    if (!bySig[sig]) bySig[sig] = [];
+    bySig[sig].push(s);
+  }
+  var groups = [];
+  Object.keys(bySig).forEach(function (sig) {
+    var arr = bySig[sig];
+    if (arr.length < 2) return;
+    arr.sort(compareLabSetIdForDedupe);
+    groups.push({
+      kind: 'exact',
+      keeperId: String(arr[0].id),
+      removeIds: arr.slice(1).map(function (x) {
+        return String(x.id);
+      }),
+    });
+  });
+  return groups;
+}
+
 /**
  * Ids a eliminar: por cada grupo de sets duplicados se conserva el de id más antiguo
  * (menor timestamp numérico o orden lexicográfico estable).
  */
 export function findDuplicateLabSetIdsToRemove(sets) {
-  var list = (sets || []).filter(function (s) {
-    return s && s.id != null && String(s.id) !== '';
-  });
-  if (list.length < 2) return [];
-  list = list.slice().sort(compareLabSetIdForDedupe);
-  var kept = [];
+  var groups = findExactDuplicateLabGroups(sets);
   var remove = [];
-  for (var i = 0; i < list.length; i++) {
-    var s = list[i];
-    var isDup = false;
-    for (var k = 0; k < kept.length; k++) {
-      if (areDuplicateLabSets(s, kept[k])) {
-        isDup = true;
-        break;
-      }
-    }
-    if (isDup) remove.push(String(s.id));
-    else kept.push(s);
+  for (var i = 0; i < groups.length; i++) {
+    remove = remove.concat(groups[i].removeIds);
   }
   return remove;
 }

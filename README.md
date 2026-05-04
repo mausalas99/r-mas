@@ -2,7 +2,16 @@
 
 Herramienta clínica de escritorio para generación de **notas de evolución**, **indicaciones médicas** y visualización de **laboratorios** con diagramas automáticos.
 
-**Versión estable actual: [2.1.2](https://github.com/mausalas99/r-mas/releases/tag/v2.1.2)** — descarga desde [Releases (última)](https://github.com/mausalas99/r-mas/releases/latest).
+**Versión estable actual: [2.2.0](https://github.com/mausalas99/r-mas/releases/tag/v2.2.0)** — descarga desde [Releases (última)](https://github.com/mausalas99/r-mas/releases/latest).
+
+---
+
+## R+ 2.2.0 (pestaña Cultivos y mejoras de historial)
+
+- **Pestaña Cultivos** — Tabla en el expediente agrupada por tipo de estudio (hemo, uro, catéter, Gram, fungicultivo), orden **más reciente primero** dentro de cada grupo; resumen de negativos arriba.
+- **Historial** — Consolidar por día y tipo homogéneo; mejor separación cultivo vs labs; tendencias sin puntos duplicados; fechas correctas al copiar bloques de laboratorio.
+
+Notas: `docs/RELEASE_NOTES_2.2.0.txt`.
 
 ---
 
@@ -73,8 +82,8 @@ Notas extendidas en el repo: docs/RELEASE_NOTES_2.0.0.txt (texto plano).
 
 Descarga el `.dmg` correspondiente a tu procesador desde [Releases](https://github.com/mausalas99/r-mas/releases/latest):
 
-- `R+-2.1.2-arm64.dmg` — Apple Silicon (M1/M2/M3/M4) *(sustituye `2.1.2` por el número de la última release si lees esto en el futuro)*
-- `R+-2.1.2-x64.dmg` — Intel
+- `R+-2.2.0-arm64.dmg` — Apple Silicon (M1/M2/M3/M4) *(sustituye `2.2.0` por el número de la última release si lees esto en el futuro)*
+- `R+-2.2.0-x64.dmg` — Intel
 
 Abre el `.dmg`, arrastra R+ a Aplicaciones y ejecútalo.
 
@@ -82,7 +91,7 @@ Abre el `.dmg`, arrastra R+ a Aplicaciones y ejecútalo.
 
 ### Windows
 
-Descarga `R+-2.1.2-x64.exe` (nombre `R+-<versión>-x64.exe`) desde [Releases](https://github.com/mausalas99/r-mas/releases/latest) y ejecútalo. La instalación es automática.
+Descarga `R+-2.2.0-x64.exe` (nombre `R+-<versión>-x64.exe`) desde [Releases](https://github.com/mausalas99/r-mas/releases/latest) y ejecútalo. La instalación es automática.
 
 > Si Windows SmartScreen advierte sobre el archivo: Más información → Ejecutar de todas formas.
 

@@ -867,13 +867,50 @@ export function parseCultivo_(textoBruto,tNorm){
   }
 }
 
+/** Meses abreviados (reportes en inglés o español) → número 01–12 */
+var LAB_FECHA_MESES_ABBREV = { ene:'01', feb:'02', mar:'03', abr:'04', may:'05', jun:'06', jul:'07', ago:'08', sep:'09', oct:'10', nov:'11', dic:'12', jan:'01', apr:'04', aug:'08', dec:'12' };
+
+function padFechaDMY(d, m, yStr) {
+  var y = String(yStr);
+  if (y.length === 2) y = '20' + y;
+  return String(d).padStart(2, '0') + '/' + String(m).padStart(2, '0') + '/' + y;
+}
+
+/**
+ * Fecha del estudio en dd/mm/aaaa desde el texto crudo del laboratorio.
+ * Evita usar la fecha de hoy cuando el reporte trae Fecha registro / resultado / muestra en otro formato.
+ */
+export function extractLabReportFechaDMY(textoBruto) {
+  if (!textoBruto || typeof textoBruto !== 'string') return '';
+  var t = textoBruto;
+  var m = t.match(/Fecha\s+Registro\s*:?\s*\r?\n?\s*([A-Za-z]{3})\s+(\d{1,2})\s+(\d{4})/i);
+  if (m) {
+    var mon = LAB_FECHA_MESES_ABBREV[m[1].toLowerCase().slice(0, 3)];
+    if (mon) return padFechaDMY(m[2], mon, m[3]);
+  }
+  var patronesNum = [
+    /Fecha\s+(?:de\s+)?(?:Registro|resultado|Resultado|muestra|Muestra|emisi[oó]n|ingreso|extracci[oó]n)\s*:?\s*(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/i,
+    /(?:Fecha|FECHA)\s+DEL\s+ESTUDIO\s*:?\s*(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/i,
+    /Recepci[oó]n\s*(?:de\s*)?(?:muestra)?\s*:?\s*(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/i,
+    /(?:Captura|Validaci[oó]n|Reporte)\s*:?\s*(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/i
+  ];
+  for (var i = 0; i < patronesNum.length; i++) {
+    m = t.match(patronesNum[i]);
+    if (m) return padFechaDMY(m[1], m[2], m[3]);
+  }
+  var head = t.slice(0, 3200);
+  m = head.match(/\bFecha\s*:\s*(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})\b/i);
+  if (m) return padFechaDMY(m[1], m[2], m[3]);
+  return '';
+}
+
 export function procesarLabs(textoBruto) {
   var tNorm = textoBruto.replace(/\s+/g,' ');
   var mNombre=textoBruto.match(/Nombre:\s*([^\n\r]+)/i);
   var mExp   =textoBruto.match(/Expediente:\s*([^\n\r]+)/i);
   var mSexo  =textoBruto.match(/Sexo:\s*([^\n\r]+)/i);
   var mEdad  =textoBruto.match(/Edad:\s*([^\n\r]+)/i);
-  var mFechaR=textoBruto.match(/Fecha\s+Registro:\s*\r?\n?\s*([A-Za-z]{3}\s+\d{1,2}\s+\d{4})/i);
+  var fechaDm = extractLabReportFechaDMY(textoBruto);
   // Clean expediente: stop before Solicitud/Medico/Fecha/Sexo/Edad keywords
   var expRaw = mExp ? mExp[1].split(/\s+(?:Solicitud|Medico|Médico|Fecha|Sexo|Edad|Ubicaci)/i)[0].trim() : '';
   // Clean edad: only first number
@@ -889,7 +926,7 @@ export function procesarLabs(textoBruto) {
       sexoRaw = (sv==='MASCULINO'||sv==='HOMBRE'||sv==='MALE'||sv==='M') ? 'M' : 'F';
     }
   }
-  var patient={ name:mNombre?mNombre[1].split(/Fecha|Sexo|Edad/i)[0].trim():'', expediente:expRaw, sexo:sexoRaw, edad:edadRaw?(edadRaw+' '+edadUnidad):'', fecha:mFechaR?mFechaR[1].trim():'' };
+  var patient={ name:mNombre?mNombre[1].split(/Fecha|Sexo|Edad/i)[0].trim():'', expediente:expRaw, sexo:sexoRaw, edad:edadRaw?(edadRaw+' '+edadUnidad):'', fecha:fechaDm };
 
   var mGaso=tNorm.match(/GASOMETRIA.*?(?=BIOMETRIA|CITOLOGIA|QUIMICA|ELECTROLITOS|PFH|COAGULACION|CITOQUIMICO|$)/i);
   var bloqueGaso=mGaso?mGaso[0]:'';

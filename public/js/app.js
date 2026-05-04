@@ -23,6 +23,9 @@ import { formatProgressLine } from './update-helpers.mjs';
 import {
   isDuplicateAgainstLatest,
   findDuplicateLabSetIdsToRemove,
+  findExactDuplicateLabGroups,
+  compareLabSetIdForDedupe,
+  normalizeLabLine,
 } from './lab-history-auto-store-core.mjs';
 import {
   parseMedicationPaste,
@@ -229,6 +232,108 @@ function buildLabSetDateLine(set) {
   return rawHora ? (rawDate + ' ' + rawHora.slice(0, 5)) : rawDate;
 }
 
+/** Encabezado de sección de laboratorio tabular (BH, QS, …). */
+function isLabSectionHeaderLine(s) {
+  return /^(BH|QS|ESC|PFHs|GASES|PIE|LCR|EGO|CUANTORINA)\b/i.test(String(s).trim());
+}
+
+/**
+ * Inicio de bloque microbiología / cultivos (no solo líneas CULTIVO\t del parser).
+ * Tras activarse, todo va a cultivos hasta el siguiente encabezado BH|QS|…
+ */
+function isCultivoBlockStartLine(s) {
+  var t = String(s).trim();
+  if (!t) return false;
+  if (/^CULTIVO\b/i.test(t)) return true;
+  if (/^BACTERIOLOGIA\b/i.test(t)) return true;
+  if (/^UROCULTIVO\b/i.test(t)) return true;
+  if (/^HEMOCULTIVO\b/i.test(t)) return true;
+  if (/^FUNGICULTIVO\b/i.test(t)) return true;
+  if (/^TINCION\s+DE\s+GRAM/i.test(t)) return true;
+  if (/^CATETER\b/i.test(t)) return true;
+  if (/^ATB\b/i.test(t)) return true;
+  if (/^Cuenta:/i.test(t)) return true;
+  if (/^[•\u2022\u00B7]\s*/.test(t)) return true;
+  if (/^Cultivos$/i.test(t)) return true;
+  if (t.indexOf('\t') === -1 && /^[A-ZÁÉÍÓÚÑ]+(?:\s+[A-ZÁÉÍÚÑ]+){1,4}$/.test(t)) {
+    var ws = t.split(/\s+/).filter(Boolean);
+    if (ws.length < 2 || ws[0].length < 5 || ws[1].length < 3) return false;
+    if (/^(INTERCONSULTA|SALA|SERVICIO|UNIDAD|PACIENTE|HOSPITAL|AREA|CONTROL|DEPARTAMENTO)/i.test(ws[0])) return false;
+    if (/^(CARDIOLOGIA|CIRUGIA|URGENCIAS|INTERNA|MEDICINA|PEDIATRIA|NEFROLOGIA|HEMATOLOGIA)$/i.test(ws[1])) return false;
+    return true;
+  }
+  return false;
+}
+
+/** Parte líneas de un set en laboratorio convencional vs cultivos / bacteriología. */
+function splitResLabsByTipo(rows) {
+  var labs = [];
+  var cultivo = [];
+  var inCultivo = false;
+  (rows || []).forEach(function (row) {
+    var raw = row == null ? '' : row;
+    var s = String(raw).trim();
+    if (isLabSectionHeaderLine(s)) {
+      inCultivo = false;
+      labs.push(raw);
+      return;
+    }
+    if (inCultivo) {
+      cultivo.push(raw);
+      return;
+    }
+    if (isCultivoBlockStartLine(s)) {
+      inCultivo = true;
+      cultivo.push(raw);
+      return;
+    }
+    labs.push(raw);
+  });
+  return { labs: labs, cultivo: cultivo };
+}
+
+function dayKeyFromLabSet(set) {
+  if (!set || set.fecha === 'Anterior') return 'Anterior';
+  var ms = parseFechaLabToMs(set.fecha, set.hora);
+  if (typeof ms === 'number' && isFinite(ms)) {
+    var d = new Date(ms);
+    return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+  }
+  var n = normalizeFechaLabHistory(set.fecha);
+  if (n && n !== 'Anterior') {
+    var ms2 = parseFechaLabToMs(n, set.hora);
+    if (typeof ms2 === 'number' && isFinite(ms2)) {
+      var d2 = new Date(ms2);
+      return d2.getFullYear() + '-' + (d2.getMonth() + 1) + '-' + d2.getDate();
+    }
+  }
+  return 'unknown';
+}
+
+function dayKeyToSortMs(dk) {
+  if (dk === 'Anterior') return Number.NEGATIVE_INFINITY;
+  if (dk === 'unknown') return Number.MIN_SAFE_INTEGER;
+  var p = dk.split('-').map(function (x) {
+    return parseInt(x, 10);
+  });
+  if (p.length !== 3 || !isFinite(p[0])) return 0;
+  return new Date(p[0], p[1] - 1, p[2]).getTime();
+}
+
+/** Clasificación del conjunto completo (no mezclar en fusión de historial). */
+function primaryTipoForLabSet(resLabs) {
+  var sp = splitResLabsByTipo(resLabs || []);
+  var hasL = sp.labs.some(function (r) {
+    return String(r || '').trim();
+  });
+  var hasC = sp.cultivo.some(function (r) {
+    return String(r || '').trim();
+  });
+  if (hasC && hasL) return 'mixed';
+  if (hasC) return 'cultivo';
+  return 'labs';
+}
+
 function rebuildEstudiosFromLabHistory(patientId) {
   if (!patientId) return;
   if (!notes[patientId]) notes[patientId] = {};
@@ -237,15 +342,68 @@ function rebuildEstudiosFromLabHistory(patientId) {
     notes[patientId].estudios = '';
     return;
   }
-  var lines = [];
-  ordered.forEach(function(set) {
+  var byDay = Object.create(null);
+  ordered.forEach(function (set) {
     if (!set || !set.resLabs || !set.resLabs.length) return;
-    var dateLine = buildLabSetDateLine(set);
-    if (dateLine) lines.push(dateLine);
-    set.resLabs.forEach(function(row) {
-      var clean = String(row == null ? '' : row).trim();
-      if (clean) lines.push(clean);
+    var dk = dayKeyFromLabSet(set);
+    if (!byDay[dk]) byDay[dk] = { sets: [] };
+    byDay[dk].sets.push(set);
+  });
+  var dayKeys = Object.keys(byDay).sort(function (a, b) {
+    if (a === 'Anterior') return 1;
+    if (b === 'Anterior') return -1;
+    return dayKeyToSortMs(b) - dayKeyToSortMs(a);
+  });
+  var lines = [];
+  dayKeys.forEach(function (dk) {
+    var sets = byDay[dk].sets.slice().sort(function (a, b) {
+      var ta = parseFechaLabToMs(a.fecha, a.hora);
+      var tb = parseFechaLabToMs(b.fecha, b.hora);
+      if (typeof ta === 'number' && typeof tb === 'number' && isFinite(ta) && isFinite(tb) && ta !== tb) return tb - ta;
+      return compareLabSetIdForDedupe(a, b);
     });
+    var labsAcc = [];
+    var cultAcc = [];
+    var seenLab = Object.create(null);
+    var seenCul = Object.create(null);
+    sets.forEach(function (set) {
+      var sp = splitResLabsByTipo(set.resLabs);
+      sp.labs.forEach(function (row) {
+        var clean = String(row == null ? '' : row).trim();
+        if (!clean) return;
+        var norm = normalizeLabLine(clean);
+        if (seenLab[norm]) return;
+        seenLab[norm] = true;
+        labsAcc.push(row);
+      });
+      sp.cultivo.forEach(function (row) {
+        var clean = String(row == null ? '' : row).trim();
+        if (!clean) return;
+        var norm = normalizeLabLine(clean);
+        if (seenCul[norm]) return;
+        seenCul[norm] = true;
+        cultAcc.push(row);
+      });
+    });
+    if (!labsAcc.length && !cultAcc.length) return;
+    var headerSet = sets[0];
+    var dateLine = buildLabSetDateLine(headerSet);
+    if (dateLine) lines.push(dateLine);
+    if (labsAcc.length) {
+      lines.push('Laboratorio');
+      labsAcc.forEach(function (row) {
+        var clean = String(row == null ? '' : row).trim();
+        if (clean) lines.push(clean);
+      });
+    }
+    if (cultAcc.length) {
+      if (labsAcc.length) lines.push('');
+      lines.push('Cultivos');
+      cultAcc.forEach(function (row) {
+        var clean = String(row == null ? '' : row).trim();
+        if (clean) lines.push(clean);
+      });
+    }
     lines.push('');
   });
   while (lines.length && !String(lines[lines.length - 1]).trim()) lines.pop();
@@ -271,6 +429,308 @@ function buildTendChartLabels(sets) {
 
 function toTrendAscendingSets(sets) {
   return (sets || []).slice().reverse();
+}
+
+/**
+ * Elimina duplicados para tendencias: misma fecha/hora resuelta y mismo valor del parámetro.
+ * setsDesc debe estar en orden del más reciente al más antiguo; se conserva la primera aparición (la más reciente).
+ */
+function dedupeTrendSetsForParam(setsDesc, param) {
+  var seen = Object.create(null);
+  var out = [];
+  for (var i = 0; i < (setsDesc || []).length; i++) {
+    var s = setsDesc[i];
+    if (!s || !s.parsed || s.parsed[param] == null || !isFinite(Number(s.parsed[param]))) continue;
+    var v = Number(s.parsed[param]);
+    var ms = parseFechaLabToMs(s.fecha, s.hora);
+    var key;
+    if (typeof ms === 'number' && isFinite(ms)) key = 't:' + ms + '|v:' + v;
+    else key = 'f:' + String(s.fecha) + '|h:' + normalizeHoraLabHistory(s.hora) + '|v:' + v;
+    if (seen[key]) continue;
+    seen[key] = true;
+    out.push(s);
+  }
+  return out;
+}
+
+// ── Expediente: pestaña Cultivos (tabla desde historial) ───────────
+var CULTIVO_TIPO_ORDER = ['hemo', 'uro', 'cateter', 'gram', 'fungi', 'otro'];
+var CULTIVO_TIPO_LABELS = {
+  hemo: 'Hemocultivo',
+  uro: 'Urocultivo',
+  cateter: 'Cultivo de catéter',
+  gram: 'Tinción Gram',
+  fungi: 'Fungicultivo',
+  otro: 'Otros cultivos',
+};
+
+function isCultureTableHeaderLine(t) {
+  var s = String(t || '').trim();
+  return (
+    /^(UROCULTIVO|HEMOCULTIVO|FUNGICULTIVO)\b/i.test(s) ||
+    /^TINCION\s+DE\s+GRAM/i.test(s) ||
+    /^CATETER\b/i.test(s)
+  );
+}
+
+/** Clave estable desde la línea cabecera del bloque (UROCULTIVO / HEMOCULTIVO / …). */
+function classifyCultureTipoKeyFromHeaderLine(rawLine) {
+  var s = String(rawLine || '').replace(/\s+/g, ' ').trim();
+  var beforeColon = (s.split(':')[0] || s).toUpperCase();
+  if (/^HEMOCULTIVO\b/.test(beforeColon)) return 'hemo';
+  if (/^UROCULTIVO\b/.test(beforeColon)) return 'uro';
+  if (/^FUNGICULTIVO\b/.test(beforeColon)) return 'fungi';
+  if (/^TINCION(\s+DE)?\s+GRAM\b/.test(beforeColon)) return 'gram';
+  if (/^CATETER\b/.test(beforeColon)) return 'cateter';
+  return 'otro';
+}
+
+function completePartialFechaForCultivo(dm, set) {
+  if (!dm) return '';
+  var parts = String(dm).trim().split('/');
+  if (parts.length === 3) {
+    var y3 = parts[2].length === 2 ? '20' + parts[2] : parts[2];
+    var joined = parts[0].padStart(2, '0') + '/' + parts[1].padStart(2, '0') + '/' + y3;
+    return normalizeFechaLabHistory(joined) || joined;
+  }
+  if (parts.length !== 2) return dm;
+  var y = new Date().getFullYear();
+  if (set && set.fecha && set.fecha !== 'Anterior') {
+    var fd = normalizeFechaLabHistory(set.fecha) || String(set.fecha);
+    var ms = parseFechaLabToMs(fd, '');
+    if (typeof ms === 'number' && isFinite(ms)) y = new Date(ms).getFullYear();
+  }
+  return parts[0].padStart(2, '0') + '/' + parts[1].padStart(2, '0') + '/' + y;
+}
+
+function cultureBlockLooksNegative(left, right) {
+  var L = (left + ' ' + right).toUpperCase();
+  if (!String(right || '').trim()) return true;
+  return (
+    /NEGATIVO|NO HAY CRECIMIENTO|SIN AISLAMIENTO|AUSENCIA(\s+DE)?\s+CRECIMIENTO|NO SE AISL|ESCASA FLORA|CONTAMINACI(O|Ó)N|SIN CRECIMIENTO/i.test(L)
+  );
+}
+
+/**
+ * @returns {{ row: object, nextIdx: number }}
+ */
+function parseCultureBlockFromCultivoLines(cultLines, startIdx, set, seq) {
+  var rawHeader = String(cultLines[startIdx] || '');
+  var line = rawHeader.replace(/\s+/g, ' ').trim();
+  var tipoKey = classifyCultureTipoKeyFromHeaderLine(rawHeader);
+  var studyDate = buildLabSetDateLine(set) || '—';
+  var sortMs = parseFechaLabToMs(set.fecha, set.hora);
+  if (typeof sortMs !== 'number' || !isFinite(sortMs)) sortMs = 0;
+
+  var colon = line.indexOf(':');
+  var left = colon >= 0 ? line.slice(0, colon).trim() : line;
+  var right = colon >= 0 ? line.slice(colon + 1).trim() : '';
+
+  var fechaMuestra = '';
+  var sitio = left;
+  var dm = left.match(/(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)\s*$/);
+  if (dm) {
+    fechaMuestra = completePartialFechaForCultivo(dm[1], set);
+    sitio = left.slice(0, dm.index).trim() || left.replace(/\s*\d{1,2}\/\d{1,2}(?:\/\d{2,4})?\s*$/, '').trim();
+  }
+
+  var organismo = right.replace(/\s+/g, ' ').trim();
+  var negativo = cultureBlockLooksNegative(left, right);
+  if (negativo && !organismo) organismo = 'Negativo';
+  else if (negativo && /^NEGATIVO$/i.test(organismo)) organismo = 'Negativo';
+  else if (!organismo) organismo = '—';
+
+  var resistencias = [];
+  var i = startIdx + 1;
+  while (i < cultLines.length) {
+    var L2 = String(cultLines[i] || '').trim();
+    if (!L2) {
+      i++;
+      continue;
+    }
+    if (isCultureTableHeaderLine(L2)) break;
+    if (/^(BH|QS|ESC|PFHs|GASES|PIE|LCR|EGO|CUANTORINA)\b/i.test(L2)) break;
+    if (/^CULTIVO\b|^BACTERIOLOGIA\b/i.test(L2)) break;
+    resistencias.push(L2);
+    i++;
+  }
+
+  var resStr = resistencias.join('\n').trim();
+
+  var sortKeyMs = sortMs;
+  if (fechaMuestra) {
+    var fmNorm = normalizeFechaLabHistory(fechaMuestra) || fechaMuestra;
+    var fmParsed = parseFechaLabToMs(fmNorm, '');
+    if (typeof fmParsed === 'number' && isFinite(fmParsed)) sortKeyMs = fmParsed;
+  }
+
+  return {
+    row: {
+      studyDate: studyDate,
+      fechaMuestra: fechaMuestra || '—',
+      sitio: sitio || '—',
+      organismo: organismo,
+      resistencias: resStr || (negativo ? '—' : ''),
+      negativo: negativo,
+      sortMs: sortMs,
+      sortKeyMs: sortKeyMs,
+      tipoKey: tipoKey,
+      tipoLabel: CULTIVO_TIPO_LABELS[tipoKey] || CULTIVO_TIPO_LABELS.otro,
+      _seq: typeof seq === 'number' ? seq : 0,
+    },
+    nextIdx: i,
+  };
+}
+
+function extractCultivoTableRowsFromHistory(patientId) {
+  var history = sortLabHistoryChronological(ensureParsedLabHistory(patientId));
+  var rows = [];
+  var seq = 0;
+  history.forEach(function (set) {
+    if (!set || !set.resLabs || !set.resLabs.length) return;
+    var cult = splitResLabsByTipo(set.resLabs).cultivo;
+    var i = 0;
+    while (i < cult.length) {
+      var t = String(cult[i] || '').trim();
+      if (!t) {
+        i++;
+        continue;
+      }
+      if (!isCultureTableHeaderLine(t)) {
+        i++;
+        continue;
+      }
+      var parsed = parseCultureBlockFromCultivoLines(cult, i, set, seq++);
+      rows.push(parsed.row);
+      i = parsed.nextIdx;
+    }
+  });
+  return rows;
+}
+
+/** Agrupa por tipo de cultivo y ordena del más reciente al más antiguo. */
+function groupCultivoRowsByTipoChronologic(rows) {
+  var byKey = Object.create(null);
+  rows.forEach(function (r) {
+    var k = r.tipoKey || 'otro';
+    if (!byKey[k]) byKey[k] = [];
+    byKey[k].push(r);
+  });
+  CULTIVO_TIPO_ORDER.forEach(function (k) {
+    if (!byKey[k]) return;
+    byKey[k].sort(function (a, b) {
+      var da = a.sortKeyMs != null ? a.sortKeyMs : a.sortMs || 0;
+      var db = b.sortKeyMs != null ? b.sortKeyMs : b.sortMs || 0;
+      if (da !== db) return db - da;
+      return (b._seq || 0) - (a._seq || 0);
+    });
+  });
+  return CULTIVO_TIPO_ORDER.filter(function (k) {
+    return byKey[k] && byKey[k].length;
+  }).map(function (k) {
+    return {
+      key: k,
+      label: CULTIVO_TIPO_LABELS[k] || CULTIVO_TIPO_LABELS.otro,
+      rows: byKey[k],
+    };
+  });
+}
+
+function renderCultivosTable() {
+  var container = document.getElementById('cultivos-table-container');
+  if (!container) return;
+  if (!activeId) {
+    container.innerHTML = '<p class="tend-empty">Selecciona un paciente.</p>';
+    return;
+  }
+  var flatRows = extractCultivoTableRowsFromHistory(activeId);
+  if (!flatRows.length) {
+    container.innerHTML =
+      '<p class="tend-empty">No hay cultivos en el historial. Aparecen urocultivos, hemocultivos, tinción Gram y cultivos de catéter enviados desde Laboratorio.</p>';
+    return;
+  }
+  var groups = groupCultivoRowsByTipoChronologic(flatRows);
+  function rowFechaDisplay(r) {
+    if (r.fechaMuestra && r.fechaMuestra !== '—') return r.fechaMuestra;
+    return r.studyDate || '—';
+  }
+  var negs = flatRows.filter(function (r) {
+    return r.negativo;
+  });
+  negs.sort(function (a, b) {
+    var oa = CULTIVO_TIPO_ORDER.indexOf(a.tipoKey || 'otro');
+    var ob = CULTIVO_TIPO_ORDER.indexOf(b.tipoKey || 'otro');
+    if (oa !== ob) return oa - ob;
+    var da = a.sortKeyMs != null ? a.sortKeyMs : a.sortMs || 0;
+    var db = b.sortKeyMs != null ? b.sortKeyMs : b.sortMs || 0;
+    if (da !== db) return db - da;
+    return (b._seq || 0) - (a._seq || 0);
+  });
+  var negStrip = '';
+  if (negs.length) {
+    var parts = negs.map(function (r) {
+      var fd = rowFechaDisplay(r);
+      var lab = r.tipoLabel || '';
+      return lab + ' · ' + fd + ' · ' + (r.sitio.length > 36 ? r.sitio.slice(0, 34) + '…' : r.sitio);
+    });
+    negStrip =
+      '<div class="cultivos-neg-strip" role="status"><strong>Cultivos negativos</strong> (en la tabla, por tipo y fecha) · ' +
+      parts.map(function (p) {
+        return '<span>' + esc(p) + '</span>';
+      }).join(' <span class="cultivos-neg-sep">|</span> ') +
+      '</div>';
+  }
+  var thead =
+    '<thead><tr>' +
+    '<th>Fecha</th>' +
+    '<th>Sitio / muestra</th>' +
+    '<th>Organismo</th>' +
+    '<th>Resistencias</th>' +
+    '</tr></thead>';
+  var tbody = groups
+    .map(function (g) {
+      var section =
+        '<tr class="cultivos-section-row"><td colspan="4">' + esc(g.label) + '</td></tr>';
+      var body = g.rows
+        .map(function (r) {
+          return (
+            '<tr class="' +
+            (r.negativo ? 'cultivos-row-neg' : '') +
+            '">' +
+            '<td>' +
+            esc(rowFechaDisplay(r)) +
+            '</td>' +
+            '<td>' +
+            esc(r.sitio) +
+            '</td>' +
+            '<td>' +
+            esc(r.organismo) +
+            '</td>' +
+            '<td class="cultivos-cell-atb"><pre>' +
+            esc(r.resistencias || '—') +
+            '</pre></td>' +
+            '</tr>'
+          );
+        })
+        .join('');
+      return section + body;
+    })
+    .join('');
+  container.innerHTML =
+    negStrip +
+    '<p class="cultivos-table-hint">Por categoría (tipo de estudio), orden cronológico de más reciente a más antiguo.</p>' +
+    '<div class="cultivos-table-wrap">' +
+    '<table class="cultivos-table">' +
+    thead +
+    '<tbody>' +
+    tbody +
+    '</tbody></table></div>';
+}
+
+function refreshTendenciasOrCultivosPanel() {
+  if (activeAppTab !== 'nota') return;
+  if (activeInner === 'tend') renderTendencias();
+  else if (activeInner === 'cult') renderCultivosTable();
 }
 
 function formatDMYDate(d) {
@@ -594,10 +1054,13 @@ function switchInnerTab(tab) {
   document.getElementById('itab-notas').classList.toggle('active', tab === 'notas');
   document.getElementById('itab-indica').classList.toggle('active', tab === 'indica');
   document.getElementById('itab-tend').classList.toggle('active', tab === 'tend');
+  document.getElementById('itab-cult').classList.toggle('active', tab === 'cult');
   document.getElementById('itab-content-notas').classList.toggle('active', tab === 'notas');
   document.getElementById('itab-content-indica').classList.toggle('active', tab === 'indica');
   document.getElementById('itab-content-tend').classList.toggle('active', tab === 'tend');
+  document.getElementById('itab-content-cult').classList.toggle('active', tab === 'cult');
   if (tab === 'tend') renderTendencias();
+  if (tab === 'cult') renderCultivosTable();
 }
 
 function onPatientSearchInput(val) {
@@ -643,7 +1106,7 @@ function selectPatient(id) {
   document.getElementById('patient-view').style.display = 'flex';
   renderNoteForm();
   renderIndicaForm();
-  if (activeInner === 'tend') renderTendencias();
+  refreshTendenciasOrCultivosPanel();
   renderLabHistoryPanel();
   renderMedRecetaPanel();
 }
@@ -1082,7 +1545,6 @@ function applyTourNavigationForStep(id) {
     case 'sala_tend':
       switchAppTab('nota');
       switchInnerTab('tend');
-      renderTendencias();
       break;
     case 'sala_soap':
       switchAppTab('nota');
@@ -2149,6 +2611,18 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '2.2.0': [
+    {
+      title: 'Pestaña Cultivos en el expediente',
+      body:
+        'Tabla con hemocultivo, urocultivo, catéter, Gram y fungicultivo: agrupada por tipo y ordenada del más reciente al más antiguo; arriba un resumen de cultivos negativos.',
+    },
+    {
+      title: 'Historial y tendencias',
+      body:
+        'Consolidar estudios del mismo día (solo labs o solo cultivos), mejor clasificación de bloques de cultivo, tendencias sin puntos duplicados y fechas al copiar labs.',
+    },
+  ],
   '2.1.2': [
     {
       title: 'Duplicados en historial de labs',
@@ -3403,7 +3877,7 @@ function deleteLabHistorySet(setId) {
   saveState();
   addAuditEntry('lab-history-delete', 'ok', 1, String(setId));
   renderLabHistoryPanel();
-  if (activeInner === 'tend') renderTendencias();
+  refreshTendenciasOrCultivosPanel();
   showToast('Eliminado del historial', 'success');
 }
 
@@ -3422,73 +3896,242 @@ function removeDuplicateLabSetsForPatient(patientId) {
   return before - (labHistory[patientId] ? labHistory[patientId].length : 0);
 }
 
-function scanLabHistoryDupesAllPatients() {
-  var rows = [];
-  patients.forEach(function (p) {
-    if (p.isDemo) return;
-    var sets = ensureParsedLabHistory(p.id);
-    var ids = findDuplicateLabSetIdsToRemove(sets);
-    if (ids.length) {
-      rows.push({
-        patientId: p.id,
-        nombre: p.nombre || '—',
-        registro: p.registro || '',
-        count: ids.length,
-      });
-    }
+function labDedupeSummaryLine(set) {
+  if (!set) return '—';
+  var rawFe =
+    set.fecha === 'Anterior'
+      ? ''
+      : normalizeFechaLabHistory(set.fecha) || String(set.fecha || '').trim() || inferFechaLabSetFromId(set) || '';
+  var fe = set.id === 'migrated-anterior' ? (rawFe ? 'Anterior · ' + rawFe : 'Anterior (sin fecha en bloque)') : rawFe || (set.fecha === 'Anterior' ? 'Anterior' : '—');
+  var ho = set.hora && String(set.hora).trim() ? String(set.hora).trim().slice(0, 8) : '';
+  var n = set.resLabs && set.resLabs.length ? set.resLabs.length : 0;
+  var parts = [fe];
+  if (ho) parts.push(ho);
+  parts.push(n + ' línea' + (n === 1 ? '' : 's'));
+  parts.push('id ' + String(set.id).slice(-12));
+  return parts.join(' · ');
+}
+
+function labParsedFingerprintForDedupe(set) {
+  var p = set && set.parsed;
+  if (!p || !Object.keys(p).length) p = extractParsedValues(set.resLabs || []);
+  var keys = Object.keys(p).filter(function (k) {
+    var v = p[k];
+    return v != null && isFinite(Number(v));
+  }).sort();
+  if (!keys.length) return '';
+  return keys.map(function (k) {
+    return k + ':' + Number(p[k]);
+  }).join('|');
+}
+
+function labLooseDupeKey(set) {
+  if (!set) return '';
+  var ms = parseFechaLabToMs(set.fecha, set.hora);
+  var timePart =
+    typeof ms === 'number' && isFinite(ms)
+      ? 't:' + ms
+      : 'f:' + normalizeFechaLabHistory(set.fecha) + '|h:' + normalizeHoraLabHistory(set.hora);
+  var fp = labParsedFingerprintForDedupe(set);
+  if (!fp) return '';
+  return timePart + '||' + fp;
+}
+
+function buildLabDedupeChecklistSections(patientId) {
+  var sets = ensureParsedLabHistory(patientId);
+  var byId = {};
+  sets.forEach(function (s) {
+    if (s && s.id != null) byId[String(s.id)] = s;
   });
+  var rows = [];
+  var exactRemoveIds = new Set();
+
+  findExactDuplicateLabGroups(sets).forEach(function (g) {
+    g.removeIds.forEach(function (id) {
+      exactRemoveIds.add(id);
+      var s = byId[id];
+      if (!s) return;
+      rows.push({
+        patientId: patientId,
+        id: id,
+        kind: 'exact',
+        checked: true,
+        summary: labDedupeSummaryLine(s),
+      });
+    });
+  });
+
+  var looseByKey = Object.create(null);
+  sets.forEach(function (s) {
+    if (!s || s.id == null) return;
+    var k = labLooseDupeKey(s);
+    if (!k) return;
+    if (!looseByKey[k]) looseByKey[k] = [];
+    looseByKey[k].push(s);
+  });
+  Object.keys(looseByKey).forEach(function (k) {
+    var arr = looseByKey[k];
+    if (arr.length < 2) return;
+    arr.sort(compareLabSetIdForDedupe);
+    arr.slice(1).forEach(function (s) {
+      var sid = String(s.id);
+      if (exactRemoveIds.has(sid)) return;
+      rows.push({
+        patientId: patientId,
+        id: sid,
+        kind: 'loose',
+        checked: true,
+        summary: labDedupeSummaryLine(s),
+      });
+    });
+  });
+
   return rows;
 }
 
-function showLabDedupeConfirmModal(rows, totalRemovable) {
+function applyLabDedupeFromChecklist(mapByPatient) {
+  var removedTotal = 0;
+  Object.keys(mapByPatient).forEach(function (pid) {
+    var ids = mapByPatient[pid];
+    if (!ids || !ids.length || !labHistory[pid]) return;
+    var idSet = new Set(ids.map(String));
+    var before = labHistory[pid].length;
+    labHistory[pid] = labHistory[pid].filter(function (s) {
+      return !idSet.has(String(s.id));
+    });
+    if (!labHistory[pid].length) delete labHistory[pid];
+    rebuildEstudiosFromLabHistory(pid);
+    removedTotal += before - (labHistory[pid] ? labHistory[pid].length : 0);
+  });
+  return removedTotal;
+}
+
+function showLabDedupeChecklistModal(sections) {
   var backdrop = document.createElement('div');
   backdrop.className = 'lab-conflict-backdrop';
   backdrop.id = 'lab-dedupe-backdrop';
-  var listHtml = rows
-    .map(function (r) {
-      return (
-        '<li style="margin:6px 0;">' +
-        esc(r.nombre || '—') +
-        (r.registro ? ' <span style="opacity:0.85">· ' + esc(r.registro) + '</span>' : '') +
-        ' — <strong>' +
-        r.count +
-        '</strong> duplicado' +
-        (r.count === 1 ? '' : 's') +
-        '</li>'
-      );
+  var blocks = sections
+    .map(function (sec) {
+      var exact = sec.rows.filter(function (r) {
+        return r.kind === 'exact';
+      });
+      var loose = sec.rows.filter(function (r) {
+        return r.kind === 'loose';
+      });
+      var head =
+        '<h4 style="margin:12px 0 8px;font-size:14px;font-weight:700;color:var(--text);">' +
+        esc(sec.nombre || '—') +
+        (sec.registro ? ' <span style="opacity:0.85;font-weight:500">· ' + esc(sec.registro) + '</span>' : '') +
+        '</h4>';
+      var part = '<div class="lab-dedupe-patient-block">' + head;
+      if (exact.length) {
+        part +=
+          '<p style="margin:0 0 6px;font-size:12px;color:var(--text-muted);font-weight:600;">Duplicados exactos (misma fecha, hora y texto del reporte)</p><ul style="margin:0 0 14px;padding-left:0;list-style:none;max-height:220px;overflow-y:auto;font-size:13px;">';
+        exact.forEach(function (r) {
+          part +=
+            '<li style="margin:6px 0;"><label style="cursor:pointer;display:flex;gap:8px;align-items:flex-start;"><input type="checkbox" class="lab-dedupe-cb" data-pid="' +
+            esc(r.patientId) +
+            '" data-sid="' +
+            esc(r.id) +
+            '" checked style="margin-top:3px;flex-shrink:0;" /> <span>' +
+            esc(r.summary) +
+            '</span></label></li>';
+        });
+        part += '</ul>';
+      }
+      if (loose.length) {
+        part +=
+          '<p style="margin:0 0 6px;font-size:12px;color:var(--text-muted);font-weight:600;">Posibles duplicados (misma fecha/hora y mismos valores numéricos parseados; el texto del reporte puede diferir)</p><ul style="margin:0 0 14px;padding-left:0;list-style:none;max-height:220px;overflow-y:auto;font-size:13px;">';
+        loose.forEach(function (r) {
+          part +=
+            '<li style="margin:6px 0;"><label style="cursor:pointer;display:flex;gap:8px;align-items:flex-start;"><input type="checkbox" class="lab-dedupe-cb" data-pid="' +
+            esc(r.patientId) +
+            '" data-sid="' +
+            esc(r.id) +
+            '" checked style="margin-top:3px;flex-shrink:0;" /> <span>' +
+            esc(r.summary) +
+            '</span></label></li>';
+        });
+        part += '</ul>';
+      }
+      return part + '</div>';
     })
     .join('');
+  var defaultCount = sections.reduce(function (acc, s) {
+    return acc + s.rows.length;
+  }, 0);
   backdrop.innerHTML =
-    '<div class="lab-conflict-modal" style="max-width:420px;">' +
-    '<h3>Duplicados en historial de labs</h3>' +
-    '<p style="font-size:13px;line-height:1.45;">Se quitarán entradas repetidas (misma fecha, hora y resultados). Se conserva la copia <strong>más antigua</strong> de cada grupo.</p>' +
-    '<p style="font-size:13px;"><strong>Total a eliminar:</strong> ' +
-    totalRemovable +
-    '</p>' +
-    '<ul style="margin:0 0 12px 0;padding-left:18px;max-height:200px;overflow-y:auto;font-size:13px;">' +
-    listHtml +
-    '</ul>' +
-    '<div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;flex-wrap:wrap;">' +
-    '<button type="button" id="lab-dedupe-cancel" style="background:#F3F4F6;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:#1f2937;">Cancelar</button>' +
-    '<button type="button" id="lab-dedupe-ok" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Eliminar duplicados</button>' +
-    '</div></div>';
+    '<div class="lab-conflict-modal" style="max-width:520px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;">' +
+    '<h3 style="margin:0 0 8px;">Sincronizar historial de laboratorio</h3>' +
+    '<p style="font-size:13px;line-height:1.45;margin:0 0 10px;color:var(--text-muted);">Marca las entradas a eliminar. Por defecto se seleccionan las copias redundantes y se conserva el conjunto con id más antiguo en cada grupo.</p>' +
+    '<div style="overflow-y:auto;flex:1;min-height:0;padding-right:4px;">' +
+    blocks +
+    '</div>' +
+    '<div style="display:flex;gap:10px;margin-top:14px;justify-content:space-between;flex-wrap:wrap;align-items:center;">' +
+    '<span style="font-size:12px;color:var(--text-muted);" id="lab-dedupe-count">' +
+    defaultCount +
+    ' seleccionada' +
+    (defaultCount === 1 ? '' : 's') +
+    '</span>' +
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+    '<button type="button" id="lab-dedupe-none" style="background:transparent;border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Quitar todas</button>' +
+    '<button type="button" id="lab-dedupe-all" style="background:transparent;border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Seleccionar todas</button>' +
+    '<button type="button" id="lab-dedupe-cancel" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Cancelar</button>' +
+    '<button type="button" id="lab-dedupe-ok" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Eliminar seleccionadas</button>' +
+    '</div></div></div>';
   document.body.appendChild(backdrop);
+
+  function updateCount() {
+    var n = backdrop.querySelectorAll('.lab-dedupe-cb:checked').length;
+    var el = document.getElementById('lab-dedupe-count');
+    if (el) {
+      el.textContent = n + ' seleccionada' + (n === 1 ? '' : 's');
+    }
+  }
+  backdrop.querySelectorAll('.lab-dedupe-cb').forEach(function (cb) {
+    cb.addEventListener('change', updateCount);
+  });
+  document.getElementById('lab-dedupe-none').onclick = function () {
+    backdrop.querySelectorAll('.lab-dedupe-cb').forEach(function (cb) {
+      cb.checked = false;
+    });
+    updateCount();
+  };
+  document.getElementById('lab-dedupe-all').onclick = function () {
+    backdrop.querySelectorAll('.lab-dedupe-cb').forEach(function (cb) {
+      cb.checked = true;
+    });
+    updateCount();
+  };
   document.getElementById('lab-dedupe-cancel').onclick = function () {
     backdrop.remove();
   };
   document.getElementById('lab-dedupe-ok').onclick = function () {
-    backdrop.remove();
-    var removedTotal = 0;
-    rows.forEach(function (r) {
-      removedTotal += removeDuplicateLabSetsForPatient(r.patientId);
+    var mapByPatient = {};
+    backdrop.querySelectorAll('.lab-dedupe-cb:checked').forEach(function (cb) {
+      var pid = cb.getAttribute('data-pid');
+      var sid = cb.getAttribute('data-sid');
+      if (!pid || !sid) return;
+      if (!mapByPatient[pid]) mapByPatient[pid] = [];
+      mapByPatient[pid].push(sid);
     });
+    backdrop.remove();
+    var nSel = Object.keys(mapByPatient).reduce(function (a, pid) {
+      return a + mapByPatient[pid].length;
+    }, 0);
+    if (!nSel) {
+      showToast('No seleccionaste entradas para eliminar', 'error');
+      return;
+    }
+    if (typeof pushUndoSnapshot === 'function') pushUndoSnapshot('Eliminar duplicados de historial de labs (' + nSel + ')');
+    var removedTotal = applyLabDedupeFromChecklist(mapByPatient);
     saveState();
     renderLabHistoryPanel();
-    if (activeInner === 'tend' && activeAppTab === 'nota') renderTendencias();
+    refreshTendenciasOrCultivosPanel();
     var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
     if (el && activeId && notes[activeId]) el.value = notes[activeId].estudios || '';
-    addAuditEntry('lab-history-dedupe', 'ok', removedTotal, String(rows.length) + ' pacientes');
-    showToast('Eliminados ' + removedTotal + ' duplicados ✓', 'success');
+    addAuditEntry('lab-history-dedupe', 'ok', removedTotal, Object.keys(mapByPatient).length + ' pacientes');
+    showToast('Eliminadas ' + removedTotal + ' entrada' + (removedTotal === 1 ? '' : 's') + ' ✓', 'success');
   };
 }
 
@@ -3499,39 +4142,133 @@ function openLabHistoryDedupeReview(scope) {
       showToast('Selecciona un paciente primero', 'error');
       return;
     }
-    var sets = ensureParsedLabHistory(activeId);
-    var ids = findDuplicateLabSetIdsToRemove(sets);
-    if (!ids.length) {
-      showToast('No hay duplicados en el historial de este paciente', 'success');
+    var rows = buildLabDedupeChecklistSections(activeId);
+    if (!rows.length) {
+      showToast('No hay duplicados ni coincidencias por fecha/valores en este paciente', 'success');
       return;
     }
-    var p = patients.find(function (x) { return x.id === activeId; });
-    showLabDedupeConfirmModal(
-      [
-        {
-          patientId: activeId,
-          nombre: p ? p.nombre : '',
-          registro: p ? p.registro : '',
-          count: ids.length,
-        },
-      ],
-      ids.length
-    );
+    var p = patients.find(function (x) {
+      return x.id === activeId;
+    });
+    showLabDedupeChecklistModal([
+      {
+        patientId: activeId,
+        nombre: p ? p.nombre : '',
+        registro: p ? p.registro : '',
+        rows: rows,
+      },
+    ]);
     return;
   }
   if (scope === 'all') {
-    var rows = scanLabHistoryDupesAllPatients();
-    if (!rows.length) {
-      showToast('No se encontraron duplicados en ningún paciente', 'success');
+    var sections = [];
+    patients.forEach(function (p) {
+      if (p.isDemo) return;
+      var r = buildLabDedupeChecklistSections(p.id);
+      if (r.length) {
+        sections.push({
+          patientId: p.id,
+          nombre: p.nombre || '—',
+          registro: p.registro || '',
+          rows: r,
+        });
+      }
+    });
+    if (!sections.length) {
+      showToast('No se encontraron duplicados ni coincidencias por fecha/valores', 'success');
       closeSettingsDropdown();
       return;
     }
-    var total = rows.reduce(function (acc, r) {
-      return acc + r.count;
-    }, 0);
-    showLabDedupeConfirmModal(rows, total);
+    showLabDedupeChecklistModal(sections);
     closeSettingsDropdown();
   }
+}
+
+/**
+ * Fusiona entradas de labHistory del mismo día calendario y mismo tipo homogéneo (solo labs o solo cultivo).
+ * Los conjuntos mixtos (laboratorio + cultivo en un mismo set) no se fusionan ni se agrupan con otros.
+ */
+function consolidateLabHistoryByDayAndTipo() {
+  if (!activeId) {
+    showToast('Selecciona un paciente primero', 'error');
+    return;
+  }
+  var list = labHistory[activeId];
+  if (!list || list.length < 2) {
+    showToast('Se necesitan al menos 2 conjuntos en el historial', 'error');
+    return;
+  }
+  if (
+    !confirm(
+      '¿Fusionar conjuntos del mismo día?\n\n' +
+        '• Solo laboratorio con solo laboratorio.\n' +
+        '• Solo cultivos con solo cultivos.\n' +
+        '• Los conjuntos mixtos (lab + cultivo en uno) no se modifican.\n' +
+        'Se conserva el id más antiguo de cada grupo y se unen las líneas (duplicados de texto omitidos).'
+    )
+  ) {
+    return;
+  }
+  ensureParsedLabHistory(activeId);
+  var sets = labHistory[activeId].slice();
+  var groups = Object.create(null);
+  sets.forEach(function (set) {
+    if (!set || set.fecha === 'Anterior') return;
+    var dk = dayKeyFromLabSet(set);
+    if (dk === 'unknown') return;
+    var tipo = primaryTipoForLabSet(set.resLabs);
+    if (tipo === 'mixed') return;
+    var gk = dk + '\x01' + tipo;
+    if (!groups[gk]) groups[gk] = [];
+    groups[gk].push(set);
+  });
+  var todo = [];
+  Object.keys(groups).forEach(function (gk) {
+    var arr = groups[gk];
+    if (arr.length < 2) return;
+    arr.sort(compareLabSetIdForDedupe);
+    var keeper = arr[0];
+    var merged = (keeper.resLabs || []).slice();
+    for (var i = 1; i < arr.length; i++) {
+      var other = arr[i].resLabs || [];
+      if (merged.length && other.length) merged.push('');
+      merged = merged.concat(other);
+    }
+    var seen = Object.create(null);
+    var deduped = [];
+    merged.forEach(function (row) {
+      var norm = normalizeLabLine(String(row == null ? '' : row));
+      if (!norm) return;
+      if (seen[norm]) return;
+      seen[norm] = true;
+      deduped.push(row);
+    });
+    keeper.resLabs = deduped;
+    keeper.parsed = extractParsedValues(deduped);
+    var newest = arr[arr.length - 1];
+    if (newest.hora) keeper.hora = newest.hora;
+    for (var j = 1; j < arr.length; j++) {
+      todo.push(String(arr[j].id));
+    }
+  });
+  if (!todo.length) {
+    showToast('No hay grupos del mismo día y tipo homogéneo para fusionar', 'success');
+    return;
+  }
+  if (typeof pushUndoSnapshot === 'function') pushUndoSnapshot('Consolidar historial de labs por día y tipo');
+  var idRemove = new Set(todo);
+  labHistory[activeId] = labHistory[activeId].filter(function (s) {
+    return !idRemove.has(String(s.id));
+  });
+  if (!labHistory[activeId].length) delete labHistory[activeId];
+  rebuildEstudiosFromLabHistory(activeId);
+  saveState();
+  renderLabHistoryPanel();
+  refreshTendenciasOrCultivosPanel();
+  var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
+  if (el && notes[activeId]) el.value = notes[activeId].estudios || '';
+  addAuditEntry('lab-history-consolidate', 'ok', todo.length, String(activeId));
+  showToast('Fusionados ' + todo.length + ' conjunto(s) ✓', 'success');
 }
 
 // ── Lab ───────────────────────────────────────────────────────────
@@ -4004,14 +4741,17 @@ function enviarLabsANota() {
 // ── Multilab ──────────────────────────────────────────────────────
 function buildLabLines() {
   var lines = [];
-  if (activeLab.patient && activeLab.patient.fecha) {
-    var fechaRaw = activeLab.patient.fecha;
-    var mesesMap = {ene:'01',feb:'02',mar:'03',abr:'04',may:'05',jun:'06',jul:'07',ago:'08',sep:'09',oct:'10',nov:'11',dic:'12',jan:'01',apr:'04',aug:'08',dec:'12'};
-    var mFechaLab = fechaRaw.trim().match(/([A-Za-z]{3})\s+(\d{1,2})\s+\d{4}/);
-    var monNum = mFechaLab && mesesMap[mFechaLab[1].toLowerCase()];
-    var todayFb = new Date();
-    var fbStr = String(todayFb.getDate()).padStart(2,'0')+'/'+String(todayFb.getMonth()+1).padStart(2,'0');
-    lines.push(monNum ? mFechaLab[2].padStart(2,'0') + '/' + monNum : fbStr);
+  if (activeLab && activeLab.patient) {
+    var raw = activeLab.patient.fecha || '';
+    var fechaDm = normalizeFechaLabHistory(raw) || String(raw).trim();
+    if (fechaDm === 'Anterior') fechaDm = '';
+    if (!fechaDm && raw) {
+      var mesesMap = {ene:'01',feb:'02',mar:'03',abr:'04',may:'05',jun:'06',jul:'07',ago:'08',sep:'09',oct:'10',nov:'11',dic:'12',jan:'01',apr:'04',aug:'08',dec:'12'};
+      var mFechaLab = raw.trim().match(/([A-Za-z]{3})\s+(\d{1,2})\s+(\d{4})/);
+      var monNum = mFechaLab && mesesMap[mFechaLab[1].toLowerCase().slice(0, 3)];
+      if (monNum) fechaDm = mFechaLab[2].padStart(2, '0') + '/' + monNum + '/' + mFechaLab[3];
+    }
+    if (fechaDm) lines.push(fechaDm);
   }
   activeLab.resLabs.forEach(function(entry) {
     var cleaned = entry.replace(/\t/g, ' ').replace(/\*+/g, '').replace(/  +/g, ' ').trim();
@@ -4201,7 +4941,7 @@ function autoStoreProcessedLabResult(result) {
   pushLabHistory(activeId, result.resLabs, fecha, hora);
   saveState();
   renderLabHistoryPanel();
-  if (activeInner === 'tend' && activeAppTab === 'nota') renderTendencias();
+  refreshTendenciasOrCultivosPanel();
 }
 
 function insertLabsAsRecent(lines) {
@@ -4210,7 +4950,7 @@ function insertLabsAsRecent(lines) {
     activeLab.patient && activeLab.patient.fecha ? activeLab.patient.fecha : '', '');
   rebuildEstudiosFromLabHistory(activeId);
   saveState();
-  if (activeInner === 'tend' && activeAppTab === 'nota') renderTendencias();
+  refreshTendenciasOrCultivosPanel();
   renderLabHistoryPanel();
   var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
   if (el) el.value = notes[activeId].estudios;
@@ -4225,7 +4965,7 @@ function insertLabsAsAnteriorThenRecent(newLines) {
     activeLab.patient && activeLab.patient.fecha ? activeLab.patient.fecha : '', '');
   rebuildEstudiosFromLabHistory(activeId);
   saveState();
-  if (activeInner === 'tend' && activeAppTab === 'nota') renderTendencias();
+  refreshTendenciasOrCultivosPanel();
   renderLabHistoryPanel();
   var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
   if (el) el.value = notes[activeId].estudios;
@@ -4260,7 +5000,7 @@ function showLabConflictModal(newLines, existingDate) {
       activeLab.patient && activeLab.patient.fecha ? activeLab.patient.fecha : '', '');
     rebuildEstudiosFromLabHistory(activeId);
     saveState();
-    if (activeInner === 'tend' && activeAppTab === 'nota') renderTendencias();
+    refreshTendenciasOrCultivosPanel();
     renderLabHistoryPanel();
     var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
     if (el) el.value = notes[activeId].estudios;
@@ -4290,16 +5030,27 @@ function renderOutput(result) {
   var patient = result.patient, resLabs = result.resLabs;
   activeLab = result;
   onboardingAdvanceAfterParse();
+  var fechaBanner = '';
+  if (patient.fecha) {
+    fechaBanner = normalizeFechaLabHistory(patient.fecha) || String(patient.fecha).trim();
+    if (fechaBanner === 'Anterior') fechaBanner = '';
+  }
   if (patient.name) {
     document.getElementById('lab-patient-name').textContent = patient.name;
     document.getElementById('lab-patient-meta').textContent = [
       patient.expediente ? 'Exp: '+patient.expediente : '',
-      patient.sexo, patient.edad || '', patient.fecha
+      patient.sexo, patient.edad || '', fechaBanner || patient.fecha
     ].filter(Boolean).join('  |  ');
     document.getElementById('lab-banner').style.display = 'block';
   }
   var box = document.getElementById('lab-output-box');
   box.innerHTML = '';
+  if (fechaBanner) {
+    var fechaTop = document.createElement('div');
+    fechaTop.className = 'lab-output-fecha';
+    fechaTop.textContent = fechaBanner;
+    box.appendChild(fechaTop);
+  }
   resLabs.forEach(function(text) {
     renderEntry(text).forEach(function(html, idx) {
       var div = document.createElement('div');
@@ -4939,6 +5690,94 @@ function ensureParsedLabHistory(patientId) {
   return history;
 }
 
+function rpcPrefersReducedMotion() {
+  try {
+    return (
+      typeof window !== 'undefined' &&
+      window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    );
+  } catch (_e) {
+    return false;
+  }
+}
+
+function tendFinishRangeVbars(container) {
+  if (!container) return;
+  var reduced = rpcPrefersReducedMotion();
+  var apply = function () {
+    var vbars = container.querySelectorAll('.tend-range-vbar');
+    for (var i = 0; i < vbars.length; i++) {
+      var vb = vbars[i];
+      vb.classList.add('tend-vbar-ready');
+      var m = vb.querySelector('.tend-range-vbar-marker');
+      if (m) {
+        var t = m.getAttribute('data-target-bottom');
+        if (t !== null && t !== '') {
+          m.style.bottom = 'max(2px, calc(' + t + '% - 5px))';
+        }
+      }
+    }
+  };
+  if (reduced) apply();
+  else {
+    requestAnimationFrame(function () {
+      requestAnimationFrame(apply);
+    });
+  }
+}
+
+/** HTML de la barra de rango (modal de tendencia); vacío si no hay ref válido. */
+function tendRefVbarMarkup(ref, latest, delayMs, extraClass) {
+  extraClass = extraClass || '';
+  if (!ref || !isFinite(ref[0]) || !isFinite(ref[1]) || ref[1] <= ref[0] || !isFinite(latest)) return '';
+  var low = Number(ref[0]);
+  var high = Number(ref[1]);
+  var isAb = latest < low || latest > high;
+  var span = high - low;
+  var fullMin = low - span * 0.5;
+  var fullMax = high + span * 0.5;
+  if (fullMax <= fullMin) {
+    fullMin = low;
+    fullMax = high;
+  }
+  var range = fullMax - fullMin;
+  var pos = ((Number(latest) - fullMin) / range) * 100;
+  if (pos < 0) pos = 0;
+  if (pos > 100) pos = 100;
+  var normBottom = ((low - fullMin) / range) * 100;
+  var normTop = ((high - fullMin) / range) * 100;
+  if (normBottom < 0) normBottom = 0;
+  if (normTop > 100) normTop = 100;
+  var normH = normTop - normBottom;
+  var stateClass = isAb ? ' is-abnormal' : ' is-normal';
+  var d = delayMs != null ? delayMs : 0;
+  return (
+    '<div class="tend-range-vbar' +
+    extraClass +
+    stateClass +
+    '" style="--tend-vbar-delay:' +
+    d +
+    'ms" title="Rango normal (' +
+    low +
+    '–' +
+    high +
+    ') · último ' +
+    latest +
+    '">' +
+    '<div class="tend-range-vbar-track"></div>' +
+    '<div class="tend-range-vbar-norm" style="bottom:' +
+    normBottom.toFixed(2) +
+    '%;height:' +
+    normH.toFixed(2) +
+    '%"></div>' +
+    '<div class="tend-range-vbar-marker" data-target-bottom="' +
+    pos.toFixed(2) +
+    '"></div>' +
+    '</div>'
+  );
+}
+
 function renderTendencias() {
   var container = document.getElementById('tendencias-container');
   if (!container) return;
@@ -4955,54 +5794,42 @@ function renderTendencias() {
     return;
   }
   var available = TEND_PARAMS.filter(function(p) {
-    return history.filter(function(s){ return s.parsed && s.parsed[p] !== null && s.parsed[p] !== undefined; }).length >= 2;
+    var raw = history.filter(function(s){ return s.parsed && s.parsed[p] !== null && s.parsed[p] !== undefined; });
+    return dedupeTrendSetsForParam(raw, p).length >= 2;
   });
   if (!available.length) {
     container.innerHTML = '<p class="tend-empty">No hay parámetros con suficientes datos para graficar.</p>';
     return;
   }
+  var chartAnim = rpcPrefersReducedMotion()
+    ? false
+    : { duration: 600, easing: 'easeOutQuart' };
   container.innerHTML = '<div class="tend-grid">' + available.map(function(param) {
-    var setsDesc = history.filter(function(s){ return s.parsed && s.parsed[param] !== null && s.parsed[param] !== undefined; });
+    var setsDesc = dedupeTrendSetsForParam(
+      history.filter(function(s){ return s.parsed && s.parsed[param] !== null && s.parsed[param] !== undefined; }),
+      param
+    );
     var latest = setsDesc.length ? setsDesc[0].parsed[param] : null;
     var ref = TEND_REF[param];
     var isAb = ref && (latest < ref[0] || latest > ref[1]);
-    var bar = '';
-    if (ref && isFinite(ref[0]) && isFinite(ref[1]) && ref[1] > ref[0] && isFinite(latest)) {
-      var low = Number(ref[0]);
-      var high = Number(ref[1]);
-      var span = high - low;
-      var fullMin = low - span * 0.5;
-      var fullMax = high + span * 0.5;
-      if (fullMax <= fullMin) {
-        fullMin = low;
-        fullMax = high;
-      }
-      var pos = ((Number(latest) - fullMin) / (fullMax - fullMin)) * 100;
-      if (pos < 0) pos = 0;
-      if (pos > 100) pos = 100;
-      var normStart = ((low - fullMin) / (fullMax - fullMin)) * 100;
-      var normEnd = ((high - fullMin) / (fullMax - fullMin)) * 100;
-      if (normStart < 0) normStart = 0;
-      if (normEnd > 100) normEnd = 100;
-      var stateClass = isAb ? ' is-abnormal' : ' is-normal';
-      bar =
-        '<div class="tend-range-bar' + stateClass + '">' +
-        '<div class="tend-range-normal" style="left:' + normStart.toFixed(2) + '%;width:' + (normEnd - normStart).toFixed(2) + '%;"></div>' +
-        '<div class="tend-range-marker" style="left:' + pos.toFixed(2) + '%;"></div>' +
-        '</div>';
-    }
-    return '<div class="tend-card" onclick="openTendDetail(\'' + param + '\')" data-param="' + param + '">'
+    return '<div class="tend-card" onclick="openTendDetail(\'' + safeAttrJsString(param) + '\')" data-param="' + esc(param) + '">'
       + '<div class="tend-card-header">'
       + '<span class="tend-param-name">' + param + '</span>'
       + '<span class="tend-param-value' + (isAb ? ' tend-abnormal' : '') + '">' + latest + '</span>'
       + '</div>'
       + '<div class="tend-unit">' + (TEND_UNITS[param] || '') + '</div>'
-      + bar
-      + '<div class="tend-spark-wrap"><canvas id="spark-' + param + '"></canvas></div>'
+      + '<div class="tend-spark-wrap">'
+      + '<div class="tend-spark-canvas-cell">'
+      + '<canvas id="spark-' + param + '"></canvas>'
+      + '</div>'
+      + '</div>'
       + '</div>';
   }).join('') + '</div>';
   available.forEach(function(param) {
-    var setsDesc = history.filter(function(s){ return s.parsed && s.parsed[param] !== null && s.parsed[param] !== undefined; });
+    var setsDesc = dedupeTrendSetsForParam(
+      history.filter(function(s){ return s.parsed && s.parsed[param] !== null && s.parsed[param] !== undefined; }),
+      param
+    );
     var setsAsc = toTrendAscendingSets(setsDesc);
     var labels = buildTendChartLabels(setsAsc);
     var values = setsAsc.map(function(s){ return s.parsed[param]; });
@@ -5019,7 +5846,7 @@ function renderTendencias() {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        animation: false,
+        animation: chartAnim,
         layout: { padding: { left: 6, right: 6, top: 8, bottom: 6 } },
         plugins: { legend: { display: false }, tooltip: { enabled: false } },
         scales: {
@@ -5034,14 +5861,23 @@ function renderTendencias() {
 function openTendDetail(param) {
   if (!activeId) return;
   var history = sortLabHistoryChronological(ensureParsedLabHistory(activeId));
-  var setsDesc = history.filter(function(s){ return s.parsed && s.parsed[param] !== null && s.parsed[param] !== undefined; });
+  var setsDesc = dedupeTrendSetsForParam(
+    history.filter(function(s){ return s.parsed && s.parsed[param] !== null && s.parsed[param] !== undefined; }),
+    param
+  );
   if (setsDesc.length < 2) return;
   var setsAsc = toTrendAscendingSets(setsDesc);
   var labels = buildTendChartLabels(setsAsc);
   var values = setsAsc.map(function(s){ return s.parsed[param]; });
-  var ref = TEND_REF[param];
   var unit = TEND_UNITS[param] || '';
+  var latest = setsDesc.length ? setsDesc[0].parsed[param] : null;
+  var ref = TEND_REF[param];
   document.getElementById('tend-detail-title').textContent = param + (unit ? ' (' + unit + ')' : '');
+  var vbarSlot = document.getElementById('tend-detail-vbar-slot');
+  if (vbarSlot) {
+    vbarSlot.innerHTML = tendRefVbarMarkup(ref, latest, 0, ' tend-detail-vbar');
+    tendFinishRangeVbars(vbarSlot);
+  }
   var backdrop = document.getElementById('tend-detail-backdrop');
   backdrop.style.display = 'flex';
   var canvas = document.getElementById('tend-detail-canvas');
@@ -5057,19 +5893,6 @@ function openTendDetail(param) {
     tension: 0.3,
     fill: false
   }];
-  if (ref) {
-    datasets.push({
-      label: 'Ref min', data: Array(values.length).fill(ref[0]),
-      borderColor: 'rgba(0,0,0,0.12)', borderWidth: 1, borderDash: [4,4],
-      pointRadius: 0, fill: false
-    });
-    datasets.push({
-      label: 'Ref max', data: Array(values.length).fill(ref[1]),
-      borderColor: 'rgba(0,0,0,0.12)', borderWidth: 1, borderDash: [4,4],
-      pointRadius: 0, fill: '-1',
-      backgroundColor: 'rgba(0,0,0,0.04)'
-    });
-  }
   detailChart = new Chart(canvas, {
     type: 'line',
     data: { labels: labels, datasets: datasets },
@@ -5095,6 +5918,8 @@ function openTendDetail(param) {
 
 function closeTendDetail() {
   document.getElementById('tend-detail-backdrop').style.display = 'none';
+  var vbarSlot = document.getElementById('tend-detail-vbar-slot');
+  if (vbarSlot) vbarSlot.innerHTML = '';
   if (detailChart) { detailChart.destroy(); detailChart = null; }
 }
 
@@ -6426,5 +7251,7 @@ Object.assign(window, {
   cancelExtraTemplateEdit,
   applyExtraTemplateFromIndica,
   restorePreimportBackupPrompt,
-  syncPreimportBackupUi
+  syncPreimportBackupUi,
+  openLabHistoryDedupeReview,
+  consolidateLabHistoryByDayAndTipo
 });
