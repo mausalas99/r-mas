@@ -205,6 +205,7 @@ export function parseGaso_(bloqueGaso) {
   var gluData  = extraerConRango(['GLUCOSA'], bloqueGaso);
   var lacData  = extraerConRango(['LACTATO'], bloqueGaso);
   var hco3Data = extraerConRango(['HCO3'], bloqueGaso);
+  var htoData  = extraerConRango(['HCT ', 'HEMATOCRITO'], bloqueGaso);
 
   var pH   = fmt(marcarSegunRango(phData.valor,   phData.min,   phData.max));
   var pCO2 = fmt(marcarSegunRango(pco2Data.valor, pco2Data.min, pco2Data.max));
@@ -214,6 +215,7 @@ export function parseGaso_(bloqueGaso) {
   var GLU  = fmt(marcarSegunRango(gluData.valor,  gluData.min,  gluData.max));
   var Lac  = fmt(marcarSegunRango(lacData.valor,  lacData.min,  lacData.max));
   var Bica = fmt(marcarSegunRango(hco3Data.valor, hco3Data.min, hco3Data.max));
+  var Hto  = fmt(marcarSegunRango(htoData.valor, htoData.min, htoData.max));
 
   var p = ['GASES'];
   p.push('pH', pH);
@@ -224,6 +226,7 @@ export function parseGaso_(bloqueGaso) {
   if (GLU  !== '---') p.push('GLU',  GLU);
   if (Lac  !== '---') p.push('Lactato', Lac);
   if (Bica !== '---') p.push('Bica', Bica);
+  if (Hto  !== '---') p.push('Hto',  Hto);
   return p[0]+'\t'+p.slice(1).join(' ');
 }
 

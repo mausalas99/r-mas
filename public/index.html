@@ -1370,6 +1370,24 @@
   }
   /* ── Tendencias de Lab ─────────────────────────────────────── */
   .tend-empty { text-align:center; color:var(--muted); font-size:14px; padding:40px 20px; }
+  .tend-section { margin-bottom: 18px; }
+  .tend-section:last-child { margin-bottom: 4px; }
+  .tend-section-toggle {
+    width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px 12px; margin-bottom: 8px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px; cursor: pointer;
+    text-align: left; font-size: 14px; font-weight: 600; color: var(--text); font-family: inherit;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .tend-section-toggle:hover {
+    box-shadow: var(--shadow-md); border-color: rgba(37, 99, 235, 0.22);
+  }
+  html.dark .tend-section-toggle:hover { border-color: rgba(96, 165, 250, 0.3); }
+  .tend-section-chevron { font-size: 10px; color: var(--muted); width: 1em; flex-shrink: 0; }
+  .tend-section-title { flex: 1; min-width: 0; }
+  .tend-section-count { font-size: 12px; font-weight: 500; color: var(--muted); }
+  .tend-section-body--collapsed { display: none !important; }
+  .tend-spark-placeholder { min-height: 56px; width: 100%; border-radius: 6px; background: rgba(0,0,0,0.03); }
+  html.dark .tend-spark-placeholder { background: rgba(255,255,255,0.04); }
   .tend-grid  { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:14px; padding:4px; }
   .tend-card  { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px; cursor:pointer; transition:box-shadow 0.22s ease, transform 0.22s ease, border-color 0.2s ease; overflow:visible; min-width:0; }
   .tend-card:hover { box-shadow:var(--shadow-md); transform:translateY(-3px); border-color: rgba(37, 99, 235, 0.25); }

@@ -78,13 +78,63 @@ var TEND_UNITS = {
   Na:'mEq/L', K:'mEq/L',  Cl:'mEq/L', HCO3:'mEq/L',Ca:'mg/dL',
   AST:'U/L',  ALT:'U/L',  FA:'U/L',   BT:'mg/dL'
 };
-var TEND_PARAMS = ['Hb','Hto','Leu','Plt','Glu','Cr','BUN','PCR','Na','K','Cl','HCO3','Ca','AST','ALT','FA','BT'];
 var TEND_REF = {
   Hb:[12,17.5], Hto:[36,53], Leu:[4,11], Plt:[150,400],
   Glu:[70,100], Cr:[0.5,1.3], BUN:[7,20], PCR:[0,0.5],
   Na:[136,145], K:[3.5,5.0], Cl:[96,106], HCO3:[22,28], Ca:[8.5,10.5],
   AST:[10,40], ALT:[7,56], FA:[44,147], BT:[0.1,1.2]
 };
+/** Rangos orientativos arteriales (solo tendencias / color; no sustituyen criterio local). */
+var TEND_REF_GASES = {
+  pH: [7.35, 7.45],
+  pCO2: [35, 45],
+  pO2: [80, 100],
+  Lactato: [0.5, 2.2]
+};
+var TEND_SECTION_LABELS = {
+  BH: 'Biometría hemática',
+  QS: 'Química sanguínea',
+  ESC: 'Electrolitos séricos',
+  PFHs: 'Función hepática',
+  GASES: 'Gasometría',
+  PIE: 'Prueba de embarazo',
+  LCR: 'LCR',
+  EGO: 'EGO',
+  CUANTORINA: 'Cuantificación urinaria'
+};
+var TEND_SECTION_ORDER = ['BH', 'QS', 'ESC', 'PFHs', 'GASES', 'PIE', 'LCR', 'EGO', 'CUANTORINA'];
+/**
+ * Series tendibles: cada gráfica es (sectionKey, fieldKey) según bloques del TSV (parsearSecciones).
+ * cardTitle se muestra en tarjeta y modal.
+ */
+var TEND_SERIES_CATALOG = [
+  { sectionKey: 'BH', fieldKey: 'Hb', cardTitle: 'Hb' },
+  { sectionKey: 'BH', fieldKey: 'Hto', cardTitle: 'Hto' },
+  { sectionKey: 'BH', fieldKey: 'Leu', cardTitle: 'Leu' },
+  { sectionKey: 'BH', fieldKey: 'Plt', cardTitle: 'Plt' },
+  { sectionKey: 'QS', fieldKey: 'Glu', cardTitle: 'Glu' },
+  { sectionKey: 'QS', fieldKey: 'Cr', cardTitle: 'Cr' },
+  { sectionKey: 'QS', fieldKey: 'BUN', cardTitle: 'BUN' },
+  { sectionKey: 'QS', fieldKey: 'PCR', cardTitle: 'PCR' },
+  { sectionKey: 'ESC', fieldKey: 'Na', cardTitle: 'Na' },
+  { sectionKey: 'ESC', fieldKey: 'K', cardTitle: 'K' },
+  { sectionKey: 'ESC', fieldKey: 'Cl', cardTitle: 'Cl' },
+  { sectionKey: 'ESC', fieldKey: 'Ca', cardTitle: 'Ca' },
+  { sectionKey: 'PFHs', fieldKey: 'AST', cardTitle: 'AST' },
+  { sectionKey: 'PFHs', fieldKey: 'ALT', cardTitle: 'ALT' },
+  { sectionKey: 'PFHs', fieldKey: 'FA', cardTitle: 'FA' },
+  { sectionKey: 'PFHs', fieldKey: 'BT', cardTitle: 'BT' },
+  { sectionKey: 'GASES', fieldKey: 'pH', cardTitle: 'pH (gas)' },
+  { sectionKey: 'GASES', fieldKey: 'pCO2', cardTitle: 'pCO₂ (gas)' },
+  { sectionKey: 'GASES', fieldKey: 'pO2', cardTitle: 'pO₂ (gas)' },
+  { sectionKey: 'GASES', fieldKey: 'Na', cardTitle: 'Na (gas)' },
+  { sectionKey: 'GASES', fieldKey: 'K', cardTitle: 'K (gas)' },
+  { sectionKey: 'GASES', fieldKey: 'GLU', cardTitle: 'Glu (gas)' },
+  { sectionKey: 'GASES', fieldKey: 'Lactato', cardTitle: 'Lactato (gas)' },
+  { sectionKey: 'GASES', fieldKey: 'Bica', cardTitle: 'HCO₃⁻ (gas)' },
+  { sectionKey: 'GASES', fieldKey: 'Hto', cardTitle: 'Hto (gas)' }
+];
+var TEND_SECTION_EXPANDED_LS = 'rpc-tend-sections-expanded';
 var guidedTourActive = false;
 /** @type {'sala'|'interconsulta'|null} */
 var guidedTourBranch = null;
@@ -431,26 +481,109 @@ function toTrendAscendingSets(sets) {
   return (sets || []).slice().reverse();
 }
 
-/**
- * Elimina duplicados para tendencias: misma fecha/hora resuelta y mismo valor del parámetro.
- * setsDesc debe estar en orden del más reciente al más antiguo; se conserva la primera aparición (la más reciente).
- */
-function dedupeTrendSetsForParam(setsDesc, param) {
+function tendSectionExpandedRead() {
+  try {
+    var raw = localStorage.getItem(TEND_SECTION_EXPANDED_LS);
+    if (!raw) return {};
+    var o = JSON.parse(raw);
+    return o && typeof o === 'object' ? o : {};
+  } catch (_e) {
+    return {};
+  }
+}
+
+function tendSectionExpandedWrite(map) {
+  try {
+    localStorage.setItem(TEND_SECTION_EXPANDED_LS, JSON.stringify(map || {}));
+  } catch (_e) {}
+}
+
+/** @param {string} sectionKey */
+function tendSectionIsExpanded(sectionKey) {
+  var m = tendSectionExpandedRead();
+  if (!Object.prototype.hasOwnProperty.call(m, sectionKey)) return true;
+  return m[sectionKey] !== false;
+}
+
+function toggleTendSection(ev, sectionKey) {
+  if (ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+  }
+  var m = tendSectionExpandedRead();
+  var cur = tendSectionIsExpanded(sectionKey);
+  m[sectionKey] = !cur;
+  tendSectionExpandedWrite(m);
+  renderTendencias();
+}
+
+function getSetTrendValueForSeries(set, sectionKey, fieldKey) {
+  var pb = set && set.parsedBySection;
+  if (!pb || !pb[sectionKey]) return null;
+  var raw = pb[sectionKey][fieldKey];
+  if (raw == null || raw === '') return null;
+  var v = Number(raw);
+  if (!isFinite(v)) return null;
+  return v;
+}
+
+function dedupeTrendSetsForSeries(setsDesc, sectionKey, fieldKey) {
   var seen = Object.create(null);
   var out = [];
   for (var i = 0; i < (setsDesc || []).length; i++) {
     var s = setsDesc[i];
-    if (!s || !s.parsed || s.parsed[param] == null || !isFinite(Number(s.parsed[param]))) continue;
-    var v = Number(s.parsed[param]);
+    var v = getSetTrendValueForSeries(s, sectionKey, fieldKey);
+    if (v == null || !isFinite(v)) continue;
     var ms = parseFechaLabToMs(s.fecha, s.hora);
     var key;
     if (typeof ms === 'number' && isFinite(ms)) key = 't:' + ms + '|v:' + v;
     else key = 'f:' + String(s.fecha) + '|h:' + normalizeHoraLabHistory(s.hora) + '|v:' + v;
+    key += '|' + sectionKey + '|' + fieldKey;
     if (seen[key]) continue;
     seen[key] = true;
     out.push(s);
   }
   return out;
+}
+
+function tendUnitForSeries(sectionKey, fieldKey) {
+  if (sectionKey === 'GASES') {
+    if (fieldKey === 'GLU') return TEND_UNITS.Glu || '';
+    if (fieldKey === 'Na') return TEND_UNITS.Na || '';
+    if (fieldKey === 'K') return TEND_UNITS.K || '';
+    if (fieldKey === 'Hto') return TEND_UNITS.Hto || '';
+    if (fieldKey === 'Bica') return TEND_UNITS.HCO3 || '';
+    if (fieldKey === 'pCO2' || fieldKey === 'pO2') return 'mmHg';
+    if (fieldKey === 'Lactato') return 'mmol/L';
+    if (fieldKey === 'pH') return '';
+  }
+  return TEND_UNITS[fieldKey] || '';
+}
+
+function tendRefForSeries(sectionKey, fieldKey) {
+  if (sectionKey === 'GASES') {
+    if (fieldKey === 'Bica') return TEND_REF.HCO3;
+    if (fieldKey === 'GLU') return TEND_REF.Glu;
+    if (fieldKey === 'Na') return TEND_REF.Na;
+    if (fieldKey === 'K') return TEND_REF.K;
+    if (fieldKey === 'Hto') return TEND_REF.Hto;
+    var g = TEND_REF_GASES[fieldKey];
+    return g || null;
+  }
+  return TEND_REF[fieldKey] || null;
+}
+
+function trendSparkDomId(sectionKey, fieldKey) {
+  return (
+    'spark-' +
+    String(sectionKey).replace(/[^a-zA-Z0-9]+/g, '_') +
+    '-' +
+    String(fieldKey).replace(/[^a-zA-Z0-9]+/g, '_')
+  );
+}
+
+function trendSparkChartKey(sectionKey, fieldKey) {
+  return sectionKey + '\x01' + fieldKey;
 }
 
 // ── Expediente: pestaña Cultivos (tabla desde historial) ───────────
@@ -4269,6 +4402,7 @@ function consolidateLabHistoryByDayAndTipo() {
     });
     keeper.resLabs = deduped;
     keeper.parsed = extractParsedValues(deduped);
+    keeper.parsedBySection = buildParsedBySectionFromResLabs(deduped);
     var newest = arr[arr.length - 1];
     if (newest.hora) keeper.hora = newest.hora;
     for (var j = 1; j < arr.length; j++) {
@@ -4905,7 +5039,8 @@ function pushLabHistory(patientId, resLabs, fecha, hora) {
     fecha: fechaNorm,
     hora: horaNorm,
     resLabs: resLabs,
-    parsed: extractParsedValues(resLabs)
+    parsed: extractParsedValues(resLabs),
+    parsedBySection: buildParsedBySectionFromResLabs(resLabs)
   };
   labHistory[patientId].push(set);
 }
@@ -5666,6 +5801,25 @@ function extractParsedValues(resLabs) {
   };
 }
 
+/** Mapa sectionKey → fieldKey → número (tendencias por estudio). */
+function buildParsedBySectionFromResLabs(resLabs) {
+  var secs = parsearSecciones(resLabs || []);
+  var out = {};
+  Object.keys(secs).forEach(function (sec) {
+    var row = {};
+    var tbl = secs[sec];
+    Object.keys(tbl).forEach(function (k) {
+      var cell = tbl[k];
+      if (!cell || cell.val == null || cell.val === '---') return;
+      var n = parseFloat(String(cell.val).replace(/\*/g, '').replace(',', '.'));
+      if (!isFinite(n)) return;
+      row[k] = n;
+    });
+    if (Object.keys(row).length) out[sec] = row;
+  });
+  return out;
+}
+
 function ensureParsedLabHistory(patientId) {
   var history = labHistory[patientId] || [];
   var changed = false;
@@ -5691,6 +5845,17 @@ function ensureParsedLabHistory(patientId) {
         set.parsed = extractParsedValues(set.resLabs);
         changed = true;
       }
+    }
+    if (set.resLabs && set.resLabs.length) {
+      var pbNext = buildParsedBySectionFromResLabs(set.resLabs);
+      var pbStr = JSON.stringify(pbNext);
+      if (JSON.stringify(set.parsedBySection || null) !== pbStr) {
+        set.parsedBySection = pbNext;
+        changed = true;
+      }
+    } else if (set.parsedBySection && Object.keys(set.parsedBySection).length) {
+      set.parsedBySection = {};
+      changed = true;
     }
     var nf = normalizeFechaLabHistory(set.fecha);
     if (nf && nf !== set.fecha && set.fecha !== 'Anterior') {
@@ -5805,8 +5970,11 @@ function tendRefVbarMarkup(ref, latest, delayMs, extraClass) {
 function renderTendencias() {
   var container = document.getElementById('tendencias-container');
   if (!container) return;
-  Object.keys(sparkCharts).forEach(function(k) {
-    if (sparkCharts[k]) { sparkCharts[k].destroy(); delete sparkCharts[k]; }
+  Object.keys(sparkCharts).forEach(function (k) {
+    if (sparkCharts[k]) {
+      sparkCharts[k].destroy();
+      delete sparkCharts[k];
+    }
   });
   if (!activeId) {
     container.innerHTML = '<p class="tend-empty">Selecciona un paciente.</p>';
@@ -5817,55 +5985,157 @@ function renderTendencias() {
     container.innerHTML = '<p class="tend-empty">Agrega al menos 2 sets de laboratorio para ver tendencias.</p>';
     return;
   }
-  var available = TEND_PARAMS.filter(function(p) {
-    var raw = history.filter(function(s){ return s.parsed && s.parsed[p] !== null && s.parsed[p] !== undefined; });
-    return dedupeTrendSetsForParam(raw, p).length >= 2;
-  });
-  if (!available.length) {
+
+  var seriesAvail = [];
+  for (var ci = 0; ci < TEND_SERIES_CATALOG.length; ci++) {
+    var sp = TEND_SERIES_CATALOG[ci];
+    var sk = sp.sectionKey;
+    var fk = sp.fieldKey;
+    var raw = history.filter(function (s) {
+      return getSetTrendValueForSeries(s, sk, fk) != null;
+    });
+    if (dedupeTrendSetsForSeries(raw, sk, fk).length < 2) continue;
+    seriesAvail.push(sp);
+  }
+  if (!seriesAvail.length) {
     container.innerHTML = '<p class="tend-empty">No hay parámetros con suficientes datos para graficar.</p>';
     return;
   }
+
+  var bySection = Object.create(null);
+  seriesAvail.forEach(function (spec) {
+    var k = spec.sectionKey;
+    if (!bySection[k]) bySection[k] = [];
+    bySection[k].push(spec);
+  });
+  var sectionsOrdered = [];
+  for (var oi = 0; oi < TEND_SECTION_ORDER.length; oi++) {
+    var sec = TEND_SECTION_ORDER[oi];
+    if (bySection[sec] && bySection[sec].length) sectionsOrdered.push(sec);
+  }
+  Object.keys(bySection).forEach(function (sec) {
+    if (sectionsOrdered.indexOf(sec) === -1) sectionsOrdered.push(sec);
+  });
+
   var chartAnim = rpcPrefersReducedMotion()
     ? false
     : { duration: 600, easing: 'easeOutQuart' };
-  container.innerHTML = '<div class="tend-grid">' + available.map(function(param) {
-    var setsDesc = dedupeTrendSetsForParam(
-      history.filter(function(s){ return s.parsed && s.parsed[param] !== null && s.parsed[param] !== undefined; }),
-      param
+  var htmlParts = [];
+  for (var si = 0; si < sectionsOrdered.length; si++) {
+    var sectionKey = sectionsOrdered[si];
+    var expanded = tendSectionIsExpanded(sectionKey);
+    var secLabel = TEND_SECTION_LABELS[sectionKey] || sectionKey;
+    var list = bySection[sectionKey];
+    var cardParts = [];
+    for (var li = 0; li < list.length; li++) {
+      var spec = list[li];
+      var fk = spec.fieldKey;
+      var setsDesc = dedupeTrendSetsForSeries(
+        history.filter(function (s) {
+          return getSetTrendValueForSeries(s, sectionKey, fk) != null;
+        }),
+        sectionKey,
+        fk
+      );
+      var latest = setsDesc.length ? getSetTrendValueForSeries(setsDesc[0], sectionKey, fk) : null;
+      var ref = tendRefForSeries(sectionKey, fk);
+      var isAb = ref && latest != null && (latest < ref[0] || latest > ref[1]);
+      var domId = trendSparkDomId(sectionKey, fk);
+      var titleEsc = esc(spec.cardTitle || fk);
+      cardParts.push(
+        '<div class="tend-card" role="button" tabindex="0" onclick="openTendDetail(\'' +
+          safeAttrJsString(sectionKey) +
+          "','" +
+          safeAttrJsString(fk) +
+          '\')">' +
+          '<div class="tend-card-header">' +
+          '<span class="tend-param-name">' +
+          titleEsc +
+          '</span>' +
+          '<span class="tend-param-value' +
+          (isAb ? ' tend-abnormal' : '') +
+          '">' +
+          (latest != null ? latest : '—') +
+          '</span>' +
+          '</div>' +
+          '<div class="tend-unit">' +
+          esc(tendUnitForSeries(sectionKey, fk)) +
+          '</div>' +
+          '<div class="tend-spark-wrap">' +
+          '<div class="tend-spark-canvas-cell">' +
+          (expanded
+            ? '<canvas id="' + domId + '"></canvas>'
+            : '<div class="tend-spark-placeholder" aria-hidden="true"></div>') +
+          '</div>' +
+          '</div>' +
+          '</div>'
+      );
+    }
+    htmlParts.push(
+      '<section class="tend-section" data-section="' +
+        esc(sectionKey) +
+        '">' +
+        '<button type="button" class="tend-section-toggle" aria-expanded="' +
+        (expanded ? 'true' : 'false') +
+        '" onclick="toggleTendSection(event,\'' +
+        safeAttrJsString(sectionKey) +
+        '\')">' +
+        '<span class="tend-section-chevron" aria-hidden="true">' +
+        (expanded ? '▼' : '▶') +
+        '</span>' +
+        '<span class="tend-section-title">' +
+        esc(secLabel) +
+        '</span>' +
+        '<span class="tend-section-count">' +
+        list.length +
+        '</span>' +
+        '</button>' +
+        '<div class="tend-section-body' +
+        (expanded ? '' : ' tend-section-body--collapsed') +
+        '">' +
+        '<div class="tend-grid">' +
+        cardParts.join('') +
+        '</div></div></section>'
     );
-    var latest = setsDesc.length ? setsDesc[0].parsed[param] : null;
-    var ref = TEND_REF[param];
-    var isAb = ref && (latest < ref[0] || latest > ref[1]);
-    return '<div class="tend-card" onclick="openTendDetail(\'' + safeAttrJsString(param) + '\')" data-param="' + esc(param) + '">'
-      + '<div class="tend-card-header">'
-      + '<span class="tend-param-name">' + param + '</span>'
-      + '<span class="tend-param-value' + (isAb ? ' tend-abnormal' : '') + '">' + latest + '</span>'
-      + '</div>'
-      + '<div class="tend-unit">' + (TEND_UNITS[param] || '') + '</div>'
-      + '<div class="tend-spark-wrap">'
-      + '<div class="tend-spark-canvas-cell">'
-      + '<canvas id="spark-' + param + '"></canvas>'
-      + '</div>'
-      + '</div>'
-      + '</div>';
-  }).join('') + '</div>';
-  available.forEach(function(param) {
-    var setsDesc = dedupeTrendSetsForParam(
-      history.filter(function(s){ return s.parsed && s.parsed[param] !== null && s.parsed[param] !== undefined; }),
-      param
+  }
+  container.innerHTML = htmlParts.join('');
+
+  for (var cj = 0; cj < seriesAvail.length; cj++) {
+    var spec2 = seriesAvail[cj];
+    var sk2 = spec2.sectionKey;
+    var fk2 = spec2.fieldKey;
+    if (!tendSectionIsExpanded(sk2)) continue;
+    var setsDesc2 = dedupeTrendSetsForSeries(
+      history.filter(function (s) {
+        return getSetTrendValueForSeries(s, sk2, fk2) != null;
+      }),
+      sk2,
+      fk2
     );
-    var setsAsc = toTrendAscendingSets(setsDesc);
-    var labels = buildTendChartLabels(setsAsc);
-    var values = setsAsc.map(function(s){ return s.parsed[param]; });
-    var canvas = document.getElementById('spark-' + param);
-    if (!canvas) return;
-    sparkCharts[param] = new Chart(canvas, {
+    var setsAsc2 = toTrendAscendingSets(setsDesc2);
+    var labels2 = buildTendChartLabels(setsAsc2);
+    var values2 = setsAsc2.map(function (s) {
+      return getSetTrendValueForSeries(s, sk2, fk2);
+    });
+    var canvas2 = document.getElementById(trendSparkDomId(sk2, fk2));
+    if (!canvas2) continue;
+    var ck = trendSparkChartKey(sk2, fk2);
+    sparkCharts[ck] = new Chart(canvas2, {
       type: 'line',
       data: {
-        labels: labels,
-        datasets: [{ data: values, borderColor: '#10b981', borderWidth: 2,
-          pointRadius: 2, pointBackgroundColor: '#10b981', tension: 0.3, fill: false,
-          clip: false }]
+        labels: labels2,
+        datasets: [
+          {
+            data: values2,
+            borderColor: '#10b981',
+            borderWidth: 2,
+            pointRadius: 2,
+            pointBackgroundColor: '#10b981',
+            tension: 0.3,
+            fill: false,
+            clip: false
+          }
+        ]
       },
       options: {
         responsive: true,
@@ -5879,24 +6149,40 @@ function renderTendencias() {
         }
       }
     });
-  });
+  }
 }
 
-function openTendDetail(param) {
-  if (!activeId) return;
+function openTendDetail(sectionKey, fieldKey) {
+  if (!activeId || sectionKey == null || fieldKey == null) return;
   var history = sortLabHistoryChronological(ensureParsedLabHistory(activeId));
-  var setsDesc = dedupeTrendSetsForParam(
-    history.filter(function(s){ return s.parsed && s.parsed[param] !== null && s.parsed[param] !== undefined; }),
-    param
+  var setsDesc = dedupeTrendSetsForSeries(
+    history.filter(function (s) {
+      return getSetTrendValueForSeries(s, sectionKey, fieldKey) != null;
+    }),
+    sectionKey,
+    fieldKey
   );
   if (setsDesc.length < 2) return;
   var setsAsc = toTrendAscendingSets(setsDesc);
   var labels = buildTendChartLabels(setsAsc);
-  var values = setsAsc.map(function(s){ return s.parsed[param]; });
-  var unit = TEND_UNITS[param] || '';
-  var latest = setsDesc.length ? setsDesc[0].parsed[param] : null;
-  var ref = TEND_REF[param];
-  document.getElementById('tend-detail-title').textContent = param + (unit ? ' (' + unit + ')' : '');
+  var values = setsAsc.map(function (s) {
+    return getSetTrendValueForSeries(s, sectionKey, fieldKey);
+  });
+  var spec = null;
+  for (var ti = 0; ti < TEND_SERIES_CATALOG.length; ti++) {
+    if (
+      TEND_SERIES_CATALOG[ti].sectionKey === sectionKey &&
+      TEND_SERIES_CATALOG[ti].fieldKey === fieldKey
+    ) {
+      spec = TEND_SERIES_CATALOG[ti];
+      break;
+    }
+  }
+  var title = spec && spec.cardTitle ? spec.cardTitle : String(fieldKey);
+  var unit = tendUnitForSeries(sectionKey, fieldKey);
+  var latest = setsDesc.length ? getSetTrendValueForSeries(setsDesc[0], sectionKey, fieldKey) : null;
+  var ref = tendRefForSeries(sectionKey, fieldKey);
+  document.getElementById('tend-detail-title').textContent = title + (unit ? ' (' + unit + ')' : '');
   var vbarSlot = document.getElementById('tend-detail-vbar-slot');
   if (vbarSlot) {
     vbarSlot.innerHTML = tendRefVbarMarkup(ref, latest, 0, ' tend-detail-vbar');
@@ -5905,18 +6191,23 @@ function openTendDetail(param) {
   var backdrop = document.getElementById('tend-detail-backdrop');
   backdrop.style.display = 'flex';
   var canvas = document.getElementById('tend-detail-canvas');
-  if (detailChart) { detailChart.destroy(); detailChart = null; }
-  var datasets = [{
-    label: param,
-    data: values,
-    borderColor: '#10b981',
-    backgroundColor: 'rgba(16,185,129,0.08)',
-    borderWidth: 2.5,
-    pointRadius: 5,
-    pointBackgroundColor: '#10b981',
-    tension: 0.3,
-    fill: false
-  }];
+  if (detailChart) {
+    detailChart.destroy();
+    detailChart = null;
+  }
+  var datasets = [
+    {
+      label: title,
+      data: values,
+      borderColor: '#10b981',
+      backgroundColor: 'rgba(16,185,129,0.08)',
+      borderWidth: 2.5,
+      pointRadius: 5,
+      pointBackgroundColor: '#10b981',
+      tension: 0.3,
+      fill: false
+    }
+  ];
   detailChart = new Chart(canvas, {
     type: 'line',
     data: { labels: labels, datasets: datasets },
@@ -5926,15 +6217,18 @@ function openTendDetail(param) {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: function(ctx) {
-              return ctx.datasetIndex === 0 ? param + ': ' + ctx.parsed.y + ' ' + unit : null;
+            label: function (ctx) {
+              return ctx.datasetIndex === 0 ? title + ': ' + ctx.parsed.y + ' ' + unit : null;
             }
           }
         }
       },
       scales: {
         x: { ticks: { font: { size: 12 } } },
-        y: { ticks: { font: { size: 12 } }, title: { display: true, text: unit, font: { size: 11 } } }
+        y: {
+          ticks: { font: { size: 12 } },
+          title: { display: !!unit, text: unit, font: { size: 11 } }
+        }
       }
     }
   });
@@ -7242,6 +7536,7 @@ Object.assign(window, {
   insertSOAPText,
   updateSOAPBalance,
   closeTendDetail,
+  toggleTendSection,
   selectPatient,
   deletePatient,
   openSOAPModal,
