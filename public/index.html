@@ -1395,13 +1395,24 @@
   }
   .tend-toolbar-btn:hover { border-color: rgba(37, 99, 235, 0.35); box-shadow: var(--shadow-sm); }
   .tend-hidden-bar {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin-bottom: 14px; padding: 10px 12px;
+    display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; padding: 10px 12px;
     border-radius: 10px; border: 1px solid var(--border); background: var(--lab-chip-bg);
   }
-  .tend-hidden-bar-label {
-    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); flex-shrink: 0;
+  .tend-hidden-bar-top {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 12px;
   }
-  .tend-hidden-chips { display: flex; flex-wrap: wrap; gap: 8px; flex: 1; min-width: 0; align-items: center; }
+  .tend-hidden-bar-toggle {
+    display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; margin: 0; border: none; border-radius: 8px;
+    background: transparent; cursor: pointer; font: inherit; font-size: 13px; font-weight: 600; color: var(--text);
+    text-align: left; flex: 1; min-width: 0;
+  }
+  .tend-hidden-bar-toggle:hover { background: rgba(0,0,0,0.05); }
+  html.dark .tend-hidden-bar-toggle:hover { background: rgba(255,255,255,0.06); }
+  .tend-hidden-bar-chevron { font-size: 10px; color: var(--muted); width: 1.1em; flex-shrink: 0; }
+  .tend-hidden-bar-summary { letter-spacing: 0.02em; }
+  .tend-hidden-bar--collapsed .tend-hidden-bar-body { display: none !important; }
+  .tend-hidden-bar-body { padding-top: 2px; }
+  .tend-hidden-chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .tend-hidden-chip {
     display: inline-flex; align-items: center; gap: 4px; padding: 4px 6px 4px 10px; border-radius: 999px;
     border: 1px solid var(--border); background: var(--surface); font-size: 12px; color: var(--text);

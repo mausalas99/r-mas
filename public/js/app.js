@@ -185,6 +185,7 @@ var TEND_SERIES_CATALOG = [
 ];
 var TEND_SECTION_EXPANDED_LS = 'rpc-tend-sections-expanded';
 var TEND_HIDDEN_SERIES_LS = 'rpc-tend-hidden-series';
+var TEND_HIDDEN_BAR_COLLAPSED_LS = 'rpc-tend-hidden-bar-collapsed';
 var guidedTourActive = false;
 /** @type {'sala'|'interconsulta'|null} */
 var guidedTourBranch = null;
@@ -750,6 +751,29 @@ function tendEyeVisibilitySvg() {
   );
 }
 
+function tendHiddenBarIsCollapsed() {
+  try {
+    return localStorage.getItem(TEND_HIDDEN_BAR_COLLAPSED_LS) === '1';
+  } catch (_e) {
+    return false;
+  }
+}
+
+function tendHiddenBarSetCollapsed(collapsed) {
+  try {
+    localStorage.setItem(TEND_HIDDEN_BAR_COLLAPSED_LS, collapsed ? '1' : '0');
+  } catch (_e) {}
+}
+
+function toggleTendHiddenBar(ev) {
+  if (ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+  }
+  tendHiddenBarSetCollapsed(!tendHiddenBarIsCollapsed());
+  renderTendencias();
+}
+
 function buildTendHiddenBarHtml() {
   var hiddenKeys = tendHiddenSeriesRead();
   if (!hiddenKeys.length) return '';
@@ -778,13 +802,30 @@ function buildTendHiddenBarHtml() {
     );
   }
   if (!chips.length) return '';
+  var n = chips.length;
+  var collapsed = tendHiddenBarIsCollapsed();
   return (
-    '<div class="tend-hidden-bar">' +
-    '<span class="tend-hidden-bar-label">Ocultos</span>' +
+    '<div class="tend-hidden-bar' +
+    (collapsed ? ' tend-hidden-bar--collapsed' : '') +
+    '">' +
+    '<div class="tend-hidden-bar-top">' +
+    '<button type="button" class="tend-hidden-bar-toggle" aria-expanded="' +
+    (collapsed ? 'false' : 'true') +
+    '" onclick="toggleTendHiddenBar(event)">' +
+    '<span class="tend-hidden-bar-chevron" aria-hidden="true">' +
+    (collapsed ? '▶' : '▼') +
+    '</span>' +
+    '<span class="tend-hidden-bar-summary">Ocultos (' +
+    n +
+    ')</span>' +
+    '</button>' +
+    '<button type="button" class="tend-toolbar-btn tend-hidden-bar-all" onclick="event.stopPropagation();tendResetAllHiddenSeries()">Mostrar todos</button>' +
+    '</div>' +
+    '<div class="tend-hidden-bar-body">' +
     '<div class="tend-hidden-chips">' +
     chips.join('') +
     '</div>' +
-    '<button type="button" class="tend-toolbar-btn tend-hidden-bar-all" onclick="tendResetAllHiddenSeries()">Mostrar todos</button>' +
+    '</div>' +
     '</div>'
   );
 }
@@ -7802,6 +7843,7 @@ Object.assign(window, {
   tendHideSeriesFromCard,
   tendUnhideSeries,
   tendResetAllHiddenSeries,
+  toggleTendHiddenBar,
   selectPatient,
   deletePatient,
   openSOAPModal,
