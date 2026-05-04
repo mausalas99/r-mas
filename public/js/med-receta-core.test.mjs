@@ -5,6 +5,7 @@ import {
   resolveFechaActualizacion,
   formatMedicationEgresoLine,
   buildMedRecetaCopyText,
+  buildMedRecetaNameOnlyText,
   extractDiaTratamiento,
   classifyMedicationSoapCategory,
   applyMedCatalogOverlay,
@@ -99,6 +100,20 @@ test('formatMedicationEgresoLine — ONDANSETRON PRN', () => {
   );
 });
 
+test('formatMedicationEgresoLine — ONDANSETRON PRN con NAUSEA y VOMITO', () => {
+  var line = formatMedicationEgresoLine({
+    nombreRaw: 'ONDANSETRON 8 MG SOL INY 4 ML',
+    viaRaw: 'VIA INTRAVENOSA',
+    dosisRaw: '8 MG // CRITERIO PRN: EN CASO DE NAUSEA Y VOMITO, CADA 8 HRS',
+    frecuenciaRaw: 'PRN',
+    diaTratamiento: null,
+  });
+  assert.equal(
+    line,
+    'ONDANSETRÓN 8 MG SOLUCIÓN INYECTABLE || ADMINISTRAR 8 MG VÍA INTRAVENOSA CADA 8 HORAS EN CASO DE NÁUSEA O VÓMITO.'
+  );
+});
+
 test('buildMedRecetaCopyText une con línea en blanco entre activos y omite suspendidos', () => {
   var items = [
     {
@@ -131,6 +146,46 @@ test('buildMedRecetaCopyText une con línea en blanco entre activos y omite susp
   assert.ok(t.indexOf('LOSARTAN') === -1);
   assert.ok(t.indexOf('OMEPRAZOL') !== -1);
   assert.ok(t.indexOf('\n\n') !== -1);
+});
+
+test('buildMedRecetaNameOnlyText deja solo nombre y día en ATB', () => {
+  var items = [
+    {
+      nombreRaw: 'METRONIDAZOL 500 MG SOL INY 100 ML (*)',
+      viaRaw: 'VIA INTRAVENOSA',
+      dosisRaw: '500 MG // *DIA# 3*',
+      frecuenciaRaw: 'CADA 8 HORAS',
+      diaTratamiento: 3,
+      suspendido: false,
+    },
+    {
+      nombreRaw: 'OMEPRAZOL 40 MG SOL INY 10 ML (*)',
+      viaRaw: 'VIA INTRAVENOSA',
+      dosisRaw: '40 MG //',
+      frecuenciaRaw: 'CADA 12 HORAS',
+      diaTratamiento: null,
+      suspendido: false,
+    },
+  ];
+  var t = buildMedRecetaNameOnlyText(items);
+  var lines = t.split('\n');
+  assert.equal(lines[0], 'METRONIDAZOL 500 MG SOLUCIÓN INYECTABLE DÍA 3');
+  assert.equal(lines[1], 'OMEPRAZOL 40 MG SOLUCIÓN INYECTABLE');
+});
+
+test('buildMedRecetaNameOnlyText no agrega DÍA en no-ATB aunque exista día', () => {
+  var items = [
+    {
+      nombreRaw: 'OMEPRAZOL 40 MG SOL INY 10 ML (*)',
+      viaRaw: 'VIA INTRAVENOSA',
+      dosisRaw: '40 MG // *DIA# 4*',
+      frecuenciaRaw: 'CADA 12 HORAS',
+      diaTratamiento: 4,
+      suspendido: false,
+    },
+  ];
+  var t = buildMedRecetaNameOnlyText(items);
+  assert.equal(t, 'OMEPRAZOL 40 MG SOLUCIÓN INYECTABLE');
 });
 
 test('bloque dorado — 12 medicamentos del spec', () => {
@@ -182,6 +237,15 @@ test('classifyMedicationSoapCategory — ejemplos hospitalarios', () => {
   assert.equal(classifyMedicationSoapCategory('OMEPRAZOL 40 MG'), 'otros');
   assert.equal(classifyMedicationSoapCategory('FÁRMACO SIN LISTA XYZ'), 'otros');
   assert.equal(classifyMedicationSoapCategory('ONDANSETRÓN 8 MG'), 'analgesia');
+  assert.equal(classifyMedicationSoapCategory('ONDASETRON 8 MG'), 'analgesia');
+});
+
+test('parseMedicationPaste incluye medicamento fuera de catálogo', () => {
+  var line =
+    '04/05/2026 07:04:24 a.m.\tMEDICAMENTOS\tFARMACO NUEVO XYZ 100 MG SOL INY\tVIA INTRAVENOSA\t100 MG //\tCADA 24 HORAS\tNW';
+  var r = parseMedicationPaste(line);
+  assert.equal(r.items.length, 1);
+  assert.equal(r.items[0].nombreRaw, 'FARMACO NUEVO XYZ 100 MG SOL INY');
 });
 
 test('applyMedCatalogOverlay clasifica tokens personalizados antes que listas internas', () => {

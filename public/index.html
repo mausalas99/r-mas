@@ -668,6 +668,54 @@
     color: var(--text-muted); cursor: pointer;
   }
   .btn-med-secondary:hover { border-color: var(--action); color: var(--action); background: var(--lab-chip-bg); }
+  .med-output-tabs {
+    position: relative;
+    display: inline-flex;
+    align-items: stretch;
+    padding: 2px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    gap: 0;
+  }
+  .med-output-tab-pill {
+    position: absolute;
+    top: 2px;
+    bottom: 2px;
+    left: 2px;
+    width: calc((100% - 4px) / 2);
+    border-radius: 6px;
+    background: rgba(255,255,255,0.22);
+    pointer-events: none;
+    z-index: 0;
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
+  }
+  .med-output-tabs[data-active="simple"] .med-output-tab-pill {
+    transform: translateX(100%);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .med-output-tab-pill { transition: none; }
+  }
+  .med-output-tab {
+    position: relative;
+    z-index: 1;
+    flex: 1 1 0;
+    min-width: 0;
+    border: 0;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.82);
+    background: transparent;
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+  .med-output-tab:hover { color: rgba(255,255,255,0.95); }
+  .med-output-tab.active {
+    color: #fff;
+  }
   .lab-history-meta { font-size: 13px; color: var(--text); flex: 1; min-width: 140px; }
   .lab-history-actions { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; }
   .btn-lab-history {
@@ -1299,6 +1347,34 @@
   .tend-param-value { font-size:18px; font-weight:700; color:var(--text); }
   .tend-param-value.tend-abnormal { color:#dc2626; }
   .tend-unit  { font-size:10px; color:var(--muted); margin-top:2px; }
+  .tend-range-bar {
+    position: relative;
+    margin-top: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(148,163,184,0.25) 0%, rgba(148,163,184,0.2) 100%);
+    overflow: hidden;
+  }
+  .tend-range-normal {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-radius: 999px;
+    background: rgba(16,185,129,0.45);
+  }
+  .tend-range-marker {
+    position: absolute;
+    top: 50%;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    border: 2px solid #fff;
+    background: #10b981;
+    box-shadow: 0 0 0 1px rgba(15,23,42,0.2);
+  }
+  .tend-range-bar.is-abnormal .tend-range-marker { background: #dc2626; }
+  .tend-range-bar.is-abnormal .tend-range-normal { background: rgba(16,185,129,0.3); }
   /* ── Modo enfoque (F6) ─────────────────────────────────────── */
   body.focus-mode aside { display: none !important; }
   body.focus-mode #settings-dropdown,
@@ -1892,10 +1968,17 @@
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
               Texto para nota de egreso
             </span>
-            <button type="button" onclick="copiarMedicamentosAlPortapapeles()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.35);color:white;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:5px;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-              Copiar
-            </button>
+            <span style="display:flex;align-items:center;gap:8px;">
+              <span class="med-output-tabs" id="med-output-tabs-track" role="tablist" aria-label="Vista de texto de medicamentos" data-active="full">
+                <span class="med-output-tab-pill" aria-hidden="true"></span>
+                <button id="med-tab-full" type="button" role="tab" aria-selected="true" class="med-output-tab active" onclick="setMedOutputTab('full')">Completa</button>
+                <button id="med-tab-simple" type="button" role="tab" aria-selected="false" class="med-output-tab" onclick="setMedOutputTab('simple')">Nombre + Día</button>
+              </span>
+              <button type="button" onclick="copiarMedicamentosAlPortapapeles()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.35);color:white;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:5px;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                Copiar
+              </button>
+            </span>
           </div>
           <div class="card-body" style="padding:16px 18px;">
             <pre id="med-output" style="white-space:pre-wrap;font-family:inherit;font-size:13px;line-height:1.6;margin:0;color:var(--text);"></pre>

@@ -28,6 +28,7 @@ import {
   parseMedicationPaste,
   resolveFechaActualizacion,
   buildMedRecetaCopyText,
+  buildMedRecetaNameOnlyText,
   formatMedicationEgresoLine,
   classifyMedicationSoapCategory,
   applyMedCatalogOverlay,
@@ -52,6 +53,7 @@ var activeLab    = null;
 var settings     = storage.getSettings();
 var sparkCharts  = {};
 var detailChart  = null;
+var medOutputTab = 'full';
 var autoBackupSchedulerId = null;
 var AUDIT_LOG_KEY = 'rpc-audit-log';
 var AUTO_BACKUP_SETTINGS_KEY = 'rpc-auto-backup-settings';
@@ -3750,7 +3752,21 @@ function renderMedRecetaPanel() {
     rows.join('') +
     '</div>';
   renderMedNotaFooter();
-  var txt = buildMedRecetaCopyText(block.items);
+  var tabFull = document.getElementById('med-tab-full');
+  var tabSimple = document.getElementById('med-tab-simple');
+  var tabTrack = document.getElementById('med-output-tabs-track');
+  if (tabTrack) tabTrack.setAttribute('data-active', medOutputTab === 'simple' ? 'simple' : 'full');
+  if (tabFull) {
+    tabFull.classList.toggle('active', medOutputTab === 'full');
+    tabFull.setAttribute('aria-selected', medOutputTab === 'full' ? 'true' : 'false');
+  }
+  if (tabSimple) {
+    tabSimple.classList.toggle('active', medOutputTab === 'simple');
+    tabSimple.setAttribute('aria-selected', medOutputTab === 'simple' ? 'true' : 'false');
+  }
+  var txtFull = buildMedRecetaCopyText(block.items);
+  var txtSimple = buildMedRecetaNameOnlyText(block.items);
+  var txt = medOutputTab === 'simple' ? txtSimple : txtFull;
   outPre.textContent = txt;
   if (outCard) outCard.style.display = txt.trim() ? 'block' : 'none';
 }
@@ -3939,6 +3955,10 @@ function copiarMedicamentosAlPortapapeles() {
   }
   var items = medRecetaByPatient[activeId].items || [];
   var text = buildMedRecetaCopyText(items);
+  var simple = buildMedRecetaNameOnlyText(items);
+  if (medOutputTab === 'simple') {
+    text = simple;
+  }
   if (!text.trim()) {
     showToast('No hay medicamentos activos para copiar', 'error');
     return;
@@ -3951,6 +3971,12 @@ function copiarMedicamentosAlPortapapeles() {
     .catch(function () {
       showToast('Error al copiar al portapapeles', 'error');
     });
+}
+
+function setMedOutputTab(tab) {
+  if (tab !== 'full' && tab !== 'simple') return;
+  medOutputTab = tab;
+  renderMedRecetaPanel();
 }
 
 function copiarLabsAlPortapapeles() {
@@ -4940,12 +4966,38 @@ function renderTendencias() {
     var latest = setsDesc.length ? setsDesc[0].parsed[param] : null;
     var ref = TEND_REF[param];
     var isAb = ref && (latest < ref[0] || latest > ref[1]);
+    var bar = '';
+    if (ref && isFinite(ref[0]) && isFinite(ref[1]) && ref[1] > ref[0] && isFinite(latest)) {
+      var low = Number(ref[0]);
+      var high = Number(ref[1]);
+      var span = high - low;
+      var fullMin = low - span * 0.5;
+      var fullMax = high + span * 0.5;
+      if (fullMax <= fullMin) {
+        fullMin = low;
+        fullMax = high;
+      }
+      var pos = ((Number(latest) - fullMin) / (fullMax - fullMin)) * 100;
+      if (pos < 0) pos = 0;
+      if (pos > 100) pos = 100;
+      var normStart = ((low - fullMin) / (fullMax - fullMin)) * 100;
+      var normEnd = ((high - fullMin) / (fullMax - fullMin)) * 100;
+      if (normStart < 0) normStart = 0;
+      if (normEnd > 100) normEnd = 100;
+      var stateClass = isAb ? ' is-abnormal' : ' is-normal';
+      bar =
+        '<div class="tend-range-bar' + stateClass + '">' +
+        '<div class="tend-range-normal" style="left:' + normStart.toFixed(2) + '%;width:' + (normEnd - normStart).toFixed(2) + '%;"></div>' +
+        '<div class="tend-range-marker" style="left:' + pos.toFixed(2) + '%;"></div>' +
+        '</div>';
+    }
     return '<div class="tend-card" onclick="openTendDetail(\'' + param + '\')" data-param="' + param + '">'
       + '<div class="tend-card-header">'
       + '<span class="tend-param-name">' + param + '</span>'
       + '<span class="tend-param-value' + (isAb ? ' tend-abnormal' : '') + '">' + latest + '</span>'
       + '</div>'
       + '<div class="tend-unit">' + (TEND_UNITS[param] || '') + '</div>'
+      + bar
       + '<div class="tend-spark-wrap"><canvas id="spark-' + param + '"></canvas></div>'
       + '</div>';
   }).join('') + '</div>';
@@ -6326,6 +6378,7 @@ Object.assign(window, {
   procesarRecetaMed,
   limpiarRecetaInput,
   copiarMedicamentosAlPortapapeles,
+  setMedOutputTab,
   toggleMedRecetaSuspendido,
   toggleMedRecetaParaNota,
   limpiarSeleccionMedNota,

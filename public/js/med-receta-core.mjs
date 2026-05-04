@@ -107,10 +107,13 @@ function escapeRegExp(s) {
 }
 
 function normalizeNombreForSoapClassify(nombreRaw) {
-  return String(nombreRaw || '')
+  var n = String(nombreRaw || '')
     .toUpperCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
+  // Alias clínicos frecuentes para tolerar variantes de captura.
+  n = n.replace(/\bONDASETRON\b/g, 'ONDANSETRON');
+  return n;
 }
 
 function sanitizeAccentMap(raw) {
@@ -356,7 +359,7 @@ export function formatMedicationEgresoLine(item) {
         '.'
       );
     }
-    if (/NAUSEAS|NÁUSEA/i.test(critRaw) && /VÓMITO|VOMITO/i.test(critRaw)) {
+    if (/(NAUSEA|NÁUSEA|NAUSEAS|NÁUSEAS)/i.test(critRaw) && /VÓMITO|VOMITO/i.test(critRaw)) {
       var cadaN = extractCadaHorasFromCrit(critRaw) || normalizeFrecuencia('CADA 8 HORAS');
       return (
         nombreExpandido +
@@ -398,6 +401,25 @@ export function buildMedRecetaCopyText(items) {
     return formatMedicationEgresoLine(it);
   });
   return lines.join('\n\n');
+}
+
+/**
+ * Versión simple de texto libre:
+ * - Solo nombre del medicamento.
+ * - Si clasifica como ATB y tiene día de tratamiento, agrega "(DÍA N ...)".
+ */
+export function buildMedRecetaNameOnlyText(items) {
+  var list = (items || []).filter(function (it) {
+    return it && !it.suspendido;
+  });
+  var lines = list.map(function (it) {
+    var nombre = applyNombreAccents(expandNombrePresentacion(it.nombreRaw));
+    if (classifyMedicationSoapCategory(it.nombreRaw) === 'abx' && it.diaTratamiento != null) {
+      return nombre + ' DÍA ' + it.diaTratamiento;
+    }
+    return nombre;
+  });
+  return lines.join('\n');
 }
 
 /**
