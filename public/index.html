@@ -1848,7 +1848,8 @@
         <p class="intro-option-lead">Pensado para seguimiento diario: interpretar labs, ver tendencias, escribir la evolución con la plantilla SOAP y trabajar la receta en Medicamentos.</p>
         <ul class="intro-option-list">
           <li>Mismo flujo de <strong>Laboratorio</strong> (procesar, diagramas, enviar a nota)</li>
-          <li><strong>Tendencias</strong> entre fechas</li>
+          <li><strong>Sincronizar</strong> y <strong>Consolidar</strong> en el historial de labs del paciente (duplicados y mismo día)</li>
+          <li><strong>Tendencias</strong> y pestaña <strong>Cultivos</strong> en Expediente</li>
           <li>Ubicación exacta del botón <strong>Plantilla SOAP</strong> (tarjeta verde de evolución)</li>
           <li><strong>Medicamentos</strong> + cómo copiar desde SOME</li>
           <li>Pocos pasos sobre exportar Word</li>
@@ -1860,9 +1861,10 @@
         <h3 class="intro-option-h">Interconsulta / consulta externa</h3>
         <p class="intro-option-lead">Incluye <strong>todo lo anterior</strong> (labs, tendencias, SOAP, medicamentos) y añade tiempo al final para dejar listos los documentos Word.</p>
         <ul class="intro-option-list">
-          <li>Recorrido clínico idéntico a sala hasta Medicamentos</li>
+          <li>Recorrido clínico idéntico a sala hasta Medicamentos (incluye <strong>Sincronizar</strong> / <strong>Consolidar</strong> en historial de labs)</li>
           <li>Después: <strong>Generar Nota (.docx)</strong> y <strong>Generar Indicaciones (.docx)</strong></li>
           <li><strong>Carpeta de documentos</strong> y botón <strong>Salida rápida</strong></li>
+          <li>En <strong>Ajustes → Laboratorio</strong>, revisión de duplicados en <strong>todos</strong> los pacientes</li>
           <li>Repaso de perfil, plantillas y respaldos</li>
         </ul>
         <button type="button" class="btn-intro-pick btn-intro-pick-secondary" onclick="guidedTourIntroChooseInterconsulta()">Empezar · Interconsulta</button>
@@ -2003,7 +2005,7 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             <span class="lab-history-card-title">Historial de labs (paciente activo)</span>
             <span class="lab-history-card-actions">
-              <button type="button" class="btn-lab-history btn-lab-dedupe-sync" onclick="consolidateLabHistoryByDayAndTipo()" title="Fusionar conjuntos del mismo día: solo laboratorio entre sí y solo cultivos entre sí (los mixtos no se tocan)">Consolidar</button>
+              <button type="button" class="btn-lab-history btn-lab-dedupe-sync" onclick="consolidateLabHistoryByDayAndTipo()" title="Une en una sola entrada los envíos del mismo día si todos son solo laboratorio o todos solo cultivos; los conjuntos mixtos no se tocan.">Consolidar</button>
               <button type="button" class="btn-lab-history btn-lab-dedupe-sync" onclick="openLabHistoryDedupeReview('active')" title="Abrir checklist: duplicados exactos y posibles coincidencias por fecha/hora y valores">Sincronizar</button>
             </span>
           </div>

@@ -1585,7 +1585,8 @@ function renderTourStep() {
           '<p style="margin:0 0 10px 0;">Recorrido <strong>completo</strong> (laboratorio, tendencias, SOAP, medicamentos). La diferencia es el <strong>énfasis al final</strong>: exportar <strong>Nota de evolución</strong> e <strong>Indicaciones</strong> a <strong>Word (.docx)</strong>, carpeta de salida y Salida rápida.</p>' +
           '<ul style="margin:0;padding-left:1.15rem;line-height:1.5;">' +
           '<li><strong>Izquierda:</strong> lista de pacientes. El demo <strong>DEMO PÉREZ</strong> no se guarda en tu historial real.</li>' +
-          '<li><strong>Arriba:</strong> <strong>Laboratorio</strong>, <strong>Expediente</strong> (nota, indicaciones, tendencias) y <strong>Medicamentos</strong>.</li>' +
+          '<li><strong>Arriba:</strong> <strong>Laboratorio</strong>, <strong>Expediente</strong> (nota, indicaciones, tendencias, cultivos) y <strong>Medicamentos</strong>.</li>' +
+          '<li>En <strong>Laboratorio</strong>, el historial del paciente tiene <strong>Sincronizar</strong> (quita duplicados con checklist) y <strong>Consolidar</strong> (fusiona conjuntos del mismo día: solo labs entre sí o solo cultivos entre sí).</li>' +
           '<li>R+ avisa si creas un paciente duplicado por nombre o registro.</li>' +
           '</ul>';
       } else {
@@ -1593,7 +1594,8 @@ function renderTourStep() {
           '<p style="margin:0 0 10px 0;">Recorrido <strong>sala / hospitalización</strong>: laboratorio, tendencias, <strong>plantilla SOAP</strong> para la evolución y <strong>Medicamentos</strong> (receta → nota / SOAP).</p>' +
           '<ul style="margin:0;padding-left:1.15rem;line-height:1.5;">' +
           '<li><strong>Laboratorio</strong> interpreta el reporte pegado y arma diagramas.</li>' +
-          '<li><strong>Tendencias</strong> comparan varios labs en el tiempo.</li>' +
+          '<li>Tras enviar labs, en el <strong>historial de laboratorio</strong> del paciente usa <strong>Sincronizar</strong> para limpiar duplicados y <strong>Consolidar</strong> para unir conjuntos del mismo día (homogéneos).</li>' +
+          '<li><strong>Tendencias</strong> comparan varios labs en el tiempo; <strong>Cultivos</strong> resume uro/hemo/Gram/catéter por tipo y fecha.</li>' +
           '<li><strong>SOAP</strong> rellena analgesia, antibióticos, antiHTA, vasopresores, etc., para pegar en la evolución.</li>' +
           '<li><strong>Medicamentos</strong> clasifica lo que marques y lo manda a la plantilla SOAP o al tratamiento.</li>' +
           '</ul>';
@@ -1611,13 +1613,15 @@ function renderTourStep() {
       setBadge('laboratorio · revisar');
       bodyEl.innerHTML =
         '<p style="margin:0 0 8px 0;">Revisa <strong>Diagramas</strong> y la tarjeta de <strong>Resultados</strong>. Cuando quieras volcar todo al expediente, usa <strong>Enviar a nota</strong> (arriba a la derecha en resultados).</p>' +
-        '<p style="margin:0;font-size:13px;color:var(--text-muted);">Eso alimenta el bloque de estudios, el historial de labs y las tendencias.</p>';
+        '<p style="margin:0 0 8px 0;">En la tarjeta <strong>Historial de laboratorio</strong> (misma pestaña), cuando tengas varias entradas: <strong>Sincronizar</strong> abre un checklist para quitar duplicados (misma fecha/hora y mismos resultados; se conserva la más antigua). <strong>Consolidar</strong> fusiona conjuntos del <strong>mismo día calendario</strong> si son del mismo tipo (solo laboratorio con laboratorio, o solo cultivos con cultivos; los mixtos no se tocan).</p>' +
+        '<p style="margin:0;font-size:13px;color:var(--text-muted);">Eso alimenta el bloque de estudios, el historial de labs, tendencias y la pestaña Cultivos.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'lab_send':
       setBadge('laboratorio · enviar');
       bodyEl.innerHTML =
-        '<p style="margin:0;">Pulsa <strong>Enviar a nota</strong> para guardar este conjunto en el paciente demo y seguir el flujo.</p>';
+        '<p style="margin:0 0 8px 0;">Pulsa <strong>Enviar a nota</strong> para guardar este conjunto en el paciente demo y seguir el flujo.</p>' +
+        '<p style="margin:0;font-size:13px;color:var(--text-muted);">Después, si acumulas más envíos, repasa <strong>Sincronizar</strong> y <strong>Consolidar</strong> en el historial para mantener orden y evitar líneas repetidas en la nota.</p>';
       nextBtn.style.display = 'none';
       break;
     case 'ic_nota':
@@ -1652,6 +1656,7 @@ function renderTourStep() {
         '<li><strong>Carpeta de documentos</strong>: donde caen los .docx de <strong>Generar Nota</strong> y <strong>Generar Indicaciones</strong>.</li>' +
         '<li><strong>Salida rápida</strong>: formato docx, html o txt para el botón gris del expediente.</li>' +
         '<li><strong>Copias de seguridad</strong> JSON, exportar paciente o rango, auto-respaldo y <strong>Paquete sync</strong> entre equipos.</li>' +
+        '<li>En <strong>Ajustes → Laboratorio</strong> puedes <strong>revisar duplicados en el historial de todos los pacientes</strong> (equivalente al checklist de <strong>Sincronizar</strong> del paciente activo en la pestaña Laboratorio).</li>' +
         '</ul>' +
         '<p style="margin:10px 0 0 0;font-size:13px;color:var(--text-muted);">En interconsulta conviene dejar la carpeta lista antes de atender.</p>';
       nextBtn.textContent = 'Siguiente';
@@ -1659,7 +1664,8 @@ function renderTourStep() {
     case 'sala_tend':
       setBadge('tendencias');
       bodyEl.innerHTML =
-        '<p style="margin:0 0 8px 0;">En <strong>Expediente → Tendencias</strong> ves mini-gráficas cuando hay varios laboratorios en el tiempo.</p>' +
+        '<p style="margin:0 0 8px 0;">En <strong>Expediente → Tendencias</strong> ves mini-gráficas cuando hay varios laboratorios en el tiempo. Los puntos duplicados (misma fecha/hora y mismo valor) se muestran una sola vez.</p>' +
+        '<p style="margin:0 0 8px 0;font-size:13px;color:var(--text-muted);">Si la gráfica se ve “sucia” por entradas repetidas en el historial, vuelve a <strong>Laboratorio</strong> y usa <strong>Sincronizar</strong> o <strong>Consolidar</strong> en la tarjeta de historial.</p>' +
         '<p style="margin:0;font-size:13px;color:var(--text-muted);">Este demo ya trae <strong>dos fechas</strong> de ejemplo; el envío que acabas de hacer suma otro punto en la serie. Así comparas creatinina, hemoglobina, leucocitos, etc.' +
         (guidedTourBranch === 'interconsulta'
           ? ' En interconsulta suele ser el contexto numérico antes de redactar y exportar la nota.'
@@ -1711,11 +1717,11 @@ function renderTourStep() {
       setBadge('listo');
       if (guidedTourBranch === 'interconsulta') {
         bodyEl.innerHTML =
-          '<p style="margin:0 0 8px 0;">Resumen <strong>interconsulta</strong>: recorrido completo (labs → tendencias → <strong>SOAP</strong> → medicamentos) y al final el <strong>énfasis</strong> en <strong>Generar Nota (.docx)</strong>, <strong>Generar Indicaciones (.docx)</strong>, carpeta de documentos y <strong>Salida rápida</strong>.</p>' +
+          '<p style="margin:0 0 8px 0;">Resumen <strong>interconsulta</strong>: recorrido completo (labs → historial con <strong>Sincronizar</strong>/<strong>Consolidar</strong> → tendencias → <strong>SOAP</strong> → medicamentos) y al final el <strong>énfasis</strong> en <strong>Generar Nota (.docx)</strong>, <strong>Generar Indicaciones (.docx)</strong>, carpeta de documentos y <strong>Salida rápida</strong>.</p>' +
           '<p style="margin:0;font-size:13px;color:var(--text-muted);">Repite el tutorial desde <strong>Mi Perfil → Ver tutorial</strong>. Tema claro/oscuro: Ajustes o icono junto a la fecha.</p>';
       } else {
         bodyEl.innerHTML =
-          '<p style="margin:0 0 8px 0;">Resumen <strong>sala</strong>: laboratorio → <strong>tendencias</strong> → evolución con <strong>SOAP</strong> → <strong>Medicamentos</strong> hacia tratamiento o SOAP.</p>' +
+          '<p style="margin:0 0 8px 0;">Resumen <strong>sala</strong>: laboratorio → mantén el historial con <strong>Sincronizar</strong> y <strong>Consolidar</strong> → <strong>tendencias</strong> → evolución con <strong>SOAP</strong> → <strong>Medicamentos</strong> hacia tratamiento o SOAP.</p>' +
           '<p style="margin:0;font-size:13px;color:var(--text-muted);">Puedes repetir el recorrido cuando quieras. Las actualizaciones se anuncian arriba al iniciar.</p>';
       }
       nextBtn.textContent = 'Finalizar';
@@ -2611,6 +2617,18 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '2.2.1': [
+    {
+      title: 'Tutorial y ayuda al día',
+      body:
+        'El recorrido Sala / Interconsulta y el modal inicial explican Sincronizar y Consolidar en el historial, la pestaña Cultivos, tendencias y la revisión de duplicados en Ajustes → Laboratorio. El mini-tour de Laboratorio incluye un paso sobre el historial.',
+    },
+    {
+      title: 'Consolidar, más claro',
+      body:
+        'El mensaje de confirmación y el tooltip del botón Consolidar describen en lenguaje sencillo cuándo se fusionan envíos del mismo día (solo laboratorio o solo cultivos) y qué pasa con los conjuntos mixtos.',
+    },
+  ],
   '2.2.0': [
     {
       title: 'Pestaña Cultivos en el expediente',
@@ -2793,6 +2811,11 @@ var LAB_MINI_TOUR_STEPS = [
   {
     badge: 'Laboratorio · tendencias',
     body: 'Cada laboratorio enviado se guarda con su fecha. Con dos o más labs aparecen mini-gráficas en <strong>Expediente → Tendencias</strong>.',
+    before: function(){ switchAppTab('lab'); }
+  },
+  {
+    badge: 'Laboratorio · historial',
+    body: 'En la tarjeta <strong>Historial de laboratorio</strong>, <strong>Sincronizar</strong> abre el checklist para eliminar duplicados (misma fecha/hora y mismos valores). <strong>Consolidar</strong> fusiona conjuntos del mismo día si son homogéneos (solo labs o solo cultivos). Así las tendencias y la nota no arrastran repeticiones.',
     before: function(){ switchAppTab('lab'); }
   },
   {
@@ -4200,11 +4223,12 @@ function consolidateLabHistoryByDayAndTipo() {
   }
   if (
     !confirm(
-      '¿Fusionar conjuntos del mismo día?\n\n' +
-        '• Solo laboratorio con solo laboratorio.\n' +
-        '• Solo cultivos con solo cultivos.\n' +
-        '• Los conjuntos mixtos (lab + cultivo en uno) no se modifican.\n' +
-        'Se conserva el id más antiguo de cada grupo y se unen las líneas (duplicados de texto omitidos).'
+      '¿Consolidar el historial por día?\n\n' +
+        'R+ agrupa entradas que comparten la misma fecha (día calendario) solo si son del mismo tipo:\n\n' +
+        '1) Varios envíos que traen únicamente laboratorio (sin bloque de cultivos) ese día → se unen en una sola entrada.\n\n' +
+        '2) Varios envíos que traen únicamente cultivos ese día → se unen en una sola entrada.\n\n' +
+        '3) Si un envío mezcla laboratorio y cultivos en el mismo conjunto, no se fusiona con otros ni se modifica.\n\n' +
+        'En cada grupo se conserva la entrada más antigua (id más viejo), se combinan todos los renglones y las líneas de texto idénticas se guardan una sola vez.'
     )
   ) {
     return;
