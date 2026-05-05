@@ -2,14 +2,14 @@ import SwiftUI
 
 struct LabView: View {
     @ObservedObject var sessionStore: PatientSessionStore
+    var titleText: String {
+        if let patient = sessionStore.selectedPatient {
+            return "Laboratorio: \(patient.displayName)"
+        }
+        return "Laboratorio: Sin paciente"
+    }
 
     var body: some View {
-        Group {
-            if let patient = sessionStore.selectedPatient {
-                Text("Laboratorio: \(patient.displayName)")
-            } else {
-                Text("Laboratorio: Sin paciente")
-            }
-        }
+        Text(titleText)
     }
 }
