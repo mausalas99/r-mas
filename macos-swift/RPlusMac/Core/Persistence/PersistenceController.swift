@@ -1,6 +1,6 @@
 import CoreData
 
-final class PersistenceController {
+class PersistenceController {
     static let shared = PersistenceController()
     let container: NSPersistentContainer
 
@@ -35,9 +35,7 @@ final class PersistenceController {
             }
         }
     }
-}
 
-extension PersistenceController {
     var viewContext: NSManagedObjectContext {
         container.viewContext
     }

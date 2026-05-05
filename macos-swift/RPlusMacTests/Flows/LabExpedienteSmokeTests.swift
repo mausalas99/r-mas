@@ -1,6 +1,19 @@
 import XCTest
 @testable import RPlusMac
 
+private final class FailingPersistenceController: PersistenceController {
+    private(set) var saveOrRollbackCalled = false
+
+    init() {
+        super.init(inMemory: true)
+    }
+
+    override func saveOrRollback() throws {
+        saveOrRollbackCalled = true
+        throw NSError(domain: "test.persistence", code: 900)
+    }
+}
+
 final class LabExpedienteSmokeTests: XCTestCase {
     func testAppBootstrapsWithPersistenceController() {
         let controller = PersistenceController(inMemory: true)
@@ -45,5 +58,23 @@ final class LabExpedienteSmokeTests: XCTestCase {
         XCTAssertThrowsError(try view.saveEditorBuffer("QS\nGLU 120", coordinator: coordinator))
         XCTAssertTrue(didRollback)
         XCTAssertEqual(coordinator.editorBuffer, "QS\nGLU 120")
+    }
+
+    @MainActor
+    func testLabViewSaveEditorBufferUsesPersistenceControllerEntrypoint() {
+        let view = LabView(sessionStore: PatientSessionStore())
+        let controller = FailingPersistenceController()
+
+        XCTAssertThrowsError(try view.saveEditorBuffer("BH\nHB 10", persistenceController: controller))
+        XCTAssertTrue(controller.saveOrRollbackCalled)
+    }
+
+    @MainActor
+    func testExpedienteViewSaveEditorBufferUsesPersistenceControllerEntrypoint() {
+        let view = ExpedienteView(sessionStore: PatientSessionStore())
+        let controller = FailingPersistenceController()
+
+        XCTAssertThrowsError(try view.saveEditorBuffer("S: paciente estable", persistenceController: controller))
+        XCTAssertTrue(controller.saveOrRollbackCalled)
     }
 }
