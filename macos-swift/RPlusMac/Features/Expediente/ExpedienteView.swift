@@ -18,6 +18,13 @@ struct ExpedienteView: View {
         persistenceController: PersistenceController = .shared
     ) throws {
         let coordinator = SaveCoordinator(persistenceController: persistenceController)
+        try saveEditorBuffer(buffer, coordinator: coordinator)
+    }
+
+    func saveEditorBuffer(
+        _ buffer: String,
+        coordinator: SaveCoordinator
+    ) throws {
         coordinator.editorBuffer = buffer
         try coordinator.commit()
     }

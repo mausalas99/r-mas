@@ -32,4 +32,18 @@ final class LabExpedienteSmokeTests: XCTestCase {
         XCTAssertTrue(didRollback)
         XCTAssertEqual(coordinator.editorBuffer, "BH\nHB 10")
     }
+
+    @MainActor
+    func testLabViewSaveEditorBufferKeepsBufferWhenCommitFails() {
+        let view = LabView(sessionStore: PatientSessionStore())
+        var didRollback = false
+        let coordinator = SaveCoordinator(
+            saveAction: { throw NSError(domain: "test", code: 501) },
+            rollbackAction: { didRollback = true }
+        )
+
+        XCTAssertThrowsError(try view.saveEditorBuffer("QS\nGLU 120", coordinator: coordinator))
+        XCTAssertTrue(didRollback)
+        XCTAssertEqual(coordinator.editorBuffer, "QS\nGLU 120")
+    }
 }
