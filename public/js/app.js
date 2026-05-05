@@ -3026,6 +3026,23 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '2.3.0': [
+    {
+      title: 'Tendencias por tipo de estudio',
+      body:
+        'Las gráficas se agrupan por sección (biometría, química, gases, LCR, etc.) y puedes colapsar cada bloque. El mismo analito no se mezcla entre paneles distintos (por ejemplo hematocrito de biometría frente al de gasometría).',
+    },
+    {
+      title: 'Catálogo amplio y series ocultas',
+      body:
+        'Más analitos en tendencias; puedes ocultar cada gráfica con el ícono del ojo. Los ocultos aparecen en una barra con chips, «Mostrar todos» y la barra se puede colapsar (se recuerda tu preferencia).',
+    },
+    {
+      title: 'Gasometría',
+      body:
+        'Si el bloque de gases incluye hematocrito, también se extrae para tendencias en esa sección.',
+    },
+  ],
   '2.2.1': [
     {
       title: 'Tutorial y ayuda al día',
