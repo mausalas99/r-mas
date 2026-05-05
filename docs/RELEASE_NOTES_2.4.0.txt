@@ -1,0 +1,23 @@
+R+ 2.4.0
+
+SIDEBAR DE PACIENTES
+- Nueva organización con secciones Pinned/Fijados, Pacientes y Archivados.
+- Acciones por tarjeta para fijar y archivar; archivados en bloque colapsable.
+- Reordenamiento por drag and drop con desplazamiento visual de las demás tarjetas.
+
+EXPERIENCIA DE USO
+- Mi Perfil se abre tocando R+ en el encabezado.
+- Tarjetas de pacientes simplificadas para reducir saturación visual.
+- Scrollbars translúcidos y sin barra horizontal en el listado de pacientes.
+
+LABORATORIO
+- Soporte para Fisicoquímico de heces.
+- Soporte para Frotis de sangre periférica.
+
+INSTALACIÓN
+
+Mac Apple Silicon: R+-2.4.0-arm64.dmg
+Mac Intel: R+-2.4.0-x64.dmg
+Windows: R+-2.4.0-x64.exe
+
+Auto-actualización: latest-mac.yml y latest.yml junto a los binarios.

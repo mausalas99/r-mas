@@ -52,6 +52,9 @@ var activeId     = null;
 var activeInner  = 'notas';
 var activeAppTab = 'lab';
 var patientSearchFilter = '';
+var ARCHIVED_SECTION_COLLAPSED_LS = 'rpc-archived-section-collapsed';
+var dragPatientId = null;
+var profileSectionVisible = false;
 var activeLab    = null;
 var settings     = storage.getSettings();
 var sparkCharts  = {};
@@ -1499,7 +1502,246 @@ function patientMatchesSearch(p) {
     (String(p.area || '').toLowerCase().indexOf(q) !== -1);
 }
 
+function ensurePatientUiState() {
+  var changed = false;
+  for (var i = 0; i < patients.length; i++) {
+    var p = patients[i];
+    if (!p) continue;
+    if (typeof p.archived !== 'boolean') {
+      p.archived = false;
+      changed = true;
+    }
+    if (typeof p.pinned !== 'boolean') {
+      p.pinned = false;
+      changed = true;
+    }
+  }
+  if (changed) saveState();
+}
+
+function isArchivedSectionCollapsed() {
+  try { return localStorage.getItem(ARCHIVED_SECTION_COLLAPSED_LS) === '1'; } catch (_e) { return false; }
+}
+function setArchivedSectionCollapsed(v) {
+  try { localStorage.setItem(ARCHIVED_SECTION_COLLAPSED_LS, v ? '1' : '0'); } catch (_e) {}
+}
+function toggleArchivedSection(ev) {
+  if (ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+  }
+  setArchivedSectionCollapsed(!isArchivedSectionCollapsed());
+  renderPatientList();
+}
+
+function patientSectionKey(p) {
+  if (p && p.archived) return 'archived';
+  if (p && p.pinned) return 'pinned';
+  return 'active';
+}
+
+function movePatientBefore(targetId, beforeId) {
+  if (!targetId || !beforeId || targetId === beforeId) return;
+  var from = patients.findIndex(function (p) { return p.id === targetId; });
+  var to = patients.findIndex(function (p) { return p.id === beforeId; });
+  if (from < 0 || to < 0 || from === to) return;
+  var moved = patients.splice(from, 1)[0];
+  if (from < to) to -= 1;
+  patients.splice(to, 0, moved);
+}
+
+function movePatientByOffset(ev, id, dir) {
+  if (ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+  }
+  var p = patients.find(function (x) { return x.id === id; });
+  if (!p) return;
+  var sec = patientSectionKey(p);
+  var ids = patients
+    .filter(function (x) { return patientSectionKey(x) === sec; })
+    .map(function (x) { return x.id; });
+  var idx = ids.indexOf(id);
+  if (idx < 0) return;
+  var next = idx + dir;
+  if (next < 0 || next >= ids.length) return;
+  movePatientBefore(id, ids[next]);
+  saveState();
+  renderPatientList();
+}
+
+function togglePatientPinned(ev, id) {
+  if (ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+  }
+  var p = patients.find(function (x) { return x.id === id; });
+  if (!p) return;
+  p.pinned = !p.pinned;
+  if (p.pinned) p.archived = false;
+  saveState();
+  renderPatientList();
+}
+
+function togglePatientArchived(ev, id) {
+  if (ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+  }
+  var p = patients.find(function (x) { return x.id === id; });
+  if (!p) return;
+  p.archived = !p.archived;
+  if (p.archived) p.pinned = false;
+  if (!p.archived) setArchivedSectionCollapsed(false);
+  saveState();
+  renderPatientList();
+}
+
+function onPatientDragStart(ev, id) {
+  if (patientSearchFilter) {
+    if (ev) ev.preventDefault();
+    showToast('Quita el filtro de búsqueda para reordenar.', 'error');
+    return;
+  }
+  dragPatientId = id;
+  var card = ev && ev.currentTarget ? ev.currentTarget : null;
+  if (card && card.classList) card.classList.add('is-dragging');
+  if (!ev || !ev.dataTransfer) return;
+  ev.dataTransfer.effectAllowed = 'move';
+  try { ev.dataTransfer.setData('text/plain', id); } catch (_e) {}
+}
+function onPatientDragOver(ev, id) {
+  if (!dragPatientId || !id || dragPatientId === id) return;
+  var dragP = patients.find(function (x) { return x.id === dragPatientId; });
+  var overP = patients.find(function (x) { return x.id === id; });
+  if (!dragP || !overP || patientSectionKey(dragP) !== patientSectionKey(overP)) return;
+  ev.preventDefault();
+  if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'move';
+  var overEl = ev.currentTarget;
+  var list = document.getElementById('patient-list');
+  if (!overEl || !list) return;
+  var dragEl = list.querySelector('.patient-card.is-dragging');
+  if (!dragEl || dragEl === overEl) return;
+  var cardsBefore = list.querySelectorAll('.patient-card[data-patient-id]');
+  var beforeRects = Object.create(null);
+  for (var i = 0; i < cardsBefore.length; i++) {
+    var bid = cardsBefore[i].getAttribute('data-patient-id');
+    if (!bid || cardsBefore[i] === dragEl) continue;
+    beforeRects[bid] = cardsBefore[i].getBoundingClientRect();
+  }
+  var rect = overEl.getBoundingClientRect();
+  var after = ev.clientY > rect.top + rect.height / 2;
+  if (after) {
+    if (overEl.nextSibling !== dragEl) list.insertBefore(dragEl, overEl.nextSibling);
+  } else if (overEl !== dragEl.nextSibling) {
+    list.insertBefore(dragEl, overEl);
+  }
+  animatePatientListReflow(list, beforeRects);
+}
+function onPatientDrop(ev, id) {
+  if (ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+  }
+  if (!dragPatientId) return;
+  syncPatientsOrderFromDom();
+  dragPatientId = null;
+  saveState();
+  renderPatientList();
+}
+function onPatientDragEnd(ev) {
+  dragPatientId = null;
+  var card = ev && ev.currentTarget ? ev.currentTarget : null;
+  if (card && card.classList) card.classList.remove('is-dragging');
+  var list = document.getElementById('patient-list');
+  if (!list) return;
+}
+
+function syncPatientsOrderFromDom() {
+  var list = document.getElementById('patient-list');
+  if (!list) return;
+  var cards = list.querySelectorAll('.patient-card[data-patient-id]');
+  if (!cards || !cards.length) return;
+  var order = [];
+  for (var i = 0; i < cards.length; i++) {
+    var pid = cards[i].getAttribute('data-patient-id');
+    if (pid) order.push(pid);
+  }
+  if (!order.length) return;
+  var rank = Object.create(null);
+  for (var j = 0; j < order.length; j++) rank[order[j]] = j;
+  var missingBase = order.length + 1000;
+  patients.sort(function (a, b) {
+    var ra = Object.prototype.hasOwnProperty.call(rank, a.id) ? rank[a.id] : missingBase;
+    var rb = Object.prototype.hasOwnProperty.call(rank, b.id) ? rank[b.id] : missingBase;
+    if (ra !== rb) return ra - rb;
+    return 0;
+  });
+}
+
+function animatePatientListReflow(list, beforeRects) {
+  if (!list || !beforeRects) return;
+  var cards = list.querySelectorAll('.patient-card[data-patient-id]');
+  for (var i = 0; i < cards.length; i++) {
+    var el = cards[i];
+    if (!el || el.classList.contains('is-dragging')) continue;
+    var id = el.getAttribute('data-patient-id');
+    var prev = beforeRects[id];
+    if (!id || !prev) continue;
+    var now = el.getBoundingClientRect();
+    var dy = prev.top - now.top;
+    if (!dy) continue;
+    el.style.transition = 'none';
+    el.style.transform = 'translateY(' + dy + 'px)';
+    el.style.willChange = 'transform';
+    requestAnimationFrame(function (node) {
+      return function () {
+        node.style.transition = 'transform 340ms cubic-bezier(0.18, 1.25, 0.35, 1)';
+        node.style.transform = '';
+        window.setTimeout(function () {
+          if (!node.classList.contains('is-dragging')) {
+            node.style.transition = '';
+            node.style.willChange = '';
+          }
+        }, 360);
+      };
+    }(el));
+  }
+}
+
+function renderPatientCardHtml(p) {
+  var pinOn = !!p.pinned;
+  var archOn = !!p.archived;
+  var pinTitle = pinOn ? 'Quitar de Pinned' : 'Mover a Pinned';
+  var archTitle = archOn ? 'Restaurar del archivo' : 'Archivar paciente';
+  var archiveIcon = archOn
+    ? '↩'
+    : '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"></rect><path d="M5 8h14v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8z"></path><path d="M10 12h4"></path></svg>';
+  return (
+    '<div class="patient-card ' + (p.id===activeId?'active':'') + '" data-patient-id="' + p.id + '" draggable="true" ' +
+    'ondragstart="onPatientDragStart(event,\'' + p.id + '\')" ' +
+    'ondragover="onPatientDragOver(event,\'' + p.id + '\')" ' +
+    'ondrop="onPatientDrop(event,\'' + p.id + '\')" ' +
+    'ondragend="onPatientDragEnd(event)" ' +
+    'onclick="selectPatient(\'' + p.id + '\')">' +
+    '<div class="patient-card-toolbar">' +
+    '<div class="patient-card-toolbar-left">' +
+    '<button class="btn-patient-action btn-archive-clean" title="' + archTitle + '" aria-label="' + archTitle + '" onclick="togglePatientArchived(event,\'' + p.id + '\')">' + archiveIcon + '</button>' +
+    '<button class="btn-patient-action btn-pinned-text" title="' + pinTitle + '" aria-label="' + pinTitle + '" onclick="togglePatientPinned(event,\'' + p.id + '\')">Pinned</button>' +
+    '</div>' +
+    '<button class="btn-delete-card" onclick="deletePatient(event,\'' + p.id + '\')" aria-label="Eliminar">×</button>' +
+    '</div>' +
+    '<div class="p-name">' + esc(p.nombre||'Sin nombre') + '</div>' +
+    '<div class="p-meta"><span>Cto. ' + esc(p.cuarto||'-') + '</span><span>Cama ' + esc(p.cama||'-') + '</span><span>' + esc(p.servicio||'-') + '</span>' +
+    (p.fromLab ? '<span class="lab-chip">LAB</span>' : '') +
+    (pinOn ? '<span class="patient-flag-chip">Pinned</span>' : '') +
+    (archOn ? '<span class="patient-flag-chip">Archivado</span>' : '') +
+    '</div></div>'
+  );
+}
+
 function renderPatientList() {
+  ensurePatientUiState();
   var list = document.getElementById('patient-list');
   if (!patients.length) {
     list.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">Sin pacientes aún</div>';
@@ -1510,13 +1752,24 @@ function renderPatientList() {
     list.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">Ningún paciente coincide con la búsqueda</div>';
     return;
   }
-  list.innerHTML = filtered.map(function(p) { return (
-    '<div class="patient-card ' + (p.id===activeId?'active':'') + '" onclick="selectPatient(\'' + p.id + '\')">' +
-    '<div class="p-name">' + esc(p.nombre||'Sin nombre') + '</div>' +
-    '<div class="p-meta"><span>Cto. ' + esc(p.cuarto||'-') + '</span><span>Cama ' + esc(p.cama||'-') + '</span><span>' + esc(p.servicio||'-') + '</span>' +
-    (p.fromLab ? '<span class="lab-chip">LAB</span>' : '') + '</div>' +
-    '<button class="btn-delete-card" onclick="deletePatient(event,\'' + p.id + '\')" aria-label="Eliminar">×</button></div>'
-  ); }).join('');
+  var pinned = filtered.filter(function (p) { return p.pinned && !p.archived; });
+  var active = filtered.filter(function (p) { return !p.pinned && !p.archived; });
+  var archived = filtered.filter(function (p) { return !!p.archived; });
+  var parts = [];
+  if (pinned.length) {
+    parts.push('<div class="patient-list-section-label">Pinned · Fijados <span>' + pinned.length + '</span></div>');
+    parts.push(pinned.map(renderPatientCardHtml).join(''));
+  }
+  if (active.length) {
+    parts.push('<div class="patient-list-section-label">Pacientes <span>' + active.length + '</span></div>');
+    parts.push(active.map(renderPatientCardHtml).join(''));
+  }
+  if (archived.length) {
+    var collapsed = isArchivedSectionCollapsed();
+    parts.push('<button class="patient-list-section-toggle" onclick="toggleArchivedSection(event)" aria-expanded="' + (!collapsed ? 'true' : 'false') + '">Archivados <span>(' + archived.length + ')</span> <span>' + (collapsed ? '▶' : '▼') + '</span></button>');
+    if (!collapsed) parts.push(archived.map(renderPatientCardHtml).join(''));
+  }
+  list.innerHTML = parts.join('');
 }
 
 function selectPatient(id) {
@@ -1719,6 +1972,27 @@ function toggleProfileSection() {
   var open  = body.style.display !== 'none';
   body.style.display = open ? 'none' : 'flex';
   arrow.textContent  = open ? '▾' : '▴';
+}
+
+function syncProfileSectionVisibility() {
+  var section = document.getElementById('profile-section');
+  if (!section) return;
+  section.style.display = profileSectionVisible ? 'block' : 'none';
+}
+
+function openProfileFromHeader(ev) {
+  if (ev) ev.preventDefault();
+  switchAppTab('nota');
+  switchInnerTab('notas');
+  profileSectionVisible = !profileSectionVisible;
+  syncProfileSectionVisibility();
+  if (!profileSectionVisible) return;
+  var body = document.getElementById('profile-body');
+  if (body && body.style.display === 'none') toggleProfileSection();
+  var section = document.getElementById('profile-section');
+  if (section && typeof section.scrollIntoView === 'function') {
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 function toggleSettingsSection() {
@@ -2005,6 +2279,7 @@ function renderTourStep() {
           '<p style="margin:0 0 10px 0;">Recorrido <strong>completo</strong> (laboratorio, tendencias, SOAP, medicamentos). La diferencia es el <strong>énfasis al final</strong>: exportar <strong>Nota de evolución</strong> e <strong>Indicaciones</strong> a <strong>Word (.docx)</strong>, carpeta de salida y Salida rápida.</p>' +
           '<ul style="margin:0;padding-left:1.15rem;line-height:1.5;">' +
           '<li><strong>Izquierda:</strong> lista de pacientes. El demo <strong>DEMO PÉREZ</strong> no se guarda en tu historial real.</li>' +
+          '<li>La barra lateral ya permite <strong>Pinned · Fijados</strong>, <strong>archivar</strong> y <strong>reordenar</strong> (arrastrar o con flechas).</li>' +
           '<li><strong>Arriba:</strong> <strong>Laboratorio</strong>, <strong>Expediente</strong> (nota, indicaciones, tendencias, cultivos) y <strong>Medicamentos</strong>.</li>' +
           '<li>En <strong>Laboratorio</strong>, el historial del paciente tiene <strong>Sincronizar</strong> (quita duplicados con checklist) y <strong>Consolidar</strong> (fusiona conjuntos del mismo día: solo labs entre sí o solo cultivos entre sí).</li>' +
           '<li>R+ avisa si creas un paciente duplicado por nombre o registro.</li>' +
@@ -2014,6 +2289,7 @@ function renderTourStep() {
           '<p style="margin:0 0 10px 0;">Recorrido <strong>sala / hospitalización</strong>: laboratorio, tendencias, <strong>plantilla SOAP</strong> para la evolución y <strong>Medicamentos</strong> (receta → nota / SOAP).</p>' +
           '<ul style="margin:0;padding-left:1.15rem;line-height:1.5;">' +
           '<li><strong>Laboratorio</strong> interpreta el reporte pegado y arma diagramas.</li>' +
+          '<li>En la barra lateral puedes usar <strong>Pinned · Fijados</strong>, <strong>archivar</strong> y <strong>reordenar</strong> pacientes (drag & drop o flechas).</li>' +
           '<li>Tras enviar labs, en el <strong>historial de laboratorio</strong> del paciente usa <strong>Sincronizar</strong> para limpiar duplicados y <strong>Consolidar</strong> para unir conjuntos del mismo día (homogéneos).</li>' +
           '<li><strong>Tendencias</strong> comparan varios labs en el tiempo; <strong>Cultivos</strong> resume uro/hemo/Gram/catéter por tipo y fecha.</li>' +
           '<li><strong>SOAP</strong> rellena analgesia, antibióticos, antiHTA, vasopresores, etc., para pegar en la evolución.</li>' +
@@ -2128,7 +2404,7 @@ function renderTourStep() {
     case 'profile':
       setBadge('perfil y respaldo');
       bodyEl.innerHTML =
-        '<p style="margin:0 0 8px 0;"><strong>Mi Perfil</strong> (barra lateral): médico tratante, profesor, grado, plantillas por defecto de indicaciones y edición de plantillas SOAP / nota.</p>' +
+        '<p style="margin:0 0 8px 0;"><strong>Mi Perfil</strong> se abre tocando <strong>R+</strong> en el encabezado: médico tratante, profesor, grado, plantillas por defecto y edición de plantillas SOAP / nota.</p>' +
         '<p style="margin:0 0 8px 0;"><strong>Ajustes</strong>: carpeta de documentos, tema, respaldos, sync, ayuda y actualizaciones.</p>' +
         '<p style="margin:0;font-size:13px;color:var(--text-muted);">Todo queda en local en este equipo; revisa privacidad en la política de la app.</p>';
       nextBtn.textContent = 'Siguiente';
@@ -3037,6 +3313,23 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '2.4.0': [
+    {
+      title: 'Sidebar de pacientes renovado',
+      body:
+        'Nueva organización del listado con Pinned/Fijados, archivado de pacientes y reordenamiento por arrastrar y soltar con animación más fluida.',
+    },
+    {
+      title: 'Interacción y limpieza visual',
+      body:
+        'Mi Perfil se abre tocando R+ en el encabezado. Se simplificaron acciones de cada tarjeta para un layout más limpio y se ajustaron scrollbars translúcidos sin barras horizontales innecesarias en el sidebar.',
+    },
+    {
+      title: 'Nuevos parsers de laboratorio',
+      body:
+        'R+ ahora procesa Fisicoquímico de heces y Frotis de sangre periférica para que esos resultados se integren al flujo clínico.',
+    },
+  ],
   '2.3.1': [
     {
       title: 'Tendencias y cultivos',
@@ -7786,6 +8079,7 @@ function initBlockFShortcuts() {
 }
 
 _rpcDeferInit(initBlockFShortcuts);
+syncProfileSectionVisibility();
 
 Object.assign(window, {
   installUpdate,
@@ -7821,6 +8115,15 @@ Object.assign(window, {
   openAddModal,
   onPatientSearchInput,
   toggleProfileSection,
+  openProfileFromHeader,
+  togglePatientPinned,
+  togglePatientArchived,
+  movePatientByOffset,
+  onPatientDragStart,
+  onPatientDragOver,
+  onPatientDrop,
+  onPatientDragEnd,
+  toggleArchivedSection,
   toggleSettingsSection,
   toggleSettingsDropdown,
   closeSettingsDropdown,

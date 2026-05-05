@@ -390,12 +390,32 @@
     background: var(--bg); color: var(--text); height: 100vh;
     display: flex; flex-direction: column; overflow: hidden; font-size: 16px; line-height: 1.5;
   }
+  /* Scrollbars: translucent track/thumb; avoid white flashes in dark mode */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--text-muted) 50%, transparent) transparent;
+  }
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+  *::-webkit-scrollbar-thumb {
+    background: color-mix(in oklab, var(--text-muted) 45%, transparent);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in oklab, var(--text-muted) 65%, transparent);
+    background-clip: padding-box;
+  }
   header {
     background: var(--primary); color: white; padding: 0 24px; height: 52px;
     display: flex; align-items: center; justify-content: space-between;
     flex-shrink: 0; box-shadow: var(--shadow-md); z-index: 10;
   }
   header h1 { font-size: 16px; font-weight: 700; letter-spacing: 0.2px; }
+  #app-brand { cursor: pointer; border-radius: 6px; padding: 2px 6px; margin-left: -6px; }
+  #app-brand:hover { background: rgba(255,255,255,0.12); }
+  #app-brand:focus-visible { outline: 2px solid rgba(255,255,255,0.8); outline-offset: 2px; }
   header span { font-size: 12px; opacity: 0.65; }
   .main-col { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-width: 0; }
   .app-tabs {
@@ -433,17 +453,106 @@
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
+    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
   }
   .patient-card {
-    padding: 12px 16px; border-bottom: 1px solid #f1f5f9; cursor: pointer;
-    transition: background 0.22s ease, border-left-color 0.25s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    padding: 14px 16px 12px; border-bottom: 1px solid color-mix(in oklab, var(--border) 70%, transparent); cursor: grab;
+    transition: background 0.22s ease, border-left-color 0.25s ease, transform 0.28s cubic-bezier(0.2, 1.18, 0.36, 1), box-shadow 0.2s ease;
     position: relative; border-left: 3px solid transparent;
   }
+  .patient-card:active { cursor: grabbing; }
   .patient-card:hover { background: #F0F7FF; transform: translateX(3px); box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.08); }
   .patient-card.active { background: #EFF6FF; border-left-color: var(--action); transform: translateX(0); }
-  .patient-card .p-name { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 3px; padding-right: 28px; line-height: 1.3; }
+  html.dark .patient-card {
+    border-bottom: 1px solid color-mix(in oklab, var(--border) 55%, transparent);
+  }
+  html.dark .patient-card:hover {
+    background: color-mix(in oklab, var(--surface) 78%, #2a4f8f);
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--action) 24%, transparent);
+  }
+  html.dark .patient-card.active {
+    background: color-mix(in oklab, var(--surface) 68%, #3560ab);
+  }
+  .patient-card-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    opacity: 0.9;
+  }
+  .patient-card:hover .patient-card-toolbar,
+  .patient-card.active .patient-card-toolbar { opacity: 1; }
+  .patient-card-toolbar-left {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .patient-card .p-name { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 7px; line-height: 1.28; }
   .patient-card .p-meta { font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .btn-patient-action {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-muted);
+    border-radius: 6px;
+    min-width: 22px;
+    min-height: 22px;
+    font-size: 11px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 2px 4px;
+  }
+  .btn-patient-action:hover { color: var(--action); border-color: #93c5fd; }
+  .btn-pinned-text { font-size: 10px; font-weight: 700; padding: 2px 6px; min-width: 52px; }
+  .btn-archive-clean { min-width: 24px; min-height: 24px; display: inline-flex; align-items: center; justify-content: center; }
+  .patient-card.is-dragging {
+    opacity: 0.65;
+    transform: scale(0.985);
+    box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--action) 45%, transparent);
+  }
+  .patient-card.drop-target {
+    box-shadow: inset 0 -3px 0 0 color-mix(in oklab, var(--action) 65%, transparent);
+  }
+  .patient-list-section-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px 6px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border);
+    background: color-mix(in oklab, var(--surface) 86%, var(--border));
+  }
+  .patient-list-section-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    border: none;
+    border-top: 1px solid var(--border);
+    background: color-mix(in oklab, var(--surface) 86%, var(--border));
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 700;
+    font-size: 10px;
+    padding: 8px 12px 6px;
+    cursor: pointer;
+  }
+  .patient-flag-chip {
+    background: color-mix(in oklab, var(--action) 18%, var(--surface));
+    color: var(--action);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in oklab, var(--action) 35%, var(--border));
+  }
   .lab-chip {
     background: var(--lab-chip-bg); color: var(--lab-chip-txt); font-size: 10px; font-weight: 700;
     letter-spacing: 0.4px; padding: 1px 6px; border-radius: 999px; border: 1px solid #BFDBFE;
@@ -492,12 +601,13 @@
     color: var(--text);
   }
   .btn-delete-card {
-    position: absolute; top: 10px; right: 10px; background: none; border: none;
+    position: static; background: none; border: none;
     color: var(--text-muted); font-size: 16px; cursor: pointer; opacity: 0;
     transition: opacity 0.1s, color 0.1s; padding: 2px 5px; border-radius: 4px;
     line-height: 1; min-width: 24px; min-height: 24px;
   }
-  .patient-card:hover .btn-delete-card { opacity: 1; }
+  .patient-card:hover .btn-delete-card,
+  .patient-card.active .btn-delete-card { opacity: 1; }
   .btn-delete-card:hover { color: var(--error); background: #fee2e2; }
   main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
   .empty-state {
@@ -1678,7 +1788,7 @@
 </div>
 
 <header>
-  <h1>R+</h1>
+  <h1 id="app-brand" role="button" tabindex="0" onclick="openProfileFromHeader(event)" onkeydown="if(event.key==='Enter'||event.key===' '){openProfileFromHeader(event);}">R+</h1>
   <span id="today-date"></span>
   <div class="header-right">
     <span id="pending-jobs-pill" class="pending-jobs-pill" role="status" aria-live="polite" aria-atomic="true" title="Tareas en curso"></span>
@@ -1961,10 +2071,6 @@
       <h2>Pacientes</h2>
       <button class="btn-add" onclick="openAddModal()">+ Agregar</button>
     </div>
-    <div class="patient-search-wrap">
-      <input type="search" class="patient-search-input" id="patient-search" placeholder="Buscar por nombre, registro, cuarto…" autocomplete="off" oninput="onPatientSearchInput(this.value)">
-    </div>
-    <div class="patient-list" id="patient-list"></div>
     <div class="profile-section" id="profile-section">
       <button class="profile-toggle" onclick="toggleProfileSection()" id="profile-toggle-btn">
         <div class="profile-toggle-left">
@@ -2005,6 +2111,10 @@
         <button class="btn-edit-templates" style="margin-top:2px;" onclick="resetAndStartOnboarding()">🎓 Ver tutorial</button>
       </div>
     </div>
+    <div class="patient-search-wrap">
+      <input type="search" class="patient-search-input" id="patient-search" placeholder="Buscar por nombre, registro, cuarto…" autocomplete="off" oninput="onPatientSearchInput(this.value)">
+    </div>
+    <div class="patient-list" id="patient-list"></div>
   </aside>
 
   <div class="main-col">
