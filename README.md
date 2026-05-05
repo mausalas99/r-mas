@@ -182,6 +182,17 @@ Firmar y notarizar **no acelera** el build: suele tardar más que un build sin n
 
 ---
 
+## macOS Swift (Fase 1)
+
+La app nativa de macOS cubre Laboratorio + Expediente en SwiftUI/CoreData.
+Windows permanece en Electron durante esta fase.
+El intercambio y respaldo cruzado usa JSON compartido con Windows Electron.
+
+Pruebas locales:
+`xcodebuild test -project macos-swift/RPlusMac.xcodeproj -scheme RPlusMac -destination 'platform=macOS'`
+
+---
+
 ## Architecture
 
 R+ is organized into modular components for maintainability and performance:
