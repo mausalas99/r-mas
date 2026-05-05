@@ -1,0 +1,13 @@
+R+ 2.3.1
+
+TENDENCIAS
+- El panel de tendencias solo incluye analitos de laboratorio convencional (BH, QS, electrolitos, función hepática, gases, LCR, líquidos, etc.).
+- No se muestran como gráficas los bloques de microbiología/cultivos (urocultivo, hemocultivo, líneas tipo SONDA con UFC, etc.). Esa información sigue en la pestaña Cultivos del expediente.
+
+INSTALACIÓN
+
+Mac Apple Silicon: R+-2.3.1-arm64.dmg
+Mac Intel: R+-2.3.1-x64.dmg
+Windows: R+-2.3.1-x64.exe
+
+Auto-actualización: latest-mac.yml y latest.yml junto a los binarios.

@@ -2,7 +2,15 @@
 
 Herramienta clínica de escritorio para generación de **notas de evolución**, **indicaciones médicas** y visualización de **laboratorios** con diagramas automáticos.
 
-**Versión estable actual: [2.3.0](https://github.com/mausalas99/r-mas/releases/tag/v2.3.0)** — descarga desde [Releases (última)](https://github.com/mausalas99/r-mas/releases/latest).
+**Versión estable actual: [2.3.1](https://github.com/mausalas99/r-mas/releases/tag/v2.3.1)** — descarga desde [Releases (última)](https://github.com/mausalas99/r-mas/releases/latest).
+
+---
+
+## R+ 2.3.1 (parche — tendencias sin cultivos)
+
+- **Tendencias** — Solo paneles de laboratorio clínico; no se muestran secciones de cultivos (urocultivo, hemocultivo, etc.) como gráficas. Los cultivos siguen en la pestaña **Cultivos**.
+
+Notas: `docs/RELEASE_NOTES_2.3.1.txt`.
 
 ---
 
@@ -102,8 +110,8 @@ Notas extendidas en el repo: docs/RELEASE_NOTES_2.0.0.txt (texto plano).
 
 Descarga el `.dmg` correspondiente a tu procesador desde [Releases](https://github.com/mausalas99/r-mas/releases/latest):
 
-- `R+-2.3.0-arm64.dmg` — Apple Silicon (M1/M2/M3/M4) *(sustituye `2.3.0` por el número de la última release si lees esto en el futuro)*
-- `R+-2.3.0-x64.dmg` — Intel
+- `R+-2.3.1-arm64.dmg` — Apple Silicon (M1/M2/M3/M4) *(sustituye `2.3.1` por el número de la última release si lees esto en el futuro)*
+- `R+-2.3.1-x64.dmg` — Intel
 
 Abre el `.dmg`, arrastra R+ a Aplicaciones y ejecútalo.
 
@@ -111,7 +119,7 @@ Abre el `.dmg`, arrastra R+ a Aplicaciones y ejecútalo.
 
 ### Windows
 
-Descarga `R+-2.3.0-x64.exe` (nombre `R+-<versión>-x64.exe`) desde [Releases](https://github.com/mausalas99/r-mas/releases/latest) y ejecútalo. La instalación es automática.
+Descarga `R+-2.3.1-x64.exe` (nombre `R+-<versión>-x64.exe`) desde [Releases](https://github.com/mausalas99/r-mas/releases/latest) y ejecútalo. La instalación es automática.
 
 > Si Windows SmartScreen advierte sobre el archivo: Más información → Ejecutar de todas formas.
 

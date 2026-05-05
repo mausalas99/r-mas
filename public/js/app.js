@@ -121,6 +121,16 @@ var TEND_SECTION_LABELS = {
 var TEND_SECTION_ORDER = [
   'BH', 'QS', 'ESC', 'PFHs', 'GASES', 'LCR', 'Liq', 'Prot12h', 'Prot24h', 'PIE', 'EGO', 'CUANTORINA'
 ];
+
+/** Solo paneles de laboratorio convencional; excluye cultivos/micro (UROCULTIVO, HEMOCULTIVO, SONDA, …). */
+function tendEligibleSectionKey(sec) {
+  var u = String(sec == null ? '' : sec)
+    .trim()
+    .replace(/:+$/, '')
+    .toUpperCase();
+  if (!u) return false;
+  return /^(BH|QS|ESC|PFHS|GASES|LCR|LIQ|PROT12H|PROT24H|PIE|EGO|CUANTORINA)$/.test(u);
+}
 /**
  * Series tendibles declaradas (parsearSecciones / resLabs). Pueden añadirse más vía merge dinámico
  * si aparecen pares sección/campo numéricos no listados.
@@ -724,6 +734,7 @@ function buildMergedTrendSeriesCatalog(history) {
     var pb = set && set.parsedBySection;
     if (!pb) return;
     Object.keys(pb).forEach(function (sk) {
+      if (!tendEligibleSectionKey(sk)) return;
       var row = pb[sk];
       if (!row) return;
       Object.keys(row).forEach(function (fk) {
@@ -3026,6 +3037,13 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '2.3.1': [
+    {
+      title: 'Tendencias y cultivos',
+      body:
+        'El panel de tendencias solo incluye analitos de laboratorio convencional (biometría, química, electrolitos, etc.). Los bloques de urocultivo, hemocultivo y similares dejan de aparecer como gráficas; siguen en la pestaña Cultivos del expediente.',
+    },
+  ],
   '2.3.0': [
     {
       title: 'Tendencias por tipo de estudio',
@@ -6099,6 +6117,7 @@ function buildParsedBySectionFromResLabs(resLabs) {
   var secs = parsearSecciones(resLabs || []);
   var out = {};
   Object.keys(secs).forEach(function (sec) {
+    if (!tendEligibleSectionKey(sec)) return;
     var row = {};
     var tbl = secs[sec];
     Object.keys(tbl).forEach(function (k) {
