@@ -8,11 +8,31 @@ struct PatientListView: View {
     ]
 
     var body: some View {
-        List(patients, id: \.id) { patient in
-            Button(patient.displayName) {
-                sessionStore.select(patient)
+        List(selection: Binding(
+            get: { sessionStore.selectedPatient?.id },
+            set: { newId in
+                if let id = newId, let p = patients.first(where: { $0.id == id }) {
+                    sessionStore.select(p)
+                }
             }
-            .buttonStyle(.plain)
+        )) {
+            Section {
+                ForEach(patients, id: \.id) { patient in
+                    Label(patient.displayName, systemImage: "person.fill")
+                        .tag(Optional(patient.id))
+                }
+            } header: {
+                Text("Pacientes")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .listStyle(.sidebar)
+        .navigationTitle("R+")
+        .onAppear {
+            if sessionStore.selectedPatient == nil, let first = patients.first {
+                sessionStore.select(first)
+            }
         }
     }
 }
