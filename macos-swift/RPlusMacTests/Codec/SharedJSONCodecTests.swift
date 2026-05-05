@@ -20,9 +20,12 @@ final class SharedJSONCodecTests: XCTestCase {
         XCTAssertEqual(reparsed.patients.count, domain.patients.count)
         XCTAssertEqual(reparsed.patients.first?.id, domain.patients.first?.id)
         XCTAssertEqual(reparsed.patients.first?.name, domain.patients.first?.name)
-        XCTAssertEqual(reparsed.patients.first?.labs.count, domain.patients.first?.labs.count)
-        XCTAssertEqual(reparsed.patients.first?.labs.first?.date, domain.patients.first?.labs.first?.date)
-        XCTAssertEqual(reparsed.patients.first?.labs.first?.rawText, domain.patients.first?.labs.first?.rawText)
+        XCTAssertEqual(reparsed.notesByPatientId["patient-001"], domain.notesByPatientId["patient-001"])
+        XCTAssertEqual(reparsed.indicacionesByPatientId["patient-001"], domain.indicacionesByPatientId["patient-001"])
+        XCTAssertEqual(reparsed.labHistoryByPatientId["patient-001"]?.count, domain.labHistoryByPatientId["patient-001"]?.count)
+        XCTAssertEqual(reparsed.labHistoryByPatientId["patient-001"]?.first?.date, domain.labHistoryByPatientId["patient-001"]?.first?.date)
+        XCTAssertEqual(reparsed.labHistoryByPatientId["patient-001"]?.first?.rawText, domain.labHistoryByPatientId["patient-001"]?.first?.rawText)
+        XCTAssertEqual(reparsed.settings["updateChannel"], domain.settings["updateChannel"])
     }
 
     func testImportThrowsForMalformedJSON() {

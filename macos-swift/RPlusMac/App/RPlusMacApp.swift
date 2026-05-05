@@ -6,7 +6,7 @@ struct RPlusMacApp: App {
 
     var body: some Scene {
         WindowGroup {
-            Text("R+ macOS Swift")
+            AppRootView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
         }
     }

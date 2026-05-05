@@ -2,13 +2,24 @@
   "patients": [
     {
       "id": "patient-001",
-      "name": "Paciente Demo",
-      "labs": [
-        {
-          "date": "2026-05-05",
-          "rawText": "BH\nHB 12.3\nHTO 36\nLEU 8.1"
-        }
-      ]
+      "name": "Paciente Demo"
     }
-  ]
+  ],
+  "notes": {
+    "patient-001": "Nota de evolucion demo"
+  },
+  "indicaciones": {
+    "patient-001": "Indicaciones demo"
+  },
+  "labHistory": {
+    "patient-001": [
+      {
+        "date": "2026-05-05",
+        "rawText": "BH\nHB 12.3\nHTO 36\nLEU 8.1"
+      }
+    ]
+  },
+  "settings": {
+    "updateChannel": "stable"
+  }
 }
