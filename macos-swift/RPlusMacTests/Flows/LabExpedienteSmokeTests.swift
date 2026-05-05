@@ -6,4 +6,13 @@ final class LabExpedienteSmokeTests: XCTestCase {
         let controller = PersistenceController(inMemory: true)
         XCTAssertNotNil(controller.container.viewContext.persistentStoreCoordinator)
     }
+
+    @MainActor
+    func testSelectingPatientPropagatesToLabAndExpediente() {
+        let store = PatientSessionStore()
+        let patient = PatientSummary(id: "p-1", displayName: "Paciente Demo")
+        store.select(patient)
+
+        XCTAssertEqual(store.selectedPatient?.id, "p-1")
+    }
 }
