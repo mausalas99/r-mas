@@ -22,7 +22,8 @@ struct ParsedLabResult: Equatable {
 final class LabParsingEngine {
     func parse(_ rawText: String) -> ParsedLabResult {
         let lines = rawText.split(separator: "\n").map(String.init)
-        guard lines.first?.uppercased().contains("BH") == true else {
+        let header = lines.first?.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        guard header == "BH" else {
             return ParsedLabResult(sections: [LabSection(type: .unknown, items: [])])
         }
 

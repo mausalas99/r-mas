@@ -8,4 +8,10 @@ final class LabParsingEngineTests: XCTestCase {
         XCTAssertEqual(parsed.sections.first?.type, .biometria)
         XCTAssertEqual(parsed.sections.first?.items.count, 3)
     }
+
+    func testDoesNotTreatPartialHeaderAsBiometria() {
+        let raw = "XBH\nHB 12.3"
+        let parsed = LabParsingEngine().parse(raw)
+        XCTAssertEqual(parsed.sections.first?.type, .unknown)
+    }
 }
