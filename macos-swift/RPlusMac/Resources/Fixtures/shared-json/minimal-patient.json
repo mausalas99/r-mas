@@ -1,25 +1,55 @@
 {
-  "patients": [
-    {
-      "id": "patient-001",
-      "name": "Paciente Demo"
-    }
-  ],
-  "notes": {
-    "patient-001": "Nota de evolucion demo"
-  },
-  "indicaciones": {
-    "patient-001": "Indicaciones demo"
-  },
-  "labHistory": {
-    "patient-001": [
+  "format": "r-plus-backup",
+  "version": 1,
+  "exportedAt": "2026-05-05T20:00:00.000Z",
+  "appVersion": "2.4.1",
+  "theme": "light",
+  "guidedTourDoneForVersion": "2.4.0",
+  "data": {
+    "patients": [
       {
-        "date": "2026-05-05",
-        "rawText": "BH\nHB 12.3\nHTO 36\nLEU 8.1"
+        "id": "patient-001",
+        "name": "Paciente Demo"
       }
-    ]
-  },
-  "settings": {
-    "updateChannel": "stable"
+    ],
+    "notes": {
+      "patient-001": {
+        "fecha": "05/05/2026",
+        "estudios": "BH de control"
+      }
+    },
+    "indicaciones": {
+      "patient-001": {
+        "fecha": "05/05/2026",
+        "dieta": "Blanda"
+      }
+    },
+    "labHistory": {
+      "patient-001": [
+        {
+          "date": "2026-05-05",
+          "rawText": "BH\nHB 12.3\nHTO 36\nLEU 8.1"
+        }
+      ]
+    },
+    "medRecetaByPatient": {
+      "patient-001": {
+        "updatedAt": "2026-05-05T19:00:00.000Z",
+        "items": []
+      }
+    },
+    "settings": {
+      "updateChannel": "stable"
+    },
+    "medCatalog": {
+      "v": 1,
+      "accents": {},
+      "soapTokens": {
+        "vasop": [],
+        "abx": [],
+        "analgesia": [],
+        "antihta": []
+      }
+    }
   }
 }
