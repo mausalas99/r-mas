@@ -1,0 +1,14 @@
+{
+  "patients": [
+    {
+      "id": "patient-001",
+      "name": "Paciente Demo",
+      "labs": [
+        {
+          "date": "2026-05-05",
+          "rawText": "BH\nHB 12.3\nHTO 36\nLEU 8.1"
+        }
+      ]
+    }
+  ]
+}

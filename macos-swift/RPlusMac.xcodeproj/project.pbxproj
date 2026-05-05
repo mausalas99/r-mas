@@ -11,6 +11,10 @@
 		100000000000000000000002 /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000102 /* PersistenceController.swift */; };
 		100000000000000000000003 /* LabExpedienteSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000103 /* LabExpedienteSmokeTests.swift */; };
 		100000000000000000000004 /* RPlusMacModel.xcdatamodeld in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000104 /* RPlusMacModel.xcdatamodeld */; };
+		100000000000000000000005 /* SharedJSONCodecTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000105 /* SharedJSONCodecTests.swift */; };
+		100000000000000000000006 /* SharedJSONModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000106 /* SharedJSONModels.swift */; };
+		100000000000000000000007 /* SharedJSONCodec.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000107 /* SharedJSONCodec.swift */; };
+		100000000000000000000008 /* minimal-patient.json in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000108 /* minimal-patient.json */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -20,6 +24,10 @@
 		100000000000000000000102 /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Persistence/PersistenceController.swift; sourceTree = "<group>"; };
 		100000000000000000000103 /* LabExpedienteSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Flows/LabExpedienteSmokeTests.swift; sourceTree = "<group>"; };
 		100000000000000000000104 /* RPlusMacModel.xcdatamodeld */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodeld; path = Core/Persistence/RPlusMacModel.xcdatamodeld; sourceTree = "<group>"; };
+		100000000000000000000105 /* SharedJSONCodecTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Codec/SharedJSONCodecTests.swift; sourceTree = "<group>"; };
+		100000000000000000000106 /* SharedJSONModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Codec/SharedJSONModels.swift; sourceTree = "<group>"; };
+		100000000000000000000107 /* SharedJSONCodec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Codec/SharedJSONCodec.swift; sourceTree = "<group>"; };
+		100000000000000000000108 /* minimal-patient.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = Resources/Fixtures/shared-json/minimal-patient.json; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -48,6 +56,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		100000000000000000000221 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000008 /* minimal-patient.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -67,7 +83,10 @@
 			children = (
 				100000000000000000000101 /* RPlusMacApp.swift */,
 				100000000000000000000102 /* PersistenceController.swift */,
+				100000000000000000000106 /* SharedJSONModels.swift */,
+				100000000000000000000107 /* SharedJSONCodec.swift */,
 				100000000000000000000104 /* RPlusMacModel.xcdatamodeld */,
+				100000000000000000000108 /* minimal-patient.json */,
 			);
 		};
 		100000000000000000000302 /* RPlusMacTests */ = {
@@ -76,6 +95,7 @@
 			sourceTree = "<group>";
 			children = (
 				100000000000000000000103 /* LabExpedienteSmokeTests.swift */,
+				100000000000000000000105 /* SharedJSONCodecTests.swift */,
 			);
 		};
 		100000000000000000000303 /* Products */ = {
@@ -113,6 +133,7 @@
 			buildPhases = (
 				100000000000000000000201 /* Sources */,
 				100000000000000000000211 /* Frameworks */,
+				100000000000000000000221 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -163,6 +184,8 @@
 			files = (
 				100000000000000000000001 /* RPlusMacApp.swift in Sources */,
 				100000000000000000000002 /* PersistenceController.swift in Sources */,
+				100000000000000000000006 /* SharedJSONModels.swift in Sources */,
+				100000000000000000000007 /* SharedJSONCodec.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -171,6 +194,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				100000000000000000000003 /* LabExpedienteSmokeTests.swift in Sources */,
+				100000000000000000000005 /* SharedJSONCodecTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
