@@ -36,3 +36,20 @@ final class PersistenceController {
         }
     }
 }
+
+extension PersistenceController {
+    var viewContext: NSManagedObjectContext {
+        container.viewContext
+    }
+
+    func saveOrRollback() throws {
+        guard viewContext.hasChanges else { return }
+
+        do {
+            try viewContext.save()
+        } catch {
+            viewContext.rollback()
+            throw error
+        }
+    }
+}

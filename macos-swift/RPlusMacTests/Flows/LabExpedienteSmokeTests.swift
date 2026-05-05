@@ -19,4 +19,17 @@ final class LabExpedienteSmokeTests: XCTestCase {
         XCTAssertEqual(labView.titleText, "Laboratorio: Paciente Demo")
         XCTAssertEqual(expedienteView.titleText, "Expediente: Paciente Demo")
     }
+
+    func testFailedSaveRollsBackContextAndKeepsEditorBuffer() {
+        var didRollback = false
+        let coordinator = SaveCoordinator(
+            saveAction: { throw NSError(domain: "test", code: 500) },
+            rollbackAction: { didRollback = true }
+        )
+        coordinator.editorBuffer = "BH\nHB 10"
+
+        XCTAssertThrowsError(try coordinator.commit())
+        XCTAssertTrue(didRollback)
+        XCTAssertEqual(coordinator.editorBuffer, "BH\nHB 10")
+    }
 }

@@ -12,4 +12,13 @@ struct ExpedienteView: View {
     var body: some View {
         Text(titleText)
     }
+
+    func saveEditorBuffer(
+        _ buffer: String,
+        persistenceController: PersistenceController = .shared
+    ) throws {
+        let coordinator = SaveCoordinator(persistenceController: persistenceController)
+        coordinator.editorBuffer = buffer
+        try coordinator.commit()
+    }
 }
