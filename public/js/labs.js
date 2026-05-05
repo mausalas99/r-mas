@@ -426,6 +426,127 @@ export function parsearCitoquimicoLiquidos(textoBruto) {
   return p[0] + '\t' + p.slice(1).join(' ');
 }
 
+export function parseFisicoquimicoHeces_(textoBruto) {
+  if (!textoBruto || typeof textoBruto !== 'string') return '';
+  var tUp = textoBruto.toUpperCase();
+  if (tUp.indexOf('FISICOQUIMICO DE HECES') === -1) return '';
+
+  var lineas = textoBruto.split(/\r?\n/).map(function (l) {
+    return String(l || '').trim();
+  });
+  var i0 = -1;
+  for (var i = 0; i < lineas.length; i++) {
+    if (lineas[i].toUpperCase().indexOf('FISICOQUIMICO DE HECES') !== -1) {
+      i0 = i;
+      break;
+    }
+  }
+  if (i0 === -1) return '';
+
+  var i1 = lineas.length;
+  for (var j = i0 + 1; j < lineas.length; j++) {
+    if (
+      /^(BACTERIOLOGIA|HEMATOLOGIA|QUIMICA CLINICA|INMUNOLOGIA|GASOMETRIA|COAGULACION|URIANALISIS|EXAMEN GENERAL DE ORINA|CULTIVO)\b/i.test(
+        lineas[j]
+      )
+    ) {
+      i1 = j;
+      break;
+    }
+  }
+  var bloque = lineas.slice(i0, i1);
+
+  function nextMeaningful(iStart, maxStep) {
+    for (var k = iStart + 1; k < Math.min(iStart + maxStep, bloque.length); k++) {
+      var txt = (bloque[k] || '').replace(/\*/g, '').trim();
+      if (!txt || txt === ':') continue;
+      if (/^ESTUDIO|RESULTADO|UNIDADES|VALOR DE REFERENCIA$/i.test(txt)) continue;
+      return txt;
+    }
+    return '';
+  }
+  function nextMeaningfulText(iStart, maxStep) {
+    for (var k = iStart + 1; k < Math.min(iStart + maxStep, bloque.length); k++) {
+      var txt = (bloque[k] || '').replace(/\*/g, '').trim();
+      if (!txt || txt === ':') continue;
+      if (/^ESTUDIO|RESULTADO|UNIDADES|VALOR DE REFERENCIA$/i.test(txt)) continue;
+      if (/^\d+(\.\d+)?$/.test(txt)) continue;
+      return txt;
+    }
+    return '';
+  }
+
+  var rows = [
+    { key: 'ASPECTO', out: 'Asp' },
+    { key: 'PH', out: 'pH' },
+    { key: 'PROTEINAS', out: 'Prot' },
+    { key: 'GLUCOSA', out: 'Glu' },
+    { key: 'LEUCOCITOS', out: 'Leu' },
+    { key: 'ERITROCITOS', out: 'Eri' },
+    { key: 'GRASA', out: 'Grasa' },
+    { key: 'FIBRAS MUSCULARES', out: 'Fibra' },
+    { key: 'COPROPARASITOSCOPICO INMEDIATO', out: 'Copro' },
+    { key: 'OBSERVACIONES', out: 'Obs' }
+  ];
+
+  var p = ['HECES'];
+  for (var r = 0; r < rows.length; r++) {
+    var row = rows[r];
+    for (var bi = 0; bi < bloque.length; bi++) {
+      if (bloque[bi].toUpperCase().indexOf(row.key) !== 0) continue;
+      var v = nextMeaningful(bi, 7);
+      if (row.key === 'ASPECTO' && /^\d+(\.\d+)?$/.test(v)) {
+        var v2 = nextMeaningfulText(bi, 10);
+        if (v2) v = v + ' ' + v2;
+      }
+      if (!v) break;
+      p.push(row.out, v.toUpperCase());
+      break;
+    }
+  }
+
+  if (p.length <= 1) return '';
+  return p[0] + '\t' + p.slice(1).join(' ');
+}
+
+export function parseFrotisSangre_(textoBruto) {
+  if (!textoBruto || typeof textoBruto !== 'string') return '';
+  var tUp = textoBruto.toUpperCase();
+  if (tUp.indexOf('FROTIS DE SANGRE PERIFERICA') === -1) return '';
+
+  var lineas = textoBruto.split(/\r?\n/).map(function (l) {
+    return String(l || '').trim();
+  });
+  var i0 = -1;
+  for (var i = 0; i < lineas.length; i++) {
+    if (lineas[i].toUpperCase().indexOf('FROTIS DE SANGRE PERIFERICA') !== -1) {
+      i0 = i;
+      break;
+    }
+  }
+  if (i0 === -1) return '';
+
+  function nextMeaningful(iStart, maxStep) {
+    for (var j = iStart + 1; j < Math.min(iStart + maxStep, lineas.length); j++) {
+      var txt = (lineas[j] || '').replace(/\*/g, '').trim();
+      if (!txt || txt === ':') continue;
+      if (/^ESTUDIO|RESULTADO|UNIDADES|VALOR DE REFERENCIA$/i.test(txt)) continue;
+      if (/^FROTIS DE SANGRE PERIFERICA$/i.test(txt)) continue;
+      return txt;
+    }
+    return '';
+  }
+
+  var desc = '';
+  for (var k = i0; k < Math.min(i0 + 20, lineas.length); k++) {
+    if (lineas[k].toUpperCase().indexOf('FROTIS DE SANGRE PERIFERICA') !== 0) continue;
+    desc = nextMeaningful(k, 8);
+    if (desc) break;
+  }
+  if (!desc) return '';
+  return 'FROTIS\tObs ' + desc.toUpperCase();
+}
+
 export function parseEGO_(textoBruto) {
   var tUp=textoBruto.toUpperCase();
   var pos=tUp.indexOf('EXAMEN GENERAL DE ORINA')!==-1?tUp.indexOf('EXAMEN GENERAL DE ORINA'):
@@ -954,6 +1075,8 @@ export function procesarLabs(textoBruto) {
   var pie=parsePIE_(tNorm);      if(pie)resLabs.push(pie);
   var lcr=parsearLCR(textoBruto);if(lcr)resLabs.push(lcr);
   var liq=parsearCitoquimicoLiquidos(textoBruto);if(liq)resLabs.push(liq);
+  var hec=parseFisicoquimicoHeces_(textoBruto);if(hec)resLabs.push(hec);
+  var fro=parseFrotisSangre_(textoBruto);if(fro)resLabs.push(fro);
   var ego=parseEGO_(textoBruto); if(ego)resLabs.push(ego);
   var cuant=parseCuantOrina_(textoBruto);if(cuant)resLabs.push(cuant);
   var cult=parseCultivo_(textoBruto,tNorm);if(cult)resLabs.push(cult);
