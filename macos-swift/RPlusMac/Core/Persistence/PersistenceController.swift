@@ -1,6 +1,6 @@
 import CoreData
 
-struct PersistenceController {
+final class PersistenceController {
     static let shared = PersistenceController()
     let container: NSPersistentContainer
 
