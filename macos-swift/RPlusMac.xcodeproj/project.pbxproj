@@ -27,7 +27,7 @@
 		100000000000000000000105 /* SharedJSONCodecTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Codec/SharedJSONCodecTests.swift; sourceTree = "<group>"; };
 		100000000000000000000106 /* SharedJSONModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Codec/SharedJSONModels.swift; sourceTree = "<group>"; };
 		100000000000000000000107 /* SharedJSONCodec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Codec/SharedJSONCodec.swift; sourceTree = "<group>"; };
-		100000000000000000000108 /* minimal-patient.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = Resources/Fixtures/shared-json/minimal-patient.json; sourceTree = "<group>"; };
+		100000000000000000000108 /* minimal-patient.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = RPlusMac/Resources/Fixtures/shared-json/minimal-patient.json; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
