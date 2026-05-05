@@ -1,0 +1,284 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		100000000000000000000001 /* RPlusMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000101 /* RPlusMacApp.swift */; };
+		100000000000000000000002 /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000102 /* PersistenceController.swift */; };
+		100000000000000000000003 /* LabExpedienteSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000103 /* LabExpedienteSmokeTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		100000000000000000000050 /* RPlusMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RPlusMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		100000000000000000000051 /* RPlusMacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RPlusMacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		100000000000000000000101 /* RPlusMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/RPlusMacApp.swift; sourceTree = "<group>"; };
+		100000000000000000000102 /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Persistence/PersistenceController.swift; sourceTree = "<group>"; };
+		100000000000000000000103 /* LabExpedienteSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Flows/LabExpedienteSmokeTests.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		100000000000000000000210 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		100000000000000000000211 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		100000000000000000000300 = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000301 /* RPlusMac */,
+				100000000000000000000302 /* RPlusMacTests */,
+				100000000000000000000303 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		100000000000000000000301 /* RPlusMac */ = {
+			isa = PBXGroup;
+			path = RPlusMac;
+			sourceTree = "<group>";
+			children = (
+				100000000000000000000101 /* RPlusMacApp.swift */,
+				100000000000000000000102 /* PersistenceController.swift */,
+			);
+		};
+		100000000000000000000302 /* RPlusMacTests */ = {
+			isa = PBXGroup;
+			path = RPlusMacTests;
+			sourceTree = "<group>";
+			children = (
+				100000000000000000000103 /* LabExpedienteSmokeTests.swift */,
+			);
+		};
+		100000000000000000000303 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				100000000000000000000050 /* RPlusMac.app */,
+				100000000000000000000051 /* RPlusMacTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		100000000000000000000400 /* RPlusMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 100000000000000000000500 /* Build configuration list for PBXNativeTarget "RPlusMac" */;
+			buildPhases = (
+				100000000000000000000200 /* Sources */,
+				100000000000000000000210 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RPlusMac;
+			productName = RPlusMac;
+			productReference = 100000000000000000000050 /* RPlusMac.app */;
+			productType = "com.apple.product-type.application";
+		};
+		100000000000000000000401 /* RPlusMacTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 100000000000000000000501 /* Build configuration list for PBXNativeTarget "RPlusMacTests" */;
+			buildPhases = (
+				100000000000000000000201 /* Sources */,
+				100000000000000000000211 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				100000000000000000000601 /* PBXTargetDependency */,
+			);
+			name = RPlusMacTests;
+			productName = RPlusMacTests;
+			productReference = 100000000000000000000051 /* RPlusMacTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		100000000000000000000600 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					100000000000000000000401 = {
+						TestTargetID = 100000000000000000000400;
+					};
+				};
+			};
+			buildConfigurationList = 100000000000000000000502 /* Build configuration list for PBXProject "RPlusMac" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 100000000000000000000300;
+			productRefGroup = 100000000000000000000303 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				100000000000000000000400 /* RPlusMac */,
+				100000000000000000000401 /* RPlusMacTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		100000000000000000000200 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000001 /* RPlusMacApp.swift in Sources */,
+				100000000000000000000002 /* PersistenceController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		100000000000000000000201 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000003 /* LabExpedienteSmokeTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		100000000000000000000601 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 100000000000000000000400 /* RPlusMac */;
+			targetProxy = 100000000000000000000602 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXContainerItemProxy section */
+		100000000000000000000602 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 100000000000000000000600 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 100000000000000000000400;
+			remoteInfo = RPlusMac;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin XCBuildConfiguration section */
+		100000000000000000000700 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGNING_ALLOWED = NO;
+				INFOPLIST_KEY_CFBundleDisplayName = RPlusMac;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rplus.mac;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		100000000000000000000701 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGNING_ALLOWED = NO;
+				INFOPLIST_KEY_CFBundleDisplayName = RPlusMac;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rplus.mac;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		100000000000000000000710 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGNING_ALLOWED = NO;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rplus.mac.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RPlusMac.app/Contents/MacOS/RPlusMac";
+			};
+			name = Debug;
+		};
+		100000000000000000000711 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGNING_ALLOWED = NO;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.rplus.mac.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RPlusMac.app/Contents/MacOS/RPlusMac";
+			};
+			name = Release;
+		};
+		100000000000000000000720 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGNING_ALLOWED = NO;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+			};
+			name = Debug;
+		};
+		100000000000000000000721 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGNING_ALLOWED = NO;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		100000000000000000000500 /* Build configuration list for PBXNativeTarget "RPlusMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				100000000000000000000700 /* Debug */,
+				100000000000000000000701 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		100000000000000000000501 /* Build configuration list for PBXNativeTarget "RPlusMacTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				100000000000000000000710 /* Debug */,
+				100000000000000000000711 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		100000000000000000000502 /* Build configuration list for PBXProject "RPlusMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				100000000000000000000720 /* Debug */,
+				100000000000000000000721 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 100000000000000000000600 /* Project object */;
+}
