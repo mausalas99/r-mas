@@ -6,11 +6,33 @@ struct PersistenceController {
 
     init(inMemory: Bool = false) {
         container = NSPersistentContainer(name: "RPlusMacModel")
-        if inMemory {
-            container.persistentStoreDescriptions.first?.url = URL(fileURLWithPath: "/dev/null")
+        let descriptions = container.persistentStoreDescriptions.isEmpty
+            ? [NSPersistentStoreDescription()]
+            : container.persistentStoreDescriptions
+
+        descriptions.forEach { description in
+            if inMemory {
+                description.url = URL(fileURLWithPath: "/dev/null")
+            }
+            description.shouldAddStoreAsynchronously = false
         }
+        container.persistentStoreDescriptions = descriptions
+
         container.loadPersistentStores { _, error in
-            if let error { fatalError("Persistent store error: \(error)") }
+            guard let error else { return }
+
+            // Keep bootstrap/dev loops resilient: report and fall back to in-memory store.
+            fputs("Persistent store load error for RPlusMacModel: \(error)\n", stderr)
+            let fallback = NSPersistentStoreDescription()
+            fallback.url = URL(fileURLWithPath: "/dev/null")
+            fallback.shouldAddStoreAsynchronously = false
+            self.container.persistentStoreDescriptions = [fallback]
+
+            self.container.loadPersistentStores { _, fallbackError in
+                if let fallbackError {
+                    assertionFailure("Fallback in-memory persistent store failed: \(fallbackError)")
+                }
+            }
         }
     }
 }

@@ -10,6 +10,7 @@
 		100000000000000000000001 /* RPlusMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000101 /* RPlusMacApp.swift */; };
 		100000000000000000000002 /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000102 /* PersistenceController.swift */; };
 		100000000000000000000003 /* LabExpedienteSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000103 /* LabExpedienteSmokeTests.swift */; };
+		100000000000000000000004 /* RPlusMacModel.xcdatamodeld in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000104 /* RPlusMacModel.xcdatamodeld */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -18,6 +19,7 @@
 		100000000000000000000101 /* RPlusMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/RPlusMacApp.swift; sourceTree = "<group>"; };
 		100000000000000000000102 /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Persistence/PersistenceController.swift; sourceTree = "<group>"; };
 		100000000000000000000103 /* LabExpedienteSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Flows/LabExpedienteSmokeTests.swift; sourceTree = "<group>"; };
+		100000000000000000000104 /* RPlusMacModel.xcdatamodeld */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodeld; path = Core/Persistence/RPlusMacModel.xcdatamodeld; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -37,6 +39,17 @@
 		};
 /* End PBXFrameworksBuildPhase section */
 
+/* Begin PBXResourcesBuildPhase section */
+		100000000000000000000220 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000004 /* RPlusMacModel.xcdatamodeld in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXGroup section */
 		100000000000000000000300 = {
 			isa = PBXGroup;
@@ -54,6 +67,7 @@
 			children = (
 				100000000000000000000101 /* RPlusMacApp.swift */,
 				100000000000000000000102 /* PersistenceController.swift */,
+				100000000000000000000104 /* RPlusMacModel.xcdatamodeld */,
 			);
 		};
 		100000000000000000000302 /* RPlusMacTests */ = {
@@ -82,6 +96,7 @@
 			buildPhases = (
 				100000000000000000000200 /* Sources */,
 				100000000000000000000210 /* Frameworks */,
+				100000000000000000000220 /* Resources */,
 			);
 			buildRules = (
 			);
