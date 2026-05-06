@@ -74,3 +74,76 @@ struct SharedDomain: Codable, Equatable {
     var settings: [String: JSONValue]
     var medCatalog: JSONValue
 }
+
+struct NoteDraft: Equatable, Codable {
+    var patientId: String
+    var fecha: String
+    var hora: String
+    var interrogatorio: String
+    var evolucion: String
+    var estudios: String
+    var diagnosticos: [String]
+    var ta: String
+    var fr: String
+    var fc: String
+    var temp: String
+    var peso: String
+    var tratamiento: [String]
+    var medico: String
+    var profesor: String
+
+    static func empty(patientId: String) -> NoteDraft {
+        NoteDraft(
+            patientId: patientId,
+            fecha: "",
+            hora: "",
+            interrogatorio: "",
+            evolucion: "",
+            estudios: "",
+            diagnosticos: [],
+            ta: "",
+            fr: "",
+            fc: "",
+            temp: "",
+            peso: "",
+            tratamiento: [],
+            medico: "",
+            profesor: ""
+        )
+    }
+}
+
+struct IndicacionesExtraSection: Equatable, Codable {
+    var titulo: String
+    var contenido: String
+}
+
+struct IndicacionesDraft: Equatable, Codable {
+    var patientId: String
+    var fecha: String
+    var hora: String
+    var descripcion: String
+    var medicos: String
+    var dieta: String
+    var cuidados: String
+    var estudios: String
+    var medicamentos: String
+    var interconsultas: String
+    var otros: [IndicacionesExtraSection]
+
+    static func empty(patientId: String) -> IndicacionesDraft {
+        IndicacionesDraft(
+            patientId: patientId,
+            fecha: "",
+            hora: "",
+            descripcion: "",
+            medicos: "",
+            dieta: "",
+            cuidados: "",
+            estudios: "",
+            medicamentos: "",
+            interconsultas: "",
+            otros: []
+        )
+    }
+}
