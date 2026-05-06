@@ -82,4 +82,82 @@ final class SharedJSONCodecTests: XCTestCase {
         XCTAssertEqual(reparsed.notesByPatientId["p-1"], domain.notesByPatientId["p-1"])
         XCTAssertEqual(reparsed.indicacionesByPatientId["p-1"], domain.indicacionesByPatientId["p-1"])
     }
+
+    func testImportMergePreservesUnknownDraftKeys() throws {
+        let codec = SharedJSONCodec()
+        let root = SharedRoot(
+            format: "rplus-shared-json",
+            version: 1,
+            exportedAt: "2026-05-06T00:00:00Z",
+            appVersion: "1.0.0",
+            theme: "system",
+            guidedTourDoneForVersion: nil,
+            data: SharedDataPayload(
+                patients: [
+                    SharedPatient(
+                        id: "p-1",
+                        name: "Paciente Demo",
+                        noteDraft: SharedNoteDraft(
+                            fecha: "",
+                            hora: nil,
+                            interrogatorio: "Desde paciente.noteDraft",
+                            evolucion: nil,
+                            estudios: nil,
+                            diagnosticos: nil,
+                            tratamiento: nil
+                        ),
+                        indicacionesDraft: SharedIndicacionesDraft(
+                            fecha: nil,
+                            hora: nil,
+                            descripcion: "Desde indicacionesDraft",
+                            medicos: nil,
+                            dieta: "",
+                            cuidados: nil,
+                            estudios: nil,
+                            medicamentos: nil,
+                            interconsultas: nil
+                        )
+                    )
+                ],
+                notes: [
+                    "p-1": .object([
+                        "fecha": .string("05/05/2026"),
+                        "custom-note-key": .string("keep-me")
+                    ])
+                ],
+                indicaciones: [
+                    "p-1": .object([
+                        "dieta": .string("Blanda"),
+                        "custom-ind-key": .string("keep-too")
+                    ])
+                ],
+                labHistory: [:],
+                medRecetaByPatient: [:],
+                settings: [:],
+                medCatalog: .object([:])
+            )
+        )
+
+        let input = try JSONEncoder().encode(root)
+        let imported = try codec.importFromSharedJSON(input)
+        let output = try codec.exportToSharedJSON(imported)
+        let reparsed = try codec.importFromSharedJSON(output)
+
+        XCTAssertEqual(
+            reparsed.notesByPatientId["p-1"],
+            .object([
+                "fecha": .string("05/05/2026"),
+                "custom-note-key": .string("keep-me"),
+                "interrogatorio": .string("Desde paciente.noteDraft")
+            ])
+        )
+        XCTAssertEqual(
+            reparsed.indicacionesByPatientId["p-1"],
+            .object([
+                "dieta": .string("Blanda"),
+                "custom-ind-key": .string("keep-too"),
+                "descripcion": .string("Desde indicacionesDraft")
+            ])
+        )
+    }
 }

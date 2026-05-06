@@ -6,11 +6,17 @@ final class SharedJSONCodec {
         var notesByPatientId = decoded.data.notes
         var indicacionesByPatientId = decoded.data.indicaciones
         for patient in decoded.data.patients {
-            if let noteDraft = patient.noteDraft, let jsonValue = encodeJSONValue(noteDraft) {
-                notesByPatientId[patient.id] = jsonValue
+            if let noteDraft = patient.noteDraft {
+                let overlay = noteOverlayFields(noteDraft)
+                if !overlay.isEmpty {
+                    notesByPatientId[patient.id] = mergeOverlay(base: notesByPatientId[patient.id], overlay: overlay)
+                }
             }
-            if let indicacionesDraft = patient.indicacionesDraft, let jsonValue = encodeJSONValue(indicacionesDraft) {
-                indicacionesByPatientId[patient.id] = jsonValue
+            if let indicacionesDraft = patient.indicacionesDraft {
+                let overlay = indicacionesOverlayFields(indicacionesDraft)
+                if !overlay.isEmpty {
+                    indicacionesByPatientId[patient.id] = mergeOverlay(base: indicacionesByPatientId[patient.id], overlay: overlay)
+                }
             }
         }
         return SharedDomain(
@@ -80,5 +86,48 @@ final class SharedJSONCodec {
             return nil
         }
         return decoded
+    }
+
+    private func mergeOverlay(base: JSONValue?, overlay: [String: JSONValue]) -> JSONValue {
+        var mergedObject: [String: JSONValue]
+        if case .object(let existing)? = base {
+            mergedObject = existing
+        } else {
+            mergedObject = [:]
+        }
+        for (key, value) in overlay {
+            mergedObject[key] = value
+        }
+        return .object(mergedObject)
+    }
+
+    private func noteOverlayFields(_ note: SharedNoteDraft) -> [String: JSONValue] {
+        var overlay: [String: JSONValue] = [:]
+        if let fecha = note.fecha, !fecha.isEmpty { overlay["fecha"] = .string(fecha) }
+        if let hora = note.hora, !hora.isEmpty { overlay["hora"] = .string(hora) }
+        if let interrogatorio = note.interrogatorio, !interrogatorio.isEmpty { overlay["interrogatorio"] = .string(interrogatorio) }
+        if let evolucion = note.evolucion, !evolucion.isEmpty { overlay["evolucion"] = .string(evolucion) }
+        if let estudios = note.estudios, !estudios.isEmpty { overlay["estudios"] = .string(estudios) }
+        if let diagnosticos = note.diagnosticos, !diagnosticos.isEmpty {
+            overlay["diagnosticos"] = .array(diagnosticos.map { .string($0) })
+        }
+        if let tratamiento = note.tratamiento, !tratamiento.isEmpty {
+            overlay["tratamiento"] = .array(tratamiento.map { .string($0) })
+        }
+        return overlay
+    }
+
+    private func indicacionesOverlayFields(_ indicaciones: SharedIndicacionesDraft) -> [String: JSONValue] {
+        var overlay: [String: JSONValue] = [:]
+        if let fecha = indicaciones.fecha, !fecha.isEmpty { overlay["fecha"] = .string(fecha) }
+        if let hora = indicaciones.hora, !hora.isEmpty { overlay["hora"] = .string(hora) }
+        if let descripcion = indicaciones.descripcion, !descripcion.isEmpty { overlay["descripcion"] = .string(descripcion) }
+        if let medicos = indicaciones.medicos, !medicos.isEmpty { overlay["medicos"] = .string(medicos) }
+        if let dieta = indicaciones.dieta, !dieta.isEmpty { overlay["dieta"] = .string(dieta) }
+        if let cuidados = indicaciones.cuidados, !cuidados.isEmpty { overlay["cuidados"] = .string(cuidados) }
+        if let estudios = indicaciones.estudios, !estudios.isEmpty { overlay["estudios"] = .string(estudios) }
+        if let medicamentos = indicaciones.medicamentos, !medicamentos.isEmpty { overlay["medicamentos"] = .string(medicamentos) }
+        if let interconsultas = indicaciones.interconsultas, !interconsultas.isEmpty { overlay["interconsultas"] = .string(interconsultas) }
+        return overlay
     }
 }
