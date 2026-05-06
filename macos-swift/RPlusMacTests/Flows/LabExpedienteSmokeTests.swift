@@ -23,10 +23,9 @@ final class LabExpedienteSmokeTests: XCTestCase {
     @MainActor
     func testSelectingPatientPropagatesToLabAndExpediente() {
         let store = PatientSessionStore()
-        let drafts = ClinicalDraftStore()
         let patient = PatientSummary(id: "p-1", displayName: "Paciente Demo")
-        let labView = LabView(sessionStore: store, drafts: drafts)
-        let expedienteView = ExpedienteView(sessionStore: store, drafts: drafts)
+        let labView = LabView(sessionStore: store)
+        let expedienteView = ExpedienteView(sessionStore: store)
         store.select(patient)
 
         XCTAssertEqual(store.selectedPatient?.id, "p-1")
@@ -49,7 +48,7 @@ final class LabExpedienteSmokeTests: XCTestCase {
 
     @MainActor
     func testLabViewSaveEditorBufferKeepsBufferWhenCommitFails() {
-        let view = LabView(sessionStore: PatientSessionStore(), drafts: ClinicalDraftStore())
+        let view = LabView(sessionStore: PatientSessionStore())
         var didRollback = false
         let coordinator = SaveCoordinator(
             saveAction: { throw NSError(domain: "test", code: 501) },
@@ -63,7 +62,7 @@ final class LabExpedienteSmokeTests: XCTestCase {
 
     @MainActor
     func testLabViewSaveEditorBufferUsesPersistenceControllerEntrypoint() {
-        let view = LabView(sessionStore: PatientSessionStore(), drafts: ClinicalDraftStore())
+        let view = LabView(sessionStore: PatientSessionStore())
         let controller = FailingPersistenceController()
 
         XCTAssertThrowsError(try view.saveEditorBuffer("BH\nHB 10", persistenceController: controller))
@@ -72,7 +71,7 @@ final class LabExpedienteSmokeTests: XCTestCase {
 
     @MainActor
     func testExpedienteViewSaveEditorBufferUsesPersistenceControllerEntrypoint() {
-        let view = ExpedienteView(sessionStore: PatientSessionStore(), drafts: ClinicalDraftStore())
+        let view = ExpedienteView(sessionStore: PatientSessionStore())
         let controller = FailingPersistenceController()
 
         XCTAssertThrowsError(try view.saveEditorBuffer("S: paciente estable", persistenceController: controller))

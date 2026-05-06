@@ -2,30 +2,21 @@ import SwiftUI
 
 struct AppRootView: View {
     @StateObject private var sessionStore = PatientSessionStore()
-    @StateObject private var drafts = ClinicalDraftStore()
 
     var body: some View {
-        NavigationSplitView {
+        HStack(spacing: 12) {
             PatientListView(sessionStore: sessionStore)
-                .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 320)
-        } detail: {
-            VStack(spacing: 0) {
-                TabView {
-                    LabView(sessionStore: sessionStore, drafts: drafts)
-                        .tabItem {
-                            Label("Laboratorio", systemImage: "cross.case")
-                        }
+                .frame(minWidth: 220, maxWidth: 280)
 
-                    ExpedienteView(sessionStore: sessionStore, drafts: drafts)
-                        .tabItem {
-                            Label("Expediente", systemImage: "doc.text")
-                        }
-                }
-                .padding(16)
+            Divider()
+
+            VStack(spacing: 12) {
+                LabView(sessionStore: sessionStore)
+                Divider()
+                ExpedienteView(sessionStore: sessionStore)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color(nsColor: .windowBackgroundColor))
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
-        .navigationTitle("R+")
+        .padding(12)
     }
 }
