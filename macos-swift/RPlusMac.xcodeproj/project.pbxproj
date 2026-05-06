@@ -25,6 +25,10 @@
 		100000000000000000000010 /* AppRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000110 /* AppRootView.swift */; };
 		1000000000000000000000115 /* SaveCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000115 /* SaveCoordinator.swift */; };
 		1000000000000000000000116 /* ClinicalDraftStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000116 /* ClinicalDraftStore.swift */; };
+		1000000000000000000000117 /* LabHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000117 /* LabHistoryStore.swift */; };
+		1000000000000000000000118 /* LabHistoryStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000118 /* LabHistoryStoreTests.swift */; };
+		1000000000000000000000119 /* CDLabHistoryEntry+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000119 /* CDLabHistoryEntry+CoreDataClass.swift */; };
+		1000000000000000000000120 /* CDLabHistoryEntry+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000120 /* CDLabHistoryEntry+CoreDataProperties.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -48,6 +52,10 @@
 		100000000000000000000110 /* AppRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Shared/AppRootView.swift; sourceTree = "<group>"; };
 		100000000000000000000115 /* SaveCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Shared/SaveCoordinator.swift; sourceTree = "<group>"; };
 		100000000000000000000116 /* ClinicalDraftStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Shared/ClinicalDraftStore.swift; sourceTree = "<group>"; };
+		100000000000000000000117 /* LabHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Laboratorio/LabHistoryStore.swift; sourceTree = "<group>"; };
+		100000000000000000000118 /* LabHistoryStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Lab/LabHistoryStoreTests.swift; sourceTree = "<group>"; };
+		100000000000000000000119 /* CDLabHistoryEntry+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Persistence/CDLabHistoryEntry+CoreDataClass.swift; sourceTree = "<group>"; };
+		100000000000000000000120 /* CDLabHistoryEntry+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Persistence/CDLabHistoryEntry+CoreDataProperties.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -103,6 +111,8 @@
 			children = (
 				100000000000000000000101 /* RPlusMacApp.swift */,
 				100000000000000000000102 /* PersistenceController.swift */,
+				100000000000000000000119 /* CDLabHistoryEntry+CoreDataClass.swift */,
+				100000000000000000000120 /* CDLabHistoryEntry+CoreDataProperties.swift */,
 				100000000000000000000106 /* SharedJSONModels.swift */,
 				100000000000000000000107 /* SharedJSONCodec.swift */,
 				10000000000000000000010F /* DomainModels.swift */,
@@ -113,6 +123,7 @@
 				100000000000000000000110 /* AppRootView.swift */,
 				10000000000000000000010C /* PatientListView.swift */,
 				10000000000000000000010D /* LabView.swift */,
+				100000000000000000000117 /* LabHistoryStore.swift */,
 				10000000000000000000010E /* ExpedienteView.swift */,
 				100000000000000000000104 /* RPlusMacModel.xcdatamodeld */,
 				100000000000000000000108 /* minimal-patient.json */,
@@ -126,6 +137,7 @@
 				100000000000000000000103 /* LabExpedienteSmokeTests.swift */,
 				100000000000000000000105 /* SharedJSONCodecTests.swift */,
 				100000000000000000000109 /* LabParsingEngineTests.swift */,
+				100000000000000000000118 /* LabHistoryStoreTests.swift */,
 			);
 		};
 		100000000000000000000303 /* Products */ = {
@@ -214,6 +226,8 @@
 			files = (
 				100000000000000000000001 /* RPlusMacApp.swift in Sources */,
 				100000000000000000000002 /* PersistenceController.swift in Sources */,
+				1000000000000000000000119 /* CDLabHistoryEntry+CoreDataClass.swift in Sources */,
+				1000000000000000000000120 /* CDLabHistoryEntry+CoreDataProperties.swift in Sources */,
 				100000000000000000000006 /* SharedJSONModels.swift in Sources */,
 				100000000000000000000007 /* SharedJSONCodec.swift in Sources */,
 				10000000000000000000000F /* DomainModels.swift in Sources */,
@@ -224,6 +238,7 @@
 				100000000000000000000010 /* AppRootView.swift in Sources */,
 				10000000000000000000000C /* PatientListView.swift in Sources */,
 				10000000000000000000000D /* LabView.swift in Sources */,
+				1000000000000000000000117 /* LabHistoryStore.swift in Sources */,
 				10000000000000000000000E /* ExpedienteView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -235,6 +250,7 @@
 				100000000000000000000003 /* LabExpedienteSmokeTests.swift in Sources */,
 				100000000000000000000005 /* SharedJSONCodecTests.swift in Sources */,
 				100000000000000000000009 /* LabParsingEngineTests.swift in Sources */,
+				1000000000000000000000118 /* LabHistoryStoreTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

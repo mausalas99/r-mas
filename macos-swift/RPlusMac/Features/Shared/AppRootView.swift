@@ -3,6 +3,7 @@ import SwiftUI
 struct AppRootView: View {
     @StateObject private var sessionStore = PatientSessionStore()
     @StateObject private var drafts = ClinicalDraftStore()
+    @StateObject private var labHistory = LabHistoryStore()
 
     var body: some View {
         NavigationSplitView {
@@ -11,7 +12,7 @@ struct AppRootView: View {
         } detail: {
             VStack(spacing: 0) {
                 TabView {
-                    LabView(sessionStore: sessionStore, drafts: drafts)
+                    LabView(sessionStore: sessionStore, drafts: drafts, labHistory: labHistory)
                         .tabItem {
                             Label("Laboratorio", systemImage: "cross.case")
                         }
