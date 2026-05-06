@@ -34,6 +34,7 @@
 		100000000000000000000019 /* IndicacionesStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000119 /* IndicacionesStoreTests.swift */; };
 		10000000000000000000001A /* NotaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000011A /* NotaView.swift */; };
 		10000000000000000000001B /* IndicacionesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000011B /* IndicacionesView.swift */; };
+		10000000000000000000001C /* DocxDocumentExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000011C /* DocxDocumentExporter.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -66,6 +67,7 @@
 		100000000000000000000119 /* IndicacionesStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stores/IndicacionesStoreTests.swift; sourceTree = "<group>"; };
 		10000000000000000000011A /* NotaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Notas/NotaView.swift; sourceTree = "<group>"; };
 		10000000000000000000011B /* IndicacionesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Indicaciones/IndicacionesView.swift; sourceTree = "<group>"; };
+		10000000000000000000011C /* DocxDocumentExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Documents/DocxDocumentExporter.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -123,6 +125,7 @@
 				100000000000000000000102 /* PersistenceController.swift */,
 				100000000000000000000106 /* SharedJSONModels.swift */,
 				100000000000000000000107 /* SharedJSONCodec.swift */,
+				10000000000000000000011C /* DocxDocumentExporter.swift */,
 				10000000000000000000010F /* DomainModels.swift */,
 				10000000000000000000010A /* LabParsingEngine.swift */,
 				10000000000000000000010B /* PatientSessionStore.swift */,
@@ -255,6 +258,7 @@
 				10000000000000000000000E /* ExpedienteView.swift in Sources */,
 				10000000000000000000001A /* NotaView.swift in Sources */,
 				10000000000000000000001B /* IndicacionesView.swift in Sources */,
+				10000000000000000000001C /* DocxDocumentExporter.swift in Sources */,
 				100000000000000000000013 /* CDNoteDraft+CoreDataClass.swift in Sources */,
 				100000000000000000000014 /* CDNoteDraft+CoreDataProperties.swift in Sources */,
 				100000000000000000000015 /* CDIndicacionesDraft+CoreDataClass.swift in Sources */,
@@ -298,6 +302,7 @@
 		100000000000000000000700 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
 				CODE_SIGNING_ALLOWED = NO;
 				ENABLE_TESTABILITY = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -313,6 +318,7 @@
 		100000000000000000000701 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
 				CODE_SIGNING_ALLOWED = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = RPlusMac;
@@ -327,6 +333,7 @@
 		100000000000000000000710 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGNING_ALLOWED = NO;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
@@ -340,6 +347,7 @@
 		100000000000000000000711 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGNING_ALLOWED = NO;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
@@ -353,6 +361,7 @@
 		100000000000000000000720 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
 				CODE_SIGNING_ALLOWED = NO;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
 			};
@@ -361,6 +370,7 @@
 		100000000000000000000721 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
 				CODE_SIGNING_ALLOWED = NO;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
 			};
