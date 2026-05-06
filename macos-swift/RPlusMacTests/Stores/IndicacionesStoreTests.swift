@@ -15,4 +15,26 @@ final class IndicacionesStoreTests: XCTestCase {
         reloaded.load(patientId: "p-1")
         XCTAssertEqual(reloaded.draft.descripcion, "INDICACIONES POR MEDICINA INTERNA")
     }
+
+    @MainActor
+    func testFlushFailureRollsBackContextAndRestoresDraft() {
+        let persistence = PersistenceController(inMemory: true)
+        let expectedError = NSError(domain: "IndicacionesStoreTests", code: 999)
+        let store = IndicacionesStore(
+            persistenceController: persistence,
+            saveAction: { throw expectedError }
+        )
+
+        store.load(patientId: "p-rollback")
+        XCTAssertEqual(store.draft.descripcion, "")
+        store.updateDescripcion("CAMBIO TEMPORAL")
+
+        XCTAssertThrowsError(try store.flush()) { error in
+            let nsError = error as NSError
+            XCTAssertEqual(nsError.domain, expectedError.domain)
+            XCTAssertEqual(nsError.code, expectedError.code)
+        }
+        XCTAssertEqual(store.draft.descripcion, "")
+        XCTAssertEqual(persistence.viewContext.hasChanges, false)
+    }
 }

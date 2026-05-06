@@ -17,47 +17,60 @@ final class NoteStore: ObservableObject {
     func load(patientId: String) {
         let context = persistenceController.viewContext
         let request = CDNoteDraft.fetchRequest()
-        request.fetchLimit = 1
         request.predicate = NSPredicate(format: "patientId == %@", patientId)
+        // NOTE: Uniqueness constraints are not currently encoded in this lightweight model file.
+        // Keep fetch deterministic in case duplicate rows exist for a patient.
 
-        let entity = (try? context.fetch(request).first) ?? {
-            let created = CDNoteDraft(context: context)
-            created.patientId = patientId
-            created.fecha = ""
-            created.hora = ""
-            created.interrogatorio = ""
-            created.evolucion = ""
-            created.estudios = ""
-            created.diagnosticosJSON = "[]"
-            created.ta = ""
-            created.fr = ""
-            created.fc = ""
-            created.temp = ""
-            created.peso = ""
-            created.tratamientoJSON = "[]"
-            created.medico = ""
-            created.profesor = ""
-            return created
-        }()
+        do {
+            let matches = try context.fetch(request).sorted {
+                $0.objectID.uriRepresentation().absoluteString < $1.objectID.uriRepresentation().absoluteString
+            }
 
-        backingObject = entity
-        draft = NoteDraft(
-            patientId: entity.patientId,
-            fecha: entity.fecha,
-            hora: entity.hora,
-            interrogatorio: entity.interrogatorio,
-            evolucion: entity.evolucion,
-            estudios: entity.estudios,
-            diagnosticos: decodeStrings(entity.diagnosticosJSON),
-            ta: entity.ta,
-            fr: entity.fr,
-            fc: entity.fc,
-            temp: entity.temp,
-            peso: entity.peso,
-            tratamiento: decodeStrings(entity.tratamientoJSON),
-            medico: entity.medico,
-            profesor: entity.profesor
-        )
+            let entity: CDNoteDraft
+            if let existing = matches.first {
+                entity = existing
+            } else {
+                let created = CDNoteDraft(context: context)
+                created.patientId = patientId
+                created.fecha = ""
+                created.hora = ""
+                created.interrogatorio = ""
+                created.evolucion = ""
+                created.estudios = ""
+                created.diagnosticosJSON = "[]"
+                created.ta = ""
+                created.fr = ""
+                created.fc = ""
+                created.temp = ""
+                created.peso = ""
+                created.tratamientoJSON = "[]"
+                created.medico = ""
+                created.profesor = ""
+                entity = created
+            }
+
+            backingObject = entity
+            draft = NoteDraft(
+                patientId: entity.patientId,
+                fecha: entity.fecha,
+                hora: entity.hora,
+                interrogatorio: entity.interrogatorio,
+                evolucion: entity.evolucion,
+                estudios: entity.estudios,
+                diagnosticos: decodeStrings(entity.diagnosticosJSON),
+                ta: entity.ta,
+                fr: entity.fr,
+                fc: entity.fc,
+                temp: entity.temp,
+                peso: entity.peso,
+                tratamiento: decodeStrings(entity.tratamientoJSON),
+                medico: entity.medico,
+                profesor: entity.profesor
+            )
+        } catch {
+            backingObject = nil
+            draft = .empty(patientId: patientId)
+        }
     }
 
     func updateInterrogatorio(_ value: String) {

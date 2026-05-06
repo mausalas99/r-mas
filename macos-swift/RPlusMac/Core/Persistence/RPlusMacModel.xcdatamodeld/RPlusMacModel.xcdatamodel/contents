@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23494" systemVersion="24A335" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
-    <entity name="CDIndicacionesDraft" representedClassName="CDIndicacionesDraft" syncable="YES" codeGenerationType="class">
+    <entity name="CDIndicacionesDraft" representedClassName="CDIndicacionesDraft" syncable="YES" codeGenerationType="manual/none">
         <attribute name="cuidados" optional="NO" attributeType="String" defaultValueString=""/>
         <attribute name="descripcion" optional="NO" attributeType="String" defaultValueString=""/>
         <attribute name="dieta" optional="NO" attributeType="String" defaultValueString=""/>
@@ -13,7 +13,7 @@
         <attribute name="otrosJSON" optional="NO" attributeType="String" defaultValueString="[]"/>
         <attribute name="patientId" optional="NO" attributeType="String" defaultValueString=""/>
     </entity>
-    <entity name="CDNoteDraft" representedClassName="CDNoteDraft" syncable="YES" codeGenerationType="class">
+    <entity name="CDNoteDraft" representedClassName="CDNoteDraft" syncable="YES" codeGenerationType="manual/none">
         <attribute name="diagnosticosJSON" optional="NO" attributeType="String" defaultValueString="[]"/>
         <attribute name="estudios" optional="NO" attributeType="String" defaultValueString=""/>
         <attribute name="evolucion" optional="NO" attributeType="String" defaultValueString=""/>
