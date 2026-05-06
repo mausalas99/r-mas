@@ -16,7 +16,7 @@ final class NoteStore: ObservableObject {
 
     func load(patientId: String) {
         let context = persistenceController.viewContext
-        let request = CDNoteDraft.fetchRequest()
+        let request = NSFetchRequest<CDNoteDraft>(entityName: "CDNoteDraft")
         request.predicate = NSPredicate(format: "patientId == %@", patientId)
         // NOTE: Uniqueness constraints are not currently encoded in this lightweight model file.
         // Keep fetch deterministic in case duplicate rows exist for a patient.
@@ -30,7 +30,10 @@ final class NoteStore: ObservableObject {
             if let existing = matches.first {
                 entity = existing
             } else {
-                let created = CDNoteDraft(context: context)
+                let created = NSEntityDescription.insertNewObject(
+                    forEntityName: "CDNoteDraft",
+                    into: context
+                ) as! CDNoteDraft
                 created.patientId = patientId
                 created.fecha = ""
                 created.hora = ""
