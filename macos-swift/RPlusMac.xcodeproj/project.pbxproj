@@ -25,6 +25,13 @@
 		100000000000000000000010 /* AppRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000110 /* AppRootView.swift */; };
 		100000000000000000000011 /* ClinicalDraftStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000111 /* ClinicalDraftStore.swift */; };
 		100000000000000000000012 /* NoteStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000112 /* NoteStoreTests.swift */; };
+		100000000000000000000013 /* CDNoteDraft+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000113 /* CDNoteDraft+CoreDataClass.swift */; };
+		100000000000000000000014 /* CDNoteDraft+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000114 /* CDNoteDraft+CoreDataProperties.swift */; };
+		100000000000000000000015 /* CDIndicacionesDraft+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000115 /* CDIndicacionesDraft+CoreDataClass.swift */; };
+		100000000000000000000016 /* CDIndicacionesDraft+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000116 /* CDIndicacionesDraft+CoreDataProperties.swift */; };
+		100000000000000000000017 /* NoteStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000117 /* NoteStore.swift */; };
+		100000000000000000000018 /* IndicacionesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000118 /* IndicacionesStore.swift */; };
+		100000000000000000000019 /* IndicacionesStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000119 /* IndicacionesStoreTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -48,6 +55,13 @@
 		100000000000000000000110 /* AppRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Shared/AppRootView.swift; sourceTree = "<group>"; };
 		100000000000000000000111 /* ClinicalDraftStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Shared/ClinicalDraftStore.swift; sourceTree = "<group>"; };
 		100000000000000000000112 /* NoteStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stores/NoteStoreTests.swift; sourceTree = "<group>"; };
+		100000000000000000000113 /* CDNoteDraft+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Core/Persistence/CDNoteDraft+CoreDataClass.swift"; sourceTree = "<group>"; };
+		100000000000000000000114 /* CDNoteDraft+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Core/Persistence/CDNoteDraft+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		100000000000000000000115 /* CDIndicacionesDraft+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Core/Persistence/CDIndicacionesDraft+CoreDataClass.swift"; sourceTree = "<group>"; };
+		100000000000000000000116 /* CDIndicacionesDraft+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Core/Persistence/CDIndicacionesDraft+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		100000000000000000000117 /* NoteStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Shared/NoteStore.swift; sourceTree = "<group>"; };
+		100000000000000000000118 /* IndicacionesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Shared/IndicacionesStore.swift; sourceTree = "<group>"; };
+		100000000000000000000119 /* IndicacionesStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stores/IndicacionesStoreTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -110,9 +124,15 @@
 				10000000000000000000010B /* PatientSessionStore.swift */,
 				100000000000000000000110 /* AppRootView.swift */,
 				100000000000000000000111 /* ClinicalDraftStore.swift */,
+				100000000000000000000117 /* NoteStore.swift */,
+				100000000000000000000118 /* IndicacionesStore.swift */,
 				10000000000000000000010C /* PatientListView.swift */,
 				10000000000000000000010D /* LabView.swift */,
 				10000000000000000000010E /* ExpedienteView.swift */,
+				100000000000000000000113 /* CDNoteDraft+CoreDataClass.swift */,
+				100000000000000000000114 /* CDNoteDraft+CoreDataProperties.swift */,
+				100000000000000000000115 /* CDIndicacionesDraft+CoreDataClass.swift */,
+				100000000000000000000116 /* CDIndicacionesDraft+CoreDataProperties.swift */,
 				100000000000000000000104 /* RPlusMacModel.xcdatamodeld */,
 				100000000000000000000108 /* minimal-patient.json */,
 			);
@@ -126,6 +146,7 @@
 				100000000000000000000105 /* SharedJSONCodecTests.swift */,
 				100000000000000000000109 /* LabParsingEngineTests.swift */,
 				100000000000000000000112 /* NoteStoreTests.swift */,
+				100000000000000000000119 /* IndicacionesStoreTests.swift */,
 			);
 		};
 		100000000000000000000303 /* Products */ = {
@@ -221,9 +242,15 @@
 				10000000000000000000000B /* PatientSessionStore.swift in Sources */,
 				100000000000000000000010 /* AppRootView.swift in Sources */,
 				100000000000000000000011 /* ClinicalDraftStore.swift in Sources */,
+				100000000000000000000017 /* NoteStore.swift in Sources */,
+				100000000000000000000018 /* IndicacionesStore.swift in Sources */,
 				10000000000000000000000C /* PatientListView.swift in Sources */,
 				10000000000000000000000D /* LabView.swift in Sources */,
 				10000000000000000000000E /* ExpedienteView.swift in Sources */,
+				100000000000000000000013 /* CDNoteDraft+CoreDataClass.swift in Sources */,
+				100000000000000000000014 /* CDNoteDraft+CoreDataProperties.swift in Sources */,
+				100000000000000000000015 /* CDIndicacionesDraft+CoreDataClass.swift in Sources */,
+				100000000000000000000016 /* CDIndicacionesDraft+CoreDataProperties.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -235,6 +262,7 @@
 				100000000000000000000005 /* SharedJSONCodecTests.swift in Sources */,
 				100000000000000000000009 /* LabParsingEngineTests.swift in Sources */,
 				100000000000000000000012 /* NoteStoreTests.swift in Sources */,
+				100000000000000000000019 /* IndicacionesStoreTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
