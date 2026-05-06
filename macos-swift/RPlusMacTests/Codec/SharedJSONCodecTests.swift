@@ -45,4 +45,41 @@ final class SharedJSONCodecTests: XCTestCase {
 
         XCTAssertThrowsError(try codec.importFromSharedJSON(malformed))
     }
+
+    func testRoundTripPreservesNoteAndIndicacionesDrafts() throws {
+        let codec = SharedJSONCodec()
+        let domain = SharedDomain(
+            format: "rplus-shared-json",
+            version: 1,
+            exportedAt: "2026-05-06T00:00:00Z",
+            appVersion: "1.0.0",
+            theme: "system",
+            guidedTourDoneForVersion: nil,
+            patients: [DomainPatient(id: "p-1", name: "Paciente Demo")],
+            notesByPatientId: [
+                "p-1": .object([
+                    "fecha": .string("06/05/2026"),
+                    "interrogatorio": .string("Paciente estable")
+                ])
+            ],
+            indicacionesByPatientId: [
+                "p-1": .object([
+                    "descripcion": .string("INDICACIONES POR MEDICINA INTERNA")
+                ])
+            ],
+            labHistoryByPatientId: [:],
+            medRecetaByPatient: [:],
+            settings: [:],
+            medCatalog: .object([:])
+        )
+
+        let output = try codec.exportToSharedJSON(domain)
+        let exportedRoot = try JSONDecoder().decode(SharedRoot.self, from: output)
+        XCTAssertEqual(exportedRoot.data.patients.first?.noteDraft?.interrogatorio, "Paciente estable")
+        XCTAssertEqual(exportedRoot.data.patients.first?.indicacionesDraft?.descripcion, "INDICACIONES POR MEDICINA INTERNA")
+
+        let reparsed = try codec.importFromSharedJSON(output)
+        XCTAssertEqual(reparsed.notesByPatientId["p-1"], domain.notesByPatientId["p-1"])
+        XCTAssertEqual(reparsed.indicacionesByPatientId["p-1"], domain.indicacionesByPatientId["p-1"])
+    }
 }
