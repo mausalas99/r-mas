@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AppRootView: View {
     @StateObject private var sessionStore = PatientSessionStore()
+    @StateObject private var drafts = ClinicalDraftStore()
 
     var body: some View {
         HStack(spacing: 12) {
@@ -13,7 +14,7 @@ struct AppRootView: View {
             VStack(spacing: 12) {
                 LabView(sessionStore: sessionStore)
                 Divider()
-                ExpedienteView(sessionStore: sessionStore)
+                ExpedienteView(sessionStore: sessionStore, drafts: drafts)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }

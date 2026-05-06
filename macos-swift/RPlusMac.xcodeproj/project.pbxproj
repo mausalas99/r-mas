@@ -23,6 +23,7 @@
 		10000000000000000000000E /* ExpedienteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000010E /* ExpedienteView.swift */; };
 		10000000000000000000000F /* DomainModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000010F /* DomainModels.swift */; };
 		100000000000000000000010 /* AppRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000110 /* AppRootView.swift */; };
+		100000000000000000000011 /* ClinicalDraftStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000111 /* ClinicalDraftStore.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -44,6 +45,7 @@
 		10000000000000000000010E /* ExpedienteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Expediente/ExpedienteView.swift; sourceTree = "<group>"; };
 		10000000000000000000010F /* DomainModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Models/DomainModels.swift; sourceTree = "<group>"; };
 		100000000000000000000110 /* AppRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Shared/AppRootView.swift; sourceTree = "<group>"; };
+		100000000000000000000111 /* ClinicalDraftStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Shared/ClinicalDraftStore.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -105,6 +107,7 @@
 				10000000000000000000010A /* LabParsingEngine.swift */,
 				10000000000000000000010B /* PatientSessionStore.swift */,
 				100000000000000000000110 /* AppRootView.swift */,
+				100000000000000000000111 /* ClinicalDraftStore.swift */,
 				10000000000000000000010C /* PatientListView.swift */,
 				10000000000000000000010D /* LabView.swift */,
 				10000000000000000000010E /* ExpedienteView.swift */,
@@ -214,6 +217,7 @@
 				10000000000000000000000A /* LabParsingEngine.swift in Sources */,
 				10000000000000000000000B /* PatientSessionStore.swift in Sources */,
 				100000000000000000000010 /* AppRootView.swift in Sources */,
+				100000000000000000000011 /* ClinicalDraftStore.swift in Sources */,
 				10000000000000000000000C /* PatientListView.swift in Sources */,
 				10000000000000000000000D /* LabView.swift in Sources */,
 				10000000000000000000000E /* ExpedienteView.swift in Sources */,
