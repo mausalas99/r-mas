@@ -24,6 +24,7 @@
 		10000000000000000000000F /* DomainModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000010F /* DomainModels.swift */; };
 		100000000000000000000010 /* AppRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000110 /* AppRootView.swift */; };
 		100000000000000000000011 /* ClinicalDraftStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000111 /* ClinicalDraftStore.swift */; };
+		100000000000000000000012 /* NoteStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000112 /* NoteStoreTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -46,6 +47,7 @@
 		10000000000000000000010F /* DomainModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Models/DomainModels.swift; sourceTree = "<group>"; };
 		100000000000000000000110 /* AppRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Shared/AppRootView.swift; sourceTree = "<group>"; };
 		100000000000000000000111 /* ClinicalDraftStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Shared/ClinicalDraftStore.swift; sourceTree = "<group>"; };
+		100000000000000000000112 /* NoteStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stores/NoteStoreTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -123,6 +125,7 @@
 				100000000000000000000103 /* LabExpedienteSmokeTests.swift */,
 				100000000000000000000105 /* SharedJSONCodecTests.swift */,
 				100000000000000000000109 /* LabParsingEngineTests.swift */,
+				100000000000000000000112 /* NoteStoreTests.swift */,
 			);
 		};
 		100000000000000000000303 /* Products */ = {
@@ -231,6 +234,7 @@
 				100000000000000000000003 /* LabExpedienteSmokeTests.swift in Sources */,
 				100000000000000000000005 /* SharedJSONCodecTests.swift in Sources */,
 				100000000000000000000009 /* LabParsingEngineTests.swift in Sources */,
+				100000000000000000000012 /* NoteStoreTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

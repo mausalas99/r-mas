@@ -9,4 +9,12 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertEqual(draft.diagnosticos, [])
         XCTAssertEqual(draft.tratamiento, [])
     }
+
+    func testDefaultIndicacionesDraftHasExpectedEmptySections() {
+        let draft = IndicacionesDraft.empty(patientId: "p-1")
+        XCTAssertEqual(draft.patientId, "p-1")
+        XCTAssertEqual(draft.descripcion, "")
+        XCTAssertEqual(draft.medicos, "")
+        XCTAssertEqual(draft.otros, [])
+    }
 }
