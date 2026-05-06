@@ -14,12 +14,6 @@ final class ClinicalDraftStore: ObservableObject {
         labRawByPatientId = copy
     }
 
-    func setLabRaw(_ text: String, patientId: String) {
-        var copy = labRawByPatientId
-        copy[patientId] = text
-        labRawByPatientId = copy
-    }
-
     func noteBinding(patientId: String?) -> Binding<String> {
         Binding(
             get: {

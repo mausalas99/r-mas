@@ -24,9 +24,8 @@ final class LabExpedienteSmokeTests: XCTestCase {
     func testSelectingPatientPropagatesToLabAndExpediente() {
         let store = PatientSessionStore()
         let drafts = ClinicalDraftStore()
-        let labHistory = LabHistoryStore(persistence: PersistenceController(inMemory: true))
         let patient = PatientSummary(id: "p-1", displayName: "Paciente Demo")
-        let labView = LabView(sessionStore: store, drafts: drafts, labHistory: labHistory)
+        let labView = LabView(sessionStore: store, drafts: drafts)
         let expedienteView = ExpedienteView(sessionStore: store, drafts: drafts)
         store.select(patient)
 
@@ -50,7 +49,7 @@ final class LabExpedienteSmokeTests: XCTestCase {
 
     @MainActor
     func testLabViewSaveEditorBufferKeepsBufferWhenCommitFails() {
-        let view = LabView(sessionStore: PatientSessionStore(), drafts: ClinicalDraftStore(), labHistory: LabHistoryStore(persistence: PersistenceController(inMemory: true)))
+        let view = LabView(sessionStore: PatientSessionStore(), drafts: ClinicalDraftStore())
         var didRollback = false
         let coordinator = SaveCoordinator(
             saveAction: { throw NSError(domain: "test", code: 501) },
@@ -64,7 +63,7 @@ final class LabExpedienteSmokeTests: XCTestCase {
 
     @MainActor
     func testLabViewSaveEditorBufferUsesPersistenceControllerEntrypoint() {
-        let view = LabView(sessionStore: PatientSessionStore(), drafts: ClinicalDraftStore(), labHistory: LabHistoryStore(persistence: PersistenceController(inMemory: true)))
+        let view = LabView(sessionStore: PatientSessionStore(), drafts: ClinicalDraftStore())
         let controller = FailingPersistenceController()
 
         XCTAssertThrowsError(try view.saveEditorBuffer("BH\nHB 10", persistenceController: controller))
