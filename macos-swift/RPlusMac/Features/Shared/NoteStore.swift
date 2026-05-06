@@ -9,9 +9,18 @@ final class NoteStore: ObservableObject {
     private var backingObject: CDNoteDraft?
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
+    private let saveAction: () throws -> Void
 
-    init(persistenceController: PersistenceController = .shared) {
+    init(
+        persistenceController: PersistenceController = .shared,
+        saveAction: (() throws -> Void)? = nil
+    ) {
         self.persistenceController = persistenceController
+        if let saveAction {
+            self.saveAction = saveAction
+        } else {
+            self.saveAction = { try persistenceController.saveOrRollback() }
+        }
     }
 
     func load(patientId: String) {
@@ -83,7 +92,31 @@ final class NoteStore: ObservableObject {
 
     func flush() throws {
         syncAllFieldsToEntity()
-        try persistenceController.saveOrRollback()
+        do {
+            try saveAction()
+        } catch {
+            persistenceController.viewContext.rollback()
+            if let backingObject {
+                draft = NoteDraft(
+                    patientId: backingObject.patientId,
+                    fecha: backingObject.fecha,
+                    hora: backingObject.hora,
+                    interrogatorio: backingObject.interrogatorio,
+                    evolucion: backingObject.evolucion,
+                    estudios: backingObject.estudios,
+                    diagnosticos: decodeStrings(backingObject.diagnosticosJSON),
+                    ta: backingObject.ta,
+                    fr: backingObject.fr,
+                    fc: backingObject.fc,
+                    temp: backingObject.temp,
+                    peso: backingObject.peso,
+                    tratamiento: decodeStrings(backingObject.tratamientoJSON),
+                    medico: backingObject.medico,
+                    profesor: backingObject.profesor
+                )
+            }
+            throw error
+        }
     }
 
     private func decodeStrings(_ value: String) -> [String] {
