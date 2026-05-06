@@ -2,7 +2,8 @@ import SwiftUI
 
 struct AppRootView: View {
     @StateObject private var sessionStore = PatientSessionStore()
-    @StateObject private var drafts = ClinicalDraftStore()
+    @StateObject private var noteStore = NoteStore()
+    @StateObject private var indicacionesStore = IndicacionesStore()
 
     var body: some View {
         HStack(spacing: 12) {
@@ -14,10 +15,17 @@ struct AppRootView: View {
             VStack(spacing: 12) {
                 LabView(sessionStore: sessionStore)
                 Divider()
-                ExpedienteView(sessionStore: sessionStore, drafts: drafts)
+                NotaView(sessionStore: sessionStore, store: noteStore)
+                Divider()
+                IndicacionesView(sessionStore: sessionStore, store: indicacionesStore)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .padding(12)
+        .onReceive(sessionStore.$selectedPatient) { patient in
+            guard let patient else { return }
+            noteStore.load(patientId: patient.id)
+            indicacionesStore.load(patientId: patient.id)
+        }
     }
 }

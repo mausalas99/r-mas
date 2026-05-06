@@ -32,6 +32,8 @@
 		100000000000000000000017 /* NoteStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000117 /* NoteStore.swift */; };
 		100000000000000000000018 /* IndicacionesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000118 /* IndicacionesStore.swift */; };
 		100000000000000000000019 /* IndicacionesStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000119 /* IndicacionesStoreTests.swift */; };
+		10000000000000000000001A /* NotaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000011A /* NotaView.swift */; };
+		10000000000000000000001B /* IndicacionesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10000000000000000000011B /* IndicacionesView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -62,6 +64,8 @@
 		100000000000000000000117 /* NoteStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Shared/NoteStore.swift; sourceTree = "<group>"; };
 		100000000000000000000118 /* IndicacionesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Shared/IndicacionesStore.swift; sourceTree = "<group>"; };
 		100000000000000000000119 /* IndicacionesStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stores/IndicacionesStoreTests.swift; sourceTree = "<group>"; };
+		10000000000000000000011A /* NotaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Notas/NotaView.swift; sourceTree = "<group>"; };
+		10000000000000000000011B /* IndicacionesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Indicaciones/IndicacionesView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -129,6 +133,8 @@
 				10000000000000000000010C /* PatientListView.swift */,
 				10000000000000000000010D /* LabView.swift */,
 				10000000000000000000010E /* ExpedienteView.swift */,
+				10000000000000000000011A /* NotaView.swift */,
+				10000000000000000000011B /* IndicacionesView.swift */,
 				100000000000000000000113 /* CDNoteDraft+CoreDataClass.swift */,
 				100000000000000000000114 /* CDNoteDraft+CoreDataProperties.swift */,
 				100000000000000000000115 /* CDIndicacionesDraft+CoreDataClass.swift */,
@@ -247,6 +253,8 @@
 				10000000000000000000000C /* PatientListView.swift in Sources */,
 				10000000000000000000000D /* LabView.swift in Sources */,
 				10000000000000000000000E /* ExpedienteView.swift in Sources */,
+				10000000000000000000001A /* NotaView.swift in Sources */,
+				10000000000000000000001B /* IndicacionesView.swift in Sources */,
 				100000000000000000000013 /* CDNoteDraft+CoreDataClass.swift in Sources */,
 				100000000000000000000014 /* CDNoteDraft+CoreDataProperties.swift in Sources */,
 				100000000000000000000015 /* CDIndicacionesDraft+CoreDataClass.swift in Sources */,

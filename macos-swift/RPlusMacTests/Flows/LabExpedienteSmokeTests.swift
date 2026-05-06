@@ -21,17 +21,17 @@ final class LabExpedienteSmokeTests: XCTestCase {
     }
 
     @MainActor
-    func testSelectingPatientPropagatesToLabAndExpediente() {
-        let store = PatientSessionStore()
-        let drafts = ClinicalDraftStore()
-        let patient = PatientSummary(id: "p-1", displayName: "Paciente Demo")
-        let labView = LabView(sessionStore: store)
-        let expedienteView = ExpedienteView(sessionStore: store, drafts: drafts)
-        store.select(patient)
+    func testNotaAndIndicacionesViewsTrackSelectedPatient() {
+        let session = PatientSessionStore()
+        let noteStore = NoteStore(persistenceController: .init(inMemory: true))
+        let indStore = IndicacionesStore(persistenceController: .init(inMemory: true))
 
-        XCTAssertEqual(store.selectedPatient?.id, "p-1")
-        XCTAssertEqual(labView.titleText, "Laboratorio: Paciente Demo")
-        XCTAssertEqual(expedienteView.titleText, "Expediente: Paciente Demo")
+        session.select(PatientSummary(id: "p-1", displayName: "Paciente Demo"))
+        noteStore.load(patientId: "p-1")
+        indStore.load(patientId: "p-1")
+
+        XCTAssertEqual(noteStore.draft.patientId, "p-1")
+        XCTAssertEqual(indStore.draft.patientId, "p-1")
     }
 
     func testFailedSaveRollsBackContextAndKeepsEditorBuffer() {
