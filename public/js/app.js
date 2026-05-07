@@ -82,7 +82,8 @@ var TEND_UNITS = {
   Na:'mEq/L', K:'mEq/L',  Cl:'mEq/L', HCO3:'mEq/L',Ca:'mg/dL', F:'mg/dL', Mg:'mEq/L',
   AST:'U/L',  ALT:'U/L',  FA:'U/L',   BT:'mg/dL', Alb:'g/dL', BD:'mg/dL', BI:'mg/dL',
   LDH:'U/L', Amil:'U/L',
-  Lactato:'mmol/L', Dens:'g/L', Prot:'mg/dL', Vol:'mL', GLU:'mg/dL', Bica:'mEq/L', pH:'', pCO2:'mmHg', pO2:'mmHg'
+  Lactato:'mmol/L', Dens:'g/L', Prot:'mg/dL', Vol:'mL', GLU:'mg/dL', Bica:'mEq/L', pH:'', pCO2:'mmHg', pO2:'mmHg',
+  iCa:'mmol/L'
 };
 var TEND_REF = {
   Hb:[12,17.5], Hto:[36,53], Leu:[4,11], Plt:[150,400], VCM:[80,100], HCM:[27,33],
@@ -105,7 +106,8 @@ var TEND_REF_GASES = {
   K: [3.5, 5.3],
   GLU: [70, 110],
   Hto: [34, 50],
-  Bica: [22, 28]
+  Bica: [22, 28],
+  iCa: [1.12, 1.32]
 };
 var TEND_SECTION_LABELS = {
   BH: 'Biometría hemática',
@@ -184,6 +186,7 @@ var TEND_SERIES_CATALOG = [
   { sectionKey: 'GASES', fieldKey: 'Lactato', cardTitle: 'Lactato (gas)' },
   { sectionKey: 'GASES', fieldKey: 'Bica', cardTitle: 'HCO₃⁻ (gas)' },
   { sectionKey: 'GASES', fieldKey: 'Hto', cardTitle: 'Hto (gas)' },
+  { sectionKey: 'GASES', fieldKey: 'iCa', cardTitle: 'Ca²⁺ ionizado (gas)' },
   { sectionKey: 'LCR', fieldKey: 'pH', cardTitle: 'pH (LCR)' },
   { sectionKey: 'LCR', fieldKey: 'Leu', cardTitle: 'Leucocitos (LCR)' },
   { sectionKey: 'LCR', fieldKey: 'Glu', cardTitle: 'Glucosa (LCR)' },

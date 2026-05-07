@@ -206,6 +206,12 @@ export function parseGaso_(bloqueGaso) {
   var lacData  = extraerConRango(['LACTATO'], bloqueGaso);
   var hco3Data = extraerConRango(['HCO3'], bloqueGaso);
   var htoData  = extraerConRango(['HCT ', 'HEMATOCRITO'], bloqueGaso);
+  // Ca++ ionizado suele aparecer en OBSERVACIONES como texto libre
+  // (p. ej. "Ca++ IONIZADO: 0.92 mmol/L"). Sin rango explícito en el
+  // reporte; se aplica el rango adulto estándar 1.12-1.32 mmol/L.
+  var iCaData = extraerConRango(['CA++ IONIZADO', 'CALCIO IONIZADO', 'CA IONIZADO'], bloqueGaso);
+  var iCaMin = iCaData.min != null ? iCaData.min : 1.12;
+  var iCaMax = iCaData.max != null ? iCaData.max : 1.32;
 
   var pH   = fmt(marcarSegunRango(phData.valor,   phData.min,   phData.max));
   var pCO2 = fmt(marcarSegunRango(pco2Data.valor, pco2Data.min, pco2Data.max));
@@ -216,6 +222,7 @@ export function parseGaso_(bloqueGaso) {
   var Lac  = fmt(marcarSegunRango(lacData.valor,  lacData.min,  lacData.max));
   var Bica = fmt(marcarSegunRango(hco3Data.valor, hco3Data.min, hco3Data.max));
   var Hto  = fmt(marcarSegunRango(htoData.valor, htoData.min, htoData.max));
+  var iCa  = fmt(marcarSegunRango(iCaData.valor,  iCaMin,        iCaMax));
 
   var p = ['GASES'];
   p.push('pH', pH);
@@ -227,6 +234,7 @@ export function parseGaso_(bloqueGaso) {
   if (Lac  !== '---') p.push('Lactato', Lac);
   if (Bica !== '---') p.push('Bica', Bica);
   if (Hto  !== '---') p.push('Hto',  Hto);
+  if (iCa  !== '---') p.push('iCa',  iCa);
   return p[0]+'\t'+p.slice(1).join(' ');
 }
 
