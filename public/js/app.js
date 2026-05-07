@@ -5965,6 +5965,16 @@ function _prefillServicioForSala() {
   if (srv && isModeSala(settings) && !srv.value) srv.value = getDefaultServicio(settings);
 }
 
+function _syncPatientModalModeFields() {
+  var sala = isModeSala(settings);
+  var areaGroup = document.getElementById('m-area-group');
+  var servicioLabel = document.getElementById('m-servicio-label');
+  var servicioInput = document.getElementById('m-servicio');
+  if (areaGroup) areaGroup.style.display = sala ? 'none' : '';
+  if (servicioLabel) servicioLabel.textContent = sala ? 'Área / Servicio *' : 'Servicio *';
+  if (servicioInput) servicioInput.placeholder = sala ? 'ej. MEDICINA INTERNA' : 'ej. MEDICINA INTERNA';
+}
+
 function openAddModal() {
   document.getElementById('modal-title').textContent = 'Nuevo Paciente';
   document.getElementById('modal-prefilled').style.display = 'none';
@@ -5976,6 +5986,7 @@ function openAddModal() {
   document.getElementById('m-edad-display-manual').value = '';
   document.getElementById('m-sexo').value = 'F';
   _setDobMaxOnInputs();
+  _syncPatientModalModeFields();
   _prefillServicioForSala();
   document.getElementById('modal').classList.add('open');
   setTimeout(function(){ document.getElementById('m-nombre-manual').focus(); }, 120);
@@ -6004,6 +6015,7 @@ function openAddModalFromLab() {
     }
   }
   _setDobMaxOnInputs();
+  _syncPatientModalModeFields();
   _prefillServicioForSala();
   document.getElementById('modal').classList.add('open');
   setTimeout(function(){ document.getElementById('m-dob-prefilled').focus(); }, 120);
@@ -6126,10 +6138,13 @@ function savePatient() {
   var age = calculateAge(dob);
   if (!age) { showToast('Fecha de nacimiento inválida (no puede ser futura ni > 120 años)','error'); return; }
   var edad = age.display;
-  var area     = (document.getElementById('m-area').value||'').trim().toUpperCase();
+  var salaMode = isModeSala(settings);
   var servicio = (document.getElementById('m-servicio').value||'').trim().toUpperCase();
+  var area     = salaMode ? servicio : (document.getElementById('m-area').value||'').trim().toUpperCase();
   var cuarto   = (document.getElementById('m-cuarto').value||'').trim();
   var cama     = (document.getElementById('m-cama').value||'').trim();
+  if (!servicio) { showToast(salaMode ? 'Ingresa Área / Servicio' : 'Ingresa servicio','error'); return; }
+  if (!salaMode && !area) { showToast('Ingresa área / departamento','error'); return; }
   if (!cuarto || !cama) { showToast('Ingresa cuarto y cama','error'); return; }
 
   var dup = findDuplicatePatient(nombre, registro);
