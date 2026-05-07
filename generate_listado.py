@@ -59,61 +59,107 @@ CELL_RPR_DEFAULT = (
     'w:cs="Times New Roman"/><w:color w:val="373435"/>'
     '<w:sz w:val="21"/><w:szCs w:val="21"/></w:rPr>'
 )
+CELL_RPR_BOLD = (
+    '<w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" '
+    'w:cs="Times New Roman"/><w:b/><w:bCs/><w:color w:val="373435"/>'
+    '<w:sz w:val="21"/><w:szCs w:val="21"/></w:rPr>'
+)
 PARA_RPR_DEFAULT = (
     '<w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" '
     'w:cs="Times New Roman"/><w:sz w:val="21"/><w:szCs w:val="21"/></w:rPr>'
 )
 
 
-def mk_para(content_xml, centered=False):
+def mk_para(content_xml, *, centered=False, ind=None):
     jc = '<w:jc w:val="center"/>' if centered else ''
+    indent = ind or ''
     return (
-        f'<w:p><w:pPr><w:pStyle w:val="TableParagraph"/>{jc}'
+        f'<w:p><w:pPr><w:pStyle w:val="TableParagraph"/>{jc}{indent}'
         f'{PARA_RPR_DEFAULT}</w:pPr>{content_xml}</w:p>'
     )
 
 
-def mk_run(text):
-    return f'<w:r>{CELL_RPR_DEFAULT}<w:t xml:space="preserve">{esc(text)}</w:t></w:r>'
+def mk_run(text, *, bold=False):
+    rpr = CELL_RPR_BOLD if bold else CELL_RPR_DEFAULT
+    return f'<w:r>{rpr}<w:t xml:space="preserve">{esc(text)}</w:t></w:r>'
 
 
-def text_to_paragraphs(text, centered=False):
-    """Convierte texto multilínea (con \n) a múltiples <w:p>. Una línea vacía → <w:p/>."""
+# Reconoce líneas tipo "a)", "  b)", "ñ)" — y permite letras seguidas
+# (la primera coincidencia gana, así que limitamos a una sola letra antes de ")").
+LIST_LINE_RE = re.compile(r'^\s*([A-Za-zÑñ])\)\s*(.*)$')
+
+
+def text_to_paragraphs(text, *, centered=False):
+    """
+    Convierte texto multilínea a múltiples <w:p>.
+
+    Reglas (markdown ligero, ad hoc para Listado de Problemas):
+      - Línea vacía → <w:p/> (separador).
+      - Línea que matchea LIST_LINE_RE (ej. ``a) Disnea progresiva...``) →
+        item de lista con sangría colgante. La letra y el ")" quedan al
+        margen y el contenido continúa con sangría.
+      - Cualquier otra línea no vacía → párrafo en negritas (título de
+        problema). Este es el formato pedido por el médico para que
+        resalten los nombres de los problemas.
+    """
     if not text:
         return '<w:p/>'
     paragraphs = []
-    for line in str(text).split('\n'):
-        line = line.rstrip('\r')
-        if not line.strip():
+    for raw in str(text).split('\n'):
+        line = raw.rstrip('\r')
+        stripped = line.strip()
+        if not stripped:
             paragraphs.append('<w:p/>')
+            continue
+        m = LIST_LINE_RE.match(line)
+        if m:
+            letter = m.group(1)
+            content = m.group(2)
+            # Sangría colgante: la primera línea empieza en 0, las
+            # continuaciones se alinean a 425 twips (~7.5 mm). El "a) " va
+            # en un run separado del contenido para que sólo aparezca una
+            # vez (el wrap respeta el indent).
+            indent_xml = '<w:ind w:left="425" w:hanging="425"/>'
+            runs = (
+                f'<w:r>{CELL_RPR_DEFAULT}<w:t xml:space="preserve">{esc(letter)}) </w:t></w:r>'
+                f'<w:r>{CELL_RPR_DEFAULT}<w:t xml:space="preserve">{esc(content)}</w:t></w:r>'
+            )
+            paragraphs.append(mk_para(runs, centered=centered, ind=indent_xml))
         else:
-            paragraphs.append(mk_para(mk_run(line), centered=centered))
+            paragraphs.append(mk_para(mk_run(line, bold=True), centered=centered))
     return ''.join(paragraphs)
 
 
-def cell(width_dxa, text, *, centered=False, borders=''):
-    """Construye una <w:tc> con ancho y bordes opcionales."""
+def plain_cell(width_dxa, text, *, centered=False, borders=''):
+    """Celda con un único párrafo de texto plano (no parsea markdown)."""
     tcpr = f'<w:tcPr><w:tcW w:w="{width_dxa}" w:type="dxa"/>{borders}</w:tcPr>'
-    body = text_to_paragraphs(text, centered=centered)
+    body = mk_para(mk_run(text), centered=centered) if text else '<w:p/>'
+    return f'<w:tc>{tcpr}{body}</w:tc>'
+
+
+def desc_cell(width_dxa, text, *, borders=''):
+    """Celda de descripción de problema con interpretación markdown."""
+    tcpr = f'<w:tcPr><w:tcW w:w="{width_dxa}" w:type="dxa"/>{borders}</w:tcPr>'
+    body = text_to_paragraphs(text)
     return f'<w:tc>{tcpr}{body}</w:tc>'
 
 
 def build_problem_row(fecha, num, activos_text, inactivos_text):
     """Una fila por problema. Anchos coinciden con el header del template."""
     cells = (
-        cell(1542, fmt_fecha(fecha), centered=True,
-             borders='<w:tcBorders><w:left w:val="nil"/>'
-                     '<w:right w:val="single" w:sz="6" w:space="0" w:color="373435"/></w:tcBorders>')
-        + cell(599, f'{num}.', centered=True,
-               borders='<w:tcBorders>'
-                       '<w:left w:val="single" w:sz="6" w:space="0" w:color="373435"/></w:tcBorders>')
-        + cell(5387, activos_text,
-               borders='<w:tcBorders>'
-                       '<w:right w:val="single" w:sz="6" w:space="0" w:color="373435"/></w:tcBorders>')
-        + cell(3249, inactivos_text,
-               borders='<w:tcBorders>'
-                       '<w:left w:val="single" w:sz="6" w:space="0" w:color="373435"/>'
-                       '<w:right w:val="nil"/></w:tcBorders>')
+        plain_cell(1542, fmt_fecha(fecha), centered=True,
+                   borders='<w:tcBorders><w:left w:val="nil"/>'
+                           '<w:right w:val="single" w:sz="6" w:space="0" w:color="373435"/></w:tcBorders>')
+        + plain_cell(599, f'{num}.', centered=True,
+                     borders='<w:tcBorders>'
+                             '<w:left w:val="single" w:sz="6" w:space="0" w:color="373435"/></w:tcBorders>')
+        + desc_cell(5387, activos_text,
+                    borders='<w:tcBorders>'
+                            '<w:right w:val="single" w:sz="6" w:space="0" w:color="373435"/></w:tcBorders>')
+        + desc_cell(3249, inactivos_text,
+                    borders='<w:tcBorders>'
+                            '<w:left w:val="single" w:sz="6" w:space="0" w:color="373435"/>'
+                            '<w:right w:val="nil"/></w:tcBorders>')
     )
     return f'<w:tr><w:trPr><w:trHeight w:val="448"/></w:trPr>{cells}</w:tr>'
 
