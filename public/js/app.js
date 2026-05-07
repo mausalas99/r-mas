@@ -2053,33 +2053,38 @@ function chooseOutputDir() {
   });
 }
 
+function openProfileModal() {
+  var modal = document.getElementById('profile-modal');
+  if (!modal) return;
+  loadSettings();
+  modal.classList.add('open');
+  setTimeout(function() {
+    var first = document.getElementById('profile-doctor');
+    if (first) first.focus();
+  }, 80);
+}
+
+function closeProfileModal() {
+  var modal = document.getElementById('profile-modal');
+  if (modal) modal.classList.remove('open');
+}
+
+// Backwards-compatible wrappers (the sidebar button used to call these directly).
 function toggleProfileSection() {
-  var body  = document.getElementById('profile-body');
-  var arrow = document.getElementById('profile-toggle-arrow');
-  var open  = body.style.display !== 'none';
-  body.style.display = open ? 'none' : 'flex';
-  arrow.textContent  = open ? '▾' : '▴';
+  var modal = document.getElementById('profile-modal');
+  if (!modal) return;
+  if (modal.classList.contains('open')) closeProfileModal();
+  else openProfileModal();
 }
 
 function syncProfileSectionVisibility() {
-  var section = document.getElementById('profile-section');
-  if (!section) return;
-  section.style.display = profileSectionVisible ? 'block' : 'none';
+  // No-op desde 3.0: la sección del sidebar es solo el botón disparador y siempre se muestra.
+  // Conservada para no romper callers externos que la invocan.
 }
 
 function openProfileFromHeader(ev) {
   if (ev) ev.preventDefault();
-  switchAppTab('nota');
-  switchInnerTab(isModeSala(settings) ? 'tend' : 'notas');
-  profileSectionVisible = !profileSectionVisible;
-  syncProfileSectionVisibility();
-  if (!profileSectionVisible) return;
-  var body = document.getElementById('profile-body');
-  if (body && body.style.display === 'none') toggleProfileSection();
-  var section = document.getElementById('profile-section');
-  if (section && typeof section.scrollIntoView === 'function') {
-    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
+  openProfileModal();
 }
 
 function toggleSettingsSection() {
@@ -2235,9 +2240,8 @@ function seedDemoTrendHistory() {
 }
 
 function ensureProfileExpandedForTour() {
-  var body = document.getElementById('profile-body');
-  if (!body) return;
-  if (body.style.display === 'none') toggleProfileSection();
+  // Desde 3.0 el perfil vive en un modal centrado; lo abrimos directamente.
+  openProfileModal();
 }
 
 function ensureSettingsExpandedForTour() {
@@ -6014,6 +6018,14 @@ document.getElementById('modal').addEventListener('click', function(e) {
   closeModal();
 });
 
+(function() {
+  var pm = document.getElementById('profile-modal');
+  if (!pm) return;
+  pm.addEventListener('click', function(e) {
+    if (e.target === pm) closeProfileModal();
+  });
+})();
+
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
     var rn = document.getElementById('release-notes-backdrop');
@@ -6028,15 +6040,16 @@ document.addEventListener('keydown', function(e) {
     }
   }
   if (e.key === 'Escape' && document.getElementById('modal').classList.contains('open')) closeModal();
+  if (e.key === 'Escape') {
+    var pm = document.getElementById('profile-modal');
+    if (pm && pm.classList.contains('open')) { closeProfileModal(); return; }
+  }
   var mod = e.metaKey || e.ctrlKey;
   if (mod && (e.key === '1' || e.key === '2' || e.key === '3' || e.key === '4')) {
     e.preventDefault();
     if (e.key === '1') switchAppTab('lab');
     if (e.key === '2') switchAppTab('nota');
-    if (e.key === '3') {
-      var pb = document.getElementById('profile-body');
-      if (pb && pb.style.display === 'none') toggleProfileSection();
-    }
+    if (e.key === '3') openProfileModal();
     if (e.key === '4') {
       var dd = document.getElementById('settings-dropdown');
       if (dd && !dd.classList.contains('open')) toggleSettingsDropdown();
@@ -8288,6 +8301,13 @@ Object.assign(window, {
   onPatientSearchInput,
   toggleProfileSection,
   openProfileFromHeader,
+  openProfileModal,
+  closeProfileModal,
+  onAppModeChange,
+  onDefaultServicioBlur,
+  onDobInputPrefilled,
+  onDobInputManual,
+  updatePatientDob,
   togglePatientPinned,
   togglePatientArchived,
   movePatientByOffset,
