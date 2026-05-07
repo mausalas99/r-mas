@@ -1523,12 +1523,161 @@ function getActiveInnerTab() {
   return activeInner || null;
 }
 
-// Listado de Problemas (UI completa en Task 8) y Estado Actual button (Task 9).
+// Listado de Problemas (Task 8) — UI completa con drag-and-drop y autosave.
+function _todayDDMMYYYY() {
+  var d = new Date();
+  return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
+}
+function _nowHHMM() {
+  var d = new Date();
+  return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+function ensureListadoForActive() {
+  if (!activeId) return null;
+  if (!listadoProblemas[activeId]) {
+    listadoProblemas[activeId] = emptyListado(_todayDDMMYYYY(), _nowHHMM());
+  }
+  // Defensive: ensure arrays exist (en caso de datos corruptos).
+  var l = listadoProblemas[activeId];
+  if (!Array.isArray(l.activos)) l.activos = [];
+  if (!Array.isArray(l.inactivos)) l.inactivos = [];
+  return l;
+}
+function _autoGrowTextarea(el) {
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 240) + 'px';
+}
+function _renderListadoRow(seccion, p, idx) {
+  return (
+    '<div class="listado-row" draggable="true" data-id="' + esc(p.id) + '" data-seccion="' + seccion + '">' +
+      '<div class="listado-num" title="Arrastra para reordenar">' + (idx + 1) + '</div>' +
+      '<input type="date" value="' + esc(p.fecha || '') + '" oninput="updateProblemaField(\'' + seccion + '\',\'' + esc(p.id) + '\',\'fecha\',this.value)" aria-label="Fecha del problema">' +
+      '<textarea rows="1" placeholder="Descripción del problema" oninput="updateProblemaField(\'' + seccion + '\',\'' + esc(p.id) + '\',\'descripcion\',this.value); _autoGrowTextarea(this)" aria-label="Descripción">' + esc(p.descripcion || '') + '</textarea>' +
+      '<button class="btn-remove-listado" onclick="removeProblemaUI(\'' + seccion + '\',\'' + esc(p.id) + '\')" aria-label="Quitar problema" title="Quitar">×</button>' +
+    '</div>'
+  );
+}
+function _renderListadoSeccion(seccion, label, lst) {
+  var arr = lst[seccion] || [];
+  var rows = arr.length
+    ? arr.map(function(p, i){ return _renderListadoRow(seccion, p, i); }).join('')
+    : '<div class="listado-empty">Sin problemas ' + label.toLowerCase() + '.</div>';
+  return (
+    '<div class="listado-section">' +
+      '<div class="listado-section-header ' + seccion + '">' +
+        '<span>' + label + ' (' + arr.length + ')</span>' +
+      '</div>' +
+      '<div class="listado-section-body" data-seccion-rows="' + seccion + '">' +
+        rows +
+      '</div>' +
+      '<div class="listado-section-body" style="padding-top:0;">' +
+        '<button class="listado-add-row" onclick="addProblemaUI(\'' + seccion + '\')">+ Agregar problema ' + label.toLowerCase() + '</button>' +
+      '</div>' +
+    '</div>'
+  );
+}
 function renderListadoForm() {
   var c = document.getElementById('listado-form');
-  if (c && !c.innerHTML.trim()) {
-    c.innerHTML = '<p style="color:var(--text-muted);padding:16px;">Pendiente de implementación.</p>';
-  }
+  if (!c) return;
+  if (!activeId) { c.innerHTML = ''; return; }
+  var patient = patients.find(function(p){ return p.id === activeId; });
+  if (!patient) { c.innerHTML = ''; return; }
+  var lst = ensureListadoForActive();
+  c.innerHTML = (
+    '<div class="card"><div class="card-header"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Datos del Paciente</div><div class="card-body"><div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:10px;align-items:end;">' +
+      '<div class="field-group"><label>Nombre</label><input type="text" value="' + esc(patient.nombre) + '" class="field-readonly" readonly></div>' +
+      '<div class="field-group"><label>Registro</label><input type="text" value="' + esc(patient.registro) + '" class="field-readonly" readonly></div>' +
+      '<div class="field-group"><label>Edad/Sexo</label><input type="text" value="' + esc(patient.edad) + ' / ' + esc(patient.sexo) + '" class="field-readonly" readonly></div>' +
+      '<div class="field-group"><label>Cuarto</label><input type="text" value="' + esc(patient.cuarto) + '" class="field-readonly" readonly></div>' +
+      '<div class="field-group"><label>Cama</label><input type="text" value="' + esc(patient.cama) + '" class="field-readonly" readonly></div>' +
+    '</div></div></div>' +
+
+    '<div class="card"><div class="card-header" style="background:#374151;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Fecha y Hora del Listado</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
+      '<div class="field-group"><label>Fecha</label><input type="text" value="' + esc(lst.fecha) + '" placeholder="DD/MM/AAAA" oninput="updateListadoMeta(\'fecha\',this.value)"></div>' +
+      '<div class="field-group"><label>Hora</label><input type="text" value="' + esc(lst.hora) + '" placeholder="HH:MM" oninput="updateListadoMeta(\'hora\',this.value)"></div>' +
+    '</div></div></div>' +
+
+    _renderListadoSeccion('activos', 'Activos', lst) +
+    _renderListadoSeccion('inactivos', 'Inactivos', lst) +
+
+    '<div class="action-bar"><button class="btn-generate" onclick="quickExportCurrentPatient()" id="btn-quick-export-listado" style="background:#475569;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida rápida</button><button class="btn-generate" onclick="generateListado()" id="btn-gen-listado"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Listado de Problemas (.docx)</button></div>'
+  );
+  // auto-grow existing textareas
+  c.querySelectorAll('.listado-row textarea').forEach(_autoGrowTextarea);
+  // wire drag-and-drop
+  setupListadoDragDrop();
+}
+function updateListadoMeta(field, value) {
+  var lst = ensureListadoForActive(); if (!lst) return;
+  lst[field] = value;
+  saveState();
+}
+function updateProblemaField(seccion, id, field, value) {
+  var lst = ensureListadoForActive(); if (!lst) return;
+  var arr = lst[seccion] || [];
+  var p = arr.find(function(x){ return x.id === id; });
+  if (!p) return;
+  p[field] = value;
+  saveState();
+}
+function addProblemaUI(seccion) {
+  var lst = ensureListadoForActive(); if (!lst) return;
+  listadoProblemas[activeId] = listadoAddProblema(lst, seccion, { fecha: '', descripcion: '' });
+  saveState();
+  renderListadoForm();
+  setTimeout(function(){
+    var rows = document.querySelectorAll('[data-seccion-rows="' + seccion + '"] .listado-row textarea');
+    if (rows.length) rows[rows.length - 1].focus();
+  }, 0);
+}
+function removeProblemaUI(seccion, id) {
+  var lst = ensureListadoForActive(); if (!lst) return;
+  listadoProblemas[activeId] = listadoRemoveProblema(lst, seccion, id);
+  saveState();
+  renderListadoForm();
+}
+function setupListadoDragDrop() {
+  var rows = document.querySelectorAll('#listado-form .listado-row');
+  rows.forEach(function(row) {
+    row.addEventListener('dragstart', function(e) {
+      row.classList.add('dragging');
+      try {
+        e.dataTransfer.setData('text/plain', JSON.stringify({ id: row.dataset.id, seccion: row.dataset.seccion }));
+        e.dataTransfer.effectAllowed = 'move';
+      } catch (_e) {}
+    });
+    row.addEventListener('dragend', function() {
+      row.classList.remove('dragging');
+      document.querySelectorAll('#listado-form .listado-row.drag-over').forEach(function(r){ r.classList.remove('drag-over'); });
+    });
+    row.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      try { e.dataTransfer.dropEffect = 'move'; } catch (_e) {}
+      row.classList.add('drag-over');
+    });
+    row.addEventListener('dragleave', function() { row.classList.remove('drag-over'); });
+    row.addEventListener('drop', function(e) {
+      e.preventDefault();
+      row.classList.remove('drag-over');
+      var data;
+      try { data = JSON.parse(e.dataTransfer.getData('text/plain')); } catch (_e) { return; }
+      if (!data || data.seccion !== row.dataset.seccion) return; // sólo dentro de la misma sección
+      if (data.id === row.dataset.id) return;
+      var lst = ensureListadoForActive(); if (!lst) return;
+      var arr = lst[data.seccion] || [];
+      var fromIdx = arr.findIndex(function(p){ return p.id === data.id; });
+      var toIdx   = arr.findIndex(function(p){ return p.id === row.dataset.id; });
+      if (fromIdx === -1 || toIdx === -1) return;
+      listadoProblemas[activeId] = listadoReorderProblema(lst, data.seccion, fromIdx, toIdx);
+      saveState();
+      renderListadoForm();
+    });
+  });
+}
+function generateListado() {
+  // Implementación completa en Task 10. Stub para no romper el botón.
+  showToast('Generador .docx llega en la siguiente iteración.', 'info');
 }
 function renderEstadoActualButton() { /* Task 9 */ }
 
@@ -8323,6 +8472,12 @@ Object.assign(window, {
   onDobInputPrefilled,
   onDobInputManual,
   updatePatientDob,
+  updateListadoMeta,
+  updateProblemaField,
+  addProblemaUI,
+  removeProblemaUI,
+  generateListado,
+  _autoGrowTextarea,
   togglePatientPinned,
   togglePatientArchived,
   movePatientByOffset,
