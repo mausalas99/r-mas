@@ -1602,6 +1602,8 @@ function renderListadoForm() {
     _renderListadoSeccion('activos', 'Activos', lst) +
     _renderListadoSeccion('inactivos', 'Inactivos', lst) +
 
+    _renderListadoMedicosCard(lst) +
+
     '<div class="action-bar"><button class="btn-generate" onclick="quickExportCurrentPatient()" id="btn-quick-export-listado" style="background:#475569;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida rápida</button><button class="btn-generate" onclick="generateListado()" id="btn-gen-listado"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Listado de Problemas (.docx)</button></div>'
   );
   // auto-grow existing textareas
@@ -1676,9 +1678,69 @@ function setupListadoDragDrop() {
     });
   });
 }
+function _renderListadoMedicosCard(lst) {
+  var meds = getMedicosForListado(lst);
+  function row(key, label, placeholder) {
+    return (
+      '<div class="field-group"><label>' + label + '</label>' +
+      '<input type="text" placeholder="' + placeholder + '" value="' + esc(meds[key] || '') + '" oninput="updateListadoMedico(\'' + key + '\', this.value)">' +
+      '</div>'
+    );
+  }
+  return (
+    '<div class="card"><div class="card-header" style="background:#0f766e;">' +
+      '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' +
+      'Médicos (firma)' +
+      '<span style="margin-left:auto;font-size:11px;font-weight:500;color:rgba(255,255,255,0.85);">Pre-llena desde Mi Perfil. Edita aquí para este paciente.</span>' +
+    '</div><div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+      row('profesor', 'Profesor',  'Profesor: Dr. Nombre Apellido') +
+      row('r4',       'R4',        'R4MI Nombre Apellido') +
+      row('r2',       'R2',        'R2MI Nombre Apellido') +
+      row('r1a',      'R1 (1)',    'R1MI Nombre Apellido') +
+      row('r1b',      'R1 (2)',    'R1MI Nombre Apellido') +
+    '</div></div>'
+  );
+}
+
 function generateListado() {
-  // Implementación completa en Task 10. Stub para no romper el botón.
-  showToast('Generador .docx llega en la siguiente iteración.', 'info');
+  if (typeof isRpcOffline === 'function' && isRpcOffline()) {
+    showToast('Sin conexión con el servidor local. Reinicia R+ para generar documentos.', 'error');
+    return;
+  }
+  if (!activeId) { showToast('Selecciona un paciente primero', 'error'); return; }
+  var patient = patients.find(function(p){ return p.id === activeId; });
+  if (!patient) return;
+  var lst = ensureListadoForActive(); if (!lst) return;
+  var hasProblems = (lst.activos && lst.activos.length) || (lst.inactivos && lst.inactivos.length);
+  if (!hasProblems) {
+    showToast('Agrega al menos un problema antes de generar.', 'error');
+    return;
+  }
+  var medicos = getMedicosForListado(lst);
+  var btn = document.getElementById('btn-gen-listado');
+  if (btn) { btn.classList.add('loading'); btn.disabled = true; }
+  if (typeof incrementPendingJobs === 'function') incrementPendingJobs();
+  fetch('/generate-listado', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      patient: patient,
+      listado: lst,
+      medicos: medicos,
+      outputDir: settings.outputDir || '',
+    }),
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if (d.ok) showToast('Listado guardado: ' + d.fileName, 'success');
+    else showToast('Error: ' + d.error, 'error');
+  })
+  .catch(function(){ showToast('Error de conexión', 'error'); })
+  .finally(function(){
+    if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
+    if (typeof decrementPendingJobs === 'function') decrementPendingJobs();
+    if (typeof syncOfflineButtonStates === 'function') syncOfflineButtonStates();
+  });
 }
 function renderEstadoActualButton() { /* Task 9 */ }
 
@@ -2060,6 +2122,11 @@ function loadSettings() {
   }
   var srvEl = document.getElementById('settings-default-servicio');
   if (srvEl) srvEl.value = settings.defaultServicio || '';
+  var medTpl = settings.medicosPlantilla || {};
+  ['profesor','r4','r2','r1a','r1b'].forEach(function(k){
+    var el = document.getElementById('settings-medico-' + k);
+    if (el) el.value = medTpl[k] || '';
+  });
   var lbl = document.getElementById('profile-toggle-label');
   if (lbl) {
     if (settings.doctorName || settings.grado) {
@@ -2174,6 +2241,37 @@ function onDefaultServicioBlur() {
   var w = document.getElementById('default-servicio-warning');
   var looksAbbrev = v.length > 0 && v.length <= 3 && /^[A-Z]+$/.test(v);
   if (w) w.style.display = looksAbbrev ? 'block' : 'none';
+}
+
+function onMedicoTemplateBlur() {
+  var keys = ['profesor','r4','r2','r1a','r1b'];
+  var tpl = {};
+  keys.forEach(function(k){
+    var el = document.getElementById('settings-medico-' + k);
+    tpl[k] = el ? (el.value || '').trim() : '';
+  });
+  settings.medicosPlantilla = tpl;
+  localStorage.setItem('rpc-settings', JSON.stringify(settings));
+}
+
+function getMedicosForListado(lst) {
+  var tpl = settings.medicosPlantilla || {};
+  var override = (lst && lst.medicos) || {};
+  function pick(k) { return (override[k] && override[k].trim()) ? override[k] : (tpl[k] || ''); }
+  return {
+    profesor: pick('profesor'),
+    r4:       pick('r4'),
+    r2:       pick('r2'),
+    r1a:      pick('r1a'),
+    r1b:      pick('r1b'),
+  };
+}
+
+function updateListadoMedico(field, value) {
+  var lst = ensureListadoForActive(); if (!lst) return;
+  if (!lst.medicos) lst.medicos = {};
+  lst.medicos[field] = value;
+  saveState();
 }
 
 function normalizeQuickOutputFormat(format) {
@@ -8545,6 +8643,8 @@ Object.assign(window, {
   closeProfileModal,
   onAppModeChange,
   onDefaultServicioBlur,
+  onMedicoTemplateBlur,
+  updateListadoMedico,
   onDobInputPrefilled,
   onDobInputManual,
   updatePatientDob,

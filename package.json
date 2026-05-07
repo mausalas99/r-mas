@@ -99,8 +99,10 @@
       "server.js",
       "generate_note.py",
       "generate_indicaciones.py",
+      "generate_listado.py",
       "template.docx",
       "template_indicaciones.docx",
+      "template_listado.docx",
       "public/**/*",
       "build/AppIcon.icns",
       "build/icon.ico"
@@ -108,8 +110,10 @@
     "asarUnpack": [
       "generate_note.py",
       "generate_indicaciones.py",
+      "generate_listado.py",
       "template.docx",
-      "template_indicaciones.docx"
+      "template_indicaciones.docx",
+      "template_listado.docx"
     ]
   }
 }

@@ -108,6 +108,24 @@ appExpress.post('/generate-indicaciones', async (req, res) => {
   }
 });
 
+appExpress.post('/generate-listado', async (req, res) => {
+  const { patient, listado, medicos, outputDir } = req.body;
+  if (!patient || !listado) return res.status(400).json({ error: 'Missing patient or listado' });
+  const dest = (outputDir || '').trim() || DOWNLOADS;
+  if (!fs.existsSync(dest)) return res.status(400).json({ error: 'La carpeta seleccionada ya no existe. Cambia la ruta en Mi Perfil.' });
+  try { fs.accessSync(dest, fs.constants.W_OK); } catch (_) {
+    return res.status(400).json({ error: 'No se puede escribir en la carpeta seleccionada.' });
+  }
+  try {
+    const buf = await runPython('generate_listado.py', JSON.stringify({ patient, listado, medicos: medicos || {} }));
+    const fileName = `Listado_Problemas_${safeName(patient.nombre)}_${safeName(listado.fecha||'')}.docx`;
+    fs.writeFileSync(path.join(dest, fileName), buf);
+    res.json({ ok: true, fileName });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 const PORT = 3738;
 const server = appExpress.listen(PORT, () => {
   console.log(`R+ → http://localhost:${PORT}`);
