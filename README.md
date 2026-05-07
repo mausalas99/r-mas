@@ -2,7 +2,16 @@
 
 Herramienta clínica de escritorio para generación de **notas de evolución**, **indicaciones médicas** y visualización de **laboratorios** con diagramas automáticos.
 
-**Versión estable actual: [2.4.0](https://github.com/mausalas99/r-mas/releases/tag/v2.4.0)** — descarga desde [Releases (última)](https://github.com/mausalas99/r-mas/releases/latest).
+**Versión estable actual: [2.4.1](https://github.com/mausalas99/r-mas/releases/tag/v2.4.1)** — descarga desde [Releases (última)](https://github.com/mausalas99/r-mas/releases/latest).
+
+---
+
+## R+ 2.4.1 (parche — medicamentos compactos y tooltip de tendencias)
+
+- **Medicamentos** — En la salida resumida «nombre + día», el formato ahora es compacto: `MEDICAMENTO + DOSIS + VÍA abreviada + FRECUENCIA abreviada + DÍA de uso` (por ejemplo: `MEROPENEM 2G IV C/8H DIA 2`).
+- **Tendencias** — En la mini-gráfica ampliada, el tooltip vuelve a aparecer al pasar el cursor sobre el último punto de la serie. La detección ahora se hace por columna del eje X y los puntos tienen un pequeño offset para que el tooltip no quede recortado contra el borde del canvas.
+
+Notas: `docs/RELEASE_NOTES_2.4.1.txt`.
 
 ---
 
@@ -120,8 +129,8 @@ Notas extendidas en el repo: docs/RELEASE_NOTES_2.0.0.txt (texto plano).
 
 Descarga el `.dmg` correspondiente a tu procesador desde [Releases](https://github.com/mausalas99/r-mas/releases/latest):
 
-- `R+-2.4.0-arm64.dmg` — Apple Silicon (M1/M2/M3/M4) *(sustituye `2.4.0` por el número de la última release si lees esto en el futuro)*
-- `R+-2.4.0-x64.dmg` — Intel
+- `R+-2.4.1-arm64.dmg` — Apple Silicon (M1/M2/M3/M4) *(sustituye `2.4.1` por el número de la última release si lees esto en el futuro)*
+- `R+-2.4.1-x64.dmg` — Intel
 
 Abre el `.dmg`, arrastra R+ a Aplicaciones y ejecútalo.
 
@@ -129,7 +138,7 @@ Abre el `.dmg`, arrastra R+ a Aplicaciones y ejecútalo.
 
 ### Windows
 
-Descarga `R+-2.4.0-x64.exe` (nombre `R+-<versión>-x64.exe`) desde [Releases](https://github.com/mausalas99/r-mas/releases/latest) y ejecútalo. La instalación es automática.
+Descarga `R+-2.4.1-x64.exe` (nombre `R+-<versión>-x64.exe`) desde [Releases](https://github.com/mausalas99/r-mas/releases/latest) y ejecútalo. La instalación es automática.
 
 > Si Windows SmartScreen advierte sobre el archivo: Más información → Ejecutar de todas formas.
 
