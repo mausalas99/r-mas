@@ -1493,17 +1493,43 @@ function switchAppTab(tab) {
 
 function switchInnerTab(tab) {
   activeInner = tab;
-  document.getElementById('itab-notas').classList.toggle('active', tab === 'notas');
-  document.getElementById('itab-indica').classList.toggle('active', tab === 'indica');
-  document.getElementById('itab-tend').classList.toggle('active', tab === 'tend');
-  document.getElementById('itab-cult').classList.toggle('active', tab === 'cult');
-  document.getElementById('itab-content-notas').classList.toggle('active', tab === 'notas');
-  document.getElementById('itab-content-indica').classList.toggle('active', tab === 'indica');
-  document.getElementById('itab-content-tend').classList.toggle('active', tab === 'tend');
-  document.getElementById('itab-content-cult').classList.toggle('active', tab === 'cult');
+  var ids = ['notas','indica','tend','cult','listado'];
+  ids.forEach(function(t) {
+    var btn = document.getElementById('itab-'+t);
+    var pane = document.getElementById('itab-content-'+t);
+    if (btn) btn.classList.toggle('active', tab === t);
+    if (pane) pane.classList.toggle('active', tab === t);
+  });
   if (tab === 'tend') renderTendencias();
   if (tab === 'cult') renderCultivosTable();
+  if (tab === 'listado') renderListadoForm();
 }
+
+function renderInnerTabs() {
+  var sala = isModeSala(settings);
+  function show(id, visible) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = visible ? '' : 'none';
+  }
+  show('itab-notas', !sala);
+  show('itab-indica', !sala);
+  show('itab-tend', true);
+  show('itab-cult', true);
+  show('itab-listado', sala);
+}
+
+function getActiveInnerTab() {
+  return activeInner || null;
+}
+
+// Listado de Problemas (UI completa en Task 8) y Estado Actual button (Task 9).
+function renderListadoForm() {
+  var c = document.getElementById('listado-form');
+  if (c && !c.innerHTML.trim()) {
+    c.innerHTML = '<p style="color:var(--text-muted);padding:16px;">Pendiente de implementación.</p>';
+  }
+}
+function renderEstadoActualButton() { /* Task 9 */ }
 
 function onPatientSearchInput(val) {
   patientSearchFilter = (val || '').trim().toLowerCase();
@@ -1796,11 +1822,18 @@ function selectPatient(id) {
   renderPatientList();
   document.getElementById('empty-state').style.display = 'none';
   document.getElementById('patient-view').style.display = 'flex';
+  renderInnerTabs();
+  renderEstadoActualButton();
   renderNoteForm();
   renderIndicaForm();
   refreshTendenciasOrCultivosPanel();
   renderLabHistoryPanel();
   renderMedRecetaPanel();
+  if (isModeSala(settings) && (activeInner === 'notas' || activeInner === 'indica' || !activeInner)) {
+    switchInnerTab('tend');
+  } else if (!isModeSala(settings) && activeInner === 'listado') {
+    switchInnerTab('notas');
+  }
 }
 
 function deletePatient(e, id) {
@@ -1814,6 +1847,7 @@ function deletePatient(e, id) {
   if (labHistory && labHistory[id]) delete labHistory[id];
   if (medRecetaByPatient && medRecetaByPatient[id]) delete medRecetaByPatient[id];
   if (medNotaSelectionByPatient && medNotaSelectionByPatient[id]) delete medNotaSelectionByPatient[id];
+  if (listadoProblemas && listadoProblemas[id]) delete listadoProblemas[id];
   saveState();
   addAuditEntry('patient-delete', 'ok', 1, target ? (target.registro || target.nombre || '') : '');
   if (activeId === id) activeId = patients.length ? patients[0].id : null;
