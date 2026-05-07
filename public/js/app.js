@@ -1461,6 +1461,7 @@ else renderLabHistoryPanel();
 applyFontZoom();
 loadSettings();
 syncThemeSettingsButtons();
+renderInnerTabs();
 if (__v3MigratedThisBoot) {
   setTimeout(function() {
     try { showToast('R+ 3.0 — Sala activado por defecto. Cambia en Mi Perfil → Aplicación.'); } catch (_e) {}
@@ -1901,6 +1902,14 @@ function loadSettings() {
   if (docEl) docEl.value = settings.doctorName || '';
   if (proEl) proEl.value = settings.profesorName || '';
   if (grEl)  grEl.value  = settings.grado || '';
+  var modeSala = document.getElementById('app-mode-sala');
+  var modeInter = document.getElementById('app-mode-inter');
+  if (modeSala && modeInter) {
+    if ((settings.appMode || 'sala') === 'sala') modeSala.checked = true;
+    else modeInter.checked = true;
+  }
+  var srvEl = document.getElementById('settings-default-servicio');
+  if (srvEl) srvEl.value = settings.defaultServicio || '';
   var lbl = document.getElementById('profile-toggle-label');
   if (lbl) {
     if (settings.doctorName || settings.grado) {
@@ -1992,6 +2001,31 @@ function saveSettings() {
   showToast('Perfil guardado ✓', 'success');
 }
 
+function onAppModeChange() {
+  var sala = document.getElementById('app-mode-sala');
+  settings.appMode = (sala && sala.checked) ? 'sala' : 'interconsulta';
+  localStorage.setItem('rpc-settings', JSON.stringify(settings));
+  var current = getActiveInnerTab();
+  var nowSala = isModeSala(settings);
+  if (nowSala && (current === 'notas' || current === 'indica')) switchInnerTab('tend');
+  else if (!nowSala && current === 'listado') switchInnerTab('notas');
+  renderInnerTabs();
+  renderEstadoActualButton();
+  showToast('Modo cambiado a ' + (nowSala ? 'Sala' : 'Interconsulta'), 'success');
+}
+
+function onDefaultServicioBlur() {
+  var el = document.getElementById('settings-default-servicio');
+  if (!el) return;
+  var v = (el.value || '').trim().toUpperCase();
+  el.value = v;
+  settings.defaultServicio = v;
+  localStorage.setItem('rpc-settings', JSON.stringify(settings));
+  var w = document.getElementById('default-servicio-warning');
+  var looksAbbrev = v.length > 0 && v.length <= 3 && /^[A-Z]+$/.test(v);
+  if (w) w.style.display = looksAbbrev ? 'block' : 'none';
+}
+
 function normalizeQuickOutputFormat(format) {
   var normalized = String(format || '').trim().toLowerCase();
   if (normalized !== 'html' && normalized !== 'txt' && normalized !== 'docx') return 'docx';
@@ -2036,7 +2070,7 @@ function syncProfileSectionVisibility() {
 function openProfileFromHeader(ev) {
   if (ev) ev.preventDefault();
   switchAppTab('nota');
-  switchInnerTab('notas');
+  switchInnerTab(isModeSala(settings) ? 'tend' : 'notas');
   profileSectionVisible = !profileSectionVisible;
   syncProfileSectionVisibility();
   if (!profileSectionVisible) return;
