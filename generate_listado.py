@@ -69,6 +69,15 @@ PARA_RPR_DEFAULT = (
     'w:cs="Times New Roman"/><w:sz w:val="21"/><w:szCs w:val="21"/></w:rPr>'
 )
 
+# numId definido en word/numbering.xml del template (heredado de FELIPE):
+# numId=35 → abstractNum=57 → formato "lowerLetter" con patrón "%1)" e
+# indent left=720 hanging=360 (sangría colgante). Word genera la letra
+# automáticamente y maneja el tab. Cuando hay varios bloques con título
+# en la misma celda, se necesitan numIds distintos para reiniciar el
+# contador en a) — los inyectamos al vuelo en numbering.xml.
+LIST_NUMID_BASE = 35       # primer bloque usa el numId nativo del template
+LIST_NUMID_DYNAMIC_START = 9000  # IDs sintéticos para reinicios sucesivos
+
 
 def mk_para(content_xml, *, centered=False, ind=None):
     jc = '<w:jc w:val="center"/>' if centered else ''
@@ -84,49 +93,74 @@ def mk_run(text, *, bold=False):
     return f'<w:r>{rpr}<w:t xml:space="preserve">{esc(text)}</w:t></w:r>'
 
 
-# Reconoce líneas tipo "a)", "  b)", "ñ)" — y permite letras seguidas
-# (la primera coincidencia gana, así que limitamos a una sola letra antes de ")").
+def mk_list_para(content, num_id):
+    """Párrafo de lista numerada (lowerLetter %1)). El ``a)``, ``b)``,
+    ``c)`` lo genera Word a partir de num_id."""
+    return (
+        '<w:p><w:pPr>'
+        '<w:pStyle w:val="TableParagraph"/>'
+        f'<w:numPr><w:ilvl w:val="0"/><w:numId w:val="{num_id}"/></w:numPr>'
+        '<w:contextualSpacing/>'
+        f'{PARA_RPR_DEFAULT}'
+        '</w:pPr>'
+        f'<w:r>{CELL_RPR_DEFAULT}<w:t xml:space="preserve">{esc(content)}</w:t></w:r>'
+        '</w:p>'
+    )
+
+
+# Reconoce líneas tipo "a)", "  b)", "ñ)" — la letra escrita por el
+# usuario se ignora y se reemplaza con la auto-generada por Word.
 LIST_LINE_RE = re.compile(r'^\s*([A-Za-zÑñ])\)\s*(.*)$')
 
 
-def text_to_paragraphs(text, *, centered=False):
+def text_to_paragraphs(text, num_id_alloc):
     """
     Convierte texto multilínea a múltiples <w:p>.
 
     Reglas (markdown ligero, ad hoc para Listado de Problemas):
-      - Línea vacía → <w:p/> (separador).
-      - Línea que matchea LIST_LINE_RE (ej. ``a) Disnea progresiva...``) →
-        item de lista con sangría colgante. La letra y el ")" quedan al
-        margen y el contenido continúa con sangría.
-      - Cualquier otra línea no vacía → párrafo en negritas (título de
-        problema). Este es el formato pedido por el médico para que
-        resalten los nombres de los problemas.
+      - Línea vacía → <w:p/>. Además abre un nuevo bloque, lo que hace
+        que la siguiente lista ``a) ...`` reinicie su contador en ``a``
+        (asignándole un numId fresco).
+      - Línea con prefijo ``letra)`` → párrafo de lista numerada
+        (lowerLetter), Word genera la letra y el tab automáticamente.
+      - Cualquier otra línea no vacía → título en negritas. También
+        abre un nuevo bloque para que la lista que la sigue reinicie.
+
+    ``num_id_alloc`` es un dict mutable ``{ 'next': int, 'used': set }``
+    que asigna numIds sintéticos a cada bloque nuevo. El primer bloque
+    usa LIST_NUMID_BASE (numId 35 del template); los siguientes
+    consumen IDs >= LIST_NUMID_DYNAMIC_START.
     """
     if not text:
         return '<w:p/>'
     paragraphs = []
+    current_num_id = None  # se asigna cuando empieza un bloque de lista
+
+    def assign_new_num_id():
+        if LIST_NUMID_BASE not in num_id_alloc['used']:
+            num_id_alloc['used'].add(LIST_NUMID_BASE)
+            return LIST_NUMID_BASE
+        nid = num_id_alloc['next']
+        num_id_alloc['next'] += 1
+        num_id_alloc['used'].add(nid)
+        return nid
+
     for raw in str(text).split('\n'):
         line = raw.rstrip('\r')
         stripped = line.strip()
         if not stripped:
             paragraphs.append('<w:p/>')
+            current_num_id = None       # bloque cerrado; siguiente lista reinicia
             continue
         m = LIST_LINE_RE.match(line)
         if m:
-            letter = m.group(1)
             content = m.group(2)
-            # Sangría colgante: la primera línea empieza en 0, las
-            # continuaciones se alinean a 425 twips (~7.5 mm). El "a) " va
-            # en un run separado del contenido para que sólo aparezca una
-            # vez (el wrap respeta el indent).
-            indent_xml = '<w:ind w:left="425" w:hanging="425"/>'
-            runs = (
-                f'<w:r>{CELL_RPR_DEFAULT}<w:t xml:space="preserve">{esc(letter)}) </w:t></w:r>'
-                f'<w:r>{CELL_RPR_DEFAULT}<w:t xml:space="preserve">{esc(content)}</w:t></w:r>'
-            )
-            paragraphs.append(mk_para(runs, centered=centered, ind=indent_xml))
+            if current_num_id is None:
+                current_num_id = assign_new_num_id()
+            paragraphs.append(mk_list_para(content, current_num_id))
         else:
-            paragraphs.append(mk_para(mk_run(line, bold=True), centered=centered))
+            paragraphs.append(mk_para(mk_run(line, bold=True)))
+            current_num_id = None       # un título también reinicia la lista
     return ''.join(paragraphs)
 
 
@@ -137,14 +171,14 @@ def plain_cell(width_dxa, text, *, centered=False, borders=''):
     return f'<w:tc>{tcpr}{body}</w:tc>'
 
 
-def desc_cell(width_dxa, text, *, borders=''):
+def desc_cell(width_dxa, text, num_id_alloc, *, borders=''):
     """Celda de descripción de problema con interpretación markdown."""
     tcpr = f'<w:tcPr><w:tcW w:w="{width_dxa}" w:type="dxa"/>{borders}</w:tcPr>'
-    body = text_to_paragraphs(text)
+    body = text_to_paragraphs(text, num_id_alloc)
     return f'<w:tc>{tcpr}{body}</w:tc>'
 
 
-def build_problem_row(fecha, num, activos_text, inactivos_text):
+def build_problem_row(fecha, num, activos_text, inactivos_text, num_id_alloc):
     """Una fila por problema. Anchos coinciden con el header del template."""
     cells = (
         plain_cell(1542, fmt_fecha(fecha), centered=True,
@@ -153,10 +187,10 @@ def build_problem_row(fecha, num, activos_text, inactivos_text):
         + plain_cell(599, f'{num}.', centered=True,
                      borders='<w:tcBorders>'
                              '<w:left w:val="single" w:sz="6" w:space="0" w:color="373435"/></w:tcBorders>')
-        + desc_cell(5387, activos_text,
+        + desc_cell(5387, activos_text, num_id_alloc,
                     borders='<w:tcBorders>'
                             '<w:right w:val="single" w:sz="6" w:space="0" w:color="373435"/></w:tcBorders>')
-        + desc_cell(3249, inactivos_text,
+        + desc_cell(3249, inactivos_text, num_id_alloc,
                     borders='<w:tcBorders>'
                             '<w:left w:val="single" w:sz="6" w:space="0" w:color="373435"/>'
                             '<w:right w:val="nil"/></w:tcBorders>')
@@ -213,6 +247,11 @@ for sentinel, value in [
 activos = listado.get('activos') or []
 inactivos = listado.get('inactivos') or []
 
+# Asignador de numIds: el primer bloque usa el numId 35 nativo del
+# template; los siguientes (un bloque por título o por separador) usan
+# IDs sintéticos a partir de 9000 que injectamos en numbering.xml.
+num_id_alloc = {'next': LIST_NUMID_DYNAMIC_START, 'used': set()}
+
 rows_xml = ''
 n = 1
 for p in activos:
@@ -220,6 +259,7 @@ for p in activos:
         p.get('fecha', ''), n,
         p.get('descripcion', '') or '',
         '',
+        num_id_alloc,
     )
     n += 1
 for p in inactivos:
@@ -227,10 +267,31 @@ for p in inactivos:
         p.get('fecha', ''), n,
         '',
         p.get('descripcion', '') or '',
+        num_id_alloc,
     )
     n += 1
 
 xml = xml.replace('<!--LISTADO_TABLE_BODY-->', rows_xml, 1)
+
+# 4) numbering.xml — inyecta los numIds sintéticos como aliases que
+# apuntan al mismo abstractNum=57 (formato lowerLetter "%1)") pero con
+# <w:lvlOverride> para reiniciar el contador en a). Sin esto, dos
+# bloques distintos seguirían numerando b, c, d en vez de reiniciar.
+num_xml = files.get('word/numbering.xml', b'').decode('utf-8')
+synth_ids = [nid for nid in sorted(num_id_alloc['used']) if nid != LIST_NUMID_BASE]
+if num_xml and synth_ids:
+    inject = ''
+    for nid in synth_ids:
+        inject += (
+            f'<w:num w:numId="{nid}">'
+            f'<w:abstractNumId w:val="57"/>'
+            f'<w:lvlOverride w:ilvl="0"><w:startOverride w:val="1"/></w:lvlOverride>'
+            f'</w:num>'
+        )
+    # Insertamos antes del cierre </w:numbering>.
+    if '</w:numbering>' in num_xml:
+        num_xml = num_xml.replace('</w:numbering>', inject + '</w:numbering>', 1)
+        files['word/numbering.xml'] = num_xml.encode('utf-8')
 
 # ── Save ──────────────────────────────────────────────────────────────
 files['word/document.xml'] = xml.encode('utf-8')
