@@ -118,7 +118,13 @@ appExpress.post('/generate-listado', async (req, res) => {
   }
   try {
     const buf = await runPython('generate_listado.py', JSON.stringify({ patient, listado, medicos: medicos || {} }));
-    const fileName = `Listado_Problemas_${safeName(patient.nombre)}_${safeName(listado.fecha||'')}.docx`;
+    const now = new Date();
+    const stamp = [
+      String(now.getHours()).padStart(2, '0'),
+      String(now.getMinutes()).padStart(2, '0'),
+      String(now.getSeconds()).padStart(2, '0'),
+    ].join('-');
+    const fileName = `Listado_Problemas_${safeName(patient.nombre)}_${safeName(listado.fecha||'')}_${stamp}.docx`;
     fs.writeFileSync(path.join(dest, fileName), buf);
     res.json({ ok: true, fileName });
   } catch (e) {
