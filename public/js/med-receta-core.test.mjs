@@ -148,7 +148,7 @@ test('buildMedRecetaCopyText une con línea en blanco entre activos y omite susp
   assert.ok(t.indexOf('\n\n') !== -1);
 });
 
-test('buildMedRecetaNameOnlyText deja solo nombre y día en ATB', () => {
+test('buildMedRecetaNameOnlyText incluye nombre, via+dosis, frecuencia y día', () => {
   var items = [
     {
       nombreRaw: 'METRONIDAZOL 500 MG SOL INY 100 ML (*)',
@@ -169,11 +169,11 @@ test('buildMedRecetaNameOnlyText deja solo nombre y día en ATB', () => {
   ];
   var t = buildMedRecetaNameOnlyText(items);
   var lines = t.split('\n');
-  assert.equal(lines[0], 'METRONIDAZOL 500 MG SOLUCIÓN INYECTABLE DÍA 3');
-  assert.equal(lines[1], 'OMEPRAZOL 40 MG SOLUCIÓN INYECTABLE');
+  assert.equal(lines[0], 'METRONIDAZOL 500MG IV C/8H DIA 3');
+  assert.equal(lines[1], 'OMEPRAZOL 40MG IV C/12H');
 });
 
-test('buildMedRecetaNameOnlyText no agrega DÍA en no-ATB aunque exista día', () => {
+test('buildMedRecetaNameOnlyText agrega día de uso cuando existe', () => {
   var items = [
     {
       nombreRaw: 'OMEPRAZOL 40 MG SOL INY 10 ML (*)',
@@ -185,7 +185,22 @@ test('buildMedRecetaNameOnlyText no agrega DÍA en no-ATB aunque exista día', (
     },
   ];
   var t = buildMedRecetaNameOnlyText(items);
-  assert.equal(t, 'OMEPRAZOL 40 MG SOLUCIÓN INYECTABLE');
+  assert.equal(t, 'OMEPRAZOL 40MG IV C/12H DIA 4');
+});
+
+test('buildMedRecetaNameOnlyText usa formato compacto solicitado en meropenem', () => {
+  var items = [
+    {
+      nombreRaw: 'MEROPENEM 1 G SOL INY 20 ML',
+      viaRaw: 'VIA INTRAVENOSA',
+      dosisRaw: '2 G // *DIA# 2*',
+      frecuenciaRaw: 'CADA 8 HORAS',
+      diaTratamiento: 2,
+      suspendido: false,
+    },
+  ];
+  var t = buildMedRecetaNameOnlyText(items);
+  assert.equal(t, 'MEROPENEM 2G IV C/8H DIA 2');
 });
 
 test('bloque dorado — 12 medicamentos del spec', () => {

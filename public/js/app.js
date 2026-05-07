@@ -3313,6 +3313,18 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '2.4.1': [
+    {
+      title: 'Medicamentos (nombre + día) en formato compacto',
+      body:
+        'La salida resumida ahora usa formato corto: medicamento, dosis, vía abreviada, frecuencia abreviada y día de uso (por ejemplo: MEROPENEM 2G IV C/8H DIA 2).',
+    },
+    {
+      title: 'Tendencias: hover del último punto',
+      body:
+        'En la mini-gráfica ampliada ya aparece el tooltip con la fecha y el valor cuando pasas el cursor sobre el último punto de la serie.',
+    },
+  ],
   '2.4.0': [
     {
       title: 'Sidebar de pacientes renovado',
@@ -6845,9 +6857,16 @@ function openTendDetail(sectionKey, fieldKey) {
     data: { labels: labels, datasets: datasets },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
+      layout: { padding: { right: 12, left: 4, top: 8, bottom: 4 } },
+      interaction: { mode: 'index', intersect: false, axis: 'x' },
       plugins: {
         legend: { display: false },
         tooltip: {
+          enabled: true,
+          mode: 'index',
+          intersect: false,
+          position: 'nearest',
           callbacks: {
             label: function (ctx) {
               return ctx.datasetIndex === 0 ? title + ': ' + ctx.parsed.y + ' ' + unit : null;
@@ -6856,7 +6875,7 @@ function openTendDetail(sectionKey, fieldKey) {
         }
       },
       scales: {
-        x: { ticks: { font: { size: 12 } } },
+        x: { ticks: { font: { size: 12 } }, offset: true },
         y: {
           ticks: { font: { size: 12 } },
           title: { display: !!unit, text: unit, font: { size: 11 } }

@@ -404,20 +404,52 @@ export function buildMedRecetaCopyText(items) {
 }
 
 /**
- * Versión simple de texto libre:
- * - Solo nombre del medicamento.
- * - Si clasifica como ATB y tiene día de tratamiento, agrega "(DÍA N ...)".
+ * Versión resumida para copia rápida:
+ * - Medicamento.
+ * - Vía y dosis (en ese orden).
+ * - Frecuencia.
+ * - Día de uso cuando exista.
  */
 export function buildMedRecetaNameOnlyText(items) {
   var list = (items || []).filter(function (it) {
     return it && !it.suspendido;
   });
+  function viaShort(viaNorm) {
+    if (viaNorm === 'VÍA INTRAVENOSA') return 'IV';
+    if (viaNorm === 'VÍA ORAL') return 'VO';
+    if (viaNorm === 'VÍA SUBCUTÁNEA') return 'SC';
+    return trimStr(viaNorm).toUpperCase();
+  }
+  function freqShort(freqNorm) {
+    var t = trimStr(freqNorm).toUpperCase();
+    var m = t.match(/^CADA\s+(\d+)\s+H(?:ORA|ORAS)$/);
+    if (m) return 'C/' + m[1] + 'H';
+    return t;
+  }
+  function doseShort(dosis) {
+    return trimStr(dosis)
+      .toUpperCase()
+      .replace(/\s+/g, ' ')
+      .replace(/(\d(?:[.,]\d+)?)\s*(MG|G|ML|MCG|UI)\b/g, '$1$2')
+      .replace(/\s+/g, '');
+  }
+  function compactName(nombreExpandido) {
+    var n = trimStr(nombreExpandido).toUpperCase();
+    var trimmed = trimStr(n.replace(/\s+\d.*$/, ''));
+    return trimmed || n;
+  }
   var lines = list.map(function (it) {
-    var nombre = applyNombreAccents(expandNombrePresentacion(it.nombreRaw));
-    if (classifyMedicationSoapCategory(it.nombreRaw) === 'abx' && it.diaTratamiento != null) {
-      return nombre + ' DÍA ' + it.diaTratamiento;
-    }
-    return nombre;
+    var nombre = compactName(applyNombreAccents(expandNombrePresentacion(it.nombreRaw)));
+    var via = normalizeVia(it.viaRaw);
+    var dosis = dosisBeforeSlash(it.dosisRaw);
+    var freq = normalizeFrecuencia(it.frecuenciaRaw);
+    var parts = [nombre];
+    if (dosis) parts.push(doseShort(dosis));
+    if (via) parts.push(viaShort(via));
+    if (freq) parts.push(freqShort(freq));
+    if (it.diaTratamiento != null) parts.push('DIA ' + it.diaTratamiento);
+    var line = parts.join(' ');
+    return line;
   });
   return lines.join('\n');
 }
