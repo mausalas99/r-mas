@@ -36,6 +36,14 @@ import {
   classifyMedicationSoapCategory,
   applyMedCatalogOverlay,
 } from './med-receta-core.mjs';
+import { isModeSala, getDefaultServicio, migrateToV3 } from './mode-features.mjs';
+import { calculateAge, formatDobForDocs } from './age-calc.mjs';
+import {
+  emptyListado,
+  addProblema as listadoAddProblema,
+  removeProblema as listadoRemoveProblema,
+  reorderProblema as listadoReorderProblema,
+} from './listado-problemas-core.mjs';
 
 
 // ════════════════════════════════════════════════════════════════════
@@ -46,6 +54,7 @@ var notes        = storage.getNotes();
 var indicaciones = storage.getIndicaciones();
 var labHistory   = storage.getLabHistory();
 var medRecetaByPatient = storage.getMedRecetaByPatient();
+var listadoProblemas = storage.getListadoProblemas();
 applyMedCatalogOverlay(storage.getMedCatalog());
 var medNotaSelectionByPatient = {};
 var activeId     = null;
@@ -57,6 +66,8 @@ var dragPatientId = null;
 var profileSectionVisible = false;
 var activeLab    = null;
 var settings     = storage.getSettings();
+var __v3MigratedThisBoot = migrateToV3(settings);
+if (__v3MigratedThisBoot) storage.saveSettings(settings);
 var sparkCharts  = {};
 var detailChart  = null;
 var medOutputTab = 'full';
@@ -1450,6 +1461,11 @@ else renderLabHistoryPanel();
 applyFontZoom();
 loadSettings();
 syncThemeSettingsButtons();
+if (__v3MigratedThisBoot) {
+  setTimeout(function() {
+    try { showToast('R+ 3.0 — Sala activado por defecto. Cambia en Mi Perfil → Aplicación.'); } catch (_e) {}
+  }, 800);
+}
 function _rpcDeferInit(fn) {
   if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
     window.requestIdleCallback(function() { try { fn(); } catch (e) { console.error('deferInit error:', e && e.message); } }, { timeout: 1500 });
@@ -1807,7 +1823,7 @@ function deletePatient(e, id) {
 }
 
 function saveState() {
-  storage.saveAll(patients, notes, indicaciones, labHistory, medRecetaByPatient);
+  storage.saveAll(patients, notes, indicaciones, labHistory, medRecetaByPatient, listadoProblemas);
 }
 
 // ── Settings ──────────────────────────────────────────────────────
@@ -3844,6 +3860,7 @@ function restorePreimportBackupPrompt() {
   localStorage.setItem('rpc-indicaciones', JSON.stringify(payload.data.indicaciones || {}));
   localStorage.setItem('rpc-labHistory', JSON.stringify(payload.data.labHistory || {}));
   localStorage.setItem('rpc-medRecetaByPatient', JSON.stringify(payload.data.medRecetaByPatient || {}));
+  localStorage.setItem('rpc-listado-problemas', JSON.stringify(payload.data.listadoProblemas || {}));
   localStorage.setItem('rpc-settings', JSON.stringify(payload.data.settings || {}));
   if (payload.data.medCatalog && typeof payload.data.medCatalog === 'object') {
     storage.saveMedCatalog(payload.data.medCatalog);
@@ -3997,6 +4014,7 @@ function buildFullBackupPayload() {
       indicaciones: storage.getIndicaciones(),
       labHistory: storage.getLabHistory(),
       medRecetaByPatient: storage.getMedRecetaByPatient(),
+      listadoProblemas: storage.getListadoProblemas(),
       settings: storage.getSettings(),
       medCatalog: storage.getMedCatalog(),
     }
@@ -4370,6 +4388,7 @@ function onBackupFileChosen(ev) {
       localStorage.setItem('rpc-indicaciones', JSON.stringify(payload.data.indicaciones || {}));
       localStorage.setItem('rpc-labHistory', JSON.stringify(payload.data.labHistory || {}));
       localStorage.setItem('rpc-medRecetaByPatient', JSON.stringify(payload.data.medRecetaByPatient || {}));
+      localStorage.setItem('rpc-listado-problemas', JSON.stringify(payload.data.listadoProblemas || {}));
       localStorage.setItem('rpc-settings', JSON.stringify(payload.data.settings || {}));
       if (payload.data.medCatalog && typeof payload.data.medCatalog === 'object') {
         storage.saveMedCatalog(payload.data.medCatalog);
@@ -7727,6 +7746,7 @@ function undoLastOperation() {
   localStorage.setItem('rpc-indicaciones', JSON.stringify(snap.data.indicaciones || {}));
   localStorage.setItem('rpc-labHistory', JSON.stringify(snap.data.labHistory || {}));
   localStorage.setItem('rpc-medRecetaByPatient', JSON.stringify(snap.data.medRecetaByPatient || {}));
+  localStorage.setItem('rpc-listado-problemas', JSON.stringify(snap.data.listadoProblemas || {}));
   localStorage.setItem('rpc-settings', JSON.stringify(snap.data.settings || {}));
   if (snap.data.medCatalog && typeof snap.data.medCatalog === 'object') {
     storage.saveMedCatalog(snap.data.medCatalog);

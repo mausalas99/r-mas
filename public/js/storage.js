@@ -80,6 +80,26 @@ export const storage = {
   },
 
   /**
+   * Get listado de problemas (v3.0) from localStorage
+   * @returns {Object} Object mapping patient IDs to listado objects
+   */
+  getListadoProblemas() {
+    return safeParseObject(localStorage.getItem('rpc-listado-problemas'));
+  },
+
+  /**
+   * Save listado de problemas (v3.0) to localStorage (filters out demo)
+   * @param {Object} listadoProblemas
+   */
+  saveListadoProblemas(listadoProblemas) {
+    const persist = {};
+    Object.keys(listadoProblemas || {}).forEach(k => {
+      if (listadoProblemas[k] && !k.startsWith('demo-')) persist[k] = listadoProblemas[k];
+    });
+    localStorage.setItem('rpc-listado-problemas', JSON.stringify(persist));
+  },
+
+  /**
    * Get lab history from localStorage
    * @returns {Object} Object mapping patient IDs to arrays of lab entries
    */
@@ -223,13 +243,15 @@ export const storage = {
    * @param {Object} indicaciones - Object mapping patient IDs to indicaciones text
    * @param {Object} labHistory - Object mapping patient IDs to arrays of lab entries
    * @param {Object} medRecetaByPatient - Object mapping patient IDs to med receta payloads
+   * @param {Object} [listadoProblemas] - Optional v3.0 listado de problemas map
    */
-  saveAll(patients, notes, indicaciones, labHistory, medRecetaByPatient) {
+  saveAll(patients, notes, indicaciones, labHistory, medRecetaByPatient, listadoProblemas) {
     this.savePatients(patients);
     this.saveNotes(notes);
     this.saveIndicaciones(indicaciones);
     this.saveLabHistory(labHistory);
     this.saveMedRecetaByPatient(medRecetaByPatient || {});
+    if (listadoProblemas !== undefined) this.saveListadoProblemas(listadoProblemas || {});
   }
 };
 
