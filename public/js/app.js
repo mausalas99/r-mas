@@ -5859,6 +5859,40 @@ function renderOutput(result) {
 }
 
 // ── Modal ─────────────────────────────────────────────────────────
+function _todayISO() {
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function _setDobMaxOnInputs() {
+  var iso = _todayISO();
+  ['m-dob-prefilled','m-dob-manual'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.max = iso;
+  });
+}
+
+function onDobInputPrefilled() {
+  var dob = (document.getElementById('m-dob-prefilled') || {}).value || '';
+  var disp = document.getElementById('m-edad-display-prefilled');
+  if (!disp) return;
+  var age = calculateAge(dob);
+  disp.value = age ? age.display : '';
+}
+
+function onDobInputManual() {
+  var dob = (document.getElementById('m-dob-manual') || {}).value || '';
+  var disp = document.getElementById('m-edad-display-manual');
+  if (!disp) return;
+  var age = calculateAge(dob);
+  disp.value = age ? age.display : '';
+}
+
+function _prefillServicioForSala() {
+  var srv = document.getElementById('m-servicio');
+  if (srv && isModeSala(settings) && !srv.value) srv.value = getDefaultServicio(settings);
+}
+
 function openAddModal() {
   document.getElementById('modal-title').textContent = 'Nuevo Paciente';
   document.getElementById('modal-prefilled').style.display = 'none';
@@ -5866,9 +5900,11 @@ function openAddModal() {
   ['nombre-manual','registro-manual','area','servicio','cuarto','cama'].forEach(function(f){
     var el = document.getElementById('m-'+f); if(el) el.value='';
   });
-  document.getElementById('m-edad-manual-num').value = '';
-  document.getElementById('m-edad-manual-unit').value = 'años';
+  document.getElementById('m-dob-manual').value = '';
+  document.getElementById('m-edad-display-manual').value = '';
   document.getElementById('m-sexo').value = 'F';
+  _setDobMaxOnInputs();
+  _prefillServicioForSala();
   document.getElementById('modal').classList.add('open');
   setTimeout(function(){ document.getElementById('m-nombre-manual').focus(); }, 120);
 }
@@ -5881,15 +5917,24 @@ function openAddModalFromLab() {
   document.getElementById('modal-manual-full').style.display = 'none';
   document.getElementById('m-nombre').value   = p.name || '';
   document.getElementById('m-registro').value = p.expediente || '';
-  // Populate edad: split "52 años" → num=52, unit=años
-  var edadParts = (p.edad||'').split(' ');
-  document.getElementById('m-edad-num').value  = edadParts[0] || '';
-  document.getElementById('m-edad-unit').value = edadParts[1] || 'años';
-  // Populate sexo dropdown
+  document.getElementById('m-dob-prefilled').value = '';
+  document.getElementById('m-edad-display-prefilled').value = '';
   document.getElementById('m-sexo-ro').value = (p.sexo==='M') ? 'M' : 'F';
   ['area','servicio','cuarto','cama'].forEach(function(f){ document.getElementById('m-'+f).value=''; });
+  var hint = document.getElementById('m-lab-edad-hint');
+  var hintTxt = document.getElementById('m-lab-edad-from-report');
+  if (hint && hintTxt) {
+    if (p.edad) {
+      hintTxt.textContent = p.edad;
+      hint.style.display = 'block';
+    } else {
+      hint.style.display = 'none';
+    }
+  }
+  _setDobMaxOnInputs();
+  _prefillServicioForSala();
   document.getElementById('modal').classList.add('open');
-  setTimeout(function(){ document.getElementById('m-area').focus(); }, 120);
+  setTimeout(function(){ document.getElementById('m-dob-prefilled').focus(); }, 120);
 }
 
 function closeModal() { document.getElementById('modal').classList.remove('open'); }
@@ -5978,23 +6023,28 @@ function showDuplicateWarning(existing, onConfirm) {
 
 function savePatient() {
   var isFromLab = document.getElementById('modal-prefilled').style.display !== 'none';
-  var nombre, registro, edad, sexo;
+  var nombre, registro, dob, sexo;
   if (isFromLab) {
     nombre   = (document.getElementById('m-nombre').value||'').trim().toUpperCase();
     registro = (document.getElementById('m-registro').value||'').trim();
-    var edNum = (document.getElementById('m-edad-num').value||'').trim();
-    var edUnit = document.getElementById('m-edad-unit').value || 'años';
-    edad = edNum ? (edNum + ' ' + edUnit) : '';
-    sexo = document.getElementById('m-sexo-ro').value || 'F';
+    dob      = (document.getElementById('m-dob-prefilled').value||'').trim();
+    sexo     = document.getElementById('m-sexo-ro').value || 'F';
   } else {
     nombre   = (document.getElementById('m-nombre-manual').value||'').trim().toUpperCase();
     registro = (document.getElementById('m-registro-manual').value||'').trim();
-    var edNumM = (document.getElementById('m-edad-manual-num').value||'').trim();
-    var edUnitM = document.getElementById('m-edad-manual-unit').value || 'años';
-    edad = edNumM ? (edNumM + ' ' + edUnitM) : '';
+    dob      = (document.getElementById('m-dob-manual').value||'').trim();
     sexo     = document.getElementById('m-sexo').value;
   }
   if (!nombre) { showToast('Ingresa el nombre del paciente','error'); return; }
+  if (!dob) {
+    showToast('Ingresa la fecha de nacimiento','error');
+    var dobEl = document.getElementById(isFromLab ? 'm-dob-prefilled' : 'm-dob-manual');
+    if (dobEl) dobEl.focus();
+    return;
+  }
+  var age = calculateAge(dob);
+  if (!age) { showToast('Fecha de nacimiento inválida (no puede ser futura ni > 120 años)','error'); return; }
+  var edad = age.display;
   var area     = (document.getElementById('m-area').value||'').trim().toUpperCase();
   var servicio = (document.getElementById('m-servicio').value||'').trim().toUpperCase();
   var cuarto   = (document.getElementById('m-cuarto').value||'').trim();
@@ -6004,18 +6054,18 @@ function savePatient() {
   var dup = findDuplicatePatient(nombre, registro);
   if (dup) {
     showDuplicateWarning(dup, function() {
-      commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cama, isFromLab);
+      commitPatient(nombre, registro, dob, edad, sexo, area, servicio, cuarto, cama, isFromLab);
     });
     return;
   }
-  commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cama, isFromLab);
+  commitPatient(nombre, registro, dob, edad, sexo, area, servicio, cuarto, cama, isFromLab);
 }
 
-function commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cama, isFromLab) {
+function commitPatient(nombre, registro, dob, edad, sexo, area, servicio, cuarto, cama, isFromLab) {
   var today = new Date();
   var fecha = String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0')+'/'+today.getFullYear();
   var hora  = String(today.getHours()).padStart(2,'0')+':'+String(today.getMinutes()).padStart(2,'0');
-  var patient = { id:Date.now().toString(36)+Math.random().toString(36).slice(2), nombre:nombre, registro:registro, edad:edad, sexo:sexo, area:area, servicio:servicio, cuarto:cuarto, cama:cama, fromLab:isFromLab };
+  var patient = { id:Date.now().toString(36)+Math.random().toString(36).slice(2), nombre:nombre, registro:registro, fechaNacimiento:(dob || null), edad:edad, sexo:sexo, area:area, servicio:servicio, cuarto:cuarto, cama:cama, fromLab:isFromLab };
   notes[patient.id] = { fecha:fecha, hora:hora, interrogatorio:'', evolucion:'', estudios:'', diagnosticos:[''], tratamiento:[''], ta:'', fr:'', fc:'', temp:'', peso:'', medico:'', profesor:'' };
   indicaciones[patient.id] = { fecha:fecha, hora:hora, medicos:'', dieta:'', cuidados:'', estudios:'', medicamentos:'', interconsultas:'', otros:[] };
   applyDefaultsToNewPatient(patient.id);
@@ -6052,9 +6102,10 @@ function renderNoteForm() {
   document.getElementById('note-form').innerHTML = (
     '<div class="card"><div class="card-header"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Datos del Paciente</div><div class="card-body"><div style="display:flex;flex-direction:column;gap:10px;">' +
     '<div class="field-group"><label>Nombre</label><input type="text" value="' + esc(patient.nombre) + '" oninput="updatePatient(\'nombre\',this.value)" style="text-transform:uppercase;"></div>' +
-    '<div style="display:grid;grid-template-columns:1fr 80px 60px;gap:10px;">' +
+    '<div style="display:grid;grid-template-columns:1fr 110px 90px 60px;gap:10px;">' +
     '<div class="field-group"><label>Registro</label><input type="text" value="' + esc(patient.registro) + '" oninput="updatePatient(\'registro\',this.value)"></div>' +
-    '<div class="field-group"><label>Edad</label><input type="text" value="' + esc(patient.edad) + '" oninput="updatePatient(\'edad\',this.value)"></div>' +
+    '<div class="field-group"><label>Fecha de nac.' + (patient.fechaNacimiento ? '' : ' <span style="color:#b45309;font-size:10px;">(faltante)</span>') + '</label><input type="date" max="' + _todayISO() + '" value="' + esc(patient.fechaNacimiento || '') + '" oninput="updatePatientDob(this.value)"' + (patient.fechaNacimiento ? '' : ' class="legacy-missing-dob"') + '></div>' +
+    '<div class="field-group"><label>Edad</label><input id="patient-edad-display" type="text" value="' + esc(patient.edad) + '" oninput="updatePatient(\'edad\',this.value)"' + (patient.fechaNacimiento ? ' readonly tabindex="-1" style="background:var(--surface);"' : '') + '></div>' +
     '<div class="field-group"><label>Sexo</label><select onchange="updatePatient(\'sexo\',this.value)"><option value="M"' + (patient.sexo==='M'?' selected':'') + '>M</option><option value="F"' + (patient.sexo==='F'?' selected':'') + '>F</option></select></div></div>' +
     '<div class="field-group"><label>Área</label><input type="text" value="' + esc(patient.area) + '" oninput="updatePatient(\'area\',this.value)" style="text-transform:uppercase;"></div>' +
     '<div class="field-group"><label>Servicio</label><input type="text" value="' + esc(patient.servicio) + '" oninput="updatePatient(\'servicio\',this.value)" style="text-transform:uppercase;"></div>' +
@@ -6105,6 +6156,17 @@ function renderNoteForm() {
 function updatePatient(field, value) {
   var p = patients.find(function(p){ return p.id===activeId; });
   if (p) { p[field] = (field==='nombre'||field==='area'||field==='servicio') ? value.toUpperCase() : value; saveState(); renderPatientList(); }
+}
+function updatePatientDob(value) {
+  var p = patients.find(function(p){ return p.id===activeId; });
+  if (!p) return;
+  p.fechaNacimiento = value || null;
+  var age = calculateAge(value);
+  if (age) p.edad = age.display;
+  var dispEl = document.getElementById('patient-edad-display');
+  if (dispEl) dispEl.value = p.edad || '';
+  saveState();
+  renderPatientList();
 }
 function updateNote(field, value) { if (!notes[activeId]) notes[activeId]={}; notes[activeId][field]=value; saveState(); }
 function updateDx(i, val) { if (!notes[activeId]) return; notes[activeId].diagnosticos[i]=val.toUpperCase(); saveState(); }

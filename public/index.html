@@ -681,6 +681,7 @@
   .modal-section { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
   .modal-divider { border: none; border-top: 1px dashed var(--border); margin: 12px 0 16px; }
   .modal-section-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
+  .legacy-missing-dob { border-color: #f59e0b !important; background: #fffbeb !important; }
   .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
   .btn-cancel { background: #F1F5F9; color: var(--text-muted); border: 1px solid var(--border); border-radius: 8px; padding: 9px 20px; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; min-height: 44px; transition: background 0.15s; }
   .btn-cancel:hover { background: var(--border); }
@@ -2333,21 +2334,18 @@
         <div class="field-group"><label>Nombre</label><input id="m-nombre" type="text" style="text-transform:uppercase;"></div>
         <div class="field-group"><label>Registro</label><input id="m-registro" type="text"></div>
       </div>
-      <div class="modal-section" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <div class="field-group"><label>Edad</label>
-          <div style="display:flex;gap:4px;">
-            <input id="m-edad-num" type="text" placeholder="0" style="width:50px;min-width:0;">
-            <select id="m-edad-unit" style="flex:1;min-width:0;">
-              <option value="años">Años</option>
-              <option value="meses">Meses</option>
-              <option value="días">Días</option>
-            </select>
-          </div>
+      <div class="modal-section" style="display:grid;grid-template-columns:1fr 1fr 70px;gap:10px;">
+        <div class="field-group"><label>Fecha de nacimiento *</label>
+          <input id="m-dob-prefilled" type="date" oninput="onDobInputPrefilled()">
         </div>
-        <div class="field-group"><label>Sexo</label>
+        <div class="field-group"><label>Edad <span style="color:var(--text-muted);font-weight:400;">(calculada)</span></label>
+          <input id="m-edad-display-prefilled" type="text" readonly tabindex="-1" placeholder="—" style="background:var(--surface);">
+        </div>
+        <div class="field-group"><label>Sexo *</label>
           <select id="m-sexo-ro"><option value="F">F</option><option value="M">M</option></select>
         </div>
       </div>
+      <p id="m-lab-edad-hint" class="muted-hint" style="display:none;font-size:11px;color:var(--text-muted);margin:6px 0 0 0;">Lab dice: <span id="m-lab-edad-from-report">—</span></p>
       <hr class="modal-divider">
       <div class="modal-section-label">Completar manualmente</div>
     </div>
@@ -2361,18 +2359,14 @@
         <div style="margin-bottom:12px;">
           <div class="field-group"><label>Registro</label><input id="m-registro-manual" type="text" placeholder="0000000-0"></div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
-          <div class="field-group"><label>Edad</label>
-            <div style="display:flex;gap:4px;">
-              <input id="m-edad-manual-num" type="text" placeholder="0" style="width:50px;min-width:0;">
-              <select id="m-edad-manual-unit" style="flex:1;min-width:0;">
-                <option value="años">Años</option>
-                <option value="meses">Meses</option>
-                <option value="días">Días</option>
-              </select>
-            </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 70px;gap:10px;margin-bottom:12px;">
+          <div class="field-group"><label>Fecha de nacimiento *</label>
+            <input id="m-dob-manual" type="date" oninput="onDobInputManual()">
           </div>
-          <div class="field-group"><label>Sexo</label>
+          <div class="field-group"><label>Edad <span style="color:var(--text-muted);font-weight:400;">(calculada)</span></label>
+            <input id="m-edad-display-manual" type="text" readonly tabindex="-1" placeholder="—" style="background:var(--surface);">
+          </div>
+          <div class="field-group"><label>Sexo *</label>
             <select id="m-sexo"><option value="F">F</option><option value="M">M</option></select>
           </div>
         </div>
