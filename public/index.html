@@ -1136,6 +1136,13 @@
     z-index: 9995; align-items: center; justify-content: center;
   }
   .soap-modal-backdrop.open { display: flex; animation: fade-in 0.15s ease-out; }
+  /* Estado Actual mode (Sala v3.0) — oculta Subjetivo y cambia botones del footer */
+  body[data-estado-actual-mode="true"] #soap-modal-backdrop .soap-section-s { display: none; }
+  body[data-estado-actual-mode="true"] #soap-modal-backdrop .btn-soap-insert { display: none; }
+  body[data-estado-actual-mode="true"] #soap-modal-backdrop .btn-soap-only-copy { display: inline-flex !important; }
+  body[data-estado-actual-mode="true"] #soap-modal-backdrop .btn-soap-save-copy { display: inline-flex !important; }
+  html.dark #estado-actual-bar { background: rgba(16,185,129,0.18) !important; border-bottom-color: rgba(110,231,183,0.35) !important; }
+  html.dark #estado-actual-bar #estado-actual-meta { color: #6ee7b7 !important; }
   .soap-modal {
     background: var(--surface); border-radius: 12px; width: 620px;
     max-width: 95vw; max-height: 90vh; display: flex; flex-direction: column;
@@ -2292,6 +2299,13 @@
         <p>Selecciona o agrega un paciente para comenzar</p>
       </div>
       <div id="patient-view" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+        <div id="estado-actual-bar" style="display:none;flex-shrink:0;background:#ecfdf5;border-bottom:1px solid #a7f3d0;padding:8px 16px;align-items:center;justify-content:flex-end;gap:10px;">
+          <span id="estado-actual-meta" style="font-size:11px;color:#065f46;flex:1;"></span>
+          <button id="btn-estado-actual" onclick="openEstadoActualModal()" style="background:#065F46;color:white;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:6px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+            Estado Actual
+          </button>
+        </div>
         <div class="inner-tab-bar">
           <button class="inner-tab active" id="itab-notas" onclick="switchInnerTab('notas')">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
@@ -2481,13 +2495,13 @@
     <div class="soap-modal-header">
       <div class="soap-modal-header-title" id="soap-modal-title">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true" focusable="false"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        Plantilla de Evolución
+        <span id="soap-modal-title-text">Plantilla de Evolución</span>
       </div>
       <button onclick="closeSOAPModal()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.35);color:white;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">× Cerrar</button>
     </div>
     <div class="soap-modal-body">
       <!-- S: Subjetivo -->
-      <div class="soap-section" style="flex-shrink:0;">
+      <div class="soap-section soap-section-s" style="flex-shrink:0;">
         <div class="soap-section-header">S — Subjetivo</div>
         <div class="soap-section-body">
           <textarea id="soap-s" rows="2" placeholder="Paciente refiere mejoría del dolor, tolera vía oral…"></textarea>
@@ -2639,9 +2653,16 @@
     </div><!-- /soap-modal-body -->
     <div class="soap-modal-footer">
       <button type="button" class="soap-btn-cancel" onclick="closeSOAPModal()" style="background:white;border:1px solid var(--border);color:var(--text-muted);border-radius:6px;padding:7px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Cancelar</button>
-      <button onclick="insertSOAPText()" style="background:#065F46;color:white;border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:5px;">
+      <button class="btn-soap-insert" onclick="insertSOAPText()" style="background:#065F46;color:white;border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:5px;">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         Insertar en evolución
+      </button>
+      <button class="btn-soap-only-copy" onclick="estadoActualOnlyCopy()" style="display:none;background:white;border:1px solid var(--border);color:var(--text-muted);border-radius:6px;padding:7px 14px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">
+        Solo copiar
+      </button>
+      <button class="btn-soap-save-copy" onclick="estadoActualSaveAndCopy()" style="display:none;background:#065F46;color:white;border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;align-items:center;gap:5px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+        Guardar y copiar
       </button>
     </div>
   </div>

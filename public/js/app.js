@@ -1517,6 +1517,7 @@ function renderInnerTabs() {
   show('itab-tend', true);
   show('itab-cult', true);
   show('itab-listado', sala);
+  renderEstadoActualBar();
 }
 
 function getActiveInnerTab() {
@@ -5810,6 +5811,81 @@ function closeSOAPModal() {
   });
   var sel = document.getElementById('soap-soporte');
   if (sel) sel.selectedIndex = 0;
+  document.body.removeAttribute('data-estado-actual-mode');
+  var title = document.getElementById('soap-modal-title-text');
+  if (title) title.textContent = 'Plantilla de Evolución';
+}
+
+// ── Estado Actual (Sala v3.0) ─────────────────────────────────
+function openEstadoActualModal() {
+  if (!activeId) { showToast('Selecciona un paciente primero', 'error'); return; }
+  document.body.setAttribute('data-estado-actual-mode', 'true');
+  var title = document.getElementById('soap-modal-title-text');
+  if (title) title.textContent = 'Estado Actual';
+  var s = document.getElementById('soap-s');
+  if (s) s.value = '';
+  document.getElementById('soap-modal-backdrop').classList.add('open');
+}
+function _estadoActualText() {
+  var s = document.getElementById('soap-s');
+  if (s) s.value = '';
+  return buildSOAPText().replace(/^\s*\n+/, '');
+}
+async function _copyToClipboardSafe(text) {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (_e) {}
+  try {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    var ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  } catch (_e) { return false; }
+}
+async function estadoActualOnlyCopy() {
+  if (!activeId) return;
+  var text = _estadoActualText();
+  var ok = await _copyToClipboardSafe(text);
+  showToast(ok ? 'Estado Actual copiado al portapapeles ✓' : 'No se pudo copiar', ok ? 'success' : 'error');
+  closeSOAPModal();
+}
+async function estadoActualSaveAndCopy() {
+  if (!activeId) return;
+  var patient = patients.find(function(p){ return p.id === activeId; });
+  if (!patient) return;
+  var text = _estadoActualText();
+  patient.estadoActual = { text: text, savedAt: new Date().toISOString() };
+  saveState();
+  renderEstadoActualBar();
+  var ok = await _copyToClipboardSafe(text);
+  showToast(ok ? 'Estado Actual guardado y copiado ✓' : 'Guardado, pero no se pudo copiar', ok ? 'success' : 'error');
+  closeSOAPModal();
+}
+function renderEstadoActualBar() {
+  var bar = document.getElementById('estado-actual-bar');
+  var meta = document.getElementById('estado-actual-meta');
+  if (!bar) return;
+  var sala = isModeSala(settings);
+  if (!sala || !activeId) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  if (!meta) return;
+  var patient = patients.find(function(p){ return p.id === activeId; });
+  if (patient && patient.estadoActual && patient.estadoActual.savedAt) {
+    var d = new Date(patient.estadoActual.savedAt);
+    if (!isNaN(d.getTime())) {
+      var label = String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear() + ' · ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+      meta.textContent = 'Último guardado: ' + label;
+      return;
+    }
+  }
+  meta.textContent = 'Sin estado actual registrado';
 }
 
 function updateSOAPBalance() {
@@ -8478,6 +8554,9 @@ Object.assign(window, {
   removeProblemaUI,
   generateListado,
   _autoGrowTextarea,
+  openEstadoActualModal,
+  estadoActualOnlyCopy,
+  estadoActualSaveAndCopy,
   togglePatientPinned,
   togglePatientArchived,
   movePatientByOffset,
