@@ -14,6 +14,7 @@ test('getSalaTourSteps incluye pasos clave de v3.0', () => {
   assert.ok(steps.includes('lab_send'));
   assert.ok(steps.includes('estado_actual'), 'debe presentar Estado Actual');
   assert.ok(steps.includes('listado_problemas'), 'debe presentar Listado de Problemas');
+  assert.ok(!steps.includes('sala_soap'), 'Sala no debe mostrar el paso heredado de Nota de evolución');
   assert.ok(steps.includes('wrap'));
 });
 
@@ -41,6 +42,7 @@ test('getTourTarget para lab_send también requiere acción del usuario', () => 
 test('getTourTarget para estado_actual apunta al expediente con su botón', () => {
   const t = getTourTarget('estado_actual', 'sala');
   assert.equal(t.appTab, 'nota');
+  assert.equal(t.innerTab, undefined);
   assert.match(t.selector, /estado-actual|btn-estado-actual/i);
 });
 
