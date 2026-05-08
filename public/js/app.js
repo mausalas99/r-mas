@@ -2553,8 +2553,13 @@ function applyTourTargetForStep(id) {
       else if (t.innerTab === 'indica') renderIndicaForm();
     }
   }
+  // Si el paso anterior abrió Mi Perfil o Ajustes y el siguiente no los
+  // necesita, ciérralos para que no queden flotando encima del nuevo
+  // objetivo (p. ej. servicio_default → lab_parse).
   if (t.openProfile) ensureProfileExpandedForTour();
+  else if (typeof closeProfileModal === 'function') closeProfileModal();
   if (t.openSettings) ensureSettingsExpandedForTour();
+  else if (typeof closeSettingsDropdown === 'function') closeSettingsDropdown();
   if (id === 'sala_med') renderMedRecetaPanel();
 
   // Pre-pega el reporte demo cuando el siguiente click esperado es
