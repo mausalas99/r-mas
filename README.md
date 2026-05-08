@@ -2,7 +2,16 @@
 
 Herramienta clínica de escritorio para generación de **notas de evolución**, **indicaciones médicas** y visualización de **laboratorios** con diagramas automáticos.
 
-**Versión estable actual: [3.0.0](https://github.com/mausalas99/r-mas/releases/tag/v3.0.0)** — descarga desde [Releases (última)](https://github.com/mausalas99/r-mas/releases/latest).
+**Versión estable actual: [3.0.1](https://github.com/mausalas99/r-mas/releases/tag/v3.0.1)** — descarga desde [Releases (última)](https://github.com/mausalas99/r-mas/releases/latest).
+
+---
+
+## R+ 3.0.1 (parche — procalcitonina y listado de problemas en 8 pt)
+
+- **Procalcitonina (PCT)** — El bloque de Estudios Especiales se procesa y la procalcitonina aparece en QS junto a PCR (`QS  PCT 0.09*`). El extractor ignora los rangos pediátricos por horas y usa el límite de adulto (`ADULTO <0.05 ng/mL`) para marcar valores fuera de rango. También disponible como serie en Tendencias.
+- **Listado de Problemas** — El texto generado en el `.docx` (fecha, número y descripciones de activos/inactivos) ahora sale en 8 pt para que entren más problemas por hoja.
+
+Notas: `docs/RELEASE_NOTES_3.0.1.txt`.
 
 ---
 
@@ -143,8 +152,8 @@ Notas extendidas en el repo: docs/RELEASE_NOTES_2.0.0.txt (texto plano).
 
 Descarga el `.dmg` correspondiente a tu procesador desde [Releases](https://github.com/mausalas99/r-mas/releases/latest):
 
-- `R+-3.0.0-arm64.dmg` — Apple Silicon (M1/M2/M3/M4) *(sustituye `3.0.0` por el número de la última release si lees esto en el futuro)*
-- `R+-3.0.0-x64.dmg` — Intel
+- `R+-3.0.1-arm64.dmg` — Apple Silicon (M1/M2/M3/M4) *(sustituye `3.0.1` por el número de la última release si lees esto en el futuro)*
+- `R+-3.0.1-x64.dmg` — Intel
 
 Abre el `.dmg`, arrastra R+ a Aplicaciones y ejecútalo.
 
@@ -152,7 +161,7 @@ Abre el `.dmg`, arrastra R+ a Aplicaciones y ejecútalo.
 
 ### Windows
 
-Descarga `R+-3.0.0-x64.exe` (nombre `R+-<versión>-x64.exe`) desde [Releases](https://github.com/mausalas99/r-mas/releases/latest) y ejecútalo. La instalación es automática.
+Descarga `R+-3.0.1-x64.exe` (nombre `R+-<versión>-x64.exe`) desde [Releases](https://github.com/mausalas99/r-mas/releases/latest) y ejecútalo. La instalación es automática.
 
 > Si Windows SmartScreen advierte sobre el archivo: Más información → Ejecutar de todas formas.
 

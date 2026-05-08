@@ -3753,6 +3753,18 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '3.0.1': [
+    {
+      title: 'Procalcitonina (PCT)',
+      body:
+        'El bloque de Estudios Especiales se procesa: la procalcitonina aparece en QS junto a PCR y se marca cuando excede el límite de adulto (por defecto 0.05 ng/mL). Disponible también como serie en Tendencias.',
+    },
+    {
+      title: 'Listado de Problemas en 8 pt',
+      body:
+        'El texto dinámico del .docx (fecha, número, descripción) ahora sale en 8 pt para que entren más problemas por hoja sin romper el template.',
+    },
+  ],
   '3.0.0': [
     {
       title: 'Modos Sala / Interconsulta',
