@@ -2946,6 +2946,10 @@ function destroyDemoAndClose() {
 }
 
 function resetAndStartOnboarding() {
+  // El botón vive dentro del modal Mi Perfil; ciérralo antes de mostrar
+  // el tour para que no se quede flotando encima.
+  closeProfileModal();
+  if (typeof closeSettingsDropdown === 'function') closeSettingsDropdown();
   localStorage.removeItem(GUIDED_TOUR_LS_KEY);
   patients = patients.filter(function(p){ return p.id !== DEMO_PATIENT_ID; });
   delete notes[DEMO_PATIENT_ID];
