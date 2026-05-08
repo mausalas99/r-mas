@@ -33,6 +33,21 @@ def problem_rows(docx_bytes):
     return rows
 
 
+def problem_row_elements(docx_bytes):
+    rows = []
+    with zipfile.ZipFile(__import__("io").BytesIO(docx_bytes)) as docx:
+        root = ET.fromstring(docx.read("word/document.xml"))
+    for row in root.findall(".//w:tr", NS):
+        cells = row.findall("w:tc", NS)
+        texts = [
+            "".join(t.text or "" for t in cell.findall(".//w:t", NS))
+            for cell in cells
+        ]
+        if len(texts) == 4 and any("TEST" in text for text in texts):
+            rows.append(row)
+    return rows
+
+
 class GenerateListadoTests(unittest.TestCase):
     BASE_PATIENT = {
         "nombre": "TEST",
@@ -100,6 +115,32 @@ class GenerateListadoTests(unittest.TestCase):
         self.assertEqual(rows[1][1], "2.")
         self.assertEqual(rows[1][2], "")
         self.assertIn("INACTIVO TEST DOS", rows[1][3])
+
+    def test_texto_de_filas_de_problemas_usa_8_pt(self):
+        docx = generate_docx(
+            {
+                "patient": self.BASE_PATIENT,
+                "listado": {
+                    "activos": [
+                        {
+                            "fecha": "2026-05-07",
+                            "descripcion": "ACTIVO TEST\na) detalle TEST",
+                        },
+                    ],
+                    "inactivos": [],
+                },
+                "medicos": {},
+            }
+        )
+
+        row = problem_row_elements(docx)[0]
+        sizes = [
+            sz.attrib[f"{{{NS['w']}}}val"]
+            for sz in row.findall(".//w:sz", NS)
+        ]
+
+        self.assertTrue(sizes)
+        self.assertEqual(set(sizes), {"16"})
 
 
 if __name__ == "__main__":

@@ -57,16 +57,16 @@ def fmt_fecha(iso_or_dmy):
 CELL_RPR_DEFAULT = (
     '<w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" '
     'w:cs="Times New Roman"/><w:color w:val="373435"/>'
-    '<w:sz w:val="21"/><w:szCs w:val="21"/></w:rPr>'
+    '<w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr>'
 )
 CELL_RPR_BOLD = (
     '<w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" '
     'w:cs="Times New Roman"/><w:b/><w:bCs/><w:color w:val="373435"/>'
-    '<w:sz w:val="21"/><w:szCs w:val="21"/></w:rPr>'
+    '<w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr>'
 )
 PARA_RPR_DEFAULT = (
     '<w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" '
-    'w:cs="Times New Roman"/><w:sz w:val="21"/><w:szCs w:val="21"/></w:rPr>'
+    'w:cs="Times New Roman"/><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr>'
 )
 
 # numId definido en word/numbering.xml del template (heredado de FELIPE):
