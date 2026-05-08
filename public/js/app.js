@@ -2477,7 +2477,25 @@ function showTourDock() {
 }
 
 function hideTourDock() {
-  document.getElementById('tour-dock').classList.remove('tour-dock-visible');
+  var d = document.getElementById('tour-dock');
+  if (!d) return;
+  d.classList.remove('tour-dock-visible');
+  d.classList.remove('tour-dock-collapsed');
+  var btn = document.getElementById('btn-tour-collapse');
+  if (btn) { btn.textContent = '–'; btn.setAttribute('aria-label', 'Minimizar tutorial'); }
+}
+
+// Colapsa el dock a sólo el encabezado (badge + acciones) para que el
+// tour deje de bloquear el contenido. Se reexpande con el mismo botón.
+function toggleTourDockCollapsed() {
+  var d = document.getElementById('tour-dock');
+  if (!d) return;
+  var collapsed = d.classList.toggle('tour-dock-collapsed');
+  var btn = document.getElementById('btn-tour-collapse');
+  if (btn) {
+    btn.textContent = collapsed ? '+' : '–';
+    btn.setAttribute('aria-label', collapsed ? 'Expandir tutorial' : 'Minimizar tutorial');
+  }
 }
 
 function seedDemoTrendHistory() {
@@ -8707,6 +8725,7 @@ Object.assign(window, {
   guidedTourIntroChooseInterconsulta,
   guidedTourIntroSkip,
   skipGuidedTour,
+  toggleTourDockCollapsed,
   guidedTourClickNext,
   openAddModal,
   onPatientSearchInput,
