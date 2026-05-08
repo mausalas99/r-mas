@@ -49,6 +49,7 @@ import {
   getTourTarget,
   stepRequiresUserAction,
 } from './tour-targets.mjs';
+import { resolveQuickOutputAction } from './quick-output.mjs';
 
 
 // ════════════════════════════════════════════════════════════════════
@@ -6814,18 +6815,20 @@ function quickExportCurrentPatient() {
     return;
   }
   var format = normalizeQuickOutputFormat(settings.quickOutputFormat);
-  if (format === 'html') {
-    exportCurrentPatientAsHtml();
-    return;
-  }
-  if (format === 'txt') {
-    exportCurrentPatientAsText();
-    return;
-  }
-  if (activeInner === 'indica') {
-    generateIndicaciones();
-  } else {
-    generateWord();
+  var action = resolveQuickOutputAction({
+    format: format,
+    appMode: isModeSala(settings) ? 'sala' : 'interconsulta',
+    activeInner: activeInner,
+    listado: listadoProblemas[activeId] || null,
+  });
+  switch (action.kind) {
+    case 'html':           exportCurrentPatientAsHtml(); return;
+    case 'txt':            exportCurrentPatientAsText(); return;
+    case 'listado':        generateListado(); return;
+    case 'listado_empty':  showToast(action.message, 'error'); return;
+    case 'indicaciones':   generateIndicaciones(); return;
+    case 'nota':
+    default:               generateWord(); return;
   }
 }
 
