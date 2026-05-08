@@ -97,11 +97,42 @@ export function parseBH_(tNorm) {
   return p[0]+'\t'+p.slice(1).join(' ');
 }
 
+// Procalcitonina viene en bloque "ESTUDIOS ESPECIALES" con un rango de
+// referencia que mezcla intervalos pediátricos por horas (e.g. "0 - 5
+// HORAS"); el extractor genérico tomaría esos números como rango. Aquí
+// usamos el indicador "ADULTO <X" para fijar el max y dejamos min=0.
+export function extraerProcalcitonina_(texto) {
+  var defaultRange = { valor: '---', min: 0, max: 0.05 };
+  if (!texto) return defaultRange;
+  var t = texto.toUpperCase();
+  var positions = [];
+  var start = 0;
+  while (true) {
+    var p = t.indexOf('PROCALCITONINA', start);
+    if (p === -1) break;
+    positions.push(p);
+    start = p + 'PROCALCITONINA'.length;
+  }
+  if (!positions.length) return defaultRange;
+  for (var i = positions.length - 1; i >= 0; i--) {
+    var pos = positions[i] + 'PROCALCITONINA'.length;
+    var sub = texto.substring(pos, pos + 220);
+    var mVal = sub.match(/(-?\d+[.,]?\d*)/);
+    if (!mVal) continue;
+    var valor = mVal[1];
+    var rangeM = sub.match(/ADULTO[^0-9<]*<\s*=?\s*(\d+[.,]?\d*)/i);
+    var max = rangeM ? parseFloat(rangeM[1].replace(',', '.')) : 0.05;
+    return { valor: valor, min: 0, max: max };
+  }
+  return defaultRange;
+}
+
 export function parseQS_(texto) {
   var gluData = extraerConRango(['GLUCOSA EN SANGRE','GLUCOSA EN','GLUCOSA'], texto);
   var crData  = extraerConRango(['CREATININA EN SANGRE','CREATININA'], texto);
   var bunData = extraerConRango(['NITROGENO DE LA UREA EN SANGRE','NITROGENO DE LA UREA','UREA'], texto);
   var pcrData = extraerConRango(['PROTEINA C REACTIVA','PROTEÍNA C REACTIVA'], texto);
+  var pctData = extraerProcalcitonina_(texto);
   var auData  = extraerConRango(['ACIDO URICO EN SANGRE','ACIDO URICO','ÁCIDO ÚRICO'], texto);
   var tglData = extraerConRango(['TRIGLICERIDOS','TRIGLICÉRIDOS'], texto);
   var colData = extraerConRango(['COLESTEROL'], texto);
@@ -112,19 +143,21 @@ export function parseQS_(texto) {
   var Cr  = fmt(marcarSegunRango(crData.valor,  crData.min,  crData.max));
   var BUN = fmt(marcarSegunRango(bunData.valor, bunData.min, bunData.max));
   var PCR = fmt(marcarSegunRango(pcrData.valor, pcrData.min, pcrData.max));
+  var PCT = fmt(marcarSegunRango(pctData.valor, pctData.min, pctData.max));
   var AU  = fmt(marcarSegunRango(auData.valor,  auData.min,  auData.max));
   var TGL = fmt(marcarSegunRango(tglData.valor, tglData.min, tglData.max));
   var COL = fmt(marcarSegunRango(colData.valor, colData.min, colData.max));
   var VSG = fmt(marcarSegunRango(vsgData.valor, vsgData.min, vsgData.max));
   var CPK = fmt(marcarSegunRango(cpkData.valor, cpkData.min, cpkData.max));
 
-  if ([Glu,Cr,BUN,PCR,AU,TGL,COL,VSG,CPK].every(function(v){return v==='---';})) return '';
+  if ([Glu,Cr,BUN,PCR,PCT,AU,TGL,COL,VSG,CPK].every(function(v){return v==='---';})) return '';
 
   var p = ['QS'];
   if (Glu !== '---') p.push('Glu', Glu);
   if (Cr  !== '---') p.push('Cr',  Cr);
   if (BUN !== '---') p.push('BUN', BUN);
   if (PCR !== '---') p.push('PCR', PCR);
+  if (PCT !== '---') p.push('PCT', PCT);
   if (AU  !== '---') p.push('AU',  AU);
   if (TGL !== '---') p.push('TGL', TGL);
   if (COL !== '---') p.push('COL', COL);

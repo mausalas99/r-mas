@@ -174,6 +174,7 @@ var TEND_SERIES_CATALOG = [
   { sectionKey: 'QS', fieldKey: 'Cr', cardTitle: 'Creatinina' },
   { sectionKey: 'QS', fieldKey: 'BUN', cardTitle: 'BUN' },
   { sectionKey: 'QS', fieldKey: 'PCR', cardTitle: 'PCR' },
+  { sectionKey: 'QS', fieldKey: 'PCT', cardTitle: 'Procalcitonina' },
   { sectionKey: 'QS', fieldKey: 'AU', cardTitle: 'Ácido úrico' },
   { sectionKey: 'QS', fieldKey: 'TGL', cardTitle: 'Triglicéridos' },
   { sectionKey: 'QS', fieldKey: 'COL', cardTitle: 'Colesterol' },
