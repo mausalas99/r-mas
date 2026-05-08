@@ -2850,6 +2850,29 @@ function skipGuidedTour() {
 
 function startOnboarding(branch) {
   guidedTourBranch = branch === 'interconsulta' ? 'interconsulta' : 'sala';
+  // Alinear el modo de la app con la rama del tutorial. Si el usuario
+  // elige "Interconsulta" pero la app está en Sala, los pasos de
+  // ic_nota / ic_indica apuntarían a una pestaña oculta. Cambiamos el
+  // modo y refrescamos la UI; el usuario puede volver a Sala desde Mi
+  // Perfil cuando termine.
+  var prevMode = settings.appMode;
+  settings.appMode = guidedTourBranch === 'interconsulta' ? 'interconsulta' : 'sala';
+  if (settings.appMode !== prevMode) {
+    try { localStorage.setItem('rpc-settings', JSON.stringify(settings)); } catch (e) {}
+    var sala = isModeSala(settings);
+    if (sala && (activeInner === 'notas' || activeInner === 'indica')) {
+      switchInnerTab('tend');
+    } else if (!sala && activeInner === 'listado') {
+      switchInnerTab('notas');
+    }
+    renderInnerTabs();
+    if (typeof renderEstadoActualButton === 'function') renderEstadoActualButton();
+    if (typeof renderEstadoActualBar === 'function') renderEstadoActualBar();
+    var modeRadioSala = document.getElementById('app-mode-sala');
+    var modeRadioInter = document.getElementById('app-mode-inter');
+    if (modeRadioSala)  modeRadioSala.checked  = sala;
+    if (modeRadioInter) modeRadioInter.checked = !sala;
+  }
   var today = new Date();
   var fecha = String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0')+'/'+today.getFullYear();
   var hora  = String(today.getHours()).padStart(2,'0')+':'+String(today.getMinutes()).padStart(2,'0');
