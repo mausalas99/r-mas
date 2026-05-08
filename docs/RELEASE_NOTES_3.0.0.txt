@@ -1,0 +1,62 @@
+R+ 3.0.0
+
+MODOS DE TRABAJO — SALA / INTERCONSULTA
+- Nuevo selector global "Modo de trabajo" en Mi Perfil. Por defecto Sala.
+- Sala: oculta Nota de Evolución e Indicaciones; expone Estado Actual y
+  Listado de Problemas.
+- Interconsulta: comportamiento original con todas las pestañas visibles.
+- En Sala, "Servicio" sustituye a "Área / Departamento" al alta del paciente
+  y se prellena con un default configurable en Mi Perfil.
+
+ESTADO ACTUAL (Sala)
+- Botón superior en el expediente que reusa la Plantilla de Evolución
+  ocultando la sección Subjetivo.
+- Persiste el snapshot por paciente (con timestamp) y copia el resultado
+  al portapapeles.
+
+LISTADO DE PROBLEMAS (Sala)
+- Pestaña nueva con secciones Activos / Inactivos.
+- Filas dinámicas sin límite, fecha por problema, drag-and-drop dentro de
+  cada sección y auto-save.
+- Generador .docx basado en plantilla con encabezado del paciente,
+  numeración nativa de Word a) b) c) con sangría francesa por bloque y
+  títulos en negritas. Cada generación crea un archivo nuevo (timestamp en
+  el nombre) para no pisar el documento previo.
+- Mi Perfil incluye "Médicos del Listado de Problemas" (Profesor, R4, R2,
+  R1 (1), R1 (2)) que prellenan la firma; cada paciente puede sobreescribir
+  esos campos desde el propio listado.
+
+GASOMETRÍA — ANION GAP
+- Cálculo automático de Anion Gap (Na − (Cl + HCO3)) en gasometrías.
+- Na y Cl se toman exclusivamente de Química Sanguínea o Electrolitos
+  Séricos del mismo reporte; si no hay química, AG no se muestra.
+- Se marca con asterisco si cae fuera del rango 8–12 mEq/L.
+
+LABORATORIO — CALCIO IONIZADO
+- El bloque de gases extrae "Ca++ IONIZADO" desde OBSERVACIONES y lo marca
+  según rango (1.12–1.32 mmol/L).
+
+TUTORIAL GUIADO — REDISEÑO
+- El recorrido salta a la pestaña/zona del paso, hace scroll, resalta el
+  control esperado y oculta "Siguiente" mientras se requiera una acción
+  del usuario.
+- En Sala pide configurar el servicio sin abreviaturas (sugerencia:
+  MEDICINA INTERNA) y guía Estado Actual + Listado de Problemas.
+- Si lanzas el tour desde Mi Perfil, el modal se cierra antes de empezar.
+- Aviso preventivo cuando intentas guardar paciente sin expediente, con
+  instrucciones para pegar el bloque "Expediente:" y autollenar campos.
+- Dock del tour más discreto: esquina inferior derecha, semitransparente,
+  con botón para minimizar. Al hacer clic en la barra colapsada, se expande.
+
+SALIDA RÁPIDA
+- En Sala exporta el Listado de Problemas (.docx) si hay datos; si no,
+  muestra un aviso explicándolo.
+- En Interconsulta sigue exportando la Nota de Evolución como antes.
+
+INSTALACIÓN
+
+Mac Apple Silicon: R+-3.0.0-arm64.dmg
+Mac Intel: R+-3.0.0-x64.dmg
+Windows: R+-3.0.0-x64.exe
+
+Auto-actualización: latest-mac.yml y latest.yml junto a los binarios.

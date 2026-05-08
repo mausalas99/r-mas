@@ -2,7 +2,21 @@
 
 Herramienta clínica de escritorio para generación de **notas de evolución**, **indicaciones médicas** y visualización de **laboratorios** con diagramas automáticos.
 
-**Versión estable actual: [2.4.1](https://github.com/mausalas99/r-mas/releases/tag/v2.4.1)** — descarga desde [Releases (última)](https://github.com/mausalas99/r-mas/releases/latest).
+**Versión estable actual: [3.0.0](https://github.com/mausalas99/r-mas/releases/tag/v3.0.0)** — descarga desde [Releases (última)](https://github.com/mausalas99/r-mas/releases/latest).
+
+---
+
+## R+ 3.0.0 (modos Sala/Interconsulta, Estado Actual, Listado de Problemas, anion gap)
+
+- **Modos** — Sala oculta Nota/Indicaciones y expone **Estado Actual** y **Listado de Problemas**; Interconsulta mantiene el comportamiento original. Default: Sala. En Sala, el alta de paciente usa **Servicio** (con default configurable en Mi Perfil) en lugar de Área.
+- **Estado Actual** — Botón rápido en el expediente que reusa la Plantilla de Evolución sin **Subjetivo**: guarda el snapshot por paciente con timestamp y lo copia al portapapeles.
+- **Listado de Problemas** — Pestaña con **Activos / Inactivos** sin límite, fecha por problema, drag-and-drop y auto-save. Generador `.docx` con numeración nativa `a) b) c)` de Word, títulos en negritas y firma editable (médicos por defecto se configuran en Mi Perfil).
+- **Anion gap** — AG (Na − (Cl + HCO3)) se calcula desde Na/Cl de Química Sanguínea o Electrolitos Séricos del mismo reporte; si no hay química, no se muestra. Se marca cuando cae fuera de 8–12 mEq/L.
+- **Calcio ionizado** — Extracción y marcado desde el bloque de Observaciones de la gasometría.
+- **Tutorial** — Navegación automática a la zona del paso, resaltado del control esperado y "Siguiente" oculto cuando se requiere una acción. Dock más discreto en la esquina inferior derecha (clic para expandirlo si lo minimizas). Aviso preventivo al guardar paciente sin expediente.
+- **Salida rápida** — En Sala exporta Listado de Problemas si hay datos; en Interconsulta sigue exportando la Nota.
+
+Notas: `docs/RELEASE_NOTES_3.0.0.txt`.
 
 ---
 
@@ -129,8 +143,8 @@ Notas extendidas en el repo: docs/RELEASE_NOTES_2.0.0.txt (texto plano).
 
 Descarga el `.dmg` correspondiente a tu procesador desde [Releases](https://github.com/mausalas99/r-mas/releases/latest):
 
-- `R+-2.4.1-arm64.dmg` — Apple Silicon (M1/M2/M3/M4) *(sustituye `2.4.1` por el número de la última release si lees esto en el futuro)*
-- `R+-2.4.1-x64.dmg` — Intel
+- `R+-3.0.0-arm64.dmg` — Apple Silicon (M1/M2/M3/M4) *(sustituye `3.0.0` por el número de la última release si lees esto en el futuro)*
+- `R+-3.0.0-x64.dmg` — Intel
 
 Abre el `.dmg`, arrastra R+ a Aplicaciones y ejecútalo.
 
@@ -138,7 +152,7 @@ Abre el `.dmg`, arrastra R+ a Aplicaciones y ejecútalo.
 
 ### Windows
 
-Descarga `R+-2.4.1-x64.exe` (nombre `R+-<versión>-x64.exe`) desde [Releases](https://github.com/mausalas99/r-mas/releases/latest) y ejecútalo. La instalación es automática.
+Descarga `R+-3.0.0-x64.exe` (nombre `R+-<versión>-x64.exe`) desde [Releases](https://github.com/mausalas99/r-mas/releases/latest) y ejecútalo. La instalación es automática.
 
 > Si Windows SmartScreen advierte sobre el archivo: Más información → Ejecutar de todas formas.
 

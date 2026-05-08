@@ -2490,12 +2490,30 @@ function hideTourDock() {
 function toggleTourDockCollapsed() {
   var d = document.getElementById('tour-dock');
   if (!d) return;
-  var collapsed = d.classList.toggle('tour-dock-collapsed');
+  setTourDockCollapsed(!d.classList.contains('tour-dock-collapsed'));
+}
+
+function setTourDockCollapsed(collapsed) {
+  var d = document.getElementById('tour-dock');
+  if (!d) return;
+  if (collapsed) d.classList.add('tour-dock-collapsed');
+  else d.classList.remove('tour-dock-collapsed');
   var btn = document.getElementById('btn-tour-collapse');
   if (btn) {
     btn.textContent = collapsed ? '+' : '–';
     btn.setAttribute('aria-label', collapsed ? 'Expandir tutorial' : 'Minimizar tutorial');
   }
+}
+
+// Click en cualquier parte del dock colapsado lo expande (excepto en
+// los botones del encabezado, que ya tienen su propio handler).
+function onTourDockClick(ev) {
+  var d = document.getElementById('tour-dock');
+  if (!d || !d.classList.contains('tour-dock-collapsed')) return;
+  var t = ev && ev.target;
+  if (t && t.closest && t.closest('.btn-tour-skip, .btn-tour-collapse, .btn-tour-next')) return;
+  setTourDockCollapsed(false);
+  ev.stopPropagation();
 }
 
 function seedDemoTrendHistory() {
@@ -3734,6 +3752,43 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '3.0.0': [
+    {
+      title: 'Modos Sala / Interconsulta',
+      body:
+        'El expediente cambia según tu rol. En Mi Perfil eliges Sala o Interconsulta. Sala oculta Nota e Indicaciones, expone Estado Actual y Listado de Problemas, y usa Servicio (con default configurable) en lugar de Área.',
+    },
+    {
+      title: 'Estado Actual',
+      body:
+        'Botón rápido en el expediente que abre la Plantilla de Evolución sin Subjetivo. Guarda el snapshot por paciente con timestamp y lo copia al portapapeles.',
+    },
+    {
+      title: 'Listado de Problemas',
+      body:
+        'Pestaña nueva con Activos e Inactivos sin límite, drag-and-drop, fechas por problema y generador .docx con numeración a) b) c) de Word, títulos en negritas y firma editable (médicos por defecto se configuran en Mi Perfil).',
+    },
+    {
+      title: 'Anion gap en gasometría',
+      body:
+        'AG (Na − (Cl + HCO3)) se calcula desde Na y Cl de Química Sanguínea o Electrolitos Séricos; si no hay química, no se muestra. Se marca cuando cae fuera de 8–12 mEq/L.',
+    },
+    {
+      title: 'Calcio ionizado',
+      body:
+        'El bloque de gases extrae Ca++ ionizado desde Observaciones y lo marca según rango.',
+    },
+    {
+      title: 'Tutorial más actionable',
+      body:
+        'El tour navega a la zona correcta, resalta el control y espera tu acción antes de avanzar. Dock pequeño y semitransparente en la esquina; clic en la barra colapsada para expandirlo. Aviso preventivo si guardas un paciente sin expediente.',
+    },
+    {
+      title: 'Salida rápida ramificada',
+      body:
+        'En Sala exporta Listado de Problemas (.docx) si hay datos. En Interconsulta exporta Nota igual que antes.',
+    },
+  ],
   '2.4.1': [
     {
       title: 'Medicamentos (nombre + día) en formato compacto',
@@ -8726,6 +8781,7 @@ Object.assign(window, {
   guidedTourIntroSkip,
   skipGuidedTour,
   toggleTourDockCollapsed,
+  onTourDockClick,
   guidedTourClickNext,
   openAddModal,
   onPatientSearchInput,

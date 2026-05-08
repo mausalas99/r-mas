@@ -1340,8 +1340,9 @@
   #tour-dock.tour-dock-collapsed { width: auto; }
   #tour-dock.tour-dock-collapsed #tour-dock-body,
   #tour-dock.tour-dock-collapsed .tour-dock-foot { display: none; }
-  #tour-dock.tour-dock-collapsed .tour-dock-inner { padding: 6px 10px; }
+  #tour-dock.tour-dock-collapsed .tour-dock-inner { padding: 6px 10px; cursor: pointer; }
   #tour-dock.tour-dock-collapsed .tour-dock-head { margin-bottom: 0; }
+  #tour-dock.tour-dock-collapsed .tour-dock-inner:hover { background: var(--lab-chip-bg, var(--surface)); }
   @keyframes tour-soap-pulse {
     0%, 100% { box-shadow: 0 0 0 0 rgba(96, 165, 250, 0.55); }
     50% { box-shadow: 0 0 0 7px rgba(96, 165, 250, 0); }
@@ -2102,7 +2103,7 @@
 </div>
 
 <div id="tour-dock" aria-live="polite">
-  <div class="tour-dock-inner">
+  <div class="tour-dock-inner" onclick="onTourDockClick(event)">
     <div class="tour-dock-head">
       <span id="tour-step-badge"></span>
       <div class="tour-dock-head-actions">
