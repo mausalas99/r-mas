@@ -194,7 +194,7 @@ export function parsePFH_(tNorm) {
   return p[0]+'\t'+p.slice(1).join(' ');
 }
 
-export function parseGaso_(bloqueGaso) {
+export function parseGaso_(bloqueGaso, textoFuera) {
   if (!bloqueGaso) return '';
   var phData   = extraerConRango(['PH '], bloqueGaso);
   if (phData.valor === '---') return '';
@@ -213,6 +213,14 @@ export function parseGaso_(bloqueGaso) {
   var iCaMin = iCaData.min != null ? iCaData.min : 1.12;
   var iCaMax = iCaData.max != null ? iCaData.max : 1.32;
 
+  // Anion gap = Na - (Cl + HCO3). Na y Cl SOLO se toman de la química
+  // sanguínea / electrolitos séricos (textoFuera). Si el reporte es solo
+  // gasometría, no se muestra AG aunque el bloque arterial completo
+  // traiga sus propios Na/Cl: el médico quiere usar los valores de
+  // química como fuente única de verdad.
+  var naAG = textoFuera ? extraerConRango(['SODIO'], textoFuera) : { valor: '---' };
+  var clAG = textoFuera ? extraerConRango(['CLORO'], textoFuera) : { valor: '---' };
+
   var pH   = fmt(marcarSegunRango(phData.valor,   phData.min,   phData.max));
   var pCO2 = fmt(marcarSegunRango(pco2Data.valor, pco2Data.min, pco2Data.max));
   var pO2  = fmt(marcarSegunRango(po2Data.valor,  po2Data.min,  po2Data.max));
@@ -223,6 +231,7 @@ export function parseGaso_(bloqueGaso) {
   var Bica = fmt(marcarSegunRango(hco3Data.valor, hco3Data.min, hco3Data.max));
   var Hto  = fmt(marcarSegunRango(htoData.valor, htoData.min, htoData.max));
   var iCa  = fmt(marcarSegunRango(iCaData.valor,  iCaMin,        iCaMax));
+  var AG   = computeAnionGap_(naAG.valor, clAG.valor, hco3Data.valor);
 
   var p = ['GASES'];
   p.push('pH', pH);
@@ -233,9 +242,26 @@ export function parseGaso_(bloqueGaso) {
   if (GLU  !== '---') p.push('GLU',  GLU);
   if (Lac  !== '---') p.push('Lactato', Lac);
   if (Bica !== '---') p.push('Bica', Bica);
+  if (AG   !== '---') p.push('AG',   AG);
   if (Hto  !== '---') p.push('Hto',  Hto);
   if (iCa  !== '---') p.push('iCa',  iCa);
   return p[0]+'\t'+p.slice(1).join(' ');
+}
+
+// Anion gap clásico (sin K). Rango normal 8-12 mEq/L. Devuelve string
+// formateado (p. ej. "12" o "18.8*"), o '---' si falta cualquier dato.
+export function computeAnionGap_(naStr, clStr, hco3Str) {
+  if (naStr === '---' || clStr === '---' || hco3Str === '---') return '---';
+  var na = parseFloat(String(naStr).replace(',', '.'));
+  var cl = parseFloat(String(clStr).replace(',', '.'));
+  var hco3 = parseFloat(String(hco3Str).replace(',', '.'));
+  if (isNaN(na) || isNaN(cl) || isNaN(hco3)) return '---';
+  var ag = na - (cl + hco3);
+  // Una decimal cuando el valor no es entero (mismo comportamiento
+  // visual que Bica 21.2 vs Na 140).
+  var rounded = Math.round(ag * 10) / 10;
+  var agStr = (rounded === Math.trunc(rounded)) ? String(rounded.toFixed(0)) : String(rounded);
+  return marcarSegunRango(agStr, 8, 12);
 }
 
 export function parsePIE_(tNorm) {
@@ -1079,7 +1105,7 @@ export function procesarLabs(textoBruto) {
     var esc=parseESC_(textoQS);if(esc)resLabs.push(esc);
     var pfh=parsePFH_(tSinLiqCorp);  if(pfh)resLabs.push(pfh);
   }
-  var gaso=parseGaso_(bloqueGaso);if(gaso)resLabs.push(gaso);
+  var gaso=parseGaso_(bloqueGaso, textoQS);if(gaso)resLabs.push(gaso);
   var pie=parsePIE_(tNorm);      if(pie)resLabs.push(pie);
   var lcr=parsearLCR(textoBruto);if(lcr)resLabs.push(lcr);
   var liq=parsearCitoquimicoLiquidos(textoBruto);if(liq)resLabs.push(liq);

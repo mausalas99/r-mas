@@ -253,23 +253,17 @@ inactivos = listado.get('inactivos') or []
 num_id_alloc = {'next': LIST_NUMID_DYNAMIC_START, 'used': set()}
 
 rows_xml = ''
-n = 1
-for p in activos:
+total = max(len(activos), len(inactivos))
+for i in range(total):
+    a = activos[i] if i < len(activos) else {}
+    ina = inactivos[i] if i < len(inactivos) else {}
+    fecha = a.get('fecha') or ina.get('fecha') or ''
     rows_xml += build_problem_row(
-        p.get('fecha', ''), n,
-        p.get('descripcion', '') or '',
-        '',
+        fecha, i + 1,
+        a.get('descripcion', '') or '',
+        ina.get('descripcion', '') or '',
         num_id_alloc,
     )
-    n += 1
-for p in inactivos:
-    rows_xml += build_problem_row(
-        p.get('fecha', ''), n,
-        '',
-        p.get('descripcion', '') or '',
-        num_id_alloc,
-    )
-    n += 1
 
 xml = xml.replace('<!--LISTADO_TABLE_BODY-->', rows_xml, 1)
 

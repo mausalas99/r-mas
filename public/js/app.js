@@ -43,6 +43,12 @@ import {
   removeProblema as listadoRemoveProblema,
   reorderProblema as listadoReorderProblema,
 } from './listado-problemas-core.mjs';
+import { validatePatientForSave, buildExpedienteAdvice } from './patient-validation.mjs';
+import {
+  getTourSteps,
+  getTourTarget,
+  stepRequiresUserAction,
+} from './tour-targets.mjs';
 
 
 // ════════════════════════════════════════════════════════════════════
@@ -2514,23 +2520,7 @@ function syncTourSoapButtonHighlight() {
 }
 
 function getGuidedTourSteps() {
-  if (guidedTourBranch === 'interconsulta') {
-    return [
-      'map',
-      'lab_parse',
-      'lab_view',
-      'lab_send',
-      'sala_tend',
-      'sala_soap',
-      'sala_med',
-      'ic_nota',
-      'ic_indica',
-      'ic_exports',
-      'profile',
-      'wrap',
-    ];
-  }
-  return ['map', 'lab_parse', 'lab_view', 'lab_send', 'sala_tend', 'sala_soap', 'sala_med', 'wrap'];
+  return getTourSteps(guidedTourBranch === 'interconsulta' ? 'interconsulta' : 'sala');
 }
 
 function guidedTourStepIndex() {
@@ -2539,60 +2529,57 @@ function guidedTourStepIndex() {
   return i < 0 ? 0 : i;
 }
 
-function applyTourNavigationForStep(id) {
-  switch (id) {
-    case 'map':
-      switchAppTab('lab');
-      var li = document.getElementById('lab-input');
-      if (li) li.value = DEMO_LAB_REPORT;
-      break;
-    case 'lab_parse':
-      switchAppTab('lab');
-      if (document.getElementById('lab-input')) document.getElementById('lab-input').value = DEMO_LAB_REPORT;
-      break;
-    case 'lab_view':
-    case 'lab_send':
-      switchAppTab('lab');
-      break;
-    case 'ic_nota':
-      switchAppTab('nota');
-      switchInnerTab('notas');
-      renderNoteForm();
-      break;
-    case 'ic_indica':
-      switchAppTab('nota');
-      switchInnerTab('indica');
-      renderIndicaForm();
-      break;
-    case 'ic_exports':
-      ensureSettingsExpandedForTour();
-      break;
-    case 'profile':
-      switchAppTab('nota');
-      switchInnerTab('notas');
-      renderNoteForm();
-      ensureProfileExpandedForTour();
-      ensureSettingsExpandedForTour();
-      break;
-    case 'sala_tend':
-      switchAppTab('nota');
-      switchInnerTab('tend');
-      break;
-    case 'sala_soap':
-      switchAppTab('nota');
-      switchInnerTab('notas');
-      renderNoteForm();
-      break;
-    case 'sala_med':
-      switchAppTab('med');
-      renderMedRecetaPanel();
-      break;
-    case 'wrap':
-      break;
-    default:
-      break;
-  }
+// Quita cualquier resaltado del paso anterior antes de pintar el siguiente.
+function clearAllTourSpotlights() {
+  var cls = ['tour-spotlight-soap', 'tour-spotlight-action'];
+  cls.forEach(function (c) {
+    document.querySelectorAll('.' + c).forEach(function (el) { el.classList.remove(c); });
+  });
 }
+
+// Lleva al usuario al elemento del paso actual: cambia tab/tab interno,
+// abre Mi Perfil/Ajustes si aplica, hace scroll y aplica spotlight para
+// que la zona de avance sea inequívoca.
+function applyTourTargetForStep(id) {
+  var t = getTourTarget(id, guidedTourBranch === 'interconsulta' ? 'interconsulta' : 'sala');
+  if (!t) return;
+
+  if (t.appTab) switchAppTab(t.appTab);
+  if (t.innerTab) {
+    switchInnerTab(t.innerTab);
+    if (t.appTab === 'nota') {
+      if (t.innerTab === 'notas') renderNoteForm();
+      else if (t.innerTab === 'indica') renderIndicaForm();
+    }
+  }
+  if (t.openProfile) ensureProfileExpandedForTour();
+  if (t.openSettings) ensureSettingsExpandedForTour();
+  if (id === 'sala_med') renderMedRecetaPanel();
+
+  // Pre-pega el reporte demo cuando el siguiente click esperado es
+  // "Procesar"; sin texto el botón no hace nada y bloquearía el tour.
+  if (id === 'lab_parse' || id === 'map') {
+    var li = document.getElementById('lab-input');
+    if (li && !li.value) li.value = DEMO_LAB_REPORT;
+  }
+
+  clearAllTourSpotlights();
+  if (!t.selector) return;
+  setTimeout(function () {
+    if (!guidedTourActive || tourStepId !== id) return;
+    var el = document.querySelector(t.selector);
+    if (!el) return;
+    try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+    var spotlightCls = t.spotlightClass || (stepRequiresUserAction(id) ? 'tour-spotlight-soap' : null);
+    if (spotlightCls) el.classList.add(spotlightCls);
+    if (t.focus && typeof el.focus === 'function') {
+      try { el.focus({ preventScroll: true }); } catch (e2) { try { el.focus(); } catch (e3) {} }
+    }
+  }, 140);
+}
+
+// Compatibilidad hacia atrás (otras partes pueden invocar este nombre).
+function applyTourNavigationForStep(id) { applyTourTargetForStep(id); }
 
 function renderTourStep() {
   if (!guidedTourActive) return;
@@ -2747,6 +2734,37 @@ function renderTourStep() {
         '<p style="margin:0;font-size:13px;color:var(--text-muted);">Todo queda en local en este equipo; revisa privacidad en la política de la app.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
+    case 'servicio_default':
+      setBadge('servicio default · Sala');
+      bodyEl.innerHTML =
+        '<p style="margin:0 0 8px 0;">Antes de empezar, define tu <strong>Servicio default</strong> en <strong>Mi Perfil → Servicio (Sala)</strong>. Ese texto se pre-llenará automáticamente al agregar pacientes en Sala.</p>' +
+        '<p style="margin:0 0 4px 0;font-size:13px;color:var(--text-muted);">Sugerencia sin abreviaturas: <strong>MEDICINA INTERNA</strong>. Pulsa <strong>Tab</strong> o sal del campo para guardar.</p>' +
+        '<p style="margin:0;font-size:13px;color:var(--text-muted);">Cuando termines, pulsa <strong>Siguiente</strong> abajo.</p>';
+      nextBtn.textContent = 'Siguiente';
+      break;
+    case 'estado_actual':
+      setBadge('Estado Actual');
+      bodyEl.innerHTML =
+        '<p style="margin:0 0 8px 0;">En Sala, el botón verde <strong>Estado Actual</strong> (arriba del expediente) abre la plantilla SOAP <em>sin la sección Subjetivo</em>. Sirve para anotar rápido el estado del paciente y copiarlo al portapapeles.</p>' +
+        '<ul style="margin:0;padding-left:1.15rem;line-height:1.5;">' +
+        '<li><strong>Solo copiar</strong>: pasa el texto al portapapeles sin guardarlo en el expediente.</li>' +
+        '<li><strong>Guardar y copiar</strong>: guarda el estado con timestamp en el paciente y lo copia.</li>' +
+        '</ul>' +
+        '<p style="margin:8px 0 0 0;font-size:13px;color:var(--text-muted);">Pulsa <strong>Estado Actual</strong> para verlo, o <strong>Siguiente</strong> para continuar.</p>';
+      nextBtn.textContent = 'Siguiente';
+      break;
+    case 'listado_problemas':
+      setBadge('Listado de Problemas');
+      bodyEl.innerHTML =
+        '<p style="margin:0 0 8px 0;">Pestaña <strong>Listado</strong> (sólo en Sala) maneja problemas activos e inactivos del paciente. Cada problema acepta título en negritas y subitems con <code>a) b) c)</code>.</p>' +
+        '<ul style="margin:0;padding-left:1.15rem;line-height:1.5;">' +
+        '<li><strong>+ Problema</strong> agrega filas; arrastra para reordenar.</li>' +
+        '<li><strong>Médicos (firma)</strong> usa los defaults de Mi Perfil y se puede sobrescribir por paciente.</li>' +
+        '<li><strong>Generar Listado de Problemas (.docx)</strong> exporta el documento con membrete.</li>' +
+        '</ul>' +
+        '<p style="margin:8px 0 0 0;font-size:13px;color:var(--text-muted);">Pulsa <strong>Siguiente</strong> para terminar.</p>';
+      nextBtn.textContent = 'Siguiente';
+      break;
     case 'wrap':
       setBadge('listo');
       if (guidedTourBranch === 'interconsulta') {
@@ -2755,13 +2773,21 @@ function renderTourStep() {
           '<p style="margin:0;font-size:13px;color:var(--text-muted);">Repite el tutorial desde <strong>Mi Perfil → Ver tutorial</strong>. Tema claro/oscuro: Ajustes o icono junto a la fecha.</p>';
       } else {
         bodyEl.innerHTML =
-          '<p style="margin:0 0 8px 0;">Resumen <strong>sala</strong>: laboratorio → mantén el historial con <strong>Sincronizar</strong> y <strong>Consolidar</strong> → <strong>tendencias</strong> → evolución con <strong>SOAP</strong> → <strong>Medicamentos</strong> hacia tratamiento o SOAP.</p>' +
-          '<p style="margin:0;font-size:13px;color:var(--text-muted);">Puedes repetir el recorrido cuando quieras. Las actualizaciones se anuncian arriba al iniciar.</p>';
+          '<p style="margin:0 0 8px 0;">Resumen <strong>sala</strong>: servicio default → laboratorio → mantén historial con <strong>Sincronizar</strong>/<strong>Consolidar</strong> → <strong>Tendencias</strong> → <strong>Estado Actual</strong> / <strong>SOAP</strong> → <strong>Medicamentos</strong> → <strong>Listado de Problemas</strong>.</p>' +
+          '<p style="margin:0;font-size:13px;color:var(--text-muted);">Puedes repetir el recorrido cuando quieras desde Mi Perfil → Ver tutorial.</p>';
       }
       nextBtn.textContent = 'Finalizar';
       break;
     default:
       hideTourDock();
+  }
+  // Si el paso requiere acción del usuario en un botón concreto,
+  // ocultamos "Siguiente" para que el avance venga del propio botón.
+  if (stepRequiresUserAction(tourStepId)
+      && tourStepId !== 'servicio_default'
+      && tourStepId !== 'estado_actual'
+      && tourStepId !== 'listado_problemas') {
+    nextBtn.style.display = 'none';
   }
   syncTourSoapButtonHighlight();
 }
@@ -2776,24 +2802,27 @@ function guidedTourClickNext() {
     completeGuidedTourWithCelebration();
     return;
   }
+  clearAllTourSpotlights();
   tourStepId = steps[i + 1];
-  applyTourNavigationForStep(tourStepId);
+  applyTourTargetForStep(tourStepId);
   renderTourStep();
 }
 
-function guidedTourAdvanceAfterNotaGenerated() {
-  if (!guidedTourActive || tourStepId !== 'ic_nota') return;
-  tourStepId = 'ic_indica';
-  applyTourNavigationForStep('ic_indica');
+// Avance automático cuando el usuario ejecuta una acción real
+// (Procesar, Enviar a nota, Generar Nota/Indicaciones, etc.).
+function guidedTourAdvanceAfter(actionStep) {
+  if (!guidedTourActive || tourStepId !== actionStep) return;
+  var steps = getGuidedTourSteps();
+  var i = steps.indexOf(actionStep);
+  if (i < 0 || i + 1 >= steps.length) return;
+  clearAllTourSpotlights();
+  tourStepId = steps[i + 1];
+  applyTourTargetForStep(tourStepId);
   renderTourStep();
 }
 
-function guidedTourAdvanceAfterIndicaGenerated() {
-  if (!guidedTourActive || tourStepId !== 'ic_indica') return;
-  tourStepId = 'ic_exports';
-  applyTourNavigationForStep('ic_exports');
-  renderTourStep();
-}
+function guidedTourAdvanceAfterNotaGenerated() { guidedTourAdvanceAfter('ic_nota'); }
+function guidedTourAdvanceAfterIndicaGenerated() { guidedTourAdvanceAfter('ic_indica'); }
 
 function completeGuidedTourWithCelebration() {
   clearTourSoapButtonHighlight();
@@ -2878,15 +2907,18 @@ function startOnboarding(branch) {
 
 function onboardingAdvanceAfterParse() {
   if (!guidedTourActive || tourStepId !== 'lab_parse') return;
+  clearAllTourSpotlights();
   tourStepId = 'lab_view';
+  applyTourTargetForStep(tourStepId);
   renderTourStep();
 }
 
 function onboardingAdvanceAfterSend() {
   if (!guidedTourActive) return;
   if (tourStepId === 'lab_view' || tourStepId === 'lab_send') {
+    clearAllTourSpotlights();
     tourStepId = 'sala_tend';
-    applyTourNavigationForStep(tourStepId);
+    applyTourTargetForStep(tourStepId);
     renderTourStep();
   }
 }
@@ -6421,7 +6453,11 @@ function savePatient() {
     edadUnit = document.getElementById('m-edad-unit-manual').value || 'años';
     sexo     = document.getElementById('m-sexo').value;
   }
-  if (!nombre) { showToast('Ingresa el nombre del paciente','error'); return; }
+
+  // Validación pura y reutilizable.
+  var v = validatePatientForSave({ nombre: nombre, registro: registro, edadNum: edadNum, edadUnit: edadUnit });
+  if (!v.ok) { showToast(v.error, 'error'); return; }
+
   if (!edadNum) { showToast('Ingresa la edad', 'error'); return; }
   var ageInt = parseInt(edadNum, 10);
   if (isNaN(ageInt) || ageInt < 0 || ageInt > 120) {
@@ -6437,14 +6473,61 @@ function savePatient() {
   if (!salaMode && !area) { showToast('Ingresa área / departamento','error'); return; }
   if (!cuarto || !cama) { showToast('Ingresa cuarto y cama','error'); return; }
 
-  var dup = findDuplicatePatient(nombre, registro);
-  if (dup) {
-    showDuplicateWarning(dup, function() {
-      commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cama, isFromLab);
-    });
+  var commit = function () {
+    var dup = findDuplicatePatient(nombre, registro);
+    if (dup) {
+      showDuplicateWarning(dup, function () {
+        commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cama, isFromLab);
+      });
+      return;
+    }
+    commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cama, isFromLab);
+  };
+
+  // Si el usuario está intentando guardar sin expediente, le mostramos
+  // el "atajo de paste" antes de continuar. La idea: enseñar el flujo
+  // recomendado (Laboratorio → pegar desde "Expediente:") sin bloquear
+  // el alta manual cuando realmente lo necesite.
+  if (v.warning === 'missing_expediente' && !isFromLab) {
+    showExpedienteAdvice(commit);
     return;
   }
-  commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cama, isFromLab);
+  commit();
+}
+
+// Modal de confirmación que enseña a copiar desde "Expediente:" para
+// alta automática y permite continuar sin expediente si el usuario lo
+// decide.
+function showExpedienteAdvice(onConfirm) {
+  var prev = document.getElementById('exp-advice-backdrop');
+  if (prev) prev.remove();
+  var advice = buildExpedienteAdvice();
+  var b = document.createElement('div');
+  b.className = 'lab-conflict-backdrop';
+  b.id = 'exp-advice-backdrop';
+  b.innerHTML =
+    '<div class="lab-conflict-modal" role="dialog" aria-modal="true" aria-labelledby="exp-advice-title">' +
+      '<h3 id="exp-advice-title">' + escTxtSafe(advice.title) + '</h3>' +
+      '<p>' + escTxtSafe(advice.body) + '</p>' +
+      '<div class="lab-conflict-actions" style="flex-direction:row;justify-content:flex-end;gap:8px;">' +
+        '<button type="button" class="btn-cancel" id="exp-advice-cancel">' + escTxtSafe(advice.cancelLabel) + '</button>' +
+        '<button type="button" class="btn-conflict-primary" id="exp-advice-confirm">' + escTxtSafe(advice.confirmLabel) + '</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(b);
+  var close = function () { var x = document.getElementById('exp-advice-backdrop'); if (x) x.remove(); };
+  document.getElementById('exp-advice-cancel').onclick = function () {
+    close();
+    var input = document.getElementById('m-registro-manual') || document.getElementById('m-registro');
+    if (input) { try { input.focus(); } catch (e) {} }
+  };
+  document.getElementById('exp-advice-confirm').onclick = function () { close(); onConfirm(); };
+}
+
+function escTxtSafe(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 function commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cama, isFromLab) {
