@@ -2046,6 +2046,7 @@ function selectPatient(id) {
   renderEstadoActualButton();
   renderNoteForm();
   renderIndicaForm();
+  renderListadoForm();
   refreshTendenciasOrCultivosPanel();
   renderLabHistoryPanel();
   renderMedRecetaPanel();
