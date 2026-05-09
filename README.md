@@ -2,7 +2,43 @@
 
 Herramienta clínica de escritorio para generación de **notas de evolución**, **indicaciones médicas** y visualización de **laboratorios** con diagramas automáticos.
 
-**Versión estable actual: [3.0.1](https://github.com/mausalas99/r-mas/releases/tag/v3.0.1)** — descarga desde [Releases (última)](https://github.com/mausalas99/r-mas/releases/latest).
+## Instalación (Mac y Windows)
+
+Todo se descarga desde **[Releases — última versión](https://github.com/mausalas99/r-mas/releases/latest)**. No hace falta instalar Python por separado: los instaladores ya traen el runtime para generar los `.docx`.
+
+### Mac
+
+1. Abre la página de *Releases* (enlace de arriba).
+2. Descarga el `.dmg` según tu Mac:
+   - **`R+-<versión>-arm64.dmg`** — Apple Silicon (M1, M2, M3, M4…).
+   - **`R+-<versión>-x64.dmg`** — Mac con procesador Intel.
+3. Abre el `.dmg`, arrastra **R+** a la carpeta **Aplicaciones** y abre la app desde allí.
+
+> Si macOS dice que no se puede abrir porque el desarrollador no está identificado: clic derecho en **R+** → **Abrir** → confirmar **Abrir**.
+
+### Windows
+
+1. En la misma página de *Releases*, descarga **`R+-<versión>-x64.exe`**.
+2. Ejecuta el instalador y sigue los pasos.
+
+> Si **SmartScreen** muestra una advertencia: **Más información** → **Ejecutar de todas formas**.
+
+---
+
+**Versión estable actual:** [3.0.2](https://github.com/mausalas99/r-mas/releases/tag/v3.0.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+
+---
+
+## R+ 3.0.2 (laboratorio, listado docx, tutorial, Python Mac)
+
+- **Gasometría** — Delta-delta e interpretación; reproceso desde historial y dedupe al consolidar.
+- **Laboratorio** — Al cambiar de paciente: limpiar resultados, expandir historial y scroll a la tarjeta.
+- **Listado .docx** — Una tabla por problema; texto largo troceado para paginación más limpia.
+- **Tutorial Sala** — Dock del tour por encima del listado al resaltar esa zona.
+- **Mac** — Fallback de Python: prioridad a `/opt/homebrew` en Apple Silicon.
+- **README** — Instalación al inicio del documento.
+
+Notas: `docs/RELEASE_NOTES_3.0.2.txt`.
 
 ---
 
@@ -146,32 +182,11 @@ Notas extendidas en el repo: docs/RELEASE_NOTES_2.0.0.txt (texto plano).
 
 ---
 
-## Instalación
-
-### Mac
-
-Descarga el `.dmg` correspondiente a tu procesador desde [Releases](https://github.com/mausalas99/r-mas/releases/latest):
-
-- `R+-3.0.1-arm64.dmg` — Apple Silicon (M1/M2/M3/M4) *(sustituye `3.0.1` por el número de la última release si lees esto en el futuro)*
-- `R+-3.0.1-x64.dmg` — Intel
-
-Abre el `.dmg`, arrastra R+ a Aplicaciones y ejecútalo.
-
-> Si macOS muestra "no se puede abrir porque proviene de un desarrollador no identificado": clic derecho → Abrir → Abrir de todas formas.
-
-### Windows
-
-Descarga `R+-3.0.1-x64.exe` (nombre `R+-<versión>-x64.exe`) desde [Releases](https://github.com/mausalas99/r-mas/releases/latest) y ejecútalo. La instalación es automática.
-
-> Si Windows SmartScreen advierte sobre el archivo: Más información → Ejecutar de todas formas.
-
----
-
 ## Requisitos
 
-- **Instalación desde el instalador oficial** (`.dmg` / `.exe` en [Releases](https://github.com/mausalas99/r-mas/releases/latest)): no necesitas instalar Python; la app incluye un runtime empaquetado para generar los `.docx`.
-- **Desarrollo desde el código fuente** (`npm start` / compilar tú mismo): hace falta **Python 3** en el PATH para la generación de documentos (o el runtime en `python-runtime/` tras ejecutar los scripts de build).
-  - Mac: `brew install python3` o el Python del sistema.
+- **Instalación desde el instalador oficial** (`.dmg` / `.exe`; instrucciones arriba en **Instalación**): no necesitas instalar Python; la app incluye un runtime empaquetado para generar los `.docx`.
+- **Desarrollo desde el código fuente** (`npm start` / compilar tú mismo): hace falta **Python 3** en el PATH para la generación de documentos (o el runtime en `python-runtime/` tras `npm run prebuild:mac` / build).
+  - Mac: `brew install python3` (en Apple Silicon, Homebrew nativo vive en `/opt/homebrew`). Ejecuta **Terminal** y la app **sin** “Abrir con Rosetta”. Si macOS avisa de *Support Ending for Intel-based Apps* al usar Python, casi siempre es un `python3` x86_64 (p. ej. antiguo `/usr/local` bajo Rosetta): instala o prioriza el Python de `/opt/homebrew/bin/python3`, o deja que el build use el runtime empaquetado en `python-runtime/mac-arm64`.
   - Windows: [python.org](https://www.python.org/downloads/) — marcar "Add to PATH".
 
 Los documentos generados se guardan en tu carpeta **Descargas** por defecto. Puedes cambiar la carpeta de salida en **Ajustes** (icono ⚙ arriba a la derecha) → sección **Documentos y salida** → **Cambiar**. Allí también defines **Salida rápida** (`docx`, `html` o `txt`). **Respaldos**, **catálogo medicamentos (SOAP)**, **privacidad** y **actualizaciones** están en las demás secciones del mismo panel. En la barra lateral, **Mi Perfil** concentra médico tratante, plantillas por defecto y tutorial.

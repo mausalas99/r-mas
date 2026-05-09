@@ -265,6 +265,8 @@ export function parseGaso_(bloqueGaso, textoFuera) {
   var Hto  = fmt(marcarSegunRango(htoData.valor, htoData.min, htoData.max));
   var iCa  = fmt(marcarSegunRango(iCaData.valor,  iCaMin,        iCaMax));
   var AG   = computeAnionGap_(naAG.valor, clAG.valor, hco3Data.valor);
+  var AGv  = computeAnionGapValue_(naAG.valor, clAG.valor, hco3Data.valor);
+  var DD   = computeDeltaDelta_(AGv, hco3Data.valor);
 
   var p = ['GASES'];
   p.push('pH', pH);
@@ -276,20 +278,237 @@ export function parseGaso_(bloqueGaso, textoFuera) {
   if (Lac  !== '---') p.push('Lactato', Lac);
   if (Bica !== '---') p.push('Bica', Bica);
   if (AG   !== '---') p.push('AG',   AG);
+  if (DD   !== '---') p.push('Delta-Delta', DD);
   if (Hto  !== '---') p.push('Hto',  Hto);
   if (iCa  !== '---') p.push('iCa',  iCa);
   return p[0]+'\t'+p.slice(1).join(' ');
 }
 
-// Anion gap clásico (sin K). Rango normal 8-12 mEq/L. Devuelve string
-// formateado (p. ej. "12" o "18.8*"), o '---' si falta cualquier dato.
-export function computeAnionGap_(naStr, clStr, hco3Str) {
-  if (naStr === '---' || clStr === '---' || hco3Str === '---') return '---';
+function toNum_(v) {
+  if (v === '---' || v == null) return null;
+  var n = parseFloat(String(v).replace(',', '.'));
+  return isNaN(n) ? null : n;
+}
+
+export function buildGasoInterpretacion_(bloqueGaso, textoFuera) {
+  if (!bloqueGaso) return '';
+  var phData   = extraerConRango(['PH '], bloqueGaso);
+  if (phData.valor === '---') return '';
+  var pco2Data = extraerConRango(['PCO2'], bloqueGaso);
+  var hco3Data = extraerConRango(['HCO3'], bloqueGaso);
+  var naAG = textoFuera ? extraerConRango(['SODIO'], textoFuera) : { valor: '---' };
+  var clAG = textoFuera ? extraerConRango(['CLORO'], textoFuera) : { valor: '---' };
+  var ag = computeAnionGapValue_(naAG.valor, clAG.valor, hco3Data.valor);
+  var dd = computeDeltaDeltaValue_(ag, hco3Data.valor);
+
+  var pH = toNum_(phData.valor);
+  var pCO2 = toNum_(pco2Data.valor);
+  var hco3 = toNum_(hco3Data.valor);
+  if (pH == null || (pCO2 == null && hco3 == null)) return '';
+
+  return buildGasoInterpretacionFromValues_(pH, pCO2, hco3, ag, dd);
+}
+
+function labSectionKey_(line) {
+  var s = String(line == null ? '' : line).trim();
+  if (!s) return '';
+  var tab = s.indexOf('\t');
+  if (tab >= 0) return s.substring(0, tab).trim().toUpperCase();
+  var colon = s.indexOf(':');
+  if (colon > 0) return s.substring(0, colon + 1).trim().toUpperCase();
+  var m = s.match(/^([A-Za-zÁÉÍÓÚÑáéíóúñ]+)\b/);
+  return m ? m[1].toUpperCase() : s.toUpperCase();
+}
+
+function lineRichnessScore_(line) {
+  var s = normalizeLabLine_(line);
+  if (!s) return 0;
+  var score = s.length;
+  score += (s.match(/\b(?:AG|DELTA-DELTA|ICA|LACTATO|BICA|PCO2|PO2)\b/gi) || []).length * 8;
+  score += (s.match(/\d/g) || []).length;
+  return score;
+}
+
+function normalizeLabLine_(line) {
+  return String(line == null ? '' : line).replace(/\s+/g, ' ').trim();
+}
+
+function dedupeSingletonSections_(rows) {
+  var singleton = {
+    BH: 1, QS: 1, ESC: 1, PFHS: 1, GASES: 1, PIE: 1, 'LCR:': 1, 'LIQ:': 1,
+    HECES: 1, FROTIS: 1, EGO: 1, PROT12H: 1, PROT24H: 1, 'INTERPRETACIÓN GASOMETRÍA:': 1,
+  };
+  var list = (rows || []).filter(function (r) { return normalizeLabLine_(r) !== ''; });
+  var best = Object.create(null);
+  var keep = [];
+  for (var i = 0; i < list.length; i++) {
+    var row = String(list[i]);
+    var key = labSectionKey_(row);
+    if (!singleton[key]) {
+      keep.push(row);
+      continue;
+    }
+    var cand = { row: row, idx: i, score: lineRichnessScore_(row) };
+    var prev = best[key];
+    if (!prev || cand.score > prev.score || (cand.score === prev.score && cand.idx > prev.idx)) {
+      best[key] = cand;
+    }
+  }
+  var chosen = Object.create(null);
+  Object.keys(best).forEach(function (k) { chosen[best[k].idx] = best[k].row; });
+  var out = [];
+  for (var j = 0; j < list.length; j++) {
+    var r = String(list[j]);
+    var k = labSectionKey_(r);
+    if (!singleton[k]) out.push(r);
+    else if (chosen[j]) out.push(chosen[j]);
+  }
+  return out;
+}
+
+function valueFromSectionLine_(line, key) {
+  var s = normalizeLabLine_(line);
+  if (!s) return null;
+  var m = s.match(new RegExp('(?:^|\\s)' + key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s+(-?\\d+(?:\\.\\d+)?)', 'i'));
+  return m ? m[1] : null;
+}
+
+function pickBestSectionLine_(rows, sectionName) {
+  var sec = String(sectionName || '').toUpperCase();
+  var best = null;
+  (rows || []).forEach(function (row, idx) {
+    if (labSectionKey_(row) !== sec) return;
+    var cand = { row: String(row), idx: idx, score: lineRichnessScore_(row) };
+    if (!best || cand.score > best.score || (cand.score === best.score && cand.idx > best.idx)) best = cand;
+  });
+  return best ? best.row : '';
+}
+
+function formatNumericToken_(n) {
+  if (n == null || !isFinite(n)) return '';
+  var rounded = Math.round(n * 10) / 10;
+  return rounded === Math.trunc(rounded) ? String(rounded.toFixed(0)) : String(rounded);
+}
+
+function buildGasoInterpretacionFromValues_(pH, pCO2, hco3, ag, dd) {
+  if (pH == null || (pCO2 == null && hco3 == null)) return '';
+  var primaria = '';
+  if (pH < 7.35) {
+    if (hco3 != null && hco3 < 22) primaria = 'Acidosis metabólica';
+    else if (pCO2 != null && pCO2 > 45) primaria = 'Acidosis respiratoria';
+  } else if (pH > 7.45) {
+    if (hco3 != null && hco3 > 26) primaria = 'Alcalosis metabólica';
+    else if (pCO2 != null && pCO2 < 35) primaria = 'Alcalosis respiratoria';
+  } else if (hco3 != null && pCO2 != null) {
+    if (hco3 < 22 && pCO2 < 35) primaria = 'Acidosis metabólica con compensación respiratoria';
+    else if (hco3 > 26 && pCO2 > 45) primaria = 'Alcalosis metabólica con compensación respiratoria';
+    else if (hco3 < 22) primaria = 'Acidosis metabólica con compensación respiratoria';
+    else if (hco3 > 26) primaria = 'Alcalosis metabólica con compensación respiratoria';
+  }
+  if (!primaria && pH >= 7.35 && pH <= 7.45 && hco3 != null) {
+    if (hco3 < 22) primaria = 'Acidosis metabólica';
+    else if (hco3 > 26) primaria = 'Alcalosis metabólica';
+  }
+  var partes = [];
+  if (primaria) partes.push(primaria);
+  if (!primaria) partes.push('Trastorno ácido-base compensado');
+  if (ag != null && ag > 12 && dd != null) {
+    if (dd < 0.8) {
+      if (/^Acidosis metabólica/i.test(primaria)) {
+        partes.push('Componente hiperclorémico con anion gap elevado (Delta-Delta bajo)');
+      } else {
+        partes.push('Acidosis metabólica hiperclorémica con anion gap elevado (Delta-Delta bajo)');
+      }
+    } else if (dd > 2) {
+      if (/^Alcalosis metabólica/i.test(primaria)) {
+        partes.push('Componente agregado con anion gap elevado (Delta-Delta alto), considerar acidosis respiratoria crónica');
+      } else {
+        partes.push('Alcalosis metabólica agregada o acidosis respiratoria crónica con anion gap elevado (Delta-Delta alto)');
+      }
+    }
+    else partes.push('Anion gap elevado');
+  }
+  return 'Interpretación gasometría:\t' + partes.join('; ');
+}
+
+function rebuildGasesFromResults_(rows) {
+  var gases = pickBestSectionLine_(rows, 'GASES');
+  if (!gases) return { gasesLine: '', interpLine: '' };
+  var base = normalizeLabLine_(gases);
+  var out = ['GASES'];
+  var orderedKeys = ['pH', 'pCO2', 'pO2', 'Na', 'K', 'GLU', 'Lactato', 'Bica', 'Hto', 'iCa'];
+  var values = {};
+  orderedKeys.forEach(function (k) {
+    values[k] = valueFromSectionLine_(base, k);
+  });
+
+  var qs = pickBestSectionLine_(rows, 'QS');
+  var esc = pickBestSectionLine_(rows, 'ESC');
+  var na = valueFromSectionLine_(qs, 'Na') || valueFromSectionLine_(esc, 'Na') || values.Na;
+  var cl = valueFromSectionLine_(qs, 'Cl') || valueFromSectionLine_(esc, 'Cl');
+  var bica = values.Bica;
+
+  orderedKeys.forEach(function (k) {
+    if (values[k] != null && values[k] !== '') out.push(k, values[k]);
+  });
+
+  var agv = computeAnionGapValue_(na || '---', cl || '---', bica || '---');
+  if (agv != null) {
+    var agStr = formatNumericToken_(agv);
+    out.push('AG', marcarSegunRango(agStr, 8, 12));
+  }
+  var ddv = computeDeltaDeltaValue_(agv, bica || '---');
+  if (ddv != null) out.push('Delta-Delta', formatNumericToken_(ddv));
+
+  var phV = toNum_(values.pH);
+  var pco2V = toNum_(values.pCO2);
+  var hco3V = toNum_(values.Bica);
+  var interp = buildGasoInterpretacionFromValues_(phV, pco2V, hco3V, agv, ddv);
+  return { gasesLine: out[0] + '\t' + out.slice(1).join(' '), interpLine: interp };
+}
+
+export function reprocessLabResultLines_(rows) {
+  var clean = dedupeSingletonSections_(rows || []);
+  var rebuilt = rebuildGasesFromResults_(clean);
+  var out = clean.filter(function (r) {
+    var k = labSectionKey_(r);
+    return k !== 'GASES' && k !== 'INTERPRETACIÓN GASOMETRÍA:';
+  });
+  if (rebuilt.gasesLine) out.push(rebuilt.gasesLine);
+  if (rebuilt.interpLine) out.push(rebuilt.interpLine);
+  return dedupeSingletonSections_(out);
+}
+
+function computeAnionGapValue_(naStr, clStr, hco3Str) {
+  if (naStr === '---' || clStr === '---' || hco3Str === '---') return null;
   var na = parseFloat(String(naStr).replace(',', '.'));
   var cl = parseFloat(String(clStr).replace(',', '.'));
   var hco3 = parseFloat(String(hco3Str).replace(',', '.'));
-  if (isNaN(na) || isNaN(cl) || isNaN(hco3)) return '---';
-  var ag = na - (cl + hco3);
+  if (isNaN(na) || isNaN(cl) || isNaN(hco3)) return null;
+  return na - (cl + hco3);
+}
+
+function computeDeltaDeltaValue_(agValue, hco3Str) {
+  if (agValue == null) return null;
+  var hco3 = parseFloat(String(hco3Str).replace(',', '.'));
+  if (isNaN(hco3)) return null;
+  var deltaHco3 = 24 - hco3;
+  if (deltaHco3 <= 0) return null;
+  return (agValue - 12) / deltaHco3;
+}
+
+function computeDeltaDelta_(agValue, hco3Str) {
+  var dd = computeDeltaDeltaValue_(agValue, hco3Str);
+  if (dd == null) return '---';
+  var rounded = Math.round(dd * 10) / 10;
+  return (rounded === Math.trunc(rounded)) ? String(rounded.toFixed(0)) : String(rounded);
+}
+
+// Anion gap clásico (sin K). Rango normal 8-12 mEq/L. Devuelve string
+// formateado (p. ej. "12" o "18.8*"), o '---' si falta cualquier dato.
+export function computeAnionGap_(naStr, clStr, hco3Str) {
+  var ag = computeAnionGapValue_(naStr, clStr, hco3Str);
+  if (ag == null) return '---';
   // Una decimal cuando el valor no es entero (mismo comportamiento
   // visual que Bica 21.2 vs Na 140).
   var rounded = Math.round(ag * 10) / 10;
@@ -1139,6 +1358,7 @@ export function procesarLabs(textoBruto) {
     var pfh=parsePFH_(tSinLiqCorp);  if(pfh)resLabs.push(pfh);
   }
   var gaso=parseGaso_(bloqueGaso, textoQS);if(gaso)resLabs.push(gaso);
+  var gasoInterp = buildGasoInterpretacion_(bloqueGaso, textoQS); if (gasoInterp) resLabs.push(gasoInterp);
   var pie=parsePIE_(tNorm);      if(pie)resLabs.push(pie);
   var lcr=parsearLCR(textoBruto);if(lcr)resLabs.push(lcr);
   var liq=parsearCitoquimicoLiquidos(textoBruto);if(liq)resLabs.push(liq);
@@ -1148,6 +1368,7 @@ export function procesarLabs(textoBruto) {
   var cuant=parseCuantOrina_(textoBruto);if(cuant)resLabs.push(cuant);
   var cult=parseCultivo_(textoBruto,tNorm);if(cult)resLabs.push(cult);
 
+  resLabs = dedupeSingletonSections_(resLabs);
   return { patient:patient, resLabs:resLabs };
 }
 

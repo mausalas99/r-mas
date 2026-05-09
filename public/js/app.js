@@ -15,6 +15,7 @@ import {
   parseCuantOrina_,
   parseCultivo_,
   procesarLabs,
+  reprocessLabResultLines_,
   escTxt,
   renderToken,
   renderEntry
@@ -2038,6 +2039,9 @@ function renderPatientList() {
 }
 
 function selectPatient(id) {
+  var prevId = activeId;
+  var wasOnLab = activeAppTab === 'lab';
+  var patientChanged = prevId != null && String(prevId) !== String(id);
   activeId = id;
   renderPatientList();
   document.getElementById('empty-state').style.display = 'none';
@@ -2054,6 +2058,25 @@ function selectPatient(id) {
     switchInnerTab('tend');
   } else if (!isModeSala(settings) && activeInner === 'listado') {
     switchInnerTab('notas');
+  }
+  // En Laboratorio: al elegir otro paciente, pantalla coherente con su historial
+  // (resultados previos eran del paciente anterior; historial visible y expandido).
+  if (wasOnLab && patientChanged) {
+    switchAppTab('lab');
+    limpiarReporte();
+    setLabHistoryPanelCollapsed(false);
+    syncLabHistoryCollapseUI();
+    renderLabHistoryPanel();
+    var labHistCard = document.getElementById('lab-history-card');
+    if (labHistCard) {
+      window.setTimeout(function () {
+        try {
+          labHistCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } catch (_e) {
+          labHistCard.scrollIntoView(true);
+        }
+      }, 0);
+    }
   }
 }
 
@@ -3754,6 +3777,28 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '3.0.2': [
+    {
+      title: 'Gasometría e historial',
+      body:
+        'Delta-delta e interpretación clínica cuando hay datos. Reprocesar desde el historial usando el texto guardado y deduplicación al consolidar entradas muy similares.',
+    },
+    {
+      title: 'Laboratorio al cambiar de paciente',
+      body:
+        'Se limpian los resultados del paciente anterior, el historial se expande y la vista hace scroll a la tarjeta del paciente seleccionado.',
+    },
+    {
+      title: 'Listado de Problemas (.docx)',
+      body:
+        'Cada problema va en su propia tabla para evitar cortes entre páginas; el texto largo en a) b) c) se parte en párrafos más cortos con cortes en frases.',
+    },
+    {
+      title: 'Tutorial y Mac',
+      body:
+        'El panel del tour queda por encima del contenido resaltado en el paso del listado. En Apple Silicon, si no hay Python embebido, se prioriza Homebrew en /opt/homebrew.',
+    },
+  ],
   '3.0.1': [
     {
       title: 'Procalcitonina (PCT)',
@@ -5056,6 +5101,58 @@ function safeAttrJsString(s) {
   return String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 
+function labRowSectionKey(row) {
+  var s = String(row == null ? '' : row).trim();
+  if (!s) return '';
+  var tabIdx = s.indexOf('\t');
+  if (tabIdx >= 0) return s.substring(0, tabIdx).trim().toUpperCase();
+  var colonIdx = s.indexOf(':');
+  if (colonIdx > 0) return s.substring(0, colonIdx + 1).trim().toUpperCase();
+  var m = s.match(/^([A-Za-zÁÉÍÓÚÑáéíóúñ]+)\b/);
+  return m ? m[1].toUpperCase() : s.toUpperCase();
+}
+
+function labRowRichnessScore(row) {
+  var s = normalizeLabLine(String(row == null ? '' : row));
+  if (!s) return 0;
+  var score = s.length;
+  score += (s.match(/\b(?:AG|DELTA-DELTA|ICA|LACTATO|BICA|PCO2|PO2)\b/gi) || []).length * 8;
+  score += (s.match(/\d/g) || []).length;
+  if (/INTERPRETACI[ÓO]N\s+GASOMETR[IÍ]A/i.test(s)) score += 20;
+  return score;
+}
+
+function dedupeConsolidatedRowsBySection(rows, tipo) {
+  var normalized = [];
+  var seenExact = Object.create(null);
+  (rows || []).forEach(function (row) {
+    var norm = normalizeLabLine(String(row == null ? '' : row));
+    if (!norm) return;
+    if (seenExact[norm]) return;
+    seenExact[norm] = true;
+    normalized.push(String(row));
+  });
+  if (tipo !== 'labs') return normalized;
+
+  var bestBySection = Object.create(null);
+  normalized.forEach(function (row, idx) {
+    var key = labRowSectionKey(row);
+    if (!key) return;
+    var cand = { row: row, idx: idx, score: labRowRichnessScore(row) };
+    var prev = bestBySection[key];
+    if (!prev || cand.score > prev.score || (cand.score === prev.score && cand.idx > prev.idx)) {
+      bestBySection[key] = cand;
+    }
+  });
+  var has = Object.create(null);
+  Object.keys(bestBySection).forEach(function (k) {
+    has[bestBySection[k].idx] = true;
+  });
+  return normalized.filter(function (_row, idx) {
+    return !!has[idx];
+  });
+}
+
 function renderLabHistoryPanel() {
   var card = document.getElementById('lab-history-card');
   var listEl = document.getElementById('lab-history-list');
@@ -5097,6 +5194,7 @@ function renderLabHistoryPanel() {
       '<div class="lab-history-meta">' + esc(meta) + '</div>' +
       '<div class="lab-history-actions">' +
       '<button type="button" class="btn-lab-history" onclick="replayLabHistorySet(\'' + sid + '\')">Ver en Laboratorio</button>' +
+      '<button type="button" class="btn-lab-history" onclick="reprocessLabHistorySet(\'' + sid + '\')">Reprocesar</button>' +
       '<button type="button" class="btn-lab-history btn-lab-history-del" onclick="deleteLabHistorySet(\'' + sid + '\')">Eliminar</button>' +
       '</div></div>'
     );
@@ -5131,6 +5229,42 @@ function replayLabHistorySet(setId) {
   var diag = document.getElementById('lab-diagrams-section');
   if (diag && diag.style.display !== 'none') {
     try { diag.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (_e) { diag.scrollIntoView(true); }
+  }
+}
+
+function reprocessLabHistorySet(setId) {
+  if (!activeId) {
+    showToast('Selecciona un paciente primero', 'error');
+    return;
+  }
+  var sets = labHistory[activeId] || [];
+  var set = sets.find(function (s) { return String(s.id) === String(setId); });
+  if (!set) {
+    showToast('No se encontró ese estudio', 'error');
+    return;
+  }
+  if (!set.resLabs || !set.resLabs.length) {
+    showToast('Este estudio no tiene resultados para reprocesar', 'error');
+    return;
+  }
+  try {
+    var repro = reprocessLabResultLines_(set.resLabs);
+    if (!repro || !repro.length) {
+      showToast('No se pudieron regenerar resultados desde el bloque guardado', 'error');
+      return;
+    }
+    set.resLabs = repro.slice();
+    set.parsed = extractParsedValues(set.resLabs);
+    set.parsedBySection = buildParsedBySectionFromResLabs(set.resLabs);
+    rebuildEstudiosFromLabHistory(activeId);
+    saveState();
+    renderLabHistoryPanel();
+    refreshTendenciasOrCultivosPanel();
+    replayLabHistorySet(setId);
+    addAuditEntry('lab-history-reprocess', 'ok', 1, String(setId));
+    showToast('Estudio reprocesado desde resultados ✓', 'success');
+  } catch (_e) {
+    showToast('Error al reprocesar este estudio', 'error');
   }
 }
 
@@ -5492,26 +5626,23 @@ function consolidateLabHistoryByDayAndTipo() {
   Object.keys(groups).forEach(function (gk) {
     var arr = groups[gk];
     if (arr.length < 2) return;
+    var tipoGrupo = gk.split('\x01')[1] || 'labs';
     arr.sort(compareLabSetIdForDedupe);
     var keeper = arr[0];
     var merged = (keeper.resLabs || []).slice();
+    var sourceParts = [];
+    if (keeper.sourceText && String(keeper.sourceText).trim()) sourceParts.push(String(keeper.sourceText).trim());
     for (var i = 1; i < arr.length; i++) {
       var other = arr[i].resLabs || [];
       if (merged.length && other.length) merged.push('');
       merged = merged.concat(other);
+      if (arr[i].sourceText && String(arr[i].sourceText).trim()) sourceParts.push(String(arr[i].sourceText).trim());
     }
-    var seen = Object.create(null);
-    var deduped = [];
-    merged.forEach(function (row) {
-      var norm = normalizeLabLine(String(row == null ? '' : row));
-      if (!norm) return;
-      if (seen[norm]) return;
-      seen[norm] = true;
-      deduped.push(row);
-    });
+    var deduped = dedupeConsolidatedRowsBySection(merged, tipoGrupo);
     keeper.resLabs = deduped;
     keeper.parsed = extractParsedValues(deduped);
     keeper.parsedBySection = buildParsedBySectionFromResLabs(deduped);
+    if (sourceParts.length) keeper.sourceText = sourceParts.join('\n\n---\n\n');
     var newest = arr[arr.length - 1];
     if (newest.hora) keeper.hora = newest.hora;
     for (var j = 1; j < arr.length; j++) {
@@ -6203,7 +6334,7 @@ function checkStudiosAndInsertLabs() {
   }
 }
 
-function pushLabHistory(patientId, resLabs, fecha, hora) {
+function pushLabHistory(patientId, resLabs, fecha, hora, sourceText) {
   if (!patientId || !resLabs || !resLabs.length) return;
   if (!labHistory[patientId]) labHistory[patientId] = [];
   var fechaNorm = normalizeFechaLabHistory(fecha) || String(fecha || '').trim();
@@ -6226,6 +6357,8 @@ function pushLabHistory(patientId, resLabs, fecha, hora) {
     parsed: extractParsedValues(resLabs),
     parsedBySection: buildParsedBySectionFromResLabs(resLabs)
   };
+  var raw = String(sourceText || '').trim();
+  if (raw) set.sourceText = raw;
   labHistory[patientId].push(set);
 }
 
@@ -6281,7 +6414,7 @@ function autoStoreProcessedLabResult(result) {
     showToast('Resultado ya registrado en historial', 'success');
     return;
   }
-  pushLabHistory(activeId, result.resLabs, fecha, hora);
+  pushLabHistory(activeId, result.resLabs, fecha, hora, result.sourceText || '');
   saveState();
   renderLabHistoryPanel();
   refreshTendenciasOrCultivosPanel();
@@ -6290,7 +6423,7 @@ function autoStoreProcessedLabResult(result) {
 function insertLabsAsRecent(lines) {
   if (!notes[activeId]) notes[activeId] = {};
   pushLabHistory(activeId, activeLab.resLabs,
-    activeLab.patient && activeLab.patient.fecha ? activeLab.patient.fecha : '', '');
+    activeLab.patient && activeLab.patient.fecha ? activeLab.patient.fecha : '', '', activeLab.sourceText || '');
   rebuildEstudiosFromLabHistory(activeId);
   saveState();
   refreshTendenciasOrCultivosPanel();
@@ -6305,7 +6438,7 @@ function insertLabsAsRecent(lines) {
 function insertLabsAsAnteriorThenRecent(newLines) {
   if (!notes[activeId]) notes[activeId] = {};
   pushLabHistory(activeId, activeLab.resLabs,
-    activeLab.patient && activeLab.patient.fecha ? activeLab.patient.fecha : '', '');
+    activeLab.patient && activeLab.patient.fecha ? activeLab.patient.fecha : '', '', activeLab.sourceText || '');
   rebuildEstudiosFromLabHistory(activeId);
   saveState();
   refreshTendenciasOrCultivosPanel();
@@ -6340,7 +6473,7 @@ function showLabConflictModal(newLines, existingDate) {
     document.body.removeChild(backdrop);
     if (!notes[activeId]) notes[activeId] = {};
     pushLabHistory(activeId, activeLab.resLabs,
-      activeLab.patient && activeLab.patient.fecha ? activeLab.patient.fecha : '', '');
+      activeLab.patient && activeLab.patient.fecha ? activeLab.patient.fecha : '', '', activeLab.sourceText || '');
     rebuildEstudiosFromLabHistory(activeId);
     saveState();
     refreshTendenciasOrCultivosPanel();
@@ -6361,6 +6494,7 @@ function procesarReporte() {
   if (!text) { showToast('Pega el texto del reporte primero','error'); return; }
   try {
     var result = procesarLabs(text);
+    result.sourceText = text;
     var resStore = applyLabPastePatientResolution(result);
     renderOutput(result);
     renderDiagramas(result.resLabs);
@@ -8856,6 +8990,7 @@ Object.assign(window, {
   procesarReporte,
   limpiarReporte,
   replayLabHistorySet,
+  reprocessLabHistorySet,
   deleteLabHistorySet,
   toggleLabHistoryPanel,
   openAddModalFromLab,

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseGaso_, procesarLabs } from './labs.js';
+import { parseGaso_, procesarLabs, buildGasoInterpretacion_, reprocessLabResultLines_ } from './labs.js';
 
 const MUESTRA_GASO_VENOSA = `
 Expediente:	2213511-4	Solicitud:	2605070398
@@ -72,6 +72,8 @@ test('parseGaso_ calcula anion gap usando Na/Cl de la química sanguínea', () =
   const out = parseGaso_(GAS_VEN_HCO3, QS_TEXT);
   // AG = 140 - (104 + 21.2) = 14.8 → fuera de rango (>12), marcado con *.
   assert.match(out, /\bAG 14\.8\*/);
+  // Delta-Delta = (14.8 - 12) / (24 - 21.2) = 1.0
+  assert.match(out, /\bDelta-Delta 1\b/);
 });
 
 test('parseGaso_ marca anion gap elevado con asterisco', () => {
@@ -134,6 +136,63 @@ CLORO	N	100	mmol/L	98 - 107
   assert.ok(lineaGases);
   // AG = 140 - (100 + 22) = 18.
   assert.match(lineaGases, /\bAG 18\*/);
+  assert.match(lineaGases, /\bDelta-Delta 3\b/);
+});
+
+test('buildGasoInterpretacion_ genera una línea separada con interpretación', () => {
+  const out = buildGasoInterpretacion_(GAS_VEN_HCO3, QS_TEXT);
+  assert.match(out, /^Interpretación gasometría:\t/);
+  assert.match(out, /acidosis metabólica/i);
+  assert.doesNotMatch(out, /\bposible\b/i);
+  assert.doesNotMatch(out, /\baparentemente\b/i);
+});
+
+test('procesarLabs agrega interpretación de gasometría en línea separada', () => {
+  const reporte = `Expediente:	1	Solicitud:	1
+Nombre:	X	Fecha Registro:	May 7 2026 6:43AM
+Sexo:	M	Ubicación:	MI
+Edad:	30	Medico:	X
+
+GASOMETRIAS
+GASOMETRIA VENOSA PARCIAL
+Estudio		Resultado	Unidades	Valor de Referencia
+PH	N	7.31		7.35 - 7.45
+pCO2	N	40	mmHg	35 - 45
+HCO3	N	18.0	mmol/L	22.0 - 26.0
+
+ELECTROLITOS SERICOS
+SODIO	N	140	mmol/L	136 - 146
+CLORO	N	100	mmol/L	98 - 107
+`;
+  const res = procesarLabs(reporte);
+  const lineaInterp = (res.resLabs || []).find((l) => /^Interpretación gasometría:\t/.test(l));
+  assert.ok(lineaInterp, 'debe existir línea separada de interpretación');
+});
+
+test('buildGasoInterpretacion_ no muestra línea si faltan datos mínimos', () => {
+  const soloPH = `GASOMETRIA VENOSA PARCIAL
+PH	N	7.40
+`.replace(/\s+/g, ' ');
+  const out = buildGasoInterpretacion_(soloPH, '');
+  assert.equal(out, '');
+});
+
+test('reprocessLabResultLines_ depura GASES duplicados y recalcula AG/delta-delta', () => {
+  const inRows = [
+    'QS\tGlu 142 Cr 7.9 BUN 42',
+    'ESC\tNa 133.4 Cl 98.7 K 3.9',
+    'GASES\tpH 7.39 pCO2 35 pO2 60 Lactato 0.7 Bica 21.2',
+    'GASES\tpH 7.39 pCO2 35 pO2 60 Lactato 0.7 Bica 21.2 iCa 0.92',
+    'Interpretación gasometría:\tpH casi normal; posible acidosis metabólica compensada',
+  ];
+  const out = reprocessLabResultLines_(inRows);
+  const gases = out.filter((l) => /^GASES\t/.test(l));
+  const interp = out.filter((l) => /^Interpretación gasometría:\t/.test(l));
+  assert.equal(gases.length, 1, 'debe quedar una sola línea GASES');
+  assert.equal(interp.length, 1, 'debe quedar una sola interpretación');
+  assert.match(gases[0], /\bAG 13\.5\*/);
+  assert.match(gases[0], /\bDelta-Delta 0\.5\b/);
+  assert.doesNotMatch(interp[0], /\bpH casi normal\b/i);
 });
 
 test('procesarLabs NO calcula AG en reporte solo de gasometría', () => {
@@ -141,4 +200,20 @@ test('procesarLabs NO calcula AG en reporte solo de gasometría', () => {
   const lineaGases = (res.resLabs || []).find((l) => /^GASES\b/.test(l));
   assert.ok(lineaGases);
   assert.doesNotMatch(lineaGases, /\bAG\b/);
+});
+
+test('buildGasoInterpretacion_ evita repetir "Acidosis metabólica" cuando hay delta-delta bajo', () => {
+  const gas = `GASOMETRIA VENOSA PARCIAL
+PH	N	7.31
+pCO2	N	30
+HCO3	N	18.0
+`.replace(/\s+/g, ' ');
+  const quimica = `QUIMICA SANGUINEA
+SODIO	N	140
+CLORO	N	107
+`.replace(/\s+/g, ' ');
+  const out = buildGasoInterpretacion_(gas, quimica);
+  const count = (out.match(/Acidosis metabólica/gi) || []).length;
+  assert.equal(count, 1, 'no debe repetir "Acidosis metabólica" dos veces');
+  assert.match(out, /Componente hiperclorémico con anion gap elevado/i);
 });

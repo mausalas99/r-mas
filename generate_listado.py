@@ -78,6 +78,14 @@ PARA_RPR_DEFAULT = (
 LIST_NUMID_BASE = 35       # primer bloque usa el numId nativo del template
 LIST_NUMID_DYNAMIC_START = 9000  # IDs sintéticos para reinicios sucesivos
 
+# Sangría del nivel 0 en abstractNum 57 del template (lowerLetter %1)).
+LIST_LVL0_LEFT_DXA = 720
+LIST_LVL0_HANG_DXA = 360
+
+# Columna de descripción estrecha + texto en mayúsculas → pocas letras por línea;
+# trozos pequeños para que Word pueda paginar entre párrafos sin cortar a mitad.
+LIST_BODY_CHUNK_MAX = 110
+
 
 def mk_para(content_xml, *, centered=False, ind=None):
     jc = '<w:jc w:val="center"/>' if centered else ''
@@ -93,19 +101,84 @@ def mk_run(text, *, bold=False):
     return f'<w:r>{rpr}<w:t xml:space="preserve">{esc(text)}</w:t></w:r>'
 
 
-def mk_list_para(content, num_id):
-    """Párrafo de lista numerada (lowerLetter %1)). El ``a)``, ``b)``,
-    ``c)`` lo genera Word a partir de num_id."""
+def _best_break_in_window(window, min_cut=24):
+    """Prioriza fin de frase / cláusula dentro de window (último índice + 1)."""
+    lim = len(window)
+    best = -1
+    for sep in ('. ', '? ', '! ', '; ', ', ', ' '):
+        p = window.rfind(sep)
+        if p >= min_cut and p + len(sep) > best:
+            best = p + len(sep)
+    return best if best > 0 else lim
+
+
+def _split_long_cell_text(text, max_chars=LIST_BODY_CHUNK_MAX):
+    """Parte texto largo en trozos para varios <w:p>."""
+    t = (text or '').strip()
+    if not t:
+        return ['']
+    if len(t) <= max_chars:
+        return [t]
+    chunks = []
+    rest = t
+    while rest:
+        if len(rest) <= max_chars:
+            chunks.append(rest)
+            break
+        window = rest[:max_chars]
+        cut = _best_break_in_window(window)
+        if cut <= 0 or cut >= len(window):
+            cut = max_chars
+        piece = rest[:cut].rstrip()
+        if not piece:
+            cut = min(max_chars, len(rest))
+            piece = rest[:cut].rstrip()
+        chunks.append(piece)
+        rest = rest[cut:].lstrip()
+    return [c for c in chunks if c]
+
+
+def mk_list_continuation_para(chunk):
+    """Continuación de un ítem a) b) c) sin nuevo número; alinea con líneas
+    siguientes del mismo ítem (mismo left que el cuerpo tras el marcador)."""
+    ind = f'<w:ind w:left="{LIST_LVL0_LEFT_DXA}" w:hanging="0"/>'
     return (
+        '<w:p><w:pPr>'
+        '<w:pStyle w:val="TableParagraph"/>'
+        f'{ind}'
+        '<w:contextualSpacing/>'
+        f'{PARA_RPR_DEFAULT}'
+        '</w:pPr>'
+        f'<w:r>{CELL_RPR_DEFAULT}<w:t xml:space="preserve">{esc(chunk)}</w:t></w:r>'
+        '</w:p>'
+    )
+
+
+def mk_list_para(content, num_id):
+    """Párrafo(s) de lista numerada (lowerLetter %1)). Texto muy largo se
+    divide en varios párrafos para paginación más limpia."""
+    chunks = _split_long_cell_text(content)
+    if not chunks or (len(chunks) == 1 and chunks[0] == ''):
+        return (
+            '<w:p><w:pPr>'
+            '<w:pStyle w:val="TableParagraph"/>'
+            f'<w:numPr><w:ilvl w:val="0"/><w:numId w:val="{num_id}"/></w:numPr>'
+            '<w:contextualSpacing/>'
+            f'{PARA_RPR_DEFAULT}'
+            '</w:pPr></w:p>'
+        )
+    first = (
         '<w:p><w:pPr>'
         '<w:pStyle w:val="TableParagraph"/>'
         f'<w:numPr><w:ilvl w:val="0"/><w:numId w:val="{num_id}"/></w:numPr>'
         '<w:contextualSpacing/>'
         f'{PARA_RPR_DEFAULT}'
         '</w:pPr>'
-        f'<w:r>{CELL_RPR_DEFAULT}<w:t xml:space="preserve">{esc(content)}</w:t></w:r>'
+        f'<w:r>{CELL_RPR_DEFAULT}<w:t xml:space="preserve">{esc(chunks[0])}</w:t></w:r>'
         '</w:p>'
     )
+    rest = ''.join(mk_list_continuation_para(c) for c in chunks[1:])
+    return first + rest
 
 
 # Reconoce líneas tipo "a)", "  b)", "ñ)" — la letra escrita por el
@@ -159,7 +232,8 @@ def text_to_paragraphs(text, num_id_alloc):
                 current_num_id = assign_new_num_id()
             paragraphs.append(mk_list_para(content, current_num_id))
         else:
-            paragraphs.append(mk_para(mk_run(line, bold=True)))
+            for part in _split_long_cell_text(line):
+                paragraphs.append(mk_para(mk_run(part, bold=True)))
             current_num_id = None       # un título también reinicia la lista
     return ''.join(paragraphs)
 
@@ -195,7 +269,10 @@ def build_problem_row(fecha, num, activos_text, inactivos_text, num_id_alloc):
                             '<w:left w:val="single" w:sz="6" w:space="0" w:color="373435"/>'
                             '<w:right w:val="nil"/></w:tcBorders>')
     )
-    return f'<w:tr><w:trPr><w:trHeight w:val="448"/></w:trPr>{cells}</w:tr>'
+    return (
+        '<w:tr><w:trPr><w:cantSplit/><w:trHeight w:val="448" w:hRule="atLeast"/>'
+        f'</w:trPr>{cells}</w:tr>'
+    )
 
 
 # ── Main ──────────────────────────────────────────────────────────────
@@ -243,29 +320,60 @@ for sentinel, value in [
 ]:
     xml = xml.replace(sentinel, esc(value))
 
-# 3) Tabla de problemas: reemplaza el marcador con N filas.
+# 3) Tabla de problemas: el template trae una <w:tbl> con cabecera, marcador
+#    y fila de médicos. Word parte filas largas entre páginas aunque lleven
+#    cantSplit; los bordes de estilo se ven cortados. Cabecera en su tabla;
+#    cada problema en una mini-tabla (mismo tblPr + grid); otra para médicos.
 activos = listado.get('activos') or []
 inactivos = listado.get('inactivos') or []
+
+marker = '<!--LISTADO_TABLE_BODY-->'
+mi = xml.find(marker)
+if mi == -1:
+    raise SystemExit('template_listado.docx: falta marcador LISTADO_TABLE_BODY')
+
+tstart = xml.rfind('<w:tbl>', 0, mi)
+if tstart == -1:
+    raise SystemExit('template_listado.docx: tabla de listado no encontrada')
+
+tr1 = xml.find('<w:tr', tstart)
+tr1_end = xml.find('</w:tr>', tr1)
+if tr1 == -1 or tr1_end == -1:
+    raise SystemExit('template_listado.docx: fila de cabecera incompleta')
+tr1_end += len('</w:tr>')
+stub = xml[tstart + len('<w:tbl>') : tr1]
+
+medico_tr_start = xml.find('<w:tr', mi)
+if medico_tr_start == -1:
+    raise SystemExit('template_listado.docx: fila de médicos no encontrada')
+medico_tr_end = xml.find('</w:tr>', medico_tr_start) + len('</w:tr>')
+medico_row = xml[medico_tr_start:medico_tr_end]
+tbl_close = xml.find('</w:tbl>', medico_tr_end)
+if tbl_close == -1:
+    raise SystemExit('template_listado.docx: cierre de tabla no encontrado')
+tbl_close += len('</w:tbl>')
 
 # Asignador de numIds: el primer bloque usa el numId 35 nativo del
 # template; los siguientes (un bloque por título o por separador) usan
 # IDs sintéticos a partir de 9000 que injectamos en numbering.xml.
 num_id_alloc = {'next': LIST_NUMID_DYNAMIC_START, 'used': set()}
 
-rows_xml = ''
+problem_tables = []
 total = max(len(activos), len(inactivos))
 for i in range(total):
     a = activos[i] if i < len(activos) else {}
     ina = inactivos[i] if i < len(inactivos) else {}
     fecha = a.get('fecha') or ina.get('fecha') or ''
-    rows_xml += build_problem_row(
+    row = build_problem_row(
         fecha, i + 1,
         a.get('descripcion', '') or '',
         ina.get('descripcion', '') or '',
         num_id_alloc,
     )
+    problem_tables.append(f'<w:tbl>{stub}{row}</w:tbl>')
 
-xml = xml.replace('<!--LISTADO_TABLE_BODY-->', rows_xml, 1)
+tail = ''.join(problem_tables) + f'<w:tbl>{stub}{medico_row}</w:tbl>'
+xml = xml[:tr1_end] + '</w:tbl>' + tail + xml[tbl_close:]
 
 # 4) numbering.xml — inyecta los numIds sintéticos como aliases que
 # apuntan al mismo abstractNum=57 (formato lowerLetter "%1)") pero con

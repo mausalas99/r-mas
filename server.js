@@ -35,11 +35,20 @@ function resolvePython() {
       }
     }
   }
-  const systemPaths = [
-    '/usr/local/bin/python3',
-    '/opt/homebrew/bin/python3',
-    '/usr/bin/python3',
-  ];
+  // Sin runtime embebido: en Apple Silicon, /usr/local suele ser Homebrew x86_64 (Rosetta)
+  // y dispara el aviso de macOS; preferir /opt/homebrew (arm64).
+  const systemPaths =
+    process.platform === 'darwin' && process.arch === 'arm64'
+      ? [
+          '/opt/homebrew/bin/python3',
+          '/usr/bin/python3',
+          '/usr/local/bin/python3',
+        ]
+      : [
+          '/usr/local/bin/python3',
+          '/opt/homebrew/bin/python3',
+          '/usr/bin/python3',
+        ];
   return systemPaths.find(p => {
     try { return fs.statSync(p).isFile(); } catch { return false; }
   }) || 'python3';

@@ -142,6 +142,30 @@ class GenerateListadoTests(unittest.TestCase):
         self.assertTrue(sizes)
         self.assertEqual(set(sizes), {"16"})
 
+    def test_filas_problema_no_parten_entre_paginas_cant_split(self):
+        docx = generate_docx(
+            {
+                "patient": self.BASE_PATIENT,
+                "listado": {
+                    "activos": [
+                        {
+                            "fecha": "2026-05-07",
+                            "descripcion": "ACTIVO TEST",
+                        },
+                    ],
+                    "inactivos": [],
+                },
+                "medicos": {},
+            }
+        )
+        for row in problem_row_elements(docx):
+            trpr = row.find("w:trPr", NS)
+            self.assertIsNotNone(trpr)
+            self.assertIsNotNone(
+                trpr.find("w:cantSplit", NS),
+                "cada fila de problema debe llevar w:cantSplit para evitar cortes al pie de página",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
