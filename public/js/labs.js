@@ -53,7 +53,6 @@ export function fmt(val) {
 
 export function parseBH_(tNorm) {
   var hbData  = extraerConRango(['HGB','HEMOGLOBINA TOTAL','HEMOGLOBINA'], tNorm);
-  if (hbData.valor === '---') return '';
   var htoData = extraerConRango(['HCT ','HEMATOCRITO'], tNorm);
   var vcmData = extraerConRango(['MCV ','VCM '], tNorm);
   var hcmData = extraerConRango(['MCH ','HCM '], tNorm);
@@ -64,7 +63,7 @@ export function parseBH_(tNorm) {
   var retData = extraerConRango(['RETICULOCITOS'], tNorm);
   var tpData  = extraerConRango(['TIEMPO DE PROTROMBINA'], tNorm);
   var ttpData = extraerConRango(['TIEMPO DE TROMBOPLASTINA'], tNorm);
-  var inrData = extraerConRango(['INR '], tNorm);
+  var inrData = extraerConRango(['INR ', 'INR'], tNorm);
 
   var Hb  = fmt(marcarSegunRango(hbData.valor,  hbData.min,  hbData.max));
   var Hto = fmt(marcarSegunRango(htoData.valor, htoData.min, htoData.max));
@@ -79,8 +78,16 @@ export function parseBH_(tNorm) {
   var TTP = fmt(marcarSegunRango(ttpData.valor, ttpData.min, ttpData.max));
   var INR = fmt(marcarSegunRango(inrData.valor, inrData.min, inrData.max));
 
+  var hasCbc = [Hb, Hto, VCM, HCM, Leu, Neu, Eos, Plt, Ret].some(function (v) {
+    return v !== '---';
+  });
+  var hasCoag = [TP, TTP, INR].some(function (v) {
+    return v !== '---';
+  });
+  if (!hasCbc && !hasCoag) return '';
+
   var p = ['BH'];
-  p.push('Hb', Hb);
+  if (Hb !== '---') p.push('Hb', Hb);
   if (Hto !== '---') p.push('Hto', Hto);
   if (VCM !== '---') p.push('VCM', VCM);
   if (HCM !== '---') p.push('HCM', HCM);
@@ -253,6 +260,7 @@ export function parseGaso_(bloqueGaso, textoFuera) {
   // química como fuente única de verdad.
   var naAG = textoFuera ? extraerConRango(['SODIO'], textoFuera) : { valor: '---' };
   var clAG = textoFuera ? extraerConRango(['CLORO'], textoFuera) : { valor: '---' };
+  var albAG = textoFuera ? extraerConRango(['ALBUMINA'], textoFuera) : { valor: '---' };
 
   var pH   = fmt(marcarSegunRango(phData.valor,   phData.min,   phData.max));
   var pCO2 = fmt(marcarSegunRango(pco2Data.valor, pco2Data.min, pco2Data.max));
@@ -264,8 +272,8 @@ export function parseGaso_(bloqueGaso, textoFuera) {
   var Bica = fmt(marcarSegunRango(hco3Data.valor, hco3Data.min, hco3Data.max));
   var Hto  = fmt(marcarSegunRango(htoData.valor, htoData.min, htoData.max));
   var iCa  = fmt(marcarSegunRango(iCaData.valor,  iCaMin,        iCaMax));
-  var AG   = computeAnionGap_(naAG.valor, clAG.valor, hco3Data.valor);
-  var AGv  = computeAnionGapValue_(naAG.valor, clAG.valor, hco3Data.valor);
+  var AG   = computeAnionGap_(naAG.valor, clAG.valor, hco3Data.valor, albAG.valor);
+  var AGv  = computeAnionGapValue_(naAG.valor, clAG.valor, hco3Data.valor, albAG.valor);
   var DD   = computeDeltaDelta_(AGv, hco3Data.valor);
 
   var p = ['GASES'];
@@ -298,7 +306,8 @@ export function buildGasoInterpretacion_(bloqueGaso, textoFuera) {
   var hco3Data = extraerConRango(['HCO3'], bloqueGaso);
   var naAG = textoFuera ? extraerConRango(['SODIO'], textoFuera) : { valor: '---' };
   var clAG = textoFuera ? extraerConRango(['CLORO'], textoFuera) : { valor: '---' };
-  var ag = computeAnionGapValue_(naAG.valor, clAG.valor, hco3Data.valor);
+  var albAG = textoFuera ? extraerConRango(['ALBUMINA'], textoFuera) : { valor: '---' };
+  var ag = computeAnionGapValue_(naAG.valor, clAG.valor, hco3Data.valor, albAG.valor);
   var dd = computeDeltaDeltaValue_(ag, hco3Data.valor);
 
   var pH = toNum_(phData.valor);
@@ -386,7 +395,7 @@ function pickBestSectionLine_(rows, sectionName) {
 
 function formatNumericToken_(n) {
   if (n == null || !isFinite(n)) return '';
-  var rounded = Math.round(n * 10) / 10;
+  var rounded = Math.round((n + Number.EPSILON) * 10) / 10;
   return rounded === Math.trunc(rounded) ? String(rounded.toFixed(0)) : String(rounded);
 }
 
@@ -444,15 +453,17 @@ function rebuildGasesFromResults_(rows) {
 
   var qs = pickBestSectionLine_(rows, 'QS');
   var esc = pickBestSectionLine_(rows, 'ESC');
+  var pfhs = pickBestSectionLine_(rows, 'PFHS');
   var na = valueFromSectionLine_(qs, 'Na') || valueFromSectionLine_(esc, 'Na') || values.Na;
   var cl = valueFromSectionLine_(qs, 'Cl') || valueFromSectionLine_(esc, 'Cl');
+  var alb = valueFromSectionLine_(pfhs, 'Alb');
   var bica = values.Bica;
 
   orderedKeys.forEach(function (k) {
     if (values[k] != null && values[k] !== '') out.push(k, values[k]);
   });
 
-  var agv = computeAnionGapValue_(na || '---', cl || '---', bica || '---');
+  var agv = computeAnionGapValue_(na || '---', cl || '---', bica || '---', alb || '---');
   if (agv != null) {
     var agStr = formatNumericToken_(agv);
     out.push('AG', marcarSegunRango(agStr, 8, 12));
@@ -479,13 +490,16 @@ export function reprocessLabResultLines_(rows) {
   return dedupeSingletonSections_(out);
 }
 
-function computeAnionGapValue_(naStr, clStr, hco3Str) {
+function computeAnionGapValue_(naStr, clStr, hco3Str, albStr) {
   if (naStr === '---' || clStr === '---' || hco3Str === '---') return null;
   var na = parseFloat(String(naStr).replace(',', '.'));
   var cl = parseFloat(String(clStr).replace(',', '.'));
   var hco3 = parseFloat(String(hco3Str).replace(',', '.'));
   if (isNaN(na) || isNaN(cl) || isNaN(hco3)) return null;
-  return na - (cl + hco3);
+  var ag = na - (cl + hco3);
+  var alb = parseFloat(String(albStr == null ? '' : albStr).replace(',', '.'));
+  if (!isNaN(alb)) ag += 2.5 * (4 - alb);
+  return ag;
 }
 
 function computeDeltaDeltaValue_(agValue, hco3Str) {
@@ -504,14 +518,16 @@ function computeDeltaDelta_(agValue, hco3Str) {
   return (rounded === Math.trunc(rounded)) ? String(rounded.toFixed(0)) : String(rounded);
 }
 
-// Anion gap clásico (sin K). Rango normal 8-12 mEq/L. Devuelve string
-// formateado (p. ej. "12" o "18.8*"), o '---' si falta cualquier dato.
-export function computeAnionGap_(naStr, clStr, hco3Str) {
-  var ag = computeAnionGapValue_(naStr, clStr, hco3Str);
+// Anion gap clásico (sin K), con corrección por albúmina opcional:
+// AGcorr = AG + 2.5 * (4 - Alb[g/dL]).
+// Rango normal 8-12 mEq/L. Devuelve string formateado
+// (p. ej. "12" o "18.8*"), o '---' si falta cualquier dato crítico.
+export function computeAnionGap_(naStr, clStr, hco3Str, albStr) {
+  var ag = computeAnionGapValue_(naStr, clStr, hco3Str, albStr);
   if (ag == null) return '---';
   // Una decimal cuando el valor no es entero (mismo comportamiento
   // visual que Bica 21.2 vs Na 140).
-  var rounded = Math.round(ag * 10) / 10;
+  var rounded = Math.round((ag + Number.EPSILON) * 10) / 10;
   var agStr = (rounded === Math.trunc(rounded)) ? String(rounded.toFixed(0)) : String(rounded);
   return marcarSegunRango(agStr, 8, 12);
 }
