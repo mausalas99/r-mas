@@ -2506,6 +2506,7 @@ function hideTourDock() {
   if (!d) return;
   d.classList.remove('tour-dock-visible');
   d.classList.remove('tour-dock-collapsed');
+  d.classList.remove('tour-dock-pos-left');
   var btn = document.getElementById('btn-tour-collapse');
   if (btn) { btn.textContent = '–'; btn.setAttribute('aria-label', 'Minimizar tutorial'); }
 }
@@ -2597,6 +2598,21 @@ function clearAllTourSpotlights() {
   cls.forEach(function (c) {
     document.querySelectorAll('.' + c).forEach(function (el) { el.classList.remove(c); });
   });
+}
+
+// Pasos donde el botón resaltado suele estar arriba a la derecha: dock abajo-derecha lo tapa.
+var TOUR_DOCK_LEFT_STEPS = { lab_send: 1, ic_nota: 1, ic_indica: 1, estado_actual: 1 };
+
+function syncTourDockPlacement() {
+  var d = document.getElementById('tour-dock');
+  if (!d) return;
+  var useLeft = false;
+  if (guidedTourActive && tourStepId && TOUR_DOCK_LEFT_STEPS[tourStepId]) useLeft = true;
+  if (miniTourActive && miniTourSteps && miniTourSteps[miniTourIdx] && miniTourSteps[miniTourIdx].dockLeft) {
+    useLeft = true;
+  }
+  if (useLeft) d.classList.add('tour-dock-pos-left');
+  else d.classList.remove('tour-dock-pos-left');
 }
 
 // Lleva al usuario al elemento del paso actual: cambia tab/tab interno,
@@ -2856,6 +2872,7 @@ function renderTourStep() {
       && tourStepId !== 'listado_problemas') {
     nextBtn.style.display = 'none';
   }
+  syncTourDockPlacement();
   syncTourSoapButtonHighlight();
 }
 
@@ -4090,7 +4107,8 @@ var LAB_MINI_TOUR_STEPS = [
   {
     badge: 'Laboratorio · enviar',
     body: 'Cada diagrama tiene un botón <strong>Copiar</strong> para pegarlo como texto en otro sistema. <strong>Enviar a nota</strong> vuelca el bloque completo al expediente del paciente activo.',
-    before: function(){ switchAppTab('lab'); }
+    before: function(){ switchAppTab('lab'); },
+    dockLeft: true,
   },
   {
     badge: 'Laboratorio · tendencias',
@@ -4152,6 +4170,7 @@ function renderMiniTourStep() {
     nextBtn.textContent = miniTourIdx === miniTourSteps.length - 1 ? 'Finalizar' : 'Siguiente';
   }
   if (skipBtn) skipBtn.textContent = 'Cerrar recorrido';
+  syncTourDockPlacement();
 }
 
 function miniTourNext() {

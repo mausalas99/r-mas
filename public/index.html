@@ -1297,8 +1297,14 @@
     z-index: 101000; width: min(340px, calc(100vw - 24px));
     display: none;
     pointer-events: none;
-    transition: opacity 0.2s ease;
+    transition: opacity 0.2s ease, left 0.2s ease, right 0.2s ease;
     opacity: 0.85;
+  }
+  /* Pasos con CTA arriba a la derecha (Enviar a nota, Generar…): el dock
+     en la esquina inferior derecha tapaba los botones; lo movemos a la izquierda. */
+  #tour-dock.tour-dock-pos-left {
+    left: 18px;
+    right: auto;
   }
   #tour-dock.tour-dock-visible { display: block; pointer-events: auto; }
   #tour-dock:hover { opacity: 1; }
