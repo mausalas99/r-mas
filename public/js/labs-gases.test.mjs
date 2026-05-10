@@ -250,6 +250,13 @@ SODIO EN ORINA
 B
 40
 mmol/L	80 - 180
+CREATININA EN ORINA
+A
+53.99
+mg/dL	0.00 - 0.00
+COMENTARIO DE MUESTRA
+*
+CLORO EN ORINA: 34mmol/L
 URIANALISIS
 EXAMEN GENERAL DE ORINA
 FISICO
@@ -265,7 +272,12 @@ DENSIDAD
   const res = procesarLabs(raw);
   assert.ok(!res.resLabs.some((l) => l.startsWith('ESC\t')), 'no debe haber línea ESC');
   assert.ok(!res.resLabs.some((l) => l.startsWith('QS\t')), 'no debe haber línea QS');
-  assert.ok(res.resLabs.some((l) => l.startsWith('EGO:')), 'debe conservar EGO');
+  const ego = res.resLabs.find((l) => l.startsWith('EGO:'));
+  assert.ok(ego, 'debe conservar EGO');
+  assert.match(ego, /\bNaU 40\b/);
+  assert.match(ego, /\bKU 22\b/);
+  assert.match(ego, /\bClU 34\b/);
+  assert.match(ego, /\bCrU 53\.99\b/);
 });
 
 test('buildGasoInterpretacion_ evita repetir "Acidosis metabólica" cuando hay delta-delta bajo', () => {

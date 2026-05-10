@@ -894,15 +894,56 @@ export function parseFrotisSangre_(textoBruto) {
   return 'FROTIS\tObs ' + desc.toUpperCase();
 }
 
+/** Na/K/Cl/Cr de QUIMICA CLINICA (orina); Cl suele venir en COMENTARIO DE MUESTRA. */
+function extraerQuimicaOrinaParaEGO_(textoBruto) {
+  var out = { na: null, k: null, cl: null, cr: null };
+  if (!textoBruto) return out;
+  var lineas = textoBruto.split(/\r?\n/).map(function (l) {
+    return l.replace(/\*/g, '').trim();
+  });
+  function valorTrasEtiqueta(etiquetas) {
+    for (var e = 0; e < etiquetas.length; e++) {
+      var lbl = etiquetas[e].toUpperCase();
+      for (var i = 0; i < lineas.length; i++) {
+        if (lineas[i].toUpperCase() !== lbl) continue;
+        for (var j = i + 1; j < Math.min(i + 10, lineas.length); j++) {
+          var l = lineas[j].trim();
+          if (!l) continue;
+          if (/^[ABHL]$/.test(l)) continue;
+          if (/^(N\/A|Estudio|Resultado|Unidades|Valor de Referencia|VALOR DE REF)/i.test(l)) continue;
+          if (/^[\-–:\/\.]+$/.test(l)) continue;
+          var mNum = l.match(/^(-?\d+[.,]?\d*)/);
+          if (mNum) return mNum[1].replace(',', '.');
+        }
+      }
+    }
+    return null;
+  }
+  out.k = valorTrasEtiqueta(['POTASIO EN ORINA']);
+  out.na = valorTrasEtiqueta(['SODIO EN ORINA']);
+  out.cr = valorTrasEtiqueta(['CREATININA EN ORINA']);
+  var mCl = textoBruto.match(/CLORO\s+EN\s+ORINA\s*:?\s*(\d+[.,]?\d*)/i);
+  if (mCl) out.cl = mCl[1].replace(',', '.');
+  return out;
+}
+
 export function parseEGO_(textoBruto) {
+  var qOrina = extraerQuimicaOrinaParaEGO_(textoBruto);
+  var hasQO = !!(qOrina.na || qOrina.k || qOrina.cl || qOrina.cr);
+
   var tUp=textoBruto.toUpperCase();
   var pos=tUp.indexOf('EXAMEN GENERAL DE ORINA')!==-1?tUp.indexOf('EXAMEN GENERAL DE ORINA'):
           tUp.indexOf('ANALISIS DE ORINA')!==-1?tUp.indexOf('ANALISIS DE ORINA'):
           tUp.indexOf('URIANALISIS')!==-1?tUp.indexOf('URIANALISIS'):-1;
-  if(pos===-1)return '';
-  var fin=tUp.search(/BACTERIOLOGIA|CULTIVO|COMENTARIO DE MUESTRA/);
-  var bloque=(fin!==-1&&fin>pos)?textoBruto.substring(pos,fin):textoBruto.substring(pos);
-  var lineas=bloque.split(/\r?\n/).map(function(l){return l.replace(/\*/g,'').trim();});
+  var lineas;
+  if (pos === -1) {
+    if (!hasQO) return '';
+    lineas = [];
+  } else {
+    var fin = tUp.search(/BACTERIOLOGIA|CULTIVO|COMENTARIO DE MUESTRA/);
+    var bloque = (fin !== -1 && fin > pos) ? textoBruto.substring(pos, fin) : textoBruto.substring(pos);
+    lineas = bloque.split(/\r?\n/).map(function (l) { return l.replace(/\*/g, '').trim(); });
+  }
   function esUnidad(l){return /^(Hem\/uL|Leucocitos\/uL|E\.U\.\/dL|mOsm\/L|mg\/dL|mmol\/L|g\/dL|\/CAMPO|K\/uL|fL|pg|uL|U\/L|SEG\.?)$/i.test(l)||/^[a-zA-Z]+\/[a-zA-Z]+$/.test(l);}
   function buscarValor(nombres){
     for(var n=0;n<nombres.length;n++)for(var i=0;i<lineas.length;i++)if(lineas[i].toUpperCase()===nombres[n].toUpperCase()){
@@ -925,7 +966,7 @@ export function parseEGO_(textoBruto) {
   var leu=buscarValor(['LEUCOCITOS']),eri=buscarValor(['ERITROCITOS','HEMATIES']),bact=buscarValor(['BACTERIAS']);
   var celEpit=buscarValor(['CELULAS EPITELIALES']),cilinG=buscarValor(['CILINDROS GRANOLOSOS']),cilinH=buscarValor(['CILINDROS HIALINOS']);
   var levad=buscarValor(['LEVADURAS']),moco=buscarValor(['MOCO']);
-  if(color==='---'&&aspecto==='---'&&ph==='---'&&leu==='---'&&eri==='---')return '';
+  if (!hasQO && color==='---'&&aspecto==='---'&&ph==='---'&&leu==='---'&&eri==='---')return '';
   function abreviar(val){if(!val||val==='---')return '---';var v=val.toUpperCase().trim();
     if(v==='NEGATIVO'||v==='NEGATIVE')return 'NEG';if(v==='POSITIVO'||v==='POSITIVE')return 'POS';
     if(v==='AUSENTES'||v==='AUSENTE')return 'AUS';if(v==='ESCASAS'||v==='ESCASO')return 'ESC';
@@ -954,6 +995,10 @@ export function parseEGO_(textoBruto) {
   if(cilinH!=='---'&&abreviar(cilinH)!=='AUS')sedimento.push('CilinH '+marcarEGO(cilinH,'CLINH'));
   if(levad!=='---'&&abreviar(levad)!=='AUS')sedimento.push('Levad '+marcarEGO(levad,'LEVAD'));
   if(moco!=='---'&&abreviar(moco)!=='AUS')sedimento.push('Moco '+marcarEGO(moco,'MOCO'));
+  if (qOrina.na) quimico.push('NaU ' + qOrina.na);
+  if (qOrina.k) quimico.push('KU ' + qOrina.k);
+  if (qOrina.cl) quimico.push('ClU ' + qOrina.cl);
+  if (qOrina.cr) quimico.push('CrU ' + qOrina.cr);
   if(!fisico.length&&!quimico.length&&!sedimento.length)return '';
   var sub=['EGO:'];
   if(fisico.length)sub.push('  '+fisico.join('  '));
