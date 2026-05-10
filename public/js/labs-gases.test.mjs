@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseGaso_, procesarLabs, buildGasoInterpretacion_, reprocessLabResultLines_ } from './labs.js';
+import { parseGaso_, procesarLabs, buildGasoInterpretacion_, reprocessLabResultLines_, parseESC_, parseQS_ } from './labs.js';
 
 const MUESTRA_GASO_VENOSA = `
 Expediente:	2213511-4	Solicitud:	2605070398
@@ -200,6 +200,72 @@ test('procesarLabs NO calcula AG en reporte solo de gasometría', () => {
   const lineaGases = (res.resLabs || []).find((l) => /^GASES\b/.test(l));
   assert.ok(lineaGases);
   assert.doesNotMatch(lineaGases, /\bAG\b/);
+});
+
+/** Química de orina bajo encabezado QUIMICA CLINICA (no debe llenar QS/ESC séricos). */
+const MUESTRA_QUIMICA_ORINA = `
+QUIMICA CLINICA
+POTASIO EN ORINA
+Estudio		Resultado	Unidades	Valor de Referencia
+POTASIO EN ORINA
+B
+22
+mmol/L	40 - 80
+SODIO URINARIO
+Estudio		Resultado	Unidades	Valor de Referencia
+SODIO EN ORINA
+B
+40
+mmol/L	80 - 180
+CREATININA EN ORINA
+Estudio		Resultado	Unidades	Valor de Referencia
+CREATININA EN ORINA
+A
+53.99
+mg/dL	0.00 - 0.00
+COMENTARIO DE MUESTRA
+*
+CLORO EN ORINA: 34mmol/L
+`.replace(/\s+/g, ' ');
+
+test('parseESC_ y parseQS_ ignoran electrolitos y creatinina de orina', () => {
+  assert.equal(parseESC_(MUESTRA_QUIMICA_ORINA), '');
+  assert.equal(parseQS_(MUESTRA_QUIMICA_ORINA), '');
+});
+
+test('parseESC_ sigue tomando sodio sérico si también hay química de orina', () => {
+  const t = (MUESTRA_QUIMICA_ORINA + ' ' + ESC_TEXT).replace(/\s+/g, ' ');
+  assert.match(parseESC_(t), /\bNa 140\b/);
+});
+
+test('procesarLabs no emite ESC ni QS con valores urinarios en reporte solo orina', () => {
+  const raw = `Expediente:\t2128960-1
+Nombre:\tTEST PACIENTE
+QUIMICA CLINICA
+POTASIO EN ORINA
+B
+22
+mmol/L	40 - 80
+SODIO EN ORINA
+B
+40
+mmol/L	80 - 180
+URIANALISIS
+EXAMEN GENERAL DE ORINA
+FISICO
+COLOR
+Amarillo
+PH
+B
+5.0
+5.5 - 6.5
+DENSIDAD
+1.014
+`;
+  const res = procesarLabs(raw);
+  assert.ok(!res.resLabs.some((l) => l.startsWith('ESC\t')), 'no debe haber línea ESC');
+  assert.ok(!res.resLabs.some((l) => l.startsWith('QS\t')), 'no debe haber línea QS');
+  assert.ok(res.resLabs.some((l) => l.startsWith('EGO:')), 'debe conservar EGO');
 });
 
 test('buildGasoInterpretacion_ evita repetir "Acidosis metabólica" cuando hay delta-delta bajo', () => {

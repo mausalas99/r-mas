@@ -36,6 +36,51 @@ export function extraerConRango(nombres, texto) {
   return { valor: '---', min: null, max: null };
 }
 
+/** True si el nombre del estudio (justo tras la keyword) es de orina, no sérico. */
+function esContextoUrinario_(texto, idxNombre, nombreLen) {
+  var b = Math.min(texto.length, idxNombre + nombreLen + 90);
+  var w = texto.substring(idxNombre, b).toUpperCase();
+  if (/\bEN\s+ORINA\b/.test(w)) return true;
+  if (/\bURINARIO\b/.test(w)) return true;
+  if (/\bURINARIA\b/.test(w)) return true;
+  return false;
+}
+
+/**
+ * Igual que extraerConRango pero ignora ocurrencias en contexto urinario
+ * (p. ej. SODIO EN ORINA bajo QUIMICA CLINICA cuando el reporte no trae suero).
+ */
+function extraerConRangoSuero(nombres, texto) {
+  if (!texto) return { valor: '---', min: null, max: null };
+  var t = texto.toUpperCase();
+  for (var i = 0; i < nombres.length; i++) {
+    var nombre = nombres[i].toUpperCase();
+    var start = 0;
+    while (true) {
+      var idx = t.indexOf(nombre, start);
+      if (idx === -1) break;
+      if (esContextoUrinario_(texto, idx, nombre.length)) {
+        start = idx + nombre.length;
+        continue;
+      }
+      var subStart = idx + nombre.length;
+      var sub = texto.substring(subStart, subStart + 220);
+      var mValor = sub.match(/(-?\d+[.,]?\d*)/);
+      if (!mValor) {
+        start = idx + nombre.length;
+        continue;
+      }
+      var valorStr = mValor[1];
+      var mRango = sub.match(/(\d+[.,]?\d*)\s*-\s*(\d+[.,]?\d*)/);
+      if (!mRango) return { valor: valorStr, min: null, max: null };
+      return { valor: valorStr,
+        min: parseFloat(mRango[1].replace(',', '.')),
+        max: parseFloat(mRango[2].replace(',', '.')) };
+    }
+  }
+  return { valor: '---', min: null, max: null };
+}
+
 export function marcarSegunRango(valorStr, min, max) {
   if (valorStr === '---' || valorStr == null) return valorStr;
   var v = parseFloat(String(valorStr).replace(',','.'));
@@ -135,16 +180,16 @@ export function extraerProcalcitonina_(texto) {
 }
 
 export function parseQS_(texto) {
-  var gluData = extraerConRango(['GLUCOSA EN SANGRE','GLUCOSA EN','GLUCOSA'], texto);
-  var crData  = extraerConRango(['CREATININA EN SANGRE','CREATININA'], texto);
-  var bunData = extraerConRango(['NITROGENO DE LA UREA EN SANGRE','NITROGENO DE LA UREA','UREA'], texto);
-  var pcrData = extraerConRango(['PROTEINA C REACTIVA','PROTEÍNA C REACTIVA'], texto);
+  var gluData = extraerConRangoSuero(['GLUCOSA EN SANGRE','GLUCOSA EN','GLUCOSA'], texto);
+  var crData  = extraerConRangoSuero(['CREATININA EN SANGRE','CREATININA'], texto);
+  var bunData = extraerConRangoSuero(['NITROGENO DE LA UREA EN SANGRE','NITROGENO DE LA UREA','UREA'], texto);
+  var pcrData = extraerConRangoSuero(['PROTEINA C REACTIVA','PROTEÍNA C REACTIVA'], texto);
   var pctData = extraerProcalcitonina_(texto);
-  var auData  = extraerConRango(['ACIDO URICO EN SANGRE','ACIDO URICO','ÁCIDO ÚRICO'], texto);
-  var tglData = extraerConRango(['TRIGLICERIDOS','TRIGLICÉRIDOS'], texto);
-  var colData = extraerConRango(['COLESTEROL'], texto);
-  var vsgData = extraerConRango(['VSG ','VELOCIDAD DE SEDIMENTACION'], texto);
-  var cpkData = extraerConRango(['CPK CREATIN FOSFO QUINASA','CPK '], texto);
+  var auData  = extraerConRangoSuero(['ACIDO URICO EN SANGRE','ACIDO URICO','ÁCIDO ÚRICO'], texto);
+  var tglData = extraerConRangoSuero(['TRIGLICERIDOS','TRIGLICÉRIDOS'], texto);
+  var colData = extraerConRangoSuero(['COLESTEROL'], texto);
+  var vsgData = extraerConRangoSuero(['VSG ','VELOCIDAD DE SEDIMENTACION'], texto);
+  var cpkData = extraerConRangoSuero(['CPK CREATIN FOSFO QUINASA','CPK '], texto);
 
   var Glu = fmt(marcarSegunRango(gluData.valor, gluData.min, gluData.max));
   var Cr  = fmt(marcarSegunRango(crData.valor,  crData.min,  crData.max));
@@ -174,13 +219,13 @@ export function parseQS_(texto) {
 }
 
 export function parseESC_(texto) {
-  var naData = extraerConRango(['SODIO'], texto);
+  var naData = extraerConRangoSuero(['SODIO'], texto);
   if (naData.valor === '---') return '';
-  var clData = extraerConRango(['CLORO'], texto);
-  var kData  = extraerConRango(['POTASIO'], texto);
-  var caData = extraerConRango(['CALCIO EN SUERO','CALCIO'], texto);
-  var fData  = extraerConRango(['FOSFORO EN SANGRE','FOSFORO','FÓSFORO'], texto);
-  var mgData = extraerConRango(['MAGNESIO'], texto);
+  var clData = extraerConRangoSuero(['CLORO'], texto);
+  var kData  = extraerConRangoSuero(['POTASIO'], texto);
+  var caData = extraerConRangoSuero(['CALCIO EN SUERO','CALCIO'], texto);
+  var fData  = extraerConRangoSuero(['FOSFORO EN SANGRE','FOSFORO','FÓSFORO'], texto);
+  var mgData = extraerConRangoSuero(['MAGNESIO'], texto);
 
   var Na = fmt(marcarSegunRango(naData.valor, naData.min, naData.max));
   var Cl = fmt(marcarSegunRango(clData.valor, clData.min, clData.max));
@@ -200,7 +245,7 @@ export function parseESC_(texto) {
 }
 
 export function parsePFH_(tNorm) {
-  var albData  = extraerConRango(['ALBUMINA'], tNorm);
+  var albData  = extraerConRangoSuero(['ALBUMINA'], tNorm);
   var astData  = extraerConRango(['AST(ASPARTATO AMINOTRANSFERASA)','AST '], tNorm);
   var altData  = extraerConRango(['ALT ALANIN AMINO TRANSFERASA','ALT '], tNorm);
   var alpData  = extraerConRango(['ALP FOSFATASA ALCALINA','FOSFATASA ALCALINA'], tNorm);
@@ -258,9 +303,9 @@ export function parseGaso_(bloqueGaso, textoFuera) {
   // gasometría, no se muestra AG aunque el bloque arterial completo
   // traiga sus propios Na/Cl: el médico quiere usar los valores de
   // química como fuente única de verdad.
-  var naAG = textoFuera ? extraerConRango(['SODIO'], textoFuera) : { valor: '---' };
-  var clAG = textoFuera ? extraerConRango(['CLORO'], textoFuera) : { valor: '---' };
-  var albAG = textoFuera ? extraerConRango(['ALBUMINA'], textoFuera) : { valor: '---' };
+  var naAG = textoFuera ? extraerConRangoSuero(['SODIO'], textoFuera) : { valor: '---' };
+  var clAG = textoFuera ? extraerConRangoSuero(['CLORO'], textoFuera) : { valor: '---' };
+  var albAG = textoFuera ? extraerConRangoSuero(['ALBUMINA'], textoFuera) : { valor: '---' };
 
   var pH   = fmt(marcarSegunRango(phData.valor,   phData.min,   phData.max));
   var pCO2 = fmt(marcarSegunRango(pco2Data.valor, pco2Data.min, pco2Data.max));
@@ -304,9 +349,9 @@ export function buildGasoInterpretacion_(bloqueGaso, textoFuera) {
   if (phData.valor === '---') return '';
   var pco2Data = extraerConRango(['PCO2'], bloqueGaso);
   var hco3Data = extraerConRango(['HCO3'], bloqueGaso);
-  var naAG = textoFuera ? extraerConRango(['SODIO'], textoFuera) : { valor: '---' };
-  var clAG = textoFuera ? extraerConRango(['CLORO'], textoFuera) : { valor: '---' };
-  var albAG = textoFuera ? extraerConRango(['ALBUMINA'], textoFuera) : { valor: '---' };
+  var naAG = textoFuera ? extraerConRangoSuero(['SODIO'], textoFuera) : { valor: '---' };
+  var clAG = textoFuera ? extraerConRangoSuero(['CLORO'], textoFuera) : { valor: '---' };
+  var albAG = textoFuera ? extraerConRangoSuero(['ALBUMINA'], textoFuera) : { valor: '---' };
   var ag = computeAnionGapValue_(naAG.valor, clAG.valor, hco3Data.valor, albAG.valor);
   var dd = computeDeltaDeltaValue_(ag, hco3Data.valor);
 
