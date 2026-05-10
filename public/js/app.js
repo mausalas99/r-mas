@@ -1502,13 +1502,14 @@ function switchAppTab(tab) {
 
 function switchInnerTab(tab) {
   activeInner = tab;
-  var ids = ['notas','indica','tend','cult','listado'];
+  var ids = ['datos','notas','indica','tend','cult','listado'];
   ids.forEach(function(t) {
     var btn = document.getElementById('itab-'+t);
     var pane = document.getElementById('itab-content-'+t);
     if (btn) btn.classList.toggle('active', tab === t);
     if (pane) pane.classList.toggle('active', tab === t);
   });
+  if (tab === 'datos') renderPatientDataPane();
   if (tab === 'tend') renderTendencias();
   if (tab === 'cult') renderCultivosTable();
   if (tab === 'listado') renderListadoForm();
@@ -1520,6 +1521,7 @@ function renderInnerTabs() {
     var el = document.getElementById(id);
     if (el) el.style.display = visible ? '' : 'none';
   }
+  show('itab-datos', sala);
   show('itab-notas', !sala);
   show('itab-indica', !sala);
   show('itab-tend', true);
@@ -2256,9 +2258,10 @@ function onAppModeChange() {
   var current = getActiveInnerTab();
   var nowSala = isModeSala(settings);
   if (nowSala && (current === 'notas' || current === 'indica')) switchInnerTab('tend');
-  else if (!nowSala && current === 'listado') switchInnerTab('notas');
+  else if (!nowSala && (current === 'listado' || current === 'datos')) switchInnerTab('notas');
   renderInnerTabs();
   renderEstadoActualButton();
+  if (activeId) renderNoteForm();
   showToast('Modo cambiado a ' + (nowSala ? 'Sala' : 'Interconsulta'), 'success');
 }
 
@@ -2945,7 +2948,7 @@ function startOnboarding(branch) {
     var sala = isModeSala(settings);
     if (sala && (activeInner === 'notas' || activeInner === 'indica')) {
       switchInnerTab('tend');
-    } else if (!sala && activeInner === 'listado') {
+    } else if (!sala && (activeInner === 'listado' || activeInner === 'datos')) {
       switchInnerTab('notas');
     }
     renderInnerTabs();
@@ -3832,7 +3835,7 @@ var RELEASE_NOTES_HIGHLIGHTS = {
     {
       title: 'Modos Sala / Interconsulta',
       body:
-        'El expediente cambia según tu rol. En Mi Perfil eliges Sala o Interconsulta. Sala oculta Nota e Indicaciones, expone Estado Actual y Listado de Problemas, y usa Servicio (con default configurable) en lugar de Área.',
+        'El expediente cambia según tu rol. En Mi Perfil eliges Sala o Interconsulta. Sala oculta Nota e Indicaciones, expone Estado Actual y Listado de Problemas, y usa Servicio (con default configurable) en lugar de Área. Los datos del paciente (nombre, registro, edad, sexo, área, servicio, cuarto, cama) se editan en la pestaña <strong>Datos</strong> del expediente.',
     },
     {
       title: 'Estado Actual',
@@ -6833,15 +6836,8 @@ function commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cam
 }
 
 // ── Note Form ─────────────────────────────────────────────────────
-function renderNoteForm() {
-  var patient = patients.find(function(p){ return p.id===activeId; });
-  if (!patient) return;
-  if (activeId) {
-    if (!notes[activeId]) notes[activeId] = {};
-    if (applyProfileToNoteIfEmpty(notes[activeId])) saveState();
-  }
-  var note = notes[activeId] || {};
-  document.getElementById('note-form').innerHTML = (
+function buildPatientDemographicsCardHtml(patient) {
+  return (
     '<div class="card"><div class="card-header"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Datos del Paciente</div><div class="card-body"><div style="display:flex;flex-direction:column;gap:10px;">' +
     '<div class="field-group"><label>Nombre</label><input type="text" value="' + esc(patient.nombre) + '" oninput="updatePatient(\'nombre\',this.value)" style="text-transform:uppercase;"></div>' +
     '<div style="display:grid;grid-template-columns:1fr 100px 60px;gap:10px;">' +
@@ -6853,7 +6849,38 @@ function renderNoteForm() {
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
     '<div class="field-group"><label>Cuarto</label><input type="text" value="' + esc(patient.cuarto) + '" oninput="updatePatient(\'cuarto\',this.value)"></div>' +
     '<div class="field-group"><label>Cama</label><input type="text" value="' + esc(patient.cama) + '" oninput="updatePatient(\'cama\',this.value)"></div></div>' +
-    '</div></div></div>' +
+    '</div></div></div>'
+  );
+}
+
+/** En modo Sala la pestaña Nota está oculta: los mismos campos van en #patient-data-form. */
+function renderPatientDataPane() {
+  var wrap = document.getElementById('patient-data-form');
+  if (!wrap) return;
+  if (!isModeSala(settings)) {
+    wrap.innerHTML = '';
+    return;
+  }
+  var patient = patients.find(function (p) { return p.id === activeId; });
+  if (!patient) {
+    wrap.innerHTML = '';
+    return;
+  }
+  wrap.innerHTML = buildPatientDemographicsCardHtml(patient);
+}
+
+function renderNoteForm() {
+  var patient = patients.find(function(p){ return p.id===activeId; });
+  if (!patient) return;
+  if (activeId) {
+    if (!notes[activeId]) notes[activeId] = {};
+    if (applyProfileToNoteIfEmpty(notes[activeId])) saveState();
+  }
+  var note = notes[activeId] || {};
+  var salaMode = isModeSala(settings);
+  var demoCard = salaMode ? '' : buildPatientDemographicsCardHtml(patient);
+  document.getElementById('note-form').innerHTML = (
+    demoCard +
 
     '<div class="card"><div class="card-header" style="background:#374151;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Fecha y Hora</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
     '<div class="field-group"><label>Fecha</label><input type="text" value="' + esc(note.fecha) + '" oninput="updateNote(\'fecha\',this.value)" placeholder="DD/MM/AAAA"></div>' +
@@ -6891,6 +6918,7 @@ function renderNoteForm() {
 
     '<div class="action-bar"><button class="btn-generate" onclick="quickExportCurrentPatient()" id="btn-quick-export-note" style="background:#475569;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida rápida</button><button class="btn-generate" onclick="generateWord()" id="btn-gen"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Nota (.docx)</button></div>'
   );
+  renderPatientDataPane();
   syncOfflineButtonStates();
 }
 
@@ -9041,6 +9069,7 @@ Object.assign(window, {
   deletePatient,
   openSOAPModal,
   updatePatient,
+  renderPatientDataPane,
   updateNote,
   updateDx,
   removeDx,
