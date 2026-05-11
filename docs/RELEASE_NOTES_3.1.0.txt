@@ -1,0 +1,6 @@
+R+ 3.1.0
+
+- Sesion en vivo beta: comparte R+ completo con otro dispositivo abierto mediante link temporal.
+- La conexion intenta LAN primero y usa relay configurado cuando LAN no conecta.
+- La sincronizacion inicial copia todos los pacientes locales y luego propaga cambios en vivo.
+- Se agrega actividad reciente, estado de conexion y aviso de conflictos para revisar cambios concurrentes.
