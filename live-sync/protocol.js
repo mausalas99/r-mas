@@ -1,7 +1,25 @@
 const crypto = require('crypto');
 
+const ALLOWED_KINDS = new Set(['hello', 'event', 'request-snapshot', 'encrypted']);
+
 function base64Url(bytes) {
   return Buffer.from(bytes).toString('base64url');
+}
+
+function isObjectPayload(payload) {
+  return payload === null || (typeof payload === 'object' && !Array.isArray(payload));
+}
+
+function isValidDateString(value) {
+  return typeof value === 'string' && value.trim() !== '' && !Number.isNaN(Date.parse(value));
+}
+
+function normalizePayload(payload) {
+  return isObjectPayload(payload) ? payload : null;
+}
+
+function normalizeSentAt(sentAt) {
+  return isValidDateString(sentAt) ? sentAt : new Date().toISOString();
 }
 
 function createSessionToken() {
@@ -17,15 +35,24 @@ function makeWireMessage(input) {
   return {
     ok: true,
     kind: input.kind,
-    payload: input.payload || null,
-    sentAt: input.sentAt || new Date().toISOString(),
+    payload: normalizePayload(input.payload || null),
+    sentAt: normalizeSentAt(input.sentAt),
   };
 }
 
 function parseWireMessage(raw) {
   try {
     const msg = JSON.parse(String(raw || ''));
-    if (!msg || msg.ok !== true || typeof msg.kind !== 'string') {
+    if (
+      !msg ||
+      typeof msg !== 'object' ||
+      Array.isArray(msg) ||
+      msg.ok !== true ||
+      typeof msg.kind !== 'string' ||
+      !ALLOWED_KINDS.has(msg.kind) ||
+      !isObjectPayload(msg.payload) ||
+      !isValidDateString(msg.sentAt)
+    ) {
       return { ok: false, error: 'invalid-message' };
     }
     return msg;
@@ -35,7 +62,18 @@ function parseWireMessage(raw) {
 }
 
 function isTokenAccepted(expected, incoming) {
-  return String(expected || '') === String(incoming || '');
+  if (
+    typeof expected !== 'string' ||
+    typeof incoming !== 'string' ||
+    expected.trim() === '' ||
+    incoming.trim() === ''
+  ) {
+    return false;
+  }
+
+  const expectedHash = crypto.createHash('sha256').update(expected).digest();
+  const incomingHash = crypto.createHash('sha256').update(incoming).digest();
+  return crypto.timingSafeEqual(expectedHash, incomingHash);
 }
 
 module.exports = {
