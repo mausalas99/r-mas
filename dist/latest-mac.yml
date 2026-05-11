@@ -1,17 +1,17 @@
-version: 3.0.2
+version: 3.0.4
 files:
-  - url: R+-3.0.2-arm64.zip
-    sha512: HfWrGqGOR7gQv5koCXPoZFDl99zIj9RgH7K2RCxD/tY3JTqFgfuRqsZa7L/QvdSqW7dki4GkdLXABrEGN9qVdg==
-    size: 141414488
-  - url: R+-3.0.2-x64.zip
-    sha512: PlaMaoFklLHZb8mkM9sQ0RVDjrHbPE77KcIfczuNwajrfP6AMPNdG1JEyJRWzV4WHRW5cFqDBwyWf9whjEwevQ==
-    size: 149440642
-  - url: R+-3.0.2-arm64.dmg
-    sha512: jPxV9T+wMzdkhuP7nBI02b1zytkv27atiRDay4JPZJsOTgSZBo8xxLAhlw9agKmGdqds3B4I8OGwtCsStBHlwQ==
-    size: 146103593
-  - url: R+-3.0.2-x64.dmg
-    sha512: Z523SWvYuhpN9V1xXYxUnJv2Rr/azDg54FRn7eB+kyOTq5SnQrESYwEFe9r0fxli9I33xfAMSE/oSEw8sm2ppA==
-    size: 154173414
-path: R+-3.0.2-arm64.zip
-sha512: HfWrGqGOR7gQv5koCXPoZFDl99zIj9RgH7K2RCxD/tY3JTqFgfuRqsZa7L/QvdSqW7dki4GkdLXABrEGN9qVdg==
-releaseDate: '2026-05-09T16:58:47.000Z'
+  - url: R+-3.0.4-arm64.zip
+    sha512: z+paiYfSVE36VAdiGDFOUiwkduXb3lz8Qv8RHhPVbkTw4tqN1CNthzR36myD9y5m0N0JlqtNj31TpI3BL1dLUw==
+    size: 141418365
+  - url: R+-3.0.4-x64.zip
+    sha512: vpkQoLCamPLojNMADIqZvF4IAKdVqkZ5FfhBfMGhj3VOzLyjAKUMg4+i5LiANanS/ITvA2JQ0nPr0K5YRpqwTg==
+    size: 149444548
+  - url: R+-3.0.4-arm64.dmg
+    sha512: ungGMLGWLmWrDi8oMq8zIsRUMnw+chaeY2k7954dlNYUnXV9NqypgF9pR+O78FWcu/zP4a4HXItlOGyXJgKu6w==
+    size: 146109346
+  - url: R+-3.0.4-x64.dmg
+    sha512: 2Q5phpJcCy+3zUeS/AjnFG/bIdn2HqCctt9D1rtxMJfZFIMcANsVGDQtKQVcgAVjsIIjZKwfqpVJdPBTQAQkaw==
+    size: 154172851
+path: R+-3.0.4-arm64.zip
+sha512: z+paiYfSVE36VAdiGDFOUiwkduXb3lz8Qv8RHhPVbkTw4tqN1CNthzR36myD9y5m0N0JlqtNj31TpI3BL1dLUw==
+releaseDate: '2026-05-11T17:35:47.000Z'
