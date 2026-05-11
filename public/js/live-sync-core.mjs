@@ -98,7 +98,7 @@ export function applyLiveSyncEvent(state, event) {
   }
 
   var localVersion = getVersion(meta, event.entityType, event.entityId);
-  if (event.baseVersion && event.baseVersion < localVersion) {
+  if (Number(event.baseVersion) < localVersion) {
     meta.conflicts.unshift({
       eventId: event.eventId,
       entityType: event.entityType,

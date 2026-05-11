@@ -36,7 +36,13 @@ test('buildLiveSyncSnapshot includes full local data families', () => {
   assert.equal(snapshot.createdAt, '2026-05-11T19:00:00.000Z');
   assert.deepEqual(snapshot.data.patients.map((p) => p.id), ['p1']);
   assert.equal(snapshot.data.notes.p1.evolucion, 'estable');
+  assert.equal(snapshot.data.indicaciones.p1.dieta, 'AYUNO');
+  assert.deepEqual(snapshot.data.labHistory.p1.map((row) => row.id), ['l1']);
+  assert.equal(snapshot.data.medRecetaByPatient.p1.rows[0].name, 'MEROPENEM');
+  assert.equal(snapshot.data.listadoProblemas.p1.activos[0].descripcion, 'Sepsis');
   assert.equal(snapshot.data.settings.appMode, 'sala');
+  assert.equal(snapshot.data.medCatalog.v, 1);
+  assert.deepEqual(snapshot.data.medCatalog.soapTokens.abx, []);
 });
 
 test('applyLiveSyncSnapshot replaces clinical data and preserves local theme outside snapshot', () => {
@@ -129,4 +135,25 @@ test('applyLiveSyncEvent records conflict when baseVersion is stale', () => {
   assert.equal(next.notes.p1.evolucion, 'remota');
   assert.equal(listConflictRecords(next).length, 1);
   assert.equal(listConflictRecords(next)[0].entityType, 'notes');
+});
+
+test('applyLiveSyncEvent records conflict when baseVersion zero is stale', () => {
+  const state = baseState();
+  state.liveSyncMeta.entityVersions.notes = { p1: 1 };
+  const event = createLiveSyncEvent({
+    sessionId: 's1',
+    sourceDeviceId: 'dev-a',
+    entityType: 'notes',
+    entityId: 'p1',
+    op: 'notes.update',
+    eventId: 'evt-zero-stale',
+    baseVersion: 0,
+    payload: { evolucion: 'remota desde cero' },
+    now: '2026-05-11T19:03:00.000Z',
+  });
+
+  const next = applyLiveSyncEvent(state, event);
+  assert.equal(next.notes.p1.evolucion, 'remota desde cero');
+  assert.equal(listConflictRecords(next).length, 1);
+  assert.equal(listConflictRecords(next)[0].remoteBaseVersion, 0);
 });
