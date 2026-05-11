@@ -20,10 +20,35 @@ const DOWNLOADS = path.join(os.homedir(), 'Downloads');
 
 function resolvePython() {
   if (process.platform === 'win32') {
-    for (const base of [process.resourcesPath, __dirname].filter(Boolean)) {
+    // En Windows, extraResources se coloca en process.resourcesPath (fuera del ASAR)
+    // Intentar múltiples ubicaciones:
+    // 1. process.resourcesPath (instalado)
+    // 2. __dirname (dev)
+    // 3. path.dirname(process.execPath) + '/resources' (instalado alternativo)
+    const bases = [
+      process.resourcesPath,
+      __dirname,
+      path.join(path.dirname(process.execPath || ''), 'resources')
+    ].filter(Boolean);
+    console.log('[resolvePython] Windows - process.execPath:', process.execPath);
+    console.log('[resolvePython] Windows - process.resourcesPath:', process.resourcesPath);
+    console.log('[resolvePython] Windows - __dirname:', __dirname);
+    console.log('[resolvePython] Windows - buscando en:', bases);
+    for (const base of bases) {
       const bundled = path.join(base, 'python-runtime', 'win-x64', 'python.exe');
-      try { if (fs.statSync(bundled).isFile()) return bundled; } catch { /* not found */ }
+      console.log('[resolvePython] Intentando:', bundled);
+      try {
+        if (fs.statSync(bundled).isFile()) {
+          console.log('[resolvePython] ✓ Encontrado:', bundled);
+          return bundled;
+        }
+      } catch (err) {
+        console.log('[resolvePython] ✗ No encontrado:', bundled, '(', err.code, ')');
+      }
     }
+    console.log('[resolvePython] ⚠️ Python embebido no encontrado en ninguna ubicación');
+    console.log('[resolvePython] ⚠️ Usando fallback "python" (requiere Python en PATH del sistema)');
+    return 'python';
   }
   if (process.platform === 'darwin') {
     const arch = process.arch === 'arm64' ? 'mac-arm64' : 'mac-x64';
