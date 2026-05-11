@@ -1,5 +1,16 @@
 function getParam(url, name) {
-  return url.searchParams.get(name) || '';
+  return (url.searchParams.get(name) || '').trim();
+}
+
+function isValidEndpoint(value) {
+  if (!value) return true;
+  var endpoint;
+  try {
+    endpoint = new URL(value);
+  } catch (_err) {
+    return false;
+  }
+  return (endpoint.protocol === 'ws:' || endpoint.protocol === 'wss:') && !!endpoint.hostname;
 }
 
 export function buildLiveSyncInviteLink(input) {
@@ -21,11 +32,26 @@ export function parseLiveSyncInviteLink(raw, opts) {
   } catch (_err) {
     return { ok: false, error: 'invalid-link' };
   }
-  if (url.protocol !== 'rplus:' || url.hostname !== 'sync' || url.pathname !== '/join') {
+  if (
+    url.protocol !== 'rplus:' ||
+    url.hostname.toLowerCase() !== 'sync' ||
+    url.port ||
+    url.username ||
+    url.password ||
+    url.pathname !== '/join'
+  ) {
     return { ok: false, error: 'invalid-link' };
   }
   var token = getParam(url, 'token');
   if (!token) return { ok: false, error: 'missing-token' };
+  var sessionId = getParam(url, 'sessionId');
+  if (!sessionId) return { ok: false, error: 'missing-session' };
+  var lanUrl = getParam(url, 'lanUrl');
+  var relayUrl = getParam(url, 'relayUrl');
+  if (!lanUrl && !relayUrl) return { ok: false, error: 'missing-endpoint' };
+  if (!isValidEndpoint(lanUrl) || !isValidEndpoint(relayUrl)) {
+    return { ok: false, error: 'invalid-endpoint' };
+  }
   var expiresAt = getParam(url, 'expiresAt');
   if (!expiresAt) return { ok: false, error: 'missing-expiry' };
   var nowMs = Date.parse((opts && opts.now) || new Date().toISOString());
@@ -35,10 +61,10 @@ export function parseLiveSyncInviteLink(raw, opts) {
   return {
     ok: true,
     invite: {
-      sessionId: getParam(url, 'sessionId'),
+      sessionId: sessionId,
       token: token,
-      lanUrl: getParam(url, 'lanUrl'),
-      relayUrl: getParam(url, 'relayUrl'),
+      lanUrl: lanUrl,
+      relayUrl: relayUrl,
       expiresAt: expiresAt,
       hostDeviceName: getParam(url, 'hostDeviceName'),
     },
