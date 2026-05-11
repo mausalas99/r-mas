@@ -81,3 +81,26 @@ test('isTokenAccepted compares exact token', () => {
   assert.equal(isTokenAccepted('abc', 'abc'), true);
   assert.equal(isTokenAccepted('abc', 'xyz'), false);
 });
+
+const { startLanHost, connectLanPeer } = require('./lan-transport');
+
+test('LAN host and peer exchange one message', async () => {
+  const host = await startLanHost({ token: 'tok', preferredPort: 0 });
+  const received = [];
+  host.onMessage((msg) => received.push(msg));
+
+  const peer = await connectLanPeer({
+    url: host.url,
+    token: 'tok',
+    timeoutMs: 1000,
+  });
+
+  peer.send({ kind: 'hello', payload: { from: 'peer' } });
+  await new Promise((resolve) => setTimeout(resolve, 80));
+
+  assert.equal(received.length, 1);
+  assert.equal(received[0].kind, 'hello');
+
+  await peer.close();
+  await host.close();
+});
