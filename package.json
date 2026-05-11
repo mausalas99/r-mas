@@ -4,8 +4,9 @@
   "description": "R+ — Laboratoriazo + Notas de Evolución",
   "main": "main.js",
   "scripts": {
-    "test": "node --test public/js/update-helpers.test.mjs public/js/lab-history-auto-store-core.test.mjs public/js/med-receta-core.test.mjs public/js/labs-cultivo.test.mjs public/js/labs-citoquimico-liquidos.test.mjs public/js/labs-heces.test.mjs public/js/labs-frotis.test.mjs public/js/labs-coag.test.mjs public/js/labs-gases.test.mjs public/js/labs-pct.test.mjs public/js/mode-features.test.mjs public/js/age-calc.test.mjs public/js/listado-problemas-core.test.mjs public/js/patient-validation.test.mjs public/js/tour-targets.test.mjs public/js/quick-output.test.mjs public/js/output-dir-fallback.test.mjs && python3 -m unittest tests/test_generate_listado.py",
+    "test": "node --test public/js/update-helpers.test.mjs public/js/lab-history-auto-store-core.test.mjs public/js/med-receta-core.test.mjs public/js/labs-cultivo.test.mjs public/js/labs-citoquimico-liquidos.test.mjs public/js/labs-heces.test.mjs public/js/labs-frotis.test.mjs public/js/labs-coag.test.mjs public/js/labs-gases.test.mjs public/js/labs-pct.test.mjs public/js/mode-features.test.mjs public/js/age-calc.test.mjs public/js/listado-problemas-core.test.mjs public/js/patient-validation.test.mjs public/js/tour-targets.test.mjs public/js/quick-output.test.mjs public/js/output-dir-fallback.test.mjs public/js/live-sync-core.test.mjs public/js/live-sync-link.test.mjs public/js/live-sync-crypto.test.mjs live-sync/protocol.test.cjs relay/live-sync-relay.test.cjs && python3 -m unittest tests/test_generate_listado.py",
     "start": "electron .",
+    "relay:start": "node relay/live-sync-relay.js",
     "build:mac": "npm run prebuild:mac && electron-builder --mac",
     "build:mac:signed": "npm run build:mac",
     "build:mac:unsigned": "npm run prebuild:mac && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac",
@@ -21,7 +22,8 @@
   "license": "ISC",
   "dependencies": {
     "electron-updater": "^6.8.3",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "ws": "^8.20.0"
   },
   "devDependencies": {
     "chart.js": "^4.5.1",
@@ -104,6 +106,7 @@
       "template_indicaciones.docx",
       "template_listado.docx",
       "public/**/*",
+      "live-sync/**/*",
       "build/AppIcon.icns",
       "build/icon.ico"
     ],
