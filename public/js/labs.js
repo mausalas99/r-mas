@@ -1064,18 +1064,22 @@ function detectTipoCultivoLine(lineasTexto) {
     if (/BACTERIOLOGIA/i.test(lineasTexto[i])) { idxBact = i; break; }
   }
   if (idxBact === -1) return '';
+  var candidate = '';
   for (var i = idxBact + 1; i < Math.min(idxBact + 35, lineasTexto.length); i++) {
     var l = lineasTexto[i].replace(/\r/g, '').replace(/\*/g, ' ').replace(/\s+/g, ' ').trim();
     if (!l) continue;
     var lUp = l.toUpperCase();
     if (/^BACTERIOLOGIA$/.test(lUp)) continue;
-    if (/^ESTUDIO(\s+RESULTADO)?$/.test(lUp)) continue;
+    if (/^ESTUDIO\b/.test(lUp)) continue;
     if (/^RESULTADO$/.test(lUp) || /^UNIDADES$/.test(lUp) || /^VALOR DE REFERENCIA$/.test(lUp)) continue;
     if (/^PRODUCTO$/.test(lUp)) break;
     if (/\bUROCULTIVO\b/i.test(l) || /\bHEMOCULTIVO\b/i.test(l) || /^CATETER(\b|$)/i.test(lUp))
       return l;
+    if (!candidate && !/^(TINCION|CALIDAD|ESTADO|MICROORGANISMO|COMENTARIO|CUENTA|ANTIBIOGRAMA)\b/i.test(lUp)) {
+      candidate = l;
+    }
   }
-  return '';
+  return candidate;
 }
 
 function detectMuestraDesdeProducto(lineasTexto) {
@@ -1206,8 +1210,8 @@ function detectMarcasResistenciaCultivo(lineasTexto) {
 }
 
 /**
- * Resumen ATB sin CMI: solo R | I | ESBL (no lista S).
- * Deduplica por fármaco; gana la peor categoría al fusionar antibiogramas.
+ * Resumen ATB sin CMI: conserva R | I | ESBL/BLEE y también S para mostrar
+ * el biograma completo sin los valores MIC.
  */
 function compactarLineasAntibiograma(sensCrudas, abreviarFn) {
   if (!sensCrudas.length) return '';
@@ -1220,11 +1224,11 @@ function compactarLineasAntibiograma(sensCrudas, abreviarFn) {
     var r = rank[it] || 0;
     if (!byKey[key] || r > byKey[key]._r) byKey[key] = { interp: it, _r: r };
   });
-  var R = [], I = [], E = [];
+  var R = [], I = [], E = [], S = [];
   Object.keys(byKey).sort().forEach(function(k) {
     var it = byKey[k].interp;
-    if (it === 'S' || it === 'POS') return;
-    if (it === 'I') I.push(k);
+    if (it === 'S' || it === 'POS') S.push(k);
+    else if (it === 'I') I.push(k);
     else if (it === 'ESBL') E.push(k);
     else R.push(k);
   });
@@ -1237,7 +1241,8 @@ function compactarLineasAntibiograma(sensCrudas, abreviarFn) {
   if (R.length) parts.push('R: ' + cap(R, 14));
   if (I.length) parts.push('I: ' + cap(I, 8));
   if (E.length) parts.push('ESBL: ' + cap(E, 8));
-  if (!parts.length) return 'ATB sin R/I/ESBL';
+  if (S.length) parts.push('S: ' + cap(S, 18));
+  if (!parts.length) return 'ATB sin interpretaciones';
   var line = 'ATB ' + parts.join(' | ');
   if (line.length <= 220) return line;
   return 'ATB ' + parts.join('\n');

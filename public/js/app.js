@@ -382,6 +382,7 @@ function isCultivoBlockStartLine(s) {
   var t = String(s).trim();
   if (!t) return false;
   if (/^CULTIVO\b/i.test(t)) return true;
+  if (/^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s\/.-]*\s+\d{1,2}\/\d{1,2}(?:\/\d{2,4})?:\s+\S/i.test(t)) return true;
   if (/^BACTERIOLOGIA\b/i.test(t)) return true;
   if (/^UROCULTIVO\b/i.test(t)) return true;
   if (/^HEMOCULTIVO\b/i.test(t)) return true;
@@ -913,7 +914,9 @@ var CULTIVO_TIPO_LABELS = {
 function isCultureTableHeaderLine(t) {
   var s = String(t || '').trim();
   return (
+    /^CULTIVO\b/i.test(s) ||
     /^(UROCULTIVO|HEMOCULTIVO|FUNGICULTIVO)\b/i.test(s) ||
+    /^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s\/.-]*\s+\d{1,2}\/\d{1,2}(?:\/\d{2,4})?:\s+\S/i.test(s) ||
     /^TINCION\s+DE\s+GRAM/i.test(s) ||
     /^CATETER\b/i.test(s)
   );
