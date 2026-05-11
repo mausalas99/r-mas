@@ -105,6 +105,8 @@ var liveSyncState = {
   applyingRemote: false,
   meta: null,
 };
+var liveSyncPendingEventTimers = {};
+var liveSyncLastPayloadByKey = {};
 var IDLE_LOCK_LS_KEY = 'rpc-idle-lock';
 var IDLE_LOCK_HASH_LS_KEY = 'rpc-idle-lock-hash';
 var IDLE_LOCK_DEBOUNCE_MS = 500;
@@ -2124,6 +2126,9 @@ function deletePatient(e, id) {
   if (medNotaSelectionByPatient && medNotaSelectionByPatient[id]) delete medNotaSelectionByPatient[id];
   if (listadoProblemas && listadoProblemas[id]) delete listadoProblemas[id];
   saveState();
+  emitLiveSyncEventNow('patient', id, 'patient.delete', { id: id }).catch(function(err) {
+    showToast((err && err.message) || 'No se pudo enviar eliminación sync', 'error');
+  });
   addAuditEntry('patient-delete', 'ok', 1, target ? (target.registro || target.nombre || '') : '');
   if (activeId === id) activeId = patients.length ? patients[0].id : null;
   renderPatientList();
@@ -2133,6 +2138,7 @@ function deletePatient(e, id) {
 
 function saveState() {
   storage.saveAll(patients, notes, indicaciones, labHistory, medRecetaByPatient, listadoProblemas);
+  scheduleLiveSyncCatchupForActivePatient();
 }
 
 // ── Settings ──────────────────────────────────────────────────────
@@ -2277,6 +2283,7 @@ function saveSettings() {
     if (notes[pid] && applyProfileToNoteIfEmpty(notes[pid])) backfill = true;
   });
   if (backfill) saveState();
+  scheduleLiveSyncSettingsEvent();
   loadSettings();
   if (activeId) renderNoteForm();
   showToast('Perfil guardado ✓', 'success');
@@ -2286,6 +2293,7 @@ function onAppModeChange() {
   var sala = document.getElementById('app-mode-sala');
   settings.appMode = (sala && sala.checked) ? 'sala' : 'interconsulta';
   localStorage.setItem('rpc-settings', JSON.stringify(settings));
+  scheduleLiveSyncSettingsEvent();
   var current = getActiveInnerTab();
   var nowSala = isModeSala(settings);
   if (nowSala && (current === 'notas' || current === 'indica')) switchInnerTab('tend');
@@ -2303,6 +2311,7 @@ function onDefaultServicioBlur() {
   el.value = v;
   settings.defaultServicio = v;
   localStorage.setItem('rpc-settings', JSON.stringify(settings));
+  scheduleLiveSyncSettingsEvent();
   var w = document.getElementById('default-servicio-warning');
   var looksAbbrev = v.length > 0 && v.length <= 3 && /^[A-Z]+$/.test(v);
   if (w) w.style.display = looksAbbrev ? 'block' : 'none';
@@ -2317,6 +2326,7 @@ function onMedicoTemplateBlur() {
   });
   settings.medicosPlantilla = tpl;
   localStorage.setItem('rpc-settings', JSON.stringify(settings));
+  scheduleLiveSyncSettingsEvent();
 }
 
 function getMedicosForListado(lst) {
@@ -2348,6 +2358,7 @@ function normalizeQuickOutputFormat(format) {
 function saveQuickOutputFormat(format) {
   settings.quickOutputFormat = normalizeQuickOutputFormat(format);
   localStorage.setItem('rpc-settings', JSON.stringify(settings));
+  scheduleLiveSyncSettingsEvent();
   loadSettings();
   showToast('Formato de salida rápida actualizado', 'success');
 }
@@ -2361,6 +2372,7 @@ function chooseOutputDir() {
     if (!dir) return;
     settings.outputDir = dir;
     localStorage.setItem('rpc-settings', JSON.stringify(settings));
+    scheduleLiveSyncSettingsEvent();
     loadSettings();
     showToast('Carpeta actualizada ✓', 'success');
   });
@@ -5184,6 +5196,7 @@ function addLiveSyncActivity(action, detail) {
 function saveLiveSyncRelayUrl(value) {
   settings.liveSyncRelayUrl = String(value || '').trim();
   storage.saveSettings(settings);
+  scheduleLiveSyncSettingsEvent();
   showToast('Relay de sesión en vivo guardado.', 'success');
 }
 
@@ -5231,6 +5244,7 @@ async function startLiveSyncShare() {
     liveSyncState.transport = 'lan';
     liveSyncState.inviteLink = link;
     liveSyncState.meta = { appliedEventIds: [], entityVersions: {}, conflicts: [] };
+    liveSyncLastPayloadByKey = {};
     addLiveSyncActivity('host-start', res.lanUrl || '');
     var copied = await _copyToClipboardSafe(link);
     setLiveSyncStatus('Sesión en vivo activa · link copiado');
@@ -5261,6 +5275,7 @@ async function joinLiveSyncFromInvite(invite, opts) {
     liveSyncState.deviceId = res.deviceId || '';
     liveSyncState.transport = res.transport || 'lan';
     liveSyncState.meta = { appliedEventIds: [], entityVersions: {}, conflicts: [] };
+    liveSyncLastPayloadByKey = {};
     addLiveSyncActivity('join', liveSyncState.transport);
     setLiveSyncStatus('Sesión en vivo conectada · ' + liveSyncState.transport.toUpperCase());
     showToast('Conectado a sesión en vivo ✓', 'success');
@@ -5307,6 +5322,7 @@ function joinLiveSyncFromManualLink() {
 }
 
 async function stopLiveSyncSession() {
+  clearLiveSyncPendingEvents();
   if (window.electronAPI && typeof window.electronAPI.liveSyncStop === 'function') {
     try { await window.electronAPI.liveSyncStop(); } catch (_e) {}
   }
@@ -5316,6 +5332,7 @@ async function stopLiveSyncSession() {
   liveSyncState.token = '';
   liveSyncState.transport = '';
   liveSyncState.meta = null;
+  liveSyncLastPayloadByKey = {};
   addLiveSyncActivity('session-stop', '');
   setLiveSyncStatus('Sesión finalizada');
 }
@@ -5371,6 +5388,70 @@ async function sendLiveSyncEncryptedPayload(payload) {
   if (!window.electronAPI || typeof window.electronAPI.liveSyncSend !== 'function') return;
   var envelope = await encryptLiveSyncEnvelope(payload, liveSyncState.token);
   await window.electronAPI.liveSyncSend({ kind: 'encrypted', payload: envelope });
+}
+
+function getLiveSyncBaseVersion(entityType, entityId) {
+  var versions = liveSyncState.meta && liveSyncState.meta.entityVersions;
+  var group = versions && versions[entityType];
+  return Number((group && group[entityId]) || 0);
+}
+
+function makeLiveSyncPayloadSignature(payload) {
+  try { return JSON.stringify(payload || {}); } catch (_err) { return String(Date.now()); }
+}
+
+async function emitLiveSyncEventNow(entityType, entityId, op, payload) {
+  if (!liveSyncState.active || liveSyncState.applyingRemote || !liveSyncState.sessionId) return;
+  var event = createLiveSyncEvent({
+    sessionId: liveSyncState.sessionId,
+    sourceDeviceId: liveSyncState.deviceId,
+    entityType: entityType,
+    entityId: entityId,
+    op: op,
+    baseVersion: getLiveSyncBaseVersion(entityType, entityId),
+    payload: payload || {},
+  });
+  var next = applyLiveSyncEvent(getLiveSyncLocalState(), event);
+  liveSyncState.meta = next.liveSyncMeta || liveSyncState.meta;
+  await sendLiveSyncEncryptedPayload({ type: 'event', event: event });
+  addLiveSyncActivity('event-send', op);
+}
+
+function scheduleLiveSyncEvent(entityType, entityId, op, payload, delayMs) {
+  if (!liveSyncState.active || liveSyncState.applyingRemote || !entityId) return;
+  var keyExtra = op.indexOf('labHistory.') === 0 && payload && payload.id ? payload.id : '';
+  var key = [entityType, entityId, op, keyExtra].join(':');
+  var signature = makeLiveSyncPayloadSignature(payload);
+  if (liveSyncLastPayloadByKey[key] === signature) return;
+  liveSyncLastPayloadByKey[key] = signature;
+  clearTimeout(liveSyncPendingEventTimers[key]);
+  liveSyncPendingEventTimers[key] = setTimeout(function() {
+    delete liveSyncPendingEventTimers[key];
+    emitLiveSyncEventNow(entityType, entityId, op, payload).catch(function(err) {
+      showToast((err && err.message) || 'No se pudo enviar evento sync', 'error');
+    });
+  }, delayMs == null ? 450 : delayMs);
+}
+
+function clearLiveSyncPendingEvents() {
+  Object.keys(liveSyncPendingEventTimers).forEach(function(key) {
+    clearTimeout(liveSyncPendingEventTimers[key]);
+  });
+  liveSyncPendingEventTimers = {};
+}
+
+function scheduleLiveSyncSettingsEvent() {
+  scheduleLiveSyncEvent('settings', 'global', 'settings.update', settings || {}, 500);
+}
+
+function scheduleLiveSyncCatchupForActivePatient() {
+  if (!activeId || liveSyncState.applyingRemote) return;
+  var patient = patients.find(function(p) { return p && p.id === activeId; });
+  if (patient) scheduleLiveSyncEvent('patient', activeId, 'patient.upsert', patient, 450);
+  if (notes[activeId]) scheduleLiveSyncEvent('notes', activeId, 'notes.update', notes[activeId], 450);
+  if (indicaciones[activeId]) scheduleLiveSyncEvent('indicaciones', activeId, 'indicaciones.update', indicaciones[activeId], 450);
+  if (listadoProblemas[activeId]) scheduleLiveSyncEvent('listado', activeId, 'listado.update', listadoProblemas[activeId], 450);
+  if (medRecetaByPatient[activeId]) scheduleLiveSyncEvent('medReceta', activeId, 'medReceta.update', medRecetaByPatient[activeId], 450);
 }
 
 async function sendLiveSyncSnapshot() {
@@ -5669,6 +5750,7 @@ function deleteLabHistorySet(setId) {
   labHistory[activeId] = (labHistory[activeId] || []).filter(function(s) { return String(s.id) !== String(setId); });
   if (!labHistory[activeId].length) delete labHistory[activeId];
   saveState();
+  scheduleLiveSyncEvent('labHistory', activeId, 'labHistory.delete', { id: setId }, 0);
   addAuditEntry('lab-history-delete', 'ok', 1, String(setId));
   renderLabHistoryPanel();
   refreshTendenciasOrCultivosPanel();
@@ -6755,6 +6837,7 @@ function pushLabHistory(patientId, resLabs, fecha, hora, sourceText) {
   var raw = String(sourceText || '').trim();
   if (raw) set.sourceText = raw;
   labHistory[patientId].push(set);
+  scheduleLiveSyncEvent('labHistory', patientId, 'labHistory.append', set, 0);
 }
 
 function isDuplicateLatestLabSet(patientId, resLabs, fecha, hora) {
@@ -7200,7 +7283,7 @@ function commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cam
     document.getElementById('lab-input').value = '';
     switchAppTab('nota');
   }
-  renderPatientList(); selectPatient(patient.id); showToast('Paciente agregado','success');
+  renderPatientList(); selectPatient(patient.id); scheduleLiveSyncCatchupForActivePatient(); showToast('Paciente agregado','success');
   if (pendingLab) {
     activeLab = pendingLab;
     enviarLabsANota();
