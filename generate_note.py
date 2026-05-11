@@ -218,7 +218,8 @@ def main():
                       '<w:t xml:space="preserve"> </w:t>')
 
     # ── Write new DOCX ────────────────────────────────────────────────────────
-    files['word/document.xml'] = xml.encode('utf-8')
+    # Use 'replace' to handle surrogates and other encoding errors gracefully
+    files['word/document.xml'] = xml.encode('utf-8', errors='replace')
 
     out = io.BytesIO()
     with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as zout:

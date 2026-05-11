@@ -148,7 +148,7 @@ new_tbl_xml = (
 xml = xml.replace(tbl, new_tbl_xml, 1)
 
 # ── Save ───────────────────────────────────────────────────────────────
-files['word/document.xml'] = xml.encode('utf-8')
+files['word/document.xml'] = xml.encode('utf-8', errors='replace')
 with zipfile.ZipFile(DST, 'w', zipfile.ZIP_DEFLATED) as zout:
     for name in names:
         zout.writestr(name, files[name])
