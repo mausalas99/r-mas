@@ -22,5 +22,3 @@ Estos fixes mejoran significativamente la estabilidad de la app en Windows, espe
 Descarga el instalador desde: https://github.com/mausalas99/r-mas/releases/tag/v3.0.5
 
 - Windows: R+-3.0.5-x64.exe
-- Mac Apple Silicon: R+-3.0.5-arm64.dmg
-- Mac Intel: R+-3.0.5-x64.dmg
