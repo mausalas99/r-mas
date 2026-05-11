@@ -1,0 +1,26 @@
+R+ 3.0.5 (fixes de Python en Windows)
+========================================
+
+Fecha: 2026-05-11
+
+## Correcciones
+
+### Python en Windows
+
+- **Resolución de Python embebido mejorada** — La app ahora busca python.exe en múltiples ubicaciones (process.resourcesPath, __dirname, y path.dirname(process.execPath) + '/resources') con logging detallado para diagnosticar problemas. Si no se encuentra el runtime embebido, usa fallback a 'python' del sistema con advertencia clara.
+
+- **Fix de UnicodeEncodeError** — Resuelto error "UnicodeEncodeError: 'utf-8' codec can't encode character '\udcXX': surrogates not allowed" que ocurría en Windows cuando el input JSON contenía caracteres Unicode mal formados (surrogates). Ahora todos los scripts de generación de documentos (generate_note.py, generate_indicaciones.py, generate_listado.py, _clean_listado_template.py) usan errors='replace' al codificar a UTF-8, reemplazando surrogates con el carácter de reemplazo Unicode (�) en lugar de fallar.
+
+## Impacto
+
+Estos fixes mejoran significativamente la estabilidad de la app en Windows, especialmente cuando:
+- El runtime de Python embebido no se encuentra en la ubicación esperada
+- Los datos de entrada contienen caracteres Unicode corruptos o mal formados
+
+## Instalación
+
+Descarga el instalador desde: https://github.com/mausalas99/r-mas/releases/tag/v3.0.5
+
+- Windows: R+-3.0.5-x64.exe
+- Mac Apple Silicon: R+-3.0.5-arm64.dmg
+- Mac Intel: R+-3.0.5-x64.dmg
