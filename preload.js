@@ -46,4 +46,25 @@ contextBridge.exposeInMainWorld('electronAPI', {
   relaunchApp: function() {
     ipcRenderer.send('relaunch-app');
   },
+  liveSyncStartHost: function(payload) {
+    return ipcRenderer.invoke('live-sync-start-host', payload || {});
+  },
+  liveSyncJoin: function(invite) {
+    return ipcRenderer.invoke('live-sync-join', invite || {});
+  },
+  liveSyncSend: function(message) {
+    return ipcRenderer.invoke('live-sync-send', message || {});
+  },
+  liveSyncStop: function() {
+    return ipcRenderer.invoke('live-sync-stop');
+  },
+  liveSyncPendingLink: function() {
+    return ipcRenderer.invoke('live-sync-pending-link');
+  },
+  onLiveSyncMessage: function(cb) {
+    ipcRenderer.on('live-sync-message', function(_e, payload) { cb(payload); });
+  },
+  onLiveSyncDeepLink: function(cb) {
+    ipcRenderer.on('live-sync-deep-link', function(_e, payload) { cb(payload); });
+  },
 });

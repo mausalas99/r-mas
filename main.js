@@ -1,6 +1,7 @@
 const { app, BrowserWindow, Menu, shell, dialog, ipcMain } = require('electron');
 const path = require('path');
 const { autoUpdater } = require('electron-updater');
+const { createLiveSyncController } = require('./live-sync/main-controller');
 
 // Reducir uso de GPU — elimina proceso GPU en idle (~50-100 MB RAM)
 // Llamar ANTES de app.whenReady()
@@ -12,6 +13,8 @@ autoUpdater.allowPrerelease = false;
 
 let server;
 let mainWindow;
+let liveSyncController;
+let pendingLiveSyncOpenUrl = null;
 
 // Cache update state so renderer can receive it even if events fired before page loaded
 let pendingUpdate = null;
@@ -96,6 +99,12 @@ function createWindow() {
 
   mainWindow.on('closed', () => { mainWindow = null; });
 }
+
+app.on('open-url', (event, url) => {
+  event.preventDefault();
+  if (liveSyncController) liveSyncController.handleDeepLink(url);
+  else pendingLiveSyncOpenUrl = url;
+});
 
 // ── Auto-updater events ───────────────────────────────────────────
 function safeSendToRenderer(channel, payload) {
@@ -265,6 +274,14 @@ function buildMenu() {
 
 // ── Startup ───────────────────────────────────────────────────────
 app.whenReady().then(async () => {
+  liveSyncController = createLiveSyncController({ mainWindowRef: () => mainWindow });
+  liveSyncController.registerProtocol();
+  liveSyncController.wireIpc();
+  if (pendingLiveSyncOpenUrl) {
+    liveSyncController.handleDeepLink(pendingLiveSyncOpenUrl);
+    pendingLiveSyncOpenUrl = null;
+  }
+
   try {
     server = await require('./server');
   } catch (e) {
@@ -289,5 +306,6 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
+  if (liveSyncController) liveSyncController.stopSession().catch(() => {});
   if (server && server.close) server.close();
 });
