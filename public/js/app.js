@@ -5204,11 +5204,92 @@ function closeLiveSyncJoinModal() {
   m.setAttribute('aria-hidden', 'true');
 }
 
-function startLiveSyncShare() {
-  showToast('Sesión en vivo: conexión se implementa en el siguiente paso.', 'success');
-  liveSyncState.active = true;
-  addLiveSyncActivity('ui-share-click', '');
-  setLiveSyncStatus('Sesión en vivo lista para compartir');
+async function startLiveSyncShare() {
+  if (!window.electronAPI || typeof window.electronAPI.liveSyncStartHost !== 'function') {
+    showToast('Sesión en vivo solo está disponible en la app de escritorio.', 'error');
+    return;
+  }
+  var relayUrl = (settings.liveSyncRelayUrl || '').trim();
+  try {
+    setLiveSyncStatus('Iniciando sesión en vivo…');
+    var res = await window.electronAPI.liveSyncStartHost({ relayUrl: relayUrl });
+    if (!res || !res.ok) throw new Error((res && res.error) || 'No se pudo iniciar');
+    var link = buildLiveSyncInviteLink({
+      sessionId: res.sessionId,
+      token: res.token,
+      lanUrl: res.lanUrl,
+      relayUrl: res.relayUrl,
+      expiresAt: res.expiresAt,
+      hostDeviceName: res.deviceName || 'R+',
+    });
+    liveSyncState.active = true;
+    liveSyncState.role = 'host';
+    liveSyncState.sessionId = res.sessionId;
+    liveSyncState.token = res.token;
+    liveSyncState.deviceId = res.deviceId || '';
+    liveSyncState.transport = 'lan';
+    liveSyncState.inviteLink = link;
+    addLiveSyncActivity('host-start', res.lanUrl || '');
+    var copied = await _copyToClipboardSafe(link);
+    setLiveSyncStatus('Sesión en vivo activa · link copiado');
+    showToast(copied ? 'Link de sesión copiado al portapapeles ✓' : 'Sesión iniciada. Copia el link desde Actividad.', copied ? 'success' : 'error');
+  } catch (err) {
+    liveSyncState.active = false;
+    setLiveSyncStatus('Sesión en vivo inactiva');
+    showToast((err && err.message) ? err.message : 'No se pudo iniciar sesión en vivo', 'error');
+  }
+}
+
+async function joinLiveSyncFromInvite(invite, opts) {
+  if (!window.electronAPI || typeof window.electronAPI.liveSyncJoin !== 'function') {
+    showToast('Sesión en vivo solo está disponible en la app de escritorio.', 'error');
+    return;
+  }
+  var requireConfirm = !(opts && opts.skipConfirm);
+  var hostName = invite.hostDeviceName || 'otro dispositivo';
+  if (requireConfirm && !window.confirm('¿Unirte a la sesión en vivo de ' + hostName + '?')) return;
+  try {
+    setLiveSyncStatus('Conectando sesión en vivo…');
+    var res = await window.electronAPI.liveSyncJoin(invite);
+    if (!res || !res.ok) throw new Error((res && res.error) || 'No se pudo conectar');
+    liveSyncState.active = true;
+    liveSyncState.role = 'peer';
+    liveSyncState.sessionId = invite.sessionId;
+    liveSyncState.token = invite.token;
+    liveSyncState.deviceId = res.deviceId || '';
+    liveSyncState.transport = res.transport || 'lan';
+    addLiveSyncActivity('join', liveSyncState.transport);
+    setLiveSyncStatus('Sesión en vivo conectada · ' + liveSyncState.transport.toUpperCase());
+    showToast('Conectado a sesión en vivo ✓', 'success');
+    closeLiveSyncJoinModal();
+  } catch (err) {
+    liveSyncState.active = false;
+    setLiveSyncStatus('Sesión en vivo inactiva');
+    showToast((err && err.message) ? err.message : 'No se pudo unir a la sesión en vivo', 'error');
+  }
+}
+
+function mapLiveSyncParseError(error) {
+  var map = {
+    'invalid-link': 'Link de sesión no válido.',
+    'missing-token': 'El link no incluye token.',
+    'missing-session': 'El link no incluye sesión.',
+    'missing-endpoint': 'El link no incluye destino LAN/relay.',
+    'invalid-endpoint': 'El destino del link no es válido.',
+    'missing-expiry': 'El link no incluye expiración.',
+    'invalid-expiry': 'La expiración del link no es válida.',
+    expired: 'El link de sesión expiró.',
+  };
+  return map[error] || 'Link de sesión no válido.';
+}
+
+async function joinLiveSyncFromRawLink(raw, opts) {
+  var parsed = parseLiveSyncInviteLink(raw);
+  if (!parsed.ok) {
+    showToast(mapLiveSyncParseError(parsed.error), 'error');
+    return;
+  }
+  await joinLiveSyncFromInvite(parsed.invite, opts);
 }
 
 function joinLiveSyncFromManualLink() {
@@ -5218,9 +5299,7 @@ function joinLiveSyncFromManualLink() {
     showToast('Pega el link de invitación.', 'error');
     return;
   }
-  showToast('Unirse con link se implementa en el siguiente paso.', 'success');
-  addLiveSyncActivity('ui-join-click', '');
-  closeLiveSyncJoinModal();
+  joinLiveSyncFromRawLink(raw);
 }
 
 async function stopLiveSyncSession() {
@@ -5237,7 +5316,31 @@ async function stopLiveSyncSession() {
 }
 
 function openLiveSyncActivityModal() {
-  showToast('Actividad de sesión en vivo se implementa en el siguiente paso.', 'success');
+  if (liveSyncState.inviteLink) {
+    _copyToClipboardSafe(liveSyncState.inviteLink).then(function(ok) {
+      showToast(ok ? 'Link de sesión copiado otra vez ✓' : 'No se pudo copiar el link', ok ? 'success' : 'error');
+    });
+  } else {
+    showToast('Sin actividad de sesión en vivo.', 'success');
+  }
+}
+
+function handleLiveSyncDeepLink(payload) {
+  var url = payload && payload.url ? payload.url : payload;
+  if (!url) return;
+  joinLiveSyncFromRawLink(url);
+}
+
+function initLiveSyncDesktopHooks() {
+  if (!window.electronAPI) return;
+  if (typeof window.electronAPI.onLiveSyncDeepLink === 'function') {
+    window.electronAPI.onLiveSyncDeepLink(handleLiveSyncDeepLink);
+  }
+  if (typeof window.electronAPI.liveSyncPendingLink === 'function') {
+    window.electronAPI.liveSyncPendingLink().then(function(res) {
+      if (res && res.url) handleLiveSyncDeepLink(res.url);
+    }).catch(function() {});
+  }
 }
 
 function launchConfetti() {
@@ -9107,6 +9210,7 @@ function initBlockFShortcuts() {
 }
 
 _rpcDeferInit(initBlockFShortcuts);
+_rpcDeferInit(initLiveSyncDesktopHooks);
 syncProfileSectionVisibility();
 
 Object.assign(window, {
