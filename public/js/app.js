@@ -5513,14 +5513,69 @@ function handleLiveSyncMessage(msg) {
   }
 }
 
-function openLiveSyncActivityModal() {
-  if (liveSyncState.inviteLink) {
-    _copyToClipboardSafe(liveSyncState.inviteLink).then(function(ok) {
-      showToast(ok ? 'Link de sesión copiado otra vez ✓' : 'No se pudo copiar el link', ok ? 'success' : 'error');
-    });
-  } else {
-    showToast('Sin actividad de sesión en vivo.', 'success');
+function formatLiveSyncActivityTime(iso) {
+  var d = new Date(iso || Date.now());
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function renderLiveSyncActivityModal() {
+  var summary = document.getElementById('live-sync-activity-summary');
+  var link = document.getElementById('live-sync-activity-link');
+  var actList = document.getElementById('live-sync-activity-list');
+  var conflictList = document.getElementById('live-sync-conflict-list');
+  if (summary) {
+    summary.textContent = liveSyncState.active
+      ? ('Activa · ' + (liveSyncState.role || 'sesión') + (liveSyncState.transport ? ' · ' + liveSyncState.transport.toUpperCase() : ''))
+      : 'Sesión en vivo inactiva';
   }
+  if (link) link.value = liveSyncState.inviteLink || '';
+
+  var conflicts = listConflictRecords(getLiveSyncLocalState());
+  if (conflictList) {
+    conflictList.innerHTML = conflicts.length ? conflicts.map(function(c) {
+      return '<div class="live-sync-activity-row live-sync-conflict-row">' +
+        escTxtSafe(c.entityType || 'entidad') + ' · ' + escTxtSafe(c.entityId || '') +
+        '<small>Versión local ' + escTxtSafe(c.localVersion) + ' vs base remota ' + escTxtSafe(c.remoteBaseVersion) + '</small>' +
+      '</div>';
+    }).join('') : '<div class="live-sync-activity-row"><em>Sin conflictos registrados.</em></div>';
+  }
+  if (actList) {
+    actList.innerHTML = liveSyncState.activity.length ? liveSyncState.activity.map(function(item) {
+      return '<div class="live-sync-activity-row">' +
+        escTxtSafe(item.action || '') +
+        (item.detail ? '<small>' + escTxtSafe(item.detail) + '</small>' : '') +
+        '<small>' + escTxtSafe(formatLiveSyncActivityTime(item.at)) + '</small>' +
+      '</div>';
+    }).join('') : '<div class="live-sync-activity-row"><em>Sin eventos todavía.</em></div>';
+  }
+}
+
+function openLiveSyncActivityModal() {
+  renderLiveSyncActivityModal();
+  var m = document.getElementById('live-sync-activity-modal');
+  if (!m) return;
+  m.style.display = 'flex';
+  m.classList.add('open');
+  m.setAttribute('aria-hidden', 'false');
+}
+
+function closeLiveSyncActivityModal() {
+  var m = document.getElementById('live-sync-activity-modal');
+  if (!m) return;
+  m.classList.remove('open');
+  m.style.display = 'none';
+  m.setAttribute('aria-hidden', 'true');
+}
+
+function copyLiveSyncInviteLink() {
+  if (!liveSyncState.inviteLink) {
+    showToast('No hay link activo.', 'error');
+    return;
+  }
+  _copyToClipboardSafe(liveSyncState.inviteLink).then(function(ok) {
+    showToast(ok ? 'Link de sesión copiado ✓' : 'No se pudo copiar el link', ok ? 'success' : 'error');
+  });
 }
 
 function handleLiveSyncDeepLink(payload) {
@@ -9508,6 +9563,8 @@ Object.assign(window, {
   joinLiveSyncFromManualLink,
   stopLiveSyncSession,
   openLiveSyncActivityModal,
+  closeLiveSyncActivityModal,
+  copyLiveSyncInviteLink,
   triggerImportActivePatientBackup,
   triggerImportBackup,
   onPatientBackupFileChosen,

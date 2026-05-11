@@ -701,6 +701,19 @@
     border-radius: 999px; padding: 5px 10px; font-size: 12px; font-family: inherit; cursor: pointer;
   }
   .live-sync-bar button:hover { border-color: var(--action); color: var(--action); }
+  .live-sync-activity-list { display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; margin-top: 8px; }
+  .live-sync-activity-row {
+    border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+    background: var(--bg); font-size: 12px; color: var(--text);
+  }
+  .live-sync-activity-row small { display: block; color: var(--text-muted); margin-top: 2px; }
+  .live-sync-conflict-row { border-color: var(--warning); background: rgba(217,119,6,0.08); }
+  .live-sync-link-box {
+    display: block; width: 100%; box-sizing: border-box; min-height: 64px;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); font-size: 11px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    padding: 8px; resize: vertical;
+  }
   .btn-save { background: var(--action); color: white; border: none; border-radius: 8px; padding: 9px 20px; font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer; min-height: 44px; transition: background 0.15s; }
   .btn-save:hover { background: var(--action-hover); }
   .toast { position: fixed; bottom: 24px; right: 24px; background: var(--text); color: white; padding: 12px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; box-shadow: var(--shadow-md); transform: translateY(80px) scale(0.94); opacity: 0; transition: transform 0.32s cubic-bezier(0.34, 1.15, 0.64, 1), opacity 0.28s ease; z-index: 200; max-width: 320px; }
@@ -2817,6 +2830,27 @@
   <span id="live-sync-bar-text">Sesión en vivo</span>
   <button type="button" onclick="openLiveSyncActivityModal()">Actividad</button>
   <button type="button" onclick="stopLiveSyncSession()">Finalizar</button>
+</div>
+
+<div id="live-sync-activity-modal" class="modal-backdrop" style="display:none;" aria-hidden="true" onclick="if(event.target===this)closeLiveSyncActivityModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h2>Actividad de sesión en vivo</h2>
+    <p id="live-sync-activity-summary" style="font-size:13px;color:var(--text-muted);line-height:1.45;margin:6px 0 12px 0;">—</p>
+    <label class="modal-section-label" for="live-sync-activity-link">Link de invitación</label>
+    <textarea id="live-sync-activity-link" class="live-sync-link-box" readonly></textarea>
+    <div class="modal-actions" style="justify-content:flex-start;margin-top:8px;">
+      <button type="button" class="btn-generate" onclick="copyLiveSyncInviteLink()">Copiar link</button>
+    </div>
+    <hr class="modal-divider">
+    <div class="modal-section-label">Conflictos</div>
+    <div id="live-sync-conflict-list" class="live-sync-activity-list"></div>
+    <hr class="modal-divider">
+    <div class="modal-section-label">Eventos recientes</div>
+    <div id="live-sync-activity-list" class="live-sync-activity-list"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn-cancel" onclick="closeLiveSyncActivityModal()">Cerrar</button>
+    </div>
+  </div>
 </div>
 
 <div id="rpc-wipe-modal" role="dialog" aria-modal="true" aria-labelledby="rpc-wipe-title" aria-hidden="true" onclick="if(event.target===this)closeWipeDataModal()">
