@@ -12,6 +12,17 @@ function ensureMeta(state) {
   return meta;
 }
 
+function ensureDataFamilies(state) {
+  if (!Array.isArray(state.patients)) state.patients = [];
+  if (!state.notes || typeof state.notes !== 'object') state.notes = {};
+  if (!state.indicaciones || typeof state.indicaciones !== 'object') state.indicaciones = {};
+  if (!state.labHistory || typeof state.labHistory !== 'object') state.labHistory = {};
+  if (!state.medRecetaByPatient || typeof state.medRecetaByPatient !== 'object') state.medRecetaByPatient = {};
+  if (!state.listadoProblemas || typeof state.listadoProblemas !== 'object') state.listadoProblemas = {};
+  if (!state.settings || typeof state.settings !== 'object') state.settings = {};
+  if (!state.medCatalog || typeof state.medCatalog !== 'object') state.medCatalog = {};
+}
+
 function currentIso(now) {
   return now || new Date().toISOString();
 }
@@ -68,6 +79,7 @@ export function applyLiveSyncSnapshot(state, snapshot) {
   next.medCatalog = clone(data.medCatalog || {});
   next.liveSyncMeta = ensureMeta(next);
   next.liveSyncMeta.appliedEventIds = [];
+  next.liveSyncMeta.entityVersions = {};
   next.liveSyncMeta.conflicts = [];
   return next;
 }
@@ -111,11 +123,12 @@ export function applyLiveSyncEvent(state, event) {
   }
 
   if (event.op === 'patient.upsert') {
-    next.patients = Array.isArray(next.patients) ? next.patients : [];
+    ensureDataFamilies(next);
     var idx = next.patients.findIndex(function(p) { return p && p.id === event.entityId; });
-    if (idx >= 0) next.patients[idx] = Object.assign({}, next.patients[idx], event.payload);
-    else next.patients.unshift(Object.assign({ id: event.entityId }, event.payload));
+    if (idx >= 0) next.patients[idx] = Object.assign({}, next.patients[idx], clone(event.payload));
+    else next.patients.unshift(Object.assign({ id: event.entityId }, clone(event.payload)));
   } else if (event.op === 'patient.delete') {
+    ensureDataFamilies(next);
     next.patients = (next.patients || []).filter(function(p) { return p && p.id !== event.entityId; });
     delete next.notes[event.entityId];
     delete next.indicaciones[event.entityId];
@@ -123,22 +136,30 @@ export function applyLiveSyncEvent(state, event) {
     delete next.medRecetaByPatient[event.entityId];
     delete next.listadoProblemas[event.entityId];
   } else if (event.op === 'notes.update') {
-    next.notes[event.entityId] = Object.assign({}, next.notes[event.entityId] || {}, event.payload);
+    ensureDataFamilies(next);
+    next.notes[event.entityId] = Object.assign({}, next.notes[event.entityId] || {}, clone(event.payload));
   } else if (event.op === 'indicaciones.update') {
-    next.indicaciones[event.entityId] = Object.assign({}, next.indicaciones[event.entityId] || {}, event.payload);
+    ensureDataFamilies(next);
+    next.indicaciones[event.entityId] = Object.assign({}, next.indicaciones[event.entityId] || {}, clone(event.payload));
   } else if (event.op === 'listado.update') {
-    next.listadoProblemas[event.entityId] = Object.assign({}, next.listadoProblemas[event.entityId] || {}, event.payload);
+    ensureDataFamilies(next);
+    next.listadoProblemas[event.entityId] = Object.assign({}, next.listadoProblemas[event.entityId] || {}, clone(event.payload));
   } else if (event.op === 'medReceta.update') {
+    ensureDataFamilies(next);
     next.medRecetaByPatient[event.entityId] = clone(event.payload);
   } else if (event.op === 'settings.update') {
-    next.settings = Object.assign({}, next.settings || {}, event.payload);
+    ensureDataFamilies(next);
+    next.settings = Object.assign({}, next.settings || {}, clone(event.payload));
   } else if (event.op === 'medCatalog.update') {
-    next.medCatalog = Object.assign({}, next.medCatalog || {}, event.payload);
+    ensureDataFamilies(next);
+    next.medCatalog = Object.assign({}, next.medCatalog || {}, clone(event.payload));
   } else if (event.op === 'labHistory.append') {
+    ensureDataFamilies(next);
     if (!next.labHistory[event.entityId]) next.labHistory[event.entityId] = [];
     var exists = next.labHistory[event.entityId].some(function(row) { return sameLabEntry(row, event.payload); });
     if (!exists) next.labHistory[event.entityId].push(clone(event.payload));
   } else if (event.op === 'labHistory.delete') {
+    ensureDataFamilies(next);
     next.labHistory[event.entityId] = (next.labHistory[event.entityId] || []).filter(function(row) {
       return row && row.id !== event.payload.id;
     });

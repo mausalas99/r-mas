@@ -61,6 +61,23 @@ test('applyLiveSyncSnapshot replaces clinical data and preserves local theme out
   assert.deepEqual(next.liveSyncMeta.appliedEventIds, []);
 });
 
+test('applyLiveSyncSnapshot resets stale entityVersions', () => {
+  const local = baseState();
+  local.liveSyncMeta.entityVersions.notes = { p1: 7 };
+  local.liveSyncMeta.appliedEventIds = ['evt-old'];
+  local.liveSyncMeta.conflicts = [{ eventId: 'evt-conflict' }];
+  const incoming = buildLiveSyncSnapshot(baseState(), {
+    sessionId: 's1',
+    sourceDeviceId: 'dev-a',
+    now: '2026-05-11T19:00:00.000Z',
+  });
+
+  const next = applyLiveSyncSnapshot(local, incoming);
+  assert.deepEqual(next.liveSyncMeta.entityVersions, {});
+  assert.deepEqual(next.liveSyncMeta.appliedEventIds, []);
+  assert.deepEqual(next.liveSyncMeta.conflicts, []);
+});
+
 test('createLiveSyncEvent creates stable envelope', () => {
   const event = createLiveSyncEvent({
     sessionId: 's1',
@@ -156,4 +173,57 @@ test('applyLiveSyncEvent records conflict when baseVersion zero is stale', () =>
   assert.equal(next.notes.p1.evolucion, 'remota desde cero');
   assert.equal(listConflictRecords(next).length, 1);
   assert.equal(listConflictRecords(next)[0].remoteBaseVersion, 0);
+});
+
+test('applyLiveSyncEvent creates notes map when missing', () => {
+  const state = { patients: [], liveSyncMeta: { appliedEventIds: [], entityVersions: {}, conflicts: [] } };
+  const event = createLiveSyncEvent({
+    sessionId: 's1',
+    sourceDeviceId: 'dev-a',
+    entityType: 'notes',
+    entityId: 'p1',
+    op: 'notes.update',
+    eventId: 'evt-notes-missing',
+    payload: { evolucion: 'creada' },
+  });
+
+  const next = applyLiveSyncEvent(state, event);
+  assert.equal(next.notes.p1.evolucion, 'creada');
+});
+
+test('applyLiveSyncEvent deletes patient from partial state without maps', () => {
+  const state = {
+    patients: [{ id: 'p1', nombre: 'UNO' }],
+    liveSyncMeta: { appliedEventIds: [], entityVersions: {}, conflicts: [] },
+  };
+  const event = createLiveSyncEvent({
+    sessionId: 's1',
+    sourceDeviceId: 'dev-a',
+    entityType: 'patients',
+    entityId: 'p1',
+    op: 'patient.delete',
+    eventId: 'evt-delete-partial',
+  });
+
+  const next = applyLiveSyncEvent(state, event);
+  assert.deepEqual(next.patients, []);
+  assert.deepEqual(next.notes, {});
+  assert.deepEqual(next.labHistory, {});
+});
+
+test('applyLiveSyncEvent clones nested patient upsert payload', () => {
+  const state = baseState();
+  const event = createLiveSyncEvent({
+    sessionId: 's1',
+    sourceDeviceId: 'dev-a',
+    entityType: 'patients',
+    entityId: 'p1',
+    op: 'patient.upsert',
+    eventId: 'evt-patient-nested',
+    payload: { triage: { flags: ['sepsis'] } },
+  });
+
+  const next = applyLiveSyncEvent(state, event);
+  event.payload.triage.flags.push('mutated');
+  assert.deepEqual(next.patients[0].triage.flags, ['sepsis']);
 });
