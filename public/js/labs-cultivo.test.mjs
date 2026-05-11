@@ -82,6 +82,74 @@ Pseudomonas aeruginosa
   assert.match(out, /PSEUDOMONAS/);
 });
 
+test('cultivo líquido peritoneal: tipo, pseudomonas y antibiograma', () => {
+  const raw = `
+Expediente:	1929604-8	Solicitud:	2605071010
+Nombre:	CORONADO PALOMO RAUL	Fecha Registro:	07/05/2026 04:32:46 p. m.
+BACTERIOLOGIA
+Estudio		Resultado	Unidades	Valor de Referencia
+LIQUIDO PERITONEAL
+PRODUCTO	
+*
+TINCION DE GRAM	
+*
+ESCASOS BACILOS GRAM NEGATIVO
+CALIDAD DE LA MUESTRA	
+*
+ESTADO DE CULTIVO	
+*
+*
+MICROORGANISMO	
+*
+Pseudomonas aeruginosa
+COMENTARIO:	
+*
+CUENTA	
+*
+X
+ANTIBIOGRAMA	
+*
+CEFTAZIDIMA
+>16	R
+*
+CIPROFLOXACINA
+<=1	S
+*
+CEFEPIMA
+16	I
+*
+IMIPENEM
+2	S
+*
+LEVOFLOXACINA
+<=2	S
+*
+MEROPENEM
+<=1	S
+*
+PIP/TAZO
+64	S
+*
+TOBRAMICINA
+<=4	S
+*
+MICROORGANISMO	
+*
+COMENTARIO:	
+*
+CUENTA	
+*
+*
+IDENTIFICACION POR ESPECTROMETRIA DE MASAS (MALDI TOF)
+MICROORGANISMO	
+*
+`;
+  const out = parseCultivo_(raw, norm(raw));
+  assert.match(out, /LIQUIDO PERITONEAL 07\/05: PSEUDOMONAS AERUGINOSA/);
+  assert.match(out, /\bATB R: CAZ \| I: FEP\b/);
+  assert.match(out, /S: CIPRO, IMI, LVX, MERO, PIP\/TAZO, TOBRA/);
+});
+
 test('urocultivo: detecta BLEE por comentario y ESBL en antibiograma', () => {
   const raw = `
 Expediente:	2211202-9

@@ -36,6 +36,51 @@ export function extraerConRango(nombres, texto) {
   return { valor: '---', min: null, max: null };
 }
 
+/** True si el nombre del estudio (justo tras la keyword) es de orina, no sérico. */
+function esContextoUrinario_(texto, idxNombre, nombreLen) {
+  var b = Math.min(texto.length, idxNombre + nombreLen + 90);
+  var w = texto.substring(idxNombre, b).toUpperCase();
+  if (/\bEN\s+ORINA\b/.test(w)) return true;
+  if (/\bURINARIO\b/.test(w)) return true;
+  if (/\bURINARIA\b/.test(w)) return true;
+  return false;
+}
+
+/**
+ * Igual que extraerConRango pero ignora ocurrencias en contexto urinario
+ * (p. ej. SODIO EN ORINA bajo QUIMICA CLINICA cuando el reporte no trae suero).
+ */
+function extraerConRangoSuero(nombres, texto) {
+  if (!texto) return { valor: '---', min: null, max: null };
+  var t = texto.toUpperCase();
+  for (var i = 0; i < nombres.length; i++) {
+    var nombre = nombres[i].toUpperCase();
+    var start = 0;
+    while (true) {
+      var idx = t.indexOf(nombre, start);
+      if (idx === -1) break;
+      if (esContextoUrinario_(texto, idx, nombre.length)) {
+        start = idx + nombre.length;
+        continue;
+      }
+      var subStart = idx + nombre.length;
+      var sub = texto.substring(subStart, subStart + 220);
+      var mValor = sub.match(/(-?\d+[.,]?\d*)/);
+      if (!mValor) {
+        start = idx + nombre.length;
+        continue;
+      }
+      var valorStr = mValor[1];
+      var mRango = sub.match(/(\d+[.,]?\d*)\s*-\s*(\d+[.,]?\d*)/);
+      if (!mRango) return { valor: valorStr, min: null, max: null };
+      return { valor: valorStr,
+        min: parseFloat(mRango[1].replace(',', '.')),
+        max: parseFloat(mRango[2].replace(',', '.')) };
+    }
+  }
+  return { valor: '---', min: null, max: null };
+}
+
 export function marcarSegunRango(valorStr, min, max) {
   if (valorStr === '---' || valorStr == null) return valorStr;
   var v = parseFloat(String(valorStr).replace(',','.'));
@@ -53,7 +98,6 @@ export function fmt(val) {
 
 export function parseBH_(tNorm) {
   var hbData  = extraerConRango(['HGB','HEMOGLOBINA TOTAL','HEMOGLOBINA'], tNorm);
-  if (hbData.valor === '---') return '';
   var htoData = extraerConRango(['HCT ','HEMATOCRITO'], tNorm);
   var vcmData = extraerConRango(['MCV ','VCM '], tNorm);
   var hcmData = extraerConRango(['MCH ','HCM '], tNorm);
@@ -64,7 +108,7 @@ export function parseBH_(tNorm) {
   var retData = extraerConRango(['RETICULOCITOS'], tNorm);
   var tpData  = extraerConRango(['TIEMPO DE PROTROMBINA'], tNorm);
   var ttpData = extraerConRango(['TIEMPO DE TROMBOPLASTINA'], tNorm);
-  var inrData = extraerConRango(['INR '], tNorm);
+  var inrData = extraerConRango(['INR ', 'INR'], tNorm);
 
   var Hb  = fmt(marcarSegunRango(hbData.valor,  hbData.min,  hbData.max));
   var Hto = fmt(marcarSegunRango(htoData.valor, htoData.min, htoData.max));
@@ -79,8 +123,16 @@ export function parseBH_(tNorm) {
   var TTP = fmt(marcarSegunRango(ttpData.valor, ttpData.min, ttpData.max));
   var INR = fmt(marcarSegunRango(inrData.valor, inrData.min, inrData.max));
 
+  var hasCbc = [Hb, Hto, VCM, HCM, Leu, Neu, Eos, Plt, Ret].some(function (v) {
+    return v !== '---';
+  });
+  var hasCoag = [TP, TTP, INR].some(function (v) {
+    return v !== '---';
+  });
+  if (!hasCbc && !hasCoag) return '';
+
   var p = ['BH'];
-  p.push('Hb', Hb);
+  if (Hb !== '---') p.push('Hb', Hb);
   if (Hto !== '---') p.push('Hto', Hto);
   if (VCM !== '---') p.push('VCM', VCM);
   if (HCM !== '---') p.push('HCM', HCM);
@@ -128,16 +180,16 @@ export function extraerProcalcitonina_(texto) {
 }
 
 export function parseQS_(texto) {
-  var gluData = extraerConRango(['GLUCOSA EN SANGRE','GLUCOSA EN','GLUCOSA'], texto);
-  var crData  = extraerConRango(['CREATININA EN SANGRE','CREATININA'], texto);
-  var bunData = extraerConRango(['NITROGENO DE LA UREA EN SANGRE','NITROGENO DE LA UREA','UREA'], texto);
-  var pcrData = extraerConRango(['PROTEINA C REACTIVA','PROTEÍNA C REACTIVA'], texto);
+  var gluData = extraerConRangoSuero(['GLUCOSA EN SANGRE','GLUCOSA EN','GLUCOSA'], texto);
+  var crData  = extraerConRangoSuero(['CREATININA EN SANGRE','CREATININA'], texto);
+  var bunData = extraerConRangoSuero(['NITROGENO DE LA UREA EN SANGRE','NITROGENO DE LA UREA','UREA'], texto);
+  var pcrData = extraerConRangoSuero(['PROTEINA C REACTIVA','PROTEÍNA C REACTIVA'], texto);
   var pctData = extraerProcalcitonina_(texto);
-  var auData  = extraerConRango(['ACIDO URICO EN SANGRE','ACIDO URICO','ÁCIDO ÚRICO'], texto);
-  var tglData = extraerConRango(['TRIGLICERIDOS','TRIGLICÉRIDOS'], texto);
-  var colData = extraerConRango(['COLESTEROL'], texto);
-  var vsgData = extraerConRango(['VSG ','VELOCIDAD DE SEDIMENTACION'], texto);
-  var cpkData = extraerConRango(['CPK CREATIN FOSFO QUINASA','CPK '], texto);
+  var auData  = extraerConRangoSuero(['ACIDO URICO EN SANGRE','ACIDO URICO','ÁCIDO ÚRICO'], texto);
+  var tglData = extraerConRangoSuero(['TRIGLICERIDOS','TRIGLICÉRIDOS'], texto);
+  var colData = extraerConRangoSuero(['COLESTEROL'], texto);
+  var vsgData = extraerConRangoSuero(['VSG ','VELOCIDAD DE SEDIMENTACION'], texto);
+  var cpkData = extraerConRangoSuero(['CPK CREATIN FOSFO QUINASA','CPK '], texto);
 
   var Glu = fmt(marcarSegunRango(gluData.valor, gluData.min, gluData.max));
   var Cr  = fmt(marcarSegunRango(crData.valor,  crData.min,  crData.max));
@@ -167,13 +219,13 @@ export function parseQS_(texto) {
 }
 
 export function parseESC_(texto) {
-  var naData = extraerConRango(['SODIO'], texto);
+  var naData = extraerConRangoSuero(['SODIO'], texto);
   if (naData.valor === '---') return '';
-  var clData = extraerConRango(['CLORO'], texto);
-  var kData  = extraerConRango(['POTASIO'], texto);
-  var caData = extraerConRango(['CALCIO EN SUERO','CALCIO'], texto);
-  var fData  = extraerConRango(['FOSFORO EN SANGRE','FOSFORO','FÓSFORO'], texto);
-  var mgData = extraerConRango(['MAGNESIO'], texto);
+  var clData = extraerConRangoSuero(['CLORO'], texto);
+  var kData  = extraerConRangoSuero(['POTASIO'], texto);
+  var caData = extraerConRangoSuero(['CALCIO EN SUERO','CALCIO'], texto);
+  var fData  = extraerConRangoSuero(['FOSFORO EN SANGRE','FOSFORO','FÓSFORO'], texto);
+  var mgData = extraerConRangoSuero(['MAGNESIO'], texto);
 
   var Na = fmt(marcarSegunRango(naData.valor, naData.min, naData.max));
   var Cl = fmt(marcarSegunRango(clData.valor, clData.min, clData.max));
@@ -193,7 +245,7 @@ export function parseESC_(texto) {
 }
 
 export function parsePFH_(tNorm) {
-  var albData  = extraerConRango(['ALBUMINA'], tNorm);
+  var albData  = extraerConRangoSuero(['ALBUMINA'], tNorm);
   var astData  = extraerConRango(['AST(ASPARTATO AMINOTRANSFERASA)','AST '], tNorm);
   var altData  = extraerConRango(['ALT ALANIN AMINO TRANSFERASA','ALT '], tNorm);
   var alpData  = extraerConRango(['ALP FOSFATASA ALCALINA','FOSFATASA ALCALINA'], tNorm);
@@ -251,8 +303,9 @@ export function parseGaso_(bloqueGaso, textoFuera) {
   // gasometría, no se muestra AG aunque el bloque arterial completo
   // traiga sus propios Na/Cl: el médico quiere usar los valores de
   // química como fuente única de verdad.
-  var naAG = textoFuera ? extraerConRango(['SODIO'], textoFuera) : { valor: '---' };
-  var clAG = textoFuera ? extraerConRango(['CLORO'], textoFuera) : { valor: '---' };
+  var naAG = textoFuera ? extraerConRangoSuero(['SODIO'], textoFuera) : { valor: '---' };
+  var clAG = textoFuera ? extraerConRangoSuero(['CLORO'], textoFuera) : { valor: '---' };
+  var albAG = textoFuera ? extraerConRangoSuero(['ALBUMINA'], textoFuera) : { valor: '---' };
 
   var pH   = fmt(marcarSegunRango(phData.valor,   phData.min,   phData.max));
   var pCO2 = fmt(marcarSegunRango(pco2Data.valor, pco2Data.min, pco2Data.max));
@@ -264,8 +317,8 @@ export function parseGaso_(bloqueGaso, textoFuera) {
   var Bica = fmt(marcarSegunRango(hco3Data.valor, hco3Data.min, hco3Data.max));
   var Hto  = fmt(marcarSegunRango(htoData.valor, htoData.min, htoData.max));
   var iCa  = fmt(marcarSegunRango(iCaData.valor,  iCaMin,        iCaMax));
-  var AG   = computeAnionGap_(naAG.valor, clAG.valor, hco3Data.valor);
-  var AGv  = computeAnionGapValue_(naAG.valor, clAG.valor, hco3Data.valor);
+  var AG   = computeAnionGap_(naAG.valor, clAG.valor, hco3Data.valor, albAG.valor);
+  var AGv  = computeAnionGapValue_(naAG.valor, clAG.valor, hco3Data.valor, albAG.valor);
   var DD   = computeDeltaDelta_(AGv, hco3Data.valor);
 
   var p = ['GASES'];
@@ -296,9 +349,10 @@ export function buildGasoInterpretacion_(bloqueGaso, textoFuera) {
   if (phData.valor === '---') return '';
   var pco2Data = extraerConRango(['PCO2'], bloqueGaso);
   var hco3Data = extraerConRango(['HCO3'], bloqueGaso);
-  var naAG = textoFuera ? extraerConRango(['SODIO'], textoFuera) : { valor: '---' };
-  var clAG = textoFuera ? extraerConRango(['CLORO'], textoFuera) : { valor: '---' };
-  var ag = computeAnionGapValue_(naAG.valor, clAG.valor, hco3Data.valor);
+  var naAG = textoFuera ? extraerConRangoSuero(['SODIO'], textoFuera) : { valor: '---' };
+  var clAG = textoFuera ? extraerConRangoSuero(['CLORO'], textoFuera) : { valor: '---' };
+  var albAG = textoFuera ? extraerConRangoSuero(['ALBUMINA'], textoFuera) : { valor: '---' };
+  var ag = computeAnionGapValue_(naAG.valor, clAG.valor, hco3Data.valor, albAG.valor);
   var dd = computeDeltaDeltaValue_(ag, hco3Data.valor);
 
   var pH = toNum_(phData.valor);
@@ -329,8 +383,13 @@ function lineRichnessScore_(line) {
   return score;
 }
 
+function normalizeGasometryInterpretationLine_(line) {
+  var s = String(line == null ? '' : line);
+  return /^Interpretación gasometría:/i.test(s.trim()) ? s.toUpperCase() : s;
+}
+
 function normalizeLabLine_(line) {
-  return String(line == null ? '' : line).replace(/\s+/g, ' ').trim();
+  return normalizeGasometryInterpretationLine_(line).replace(/\s+/g, ' ').trim();
 }
 
 function dedupeSingletonSections_(rows) {
@@ -386,7 +445,7 @@ function pickBestSectionLine_(rows, sectionName) {
 
 function formatNumericToken_(n) {
   if (n == null || !isFinite(n)) return '';
-  var rounded = Math.round(n * 10) / 10;
+  var rounded = Math.round((n + Number.EPSILON) * 10) / 10;
   return rounded === Math.trunc(rounded) ? String(rounded.toFixed(0)) : String(rounded);
 }
 
@@ -428,7 +487,7 @@ function buildGasoInterpretacionFromValues_(pH, pCO2, hco3, ag, dd) {
     }
     else partes.push('Anion gap elevado');
   }
-  return 'Interpretación gasometría:\t' + partes.join('; ');
+  return ('Interpretación gasometría:\t' + partes.join('; ')).toUpperCase();
 }
 
 function rebuildGasesFromResults_(rows) {
@@ -444,15 +503,17 @@ function rebuildGasesFromResults_(rows) {
 
   var qs = pickBestSectionLine_(rows, 'QS');
   var esc = pickBestSectionLine_(rows, 'ESC');
+  var pfhs = pickBestSectionLine_(rows, 'PFHS');
   var na = valueFromSectionLine_(qs, 'Na') || valueFromSectionLine_(esc, 'Na') || values.Na;
   var cl = valueFromSectionLine_(qs, 'Cl') || valueFromSectionLine_(esc, 'Cl');
+  var alb = valueFromSectionLine_(pfhs, 'Alb');
   var bica = values.Bica;
 
   orderedKeys.forEach(function (k) {
     if (values[k] != null && values[k] !== '') out.push(k, values[k]);
   });
 
-  var agv = computeAnionGapValue_(na || '---', cl || '---', bica || '---');
+  var agv = computeAnionGapValue_(na || '---', cl || '---', bica || '---', alb || '---');
   if (agv != null) {
     var agStr = formatNumericToken_(agv);
     out.push('AG', marcarSegunRango(agStr, 8, 12));
@@ -479,13 +540,16 @@ export function reprocessLabResultLines_(rows) {
   return dedupeSingletonSections_(out);
 }
 
-function computeAnionGapValue_(naStr, clStr, hco3Str) {
+function computeAnionGapValue_(naStr, clStr, hco3Str, albStr) {
   if (naStr === '---' || clStr === '---' || hco3Str === '---') return null;
   var na = parseFloat(String(naStr).replace(',', '.'));
   var cl = parseFloat(String(clStr).replace(',', '.'));
   var hco3 = parseFloat(String(hco3Str).replace(',', '.'));
   if (isNaN(na) || isNaN(cl) || isNaN(hco3)) return null;
-  return na - (cl + hco3);
+  var ag = na - (cl + hco3);
+  var alb = parseFloat(String(albStr == null ? '' : albStr).replace(',', '.'));
+  if (!isNaN(alb)) ag += 2.5 * (4 - alb);
+  return ag;
 }
 
 function computeDeltaDeltaValue_(agValue, hco3Str) {
@@ -504,14 +568,16 @@ function computeDeltaDelta_(agValue, hco3Str) {
   return (rounded === Math.trunc(rounded)) ? String(rounded.toFixed(0)) : String(rounded);
 }
 
-// Anion gap clásico (sin K). Rango normal 8-12 mEq/L. Devuelve string
-// formateado (p. ej. "12" o "18.8*"), o '---' si falta cualquier dato.
-export function computeAnionGap_(naStr, clStr, hco3Str) {
-  var ag = computeAnionGapValue_(naStr, clStr, hco3Str);
+// Anion gap clásico (sin K), con corrección por albúmina opcional:
+// AGcorr = AG + 2.5 * (4 - Alb[g/dL]).
+// Rango normal 8-12 mEq/L. Devuelve string formateado
+// (p. ej. "12" o "18.8*"), o '---' si falta cualquier dato crítico.
+export function computeAnionGap_(naStr, clStr, hco3Str, albStr) {
+  var ag = computeAnionGapValue_(naStr, clStr, hco3Str, albStr);
   if (ag == null) return '---';
   // Una decimal cuando el valor no es entero (mismo comportamiento
   // visual que Bica 21.2 vs Na 140).
-  var rounded = Math.round(ag * 10) / 10;
+  var rounded = Math.round((ag + Number.EPSILON) * 10) / 10;
   var agStr = (rounded === Math.trunc(rounded)) ? String(rounded.toFixed(0)) : String(rounded);
   return marcarSegunRango(agStr, 8, 12);
 }
@@ -833,15 +899,56 @@ export function parseFrotisSangre_(textoBruto) {
   return 'FROTIS\tObs ' + desc.toUpperCase();
 }
 
+/** Na/K/Cl/Cr de QUIMICA CLINICA (orina); Cl suele venir en COMENTARIO DE MUESTRA. */
+function extraerQuimicaOrinaParaEGO_(textoBruto) {
+  var out = { na: null, k: null, cl: null, cr: null };
+  if (!textoBruto) return out;
+  var lineas = textoBruto.split(/\r?\n/).map(function (l) {
+    return l.replace(/\*/g, '').trim();
+  });
+  function valorTrasEtiqueta(etiquetas) {
+    for (var e = 0; e < etiquetas.length; e++) {
+      var lbl = etiquetas[e].toUpperCase();
+      for (var i = 0; i < lineas.length; i++) {
+        if (lineas[i].toUpperCase() !== lbl) continue;
+        for (var j = i + 1; j < Math.min(i + 10, lineas.length); j++) {
+          var l = lineas[j].trim();
+          if (!l) continue;
+          if (/^[ABHL]$/.test(l)) continue;
+          if (/^(N\/A|Estudio|Resultado|Unidades|Valor de Referencia|VALOR DE REF)/i.test(l)) continue;
+          if (/^[\-–:\/\.]+$/.test(l)) continue;
+          var mNum = l.match(/^(-?\d+[.,]?\d*)/);
+          if (mNum) return mNum[1].replace(',', '.');
+        }
+      }
+    }
+    return null;
+  }
+  out.k = valorTrasEtiqueta(['POTASIO EN ORINA']);
+  out.na = valorTrasEtiqueta(['SODIO EN ORINA']);
+  out.cr = valorTrasEtiqueta(['CREATININA EN ORINA']);
+  var mCl = textoBruto.match(/CLORO\s+EN\s+ORINA\s*:?\s*(\d+[.,]?\d*)/i);
+  if (mCl) out.cl = mCl[1].replace(',', '.');
+  return out;
+}
+
 export function parseEGO_(textoBruto) {
+  var qOrina = extraerQuimicaOrinaParaEGO_(textoBruto);
+  var hasQO = !!(qOrina.na || qOrina.k || qOrina.cl || qOrina.cr);
+
   var tUp=textoBruto.toUpperCase();
   var pos=tUp.indexOf('EXAMEN GENERAL DE ORINA')!==-1?tUp.indexOf('EXAMEN GENERAL DE ORINA'):
           tUp.indexOf('ANALISIS DE ORINA')!==-1?tUp.indexOf('ANALISIS DE ORINA'):
           tUp.indexOf('URIANALISIS')!==-1?tUp.indexOf('URIANALISIS'):-1;
-  if(pos===-1)return '';
-  var fin=tUp.search(/BACTERIOLOGIA|CULTIVO|COMENTARIO DE MUESTRA/);
-  var bloque=(fin!==-1&&fin>pos)?textoBruto.substring(pos,fin):textoBruto.substring(pos);
-  var lineas=bloque.split(/\r?\n/).map(function(l){return l.replace(/\*/g,'').trim();});
+  var lineas;
+  if (pos === -1) {
+    if (!hasQO) return '';
+    lineas = [];
+  } else {
+    var fin = tUp.search(/BACTERIOLOGIA|CULTIVO|COMENTARIO DE MUESTRA/);
+    var bloque = (fin !== -1 && fin > pos) ? textoBruto.substring(pos, fin) : textoBruto.substring(pos);
+    lineas = bloque.split(/\r?\n/).map(function (l) { return l.replace(/\*/g, '').trim(); });
+  }
   function esUnidad(l){return /^(Hem\/uL|Leucocitos\/uL|E\.U\.\/dL|mOsm\/L|mg\/dL|mmol\/L|g\/dL|\/CAMPO|K\/uL|fL|pg|uL|U\/L|SEG\.?)$/i.test(l)||/^[a-zA-Z]+\/[a-zA-Z]+$/.test(l);}
   function buscarValor(nombres){
     for(var n=0;n<nombres.length;n++)for(var i=0;i<lineas.length;i++)if(lineas[i].toUpperCase()===nombres[n].toUpperCase()){
@@ -864,7 +971,7 @@ export function parseEGO_(textoBruto) {
   var leu=buscarValor(['LEUCOCITOS']),eri=buscarValor(['ERITROCITOS','HEMATIES']),bact=buscarValor(['BACTERIAS']);
   var celEpit=buscarValor(['CELULAS EPITELIALES']),cilinG=buscarValor(['CILINDROS GRANOLOSOS']),cilinH=buscarValor(['CILINDROS HIALINOS']);
   var levad=buscarValor(['LEVADURAS']),moco=buscarValor(['MOCO']);
-  if(color==='---'&&aspecto==='---'&&ph==='---'&&leu==='---'&&eri==='---')return '';
+  if (!hasQO && color==='---'&&aspecto==='---'&&ph==='---'&&leu==='---'&&eri==='---')return '';
   function abreviar(val){if(!val||val==='---')return '---';var v=val.toUpperCase().trim();
     if(v==='NEGATIVO'||v==='NEGATIVE')return 'NEG';if(v==='POSITIVO'||v==='POSITIVE')return 'POS';
     if(v==='AUSENTES'||v==='AUSENTE')return 'AUS';if(v==='ESCASAS'||v==='ESCASO')return 'ESC';
@@ -893,6 +1000,10 @@ export function parseEGO_(textoBruto) {
   if(cilinH!=='---'&&abreviar(cilinH)!=='AUS')sedimento.push('CilinH '+marcarEGO(cilinH,'CLINH'));
   if(levad!=='---'&&abreviar(levad)!=='AUS')sedimento.push('Levad '+marcarEGO(levad,'LEVAD'));
   if(moco!=='---'&&abreviar(moco)!=='AUS')sedimento.push('Moco '+marcarEGO(moco,'MOCO'));
+  if (qOrina.na) quimico.push('NaU ' + qOrina.na);
+  if (qOrina.k) quimico.push('KU ' + qOrina.k);
+  if (qOrina.cl) quimico.push('ClU ' + qOrina.cl);
+  if (qOrina.cr) quimico.push('CrU ' + qOrina.cr);
   if(!fisico.length&&!quimico.length&&!sedimento.length)return '';
   var sub=['EGO:'];
   if(fisico.length)sub.push('  '+fisico.join('  '));
@@ -953,18 +1064,22 @@ function detectTipoCultivoLine(lineasTexto) {
     if (/BACTERIOLOGIA/i.test(lineasTexto[i])) { idxBact = i; break; }
   }
   if (idxBact === -1) return '';
+  var candidate = '';
   for (var i = idxBact + 1; i < Math.min(idxBact + 35, lineasTexto.length); i++) {
     var l = lineasTexto[i].replace(/\r/g, '').replace(/\*/g, ' ').replace(/\s+/g, ' ').trim();
     if (!l) continue;
     var lUp = l.toUpperCase();
     if (/^BACTERIOLOGIA$/.test(lUp)) continue;
-    if (/^ESTUDIO(\s+RESULTADO)?$/.test(lUp)) continue;
+    if (/^ESTUDIO\b/.test(lUp)) continue;
     if (/^RESULTADO$/.test(lUp) || /^UNIDADES$/.test(lUp) || /^VALOR DE REFERENCIA$/.test(lUp)) continue;
     if (/^PRODUCTO$/.test(lUp)) break;
     if (/\bUROCULTIVO\b/i.test(l) || /\bHEMOCULTIVO\b/i.test(l) || /^CATETER(\b|$)/i.test(lUp))
       return l;
+    if (!candidate && !/^(TINCION|CALIDAD|ESTADO|MICROORGANISMO|COMENTARIO|CUENTA|ANTIBIOGRAMA)\b/i.test(lUp)) {
+      candidate = l;
+    }
   }
-  return '';
+  return candidate;
 }
 
 function detectMuestraDesdeProducto(lineasTexto) {
@@ -1095,8 +1210,8 @@ function detectMarcasResistenciaCultivo(lineasTexto) {
 }
 
 /**
- * Resumen ATB sin CMI: solo R | I | ESBL (no lista S).
- * Deduplica por fármaco; gana la peor categoría al fusionar antibiogramas.
+ * Resumen ATB sin CMI: conserva R | I | ESBL/BLEE y también S para mostrar
+ * el biograma completo sin los valores MIC.
  */
 function compactarLineasAntibiograma(sensCrudas, abreviarFn) {
   if (!sensCrudas.length) return '';
@@ -1109,11 +1224,11 @@ function compactarLineasAntibiograma(sensCrudas, abreviarFn) {
     var r = rank[it] || 0;
     if (!byKey[key] || r > byKey[key]._r) byKey[key] = { interp: it, _r: r };
   });
-  var R = [], I = [], E = [];
+  var R = [], I = [], E = [], S = [];
   Object.keys(byKey).sort().forEach(function(k) {
     var it = byKey[k].interp;
-    if (it === 'S' || it === 'POS') return;
-    if (it === 'I') I.push(k);
+    if (it === 'S' || it === 'POS') S.push(k);
+    else if (it === 'I') I.push(k);
     else if (it === 'ESBL') E.push(k);
     else R.push(k);
   });
@@ -1126,7 +1241,8 @@ function compactarLineasAntibiograma(sensCrudas, abreviarFn) {
   if (R.length) parts.push('R: ' + cap(R, 14));
   if (I.length) parts.push('I: ' + cap(I, 8));
   if (E.length) parts.push('ESBL: ' + cap(E, 8));
-  if (!parts.length) return 'ATB sin R/I/ESBL';
+  if (S.length) parts.push('S: ' + cap(S, 18));
+  if (!parts.length) return 'ATB sin interpretaciones';
   var line = 'ATB ' + parts.join(' | ');
   if (line.length <= 220) return line;
   return 'ATB ' + parts.join('\n');
@@ -1380,6 +1496,7 @@ export function renderToken(tok){
 }
 
 export function renderEntry(text){
+  text = normalizeGasometryInterpretationLine_(text);
   return text.split('\n').map(function(line,li){
     var tabIdx=line.indexOf('\t');
     if(tabIdx>=0){

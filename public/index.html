@@ -1297,8 +1297,14 @@
     z-index: 101000; width: min(340px, calc(100vw - 24px));
     display: none;
     pointer-events: none;
-    transition: opacity 0.2s ease;
+    transition: opacity 0.2s ease, left 0.2s ease, right 0.2s ease;
     opacity: 0.85;
+  }
+  /* Pasos con CTA arriba a la derecha (Enviar a nota, Generar…): el dock
+     en la esquina inferior derecha tapaba los botones; lo movemos a la izquierda. */
+  #tour-dock.tour-dock-pos-left {
+    left: 18px;
+    right: auto;
   }
   #tour-dock.tour-dock-visible { display: block; pointer-events: auto; }
   #tour-dock:hover { opacity: 1; }
@@ -2324,6 +2330,10 @@
           </button>
         </div>
         <div class="inner-tab-bar">
+          <button class="inner-tab" id="itab-datos" onclick="switchInnerTab('datos')" style="display:none;" aria-label="Datos del paciente">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Datos
+          </button>
           <button class="inner-tab active" id="itab-notas" onclick="switchInnerTab('notas')">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
             Nota de Evolución
@@ -2345,6 +2355,7 @@
             Listado de problemas
           </button>
         </div>
+        <div id="itab-content-datos" class="tab-content"><div id="patient-data-form" style="display:flex;flex-direction:column;gap:20px;"></div></div>
         <div id="itab-content-notas" class="tab-content active"><div id="note-form" style="display:flex;flex-direction:column;gap:20px;"></div></div>
         <div id="itab-content-indica" class="tab-content"><div id="indica-form" style="display:flex;flex-direction:column;gap:20px;"></div></div>
         <div id="itab-content-tend" class="tab-content"><div id="tendencias-container"></div></div>

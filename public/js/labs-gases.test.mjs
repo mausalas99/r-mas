@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseGaso_, procesarLabs, buildGasoInterpretacion_, reprocessLabResultLines_ } from './labs.js';
+import { parseGaso_, procesarLabs, buildGasoInterpretacion_, reprocessLabResultLines_, parseESC_, parseQS_, renderEntry } from './labs.js';
 
 const MUESTRA_GASO_VENOSA = `
 Expediente:	2213511-4	Solicitud:	2605070398
@@ -141,8 +141,8 @@ CLORO	N	100	mmol/L	98 - 107
 
 test('buildGasoInterpretacion_ genera una línea separada con interpretación', () => {
   const out = buildGasoInterpretacion_(GAS_VEN_HCO3, QS_TEXT);
-  assert.match(out, /^Interpretación gasometría:\t/);
-  assert.match(out, /acidosis metabólica/i);
+  assert.match(out, /^INTERPRETACIÓN GASOMETRÍA:\t/);
+  assert.match(out, /ACIDOSIS METABÓLICA/);
   assert.doesNotMatch(out, /\bposible\b/i);
   assert.doesNotMatch(out, /\baparentemente\b/i);
 });
@@ -165,8 +165,16 @@ SODIO	N	140	mmol/L	136 - 146
 CLORO	N	100	mmol/L	98 - 107
 `;
   const res = procesarLabs(reporte);
-  const lineaInterp = (res.resLabs || []).find((l) => /^Interpretación gasometría:\t/.test(l));
+  const lineaInterp = (res.resLabs || []).find((l) => /^INTERPRETACIÓN GASOMETRÍA:\t/.test(l));
   assert.ok(lineaInterp, 'debe existir línea separada de interpretación');
+});
+
+test('renderEntry normaliza interpretación gasométrica legacy a mayúsculas', () => {
+  const html = renderEntry('Interpretación gasometría:\tAcidosis metabólica con compensación respiratoria').join('\n');
+  assert.match(html, /INTERPRETACIÓN GASOMETRÍA:/);
+  assert.match(html, /ACIDOSIS METABÓLICA CON COMPENSACIÓN RESPIRATORIA/);
+  assert.doesNotMatch(html, /Interpretación gasometría/);
+  assert.doesNotMatch(html, /Acidosis metabólica/);
 });
 
 test('buildGasoInterpretacion_ no muestra línea si faltan datos mínimos', () => {
@@ -183,11 +191,11 @@ test('reprocessLabResultLines_ depura GASES duplicados y recalcula AG/delta-delt
     'ESC\tNa 133.4 Cl 98.7 K 3.9',
     'GASES\tpH 7.39 pCO2 35 pO2 60 Lactato 0.7 Bica 21.2',
     'GASES\tpH 7.39 pCO2 35 pO2 60 Lactato 0.7 Bica 21.2 iCa 0.92',
-    'Interpretación gasometría:\tpH casi normal; posible acidosis metabólica compensada',
+    'INTERPRETACIÓN GASOMETRÍA:\tpH casi normal; posible acidosis metabólica compensada',
   ];
   const out = reprocessLabResultLines_(inRows);
   const gases = out.filter((l) => /^GASES\t/.test(l));
-  const interp = out.filter((l) => /^Interpretación gasometría:\t/.test(l));
+  const interp = out.filter((l) => /^INTERPRETACIÓN GASOMETRÍA:\t/.test(l));
   assert.equal(gases.length, 1, 'debe quedar una sola línea GASES');
   assert.equal(interp.length, 1, 'debe quedar una sola interpretación');
   assert.match(gases[0], /\bAG 13\.5\*/);
@@ -200,6 +208,84 @@ test('procesarLabs NO calcula AG en reporte solo de gasometría', () => {
   const lineaGases = (res.resLabs || []).find((l) => /^GASES\b/.test(l));
   assert.ok(lineaGases);
   assert.doesNotMatch(lineaGases, /\bAG\b/);
+});
+
+/** Química de orina bajo encabezado QUIMICA CLINICA (no debe llenar QS/ESC séricos). */
+const MUESTRA_QUIMICA_ORINA = `
+QUIMICA CLINICA
+POTASIO EN ORINA
+Estudio		Resultado	Unidades	Valor de Referencia
+POTASIO EN ORINA
+B
+22
+mmol/L	40 - 80
+SODIO URINARIO
+Estudio		Resultado	Unidades	Valor de Referencia
+SODIO EN ORINA
+B
+40
+mmol/L	80 - 180
+CREATININA EN ORINA
+Estudio		Resultado	Unidades	Valor de Referencia
+CREATININA EN ORINA
+A
+53.99
+mg/dL	0.00 - 0.00
+COMENTARIO DE MUESTRA
+*
+CLORO EN ORINA: 34mmol/L
+`.replace(/\s+/g, ' ');
+
+test('parseESC_ y parseQS_ ignoran electrolitos y creatinina de orina', () => {
+  assert.equal(parseESC_(MUESTRA_QUIMICA_ORINA), '');
+  assert.equal(parseQS_(MUESTRA_QUIMICA_ORINA), '');
+});
+
+test('parseESC_ sigue tomando sodio sérico si también hay química de orina', () => {
+  const t = (MUESTRA_QUIMICA_ORINA + ' ' + ESC_TEXT).replace(/\s+/g, ' ');
+  assert.match(parseESC_(t), /\bNa 140\b/);
+});
+
+test('procesarLabs no emite ESC ni QS con valores urinarios en reporte solo orina', () => {
+  const raw = `Expediente:\t2128960-1
+Nombre:\tTEST PACIENTE
+QUIMICA CLINICA
+POTASIO EN ORINA
+B
+22
+mmol/L	40 - 80
+SODIO EN ORINA
+B
+40
+mmol/L	80 - 180
+CREATININA EN ORINA
+A
+53.99
+mg/dL	0.00 - 0.00
+COMENTARIO DE MUESTRA
+*
+CLORO EN ORINA: 34mmol/L
+URIANALISIS
+EXAMEN GENERAL DE ORINA
+FISICO
+COLOR
+Amarillo
+PH
+B
+5.0
+5.5 - 6.5
+DENSIDAD
+1.014
+`;
+  const res = procesarLabs(raw);
+  assert.ok(!res.resLabs.some((l) => l.startsWith('ESC\t')), 'no debe haber línea ESC');
+  assert.ok(!res.resLabs.some((l) => l.startsWith('QS\t')), 'no debe haber línea QS');
+  const ego = res.resLabs.find((l) => l.startsWith('EGO:'));
+  assert.ok(ego, 'debe conservar EGO');
+  assert.match(ego, /\bNaU 40\b/);
+  assert.match(ego, /\bKU 22\b/);
+  assert.match(ego, /\bClU 34\b/);
+  assert.match(ego, /\bCrU 53\.99\b/);
 });
 
 test('buildGasoInterpretacion_ evita repetir "Acidosis metabólica" cuando hay delta-delta bajo', () => {
