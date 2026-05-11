@@ -1,4 +1,5 @@
 const ITERATIONS = 120000;
+const BASE64_RE = /^[A-Za-z0-9+/]*={0,2}$/;
 
 function getWebCrypto() {
   var webCrypto = globalThis.crypto;
@@ -6,6 +7,12 @@ function getWebCrypto() {
     throw new Error('WebCrypto no disponible');
   }
   return webCrypto;
+}
+
+function validateToken(token) {
+  if (typeof token !== 'string' || token.trim() === '') {
+    throw new Error('Live sync token is required');
+  }
 }
 
 function bytesToBase64(bytes) {
@@ -46,7 +53,39 @@ async function deriveKey(token, salt) {
   );
 }
 
+function invalidEnvelope() {
+  throw new Error('Invalid encrypted live sync envelope');
+}
+
+function decodeBase64Field(value, expectedLength, allowAnyNonEmptyLength) {
+  if (typeof value !== 'string' || value === '') invalidEnvelope();
+  if (!BASE64_RE.test(value) || value.length % 4 === 1) invalidEnvelope();
+  var bytes;
+  try {
+    bytes = base64ToBytes(value);
+  } catch (_err) {
+    invalidEnvelope();
+  }
+  if (expectedLength != null && bytes.length !== expectedLength) invalidEnvelope();
+  if (allowAnyNonEmptyLength && bytes.length === 0) invalidEnvelope();
+  return bytes;
+}
+
+function validateEnvelope(envelope) {
+  if (!envelope || typeof envelope !== 'object') invalidEnvelope();
+  if (envelope.encrypted !== true) invalidEnvelope();
+  if (envelope.alg !== 'AES-GCM') invalidEnvelope();
+  if (envelope.kdf !== 'PBKDF2-SHA256') invalidEnvelope();
+  if (envelope.iterations !== ITERATIONS) invalidEnvelope();
+  return {
+    salt: decodeBase64Field(envelope.salt, 16, false),
+    iv: decodeBase64Field(envelope.iv, 12, false),
+    ciphertext: decodeBase64Field(envelope.ciphertext, null, true),
+  };
+}
+
 export async function encryptLiveSyncEnvelope(obj, token) {
+  validateToken(token);
   var webCrypto = getWebCrypto();
   var enc = new TextEncoder();
   var salt = webCrypto.getRandomValues(new Uint8Array(16));
@@ -66,16 +105,16 @@ export async function encryptLiveSyncEnvelope(obj, token) {
 }
 
 export async function decryptLiveSyncEnvelope(envelope, token) {
+  validateToken(token);
+  var validated = validateEnvelope(envelope);
   try {
     var webCrypto = getWebCrypto();
     var dec = new TextDecoder();
-    var salt = base64ToBytes(envelope && envelope.salt);
-    var iv = base64ToBytes(envelope && envelope.iv);
-    var key = await deriveKey(token, salt);
+    var key = await deriveKey(token, validated.salt);
     var plain = await webCrypto.subtle.decrypt(
-      { name: 'AES-GCM', iv: iv },
+      { name: 'AES-GCM', iv: validated.iv },
       key,
-      base64ToBytes(envelope && envelope.ciphertext)
+      validated.ciphertext
     );
     return JSON.parse(dec.decode(plain));
   } catch (err) {
