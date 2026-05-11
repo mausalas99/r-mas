@@ -252,6 +252,31 @@ export const storage = {
     this.saveLabHistory(labHistory);
     this.saveMedRecetaByPatient(medRecetaByPatient || {});
     if (listadoProblemas !== undefined) this.saveListadoProblemas(listadoProblemas || {});
+  },
+
+  getFullData() {
+    return {
+      patients: this.getPatients(),
+      notes: this.getNotes(),
+      indicaciones: this.getIndicaciones(),
+      labHistory: this.getLabHistory(),
+      medRecetaByPatient: this.getMedRecetaByPatient(),
+      listadoProblemas: this.getListadoProblemas(),
+      settings: this.getSettings(),
+      medCatalog: this.getMedCatalog(),
+    };
+  },
+
+  saveFullData(data) {
+    const d = data && typeof data === 'object' ? data : {};
+    this.savePatients(Array.isArray(d.patients) ? d.patients : []);
+    this.saveNotes(d.notes && typeof d.notes === 'object' ? d.notes : {});
+    this.saveIndicaciones(d.indicaciones && typeof d.indicaciones === 'object' ? d.indicaciones : {});
+    this.saveLabHistory(d.labHistory && typeof d.labHistory === 'object' ? d.labHistory : {});
+    this.saveMedRecetaByPatient(d.medRecetaByPatient && typeof d.medRecetaByPatient === 'object' ? d.medRecetaByPatient : {});
+    this.saveListadoProblemas(d.listadoProblemas && typeof d.listadoProblemas === 'object' ? d.listadoProblemas : {});
+    this.saveSettings(d.settings && typeof d.settings === 'object' ? d.settings : {});
+    this.saveMedCatalog(d.medCatalog && typeof d.medCatalog === 'object' ? d.medCatalog : {});
   }
 };
 
