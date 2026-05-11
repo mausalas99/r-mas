@@ -103,6 +103,7 @@ var liveSyncState = {
   inviteLink: '',
   activity: [],
   applyingRemote: false,
+  meta: null,
 };
 var IDLE_LOCK_LS_KEY = 'rpc-idle-lock';
 var IDLE_LOCK_HASH_LS_KEY = 'rpc-idle-lock-hash';
@@ -5229,6 +5230,7 @@ async function startLiveSyncShare() {
     liveSyncState.deviceId = res.deviceId || '';
     liveSyncState.transport = 'lan';
     liveSyncState.inviteLink = link;
+    liveSyncState.meta = { appliedEventIds: [], entityVersions: {}, conflicts: [] };
     addLiveSyncActivity('host-start', res.lanUrl || '');
     var copied = await _copyToClipboardSafe(link);
     setLiveSyncStatus('Sesión en vivo activa · link copiado');
@@ -5258,10 +5260,12 @@ async function joinLiveSyncFromInvite(invite, opts) {
     liveSyncState.token = invite.token;
     liveSyncState.deviceId = res.deviceId || '';
     liveSyncState.transport = res.transport || 'lan';
+    liveSyncState.meta = { appliedEventIds: [], entityVersions: {}, conflicts: [] };
     addLiveSyncActivity('join', liveSyncState.transport);
     setLiveSyncStatus('Sesión en vivo conectada · ' + liveSyncState.transport.toUpperCase());
     showToast('Conectado a sesión en vivo ✓', 'success');
     closeLiveSyncJoinModal();
+    await requestLiveSyncSnapshot();
   } catch (err) {
     liveSyncState.active = false;
     setLiveSyncStatus('Sesión en vivo inactiva');
@@ -5311,8 +5315,121 @@ async function stopLiveSyncSession() {
   liveSyncState.sessionId = '';
   liveSyncState.token = '';
   liveSyncState.transport = '';
+  liveSyncState.meta = null;
   addLiveSyncActivity('session-stop', '');
   setLiveSyncStatus('Sesión finalizada');
+}
+
+function getLiveSyncLocalState() {
+  var data = storage.getFullData();
+  data.liveSyncMeta = liveSyncState.meta || { appliedEventIds: [], entityVersions: {}, conflicts: [] };
+  return data;
+}
+
+function refreshAfterLiveSyncApply() {
+  renderPatientList();
+  if (activeId && patients.some(function(p) { return p && p.id === activeId; })) {
+    selectPatient(activeId);
+  } else if (patients.length) {
+    selectPatient(patients[0].id);
+  } else {
+    activeId = null;
+    var view = document.getElementById('patient-view');
+    var empty = document.getElementById('empty-state');
+    if (view) view.style.display = 'none';
+    if (empty) empty.style.display = 'flex';
+    renderLabHistoryPanel();
+  }
+}
+
+function applyLiveSyncState(next) {
+  patients = next.patients || [];
+  notes = next.notes || {};
+  indicaciones = next.indicaciones || {};
+  labHistory = next.labHistory || {};
+  medRecetaByPatient = next.medRecetaByPatient || {};
+  listadoProblemas = next.listadoProblemas || {};
+  settings = next.settings || {};
+  liveSyncState.meta = next.liveSyncMeta || null;
+  storage.saveFullData({
+    patients: patients,
+    notes: notes,
+    indicaciones: indicaciones,
+    labHistory: labHistory,
+    medRecetaByPatient: medRecetaByPatient,
+    listadoProblemas: listadoProblemas,
+    settings: settings,
+    medCatalog: next.medCatalog || {},
+  });
+  applyMedCatalogOverlay(next.medCatalog || {});
+  loadSettings();
+  refreshAfterLiveSyncApply();
+}
+
+async function sendLiveSyncEncryptedPayload(payload) {
+  if (!liveSyncState.active || !liveSyncState.token) return;
+  if (!window.electronAPI || typeof window.electronAPI.liveSyncSend !== 'function') return;
+  var envelope = await encryptLiveSyncEnvelope(payload, liveSyncState.token);
+  await window.electronAPI.liveSyncSend({ kind: 'encrypted', payload: envelope });
+}
+
+async function sendLiveSyncSnapshot() {
+  var snapshot = buildLiveSyncSnapshot(getLiveSyncLocalState(), {
+    sessionId: liveSyncState.sessionId,
+    sourceDeviceId: liveSyncState.deviceId,
+  });
+  await sendLiveSyncEncryptedPayload({ type: 'snapshot', snapshot: snapshot });
+  addLiveSyncActivity('snapshot-send', String((snapshot.data.patients || []).length) + ' pacientes');
+}
+
+async function requestLiveSyncSnapshot() {
+  if (!window.electronAPI || typeof window.electronAPI.liveSyncSend !== 'function') return;
+  await window.electronAPI.liveSyncSend({
+    kind: 'request-snapshot',
+    payload: { deviceId: liveSyncState.deviceId },
+  });
+  addLiveSyncActivity('snapshot-request', liveSyncState.transport || '');
+}
+
+async function applyLiveSyncEncryptedEnvelope(envelope) {
+  var plain = await decryptLiveSyncEnvelope(envelope, liveSyncState.token);
+  if (!plain || typeof plain !== 'object') return;
+  if (plain.type === 'snapshot' && plain.snapshot) {
+    if (typeof pushUndoSnapshot === 'function') pushUndoSnapshot('Antes de aplicar sync en vivo');
+    liveSyncState.applyingRemote = true;
+    try {
+      var nextSnapshotState = applyLiveSyncSnapshot(getLiveSyncLocalState(), plain.snapshot);
+      applyLiveSyncState(nextSnapshotState);
+      addLiveSyncActivity('snapshot-apply', String((patients || []).length) + ' pacientes');
+      showToast('Sesión recibida y aplicada ✓', 'success');
+    } finally {
+      liveSyncState.applyingRemote = false;
+    }
+  } else if (plain.type === 'event' && plain.event) {
+    liveSyncState.applyingRemote = true;
+    try {
+      var nextEventState = applyLiveSyncEvent(getLiveSyncLocalState(), plain.event);
+      applyLiveSyncState(nextEventState);
+      addLiveSyncActivity('event-apply', plain.event.op || '');
+      var conflicts = listConflictRecords(nextEventState);
+      if (conflicts.length) setLiveSyncStatus('Sesión en vivo conectada · conflictos pendientes');
+    } finally {
+      liveSyncState.applyingRemote = false;
+    }
+  }
+}
+
+function handleLiveSyncMessage(msg) {
+  if (!msg || msg.ok === false || !liveSyncState.active) return;
+  if (msg.kind === 'request-snapshot' && liveSyncState.role === 'host') {
+    sendLiveSyncSnapshot().catch(function(err) {
+      showToast((err && err.message) || 'No se pudo enviar snapshot', 'error');
+    });
+  } else if (msg.kind === 'encrypted') {
+    applyLiveSyncEncryptedEnvelope(msg.payload).catch(function(err) {
+      showToast((err && err.message) || 'No se pudo aplicar sync en vivo', 'error');
+    });
+  }
 }
 
 function openLiveSyncActivityModal() {
@@ -5335,6 +5452,9 @@ function initLiveSyncDesktopHooks() {
   if (!window.electronAPI) return;
   if (typeof window.electronAPI.onLiveSyncDeepLink === 'function') {
     window.electronAPI.onLiveSyncDeepLink(handleLiveSyncDeepLink);
+  }
+  if (typeof window.electronAPI.onLiveSyncMessage === 'function') {
+    window.electronAPI.onLiveSyncMessage(handleLiveSyncMessage);
   }
   if (typeof window.electronAPI.liveSyncPendingLink === 'function') {
     window.electronAPI.liveSyncPendingLink().then(function(res) {
