@@ -52,6 +52,15 @@ import {
 } from './tour-targets.mjs';
 import { resolveQuickOutputAction } from './quick-output.mjs';
 import { handleOutputDirFallback } from './output-dir-fallback.mjs';
+import {
+  buildLiveSyncSnapshot,
+  createLiveSyncEvent,
+  applyLiveSyncSnapshot,
+  applyLiveSyncEvent,
+  listConflictRecords,
+} from './live-sync-core.mjs';
+import { buildLiveSyncInviteLink, parseLiveSyncInviteLink } from './live-sync-link.mjs';
+import { encryptLiveSyncEnvelope, decryptLiveSyncEnvelope } from './live-sync-crypto.mjs';
 
 
 // ════════════════════════════════════════════════════════════════════
@@ -84,6 +93,17 @@ var AUDIT_LOG_KEY = 'rpc-audit-log';
 var AUTO_BACKUP_SETTINGS_KEY = 'rpc-auto-backup-settings';
 var AUTO_BACKUP_INDEX_KEY = 'rpc-auto-backup-index';
 var AUTO_BACKUP_MAX = 14;
+var liveSyncState = {
+  active: false,
+  role: null,
+  sessionId: '',
+  token: '',
+  deviceId: '',
+  transport: '',
+  inviteLink: '',
+  activity: [],
+  applyingRemote: false,
+};
 var IDLE_LOCK_LS_KEY = 'rpc-idle-lock';
 var IDLE_LOCK_HASH_LS_KEY = 'rpc-idle-lock-hash';
 var IDLE_LOCK_DEBOUNCE_MS = 500;
@@ -2163,6 +2183,8 @@ function loadSettings() {
   }
   var srvEl = document.getElementById('settings-default-servicio');
   if (srvEl) srvEl.value = settings.defaultServicio || '';
+  var liveRelayEl = document.getElementById('live-sync-relay-url');
+  if (liveRelayEl) liveRelayEl.value = settings.liveSyncRelayUrl || '';
   var medTpl = settings.medicosPlantilla || {};
   ['profesor','r4','r2','r1a','r1b'].forEach(function(k){
     var el = document.getElementById('settings-medico-' + k);
@@ -5137,6 +5159,85 @@ function onSyncBundleFileChosen(ev) {
     }
   };
   reader.readAsText(f);
+}
+
+function setLiveSyncStatus(text) {
+  var label = text || 'Sesión en vivo inactiva';
+  var card = document.getElementById('live-sync-status');
+  var bar = document.getElementById('live-sync-bar');
+  var barText = document.getElementById('live-sync-bar-text');
+  if (card) card.textContent = label;
+  if (barText) barText.textContent = label;
+  if (bar) bar.style.display = liveSyncState.active ? 'flex' : 'none';
+}
+
+function addLiveSyncActivity(action, detail) {
+  liveSyncState.activity.unshift({
+    at: new Date().toISOString(),
+    action: action,
+    detail: detail || '',
+  });
+  if (liveSyncState.activity.length > 100) liveSyncState.activity = liveSyncState.activity.slice(0, 100);
+}
+
+function saveLiveSyncRelayUrl(value) {
+  settings.liveSyncRelayUrl = String(value || '').trim();
+  storage.saveSettings(settings);
+  showToast('Relay de sesión en vivo guardado.', 'success');
+}
+
+function openLiveSyncJoinModal() {
+  var m = document.getElementById('live-sync-join-modal');
+  if (!m) return;
+  m.style.display = 'flex';
+  m.classList.add('open');
+  m.setAttribute('aria-hidden', 'false');
+  var input = document.getElementById('live-sync-join-link');
+  if (input) setTimeout(function() { try { input.focus(); } catch (_e) {} }, 30);
+}
+
+function closeLiveSyncJoinModal() {
+  var m = document.getElementById('live-sync-join-modal');
+  if (!m) return;
+  m.classList.remove('open');
+  m.style.display = 'none';
+  m.setAttribute('aria-hidden', 'true');
+}
+
+function startLiveSyncShare() {
+  showToast('Sesión en vivo: conexión se implementa en el siguiente paso.', 'success');
+  liveSyncState.active = true;
+  addLiveSyncActivity('ui-share-click', '');
+  setLiveSyncStatus('Sesión en vivo lista para compartir');
+}
+
+function joinLiveSyncFromManualLink() {
+  var el = document.getElementById('live-sync-join-link');
+  var raw = el ? el.value : '';
+  if (!raw.trim()) {
+    showToast('Pega el link de invitación.', 'error');
+    return;
+  }
+  showToast('Unirse con link se implementa en el siguiente paso.', 'success');
+  addLiveSyncActivity('ui-join-click', '');
+  closeLiveSyncJoinModal();
+}
+
+async function stopLiveSyncSession() {
+  if (window.electronAPI && typeof window.electronAPI.liveSyncStop === 'function') {
+    try { await window.electronAPI.liveSyncStop(); } catch (_e) {}
+  }
+  liveSyncState.active = false;
+  liveSyncState.role = null;
+  liveSyncState.sessionId = '';
+  liveSyncState.token = '';
+  liveSyncState.transport = '';
+  addLiveSyncActivity('session-stop', '');
+  setLiveSyncStatus('Sesión finalizada');
+}
+
+function openLiveSyncActivityModal() {
+  showToast('Actividad de sesión en vivo se implementa en el siguiente paso.', 'success');
 }
 
 function launchConfetti() {
@@ -9093,6 +9194,13 @@ Object.assign(window, {
   exportSyncBundlePrompt,
   triggerImportSyncBundle,
   onSyncBundleFileChosen,
+  startLiveSyncShare,
+  saveLiveSyncRelayUrl,
+  openLiveSyncJoinModal,
+  closeLiveSyncJoinModal,
+  joinLiveSyncFromManualLink,
+  stopLiveSyncSession,
+  openLiveSyncActivityModal,
   triggerImportActivePatientBackup,
   triggerImportBackup,
   onPatientBackupFileChosen,
