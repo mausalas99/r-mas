@@ -51,6 +51,7 @@ import {
   stepRequiresUserAction,
 } from './tour-targets.mjs';
 import { resolveQuickOutputAction } from './quick-output.mjs';
+import { handleOutputDirFallback } from './output-dir-fallback.mjs';
 
 
 // ════════════════════════════════════════════════════════════════════
@@ -1730,20 +1731,24 @@ function generateListado() {
   var btn = document.getElementById('btn-gen-listado');
   if (btn) { btn.classList.add('loading'); btn.disabled = true; }
   if (typeof incrementPendingJobs === 'function') incrementPendingJobs();
-  fetch('/generate-listado', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
+  function buildPayload(outputDir) {
+    return {
       patient: patient,
       listado: lst,
       medicos: medicos,
-      outputDir: settings.outputDir || '',
-    }),
-  })
-  .then(function(r){ return r.json(); })
+      outputDir: outputDir || '',
+    };
+  }
+  requestDocumentJson('/generate-listado', buildPayload(settings.outputDir || ''))
   .then(function(d){
-    if (d.ok) showToast('Listado guardado: ' + d.fileName, 'success');
-    else showToast('Error: ' + d.error, 'error');
+    return handleDocumentGenerateResponse({
+      response: d,
+      url: '/generate-listado',
+      buildPayload: buildPayload,
+      onSuccess: function(data) {
+        showToast('Listado guardado: ' + data.fileName, 'success');
+      },
+    });
   })
   .catch(function(){ showToast('Error de conexión', 'error'); })
   .finally(function(){
@@ -2332,6 +2337,47 @@ function chooseOutputDir() {
     localStorage.setItem('rpc-settings', JSON.stringify(settings));
     loadSettings();
     showToast('Carpeta actualizada ✓', 'success');
+  });
+}
+
+function saveOutputDirSelection(dir) {
+  if (!dir) return;
+  settings.outputDir = dir;
+  localStorage.setItem('rpc-settings', JSON.stringify(settings));
+  loadSettings();
+}
+
+function requestDocumentJson(url, payload) {
+  return fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }).then(function(r){ return r.json(); });
+}
+
+function getOutputDirSelector() {
+  if (!window.electronAPI || !window.electronAPI.selectOutputDir) return undefined;
+  return function() { return window.electronAPI.selectOutputDir(); };
+}
+
+function handleDocumentGenerateResponse(opts) {
+  return handleOutputDirFallback({
+    response: opts.response,
+    selectOutputDir: getOutputDirSelector(),
+    saveOutputDir: saveOutputDirSelection,
+    retry: function(dir) {
+      return requestDocumentJson(opts.url, opts.buildPayload(dir));
+    },
+    onSuccess: opts.onSuccess,
+    onError: function(message) {
+      showToast('Error: ' + message, 'error');
+    },
+    onPrompt: function() {
+      showToast('Selecciona una carpeta para guardar el documento.', 'error');
+    },
+    onCancel: function() {
+      showToast('No se guardó el documento: no se eligió carpeta.', 'error');
+    },
   });
 }
 
@@ -7141,13 +7187,20 @@ function generateWord() {
   var note = notes[activeId]; if (!note) return;
   var btn = document.getElementById('btn-gen'); if (btn) { btn.classList.add('loading'); btn.disabled=true; }
   incrementPendingJobs();
-  fetch('/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({patient:patient,note:note,outputDir:settings.outputDir||''})})
-  .then(function(r){ return r.json(); })
+  function buildPayload(outputDir) {
+    return { patient: patient, note: note, outputDir: outputDir || '' };
+  }
+  requestDocumentJson('/generate', buildPayload(settings.outputDir || ''))
   .then(function(d){
-    if (d.ok) {
-      showToast('Nota guardada: '+d.fileName,'success');
-      guidedTourAdvanceAfterNotaGenerated();
-    } else showToast('Error: '+d.error,'error');
+    return handleDocumentGenerateResponse({
+      response: d,
+      url: '/generate',
+      buildPayload: buildPayload,
+      onSuccess: function(data) {
+        showToast('Nota guardada: '+data.fileName,'success');
+        guidedTourAdvanceAfterNotaGenerated();
+      },
+    });
   })
   .catch(function(){ showToast('Error de conexión','error'); })
   .finally(function(){
@@ -8026,13 +8079,20 @@ function generateIndicaciones() {
   var ind = indicaciones[activeId]; if (!ind) return;
   var btn = document.getElementById('btn-gen-ind'); if (btn) { btn.classList.add('loading'); btn.disabled=true; }
   incrementPendingJobs();
-  fetch('/generate-indicaciones',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({patient:patient,indicaciones:ind,outputDir:settings.outputDir||''})})
-  .then(function(r){ return r.json(); })
+  function buildPayload(outputDir) {
+    return { patient: patient, indicaciones: ind, outputDir: outputDir || '' };
+  }
+  requestDocumentJson('/generate-indicaciones', buildPayload(settings.outputDir || ''))
   .then(function(d){
-    if (d.ok) {
-      showToast('Indicaciones guardadas: '+d.fileName,'success');
-      guidedTourAdvanceAfterIndicaGenerated();
-    } else showToast('Error: '+d.error,'error');
+    return handleDocumentGenerateResponse({
+      response: d,
+      url: '/generate-indicaciones',
+      buildPayload: buildPayload,
+      onSuccess: function(data) {
+        showToast('Indicaciones guardadas: '+data.fileName,'success');
+        guidedTourAdvanceAfterIndicaGenerated();
+      },
+    });
   })
   .catch(function(){ showToast('Error de conexión','error'); })
   .finally(function(){

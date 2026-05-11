@@ -383,8 +383,13 @@ function lineRichnessScore_(line) {
   return score;
 }
 
+function normalizeGasometryInterpretationLine_(line) {
+  var s = String(line == null ? '' : line);
+  return /^Interpretación gasometría:/i.test(s.trim()) ? s.toUpperCase() : s;
+}
+
 function normalizeLabLine_(line) {
-  return String(line == null ? '' : line).replace(/\s+/g, ' ').trim();
+  return normalizeGasometryInterpretationLine_(line).replace(/\s+/g, ' ').trim();
 }
 
 function dedupeSingletonSections_(rows) {
@@ -482,7 +487,7 @@ function buildGasoInterpretacionFromValues_(pH, pCO2, hco3, ag, dd) {
     }
     else partes.push('Anion gap elevado');
   }
-  return 'Interpretación gasometría:\t' + partes.join('; ');
+  return ('Interpretación gasometría:\t' + partes.join('; ')).toUpperCase();
 }
 
 function rebuildGasesFromResults_(rows) {
@@ -1486,6 +1491,7 @@ export function renderToken(tok){
 }
 
 export function renderEntry(text){
+  text = normalizeGasometryInterpretationLine_(text);
   return text.split('\n').map(function(line,li){
     var tabIdx=line.indexOf('\t');
     if(tabIdx>=0){

@@ -1,10 +1,10 @@
 {
   "name": "r-plus",
-  "version": "3.0.2",
+  "version": "3.0.4",
   "description": "R+ — Laboratoriazo + Notas de Evolución",
   "main": "main.js",
   "scripts": {
-    "test": "node --test public/js/update-helpers.test.mjs public/js/lab-history-auto-store-core.test.mjs public/js/med-receta-core.test.mjs public/js/labs-cultivo.test.mjs public/js/labs-citoquimico-liquidos.test.mjs public/js/labs-heces.test.mjs public/js/labs-frotis.test.mjs public/js/labs-coag.test.mjs public/js/labs-gases.test.mjs public/js/labs-pct.test.mjs public/js/mode-features.test.mjs public/js/age-calc.test.mjs public/js/listado-problemas-core.test.mjs public/js/patient-validation.test.mjs public/js/tour-targets.test.mjs public/js/quick-output.test.mjs && python3 -m unittest tests/test_generate_listado.py",
+    "test": "node --test public/js/update-helpers.test.mjs public/js/lab-history-auto-store-core.test.mjs public/js/med-receta-core.test.mjs public/js/labs-cultivo.test.mjs public/js/labs-citoquimico-liquidos.test.mjs public/js/labs-heces.test.mjs public/js/labs-frotis.test.mjs public/js/labs-coag.test.mjs public/js/labs-gases.test.mjs public/js/labs-pct.test.mjs public/js/mode-features.test.mjs public/js/age-calc.test.mjs public/js/listado-problemas-core.test.mjs public/js/patient-validation.test.mjs public/js/tour-targets.test.mjs public/js/quick-output.test.mjs public/js/output-dir-fallback.test.mjs && python3 -m unittest tests/test_generate_listado.py",
     "start": "electron .",
     "build:mac": "npm run prebuild:mac && electron-builder --mac",
     "build:mac:signed": "npm run build:mac",
