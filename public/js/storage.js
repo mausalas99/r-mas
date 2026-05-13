@@ -132,6 +132,38 @@ export const storage = {
   },
 
   /**
+   * Get to-do list for a patient. Normaliza forma de cada todo.
+   * @param {string} patientId
+   * @returns {Array<{id:string,text:string,completed:boolean,priority:string,createdAt:string}>}
+   */
+  getTodos(patientId) {
+    const map = safeParseObject(localStorage.getItem('rpc-todos'));
+    const raw = Array.isArray(map[patientId]) ? map[patientId] : [];
+    return raw.map(function (t) {
+      return {
+        id: String(t && t.id != null ? t.id : ''),
+        text: String(t && t.text != null ? t.text : ''),
+        completed: !!(t && t.completed),
+        priority: (t && (t.priority === 'alta' || t.priority === 'baja' || t.priority === 'normal')) ? t.priority : 'normal',
+        createdAt: String(t && t.createdAt != null ? t.createdAt : '')
+      };
+    });
+  },
+
+  /**
+   * Save to-do list for a patient. Skips demo- patients.
+   * @param {string} patientId
+   * @param {Array} todos
+   */
+  saveTodos(patientId, todos) {
+    if (typeof patientId !== 'string') return;
+    if (patientId.indexOf('demo-') === 0) return;
+    const map = safeParseObject(localStorage.getItem('rpc-todos')) || {};
+    map[patientId] = Array.isArray(todos) ? todos : [];
+    localStorage.setItem('rpc-todos', JSON.stringify(map));
+  },
+
+  /**
    * Catálogo personalizado de medicamentos (acentos + tokens SOAP por categoría).
    * @returns {{ v: number, accents: Object, soapTokens: { vasop: string[], abx: string[], analgesia: string[], antihta: string[] } }}
    */
