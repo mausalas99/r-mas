@@ -1506,7 +1506,7 @@ function switchAppTab(tab) {
 
 function switchInnerTab(tab) {
   activeInner = tab;
-  var ids = ['datos','notas','indica','tend','cult','listado'];
+  var ids = ['datos','notas','indica','tend','cult','listado','todo'];
   ids.forEach(function(t) {
     var btn = document.getElementById('itab-'+t);
     var pane = document.getElementById('itab-content-'+t);
@@ -1517,6 +1517,7 @@ function switchInnerTab(tab) {
   if (tab === 'tend') renderTendencias();
   if (tab === 'cult') renderCultivosTable();
   if (tab === 'listado') renderListadoForm();
+  if (tab === 'todo') renderTodoForm();
 }
 
 function renderInnerTabs() {
@@ -1525,12 +1526,36 @@ function renderInnerTabs() {
     var el = document.getElementById(id);
     if (el) el.style.display = visible ? '' : 'none';
   }
+  function setOrder(id, order) {
+    var el = document.getElementById(id);
+    if (el) el.style.order = String(order);
+  }
   show('itab-datos', sala);
   show('itab-notas', !sala);
   show('itab-indica', !sala);
   show('itab-tend', true);
   show('itab-cult', true);
   show('itab-listado', sala);
+  show('itab-todo', true);
+
+  if (sala) {
+    setOrder('itab-datos', 1);
+    setOrder('itab-todo', 2);
+    setOrder('itab-tend', 3);
+    setOrder('itab-cult', 4);
+    setOrder('itab-listado', 5);
+    setOrder('itab-notas', 99);
+    setOrder('itab-indica', 99);
+  } else {
+    setOrder('itab-todo', 1);
+    setOrder('itab-notas', 2);
+    setOrder('itab-indica', 3);
+    setOrder('itab-tend', 4);
+    setOrder('itab-cult', 5);
+    setOrder('itab-datos', 99);
+    setOrder('itab-listado', 99);
+  }
+
   renderEstadoActualBar();
 }
 
@@ -2069,6 +2094,9 @@ function selectPatient(id) {
   } else if (!isModeSala(settings) && activeInner === 'listado') {
     switchInnerTab('notas');
   }
+  if (activeInner === 'todo' && patientChanged) {
+    renderTodoForm();
+  }
   // En Laboratorio: al elegir otro paciente, pantalla coherente con su historial
   // (resultados previos eran del paciente anterior; historial visible y expandido).
   if (wasOnLab && patientChanged) {
@@ -2102,6 +2130,16 @@ function deletePatient(e, id) {
   if (medRecetaByPatient && medRecetaByPatient[id]) delete medRecetaByPatient[id];
   if (medNotaSelectionByPatient && medNotaSelectionByPatient[id]) delete medNotaSelectionByPatient[id];
   if (listadoProblemas && listadoProblemas[id]) delete listadoProblemas[id];
+  try {
+    var rawTodosMap = localStorage.getItem('rpc-todos');
+    if (rawTodosMap) {
+      var todosMap = JSON.parse(rawTodosMap);
+      if (todosMap && typeof todosMap === 'object' && todosMap[id]) {
+        delete todosMap[id];
+        localStorage.setItem('rpc-todos', JSON.stringify(todosMap));
+      }
+    }
+  } catch (_e) { /* ignore */ }
   saveState();
   addAuditEntry('patient-delete', 'ok', 1, target ? (target.registro || target.nombre || '') : '');
   if (activeId === id) activeId = patients.length ? patients[0].id : null;
