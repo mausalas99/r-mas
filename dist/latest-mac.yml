@@ -1,17 +1,17 @@
-version: 3.0.4
+version: 3.1.1
 files:
-  - url: R+-3.0.4-arm64.zip
-    sha512: z+paiYfSVE36VAdiGDFOUiwkduXb3lz8Qv8RHhPVbkTw4tqN1CNthzR36myD9y5m0N0JlqtNj31TpI3BL1dLUw==
-    size: 141418365
-  - url: R+-3.0.4-x64.zip
-    sha512: vpkQoLCamPLojNMADIqZvF4IAKdVqkZ5FfhBfMGhj3VOzLyjAKUMg4+i5LiANanS/ITvA2JQ0nPr0K5YRpqwTg==
-    size: 149444548
-  - url: R+-3.0.4-arm64.dmg
-    sha512: ungGMLGWLmWrDi8oMq8zIsRUMnw+chaeY2k7954dlNYUnXV9NqypgF9pR+O78FWcu/zP4a4HXItlOGyXJgKu6w==
-    size: 146109346
-  - url: R+-3.0.4-x64.dmg
-    sha512: 2Q5phpJcCy+3zUeS/AjnFG/bIdn2HqCctt9D1rtxMJfZFIMcANsVGDQtKQVcgAVjsIIjZKwfqpVJdPBTQAQkaw==
-    size: 154172851
-path: R+-3.0.4-arm64.zip
-sha512: z+paiYfSVE36VAdiGDFOUiwkduXb3lz8Qv8RHhPVbkTw4tqN1CNthzR36myD9y5m0N0JlqtNj31TpI3BL1dLUw==
-releaseDate: '2026-05-11T17:35:47.000Z'
+  - url: R+-3.1.1-arm64.zip
+    sha512: LpUT5fwJiPlEuIQkQ4WgcbYwaPojuym8tFjWex8q3QpmnXk1BtxXdR71Zq2LFYhIiyo/xKDQMAy4kI9s7twB+w==
+    size: 141059208
+  - url: R+-3.1.1-x64.zip
+    sha512: twD5+V9GVf26z4bZoEdNb5XSDet9sSJuC2O45ufGm+cVmEpkZk06OEzcRPtIZHdjfIDYWxcbbneGoJhP1oluOg==
+    size: 149085361
+  - url: R+-3.1.1-arm64.dmg
+    sha512: PNpcDcS8HdZOe4hBx0dPg7h1iT/5dmCsdLAl/Z4kCgT0St6Dt6bzApdjMXqKL6xqEJVfUfx6zDqinEUgl/CLyA==
+    size: 145659135
+  - url: R+-3.1.1-x64.dmg
+    sha512: KxvQ7YSt9RA/J9SVLG4xaLU2oyphAqWRuFhXSZxW4nM5AH1gxCuMmlc3Fj8L3a/i4quky3WYf/6rOnZaNDqW1g==
+    size: 153747328
+path: R+-3.1.1-arm64.zip
+sha512: LpUT5fwJiPlEuIQkQ4WgcbYwaPojuym8tFjWex8q3QpmnXk1BtxXdR71Zq2LFYhIiyo/xKDQMAy4kI9s7twB+w==
+releaseDate: '2026-05-13T22:29:31.000Z'
