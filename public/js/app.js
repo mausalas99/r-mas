@@ -3709,8 +3709,9 @@ var HELP_ARTICLES = [
       '<ul>' +
       '<li><strong>Ctrl/⌘ + 1</strong> — Laboratorio</li>' +
       '<li><strong>Ctrl/⌘ + 2</strong> — Expediente</li>' +
-      '<li><strong>Ctrl/⌘ + 3</strong> — Abrir Mi Perfil (barra lateral)</li>' +
-      '<li><strong>Ctrl/⌘ + 4</strong> — Abrir Ajustes</li>' +
+      '<li><strong>Ctrl/⌘ + 3</strong> — Medicamentos</li>' +
+      '<li><strong>Ctrl/⌘ + 4</strong> — Ajustes</li>' +
+      '<li><strong>Ctrl/⌘ + P</strong> — Abrir/cerrar Mi Perfil</li>' +
       '<li><strong>Esc</strong> — Cerrar modal o el centro de ayuda</li>' +
       '<li>Dentro del centro de ayuda: <strong>↓</strong> desde el buscador enfoca la lista; <strong>↑ / ↓</strong> navegan artículos.</li>' +
       '</ul>'
@@ -6743,14 +6744,18 @@ document.addEventListener('keydown', function(e) {
     if (pm && pm.classList.contains('open')) { closeProfileModal(); return; }
   }
   var mod = e.metaKey || e.ctrlKey;
-  if (mod && (e.key === '1' || e.key === '2' || e.key === '3' || e.key === '4')) {
-    e.preventDefault();
-    if (e.key === '1') switchAppTab('lab');
-    if (e.key === '2') switchAppTab('nota');
-    if (e.key === '3') openProfileModal();
-    if (e.key === '4') {
-      var dd = document.getElementById('settings-dropdown');
-      if (dd && !dd.classList.contains('open')) toggleSettingsDropdown();
+  if (mod) {
+    var key = e.key.toLowerCase();
+    if (key === '1' || key === '2' || key === '3' || key === '4' || key === 'p') {
+      e.preventDefault();
+      if (key === '1') switchAppTab('lab');
+      if (key === '2') switchAppTab('nota');
+      if (key === '3') switchAppTab('med');
+      if (key === '4') {
+        var dd = document.getElementById('settings-dropdown');
+        if (dd && !dd.classList.contains('open')) toggleSettingsDropdown();
+      }
+      if (key === 'p') toggleProfileSection();
     }
   }
 });
