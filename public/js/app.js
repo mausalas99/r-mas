@@ -1482,8 +1482,8 @@ var I18N_ES = {
   'settings.checkUpdates':    'Buscar actualizaciones…',
   'settings.open':            'Abrir ajustes',
   'settings.openTitle':       'Ajustes',
-  'settings.teamSyncAria':    'Abrir respaldos y sync entre equipos',
-  'settings.teamSyncTitle':   'Sync entre equipos: mismo panel que Ajustes → Respaldos, sync y recuperación (exportar/importar paquete). En escritorio siempre disponible.',
+  'settings.teamSyncAria':    'Abrir sesión en vivo',
+  'settings.teamSyncTitle':   'Panel de sesión en vivo (sin abrir todo Ajustes). Paquete JSON sigue en Ajustes → Respaldos, sync…',
   'theme.toggle':             'Cambiar tema claro u oscuro',
   'theme.toggleTitle':        'Cambiar tema'
 };
@@ -2566,6 +2566,29 @@ function closeSettingsDropdown() {
   if (trigger) trigger.setAttribute('aria-expanded', 'false');
 }
 
+function openLiveSyncQuickModal() {
+  if (typeof closeSettingsDropdown === 'function') closeSettingsDropdown();
+  var el = document.getElementById('live-sync-quick-backdrop');
+  if (!el) return;
+  var liveRelayEl = document.getElementById('live-sync-relay-url');
+  if (liveRelayEl && settings) liveRelayEl.value = settings.liveSyncRelayUrl || '';
+  el.style.display = 'flex';
+  el.classList.add('open');
+  el.setAttribute('aria-hidden', 'false');
+  setTimeout(function () {
+    var r = document.getElementById('live-sync-relay-url');
+    if (r) try { r.focus(); } catch (_e) {}
+  }, 30);
+}
+
+function closeLiveSyncQuickModal() {
+  var el = document.getElementById('live-sync-quick-backdrop');
+  if (!el) return;
+  el.classList.remove('open');
+  el.style.display = 'none';
+  el.setAttribute('aria-hidden', 'true');
+}
+
 /** Abre el acordeón «Respaldos, sync y recuperación» en el panel de Ajustes. */
 function expandSettingsAccordionBackupSync() {
   var det = document.getElementById('settings-accordion-backup-sync');
@@ -2573,14 +2596,7 @@ function expandSettingsAccordionBackupSync() {
 }
 
 function openTeamSyncFromHeader() {
-  ensureSettingsDropdownOpen();
-  expandSettingsAccordionBackupSync();
-  var det = document.getElementById('settings-accordion-backup-sync');
-  if (det) {
-    setTimeout(function () {
-      try { det.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (_e) {}
-    }, 40);
-  }
+  openLiveSyncQuickModal();
 }
 
 function syncTeamSyncHeaderButton() {
@@ -2909,7 +2925,7 @@ function renderTourStep() {
       }
       if (window.electronAPI && typeof window.electronAPI.getAppVersion === 'function') {
         mapBody +=
-          '<p style="margin:10px 0 0 0;padding:8px 10px;border-radius:8px;background:var(--lab-chip-bg);font-size:13px;line-height:1.45;border:1px solid var(--border);">En la <strong>app de escritorio</strong>, el botón <strong>⇄</strong> junto a <strong>Ajustes</strong> abre <strong>Respaldos, sync y recuperación</strong> (exportar / importar <strong>paquete sync</strong> entre equipos). Si eliges canal <strong>beta</strong> en <strong>Ajustes → Aplicación y actualizaciones</strong>, el mismo botón muestra un <strong>borde ámbar</strong> y recibirás pre-releases.</p>';
+          '<p style="margin:10px 0 0 0;padding:8px 10px;border-radius:8px;background:var(--lab-chip-bg);font-size:13px;line-height:1.45;border:1px solid var(--border);">En la <strong>app de escritorio</strong>, el botón <strong>⇄</strong> abre el panel de <strong>sesión en vivo</strong> (sincronizar con otro equipo por link, sin abrir todo Ajustes). El <strong>paquete sync</strong> por archivos JSON sigue en <strong>Ajustes → Respaldos, sync y recuperación</strong>. Si eliges canal <strong>beta</strong> en actualizaciones, <strong>⇄</strong> muestra borde ámbar y recibirás pre-releases.</p>';
       }
       bodyEl.innerHTML = mapBody;
       nextBtn.textContent = 'Siguiente';
@@ -9884,6 +9900,8 @@ Object.assign(window, {
   toggleSettingsDropdown,
   closeSettingsDropdown,
   openTeamSyncFromHeader,
+  openLiveSyncQuickModal,
+  closeLiveSyncQuickModal,
   checkForAppUpdates,
   setUpdateChannel,
   setUpdateTelemetryEnabled,

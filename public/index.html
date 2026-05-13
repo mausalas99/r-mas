@@ -769,6 +769,14 @@
   .live-sync-actions .btn-edit-templates { margin: 0; flex: 1 1 130px; }
   .live-sync-relay-row { display: flex; flex-direction: column; gap: 3px; margin-top: 8px; }
   .live-sync-relay-row span { font-size: 10px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .live-sync-quick-heading {
+    font-size: 11px; font-weight: 700; color: var(--text-muted);
+    letter-spacing: 0.55px; text-transform: uppercase; margin: 0 0 8px 0;
+  }
+  #live-sync-quick-backdrop { z-index: 120; }
+  #live-sync-quick-backdrop .modal { width: min(420px, 94vw); }
+  #live-sync-join-modal,
+  #live-sync-activity-modal { z-index: 125; }
   .live-sync-bar {
     position: fixed; left: 16px; right: 16px; bottom: 16px; z-index: 999;
     display: none; gap: 10px; align-items: center; justify-content: center;
@@ -1962,7 +1970,7 @@
   <span id="today-date"></span>
   <div class="header-right">
     <span id="pending-jobs-pill" class="pending-jobs-pill" role="status" aria-live="polite" aria-atomic="true" title="Tareas en curso"></span>
-    <button type="button" class="btn-header-icon" id="btn-header-team-sync" style="display:none;" onclick="openTeamSyncFromHeader()" data-i18n-aria-label="settings.teamSyncAria" data-i18n-title="settings.teamSyncTitle" title="Sync entre equipos">⇄</button>
+    <button type="button" class="btn-header-icon" id="btn-header-team-sync" style="display:none;" onclick="openTeamSyncFromHeader()" data-i18n-aria-label="settings.teamSyncAria" data-i18n-title="settings.teamSyncTitle" title="Sesión en vivo">⇄</button>
     <button class="btn-header-icon" id="btn-open-settings" onclick="toggleSettingsDropdown()" title="Ajustes" aria-label="Abrir ajustes" aria-haspopup="dialog" aria-expanded="false" data-i18n-aria-label="settings.open" data-i18n-title="settings.openTitle">&#9881;</button>
     <button id="theme-toggle" class="btn-header-icon" onclick="toggleTheme()" title="Cambiar tema" aria-label="Cambiar tema claro u oscuro" data-i18n-aria-label="theme.toggle" data-i18n-title="theme.toggleTitle">☀️</button>
     <div class="settings-dropdown-backdrop" id="settings-dropdown-backdrop" onclick="closeSettingsDropdown()"></div>
@@ -2066,17 +2074,8 @@
           <button type="button" class="btn-edit-templates" style="margin-top:2px;" onclick="triggerImportSyncBundle()">Importar paquete sync…</button>
           <hr class="profile-divider" style="margin:8px 0;">
           <div class="profile-defaults-title">Sesión en vivo</div>
-          <p style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;">Sincroniza todos los pacientes locales con otro dispositivo abierto. El link expira y el otro dispositivo requiere confirmación.</p>
-          <label class="live-sync-relay-row">
-            <span>Relay URL</span>
-            <input id="live-sync-relay-url" class="profile-input" type="text" placeholder="ws://127.0.0.1:3740" onchange="saveLiveSyncRelayUrl(this.value)">
-          </label>
-          <div class="live-sync-actions">
-            <button type="button" class="btn-edit-templates" onclick="startLiveSyncShare()">Compartir sesión en vivo</button>
-            <button type="button" class="btn-edit-templates" onclick="openLiveSyncJoinModal()">Unirse con link</button>
-            <button type="button" class="btn-edit-templates" onclick="stopLiveSyncSession()">Finalizar sesión</button>
-          </div>
-          <div id="live-sync-status" class="live-sync-status">Sesión en vivo inactiva</div>
+          <p style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 6px 0;">Sincronización en tiempo real entre equipos. El mismo panel se abre con <strong>⇄</strong> en la barra superior.</p>
+          <button type="button" class="btn-edit-templates" onclick="openLiveSyncQuickModal()">Abrir sesión en vivo…</button>
         </div>
       </details>
 
@@ -2200,7 +2199,7 @@
 <div id="onboarding-intro-backdrop" aria-hidden="true">
   <div class="onboarding-intro-modal" role="dialog" aria-modal="true" aria-labelledby="intro-modal-title">
     <h2 id="intro-modal-title">Bienvenido a R+</h2>
-    <p class="intro-lead">Elige el tipo de recorrido. En ambos casos se usa un paciente de demostración (<strong>DEMO PÉREZ</strong>) que <strong>no se guarda</strong> en tu lista real. Puedes repetir el tutorial cuando quieras desde <strong>Mi Perfil → Ver tutorial</strong>. Si usas R+ en <strong>varios equipos</strong>, en la <strong>app de escritorio</strong> el botón <strong>⇄</strong> junto a <strong>Ajustes</strong> abre <strong>Respaldos, sync y recuperación</strong> (mismo menú que el engrane): exportar/importar <strong>paquete sync</strong> (JSON, opcionalmente cifrado). El canal <strong>beta</strong> de actualizaciones solo cambia qué versiones recibes; se configura en <strong>Ajustes → Aplicación y actualizaciones</strong>.</p>
+    <p class="intro-lead">Elige el tipo de recorrido. En ambos casos se usa un paciente de demostración (<strong>DEMO PÉREZ</strong>) que <strong>no se guarda</strong> en tu lista real. Puedes repetir el tutorial cuando quieras desde <strong>Mi Perfil → Ver tutorial</strong>. En la <strong>app de escritorio</strong>, el botón <strong>⇄</strong> abre <strong>sesión en vivo</strong> (sincronizar con otro equipo abierto). El <strong>paquete sync</strong> por JSON está en <strong>Ajustes → Respaldos, sync y recuperación</strong>. El canal <strong>beta</strong> de actualizaciones solo cambia qué versiones recibes (Ajustes → Aplicación).</p>
     <div class="intro-options-grid">
       <article class="intro-option-card">
         <span class="intro-option-kicker">Turno en piso</span>
@@ -2213,7 +2212,7 @@
           <li>Ubicación exacta del botón <strong>Plantilla SOAP</strong> (tarjeta verde de evolución)</li>
           <li><strong>Medicamentos</strong> + cómo copiar desde SOME</li>
           <li>Pocos pasos sobre exportar Word</li>
-          <li><strong>Varios equipos:</strong> atajo <strong>⇄</strong> (escritorio) o <strong>Ajustes → Respaldos, sync…</strong> para paquete sync</li>
+          <li><strong>Varios equipos:</strong> <strong>⇄</strong> = sesión en vivo; paquete JSON en <strong>Ajustes → Respaldos, sync…</strong></li>
         </ul>
         <button type="button" class="btn-intro-pick" onclick="guidedTourIntroChooseSala()">Empezar · Sala</button>
       </article>
@@ -2227,7 +2226,7 @@
           <li><strong>Carpeta de documentos</strong> y botón <strong>Salida rápida</strong></li>
           <li>En <strong>Ajustes → Laboratorio</strong>, revisión de duplicados en <strong>todos</strong> los pacientes</li>
           <li>Repaso de perfil, plantillas y respaldos</li>
-          <li><strong>Varios equipos:</strong> <strong>⇄</strong> junto a Ajustes (escritorio) o menú <strong>Ajustes → Respaldos, sync…</strong></li>
+          <li><strong>Varios equipos:</strong> <strong>⇄</strong> sesión en vivo; <strong>Ajustes</strong> para paquete sync JSON</li>
         </ul>
         <button type="button" class="btn-intro-pick btn-intro-pick-secondary" onclick="guidedTourIntroChooseInterconsulta()">Empezar · Interconsulta</button>
       </article>
@@ -2902,6 +2901,26 @@
     <div class="rpc-idle-lock-error" id="rpc-idle-lock-error" role="alert"></div>
     <div class="rpc-idle-lock-actions">
       <button type="button" class="btn-unlock" onclick="submitIdleLockPin()">Desbloquear</button>
+    </div>
+  </div>
+</div>
+
+<div id="live-sync-quick-backdrop" class="modal-backdrop" style="display:none;" aria-hidden="true" onclick="if(event.target===this)closeLiveSyncQuickModal()">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="live-sync-quick-title" onclick="event.stopPropagation()">
+    <h2 id="live-sync-quick-title" class="live-sync-quick-heading">Sesión en vivo</h2>
+    <p style="font-size:11px;color:var(--text-muted);line-height:1.45;margin:0 0 12px 0;">Sincroniza todos los pacientes locales con otro dispositivo abierto. El link expira y el otro dispositivo requiere confirmación.</p>
+    <label class="live-sync-relay-row">
+      <span>Relay URL</span>
+      <input id="live-sync-relay-url" class="profile-input" type="text" placeholder="ws://127.0.0.1:3740" onchange="saveLiveSyncRelayUrl(this.value)">
+    </label>
+    <div class="live-sync-actions">
+      <button type="button" class="btn-edit-templates" onclick="startLiveSyncShare()">Compartir sesión en vivo</button>
+      <button type="button" class="btn-edit-templates" onclick="openLiveSyncJoinModal()">Unirse con link</button>
+      <button type="button" class="btn-edit-templates" onclick="stopLiveSyncSession()">Finalizar sesión</button>
+    </div>
+    <div id="live-sync-status" class="live-sync-status">Sesión en vivo inactiva</div>
+    <div class="modal-actions" style="margin-top:16px;">
+      <button type="button" class="btn-cancel" onclick="closeLiveSyncQuickModal()">Cerrar</button>
     </div>
   </div>
 </div>
