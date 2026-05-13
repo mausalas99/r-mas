@@ -1459,6 +1459,8 @@ var I18N_ES = {
   'settings.checkUpdates':    'Buscar actualizaciones…',
   'settings.open':            'Abrir ajustes',
   'settings.openTitle':       'Ajustes',
+  'settings.teamSyncAria':    'Abrir respaldos y sync entre equipos',
+  'settings.teamSyncTitle':   'Sync entre equipos (canal beta): mismo panel que Ajustes → Respaldos, sync y recuperación',
   'theme.toggle':             'Cambiar tema claro u oscuro',
   'theme.toggleTitle':        'Cambiar tema'
 };
@@ -2529,6 +2531,30 @@ function closeSettingsDropdown() {
   if (trigger) trigger.setAttribute('aria-expanded', 'false');
 }
 
+/** Abre el desplegable de Ajustes y la sección «Respaldos, sync y recuperación» (mismos controles que en ⚙). */
+function expandSettingsAccordionBackupSync() {
+  var det = document.getElementById('settings-accordion-backup-sync');
+  if (det) det.open = true;
+}
+
+function openTeamSyncFromHeader() {
+  ensureSettingsDropdownOpen();
+  expandSettingsAccordionBackupSync();
+  var det = document.getElementById('settings-accordion-backup-sync');
+  if (det) {
+    setTimeout(function () {
+      try { det.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (_e) {}
+    }, 40);
+  }
+}
+
+function syncTeamSyncHeaderButton() {
+  var btn = document.getElementById('btn-header-team-sync');
+  if (!btn) return;
+  var show = getUpdateChannel() === 'beta';
+  btn.style.display = show ? 'flex' : 'none';
+}
+
 function checkForAppUpdates() {
   if (!window.electronAPI || typeof window.electronAPI.checkForUpdates !== 'function') {
     showToast('Las actualizaciones automáticas solo están en la app de escritorio.', 'error');
@@ -2822,8 +2848,9 @@ function renderTourStep() {
   switch (tourStepId) {
     case 'map':
       setBadge('mapa de la app');
+      var mapBody;
       if (guidedTourBranch === 'interconsulta') {
-        bodyEl.innerHTML =
+        mapBody =
           '<p style="margin:0 0 10px 0;">Recorrido <strong>completo</strong> (laboratorio, tendencias, SOAP, medicamentos). La diferencia es el <strong>énfasis al final</strong>: exportar <strong>Nota de evolución</strong> e <strong>Indicaciones</strong> a <strong>Word (.docx)</strong>, carpeta de salida y Salida rápida.</p>' +
           '<ul style="margin:0;padding-left:1.15rem;line-height:1.5;">' +
           '<li><strong>Izquierda:</strong> lista de pacientes. El demo <strong>DEMO PÉREZ</strong> no se guarda en tu historial real.</li>' +
@@ -2833,7 +2860,7 @@ function renderTourStep() {
           '<li>R+ avisa si creas un paciente duplicado por nombre o registro.</li>' +
           '</ul>';
       } else {
-        bodyEl.innerHTML =
+        mapBody =
           '<p style="margin:0 0 10px 0;">Recorrido <strong>sala / hospitalización</strong>: laboratorio, tendencias, <strong>plantilla SOAP</strong> para la evolución y <strong>Medicamentos</strong> (receta → nota / SOAP).</p>' +
           '<ul style="margin:0;padding-left:1.15rem;line-height:1.5;">' +
           '<li><strong>Laboratorio</strong> interpreta el reporte pegado y arma diagramas.</li>' +
@@ -2844,6 +2871,11 @@ function renderTourStep() {
           '<li><strong>Medicamentos</strong> clasifica lo que marques y lo manda a la plantilla SOAP o al tratamiento.</li>' +
           '</ul>';
       }
+      if (getUpdateChannel() === 'beta') {
+        mapBody +=
+          '<p style="margin:10px 0 0 0;padding:8px 10px;border-radius:8px;background:var(--lab-chip-bg);font-size:13px;line-height:1.45;border:1px solid var(--border);"><strong>Canal beta:</strong> el botón <strong>⇄</strong> junto a <strong>Ajustes</strong> abre directo <strong>Respaldos, sync y recuperación</strong> (mismo menú que en ⚙): exportar / importar <strong>paquete sync</strong> entre equipos. El canal se guarda en <strong>Ajustes → Aplicación y actualizaciones</strong>.</p>';
+      }
+      bodyEl.innerHTML = mapBody;
       nextBtn.textContent = 'Siguiente';
       break;
     case 'lab_parse':
@@ -4215,12 +4247,12 @@ var SETTINGS_MINI_TOUR_STEPS = [
   {
     badge: 'Ajustes · respaldo',
     body: '<strong>Copias de seguridad</strong>: exporta todo, solo al paciente activo, un rango de fechas, o activa la <strong>copia automática</strong> (hasta 14 snapshots locales rotativos).',
-    before: function(){ ensureSettingsDropdownOpen(); }
+    before: function(){ ensureSettingsDropdownOpen(); expandSettingsAccordionBackupSync(); }
   },
   {
     badge: 'Ajustes · sync',
     body: 'Si usas R+ en más de un equipo, el <strong>Paquete sync</strong> intercambia JSON cifrados con passphrase y combina cambios sin pisar lo que ya tenías.',
-    before: function(){ ensureSettingsDropdownOpen(); }
+    before: function(){ ensureSettingsDropdownOpen(); expandSettingsAccordionBackupSync(); }
   },
   {
     badge: 'Ajustes · datos',
@@ -8458,6 +8490,7 @@ function syncUpdateChannelUI() {
   if (sel) sel.value = getUpdateChannel();
   var pill = document.getElementById('update-modal-channel-pill');
   if (pill) pill.style.display = getUpdateChannel() === 'beta' ? 'inline-block' : 'none';
+  if (typeof syncTeamSyncHeaderButton === 'function') syncTeamSyncHeaderButton();
 }
 
 function getUpdateTelemetryEnabled() {
@@ -9386,6 +9419,7 @@ Object.assign(window, {
   toggleSettingsSection,
   toggleSettingsDropdown,
   closeSettingsDropdown,
+  openTeamSyncFromHeader,
   checkForAppUpdates,
   setUpdateChannel,
   setUpdateTelemetryEnabled,
