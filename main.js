@@ -50,7 +50,8 @@ function createWindow() {
     },
   });
 
-  mainWindow.loadURL('http://localhost:3738');
+  const port = process.env.PORT || 3738;
+  mainWindow.loadURL(`http://localhost:${port}`);
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);

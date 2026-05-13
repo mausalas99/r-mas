@@ -141,7 +141,7 @@ appExpress.post('/generate-listado', async (req, res) => {
   }
 });
 
-const PORT = 3738;
+const PORT = process.env.PORT || 3738;
 const server = appExpress.listen(PORT, () => {
   console.log(`R+ → http://localhost:${PORT}`);
 });
