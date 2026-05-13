@@ -1020,6 +1020,9 @@
     transition: background 0.15s; flex-shrink: 0; color: white;
   }
   .btn-header-icon:hover { background: rgba(255,255,255,0.25); }
+  .btn-header-icon.btn-header-team-sync-beta {
+    box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.85);
+  }
   .settings-dropdown {
     display: none; position: absolute; top: calc(100% + 8px); right: 0; z-index: 100;
     background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
@@ -1928,7 +1931,7 @@
   <span id="today-date"></span>
   <div class="header-right">
     <span id="pending-jobs-pill" class="pending-jobs-pill" role="status" aria-live="polite" aria-atomic="true" title="Tareas en curso"></span>
-    <button type="button" class="btn-header-icon" id="btn-header-team-sync" style="display:none;" onclick="openTeamSyncFromHeader()" data-i18n-aria-label="settings.teamSyncAria" data-i18n-title="settings.teamSyncTitle" title="Sync entre equipos (canal beta)">⇄</button>
+    <button type="button" class="btn-header-icon" id="btn-header-team-sync" style="display:none;" onclick="openTeamSyncFromHeader()" data-i18n-aria-label="settings.teamSyncAria" data-i18n-title="settings.teamSyncTitle" title="Sync entre equipos">⇄</button>
     <button class="btn-header-icon" id="btn-open-settings" onclick="toggleSettingsDropdown()" title="Ajustes" aria-label="Abrir ajustes" aria-haspopup="dialog" aria-expanded="false" data-i18n-aria-label="settings.open" data-i18n-title="settings.openTitle">&#9881;</button>
     <button id="theme-toggle" class="btn-header-icon" onclick="toggleTheme()" title="Cambiar tema" aria-label="Cambiar tema claro u oscuro" data-i18n-aria-label="theme.toggle" data-i18n-title="theme.toggleTitle">☀️</button>
     <div class="settings-dropdown-backdrop" id="settings-dropdown-backdrop" onclick="closeSettingsDropdown()"></div>
@@ -2153,7 +2156,7 @@
 <div id="onboarding-intro-backdrop" aria-hidden="true">
   <div class="onboarding-intro-modal" role="dialog" aria-modal="true" aria-labelledby="intro-modal-title">
     <h2 id="intro-modal-title">Bienvenido a R+</h2>
-    <p class="intro-lead">Elige el tipo de recorrido. En ambos casos se usa un paciente de demostración (<strong>DEMO PÉREZ</strong>) que <strong>no se guarda</strong> en tu lista real. Puedes repetir el tutorial cuando quieras desde <strong>Mi Perfil → Ver tutorial</strong>. Si usas R+ en <strong>varios equipos</strong>, en <strong>Ajustes → Respaldos, sync y recuperación</strong> puedes exportar e importar el <strong>paquete sync</strong> (JSON, opcionalmente cifrado); con el <strong>canal beta</strong> activo aparece además el botón <strong>⇄</strong> junto a Ajustes para abrir esa misma zona al instante.</p>
+    <p class="intro-lead">Elige el tipo de recorrido. En ambos casos se usa un paciente de demostración (<strong>DEMO PÉREZ</strong>) que <strong>no se guarda</strong> en tu lista real. Puedes repetir el tutorial cuando quieras desde <strong>Mi Perfil → Ver tutorial</strong>. Si usas R+ en <strong>varios equipos</strong>, en la <strong>app de escritorio</strong> el botón <strong>⇄</strong> junto a <strong>Ajustes</strong> abre <strong>Respaldos, sync y recuperación</strong> (mismo menú que el engrane): exportar/importar <strong>paquete sync</strong> (JSON, opcionalmente cifrado). El canal <strong>beta</strong> de actualizaciones solo cambia qué versiones recibes; se configura en <strong>Ajustes → Aplicación y actualizaciones</strong>.</p>
     <div class="intro-options-grid">
       <article class="intro-option-card">
         <span class="intro-option-kicker">Turno en piso</span>
@@ -2166,7 +2169,7 @@
           <li>Ubicación exacta del botón <strong>Plantilla SOAP</strong> (tarjeta verde de evolución)</li>
           <li><strong>Medicamentos</strong> + cómo copiar desde SOME</li>
           <li>Pocos pasos sobre exportar Word</li>
-          <li><strong>Varios equipos:</strong> paquete sync en Ajustes (y atajo <strong>⇄</strong> si eliges canal beta)</li>
+          <li><strong>Varios equipos:</strong> atajo <strong>⇄</strong> (escritorio) o <strong>Ajustes → Respaldos, sync…</strong> para paquete sync</li>
         </ul>
         <button type="button" class="btn-intro-pick" onclick="guidedTourIntroChooseSala()">Empezar · Sala</button>
       </article>
@@ -2180,7 +2183,7 @@
           <li><strong>Carpeta de documentos</strong> y botón <strong>Salida rápida</strong></li>
           <li>En <strong>Ajustes → Laboratorio</strong>, revisión de duplicados en <strong>todos</strong> los pacientes</li>
           <li>Repaso de perfil, plantillas y respaldos</li>
-          <li><strong>Varios equipos:</strong> <strong>Paquete sync</strong> en Ajustes; con canal <strong>beta</strong>, botón <strong>⇄</strong> junto a Ajustes</li>
+          <li><strong>Varios equipos:</strong> <strong>⇄</strong> junto a Ajustes (escritorio) o menú <strong>Ajustes → Respaldos, sync…</strong></li>
         </ul>
         <button type="button" class="btn-intro-pick btn-intro-pick-secondary" onclick="guidedTourIntroChooseInterconsulta()">Empezar · Interconsulta</button>
       </article>

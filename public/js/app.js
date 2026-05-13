@@ -1460,7 +1460,7 @@ var I18N_ES = {
   'settings.open':            'Abrir ajustes',
   'settings.openTitle':       'Ajustes',
   'settings.teamSyncAria':    'Abrir respaldos y sync entre equipos',
-  'settings.teamSyncTitle':   'Sync entre equipos (canal beta): mismo panel que Ajustes → Respaldos, sync y recuperación',
+  'settings.teamSyncTitle':   'Sync entre equipos: mismo panel que Ajustes → Respaldos, sync y recuperación (exportar/importar paquete). En escritorio siempre disponible.',
   'theme.toggle':             'Cambiar tema claro u oscuro',
   'theme.toggleTitle':        'Cambiar tema'
 };
@@ -2551,8 +2551,9 @@ function openTeamSyncFromHeader() {
 function syncTeamSyncHeaderButton() {
   var btn = document.getElementById('btn-header-team-sync');
   if (!btn) return;
-  var show = getUpdateChannel() === 'beta';
-  btn.style.display = show ? 'flex' : 'none';
+  var desktop = !!(window.electronAPI && typeof window.electronAPI.getAppVersion === 'function');
+  btn.style.display = desktop ? 'flex' : 'none';
+  btn.classList.toggle('btn-header-team-sync-beta', desktop && getUpdateChannel() === 'beta');
 }
 
 function checkForAppUpdates() {
@@ -2871,9 +2872,9 @@ function renderTourStep() {
           '<li><strong>Medicamentos</strong> clasifica lo que marques y lo manda a la plantilla SOAP o al tratamiento.</li>' +
           '</ul>';
       }
-      if (getUpdateChannel() === 'beta') {
+      if (window.electronAPI && typeof window.electronAPI.getAppVersion === 'function') {
         mapBody +=
-          '<p style="margin:10px 0 0 0;padding:8px 10px;border-radius:8px;background:var(--lab-chip-bg);font-size:13px;line-height:1.45;border:1px solid var(--border);"><strong>Canal beta:</strong> el botón <strong>⇄</strong> junto a <strong>Ajustes</strong> abre directo <strong>Respaldos, sync y recuperación</strong> (mismo menú que en ⚙): exportar / importar <strong>paquete sync</strong> entre equipos. El canal se guarda en <strong>Ajustes → Aplicación y actualizaciones</strong>.</p>';
+          '<p style="margin:10px 0 0 0;padding:8px 10px;border-radius:8px;background:var(--lab-chip-bg);font-size:13px;line-height:1.45;border:1px solid var(--border);">En la <strong>app de escritorio</strong>, el botón <strong>⇄</strong> junto a <strong>Ajustes</strong> abre <strong>Respaldos, sync y recuperación</strong> (exportar / importar <strong>paquete sync</strong> entre equipos). Si eliges canal <strong>beta</strong> en <strong>Ajustes → Aplicación y actualizaciones</strong>, el mismo botón muestra un <strong>borde ámbar</strong> y recibirás pre-releases.</p>';
       }
       bodyEl.innerHTML = mapBody;
       nextBtn.textContent = 'Siguiente';
