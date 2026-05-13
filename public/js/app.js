@@ -2604,7 +2604,6 @@ function syncTeamSyncHeaderButton() {
   if (!btn) return;
   var desktop = !!(window.electronAPI && typeof window.electronAPI.getAppVersion === 'function');
   btn.style.display = desktop ? 'flex' : 'none';
-  btn.classList.toggle('btn-header-team-sync-beta', desktop && getUpdateChannel() === 'beta');
 }
 
 function checkForAppUpdates() {
@@ -2925,7 +2924,7 @@ function renderTourStep() {
       }
       if (window.electronAPI && typeof window.electronAPI.getAppVersion === 'function') {
         mapBody +=
-          '<p style="margin:10px 0 0 0;padding:8px 10px;border-radius:8px;background:var(--lab-chip-bg);font-size:13px;line-height:1.45;border:1px solid var(--border);">En la <strong>app de escritorio</strong>, el botón <strong>⇄</strong> abre el panel de <strong>sesión en vivo</strong> (sincronizar con otro equipo por link, sin abrir todo Ajustes). El <strong>paquete sync</strong> por archivos JSON sigue en <strong>Ajustes → Respaldos, sync y recuperación</strong>. Si eliges canal <strong>beta</strong> en actualizaciones, <strong>⇄</strong> muestra borde ámbar y recibirás pre-releases.</p>';
+          '<p style="margin:10px 0 0 0;padding:8px 10px;border-radius:8px;background:var(--lab-chip-bg);font-size:13px;line-height:1.45;border:1px solid var(--border);">En la <strong>app de escritorio</strong>, el botón <strong>⇄</strong> abre el panel de <strong>sesión en vivo</strong> (sincronizar con otro equipo por link, sin abrir todo Ajustes). El <strong>paquete sync</strong> por archivos JSON sigue en <strong>Ajustes → Respaldos, sync y recuperación</strong>. Si eliges canal <strong>beta</strong> en actualizaciones, recibirás pre-releases (Ajustes → Aplicación).</p>';
       }
       bodyEl.innerHTML = mapBody;
       nextBtn.textContent = 'Siguiente';
