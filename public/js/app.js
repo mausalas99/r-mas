@@ -6971,6 +6971,168 @@ function renderNoteForm() {
   syncOfflineButtonStates();
 }
 
+function _todoCompareForSort(a, b) {
+  if (!!a.completed !== !!b.completed) return a.completed ? 1 : -1;
+  var prioOrder = { alta: 0, normal: 1, baja: 2 };
+  var pa = prioOrder[a.priority] != null ? prioOrder[a.priority] : 1;
+  var pb = prioOrder[b.priority] != null ? prioOrder[b.priority] : 1;
+  if (pa !== pb) return pa - pb;
+  if (a.createdAt && b.createdAt) return String(b.createdAt).localeCompare(String(a.createdAt));
+  return 0;
+}
+
+function renderTodoForm() {
+  var container = document.getElementById('todo-form');
+  if (!container) return;
+  while (container.firstChild) container.removeChild(container.firstChild);
+
+  if (!activeId) {
+    var empty = document.createElement('p');
+    empty.className = 'todo-empty';
+    empty.textContent = 'Selecciona un paciente para ver sus pendientes.';
+    container.appendChild(empty);
+    return;
+  }
+
+  var addRow = document.createElement('div');
+  addRow.className = 'todo-add-row';
+  var input = document.createElement('input');
+  input.type = 'text';
+  input.id = 'todo-input';
+  input.placeholder = 'Nuevo pendiente...';
+  var sel = document.createElement('select');
+  sel.id = 'todo-priority';
+  [
+    { v: 'alta',   t: 'Alta'   },
+    { v: 'normal', t: 'Normal' },
+    { v: 'baja',   t: 'Baja'   }
+  ].forEach(function (o) {
+    var opt = document.createElement('option');
+    opt.value = o.v;
+    opt.textContent = o.t;
+    if (o.v === 'normal') opt.selected = true;
+    sel.appendChild(opt);
+  });
+  var addBtn = document.createElement('button');
+  addBtn.type = 'button';
+  addBtn.textContent = 'Agregar';
+  addBtn.addEventListener('click', addTodo);
+  input.addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') addTodo();
+  });
+  addRow.appendChild(input);
+  addRow.appendChild(sel);
+  addRow.appendChild(addBtn);
+  container.appendChild(addRow);
+
+  var todos = storage.getTodos(activeId).slice().sort(_todoCompareForSort);
+  if (!todos.length) {
+    var none = document.createElement('p');
+    none.className = 'todo-empty';
+    none.textContent = 'Sin pendientes. Agrega el primero arriba.';
+    container.appendChild(none);
+    return;
+  }
+
+  var list = document.createElement('div');
+  todos.forEach(function (t) {
+    var row = document.createElement('div');
+    row.className = 'todo-row' + (t.completed ? ' completed' : '');
+
+    var chip = document.createElement('span');
+    chip.className = 'todo-prio ' + (t.priority || 'normal');
+    chip.title = 'Prioridad: ' + (t.priority || 'normal');
+    row.appendChild(chip);
+
+    var chk = document.createElement('input');
+    chk.type = 'checkbox';
+    chk.checked = !!t.completed;
+    chk.addEventListener('change', function () { toggleTodo(t.id); });
+    row.appendChild(chk);
+
+    var txt = document.createElement('span');
+    txt.className = 'todo-text';
+    txt.textContent = t.text;
+    row.appendChild(txt);
+
+    var prioSel = document.createElement('select');
+    [
+      { v: 'alta',   t: 'A' },
+      { v: 'normal', t: 'N' },
+      { v: 'baja',   t: 'B' }
+    ].forEach(function (o) {
+      var opt = document.createElement('option');
+      opt.value = o.v;
+      opt.textContent = o.t;
+      if (o.v === t.priority) opt.selected = true;
+      prioSel.appendChild(opt);
+    });
+    prioSel.title = 'Cambiar prioridad';
+    prioSel.addEventListener('change', function () { setTodoPriority(t.id, prioSel.value); });
+    row.appendChild(prioSel);
+
+    var del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'todo-del';
+    del.textContent = '×';
+    del.title = 'Eliminar';
+    del.addEventListener('click', function () { deleteTodo(t.id); });
+    row.appendChild(del);
+
+    list.appendChild(row);
+  });
+  container.appendChild(list);
+}
+
+function addTodo() {
+  if (!activeId) return;
+  var input = document.getElementById('todo-input');
+  var sel   = document.getElementById('todo-priority');
+  if (!input) return;
+  var text = String(input.value || '').trim();
+  if (!text) return;
+  var priority = sel && (sel.value === 'alta' || sel.value === 'baja') ? sel.value : 'normal';
+  var todos = storage.getTodos(activeId);
+  todos.push({
+    id: String(Date.now()) + '-' + Math.random().toString(36).slice(2, 6),
+    text: text,
+    completed: false,
+    priority: priority,
+    createdAt: new Date().toISOString()
+  });
+  storage.saveTodos(activeId, todos);
+  input.value = '';
+  renderTodoForm();
+}
+
+function toggleTodo(id) {
+  if (!activeId) return;
+  var todos = storage.getTodos(activeId);
+  var found = todos.find(function (t) { return t.id === id; });
+  if (!found) return;
+  found.completed = !found.completed;
+  storage.saveTodos(activeId, todos);
+  renderTodoForm();
+}
+
+function deleteTodo(id) {
+  if (!activeId) return;
+  var todos = storage.getTodos(activeId).filter(function (t) { return t.id !== id; });
+  storage.saveTodos(activeId, todos);
+  renderTodoForm();
+}
+
+function setTodoPriority(id, priority) {
+  if (!activeId) return;
+  var valid = (priority === 'alta' || priority === 'baja' || priority === 'normal') ? priority : 'normal';
+  var todos = storage.getTodos(activeId);
+  var found = todos.find(function (t) { return t.id === id; });
+  if (!found) return;
+  found.priority = valid;
+  storage.saveTodos(activeId, todos);
+  renderTodoForm();
+}
+
 function updatePatient(field, value) {
   var p = patients.find(function(p){ return p.id===activeId; });
   if (p) { p[field] = (field==='nombre'||field==='area'||field==='servicio') ? value.toUpperCase() : value; saveState(); renderPatientList(); }
@@ -9133,6 +9295,11 @@ Object.assign(window, {
   openSOAPModal,
   updatePatient,
   renderPatientDataPane,
+  renderTodoForm,
+  addTodo,
+  toggleTodo,
+  deleteTodo,
+  setTodoPriority,
   updateNote,
   updateDx,
   removeDx,
