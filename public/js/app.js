@@ -4040,6 +4040,18 @@ var RELEASE_NOTES_HIGHLIGHTS = {
         'El panel del tour queda por encima del contenido resaltado en el paso del listado. En Apple Silicon, si no hay Python embebido, se prioriza Homebrew en /opt/homebrew.',
     },
   ],
+  '3.1.1': [
+    {
+      title: 'Sesión en vivo: atajo ⇄',
+      body:
+        'El botón ⇄ abre un modal dedicado (relay, compartir, unir, finalizar) sin desplegar todo Ajustes. En Respaldos, sync sigue el botón «Abrir sesión en vivo…» al mismo panel.',
+    },
+    {
+      title: 'Barra superior',
+      body:
+        'Se quitó el contorno de foco y el anillo visual del botón ⇄ para un encabezado más limpio.',
+    },
+  ],
   '3.0.1': [
     {
       title: 'Procalcitonina (PCT)',

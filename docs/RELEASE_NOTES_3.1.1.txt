@@ -1,0 +1,6 @@
+R+ 3.1.1
+
+- Atajo ⇄: abre el panel de sesión en vivo en un modal propio (sin abrir todo el menú de Ajustes).
+- Ajustes → Respaldos, sync: acceso resumido «Abrir sesión en vivo…» al mismo modal.
+- Botón ⇄: sin anillo ni outline de foco extra en el encabezado.
+- Z-index: modales de unirse / actividad por encima del modal rápido de sesión en vivo.
