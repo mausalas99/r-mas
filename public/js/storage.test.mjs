@@ -36,10 +36,15 @@ describe('storage todos', () => {
       assert.deepStrictEqual(storage.getTodos('p1'), todos);
     });
 
-    it('normalizes missing priority to "normal"', () => {
+    it('normalizes missing priority to "media"', () => {
       store['rpc-todos'] = JSON.stringify({ p1: [{ id: 'a', text: 't', completed: false }] });
       const result = storage.getTodos('p1');
-      assert.strictEqual(result[0].priority, 'normal');
+      assert.strictEqual(result[0].priority, 'media');
+    });
+
+    it('maps legacy "normal" priority to "media"', () => {
+      store['rpc-todos'] = JSON.stringify({ p1: [{ id: 'a', text: 't', completed: false, priority: 'normal' }] });
+      assert.strictEqual(storage.getTodos('p1')[0].priority, 'media');
     });
 
     it('coerces completed to boolean', () => {
@@ -50,13 +55,13 @@ describe('storage todos', () => {
 
   describe('saveTodos', () => {
     it('saves todos for the patient', () => {
-      const todos = [{ id: '1', text: 'x', completed: false, priority: 'normal', createdAt: '' }];
+      const todos = [{ id: '1', text: 'x', completed: false, priority: 'media', createdAt: '' }];
       storage.saveTodos('p1', todos);
       assert.deepStrictEqual(JSON.parse(store['rpc-todos']).p1, todos);
     });
 
     it('preserves entries for other patients', () => {
-      store['rpc-todos'] = JSON.stringify({ p2: [{ id: 'x', text: 'y', completed: true, priority: 'normal', createdAt: '' }] });
+      store['rpc-todos'] = JSON.stringify({ p2: [{ id: 'x', text: 'y', completed: true, priority: 'media', createdAt: '' }] });
       storage.saveTodos('p1', [{ id: '1', text: 'a', completed: false, priority: 'alta', createdAt: '' }]);
       const obj = JSON.parse(store['rpc-todos']);
       assert.strictEqual(obj.p1.length, 1);
@@ -64,7 +69,7 @@ describe('storage todos', () => {
     });
 
     it('does NOT write for demo- patients', () => {
-      storage.saveTodos('demo-foo', [{ id: '1', text: 'a', completed: false, priority: 'normal', createdAt: '' }]);
+      storage.saveTodos('demo-foo', [{ id: '1', text: 'a', completed: false, priority: 'media', createdAt: '' }]);
       assert.strictEqual(store['rpc-todos'], undefined);
     });
   });

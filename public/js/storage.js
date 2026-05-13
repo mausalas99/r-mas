@@ -134,17 +134,19 @@ export const storage = {
   /**
    * Get to-do list for a patient. Normaliza forma de cada todo.
    * @param {string} patientId
-   * @returns {Array<{id:string,text:string,completed:boolean,priority:string,createdAt:string}>}
+   * @returns {Array<{id:string,text:string,completed:boolean,priority:'alta'|'media'|'baja',createdAt:string}>}
    */
   getTodos(patientId) {
     const map = safeParseObject(localStorage.getItem('rpc-todos'));
     const raw = Array.isArray(map[patientId]) ? map[patientId] : [];
     return raw.map(function (t) {
+      var rawP = t && t.priority;
+      var p = rawP === 'alta' || rawP === 'baja' || rawP === 'media' ? rawP : 'media';
       return {
         id: String(t && t.id != null ? t.id : ''),
         text: String(t && t.text != null ? t.text : ''),
         completed: !!(t && t.completed),
-        priority: (t && (t.priority === 'alta' || t.priority === 'baja' || t.priority === 'normal')) ? t.priority : 'normal',
+        priority: p,
         createdAt: String(t && t.createdAt != null ? t.createdAt : '')
       };
     });
