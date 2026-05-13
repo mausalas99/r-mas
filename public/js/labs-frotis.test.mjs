@@ -46,6 +46,6 @@ test('parseFrotisSangre_ extrae comentario de frotis', () => {
 
 test('procesarLabs incluye bloque FROTIS cuando aparece en hematologia', () => {
   const { resLabs } = procesarLabs(MUESTRA_FROTIS);
-  const frotis = resLabs.find((l) => typeof l === 'string' && l.startsWith('FROTIS\t'));
+  const frotis = resLabs.find((l) => l.startsWith('FROTIS\t'));
   assert.ok(frotis, 'debe incluir bloque FROTIS');
 });

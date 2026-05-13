@@ -1545,8 +1545,11 @@ export function procesarLabs(textoBruto) {
   var esSoloGaso=/GASOMETRIA/i.test(tNorm)&&!/BIOMETRIA|QUIMICA|ELECTROLITOS|PFH|COAGULACION|CULTIVO/i.test(tNorm);
 
   var resLabs=[];
+  var bhExtras = {};
   if(!esSoloGaso){
-    var bh=parseBH_(tSinLiqCorp);    if(bh)resLabs.push(bh);
+    var bhRes = parseBH_(tSinLiqCorp);
+    if (bhRes && bhRes.visible) resLabs.push(bhRes.visible);
+    if (bhRes && bhRes.extras) bhExtras = bhRes.extras;
     var qs=parseQS_(textoQS);  if(qs)resLabs.push(qs);
     var esc=parseESC_(textoQS);if(esc)resLabs.push(esc);
     var pfh=parsePFH_(tSinLiqCorp);  if(pfh)resLabs.push(pfh);
@@ -1563,7 +1566,7 @@ export function procesarLabs(textoBruto) {
   var cult=parseCultivo_(textoBruto,tNorm);if(cult)resLabs.push(cult);
 
   resLabs = dedupeSingletonSections_(resLabs);
-  return { patient:patient, resLabs:resLabs };
+  return { patient: patient, resLabs: resLabs, bhExtras: bhExtras };
 }
 
 export function escTxt(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }

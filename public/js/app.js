@@ -5365,7 +5365,7 @@ function reprocessLabHistorySet(setId) {
     }
     set.resLabs = repro.slice();
     set.parsed = extractParsedValues(set.resLabs);
-    set.parsedBySection = buildParsedBySectionFromResLabs(set.resLabs);
+    set.parsedBySection = buildParsedBySectionFromResLabs(set.resLabs, set.bhExtras);
     rebuildEstudiosFromLabHistory(activeId);
     saveState();
     renderLabHistoryPanel();
@@ -5751,7 +5751,17 @@ function consolidateLabHistoryByDayAndTipo() {
     var deduped = dedupeConsolidatedRowsBySection(merged, tipoGrupo);
     keeper.resLabs = deduped;
     keeper.parsed = extractParsedValues(deduped);
-    keeper.parsedBySection = buildParsedBySectionFromResLabs(deduped);
+    var mergedBhExtras = {};
+    for (var mi = 0; mi < arr.length; mi++) {
+      var sMerge = arr[mi];
+      if (sMerge && sMerge.bhExtras && typeof sMerge.bhExtras === 'object') {
+        Object.keys(sMerge.bhExtras).forEach(function (bk) {
+          mergedBhExtras[bk] = sMerge.bhExtras[bk];
+        });
+      }
+    }
+    keeper.bhExtras = mergedBhExtras;
+    keeper.parsedBySection = buildParsedBySectionFromResLabs(deduped, keeper.bhExtras);
     if (sourceParts.length) keeper.sourceText = sourceParts.join('\n\n---\n\n');
     var newest = arr[arr.length - 1];
     if (newest.hora) keeper.hora = newest.hora;
@@ -6444,9 +6454,10 @@ function checkStudiosAndInsertLabs() {
   }
 }
 
-function pushLabHistory(patientId, resLabs, fecha, hora, sourceText) {
+function pushLabHistory(patientId, resLabs, fecha, hora, sourceText, bhExtras) {
   if (!patientId || !resLabs || !resLabs.length) return;
   if (!labHistory[patientId]) labHistory[patientId] = [];
+  var extras = bhExtras && typeof bhExtras === 'object' ? bhExtras : {};
   var fechaNorm = normalizeFechaLabHistory(fecha) || String(fecha || '').trim();
   if (!fechaNorm && notes[patientId] && notes[patientId].fecha) {
     fechaNorm = normalizeFechaLabHistory(notes[patientId].fecha) || '';
@@ -6464,8 +6475,9 @@ function pushLabHistory(patientId, resLabs, fecha, hora, sourceText) {
     fecha: fechaNorm,
     hora: horaNorm,
     resLabs: resLabs,
+    bhExtras: extras,
     parsed: extractParsedValues(resLabs),
-    parsedBySection: buildParsedBySectionFromResLabs(resLabs)
+    parsedBySection: buildParsedBySectionFromResLabs(resLabs, extras)
   };
   var raw = String(sourceText || '').trim();
   if (raw) set.sourceText = raw;
@@ -6524,7 +6536,7 @@ function autoStoreProcessedLabResult(result) {
     showToast('Resultado ya registrado en historial', 'success');
     return;
   }
-  pushLabHistory(activeId, result.resLabs, fecha, hora, result.sourceText || '');
+  pushLabHistory(activeId, result.resLabs, fecha, hora, result.sourceText || '', result.bhExtras);
   saveState();
   renderLabHistoryPanel();
   refreshTendenciasOrCultivosPanel();
@@ -6533,7 +6545,7 @@ function autoStoreProcessedLabResult(result) {
 function insertLabsAsRecent(lines) {
   if (!notes[activeId]) notes[activeId] = {};
   pushLabHistory(activeId, activeLab.resLabs,
-    activeLab.patient && activeLab.patient.fecha ? activeLab.patient.fecha : '', '', activeLab.sourceText || '');
+    activeLab.patient && activeLab.patient.fecha ? activeLab.patient.fecha : '', '', activeLab.sourceText || '', activeLab.bhExtras);
   rebuildEstudiosFromLabHistory(activeId);
   saveState();
   refreshTendenciasOrCultivosPanel();
@@ -6548,7 +6560,7 @@ function insertLabsAsRecent(lines) {
 function insertLabsAsAnteriorThenRecent(newLines) {
   if (!notes[activeId]) notes[activeId] = {};
   pushLabHistory(activeId, activeLab.resLabs,
-    activeLab.patient && activeLab.patient.fecha ? activeLab.patient.fecha : '', '', activeLab.sourceText || '');
+    activeLab.patient && activeLab.patient.fecha ? activeLab.patient.fecha : '', '', activeLab.sourceText || '', activeLab.bhExtras);
   rebuildEstudiosFromLabHistory(activeId);
   saveState();
   refreshTendenciasOrCultivosPanel();
@@ -6583,7 +6595,7 @@ function showLabConflictModal(newLines, existingDate) {
     document.body.removeChild(backdrop);
     if (!notes[activeId]) notes[activeId] = {};
     pushLabHistory(activeId, activeLab.resLabs,
-      activeLab.patient && activeLab.patient.fecha ? activeLab.patient.fecha : '', '', activeLab.sourceText || '');
+      activeLab.patient && activeLab.patient.fecha ? activeLab.patient.fecha : '', '', activeLab.sourceText || '', activeLab.bhExtras);
     rebuildEstudiosFromLabHistory(activeId);
     saveState();
     refreshTendenciasOrCultivosPanel();
@@ -7523,7 +7535,7 @@ function extractParsedValues(resLabs) {
 }
 
 /** Mapa sectionKey → fieldKey → número (tendencias por estudio). */
-function buildParsedBySectionFromResLabs(resLabs) {
+function buildParsedBySectionFromResLabs(resLabs, bhExtras) {
   var secs = parsearSecciones(resLabs || []);
   var out = {};
   Object.keys(secs).forEach(function (sec) {
@@ -7539,6 +7551,13 @@ function buildParsedBySectionFromResLabs(resLabs) {
     });
     if (Object.keys(row).length) out[sec] = row;
   });
+  if (bhExtras && typeof bhExtras === 'object') {
+    if (!out.BH) out.BH = {};
+    Object.keys(bhExtras).forEach(function (k) {
+      var n = parseFloat(String(bhExtras[k]).replace(/\*/g, '').replace(',', '.'));
+      if (isFinite(n) && out.BH[k] == null) out.BH[k] = n;
+    });
+  }
   return out;
 }
 
@@ -7558,6 +7577,15 @@ function ensureParsedLabHistory(patientId) {
         changed = true;
       }
     }
+    if (!set.bhExtras && set.sourceText) {
+      try {
+        var reParse = procesarLabs(set.sourceText);
+        set.bhExtras = reParse && reParse.bhExtras ? reParse.bhExtras : {};
+      } catch (_e) {
+        set.bhExtras = {};
+      }
+      changed = true;
+    }
     var needsParse = !set.parsed || !Object.keys(set.parsed).length;
     if (needsParse) {
       if (!set.resLabs || !set.resLabs.length) {
@@ -7569,7 +7597,7 @@ function ensureParsedLabHistory(patientId) {
       }
     }
     if (set.resLabs && set.resLabs.length) {
-      var pbNext = buildParsedBySectionFromResLabs(set.resLabs);
+      var pbNext = buildParsedBySectionFromResLabs(set.resLabs, set.bhExtras);
       var pbStr = JSON.stringify(pbNext);
       if (JSON.stringify(set.parsedBySection || null) !== pbStr) {
         set.parsedBySection = pbNext;

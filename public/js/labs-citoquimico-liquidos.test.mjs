@@ -85,8 +85,8 @@ test('parsearCitoquimicoLiquidos — líquido peritoneal (química + citología)
 
 test('procesarLabs no mezcla glucosa del líquido con QS', () => {
   const { resLabs } = procesarLabs(MUESTRA_PERITONEAL);
-  const qs = resLabs.find((l) => typeof l === 'string' && l.startsWith('QS\t'));
-  const liq = resLabs.find((l) => typeof l === 'string' && l.startsWith('Liq:\t'));
+  const qs = resLabs.find((l) => l.startsWith('QS\t'));
+  const liq = resLabs.find((l) => l.startsWith('Liq:\t'));
   assert.ok(liq, 'debe incluir bloque Liq');
   if (qs) assert.ok(!qs.includes('949'), 'QS no debe tomar Glu 949 del ascitis');
 });

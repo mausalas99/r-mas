@@ -278,9 +278,9 @@ DENSIDAD
 1.014
 `;
   const res = procesarLabs(raw);
-  assert.ok(!res.resLabs.some((l) => typeof l === 'string' && l.startsWith('ESC\t')), 'no debe haber línea ESC');
-  assert.ok(!res.resLabs.some((l) => typeof l === 'string' && l.startsWith('QS\t')), 'no debe haber línea QS');
-  const ego = res.resLabs.find((l) => typeof l === 'string' && l.startsWith('EGO:'));
+  assert.ok(!res.resLabs.some((l) => l.startsWith('ESC\t')), 'no debe haber línea ESC');
+  assert.ok(!res.resLabs.some((l) => l.startsWith('QS\t')), 'no debe haber línea QS');
+  const ego = res.resLabs.find((l) => l.startsWith('EGO:'));
   assert.ok(ego, 'debe conservar EGO');
   assert.match(ego, /\bNaU 40\b/);
   assert.match(ego, /\bKU 22\b/);
