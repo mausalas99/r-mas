@@ -97,56 +97,126 @@ export function fmt(val) {
 }
 
 export function parseBH_(tNorm) {
-  var hbData  = extraerConRango(['HGB','HEMOGLOBINA TOTAL','HEMOGLOBINA'], tNorm);
-  var htoData = extraerConRango(['HCT ','HEMATOCRITO'], tNorm);
-  var vcmData = extraerConRango(['MCV ','VCM '], tNorm);
-  var hcmData = extraerConRango(['MCH ','HCM '], tNorm);
-  var leuData = extraerConRango(['WBC '], tNorm);
-  var neuData = extraerConRango(['NEU '], tNorm);
-  var eosData = extraerConRango(['EOS '], tNorm);
-  var pltData = extraerConRango(['PLT '], tNorm);
-  var retData = extraerConRango(['RETICULOCITOS'], tNorm);
-  var tpData  = extraerConRango(['TIEMPO DE PROTROMBINA'], tNorm);
-  var ttpData = extraerConRango(['TIEMPO DE TROMBOPLASTINA'], tNorm);
-  var inrData = extraerConRango(['INR ', 'INR'], tNorm);
+  // Helper: extraer un número simple para una etiqueta tipo "NEU%" donde el
+  // extractor con rango no funciona (no hay min/max). Toma el primer número
+  // que aparece después de la etiqueta literal.
+  function extraerSimple(labels, texto) {
+    if (!texto) return '';
+    for (var li = 0; li < labels.length; li++) {
+      var lbl = labels[li];
+      var idx = -1;
+      var up = String(texto).toUpperCase();
+      var lu = lbl.toUpperCase();
+      var from = 0;
+      while (true) {
+        var p = up.indexOf(lu, from);
+        if (p === -1) break;
+        var after = up.charAt(p + lu.length);
+        var before = up.charAt(p - 1) || ' ';
+        var isWordBoundaryBefore = !/[A-Z0-9_]/.test(before);
+        var isExactBoundary = lu.charAt(lu.length - 1) === '%' || !/[A-Z0-9]/.test(after);
+        if (isWordBoundaryBefore && isExactBoundary) { idx = p + lu.length; break; }
+        from = p + lu.length;
+      }
+      if (idx === -1) continue;
+      var sub = texto.substring(idx, idx + 80);
+      var m = sub.match(/(-?\d+[.,]?\d*)/);
+      if (m) return m[1].replace(',', '.');
+    }
+    return '';
+  }
 
-  var Hb  = fmt(marcarSegunRango(hbData.valor,  hbData.min,  hbData.max));
-  var Hto = fmt(marcarSegunRango(htoData.valor, htoData.min, htoData.max));
-  var VCM = fmt(marcarSegunRango(vcmData.valor, vcmData.min, vcmData.max));
-  var HCM = fmt(marcarSegunRango(hcmData.valor, hcmData.min, hcmData.max));
-  var Leu = fmt(marcarSegunRango(leuData.valor, leuData.min, leuData.max));
-  var Neu = fmt(marcarSegunRango(neuData.valor, neuData.min, neuData.max));
-  var Eos = fmt(marcarSegunRango(eosData.valor, eosData.min, eosData.max));
-  var Plt = fmt(marcarSegunRango(pltData.valor, pltData.min, pltData.max));
-  var Ret = fmt(marcarSegunRango(retData.valor, retData.min, retData.max));
-  var TP  = fmt(marcarSegunRango(tpData.valor,  tpData.min,  tpData.max));
-  var TTP = fmt(marcarSegunRango(ttpData.valor, ttpData.min, ttpData.max));
-  var INR = fmt(marcarSegunRango(inrData.valor, inrData.min, inrData.max));
+  // Conserva el comportamiento previo (ranged extraction) para los campos clásicos:
+  var hbData   = extraerConRango(['HGB','HEMOGLOBINA TOTAL','HEMOGLOBINA'], tNorm);
+  var htoData  = extraerConRango(['HCT ','HEMATOCRITO'], tNorm);
+  var vcmData  = extraerConRango(['MCV ','VCM '], tNorm);
+  var hcmData  = extraerConRango(['MCH ','HCM '], tNorm);
+  var leuData  = extraerConRango(['WBC '], tNorm);
+  var neuData  = extraerConRango(['NEU '], tNorm);
+  var eosData  = extraerConRango(['EOS '], tNorm);
+  var pltData  = extraerConRango(['PLT '], tNorm);
+  var retData  = extraerConRango(['RETICULOCITOS'], tNorm);
+  var tpData   = extraerConRango(['TIEMPO DE PROTROMBINA'], tNorm);
+  var ttpData  = extraerConRango(['TIEMPO DE TROMBOPLASTINA'], tNorm);
+  var inrData  = extraerConRango(['INR ', 'INR'], tNorm);
+  // Nuevos (rojos / plaq / VPM):
+  var rbcData  = extraerConRango(['RBC ', 'ERITROCITOS', 'HEMATIES'], tNorm);
+  var chcmData = extraerConRango(['MCHC', 'CHCM'], tNorm);
+  var rdwData  = extraerConRango(['RDW '], tNorm);
+  var mpvData  = extraerConRango(['MPV ', 'VPM '], tNorm);
 
-  var hasCbc = [Hb, Hto, VCM, HCM, Leu, Neu, Eos, Plt, Ret].some(function (v) {
+  // Marcado con rangos (visible)
+  var Hb   = fmt(marcarSegunRango(hbData.valor,   hbData.min,   hbData.max));
+  var Hto  = fmt(marcarSegunRango(htoData.valor,  htoData.min,  htoData.max));
+  var VCM  = fmt(marcarSegunRango(vcmData.valor,  vcmData.min,  vcmData.max));
+  var HCM  = fmt(marcarSegunRango(hcmData.valor,  hcmData.min,  hcmData.max));
+  var CHCM = fmt(marcarSegunRango(chcmData.valor, chcmData.min, chcmData.max));
+  var RDW  = fmt(marcarSegunRango(rdwData.valor,  rdwData.min,  rdwData.max));
+  var Leu  = fmt(marcarSegunRango(leuData.valor,  leuData.min,  leuData.max));
+  var RBC  = fmt(marcarSegunRango(rbcData.valor,  rbcData.min,  rbcData.max));
+  var Plt  = fmt(marcarSegunRango(pltData.valor,  pltData.min,  pltData.max));
+  var MPV  = fmt(marcarSegunRango(mpvData.valor,  mpvData.min,  mpvData.max));
+  var Ret  = fmt(marcarSegunRango(retData.valor,  retData.min,  retData.max));
+  var TP   = fmt(marcarSegunRango(tpData.valor,   tpData.min,   tpData.max));
+  var TTP  = fmt(marcarSegunRango(ttpData.valor,  ttpData.min,  ttpData.max));
+  var INR  = fmt(marcarSegunRango(inrData.valor,  inrData.min,  inrData.max));
+
+  // EXTRAS: valores crudos (string), sin marcadores de rango.
+  var extras = {};
+  function pushExtra(key, value) {
+    if (value && value !== '---' && value !== '') extras[key] = String(value);
+  }
+  pushExtra('Neu',  neuData.valor);
+  pushExtra('Eos',  eosData.valor);
+  // Linfocitos / Monocitos / Basófilos absolutos (nuevos):
+  var linData  = extraerConRango(['LYM ', 'LINFOCITOS'], tNorm);
+  var monoData = extraerConRango(['MONO '], tNorm);
+  var basoData = extraerConRango(['BASO '], tNorm);
+  pushExtra('Lin',  linData.valor);
+  pushExtra('Mono', monoData.valor);
+  pushExtra('Baso', basoData.valor);
+  // Porcentajes (parseados pero ocultos):
+  pushExtra('NeuPct',  extraerSimple(['NEU%',  'NEUTROFILOS%'],  tNorm));
+  pushExtra('LinPct',  extraerSimple(['LYM%',  'LINFOCITOS%'],   tNorm));
+  pushExtra('MonoPct', extraerSimple(['MONO%', 'MONOCITOS%'],    tNorm));
+  pushExtra('EosPct',  extraerSimple(['EOS%',  'EOSINOFILOS%'],  tNorm));
+  pushExtra('BasoPct', extraerSimple(['BASO%', 'BASOFILOS%'],    tNorm));
+  // Frotis manual:
+  pushExtra('Bandas',    extraerSimple(['BANDAS', 'CAYADOS'], tNorm));
+  pushExtra('Mielo',     extraerSimple(['MIELOCITOS'], tNorm));
+  pushExtra('Metamielo', extraerSimple(['METAMIELOCITOS'], tNorm));
+  pushExtra('Promielo',  extraerSimple(['PROMIELOCITOS'], tNorm));
+  pushExtra('Blastos',   extraerSimple(['BLASTOS'], tNorm));
+  pushExtra('Atipicos',  extraerSimple(['LINFOCITOS ATIPICOS', 'VARIANTES', 'ATIPICOS'], tNorm));
+
+  // Construir texto visible (limitado a BH_TEXT_FIELDS)
+  var hasVisible = [RBC, Hb, Hto, VCM, HCM, CHCM, RDW, Leu, Plt, MPV, Ret].some(function (v) {
     return v !== '---';
   });
-  var hasCoag = [TP, TTP, INR].some(function (v) {
-    return v !== '---';
-  });
-  if (!hasCbc && !hasCoag) return '';
+  var hasCoag = [TP, TTP, INR].some(function (v) { return v !== '---'; });
+  if (!hasVisible && !hasCoag && Object.keys(extras).length === 0) {
+    return { visible: '', extras: {} };
+  }
 
   var p = ['BH'];
-  if (Hb !== '---') p.push('Hb', Hb);
-  if (Hto !== '---') p.push('Hto', Hto);
-  if (VCM !== '---') p.push('VCM', VCM);
-  if (HCM !== '---') p.push('HCM', HCM);
-  if (Leu !== '---') p.push('Leu', Leu);
-  if (Neu !== '---') p.push('Neu', Neu);
-  if (Eos !== '---') p.push('Eos', Eos);
-  if (Plt !== '---') p.push('Plt', Plt);
-  if (Ret !== '---') p.push('Ret', Ret);
+  if (RBC  !== '---') p.push('RBC', RBC);
+  if (Hb   !== '---') p.push('Hb', Hb);
+  if (Hto  !== '---') p.push('Hto', Hto);
+  if (VCM  !== '---') p.push('VCM', VCM);
+  if (HCM  !== '---') p.push('HCM', HCM);
+  if (CHCM !== '---') p.push('CHCM', CHCM);
+  if (RDW  !== '---') p.push('RDW', RDW);
+  if (Leu  !== '---') p.push('Leu', Leu);
+  if (Plt  !== '---') p.push('Plt', Plt);
+  if (MPV  !== '---') p.push('MPV', MPV);
+  if (Ret  !== '---') p.push('Ret', Ret);
   var coag = [];
   if (TP  !== '---') coag.push('TP',  TP);
   if (TTP !== '---') coag.push('TTP', TTP);
   if (INR !== '---') coag.push('INR', INR);
   if (coag.length) { p.push('-'); p = p.concat(coag); }
-  return p[0]+'\t'+p.slice(1).join(' ');
+  var visible = (p.length > 1) ? (p[0] + '\t' + p.slice(1).join(' ')) : '';
+  return { visible: visible, extras: extras };
 }
 
 // Procalcitonina viene en bloque "ESTUDIOS ESPECIALES" con un rango de
@@ -392,22 +462,29 @@ function normalizeLabLine_(line) {
   return normalizeGasometryInterpretationLine_(line).replace(/\s+/g, ' ').trim();
 }
 
+/** Texto de sección para filtrar / deduplicar (p. ej. fila BH como `{ visible, extras }`). */
+function labRowText_(row) {
+  if (row && typeof row === 'object' && typeof row.visible === 'string') return row.visible;
+  return String(row == null ? '' : row);
+}
+
 function dedupeSingletonSections_(rows) {
   var singleton = {
     BH: 1, QS: 1, ESC: 1, PFHS: 1, GASES: 1, PIE: 1, 'LCR:': 1, 'LIQ:': 1,
     HECES: 1, FROTIS: 1, EGO: 1, PROT12H: 1, PROT24H: 1, 'INTERPRETACIÓN GASOMETRÍA:': 1,
   };
-  var list = (rows || []).filter(function (r) { return normalizeLabLine_(r) !== ''; });
+  var list = (rows || []).filter(function (r) { return normalizeLabLine_(labRowText_(r)) !== ''; });
   var best = Object.create(null);
   var keep = [];
   for (var i = 0; i < list.length; i++) {
-    var row = String(list[i]);
-    var key = labSectionKey_(row);
+    var raw = list[i];
+    var rowText = labRowText_(raw);
+    var key = labSectionKey_(rowText);
     if (!singleton[key]) {
-      keep.push(row);
+      keep.push(raw);
       continue;
     }
-    var cand = { row: row, idx: i, score: lineRichnessScore_(row) };
+    var cand = { row: raw, idx: i, score: lineRichnessScore_(rowText) };
     var prev = best[key];
     if (!prev || cand.score > prev.score || (cand.score === prev.score && cand.idx > prev.idx)) {
       best[key] = cand;
@@ -417,9 +494,10 @@ function dedupeSingletonSections_(rows) {
   Object.keys(best).forEach(function (k) { chosen[best[k].idx] = best[k].row; });
   var out = [];
   for (var j = 0; j < list.length; j++) {
-    var r = String(list[j]);
-    var k = labSectionKey_(r);
-    if (!singleton[k]) out.push(r);
+    var raw = list[j];
+    var rText = labRowText_(raw);
+    var k = labSectionKey_(rText);
+    if (!singleton[k]) out.push(raw);
     else if (chosen[j]) out.push(chosen[j]);
   }
   return out;

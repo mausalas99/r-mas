@@ -64,6 +64,6 @@ test('parseFisicoquimicoHeces_ detecta bloque y resultados clave', () => {
 
 test('procesarLabs incluye bloque HECES cuando viene parasitologia', () => {
   const { resLabs } = procesarLabs(MUESTRA_HECES);
-  const heces = resLabs.find((l) => l.startsWith('HECES\t'));
+  const heces = resLabs.find((l) => typeof l === 'string' && l.startsWith('HECES\t'));
   assert.ok(heces, 'debe incluir bloque HECES');
 });

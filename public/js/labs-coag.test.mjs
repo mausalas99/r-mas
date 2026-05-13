@@ -36,7 +36,9 @@ OBSERVACIONES
 
 test('procesarLabs incluye BH con TP/TTP/INR cuando no hay biometría', () => {
   const { resLabs } = procesarLabs(MUESTRA_SOLO_COAG);
-  const bh = resLabs.find((l) => l.startsWith('BH\t'));
+  const bhEntry = resLabs.find((l) => typeof l === 'string' && l.startsWith('BH\t')) ||
+    resLabs.find((l) => l && typeof l === 'object' && l.visible && l.visible.startsWith('BH\t'));
+  const bh = typeof bhEntry === 'string' ? bhEntry : bhEntry && bhEntry.visible;
   assert.ok(bh, 'debe producir línea BH');
   assert.match(bh, /TP\s+13\.7/);
   assert.match(bh, /TTP\s+33\.3/);
