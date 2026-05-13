@@ -186,7 +186,7 @@ xml = replace_t(xml, ORIG_CAMA,     f' {cama}')
 
 # ── Write output ──────────────────────────────────────────────────────────────
 
-files['word/document.xml'] = xml.encode('utf-8')
+files['word/document.xml'] = xml.encode('utf-8', errors='replace')
 
 out = io.BytesIO()
 with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as zout:

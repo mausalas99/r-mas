@@ -393,10 +393,10 @@ if num_xml and synth_ids:
     # Insertamos antes del cierre </w:numbering>.
     if '</w:numbering>' in num_xml:
         num_xml = num_xml.replace('</w:numbering>', inject + '</w:numbering>', 1)
-        files['word/numbering.xml'] = num_xml.encode('utf-8')
+        files['word/numbering.xml'] = num_xml.encode('utf-8', errors='replace')
 
 # ── Save ──────────────────────────────────────────────────────────────
-files['word/document.xml'] = xml.encode('utf-8')
+files['word/document.xml'] = xml.encode('utf-8', errors='replace')
 out = io.BytesIO()
 with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as zout:
     for name in names:
