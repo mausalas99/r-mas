@@ -7078,7 +7078,7 @@ function renderNoteForm() {
 
 function _todoCompareForSort(a, b) {
   if (!!a.completed !== !!b.completed) return a.completed ? 1 : -1;
-  var prioOrder = { alta: 0, normal: 1, baja: 2 };
+  var prioOrder = { alta: 0, media: 1, baja: 2 };
   var pa = prioOrder[a.priority] != null ? prioOrder[a.priority] : 1;
   var pb = prioOrder[b.priority] != null ? prioOrder[b.priority] : 1;
   if (pa !== pb) return pa - pb;
@@ -7108,14 +7108,14 @@ function renderTodoForm() {
   var sel = document.createElement('select');
   sel.id = 'todo-priority';
   [
-    { v: 'alta',   t: 'Alta'   },
-    { v: 'normal', t: 'Normal' },
-    { v: 'baja',   t: 'Baja'   }
+    { v: 'alta',  t: 'Alta'  },
+    { v: 'media', t: 'Media' },
+    { v: 'baja',  t: 'Baja'  }
   ].forEach(function (o) {
     var opt = document.createElement('option');
     opt.value = o.v;
     opt.textContent = o.t;
-    if (o.v === 'normal') opt.selected = true;
+    if (o.v === 'media') opt.selected = true;
     sel.appendChild(opt);
   });
   var addBtn = document.createElement('button');
@@ -7141,35 +7141,55 @@ function renderTodoForm() {
 
   var list = document.createElement('div');
   todos.forEach(function (t) {
+    var prio = t.priority === 'alta' || t.priority === 'baja' ? t.priority : 'media';
     var row = document.createElement('div');
-    row.className = 'todo-row' + (t.completed ? ' completed' : '');
+    row.className = 'todo-row prio-' + prio + (t.completed ? ' completed' : '');
 
     var chip = document.createElement('span');
-    chip.className = 'todo-prio ' + (t.priority || 'normal');
-    chip.title = 'Prioridad: ' + (t.priority || 'normal');
+    chip.className = 'todo-prio ' + prio;
+    chip.title = 'Prioridad: ' + (prio === 'alta' ? 'Alta' : prio === 'baja' ? 'Baja' : 'Media');
     row.appendChild(chip);
 
     var chk = document.createElement('input');
     chk.type = 'checkbox';
+    chk.className = 'todo-check';
+    chk.setAttribute('aria-label', 'Completado');
     chk.checked = !!t.completed;
     chk.addEventListener('change', function () { toggleTodo(t.id); });
     row.appendChild(chk);
 
-    var txt = document.createElement('span');
-    txt.className = 'todo-text';
-    txt.textContent = t.text;
-    row.appendChild(txt);
+    var txtInput = document.createElement('input');
+    txtInput.type = 'text';
+    txtInput.className = 'todo-text-input';
+    txtInput.value = t.text;
+    txtInput.placeholder = 'Descripción del pendiente';
+    txtInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        txtInput.blur();
+      }
+    });
+    txtInput.addEventListener('blur', function () {
+      var v = String(txtInput.value || '').trim();
+      if (!v) {
+        txtInput.value = t.text;
+        return;
+      }
+      if (v !== String(t.text || '')) updateTodoText(t.id, v);
+    });
+    row.appendChild(txtInput);
 
     var prioSel = document.createElement('select');
+    prioSel.className = 'todo-row-select';
     [
-      { v: 'alta',   t: 'A' },
-      { v: 'normal', t: 'N' },
-      { v: 'baja',   t: 'B' }
+      { v: 'alta',  t: 'Alta'  },
+      { v: 'media', t: 'Media' },
+      { v: 'baja',  t: 'Baja'  }
     ].forEach(function (o) {
       var opt = document.createElement('option');
       opt.value = o.v;
       opt.textContent = o.t;
-      if (o.v === t.priority) opt.selected = true;
+      if (o.v === prio) opt.selected = true;
       prioSel.appendChild(opt);
     });
     prioSel.title = 'Cambiar prioridad';
@@ -7196,7 +7216,7 @@ function addTodo() {
   if (!input) return;
   var text = String(input.value || '').trim();
   if (!text) return;
-  var priority = sel && (sel.value === 'alta' || sel.value === 'baja') ? sel.value : 'normal';
+  var priority = sel && (sel.value === 'alta' || sel.value === 'baja' || sel.value === 'media') ? sel.value : 'media';
   var todos = storage.getTodos(activeId);
   todos.push({
     id: String(Date.now()) + '-' + Math.random().toString(36).slice(2, 6),
@@ -7229,11 +7249,23 @@ function deleteTodo(id) {
 
 function setTodoPriority(id, priority) {
   if (!activeId) return;
-  var valid = (priority === 'alta' || priority === 'baja' || priority === 'normal') ? priority : 'normal';
+  var valid = priority === 'alta' || priority === 'baja' || priority === 'media' ? priority : 'media';
   var todos = storage.getTodos(activeId);
   var found = todos.find(function (t) { return t.id === id; });
   if (!found) return;
   found.priority = valid;
+  storage.saveTodos(activeId, todos);
+  renderTodoForm();
+}
+
+function updateTodoText(id, text) {
+  if (!activeId) return;
+  var trimmed = String(text || '').trim();
+  if (!trimmed) return;
+  var todos = storage.getTodos(activeId);
+  var found = todos.find(function (t) { return t.id === id; });
+  if (!found || String(found.text || '') === trimmed) return;
+  found.text = trimmed;
   storage.saveTodos(activeId, todos);
   renderTodoForm();
 }
