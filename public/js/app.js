@@ -2553,7 +2553,6 @@ function syncTeamSyncHeaderButton() {
   if (!btn) return;
   var desktop = !!(window.electronAPI && typeof window.electronAPI.getAppVersion === 'function');
   btn.style.display = desktop ? 'flex' : 'none';
-  btn.classList.toggle('btn-header-team-sync-beta', desktop && getUpdateChannel() === 'beta');
 }
 
 function checkForAppUpdates() {
@@ -2874,7 +2873,7 @@ function renderTourStep() {
       }
       if (window.electronAPI && typeof window.electronAPI.getAppVersion === 'function') {
         mapBody +=
-          '<p style="margin:10px 0 0 0;padding:8px 10px;border-radius:8px;background:var(--lab-chip-bg);font-size:13px;line-height:1.45;border:1px solid var(--border);">En la <strong>app de escritorio</strong>, el botón <strong>⇄</strong> junto a <strong>Ajustes</strong> abre <strong>Respaldos, sync y recuperación</strong> (exportar / importar <strong>paquete sync</strong> entre equipos). Si eliges canal <strong>beta</strong> en <strong>Ajustes → Aplicación y actualizaciones</strong>, el mismo botón muestra un <strong>borde ámbar</strong> y recibirás pre-releases.</p>';
+          '<p style="margin:10px 0 0 0;padding:8px 10px;border-radius:8px;background:var(--lab-chip-bg);font-size:13px;line-height:1.45;border:1px solid var(--border);">En la <strong>app de escritorio</strong>, el botón <strong>⇄</strong> junto a <strong>Ajustes</strong> abre <strong>Respaldos, sync y recuperación</strong> (exportar / importar <strong>paquete sync</strong> entre equipos). Si eliges canal <strong>beta</strong> en <strong>Ajustes → Aplicación y actualizaciones</strong>, recibirás pre-releases.</p>';
       }
       bodyEl.innerHTML = mapBody;
       nextBtn.textContent = 'Siguiente';
