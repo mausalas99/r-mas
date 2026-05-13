@@ -172,6 +172,24 @@ var TEND_SERIES_CATALOG = [
   { sectionKey: 'BH', fieldKey: 'TP', cardTitle: 'TP' },
   { sectionKey: 'BH', fieldKey: 'TTP', cardTitle: 'TTP' },
   { sectionKey: 'BH', fieldKey: 'INR', cardTitle: 'INR' },
+  { sectionKey: 'BH', fieldKey: 'RBC', cardTitle: 'Eritrocitos' },
+  { sectionKey: 'BH', fieldKey: 'CHCM', cardTitle: 'CHCM' },
+  { sectionKey: 'BH', fieldKey: 'RDW', cardTitle: 'RDW' },
+  { sectionKey: 'BH', fieldKey: 'Lin', cardTitle: 'Linfocitos' },
+  { sectionKey: 'BH', fieldKey: 'Mono', cardTitle: 'Monocitos' },
+  { sectionKey: 'BH', fieldKey: 'Baso', cardTitle: 'Basófilos' },
+  { sectionKey: 'BH', fieldKey: 'MPV', cardTitle: 'VPM' },
+  { sectionKey: 'BH', fieldKey: 'Bandas', cardTitle: 'Bandas' },
+  { sectionKey: 'BH', fieldKey: 'Mielo', cardTitle: 'Mielocitos' },
+  { sectionKey: 'BH', fieldKey: 'Metamielo', cardTitle: 'Metamielocitos' },
+  { sectionKey: 'BH', fieldKey: 'Promielo', cardTitle: 'Promielocitos' },
+  { sectionKey: 'BH', fieldKey: 'Blastos', cardTitle: 'Blastos' },
+  { sectionKey: 'BH', fieldKey: 'Atipicos', cardTitle: 'Linfocitos atípicos' },
+  { sectionKey: 'BH', fieldKey: 'NeuPct', cardTitle: 'Neutrófilos %', hiddenByDefault: true },
+  { sectionKey: 'BH', fieldKey: 'LinPct', cardTitle: 'Linfocitos %', hiddenByDefault: true },
+  { sectionKey: 'BH', fieldKey: 'MonoPct', cardTitle: 'Monocitos %', hiddenByDefault: true },
+  { sectionKey: 'BH', fieldKey: 'EosPct', cardTitle: 'Eosinófilos %', hiddenByDefault: true },
+  { sectionKey: 'BH', fieldKey: 'BasoPct', cardTitle: 'Basófilos %', hiddenByDefault: true },
   { sectionKey: 'QS', fieldKey: 'Glu', cardTitle: 'Glucosa' },
   { sectionKey: 'QS', fieldKey: 'Cr', cardTitle: 'Creatinina' },
   { sectionKey: 'QS', fieldKey: 'BUN', cardTitle: 'BUN' },
@@ -726,6 +744,37 @@ function tendSeriesSetUserHidden(sectionKey, fieldKey, hidden) {
   if (hidden && i === -1) a.push(k);
   if (!hidden && i !== -1) a.splice(i, 1);
   tendHiddenSeriesWrite(a);
+}
+
+function seedTendHiddenDefaults() {
+  var SEED_KEY = 'rpc-tend-hidden-seeded-v1';
+  try {
+    if (localStorage.getItem(SEED_KEY) === '1') return;
+  } catch (_e) {
+    return;
+  }
+  var current = tendHiddenSeriesRead().slice();
+  var seen = {};
+  current.forEach(function (k) {
+    seen[k] = true;
+  });
+  var changed = false;
+  TEND_SERIES_CATALOG.forEach(function (sp) {
+    if (sp && sp.hiddenByDefault) {
+      var key = tendCatalogSeriesKey(sp.sectionKey, sp.fieldKey);
+      if (!seen[key]) {
+        current.push(key);
+        seen[key] = true;
+        changed = true;
+      }
+    }
+  });
+  try {
+    if (changed) tendHiddenSeriesWrite(current);
+    localStorage.setItem(SEED_KEY, '1');
+  } catch (_e) {
+    /* ignore */
+  }
 }
 
 function tendFindSeriesSpec(sectionKey, fieldKey) {
@@ -1472,6 +1521,7 @@ if (patients.length > 0) selectPatient(patients[0].id);
 else renderLabHistoryPanel();
 applyFontZoom();
 loadSettings();
+seedTendHiddenDefaults();
 syncThemeSettingsButtons();
 renderInnerTabs();
 if (__v3MigratedThisBoot) {
