@@ -1,11 +1,35 @@
 const express = require('express');
+const http    = require('node:http');
 const path    = require('path');
 const fs      = require('fs');
 const os      = require('os');
 const { spawn } = require('child_process');
+const { createHostStore } = require('./lan-squad/host-store.js');
+const { createLanRouter } = require('./lan-squad/host-router.js');
+const { attachWsHub } = require('./lan-squad/ws-hub.js');
 
 const appExpress = express();
 appExpress.use(express.json({ limit: '2mb' }));
+appExpress.use((req, res, next) => {
+  const rawOrigin = req.headers.origin;
+  if (rawOrigin) {
+    try {
+      const originUrl = new URL(rawOrigin);
+      const normalized = `${originUrl.protocol}//${originUrl.hostname}:${originUrl.port || (originUrl.protocol === 'https:' ? '443' : '80')}`;
+      if (normalized === 'http://localhost:3738' || normalized === 'http://127.0.0.1:3738') {
+        const allowOrigin = `${originUrl.protocol}//${originUrl.host}`;
+        res.setHeader('Access-Control-Allow-Origin', allowOrigin);
+        res.setHeader('Vary', 'Origin');
+        res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,POST,PATCH,DELETE,OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Lan-Team-Code');
+      }
+    } catch (_e) {
+      // Ignore malformed Origin headers and continue normal handling.
+    }
+  }
+  if (req.method === 'OPTIONS') return res.status(204).end();
+  next();
+});
 appExpress.get('/health', (_req, res) => {
   try {
     res.json({ ok: true, app: 'r-plus' });
@@ -167,7 +191,25 @@ appExpress.post('/generate-listado', async (req, res) => {
 });
 
 const PORT = 3738;
-const server = appExpress.listen(PORT, () => {
+const userData = process.env.R_PLUS_USER_DATA || require('node:os').tmpdir();
+const lanStatePath = path.join(userData, 'lan-squad-host-state.json');
+let LAN_TEAM_CODE = process.env.R_PLUS_LAN_TEAM_CODE || 'change-me-in-profile';
+try {
+  const teamCodePath = path.join(userData, 'lan-team-code.txt');
+  if (fs.existsSync(teamCodePath)) {
+    const firstLine = fs.readFileSync(teamCodePath, 'utf8').split(/\r?\n/, 1)[0].trim();
+    if (firstLine) LAN_TEAM_CODE = firstLine;
+  }
+} catch (_e) {
+  // Keep LAN team code from env/default if local file read fails.
+}
+// Existing host state is bound to one team code and throws on mismatches.
+const lanStore = createHostStore({ filePath: lanStatePath, teamCodePlain: LAN_TEAM_CODE });
+const httpServer = http.createServer(appExpress);
+const { broadcast } = attachWsHub(httpServer, { getState: () => lanStore.getState() });
+appExpress.use('/api/lan/v1', createLanRouter({ store: lanStore, broadcast }));
+
+const server = httpServer.listen(PORT, () => {
   console.log(`R+ → http://localhost:${PORT}`);
 });
 
