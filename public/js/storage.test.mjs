@@ -74,3 +74,26 @@ describe('storage todos', () => {
     });
   });
 });
+
+describe('lan config', () => {
+  beforeEach(() => {
+    for (const k of Object.keys(store)) delete store[k];
+  });
+
+  it('persists and reads LAN config', () => {
+    const cfg = { hostUrl: 'http://192.168.1.10:3738', teamCode: 'testcode' };
+    storage.saveLanConfig(cfg);
+    assert.deepStrictEqual(storage.getLanConfig(), cfg);
+  });
+
+  it('persists and reads host patient map', () => {
+    storage.saveHostPatientMap({ a: 'b' });
+    assert.deepStrictEqual(storage.getHostPatientMap(), { a: 'b' });
+  });
+
+  it('clears LAN config when saveLanConfig(null)', () => {
+    storage.saveLanConfig({ hostUrl: 'http://x', teamCode: 'y' });
+    storage.saveLanConfig(null);
+    assert.strictEqual(storage.getLanConfig(), null);
+  });
+});

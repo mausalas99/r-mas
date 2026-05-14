@@ -270,6 +270,26 @@ export const storage = {
     localStorage.removeItem('rpc-guidedTourDone');
   },
 
+  getLanConfig() {
+    return safeParse(localStorage.getItem('rpc-lan-config'), null) || null;
+  },
+
+  saveLanConfig(cfg) {
+    if (!cfg) {
+      localStorage.removeItem('rpc-lan-config');
+      return;
+    }
+    localStorage.setItem('rpc-lan-config', JSON.stringify(cfg));
+  },
+
+  getHostPatientMap() {
+    return safeParseObject(localStorage.getItem('rpc-lan-host-patient-map'));
+  },
+
+  saveHostPatientMap(map) {
+    localStorage.setItem('rpc-lan-host-patient-map', JSON.stringify(map || {}));
+  },
+
   /**
    * Batch save all data to localStorage
    * @param {Array} patients - Array of patient objects
