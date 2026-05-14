@@ -1789,8 +1789,12 @@ async function saveLanHostTeamCodeFromUi() {
 }
 
 async function saveLanSettingsFromUi() {
-  var hostInput = document.getElementById('lan-input-host-url');
-  var teamInput = document.getElementById('lan-input-team-code');
+  var hostInput =
+    document.getElementById('lan-input-host-url') ||
+    document.getElementById('cal-lan-input-host-url');
+  var teamInput =
+    document.getElementById('lan-input-team-code') ||
+    document.getElementById('cal-lan-input-team-code');
   var hostUrl = String(hostInput && hostInput.value ? hostInput.value : '').trim();
   var teamCode = String(teamInput && teamInput.value ? teamInput.value : '').trim();
   if (!hostUrl || !teamCode) {
@@ -1880,9 +1884,49 @@ async function renderCalendarioPanel() {
   root.innerHTML = '';
 
   if (!lanClient.baseUrl()) {
-    var msg = document.createElement('p');
-    msg.textContent = 'Configura LAN en pestaña LiveSync';
-    root.appendChild(msg);
+    var cfg = typeof storage.getLanConfig === 'function' ? (storage.getLanConfig() || {}) : {};
+    var intro = document.createElement('p');
+    intro.style.marginBottom = '10px';
+    intro.style.lineHeight = '1.45';
+    intro.textContent =
+      'Calendario de procedimientos del equipo (datos en el servidor LAN). ' +
+      'Indica la URL del host y el código de equipo; es la misma conexión que usa la sincronización en red, sin depender de otra pestaña.';
+    root.appendChild(intro);
+
+    var wrapCfg = document.createElement('div');
+    wrapCfg.className = 'panel-content';
+    wrapCfg.style.display = 'grid';
+    wrapCfg.style.gap = '8px';
+    wrapCfg.style.maxWidth = '520px';
+
+    var labelHost = document.createElement('label');
+    labelHost.textContent = 'URL del host LAN';
+    labelHost.setAttribute('for', 'cal-lan-input-host-url');
+    var inputHost = document.createElement('input');
+    inputHost.id = 'cal-lan-input-host-url';
+    inputHost.type = 'text';
+    inputHost.placeholder = 'http://192.168.0.10:3738';
+    inputHost.value = String(cfg.hostUrl || '');
+
+    var labelCode = document.createElement('label');
+    labelCode.textContent = 'Código de equipo';
+    labelCode.setAttribute('for', 'cal-lan-input-team-code');
+    var inputCode = document.createElement('input');
+    inputCode.id = 'cal-lan-input-team-code';
+    inputCode.type = 'text';
+    inputCode.value = String(cfg.teamCode || '');
+
+    var btnSave = document.createElement('button');
+    btnSave.className = 'btn';
+    btnSave.textContent = 'Conectar y cargar calendario';
+    btnSave.onclick = saveLanSettingsFromUi;
+
+    wrapCfg.appendChild(labelHost);
+    wrapCfg.appendChild(inputHost);
+    wrapCfg.appendChild(labelCode);
+    wrapCfg.appendChild(inputCode);
+    wrapCfg.appendChild(btnSave);
+    root.appendChild(wrapCfg);
     return;
   }
 
@@ -1932,6 +1976,21 @@ async function renderCalendarioPanel() {
     );
     patientNameById[id] = name;
   });
+
+  var calHead = document.createElement('div');
+  calHead.style.marginBottom = '12px';
+  var hCal = document.createElement('h3');
+  hCal.style.margin = '0 0 4px 0';
+  hCal.style.fontSize = '1.05rem';
+  hCal.textContent = 'Procedimientos';
+  var subCal = document.createElement('p');
+  subCal.style.margin = '0';
+  subCal.style.opacity = '0.85';
+  subCal.style.fontSize = '0.9rem';
+  subCal.textContent = 'Datos del host ' + lanClient.baseUrl();
+  calHead.appendChild(hCal);
+  calHead.appendChild(subCal);
+  root.appendChild(calHead);
 
   var table = document.createElement('table');
   table.className = 'table';
@@ -2011,7 +2070,7 @@ async function renderCalendarioPanel() {
   formWrap.style.maxWidth = '520px';
 
   var title = document.createElement('h4');
-  title.textContent = 'Nuevo evento';
+  title.textContent = 'Agregar procedimiento';
   title.style.margin = '4px 0';
   formWrap.appendChild(title);
 
@@ -2067,7 +2126,7 @@ async function renderCalendarioPanel() {
 
   var btnCreate = document.createElement('button');
   btnCreate.className = 'btn';
-  btnCreate.textContent = 'Crear evento';
+  btnCreate.textContent = 'Agregar a calendario';
   btnCreate.disabled = !lanClient.connected || !hostPatients.length;
   btnCreate.onclick = createCalendarEventFromUi;
   formWrap.appendChild(btnCreate);
@@ -2117,7 +2176,7 @@ async function createCalendarEventFromUi() {
   if (inputStart) inputStart.value = '';
   if (inputProc) inputProc.value = '';
   if (inputLoc) inputLoc.value = '';
-  showToast('Evento creado', 'success');
+  showToast('Procedimiento agregado', 'success');
   renderCalendarioPanel();
 }
 
