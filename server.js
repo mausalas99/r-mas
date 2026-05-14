@@ -190,6 +190,10 @@ appExpress.post('/generate-listado', async (req, res) => {
   }
 });
 
+// LAN squad (host): escucha en el puerto de abajo en todas las interfaces; los clientes
+// usan http://<IP-de-esta-PC>:3738. Abre el puerto en el firewall del SO si no conecta.
+// Código de equipo: variable R_PLUS_LAN_TEAM_CODE o primer línea de userData/lan-team-code.txt
+// (tras cambiar el archivo, reinicia R+). Red local de confianza; sin TLS en LAN.
 const PORT = 3738;
 const userData = process.env.R_PLUS_USER_DATA || require('node:os').tmpdir();
 const lanStatePath = path.join(userData, 'lan-squad-host-state.json');
