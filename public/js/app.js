@@ -94,7 +94,7 @@ lanClient.addEventListener('lan-status', function (ev) {
     el.textContent = '';
   } else {
     el.style.display = 'block';
-    el.textContent = 'Sin conexión al servidor de sala (LAN). Calendario remoto en solo lectura.';
+    el.textContent = 'Sin conexión al servidor de sala (LAN). Agenda de procedimientos en solo lectura.';
   }
 });
 lanClient.addEventListener('lan-patch', function () {
@@ -1889,8 +1889,8 @@ async function renderCalendarioPanel() {
     intro.style.marginBottom = '10px';
     intro.style.lineHeight = '1.45';
     intro.textContent =
-      'Calendario de procedimientos del equipo (datos en el servidor LAN). ' +
-      'Indica la URL del host y el código de equipo; es la misma conexión que usa la sincronización en red, sin depender de otra pestaña.';
+      'Agenda de procedimientos del equipo: aquí registras paciente, procedimiento, fecha y lugar (datos en el servidor LAN). ' +
+      'Indica la URL del host y el código de equipo; la conexión es la misma que la sincronización en red, sin abrir otra pestaña.';
     root.appendChild(intro);
 
     var wrapCfg = document.createElement('div');
@@ -1918,7 +1918,7 @@ async function renderCalendarioPanel() {
 
     var btnSave = document.createElement('button');
     btnSave.className = 'btn';
-    btnSave.textContent = 'Conectar y cargar calendario';
+    btnSave.textContent = 'Conectar y cargar agenda';
     btnSave.onclick = saveLanSettingsFromUi;
 
     wrapCfg.appendChild(labelHost);
@@ -1940,17 +1940,17 @@ async function renderCalendarioPanel() {
     eventsResp = responses[0];
     patientsResp = responses[1];
   } catch (_e) {
-    showToast('No se pudo cargar calendario LAN', 'error');
+    showToast('No se pudo cargar la agenda LAN', 'error');
     var netErr = document.createElement('p');
-    netErr.textContent = 'No se pudo cargar el calendario LAN.';
+    netErr.textContent = 'No se pudo cargar la agenda de procedimientos.';
     root.appendChild(netErr);
     return;
   }
 
   if (!eventsResp.ok || !patientsResp.ok) {
-    showToast('Error al consultar datos del calendario', 'error');
+    showToast('Error al consultar la agenda', 'error');
     var httpErr = document.createElement('p');
-    httpErr.textContent = 'Error al consultar datos del calendario.';
+    httpErr.textContent = 'Error al consultar la agenda de procedimientos.';
     root.appendChild(httpErr);
     return;
   }
@@ -1982,12 +1982,12 @@ async function renderCalendarioPanel() {
   var hCal = document.createElement('h3');
   hCal.style.margin = '0 0 4px 0';
   hCal.style.fontSize = '1.05rem';
-  hCal.textContent = 'Procedimientos';
+  hCal.textContent = 'Agenda de procedimientos';
   var subCal = document.createElement('p');
   subCal.style.margin = '0';
   subCal.style.opacity = '0.85';
   subCal.style.fontSize = '0.9rem';
-  subCal.textContent = 'Datos del host ' + lanClient.baseUrl();
+  subCal.textContent = 'Servidor: ' + lanClient.baseUrl();
   calHead.appendChild(hCal);
   calHead.appendChild(subCal);
   root.appendChild(calHead);
@@ -1998,7 +1998,7 @@ async function renderCalendarioPanel() {
   table.style.marginBottom = '14px';
   var thead = document.createElement('thead');
   var trh = document.createElement('tr');
-  ['Inicio', 'Procedimiento', 'Lugar', 'Paciente', 'Material listo'].forEach(function (h) {
+  ['Inicio / cita', 'Paciente', 'Procedimiento', 'Lugar', 'Material listo'].forEach(function (h) {
     var th = document.createElement('th');
     th.textContent = h;
     trh.appendChild(th);
@@ -2014,6 +2014,11 @@ async function renderCalendarioPanel() {
     tdStart.textContent = String(ev && ev.start ? ev.start : '');
     tr.appendChild(tdStart);
 
+    var tdPatient = document.createElement('td');
+    var pid = String(ev && ev.patientId ? ev.patientId : '');
+    tdPatient.textContent = patientNameById[pid] || pid;
+    tr.appendChild(tdPatient);
+
     var tdProc = document.createElement('td');
     tdProc.textContent = String(ev && ev.procedure ? ev.procedure : '');
     tr.appendChild(tdProc);
@@ -2021,11 +2026,6 @@ async function renderCalendarioPanel() {
     var tdLoc = document.createElement('td');
     tdLoc.textContent = String(ev && ev.location ? ev.location : '');
     tr.appendChild(tdLoc);
-
-    var tdPatient = document.createElement('td');
-    var pid = String(ev && ev.patientId ? ev.patientId : '');
-    tdPatient.textContent = patientNameById[pid] || pid;
-    tr.appendChild(tdPatient);
 
     var tdMaterial = document.createElement('td');
     var chk = document.createElement('input');
@@ -2043,7 +2043,7 @@ async function renderCalendarioPanel() {
           })
         });
         if (!patchResp.ok) {
-          showToast('No se pudo actualizar evento', 'error');
+          showToast('No se pudo actualizar el procedimiento', 'error');
           chk.checked = !chk.checked;
           return;
         }
@@ -2053,7 +2053,7 @@ async function renderCalendarioPanel() {
         }
       } catch (_e) {
         chk.checked = !chk.checked;
-        showToast('No se pudo actualizar evento', 'error');
+        showToast('No se pudo actualizar el procedimiento', 'error');
       }
     });
     tdMaterial.appendChild(chk);
@@ -2070,7 +2070,7 @@ async function renderCalendarioPanel() {
   formWrap.style.maxWidth = '520px';
 
   var title = document.createElement('h4');
-  title.textContent = 'Agregar procedimiento';
+  title.textContent = 'Agregar procedimiento a la agenda';
   title.style.margin = '4px 0';
   formWrap.appendChild(title);
 
@@ -2083,7 +2083,7 @@ async function renderCalendarioPanel() {
   selPatient.id = 'calendario-input-patient';
   var emptyOpt = document.createElement('option');
   emptyOpt.value = '';
-  emptyOpt.textContent = hostPatients.length ? 'Selecciona paciente' : 'Sin pacientes en host';
+  emptyOpt.textContent = hostPatients.length ? 'Selecciona un paciente' : 'Sin pacientes en el servidor';
   selPatient.appendChild(emptyOpt);
   hostPatients.forEach(function (p) {
     if (!p || p.id == null) return;
@@ -2094,16 +2094,6 @@ async function renderCalendarioPanel() {
   });
   formWrap.appendChild(selPatient);
 
-  var lblStart = document.createElement('label');
-  lblStart.setAttribute('for', 'calendario-input-start');
-  lblStart.textContent = 'Inicio';
-  formWrap.appendChild(lblStart);
-
-  var inputStart = document.createElement('input');
-  inputStart.id = 'calendario-input-start';
-  inputStart.type = 'datetime-local';
-  formWrap.appendChild(inputStart);
-
   var lblProc = document.createElement('label');
   lblProc.setAttribute('for', 'calendario-input-procedure');
   lblProc.textContent = 'Procedimiento';
@@ -2112,7 +2102,18 @@ async function renderCalendarioPanel() {
   var inputProc = document.createElement('input');
   inputProc.id = 'calendario-input-procedure';
   inputProc.type = 'text';
+  inputProc.placeholder = 'Ej. cateterismo, endoscopia, biopsia…';
   formWrap.appendChild(inputProc);
+
+  var lblStart = document.createElement('label');
+  lblStart.setAttribute('for', 'calendario-input-start');
+  lblStart.textContent = 'Inicio (fecha y hora)';
+  formWrap.appendChild(lblStart);
+
+  var inputStart = document.createElement('input');
+  inputStart.id = 'calendario-input-start';
+  inputStart.type = 'datetime-local';
+  formWrap.appendChild(inputStart);
 
   var lblLoc = document.createElement('label');
   lblLoc.setAttribute('for', 'calendario-input-location');
@@ -2122,11 +2123,12 @@ async function renderCalendarioPanel() {
   var inputLoc = document.createElement('input');
   inputLoc.id = 'calendario-input-location';
   inputLoc.type = 'text';
+  inputLoc.placeholder = 'Ej. hemodinámica, quirófano 2…';
   formWrap.appendChild(inputLoc);
 
   var btnCreate = document.createElement('button');
   btnCreate.className = 'btn';
-  btnCreate.textContent = 'Agregar a calendario';
+  btnCreate.textContent = 'Guardar en agenda';
   btnCreate.disabled = !lanClient.connected || !hostPatients.length;
   btnCreate.onclick = createCalendarEventFromUi;
   formWrap.appendChild(btnCreate);
@@ -2136,7 +2138,7 @@ async function renderCalendarioPanel() {
 
 async function createCalendarEventFromUi() {
   if (!lanClient.connected) {
-    showToast('Conéctate al host LAN para crear eventos', 'error');
+    showToast('Conéctate al host LAN para agregar a la agenda', 'error');
     return;
   }
   var patientId = String((document.getElementById('calendario-input-patient') || {}).value || '').trim();
@@ -2163,11 +2165,11 @@ async function createCalendarEventFromUi() {
       body: JSON.stringify(body)
     });
   } catch (_e) {
-    showToast('No se pudo crear el evento', 'error');
+    showToast('No se pudo guardar en la agenda', 'error');
     return;
   }
   if (!resp.ok) {
-    showToast('No se pudo crear el evento', 'error');
+    showToast('No se pudo guardar en la agenda', 'error');
     return;
   }
   var inputStart = document.getElementById('calendario-input-start');
@@ -2176,7 +2178,7 @@ async function createCalendarEventFromUi() {
   if (inputStart) inputStart.value = '';
   if (inputProc) inputProc.value = '';
   if (inputLoc) inputLoc.value = '';
-  showToast('Procedimiento agregado', 'success');
+  showToast('Procedimiento agregado a la agenda', 'success');
   renderCalendarioPanel();
 }
 
