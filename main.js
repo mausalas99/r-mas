@@ -266,6 +266,7 @@ function buildMenu() {
 // ── Startup ───────────────────────────────────────────────────────
 app.whenReady().then(async () => {
   try {
+    process.env.R_PLUS_USER_DATA = app.getPath('userData');
     server = await require('./server');
   } catch (e) {
     const detail = e && e.message ? e.message : String(e);
