@@ -1,4 +1,5 @@
 const { app, BrowserWindow, Menu, shell, dialog, ipcMain } = require('electron');
+const fs = require('fs');
 const path = require('path');
 const { autoUpdater } = require('electron-updater');
 
@@ -215,6 +216,16 @@ ipcMain.handle('select-output-dir', async () => {
   });
   if (result.canceled || !result.filePaths.length) return undefined;
   return result.filePaths[0];
+});
+
+ipcMain.handle('lan-host-write-team-code', (_e, plain) => {
+  try {
+    const filePath = path.join(app.getPath('userData'), 'lan-team-code.txt');
+    fs.writeFileSync(filePath, String(plain || '').trim(), 'utf8');
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e && e.message ? e.message : String(e) };
+  }
 });
 
 // ── App menu ──────────────────────────────────────────────────────

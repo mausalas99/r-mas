@@ -1649,6 +1649,34 @@ async function renderLanPanel() {
   topRow.textContent = 'Host configurado: ' + lanClient.baseUrl();
   root.appendChild(topRow);
 
+  var hostTeamWrap = document.createElement('div');
+  hostTeamWrap.style.marginBottom = '12px';
+  hostTeamWrap.style.display = 'grid';
+  hostTeamWrap.style.gap = '8px';
+  hostTeamWrap.style.maxWidth = '520px';
+  if (window.electronAPI && typeof window.electronAPI.writeLanHostTeamCode === 'function') {
+    var labelHostTeam = document.createElement('label');
+    labelHostTeam.textContent = 'Código de equipo (host, archivo en userData)';
+    labelHostTeam.setAttribute('for', 'lan-host-team-code-input');
+    var inputHostTeam = document.createElement('input');
+    inputHostTeam.id = 'lan-host-team-code-input';
+    inputHostTeam.type = 'text';
+    var btnHostTeam = document.createElement('button');
+    btnHostTeam.className = 'btn';
+    btnHostTeam.textContent = 'Guardar código host';
+    btnHostTeam.onclick = saveLanHostTeamCodeFromUi;
+    hostTeamWrap.appendChild(labelHostTeam);
+    hostTeamWrap.appendChild(inputHostTeam);
+    hostTeamWrap.appendChild(btnHostTeam);
+  } else {
+    var onlyElectron = document.createElement('p');
+    onlyElectron.style.opacity = '0.75';
+    onlyElectron.style.fontSize = '0.9em';
+    onlyElectron.textContent = 'Código de equipo (host): solo en app Electron.';
+    hostTeamWrap.appendChild(onlyElectron);
+  }
+  root.appendChild(hostTeamWrap);
+
   var createRow = document.createElement('div');
   createRow.style.display = 'flex';
   createRow.style.gap = '8px';
@@ -1737,6 +1765,27 @@ async function renderLanPanel() {
     list.appendChild(li);
   });
   root.appendChild(list);
+}
+
+async function saveLanHostTeamCodeFromUi() {
+  if (!window.electronAPI || typeof window.electronAPI.writeLanHostTeamCode !== 'function') {
+    showToast('Solo disponible en la app Electron', 'error');
+    return;
+  }
+  var input = document.getElementById('lan-host-team-code-input');
+  var plain = input && input.value;
+  var res;
+  try {
+    res = await window.electronAPI.writeLanHostTeamCode(plain);
+  } catch (e) {
+    showToast(e && e.message ? e.message : 'Error al guardar', 'error');
+    return;
+  }
+  if (res && res.ok) {
+    showToast('Guardado. Reinicia R+ para aplicar en el servidor.', 'success');
+  } else {
+    showToast(res && res.error ? res.error : 'Error al guardar', 'error');
+  }
 }
 
 async function saveLanSettingsFromUi() {
@@ -9898,6 +9947,7 @@ Object.assign(window, {
   wipeAllConfirmed,
   switchAppTab,
   saveLanSettingsFromUi,
+  saveLanHostTeamCodeFromUi,
   joinLanRoom,
   createLanRoomFromUi,
   deleteLanRoom,

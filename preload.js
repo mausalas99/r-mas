@@ -43,6 +43,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getPlatform: function() {
     return ipcRenderer.invoke('get-platform');
   },
+  writeLanHostTeamCode: function(plain) {
+    return ipcRenderer.invoke('lan-host-write-team-code', plain);
+  },
   relaunchApp: function() {
     ipcRenderer.send('relaunch-app');
   },
