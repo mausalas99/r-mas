@@ -1,4 +1,5 @@
 import { storage } from './storage.js';
+import { LanClient } from './lan-client.mjs';
 import {
   extraer,
   extraerConRango,
@@ -76,6 +77,30 @@ var activeLab    = null;
 var settings     = storage.getSettings();
 var __v3MigratedThisBoot = migrateToV3(settings);
 if (__v3MigratedThisBoot) storage.saveSettings(settings);
+var lanClient = new LanClient();
+function initLanClientFromStorage() {
+  var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() : null;
+  if (cfg && cfg.hostUrl && cfg.teamCode) {
+    lanClient.configure(cfg);
+    try { lanClient.connectCalendarChannel(); } catch (_e) {}
+  }
+}
+initLanClientFromStorage();
+lanClient.addEventListener('lan-status', function (ev) {
+  var el = document.getElementById('lan-connection-banner');
+  if (!el) return;
+  if (ev.detail && ev.detail.connected) {
+    el.style.display = 'none';
+    el.textContent = '';
+  } else {
+    el.style.display = 'block';
+    el.textContent = 'Sin conexión al servidor de sala (LAN). Calendario remoto en solo lectura.';
+  }
+});
+lanClient.addEventListener('lan-patch', function () {
+  if (typeof renderCalendarioPanel === 'function') renderCalendarioPanel();
+  if (typeof renderLanPanel === 'function') renderLanPanel();
+});
 var sparkCharts  = {};
 var detailChart  = null;
 var medOutputTab = 'full';
@@ -1546,14 +1571,509 @@ initUpdateChannelAndGate();
 
 function switchAppTab(tab) {
   activeAppTab = tab;
-  document.getElementById('apptab-lab').classList.toggle('active', tab === 'lab');
-  document.getElementById('apptab-nota').classList.toggle('active', tab === 'nota');
-  document.getElementById('apptab-med').classList.toggle('active', tab === 'med');
-  document.getElementById('appcontent-lab').style.display  = tab === 'lab'  ? 'flex' : 'none';
-  document.getElementById('appcontent-med').style.display  = tab === 'med'  ? 'flex' : 'none';
-  document.getElementById('appcontent-nota').style.display = tab === 'nota' ? 'flex' : 'none';
+  var apptabLab = document.getElementById('apptab-lab');
+  var apptabNota = document.getElementById('apptab-nota');
+  var apptabMed = document.getElementById('apptab-med');
+  var apptabLan = document.getElementById('apptab-lan');
+  var apptabCalendario = document.getElementById('apptab-calendario');
+  var appcontentLab = document.getElementById('appcontent-lab');
+  var appcontentMed = document.getElementById('appcontent-med');
+  var appcontentNota = document.getElementById('appcontent-nota');
+  var appcontentLan = document.getElementById('appcontent-lan');
+  var appcontentCalendario = document.getElementById('appcontent-calendario');
+
+  if (apptabLab) apptabLab.classList.toggle('active', tab === 'lab');
+  if (apptabNota) apptabNota.classList.toggle('active', tab === 'nota');
+  if (apptabMed) apptabMed.classList.toggle('active', tab === 'med');
+  if (apptabLan) apptabLan.classList.toggle('active', tab === 'lan');
+  if (apptabCalendario) apptabCalendario.classList.toggle('active', tab === 'calendario');
+
+  if (appcontentLab) appcontentLab.style.display = tab === 'lab' ? 'flex' : 'none';
+  if (appcontentMed) appcontentMed.style.display = tab === 'med' ? 'flex' : 'none';
+  if (appcontentNota) appcontentNota.style.display = tab === 'nota' ? 'flex' : 'none';
+  if (appcontentLan) appcontentLan.style.display = tab === 'lan' ? 'flex' : 'none';
+  if (appcontentCalendario) appcontentCalendario.style.display = tab === 'calendario' ? 'flex' : 'none';
+
   if (tab === 'lab') renderLabHistoryPanel();
   if (tab === 'med') renderMedRecetaPanel();
+  if (tab === 'lan' && typeof renderLanPanel === 'function') renderLanPanel();
+  if (tab === 'calendario' && typeof renderCalendarioPanel === 'function') renderCalendarioPanel();
+}
+
+async function renderLanPanel() {
+  var root = document.getElementById('lan-panel-root');
+  if (!root) return;
+  root.innerHTML = '';
+
+  var cfg = typeof storage.getLanConfig === 'function' ? (storage.getLanConfig() || {}) : {};
+  if (!lanClient.baseUrl()) {
+    var wrapCfg = document.createElement('div');
+    wrapCfg.className = 'panel-content';
+    wrapCfg.style.display = 'grid';
+    wrapCfg.style.gap = '8px';
+    wrapCfg.style.maxWidth = '520px';
+
+    var labelHost = document.createElement('label');
+    labelHost.textContent = 'URL del host LAN';
+    labelHost.setAttribute('for', 'lan-input-host-url');
+    var inputHost = document.createElement('input');
+    inputHost.id = 'lan-input-host-url';
+    inputHost.type = 'text';
+    inputHost.placeholder = 'http://192.168.0.10:3738';
+    inputHost.value = String(cfg.hostUrl || '');
+
+    var labelCode = document.createElement('label');
+    labelCode.textContent = 'Código de equipo';
+    labelCode.setAttribute('for', 'lan-input-team-code');
+    var inputCode = document.createElement('input');
+    inputCode.id = 'lan-input-team-code';
+    inputCode.type = 'text';
+    inputCode.value = String(cfg.teamCode || '');
+
+    var btnSave = document.createElement('button');
+    btnSave.className = 'btn';
+    btnSave.textContent = 'Guardar configuración LAN';
+    btnSave.onclick = saveLanSettingsFromUi;
+
+    wrapCfg.appendChild(labelHost);
+    wrapCfg.appendChild(inputHost);
+    wrapCfg.appendChild(labelCode);
+    wrapCfg.appendChild(inputCode);
+    wrapCfg.appendChild(btnSave);
+    root.appendChild(wrapCfg);
+    return;
+  }
+
+  var topRow = document.createElement('div');
+  topRow.style.marginBottom = '10px';
+  topRow.textContent = 'Host configurado: ' + lanClient.baseUrl();
+  root.appendChild(topRow);
+
+  var createRow = document.createElement('div');
+  createRow.style.display = 'flex';
+  createRow.style.gap = '8px';
+  createRow.style.alignItems = 'center';
+  createRow.style.marginBottom = '12px';
+
+  var newRoomInput = document.createElement('input');
+  newRoomInput.id = 'lan-input-room-name';
+  newRoomInput.type = 'text';
+  newRoomInput.placeholder = 'Nueva sala';
+  newRoomInput.style.maxWidth = '280px';
+
+  var createBtn = document.createElement('button');
+  createBtn.className = 'btn';
+  createBtn.textContent = 'Crear sala';
+  createBtn.disabled = !lanClient.connected;
+  createBtn.onclick = createLanRoomFromUi;
+
+  createRow.appendChild(newRoomInput);
+  createRow.appendChild(createBtn);
+  root.appendChild(createRow);
+
+  var resp;
+  try {
+    resp = await lanClient.fetch('/api/lan/v1/rooms');
+  } catch (e) {
+    showToast('No se pudo consultar salas LAN', 'error');
+    var errNet = document.createElement('div');
+    errNet.textContent = 'No se pudo consultar salas LAN.';
+    root.appendChild(errNet);
+    return;
+  }
+  if (!resp.ok) {
+    showToast('Error al cargar salas LAN', 'error');
+    var errHttp = document.createElement('div');
+    errHttp.textContent = 'Error al cargar salas LAN.';
+    root.appendChild(errHttp);
+    return;
+  }
+
+  var payload;
+  try {
+    payload = await resp.json();
+  } catch (_e) {
+    payload = {};
+  }
+  var rooms = Array.isArray(payload && payload.rooms) ? payload.rooms : [];
+  if (!rooms.length) {
+    var empty = document.createElement('p');
+    empty.textContent = 'No hay salas creadas.';
+    root.appendChild(empty);
+    return;
+  }
+
+  var list = document.createElement('ul');
+  list.style.listStyle = 'none';
+  list.style.padding = '0';
+  list.style.margin = '0';
+  rooms.forEach(function (room) {
+    var id = room && room.id ? String(room.id) : '';
+    if (!id) return;
+    var li = document.createElement('li');
+    li.style.display = 'flex';
+    li.style.gap = '8px';
+    li.style.alignItems = 'center';
+    li.style.marginBottom = '8px';
+
+    var name = document.createElement('span');
+    name.style.flex = '1';
+    name.textContent = String(room.displayName || room.name || id);
+
+    var joinBtn = document.createElement('button');
+    joinBtn.className = 'btn';
+    joinBtn.textContent = 'Unirse';
+    joinBtn.onclick = function () { joinLanRoom(id); };
+
+    var delBtn = document.createElement('button');
+    delBtn.className = 'btn danger';
+    delBtn.textContent = 'Eliminar';
+    delBtn.disabled = !lanClient.connected;
+    delBtn.onclick = function () { deleteLanRoom(id); };
+
+    li.appendChild(name);
+    li.appendChild(joinBtn);
+    li.appendChild(delBtn);
+    list.appendChild(li);
+  });
+  root.appendChild(list);
+}
+
+async function saveLanSettingsFromUi() {
+  var hostInput = document.getElementById('lan-input-host-url');
+  var teamInput = document.getElementById('lan-input-team-code');
+  var hostUrl = String(hostInput && hostInput.value ? hostInput.value : '').trim();
+  var teamCode = String(teamInput && teamInput.value ? teamInput.value : '').trim();
+  if (!hostUrl || !teamCode) {
+    showToast('Completa URL del host y código de equipo', 'error');
+    return;
+  }
+  var cfg = { hostUrl: hostUrl.replace(/\/+$/, ''), teamCode: teamCode };
+  storage.saveLanConfig(cfg);
+  lanClient.configure(cfg);
+  lanClient.disconnect();
+  try {
+    lanClient.connectCalendarChannel();
+  } catch (_e) {}
+  showToast('Configuración LAN guardada', 'success');
+  renderLanPanel();
+  if (activeAppTab === 'calendario') renderCalendarioPanel();
+}
+
+function joinLanRoom(roomId) {
+  var id = String(roomId || '').trim();
+  if (!id) return;
+  try {
+    lanClient.connectLiveChannel(id);
+    localStorage.setItem('rpc-lan-last-room', id);
+    showToast('Sala: relay WebSocket activo', 'success');
+  } catch (_e) {
+    showToast('No se pudo activar relay de sala', 'error');
+  }
+}
+
+async function createLanRoomFromUi() {
+  if (!lanClient.connected) {
+    showToast('Conéctate al host LAN para crear salas', 'error');
+    return;
+  }
+  var input = document.getElementById('lan-input-room-name');
+  var displayName = String(input && input.value ? input.value : '').trim();
+  if (!displayName) {
+    showToast('Escribe un nombre de sala', 'error');
+    return;
+  }
+  var resp;
+  try {
+    resp = await lanClient.fetch('/api/lan/v1/rooms', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ displayName: displayName })
+    });
+  } catch (_e) {
+    showToast('No se pudo crear la sala', 'error');
+    return;
+  }
+  if (!resp.ok) {
+    showToast('No se pudo crear la sala', 'error');
+    return;
+  }
+  if (input) input.value = '';
+  showToast('Sala creada', 'success');
+  renderLanPanel();
+}
+
+async function deleteLanRoom(roomId) {
+  if (!lanClient.connected) {
+    showToast('Conéctate al host LAN para eliminar salas', 'error');
+    return;
+  }
+  var id = String(roomId || '').trim();
+  if (!id) return;
+  var resp;
+  try {
+    resp = await lanClient.fetch('/api/lan/v1/rooms/' + encodeURIComponent(id), { method: 'DELETE' });
+  } catch (_e) {
+    showToast('No se pudo eliminar la sala', 'error');
+    return;
+  }
+  if (!resp.ok) {
+    showToast('No se pudo eliminar la sala', 'error');
+    return;
+  }
+  showToast('Sala eliminada', 'success');
+  renderLanPanel();
+}
+
+async function renderCalendarioPanel() {
+  var root = document.getElementById('calendario-panel-root');
+  if (!root) return;
+  root.innerHTML = '';
+
+  if (!lanClient.baseUrl()) {
+    var msg = document.createElement('p');
+    msg.textContent = 'Configura LAN en pestaña LiveSync';
+    root.appendChild(msg);
+    return;
+  }
+
+  var eventsResp;
+  var patientsResp;
+  try {
+    var responses = await Promise.all([
+      lanClient.fetch('/api/lan/v1/calendar-events'),
+      lanClient.fetch('/api/lan/v1/patients')
+    ]);
+    eventsResp = responses[0];
+    patientsResp = responses[1];
+  } catch (_e) {
+    showToast('No se pudo cargar calendario LAN', 'error');
+    var netErr = document.createElement('p');
+    netErr.textContent = 'No se pudo cargar el calendario LAN.';
+    root.appendChild(netErr);
+    return;
+  }
+
+  if (!eventsResp.ok || !patientsResp.ok) {
+    showToast('Error al consultar datos del calendario', 'error');
+    var httpErr = document.createElement('p');
+    httpErr.textContent = 'Error al consultar datos del calendario.';
+    root.appendChild(httpErr);
+    return;
+  }
+
+  var eventsPayload = {};
+  var patientsPayload = {};
+  try { eventsPayload = await eventsResp.json(); } catch (_e) {}
+  try { patientsPayload = await patientsResp.json(); } catch (_e) {}
+  var events = Array.isArray(eventsPayload && eventsPayload.events) ? eventsPayload.events : [];
+  var hostPatients = Array.isArray(patientsPayload && patientsPayload.patients) ? patientsPayload.patients : [];
+  var patientNameById = Object.create(null);
+  hostPatients.forEach(function (p) {
+    if (!p || p.id == null) return;
+    var id = String(p.id);
+    var name = String(
+      p.nombreCompleto ||
+      p.nombre ||
+      p.name ||
+      p.displayName ||
+      p.fullName ||
+      p.paciente ||
+      id
+    );
+    patientNameById[id] = name;
+  });
+
+  var table = document.createElement('table');
+  table.className = 'table';
+  table.style.width = '100%';
+  table.style.marginBottom = '14px';
+  var thead = document.createElement('thead');
+  var trh = document.createElement('tr');
+  ['Inicio', 'Procedimiento', 'Lugar', 'Paciente', 'Material listo'].forEach(function (h) {
+    var th = document.createElement('th');
+    th.textContent = h;
+    trh.appendChild(th);
+  });
+  thead.appendChild(trh);
+  table.appendChild(thead);
+
+  var tbody = document.createElement('tbody');
+  events.forEach(function (ev) {
+    var tr = document.createElement('tr');
+
+    var tdStart = document.createElement('td');
+    tdStart.textContent = String(ev && ev.start ? ev.start : '');
+    tr.appendChild(tdStart);
+
+    var tdProc = document.createElement('td');
+    tdProc.textContent = String(ev && ev.procedure ? ev.procedure : '');
+    tr.appendChild(tdProc);
+
+    var tdLoc = document.createElement('td');
+    tdLoc.textContent = String(ev && ev.location ? ev.location : '');
+    tr.appendChild(tdLoc);
+
+    var tdPatient = document.createElement('td');
+    var pid = String(ev && ev.patientId ? ev.patientId : '');
+    tdPatient.textContent = patientNameById[pid] || pid;
+    tr.appendChild(tdPatient);
+
+    var tdMaterial = document.createElement('td');
+    var chk = document.createElement('input');
+    chk.type = 'checkbox';
+    chk.checked = !!(ev && ev.materialReady);
+    chk.disabled = !lanClient.connected;
+    chk.addEventListener('change', async function () {
+      try {
+        var patchResp = await lanClient.fetch('/api/lan/v1/calendar-events/' + encodeURIComponent(String(ev.id || '')), {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            materialReady: !!chk.checked,
+            expectedVersion: ev.version
+          })
+        });
+        if (!patchResp.ok) {
+          showToast('No se pudo actualizar evento', 'error');
+          chk.checked = !chk.checked;
+          return;
+        }
+        var patchPayload = await patchResp.json();
+        if (patchPayload && patchPayload.event && patchPayload.event.version != null) {
+          ev.version = patchPayload.event.version;
+        }
+      } catch (_e) {
+        chk.checked = !chk.checked;
+        showToast('No se pudo actualizar evento', 'error');
+      }
+    });
+    tdMaterial.appendChild(chk);
+    tr.appendChild(tdMaterial);
+
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  root.appendChild(table);
+
+  var formWrap = document.createElement('div');
+  formWrap.style.display = 'grid';
+  formWrap.style.gap = '8px';
+  formWrap.style.maxWidth = '520px';
+
+  var title = document.createElement('h4');
+  title.textContent = 'Nuevo evento';
+  title.style.margin = '4px 0';
+  formWrap.appendChild(title);
+
+  var lblPatient = document.createElement('label');
+  lblPatient.setAttribute('for', 'calendario-input-patient');
+  lblPatient.textContent = 'Paciente';
+  formWrap.appendChild(lblPatient);
+
+  var selPatient = document.createElement('select');
+  selPatient.id = 'calendario-input-patient';
+  var emptyOpt = document.createElement('option');
+  emptyOpt.value = '';
+  emptyOpt.textContent = hostPatients.length ? 'Selecciona paciente' : 'Sin pacientes en host';
+  selPatient.appendChild(emptyOpt);
+  hostPatients.forEach(function (p) {
+    if (!p || p.id == null) return;
+    var opt = document.createElement('option');
+    opt.value = String(p.id);
+    opt.textContent = patientNameById[String(p.id)] || String(p.id);
+    selPatient.appendChild(opt);
+  });
+  formWrap.appendChild(selPatient);
+
+  var lblStart = document.createElement('label');
+  lblStart.setAttribute('for', 'calendario-input-start');
+  lblStart.textContent = 'Inicio';
+  formWrap.appendChild(lblStart);
+
+  var inputStart = document.createElement('input');
+  inputStart.id = 'calendario-input-start';
+  inputStart.type = 'datetime-local';
+  formWrap.appendChild(inputStart);
+
+  var lblProc = document.createElement('label');
+  lblProc.setAttribute('for', 'calendario-input-procedure');
+  lblProc.textContent = 'Procedimiento';
+  formWrap.appendChild(lblProc);
+
+  var inputProc = document.createElement('input');
+  inputProc.id = 'calendario-input-procedure';
+  inputProc.type = 'text';
+  formWrap.appendChild(inputProc);
+
+  var lblLoc = document.createElement('label');
+  lblLoc.setAttribute('for', 'calendario-input-location');
+  lblLoc.textContent = 'Lugar';
+  formWrap.appendChild(lblLoc);
+
+  var inputLoc = document.createElement('input');
+  inputLoc.id = 'calendario-input-location';
+  inputLoc.type = 'text';
+  formWrap.appendChild(inputLoc);
+
+  var btnCreate = document.createElement('button');
+  btnCreate.className = 'btn';
+  btnCreate.textContent = 'Crear evento';
+  btnCreate.disabled = !lanClient.connected || !hostPatients.length;
+  btnCreate.onclick = createCalendarEventFromUi;
+  formWrap.appendChild(btnCreate);
+
+  root.appendChild(formWrap);
+}
+
+async function createCalendarEventFromUi() {
+  if (!lanClient.connected) {
+    showToast('Conéctate al host LAN para crear eventos', 'error');
+    return;
+  }
+  var patientId = String((document.getElementById('calendario-input-patient') || {}).value || '').trim();
+  var start = String((document.getElementById('calendario-input-start') || {}).value || '').trim();
+  var procedure = String((document.getElementById('calendario-input-procedure') || {}).value || '').trim();
+  var location = String((document.getElementById('calendario-input-location') || {}).value || '').trim();
+  if (!patientId || !start || !procedure) {
+    showToast('Completa paciente, inicio y procedimiento', 'error');
+    return;
+  }
+  var body = {
+    patientId: patientId,
+    start: start,
+    end: start,
+    procedure: procedure,
+    location: location,
+    materialReady: false
+  };
+  var resp;
+  try {
+    resp = await lanClient.fetch('/api/lan/v1/calendar-events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+  } catch (_e) {
+    showToast('No se pudo crear el evento', 'error');
+    return;
+  }
+  if (resp.status === 404 || resp.status === 405) {
+    showToast('Este host no soporta crear eventos en paciente existente (v1).', 'error');
+    return;
+  }
+  if (!resp.ok) {
+    showToast('No se pudo crear el evento', 'error');
+    return;
+  }
+  var inputStart = document.getElementById('calendario-input-start');
+  var inputProc = document.getElementById('calendario-input-procedure');
+  var inputLoc = document.getElementById('calendario-input-location');
+  if (inputStart) inputStart.value = '';
+  if (inputProc) inputProc.value = '';
+  if (inputLoc) inputLoc.value = '';
+  showToast('Evento creado', 'success');
+  renderCalendarioPanel();
 }
 
 function switchInnerTab(tab) {
@@ -9381,6 +9901,11 @@ Object.assign(window, {
   wipeCacheConfirmed,
   wipeAllConfirmed,
   switchAppTab,
+  saveLanSettingsFromUi,
+  joinLanRoom,
+  createLanRoomFromUi,
+  deleteLanRoom,
+  createCalendarEventFromUi,
   switchInnerTab,
   guidedTourIntroChooseSala,
   guidedTourIntroChooseInterconsulta,
