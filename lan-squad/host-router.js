@@ -53,6 +53,17 @@ function createLanRouter({ store, broadcast }) {
     }
   });
 
+  r.post('/calendar-events', express.json({ limit: '512kb' }), (req, res) => {
+    try {
+      const { patientId, start, end, procedure, location, materialReady } = req.body || {};
+      const event = store.addCalendarEvent({ patientId, start, end, procedure, location, materialReady });
+      broadcast('calendar', { type: 'calendar-changed' });
+      res.status(201).json({ event });
+    } catch (e) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+
   r.get('/calendar-events', (_req, res) => {
     res.json({ events: store.listCalendarEvents() });
   });

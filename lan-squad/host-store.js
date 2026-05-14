@@ -104,6 +104,33 @@ function createHostStore({ filePath, teamCodePlain }) {
     return { hostPatientId, event: cal };
   }
 
+  function addCalendarEvent({ patientId, start, end, procedure, location, materialReady }) {
+    const state = load();
+    if (!state.patients.some((p) => p.id === patientId)) {
+      throw new Error('unknown patient');
+    }
+    const t = nowIso();
+    const evId = newId('ev');
+    const cal = {
+      id: evId,
+      patientId: String(patientId || ''),
+      start: String(start || ''),
+      end: String(end || ''),
+      procedure: String(procedure || ''),
+      location: String(location || ''),
+      materialReady: !!materialReady,
+      createdAt: t,
+      updatedAt: t,
+      version: 1,
+    };
+    if (!cal.start || !cal.procedure) {
+      throw new Error('invalid event: start and procedure required');
+    }
+    state.calendarEvents.push(cal);
+    save(state);
+    return cal;
+  }
+
   function upsertPatient(patient, expectedVersion) {
     const state = load();
     const idx = state.patients.findIndex((p) => p.id === patient.id);
@@ -179,6 +206,7 @@ function createHostStore({ filePath, teamCodePlain }) {
   return {
     getState,
     createPatientAndCalendarEvent,
+    addCalendarEvent,
     upsertPatient,
     listCalendarEvents,
     patchCalendarEvent,

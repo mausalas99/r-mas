@@ -2058,10 +2058,6 @@ async function createCalendarEventFromUi() {
     showToast('No se pudo crear el evento', 'error');
     return;
   }
-  if (resp.status === 404 || resp.status === 405) {
-    showToast('Este host no soporta crear eventos en paciente existente (v1).', 'error');
-    return;
-  }
   if (!resp.ok) {
     showToast('No se pudo crear el evento', 'error');
     return;

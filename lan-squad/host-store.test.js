@@ -53,4 +53,38 @@ describe('host-store', () => {
     assert.strictEqual(st.calendarEvents.length, 1);
     assert.strictEqual(st.calendarEvents[0].patientId, out.hostPatientId);
   });
+
+  it('addCalendarEvent agrega evento para paciente host existente', () => {
+    const store = createHostStore({ filePath, teamCodePlain: 'x' });
+    const patient = {
+      id: 'client-local-1',
+      nombre: 'Test',
+      registro: 'R1',
+      edad: '40',
+      sexo: 'M',
+      area: '',
+      servicio: '',
+      cuarto: '',
+      cama: '',
+      fromLab: false,
+    };
+    const ev = {
+      start: '2026-05-13T10:00:00.000Z',
+      end: '2026-05-13T11:00:00.000Z',
+      procedure: 'Cateterismo',
+      location: 'Hemodinamia',
+      materialReady: false,
+    };
+    const out = store.createPatientAndCalendarEvent({ patient, event: ev, clientPatientId: 'client-local-1' });
+    store.addCalendarEvent({
+      patientId: out.hostPatientId,
+      start: '2026-05-14T10:00:00.000Z',
+      end: '2026-05-14T11:00:00.000Z',
+      procedure: 'Endoscopia',
+      location: 'Endoscopía',
+      materialReady: true,
+    });
+    const st = store.getState();
+    assert.strictEqual(st.calendarEvents.length, 2);
+  });
 });
