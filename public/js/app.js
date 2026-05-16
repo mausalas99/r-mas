@@ -7366,6 +7366,18 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '3.3.0': [
+    {
+      title: 'LiveSync por sala',
+      body:
+        'Al unirte a una sala LAN (⇄), la agenda de procedimientos y los pendientes del expediente se comparten en tiempo real con el equipo en esa sala. Al salir se guarda un snapshot local para reconciliar al volver.',
+    },
+    {
+      title: 'Copiar prompt IA (Listado)',
+      body:
+        'En Listado de problemas, el botón Copiar prompt IA lleva al portapapeles la plantilla para generar el listado activo/inactivo y planes iniciales en un chat externo.',
+    },
+  ],
   '3.2.2': [
     {
       title: 'Actualizaciones en canal Estable',

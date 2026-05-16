@@ -1,0 +1,33 @@
+R+ 3.3.0 (estable — LiveSync por sala, agenda y pendientes)
+==========================================================
+
+Fecha: 2026-05-16
+
+## Resumen
+
+Sincronización en tiempo real de **agenda de procedimientos** y **pendientes** cuando varias R+ están en la **misma sala LAN** (LiveSync). Incluye también el botón **Copiar prompt IA** en Listado de problemas.
+
+## LiveSync (LAN)
+
+- **Por sala** — Solo quienes se unen a la misma sala comparten agenda y pendientes; fuera de sala todo sigue siendo local.
+- **Tiempo real** — Cambios se envían por WebSocket `live:{roomId}`; merge automático por fecha de última edición (`updatedAt`).
+- **Al salir** — Snapshot local por sala; opcional copia en el anfitrión para reconciliar al volver a entrar.
+- **Panel ⇄** — Indicador de sala activa y botón **Salir de sala (LiveSync)**.
+
+## Listado de problemas
+
+- **Copiar prompt IA** — Copia al portapapeles la plantilla para generar listado de problemas y planes iniciales en un chat externo.
+
+## Quién debería actualizar
+
+- Equipos que usan **varias R+ en la misma red** para coordinar procedimientos y pendientes en sala.
+- Usuarios en **3.2.x**: Ajustes → **Estable** → **Buscar actualizaciones…**, o instalar el instalador de esta versión.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v3.3.0
+
+- Mac: `R+-3.3.0-arm64.dmg`, `R+-3.3.0-x64.dmg` (y zip para auto-update).
+- Windows: `R+-3.3.0-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye `write-release-yml.js`).

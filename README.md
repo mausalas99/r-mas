@@ -25,7 +25,16 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 ---
 
-**Versión estable actual:** [3.2.2](https://github.com/mausalas99/r-mas/releases/tag/v3.2.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [3.3.0](https://github.com/mausalas99/r-mas/releases/tag/v3.3.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+
+---
+
+## R+ 3.3.0 (estable — LiveSync por sala: agenda y pendientes)
+
+- **LiveSync** — En la misma sala LAN, agenda de procedimientos y pendientes se sincronizan en vivo entre equipos.
+- **Listado** — Botón **Copiar prompt IA** para plantilla de listado de problemas.
+
+Notas: `docs/RELEASE_NOTES_3.3.0.txt`.
 
 ---
 
