@@ -82,6 +82,7 @@ function createWindow() {
           mainWindow.webContents.send('update-available', {
             version: pendingUpdate.version,
             releaseNotes: pendingUpdate.releaseNotes || '',
+            prerelease: !!pendingUpdate.prerelease,
           });
         else if (pendingUpdate.type === 'progress')
           mainWindow.webContents.send('update-progress', {
@@ -120,8 +121,9 @@ autoUpdater.on('update-available', (info) => {
   try {
     const releaseNotes = serializeReleaseNotes(info);
     const version = info && info.version ? info.version : '';
-    pendingUpdate = { type: 'available', version, releaseNotes };
-    safeSendToRenderer('update-available', { version, releaseNotes });
+    const prerelease = !!(info && info.prerelease);
+    pendingUpdate = { type: 'available', version, releaseNotes, prerelease };
+    safeSendToRenderer('update-available', { version, releaseNotes, prerelease });
   } catch (e) {
     console.error('update-available handler error:', e && e.message);
   }

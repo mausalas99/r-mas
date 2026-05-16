@@ -11804,6 +11804,7 @@ var MIN_VERSION_URL = 'https://raw.githubusercontent.com/mausalas99/r-mas/main/m
 var UPDATE_TELEMETRY_URL = 'https://example.invalid/r-plus-update';
 var RELEASES_LATEST_URL = 'https://github.com/mausalas99/r-mas/releases/latest';
 var pendingUpdaterTargetVersion = null;
+var pendingUpdaterIsPrerelease = false;
 var minVersionGateKeydownBound = false;
 
 function getUpdateChannel() {
@@ -11830,12 +11831,29 @@ function setUpdateChannel(channel) {
   }
 }
 
+function syncUpdateModalChannelPill(isPrerelease) {
+  var pill = document.getElementById('update-modal-channel-pill');
+  if (pill) pill.style.display = isPrerelease ? 'inline-block' : 'none';
+}
+
 function syncUpdateChannelUI() {
   var sel = document.getElementById('rpc-update-channel');
   if (sel) sel.value = getUpdateChannel();
-  var pill = document.getElementById('update-modal-channel-pill');
-  if (pill) pill.style.display = getUpdateChannel() === 'beta' ? 'inline-block' : 'none';
+  syncUpdateModalChannelPill(pendingUpdaterIsPrerelease);
   if (typeof syncTeamSyncHeaderButton === 'function') syncTeamSyncHeaderButton();
+}
+
+/** Tras 3.2.1 estable: quien tenía canal pre-releases vuelve a Estable (una sola vez). */
+function migrateUpdateChannelToStableDefault() {
+  var key = 'rpc-update-channel-stable-default-v321';
+  if (localStorage.getItem(key)) return;
+  localStorage.setItem(key, '1');
+  if (getUpdateChannel() !== 'beta') return;
+  settings.updateChannel = 'estable';
+  localStorage.setItem('rpc-settings', JSON.stringify(settings));
+  if (window.electronAPI && typeof window.electronAPI.setUpdateChannel === 'function') {
+    try { window.electronAPI.setUpdateChannel('estable'); } catch (_e) {}
+  }
 }
 
 function getUpdateTelemetryEnabled() {
@@ -11974,6 +11992,7 @@ function checkMinVersionGate() {
 }
 
 function initUpdateChannelAndGate() {
+  migrateUpdateChannelToStableDefault();
   syncUpdateChannelUI();
   syncUpdateTelemetryUI();
   if (window.electronAPI && typeof window.electronAPI.setUpdateChannel === 'function') {
@@ -12101,6 +12120,7 @@ if (window.electronAPI) {
       var rawNotes = (payload && payload.releaseNotes != null) ? String(payload.releaseNotes) : '';
       var releaseNotes = stripHtmlToPlainText(rawNotes);
       pendingUpdaterTargetVersion = version;
+      pendingUpdaterIsPrerelease = !!(payload && payload.prerelease);
       if (isSnoozeActiveForVersion(version)) return;
       resetUpdateModalPanels();
       var title = document.getElementById('update-modal-title');
@@ -12112,8 +12132,7 @@ if (window.electronAPI) {
         pill.textContent = 'v' + version;
         pill.style.display = 'inline-block';
       }
-      var channelPill = document.getElementById('update-modal-channel-pill');
-      if (channelPill) channelPill.style.display = getUpdateChannel() === 'beta' ? 'inline-block' : 'none';
+      syncUpdateModalChannelPill(pendingUpdaterIsPrerelease);
       var notes = document.getElementById('update-modal-notes');
       if (notes) notes.textContent = releaseNotes;
       var state = document.getElementById('update-modal-state');
@@ -12162,6 +12181,7 @@ if (window.electronAPI) {
       var bps = payload && payload.bytesPerSecond;
       if (pendingUpdaterTargetVersion && isSnoozeActiveForVersion(pendingUpdaterTargetVersion)) return;
       resetUpdateModalPanels();
+      syncUpdateModalChannelPill(pendingUpdaterIsPrerelease);
       var state = document.getElementById('update-modal-state');
       if (state) state.textContent = 'Descargando…';
       var fill = document.getElementById('update-modal-progress-fill');
@@ -12190,6 +12210,7 @@ if (window.electronAPI) {
       try { sendUpdateTelemetry('success', version); } catch (_te) {}
       if (isSnoozeActiveForVersion(version)) return;
       resetUpdateModalPanels();
+      syncUpdateModalChannelPill(pendingUpdaterIsPrerelease);
       var state = document.getElementById('update-modal-state');
       if (state) {
         state.textContent =
@@ -12224,6 +12245,8 @@ if (window.electronAPI) {
   window.electronAPI.onUpdateNotAvailable(function() {
     try {
       pendingUpdaterTargetVersion = null;
+      pendingUpdaterIsPrerelease = false;
+      syncUpdateModalChannelPill(false);
       showToast('R+ está actualizado.', 'success');
     } catch (e) {
       console.error('onUpdateNotAvailable callback error:', e && e.message);

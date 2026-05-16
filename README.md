@@ -296,7 +296,7 @@ En **macOS**, el instalador automático (Squirrel) solo acepta actualizaciones f
 En **Ajustes → Aplicación y actualizaciones → Canal de actualizaciones** puedes elegir entre:
 
 - **Estable** (predeterminado): solo recibes releases publicados oficialmente.
-- **Pre-releases (borradores)**: además recibes borradores de GitHub (pre-releases). El modal de actualización muestra un distintivo **Pre-release**. Puedes volver a Estable en cualquier momento y la próxima verificación solo considerará releases estables.
+- **Pre-releases (borradores)**: además recibes borradores de GitHub (pre-releases). El modal solo muestra el distintivo **Pre-release** cuando la versión disponible en GitHub está marcada como pre-release (no por tener activado el canal en Ajustes). Puedes volver a Estable en cualquier momento.
 
 El canal se guarda localmente (`rpc-settings.updateChannel`, valores internos `estable` o `beta`) y se sincroniza con `electron-updater` al iniciar la app vía IPC (`autoUpdater.allowPrerelease`).
 
