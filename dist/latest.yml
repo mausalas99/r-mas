@@ -1,8 +1,8 @@
-version: 3.2.2
+version: 3.3.1
 files:
-  - url: R+-3.2.2-x64.exe
-    sha512: EQIMx6WcADEY1iMhr+wS4+qwB0V5XFIAAFR/z1Rldj/Ww/xQe71LxQhN/Zm/WL/SZLlIS9Ixdwsr3qLQ+1KSEg==
-    size: 110383271
-path: R+-3.2.2-x64.exe
-sha512: EQIMx6WcADEY1iMhr+wS4+qwB0V5XFIAAFR/z1Rldj/Ww/xQe71LxQhN/Zm/WL/SZLlIS9Ixdwsr3qLQ+1KSEg==
-releaseDate: '2026-05-16T06:20:29.000Z'
+  - url: R+-3.3.1-x64.exe
+    sha512: miGm9ltZi1iWQjBAt4xnIkF5X8OoH0CkQZLPkPAQE08Nw8+T7nN1axnIL0LTuMN1eT3HLWVg5K2D1t0+hJGw5w==
+    size: 110388744
+path: R+-3.3.1-x64.exe
+sha512: miGm9ltZi1iWQjBAt4xnIkF5X8OoH0CkQZLPkPAQE08Nw8+T7nN1axnIL0LTuMN1eT3HLWVg5K2D1t0+hJGw5w==
+releaseDate: '2026-05-16T15:27:04.000Z'

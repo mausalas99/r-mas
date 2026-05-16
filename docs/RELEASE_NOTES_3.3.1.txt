@@ -1,0 +1,25 @@
+R+ 3.3.1 (estable — corrección Copiar labs)
+==========================================
+
+Fecha: 2026-05-16
+
+## Resumen
+
+Corrige un error crítico en **Laboratorio → Copiar**: volvía a pegar el informe crudo de SOME (tablas, flags B/*/A en líneas sueltas) en lugar del texto compacto procesado por R+.
+
+## Laboratorio
+
+- **Copiar** en Resultados usa de nuevo `buildLabLines()` (misma salida que **Enviar a nota**): BH/QS/GASES compactos, asteriscos en alterados, sin encabezado ni tablas del LIS.
+
+## Quién debería actualizar
+
+- Cualquier usuario en **3.3.0** que use **Copiar** para pegar labs en notas, WhatsApp u otro sistema.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v3.3.1
+
+- Mac: `R+-3.3.1-arm64.dmg`, `R+-3.3.1-x64.dmg` (y zip para auto-update).
+- Windows: `R+-3.3.1-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye `write-release-yml.js`).

@@ -25,7 +25,15 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 ---
 
-**Versión estable actual:** [3.3.0](https://github.com/mausalas99/r-mas/releases/tag/v3.3.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [3.3.1](https://github.com/mausalas99/r-mas/releases/tag/v3.3.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+
+---
+
+## R+ 3.3.1 (estable — corrección Copiar labs)
+
+- **Laboratorio** — **Copiar** vuelve a exportar el texto compacto procesado (no el informe crudo de SOME).
+
+Notas: `docs/RELEASE_NOTES_3.3.1.txt`.
 
 ---
 

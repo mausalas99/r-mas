@@ -7366,6 +7366,13 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '3.3.1': [
+    {
+      title: 'Copiar labs corregido',
+      body:
+        'El botón Copiar en Resultados vuelve a copiar el texto compacto de R+ (BH, QS, gases, etc.), no el informe crudo pegado desde SOME con tablas y flags sueltos.',
+    },
+  ],
   '3.3.0': [
     {
       title: 'LiveSync por sala',
@@ -9787,8 +9794,7 @@ function copiarLabsAlPortapapeles() {
   if (!activeLab || !activeLab.resLabs || !activeLab.resLabs.length) {
     showToast('No hay resultados procesados', 'error'); return;
   }
-  var rawFull = activeLab.sourceText && String(activeLab.sourceText).trim();
-  var text = rawFull ? rawFull : buildLabLines().join('\n');
+  var text = buildLabLines().join('\n');
   navigator.clipboard.writeText(text)
     .then(function() { showToast('Labs copiados al portapapeles ✓', 'success'); })
     .catch(function() { showToast('Error al copiar al portapapeles', 'error'); });
