@@ -3,7 +3,11 @@
 // scroll/foco/spotlight y decidir si esperar acción del usuario.
 
 const SALA_STEPS = [
-  'map',
+  'map_sidebar',
+  'pase_enter',
+  'pase_board',
+  'map_tabs',
+  'map_lab_teaser',
   'servicio_default',
   'lab_parse',
   'lab_view',
@@ -16,7 +20,11 @@ const SALA_STEPS = [
 ];
 
 const INTERCONSULTA_STEPS = [
-  'map',
+  'map_sidebar',
+  'pase_enter',
+  'pase_board',
+  'map_tabs',
+  'map_lab_teaser',
   'lab_parse',
   'lab_view',
   'lab_send',
@@ -33,6 +41,7 @@ const INTERCONSULTA_STEPS = [
 // Pasos cuyo avance depende de que el usuario presione un botón real
 // (no se muestra "Siguiente" en el dock).
 const ACTION_STEPS = new Set([
+  'pase_enter',
   'lab_parse',
   'lab_send',
   'ic_nota',
@@ -46,7 +55,14 @@ const ACTION_STEPS = new Set([
 // resueltos por la capa de UI con document.querySelector(). Los IDs
 // reales viven en index.html / app.js.
 const TARGETS = {
-  map:               { appTab: null,   selector: 'aside .sidebar-header',                    focus: false },
+  map_sidebar:       { appTab: null,   selector: 'aside',                                     focus: false,
+                       spotlightClass: 'tour-spotlight-action' },
+  map_tabs:          { appTab: null,   selector: '#main-area',                                focus: false,
+                       spotlightClass: 'tour-spotlight-action' },
+  pase_enter:        { appTab: null,   selector: '#main-area',                                focus: false,
+                       spotlightClass: 'tour-spotlight-action' },
+  map_lab_teaser:    { appTab: 'lab',  selector: '#lab-input',                                focus: false,
+                       spotlightClass: 'tour-spotlight-action' },
   servicio_default:  { appTab: null,   selector: '#settings-default-servicio',               focus: true,
                        openProfile: true },
   lab_parse:         { appTab: 'lab',  selector: '#btn-procesar, #lab-input',                focus: false },
@@ -69,6 +85,8 @@ const TARGETS = {
   profile:           { appTab: null,   selector: '#profile-modal .modal',                    focus: false,
                        openProfile: true },
   wrap:              { appTab: null,   selector: 'aside .sidebar-header',                    focus: false },
+  pase_board:        { appTab: 'nota', selector: '#pase-board-scroll',                       focus: false,
+                       spotlightClass: 'tour-spotlight-action' },
 };
 
 export function getSalaTourSteps() {

@@ -36,9 +36,8 @@ describe('parseBH_ extended', () => {
     assert.ok(r.extras && typeof r.extras === 'object');
   });
 
-  it('visible text only contains BH_TEXT_FIELDS (no white-cell absolutes nor percentages)', () => {
+  it('visible line includes headline neutrophil and eosinophil absolutes (compact BH)', () => {
     const { visible } = parseBH_(BH_REAL);
-    // Must include red/headline-white/plt:
     assert.match(visible, /\bHb\b/);
     assert.match(visible, /\bHto\b/);
     assert.match(visible, /\bVCM\b/);
@@ -46,24 +45,25 @@ describe('parseBH_ extended', () => {
     assert.match(visible, /\bCHCM\b/);
     assert.match(visible, /\bRDW\b/);
     assert.match(visible, /\bLeu\b/);
+    assert.match(visible, /\bNeu\b/);
+    assert.match(visible, /\bEos\b/);
     assert.match(visible, /\bRBC\b/);
     assert.match(visible, /\bPlt\b/);
     assert.match(visible, /\bMPV\b/);
-    // Must NOT include white-cell absolutes or any percentage:
-    assert.doesNotMatch(visible, /\bNeu\b/);
+    assert.match(visible, /\bNeu\s+21\.7\*?/);
+    assert.match(visible, /\bEos\s+0\b/);
     assert.doesNotMatch(visible, /\bLin\b/);
     assert.doesNotMatch(visible, /\bMono\b/);
-    assert.doesNotMatch(visible, /\bEos\b/);
     assert.doesNotMatch(visible, /\bBaso\b/);
     assert.doesNotMatch(visible, /Pct\b|%/);
   });
 
-  it('extras contains all white-cell absolutes and percentages', () => {
+  it('extras contains other white-cell absolutes and percentages (not Neu/Eos on visible line)', () => {
     const { extras } = parseBH_(BH_REAL);
-    assert.strictEqual(extras.Neu,  '21.70');
+    assert.strictEqual(extras.Neu, undefined);
+    assert.strictEqual(extras.Eos, undefined);
     assert.strictEqual(extras.Lin,  '0.50');
     assert.strictEqual(extras.Mono, '0.847');
-    assert.strictEqual(extras.Eos,  '0.000');
     assert.strictEqual(extras.Baso, '0.072');
     assert.strictEqual(extras.NeuPct,  '93.8');
     assert.strictEqual(extras.LinPct,  '2.2');
@@ -73,8 +73,11 @@ describe('parseBH_ extended', () => {
   });
 
   it('distinguishes NEU from NEU% (no key collision)', () => {
-    const { extras } = parseBH_(BH_REAL);
-    assert.notStrictEqual(extras.Neu, extras.NeuPct);
+    const { visible, extras } = parseBH_(BH_REAL);
+    assert.match(visible, /\bNeu\s+/);
+    assert.strictEqual(extras.Neu, undefined);
+    assert.notStrictEqual(extras.NeuPct, '21.7');
+    assert.strictEqual(extras.NeuPct, '93.8');
   });
 
   it('parses MCHC, RDW, MPV into visible text correctly', () => {

@@ -21,6 +21,45 @@ function safeParseObject(raw) {
   return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
 }
 
+function coerceBool(v, defaultVal) {
+  if (v === true || v === false) return v;
+  if (v === 'true' || v === 1) return true;
+  if (v === 'false' || v === 0) return false;
+  return defaultVal;
+}
+
+/** Normaliza evento persistente desde JSON crudo (omite inválidos / demo paciente). */
+function normalizeScheduledProcedureStored(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const id = String(raw.id != null ? raw.id : '').trim();
+  const patientId = String(raw.patientId != null ? raw.patientId : '').trim();
+  const procedure = String(raw.procedure != null ? raw.procedure : '').trim();
+  const location = String(raw.location != null ? raw.location : '').trim();
+  if (!id || !patientId || !procedure || !location) return null;
+  if (patientId.indexOf('demo-') === 0) return null;
+  const start = String(raw.start != null ? raw.start : '').trim();
+  if (!start) return null;
+  const ds = Date.parse(start);
+  if (!Number.isFinite(ds)) return null;
+  let createdAt = String(raw.createdAt != null ? raw.createdAt : '').trim();
+  if (!createdAt || !Number.isFinite(Date.parse(createdAt))) {
+    createdAt = new Date(ds).toISOString();
+  }
+  let updatedAt = String(raw.updatedAt != null ? raw.updatedAt : '').trim();
+  if (!updatedAt || !Number.isFinite(Date.parse(updatedAt))) updatedAt = createdAt;
+  return {
+    id,
+    patientId,
+    procedure,
+    location,
+    materialApproved: coerceBool(raw.materialApproved, false),
+    anesthesiaScheduled: coerceBool(raw.anesthesiaScheduled, false),
+    start: new Date(ds).toISOString(),
+    createdAt,
+    updatedAt,
+  };
+}
+
 export const storage = {
   /**
    * Get all patients from localStorage
@@ -204,6 +243,45 @@ export const storage = {
   },
 
   /**
+   * Lista local de procedimientos agendados (spec agenda semanal v1).
+   * @returns {Array<Object>}
+   */
+  getScheduledProcedures() {
+    const raw = safeParseArray(localStorage.getItem('rpc-scheduled-procedures'));
+    const out = [];
+    const seen = new Set();
+    for (let i = 0; i < raw.length; i += 1) {
+      const ev = normalizeScheduledProcedureStored(raw[i]);
+      if (
+        ev &&
+        ev.patientId.indexOf('demo-') !== 0 &&
+        !seen.has(ev.id)
+      ) {
+        seen.add(ev.id);
+        out.push(ev);
+      }
+    }
+    return out;
+  },
+
+  /**
+   * @param {Array<Object>} events
+   */
+  saveScheduledProcedures(events) {
+    const list = Array.isArray(events) ? events.map(normalizeScheduledProcedureStored).filter(Boolean) : [];
+    const filtered = list.filter(ev => ev.patientId.indexOf('demo-') !== 0);
+    localStorage.setItem('rpc-scheduled-procedures', JSON.stringify(filtered));
+  },
+
+  /** Elimina en cascada eventos ligados al paciente. */
+  removeScheduledProceduresForPatient(patientId) {
+    if (typeof patientId !== 'string' || !patientId) return;
+    const cur = this.getScheduledProcedures();
+    const next = cur.filter(ev => ev.patientId !== patientId);
+    if (next.length !== cur.length) this.saveScheduledProcedures(next);
+  },
+
+  /**
    * Add a lab entry to a patient's lab history
    * @param {string} patientId - Patient ID
    * @param {Object} labEntry - Lab entry object with test results
@@ -288,6 +366,19 @@ export const storage = {
 
   saveHostPatientMap(map) {
     localStorage.setItem('rpc-lan-host-patient-map', JSON.stringify(map || {}));
+  },
+
+  /** 'host' = esta R+ abre el servidor; 'client' = solo se une. */
+  getLanUiRole() {
+    var v = localStorage.getItem('rpc-lan-ui-role');
+    if (v === 'host' || v === 'client') return v;
+    return 'client';
+  },
+
+  saveLanUiRole(role) {
+    if (role === 'host' || role === 'client') {
+      localStorage.setItem('rpc-lan-ui-role', role);
+    }
   },
 
   /**

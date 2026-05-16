@@ -1,17 +1,17 @@
-version: 3.0.4
+version: 3.2.0
 files:
-  - url: R+-3.0.4-arm64.zip
-    sha512: z+paiYfSVE36VAdiGDFOUiwkduXb3lz8Qv8RHhPVbkTw4tqN1CNthzR36myD9y5m0N0JlqtNj31TpI3BL1dLUw==
-    size: 141418365
-  - url: R+-3.0.4-x64.zip
-    sha512: vpkQoLCamPLojNMADIqZvF4IAKdVqkZ5FfhBfMGhj3VOzLyjAKUMg4+i5LiANanS/ITvA2JQ0nPr0K5YRpqwTg==
-    size: 149444548
-  - url: R+-3.0.4-arm64.dmg
-    sha512: ungGMLGWLmWrDi8oMq8zIsRUMnw+chaeY2k7954dlNYUnXV9NqypgF9pR+O78FWcu/zP4a4HXItlOGyXJgKu6w==
-    size: 146109346
-  - url: R+-3.0.4-x64.dmg
-    sha512: 2Q5phpJcCy+3zUeS/AjnFG/bIdn2HqCctt9D1rtxMJfZFIMcANsVGDQtKQVcgAVjsIIjZKwfqpVJdPBTQAQkaw==
-    size: 154172851
-path: R+-3.0.4-arm64.zip
-sha512: z+paiYfSVE36VAdiGDFOUiwkduXb3lz8Qv8RHhPVbkTw4tqN1CNthzR36myD9y5m0N0JlqtNj31TpI3BL1dLUw==
-releaseDate: '2026-05-11T17:35:47.000Z'
+  - url: r-plus-3.2.0-arm64-mac.zip
+    sha512: GPWNYV7/TYhZC/FttT+tBKcHHdjTy6YBaUnY2UDOLEitOX4japA46T31Bc5BkmtqHQZ1XCibwcGN23FqjtV0aA==
+    size: 141422579
+  - url: r-plus-3.2.0-mac.zip
+    sha512: SZVme4hDmyoZn8Lqsru+qGVJ4nmh2ZA2Myx9o3okYCHaQDrHsSJGuR8H1RgX2K9Gf/o0oV3W+QokMRgdr7dedQ==
+    size: 149666658
+  - url: r-plus-3.2.0.dmg
+    sha512: x1cWiByt88+9LNg4fz7SebyoslImKGfPrMv3cHySijudl8kBY9tOz1wqvNUnjv+cQrlbT/SZ7w7VqqUPPEGgOg==
+    size: 146039872
+  - url: r-plus-3.2.0.dmg
+    sha512: oOQQkYLmb9qmmSoLbo7EhuUo96TspLJXHBpvNa0uJFWllbUdD0/+Yr6twAg1QAEQuIeqcPxia7H4kJgU9FcNKw==
+    size: 154327480
+path: r-plus-3.2.0-arm64-mac.zip
+sha512: GPWNYV7/TYhZC/FttT+tBKcHHdjTy6YBaUnY2UDOLEitOX4japA46T31Bc5BkmtqHQZ1XCibwcGN23FqjtV0aA==
+releaseDate: '2026-05-16T03:11:38.090Z'

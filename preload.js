@@ -43,8 +43,23 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getPlatform: function() {
     return ipcRenderer.invoke('get-platform');
   },
+  /** Información síncrona del chrome de ventana (sin IPC). */
+  getWindowChromeFlags: function() {
+    return {
+      macTitleBarInset: process.platform === 'darwin',
+    };
+  },
   writeLanHostTeamCode: function(plain) {
     return ipcRenderer.invoke('lan-host-write-team-code', plain);
+  },
+  getLanCandidateBaseUrl: function() {
+    return ipcRenderer.invoke('get-lan-candidate-base-url');
+  },
+  resetLanSquadHostState: function() {
+    return ipcRenderer.invoke('lan-reset-squad-host-state');
+  },
+  getLanEffectiveTeamCode: function() {
+    return ipcRenderer.invoke('lan-get-effective-team-code');
   },
   relaunchApp: function() {
     ipcRenderer.send('relaunch-app');

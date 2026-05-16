@@ -266,7 +266,8 @@ function normalizeFrecuencia(fr) {
   return t;
 }
 
-function dosisBeforeSlash(dosisRaw) {
+/** Parte de dosis aplicada antes de comentarios del sistema (// …). Usado en receta y en tarjetas Pase. */
+export function dosisBeforeSlash(dosisRaw) {
   var t = trimStr(dosisRaw);
   var idx = t.indexOf('//');
   var left = idx === -1 ? t : t.slice(0, idx);

@@ -19,13 +19,19 @@ import {
   reprocessLabResultLines_,
   escTxt,
   renderToken,
-  renderEntry
+  renderEntry,
+  buildAtbChipsHtml,
+  buildAtbRisSummaryHtml,
+  extractSensCrudasForGermFromSource
 } from './labs.js';
 import { formatProgressLine } from './update-helpers.mjs';
 import {
   isDuplicateAgainstLatest,
   findDuplicateLabSetIdsToRemove,
   findExactDuplicateLabGroups,
+  findNormalizedSourceDuplicateGroups,
+  findConflictingSameDateTimeGroups,
+  areLabSetsEquivalent,
   compareLabSetIdForDedupe,
   normalizeLabLine,
 } from './lab-history-auto-store-core.mjs';
@@ -37,6 +43,7 @@ import {
   formatMedicationEgresoLine,
   classifyMedicationSoapCategory,
   applyMedCatalogOverlay,
+  dosisBeforeSlash,
 } from './med-receta-core.mjs';
 import { isModeSala, getDefaultServicio, migrateToV3 } from './mode-features.mjs';
 import {
@@ -53,6 +60,16 @@ import {
 } from './tour-targets.mjs';
 import { resolveQuickOutputAction } from './quick-output.mjs';
 import { handleOutputDirFallback } from './output-dir-fallback.mjs';
+import {
+  mondayStartLocal,
+  addDaysLocal,
+  weekBoundsFromMonday,
+  clipEventToDayColumn,
+  assignLanesByInterval,
+  AGENDA_DISPLAY_FIRST_HOUR,
+  AGENDA_DISPLAY_LAST_HOUR_EXCLUSIVE,
+  VISUAL_DURATION_MS,
+} from './procedure-agenda-week.mjs';
 
 
 // ════════════════════════════════════════════════════════════════════
@@ -67,22 +84,180 @@ var listadoProblemas = storage.getListadoProblemas();
 applyMedCatalogOverlay(storage.getMedCatalog());
 var medNotaSelectionByPatient = {};
 var activeId     = null;
-var activeInner  = 'notas';
+var activeInner  = 'todo';
 var activeAppTab = 'lab';
+/** @type {number} -1 pasado, 0 actual, +1 siguiente (spec agenda semanal) */
+var procedureAgendaWeekOffset = 0;
 var patientSearchFilter = '';
+var _lastRondaNavIds = [];
+/** Solo en densidad Pase + Expediente: resumen ronda (labs + pendientes) vs expediente con pestañas. */
+var _roundOverviewMode = true;
 var ARCHIVED_SECTION_COLLAPSED_LS = 'rpc-archived-section-collapsed';
-var dragPatientId = null;
+/** Una instancia Sortable.js por zona (pinned / activos / archivados). */
+var _patientListSortables = [];
 var profileSectionVisible = false;
 var activeLab    = null;
 var settings     = storage.getSettings();
 var __v3MigratedThisBoot = migrateToV3(settings);
 if (__v3MigratedThisBoot) storage.saveSettings(settings);
 var lanClient = new LanClient();
+var LAN_KNOWN_ROOMS_LS = 'rpc-lan-known-rooms';
+function readLanKnownRooms() {
+  try {
+    var raw = localStorage.getItem(LAN_KNOWN_ROOMS_LS);
+    var arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr.filter(function (x) { return x && x.id; }) : [];
+  } catch (_e) {
+    return [];
+  }
+}
+function writeLanKnownRooms(arr) {
+  try {
+    localStorage.setItem(LAN_KNOWN_ROOMS_LS, JSON.stringify(arr.slice(0, 12)));
+  } catch (_e) {}
+}
+function migrateLanLastRoomToKnown() {
+  var list = readLanKnownRooms();
+  if (list.length) return;
+  var last = '';
+  try {
+    last = String(localStorage.getItem('rpc-lan-last-room') || '').trim();
+  } catch (_e) {}
+  if (last) writeLanKnownRooms([{ id: last, label: 'Última sala', joinedAt: Date.now() }]);
+}
+function forgetLanRoomSession(roomId) {
+  var id = String(roomId || '').trim();
+  if (!id) return;
+  writeLanKnownRooms(readLanKnownRooms().filter(function (r) { return r.id !== id; }));
+  try {
+    if (String(localStorage.getItem('rpc-lan-last-room') || '').trim() === id) {
+      localStorage.removeItem('rpc-lan-last-room');
+    }
+  } catch (_e) {}
+}
+function rememberLanRoomJoined(roomId, displayName) {
+  var id = String(roomId || '').trim();
+  if (!id) return;
+  var label = String(displayName || '').trim() || id.slice(0, 14);
+  var next = [{ id: id, label: label, joinedAt: Date.now() }];
+  readLanKnownRooms().forEach(function (r) {
+    if (r.id !== id) next.push(r);
+  });
+  writeLanKnownRooms(next);
+}
+/** Salas REST no requieren WebSocket; el botón no debe depender solo de `lanClient.connected`. */
+function isLanSessionConfiguredForRest() {
+  try {
+    var c = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() : null;
+    return !!(c && String(c.hostUrl || '').trim() && String(c.teamCode || '').trim());
+  } catch (_e) {
+    return false;
+  }
+}
+
+/** En escritorio: alinea rpc-lan-config.teamCode con archivo/env/default (misma regla que el proceso servidor). */
+async function syncLanSavedTeamCodeWithEffectiveHostCode() {
+  if (!window.electronAPI || typeof window.electronAPI.getLanEffectiveTeamCode !== 'function') {
+    return false;
+  }
+  var info;
+  try {
+    info = await window.electronAPI.getLanEffectiveTeamCode();
+  } catch (_e) {
+    return false;
+  }
+  if (!info || !info.ok || !info.code) return false;
+  var cfg = typeof storage.getLanConfig === 'function' ? (storage.getLanConfig() || {}) : {};
+  var hostUrl = String(cfg.hostUrl || '').trim().replace(/\/+$/, '');
+  if (!hostUrl) return false;
+  storage.saveLanConfig({ hostUrl: hostUrl, teamCode: info.code });
+  lanClient.configure({ hostUrl: hostUrl, teamCode: info.code });
+  try {
+    lanClient.disconnect();
+    lanClient.connectSyncChannel();
+  } catch (_e) {}
+  return true;
+}
+function appendLanKnownSessionsSection(root) {
+  if (!root) return;
+  migrateLanLastRoomToKnown();
+  var list = readLanKnownRooms();
+  var sec = document.createElement('div');
+  sec.style.marginBottom = '14px';
+  sec.style.paddingBottom = '12px';
+  sec.style.borderBottom = '1px solid var(--border)';
+  var h = document.createElement('div');
+  h.style.fontSize = '11px';
+  h.style.fontWeight = '700';
+  h.style.textTransform = 'uppercase';
+  h.style.letterSpacing = '0.4px';
+  h.style.color = 'var(--text-muted)';
+  h.style.marginBottom = '8px';
+  h.textContent = 'Sesiones guardadas';
+  sec.appendChild(h);
+  if (!list.length) {
+    var empty = document.createElement('p');
+    empty.style.fontSize = '12px';
+    empty.style.color = 'var(--text-muted)';
+    empty.style.margin = '0';
+    empty.style.lineHeight = '1.45';
+    empty.textContent =
+      'Aún no hay salas guardadas. Cuando estés conectado por LAN, elige una sala abajo y pulsa «Unirse»; después podrás volver a entrar desde aquí.';
+    sec.appendChild(empty);
+    root.appendChild(sec);
+    return;
+  }
+  list.forEach(function (rec) {
+    var row = document.createElement('div');
+    row.style.display = 'flex';
+    row.style.gap = '8px';
+    row.style.alignItems = 'center';
+    row.style.marginBottom = '6px';
+    var lab = document.createElement('span');
+    lab.style.flex = '1';
+    lab.style.fontSize = '13px';
+    lab.style.overflow = 'hidden';
+    lab.style.textOverflow = 'ellipsis';
+    lab.style.whiteSpace = 'nowrap';
+    lab.textContent = String(rec.label || rec.id);
+    lab.title = String(rec.id);
+    var join = document.createElement('button');
+    join.type = 'button';
+    join.className = 'btn-lan-secondary';
+    join.style.flex = '0 0 auto';
+    join.textContent = 'Unirse';
+    join.onclick = function () {
+      joinLanRoom(rec.id, rec.label);
+    };
+    var del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'btn-lan-danger';
+    del.style.flex = '0 0 auto';
+    del.textContent = 'Quitar';
+    del.title = 'Quitar de la lista';
+    del.onclick = function () {
+      forgetLanRoomSession(rec.id);
+      renderLanPanel();
+    };
+    row.appendChild(lab);
+    row.appendChild(join);
+    row.appendChild(del);
+    sec.appendChild(row);
+  });
+  var hint = document.createElement('p');
+  hint.style.fontSize = '10px';
+  hint.style.color = 'var(--text-muted)';
+  hint.style.margin = '4px 0 0 0';
+  hint.style.lineHeight = '1.35';
+  hint.textContent = 'Se actualizan al unirte a una sala (relay en vivo).';
+  sec.appendChild(hint);
+  root.appendChild(sec);
+}
 function initLanClientFromStorage() {
   var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() : null;
   if (cfg && cfg.hostUrl && cfg.teamCode) {
     lanClient.configure(cfg);
-    try { lanClient.connectCalendarChannel(); } catch (_e) {}
+    try { lanClient.connectSyncChannel(); } catch (_e) {}
   }
 }
 initLanClientFromStorage();
@@ -94,11 +269,10 @@ lanClient.addEventListener('lan-status', function (ev) {
     el.textContent = '';
   } else {
     el.style.display = 'block';
-    el.textContent = 'Sin conexión al servidor de sala (LAN). Agenda de procedimientos en solo lectura.';
+    el.textContent = 'Sin conexión al host LAN. LiveSync (salas y relay) puede estar limitado hasta reconectar.';
   }
 });
 lanClient.addEventListener('lan-patch', function () {
-  if (typeof renderCalendarioPanel === 'function') renderCalendarioPanel();
   if (typeof renderLanPanel === 'function') renderLanPanel();
 });
 var sparkCharts  = {};
@@ -120,8 +294,12 @@ var idleLockEnabledMinutes = 0;
 
 var TEND_UNITS = {
   Hb:'g/dL',  Hto:'%',    Leu:'K/μL', Plt:'K/μL', VCM:'fL', HCM:'pg',
-  Neu:'K/μL', Eos:'K/μL', Ret:'%', TP:'s', TTP:'s', INR:'',
-  Glu:'mg/dL',Cr:'mg/dL', BUN:'mg/dL',PCR:'mg/dL',
+  RBC:'M/μL', CHCM:'g/dL', RDW:'%', MPV:'fL',
+  Neu:'K/μL', Eos:'K/μL', Lin:'K/μL', Mono:'K/μL', Baso:'K/μL',
+  NeuPct:'%', LinPct:'%', MonoPct:'%', EosPct:'%', BasoPct:'%',
+  Bandas:'%', Mielo:'%', Metamielo:'%', Promielo:'%', Blastos:'%', Atipicos:'%',
+  Ret:'%', TP:'s', TTP:'s', INR:'',
+  Glu:'mg/dL',Cr:'mg/dL', eTFG:'mL/min/1.73m²', BUN:'mg/dL',PCR:'mg/dL',
   AU:'mg/dL', TGL:'mg/dL',COL:'mg/dL', VSG:'mm/h', CPK:'U/L',
   Na:'mEq/L', K:'mEq/L',  Cl:'mEq/L', HCO3:'mEq/L',Ca:'mg/dL', F:'mg/dL', Mg:'mEq/L',
   AST:'U/L',  ALT:'U/L',  FA:'U/L',   BT:'mg/dL', Alb:'g/dL', BD:'mg/dL', BI:'mg/dL',
@@ -131,7 +309,11 @@ var TEND_UNITS = {
 };
 var TEND_REF = {
   Hb:[12,17.5], Hto:[36,53], Leu:[4,11], Plt:[150,400], VCM:[80,100], HCM:[27,33],
-  Neu:[1.5,8], Eos:[0,0.6], Ret:[0.5,2.5], TP:[11,14], TTP:[25,35], INR:[0.8,1.2],
+  RBC:[4.2,5.4], CHCM:[31.5,34.5], RDW:[11.5,14.5], MPV:[7.4,10.4],
+  Neu:[1.5,8], Eos:[0,0.6], Lin:[0.6,3.4], Mono:[0,0.9], Baso:[0,0.2],
+  NeuPct:[37,80], LinPct:[10,50], MonoPct:[0,12], EosPct:[0,7], BasoPct:[0,2.5],
+  Bandas:[0,5], Mielo:[0,1], Metamielo:[0,1], Promielo:[0,1], Blastos:[0,1], Atipicos:[0,5],
+  Ret:[0.5,2.5], TP:[11,14], TTP:[25,35], INR:[0.8,1.2],
   Glu:[70,100], Cr:[0.5,1.3], BUN:[7,20], PCR:[0,0.5],
   AU:[3.5,7], TGL:[0,150], COL:[0,200], CPK:[30,200],
   Na:[136,145], K:[3.5,5.0], Cl:[96,106], HCO3:[22,28], Ca:[8.5,10.5], F:[2.5,4.5], Mg:[1.6,2.6],
@@ -193,23 +375,23 @@ var TEND_SERIES_CATALOG = [
   { sectionKey: 'BH', fieldKey: 'Neu', cardTitle: 'Neutrófilos' },
   { sectionKey: 'BH', fieldKey: 'Eos', cardTitle: 'Eosinófilos' },
   { sectionKey: 'BH', fieldKey: 'Plt', cardTitle: 'Plaquetas' },
-  { sectionKey: 'BH', fieldKey: 'Ret', cardTitle: 'Reticulocitos' },
-  { sectionKey: 'BH', fieldKey: 'TP', cardTitle: 'TP' },
-  { sectionKey: 'BH', fieldKey: 'TTP', cardTitle: 'TTP' },
-  { sectionKey: 'BH', fieldKey: 'INR', cardTitle: 'INR' },
-  { sectionKey: 'BH', fieldKey: 'RBC', cardTitle: 'Eritrocitos' },
-  { sectionKey: 'BH', fieldKey: 'CHCM', cardTitle: 'CHCM' },
-  { sectionKey: 'BH', fieldKey: 'RDW', cardTitle: 'RDW' },
-  { sectionKey: 'BH', fieldKey: 'Lin', cardTitle: 'Linfocitos' },
-  { sectionKey: 'BH', fieldKey: 'Mono', cardTitle: 'Monocitos' },
-  { sectionKey: 'BH', fieldKey: 'Baso', cardTitle: 'Basófilos' },
-  { sectionKey: 'BH', fieldKey: 'MPV', cardTitle: 'VPM' },
-  { sectionKey: 'BH', fieldKey: 'Bandas', cardTitle: 'Bandas' },
-  { sectionKey: 'BH', fieldKey: 'Mielo', cardTitle: 'Mielocitos' },
-  { sectionKey: 'BH', fieldKey: 'Metamielo', cardTitle: 'Metamielocitos' },
-  { sectionKey: 'BH', fieldKey: 'Promielo', cardTitle: 'Promielocitos' },
-  { sectionKey: 'BH', fieldKey: 'Blastos', cardTitle: 'Blastos' },
-  { sectionKey: 'BH', fieldKey: 'Atipicos', cardTitle: 'Linfocitos atípicos' },
+  { sectionKey: 'BH', fieldKey: 'Ret', cardTitle: 'Reticulocitos', hiddenByDefault: true },
+  { sectionKey: 'BH', fieldKey: 'TP', cardTitle: 'TP', hiddenByDefault: true },
+  { sectionKey: 'BH', fieldKey: 'TTP', cardTitle: 'TTP', hiddenByDefault: true },
+  { sectionKey: 'BH', fieldKey: 'INR', cardTitle: 'INR', hiddenByDefault: true },
+  { sectionKey: 'BH', fieldKey: 'RBC', cardTitle: 'Eritrocitos', hiddenByDefault: true },
+  { sectionKey: 'BH', fieldKey: 'CHCM', cardTitle: 'CHCM', hiddenByDefault: true },
+  { sectionKey: 'BH', fieldKey: 'RDW', cardTitle: 'RDW', hiddenByDefault: true },
+  { sectionKey: 'BH', fieldKey: 'Lin', cardTitle: 'Linfocitos', hiddenByDefault: true },
+  { sectionKey: 'BH', fieldKey: 'Mono', cardTitle: 'Monocitos', hiddenByDefault: true },
+  { sectionKey: 'BH', fieldKey: 'Baso', cardTitle: 'Basófilos', hiddenByDefault: true },
+  { sectionKey: 'BH', fieldKey: 'MPV', cardTitle: 'VPM', hiddenByDefault: true },
+  { sectionKey: 'BH', fieldKey: 'Bandas', cardTitle: 'Bandas', hiddenByDefault: true },
+  { sectionKey: 'BH', fieldKey: 'Mielo', cardTitle: 'Mielocitos', hiddenByDefault: true },
+  { sectionKey: 'BH', fieldKey: 'Metamielo', cardTitle: 'Metamielocitos', hiddenByDefault: true },
+  { sectionKey: 'BH', fieldKey: 'Promielo', cardTitle: 'Promielocitos', hiddenByDefault: true },
+  { sectionKey: 'BH', fieldKey: 'Blastos', cardTitle: 'Blastos', hiddenByDefault: true },
+  { sectionKey: 'BH', fieldKey: 'Atipicos', cardTitle: 'Linfocitos atípicos', hiddenByDefault: true },
   { sectionKey: 'BH', fieldKey: 'NeuPct', cardTitle: 'Neutrófilos %', hiddenByDefault: true },
   { sectionKey: 'BH', fieldKey: 'LinPct', cardTitle: 'Linfocitos %', hiddenByDefault: true },
   { sectionKey: 'BH', fieldKey: 'MonoPct', cardTitle: 'Monocitos %', hiddenByDefault: true },
@@ -217,6 +399,7 @@ var TEND_SERIES_CATALOG = [
   { sectionKey: 'BH', fieldKey: 'BasoPct', cardTitle: 'Basófilos %', hiddenByDefault: true },
   { sectionKey: 'QS', fieldKey: 'Glu', cardTitle: 'Glucosa' },
   { sectionKey: 'QS', fieldKey: 'Cr', cardTitle: 'Creatinina' },
+  { sectionKey: 'QS', fieldKey: 'eTFG', cardTitle: 'eTFG (CKD-EPI 2021)' },
   { sectionKey: 'QS', fieldKey: 'BUN', cardTitle: 'BUN' },
   { sectionKey: 'QS', fieldKey: 'PCR', cardTitle: 'PCR' },
   { sectionKey: 'QS', fieldKey: 'PCT', cardTitle: 'Procalcitonina' },
@@ -264,7 +447,7 @@ var TEND_SERIES_CATALOG = [
 ];
 var TEND_SECTION_EXPANDED_LS = 'rpc-tend-sections-expanded';
 var TEND_HIDDEN_SERIES_LS = 'rpc-tend-hidden-series';
-var TEND_HIDDEN_BAR_COLLAPSED_LS = 'rpc-tend-hidden-bar-collapsed';
+var TEND_ABNORMAL_ONLY_LS = 'rpc-tend-abnormal-only';
 var guidedTourActive = false;
 /** @type {'sala'|'interconsulta'|null} */
 var guidedTourBranch = null;
@@ -300,6 +483,119 @@ var OLDER_DEMO_LAB_REPORT = 'LABORATORIO CLÍNICO — Hospital General\n' +
   'Albúmina: 2.3 g/dL\nAST: 14 U/L\nALT: 8 U/L\nFosfatasa Alcalina: 110 U/L\n' +
   'Bilirrubina Total: 0.4 mg/dL\nBilirrubina Directa: 0.15 mg/dL\nBilirrubina Indirecta: 0.25 mg/dL\n' +
   'LDH: 125 U/L\nAmilasa: 28 U/L';
+
+/** Plantilla BH de referencia (p. ej. tour guiado). El cuadro de laboratorio no se rellena solo al iniciar. */
+var LAB_INPUT_DEFAULT_REPORT =
+  'BIOMETRÍA HEMÁTICA\n' +
+  'Hemoglobina: 7.44 g/dL\n' +
+  'Hematocrito: 24%\n' +
+  'VCM: 97 fL\n' +
+  'HCM: 30.2 pg\n' +
+  'Leucocitos: 29.1 x10³/µL\n' +
+  'Neutrófilos: 25.8 x10³/µL\n' +
+  'Eosinófilos: 0 x10³/µL\n' +
+  'Plaquetas: 163 x10³/µL\n';
+
+var LAB_OUTPUT_PREFS_KEY = 'rpc-lab-output-prefs-v1';
+var LAB_BH_EXT_ORDER = [
+  'Ret', 'TP', 'TTP', 'INR', 'Lin', 'Mono', 'Baso', 'NeuPct', 'LinPct', 'MonoPct', 'EosPct',
+  'BasoPct', 'Bandas', 'Mielo', 'Metamielo', 'Promielo', 'Blastos', 'Atipicos',
+];
+
+function getLabOutputPrefs() {
+  try {
+    var raw = localStorage.getItem(LAB_OUTPUT_PREFS_KEY);
+    var o = raw ? JSON.parse(raw) : {};
+    return {
+      showBhExtendedLine: !!o.showBhExtendedLine,
+      hideGasoAdvInterp: !!o.hideGasoAdvInterp,
+    };
+  } catch (_e) {
+    return { showBhExtendedLine: false, hideGasoAdvInterp: false };
+  }
+}
+
+function setLabOutputPrefs(partial) {
+  var cur = getLabOutputPrefs();
+  if (partial.showBhExtendedLine != null) cur.showBhExtendedLine = !!partial.showBhExtendedLine;
+  if (partial.hideGasoAdvInterp != null) cur.hideGasoAdvInterp = !!partial.hideGasoAdvInterp;
+  try {
+    localStorage.setItem(LAB_OUTPUT_PREFS_KEY, JSON.stringify(cur));
+  } catch (_e) {}
+  return cur;
+}
+
+function isGasoInterpretacionResLabChunk(text) {
+  var head = String(text || '').split('\n')[0].trim();
+  return /^INTERPRETACI[ÓO]N\s+GASOMETR[IÍ]A\s*:/i.test(head);
+}
+
+function isBhMainResLabChunk(text) {
+  if (!text) return false;
+  var head = String(text).split('\n')[0].trim();
+  return head.indexOf('BH\t') === 0 || /^BH\s/.test(head);
+}
+
+function formatBhExtendedTabLine(bhExtras) {
+  if (!bhExtras || typeof bhExtras !== 'object') return '';
+  var parts = [];
+  var seen = {};
+  function addKey(k) {
+    if (seen[k]) return;
+    var v = bhExtras[k];
+    if (v == null || String(v).trim() === '') return;
+    seen[k] = true;
+    parts.push(k, String(v));
+  }
+  LAB_BH_EXT_ORDER.forEach(addKey);
+  Object.keys(bhExtras).forEach(function (k) {
+    addKey(k);
+  });
+  if (!parts.length) return '';
+  return 'BH ext\t' + parts.join(' ');
+}
+
+function _syncLabPrefSwitchAria(el) {
+  if (!el || el.getAttribute('role') !== 'switch') return;
+  el.setAttribute('aria-checked', el.checked ? 'true' : 'false');
+}
+
+function openLabDisplayPrefsModal() {
+  var backdrop = document.getElementById('lab-display-prefs-backdrop');
+  if (!backdrop) return;
+  var p = getLabOutputPrefs();
+  var cbBh = document.getElementById('lab-pref-bh-extended');
+  var cbGaso = document.getElementById('lab-pref-gaso-extended');
+  if (cbBh) {
+    cbBh.checked = p.showBhExtendedLine;
+    _syncLabPrefSwitchAria(cbBh);
+  }
+  if (cbGaso) {
+    cbGaso.checked = !p.hideGasoAdvInterp;
+    _syncLabPrefSwitchAria(cbGaso);
+  }
+  backdrop.classList.add('open');
+  backdrop.setAttribute('aria-hidden', 'false');
+}
+
+function closeLabDisplayPrefsModal() {
+  var backdrop = document.getElementById('lab-display-prefs-backdrop');
+  if (!backdrop) return;
+  backdrop.classList.remove('open');
+  backdrop.setAttribute('aria-hidden', 'true');
+}
+
+function onLabDisplayPrefsChanged() {
+  var cbBh = document.getElementById('lab-pref-bh-extended');
+  var cbGaso = document.getElementById('lab-pref-gaso-extended');
+  setLabOutputPrefs({
+    showBhExtendedLine: cbBh ? cbBh.checked : false,
+    hideGasoAdvInterp: cbGaso ? !cbGaso.checked : false,
+  });
+  _syncLabPrefSwitchAria(cbBh);
+  _syncLabPrefSwitchAria(cbGaso);
+  if (activeLab && activeLab.resLabs && activeLab.resLabs.length) renderOutput(activeLab);
+}
 
 function isLikelyLabDataLine(line) {
   if (!line) return false;
@@ -772,7 +1068,7 @@ function tendSeriesSetUserHidden(sectionKey, fieldKey, hidden) {
 }
 
 function seedTendHiddenDefaults() {
-  var SEED_KEY = 'rpc-tend-hidden-seeded-v1';
+  var SEED_KEY = 'rpc-tend-hidden-seeded-v2';
   try {
     if (localStorage.getItem(SEED_KEY) === '1') return;
   } catch (_e) {
@@ -863,34 +1159,35 @@ function tendEyeVisibilitySvg() {
   );
 }
 
-function tendHiddenBarIsCollapsed() {
+function tendAbnormalOnlyRead() {
   try {
-    return localStorage.getItem(TEND_HIDDEN_BAR_COLLAPSED_LS) === '1';
+    return localStorage.getItem(TEND_ABNORMAL_ONLY_LS) === '1';
   } catch (_e) {
     return false;
   }
 }
 
-function tendHiddenBarSetCollapsed(collapsed) {
+function tendAbnormalOnlyWrite(on) {
   try {
-    localStorage.setItem(TEND_HIDDEN_BAR_COLLAPSED_LS, collapsed ? '1' : '0');
+    if (on) localStorage.setItem(TEND_ABNORMAL_ONLY_LS, '1');
+    else localStorage.removeItem(TEND_ABNORMAL_ONLY_LS);
   } catch (_e) {}
 }
 
-function toggleTendHiddenBar(ev) {
-  if (ev) {
-    ev.preventDefault();
-    ev.stopPropagation();
-  }
-  tendHiddenBarSetCollapsed(!tendHiddenBarIsCollapsed());
-  renderTendencias();
+function tendSeriesLatestAbnormal(history, sectionKey, fieldKey) {
+  var raw = history.filter(function (s) {
+    return getSetTrendValueForSeries(s, sectionKey, fieldKey) != null;
+  });
+  var setsDesc = dedupeTrendSetsForSeries(raw, sectionKey, fieldKey);
+  if (setsDesc.length < 2) return false;
+  var latest = getSetTrendValueForSeries(setsDesc[0], sectionKey, fieldKey);
+  var ref = tendRefForSeries(sectionKey, fieldKey);
+  return !!(ref && latest != null && (latest < ref[0] || latest > ref[1]));
 }
 
-function buildTendHiddenBarHtml() {
+function tendHiddenChipDescriptors() {
   var hiddenKeys = tendHiddenSeriesRead();
-  if (!hiddenKeys.length) return '';
-  var svg = tendEyeVisibilitySvg();
-  var chips = [];
+  var list = [];
   for (var hi = 0; hi < hiddenKeys.length; hi++) {
     var entry = hiddenKeys[hi];
     var pipe = entry.indexOf('|');
@@ -898,6 +1195,18 @@ function buildTendHiddenBarHtml() {
     var sk = entry.slice(0, pipe);
     var fk = entry.slice(pipe + 1);
     if (!fk) continue;
+    list.push({ sectionKey: sk, fieldKey: fk });
+  }
+  return list;
+}
+
+function buildTendHiddenChipsHtml() {
+  var desc = tendHiddenChipDescriptors();
+  var svg = tendEyeVisibilitySvg();
+  var chips = [];
+  for (var i = 0; i < desc.length; i++) {
+    var sk = desc[i].sectionKey;
+    var fk = desc[i].fieldKey;
     var label = esc(tendFindSeriesSpec(sk, fk).cardTitle || fk);
     chips.push(
       '<span class="tend-hidden-chip">' +
@@ -913,33 +1222,64 @@ function buildTendHiddenBarHtml() {
       '</button></span>'
     );
   }
-  if (!chips.length) return '';
-  var n = chips.length;
-  var collapsed = tendHiddenBarIsCollapsed();
+  return chips.join('');
+}
+
+function refreshTendHiddenModalContent() {
+  var el = document.getElementById('tend-hidden-modal-chips');
+  if (!el) return;
+  var html = buildTendHiddenChipsHtml();
+  el.innerHTML =
+    html ||
+    '<p style="margin:0;font-size:13px;color:var(--text-muted);">No hay analitos ocultos.</p>';
+}
+
+function openTendHiddenModal() {
+  var bd = document.getElementById('tend-hidden-modal-backdrop');
+  if (!bd) return;
+  refreshTendHiddenModalContent();
+  bd.classList.add('open');
+  bd.setAttribute('aria-hidden', 'false');
+}
+
+function closeTendHiddenModal() {
+  var bd = document.getElementById('tend-hidden-modal-backdrop');
+  if (!bd) return;
+  bd.classList.remove('open');
+  bd.setAttribute('aria-hidden', 'true');
+}
+
+function buildTendInlineControlsHtml(hiddenCount) {
+  var on = tendAbnormalOnlyRead();
+  var hint = on
+    ? 'Solo analitos con último valor fuera del rango orientativo (si hay referencia).'
+    : 'Vista completa: todos los analitos con datos suficientes para tendencia.';
+  var toggleLabel = on ? 'Ver todas' : 'Solo fuera de rango';
+  var ocultosBtn =
+    hiddenCount > 0
+      ? '<button type="button" class="tend-toolbar-btn tend-ocultos-trigger" onclick="openTendHiddenModal()">Ocultos (' +
+        hiddenCount +
+        ')</button>'
+      : '';
   return (
-    '<div class="tend-hidden-bar' +
-    (collapsed ? ' tend-hidden-bar--collapsed' : '') +
+    '<div class="tend-inline-controls">' +
+    '<button type="button" class="tend-toolbar-toggle' +
+    (on ? ' is-active' : '') +
+    '" onclick="toggleTendAbnormalOnlyFilter()" aria-pressed="' +
+    (on ? 'true' : 'false') +
+    '" title="' +
+    esc(hint) +
     '">' +
-    '<div class="tend-hidden-bar-top">' +
-    '<button type="button" class="tend-hidden-bar-toggle" aria-expanded="' +
-    (collapsed ? 'false' : 'true') +
-    '" onclick="toggleTendHiddenBar(event)">' +
-    '<span class="tend-hidden-bar-chevron" aria-hidden="true">' +
-    (collapsed ? '▶' : '▼') +
-    '</span>' +
-    '<span class="tend-hidden-bar-summary">Ocultos (' +
-    n +
-    ')</span>' +
+    esc(toggleLabel) +
     '</button>' +
-    '<button type="button" class="tend-toolbar-btn tend-hidden-bar-all" onclick="event.stopPropagation();tendResetAllHiddenSeries()">Mostrar todos</button>' +
-    '</div>' +
-    '<div class="tend-hidden-bar-body">' +
-    '<div class="tend-hidden-chips">' +
-    chips.join('') +
-    '</div>' +
-    '</div>' +
+    ocultosBtn +
     '</div>'
   );
+}
+
+function toggleTendAbnormalOnlyFilter() {
+  tendAbnormalOnlyWrite(!tendAbnormalOnlyRead());
+  renderTendencias();
 }
 
 function tendHideSeriesFromCard(ev, sectionKey, fieldKey) {
@@ -958,6 +1298,7 @@ function tendUnhideSeries(sectionKey, fieldKey) {
 
 function tendResetAllHiddenSeries() {
   tendHiddenSeriesWrite([]);
+  closeTendHiddenModal();
   renderTendencias();
 }
 
@@ -1035,10 +1376,10 @@ function cultureBlockLooksNegative(left, right) {
 }
 
 /**
- * @returns {{ row: object, nextIdx: number }}
+ * Una fila de tabla = primera línea cabecera (sitio/fecha:germen) + resto (ATB, cuenta…).
  */
-function parseCultureBlockFromCultivoLines(cultLines, startIdx, set, seq) {
-  var rawHeader = String(cultLines[startIdx] || '');
+function parseCultureBlockFromLineArray(lines, set, seq) {
+  var rawHeader = String(lines[0] || '');
   var line = rawHeader.replace(/\s+/g, ' ').trim();
   var tipoKey = classifyCultureTipoKeyFromHeaderLine(rawHeader);
   var studyDate = buildLabSetDateLine(set) || '—';
@@ -1063,21 +1404,7 @@ function parseCultureBlockFromCultivoLines(cultLines, startIdx, set, seq) {
   else if (negativo && /^NEGATIVO$/i.test(organismo)) organismo = 'Negativo';
   else if (!organismo) organismo = '—';
 
-  var resistencias = [];
-  var i = startIdx + 1;
-  while (i < cultLines.length) {
-    var L2 = String(cultLines[i] || '').trim();
-    if (!L2) {
-      i++;
-      continue;
-    }
-    if (isCultureTableHeaderLine(L2)) break;
-    if (/^(BH|QS|ESC|PFHs|GASES|PIE|LCR|EGO|CUANTORINA)\b/i.test(L2)) break;
-    if (/^CULTIVO\b|^BACTERIOLOGIA\b/i.test(L2)) break;
-    resistencias.push(L2);
-    i++;
-  }
-
+  var resistencias = lines.slice(1);
   var resStr = resistencias.join('\n').trim();
 
   var sortKeyMs = sortMs;
@@ -1099,10 +1426,320 @@ function parseCultureBlockFromCultivoLines(cultLines, startIdx, set, seq) {
       sortKeyMs: sortKeyMs,
       tipoKey: tipoKey,
       tipoLabel: CULTIVO_TIPO_LABELS[tipoKey] || CULTIVO_TIPO_LABELS.otro,
+      labSetId: set && set.id != null ? set.id : '',
       _seq: typeof seq === 'number' ? seq : 0,
     },
-    nextIdx: i,
   };
+}
+
+function copyLabSetSourceText(setId) {
+  var pid = activeId;
+  if (!pid) {
+    showToast('Selecciona un paciente', 'error');
+    return;
+  }
+  var sets = labHistory[pid] || [];
+  var set = sets.find(function (s) {
+    return String(s.id) === String(setId);
+  });
+  var t = set && set.sourceText ? String(set.sourceText).trim() : '';
+  if (!t) {
+    showToast(
+      'No hay texto completo guardado para este envío (vuelve a pegar el informe en Laboratorio y enviar a nota).',
+      'error'
+    );
+    return;
+  }
+  var p =
+    navigator.clipboard && navigator.clipboard.writeText
+      ? navigator.clipboard.writeText(t)
+      : Promise.reject(new Error('no clipboard'));
+  p.then(
+    function () {
+      showToast('Informe de laboratorio completo copiado', 'success');
+    },
+    function () {
+      showToast('No se pudo copiar al portapapeles', 'error');
+    }
+  );
+}
+
+function germHintFromCultivoHeadLine(headLine) {
+  var line = String(headLine || '').replace(/\s+/g, ' ').trim();
+  var colon = line.lastIndexOf(':');
+  if (colon >= 0) {
+    var right = line.slice(colon + 1).trim();
+    if (right) return right;
+  }
+  return line;
+}
+
+function germQueryFromCultivoChunkHead(headLine) {
+  var h = germHintFromCultivoHeadLine(headLine);
+  var base = h.split(/\s*·\s*/)[0].trim();
+  return base || h;
+}
+
+function isResLabChunkPureCultivo(text) {
+  var sp = splitResLabsByTipo([text]);
+  if (sp.labs.length) return false;
+  return sp.cultivo.some(function (r) {
+    return String(r || '').trim();
+  });
+}
+
+function buildCultivoOutputHtmlFragments(text, sourceText) {
+  var raw = String(text || '');
+  var chunks = raw
+    .split(/\n\n+/)
+    .map(function (s) {
+      return s.trim();
+    })
+    .filter(Boolean);
+  if (!chunks.length) return '';
+  var parts = [];
+  chunks.forEach(function (chunk) {
+    var lines = chunk.split(/\n/);
+    var germQuery = germQueryFromCultivoChunkHead(lines[0] || '');
+    var sens = sourceText ? extractSensCrudasForGermFromSource(sourceText, germQuery) : null;
+    lines.forEach(function (lineRaw) {
+      var t = String(lineRaw || '').trim();
+      if (/^ATB\b/i.test(t) && sens && sens.length) {
+        parts.push(
+          '<div class="out-line cultivos-atb-chips lab-out-atb">' + buildAtbChipsHtml(sens) + '</div>'
+        );
+        return;
+      }
+      renderEntry(lineRaw).forEach(function (html, idx) {
+        parts.push('<div class="' + (idx === 0 ? 'out-line' : 'out-indent') + '">' + html + '</div>');
+      });
+    });
+  });
+  return parts.join('');
+}
+
+function cultivoAntibiogramCellHtml(r) {
+  if (!activeId) return '<pre class="cultivos-atb-fallback">—</pre>';
+  var sets = labHistory[activeId] || [];
+  var set = sets.find(function (s) {
+    return String(s.id) === String(r.labSetId);
+  });
+  var sens =
+    set && set.sourceText ? extractSensCrudasForGermFromSource(set.sourceText, r.organismo) : null;
+  var copyBtn =
+    set && r.labSetId != null && String(r.labSetId) !== ''
+      ? '<button type="button" class="cultivos-copy-full-btn" onclick=\'copyLabSetSourceText(' +
+        JSON.stringify(String(r.labSetId)) +
+        ')\'>Copiar informe completo</button>'
+      : '';
+  if (sens && sens.length) {
+    return (
+      '<div class="cultivos-atb-wrap">' +
+      '<div class="cultivos-atb-chips" role="list">' +
+      buildAtbRisSummaryHtml(sens) +
+      '</div>' +
+      copyBtn +
+      '</div>'
+    );
+  }
+  return (
+    '<div class="cultivos-atb-wrap">' +
+    '<pre class="cultivos-atb-fallback">' +
+    esc(r.resistencias || '—') +
+    '</pre>' +
+    copyBtn +
+    '</div>'
+  );
+}
+
+var _atbRisScrollResizeWired = false;
+var _atbRisScrollRootsWired = new WeakSet();
+var _atbRisDelegatedHoverRoots = new WeakSet();
+var ATB_RIS_HIDE_DELAY_MS = 140;
+
+function ensureAtbRisScrollRepositionOn(el) {
+  if (!el || _atbRisScrollRootsWired.has(el)) return;
+  _atbRisScrollRootsWired.add(el);
+  el.addEventListener('scroll', repositionOpenAtbRisPanel, { passive: true });
+}
+
+function cancelHideAtbPanel(panel) {
+  if (!panel || !panel._atbHideTid) return;
+  clearTimeout(panel._atbHideTid);
+  panel._atbHideTid = null;
+}
+
+function scheduleHideAtbPanel(panel) {
+  if (!panel) return;
+  cancelHideAtbPanel(panel);
+  panel._atbHideTid = setTimeout(function () {
+    panel._atbHideTid = null;
+    hideAtbRisHoverPanel(panel);
+  }, ATB_RIS_HIDE_DELAY_MS);
+}
+
+function panelAtbRisForWrap(wrap) {
+  return wrap.querySelector('.atb-ris-hover-panel') || wrap._atbRisPanelEl || null;
+}
+
+function hideAtbRisHoverPanel(panel) {
+  if (!panel) return;
+  cancelHideAtbPanel(panel);
+  panel.classList.remove('is-open');
+  panel.style.left = '';
+  panel.style.top = '';
+  panel.style.visibility = '';
+  var wrap = panel._atbRisOwnerWrap;
+  if (wrap) {
+    wrap._atbRisPanelEl = null;
+  }
+  panel._atbRisOwnerWrap = null;
+  if (wrap && wrap.isConnected) {
+    wrap.appendChild(panel);
+  } else if (panel.parentNode === document.body) {
+    panel.remove();
+  }
+}
+
+function closeAtbRisPanelsExcept(exceptWrap) {
+  document.querySelectorAll('.atb-ris-hover-panel.is-open').forEach(function (panel) {
+    var w = panel._atbRisOwnerWrap || panel.closest('.cult-atb-ris-chip-wrap');
+    if (w !== exceptWrap) hideAtbRisHoverPanel(panel);
+  });
+}
+
+function repositionOpenAtbRisPanel() {
+  var panel = document.querySelector('.atb-ris-hover-panel.is-open');
+  if (!panel) return;
+  var wrap = panel._atbRisOwnerWrap || panel.closest('.cult-atb-ris-chip-wrap');
+  if (wrap) positionAtbRisHoverPanel(wrap);
+}
+
+function positionAtbRisHoverPanel(wrap) {
+  var panel = panelAtbRisForWrap(wrap);
+  var chip = wrap.querySelector('.atb-chip');
+  if (!panel || !chip) return;
+  closeAtbRisPanelsExcept(wrap);
+  cancelHideAtbPanel(panel);
+  panel._atbRisOwnerWrap = wrap;
+  wrap._atbRisPanelEl = panel;
+  if (panel.parentNode !== document.body) {
+    document.body.appendChild(panel);
+  }
+  panel.classList.add('is-open');
+  panel.style.visibility = 'hidden';
+  panel.style.left = '-9999px';
+  panel.style.top = '0';
+  void panel.offsetWidth;
+  var chipRect = chip.getBoundingClientRect();
+  var pr = panel.getBoundingClientRect();
+  var pw = pr.width;
+  var ph = pr.height;
+  var margin = 8;
+  var gap = 1;
+  var vh = window.innerHeight;
+  var vw = window.innerWidth;
+  var top = chipRect.bottom + gap;
+  if (top + ph > vh - margin) {
+    var aboveTop = chipRect.top - gap - ph;
+    if (aboveTop >= margin) top = aboveTop;
+    else top = Math.max(margin, vh - margin - ph);
+  }
+  var left = chipRect.left;
+  if (left + pw > vw - margin) left = vw - margin - pw;
+  if (left < margin) left = margin;
+  panel.style.left = left + 'px';
+  panel.style.top = top + 'px';
+  panel.style.visibility = '';
+}
+
+function wireAtbRisHoverPanels(rootEl) {
+  if (!rootEl) return;
+  if (!_atbRisScrollResizeWired) {
+    _atbRisScrollResizeWired = true;
+    window.addEventListener('scroll', repositionOpenAtbRisPanel, true);
+    window.addEventListener('resize', repositionOpenAtbRisPanel);
+  }
+  ensureAtbRisScrollRepositionOn(rootEl);
+  var tableWrap = rootEl.querySelector && rootEl.querySelector('.cultivos-table-wrap');
+  if (tableWrap) ensureAtbRisScrollRepositionOn(tableWrap);
+  var cultTab = document.getElementById('itab-content-cult');
+  if (cultTab) ensureAtbRisScrollRepositionOn(cultTab);
+  if (!_atbRisDelegatedHoverRoots.has(rootEl)) {
+    _atbRisDelegatedHoverRoots.add(rootEl);
+    rootEl.addEventListener('mouseover', function (ev) {
+      var t = ev.target;
+      if (t && t.nodeType !== 1) t = t.parentElement;
+      if (!t || !t.closest) return;
+      var wrap = t.classList.contains('cult-atb-ris-chip-wrap')
+        ? t
+        : t.closest('.cult-atb-ris-chip-wrap');
+      if (!wrap || !rootEl.contains(wrap)) return;
+      var p = panelAtbRisForWrap(wrap);
+      if (p) cancelHideAtbPanel(p);
+      positionAtbRisHoverPanel(wrap);
+    });
+    rootEl.addEventListener('mouseout', function (ev) {
+      var t = ev.target;
+      if (t && t.nodeType !== 1) t = t.parentElement;
+      if (!t || !t.closest) return;
+      var wrap = t.classList.contains('cult-atb-ris-chip-wrap')
+        ? t
+        : t.closest('.cult-atb-ris-chip-wrap');
+      if (!wrap || !rootEl.contains(wrap)) return;
+      var p = panelAtbRisForWrap(wrap);
+      if (!p) return;
+      var toEl = ev.relatedTarget;
+      if (toEl && (wrap.contains(toEl) || p.contains(toEl))) return;
+      scheduleHideAtbPanel(p);
+    });
+    rootEl.addEventListener('focusin', function (ev) {
+      var t = ev.target;
+      if (t && t.nodeType !== 1) t = t.parentElement;
+      if (!t || !t.closest) return;
+      var wrap = t.classList.contains('cult-atb-ris-chip-wrap')
+        ? t
+        : t.closest('.cult-atb-ris-chip-wrap');
+      if (!wrap || !rootEl.contains(wrap)) return;
+      var p = panelAtbRisForWrap(wrap);
+      if (p) cancelHideAtbPanel(p);
+      positionAtbRisHoverPanel(wrap);
+    });
+    rootEl.addEventListener('focusout', function (ev) {
+      var t = ev.target;
+      if (t && t.nodeType !== 1) t = t.parentElement;
+      if (!t || !t.closest) return;
+      var wrap = t.classList.contains('cult-atb-ris-chip-wrap')
+        ? t
+        : t.closest('.cult-atb-ris-chip-wrap');
+      if (!wrap || !rootEl.contains(wrap)) return;
+      var p = panelAtbRisForWrap(wrap);
+      if (!p) return;
+      var rel = ev.relatedTarget;
+      if (rel && (wrap.contains(rel) || p.contains(rel))) return;
+      hideAtbRisHoverPanel(p);
+    });
+  }
+  rootEl.querySelectorAll('.atb-ris-hover-panel').forEach(function (panel) {
+    if (panel._atbRisPanelHoverListeners) return;
+    panel._atbRisPanelHoverListeners = true;
+    panel.addEventListener('mouseenter', function () {
+      cancelHideAtbPanel(panel);
+    });
+    panel.addEventListener('mouseleave', function (ev) {
+      var w = panel._atbRisOwnerWrap || panel.closest('.cult-atb-ris-chip-wrap');
+      var toEl = ev.relatedTarget;
+      if (toEl && w && (w.contains(toEl) || panel.contains(toEl))) return;
+      scheduleHideAtbPanel(panel);
+    });
+  });
+}
+
+/** Paneles portados a body al abrir; quitar antes de sustituir innerHTML del contenedor. */
+function removeAtbRisPanelsFromBody() {
+  document.querySelectorAll('body > .atb-ris-hover-panel').forEach(function (p) {
+    hideAtbRisHoverPanel(p);
+  });
 }
 
 function extractCultivoTableRowsFromHistory(patientId) {
@@ -1112,21 +1749,24 @@ function extractCultivoTableRowsFromHistory(patientId) {
   history.forEach(function (set) {
     if (!set || !set.resLabs || !set.resLabs.length) return;
     var cult = splitResLabsByTipo(set.resLabs).cultivo;
-    var i = 0;
-    while (i < cult.length) {
-      var t = String(cult[i] || '').trim();
-      if (!t) {
-        i++;
-        continue;
-      }
-      if (!isCultureTableHeaderLine(t)) {
-        i++;
-        continue;
-      }
-      var parsed = parseCultureBlockFromCultivoLines(cult, i, set, seq++);
-      rows.push(parsed.row);
-      i = parsed.nextIdx;
-    }
+    cult.forEach(function (chunk) {
+      var sections = String(chunk || '')
+        .split(/\n\n+/)
+        .map(function (s) {
+          return s.trim();
+        })
+        .filter(Boolean);
+      sections.forEach(function (sec) {
+        var lines = sec.split(/\r?\n/).map(function (l) {
+          return l.replace(/\*+$/g, '').trim();
+        }).filter(function (l) {
+          return l;
+        });
+        if (!lines.length) return;
+        if (!isCultureTableHeaderLine(lines[0])) return;
+        rows.push(parseCultureBlockFromLineArray(lines, set, seq++).row);
+      });
+    });
   });
   return rows;
 }
@@ -1159,25 +1799,75 @@ function groupCultivoRowsByTipoChronologic(rows) {
   });
 }
 
+/** Cultivos: mostrar positivos y negativos solo si hay cambio de signo respecto a otro resultado del mismo tipo+muestra (seguidos en el tiempo). */
+function filterCultivoRowsSignificantFlip(rows) {
+  function seriesKey(r) {
+    return (
+      (r.tipoKey || 'otro') +
+      '\x01' +
+      String(r.sitio || '')
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .trim()
+    );
+  }
+  var bySeries = Object.create(null);
+  rows.forEach(function (r) {
+    var k = seriesKey(r);
+    if (!bySeries[k]) bySeries[k] = [];
+    bySeries[k].push(r);
+  });
+  var out = [];
+  Object.keys(bySeries).forEach(function (k) {
+    var arr = bySeries[k].slice().sort(function (a, b) {
+      var da = a.sortKeyMs != null ? a.sortKeyMs : a.sortMs || 0;
+      var db = b.sortKeyMs != null ? b.sortKeyMs : b.sortMs || 0;
+      if (da !== db) return da - db;
+      return (a._seq || 0) - (b._seq || 0);
+    });
+    for (var i = 0; i < arr.length; i++) {
+      var r = arr[i];
+      if (!r.negativo) {
+        out.push(r);
+        continue;
+      }
+      var prev = arr[i - 1];
+      var next = arr[i + 1];
+      if ((prev && !prev.negativo) || (next && !next.negativo)) out.push(r);
+    }
+  });
+  return out;
+}
+
 function renderCultivosTable() {
   var container = document.getElementById('cultivos-table-container');
   if (!container) return;
+  removeAtbRisPanelsFromBody();
   if (!activeId) {
     container.innerHTML = '<p class="tend-empty">Selecciona un paciente.</p>';
+    if (isPaseMode()) renderPaseBoard();
     return;
   }
   var flatRows = extractCultivoTableRowsFromHistory(activeId);
-  if (!flatRows.length) {
+  var displayRows = filterCultivoRowsSignificantFlip(flatRows);
+  if (!displayRows.length && flatRows.length) {
     container.innerHTML =
-      '<p class="tend-empty">No hay cultivos en el historial. Aparecen urocultivos, hemocultivos, tinción Gram y cultivos de catéter enviados desde Laboratorio.</p>';
+      '<p class="tend-empty">No hay cultivos positivos en el historial. Los negativos sin un positivo previo o posterior en la misma línea (tipo y muestra) no se muestran aquí.</p>';
+    if (isPaseMode()) renderPaseBoard();
     return;
   }
-  var groups = groupCultivoRowsByTipoChronologic(flatRows);
+  if (!displayRows.length) {
+    container.innerHTML =
+      '<p class="tend-empty">No hay cultivos en el historial. Aparecen urocultivos, hemocultivos, tinción Gram y cultivos de catéter enviados desde Laboratorio.</p>';
+    if (isPaseMode()) renderPaseBoard();
+    return;
+  }
+  var groups = groupCultivoRowsByTipoChronologic(displayRows);
   function rowFechaDisplay(r) {
     if (r.fechaMuestra && r.fechaMuestra !== '—') return r.fechaMuestra;
     return r.studyDate || '—';
   }
-  var negs = flatRows.filter(function (r) {
+  var negs = displayRows.filter(function (r) {
     return r.negativo;
   });
   negs.sort(function (a, b) {
@@ -1197,7 +1887,7 @@ function renderCultivosTable() {
       return lab + ' · ' + fd + ' · ' + (r.sitio.length > 36 ? r.sitio.slice(0, 34) + '…' : r.sitio);
     });
     negStrip =
-      '<div class="cultivos-neg-strip" role="status"><strong>Cultivos negativos</strong> (en la tabla, por tipo y fecha) · ' +
+      '<div class="cultivos-neg-strip" role="status"><strong>Cultivos negativos</strong> (solo si hay cambio vs. positivo en la misma muestra) · ' +
       parts.map(function (p) {
         return '<span>' + esc(p) + '</span>';
       }).join(' <span class="cultivos-neg-sep">|</span> ') +
@@ -1208,7 +1898,7 @@ function renderCultivosTable() {
     '<th>Fecha</th>' +
     '<th>Sitio / muestra</th>' +
     '<th>Organismo</th>' +
-    '<th>Resistencias</th>' +
+    '<th>Antibiograma</th>' +
     '</tr></thead>';
   var tbody = groups
     .map(function (g) {
@@ -1229,9 +1919,7 @@ function renderCultivosTable() {
             '<td>' +
             esc(r.organismo) +
             '</td>' +
-            '<td class="cultivos-cell-atb"><pre>' +
-            esc(r.resistencias || '—') +
-            '</pre></td>' +
+            '<td class="cultivos-cell-atb">' + cultivoAntibiogramCellHtml(r) + '</td>' +
             '</tr>'
           );
         })
@@ -1241,13 +1929,15 @@ function renderCultivosTable() {
     .join('');
   container.innerHTML =
     negStrip +
-    '<p class="cultivos-table-hint">Por categoría (tipo de estudio), orden cronológico de más reciente a más antiguo.</p>' +
+    '<p class="cultivos-table-hint">Solo cultivos positivos; se incluyen negativos si hubo cambio frente a un resultado positivo previo o siguiente en la misma muestra. Por categoría, del más reciente al más antiguo.</p>' +
     '<div class="cultivos-table-wrap">' +
     '<table class="cultivos-table">' +
     thead +
     '<tbody>' +
     tbody +
     '</tbody></table></div>';
+  wireAtbRisHoverPanels(container);
+  if (isPaseMode()) renderPaseBoard();
 }
 
 function refreshTendenciasOrCultivosPanel() {
@@ -1371,6 +2061,14 @@ function toggleLabHistoryPanel(ev) {
   catch (e) { console.error('migrateLabHistory write error:', e && e.message); }
 }());
 
+// ════════════════════════════════════════════════════════════════════
+// Theme icons (SVG — sin emoji en controles)
+// ════════════════════════════════════════════════════════════════════
+var THEME_ICON_SUN =
+  '<svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>';
+var THEME_ICON_MOON =
+  '<svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+
 // ── Theme ──────────────────────────────────────────────────────────
 (function() {
   if (localStorage.getItem('theme') === 'dark') {
@@ -1386,12 +2084,18 @@ function syncThemeSettingsButtons() {
   if (darkBtn) darkBtn.classList.toggle('active', isDark);
 }
 
+function syncThemeToggleIcon() {
+  var themeBtn = document.getElementById('theme-toggle');
+  if (!themeBtn) return;
+  var isDark = document.documentElement.classList.contains('dark');
+  themeBtn.innerHTML = isDark ? THEME_ICON_MOON : THEME_ICON_SUN;
+}
+
 function setThemeMode(mode) {
   var isDark = mode === 'dark';
   document.documentElement.classList.toggle('dark', isDark);
   localStorage.setItem('theme', isDark ? 'dark' : 'light');
-  var themeBtn = document.getElementById('theme-toggle');
-  if (themeBtn) themeBtn.textContent = isDark ? '🌙' : '☀️';
+  syncThemeToggleIcon();
   syncThemeSettingsButtons();
 }
 
@@ -1459,6 +2163,68 @@ function toggleHighContrast() {
   setHighContrast(!isHighContrast());
 }
 
+// ── Modo de vista: normal (pestañas completas) vs pase (resumen) ─
+var UI_DENSITY_LS = 'rpc-ui-density';
+
+function getUiDensity() {
+  var raw = localStorage.getItem(UI_DENSITY_LS);
+  if (raw === 'pase' || raw === 'compact') return 'pase';
+  if (raw === 'normal' || raw === 'comfortable') return 'normal';
+  return 'normal';
+}
+
+function isPaseMode() {
+  return getUiDensity() === 'pase';
+}
+
+function applyUiDensity() {
+  document.documentElement.classList.toggle('ui-density-normal', getUiDensity() === 'normal');
+  var rondaHint = document.getElementById('sidebar-ronda-hint');
+  if (rondaHint) {
+    rondaHint.setAttribute('aria-hidden', getUiDensity() === 'pase' ? 'false' : 'true');
+  }
+  if (isPaseMode()) {
+    _roundOverviewMode = true;
+  }
+  switchAppTab(activeAppTab);
+}
+
+function syncUiDensityButtons() {
+  var d = getUiDensity();
+  var normalBtn = document.getElementById('settings-density-normal');
+  var paseBtn = document.getElementById('settings-density-pase');
+  if (normalBtn) {
+    normalBtn.classList.toggle('active', d === 'normal');
+    normalBtn.setAttribute('aria-pressed', d === 'normal' ? 'true' : 'false');
+  }
+  if (paseBtn) {
+    paseBtn.classList.toggle('active', d === 'pase');
+    paseBtn.setAttribute('aria-pressed', d === 'pase' ? 'true' : 'false');
+  }
+}
+
+function setUiDensity(mode) {
+  var m = mode === 'pase' || mode === 'compact' ? 'pase' : 'normal';
+  if (mode === 'comfortable') m = 'normal';
+  localStorage.setItem(UI_DENSITY_LS, m);
+  applyUiDensity();
+  syncUiDensityButtons();
+  renderPatientList();
+  if (activeId) {
+    requestAnimationFrame(function () {
+      scrollActiveRondaCardIntoView();
+    });
+  }
+  if (activeAppTab === 'agenda') renderProcedureAgendaPanel();
+  if (guidedTourActive && tourStepId === 'pase_enter' && isPaseMode()) {
+    guidedTourAdvanceAfter('pase_enter');
+  }
+}
+
+function getProcedureAgendaRowPx() {
+  return getUiDensity() === 'normal' ? 50 : 42;
+}
+
 // ── i18n (etiquetas de Apariencia / ajustes rápidos) ───────────────
 var I18N_ES = {
   'settings.appearance':      'Apariencia',
@@ -1470,6 +2236,11 @@ var I18N_ES = {
   'settings.fontNormal':      'Normal',
   'settings.fontLarge':       'Grande',
   'settings.fontXLarge':      'Más grande',
+  'settings.uiDensity':       'Modo de vista',
+  'settings.uiDensityHint':
+    'Normal: Laboratorio, Expediente, Medicamentos y Agenda en pestañas completas (vista Ronda centrada). Pase: resumen del paciente en una columna; pulsa un título de sección para abrir el detalle en Normal. ⌘P o Ctrl+P alterna.',
+  'settings.densityNormal':   'Normal',
+  'settings.densityPase':    'Pase',
   'settings.highContrast':    'Alto contraste',
   'settings.highContrastHint':'Aumenta el contraste de texto y bordes para mejor legibilidad.',
   'settings.hcOff':           'Desactivado',
@@ -1484,10 +2255,19 @@ var I18N_ES = {
   'settings.checkUpdates':    'Buscar actualizaciones…',
   'settings.open':            'Abrir ajustes',
   'settings.openTitle':       'Ajustes',
-  'settings.teamSyncAria':    'Abrir respaldos y sync entre equipos',
-  'settings.teamSyncTitle':   'Sync entre equipos: mismo panel que Ajustes → Respaldos, sync y recuperación (exportar/importar paquete). En escritorio siempre disponible.',
+  'settings.teamSyncAria':    'Abrir conexión LAN y LiveSync (salas)',
+  'settings.teamSyncTitle':   'Conexión LAN (⇄): rol, dirección, código al conectar, salas. Archivo del código en disco (anfitrión): Ajustes → LAN · servidor en esta computadora. Paquete sync JSON: Ajustes → Respaldos, sync y recuperación.',
   'theme.toggle':             'Cambiar tema claro u oscuro',
-  'theme.toggleTitle':        'Cambiar tema'
+  'theme.toggleTitle':        'Cambiar tema',
+  'appTab.lab':               'Laboratorio',
+  'appTab.nota':              'Expediente',
+  'appTab.med':               'Medicamentos',
+  'appTab.agenda':            'Agenda',
+  'roundMode.hint':           'Ronda: paciente siguiente / anterior',
+  'roundMode.seenTitle':      'Visto en ronda (se reinicia cada día)',
+  'roundMode.sectionNota':    'Nota e indicaciones',
+  'roundMode.sectionLabs':    'Laboratorio reciente',
+  'roundMode.sectionTodos':   'Pendientes'
 };
 
 function t(key) {
@@ -1530,14 +2310,13 @@ function applyI18n() {
   });
 }
 
-// Set correct icon on load
+// Icono tema acorde al modo guardado
 (function() {
-  if (document.documentElement.classList.contains('dark')) {
-    document.getElementById('theme-toggle').textContent = '🌙';
-  }
+  syncThemeToggleIcon();
 })();
 
 applyHighContrast();
+applyUiDensity();
 applyI18n();
 syncLabHistoryCollapseUI();
 
@@ -1548,8 +2327,10 @@ if (patients.length > 0) selectPatient(patients[0].id);
 else renderLabHistoryPanel();
 applyFontZoom();
 loadSettings();
+syncWorkContextChrome();
 seedTendHiddenDefaults();
 syncThemeSettingsButtons();
+syncMainAppTabA11y(activeAppTab);
 renderInnerTabs();
 if (__v3MigratedThisBoot) {
   setTimeout(function() {
@@ -1569,151 +2350,1375 @@ _rpcDeferInit(initRpcServerHealthWatch);
 _rpcDeferInit(initIdleLockFeature);
 initUpdateChannelAndGate();
 
+function syncActivePatientContextBar() {
+  /* Paciente activo solo en la barra lateral; no repetir en el header */
+}
+
+function syncHeaderAppModeChip() {
+  var chip = document.getElementById('header-app-mode-chip');
+  if (!chip) return;
+  var sala = isModeSala(settings);
+  chip.textContent = sala ? 'Modo: Sala' : 'Modo: Interconsulta';
+  chip.title = sala
+    ? 'Pulsa para cambiar a Interconsulta (Nota de evolución, Indicaciones…). Ajustes finos en Mi Perfil.'
+    : 'Pulsa para cambiar a Sala (Estado actual, Listado de problemas…). Ajustes finos en Mi Perfil.';
+  chip.classList.toggle('mode-sala', sala);
+  chip.classList.toggle('mode-inter', !sala);
+}
+
+function syncMedPatientGate() {
+  var empty = document.getElementById('med-empty-guided');
+  var work = document.getElementById('med-work-area');
+  if (!empty || !work) return;
+  var showEmpty = activeAppTab === 'med' && !activeId;
+  empty.style.display = showEmpty ? 'flex' : 'none';
+  work.style.display = showEmpty ? 'none' : 'flex';
+}
+
+function syncLabComboButtonState() {
+  var btn = document.getElementById('btn-procesar-y-expediente');
+  var hint = document.getElementById('lab-combo-hint');
+  var ok = !!activeId;
+  if (btn) btn.disabled = !ok;
+  if (hint) hint.style.display = ok ? 'none' : 'block';
+}
+
+function setMedTabAttention(on) {
+  var tab = document.getElementById('apptab-med');
+  if (tab) tab.classList.toggle('app-tab-attention', !!on);
+}
+
+function syncWorkContextChrome() {
+  syncActivePatientContextBar();
+  syncHeaderAppModeChip();
+  syncMedPatientGate();
+  syncLabComboButtonState();
+}
+
+function focusPatientSearchInput() {
+  var el = document.getElementById('patient-search');
+  if (!el) return;
+  try {
+    el.focus();
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } catch (_e) {
+    try {
+      el.focus();
+    } catch (_e2) {}
+  }
+}
+
+function clearLabInputAfterSuccessfulParse() {
+  var ta = document.getElementById('lab-input');
+  if (!ta) return;
+  ta.value = '';
+  try {
+    ta.dispatchEvent(new Event('input', { bubbles: true }));
+  } catch (_e) {}
+}
+
+function procesarYEnviarExpediente() {
+  if (!activeId) {
+    showToast('Selecciona un paciente en la lista antes de enviar al expediente.', 'error');
+    return;
+  }
+  var ta = document.getElementById('lab-input');
+  var text = ta ? ta.value.trim() : '';
+  if (!text) {
+    showToast('Pega el texto del reporte primero', 'error');
+    return;
+  }
+  try {
+    var result = procesarLabs(text);
+    result.sourceText = text;
+    var resStore = applyLabPastePatientResolution(result);
+    renderOutput(result);
+    renderDiagramas(result.resLabs);
+    if (resStore.shouldAutoStore) autoStoreProcessedLabResult(result);
+    if (!result.resLabs.length) {
+      showToast('No se encontraron resultados de laboratorio', 'error');
+      return;
+    }
+    clearLabInputAfterSuccessfulParse();
+    enviarLabsANota();
+  } catch (e) {
+    showToast('Error al procesar el reporte', 'error');
+    console.error(e);
+  }
+}
+
+function agendaEligiblePatients() {
+  return patients.filter(function (p) {
+    if (!p) return false;
+    if (p.isDemo) return false;
+    if (String(p.id).indexOf('demo-') === 0) return false;
+    return true;
+  });
+}
+
+function paIsoToDatetimeLocalValue(isoStr) {
+  var d = new Date(String(isoStr || '').trim());
+  if (isNaN(d.getTime())) return '';
+  var pad = function (x) {
+    return String(x).padStart(2, '0');
+  };
+  return (
+    d.getFullYear() +
+    '-' +
+    pad(d.getMonth() + 1) +
+    '-' +
+    pad(d.getDate()) +
+    'T' +
+    pad(d.getHours()) +
+    ':' +
+    pad(d.getMinutes())
+  );
+}
+
+function paParseDatetimeLocalValue(s) {
+  var v = String(s || '').trim();
+  if (!v) return null;
+  var d = new Date(v);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function getProcedureAgendaMondayAnchor() {
+  var base = mondayStartLocal(new Date());
+  var dt = addDaysLocal(base, procedureAgendaWeekOffset * 7);
+  dt.setHours(0, 0, 0, 0);
+  return dt;
+}
+
+function formatProcedureAgendaRangeLabel(monday) {
+  try {
+    var sun = addDaysLocal(monday, 6);
+    var oDay = { day: 'numeric' };
+    var oWd = { weekday: 'short' };
+    var oMon = { month: 'short' };
+    var a =
+      monday.toLocaleDateString('es', oWd).replace('.', '') +
+      ' ' +
+      monday.toLocaleDateString('es', oDay) +
+      ' ' +
+      monday.toLocaleDateString('es', oMon);
+    var b =
+      sun.toLocaleDateString('es', oWd).replace('.', '') +
+      ' ' +
+      sun.toLocaleDateString('es', oDay) +
+      ' ' +
+      sun.toLocaleDateString('es', oMon) +
+      ' ' +
+      sun.getFullYear();
+    return a.charAt(0).toUpperCase() + a.slice(1) + ' — ' + b;
+  } catch (_e) {
+    return '';
+  }
+}
+
+function syncProcedureAgendaNavButtons() {
+  var prevBtn = document.getElementById('procedure-agenda-prev');
+  var nextBtn = document.getElementById('procedure-agenda-next');
+  if (prevBtn) prevBtn.disabled = procedureAgendaWeekOffset <= -1;
+  if (nextBtn) nextBtn.disabled = procedureAgendaWeekOffset >= 1;
+}
+
+function navigateProcedureAgendaWeek(delta) {
+  procedureAgendaWeekOffset = Math.max(-1, Math.min(1, procedureAgendaWeekOffset + delta));
+  renderProcedureAgendaPanel();
+}
+
+function renderProcedureAgendaPanel() {
+  var mount = document.getElementById('procedure-agenda-grid-mount');
+  var rangeEl = document.getElementById('procedure-agenda-range');
+  if (!mount || !rangeEl) return;
+  syncProcedureAgendaNavButtons();
+  var monday = getProcedureAgendaMondayAnchor();
+  rangeEl.textContent = formatProcedureAgendaRangeLabel(monday);
+  var week = weekBoundsFromMonday(monday);
+  var nh = AGENDA_DISPLAY_LAST_HOUR_EXCLUSIVE - AGENDA_DISPLAY_FIRST_HOUR;
+  var agendaRowPx = getProcedureAgendaRowPx();
+
+  var elig = agendaEligiblePatients();
+  var pmap = {};
+  elig.forEach(function (p) {
+    pmap[String(p.id)] = String(p.nombre || '').trim();
+  });
+
+  var newBtn = document.getElementById('procedure-agenda-new');
+  if (newBtn) newBtn.disabled = elig.length === 0;
+
+  var board = document.createElement('div');
+  var head = document.createElement('div');
+  head.className = 'rpc-proc-agenda-board-head';
+  var headSpacer = document.createElement('div');
+  headSpacer.className = 'rpc-proc-agenda-head-spacer';
+  head.appendChild(headSpacer);
+
+  var iDay;
+  var colDate;
+  for (iDay = 0; iDay < 7; iDay += 1) {
+    colDate = addDaysLocal(monday, iDay);
+    var hc = document.createElement('div');
+    hc.className = 'rpc-proc-agenda-head-cell';
+    var wd = String(colDate.toLocaleDateString('es', { weekday: 'short' })).replace(/\.$/, '');
+    var dm = String(colDate.toLocaleDateString('es', { day: 'numeric', month: 'short' })).replace('.', '');
+    wd = wd.charAt(0).toUpperCase() + wd.slice(1);
+    dm = dm.charAt(0).toUpperCase() + dm.slice(1);
+    hc.innerHTML = '<span>' + esc(wd) + '</span><strong>' + esc(dm) + '</strong>';
+    head.appendChild(hc);
+  }
+  board.appendChild(head);
+
+  var bodyRow = document.createElement('div');
+  bodyRow.className = 'rpc-proc-agenda-board-body';
+
+  var timesCol = document.createElement('div');
+  timesCol.className = 'rpc-proc-agenda-times-col';
+  for (var h = AGENDA_DISPLAY_FIRST_HOUR; h < AGENDA_DISPLAY_LAST_HOUR_EXCLUSIVE; h += 1) {
+    var tsl = document.createElement('div');
+    tsl.className = 'rpc-proc-agenda-time-slot';
+    tsl.style.height = agendaRowPx + 'px';
+    tsl.textContent = String(h).padStart(2, '0') + ':00';
+    timesCol.appendChild(tsl);
+  }
+  bodyRow.appendChild(timesCol);
+
+  var clipsByDay = [[], [], [], [], [], [], []];
+
+  storage.getScheduledProcedures().forEach(function (ev) {
+    var evtMs = Date.parse(ev.start);
+    if (!Number.isFinite(evtMs)) return;
+    if (evtMs >= week.endExclusive.getTime()) return;
+    var evEndMs = evtMs + VISUAL_DURATION_MS;
+    if (evEndMs <= week.start.getTime()) return;
+    if (String(ev.patientId).indexOf('demo-') === 0) return;
+
+    var patientLabel = pmap[ev.patientId] ? pmap[ev.patientId] : 'Paciente desconocido';
+
+    for (iDay = 0; iDay < 7; iDay += 1) {
+      colDate = addDaysLocal(monday, iDay);
+      colDate.setHours(0, 0, 0, 0);
+      var clip = clipEventToDayColumn(evtMs, colDate.getTime());
+      if (!clip) continue;
+      clipsByDay[iDay].push({
+        ev: ev,
+        clip: clip,
+        patientLabel: patientLabel,
+      });
+    }
+  });
+
+  for (iDay = 0; iDay < 7; iDay += 1) {
+    colDate = addDaysLocal(monday, iDay);
+    colDate.setHours(0, 0, 0, 0);
+    var dayCol = document.createElement('div');
+    dayCol.className = 'rpc-proc-agenda-day-col-wrap';
+    dayCol.style.height = nh * agendaRowPx + 'px';
+
+    var hl;
+    for (h = AGENDA_DISPLAY_FIRST_HOUR; h < AGENDA_DISPLAY_LAST_HOUR_EXCLUSIVE; h += 1) {
+      hl = document.createElement('div');
+      hl.className = 'rpc-proc-agenda-hour-line';
+      hl.style.height = agendaRowPx + 'px';
+      dayCol.appendChild(hl);
+    }
+
+    var intervals = clipsByDay[iDay].map(function (x) {
+      return { id: x.ev.id, topMs: x.clip.topMs, botMs: x.clip.botMs };
+    });
+    var laneById =
+      intervals.length === 0 ? new Map() : assignLanesByInterval(intervals.slice());
+    var laneCount = 1;
+    if (laneById.size > 0) {
+      laneById.forEach(function (ln) {
+        laneCount = Math.max(laneCount, ln + 1);
+      });
+    }
+
+    clipsByDay[iDay].forEach(function (cell) {
+      var clip = cell.clip;
+      var ev = cell.ev;
+      var visStartMs = clip.visStartMs;
+      var blockTopPx = ((clip.topMs - visStartMs) / (60 * 60 * 1000)) * agendaRowPx;
+      var blockHtPx =
+        Math.max(((clip.botMs - clip.topMs) / (60 * 60 * 1000)) * agendaRowPx, 18);
+
+      var lane = laneById.get(ev.id) || 0;
+      var lcLane = laneCount < 1 ? 1 : laneCount;
+      var pctEach = 100 / lcLane;
+      var startClock = String(
+        new Date(ev.start).toLocaleTimeString('es', {
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      ).replace('.', '');
+
+      var blk = document.createElement('button');
+      blk.type = 'button';
+      blk.className = 'rpc-proc-agenda-block';
+      blk.style.top = Math.max(0, blockTopPx) + 'px';
+      blk.style.height = blockHtPx + 'px';
+      if (lcLane <= 1) {
+        blk.style.left = '3px';
+        blk.style.width = 'calc(100% - 6px)';
+      } else {
+        blk.style.left = 'calc(' + lane * pctEach + '% + 3px)';
+        blk.style.width = 'calc(' + pctEach + '% - 10px)';
+      }
+      blk.setAttribute(
+        'title',
+        (ev.procedure || '') + ' · ' + (ev.location || '') + ' · ' + cell.patientLabel
+      );
+      blk.setAttribute('aria-label', 'Editar procedimiento para ' + cell.patientLabel);
+      if (!(ev.materialApproved && ev.anesthesiaScheduled)) blk.classList.add('rpc-proc-flag');
+      blk.innerHTML =
+        '<div class="rpc-proc-name">' +
+        esc(String(ev.procedure || '')) +
+        '</div>' +
+        '<div class="rpc-proc-sub">' +
+        esc(String(startClock + ' · ' + (ev.location || ''))) +
+        '</div>' +
+        '<div class="rpc-proc-pat">' +
+        esc(String(cell.patientLabel)) +
+        '</div>';
+      blk.addEventListener('click', function (e) {
+        e.preventDefault();
+        openProcedureAgendaModal(ev.id);
+      });
+      dayCol.appendChild(blk);
+    });
+
+    bodyRow.appendChild(dayCol);
+  }
+
+  board.appendChild(bodyRow);
+
+  mount.innerHTML = '';
+  mount.appendChild(board);
+  if (isPaseMode()) renderPaseBoard();
+}
+
+function openProcedureAgendaModal(editEventId) {
+  var bd = document.getElementById('procedure-agenda-modal');
+  if (!bd) return;
+  var errEl = document.getElementById('pa-modal-error');
+  var delBtn = document.getElementById('pa-btn-delete');
+  if (errEl) {
+    errEl.style.display = 'none';
+    errEl.textContent = '';
+  }
+
+  document.getElementById('pa-edit-id').value = editEventId || '';
+  var elig = agendaEligiblePatients();
+  var sel = document.getElementById('pa-patient');
+  if (sel) {
+    sel.innerHTML = '';
+    elig.forEach(function (p) {
+      var opt = document.createElement('option');
+      opt.value = String(p.id);
+      opt.textContent = String(p.nombre || p.id);
+      sel.appendChild(opt);
+    });
+  }
+
+  if (delBtn) delBtn.style.display = editEventId ? 'inline-flex' : 'none';
+
+  if (editEventId) {
+    var found = storage
+      .getScheduledProcedures()
+      .filter(function (e) {
+        return e.id === editEventId;
+      })[0];
+    if (found && sel) {
+      sel.value = String(found.patientId);
+      if (sel.value !== String(found.patientId)) sel.appendChild(new Option(found.patientId, found.patientId));
+      sel.value = String(found.patientId);
+    }
+    if (found) {
+      document.getElementById('pa-procedure').value = found.procedure || '';
+      document.getElementById('pa-location').value = found.location || '';
+      document.getElementById('pa-start').value = paIsoToDatetimeLocalValue(found.start);
+      document.getElementById('pa-material').checked = !!found.materialApproved;
+      document.getElementById('pa-anesthesia').checked = !!found.anesthesiaScheduled;
+    }
+  } else {
+    if (sel && elig.length && activeId && elig.some(function (p) { return p.id === activeId; })) {
+      sel.value = String(activeId);
+    } else if (sel && elig[0]) sel.value = elig[0].id;
+    document.getElementById('pa-procedure').value = '';
+    document.getElementById('pa-location').value = '';
+    var now = new Date();
+    document.getElementById('pa-start').value = paIsoToDatetimeLocalValue(now.toISOString());
+    document.getElementById('pa-material').checked = false;
+    document.getElementById('pa-anesthesia').checked = false;
+  }
+
+  bd.classList.add('open');
+  bd.setAttribute('aria-hidden', 'false');
+}
+
+function closeProcedureAgendaModal() {
+  var bd = document.getElementById('procedure-agenda-modal');
+  if (!bd) return;
+  bd.classList.remove('open');
+  bd.setAttribute('aria-hidden', 'true');
+}
+
+function saveProcedureAgendaFromModal() {
+  var errEl = document.getElementById('pa-modal-error');
+  function showPaErr(msg) {
+    errEl.style.display = 'block';
+    errEl.textContent = msg;
+    showToast(msg, 'error');
+  }
+  if (errEl) {
+    errEl.style.display = 'none';
+    errEl.textContent = '';
+  }
+
+  var editId = (document.getElementById('pa-edit-id').value || '').trim();
+  var patientId = String(document.getElementById('pa-patient').value || '').trim();
+  var procedure = String(document.getElementById('pa-procedure').value || '').trim();
+  var location = String(document.getElementById('pa-location').value || '').trim();
+  var sd = paParseDatetimeLocalValue(document.getElementById('pa-start').value);
+  var elig = agendaEligiblePatients();
+  if (!elig.length) {
+    showPaErr('No hay pacientes reales para agendar (agrega un paciente desde la barra lateral).');
+    return;
+  }
+  if (!patientId || !elig.some(function (p) { return String(p.id) === patientId; })) {
+    showPaErr('Elige un paciente válido de la lista.');
+    return;
+  }
+  if (!procedure) {
+    showPaErr('Indica el procedimiento.');
+    return;
+  }
+  if (!location) {
+    showPaErr('Indica el lugar.');
+    return;
+  }
+  if (!sd) {
+    showPaErr('Fecha u hora de inicio inválidas.');
+    return;
+  }
+
+  var nowIso = new Date().toISOString();
+  var arr = storage.getScheduledProcedures();
+  var prev = editId ? arr.filter(function (e) { return e.id === editId; })[0] : null;
+  var eventObj = {
+    id: editId || 'proc-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 9),
+    patientId: patientId,
+    procedure: procedure,
+    location: location,
+    materialApproved: !!document.getElementById('pa-material').checked,
+    anesthesiaScheduled: !!document.getElementById('pa-anesthesia').checked,
+    start: sd.toISOString(),
+    createdAt: prev && prev.createdAt ? prev.createdAt : nowIso,
+    updatedAt: nowIso,
+  };
+
+  var next;
+  if (editId) {
+    next = arr.map(function (e) {
+      return e.id === editId ? eventObj : e;
+    });
+    if (!next.some(function (e) { return e.id === editId; })) next.push(eventObj);
+  } else {
+    next = arr.concat([eventObj]);
+  }
+  storage.saveScheduledProcedures(next);
+  closeProcedureAgendaModal();
+  showToast('Procedimiento guardado', 'success');
+  renderProcedureAgendaPanel();
+}
+
+function deleteProcedureAgendaFromModal() {
+  var editId = (document.getElementById('pa-edit-id').value || '').trim();
+  if (!editId) return;
+  if (
+    !confirm(
+      '¿Eliminar este procedimiento de la agenda? No se puede deshacer desde aquí.'
+    )
+  )
+    return;
+  var arr = storage.getScheduledProcedures().filter(function (e) {
+    return e.id !== editId;
+  });
+  storage.saveScheduledProcedures(arr);
+  closeProcedureAgendaModal();
+  showToast('Eliminado de la agenda', 'success');
+  renderProcedureAgendaPanel();
+}
+
+/** Misma fila que Laboratorio (colores BH/QS, valores alterados). */
+function buildPaseLabBlockHtml(labChunks) {
+  if (!labChunks || !labChunks.length) return '';
+  var parts = [];
+  labChunks.forEach(function (text) {
+    renderEntry(text).forEach(function (htmlLine, idx) {
+      parts.push(
+        '<div class="pase-lab-line' + (idx === 0 ? ' pase-lab-line--sechead' : '') + '">' + htmlLine + '</div>'
+      );
+    });
+  });
+  return '<div class="pase-lab-block" role="text">' + parts.join('') + '</div>';
+}
+
+/** Resalta R:/I:/S: en líneas de antibiograma del resumen de cultivos. */
+function formatPaseCultivoResistenciasHtml(raw) {
+  var t = esc(String(raw || ''));
+  t = t.replace(/\bR:/g, '<span class="pase-atb-tag pase-atb-tag--r">R:</span>');
+  t = t.replace(/\bI:/g, '<span class="pase-atb-tag pase-atb-tag--i">I:</span>');
+  t = t.replace(/\bS:/g, '<span class="pase-atb-tag pase-atb-tag--s">S:</span>');
+  return t;
+}
+
+function paseCultivoAtbBlockHtml(patientId, r) {
+  var sets = labHistory[patientId] || [];
+  var set = sets.find(function (s) {
+    return String(s.id) === String(r.labSetId);
+  });
+  var sens =
+    set && set.sourceText ? extractSensCrudasForGermFromSource(set.sourceText, r.organismo) : null;
+  if (sens && sens.length) {
+    return (
+      '<div class="pase-cult-atb-wrap">' +
+      '<div class="cultivos-atb-chips pase-cult-atb-chips" role="list">' +
+      buildAtbRisSummaryHtml(sens) +
+      '</div></div>'
+    );
+  }
+  var resH =
+    r.resistencias && String(r.resistencias).trim()
+      ? '<div class="pase-cult-atb">' + formatPaseCultivoResistenciasHtml(r.resistencias) + '</div>'
+      : '';
+  if (resH) {
+    return '<div class="pase-cult-atb-wrap">' + resH + '</div>';
+  }
+  return '';
+}
+
+/** Limpia línea de dosis para tarjeta Pase: solo lo aplicable (antes de //), sin *DIA#*, sin calendario colado. */
+function cleanPaseMedDosisForCard(dosisRaw) {
+  var s = String(dosisBeforeSlash(dosisRaw) || '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!s) return '';
+  // Quitar sufijos tipo "4000 UI LUNES MIERCOLES Y VIERNES" si quedaron sin separador //.
+  var día =
+    /\b(?:LOS\s+)?(?:LUNES|MARTES|MIERCOLES|MIÉRCOLES|JUEVES|VIERNES|SABADO|SÁBADO|DOMINGO)\b/i;
+  var m = s.match(día);
+  if (m && m.index != null && m.index > 0) {
+    s = s
+      .slice(0, m.index)
+      .replace(/\s*(?:,\s*|\bY\b|\bO\b)\s*$/gi, '')
+      .replace(/[,\s]+$/g, '')
+      .trim();
+  }
+  return s.replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Abrevia cantidades muy grandes en UI/IU para la pastilla Pase (p. ej. 2400000 → 2.4M).
+ * Solo valores enteros sencillos tras // para evitar ambigüedad con miles con separadores.
+ */
+function abbreviatePaseMedDosisCore(core) {
+  var t = String(core || '').trim();
+  if (!t) return t;
+  var m = t.match(/^(\d+)\s*(UI|IU)\s*$/i);
+  if (!m) return t;
+  var n = parseInt(m[1], 10);
+  if (!Number.isFinite(n) || n < 1e6) return t;
+  var mil = n / 1e6;
+  var label =
+    mil % 1 === 0
+      ? String(mil)
+      : String(Math.round(mil * 10) / 10).replace('.', ',');
+  return label + 'M ' + m[2].toUpperCase();
+}
+
+/**
+ * Separa número+unidad (núcleo sin partir) del resto del texto de dosis para chips Pase.
+ * Si no reconoce el patrón, devuelve todo en núcleo.
+ */
+function splitPaseMedDosisForDisplay(dosisClean) {
+  var s = String(dosisClean || '').trim();
+  if (!s) return { core: '', extra: '', splitOk: false };
+  // Fracciones tipo 1600/800 MG; unidades típicicas de receta. No partir número+unidad entre chips.
+  var unit =
+    '(?:UI\\/ML|IU\\/ML|MCG\\/ML|MG\\/ML|' +
+      '\\b(?:UI|IU|MCG|UG|MG|NG|ML|UL)\\b)';
+  var re = new RegExp(
+    '^((?:\\d+(?:[,\\.]\\d+)?(?:\\s*/\\s*\\d+(?:[,\\.]\\d+)?)?\\s*(?:' +
+      unit +
+      '))|(?:\\d+(?:[,\\.]\\d+)?\\s*%))(?:\\s+([\\s\\S]*))?$',
+    'i'
+  );
+  var m = s.match(re);
+  if (!m || !String(m[1] || '').trim()) return { core: s, extra: '', splitOk: false };
+  return {
+    core: String(m[1]).trim(),
+    extra: String(m[2] || '').trim(),
+    splitOk: true
+  };
+}
+
+/** Vía resumida para tarjetas Pase. */
+function abbreviatePaseMedVia(viaRaw) {
+  var u = String(viaRaw || '')
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+  if (!u.trim()) return '';
+  if (/\bINTRAPERITONEAL\b/.test(u)) return 'IP';
+  if (/\bINTRAMUSCULAR\b/.test(u)) return 'IM';
+  if (/\bINTRAVENOSA\b/.test(u)) return 'IV';
+  if (/\bORAL\b/.test(u)) return 'VO';
+  var fallback = String(viaRaw || '').trim();
+  return fallback.length > 28 ? fallback.slice(0, 26) + '…' : fallback;
+}
+
+/** Título corto Pase: principio activo (antes de la dosis numérica); sin (*…). */
+function paseMedPrincipioActivoTitle(nombreRaw) {
+  var s = String(nombreRaw || '').trim();
+  if (!s) return '';
+  s = s.replace(/\s*\([^)]*\)\s*$/, '').trim();
+  var chunk = s.split(/\s+(?=\d)/)[0] || '';
+  chunk = chunk.trim();
+  return chunk.slice(0, 120) || s.slice(0, 120);
+}
+
+function findPaseLatestLabSend(patientId) {
+  if (!patientId) return null;
+  var hist = sortLabHistoryChronological(ensureParsedLabHistory(patientId));
+  // sortLabHistoryChronological: más reciente primero (índice 0).
+  for (var i = 0; i < hist.length; i++) {
+    var set = hist[i];
+    var tipo = primaryTipoForLabSet(set.resLabs);
+    if (tipo === 'cultivo') continue;
+    var sp = splitResLabsByTipo(set.resLabs || []);
+    var labChunks = sp.labs.filter(function (x) {
+      return String(x || '').trim();
+    });
+    if (!labChunks.length) continue;
+    var rawFe =
+      set.fecha === 'Anterior'
+        ? ''
+        : normalizeFechaLabHistory(set.fecha) || String(set.fecha || '').trim() || inferFechaLabSetFromId(set) || '';
+    var fe =
+      set.id === 'migrated-anterior'
+        ? rawFe
+          ? 'Anterior · ' + rawFe
+          : 'Anterior'
+        : rawFe || (set.fecha === 'Anterior' ? 'Anterior' : '—');
+    var ho = set.hora && String(set.hora).trim() ? String(set.hora).trim().slice(0, 8) : '';
+    var meta = ho ? fe + ' · ' + ho : fe;
+    return { meta: meta, labChunks: labChunks };
+  }
+  return null;
+}
+
+function getPaseAgendaForPatient(patientId) {
+  var cutoff = Date.now() - 3600000;
+  return storage
+    .getScheduledProcedures()
+    .filter(function (ev) {
+      return String(ev.patientId) === String(patientId);
+    })
+    .filter(function (ev) {
+      var t = Date.parse(ev.start);
+      return Number.isFinite(t) && t >= cutoff;
+    })
+    .sort(function (a, b) {
+      return Date.parse(a.start) - Date.parse(b.start);
+    })
+    .slice(0, 12);
+}
+
+function renderPaseBoard() {
+  var host = document.getElementById('pase-board-scroll');
+  if (!host || !isPaseMode()) return;
+  removeAtbRisPanelsFromBody();
+  if (!host._paseDelegate) {
+    host._paseDelegate = true;
+    host.addEventListener('click', function (e) {
+      var todoBtn = e.target.closest('[data-pase-todo]');
+      if (todoBtn && todoBtn.getAttribute('data-pase-todo')) {
+        e.preventDefault();
+        toggleTodo(todoBtn.getAttribute('data-pase-todo'));
+      }
+    });
+  }
+  if (!activeId) {
+    host.innerHTML =
+      '<div class="pase-empty-screen" role="status">Selecciona un paciente en la lista para ver el resumen.</div>';
+    return;
+  }
+  var pid = activeId;
+  var parts = [];
+
+  var todos = storage.getTodos(pid).slice().sort(_todoCompareForSort);
+  var ag = getPaseAgendaForPatient(pid);
+
+  var todoParts = [];
+  if (!todos.length) {
+    todoParts.push('<div class="pase-mini-card pase-mini-card--dim">Sin pendientes.</div>');
+  } else {
+    todos.forEach(function (t) {
+      var prio = t.priority === 'alta' ? 'alta' : t.priority === 'baja' ? 'baja' : 'media';
+      todoParts.push(
+        '<div class="pase-mini-card pase-todo-card todo-prio-' +
+          prio +
+          (t.completed ? ' pase-mini-card--todo-done' : '') +
+          '">' +
+          '<button type="button" class="pase-todo-hit" data-pase-todo="' +
+          esc(String(t.id)) +
+          '" aria-label="' +
+          (t.completed ? 'Marcar como pendiente' : 'Marcar como hecho') +
+          '">' +
+          (t.completed ? '✓' : '○') +
+          '</button>' +
+          '<span>' +
+          esc(String(t.text || '')) +
+          '</span></div>'
+      );
+    });
+  }
+  var agParts = [];
+  if (!ag.length) {
+    agParts.push('<div class="pase-mini-card pase-mini-card--dim">Sin procedimientos próximos.</div>');
+  } else {
+    ag.forEach(function (ev) {
+      var when = new Date(ev.start);
+      var whenStr = isNaN(when.getTime())
+        ? '—'
+        : when.toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' });
+      agParts.push(
+        '<div class="pase-mini-card"><strong>' +
+          esc(String(ev.procedure || 'Procedimiento')) +
+          '</strong><span class="pase-sub">' +
+          esc(whenStr + ' · ' + String(ev.location || '').trim()) +
+          '</span></div>'
+      );
+    });
+  }
+
+  parts.push('<div class="pase-section-row pase-section-row--split">');
+  parts.push('<section class="pase-section" aria-label="Pendientes">');
+  parts.push('<div class="pase-section-head">');
+  parts.push(
+    '<button type="button" class="pase-section-title" onclick="openPaseSectionInNormal(\'pendientes\')">Pendientes</button>'
+  );
+  parts.push('</div><div class="pase-dual-col-grid">');
+  parts.push(todoParts.join(''));
+  parts.push('</div></section>');
+
+  parts.push('<section class="pase-section" aria-label="Agenda">');
+  parts.push('<div class="pase-section-head">');
+  parts.push(
+    '<button type="button" class="pase-section-title" onclick="openPaseSectionInNormal(\'agenda\')">Agenda</button>'
+  );
+  parts.push('</div><div class="pase-dual-col-grid">');
+  parts.push(agParts.join(''));
+  parts.push('</div></section>');
+  parts.push('</div>');
+
+  var labSend = findPaseLatestLabSend(pid);
+  parts.push('<section class="pase-section" aria-label="Laboratorio">');
+  parts.push('<div class="pase-section-head">');
+  parts.push(
+    '<button type="button" class="pase-section-title" onclick="openPaseSectionInNormal(\'labs\')" aria-label="Laboratorio">Labs</button>'
+  );
+  parts.push('</div><div class="pase-card-grid">');
+  if (!labSend) {
+    parts.push(
+      '<div class="pase-mini-card pase-mini-card--dim">Sin envíos de laboratorio convencional en el historial.</div>'
+    );
+  } else {
+    parts.push(
+      '<div class="pase-mini-card pase-mini-card--wide pase-mini-card--lab">' +
+        '<div class="pase-lab-meta">' +
+        esc(labSend.meta) +
+        '</div>' +
+        buildPaseLabBlockHtml(labSend.labChunks) +
+        '</div>'
+    );
+  }
+  parts.push('</div></section>');
+
+  var flatRows = extractCultivoTableRowsFromHistory(pid);
+  var displayRows = filterCultivoRowsSignificantFlip(flatRows);
+  displayRows = displayRows.slice().sort(function (a, b) {
+    var da = a.sortKeyMs != null ? a.sortKeyMs : a.sortMs || 0;
+    var db = b.sortKeyMs != null ? b.sortKeyMs : b.sortMs || 0;
+    if (db !== da) return db - da;
+    return (b._seq || 0) - (a._seq || 0);
+  });
+  parts.push('<section class="pase-section" aria-label="Cultivos">');
+  parts.push('<div class="pase-section-head">');
+  parts.push(
+    '<button type="button" class="pase-section-title" onclick="openPaseSectionInNormal(\'cultivos\')">Cultivos</button>'
+  );
+  parts.push('</div><div class="pase-card-grid">');
+  if (!displayRows.length) {
+    parts.push(
+      '<div class="pase-mini-card pase-mini-card--dim">Sin cultivos en la tabla (mismas reglas que Expediente → Cultivos).</div>'
+    );
+  } else {
+    displayRows.slice(0, 10).forEach(function (r) {
+      var fd = r.fechaMuestra && r.fechaMuestra !== '—' ? r.fechaMuestra : r.studyDate || '—';
+      var atbBlock = paseCultivoAtbBlockHtml(pid, r);
+      parts.push(
+        '<div class="pase-mini-card pase-cultivo-card' +
+          (r.negativo ? ' pase-mini-card--dim' : '') +
+          '"><div class="pase-cult-org">' +
+          esc(String(r.organismo || '—')) +
+          '</div>' +
+          atbBlock +
+          '<div class="pase-sub">' +
+          esc(String(r.tipoLabel || '') + ' · ' + String(r.sitio || '').slice(0, 72)) +
+          '<br>' +
+          esc(fd) +
+          '</div></div>'
+      );
+    });
+  }
+  parts.push('</div></section>');
+
+  var block = medRecetaByPatient[pid];
+  var medItems =
+    block && block.items
+      ? block.items.filter(function (it) {
+          return !it.suspendido;
+        })
+      : [];
+  parts.push('<section class="pase-section" aria-label="Medicamentos">');
+  parts.push('<div class="pase-section-head">');
+  parts.push(
+    '<button type="button" class="pase-section-title" onclick="openPaseSectionInNormal(\'med\')">Medicamentos</button>'
+  );
+  parts.push('</div><div class="pase-card-grid">');
+  if (!medItems.length) {
+    parts.push(
+      '<div class="pase-mini-card pase-mini-card--dim">Sin medicamentos activos en la receta (o todos excluidos).</div>'
+    );
+  } else {
+    medItems.forEach(function (it) {
+      var nombre = paseMedPrincipioActivoTitle(it.nombreRaw || '');
+      var viaAbbr = abbreviatePaseMedVia(it.viaRaw || '');
+      var freq = String(it.frecuenciaRaw || '').trim();
+      var dosis = cleanPaseMedDosisForCard(it.dosisRaw || '');
+      var dosisSplit = dosis
+        ? splitPaseMedDosisForDisplay(dosis)
+        : { core: '', extra: '', splitOk: false };
+      var diaBadge =
+        it.diaTratamiento != null
+          ? '<div class="pase-med-dia-badge" title="Día de tratamiento">Día ' +
+            esc(String(it.diaTratamiento)) +
+            '</div>'
+          : '';
+      var metaParts = [];
+      if (dosisSplit.core || dosisSplit.extra) {
+        if (dosisSplit.splitOk) {
+          metaParts.push(
+            '<span class="pase-med-chip pase-med-chip--dosis">' +
+              (dosisSplit.core
+                ? '<span class="pase-med-dosis-core">' +
+                  esc(abbreviatePaseMedDosisCore(dosisSplit.core)) +
+                  '</span>'
+                : '') +
+              (dosisSplit.extra
+                ? '<span class="pase-med-dosis-rest">' + esc(dosisSplit.extra) + '</span>'
+                : '') +
+              '</span>'
+          );
+        } else {
+          metaParts.push('<span class="pase-med-chip">' + esc(dosisSplit.core) + '</span>');
+        }
+      }
+      if (viaAbbr) {
+        metaParts.push('<span class="pase-med-chip">' + esc(viaAbbr) + '</span>');
+      }
+      if (freq) {
+        metaParts.push('<span class="pase-med-chip">' + esc(freq) + '</span>');
+      }
+      var metaRow =
+        metaParts.length > 0
+          ? '<div class="pase-med-meta-row">' + metaParts.join('') + '</div>'
+          : '';
+      parts.push(
+        '<div class="pase-mini-card pase-med-card"><div class="pase-med-card-head">' +
+          '<div class="pase-med-name">' +
+          esc(nombre) +
+          '</div>' +
+          diaBadge +
+          '</div>' +
+          metaRow +
+          '</div>'
+      );
+    });
+  }
+  parts.push('</div></section>');
+
+  host.innerHTML = parts.join('');
+  wireAtbRisHoverPanels(host);
+}
+
+function openPaseSectionInNormal(which) {
+  var w = String(which || '').toLowerCase();
+  if (getUiDensity() !== 'normal') {
+    setUiDensity('normal');
+  }
+  if (w === 'labs' || w === 'lab') {
+    switchAppTab('lab');
+  } else if (w === 'pendientes' || w === 'todo') {
+    switchAppTab('nota');
+    switchInnerTab('todo');
+  } else if (w === 'agenda') {
+    switchAppTab('agenda');
+  } else if (w === 'cultivos' || w === 'cult') {
+    switchAppTab('nota');
+    switchInnerTab('cult');
+  } else if (w === 'med' || w === 'medicamentos') {
+    switchAppTab('med');
+  } else if (w === 'expediente' || w === 'nota') {
+    switchAppTab('nota');
+    switchInnerTab('notas');
+  } else {
+    switchAppTab('nota');
+    switchInnerTab('notas');
+  }
+  if (getUiDensity() === 'normal') {
+    requestAnimationFrame(function () {
+      scrollActiveRondaCardIntoView();
+    });
+  }
+}
+
 function switchAppTab(tab) {
+  if (tab === 'lan') tab = 'lab';
+  var prevAppTab = activeAppTab;
   activeAppTab = tab;
+  if (tab === 'nota' && isPaseMode() && prevAppTab !== 'nota') {
+    _roundOverviewMode = true;
+  }
+  if (tab === 'nota' && prevAppTab !== 'nota' && !isPaseMode()) {
+    switchInnerTab('todo');
+  }
   var apptabLab = document.getElementById('apptab-lab');
   var apptabNota = document.getElementById('apptab-nota');
   var apptabMed = document.getElementById('apptab-med');
-  var apptabLan = document.getElementById('apptab-lan');
-  var apptabCalendario = document.getElementById('apptab-calendario');
+  var apptabAgenda = document.getElementById('apptab-agenda');
   var appcontentLab = document.getElementById('appcontent-lab');
   var appcontentMed = document.getElementById('appcontent-med');
   var appcontentNota = document.getElementById('appcontent-nota');
-  var appcontentLan = document.getElementById('appcontent-lan');
-  var appcontentCalendario = document.getElementById('appcontent-calendario');
+  var appcontentAgenda = document.getElementById('appcontent-agenda');
+  var unified = isPaseMode();
 
   if (apptabLab) apptabLab.classList.toggle('active', tab === 'lab');
   if (apptabNota) apptabNota.classList.toggle('active', tab === 'nota');
   if (apptabMed) apptabMed.classList.toggle('active', tab === 'med');
-  if (apptabLan) apptabLan.classList.toggle('active', tab === 'lan');
-  if (apptabCalendario) apptabCalendario.classList.toggle('active', tab === 'calendario');
+  if (apptabAgenda) apptabAgenda.classList.toggle('active', tab === 'agenda');
 
-  if (appcontentLab) appcontentLab.style.display = tab === 'lab' ? 'flex' : 'none';
-  if (appcontentMed) appcontentMed.style.display = tab === 'med' ? 'flex' : 'none';
-  if (appcontentNota) appcontentNota.style.display = tab === 'nota' ? 'flex' : 'none';
-  if (appcontentLan) appcontentLan.style.display = tab === 'lan' ? 'flex' : 'none';
-  if (appcontentCalendario) appcontentCalendario.style.display = tab === 'calendario' ? 'flex' : 'none';
+  if (unified) {
+    var paseRoot = document.getElementById('appcontent-pase');
+    [appcontentLab, appcontentMed, appcontentNota, appcontentAgenda].forEach(function (p) {
+      if (!p) return;
+      p.style.display = 'none';
+    });
+    if (paseRoot) {
+      paseRoot.style.display = 'flex';
+      paseRoot.style.flexDirection = 'column';
+      paseRoot.style.flex = '1';
+      paseRoot.style.minHeight = '0';
+      paseRoot.style.overflow = 'hidden';
+    }
+    renderPaseBoard();
+  } else {
+    if (document.getElementById('appcontent-pase')) {
+      var pr = document.getElementById('appcontent-pase');
+      pr.style.display = 'none';
+    }
+    if (appcontentLab) {
+      appcontentLab.style.display = tab === 'lab' ? 'flex' : 'none';
+      appcontentLab.style.flex = '1';
+      appcontentLab.style.overflow = 'hidden';
+    }
+    if (appcontentMed) {
+      appcontentMed.style.display = tab === 'med' ? 'flex' : 'none';
+      appcontentMed.style.flex = '1';
+      appcontentMed.style.overflow = 'hidden';
+    }
+    if (appcontentNota) {
+      appcontentNota.style.display = tab === 'nota' ? 'flex' : 'none';
+      appcontentNota.style.flex = '1';
+      appcontentNota.style.overflow = 'hidden';
+    }
+    if (appcontentAgenda) {
+      appcontentAgenda.style.display = tab === 'agenda' ? 'flex' : 'none';
+      appcontentAgenda.style.flex = '1';
+      appcontentAgenda.style.overflow = 'hidden';
+    }
+    if (tab === 'lab') renderLabHistoryPanel();
+    if (tab === 'med') renderMedRecetaPanel();
+    if (tab === 'agenda') renderProcedureAgendaPanel();
+  }
 
-  if (tab === 'lab') renderLabHistoryPanel();
-  if (tab === 'med') renderMedRecetaPanel();
-  if (tab === 'lan' && typeof renderLanPanel === 'function') renderLanPanel();
-  if (tab === 'calendario' && typeof renderCalendarioPanel === 'function') renderCalendarioPanel();
+  syncMainAppTabA11y(tab);
+
+  if (tab === 'med') setMedTabAttention(false);
+
+  syncWorkContextChrome();
+  if (activeAppTab === 'nota') syncRoundExpedienteLayout();
+}
+
+function syncMainAppTabA11y(tab) {
+  if (tab === 'lan') tab = 'lab';
+  var rows = [
+    ['lab', 'apptab-lab', 'appcontent-lab', 'appTab.lab'],
+    ['nota', 'apptab-nota', 'appcontent-nota', 'appTab.nota'],
+    ['med', 'apptab-med', 'appcontent-med', 'appTab.med'],
+    ['agenda', 'apptab-agenda', 'appcontent-agenda', 'appTab.agenda'],
+  ];
+  var list = document.getElementById('app-main-tablist');
+  if (isPaseMode()) {
+    if (list) list.setAttribute('aria-hidden', 'true');
+    rows.forEach(function (r) {
+      var b = document.getElementById(r[1]);
+      var p = document.getElementById(r[2]);
+      if (b) {
+        b.setAttribute('aria-hidden', 'true');
+        b.setAttribute('tabindex', '-1');
+      }
+      if (p) {
+        p.setAttribute('role', 'tabpanel');
+        p.removeAttribute('aria-label');
+        p.setAttribute('aria-labelledby', r[1]);
+        p.setAttribute('aria-hidden', 'true');
+      }
+    });
+    var paseRoot = document.getElementById('appcontent-pase');
+    if (paseRoot) {
+      paseRoot.setAttribute('role', 'region');
+      paseRoot.setAttribute('aria-label', 'Vista Pase — resumen del paciente');
+      paseRoot.setAttribute('aria-hidden', 'false');
+    }
+    return;
+  }
+  var paseRoot2 = document.getElementById('appcontent-pase');
+  if (paseRoot2) {
+    paseRoot2.removeAttribute('role');
+    paseRoot2.removeAttribute('aria-label');
+    paseRoot2.setAttribute('aria-hidden', 'true');
+  }
+  if (list) list.removeAttribute('aria-hidden');
+  rows.forEach(function (r) {
+    var b = document.getElementById(r[1]);
+    var p = document.getElementById(r[2]);
+    var sel = tab === r[0];
+    if (b) {
+      b.removeAttribute('aria-hidden');
+      b.setAttribute('aria-selected', sel ? 'true' : 'false');
+      b.tabIndex = sel ? 0 : -1;
+    }
+    if (p) {
+      p.setAttribute('role', 'tabpanel');
+      p.removeAttribute('aria-label');
+      p.setAttribute('aria-labelledby', r[1]);
+      p.setAttribute('aria-hidden', sel ? 'false' : 'true');
+    }
+  });
+}
+
+(function setupMainAppTabKeyboard() {
+  var list = document.getElementById('app-main-tablist');
+  if (!list) return;
+  var order = ['lab', 'nota', 'med', 'agenda'];
+  list.addEventListener('keydown', function (e) {
+    var k = e.key;
+    if (k !== 'ArrowRight' && k !== 'ArrowLeft' && k !== 'ArrowDown' && k !== 'ArrowUp' && k !== 'Home' && k !== 'End') return;
+    var cur = activeAppTab === 'lan' ? 'lab' : activeAppTab;
+    var i = order.indexOf(cur);
+    if (i < 0) i = 0;
+    var next = -1;
+    if (k === 'ArrowRight' || k === 'ArrowDown') next = (i + 1) % order.length;
+    else if (k === 'ArrowLeft' || k === 'ArrowUp') next = (i - 1 + order.length) % order.length;
+    else if (k === 'Home') next = 0;
+    else if (k === 'End') next = order.length - 1;
+    if (next < 0) return;
+    e.preventDefault();
+    var t = order[next];
+    switchAppTab(t);
+    var btn = document.getElementById('apptab-' + t);
+    if (btn) btn.focus();
+  });
+})();
+
+function appendLanRoleTabs(root) {
+  if (!root || typeof storage.getLanUiRole !== 'function' || typeof storage.saveLanUiRole !== 'function') return;
+  var wrap = document.createElement('div');
+  wrap.className = 'lan-role-tabs';
+  wrap.setAttribute('role', 'group');
+  wrap.setAttribute('aria-label', 'Modo de conexión');
+  var role = storage.getLanUiRole();
+  function mk(shortLabel, longTitle, value) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'lan-role-tab' + (role === value ? ' active' : '');
+    b.textContent = shortLabel;
+    b.title = longTitle;
+    b.onclick = function () {
+      storage.saveLanUiRole(value);
+      if (typeof syncSettingsLanHostDiskSection === 'function') syncSettingsLanHostDiskSection();
+      renderLanPanel();
+    };
+    return b;
+  }
+  wrap.appendChild(
+    mk(
+      'Anfitrión',
+      'Esta computadora tiene el servidor y comparte la invitación con el equipo',
+      'host'
+    )
+  );
+  wrap.appendChild(
+    mk(
+      'Cliente',
+      'Esta computadora solo se une con la dirección y el código que te dieron',
+      'client'
+    )
+  );
+  root.appendChild(wrap);
 }
 
 async function renderLanPanel() {
-  var root = document.getElementById('lan-panel-root');
+  var root = document.getElementById('lan-connection-panel-root');
   if (!root) return;
   root.innerHTML = '';
+  appendLanRoleTabs(root);
+  appendLanKnownSessionsSection(root);
 
   var cfg = typeof storage.getLanConfig === 'function' ? (storage.getLanConfig() || {}) : {};
-  if (!lanClient.baseUrl()) {
-    var wrapCfg = document.createElement('div');
-    wrapCfg.className = 'panel-content';
-    wrapCfg.style.display = 'grid';
-    wrapCfg.style.gap = '8px';
-    wrapCfg.style.maxWidth = '520px';
+  var uiRole = typeof storage.getLanUiRole === 'function' ? storage.getLanUiRole() : 'client';
 
+  if (!lanClient.baseUrl()) {
+    var card = document.createElement('div');
+    card.className = 'lan-connect-card';
+
+    var title = document.createElement('div');
+    title.className = 'lan-connect-card-title';
+    title.textContent = uiRole === 'host' ? 'Anfitrión (abres la sala)' : 'Cliente (te unes al equipo)';
+    card.appendChild(title);
+
+    var hint = document.createElement('p');
+    hint.className = 'lan-connect-card-hint';
+    if (uiRole === 'host') {
+      hint.innerHTML =
+        'Las otras R+ deben estar en la <strong>misma red Wi‑Fi</strong>. La dirección suele ser <code>http://</code> más la IP de <strong>esta</strong> computadora (la que te da el hospital o la red local). Si dejas vacío el campo de dirección, al iniciar y al copiar usamos la IP que detectamos en esta máquina. El <strong>código del equipo</strong> debe ser el mismo que tiene configurado el servidor R+ en esta máquina.';
+    } else {
+      hint.innerHTML =
+        'Pide al anfitrión la <strong>dirección</strong> y el <strong>código</strong>. Son la “dirección del edificio” y la “llave”: sin ambos no entras.';
+    }
+    card.appendChild(hint);
+
+    var fieldHost = document.createElement('div');
+    fieldHost.className = 'lan-connect-field';
     var labelHost = document.createElement('label');
-    labelHost.textContent = 'URL del host LAN';
+    labelHost.className = 'profile-field-label';
+    labelHost.textContent = uiRole === 'host' ? 'Dirección que verán las otras R+' : 'Dirección del servidor (URL)';
     labelHost.setAttribute('for', 'lan-input-host-url');
     var inputHost = document.createElement('input');
+    inputHost.className = 'profile-input';
     inputHost.id = 'lan-input-host-url';
     inputHost.type = 'text';
-    inputHost.placeholder = 'http://192.168.0.10:3738';
+    inputHost.autocomplete = 'off';
+    inputHost.placeholder =
+      uiRole === 'host' ? 'Ejemplo: http://192.168.0.15:3738' : 'Ejemplo: http://192.168.0.10:3738';
     inputHost.value = String(cfg.hostUrl || '');
+    fieldHost.appendChild(labelHost);
+    fieldHost.appendChild(inputHost);
+    card.appendChild(fieldHost);
 
+    var fieldCode = document.createElement('div');
+    fieldCode.className = 'lan-connect-field';
     var labelCode = document.createElement('label');
-    labelCode.textContent = 'Código de equipo';
+    labelCode.className = 'profile-field-label';
+    labelCode.textContent = 'Código del equipo';
     labelCode.setAttribute('for', 'lan-input-team-code');
     var inputCode = document.createElement('input');
+    inputCode.className = 'profile-input';
     inputCode.id = 'lan-input-team-code';
     inputCode.type = 'text';
+    inputCode.autocomplete = 'off';
+    inputCode.placeholder = uiRole === 'host' ? 'Si no usas archivo en servidor: change-me-in-profile' : 'Lo escribe quien configuró la sala';
     inputCode.value = String(cfg.teamCode || '');
+    fieldCode.appendChild(labelCode);
+    fieldCode.appendChild(inputCode);
+    card.appendChild(fieldCode);
 
-    var btnSave = document.createElement('button');
-    btnSave.className = 'btn';
-    btnSave.textContent = 'Guardar configuración LAN';
-    btnSave.onclick = saveLanSettingsFromUi;
+    var actions = document.createElement('div');
+    actions.className = 'lan-connect-actions';
+    var row = document.createElement('div');
+    row.className = 'lan-connect-actions-row';
+    if (uiRole === 'host') {
+      var btnHostStart = document.createElement('button');
+      btnHostStart.type = 'button';
+      btnHostStart.className = 'btn-lan-primary';
+      btnHostStart.style.flex = '1';
+      btnHostStart.textContent = 'Iniciar como anfitrión y copiar invitación';
+      btnHostStart.onclick = function () {
+        saveLanSettingsFromUi({ copyInviteAfter: true });
+      };
+      row.appendChild(btnHostStart);
+    } else {
+      var btnConnect = document.createElement('button');
+      btnConnect.type = 'button';
+      btnConnect.className = 'btn-lan-primary';
+      btnConnect.textContent = 'Iniciar sesión LAN';
+      btnConnect.onclick = function () {
+        saveLanSettingsFromUi();
+      };
+      var btnLink = document.createElement('button');
+      btnLink.type = 'button';
+      btnLink.className = 'btn-lan-secondary';
+      btnLink.textContent = 'Copiar invitación para enviar';
+      btnLink.title = 'Genera un texto listo para WhatsApp o correo';
+      btnLink.onclick = function () {
+        copyLanInviteLinkFromUi();
+      };
+      row.appendChild(btnConnect);
+      row.appendChild(btnLink);
+    }
+    actions.appendChild(row);
+    card.appendChild(actions);
 
-    wrapCfg.appendChild(labelHost);
-    wrapCfg.appendChild(inputHost);
-    wrapCfg.appendChild(labelCode);
-    wrapCfg.appendChild(inputCode);
-    wrapCfg.appendChild(btnSave);
-    root.appendChild(wrapCfg);
+    if (uiRole === 'host') {
+      var postHint = document.createElement('p');
+      postHint.className = 'lan-connect-card-hint';
+      postHint.style.marginTop = '2px';
+      postHint.textContent =
+        'Al pulsar el botón se guarda la conexión, se prueba el servidor y se copia al portapapeles un texto para que lo pegues en WhatsApp o correo.';
+      card.appendChild(postHint);
+    }
+
+    root.appendChild(card);
+    if (uiRole === 'host' && !String(cfg.hostUrl || '').trim()) {
+      resolveLanHostUrlForShare().then(function (u) {
+        var inp = document.getElementById('lan-input-host-url');
+        if (inp && u && !String(inp.value || '').trim()) inp.value = u;
+      });
+    }
     return;
   }
 
-  var topRow = document.createElement('div');
+  var statusCard = document.createElement('div');
+  statusCard.className = 'lan-connect-card';
+  var stTitle = document.createElement('div');
+  stTitle.className = 'lan-connect-card-title';
+  stTitle.textContent = uiRole === 'host' ? 'Conectado como anfitrión' : 'Conectado como cliente';
+  statusCard.appendChild(stTitle);
+  var topRow = document.createElement('p');
+  topRow.className = 'lan-connect-card-hint';
   topRow.style.marginBottom = '10px';
-  topRow.textContent = 'Host configurado: ' + lanClient.baseUrl();
-  root.appendChild(topRow);
+  topRow.innerHTML = '<strong>Dirección:</strong> ' + esc(lanClient.baseUrl());
+  statusCard.appendChild(topRow);
+  var rowInvite = document.createElement('div');
+  rowInvite.className = 'lan-connect-actions-row';
+  var btnCopyStored = document.createElement('button');
+  btnCopyStored.type = 'button';
+  btnCopyStored.className = 'btn-lan-secondary';
+  btnCopyStored.style.flex = '1';
+  btnCopyStored.textContent = 'Copiar invitación para enviar';
+  btnCopyStored.onclick = function () {
+    copyLanInviteLinkFromUi();
+  };
+  rowInvite.appendChild(btnCopyStored);
+  statusCard.appendChild(rowInvite);
+  root.appendChild(statusCard);
 
-  var hostTeamWrap = document.createElement('div');
-  hostTeamWrap.style.marginBottom = '12px';
-  hostTeamWrap.style.display = 'grid';
-  hostTeamWrap.style.gap = '8px';
-  hostTeamWrap.style.maxWidth = '520px';
-  if (window.electronAPI && typeof window.electronAPI.writeLanHostTeamCode === 'function') {
-    var labelHostTeam = document.createElement('label');
-    labelHostTeam.textContent = 'Código de equipo (host, archivo en userData)';
-    labelHostTeam.setAttribute('for', 'lan-host-team-code-input');
-    var inputHostTeam = document.createElement('input');
-    inputHostTeam.id = 'lan-host-team-code-input';
-    inputHostTeam.type = 'text';
-    var btnHostTeam = document.createElement('button');
-    btnHostTeam.className = 'btn';
-    btnHostTeam.textContent = 'Guardar código host';
-    btnHostTeam.onclick = saveLanHostTeamCodeFromUi;
-    hostTeamWrap.appendChild(labelHostTeam);
-    hostTeamWrap.appendChild(inputHostTeam);
-    hostTeamWrap.appendChild(btnHostTeam);
-  } else {
-    var onlyElectron = document.createElement('p');
-    onlyElectron.style.opacity = '0.75';
-    onlyElectron.style.fontSize = '0.9em';
-    onlyElectron.textContent = 'Código de equipo (host): solo en app Electron.';
-    hostTeamWrap.appendChild(onlyElectron);
-  }
-  root.appendChild(hostTeamWrap);
+  var roomsCard = document.createElement('div');
+  roomsCard.className = 'lan-connect-card';
+  var roomsTitle = document.createElement('div');
+  roomsTitle.className = 'lan-connect-card-title';
+  roomsTitle.textContent = 'Salas en vivo';
+  roomsCard.appendChild(roomsTitle);
+  var roomsHint = document.createElement('p');
+  roomsHint.className = 'lan-connect-card-hint';
+  roomsHint.textContent =
+    'Cada sala es un canal para que varias R+ compartan señal en tiempo real. Si no ves salas, pide a un compañero que cree una o créala tú.';
+  roomsCard.appendChild(roomsHint);
 
   var createRow = document.createElement('div');
   createRow.style.display = 'flex';
+  createRow.style.flexWrap = 'wrap';
   createRow.style.gap = '8px';
   createRow.style.alignItems = 'center';
-  createRow.style.marginBottom = '12px';
+  createRow.style.marginBottom = '4px';
 
   var newRoomInput = document.createElement('input');
   newRoomInput.id = 'lan-input-room-name';
+  newRoomInput.className = 'profile-input';
   newRoomInput.type = 'text';
-  newRoomInput.placeholder = 'Nueva sala';
-  newRoomInput.style.maxWidth = '280px';
+  newRoomInput.placeholder = 'Nombre de la nueva sala';
+  newRoomInput.style.flex = '1';
+  newRoomInput.style.minWidth = '160px';
 
   var createBtn = document.createElement('button');
-  createBtn.className = 'btn';
+  createBtn.type = 'button';
+  createBtn.className = 'btn-lan-primary';
   createBtn.textContent = 'Crear sala';
-  createBtn.disabled = !lanClient.connected;
+  createBtn.disabled = !isLanSessionConfiguredForRest();
   createBtn.onclick = createLanRoomFromUi;
 
   createRow.appendChild(newRoomInput);
   createRow.appendChild(createBtn);
-  root.appendChild(createRow);
+  roomsCard.appendChild(createRow);
 
   var resp;
   try {
     resp = await lanClient.fetch('/api/lan/v1/rooms');
   } catch (e) {
     showToast('No se pudo consultar salas LAN', 'error');
-    var errNet = document.createElement('div');
-    errNet.textContent = 'No se pudo consultar salas LAN.';
-    root.appendChild(errNet);
+    var errNet = document.createElement('p');
+    errNet.className = 'lan-connect-card-hint';
+    errNet.textContent = 'No se pudo consultar la lista de salas. Revisa el Wi‑Fi o la dirección del servidor.';
+    roomsCard.appendChild(errNet);
+    root.appendChild(roomsCard);
     return;
   }
   if (!resp.ok) {
     showToast('Error al cargar salas LAN', 'error');
-    var errHttp = document.createElement('div');
-    errHttp.textContent = 'Error al cargar salas LAN.';
-    root.appendChild(errHttp);
+    var errHttp = document.createElement('p');
+    errHttp.className = 'lan-connect-card-hint';
+    if (resp.status === 401) {
+      errHttp.innerHTML =
+        'El <strong>código del equipo</strong> que guardaste en esta R+ no coincide con el que usa el proceso servidor (archivo <code>lan-team-code.txt</code> en datos de la app, variable <code>R_PLUS_LAN_TEAM_CODE</code>, o el valor por defecto <code>change-me-in-profile</code>). Deben ser <strong>exactamente el mismo texto</strong> en ambos sitios. Tras cambiar el archivo, reinicia R+.';
+    } else {
+      var rawBody = '';
+      try {
+        rawBody = await resp.text();
+      } catch (_e2) {}
+      var detail = '';
+      try {
+        var jo = JSON.parse(rawBody);
+        if (jo && jo.error) detail = String(jo.error);
+      } catch (_e3) {
+        if (rawBody) detail = rawBody.replace(/\s+/g, ' ').trim().slice(0, 200);
+      }
+      var hint500 =
+        detail && /team code mismatch|host file/i.test(detail)
+          ? ' El archivo <code>lan-squad-host-state.json</code> se creó con <strong>otro</strong> código: o vuelves al código anterior, o (solo si puedes perder salas/pacientes LAN de prueba en ese archivo) cierra R+, borra ese JSON en datos de la app y vuelve a abrir para regenerarlo con el código actual.'
+          : '';
+      errHttp.innerHTML =
+        '<strong>HTTP ' +
+        esc(String(resp.status)) +
+        '</strong>' +
+        (detail ? ': ' + esc(detail) : '.') +
+        (hint500 ? hint500 : ' Comprueba la URL del anfitrión y que R+ siga abierto en esa máquina.');
+    }
+    roomsCard.appendChild(errHttp);
+    root.appendChild(roomsCard);
     return;
   }
 
@@ -1726,45 +3731,72 @@ async function renderLanPanel() {
   var rooms = Array.isArray(payload && payload.rooms) ? payload.rooms : [];
   if (!rooms.length) {
     var empty = document.createElement('p');
-    empty.textContent = 'No hay salas creadas.';
-    root.appendChild(empty);
-    return;
+    empty.className = 'lan-connect-card-hint';
+    empty.textContent = 'Todavía no hay salas. Crea una arriba o espera a que alguien del equipo la cree.';
+    roomsCard.appendChild(empty);
+  } else {
+    var list = document.createElement('ul');
+    list.style.listStyle = 'none';
+    list.style.padding = '0';
+    list.style.margin = '0';
+    rooms.forEach(function (room) {
+      var id = room && room.id ? String(room.id) : '';
+      if (!id) return;
+      var li = document.createElement('li');
+      li.style.display = 'flex';
+      li.style.gap = '8px';
+      li.style.alignItems = 'center';
+      li.style.marginBottom = '8px';
+
+      var name = document.createElement('span');
+      name.style.flex = '1';
+      name.style.fontSize = '13px';
+      var disp = String(room.displayName || room.name || id);
+      name.textContent = disp;
+
+      var joinBtn = document.createElement('button');
+      joinBtn.type = 'button';
+      joinBtn.className = 'btn-lan-secondary';
+      joinBtn.style.flex = '0 0 auto';
+      joinBtn.textContent = 'Unirse';
+      joinBtn.onclick = function () {
+        joinLanRoom(id, disp);
+      };
+
+      var delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'btn-lan-danger';
+      delBtn.textContent = 'Eliminar';
+      delBtn.disabled = !lanClient.connected;
+      delBtn.onclick = function () {
+        deleteLanRoom(id);
+      };
+
+      li.appendChild(name);
+      li.appendChild(joinBtn);
+      li.appendChild(delBtn);
+      list.appendChild(li);
+    });
+    roomsCard.appendChild(list);
   }
+  root.appendChild(roomsCard);
+}
 
-  var list = document.createElement('ul');
-  list.style.listStyle = 'none';
-  list.style.padding = '0';
-  list.style.margin = '0';
-  rooms.forEach(function (room) {
-    var id = room && room.id ? String(room.id) : '';
-    if (!id) return;
-    var li = document.createElement('li');
-    li.style.display = 'flex';
-    li.style.gap = '8px';
-    li.style.alignItems = 'center';
-    li.style.marginBottom = '8px';
-
-    var name = document.createElement('span');
-    name.style.flex = '1';
-    name.textContent = String(room.displayName || room.name || id);
-
-    var joinBtn = document.createElement('button');
-    joinBtn.className = 'btn';
-    joinBtn.textContent = 'Unirse';
-    joinBtn.onclick = function () { joinLanRoom(id); };
-
-    var delBtn = document.createElement('button');
-    delBtn.className = 'btn danger';
-    delBtn.textContent = 'Eliminar';
-    delBtn.disabled = !lanClient.connected;
-    delBtn.onclick = function () { deleteLanRoom(id); };
-
-    li.appendChild(name);
-    li.appendChild(joinBtn);
-    li.appendChild(delBtn);
-    list.appendChild(li);
-  });
-  root.appendChild(list);
+async function resolveLanHostUrlForShare() {
+  var cfg = typeof storage.getLanConfig === 'function' ? (storage.getLanConfig() || {}) : {};
+  var el = document.getElementById('lan-input-host-url');
+  var fromInput = el && String(el.value || '').trim();
+  if (fromInput) return fromInput.replace(/\/+$/, '');
+  var fromCfg = String(cfg.hostUrl || '').trim().replace(/\/+$/, '');
+  if (fromCfg) return fromCfg;
+  var uiRole = typeof storage.getLanUiRole === 'function' ? storage.getLanUiRole() : 'client';
+  if (uiRole !== 'host') return '';
+  if (!window.electronAPI || typeof window.electronAPI.getLanCandidateBaseUrl !== 'function') return '';
+  try {
+    return String(await window.electronAPI.getLanCandidateBaseUrl() || '').trim().replace(/\/+$/, '');
+  } catch (_e) {
+    return '';
+  }
 }
 
 async function saveLanHostTeamCodeFromUi() {
@@ -1772,7 +3804,7 @@ async function saveLanHostTeamCodeFromUi() {
     showToast('Solo disponible en la app Electron', 'error');
     return;
   }
-  var input = document.getElementById('lan-host-team-code-input');
+  var input = document.getElementById('settings-lan-host-team-code-input');
   var plain = input && input.value;
   var res;
   try {
@@ -1782,23 +3814,126 @@ async function saveLanHostTeamCodeFromUi() {
     return;
   }
   if (res && res.ok) {
-    showToast('Guardado. Reinicia R+ para aplicar en el servidor.', 'success');
+    var plainTrim = String(plain || '').trim();
+    var cfg = typeof storage.getLanConfig === 'function' ? (storage.getLanConfig() || {}) : {};
+    var hostUrl = String(cfg.hostUrl || '').trim().replace(/\/+$/, '');
+    if (hostUrl && plainTrim) {
+      storage.saveLanConfig({ hostUrl: hostUrl, teamCode: plainTrim });
+      lanClient.configure({ hostUrl: hostUrl, teamCode: plainTrim });
+      try {
+        lanClient.disconnect();
+        lanClient.connectSyncChannel();
+      } catch (_e) {}
+    }
+    showToast('Guardado. Reinicia R+ para que el proceso del servidor relea el archivo.', 'success');
   } else {
     showToast(res && res.error ? res.error : 'Error al guardar', 'error');
   }
 }
 
-async function saveLanSettingsFromUi() {
-  var hostInput =
-    document.getElementById('lan-input-host-url') ||
-    document.getElementById('cal-lan-input-host-url');
-  var teamInput =
-    document.getElementById('lan-input-team-code') ||
-    document.getElementById('cal-lan-input-team-code');
-  var hostUrl = String(hostInput && hostInput.value ? hostInput.value : '').trim();
+async function resetLanSquadHostStateFromUi() {
+  if (!window.electronAPI || typeof window.electronAPI.resetLanSquadHostState !== 'function') {
+    showToast('Solo disponible en la app de escritorio.', 'error');
+    return;
+  }
+  if (
+    !confirm(
+      'Se borrará el archivo lan-squad-host-state.json en esta computadora (salas y datos de pacientes del host LAN guardados ahí). ¿Seguir?'
+    )
+  ) {
+    return;
+  }
+  var res;
+  try {
+    res = await window.electronAPI.resetLanSquadHostState();
+  } catch (e) {
+    showToast(e && e.message ? e.message : 'Error al restablecer', 'error');
+    return;
+  }
+  if (res && res.ok) {
+    var synced = await syncLanSavedTeamCodeWithEffectiveHostCode();
+    showToast(
+      synced
+        ? 'Estado LAN del host borrado. El «Código del equipo» guardado en esta R+ quedó alineado con archivo / variable de entorno / valor por defecto del servidor.'
+        : 'Estado LAN del host borrado. Si sigues con error 401, escribe en «Código del equipo» el mismo texto que el servidor (o reinicia R+ tras cambiar el archivo).',
+      'success'
+    );
+    if (typeof renderLanPanel === 'function') renderLanPanel();
+  } else {
+    showToast(res && res.error ? res.error : 'No se pudo borrar el archivo.', 'error');
+  }
+}
+
+async function copyLanInviteLinkFromUi(opts) {
+  opts = opts || {};
+  var silent = !!opts.silent;
+  var cfg = typeof storage.getLanConfig === 'function' ? (storage.getLanConfig() || {}) : {};
+  var teamInput = document.getElementById('lan-input-team-code');
+  var hostUrl = await resolveLanHostUrlForShare();
+  var teamCode = String(
+    teamInput && teamInput.value != null && String(teamInput.value).trim()
+      ? teamInput.value
+      : cfg.teamCode || ''
+  ).trim();
+  if (!hostUrl || !teamCode) {
+    if (!silent) {
+      showToast(
+        !hostUrl
+          ? 'Falta la dirección del servidor (o no pudimos detectar la IP en esta computadora).'
+          : 'Falta el código del equipo.',
+        'error'
+      );
+    }
+    return false;
+  }
+  var body =
+    'Hola — para entrar a la misma sala en R+ (icono ⇄ arriba a la derecha), usa estos datos:\n\n' +
+    'Dirección del servidor:\n' +
+    hostUrl +
+    '\n\n' +
+    'Código del equipo:\n' +
+    teamCode +
+    '\n\n' +
+    'Pasos en la otra computadora: abre R+, pulsa ⇄, elige «Cliente», escribe la dirección y el código, y toca «Iniciar sesión LAN».';
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(body);
+      if (!silent) showToast('Listo: texto copiado. Pégalo en WhatsApp, correo o una nota para tu equipo.', 'success');
+      return true;
+    }
+    if (!silent) showToast('Tu navegador no permite copiar automáticamente.', 'error');
+    return false;
+  } catch (_e) {
+    if (!silent) showToast('No se pudo copiar al portapapeles.', 'error');
+    return false;
+  }
+}
+
+async function saveLanSettingsFromUi(opts) {
+  opts = opts || {};
+  var copyInviteAfter = !!opts.copyInviteAfter;
+  var uiRole = typeof storage.getLanUiRole === 'function' ? storage.getLanUiRole() : 'client';
+  var hostInput = document.getElementById('lan-input-host-url');
+  var teamInput = document.getElementById('lan-input-team-code');
+  if (hostInput && !String(hostInput.value || '').trim()) {
+    var autoHost = await resolveLanHostUrlForShare();
+    if (autoHost) hostInput.value = autoHost;
+  }
+  var hostUrl = String(hostInput && hostInput.value ? hostInput.value : '')
+    .trim()
+    .replace(/\/+$/, '');
   var teamCode = String(teamInput && teamInput.value ? teamInput.value : '').trim();
   if (!hostUrl || !teamCode) {
-    showToast('Completa URL del host y código de equipo', 'error');
+    showToast(
+      !hostUrl
+        ? uiRole === 'host'
+          ? 'No pudimos detectar la IP. Escribe la dirección http://… que verán las otras R+.'
+          : 'Escribe la dirección del servidor que te dio el anfitrión.'
+        : uiRole === 'host'
+          ? 'Escribe el código del equipo (el mismo que usa el servidor en esta R+).'
+          : 'Escribe el código que te dio quien abrió la sala.',
+      'error'
+    );
     return;
   }
   var cfg = { hostUrl: hostUrl.replace(/\/+$/, ''), teamCode: teamCode };
@@ -1806,28 +3941,65 @@ async function saveLanSettingsFromUi() {
   lanClient.configure(cfg);
   lanClient.disconnect();
   try {
-    lanClient.connectCalendarChannel();
+    lanClient.connectSyncChannel();
   } catch (_e) {}
-  showToast('Configuración LAN guardada', 'success');
+  var pingOk = false;
+  var pingStatus = 0;
+  try {
+    var r = await lanClient.fetch('/api/lan/v1/ping');
+    pingStatus = r && r.status ? r.status : 0;
+    pingOk = !!(r && r.ok);
+  } catch (_e) {}
+  var copiedOk = false;
+  if (copyInviteAfter && pingStatus !== 401) {
+    copiedOk = await copyLanInviteLinkFromUi({ silent: true });
+  }
+  if (pingOk) {
+    if (copyInviteAfter) {
+      showToast(
+        copiedOk
+          ? 'Anfitrión listo. La invitación ya está en el portapapeles; compártela por WhatsApp o correo.'
+          : 'Anfitrión listo, pero no se pudo copiar solo. Pulsa «Copiar invitación otra vez».',
+        copiedOk ? 'success' : 'error'
+      );
+    } else {
+      showToast('Listo: ya iniciaste sesión en la sala del equipo.', 'success');
+    }
+  } else if (pingStatus === 401) {
+    showToast('El código no coincide con el del servidor. Pide el código correcto a quien tiene la computadora anfitriona.', 'error');
+  } else {
+    if (copyInviteAfter && copiedOk) {
+      showToast(
+        'Invitación copiada al portapapeles. Aun así no hubo respuesta del servidor: revisa el Wi‑Fi o que R+ siga abierto en el anfitrión.',
+        'error'
+      );
+    } else {
+      showToast(
+        'Guardamos los datos, pero no hubo respuesta del servidor. Revisa la dirección y que ambas computadoras estén en el mismo Wi‑Fi.',
+        'error'
+      );
+    }
+  }
   renderLanPanel();
-  if (activeAppTab === 'calendario') renderCalendarioPanel();
 }
 
-function joinLanRoom(roomId) {
+function joinLanRoom(roomId, displayName) {
   var id = String(roomId || '').trim();
   if (!id) return;
   try {
     lanClient.connectLiveChannel(id);
     localStorage.setItem('rpc-lan-last-room', id);
+    rememberLanRoomJoined(id, displayName != null ? displayName : id);
     showToast('Sala: relay WebSocket activo', 'success');
+    renderLanPanel();
   } catch (_e) {
     showToast('No se pudo activar relay de sala', 'error');
   }
 }
 
 async function createLanRoomFromUi() {
-  if (!lanClient.connected) {
-    showToast('Conéctate al host LAN para crear salas', 'error');
+  if (!isLanSessionConfiguredForRest()) {
+    showToast('Falta dirección o código LAN. Desconecta, escribe ambos y guarda de nuevo.', 'error');
     return;
   }
   var input = document.getElementById('lan-input-room-name');
@@ -1848,7 +4020,14 @@ async function createLanRoomFromUi() {
     return;
   }
   if (!resp.ok) {
-    showToast('No se pudo crear la sala', 'error');
+    if (resp.status === 401) {
+      showToast(
+        'El código del equipo no coincide con el servidor. Igualálo al conectar y en lan-team-code.txt; reinicia R+ en el anfitrión si cambiaste el archivo.',
+        'error'
+      );
+    } else {
+      showToast('No se pudo crear la sala', 'error');
+    }
     return;
   }
   if (input) input.value = '';
@@ -1857,8 +4036,8 @@ async function createLanRoomFromUi() {
 }
 
 async function deleteLanRoom(roomId) {
-  if (!lanClient.connected) {
-    showToast('Conéctate al host LAN para eliminar salas', 'error');
+  if (!isLanSessionConfiguredForRest()) {
+    showToast('Falta configuración LAN para eliminar salas.', 'error');
     return;
   }
   var id = String(roomId || '').trim();
@@ -1871,318 +4050,33 @@ async function deleteLanRoom(roomId) {
     return;
   }
   if (!resp.ok) {
-    showToast('No se pudo eliminar la sala', 'error');
+    if (resp.status === 401) {
+      showToast('El código del equipo no coincide con el servidor; no se pudo eliminar la sala.', 'error');
+    } else {
+      showToast('No se pudo eliminar la sala', 'error');
+    }
     return;
   }
   showToast('Sala eliminada', 'success');
   renderLanPanel();
 }
 
-async function renderCalendarioPanel() {
-  var root = document.getElementById('calendario-panel-root');
-  if (!root) return;
-  root.innerHTML = '';
-
-  if (!lanClient.baseUrl()) {
-    var cfg = typeof storage.getLanConfig === 'function' ? (storage.getLanConfig() || {}) : {};
-    var intro = document.createElement('p');
-    intro.style.marginBottom = '10px';
-    intro.style.lineHeight = '1.45';
-    intro.textContent =
-      'Agenda de procedimientos del equipo: aquí registras paciente, procedimiento, fecha y lugar (datos en el servidor LAN). ' +
-      'Indica la URL del host y el código de equipo; la conexión es la misma que la sincronización en red, sin abrir otra pestaña.';
-    root.appendChild(intro);
-
-    var wrapCfg = document.createElement('div');
-    wrapCfg.className = 'panel-content';
-    wrapCfg.style.display = 'grid';
-    wrapCfg.style.gap = '8px';
-    wrapCfg.style.maxWidth = '520px';
-
-    var labelHost = document.createElement('label');
-    labelHost.textContent = 'URL del host LAN';
-    labelHost.setAttribute('for', 'cal-lan-input-host-url');
-    var inputHost = document.createElement('input');
-    inputHost.id = 'cal-lan-input-host-url';
-    inputHost.type = 'text';
-    inputHost.placeholder = 'http://192.168.0.10:3738';
-    inputHost.value = String(cfg.hostUrl || '');
-
-    var labelCode = document.createElement('label');
-    labelCode.textContent = 'Código de equipo';
-    labelCode.setAttribute('for', 'cal-lan-input-team-code');
-    var inputCode = document.createElement('input');
-    inputCode.id = 'cal-lan-input-team-code';
-    inputCode.type = 'text';
-    inputCode.value = String(cfg.teamCode || '');
-
-    var btnSave = document.createElement('button');
-    btnSave.className = 'btn';
-    btnSave.textContent = 'Conectar y cargar agenda';
-    btnSave.onclick = saveLanSettingsFromUi;
-
-    wrapCfg.appendChild(labelHost);
-    wrapCfg.appendChild(inputHost);
-    wrapCfg.appendChild(labelCode);
-    wrapCfg.appendChild(inputCode);
-    wrapCfg.appendChild(btnSave);
-    root.appendChild(wrapCfg);
-    return;
-  }
-
-  var eventsResp;
-  var patientsResp;
-  try {
-    var responses = await Promise.all([
-      lanClient.fetch('/api/lan/v1/calendar-events'),
-      lanClient.fetch('/api/lan/v1/patients')
-    ]);
-    eventsResp = responses[0];
-    patientsResp = responses[1];
-  } catch (_e) {
-    showToast('No se pudo cargar la agenda LAN', 'error');
-    var netErr = document.createElement('p');
-    netErr.textContent = 'No se pudo cargar la agenda de procedimientos.';
-    root.appendChild(netErr);
-    return;
-  }
-
-  if (!eventsResp.ok || !patientsResp.ok) {
-    showToast('Error al consultar la agenda', 'error');
-    var httpErr = document.createElement('p');
-    httpErr.textContent = 'Error al consultar la agenda de procedimientos.';
-    root.appendChild(httpErr);
-    return;
-  }
-
-  var eventsPayload = {};
-  var patientsPayload = {};
-  try { eventsPayload = await eventsResp.json(); } catch (_e) {}
-  try { patientsPayload = await patientsResp.json(); } catch (_e) {}
-  var events = Array.isArray(eventsPayload && eventsPayload.events) ? eventsPayload.events : [];
-  var hostPatients = Array.isArray(patientsPayload && patientsPayload.patients) ? patientsPayload.patients : [];
-  var patientNameById = Object.create(null);
-  hostPatients.forEach(function (p) {
-    if (!p || p.id == null) return;
-    var id = String(p.id);
-    var name = String(
-      p.nombreCompleto ||
-      p.nombre ||
-      p.name ||
-      p.displayName ||
-      p.fullName ||
-      p.paciente ||
-      id
-    );
-    patientNameById[id] = name;
+function syncInnerTabVisualOnly() {
+  var tab = activeInner || 'todo';
+  var ids = ['datos', 'notas', 'indica', 'tend', 'cult', 'listado', 'todo'];
+  ids.forEach(function (t) {
+    var btn = document.getElementById('itab-' + t);
+    var pane = document.getElementById('itab-content-' + t);
+    if (btn) btn.classList.toggle('active', tab === t);
+    if (pane) pane.classList.toggle('active', tab === t);
   });
-
-  var calHead = document.createElement('div');
-  calHead.style.marginBottom = '12px';
-  var hCal = document.createElement('h3');
-  hCal.style.margin = '0 0 4px 0';
-  hCal.style.fontSize = '1.05rem';
-  hCal.textContent = 'Agenda de procedimientos';
-  var subCal = document.createElement('p');
-  subCal.style.margin = '0';
-  subCal.style.opacity = '0.85';
-  subCal.style.fontSize = '0.9rem';
-  subCal.textContent = 'Servidor: ' + lanClient.baseUrl();
-  calHead.appendChild(hCal);
-  calHead.appendChild(subCal);
-  root.appendChild(calHead);
-
-  var table = document.createElement('table');
-  table.className = 'table';
-  table.style.width = '100%';
-  table.style.marginBottom = '14px';
-  var thead = document.createElement('thead');
-  var trh = document.createElement('tr');
-  ['Inicio / cita', 'Paciente', 'Procedimiento', 'Lugar', 'Material listo'].forEach(function (h) {
-    var th = document.createElement('th');
-    th.textContent = h;
-    trh.appendChild(th);
-  });
-  thead.appendChild(trh);
-  table.appendChild(thead);
-
-  var tbody = document.createElement('tbody');
-  events.forEach(function (ev) {
-    var tr = document.createElement('tr');
-
-    var tdStart = document.createElement('td');
-    tdStart.textContent = String(ev && ev.start ? ev.start : '');
-    tr.appendChild(tdStart);
-
-    var tdPatient = document.createElement('td');
-    var pid = String(ev && ev.patientId ? ev.patientId : '');
-    tdPatient.textContent = patientNameById[pid] || pid;
-    tr.appendChild(tdPatient);
-
-    var tdProc = document.createElement('td');
-    tdProc.textContent = String(ev && ev.procedure ? ev.procedure : '');
-    tr.appendChild(tdProc);
-
-    var tdLoc = document.createElement('td');
-    tdLoc.textContent = String(ev && ev.location ? ev.location : '');
-    tr.appendChild(tdLoc);
-
-    var tdMaterial = document.createElement('td');
-    var chk = document.createElement('input');
-    chk.type = 'checkbox';
-    chk.checked = !!(ev && ev.materialReady);
-    chk.disabled = !lanClient.connected;
-    chk.addEventListener('change', async function () {
-      try {
-        var patchResp = await lanClient.fetch('/api/lan/v1/calendar-events/' + encodeURIComponent(String(ev.id || '')), {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            materialReady: !!chk.checked,
-            expectedVersion: ev.version
-          })
-        });
-        if (!patchResp.ok) {
-          showToast('No se pudo actualizar el procedimiento', 'error');
-          chk.checked = !chk.checked;
-          return;
-        }
-        var patchPayload = await patchResp.json();
-        if (patchPayload && patchPayload.event && patchPayload.event.version != null) {
-          ev.version = patchPayload.event.version;
-        }
-      } catch (_e) {
-        chk.checked = !chk.checked;
-        showToast('No se pudo actualizar el procedimiento', 'error');
-      }
-    });
-    tdMaterial.appendChild(chk);
-    tr.appendChild(tdMaterial);
-
-    tbody.appendChild(tr);
-  });
-  table.appendChild(tbody);
-  root.appendChild(table);
-
-  var formWrap = document.createElement('div');
-  formWrap.style.display = 'grid';
-  formWrap.style.gap = '8px';
-  formWrap.style.maxWidth = '520px';
-
-  var title = document.createElement('h4');
-  title.textContent = 'Agregar procedimiento a la agenda';
-  title.style.margin = '4px 0';
-  formWrap.appendChild(title);
-
-  var lblPatient = document.createElement('label');
-  lblPatient.setAttribute('for', 'calendario-input-patient');
-  lblPatient.textContent = 'Paciente';
-  formWrap.appendChild(lblPatient);
-
-  var selPatient = document.createElement('select');
-  selPatient.id = 'calendario-input-patient';
-  var emptyOpt = document.createElement('option');
-  emptyOpt.value = '';
-  emptyOpt.textContent = hostPatients.length ? 'Selecciona un paciente' : 'Sin pacientes en el servidor';
-  selPatient.appendChild(emptyOpt);
-  hostPatients.forEach(function (p) {
-    if (!p || p.id == null) return;
-    var opt = document.createElement('option');
-    opt.value = String(p.id);
-    opt.textContent = patientNameById[String(p.id)] || String(p.id);
-    selPatient.appendChild(opt);
-  });
-  formWrap.appendChild(selPatient);
-
-  var lblProc = document.createElement('label');
-  lblProc.setAttribute('for', 'calendario-input-procedure');
-  lblProc.textContent = 'Procedimiento';
-  formWrap.appendChild(lblProc);
-
-  var inputProc = document.createElement('input');
-  inputProc.id = 'calendario-input-procedure';
-  inputProc.type = 'text';
-  inputProc.placeholder = 'Ej. cateterismo, endoscopia, biopsia…';
-  formWrap.appendChild(inputProc);
-
-  var lblStart = document.createElement('label');
-  lblStart.setAttribute('for', 'calendario-input-start');
-  lblStart.textContent = 'Inicio (fecha y hora)';
-  formWrap.appendChild(lblStart);
-
-  var inputStart = document.createElement('input');
-  inputStart.id = 'calendario-input-start';
-  inputStart.type = 'datetime-local';
-  formWrap.appendChild(inputStart);
-
-  var lblLoc = document.createElement('label');
-  lblLoc.setAttribute('for', 'calendario-input-location');
-  lblLoc.textContent = 'Lugar';
-  formWrap.appendChild(lblLoc);
-
-  var inputLoc = document.createElement('input');
-  inputLoc.id = 'calendario-input-location';
-  inputLoc.type = 'text';
-  inputLoc.placeholder = 'Ej. hemodinámica, quirófano 2…';
-  formWrap.appendChild(inputLoc);
-
-  var btnCreate = document.createElement('button');
-  btnCreate.className = 'btn';
-  btnCreate.textContent = 'Guardar en agenda';
-  btnCreate.disabled = !lanClient.connected || !hostPatients.length;
-  btnCreate.onclick = createCalendarEventFromUi;
-  formWrap.appendChild(btnCreate);
-
-  root.appendChild(formWrap);
 }
 
-async function createCalendarEventFromUi() {
-  if (!lanClient.connected) {
-    showToast('Conéctate al host LAN para agregar a la agenda', 'error');
-    return;
+function switchInnerTab(tab, opts) {
+  opts = opts || {};
+  if (isPaseMode() && activeAppTab === 'nota' && !opts.preserveRoundOverview) {
+    _roundOverviewMode = false;
   }
-  var patientId = String((document.getElementById('calendario-input-patient') || {}).value || '').trim();
-  var start = String((document.getElementById('calendario-input-start') || {}).value || '').trim();
-  var procedure = String((document.getElementById('calendario-input-procedure') || {}).value || '').trim();
-  var location = String((document.getElementById('calendario-input-location') || {}).value || '').trim();
-  if (!patientId || !start || !procedure) {
-    showToast('Completa paciente, inicio y procedimiento', 'error');
-    return;
-  }
-  var body = {
-    patientId: patientId,
-    start: start,
-    end: start,
-    procedure: procedure,
-    location: location,
-    materialReady: false
-  };
-  var resp;
-  try {
-    resp = await lanClient.fetch('/api/lan/v1/calendar-events', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-  } catch (_e) {
-    showToast('No se pudo guardar en la agenda', 'error');
-    return;
-  }
-  if (!resp.ok) {
-    showToast('No se pudo guardar en la agenda', 'error');
-    return;
-  }
-  var inputStart = document.getElementById('calendario-input-start');
-  var inputProc = document.getElementById('calendario-input-procedure');
-  var inputLoc = document.getElementById('calendario-input-location');
-  if (inputStart) inputStart.value = '';
-  if (inputProc) inputProc.value = '';
-  if (inputLoc) inputLoc.value = '';
-  showToast('Procedimiento agregado a la agenda', 'success');
-  renderCalendarioPanel();
-}
-
-function switchInnerTab(tab) {
   activeInner = tab;
   var ids = ['datos','notas','indica','tend','cult','listado','todo'];
   ids.forEach(function(t) {
@@ -2196,6 +4090,7 @@ function switchInnerTab(tab) {
   if (tab === 'cult') renderCultivosTable();
   if (tab === 'listado') renderListadoForm();
   if (tab === 'todo') renderTodoForm();
+  syncRoundExpedienteLayout();
 }
 
 function renderInnerTabs() {
@@ -2225,11 +4120,12 @@ function renderInnerTabs() {
     setOrder('itab-notas', 99);
     setOrder('itab-indica', 99);
   } else {
-    setOrder('itab-todo', 1);
-    setOrder('itab-notas', 2);
-    setOrder('itab-indica', 3);
-    setOrder('itab-tend', 4);
-    setOrder('itab-cult', 5);
+    /* Interconsulta: orden clásico de expediente (nota primero). */
+    setOrder('itab-notas', 1);
+    setOrder('itab-indica', 2);
+    setOrder('itab-tend', 3);
+    setOrder('itab-cult', 4);
+    setOrder('itab-todo', 5);
     setOrder('itab-datos', 99);
     setOrder('itab-listado', 99);
   }
@@ -2576,64 +4472,52 @@ function togglePatientArchived(ev, id) {
   renderPatientList();
 }
 
-function onPatientDragStart(ev, id) {
-  if (patientSearchFilter) {
-    if (ev) ev.preventDefault();
-    showToast('Quita el filtro de búsqueda para reordenar.', 'error');
-    return;
-  }
-  dragPatientId = id;
-  var card = ev && ev.currentTarget ? ev.currentTarget : null;
-  if (card && card.classList) card.classList.add('is-dragging');
-  if (!ev || !ev.dataTransfer) return;
-  ev.dataTransfer.effectAllowed = 'move';
-  try { ev.dataTransfer.setData('text/plain', id); } catch (_e) {}
+function destroyPatientListSortables() {
+  _patientListSortables.forEach(function (s) {
+    try {
+      if (s && typeof s.destroy === 'function') s.destroy();
+    } catch (_e) {}
+  });
+  _patientListSortables = [];
 }
-function onPatientDragOver(ev, id) {
-  if (!dragPatientId || !id || dragPatientId === id) return;
-  var dragP = patients.find(function (x) { return x.id === dragPatientId; });
-  var overP = patients.find(function (x) { return x.id === id; });
-  if (!dragP || !overP || patientSectionKey(dragP) !== patientSectionKey(overP)) return;
-  ev.preventDefault();
-  if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'move';
-  var overEl = ev.currentTarget;
-  var list = document.getElementById('patient-list');
-  if (!overEl || !list) return;
-  var dragEl = list.querySelector('.patient-card.is-dragging');
-  if (!dragEl || dragEl === overEl) return;
-  var cardsBefore = list.querySelectorAll('.patient-card[data-patient-id]');
-  var beforeRects = Object.create(null);
-  for (var i = 0; i < cardsBefore.length; i++) {
-    var bid = cardsBefore[i].getAttribute('data-patient-id');
-    if (!bid || cardsBefore[i] === dragEl) continue;
-    beforeRects[bid] = cardsBefore[i].getBoundingClientRect();
-  }
-  var rect = overEl.getBoundingClientRect();
-  var after = ev.clientY > rect.top + rect.height / 2;
-  if (after) {
-    if (overEl.nextSibling !== dragEl) list.insertBefore(dragEl, overEl.nextSibling);
-  } else if (overEl !== dragEl.nextSibling) {
-    list.insertBefore(dragEl, overEl);
-  }
-  animatePatientListReflow(list, beforeRects);
-}
-function onPatientDrop(ev, id) {
-  if (ev) {
-    ev.preventDefault();
-    ev.stopPropagation();
-  }
-  if (!dragPatientId) return;
+
+function handlePatientSortZoneEnd(evt) {
+  if (evt.oldIndex === evt.newIndex || evt.from !== evt.to) return;
   syncPatientsOrderFromDom();
-  dragPatientId = null;
   saveState();
-  renderPatientList();
 }
-function onPatientDragEnd(ev) {
-  dragPatientId = null;
-  var card = ev && ev.currentTarget ? ev.currentTarget : null;
-  if (card && card.classList) card.classList.remove('is-dragging');
-  var list = document.getElementById('patient-list');
-  if (!list) return;
+
+function mountPatientListSortables() {
+  destroyPatientListSortables();
+  var SortableCtor = typeof globalThis !== 'undefined' ? globalThis.Sortable : null;
+  if (!SortableCtor || typeof SortableCtor.create !== 'function') return;
+  var listRoot = document.getElementById('patient-list');
+  if (!listRoot || patientSearchFilter) return;
+  listRoot.querySelectorAll('.patient-sort-zone').forEach(function (zone) {
+    var sortable = SortableCtor.create(zone, {
+      animation: 200,
+      easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+      draggable: '.patient-card',
+      filter: 'button, a[href], input, textarea, select',
+      preventOnFilter: true,
+      delay: 0,
+      delayOnTouchOnly: true,
+      direction: 'vertical',
+      // HTML5 drag en Electron deja preview casi invisible; fallback = clon bajo el cursor (hovercard).
+      forceFallback: true,
+      fallbackClass: 'patient-drag-hovercard',
+      fallbackOnBody: true,
+      fallbackTolerance: 4,
+      swapThreshold: 0.65,
+      invertedSwapThreshold: 0.58,
+      scroll: listRoot,
+      bubbleScroll: true,
+      scrollSensitivity: 54,
+      scrollSpeed: 9,
+      onEnd: handlePatientSortZoneEnd,
+    });
+    _patientListSortables.push(sortable);
+  });
 }
 
 function syncPatientsOrderFromDom() {
@@ -2658,34 +4542,312 @@ function syncPatientsOrderFromDom() {
   });
 }
 
-function animatePatientListReflow(list, beforeRects) {
-  if (!list || !beforeRects) return;
-  var cards = list.querySelectorAll('.patient-card[data-patient-id]');
-  for (var i = 0; i < cards.length; i++) {
-    var el = cards[i];
-    if (!el || el.classList.contains('is-dragging')) continue;
-    var id = el.getAttribute('data-patient-id');
-    var prev = beforeRects[id];
-    if (!id || !prev) continue;
-    var now = el.getBoundingClientRect();
-    var dy = prev.top - now.top;
-    if (!dy) continue;
-    el.style.transition = 'none';
-    el.style.transform = 'translateY(' + dy + 'px)';
-    el.style.willChange = 'transform';
-    requestAnimationFrame(function (node) {
-      return function () {
-        node.style.transition = 'transform 340ms cubic-bezier(0.18, 1.25, 0.35, 1)';
-        node.style.transform = '';
-        window.setTimeout(function () {
-          if (!node.classList.contains('is-dragging')) {
-            node.style.transition = '';
-            node.style.willChange = '';
-          }
-        }, 360);
-      };
-    }(el));
+var ROUND_SEEN_LS = 'rpc-round-seen';
+
+function todayLocalYMD() {
+  var d = new Date();
+  return (
+    d.getFullYear() +
+    '-' +
+    String(d.getMonth() + 1).padStart(2, '0') +
+    '-' +
+    String(d.getDate()).padStart(2, '0')
+  );
+}
+
+function getRoundSeenSet() {
+  try {
+    var raw = localStorage.getItem(ROUND_SEEN_LS);
+    var o = raw ? JSON.parse(raw) : {};
+    var today = todayLocalYMD();
+    if (o.day !== today) return { day: today, ids: [] };
+    return { day: today, ids: Array.isArray(o.ids) ? o.ids.map(String) : [] };
+  } catch (_e) {
+    return { day: todayLocalYMD(), ids: [] };
   }
+}
+
+function persistRoundSeenSet(s) {
+  try {
+    localStorage.setItem(ROUND_SEEN_LS, JSON.stringify(s));
+  } catch (_e) {}
+}
+
+function isPatientRoundSeen(patientId) {
+  var s = getRoundSeenSet();
+  return s.ids.indexOf(String(patientId)) >= 0;
+}
+
+function togglePatientRoundSeen(ev, patientId) {
+  if (ev) {
+    ev.stopPropagation();
+    ev.preventDefault();
+  }
+  var s = getRoundSeenSet();
+  var id = String(patientId);
+  var idx = s.ids.indexOf(id);
+  if (idx >= 0) s.ids.splice(idx, 1);
+  else s.ids.push(id);
+  persistRoundSeenSet(s);
+  renderPatientList();
+}
+
+function buildRondaRecentLabsBlockHtml(patientId) {
+  if (!patientId) {
+    return '<p class="ronda-panel-empty">Sin datos.</p>';
+  }
+  var hist = sortLabHistoryChronological(ensureParsedLabHistory(patientId));
+  if (hist.length) {
+    var newest = hist[0];
+    var parts = [];
+    parts.push('<div class="ronda-labs-meta">');
+    var rawFe =
+      newest.fecha === 'Anterior'
+        ? ''
+        : normalizeFechaLabHistory(newest.fecha) || String(newest.fecha || '').trim() || '';
+    if (newest.id === 'migrated-anterior') {
+      parts.push('<span class="ronda-labs-date">' + esc(rawFe ? 'Anterior · ' + rawFe : 'Anterior') + '</span>');
+    } else {
+      parts.push('<span class="ronda-labs-date">' + esc(rawFe || '—') + '</span>');
+    }
+    if (newest.hora && String(newest.hora).trim()) {
+      parts.push('<span>' + esc(String(newest.hora).trim().slice(0, 8)) + '</span>');
+    }
+    var tipo = primaryTipoForLabSet(newest.resLabs);
+    if (tipo && tipo !== 'labs') {
+      parts.push(
+        '<span>' +
+        esc(tipo === 'mixed' ? 'Mixto' : tipo === 'cultivo' ? 'Cultivo' : tipo) +
+        '</span>'
+      );
+    }
+    parts.push('</div>');
+    if (newest.resLabs && newest.resLabs.length) {
+      parts.push('<ul class="ronda-labs-lines">');
+      newest.resLabs.forEach(function (L) {
+        var line = String(L || '').trim();
+        if (!line) return;
+        parts.push('<li>' + esc(line) + '</li>');
+      });
+      parts.push('</ul>');
+      return parts.join('');
+    }
+  }
+  var n = notes[patientId];
+  if (n && n.estudios && String(n.estudios).trim()) {
+    var lines = String(n.estudios)
+      .split('\n')
+      .map(function (l) {
+        return l.trim();
+      })
+      .filter(Boolean);
+    var skip = { laboratorio: 1, cultivos: 1 };
+    var body = [];
+    lines.forEach(function (L) {
+      if (skip[L.toLowerCase()]) return;
+      if (/^fecha|^----/i.test(L)) return;
+      body.push('<li>' + esc(L) + '</li>');
+    });
+    if (body.length) {
+      return (
+        '<p class="ronda-labs-fallback-label">Desde nota · estudios auxiliares</p>' +
+        '<ul class="ronda-labs-lines">' +
+        body.join('') +
+        '</ul>'
+      );
+    }
+  }
+  return (
+    '<p class="ronda-panel-empty">Sin laboratorios recientes. ' +
+    'Puedes cargar o enviar resultados desde la pestaña Laboratorio.</p>'
+  );
+}
+
+function syncRoundExpedienteLayout() {
+  var overview = document.getElementById('patient-ronda-overview');
+  var classic = document.getElementById('patient-expediente-classic');
+  var fullbar = document.getElementById('patient-ronda-fullbar');
+  if (!overview || !classic) return;
+
+  if (!isPaseMode()) {
+    overview.style.display = 'none';
+    classic.style.display = 'flex';
+    if (fullbar) {
+      fullbar.classList.remove('is-visible');
+      fullbar.setAttribute('aria-hidden', 'true');
+    }
+    var rm = document.getElementById('patient-ronda-todos-mount');
+    if (rm) {
+      while (rm.firstChild) rm.removeChild(rm.firstChild);
+    }
+    return;
+  }
+
+  var showOverview =
+    !!activeId && activeAppTab === 'nota' && _roundOverviewMode;
+  overview.style.display = showOverview ? 'flex' : 'none';
+  classic.style.display = showOverview ? 'none' : 'flex';
+  if (fullbar) {
+    var showBar = !!(activeId && activeAppTab === 'nota' && !showOverview);
+    fullbar.classList.toggle('is-visible', showBar);
+    fullbar.setAttribute('aria-hidden', showBar ? 'false' : 'true');
+  }
+  if (showOverview) renderRoundOverviewPanels();
+}
+
+function renderRoundOverviewPanels() {
+  if (!isPaseMode() || !_roundOverviewMode || activeAppTab !== 'nota' || !activeId) return;
+  var titleEl = document.getElementById('patient-ronda-patient-label');
+  var metaEl = document.getElementById('patient-ronda-patient-meta');
+  var p = patients.find(function (x) {
+    return String(x.id) === String(activeId);
+  });
+  if (titleEl) titleEl.textContent = p ? p.nombre || 'Paciente' : 'Paciente';
+  if (metaEl) {
+    if (!p) metaEl.textContent = '';
+    else {
+      metaEl.textContent =
+        'Cto. ' +
+        (p.cuarto || '—') +
+        ' · Cama ' +
+        (p.cama || '—') +
+        ' · ' +
+        (p.servicio || '—') +
+        (p.registro ? ' · Reg. ' + String(p.registro) : '');
+    }
+  }
+  var labsBody = document.getElementById('patient-ronda-labs-body');
+  if (labsBody) labsBody.innerHTML = buildRondaRecentLabsBlockHtml(activeId);
+  refreshAllTodoUIs();
+  var gala = isModeSala(settings);
+  var qDatos = document.getElementById('ronda-quick-datos');
+  if (qDatos) qDatos.style.display = gala ? '' : 'none';
+  var qList = document.getElementById('ronda-quick-listado');
+  if (qList) qList.style.display = gala ? '' : 'none';
+}
+
+function returnToRoundOverview() {
+  if (!isPaseMode()) return;
+  _roundOverviewMode = true;
+  syncRoundExpedienteLayout();
+}
+
+function openFullExpedienteFromRound(tab) {
+  if (!isPaseMode()) return;
+  var t = tab;
+  var sala = isModeSala(settings);
+  if (sala) {
+    if (t === 'notas' || t === 'indica') t = 'tend';
+    if (!t) t = 'tend';
+  } else {
+    if (!t) t = 'notas';
+  }
+  switchInnerTab(t);
+}
+
+function advanceRondaPatient(delta) {
+  if (!isPaseMode()) return;
+  if (!_lastRondaNavIds.length) return;
+  var cur = activeId != null ? String(activeId) : '';
+  var idx = _lastRondaNavIds.indexOf(cur);
+  if (idx < 0) {
+    selectPatient(_lastRondaNavIds[delta > 0 ? 0 : _lastRondaNavIds.length - 1]);
+    return;
+  }
+  var next = idx + delta;
+  if (next < 0) next = _lastRondaNavIds.length - 1;
+  if (next >= _lastRondaNavIds.length) next = 0;
+  selectPatient(_lastRondaNavIds[next]);
+}
+
+function scrollActiveRondaCardIntoView() {
+  if (!activeId) return;
+  var list = document.getElementById('patient-list');
+  if (!list) return;
+  var cards = list.querySelectorAll('.patient-card[data-patient-id]');
+  var want = String(activeId);
+  for (var i = 0; i < cards.length; i++) {
+    if (cards[i].getAttribute('data-patient-id') === want) {
+      try {
+        cards[i].scrollIntoView({
+          block: 'nearest',
+          behavior: rpcPrefersReducedMotion() ? 'auto' : 'smooth',
+        });
+      } catch (_e) {
+        cards[i].scrollIntoView(true);
+      }
+      break;
+    }
+  }
+}
+
+function renderPatientRoundRowHtml(p) {
+  var pinOn = !!p.pinned;
+  var archOn = !!p.archived;
+  var seen = isPatientRoundSeen(p.id);
+  var pinTitle = pinOn ? 'Quitar de Pinned' : 'Mover a Pinned';
+  var archTitle = archOn ? 'Restaurar del archivo' : 'Archivar paciente';
+  var archiveIcon = archOn
+    ? '↩'
+    : '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"></rect><path d="M5 8h14v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8z"></path><path d="M10 12h4"></path></svg>';
+  var seenTitle = typeof t === 'function' ? t('roundMode.seenTitle') : 'Visto en ronda';
+  return (
+    '<div class="patient-card patient-card--roundrow ' +
+    (p.id === activeId ? 'active' : '') +
+    (seen ? ' patient-card--roundrow-seen' : '') +
+    '" data-patient-id="' +
+    p.id +
+    '" onclick="selectPatient(\'' +
+    p.id +
+    '\')">' +
+    '<div class="patient-card-toolbar">' +
+    '<div class="patient-card-toolbar-left">' +
+    '<button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon btn-archive-clean" title="' +
+    archTitle +
+    '" aria-label="' +
+    archTitle +
+    '" onclick="togglePatientArchived(event,\'' +
+    p.id +
+    '\')">' +
+    archiveIcon +
+    '</button>' +
+    '<button type="button" class="patient-toolbar-chip btn-pinned-text" title="' +
+    pinTitle +
+    '" aria-label="' +
+    pinTitle +
+    '" onclick="togglePatientPinned(event,\'' +
+    p.id +
+    '\')">Pinned</button>' +
+    '</div>' +
+    '<button type="button" class="btn-delete-card" onclick="deletePatient(event,\'' +
+    p.id +
+    '\')" aria-label="Eliminar">×</button>' +
+    '</div>' +
+    '<div class="roundrow-main">' +
+    '<div class="roundrow-text">' +
+    '<div class="p-name">' +
+    esc(p.nombre || 'Sin nombre') +
+    '</div>' +
+    '<div class="p-meta"><span>Cto. ' +
+    esc(p.cuarto || '-') +
+    '</span><span>Cama ' +
+    esc(p.cama || '-') +
+    '</span><span>' +
+    esc(p.servicio || '-') +
+    '</span></div></div>' +
+    '<button type="button" class="btn-round-seen" title="' +
+    esc(seenTitle) +
+    '" aria-label="' +
+    esc(seenTitle) +
+    '" aria-pressed="' +
+    (seen ? 'true' : 'false') +
+    '" onclick="togglePatientRoundSeen(event,\'' +
+    p.id +
+    '\')">' +
+    (seen ? '✓' : '○') +
+    '</button>' +
+    '</div></div>'
+  );
 }
 
 function renderPatientCardHtml(p) {
@@ -2697,58 +4859,105 @@ function renderPatientCardHtml(p) {
     ? '↩'
     : '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"></rect><path d="M5 8h14v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8z"></path><path d="M10 12h4"></path></svg>';
   return (
-    '<div class="patient-card ' + (p.id===activeId?'active':'') + '" data-patient-id="' + p.id + '" draggable="true" ' +
-    'ondragstart="onPatientDragStart(event,\'' + p.id + '\')" ' +
-    'ondragover="onPatientDragOver(event,\'' + p.id + '\')" ' +
-    'ondrop="onPatientDrop(event,\'' + p.id + '\')" ' +
-    'ondragend="onPatientDragEnd(event)" ' +
-    'onclick="selectPatient(\'' + p.id + '\')">' +
+    '<div class="patient-card ' + (p.id===activeId?'active':'') + '" data-patient-id="' + p.id + '" onclick="selectPatient(\'' + p.id + '\')">' +
     '<div class="patient-card-toolbar">' +
     '<div class="patient-card-toolbar-left">' +
-    '<button class="btn-patient-action btn-archive-clean" title="' + archTitle + '" aria-label="' + archTitle + '" onclick="togglePatientArchived(event,\'' + p.id + '\')">' + archiveIcon + '</button>' +
-    '<button class="btn-patient-action btn-pinned-text" title="' + pinTitle + '" aria-label="' + pinTitle + '" onclick="togglePatientPinned(event,\'' + p.id + '\')">Pinned</button>' +
+    '<button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon btn-archive-clean" title="' + archTitle + '" aria-label="' + archTitle + '" onclick="togglePatientArchived(event,\'' + p.id + '\')">' + archiveIcon + '</button>' +
+    '<button type="button" class="patient-toolbar-chip btn-pinned-text" title="' + pinTitle + '" aria-label="' + pinTitle + '" onclick="togglePatientPinned(event,\'' + p.id + '\')">Pinned</button>' +
     '</div>' +
-    '<button class="btn-delete-card" onclick="deletePatient(event,\'' + p.id + '\')" aria-label="Eliminar">×</button>' +
+    '<button type="button" class="btn-delete-card" onclick="deletePatient(event,\'' + p.id + '\')" aria-label="Eliminar">×</button>' +
     '</div>' +
     '<div class="p-name">' + esc(p.nombre||'Sin nombre') + '</div>' +
-    '<div class="p-meta"><span>Cto. ' + esc(p.cuarto||'-') + '</span><span>Cama ' + esc(p.cama||'-') + '</span><span>' + esc(p.servicio||'-') + '</span>' +
-    (p.fromLab ? '<span class="lab-chip">LAB</span>' : '') +
-    (pinOn ? '<span class="patient-flag-chip">Pinned</span>' : '') +
-    (archOn ? '<span class="patient-flag-chip">Archivado</span>' : '') +
-    '</div></div>'
+    '<div class="p-meta"><span>Cto. ' + esc(p.cuarto||'-') + '</span><span>Cama ' + esc(p.cama||'-') + '</span><span>' + esc(p.servicio||'-') + '</span></div></div>'
   );
 }
 
 function renderPatientList() {
   ensurePatientUiState();
   var list = document.getElementById('patient-list');
+  if (!list) return;
+  destroyPatientListSortables();
+  var isRonda = isPaseMode();
+  list.classList.toggle('patient-list--ronda', isRonda);
+
   if (!patients.length) {
     list.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">Sin pacientes aún</div>';
+    _lastRondaNavIds = [];
+    if (activeAppTab === 'agenda') renderProcedureAgendaPanel();
     return;
   }
   var filtered = patients.filter(patientMatchesSearch);
   if (!filtered.length) {
     list.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">Ningún paciente coincide con la búsqueda</div>';
+    _lastRondaNavIds = [];
+    if (activeAppTab === 'agenda') renderProcedureAgendaPanel();
     return;
   }
-  var pinned = filtered.filter(function (p) { return p.pinned && !p.archived; });
-  var active = filtered.filter(function (p) { return !p.pinned && !p.archived; });
-  var archived = filtered.filter(function (p) { return !!p.archived; });
+  var pinned = filtered.filter(function (p) {
+    return p.pinned && !p.archived;
+  });
+  var active = filtered.filter(function (p) {
+    return !p.pinned && !p.archived;
+  });
+  var archived = filtered.filter(function (p) {
+    return !!p.archived;
+  });
   var parts = [];
+  var rondaNav = [];
+  var cardHtml = isRonda ? renderPatientRoundRowHtml : renderPatientCardHtml;
+
   if (pinned.length) {
-    parts.push('<div class="patient-list-section-label">Pinned · Fijados <span>' + pinned.length + '</span></div>');
-    parts.push(pinned.map(renderPatientCardHtml).join(''));
+    parts.push(
+      '<div class="patient-list-section-label patient-list-section-label--pinned" role="group" aria-label="Pacientes fijados">' +
+        '<svg class="patient-list-pin-svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16h14v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a3 3 0 1 0-6 0v3.76z"/></svg>' +
+        '<span class="patient-list-section-count">' +
+        pinned.length +
+        '</span></div>'
+    );
+    parts.push('<div class="patient-sort-zone" data-patient-zone="pinned">');
+    pinned.forEach(function (p) {
+      rondaNav.push(String(p.id));
+    });
+    parts.push(pinned.map(cardHtml).join(''));
+    parts.push('</div>');
   }
   if (active.length) {
-    parts.push('<div class="patient-list-section-label">Pacientes <span>' + active.length + '</span></div>');
-    parts.push(active.map(renderPatientCardHtml).join(''));
+    parts.push(
+      '<div class="patient-list-section-label" role="group" aria-label="Lista de pacientes">Pacientes <span class="patient-list-section-count">' +
+        active.length +
+        '</span></div>'
+    );
+    parts.push('<div class="patient-sort-zone" data-patient-zone="active">');
+    active.forEach(function (p) {
+      rondaNav.push(String(p.id));
+    });
+    parts.push(active.map(cardHtml).join(''));
+    parts.push('</div>');
   }
   if (archived.length) {
     var collapsed = isArchivedSectionCollapsed();
-    parts.push('<button class="patient-list-section-toggle" onclick="toggleArchivedSection(event)" aria-expanded="' + (!collapsed ? 'true' : 'false') + '">Archivados <span>(' + archived.length + ')</span> <span>' + (collapsed ? '▶' : '▼') + '</span></button>');
-    if (!collapsed) parts.push(archived.map(renderPatientCardHtml).join(''));
+    parts.push(
+      '<button type="button" class="patient-list-section-toggle" onclick="toggleArchivedSection(event)" aria-expanded="' +
+        (!collapsed ? 'true' : 'false') +
+        '">Archivados <span>(' +
+        archived.length +
+        ')</span> <span>' +
+        (collapsed ? '▶' : '▼') +
+        '</span></button>'
+    );
+    if (!collapsed) {
+      parts.push('<div class="patient-sort-zone" data-patient-zone="archived">');
+      archived.forEach(function (p) {
+        rondaNav.push(String(p.id));
+      });
+      parts.push(archived.map(cardHtml).join(''));
+      parts.push('</div>');
+    }
   }
+  _lastRondaNavIds = rondaNav;
   list.innerHTML = parts.join('');
+  mountPatientListSortables();
+  if (activeAppTab === 'agenda') renderProcedureAgendaPanel();
 }
 
 function selectPatient(id) {
@@ -2768,31 +4977,56 @@ function selectPatient(id) {
   renderLabHistoryPanel();
   renderMedRecetaPanel();
   if (isModeSala(settings) && (activeInner === 'notas' || activeInner === 'indica' || !activeInner)) {
-    switchInnerTab('tend');
+    if (getUiDensity() === 'normal') {
+      activeInner = 'todo';
+      syncInnerTabVisualOnly();
+    } else {
+      switchInnerTab('todo');
+    }
   } else if (!isModeSala(settings) && activeInner === 'listado') {
-    switchInnerTab('notas');
+    if (getUiDensity() === 'normal') {
+      activeInner = 'todo';
+      syncInnerTabVisualOnly();
+    } else {
+      switchInnerTab('todo');
+    }
   }
-  if (activeInner === 'todo' && patientChanged) {
+  if (activeInner === 'todo') {
     renderTodoForm();
   }
   // En Laboratorio: al elegir otro paciente, pantalla coherente con su historial
   // (resultados previos eran del paciente anterior; historial visible y expandido).
   if (wasOnLab && patientChanged) {
-    switchAppTab('lab');
     limpiarReporte();
     setLabHistoryPanelCollapsed(false);
     syncLabHistoryCollapseUI();
     renderLabHistoryPanel();
-    var labHistCard = document.getElementById('lab-history-card');
-    if (labHistCard) {
-      window.setTimeout(function () {
-        try {
-          labHistCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        } catch (_e) {
-          labHistCard.scrollIntoView(true);
-        }
-      }, 0);
+    if (isPaseMode()) {
+      syncWorkContextChrome();
+    } else {
+      switchAppTab('lab');
+      var labHistCard = document.getElementById('lab-history-card');
+      if (labHistCard) {
+        window.setTimeout(function () {
+          try {
+            labHistCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          } catch (_e) {
+            labHistCard.scrollIntoView(true);
+          }
+        }, 0);
+      }
     }
+  } else {
+    syncWorkContextChrome();
+  }
+  if (isPaseMode() && activeAppTab === 'nota') {
+    _roundOverviewMode = true;
+  }
+  syncRoundExpedienteLayout();
+  if (activeId) {
+    requestAnimationFrame(function () {
+      scrollActiveRondaCardIntoView();
+    });
   }
 }
 
@@ -2818,17 +5052,138 @@ function deletePatient(e, id) {
       }
     }
   } catch (_e) { /* ignore */ }
+  try {
+    if (storage.removeScheduledProceduresForPatient) storage.removeScheduledProceduresForPatient(id);
+  } catch (_eAg) {}
   saveState();
   addAuditEntry('patient-delete', 'ok', 1, target ? (target.registro || target.nombre || '') : '');
   if (activeId === id) activeId = patients.length ? patients[0].id : null;
   renderPatientList();
   if (activeId) selectPatient(activeId);
-  else { document.getElementById('patient-view').style.display='none'; document.getElementById('empty-state').style.display='flex'; }
+  else {
+    document.getElementById('patient-view').style.display = 'none';
+    document.getElementById('empty-state').style.display = 'flex';
+    syncWorkContextChrome();
+  }
+}
+
+var _labMaintTimer = null;
+var _labMaintRunning = false;
+var LAB_MAINT_DEBOUNCE_MS = 550;
+
+/**
+ * Tras cada guardado: reprocesa líneas de resultado guardadas (GASES/dedupe interno)
+ * y arma un informe de duplicados exactos, mismo sourceText y conflictos fecha/hora.
+ * Expone `window.__rpcLabAudit` y escribe en consola si hay algo que revisar.
+ * @returns {boolean} true si se modificó algún set (conviene volver a persistir).
+ */
+function runLabHistoryPostSaveMaintenance() {
+  var report = {
+    at: new Date().toISOString(),
+    reprocessedSetCount: 0,
+    patientsReprocessed: [],
+    exactDuplicates: [],
+    sourceDuplicates: [],
+    sameDateTimeConflicts: [],
+  };
+  var changed = false;
+  Object.keys(labHistory || {}).forEach(function (pid) {
+    if (pid.indexOf('demo-') === 0) return;
+    var sets = labHistory[pid];
+    if (!Array.isArray(sets) || !sets.length) return;
+    sets.forEach(function (set) {
+      if (!set.resLabs || !set.resLabs.length) return;
+      var repro = reprocessLabResultLines_(set.resLabs);
+      if (!repro || !repro.length) return;
+      if (!areLabSetsEquivalent(set.resLabs, repro)) {
+        set.resLabs = repro.slice();
+        set.parsed = extractParsedValues(repro);
+        set.parsedBySection = buildParsedBySectionFromResLabs(repro, set.bhExtras);
+        changed = true;
+        report.reprocessedSetCount++;
+        if (report.patientsReprocessed.indexOf(pid) === -1) report.patientsReprocessed.push(pid);
+      }
+    });
+    var ex = findExactDuplicateLabGroups(sets);
+    if (ex.length) {
+      report.exactDuplicates.push({ patientId: pid, groups: ex });
+    }
+    var src = findNormalizedSourceDuplicateGroups(sets);
+    if (src.length) {
+      report.sourceDuplicates.push({ patientId: pid, groups: src });
+    }
+    var ct = findConflictingSameDateTimeGroups(sets);
+    if (ct.length) {
+      report.sameDateTimeConflicts.push({ patientId: pid, groups: ct });
+    }
+  });
+  try {
+    window.__rpcLabAudit = report;
+  } catch (_e) {}
+  var noise =
+    report.reprocessedSetCount > 0 ||
+    report.exactDuplicates.length > 0 ||
+    report.sourceDuplicates.length > 0 ||
+    report.sameDateTimeConflicts.length > 0;
+  if (noise) {
+    console.info('[R+ Laboratorio] Auditoría tras guardado — revisa window.__rpcLabAudit:', report);
+  }
+  return changed;
+}
+
+function scheduleLabHistoryPostSaveMaintenance() {
+  clearTimeout(_labMaintTimer);
+  _labMaintTimer = setTimeout(function () {
+    _labMaintTimer = null;
+    if (_labMaintRunning) return;
+    _labMaintRunning = true;
+    try {
+      var changed = runLabHistoryPostSaveMaintenance();
+      if (changed) {
+        storage.saveAll(patients, notes, indicaciones, labHistory, medRecetaByPatient, listadoProblemas);
+        if (typeof renderLabHistoryPanel === 'function' && activeId) {
+          try {
+            renderLabHistoryPanel();
+          } catch (_r) {}
+        }
+        if (typeof refreshTendenciasOrCultivosPanel === 'function') {
+          try {
+            refreshTendenciasOrCultivosPanel();
+          } catch (_t) {}
+        }
+      }
+    } catch (err) {
+      console.warn('[R+ Laboratorio] Falló mantenimiento post-guardado:', err);
+    } finally {
+      _labMaintRunning = false;
+    }
+  }, LAB_MAINT_DEBOUNCE_MS);
 }
 
 function saveState() {
   storage.saveAll(patients, notes, indicaciones, labHistory, medRecetaByPatient, listadoProblemas);
+  scheduleLabHistoryPostSaveMaintenance();
 }
+
+try {
+  window.runRpcLabAuditNow = function () {
+    var ch = runLabHistoryPostSaveMaintenance();
+    if (ch) {
+      storage.saveAll(patients, notes, indicaciones, labHistory, medRecetaByPatient, listadoProblemas);
+      if (typeof renderLabHistoryPanel === 'function' && activeId) {
+        try {
+          renderLabHistoryPanel();
+        } catch (_e) {}
+      }
+      if (typeof refreshTendenciasOrCultivosPanel === 'function') {
+        try {
+          refreshTendenciasOrCultivosPanel();
+        } catch (_e2) {}
+      }
+    }
+    return window.__rpcLabAudit;
+  };
+} catch (_eRun) {}
 
 // ── Settings ──────────────────────────────────────────────────────
 var _lastLoadSettingsSnapshot = null;
@@ -2858,11 +5213,14 @@ function loadSettings() {
   if (snapshotUnchanged) {
     // DOM-visible settings didn't change; skip re-painting the heavy bits.
     // Still run lightweight, idempotent syncers that reflect orthogonal state
-    // (theme/zoom/contrast/update-channel) in case callers expected them.
+    // (theme/zoom/contrast/density/update-channel) in case callers expected them.
     syncFontZoomButtons();
     syncHighContrastButtons();
+    syncUiDensityButtons();
     if (typeof syncUpdateChannelUI === 'function') syncUpdateChannelUI();
     if (typeof syncUpdateTelemetryUI === 'function') syncUpdateTelemetryUI();
+    if (typeof syncSettingsLanHostDiskSection === 'function') syncSettingsLanHostDiskSection();
+    syncWorkContextChrome();
     return;
   }
   var docEl = document.getElementById('profile-doctor');
@@ -2953,10 +5311,13 @@ function loadSettings() {
   }
   syncFontZoomButtons();
   syncHighContrastButtons();
+  syncUiDensityButtons();
   if (typeof syncUpdateChannelUI === 'function') syncUpdateChannelUI();
   if (typeof syncUpdateTelemetryUI === 'function') syncUpdateTelemetryUI();
   syncIdleLockSelectUi();
   syncPreimportBackupUi();
+  if (typeof syncSettingsLanHostDiskSection === 'function') syncSettingsLanHostDiskSection();
+  syncWorkContextChrome();
 }
 
 function saveSettings() {
@@ -2975,18 +5336,36 @@ function saveSettings() {
   showToast('Perfil guardado ✓', 'success');
 }
 
-function onAppModeChange() {
-  var sala = document.getElementById('app-mode-sala');
-  settings.appMode = (sala && sala.checked) ? 'sala' : 'interconsulta';
-  localStorage.setItem('rpc-settings', JSON.stringify(settings));
+function applyAppModeSwitchEffects() {
   var current = getActiveInnerTab();
   var nowSala = isModeSala(settings);
-  if (nowSala && (current === 'notas' || current === 'indica')) switchInnerTab('tend');
-  else if (!nowSala && (current === 'listado' || current === 'datos')) switchInnerTab('notas');
+  if (nowSala && (current === 'notas' || current === 'indica')) switchInnerTab('todo');
+  else if (!nowSala && (current === 'listado' || current === 'datos')) switchInnerTab('todo');
   renderInnerTabs();
   renderEstadoActualButton();
   if (activeId) renderNoteForm();
+  syncWorkContextChrome();
+  if (isPaseMode()) renderRoundOverviewPanels();
   showToast('Modo cambiado a ' + (nowSala ? 'Sala' : 'Interconsulta'), 'success');
+}
+
+function onAppModeChange() {
+  var sala = document.getElementById('app-mode-sala');
+  settings.appMode = sala && sala.checked ? 'sala' : 'interconsulta';
+  localStorage.setItem('rpc-settings', JSON.stringify(settings));
+  applyAppModeSwitchEffects();
+}
+
+function toggleHeaderWorkMode() {
+  settings.appMode = isModeSala(settings) ? 'interconsulta' : 'sala';
+  localStorage.setItem('rpc-settings', JSON.stringify(settings));
+  var modeSalaEl = document.getElementById('app-mode-sala');
+  var modeInterEl = document.getElementById('app-mode-inter');
+  if (modeSalaEl && modeInterEl) {
+    if (isModeSala(settings)) modeSalaEl.checked = true;
+    else modeInterEl.checked = true;
+  }
+  applyAppModeSwitchEffects();
 }
 
 function onDefaultServicioBlur() {
@@ -3137,7 +5516,17 @@ function openProfileFromHeader(ev) {
 function toggleSettingsSection() {
   toggleSettingsDropdown();
 }
+
+function syncSettingsLanHostDiskSection() {
+  var acc = document.getElementById('settings-accordion-lan-host-disk');
+  if (!acc) return;
+  var desktop = !!(window.electronAPI && typeof window.electronAPI.writeLanHostTeamCode === 'function');
+  var role = typeof storage.getLanUiRole === 'function' ? storage.getLanUiRole() : 'client';
+  acc.style.display = desktop && role === 'host' ? '' : 'none';
+}
+
 function toggleSettingsDropdown() {
+  closeConnectionDropdown();
   var dd = document.getElementById('settings-dropdown');
   var bg = document.getElementById('settings-dropdown-backdrop');
   if (!dd) return;
@@ -3147,6 +5536,7 @@ function toggleSettingsDropdown() {
   var trigger = document.getElementById('btn-open-settings');
   if (trigger) trigger.setAttribute('aria-expanded', !open ? 'true' : 'false');
   if (!open && typeof syncPreimportBackupUi === 'function') syncPreimportBackupUi();
+  if (!open && typeof syncSettingsLanHostDiskSection === 'function') syncSettingsLanHostDiskSection();
 }
 function closeSettingsDropdown() {
   var dd = document.getElementById('settings-dropdown');
@@ -3163,15 +5553,41 @@ function expandSettingsAccordionBackupSync() {
   if (det) det.open = true;
 }
 
-function openTeamSyncFromHeader() {
-  ensureSettingsDropdownOpen();
-  expandSettingsAccordionBackupSync();
-  var det = document.getElementById('settings-accordion-backup-sync');
-  if (det) {
-    setTimeout(function () {
-      try { det.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (_e) {}
-    }, 40);
+function closeConnectionDropdown() {
+  var dd = document.getElementById('connection-dropdown');
+  var bg = document.getElementById('connection-dropdown-backdrop');
+  if (dd) dd.classList.remove('open');
+  if (bg) bg.classList.remove('open');
+  var syncBtn = document.getElementById('btn-header-team-sync');
+  if (syncBtn) syncBtn.setAttribute('aria-expanded', 'false');
+}
+
+function openConnectionDropdown() {
+  closeSettingsDropdown();
+  var dd = document.getElementById('connection-dropdown');
+  var bg = document.getElementById('connection-dropdown-backdrop');
+  if (!dd) return;
+  dd.classList.add('open');
+  if (bg) bg.classList.add('open');
+  var syncBtn = document.getElementById('btn-header-team-sync');
+  if (syncBtn) syncBtn.setAttribute('aria-expanded', 'true');
+  if (typeof renderLanPanel === 'function') renderLanPanel();
+}
+
+function toggleConnectionDropdown(ev) {
+  if (ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
   }
+  var dd = document.getElementById('connection-dropdown');
+  if (!dd) return;
+  if (dd.classList.contains('open')) closeConnectionDropdown();
+  else openConnectionDropdown();
+}
+
+/** Compat: tours / ayuda que aún llamen al atajo ⇄ — abre el panel LAN (no Ajustes). */
+function openTeamSyncFromHeader() {
+  openConnectionDropdown();
 }
 
 function syncTeamSyncHeaderButton() {
@@ -3238,7 +5654,47 @@ function applyDefaultsToNewIndicaciones(patientId) {
 }
 
 // ── Tour guiado (modal intro + panel por pasos) ───────────────────
+// Persistencia: localStorage sobrevive al cerrar la app (Electron). La clave guarda
+// la última versión para la que el usuario omitió o completó el tutorial; al
+// actualizar a una versión mayor (semver), la bienvenida vuelve a mostrarse.
 var GUIDED_TOUR_LS_KEY = 'rpc-guided-tour-done-for-version';
+
+function parseSemverCoreParts(versionLabel) {
+  var s = normalizeTourVersionLabel(versionLabel);
+  if (s === 'dev') return null;
+  var core = s.split('-')[0].split('+')[0];
+  var parts = core.split('.');
+  var nums = [];
+  for (var i = 0; i < parts.length; i++) {
+    var n = parseInt(parts[i], 10);
+    if (isNaN(n)) return null;
+    nums.push(n);
+  }
+  return nums.length ? nums : null;
+}
+
+/** >0 si a mayor que b; <0 si menor; 0 si igual. */
+function compareSemverNumericArrays(a, b) {
+  var len = Math.max(a.length, b.length);
+  for (var i = 0; i < len; i++) {
+    var ai = a[i] || 0;
+    var bi = b[i] || 0;
+    if (ai !== bi) return ai > bi ? 1 : -1;
+  }
+  return 0;
+}
+
+/** Mostrar bienvenida solo en primera ejecución o tras actualizar a una versión más nueva (semver). */
+function shouldShowGuidedTourIntro(currentVersion, storedDoneVersionRaw) {
+  var cur = normalizeTourVersionLabel(currentVersion);
+  if (storedDoneVersionRaw == null || String(storedDoneVersionRaw).trim() === '') return true;
+  var done = String(storedDoneVersionRaw).trim();
+  if (cur === done) return false;
+  var pc = parseSemverCoreParts(cur);
+  var pd = parseSemverCoreParts(done);
+  if (pc && pd) return compareSemverNumericArrays(pc, pd) > 0;
+  return cur !== done;
+}
 
 function resolveAppVersionForTour() {
   if (window.electronAPI && typeof window.electronAPI.getAppVersion === 'function') {
@@ -3247,31 +5703,56 @@ function resolveAppVersionForTour() {
   return Promise.resolve('dev');
 }
 
+function normalizeTourVersionLabel(v) {
+  var s = String(v == null ? '' : v).trim();
+  return s || 'dev';
+}
+
 function initGuidedTourGate() {
-  resolveAppVersionForTour().then(function(v) {
-    window.__RPC_APP_VERSION__ = v;
-    var done = localStorage.getItem(GUIDED_TOUR_LS_KEY);
-    if (done !== v) setTimeout(showTourIntroModal, 80);
-  });
+  resolveAppVersionForTour()
+    .then(function (v) {
+      window.__RPC_APP_VERSION__ = normalizeTourVersionLabel(v);
+      var cur = window.__RPC_APP_VERSION__;
+      var stored = '';
+      try {
+        stored = localStorage.getItem(GUIDED_TOUR_LS_KEY);
+      } catch (_ls) {}
+      if (shouldShowGuidedTourIntro(cur, stored)) setTimeout(showTourIntroModal, 80);
+    })
+    .catch(function () {
+      window.__RPC_APP_VERSION__ = 'dev';
+      var stored = '';
+      try {
+        stored = localStorage.getItem(GUIDED_TOUR_LS_KEY);
+      } catch (_ls2) {}
+      if (shouldShowGuidedTourIntro('dev', stored)) setTimeout(showTourIntroModal, 80);
+    });
 }
 
 function showTourIntroModal() {
   var el = document.getElementById('onboarding-intro-backdrop');
-  var ver = window.__RPC_APP_VERSION__ || '';
+  if (!el) return;
+  try {
+    closeReleaseNotes();
+  } catch (_e) {}
+  var ver = normalizeTourVersionLabel(window.__RPC_APP_VERSION__);
   var h2 = document.getElementById('intro-modal-title');
-  if (h2) h2.textContent = ver ? ('R+ · versión ' + ver) : 'Bienvenido a R+';
+  if (h2) h2.textContent = ver && ver !== 'dev' ? ('R+ · versión ' + ver) : 'Bienvenido a R+';
   el.classList.add('open');
   el.setAttribute('aria-hidden', 'false');
 }
 
 function hideTourIntroModal() {
   var el = document.getElementById('onboarding-intro-backdrop');
+  if (!el) return;
   el.classList.remove('open');
   el.setAttribute('aria-hidden', 'true');
 }
 
 function markGuidedTourVersionDone() {
-  localStorage.setItem(GUIDED_TOUR_LS_KEY, window.__RPC_APP_VERSION__ || 'dev');
+  try {
+    localStorage.setItem(GUIDED_TOUR_LS_KEY, normalizeTourVersionLabel(window.__RPC_APP_VERSION__));
+  } catch (_e) {}
 }
 
 function guidedTourIntroSkip() {
@@ -3411,6 +5892,13 @@ function syncTourDockPlacement() {
 // abre Mi Perfil/Ajustes si aplica, hace scroll y aplica spotlight para
 // que la zona de avance sea inequívoca.
 function applyTourTargetForStep(id) {
+  if (guidedTourActive) {
+    if (id === 'pase_board') {
+      setUiDensity('pase');
+    } else {
+      setUiDensity('normal');
+    }
+  }
   var t = getTourTarget(id, guidedTourBranch === 'interconsulta' ? 'interconsulta' : 'sala');
   if (!t) return;
 
@@ -3428,14 +5916,20 @@ function applyTourTargetForStep(id) {
   if (t.openProfile) ensureProfileExpandedForTour();
   else if (typeof closeProfileModal === 'function') closeProfileModal();
   if (t.openSettings) ensureSettingsExpandedForTour();
-  else if (typeof closeSettingsDropdown === 'function') closeSettingsDropdown();
+  else {
+    if (typeof closeSettingsDropdown === 'function') closeSettingsDropdown();
+    if (typeof closeConnectionDropdown === 'function') closeConnectionDropdown();
+  }
   if (id === 'sala_med') renderMedRecetaPanel();
 
   // Pre-pega el reporte demo cuando el siguiente click esperado es
   // "Procesar"; sin texto el botón no hace nada y bloquearía el tour.
-  if (id === 'lab_parse' || id === 'map') {
+  if (id === 'lab_parse' || id === 'map_lab_teaser') {
     var li = document.getElementById('lab-input');
-    if (li && !li.value) li.value = DEMO_LAB_REPORT;
+    if (!li) return;
+    var v = String(li.value || '').trim();
+    var def = String(LAB_INPUT_DEFAULT_REPORT || '').trim();
+    if (!v || v === def) li.value = DEMO_LAB_REPORT;
   }
 
   clearAllTourSpotlights();
@@ -3472,191 +5966,135 @@ function renderTourStep() {
   nextBtn.disabled = false;
 
   switch (tourStepId) {
-    case 'map':
-      setBadge('mapa de la app');
-      var mapBody;
-      if (guidedTourBranch === 'interconsulta') {
-        mapBody =
-          '<p style="margin:0 0 10px 0;">Recorrido <strong>completo</strong> (laboratorio, tendencias, SOAP, medicamentos). La diferencia es el <strong>énfasis al final</strong>: exportar <strong>Nota de evolución</strong> e <strong>Indicaciones</strong> a <strong>Word (.docx)</strong>, carpeta de salida y Salida rápida.</p>' +
-          '<ul style="margin:0;padding-left:1.15rem;line-height:1.5;">' +
-          '<li><strong>Izquierda:</strong> lista de pacientes. El demo <strong>DEMO PÉREZ</strong> no se guarda en tu historial real.</li>' +
-          '<li>La barra lateral ya permite <strong>Pinned · Fijados</strong>, <strong>archivar</strong> y <strong>reordenar</strong> (arrastrar o con flechas).</li>' +
-          '<li><strong>Arriba:</strong> <strong>Laboratorio</strong>, <strong>Expediente</strong> (nota, indicaciones, tendencias, cultivos) y <strong>Medicamentos</strong>.</li>' +
-          '<li>En <strong>Laboratorio</strong>, el historial del paciente tiene <strong>Sincronizar</strong> (quita duplicados con checklist) y <strong>Consolidar</strong> (fusiona conjuntos del mismo día: solo labs entre sí o solo cultivos entre sí).</li>' +
-          '<li>R+ avisa si creas un paciente duplicado por nombre o registro.</li>' +
-          '</ul>';
-      } else {
-        mapBody =
-          '<p style="margin:0 0 10px 0;">Recorrido <strong>sala / hospitalización</strong>: laboratorio, tendencias, <strong>plantilla SOAP</strong> para la evolución y <strong>Medicamentos</strong> (receta → nota / SOAP).</p>' +
-          '<ul style="margin:0;padding-left:1.15rem;line-height:1.5;">' +
-          '<li><strong>Laboratorio</strong> interpreta el reporte pegado y arma diagramas.</li>' +
-          '<li>En la barra lateral puedes usar <strong>Pinned · Fijados</strong>, <strong>archivar</strong> y <strong>reordenar</strong> pacientes (drag & drop o flechas).</li>' +
-          '<li>Tras enviar labs, en el <strong>historial de laboratorio</strong> del paciente usa <strong>Sincronizar</strong> para limpiar duplicados y <strong>Consolidar</strong> para unir conjuntos del mismo día (homogéneos).</li>' +
-          '<li><strong>Tendencias</strong> comparan varios labs en el tiempo; <strong>Cultivos</strong> resume uro/hemo/Gram/catéter por tipo y fecha.</li>' +
-          '<li><strong>SOAP</strong> rellena analgesia, antibióticos, antiHTA, vasopresores, etc., para pegar en la evolución.</li>' +
-          '<li><strong>Medicamentos</strong> clasifica lo que marques y lo manda a la plantilla SOAP o al tratamiento.</li>' +
-          '</ul>';
-      }
-      if (window.electronAPI && typeof window.electronAPI.getAppVersion === 'function') {
-        mapBody +=
-          '<p style="margin:10px 0 0 0;padding:8px 10px;border-radius:8px;background:var(--lab-chip-bg);font-size:13px;line-height:1.45;border:1px solid var(--border);">En la <strong>app de escritorio</strong>, el botón <strong>⇄</strong> junto a <strong>Ajustes</strong> abre <strong>Respaldos, sync y recuperación</strong> (exportar / importar <strong>paquete sync</strong> entre equipos). Si eliges canal <strong>beta</strong> en <strong>Ajustes → Aplicación y actualizaciones</strong>, recibirás pre-releases.</p>';
-      }
-      bodyEl.innerHTML = mapBody;
+    case 'map_sidebar':
+      setBadge('pacientes');
+      bodyEl.innerHTML =
+        '<p style="margin:0;line-height:1.5;">La <strong>columna izquierda</strong> es tu lista de pacientes. <strong>DEMO PÉREZ</strong> solo existe para este tour.</p>';
+      nextBtn.textContent = 'Siguiente';
+      break;
+    case 'pase_enter':
+      setBadge('Modo Pase · atajo');
+      bodyEl.innerHTML =
+        '<p style="margin:0;line-height:1.5;">Para ver el <strong>resumen de ronda</strong> (Pase), usa el atajo <strong>' +
+        (navigator.platform && /Mac/i.test(navigator.platform) ? '⌘' : 'Ctrl') +
+        '+P</strong> (también en <strong>Mi Perfil → Modo de vista → Pase</strong>).</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">El paso sigue solo al activar <strong>Pase</strong>; no hay botón <strong>Siguiente</strong>.</p>';
+      nextBtn.style.display = 'none';
+      break;
+    case 'pase_board':
+      setBadge('Modo Pase');
+      bodyEl.innerHTML =
+        '<p style="margin:0;line-height:1.5;">Así se ve el <strong>resumen</strong>: pendientes, laboratorio reciente, cultivos, medicamentos. Pulsa un <strong>título de sección</strong> para abrir el detalle en modo Normal, o <strong>' +
+        (navigator.platform && /Mac/i.test(navigator.platform) ? '⌘' : 'Ctrl') +
+        '+1…3 / 5</strong> según contexto.</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Siguiente</strong> vuelve a la vista en pestañas y continúa el recorrido.</p>';
+      nextBtn.textContent = 'Siguiente';
+      nextBtn.style.display = '';
+      break;
+    case 'map_tabs':
+      setBadge('pestañas');
+      bodyEl.innerHTML =
+        getUiDensity() !== 'normal'
+          ? '<p style="margin:0;line-height:1.5;">En <strong>Pase</strong> el centro es un <strong>resumen</strong> del paciente (pendientes, laboratorio, cultivos, medicamentos). Pulsa el título de cada bloque o usa <strong>Ctrl/⌘ + 1…3 / 5</strong> para abrir el detalle en vista <strong>Normal</strong>.</p>'
+          : '<p style="margin:0;line-height:1.5;">Arriba cambias de área: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong>, <strong>Agenda</strong>. En cada paso te resaltamos qué mirar.</p>';
+      nextBtn.textContent = 'Siguiente';
+      break;
+    case 'map_lab_teaser':
+      setBadge('laboratorio · texto');
+      bodyEl.innerHTML =
+        guidedTourBranch === 'interconsulta'
+          ? '<p style="margin:0;line-height:1.5;">Aquí pegas el reporte; ya hay un <strong>ejemplo</strong>. Pulsa <strong>Siguiente</strong> y luego el botón morado <strong>Procesar</strong>.</p>'
+          : '<p style="margin:0;line-height:1.5;">Aquí va el laboratorio (hay un <strong>ejemplo</strong>). Después definirás tu servicio en Mi Perfil y volverás para pulsar <strong>Procesar</strong>.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'lab_parse':
       setBadge('laboratorio · procesar');
       bodyEl.innerHTML =
-        '<p style="margin:0 0 8px 0;">Ya tienes un reporte de ejemplo pegado. Pulsa <strong>Procesar</strong> para que R+ lea biometría, química, electrolitos, función hepática y más.</p>' +
-        '<p style="margin:0;font-size:13px;color:var(--text-muted);">Se generan diagramas (Gamble, BH, etc.) y una tabla con alteraciones en rojo. Cada diagrama tiene <strong>Copiar</strong> por si lo quieres en otro sistema.</p>';
+        '<p style="margin:0;line-height:1.5;">Pulsa <strong>Procesar</strong> (morado) para interpretar el ejemplo y ver diagramas.</p>';
       nextBtn.style.display = 'none';
       break;
     case 'lab_view':
       setBadge('laboratorio · revisar');
       bodyEl.innerHTML =
-        '<p style="margin:0 0 8px 0;">Revisa <strong>Diagramas</strong> y la tarjeta de <strong>Resultados</strong>. Cuando quieras volcar todo al expediente, usa <strong>Enviar a nota</strong> (arriba a la derecha en resultados).</p>' +
-        '<p style="margin:0 0 8px 0;">En la tarjeta <strong>Historial de laboratorio</strong> (misma pestaña), cuando tengas varias entradas: <strong>Sincronizar</strong> abre un checklist para quitar duplicados (misma fecha/hora y mismos resultados; se conserva la más antigua). <strong>Consolidar</strong> fusiona conjuntos del <strong>mismo día calendario</strong> si son del mismo tipo (solo laboratorio con laboratorio, o solo cultivos con cultivos; los mixtos no se tocan).</p>' +
-        '<p style="margin:0;font-size:13px;color:var(--text-muted);">Eso alimenta el bloque de estudios, el historial de labs, tendencias y la pestaña Cultivos.</p>';
+        '<p style="margin:0;line-height:1.5;">Revisa diagramas y tabla de resultados. En el historial: <strong>Sincronizar</strong> quita duplicados; <strong>Consolidar</strong> junta envíos del mismo día (mismo tipo de dato).</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Para seguir: <strong>Enviar a nota</strong> en la zona de resultados.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'lab_send':
       setBadge('laboratorio · enviar');
       bodyEl.innerHTML =
-        '<p style="margin:0 0 8px 0;">Pulsa <strong>Enviar a nota</strong> para guardar este conjunto en el paciente demo y seguir el flujo.</p>' +
-        '<p style="margin:0;font-size:13px;color:var(--text-muted);">Después, si acumulas más envíos, repasa <strong>Sincronizar</strong> y <strong>Consolidar</strong> en el historial para mantener orden y evitar líneas repetidas en la nota.</p>';
+        '<p style="margin:0;line-height:1.5;">Pulsa <strong>Enviar a nota</strong> para guardar este conjunto en el expediente demo.</p>';
       nextBtn.style.display = 'none';
       break;
     case 'ic_nota':
       setBadge('énfasis · Nota .docx');
       bodyEl.innerHTML =
-        '<p style="margin:0 0 8px 0;"><strong>Enfoque interconsulta:</strong> dejar la <strong>Nota de evolución</strong> lista y generar el <strong>.docx</strong> para informe, archivo o envío. Ya repasaste laboratorio, tendencias, SOAP y medicamentos.</p>' +
-        '<ul style="margin:0;padding-left:1.15rem;line-height:1.5;">' +
-        '<li><strong>Generar Nota (.docx)</strong>: documento con membrete y bloques clínicos; ruta en <strong>Ajustes → Carpeta de documentos</strong> (o Descargas por defecto).</li>' +
-        '<li><strong>Salida rápida</strong> (gris): un clic según formato docx / html / txt configurado en Ajustes.</li>' +
-        '<li>Si falta texto, usa de nuevo la <strong>plantilla SOAP</strong> o edita interrogatorio y evolución antes de generar.</li>' +
-        '</ul>' +
-        '<p style="margin:10px 0 0 0;font-size:13px;color:var(--text-muted);">Pulsa <strong>Generar Nota (.docx)</strong> para avanzar (si el servidor local no responde, <strong>Omitir tutorial</strong>).</p>';
+        '<p style="margin:0;line-height:1.5;">Genera la <strong>Nota (.docx)</strong> desde el botón correspondiente. Si el servidor local falla, puedes <strong>Omitir</strong> el tutorial.</p>';
       nextBtn.style.display = 'none';
       break;
     case 'ic_indica':
       setBadge('énfasis · Indicaciones .docx');
       bodyEl.innerHTML =
-        '<p style="margin:0 0 8px 0;"><strong>Enfoque interconsulta:</strong> la hoja de <strong>Indicaciones</strong> en .docx es lo que suele imprimirse o entregarse al paciente / servicio.</p>' +
-        '<ul style="margin:0;padding-left:1.15rem;line-height:1.5;">' +
-        '<li><strong>Generar Indicaciones (.docx)</strong>: mismas reglas de carpeta que la nota.</li>' +
-        '<li><strong>Plantillas por defecto</strong> (Mi Perfil) agilizan dieta, cuidados y medicamentos en cada paciente nuevo.</li>' +
-        '<li><strong>Salida rápida</strong> desde esta pestaña respeta el mismo formato global del paciente activo.</li>' +
-        '</ul>' +
-        '<p style="margin:10px 0 0 0;font-size:13px;color:var(--text-muted);">Pulsa <strong>Generar Indicaciones (.docx)</strong> para continuar.</p>';
+        '<p style="margin:0;line-height:1.5;">Aquí exportas las <strong>Indicaciones (.docx)</strong> para entrega o impresión.</p>';
       nextBtn.style.display = 'none';
       break;
     case 'ic_exports':
-      setBadge('exportación y carpeta');
+      setBadge('exportación');
       bodyEl.innerHTML =
-        '<p style="margin:0 0 8px 0;">Abre <strong>Ajustes</strong> (icono ⚙ arriba a la derecha). Ahí defines:</p>' +
-        '<ul style="margin:0;padding-left:1.15rem;line-height:1.5;">' +
-        '<li><strong>Carpeta de documentos</strong>: donde caen los .docx de <strong>Generar Nota</strong> y <strong>Generar Indicaciones</strong>.</li>' +
-        '<li><strong>Salida rápida</strong>: formato docx, html o txt para el botón gris del expediente.</li>' +
-        '<li><strong>Copias de seguridad</strong> JSON, exportar paciente o rango, auto-respaldo y <strong>Paquete sync</strong> entre equipos.</li>' +
-        '<li>En <strong>Ajustes → Laboratorio</strong> puedes <strong>revisar duplicados en el historial de todos los pacientes</strong> (equivalente al checklist de <strong>Sincronizar</strong> del paciente activo en la pestaña Laboratorio).</li>' +
-        '</ul>' +
-        '<p style="margin:10px 0 0 0;font-size:13px;color:var(--text-muted);">En interconsulta conviene dejar la carpeta lista antes de atender.</p>';
+        '<p style="margin:0;line-height:1.5;">En <strong>Ajustes (⚙)</strong>: carpeta de documentos, formato de <strong>salida rápida</strong>, respaldos y sync. En <strong>Laboratorio → duplicados</strong> puedes revisar todos los pacientes.</p>' +
+        (window.electronAPI && typeof window.electronAPI.getAppVersion === 'function'
+          ? '<p style="margin:10px 0 0;font-size:12px;color:var(--text-muted);">Escritorio: <strong>⇄</strong> junto a Ajustes abre LAN; sync entre equipos en <strong>Respaldos, sync y recuperación</strong>.</p>'
+          : '');
       nextBtn.textContent = 'Siguiente';
       break;
     case 'sala_tend':
       setBadge('tendencias');
       bodyEl.innerHTML =
-        '<p style="margin:0 0 8px 0;">En <strong>Expediente → Tendencias</strong> ves mini-gráficas cuando hay varios laboratorios en el tiempo. Los puntos duplicados (misma fecha/hora y mismo valor) se muestran una sola vez.</p>' +
-        '<p style="margin:0 0 8px 0;font-size:13px;color:var(--text-muted);">Si la gráfica se ve “sucia” por entradas repetidas en el historial, vuelve a <strong>Laboratorio</strong> y usa <strong>Sincronizar</strong> o <strong>Consolidar</strong> en la tarjeta de historial.</p>' +
-        '<p style="margin:0;font-size:13px;color:var(--text-muted);">Este demo ya trae <strong>dos fechas</strong> de ejemplo; el envío que acabas de hacer suma otro punto en la serie. Así comparas creatinina, hemoglobina, leucocitos, etc.' +
-        (guidedTourBranch === 'interconsulta'
-          ? ' En interconsulta suele ser el contexto numérico antes de redactar y exportar la nota.'
-          : '') +
-        '</p>';
+        '<p style="margin:0;line-height:1.5;">Mini-gráficas cuando hay varios laboratorios en el tiempo. Si hay ruido por duplicados en el historial, vuelve a Laboratorio y usa <strong>Sincronizar</strong> / <strong>Consolidar</strong>.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'sala_soap':
       setBadge('plantilla SOAP');
       bodyEl.innerHTML =
-        '<p><strong>Dónde está el botón:</strong> en <strong>Expediente → Nota de evolución</strong>, mira la tarjeta verde titulada <strong>«Evolución y Actualización del Cuadro Clínico»</strong>. El botón <strong>Plantilla SOAP</strong> (icono de documento) está en la <strong>esquina derecha de esa misma franja verde</strong>, alineado con el título — no está abajo junto al cuadro de texto gris.</p>' +
-        '<p class="tour-dock-hint">Mientras dure este paso, el botón lleva un <strong>resaltado animado</strong> para que lo ubiques al instante.</p>' +
-        '<ul>' +
-        '<li>Al abrirlo verás campos de <strong>S / O</strong>, <strong>FOUR / esferas</strong>, analgesia, FR/Sat/soporte, TA/FC, antiHTA, vasopresores, temperatura, antibióticos, dieta, balance y glucometrías.</li>' +
-        '<li><strong>Insertar en evolución</strong> pega el texto en el área grande debajo del encabezado verde.</li>' +
-        '<li>' +
-        (guidedTourBranch === 'interconsulta'
-          ? 'En interconsulta este párrafo suele preparar la parte objetiva antes de <strong>Generar Nota (.docx)</strong>.'
-          : 'En sala suele bastar con SOAP + tendencias; Word es opcional.') +
-        '</li>' +
-        '</ul>';
+        '<p style="margin:0 0 8px;line-height:1.5;"><strong>Expediente → Nota</strong>: en la tarjeta verde de evolución, el botón <strong>Plantilla SOAP</strong> está arriba a la derecha del encabezado verde (lleva resaltado).</p>' +
+        '<p style="margin:0;font-size:13px;color:var(--text-muted);">Ábrelo e inserta en evolución cuando quieras.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'sala_med':
       setBadge('medicamentos');
       bodyEl.innerHTML =
-        '<p>En la pestaña <strong>Medicamentos</strong> pegas el bloque en formato TSV (tabuladores) del hospital y pulsas <strong>Receta</strong>.</p>' +
-        '<p><strong>SOME y el bloque de indicaciones:</strong> si en <strong>SOME</strong> debes replicar el listado de medicamentos tal como en el expediente electrónico, allí copia <strong>desde la columna «Fecha y hora»</strong> (primera columna del cuadro de medicamentos) <strong>hasta el final de esa sección</strong> (última fila del bloque). Pega ese mismo rango en R+ y procesa con <strong>Receta</strong>.</p>' +
-        '<ul>' +
-        '<li><strong>Excl.</strong> quita el fármaco del texto de egreso; <strong>SOAP</strong> elige qué filas van a la plantilla SOAP o al tratamiento.</li>' +
-        '<li>La vista previa agrupa por tipo (analgésicos, ABX, antiHTA, vasopresores, otros).</li>' +
-        '<li><strong>Añadir a Tratamiento</strong> envía líneas al apartado de tratamiento de la nota.</li>' +
-        '<li><strong>Abrir plantilla SOAP</strong> rellena analgesia / ABX / antiHTA / vasopresores según el nombre del medicamento.</li>' +
-        '</ul>' +
-        '<p class="tour-dock-hint">El demo trae dos fármacos ya marcados para SOAP.' +
-        (guidedTourBranch === 'interconsulta' ? ' Después verás el bloque dedicado a exportar nota e indicaciones en Word.' : '') +
-        '</p>';
+        '<p style="margin:0;line-height:1.5;">Pega el bloque TSV del hospital y pulsa <strong>Receta</strong>. Marca filas para <strong>SOAP</strong> o <strong>Tratamiento</strong>; el demo ya trae dos fármacos de ejemplo.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'profile':
-      setBadge('perfil y respaldo');
+      setBadge('perfil');
       bodyEl.innerHTML =
-        '<p style="margin:0 0 8px 0;"><strong>Mi Perfil</strong> se abre tocando <strong>R+</strong> en el encabezado: médico tratante, profesor, grado, plantillas por defecto y edición de plantillas SOAP / nota.</p>' +
-        '<p style="margin:0 0 8px 0;"><strong>Ajustes</strong>: carpeta de documentos, tema, respaldos, sync, ayuda y actualizaciones.</p>' +
-        '<p style="margin:0;font-size:13px;color:var(--text-muted);">Todo queda en local en este equipo; revisa privacidad en la política de la app.</p>';
+        '<p style="margin:0;line-height:1.5;"><strong>Mi Perfil</strong> (nombre arriba): médico, plantillas y valores por defecto. <strong>Ajustes</strong>: carpeta, tema, respaldos y ayuda.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'servicio_default':
-      setBadge('servicio default · Sala');
+      setBadge('servicio · Sala');
       bodyEl.innerHTML =
-        '<p style="margin:0 0 8px 0;">Antes de empezar, define tu <strong>Servicio default</strong> en <strong>Mi Perfil → Servicio (Sala)</strong>. Ese texto se pre-llenará automáticamente al agregar pacientes en Sala.</p>' +
-        '<p style="margin:0 0 4px 0;font-size:13px;color:var(--text-muted);">Sugerencia sin abreviaturas: <strong>MEDICINA INTERNA</strong>. Pulsa <strong>Tab</strong> o sal del campo para guardar.</p>' +
-        '<p style="margin:0;font-size:13px;color:var(--text-muted);">Cuando termines, pulsa <strong>Siguiente</strong> abajo.</p>';
+        '<p style="margin:0;line-height:1.5;">Escribe tu <strong>Servicio (Sala)</strong> en Mi Perfil (ej. <strong>MEDICINA INTERNA</strong>) y sal del campo para guardar. Luego <strong>Siguiente</strong>.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'estado_actual':
       setBadge('Estado Actual');
       bodyEl.innerHTML =
-        '<p style="margin:0 0 8px 0;">En Sala, el botón verde <strong>Estado Actual</strong> (arriba del expediente) abre la plantilla SOAP <em>sin la sección Subjetivo</em>. Sirve para anotar rápido el estado del paciente y copiarlo al portapapeles.</p>' +
-        '<ul style="margin:0;padding-left:1.15rem;line-height:1.5;">' +
-        '<li><strong>Solo copiar</strong>: pasa el texto al portapapeles sin guardarlo en el expediente.</li>' +
-        '<li><strong>Guardar y copiar</strong>: guarda el estado con timestamp en el paciente y lo copia.</li>' +
-        '</ul>' +
-        '<p style="margin:8px 0 0 0;font-size:13px;color:var(--text-muted);">Pulsa <strong>Estado Actual</strong> para verlo, o <strong>Siguiente</strong> para continuar.</p>';
+        '<p style="margin:0;line-height:1.5;">El botón verde <strong>Estado Actual</strong> abre una plantilla tipo SOAP <em>sin subjetivo</em>: copia rápida o guarda en el paciente.</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Ábrelo o pulsa <strong>Siguiente</strong>.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'listado_problemas':
-      setBadge('Listado de Problemas');
+      setBadge('Listado');
       bodyEl.innerHTML =
-        '<p style="margin:0 0 8px 0;">Pestaña <strong>Listado</strong> (sólo en Sala) maneja problemas activos e inactivos del paciente. Cada problema acepta título en negritas y subitems con <code>a) b) c)</code>.</p>' +
-        '<ul style="margin:0;padding-left:1.15rem;line-height:1.5;">' +
-        '<li><strong>+ Problema</strong> agrega filas; arrastra para reordenar.</li>' +
-        '<li><strong>Médicos (firma)</strong> usa los defaults de Mi Perfil y se puede sobrescribir por paciente.</li>' +
-        '<li><strong>Generar Listado de Problemas (.docx)</strong> exporta el documento con membrete.</li>' +
-        '</ul>' +
-        '<p style="margin:8px 0 0 0;font-size:13px;color:var(--text-muted);">Pulsa <strong>Siguiente</strong> para terminar.</p>';
+        '<p style="margin:0;line-height:1.5;">Activa e inactivos con subítems; puedes exportar a Word. <strong>Siguiente</strong> cierra el tour.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'wrap':
       setBadge('listo');
-      if (guidedTourBranch === 'interconsulta') {
-        bodyEl.innerHTML =
-          '<p style="margin:0 0 8px 0;">Resumen <strong>interconsulta</strong>: recorrido completo (labs → historial con <strong>Sincronizar</strong>/<strong>Consolidar</strong> → tendencias → <strong>SOAP</strong> → medicamentos) y al final el <strong>énfasis</strong> en <strong>Generar Nota (.docx)</strong>, <strong>Generar Indicaciones (.docx)</strong>, carpeta de documentos y <strong>Salida rápida</strong>.</p>' +
-          '<p style="margin:0;font-size:13px;color:var(--text-muted);">Repite el tutorial desde <strong>Mi Perfil → Ver tutorial</strong>. Tema claro/oscuro: Ajustes o icono junto a la fecha.</p>';
-      } else {
-        bodyEl.innerHTML =
-          '<p style="margin:0 0 8px 0;">Resumen <strong>sala</strong>: servicio default → laboratorio → mantén historial con <strong>Sincronizar</strong>/<strong>Consolidar</strong> → <strong>Tendencias</strong> → <strong>Estado Actual</strong> / <strong>SOAP</strong> → <strong>Medicamentos</strong> → <strong>Listado de Problemas</strong>.</p>' +
-          '<p style="margin:0;font-size:13px;color:var(--text-muted);">Puedes repetir el recorrido cuando quieras desde Mi Perfil → Ver tutorial.</p>';
-      }
+      bodyEl.innerHTML =
+        '<p style="margin:0;line-height:1.5;">Listo. Repite el tutorial desde <strong>Mi Perfil</strong> o <strong>Ajustes</strong> cuando quieras.</p>';
       nextBtn.textContent = 'Finalizar';
       break;
     default:
@@ -3731,6 +6169,7 @@ function skipGuidedTour() {
 
 function startOnboarding(branch) {
   guidedTourBranch = branch === 'interconsulta' ? 'interconsulta' : 'sala';
+  setUiDensity('normal');
   // Alinear el modo de la app con la rama del tutorial. Si el usuario
   // elige "Interconsulta" pero la app está en Sala, los pasos de
   // ic_nota / ic_indica apuntarían a una pestaña oculta. Cambiamos el
@@ -3742,9 +6181,9 @@ function startOnboarding(branch) {
     try { localStorage.setItem('rpc-settings', JSON.stringify(settings)); } catch (e) {}
     var sala = isModeSala(settings);
     if (sala && (activeInner === 'notas' || activeInner === 'indica')) {
-      switchInnerTab('tend');
+      switchInnerTab('todo');
     } else if (!sala && (activeInner === 'listado' || activeInner === 'datos')) {
-      switchInnerTab('notas');
+      switchInnerTab('todo');
     }
     renderInnerTabs();
     if (typeof renderEstadoActualButton === 'function') renderEstadoActualButton();
@@ -3802,10 +6241,10 @@ function startOnboarding(branch) {
   patients = patients.filter(function(p){ return p.id !== DEMO_PATIENT_ID; });
   patients.unshift(demoPatient);
   guidedTourActive = true;
-  tourStepId = 'map';
+  tourStepId = 'map_sidebar';
   renderPatientList();
   selectPatient(DEMO_PATIENT_ID);
-  applyTourNavigationForStep('map');
+  applyTourNavigationForStep('map_sidebar');
   showTourDock();
   renderTourStep();
 }
@@ -3854,29 +6293,47 @@ function resetAndStartOnboarding() {
   // el tour para que no se quede flotando encima.
   closeProfileModal();
   if (typeof closeSettingsDropdown === 'function') closeSettingsDropdown();
-  localStorage.removeItem(GUIDED_TOUR_LS_KEY);
-  patients = patients.filter(function(p){ return p.id !== DEMO_PATIENT_ID; });
-  delete notes[DEMO_PATIENT_ID];
-  delete indicaciones[DEMO_PATIENT_ID];
-  delete labHistory[DEMO_PATIENT_ID];
-  delete medRecetaByPatient[DEMO_PATIENT_ID];
-  if (medNotaSelectionByPatient[DEMO_PATIENT_ID]) delete medNotaSelectionByPatient[DEMO_PATIENT_ID];
-  guidedTourActive = false;
-  tourStepId = null;
-  guidedTourBranch = null;
-  hideTourDock();
-  hideTourIntroModal();
-  limpiarReporte();
-  if (activeId === DEMO_PATIENT_ID) {
-    activeId = patients.length ? patients[0].id : null;
+  try {
+    localStorage.removeItem(GUIDED_TOUR_LS_KEY);
+  } catch (_e) {}
+  try {
+    patients = patients.filter(function (p) {
+      return p.id !== DEMO_PATIENT_ID;
+    });
+    delete notes[DEMO_PATIENT_ID];
+    delete indicaciones[DEMO_PATIENT_ID];
+    delete labHistory[DEMO_PATIENT_ID];
+    delete medRecetaByPatient[DEMO_PATIENT_ID];
+    if (medNotaSelectionByPatient[DEMO_PATIENT_ID]) delete medNotaSelectionByPatient[DEMO_PATIENT_ID];
+    guidedTourActive = false;
+    tourStepId = null;
+    guidedTourBranch = null;
+    hideTourDock();
+    hideTourIntroModal();
+    limpiarReporte();
+    if (activeId === DEMO_PATIENT_ID) {
+      activeId = patients.length ? patients[0].id : null;
+    }
+    renderPatientList();
+    if (activeId) selectPatient(activeId);
+    else {
+      var pv = document.getElementById('patient-view');
+      var es = document.getElementById('empty-state');
+      if (pv) pv.style.display = 'none';
+      if (es) es.style.display = 'flex';
+    }
+  } catch (err) {
+    console.error('resetAndStartOnboarding cleanup:', err && err.message);
   }
-  renderPatientList();
-  if (activeId) selectPatient(activeId);
-  else {
-    document.getElementById('patient-view').style.display = 'none';
-    document.getElementById('empty-state').style.display = 'flex';
-  }
-  showTourIntroModal();
+  resolveAppVersionForTour()
+    .then(function (v) {
+      window.__RPC_APP_VERSION__ = normalizeTourVersionLabel(v);
+      showTourIntroModal();
+    })
+    .catch(function () {
+      window.__RPC_APP_VERSION__ = 'dev';
+      showTourIntroModal();
+    });
 }
 
 function setRpcOfflineVisible(show) {
@@ -4330,6 +6787,18 @@ var HELP_ARTICLES = [
       '</ul>'
   },
   {
+    id: 'lan-vs-respaldo',
+    title: 'LAN en vivo vs respaldos entre equipos',
+    keywords: 'lan wifi sala equipo respaldo sync paquete red wifi sincronizar vivo copia snapshot exportar',
+    html:
+      '<p>R+ usa dos ideas distintas que no compiten; sirven para cosas diferentes:</p>' +
+      '<ul>' +
+      '<li><strong>Sala en vivo (LAN / ⇄):</strong> trabajar en <strong>sesión</strong> con colegas en la <strong>misma red local</strong>. Es colaboración en tiempo real sobre la misma sala; no es una copia permanente de tu historial para llevar a otro equipo.</li>' +
+      '<li><strong>Respaldos y sync (Ajustes → Respaldos, sync y recuperación):</strong> exportar/importar <strong>JSON</strong>, auto‑respaldos y <strong>paquete sync</strong> para mover o recuperar el contenido clínico entre computadoras o después del turno.</li>' +
+      '</ul>' +
+      '<p style="font-size:13px;color:var(--text-muted);margin:0;">¿Continuar el mismo caso en otro equipo físico? Usa <strong>exportar/importar</strong> o el paquete sync. ¿Ver en vivo lo que hace el equipo en sala? Usa <strong>LAN</strong>.</p>'
+  },
+  {
     id: 'laboratorio',
     title: 'Laboratorio: procesar y enviar',
     keywords: 'lab laboratorio procesar reporte diagrama gamble bh quimica enviar nota copiar',
@@ -4339,6 +6808,7 @@ var HELP_ARTICLES = [
       '<li>Cada diagrama tiene un botón <strong>Copiar</strong> para pegarlo como texto en otro sistema.</li>' +
       '<li>Los valores fuera de rango se resaltan en rojo.</li>' +
       '<li><strong>Enviar a nota</strong> vuelca el bloque al expediente del paciente activo y alimenta <strong>Tendencias</strong>.</li>' +
+      '<li>Con paciente seleccionado, <strong>Procesar y abrir expediente</strong> combina procesamiento y envío y cambia a <strong>Expediente</strong>.</li>' +
       '<li>En <strong>Historial de labs</strong> ves cada envío guardado; puedes <strong>Ver en Laboratorio</strong> para recuperar diagramas o <strong>Eliminar</strong> un conjunto si fue un error.</li>' +
       '</ul>'
   },
@@ -4387,6 +6857,7 @@ var HELP_ARTICLES = [
     title: 'Respaldo y portabilidad',
     keywords: 'respaldo backup copia seguridad exportar importar paciente rango sync pasarela equipos auditoria',
     html:
+      '<p><strong>¿LAN o respaldo?</strong> Lee primero <strong>LAN en vivo vs respaldos entre equipos</strong> en este centro de ayuda.</p>' +
       '<p>R+ ofrece varias vías para mover o resguardar datos desde <strong>Ajustes</strong>:</p>' +
       '<ul>' +
       '<li><strong>Copia de seguridad</strong>: JSON completo de pacientes, notas, indicaciones y labs.</li>' +
@@ -4415,11 +6886,14 @@ var HELP_ARTICLES = [
     html:
       '<p>Ahorra tiempo con estos atajos:</p>' +
       '<ul>' +
-      '<li><strong>Ctrl/⌘ + 1</strong> — Laboratorio</li>' +
-      '<li><strong>Ctrl/⌘ + 2</strong> — Expediente</li>' +
-      '<li><strong>Ctrl/⌘ + 3</strong> — Medicamentos</li>' +
+      '<li><strong>Ctrl/⌘ + 1</strong> — Laboratorio · <strong>2</strong> — Expediente · <strong>3</strong> — Medicamentos · <strong>5</strong> — Agenda (<strong>Pase</strong>: abre la sección en vista Normal)</li>' +
       '<li><strong>Ctrl/⌘ + 4</strong> — Ajustes</li>' +
-      '<li><strong>Ctrl/⌘ + P</strong> — Abrir/cerrar Mi Perfil</li>' +
+      '<li><strong>Ctrl/⌘ + N</strong> — Nuevo paciente</li>' +
+      '<li><strong>Ctrl/⌘ + S</strong> — Guardar estado del paciente activo</li>' +
+      '<li><strong>Ctrl/⌘ + K</strong> — Búsqueda unificada (pacientes, notas, indicaciones)</li>' +
+      '<li><strong>Ctrl/⌘ + P</strong> — Alternar vista Normal ↔ Pase</li>' +
+      '<li><strong>Ctrl/⌘ + Shift + P</strong> — Abrir/cerrar Mi Perfil</li>' +
+      '<li><strong>Ctrl/⌘ + ,</strong> — Activa/desactiva <strong>sobrescribir</strong> en conflictos al importar JSON (sin preguntar)</li>' +
       '<li><strong>Esc</strong> — Cerrar modal o el centro de ayuda</li>' +
       '<li>Dentro del centro de ayuda: <strong>↓</strong> desde el buscador enfoca la lista; <strong>↑ / ↓</strong> navegan artículos.</li>' +
       '</ul>'
@@ -4440,7 +6914,7 @@ var HELP_ARTICLES = [
 
 var helpCurrentArticleId = null;
 
-function openQuickHelp() {
+function openQuickHelp(preselectId) {
   var el = document.getElementById('help-quick-backdrop');
   if (!el) return;
   el.classList.add('open');
@@ -4449,7 +6923,12 @@ function openQuickHelp() {
   var input = document.getElementById('help-search-input');
   if (input) input.value = '';
   renderHelpArticles('');
-  if (!helpCurrentArticleId || !HELP_ARTICLES.some(function(a){ return a.id === helpCurrentArticleId; })) {
+  var pickId =
+    preselectId && HELP_ARTICLES.some(function (a) { return a.id === preselectId; })
+      ? preselectId
+      : null;
+  if (pickId) selectHelpArticle(pickId);
+  else if (!helpCurrentArticleId || !HELP_ARTICLES.some(function(a){ return a.id === helpCurrentArticleId; })) {
     selectHelpArticle(HELP_ARTICLES[0].id);
   } else {
     selectHelpArticle(helpCurrentArticleId);
@@ -4593,6 +7072,18 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '3.2.0': [
+    {
+      title: 'Interfaz “soft” y rendimiento',
+      body:
+        'Superficies sólidas (sin vidrio animado pesado para la GPU), sombras más ligeras, lista de pacientes y tarjetas sin desplazamientos costosos al hacer hover; botón principal en degradados solo violeta (--action).',
+    },
+    {
+      title: 'Tutorial: Modo Pase en ambos flujos',
+      body:
+        'El recorrido guiado para Sala y para Interconsulta incluye el mismo paso de vista Pase (resumen de ronda); después el tour continúa en pestañas completas. Versión estable 3.2.',
+    },
+  ],
   '3.0.2': [
     {
       title: 'Gasometría e historial',
@@ -4721,7 +7212,7 @@ var RELEASE_NOTES_HIGHLIGHTS = {
     {
       title: 'Tutorial y ayuda al día',
       body:
-        'El recorrido Sala / Interconsulta y el modal inicial explican Sincronizar y Consolidar en el historial, la pestaña Cultivos, tendencias y la revisión de duplicados en Ajustes → Laboratorio. El mini-tour de Laboratorio incluye un paso sobre el historial.',
+        'El recorrido Sala / Interconsulta incluye un paso de <strong>Modo Pase</strong> (resumen de ronda) en ambos flujos; el modal inicial y el tour explican Sincronizar y Consolidar en el historial, la pestaña Cultivos, tendencias y duplicados en Ajustes → Laboratorio. El mini-tour de Laboratorio incluye un paso sobre el historial.',
     },
     {
       title: 'Consolidar, más claro',
@@ -5195,6 +7686,10 @@ function restorePreimportBackupPrompt() {
   localStorage.setItem('rpc-labHistory', JSON.stringify(payload.data.labHistory || {}));
   localStorage.setItem('rpc-medRecetaByPatient', JSON.stringify(payload.data.medRecetaByPatient || {}));
   localStorage.setItem('rpc-listado-problemas', JSON.stringify(payload.data.listadoProblemas || {}));
+  localStorage.setItem(
+    'rpc-scheduled-procedures',
+    JSON.stringify(payload.data.scheduledProcedures || [])
+  );
   localStorage.setItem('rpc-settings', JSON.stringify(payload.data.settings || {}));
   if (payload.data.medCatalog && typeof payload.data.medCatalog === 'object') {
     storage.saveMedCatalog(payload.data.medCatalog);
@@ -5349,6 +7844,7 @@ function buildFullBackupPayload() {
       labHistory: storage.getLabHistory(),
       medRecetaByPatient: storage.getMedRecetaByPatient(),
       listadoProblemas: storage.getListadoProblemas(),
+      scheduledProcedures: storage.getScheduledProcedures(),
       settings: storage.getSettings(),
       medCatalog: storage.getMedCatalog(),
     }
@@ -5405,6 +7901,9 @@ function patientInDateRange(entry, range) {
 }
 
 function askConflictAction(label) {
+  if (typeof window !== 'undefined' && window.__rpcPreferImportOverwrite === true) {
+    return 'overwrite';
+  }
   var answer = prompt('Conflicto detectado para "' + label + '". Escribe: O = sobrescribir, D = duplicar, C = cancelar.', 'O');
   var v = String(answer || '').trim().toUpperCase();
   if (v === 'O') return 'overwrite';
@@ -5723,6 +8222,10 @@ function onBackupFileChosen(ev) {
       localStorage.setItem('rpc-labHistory', JSON.stringify(payload.data.labHistory || {}));
       localStorage.setItem('rpc-medRecetaByPatient', JSON.stringify(payload.data.medRecetaByPatient || {}));
       localStorage.setItem('rpc-listado-problemas', JSON.stringify(payload.data.listadoProblemas || {}));
+      localStorage.setItem(
+        'rpc-scheduled-procedures',
+        JSON.stringify(payload.data.scheduledProcedures || [])
+      );
       localStorage.setItem('rpc-settings', JSON.stringify(payload.data.settings || {}));
       if (payload.data.medCatalog && typeof payload.data.medCatalog === 'object') {
         storage.saveMedCatalog(payload.data.medCatalog);
@@ -5981,6 +8484,8 @@ function renderLabHistoryPanel() {
     hintEl.textContent = 'Selecciona un paciente en la columna izquierda para ver los estudios que hayas enviado a su nota.';
     listEl.innerHTML = '';
     syncLabHistoryCollapseUI();
+    renderRoundOverviewPanels();
+    if (isPaseMode()) renderPaseBoard();
     return;
   }
   var hist = sortLabHistoryChronological(ensureParsedLabHistory(activeId));
@@ -5989,6 +8494,8 @@ function renderLabHistoryPanel() {
     hintEl.textContent = 'Cuando envíes un reporte a la nota con «Enviar a nota», cada conjunto queda guardado aquí (sirve para Tendencias y para volver a ver diagramas).';
     listEl.innerHTML = '';
     syncLabHistoryCollapseUI();
+    renderRoundOverviewPanels();
+    if (isPaseMode()) renderPaseBoard();
     return;
   }
   hintEl.style.display = 'none';
@@ -6018,6 +8525,8 @@ function renderLabHistoryPanel() {
     );
   }).join('');
   syncLabHistoryCollapseUI();
+  renderRoundOverviewPanels();
+  if (isPaseMode()) renderPaseBoard();
 }
 
 function replayLabHistorySet(setId) {
@@ -6036,14 +8545,15 @@ function replayLabHistorySet(setId) {
   var reg = patient ? (patient.registro || '') : '';
   var result = {
     patient: { name: name, expediente: reg, sexo: '', edad: '', fecha: set.fecha || '' },
-    resLabs: set.resLabs
+    resLabs: set.resLabs,
+    sourceText: set.sourceText || ''
   };
   activeLab = result;
   renderOutput(result);
   renderDiagramas(result.resLabs);
   addAuditEntry('lab-history-replay', 'ok', 1, String(setId));
   showToast('Estudio cargado en Laboratorio', 'success');
-  switchAppTab('lab');
+  openPaseSectionInNormal('labs');
   var diag = document.getElementById('lab-diagrams-section');
   if (diag && diag.style.display !== 'none') {
     try { diag.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (_e) { diag.scrollIntoView(true); }
@@ -6652,6 +9162,7 @@ function renderMedRecetaPanel() {
     outPre.textContent = '';
     if (outCard) outCard.style.display = 'none';
     hideMedNotaFooter();
+    if (isPaseMode()) renderPaseBoard();
     return;
   }
   var block = medRecetaByPatient[activeId];
@@ -6663,6 +9174,7 @@ function renderMedRecetaPanel() {
     outPre.textContent = '';
     if (outCard) outCard.style.display = 'none';
     hideMedNotaFooter();
+    if (isPaseMode()) renderPaseBoard();
     return;
   }
   hintEl.style.display = 'none';
@@ -6732,6 +9244,7 @@ function renderMedRecetaPanel() {
   var txt = medOutputTab === 'simple' ? txtSimple : txtFull;
   outPre.textContent = txt;
   if (outCard) outCard.style.display = txt.trim() ? 'block' : 'none';
+  if (isPaseMode()) renderPaseBoard();
 }
 
 function toggleMedRecetaSuspendido(itemId, suspended) {
@@ -6813,8 +9326,7 @@ function mediAnadirATratamiento() {
     notes[activeId].tratamiento = tx;
   }
   saveState();
-  switchAppTab('nota');
-  switchInnerTab('notas');
+  openPaseSectionInNormal('expediente');
   renderNoteForm();
   showToast(lines.length + ' línea(s) añadidas a Tratamiento', 'success');
 }
@@ -6864,8 +9376,7 @@ function mediLlevarASOAP() {
   buckets.vasop.forEach(function (t) {
     mergeSoapMedField('soap-vasop', t);
   });
-  switchAppTab('nota');
-  switchInnerTab('notas');
+  openPaseSectionInNormal('expediente');
   renderNoteForm();
   openSOAPModalDirect();
   var toastMsg = 'Campos SOAP actualizados · completa e Insertar en evolución';
@@ -6946,7 +9457,8 @@ function copiarLabsAlPortapapeles() {
   if (!activeLab || !activeLab.resLabs || !activeLab.resLabs.length) {
     showToast('No hay resultados procesados', 'error'); return;
   }
-  var text = buildLabLines().join('\n');
+  var rawFull = activeLab.sourceText && String(activeLab.sourceText).trim();
+  var text = rawFull ? rawFull : buildLabLines().join('\n');
   navigator.clipboard.writeText(text)
     .then(function() { showToast('Labs copiados al portapapeles ✓', 'success'); })
     .catch(function() { showToast('Error al copiar al portapapeles', 'error'); });
@@ -6967,6 +9479,7 @@ function enviarLabsANota() {
 // ── Multilab ──────────────────────────────────────────────────────
 function buildLabLines() {
   var lines = [];
+  var prefs = getLabOutputPrefs();
   if (activeLab && activeLab.patient) {
     var raw = activeLab.patient.fecha || '';
     var fechaDm = normalizeFechaLabHistory(raw) || String(raw).trim();
@@ -6979,9 +9492,20 @@ function buildLabLines() {
     }
     if (fechaDm) lines.push(fechaDm);
   }
+  var bhExtDone = false;
   activeLab.resLabs.forEach(function(entry) {
+    if (prefs.hideGasoAdvInterp && isGasoInterpretacionResLabChunk(entry)) return;
     var cleaned = entry.replace(/\t/g, ' ').replace(/\*+/g, '').replace(/  +/g, ' ').trim();
     lines.push(cleaned);
+    if (prefs.showBhExtendedLine && !bhExtDone && activeLab.bhExtras && isBhMainResLabChunk(entry)) {
+      var extPlain = formatBhExtendedTabLine(activeLab.bhExtras);
+      if (extPlain) {
+        lines.push(
+          extPlain.replace(/\t/g, ' ').replace(/\*+/g, '').replace(/  +/g, ' ').trim()
+        );
+        bhExtDone = true;
+      }
+    }
   });
   return lines;
 }
@@ -7077,23 +9601,52 @@ async function estadoActualSaveAndCopy() {
   closeSOAPModal();
 }
 function renderEstadoActualBar() {
-  var bar = document.getElementById('estado-actual-bar');
+  var wrap = document.getElementById('estado-actual-context-wrap');
   var meta = document.getElementById('estado-actual-meta');
-  if (!bar) return;
+  var btn = document.getElementById('btn-estado-actual');
+  if (!wrap || !meta || !btn) return;
   var sala = isModeSala(settings);
-  if (!sala || !activeId) { bar.style.display = 'none'; return; }
-  bar.style.display = 'flex';
-  if (!meta) return;
-  var patient = patients.find(function(p){ return p.id === activeId; });
+  if (!sala || !activeId) {
+    wrap.style.display = 'none';
+    meta.textContent = '';
+    btn.classList.remove('btn-estado-actual-compact--pending');
+    btn.removeAttribute('aria-label');
+    return;
+  }
+  wrap.style.display = 'flex';
+  var patient = patients.find(function (p) {
+    return p.id === activeId;
+  });
+  var saved = false;
   if (patient && patient.estadoActual && patient.estadoActual.savedAt) {
     var d = new Date(patient.estadoActual.savedAt);
     if (!isNaN(d.getTime())) {
-      var label = String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear() + ' · ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
-      meta.textContent = 'Último guardado: ' + label;
-      return;
+      var label =
+        String(d.getDate()).padStart(2, '0') +
+        '/' +
+        String(d.getMonth() + 1).padStart(2, '0') +
+        '/' +
+        d.getFullYear() +
+        ' · ' +
+        String(d.getHours()).padStart(2, '0') +
+        ':' +
+        String(d.getMinutes()).padStart(2, '0');
+      meta.textContent = 'Guardado ' + label;
+      btn.title = 'Abrir Estado Actual · ' + meta.textContent;
+      btn.removeAttribute('aria-label');
+      btn.classList.remove('btn-estado-actual-compact--pending');
+      saved = true;
     }
   }
-  meta.textContent = 'Sin estado actual registrado';
+  if (!saved) {
+    meta.textContent = '';
+    btn.title = '';
+    btn.setAttribute(
+      'aria-label',
+      'Estado Actual: abrir plantilla (SOAP sin Subjetivo). Aún sin guardar para este paciente.'
+    );
+    btn.classList.add('btn-estado-actual-compact--pending');
+  }
 }
 
 function updateSOAPBalance() {
@@ -7262,7 +9815,8 @@ function insertLabsAsRecent(lines) {
   if (el) el.value = notes[activeId].estudios;
   onboardingAdvanceAfterSend();
   showToast('Labs enviados a la nota ✓', 'success');
-  switchAppTab('nota');
+  setMedTabAttention(true);
+  openPaseSectionInNormal('expediente');
 }
 
 function insertLabsAsAnteriorThenRecent(newLines) {
@@ -7277,7 +9831,8 @@ function insertLabsAsAnteriorThenRecent(newLines) {
   if (el) el.value = notes[activeId].estudios;
   onboardingAdvanceAfterSend();
   showToast('Fecha anterior guardada + nuevos labs agregados ✓', 'success');
-  switchAppTab('nota');
+  setMedTabAttention(true);
+  openPaseSectionInNormal('expediente');
 }
 
 function showLabConflictModal(newLines, existingDate) {
@@ -7312,7 +9867,8 @@ function showLabConflictModal(newLines, existingDate) {
     if (el) el.value = notes[activeId].estudios;
     onboardingAdvanceAfterSend();
     showToast('Fecha reciente reemplazada ✓', 'success');
-    switchAppTab('nota');
+    setMedTabAttention(true);
+    openPaseSectionInNormal('expediente');
   };
   document.getElementById('btn-conflict-cancel').onclick = function() {
     document.body.removeChild(backdrop);
@@ -7330,6 +9886,7 @@ function procesarReporte() {
     renderDiagramas(result.resLabs);
     if (resStore.shouldAutoStore) autoStoreProcessedLabResult(result);
     if (!result.resLabs.length) showToast('No se encontraron resultados de laboratorio','error');
+    else clearLabInputAfterSuccessfulParse();
   } catch(e) { showToast('Error al procesar el reporte','error'); console.error(e); }
 }
 
@@ -7358,12 +9915,35 @@ function renderOutput(result) {
     fechaTop.textContent = fechaBanner;
     box.appendChild(fechaTop);
   }
-  resLabs.forEach(function(text) {
-    renderEntry(text).forEach(function(html, idx) {
+  var src = String(result.sourceText || '').trim();
+  var labDisp = getLabOutputPrefs();
+  resLabs.forEach(function (text) {
+    if (labDisp.hideGasoAdvInterp && isGasoInterpretacionResLabChunk(text)) return;
+    if (isResLabChunkPureCultivo(text)) {
+      var wrap = document.createElement('div');
+      wrap.className = 'lab-out-cultivo-chunk';
+      wrap.innerHTML = buildCultivoOutputHtmlFragments(text, src);
+      box.appendChild(wrap);
+      return;
+    }
+    renderEntry(text).forEach(function (html, idx) {
       var div = document.createElement('div');
-      div.className = idx===0 ? 'out-line' : 'out-indent';
-      div.innerHTML = html; box.appendChild(div);
+      div.className = idx === 0 ? 'out-line' : 'out-indent';
+      div.innerHTML = html;
+      box.appendChild(div);
     });
+    if (labDisp.showBhExtendedLine && result.bhExtras && isBhMainResLabChunk(text)) {
+      var extTab = formatBhExtendedTabLine(result.bhExtras);
+      if (extTab) {
+        renderEntry(extTab).forEach(function (html, idx) {
+          var divEx = document.createElement('div');
+          divEx.className =
+            (idx === 0 ? 'out-line' : 'out-indent') + ' lab-bh-extended-line';
+          divEx.innerHTML = html;
+          box.appendChild(divEx);
+        });
+      }
+    }
   });
   document.getElementById('lab-output-section').style.display = 'block';
 }
@@ -7457,25 +10037,63 @@ document.addEventListener('keydown', function(e) {
       closeQuickHelp();
       return;
     }
+    var conn = document.getElementById('connection-dropdown');
+    if (conn && conn.classList.contains('open')) {
+      closeConnectionDropdown();
+      return;
+    }
+    var sdd = document.getElementById('settings-dropdown');
+    if (sdd && sdd.classList.contains('open')) {
+      closeSettingsDropdown();
+      return;
+    }
   }
   if (e.key === 'Escape' && document.getElementById('modal').classList.contains('open')) closeModal();
   if (e.key === 'Escape') {
+    var pam = document.getElementById('procedure-agenda-modal');
+    if (pam && pam.classList.contains('open')) {
+      closeProcedureAgendaModal();
+      return;
+    }
     var pm = document.getElementById('profile-modal');
     if (pm && pm.classList.contains('open')) { closeProfileModal(); return; }
   }
   var mod = e.metaKey || e.ctrlKey;
   if (mod) {
     var key = e.key.toLowerCase();
-    if (key === '1' || key === '2' || key === '3' || key === '4' || key === 'p') {
+    if (key === '1' || key === '2' || key === '3' || key === '4' || key === '5') {
       e.preventDefault();
-      if (key === '1') switchAppTab('lab');
-      if (key === '2') switchAppTab('nota');
-      if (key === '3') switchAppTab('med');
+      if (isPaseMode()) {
+        if (key === '1') openPaseSectionInNormal('labs');
+        if (key === '2') openPaseSectionInNormal('expediente');
+        if (key === '3') openPaseSectionInNormal('med');
+        if (key === '5') openPaseSectionInNormal('agenda');
+      } else {
+        if (key === '1') switchAppTab('lab');
+        if (key === '2') switchAppTab('nota');
+        if (key === '3') switchAppTab('med');
+        if (key === '5') switchAppTab('agenda');
+      }
       if (key === '4') {
         var dd = document.getElementById('settings-dropdown');
         if (dd && !dd.classList.contains('open')) toggleSettingsDropdown();
       }
-      if (key === 'p') toggleProfileSection();
+    }
+    if (key === 'p' && !e.altKey) {
+      e.preventDefault();
+      if (e.shiftKey) toggleProfileSection();
+      else setUiDensity(getUiDensity() === 'normal' ? 'pase' : 'normal');
+    }
+    if (e.key === ',' && !e.shiftKey && !e.altKey) {
+      if (typeof isTypingContext === 'function' && isTypingContext(e.target)) return;
+      e.preventDefault();
+      window.__rpcPreferImportOverwrite = !window.__rpcPreferImportOverwrite;
+      showToast(
+        window.__rpcPreferImportOverwrite
+          ? 'Importación: conflictos → sobrescribir (⌘, o Ctrl+, de nuevo para apagar).'
+          : 'Importación: se preguntará en cada conflicto.',
+        window.__rpcPreferImportOverwrite ? 'success' : 'info'
+      );
     }
   }
 });
@@ -7673,7 +10291,9 @@ function renderPatientDataPane() {
     wrap.innerHTML = '';
     return;
   }
-  var patient = patients.find(function (p) { return p.id === activeId; });
+  var patient = patients.find(function (p) {
+    return String(p.id) === String(activeId);
+  });
   if (!patient) {
     wrap.innerHTML = '';
     return;
@@ -7682,7 +10302,9 @@ function renderPatientDataPane() {
 }
 
 function renderNoteForm() {
-  var patient = patients.find(function(p){ return p.id===activeId; });
+  var patient = patients.find(function (p) {
+    return String(p.id) === String(activeId);
+  });
   if (!patient) return;
   if (activeId) {
     if (!notes[activeId]) notes[activeId] = {};
@@ -7744,9 +10366,34 @@ function _todoCompareForSort(a, b) {
   return 0;
 }
 
+function refreshAllTodoUIs() {
+  var elClassic = document.getElementById('todo-form');
+  if (elClassic) renderTodoFormIn(elClassic, '');
+  var overview = document.getElementById('patient-ronda-overview');
+  var ronda = document.getElementById('patient-ronda-todos-mount');
+  if (!ronda) return;
+  var showRonda =
+    isPaseMode() &&
+    overview &&
+    overview.style.display !== 'none' &&
+    activeId &&
+    activeAppTab === 'nota' &&
+    _roundOverviewMode;
+  if (showRonda) {
+    renderTodoFormIn(ronda, 'ronda-');
+  } else {
+    while (ronda.firstChild) ronda.removeChild(ronda.firstChild);
+  }
+  if (isPaseMode()) renderPaseBoard();
+}
+
 function renderTodoForm() {
-  var container = document.getElementById('todo-form');
+  refreshAllTodoUIs();
+}
+
+function renderTodoFormIn(container, idPrefix) {
   if (!container) return;
+  idPrefix = idPrefix == null ? '' : String(idPrefix);
   while (container.firstChild) container.removeChild(container.firstChild);
 
   if (!activeId) {
@@ -7761,10 +10408,10 @@ function renderTodoForm() {
   addRow.className = 'todo-add-row';
   var input = document.createElement('input');
   input.type = 'text';
-  input.id = 'todo-input';
+  input.id = idPrefix + 'todo-input';
   input.placeholder = 'Nuevo pendiente...';
   var sel = document.createElement('select');
-  sel.id = 'todo-priority';
+  sel.id = idPrefix + 'todo-priority';
   [
     { v: 'alta',  t: 'Alta'  },
     { v: 'media', t: 'Media' },
@@ -7779,9 +10426,9 @@ function renderTodoForm() {
   var addBtn = document.createElement('button');
   addBtn.type = 'button';
   addBtn.textContent = 'Agregar';
-  addBtn.addEventListener('click', addTodo);
+  addBtn.addEventListener('click', function () { addTodo(idPrefix); });
   input.addEventListener('keypress', function (e) {
-    if (e.key === 'Enter') addTodo();
+    if (e.key === 'Enter') addTodo(idPrefix);
   });
   addRow.appendChild(input);
   addRow.appendChild(sel);
@@ -7867,10 +10514,12 @@ function renderTodoForm() {
   container.appendChild(list);
 }
 
-function addTodo() {
+function addTodo(idPrefix) {
+  if (idPrefix === undefined || idPrefix === null) idPrefix = '';
+  if (typeof idPrefix !== 'string') idPrefix = '';
   if (!activeId) return;
-  var input = document.getElementById('todo-input');
-  var sel   = document.getElementById('todo-priority');
+  var input = document.getElementById(idPrefix + 'todo-input');
+  var sel   = document.getElementById(idPrefix + 'todo-priority');
   if (!input) return;
   var text = String(input.value || '').trim();
   if (!text) return;
@@ -7885,7 +10534,7 @@ function addTodo() {
   });
   storage.saveTodos(activeId, todos);
   input.value = '';
-  renderTodoForm();
+  refreshAllTodoUIs();
 }
 
 function toggleTodo(id) {
@@ -7895,14 +10544,14 @@ function toggleTodo(id) {
   if (!found) return;
   found.completed = !found.completed;
   storage.saveTodos(activeId, todos);
-  renderTodoForm();
+  refreshAllTodoUIs();
 }
 
 function deleteTodo(id) {
   if (!activeId) return;
   var todos = storage.getTodos(activeId).filter(function (t) { return t.id !== id; });
   storage.saveTodos(activeId, todos);
-  renderTodoForm();
+  refreshAllTodoUIs();
 }
 
 function setTodoPriority(id, priority) {
@@ -7913,7 +10562,7 @@ function setTodoPriority(id, priority) {
   if (!found) return;
   found.priority = valid;
   storage.saveTodos(activeId, todos);
-  renderTodoForm();
+  refreshAllTodoUIs();
 }
 
 function updateTodoText(id, text) {
@@ -7925,14 +10574,33 @@ function updateTodoText(id, text) {
   if (!found || String(found.text || '') === trimmed) return;
   found.text = trimmed;
   storage.saveTodos(activeId, todos);
-  renderTodoForm();
+  refreshAllTodoUIs();
 }
 
 function updatePatient(field, value) {
-  var p = patients.find(function(p){ return p.id===activeId; });
-  if (p) { p[field] = (field==='nombre'||field==='area'||field==='servicio') ? value.toUpperCase() : value; saveState(); renderPatientList(); }
+  if (activeId == null) return;
+  var pid = String(activeId);
+  var p = patients.find(function (pl) {
+    return String(pl.id) === pid;
+  });
+  if (!p) return;
+  var next =
+    field === 'nombre' || field === 'area' || field === 'servicio'
+      ? String(value || '').toUpperCase()
+      : value;
+  if (String(p[field] || '') === String(next || '')) return;
+  p[field] = next;
+  saveState();
+  renderPatientList();
+  renderPatientDataPane();
+  syncWorkContextChrome();
+  if (isPaseMode()) {
+    renderPaseBoard();
+    renderRoundOverviewPanels();
+    if (activeAppTab === 'agenda') renderProcedureAgendaPanel();
+  }
 }
-function updateNote(field, value) { if (!notes[activeId]) notes[activeId]={}; notes[activeId][field]=value; saveState(); }
+function updateNote(field, value) { if (!notes[activeId]) notes[activeId]={}; notes[activeId][field]=value; saveState(); if (field === 'estudios') renderRoundOverviewPanels(); }
 function updateDx(i, val) { if (!notes[activeId]) return; notes[activeId].diagnosticos[i]=val.toUpperCase(); saveState(); }
 function addDx() { if (!notes[activeId]) return; notes[activeId].diagnosticos.push(''); saveState(); renderNoteForm(); }
 function removeDx(i) { if (!notes[activeId]||notes[activeId].diagnosticos.length<=1) return; notes[activeId].diagnosticos.splice(i,1); saveState(); renderNoteForm(); }
@@ -8264,7 +10932,7 @@ function extractParsedValues(resLabs) {
   return {
     Hb:  num('BH','Hb'),   Hto: num('BH','Hto'),
     Leu: num('BH','Leu'),  Plt: num('BH','Plt'),
-    Glu: num('QS','Glu'),  Cr:  num('QS','Cr'),
+    Glu: num('QS','Glu'),  Cr:  num('QS','Cr'), eTFG: num('QS','eTFG'),
     BUN: num('QS','BUN'),  PCR: num('QS','PCR'),
     AU:  num('QS','AU'),   TGL: num('QS','TGL'),  COL: num('QS','COL'),
     Na:  num('ESC','Na'),  K:   num('ESC','K'),
@@ -8467,11 +11135,13 @@ function renderTendencias() {
     }
   });
   if (!activeId) {
+    closeTendHiddenModal();
     container.innerHTML = '<p class="tend-empty">Selecciona un paciente.</p>';
     return;
   }
   var history = sortLabHistoryChronological(ensureParsedLabHistory(activeId));
   if (history.length < 2) {
+    closeTendHiddenModal();
     container.innerHTML = '<p class="tend-empty">Agrega al menos 2 sets de laboratorio para ver tendencias.</p>';
     return;
   }
@@ -8489,6 +11159,17 @@ function renderTendencias() {
     if (dedupeTrendSetsForSeries(raw, sk, fk).length < 2) continue;
     seriesAvail.push(sp);
   }
+  var seriesAvailFull = seriesAvail.slice();
+  var abnormalOnly = tendAbnormalOnlyRead();
+  if (abnormalOnly) {
+    seriesAvail = seriesAvail.filter(function (sp) {
+      return tendSeriesLatestAbnormal(history, sp.sectionKey, sp.fieldKey);
+    });
+  }
+
+  var hiddenChipN = tendHiddenChipDescriptors().length;
+  var toolbarHtml = buildTendInlineControlsHtml(hiddenChipN);
+
   if (!seriesAvail.length) {
     var anyData = mergedCatalog.some(function (sp) {
       var r = history.filter(function (s) {
@@ -8505,16 +11186,23 @@ function renderTendencias() {
         });
         return dedupeTrendSetsForSeries(r2, sp.sectionKey, sp.fieldKey).length >= 2;
       });
-    var hb = buildTendHiddenBarHtml();
+    if (abnormalOnly && seriesAvailFull.length) {
+      container.innerHTML =
+        toolbarHtml +
+        '<p class="tend-empty">Ningún analito está fuera de rango orientativo (o no tiene referencia). Pulsa <strong>Ver todas</strong> (tooltip en el botón) para volver a la vista completa.</p>';
+      syncTendHiddenModalIfOpen();
+      return;
+    }
     if (hiddenAll) {
       container.innerHTML =
-        hb +
-        '<p class="tend-empty">Los analitos con datos están <strong>ocultos</strong>. Pulsa el ojo en la barra o <strong>Mostrar todos</strong>.</p>';
+        toolbarHtml +
+        '<p class="tend-empty">Los analitos con datos están <strong>ocultos</strong>. Pulsa <strong>Ocultos</strong> y restaura con el ojo o <strong>Mostrar todos</strong>.</p>';
     } else {
       container.innerHTML =
-        hb +
+        toolbarHtml +
         '<p class="tend-empty">No hay parámetros con suficientes datos para graficar.</p>';
     }
+    syncTendHiddenModalIfOpen();
     return;
   }
 
@@ -8537,7 +11225,7 @@ function renderTendencias() {
     ? false
     : { duration: 600, easing: 'easeOutQuart' };
   var htmlParts = [];
-  htmlParts.push(buildTendHiddenBarHtml());
+  htmlParts.push(buildTendInlineControlsHtml(hiddenChipN));
   var eyeBtnSvg = tendEyeVisibilitySvg();
   for (var si = 0; si < sectionsOrdered.length; si++) {
     var sectionKey = sectionsOrdered[si];
@@ -8646,6 +11334,16 @@ function renderTendencias() {
     var canvas2 = document.getElementById(trendSparkDomId(sk2, fk2));
     if (!canvas2) continue;
     var ck = trendSparkChartKey(sk2, fk2);
+    var latestSpark =
+      setsDesc2.length ? getSetTrendValueForSeries(setsDesc2[0], sk2, fk2) : null;
+    var refSpark = tendRefForSeries(sk2, fk2);
+    var isAbSpark =
+      refSpark &&
+      latestSpark != null &&
+      (latestSpark < refSpark[0] || latestSpark > refSpark[1]);
+    var lineColor = isAbSpark ? '#f87171' : 'rgba(52,211,153,0.95)';
+    var lineW = 2.25;
+    var pointR = 2;
     sparkCharts[ck] = new Chart(canvas2, {
       type: 'line',
       data: {
@@ -8653,10 +11351,10 @@ function renderTendencias() {
         datasets: [
           {
             data: values2,
-            borderColor: '#10b981',
-            borderWidth: 2,
-            pointRadius: 2,
-            pointBackgroundColor: '#10b981',
+            borderColor: lineColor,
+            borderWidth: lineW,
+            pointRadius: pointR,
+            pointBackgroundColor: lineColor,
             tension: 0.3,
             fill: false,
             clip: false
@@ -8675,6 +11373,14 @@ function renderTendencias() {
         }
       }
     });
+  }
+  syncTendHiddenModalIfOpen();
+}
+
+function syncTendHiddenModalIfOpen() {
+  var bd = document.getElementById('tend-hidden-modal-backdrop');
+  if (bd && bd.classList.contains('open')) {
+    refreshTendHiddenModalContent();
   }
 }
 
@@ -9104,7 +11810,7 @@ function setUpdateChannel(channel) {
   if (previous !== normalized) {
     showToast(
       normalized === 'beta'
-        ? 'Canal beta activado: recibirás pre-releases.'
+        ? 'Canal pre-releases activado: recibirás borradores de GitHub.'
         : 'Canal estable activado.',
       'success'
     );
@@ -9548,6 +12254,7 @@ function buildUndoSnapshotPayload(label) {
       indicaciones: cloneForUndo(indicaciones) || {},
       labHistory: cloneForUndo(labHistory) || {},
       medRecetaByPatient: cloneForUndo(medRecetaByPatient) || {},
+      scheduledProcedures: cloneForUndo(storage.getScheduledProcedures()) || [],
       settings: cloneForUndo(settings) || {},
       medCatalog: cloneForUndo(storage.getMedCatalog()) || storage.getMedCatalog(),
     },
@@ -9606,6 +12313,10 @@ function undoLastOperation() {
   localStorage.setItem('rpc-labHistory', JSON.stringify(snap.data.labHistory || {}));
   localStorage.setItem('rpc-medRecetaByPatient', JSON.stringify(snap.data.medRecetaByPatient || {}));
   localStorage.setItem('rpc-listado-problemas', JSON.stringify(snap.data.listadoProblemas || {}));
+  localStorage.setItem(
+    'rpc-scheduled-procedures',
+    JSON.stringify(snap.data.scheduledProcedures || [])
+  );
   localStorage.setItem('rpc-settings', JSON.stringify(snap.data.settings || {}));
   if (snap.data.medCatalog && typeof snap.data.medCatalog === 'object') {
     storage.saveMedCatalog(snap.data.medCatalog);
@@ -9955,6 +12666,20 @@ function initBlockFShortcuts() {
         return;
       }
     }
+    if (
+      isPaseMode() &&
+      document.body &&
+      !document.body.classList.contains('focus-mode')
+    ) {
+      if (!isTypingContext(e.target) && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        var roundKey = (e.key || '').toLowerCase();
+        if (roundKey === 'j' || roundKey === 'k') {
+          e.preventDefault();
+          advanceRondaPatient(roundKey === 'j' ? 1 : -1);
+          return;
+        }
+      }
+    }
     var mod = e.metaKey || e.ctrlKey;
     if (!mod) return;
     if (e.altKey || e.shiftKey) return;
@@ -9987,6 +12712,7 @@ Object.assign(window, {
   toggleTheme,
   setThemeMode,
   setFontZoom,
+  setUiDensity,
   setHighContrast,
   toggleHighContrast,
   t,
@@ -10007,12 +12733,19 @@ Object.assign(window, {
   wipeCacheConfirmed,
   wipeAllConfirmed,
   switchAppTab,
+  openPaseSectionInNormal,
+  renderPaseBoard,
+  navigateProcedureAgendaWeek,
+  openProcedureAgendaModal,
+  closeProcedureAgendaModal,
+  saveProcedureAgendaFromModal,
+  deleteProcedureAgendaFromModal,
   saveLanSettingsFromUi,
   saveLanHostTeamCodeFromUi,
+  resetLanSquadHostStateFromUi,
   joinLanRoom,
   createLanRoomFromUi,
   deleteLanRoom,
-  createCalendarEventFromUi,
   switchInnerTab,
   guidedTourIntroChooseSala,
   guidedTourIntroChooseInterconsulta,
@@ -10023,11 +12756,13 @@ Object.assign(window, {
   guidedTourClickNext,
   openAddModal,
   onPatientSearchInput,
+  focusPatientSearchInput,
   toggleProfileSection,
   openProfileFromHeader,
   openProfileModal,
   closeProfileModal,
   onAppModeChange,
+  toggleHeaderWorkMode,
   onDefaultServicioBlur,
   onMedicoTemplateBlur,
   updateListadoMedico,
@@ -10042,16 +12777,16 @@ Object.assign(window, {
   estadoActualSaveAndCopy,
   togglePatientPinned,
   togglePatientArchived,
+  togglePatientRoundSeen,
   movePatientByOffset,
-  onPatientDragStart,
-  onPatientDragOver,
-  onPatientDrop,
-  onPatientDragEnd,
   toggleArchivedSection,
   toggleSettingsSection,
   toggleSettingsDropdown,
   closeSettingsDropdown,
   openTeamSyncFromHeader,
+  toggleConnectionDropdown,
+  closeConnectionDropdown,
+  copyLanInviteLinkFromUi,
   checkForAppUpdates,
   setUpdateChannel,
   setUpdateTelemetryEnabled,
@@ -10079,7 +12814,11 @@ Object.assign(window, {
   onPatientBackupFileChosen,
   onBackupFileChosen,
   procesarReporte,
+  procesarYEnviarExpediente,
   limpiarReporte,
+  openLabDisplayPrefsModal,
+  closeLabDisplayPrefsModal,
+  onLabDisplayPrefsChanged,
   replayLabHistorySet,
   reprocessLabHistorySet,
   deleteLabHistorySet,
@@ -10105,10 +12844,12 @@ Object.assign(window, {
   updateSOAPBalance,
   closeTendDetail,
   toggleTendSection,
+  toggleTendAbnormalOnlyFilter,
   tendHideSeriesFromCard,
   tendUnhideSeries,
   tendResetAllHiddenSeries,
-  toggleTendHiddenBar,
+  openTendHiddenModal,
+  closeTendHiddenModal,
   selectPatient,
   deletePatient,
   openSOAPModal,
@@ -10119,6 +12860,8 @@ Object.assign(window, {
   toggleTodo,
   deleteTodo,
   setTodoPriority,
+  openFullExpedienteFromRound,
+  returnToRoundOverview,
   updateNote,
   updateDx,
   removeDx,
@@ -10150,5 +12893,6 @@ Object.assign(window, {
   restorePreimportBackupPrompt,
   syncPreimportBackupUi,
   openLabHistoryDedupeReview,
-  consolidateLabHistoryByDayAndTipo
+  consolidateLabHistoryByDayAndTipo,
+  copyLabSetSourceText
 });

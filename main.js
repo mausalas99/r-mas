@@ -1,6 +1,7 @@
 const { app, BrowserWindow, Menu, shell, dialog, ipcMain } = require('electron');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { autoUpdater } = require('electron-updater');
 
 // Reducir uso de GPU — elimina proceso GPU en idle (~50-100 MB RAM)
@@ -32,7 +33,7 @@ function serializeReleaseNotes(info) {
 }
 
 function createWindow() {
-  mainWindow = new BrowserWindow({
+  const winOpts = {
     width: 1280,
     height: 900,
     minWidth: 960,
@@ -46,7 +47,13 @@ function createWindow() {
       backgroundThrottling: true, // throttle renderer cuando window no está en foco
       spellcheck: false,          // deshabilitar corrector ortográfico (innecesario)
     },
-  });
+  };
+  // Barra de título integrada con el HTML (macOS); semáforos en el área de cliente
+  if (process.platform === 'darwin') {
+    winOpts.titleBarStyle = 'hiddenInset';
+    winOpts.trafficLightPosition = { x: 14, y: 17 };
+  }
+  mainWindow = new BrowserWindow(winOpts);
 
   mainWindow.loadURL('http://localhost:3738');
 
@@ -183,7 +190,7 @@ ipcMain.on('relaunch-app', () => {
   app.exit(0);
 });
 
-// Canal de actualización (beta | estable). El renderer lo persiste en localStorage
+// Canal de actualización (pre-releases "beta" interno | estable). El renderer lo persiste en localStorage
 // y lo informa por IPC al iniciar y al cambiarlo en Ajustes.
 ipcMain.on('set-update-channel', (_e, channel) => {
   const isBeta = String(channel || '').toLowerCase() === 'beta';
@@ -228,7 +235,57 @@ ipcMain.handle('lan-host-write-team-code', (_e, plain) => {
   }
 });
 
-// ── App menu ──────────────────────────────────────────────────────
+/** Borra el estado del host LAN (salas/pacientes en ese JSON). Útil tras error HTTP 500 por cambio de código. */
+ipcMain.handle('lan-reset-squad-host-state', () => {
+  try {
+    const filePath = path.join(app.getPath('userData'), 'lan-squad-host-state.json');
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e && e.message ? e.message : String(e) };
+  }
+});
+
+ipcMain.handle('lan-get-effective-team-code', () => {
+  try {
+    const { readEffectiveLanTeamCode } = require('./lan-squad/effective-team-code.js');
+    const out = readEffectiveLanTeamCode({ userDataPath: app.getPath('userData') });
+    return { ok: true, code: out.code, source: out.source };
+  } catch (e) {
+    return { ok: false, error: e && e.message ? e.message : String(e) };
+  }
+});
+
+/** URL sugerida http://<IPv4-LAN>:3738 para que otras R+ en la misma red se conecten al host. */
+function pickLanCandidateBaseUrl() {
+  const port = 3738;
+  const nets = os.networkInterfaces();
+  const candidates = [];
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name] || []) {
+      const fam = net.family;
+      if (fam !== 'IPv4' && fam !== 4) continue;
+      if (net.internal) continue;
+      const addr = net.address;
+      if (!addr || addr === '127.0.0.1') continue;
+      candidates.push({ name, address: addr });
+    }
+  }
+  if (!candidates.length) return '';
+  const prefer = (n) => /en0|eth0|wlan|wi-?fi|wifi|ethernet|enp|wlp/i.test(n);
+  candidates.sort((a, b) => {
+    const pa = prefer(a.name) ? 0 : 1;
+    const pb = prefer(b.name) ? 0 : 1;
+    if (pa !== pb) return pa - pb;
+    return String(a.address).localeCompare(String(b.address));
+  });
+  const ip = candidates[0].address;
+  return `http://${ip}:${port}`;
+}
+
+ipcMain.handle('get-lan-candidate-base-url', () => pickLanCandidateBaseUrl());
 function buildMenu() {
   const version = app.getVersion();
   const isMac = process.platform === 'darwin';

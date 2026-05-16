@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseCultivo_ } from './labs.js';
+import { parseCultivo_, procesarLabs, extractMicSortKey, buildAtbRisSummaryHtml } from './labs.js';
 
 const norm = (t) => t.replace(/\s+/g, ' ');
 
@@ -86,6 +86,8 @@ test('cultivo líquido peritoneal: tipo, pseudomonas y antibiograma', () => {
   const raw = `
 Expediente:	1929604-8	Solicitud:	2605071010
 Nombre:	CORONADO PALOMO RAUL	Fecha Registro:	07/05/2026 04:32:46 p. m.
+Sexo:	MASCULINO	Ubicación:	NEUROMEDICA
+Edad:	69	Medico:	A QUIEN CORRESPONDA
 BACTERIOLOGIA
 Estudio		Resultado	Unidades	Valor de Referencia
 LIQUIDO PERITONEAL
@@ -146,6 +148,7 @@ MICROORGANISMO
 `;
   const out = parseCultivo_(raw, norm(raw));
   assert.match(out, /LIQUIDO PERITONEAL 07\/05: PSEUDOMONAS AERUGINOSA/);
+  assert.doesNotMatch(out, /NEUROMEDICA/i);
   assert.match(out, /\bATB R: CAZ \| I: FEP\b/);
   assert.match(out, /S: CIPRO, IMI, LVX, MERO, PIP\/TAZO, TOBRA/);
 });
@@ -259,5 +262,50 @@ COMENTARIO:
 RESISTENTE A CARBAPENEMICOS
 `;
   const out = parseCultivo_(raw, norm(raw));
+  assert.match(out, /Acinetobacter baumannii/i);
   assert.match(out, /Carb-R|CRE/i);
+});
+
+test('procesarLabs: Ubicación del encabezado es del paciente (no se antepone al cultivo)', () => {
+  const raw = [
+    'Expediente:\t1\tSolicitud:\t2',
+    'Nombre:\tPACIENTE\tFecha Registro:\t07/05/2026',
+    'Sexo:\tMASCULINO\tUbicación:\tNEUROMEDICA',
+    'Edad:\t69',
+    'BACTERIOLOGIA',
+    'UROCULTIVO POR SONDA',
+    'PRODUCTO',
+    '*',
+    'MICROORGANISMO',
+    '*',
+    'Escherichia coli',
+  ].join('\n');
+  const r = procesarLabs(raw);
+  assert.equal(r.patient.ubicacion, 'NEUROMEDICA');
+  const joined = (r.resLabs || []).join('\n');
+  assert.doesNotMatch(joined, /NEUROMEDICA/i);
+  assert.match(joined, /UROCULTIVO|POR SONDA|Escherichia coli/i);
+});
+
+test('extractMicSortKey: primer valor numérico del CMI', () => {
+  assert.equal(extractMicSortKey('<=8'), 8);
+  assert.equal(extractMicSortKey('>=256'), 256);
+  assert.equal(extractMicSortKey('\u226564'), 64);
+  assert.ok(Number.isNaN(extractMicSortKey('')));
+});
+
+test('buildAtbRisSummaryHtml: títulos por categoría y orden S por CMI ascendente', () => {
+  const sens = [
+    { med: 'AAA', mic: '16', interp: 'S' },
+    { med: 'BBB', mic: '4', interp: 'S' },
+    { med: 'CCC', mic: '≥64', interp: 'R' },
+    { med: 'DDD', mic: '8', interp: 'I' },
+  ];
+  const h = buildAtbRisSummaryHtml(sens);
+  assert.match(h, /Resistencias/);
+  assert.match(h, /Indeterminado/);
+  assert.match(h, /Sensible/);
+  const idxBbb = h.indexOf('atb-ris-drug">BBB<');
+  const idxAaa = h.indexOf('atb-ris-drug">AAA<');
+  assert.ok(idxBbb > 0 && idxAaa > idxBbb, 'en S, menor CMI primero');
 });

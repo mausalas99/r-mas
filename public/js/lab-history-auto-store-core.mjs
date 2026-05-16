@@ -2,6 +2,11 @@ function normalizeText(value) {
   return String(value == null ? '' : value).trim();
 }
 
+/** Texto fuente colapsado — útil para detectar pegados repetidos. */
+export function normalizedSourceText(s) {
+  return normalizeText(s && s.sourceText).replace(/\s+/g, ' ');
+}
+
 export function normalizeLabLine(line) {
   return normalizeText(line).replace(/\s+/g, ' ');
 }
@@ -105,4 +110,73 @@ export function findDuplicateLabSetIdsToRemove(sets) {
     remove = remove.concat(groups[i].removeIds);
   }
   return remove;
+}
+
+/**
+ * Mismo informe pegado (sourceText normalizado) en varios ids del mismo paciente.
+ */
+export function findNormalizedSourceDuplicateGroups(sets) {
+  var list = (sets || []).filter(function (s) {
+    if (!s || s.id == null || String(s.id) === '') return false;
+    return normalizedSourceText(s).length > 24;
+  });
+  var by = Object.create(null);
+  for (var i = 0; i < list.length; i++) {
+    var s = list[i];
+    var k = normalizedSourceText(s);
+    if (!by[k]) by[k] = [];
+    by[k].push(s);
+  }
+  var groups = [];
+  Object.keys(by).forEach(function (k) {
+    var arr = by[k];
+    if (arr.length < 2) return;
+    arr.sort(compareLabSetIdForDedupe);
+    groups.push({
+      kind: 'sourceText',
+      preview: k.slice(0, 72) + (k.length > 72 ? '…' : ''),
+      ids: arr.map(function (x) {
+        return String(x.id);
+      }),
+      fechas: arr.map(function (x) {
+        return normalizeDateValue(x.fecha);
+      }),
+    });
+  });
+  return groups;
+}
+
+/**
+ * Misma fecha y hora declaradas pero líneas de resultado distintas (no equivalentes).
+ */
+export function findConflictingSameDateTimeGroups(sets) {
+  var list = (sets || []).filter(function (s) {
+    return s && s.id != null && String(s.id) !== '';
+  });
+  var by = Object.create(null);
+  for (var i = 0; i < list.length; i++) {
+    var s = list[i];
+    var k = normalizeDateValue(s.fecha) + '\x01' + normalizeTimeValue(s.hora);
+    if (!by[k]) by[k] = [];
+    by[k].push(s);
+  }
+  var out = [];
+  Object.keys(by).forEach(function (k) {
+    var arr = by[k];
+    if (arr.length < 2) return;
+    var base = arr[0];
+    var allSame = arr.every(function (s) {
+      return areLabSetsEquivalent(s.resLabs || [], base.resLabs || []);
+    });
+    if (allSame) return;
+    out.push({
+      kind: 'sameDateTimeDifferentLabs',
+      fecha: base.fecha,
+      hora: base.hora,
+      ids: arr.map(function (x) {
+        return String(x.id);
+      }),
+    });
+  });
+  return out;
 }

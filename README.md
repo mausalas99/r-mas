@@ -25,7 +25,19 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 ---
 
-**Versión estable actual:** [3.0.2](https://github.com/mausalas99/r-mas/releases/tag/v3.0.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [3.2.0](https://github.com/mausalas99/r-mas/releases/tag/v3.2.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+
+---
+
+## R+ 3.2.0 (laboratorio, pacientes Sortable, pase, estable)
+
+- **Laboratorio** — Limpiar entrada tras procesar con resultados; gasometría extendida con etiqueta e interruptor alineados al comportamiento esperado.
+- **Pacientes** — Orden por arrastre por sección (SortableJS); tarjetas y modo ronda más compactos.
+- **Pase** — Agenda + Pendientes en fila; medicación con dosis **solo antes de `//`**, chips compactos y UI grandes abreviadas (p. ej. 2,4M UI).
+- **Receta** — `dosisBeforeSlash` en el núcleo compartido entre exportes y vista Pase.
+- **Actualizaciones** — Canal por defecto Estable; pre-releases como opción explícita en Ajustes (sin presentar la app como “beta”).
+
+Notas: `docs/RELEASE_NOTES_3.2.0.txt`.
 
 ---
 
@@ -54,7 +66,7 @@ Notas: `docs/RELEASE_NOTES_3.0.1.txt`.
 ## R+ 3.0.0 (modos Sala/Interconsulta, Estado Actual, Listado de Problemas, anion gap)
 
 - **Modos** — Sala oculta Nota/Indicaciones y expone **Estado Actual** y **Listado de Problemas**; Interconsulta mantiene el comportamiento original. Default: Sala. En Sala, el alta de paciente usa **Servicio** (con default configurable en Mi Perfil) en lugar de Área.
-- **Estado Actual** — Botón rápido en el expediente que reusa la Plantilla de Evolución sin **Subjetivo**: guarda el snapshot por paciente con timestamp y lo copia al portapapeles.
+- **Estado Actual** — Botón rápido en la **barra del encabezado** (junto al modo de trabajo) que reusa la Plantilla de Evolución sin **Subjetivo**: guarda el snapshot por paciente con timestamp y lo copia al portapapeles.
 - **Listado de Problemas** — Pestaña con **Activos / Inactivos** sin límite, fecha por problema, drag-and-drop y auto-save. Generador `.docx` con numeración nativa `a) b) c)` de Word, títulos en negritas y firma editable (médicos por defecto se configuran en Mi Perfil).
 - **Anion gap** — AG (Na − (Cl + HCO3)) se calcula desde Na/Cl de Química Sanguínea o Electrolitos Séricos del mismo reporte; si no hay química, no se muestra. Se marca cuando cae fuera de 8–12 mEq/L.
 - **Calcio ionizado** — Extracción y marcado desde el bloque de Observaciones de la gasometría.
@@ -95,7 +107,7 @@ Notas: `docs/RELEASE_NOTES_2.3.1.txt`.
 ## R+ 2.3.0 (tendencias por sección, ocultos y gasometría)
 
 - **Tendencias** — Agrupación por tipo de estudio; secciones colapsables; sin mezclar el mismo analito entre paneles (p. ej. Hto biometría vs gasometría).
-- **Ocultos** — Ojo en cada tarjeta; barra con chips, «Mostrar todos» y barra colapsable con contador; preferencias persistidas.
+- **Ocultos** — Ojo en cada tarjeta; botón **Ocultos (n)** abre una ventana con chips y «Mostrar todos»; preferencias persistidas.
 - **Gasometría** — Extracción opcional de hematocrito del bloque de gases para su serie en tendencias.
 
 Notas: `docs/RELEASE_NOTES_2.3.0.txt`.
@@ -270,14 +282,14 @@ La app busca actualizaciones automáticamente al iniciar. También puedes verifi
 
 En **macOS**, el instalador automático (Squirrel) solo acepta actualizaciones firmadas de forma compatible con la app ya instalada; el **identificador de paquete** (`appId`) debe mantenerse entre versiones. El nombre visible sigue siendo «R+»; el id interno no afecta el título de la ventana.
 
-### Canal de actualizaciones (estable / beta)
+### Canal de actualizaciones (estable / pre-releases)
 
 En **Ajustes → Aplicación y actualizaciones → Canal de actualizaciones** puedes elegir entre:
 
 - **Estable** (predeterminado): solo recibes releases publicados oficialmente.
-- **Beta**: además recibes pre-releases. El modal de actualización muestra un distintivo **Beta**. Puedes cambiar a Estable en cualquier momento y la próxima verificación solo considerará releases estables.
+- **Pre-releases (borradores)**: además recibes borradores de GitHub (pre-releases). El modal de actualización muestra un distintivo **Pre-release**. Puedes volver a Estable en cualquier momento y la próxima verificación solo considerará releases estables.
 
-El canal se guarda localmente (`rpc-settings.updateChannel`) y se sincroniza con `electron-updater` al iniciar la app vía IPC (`autoUpdater.allowPrerelease`).
+El canal se guarda localmente (`rpc-settings.updateChannel`, valores internos `estable` o `beta`) y se sincroniza con `electron-updater` al iniciar la app vía IPC (`autoUpdater.allowPrerelease`).
 
 ### Telemetría anónima de actualización (opcional)
 
@@ -316,7 +328,7 @@ No hay reversión automática del binario instalado. Si una versión nueva intro
    - **Mac:** abre el `.dmg` y arrastra **R+** a **Aplicaciones**. Si macOS ofrece **Reemplazar**, acéptalo. Si aparece un aviso de firma inválida, elimina R+ desde `Aplicaciones` (a la Papelera) y vuelve a instalar desde el `.dmg` descargado.
    - **Windows:** ejecuta el `.exe` del instalador; por defecto sobrescribe la instalación actual.
 4. Abre R+ y confirma la versión en **Ajustes → Aplicación → Versión**.
-5. Si la auto-actualización vuelve a proponerte la versión nueva y aún no quieres actualizar, en macOS puedes **esperar 24h** (la app respeta el snooze por versión), o cambiar a canal **Estable** si estabas en **Beta**.
+5. Si la auto-actualización vuelve a proponerte la versión nueva y aún no quieres actualizar, en macOS puedes **esperar 24h** (la app respeta el snooze por versión), o cambiar a canal **Estable** si estabas en **Pre-releases**.
 
 **Datos locales y compatibilidad:**
 

@@ -57,7 +57,7 @@ function attachWsHub(httpServer, { getState, pathName = '/api/lan/v1/ws' }) {
 
   wss.on('connection', (ws, req) => {
     const u = new URL(req.url || '', 'http://localhost');
-    const channel = u.searchParams.get('channel') || 'calendar';
+    const channel = u.searchParams.get('channel') || 'sync';
     joinRoom(ws, channel);
 
     ws.on('message', (raw) => {

@@ -9,10 +9,20 @@ import {
   extractDiaTratamiento,
   classifyMedicationSoapCategory,
   applyMedCatalogOverlay,
+  dosisBeforeSlash,
 } from './med-receta-core.mjs';
 
 beforeEach(() => {
   applyMedCatalogOverlay({ accents: {}, soapTokens: { vasop: [], abx: [], analgesia: [], antihta: [] } });
+});
+
+test('dosisBeforeSlash descarta todo tras // para dosis aplicada', () => {
+  assert.equal(
+    dosisBeforeSlash('2400000 UI // 1ERA DOSIS 12 DE MAYO, 2DA 19 DE MAYO *DIA# 4*'),
+    '2400000 UI'
+  );
+  assert.equal(dosisBeforeSlash('160 MG // SOLUCION STANFORD *DIA# 4*'), '160 MG');
+  assert.equal(dosisBeforeSlash('8 MG'), '8 MG');
 });
 
 test('parseMedicationPaste extrae nombre, via, dosis, frecuencia y diaTratamiento null sin DIA#', () => {

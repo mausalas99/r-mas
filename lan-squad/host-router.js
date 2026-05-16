@@ -5,7 +5,13 @@ const { verifyTeamCode } = require('./team-code.js');
 function teamCodeMiddleware(getState) {
   return (req, res, next) => {
     const code = req.get('x-lan-team-code') || req.query.code || '';
-    const st = getState();
+    let st;
+    try {
+      st = getState();
+    } catch (e) {
+      const msg = (e && e.message) || 'host store error';
+      return res.status(500).json({ error: msg });
+    }
     if (!verifyTeamCode(code, st.teamCodeHash)) {
       return res.status(401).json({ error: 'invalid team code' });
     }
@@ -17,11 +23,11 @@ function createLanRouter({ store, broadcast }) {
   const r = express.Router();
   const getState = () => store.getState();
 
+  r.use(teamCodeMiddleware(getState));
+
   r.get('/ping', (_req, res) => {
     res.json({ ok: true, lan: true });
   });
-
-  r.use(teamCodeMiddleware(getState));
 
   r.get('/patients', (_req, res) => {
     res.json({ patients: store.getState().patients });
@@ -34,50 +40,10 @@ function createLanRouter({ store, broadcast }) {
       delete body.expectedVersion;
       body.id = req.params.id;
       const out = store.upsertPatient(body, expected);
-      broadcast('calendar', { type: 'patients-updated' });
+      broadcast('sync', { type: 'patients-updated' });
       res.json({ patient: out });
     } catch (e) {
       if (e.code === 'CONFLICT') return res.status(409).json({ error: 'conflict', patient: e.serverPatient });
-      res.status(400).json({ error: e.message });
-    }
-  });
-
-  r.post('/patients-with-event', express.json({ limit: '2mb' }), (req, res) => {
-    try {
-      const { patient, event, clientPatientId } = req.body || {};
-      const out = store.createPatientAndCalendarEvent({ patient, event, clientPatientId });
-      broadcast('calendar', { type: 'calendar-changed' });
-      res.status(201).json(out);
-    } catch (e) {
-      res.status(400).json({ error: e.message });
-    }
-  });
-
-  r.post('/calendar-events', express.json({ limit: '512kb' }), (req, res) => {
-    try {
-      const { patientId, start, end, procedure, location, materialReady } = req.body || {};
-      const event = store.addCalendarEvent({ patientId, start, end, procedure, location, materialReady });
-      broadcast('calendar', { type: 'calendar-changed' });
-      res.status(201).json({ event });
-    } catch (e) {
-      res.status(400).json({ error: e.message });
-    }
-  });
-
-  r.get('/calendar-events', (_req, res) => {
-    res.json({ events: store.listCalendarEvents() });
-  });
-
-  r.patch('/calendar-events/:id', express.json({ limit: '512kb' }), (req, res) => {
-    try {
-      const expected = req.body && req.body.expectedVersion != null ? Number(req.body.expectedVersion) : null;
-      const patch = { ...req.body };
-      delete patch.expectedVersion;
-      const out = store.patchCalendarEvent(req.params.id, patch, expected);
-      broadcast('calendar', { type: 'calendar-changed', eventId: out.id });
-      res.json({ event: out });
-    } catch (e) {
-      if (e.code === 'CONFLICT') return res.status(409).json({ error: 'conflict', event: e.serverEvent });
       res.status(400).json({ error: e.message });
     }
   });

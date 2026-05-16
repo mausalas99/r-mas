@@ -30,15 +30,17 @@ export class LanClient extends EventTarget {
 
   async fetch(path, opts = {}) {
     const url = `${this.baseUrl()}${path}`;
+    const team = this._cfg ? String(this._cfg.teamCode ?? '') : '';
     const headers = {
       ...(opts.headers || {}),
-      'X-Lan-Team-Code': this._cfg.teamCode,
+      'X-Lan-Team-Code': team,
     };
     return fetch(url, { ...opts, headers });
   }
 
-  connectCalendarChannel() {
-    this._openWs('calendar');
+  /** WebSocket de presencia / notificaciones LAN (pacientes, etc.); no es el relay `live:*` de salas. */
+  connectSyncChannel() {
+    this._openWs('sync');
   }
 
   connectLiveChannel(roomId) {

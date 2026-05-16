@@ -1,0 +1,52 @@
+R+ 3.2.0 (estable — laboratorio, pacientes, pase, actualizaciones)
+===================================================================
+
+Fecha: 2026-05-15
+
+## Resumen
+
+Versión estable **3.2**: refinamiento del laboratorio, listado de pacientes con orden por arrastre, pase quirúrgico y ajustes de UX. La app deja el posicionamiento “beta”: el canal por defecto de actualización sigue siendo **Estable**; la opción de borradores de GitHub aparece como **Pre-releases** en Ajustes.
+
+## Laboratorio
+
+- Tras **Procesar**, si hay resultados, el área de texto de entrada se limpia por defecto (el texto permanece disponible desde el historial / expediente).
+- Misma lógica antes de **Procesar y abrir expediente**.
+- Preferencia **Gasometría extendida**: etiqueta aclarada e inversión del interruptor para que activado signifique interpretación extendida visible.
+
+## Pacientes y vistas
+
+- Reordenamiento con **SortableJS** por secciones (fijados, activos, archivados), sin mezclar entre secciones.
+- Arrastre con fallback y vista previo bajo el cursor (menos “ghost”).
+- Tarjetas más compactas; chips de barra tipo outline; metadatos sin duplicar LAB/Pin; modo ronda con nombres acotados a dos líneas.
+- **`updatePatient`**: coincidencia de id por cadena (`String(id)`) para refrescar paneles (pase, ronda, agenda) de forma consistente.
+
+## Pase
+
+- **Agenda** y **Pendientes** en una sola fila, con **Pendientes a la izquierda**.
+- **Medicamentos en tarjetas**
+  - Dosis efectiva igual que en exportes de receta: solo el texto **antes de `//`** (comentarios del HIS como calendarios, “SOLUCION STANFORD”, etc., no aparecen en la tarjeta).
+  - Tras ese corte sigue aplicándose la lógica de **días de la semana / LOS** cuando aún viene pegada esa parte en la columna útil del HIS.
+  - **UI/IU muy altas**: abreviación compacta tipo **2,4M UI**, **10M UI**.
+  - Número + unidad agrupados; chips de dosis/vía/frecuencia al **ancho del contenido** (sin pastillas que estiran todo el ancho del card en vacío).
+  - **Nombre**: menos cortes agresivos a mitad de palabra.
+  - Badge **Día N** cuando aplica (`*DIA#*` en el pegado original).
+- Pista de sidebar en ronda: sin texto duplicado de atajos; teclas arriba y texto debajo.
+
+## Receta / núcleo
+
+- **`dosisBeforeSlash`** exportado en `med-receta-core.mjs` para reutilizar la misma regla (“solo dosis aplicada antes de `//`”); prueba automatizada incluida.
+
+## Actualizaciones (Electron)
+
+- UI: pill del modal **Pre-release** cuando el usuario eligió canal de pre-releases; copia en Ajustes alineada con “borradores de GitHub” en lugar del término “beta” como etiqueta principal del producto.
+
+## LAN / equipo (infra)
+
+- Cambios relacionados con host/router, código de equipo y pruebas automatizadas asociadas (ver historial git del repositorio).
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v3.2.0
+
+- Mac: `R+-3.2.0-arm64.dmg`, `R+-3.2.0-x64.dmg` (y artefactos zip si se publican).
+- Windows: `R+-3.2.0-x64.exe`.

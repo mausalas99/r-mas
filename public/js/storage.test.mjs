@@ -96,4 +96,67 @@ describe('lan config', () => {
     storage.saveLanConfig(null);
     assert.strictEqual(storage.getLanConfig(), null);
   });
+
+  it('LAN UI role defaults to client', () => {
+    assert.strictEqual(storage.getLanUiRole(), 'client');
+  });
+
+  it('persists LAN UI role host or client', () => {
+    storage.saveLanUiRole('host');
+    assert.strictEqual(storage.getLanUiRole(), 'host');
+    storage.saveLanUiRole('client');
+    assert.strictEqual(storage.getLanUiRole(), 'client');
+  });
+});
+
+describe('scheduled procedures (agenda v1)', () => {
+  beforeEach(() => {
+    for (const k of Object.keys(store)) delete store[k];
+  });
+
+  const sample = () => ({
+    id: 'e1',
+    patientId: 'p1',
+    procedure: 'Cirugia',
+    location: 'Qx1',
+    materialApproved: false,
+    anesthesiaScheduled: true,
+    start: '2026-05-12T15:00:00.000Z',
+    createdAt: '2026-05-12T10:00:00.000Z',
+    updatedAt: '2026-05-12T10:00:00.000Z',
+  });
+
+  it('returns [] when empty', () => {
+    assert.deepStrictEqual(storage.getScheduledProcedures(), []);
+  });
+
+  it('round-trips valid events', () => {
+    storage.saveScheduledProcedures([sample()]);
+    const list = storage.getScheduledProcedures();
+    assert.strictEqual(list.length, 1);
+    assert.strictEqual(list[0].id, 'e1');
+    assert.strictEqual(list[0].patientId, 'p1');
+  });
+
+  it('drops demo-linked events on persist', () => {
+    storage.saveScheduledProcedures([
+      sample(),
+      { ...sample(), id: 'bad', patientId: 'demo-x' },
+    ]);
+    assert.strictEqual(storage.getScheduledProcedures().length, 1);
+  });
+
+  it('treats malformed JSON as empty', () => {
+    store['rpc-scheduled-procedures'] = '[';
+    assert.deepStrictEqual(storage.getScheduledProcedures(), []);
+  });
+
+  it('removeScheduledProceduresForPatient filters by patientId', () => {
+    storage.saveScheduledProcedures([sample(), { ...sample(), id: 'e2', patientId: 'p2' }]);
+    storage.removeScheduledProceduresForPatient('p1');
+    assert.deepStrictEqual(
+      storage.getScheduledProcedures().map((x) => x.id),
+      ['e2']
+    );
+  });
 });

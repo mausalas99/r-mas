@@ -38,7 +38,6 @@ function defaultState(teamCodeHash) {
     teamCodeHash,
     patients: [],
     rooms: [],
-    calendarEvents: [],
   };
 }
 
@@ -59,7 +58,7 @@ function createHostStore({ filePath, teamCodePlain }) {
     }
     s.patients = Array.isArray(s.patients) ? s.patients : [];
     s.rooms = Array.isArray(s.rooms) ? s.rooms : [];
-    s.calendarEvents = Array.isArray(s.calendarEvents) ? s.calendarEvents : [];
+    delete s.calendarEvents;
     return s;
   }
 
@@ -69,66 +68,6 @@ function createHostStore({ filePath, teamCodePlain }) {
 
   function getState() {
     return load();
-  }
-
-  function createPatientAndCalendarEvent({ patient, event, clientPatientId }) {
-    const state = load();
-    const hostPatientId = newId('hp');
-    const t = nowIso();
-    const p = {
-      ...patient,
-      id: hostPatientId,
-      clientOriginId: String(clientPatientId || ''),
-      version: 1,
-      updatedAt: t,
-    };
-    const evId = newId('ev');
-    const cal = {
-      id: evId,
-      patientId: hostPatientId,
-      start: String(event.start || ''),
-      end: String(event.end || ''),
-      procedure: String(event.procedure || ''),
-      location: String(event.location || ''),
-      materialReady: !!event.materialReady,
-      createdAt: t,
-      updatedAt: t,
-      version: 1,
-    };
-    if (!cal.start || !cal.procedure) {
-      throw new Error('invalid event: start and procedure required');
-    }
-    state.patients.push(p);
-    state.calendarEvents.push(cal);
-    save(state);
-    return { hostPatientId, event: cal };
-  }
-
-  function addCalendarEvent({ patientId, start, end, procedure, location, materialReady }) {
-    const state = load();
-    if (!state.patients.some((p) => p.id === patientId)) {
-      throw new Error('unknown patient');
-    }
-    const t = nowIso();
-    const evId = newId('ev');
-    const cal = {
-      id: evId,
-      patientId: String(patientId || ''),
-      start: String(start || ''),
-      end: String(end || ''),
-      procedure: String(procedure || ''),
-      location: String(location || ''),
-      materialReady: !!materialReady,
-      createdAt: t,
-      updatedAt: t,
-      version: 1,
-    };
-    if (!cal.start || !cal.procedure) {
-      throw new Error('invalid event: start and procedure required');
-    }
-    state.calendarEvents.push(cal);
-    save(state);
-    return cal;
   }
 
   function upsertPatient(patient, expectedVersion) {
@@ -150,28 +89,6 @@ function createHostStore({ filePath, teamCodePlain }) {
     }
     const next = { ...cur, ...patient, version: Number(cur.version || 1) + 1, updatedAt: t };
     state.patients[idx] = next;
-    save(state);
-    return next;
-  }
-
-  function listCalendarEvents() {
-    return load().calendarEvents.slice();
-  }
-
-  function patchCalendarEvent(id, patch, expectedVersion) {
-    const state = load();
-    const idx = state.calendarEvents.findIndex((e) => e.id === id);
-    if (idx === -1) throw new Error('not found');
-    const cur = state.calendarEvents[idx];
-    if (expectedVersion != null && Number(cur.version) !== Number(expectedVersion)) {
-      const err = new Error('conflict');
-      err.code = 'CONFLICT';
-      err.serverEvent = cur;
-      throw err;
-    }
-    const t = nowIso();
-    const next = { ...cur, ...patch, version: Number(cur.version || 1) + 1, updatedAt: t };
-    state.calendarEvents[idx] = next;
     save(state);
     return next;
   }
@@ -205,11 +122,7 @@ function createHostStore({ filePath, teamCodePlain }) {
 
   return {
     getState,
-    createPatientAndCalendarEvent,
-    addCalendarEvent,
     upsertPatient,
-    listCalendarEvents,
-    patchCalendarEvent,
     listRooms,
     createRoom,
     renameRoom,

@@ -20,71 +20,35 @@ describe('host-store', () => {
     const st = store.getState();
     assert.strictEqual(st.patients.length, 0);
     assert.strictEqual(st.rooms.length, 0);
-    assert.strictEqual(st.calendarEvents.length, 0);
+    assert.strictEqual(st.calendarEvents, undefined);
     assert.strictEqual(st.teamCodeHash, hashTeamCode('abc'));
   });
 
-  it('createPatientAndCalendarEvent persiste ambos o ninguno', () => {
+  it('upsertPatient crea y actualiza con versión', () => {
     const store = createHostStore({ filePath, teamCodePlain: 'x' });
-    const patient = {
-      id: 'client-local-1',
-      nombre: 'Test',
-      registro: 'R1',
-      edad: '40',
-      sexo: 'M',
-      area: '',
-      servicio: '',
-      cuarto: '',
-      cama: '',
-      fromLab: false,
-    };
-    const ev = {
-      start: '2026-05-13T10:00:00.000Z',
-      end: '2026-05-13T11:00:00.000Z',
-      procedure: 'Cateterismo',
-      location: 'Hemodinamia',
-      materialReady: false,
-    };
-    const out = store.createPatientAndCalendarEvent({ patient, event: ev, clientPatientId: 'client-local-1' });
-    assert.ok(out.hostPatientId && out.hostPatientId !== 'client-local-1');
-    assert.ok(out.event.id);
+    const p1 = store.upsertPatient(
+      { id: 'p1', nombre: 'Uno', registro: 'R1', edad: '30', sexo: 'F' },
+      null
+    );
+    assert.strictEqual(p1.version, 1);
     const st = store.getState();
     assert.strictEqual(st.patients.length, 1);
-    assert.strictEqual(st.calendarEvents.length, 1);
-    assert.strictEqual(st.calendarEvents[0].patientId, out.hostPatientId);
+    const p2 = store.upsertPatient(
+      { id: 'p1', nombre: 'Uno x', registro: 'R1', edad: '30', sexo: 'F' },
+      1
+    );
+    assert.strictEqual(p2.version, 2);
+    assert.strictEqual(store.getState().patients[0].nombre, 'Uno x');
   });
 
-  it('addCalendarEvent agrega evento para paciente host existente', () => {
-    const store = createHostStore({ filePath, teamCodePlain: 'x' });
-    const patient = {
-      id: 'client-local-1',
-      nombre: 'Test',
-      registro: 'R1',
-      edad: '40',
-      sexo: 'M',
-      area: '',
-      servicio: '',
-      cuarto: '',
-      cama: '',
-      fromLab: false,
-    };
-    const ev = {
-      start: '2026-05-13T10:00:00.000Z',
-      end: '2026-05-13T11:00:00.000Z',
-      procedure: 'Cateterismo',
-      location: 'Hemodinamia',
-      materialReady: false,
-    };
-    const out = store.createPatientAndCalendarEvent({ patient, event: ev, clientPatientId: 'client-local-1' });
-    store.addCalendarEvent({
-      patientId: out.hostPatientId,
-      start: '2026-05-14T10:00:00.000Z',
-      end: '2026-05-14T11:00:00.000Z',
-      procedure: 'Endoscopia',
-      location: 'Endoscopía',
-      materialReady: true,
-    });
-    const st = store.getState();
-    assert.strictEqual(st.calendarEvents.length, 2);
+  it('createRoom y listRooms', () => {
+    const store = createHostStore({ filePath, teamCodePlain: 'z' });
+    assert.strictEqual(store.listRooms().length, 0);
+    const r = store.createRoom('Sala E');
+    assert.ok(r.id);
+    assert.strictEqual(r.displayName, 'Sala E');
+    const list = store.listRooms();
+    assert.strictEqual(list.length, 1);
+    assert.strictEqual(list[0].id, r.id);
   });
 });

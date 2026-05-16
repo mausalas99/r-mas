@@ -2,13 +2,15 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Implementar el diseño en [`docs/superpowers/specs/2026-05-13-lan-host-livesync-calendario-global-design.md`](../specs/2026-05-13-lan-host-livesync-calendario-global-design.md): servidor LAN en la máquina host (REST + WebSocket), lista de salas compartida, relay de mensajes para sesiones N≥2, calendario global con checkbox de material, código de equipo, alta atómica paciente+evento desde cliente, mapeo de ids en cliente, pestaña Calendario independiente con el mismo canal de actualización que otras vistas conectadas, y banner de desconexión con solo lectura remota en v1.
+> **Nota:** El spec de diseño LAN `2026-05-13-lan-host-livesync-calendario-global-design.md` fue **retirado** como obsoleto. La agenda de procedimientos (producto vigente para calendario) está en [`2026-05-14-procedure-agenda-week-view-design.md`](../specs/2026-05-14-procedure-agenda-week-view-design.md). Este archivo de plan puede seguir aplicándose solo a trabajo técnico LAN ya empezado; no use el spec eliminado como fuente.
+
+**Goal:** Implementar servidor LAN en la máquina host (REST + WebSocket), lista de salas compartida, relay de mensajes para sesiones N≥2, calendario global con checkbox de material, código de equipo, alta atómica paciente+evento desde cliente, mapeo de ids en cliente, pestaña Calendario independiente con el mismo canal de actualización que otras vistas conectadas, y banner de desconexión con solo lectura remota en v1.
 
 **Architecture:** Extender el `http.Server` existente en `server.js` (puerto 3738) con rutas bajo `/api/lan/v1/*`, CORS para orígenes `http://localhost:3738` y `http://127.0.0.1:3738`, y `WebSocketServer` en el mismo puerto para eventos (`calendar`, `rooms`) y relay de sala LiveSync. Persistencia canónica del host en un JSON atómico bajo `userData/lan-squad-host-state.json` (v1; migración a SQLite opcional después). Renderer: nuevo módulo `public/js/lan-client.mjs` (fetch + WebSocket + `EventTarget` para suscriptores), helpers en `storage.js` para `rpc-lan-config` y `rpc-lan-host-patient-map`, UI en `index.html` + handlers en `app.js`. `main.js` define `process.env.R_PLUS_USER_DATA` antes de `require('./server')`.
 
 **Tech Stack:** Electron 41, Express 5, `ws` (nueva dependencia), Node `crypto` / `fs`, vanilla JS ESM en renderer, `node --test`.
 
-**Spec reference:** cubrir secciones Arquitectura, modelo de datos, cliente mapeo, conflictos, flujos 1–5, errores §4, pruebas §5.
+**Spec reference:** el spec LAN de diseño enlazado antiguamente fue retirado. Para modelo y UI de **agenda de procedimientos** v1 local, ver [`procedure-agenda-week-view-design.md`](../specs/2026-05-14-procedure-agenda-week-view-design.md).
 
 ---
 

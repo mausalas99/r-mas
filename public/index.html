@@ -4,62 +4,414 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>R+</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+(function () {
+  try {
+    if (window.electronAPI && typeof window.electronAPI.getWindowChromeFlags === 'function') {
+      var f = window.electronAPI.getWindowChromeFlags();
+      if (f && f.macTitleBarInset) document.documentElement.classList.add('electron-macos-inset-bar');
+    }
+  } catch (_e) {}
+})();
+(function () {
+  try {
+    var d = localStorage.getItem('rpc-ui-density');
+    var isNormal = true;
+    if (d === 'pase' || d === 'compact') isNormal = false;
+    else if (d === 'normal' || d === 'comfortable') isNormal = true;
+    document.documentElement.classList.toggle('ui-density-normal', isNormal);
+  } catch (_e) {}
+})();
+</script>
 <style>
   :root {
-    --primary:      #1E3A5F;
-    --action:       #2563EB;
-    --action-hover: #1D4ED8;
-    --bg:           #F8FAFC;
+    --primary:      #2D3A54;
+    --action:       #4F56FF;
+    --action-hover: #3d44e0;
+    --bg:           #F2F3F5;
     --surface:      #FFFFFF;
-    --border:       #CBD5E1;
-    --text:         #1E293B;
+    --border:       rgba(15, 23, 42, 0.075);
+    --divider:      rgba(15, 23, 42, 0.05);
+    --text:         #1e293b;
     --text-muted:   #64748B;
     --error:        #DC2626;
     --success:      #16A34A;
-    --lab-chip-bg:  #EFF6FF;
-    --lab-chip-txt: #1D4ED8;
-    --shadow:       0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06);
-    --shadow-md:    0 4px 6px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.05);
+    --lab-chip-bg:  rgba(79, 86, 255, 0.09);
+    --lab-chip-txt: #3d44d6;
+    --accent-gradient: linear-gradient(135deg, #6d73f6 0%, #4f56ff 48%, #3e45d6 100%);
+    --accent-gradient-hover: linear-gradient(135deg, #6369ec 0%, #484fd8 48%, #363cad 100%);
+    --radius-lg:    16px;
+    --radius-md:    12px;
+    --radius-pill:  999px;
+    --shadow:       0 8px 28px rgba(15, 23, 42, 0.06), 0 2px 8px rgba(15, 23, 42, 0.04);
+    --shadow-md:    0 14px 40px rgba(15, 23, 42, 0.08), 0 4px 12px rgba(15, 23, 42, 0.05);
+    --input-fill:   color-mix(in oklab, #f5f6f8 70%, var(--surface));
+    --card-body-bg: color-mix(in oklab, var(--surface) 92%, var(--bg));
     --diagram-line:  #64748B;
     --diagram-label: #64748B;
     --diagram-value: #1E293B;
     --todo-prio-alta: #cf6060;
     --todo-prio-media: #b45309;
     --todo-prio-baja: #15803d;
+    /* macOS + titleBarStyle hiddenInset: espacio hasta el primer contenido (logo); los semáforos los pinta el sistema */
+    --titlebar-traffic-gap: 96px;
+    color-scheme: light;
+    --density-space: 1;
+    --density-font: 1;
+    --sidebar-width: 240px;
   }
+  html.ui-density-normal {
+    /* Vista normal: laboratorio / expediente completos; espaciado más cómodo (layout previo al modo Pase). */
+    --density-space: 1.1;
+    --density-font: 1.03;
+    --sidebar-width: min(280px, 34vw);
+  }
+  html.ui-density-normal .patient-list-section-label {
+    font-size: calc(10px * var(--density-font));
+    opacity: 0.88;
+  }
+  /* En compacto/Pase se ocultan acciones secundarias; no usar esta clase en controles que deban verse siempre (p. ej. engrane de Laboratorio). */
+  html.ui-density-normal .card-header-soft-btn-secondary { display: none !important; }
+  html.ui-density-normal .overview-hint { display: none !important; }
+  html:not(.ui-density-normal) .sidebar-ronda-hint { display: flex; }
+  .sidebar-ronda-hint {
+    display: none;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: calc(6px * var(--density-space));
+    padding: 0 calc(10px * var(--density-space)) calc(6px * var(--density-space));
+    font-size: calc(10px * var(--density-font));
+    color: var(--text-muted);
+    line-height: 1.38;
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .sidebar-ronda-hint > span[data-i18n] {
+    width: 100%;
+    min-width: 0;
+  }
+  .sidebar-ronda-hint-keys {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .sidebar-ronda-hint kbd {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: color-mix(in oklab, var(--surface) 88%, var(--bg));
+    color: var(--text-muted);
+  }
+  .patient-list.patient-list--ronda {
+    gap: calc(7px * var(--density-space));
+    padding-bottom: calc(14px * var(--density-space));
+  }
+  .patient-card--roundrow {
+    padding: calc(8px * var(--density-space)) calc(10px * var(--density-space));
+  }
+  .patient-card--roundrow::before {
+    top: calc(8px * var(--density-space));
+    bottom: calc(8px * var(--density-space));
+  }
+  .patient-card--roundrow .patient-card-toolbar {
+    margin-bottom: calc(2px * var(--density-space));
+    opacity: 0.72;
+  }
+  .patient-card--roundrow:hover .patient-card-toolbar,
+  .patient-card--roundrow.active .patient-card-toolbar { opacity: 1; }
+  .roundrow-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: calc(9px * var(--density-space));
+    min-width: 0;
+  }
+  .roundrow-text {
+    flex: 1;
+    min-width: 0;
+  }
+  .patient-card--roundrow .p-name {
+    margin: 0 0 calc(1px * var(--density-space));
+    font-size: calc(11px * var(--density-font));
+    font-weight: 650;
+    line-height: 1.22;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+  .patient-card--roundrow .p-meta {
+    margin: 0;
+    font-size: calc(10px * var(--density-font));
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0.92;
+  }
+  .btn-round-seen {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border);
+    background: color-mix(in oklab, var(--surface) 92%, var(--bg));
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+    padding: 0;
+  }
+  .btn-round-seen:hover {
+    border-color: color-mix(in oklab, var(--action) 40%, var(--border));
+    color: var(--action);
+  }
+  .patient-card--roundrow-seen {
+    border-color: color-mix(in oklab, var(--success) 38%, var(--border));
+  }
+  .patient-card--roundrow-seen .btn-round-seen {
+    background: color-mix(in oklab, var(--success) 16%, var(--surface));
+    color: var(--success);
+    border-color: color-mix(in oklab, var(--success) 45%, var(--border));
+  }
+  /* Vista ronda — panel central (labs + pendientes) */
+  .patient-ronda-overview {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    background: color-mix(in oklab, var(--bg) 35%, transparent);
+  }
+  .ronda-overview-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: calc(14px * var(--density-space)) calc(16px * var(--density-space)) calc(10px * var(--density-space));
+    border-bottom: 1px solid color-mix(in oklab, var(--divider) 88%, transparent);
+    background: var(--surface);
+  }
+  .ronda-overview-title {
+    margin: 0 0 4px;
+    font-size: calc(17px * var(--density-font));
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+  .ronda-overview-sub {
+    margin: 0;
+    font-size: calc(12px * var(--density-font));
+    color: var(--text-muted);
+    line-height: 1.35;
+  }
+  .ronda-overview-header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .ronda-overview-header-actions .secondary {
+    font-size: calc(12px * var(--density-font));
+    padding: 8px 12px;
+  }
+  .ronda-overview-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: calc(14px * var(--density-space)) calc(16px * var(--density-space)) calc(20px * var(--density-space));
+    display: flex;
+    flex-direction: column;
+    gap: calc(14px * var(--density-space));
+  }
+  .ronda-overview-card {
+    border-radius: var(--radius-lg, 12px);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .ronda-overview-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: calc(11px * var(--density-space)) calc(14px * var(--density-space));
+    background: color-mix(in oklab, var(--surface) 90%, var(--bg));
+    border-bottom: 1px solid color-mix(in oklab, var(--divider) 80%, transparent);
+  }
+  .ronda-overview-card-head h3 {
+    margin: 0;
+    font-size: calc(12px * var(--density-font));
+    font-weight: 750;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .ronda-link-btn {
+    background: transparent;
+    border: none;
+    padding: 4px 0;
+    font: inherit;
+    font-size: calc(12px * var(--density-font));
+    font-weight: 600;
+    color: var(--action);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .ronda-link-btn:hover {
+    color: var(--action-hover, var(--action));
+  }
+  .ronda-overview-card-body {
+    padding: calc(12px * var(--density-space)) calc(14px * var(--density-space));
+    font-size: calc(13px * var(--density-font));
+    line-height: 1.45;
+  }
+  .ronda-labs-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+    font-size: calc(12px * var(--density-font));
+    color: var(--text-muted);
+  }
+  .ronda-labs-date { font-weight: 650; color: var(--text); }
+  .ronda-labs-lines {
+    margin: 0;
+    padding: 0 0 0 1.1em;
+    list-style: disc;
+  }
+  .ronda-labs-lines li { margin-bottom: 4px; word-break: break-word; }
+  .ronda-labs-fallback-label {
+    margin: 0 0 8px;
+    font-size: calc(11px * var(--density-font));
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+  .ronda-panel-empty {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: calc(13px * var(--density-font));
+    line-height: 1.45;
+  }
+  .ronda-overview-quick {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-top: 2px;
+  }
+  .ronda-overview-quick button {
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border);
+    background: color-mix(in oklab, var(--surface) 94%, var(--bg));
+    color: var(--text);
+    font: inherit;
+    font-size: calc(12px * var(--density-font));
+    font-weight: 600;
+    padding: 7px 12px;
+    cursor: pointer;
+  }
+  /* Resumen ronda solo se usa en modo Pase; tipografía un poco más legible ahí. */
+  html:not(.ui-density-normal) .ronda-overview-card-body {
+    font-size: calc(14px * var(--density-font));
+    line-height: 1.52;
+  }
+  html:not(.ui-density-normal) .ronda-labs-lines li { margin-bottom: 6px; }
+  html:not(.ui-density-normal) .ronda-labs-meta { margin-bottom: 12px; }
+  .patient-expediente-classic {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .patient-ronda-fullbar {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    background: color-mix(in oklab, var(--surface) 92%, var(--bg));
+    flex-shrink: 0;
+  }
+  .patient-ronda-fullbar button {
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+  .patient-ronda-fullbar button:hover {
+    border-color: color-mix(in oklab, var(--action) 40%, var(--border));
+    color: var(--action);
+  }
+  html:not(.ui-density-normal) .patient-ronda-fullbar.is-visible { display: flex; }
   html.dark {
-    --primary:      #3B82F6;
-    --action:       #60A5FA;
-    --action-hover: #3B82F6;
-    --bg:           #0F1117;
-    --surface:      #1A1D27;
-    --border:       #2D3142;
-    --text:         #E2E8F0;
-    --text-muted:   #94A3B8;
-    --error:        #F87171;
-    --success:      #4ADE80;
-    --lab-chip-bg:  #1E3A5F;
-    --lab-chip-txt: #93C5FD;
-    --shadow:       0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
-    --shadow-md:    0 4px 6px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.3);
+    --primary:      #93C5FD;
+    --action:       #7C83FF;
+    --action-hover: #9aa0ff;
+    --bg:           #0f1118;
+    --surface:      #1b1f2a;
+    --border:       rgba(148, 163, 184, 0.12);
+    --divider:      rgba(148, 163, 184, 0.08);
+    --text:         #e8edf5;
+    --text-muted:   #94a3b8;
+    --error:        #f87171;
+    --success:      #6ee7a8;
+    --lab-chip-bg:  rgba(124, 131, 255, 0.12);
+    --lab-chip-txt: #bac0ff;
+    --accent-gradient: linear-gradient(135deg, #9ea4ff 0%, #7c83ff 45%, #666df2 100%);
+    --accent-gradient-hover: linear-gradient(135deg, #b4b8ff 0%, #9399ff 45%, #7a80f5 100%);
+    --shadow:       0 8px 28px rgba(0, 0, 0, 0.42), 0 2px 8px rgba(0, 0, 0, 0.28);
+    --shadow-md:    0 14px 40px rgba(0, 0, 0, 0.5), 0 4px 14px rgba(0, 0, 0, 0.35);
+    --input-fill:   color-mix(in oklab, var(--surface) 82%, var(--bg));
+    --card-body-bg: color-mix(in oklab, var(--surface) 96%, var(--bg));
     --diagram-line:  #94A3B8;
     --diagram-label: #94A3B8;
     --diagram-value: #E2E8F0;
     --todo-prio-alta: #fca5a5;
     --todo-prio-media: #facc15;
     --todo-prio-baja: #86efac;
+    color-scheme: dark;
   }
-  html.dark .patient-card:hover { background: #1a2744; transform: translateX(3px); box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.15); }
-  html.dark .patient-card.active { background: #1e2f55; border-left-color: var(--action); transform: translateX(0); }
   html.dark .dcard-copy:hover { border-color: var(--action); color: var(--action); background: #1e3a5f; }
   html.dark .dcard-copy.copied { border-color: #4ade80; color: #4ade80; background: #14532d; }
   /* Dark mode overrides for hardcoded backgrounds */
-  html.dark .field-group input,
+  html.dark .field-group input:not([type="checkbox"]):not([type="radio"]),
   html.dark .field-group select,
-  html.dark .field-group textarea { background: var(--surface); }
-  html.dark .field-group input:focus,
+  html.dark .field-group textarea { background: var(--input-fill); }
+  html.dark .field-group input:not([type="checkbox"]):not([type="radio"]):focus,
   html.dark .field-group select:focus,
-  html.dark .field-group textarea:focus { background: var(--bg); box-shadow: 0 0 0 3px rgba(96,165,250,0.15); }
+  html.dark .field-group textarea:focus { background: var(--surface); box-shadow: 0 0 0 3px rgba(124,131,255,0.2); }
+  html.dark .profile-input { background: var(--input-fill); }
+  html.dark .profile-input:focus {
+    background: var(--surface);
+    box-shadow: 0 0 0 3px rgba(124,131,255,0.2), inset 0 1px 2px rgba(15, 23, 42, 0.03);
+    border-color: color-mix(in oklab, var(--action) 45%, var(--border));
+  }
   html.dark .vital-label { background: var(--lab-chip-bg); color: var(--lab-chip-txt); }
   html.dark .vital-box input { background: var(--surface); }
   html.dark .vital-box input:focus { background: var(--bg); }
@@ -77,7 +429,7 @@
   html.dark .lab-item { background: var(--lab-chip-bg); }
   html.dark .lab-value-altered { color: #f87171; }
   html.dark .lab-value-normal { color: #4ade80; }
-  #theme-toggle:focus { outline: 2px solid rgba(255,255,255,0.5); outline-offset: 2px; }
+  #theme-toggle:focus { outline: 2px solid var(--action); outline-offset: 2px; }
   html.dark #theme-toggle:focus { outline: 2px solid var(--action); outline-offset: 2px; }
   /* ── Alto contraste (accesibilidad) ─────────────────────── */
   html.high-contrast {
@@ -87,6 +439,7 @@
     --bg:           #FFFFFF;
     --surface:      #FFFFFF;
     --border:       #000000;
+    --divider:      var(--border);
     --text:         #000000;
     --text-muted:   #1A1A1A;
     --error:        #B00000;
@@ -106,6 +459,7 @@
     --bg:           #000000;
     --surface:      #000000;
     --border:       #FFFFFF;
+    --divider:      var(--border);
     --text:         #FFFFFF;
     --text-muted:   #EAEAEA;
     --error:        #FF4D4D;
@@ -123,12 +477,13 @@
   html.high-contrast header { border-bottom: 2px solid var(--border); }
   html.high-contrast .app-tab.active,
   html.high-contrast .inner-tab.active { border-bottom-width: 3px; }
-  html.high-contrast .field-group input,
+  html.high-contrast .field-group input:not([type="checkbox"]):not([type="radio"]),
   html.high-contrast .field-group select,
   html.high-contrast .field-group textarea,
   html.high-contrast .profile-input,
   html.high-contrast .list-row input,
   html.high-contrast .patient-search-input { border-width: 2px; background: var(--surface); color: var(--text); }
+  html.high-contrast .patient-card { border-width: 2px; }
   html.high-contrast .card,
   html.high-contrast .modal,
   html.high-contrast .soap-modal,
@@ -139,6 +494,7 @@
   html.high-contrast .dcard-title { color: var(--text-muted) !important; }
   html.high-contrast #lab-diagrams-section > .card-header,
   html.high-contrast #lab-output-section > .card-header,
+  html.high-contrast #med-output-section > .card-header,
   html.high-contrast #lab-history-card > .card-header {
     background: var(--surface) !important;
     color: var(--text) !important;
@@ -146,10 +502,12 @@
   }
   html.high-contrast #lab-diagrams-section > .card-header svg,
   html.high-contrast #lab-output-section > .card-header svg,
+  html.high-contrast #med-output-section > .card-header svg,
   html.high-contrast #lab-history-card > .card-header svg {
     stroke: currentColor;
   }
-  html.high-contrast #lab-output-section > .card-header button {
+  html.high-contrast #lab-output-section > .card-header button,
+  html.high-contrast #med-output-section > .card-header button {
     background: var(--surface) !important;
     color: var(--text) !important;
     border-color: var(--border) !important;
@@ -225,12 +583,14 @@
   .settings-toggle:focus-visible,
   .dcard-copy:focus-visible,
   .btn-tour-next:focus-visible,
-  .btn-tour-skip:focus-visible {
+  .btn-tour-skip:focus-visible,
+  .app-tabs-keys-btn:focus-visible {
     outline: 2px solid var(--action);
     outline-offset: 2px;
     box-shadow: 0 0 0 4px rgba(37,99,235,0.25);
   }
   html.dark .btn-header-icon:focus-visible,
+  html.dark .app-tabs-keys-btn:focus-visible,
   html.dark .btn-add:focus-visible,
   html.dark .btn-edit-templates:focus-visible,
   html.dark .btn-save:focus-visible,
@@ -241,6 +601,7 @@
   html.dark .inner-tab:focus-visible {
     box-shadow: 0 0 0 4px rgba(96,165,250,0.35);
   }
+  html.high-contrast input[type="checkbox"]:focus-visible,
   html.high-contrast .btn-header-icon:focus-visible,
   html.high-contrast .btn-add:focus-visible,
   html.high-contrast .btn-edit-templates:focus-visible,
@@ -249,8 +610,9 @@
   html.high-contrast .btn-generate:focus-visible,
   html.high-contrast .settings-theme-btn:focus-visible,
   html.high-contrast .app-tab:focus-visible,
+  html.high-contrast .app-tabs-keys-btn:focus-visible,
   html.high-contrast .inner-tab:focus-visible,
-  html.high-contrast .field-group input:focus-visible,
+  html.high-contrast .field-group input:not([type="checkbox"]):not([type="radio"]):focus-visible,
   html.high-contrast .field-group select:focus-visible,
   html.high-contrast .field-group textarea:focus-visible,
   html.high-contrast .profile-input:focus-visible,
@@ -269,6 +631,29 @@
     clip: rect(0,0,0,0) !important;
     white-space: nowrap !important;
     border: 0 !important;
+  }
+  .skip-to-main {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    z-index: 200010;
+    padding: 10px 16px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--surface);
+    background: var(--action);
+    border: none;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .skip-to-main:focus {
+    left: 12px;
+    top: 12px;
+    outline: 3px solid color-mix(in oklab, var(--action) 50%, var(--surface));
+    outline-offset: 2px;
   }
   html.dark .dcard { background: var(--surface); }
   html.dark .dcard-title { color: var(--text-muted); }
@@ -302,10 +687,10 @@
     gap: 6px;
     font-size: 12px;
     font-weight: 600;
-    color: white;
-    background: rgba(255,255,255,0.15);
-    border: 1px solid rgba(255,255,255,0.28);
-    border-radius: 999px;
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
     padding: 3px 10px;
     line-height: 1.2;
     user-select: none;
@@ -323,7 +708,7 @@
     70%  { box-shadow: 0 0 0 6px rgba(251,191,36,0); }
     100% { box-shadow: 0 0 0 0 rgba(251,191,36,0); }
   }
-  html.dark .pending-jobs-pill { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.22); }
+  html.dark .pending-jobs-pill { background: rgba(255,255,255,0.08); border-color: rgba(148,163,184,0.22); color: var(--text); }
   #update-modal-backdrop {
     display: none;
     position: fixed;
@@ -342,7 +727,7 @@
     color: var(--text);
     border-radius: 16px;
     box-shadow: var(--shadow-md);
-    border: 1px solid var(--border);
+    border: none;
     padding: 22px 24px 20px;
     position: relative;
   }
@@ -363,7 +748,7 @@
   #min-version-backdrop.open { display: flex; }
   #min-version-modal {
     width: 100%; max-width: 440px; background: var(--surface); color: var(--text);
-    border-radius: 16px; box-shadow: var(--shadow-md); border: 1px solid var(--border);
+    border-radius: 16px; box-shadow: var(--shadow-md); border: none;
     padding: 24px;
   }
   #min-version-modal h2 { font-size: 18px; font-weight: 700; margin-bottom: 10px; color: var(--error); }
@@ -392,8 +777,9 @@
   #update-modal .error-box { font-size: 13px; color: var(--error); margin-bottom: 10px; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-    background: var(--bg); color: var(--text); height: 100vh;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text); height: 100vh;
     display: flex; flex-direction: column; overflow: hidden; font-size: 16px; line-height: 1.5;
   }
   /* Scrollbars: translucent track/thumb; avoid white flashes in dark mode */
@@ -413,47 +799,701 @@
     background: color-mix(in oklab, var(--text-muted) 65%, transparent);
     background-clip: padding-box;
   }
-  header {
-    background: var(--primary); color: white; padding: 0 24px; height: 52px;
-    display: flex; align-items: center; justify-content: space-between;
-    flex-shrink: 0; box-shadow: var(--shadow-md); z-index: 10;
+  .main-work-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: calc(24px * var(--density-space));
+    display: flex;
+    flex-direction: column;
+    gap: calc(20px * var(--density-space));
+    min-height: 0;
   }
-  header h1 { font-size: 16px; font-weight: 700; letter-spacing: 0.2px; }
-  #app-brand { cursor: pointer; border-radius: 6px; padding: 2px 6px; margin-left: -6px; }
-  #app-brand:hover { background: rgba(255,255,255,0.12); }
-  #app-brand:focus-visible { outline: 2px solid rgba(255,255,255,0.8); outline-offset: 2px; }
-  header span { font-size: 12px; opacity: 0.65; }
+  .rpc-form-stack {
+    display: flex;
+    flex-direction: column;
+    gap: calc(20px * var(--density-space));
+  }
+  .rpc-form-stack-tight {
+    display: flex;
+    flex-direction: column;
+    gap: calc(16px * var(--density-space));
+  }
+  header {
+    position: relative;
+    background: var(--surface);
+    color: var(--text);
+    padding: 0 calc(24px * var(--density-space));
+    min-height: calc(54px + 12px * (var(--density-space) - 1));
+    height: calc(54px + 12px * (var(--density-space) - 1));
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+    box-shadow: none;
+    border-bottom: none;
+    z-index: 10;
+  }
+  html.electron-macos-inset-bar header {
+    padding-left: var(--titlebar-traffic-gap);
+    -webkit-app-region: drag;
+  }
+  html.electron-macos-inset-bar header #app-brand,
+  html.electron-macos-inset-bar header .header-right {
+    -webkit-app-region: no-drag;
+  }
+  html.electron-macos-inset-bar #app-brand {
+    margin-left: 0;
+  }
+  header h1 { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
+  /* Centrado respecto al ancho del header (no respecto al hueco entre R+ y botones). */
+  #today-date {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: min(440px, calc(100vw - 140px));
+    text-align: center;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    color: var(--text-muted);
+    opacity: 0.88;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+  }
+  #app-brand { cursor: pointer; border-radius: var(--radius-md); padding: 2px 6px; margin-left: -6px; flex-shrink: 0; }
+  #app-brand:hover { background: rgba(15, 23, 42, 0.05); }
+  #app-brand:focus-visible { outline: 2px solid var(--action); outline-offset: 2px; }
+  header span { font-size: 12px; color: var(--text-muted); }
+  html.dark #app-brand:hover { background: rgba(255, 255, 255, 0.06); }
+  html.dark header {
+    box-shadow: none;
+    border-bottom: none;
+  }
+  html.dark aside {
+    border-right: none;
+    box-shadow: 10px 0 40px rgba(0, 0, 0, 0.42);
+  }
   .main-col { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-width: 0; }
+  .header-work-cluster {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 0 1 auto;
+    min-width: 0;
+    justify-content: flex-end;
+  }
+  .header-app-mode-chip {
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+    background: color-mix(in oklab, var(--surface) 88%, var(--bg));
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    padding: 8px 14px;
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .header-app-mode-chip:hover {
+    border-color: color-mix(in oklab, var(--action) 40%, var(--border));
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  }
+  .estado-actual-context-wrap {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    flex-wrap: nowrap;
+  }
+  .header-work-cluster .estado-actual-meta {
+    max-width: min(140px, 18vw);
+  }
+  .header-work-cluster .btn-estado-actual-compact {
+    padding: 5px 11px;
+    font-size: 11px;
+    gap: 5px;
+  }
+  .header-work-cluster .btn-estado-actual-compact svg {
+    width: 12px;
+    height: 12px;
+  }
+  .header-work-cluster .header-app-mode-chip {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+  .estado-actual-meta {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    max-width: min(260px, 32vw);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .btn-estado-actual-compact {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    background: #065f46;
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-pill);
+    padding: 7px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: filter 0.15s ease, box-shadow 0.15s ease, outline-color 0.15s ease;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+  }
+  .btn-estado-actual-compact:hover {
+    filter: brightness(1.07);
+  }
+  .btn-estado-actual-compact--pending {
+    box-shadow: 0 0 0 1px rgba(5, 150, 105, 0.45), 0 1px 2px rgba(15, 23, 42, 0.06);
+  }
+  html.dark .btn-estado-actual-compact {
+    background: color-mix(in oklab, #059669 78%, var(--surface));
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  }
+  html.dark .btn-estado-actual-compact--pending {
+    box-shadow: 0 0 0 1px rgba(110, 231, 183, 0.35), 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+  .header-app-mode-chip.mode-sala {
+    border-color: color-mix(in oklab, #059669 28%, var(--border));
+  }
+  .header-app-mode-chip.mode-inter {
+    border-color: color-mix(in oklab, #6366f1 30%, var(--border));
+  }
+  html.dark .header-app-mode-chip {
+    background: rgba(255, 255, 255, 0.04);
+  }
+  .app-tabs-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: calc(12px * var(--density-space));
+    flex-shrink: 0;
+    padding: calc(10px * var(--density-space)) calc(20px * var(--density-space)) calc(12px * var(--density-space));
+    background: var(--surface);
+    box-shadow: none;
+    border-bottom: none;
+  }
+  .app-tabs-row .app-tabs { flex: 1; padding: 0; box-shadow: none; background: transparent; min-width: 0; }
+  /* Pase: resumen en una sola columna; vista normal = pestañas completas (Laboratorio, Expediente, …) */
+  html:not(.ui-density-normal) .app-tabs-row {
+    display: none;
+  }
+  html:not(.ui-density-normal) #main-area {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  html:not(.ui-density-normal) .appcontent-pase {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  html:not(.ui-density-normal) .pase-board-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: calc(16px * var(--density-space)) calc(18px * var(--density-space)) calc(24px * var(--density-space));
+    display: flex;
+    flex-direction: column;
+    gap: calc(18px * var(--density-space));
+    scroll-behavior: smooth;
+  }
+  html:not(.ui-density-normal) .pase-section {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
+    padding: calc(12px * var(--density-space)) calc(14px * var(--density-space)) calc(14px * var(--density-space));
+  }
+  html:not(.ui-density-normal) .pase-section-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--divider);
+  }
+  html:not(.ui-density-normal) .pase-section-title {
+    border: none;
+    background: transparent;
+    font: inherit;
+    font-size: calc(11px * var(--density-font));
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--action);
+    cursor: pointer;
+    padding: 4px 2px;
+    text-align: left;
+  }
+  html:not(.ui-density-normal) .pase-section-title:hover {
+    text-decoration: underline;
+  }
+  html:not(.ui-density-normal) .pase-section-title:focus-visible {
+    outline: 2px solid var(--action);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  html:not(.ui-density-normal) .pase-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+  }
+  html:not(.ui-density-normal) .pase-dual-cols {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 12px;
+  }
+  html:not(.ui-density-normal) .pase-dual-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  html:not(.ui-density-normal) .pase-dual-col-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  @media (max-width: 520px) {
+    html:not(.ui-density-normal) .pase-dual-cols {
+      flex-direction: column;
+    }
+  }
+  /** Agenda + Pendientes en una fila (dos tarjetas); en pantallas estrechas se apilan. */
+  html:not(.ui-density-normal) .pase-section-row--split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: calc(12px * var(--density-space));
+    align-items: stretch;
+    min-width: 0;
+  }
+  @media (max-width: 640px) {
+    html:not(.ui-density-normal) .pase-section-row--split {
+      grid-template-columns: 1fr;
+    }
+  }
+  html:not(.ui-density-normal) .pase-mini-card {
+    background: color-mix(in oklab, var(--bg) 50%, var(--surface));
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    font-size: calc(12px * var(--density-font));
+    line-height: 1.35;
+    min-height: 48px;
+  }
+  html:not(.ui-density-normal) .pase-mini-card--dim {
+    opacity: 0.82;
+    color: var(--text-muted);
+  }
+  html:not(.ui-density-normal) .pase-mini-card--wide {
+    grid-column: 1 / -1;
+  }
+  html:not(.ui-density-normal) .pase-mini-card--todo-done {
+    text-decoration: line-through;
+    color: var(--text-muted);
+  }
+  html:not(.ui-density-normal) .pase-todo-card {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  html:not(.ui-density-normal) .pase-todo-hit {
+    flex-shrink: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1.2;
+    padding: 0 2px 0 0;
+    color: var(--action);
+    font-family: inherit;
+  }
+  html:not(.ui-density-normal) .pase-todo-hit:focus-visible {
+    outline: 2px solid var(--action);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  html:not(.ui-density-normal) .pase-todo-card.todo-prio-alta {
+    border-left: 3px solid var(--todo-prio-alta);
+    background: color-mix(in oklab, var(--todo-prio-alta) 14%, var(--surface));
+    padding-left: 12px;
+  }
+  html:not(.ui-density-normal) .pase-todo-card.todo-prio-media {
+    border-left: 3px solid var(--todo-prio-media);
+    background: color-mix(in oklab, var(--todo-prio-media) 12%, var(--surface));
+    padding-left: 12px;
+  }
+  html:not(.ui-density-normal) .pase-todo-card.todo-prio-baja {
+    border-left: 3px solid var(--todo-prio-baja);
+    background: color-mix(in oklab, var(--todo-prio-baja) 11%, var(--surface));
+    padding-left: 12px;
+  }
+  html:not(.ui-density-normal) .pase-cultivo-card .pase-cult-org {
+    font-weight: 700;
+    font-size: calc(12px * var(--density-font));
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    line-height: 1.35;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+  html:not(.ui-density-normal) .pase-cult-atb {
+    font-family: ui-monospace, 'Cascadia Code', Menlo, monospace;
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  html:not(.ui-density-normal) .pase-cult-atb-chips {
+    margin-bottom: 4px;
+  }
+  html:not(.ui-density-normal) .pase-cult-atb-chips .cult-atb-ris-chip-wrap {
+    position: relative;
+    z-index: 0;
+  }
+  html:not(.ui-density-normal) .pase-cult-atb-chips .cult-atb-ris-chip-wrap:hover {
+    z-index: 5;
+  }
+  html:not(.ui-density-normal) .pase-atb-tag { font-weight: 700; }
+  html:not(.ui-density-normal) .pase-atb-tag--r { color: #dc2626; }
+  html:not(.ui-density-normal) .pase-atb-tag--i { color: #ca8a04; }
+  html:not(.ui-density-normal) .pase-atb-tag--s { color: #15803d; }
+  html.dark:not(.ui-density-normal) .pase-atb-tag--r { color: #f87171; }
+  html.dark:not(.ui-density-normal) .pase-atb-tag--i { color: #fbbf24; }
+  html.dark:not(.ui-density-normal) .pase-atb-tag--s { color: #4ade80; }
+  html:not(.ui-density-normal) .pase-med-card {
+    padding: 12px 14px 11px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-self: stretch;
+  }
+  html:not(.ui-density-normal) .pase-med-card-head {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: calc(6px * var(--density-space));
+  }
+  html:not(.ui-density-normal) .pase-med-name {
+    font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif;
+    font-size: calc(12px * var(--density-font));
+    font-weight: 650;
+    line-height: 1.32;
+    color: var(--text);
+    min-width: 0;
+    width: 100%;
+    overflow-wrap: break-word;
+    word-break: normal;
+    hyphens: manual;
+  }
+  html:not(.ui-density-normal) .pase-med-dia-badge {
+    flex-shrink: 0;
+    align-self: flex-end;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--action);
+    line-height: 1.25;
+    text-align: right;
+    margin-top: 0;
+    white-space: nowrap;
+    max-width: 100%;
+    padding-left: calc(14px * var(--density-space));
+    box-sizing: border-box;
+  }
+  html:not(.ui-density-normal) .pase-med-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+  }
+  html:not(.ui-density-normal) .pase-med-chip {
+    font-weight: 800;
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    color: var(--action);
+    background: color-mix(in oklab, var(--action) 14%, transparent);
+    padding: 2px 7px;
+    border-radius: 5px;
+    line-height: 1.25;
+    max-width: 100%;
+    overflow-wrap: break-word;
+    word-break: normal;
+  }
+  html:not(.ui-density-normal) .pase-med-chip--dosis {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 6px;
+    width: auto;
+    max-width: 100%;
+    flex: 0 1 auto;
+    box-sizing: border-box;
+    vertical-align: middle;
+  }
+  html:not(.ui-density-normal) .pase-med-dosis-core {
+    white-space: nowrap;
+    flex: 0 0 auto;
+    max-width: 100%;
+  }
+  html:not(.ui-density-normal) .pase-med-dosis-rest {
+    flex: 1 1 100%;
+    min-width: 0;
+    line-height: 1.38;
+    font-weight: 750;
+    letter-spacing: 0.04em;
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: normal;
+  }
+  html:not(.ui-density-normal) .pase-sub {
+    font-size: calc(11px * var(--density-font));
+    color: var(--text-muted);
+    display: block;
+    margin-top: 4px;
+  }
+  html:not(.ui-density-normal) .pase-lab-meta {
+    font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif;
+    font-size: calc(13px * var(--density-font));
+    font-weight: 650;
+    letter-spacing: 0.02em;
+    color: var(--action);
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid color-mix(in oklab, var(--border) 75%, transparent);
+    line-height: 1.45;
+  }
+  html.dark:not(.ui-density-normal) .pase-lab-meta {
+    color: #93c5fd;
+    border-bottom-color: rgba(148, 163, 184, 0.35);
+  }
+  html:not(.ui-density-normal) .pase-lab-block {
+    font-family: ui-monospace, 'Cascadia Code', Menlo, Consolas, monospace;
+    font-size: calc(13px * var(--density-font));
+    line-height: 1.65;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: min(52vh, 520px);
+    overflow: auto;
+    padding: 6px 4px 2px 0;
+    color: var(--text);
+  }
+  html:not(.ui-density-normal) .pase-lab-line {
+    white-space: pre-wrap;
+    line-height: 1.7;
+  }
+  html:not(.ui-density-normal) .pase-lab-line--sechead {
+    margin-top: 6px;
+  }
+  html:not(.ui-density-normal) .pase-lab-line--sechead:first-child {
+    margin-top: 0;
+  }
+  html.dark:not(.ui-density-normal) .pase-lab-block .section-lbl {
+    color: #93c5fd;
+  }
+  html:not(.ui-density-normal) .pase-lab-snippet {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: calc(11px * var(--density-font));
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 220px;
+    overflow: hidden;
+    line-height: 1.45;
+  }
+  html:not(.ui-density-normal) .pase-empty-screen {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px 24px;
+    color: var(--text-muted);
+    font-size: calc(14px * var(--density-font));
+    line-height: 1.5;
+  }
+  .app-tabs-keys-btn {
+    flex-shrink: 0;
+    min-width: 44px;
+    min-height: 44px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  }
+  .app-tabs-keys-btn .btn-header-icon-svg { display: block; flex-shrink: 0; pointer-events: none; }
+  .app-tabs-keys-btn:hover {
+    color: var(--action);
+    border-color: color-mix(in oklab, var(--action) 35%, var(--border));
+    background: color-mix(in oklab, var(--surface) 60%, var(--bg));
+  }
+  .app-tab-attention {
+    position: relative;
+  }
+  .app-tab-attention::after {
+    content: '';
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--action);
+    box-shadow: 0 0 0 2px var(--surface);
+  }
+  .settings-data-sync-compare {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .settings-sync-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    background: color-mix(in oklab, var(--surface) 96%, var(--bg));
+  }
+  .settings-sync-card h4 {
+    margin: 0 0 6px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .settings-sync-card p {
+    margin: 0;
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.45;
+  }
+  .settings-sync-help-link {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin: 0 0 10px;
+    line-height: 1.45;
+  }
+  .guided-empty-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 8px;
+  }
+  .guided-empty-actions button {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 16px;
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+  }
+  .guided-empty-actions button.primary {
+    background: var(--accent-gradient);
+    color: #fff;
+    border: none;
+    box-shadow: 0 2px 10px rgba(79, 86, 255, 0.2);
+  }
+  .empty-state .empty-state-title {
+    margin: 0;
+    font-size: calc(17px * var(--density-font));
+    font-weight: 700;
+    color: var(--text);
+    text-align: center;
+  }
+  .empty-state .empty-state-lead {
+    margin: 0;
+    font-size: calc(14px * var(--density-font));
+    text-align: center;
+    max-width: 420px;
+    line-height: 1.5;
+  }
   .app-tabs {
-    background: var(--surface); border-bottom: 1px solid var(--border);
-    display: flex; padding: 0 24px; flex-shrink: 0; gap: 4px;
+    background: color-mix(in oklab, var(--surface) 97%, var(--bg));
+    border-bottom: none;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: calc(8px * var(--density-space));
+    box-shadow: none;
   }
   .app-tab {
-    padding: 10px 18px; font-size: 14px; font-weight: 600; color: var(--text-muted);
-    background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px;
-    cursor: pointer; transition: color 0.2s ease, border-color 0.28s cubic-bezier(0.4, 0, 0.2, 1), transform 0.18s ease; display: flex;
-    align-items: center; gap: 6px; font-family: inherit;
+    padding: calc(8px * var(--density-space)) calc(17px * var(--density-space));
+    font-size: calc(14px * var(--density-font));
+    font-weight: 600; color: var(--text-muted);
+    background: transparent; border: none; border-radius: var(--radius-pill);
+    cursor: pointer;
+    transition: color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+    display: flex; align-items: center; gap: calc(7px * var(--density-space)); font-family: inherit;
   }
-  .app-tab:hover { color: var(--action); transform: translateY(-1px); }
-  .app-tab.active { color: var(--action); border-bottom-color: var(--action); transform: translateY(0); }
+  .app-tab:hover { color: var(--action); background: color-mix(in oklab, var(--surface) 55%, var(--bg)); }
+  .app-tab.active {
+    color: var(--action);
+    background: var(--surface);
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(79, 86, 255, 0.07);
+  }
+  html.dark .app-tab:hover { background: rgba(255,255,255,0.05); }
+  html.dark .app-tab.active {
+    background: rgba(255,255,255,0.08);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.28);
+  }
   .app { display: flex; flex: 1; overflow: hidden; }
   aside {
-    width: 280px; background: var(--surface); border-right: 1px solid var(--border);
+    width: var(--sidebar-width);
+    background: var(--surface);
+    border-right: none;
     display: flex; flex-direction: column; flex-shrink: 0;
     min-height: 0;
     overflow: hidden;
+    box-shadow: 8px 0 28px rgba(15, 23, 42, 0.055);
   }
   .sidebar-header {
-    padding: 14px 16px; border-bottom: 1px solid var(--border);
+    padding: calc(14px * var(--density-space)) calc(16px * var(--density-space)) calc(15px * var(--density-space));
+    border-bottom: none;
     display: flex; align-items: center; justify-content: space-between;
+    background: transparent;
   }
-  .sidebar-header h2 { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; }
+  .sidebar-header h2 { font-size: calc(12px * var(--density-font)); font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; }
   .btn-add {
-    background: var(--action); color: white; border: none; border-radius: 6px;
-    padding: 6px 12px; font-size: 13px; font-weight: 600; font-family: inherit;
-    cursor: pointer; display: flex; align-items: center; gap: 4px; transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease; min-height: 32px;
+    background: var(--accent-gradient); color: white; border: none; border-radius: var(--radius-pill);
+    padding: calc(6px * var(--density-space)) calc(14px * var(--density-space));
+    font-size: calc(13px * var(--density-font));
+    font-weight: 600; font-family: inherit;
+    cursor: pointer; display: flex; align-items: center; gap: calc(4px * var(--density-space));
+    transition: background 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease;
+    min-height: calc(32px + 6px * (var(--density-space) - 1));
+    box-shadow: 0 2px 10px rgba(79, 86, 255, 0.2);
   }
-  .btn-add:hover { background: var(--action-hover); box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35); }
+  .btn-add:hover { background: var(--accent-gradient-hover); box-shadow: 0 3px 14px rgba(79, 86, 255, 0.24); }
   .btn-add:active { transform: scale(0.96); }
   .patient-list {
     flex: 1 1 auto;
@@ -461,30 +1501,76 @@
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+    display: flex;
+    flex-direction: column;
+    gap: calc(8px * var(--density-space));
+    padding: calc(10px * var(--density-space)) calc(12px * var(--density-space)) calc(16px * var(--density-space));
+  }
+  /** Contenedor Sortable por sección (pinned / activos / archivados): mismo hueco vertical que antes entre tarjetas. */
+  .patient-sort-zone {
+    display: flex;
+    flex-direction: column;
+    gap: calc(8px * var(--density-space));
+  }
+  .patient-sort-zone .sortable-chosen:not(.sortable-ghost):not(.sortable-drag) {
+    box-shadow: 0 4px 18px rgba(79, 86, 255, 0.12);
+  }
+  .patient-sort-zone .sortable-ghost {
+    opacity: 0.62;
+    border-style: dashed;
+    border-color: color-mix(in oklab, var(--action) 38%, var(--border));
+    background: color-mix(in oklab, var(--surface) 88%, var(--bg));
   }
   .patient-card {
-    padding: 14px 16px 12px; border-bottom: 1px solid color-mix(in oklab, var(--border) 70%, transparent); cursor: grab;
-    transition: background 0.22s ease, border-left-color 0.25s ease, transform 0.28s cubic-bezier(0.2, 1.18, 0.36, 1), box-shadow 0.2s ease;
-    position: relative; border-left: 3px solid transparent;
+    padding: calc(9px * var(--density-space)) calc(12px * var(--density-space)) calc(7px * var(--density-space));
+    cursor: grab;
+    position: relative;
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    background: color-mix(in oklab, var(--surface) 82%, transparent);
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+    transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  }
+  .patient-card::before {
+    content: '';
+    position: absolute; left: 0;
+    top: calc(7px * var(--density-space));
+    bottom: calc(7px * var(--density-space));
+    width: 3px;
+    border-radius: 0 4px 4px 0;
+    background: transparent;
+    transition: background 0.2s ease;
   }
   .patient-card:active { cursor: grabbing; }
-  .patient-card:hover { background: #F0F7FF; transform: translateX(3px); box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.08); }
-  .patient-card.active { background: #EFF6FF; border-left-color: var(--action); transform: translateX(0); }
+  .patient-card:hover {
+    background: color-mix(in oklab, #ffffff 92%, var(--lab-chip-bg));
+    border-color: color-mix(in oklab, var(--action) 28%, var(--border));
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+  }
+  .patient-card.active {
+    background: color-mix(in oklab, var(--surface) 70%, var(--lab-chip-bg));
+    border-color: color-mix(in oklab, var(--action) 38%, var(--border));
+    box-shadow: 0 4px 16px rgba(79, 86, 255, 0.1);
+  }
+  .patient-card.active::before { background: linear-gradient(180deg, #7379f8 0%, #4f56ff 100%); }
   html.dark .patient-card {
-    border-bottom: 1px solid color-mix(in oklab, var(--border) 55%, transparent);
+    background: color-mix(in oklab, var(--surface) 92%, var(--bg));
+    box-shadow: 0 2px 10px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.04);
   }
   html.dark .patient-card:hover {
     background: color-mix(in oklab, var(--surface) 78%, #2a4f8f);
-    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--action) 24%, transparent);
+    border-color: color-mix(in oklab, var(--action) 35%, var(--border));
+    box-shadow: 0 4px 16px rgba(0,0,0,0.22);
   }
   html.dark .patient-card.active {
-    background: color-mix(in oklab, var(--surface) 68%, #3560ab);
+    background: color-mix(in oklab, var(--surface) 65%, #3560ab);
+    border-color: color-mix(in oklab, var(--action) 45%, var(--border));
   }
   .patient-card-toolbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 8px;
+    margin-bottom: calc(4px * var(--density-space));
     opacity: 0.9;
   }
   .patient-card:hover .patient-card-toolbar,
@@ -494,65 +1580,144 @@
     align-items: center;
     gap: 6px;
   }
-  .patient-card .p-name { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 7px; line-height: 1.28; }
-  .patient-card .p-meta { font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-  .btn-patient-action {
-    border: 1px solid var(--border);
-    background: var(--surface);
-    color: var(--text-muted);
-    border-radius: 6px;
-    min-width: 22px;
-    min-height: 22px;
-    font-size: 11px;
-    line-height: 1;
-    cursor: pointer;
-    padding: 2px 4px;
+  .patient-card .p-name {
+    font-size: calc(12px * var(--density-font));
+    font-weight: 700; color: var(--text);
+    margin-bottom: calc(3px * var(--density-space));
+    line-height: 1.24;
   }
-  .btn-patient-action:hover { color: var(--action); border-color: #93c5fd; }
-  .btn-pinned-text { font-size: 10px; font-weight: 700; padding: 2px 6px; min-width: 52px; }
-  .btn-archive-clean { min-width: 24px; min-height: 24px; display: inline-flex; align-items: center; justify-content: center; }
-  .patient-card.is-dragging {
-    opacity: 0.65;
-    transform: scale(0.985);
-    box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--action) 45%, transparent);
+  .patient-card .p-meta { font-size: calc(10.5px * var(--density-font)); color: var(--text-muted); display: flex; align-items: center; gap: calc(5px * var(--density-space)); flex-wrap: wrap; line-height: 1.22; }
+  .patient-toolbar-chip {
+    appearance: none;
+    -webkit-appearance: none;
+    margin: 0;
+    font-family: inherit;
+    cursor: grab;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: color-mix(in oklab, var(--action) 18%, var(--surface));
+    color: var(--action);
+    font-size: calc(10px * var(--density-font));
+    font-weight: 700;
+    letter-spacing: 0.28px;
+    padding: 2px 8px;
+    min-height: 22px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in oklab, var(--action) 35%, var(--border));
+    box-shadow: none;
+    line-height: 1.15;
+    flex-shrink: 0;
+  }
+  .patient-toolbar-chip:active { cursor: grabbing; }
+  .patient-toolbar-chip:hover {
+    background: color-mix(in oklab, var(--action) 27%, var(--surface));
+    border-color: color-mix(in oklab, var(--action) 52%, var(--border));
+    color: color-mix(in oklab, var(--action) 94%, var(--text));
+  }
+  .patient-toolbar-chip:focus-visible {
+    outline: 2px solid color-mix(in oklab, var(--action) 50%, transparent);
+    outline-offset: 1px;
+  }
+  .patient-toolbar-chip--icon {
+    min-width: 26px;
+    padding: 2px 5px;
+  }
+  .patient-toolbar-chip--icon svg {
+    display: block;
+  }
+  html.dark .patient-toolbar-chip:hover {
+    background: color-mix(in oklab, var(--action) 22%, var(--surface));
+    border-color: color-mix(in oklab, var(--action) 55%, var(--border));
+    color: var(--lab-chip-txt);
+  }
+  .btn-pinned-text {
+    font-size: calc(10px * var(--density-font));
+    font-weight: 700;
+    min-width: 50px;
+  }
+  .btn-archive-clean {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .patient-sort-zone .sortable-drag {
+    opacity: 0.92;
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--action) 40%, transparent);
+  }
+  /** Clon que sigue al cursor con Sortable `forceFallback` (sidebar / Electron). */
+  .patient-drag-hovercard.patient-card {
+    cursor: grabbing !important;
+    pointer-events: none !important;
+    z-index: 10060;
+    box-sizing: border-box;
+    opacity: 1 !important;
+    background: color-mix(in oklab, var(--surface) 97%, var(--bg)) !important;
+    border: 1px solid color-mix(in oklab, var(--action) 38%, var(--border)) !important;
+    border-radius: var(--radius-md);
+    box-shadow: 0 18px 50px rgba(15, 23, 42, 0.2), 0 6px 18px rgba(79, 86, 255, 0.14) !important;
+  }
+  html.dark .patient-drag-hovercard.patient-card {
+    background: color-mix(in oklab, var(--surface) 94%, #0f172a) !important;
+    border-color: color-mix(in oklab, var(--action) 45%, var(--border)) !important;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45), 0 4px 16px rgba(79, 86, 255, 0.18) !important;
   }
   .patient-card.drop-target {
-    box-shadow: inset 0 -3px 0 0 color-mix(in oklab, var(--action) 65%, transparent);
+    border-color: color-mix(in oklab, var(--action) 50%, var(--border));
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--action) 22%, transparent);
   }
   .patient-list-section-label {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 12px 6px;
-    font-size: 10px;
+    margin: calc(4px * var(--density-space)) calc(2px * var(--density-space)) calc(2px * var(--density-space));
+    padding: calc(8px * var(--density-space)) calc(12px * var(--density-space));
+    font-size: calc(10px * var(--density-font));
     font-weight: 700;
     letter-spacing: 0.5px;
     text-transform: uppercase;
     color: var(--text-muted);
-    border-top: 1px solid var(--border);
-    background: color-mix(in oklab, var(--surface) 86%, var(--border));
+    border-radius: var(--radius-pill);
+    background: color-mix(in oklab, var(--surface) 65%, var(--border));
+    border: 1px solid color-mix(in oklab, var(--divider) 72%, transparent);
+  }
+  .patient-list-section-label--pinned {
+    gap: 10px;
+  }
+  .patient-list-pin-svg {
+    flex-shrink: 0;
+    color: var(--text-muted);
+    opacity: 0.92;
+    display: block;
+  }
+  .patient-list-section-count {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    letter-spacing: 0.02em;
   }
   .patient-list-section-toggle {
-    width: 100%;
+    width: calc(100% - 4px);
+    margin: 4px 2px 2px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    border: none;
-    border-top: 1px solid var(--border);
-    background: color-mix(in oklab, var(--surface) 86%, var(--border));
+    border: 1px solid color-mix(in oklab, var(--divider) 72%, transparent);
+    border-radius: var(--radius-pill);
+    background: color-mix(in oklab, var(--surface) 65%, var(--border));
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     font-weight: 700;
     font-size: 10px;
-    padding: 8px 12px 6px;
+    padding: 8px 12px;
     cursor: pointer;
   }
   .patient-flag-chip {
     background: color-mix(in oklab, var(--action) 18%, var(--surface));
     color: var(--action);
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.3px;
     padding: 1px 6px;
@@ -560,7 +1725,7 @@
     border: 1px solid color-mix(in oklab, var(--action) 35%, var(--border));
   }
   .lab-chip {
-    background: var(--lab-chip-bg); color: var(--lab-chip-txt); font-size: 10px; font-weight: 700;
+    background: var(--lab-chip-bg); color: var(--lab-chip-txt); font-size: 11px; font-weight: 700;
     letter-spacing: 0.4px; padding: 1px 6px; border-radius: 999px; border: 1px solid #BFDBFE;
   }
   .lab-value-altered {
@@ -579,7 +1744,7 @@
     color: var(--text);
     margin-bottom: 1rem;
     padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--divider);
   }
   .lab-grid {
     display: grid;
@@ -618,25 +1783,42 @@
   main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
   .empty-state {
     flex: 1; display: flex; flex-direction: column; align-items: center;
-    justify-content: center; color: var(--text-muted); gap: 12px; padding: 40px;
+    justify-content: center; color: var(--text-muted);
+    gap: calc(12px * var(--density-space));
+    padding: calc(40px * var(--density-space));
   }
-  .empty-state svg { opacity: 0.25; }
-  .empty-state p { font-size: 15px; }
+  .empty-state p { font-size: calc(15px * var(--density-font)); }
   .inner-tab-bar {
-    background: var(--surface); border-bottom: 1px solid var(--border);
-    display: flex; padding: 0 24px; flex-shrink: 0; gap: 4px;
+    background: color-mix(in oklab, var(--surface) 97%, var(--bg));
+    border-bottom: none;
+    box-shadow: inset 0 -1px 0 var(--divider);
+    display: flex; align-items: center;
+    padding: calc(8px * var(--density-space)) calc(22px * var(--density-space)) calc(10px * var(--density-space));
+    flex-shrink: 0; gap: calc(8px * var(--density-space));
   }
   .inner-tab {
-    padding: 10px 18px; font-size: 13px; font-weight: 600; color: var(--text-muted);
-    background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px;
-    cursor: pointer; font-family: inherit; transition: color 0.2s ease, border-color 0.28s cubic-bezier(0.4, 0, 0.2, 1), transform 0.18s ease;
-    display: flex; align-items: center; gap: 5px;
+    padding: calc(7px * var(--density-space)) calc(15px * var(--density-space));
+    font-size: calc(13px * var(--density-font));
+    font-weight: 600; color: var(--text-muted);
+    background: transparent; border: none; border-radius: var(--radius-pill);
+    cursor: pointer; font-family: inherit;
+    transition: color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+    display: flex; align-items: center; gap: calc(5px * var(--density-space));
   }
-  .inner-tab:hover { color: var(--action); transform: translateY(-1px); }
-  .inner-tab.active { color: var(--action); border-bottom-color: var(--action); transform: translateY(0); }
+  .inner-tab:hover { color: var(--action); background: color-mix(in oklab, var(--surface) 50%, var(--bg)); }
+  .inner-tab.active {
+    color: var(--action);
+    background: var(--surface);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(79, 86, 255, 0.06);
+  }
+  html.dark .inner-tab:hover { background: rgba(255,255,255,0.05); }
+  html.dark .inner-tab.active {
+    background: rgba(255,255,255,0.07);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.22);
+  }
   .todo-row {
     display: flex; align-items: center; gap: 10px;
-    padding: 10px 12px; border-bottom: 1px solid color-mix(in oklab, var(--border) 50%, transparent);
+    padding: 10px 12px; border-bottom: 1px solid var(--divider);
     border-radius: 8px;
     border-left: 3px solid transparent;
   }
@@ -687,24 +1869,54 @@
     box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15);
   }
   .todo-row input.todo-check[type="checkbox"] {
-    width: 18px; height: 18px; margin: 0; cursor: pointer;
-    accent-color: var(--action); flex-shrink: 0;
+    width: 18px; height: 18px;
   }
   .todo-row-select {
-    padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px;
-    background: var(--surface); color: var(--text); font-size: 13px;
-    font-family: inherit; cursor: pointer; min-width: 92px;
+    padding: 8px 10px;
+    border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
+    border-radius: var(--radius-md);
+    background: var(--input-fill);
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    min-width: 92px;
+    line-height: 1.5;
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
   }
   .todo-row-select:focus {
-    outline: none; border-color: var(--action);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    outline: none;
+    border-color: color-mix(in oklab, var(--action) 45%, var(--border));
+    background: var(--surface);
+    box-shadow: 0 0 0 3px rgba(79, 86, 255, 0.14), inset 0 1px 2px rgba(15, 23, 42, 0.03);
   }
   html.dark .todo-row-select:focus {
-    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15);
+    box-shadow: 0 0 0 3px rgba(124, 131, 255, 0.2), inset 0 1px 2px rgba(15, 23, 42, 0.03);
   }
   .todo-add-row { display: flex; gap: 8px; align-items: center; }
   .todo-add-row input[type="text"] { flex: 1; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); font-family: inherit; font-size: 14px; }
-  .todo-add-row select { padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); font-family: inherit; font-size: 14px; }
+  .todo-add-row select {
+    padding: 8px 12px;
+    border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
+    border-radius: var(--radius-md);
+    background: var(--input-fill);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.5;
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  }
+  .todo-add-row select:focus {
+    outline: none;
+    border-color: color-mix(in oklab, var(--action) 45%, var(--border));
+    background: var(--surface);
+    box-shadow: 0 0 0 3px rgba(79, 86, 255, 0.14), inset 0 1px 2px rgba(15, 23, 42, 0.03);
+  }
+  html.dark .todo-add-row select:focus {
+    box-shadow: 0 0 0 3px rgba(124, 131, 255, 0.2), inset 0 1px 2px rgba(15, 23, 42, 0.03);
+  }
   .todo-add-row button { padding: 8px 14px; border: 1px solid var(--border); border-radius: 6px; background: var(--action); color: white; cursor: pointer; font-weight: 600; font-family: inherit; font-size: 14px; }
   .todo-del { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; line-height: 1; padding: 0 6px; }
   .todo-empty { color: var(--text-muted); padding: 16px; text-align: center; }
@@ -712,60 +1924,335 @@
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
   }
-  .tab-content { display: none; flex-direction: column; overflow-y: auto; padding: 24px; flex: 1; gap: 20px; min-height: 0; }
+  .tab-content {
+    display: none; flex-direction: column; overflow-y: auto;
+    padding: calc(26px * var(--density-space)) calc(26px * var(--density-space)) calc(32px * var(--density-space));
+    flex: 1; gap: calc(22px * var(--density-space)); min-height: 0;
+    background: var(--bg);
+  }
+  html.dark .tab-content {
+    background: var(--bg);
+  }
+  #main-area > div[id^="appcontent-"] > div:first-child {
+    background: var(--bg);
+  }
+  html.dark #main-area > div[id^="appcontent-"] > div:first-child {
+    background: var(--bg);
+  }
   .tab-content.active { display: flex; animation: rpc-tab-content-in 0.28s cubic-bezier(0.4, 0, 0.2, 1); }
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); overflow: hidden; transition: box-shadow 0.22s ease, transform 0.22s ease, border-color 0.2s ease; }
-  .app .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .card {
+    background: var(--surface);
+    border: none;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    transition: box-shadow 0.15s ease;
+  }
+  html.dark .card { box-shadow: var(--shadow); }
+  .app .card:hover {
+    box-shadow: var(--shadow-md), 0 0 0 1px color-mix(in oklab, var(--action) 20%, transparent);
+  }
   .card-header {
-    background: var(--primary); color: white; padding: 11px 18px; font-size: 12px;
-    font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; display: flex; align-items: center; gap: 8px;
+    background: linear-gradient(120deg,
+      color-mix(in oklab, var(--action) 14%, var(--surface)) 0%,
+      color-mix(in oklab, var(--action) 7%, var(--surface)) 50%,
+      var(--surface) 100%);
+    color: var(--primary);
+    padding: calc(12px * var(--density-space)) calc(18px * var(--density-space));
+    font-size: calc(12px * var(--density-font));
+    font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; display: flex; align-items: center; gap: calc(8px * var(--density-space));
+    border-bottom: 1px solid var(--divider);
   }
-  .card-body { padding: 18px; }
-  .field-group { display: flex; flex-direction: column; gap: 4px; }
-  .field-group label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-  .field-group input, .field-group select, .field-group textarea {
-    border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 14px;
-    font-family: inherit; color: var(--text); background: #F8FAFC;
+  .card-header svg { stroke: currentColor; flex-shrink: 0; }
+  .card-header.card-header-row {
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .lab-report-card-title {
+    display: flex;
+    align-items: center;
+    gap: calc(8px * var(--density-space));
+    flex: 1;
+    min-width: 0;
+  }
+  .lab-report-header-actions.card-header-actions {
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+  .btn-lab-display-prefs {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 10px !important;
+    justify-content: center;
+    border-radius: 10px !important;
+  }
+  .card-header-actions { display: flex; align-items: center; gap: calc(6px * var(--density-space)); flex-wrap: wrap; }
+  .card-header-soft-btn {
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid var(--divider);
+    color: var(--primary);
+    border-radius: var(--radius-pill);
+    padding: calc(5px * var(--density-space)) calc(12px * var(--density-space));
+    font-size: calc(12px * var(--density-font));
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: calc(5px * var(--density-space));
+    transition: background 0.18s ease, box-shadow 0.18s ease;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
+  }
+  .card-header-soft-btn:hover { background: var(--surface); box-shadow: var(--shadow); }
+  html.dark .card-header-soft-btn {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text);
+  }
+  html.dark .card-header-soft-btn:hover { background: rgba(255, 255, 255, 0.11); }
+  .card-body { padding: calc(18px * var(--density-space)) calc(20px * var(--density-space)); background: var(--card-body-bg); }
+  .field-group { display: flex; flex-direction: column; gap: calc(6px * var(--density-space)); }
+  .field-group label { font-size: calc(11px * var(--density-font)); font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .field-group input:not([type="checkbox"]):not([type="radio"]),
+  .field-group select,
+  .field-group textarea {
+    border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
+    border-radius: var(--radius-md);
+    padding: calc(10px * var(--density-space)) calc(12px * var(--density-space));
+    font-size: calc(14px * var(--density-font));
+    font-family: inherit; color: var(--text); background: var(--input-fill);
     transition: border-color 0.15s, background 0.15s, box-shadow 0.15s; line-height: 1.5;
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
   }
-  .field-group input:focus, .field-group select:focus, .field-group textarea:focus {
-    outline: none; border-color: var(--action); background: white; box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+  .field-group input:not([type="checkbox"]):not([type="radio"]):focus,
+  .field-group select:focus,
+  .field-group textarea:focus {
+    outline: none; border-color: color-mix(in oklab, var(--action) 45%, var(--border));
+    background: var(--surface);
+    box-shadow: 0 0 0 3px rgba(79, 86, 255, 0.14), inset 0 1px 2px rgba(15, 23, 42, 0.03);
   }
-  .field-group textarea { resize: vertical; min-height: 90px; }
-  .field-readonly { border: none !important; background: #F1F5F9 !important; color: var(--text-muted) !important; box-shadow: none !important; cursor: default; }
-  .vitals-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
-  .vital-box { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; text-align: center; }
-  .vital-label { background: #EFF6FF; padding: 5px; font-size: 10px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid var(--border); }
-  .vital-box input { border: none; padding: 10px 8px; font-size: 16px; font-weight: 700; text-align: center; width: 100%; background: white; color: var(--text); font-family: inherit; }
-  .vital-box input:focus { outline: none; background: #EFF6FF; }
-  .list-rows { display: flex; flex-direction: column; gap: 6px; }
-  .list-row { display: flex; gap: 8px; align-items: center; }
-  .list-row input { flex: 1; border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; font-size: 14px; font-family: inherit; background: #F8FAFC; transition: border-color 0.15s, background 0.15s; color: var(--text); }
-  .list-row input:focus { outline: none; border-color: var(--action); background: white; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+  #lab-input { resize: none; }
+  input[type="checkbox"] {
+    width: 1.125rem;
+    height: 1.125rem;
+    margin: 0;
+    accent-color: var(--action);
+    cursor: pointer;
+    flex-shrink: 0;
+    vertical-align: middle;
+  }
+  input[type="checkbox"]:focus-visible {
+    outline: 2px solid var(--action);
+    outline-offset: 2px;
+  }
+  .field-group textarea { resize: vertical; min-height: calc(90px + 24px * (var(--density-space) - 1)); }
+  .field-readonly { border: none !important; background: var(--input-fill) !important; color: var(--text-muted) !important; box-shadow: none !important; cursor: default; }
+  .vitals-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: calc(10px * var(--density-space)); }
+  .vital-box {
+    border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
+    border-radius: var(--radius-md); overflow: hidden; text-align: center;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  }
+  .vital-label {
+    background: color-mix(in oklab, var(--lab-chip-bg) 92%, transparent);
+    padding: calc(6px * var(--density-space));
+    font-size: calc(10px * var(--density-font));
+    font-weight: 700; color: var(--primary);
+    text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid var(--divider);
+  }
+  .vital-box input { border: none; padding: calc(10px * var(--density-space)) calc(8px * var(--density-space)); font-size: calc(16px * var(--density-font)); font-weight: 700; text-align: center; width: 100%; background: var(--surface); color: var(--text); font-family: inherit; }
+  .vital-box input:focus { outline: none; background: color-mix(in oklab, var(--lab-chip-bg) 35%, var(--surface)); }
+  .list-rows { display: flex; flex-direction: column; gap: calc(8px * var(--density-space)); }
+  .list-row { display: flex; gap: calc(8px * var(--density-space)); align-items: center; }
+  .list-row input {
+    flex: 1; border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
+    border-radius: var(--radius-md); padding: calc(8px * var(--density-space)) calc(12px * var(--density-space)); font-size: calc(14px * var(--density-font)); font-family: inherit;
+    background: var(--input-fill); transition: border-color 0.15s, background 0.15s; color: var(--text);
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+  }
+  .list-row input:focus {
+    outline: none; border-color: color-mix(in oklab, var(--action) 45%, var(--border));
+    background: var(--surface); box-shadow: 0 0 0 3px rgba(79, 86, 255, 0.12);
+  }
   .list-num { font-size: 13px; font-weight: 700; color: var(--action); min-width: 22px; text-align: right; padding: 8px 0; }
   .btn-remove { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; padding: 4px 6px; border-radius: 4px; line-height: 1; transition: color 0.1s, background 0.1s; min-width: 28px; min-height: 28px; }
   .btn-remove:hover { color: var(--error); background: #fee2e2; }
-  .btn-add-row { background: none; border: 1px dashed var(--border); border-radius: 6px; padding: 7px 14px; font-size: 13px; font-family: inherit; color: var(--text-muted); cursor: pointer; transition: all 0.15s; margin-top: 4px; }
-  .btn-add-row:hover { border-color: var(--action); color: var(--action); background: #EFF6FF; }
-  .action-bar { background: white; border-top: 1px solid var(--border); padding: 14px 24px; display: flex; justify-content: flex-end; gap: 10px; flex-shrink: 0; box-shadow: 0 -2px 8px rgba(0,0,0,0.06); }
-  .btn-generate { background: var(--action); color: white; border: none; border-radius: 8px; padding: 10px 22px; font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.15s, transform 0.1s; min-height: 44px; }
-  .btn-generate:hover { background: var(--action-hover); }
+  .btn-add-row {
+    background: color-mix(in oklab, var(--surface) 70%, transparent);
+    border: 1px dashed color-mix(in oklab, var(--border) 85%, var(--action));
+    border-radius: var(--radius-pill); padding: 8px 16px; font-size: 13px; font-family: inherit;
+    color: var(--text-muted); cursor: pointer; transition: all 0.18s; margin-top: 4px;
+  }
+  .btn-add-row:hover { border-style: solid; border-color: var(--action); color: var(--action); background: var(--lab-chip-bg); box-shadow: 0 4px 12px rgba(79, 86, 255, 0.1); }
+  .action-bar {
+    background: var(--surface);
+    border-top: 1px solid var(--divider);
+    padding: calc(14px * var(--density-space)) calc(24px * var(--density-space));
+    display: flex; justify-content: flex-end; gap: calc(10px * var(--density-space)); flex-shrink: 0;
+    box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.04);
+  }
+  .btn-generate {
+    background: var(--accent-gradient); color: white; border: none; border-radius: var(--radius-pill);
+    padding: calc(10px * var(--density-space)) calc(22px * var(--density-space));
+    font-size: calc(14px * var(--density-font));
+    font-weight: 700; font-family: inherit; cursor: pointer; display: flex;
+    align-items: center; gap: calc(8px * var(--density-space)); transition: background 0.15s ease, transform 0.1s, box-shadow 0.15s ease; min-height: 44px;
+    box-shadow: 0 3px 14px rgba(79, 86, 255, 0.22);
+  }
+  .btn-generate:hover { background: var(--accent-gradient-hover); box-shadow: 0 4px 18px rgba(79, 86, 255, 0.26); }
   .btn-generate:active { transform: scale(0.98); }
   .btn-generate.loading { opacity: 0.65; cursor: not-allowed; }
   .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; align-items: center; justify-content: center; }
   .modal-backdrop.open { display: flex; animation: fade-in 0.15s ease-out; }
   @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-  .modal { background: white; border-radius: 12px; padding: 28px; width: 500px; max-width: 95vw; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2); animation: modal-in 0.22s cubic-bezier(0.34, 1.2, 0.64, 1); }
+  .modal { background: var(--surface); border-radius: var(--radius-lg); padding: 28px; width: 500px; max-width: 95vw; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-md); animation: modal-in 0.22s cubic-bezier(0.34, 1.2, 0.64, 1); border: none; }
   @keyframes modal-in { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
   .modal h3 { font-size: 18px; font-weight: 700; margin-bottom: 20px; color: var(--primary); }
   .modal-section { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
   .modal-divider { border: none; border-top: 1px dashed var(--border); margin: 12px 0 16px; }
   .modal-section-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
   .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
-  .btn-cancel { background: #F1F5F9; color: var(--text-muted); border: 1px solid var(--border); border-radius: 8px; padding: 9px 20px; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; min-height: 44px; transition: background 0.15s; }
+  /* Preferencias laboratorio: filas tipo interruptor */
+  .lab-display-prefs-modal .lab-display-prefs-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .lab-display-prefs-hint {
+    margin: 0 0 16px;
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.45;
+  }
+  .lab-pref-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 44px;
+  }
+  .lab-pref-row-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.35;
+    flex: 1;
+    min-width: 0;
+  }
+  .rpc-switch {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .rpc-switch-input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    clip: rect(0, 0, 0, 0);
+  }
+  .rpc-switch-track {
+    width: 48px;
+    height: 28px;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--border) 50%, var(--surface));
+    border: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
+    box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.1);
+    transition: background 0.2s ease, border-color 0.2s ease;
+    position: relative;
+    box-sizing: border-box;
+  }
+  html.dark .rpc-switch-track {
+    background: color-mix(in oklab, var(--bg) 55%, var(--border));
+    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.32);
+  }
+  .rpc-switch-thumb {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    top: 50%;
+    left: 3px;
+    margin-top: -11px;
+    border-radius: 50%;
+    background: var(--surface);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
+    transition: transform 0.22s cubic-bezier(0.34, 1.2, 0.64, 1), background 0.2s ease;
+    pointer-events: none;
+  }
+  html.dark .rpc-switch-thumb {
+    background: #f8fafc;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  }
+  .rpc-switch-input:checked + .rpc-switch-track {
+    background: color-mix(in oklab, var(--action) 72%, var(--surface));
+    border-color: color-mix(in oklab, var(--action) 45%, transparent);
+  }
+  .rpc-switch-input:checked + .rpc-switch-track .rpc-switch-thumb {
+    transform: translateX(20px);
+  }
+  .rpc-switch-input:focus-visible + .rpc-switch-track {
+    outline: 2px solid var(--action);
+    outline-offset: 3px;
+  }
+  .btn-cancel { background: rgba(241, 245, 249, 0.9); color: var(--text-muted); border: 1px solid var(--border); border-radius: var(--radius-pill); padding: 9px 20px; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; min-height: 44px; transition: background 0.15s; }
   .btn-cancel:hover { background: var(--border); }
-  .btn-save { background: var(--action); color: white; border: none; border-radius: 8px; padding: 9px 20px; font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer; min-height: 44px; transition: background 0.15s; }
-  .btn-save:hover { background: var(--action-hover); }
+  .btn-save {
+    background: var(--accent-gradient); color: white; border: none; border-radius: var(--radius-pill);
+    padding: 9px 20px; font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer; min-height: 44px;
+    transition: background 0.15s ease, box-shadow 0.15s ease; box-shadow: 0 3px 12px rgba(79, 86, 255, 0.2);
+  }
+  .btn-save:hover { background: var(--accent-gradient-hover); box-shadow: 0 4px 16px rgba(79, 86, 255, 0.26); }
+  /* Agenda de procedimientos (vista semanal) */
+  .rpc-proc-agenda-root { flex: 1; display: flex; flex-direction: column; min-height: 0; padding: calc(20px * var(--density-space)) calc(24px * var(--density-space)) calc(24px * var(--density-space)); gap: calc(14px * var(--density-space)); }
+  .rpc-proc-agenda-header { display: flex; flex-wrap: wrap; align-items: center; gap: calc(10px * var(--density-space)) calc(16px * var(--density-space)); justify-content: space-between; }
+  .rpc-proc-agenda-titlewrap { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .rpc-proc-agenda-title { font-size: calc(17px * var(--density-font)); font-weight: 800; letter-spacing: -0.02em; color: var(--primary); margin: 0; }
+  .rpc-proc-agenda-range { font-size: 13px; color: var(--text-muted); font-weight: 600; }
+  .rpc-proc-agenda-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .rpc-proc-agenda-actions button.secondary {
+    background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-pill);
+    padding: 8px 14px; font-size: 13px; font-weight: 700; font-family: inherit; color: var(--text); cursor: pointer; min-height: 40px;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .rpc-proc-agenda-actions button.secondary:hover:not(:disabled) { background: var(--surface); border-color: var(--action); }
+  .rpc-proc-agenda-actions button.secondary:disabled { opacity: 0.42; cursor: not-allowed; }
+  .rpc-proc-agenda-actions .rpc-proc-agenda-btn-new {
+    background: var(--accent-gradient); color: #fff; border: none; border-radius: var(--radius-pill);
+    padding: 8px 16px; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; min-height: 40px;
+    box-shadow: 0 3px 12px rgba(79, 86, 255, 0.2);
+  }
+  .rpc-proc-agenda-actions .rpc-proc-agenda-btn-new:hover:not(:disabled) { filter: brightness(1.06); }
+  .rpc-proc-agenda-actions .rpc-proc-agenda-btn-new:disabled { opacity: 0.45; cursor: not-allowed; filter: none; box-shadow: none; }
+  .rpc-proc-agenda-scroll { flex: 1; min-height: 240px; overflow: auto; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); }
+  .rpc-proc-agenda-board-head { display: flex; align-items: stretch; min-width: 640px; position: sticky; top: 0; z-index: 5; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .rpc-proc-agenda-head-spacer { width: 46px; flex-shrink: 0; border-right: 1px solid var(--border); }
+  .rpc-proc-agenda-head-cell { flex: 1; min-width: 0; padding: 8px 4px; text-align: center; font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: capitalize; letter-spacing: 0.02em; border-right: 1px solid var(--border); box-sizing: border-box; }
+  .rpc-proc-agenda-head-cell:last-child { border-right: none; }
+  .rpc-proc-agenda-head-cell strong { display: block; font-size: 14px; font-weight: 800; color: var(--text); margin-top: 2px; }
+  .rpc-proc-agenda-board-body { display: flex; min-width: 640px; align-items: stretch; position: relative; }
+  .rpc-proc-agenda-times-col { width: 46px; flex-shrink: 0; border-right: 1px solid var(--border); box-sizing: border-box; background: var(--surface); }
+  .rpc-proc-agenda-time-slot { border-bottom: 1px dashed var(--border); padding: 2px 6px 0 0; text-align: right; font-size: 11px; font-weight: 600; color: var(--text-muted); box-sizing: border-box; }
+  .rpc-proc-agenda-day-col-wrap { flex: 1; min-width: 0; border-right: 1px solid var(--border); box-sizing: border-box; background: var(--bg); position: relative; }
+  .rpc-proc-agenda-day-col-wrap:last-child { border-right: none; }
+  .rpc-proc-agenda-hour-line { border-bottom: 1px dashed var(--border); box-sizing: border-box; pointer-events: none; }
+  .rpc-proc-agenda-block {
+    position: absolute; left: 2px; border-radius: 10px;
+    padding: 5px 7px 6px; font-size: 11px; line-height: 1.28; overflow: hidden; cursor: pointer;
+    background: linear-gradient(145deg, rgba(79,86,255,0.14), rgba(37,99,235,0.12)); color: var(--text);
+    border: 2px solid rgba(79,86,255,0.38); box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    z-index: 1; transition: transform 0.1s ease, border-color 0.12s, box-shadow 0.12s; box-sizing: border-box;
+  }
+  .rpc-proc-agenda-block:hover { transform: scale(1.02); border-color: var(--action); z-index: 5; box-shadow: 0 4px 14px rgba(0,0,0,0.1); }
+  .rpc-proc-agenda-block.rpc-proc-flag { border-color: rgba(217, 119, 6, 0.65); box-shadow: 0 0 0 1px rgba(217,119,6,0.25) inset; }
+  html.dark .rpc-proc-agenda-slot { background: rgba(255,255,255,0.02); }
+  html.dark .rpc-proc-agenda-block { background: linear-gradient(145deg, rgba(129,140,248,0.18), rgba(59,130,246,0.12)); border-color: rgba(129,140,248,0.45); }
+  html.dark .rpc-proc-agenda-block.rpc-proc-flag { border-color: rgba(251, 191, 36, 0.55); }
+  .rpc-proc-agenda-block .rpc-proc-name { font-weight: 800; letter-spacing: -0.01em; }
+  .rpc-proc-agenda-block .rpc-proc-sub { margin-top: 2px; font-size: 10px; color: var(--text-muted); font-weight: 600; }
+  .rpc-proc-agenda-block .rpc-proc-pat { margin-top: 3px; font-size: 10px; color: var(--primary); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
   .toast { position: fixed; bottom: 24px; right: 24px; background: var(--text); color: white; padding: 12px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; box-shadow: var(--shadow-md); transform: translateY(80px) scale(0.94); opacity: 0; transition: transform 0.32s cubic-bezier(0.34, 1.15, 0.64, 1), opacity 0.28s ease; z-index: 200; max-width: 320px; }
   .toast.show { transform: translateY(0) scale(1); opacity: 1; }
   .toast.success { background: var(--success); }
@@ -777,16 +2264,17 @@
     color: var(--primary);
     margin-bottom: 12px;
     padding-bottom: 10px;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--divider);
     letter-spacing: 0.02em;
   }
   html.dark .lab-output-fecha { color: #93c5fd; border-bottom-color: rgba(148, 163, 184, 0.35); }
   .out-line   { font-family: 'Courier New', monospace; line-height: 1.9; white-space: pre-wrap; font-size: 13px; }
   .out-indent { font-family: 'Courier New', monospace; line-height: 1.9; padding-left: 2rem; white-space: pre-wrap; font-size: 13px; }
+  .lab-bh-extended-line { border-top: 1px dashed color-mix(in oklab, var(--border) 75%, transparent); margin-top: 2px; padding-top: 4px; }
   .out-line strong, .out-indent strong { font-weight: 700; color: var(--error); background: rgba(220,38,38,0.07); padding: 0 3px; border-radius: 3px; }
   .section-lbl { color: #4F46E5; font-weight: 700; letter-spacing: 0.04em; }
-  .indica-section { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-  .indica-section-header { background: #EFF6FF; padding: 8px 14px; font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); }
+  .indica-section { border: 1px solid var(--divider); border-radius: 8px; overflow: hidden; }
+  .indica-section-header { background: #EFF6FF; padding: 8px 14px; font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--divider); }
   .indica-section-body { padding: 12px 14px; background: white; }
   .indica-section-body textarea { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 13px; font-family: inherit; color: var(--text); background: #F8FAFC; resize: vertical; min-height: 70px; line-height: 1.6; width: 100%; transition: border-color 0.15s, background 0.15s; }
   .indica-section-body textarea:focus { outline: none; border-color: var(--action); background: white; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
@@ -798,8 +2286,8 @@
   .btn-remove-otro { position:absolute; top:8px; right:8px; background:none; border:none; color:var(--text-muted); font-size:18px; cursor:pointer; padding:2px 6px; border-radius:4px; line-height:1; }
   .btn-remove-otro:hover { color:#dc2626; background:#fee2e2; }
   /* ── Listado de Problemas (v3.0 Sala) ────────────────────── */
-  .listado-section { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: white; }
-  .listado-section-header { background: #EFF6FF; padding: 8px 14px; font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .listado-section { border: 1px solid var(--divider); border-radius: 8px; overflow: hidden; background: white; }
+  .listado-section-header { background: #EFF6FF; padding: 8px 14px; font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--divider); display:flex; align-items:center; justify-content:space-between; gap:8px; }
   .listado-section-header.activos { background: #ecfdf5; color: #065f46; }
   .listado-section-header.inactivos { background: #f3f4f6; color: #4b5563; }
   .listado-section-body { padding: 12px 14px; display:flex; flex-direction:column; gap:8px; }
@@ -909,20 +2397,21 @@
     position: relative;
     display: inline-flex;
     align-items: stretch;
-    padding: 2px;
-    border-radius: 8px;
-    background: rgba(255,255,255,0.12);
-    border: 1px solid rgba(255,255,255,0.25);
+    padding: 3px;
+    border-radius: 10px;
+    background: color-mix(in oklab, var(--primary) 14%, var(--surface));
+    border: 1px solid var(--border);
     gap: 0;
   }
   .med-output-tab-pill {
     position: absolute;
-    top: 2px;
-    bottom: 2px;
-    left: 2px;
-    width: calc((100% - 4px) / 2);
-    border-radius: 6px;
-    background: rgba(255,255,255,0.22);
+    top: 3px;
+    bottom: 3px;
+    left: 3px;
+    width: calc((100% - 6px) / 2);
+    border-radius: 8px;
+    background: var(--surface);
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
     pointer-events: none;
     z-index: 0;
     transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
@@ -933,6 +2422,7 @@
   }
   @media (prefers-reduced-motion: reduce) {
     .med-output-tab-pill { transition: none; }
+    .pending-jobs-pill::before { animation: none !important; box-shadow: none; }
     .app-tab, .inner-tab, .patient-card, .card, .tend-card, .btn-add, .toast { transition: none !important; animation: none !important; }
     .app-tab:hover, .inner-tab:hover { transform: none; }
     .patient-card:hover, .app .card:hover, .tend-card:hover { transform: none; }
@@ -953,16 +2443,26 @@
     border: 0;
     border-radius: 6px;
     padding: 4px 10px;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
-    color: rgba(255,255,255,0.82);
+    color: var(--text-muted);
     background: transparent;
     cursor: pointer;
     transition: color 0.2s ease;
   }
-  .med-output-tab:hover { color: rgba(255,255,255,0.95); }
+  .med-output-tab:hover { color: var(--text); }
   .med-output-tab.active {
-    color: #fff;
+    color: var(--primary);
+  }
+  html.dark .med-output-tabs {
+    background: rgba(255, 255, 255, 0.06);
+  }
+  html.dark .med-output-tab-pill {
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+  }
+  html.dark .med-output-tab.active {
+    color: var(--text);
   }
   .lab-history-meta { font-size: 13px; color: var(--text); flex: 1; min-width: 140px; }
   .lab-history-actions { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; }
@@ -978,22 +2478,30 @@
   .lab-history-card-actions { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
   .btn-lab-dedupe-sync { font-size: 12px; padding: 6px 10px; }
   .dcard { background:#fff; border:1px solid var(--border); border-radius:8px; padding:14px 16px; flex-shrink:0; position:relative; }
-  .dcard-title { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#9ca3af; margin-bottom:8px; padding-right:56px; }
-  .dcard-copy { position:absolute; top:10px; right:10px; background:none; border:1px solid var(--border); border-radius:5px; padding:3px 8px; font-size:10px; font-family:inherit; color:var(--text-muted); cursor:pointer; transition:all 0.15s; white-space:nowrap; }
+  .dcard-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#9ca3af; margin-bottom:8px; padding-right:56px; }
+  .dcard-copy { position:absolute; top:10px; right:10px; background:none; border:1px solid var(--border); border-radius:5px; padding:4px 9px; font-size:11px; font-family:inherit; color:var(--text-muted); cursor:pointer; transition:all 0.15s; white-space:nowrap; }
   .dcard-copy:hover { border-color:var(--action); color:var(--action); background:#EFF6FF; }
   .dcard-copy.copied { border-color:#16a34a; color:#16a34a; background:#f0fdf4; }
-  @media (max-width: 700px) { aside { width: 220px; } .vitals-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 700px) {
+    aside { width: 220px !important; }
+    .vitals-grid { grid-template-columns: repeat(3, 1fr); }
+    html.ui-density-normal aside { width: min(100%, 268px) !important; }
+  }
   /* ── Mi Perfil / Ajustes (barra lateral) ───────────────── */
-  .profile-section, .settings-section { border-top: 1px solid var(--border); flex-shrink: 0; }
+  .profile-section, .settings-section { border-top: 1px solid var(--divider); flex-shrink: 0; }
   .profile-toggle, .settings-toggle {
     width: 100%; display: flex; align-items: center; justify-content: space-between;
-    padding: 10px 14px; background: none; border: none; cursor: pointer;
-    font-family: inherit; color: var(--text-muted); font-size: 12px; font-weight: 500;
+    padding: calc(10px * var(--density-space)) calc(14px * var(--density-space));
+    background: none; border: none; cursor: pointer;
+    font-family: inherit; color: var(--text-muted); font-size: calc(12px * var(--density-font)); font-weight: 500;
     transition: background 0.15s;
   }
   .profile-toggle:hover, .settings-toggle:hover { background: var(--border); }
   .profile-toggle-left, .settings-toggle-left { display: flex; align-items: center; gap: 6px; }
-  .profile-body, .settings-body { padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; }
+  .profile-toggle-icon { flex-shrink: 0; color: var(--text-muted); }
+  .profile-toggle-arrow { flex-shrink: 0; color: var(--text-muted); display: block; }
+  .btn-inline-help-icon { flex-shrink: 0; }
+  .profile-body, .settings-body { padding: calc(10px * var(--density-space)) calc(14px * var(--density-space)); display: flex; flex-direction: column; gap: calc(8px * var(--density-space)); }
   .profile-body {
     max-height: min(380px, 42vh);
     overflow-y: auto;
@@ -1013,33 +2521,137 @@
   }
   html.dark .settings-theme-btn.active { background: var(--action); color: #fff; }
   /* ── Header settings dropdown ──────────────────────────── */
-  .header-right { display: flex; align-items: center; gap: 8px; position: relative; }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: calc(10px * var(--density-space));
+    position: relative;
+    flex: 0 1 auto;
+    min-width: 0;
+    justify-content: flex-end;
+  }
   .btn-header-icon {
-    background: rgba(255,255,255,0.15); border: none; border-radius: 50%; width: 32px; height: 32px;
+    background: color-mix(in oklab, var(--surface) 88%, transparent);
+    border: 1px solid var(--divider); border-radius: 12px;
+    min-width: 44px; min-height: 44px; width: 44px; height: 44px;
+    padding: 0;
     cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
-    transition: background 0.15s; flex-shrink: 0; color: white;
+    transition: background 0.15s, color 0.15s; flex-shrink: 0; color: var(--text-muted);
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
   }
-  .btn-header-icon:hover { background: rgba(255,255,255,0.25); }
-  #btn-header-team-sync:focus,
-  #btn-header-team-sync:focus-visible {
-    outline: none;
-  }
+  .btn-header-icon .btn-header-icon-svg { display: block; flex-shrink: 0; pointer-events: none; }
+  .btn-header-icon:hover { background: var(--surface); color: var(--text); }
   .settings-dropdown {
     display: none; position: absolute; top: calc(100% + 8px); right: 0; z-index: 100;
-    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    background: var(--surface);
+    border: none; border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg, 0 10px 25px rgba(0,0,0,0.15)); width: min(320px, calc(100vw - 32px));
     max-height: min(85vh, calc(100vh - 56px));
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
-    padding: 14px; flex-direction: column; gap: 8px;
+    padding: calc(14px * var(--density-space)); flex-direction: column; gap: calc(8px * var(--density-space));
   }
   .settings-dropdown.open { display: flex; }
   .settings-dropdown-backdrop {
     display: none; position: fixed; inset: 0; z-index: 99;
   }
   .settings-dropdown-backdrop.open { display: block; }
+  /* Menú ⇄ · LAN / LiveSync (separado de Ajustes) */
+  .connection-dropdown {
+    display: none; position: absolute; top: calc(100% + 8px); right: 0; z-index: 102;
+    background: var(--surface);
+    border: none; border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg, 0 10px 25px rgba(0,0,0,0.15));
+    width: min(400px, calc(100vw - 24px));
+    max-height: min(85vh, calc(100vh - 56px));
+    overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
+    padding: 14px; flex-direction: column; gap: 10px;
+  }
+  .connection-dropdown.open { display: flex; }
+  .connection-dropdown-backdrop {
+    display: none; position: fixed; inset: 0; z-index: 101;
+  }
+  .connection-dropdown-backdrop.open { display: block; }
+  .connection-dropdown-head {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 10px 12px; margin: -4px -4px 8px -4px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--lab-chip-bg);
+  }
+  .connection-dropdown-head-icon {
+    width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface); border: 1px solid var(--border);
+  }
+  .connection-dropdown-head-icon svg { display: block; }
+  .connection-dropdown-head-title {
+    font-size: 14px; font-weight: 700; color: var(--text); line-height: 1.25;
+    margin: 0 0 2px 0;
+  }
+  .connection-dropdown-head-sub {
+    font-size: 11px; color: var(--text-muted); line-height: 1.4; margin: 0;
+  }
+  .lan-connection-panel-root { display: flex; flex-direction: column; gap: 10px; }
+  .lan-connect-card {
+    border: 1px solid var(--border); border-radius: 10px; background: var(--surface);
+    padding: 12px 12px 14px; display: flex; flex-direction: column; gap: 10px;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.04);
+  }
+  .lan-connect-card-title {
+    font-size: 12px; font-weight: 700; color: var(--text); margin: 0 0 2px 0;
+    letter-spacing: 0.02em;
+  }
+  .lan-connect-card-hint {
+    font-size: 11px; color: var(--text-muted); line-height: 1.45; margin: 0;
+  }
+  .lan-connect-field { display: flex; flex-direction: column; gap: 4px; }
+  .lan-connection-panel-root .profile-input {
+    font-size: 13px;
+  }
+  .lan-connect-actions {
+    display: flex; flex-direction: column; gap: 8px; margin-top: 4px;
+  }
+  .lan-connect-actions-row {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch;
+  }
+  .lan-connect-actions-row .btn-lan-primary { flex: 1; min-width: 140px; }
+  .btn-lan-primary {
+    background: var(--action); color: #fff; border: none; border-radius: 8px;
+    padding: 10px 14px; font-size: 13px; font-weight: 700; font-family: inherit;
+    cursor: pointer; box-shadow: var(--shadow);
+  }
+  .btn-lan-primary:hover { background: var(--action-hover); }
+  .btn-lan-primary:disabled { opacity: 0.55; cursor: not-allowed; }
+  .btn-lan-secondary {
+    background: var(--lab-chip-bg); color: var(--action); border: 1px solid var(--border);
+    border-radius: 8px; padding: 9px 12px; font-size: 12px; font-weight: 600;
+    font-family: inherit; cursor: pointer; flex: 1; min-width: 120px;
+  }
+  .btn-lan-danger {
+    background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;
+    border-radius: 8px; padding: 7px 10px; font-size: 12px; font-weight: 600;
+    font-family: inherit; cursor: pointer;
+  }
+  .btn-lan-danger:hover { background: #fee2e2; }
+  .btn-lan-danger:disabled { opacity: 0.5; cursor: not-allowed; }
+  .lan-role-tabs {
+    display: flex; gap: 6px; margin-bottom: 6px; padding: 5px;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+  }
+  .lan-role-tab {
+    flex: 1; border: none; border-radius: 8px; padding: 9px 8px;
+    font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer;
+    background: transparent; color: var(--text-muted); line-height: 1.25;
+  }
+  .lan-role-tab:hover { color: var(--text); background: var(--surface); }
+  .lan-role-tab.active {
+    background: var(--action); color: #fff; box-shadow: var(--shadow);
+  }
   .settings-help-cta {
     background: linear-gradient(135deg, var(--lab-chip-bg) 0%, var(--surface) 100%);
     border: 1px solid var(--border);
@@ -1061,6 +2673,25 @@
     box-shadow: var(--shadow);
   }
   .btn-settings-help-primary:hover { background: var(--action-hover); }
+  .btn-settings-help-secondary {
+    width: 100%;
+    margin-top: 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    background: var(--surface);
+    color: var(--text);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: flex-start;
+    text-align: left;
+  }
+  .btn-settings-help-secondary:hover { background: var(--bg); }
   .settings-help-cta-hint {
     margin: 8px 0 0 0;
     font-size: 11px;
@@ -1132,12 +2763,26 @@
     text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px;
   }
   .profile-input {
-    width: 100%; background: var(--bg); border: 1px solid var(--border);
-    border-radius: 5px; padding: 5px 8px; color: var(--text);
-    font-size: 11px; font-family: inherit; box-sizing: border-box;
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    color: var(--text);
+    font-size: 12px;
+    font-family: inherit;
+    line-height: 1.5;
+    background: var(--input-fill);
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
   }
-  .profile-input:focus { outline: none; border-color: var(--action); box-shadow: 0 0 0 2px rgba(37,99,235,0.15); }
-  .profile-divider { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
+  .profile-input:focus {
+    outline: none;
+    border-color: color-mix(in oklab, var(--action) 45%, var(--border));
+    background: var(--surface);
+    box-shadow: 0 0 0 3px rgba(79, 86, 255, 0.14), inset 0 1px 2px rgba(15, 23, 42, 0.03);
+  }
+  .profile-divider { border: none; border-top: 1px solid var(--divider); margin: 4px 0; }
   .profile-defaults-title {
     color: var(--text-muted); font-size: 10px; font-weight: 700;
     text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;
@@ -1153,31 +2798,39 @@
     font-family: inherit; cursor: pointer; margin-top: 4px; font-weight: 600;
   }
   .btn-edit-templates:hover { opacity: 0.85; }
-  .patient-search-wrap { padding: 0 10px 8px; flex-shrink: 0; }
+  .patient-search-wrap { padding: 0 calc(10px * var(--density-space)) calc(8px * var(--density-space)); flex-shrink: 0; }
   .patient-search-input {
-    width: 100%; box-sizing: border-box; padding: 8px 10px; font-size: 12px;
-    border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
+    width: 100%; box-sizing: border-box;
+    padding: calc(9px * var(--density-space)) calc(12px * var(--density-space));
+    font-size: calc(12px * var(--density-font));
+    border: 1px solid var(--border); border-radius: var(--radius-pill);
+    background: color-mix(in oklab, var(--surface) 82%, var(--bg));
     color: var(--text); font-family: inherit;
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
   }
   .patient-search-input::placeholder { color: var(--text-muted); }
   .patient-search-input:focus {
-    outline: none; border-color: var(--action); box-shadow: 0 0 0 2px rgba(37,99,235,0.12);
+    outline: none; border-color: color-mix(in oklab, var(--action) 55%, var(--border));
+    box-shadow: 0 0 0 3px rgba(79, 86, 255, 0.12);
   }
   .btn-save-profile {
-    width: 100%; background: var(--action); color: white; border: none;
-    border-radius: 5px; padding: 6px; font-size: 11px; font-family: inherit;
+    width: 100%; background: var(--accent-gradient); color: white; border: none;
+    border-radius: var(--radius-pill); padding: 6px; font-size: 11px; font-family: inherit;
     cursor: pointer; font-weight: 700; margin-top: 4px;
+    box-shadow: 0 2px 10px rgba(79, 86, 255, 0.2);
+    transition: background 0.15s ease, box-shadow 0.15s ease;
   }
-  .btn-save-profile:hover { background: var(--action-hover); }
+  .btn-save-profile:hover { background: var(--accent-gradient-hover); box-shadow: 0 3px 12px rgba(79, 86, 255, 0.24); }
   /* Templates modal */
   .templates-modal-backdrop {
     position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9990;
     display: flex; align-items: center; justify-content: center;
   }
   .templates-modal {
-    background: var(--surface); border-radius: 10px; padding: 20px;
+    background: var(--surface); border-radius: var(--radius-lg); padding: 20px;
     width: 90%; max-width: 440px; display: flex; flex-direction: column; gap: 12px;
     box-shadow: var(--shadow-md);
+    border: none;
   }
   .templates-modal h3 { font-size: 15px; color: var(--text); }
   .templates-modal label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; display: block; margin-bottom: 4px; }
@@ -1224,8 +2877,6 @@
   body[data-estado-actual-mode="true"] #soap-modal-backdrop .btn-soap-insert { display: none; }
   body[data-estado-actual-mode="true"] #soap-modal-backdrop .btn-soap-only-copy { display: inline-flex !important; }
   body[data-estado-actual-mode="true"] #soap-modal-backdrop .btn-soap-save-copy { display: inline-flex !important; }
-  html.dark #estado-actual-bar { background: rgba(16,185,129,0.18) !important; border-bottom-color: rgba(110,231,183,0.35) !important; }
-  html.dark #estado-actual-bar #estado-actual-meta { color: #6ee7b7 !important; }
   .soap-modal {
     background: var(--surface); border-radius: 12px; width: 620px;
     max-width: 95vw; max-height: 90vh; display: flex; flex-direction: column;
@@ -1243,11 +2894,11 @@
     display: flex; flex-direction: column; gap: 10px;
   }
   .soap-section {
-    border: 1px solid var(--border); border-radius: 8px;
+    border: 1px solid var(--divider); border-radius: 8px;
     overflow: hidden; flex-shrink: 0; box-shadow: var(--shadow);
   }
   .soap-section-header {
-    background: #EFF6FF; border-bottom: 1px solid var(--border);
+    background: #EFF6FF; border-bottom: 1px solid var(--divider);
     padding: 7px 14px; font-size: 10px; font-weight: 700;
     text-transform: uppercase; letter-spacing: 0.6px; color: var(--primary);
   }
@@ -1256,7 +2907,7 @@
     display: flex; flex-direction: column; gap: 10px;
   }
   .soap-modal-footer {
-    padding: 14px 18px; border-top: 1px solid var(--border);
+    padding: 14px 18px; border-top: 1px solid var(--divider);
     display: flex; justify-content: flex-end; gap: 10px;
     background: var(--surface); flex-shrink: 0;
   }
@@ -1264,17 +2915,28 @@
   .soap-modal input[type="number"],
   .soap-modal select,
   .soap-modal textarea {
-    border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px;
-    font-size: 13px; font-family: inherit; color: var(--text); background: #F8FAFC;
+    border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text);
+    background: var(--input-fill);
     transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
-    line-height: 1.5; width: 100%; box-sizing: border-box; text-transform: uppercase;
+    line-height: 1.5;
+    width: 100%;
+    box-sizing: border-box;
+    text-transform: uppercase;
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
   }
   .soap-modal input[type="text"]:focus,
   .soap-modal input[type="number"]:focus,
   .soap-modal select:focus,
   .soap-modal textarea:focus {
-    outline: none; border-color: var(--action); background: white;
-    box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+    outline: none;
+    border-color: color-mix(in oklab, var(--action) 45%, var(--border));
+    background: var(--surface);
+    box-shadow: 0 0 0 3px rgba(79, 86, 255, 0.14), inset 0 1px 2px rgba(15, 23, 42, 0.03);
   }
   .soap-modal select { text-transform: none; }
   .soap-modal textarea { text-transform: none; resize: vertical; min-height: 58px; }
@@ -1286,21 +2948,23 @@
   }
   html.dark .soap-section-header {
     background: var(--lab-chip-bg); color: var(--lab-chip-txt);
-    border-bottom-color: var(--border);
+    border-bottom-color: var(--divider);
   }
   html.dark .soap-modal input[type="text"],
   html.dark .soap-modal input[type="number"],
   html.dark .soap-modal select,
   html.dark .soap-modal textarea {
-    background: var(--surface); color: var(--text);
-    border-color: var(--border);
+    background: var(--input-fill);
+    color: var(--text);
+    border-color: color-mix(in oklab, var(--border) 90%, transparent);
   }
   html.dark .soap-modal input[type="text"]:focus,
   html.dark .soap-modal input[type="number"]:focus,
   html.dark .soap-modal select:focus,
   html.dark .soap-modal textarea:focus {
-    background: var(--bg);
-    box-shadow: 0 0 0 3px rgba(96,165,250,0.15);
+    background: var(--surface);
+    border-color: color-mix(in oklab, var(--action) 45%, var(--border));
+    box-shadow: 0 0 0 3px rgba(124, 131, 255, 0.2), inset 0 1px 2px rgba(15, 23, 42, 0.03);
   }
   html.dark .soap-modal input::placeholder,
   html.dark .soap-modal textarea::placeholder { color: var(--text-muted); opacity: 0.85; }
@@ -1312,25 +2976,58 @@
     background: var(--surface) !important; color: var(--text) !important;
     border-color: var(--border) !important;
   }
-  /* ── Onboarding / tour guiado ─────────────────────────── */
+  /* ── Onboarding / tour guiado ───────────────────────────
+     Apple HIG · Onboarding: pocas palabras, decisión clara, omitir visible;
+     el detalle va en el tour y en Centro de ayuda — no aquí.
+     https://developer.apple.com/design/human-interface-guidelines/onboarding
+  ───────────────────────────────────────────────────────── */
   #onboarding-intro-backdrop {
     position: fixed; inset: 0; z-index: 200000;
-    background: rgba(15,23,42,0.55); backdrop-filter: blur(2px);
-    display: none; align-items: center; justify-content: center;
+    background: rgba(15,23,42,0.55);
+    display: none;
     padding: 24px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
-  #onboarding-intro-backdrop.open { display: flex; }
+  #onboarding-intro-backdrop.open {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 100%;
+    box-sizing: border-box;
+  }
   .onboarding-intro-modal {
     background: var(--surface); color: var(--text);
     border-radius: 18px; max-width: min(720px, calc(100vw - 32px)); width: 100%;
-    padding: 28px 26px 24px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35);
-    border: 1px solid var(--border);
+    padding: 28px 26px 28px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35);
+    border: none;
+    flex-shrink: 0;
+    margin: 12px auto 28px;
+    max-height: min(calc(100dvh - 56px), calc(100vh - 56px));
+    overflow-y: auto;
+    box-sizing: border-box;
+  }
+  @media (max-height: 760px) {
+    #onboarding-intro-backdrop { padding: 12px 16px 24px; }
+    .onboarding-intro-modal { padding: 20px 18px 22px; margin-top: 8px; margin-bottom: 20px; max-height: min(calc(100dvh - 44px), calc(100vh - 44px)); }
+    .onboarding-intro-modal h2 { font-size: 1.35rem; }
+    .intro-lead { font-size: 13px; margin-bottom: 10px; line-height: 1.45; }
+    .intro-options-grid { gap: 12px; margin-bottom: 2px; }
+    .intro-option-card { padding: 14px 14px 12px; gap: 8px; }
+    .btn-intro-pick { padding: 10px 12px; font-size: 13px; }
+    .intro-skip-above-paths { margin-bottom: 12px; }
   }
   .onboarding-intro-modal h2 {
     margin: 0 0 8px; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1.2;
   }
   .intro-lead {
-    margin: 0 0 20px; font-size: 15px; line-height: 1.65; color: var(--text-muted); max-width: 42em;
+    margin: 0 0 12px;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--text-muted);
+    max-width: 36em;
   }
   .intro-options-grid {
     display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 4px;
@@ -1339,8 +3036,8 @@
     .intro-options-grid { grid-template-columns: 1fr; }
   }
   .intro-option-card {
-    border: 1px solid var(--border); border-radius: 14px; padding: 18px 18px 16px;
-    background: var(--bg); display: flex; flex-direction: column; gap: 10px; text-align: left;
+    border: 1px solid var(--border); border-radius: 14px; padding: 14px 14px 14px;
+    background: var(--bg); display: flex; flex-direction: column; gap: 8px; text-align: left;
   }
   .intro-option-card-accent { border-color: rgba(37, 99, 235, 0.35); box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.08); }
   html.dark .intro-option-card-accent { border-color: rgba(96, 165, 250, 0.4); }
@@ -1348,15 +3045,9 @@
     font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--action);
   }
   .intro-option-h { margin: 0; font-size: 1.05rem; font-weight: 700; line-height: 1.3; color: var(--text); }
-  .intro-option-lead { margin: 0; font-size: 13px; line-height: 1.6; color: var(--text-muted); }
-  .intro-option-list {
-    margin: 0; padding: 0 0 0 1.15rem; font-size: 13px; line-height: 1.65; color: var(--text);
-    flex: 1;
-  }
-  .intro-option-list li { margin-bottom: 6px; }
-  .intro-option-list li:last-child { margin-bottom: 0; }
+  .intro-option-lead { margin: 0; font-size: 13px; line-height: 1.45; color: var(--text-muted); }
   .btn-intro-pick {
-    margin-top: 4px; width: 100%; border: none; border-radius: 10px; padding: 12px 14px;
+    margin-top: auto; width: 100%; border: none; border-radius: 10px; padding: 12px 14px;
     font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer;
     background: var(--action); color: white; transition: filter 0.15s, transform 0.1s;
   }
@@ -1365,17 +3056,32 @@
   .btn-intro-pick-secondary { background: #0f766e; }
   .btn-intro-pick-secondary:hover { filter: brightness(1.08); }
   html.dark .btn-intro-pick-secondary { background: #14b8a6; color: #0f172a; }
-  .intro-modal-actions { display: flex; justify-content: center; margin-top: 18px; padding-top: 4px; }
-  .intro-modal-actions .btn-intro-primary {
-    background: #2563eb; color: white; border: none; border-radius: 8px;
-    padding: 10px 18px; font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer;
+  /* Omitir encima de las rutas (HIG onboarding: salida clara antes de la decisión principal). */
+  .intro-skip-above-paths {
+    display: flex;
+    justify-content: flex-end;
+    margin: 0 0 18px;
   }
-  .intro-modal-actions .btn-intro-primary:hover { background: #1d4ed8; }
-  .intro-modal-actions .btn-intro-skip {
-    background: transparent; color: var(--text-muted); border: none;
-    padding: 10px 12px; font-size: 13px; font-family: inherit; cursor: pointer; text-decoration: underline;
+  .btn-intro-skip {
+    background: transparent;
+    color: var(--text-muted);
+    border: none;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: background 0.15s ease, color 0.15s ease;
   }
-  .intro-modal-actions .btn-intro-skip:hover { color: var(--text); }
+  .btn-intro-skip:hover {
+    color: var(--text);
+    background: color-mix(in oklab, var(--border) 65%, transparent);
+  }
+  html.dark .btn-intro-skip:hover {
+    background: rgba(148, 163, 184, 0.12);
+  }
   #tour-dock {
     position: fixed; bottom: 18px; right: 18px;
     z-index: 101000; width: min(340px, calc(100vw - 24px));
@@ -1406,15 +3112,31 @@
   #tour-step-badge {
     font-size: 11px; font-weight: 600; letter-spacing: 0.02em; color: var(--text-muted); line-height: 1.35;
   }
-  .btn-tour-skip,
   .btn-tour-collapse {
     background: transparent; border: none; color: var(--text-muted);
     font-size: 11px; font-family: inherit; cursor: pointer; padding: 0;
+    font-weight: 700; padding: 0 4px; line-height: 1;
   }
-  .btn-tour-skip { text-decoration: underline; }
-  .btn-tour-collapse { font-weight: 700; padding: 0 4px; line-height: 1; }
-  .btn-tour-skip:hover,
   .btn-tour-collapse:hover { color: var(--text); }
+  .btn-tour-skip {
+    margin-right: auto;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    padding: 7px 12px;
+    text-decoration: none;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .btn-tour-skip:hover {
+    color: var(--text);
+    border-color: color-mix(in oklab, var(--action) 35%, var(--border));
+    background: color-mix(in oklab, var(--border) 40%, transparent);
+  }
   #tour-dock-body {
     font-size: 13px; line-height: 1.5; margin-bottom: 10px; color: var(--text); letter-spacing: 0.005em;
   }
@@ -1443,7 +3165,16 @@
     animation: tour-soap-pulse 1.8s ease-in-out infinite;
   }
   html.dark .tour-spotlight-soap { outline-color: #38bdf8 !important; }
-  .tour-dock-foot { display: flex; justify-content: flex-end; gap: 8px; }
+  @keyframes tour-action-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(124, 131, 255, 0.45); }
+    50% { box-shadow: 0 0 0 6px rgba(124, 131, 255, 0); }
+  }
+  .tour-spotlight-action {
+    position: relative; z-index: 100000 !important;
+    outline: 2px solid var(--action) !important; outline-offset: 3px !important;
+    animation: tour-action-pulse 1.85s ease-in-out infinite;
+  }
+  .tour-dock-foot { display: flex; justify-content: flex-end; align-items: center; gap: 10px; flex-wrap: wrap; }
   .btn-tour-next {
     background: #2563eb; color: white; border: none; border-radius: 8px;
     padding: 8px 16px; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer;
@@ -1518,6 +3249,9 @@
     border: 1px solid transparent; border-radius: 6px;
     padding: 6px 12px; font-size: 12px; font-weight: 600; font-family: inherit;
     cursor: pointer; transition: background 0.12s, border-color 0.12s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
   }
   .help-tour-btn:hover { border-color: var(--action); }
   /* ── Novedades (release notes) ─────────────────────────────── */
@@ -1552,7 +3286,7 @@
   /* ── Bloqueo por inactividad ───────────────────────────────── */
   #rpc-idle-lock-overlay {
     display: none; position: fixed; inset: 0; z-index: 300000;
-    background: rgba(15,23,42,0.85); backdrop-filter: blur(4px);
+    background: rgba(15,23,42,0.88);
     align-items: center; justify-content: center; padding: 24px;
   }
   html.dark #rpc-idle-lock-overlay { background: rgba(0,0,0,0.82); }
@@ -1589,7 +3323,7 @@
   /* ── Borrado de datos ──────────────────────────────────────── */
   #rpc-wipe-modal {
     display: none; position: fixed; inset: 0; z-index: 200000;
-    background: rgba(15,23,42,0.6); backdrop-filter: blur(2px);
+    background: rgba(15,23,42,0.65);
     align-items: center; justify-content: center; padding: 24px;
   }
   html.dark #rpc-wipe-modal { background: rgba(0,0,0,0.65); }
@@ -1620,6 +3354,37 @@
   }
   /* ── Tendencias de Lab ─────────────────────────────────────── */
   .tend-empty { text-align:center; color:var(--muted); font-size:14px; padding:40px 20px; }
+  .tend-inline-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .tend-toolbar-toggle {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 8px 14px;
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+  }
+  .tend-toolbar-toggle:hover {
+    border-color: color-mix(in oklab, var(--action) 38%, var(--border));
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
+  }
+  .tend-toolbar-toggle.is-active {
+    border-color: color-mix(in oklab, var(--error) 42%, var(--border));
+    background: color-mix(in oklab, var(--error) 7%, var(--surface));
+  }
+  html.dark .tend-toolbar-toggle.is-active {
+    background: color-mix(in oklab, var(--error) 14%, var(--surface));
+  }
+  .tend-ocultos-trigger { border-radius: var(--radius-pill); }
   .tend-section { margin-bottom: 18px; }
   .tend-section:last-child { margin-bottom: 4px; }
   .tend-section-toggle {
@@ -1644,25 +3409,13 @@
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
   .tend-toolbar-btn:hover { border-color: rgba(37, 99, 235, 0.35); box-shadow: var(--shadow-sm); }
-  .tend-hidden-bar {
-    display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; padding: 10px 12px;
-    border-radius: 10px; border: 1px solid var(--border); background: var(--lab-chip-bg);
+  .tend-hidden-modal-hint {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.45;
+    margin: 0 0 14px 0;
   }
-  .tend-hidden-bar-top {
-    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 12px;
-  }
-  .tend-hidden-bar-toggle {
-    display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; margin: 0; border: none; border-radius: 8px;
-    background: transparent; cursor: pointer; font: inherit; font-size: 13px; font-weight: 600; color: var(--text);
-    text-align: left; flex: 1; min-width: 0;
-  }
-  .tend-hidden-bar-toggle:hover { background: rgba(0,0,0,0.05); }
-  html.dark .tend-hidden-bar-toggle:hover { background: rgba(255,255,255,0.06); }
-  .tend-hidden-bar-chevron { font-size: 10px; color: var(--muted); width: 1.1em; flex-shrink: 0; }
-  .tend-hidden-bar-summary { letter-spacing: 0.02em; }
-  .tend-hidden-bar--collapsed .tend-hidden-bar-body { display: none !important; }
-  .tend-hidden-bar-body { padding-top: 2px; }
-  .tend-hidden-chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .tend-hidden-modal-chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; min-height: 2em; }
   .tend-hidden-chip {
     display: inline-flex; align-items: center; gap: 4px; padding: 4px 6px 4px 10px; border-radius: 999px;
     border: 1px solid var(--border); background: var(--surface); font-size: 12px; color: var(--text);
@@ -1675,7 +3428,6 @@
   .tend-hidden-chip-btn:hover { background: rgba(16, 185, 129, 0.15); color: #059669; }
   html.dark .tend-hidden-chip-btn:hover { color: #34d399; }
   .tend-hidden-chip-btn .tend-eye-svg { display: block; }
-  .tend-hidden-bar-all { flex-shrink: 0; font-weight: 600; }
   .tend-card-eye {
     position: absolute; top: 8px; right: 8px; z-index: 3; width: 32px; height: 32px; padding: 0; margin: 0;
     display: flex; align-items: center; justify-content: center; border: none; border-radius: 8px; cursor: pointer;
@@ -1686,9 +3438,26 @@
   .tend-card-eye:hover { color: var(--text); background: var(--surface); transform: scale(1.05); }
   .tend-card-eye:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
   .tend-card .tend-card-header { padding-right: 36px; }
-  .tend-grid  { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:14px; padding:4px; }
+  .tend-grid  { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; padding:4px; }
   .tend-card  { position:relative; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px; cursor:pointer; transition:box-shadow 0.22s ease, transform 0.22s ease, border-color 0.2s ease; overflow:visible; min-width:0; }
-  .tend-card:hover { box-shadow:var(--shadow-md); transform:translateY(-3px); border-color: rgba(37, 99, 235, 0.25); }
+  /* Modo cómodo: sidebar más ancha → menos columnas si usamos 1fr; capamos tarjetas para no inflar “cuadros”. */
+  html.ui-density-normal .tend-grid {
+    grid-template-columns: repeat(auto-fill, minmax(188px, 220px));
+    gap: 14px;
+    justify-content: start;
+  }
+  html.ui-density-normal .tend-card {
+    max-width: 220px;
+    width: 100%;
+    padding: 10px;
+    justify-self: start;
+  }
+  html.ui-density-normal .tend-param-value { font-size: 16px; }
+  html.ui-density-normal .tend-spark-wrap { height: 50px; margin-top: 6px; }
+  html.ui-density-normal .tend-spark-placeholder { min-height: 50px; }
+  html.ui-density-normal .tend-inline-controls { margin-bottom: 12px; }
+  html.ui-density-normal .tend-section { margin-bottom: 14px; }
+  .tend-card:hover { box-shadow: var(--shadow-md); border-color: rgba(37, 99, 235, 0.25); }
   html.dark .tend-card:hover { border-color: rgba(96, 165, 250, 0.35); }
   /* ── Expediente: pestaña Cultivos (tabla) ───────────────────── */
   .cultivos-neg-strip {
@@ -1710,12 +3479,152 @@
     font-size: 10px; border-bottom: 1px solid var(--border); background: var(--lab-chip-bg); white-space: nowrap;
   }
   .cultivos-table td { padding: 10px 12px; vertical-align: top; border-bottom: 1px solid var(--border); color: var(--text); }
+  .cultivos-cell-atb { overflow: visible; position: relative; z-index: 0; }
+  .cultivos-cell-atb .cult-atb-ris-chip-wrap:focus-within,
+  .cultivos-cell-atb .cult-atb-ris-chip-wrap:hover { z-index: 5; }
   .cultivos-table tbody tr:last-child td { border-bottom: none; }
   .cultivos-row-neg { background: rgba(34, 197, 94, 0.06); }
   html.dark .cultivos-row-neg { background: rgba(34, 197, 94, 0.1); }
   .cultivos-cell-atb pre {
     margin: 0; font-family: ui-monospace, monospace; font-size: 11px; line-height: 1.4; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto;
   }
+  .cultivos-atb-fallback { margin: 0; font-family: ui-monospace, monospace; font-size: 11px; line-height: 1.4; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto; }
+  .cultivos-atb-wrap { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+  .cultivos-atb-chips, .pase-cult-atb-chips {
+    display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center;
+  }
+  .lab-out-cultivo-chunk { margin-top: 12px; }
+  #lab-output-box > .lab-out-cultivo-chunk:first-child { margin-top: 0; }
+  .cultivos-atb-chips .atb-chip, .pase-cult-atb-chips .atb-chip, .lab-out-atb .atb-chip {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 1.35em; padding: 2px 7px; border-radius: 6px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+    border: 1px solid var(--border); cursor: default; font-family: ui-sans-serif, system-ui, sans-serif;
+  }
+  .atb-chip--r { color: #b91c1c; background: color-mix(in oklab, #fecaca 38%, var(--surface)); }
+  .atb-chip--i { color: #a16207; background: color-mix(in oklab, #fde68a 42%, var(--surface)); }
+  .atb-chip--s { color: #166534; background: color-mix(in oklab, #bbf7d0 48%, var(--surface)); }
+  html.dark .atb-chip--r { color: #fca5a5; background: color-mix(in oklab, #7f1d1d 42%, var(--surface)); }
+  html.dark .atb-chip--i { color: #fcd34d; background: color-mix(in oklab, #78350f 40%, var(--surface)); }
+  html.dark .atb-chip--s { color: #86efac; background: color-mix(in oklab, #14532d 45%, var(--surface)); }
+  .cult-atb-ris-summary {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    max-width: 100%;
+  }
+  .cult-atb-ris-chips {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+  .cult-atb-ris-chip-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+  .atb-ris-hover-panel {
+    display: none;
+    position: fixed;
+    left: 0;
+    top: 0;
+    min-width: 240px;
+    max-width: min(420px, 88vw);
+    max-height: min(320px, 50vh);
+    overflow-y: auto;
+    z-index: 9200;
+    padding: 0;
+    border-radius: var(--radius-lg, 10px);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+  .atb-ris-hover-panel--r { border-left: 3px solid color-mix(in oklab, #b91c1c 75%, var(--border)); }
+  .atb-ris-hover-panel--i { border-left: 3px solid color-mix(in oklab, #a16207 75%, var(--border)); }
+  .atb-ris-hover-panel--s { border-left: 3px solid color-mix(in oklab, #166534 75%, var(--border)); }
+  html.dark .atb-ris-hover-panel--r { border-left-color: #f87171; }
+  html.dark .atb-ris-hover-panel--i { border-left-color: #fbbf24; }
+  html.dark .atb-ris-hover-panel--s { border-left-color: #4ade80; }
+  .atb-ris-panel-head {
+    margin: 0;
+    padding: 8px 12px 6px;
+    font-size: 11px;
+    font-weight: 750;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    border-bottom: 1px solid color-mix(in oklab, var(--divider) 85%, transparent);
+    background: color-mix(in oklab, var(--surface) 92%, var(--bg));
+  }
+  .atb-ris-detail-list {
+    margin: 0;
+    padding: 6px 10px 10px;
+    list-style: none;
+  }
+  .atb-ris-detail-item { margin: 0; padding: 0; }
+  .atb-ris-detail-item + .atb-ris-detail-item {
+    border-top: 1px solid color-mix(in oklab, var(--divider) 70%, transparent);
+  }
+  .atb-ris-detail-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px 12px;
+    padding: 8px 2px;
+  }
+  .atb-ris-drug {
+    font-weight: 650;
+    color: var(--text);
+    letter-spacing: 0.01em;
+    flex: 1 1 140px;
+    min-width: 0;
+    word-break: break-word;
+  }
+  .atb-ris-meta {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 8px;
+    justify-content: flex-end;
+    text-align: right;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .atb-ris-mic-lbl {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 9px;
+    letter-spacing: 0.04em;
+    opacity: 0.85;
+    margin-right: 2px;
+  }
+  .atb-ris-meta-sep { opacity: 0.45; user-select: none; }
+  .atb-ris-int {
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+  .atb-ris-int--r { color: #b91c1c; background: color-mix(in oklab, #fecaca 28%, var(--surface)); }
+  .atb-ris-int--i { color: #a16207; background: color-mix(in oklab, #fde68a 30%, var(--surface)); }
+  .atb-ris-int--s { color: #166534; background: color-mix(in oklab, #bbf7d0 35%, var(--surface)); }
+  html.dark .atb-ris-int--r { color: #fca5a5; background: color-mix(in oklab, #7f1d1d 35%, var(--surface)); }
+  html.dark .atb-ris-int--i { color: #fcd34d; background: color-mix(in oklab, #78350f 32%, var(--surface)); }
+  html.dark .atb-ris-int--s { color: #86efac; background: color-mix(in oklab, #14532d 38%, var(--surface)); }
+  .atb-ris-hover-panel.is-open {
+    display: block;
+  }
+  .cultivos-copy-full-btn, .pase-cult-copy-full {
+    font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px;
+    border: 1px solid var(--border); background: var(--lab-chip-bg); color: var(--text);
+    cursor: pointer; font-family: inherit;
+  }
+  .cultivos-copy-full-btn:hover, .pase-cult-copy-full:hover { filter: brightness(1.06); }
+  .pase-cult-atb-wrap { margin-bottom: 6px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
   .tend-spark-wrap {
     width:100%; height:56px; margin-top:8px; position:relative; border-radius:6px; overflow:hidden;
   }
@@ -1814,7 +3723,9 @@
   /* ── Modo enfoque (F6) ─────────────────────────────────────── */
   body.focus-mode aside { display: none !important; }
   body.focus-mode #settings-dropdown,
-  body.focus-mode #settings-dropdown-backdrop { display: none !important; }
+  body.focus-mode #settings-dropdown-backdrop,
+  body.focus-mode #connection-dropdown,
+  body.focus-mode #connection-dropdown-backdrop { display: none !important; }
   body.focus-mode #btn-open-settings,
   body.focus-mode #btn-header-team-sync { display: none !important; }
   #focus-mode-pill {
@@ -1873,9 +3784,27 @@
     border: 1px dashed var(--border); border-radius: 8px; background: var(--bg);
   }
   .indica-extra-tmpl select {
-    flex: 1; min-width: 0; border: 1px solid var(--border); border-radius: 6px;
-    padding: 6px 8px; font-family: inherit; font-size: 13px; color: var(--text);
+    flex: 1;
+    min-width: 0;
+    border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--text);
+    background: var(--input-fill);
+    line-height: 1.5;
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  }
+  .indica-extra-tmpl select:focus {
+    outline: none;
+    border-color: color-mix(in oklab, var(--action) 45%, var(--border));
     background: var(--surface);
+    box-shadow: 0 0 0 3px rgba(79, 86, 255, 0.14), inset 0 1px 2px rgba(15, 23, 42, 0.03);
+  }
+  html.dark .indica-extra-tmpl select:focus {
+    box-shadow: 0 0 0 3px rgba(124, 131, 255, 0.2), inset 0 1px 2px rgba(15, 23, 42, 0.03);
   }
   .indica-extra-tmpl button {
     background: var(--action); color: white; border: none; border-radius: 6px;
@@ -1886,9 +3815,11 @@
   .indica-extra-tmpl .iet-hint { font-size: 11px; color: var(--text-muted); }
 </style>
 <script src="vendor/chart.umd.min.js"></script>
+<script src="vendor/sortable.min.js"></script>
 <script type="module" src="js/app.js"></script>
 </head>
 <body>
+<a class="skip-to-main" href="#main-area">Saltar al contenido principal</a>
 
 <div id="update-banner" style="display:none;background:#166534;color:#bbf7d0;padding:8px 16px;font-size:13px;font-weight:600;align-items:center;gap:12px;flex-shrink:0;">
   <span id="update-banner-text">Descargando actualización…</span>
@@ -1903,7 +3834,7 @@
 
 <div id="update-modal-backdrop" aria-hidden="true">
   <div id="update-modal" role="dialog" aria-modal="true" aria-labelledby="update-modal-title" tabindex="-1">
-    <h2 id="update-modal-title">Nueva versión<span class="version-pill" id="update-modal-version-pill" style="display:none;"></span><span class="channel-pill" id="update-modal-channel-pill" style="display:none;">Beta</span></h2>
+    <h2 id="update-modal-title">Nueva versión<span class="version-pill" id="update-modal-version-pill" style="display:none;"></span><span class="channel-pill" id="update-modal-channel-pill" style="display:none;">Pre-release</span></h2>
     <div class="release-notes" id="update-modal-notes"></div>
     <div class="update-state-msg" id="update-modal-state"></div>
     <div class="error-box" id="update-modal-error" style="display:none;"></div>
@@ -1928,20 +3859,83 @@
   </div>
 </div>
 
+<div id="tend-hidden-modal-backdrop" class="modal-backdrop" aria-hidden="true" onclick="if(event.target===this)closeTendHiddenModal()">
+  <div class="modal tend-hidden-modal" role="dialog" aria-modal="true" aria-labelledby="tend-hidden-modal-title" onclick="event.stopPropagation()">
+    <h3 id="tend-hidden-modal-title">Analitos ocultos</h3>
+    <p class="tend-hidden-modal-hint">Pulsa el ícono del ojo junto a cada nombre para volver a mostrarlo en la cuadrícula de tendencias.</p>
+    <div id="tend-hidden-modal-chips" class="tend-hidden-modal-chips"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn-cancel" onclick="closeTendHiddenModal()">Cerrar</button>
+      <button type="button" class="btn-save" onclick="tendResetAllHiddenSeries()">Mostrar todos</button>
+    </div>
+  </div>
+</div>
+
+<div id="lab-display-prefs-backdrop" class="modal-backdrop" aria-hidden="true" onclick="if(event.target===this)closeLabDisplayPrefsModal()">
+  <div class="modal lab-display-prefs-modal" role="dialog" aria-modal="true" aria-labelledby="lab-display-prefs-title" onclick="event.stopPropagation()">
+    <h3 id="lab-display-prefs-title">Vista de laboratorio</h3>
+    <p class="lab-display-prefs-hint">Solo en este equipo · resultados, copiar y enviar a nota.</p>
+    <div class="lab-display-prefs-fields">
+      <div class="lab-pref-row">
+        <span class="lab-pref-row-label" id="lab-pref-bh-extended-lbl">BH extendida</span>
+        <label class="rpc-switch">
+          <input type="checkbox" id="lab-pref-bh-extended" class="rpc-switch-input" role="switch" aria-labelledby="lab-pref-bh-extended-lbl" onchange="onLabDisplayPrefsChanged()" />
+          <span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span>
+        </label>
+      </div>
+      <div class="lab-pref-row">
+        <span class="lab-pref-row-label" id="lab-pref-gaso-extended-lbl">Gasometría extendida</span>
+        <label class="rpc-switch">
+          <input type="checkbox" id="lab-pref-gaso-extended" class="rpc-switch-input" role="switch" aria-labelledby="lab-pref-gaso-extended-lbl" onchange="onLabDisplayPrefsChanged()" />
+          <span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span>
+        </label>
+      </div>
+    </div>
+    <div class="modal-actions" style="margin-top:20px;">
+      <button type="button" class="btn-save" onclick="closeLabDisplayPrefsModal()">Listo</button>
+    </div>
+  </div>
+</div>
+
 <header>
   <h1 id="app-brand" role="button" tabindex="0" onclick="openProfileFromHeader(event)" onkeydown="if(event.key==='Enter'||event.key===' '){openProfileFromHeader(event);}">R+</h1>
   <span id="today-date"></span>
   <div class="header-right">
+    <div class="header-work-cluster" aria-label="Contexto de trabajo">
+      <div id="estado-actual-context-wrap" class="estado-actual-context-wrap" aria-live="polite">
+        <span id="estado-actual-meta" class="estado-actual-meta"></span>
+        <button type="button" id="btn-estado-actual" class="btn-estado-actual-compact" onclick="openEstadoActualModal()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+          Estado Actual
+        </button>
+      </div>
+      <button type="button" id="header-app-mode-chip" class="header-app-mode-chip mode-sala" onclick="toggleHeaderWorkMode()" title="">
+        Modo: Sala
+      </button>
+    </div>
     <span id="pending-jobs-pill" class="pending-jobs-pill" role="status" aria-live="polite" aria-atomic="true" title="Tareas en curso"></span>
-    <button type="button" class="btn-header-icon" id="btn-header-team-sync" style="display:none;" onclick="openTeamSyncFromHeader()" data-i18n-aria-label="settings.teamSyncAria" data-i18n-title="settings.teamSyncTitle" title="Sync entre equipos">⇄</button>
-    <button class="btn-header-icon" id="btn-open-settings" onclick="toggleSettingsDropdown()" title="Ajustes" aria-label="Abrir ajustes" aria-haspopup="dialog" aria-expanded="false" data-i18n-aria-label="settings.open" data-i18n-title="settings.openTitle">&#9881;</button>
-    <button id="theme-toggle" class="btn-header-icon" onclick="toggleTheme()" title="Cambiar tema" aria-label="Cambiar tema claro u oscuro" data-i18n-aria-label="theme.toggle" data-i18n-title="theme.toggleTitle">☀️</button>
+    <button type="button" class="btn-header-icon" id="btn-header-team-sync" style="display:none;" onclick="toggleConnectionDropdown(event)" aria-haspopup="dialog" aria-expanded="false" data-i18n-aria-label="settings.teamSyncAria" data-i18n-title="settings.teamSyncTitle" title="Conexión LAN / LiveSync"><svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg></button>
+    <div class="connection-dropdown-backdrop" id="connection-dropdown-backdrop" onclick="closeConnectionDropdown()"></div>
+    <div class="connection-dropdown" id="connection-dropdown" role="dialog" aria-modal="true" aria-labelledby="connection-dropdown-title">
+      <h2 class="visually-hidden" id="connection-dropdown-title">Conexión LAN</h2>
+      <div class="connection-dropdown-head">
+        <div class="connection-dropdown-head-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg></div>
+        <div>
+          <div class="connection-dropdown-head-title">Sala en vivo del equipo</div>
+          <p class="connection-dropdown-head-sub">Solo en la misma red Wi‑Fi del hospital que la computadora anfitriona. Para copias de respaldo entre equipos distintos usa <strong>Ajustes → Respaldos, sync y recuperación</strong>.</p>
+        </div>
+      </div>
+      <div id="lan-connection-panel-root" class="lan-connection-panel-root"></div>
+    </div>
+    <button class="btn-header-icon" id="btn-open-settings" onclick="toggleSettingsDropdown()" title="Ajustes" aria-label="Abrir ajustes" aria-haspopup="dialog" aria-expanded="false" data-i18n-aria-label="settings.open" data-i18n-title="settings.openTitle"><svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+    <button type="button" id="theme-toggle" class="btn-header-icon" onclick="toggleTheme()" title="Cambiar tema" aria-label="Cambiar tema claro u oscuro" data-i18n-aria-label="theme.toggle" data-i18n-title="theme.toggleTitle"><svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></button>
     <div class="settings-dropdown-backdrop" id="settings-dropdown-backdrop" onclick="closeSettingsDropdown()"></div>
     <div class="settings-dropdown" id="settings-dropdown" role="dialog" aria-modal="false" aria-labelledby="settings-dropdown-title">
       <h2 class="visually-hidden" id="settings-dropdown-title">Ajustes</h2>
       <div class="settings-help-cta">
         <button type="button" class="btn-settings-help-primary" onclick="closeSettingsDropdown(); openQuickHelp();" data-i18n="settings.quickHelp">Centro de ayuda · atajos y tours</button>
-        <p class="settings-help-cta-hint">Guías, atajos, tutorial Sala / Interconsulta y tours breves (Laboratorio, Ajustes).</p>
+        <button type="button" class="btn-settings-help-secondary" onclick="closeSettingsDropdown(); resetAndStartOnboarding();"><svg class="btn-inline-help-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8"/><path d="M8 11h6"/></svg> Tutorial completo · elegir Sala o Interconsulta</button>
+        <p class="settings-help-cta-hint overview-hint">Guías, atajos, tutorial Sala / Interconsulta y tours breves (Laboratorio, Ajustes).</p>
       </div>
 
       <details class="settings-accordion" open>
@@ -1952,14 +3946,20 @@
             <button type="button" class="settings-theme-btn" id="settings-theme-dark" onclick="setThemeMode('dark')" data-i18n="settings.themeDark">Oscuro</button>
           </div>
           <div class="profile-field-label" style="margin-top:4px;" data-i18n="settings.fontSize">Tamaño de texto</div>
-          <p id="settings-fontsize-hint" style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;" data-i18n="settings.fontSizeHint">Escala toda la interfaz (útil en pantallas pequeñas).</p>
+          <p id="settings-fontsize-hint" class="overview-hint" style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;" data-i18n="settings.fontSizeHint">Escala toda la interfaz (útil en pantallas pequeñas).</p>
           <div class="settings-theme-row" id="settings-font-zoom-row" role="group" aria-label="Tamaño de texto" aria-describedby="settings-fontsize-hint" data-i18n-aria-label="settings.fontSize">
             <button type="button" class="settings-theme-btn" id="settings-font-100" onclick="setFontZoom(100)" data-i18n="settings.fontNormal">Normal</button>
             <button type="button" class="settings-theme-btn" id="settings-font-110" onclick="setFontZoom(110)" data-i18n="settings.fontLarge">Grande</button>
             <button type="button" class="settings-theme-btn" id="settings-font-125" onclick="setFontZoom(125)" data-i18n="settings.fontXLarge">Más grande</button>
           </div>
+          <div class="profile-field-label" style="margin-top:8px;" data-i18n="settings.uiDensity">Densidad de la interfaz</div>
+          <p id="settings-density-hint" class="overview-hint" style="font-size:11px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;" data-i18n="settings.uiDensityHint">Normal: pestañas completas y Ronda. Pase: resumen del paciente en una columna; pulsa un título para abrir el detalle en Normal. ⌘P o Ctrl+P alterna.</p>
+          <div class="settings-theme-row" role="group" aria-label="Modo de vista" aria-describedby="settings-density-hint" data-i18n-aria-label="settings.uiDensity">
+            <button type="button" class="settings-theme-btn" id="settings-density-normal" onclick="setUiDensity('normal')" data-i18n="settings.densityNormal">Normal</button>
+            <button type="button" class="settings-theme-btn" id="settings-density-pase" onclick="setUiDensity('pase')" data-i18n="settings.densityPase">Pase</button>
+          </div>
           <div class="profile-field-label" style="margin-top:6px;" data-i18n="settings.highContrast">Alto contraste</div>
-          <p id="settings-hc-hint" style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;" data-i18n="settings.highContrastHint">Aumenta el contraste de texto y bordes para mejor legibilidad.</p>
+          <p id="settings-hc-hint" class="overview-hint" style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;" data-i18n="settings.highContrastHint">Aumenta el contraste de texto y bordes para mejor legibilidad.</p>
           <div class="settings-theme-row" role="group" aria-label="Alto contraste" aria-describedby="settings-hc-hint" data-i18n-aria-label="settings.highContrast">
             <button type="button" class="settings-theme-btn" id="settings-hc-off" onclick="setHighContrast(false)" data-i18n="settings.hcOff">Desactivado</button>
             <button type="button" class="settings-theme-btn" id="settings-hc-on" onclick="setHighContrast(true)" data-i18n="settings.hcOn">Activado</button>
@@ -1993,9 +3993,36 @@
         </div>
       </details>
 
+      <details class="settings-accordion" id="settings-accordion-lan-host-disk" style="display: none;">
+        <summary>LAN · servidor en esta computadora</summary>
+        <div class="settings-acc-body">
+          <p style="font-size:10px;color:var(--text-muted);line-height:1.45;margin:0 0 8px 0;">
+            Solo si esta R+ es <strong>anfitrión</strong> (el proceso en el puerto 3738). Aquí se escribe <code>lan-team-code.txt</code> en datos de la app; el mismo texto debe ir en <strong>Código del equipo</strong> al conectar por LAN. Sin archivo, el servidor usa <code>change-me-in-profile</code>. Tras guardar aquí, <strong>reinicia R+</strong>. Si hubo error 500 por cambiar código, usa restablecer abajo.
+          </p>
+          <label for="settings-lan-host-team-code-input" class="profile-field-label">Código en el servidor (archivo)</label>
+          <input id="settings-lan-host-team-code-input" class="profile-input" type="text" autocomplete="off" placeholder="Vacío = servidor usa change-me-in-profile" style="font-size:12px;" />
+          <button type="button" class="btn-edit-templates" style="margin-top:6px;" onclick="saveLanHostTeamCodeFromUi()">Guardar código en esta computadora</button>
+          <button type="button" class="btn-edit-templates" style="margin-top:8px;color:var(--error);" onclick="resetLanSquadHostStateFromUi()">Restablecer estado LAN del host…</button>
+        </div>
+      </details>
+
       <details class="settings-accordion" id="settings-accordion-backup-sync">
         <summary>Respaldos, sync y recuperación</summary>
         <div class="settings-acc-body">
+          <div class="settings-data-sync-compare">
+            <div class="settings-sync-card">
+              <h4>Sala en vivo (LAN)</h4>
+              <p>Comparte el <strong>mismo turno</strong> con el equipo en la <strong>misma red Wi‑Fi</strong>: sesión temporal mientras trabajan juntos. No sustituye una copia de tus datos.</p>
+            </div>
+            <div class="settings-sync-card">
+              <h4>Respaldos y sync entre equipos</h4>
+              <p><strong>Exportar / importar</strong> JSON, paquete sync y auto‑respaldos mueven o resguardan el <strong>historial clínico local</strong> entre computadoras o después del trabajo.</p>
+            </div>
+          </div>
+          <p class="settings-sync-help-link">
+            Más detalle en el centro de ayuda:
+            <button type="button" class="btn-edit-templates" style="margin-left:6px;display:inline-flex;" onclick="closeSettingsDropdown(); openQuickHelp('lan-vs-respaldo');">LAN vs respaldos</button>
+          </p>
           <div id="settings-preimport-restore-wrap" class="settings-preimport-box" style="display:none;">
             <p class="settings-preimport-label">Copia automática antes de importar todo</p>
             <p class="settings-preimport-meta" id="settings-preimport-meta">—</p>
@@ -2083,10 +4110,10 @@
           <div class="profile-field-label" data-i18n="settings.version">Versión</div>
           <div id="settings-app-version" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">—</div>
           <label for="rpc-update-channel" class="profile-field-label" style="margin-top:4px;">Canal de actualizaciones</label>
-          <p style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;"><strong>Beta</strong> recibe pre-releases; <strong>Estable</strong> solo versiones oficiales.</p>
+          <p style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;"><strong>Pre-releases</strong> incluye borradores de GitHub; <strong>Estable</strong> solo versiones oficiales.</p>
           <select id="rpc-update-channel" class="profile-input" onchange="setUpdateChannel(this.value)" style="font-size:12px;">
             <option value="estable">Estable (recomendado)</option>
-            <option value="beta">Beta</option>
+            <option value="beta">Pre-releases (borradores)</option>
           </select>
           <label for="rpc-update-telemetry-toggle" style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;color:var(--text);cursor:pointer;">
             <input type="checkbox" id="rpc-update-telemetry-toggle" onchange="setUpdateTelemetryEnabled(this.checked)" style="flex-shrink:0;">
@@ -2137,9 +4164,9 @@
     </div>
     <div class="help-tour-section">
       <span class="help-tour-label">Tours</span>
-      <button type="button" class="help-tour-btn" onclick="startHelpTourMain()">🎓 Tutorial guiado (Sala o Interconsulta)</button>
-      <button type="button" class="help-tour-btn" onclick="startMiniTour('lab')">🧪 Laboratorio (breve)</button>
-      <button type="button" class="help-tour-btn" onclick="startMiniTour('ajustes')">⚙️ Ajustes (breve)</button>
+      <button type="button" class="help-tour-btn" onclick="startHelpTourMain()"><svg class="btn-inline-help-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8"/><path d="M8 11h6"/></svg> Tutorial guiado (Sala o Interconsulta)</button>
+      <button type="button" class="help-tour-btn" onclick="startMiniTour('lab')"><svg class="btn-inline-help-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg> Laboratorio (breve)</button>
+      <button type="button" class="help-tour-btn" onclick="startMiniTour('ajustes')"><svg class="btn-inline-help-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Ajustes (breve)</button>
     </div>
   </div>
 </div>
@@ -2158,40 +4185,23 @@
 <div id="onboarding-intro-backdrop" aria-hidden="true">
   <div class="onboarding-intro-modal" role="dialog" aria-modal="true" aria-labelledby="intro-modal-title">
     <h2 id="intro-modal-title">Bienvenido a R+</h2>
-    <p class="intro-lead">Elige el tipo de recorrido. En ambos casos se usa un paciente de demostración (<strong>DEMO PÉREZ</strong>) que <strong>no se guarda</strong> en tu lista real. Puedes repetir el tutorial cuando quieras desde <strong>Mi Perfil → Ver tutorial</strong>. Si usas R+ en <strong>varios equipos</strong>, en la <strong>app de escritorio</strong> el botón <strong>⇄</strong> junto a <strong>Ajustes</strong> abre <strong>Respaldos, sync y recuperación</strong> (mismo menú que el engrane): exportar/importar <strong>paquete sync</strong> (JSON, opcionalmente cifrado). El canal <strong>beta</strong> de actualizaciones solo cambia qué versiones recibes; se configura en <strong>Ajustes → Aplicación y actualizaciones</strong>.</p>
+    <p class="intro-lead">Recorrido corto con <strong>DEMO PÉREZ</strong> (no se guarda). Incluye el <strong>Modo Pase</strong> (resumen de ronda) y luego el flujo de Sala o Interconsulta. El panel inferior guía la interfaz paso a paso.</p>
+    <div class="intro-skip-above-paths">
+      <button type="button" class="btn-intro-skip" id="intro-btn-skip" onclick="guidedTourIntroSkip()">Omitir tutorial</button>
+    </div>
     <div class="intro-options-grid">
       <article class="intro-option-card">
-        <span class="intro-option-kicker">Turno en piso</span>
-        <h3 class="intro-option-h">Sala / hospitalización</h3>
-        <p class="intro-option-lead">Pensado para seguimiento diario: interpretar labs, ver tendencias, escribir la evolución con la plantilla SOAP y trabajar la receta en Medicamentos.</p>
-        <ul class="intro-option-list">
-          <li>Mismo flujo de <strong>Laboratorio</strong> (procesar, diagramas, enviar a nota)</li>
-          <li><strong>Sincronizar</strong> y <strong>Consolidar</strong> en el historial de labs del paciente (duplicados y mismo día)</li>
-          <li><strong>Tendencias</strong> y pestaña <strong>Cultivos</strong> en Expediente</li>
-          <li>Ubicación exacta del botón <strong>Plantilla SOAP</strong> (tarjeta verde de evolución)</li>
-          <li><strong>Medicamentos</strong> + cómo copiar desde SOME</li>
-          <li>Pocos pasos sobre exportar Word</li>
-          <li><strong>Varios equipos:</strong> atajo <strong>⇄</strong> (escritorio) o <strong>Ajustes → Respaldos, sync…</strong> para paquete sync</li>
-        </ul>
+        <span class="intro-option-kicker">Hospitalización</span>
+        <h3 class="intro-option-h">Sala</h3>
+        <p class="intro-option-lead">Laboratorio, expediente, SOAP y medicamentos.</p>
         <button type="button" class="btn-intro-pick" onclick="guidedTourIntroChooseSala()">Empezar · Sala</button>
       </article>
       <article class="intro-option-card intro-option-card-accent">
-        <span class="intro-option-kicker">Informe y alta</span>
-        <h3 class="intro-option-h">Interconsulta / consulta externa</h3>
-        <p class="intro-option-lead">Incluye <strong>todo lo anterior</strong> (labs, tendencias, SOAP, medicamentos) y añade tiempo al final para dejar listos los documentos Word.</p>
-        <ul class="intro-option-list">
-          <li>Recorrido clínico idéntico a sala hasta Medicamentos (incluye <strong>Sincronizar</strong> / <strong>Consolidar</strong> en historial de labs)</li>
-          <li>Después: <strong>Generar Nota (.docx)</strong> y <strong>Generar Indicaciones (.docx)</strong></li>
-          <li><strong>Carpeta de documentos</strong> y botón <strong>Salida rápida</strong></li>
-          <li>En <strong>Ajustes → Laboratorio</strong>, revisión de duplicados en <strong>todos</strong> los pacientes</li>
-          <li>Repaso de perfil, plantillas y respaldos</li>
-          <li><strong>Varios equipos:</strong> <strong>⇄</strong> junto a Ajustes (escritorio) o menú <strong>Ajustes → Respaldos, sync…</strong></li>
-        </ul>
+        <span class="intro-option-kicker">Consulta externa</span>
+        <h3 class="intro-option-h">Interconsulta</h3>
+        <p class="intro-option-lead">Lo clínico de Sala + nota e indicaciones en Word.</p>
         <button type="button" class="btn-intro-pick btn-intro-pick-secondary" onclick="guidedTourIntroChooseInterconsulta()">Empezar · Interconsulta</button>
       </article>
-    </div>
-    <div class="intro-modal-actions">
-      <button type="button" class="btn-intro-skip" id="intro-btn-skip" onclick="guidedTourIntroSkip()">Omitir tutorial</button>
     </div>
   </div>
 </div>
@@ -2202,11 +4212,11 @@
       <span id="tour-step-badge"></span>
       <div class="tour-dock-head-actions">
         <button type="button" class="btn-tour-collapse" id="btn-tour-collapse" title="Minimizar / expandir" aria-label="Minimizar tutorial" onclick="toggleTourDockCollapsed()">–</button>
-        <button type="button" class="btn-tour-skip" onclick="skipGuidedTour()">Omitir</button>
       </div>
     </div>
     <div id="tour-dock-body"></div>
     <div class="tour-dock-foot">
+      <button type="button" class="btn-tour-skip" onclick="skipGuidedTour()">Omitir tutorial</button>
       <button type="button" class="btn-tour-next" id="tour-btn-next" onclick="guidedTourClickNext()">Siguiente</button>
     </div>
   </div>
@@ -2221,66 +4231,85 @@
     <div class="profile-section" id="profile-section">
       <button class="profile-toggle" onclick="openProfileModal()" id="profile-toggle-btn" title="Abrir Mi Perfil">
         <div class="profile-toggle-left">
-          <span>👤</span>
+          <svg class="profile-toggle-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           <span id="profile-toggle-label">Mi Perfil</span>
         </div>
-        <span id="profile-toggle-arrow" style="font-size:11px;">⤴</span>
+        <svg id="profile-toggle-arrow" class="profile-toggle-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
       </button>
     </div>
     <div class="patient-search-wrap">
       <input type="search" class="patient-search-input" id="patient-search" placeholder="Buscar por nombre, registro, cuarto…" autocomplete="off" oninput="onPatientSearchInput(this.value)">
+    </div>
+    <div class="sidebar-ronda-hint" id="sidebar-ronda-hint" aria-hidden="true">
+      <span class="sidebar-ronda-hint-keys"><kbd>J</kbd><kbd>K</kbd></span>
+      <span data-i18n="roundMode.hint">Ronda: paciente siguiente / anterior</span>
     </div>
     <div class="patient-list" id="patient-list"></div>
   </aside>
 
   <div class="main-col">
     <div id="lan-connection-banner" role="status" aria-live="polite" style="display:none;padding:8px 16px;background:#7c2d12;color:#fff;font-size:13px;"></div>
-    <div class="app-tabs">
-      <button class="app-tab active" id="apptab-lab" onclick="switchAppTab('lab')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
-        Laboratorio
+    <div class="app-tabs-row">
+      <div class="app-tabs" id="app-main-tablist" role="tablist" aria-label="Secciones principales">
+      <button type="button" class="app-tab active" role="tab" id="apptab-lab" aria-selected="true" aria-controls="appcontent-lab" tabindex="0" onclick="switchAppTab('lab')" data-i18n-aria-label="appTab.lab" data-i18n-title="appTab.lab">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+        <span class="app-tab-label" data-i18n="appTab.lab">Laboratorio</span>
       </button>
-      <button class="app-tab" id="apptab-nota" onclick="switchAppTab('nota')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
-        Expediente
+      <button type="button" class="app-tab" role="tab" id="apptab-nota" aria-selected="false" aria-controls="appcontent-nota" tabindex="-1" onclick="switchAppTab('nota')" data-i18n-aria-label="appTab.nota" data-i18n-title="appTab.nota">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+        <span class="app-tab-label" data-i18n="appTab.nota">Expediente</span>
       </button>
-      <button class="app-tab" id="apptab-med" onclick="switchAppTab('med')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.5 4.04 3 5.5l7 7Z"/></svg>
-        Medicamentos
+      <button type="button" class="app-tab" role="tab" id="apptab-med" aria-selected="false" aria-controls="appcontent-med" tabindex="-1" onclick="switchAppTab('med')" data-i18n-aria-label="appTab.med" data-i18n-title="appTab.med">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.5 4.04 3 5.5l7 7Z"/></svg>
+        <span class="app-tab-label" data-i18n="appTab.med">Medicamentos</span>
       </button>
-      <button class="app-tab" id="apptab-lan" onclick="switchAppTab('lan')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-        LiveSync
-      </button>
-      <button class="app-tab" id="apptab-calendario" onclick="switchAppTab('calendario')" title="Agenda de procedimientos compartida (host LAN)">
+      <button type="button" class="app-tab" role="tab" id="apptab-agenda" aria-selected="false" aria-controls="appcontent-agenda" tabindex="-1" onclick="switchAppTab('agenda')" data-i18n-aria-label="appTab.agenda" data-i18n-title="appTab.agenda">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-        Agenda de procedimientos
+        <span class="app-tab-label" data-i18n="appTab.agenda">Agenda</span>
       </button>
+      </div>
+      <button type="button" class="app-tabs-keys-btn" onclick="openQuickHelp('atajos')" title="Atajos de teclado" aria-label="Ver atajos de teclado"><svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><path d="M6 8h.001M10 8h.001M14 8h.001M18 8h.001M8 12h.001M12 12h.001M16 12h.001M7 16h10"/></svg></button>
     </div>
     <main id="main-area">
 
-    <div id="appcontent-lab" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
-      <div style="flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:20px;min-height:0;">
+    <div id="appcontent-pase" class="appcontent-pase" style="display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden;" aria-hidden="true">
+      <div id="pase-board-scroll" class="pase-board-scroll"></div>
+    </div>
+
+    <div id="appcontent-lab" role="tabpanel" aria-labelledby="apptab-lab" aria-hidden="false" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
+      <div class="main-work-scroll">
 
         <div class="card" style="flex-shrink:0;">
-          <div class="card-header">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
-            Reporte de Laboratorio
+          <div class="card-header card-header-row">
+            <span class="lab-report-card-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+              Reporte de Laboratorio
+            </span>
+            <div class="card-header-actions lab-report-header-actions">
+              <button type="button" class="card-header-soft-btn btn-lab-display-prefs" onclick="openLabDisplayPrefsModal()" title="Vista de laboratorio (BH extendida, gasometría extendida)" aria-label="Opciones de vista de laboratorio">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              </button>
+            </div>
           </div>
           <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
             <div class="field-group">
               <label>Pega el texto del reporte aquí</label>
-              <textarea id="lab-input" rows="10" placeholder="Copia y pega el texto completo del reporte de laboratorio..."></textarea>
+              <textarea id="lab-input" rows="10" autocomplete="off" autocorrect="off" spellcheck="false" data-lpignore="true" placeholder="Copia y pega el texto completo del reporte de laboratorio..."></textarea>
             </div>
-            <div style="display:flex;gap:10px;align-items:center;">
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
               <button id="btn-procesar" class="btn-generate" onclick="procesarReporte()" style="min-width:140px;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 Procesar
+              </button>
+              <button type="button" id="btn-procesar-y-expediente" class="btn-generate" onclick="procesarYEnviarExpediente()" style="min-width:200px;background:#065F46;" disabled title="Con paciente activo: procesa, envía a la nota y abre Expediente">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                Procesar y abrir expediente
               </button>
               <button onclick="limpiarReporte()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:9px 16px;font-size:13px;font-family:inherit;color:var(--text-muted);cursor:pointer;min-height:44px;" onmouseover="this.style.background='#F1F5F9'" onmouseout="this.style.background='none'">
                 Limpiar
               </button>
             </div>
+            <p id="lab-combo-hint" class="overview-hint" style="display:none;margin:0;font-size:11px;color:var(--text-muted);line-height:1.4;">Selecciona un paciente a la izquierda para usar <strong>Procesar y abrir expediente</strong> en un solo paso.</p>
           </div>
         </div>
 
@@ -2317,33 +4346,33 @@
         </div>
 
         <div id="lab-diagrams-section" class="card" style="display:none;overflow-x:auto;flex-shrink:0;">
-          <div class="card-header" style="background:#1e3a5f;">
+          <div class="card-header">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
             Diagramas
           </div>
-          <div class="card-body" style="padding:16px 18px;">
+          <div class="card-body">
             <div id="diagrams-grid" class="diagrams-wrap"></div>
           </div>
         </div>
 
         <div id="lab-output-section" class="card" style="display:none;flex-shrink:0;">
-          <div class="card-header" style="background:#312E81;display:flex;align-items:center;justify-content:space-between;">
+          <div class="card-header card-header-row">
             <span style="display:flex;align-items:center;gap:8px;">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
               Resultados
             </span>
-            <div style="display:flex;gap:6px;">
-              <button onclick="copiarLabsAlPortapapeles()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.35);color:white;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:5px;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+            <div class="card-header-actions">
+              <button type="button" class="card-header-soft-btn card-header-soft-btn-secondary" onclick="copiarLabsAlPortapapeles()">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                 Copiar
               </button>
-              <button id="btn-enviar-nota" onclick="enviarLabsANota()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.35);color:white;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:5px;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+              <button type="button" id="btn-enviar-nota" class="card-header-soft-btn" onclick="enviarLabsANota()">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/><path d="M12 12v6m0 0l-2-2m2 2l2-2"/></svg>
                 Enviar a nota
               </button>
             </div>
           </div>
-          <div class="card-body" style="padding:16px 18px;">
+          <div class="card-body">
             <div id="lab-output-box" style="line-height:2;"></div>
           </div>
         </div>
@@ -2351,8 +4380,17 @@
       </div>
     </div>
 
-    <div id="appcontent-med" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
-      <div style="flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:20px;min-height:0;">
+    <div id="appcontent-med" role="tabpanel" aria-labelledby="apptab-med" aria-hidden="true" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+      <div id="med-empty-guided" class="empty-state" style="display:none;" role="region" aria-label="Sin paciente para medicamentos">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.5 4.04 3 5.5l7 7Z"/></svg>
+        <h3 class="empty-state-title">Selecciona un paciente para Medicamentos</h3>
+        <p class="empty-state-lead">Elige uno en la lista de la izquierda o agrega un paciente con <strong>+ Agregar</strong>. Después podrás pegar la receta del hospital y usar <strong>Receta</strong>.</p>
+        <div class="guided-empty-actions">
+          <button type="button" class="primary" onclick="focusPatientSearchInput()">Buscar en la lista</button>
+          <button type="button" onclick="openAddModal()">Agregar paciente</button>
+        </div>
+      </div>
+      <div id="med-work-area" class="main-work-scroll">
         <div class="card" style="flex-shrink:0;">
           <div class="card-header">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.5 4.04 3 5.5l7 7Z"/></svg>
@@ -2389,49 +4427,105 @@
         </div>
 
         <div id="med-output-section" class="card" style="flex-shrink:0;">
-          <div class="card-header" style="background:#312E81;display:flex;align-items:center;justify-content:space-between;">
+          <div class="card-header card-header-row">
             <span style="display:flex;align-items:center;gap:8px;">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
               Texto para nota de egreso
             </span>
-            <span style="display:flex;align-items:center;gap:8px;">
+            <span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
               <span class="med-output-tabs" id="med-output-tabs-track" role="tablist" aria-label="Vista de texto de medicamentos" data-active="full">
                 <span class="med-output-tab-pill" aria-hidden="true"></span>
                 <button id="med-tab-full" type="button" role="tab" aria-selected="true" class="med-output-tab active" onclick="setMedOutputTab('full')">Completa</button>
                 <button id="med-tab-simple" type="button" role="tab" aria-selected="false" class="med-output-tab" onclick="setMedOutputTab('simple')">Nombre + Día</button>
               </span>
-              <button type="button" onclick="copiarMedicamentosAlPortapapeles()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.35);color:white;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:5px;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+              <button type="button" class="card-header-soft-btn card-header-soft-btn-secondary" onclick="copiarMedicamentosAlPortapapeles()">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                 Copiar
               </button>
             </span>
           </div>
-          <div class="card-body" style="padding:16px 18px;">
+          <div class="card-body">
             <pre id="med-output" style="white-space:pre-wrap;font-family:inherit;font-size:13px;line-height:1.6;margin:0;color:var(--text);"></pre>
           </div>
         </div>
       </div>
     </div>
 
-    <div id="appcontent-nota" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+    <div id="appcontent-agenda" role="tabpanel" aria-labelledby="apptab-agenda" aria-hidden="true" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+      <div class="rpc-proc-agenda-root" id="procedure-agenda-root">
+        <div class="rpc-proc-agenda-header">
+          <div class="rpc-proc-agenda-titlewrap">
+            <h2 class="rpc-proc-agenda-title">Agenda de procedimientos</h2>
+            <div class="rpc-proc-agenda-range" id="procedure-agenda-range" aria-live="polite"></div>
+          </div>
+          <div class="rpc-proc-agenda-actions">
+            <button type="button" class="secondary" id="procedure-agenda-prev" onclick="navigateProcedureAgendaWeek(-1)" aria-label="Semana anterior">← Semana ant.</button>
+            <button type="button" class="secondary" id="procedure-agenda-next" onclick="navigateProcedureAgendaWeek(1)" aria-label="Semana siguiente">Semana sig. →</button>
+            <button type="button" class="rpc-proc-agenda-btn-new" id="procedure-agenda-new" onclick="openProcedureAgendaModal(null)">+ Nuevo procedimiento</button>
+          </div>
+        </div>
+        <div class="rpc-proc-agenda-scroll" id="procedure-agenda-scroll-host">
+          <div id="procedure-agenda-grid-mount"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="appcontent-nota" role="tabpanel" aria-labelledby="apptab-nota" aria-hidden="true" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
       <div class="empty-state" id="empty-state">
         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
-        <p>Selecciona o agrega un paciente para comenzar</p>
+        <h3 class="empty-state-title">Elige un paciente para ver el expediente</h3>
+        <p class="empty-state-lead">Selecciona uno en la lista de la izquierda o pulsa <strong>+ Agregar</strong>. También puedes crear un paciente al procesar un reporte de laboratorio.</p>
+        <div class="guided-empty-actions">
+          <button type="button" class="primary" onclick="focusPatientSearchInput()">Buscar en la lista</button>
+          <button type="button" onclick="openAddModal()">Agregar paciente</button>
+        </div>
       </div>
       <div id="patient-view" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
-        <div id="estado-actual-bar" style="display:none;flex-shrink:0;background:#ecfdf5;border-bottom:1px solid #a7f3d0;padding:8px 16px;align-items:center;justify-content:flex-end;gap:10px;">
-          <span id="estado-actual-meta" style="font-size:11px;color:#065f46;flex:1;"></span>
-          <button id="btn-estado-actual" onclick="openEstadoActualModal()" style="background:#065F46;color:white;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:6px;">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
-            Estado Actual
-          </button>
+        <div id="patient-ronda-overview" class="patient-ronda-overview" aria-label="Vista ronda">
+          <header class="ronda-overview-header">
+            <div>
+              <h2 class="ronda-overview-title" id="patient-ronda-patient-label">Paciente</h2>
+              <p class="ronda-overview-sub" id="patient-ronda-patient-meta"></p>
+            </div>
+            <div class="ronda-overview-header-actions">
+              <button type="button" class="secondary" onclick="openFullExpedienteFromRound(null)">Expediente completo</button>
+            </div>
+          </header>
+          <div class="ronda-overview-scroll">
+            <section class="ronda-overview-card" aria-labelledby="ronda-labs-heading">
+              <div class="ronda-overview-card-head">
+                <h3 id="ronda-labs-heading">Laboratorio reciente</h3>
+                <button type="button" class="ronda-link-btn" onclick="switchAppTab('lab')">Ir a Laboratorio</button>
+              </div>
+              <div id="patient-ronda-labs-body" class="ronda-overview-card-body"></div>
+            </section>
+            <section class="ronda-overview-card" aria-labelledby="ronda-todo-heading">
+              <div class="ronda-overview-card-head">
+                <h3 id="ronda-todo-heading">Pendientes</h3>
+                <button type="button" class="ronda-link-btn" onclick="openFullExpedienteFromRound('todo')">Ver en pestaña</button>
+              </div>
+              <div id="patient-ronda-todos-mount" class="ronda-overview-card-body rpc-form-stack-tight"></div>
+            </section>
+            <div class="ronda-overview-quick" role="group" aria-label="Accesos al expediente">
+              <button type="button" onclick="openFullExpedienteFromRound('notas')">Nota completa</button>
+              <button type="button" onclick="openFullExpedienteFromRound('indica')">Indicaciones</button>
+              <button type="button" onclick="openFullExpedienteFromRound('tend')">Tendencias</button>
+              <button type="button" onclick="openFullExpedienteFromRound('cult')">Cultivos</button>
+              <button type="button" id="ronda-quick-datos" onclick="openFullExpedienteFromRound('datos')" style="display:none;">Datos</button>
+              <button type="button" id="ronda-quick-listado" onclick="openFullExpedienteFromRound('listado')" style="display:none;">Listado de problemas</button>
+            </div>
+          </div>
+        </div>
+        <div id="patient-expediente-classic" class="patient-expediente-classic">
+        <div id="patient-ronda-fullbar" class="patient-ronda-fullbar" aria-hidden="true">
+          <button type="button" onclick="returnToRoundOverview()">Resumen de ronda</button>
         </div>
         <div class="inner-tab-bar">
           <button class="inner-tab" id="itab-datos" onclick="switchInnerTab('datos')" style="display:none;" aria-label="Datos del paciente">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             Datos
           </button>
-          <button class="inner-tab active" id="itab-notas" onclick="switchInnerTab('notas')">
+          <button class="inner-tab" id="itab-notas" onclick="switchInnerTab('notas')">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
             Nota de Evolución
           </button>
@@ -2451,28 +4545,19 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11h6m-6 4h6m-7-9h8a2 2 0 012 2v12a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2z"/></svg>
             Listado de problemas
           </button>
-          <button class="inner-tab" id="itab-todo" onclick="switchInnerTab('todo')">
+          <button class="inner-tab active" id="itab-todo" onclick="switchInnerTab('todo')">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3 8-8"/><path d="M21 12v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h11"/></svg>
             Pendientes
           </button>
         </div>
-        <div id="itab-content-datos" class="tab-content"><div id="patient-data-form" style="display:flex;flex-direction:column;gap:20px;"></div></div>
-        <div id="itab-content-notas" class="tab-content active"><div id="note-form" style="display:flex;flex-direction:column;gap:20px;"></div></div>
-        <div id="itab-content-indica" class="tab-content"><div id="indica-form" style="display:flex;flex-direction:column;gap:20px;"></div></div>
+        <div id="itab-content-datos" class="tab-content"><div id="patient-data-form" class="rpc-form-stack"></div></div>
+        <div id="itab-content-notas" class="tab-content"><div id="note-form" class="rpc-form-stack"></div></div>
+        <div id="itab-content-indica" class="tab-content"><div id="indica-form" class="rpc-form-stack"></div></div>
         <div id="itab-content-tend" class="tab-content"><div id="tendencias-container"></div></div>
         <div id="itab-content-cult" class="tab-content"><div id="cultivos-table-container"></div></div>
-        <div id="itab-content-listado" class="tab-content"><div id="listado-form" style="display:flex;flex-direction:column;gap:20px;"></div></div>
-        <div id="itab-content-todo" class="tab-content"><div id="todo-form" style="display:flex;flex-direction:column;gap:16px;"></div></div>
-      </div>
-    </div>
-    <div id="appcontent-lan" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
-      <div style="flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:20px;min-height:0;">
-        <div id="lan-panel-root"></div>
-      </div>
-    </div>
-    <div id="appcontent-calendario" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
-      <div style="flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:20px;min-height:0;">
-        <div id="calendario-panel-root"></div>
+        <div id="itab-content-listado" class="tab-content"><div id="listado-form" class="rpc-form-stack"></div></div>
+        <div id="itab-content-todo" class="tab-content active"><div id="todo-form" class="rpc-form-stack-tight"></div></div>
+        </div>
       </div>
     </div>
 
@@ -2621,6 +4706,49 @@
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
       <button class="btn-save" onclick="savePatient()">Agregar Paciente</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="procedure-agenda-modal" aria-hidden="true" onclick="if(event.target===this)closeProcedureAgendaModal()">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="procedure-agenda-modal-title">
+    <h3 id="procedure-agenda-modal-title">Procedimiento agendado</h3>
+    <input type="hidden" id="pa-edit-id" value="">
+    <div class="modal-section">
+      <div class="field-group">
+        <label for="pa-patient">Paciente</label>
+        <select id="pa-patient" class="profile-input" style="font-size:13px;width:100%;"></select>
+      </div>
+      <div class="field-group">
+        <label for="pa-procedure">Procedimiento</label>
+        <input id="pa-procedure" type="text" class="profile-input" style="font-size:13px;" placeholder="Ej. IQ programada">
+      </div>
+      <div class="field-group">
+        <label for="pa-location">Lugar</label>
+        <input id="pa-location" type="text" class="profile-input" style="font-size:13px;" placeholder="Quirofano / sala…">
+      </div>
+      <div class="field-group">
+        <label for="pa-start">Inicio (fecha y hora)</label>
+        <input id="pa-start" type="datetime-local" class="profile-input" style="font-size:13px;width:100%;">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);cursor:pointer;">
+          <input type="checkbox" id="pa-material" style="flex-shrink:0;">
+          Material aprobado
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);cursor:pointer;">
+          <input type="checkbox" id="pa-anesthesia" style="flex-shrink:0;">
+          Anestesio agendado
+        </label>
+      </div>
+    </div>
+    <div id="pa-modal-error" style="display:none;font-size:12px;font-weight:600;color:var(--error);margin-bottom:10px;"></div>
+    <div class="modal-actions" style="justify-content:space-between;flex-wrap:wrap;">
+      <button type="button" class="btn-cancel" id="pa-btn-delete" style="margin-right:auto;border-color:rgba(220,38,38,0.35);color:var(--error);display:none;" onclick="deleteProcedureAgendaFromModal()">Eliminar</button>
+      <div style="display:flex;gap:10px;margin-left:auto;">
+        <button type="button" class="btn-cancel" onclick="closeProcedureAgendaModal()">Cancelar</button>
+        <button type="button" class="btn-save" onclick="saveProcedureAgendaFromModal()">Guardar</button>
+      </div>
     </div>
   </div>
 </div>
