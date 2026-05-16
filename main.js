@@ -12,6 +12,42 @@ autoUpdater.autoDownload = true;
 autoUpdater.autoInstallOnAppQuit = true;
 autoUpdater.allowPrerelease = false;
 
+const UPDATE_CHANNEL_FILE = 'update-channel.json';
+
+function normalizeUpdateChannel(channel) {
+  return String(channel || '').toLowerCase() === 'beta' ? 'beta' : 'estable';
+}
+
+function updateChannelFilePath() {
+  return path.join(app.getPath('userData'), UPDATE_CHANNEL_FILE);
+}
+
+function readUpdateChannelFromDisk() {
+  try {
+    const raw = JSON.parse(fs.readFileSync(updateChannelFilePath(), 'utf8'));
+    return normalizeUpdateChannel(raw.channel);
+  } catch (_e) {
+    return 'estable';
+  }
+}
+
+function writeUpdateChannelToDisk(channel) {
+  const normalized = normalizeUpdateChannel(channel);
+  try {
+    fs.writeFileSync(updateChannelFilePath(), JSON.stringify({ channel: normalized }), 'utf8');
+  } catch (_e) {}
+  return normalized;
+}
+
+/** Aplica canal Estable (GitHub /releases/latest) vs Pre-releases (feed + borradores). */
+function applyUpdateChannel(channel) {
+  const normalized = normalizeUpdateChannel(channel);
+  autoUpdater.allowPrerelease = normalized === 'beta';
+  autoUpdater.channel = null;
+  if (normalized === 'estable') autoUpdater.allowDowngrade = false;
+  return normalized;
+}
+
 let server;
 let mainWindow;
 
@@ -98,9 +134,7 @@ function createWindow() {
       console.error('did-finish-load replay error:', e && e.message);
     }
     // Small delay to ensure renderer IPC listeners are registered
-    setTimeout(() => {
-      try { autoUpdater.checkForUpdates().catch(() => {}); } catch (_e) { /* noop */ }
-    }, 1500);
+    scheduleUpdateCheck(1500);
   });
 
   mainWindow.on('closed', () => { mainWindow = null; });
@@ -179,8 +213,20 @@ autoUpdater.on('error', (err) => {
 
 ipcMain.on('install-update', () => autoUpdater.quitAndInstall());
 
+let updateCheckTimer = null;
+function scheduleUpdateCheck(delayMs) {
+  if (updateCheckTimer) clearTimeout(updateCheckTimer);
+  updateCheckTimer = setTimeout(function () {
+    updateCheckTimer = null;
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    try {
+      autoUpdater.checkForUpdates().catch(function () {});
+    } catch (_e) { /* noop */ }
+  }, typeof delayMs === 'number' ? delayMs : 400);
+}
+
 ipcMain.on('check-for-updates', () => {
-  autoUpdater.checkForUpdates().catch(() => {});
+  scheduleUpdateCheck(80);
 });
 
 ipcMain.on('relaunch-app', () => {
@@ -192,11 +238,10 @@ ipcMain.on('relaunch-app', () => {
   app.exit(0);
 });
 
-// Canal de actualización (pre-releases "beta" interno | estable). El renderer lo persiste en localStorage
-// y lo informa por IPC al iniciar y al cambiarlo en Ajustes.
+// Canal de actualización (pre-releases "beta" | estable). Persistido en userData y en localStorage del renderer.
 ipcMain.on('set-update-channel', (_e, channel) => {
-  const isBeta = String(channel || '').toLowerCase() === 'beta';
-  autoUpdater.allowPrerelease = isBeta;
+  const normalized = writeUpdateChannelToDisk(channel);
+  applyUpdateChannel(normalized);
 });
 
 ipcMain.handle('get-platform', () => process.platform);
@@ -291,7 +336,7 @@ ipcMain.handle('get-lan-candidate-base-url', () => pickLanCandidateBaseUrl());
 function buildMenu() {
   const version = app.getVersion();
   const isMac = process.platform === 'darwin';
-  const checkUpdate = () => autoUpdater.checkForUpdates().catch(() => {});
+  const checkUpdate = () => scheduleUpdateCheck(80);
 
   const template = [
     ...(isMac ? [{
@@ -337,6 +382,7 @@ function buildMenu() {
 app.whenReady().then(async () => {
   try {
     process.env.R_PLUS_USER_DATA = app.getPath('userData');
+    applyUpdateChannel(readUpdateChannelFromDisk());
     server = await require('./server');
   } catch (e) {
     const detail = e && e.message ? e.message : String(e);

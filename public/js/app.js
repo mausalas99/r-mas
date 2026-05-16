@@ -5603,7 +5603,12 @@ function checkForAppUpdates() {
     showToast('Las actualizaciones automáticas solo están en la app de escritorio.', 'error');
     return;
   }
-  window.electronAPI.checkForUpdates();
+  if (typeof window.electronAPI.setUpdateChannel === 'function') {
+    try { window.electronAPI.setUpdateChannel(getUpdateChannel()); } catch (_e) {}
+  }
+  setTimeout(function () {
+    try { window.electronAPI.checkForUpdates(); } catch (_e) {}
+  }, 150);
   showToast('Buscando actualizaciones…', 'success');
 }
 
@@ -11828,6 +11833,11 @@ function setUpdateChannel(channel) {
         : 'Canal estable activado.',
       'success'
     );
+    if (window.electronAPI && typeof window.electronAPI.checkForUpdates === 'function') {
+      setTimeout(function () {
+        try { window.electronAPI.checkForUpdates(); } catch (_e) {}
+      }, 250);
+    }
   }
 }
 
@@ -11853,6 +11863,11 @@ function migrateUpdateChannelToStableDefault() {
   localStorage.setItem('rpc-settings', JSON.stringify(settings));
   if (window.electronAPI && typeof window.electronAPI.setUpdateChannel === 'function') {
     try { window.electronAPI.setUpdateChannel('estable'); } catch (_e) {}
+    if (typeof window.electronAPI.checkForUpdates === 'function') {
+      setTimeout(function () {
+        try { window.electronAPI.checkForUpdates(); } catch (_e) {}
+      }, 300);
+    }
   }
 }
 
