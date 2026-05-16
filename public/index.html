@@ -4004,10 +4004,11 @@
         <summary>LAN · servidor en esta computadora</summary>
         <div class="settings-acc-body">
           <p style="font-size:10px;color:var(--text-muted);line-height:1.45;margin:0 0 8px 0;">
-            Solo si esta R+ es <strong>anfitrión</strong> (el proceso en el puerto 3738). Aquí se escribe <code>lan-team-code.txt</code> en datos de la app; el mismo texto debe ir en <strong>Código del equipo</strong> al conectar por LAN. Sin archivo, el servidor usa <code>change-me-in-profile</code>. Tras guardar aquí, <strong>reinicia R+</strong>. Si hubo error 500 por cambiar código, usa restablecer abajo.
+            Solo si esta R+ es <strong>anfitrión</strong> (el proceso en el puerto 3738). Aquí se escribe <code>lan-team-code.txt</code> en datos de la app; el mismo texto debe ir en <strong>Código del equipo</strong> al conectar por LAN. Si dejas el campo vacío, el servidor usa <strong>1234</strong>. Tras guardar aquí, <strong>reinicia R+</strong>. Si hubo error 500 por cambiar código, usa restablecer abajo.
           </p>
+          <div id="lan-host-first-time-hint" class="settings-lan-host-first-hint" style="display:none;" role="status"></div>
           <label for="settings-lan-host-team-code-input" class="profile-field-label">Código en el servidor (archivo)</label>
-          <input id="settings-lan-host-team-code-input" class="profile-input" type="text" autocomplete="off" placeholder="Vacío = servidor usa change-me-in-profile" style="font-size:12px;" />
+          <input id="settings-lan-host-team-code-input" class="profile-input" type="text" autocomplete="off" placeholder="1234 (recomendado; vacío = 1234)" style="font-size:12px;" />
           <button type="button" class="btn-edit-templates" style="margin-top:6px;" onclick="saveLanHostTeamCodeFromUi()">Guardar código en esta computadora</button>
           <button type="button" class="btn-edit-templates" style="margin-top:8px;color:var(--error);" onclick="resetLanSquadHostStateFromUi()">Restablecer estado LAN del host…</button>
         </div>
@@ -4019,7 +4020,7 @@
           <div class="settings-data-sync-compare">
             <div class="settings-sync-card">
               <h4>Sala en vivo (LAN)</h4>
-              <p>Comparte el <strong>mismo turno</strong> con el equipo en la <strong>misma red Wi‑Fi</strong>: sesión temporal mientras trabajan juntos. No sustituye una copia de tus datos.</p>
+              <p>Comparte el <strong>mismo turno</strong> en la <strong>misma red Wi‑Fi</strong>: al unirte a una sala se fusionan <strong>pacientes, notas, labs, agenda y pendientes</strong> (sin borrar los que solo tienes tú). No sustituye un respaldo completo entre turnos.</p>
             </div>
             <div class="settings-sync-card">
               <h4>Respaldos y sync entre equipos</h4>

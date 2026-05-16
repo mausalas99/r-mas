@@ -76,7 +76,7 @@ function createLanRouter({ store, broadcast }) {
     res.json({ bundle });
   });
 
-  r.put('/rooms/:id/sync-bundle', express.json({ limit: '4mb' }), (req, res) => {
+  r.put('/rooms/:id/sync-bundle', express.json({ limit: '16mb' }), (req, res) => {
     try {
       const body = req.body && req.body.bundle ? req.body.bundle : req.body;
       const out = store.putRoomSyncBundle(req.params.id, body);

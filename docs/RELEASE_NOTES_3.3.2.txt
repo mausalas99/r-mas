@@ -1,0 +1,33 @@
+R+ 3.3.2 (estable — LAN código 1234 + expediente en sala)
+=======================================================
+
+Fecha: 2026-05-16
+
+## Resumen
+
+Mejora la coordinación en sala LAN: código de equipo por defecto **1234**, y al unirte a una sala LiveSync se fusiona el **expediente completo** (pacientes, notas, labs, listado, agenda y pendientes) sin borrar lo que solo existe en tu equipo.
+
+## LAN / LiveSync
+
+- **Código por defecto `1234`** — Servidor y cliente usan `1234` si no hay archivo ni variable de entorno; aviso la primera vez que configuras el host.
+- **Expediente en sala** — Al entrar a una sala (⇄) se combinan pacientes por registro: notas, indicaciones, historial de laboratorio, receta y listado de problemas. Los pacientes que solo tienes tú **no se eliminan**; los cambios recientes de cualquier lado se reflejan en el merge.
+- **Labs** — Los envíos de laboratorio se unen por id de estudio (no se pierden los del host si tu R+ estaba vacía).
+- **Texto de ayuda** — Ajustes y panel ⇄ aclaran la diferencia entre sala en vivo y paquete sync manual.
+
+## Laboratorio (desde 3.3.1)
+
+- **Copiar** en Resultados exporta el texto compacto de R+, no el informe crudo de SOME.
+
+## Quién debería actualizar
+
+- Equipos que usan **⇄ sala LAN** y necesitan ver el mismo listado de pacientes y labs en varias computadoras del turno.
+- Usuarios en **3.3.0** o **3.3.1** con problemas de código LAN o Copiar labs.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v3.3.2
+
+- Mac: `R+-3.3.2-arm64.dmg`, `R+-3.3.2-x64.dmg` (y zip para auto-update).
+- Windows: `R+-3.3.2-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye `write-release-yml.js`).

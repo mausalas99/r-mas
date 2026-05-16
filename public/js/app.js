@@ -59,6 +59,7 @@ import {
   nextRoomSnapshotGeneration,
   isLiveSyncEnvelope,
 } from './live-sync-room.mjs';
+import { mergeLanPatientEntrySources } from './lan-patient-merge.mjs';
 import { validatePatientForSave, buildExpedienteAdvice } from './patient-validation.mjs';
 import {
   getTourSteps,
@@ -110,6 +111,11 @@ if (__v3MigratedThisBoot) storage.saveSettings(settings);
 var lanClient = new LanClient();
 var activeLiveSyncRoomId = '';
 var activeLiveSyncRoomLabel = '';
+/** Código LAN por defecto (mismo que lan-squad/effective-team-code.js). */
+var DEFAULT_LAN_TEAM_CODE = '1234';
+var LAN_HOST_CODE_HINT_SEEN_KEY = 'rpc-lan-host-code-hint-seen';
+var _liveSyncPushTimer = null;
+var LIVE_SYNC_PUSH_DEBOUNCE_MS = 900;
 var LAN_KNOWN_ROOMS_LS = 'rpc-lan-known-rooms';
 function readLanKnownRooms() {
   try {
@@ -312,6 +318,81 @@ function collectTodosMapForLiveSync() {
   });
   return out;
 }
+function collectPatientEntriesForLanSync() {
+  var out = [];
+  patients.forEach(function (p) {
+    if (!p || !p.id || String(p.id).indexOf('demo-') === 0) return;
+    var entry = buildPatientEntry(p.id);
+    if (entry) out.push(entry);
+  });
+  return out;
+}
+
+function mergeLiveSyncFullBundles(sources) {
+  var base = mergeLiveSyncBundles(sources);
+  base.entries = mergeLanPatientEntrySources(sources);
+  return base;
+}
+
+function touchPatientLanUpdatedAt(patientId) {
+  var p = patients.find(function (x) {
+    return x && x.id === patientId;
+  });
+  if (p) p.lanUpdatedAt = new Date().toISOString();
+}
+
+function applyLanPatientEntries(entries) {
+  if (!entries || !entries.length) return { added: 0, updated: 0 };
+  var added = 0;
+  var updated = 0;
+  for (var i = 0; i < entries.length; i += 1) {
+    var entry = entries[i];
+    if (!entry || !entry.patient) continue;
+    var reg = String(entry.patient.registro || '').trim();
+    var existing = reg ? findPatientByRegistro(reg) : null;
+    if (!existing && entry.patient.id) {
+      existing = patients.find(function (p) {
+        return p && p.id === entry.patient.id;
+      });
+    }
+    if (existing) {
+      existing.nombre = entry.patient.nombre || existing.nombre;
+      existing.edad = entry.patient.edad || existing.edad;
+      existing.sexo = entry.patient.sexo || existing.sexo;
+      existing.area = entry.patient.area || existing.area;
+      existing.servicio = entry.patient.servicio || existing.servicio;
+      existing.cuarto = entry.patient.cuarto || existing.cuarto;
+      existing.cama = entry.patient.cama || existing.cama;
+      existing.registro = entry.patient.registro || existing.registro;
+      if (entry.patient.fromLab) existing.fromLab = true;
+      notes[existing.id] = entry.note || {};
+      indicaciones[existing.id] = entry.indicaciones || {};
+      labHistory[existing.id] = Array.isArray(entry.labHistory) ? entry.labHistory : [];
+      if (entry.medReceta) medRecetaByPatient[existing.id] = entry.medReceta;
+      else delete medRecetaByPatient[existing.id];
+      if (entry.listadoProblemas) listadoProblemas[existing.id] = entry.listadoProblemas;
+      updated += 1;
+    } else {
+      var newId = applyImportEntry(entry, 'duplicate', null);
+      if (entry.listadoProblemas && newId) listadoProblemas[newId] = entry.listadoProblemas;
+      added += 1;
+    }
+  }
+  if (added || updated) {
+    storage.saveAll(patients, notes, indicaciones, labHistory, medRecetaByPatient, listadoProblemas);
+    renderPatientList();
+    if (activeId) {
+      try {
+        renderNoteForm();
+      } catch (_e) {}
+      try {
+        renderLabHistoryPanel();
+      } catch (_e2) {}
+    }
+  }
+  return { added: added, updated: updated };
+}
+
 function applyLiveSyncMerged(merged) {
   if (!merged) return;
   storage.saveScheduledProcedures(merged.agenda || []);
@@ -319,6 +400,9 @@ function applyLiveSyncMerged(merged) {
   Object.keys(todosMap).forEach(function (pid) {
     storage.saveTodos(pid, todosMap[pid] || []);
   });
+  if (merged.entries && merged.entries.length) {
+    applyLanPatientEntries(merged.entries);
+  }
   if (activeAppTab === 'agenda') renderProcedureAgendaPanel();
   refreshAllTodoUIs();
 }
@@ -327,17 +411,20 @@ function saveLocalRoomSnapshot(roomId) {
   if (!rid) return;
   var snap = buildRoomSnapshotFromStorage(storage, collectPatientIdsForLiveSync());
   var prev = storage.getLanRoomSnapshot(rid);
+  var entries = collectPatientEntriesForLanSync();
   storage.saveLanRoomSnapshot(rid, {
     savedAt: snap.savedAt,
     generation: nextRoomSnapshotGeneration(prev),
     agenda: snap.agenda,
     todos: snap.todos,
+    entries: entries,
   });
 }
 function buildLiveSyncBundleEnvelope(roomId) {
   var rid = String(roomId || '').trim();
   var snap = buildRoomSnapshotFromStorage(storage, collectPatientIdsForLiveSync());
   var prev = storage.getLanRoomSnapshot(rid);
+  var entries = collectPatientEntriesForLanSync();
   return {
     type: 'livesync:bundle',
     roomId: rid,
@@ -346,7 +433,21 @@ function buildLiveSyncBundleEnvelope(roomId) {
     generation: nextRoomSnapshotGeneration(prev),
     agenda: snap.agenda,
     todos: snap.todos,
+    entries: entries,
   };
+}
+function scheduleLiveSyncPush() {
+  if (!activeLiveSyncRoomId || !lanClient.liveConnected) return;
+  if (_liveSyncPushTimer) clearTimeout(_liveSyncPushTimer);
+  _liveSyncPushTimer = setTimeout(function () {
+    _liveSyncPushTimer = null;
+    if (!activeLiveSyncRoomId || !lanClient.liveConnected) return;
+    var bundle = buildLiveSyncBundleEnvelope(activeLiveSyncRoomId);
+    try {
+      lanClient.sendLive(bundle);
+    } catch (_e) {}
+    saveLocalRoomSnapshot(activeLiveSyncRoomId);
+  }, LIVE_SYNC_PUSH_DEBOUNCE_MS);
 }
 function syncLiveSyncStatusChrome() {
   var el = document.getElementById('lan-livesync-status');
@@ -359,7 +460,7 @@ function syncLiveSyncStatusChrome() {
   el.style.display = 'block';
   var label = activeLiveSyncRoomLabel || activeLiveSyncRoomId;
   if (lanClient.liveConnected) {
-    el.textContent = 'Sala: ' + label + ' · sincronizando agenda y pendientes';
+    el.textContent = 'Sala: ' + label + ' · sincronizando pacientes, labs, agenda y pendientes';
   } else {
     el.textContent = 'Sala: ' + label + ' · solo local (sin sync en vivo)';
   }
@@ -427,10 +528,27 @@ function onLiveSyncWireMessage(data) {
     }
     return;
   }
+  if (data.type === 'livesync:leave' && data.bundle && data.clientId !== myId) {
+    applyLiveSyncMerged(
+      mergeLiveSyncFullBundles([
+        {
+          agenda: storage.getScheduledProcedures(),
+          todos: collectTodosMapForLiveSync(),
+          entries: collectPatientEntriesForLanSync(),
+        },
+        data.bundle,
+      ])
+    );
+    return;
+  }
   if (data.clientId === myId && data.type !== 'livesync:hello') return;
   if (data.type === 'livesync:bundle') {
-    var mergedBundle = mergeLiveSyncBundles([
-      { agenda: storage.getScheduledProcedures(), todos: collectTodosMapForLiveSync() },
+    var mergedBundle = mergeLiveSyncFullBundles([
+      {
+        agenda: storage.getScheduledProcedures(),
+        todos: collectTodosMapForLiveSync(),
+        entries: collectPatientEntriesForLanSync(),
+      },
       data,
     ]);
     applyLiveSyncMerged(mergedBundle);
@@ -448,6 +566,11 @@ async function reconcileLiveSyncRoom(roomId) {
   var sources = [];
   var local = storage.getLanRoomSnapshot(roomId);
   if (local) sources.push(local);
+  sources.push({
+    agenda: storage.getScheduledProcedures(),
+    todos: collectTodosMapForLiveSync(),
+    entries: collectPatientEntriesForLanSync(),
+  });
   try {
     var resp = await lanClient.fetch(
       '/api/lan/v1/rooms/' + encodeURIComponent(roomId) + '/sync-bundle'
@@ -458,7 +581,7 @@ async function reconcileLiveSyncRoom(roomId) {
     }
   } catch (_e) {}
   if (sources.length) {
-    applyLiveSyncMerged(mergeLiveSyncBundles(sources));
+    applyLiveSyncMerged(mergeLiveSyncFullBundles(sources));
   }
 }
 function leaveLiveSyncRoom(opts) {
@@ -486,6 +609,7 @@ function leaveLiveSyncRoom(opts) {
               uploadedByClientId: bundle.clientId,
               agenda: bundle.agenda,
               todos: bundle.todos,
+              entries: bundle.entries,
             },
           }),
         })
@@ -3762,7 +3886,9 @@ async function renderLanPanel() {
     hint.className = 'lan-connect-card-hint';
     if (uiRole === 'host') {
       hint.innerHTML =
-        'Las otras R+ deben estar en la <strong>misma red Wi‑Fi</strong>. La dirección suele ser <code>http://</code> más la IP de <strong>esta</strong> computadora (la que te da el hospital o la red local). Si dejas vacío el campo de dirección, al iniciar y al copiar usamos la IP que detectamos en esta máquina. El <strong>código del equipo</strong> debe ser el mismo que tiene configurado el servidor R+ en esta máquina.';
+        'Las otras R+ deben estar en la <strong>misma red Wi‑Fi</strong>. La dirección suele ser <code>http://</code> más la IP de <strong>esta</strong> computadora. Si dejas vacío el campo de dirección, usamos la IP que detectamos aquí. El <strong>código del equipo</strong> por defecto es <strong>' +
+        esc(DEFAULT_LAN_TEAM_CODE) +
+        '</strong> (escríbelo tal cual en «Código del equipo» y en Ajustes → LAN · servidor en esta computadora).';
     } else {
       hint.innerHTML =
         'Pide al anfitrión la <strong>dirección</strong> y el <strong>código</strong>. Son la “dirección del edificio” y la “llave”: sin ambos no entras.';
@@ -3798,8 +3924,9 @@ async function renderLanPanel() {
     inputCode.id = 'lan-input-team-code';
     inputCode.type = 'text';
     inputCode.autocomplete = 'off';
-    inputCode.placeholder = uiRole === 'host' ? 'Si no usas archivo en servidor: change-me-in-profile' : 'Lo escribe quien configuró la sala';
-    inputCode.value = String(cfg.teamCode || '');
+    inputCode.placeholder =
+      uiRole === 'host' ? 'Por defecto: ' + DEFAULT_LAN_TEAM_CODE : 'Lo escribe quien configuró la sala';
+    inputCode.value = String(cfg.teamCode || '').trim() || (uiRole === 'host' ? DEFAULT_LAN_TEAM_CODE : '');
     fieldCode.appendChild(labelCode);
     fieldCode.appendChild(inputCode);
     card.appendChild(fieldCode);
@@ -3961,7 +4088,9 @@ async function renderLanPanel() {
     errHttp.className = 'lan-connect-card-hint';
     if (resp.status === 401) {
       errHttp.innerHTML =
-        'El <strong>código del equipo</strong> que guardaste en esta R+ no coincide con el que usa el proceso servidor (archivo <code>lan-team-code.txt</code> en datos de la app, variable <code>R_PLUS_LAN_TEAM_CODE</code>, o el valor por defecto <code>change-me-in-profile</code>). Deben ser <strong>exactamente el mismo texto</strong> en ambos sitios. Tras cambiar el archivo, reinicia R+.';
+        'El <strong>código del equipo</strong> que guardaste en esta R+ no coincide con el que usa el proceso servidor (archivo <code>lan-team-code.txt</code>, variable <code>R_PLUS_LAN_TEAM_CODE</code> o el valor por defecto <code>' +
+        esc(DEFAULT_LAN_TEAM_CODE) +
+        '</code>). Deben ser <strong>exactamente el mismo texto</strong> en ambos sitios. Tras cambiar el archivo, reinicia R+.';
     } else {
       var rawBody = '';
       try {
@@ -4082,7 +4211,7 @@ async function saveLanHostTeamCodeFromUi() {
     return;
   }
   if (res && res.ok) {
-    var plainTrim = String(plain || '').trim();
+    var plainTrim = String(plain || '').trim() || DEFAULT_LAN_TEAM_CODE;
     var cfg = typeof storage.getLanConfig === 'function' ? (storage.getLanConfig() || {}) : {};
     var hostUrl = String(cfg.hostUrl || '').trim().replace(/\/+$/, '');
     if (hostUrl && plainTrim) {
@@ -4191,6 +4320,7 @@ async function saveLanSettingsFromUi(opts) {
     .trim()
     .replace(/\/+$/, '');
   var teamCode = String(teamInput && teamInput.value ? teamInput.value : '').trim();
+  if (!teamCode && uiRole === 'host') teamCode = DEFAULT_LAN_TEAM_CODE;
   if (!hostUrl || !teamCode) {
     showToast(
       !hostUrl
@@ -4198,7 +4328,7 @@ async function saveLanSettingsFromUi(opts) {
           ? 'No pudimos detectar la IP. Escribe la dirección http://… que verán las otras R+.'
           : 'Escribe la dirección del servidor que te dio el anfitrión.'
         : uiRole === 'host'
-          ? 'Escribe el código del equipo (el mismo que usa el servidor en esta R+).'
+          ? 'Escribe el código del equipo (por defecto ' + DEFAULT_LAN_TEAM_CODE + ').'
           : 'Escribe el código que te dio quien abrió la sala.',
       'error'
     );
@@ -4274,7 +4404,7 @@ function joinLanRoom(roomId, displayName) {
     showToast('No se pudo activar relay de sala', 'error');
     return;
   }
-  showToast('Sala: sincronizando agenda y pendientes', 'success');
+  showToast('Sala: sincronizando expediente, agenda y pendientes', 'success');
   syncLiveSyncStatusChrome();
   renderLanPanel();
 }
@@ -5450,8 +5580,10 @@ function scheduleLabHistoryPostSaveMaintenance() {
 }
 
 function saveState() {
+  if (activeLiveSyncRoomId && activeId) touchPatientLanUpdatedAt(activeId);
   storage.saveAll(patients, notes, indicaciones, labHistory, medRecetaByPatient, listadoProblemas);
   scheduleLabHistoryPostSaveMaintenance();
+  scheduleLiveSyncPush();
 }
 
 try {
@@ -5806,12 +5938,71 @@ function toggleSettingsSection() {
   toggleSettingsDropdown();
 }
 
+function syncLanHostFirstTimeHintUi() {
+  var hint = document.getElementById('lan-host-first-time-hint');
+  if (!hint) return;
+  var role = typeof storage.getLanUiRole === 'function' ? storage.getLanUiRole() : 'client';
+  if (role !== 'host' || localStorage.getItem(LAN_HOST_CODE_HINT_SEEN_KEY) === '1') {
+    hint.style.display = 'none';
+    return;
+  }
+  hint.style.display = 'block';
+  hint.style.margin = '0 0 10px 0';
+  hint.style.padding = '10px 12px';
+  hint.style.borderRadius = '8px';
+  hint.style.border = '1px solid var(--border)';
+  hint.style.background = 'var(--surface-elevated, rgba(99,102,241,0.08))';
+  hint.style.fontSize = '11px';
+  hint.style.lineHeight = '1.45';
+  hint.innerHTML =
+    '<strong>Primera vez como anfitrión:</strong> en el campo de abajo escribe <strong>' +
+    esc(DEFAULT_LAN_TEAM_CODE) +
+    '</strong> tal cual (cuatro dígitos), pulsa «Guardar código en esta computadora» y <strong>reinicia R+</strong>. ' +
+    'El mismo <strong>' +
+    esc(DEFAULT_LAN_TEAM_CODE) +
+    '</strong> debe ir en «Código del equipo» en la pestaña ⇄. ' +
+    '<button type="button" class="btn-edit-templates" style="margin-top:8px;display:block;" onclick="dismissLanHostFirstTimeHint()">Entendido</button>';
+}
+
+function dismissLanHostFirstTimeHint() {
+  try {
+    localStorage.setItem(LAN_HOST_CODE_HINT_SEEN_KEY, '1');
+  } catch (_e) {}
+  syncLanHostFirstTimeHintUi();
+}
+
+async function syncLanHostTeamCodeSettingsInput() {
+  var input = document.getElementById('settings-lan-host-team-code-input');
+  if (!input) return;
+  var code = DEFAULT_LAN_TEAM_CODE;
+  if (window.electronAPI && typeof window.electronAPI.getLanEffectiveTeamCode === 'function') {
+    try {
+      var info = await window.electronAPI.getLanEffectiveTeamCode();
+      if (info && info.ok && info.code) code = String(info.code);
+    } catch (_e) {}
+  }
+  if (!String(input.value || '').trim()) input.value = code;
+}
+
 function syncSettingsLanHostDiskSection() {
   var acc = document.getElementById('settings-accordion-lan-host-disk');
   if (!acc) return;
   var desktop = !!(window.electronAPI && typeof window.electronAPI.writeLanHostTeamCode === 'function');
   var role = typeof storage.getLanUiRole === 'function' ? storage.getLanUiRole() : 'client';
   acc.style.display = desktop && role === 'host' ? '' : 'none';
+  if (desktop && role === 'host') {
+    syncLanHostTeamCodeSettingsInput();
+    syncLanHostFirstTimeHintUi();
+    if (!acc.dataset.lanHostToggleBound) {
+      acc.dataset.lanHostToggleBound = '1';
+      acc.addEventListener('toggle', function () {
+        if (acc.open) {
+          syncLanHostTeamCodeSettingsInput();
+          syncLanHostFirstTimeHintUi();
+        }
+      });
+    }
+  }
 }
 
 function toggleSettingsDropdown() {
@@ -7366,6 +7557,18 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '3.3.2': [
+    {
+      title: 'LAN: código 1234 y expediente en sala',
+      body:
+        'El código de equipo por defecto es 1234. Al unirte a una sala ⇄ se fusionan pacientes, notas, laboratorios, agenda y pendientes entre el equipo, sin borrar los pacientes que solo existen en tu R+.',
+    },
+    {
+      title: 'Copiar labs (3.3.1)',
+      body:
+        'Copiar en Resultados vuelve a usar el texto compacto de R+, no el informe crudo de SOME.',
+    },
+  ],
   '3.3.1': [
     {
       title: 'Copiar labs corregido',
@@ -8223,7 +8426,8 @@ function buildPatientEntry(patientId) {
     note: notes[patientId] || {},
     indicaciones: indicaciones[patientId] || {},
     labHistory: Array.isArray(labHistory[patientId]) ? labHistory[patientId] : [],
-    medReceta: medRecetaByPatient[patientId] || null
+    medReceta: medRecetaByPatient[patientId] || null,
+    listadoProblemas: listadoProblemas[patientId] || null,
   };
 }
 
@@ -13123,6 +13327,7 @@ Object.assign(window, {
   deleteProcedureAgendaFromModal,
   saveLanSettingsFromUi,
   saveLanHostTeamCodeFromUi,
+  dismissLanHostFirstTimeHint,
   resetLanSquadHostStateFromUi,
   joinLanRoom,
   createLanRoomFromUi,

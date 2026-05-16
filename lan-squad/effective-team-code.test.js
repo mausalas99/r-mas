@@ -13,7 +13,7 @@ test('readEffectiveLanTeamCode usa default sin archivo ni env forzado', () => {
   try {
     const r = readEffectiveLanTeamCode({ userDataPath: dir });
     assert.strictEqual(r.source, 'default');
-    assert.strictEqual(r.code, 'change-me-in-profile');
+    assert.strictEqual(r.code, '1234');
   } finally {
     if (prev !== undefined) process.env.R_PLUS_LAN_TEAM_CODE = prev;
     fs.rmSync(dir, { recursive: true, force: true });
