@@ -25,7 +25,16 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 ---
 
-**Versión estable actual:** [3.2.1](https://github.com/mausalas99/r-mas/releases/tag/v3.2.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [3.2.2](https://github.com/mausalas99/r-mas/releases/tag/v3.2.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+
+---
+
+## R+ 3.2.2 (estable — laboratorio + canal Estable en actualizaciones)
+
+- **Actualizaciones** — Canal **Estable** detecta releases oficiales al arrancar y al cambiar de canal; salto directo recomendado desde 3.0.x / 3.2.0.
+- **Laboratorio** — Incluye arreglos de 3.2.1: **Copiar** visible, BH compacta, asteriscos en alterados.
+
+Notas: `docs/RELEASE_NOTES_3.2.2.txt`.
 
 ---
 

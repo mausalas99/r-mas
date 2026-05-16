@@ -7078,6 +7078,18 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '3.2.2': [
+    {
+      title: 'Actualizaciones en canal Estable',
+      body:
+        'Con Estable seleccionado en Ajustes, la app vuelve a detectar releases oficiales en GitHub (incluido salto desde versiones 3.0.x). Al cambiar de canal se busca de nuevo. El aviso Pre-release solo aparece en borradores reales de GitHub.',
+    },
+    {
+      title: 'Laboratorio (BH, Copiar, asteriscos)',
+      body:
+        'BH compacta sin línea extendida; botón Copiar en Resultados; valores alterados con * al copiar. Ver detalle en notas de 3.2.1 si vienes de 3.2.0.',
+    },
+  ],
   '3.2.1': [
     {
       title: 'Laboratorio: BH compacta y Copiar visible',
