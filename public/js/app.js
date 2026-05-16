@@ -52,6 +52,13 @@ import {
   removeProblema as listadoRemoveProblema,
   reorderProblema as listadoReorderProblema,
 } from './listado-problemas-core.mjs';
+import { LISTADO_PROBLEMAS_AI_PROMPT } from './listado-problemas-ai-prompt.mjs';
+import {
+  mergeLiveSyncBundles,
+  buildRoomSnapshotFromStorage,
+  nextRoomSnapshotGeneration,
+  isLiveSyncEnvelope,
+} from './live-sync-room.mjs';
 import { validatePatientForSave, buildExpedienteAdvice } from './patient-validation.mjs';
 import {
   getTourSteps,
@@ -101,6 +108,8 @@ var settings     = storage.getSettings();
 var __v3MigratedThisBoot = migrateToV3(settings);
 if (__v3MigratedThisBoot) storage.saveSettings(settings);
 var lanClient = new LanClient();
+var activeLiveSyncRoomId = '';
+var activeLiveSyncRoomLabel = '';
 var LAN_KNOWN_ROOMS_LS = 'rpc-lan-known-rooms';
 function readLanKnownRooms() {
   try {
@@ -275,6 +284,247 @@ lanClient.addEventListener('lan-status', function (ev) {
 lanClient.addEventListener('lan-patch', function () {
   if (typeof renderLanPanel === 'function') renderLanPanel();
 });
+function getLanClientId() {
+  try {
+    var id = localStorage.getItem('rpc-lan-client-id');
+    if (id && String(id).trim()) return String(id).trim();
+    var gen = 'lc_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+    localStorage.setItem('rpc-lan-client-id', gen);
+    return gen;
+  } catch (_e) {
+    return 'lc_anon';
+  }
+}
+function collectPatientIdsForLiveSync() {
+  return patients
+    .filter(function (p) {
+      return p && p.id && String(p.id).indexOf('demo-') !== 0;
+    })
+    .map(function (p) {
+      return String(p.id);
+    });
+}
+function collectTodosMapForLiveSync() {
+  var out = {};
+  collectPatientIdsForLiveSync().forEach(function (pid) {
+    var list = storage.getTodos(pid);
+    if (list.length) out[pid] = list;
+  });
+  return out;
+}
+function applyLiveSyncMerged(merged) {
+  if (!merged) return;
+  storage.saveScheduledProcedures(merged.agenda || []);
+  var todosMap = merged.todos || {};
+  Object.keys(todosMap).forEach(function (pid) {
+    storage.saveTodos(pid, todosMap[pid] || []);
+  });
+  if (activeAppTab === 'agenda') renderProcedureAgendaPanel();
+  refreshAllTodoUIs();
+}
+function saveLocalRoomSnapshot(roomId) {
+  var rid = String(roomId || '').trim();
+  if (!rid) return;
+  var snap = buildRoomSnapshotFromStorage(storage, collectPatientIdsForLiveSync());
+  var prev = storage.getLanRoomSnapshot(rid);
+  storage.saveLanRoomSnapshot(rid, {
+    savedAt: snap.savedAt,
+    generation: nextRoomSnapshotGeneration(prev),
+    agenda: snap.agenda,
+    todos: snap.todos,
+  });
+}
+function buildLiveSyncBundleEnvelope(roomId) {
+  var rid = String(roomId || '').trim();
+  var snap = buildRoomSnapshotFromStorage(storage, collectPatientIdsForLiveSync());
+  var prev = storage.getLanRoomSnapshot(rid);
+  return {
+    type: 'livesync:bundle',
+    roomId: rid,
+    clientId: getLanClientId(),
+    savedAt: snap.savedAt,
+    generation: nextRoomSnapshotGeneration(prev),
+    agenda: snap.agenda,
+    todos: snap.todos,
+  };
+}
+function syncLiveSyncStatusChrome() {
+  var el = document.getElementById('lan-livesync-status');
+  if (!el) return;
+  if (!activeLiveSyncRoomId) {
+    el.style.display = 'none';
+    el.textContent = '';
+    return;
+  }
+  el.style.display = 'block';
+  var label = activeLiveSyncRoomLabel || activeLiveSyncRoomId;
+  if (lanClient.liveConnected) {
+    el.textContent = 'Sala: ' + label + ' · sincronizando agenda y pendientes';
+  } else {
+    el.textContent = 'Sala: ' + label + ' · solo local (sin sync en vivo)';
+  }
+}
+function emitLiveSyncAgendaUpsert(eventObj) {
+  if (!activeLiveSyncRoomId || !lanClient.liveConnected || !eventObj) return;
+  lanClient.sendLive({
+    type: 'livesync:patch',
+    roomId: activeLiveSyncRoomId,
+    clientId: getLanClientId(),
+    entity: 'agenda',
+    op: 'upsert',
+    id: eventObj.id,
+    body: eventObj,
+    updatedAt: eventObj.updatedAt,
+  });
+}
+function emitLiveSyncAgendaDelete(id, updatedAt) {
+  if (!activeLiveSyncRoomId || !lanClient.liveConnected) return;
+  lanClient.sendLive({
+    type: 'livesync:patch',
+    roomId: activeLiveSyncRoomId,
+    clientId: getLanClientId(),
+    entity: 'agenda',
+    op: 'delete',
+    id: id,
+    updatedAt: updatedAt,
+  });
+}
+function emitLiveSyncTodoUpsert(patientId, todo) {
+  if (!activeLiveSyncRoomId || !lanClient.liveConnected || !todo) return;
+  if (String(patientId || '').indexOf('demo-') === 0) return;
+  lanClient.sendLive({
+    type: 'livesync:patch',
+    roomId: activeLiveSyncRoomId,
+    clientId: getLanClientId(),
+    entity: 'todo',
+    op: 'upsert',
+    id: todo.id,
+    patientId: patientId,
+    body: todo,
+    updatedAt: todo.updatedAt,
+  });
+}
+function emitLiveSyncTodoDelete(patientId, id, updatedAt) {
+  if (!activeLiveSyncRoomId || !lanClient.liveConnected) return;
+  lanClient.sendLive({
+    type: 'livesync:patch',
+    roomId: activeLiveSyncRoomId,
+    clientId: getLanClientId(),
+    entity: 'todo',
+    op: 'delete',
+    id: id,
+    patientId: patientId,
+    updatedAt: updatedAt,
+  });
+}
+function onLiveSyncWireMessage(data) {
+  if (!data || !isLiveSyncEnvelope(data)) return;
+  if (data.roomId && activeLiveSyncRoomId && data.roomId !== activeLiveSyncRoomId) return;
+  var myId = getLanClientId();
+  if (data.type === 'livesync:hello') {
+    if (data.clientId !== myId && activeLiveSyncRoomId) {
+      lanClient.sendLive(buildLiveSyncBundleEnvelope(activeLiveSyncRoomId));
+    }
+    return;
+  }
+  if (data.clientId === myId && data.type !== 'livesync:hello') return;
+  if (data.type === 'livesync:bundle') {
+    var mergedBundle = mergeLiveSyncBundles([
+      { agenda: storage.getScheduledProcedures(), todos: collectTodosMapForLiveSync() },
+      data,
+    ]);
+    applyLiveSyncMerged(mergedBundle);
+    return;
+  }
+  if (data.type === 'livesync:patch') {
+    var mergedPatch = mergeLiveSyncBundles([
+      { agenda: storage.getScheduledProcedures(), todos: collectTodosMapForLiveSync() },
+      data,
+    ]);
+    applyLiveSyncMerged(mergedPatch);
+  }
+}
+async function reconcileLiveSyncRoom(roomId) {
+  var sources = [];
+  var local = storage.getLanRoomSnapshot(roomId);
+  if (local) sources.push(local);
+  try {
+    var resp = await lanClient.fetch(
+      '/api/lan/v1/rooms/' + encodeURIComponent(roomId) + '/sync-bundle'
+    );
+    if (resp.ok) {
+      var j = await resp.json();
+      if (j && j.bundle) sources.push(j.bundle);
+    }
+  } catch (_e) {}
+  if (sources.length) {
+    applyLiveSyncMerged(mergeLiveSyncBundles(sources));
+  }
+}
+function leaveLiveSyncRoom(opts) {
+  opts = opts || {};
+  var roomId = activeLiveSyncRoomId;
+  if (roomId) {
+    var bundle = buildLiveSyncBundleEnvelope(roomId);
+    if (!opts.silentLeave) {
+      lanClient.sendLive({
+        type: 'livesync:leave',
+        roomId: roomId,
+        clientId: getLanClientId(),
+        bundle: bundle,
+      });
+    }
+    saveLocalRoomSnapshot(roomId);
+    if (isLanSessionConfiguredForRest()) {
+      lanClient
+        .fetch('/api/lan/v1/rooms/' + encodeURIComponent(roomId) + '/sync-bundle', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            bundle: {
+              updatedAt: bundle.savedAt,
+              uploadedByClientId: bundle.clientId,
+              agenda: bundle.agenda,
+              todos: bundle.todos,
+            },
+          }),
+        })
+        .catch(function () {});
+    }
+  }
+  activeLiveSyncRoomId = '';
+  activeLiveSyncRoomLabel = '';
+  lanClient.disconnectLiveChannel();
+  syncLiveSyncStatusChrome();
+  if (typeof renderLanPanel === 'function') renderLanPanel();
+}
+lanClient.addEventListener('lan-live', function (ev) {
+  onLiveSyncWireMessage(ev.detail);
+});
+lanClient.addEventListener('lan-live-status', function (ev) {
+  if (!ev.detail) return;
+  if (ev.detail.connected && activeLiveSyncRoomId) {
+    reconcileLiveSyncRoom(activeLiveSyncRoomId).then(function () {
+      var prev = storage.getLanRoomSnapshot(activeLiveSyncRoomId);
+      lanClient.sendLive({
+        type: 'livesync:hello',
+        roomId: activeLiveSyncRoomId,
+        clientId: getLanClientId(),
+        snapshotAt: prev && prev.savedAt ? prev.savedAt : null,
+        generation: prev && prev.generation != null ? prev.generation : 0,
+      });
+    });
+  } else if (!ev.detail.connected && activeLiveSyncRoomId) {
+    saveLocalRoomSnapshot(activeLiveSyncRoomId);
+  }
+  syncLiveSyncStatusChrome();
+  if (typeof renderLanPanel === 'function') renderLanPanel();
+});
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', function () {
+    if (activeLiveSyncRoomId) saveLocalRoomSnapshot(activeLiveSyncRoomId);
+  });
+}
 var sparkCharts  = {};
 var detailChart  = null;
 var medOutputTab = 'full';
@@ -1800,7 +2050,7 @@ function groupCultivoRowsByTipoChronologic(rows) {
   });
 }
 
-/** Cultivos: mostrar positivos y negativos solo si hay cambio de signo respecto a otro resultado del mismo tipo+muestra (seguidos en el tiempo). */
+/** Modo Pase: positivos siempre; negativos solo si hay cambio de signo vs. otro resultado del mismo tipo+muestra (cronológico). */
 function filterCultivoRowsSignificantFlip(rows) {
   function seriesKey(r) {
     return (
@@ -1850,25 +2100,18 @@ function renderCultivosTable() {
     return;
   }
   var flatRows = extractCultivoTableRowsFromHistory(activeId);
-  var displayRows = filterCultivoRowsSignificantFlip(flatRows);
-  if (!displayRows.length && flatRows.length) {
-    container.innerHTML =
-      '<p class="tend-empty">No hay cultivos positivos en el historial. Los negativos sin un positivo previo o posterior en la misma línea (tipo y muestra) no se muestran aquí.</p>';
-    if (isPaseMode()) renderPaseBoard();
-    return;
-  }
-  if (!displayRows.length) {
+  if (!flatRows.length) {
     container.innerHTML =
       '<p class="tend-empty">No hay cultivos en el historial. Aparecen urocultivos, hemocultivos, tinción Gram y cultivos de catéter enviados desde Laboratorio.</p>';
     if (isPaseMode()) renderPaseBoard();
     return;
   }
-  var groups = groupCultivoRowsByTipoChronologic(displayRows);
+  var groups = groupCultivoRowsByTipoChronologic(flatRows);
   function rowFechaDisplay(r) {
     if (r.fechaMuestra && r.fechaMuestra !== '—') return r.fechaMuestra;
     return r.studyDate || '—';
   }
-  var negs = displayRows.filter(function (r) {
+  var negs = flatRows.filter(function (r) {
     return r.negativo;
   });
   negs.sort(function (a, b) {
@@ -1888,7 +2131,7 @@ function renderCultivosTable() {
       return lab + ' · ' + fd + ' · ' + (r.sitio.length > 36 ? r.sitio.slice(0, 34) + '…' : r.sitio);
     });
     negStrip =
-      '<div class="cultivos-neg-strip" role="status"><strong>Cultivos negativos</strong> (solo si hay cambio vs. positivo en la misma muestra) · ' +
+      '<div class="cultivos-neg-strip" role="status"><strong>Cultivos negativos</strong> (en la tabla, por tipo y fecha) · ' +
       parts.map(function (p) {
         return '<span>' + esc(p) + '</span>';
       }).join(' <span class="cultivos-neg-sep">|</span> ') +
@@ -1930,7 +2173,7 @@ function renderCultivosTable() {
     .join('');
   container.innerHTML =
     negStrip +
-    '<p class="cultivos-table-hint">Solo cultivos positivos; se incluyen negativos si hubo cambio frente a un resultado positivo previo o siguiente en la misma muestra. Por categoría, del más reciente al más antiguo.</p>' +
+    '<p class="cultivos-table-hint">Por categoría (tipo de estudio), orden cronológico de más reciente a más antiguo.</p>' +
     '<div class="cultivos-table-wrap">' +
     '<table class="cultivos-table">' +
     thead +
@@ -2829,6 +3072,7 @@ function saveProcedureAgendaFromModal() {
     next = arr.concat([eventObj]);
   }
   storage.saveScheduledProcedures(next);
+  emitLiveSyncAgendaUpsert(eventObj);
   closeProcedureAgendaModal();
   showToast('Procedimiento guardado', 'success');
   renderProcedureAgendaPanel();
@@ -2843,10 +3087,12 @@ function deleteProcedureAgendaFromModal() {
     )
   )
     return;
+  var delAt = new Date().toISOString();
   var arr = storage.getScheduledProcedures().filter(function (e) {
     return e.id !== editId;
   });
   storage.saveScheduledProcedures(arr);
+  emitLiveSyncAgendaDelete(editId, delAt);
   closeProcedureAgendaModal();
   showToast('Eliminado de la agenda', 'success');
   renderProcedureAgendaPanel();
@@ -3164,7 +3410,7 @@ function renderPaseBoard() {
   parts.push('</div><div class="pase-card-grid">');
   if (!displayRows.length) {
     parts.push(
-      '<div class="pase-mini-card pase-mini-card--dim">Sin cultivos en la tabla (mismas reglas que Expediente → Cultivos).</div>'
+      '<div class="pase-mini-card pase-mini-card--dim">Sin cultivos relevantes para la ronda (positivos o negativos con cambio de signo en la misma muestra).</div>'
     );
   } else {
     displayRows.slice(0, 10).forEach(function (r) {
@@ -3624,6 +3870,27 @@ async function renderLanPanel() {
   topRow.style.marginBottom = '10px';
   topRow.innerHTML = '<strong>Dirección:</strong> ' + esc(lanClient.baseUrl());
   statusCard.appendChild(topRow);
+  var liveStatus = document.createElement('p');
+  liveStatus.id = 'lan-livesync-status';
+  liveStatus.className = 'lan-connect-card-hint';
+  liveStatus.style.marginTop = '6px';
+  statusCard.appendChild(liveStatus);
+  syncLiveSyncStatusChrome();
+  if (activeLiveSyncRoomId) {
+    var leaveLiveRow = document.createElement('div');
+    leaveLiveRow.className = 'lan-connect-actions-row';
+    leaveLiveRow.style.marginTop = '8px';
+    var btnLeaveLive = document.createElement('button');
+    btnLeaveLive.type = 'button';
+    btnLeaveLive.className = 'btn-lan-secondary';
+    btnLeaveLive.style.flex = '1';
+    btnLeaveLive.textContent = 'Salir de sala (LiveSync)';
+    btnLeaveLive.onclick = function () {
+      leaveLiveSyncRoom({});
+    };
+    leaveLiveRow.appendChild(btnLeaveLive);
+    statusCard.appendChild(leaveLiveRow);
+  }
   var rowInvite = document.createElement('div');
   rowInvite.className = 'lan-connect-actions-row';
   var btnCopyStored = document.createElement('button');
@@ -3987,15 +4254,29 @@ async function saveLanSettingsFromUi(opts) {
 function joinLanRoom(roomId, displayName) {
   var id = String(roomId || '').trim();
   if (!id) return;
+  if (activeLiveSyncRoomId && activeLiveSyncRoomId !== id) {
+    leaveLiveSyncRoom({ silentLeave: false });
+  }
+  activeLiveSyncRoomId = id;
+  activeLiveSyncRoomLabel = displayName != null ? String(displayName) : id;
   try {
+    if (!lanClient.connected) {
+      try {
+        lanClient.connectSyncChannel();
+      } catch (_sync) {}
+    }
     lanClient.connectLiveChannel(id);
     localStorage.setItem('rpc-lan-last-room', id);
-    rememberLanRoomJoined(id, displayName != null ? displayName : id);
-    showToast('Sala: relay WebSocket activo', 'success');
-    renderLanPanel();
+    rememberLanRoomJoined(id, activeLiveSyncRoomLabel);
   } catch (_e) {
+    activeLiveSyncRoomId = '';
+    activeLiveSyncRoomLabel = '';
     showToast('No se pudo activar relay de sala', 'error');
+    return;
   }
+  showToast('Sala: sincronizando agenda y pendientes', 'success');
+  syncLiveSyncStatusChrome();
+  renderLanPanel();
 }
 
 async function createLanRoomFromUi() {
@@ -4043,6 +4324,9 @@ async function deleteLanRoom(roomId) {
   }
   var id = String(roomId || '').trim();
   if (!id) return;
+  if (activeLiveSyncRoomId === id) {
+    leaveLiveSyncRoom({ silentLeave: true });
+  }
   var resp;
   try {
     resp = await lanClient.fetch('/api/lan/v1/rooms/' + encodeURIComponent(id), { method: 'DELETE' });
@@ -4218,7 +4502,7 @@ function renderListadoForm() {
 
     _renderListadoMedicosCard(lst) +
 
-    '<div class="action-bar"><button class="btn-generate" onclick="quickExportCurrentPatient()" id="btn-quick-export-listado" style="background:#475569;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida rápida</button><button class="btn-generate" onclick="generateListado()" id="btn-gen-listado"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Listado de Problemas (.docx)</button></div>'
+    '<div class="action-bar"><button class="btn-generate" onclick="quickExportCurrentPatient()" id="btn-quick-export-listado" style="background:#475569;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida rápida</button><button type="button" class="btn-generate" onclick="copyListadoProblemasAiPrompt()" style="background:#1e40af;" title="Copia el prompt para usar en un chat de IA"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copiar prompt IA</button><button class="btn-generate" onclick="generateListado()" id="btn-gen-listado"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Listado de Problemas (.docx)</button></div>'
   );
   // auto-grow existing textareas
   c.querySelectorAll('.listado-row textarea').forEach(_autoGrowTextarea);
@@ -4316,6 +4600,10 @@ function _renderListadoMedicosCard(lst) {
   );
 }
 
+async function copyListadoProblemasAiPrompt() {
+  var ok = await _copyToClipboardSafe(LISTADO_PROBLEMAS_AI_PROMPT);
+  showToast(ok ? 'Prompt copiado al portapapeles ✓' : 'No se pudo copiar el prompt', ok ? 'success' : 'error');
+}
 function generateListado() {
   if (typeof isRpcOffline === 'function' && isRpcOffline()) {
     showToast('Sin conexión con el servidor local. Reinicia R+ para generar documentos.', 'error');
@@ -10554,15 +10842,19 @@ function addTodo(idPrefix) {
   var text = String(input.value || '').trim();
   if (!text) return;
   var priority = sel && (sel.value === 'alta' || sel.value === 'baja' || sel.value === 'media') ? sel.value : 'media';
+  var nowIso = new Date().toISOString();
   var todos = storage.getTodos(activeId);
-  todos.push({
+  var row = {
     id: String(Date.now()) + '-' + Math.random().toString(36).slice(2, 6),
     text: text,
     completed: false,
     priority: priority,
-    createdAt: new Date().toISOString()
-  });
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  };
+  todos.push(row);
   storage.saveTodos(activeId, todos);
+  emitLiveSyncTodoUpsert(activeId, row);
   input.value = '';
   refreshAllTodoUIs();
 }
@@ -10573,14 +10865,18 @@ function toggleTodo(id) {
   var found = todos.find(function (t) { return t.id === id; });
   if (!found) return;
   found.completed = !found.completed;
+  found.updatedAt = new Date().toISOString();
   storage.saveTodos(activeId, todos);
+  emitLiveSyncTodoUpsert(activeId, found);
   refreshAllTodoUIs();
 }
 
 function deleteTodo(id) {
   if (!activeId) return;
+  var delAt = new Date().toISOString();
   var todos = storage.getTodos(activeId).filter(function (t) { return t.id !== id; });
   storage.saveTodos(activeId, todos);
+  emitLiveSyncTodoDelete(activeId, id, delAt);
   refreshAllTodoUIs();
 }
 
@@ -10591,7 +10887,9 @@ function setTodoPriority(id, priority) {
   var found = todos.find(function (t) { return t.id === id; });
   if (!found) return;
   found.priority = valid;
+  found.updatedAt = new Date().toISOString();
   storage.saveTodos(activeId, todos);
+  emitLiveSyncTodoUpsert(activeId, found);
   refreshAllTodoUIs();
 }
 
@@ -10603,7 +10901,9 @@ function updateTodoText(id, text) {
   var found = todos.find(function (t) { return t.id === id; });
   if (!found || String(found.text || '') === trimmed) return;
   found.text = trimmed;
+  found.updatedAt = new Date().toISOString();
   storage.saveTodos(activeId, todos);
+  emitLiveSyncTodoUpsert(activeId, found);
   refreshAllTodoUIs();
 }
 
@@ -12833,6 +13133,7 @@ Object.assign(window, {
   updateProblemaField,
   addProblemaUI,
   removeProblemaUI,
+  copyListadoProblemasAiPrompt,
   generateListado,
   _autoGrowTextarea,
   openEstadoActualModal,

@@ -9,13 +9,25 @@ export function parseWsPayload(s) {
 export class LanClient extends EventTarget {
   constructor() {
     super();
-    this._ws = null;
+    this._syncWs = null;
+    this._liveWs = null;
+    this._liveRoomId = null;
     this._cfg = null;
-    this._connected = false;
+    this._syncConnected = false;
+    this._liveConnected = false;
   }
 
+  /** Compat: canal sync (presencia / pacientes). */
   get connected() {
-    return this._connected;
+    return this._syncConnected;
+  }
+
+  get liveConnected() {
+    return this._liveConnected;
+  }
+
+  get liveRoomId() {
+    return this._liveRoomId;
   }
 
   configure(cfg) {
@@ -38,19 +50,60 @@ export class LanClient extends EventTarget {
     return fetch(url, { ...opts, headers });
   }
 
-  /** WebSocket de presencia / notificaciones LAN (pacientes, etc.); no es el relay `live:*` de salas. */
+  /** WebSocket de presencia / notificaciones LAN; no es el relay `live:*` de salas. */
   connectSyncChannel() {
-    this._openWs('sync');
+    this._openChannelWs('sync', '_syncWs', 'sync');
   }
 
   connectLiveChannel(roomId) {
-    this._openWs('live:' + encodeURIComponent(roomId));
+    const id = String(roomId || '').trim();
+    if (!id) return;
+    this._liveRoomId = id;
+    const ch = `live:${encodeURIComponent(id)}`;
+    this._openChannelWs(ch, '_liveWs', 'live');
   }
 
-  _openWs(channel) {
-    if (this._ws) {
+  disconnectLiveChannel() {
+    if (this._liveWs) {
       try {
-        this._ws.close();
+        this._liveWs.close();
+      } catch (_e) {
+        /* ignore */
+      }
+      this._liveWs = null;
+    }
+    this._liveConnected = false;
+    this._liveRoomId = null;
+  }
+
+  disconnect() {
+    this.disconnectLiveChannel();
+    if (this._syncWs) {
+      try {
+        this._syncWs.close();
+      } catch (_e) {
+        /* ignore */
+      }
+      this._syncWs = null;
+    }
+    this._syncConnected = false;
+  }
+
+  sendLive(obj) {
+    if (!this._liveWs || this._liveWs.readyState !== 1) return false;
+    try {
+      this._liveWs.send(JSON.stringify(obj));
+      return true;
+    } catch (_e) {
+      return false;
+    }
+  }
+
+  _openChannelWs(channel, prop, kind) {
+    const prev = this[prop];
+    if (prev) {
+      try {
+        prev.close();
       } catch (_e) {
         /* ignore */
       }
@@ -58,30 +111,41 @@ export class LanClient extends EventTarget {
     const base = this.baseUrl().replace(/^http/, 'ws');
     const code = encodeURIComponent(this._cfg.teamCode || '');
     const u = `${base}/api/lan/v1/ws?code=${code}&channel=${encodeURIComponent(channel)}`;
-    this._ws = new WebSocket(u);
-    this._ws.onopen = () => {
-      this._connected = true;
-      this.dispatchEvent(new CustomEvent('lan-status', { detail: { connected: true } }));
-    };
-    this._ws.onclose = () => {
-      this._connected = false;
-      this.dispatchEvent(new CustomEvent('lan-status', { detail: { connected: false } }));
-    };
-    this._ws.onmessage = (ev) => {
-      const data = parseWsPayload(ev.data);
-      if (data) this.dispatchEvent(new CustomEvent('lan-patch', { detail: data }));
-    };
-  }
+    const ws = new WebSocket(u);
+    this[prop] = ws;
 
-  disconnect() {
-    if (this._ws) {
-      try {
-        this._ws.close();
-      } catch (_e) {
-        /* ignore */
+    ws.onopen = () => {
+      if (kind === 'sync') {
+        this._syncConnected = true;
+        this.dispatchEvent(new CustomEvent('lan-status', { detail: { connected: true, channel: 'sync' } }));
+      } else {
+        this._liveConnected = true;
+        this.dispatchEvent(
+          new CustomEvent('lan-live-status', { detail: { connected: true, roomId: this._liveRoomId } })
+        );
       }
-      this._ws = null;
-    }
-    this._connected = false;
+    };
+
+    ws.onclose = () => {
+      if (kind === 'sync') {
+        this._syncConnected = false;
+        this.dispatchEvent(new CustomEvent('lan-status', { detail: { connected: false, channel: 'sync' } }));
+      } else {
+        this._liveConnected = false;
+        this.dispatchEvent(
+          new CustomEvent('lan-live-status', { detail: { connected: false, roomId: this._liveRoomId } })
+        );
+      }
+    };
+
+    ws.onmessage = (ev) => {
+      const data = parseWsPayload(ev.data);
+      if (!data) return;
+      if (kind === 'sync') {
+        this.dispatchEvent(new CustomEvent('lan-patch', { detail: data }));
+      } else {
+        this.dispatchEvent(new CustomEvent('lan-live', { detail: data }));
+      }
+    };
   }
 }

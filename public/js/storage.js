@@ -173,7 +173,7 @@ export const storage = {
   /**
    * Get to-do list for a patient. Normaliza forma de cada todo.
    * @param {string} patientId
-   * @returns {Array<{id:string,text:string,completed:boolean,priority:'alta'|'media'|'baja',createdAt:string}>}
+   * @returns {Array<{id:string,text:string,completed:boolean,priority:'alta'|'media'|'baja',createdAt:string,updatedAt:string}>}
    */
   getTodos(patientId) {
     const map = safeParseObject(localStorage.getItem('rpc-todos'));
@@ -181,12 +181,17 @@ export const storage = {
     return raw.map(function (t) {
       var rawP = t && t.priority;
       var p = rawP === 'alta' || rawP === 'baja' || rawP === 'media' ? rawP : 'media';
+      var createdAt = String(t && t.createdAt != null ? t.createdAt : '');
+      var updatedAt = String(
+        t && t.updatedAt != null ? t.updatedAt : createdAt || ''
+      );
       return {
         id: String(t && t.id != null ? t.id : ''),
         text: String(t && t.text != null ? t.text : ''),
         completed: !!(t && t.completed),
         priority: p,
-        createdAt: String(t && t.createdAt != null ? t.createdAt : '')
+        createdAt: createdAt,
+        updatedAt: updatedAt
       };
     });
   },
@@ -200,8 +205,40 @@ export const storage = {
     if (typeof patientId !== 'string') return;
     if (patientId.indexOf('demo-') === 0) return;
     const map = safeParseObject(localStorage.getItem('rpc-todos')) || {};
-    map[patientId] = Array.isArray(todos) ? todos : [];
+    const now = new Date().toISOString();
+    map[patientId] = (Array.isArray(todos) ? todos : []).map(function (t) {
+      var createdAt = String(t && t.createdAt != null ? t.createdAt : now);
+      return {
+        id: String(t && t.id != null ? t.id : ''),
+        text: String(t && t.text != null ? t.text : ''),
+        completed: !!(t && t.completed),
+        priority:
+          t && (t.priority === 'alta' || t.priority === 'baja' || t.priority === 'media')
+            ? t.priority
+            : 'media',
+        createdAt: createdAt,
+        updatedAt: String(t && t.updatedAt != null ? t.updatedAt : createdAt || now)
+      };
+    });
     localStorage.setItem('rpc-todos', JSON.stringify(map));
+  },
+
+  getLanRoomSnapshots() {
+    return safeParseObject(localStorage.getItem('rpc-lan-room-snapshots'));
+  },
+
+  getLanRoomSnapshot(roomId) {
+    const all = this.getLanRoomSnapshots();
+    const row = all[String(roomId || '')];
+    return row && typeof row === 'object' ? row : null;
+  },
+
+  saveLanRoomSnapshot(roomId, snapshot) {
+    const rid = String(roomId || '');
+    if (!rid) return;
+    const all = this.getLanRoomSnapshots();
+    all[rid] = snapshot && typeof snapshot === 'object' ? snapshot : {};
+    localStorage.setItem('rpc-lan-room-snapshots', JSON.stringify(all));
   },
 
   /**

@@ -33,7 +33,10 @@ describe('storage todos', () => {
     it('returns the todos for the patient', () => {
       const todos = [{ id: 'a', text: 't', completed: false, priority: 'alta', createdAt: '2026-05-13T10:00:00.000Z' }];
       store['rpc-todos'] = JSON.stringify({ p1: todos });
-      assert.deepStrictEqual(storage.getTodos('p1'), todos);
+      const got = storage.getTodos('p1');
+      assert.strictEqual(got.length, 1);
+      assert.strictEqual(got[0].id, 'a');
+      assert.strictEqual(got[0].updatedAt, '2026-05-13T10:00:00.000Z');
     });
 
     it('normalizes missing priority to "media"', () => {
@@ -55,9 +58,12 @@ describe('storage todos', () => {
 
   describe('saveTodos', () => {
     it('saves todos for the patient', () => {
-      const todos = [{ id: '1', text: 'x', completed: false, priority: 'media', createdAt: '' }];
+      const todos = [{ id: '1', text: 'x', completed: false, priority: 'media', createdAt: '2026-05-13T10:00:00.000Z' }];
       storage.saveTodos('p1', todos);
-      assert.deepStrictEqual(JSON.parse(store['rpc-todos']).p1, todos);
+      const saved = JSON.parse(store['rpc-todos']).p1[0];
+      assert.strictEqual(saved.id, '1');
+      assert.strictEqual(saved.priority, 'media');
+      assert.ok(saved.updatedAt);
     });
 
     it('preserves entries for other patients', () => {

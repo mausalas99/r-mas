@@ -51,4 +51,30 @@ describe('host-store', () => {
     assert.strictEqual(list.length, 1);
     assert.strictEqual(list[0].id, r.id);
   });
+
+  it('putRoomSyncBundle LWW por updatedAt del envelope', () => {
+    const store = createHostStore({ filePath, teamCodePlain: 'b' });
+    const r = store.createRoom('Sala sync');
+    store.putRoomSyncBundle(r.id, {
+      updatedAt: '2026-05-16T08:00:00.000Z',
+      uploadedByClientId: 'a',
+      agenda: [{ id: 'e1', patientId: 'p1', procedure: 'A', location: 'X', updatedAt: '2026-05-16T08:00:00.000Z' }],
+      todos: {},
+    });
+    store.putRoomSyncBundle(r.id, {
+      updatedAt: '2026-05-16T07:00:00.000Z',
+      uploadedByClientId: 'b',
+      agenda: [{ id: 'e1', patientId: 'p1', procedure: 'OLD', location: 'Y', updatedAt: '2026-05-16T07:00:00.000Z' }],
+      todos: {},
+    });
+    const got = store.getRoomSyncBundle(r.id);
+    assert.strictEqual(got.agenda[0].procedure, 'A');
+    store.putRoomSyncBundle(r.id, {
+      updatedAt: '2026-05-16T09:00:00.000Z',
+      uploadedByClientId: 'c',
+      agenda: [{ id: 'e1', patientId: 'p1', procedure: 'NEW', location: 'Z', updatedAt: '2026-05-16T09:00:00.000Z' }],
+      todos: {},
+    });
+    assert.strictEqual(store.getRoomSyncBundle(r.id).agenda[0].procedure, 'NEW');
+  });
 });

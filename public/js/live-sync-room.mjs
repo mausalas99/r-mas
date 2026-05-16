@@ -1,0 +1,175 @@
+/** LiveSync por sala: merge LWW, snapshots y mensajes (sin DOM). */
+
+export const LAN_CLIENT_ID_KEY = 'rpc-lan-client-id';
+export const LAN_ROOM_SNAPSHOTS_KEY = 'rpc-lan-room-snapshots';
+
+export function compareIso(a, b) {
+  const x = String(a || '');
+  const y = String(b || '');
+  if (x > y) return 1;
+  if (x < y) return -1;
+  return 0;
+}
+
+export function agendaEntityKey(id) {
+  return 'a:' + String(id || '');
+}
+
+export function todoEntityKey(patientId, id) {
+  return 't:' + String(patientId || '') + ':' + String(id || '');
+}
+
+export function isDemoPatientId(patientId) {
+  return String(patientId || '').indexOf('demo-') === 0;
+}
+
+/** @param {Array<{ agenda?: object[], todos?: Record<string, object[]> }>} sources */
+export function mergeLiveSyncBundles(sources) {
+  /** @type {Map<string, { kind: 'agenda', item: object, updatedAt: string, deleted: boolean }>} */
+  const agenda = new Map();
+  /** @type {Map<string, { kind: 'todo', patientId: string, item: object, updatedAt: string, deleted: boolean }>} */
+  const todos = new Map();
+
+  function upsertAgenda(ev, deleted) {
+    if (!ev || !ev.id || isDemoPatientId(ev.patientId)) return;
+    const k = agendaEntityKey(ev.id);
+    const at = String(ev.updatedAt || ev.createdAt || '');
+    const cur = agenda.get(k);
+    if (!cur || compareIso(at, cur.updatedAt) >= 0) {
+      agenda.set(k, {
+        kind: 'agenda',
+        item: deleted ? { id: ev.id } : { ...ev },
+        updatedAt: at,
+        deleted: !!deleted,
+      });
+    }
+  }
+
+  function upsertTodo(patientId, item, deleted) {
+    if (!item || !item.id || isDemoPatientId(patientId)) return;
+    const k = todoEntityKey(patientId, item.id);
+    const at = String(item.updatedAt || item.createdAt || '');
+    const cur = todos.get(k);
+    if (!cur || compareIso(at, cur.updatedAt) >= 0) {
+      todos.set(k, {
+        kind: 'todo',
+        patientId: String(patientId),
+        item: deleted ? { id: item.id } : { ...item },
+        updatedAt: at,
+        deleted: !!deleted,
+      });
+    }
+  }
+
+  function ingestSource(src) {
+    if (!src) return;
+    const list = Array.isArray(src.agenda) ? src.agenda : [];
+    for (let i = 0; i < list.length; i += 1) {
+      upsertAgenda(list[i], false);
+    }
+    const map = src.todos && typeof src.todos === 'object' ? src.todos : {};
+    for (const pid of Object.keys(map)) {
+      if (isDemoPatientId(pid)) continue;
+      const arr = Array.isArray(map[pid]) ? map[pid] : [];
+      for (let j = 0; j < arr.length; j += 1) {
+        upsertTodo(pid, arr[j], false);
+      }
+    }
+  }
+
+  function applyPatch(patch) {
+    if (!patch || patch.type !== 'livesync:patch') return;
+    const at = String(patch.updatedAt || '');
+    if (patch.entity === 'agenda') {
+      const k = agendaEntityKey(patch.id);
+      if (patch.op === 'delete') {
+        const cur = agenda.get(k);
+        if (!cur || compareIso(at, cur.updatedAt) >= 0) {
+          agenda.set(k, {
+            kind: 'agenda',
+            item: { id: patch.id },
+            updatedAt: at,
+            deleted: true,
+          });
+        }
+      } else {
+        upsertAgenda({ ...(patch.body || {}), id: patch.id, updatedAt: at }, false);
+      }
+      return;
+    }
+    if (patch.entity === 'todo') {
+      const pid = String(patch.patientId || '');
+      const k = todoEntityKey(pid, patch.id);
+      if (patch.op === 'delete') {
+        const cur = todos.get(k);
+        if (!cur || compareIso(at, cur.updatedAt) >= 0) {
+          todos.set(k, {
+            kind: 'todo',
+            patientId: pid,
+            item: { id: patch.id },
+            updatedAt: at,
+            deleted: true,
+          });
+        }
+      } else {
+        upsertTodo(pid, { ...(patch.body || {}), id: patch.id, updatedAt: at }, false);
+      }
+    }
+  }
+
+  for (let s = 0; s < (sources || []).length; s += 1) {
+    const src = sources[s];
+    if (src && src.type === 'livesync:patch') {
+      applyPatch(src);
+    } else {
+      ingestSource(src);
+    }
+  }
+
+  const agendaOut = [];
+  for (const row of agenda.values()) {
+    if (!row.deleted && row.item && row.item.id) agendaOut.push(row.item);
+  }
+
+  const todosOut = {};
+  for (const row of todos.values()) {
+    if (row.deleted) continue;
+    if (!row.item || !row.item.id) continue;
+    if (!todosOut[row.patientId]) todosOut[row.patientId] = [];
+    todosOut[row.patientId].push(row.item);
+  }
+
+  return { agenda: agendaOut, todos: todosOut };
+}
+
+/** @param {{ getScheduledProcedures: () => object[], getTodos: (id: string) => object[], patientIds?: string[] }} storageApi */
+export function buildRoomSnapshotFromStorage(storageApi, patientIds) {
+  const agenda = storageApi.getScheduledProcedures().filter((ev) => !isDemoPatientId(ev.patientId));
+  const todos = {};
+  const ids = Array.isArray(patientIds) ? patientIds : [];
+  for (let i = 0; i < ids.length; i += 1) {
+    const pid = ids[i];
+    if (isDemoPatientId(pid)) continue;
+    const list = storageApi.getTodos(pid);
+    if (list.length) todos[pid] = list;
+  }
+  return {
+    savedAt: new Date().toISOString(),
+    agenda,
+    todos,
+  };
+}
+
+export function parseRoomSnapshotsRaw(raw) {
+  if (!raw || typeof raw !== 'object') return {};
+  return raw;
+}
+
+export function nextRoomSnapshotGeneration(prev) {
+  const n = Number(prev && prev.generation != null ? prev.generation : 0);
+  return n + 1;
+}
+
+export function isLiveSyncEnvelope(msg) {
+  return !!(msg && typeof msg.type === 'string' && msg.type.indexOf('livesync:') === 0);
+}

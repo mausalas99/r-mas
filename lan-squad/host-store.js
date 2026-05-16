@@ -38,6 +38,7 @@ function defaultState(teamCodeHash) {
     teamCodeHash,
     patients: [],
     rooms: [],
+    roomSyncBundles: {},
   };
 }
 
@@ -58,6 +59,8 @@ function createHostStore({ filePath, teamCodePlain }) {
     }
     s.patients = Array.isArray(s.patients) ? s.patients : [];
     s.rooms = Array.isArray(s.rooms) ? s.rooms : [];
+    s.roomSyncBundles =
+      s.roomSyncBundles && typeof s.roomSyncBundles === 'object' ? s.roomSyncBundles : {};
     delete s.calendarEvents;
     return s;
   }
@@ -116,8 +119,41 @@ function createHostStore({ filePath, teamCodePlain }) {
 
   function deleteRoom(id) {
     const state = load();
-    state.rooms = state.rooms.filter((x) => x.id !== id);
+    const rid = String(id || '');
+    state.rooms = state.rooms.filter((x) => x.id !== rid);
+    if (state.roomSyncBundles && state.roomSyncBundles[rid]) {
+      delete state.roomSyncBundles[rid];
+    }
     save(state);
+  }
+
+  function getRoomSyncBundle(roomId) {
+    const state = load();
+    const rid = String(roomId || '');
+    const b = state.roomSyncBundles && state.roomSyncBundles[rid];
+    return b && typeof b === 'object' ? b : null;
+  }
+
+  function putRoomSyncBundle(roomId, bundle) {
+    const state = load();
+    const rid = String(roomId || '');
+    if (!rid) throw new Error('room id required');
+    const incoming = bundle && typeof bundle === 'object' ? bundle : {};
+    const at = String(incoming.updatedAt || nowIso());
+    if (!state.roomSyncBundles) state.roomSyncBundles = {};
+    const cur = state.roomSyncBundles[rid];
+    if (cur && String(cur.updatedAt || '') > at) {
+      return cur;
+    }
+    const next = {
+      updatedAt: at,
+      uploadedByClientId: String(incoming.uploadedByClientId || ''),
+      agenda: Array.isArray(incoming.agenda) ? incoming.agenda : [],
+      todos: incoming.todos && typeof incoming.todos === 'object' ? incoming.todos : {},
+    };
+    state.roomSyncBundles[rid] = next;
+    save(state);
+    return next;
   }
 
   return {
@@ -127,6 +163,8 @@ function createHostStore({ filePath, teamCodePlain }) {
     createRoom,
     renameRoom,
     deleteRoom,
+    getRoomSyncBundle,
+    putRoomSyncBundle,
   };
 }
 

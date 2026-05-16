@@ -70,6 +70,22 @@ function createLanRouter({ store, broadcast }) {
     res.json({ ok: true });
   });
 
+  r.get('/rooms/:id/sync-bundle', (req, res) => {
+    const bundle = store.getRoomSyncBundle(req.params.id);
+    if (!bundle) return res.status(404).json({ error: 'no bundle' });
+    res.json({ bundle });
+  });
+
+  r.put('/rooms/:id/sync-bundle', express.json({ limit: '4mb' }), (req, res) => {
+    try {
+      const body = req.body && req.body.bundle ? req.body.bundle : req.body;
+      const out = store.putRoomSyncBundle(req.params.id, body);
+      res.json({ bundle: out });
+    } catch (e) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+
   return r;
 }
 
