@@ -631,6 +631,7 @@
     clip: rect(0,0,0,0) !important;
     white-space: nowrap !important;
     border: 0 !important;
+    user-select: none !important;
   }
   .skip-to-main {
     position: absolute;
@@ -1732,6 +1733,12 @@
     color: #ef4444;
     font-weight: bold;
   }
+  .lab-value-star {
+    color: #ef4444;
+    font-weight: 700;
+    margin-left: 1px;
+  }
+  html.dark .lab-value-star { color: #f87171; }
   .lab-value-normal {
     color: #10b981;
   }
@@ -4362,7 +4369,7 @@
               Resultados
             </span>
             <div class="card-header-actions">
-              <button type="button" class="card-header-soft-btn card-header-soft-btn-secondary" onclick="copiarLabsAlPortapapeles()">
+              <button type="button" class="card-header-soft-btn" onclick="copiarLabsAlPortapapeles()">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                 Copiar
               </button>

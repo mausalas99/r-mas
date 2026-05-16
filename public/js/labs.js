@@ -189,29 +189,43 @@ export function parseBH_(tNorm) {
   pushExtra('Blastos',   extraerSimple(['BLASTOS'], tNorm));
   pushExtra('Atipicos',  extraerSimple(['LINFOCITOS ATIPICOS', 'VARIANTES', 'ATIPICOS'], tNorm));
 
-  // Construir línea compacta (incluye Neu/Eos absolutos; resto de serie blanca en extras).
-  var hasVisible = [RBC, Hb, Hto, VCM, HCM, CHCM, RDW, Leu, Neu, Eos, Plt, MPV, Ret].some(function (v) {
+  // Línea compacta (BH extendida OFF): Hb Hto VCM HCM Leu Neu Eos Plt (+ coag si hace falta).
+  // RBC, CHCM, RDW, MPV y Ret van a extras y solo se muestran en la segunda fila con BH extendida ON.
+  var hasCore = [Hb, Hto, VCM, HCM, Leu, Neu, Eos, Plt].some(function (v) {
+    return v !== '---';
+  });
+  var hasExtIdx = [RBC, CHCM, RDW, MPV, Ret].some(function (v) {
     return v !== '---';
   });
   var hasCoag = [TP, TTP, INR].some(function (v) { return v !== '---'; });
-  if (!hasVisible && !hasCoag && Object.keys(extras).length === 0) {
+  if (!hasCore && !hasExtIdx && !hasCoag && Object.keys(extras).length === 0) {
     return { visible: '', extras: {} };
   }
 
   var p = ['BH'];
-  if (RBC  !== '---') p.push('RBC', RBC);
   if (Hb   !== '---') p.push('Hb', Hb);
   if (Hto  !== '---') p.push('Hto', Hto);
   if (VCM  !== '---') p.push('VCM', VCM);
   if (HCM  !== '---') p.push('HCM', HCM);
-  if (CHCM !== '---') p.push('CHCM', CHCM);
-  if (RDW  !== '---') p.push('RDW', RDW);
   if (Leu  !== '---') p.push('Leu', Leu);
   if (Neu !== '---') p.push('Neu', Neu);
   if (Eos !== '---') p.push('Eos', Eos);
   if (Plt  !== '---') p.push('Plt', Plt);
-  if (MPV  !== '---') p.push('MPV', MPV);
-  if (Ret  !== '---') p.push('Ret', Ret);
+
+  var hasCompactBody = p.length > 1;
+  if (hasCompactBody || hasCoag) {
+    if (RBC  !== '---') pushExtra('RBC', RBC);
+    if (CHCM !== '---') pushExtra('CHCM', CHCM);
+    if (RDW  !== '---') pushExtra('RDW', RDW);
+    if (MPV  !== '---') pushExtra('MPV', MPV);
+    if (Ret  !== '---') pushExtra('Ret', Ret);
+  } else {
+    if (RBC  !== '---') p.push('RBC', RBC);
+    if (CHCM !== '---') p.push('CHCM', CHCM);
+    if (RDW  !== '---') p.push('RDW', RDW);
+    if (MPV  !== '---') p.push('MPV', MPV);
+    if (Ret  !== '---') p.push('Ret', Ret);
+  }
   var coag = [];
   if (TP  !== '---') coag.push('TP',  TP);
   if (TTP !== '---') coag.push('TTP', TTP);
@@ -1859,7 +1873,7 @@ export function renderToken(tok){
   if(!tok)return tok;
   if (tok.endsWith('*')) {
     var inner = escTxt(tok.slice(0,-1));
-    return '<strong class="lab-value-altered" title="Fuera de rango de referencia">' + inner + '</strong><span class="visually-hidden">, alterado</span>';
+    return '<strong class="lab-value-altered" title="Fuera de rango de referencia">' + inner + '</strong><span class="lab-value-star" aria-hidden="true">*</span>';
   }
   return escTxt(tok);
 }

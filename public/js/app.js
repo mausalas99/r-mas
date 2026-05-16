@@ -498,7 +498,8 @@ var LAB_INPUT_DEFAULT_REPORT =
 
 var LAB_OUTPUT_PREFS_KEY = 'rpc-lab-output-prefs-v1';
 var LAB_BH_EXT_ORDER = [
-  'Ret', 'TP', 'TTP', 'INR', 'Lin', 'Mono', 'Baso', 'NeuPct', 'LinPct', 'MonoPct', 'EosPct',
+  'RBC', 'CHCM', 'RDW', 'MPV', 'Ret',
+  'TP', 'TTP', 'INR', 'Lin', 'Mono', 'Baso', 'NeuPct', 'LinPct', 'MonoPct', 'EosPct',
   'BasoPct', 'Bandas', 'Mielo', 'Metamielo', 'Promielo', 'Blastos', 'Atipicos',
 ];
 
@@ -7072,6 +7073,18 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '3.2.1': [
+    {
+      title: 'Laboratorio: BH compacta y Copiar visible',
+      body:
+        'Con BH extendida apagada, la primera línea solo lleva Hb, Hto, VCM, HCM, Leu, Neu, Eos y Plt (más coag si aplica); RBC, CHCM, RDW, MPV y reticulocitos van a la segunda línea solo cuando activas la preferencia. El botón Copiar del encabezado de Resultados vuelve a verse en densidad de interfaz normal.',
+    },
+    {
+      title: 'Alterados con asterisco al copiar',
+      body:
+        'El texto generado para portapapeles y nota conserva el * en valores fuera de rango. En pantalla el asterisco aparece en rojo junto al valor; se evita copiar el texto “, alterado” al seleccionar los resultados.',
+    },
+  ],
   '3.2.0': [
     {
       title: 'Interfaz “soft” y rendimiento',
@@ -9495,13 +9508,13 @@ function buildLabLines() {
   var bhExtDone = false;
   activeLab.resLabs.forEach(function(entry) {
     if (prefs.hideGasoAdvInterp && isGasoInterpretacionResLabChunk(entry)) return;
-    var cleaned = entry.replace(/\t/g, ' ').replace(/\*+/g, '').replace(/  +/g, ' ').trim();
+    var cleaned = entry.replace(/\t/g, ' ').replace(/  +/g, ' ').trim();
     lines.push(cleaned);
     if (prefs.showBhExtendedLine && !bhExtDone && activeLab.bhExtras && isBhMainResLabChunk(entry)) {
       var extPlain = formatBhExtendedTabLine(activeLab.bhExtras);
       if (extPlain) {
         lines.push(
-          extPlain.replace(/\t/g, ' ').replace(/\*+/g, '').replace(/  +/g, ' ').trim()
+          extPlain.replace(/\t/g, ' ').replace(/  +/g, ' ').trim()
         );
         bhExtDone = true;
       }

@@ -1,0 +1,22 @@
+R+ 3.2.1 (parche estable — laboratorio: BH compacta, copiar y asteriscos)
+=========================================================================
+
+Fecha: 2026-05-15
+
+## Resumen
+
+Parche sobre **3.2.0** centrado en la pestaña **Laboratorio**: resultado compacto de biometría cuando **BH extendida** está apagada, botón **Copiar** siempre visible en vista normal, y texto copiado/seleccionado con **asterisco (*)** en valores fuera de rango (sin el texto accesible “, alterado” mezclado al copiar).
+
+## Laboratorio
+
+- **Resultados — Copiar** — En densidad de interfaz **Normal / cómoda**, el botón **Copiar** del encabezado morado vuelve a mostrarse (la clase de “acción secundaria” ya no lo oculta).
+- **BH extendida (preferencia)** — Con el interruptor **apagado**, la primera línea de BH solo incluye el núcleo clínico habitual: **Hb, Hto, VCM, HCM, Leu, Neu, Eos, Plt** y el bloque de coagulación si aplica. **RBC, CHCM, RDW, MPV** y **Ret** pasan a **extras** y solo aparecen en la **segunda línea** cuando **BH extendida** está **encendida** (orden de la línea extendida actualizado en consecuencia).
+- **Copiar / enviar a nota** — Al construir el texto desde los bloques procesados, ya **no** se eliminan los **\*** de valores alterados; coinciden con el marcado del parser.
+- **Vista en pantalla** — Los valores fuera de rango muestran un **\*** rojo junto al número; se quitó el fragmento oculto “, alterado” que algunos navegadores incluían al copiar la selección. Los elementos `.visually-hidden` usan `user-select: none` para no contaminar copias amplias.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v3.2.1
+
+- Mac: `R+-3.2.1-arm64.dmg`, `R+-3.2.1-x64.dmg` (y artefactos zip si se publican).
+- Windows: `R+-3.2.1-x64.exe`.

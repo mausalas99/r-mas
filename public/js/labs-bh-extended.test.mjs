@@ -36,30 +36,34 @@ describe('parseBH_ extended', () => {
     assert.ok(r.extras && typeof r.extras === 'object');
   });
 
-  it('visible line includes headline neutrophil and eosinophil absolutes (compact BH)', () => {
+  it('visible line is compact BH (core indices + Neu/Eos absolutes; sin RBC/CHCM/RDW/MPV)', () => {
     const { visible } = parseBH_(BH_REAL);
     assert.match(visible, /\bHb\b/);
     assert.match(visible, /\bHto\b/);
     assert.match(visible, /\bVCM\b/);
     assert.match(visible, /\bHCM\b/);
-    assert.match(visible, /\bCHCM\b/);
-    assert.match(visible, /\bRDW\b/);
     assert.match(visible, /\bLeu\b/);
     assert.match(visible, /\bNeu\b/);
     assert.match(visible, /\bEos\b/);
-    assert.match(visible, /\bRBC\b/);
     assert.match(visible, /\bPlt\b/);
-    assert.match(visible, /\bMPV\b/);
     assert.match(visible, /\bNeu\s+21\.7\*?/);
     assert.match(visible, /\bEos\s+0\b/);
+    assert.doesNotMatch(visible, /\bRBC\b/);
+    assert.doesNotMatch(visible, /\bCHCM\b/);
+    assert.doesNotMatch(visible, /\bRDW\b/);
+    assert.doesNotMatch(visible, /\bMPV\b/);
     assert.doesNotMatch(visible, /\bLin\b/);
     assert.doesNotMatch(visible, /\bMono\b/);
     assert.doesNotMatch(visible, /\bBaso\b/);
     assert.doesNotMatch(visible, /Pct\b|%/);
   });
 
-  it('extras contains other white-cell absolutes and percentages (not Neu/Eos on visible line)', () => {
+  it('extras contains RBC/CHCM/RDW/MPV and other white-cell absolutes and percentages (not Neu/Eos)', () => {
     const { extras } = parseBH_(BH_REAL);
+    assert.strictEqual(extras.RBC, '3.11*');
+    assert.strictEqual(extras.CHCM, '32.3');
+    assert.strictEqual(extras.RDW, '16.8*');
+    assert.strictEqual(extras.MPV, '7.7');
     assert.strictEqual(extras.Neu, undefined);
     assert.strictEqual(extras.Eos, undefined);
     assert.strictEqual(extras.Lin,  '0.50');
@@ -80,11 +84,11 @@ describe('parseBH_ extended', () => {
     assert.strictEqual(extras.NeuPct, '93.8');
   });
 
-  it('parses MCHC, RDW, MPV into visible text correctly', () => {
-    const { visible } = parseBH_(BH_REAL);
-    assert.match(visible, /CHCM\s+32\.3/);
-    assert.match(visible, /RDW\s+16\.8/);
-    assert.match(visible, /MPV\s+7\.7/);
+  it('parses MCHC, RDW, MPV into extras (extended line) correctly', () => {
+    const { extras } = parseBH_(BH_REAL);
+    assert.strictEqual(extras.CHCM, '32.3');
+    assert.strictEqual(extras.RDW, '16.8*');
+    assert.strictEqual(extras.MPV, '7.7');
   });
 
   it('manual frotis fields (Bandas, Mielo, ...) end up in extras when present', () => {

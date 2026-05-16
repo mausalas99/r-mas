@@ -25,7 +25,16 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 ---
 
-**Versión estable actual:** [3.2.0](https://github.com/mausalas99/r-mas/releases/tag/v3.2.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [3.2.1](https://github.com/mausalas99/r-mas/releases/tag/v3.2.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+
+---
+
+## R+ 3.2.1 (parche — laboratorio: BH compacta, copiar, asteriscos)
+
+- **Laboratorio** — **Copiar** en Resultados visible de nuevo en vista normal; **BH** sin línea extendida: solo núcleo compacto en la primera fila; **RBC, CHCM, RDW, MPV, Ret** en la segunda solo con **BH extendida** activada.
+- **Copia** — Los valores alterados conservan **\*** al copiar o enviar a nota; en pantalla se muestra **\*** en rojo y se evita mezclar “, alterado” al seleccionar texto.
+
+Notas: `docs/RELEASE_NOTES_3.2.1.txt`.
 
 ---
 
