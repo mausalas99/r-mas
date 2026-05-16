@@ -1,15 +1,25 @@
 #!/usr/bin/env node
 /**
  * Regenera dist/latest-mac.yml y dist/latest.yml a partir de los binarios en dist/.
+ * electron-builder suele escribir latest-*.yml con nombres (r-plus-…) que no coinciden
+ * con artifactName (R+-…); ejecutar este script después del build corrige las URLs.
+ *
  * Uso:
- *   node scripts/write-release-yml.js           → Mac + Windows (todos los archivos deben existir)
+ *   node scripts/write-release-yml.js            → Mac + Windows (todos los archivos deben existir)
  *   node scripts/write-release-yml.js --mac-only → solo latest-mac.yml
+ *   node scripts/write-release-yml.js --win-only → solo latest.yml
  */
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
 const macOnly = process.argv.includes('--mac-only');
+const winOnly = process.argv.includes('--win-only');
+
+if (macOnly && winOnly) {
+  console.error('Usa solo uno de --mac-only o --win-only');
+  process.exit(1);
+}
 
 const root = path.join(__dirname, '..');
 const pkg = require(path.join(root, 'package.json'));
@@ -41,23 +51,25 @@ const macNames = [
   `R+-${ver}-x64.dmg`,
 ];
 
-const lines = [];
-lines.push(`version: ${ver}`);
-lines.push('files:');
-for (const url of macNames) {
-  const abs = need(url);
-  lines.push(`  - url: ${url}`);
-  lines.push(`    sha512: ${sha512b64(abs)}`);
-  lines.push(`    size: ${fs.statSync(abs).size}`);
-}
-const zipArm = need(`R+-${ver}-arm64.zip`);
-lines.push(`path: R+-${ver}-arm64.zip`);
-lines.push(`sha512: ${sha512b64(zipArm)}`);
-lines.push(`releaseDate: '${isoDate()}'`);
-lines.push('');
+if (!winOnly) {
+  const lines = [];
+  lines.push(`version: ${ver}`);
+  lines.push('files:');
+  for (const url of macNames) {
+    const abs = need(url);
+    lines.push(`  - url: ${url}`);
+    lines.push(`    sha512: ${sha512b64(abs)}`);
+    lines.push(`    size: ${fs.statSync(abs).size}`);
+  }
+  const zipArm = need(`R+-${ver}-arm64.zip`);
+  lines.push(`path: R+-${ver}-arm64.zip`);
+  lines.push(`sha512: ${sha512b64(zipArm)}`);
+  lines.push(`releaseDate: '${isoDate()}'`);
+  lines.push('');
 
-fs.writeFileSync(path.join(dist, 'latest-mac.yml'), lines.join('\n'), 'utf8');
-console.log('Escrito dist/latest-mac.yml');
+  fs.writeFileSync(path.join(dist, 'latest-mac.yml'), lines.join('\n'), 'utf8');
+  console.log('Escrito dist/latest-mac.yml');
+}
 
 if (!macOnly) {
   const winName = `R+-${ver}-x64.exe`;

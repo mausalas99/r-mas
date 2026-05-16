@@ -1,17 +1,17 @@
 version: 3.2.0
 files:
   - url: R+-3.2.0-arm64.zip
-    sha512: GPWNYV7/TYhZC/FttT+tBKcHHdjTy6YBaUnY2UDOLEitOX4japA46T31Bc5BkmtqHQZ1XCibwcGN23FqjtV0aA==
-    size: 141422579
+    sha512: SUjVOFQoxljpIA0nBwmntUEujQhZjmtO715Vyp6gg+KAa5cJTwC8Tf+e7R6clL7uvwiZIN/957Ur5D7LL5FZiw==
+    size: 141425232
   - url: R+-3.2.0-x64.zip
-    sha512: SZVme4hDmyoZn8Lqsru+qGVJ4nmh2ZA2Myx9o3okYCHaQDrHsSJGuR8H1RgX2K9Gf/o0oV3W+QokMRgdr7dedQ==
-    size: 149666658
+    sha512: xj8hIoJHg/Mwszfn56rOhm2xjBcuGI3eZrsYPxYd3YFkUlOgSuWmjwFpse0wWLxJlP4vrWifYTLVe/xOpUZvnQ==
+    size: 149669394
   - url: R+-3.2.0-arm64.dmg
-    sha512: x1cWiByt88+9LNg4fz7SebyoslImKGfPrMv3cHySijudl8kBY9tOz1wqvNUnjv+cQrlbT/SZ7w7VqqUPPEGgOg==
-    size: 146039872
+    sha512: TsUBJOzYlaXo1hfHvq293B8OK70yhVDNdVwfVzrQqq7v5MP62CQRS4AxztTDG1+1dq8mC4MOA6jS+O1jMr8YKw==
+    size: 146032646
   - url: R+-3.2.0-x64.dmg
-    sha512: oOQQkYLmb9qmmSoLbo7EhuUo96TspLJXHBpvNa0uJFWllbUdD0/+Yr6twAg1QAEQuIeqcPxia7H4kJgU9FcNKw==
-    size: 154327480
+    sha512: lmrs2J/BSpu/YVef7QW3MvxBOQ0YLkhYjGz9qfMayCFwKR13jLjH2pkU73qMaEZizQqHhlcWZDwqNit+GyNCfQ==
+    size: 154354278
 path: R+-3.2.0-arm64.zip
-sha512: GPWNYV7/TYhZC/FttT+tBKcHHdjTy6YBaUnY2UDOLEitOX4japA46T31Bc5BkmtqHQZ1XCibwcGN23FqjtV0aA==
-releaseDate: '2026-05-16T03:18:44.000Z'
+sha512: SUjVOFQoxljpIA0nBwmntUEujQhZjmtO715Vyp6gg+KAa5cJTwC8Tf+e7R6clL7uvwiZIN/957Ur5D7LL5FZiw==
+releaseDate: '2026-05-16T03:30:06.000Z'
