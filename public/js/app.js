@@ -44,7 +44,12 @@ import {
   classifyMedicationSoapCategory,
   applyMedCatalogOverlay,
   dosisBeforeSlash,
+  incrementMedItemsDiaTratamiento,
 } from './med-receta-core.mjs';
+import {
+  evaluateLabSuggestions,
+  filterNewLabSuggestions,
+} from './lab-clinical-suggestions.mjs';
 import { isModeSala, getDefaultServicio, migrateToV3 } from './mode-features.mjs';
 import {
   emptyListado,
@@ -7862,6 +7867,18 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '3.4.1': [
+    {
+      title: 'Sugerencias clínicas desde laboratorio',
+      body:
+        'Al procesar o reprocesar labs, R+ agrega pendientes en mayúsculas (p. ej. TRANSFUSION, REPO DE POTASIO) según umbrales de Hb y electrolitos. Sin duplicar la misma regla el mismo día.',
+    },
+    {
+      title: 'Medicamentos: +1 día (DIA#)',
+      body:
+        'Botón +1 día en Medicamentos para incrementar el día de tratamiento sin volver a pegar del hospital (todos los ítems con DIA# activos).',
+    },
+  ],
   '3.4.0': [
     {
       title: 'R+ Móvil (Safari, misma Wi‑Fi)',
@@ -9443,6 +9460,7 @@ function reprocessLabHistorySet(setId) {
     set.resLabs = repro.slice();
     set.parsed = extractParsedValues(set.resLabs);
     set.parsedBySection = buildParsedBySectionFromResLabs(set.resLabs, set.bhExtras);
+    applyLabClinicalSuggestions(activeId, set.resLabs, set.fecha, set.bhExtras);
     rebuildEstudiosFromLabHistory(activeId);
     saveState();
     renderLabHistoryPanel();
@@ -10281,6 +10299,30 @@ function limpiarRecetaInput() {
   if (ta) ta.value = '';
 }
 
+function incrementMedDiaTratamiento() {
+  if (!activeId) {
+    showToast('Selecciona un paciente primero', 'error');
+    return;
+  }
+  var block = medRecetaByPatient[activeId];
+  if (!block || !block.items || !block.items.length) {
+    showToast('No hay medicamentos procesados', 'error');
+    return;
+  }
+  var res = incrementMedItemsDiaTratamiento(block.items);
+  if (!res.count) {
+    showToast('Ningún medicamento con DIA# activo', 'error');
+    return;
+  }
+  block.items = res.items;
+  saveState();
+  renderMedRecetaPanel();
+  showToast(
+    res.count === 1 ? 'Día de tratamiento +1 (1 medicamento)' : 'Día de tratamiento +1 (' + res.count + ' medicamentos)',
+    'success'
+  );
+}
+
 function copiarMedicamentosAlPortapapeles() {
   if (!activeId || !medRecetaByPatient[activeId]) {
     showToast('No hay medicamentos procesados', 'error');
@@ -10656,9 +10698,48 @@ function autoStoreProcessedLabResult(result) {
     return;
   }
   pushLabHistory(activeId, result.resLabs, fecha, hora, result.sourceText || '', result.bhExtras);
+  applyLabClinicalSuggestions(activeId, result.resLabs, fecha, result.bhExtras);
   saveState();
   renderLabHistoryPanel();
   refreshTendenciasOrCultivosPanel();
+}
+
+function applyLabClinicalSuggestions(patientId, resLabs, fecha, bhExtras) {
+  if (!patientId || !resLabs || !resLabs.length) return;
+  var fechaNorm = normalizeFechaLabHistory(fecha) || String(fecha || '').trim();
+  if (!fechaNorm) return;
+  var parsed = extractParsedValues(resLabs);
+  var parsedBySection = buildParsedBySectionFromResLabs(resLabs, bhExtras);
+  var suggestions = evaluateLabSuggestions(parsed, parsedBySection, fechaNorm);
+  if (!suggestions.length) return;
+  var todos = storage.getTodos(patientId);
+  var toAdd = filterNewLabSuggestions(suggestions, todos);
+  if (!toAdd.length) return;
+  var nowIso = new Date().toISOString();
+  var added = 0;
+  toAdd.forEach(function (s) {
+    var row = {
+      id: String(Date.now()) + '-' + Math.random().toString(36).slice(2, 6),
+      text: s.text,
+      completed: false,
+      priority: 'media',
+      createdAt: nowIso,
+      updatedAt: nowIso,
+      labRuleId: s.ruleId,
+      labFecha: s.fechaEstudio,
+    };
+    todos.push(row);
+    emitLiveSyncTodoUpsert(patientId, row);
+    added += 1;
+  });
+  if (added > 0) {
+    storage.saveTodos(patientId, todos);
+    refreshAllTodoUIs();
+    showToast(
+      added === 1 ? '1 sugerencia agregada a pendientes' : added + ' sugerencias agregadas a pendientes',
+      'success'
+    );
+  }
 }
 
 function insertLabsAsRecent(lines) {
@@ -13734,6 +13815,7 @@ Object.assign(window, {
   openAddModalFromLab,
   copiarLabsAlPortapapeles,
   procesarRecetaMed,
+  incrementMedDiaTratamiento,
   limpiarRecetaInput,
   copiarMedicamentosAlPortapapeles,
   setMedOutputTab,

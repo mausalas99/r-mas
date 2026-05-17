@@ -25,9 +25,16 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 ---
 
-**Versión estable actual:** [3.4.0](https://github.com/mausalas99/r-mas/releases/tag/v3.4.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [3.4.1](https://github.com/mausalas99/r-mas/releases/tag/v3.4.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+## R+ 3.4.1 (estable — sugerencias lab + DIA#)
+
+- **Laboratorio:** pendientes sugeridos al procesar o **reprocesar** (TRANSFUSION, REPO DE …).
+- **Medicamentos:** botón **+1 día (DIA#)** sin volver a pegar del hospital.
+
+Notas: `docs/RELEASE_NOTES_3.4.1.txt`.
 
 ## R+ 3.4.0 (estable — R+ Móvil + tutorial LiveSync)
 

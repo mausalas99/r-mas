@@ -1,0 +1,25 @@
+R+ 3.4.1 (estable — sugerencias lab + DIA#)
+============================================
+
+Fecha: 2026-05-17
+
+## Resumen
+
+Sugerencias automáticas a pendientes según resultados de laboratorio (al procesar o reprocesar) y botón para avanzar un día en medicamentos con DIA# sin volver a pegar del hospital.
+
+## Nuevo
+
+- **Sugerencias desde laboratorio:** al procesar o **reprocesar** un estudio, se agregan pendientes en mayúsculas cuando aplica:
+  - Hb < 7 → TRANSFUSION DE CONCENTRADO ERITROCITARIO
+  - K < 3.5, Na < 135, Mg < 1.6, Ca < 8.5 → REPO DE …
+  - No duplica la misma regla el mismo día si ya hay pendiente abierto.
+- **Medicamentos +1 día (DIA#):** incrementa el día en todos los medicamentos con marcador DIA# no suspendidos.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v3.4.1
+
+- Mac: `R+-3.4.1-arm64.dmg`, `R+-3.4.1-x64.dmg` (y zip para auto-update).
+- Windows: `R+-3.4.1-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye `write-release-yml.js`).

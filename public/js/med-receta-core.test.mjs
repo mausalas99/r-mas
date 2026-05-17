@@ -7,6 +7,8 @@ import {
   buildMedRecetaCopyText,
   buildMedRecetaNameOnlyText,
   extractDiaTratamiento,
+  setDiaTratamientoInDosis,
+  incrementMedItemsDiaTratamiento,
   classifyMedicationSoapCategory,
   applyMedCatalogOverlay,
   dosisBeforeSlash,
@@ -58,6 +60,23 @@ test('parseMedicationPaste lee DIA# en ertapenem (1 G // *DIA# 3*)', () => {
 
 test('extractDiaTratamiento acepta DIA # con espacio y sin asteriscos', () => {
   assert.equal(extractDiaTratamiento('1 G // DIA # 5'), 5);
+});
+
+test('setDiaTratamientoInDosis actualiza marcador DIA#', () => {
+  assert.equal(setDiaTratamientoInDosis('500 MG // *DIA# 3*', 4), '500 MG // *DIA# 4*');
+});
+
+test('incrementMedItemsDiaTratamiento incrementa solo con DIA# y no suspendidos', () => {
+  var items = [
+    { id: 'a', suspendido: false, diaTratamiento: 3, dosisRaw: '500 MG // *DIA# 3*' },
+    { id: 'b', suspendido: true, diaTratamiento: 2, dosisRaw: '*DIA# 2*' },
+    { id: 'c', suspendido: false, diaTratamiento: null, dosisRaw: '40 MG' },
+  ];
+  var r = incrementMedItemsDiaTratamiento(items);
+  assert.equal(r.count, 1);
+  assert.equal(r.items[0].diaTratamiento, 4);
+  assert.equal(r.items[0].dosisRaw, '500 MG // *DIA# 4*');
+  assert.equal(r.items[1].diaTratamiento, 2);
 });
 
 test('resolveFechaActualizacion usa moda de fechas dd/mm/yyyy', () => {

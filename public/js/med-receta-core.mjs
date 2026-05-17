@@ -22,6 +22,33 @@ export function extractDiaTratamiento(dosisRaw) {
   return m ? parseInt(m[1], 10) : null;
 }
 
+/** Reemplaza el primer marcador DIA# en dosisRaw conservando formato (*DIA# n*). */
+export function setDiaTratamientoInDosis(dosisRaw, dia) {
+  var t = normalizeDiaMarkerText(trimStr(dosisRaw));
+  if (!/DIA\s*#\s*\d+/i.test(t)) return trimStr(dosisRaw);
+  var n = parseInt(dia, 10);
+  if (!Number.isFinite(n) || n < 1) return trimStr(dosisRaw);
+  return t.replace(/(\*?\s*DIA\s*#\s*)\d+(\s*\*?)/i, function (_m, pre, post) {
+    return pre + String(n) + post;
+  });
+}
+
+/** Incrementa día en ítems con DIA# (no suspendidos). */
+export function incrementMedItemsDiaTratamiento(items) {
+  var list = Array.isArray(items) ? items : [];
+  var count = 0;
+  var next = list.map(function (it) {
+    if (!it || it.suspendido || it.diaTratamiento == null) return it;
+    var diaNext = it.diaTratamiento + 1;
+    count += 1;
+    return Object.assign({}, it, {
+      diaTratamiento: diaNext,
+      dosisRaw: setDiaTratamientoInDosis(it.dosisRaw, diaNext),
+    });
+  });
+  return { items: next, count: count };
+}
+
 function stripDiaMarkersFromDosis(dosisPart) {
   var t = normalizeDiaMarkerText(String(dosisPart || ''));
   return trimStr(
