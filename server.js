@@ -10,15 +10,26 @@ const { attachWsHub } = require('./lan-squad/ws-hub.js');
 
 const appExpress = express();
 appExpress.use(express.json({ limit: '2mb' }));
+
+const LAN_HTTP_PORT = 3738;
+
+/** Permite fetch/WebSocket desde el mismo host (p. ej. iPad en http://192.168.x.x:3738). */
+function isAllowedLanCorsOrigin(originUrl, requestHost) {
+  if (!originUrl || !requestHost) return false;
+  const oh = String(originUrl.host || '').toLowerCase();
+  const rh = String(requestHost || '').toLowerCase();
+  if (oh === rh) return true;
+  if (oh === `localhost:${LAN_HTTP_PORT}` || oh === `127.0.0.1:${LAN_HTTP_PORT}`) return true;
+  return false;
+}
+
 appExpress.use((req, res, next) => {
   const rawOrigin = req.headers.origin;
   if (rawOrigin) {
     try {
       const originUrl = new URL(rawOrigin);
-      const normalized = `${originUrl.protocol}//${originUrl.hostname}:${originUrl.port || (originUrl.protocol === 'https:' ? '443' : '80')}`;
-      if (normalized === 'http://localhost:3738' || normalized === 'http://127.0.0.1:3738') {
-        const allowOrigin = `${originUrl.protocol}//${originUrl.host}`;
-        res.setHeader('Access-Control-Allow-Origin', allowOrigin);
+      if (isAllowedLanCorsOrigin(originUrl, req.headers.host)) {
+        res.setHeader('Access-Control-Allow-Origin', rawOrigin);
         res.setHeader('Vary', 'Origin');
         res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,POST,PATCH,DELETE,OPTIONS');
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Lan-Team-Code');
@@ -29,6 +40,11 @@ appExpress.use((req, res, next) => {
   }
   if (req.method === 'OPTIONS') return res.status(204).end();
   next();
+});
+
+appExpress.get('/join', (req, res) => {
+  const qs = new URLSearchParams(req.query).toString();
+  res.redirect(302, '/mobile/' + (qs ? `?${qs}` : ''));
 });
 appExpress.get('/health', (_req, res) => {
   try {

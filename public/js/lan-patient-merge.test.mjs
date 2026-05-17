@@ -44,6 +44,20 @@ test('mergeLabHistorySets gana el set más reciente con mismo id', () => {
   assert.match(String(out[0].resLabs), /nuevo/);
 });
 
+test('mergePatientEntry fusiona pendientes por id', () => {
+  const a = {
+    patient: { id: 'p1', registro: 'R1' },
+    todos: [{ id: 't1', text: 'viejo', updatedAt: '2026-01-01T00:00:00Z' }],
+  };
+  const b = {
+    patient: { id: 'p1', registro: 'R1' },
+    todos: [{ id: 't1', text: 'nuevo', updatedAt: '2026-01-15T00:00:00Z' }],
+  };
+  const m = mergePatientEntry(a, b);
+  assert.equal(m.todos.length, 1);
+  assert.equal(m.todos[0].text, 'nuevo');
+});
+
 test('mismo registro fusiona nota más reciente', () => {
   const merged = mergeLanPatientEntrySources([
     {

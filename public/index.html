@@ -18,6 +18,15 @@
 })();
 (function () {
   try {
+    var p = new URLSearchParams(location.search || '');
+    if (p.get('rpc-mobile') === '1' || /^\/mobile\/?$/i.test(location.pathname || '')) {
+      window.__RPC_MOBILE_WEB__ = true;
+      document.documentElement.classList.add('rpc-mobile-web');
+    }
+  } catch (_e) {}
+})();
+(function () {
+  try {
     var d = localStorage.getItem('rpc-ui-density');
     var isNormal = true;
     if (d === 'pase' || d === 'compact') isNormal = false;
@@ -2604,6 +2613,7 @@
     font-size: 11px; color: var(--text-muted); line-height: 1.4; margin: 0;
   }
   .lan-connection-panel-root { display: flex; flex-direction: column; gap: 10px; }
+  .lan-connection-panel-root .lan-rooms-panel ~ .lan-rooms-panel { display: none !important; }
   .lan-connect-card {
     border: 1px solid var(--border); border-radius: 10px; background: var(--surface);
     padding: 12px 12px 14px; display: flex; flex-direction: column; gap: 10px;
@@ -3820,6 +3830,34 @@
   }
   .indica-extra-tmpl button:disabled { opacity: 0.5; cursor: not-allowed; }
   .indica-extra-tmpl .iet-hint { font-size: 11px; color: var(--text-muted); }
+
+  /* R+ Móvil: misma UI; sin Word / salida rápida */
+  html.rpc-mobile-web .rpc-doc-export,
+  html.rpc-mobile-web #settings-accordion-documents,
+  html.rpc-mobile-web #settings-accordion-updates,
+  html.rpc-mobile-web #settings-accordion-lan-host-disk,
+  html.rpc-mobile-web .settings-help-cta .btn-settings-help-secondary {
+    display: none !important;
+  }
+  html.rpc-mobile-web .btn-header-icon,
+  html.rpc-mobile-web .btn-generate,
+  html.rpc-mobile-web .patient-card,
+  html.rpc-mobile-web .btn-lan-primary,
+  html.rpc-mobile-web .btn-lan-secondary {
+    min-height: 44px;
+  }
+  html.rpc-mobile-web header {
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    background: var(--surface);
+  }
+  @media (max-width: 900px) {
+    html.rpc-mobile-web aside {
+      width: min(280px, 42vw) !important;
+      min-width: 200px;
+    }
+  }
 </style>
 <script src="vendor/chart.umd.min.js"></script>
 <script src="vendor/sortable.min.js"></script>
@@ -3982,7 +4020,7 @@
         </div>
       </details>
 
-      <details class="settings-accordion">
+      <details class="settings-accordion" id="settings-accordion-documents">
         <summary>Documentos y salida</summary>
         <div class="settings-acc-body">
           <p style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;" data-i18n="settings.docsFolderHint">Los .docx generados se guardan aquí (si no eliges carpeta, se usa Descargas).</p>
@@ -4112,7 +4150,7 @@
         </div>
       </details>
 
-      <details class="settings-accordion">
+      <details class="settings-accordion" id="settings-accordion-updates">
         <summary data-i18n="settings.application">Aplicación y actualizaciones</summary>
         <div class="settings-acc-body">
           <div class="profile-field-label" data-i18n="settings.version">Versión</div>
@@ -4193,7 +4231,7 @@
 <div id="onboarding-intro-backdrop" aria-hidden="true">
   <div class="onboarding-intro-modal" role="dialog" aria-modal="true" aria-labelledby="intro-modal-title">
     <h2 id="intro-modal-title">Bienvenido a R+</h2>
-    <p class="intro-lead">Recorrido corto con <strong>DEMO PÉREZ</strong> (no se guarda). Incluye el <strong>Modo Pase</strong> (resumen de ronda) y luego el flujo de Sala o Interconsulta. El panel inferior guía la interfaz paso a paso.</p>
+    <p class="intro-lead">Recorrido corto con <strong>DEMO PÉREZ</strong> (no se guarda). Incluye el <strong>Modo Pase</strong> (resumen de ronda), el flujo de Sala o Interconsulta y, al final, cómo sincronizar con el equipo (<strong>⇄ LiveSync</strong>) y usar <strong>R+ Móvil</strong> en iPad (Safari, misma Wi‑Fi). El panel inferior guía la interfaz paso a paso.</p>
     <div class="intro-skip-above-paths">
       <button type="button" class="btn-intro-skip" id="intro-btn-skip" onclick="guidedTourIntroSkip()">Omitir tutorial</button>
     </div>
@@ -4201,13 +4239,13 @@
       <article class="intro-option-card">
         <span class="intro-option-kicker">Hospitalización</span>
         <h3 class="intro-option-h">Sala</h3>
-        <p class="intro-option-lead">Laboratorio, expediente, SOAP y medicamentos.</p>
+        <p class="intro-option-lead">Laboratorio, expediente, medicamentos y al cerrar: sync en equipo + móvil.</p>
         <button type="button" class="btn-intro-pick" onclick="guidedTourIntroChooseSala()">Empezar · Sala</button>
       </article>
       <article class="intro-option-card intro-option-card-accent">
         <span class="intro-option-kicker">Consulta externa</span>
         <h3 class="intro-option-h">Interconsulta</h3>
-        <p class="intro-option-lead">Lo clínico de Sala + nota e indicaciones en Word.</p>
+        <p class="intro-option-lead">Lo clínico de Sala + Word; al cerrar: sync en equipo + móvil.</p>
         <button type="button" class="btn-intro-pick btn-intro-pick-secondary" onclick="guidedTourIntroChooseInterconsulta()">Empezar · Interconsulta</button>
       </article>
     </div>

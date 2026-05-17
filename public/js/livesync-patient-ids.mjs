@@ -1,0 +1,109 @@
+/** Mapea IDs de paciente del peer LAN al ID local (mismo registro, distinto id). */
+
+export function findPatientIdByRegistro(patients, registro) {
+  const r = String(registro || '').trim();
+  if (!r || !Array.isArray(patients)) return '';
+  const row = patients.find((p) => p && String(p.registro || '').trim() === r);
+  return row && row.id ? String(row.id) : '';
+}
+
+export function resolveLiveSyncLocalPatientId(remotePatientId, registro, patients) {
+  const byReg = findPatientIdByRegistro(patients, registro);
+  if (byReg) return byReg;
+  const rid = String(remotePatientId || '').trim();
+  if (!rid) return '';
+  const byId = Array.isArray(patients) ? patients.find((p) => p && p.id === rid) : null;
+  return byId && byId.id ? String(byId.id) : rid;
+}
+
+export function buildLiveSyncPatientIdMap(entries, patients, todosMap) {
+  const map = {};
+  const regByRemote = {};
+  const list = Array.isArray(entries) ? entries : [];
+  for (let i = 0; i < list.length; i += 1) {
+    const entry = list[i];
+    if (!entry || !entry.patient) continue;
+    const remoteId = String(entry.patient.id || '').trim();
+    if (!remoteId) continue;
+    const reg = String(entry.patient.registro || '').trim();
+    if (reg) regByRemote[remoteId] = reg;
+    map[remoteId] = resolveLiveSyncLocalPatientId(remoteId, reg, patients);
+  }
+  for (let p = 0; p < (patients || []).length; p += 1) {
+    const row = patients[p];
+    if (!row || !row.id) continue;
+    const localId = String(row.id);
+    map[localId] = localId;
+    const reg = String(row.registro || '').trim();
+    if (!reg) continue;
+    for (const remoteId of Object.keys(regByRemote)) {
+      if (regByRemote[remoteId] === reg) map[remoteId] = localId;
+    }
+  }
+  const todos = todosMap && typeof todosMap === 'object' ? todosMap : {};
+  for (const remotePid of Object.keys(todos)) {
+    if (map[remotePid]) continue;
+    map[remotePid] = resolveLiveSyncLocalPatientId(
+      remotePid,
+      regByRemote[remotePid] || '',
+      patients
+    );
+  }
+  return map;
+}
+
+export function mergeTodoListsById(existing, incoming) {
+  const byId = {};
+  (Array.isArray(existing) ? existing : []).forEach((t) => {
+    if (t && t.id) byId[t.id] = t;
+  });
+  (Array.isArray(incoming) ? incoming : []).forEach((t) => {
+    if (!t || !t.id) return;
+    const cur = byId[t.id];
+    const at = String(t.updatedAt || t.createdAt || '');
+    const curAt = cur ? String(cur.updatedAt || cur.createdAt || '') : '';
+    if (!cur || at >= curAt) byId[t.id] = t;
+  });
+  return Object.keys(byId).map((k) => byId[k]);
+}
+
+export function remapTodosPatientIds(todosMap, idMap) {
+  const out = {};
+  if (!todosMap || typeof todosMap !== 'object') return out;
+  for (const remotePid of Object.keys(todosMap)) {
+    const localPid = idMap[remotePid] || remotePid;
+    const arr = Array.isArray(todosMap[remotePid]) ? todosMap[remotePid] : [];
+    if (!arr.length) continue;
+    out[localPid] = out[localPid] ? mergeTodoListsById(out[localPid], arr) : arr.slice();
+  }
+  return out;
+}
+
+/** Une el mapa global de pendientes en cada entrada de paciente (mismo id remoto). */
+export function attachTodosMapToPatientEntries(entries, todosMap) {
+  if (!Array.isArray(entries)) return [];
+  const byRemoteId = new Map();
+  for (const entry of entries) {
+    const id = entry?.patient?.id;
+    if (id) byRemoteId.set(String(id), entry);
+  }
+  for (const remotePid of Object.keys(todosMap || {})) {
+    const list = todosMap[remotePid];
+    if (!Array.isArray(list) || !list.length) continue;
+    const entry = byRemoteId.get(remotePid);
+    if (!entry) continue;
+    entry.todos = mergeTodoListsById(entry.todos, list);
+  }
+  return entries;
+}
+
+export function remapAgendaPatientIds(agenda, idMap) {
+  if (!Array.isArray(agenda)) return [];
+  return agenda.map((ev) => {
+    if (!ev || !ev.patientId) return ev;
+    const pid = String(ev.patientId);
+    const local = idMap[pid] || pid;
+    if (local === pid) return ev;
+    return { ...ev, patientId: local };
+  });
+}

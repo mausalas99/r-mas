@@ -17,8 +17,12 @@ test('getSalaTourSteps incluye pasos clave de v3.0', () => {
   assert.ok(steps.includes('lab_send'));
   assert.ok(steps.includes('estado_actual'), 'debe presentar Estado Actual');
   assert.ok(steps.includes('listado_problemas'), 'debe presentar Listado de Problemas');
+  assert.ok(steps.includes('livesync_desktop'), 'debe explicar LiveSync en escritorio');
+  assert.ok(steps.includes('livesync_mobile'), 'debe explicar R+ Móvil');
   assert.ok(!steps.includes('sala_soap'), 'Sala no debe mostrar el paso heredado de Nota de evolución');
-  assert.ok(steps.includes('wrap'));
+  assert.equal(steps[steps.length - 1], 'wrap');
+  assert.equal(steps[steps.length - 3], 'livesync_desktop');
+  assert.equal(steps.length, 16);
   assert.equal(steps[1], 'pase_enter');
   assert.equal(steps[2], 'pase_board', 'tour en Sala incluye resumen Pase');
 });
@@ -37,6 +41,9 @@ test('getInterconsultaTourSteps mantiene pasos clásicos sin Estado Actual ni Li
   assert.ok(!steps.includes('listado_problemas'));
   assert.ok(steps.includes('ic_nota'));
   assert.ok(steps.includes('ic_indica'));
+  assert.ok(steps.includes('livesync_desktop'));
+  assert.ok(steps.includes('livesync_mobile'));
+  assert.equal(steps[steps.length - 1], 'wrap');
 });
 
 test('getTourTarget para pase_enter resalta el área principal', () => {
@@ -85,10 +92,18 @@ test('stepRequiresUserAction incluye pase_enter', () => {
   assert.equal(stepRequiresUserAction('pase_enter'), true);
 });
 
+test('getTourTarget livesync_desktop abre panel ⇄', () => {
+  const t = getTourTarget('livesync_desktop', 'sala');
+  assert.match(t.selector || '', /team-sync/);
+  assert.equal(t.openConnection, true);
+});
+
 test('stepRequiresUserAction es false para pasos puramente narrativos', () => {
   assert.equal(stepRequiresUserAction('map_sidebar'), false);
   assert.equal(stepRequiresUserAction('map_tabs'), false);
   assert.equal(stepRequiresUserAction('map_lab_teaser'), false);
   assert.equal(stepRequiresUserAction('pase_board'), false);
   assert.equal(stepRequiresUserAction('wrap'), false);
+  assert.equal(stepRequiresUserAction('livesync_desktop'), false);
+  assert.equal(stepRequiresUserAction('livesync_mobile'), false);
 });

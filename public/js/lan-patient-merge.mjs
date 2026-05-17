@@ -1,6 +1,7 @@
 /** Merge de expedientes (entradas paciente) para sync LAN — unión sin borrar locales. */
 
 import { compareIso } from './live-sync-room.mjs';
+import { mergeTodoListsById } from './livesync-patient-ids.mjs';
 
 export function isDemoPatientId(patientId) {
   return String(patientId || '').indexOf('demo-') === 0;
@@ -184,6 +185,7 @@ export function mergePatientEntry(a, b) {
     labHistory: mergeLabHistorySets(a.labHistory, b.labHistory),
     medReceta,
     listadoProblemas: mergeListadoProblemas(a.listadoProblemas, b.listadoProblemas),
+    todos: mergeTodoListsById(a.todos, b.todos),
   };
 }
 
@@ -195,6 +197,7 @@ function cloneEntry(entry) {
     labHistory: Array.isArray(entry.labHistory) ? entry.labHistory.map((s) => ({ ...s })) : [],
     medReceta: entry.medReceta ? { ...entry.medReceta } : null,
     listadoProblemas: entry.listadoProblemas ? { ...entry.listadoProblemas } : null,
+    todos: Array.isArray(entry.todos) ? entry.todos.map((t) => ({ ...t })) : [],
   };
 }
 

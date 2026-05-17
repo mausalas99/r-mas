@@ -60,6 +60,15 @@ import {
   isLiveSyncEnvelope,
 } from './live-sync-room.mjs';
 import { mergeLanPatientEntrySources } from './lan-patient-merge.mjs';
+import {
+  buildLiveSyncPatientIdMap,
+  remapTodosPatientIds,
+  remapAgendaPatientIds,
+  mergeTodoListsById,
+  attachTodosMapToPatientEntries,
+} from './livesync-patient-ids.mjs';
+import { buildLanJoinUrls, parseLanJoinQuery } from './lan-join-link.mjs';
+import { isMobileWeb, blockIfMobileDocExport, mobileDocExportToast } from './mobile-web.mjs';
 import { validatePatientForSave, buildExpedienteAdvice } from './patient-validation.mjs';
 import {
   getTourSteps,
@@ -116,6 +125,8 @@ var DEFAULT_LAN_TEAM_CODE = '1234';
 var LAN_HOST_CODE_HINT_SEEN_KEY = 'rpc-lan-host-code-hint-seen';
 var _liveSyncPushTimer = null;
 var LIVE_SYNC_PUSH_DEBOUNCE_MS = 900;
+var _lanPanelRenderGen = 0;
+var _lanPanelRenderChain = Promise.resolve();
 var LAN_KNOWN_ROOMS_LS = 'rpc-lan-known-rooms';
 function readLanKnownRooms() {
   try {
@@ -331,6 +342,7 @@ function collectPatientEntriesForLanSync() {
 function mergeLiveSyncFullBundles(sources) {
   var base = mergeLiveSyncBundles(sources);
   base.entries = mergeLanPatientEntrySources(sources);
+  base.entries = attachTodosMapToPatientEntries(base.entries, base.todos);
   return base;
 }
 
@@ -339,6 +351,16 @@ function touchPatientLanUpdatedAt(patientId) {
     return x && x.id === patientId;
   });
   if (p) p.lanUpdatedAt = new Date().toISOString();
+}
+
+function saveEntryTodosOnLocalPatient(localPatientId, entry) {
+  if (!localPatientId || !entry) return;
+  var incoming = Array.isArray(entry.todos) ? entry.todos : [];
+  if (!incoming.length) return;
+  storage.saveTodos(
+    localPatientId,
+    mergeTodoListsById(storage.getTodos(localPatientId), incoming)
+  );
 }
 
 function applyLanPatientEntries(entries) {
@@ -371,10 +393,39 @@ function applyLanPatientEntries(entries) {
       if (entry.medReceta) medRecetaByPatient[existing.id] = entry.medReceta;
       else delete medRecetaByPatient[existing.id];
       if (entry.listadoProblemas) listadoProblemas[existing.id] = entry.listadoProblemas;
+      saveEntryTodosOnLocalPatient(existing.id, entry);
       updated += 1;
     } else {
-      var newId = applyImportEntry(entry, 'duplicate', null);
+      var remoteId = String(entry.patient.id || '').trim();
+      var idTaken =
+        remoteId &&
+        patients.some(function (p) {
+          return p && p.id === remoteId;
+        });
+      var newId;
+      if (remoteId && !idTaken) {
+        patients.unshift({
+          id: remoteId,
+          nombre: ensureUniquePatientName(entry.patient.nombre || 'PACIENTE SIN NOMBRE'),
+          area: entry.patient.area || '',
+          servicio: entry.patient.servicio || '',
+          cuarto: entry.patient.cuarto || '',
+          cama: entry.patient.cama || '',
+          edad: entry.patient.edad || '',
+          sexo: entry.patient.sexo || 'F',
+          registro: entry.patient.registro || '',
+          fromLab: !!entry.patient.fromLab,
+        });
+        notes[remoteId] = entry.note || {};
+        indicaciones[remoteId] = entry.indicaciones || {};
+        labHistory[remoteId] = Array.isArray(entry.labHistory) ? entry.labHistory : [];
+        if (entry.medReceta) medRecetaByPatient[remoteId] = entry.medReceta;
+        newId = remoteId;
+      } else {
+        newId = applyImportEntry(entry, 'duplicate', null);
+      }
       if (entry.listadoProblemas && newId) listadoProblemas[newId] = entry.listadoProblemas;
+      saveEntryTodosOnLocalPatient(newId, entry);
       added += 1;
     }
   }
@@ -395,16 +446,60 @@ function applyLanPatientEntries(entries) {
 
 function applyLiveSyncMerged(merged) {
   if (!merged) return;
-  storage.saveScheduledProcedures(merged.agenda || []);
-  var todosMap = merged.todos || {};
+  var entries = merged.entries || [];
+  if (entries.length) {
+    applyLanPatientEntries(entries);
+  }
+  var idMap = buildLiveSyncPatientIdMap(entries, patients, merged.todos || {});
+  storage.saveScheduledProcedures(remapAgendaPatientIds(merged.agenda || [], idMap));
+  var todosMap = remapTodosPatientIds(merged.todos || {}, idMap);
   Object.keys(todosMap).forEach(function (pid) {
     storage.saveTodos(pid, todosMap[pid] || []);
   });
-  if (merged.entries && merged.entries.length) {
-    applyLanPatientEntries(merged.entries);
+  if (activeAppTab === 'agenda' || (typeof isMobileWeb === 'function' && isMobileWeb())) {
+    renderProcedureAgendaPanel();
   }
-  if (activeAppTab === 'agenda') renderProcedureAgendaPanel();
   refreshAllTodoUIs();
+  if (activeId) {
+    try {
+      renderNoteForm();
+    } catch (_eNote) {}
+    try {
+      renderLabHistoryPanel();
+    } catch (_eLab) {}
+  }
+}
+function liveSyncBundleHasPayload(bundle) {
+  if (!bundle) return false;
+  if (Array.isArray(bundle.entries) && bundle.entries.length > 0) return true;
+  if (Array.isArray(bundle.agenda) && bundle.agenda.length > 0) return true;
+  var todos = bundle.todos;
+  if (!todos || typeof todos !== 'object') return false;
+  var keys = Object.keys(todos);
+  for (var i = 0; i < keys.length; i += 1) {
+    if (Array.isArray(todos[keys[i]]) && todos[keys[i]].length > 0) return true;
+  }
+  return false;
+}
+function pushRoomSyncBundleToHost(roomId, envelope) {
+  if (!isLanSessionConfiguredForRest()) return;
+  var rid = String(roomId || '').trim();
+  if (!rid || !envelope || !liveSyncBundleHasPayload(envelope)) return;
+  lanClient
+    .fetch('/api/lan/v1/rooms/' + encodeURIComponent(rid) + '/sync-bundle', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        bundle: {
+          updatedAt: envelope.savedAt || new Date().toISOString(),
+          uploadedByClientId: envelope.clientId || getLanClientId(),
+          agenda: envelope.agenda || [],
+          todos: envelope.todos || {},
+          entries: envelope.entries || [],
+        },
+      }),
+    })
+    .catch(function () {});
 }
 function saveLocalRoomSnapshot(roomId) {
   var rid = String(roomId || '').trim();
@@ -446,6 +541,7 @@ function scheduleLiveSyncPush() {
     try {
       lanClient.sendLive(bundle);
     } catch (_e) {}
+    pushRoomSyncBundleToHost(activeLiveSyncRoomId, bundle);
     saveLocalRoomSnapshot(activeLiveSyncRoomId);
   }, LIVE_SYNC_PUSH_DEBOUNCE_MS);
 }
@@ -584,6 +680,27 @@ async function reconcileLiveSyncRoom(roomId) {
     applyLiveSyncMerged(mergeLiveSyncFullBundles(sources));
   }
 }
+function syncLiveSyncAfterRoomJoin(roomId) {
+  var rid = String(roomId || '').trim();
+  if (!rid) return Promise.resolve();
+  return reconcileLiveSyncRoom(rid).then(function () {
+    if (activeLiveSyncRoomId !== rid) return;
+    if (lanClient.liveConnected) {
+      var prev = storage.getLanRoomSnapshot(rid);
+      lanClient.sendLive({
+        type: 'livesync:hello',
+        roomId: rid,
+        clientId: getLanClientId(),
+        snapshotAt: prev && prev.savedAt ? prev.savedAt : null,
+        generation: prev && prev.generation != null ? prev.generation : 0,
+      });
+    }
+    syncLiveSyncStatusChrome();
+    renderProcedureAgendaPanel();
+    refreshAllTodoUIs();
+    renderPatientList();
+  });
+}
 function leaveLiveSyncRoom(opts) {
   opts = opts || {};
   var roomId = activeLiveSyncRoomId;
@@ -598,22 +715,8 @@ function leaveLiveSyncRoom(opts) {
       });
     }
     saveLocalRoomSnapshot(roomId);
-    if (isLanSessionConfiguredForRest()) {
-      lanClient
-        .fetch('/api/lan/v1/rooms/' + encodeURIComponent(roomId) + '/sync-bundle', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            bundle: {
-              updatedAt: bundle.savedAt,
-              uploadedByClientId: bundle.clientId,
-              agenda: bundle.agenda,
-              todos: bundle.todos,
-              entries: bundle.entries,
-            },
-          }),
-        })
-        .catch(function () {});
+    if (liveSyncBundleHasPayload(bundle)) {
+      pushRoomSyncBundleToHost(roomId, bundle);
     }
   }
   activeLiveSyncRoomId = '';
@@ -628,21 +731,11 @@ lanClient.addEventListener('lan-live', function (ev) {
 lanClient.addEventListener('lan-live-status', function (ev) {
   if (!ev.detail) return;
   if (ev.detail.connected && activeLiveSyncRoomId) {
-    reconcileLiveSyncRoom(activeLiveSyncRoomId).then(function () {
-      var prev = storage.getLanRoomSnapshot(activeLiveSyncRoomId);
-      lanClient.sendLive({
-        type: 'livesync:hello',
-        roomId: activeLiveSyncRoomId,
-        clientId: getLanClientId(),
-        snapshotAt: prev && prev.savedAt ? prev.savedAt : null,
-        generation: prev && prev.generation != null ? prev.generation : 0,
-      });
-    });
+    syncLiveSyncAfterRoomJoin(activeLiveSyncRoomId);
   } else if (!ev.detail.connected && activeLiveSyncRoomId) {
     saveLocalRoomSnapshot(activeLiveSyncRoomId);
   }
   syncLiveSyncStatusChrome();
-  if (typeof renderLanPanel === 'function') renderLanPanel();
 });
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', function () {
@@ -2714,6 +2807,7 @@ function _rpcDeferInit(fn) {
 }
 _rpcDeferInit(initGoalGFeatures);
 _rpcDeferInit(initGuidedTourGate);
+_rpcDeferInit(initMobileWebBoot);
 _rpcDeferInit(initRpcServerHealthWatch);
 _rpcDeferInit(initIdleLockFeature);
 initUpdateChannelAndGate();
@@ -3863,17 +3957,39 @@ function appendLanRoleTabs(root) {
   root.appendChild(wrap);
 }
 
-async function renderLanPanel() {
+function lanPanelRenderStale(gen) {
+  return gen !== _lanPanelRenderGen;
+}
+
+function purgeDuplicateLanRoomsPanels(root) {
+  if (!root) return;
+  var panels = root.querySelectorAll('.lan-rooms-panel');
+  for (var i = 0; i < panels.length - 1; i += 1) {
+    panels[i].remove();
+  }
+}
+
+function renderLanPanel() {
+  _lanPanelRenderChain = _lanPanelRenderChain
+    .catch(function () {})
+    .then(function () {
+      return renderLanPanelOnce();
+    });
+  return _lanPanelRenderChain;
+}
+
+async function renderLanPanelOnce() {
+  var gen = ++_lanPanelRenderGen;
   var root = document.getElementById('lan-connection-panel-root');
   if (!root) return;
-  root.innerHTML = '';
-  appendLanRoleTabs(root);
-  appendLanKnownSessionsSection(root);
 
   var cfg = typeof storage.getLanConfig === 'function' ? (storage.getLanConfig() || {}) : {};
   var uiRole = typeof storage.getLanUiRole === 'function' ? storage.getLanUiRole() : 'client';
 
   if (!lanClient.baseUrl()) {
+    root.innerHTML = '';
+    appendLanRoleTabs(root);
+    appendLanKnownSessionsSection(root);
     var card = document.createElement('div');
     card.className = 'lan-connect-card';
 
@@ -3979,12 +4095,42 @@ async function renderLanPanel() {
     root.appendChild(card);
     if (uiRole === 'host' && !String(cfg.hostUrl || '').trim()) {
       resolveLanHostUrlForShare().then(function (u) {
+        if (lanPanelRenderStale(gen)) return;
         var inp = document.getElementById('lan-input-host-url');
         if (inp && u && !String(inp.value || '').trim()) inp.value = u;
       });
     }
     return;
   }
+
+  var roomsFetch = { ok: false, rooms: [], httpStatus: 0, errorDetail: '', networkError: false };
+  try {
+    var respRooms = await lanClient.fetch('/api/lan/v1/rooms');
+    if (lanPanelRenderStale(gen)) return;
+    if (!respRooms.ok) {
+      roomsFetch.httpStatus = respRooms.status;
+      try {
+        roomsFetch.errorDetail = await respRooms.text();
+      } catch (_eTxt) {}
+    } else {
+      var payloadRooms;
+      try {
+        payloadRooms = await respRooms.json();
+      } catch (_eJson) {
+        payloadRooms = {};
+      }
+      roomsFetch.ok = true;
+      roomsFetch.rooms = Array.isArray(payloadRooms && payloadRooms.rooms) ? payloadRooms.rooms : [];
+    }
+  } catch (_eNet) {
+    if (lanPanelRenderStale(gen)) return;
+    roomsFetch.networkError = true;
+  }
+  if (lanPanelRenderStale(gen)) return;
+
+  root.innerHTML = '';
+  appendLanRoleTabs(root);
+  appendLanKnownSessionsSection(root);
 
   var statusCard = document.createElement('div');
   statusCard.className = 'lan-connect-card';
@@ -4028,12 +4174,22 @@ async function renderLanPanel() {
   btnCopyStored.onclick = function () {
     copyLanInviteLinkFromUi();
   };
+  var btnCopyMobile = document.createElement('button');
+  btnCopyMobile.type = 'button';
+  btnCopyMobile.className = 'btn-lan-secondary';
+  btnCopyMobile.style.flex = '1';
+  btnCopyMobile.textContent = 'Copiar enlace móvil';
+  btnCopyMobile.title = 'Solo URL para iPad o teléfono (Safari, misma Wi‑Fi)';
+  btnCopyMobile.onclick = function () {
+    copyMobileLanLinkFromUi();
+  };
   rowInvite.appendChild(btnCopyStored);
+  rowInvite.appendChild(btnCopyMobile);
   statusCard.appendChild(rowInvite);
   root.appendChild(statusCard);
 
   var roomsCard = document.createElement('div');
-  roomsCard.className = 'lan-connect-card';
+  roomsCard.className = 'lan-connect-card lan-rooms-panel';
   var roomsTitle = document.createElement('div');
   roomsTitle.className = 'lan-connect-card-title';
   roomsTitle.textContent = 'Salas en vivo';
@@ -4070,32 +4226,23 @@ async function renderLanPanel() {
   createRow.appendChild(createBtn);
   roomsCard.appendChild(createRow);
 
-  var resp;
-  try {
-    resp = await lanClient.fetch('/api/lan/v1/rooms');
-  } catch (e) {
+  if (roomsFetch.networkError) {
     showToast('No se pudo consultar salas LAN', 'error');
     var errNet = document.createElement('p');
     errNet.className = 'lan-connect-card-hint';
     errNet.textContent = 'No se pudo consultar la lista de salas. Revisa el Wi‑Fi o la dirección del servidor.';
     roomsCard.appendChild(errNet);
-    root.appendChild(roomsCard);
-    return;
-  }
-  if (!resp.ok) {
+  } else if (!roomsFetch.ok) {
     showToast('Error al cargar salas LAN', 'error');
     var errHttp = document.createElement('p');
     errHttp.className = 'lan-connect-card-hint';
-    if (resp.status === 401) {
+    if (roomsFetch.httpStatus === 401) {
       errHttp.innerHTML =
         'El <strong>código del equipo</strong> que guardaste en esta R+ no coincide con el que usa el proceso servidor (archivo <code>lan-team-code.txt</code>, variable <code>R_PLUS_LAN_TEAM_CODE</code> o el valor por defecto <code>' +
         esc(DEFAULT_LAN_TEAM_CODE) +
         '</code>). Deben ser <strong>exactamente el mismo texto</strong> en ambos sitios. Tras cambiar el archivo, reinicia R+.';
     } else {
-      var rawBody = '';
-      try {
-        rawBody = await resp.text();
-      } catch (_e2) {}
+      var rawBody = String(roomsFetch.errorDetail || '');
       var detail = '';
       try {
         var jo = JSON.parse(rawBody);
@@ -4109,24 +4256,13 @@ async function renderLanPanel() {
           : '';
       errHttp.innerHTML =
         '<strong>HTTP ' +
-        esc(String(resp.status)) +
+        esc(String(roomsFetch.httpStatus)) +
         '</strong>' +
         (detail ? ': ' + esc(detail) : '.') +
         (hint500 ? hint500 : ' Comprueba la URL del anfitrión y que R+ siga abierto en esa máquina.');
     }
     roomsCard.appendChild(errHttp);
-    root.appendChild(roomsCard);
-    return;
-  }
-
-  var payload;
-  try {
-    payload = await resp.json();
-  } catch (_e) {
-    payload = {};
-  }
-  var rooms = Array.isArray(payload && payload.rooms) ? payload.rooms : [];
-  if (!rooms.length) {
+  } else if (!roomsFetch.rooms.length) {
     var empty = document.createElement('p');
     empty.className = 'lan-connect-card-hint';
     empty.textContent = 'Todavía no hay salas. Crea una arriba o espera a que alguien del equipo la cree.';
@@ -4136,7 +4272,7 @@ async function renderLanPanel() {
     list.style.listStyle = 'none';
     list.style.padding = '0';
     list.style.margin = '0';
-    rooms.forEach(function (room) {
+    roomsFetch.rooms.forEach(function (room) {
       var id = room && room.id ? String(room.id) : '';
       if (!id) return;
       var li = document.createElement('li');
@@ -4155,7 +4291,8 @@ async function renderLanPanel() {
       joinBtn.type = 'button';
       joinBtn.className = 'btn-lan-secondary';
       joinBtn.style.flex = '0 0 auto';
-      joinBtn.textContent = 'Unirse';
+      joinBtn.textContent = activeLiveSyncRoomId === id ? 'En sala' : 'Unirse';
+      joinBtn.disabled = activeLiveSyncRoomId === id;
       joinBtn.onclick = function () {
         joinLanRoom(id, disp);
       };
@@ -4176,7 +4313,9 @@ async function renderLanPanel() {
     });
     roomsCard.appendChild(list);
   }
+  if (lanPanelRenderStale(gen)) return;
   root.appendChild(roomsCard);
+  purgeDuplicateLanRoomsPanels(root);
 }
 
 async function resolveLanHostUrlForShare() {
@@ -4261,6 +4400,51 @@ async function resetLanSquadHostStateFromUi() {
   }
 }
 
+async function copyMobileLanLinkFromUi(opts) {
+  opts = opts || {};
+  var silent = !!opts.silent;
+  var cfg = typeof storage.getLanConfig === 'function' ? (storage.getLanConfig() || {}) : {};
+  var teamInput = document.getElementById('lan-input-team-code');
+  var hostUrl = await resolveLanHostUrlForShare();
+  var teamCode = String(
+    teamInput && teamInput.value != null && String(teamInput.value).trim()
+      ? teamInput.value
+      : cfg.teamCode || ''
+  ).trim();
+  if (!hostUrl || !teamCode) {
+    if (!silent) {
+      showToast(
+        !hostUrl
+          ? 'Falta la dirección del servidor (o no pudimos detectar la IP en esta computadora).'
+          : 'Falta el código del equipo.',
+        'error'
+      );
+    }
+    return false;
+  }
+  var roomId = String(activeLiveSyncRoomId || '').trim();
+  var urls = buildLanJoinUrls(hostUrl, teamCode, roomId);
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(urls.mobileUrl);
+      if (!silent) {
+        showToast(
+          roomId
+            ? 'Enlace móvil copiado (incluye sala). Ábrelo en Safari en la misma Wi‑Fi.'
+            : 'Enlace móvil copiado. En el iPad elige la misma sala LiveSync que el equipo.',
+          'success'
+        );
+      }
+      return true;
+    }
+    if (!silent) showToast('Tu navegador no permite copiar automáticamente.', 'error');
+    return false;
+  } catch (_e) {
+    if (!silent) showToast('No se pudo copiar al portapapeles.', 'error');
+    return false;
+  }
+}
+
 async function copyLanInviteLinkFromUi(opts) {
   opts = opts || {};
   var silent = !!opts.silent;
@@ -4283,15 +4467,25 @@ async function copyLanInviteLinkFromUi(opts) {
     }
     return false;
   }
+  var roomId = String(activeLiveSyncRoomId || '').trim();
+  var urls = buildLanJoinUrls(hostUrl, teamCode, roomId);
   var body =
-    'Hola — para entrar a la misma sala en R+ (icono ⇄ arriba a la derecha), usa estos datos:\n\n' +
+    'Hola — para unirte al equipo en R+:\n\n' +
     'Dirección del servidor:\n' +
     hostUrl +
     '\n\n' +
     'Código del equipo:\n' +
     teamCode +
     '\n\n' +
-    'Pasos en la otra computadora: abre R+, pulsa ⇄, elige «Cliente», escribe la dirección y el código, y toca «Iniciar sesión LAN».';
+    'En otra computadora (app de escritorio): abre R+, pulsa ⇄, elige «Cliente», escribe dirección y código, «Iniciar sesión LAN».' +
+    (roomId ? ' Luego entra a la misma sala LiveSync.' : '') +
+    '\n\n' +
+    'En iPad o teléfono (misma Wi‑Fi, sin instalar app):\n' +
+    urls.mobileUrl +
+    '\n\n' +
+    '(También: ' +
+    urls.joinUrl +
+    ')';
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(body);
@@ -4384,6 +4578,15 @@ async function saveLanSettingsFromUi(opts) {
 function joinLanRoom(roomId, displayName) {
   var id = String(roomId || '').trim();
   if (!id) return;
+  if (
+    activeLiveSyncRoomId === id &&
+    String(lanClient.liveRoomId || '') === id &&
+    lanClient.liveConnected
+  ) {
+    syncLiveSyncAfterRoomJoin(id);
+    syncLiveSyncStatusChrome();
+    return;
+  }
   if (activeLiveSyncRoomId && activeLiveSyncRoomId !== id) {
     leaveLiveSyncRoom({ silentLeave: false });
   }
@@ -4407,6 +4610,7 @@ function joinLanRoom(roomId, displayName) {
   showToast('Sala: sincronizando expediente, agenda y pendientes', 'success');
   syncLiveSyncStatusChrome();
   renderLanPanel();
+  syncLiveSyncAfterRoomJoin(id);
 }
 
 async function createLanRoomFromUi() {
@@ -4632,7 +4836,7 @@ function renderListadoForm() {
 
     _renderListadoMedicosCard(lst) +
 
-    '<div class="action-bar"><button class="btn-generate" onclick="quickExportCurrentPatient()" id="btn-quick-export-listado" style="background:#475569;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida rápida</button><button type="button" class="btn-generate" onclick="copyListadoProblemasAiPrompt()" style="background:#1e40af;" title="Copia el prompt para usar en un chat de IA"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copiar prompt IA</button><button class="btn-generate" onclick="generateListado()" id="btn-gen-listado"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Listado de Problemas (.docx)</button></div>'
+    '<div class="action-bar"><button class="btn-generate rpc-doc-export" onclick="quickExportCurrentPatient()" id="btn-quick-export-listado" style="background:#475569;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida rápida</button><button type="button" class="btn-generate" onclick="copyListadoProblemasAiPrompt()" style="background:#1e40af;" title="Copia el prompt para usar en un chat de IA"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copiar prompt IA</button><button class="btn-generate rpc-doc-export" onclick="generateListado()" id="btn-gen-listado"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Listado de Problemas (.docx)</button></div>'
   );
   // auto-grow existing textareas
   c.querySelectorAll('.listado-row textarea').forEach(_autoGrowTextarea);
@@ -4735,6 +4939,7 @@ async function copyListadoProblemasAiPrompt() {
   showToast(ok ? 'Prompt copiado al portapapeles ✓' : 'No se pudo copiar el prompt', ok ? 'success' : 'error');
 }
 function generateListado() {
+  if (guardMobileDocExport()) return;
   if (typeof isRpcOffline === 'function' && isRpcOffline()) {
     showToast('Sin conexión con el servidor local. Reinicia R+ para generar documentos.', 'error');
     return;
@@ -6074,7 +6279,80 @@ function syncTeamSyncHeaderButton() {
   var btn = document.getElementById('btn-header-team-sync');
   if (!btn) return;
   var desktop = !!(window.electronAPI && typeof window.electronAPI.getAppVersion === 'function');
-  btn.style.display = desktop ? 'flex' : 'none';
+  btn.style.display = desktop || isMobileWeb() ? 'flex' : 'none';
+}
+
+function guardMobileDocExport() {
+  if (!blockIfMobileDocExport()) return false;
+  mobileDocExportToast(showToast);
+  return true;
+}
+
+async function initMobileWebBoot() {
+  if (!isMobileWeb()) return;
+  try {
+    document.title = 'R+ Móvil';
+  } catch (_e) {}
+  syncTeamSyncHeaderButton();
+  try {
+    var v = await resolveAppVersionForTour();
+    window.__RPC_APP_VERSION__ = normalizeTourVersionLabel(v);
+    markGuidedTourVersionDone();
+  } catch (_bootVer) {}
+  var intro = document.getElementById('onboarding-intro-backdrop');
+  if (intro) {
+    intro.classList.remove('open');
+    intro.setAttribute('aria-hidden', 'true');
+  }
+  var parsed = parseLanJoinQuery(location.search, location.origin);
+  if (!parsed.teamCode) {
+    setTimeout(function () {
+      if (typeof openConnectionDropdown === 'function') openConnectionDropdown();
+    }, 600);
+    return;
+  }
+  var hostUrl = String(parsed.hostUrl || location.origin || '')
+    .trim()
+    .replace(/\/+$/, '');
+  if (!hostUrl) return;
+  configureLanFromMobileJoin(hostUrl, parsed.teamCode, parsed.roomId);
+}
+
+function configureLanFromMobileJoin(hostUrl, teamCode, roomId) {
+  var cfg = { hostUrl: hostUrl.replace(/\/+$/, ''), teamCode: String(teamCode || '').trim() };
+  if (!cfg.teamCode) return;
+  storage.saveLanConfig(cfg);
+  lanClient.configure(cfg);
+  try {
+    lanClient.connectSyncChannel();
+  } catch (_e) {}
+  lanClient
+    .fetch('/api/lan/v1/ping')
+    .then(function (r) {
+      if (!r || !r.ok) {
+        showToast(
+          'No se pudo conectar al servidor. Revisa Wi‑Fi y que R+ esté abierto en el anfitrión.',
+          'error'
+        );
+        setTimeout(function () {
+          if (typeof openConnectionDropdown === 'function') openConnectionDropdown();
+        }, 400);
+        return;
+      }
+      var rid = String(roomId || '').trim();
+      if (rid) {
+        joinLanRoom(rid, '');
+        showToast('Sincronizando con la sala LiveSync del equipo', 'success');
+        return;
+      }
+      showToast('Conectado al servidor. Elige la misma sala LiveSync en ⇄', 'success');
+      setTimeout(function () {
+        if (typeof openConnectionDropdown === 'function') openConnectionDropdown();
+      }, 500);
+    })
+    .catch(function () {
+      showToast('Error de red al conectar con el anfitrión', 'error');
+    });
 }
 
 function checkForAppUpdates() {
@@ -6194,6 +6472,7 @@ function normalizeTourVersionLabel(v) {
 }
 
 function initGuidedTourGate() {
+  if (isMobileWeb()) return;
   resolveAppVersionForTour()
     .then(function (v) {
       window.__RPC_APP_VERSION__ = normalizeTourVersionLabel(v);
@@ -6324,6 +6603,15 @@ function ensureSettingsExpandedForTour() {
   if (!dd.classList.contains('open')) toggleSettingsDropdown();
 }
 
+function ensureConnectionExpandedForTour() {
+  if (typeof closeSettingsDropdown === 'function') closeSettingsDropdown();
+  var dd = document.getElementById('connection-dropdown');
+  if (!dd) return;
+  if (!dd.classList.contains('open') && typeof openConnectionDropdown === 'function') {
+    openConnectionDropdown();
+  }
+}
+
 function clearTourSoapButtonHighlight() {
   var b = document.getElementById('btn-soap-template');
   if (b) b.classList.remove('tour-spotlight-soap');
@@ -6400,7 +6688,8 @@ function applyTourTargetForStep(id) {
   // objetivo (p. ej. servicio_default → lab_parse).
   if (t.openProfile) ensureProfileExpandedForTour();
   else if (typeof closeProfileModal === 'function') closeProfileModal();
-  if (t.openSettings) ensureSettingsExpandedForTour();
+  if (t.openConnection) ensureConnectionExpandedForTour();
+  else if (t.openSettings) ensureSettingsExpandedForTour();
   else {
     if (typeof closeSettingsDropdown === 'function') closeSettingsDropdown();
     if (typeof closeConnectionDropdown === 'function') closeConnectionDropdown();
@@ -6554,7 +6843,7 @@ function renderTourStep() {
     case 'profile':
       setBadge('perfil');
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;"><strong>Mi Perfil</strong> (nombre arriba): médico, plantillas y valores por defecto. <strong>Ajustes</strong>: carpeta, tema, respaldos y ayuda.</p>';
+        '<p style="margin:0;line-height:1.5;"><strong>Mi Perfil</strong> (nombre arriba): médico, plantillas y valores por defecto. <strong>Ajustes</strong>: carpeta, tema, respaldos y ayuda. <strong>Siguiente</strong>: sincronización en equipo (⇄) y versión móvil.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'servicio_default':
@@ -6573,13 +6862,29 @@ function renderTourStep() {
     case 'listado_problemas':
       setBadge('Listado');
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">Activa e inactivos con subítems; puedes exportar a Word. <strong>Siguiente</strong> cierra el tour.</p>';
+        '<p style="margin:0;line-height:1.5;">Activa e inactivos con subítems; puedes exportar a Word. <strong>Siguiente</strong> muestra cómo sincronizar con el equipo (LiveSync).</p>';
+      nextBtn.textContent = 'Siguiente';
+      break;
+    case 'livesync_desktop':
+      setBadge('LiveSync · escritorio');
+      bodyEl.innerHTML =
+        '<p style="margin:0;line-height:1.5;">El icono <strong>⇄</strong> (junto a Ajustes) abre la conexión LAN: elige <strong>Anfitrión</strong> (esta PC comparte) o <strong>Cliente</strong> (te unes con dirección y código). Tras conectar, entra a una <strong>sala en vivo</strong>: ahí se sincronizan pacientes, laboratorios, agenda y pendientes entre las R+ del turno.</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Código por defecto del equipo: <strong>' +
+        esc(DEFAULT_LAN_TEAM_CODE) +
+        '</strong>. Los respaldos JSON manuales siguen en Ajustes → Respaldos, sync y recuperación.</p>';
+      nextBtn.textContent = 'Siguiente';
+      break;
+    case 'livesync_mobile':
+      setBadge('LiveSync · iPad / móvil');
+      bodyEl.innerHTML =
+        '<p style="margin:0;line-height:1.5;">En ⇄ usa <strong>Copiar enlace móvil</strong>. En iPad o teléfono (misma Wi‑Fi) abre ese enlace en Safari: verás <strong>la misma interfaz R+</strong> (pacientes, laboratorio, expediente, medicamentos, agenda), sin botones de Word.</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">El Mac anfitrión debe tener R+ abierto. En móvil elige la <strong>misma sala LiveSync</strong> que el equipo de escritorio.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'wrap':
       setBadge('listo');
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">Listo. Repite el tutorial desde <strong>Mi Perfil</strong> o <strong>Ajustes</strong> cuando quieras.</p>';
+        '<p style="margin:0;line-height:1.5;">Listo. Repite el tutorial desde <strong>Mi Perfil</strong> o <strong>Ajustes</strong>. Para el equipo en vivo usa <strong>⇄</strong> y, si hace falta, el enlace móvil.</p>';
       nextBtn.textContent = 'Finalizar';
       break;
     default:
@@ -7557,6 +7862,18 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '3.4.0': [
+    {
+      title: 'R+ Móvil (Safari, misma Wi‑Fi)',
+      body:
+        'Abre el enlace móvil en iPad o teléfono: la misma interfaz R+ que en escritorio (sin generar Word). Sincroniza pacientes, labs, pendientes y agenda por sala LiveSync. Copia el enlace en ⇄ → Copiar enlace móvil.',
+    },
+    {
+      title: 'Tutorial: LiveSync al terminar',
+      body:
+        'Al completar el recorrido Sala o Interconsulta, el tutorial explica ⇄, salas en vivo y la versión móvil.',
+    },
+  ],
   '3.3.2': [
     {
       title: 'LAN: código 1234 y expediente en sala',
@@ -8428,6 +8745,7 @@ function buildPatientEntry(patientId) {
     labHistory: Array.isArray(labHistory[patientId]) ? labHistory[patientId] : [],
     medReceta: medRecetaByPatient[patientId] || null,
     listadoProblemas: listadoProblemas[patientId] || null,
+    todos: storage.getTodos(patientId),
   };
 }
 
@@ -10890,7 +11208,7 @@ function renderNoteForm() {
     '<div class="field-group"><label>Profesor Responsable</label><input type="text" value="' + esc(note.profesor) + '" placeholder="Nombre completo" oninput="updateNote(\'profesor\',this.value)"></div>' +
     '</div></div></div>' +
 
-    '<div class="action-bar"><button class="btn-generate" onclick="quickExportCurrentPatient()" id="btn-quick-export-note" style="background:#475569;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida rápida</button><button class="btn-generate" onclick="generateWord()" id="btn-gen"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Nota (.docx)</button></div>'
+    '<div class="action-bar"><button class="btn-generate rpc-doc-export" onclick="quickExportCurrentPatient()" id="btn-quick-export-note" style="background:#475569;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida rápida</button><button class="btn-generate rpc-doc-export" onclick="generateWord()" id="btn-gen"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Nota (.docx)</button></div>'
   );
   renderPatientDataPane();
   syncOfflineButtonStates();
@@ -11336,6 +11654,7 @@ function exportCurrentPatientAsHtml() {
 }
 
 function quickExportCurrentPatient() {
+  if (guardMobileDocExport()) return;
   if (!activeId) {
     showToast('Selecciona un paciente primero', 'error');
     return;
@@ -11359,6 +11678,7 @@ function quickExportCurrentPatient() {
 }
 
 function generateWord() {
+  if (guardMobileDocExport()) return;
   if (isRpcOffline()) {
     showToast('Sin conexión con el servidor local. Reinicia R+ para generar documentos.', 'error');
     return;
@@ -11428,7 +11748,7 @@ function renderIndicaForm() {
     (ind.otros||[]).map(function(o,i){ return '<div class="otros-item"><button class="btn-remove-otro" onclick="removeOtro('+i+')">×</button><input type="text" placeholder="TÍTULO DE LA SECCIÓN" value="'+esc(o.titulo)+'" oninput="updateOtro('+i+',\'titulo\',this.value)"><textarea rows="2" placeholder="Indicaciones..." oninput="updateOtro('+i+',\'contenido\',this.value)">'+esc(o.contenido)+'</textarea></div>'; }).join('') +
     '</div><button class="btn-add-row" onclick="addOtro()">+ Agregar sección</button></div></div>' +
 
-    '<div class="action-bar"><button class="btn-generate" onclick="quickExportCurrentPatient()" id="btn-quick-export-indica" style="background:#475569;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida rápida</button><button class="btn-generate" onclick="generateIndicaciones()" id="btn-gen-ind"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Indicaciones (.docx)</button></div>'
+    '<div class="action-bar"><button class="btn-generate rpc-doc-export" onclick="quickExportCurrentPatient()" id="btn-quick-export-indica" style="background:#475569;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida rápida</button><button class="btn-generate rpc-doc-export" onclick="generateIndicaciones()" id="btn-gen-ind"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Indicaciones (.docx)</button></div>'
   );
   syncOfflineButtonStates();
 }
@@ -12305,6 +12625,7 @@ function renderDiagramas(resLabs){
 }
 
 function generateIndicaciones() {
+  if (guardMobileDocExport()) return;
   if (isRpcOffline()) {
     showToast('Sin conexión con el servidor local. Reinicia R+ para generar documentos.', 'error');
     return;

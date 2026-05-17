@@ -25,9 +25,17 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 ---
 
-**Versión estable actual:** [3.3.2](https://github.com/mausalas99/r-mas/releases/tag/v3.3.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [3.4.0](https://github.com/mausalas99/r-mas/releases/tag/v3.4.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+## R+ 3.4.0 (estable — R+ Móvil + tutorial LiveSync)
+
+- **R+ Móvil:** `http://<IP-Mac>:3738/mobile/` en Safari (misma Wi‑Fi): **misma interfaz** que escritorio; oculta solo Word / salida rápida. LiveSync por sala ⇄.
+- **⇄ → Copiar enlace móvil** para compartir solo la URL.
+- **Tutorial:** al terminar Sala o Interconsulta explica LiveSync y la versión móvil.
+
+Notas: `docs/RELEASE_NOTES_3.4.0.txt`.
 
 ## R+ 3.3.2 (estable — LAN 1234 + expediente en sala)
 

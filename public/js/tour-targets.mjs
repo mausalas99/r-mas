@@ -16,6 +16,8 @@ const SALA_STEPS = [
   'estado_actual',
   'sala_med',
   'listado_problemas',
+  'livesync_desktop',
+  'livesync_mobile',
   'wrap',
 ];
 
@@ -35,6 +37,8 @@ const INTERCONSULTA_STEPS = [
   'ic_indica',
   'ic_exports',
   'profile',
+  'livesync_desktop',
+  'livesync_mobile',
   'wrap',
 ];
 
@@ -87,6 +91,9 @@ const TARGETS = {
   wrap:              { appTab: null,   selector: 'aside .sidebar-header',                    focus: false },
   pase_board:        { appTab: 'nota', selector: '#pase-board-scroll',                       focus: false,
                        spotlightClass: 'tour-spotlight-action' },
+  livesync_desktop:  { appTab: null,   selector: '#btn-header-team-sync',                    focus: false,
+                       openConnection: true, spotlightClass: 'tour-spotlight-action' },
+  livesync_mobile:   { appTab: null,   selector: '#connection-dropdown', focus: false, openConnection: true },
 };
 
 export function getSalaTourSteps() {

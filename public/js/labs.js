@@ -800,6 +800,105 @@ function bloqueCitoquimicoLiquidosFull(textoBruto) {
   return t.substring(i0, end);
 }
 
+/** mg/dL del laboratorio → g/dL para ratios (p. ej. 6000→6, 300→3). */
+export function normalizarProteinasFluidoGdl_(valStr) {
+  var n = toNum_(String(valStr || '').replace(/[A-Z*]$/i, ''));
+  if (n == null) return null;
+  if (n >= 1000) return n / 1000;
+  if (n >= 100) return n / 100;
+  return n;
+}
+
+export function esLiquidoPleural_(fluid, com, bloque) {
+  var s = ((fluid || '') + ' ' + (com || '') + ' ' + (bloque || '')).toUpperCase();
+  return /\bPLEURAL\b/.test(s) || /\bL[IÍ]QUIDO\s+PLEURAL\b/.test(s);
+}
+
+/**
+ * Criterios de Light: exudado si ≥1 de Prot/ProtS>0.5, LDH/LDHS>0.6, LDHpleural>2/3 ULN LDH sérica.
+ * TRASUDADO solo si los tres criterios aplicables fueron evaluados y ninguno es positivo.
+ */
+export function evaluarCriteriosLight_(pleuralProtGdl, pleuralLdh, serumProtGdl, serumLdh, serumLdhUln) {
+  var hits = [];
+  var details = [];
+  var nProt = 0;
+  var nLdh = 0;
+  var nUln = 0;
+
+  if (pleuralProtGdl != null && serumProtGdl != null && serumProtGdl > 0) {
+    nProt = 1;
+    var r1 = pleuralProtGdl / serumProtGdl;
+    var ok1 = r1 > 0.5;
+    if (ok1) hits.push('prot');
+    details.push('Prot ' + r1.toFixed(2) + (ok1 ? '' : '−'));
+  }
+  if (pleuralLdh != null && serumLdh != null && serumLdh > 0) {
+    nLdh = 1;
+    var r2 = pleuralLdh / serumLdh;
+    var ok2 = r2 > 0.6;
+    if (ok2) hits.push('ldh');
+    details.push('LDH ' + r2.toFixed(2) + (ok2 ? '' : '−'));
+  }
+  if (pleuralLdh != null && serumLdhUln != null && serumLdhUln > 0) {
+    nUln = 1;
+    var umbral = (2 / 3) * serumLdhUln;
+    var ok3 = pleuralLdh > umbral;
+    if (ok3) hits.push('ldhUln');
+    details.push('LDH>2/3' + (ok3 ? '' : '−'));
+  }
+
+  var nEval = nProt + nLdh + nUln;
+  if (!nEval || !details.length) return '';
+
+  if (hits.length > 0) return 'Light EXUDADO (' + details.join(', ') + ')';
+  if (nProt && nLdh && nUln) return 'Light TRASUDADO (' + details.join(', ') + ')';
+  return 'Light TRASUDADO parcial (' + details.join(', ') + ')';
+}
+
+function extraerSueroParaLight_(textoBruto, bloqueCito) {
+  var t = textoBruto || '';
+  if (bloqueCito) t = t.replace(bloqueCito, ' ');
+  var protData = extraerConRangoSuero(
+    ['PROTEINAS TOTALES EN SANGRE', 'PROTEINAS TOTALES', 'PROTEINA TOTAL EN SANGRE', 'PROTEINAS EN SANGRE'],
+    t
+  );
+  var ldhData = extraerConRangoSuero(['LDH DESHIDROGENASA LACTICA', 'LDH '], t);
+  return {
+    protGdl: normalizarProteinasFluidoGdl_(protData.valor),
+    ldh: toNum_(ldhData.valor),
+    ldhUln: ldhData.max != null ? ldhData.max : null,
+  };
+}
+
+function normalizarRecuentoCelular_(valStr) {
+  var c = String(valStr || '').replace(/\*/g, '').trim();
+  if (/^\d{1,3},\d{3}$/.test(c)) return c.replace(',', '');
+  return c.replace(',', '.');
+}
+
+function fmtProteinaFluido_(valStr) {
+  var g = normalizarProteinasFluidoGdl_(valStr);
+  if (g == null) return String(valStr || '').replace(/[A-Z*]$/i, '');
+  var star = /[A-Z*]$/.test(String(valStr || ''));
+  var s = g >= 10 ? String(Math.round(g * 10) / 10) : String(Math.round(g * 100) / 100);
+  return s + (star ? '*' : '');
+}
+
+function buildLightPleural_(bloque, pleuralProtRaw, pleuralLdhRaw, textoBruto) {
+  var pleuralProt = normalizarProteinasFluidoGdl_(pleuralProtRaw);
+  var pleuralLdh = toNum_(pleuralLdhRaw);
+  if (pleuralProt == null && pleuralLdh == null) return '';
+
+  var suero = extraerSueroParaLight_(textoBruto, bloque);
+  var ldhUln = suero.ldhUln;
+  if (ldhUln == null && bloque) {
+    var ldhRef = extraerConRango(['LDH DESHIDROGENASA LACTICA', 'LDH '], bloque);
+    if (ldhRef.max != null) ldhUln = ldhRef.max;
+  }
+
+  return evaluarCriteriosLight_(pleuralProt, pleuralLdh, suero.protGdl, suero.ldh, ldhUln);
+}
+
 /**
  * Citoquímico de líquidos corporales (ascitis, pleural, peritoneal, etc.).
  * No confundir con LCR (parsearLCR).
@@ -808,8 +907,8 @@ export function parsearCitoquimicoLiquidos(textoBruto) {
   var bloque = bloqueCitoquimicoLiquidosFull(textoBruto);
   if (!bloque) return '';
   var lineas = bloque.split(/\r?\n/).map(function(l) { return l.trim(); });
-  var fluid = '', dens = '', pH = '', glu = '', prot = '', ldh = '', aspecto = '', leu = '',
-    rec = '', pmn = '', eri = '', gram = '', com = '';
+  var fluid = '', dens = '', pH = '', glu = '', prot = '', ldh = '', alb = '', aspecto = '', leu = '',
+    rec = '', pmn = '', linf = '', eri = '', gram = '', com = '';
   function nextMeaningful(i0, maxJ) {
     for (var j = i0 + 1; j < Math.min(i0 + maxJ, lineas.length); j++) {
       var txt = lineas[j].replace(/\*/g, '').trim();
@@ -825,6 +924,10 @@ export function parsearCitoquimicoLiquidos(textoBruto) {
     if (/^CITOQUIMICO DE\s*$/i.test(lin) && !/CORPORALES/i.test(lin)) {
       var f = nextMeaningful(i, 6);
       if (f && !/^:$/.test(f)) fluid = f.toUpperCase();
+    }
+    if (/^CITOQUIMICO DE\s+/i.test(lin) && !/CORPORALES/i.test(lin)) {
+      var mTipo = lin.match(/^CITOQUIMICO DE\s+(.+)$/i);
+      if (mTipo && mTipo[1].trim()) fluid = mTipo[1].trim().toUpperCase();
     }
     if (linUp.indexOf('DENSIDAD') === 0) {
       for (var j = i + 1; j < Math.min(i + 5, lineas.length); j++) {
@@ -853,9 +956,19 @@ export function parsearCitoquimicoLiquidos(textoBruto) {
       }
     }
     if (linUp.indexOf('LDH') === 0) {
-      for (var j = i + 1; j < Math.min(i + 5, lineas.length); j++) {
-        var m = lineas[j].match(/(\d+(\.\d+)?)/);
+      for (var j = i + 1; j < Math.min(i + 8, lineas.length); j++) {
+        var c = lineas[j].replace(/\*/g, '').trim();
+        if (/^[A-Z]$/i.test(c)) continue;
+        var m = c.match(/(\d+(\.\d+)?)/);
         if (m) { ldh = m[1]; break; }
+      }
+    }
+    if (linUp.indexOf('ALBUMINA') === 0) {
+      for (var j = i + 1; j < Math.min(i + 8, lineas.length); j++) {
+        var c = lineas[j].replace(/\*/g, '').trim();
+        if (/^[A-Z]$/i.test(c)) continue;
+        var m = c.match(/(\d+(\.\d+)?)/);
+        if (m) { alb = m[1]; break; }
       }
     }
     if (linUp.indexOf('ASPECTO') === 0) {
@@ -876,18 +989,22 @@ export function parsearCitoquimicoLiquidos(textoBruto) {
     if (/^LEUCOCITOS/i.test(linUp)) {
       for (var j = i - 1; j >= Math.max(0, i - 6); j--) {
         var c = lineas[j].replace(/\*/g, '').trim();
-        if (/^\d+[.,]?\d*$/.test(c)) { leu = c.replace(',', '.'); break; }
+        if (/^\d+[.,]?\d*$/.test(c)) { leu = normalizarRecuentoCelular_(c); break; }
       }
       if (!leu) {
         for (var j = i + 1; j < Math.min(i + 8, lineas.length); j++) {
           var c = lineas[j].replace(/\*/g, '').trim();
-          if (/^\d+[.,]?\d*$/.test(c)) { leu = c.replace(',', '.'); break; }
+          if (/^\d+[.,]?\d*$/.test(c)) { leu = normalizarRecuentoCelular_(c); break; }
         }
       }
     }
     if (linUp.indexOf('POLIMORFONUCLEARES') === 0) {
       var ptxt = nextMeaningful(i, 5);
       if (ptxt) pmn = ptxt.toUpperCase();
+    }
+    if (linUp.indexOf('LINFOCITOS') === 0) {
+      var ltxt = nextMeaningful(i, 5);
+      if (ltxt && ltxt !== '%' && ltxt !== '---') linf = ltxt.replace(',', '.');
     }
     if (linUp.indexOf('ERITROCITOS') === 0) {
       var etxt = nextMeaningful(i, 5);
@@ -902,21 +1019,31 @@ export function parsearCitoquimicoLiquidos(textoBruto) {
       if (cx && !/^\*+$/.test(cx)) com = cx.toUpperCase();
     }
   }
-  if (!fluid && !dens && !pH && !glu && !prot && !ldh && !aspecto && !leu && !rec && !pmn && !eri && !gram && !com) return '';
+  if (!fluid && com && /\bPLEURAL\b/i.test(com)) fluid = com;
+  if (!fluid && esLiquidoPleural_(fluid, com, bloque)) fluid = 'LIQUIDO PLEURAL';
+
+  if (!fluid && !dens && !pH && !glu && !prot && !ldh && !alb && !aspecto && !leu && !rec && !pmn && !linf && !eri && !gram && !com) return '';
+
+  var esPleural = esLiquidoPleural_(fluid, com, bloque);
+  var lightTxt = esPleural ? buildLightPleural_(bloque, prot, ldh, textoBruto) : '';
+
   var p = ['Liq:'];
   if (fluid) p.push('Tipo', fluid);
   if (dens) p.push('Dens', dens);
   if (pH) p.push('pH', pH);
   if (glu) p.push('Glu', glu);
-  if (prot) p.push('Prot', prot);
+  if (prot) p.push('Prot', fmtProteinaFluido_(prot));
+  if (alb) p.push('Alb', alb);
   if (ldh) p.push('LDH', ldh);
   if (aspecto) p.push('Asp', aspecto);
   if (rec) p.push('Rec', rec);
   if (leu) p.push('Leu', leu);
-  if (pmn) p.push('PMN', pmn);
+  if (pmn && pmn !== '---') p.push('PMN', pmn);
+  if (linf) p.push('Linf', linf + (/%/.test(linf) ? '' : '%'));
   if (eri) p.push('Eri', eri);
   if (gram) p.push('Gram', gram);
-  if (com) p.push('Obs', com);
+  if (com && com !== fluid) p.push('Obs', com);
+  if (lightTxt) p.push(lightTxt);
   return p[0] + '\t' + p.slice(1).join(' ');
 }
 
