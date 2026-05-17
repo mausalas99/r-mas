@@ -1518,6 +1518,30 @@ function compactarLineasAntibiograma(sensCrudas, abreviarFn) {
 }
 
 /**
+ * Texto para portapapeles: fecha del estudio, cabecera del cultivo y línea ATB condensada.
+ */
+export function formatCultivoCondensedForCopy(chunkText, studyDateLine) {
+  var lines = [];
+  var dateLine = String(studyDateLine || '').trim();
+  if (dateLine && dateLine !== '—') lines.push(dateLine);
+  var chunkLines = String(chunkText || '')
+    .trim()
+    .split(/\n/)
+    .map(function (l) {
+      return l.trim();
+    })
+    .filter(Boolean);
+  if (chunkLines[0]) lines.push(chunkLines[0]);
+  for (var i = 1; i < chunkLines.length; i++) {
+    if (/^ATB\b/i.test(chunkLines[i])) {
+      lines.push(chunkLines[i]);
+      break;
+    }
+  }
+  return lines.join('\n');
+}
+
+/**
  * Todos los aislamientos con nombre tras MICROORGANISMO (uro/hemo polimicrobiano).
  * Corta antes del siguiente MICROORGANISMO o de la sección MALDI.
  */

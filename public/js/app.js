@@ -20,9 +20,9 @@ import {
   escTxt,
   renderToken,
   renderEntry,
-  buildAtbChipsHtml,
   buildAtbRisSummaryHtml,
-  extractSensCrudasForGermFromSource
+  extractSensCrudasForGermFromSource,
+  formatCultivoCondensedForCopy
 } from './labs.js';
 import { formatProgressLine } from './update-helpers.mjs';
 import {
@@ -1905,7 +1905,44 @@ function parseCultureBlockFromLineArray(lines, set, seq) {
   };
 }
 
-function copyLabSetSourceText(setId) {
+function findCultivoChunkInSet(set, organismoQuery) {
+  if (!set || !set.resLabs) return null;
+  var q = String(organismoQuery || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase();
+  if (!q || q === '—') return null;
+  var cult = splitResLabsByTipo(set.resLabs).cultivo;
+  for (var ei = 0; ei < cult.length; ei++) {
+    var chunks = String(cult[ei] || '')
+      .split(/\n\n+/)
+      .map(function (s) {
+        return s.trim();
+      })
+      .filter(Boolean);
+    for (var ci = 0; ci < chunks.length; ci++) {
+      var head = chunks[ci].split(/\n/)[0] || '';
+      var gq = germQueryFromCultivoChunkHead(head)
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toUpperCase();
+      if (!gq) continue;
+      if (gq === q || gq.indexOf(q) !== -1 || q.indexOf(gq) !== -1) return chunks[ci];
+      var gTok = gq.split(/\s+/).filter(Boolean)[0] || '';
+      var qTok = q.split(/\s+/).filter(Boolean)[0] || '';
+      if (
+        gTok.length > 3 &&
+        qTok.length > 3 &&
+        (gTok === qTok || gq.indexOf(qTok) === 0 || q.indexOf(gTok) === 0)
+      ) {
+        return chunks[ci];
+      }
+    }
+  }
+  return null;
+}
+
+function copyCultivoCondensado(setId, organismo) {
   var pid = activeId;
   if (!pid) {
     showToast('Selecciona un paciente', 'error');
@@ -1915,12 +1952,18 @@ function copyLabSetSourceText(setId) {
   var set = sets.find(function (s) {
     return String(s.id) === String(setId);
   });
-  var t = set && set.sourceText ? String(set.sourceText).trim() : '';
-  if (!t) {
-    showToast(
-      'No hay texto completo guardado para este envío (vuelve a pegar el informe en Laboratorio y enviar a nota).',
-      'error'
-    );
+  if (!set) {
+    showToast('No se encontró el envío en historial', 'error');
+    return;
+  }
+  var chunk = findCultivoChunkInSet(set, organismo);
+  if (!chunk) {
+    showToast('No hay resumen de cultivo procesado para copiar', 'error');
+    return;
+  }
+  var t = formatCultivoCondensedForCopy(chunk, buildLabSetDateLine(set) || '');
+  if (!t.trim()) {
+    showToast('No hay texto para copiar', 'error');
     return;
   }
   var p =
@@ -1929,7 +1972,7 @@ function copyLabSetSourceText(setId) {
       : Promise.reject(new Error('no clipboard'));
   p.then(
     function () {
-      showToast('Informe de laboratorio completo copiado', 'success');
+      showToast('Cultivo condensado copiado', 'success');
     },
     function () {
       showToast('No se pudo copiar al portapapeles', 'error');
@@ -1979,7 +2022,7 @@ function buildCultivoOutputHtmlFragments(text, sourceText) {
       var t = String(lineRaw || '').trim();
       if (/^ATB\b/i.test(t) && sens && sens.length) {
         parts.push(
-          '<div class="out-line cultivos-atb-chips lab-out-atb">' + buildAtbChipsHtml(sens) + '</div>'
+          '<div class="out-line cultivos-atb-chips lab-out-atb">' + buildAtbRisSummaryHtml(sens) + '</div>'
         );
         return;
       }
@@ -2001,8 +2044,10 @@ function cultivoAntibiogramCellHtml(r) {
     set && set.sourceText ? extractSensCrudasForGermFromSource(set.sourceText, r.organismo) : null;
   var copyBtn =
     set && r.labSetId != null && String(r.labSetId) !== ''
-      ? '<button type="button" class="cultivos-copy-full-btn" onclick=\'copyLabSetSourceText(' +
+      ? '<button type="button" class="cultivos-copy-full-btn" onclick=\'copyCultivoCondensado(' +
         JSON.stringify(String(r.labSetId)) +
+        ',' +
+        JSON.stringify(String(r.organismo || '')) +
         ')\'>Copiar informe completo</button>'
       : '';
   if (sens && sens.length) {
@@ -10847,6 +10892,7 @@ function renderOutput(result) {
     document.getElementById('lab-banner').style.display = 'block';
   }
   var box = document.getElementById('lab-output-box');
+  removeAtbRisPanelsFromBody();
   box.innerHTML = '';
   if (fechaBanner) {
     var fechaTop = document.createElement('div');
@@ -10885,6 +10931,7 @@ function renderOutput(result) {
     }
   });
   document.getElementById('lab-output-section').style.display = 'block';
+  wireAtbRisHoverPanels(box);
 }
 
 // ── Modal ─────────────────────────────────────────────────────────
@@ -13884,5 +13931,5 @@ Object.assign(window, {
   syncPreimportBackupUi,
   openLabHistoryDedupeReview,
   consolidateLabHistoryByDayAndTipo,
-  copyLabSetSourceText
+  copyCultivoCondensado
 });

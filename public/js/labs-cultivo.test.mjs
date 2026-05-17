@@ -1,6 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseCultivo_, procesarLabs, extractMicSortKey, buildAtbRisSummaryHtml } from './labs.js';
+import {
+  parseCultivo_,
+  procesarLabs,
+  extractMicSortKey,
+  buildAtbRisSummaryHtml,
+  formatCultivoCondensedForCopy,
+} from './labs.js';
 
 const norm = (t) => t.replace(/\s+/g, ' ');
 
@@ -292,6 +298,19 @@ test('extractMicSortKey: primer valor numérico del CMI', () => {
   assert.equal(extractMicSortKey('>=256'), 256);
   assert.equal(extractMicSortKey('\u226564'), 64);
   assert.ok(Number.isNaN(extractMicSortKey('')));
+});
+
+test('formatCultivoCondensedForCopy: fecha, cabecera y ATB', () => {
+  const chunk = [
+    'LIQUIDO PERITONEAL 07/05: PSEUDOMONAS AERUGINOSA',
+    'ATB R: CAZ | I: FEP | S: CIPRO, IMI, LVX, MERO, PIP/TAZO, TOBRA',
+    'Cuenta: +100 UFC',
+  ].join('\n');
+  const out = formatCultivoCondensedForCopy(chunk, '07/05/2026');
+  assert.equal(
+    out,
+    '07/05/2026\nLIQUIDO PERITONEAL 07/05: PSEUDOMONAS AERUGINOSA\nATB R: CAZ | I: FEP | S: CIPRO, IMI, LVX, MERO, PIP/TAZO, TOBRA'
+  );
 });
 
 test('buildAtbRisSummaryHtml: títulos por categoría y orden S por CMI ascendente', () => {
