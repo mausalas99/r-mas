@@ -22,7 +22,9 @@ test('getSalaTourSteps incluye pasos clave de v3.0', () => {
   assert.ok(!steps.includes('sala_soap'), 'Sala no debe mostrar el paso heredado de Nota de evolución');
   assert.equal(steps[steps.length - 1], 'wrap');
   assert.equal(steps[steps.length - 3], 'livesync_desktop');
-  assert.equal(steps.length, 16);
+  assert.ok(steps.includes('sala_tend_chart'), 'debe presentar Gráfica del estudio');
+  assert.equal(steps.indexOf('sala_tend_chart'), steps.indexOf('sala_tend') + 1);
+  assert.equal(steps.length, 17);
   assert.equal(steps[1], 'pase_enter');
   assert.equal(steps[2], 'pase_board', 'tour en Sala incluye resumen Pase');
 });
@@ -31,6 +33,7 @@ test('getInterconsultaTourSteps incluye entrada a Pase y tablero', () => {
   const steps = getInterconsultaTourSteps();
   assert.equal(steps[1], 'pase_enter');
   assert.equal(steps[2], 'pase_board');
+  assert.ok(steps.includes('sala_tend_chart'));
 });
 
 test('getInterconsultaTourSteps mantiene pasos clásicos sin Estado Actual ni Listado', () => {
@@ -90,6 +93,14 @@ test('getTourTarget para servicio_default apunta a Mi Perfil', () => {
 
 test('stepRequiresUserAction incluye pase_enter', () => {
   assert.equal(stepRequiresUserAction('pase_enter'), true);
+});
+
+test('getTourTarget para sala_tend_chart resalta botón Gráfica', () => {
+  const t = getTourTarget('sala_tend_chart', 'sala');
+  assert.equal(t.appTab, 'nota');
+  assert.equal(t.innerTab, 'tend');
+  assert.match(t.selector, /tend-section-chart-btn/);
+  assert.equal(t.spotlightClass, 'tour-spotlight-action');
 });
 
 test('getTourTarget livesync_desktop abre panel ⇄', () => {

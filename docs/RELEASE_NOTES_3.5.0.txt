@@ -1,0 +1,25 @@
+R+ 3.5.0 (estable — gráfica y tabla por estudio en Tendencias)
+============================================================
+
+Fecha: 2026-05-18
+
+## Resumen
+
+En Expediente → Tendencias, cada estudio (BH, QS, gases, etc.) abre una vista agrupada con gráficas por familia de analitos y una tabla copiable. Incluye ocultar filas/columnas para la copia, escalas dinámicas al desmarcar series, paneles reordenables y cierre con Esc.
+
+## Nuevo / mejorado
+
+- **Tendencias — Gráfica del estudio:** botón «Gráfica» en el encabezado de cada sección; modal con pestañas Gráficas y Tabla.
+- **Gráficas:** paneles por tipo (fórmula leucocitaria %, índices eritrocitarios %, gasometría, valores absolutos); leyenda con color y visibilidad; eje Y se ajusta al ocultar analitos; paneles arrastrables y ocultables (como tarjetas de pacientes).
+- **Tabla:** matriz fecha × analito; ocultar filas o columnas en la copia; barra «Ocultos en copia» colapsable; copiar como imagen (PNG) o texto (TSV).
+- **Atajos y UX:** Esc cierra el modal; tooltips y etiquetas de eje sin artefactos de decimales flotantes.
+- **Persistencia:** colores de series globales; series visibles y orden de paneles por paciente y estudio.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v3.5.0
+
+- Mac: `R+-3.5.0-arm64.dmg`, `R+-3.5.0-x64.dmg` (y zip para auto-update).
+- Windows: `R+-3.5.0-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye `write-release-yml.js`).

@@ -1,30 +1,34 @@
 #!/usr/bin/env node
 /**
- * Regenera dist/latest-mac.yml y dist/latest.yml a partir de los binarios en dist/.
- * electron-builder suele escribir latest-*.yml con nombres (r-plus-…) que no coinciden
- * con artifactName (R+-…); ejecutar este script después del build corrige las URLs.
+ * Regenera dist/latest-mac.yml y dist/latest.yml desde los binarios en dist/.
+ *
+ * electron-builder escribe latest-*.yml con safeArtifactName (r-plus-…-mac.zip)
+ * cuando artifactName lleva '+' (R+-…); el auto-updater busca esa URL y da 404.
+ *
+ * Con artifactName GitHub-safe (R-${version}-${arch}) los yml suelen ser correctos;
+ * este script sigue necesario para unificar arm64+x64 y listar todos los archivos.
  *
  * Uso:
- *   node scripts/write-release-yml.js            → Mac + Windows (todos los archivos deben existir)
- *   node scripts/write-release-yml.js --mac-only → solo latest-mac.yml
- *   node scripts/write-release-yml.js --win-only → solo latest.yml
+ *   node scripts/write-release-yml.js            → Mac + Windows (todo en dist/)
+ *   node scripts/write-release-yml.js --auto     → según lo que exista en dist/
+ *   node scripts/write-release-yml.js --mac-only
+ *   node scripts/write-release-yml.js --win-only
  */
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { macArtifactNames, winArtifactName, getArtifactPattern } = require('./lib/artifact-names');
 
-const macOnly = process.argv.includes('--mac-only');
-const winOnly = process.argv.includes('--win-only');
-
-if (macOnly && winOnly) {
-  console.error('Usa solo uno de --mac-only o --win-only');
-  process.exit(1);
-}
+const argv = process.argv.slice(2);
+const auto = argv.includes('--auto');
+let macOnly = argv.includes('--mac-only');
+let winOnly = argv.includes('--win-only');
 
 const root = path.join(__dirname, '..');
 const pkg = require(path.join(root, 'package.json'));
 const ver = pkg.version;
 const dist = path.join(root, 'dist');
+const pattern = getArtifactPattern(pkg);
 
 function sha512b64(filePath) {
   const buf = fs.readFileSync(filePath);
@@ -40,16 +44,31 @@ function need(rel) {
   return abs;
 }
 
+function exists(rel) {
+  return fs.existsSync(path.join(dist, rel));
+}
+
 function isoDate() {
   return new Date().toISOString().replace(/\.\d{3}Z$/, '.000Z');
 }
 
-const macNames = [
-  `R+-${ver}-arm64.zip`,
-  `R+-${ver}-x64.zip`,
-  `R+-${ver}-arm64.dmg`,
-  `R+-${ver}-x64.dmg`,
-];
+if (auto) {
+  const hasMac = macArtifactNames(ver, pattern, pkg).some((n) => exists(n));
+  const hasWin = exists(winArtifactName(ver, pattern, pkg));
+  macOnly = hasMac && !hasWin;
+  winOnly = hasWin && !hasMac;
+  if (!macOnly && !winOnly && !hasMac && !hasWin) {
+    console.log('write-release-yml --auto: nada que actualizar en dist/');
+    process.exit(0);
+  }
+}
+
+if (macOnly && winOnly) {
+  console.error('Usa solo uno de --mac-only o --win-only');
+  process.exit(1);
+}
+
+const macNames = macArtifactNames(ver, pattern, pkg);
 
 if (!winOnly) {
   const lines = [];
@@ -61,9 +80,10 @@ if (!winOnly) {
     lines.push(`    sha512: ${sha512b64(abs)}`);
     lines.push(`    size: ${fs.statSync(abs).size}`);
   }
-  const zipArm = need(`R+-${ver}-arm64.zip`);
-  lines.push(`path: R+-${ver}-arm64.zip`);
-  lines.push(`sha512: ${sha512b64(zipArm)}`);
+  const zipPrimary = macNames.find((n) => n.endsWith('-arm64.zip')) || macNames.find((n) => n.endsWith('.zip'));
+  const zipAbs = need(zipPrimary);
+  lines.push(`path: ${zipPrimary}`);
+  lines.push(`sha512: ${sha512b64(zipAbs)}`);
   lines.push(`releaseDate: '${isoDate()}'`);
   lines.push('');
 
@@ -72,7 +92,7 @@ if (!winOnly) {
 }
 
 if (!macOnly) {
-  const winName = `R+-${ver}-x64.exe`;
+  const winName = winArtifactName(ver, pattern, pkg);
   const winAbs = need(winName);
   const winSha = sha512b64(winAbs);
   const winSize = fs.statSync(winAbs).size;

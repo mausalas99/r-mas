@@ -25,9 +25,18 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 ---
 
-**Versión estable actual:** [3.4.1](https://github.com/mausalas99/r-mas/releases/tag/v3.4.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [3.5.0](https://github.com/mausalas99/r-mas/releases/tag/v3.5.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+
+## R+ 3.5.0 (estable — gráfica y tabla por estudio en Tendencias)
+
+- **Tendencias:** botón «Gráfica» por estudio → modal con gráficas agrupadas y tabla copiable (PNG / TSV).
+- **Gráficas:** leyenda, colores, escalas dinámicas, paneles reordenables/ocultables.
+- **Tabla:** ocultar filas/columnas en copia; barra de ocultos colapsable; **Esc** cierra el modal.
+
+Notas: `docs/RELEASE_NOTES_3.5.0.txt`.
 
 ## R+ 3.4.1 (estable — sugerencias lab + DIA#)
 
@@ -53,6 +62,12 @@ Notas: `docs/RELEASE_NOTES_3.3.2.txt`.
 
 ---
 
+
+## R+ 3.5.0 (estable — gráfica y tabla por estudio en Tendencias)
+
+- **TODO:** completar bullets en README.
+
+Notas: `docs/RELEASE_NOTES_3.5.0.txt`.
 ## R+ 3.3.1 (estable — corrección Copiar labs)
 
 - **Laboratorio** — **Copiar** vuelve a exportar el texto compacto procesado (no el informe crudo de SOME).

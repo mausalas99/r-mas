@@ -16,6 +16,7 @@ import {
   parseCuantOrina_,
   parseCultivo_,
   procesarLabs,
+  buildRefsBySectionFromReport,
   extractLabReportHora,
   looksLikeSomeLabReport,
   reprocessLabResultLines_,
@@ -95,6 +96,17 @@ import {
   AGENDA_DISPLAY_LAST_HOUR_EXCLUSIVE,
   VISUAL_DURATION_MS,
 } from './procedure-agenda-week.mjs';
+import {
+  dedupeTrendSetsForSeries,
+  getSetTrendValueForSeries,
+  buildTendChartLabels,
+  buildTrendAxisMeta,
+  sortLabHistoryChronological,
+  parseFechaLabToMs,
+  normalizeFechaLabHistory,
+  normalizeHoraLabHistory
+} from './tend-core.mjs';
+import { createTendGroupModal } from './tend-group-modal.mjs';
 
 
 // ════════════════════════════════════════════════════════════════════
@@ -1088,94 +1100,6 @@ function extractLabDataLines(lines) {
   return (lines || []).filter(isLikelyLabDataLine);
 }
 
-// ── Tendencias: fechas y orden cronológico ────────────────────────
-var TEND_MESES_MAP = {ene:'01',feb:'02',mar:'03',abr:'04',may:'05',jun:'06',jul:'07',ago:'08',sep:'09',oct:'10',nov:'11',dic:'12',jan:'01',apr:'04',aug:'08',dec:'12'};
-
-function normalizeFechaLabHistory(fechaRaw) {
-  if (fechaRaw == null || fechaRaw === '') return '';
-  if (String(fechaRaw).trim() === 'Anterior') return 'Anterior';
-  var t = String(fechaRaw).trim();
-  var mEn = t.match(/([A-Za-z]{3})\s+(\d{1,2})\s+(\d{4})/i);
-  if (mEn) {
-    var mon = TEND_MESES_MAP[mEn[1].toLowerCase().slice(0, 3)];
-    if (mon) return mEn[2].padStart(2, '0') + '/' + mon + '/' + mEn[3];
-  }
-  var mNum = t.match(/^(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?$/);
-  if (mNum) {
-    var y = mNum[3] ? String(mNum[3]) : String(new Date().getFullYear());
-    if (y.length === 2) y = '20' + y;
-    return mNum[1].padStart(2, '0') + '/' + mNum[2].padStart(2, '0') + '/' + y;
-  }
-  return t;
-}
-
-function applyHoraToMs(ms, horaStr) {
-  if (horaStr == null || !/^\d{1,2}:\d{2}/.test(String(horaStr).trim())) return ms;
-  var h = String(horaStr).trim().match(/^(\d{1,2}):(\d{2})/);
-  if (!h) return ms;
-  return ms + (parseInt(h[1], 10) * 3600 + parseInt(h[2], 10) * 60) * 1000;
-}
-
-function normalizeHoraLabHistory(horaRaw) {
-  if (horaRaw == null) return '';
-  var t = String(horaRaw).trim();
-  if (!t) return '';
-  var m = t.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/);
-  if (!m) return '';
-  var hh = Math.max(0, Math.min(23, parseInt(m[1], 10)));
-  var mm = Math.max(0, Math.min(59, parseInt(m[2], 10)));
-  var ss = m[3] == null ? null : Math.max(0, Math.min(59, parseInt(m[3], 10)));
-  var out = String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
-  if (ss != null) out += ':' + String(ss).padStart(2, '0');
-  return out;
-}
-
-function parseFechaLabToMs(fechaStr, horaStr) {
-  if (!fechaStr) return null;
-  var t = String(fechaStr).trim();
-  if (t === 'Anterior') return null;
-  var mEn = t.match(/([A-Za-z]{3})\s+(\d{1,2})\s+(\d{4})/i);
-  if (mEn) {
-    var monStr = TEND_MESES_MAP[mEn[1].toLowerCase().slice(0, 3)];
-    if (monStr) {
-      var mo = parseInt(monStr, 10) - 1;
-      var ms = new Date(parseInt(mEn[3], 10), mo, parseInt(mEn[2], 10)).getTime();
-      return applyHoraToMs(ms, horaStr);
-    }
-  }
-  var mNum = t.match(/^(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?$/);
-  if (mNum) {
-    var y = mNum[3] ? parseInt(mNum[3], 10) : new Date().getFullYear();
-    if (y < 100) y += 2000;
-    var ms2 = new Date(y, parseInt(mNum[2], 10) - 1, parseInt(mNum[1], 10)).getTime();
-    return applyHoraToMs(ms2, horaStr);
-  }
-  return null;
-}
-
-function sortLabHistoryChronological(hist) {
-  return (hist || []).slice().sort(function(a, b) {
-    var aAnterior = !!(a && (a.fecha === 'Anterior' || a.id === 'migrated-anterior'));
-    var bAnterior = !!(b && (b.fecha === 'Anterior' || b.id === 'migrated-anterior'));
-    if (aAnterior !== bAnterior) return aAnterior ? 1 : -1; // "Anterior" siempre al fondo
-
-    var ta = parseFechaLabToMs(a.fecha, a.hora);
-    var tb = parseFechaLabToMs(b.fecha, b.hora);
-
-    var aValid = typeof ta === 'number' && isFinite(ta);
-    var bValid = typeof tb === 'number' && isFinite(tb);
-    if (aValid !== bValid) return aValid ? -1 : 1; // no parseables al final
-    if (aValid && bValid && ta !== tb) return tb - ta; // más reciente primero
-
-    var ha = normalizeHoraLabHistory(a && a.hora);
-    var hb = normalizeHoraLabHistory(b && b.hora);
-    if (ha && hb && ha !== hb) return hb.localeCompare(ha); // empate de fecha -> hora desc
-
-    // Empate final estable por captura (no altera orden relativo original).
-    return 0;
-  });
-}
-
 function buildLabSetDateLine(set) {
   if (!set) return '';
   var rawDate = normalizeFechaLabHistory(set.fecha) || String(set.fecha || '').trim() || inferFechaLabSetFromId(set) || '';
@@ -1372,23 +1296,6 @@ function rebuildEstudiosFromLabHistory(patientId) {
   notes[patientId].estudios = lines.join('\n');
 }
 
-function buildTendChartLabels(sets) {
-  var byDay = {};
-  return sets.map(function(s) {
-    if (s.fecha === 'Anterior') return 'Ant.';
-    var ms = parseFechaLabToMs(s.fecha, s.hora);
-    var d = new Date(ms);
-    if (isNaN(d.getTime())) return String(s.fecha).slice(0, 12);
-    var dayKey = d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
-    byDay[dayKey] = (byDay[dayKey] || 0) + 1;
-    var dd = String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0');
-    if (byDay[dayKey] > 1 && s.hora && /^\d{1,2}:\d{2}/.test(String(s.hora)))
-      return dd + ' ' + String(s.hora).trim().slice(0, 5);
-    if (byDay[dayKey] > 1) return dd + ' #' + byDay[dayKey];
-    return dd;
-  });
-}
-
 function toTrendAscendingSets(sets) {
   return (sets || []).slice().reverse();
 }
@@ -1429,35 +1336,6 @@ function toggleTendSection(ev, sectionKey) {
   renderTendencias();
 }
 
-function getSetTrendValueForSeries(set, sectionKey, fieldKey) {
-  var pb = set && set.parsedBySection;
-  if (!pb || !pb[sectionKey]) return null;
-  var raw = pb[sectionKey][fieldKey];
-  if (raw == null || raw === '') return null;
-  var v = Number(raw);
-  if (!isFinite(v)) return null;
-  return v;
-}
-
-function dedupeTrendSetsForSeries(setsDesc, sectionKey, fieldKey) {
-  var seen = Object.create(null);
-  var out = [];
-  for (var i = 0; i < (setsDesc || []).length; i++) {
-    var s = setsDesc[i];
-    var v = getSetTrendValueForSeries(s, sectionKey, fieldKey);
-    if (v == null || !isFinite(v)) continue;
-    var ms = parseFechaLabToMs(s.fecha, s.hora);
-    var key;
-    if (typeof ms === 'number' && isFinite(ms)) key = 't:' + ms + '|v:' + v;
-    else key = 'f:' + String(s.fecha) + '|h:' + normalizeHoraLabHistory(s.hora) + '|v:' + v;
-    key += '|' + sectionKey + '|' + fieldKey;
-    if (seen[key]) continue;
-    seen[key] = true;
-    out.push(s);
-  }
-  return out;
-}
-
 function tendUnitForSeries(sectionKey, fieldKey) {
   if (sectionKey === 'GASES') {
     if (fieldKey === 'GLU') return TEND_UNITS.Glu || '';
@@ -1487,7 +1365,8 @@ function tendUnitForSeries(sectionKey, fieldKey) {
   return TEND_UNITS[fieldKey] || '';
 }
 
-function tendRefForSeries(sectionKey, fieldKey) {
+/** Rango orientativo fijo (respaldo si el reporte no trae referencia). */
+function tendRefOrientative(sectionKey, fieldKey) {
   if (sectionKey === 'GASES') {
     var gg = TEND_REF_GASES[fieldKey];
     if (gg) return gg;
@@ -1516,6 +1395,28 @@ function tendRefForSeries(sectionKey, fieldKey) {
     return lq[fieldKey] || null;
   }
   return TEND_REF[fieldKey] || null;
+}
+
+function tendRefFromLabSet(set, sectionKey, fieldKey) {
+  var refs = set && set.refsBySection;
+  var row = refs && refs[sectionKey];
+  var r = row && row[fieldKey];
+  if (r && r.length === 2 && isFinite(r[0]) && isFinite(r[1]) && r[1] > r[0]) return r;
+  return null;
+}
+
+/** Rango del reporte (set preferido o historial reciente); si no, orientativo. */
+function tendRefForSeries(history, sectionKey, fieldKey, preferSet) {
+  var fromPrefer = preferSet ? tendRefFromLabSet(preferSet, sectionKey, fieldKey) : null;
+  if (fromPrefer) return fromPrefer;
+  if (history && history.length) {
+    var sorted = sortLabHistoryChronological(history);
+    for (var i = sorted.length - 1; i >= 0; i--) {
+      var r = tendRefFromLabSet(sorted[i], sectionKey, fieldKey);
+      if (r) return r;
+    }
+  }
+  return tendRefOrientative(sectionKey, fieldKey);
 }
 
 function tendCatalogSeriesKey(sectionKey, fieldKey) {
@@ -1637,6 +1538,16 @@ function buildMergedTrendSeriesCatalog(history) {
   return out;
 }
 
+function getTendCatalogSpecsForSection(sectionKey, history) {
+  return buildMergedTrendSeriesCatalog(history || []).filter(function (sp) {
+    return sp.sectionKey === sectionKey;
+  });
+}
+
+function getTendSectionLabel(sectionKey) {
+  return TEND_SECTION_LABELS[sectionKey] || sectionKey;
+}
+
 function tendEyeVisibilitySvg() {
   return (
     '<svg class="tend-eye-svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
@@ -1665,8 +1576,9 @@ function tendSeriesLatestAbnormal(history, sectionKey, fieldKey) {
   });
   var setsDesc = dedupeTrendSetsForSeries(raw, sectionKey, fieldKey);
   if (setsDesc.length < 2) return false;
-  var latest = getSetTrendValueForSeries(setsDesc[0], sectionKey, fieldKey);
-  var ref = tendRefForSeries(sectionKey, fieldKey);
+  var latestSet = setsDesc[0];
+  var latest = getSetTrendValueForSeries(latestSet, sectionKey, fieldKey);
+  var ref = tendRefForSeries(history, sectionKey, fieldKey, latestSet);
   return !!(ref && latest != null && (latest < ref[0] || latest > ref[1]));
 }
 
@@ -1737,7 +1649,7 @@ function closeTendHiddenModal() {
 function buildTendInlineControlsHtml(hiddenCount) {
   var on = tendAbnormalOnlyRead();
   var hint = on
-    ? 'Solo analitos con último valor fuera del rango orientativo (si hay referencia).'
+    ? 'Solo analitos con último valor fuera del rango de referencia del laboratorio (si hay referencia).'
     : 'Vista completa: todos los analitos con datos suficientes para tendencia.';
   var toggleLabel = on ? 'Ver todas' : 'Solo fuera de rango';
   var ocultosBtn =
@@ -6886,7 +6798,14 @@ function renderTourStep() {
     case 'sala_tend':
       setBadge('tendencias');
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">Mini-gráficas cuando hay varios laboratorios en el tiempo. Si hay ruido por duplicados en el historial, vuelve a Laboratorio y usa <strong>Sincronizar</strong> / <strong>Consolidar</strong>.</p>';
+        '<p style="margin:0;line-height:1.5;">En <strong>Expediente → Tendencias</strong> ves mini-gráficas cuando hay varios laboratorios en el tiempo.</p>';
+      nextBtn.textContent = 'Siguiente';
+      break;
+    case 'sala_tend_chart':
+      setBadge('tendencias · gráfica');
+      bodyEl.innerHTML =
+        '<p style="margin:0;line-height:1.5;">Pulsa <strong>Gráfica</strong> en un estudio (p. ej. biometría) para ver tendencias agrupadas y una tabla copiable.</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">En esa vista, <strong>Esc</strong> cierra. Es opcional en el demo: <strong>Siguiente</strong> para continuar.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'sala_soap':
@@ -7924,6 +7843,18 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '3.5.0': [
+    {
+      title: 'Gráfica y tabla por estudio',
+      body:
+        'En Tendencias, pulsa «Gráfica» en un estudio (BH, QS, gases…): ves tendencias agrupadas por panel y una tabla para copiar al portapapeles como imagen o texto.',
+    },
+    {
+      title: 'Copia flexible y paneles',
+      body:
+        'Oculta filas o fechas solo en la copia; la barra «Ocultos en copia» se pliega. Reordena u oculta paneles de gráficas; el eje Y se ajusta al desmarcar analitos. Esc cierra la vista.',
+    },
+  ],
   '3.4.1': [
     {
       title: 'Sugerencias clínicas desde laboratorio',
@@ -10681,10 +10612,14 @@ function checkStudiosAndInsertLabs() {
   }
 }
 
-function pushLabHistory(patientId, resLabs, fecha, hora, sourceText, bhExtras) {
+function pushLabHistory(patientId, resLabs, fecha, hora, sourceText, bhExtras, refsBySection) {
   if (!patientId || !resLabs || !resLabs.length) return;
   if (!labHistory[patientId]) labHistory[patientId] = [];
   var extras = bhExtras && typeof bhExtras === 'object' ? bhExtras : {};
+  var refs = refsBySection && typeof refsBySection === 'object' ? refsBySection : {};
+  if (!Object.keys(refs).length && sourceText) {
+    refs = buildRefsBySectionFromReport(sourceText);
+  }
   var fechaNorm = normalizeFechaLabHistory(fecha) || String(fecha || '').trim();
   if (!fechaNorm && notes[patientId] && notes[patientId].fecha) {
     fechaNorm = normalizeFechaLabHistory(notes[patientId].fecha) || '';
@@ -10701,7 +10636,8 @@ function pushLabHistory(patientId, resLabs, fecha, hora, sourceText, bhExtras) {
     resLabs: resLabs,
     bhExtras: extras,
     parsed: extractParsedValues(resLabs),
-    parsedBySection: buildParsedBySectionFromResLabs(resLabs, extras)
+    parsedBySection: buildParsedBySectionFromResLabs(resLabs, extras),
+    refsBySection: refs
   };
   var raw = String(sourceText || '').trim();
   if (raw) set.sourceText = raw;
@@ -10760,7 +10696,15 @@ function autoStoreProcessedLabResult(result) {
     showToast('Resultado ya registrado en historial', 'success');
     return;
   }
-  pushLabHistory(activeId, result.resLabs, fecha, hora, result.sourceText || '', result.bhExtras);
+  pushLabHistory(
+    activeId,
+    result.resLabs,
+    fecha,
+    hora,
+    result.sourceText || '',
+    result.bhExtras,
+    result.refsBySection
+  );
   applyLabClinicalSuggestions(activeId, result.resLabs, fecha, result.bhExtras);
   saveState();
   renderLabHistoryPanel();
@@ -10807,10 +10751,15 @@ function applyLabClinicalSuggestions(patientId, resLabs, fecha, bhExtras) {
 
 function insertLabsAsRecent(lines) {
   if (!notes[activeId]) notes[activeId] = {};
-  pushLabHistory(activeId, activeLab.resLabs,
+  pushLabHistory(
+    activeId,
+    activeLab.resLabs,
     activeLab.patient && activeLab.patient.fecha ? activeLab.patient.fecha : '',
     activeLab.patient && activeLab.patient.hora ? activeLab.patient.hora : '',
-    activeLab.sourceText || '', activeLab.bhExtras);
+    activeLab.sourceText || '',
+    activeLab.bhExtras,
+    activeLab.refsBySection
+  );
   rebuildEstudiosFromLabHistory(activeId);
   saveState();
   refreshTendenciasOrCultivosPanel();
@@ -10825,10 +10774,15 @@ function insertLabsAsRecent(lines) {
 
 function insertLabsAsAnteriorThenRecent(newLines) {
   if (!notes[activeId]) notes[activeId] = {};
-  pushLabHistory(activeId, activeLab.resLabs,
+  pushLabHistory(
+    activeId,
+    activeLab.resLabs,
     activeLab.patient && activeLab.patient.fecha ? activeLab.patient.fecha : '',
     activeLab.patient && activeLab.patient.hora ? activeLab.patient.hora : '',
-    activeLab.sourceText || '', activeLab.bhExtras);
+    activeLab.sourceText || '',
+    activeLab.bhExtras,
+    activeLab.refsBySection
+  );
   rebuildEstudiosFromLabHistory(activeId);
   saveState();
   refreshTendenciasOrCultivosPanel();
@@ -10863,10 +10817,15 @@ function showLabConflictModal(newLines, existingDate) {
   document.getElementById('btn-conflict-replace').onclick = function() {
     document.body.removeChild(backdrop);
     if (!notes[activeId]) notes[activeId] = {};
-    pushLabHistory(activeId, activeLab.resLabs,
+    pushLabHistory(
+      activeId,
+      activeLab.resLabs,
       activeLab.patient && activeLab.patient.fecha ? activeLab.patient.fecha : '',
-    activeLab.patient && activeLab.patient.hora ? activeLab.patient.hora : '',
-    activeLab.sourceText || '', activeLab.bhExtras);
+      activeLab.patient && activeLab.patient.hora ? activeLab.patient.hora : '',
+      activeLab.sourceText || '',
+      activeLab.bhExtras,
+      activeLab.refsBySection
+    );
     rebuildEstudiosFromLabHistory(activeId);
     saveState();
     refreshTendenciasOrCultivosPanel();
@@ -11050,6 +11009,11 @@ document.getElementById('modal').addEventListener('click', function(e) {
 
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
+    var tgb = document.getElementById('tend-group-backdrop');
+    if (tgb && tgb.getAttribute('aria-hidden') === 'false') {
+      closeTendGroupModal();
+      return;
+    }
     var rn = document.getElementById('release-notes-backdrop');
     if (rn && rn.classList.contains('open')) {
       closeReleaseNotes();
@@ -12064,6 +12028,13 @@ function ensureParsedLabHistory(patientId) {
       changed = true;
     }
     if (set.sourceText) {
+      if (!set.refsBySection || !Object.keys(set.refsBySection).length) {
+        var refsNext = buildRefsBySectionFromReport(set.sourceText);
+        if (refsNext && Object.keys(refsNext).length) {
+          set.refsBySection = refsNext;
+          changed = true;
+        }
+      }
       var horaFromSrc = extractLabReportHora(set.sourceText);
       if (horaFromSrc && horaFromSrc !== normalizeHoraLabHistory(set.hora)) {
         set.hora = horaFromSrc;
@@ -12124,29 +12095,54 @@ function tendFinishRangeVbars(container) {
   }
 }
 
-/** HTML de la barra de rango (modal de tendencia); vacío si no hay ref válido. */
-function tendRefVbarMarkup(ref, latest, delayMs, extraClass) {
+/**
+ * HTML de la barra de rango (modal de tendencia).
+ * Con yBounds (eje Y del gráfico): misma escala que el chart; solo si el rango
+ * orientativo intersecta lo visible; si no hay intersección, no se dibuja.
+ */
+function tendRefVbarMarkup(ref, latest, delayMs, extraClass, yBounds) {
   extraClass = extraClass || '';
-  if (!ref || !isFinite(ref[0]) || !isFinite(ref[1]) || ref[1] <= ref[0] || !isFinite(latest)) return '';
+  if (!ref || !isFinite(ref[0]) || !isFinite(ref[1]) || ref[1] <= ref[0] || !isFinite(latest)) {
+    return '';
+  }
   var low = Number(ref[0]);
   var high = Number(ref[1]);
-  var isAb = latest < low || latest > high;
-  var span = high - low;
-  var fullMin = low - span * 0.5;
-  var fullMax = high + span * 0.5;
-  if (fullMax <= fullMin) {
-    fullMin = low;
-    fullMax = high;
+  var latestN = Number(latest);
+  var isAb = latestN < low || latestN > high;
+  var normBottom;
+  var normTop;
+  var pos;
+
+  if (yBounds && isFinite(yBounds.min) && isFinite(yBounds.max) && yBounds.max > yBounds.min) {
+    var yMin = yBounds.min;
+    var yMax = yBounds.max;
+    var ySpan = yMax - yMin;
+    var visLow = Math.max(low, yMin);
+    var visHigh = Math.min(high, yMax);
+    if (visHigh <= visLow) return '';
+    normBottom = ((visLow - yMin) / ySpan) * 100;
+    normTop = ((visHigh - yMin) / ySpan) * 100;
+    pos = ((latestN - yMin) / ySpan) * 100;
+  } else {
+    var span = high - low;
+    var fullMin = low - span * 0.5;
+    var fullMax = high + span * 0.5;
+    if (fullMax <= fullMin) {
+      fullMin = low;
+      fullMax = high;
+    }
+    var range = fullMax - fullMin;
+    pos = ((latestN - fullMin) / range) * 100;
+    normBottom = ((low - fullMin) / range) * 100;
+    normTop = ((high - fullMin) / range) * 100;
   }
-  var range = fullMax - fullMin;
-  var pos = ((Number(latest) - fullMin) / range) * 100;
+
   if (pos < 0) pos = 0;
   if (pos > 100) pos = 100;
-  var normBottom = ((low - fullMin) / range) * 100;
-  var normTop = ((high - fullMin) / range) * 100;
   if (normBottom < 0) normBottom = 0;
   if (normTop > 100) normTop = 100;
   var normH = normTop - normBottom;
+  if (normH <= 0) return '';
   var stateClass = isAb ? ' is-abnormal' : ' is-normal';
   var d = delayMs != null ? delayMs : 0;
   return (
@@ -12155,7 +12151,7 @@ function tendRefVbarMarkup(ref, latest, delayMs, extraClass) {
     stateClass +
     '" style="--tend-vbar-delay:' +
     d +
-    'ms" title="Rango normal (' +
+    'ms" title="Rango de referencia (' +
     low +
     '–' +
     high +
@@ -12172,6 +12168,73 @@ function tendRefVbarMarkup(ref, latest, delayMs, extraClass) {
     pos.toFixed(2) +
     '"></div>' +
     '</div>'
+  );
+}
+
+function tendDetailChartYBounds(chart) {
+  if (!chart || !chart.scales || !chart.scales.y) return null;
+  var y = chart.scales.y;
+  if (!isFinite(y.min) || !isFinite(y.max) || y.max <= y.min) return null;
+  return { min: y.min, max: y.max };
+}
+
+function syncTendDetailVbar(ref, latest) {
+  var vbarSlot = document.getElementById('tend-detail-vbar-slot');
+  if (!vbarSlot) return;
+  var yBounds = tendDetailChartYBounds(detailChart);
+  vbarSlot.innerHTML = tendRefVbarMarkup(ref, latest, 0, ' tend-detail-vbar', yBounds);
+  vbarSlot.setAttribute('aria-hidden', vbarSlot.innerHTML ? 'false' : 'true');
+  tendFinishRangeVbars(vbarSlot);
+}
+
+var tendGroupModal = createTendGroupModal({
+  getActiveId: function () {
+    return activeId;
+  },
+  getHistory: function () {
+    return ensureParsedLabHistory(activeId);
+  },
+  getSectionLabel: getTendSectionLabel,
+  getCatalogSpecs: getTendCatalogSpecsForSection,
+  buildMergedTrendSeriesCatalog: buildMergedTrendSeriesCatalog,
+  tendUnitForSeries: tendUnitForSeries,
+  tendRefFromLabSet: tendRefFromLabSet,
+  tendRefForSeries: tendRefForSeries,
+  buildColHeader: buildLabSetDateLine,
+  esc: esc,
+  Chart: Chart,
+  showToast: showToast
+});
+
+function openTendGroupModal(sectionKey) {
+  tendGroupModal.open(sectionKey);
+}
+
+function closeTendGroupModal() {
+  var advanceTourAfterChart =
+    guidedTourActive && tourStepId === 'sala_tend_chart';
+  tendGroupModal.close();
+  if (advanceTourAfterChart) guidedTourAdvanceAfter('sala_tend_chart');
+}
+
+function setTendGroupTab(name) {
+  tendGroupModal.setTab(name);
+}
+
+function copyTendGroupTablePng() {
+  tendGroupModal.copyTablePng();
+}
+
+function copyTendGroupTableText() {
+  tendGroupModal.copyTableText();
+}
+
+function tendSectionChartSvg() {
+  return (
+    '<svg class="tend-section-chart-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M3 17l6-6 4 4 8-10"/>' +
+    '<path d="M3 12l5-4 4 3 9-7"/>' +
+    '</svg>'
   );
 }
 
@@ -12239,7 +12302,7 @@ function renderTendencias() {
     if (abnormalOnly && seriesAvailFull.length) {
       container.innerHTML =
         toolbarHtml +
-        '<p class="tend-empty">Ningún analito está fuera de rango orientativo (o no tiene referencia). Pulsa <strong>Ver todas</strong> (tooltip en el botón) para volver a la vista completa.</p>';
+        '<p class="tend-empty">Ningún analito está fuera de rango de referencia (o no tiene referencia en el reporte). Pulsa <strong>Ver todas</strong> (tooltip en el botón) para volver a la vista completa.</p>';
       syncTendHiddenModalIfOpen();
       return;
     }
@@ -12293,8 +12356,9 @@ function renderTendencias() {
         sectionKey,
         fk
       );
-      var latest = setsDesc.length ? getSetTrendValueForSeries(setsDesc[0], sectionKey, fk) : null;
-      var ref = tendRefForSeries(sectionKey, fk);
+      var latestSet = setsDesc.length ? setsDesc[0] : null;
+      var latest = latestSet ? getSetTrendValueForSeries(latestSet, sectionKey, fk) : null;
+      var ref = tendRefForSeries(history, sectionKey, fk, latestSet);
       var isAb = ref && latest != null && (latest < ref[0] || latest > ref[1]);
       var domId = trendSparkDomId(sectionKey, fk);
       var disp = tendFindSeriesSpec(sectionKey, fk).cardTitle || fk;
@@ -12339,6 +12403,7 @@ function renderTendencias() {
       '<section class="tend-section" data-section="' +
         esc(sectionKey) +
         '">' +
+        '<div class="tend-section-head">' +
         '<button type="button" class="tend-section-toggle" aria-expanded="' +
         (expanded ? 'true' : 'false') +
         '" onclick="toggleTendSection(event,\'' +
@@ -12349,11 +12414,19 @@ function renderTendencias() {
         '</span>' +
         '<span class="tend-section-title">' +
         esc(secLabel) +
-        '</span>' +
+        '</span></button>' +
+        '<span class="tend-section-toggle-end">' +
         '<span class="tend-section-count">' +
         list.length +
         '</span>' +
-        '</button>' +
+        (list.length > 0
+          ? '<button type="button" class="tend-section-chart-btn" title="Abrir gráfica y tabla del estudio" aria-label="Gráfica del estudio" onclick="openTendGroupModal(\'' +
+            safeAttrJsString(sectionKey) +
+            '\')">' +
+            tendSectionChartSvg() +
+            '<span class="tend-section-chart-label">Gráfica</span></button>'
+          : '') +
+        '</span></div>' +
         '<div class="tend-section-body' +
         (expanded ? '' : ' tend-section-body--collapsed') +
         '">' +
@@ -12384,9 +12457,11 @@ function renderTendencias() {
     var canvas2 = document.getElementById(trendSparkDomId(sk2, fk2));
     if (!canvas2) continue;
     var ck = trendSparkChartKey(sk2, fk2);
-    var latestSpark =
-      setsDesc2.length ? getSetTrendValueForSeries(setsDesc2[0], sk2, fk2) : null;
-    var refSpark = tendRefForSeries(sk2, fk2);
+    var latestSetSpark = setsDesc2.length ? setsDesc2[0] : null;
+    var latestSpark = latestSetSpark
+      ? getSetTrendValueForSeries(latestSetSpark, sk2, fk2)
+      : null;
+    var refSpark = tendRefForSeries(history, sk2, fk2, latestSetSpark);
     var isAbSpark =
       refSpark &&
       latestSpark != null &&
@@ -12453,13 +12528,14 @@ function openTendDetail(sectionKey, fieldKey) {
   var spec = tendFindSeriesSpec(sectionKey, fieldKey);
   var title = spec && spec.cardTitle ? spec.cardTitle : String(fieldKey);
   var unit = tendUnitForSeries(sectionKey, fieldKey);
-  var latest = setsDesc.length ? getSetTrendValueForSeries(setsDesc[0], sectionKey, fieldKey) : null;
-  var ref = tendRefForSeries(sectionKey, fieldKey);
+  var latestSet = setsDesc.length ? setsDesc[0] : null;
+  var latest = latestSet ? getSetTrendValueForSeries(latestSet, sectionKey, fieldKey) : null;
+  var ref = tendRefForSeries(history, sectionKey, fieldKey, latestSet);
   document.getElementById('tend-detail-title').textContent = title + (unit ? ' (' + unit + ')' : '');
   var vbarSlot = document.getElementById('tend-detail-vbar-slot');
   if (vbarSlot) {
-    vbarSlot.innerHTML = tendRefVbarMarkup(ref, latest, 0, ' tend-detail-vbar');
-    tendFinishRangeVbars(vbarSlot);
+    vbarSlot.innerHTML = '';
+    vbarSlot.setAttribute('aria-hidden', 'true');
   }
   var backdrop = document.getElementById('tend-detail-backdrop');
   backdrop.style.display = 'flex';
@@ -12512,12 +12588,16 @@ function openTendDetail(sectionKey, fieldKey) {
       }
     }
   });
+  syncTendDetailVbar(ref, latest);
 }
 
 function closeTendDetail() {
   document.getElementById('tend-detail-backdrop').style.display = 'none';
   var vbarSlot = document.getElementById('tend-detail-vbar-slot');
-  if (vbarSlot) vbarSlot.innerHTML = '';
+  if (vbarSlot) {
+    vbarSlot.innerHTML = '';
+    vbarSlot.setAttribute('aria-hidden', 'true');
+  }
   if (detailChart) { detailChart.destroy(); detailChart = null; }
 }
 
@@ -13930,6 +14010,11 @@ Object.assign(window, {
   insertSOAPText,
   updateSOAPBalance,
   closeTendDetail,
+  openTendGroupModal,
+  closeTendGroupModal,
+  setTendGroupTab,
+  copyTendGroupTablePng,
+  copyTendGroupTableText,
   toggleTendSection,
   toggleTendAbnormalOnlyFilter,
   tendHideSeriesFromCard,

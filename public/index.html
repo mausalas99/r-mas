@@ -3492,19 +3492,200 @@
   .tend-ocultos-trigger { border-radius: var(--radius-pill); }
   .tend-section { margin-bottom: 18px; }
   .tend-section:last-child { margin-bottom: 4px; }
-  .tend-section-toggle {
-    width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px 12px; margin-bottom: 8px;
-    background: var(--surface); border: 1px solid var(--border); border-radius: 10px; cursor: pointer;
-    text-align: left; font-size: 14px; font-weight: 600; color: var(--text); font-family: inherit;
+  .tend-section-head {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding-right: 10px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
     transition: box-shadow 0.2s ease, border-color 0.2s ease;
   }
-  .tend-section-toggle:hover {
+  .tend-section-head:hover {
     box-shadow: var(--shadow-md); border-color: rgba(37, 99, 235, 0.22);
   }
-  html.dark .tend-section-toggle:hover { border-color: rgba(96, 165, 250, 0.3); }
+  html.dark .tend-section-head:hover { border-color: rgba(96, 165, 250, 0.3); }
+  .tend-section-toggle {
+    flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    margin: 0; border: none; border-radius: 10px 0 0 10px; background: transparent; cursor: pointer;
+    text-align: left; font-size: 14px; font-weight: 600; color: var(--text); font-family: inherit;
+  }
+  .tend-section-toggle:hover { background: rgba(37, 99, 235, 0.04); }
+  html.dark .tend-section-toggle:hover { background: rgba(96, 165, 250, 0.08); }
   .tend-section-chevron { font-size: 10px; color: var(--muted); width: 1em; flex-shrink: 0; }
   .tend-section-title { flex: 1; min-width: 0; }
-  .tend-section-count { font-size: 12px; font-weight: 500; color: var(--muted); }
+  .tend-section-toggle-end {
+    display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0;
+  }
+  .tend-section-count {
+    font-size: 12px; font-weight: 600; color: var(--text-muted);
+    padding: 4px 10px; border-radius: 999px; background: var(--lab-chip-bg);
+    line-height: 1.2; min-width: 1.75em; text-align: center;
+  }
+  .tend-section-chart-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    height: 32px; padding: 0 12px; margin-left: 0; flex-shrink: 0;
+    border: 1px solid rgba(37, 99, 235, 0.28); border-radius: 999px;
+    background: color-mix(in oklab, var(--primary) 10%, var(--surface));
+    color: var(--primary); font-family: inherit; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  }
+  .tend-section-chart-label { line-height: 1; }
+  .tend-section-chart-btn .tend-section-chart-icon { flex-shrink: 0; }
+  .tend-section-chart-btn:hover {
+    color: var(--primary); border-color: rgba(37, 99, 235, 0.45);
+    background: color-mix(in oklab, var(--primary) 16%, var(--surface)); box-shadow: var(--shadow-sm);
+  }
+  html.dark .tend-section-chart-btn {
+    border-color: rgba(96, 165, 250, 0.35);
+    background: color-mix(in oklab, var(--primary) 14%, var(--surface));
+  }
+  html.dark .tend-section-chart-btn:hover { border-color: rgba(96, 165, 250, 0.5); }
+  .tend-section-chart-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .tend-group-backdrop {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1100;
+    align-items: center; justify-content: center; padding: 16px;
+  }
+  #tend-group-modal {
+    background: var(--surface); border-radius: 12px; border: 1px solid var(--border);
+    width: min(95vw, 900px); max-height: 80vh; overflow: hidden; display: flex; flex-direction: column;
+    font-family: inherit; box-shadow: var(--shadow-md);
+  }
+  .tend-group-header {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+  }
+  .tend-group-header h2 {
+    margin: 0; font-size: 16px; font-weight: 700; color: var(--text); flex: 1; min-width: 0;
+  }
+  .tend-group-close {
+    background: transparent; border: 1px solid var(--border); border-radius: 8px;
+    padding: 4px 12px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text); font-family: inherit;
+  }
+  .tend-group-close:hover { border-color: rgba(37, 99, 235, 0.35); box-shadow: var(--shadow-sm); }
+  .tend-group-tabs-wrap { padding: 12px 20px 0; }
+  .tend-group-tabs {
+    position: relative; display: inline-flex; align-items: stretch; padding: 3px; border-radius: 10px;
+    background: color-mix(in oklab, var(--primary) 14%, var(--surface)); border: 1px solid var(--border); gap: 0;
+  }
+  .tend-group-tab-pill {
+    position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc((100% - 6px) / 2);
+    border-radius: 8px; background: var(--surface); box-shadow: var(--shadow-sm);
+    pointer-events: none; z-index: 0; transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .tend-group-tabs[data-active="table"] .tend-group-tab-pill { transform: translateX(100%); }
+  .tend-group-tab {
+    position: relative; z-index: 1; flex: 1 1 0; min-width: 0; border: 0; border-radius: 6px;
+    padding: 6px 14px; font-size: 12px; font-weight: 700; color: var(--text-muted);
+    background: transparent; cursor: pointer; font-family: inherit; transition: color 0.2s ease;
+  }
+  .tend-group-tab:hover { color: var(--text); }
+  .tend-group-tab.active { color: var(--primary); }
+  html.dark .tend-group-tabs { background: rgba(255, 255, 255, 0.06); }
+  html.dark .tend-group-tab-pill { background: rgba(255, 255, 255, 0.12); box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35); }
+  html.dark .tend-group-tab.active { color: var(--text); }
+  .tend-group-panel {
+    flex: 1; min-height: 0; overflow-y: auto; padding: 16px 20px 20px;
+  }
+  .tend-group-panel-family,
+  .tend-group-panel-card {
+    margin-bottom: 20px; padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface);
+    position: relative;
+  }
+  .tend-group-sort-zone .tend-group-panel-card:last-child { margin-bottom: 0; }
+  .tend-group-panel-toolbar {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    margin-bottom: 6px;
+  }
+  .tend-group-panel-card:hover .tend-group-panel-toolbar,
+  .tend-group-panel-card.sortable-chosen .tend-group-panel-toolbar {
+    opacity: 1;
+  }
+  .tend-group-panel-drag-hint {
+    font-size: 14px;
+    letter-spacing: -2px;
+    color: var(--text-muted);
+    cursor: grab;
+    user-select: none;
+    line-height: 1;
+  }
+  .tend-group-drag-hovercard.tend-group-panel-card {
+    box-shadow: var(--shadow-md, 0 8px 24px rgba(0, 0, 0, 0.18));
+    opacity: 0.96;
+    cursor: grabbing;
+  }
+  html.dark .tend-group-drag-hovercard.tend-group-panel-card {
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  }
+  .tend-group-panels-hidden-bar { margin-bottom: 12px; }
+  .tend-group-family-title,
+  .tend-group-panel-family-title {
+    margin: 0 0 10px 0; font-size: 13px; font-weight: 700; color: var(--text);
+  }
+  .tend-group-legend {
+    display: flex; flex-wrap: wrap; gap: 8px 12px; margin-bottom: 12px;
+  }
+  .tend-group-legend-item {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text); cursor: pointer;
+  }
+  .tend-group-legend-color {
+    width: 28px; height: 22px; padding: 0; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; background: var(--surface);
+  }
+  .tend-group-chart-wrap { height: 220px; position: relative; }
+  .tend-group-table-actions {
+    display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap;
+  }
+  .tend-group-table-actions .btn-primary,
+  .tend-group-table-actions .btn-secondary {
+    font-family: inherit; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 8px; cursor: pointer;
+  }
+  .tend-group-table-actions .btn-primary {
+    background: var(--action, var(--primary)); color: #fff; border: none;
+  }
+  .tend-group-table-actions .btn-primary:hover { filter: brightness(1.05); }
+  .tend-group-table-actions .btn-secondary {
+    background: var(--surface); color: var(--text-muted); border: 1px solid var(--border);
+  }
+  .tend-group-table-actions .btn-secondary:hover { border-color: rgba(37, 99, 235, 0.35); color: var(--text); }
+  .tend-group-table .is-hidden { display: none !important; }
+  .tend-group-table .tend-abnormal { color: var(--error); font-weight: 600; }
+  .tend-group-table-hidden-bar {
+    margin-bottom: 10px; padding: 0; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--lab-chip-bg);
+    font-size: 12px; line-height: 1.4; color: var(--text-muted);
+    overflow: hidden;
+  }
+  .tend-group-hidden-bar-head {
+    display: flex; align-items: center; gap: 8px; padding: 8px 10px 8px 8px;
+  }
+  .tend-group-hidden-bar-toggle {
+    display: inline-flex; align-items: center; gap: 8px; flex: 1; min-width: 0;
+    padding: 4px 8px; border: none; border-radius: 8px; background: transparent;
+    font-family: inherit; font-size: 12px; font-weight: 600; color: var(--text);
+    cursor: pointer; text-align: left;
+  }
+  .tend-group-hidden-bar-toggle:hover { background: var(--surface); }
+  .tend-group-hidden-bar-toggle .tend-section-chevron {
+    font-size: 10px; color: var(--muted); flex-shrink: 0;
+  }
+  .tend-group-hidden-bar-body {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    padding: 0 12px 10px 12px;
+  }
+  .tend-group-table-hidden-bar.is-collapsed .tend-group-hidden-bar-head {
+    padding-bottom: 8px;
+  }
+  .tend-group-hidden-label { font-weight: 600; color: var(--text); margin-right: 4px; }
+  .tend-group-restore-chip {
+    display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px 3px 10px;
+    border-radius: 999px; border: 1px solid var(--border); background: var(--surface);
+    font-size: 11px; color: var(--text); cursor: pointer; font-family: inherit;
+  }
+  .tend-group-restore-chip:hover { border-color: rgba(37, 99, 235, 0.35); }
+  .tend-group-show-all-btn { margin-left: auto; font-size: 12px; padding: 6px 12px; }
+  .tend-group-row--data-hidden td:not(:first-child) { display: none !important; }
+  .tend-group-row--data-hidden td:first-child { opacity: 0.72; }
+  .tend-group-row-toggle, .tend-group-col-toggle {
+    display: inline-flex; align-items: center; gap: 6px; font-weight: inherit; cursor: pointer;
+  }
+  .tend-group-unit { font-weight: 500; color: var(--text-muted); font-size: 11px; }
   .tend-section-body--collapsed { display: none !important; }
   .tend-spark-placeholder { min-height: 56px; width: 100%; border-radius: 6px; background: rgba(0,0,0,0.03); }
   html.dark .tend-spark-placeholder { background: rgba(255,255,255,0.04); }
@@ -5182,6 +5363,30 @@
         <canvas id="tend-detail-canvas"></canvas>
       </div>
       <div id="tend-detail-vbar-slot" class="tend-detail-vbar-slot" aria-hidden="true"></div>
+    </div>
+  </div>
+</div>
+
+<div id="tend-group-backdrop" class="tend-group-backdrop" style="display:none" onclick="if(event.target===this)closeTendGroupModal()" aria-hidden="true">
+  <div id="tend-group-modal" role="dialog" aria-modal="true" aria-labelledby="tend-group-title">
+    <header class="tend-group-header">
+      <h2 id="tend-group-title"></h2>
+      <button type="button" class="tend-group-close" onclick="closeTendGroupModal()" aria-label="Cerrar" title="Cerrar (Esc)" aria-keyshortcuts="Escape">×</button>
+    </header>
+    <div class="tend-group-tabs-wrap">
+      <nav class="tend-group-tabs" id="tend-group-tabs-track" role="tablist" aria-label="Vista del estudio" data-active="charts">
+        <span class="tend-group-tab-pill" aria-hidden="true"></span>
+        <button type="button" role="tab" class="tend-group-tab active" data-tab="charts" aria-selected="true" onclick="setTendGroupTab('charts')">Gráficas</button>
+        <button type="button" role="tab" class="tend-group-tab" data-tab="table" aria-selected="false" onclick="setTendGroupTab('table')">Tabla</button>
+      </nav>
+    </div>
+    <div id="tend-group-panel-charts" class="tend-group-panel" role="tabpanel"></div>
+    <div id="tend-group-panel-table" class="tend-group-panel" role="tabpanel" hidden>
+      <div id="tend-group-table-wrap"></div>
+      <div class="tend-group-table-actions">
+        <button type="button" class="btn-primary" onclick="copyTendGroupTablePng()">Copiar</button>
+        <button type="button" class="btn-secondary" onclick="copyTendGroupTableText()">Copiar como texto</button>
+      </div>
     </div>
   </div>
 </div>
