@@ -2117,6 +2117,94 @@
   .btn-generate:hover { background: var(--accent-gradient-hover); box-shadow: 0 4px 18px rgba(79, 86, 255, 0.26); }
   .btn-generate:active { transform: scale(0.98); }
   .btn-generate.loading { opacity: 0.65; cursor: not-allowed; }
+  .med-toolbar-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .btn-med-secondary {
+    background: color-mix(in oklab, var(--lab-chip-bg) 88%, var(--surface));
+    border: 1px solid color-mix(in oklab, var(--action) 32%, var(--border));
+    color: var(--primary);
+    border-radius: var(--radius-pill);
+    padding: calc(9px * var(--density-space)) calc(16px * var(--density-space));
+    font-size: calc(13px * var(--density-font));
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: calc(7px * var(--density-space));
+    min-height: 44px;
+    transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.1s;
+    box-shadow: 0 2px 8px rgba(79, 86, 255, 0.08);
+  }
+  .btn-med-secondary:hover {
+    background: color-mix(in oklab, var(--lab-chip-bg) 70%, var(--surface));
+    border-color: color-mix(in oklab, var(--action) 48%, var(--border));
+    box-shadow: 0 4px 14px rgba(79, 86, 255, 0.14);
+  }
+  .btn-med-secondary:active { transform: scale(0.98); }
+  .btn-med-secondary:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(79, 86, 255, 0.2), 0 2px 8px rgba(79, 86, 255, 0.1);
+  }
+  .btn-med-secondary--dia {
+    color: color-mix(in oklab, var(--action) 88%, var(--primary));
+    border-color: color-mix(in oklab, var(--action) 42%, var(--border));
+    background: linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--lab-chip-bg) 92%, var(--surface)) 0%,
+      color-mix(in oklab, var(--surface) 88%, var(--lab-chip-bg)) 100%
+    );
+  }
+  .btn-med-secondary--dia .btn-med-secondary-icon {
+    background: color-mix(in oklab, var(--action) 14%, transparent);
+    color: var(--action);
+  }
+  .btn-med-secondary-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    flex-shrink: 0;
+  }
+  html.dark .btn-med-secondary {
+    background: rgba(96, 165, 250, 0.1);
+    border-color: rgba(96, 165, 250, 0.28);
+    color: var(--text);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  }
+  html.dark .btn-med-secondary:hover {
+    background: rgba(96, 165, 250, 0.16);
+    border-color: rgba(96, 165, 250, 0.42);
+  }
+  html.dark .btn-med-secondary--dia .btn-med-secondary-icon {
+    background: rgba(96, 165, 250, 0.2);
+    color: #93c5fd;
+  }
+  .btn-med-secondary--muted {
+    color: var(--text-muted);
+    border-color: var(--border);
+    background: color-mix(in oklab, var(--surface) 92%, transparent);
+    box-shadow: none;
+  }
+  .btn-med-secondary--muted:hover {
+    color: var(--text);
+    background: var(--lab-chip-bg);
+    border-color: color-mix(in oklab, var(--border) 70%, var(--action));
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  }
+  html.dark .btn-med-secondary--muted {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: var(--border);
+  }
+  html.dark .btn-med-secondary--muted:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
   .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; align-items: center; justify-content: center; }
   .modal-backdrop.open { display: flex; animation: fade-in 0.15s ease-out; }
   @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
@@ -4449,15 +4537,18 @@
               <label>Pega aquí el texto copiado del sistema</label>
               <textarea id="med-input" rows="10" placeholder="Pega el bloque de medicamentos (columnas separadas por tabulador)…"></textarea>
             </div>
-            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <div class="med-toolbar-actions">
               <button type="button" class="btn-generate" onclick="procesarRecetaMed()" style="min-width:140px;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
                 Receta
               </button>
-              <button type="button" onclick="incrementMedDiaTratamiento()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:9px 16px;font-size:13px;font-family:inherit;color:var(--text);cursor:pointer;min-height:44px;" title="Incrementa DIA# en medicamentos con día de tratamiento (sin volver a pegar)">
-                +1 día (DIA#)
+              <button type="button" class="btn-med-secondary btn-med-secondary--dia" onclick="incrementMedDiaTratamiento()" title="Incrementa DIA# en medicamentos con día de tratamiento (sin volver a pegar)">
+                <span class="btn-med-secondary-icon" aria-hidden="true">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M12 14v4M10 16h4"/></svg>
+                </span>
+                +1 día
               </button>
-              <button type="button" onclick="limpiarRecetaInput()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:9px 16px;font-size:13px;font-family:inherit;color:var(--text-muted);cursor:pointer;min-height:44px;" onmouseover="this.style.background='#F1F5F9'" onmouseout="this.style.background='none'">
+              <button type="button" class="btn-med-secondary btn-med-secondary--muted" onclick="limpiarRecetaInput()">
                 Limpiar
               </button>
             </div>

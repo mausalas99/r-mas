@@ -1943,6 +1943,58 @@ export function extractLabReportFechaDMY(textoBruto) {
   return '';
 }
 
+/** Encabezado típico de reporte SOME (copiar desde «Expediente:»). */
+export function looksLikeSomeLabReport(textoBruto) {
+  if (!textoBruto || typeof textoBruto !== 'string') return false;
+  var t = textoBruto;
+  if (!/Expediente\s*:/i.test(t)) return false;
+  if (!/Nombre\s*:/i.test(t)) return false;
+  return /Fecha\s+Registro/i.test(t) || /HEMATOLOG[IÍ]A|QU[IÍ]MICA|BIOMETR[IÍ]A|GASOMETR[IÍ]A/i.test(t);
+}
+
+function applyMeridiemHour(hh, meridiemRaw) {
+  if (!meridiemRaw) return hh;
+  var t = String(meridiemRaw).toLowerCase().replace(/\./g, '').replace(/\s+/g, '');
+  var isPm = t === 'pm' || t === 'p' || t.indexOf('pm') !== -1;
+  var isAm = t === 'am' || t === 'a' || t.indexOf('am') !== -1;
+  if (isPm && !isAm) {
+    if (hh < 12) return hh + 12;
+    return hh;
+  }
+  if (isAm && !isPm) {
+    if (hh === 12) return 0;
+    return hh;
+  }
+  return hh;
+}
+
+function horaFromFechaRegistroMatch(m) {
+  if (!m) return '';
+  var hh = parseInt(m[1], 10);
+  var mm = parseInt(m[2], 10);
+  if (!isFinite(hh) || !isFinite(mm)) return '';
+  hh = applyMeridiemHour(hh, m[4]);
+  if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return '';
+  return String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+}
+
+/**
+ * Hora de toma/registro (HH:MM, 24 h) desde Fecha Registro del reporte SOME.
+ */
+export function extractLabReportHora(textoBruto) {
+  if (!textoBruto || typeof textoBruto !== 'string') return '';
+  var head = textoBruto.slice(0, 4000);
+  var m = head.match(
+    /Fecha\s+Registro\s*:?[\s\t]*[A-Za-z]{3}\s+\d{1,2}\s+\d{4}\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?/i
+  );
+  if (m) return horaFromFechaRegistroMatch(m);
+  m = head.match(
+    /Fecha\s+Registro\s*:?[\s\t]*\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*((?:a|p)\.?\s*m\.?|AM|PM)?/i
+  );
+  if (m) return horaFromFechaRegistroMatch(m);
+  return '';
+}
+
 export function procesarLabs(textoBruto) {
   var tNorm = textoBruto.replace(/\s+/g,' ');
   var mNombre=textoBruto.match(/Nombre:\s*([^\n\r]+)/i);
@@ -1950,6 +2002,7 @@ export function procesarLabs(textoBruto) {
   var mSexo  =textoBruto.match(/Sexo:\s*([^\n\r]+)/i);
   var mEdad  =textoBruto.match(/Edad:\s*([^\n\r]+)/i);
   var fechaDm = extractLabReportFechaDMY(textoBruto);
+  var horaLab = extractLabReportHora(textoBruto);
   // Clean expediente: stop before Solicitud/Medico/Fecha/Sexo/Edad keywords
   var expRaw = mExp ? mExp[1].split(/\s+(?:Solicitud|Medico|Médico|Fecha|Sexo|Edad|Ubicaci)/i)[0].trim() : '';
   // Clean edad: only first number
@@ -1974,7 +2027,7 @@ export function procesarLabs(textoBruto) {
     }).filter(Boolean);
     ubicacion = (uTok[0] || uRaw.split(/\s+(?:Medico|Médico|Edad)\s*:/i)[0] || uRaw).trim();
   }
-  var patient={ name:mNombre?mNombre[1].split(/Fecha|Sexo|Edad/i)[0].trim():'', expediente:expRaw, sexo:sexoRaw, edad:edadRaw?(edadRaw+' '+edadUnidad):'', fecha:fechaDm, ubicacion: ubicacion };
+  var patient={ name:mNombre?mNombre[1].split(/Fecha|Sexo|Edad/i)[0].trim():'', expediente:expRaw, sexo:sexoRaw, edad:edadRaw?(edadRaw+' '+edadUnidad):'', fecha:fechaDm, hora: horaLab, ubicacion: ubicacion };
 
   var mGaso=tNorm.match(/GASOMETRIA.*?(?=BIOMETRIA|CITOLOGIA|QUIMICA|ELECTROLITOS|PFH|COAGULACION|CITOQUIMICO|$)/i);
   var bloqueGaso=mGaso?mGaso[0]:'';

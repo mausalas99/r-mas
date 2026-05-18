@@ -56,6 +56,19 @@ function stripDiaMarkersFromDosis(dosisPart) {
   );
 }
 
+/** Bloque TSV de medicamentos copiado desde SOME (expediente). */
+export function looksLikeSomeMedicationPaste(text) {
+  var raw = String(text || '');
+  if (!raw.trim()) return false;
+  if (!/\t/.test(raw)) return false;
+  var lines = raw.split(/\r?\n/).map(trimStr).filter(Boolean);
+  for (var i = 0; i < lines.length; i += 1) {
+    var cols = lines[i].split('\t');
+    if (cols.length >= 7 && trimStr(cols[1]).toUpperCase() === 'MEDICAMENTOS') return true;
+  }
+  return false;
+}
+
 export function parseMedicationPaste(text) {
   var lines = String(text || '')
     .split(/\r?\n/)

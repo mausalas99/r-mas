@@ -16,6 +16,8 @@ import {
   parseCuantOrina_,
   parseCultivo_,
   procesarLabs,
+  extractLabReportHora,
+  looksLikeSomeLabReport,
   reprocessLabResultLines_,
   escTxt,
   renderToken,
@@ -37,6 +39,7 @@ import {
 } from './lab-history-auto-store-core.mjs';
 import {
   parseMedicationPaste,
+  looksLikeSomeMedicationPaste,
   resolveFechaActualizacion,
   buildMedRecetaCopyText,
   buildMedRecetaNameOnlyText,
@@ -1181,6 +1184,16 @@ function buildLabSetDateLine(set) {
   return rawHora ? (rawDate + ' ' + rawHora.slice(0, 5)) : rawDate;
 }
 
+/** Fecha abreviada DD/MM para el bloque de estudios en la nota (sin hora). */
+function buildLabSetDateLineForNota(set) {
+  if (!set) return '';
+  if (set.fecha === 'Anterior' || set.id === 'migrated-anterior') return 'Anterior';
+  var rawDate = normalizeFechaLabHistory(set.fecha) || String(set.fecha || '').trim() || inferFechaLabSetFromId(set) || '';
+  if (!rawDate) return '';
+  if (rawDate.length >= 5 && rawDate.indexOf('/') !== -1) return rawDate.slice(0, 5);
+  return rawDate;
+}
+
 /** Encabezado de sección de laboratorio tabular (BH, QS, …). */
 function isLabSectionHeaderLine(s) {
   return /^(BH|QS|ESC|PFHs|GASES|PIE|LCR|EGO|CUANTORINA)\b/i.test(String(s).trim());
@@ -1337,10 +1350,9 @@ function rebuildEstudiosFromLabHistory(patientId) {
     });
     if (!labsAcc.length && !cultAcc.length) return;
     var headerSet = sets[0];
-    var dateLine = buildLabSetDateLine(headerSet);
+    var dateLine = buildLabSetDateLineForNota(headerSet);
     if (dateLine) lines.push(dateLine);
     if (labsAcc.length) {
-      lines.push('Laboratorio');
       labsAcc.forEach(function (row) {
         var clean = String(row == null ? '' : row).trim();
         if (clean) lines.push(clean);
@@ -10316,7 +10328,14 @@ function procesarRecetaMed() {
   var raw = ta ? ta.value : '';
   var parsed = parseMedicationPaste(raw || '');
   if (!parsed.items.length) {
-    showToast('No se encontraron medicamentos válidos', 'error');
+    if (!looksLikeSomeMedicationPaste(raw || '')) {
+      showToast(
+        'No parece el bloque de SOME. En expediente, copia desde la columna Fecha y hora hasta el final de medicamentos (con tabuladores) y pégalo aquí.',
+        'error'
+      );
+    } else {
+      showToast('No se encontraron filas MEDICAMENTOS válidas en el pegado', 'error');
+    }
     return;
   }
   var today = new Date();
@@ -10435,7 +10454,9 @@ function buildLabLines() {
       var monNum = mFechaLab && mesesMap[mFechaLab[1].toLowerCase().slice(0, 3)];
       if (monNum) fechaDm = mFechaLab[2].padStart(2, '0') + '/' + monNum + '/' + mFechaLab[3];
     }
-    if (fechaDm) lines.push(fechaDm);
+    if (fechaDm) {
+      lines.push(fechaDm.length >= 5 && fechaDm.indexOf('/') !== -1 ? fechaDm.slice(0, 5) : fechaDm);
+    }
   }
   var bhExtDone = false;
   activeLab.resLabs.forEach(function(entry) {
@@ -10673,9 +10694,6 @@ function pushLabHistory(patientId, resLabs, fecha, hora, sourceText, bhExtras) {
     fechaNorm = String(nd.getDate()).padStart(2, '0') + '/' + String(nd.getMonth() + 1).padStart(2, '0') + '/' + nd.getFullYear();
   }
   var horaNorm = normalizeHoraLabHistory(hora);
-  if (!horaNorm && notes[patientId] && notes[patientId].hora) {
-    horaNorm = normalizeHoraLabHistory(notes[patientId].hora);
-  }
   var set = {
     id: Date.now().toString(),
     fecha: fechaNorm,
@@ -10737,7 +10755,7 @@ function autoStoreProcessedLabResult(result) {
   if (!activeId) return;
   if (!result || !result.resLabs || !result.resLabs.length) return;
   var fecha = (result.patient && result.patient.fecha) ? result.patient.fecha : '';
-  var hora = '';
+  var hora = (result.patient && result.patient.hora) ? result.patient.hora : '';
   if (isDuplicateLatestLabSet(activeId, result.resLabs, fecha, hora)) {
     showToast('Resultado ya registrado en historial', 'success');
     return;
@@ -10790,7 +10808,9 @@ function applyLabClinicalSuggestions(patientId, resLabs, fecha, bhExtras) {
 function insertLabsAsRecent(lines) {
   if (!notes[activeId]) notes[activeId] = {};
   pushLabHistory(activeId, activeLab.resLabs,
-    activeLab.patient && activeLab.patient.fecha ? activeLab.patient.fecha : '', '', activeLab.sourceText || '', activeLab.bhExtras);
+    activeLab.patient && activeLab.patient.fecha ? activeLab.patient.fecha : '',
+    activeLab.patient && activeLab.patient.hora ? activeLab.patient.hora : '',
+    activeLab.sourceText || '', activeLab.bhExtras);
   rebuildEstudiosFromLabHistory(activeId);
   saveState();
   refreshTendenciasOrCultivosPanel();
@@ -10806,7 +10826,9 @@ function insertLabsAsRecent(lines) {
 function insertLabsAsAnteriorThenRecent(newLines) {
   if (!notes[activeId]) notes[activeId] = {};
   pushLabHistory(activeId, activeLab.resLabs,
-    activeLab.patient && activeLab.patient.fecha ? activeLab.patient.fecha : '', '', activeLab.sourceText || '', activeLab.bhExtras);
+    activeLab.patient && activeLab.patient.fecha ? activeLab.patient.fecha : '',
+    activeLab.patient && activeLab.patient.hora ? activeLab.patient.hora : '',
+    activeLab.sourceText || '', activeLab.bhExtras);
   rebuildEstudiosFromLabHistory(activeId);
   saveState();
   refreshTendenciasOrCultivosPanel();
@@ -10842,7 +10864,9 @@ function showLabConflictModal(newLines, existingDate) {
     document.body.removeChild(backdrop);
     if (!notes[activeId]) notes[activeId] = {};
     pushLabHistory(activeId, activeLab.resLabs,
-      activeLab.patient && activeLab.patient.fecha ? activeLab.patient.fecha : '', '', activeLab.sourceText || '', activeLab.bhExtras);
+      activeLab.patient && activeLab.patient.fecha ? activeLab.patient.fecha : '',
+    activeLab.patient && activeLab.patient.hora ? activeLab.patient.hora : '',
+    activeLab.sourceText || '', activeLab.bhExtras);
     rebuildEstudiosFromLabHistory(activeId);
     saveState();
     refreshTendenciasOrCultivosPanel();
@@ -10862,6 +10886,13 @@ function showLabConflictModal(newLines, existingDate) {
 function procesarReporte() {
   var text = document.getElementById('lab-input').value.trim();
   if (!text) { showToast('Pega el texto del reporte primero','error'); return; }
+  var fromSomeExpediente = looksLikeSomeLabReport(text);
+  if (!fromSomeExpediente) {
+    showToast(
+      'No parece un reporte de SOME. En expediente, copia desde «Expediente:» hasta el final del informe y pégalo completo aquí.',
+      'error'
+    );
+  }
   try {
     var result = procesarLabs(text);
     result.sourceText = text;
@@ -10869,8 +10900,14 @@ function procesarReporte() {
     renderOutput(result);
     renderDiagramas(result.resLabs);
     if (resStore.shouldAutoStore) autoStoreProcessedLabResult(result);
-    if (!result.resLabs.length) showToast('No se encontraron resultados de laboratorio','error');
-    else clearLabInputAfterSuccessfulParse();
+    if (!result.resLabs.length) {
+      showToast(
+        fromSomeExpediente
+          ? 'No se encontraron resultados de laboratorio en el texto pegado'
+          : 'No se encontraron resultados. Copia el reporte completo desde SOME (desde «Expediente:»).',
+        'error'
+      );
+    } else clearLabInputAfterSuccessfulParse();
   } catch(e) { showToast('Error al procesar el reporte','error'); console.error(e); }
 }
 
@@ -11972,6 +12009,7 @@ function buildParsedBySectionFromResLabs(resLabs, bhExtras) {
 function ensureParsedLabHistory(patientId) {
   var history = labHistory[patientId] || [];
   var changed = false;
+  var rebuildNota = false;
   var noteLines = (notes[patientId] && notes[patientId].estudios ? notes[patientId].estudios.split('\n') : []);
 
   history.forEach(function(set) {
@@ -12025,6 +12063,14 @@ function ensureParsedLabHistory(patientId) {
       set.hora = nh;
       changed = true;
     }
+    if (set.sourceText) {
+      var horaFromSrc = extractLabReportHora(set.sourceText);
+      if (horaFromSrc && horaFromSrc !== normalizeHoraLabHistory(set.hora)) {
+        set.hora = horaFromSrc;
+        changed = true;
+        rebuildNota = true;
+      }
+    }
     if ((!set.fecha || !String(set.fecha).trim()) && set.fecha !== 'Anterior') {
       var inferred = inferFechaLabSetFromId(set);
       if (inferred) {
@@ -12033,6 +12079,10 @@ function ensureParsedLabHistory(patientId) {
       }
     }
   });
+  if (rebuildNota && patientId && notes[patientId]) {
+    rebuildEstudiosFromLabHistory(patientId);
+    changed = true;
+  }
   if (changed) saveState();
   return history;
 }

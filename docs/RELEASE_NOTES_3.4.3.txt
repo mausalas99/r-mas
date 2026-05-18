@@ -1,0 +1,24 @@
+R+ 3.4.3 (estable — hora de labs, nota estudios y pegado SOME)
+===============================================================
+
+Fecha: 2026-05-18
+
+## Resumen
+
+Hora de toma desde «Fecha Registro» del reporte SOME (incluye AM/PM). La nota de evolución muestra estudios con fecha corta DD/MM sin el encabezado «Laboratorio». Mensajes claros si el pegado no parece reporte de SOME (labs o medicamentos). Botones de Medicamentos (+1 día / Limpiar) con mejor aspecto.
+
+## Nuevo / mejorado
+
+- **Laboratorio:** extrae hora HH:MM desde Fecha Registro al pegar; rellena hora en sets existentes desde `sourceText`.
+- **Nota — Estudios:** fecha DD/MM sin hora; sin línea «Laboratorio» antes del bloque tabular.
+- **Laboratorio / Medicamentos:** aviso si el texto pegado no parece bloque SOME (Expediente + columnas MEDICAMENTOS).
+- **Medicamentos:** botones +1 día y Limpiar con estilo unificado.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v3.4.3
+
+- Mac: `R+-3.4.3-arm64.dmg`, `R+-3.4.3-x64.dmg` (y zip para auto-update).
+- Windows: `R+-3.4.3-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye `write-release-yml.js`).
