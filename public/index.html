@@ -3554,12 +3554,6 @@
   .tend-group-header h2 {
     margin: 0; font-size: 16px; font-weight: 700; color: var(--text); flex: 1; min-width: 0;
   }
-  .tend-group-close {
-    background: transparent; border: 1px solid var(--border); border-radius: 8px;
-    padding: 4px 12px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text); font-family: inherit;
-    position: relative; z-index: 2; flex-shrink: 0;
-  }
-  .tend-group-close:hover { border-color: rgba(37, 99, 235, 0.35); box-shadow: var(--shadow-sm); }
   .tend-group-tabs-wrap { padding: 12px 20px 0; }
   .tend-group-tabs {
     position: relative; display: inline-flex; align-items: stretch; padding: 3px; border-radius: 10px;
@@ -5388,11 +5382,10 @@
   </div>
 </div>
 
-<div id="tend-group-backdrop" class="tend-group-backdrop" style="display:none" onclick="if(event.target===this)closeTendGroupModal()" aria-hidden="true">
+<div id="tend-group-backdrop" class="tend-group-backdrop" style="display:none" aria-hidden="true">
   <div id="tend-group-modal" role="dialog" aria-modal="true" aria-labelledby="tend-group-title">
     <header class="tend-group-header">
       <h2 id="tend-group-title"></h2>
-      <button type="button" class="tend-group-close" onclick="closeTendGroupModal()" aria-label="Cerrar" title="Cerrar (Esc)" aria-keyshortcuts="Escape">×</button>
     </header>
     <div class="tend-group-tabs-wrap">
       <nav class="tend-group-tabs" id="tend-group-tabs-track" role="tablist" aria-label="Vista del estudio" data-active="charts">

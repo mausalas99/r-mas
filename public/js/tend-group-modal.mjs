@@ -954,19 +954,10 @@ export function createTendGroupModal(deps) {
   }
 
 
-  (function bindTendGroupModalChromeOnce() {
+  (function bindTendGroupBackdropCloseOnce() {
     var bd = document.getElementById('tend-group-backdrop');
-    if (!bd || bd.dataset.tendCloseBound === '1') return;
-    bd.dataset.tendCloseBound = '1';
-    var closeBtn = bd.querySelector('.tend-group-close');
-    if (closeBtn) {
-      closeBtn.removeAttribute('onclick');
-      closeBtn.addEventListener('click', function (ev) {
-        ev.preventDefault();
-        ev.stopPropagation();
-        requestCloseFromUi();
-      });
-    }
+    if (!bd || bd.dataset.tendBackdropClose === '1') return;
+    bd.dataset.tendBackdropClose = '1';
     bd.addEventListener('click', function (ev) {
       if (ev.target === bd) requestCloseFromUi();
     });
@@ -1021,12 +1012,6 @@ export function createTendGroupModal(deps) {
       }
 
       document.addEventListener('keydown', onDocumentKeydown, true);
-      var closeBtn = document.querySelector('#tend-group-modal .tend-group-close');
-      if (closeBtn && typeof closeBtn.focus === 'function') {
-        try {
-          closeBtn.focus();
-        } catch (_focusErr) {}
-      }
     },
 
     close: closeModal,
