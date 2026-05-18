@@ -3557,6 +3557,7 @@
   .tend-group-close {
     background: transparent; border: 1px solid var(--border); border-radius: 8px;
     padding: 4px 12px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text); font-family: inherit;
+    position: relative; z-index: 2; flex-shrink: 0;
   }
   .tend-group-close:hover { border-color: rgba(37, 99, 235, 0.35); box-shadow: var(--shadow-sm); }
   .tend-group-tabs-wrap { padding: 12px 20px 0; }
@@ -3597,11 +3598,6 @@
   .tend-group-panel-card:hover .tend-group-panel-toolbar,
   .tend-group-panel-card.sortable-chosen .tend-group-panel-toolbar {
     opacity: 1;
-  }
-  .tend-group-panel-hide {
-    font-size: 15px;
-    line-height: 1;
-    font-weight: 700;
   }
   .tend-group-panel-drag-hint {
     font-size: 14px;

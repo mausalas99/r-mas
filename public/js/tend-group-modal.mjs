@@ -336,17 +336,6 @@ export function createTendGroupModal(deps) {
     }
   }
 
-  function hidePanelFamily(sectionKey, fam, ev) {
-    if (ev) {
-      ev.preventDefault();
-      ev.stopPropagation();
-    }
-    var h = readGroupPanelHidden(state.patientId, sectionKey).slice();
-    if (h.indexOf(fam) < 0) h.push(fam);
-    writeGroupPanelHidden(state.patientId, sectionKey, h);
-    renderCharts(sectionKey);
-  }
-
   function isAbnormal(set, sectionKey, fieldKey, val, historyDesc) {
     if (val == null || !isFinite(val)) return false;
     var ref =
@@ -709,7 +698,9 @@ export function createTendGroupModal(deps) {
       toolbar.className = 'patient-card-toolbar tend-group-panel-toolbar';
       toolbar.innerHTML =
         '<div class="patient-card-toolbar-left">' +
-        '<button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon tend-group-panel-hide" title="Ocultar panel" aria-label="Ocultar panel">×</button>' +
+        '<button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon tend-group-panel-eye" title="Ocultar panel" aria-label="Ocultar panel">' +
+        tendPanelEyeSvg() +
+        '</button>' +
         '</div>' +
         '<span class="tend-group-panel-drag-hint" aria-hidden="true" title="Arrastrar para reordenar">⋮⋮</span>';
       block.appendChild(toolbar);
@@ -754,8 +745,15 @@ export function createTendGroupModal(deps) {
       });
       block.appendChild(titleEl);
 
-      toolbar.querySelector('.tend-group-panel-hide').onclick = function (ev) {
-        hidePanelFamily(sectionKey, fam, ev);
+      toolbar.querySelector('.tend-group-panel-eye').onclick = function (ev) {
+        if (ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+        }
+        var h = readGroupPanelHidden(state.patientId, sectionKey).slice();
+        if (h.indexOf(fam) < 0) h.push(fam);
+        writeGroupPanelHidden(state.patientId, sectionKey, h);
+        renderCharts(sectionKey);
       };
 
       var chartWrap = document.createElement('div');
