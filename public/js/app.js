@@ -7843,18 +7843,6 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
-  '3.5.0': [
-    {
-      title: 'Gráfica y tabla por estudio',
-      body:
-        'En Tendencias, pulsa «Gráfica» en un estudio (BH, QS, gases…): ves tendencias agrupadas por panel y una tabla para copiar al portapapeles como imagen o texto.',
-    },
-    {
-      title: 'Copia flexible y paneles',
-      body:
-        'Oculta filas o fechas solo en la copia; la barra «Ocultos en copia» se pliega. Reordena u oculta paneles; edita el título de cada gráfica con un clic. El eje Y se ajusta al desmarcar analitos. Esc cierra la vista.',
-    },
-  ],
   '3.4.1': [
     {
       title: 'Sugerencias clínicas desde laboratorio',
@@ -12187,7 +12175,15 @@ function syncTendDetailVbar(ref, latest) {
   tendFinishRangeVbars(vbarSlot);
 }
 
+function closeTendGroupModal() {
+  var advanceTourAfterChart =
+    guidedTourActive && tourStepId === 'sala_tend_chart';
+  tendGroupModal.close();
+  if (advanceTourAfterChart) guidedTourAdvanceAfter('sala_tend_chart');
+}
+
 var tendGroupModal = createTendGroupModal({
+  onRequestClose: closeTendGroupModal,
   getActiveId: function () {
     return activeId;
   },
@@ -12208,13 +12204,6 @@ var tendGroupModal = createTendGroupModal({
 
 function openTendGroupModal(sectionKey) {
   tendGroupModal.open(sectionKey);
-}
-
-function closeTendGroupModal() {
-  var advanceTourAfterChart =
-    guidedTourActive && tourStepId === 'sala_tend_chart';
-  tendGroupModal.close();
-  if (advanceTourAfterChart) guidedTourAdvanceAfter('sala_tend_chart');
 }
 
 function setTendGroupTab(name) {

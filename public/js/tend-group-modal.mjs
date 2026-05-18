@@ -308,7 +308,7 @@ export function createTendGroupModal(deps) {
     if (ev.key === 'Escape' || ev.key === 'Esc') {
       ev.preventDefault();
       ev.stopPropagation();
-      closeModal();
+      requestCloseFromUi();
     }
   }
 
@@ -326,6 +326,25 @@ export function createTendGroupModal(deps) {
     if (chartsPanel) chartsPanel.innerHTML = '';
     var wrap = document.getElementById('tend-group-table-wrap');
     if (wrap) wrap.innerHTML = '';
+  }
+
+  function requestCloseFromUi() {
+    if (typeof deps.onRequestClose === 'function') {
+      deps.onRequestClose();
+    } else {
+      closeModal();
+    }
+  }
+
+  function hidePanelFamily(sectionKey, fam, ev) {
+    if (ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+    }
+    var h = readGroupPanelHidden(state.patientId, sectionKey).slice();
+    if (h.indexOf(fam) < 0) h.push(fam);
+    writeGroupPanelHidden(state.patientId, sectionKey, h);
+    renderCharts(sectionKey);
   }
 
   function isAbnormal(set, sectionKey, fieldKey, val, historyDesc) {
@@ -690,8 +709,7 @@ export function createTendGroupModal(deps) {
       toolbar.className = 'patient-card-toolbar tend-group-panel-toolbar';
       toolbar.innerHTML =
         '<div class="patient-card-toolbar-left">' +
-        '<button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon tend-group-panel-eye" title="Ocultar panel" aria-label="Ocultar panel">' +
-        tendPanelEyeSvg() +
+        '<button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon tend-group-panel-hide" title="Ocultar panel" aria-label="Ocultar panel">×</button>' +
         '</div>' +
         '<span class="tend-group-panel-drag-hint" aria-hidden="true" title="Arrastrar para reordenar">⋮⋮</span>';
       block.appendChild(toolbar);
@@ -736,15 +754,8 @@ export function createTendGroupModal(deps) {
       });
       block.appendChild(titleEl);
 
-      toolbar.querySelector('.tend-group-panel-eye').onclick = function (ev) {
-        if (ev) {
-          ev.preventDefault();
-          ev.stopPropagation();
-        }
-        var h = readGroupPanelHidden(state.patientId, sectionKey).slice();
-        if (h.indexOf(fam) < 0) h.push(fam);
-        writeGroupPanelHidden(state.patientId, sectionKey, h);
-        renderCharts(sectionKey);
+      toolbar.querySelector('.tend-group-panel-hide').onclick = function (ev) {
+        hidePanelFamily(sectionKey, fam, ev);
       };
 
       var chartWrap = document.createElement('div');
@@ -943,6 +954,25 @@ export function createTendGroupModal(deps) {
     var track = document.getElementById('tend-group-tabs-track');
     if (track) track.setAttribute('data-active', state.activeTab);
   }
+
+
+  (function bindTendGroupModalChromeOnce() {
+    var bd = document.getElementById('tend-group-backdrop');
+    if (!bd || bd.dataset.tendCloseBound === '1') return;
+    bd.dataset.tendCloseBound = '1';
+    var closeBtn = bd.querySelector('.tend-group-close');
+    if (closeBtn) {
+      closeBtn.removeAttribute('onclick');
+      closeBtn.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        requestCloseFromUi();
+      });
+    }
+    bd.addEventListener('click', function (ev) {
+      if (ev.target === bd) requestCloseFromUi();
+    });
+  })();
 
   return {
     open: function (sectionKey) {
