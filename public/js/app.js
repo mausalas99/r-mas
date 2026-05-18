@@ -10889,7 +10889,7 @@ function procesarReporte() {
   var fromSomeExpediente = looksLikeSomeLabReport(text);
   if (!fromSomeExpediente) {
     showToast(
-      'No parece un reporte de SOME. En expediente, copia desde «Expediente:» hasta el final del informe y pégalo completo aquí.',
+      'No parece un reporte de SOME. En el reporte de laboratorio, copia desde «Expediente:» hasta el final del reporte y pégalo completo aquí.',
       'error'
     );
   }
