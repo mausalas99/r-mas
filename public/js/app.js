@@ -6805,7 +6805,7 @@ function renderTourStep() {
       setBadge('tendencias · gráfica');
       bodyEl.innerHTML =
         '<p style="margin:0;line-height:1.5;">Pulsa <strong>Gráfica</strong> en un estudio (p. ej. biometría) para ver tendencias agrupadas y una tabla copiable.</p>' +
-        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">En esa vista, <strong>Esc</strong> cierra. Es opcional en el demo: <strong>Siguiente</strong> para continuar.</p>';
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Cierra con clic fuera de la ventana o <strong>Esc</strong>. Es opcional en el demo: <strong>Siguiente</strong> para continuar.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'sala_soap':
