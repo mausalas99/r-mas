@@ -7852,7 +7852,7 @@ var RELEASE_NOTES_HIGHLIGHTS = {
     {
       title: 'Copia flexible y paneles',
       body:
-        'Oculta filas o fechas solo en la copia; la barra «Ocultos en copia» se pliega. Reordena u oculta paneles de gráficas; el eje Y se ajusta al desmarcar analitos. Esc cierra la vista.',
+        'Oculta filas o fechas solo en la copia; la barra «Ocultos en copia» se pliega. Reordena u oculta paneles; edita el título de cada gráfica con un clic. El eje Y se ajusta al desmarcar analitos. Esc cierra la vista.',
     },
   ],
   '3.4.1': [

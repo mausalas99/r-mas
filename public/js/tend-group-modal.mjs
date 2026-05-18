@@ -23,16 +23,11 @@ import {
   writeGroupPanelOrder,
   readGroupPanelHidden,
   writeGroupPanelHidden,
+  resolvePanelTitle,
+  writeGroupPanelTitle,
   defaultSeriesColor
 } from './tend-prefs.mjs';
 import { buildTableTsv, copyTableModelAsPng, copyTableText } from './tend-export.mjs';
-
-const PANEL_LABELS = {
-  gases: 'Gasometría',
-  'percent-diff': 'Fórmula leucocitaria (%)',
-  'percent-rbc': 'Índices eritrocitarios (%)',
-  absolute: 'Valores absolutos'
-};
 
 const FAMILY_ORDER = ['gases', 'percent-diff', 'percent-rbc', 'absolute'];
 
@@ -260,7 +255,7 @@ export function createTendGroupModal(deps) {
         '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-panel="' +
         esc(fam) +
         '">' +
-        esc(PANEL_LABELS[fam] || fam) +
+        esc(resolvePanelTitle(state.patientId, sectionKey, fam)) +
         ' <span aria-hidden="true">×</span></button>'
       );
     });
@@ -702,8 +697,43 @@ export function createTendGroupModal(deps) {
       block.appendChild(toolbar);
 
       var titleEl = document.createElement('h3');
-      titleEl.className = 'tend-group-family-title';
-      titleEl.textContent = PANEL_LABELS[fam] || fam;
+      titleEl.className = 'tend-group-family-title tend-group-family-title--editable';
+      titleEl.setAttribute('contenteditable', 'true');
+      titleEl.setAttribute('spellcheck', 'false');
+      titleEl.setAttribute('role', 'textbox');
+      titleEl.setAttribute(
+        'aria-label',
+        'Título del panel, editable. Enter para guardar, Esc para cancelar.'
+      );
+      titleEl.textContent = resolvePanelTitle(state.patientId, sectionKey, fam);
+      var titleDraft = titleEl.textContent;
+      titleEl.addEventListener('focus', function () {
+        titleDraft = titleEl.textContent;
+      });
+      titleEl.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter') {
+          ev.preventDefault();
+          titleEl.blur();
+        } else if (ev.key === 'Escape') {
+          ev.preventDefault();
+          titleEl.textContent = titleDraft;
+          titleEl.blur();
+        }
+      });
+      titleEl.addEventListener('blur', function () {
+        var next = (titleEl.textContent || '').replace(/\s+/g, ' ').trim();
+        if (!next) {
+          titleEl.textContent = titleDraft;
+          return;
+        }
+        writeGroupPanelTitle(state.patientId, sectionKey, fam, next);
+        titleEl.textContent = resolvePanelTitle(state.patientId, sectionKey, fam);
+        titleDraft = titleEl.textContent;
+        var hiddenNow = readGroupPanelHidden(state.patientId, sectionKey).filter(function (f) {
+          return activeFams.indexOf(f) >= 0;
+        });
+        renderPanelsHiddenBar(panelEl, sectionKey, hiddenNow);
+      });
       block.appendChild(titleEl);
 
       toolbar.querySelector('.tend-group-panel-eye').onclick = function (ev) {

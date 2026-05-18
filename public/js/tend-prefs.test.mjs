@@ -12,6 +12,9 @@ import {
   writeGroupPanelOrder,
   readGroupPanelHidden,
   writeGroupPanelHidden,
+  writeGroupPanelTitle,
+  resolvePanelTitle,
+  defaultPanelLabel,
   defaultSeriesColor,
   DEFAULT_COLORS
 } from './tend-prefs.mjs';
@@ -47,6 +50,15 @@ test('orden y ocultos de paneles por paciente+sección', () => {
   writeGroupPanelHidden('p1', 'BH', ['absolute']);
   assert.deepEqual(readGroupPanelOrder('p1', 'BH'), ['gases', 'percent-rbc']);
   assert.deepEqual(readGroupPanelHidden('p1', 'BH'), ['absolute']);
+});
+
+test('títulos de paneles personalizables por paciente+sección', () => {
+  assert.equal(defaultPanelLabel('gases'), 'Gasometría');
+  assert.equal(resolvePanelTitle('p1', 'BH', 'gases'), 'Gasometría');
+  writeGroupPanelTitle('p1', 'BH', 'gases', 'Gases arteriales');
+  assert.equal(resolvePanelTitle('p1', 'BH', 'gases'), 'Gases arteriales');
+  writeGroupPanelTitle('p1', 'BH', 'gases', 'Gasometría');
+  assert.equal(resolvePanelTitle('p1', 'BH', 'gases'), 'Gasometría');
 });
 
 test('defaultSeriesColor rota paleta de 8 colores', () => {

@@ -3,6 +3,14 @@ const LS_GROUP_VISIBLE = 'rpc-tend-group-visible';
 const LS_GROUP_TABLE_HIDDEN = 'rpc-tend-group-table-hidden';
 const LS_GROUP_PANEL_ORDER = 'rpc-tend-group-panel-order';
 const LS_GROUP_PANEL_HIDDEN = 'rpc-tend-group-panel-hidden';
+const LS_GROUP_PANEL_TITLES = 'rpc-tend-group-panel-titles';
+
+export const DEFAULT_PANEL_LABELS = {
+  gases: 'Gasometría',
+  'percent-diff': 'Fórmula leucocitaria (%)',
+  'percent-rbc': 'Índices eritrocitarios (%)',
+  absolute: 'Valores absolutos'
+};
 
 export const DEFAULT_COLORS = [
   '#10b981',
@@ -104,6 +112,43 @@ export function writeGroupPanelHidden(patientId, sectionKey, familyKeys) {
   var map = readJson(LS_GROUP_PANEL_HIDDEN, {});
   map[groupKey(patientId, sectionKey)] = (familyKeys || []).slice();
   writeJson(LS_GROUP_PANEL_HIDDEN, map);
+}
+
+export function defaultPanelLabel(familyKey) {
+  var fam = String(familyKey || '');
+  return DEFAULT_PANEL_LABELS[fam] || fam;
+}
+
+export function readGroupPanelTitles(patientId, sectionKey) {
+  var map = readJson(LS_GROUP_PANEL_TITLES, {});
+  var entry = map[groupKey(patientId, sectionKey)];
+  if (!entry || typeof entry !== 'object') return {};
+  return Object.assign({}, entry);
+}
+
+export function writeGroupPanelTitle(patientId, sectionKey, familyKey, title) {
+  var fam = String(familyKey || '');
+  var trimmed = String(title || '').trim();
+  var map = readJson(LS_GROUP_PANEL_TITLES, {});
+  var gk = groupKey(patientId, sectionKey);
+  var entry =
+    map[gk] && typeof map[gk] === 'object' ? Object.assign({}, map[gk]) : {};
+  if (!trimmed || trimmed === defaultPanelLabel(fam)) {
+    delete entry[fam];
+    if (!Object.keys(entry).length) delete map[gk];
+    else map[gk] = entry;
+  } else {
+    entry[fam] = trimmed;
+    map[gk] = entry;
+  }
+  writeJson(LS_GROUP_PANEL_TITLES, map);
+}
+
+export function resolvePanelTitle(patientId, sectionKey, familyKey) {
+  var fam = String(familyKey || '');
+  var custom = readGroupPanelTitles(patientId, sectionKey)[fam];
+  if (custom && String(custom).trim()) return String(custom).trim();
+  return defaultPanelLabel(fam);
 }
 
 export function defaultSeriesColor(index) {

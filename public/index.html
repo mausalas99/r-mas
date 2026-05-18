@@ -3619,6 +3619,26 @@
   .tend-group-panel-family-title {
     margin: 0 0 10px 0; font-size: 13px; font-weight: 700; color: var(--text);
   }
+  .tend-group-family-title--editable {
+    cursor: text;
+    border-radius: 6px;
+    padding: 2px 6px;
+    margin-left: -6px;
+    outline: none;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+  }
+  .tend-group-family-title--editable:hover {
+    background: color-mix(in srgb, var(--text) 6%, transparent);
+  }
+  .tend-group-family-title--editable:focus {
+    background: var(--surface);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #3b82f6) 35%, transparent);
+  }
+  .tend-group-family-title--editable:empty::before {
+    content: 'Título del panel';
+    color: var(--text-muted);
+    font-weight: 500;
+  }
   .tend-group-legend {
     display: flex; flex-wrap: wrap; gap: 8px 12px; margin-bottom: 12px;
   }
