@@ -19,6 +19,12 @@ export function todoEntityKey(patientId, id) {
   return 't:' + String(patientId || '') + ':' + String(id || '');
 }
 
+export function patientEntityKey(id, registro) {
+  const reg = String(registro || '').trim();
+  if (reg) return 'reg:' + reg;
+  return 'id:' + String(id || '');
+}
+
 export function isDemoPatientId(patientId) {
   return String(patientId || '').indexOf('demo-') === 0;
 }
@@ -29,6 +35,9 @@ export function mergeLiveSyncBundles(sources) {
   const agenda = new Map();
   /** @type {Map<string, { kind: 'todo', patientId: string, item: object, updatedAt: string, deleted: boolean }>} */
   const todos = new Map();
+  /** @type {Map<string, { id: string, registro: string, updatedAt: string, deleted: boolean }>} */
+  const patientDeletes = new Map();
+  const todoTouchedPatientIds = new Set();
 
   function upsertAgenda(ev, deleted) {
     if (!ev || !ev.id || isDemoPatientId(ev.patientId)) return;
@@ -99,6 +108,7 @@ export function mergeLiveSyncBundles(sources) {
     }
     if (patch.entity === 'todo') {
       const pid = String(patch.patientId || '');
+      if (pid) todoTouchedPatientIds.add(pid);
       const k = todoEntityKey(pid, patch.id);
       if (patch.op === 'delete') {
         const cur = todos.get(k);
@@ -113,6 +123,21 @@ export function mergeLiveSyncBundles(sources) {
         }
       } else {
         upsertTodo(pid, { ...(patch.body || {}), id: patch.id, updatedAt: at }, false);
+      }
+      return;
+    }
+    if (patch.entity === 'patient') {
+      const k = patientEntityKey(patch.id, patch.registro);
+      if (patch.op === 'delete') {
+        const cur = patientDeletes.get(k);
+        if (!cur || compareIso(at, cur.updatedAt) >= 0) {
+          patientDeletes.set(k, {
+            id: String(patch.id || ''),
+            registro: String(patch.registro || '').trim(),
+            updatedAt: at,
+            deleted: true,
+          });
+        }
       }
     }
   }
@@ -139,7 +164,17 @@ export function mergeLiveSyncBundles(sources) {
     todosOut[row.patientId].push(row.item);
   }
 
-  return { agenda: agendaOut, todos: todosOut };
+  const patientDeletesOut = [];
+  for (const row of patientDeletes.values()) {
+    if (row.deleted) patientDeletesOut.push(row);
+  }
+
+  return {
+    agenda: agendaOut,
+    todos: todosOut,
+    todoTouchedPatientIds: Array.from(todoTouchedPatientIds),
+    patientDeletes: patientDeletesOut,
+  };
 }
 
 /** @param {{ getScheduledProcedures: () => object[], getTodos: (id: string) => object[], patientIds?: string[] }} storageApi */

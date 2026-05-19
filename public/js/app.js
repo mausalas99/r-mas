@@ -71,7 +71,10 @@ import {
   nextRoomSnapshotGeneration,
   isLiveSyncEnvelope,
 } from './live-sync-room.mjs';
-import { mergeLanPatientEntrySources } from './lan-patient-merge.mjs';
+import {
+  mergeLanPatientEntrySources,
+  filterEntriesByPatientDeletes,
+} from './lan-patient-merge.mjs';
 import {
   buildLiveSyncPatientIdMap,
   remapTodosPatientIds,
@@ -371,8 +374,9 @@ function collectPatientEntriesForLanSync() {
 
 function mergeLiveSyncFullBundles(sources) {
   var base = mergeLiveSyncBundles(sources);
-  base.entries = mergeLanPatientEntrySources(sources);
-  base.entries = attachTodosMapToPatientEntries(base.entries, base.todos);
+  var entries = mergeLanPatientEntrySources(sources);
+  entries = filterEntriesByPatientDeletes(entries, base.patientDeletes || []);
+  base.entries = attachTodosMapToPatientEntries(entries, base.todos);
   return base;
 }
 
@@ -474,6 +478,61 @@ function applyLanPatientEntries(entries) {
   return { added: added, updated: updated };
 }
 
+function removePatientLocally(patientId) {
+  var pid = String(patientId || '').trim();
+  if (!pid || pid.indexOf('demo-') === 0) return false;
+  if (!patients.some(function (p) {
+    return p && p.id === pid;
+  })) {
+    return false;
+  }
+  patients = patients.filter(function (p) {
+    return p.id !== pid;
+  });
+  delete notes[pid];
+  delete indicaciones[pid];
+  if (labHistory && labHistory[pid]) delete labHistory[pid];
+  if (medRecetaByPatient && medRecetaByPatient[pid]) delete medRecetaByPatient[pid];
+  if (medNotaSelectionByPatient && medNotaSelectionByPatient[pid]) delete medNotaSelectionByPatient[pid];
+  if (listadoProblemas && listadoProblemas[pid]) delete listadoProblemas[pid];
+  try {
+    var rawTodosMap = localStorage.getItem('rpc-todos');
+    if (rawTodosMap) {
+      var todosMap = JSON.parse(rawTodosMap);
+      if (todosMap && typeof todosMap === 'object' && todosMap[pid]) {
+        delete todosMap[pid];
+        localStorage.setItem('rpc-todos', JSON.stringify(todosMap));
+      }
+    }
+  } catch (_e) {}
+  try {
+    if (storage.removeScheduledProceduresForPatient) storage.removeScheduledProceduresForPatient(pid);
+  } catch (_eAg) {}
+  if (activeId === pid) activeId = patients.length ? patients[0].id : null;
+  return true;
+}
+
+function applyLiveSyncPatientDeletes(deletes, idMap) {
+  if (!deletes || !deletes.length) return false;
+  var changed = false;
+  for (var i = 0; i < deletes.length; i += 1) {
+    var d = deletes[i];
+    if (!d || !d.deleted) continue;
+    var remoteId = String(d.id || '').trim();
+    var localId = remoteId && idMap && idMap[remoteId] ? idMap[remoteId] : remoteId;
+    if (localId && removePatientLocally(localId)) {
+      changed = true;
+      continue;
+    }
+    var reg = String(d.registro || '').trim();
+    if (reg) {
+      var existing = findPatientByRegistro(reg);
+      if (existing && removePatientLocally(existing.id)) changed = true;
+    }
+  }
+  return changed;
+}
+
 function applyLiveSyncMerged(merged) {
   if (!merged) return;
   var entries = merged.entries || [];
@@ -481,11 +540,31 @@ function applyLiveSyncMerged(merged) {
     applyLanPatientEntries(entries);
   }
   var idMap = buildLiveSyncPatientIdMap(entries, patients, merged.todos || {});
+  var patientRemoved = applyLiveSyncPatientDeletes(merged.patientDeletes || [], idMap);
   storage.saveScheduledProcedures(remapAgendaPatientIds(merged.agenda || [], idMap));
   var todosMap = remapTodosPatientIds(merged.todos || {}, idMap);
+  var saveTodoPids = Object.create(null);
   Object.keys(todosMap).forEach(function (pid) {
+    saveTodoPids[pid] = true;
+  });
+  (merged.todoTouchedPatientIds || []).forEach(function (pid) {
+    var mapped = idMap[pid] || pid;
+    if (mapped) saveTodoPids[mapped] = true;
+  });
+  Object.keys(saveTodoPids).forEach(function (pid) {
     storage.saveTodos(pid, todosMap[pid] || []);
   });
+  if (patientRemoved) {
+    renderPatientList();
+    if (activeId) selectPatient(activeId);
+    else {
+      var pv = document.getElementById('patient-view');
+      var es = document.getElementById('empty-state');
+      if (pv) pv.style.display = 'none';
+      if (es) es.style.display = 'flex';
+      syncWorkContextChrome();
+    }
+  }
   if (activeAppTab === 'agenda' || (typeof isMobileWeb === 'function' && isMobileWeb())) {
     renderProcedureAgendaPanel();
   }
@@ -642,6 +721,20 @@ function emitLiveSyncTodoDelete(patientId, id, updatedAt) {
     id: id,
     patientId: patientId,
     updatedAt: updatedAt,
+  });
+}
+function emitLiveSyncPatientDelete(patient) {
+  if (!activeLiveSyncRoomId || !lanClient.liveConnected || !patient) return;
+  if (String(patient.id || '').indexOf('demo-') === 0) return;
+  lanClient.sendLive({
+    type: 'livesync:patch',
+    roomId: activeLiveSyncRoomId,
+    clientId: getLanClientId(),
+    entity: 'patient',
+    op: 'delete',
+    id: patient.id,
+    registro: patient.registro || '',
+    updatedAt: new Date().toISOString(),
   });
 }
 function onLiveSyncWireMessage(data) {
@@ -5769,28 +5862,10 @@ function deletePatient(e, id) {
   var target = patients.find(function(p){ return p.id === id; });
   var label = target ? ('Eliminar ' + (target.nombre || 'paciente')) : 'Eliminar paciente';
   if (typeof pushUndoSnapshot === 'function') pushUndoSnapshot(label);
-  patients = patients.filter(function(p){ return p.id !== id; });
-  delete notes[id]; delete indicaciones[id];
-  if (labHistory && labHistory[id]) delete labHistory[id];
-  if (medRecetaByPatient && medRecetaByPatient[id]) delete medRecetaByPatient[id];
-  if (medNotaSelectionByPatient && medNotaSelectionByPatient[id]) delete medNotaSelectionByPatient[id];
-  if (listadoProblemas && listadoProblemas[id]) delete listadoProblemas[id];
-  try {
-    var rawTodosMap = localStorage.getItem('rpc-todos');
-    if (rawTodosMap) {
-      var todosMap = JSON.parse(rawTodosMap);
-      if (todosMap && typeof todosMap === 'object' && todosMap[id]) {
-        delete todosMap[id];
-        localStorage.setItem('rpc-todos', JSON.stringify(todosMap));
-      }
-    }
-  } catch (_e) { /* ignore */ }
-  try {
-    if (storage.removeScheduledProceduresForPatient) storage.removeScheduledProceduresForPatient(id);
-  } catch (_eAg) {}
+  if (!removePatientLocally(id)) return;
+  emitLiveSyncPatientDelete(target || { id: id, registro: '' });
   saveState();
   addAuditEntry('patient-delete', 'ok', 1, target ? (target.registro || target.nombre || '') : '');
-  if (activeId === id) activeId = patients.length ? patients[0].id : null;
   renderPatientList();
   if (activeId) selectPatient(activeId);
   else {
@@ -7987,7 +8062,12 @@ var RELEASE_NOTES_HIGHLIGHTS = {
     {
       title: 'Tendencias BH y gráfica fullscreen',
       body:
-        'Panel Diferencial manual en gráficas/tablas con nombres del reporte. Modal Gráfica del estudio a pantalla completa.',
+        'Panel Diferencial manual en gráficas y tablas con nombres del reporte. Modal Gráfica del estudio a pantalla completa.',
+    },
+    {
+      title: 'LiveSync: borrados en la sala',
+      body:
+        'Al quitar un pendiente o eliminar un paciente en la sala ⇄, el cambio se aplica en todos los equipos conectados.',
     },
   ],
   '3.5.0': [

@@ -29,11 +29,12 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 ---
 
-## R+ 5.0.1 (estable — labs manuales, tendencias BH y gráfica fullscreen)
+## R+ 5.0.1 (estable — labs manuales, tendencias BH, fullscreen y LiveSync)
 
 - **Laboratorios:** diferencial manual SOME (Segmentados, bandas, metamielocitos) + coagulación y frotis; salida `Dif.` / `Coag.` legible; plaquetas en citrato; EGO no contamina BH.
 - **Tendencias BH:** panel **Diferencial manual** con títulos del reporte; tablas y gráficas desde el bloque multilínea.
 - **UX:** modal Gráfica/Tabla del estudio a **pantalla completa**.
+- **LiveSync:** borrar pendiente o paciente en la sala se refleja en todos los equipos conectados.
 
 Notas: `docs/RELEASE_NOTES_5.0.1.txt`.
 

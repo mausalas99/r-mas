@@ -78,6 +78,37 @@ describe('live-sync-room merge LWW', () => {
     assert.strictEqual(merged.todos.p1.length, 1);
     assert.strictEqual(merged.todos.p1[0].text, 'nuevo');
   });
+
+  it('delete de último todo marca paciente tocado', () => {
+    const merged = mergeLiveSyncBundles([
+      { agenda: [], todos: { p1: [{ id: 't1', text: 'x', updatedAt: '2026-05-16T08:00:00.000Z' }] } },
+      {
+        type: 'livesync:patch',
+        entity: 'todo',
+        op: 'delete',
+        id: 't1',
+        patientId: 'p1',
+        updatedAt: '2026-05-16T12:00:00.000Z',
+      },
+    ]);
+    assert.deepEqual(merged.todos.p1, undefined);
+    assert.ok(merged.todoTouchedPatientIds.includes('p1'));
+  });
+
+  it('delete de paciente en patch', () => {
+    const merged = mergeLiveSyncBundles([
+      {
+        type: 'livesync:patch',
+        entity: 'patient',
+        op: 'delete',
+        id: 'p9',
+        registro: '12345',
+        updatedAt: '2026-05-16T12:00:00.000Z',
+      },
+    ]);
+    assert.strictEqual(merged.patientDeletes.length, 1);
+    assert.strictEqual(merged.patientDeletes[0].registro, '12345');
+  });
 });
 
 describe('buildRoomSnapshotFromStorage', () => {

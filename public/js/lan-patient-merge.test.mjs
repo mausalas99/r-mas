@@ -5,6 +5,7 @@ import {
   mergeLanPatientEntrySources,
   mergeLabHistorySets,
   entryMatchKey,
+  filterEntriesByPatientDeletes,
 } from './lan-patient-merge.mjs';
 
 test('entryMatchKey usa registro cuando existe', () => {
@@ -81,4 +82,23 @@ test('mismo registro fusiona nota más reciente', () => {
   ]);
   assert.equal(merged.length, 1);
   assert.equal(merged[0].note.evolucion, 'nueva');
+});
+
+test('filterEntriesByPatientDeletes quita entrada si delete es más reciente', () => {
+  const entries = [
+    {
+      patient: { id: 'p1', registro: 'R1', nombre: 'PAC', lanUpdatedAt: '2026-05-16T08:00:00.000Z' },
+      note: { fecha: '01/01/2026' },
+      labHistory: [],
+    },
+  ];
+  const filtered = filterEntriesByPatientDeletes(entries, [
+    {
+      id: 'p1',
+      registro: 'R1',
+      updatedAt: '2026-05-16T12:00:00.000Z',
+      deleted: true,
+    },
+  ]);
+  assert.equal(filtered.length, 0);
 });

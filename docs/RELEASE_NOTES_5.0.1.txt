@@ -1,11 +1,11 @@
-R+ 5.0.1 (estable — labs manuales, tendencias BH y gráfica fullscreen)
-=======================================================================
+R+ 5.0.1 (estable — labs manuales, tendencias BH, fullscreen y LiveSync)
+========================================================================
 
 Fecha: 2026-05-19
 
 ## Resumen
 
-Parche de laboratorios y tendencias: diferencial manual SOME con salida legible (Segmentados, Bandas, etc.), coagulación y frotis en el mismo flujo, paneles BH en gráficas/tablas con títulos del reporte, y modal de gráfica del estudio a pantalla completa.
+Parche de laboratorios y tendencias: diferencial manual SOME con salida legible (Segmentados, Bandas, etc.), coagulación y frotis en el mismo flujo, paneles BH en gráficas/tablas con títulos del reporte, modal de gráfica del estudio a pantalla completa, y borrados en LiveSync propagados a toda la sala.
 
 ## Nuevo / mejorado
 
@@ -15,6 +15,7 @@ Parche de laboratorios y tendencias: diferencial manual SOME con salida legible 
 - **Tendencias BH:** panel exclusivo **Diferencial manual** (Segmentados, Linfocitos, Bandas, Metamielocitos…); datos del bloque multilínea alimentan tablas y gráficas; coagulación en panel propio.
 - **Tendencias — UX:** modal Gráfica/Tabla del estudio a **pantalla completa**, gráficas más altas, botón cerrar y bloqueo de scroll del fondo.
 - **BH extendida:** segunda fila con mismas etiquetas legibles al activar «BH extendida» en preferencias de salida.
+- **LiveSync (sala ⇄):** al quitar un **pendiente** o **eliminar un paciente**, el cambio se replica en todos los equipos conectados a la misma sala (incluye vaciar el último pendiente de un paciente).
 
 ## Instalación
 

@@ -219,3 +219,27 @@ export function mergeLanPatientEntrySources(sources) {
   }
   return Array.from(byKey.values());
 }
+
+/**
+ * Quita entradas de paciente anuladas por un delete remoto más reciente (LiveSync).
+ * @param {object[]} entries
+ * @param {Array<{ id?: string, registro?: string, updatedAt?: string, deleted?: boolean }>} patientDeletes
+ */
+export function filterEntriesByPatientDeletes(entries, patientDeletes) {
+  if (!patientDeletes || !patientDeletes.length) return entries || [];
+  const delMap = new Map();
+  for (let i = 0; i < patientDeletes.length; i += 1) {
+    const d = patientDeletes[i];
+    if (!d || !d.deleted) continue;
+    const reg = String(d.registro || '').trim();
+    const k = reg ? 'reg:' + reg : 'id:' + String(d.id || '');
+    delMap.set(k, d);
+  }
+  if (!delMap.size) return entries || [];
+  return (entries || []).filter((entry) => {
+    if (!entry || !entry.patient) return false;
+    const del = delMap.get(entryMatchKey(entry));
+    if (!del) return true;
+    return compareIso(entryUpdatedAt(entry), del.updatedAt || '') > 0;
+  });
+}
