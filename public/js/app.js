@@ -115,19 +115,26 @@ import {
 import { createTendGroupModal } from './tend-group-modal.mjs';
 import { readTendCardOrder, writeTendCardOrder } from './tend-prefs.mjs';
 import { createModalDismissRegistry } from './modal-dismiss.mjs';
+import {
+  patients,
+  notes,
+  indicaciones,
+  labHistory,
+  medRecetaByPatient,
+  listadoProblemas,
+  medNotaSelectionByPatient,
+  initAppState,
+  saveState,
+  setPatients,
+  setNotes,
+  setIndicaciones,
+  setLabHistory,
+  setMedRecetaByPatient,
+  setSaveStateHooks,
+} from './app-state.mjs';
 
+initAppState();
 
-// ════════════════════════════════════════════════════════════════════
-// STATE
-// ════════════════════════════════════════════════════════════════════
-var patients     = storage.getPatients();
-var notes        = storage.getNotes();
-var indicaciones = storage.getIndicaciones();
-var labHistory   = storage.getLabHistory();
-var medRecetaByPatient = storage.getMedRecetaByPatient();
-var listadoProblemas = storage.getListadoProblemas();
-applyMedCatalogOverlay(storage.getMedCatalog());
-var medNotaSelectionByPatient = {};
 var activeId     = null;
 var activeInner  = 'todo';
 var activeAppTab = 'lab';
@@ -150,6 +157,7 @@ var activeLab    = null;
 var settings     = storage.getSettings();
 var __v3MigratedThisBoot = migrateToV3(settings);
 if (__v3MigratedThisBoot) storage.saveSettings(settings);
+
 var lanClient = new LanClient();
 var activeLiveSyncRoomId = '';
 var activeLiveSyncRoomLabel = '';
@@ -486,9 +494,9 @@ function removePatientLocally(patientId) {
   })) {
     return false;
   }
-  patients = patients.filter(function (p) {
+  setPatients(patients.filter(function (p) {
     return p.id !== pid;
-  });
+  }));
   delete notes[pid];
   delete indicaciones[pid];
   if (labHistory && labHistory[pid]) delete labHistory[pid];
@@ -654,6 +662,17 @@ function scheduleLiveSyncPush() {
     saveLocalRoomSnapshot(activeLiveSyncRoomId);
   }, LIVE_SYNC_PUSH_DEBOUNCE_MS);
 }
+
+setSaveStateHooks({
+  before() {
+    if (activeLiveSyncRoomId && activeId) touchPatientLanUpdatedAt(activeId);
+  },
+  after() {
+    scheduleLabHistoryPostSaveMaintenance();
+    scheduleLiveSyncPush();
+  },
+});
+
 function syncLiveSyncStatusChrome() {
   var el = document.getElementById('lan-livesync-status');
   if (!el) return;
@@ -6004,13 +6023,6 @@ function scheduleLabHistoryPostSaveMaintenance() {
   }, LAB_MAINT_DEBOUNCE_MS);
 }
 
-function saveState() {
-  if (activeLiveSyncRoomId && activeId) touchPatientLanUpdatedAt(activeId);
-  storage.saveAll(patients, notes, indicaciones, labHistory, medRecetaByPatient, listadoProblemas);
-  scheduleLabHistoryPostSaveMaintenance();
-  scheduleLiveSyncPush();
-}
-
 try {
   window.runRpcLabAuditNow = function () {
     var ch = runLabHistoryPostSaveMaintenance();
@@ -7255,7 +7267,7 @@ function startOnboarding(branch) {
     ],
   };
   medNotaSelectionByPatient[DEMO_PATIENT_ID] = { 'tour-med-1': true, 'tour-med-2': true };
-  patients = patients.filter(function(p){ return p.id !== DEMO_PATIENT_ID; });
+  setPatients(patients.filter(function(p){ return p.id !== DEMO_PATIENT_ID; }));
   patients.unshift(demoPatient);
   guidedTourActive = true;
   tourStepId = 'map_sidebar';
@@ -7286,7 +7298,7 @@ function onboardingAdvanceAfterSend() {
 
 function destroyDemoAndClose() {
   clearTourSoapButtonHighlight();
-  patients = patients.filter(function(p){ return p.id !== DEMO_PATIENT_ID; });
+  setPatients(patients.filter(function(p){ return p.id !== DEMO_PATIENT_ID; }));
   delete notes[DEMO_PATIENT_ID];
   delete indicaciones[DEMO_PATIENT_ID];
   delete labHistory[DEMO_PATIENT_ID];
@@ -7314,9 +7326,9 @@ function resetAndStartOnboarding() {
     localStorage.removeItem(GUIDED_TOUR_LS_KEY);
   } catch (_e) {}
   try {
-    patients = patients.filter(function (p) {
+    setPatients(patients.filter(function (p) {
       return p.id !== DEMO_PATIENT_ID;
-    });
+    }));
     delete notes[DEMO_PATIENT_ID];
     delete indicaciones[DEMO_PATIENT_ID];
     delete labHistory[DEMO_PATIENT_ID];
@@ -9102,11 +9114,11 @@ function importEntriesWithConflicts(entries, actionLabel) {
     }
   }
   if (out.cancelled) {
-    patients = patientsBefore;
-    notes = notesBefore;
-    indicaciones = indicacionesBefore;
-    labHistory = labHistoryBefore;
-    medRecetaByPatient = medRecetaBefore;
+    setPatients(patientsBefore);
+    setNotes(notesBefore);
+    setIndicaciones(indicacionesBefore);
+    setLabHistory(labHistoryBefore);
+    setMedRecetaByPatient(medRecetaBefore);
   } else {
     saveState();
     renderPatientList();
