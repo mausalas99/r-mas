@@ -116,6 +116,26 @@ import { createTendGroupModal } from './tend-group-modal.mjs';
 import { readTendCardOrder, writeTendCardOrder } from './tend-prefs.mjs';
 import { createModalDismissRegistry } from './modal-dismiss.mjs';
 import {
+  t,
+  getUiDensity,
+  isPaseMode,
+  getProcedureAgendaRowPx,
+  setUiDensity,
+  toggleTheme,
+  setThemeMode,
+  setFontZoom,
+  setHighContrast,
+  toggleHighContrast,
+  applyI18n,
+  applyHighContrast,
+  applyUiDensity,
+  applyFontZoom,
+  syncThemeToggleIcon,
+  initChromeAppearance,
+  registerChromeRuntime,
+  windowHandlers as chromeWindowHandlers,
+} from './features/chrome.mjs';
+import {
   patients,
   notes,
   indicaciones,
@@ -2650,263 +2670,21 @@ function toggleLabHistoryPanel(ev) {
   catch (e) { console.error('migrateLabHistory write error:', e && e.message); }
 }());
 
-// ════════════════════════════════════════════════════════════════════
-// Theme icons (SVG — sin emoji en controles)
-// ════════════════════════════════════════════════════════════════════
-var THEME_ICON_SUN =
-  '<svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>';
-var THEME_ICON_MOON =
-  '<svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
-
-// ── Theme ──────────────────────────────────────────────────────────
-(function() {
-  if (localStorage.getItem('theme') === 'dark') {
-    document.documentElement.classList.add('dark');
-  }
-})();
-
-function syncThemeSettingsButtons() {
-  var isDark = document.documentElement.classList.contains('dark');
-  var lightBtn = document.getElementById('settings-theme-light');
-  var darkBtn = document.getElementById('settings-theme-dark');
-  if (lightBtn) lightBtn.classList.toggle('active', !isDark);
-  if (darkBtn) darkBtn.classList.toggle('active', isDark);
-}
-
-function syncThemeToggleIcon() {
-  var themeBtn = document.getElementById('theme-toggle');
-  if (!themeBtn) return;
-  var isDark = document.documentElement.classList.contains('dark');
-  themeBtn.innerHTML = isDark ? THEME_ICON_MOON : THEME_ICON_SUN;
-}
-
-function setThemeMode(mode) {
-  var isDark = mode === 'dark';
-  document.documentElement.classList.toggle('dark', isDark);
-  localStorage.setItem('theme', isDark ? 'dark' : 'light');
-  syncThemeToggleIcon();
-  syncThemeSettingsButtons();
-}
-
-var FONT_ZOOM_LS = 'rpc-font-zoom';
-
-function applyFontZoom() {
-  var p = parseInt(localStorage.getItem(FONT_ZOOM_LS) || '100', 10);
-  if (!Number.isFinite(p)) p = 100;
-  if (p < 90) p = 90;
-  if (p > 140) p = 140;
-  document.documentElement.style.zoom = String(p / 100);
-}
-
-function syncFontZoomButtons() {
-  var p = parseInt(localStorage.getItem(FONT_ZOOM_LS) || '100', 10);
-  if (p !== 100 && p !== 110 && p !== 125) p = 100;
-  ['100', '110', '125'].forEach(function(v) {
-    var btn = document.getElementById('settings-font-' + v);
-    if (btn) btn.classList.toggle('active', p === parseInt(v, 10));
-  });
-}
-
-function setFontZoom(pct) {
-  localStorage.setItem(FONT_ZOOM_LS, String(pct));
-  applyFontZoom();
-  syncFontZoomButtons();
-}
-
-function toggleTheme() {
-  setThemeMode(document.documentElement.classList.contains('dark') ? 'light' : 'dark');
-}
-
-// ── Alto contraste ────────────────────────────────────────────────
-var HIGH_CONTRAST_LS = 'rpc-high-contrast';
-
-function isHighContrast() {
-  return localStorage.getItem(HIGH_CONTRAST_LS) === '1';
-}
-
-function applyHighContrast() {
-  document.documentElement.classList.toggle('high-contrast', isHighContrast());
-}
-
-function syncHighContrastButtons() {
-  var on = isHighContrast();
-  var onBtn = document.getElementById('settings-hc-on');
-  var offBtn = document.getElementById('settings-hc-off');
-  if (onBtn) {
-    onBtn.classList.toggle('active', on);
-    onBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
-  }
-  if (offBtn) {
-    offBtn.classList.toggle('active', !on);
-    offBtn.setAttribute('aria-pressed', !on ? 'true' : 'false');
-  }
-}
-
-function setHighContrast(on) {
-  localStorage.setItem(HIGH_CONTRAST_LS, on ? '1' : '0');
-  applyHighContrast();
-  syncHighContrastButtons();
-}
-
-function toggleHighContrast() {
-  setHighContrast(!isHighContrast());
-}
-
-// ── Modo de vista: normal (pestañas completas) vs pase (resumen) ─
-var UI_DENSITY_LS = 'rpc-ui-density';
-
-function getUiDensity() {
-  var raw = localStorage.getItem(UI_DENSITY_LS);
-  if (raw === 'pase' || raw === 'compact') return 'pase';
-  if (raw === 'normal' || raw === 'comfortable') return 'normal';
-  return 'normal';
-}
-
-function isPaseMode() {
-  return getUiDensity() === 'pase';
-}
-
-function applyUiDensity() {
-  document.documentElement.classList.toggle('ui-density-normal', getUiDensity() === 'normal');
-  var rondaHint = document.getElementById('sidebar-ronda-hint');
-  if (rondaHint) {
-    rondaHint.setAttribute('aria-hidden', getUiDensity() === 'pase' ? 'false' : 'true');
-  }
-  if (isPaseMode()) {
-    _roundOverviewMode = true;
-  }
-  switchAppTab(activeAppTab);
-}
-
-function syncUiDensityButtons() {
-  var d = getUiDensity();
-  var normalBtn = document.getElementById('settings-density-normal');
-  var paseBtn = document.getElementById('settings-density-pase');
-  if (normalBtn) {
-    normalBtn.classList.toggle('active', d === 'normal');
-    normalBtn.setAttribute('aria-pressed', d === 'normal' ? 'true' : 'false');
-  }
-  if (paseBtn) {
-    paseBtn.classList.toggle('active', d === 'pase');
-    paseBtn.setAttribute('aria-pressed', d === 'pase' ? 'true' : 'false');
-  }
-}
-
-function setUiDensity(mode) {
-  var m = mode === 'pase' || mode === 'compact' ? 'pase' : 'normal';
-  if (mode === 'comfortable') m = 'normal';
-  localStorage.setItem(UI_DENSITY_LS, m);
-  applyUiDensity();
-  syncUiDensityButtons();
-  renderPatientList();
-  if (activeId) {
-    requestAnimationFrame(function () {
-      scrollActiveRondaCardIntoView();
-    });
-  }
-  if (activeAppTab === 'agenda') renderProcedureAgendaPanel();
-  if (guidedTourActive && tourStepId === 'pase_enter' && isPaseMode()) {
-    guidedTourAdvanceAfter('pase_enter');
-  }
-}
-
-function getProcedureAgendaRowPx() {
-  return getUiDensity() === 'normal' ? 50 : 42;
-}
-
-// ── i18n (etiquetas de Apariencia / ajustes rápidos) ───────────────
-var I18N_ES = {
-  'settings.appearance':      'Apariencia',
-  'settings.themeGroup':      'Tema de la aplicación',
-  'settings.themeLight':      'Claro',
-  'settings.themeDark':       'Oscuro',
-  'settings.fontSize':        'Tamaño de texto',
-  'settings.fontSizeHint':    'Escala toda la interfaz (útil en pantallas pequeñas).',
-  'settings.fontNormal':      'Normal',
-  'settings.fontLarge':       'Grande',
-  'settings.fontXLarge':      'Más grande',
-  'settings.uiDensity':       'Modo de vista',
-  'settings.uiDensityHint':
-    'Normal: Laboratorio, Expediente, Medicamentos y Agenda en pestañas completas (vista Ronda centrada). Pase: resumen del paciente en una columna; pulsa un título de sección para abrir el detalle en Normal. ⌘P o Ctrl+P alterna.',
-  'settings.densityNormal':   'Normal',
-  'settings.densityPase':    'Pase',
-  'settings.highContrast':    'Alto contraste',
-  'settings.highContrastHint':'Aumenta el contraste de texto y bordes para mejor legibilidad.',
-  'settings.hcOff':           'Desactivado',
-  'settings.hcOn':            'Activado',
-  'settings.docsFolder':      'Carpeta de documentos',
-  'settings.docsFolderHint':  'Los .docx generados se guardan aquí (si no eliges carpeta, se usa Descargas).',
-  'settings.backup':          'Respaldo local',
-  'settings.backupHint':      'Exporta o restaura pacientes, notas e indicaciones (JSON).',
-  'settings.application':     'Aplicación',
-  'settings.quickHelp':       'Centro de ayuda · atajos y tours',
-  'settings.version':         'Versión',
-  'settings.checkUpdates':    'Buscar actualizaciones…',
-  'settings.open':            'Abrir ajustes',
-  'settings.openTitle':       'Ajustes',
-  'settings.teamSyncAria':    'Abrir conexión LAN y LiveSync (salas)',
-  'settings.teamSyncTitle':   'Conexión LAN (⇄): rol, dirección, código al conectar, salas. Archivo del código en disco (anfitrión): Ajustes → LAN · servidor en esta computadora. Paquete sync JSON: Ajustes → Respaldos, sync y recuperación.',
-  'theme.toggle':             'Cambiar tema claro u oscuro',
-  'theme.toggleTitle':        'Cambiar tema',
-  'appTab.lab':               'Laboratorio',
-  'appTab.nota':              'Expediente',
-  'appTab.med':               'Medicamentos',
-  'appTab.agenda':            'Agenda',
-  'roundMode.hint':           'Ronda: paciente siguiente / anterior',
-  'roundMode.seenTitle':      'Visto en ronda (se reinicia cada día)',
-  'roundMode.sectionNota':    'Nota e indicaciones',
-  'roundMode.sectionLabs':    'Laboratorio reciente',
-  'roundMode.sectionTodos':   'Pendientes'
-};
-
-function t(key) {
-  if (I18N_ES && Object.prototype.hasOwnProperty.call(I18N_ES, key)) return I18N_ES[key];
-  return key;
-}
-
-function applyI18n() {
-  var htmlEl = document.documentElement;
-  if (htmlEl && htmlEl.getAttribute('lang') !== 'es') htmlEl.setAttribute('lang', 'es');
-  var textNodes = document.querySelectorAll('[data-i18n]');
-  textNodes.forEach(function(el) {
-    var key = el.getAttribute('data-i18n');
-    if (!key) return;
-    var val = t(key);
-    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-      if (el.type === 'button' || el.type === 'submit' || el.type === 'reset') {
-        el.value = val;
-      } else {
-        el.setAttribute('placeholder', val);
-      }
-    } else {
-      el.textContent = val;
+registerChromeRuntime({
+  switchAppTab,
+  renderPatientList,
+  scrollActiveRondaCardIntoView,
+  renderProcedureAgendaPanel,
+  getActiveAppTab: function () { return activeAppTab; },
+  getActiveId: function () { return activeId; },
+  setRoundOverviewMode: function (v) { _roundOverviewMode = v; },
+  onGuidedTourPaseEnter: function () {
+    if (guidedTourActive && tourStepId === 'pase_enter' && isPaseMode()) {
+      guidedTourAdvanceAfter('pase_enter');
     }
-  });
-  var ariaNodes = document.querySelectorAll('[data-i18n-aria-label]');
-  ariaNodes.forEach(function(el) {
-    var key = el.getAttribute('data-i18n-aria-label');
-    if (key) el.setAttribute('aria-label', t(key));
-  });
-  var titleNodes = document.querySelectorAll('[data-i18n-title]');
-  titleNodes.forEach(function(el) {
-    var key = el.getAttribute('data-i18n-title');
-    if (key) el.setAttribute('title', t(key));
-  });
-  var placeholderNodes = document.querySelectorAll('[data-i18n-placeholder]');
-  placeholderNodes.forEach(function(el) {
-    var key = el.getAttribute('data-i18n-placeholder');
-    if (key) el.setAttribute('placeholder', t(key));
-  });
-}
-
-// Icono tema acorde al modo guardado
-(function() {
-  syncThemeToggleIcon();
-})();
-
-applyHighContrast();
-applyUiDensity();
-applyI18n();
+  },
+});
+initChromeAppearance();
 syncLabHistoryCollapseUI();
 
 document.getElementById('today-date').textContent =
@@ -2914,11 +2692,9 @@ document.getElementById('today-date').textContent =
 renderPatientList();
 if (patients.length > 0) selectPatient(patients[0].id);
 else renderLabHistoryPanel();
-applyFontZoom();
 loadSettings();
 syncWorkContextChrome();
 seedTendHiddenDefaults();
-syncThemeSettingsButtons();
 syncMainAppTabA11y(activeAppTab);
 renderInnerTabs();
 if (__v3MigratedThisBoot) {
@@ -14554,15 +14330,8 @@ _rpcDeferInit(initModalDismiss);
 _rpcDeferInit(initSidebarAutoHide);
 syncProfileSectionVisibility();
 
-Object.assign(window, {
+Object.assign(window, chromeWindowHandlers, {
   installUpdate,
-  toggleTheme,
-  setThemeMode,
-  setFontZoom,
-  setUiDensity,
-  setHighContrast,
-  toggleHighContrast,
-  t,
   openUserDataFolderFromSettings,
   openQuickHelp,
   closeQuickHelp,
