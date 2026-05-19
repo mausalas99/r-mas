@@ -74,16 +74,6 @@ import {
 import { resolveQuickOutputAction } from './quick-output.mjs';
 import { handleOutputDirFallback } from './output-dir-fallback.mjs';
 import {
-  mondayStartLocal,
-  addDaysLocal,
-  weekBoundsFromMonday,
-  clipEventToDayColumn,
-  assignLanesByInterval,
-  AGENDA_DISPLAY_FIRST_HOUR,
-  AGENDA_DISPLAY_LAST_HOUR_EXCLUSIVE,
-  VISUAL_DURATION_MS,
-} from './procedure-agenda-week.mjs';
-import {
   dedupeTrendSetsForSeries,
   getSetTrendValueForSeries,
   buildTendChartLabels,
@@ -100,7 +90,6 @@ import {
   t,
   getUiDensity,
   isPaseMode,
-  getProcedureAgendaRowPx,
   setUiDensity,
   toggleTheme,
   setThemeMode,
@@ -120,8 +109,6 @@ import {
   registerLanRuntime,
   registerLanSaveHooks,
   windowHandlers as lanWindowHandlers,
-  emitLiveSyncAgendaUpsert,
-  emitLiveSyncAgendaDelete,
   emitLiveSyncTodoUpsert,
   emitLiveSyncTodoDelete,
   closeConnectionDropdown,
@@ -179,6 +166,26 @@ import {
   enviarLabsANota,
 } from './features/lab-panel.mjs';
 import {
+  registerSoapEstadoRuntime,
+  windowHandlers as soapEstadoWindowHandlers,
+  mergeSoapMedField,
+  openSOAPModalDirect,
+  closeSOAPModal,
+  copyToClipboardSafe,
+  renderEstadoActualBar,
+  renderEstadoActualButton,
+} from './features/soap-estado.mjs';
+import {
+  registerProcedureAgendaRuntime,
+  windowHandlers as agendaWindowHandlers,
+  renderProcedureAgendaPanel,
+  navigateProcedureAgendaWeek,
+  openProcedureAgendaModal,
+  closeProcedureAgendaModal,
+  saveProcedureAgendaFromModal,
+  deleteProcedureAgendaFromModal,
+} from './features/agenda.mjs';
+import {
   patients,
   notes,
   indicaciones,
@@ -200,8 +207,6 @@ initAppState();
 var activeId     = null;
 var activeInner  = 'todo';
 var activeAppTab = 'lab';
-/** @type {number} -1 pasado, 0 actual, +1 siguiente (spec agenda semanal) */
-var procedureAgendaWeekOffset = 0;
 /** Una instancia Sortable.js por rejilla de tendencias (por sección de laboratorio). */
 var _tendCardSortables = [];
 /** Una instancia Sortable.js por sección del listado de problemas (activos / inactivos). */
@@ -1949,6 +1954,24 @@ function inferAnteriorLabDateFromNote(patientId) {
   catch (e) { console.error('migrateLabHistory write error:', e && e.message); }
 }());
 
+registerProcedureAgendaRuntime({
+  getActiveId: function () {
+    return activeId;
+  },
+  showToast: showToast,
+  renderPaseBoard: renderPaseBoard,
+});
+
+registerSoapEstadoRuntime({
+  getActiveId: function () {
+    return activeId;
+  },
+  showToast: showToast,
+  getSettings: function () {
+    return settings;
+  },
+});
+
 registerLabPanelRuntime({
   showToast: showToast,
   getActiveId: function () {
@@ -2168,413 +2191,6 @@ function syncWorkContextChrome() {
   syncHeaderAppModeChip();
   syncMedPatientGate();
   syncLabComboButtonState();
-}
-
-function agendaEligiblePatients() {
-  return patients.filter(function (p) {
-    if (!p) return false;
-    if (p.isDemo) return false;
-    if (String(p.id).indexOf('demo-') === 0) return false;
-    return true;
-  });
-}
-
-function paIsoToDatetimeLocalValue(isoStr) {
-  var d = new Date(String(isoStr || '').trim());
-  if (isNaN(d.getTime())) return '';
-  var pad = function (x) {
-    return String(x).padStart(2, '0');
-  };
-  return (
-    d.getFullYear() +
-    '-' +
-    pad(d.getMonth() + 1) +
-    '-' +
-    pad(d.getDate()) +
-    'T' +
-    pad(d.getHours()) +
-    ':' +
-    pad(d.getMinutes())
-  );
-}
-
-function paParseDatetimeLocalValue(s) {
-  var v = String(s || '').trim();
-  if (!v) return null;
-  var d = new Date(v);
-  return isNaN(d.getTime()) ? null : d;
-}
-
-function getProcedureAgendaMondayAnchor() {
-  var base = mondayStartLocal(new Date());
-  var dt = addDaysLocal(base, procedureAgendaWeekOffset * 7);
-  dt.setHours(0, 0, 0, 0);
-  return dt;
-}
-
-function formatProcedureAgendaRangeLabel(monday) {
-  try {
-    var sun = addDaysLocal(monday, 6);
-    var oDay = { day: 'numeric' };
-    var oWd = { weekday: 'short' };
-    var oMon = { month: 'short' };
-    var a =
-      monday.toLocaleDateString('es', oWd).replace('.', '') +
-      ' ' +
-      monday.toLocaleDateString('es', oDay) +
-      ' ' +
-      monday.toLocaleDateString('es', oMon);
-    var b =
-      sun.toLocaleDateString('es', oWd).replace('.', '') +
-      ' ' +
-      sun.toLocaleDateString('es', oDay) +
-      ' ' +
-      sun.toLocaleDateString('es', oMon) +
-      ' ' +
-      sun.getFullYear();
-    return a.charAt(0).toUpperCase() + a.slice(1) + ' — ' + b;
-  } catch (_e) {
-    return '';
-  }
-}
-
-function syncProcedureAgendaNavButtons() {
-  var prevBtn = document.getElementById('procedure-agenda-prev');
-  var nextBtn = document.getElementById('procedure-agenda-next');
-  if (prevBtn) prevBtn.disabled = procedureAgendaWeekOffset <= -1;
-  if (nextBtn) nextBtn.disabled = procedureAgendaWeekOffset >= 1;
-}
-
-function navigateProcedureAgendaWeek(delta) {
-  procedureAgendaWeekOffset = Math.max(-1, Math.min(1, procedureAgendaWeekOffset + delta));
-  renderProcedureAgendaPanel();
-}
-
-function renderProcedureAgendaPanel() {
-  var mount = document.getElementById('procedure-agenda-grid-mount');
-  var rangeEl = document.getElementById('procedure-agenda-range');
-  if (!mount || !rangeEl) return;
-  syncProcedureAgendaNavButtons();
-  var monday = getProcedureAgendaMondayAnchor();
-  rangeEl.textContent = formatProcedureAgendaRangeLabel(monday);
-  var week = weekBoundsFromMonday(monday);
-  var nh = AGENDA_DISPLAY_LAST_HOUR_EXCLUSIVE - AGENDA_DISPLAY_FIRST_HOUR;
-  var agendaRowPx = getProcedureAgendaRowPx();
-
-  var elig = agendaEligiblePatients();
-  var pmap = {};
-  elig.forEach(function (p) {
-    pmap[String(p.id)] = String(p.nombre || '').trim();
-  });
-
-  var newBtn = document.getElementById('procedure-agenda-new');
-  if (newBtn) newBtn.disabled = elig.length === 0;
-
-  var board = document.createElement('div');
-  var head = document.createElement('div');
-  head.className = 'rpc-proc-agenda-board-head';
-  var headSpacer = document.createElement('div');
-  headSpacer.className = 'rpc-proc-agenda-head-spacer';
-  head.appendChild(headSpacer);
-
-  var iDay;
-  var colDate;
-  for (iDay = 0; iDay < 7; iDay += 1) {
-    colDate = addDaysLocal(monday, iDay);
-    var hc = document.createElement('div');
-    hc.className = 'rpc-proc-agenda-head-cell';
-    var wd = String(colDate.toLocaleDateString('es', { weekday: 'short' })).replace(/\.$/, '');
-    var dm = String(colDate.toLocaleDateString('es', { day: 'numeric', month: 'short' })).replace('.', '');
-    wd = wd.charAt(0).toUpperCase() + wd.slice(1);
-    dm = dm.charAt(0).toUpperCase() + dm.slice(1);
-    hc.innerHTML = '<span>' + esc(wd) + '</span><strong>' + esc(dm) + '</strong>';
-    head.appendChild(hc);
-  }
-  board.appendChild(head);
-
-  var bodyRow = document.createElement('div');
-  bodyRow.className = 'rpc-proc-agenda-board-body';
-
-  var timesCol = document.createElement('div');
-  timesCol.className = 'rpc-proc-agenda-times-col';
-  for (var h = AGENDA_DISPLAY_FIRST_HOUR; h < AGENDA_DISPLAY_LAST_HOUR_EXCLUSIVE; h += 1) {
-    var tsl = document.createElement('div');
-    tsl.className = 'rpc-proc-agenda-time-slot';
-    tsl.style.height = agendaRowPx + 'px';
-    tsl.textContent = String(h).padStart(2, '0') + ':00';
-    timesCol.appendChild(tsl);
-  }
-  bodyRow.appendChild(timesCol);
-
-  var clipsByDay = [[], [], [], [], [], [], []];
-
-  storage.getScheduledProcedures().forEach(function (ev) {
-    var evtMs = Date.parse(ev.start);
-    if (!Number.isFinite(evtMs)) return;
-    if (evtMs >= week.endExclusive.getTime()) return;
-    var evEndMs = evtMs + VISUAL_DURATION_MS;
-    if (evEndMs <= week.start.getTime()) return;
-    if (String(ev.patientId).indexOf('demo-') === 0) return;
-
-    var patientLabel = pmap[ev.patientId] ? pmap[ev.patientId] : 'Paciente desconocido';
-
-    for (iDay = 0; iDay < 7; iDay += 1) {
-      colDate = addDaysLocal(monday, iDay);
-      colDate.setHours(0, 0, 0, 0);
-      var clip = clipEventToDayColumn(evtMs, colDate.getTime());
-      if (!clip) continue;
-      clipsByDay[iDay].push({
-        ev: ev,
-        clip: clip,
-        patientLabel: patientLabel,
-      });
-    }
-  });
-
-  for (iDay = 0; iDay < 7; iDay += 1) {
-    colDate = addDaysLocal(monday, iDay);
-    colDate.setHours(0, 0, 0, 0);
-    var dayCol = document.createElement('div');
-    dayCol.className = 'rpc-proc-agenda-day-col-wrap';
-    dayCol.style.height = nh * agendaRowPx + 'px';
-
-    var hl;
-    for (h = AGENDA_DISPLAY_FIRST_HOUR; h < AGENDA_DISPLAY_LAST_HOUR_EXCLUSIVE; h += 1) {
-      hl = document.createElement('div');
-      hl.className = 'rpc-proc-agenda-hour-line';
-      hl.style.height = agendaRowPx + 'px';
-      dayCol.appendChild(hl);
-    }
-
-    var intervals = clipsByDay[iDay].map(function (x) {
-      return { id: x.ev.id, topMs: x.clip.topMs, botMs: x.clip.botMs };
-    });
-    var laneById =
-      intervals.length === 0 ? new Map() : assignLanesByInterval(intervals.slice());
-    var laneCount = 1;
-    if (laneById.size > 0) {
-      laneById.forEach(function (ln) {
-        laneCount = Math.max(laneCount, ln + 1);
-      });
-    }
-
-    clipsByDay[iDay].forEach(function (cell) {
-      var clip = cell.clip;
-      var ev = cell.ev;
-      var visStartMs = clip.visStartMs;
-      var blockTopPx = ((clip.topMs - visStartMs) / (60 * 60 * 1000)) * agendaRowPx;
-      var blockHtPx =
-        Math.max(((clip.botMs - clip.topMs) / (60 * 60 * 1000)) * agendaRowPx, 18);
-
-      var lane = laneById.get(ev.id) || 0;
-      var lcLane = laneCount < 1 ? 1 : laneCount;
-      var pctEach = 100 / lcLane;
-      var startClock = String(
-        new Date(ev.start).toLocaleTimeString('es', {
-          hour: '2-digit',
-          minute: '2-digit',
-        })
-      ).replace('.', '');
-
-      var blk = document.createElement('button');
-      blk.type = 'button';
-      blk.className = 'rpc-proc-agenda-block';
-      blk.style.top = Math.max(0, blockTopPx) + 'px';
-      blk.style.height = blockHtPx + 'px';
-      if (lcLane <= 1) {
-        blk.style.left = '3px';
-        blk.style.width = 'calc(100% - 6px)';
-      } else {
-        blk.style.left = 'calc(' + lane * pctEach + '% + 3px)';
-        blk.style.width = 'calc(' + pctEach + '% - 10px)';
-      }
-      blk.setAttribute(
-        'title',
-        (ev.procedure || '') + ' · ' + (ev.location || '') + ' · ' + cell.patientLabel
-      );
-      blk.setAttribute('aria-label', 'Editar procedimiento para ' + cell.patientLabel);
-      if (!(ev.materialApproved && ev.anesthesiaScheduled)) blk.classList.add('rpc-proc-flag');
-      blk.innerHTML =
-        '<div class="rpc-proc-name">' +
-        esc(String(ev.procedure || '')) +
-        '</div>' +
-        '<div class="rpc-proc-sub">' +
-        esc(String(startClock + ' · ' + (ev.location || ''))) +
-        '</div>' +
-        '<div class="rpc-proc-pat">' +
-        esc(String(cell.patientLabel)) +
-        '</div>';
-      blk.addEventListener('click', function (e) {
-        e.preventDefault();
-        openProcedureAgendaModal(ev.id);
-      });
-      dayCol.appendChild(blk);
-    });
-
-    bodyRow.appendChild(dayCol);
-  }
-
-  board.appendChild(bodyRow);
-
-  mount.innerHTML = '';
-  mount.appendChild(board);
-  if (isPaseMode()) renderPaseBoard();
-}
-
-function openProcedureAgendaModal(editEventId) {
-  var bd = document.getElementById('procedure-agenda-modal');
-  if (!bd) return;
-  var errEl = document.getElementById('pa-modal-error');
-  var delBtn = document.getElementById('pa-btn-delete');
-  if (errEl) {
-    errEl.style.display = 'none';
-    errEl.textContent = '';
-  }
-
-  document.getElementById('pa-edit-id').value = editEventId || '';
-  var elig = agendaEligiblePatients();
-  var sel = document.getElementById('pa-patient');
-  if (sel) {
-    sel.innerHTML = '';
-    elig.forEach(function (p) {
-      var opt = document.createElement('option');
-      opt.value = String(p.id);
-      opt.textContent = String(p.nombre || p.id);
-      sel.appendChild(opt);
-    });
-  }
-
-  if (delBtn) delBtn.style.display = editEventId ? 'inline-flex' : 'none';
-
-  if (editEventId) {
-    var found = storage
-      .getScheduledProcedures()
-      .filter(function (e) {
-        return e.id === editEventId;
-      })[0];
-    if (found && sel) {
-      sel.value = String(found.patientId);
-      if (sel.value !== String(found.patientId)) sel.appendChild(new Option(found.patientId, found.patientId));
-      sel.value = String(found.patientId);
-    }
-    if (found) {
-      document.getElementById('pa-procedure').value = found.procedure || '';
-      document.getElementById('pa-location').value = found.location || '';
-      document.getElementById('pa-start').value = paIsoToDatetimeLocalValue(found.start);
-      document.getElementById('pa-material').checked = !!found.materialApproved;
-      document.getElementById('pa-anesthesia').checked = !!found.anesthesiaScheduled;
-    }
-  } else {
-    if (sel && elig.length && activeId && elig.some(function (p) { return p.id === activeId; })) {
-      sel.value = String(activeId);
-    } else if (sel && elig[0]) sel.value = elig[0].id;
-    document.getElementById('pa-procedure').value = '';
-    document.getElementById('pa-location').value = '';
-    var now = new Date();
-    document.getElementById('pa-start').value = paIsoToDatetimeLocalValue(now.toISOString());
-    document.getElementById('pa-material').checked = false;
-    document.getElementById('pa-anesthesia').checked = false;
-  }
-
-  bd.classList.add('open');
-  bd.setAttribute('aria-hidden', 'false');
-}
-
-function closeProcedureAgendaModal() {
-  var bd = document.getElementById('procedure-agenda-modal');
-  if (!bd) return;
-  bd.classList.remove('open');
-  bd.setAttribute('aria-hidden', 'true');
-}
-
-function saveProcedureAgendaFromModal() {
-  var errEl = document.getElementById('pa-modal-error');
-  function showPaErr(msg) {
-    errEl.style.display = 'block';
-    errEl.textContent = msg;
-    showToast(msg, 'error');
-  }
-  if (errEl) {
-    errEl.style.display = 'none';
-    errEl.textContent = '';
-  }
-
-  var editId = (document.getElementById('pa-edit-id').value || '').trim();
-  var patientId = String(document.getElementById('pa-patient').value || '').trim();
-  var procedure = String(document.getElementById('pa-procedure').value || '').trim();
-  var location = String(document.getElementById('pa-location').value || '').trim();
-  var sd = paParseDatetimeLocalValue(document.getElementById('pa-start').value);
-  var elig = agendaEligiblePatients();
-  if (!elig.length) {
-    showPaErr('No hay pacientes reales para agendar (agrega un paciente desde la barra lateral).');
-    return;
-  }
-  if (!patientId || !elig.some(function (p) { return String(p.id) === patientId; })) {
-    showPaErr('Elige un paciente válido de la lista.');
-    return;
-  }
-  if (!procedure) {
-    showPaErr('Indica el procedimiento.');
-    return;
-  }
-  if (!location) {
-    showPaErr('Indica el lugar.');
-    return;
-  }
-  if (!sd) {
-    showPaErr('Fecha u hora de inicio inválidas.');
-    return;
-  }
-
-  var nowIso = new Date().toISOString();
-  var arr = storage.getScheduledProcedures();
-  var prev = editId ? arr.filter(function (e) { return e.id === editId; })[0] : null;
-  var eventObj = {
-    id: editId || 'proc-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 9),
-    patientId: patientId,
-    procedure: procedure,
-    location: location,
-    materialApproved: !!document.getElementById('pa-material').checked,
-    anesthesiaScheduled: !!document.getElementById('pa-anesthesia').checked,
-    start: sd.toISOString(),
-    createdAt: prev && prev.createdAt ? prev.createdAt : nowIso,
-    updatedAt: nowIso,
-  };
-
-  var next;
-  if (editId) {
-    next = arr.map(function (e) {
-      return e.id === editId ? eventObj : e;
-    });
-    if (!next.some(function (e) { return e.id === editId; })) next.push(eventObj);
-  } else {
-    next = arr.concat([eventObj]);
-  }
-  storage.saveScheduledProcedures(next);
-  emitLiveSyncAgendaUpsert(eventObj);
-  closeProcedureAgendaModal();
-  showToast('Procedimiento guardado', 'success');
-  renderProcedureAgendaPanel();
-}
-
-function deleteProcedureAgendaFromModal() {
-  var editId = (document.getElementById('pa-edit-id').value || '').trim();
-  if (!editId) return;
-  if (
-    !confirm(
-      '¿Eliminar este procedimiento de la agenda? No se puede deshacer desde aquí.'
-    )
-  )
-    return;
-  var delAt = new Date().toISOString();
-  var arr = storage.getScheduledProcedures().filter(function (e) {
-    return e.id !== editId;
-  });
-  storage.saveScheduledProcedures(arr);
-  emitLiveSyncAgendaDelete(editId, delAt);
-  closeProcedureAgendaModal();
-  showToast('Eliminado de la agenda', 'success');
-  renderProcedureAgendaPanel();
 }
 
 /** Misma fila que Laboratorio (colores BH/QS, valores alterados). */
@@ -3513,7 +3129,7 @@ function _renderListadoMedicosCard(lst) {
 }
 
 async function copyListadoProblemasAiPrompt() {
-  var ok = await _copyToClipboardSafe(LISTADO_PROBLEMAS_AI_PROMPT);
+  var ok = await copyToClipboardSafe(LISTADO_PROBLEMAS_AI_PROMPT);
   showToast(ok ? 'Prompt copiado al portapapeles ✓' : 'No se pudo copiar el prompt', ok ? 'success' : 'error');
 }
 function generateListado() {
@@ -3560,9 +3176,6 @@ function generateListado() {
     if (typeof decrementPendingJobs === 'function') decrementPendingJobs();
     if (typeof syncOfflineButtonStates === 'function') syncOfflineButtonStates();
   });
-}
-function renderEstadoActualButton() { /* Task 9 */ }
-
 }
 
 var _labMaintTimer = null;
@@ -7258,19 +6871,6 @@ function medInstructionFragmentForSoap(it) {
   return parts[1].replace(/^\s+/, '').replace(/\.\s*$/, '').trim();
 }
 
-function mergeSoapMedField(fieldId, fragment) {
-  var el = document.getElementById(fieldId);
-  if (!el || !fragment) return;
-  var f = String(fragment).trim();
-  if (!f) return;
-  var cur = el.value.trim();
-  el.value = cur ? cur + ' | ' + f : f;
-}
-
-function openSOAPModalDirect() {
-  var bd = document.getElementById('soap-modal-backdrop');
-  if (bd) bd.classList.add('open');
-}
 
 function mediAnadirATratamiento() {
   if (!activeId) {
@@ -7465,202 +7065,6 @@ function setMedOutputTab(tab) {
   renderMedRecetaPanel();
 }
 
-
-// ── SOAP Modal ────────────────────────────────────────
-function openSOAPModal() {
-  if (!activeId) { showToast('Selecciona un paciente primero', 'error'); return; }
-  var existing = notes[activeId] && notes[activeId].evolucion ? notes[activeId].evolucion.trim() : '';
-  if (existing) {
-    var backdrop = document.createElement('div');
-    backdrop.className = 'lab-conflict-backdrop';
-    backdrop.id = 'soap-confirm-backdrop';
-    backdrop.innerHTML =
-      '<div class="lab-conflict-modal">' +
-      '<h3>¿Reemplazar evolución?</h3>' +
-      '<p>La evolución ya tiene contenido. ¿Reemplazarlo con la plantilla?</p>' +
-      '<div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;">' +
-      '<button onclick="document.getElementById(\'soap-confirm-backdrop\').remove()" style="background:#F3F4F6;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Cancelar</button>' +
-      '<button onclick="document.getElementById(\'soap-confirm-backdrop\').remove();document.getElementById(\'soap-modal-backdrop\').classList.add(\'open\')" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Reemplazar</button>' +
-      '</div></div>';
-    document.body.appendChild(backdrop);
-  } else {
-    document.getElementById('soap-modal-backdrop').classList.add('open');
-  }
-}
-
-function closeSOAPModal() {
-  document.getElementById('soap-modal-backdrop').classList.remove('open');
-  ['soap-s','soap-four','soap-esferas','soap-analgesia','soap-fr','soap-sat',
-   'soap-tas','soap-tad','soap-fc','soap-antihta','soap-vasop','soap-temp','soap-abx',
-   'soap-dieta','soap-kcalkg','soap-kcal','soap-peso','soap-ing','soap-egr',
-   'soap-balance','soap-glu1','soap-glu2','soap-glu3'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-  var sel = document.getElementById('soap-soporte');
-  if (sel) sel.selectedIndex = 0;
-  document.body.removeAttribute('data-estado-actual-mode');
-  var title = document.getElementById('soap-modal-title-text');
-  if (title) title.textContent = 'Plantilla de Evolución';
-}
-
-// ── Estado Actual (Sala v3.0) ─────────────────────────────────
-function openEstadoActualModal() {
-  if (!activeId) { showToast('Selecciona un paciente primero', 'error'); return; }
-  document.body.setAttribute('data-estado-actual-mode', 'true');
-  var title = document.getElementById('soap-modal-title-text');
-  if (title) title.textContent = 'Estado Actual';
-  var s = document.getElementById('soap-s');
-  if (s) s.value = '';
-  document.getElementById('soap-modal-backdrop').classList.add('open');
-}
-function _estadoActualText() {
-  var s = document.getElementById('soap-s');
-  if (s) s.value = '';
-  return buildSOAPText().replace(/^\s*\n+/, '');
-}
-async function _copyToClipboardSafe(text) {
-  try {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-  } catch (_e) {}
-  try {
-    var ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed'; ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    var ok = document.execCommand('copy');
-    document.body.removeChild(ta);
-    return ok;
-  } catch (_e) { return false; }
-}
-async function estadoActualOnlyCopy() {
-  if (!activeId) return;
-  var text = _estadoActualText();
-  var ok = await _copyToClipboardSafe(text);
-  showToast(ok ? 'Estado Actual copiado al portapapeles ✓' : 'No se pudo copiar', ok ? 'success' : 'error');
-  closeSOAPModal();
-}
-async function estadoActualSaveAndCopy() {
-  if (!activeId) return;
-  var patient = patients.find(function(p){ return p.id === activeId; });
-  if (!patient) return;
-  var text = _estadoActualText();
-  patient.estadoActual = { text: text, savedAt: new Date().toISOString() };
-  saveState();
-  renderEstadoActualBar();
-  var ok = await _copyToClipboardSafe(text);
-  showToast(ok ? 'Estado Actual guardado y copiado ✓' : 'Guardado, pero no se pudo copiar', ok ? 'success' : 'error');
-  closeSOAPModal();
-}
-function renderEstadoActualBar() {
-  var wrap = document.getElementById('estado-actual-context-wrap');
-  var meta = document.getElementById('estado-actual-meta');
-  var btn = document.getElementById('btn-estado-actual');
-  if (!wrap || !meta || !btn) return;
-  var sala = isModeSala(settings);
-  if (!sala || !activeId) {
-    wrap.style.display = 'none';
-    meta.textContent = '';
-    btn.classList.remove('btn-estado-actual-compact--pending');
-    btn.removeAttribute('aria-label');
-    return;
-  }
-  wrap.style.display = 'flex';
-  var patient = patients.find(function (p) {
-    return p.id === activeId;
-  });
-  var saved = false;
-  if (patient && patient.estadoActual && patient.estadoActual.savedAt) {
-    var d = new Date(patient.estadoActual.savedAt);
-    if (!isNaN(d.getTime())) {
-      var label =
-        String(d.getDate()).padStart(2, '0') +
-        '/' +
-        String(d.getMonth() + 1).padStart(2, '0') +
-        '/' +
-        d.getFullYear() +
-        ' · ' +
-        String(d.getHours()).padStart(2, '0') +
-        ':' +
-        String(d.getMinutes()).padStart(2, '0');
-      meta.textContent = 'Guardado ' + label;
-      btn.title = 'Abrir Estado Actual · ' + meta.textContent;
-      btn.removeAttribute('aria-label');
-      btn.classList.remove('btn-estado-actual-compact--pending');
-      saved = true;
-    }
-  }
-  if (!saved) {
-    meta.textContent = '';
-    btn.title = '';
-    btn.setAttribute(
-      'aria-label',
-      'Estado Actual: abrir plantilla (SOAP sin Subjetivo). Aún sin guardar para este paciente.'
-    );
-    btn.classList.add('btn-estado-actual-compact--pending');
-  }
-}
-
-function updateSOAPBalance() {
-  var ing = parseFloat(document.getElementById('soap-ing').value);
-  var egr = parseFloat(document.getElementById('soap-egr').value);
-  var bal = document.getElementById('soap-balance');
-  if (!isNaN(ing) && !isNaN(egr)) {
-    var diff = ing - egr;
-    bal.value = (diff > 0 ? '+' : '') + diff;
-  } else {
-    bal.value = '';
-  }
-}
-
-function buildSOAPText() {
-  function g(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
-  function val(v) { return v ? v.toUpperCase() : '___'; }
-  function num(v) { return v !== '' ? v : '___'; }
-
-  var soporteMap = {
-    'Aire ambiente':    'AL AIRE AMBIENTE',
-    'Puntillas nasales':'POR PUNTILLAS NASALES',
-    'Alto flujo':       'POR ALTO FLUJO',
-    'VM no invasiva':   'CON VENTILACIÓN MECÁNICA NO INVASIVA'
-  };
-  var soporte = soporteMap[g('soap-soporte')] || 'AL AIRE AMBIENTE';
-
-  var ing = g('soap-ing');
-  var egr = g('soap-egr');
-  var balance = (ing && egr) ?
-    (function(){ var d = parseFloat(ing) - parseFloat(egr); return (d > 0 ? '+' : '') + d; }()) :
-    '___';
-
-  var lines = [];
-  var subj = g('soap-s');
-  if (subj) { lines.push('S: ' + subj); lines.push(''); }
-
-  lines.push('N: FOUR ' + num(g('soap-four')) + '/16 PUNTOS, SIN DATOS DE FOCALIZACIÓN, ORIENTADO EN ' + num(g('soap-esferas')) + ' ESFERAS, ALERTA || ANALGESIA CON ' + val(g('soap-analgesia')));
-  lines.push('V: FR ' + num(g('soap-fr')) + ' RPM, SATO2 ' + num(g('soap-sat')) + '% ' + soporte + ' | SIN DATOS DE DIFICULTAD RESPIRATORIA || CAMPOS PULMONARES BIEN VENTILADOS');
-  lines.push('HD: ESTABLE, TA ' + num(g('soap-tas')) + '/' + num(g('soap-tad')) + ' MMHG, FC ' + num(g('soap-fc')) + ' LPM || ANTIHIPERTENSIVOS: ' + val(g('soap-antihta') || 'NINGUNO') + ' || VASOPRESORES: ' + val(g('soap-vasop') || 'NINGUNO'));
-  lines.push('HI: AFEBRIL, TEMPERATURA ' + num(g('soap-temp')) + ' °C || ANTIBIÓTICOS: ' + val(g('soap-abx') || 'NINGUNO'));
-  lines.push('NM: DIETA ' + val(g('soap-dieta')) + ' CALCULADA A ' + num(g('soap-kcalkg')) + ' KCAL/KG (' + num(g('soap-kcal')) + ' KCAL) PARA PESO DE ' + num(g('soap-peso')) + ' KG || INGRESOS ' + num(ing) + ' CC, EGRESOS ' + num(egr) + ' CC, BALANCE ' + balance + ' CC || GLUCOMETRÍAS CAPILARES (' + num(g('soap-glu1')) + ', ' + num(g('soap-glu2')) + ', ' + num(g('soap-glu3')) + ' MG/DL) || RESCATES DE INSULINA DISPONIBLES, NO APLICADOS ACTUALMENTE');
-
-  return lines.join('\n');
-}
-
-function insertSOAPText() {
-  var text = buildSOAPText();
-  if (!notes[activeId]) notes[activeId] = {};
-  notes[activeId].evolucion = text;
-  saveState();
-  var el = document.querySelector('#note-form textarea[oninput*="evolucion"]');
-  if (el) el.value = text;
-  closeSOAPModal();
-  showToast('Plantilla insertada ✓', 'success');
-}
-  return d !== 'none' && d !== '';
-}
 
 var modalDismiss = createModalDismissRegistry();
 
@@ -10765,7 +10169,7 @@ _rpcDeferInit(initSidebarAutoHide);
 _rpcDeferInit(initPatientModalEnterSave);
 syncProfileSectionVisibility();
 
-Object.assign(window, chromeWindowHandlers, lanWindowHandlers, patientsWindowHandlers, labPanelWindowHandlers, {
+Object.assign(window, chromeWindowHandlers, lanWindowHandlers, patientsWindowHandlers, labPanelWindowHandlers, soapEstadoWindowHandlers, agendaWindowHandlers, {
   installUpdate,
   openUserDataFolderFromSettings,
   openQuickHelp,
@@ -10786,11 +10190,6 @@ Object.assign(window, chromeWindowHandlers, lanWindowHandlers, patientsWindowHan
   switchAppTab,
   openPaseSectionInNormal,
   renderPaseBoard,
-  navigateProcedureAgendaWeek,
-  openProcedureAgendaModal,
-  closeProcedureAgendaModal,
-  saveProcedureAgendaFromModal,
-  deleteProcedureAgendaFromModal,
   switchInnerTab,
   guidedTourIntroChooseSala,
   guidedTourIntroChooseInterconsulta,
@@ -10815,9 +10214,6 @@ Object.assign(window, chromeWindowHandlers, lanWindowHandlers, patientsWindowHan
   copyListadoProblemasAiPrompt,
   generateListado,
   _autoGrowTextarea,
-  openEstadoActualModal,
-  estadoActualOnlyCopy,
-  estadoActualSaveAndCopy,
   toggleSettingsSection,
   toggleSettingsDropdown,
   closeSettingsDropdown,
@@ -10861,9 +10257,6 @@ Object.assign(window, chromeWindowHandlers, lanWindowHandlers, patientsWindowHan
   mediLlevarASOAP,
   closeTemplatesModal,
   saveTemplates,
-  closeSOAPModal,
-  insertSOAPText,
-  updateSOAPBalance,
   closeTendDetail,
   openTendGroupModal,
   closeTendGroupModal,
@@ -10877,7 +10270,6 @@ Object.assign(window, chromeWindowHandlers, lanWindowHandlers, patientsWindowHan
   tendResetAllHiddenSeries,
   openTendHiddenModal,
   closeTendHiddenModal,
-  openSOAPModal,
   updatePatient,
   renderPatientDataPane,
   renderTodoForm,
