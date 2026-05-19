@@ -1,0 +1,181 @@
+/* Hallmark · phase 3 · tokens: utilitarian clinical · theme: R+ core
+ * contrast: n/a (token layer)
+ */
+
+:root {
+  --color-paper: #F2F3F5;
+  --color-surface: color-mix(in oklab, #ffffff 97%, #2d3a54);
+  --color-ink: #1e293b;
+  --color-ink-muted: #64748b;
+  --color-accent: #4f56ff;
+  --color-accent-hover: #3d44e0;
+  --color-accent-soft: rgba(79, 86, 255, 0.09);
+  --color-accent-soft-text: #3d44d6;
+  --color-section-header-bg: color-mix(in oklab, var(--color-accent) 7%, var(--color-surface));
+  --color-section-accent: var(--color-accent);
+  --color-channel-pill-bg: color-mix(in oklab, var(--color-accent) 72%, #5b21b6);
+  --color-channel-pill-fg: #ffffff;
+  --color-focus-ring: color-mix(in oklab, var(--color-accent) 28%, transparent);
+  --color-update-banner-bg: #166534;
+  --color-update-banner-fg: #bbf7d0;
+  --color-update-banner-track: rgba(255, 255, 255, 0.2);
+  --color-update-banner-fill: #4ade80;
+  --color-update-banner-btn-bg: #ffffff;
+  --color-update-banner-btn-fg: #166534;
+  --color-update-banner-btn-border: rgba(255, 255, 255, 0.4);
+
+  /* Legacy aliases (app CSS) */
+  --primary: #2d3a54;
+  --action: var(--color-accent);
+  --action-hover: var(--color-accent-hover);
+  --bg: var(--color-paper);
+  --surface: var(--color-surface);
+  --border: rgba(15, 23, 42, 0.075);
+  --divider: rgba(15, 23, 42, 0.05);
+  --text: var(--color-ink);
+  --text-muted: var(--color-ink-muted);
+  --error: #dc2626;
+  --success: #16a34a;
+  --lab-chip-bg: var(--color-accent-soft);
+  --lab-chip-txt: var(--color-accent-soft-text);
+  --section-header-bg: var(--color-section-header-bg);
+  --section-accent: var(--color-section-accent);
+
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-pill: 999px;
+  --shadow: 0 8px 28px rgba(15, 23, 42, 0.06), 0 2px 8px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 14px 40px rgba(15, 23, 42, 0.08), 0 4px 12px rgba(15, 23, 42, 0.05);
+  --input-fill: color-mix(in oklab, #f5f6f8 70%, var(--surface));
+  --card-body-bg: color-mix(in oklab, var(--surface) 92%, var(--bg));
+  --diagram-line: #64748b;
+  --diagram-label: #64748b;
+  --diagram-value: #1e293b;
+  --todo-prio-alta: #cf6060;
+  --todo-prio-media: #b45309;
+  --todo-prio-baja: #15803d;
+  --titlebar-traffic-gap: 96px;
+  color-scheme: light;
+  --density-space: 1;
+  --density-font: 1;
+  --sidebar-width: 240px;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 150ms;
+  --dur-normal: 220ms;
+  --font-ui: "IBM Plex Sans", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+html.ui-density-normal {
+  --density-space: 1.1;
+  --density-font: 1.03;
+  --sidebar-width: min(280px, 34vw);
+}
+
+html.dark {
+  --color-paper: #0f1118;
+  --color-surface: color-mix(in oklab, #1b1f2a 96%, #93c5fd);
+  --color-ink: #e8edf5;
+  --color-ink-muted: #94a3b8;
+  --color-accent: #7c83ff;
+  --color-accent-hover: #9aa0ff;
+  --color-accent-soft: rgba(124, 131, 255, 0.12);
+  --color-accent-soft-text: #bac0ff;
+  --color-section-header-bg: var(--color-accent-soft);
+  --color-channel-pill-bg: #a78bfa;
+  --color-channel-pill-fg: #1e1b4b;
+  --color-focus-ring: rgba(124, 131, 255, 0.2);
+  --color-update-banner-bg: #14532d;
+  --color-update-banner-fg: #bbf7d0;
+
+  --primary: #93c5fd;
+  --action: var(--color-accent);
+  --action-hover: var(--color-accent-hover);
+  --bg: var(--color-paper);
+  --surface: var(--color-surface);
+  --border: rgba(148, 163, 184, 0.12);
+  --divider: rgba(148, 163, 184, 0.08);
+  --text: var(--color-ink);
+  --text-muted: var(--color-ink-muted);
+  --error: #f87171;
+  --success: #6ee7a8;
+  --lab-chip-bg: var(--color-accent-soft);
+  --lab-chip-txt: var(--color-accent-soft-text);
+  --shadow: 0 8px 28px rgba(0, 0, 0, 0.42), 0 2px 8px rgba(0, 0, 0, 0.28);
+  --shadow-md: 0 14px 40px rgba(0, 0, 0, 0.5), 0 4px 14px rgba(0, 0, 0, 0.35);
+  --input-fill: color-mix(in oklab, var(--surface) 82%, var(--bg));
+  --card-body-bg: color-mix(in oklab, var(--surface) 96%, var(--bg));
+  --diagram-line: #cbd5e1;
+  --diagram-label: #e2e8f0;
+  --diagram-value: #f8fafc;
+  --todo-prio-alta: #fca5a5;
+  --todo-prio-media: #facc15;
+  --todo-prio-baja: #86efac;
+  color-scheme: dark;
+}
+
+/* Alto contraste — legibilidad primero (WCAG), sin “marco” blanco en cada caja */
+html.high-contrast {
+  --color-paper: #ffffff;
+  --color-surface: #ffffff;
+  --color-ink: #000000;
+  --color-ink-muted: #262626;
+  --color-accent: #0000b8;
+  --color-accent-hover: #000090;
+  --color-on-accent: #ffffff;
+  --color-on-success: #ffffff;
+  --primary: #000000;
+  --action: var(--color-accent);
+  --action-hover: var(--color-accent-hover);
+  --bg: var(--color-paper);
+  --surface: var(--color-surface);
+  --border: #000000;
+  --divider: var(--border);
+  --text: var(--color-ink);
+  --text-muted: var(--color-ink-muted);
+  --error: #b00000;
+  --success: #006400;
+  --lab-chip-bg: #e8e8ff;
+  --lab-chip-txt: #000000;
+  --input-fill: #ffffff;
+  --card-body-bg: #f4f4f4;
+  --section-header-bg: #ececec;
+  --shadow: none;
+  --shadow-md: none;
+  --diagram-line: #000000;
+  --diagram-label: #000000;
+  --diagram-value: #000000;
+}
+
+html.high-contrast.dark {
+  --color-paper: #0a0a0a;
+  --color-surface: #161616;
+  --color-ink: #ffffff;
+  --color-ink-muted: #d1d5db;
+  --color-accent: #6ec6ff;
+  --color-accent-hover: #9edaff;
+  --color-on-accent: #000000;
+  --color-on-success: #000000;
+  --primary: #ffffff;
+  --action: var(--color-accent);
+  --action-hover: var(--color-accent-hover);
+  --bg: var(--color-paper);
+  --surface: var(--color-surface);
+  --border: #e5e5e5;
+  --divider: #c4c4c4;
+  --text: var(--color-ink);
+  --text-muted: var(--color-ink-muted);
+  --error: #ff6b6b;
+  --success: #5eea7a;
+  --lab-chip-bg: #1e3a5f;
+  --lab-chip-txt: #ffffff;
+  --input-fill: #1c1c1c;
+  --card-body-bg: #121212;
+  --section-header-bg: #1f1f1f;
+  --shadow: none;
+  --shadow-md: none;
+  --diagram-line: #ffffff;
+  --diagram-label: #ffffff;
+  --diagram-value: #ffffff;
+}

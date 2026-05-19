@@ -3610,6 +3610,38 @@ function getPaseAgendaForPatient(patientId) {
     .slice(0, 12);
 }
 
+function buildPasePatientHeaderHtml(patient) {
+  if (!patient) return '';
+  var chips = [];
+  if (patient.cuarto) chips.push({ label: 'Cto.', value: String(patient.cuarto) });
+  if (patient.cama) chips.push({ label: 'Cama', value: String(patient.cama) });
+  if (patient.servicio) chips.push({ label: 'Servicio', value: String(patient.servicio) });
+  if (patient.registro) chips.push({ label: 'Reg.', value: String(patient.registro), mono: true });
+  var chipsHtml = chips
+    .map(function (c) {
+      return (
+        '<span class="pase-patient-chip' +
+        (c.mono ? ' pase-patient-chip--mono' : '') +
+        '"><span class="pase-patient-chip-label">' +
+        esc(c.label) +
+        '</span> ' +
+        esc(c.value) +
+        '</span>'
+      );
+    })
+    .join('');
+  return (
+    '<section class="pase-section pase-patient-banner" aria-label="Paciente activo">' +
+    '<div class="pase-patient-banner-body">' +
+    '<div class="pase-patient-name">' +
+    esc(patient.nombre || 'Paciente') +
+    '</div>' +
+    (chipsHtml ? '<div class="pase-patient-meta-row">' + chipsHtml + '</div>' : '') +
+    '</div>' +
+    '</section>'
+  );
+}
+
 function renderPaseBoard() {
   var host = document.getElementById('pase-board-scroll');
   if (!host || !isPaseMode()) return;
@@ -3631,6 +3663,10 @@ function renderPaseBoard() {
   }
   var pid = activeId;
   var parts = [];
+  var patient = patients.find(function (x) {
+    return String(x.id) === String(pid);
+  });
+  parts.push(buildPasePatientHeaderHtml(patient));
 
   var todos = storage.getTodos(pid).slice().sort(_todoCompareForSort);
   var ag = getPaseAgendaForPatient(pid);
@@ -6101,12 +6137,12 @@ function loadSettings() {
     }
   }
   var hintEl = document.getElementById('settings-updates-hint');
-  if (hintEl) hintEl.style.display = window.electronAPI ? 'block' : 'none';
+  if (hintEl) hintEl.classList.toggle('is-visible', !!window.electronAPI);
   var udEl = document.getElementById('settings-user-data-path');
   var udHint = document.getElementById('settings-userdata-web-hint');
   var udBtn = document.getElementById('settings-open-userdata-btn');
   if (window.electronAPI && typeof window.electronAPI.getUserDataPath === 'function') {
-    if (udHint) udHint.style.display = 'none';
+    if (udHint) udHint.classList.remove('is-visible');
     if (udBtn) udBtn.disabled = false;
     window.electronAPI.getUserDataPath().then(function(p) {
       if (udEl) {
@@ -6116,7 +6152,7 @@ function loadSettings() {
     }).catch(function() { if (udEl) udEl.textContent = '—'; });
   } else {
     if (udEl) udEl.textContent = 'Navegador / modo desarrollo';
-    if (udHint) udHint.style.display = 'block';
+    if (udHint) udHint.classList.add('is-visible');
     if (udBtn) udBtn.disabled = true;
   }
   syncFontZoomButtons();
@@ -12987,7 +13023,6 @@ function renderTendencias() {
     : { duration: 600, easing: 'easeOutQuart' };
   var htmlParts = [];
   htmlParts.push(buildTendInlineControlsHtml(hiddenChipN));
-  var eyeBtnSvg = tendEyeVisibilitySvg();
   for (var si = 0; si < sectionsOrdered.length; si++) {
     var sectionKey = sectionsOrdered[si];
     var expanded = tendSectionIsExpanded(sectionKey);
@@ -13026,13 +13061,6 @@ function renderTendencias() {
           "','" +
           safeAttrJsString(fk) +
           '\')">' +
-          '<button type="button" class="tend-card-eye" title="Ocultar este analito" aria-label="Ocultar de tendencias" onclick="tendHideSeriesFromCard(event,\'' +
-          safeAttrJsString(sectionKey) +
-          "','" +
-          safeAttrJsString(fk) +
-          '\')">' +
-          eyeBtnSvg +
-          '</button>' +
           '<div class="tend-card-header">' +
           '<span class="tend-param-name">' +
           titleEsc +

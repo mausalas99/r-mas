@@ -6,7 +6,8 @@
 <title>R+</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
 <script>
 (function () {
   try {
@@ -36,48 +37,7 @@
 })();
 </script>
 <style>
-  :root {
-    --primary:      #2D3A54;
-    --action:       #4F56FF;
-    --action-hover: #3d44e0;
-    --bg:           #F2F3F5;
-    --surface:      #FFFFFF;
-    --border:       rgba(15, 23, 42, 0.075);
-    --divider:      rgba(15, 23, 42, 0.05);
-    --text:         #1e293b;
-    --text-muted:   #64748B;
-    --error:        #DC2626;
-    --success:      #16A34A;
-    --lab-chip-bg:  rgba(79, 86, 255, 0.09);
-    --lab-chip-txt: #3d44d6;
-    --accent-gradient: linear-gradient(135deg, #6d73f6 0%, #4f56ff 48%, #3e45d6 100%);
-    --accent-gradient-hover: linear-gradient(135deg, #6369ec 0%, #484fd8 48%, #363cad 100%);
-    --radius-lg:    16px;
-    --radius-md:    12px;
-    --radius-pill:  999px;
-    --shadow:       0 8px 28px rgba(15, 23, 42, 0.06), 0 2px 8px rgba(15, 23, 42, 0.04);
-    --shadow-md:    0 14px 40px rgba(15, 23, 42, 0.08), 0 4px 12px rgba(15, 23, 42, 0.05);
-    --input-fill:   color-mix(in oklab, #f5f6f8 70%, var(--surface));
-    --card-body-bg: color-mix(in oklab, var(--surface) 92%, var(--bg));
-    --diagram-line:  #64748B;
-    --diagram-label: #64748B;
-    --diagram-value: #1E293B;
-    --todo-prio-alta: #cf6060;
-    --todo-prio-media: #b45309;
-    --todo-prio-baja: #15803d;
-    /* macOS + titleBarStyle hiddenInset: espacio hasta el primer contenido (logo); los semáforos los pinta el sistema */
-    --titlebar-traffic-gap: 96px;
-    color-scheme: light;
-    --density-space: 1;
-    --density-font: 1;
-    --sidebar-width: 240px;
-  }
-  html.ui-density-normal {
-    /* Vista normal: laboratorio / expediente completos; espaciado más cómodo (layout previo al modo Pase). */
-    --density-space: 1.1;
-    --density-font: 1.03;
-    --sidebar-width: min(280px, 34vw);
-  }
+  /* Design tokens: public/tokens.css */
   html.ui-density-normal .patient-list-section-label {
     font-size: calc(10px * var(--density-font));
     opacity: 0.88;
@@ -110,7 +70,7 @@
     flex-shrink: 0;
   }
   .sidebar-ronda-hint kbd {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-family: var(--font-mono);
     font-size: 10px;
     font-weight: 600;
     padding: 2px 6px;
@@ -270,9 +230,9 @@
   .ronda-overview-card-head h3 {
     margin: 0;
     font-size: calc(12px * var(--density-font));
-    font-weight: 750;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-transform: none;
     color: var(--text-muted);
   }
   .ronda-link-btn {
@@ -344,6 +304,12 @@
     font-size: calc(14px * var(--density-font));
     line-height: 1.52;
   }
+  html:not(.ui-density-normal) .ronda-overview-card-body .card-header {
+    font-size: calc(14px * var(--density-font));
+    font-weight: 650;
+    letter-spacing: 0.01em;
+    text-transform: none;
+  }
   html:not(.ui-density-normal) .ronda-labs-lines li { margin-bottom: 6px; }
   html:not(.ui-density-normal) .ronda-labs-meta { margin-bottom: 12px; }
   .patient-expediente-classic {
@@ -378,34 +344,6 @@
     color: var(--action);
   }
   html:not(.ui-density-normal) .patient-ronda-fullbar.is-visible { display: flex; }
-  html.dark {
-    --primary:      #93C5FD;
-    --action:       #7C83FF;
-    --action-hover: #9aa0ff;
-    --bg:           #0f1118;
-    --surface:      #1b1f2a;
-    --border:       rgba(148, 163, 184, 0.12);
-    --divider:      rgba(148, 163, 184, 0.08);
-    --text:         #e8edf5;
-    --text-muted:   #94a3b8;
-    --error:        #f87171;
-    --success:      #6ee7a8;
-    --lab-chip-bg:  rgba(124, 131, 255, 0.12);
-    --lab-chip-txt: #bac0ff;
-    --accent-gradient: linear-gradient(135deg, #9ea4ff 0%, #7c83ff 45%, #666df2 100%);
-    --accent-gradient-hover: linear-gradient(135deg, #b4b8ff 0%, #9399ff 45%, #7a80f5 100%);
-    --shadow:       0 8px 28px rgba(0, 0, 0, 0.42), 0 2px 8px rgba(0, 0, 0, 0.28);
-    --shadow-md:    0 14px 40px rgba(0, 0, 0, 0.5), 0 4px 14px rgba(0, 0, 0, 0.35);
-    --input-fill:   color-mix(in oklab, var(--surface) 82%, var(--bg));
-    --card-body-bg: color-mix(in oklab, var(--surface) 96%, var(--bg));
-    --diagram-line:  #94A3B8;
-    --diagram-label: #94A3B8;
-    --diagram-value: #E2E8F0;
-    --todo-prio-alta: #fca5a5;
-    --todo-prio-media: #facc15;
-    --todo-prio-baja: #86efac;
-    color-scheme: dark;
-  }
   html.dark .dcard-copy:hover { border-color: var(--action); color: var(--action); background: #1e3a5f; }
   html.dark .dcard-copy.copied { border-color: #4ade80; color: #4ade80; background: #14532d; }
   /* Dark mode overrides for hardcoded backgrounds */
@@ -440,72 +378,113 @@
   html.dark .lab-value-normal { color: #4ade80; }
   #theme-toggle:focus { outline: 2px solid var(--action); outline-offset: 2px; }
   html.dark #theme-toggle:focus { outline: 2px solid var(--action); outline-offset: 2px; }
-  /* ── Alto contraste (accesibilidad) ─────────────────────── */
-  html.high-contrast {
-    --primary:      #000000;
-    --action:       #0000EE;
-    --action-hover: #0000AA;
-    --bg:           #FFFFFF;
-    --surface:      #FFFFFF;
-    --border:       #000000;
-    --divider:      var(--border);
-    --text:         #000000;
-    --text-muted:   #1A1A1A;
-    --error:        #B00000;
-    --success:      #006400;
-    --lab-chip-bg:  #FFFF66;
-    --lab-chip-txt: #000000;
-    --shadow:       0 0 0 1px #000000;
-    --shadow-md:    0 0 0 2px #000000;
-    --diagram-line:  #000000;
-    --diagram-label: #000000;
-    --diagram-value: #000000;
+  /* ── Alto contraste (accesibilidad) — tokens en tokens.css ─ */
+  html.high-contrast body { font-weight: 500; line-height: 1.55; }
+  html.high-contrast .btn-header-icon { background: transparent; border: 2px solid var(--text); color: var(--text); box-shadow: none; }
+  html.high-contrast header { border-bottom: 2px solid var(--border); box-shadow: none; }
+  html.high-contrast .app-tab,
+  html.high-contrast .inner-tab {
+    box-shadow: none !important;
+    border-radius: 0;
+    margin-bottom: -1px;
   }
-  html.high-contrast.dark {
-    --primary:      #FFFFFF;
-    --action:       #FFE600;
-    --action-hover: #FFD000;
-    --bg:           #000000;
-    --surface:      #000000;
-    --border:       #FFFFFF;
-    --divider:      var(--border);
-    --text:         #FFFFFF;
-    --text-muted:   #EAEAEA;
-    --error:        #FF4D4D;
-    --success:      #7CFC00;
-    --lab-chip-bg:  #003366;
-    --lab-chip-txt: #FFFF00;
-    --shadow:       0 0 0 1px #FFFFFF;
-    --shadow-md:    0 0 0 2px #FFFFFF;
-    --diagram-line:  #FFFFFF;
-    --diagram-label: #FFFFFF;
-    --diagram-value: #FFFFFF;
-  }
-  html.high-contrast body { font-weight: 500; }
-  html.high-contrast .btn-header-icon { background: transparent; border: 2px solid var(--text); color: var(--text); }
-  html.high-contrast header { border-bottom: 2px solid var(--border); }
   html.high-contrast .app-tab.active,
-  html.high-contrast .inner-tab.active { border-bottom-width: 3px; }
+  html.high-contrast .inner-tab.active {
+    background: transparent !important;
+    color: var(--text) !important;
+    border-bottom: 3px solid var(--action);
+    box-shadow: none !important;
+  }
+  html.high-contrast:not(.dark) .app-tab.active,
+  html.high-contrast:not(.dark) .inner-tab.active {
+    color: var(--action) !important;
+  }
   html.high-contrast .field-group input:not([type="checkbox"]):not([type="radio"]),
   html.high-contrast .field-group select,
   html.high-contrast .field-group textarea,
   html.high-contrast .profile-input,
   html.high-contrast .list-row input,
-  html.high-contrast .patient-search-input { border-width: 2px; background: var(--surface); color: var(--text); }
-  html.high-contrast .patient-card { border-width: 2px; }
+  html.high-contrast .patient-search-input {
+    border-width: 2px;
+    background: var(--input-fill);
+    color: var(--text);
+  }
+  html.high-contrast .field-group label,
+  html.high-contrast .profile-field-label,
+  html.high-contrast .overview-hint,
+  html.high-contrast .lab-history-hint,
+  html.high-contrast .lab-history-meta { color: var(--text-muted); opacity: 1; }
+  html.high-contrast textarea::placeholder,
+  html.high-contrast input::placeholder {
+    color: var(--text-muted) !important;
+    opacity: 1 !important;
+  }
+  html.high-contrast .patient-card { border-width: 2px; box-shadow: none !important; }
   html.high-contrast .card,
   html.high-contrast .modal,
   html.high-contrast .soap-modal,
   html.high-contrast .templates-modal,
   html.high-contrast .settings-dropdown,
   html.high-contrast #update-modal,
-  html.high-contrast .onboarding-intro-modal { border: 2px solid var(--border); }
+  html.high-contrast .onboarding-intro-modal {
+    border: 2px solid var(--border);
+    box-shadow: none !important;
+    background: var(--surface);
+  }
+  html.high-contrast .card-body { background: var(--card-body-bg); }
+  html.high-contrast .app .card:hover { box-shadow: none !important; }
   html.high-contrast .dcard-title { color: var(--text-muted) !important; }
+  html.high-contrast .dcard { background: var(--surface); border-width: 2px; }
+  html.high-contrast .lab-history-row {
+    background: var(--input-fill);
+    border-width: 2px;
+  }
+  html.high-contrast .btn-generate,
+  html.high-contrast .btn-add,
+  html.high-contrast .btn-save,
+  html.high-contrast .btn-save-profile {
+    box-shadow: none !important;
+    border: 2px solid var(--border);
+  }
+  html.high-contrast .btn-generate { background: var(--action) !important; color: var(--color-on-accent) !important; }
+  html.high-contrast .btn-generate--success { background: var(--success) !important; color: var(--color-on-success) !important; }
+  html.high-contrast .settings-theme-btn {
+    background: var(--input-fill);
+    color: var(--text);
+    border: 2px solid var(--border);
+  }
+  html.high-contrast .settings-theme-btn.active {
+    background: var(--action) !important;
+    color: var(--color-on-accent) !important;
+    border-color: var(--border) !important;
+  }
+  html.high-contrast .btn-settings-help-primary {
+    background: var(--action) !important;
+    color: var(--color-on-accent) !important;
+    box-shadow: none !important;
+    border: 2px solid var(--border);
+  }
+  html.high-contrast .btn-settings-help-secondary {
+    background: var(--surface);
+    color: var(--text);
+    border: 2px solid var(--border);
+  }
+  html.high-contrast .settings-help-cta {
+    background: var(--section-header-bg);
+    border: 2px solid var(--border);
+  }
+  html.high-contrast .settings-accordion { border: 2px solid var(--border); }
+  html.high-contrast .btn-edit-templates,
+  html.high-contrast .btn-lab-history,
+  html.high-contrast .card-header-soft-btn {
+    border-width: 2px;
+    color: var(--text);
+  }
   html.high-contrast #lab-diagrams-section > .card-header,
   html.high-contrast #lab-output-section > .card-header,
   html.high-contrast #med-output-section > .card-header,
   html.high-contrast #lab-history-card > .card-header {
-    background: var(--surface) !important;
+    background: var(--section-header-bg) !important;
     color: var(--text) !important;
     border-bottom: 2px solid var(--border);
   }
@@ -519,56 +498,26 @@
   html.high-contrast #med-output-section > .card-header button {
     background: var(--surface) !important;
     color: var(--text) !important;
-    border-color: var(--border) !important;
+    border: 2px solid var(--border) !important;
   }
-  /* Alto contraste + oscuro: --primary y --action claros → texto sobre botón/encabezados ilegible */
   html.high-contrast.dark .card-header {
-    background: #000000;
-    color: #FFFFFF;
+    background: var(--section-header-bg);
+    color: var(--text);
     border-bottom: 2px solid var(--border);
   }
-  html.high-contrast.dark .card-header svg { stroke: #FFFFFF; }
-  html.high-contrast.dark header {
-    background: #000000;
-    color: #FFFFFF;
-  }
+  html.high-contrast.dark .card-header svg { stroke: currentColor; }
+  html.high-contrast.dark header { background: var(--surface); color: var(--text); box-shadow: none; }
   html.high-contrast.dark header h1,
-  html.high-contrast.dark header span { color: #FFFFFF; }
-  html.high-contrast.dark header span { opacity: 0.88; }
-  html.high-contrast.dark .btn-generate,
-  html.high-contrast.dark .btn-save,
-  html.high-contrast.dark .btn-save-profile,
-  html.high-contrast.dark .btn-add,
-  html.high-contrast.dark .settings-theme-btn.active,
-  html.high-contrast.dark .help-article-item.active,
-  html.high-contrast.dark #update-modal .btn-primary,
-  html.high-contrast.dark #min-version-modal .btn-primary,
-  html.high-contrast.dark .rpc-idle-lock-actions .btn-unlock,
-  html.high-contrast.dark #focus-mode-pill,
-  html.high-contrast.dark .indica-extra-tmpl button {
-    color: #000000 !important;
-  }
-  html.high-contrast.dark .toast {
-    background: #FFFFFF;
-    color: #000000;
-  }
-  html.high-contrast.dark .toast.success {
-    background: var(--success);
-    color: #000000;
-  }
-  html.high-contrast.dark .toast.error {
-    background: var(--error);
-    color: #000000;
-  }
-  html.high-contrast.dark textarea::placeholder,
-  html.high-contrast.dark input::placeholder {
-    color: #BDBDBD !important;
-    opacity: 1 !important;
-  }
+  html.high-contrast.dark header span { color: var(--text); opacity: 1; }
+  html.high-contrast.dark #today-date { color: var(--text-muted); opacity: 1; }
+  html.high-contrast.dark aside.patient-sidebar { box-shadow: none; border-right: 2px solid var(--border); }
+  html.high-contrast.dark .toast { background: var(--surface); color: var(--text); border: 2px solid var(--border); }
+  html.high-contrast.dark .toast.success { background: var(--success); color: var(--color-on-success); }
+  html.high-contrast.dark .toast.error { background: var(--error); color: var(--color-on-accent); }
   html.high-contrast.dark .lab-chip {
-    background: #000000;
-    color: #FFFF00;
-    border: 2px solid #FFFF00;
+    background: var(--lab-chip-bg);
+    color: var(--lab-chip-txt);
+    border: 2px solid var(--border);
   }
   html.high-contrast.dark .section-lbl { color: var(--text); }
   html.high-contrast.dark .modal h3 { color: var(--text); }
@@ -669,8 +618,95 @@
   html.dark .dcard-title { color: var(--text-muted); }
   html.dark .btn-cancel { background: var(--border); }
   html.dark .btn-remove-otro:hover { color: var(--error); background: rgba(248,113,113,0.15); }
-  html.dark #update-banner { background: #14532d; border-bottom: 1px solid #166534; }
-  #update-banner { display: none !important; }
+  html.dark #update-banner { background: var(--color-update-banner-bg); border-bottom: 1px solid color-mix(in oklab, var(--color-update-banner-bg) 80%, var(--border)); }
+  #update-banner {
+    display: none;
+    background: var(--color-update-banner-bg);
+    color: var(--color-update-banner-fg);
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  #update-banner.is-active { display: flex !important; }
+  #update-progress-track {
+    flex: 1;
+    height: 4px;
+    background: var(--color-update-banner-track);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  #update-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--color-update-banner-fill);
+    border-radius: 2px;
+    transition: width var(--dur-normal) var(--ease-out);
+  }
+  #update-actions { display: none; gap: 8px; flex-shrink: 0; }
+  #update-actions.is-visible { display: flex; }
+  #update-banner .update-banner-btn-primary {
+    background: var(--color-update-banner-btn-bg);
+    color: var(--color-update-banner-btn-fg);
+    border: none;
+    border-radius: 5px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  #update-banner .update-banner-btn-secondary {
+    background: transparent;
+    color: var(--color-update-banner-fg);
+    border: 1px solid var(--color-update-banner-btn-border);
+    border-radius: 5px;
+    padding: 4px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .lab-banner--detected {
+    border: 1px solid color-mix(in oklab, var(--action) 32%, var(--border));
+  }
+  .lab-banner-body {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .lab-banner-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+    background: var(--lab-chip-bg);
+    color: var(--lab-chip-txt);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    margin-bottom: 8px;
+  }
+  .lab-banner-status svg { flex-shrink: 0; }
+  .lab-banner-main { flex: 1; min-width: min(100%, 220px); }
+  .lab-banner-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 4px;
+    line-height: 1.25;
+  }
+  .lab-banner-meta {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.4;
+  }
+  .lab-banner-cta { flex-shrink: 0; white-space: nowrap; align-self: center; }
   .rpc-offline-banner {
     display: none;
     flex-shrink: 0;
@@ -735,7 +771,7 @@
     max-width: 420px;
     background: var(--surface);
     color: var(--text);
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md);
     border: none;
     padding: 22px 24px 20px;
@@ -748,9 +784,9 @@
   }
   #update-modal .channel-pill {
     font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
-    background: #7c3aed; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px;
+    background: var(--color-channel-pill-bg); color: var(--color-channel-pill-fg); text-transform: none; letter-spacing: 0.02em;
   }
-  html.dark #update-modal .channel-pill { background: #a78bfa; color: #1e1b4b; }
+  html.dark #update-modal .channel-pill { background: var(--color-channel-pill-bg); color: var(--color-channel-pill-fg); }
   #min-version-backdrop {
     display: none; position: fixed; inset: 0; background: rgba(15, 17, 23, 0.85);
     z-index: 200001; align-items: center; justify-content: center; padding: 24px;
@@ -776,7 +812,7 @@
   #update-modal .release-notes:empty { display: none; }
   #update-modal .update-state-msg { font-size: 13px; color: var(--text-muted); margin-bottom: 10px; min-height: 1.3em; }
   #update-modal .progress-wrap { height: 10px; background: var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 8px; }
-  #update-modal .progress-fill { height: 100%; width: 0%; background: var(--action); border-radius: 6px; transition: width 0.25s ease; }
+  #update-modal .progress-fill { height: 100%; width: 0%; background: var(--action); border-radius: 6px; transition: width var(--dur-normal) var(--ease-out); }
   #update-modal .progress-label { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
   #update-modal .modal-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
   #update-modal button { font-family: inherit; font-size: 13px; cursor: pointer; border-radius: 8px; padding: 8px 14px; }
@@ -787,10 +823,17 @@
   #update-modal .error-box { font-size: 13px; color: var(--error); margin-bottom: 10px; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-family: var(--font-ui);
     background: var(--bg);
     color: var(--text); height: 100vh;
     display: flex; flex-direction: column; overflow: hidden; font-size: 16px; line-height: 1.5;
+  }
+  .type-mono { font-family: var(--font-mono); }
+  #m-registro,
+  #m-registro-manual,
+  #lab-output-box .out-line,
+  #lab-output-box .out-indent {
+    font-family: var(--font-mono);
   }
   /* Scrollbars: translucent track/thumb; avoid white flashes in dark mode */
   * {
@@ -1019,6 +1062,61 @@
     gap: calc(18px * var(--density-space));
     scroll-behavior: smooth;
   }
+  html:not(.ui-density-normal) .pase-patient-banner {
+    padding: calc(14px * var(--density-space)) calc(16px * var(--density-space));
+    border-color: color-mix(in oklab, var(--action) 22%, var(--border));
+    background: color-mix(in oklab, var(--surface) 96%, var(--action) 4%);
+  }
+  html.dark:not(.ui-density-normal) .pase-patient-banner {
+    background: color-mix(in oklab, var(--surface) 92%, var(--action) 8%);
+    border-color: color-mix(in oklab, var(--action) 28%, var(--border));
+  }
+  html:not(.ui-density-normal) .pase-patient-banner-body {
+    display: flex;
+    flex-direction: column;
+    gap: calc(10px * var(--density-space));
+    min-width: 0;
+  }
+  html:not(.ui-density-normal) .pase-patient-name {
+    margin: 0;
+    font-size: calc(15px * var(--density-font));
+    font-weight: 650;
+    line-height: 1.32;
+    letter-spacing: 0.01em;
+    color: var(--text);
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+  html:not(.ui-density-normal) .pase-patient-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: calc(6px * var(--density-space));
+    align-items: center;
+  }
+  html:not(.ui-density-normal) .pase-patient-chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    font-size: calc(11px * var(--density-font));
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--text-muted);
+    background: color-mix(in oklab, var(--bg) 55%, var(--surface));
+    border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
+    border-radius: var(--radius-pill);
+    padding: 4px 10px;
+    max-width: 100%;
+  }
+  html:not(.ui-density-normal) .pase-patient-chip-label {
+    font-weight: 650;
+    color: color-mix(in oklab, var(--text-muted) 88%, var(--action));
+    font-size: calc(10px * var(--density-font));
+    letter-spacing: 0.02em;
+  }
+  html:not(.ui-density-normal) .pase-patient-chip--mono {
+    font-family: var(--font-mono);
+    letter-spacing: 0.02em;
+  }
   html:not(.ui-density-normal) .pase-section {
     background: var(--surface);
     border-radius: var(--radius-lg);
@@ -1039,14 +1137,15 @@
     border: none;
     background: transparent;
     font: inherit;
-    font-size: calc(11px * var(--density-font));
-    font-weight: 800;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    font-size: calc(15px * var(--density-font));
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    text-transform: none;
     color: var(--action);
     cursor: pointer;
     padding: 4px 2px;
     text-align: left;
+    line-height: 1.3;
   }
   html:not(.ui-density-normal) .pase-section-title:hover {
     text-decoration: underline;
@@ -1154,16 +1253,16 @@
     padding-left: 12px;
   }
   html:not(.ui-density-normal) .pase-cultivo-card .pase-cult-org {
-    font-weight: 700;
-    font-size: calc(12px * var(--density-font));
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
+    font-weight: 650;
+    font-size: calc(13px * var(--density-font));
+    letter-spacing: 0.01em;
+    text-transform: none;
     line-height: 1.35;
     margin-bottom: 6px;
     color: var(--text);
   }
   html:not(.ui-density-normal) .pase-cult-atb {
-    font-family: ui-monospace, 'Cascadia Code', Menlo, monospace;
+    font-family: var(--font-mono);
     font-size: 11px;
     line-height: 1.5;
     color: var(--text);
@@ -1200,9 +1299,9 @@
     gap: calc(6px * var(--density-space));
   }
   html:not(.ui-density-normal) .pase-med-name {
-    font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif;
-    font-size: calc(12px * var(--density-font));
-    font-weight: 650;
+    font-family: var(--font-ui);
+    font-size: calc(13px * var(--density-font));
+    font-weight: 600;
     line-height: 1.32;
     color: var(--text);
     min-width: 0;
@@ -1214,11 +1313,11 @@
   html:not(.ui-density-normal) .pase-med-dia-badge {
     flex-shrink: 0;
     align-self: flex-end;
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-    color: var(--action);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-transform: none;
+    color: var(--text-muted);
     line-height: 1.25;
     text-align: right;
     margin-top: 0;
@@ -1235,9 +1334,10 @@
     margin-top: 2px;
   }
   html:not(.ui-density-normal) .pase-med-chip {
-    font-weight: 800;
-    font-size: 10px;
-    letter-spacing: 0.05em;
+    font-weight: 650;
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    text-transform: none;
     color: var(--action);
     background: color-mix(in oklab, var(--action) 14%, transparent);
     padding: 2px 7px;
@@ -1267,8 +1367,8 @@
     flex: 1 1 100%;
     min-width: 0;
     line-height: 1.38;
-    font-weight: 750;
-    letter-spacing: 0.04em;
+    font-weight: 600;
+    letter-spacing: 0.02em;
     white-space: normal;
     overflow-wrap: break-word;
     word-break: normal;
@@ -1280,9 +1380,9 @@
     margin-top: 4px;
   }
   html:not(.ui-density-normal) .pase-lab-meta {
-    font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif;
-    font-size: calc(13px * var(--density-font));
-    font-weight: 650;
+    font-family: var(--font-ui);
+    font-size: calc(14px * var(--density-font));
+    font-weight: 600;
     letter-spacing: 0.02em;
     color: var(--action);
     margin-bottom: 8px;
@@ -1295,7 +1395,7 @@
     border-bottom-color: rgba(148, 163, 184, 0.35);
   }
   html:not(.ui-density-normal) .pase-lab-block {
-    font-family: ui-monospace, 'Cascadia Code', Menlo, Consolas, monospace;
+    font-family: var(--font-mono);
     font-size: calc(13px * var(--density-font));
     line-height: 1.65;
     white-space: pre-wrap;
@@ -1319,7 +1419,7 @@
     color: #93c5fd;
   }
   html:not(.ui-density-normal) .pase-lab-snippet {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-family: var(--font-mono);
     font-size: calc(11px * var(--density-font));
     white-space: pre-wrap;
     word-break: break-word;
@@ -1428,7 +1528,7 @@
     color: var(--text);
   }
   .guided-empty-actions button.primary {
-    background: var(--accent-gradient);
+    background: var(--action);
     color: #fff;
     border: none;
     box-shadow: 0 2px 10px rgba(79, 86, 255, 0.2);
@@ -1449,32 +1549,51 @@
   }
   .app-tabs {
     background: color-mix(in oklab, var(--surface) 97%, var(--bg));
-    border-bottom: none;
+    border-bottom: 1px solid var(--divider);
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     flex-shrink: 0;
-    gap: calc(8px * var(--density-space));
+    gap: 2px;
     box-shadow: none;
+    padding: 0 calc(8px * var(--density-space));
   }
   .app-tab {
-    padding: calc(8px * var(--density-space)) calc(17px * var(--density-space));
+    padding: calc(10px * var(--density-space)) calc(14px * var(--density-space)) calc(8px * var(--density-space));
     font-size: calc(14px * var(--density-font));
-    font-weight: 600; color: var(--text-muted);
-    background: transparent; border: none; border-radius: var(--radius-pill);
+    font-weight: 600;
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    margin-bottom: -1px;
     cursor: pointer;
-    transition: color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
-    display: flex; align-items: center; gap: calc(7px * var(--density-space)); font-family: inherit;
+    transition: color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+    display: flex;
+    align-items: center;
+    gap: calc(7px * var(--density-space));
+    font-family: inherit;
+    box-shadow: none;
   }
-  .app-tab:hover { color: var(--action); background: color-mix(in oklab, var(--surface) 55%, var(--bg)); }
+  .app-tab:hover {
+    color: var(--action);
+    background: color-mix(in oklab, var(--action) 6%, transparent);
+    box-shadow: none;
+  }
   .app-tab.active {
     color: var(--action);
-    background: var(--surface);
-    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(79, 86, 255, 0.07);
+    background: color-mix(in oklab, var(--action) 8%, var(--surface));
+    border-bottom-color: var(--action);
+    box-shadow: none;
   }
-  html.dark .app-tab:hover { background: rgba(255,255,255,0.05); }
+  html.dark .app-tab:hover {
+    background: color-mix(in oklab, var(--action) 10%, transparent);
+    box-shadow: none;
+  }
   html.dark .app-tab.active {
-    background: rgba(255,255,255,0.08);
-    box-shadow: 0 2px 12px rgba(0,0,0,0.28);
+    background: color-mix(in oklab, var(--action) 14%, transparent);
+    border-bottom-color: var(--action);
+    box-shadow: none;
   }
   .app { display: flex; flex: 1; overflow: hidden; }
   aside.patient-sidebar {
@@ -1559,9 +1678,9 @@
     outline: 2px solid color-mix(in oklab, var(--action) 50%, transparent);
     outline-offset: 1px;
   }
-  .sidebar-header h2 { font-size: calc(12px * var(--density-font)); font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; }
+  .sidebar-header h2 { font-size: calc(12px * var(--density-font)); font-weight: 600; color: var(--text-muted); text-transform: none; letter-spacing: 0.01em; }
   .btn-add {
-    background: var(--accent-gradient); color: white; border: none; border-radius: var(--radius-pill);
+    background: var(--action); color: white; border: none; border-radius: var(--radius-pill);
     padding: calc(6px * var(--density-space)) calc(14px * var(--density-space));
     font-size: calc(13px * var(--density-font));
     font-weight: 600; font-family: inherit;
@@ -1570,7 +1689,7 @@
     min-height: calc(32px + 6px * (var(--density-space) - 1));
     box-shadow: 0 2px 10px rgba(79, 86, 255, 0.2);
   }
-  .btn-add:hover { background: var(--accent-gradient-hover); box-shadow: 0 3px 14px rgba(79, 86, 255, 0.24); }
+  .btn-add:hover { background: var(--action-hover); box-shadow: 0 3px 14px color-mix(in oklab, var(--action) 28%, transparent); }
   .btn-add:active { transform: scale(0.96); }
   .patient-list {
     flex: 1 1 auto;
@@ -1873,31 +1992,51 @@
   .empty-state p { font-size: calc(15px * var(--density-font)); }
   .inner-tab-bar {
     background: color-mix(in oklab, var(--surface) 97%, var(--bg));
-    border-bottom: none;
-    box-shadow: inset 0 -1px 0 var(--divider);
-    display: flex; align-items: center;
-    padding: calc(8px * var(--density-space)) calc(22px * var(--density-space)) calc(10px * var(--density-space));
-    flex-shrink: 0; gap: calc(8px * var(--density-space));
+    border-bottom: 1px solid var(--divider);
+    box-shadow: none;
+    display: flex;
+    align-items: flex-end;
+    padding: calc(6px * var(--density-space)) calc(22px * var(--density-space)) 0;
+    flex-shrink: 0;
+    gap: 2px;
   }
   .inner-tab {
-    padding: calc(7px * var(--density-space)) calc(15px * var(--density-space));
+    padding: calc(8px * var(--density-space)) calc(13px * var(--density-space)) calc(7px * var(--density-space));
     font-size: calc(13px * var(--density-font));
-    font-weight: 600; color: var(--text-muted);
-    background: transparent; border: none; border-radius: var(--radius-pill);
-    cursor: pointer; font-family: inherit;
-    transition: color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
-    display: flex; align-items: center; gap: calc(5px * var(--density-space));
+    font-weight: 600;
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    margin-bottom: -1px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+    display: flex;
+    align-items: center;
+    gap: calc(5px * var(--density-space));
+    box-shadow: none;
   }
-  .inner-tab:hover { color: var(--action); background: color-mix(in oklab, var(--surface) 50%, var(--bg)); }
+  .inner-tab:hover {
+    color: var(--action);
+    background: color-mix(in oklab, var(--action) 6%, transparent);
+    box-shadow: none;
+  }
   .inner-tab.active {
     color: var(--action);
-    background: var(--surface);
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(79, 86, 255, 0.06);
+    background: color-mix(in oklab, var(--action) 8%, var(--surface));
+    border-bottom-color: var(--action);
+    box-shadow: none;
   }
-  html.dark .inner-tab:hover { background: rgba(255,255,255,0.05); }
+  html.dark .inner-tab:hover {
+    background: color-mix(in oklab, var(--action) 10%, transparent);
+    box-shadow: none;
+  }
   html.dark .inner-tab.active {
-    background: rgba(255,255,255,0.07);
-    box-shadow: 0 2px 10px rgba(0,0,0,0.22);
+    background: color-mix(in oklab, var(--action) 14%, transparent);
+    border-bottom-color: var(--action);
+    box-shadow: none;
   }
   .todo-row {
     display: flex; align-items: center; gap: 10px;
@@ -2004,8 +2143,8 @@
   .todo-del { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; line-height: 1; padding: 0 6px; }
   .todo-empty { color: var(--text-muted); padding: 16px; text-align: center; }
   @keyframes rpc-tab-content-in {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
   .tab-content {
     display: none; flex-direction: column; overflow-y: auto;
@@ -2022,7 +2161,7 @@
   html.dark #main-area > div[id^="appcontent-"] > div:first-child {
     background: var(--bg);
   }
-  .tab-content.active { display: flex; animation: rpc-tab-content-in 0.28s cubic-bezier(0.4, 0, 0.2, 1); }
+  .tab-content.active { display: flex; animation: rpc-tab-content-in var(--dur-fast) var(--ease-out); }
   .card {
     background: var(--surface);
     border: none;
@@ -2036,14 +2175,16 @@
     box-shadow: var(--shadow-md), 0 0 0 1px color-mix(in oklab, var(--action) 20%, transparent);
   }
   .card-header {
-    background: linear-gradient(120deg,
-      color-mix(in oklab, var(--action) 14%, var(--surface)) 0%,
-      color-mix(in oklab, var(--action) 7%, var(--surface)) 50%,
-      var(--surface) 100%);
-    color: var(--primary);
+    background: var(--surface);
+    color: var(--text);
     padding: calc(12px * var(--density-space)) calc(18px * var(--density-space));
-    font-size: calc(12px * var(--density-font));
-    font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; display: flex; align-items: center; gap: calc(8px * var(--density-space));
+    font-size: calc(13px * var(--density-font));
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-transform: none;
+    display: flex;
+    align-items: center;
+    gap: calc(8px * var(--density-space));
     border-bottom: 1px solid var(--divider);
   }
   .card-header svg { stroke: currentColor; flex-shrink: 0; }
@@ -2094,7 +2235,7 @@
   html.dark .card-header-soft-btn:hover { background: rgba(255, 255, 255, 0.11); }
   .card-body { padding: calc(18px * var(--density-space)) calc(20px * var(--density-space)); background: var(--card-body-bg); }
   .field-group { display: flex; flex-direction: column; gap: calc(6px * var(--density-space)); }
-  .field-group label { font-size: calc(11px * var(--density-font)); font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .field-group label { font-size: calc(12px * var(--density-font)); font-weight: 600; color: var(--text-muted); text-transform: none; letter-spacing: 0.01em; }
   .field-group input:not([type="checkbox"]):not([type="radio"]),
   .field-group select,
   .field-group textarea {
@@ -2174,16 +2315,26 @@
     box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.04);
   }
   .btn-generate {
-    background: var(--accent-gradient); color: white; border: none; border-radius: var(--radius-pill);
+    background: var(--action); color: white; border: none; border-radius: var(--radius-pill);
     padding: calc(10px * var(--density-space)) calc(22px * var(--density-space));
     font-size: calc(14px * var(--density-font));
     font-weight: 700; font-family: inherit; cursor: pointer; display: flex;
     align-items: center; gap: calc(8px * var(--density-space)); transition: background 0.15s ease, transform 0.1s, box-shadow 0.15s ease; min-height: 44px;
     box-shadow: 0 3px 14px rgba(79, 86, 255, 0.22);
   }
-  .btn-generate:hover { background: var(--accent-gradient-hover); box-shadow: 0 4px 18px rgba(79, 86, 255, 0.26); }
+  .btn-generate:hover { background: var(--action-hover); box-shadow: 0 4px 18px color-mix(in oklab, var(--action) 30%, transparent); }
   .btn-generate:active { transform: scale(0.98); }
   .btn-generate.loading { opacity: 0.65; cursor: not-allowed; }
+  .btn-generate--success {
+    background: #065f46;
+    color: #ffffff;
+  }
+  .btn-generate--success:hover {
+    background: #047857;
+    box-shadow: 0 4px 18px color-mix(in oklab, #065f46 35%, transparent);
+  }
+  html.dark .btn-generate--success { background: #059669; }
+  html.dark .btn-generate--success:hover { background: #10b981; }
   .med-toolbar-actions {
     display: flex;
     gap: 10px;
@@ -2273,14 +2424,28 @@
     background: rgba(255, 255, 255, 0.08);
   }
   .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; align-items: center; justify-content: center; }
-  .modal-backdrop.open { display: flex; animation: fade-in 0.15s ease-out; }
+  .modal-backdrop.open { display: flex; animation: fade-in var(--dur-fast) var(--ease-out); }
   @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-  .modal { background: var(--surface); border-radius: var(--radius-lg); padding: 28px; width: 500px; max-width: 95vw; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-md); animation: modal-in 0.22s cubic-bezier(0.34, 1.2, 0.64, 1); border: none; }
-  @keyframes modal-in { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+  .modal {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    width: 500px;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-md);
+    animation: modal-in var(--dur-normal) var(--ease-out);
+    border: none;
+  }
+  @keyframes modal-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
   .modal h3 { font-size: 18px; font-weight: 700; margin-bottom: 20px; color: var(--primary); }
   .modal-section { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
   .modal-divider { border: none; border-top: 1px dashed var(--border); margin: 12px 0 16px; }
-  .modal-section-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
+  .modal-section-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: none; letter-spacing: 0.01em; margin-bottom: 4px; }
   .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
   /* Preferencias laboratorio: filas tipo interruptor */
   .lab-display-prefs-modal .lab-display-prefs-fields {
@@ -2349,7 +2514,7 @@
     border-radius: 50%;
     background: var(--surface);
     box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
-    transition: transform 0.22s cubic-bezier(0.34, 1.2, 0.64, 1), background 0.2s ease;
+    transition: transform var(--dur-normal) var(--ease-out), background var(--dur-fast) var(--ease-out);
     pointer-events: none;
   }
   html.dark .rpc-switch-thumb {
@@ -2370,11 +2535,11 @@
   .btn-cancel { background: rgba(241, 245, 249, 0.9); color: var(--text-muted); border: 1px solid var(--border); border-radius: var(--radius-pill); padding: 9px 20px; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; min-height: 44px; transition: background 0.15s; }
   .btn-cancel:hover { background: var(--border); }
   .btn-save {
-    background: var(--accent-gradient); color: white; border: none; border-radius: var(--radius-pill);
+    background: var(--action); color: white; border: none; border-radius: var(--radius-pill);
     padding: 9px 20px; font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer; min-height: 44px;
     transition: background 0.15s ease, box-shadow 0.15s ease; box-shadow: 0 3px 12px rgba(79, 86, 255, 0.2);
   }
-  .btn-save:hover { background: var(--accent-gradient-hover); box-shadow: 0 4px 16px rgba(79, 86, 255, 0.26); }
+  .btn-save:hover { background: var(--action-hover); box-shadow: 0 4px 16px color-mix(in oklab, var(--action) 30%, transparent); }
   /* Agenda de procedimientos (vista semanal) */
   .rpc-proc-agenda-root { flex: 1; display: flex; flex-direction: column; min-height: 0; padding: calc(20px * var(--density-space)) calc(24px * var(--density-space)) calc(24px * var(--density-space)); gap: calc(14px * var(--density-space)); }
   .rpc-proc-agenda-header { display: flex; flex-wrap: wrap; align-items: center; gap: calc(10px * var(--density-space)) calc(16px * var(--density-space)); justify-content: space-between; }
@@ -2390,7 +2555,7 @@
   .rpc-proc-agenda-actions button.secondary:hover:not(:disabled) { background: var(--surface); border-color: var(--action); }
   .rpc-proc-agenda-actions button.secondary:disabled { opacity: 0.42; cursor: not-allowed; }
   .rpc-proc-agenda-actions .rpc-proc-agenda-btn-new {
-    background: var(--accent-gradient); color: #fff; border: none; border-radius: var(--radius-pill);
+    background: var(--action); color: #fff; border: none; border-radius: var(--radius-pill);
     padding: 8px 16px; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; min-height: 40px;
     box-shadow: 0 3px 12px rgba(79, 86, 255, 0.2);
   }
@@ -2424,8 +2589,24 @@
   .rpc-proc-agenda-block .rpc-proc-sub { margin-top: 2px; font-size: 10px; color: var(--text-muted); font-weight: 600; }
   .rpc-proc-agenda-block .rpc-proc-pat { margin-top: 3px; font-size: 10px; color: var(--primary); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--text); color: white; padding: 12px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; box-shadow: var(--shadow-md); transform: translateY(80px) scale(0.94); opacity: 0; transition: transform 0.32s cubic-bezier(0.34, 1.15, 0.64, 1), opacity 0.28s ease; z-index: 200; max-width: 320px; }
-  .toast.show { transform: translateY(0) scale(1); opacity: 1; }
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--text);
+    color: white;
+    padding: 12px 20px;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: var(--shadow-md);
+    transform: translateY(12px);
+    opacity: 0;
+    transition: transform var(--dur-normal) var(--ease-out), opacity var(--dur-fast) var(--ease-out);
+    z-index: 200;
+    max-width: 320px;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
   .toast.success { background: var(--success); }
   .toast.error { background: var(--error); }
   .lab-output-fecha {
@@ -2439,16 +2620,16 @@
     letter-spacing: 0.02em;
   }
   html.dark .lab-output-fecha { color: #93c5fd; border-bottom-color: rgba(148, 163, 184, 0.35); }
-  .out-line   { font-family: 'Courier New', monospace; line-height: 1.9; white-space: pre-wrap; font-size: 13px; }
-  .out-indent { font-family: 'Courier New', monospace; line-height: 1.9; padding-left: 2rem; white-space: pre-wrap; font-size: 13px; }
+  .out-line   { font-family: var(--font-mono); line-height: 1.9; white-space: pre-wrap; font-size: 13px; }
+  .out-indent { font-family: var(--font-mono); line-height: 1.9; padding-left: 2rem; white-space: pre-wrap; font-size: 13px; }
   .lab-bh-extended-line { border-top: 1px dashed color-mix(in oklab, var(--border) 75%, transparent); margin-top: 2px; padding-top: 4px; }
   .out-line strong, .out-indent strong { font-weight: 700; color: var(--error); background: rgba(220,38,38,0.07); padding: 0 3px; border-radius: 3px; }
-  .section-lbl { color: #4F46E5; font-weight: 700; letter-spacing: 0.04em; }
+  .section-lbl { color: var(--section-accent); font-weight: 600; letter-spacing: 0.01em; }
   .indica-section { border: 1px solid var(--divider); border-radius: 8px; overflow: hidden; }
-  .indica-section-header { background: #EFF6FF; padding: 8px 14px; font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--divider); }
-  .indica-section-body { padding: 12px 14px; background: white; }
-  .indica-section-body textarea { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 13px; font-family: inherit; color: var(--text); background: #F8FAFC; resize: vertical; min-height: 70px; line-height: 1.6; width: 100%; transition: border-color 0.15s, background 0.15s; }
-  .indica-section-body textarea:focus { outline: none; border-color: var(--action); background: white; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+  .indica-section-header { background: var(--section-header-bg); padding: 8px 14px; font-size: 12px; font-weight: 600; color: var(--text); text-transform: none; letter-spacing: 0.01em; border-bottom: 1px solid var(--divider); }
+  .indica-section-body { padding: 12px 14px; background: var(--surface); }
+  .indica-section-body textarea { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 13px; font-family: inherit; color: var(--text); background: var(--input-fill); resize: vertical; min-height: 70px; line-height: 1.6; width: 100%; transition: border-color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out); }
+  .indica-section-body textarea:focus { outline: none; border-color: var(--action); background: var(--surface); box-shadow: 0 0 0 3px var(--color-focus-ring); }
   .otros-item { border:1px solid var(--border); border-radius:8px; padding:12px; background:var(--bg); display:flex; flex-direction:column; gap:8px; position:relative; }
   .otros-item input { border:1px solid var(--border); border-radius:6px; padding:7px 10px; font-size:13px; font-family:inherit; background:white; font-weight:600; text-transform:uppercase; width:100%; }
   .otros-item input:focus { outline:none; border-color:var(--action); box-shadow:0 0 0 3px rgba(37,99,235,0.12); }
@@ -2458,7 +2639,7 @@
   .btn-remove-otro:hover { color:#dc2626; background:#fee2e2; }
   /* ── Listado de Problemas (v3.0 Sala) ────────────────────── */
   .listado-section { border: 1px solid var(--divider); border-radius: 8px; overflow: hidden; background: white; }
-  .listado-section-header { background: #EFF6FF; padding: 8px 14px; font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--divider); display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .listado-section-header { background: var(--section-header-bg); padding: 8px 14px; font-size: 12px; font-weight: 600; color: var(--text); text-transform: none; letter-spacing: 0.01em; border-bottom: 1px solid var(--divider); display:flex; align-items:center; justify-content:space-between; gap:8px; }
   .listado-section-header.activos { background: #ecfdf5; color: #065f46; }
   .listado-section-header.inactivos { background: #f3f4f6; color: #4b5563; }
   .listado-section-body { padding: 12px 14px; display:flex; flex-direction:column; gap:8px; }
@@ -2504,14 +2685,14 @@
   .listado-row .btn-remove-listado { background: none; border: 1px solid transparent; color: var(--text-muted); font-size: 16px; cursor: pointer; padding: 4px 6px; border-radius: 4px; line-height: 1; min-width: 28px; min-height: 28px; }
   .listado-row .btn-remove-listado:hover { color: #dc2626; background: #fee2e2; border-color: #fecaca; }
   .listado-add-row { background: none; border: 1px dashed var(--border); border-radius: 6px; padding: 8px 14px; font-size: 13px; font-family: inherit; color: var(--text-muted); cursor: pointer; transition: all 0.15s; }
-  .listado-add-row:hover { border-color: var(--action); color: var(--action); background: #EFF6FF; }
+  .listado-add-row:hover { border-color: var(--action); color: var(--action); background: var(--section-header-bg); }
   .listado-empty { font-size: 12px; color: var(--text-muted); font-style: italic; padding: 8px 4px; }
   html.dark .listado-section { background: var(--surface); }
   html.dark .listado-section-header { background: var(--lab-chip-bg); color: var(--lab-chip-txt); }
   html.dark .listado-section-header.activos { background: rgba(16,185,129,0.18); color: #6ee7b7; }
   html.dark .listado-section-header.inactivos { background: rgba(107,114,128,0.18); color: #d1d5db; }
   html.dark .listado-row textarea, html.dark .listado-row input[type="date"] { background: var(--bg); }
-  .diagrams-wrap { display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; }
+  .diagrams-wrap { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
   .lab-history-card-header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .lab-history-toggle {
     flex-shrink: 0; width: 32px; height: 32px; padding: 0; border: none; border-radius: 6px;
@@ -2628,8 +2809,8 @@
     .patient-card:hover, .app .card:hover, .tend-card:hover { transform: none; }
     .tab-content.active { animation: none; }
     .btn-add:active { transform: none; }
-    .toast { transform: translateY(80px); }
-    .toast.show { transform: translateY(0); }
+    .toast { transform: translateY(12px); opacity: 0; }
+    .toast.show { transform: translateY(0); opacity: 1; }
     .modal { animation: none; }
     .tend-range-vbar-norm,
     .tend-range-vbar-marker { transition: none !important; transition-delay: 0ms !important; }
@@ -2677,10 +2858,31 @@
   html.dark .btn-lab-history-del:hover { background: rgba(248,113,113,0.12); }
   .lab-history-card-actions { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
   .btn-lab-dedupe-sync { font-size: 12px; padding: 6px 10px; }
-  .dcard { background:#fff; border:1px solid var(--border); border-radius:8px; padding:14px 16px; flex-shrink:0; position:relative; }
-  .dcard-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:#9ca3af; margin-bottom:8px; padding-right:56px; }
+  .dcard {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .dcard-title {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0.02em;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    padding-right: 56px;
+  }
+  html.dark .dcard {
+    background: color-mix(in oklab, var(--surface) 92%, var(--bg));
+    border-color: color-mix(in oklab, var(--border) 140%, transparent);
+  }
+  html.dark .dcard svg [stroke] { stroke: var(--diagram-line); }
+  html.dark .dcard svg text { fill: var(--diagram-label); }
   .dcard-copy { position:absolute; top:10px; right:10px; background:none; border:1px solid var(--border); border-radius:5px; padding:4px 9px; font-size:11px; font-family:inherit; color:var(--text-muted); cursor:pointer; transition:all 0.15s; white-space:nowrap; }
-  .dcard-copy:hover { border-color:var(--action); color:var(--action); background:#EFF6FF; }
+  .dcard-copy:hover { border-color:var(--action); color:var(--action); background:var(--section-header-bg); }
   .dcard-copy.copied { border-color:#16a34a; color:#16a34a; background:#f0fdf4; }
   @media (max-width: 700px) {
     aside { width: 220px !important; }
@@ -2901,8 +3103,8 @@
   }
   .settings-accordion {
     border: 1px solid var(--border);
-    border-radius: 8px;
-    margin-bottom: 6px;
+    border-radius: var(--radius-md);
+    margin-bottom: calc(8px * var(--density-space));
     background: var(--surface);
   }
   .settings-accordion > summary {
@@ -2910,12 +3112,12 @@
     justify-content: space-between;
     align-items: center;
     list-style: none;
-    padding: 10px 12px;
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.45px;
-    color: var(--text-muted);
+    padding: calc(10px * var(--density-space)) calc(12px * var(--density-space));
+    font-size: calc(13px * var(--density-font));
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0.01em;
+    color: var(--text);
     cursor: pointer;
     user-select: none;
   }
@@ -2932,11 +3134,57 @@
     background: var(--lab-chip-bg);
   }
   .settings-acc-body {
-    padding: 10px 12px 12px;
+    padding: calc(10px * var(--density-space)) calc(12px * var(--density-space)) calc(12px * var(--density-space));
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: calc(8px * var(--density-space));
   }
+  .settings-acc-hint {
+    font-size: calc(11px * var(--density-font));
+    color: var(--text-muted);
+    line-height: 1.45;
+    margin: 0;
+  }
+  .settings-acc-hint--tight { line-height: 1.35; }
+  .settings-acc-hint--md { font-size: calc(12px * var(--density-font)); }
+  .settings-acc-label-spaced { margin-top: calc(8px * var(--density-space)); }
+  .settings-acc-label-spaced--sm { margin-top: calc(6px * var(--density-space)); }
+  .settings-acc-label-spaced--xs { margin-top: calc(4px * var(--density-space)); }
+  .settings-acc-label-spaced--2xs { margin-top: calc(2px * var(--density-space)); }
+  .settings-acc-row {
+    display: flex;
+    align-items: center;
+    gap: calc(8px * var(--density-space));
+  }
+  .settings-acc-path {
+    font-size: calc(13px * var(--density-font));
+    color: var(--text-muted);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .settings-acc-path--sm {
+    font-size: calc(11px * var(--density-font));
+    min-width: 120px;
+  }
+  .settings-acc-select { font-size: calc(12px * var(--density-font)); }
+  .settings-acc-btn-stack > .btn-edit-templates { margin-top: calc(2px * var(--density-space)); }
+  .settings-acc-btn-stack > .btn-edit-templates:first-child { margin-top: 0; }
+  .settings-acc-btn--inline { margin: 0; white-space: nowrap; }
+  .settings-acc-btn--danger { color: var(--error); }
+  .settings-acc-divider { margin: calc(8px * var(--density-space)) 0; }
+  .settings-acc-version {
+    font-size: calc(12px * var(--density-font));
+    color: var(--text-muted);
+    margin-bottom: calc(6px * var(--density-space));
+  }
+  .settings-acc-inline-help {
+    margin: calc(4px * var(--density-space)) 0 0 0;
+    display: none;
+  }
+  .settings-acc-inline-help.is-visible { display: block; }
   .settings-preimport-box {
     padding: 10px;
     border-radius: 8px;
@@ -2945,10 +3193,10 @@
   }
   .settings-preimport-label {
     margin: 0 0 4px 0;
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
+    font-size: calc(12px * var(--density-font));
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0.01em;
     color: var(--action);
   }
   .settings-preimport-meta {
@@ -2960,8 +3208,8 @@
   html.high-contrast .settings-accordion > summary { border-bottom: none; }
   html.high-contrast .settings-accordion[open] > summary { border-bottom: 2px solid var(--border); }
   .profile-field-label {
-    color: var(--text-muted); font-size: 10px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px;
+    color: var(--text-muted); font-size: 12px; font-weight: 600;
+    text-transform: none; letter-spacing: 0.01em; margin-bottom: 3px;
   }
   .profile-input {
     width: 100%;
@@ -2985,14 +3233,18 @@
   }
   .profile-divider { border: none; border-top: 1px solid var(--divider); margin: 4px 0; }
   .profile-defaults-title {
-    color: var(--text-muted); font-size: 10px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;
+    color: var(--text-muted);
+    font-size: calc(12px * var(--density-font));
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0.01em;
+    margin-bottom: calc(5px * var(--density-space));
   }
   .profile-default-preview {
     background: var(--bg); border: 1px solid var(--border); border-radius: 5px;
     padding: 5px 8px; font-size: 10px; color: var(--text-muted); font-style: italic; margin-bottom: 4px;
   }
-  .profile-default-preview .preview-label { font-style: normal; font-weight: 600; color: var(--text-muted); margin-bottom: 2px; font-size: 9px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .profile-default-preview .preview-label { font-style: normal; font-weight: 600; color: var(--text-muted); margin-bottom: 2px; font-size: calc(11px * var(--density-font)); text-transform: none; letter-spacing: 0.01em; }
   .btn-edit-templates {
     width: 100%; background: var(--lab-chip-bg); color: var(--action);
     border: none; border-radius: 5px; padding: 5px; font-size: 11px;
@@ -3015,13 +3267,13 @@
     box-shadow: 0 0 0 3px rgba(79, 86, 255, 0.12);
   }
   .btn-save-profile {
-    width: 100%; background: var(--accent-gradient); color: white; border: none;
+    width: 100%; background: var(--action); color: white; border: none;
     border-radius: var(--radius-pill); padding: 6px; font-size: 11px; font-family: inherit;
     cursor: pointer; font-weight: 700; margin-top: 4px;
     box-shadow: 0 2px 10px rgba(79, 86, 255, 0.2);
     transition: background 0.15s ease, box-shadow 0.15s ease;
   }
-  .btn-save-profile:hover { background: var(--accent-gradient-hover); box-shadow: 0 3px 12px rgba(79, 86, 255, 0.24); }
+  .btn-save-profile:hover { background: var(--action-hover); box-shadow: 0 3px 12px color-mix(in oklab, var(--action) 28%, transparent); }
   /* Templates modal */
   .templates-modal-backdrop {
     position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9990;
@@ -3034,7 +3286,7 @@
     border: none;
   }
   .templates-modal h3 { font-size: 15px; color: var(--text); }
-  .templates-modal label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; display: block; margin-bottom: 4px; }
+  .templates-modal label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: none; letter-spacing: 0.01em; display: block; margin-bottom: 4px; }
   .templates-modal textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; font-size: 12px; font-family: inherit; color: var(--text); resize: vertical; min-height: 60px; box-sizing: border-box; }
   .templates-modal textarea:focus { outline: none; border-color: var(--action); }
   .templates-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
@@ -3072,17 +3324,23 @@
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55);
     z-index: 9995; align-items: center; justify-content: center;
   }
-  .soap-modal-backdrop.open { display: flex; animation: fade-in 0.15s ease-out; }
+  .soap-modal-backdrop.open { display: flex; animation: fade-in var(--dur-fast) var(--ease-out); }
   /* Estado Actual mode (Sala v3.0) — oculta Subjetivo y cambia botones del footer */
   body[data-estado-actual-mode="true"] #soap-modal-backdrop .soap-section-s { display: none; }
   body[data-estado-actual-mode="true"] #soap-modal-backdrop .btn-soap-insert { display: none; }
   body[data-estado-actual-mode="true"] #soap-modal-backdrop .btn-soap-only-copy { display: inline-flex !important; }
   body[data-estado-actual-mode="true"] #soap-modal-backdrop .btn-soap-save-copy { display: inline-flex !important; }
   .soap-modal {
-    background: var(--surface); border-radius: 12px; width: 620px;
-    max-width: 95vw; max-height: 90vh; display: flex; flex-direction: column;
-    overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-    animation: modal-in 0.15s ease-out;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    width: 620px;
+    max-width: 95vw;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    animation: modal-in var(--dur-normal) var(--ease-out);
   }
   .soap-modal-header {
     background: #065F46; color: white; padding: 11px 18px; flex-shrink: 0;
@@ -3099,7 +3357,7 @@
     overflow: hidden; flex-shrink: 0; box-shadow: var(--shadow);
   }
   .soap-section-header {
-    background: #EFF6FF; border-bottom: 1px solid var(--divider);
+    background: var(--section-header-bg); border-bottom: 1px solid var(--divider);
     padding: 7px 14px; font-size: 10px; font-weight: 700;
     text-transform: uppercase; letter-spacing: 0.6px; color: var(--primary);
   }
@@ -3640,44 +3898,35 @@
     position: fixed;
     inset: 0;
     z-index: 1100;
-    padding: 0;
-    background: var(--surface);
-    align-items: stretch;
-    justify-content: stretch;
+    padding: 28px;
+    box-sizing: border-box;
+    background: rgba(0, 0, 0, 0.52);
+    align-items: center;
+    justify-content: center;
+    animation: fade-in var(--dur-fast) var(--ease-out);
   }
+  html.dark .tend-group-backdrop { background: rgba(0, 0, 0, 0.68); }
   #tend-group-modal {
     background: var(--surface);
     width: 100%;
     height: 100%;
-    max-width: 100vw;
-    max-height: 100dvh;
-    border-radius: 0;
-    border: none;
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
     overflow: hidden;
     display: flex;
     flex-direction: column;
     font-family: inherit;
-    box-shadow: none;
+    box-shadow: var(--shadow-md);
   }
   .tend-group-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 12px;
     padding: 14px 20px;
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
-  }
-  .tend-group-close {
-    flex-shrink: 0;
-    font-size: 22px;
-    line-height: 1;
-    width: 40px;
-    height: 40px;
-    padding: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
   }
   .tend-group-header h2 {
     margin: 0; font-size: 16px; font-weight: 700; color: var(--text); flex: 1; min-width: 0;
@@ -3872,16 +4121,6 @@
   .tend-hidden-chip-btn:hover { background: rgba(16, 185, 129, 0.15); color: #059669; }
   html.dark .tend-hidden-chip-btn:hover { color: #34d399; }
   .tend-hidden-chip-btn .tend-eye-svg { display: block; }
-  .tend-card-eye {
-    position: absolute; top: 8px; right: 8px; z-index: 3; width: 32px; height: 32px; padding: 0; margin: 0;
-    display: flex; align-items: center; justify-content: center; border: none; border-radius: 8px; cursor: pointer;
-    background: rgba(255,255,255,0.75); color: var(--muted); box-shadow: 0 1px 2px rgba(0,0,0,0.06);
-    transition: color 0.15s ease, background 0.15s ease, transform 0.15s ease;
-  }
-  html.dark .tend-card-eye { background: rgba(30,41,59,0.85); }
-  .tend-card-eye:hover { color: var(--text); background: var(--surface); transform: scale(1.05); }
-  .tend-card-eye:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-  .tend-card .tend-card-header { padding-right: 36px; }
   .tend-grid,
   .tend-grid.tend-sort-zone {
     display: grid;
@@ -4022,9 +4261,9 @@
   .cultivos-row-neg { background: rgba(34, 197, 94, 0.06); }
   html.dark .cultivos-row-neg { background: rgba(34, 197, 94, 0.1); }
   .cultivos-cell-atb pre {
-    margin: 0; font-family: ui-monospace, monospace; font-size: 11px; line-height: 1.4; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto;
+    margin: 0; font-family: var(--font-mono); font-size: 11px; line-height: 1.4; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto;
   }
-  .cultivos-atb-fallback { margin: 0; font-family: ui-monospace, monospace; font-size: 11px; line-height: 1.4; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto; }
+  .cultivos-atb-fallback { margin: 0; font-family: var(--font-mono); font-size: 11px; line-height: 1.4; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto; }
   .cultivos-atb-wrap { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
   .cultivos-atb-chips, .pase-cult-atb-chips {
     display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center;
@@ -4385,14 +4624,14 @@
 <body>
 <a class="skip-to-main" href="#main-area">Saltar al contenido principal</a>
 
-<div id="update-banner" style="display:none;background:#166534;color:#bbf7d0;padding:8px 16px;font-size:13px;font-weight:600;align-items:center;gap:12px;flex-shrink:0;">
+<div id="update-banner">
   <span id="update-banner-text">Descargando actualización…</span>
-  <div id="update-progress-track" style="flex:1;height:4px;background:rgba(255,255,255,0.2);border-radius:2px;overflow:hidden;">
-    <div id="update-progress-fill" style="height:100%;width:0%;background:#4ade80;border-radius:2px;transition:width 0.3s;"></div>
+  <div id="update-progress-track">
+    <div id="update-progress-fill"></div>
   </div>
-  <div id="update-actions" style="display:none;gap:8px;flex-shrink:0;">
-    <button onclick="installUpdate()" style="background:white;color:#166534;border:none;border-radius:5px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">Instalar y reiniciar</button>
-    <button onclick="document.getElementById('update-banner').style.display='none'" style="background:transparent;color:#bbf7d0;border:1px solid rgba(255,255,255,0.4);border-radius:5px;padding:4px 12px;font-size:12px;cursor:pointer;font-family:inherit;">Más tarde</button>
+  <div id="update-actions">
+    <button type="button" class="update-banner-btn-primary" onclick="installUpdate()">Instalar y reiniciar</button>
+    <button type="button" class="update-banner-btn-secondary" onclick="document.getElementById('update-banner').classList.remove('is-active')">Más tarde</button>
   </div>
 </div>
 
@@ -4505,21 +4744,21 @@
             <button type="button" class="settings-theme-btn" id="settings-theme-light" onclick="setThemeMode('light')" data-i18n="settings.themeLight">Claro</button>
             <button type="button" class="settings-theme-btn" id="settings-theme-dark" onclick="setThemeMode('dark')" data-i18n="settings.themeDark">Oscuro</button>
           </div>
-          <div class="profile-field-label" style="margin-top:4px;" data-i18n="settings.fontSize">Tamaño de texto</div>
-          <p id="settings-fontsize-hint" class="overview-hint" style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;" data-i18n="settings.fontSizeHint">Escala toda la interfaz (útil en pantallas pequeñas).</p>
+          <div class="profile-field-label settings-acc-label-spaced--xs" data-i18n="settings.fontSize">Tamaño de texto</div>
+          <p id="settings-fontsize-hint" class="overview-hint settings-acc-hint" data-i18n="settings.fontSizeHint">Escala toda la interfaz (útil en pantallas pequeñas).</p>
           <div class="settings-theme-row" id="settings-font-zoom-row" role="group" aria-label="Tamaño de texto" aria-describedby="settings-fontsize-hint" data-i18n-aria-label="settings.fontSize">
             <button type="button" class="settings-theme-btn" id="settings-font-100" onclick="setFontZoom(100)" data-i18n="settings.fontNormal">Normal</button>
             <button type="button" class="settings-theme-btn" id="settings-font-110" onclick="setFontZoom(110)" data-i18n="settings.fontLarge">Grande</button>
             <button type="button" class="settings-theme-btn" id="settings-font-125" onclick="setFontZoom(125)" data-i18n="settings.fontXLarge">Más grande</button>
           </div>
-          <div class="profile-field-label" style="margin-top:8px;" data-i18n="settings.uiDensity">Densidad de la interfaz</div>
-          <p id="settings-density-hint" class="overview-hint" style="font-size:11px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;" data-i18n="settings.uiDensityHint">Normal: pestañas completas y Ronda. Pase: resumen del paciente en una columna; pulsa un título para abrir el detalle en Normal. ⌘P o Ctrl+P alterna.</p>
+          <div class="profile-field-label settings-acc-label-spaced" data-i18n="settings.uiDensity">Densidad de la interfaz</div>
+          <p id="settings-density-hint" class="overview-hint settings-acc-hint" data-i18n="settings.uiDensityHint">Normal: pestañas completas y Ronda. Pase: resumen del paciente en una columna; pulsa un título para abrir el detalle en Normal. ⌘P o Ctrl+P alterna.</p>
           <div class="settings-theme-row" role="group" aria-label="Modo de vista" aria-describedby="settings-density-hint" data-i18n-aria-label="settings.uiDensity">
             <button type="button" class="settings-theme-btn" id="settings-density-normal" onclick="setUiDensity('normal')" data-i18n="settings.densityNormal">Normal</button>
             <button type="button" class="settings-theme-btn" id="settings-density-pase" onclick="setUiDensity('pase')" data-i18n="settings.densityPase">Pase</button>
           </div>
-          <div class="profile-field-label" style="margin-top:6px;" data-i18n="settings.highContrast">Alto contraste</div>
-          <p id="settings-hc-hint" class="overview-hint" style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;" data-i18n="settings.highContrastHint">Aumenta el contraste de texto y bordes para mejor legibilidad.</p>
+          <div class="profile-field-label settings-acc-label-spaced--sm" data-i18n="settings.highContrast">Alto contraste</div>
+          <p id="settings-hc-hint" class="overview-hint settings-acc-hint" data-i18n="settings.highContrastHint">Aumenta el contraste de texto y bordes para mejor legibilidad.</p>
           <div class="settings-theme-row" role="group" aria-label="Alto contraste" aria-describedby="settings-hc-hint" data-i18n-aria-label="settings.highContrast">
             <button type="button" class="settings-theme-btn" id="settings-hc-off" onclick="setHighContrast(false)" data-i18n="settings.hcOff">Desactivado</button>
             <button type="button" class="settings-theme-btn" id="settings-hc-on" onclick="setHighContrast(true)" data-i18n="settings.hcOn">Activado</button>
@@ -4530,7 +4769,7 @@
       <details class="settings-accordion">
         <summary>Laboratorio</summary>
         <div class="settings-acc-body">
-          <p style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;">Busca en <strong>todos los pacientes</strong> entradas repetidas en el historial de labs (misma fecha, hora y bloques de resultados) y permite eliminarlas conservando la copia más antigua.</p>
+          <p class="settings-acc-hint">Busca en <strong>todos los pacientes</strong> entradas repetidas en el historial de labs (misma fecha, hora y bloques de resultados) y permite eliminarlas conservando la copia más antigua.</p>
           <button type="button" class="btn-edit-templates" onclick="openLabHistoryDedupeReview('all')">Revisar duplicados en historial…</button>
         </div>
       </details>
@@ -4538,14 +4777,14 @@
       <details class="settings-accordion" id="settings-accordion-documents">
         <summary>Documentos y salida</summary>
         <div class="settings-acc-body">
-          <p style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;" data-i18n="settings.docsFolderHint">Los .docx generados se guardan aquí (si no eliges carpeta, se usa Descargas).</p>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span id="settings-output-dir" style="font-size:13px;color:var(--text-muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="">Descargas (predeterminado)</span>
-            <button type="button" class="btn-edit-templates" style="margin:0;white-space:nowrap;" onclick="chooseOutputDir()">Cambiar</button>
+          <p class="settings-acc-hint" data-i18n="settings.docsFolderHint">Los .docx generados se guardan aquí (si no eliges carpeta, se usa Descargas).</p>
+          <div class="settings-acc-row">
+            <span id="settings-output-dir" class="settings-acc-path" title="">Descargas (predeterminado)</span>
+            <button type="button" class="btn-edit-templates settings-acc-btn--inline" onclick="chooseOutputDir()">Cambiar</button>
           </div>
-          <label for="settings-quick-output-format" class="profile-field-label" style="margin-top:8px;">Salida rápida</label>
-          <p style="font-size:12px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;">Formato por defecto para exportar al instante la nota/indicaciones actuales.</p>
-          <select id="settings-quick-output-format" class="profile-input" onchange="saveQuickOutputFormat(this.value)" style="font-size:12px;">
+          <label for="settings-quick-output-format" class="profile-field-label settings-acc-label-spaced">Salida rápida</label>
+          <p class="settings-acc-hint settings-acc-hint--md">Formato por defecto para exportar al instante la nota/indicaciones actuales.</p>
+          <select id="settings-quick-output-format" class="profile-input settings-acc-select" onchange="saveQuickOutputFormat(this.value)">
             <option value="docx">DOCX (flujo actual)</option>
             <option value="html">HTML descargable</option>
             <option value="txt">Texto plano (.txt)</option>
@@ -4556,20 +4795,20 @@
       <details class="settings-accordion" id="settings-accordion-lan-host-disk" style="display: none;">
         <summary>LAN · servidor en esta computadora</summary>
         <div class="settings-acc-body">
-          <p style="font-size:10px;color:var(--text-muted);line-height:1.45;margin:0 0 8px 0;">
+          <p class="settings-acc-hint settings-acc-hint--tight">
             Solo si esta R+ es <strong>anfitrión</strong> (el proceso en el puerto 3738). Aquí se escribe <code>lan-team-code.txt</code> en datos de la app; el mismo texto debe ir en <strong>Código del equipo</strong> al conectar por LAN. Si dejas el campo vacío, el servidor usa <strong>1234</strong>. Tras guardar aquí, <strong>reinicia R+</strong>. Si hubo error 500 por cambiar código, usa restablecer abajo.
           </p>
           <div id="lan-host-first-time-hint" class="settings-lan-host-first-hint" style="display:none;" role="status"></div>
           <label for="settings-lan-host-team-code-input" class="profile-field-label">Código en el servidor (archivo)</label>
-          <input id="settings-lan-host-team-code-input" class="profile-input" type="text" autocomplete="off" placeholder="1234 (recomendado; vacío = 1234)" style="font-size:12px;" />
-          <button type="button" class="btn-edit-templates" style="margin-top:6px;" onclick="saveLanHostTeamCodeFromUi()">Guardar código en esta computadora</button>
-          <button type="button" class="btn-edit-templates" style="margin-top:8px;color:var(--error);" onclick="resetLanSquadHostStateFromUi()">Restablecer estado LAN del host…</button>
+          <input id="settings-lan-host-team-code-input" class="profile-input settings-acc-select" type="text" autocomplete="off" placeholder="1234 (recomendado; vacío = 1234)" />
+          <button type="button" class="btn-edit-templates" onclick="saveLanHostTeamCodeFromUi()">Guardar código en esta computadora</button>
+          <button type="button" class="btn-edit-templates settings-acc-btn--danger" onclick="resetLanSquadHostStateFromUi()">Restablecer estado LAN del host…</button>
         </div>
       </details>
 
       <details class="settings-accordion" id="settings-accordion-backup-sync">
         <summary>Respaldos, sync y recuperación</summary>
-        <div class="settings-acc-body">
+        <div class="settings-acc-body settings-acc-btn-stack">
           <div class="settings-data-sync-compare">
             <div class="settings-sync-card">
               <h4>Sala en vivo (LAN)</h4>
@@ -4589,55 +4828,55 @@
             <p class="settings-preimport-meta" id="settings-preimport-meta">—</p>
             <button type="button" class="btn-edit-templates" onclick="restorePreimportBackupPrompt();">Restaurar esa copia…</button>
           </div>
-          <p style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;" data-i18n="settings.backupHint">Exporta o restaura pacientes, notas e indicaciones (JSON).</p>
+          <p class="settings-acc-hint" data-i18n="settings.backupHint">Exporta o restaura pacientes, notas e indicaciones (JSON).</p>
           <button type="button" class="btn-edit-templates" onclick="exportDataBackup()">Exportar copia de seguridad…</button>
-          <button type="button" class="btn-edit-templates" style="margin-top:2px;" onclick="exportActivePatientBackup()">Exportar paciente actual…</button>
-          <button type="button" class="btn-edit-templates" style="margin-top:2px;" onclick="exportRangeBackupPrompt()">Exportar por rango…</button>
-          <button type="button" class="btn-edit-templates" style="margin-top:2px;" onclick="triggerImportActivePatientBackup()">Importar paciente…</button>
-          <button type="button" class="btn-edit-templates" style="margin-top:2px;" onclick="triggerImportRangeBackup()">Importar rango…</button>
-          <button type="button" class="btn-edit-templates" style="margin-top:2px;" onclick="triggerImportBackup()">Importar copia de seguridad…</button>
-          <label for="auto-backup-frequency" class="profile-field-label" style="margin-top:8px;">Auto-respaldo</label>
+          <button type="button" class="btn-edit-templates" onclick="exportActivePatientBackup()">Exportar paciente actual…</button>
+          <button type="button" class="btn-edit-templates" onclick="exportRangeBackupPrompt()">Exportar por rango…</button>
+          <button type="button" class="btn-edit-templates" onclick="triggerImportActivePatientBackup()">Importar paciente…</button>
+          <button type="button" class="btn-edit-templates" onclick="triggerImportRangeBackup()">Importar rango…</button>
+          <button type="button" class="btn-edit-templates" onclick="triggerImportBackup()">Importar copia de seguridad…</button>
+          <label for="auto-backup-frequency" class="profile-field-label settings-acc-label-spaced">Auto-respaldo</label>
           <div style="display:flex;gap:6px;">
-            <select id="auto-backup-frequency" class="profile-input" onchange="updateAutoBackupSettingsFromUi()" style="font-size:12px;">
+            <select id="auto-backup-frequency" class="profile-input settings-acc-select" onchange="updateAutoBackupSettingsFromUi()">
               <option value="off">Desactivado</option>
               <option value="daily">Diario</option>
               <option value="weekly">Semanal</option>
             </select>
-            <select id="auto-backup-retention" class="profile-input" onchange="updateAutoBackupSettingsFromUi()" style="font-size:12px;">
+            <select id="auto-backup-retention" class="profile-input settings-acc-select" onchange="updateAutoBackupSettingsFromUi()">
               <option value="3">3 archivos</option>
               <option value="7">7 archivos</option>
               <option value="14">14 archivos</option>
             </select>
           </div>
-          <button type="button" class="btn-edit-templates" style="margin-top:2px;" onclick="runAutoBackupNow()">Generar auto-respaldo ahora</button>
-          <button type="button" class="btn-edit-templates" style="margin-top:2px;" onclick="exportAuditLog()">Exportar bitácora</button>
-          <button type="button" class="btn-edit-templates" style="margin-top:2px;" id="btn-undo-op" onclick="undoLastOperation()" disabled title="Revierte la última operación destructiva (eliminar paciente o importar).">Deshacer última operación</button>
-          <p style="font-size:10px;color:var(--text-muted);line-height:1.35;margin:4px 0 0 0;">El deshacer usa una copia en memoria del momento previo. Si algo salió mal, usa <strong>Restaurar esa copia</strong> (si existe) o un archivo <strong>R-plus-auto-respaldo-</strong> / <strong>R-plus-respaldo-</strong> desde Descargas.</p>
-          <hr class="profile-divider" style="margin:8px 0;">
+          <button type="button" class="btn-edit-templates" onclick="runAutoBackupNow()">Generar auto-respaldo ahora</button>
+          <button type="button" class="btn-edit-templates" onclick="exportAuditLog()">Exportar bitácora</button>
+          <button type="button" class="btn-edit-templates" id="btn-undo-op" onclick="undoLastOperation()" disabled title="Revierte la última operación destructiva (eliminar paciente o importar).">Deshacer última operación</button>
+          <p class="settings-acc-hint settings-acc-hint--tight">El deshacer usa una copia en memoria del momento previo. Si algo salió mal, usa <strong>Restaurar esa copia</strong> (si existe) o un archivo <strong>R-plus-auto-respaldo-</strong> / <strong>R-plus-respaldo-</strong> desde Descargas.</p>
+          <hr class="profile-divider settings-acc-divider">
           <div class="profile-defaults-title">Catálogo medicamentos (SOAP)</div>
-          <p style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;">Personaliza <strong>acentos</strong> y <strong>palabras clave</strong> por categoría para la plantilla SOAP. Sin datos de pacientes.</p>
+          <p class="settings-acc-hint">Personaliza <strong>acentos</strong> y <strong>palabras clave</strong> por categoría para la plantilla SOAP. Sin datos de pacientes.</p>
           <button type="button" class="btn-edit-templates" onclick="exportMedCatalogBundle()">Exportar catálogo…</button>
-          <button type="button" class="btn-edit-templates" style="margin-top:2px;" onclick="triggerImportMedCatalog()">Importar catálogo…</button>
-          <hr class="profile-divider" style="margin:8px 0;">
+          <button type="button" class="btn-edit-templates" onclick="triggerImportMedCatalog()">Importar catálogo…</button>
+          <hr class="profile-divider settings-acc-divider">
           <div class="profile-defaults-title">Sync entre equipos</div>
-          <p style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;">Paquetes JSON (opcionalmente cifrados con passphrase).</p>
+          <p class="settings-acc-hint">Paquetes JSON (opcionalmente cifrados con passphrase).</p>
           <button type="button" class="btn-edit-templates" onclick="exportSyncBundlePrompt()">Exportar paquete sync…</button>
-          <button type="button" class="btn-edit-templates" style="margin-top:2px;" onclick="triggerImportSyncBundle()">Importar paquete sync…</button>
+          <button type="button" class="btn-edit-templates" onclick="triggerImportSyncBundle()">Importar paquete sync…</button>
         </div>
       </details>
 
       <details class="settings-accordion">
         <summary>Plantillas y flujo de trabajo</summary>
         <div class="settings-acc-body">
-          <p style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;">Combinaciones de dieta, cuidados y medicamentos aplicables desde Indicaciones.</p>
+          <p class="settings-acc-hint">Combinaciones de dieta, cuidados y medicamentos aplicables desde Indicaciones.</p>
           <button type="button" class="btn-edit-templates" onclick="openExtraTemplatesManager()">Administrar plantillas…</button>
-          <hr class="profile-divider" style="margin:8px 0;">
+          <hr class="profile-divider settings-acc-divider">
           <div class="profile-defaults-title">Búsqueda unificada</div>
-          <p style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;">Pacientes, notas e indicaciones. Atajo: Ctrl/⌘ + K.</p>
+          <p class="settings-acc-hint">Pacientes, notas e indicaciones. Atajo: Ctrl/⌘ + K.</p>
           <button type="button" class="btn-edit-templates" onclick="openUnifiedSearch()">Abrir búsqueda…</button>
-          <hr class="profile-divider" style="margin:8px 0;">
+          <hr class="profile-divider settings-acc-divider">
           <div class="profile-defaults-title">Modo enfoque</div>
-          <p style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;">Oculta barra lateral y ajustes. Atajo: F6.</p>
+          <p class="settings-acc-hint">Oculta barra lateral y ajustes. Atajo: F6.</p>
           <button type="button" class="btn-edit-templates" id="btn-toggle-focus-mode" onclick="toggleFocusMode()">Activar modo enfoque</button>
         </div>
       </details>
@@ -4645,23 +4884,23 @@
       <details class="settings-accordion">
         <summary>Privacidad y datos en este equipo</summary>
         <div class="settings-acc-body">
-          <p style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;">Bloqueo con PIN (hash local SHA-256, no se envía a servidores).</p>
-          <label for="settings-idle-lock" class="profile-field-label" style="margin-top:2px;">Bloqueo por inactividad</label>
-          <select id="settings-idle-lock" class="profile-input" onchange="onIdleLockSelectChange(this.value)" style="font-size:12px;">
+          <p class="settings-acc-hint">Bloqueo con PIN (hash local SHA-256, no se envía a servidores).</p>
+          <label for="settings-idle-lock" class="profile-field-label settings-acc-label-spaced--2xs">Bloqueo por inactividad</label>
+          <select id="settings-idle-lock" class="profile-input settings-acc-select" onchange="onIdleLockSelectChange(this.value)">
             <option value="0">Desactivado</option>
             <option value="5">5 minutos</option>
             <option value="10">10 minutos</option>
             <option value="30">30 minutos</option>
           </select>
           <button type="button" class="btn-edit-templates" style="margin-top:4px;" onclick="changeIdleLockPin()">Cambiar PIN de bloqueo…</button>
-          <hr class="profile-divider" style="margin:8px 0;">
-          <p style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;">R+ guarda pacientes, notas, labs, recetas y ajustes en el perfil local de Electron. Los <code>.docx</code> van a la carpeta de salida que elijas.</p>
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <span id="settings-user-data-path" style="font-size:11px;color:var(--text-muted);flex:1;min-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="">—</span>
-            <button type="button" class="btn-edit-templates" style="margin:0;white-space:nowrap;" id="settings-open-userdata-btn" onclick="openUserDataFolderFromSettings()">Abrir carpeta…</button>
+          <hr class="profile-divider settings-acc-divider">
+          <p class="settings-acc-hint">R+ guarda pacientes, notas, labs, recetas y ajustes en el perfil local de Electron. Los <code>.docx</code> van a la carpeta de salida que elijas.</p>
+          <div class="settings-acc-row" style="flex-wrap:wrap;">
+            <span id="settings-user-data-path" class="settings-acc-path settings-acc-path--sm" title="">—</span>
+            <button type="button" class="btn-edit-templates settings-acc-btn--inline" id="settings-open-userdata-btn" onclick="openUserDataFolderFromSettings()">Abrir carpeta…</button>
           </div>
-          <p id="settings-userdata-web-hint" style="font-size:10px;color:var(--text-muted);line-height:1.35;margin:6px 0 0 0;display:none;">Solo disponible en la aplicación de escritorio.</p>
-          <button type="button" class="btn-edit-templates" style="margin-top:6px;color:var(--error);" onclick="openWipeDataModal()">Borrar datos de R+ en este equipo…</button>
+          <p id="settings-userdata-web-hint" class="settings-acc-hint settings-acc-hint--tight settings-acc-inline-help">Solo disponible en la aplicación de escritorio.</p>
+          <button type="button" class="btn-edit-templates settings-acc-btn--danger" onclick="openWipeDataModal()">Borrar datos de R+ en este equipo…</button>
         </div>
       </details>
 
@@ -4669,10 +4908,10 @@
         <summary data-i18n="settings.application">Aplicación y actualizaciones</summary>
         <div class="settings-acc-body">
           <div class="profile-field-label" data-i18n="settings.version">Versión</div>
-          <div id="settings-app-version" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">—</div>
-          <label for="rpc-update-channel" class="profile-field-label" style="margin-top:4px;">Canal de actualizaciones</label>
-          <p style="font-size:10px;color:var(--text-muted);line-height:1.4;margin:0 0 4px 0;"><strong>Pre-releases</strong> incluye borradores de GitHub; <strong>Estable</strong> solo versiones oficiales.</p>
-          <select id="rpc-update-channel" class="profile-input" onchange="setUpdateChannel(this.value)" style="font-size:12px;">
+          <div id="settings-app-version" class="settings-acc-version">—</div>
+          <label for="rpc-update-channel" class="profile-field-label settings-acc-label-spaced--xs">Canal de actualizaciones</label>
+          <p class="settings-acc-hint"><strong>Pre-releases</strong> incluye borradores de GitHub; <strong>Estable</strong> solo versiones oficiales.</p>
+          <select id="rpc-update-channel" class="profile-input settings-acc-select" onchange="setUpdateChannel(this.value)">
             <option value="estable">Estable (recomendado)</option>
             <option value="beta">Pre-releases (borradores)</option>
           </select>
@@ -4680,9 +4919,9 @@
             <input type="checkbox" id="rpc-update-telemetry-toggle" onchange="setUpdateTelemetryEnabled(this.checked)" style="flex-shrink:0;">
             <span>Enviar telemetría anónima de actualización</span>
           </label>
-          <p style="font-size:10px;color:var(--text-muted);line-height:1.35;margin:4px 0 0 0;">Solo versión, resultado y plataforma. <strong>No</strong> incluye datos clínicos. Desactivado por defecto.</p>
+          <p class="settings-acc-hint settings-acc-hint--tight">Solo versión, resultado y plataforma. <strong>No</strong> incluye datos clínicos. Desactivado por defecto.</p>
           <button type="button" class="btn-edit-templates" id="settings-check-updates-btn" style="margin-top:8px;" onclick="checkForAppUpdates()" data-i18n="settings.checkUpdates">Buscar actualizaciones…</button>
-          <p id="settings-updates-hint" style="font-size:10px;color:var(--text-muted);line-height:1.35;margin:4px 0 0 0;display:none;">También en el menú de la aplicación (Mac: R+, Windows: Aplicación).</p>
+          <p id="settings-updates-hint" class="settings-acc-hint settings-acc-hint--tight settings-acc-inline-help">También en el menú de la aplicación (Mac: R+, Windows: Aplicación).</p>
         </div>
       </details>
 
@@ -4864,27 +5103,28 @@
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 Procesar
               </button>
-              <button type="button" id="btn-procesar-y-expediente" class="btn-generate" onclick="procesarYEnviarExpediente()" style="min-width:200px;background:#065F46;" disabled title="Con paciente activo: procesa, envía a la nota y abre Expediente">
+              <button type="button" id="btn-procesar-y-expediente" class="btn-generate btn-generate--success" onclick="procesarYEnviarExpediente()" style="min-width:200px;" disabled title="Con paciente activo: procesa, envía a la nota y abre Expediente">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 Procesar y abrir expediente
               </button>
-              <button onclick="limpiarReporte()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:9px 16px;font-size:13px;font-family:inherit;color:var(--text-muted);cursor:pointer;min-height:44px;" onmouseover="this.style.background='#F1F5F9'" onmouseout="this.style.background='none'">
-                Limpiar
-              </button>
+              <button type="button" class="btn-med-secondary btn-med-secondary--muted" onclick="limpiarReporte()">Limpiar</button>
             </div>
             <p id="lab-combo-hint" class="overview-hint" style="display:none;margin:0;font-size:11px;color:var(--text-muted);line-height:1.4;">Selecciona un paciente a la izquierda para usar <strong>Procesar y abrir expediente</strong> en un solo paso.</p>
           </div>
         </div>
 
-        <div id="lab-banner" class="card" style="display:none;border-left:4px solid var(--action);flex-shrink:0;">
-          <div class="card-body" style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;">
-            <div style="flex:1;">
-              <div style="font-size:11px;font-weight:700;color:var(--action);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Paciente detectado</div>
-              <div id="lab-patient-name" style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px;"></div>
-              <div id="lab-patient-meta" style="font-size:13px;color:var(--text-muted);"></div>
+        <div id="lab-banner" class="card lab-banner--detected" style="display:none;flex-shrink:0;">
+          <div class="card-body lab-banner-body">
+            <div class="lab-banner-main">
+              <div class="lab-banner-status" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Paciente detectado
+              </div>
+              <div id="lab-patient-name" class="lab-banner-name"></div>
+              <div id="lab-patient-meta" class="lab-banner-meta"></div>
             </div>
-            <button class="btn-generate" onclick="openAddModalFromLab()" style="white-space:nowrap;flex-shrink:0;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            <button type="button" class="btn-generate lab-banner-cta" onclick="openAddModalFromLab()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
               Agregar Paciente
             </button>
           </div>
@@ -5164,7 +5404,7 @@
         <p style="font-size:11px;color:var(--text-muted);margin:2px 0 8px 0;line-height:1.3;">Sala oculta Nota e Indicaciones; expone Estado Actual y Listado de problemas.</p>
       </div>
       <div>
-        <div class="profile-field-label" style="margin-top:6px;">Servicio (Sala)</div>
+        <div class="profile-field-label settings-acc-label-spaced--sm">Servicio (Sala)</div>
         <input class="profile-input" id="settings-default-servicio" type="text" placeholder="MEDICINA INTERNA" style="text-transform:uppercase;" onblur="onDefaultServicioBlur()">
         <p style="font-size:11px;color:var(--text-muted);margin:4px 0 0 0;line-height:1.3;">Sin abreviaturas. Pre-llena Servicio al agregar pacientes en Sala.</p>
         <p id="default-servicio-warning" style="display:none;color:#b45309;font-size:11px;margin:4px 0 0 0;line-height:1.3;">¿Estás seguro? Recomendamos servicio sin abreviaturas (p.ej. MEDICINA INTERNA en lugar de MI).</p>
@@ -5209,7 +5449,7 @@
       <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;">
         <button class="btn-edit-templates" onclick="openTemplatesModal()">✏️ Editar plantillas…</button>
         <button class="btn-save-profile" onclick="saveSettings()">Guardar perfil</button>
-        <button class="btn-edit-templates" style="margin-top:2px;" onclick="resetAndStartOnboarding()">🎓 Ver tutorial</button>
+        <button class="btn-edit-templates" onclick="resetAndStartOnboarding()">🎓 Ver tutorial</button>
       </div>
     </div>
   </div>
@@ -5599,7 +5839,6 @@
   <div id="tend-group-modal" role="dialog" aria-modal="true" aria-labelledby="tend-group-title">
     <header class="tend-group-header">
       <h2 id="tend-group-title"></h2>
-      <button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon tend-group-close" onclick="closeTendGroupModal()" aria-label="Cerrar" title="Cerrar (Esc)">×</button>
     </header>
     <div class="tend-group-tabs-wrap">
       <nav class="tend-group-tabs" id="tend-group-tabs-track" role="tablist" aria-label="Vista del estudio" data-active="charts">
