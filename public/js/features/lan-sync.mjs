@@ -407,7 +407,7 @@ function applyLanPatientEntries(entries) {
   return { added: added, updated: updated };
 }
 
-function removePatientLocally(patientId) {
+export function removePatientLocally(patientId) {
   var pid = String(patientId || '').trim();
   if (!pid || pid.indexOf('demo-') === 0) return false;
   if (!patients.some(function (p) {

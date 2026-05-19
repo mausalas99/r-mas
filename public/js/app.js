@@ -66,7 +66,6 @@ import {
 import { LISTADO_PROBLEMAS_AI_PROMPT } from './listado-problemas-ai-prompt.mjs';
 import { parseLanJoinQuery } from './lan-join-link.mjs';
 import { isMobileWeb, blockIfMobileDocExport, mobileDocExportToast } from './mobile-web.mjs';
-import { validatePatientForSave, buildExpedienteAdvice } from './patient-validation.mjs';
 import {
   getTourSteps,
   getTourTarget,
@@ -125,7 +124,6 @@ import {
   emitLiveSyncAgendaDelete,
   emitLiveSyncTodoUpsert,
   emitLiveSyncTodoDelete,
-  emitLiveSyncPatientDelete,
   closeConnectionDropdown,
   openConnectionDropdown,
   configureLanFromMobileJoin,
@@ -133,6 +131,40 @@ import {
   syncLanHostFirstTimeHintUi,
   DEFAULT_LAN_TEAM_CODE,
 } from './features/lan-sync.mjs';
+import {
+  registerPatientsRuntime,
+  windowHandlers as patientsWindowHandlers,
+  renderPatientList,
+  selectPatient,
+  deletePatient,
+  advanceRondaPatient,
+  scrollActiveRondaCardIntoView,
+  syncRoundExpedienteLayout,
+  renderRoundOverviewPanels,
+  returnToRoundOverview,
+  openFullExpedienteFromRound,
+  buildPatientEntry,
+  findPatientByRegistro,
+  ensureUniquePatientName,
+  generatePatientId,
+  openAddModal,
+  openAddModalFromLab,
+  closeModal,
+  confirmCloseAddPatientModal,
+  savePatient,
+  onPatientSearchInput,
+  focusPatientSearchInput,
+  togglePatientPinned,
+  togglePatientArchived,
+  togglePatientRoundSeen,
+  movePatientByOffset,
+  toggleArchivedSection,
+  toggleSidebarAutoHide,
+  initSidebarAutoHide,
+  initPatientModalEnterSave,
+  setRoundOverviewMode,
+  getRoundOverviewMode,
+} from './features/patients.mjs';
 import {
   patients,
   notes,
@@ -157,14 +189,6 @@ var activeInner  = 'todo';
 var activeAppTab = 'lab';
 /** @type {number} -1 pasado, 0 actual, +1 siguiente (spec agenda semanal) */
 var procedureAgendaWeekOffset = 0;
-var patientSearchFilter = '';
-var _lastRondaNavIds = [];
-/** Solo en densidad Pase + Expediente: resumen ronda (labs + pendientes) vs expediente con pestañas. */
-var _roundOverviewMode = true;
-var ARCHIVED_SECTION_COLLAPSED_LS = 'rpc-archived-section-collapsed';
-var SIDEBAR_AUTO_HIDE_LS = 'rpc-sidebar-auto-hide';
-/** Una instancia Sortable.js por zona (pinned / activos / archivados). */
-var _patientListSortables = [];
 /** Una instancia Sortable.js por rejilla de tendencias (por sección de laboratorio). */
 var _tendCardSortables = [];
 /** Una instancia Sortable.js por sección del listado de problemas (activos / inactivos). */
@@ -1941,6 +1965,77 @@ function toggleLabHistoryPanel(ev) {
   catch (e) { console.error('migrateLabHistory write error:', e && e.message); }
 }());
 
+registerPatientsRuntime({
+  getActiveId: function () {
+    return activeId;
+  },
+  setActiveId: function (id) {
+    activeId = id;
+  },
+  getActiveAppTab: function () {
+    return activeAppTab;
+  },
+  getActiveInner: function () {
+    return activeInner;
+  },
+  setActiveInner: function (v) {
+    activeInner = v;
+  },
+  getSettings: function () {
+    return settings;
+  },
+  getActiveLab: function () {
+    return activeLab;
+  },
+  consumeActiveLab: function () {
+    var x = activeLab;
+    activeLab = null;
+    return x;
+  },
+  restoreActiveLab: function (x) {
+    activeLab = x;
+  },
+  clearLabOutputUi: function () {
+    var banner = document.getElementById('lab-banner');
+    var outSec = document.getElementById('lab-output-section');
+    var outBox = document.getElementById('lab-output-box');
+    var ta = document.getElementById('lab-input');
+    if (banner) banner.style.display = 'none';
+    if (outSec) outSec.style.display = 'none';
+    if (outBox) outBox.innerHTML = '';
+    if (ta) ta.value = '';
+  },
+  switchAppTab: switchAppTab,
+  showToast: showToast,
+  renderInnerTabs: renderInnerTabs,
+  renderEstadoActualButton: renderEstadoActualButton,
+  renderNoteForm: renderNoteForm,
+  renderIndicaForm: renderIndicaForm,
+  renderListadoForm: renderListadoForm,
+  refreshTendenciasOrCultivosPanel: refreshTendenciasOrCultivosPanel,
+  renderLabHistoryPanel: renderLabHistoryPanel,
+  renderMedRecetaPanel: renderMedRecetaPanel,
+  switchInnerTab: switchInnerTab,
+  syncInnerTabVisualOnly: syncInnerTabVisualOnly,
+  renderTodoForm: renderTodoForm,
+  limpiarReporte: limpiarReporte,
+  setLabHistoryPanelCollapsed: setLabHistoryPanelCollapsed,
+  syncLabHistoryCollapseUI: syncLabHistoryCollapseUI,
+  syncWorkContextChrome: syncWorkContextChrome,
+  rpcPrefersReducedMotion: rpcPrefersReducedMotion,
+  renderProcedureAgendaPanel: renderProcedureAgendaPanel,
+  refreshAllTodoUIs: refreshAllTodoUIs,
+  renderPaseBoard: renderPaseBoard,
+  pushUndoSnapshot: pushUndoSnapshot,
+  addAuditEntry: addAuditEntry,
+  applyDefaultsToNewPatient: applyDefaultsToNewPatient,
+  applyDefaultsToNewIndicaciones: applyDefaultsToNewIndicaciones,
+  enviarLabsANota: enviarLabsANota,
+  ensureParsedLabHistory: ensureParsedLabHistory,
+  primaryTipoForLabSet: primaryTipoForLabSet,
+  normalizeFechaLabHistory: normalizeFechaLabHistory,
+});
+
 registerChromeRuntime({
   switchAppTab,
   renderPatientList,
@@ -1948,7 +2043,7 @@ registerChromeRuntime({
   renderProcedureAgendaPanel,
   getActiveAppTab: function () { return activeAppTab; },
   getActiveId: function () { return activeId; },
-  setRoundOverviewMode: function (v) { _roundOverviewMode = v; },
+  setRoundOverviewMode: setRoundOverviewMode,
   onGuidedTourPaseEnter: function () {
     if (guidedTourActive && tourStepId === 'pase_enter' && isPaseMode()) {
       guidedTourAdvanceAfter('pase_enter');
@@ -2056,19 +2151,6 @@ function syncWorkContextChrome() {
   syncHeaderAppModeChip();
   syncMedPatientGate();
   syncLabComboButtonState();
-}
-
-function focusPatientSearchInput() {
-  var el = document.getElementById('patient-search');
-  if (!el) return;
-  try {
-    el.focus();
-    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  } catch (_e) {
-    try {
-      el.focus();
-    } catch (_e2) {}
-  }
 }
 
 function clearLabInputAfterSuccessfulParse() {
@@ -3003,7 +3085,7 @@ function switchAppTab(tab) {
   var prevAppTab = activeAppTab;
   activeAppTab = tab;
   if (tab === 'nota' && isPaseMode() && prevAppTab !== 'nota') {
-    _roundOverviewMode = true;
+    setRoundOverviewMode(true);
   }
   if (tab === 'nota' && prevAppTab !== 'nota' && !isPaseMode()) {
     switchInnerTab('todo');
@@ -3172,7 +3254,7 @@ function syncInnerTabVisualOnly() {
 function switchInnerTab(tab, opts) {
   opts = opts || {};
   if (isPaseMode() && activeAppTab === 'nota' && !opts.preserveRoundOverview) {
-    _roundOverviewMode = false;
+    setRoundOverviewMode(false);
   }
   activeInner = tab;
   var ids = ['datos','notas','indica','tend','cult','listado','todo'];
@@ -3503,745 +3585,6 @@ function generateListado() {
 }
 function renderEstadoActualButton() { /* Task 9 */ }
 
-function onPatientSearchInput(val) {
-  patientSearchFilter = (val || '').trim().toLowerCase();
-  renderPatientList();
-}
-
-function patientMatchesSearch(p) {
-  if (!patientSearchFilter) return true;
-  var q = patientSearchFilter;
-  return (String(p.nombre || '').toLowerCase().indexOf(q) !== -1) ||
-    (String(p.registro || '').toLowerCase().indexOf(q) !== -1) ||
-    (String(p.cuarto || '').toLowerCase().indexOf(q) !== -1) ||
-    (String(p.cama || '').toLowerCase().indexOf(q) !== -1) ||
-    (String(p.servicio || '').toLowerCase().indexOf(q) !== -1) ||
-    (String(p.area || '').toLowerCase().indexOf(q) !== -1);
-}
-
-function ensurePatientUiState() {
-  var changed = false;
-  for (var i = 0; i < patients.length; i++) {
-    var p = patients[i];
-    if (!p) continue;
-    if (typeof p.archived !== 'boolean') {
-      p.archived = false;
-      changed = true;
-    }
-    if (typeof p.pinned !== 'boolean') {
-      p.pinned = false;
-      changed = true;
-    }
-  }
-  if (changed) saveState();
-}
-
-function isArchivedSectionCollapsed() {
-  try { return localStorage.getItem(ARCHIVED_SECTION_COLLAPSED_LS) === '1'; } catch (_e) { return false; }
-}
-function setArchivedSectionCollapsed(v) {
-  try { localStorage.setItem(ARCHIVED_SECTION_COLLAPSED_LS, v ? '1' : '0'); } catch (_e) {}
-}
-function toggleArchivedSection(ev) {
-  if (ev) {
-    ev.preventDefault();
-    ev.stopPropagation();
-  }
-  setArchivedSectionCollapsed(!isArchivedSectionCollapsed());
-  renderPatientList();
-}
-
-function patientSectionKey(p) {
-  if (p && p.archived) return 'archived';
-  if (p && p.pinned) return 'pinned';
-  return 'active';
-}
-
-function movePatientBefore(targetId, beforeId) {
-  if (!targetId || !beforeId || targetId === beforeId) return;
-  var from = patients.findIndex(function (p) { return p.id === targetId; });
-  var to = patients.findIndex(function (p) { return p.id === beforeId; });
-  if (from < 0 || to < 0 || from === to) return;
-  var moved = patients.splice(from, 1)[0];
-  if (from < to) to -= 1;
-  patients.splice(to, 0, moved);
-}
-
-function movePatientByOffset(ev, id, dir) {
-  if (ev) {
-    ev.preventDefault();
-    ev.stopPropagation();
-  }
-  var p = patients.find(function (x) { return x.id === id; });
-  if (!p) return;
-  var sec = patientSectionKey(p);
-  var ids = patients
-    .filter(function (x) { return patientSectionKey(x) === sec; })
-    .map(function (x) { return x.id; });
-  var idx = ids.indexOf(id);
-  if (idx < 0) return;
-  var next = idx + dir;
-  if (next < 0 || next >= ids.length) return;
-  movePatientBefore(id, ids[next]);
-  saveState();
-  renderPatientList();
-}
-
-function togglePatientPinned(ev, id) {
-  if (ev) {
-    ev.preventDefault();
-    ev.stopPropagation();
-  }
-  var p = patients.find(function (x) { return x.id === id; });
-  if (!p) return;
-  p.pinned = !p.pinned;
-  if (p.pinned) p.archived = false;
-  saveState();
-  renderPatientList();
-}
-
-function togglePatientArchived(ev, id) {
-  if (ev) {
-    ev.preventDefault();
-    ev.stopPropagation();
-  }
-  var p = patients.find(function (x) { return x.id === id; });
-  if (!p) return;
-  p.archived = !p.archived;
-  if (p.archived) p.pinned = false;
-  if (!p.archived) setArchivedSectionCollapsed(false);
-  saveState();
-  renderPatientList();
-}
-
-function readSidebarAutoHide() {
-  try {
-    return localStorage.getItem(SIDEBAR_AUTO_HIDE_LS) === '1';
-  } catch (_e) {
-    return false;
-  }
-}
-
-function writeSidebarAutoHide(on) {
-  try {
-    localStorage.setItem(SIDEBAR_AUTO_HIDE_LS, on ? '1' : '0');
-  } catch (_e) {}
-}
-
-function applySidebarAutoHideUi() {
-  var on = readSidebarAutoHide();
-  document.documentElement.classList.toggle('sidebar-auto-hide', on);
-  if (!on) document.documentElement.classList.remove('sidebar-reveal');
-  var btn = document.getElementById('btn-sidebar-auto-hide');
-  if (btn) {
-    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-    btn.title = on
-      ? 'Mostrar barra de pacientes fija'
-      : 'Ocultar barra de pacientes (reaparece al acercar el mouse)';
-  }
-}
-
-function toggleSidebarAutoHide() {
-  writeSidebarAutoHide(!readSidebarAutoHide());
-  applySidebarAutoHideUi();
-}
-
-function initSidebarAutoHide() {
-  var strip = document.getElementById('sidebar-hover-strip');
-  var aside = document.getElementById('patient-sidebar');
-  applySidebarAutoHideUi();
-  if (!strip || !aside) return;
-  function reveal() {
-    if (readSidebarAutoHide()) document.documentElement.classList.add('sidebar-reveal');
-  }
-  function hide() {
-    document.documentElement.classList.remove('sidebar-reveal');
-  }
-  strip.addEventListener('mouseenter', reveal);
-  aside.addEventListener('mouseenter', reveal);
-  aside.addEventListener('mouseleave', hide);
-  strip.addEventListener('mouseleave', function (e) {
-    var rel = e.relatedTarget;
-    if (rel && (aside === rel || aside.contains(rel))) return;
-    hide();
-  });
-}
-
-function destroyPatientListSortables() {
-  _patientListSortables.forEach(function (s) {
-    try {
-      if (s && typeof s.destroy === 'function') s.destroy();
-    } catch (_e) {}
-  });
-  _patientListSortables = [];
-}
-
-function handlePatientSortZoneEnd(evt) {
-  if (evt.oldIndex === evt.newIndex || evt.from !== evt.to) return;
-  syncPatientsOrderFromDom();
-  saveState();
-}
-
-function mountPatientListSortables() {
-  destroyPatientListSortables();
-  var SortableCtor = typeof globalThis !== 'undefined' ? globalThis.Sortable : null;
-  if (!SortableCtor || typeof SortableCtor.create !== 'function') return;
-  var listRoot = document.getElementById('patient-list');
-  if (!listRoot || patientSearchFilter) return;
-  listRoot.querySelectorAll('.patient-sort-zone').forEach(function (zone) {
-    var sortable = SortableCtor.create(zone, {
-      animation: 200,
-      easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
-      draggable: '.patient-card',
-      filter: 'button, a[href], input, textarea, select',
-      preventOnFilter: true,
-      delay: 0,
-      delayOnTouchOnly: true,
-      direction: 'vertical',
-      // HTML5 drag en Electron deja preview casi invisible; fallback = clon bajo el cursor (hovercard).
-      forceFallback: true,
-      fallbackClass: 'patient-drag-hovercard',
-      fallbackOnBody: true,
-      fallbackTolerance: 4,
-      swapThreshold: 0.65,
-      invertedSwapThreshold: 0.58,
-      scroll: listRoot,
-      bubbleScroll: true,
-      scrollSensitivity: 54,
-      scrollSpeed: 9,
-      onEnd: handlePatientSortZoneEnd,
-    });
-    _patientListSortables.push(sortable);
-  });
-}
-
-function syncPatientsOrderFromDom() {
-  var list = document.getElementById('patient-list');
-  if (!list) return;
-  var cards = list.querySelectorAll('.patient-card[data-patient-id]');
-  if (!cards || !cards.length) return;
-  var order = [];
-  for (var i = 0; i < cards.length; i++) {
-    var pid = cards[i].getAttribute('data-patient-id');
-    if (pid) order.push(pid);
-  }
-  if (!order.length) return;
-  var rank = Object.create(null);
-  for (var j = 0; j < order.length; j++) rank[order[j]] = j;
-  var missingBase = order.length + 1000;
-  patients.sort(function (a, b) {
-    var ra = Object.prototype.hasOwnProperty.call(rank, a.id) ? rank[a.id] : missingBase;
-    var rb = Object.prototype.hasOwnProperty.call(rank, b.id) ? rank[b.id] : missingBase;
-    if (ra !== rb) return ra - rb;
-    return 0;
-  });
-}
-
-var ROUND_SEEN_LS = 'rpc-round-seen';
-
-function todayLocalYMD() {
-  var d = new Date();
-  return (
-    d.getFullYear() +
-    '-' +
-    String(d.getMonth() + 1).padStart(2, '0') +
-    '-' +
-    String(d.getDate()).padStart(2, '0')
-  );
-}
-
-function getRoundSeenSet() {
-  try {
-    var raw = localStorage.getItem(ROUND_SEEN_LS);
-    var o = raw ? JSON.parse(raw) : {};
-    var today = todayLocalYMD();
-    if (o.day !== today) return { day: today, ids: [] };
-    return { day: today, ids: Array.isArray(o.ids) ? o.ids.map(String) : [] };
-  } catch (_e) {
-    return { day: todayLocalYMD(), ids: [] };
-  }
-}
-
-function persistRoundSeenSet(s) {
-  try {
-    localStorage.setItem(ROUND_SEEN_LS, JSON.stringify(s));
-  } catch (_e) {}
-}
-
-function isPatientRoundSeen(patientId) {
-  var s = getRoundSeenSet();
-  return s.ids.indexOf(String(patientId)) >= 0;
-}
-
-function togglePatientRoundSeen(ev, patientId) {
-  if (ev) {
-    ev.stopPropagation();
-    ev.preventDefault();
-  }
-  var s = getRoundSeenSet();
-  var id = String(patientId);
-  var idx = s.ids.indexOf(id);
-  if (idx >= 0) s.ids.splice(idx, 1);
-  else s.ids.push(id);
-  persistRoundSeenSet(s);
-  renderPatientList();
-}
-
-function buildRondaRecentLabsBlockHtml(patientId) {
-  if (!patientId) {
-    return '<p class="ronda-panel-empty">Sin datos.</p>';
-  }
-  var hist = sortLabHistoryChronological(ensureParsedLabHistory(patientId));
-  if (hist.length) {
-    var newest = hist[0];
-    var parts = [];
-    parts.push('<div class="ronda-labs-meta">');
-    var rawFe =
-      newest.fecha === 'Anterior'
-        ? ''
-        : normalizeFechaLabHistory(newest.fecha) || String(newest.fecha || '').trim() || '';
-    if (newest.id === 'migrated-anterior') {
-      parts.push('<span class="ronda-labs-date">' + esc(rawFe ? 'Anterior · ' + rawFe : 'Anterior') + '</span>');
-    } else {
-      parts.push('<span class="ronda-labs-date">' + esc(rawFe || '—') + '</span>');
-    }
-    if (newest.hora && String(newest.hora).trim()) {
-      parts.push('<span>' + esc(String(newest.hora).trim().slice(0, 8)) + '</span>');
-    }
-    var tipo = primaryTipoForLabSet(newest.resLabs);
-    if (tipo && tipo !== 'labs') {
-      parts.push(
-        '<span>' +
-        esc(tipo === 'mixed' ? 'Mixto' : tipo === 'cultivo' ? 'Cultivo' : tipo) +
-        '</span>'
-      );
-    }
-    parts.push('</div>');
-    if (newest.resLabs && newest.resLabs.length) {
-      parts.push('<ul class="ronda-labs-lines">');
-      newest.resLabs.forEach(function (L) {
-        var line = String(L || '').trim();
-        if (!line) return;
-        parts.push('<li>' + esc(line) + '</li>');
-      });
-      parts.push('</ul>');
-      return parts.join('');
-    }
-  }
-  var n = notes[patientId];
-  if (n && n.estudios && String(n.estudios).trim()) {
-    var lines = String(n.estudios)
-      .split('\n')
-      .map(function (l) {
-        return l.trim();
-      })
-      .filter(Boolean);
-    var skip = { laboratorio: 1, cultivos: 1 };
-    var body = [];
-    lines.forEach(function (L) {
-      if (skip[L.toLowerCase()]) return;
-      if (/^fecha|^----/i.test(L)) return;
-      body.push('<li>' + esc(L) + '</li>');
-    });
-    if (body.length) {
-      return (
-        '<p class="ronda-labs-fallback-label">Desde nota · estudios auxiliares</p>' +
-        '<ul class="ronda-labs-lines">' +
-        body.join('') +
-        '</ul>'
-      );
-    }
-  }
-  return (
-    '<p class="ronda-panel-empty">Sin laboratorios recientes. ' +
-    'Puedes cargar o enviar resultados desde la pestaña Laboratorio.</p>'
-  );
-}
-
-function syncRoundExpedienteLayout() {
-  var overview = document.getElementById('patient-ronda-overview');
-  var classic = document.getElementById('patient-expediente-classic');
-  var fullbar = document.getElementById('patient-ronda-fullbar');
-  if (!overview || !classic) return;
-
-  if (!isPaseMode()) {
-    overview.style.display = 'none';
-    classic.style.display = 'flex';
-    if (fullbar) {
-      fullbar.classList.remove('is-visible');
-      fullbar.setAttribute('aria-hidden', 'true');
-    }
-    var rm = document.getElementById('patient-ronda-todos-mount');
-    if (rm) {
-      while (rm.firstChild) rm.removeChild(rm.firstChild);
-    }
-    return;
-  }
-
-  var showOverview =
-    !!activeId && activeAppTab === 'nota' && _roundOverviewMode;
-  overview.style.display = showOverview ? 'flex' : 'none';
-  classic.style.display = showOverview ? 'none' : 'flex';
-  if (fullbar) {
-    var showBar = !!(activeId && activeAppTab === 'nota' && !showOverview);
-    fullbar.classList.toggle('is-visible', showBar);
-    fullbar.setAttribute('aria-hidden', showBar ? 'false' : 'true');
-  }
-  if (showOverview) renderRoundOverviewPanels();
-}
-
-function renderRoundOverviewPanels() {
-  if (!isPaseMode() || !_roundOverviewMode || activeAppTab !== 'nota' || !activeId) return;
-  var titleEl = document.getElementById('patient-ronda-patient-label');
-  var metaEl = document.getElementById('patient-ronda-patient-meta');
-  var p = patients.find(function (x) {
-    return String(x.id) === String(activeId);
-  });
-  if (titleEl) titleEl.textContent = p ? p.nombre || 'Paciente' : 'Paciente';
-  if (metaEl) {
-    if (!p) metaEl.textContent = '';
-    else {
-      metaEl.textContent =
-        'Cto. ' +
-        (p.cuarto || '—') +
-        ' · Cama ' +
-        (p.cama || '—') +
-        ' · ' +
-        (p.servicio || '—') +
-        (p.registro ? ' · Reg. ' + String(p.registro) : '');
-    }
-  }
-  var labsBody = document.getElementById('patient-ronda-labs-body');
-  if (labsBody) labsBody.innerHTML = buildRondaRecentLabsBlockHtml(activeId);
-  refreshAllTodoUIs();
-  var gala = isModeSala(settings);
-  var qDatos = document.getElementById('ronda-quick-datos');
-  if (qDatos) qDatos.style.display = gala ? '' : 'none';
-  var qList = document.getElementById('ronda-quick-listado');
-  if (qList) qList.style.display = gala ? '' : 'none';
-}
-
-function returnToRoundOverview() {
-  if (!isPaseMode()) return;
-  _roundOverviewMode = true;
-  syncRoundExpedienteLayout();
-}
-
-function openFullExpedienteFromRound(tab) {
-  if (!isPaseMode()) return;
-  var t = tab;
-  var sala = isModeSala(settings);
-  if (sala) {
-    if (t === 'notas' || t === 'indica') t = 'tend';
-    if (!t) t = 'tend';
-  } else {
-    if (!t) t = 'notas';
-  }
-  switchInnerTab(t);
-}
-
-function advanceRondaPatient(delta) {
-  if (!isPaseMode()) return;
-  if (!_lastRondaNavIds.length) return;
-  var cur = activeId != null ? String(activeId) : '';
-  var idx = _lastRondaNavIds.indexOf(cur);
-  if (idx < 0) {
-    selectPatient(_lastRondaNavIds[delta > 0 ? 0 : _lastRondaNavIds.length - 1]);
-    return;
-  }
-  var next = idx + delta;
-  if (next < 0) next = _lastRondaNavIds.length - 1;
-  if (next >= _lastRondaNavIds.length) next = 0;
-  selectPatient(_lastRondaNavIds[next]);
-}
-
-function scrollActiveRondaCardIntoView() {
-  if (!activeId) return;
-  var list = document.getElementById('patient-list');
-  if (!list) return;
-  var cards = list.querySelectorAll('.patient-card[data-patient-id]');
-  var want = String(activeId);
-  for (var i = 0; i < cards.length; i++) {
-    if (cards[i].getAttribute('data-patient-id') === want) {
-      try {
-        cards[i].scrollIntoView({
-          block: 'nearest',
-          behavior: rpcPrefersReducedMotion() ? 'auto' : 'smooth',
-        });
-      } catch (_e) {
-        cards[i].scrollIntoView(true);
-      }
-      break;
-    }
-  }
-}
-
-function renderPatientRoundRowHtml(p) {
-  var pinOn = !!p.pinned;
-  var archOn = !!p.archived;
-  var seen = isPatientRoundSeen(p.id);
-  var pinTitle = pinOn ? 'Quitar de Pinned' : 'Mover a Pinned';
-  var archTitle = archOn ? 'Restaurar del archivo' : 'Archivar paciente';
-  var archiveIcon = archOn
-    ? '↩'
-    : '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"></rect><path d="M5 8h14v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8z"></path><path d="M10 12h4"></path></svg>';
-  var seenTitle = typeof t === 'function' ? t('roundMode.seenTitle') : 'Visto en ronda';
-  return (
-    '<div class="patient-card patient-card--roundrow ' +
-    (p.id === activeId ? 'active' : '') +
-    (seen ? ' patient-card--roundrow-seen' : '') +
-    '" data-patient-id="' +
-    p.id +
-    '" onclick="selectPatient(\'' +
-    p.id +
-    '\')">' +
-    '<div class="patient-card-toolbar">' +
-    '<div class="patient-card-toolbar-left">' +
-    '<button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon btn-archive-clean" title="' +
-    archTitle +
-    '" aria-label="' +
-    archTitle +
-    '" onclick="togglePatientArchived(event,\'' +
-    p.id +
-    '\')">' +
-    archiveIcon +
-    '</button>' +
-    '<button type="button" class="patient-toolbar-chip btn-pinned-text" title="' +
-    pinTitle +
-    '" aria-label="' +
-    pinTitle +
-    '" onclick="togglePatientPinned(event,\'' +
-    p.id +
-    '\')">Pinned</button>' +
-    '</div>' +
-    '<button type="button" class="btn-delete-card" onclick="deletePatient(event,\'' +
-    p.id +
-    '\')" aria-label="Eliminar">×</button>' +
-    '</div>' +
-    '<div class="roundrow-main">' +
-    '<div class="roundrow-text">' +
-    '<div class="p-name">' +
-    esc(p.nombre || 'Sin nombre') +
-    '</div>' +
-    '<div class="p-meta"><span>Cto. ' +
-    esc(p.cuarto || '-') +
-    '</span><span>Cama ' +
-    esc(p.cama || '-') +
-    '</span><span>' +
-    esc(p.servicio || '-') +
-    '</span></div></div>' +
-    '<button type="button" class="btn-round-seen" title="' +
-    esc(seenTitle) +
-    '" aria-label="' +
-    esc(seenTitle) +
-    '" aria-pressed="' +
-    (seen ? 'true' : 'false') +
-    '" onclick="togglePatientRoundSeen(event,\'' +
-    p.id +
-    '\')">' +
-    (seen ? '✓' : '○') +
-    '</button>' +
-    '</div></div>'
-  );
-}
-
-function renderPatientCardHtml(p) {
-  var pinOn = !!p.pinned;
-  var archOn = !!p.archived;
-  var pinTitle = pinOn ? 'Quitar de Pinned' : 'Mover a Pinned';
-  var archTitle = archOn ? 'Restaurar del archivo' : 'Archivar paciente';
-  var archiveIcon = archOn
-    ? '↩'
-    : '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"></rect><path d="M5 8h14v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8z"></path><path d="M10 12h4"></path></svg>';
-  return (
-    '<div class="patient-card ' + (p.id===activeId?'active':'') + '" data-patient-id="' + p.id + '" onclick="selectPatient(\'' + p.id + '\')">' +
-    '<div class="patient-card-toolbar">' +
-    '<div class="patient-card-toolbar-left">' +
-    '<button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon btn-archive-clean" title="' + archTitle + '" aria-label="' + archTitle + '" onclick="togglePatientArchived(event,\'' + p.id + '\')">' + archiveIcon + '</button>' +
-    '<button type="button" class="patient-toolbar-chip btn-pinned-text" title="' + pinTitle + '" aria-label="' + pinTitle + '" onclick="togglePatientPinned(event,\'' + p.id + '\')">Pinned</button>' +
-    '</div>' +
-    '<button type="button" class="btn-delete-card" onclick="deletePatient(event,\'' + p.id + '\')" aria-label="Eliminar">×</button>' +
-    '</div>' +
-    '<div class="p-name">' + esc(p.nombre||'Sin nombre') + '</div>' +
-    '<div class="p-meta"><span>Cto. ' + esc(p.cuarto||'-') + '</span><span>Cama ' + esc(p.cama||'-') + '</span><span>' + esc(p.servicio||'-') + '</span></div></div>'
-  );
-}
-
-function renderPatientList() {
-  ensurePatientUiState();
-  var list = document.getElementById('patient-list');
-  if (!list) return;
-  destroyPatientListSortables();
-  var isRonda = isPaseMode();
-  list.classList.toggle('patient-list--ronda', isRonda);
-
-  if (!patients.length) {
-    list.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">Sin pacientes aún</div>';
-    _lastRondaNavIds = [];
-    if (activeAppTab === 'agenda') renderProcedureAgendaPanel();
-    return;
-  }
-  var filtered = patients.filter(patientMatchesSearch);
-  if (!filtered.length) {
-    list.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">Ningún paciente coincide con la búsqueda</div>';
-    _lastRondaNavIds = [];
-    if (activeAppTab === 'agenda') renderProcedureAgendaPanel();
-    return;
-  }
-  var pinned = filtered.filter(function (p) {
-    return p.pinned && !p.archived;
-  });
-  var active = filtered.filter(function (p) {
-    return !p.pinned && !p.archived;
-  });
-  var archived = filtered.filter(function (p) {
-    return !!p.archived;
-  });
-  var parts = [];
-  var rondaNav = [];
-  var cardHtml = isRonda ? renderPatientRoundRowHtml : renderPatientCardHtml;
-
-  if (pinned.length) {
-    parts.push(
-      '<div class="patient-list-section-label patient-list-section-label--pinned" role="group" aria-label="Pacientes fijados">' +
-        '<svg class="patient-list-pin-svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16h14v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a3 3 0 1 0-6 0v3.76z"/></svg>' +
-        '<span class="patient-list-section-count">' +
-        pinned.length +
-        '</span></div>'
-    );
-    parts.push('<div class="patient-sort-zone" data-patient-zone="pinned">');
-    pinned.forEach(function (p) {
-      rondaNav.push(String(p.id));
-    });
-    parts.push(pinned.map(cardHtml).join(''));
-    parts.push('</div>');
-  }
-  if (active.length) {
-    parts.push(
-      '<div class="patient-list-section-label" role="group" aria-label="Lista de pacientes">Pacientes <span class="patient-list-section-count">' +
-        active.length +
-        '</span></div>'
-    );
-    parts.push('<div class="patient-sort-zone" data-patient-zone="active">');
-    active.forEach(function (p) {
-      rondaNav.push(String(p.id));
-    });
-    parts.push(active.map(cardHtml).join(''));
-    parts.push('</div>');
-  }
-  if (archived.length) {
-    var collapsed = isArchivedSectionCollapsed();
-    parts.push(
-      '<button type="button" class="patient-list-section-toggle" onclick="toggleArchivedSection(event)" aria-expanded="' +
-        (!collapsed ? 'true' : 'false') +
-        '">Archivados <span>(' +
-        archived.length +
-        ')</span> <span>' +
-        (collapsed ? '▶' : '▼') +
-        '</span></button>'
-    );
-    if (!collapsed) {
-      parts.push('<div class="patient-sort-zone" data-patient-zone="archived">');
-      archived.forEach(function (p) {
-        rondaNav.push(String(p.id));
-      });
-      parts.push(archived.map(cardHtml).join(''));
-      parts.push('</div>');
-    }
-  }
-  _lastRondaNavIds = rondaNav;
-  list.innerHTML = parts.join('');
-  mountPatientListSortables();
-  if (activeAppTab === 'agenda') renderProcedureAgendaPanel();
-}
-
-function selectPatient(id) {
-  var prevId = activeId;
-  var wasOnLab = activeAppTab === 'lab';
-  var patientChanged = prevId != null && String(prevId) !== String(id);
-  activeId = id;
-  renderPatientList();
-  document.getElementById('empty-state').style.display = 'none';
-  document.getElementById('patient-view').style.display = 'flex';
-  renderInnerTabs();
-  renderEstadoActualButton();
-  renderNoteForm();
-  renderIndicaForm();
-  renderListadoForm();
-  refreshTendenciasOrCultivosPanel();
-  renderLabHistoryPanel();
-  renderMedRecetaPanel();
-  if (isModeSala(settings) && (activeInner === 'notas' || activeInner === 'indica' || !activeInner)) {
-    if (getUiDensity() === 'normal') {
-      activeInner = 'todo';
-      syncInnerTabVisualOnly();
-    } else {
-      switchInnerTab('todo');
-    }
-  } else if (!isModeSala(settings) && activeInner === 'listado') {
-    if (getUiDensity() === 'normal') {
-      activeInner = 'todo';
-      syncInnerTabVisualOnly();
-    } else {
-      switchInnerTab('todo');
-    }
-  }
-  if (activeInner === 'todo') {
-    renderTodoForm();
-  }
-  // En Laboratorio: al elegir otro paciente, pantalla coherente con su historial
-  // (resultados previos eran del paciente anterior; historial visible y expandido).
-  if (wasOnLab && patientChanged) {
-    limpiarReporte();
-    setLabHistoryPanelCollapsed(false);
-    syncLabHistoryCollapseUI();
-    renderLabHistoryPanel();
-    if (isPaseMode()) {
-      syncWorkContextChrome();
-    } else {
-      switchAppTab('lab');
-      var labHistCard = document.getElementById('lab-history-card');
-      if (labHistCard) {
-        window.setTimeout(function () {
-          try {
-            labHistCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-          } catch (_e) {
-            labHistCard.scrollIntoView(true);
-          }
-        }, 0);
-      }
-    }
-  } else {
-    syncWorkContextChrome();
-  }
-  if (isPaseMode() && activeAppTab === 'nota') {
-    _roundOverviewMode = true;
-  }
-  syncRoundExpedienteLayout();
-  if (activeId) {
-    requestAnimationFrame(function () {
-      scrollActiveRondaCardIntoView();
-    });
-  }
-}
-
-function deletePatient(e, id) {
-  e.stopPropagation();
-  if (!confirm('¿Eliminar este paciente y sus notas?')) return;
-  var target = patients.find(function(p){ return p.id === id; });
-  var label = target ? ('Eliminar ' + (target.nombre || 'paciente')) : 'Eliminar paciente';
-  if (typeof pushUndoSnapshot === 'function') pushUndoSnapshot(label);
-  if (!removePatientLocally(id)) return;
-  emitLiveSyncPatientDelete(target || { id: id, registro: '' });
-  saveState();
-  addAuditEntry('patient-delete', 'ok', 1, target ? (target.registro || target.nombre || '') : '');
-  renderPatientList();
-  if (activeId) selectPatient(activeId);
-  else {
-    document.getElementById('patient-view').style.display = 'none';
-    document.getElementById('empty-state').style.display = 'flex';
-    syncWorkContextChrome();
-  }
 }
 
 var _labMaintTimer = null;
@@ -7214,20 +6557,6 @@ function parseDateRangePrompt(raw) {
   return { from: from, to: to, fromLabel: m[1], toLabel: m[2] };
 }
 
-function buildPatientEntry(patientId) {
-  var patient = patients.find(function(p) { return p.id === patientId; });
-  if (!patient || patient.id === DEMO_PATIENT_ID) return null;
-  return {
-    patient: patient,
-    note: notes[patientId] || {},
-    indicaciones: indicaciones[patientId] || {},
-    labHistory: Array.isArray(labHistory[patientId]) ? labHistory[patientId] : [],
-    medReceta: medRecetaByPatient[patientId] || null,
-    listadoProblemas: listadoProblemas[patientId] || null,
-    todos: storage.getTodos(patientId),
-  };
-}
-
 function patientInDateRange(entry, range) {
   var nDate = entry && entry.note ? parseDateDMY(entry.note.fecha) : null;
   var iDate = entry && entry.indicaciones ? parseDateDMY(entry.indicaciones.fecha) : null;
@@ -7432,37 +6761,6 @@ function triggerImportBackup() {
 function triggerImportActivePatientBackup() {
   var input = document.getElementById('patient-backup-file-input');
   if (input) input.click();
-}
-
-function generatePatientId() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-}
-
-function findPatientByRegistro(registro) {
-  var r = String(registro || '').trim();
-  if (!r) return null;
-  return patients.find(function(p) {
-    return String(p.registro || '').trim() === r;
-  }) || null;
-}
-
-function ensureUniquePatientName(base) {
-  var desired = String(base || '').trim() || 'PACIENTE SIN NOMBRE';
-  var normalized = desired.toUpperCase();
-  var has = patients.some(function(p) {
-    return String(p.nombre || '').trim().toUpperCase() === normalized;
-  });
-  if (!has) return desired;
-  var i = 2;
-  while (i < 9999) {
-    var candidate = desired + ' (' + i + ')';
-    var exists = patients.some(function(p) {
-      return String(p.nombre || '').trim().toUpperCase() === candidate.toUpperCase();
-    });
-    if (!exists) return candidate;
-    i += 1;
-  }
-  return desired + ' (COPIA)';
 }
 
 function onPatientBackupFileChosen(ev) {
@@ -9407,77 +8705,6 @@ function renderOutput(result) {
   wireAtbRisHoverPanels(box);
 }
 
-// ── Modal ─────────────────────────────────────────────────────────
-function _prefillServicioForSala() {
-  var srv = document.getElementById('m-servicio');
-  if (srv && isModeSala(settings) && !srv.value) srv.value = getDefaultServicio(settings);
-}
-
-function _syncPatientModalModeFields() {
-  var sala = isModeSala(settings);
-  var areaGroup = document.getElementById('m-area-group');
-  var servicioLabel = document.getElementById('m-servicio-label');
-  var servicioInput = document.getElementById('m-servicio');
-  if (areaGroup) areaGroup.style.display = sala ? 'none' : '';
-  if (servicioLabel) servicioLabel.textContent = sala ? 'Área / Servicio *' : 'Servicio *';
-  if (servicioInput) servicioInput.placeholder = sala ? 'ej. MEDICINA INTERNA' : 'ej. MEDICINA INTERNA';
-}
-
-function openAddModal() {
-  document.getElementById('modal-title').textContent = 'Nuevo Paciente';
-  document.getElementById('modal-prefilled').style.display = 'none';
-  document.getElementById('modal-manual-full').style.display = 'block';
-  ['nombre-manual','registro-manual','area','servicio','cuarto','cama'].forEach(function(f){
-    var el = document.getElementById('m-'+f); if(el) el.value='';
-  });
-  var edadNumManual = document.getElementById('m-edad-num-manual');
-  var edadUnitManual = document.getElementById('m-edad-unit-manual');
-  if (edadNumManual) edadNumManual.value = '';
-  if (edadUnitManual) edadUnitManual.value = 'años';
-  document.getElementById('m-sexo').value = 'F';
-  _syncPatientModalModeFields();
-  _prefillServicioForSala();
-  document.getElementById('modal').classList.add('open');
-  setTimeout(function(){ document.getElementById('m-nombre-manual').focus(); }, 120);
-}
-
-function openAddModalFromLab() {
-  if (!activeLab) { openAddModal(); return; }
-  var p = activeLab.patient;
-  document.getElementById('modal-title').textContent = 'Agregar Paciente del Lab';
-  document.getElementById('modal-prefilled').style.display = 'block';
-  document.getElementById('modal-manual-full').style.display = 'none';
-  document.getElementById('m-nombre').value   = p.name || '';
-  document.getElementById('m-registro').value = p.expediente || '';
-  var edadNum = document.getElementById('m-edad-num');
-  var edadUnit = document.getElementById('m-edad-unit');
-  if (edadNum) {
-    var ageNum = parseInt(p.edad, 10);
-    edadNum.value = isNaN(ageNum) ? '' : String(ageNum);
-  }
-  if (edadUnit) edadUnit.value = 'años';
-  document.getElementById('m-sexo-ro').value = (p.sexo==='M') ? 'M' : 'F';
-  ['area','servicio','cuarto','cama'].forEach(function(f){ document.getElementById('m-'+f).value=''; });
-  _syncPatientModalModeFields();
-  _prefillServicioForSala();
-  document.getElementById('modal').classList.add('open');
-  setTimeout(function(){
-    var first = document.getElementById('m-edad-num');
-    if (first) first.focus();
-  }, 120);
-}
-
-function closeModal() { document.getElementById('modal').classList.remove('open'); }
-
-function confirmCloseAddPatientModal() {
-  var hasData = ['m-area', 'm-servicio', 'm-cuarto', 'm-cama'].some(function (id) {
-    var el = document.getElementById(id);
-    return el && el.value.trim();
-  });
-  if (hasData && !confirm('¿Cerrar sin guardar?')) return false;
-  return true;
-}
-
 function isRpcOverlayVisible(el) {
   if (!el) return false;
   var d = window.getComputedStyle(el).display;
@@ -9758,173 +8985,6 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
-document.getElementById('modal').addEventListener('keydown', function(e) {
-  if (e.key==='Enter' && e.target.tagName!=='TEXTAREA' && e.target.tagName!=='SELECT') savePatient();
-});
-
-function normalizeName(str) {
-  return (str || '')
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function findDuplicatePatient(nombre, registro) {
-  var nombreNorm = normalizeName(nombre);
-  return patients.find(function(p) {
-    if (p.isDemo) return false;
-    if (registro && p.registro && registro === p.registro) return true;
-    return normalizeName(p.nombre) === nombreNorm;
-  });
-}
-
-function showDuplicateWarning(existing, onConfirm) {
-  var fecha = notes[existing.id] ? notes[existing.id].fecha : '';
-  var body = '<strong>' + esc(existing.nombre) + '</strong>';
-  body += '<br>Cto. ' + esc(existing.cuarto || '—') + ' Cama ' + esc(existing.cama || '—');
-  if (existing.registro) body += '<br>Registro: ' + esc(existing.registro);
-  if (fecha) body += '<br>Ingreso: ' + esc(fecha);
-  var backdrop = document.createElement('div');
-  backdrop.className = 'lab-conflict-backdrop';
-  backdrop.id = 'dup-confirm-backdrop';
-  backdrop.innerHTML =
-    '<div class="lab-conflict-modal">' +
-    '<h3>Paciente similar encontrado</h3>' +
-    '<p>' + body + '</p>' +
-    '<div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;">' +
-    '<button onclick="document.getElementById(\'dup-confirm-backdrop\').remove()" style="background:#F3F4F6;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:#1f2937;">Cancelar</button>' +
-    '<button id="dup-confirm-btn" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Agregar de todas formas</button>' +
-    '</div></div>';
-  document.body.appendChild(backdrop);
-  document.getElementById('dup-confirm-btn').onclick = function() {
-    document.getElementById('dup-confirm-backdrop').remove();
-    onConfirm();
-  };
-}
-
-function savePatient() {
-  var isFromLab = document.getElementById('modal-prefilled').style.display !== 'none';
-  var nombre, registro, edadNum, edadUnit, sexo;
-  if (isFromLab) {
-    nombre   = (document.getElementById('m-nombre').value||'').trim().toUpperCase();
-    registro = (document.getElementById('m-registro').value||'').trim();
-    edadNum  = (document.getElementById('m-edad-num').value||'').trim();
-    edadUnit = document.getElementById('m-edad-unit').value || 'años';
-    sexo     = document.getElementById('m-sexo-ro').value || 'F';
-  } else {
-    nombre   = (document.getElementById('m-nombre-manual').value||'').trim().toUpperCase();
-    registro = (document.getElementById('m-registro-manual').value||'').trim();
-    edadNum  = (document.getElementById('m-edad-num-manual').value||'').trim();
-    edadUnit = document.getElementById('m-edad-unit-manual').value || 'años';
-    sexo     = document.getElementById('m-sexo').value;
-  }
-
-  // Validación pura y reutilizable.
-  var v = validatePatientForSave({ nombre: nombre, registro: registro, edadNum: edadNum, edadUnit: edadUnit });
-  if (!v.ok) { showToast(v.error, 'error'); return; }
-
-  if (!edadNum) { showToast('Ingresa la edad', 'error'); return; }
-  var ageInt = parseInt(edadNum, 10);
-  if (isNaN(ageInt) || ageInt < 0 || ageInt > 120) {
-    showToast('Edad inválida', 'error'); return;
-  }
-  var edad = String(ageInt) + (edadUnit && edadUnit !== 'años' ? ' ' + edadUnit : '');
-  var salaMode = isModeSala(settings);
-  var servicio = (document.getElementById('m-servicio').value||'').trim().toUpperCase();
-  var area     = salaMode ? servicio : (document.getElementById('m-area').value||'').trim().toUpperCase();
-  var cuarto   = (document.getElementById('m-cuarto').value||'').trim();
-  var cama     = (document.getElementById('m-cama').value||'').trim();
-  if (!servicio) { showToast(salaMode ? 'Ingresa Área / Servicio' : 'Ingresa servicio','error'); return; }
-  if (!salaMode && !area) { showToast('Ingresa área / departamento','error'); return; }
-  if (!cuarto || !cama) { showToast('Ingresa cuarto y cama','error'); return; }
-
-  var commit = function () {
-    var dup = findDuplicatePatient(nombre, registro);
-    if (dup) {
-      showDuplicateWarning(dup, function () {
-        commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cama, isFromLab);
-      });
-      return;
-    }
-    commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cama, isFromLab);
-  };
-
-  // Si el usuario está intentando guardar sin expediente, le mostramos
-  // el "atajo de paste" antes de continuar. La idea: enseñar el flujo
-  // recomendado (Laboratorio → pegar desde "Expediente:") sin bloquear
-  // el alta manual cuando realmente lo necesite.
-  if (v.warning === 'missing_expediente' && !isFromLab) {
-    showExpedienteAdvice(commit);
-    return;
-  }
-  commit();
-}
-
-// Modal de confirmación que enseña a copiar desde "Expediente:" para
-// alta automática y permite continuar sin expediente si el usuario lo
-// decide.
-function showExpedienteAdvice(onConfirm) {
-  var prev = document.getElementById('exp-advice-backdrop');
-  if (prev) prev.remove();
-  var advice = buildExpedienteAdvice();
-  var b = document.createElement('div');
-  b.className = 'lab-conflict-backdrop';
-  b.id = 'exp-advice-backdrop';
-  b.innerHTML =
-    '<div class="lab-conflict-modal" role="dialog" aria-modal="true" aria-labelledby="exp-advice-title">' +
-      '<h3 id="exp-advice-title">' + escTxtSafe(advice.title) + '</h3>' +
-      '<p>' + escTxtSafe(advice.body) + '</p>' +
-      '<div class="lab-conflict-actions" style="flex-direction:row;justify-content:flex-end;gap:8px;">' +
-        '<button type="button" class="btn-cancel" id="exp-advice-cancel">' + escTxtSafe(advice.cancelLabel) + '</button>' +
-        '<button type="button" class="btn-conflict-primary" id="exp-advice-confirm">' + escTxtSafe(advice.confirmLabel) + '</button>' +
-      '</div>' +
-    '</div>';
-  document.body.appendChild(b);
-  var close = function () { var x = document.getElementById('exp-advice-backdrop'); if (x) x.remove(); };
-  document.getElementById('exp-advice-cancel').onclick = function () {
-    close();
-    var input = document.getElementById('m-registro-manual') || document.getElementById('m-registro');
-    if (input) { try { input.focus(); } catch (e) {} }
-  };
-  document.getElementById('exp-advice-confirm').onclick = function () { close(); onConfirm(); };
-}
-
-function escTxtSafe(s) {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-function commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cama, isFromLab) {
-  var today = new Date();
-  var fecha = String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0')+'/'+today.getFullYear();
-  var hora  = String(today.getHours()).padStart(2,'0')+':'+String(today.getMinutes()).padStart(2,'0');
-  var patient = { id:Date.now().toString(36)+Math.random().toString(36).slice(2), nombre:nombre, registro:registro, edad:edad, sexo:sexo, area:area, servicio:servicio, cuarto:cuarto, cama:cama, fromLab:isFromLab };
-  notes[patient.id] = { fecha:fecha, hora:hora, interrogatorio:'', evolucion:'', estudios:'', diagnosticos:[''], tratamiento:[''], ta:'', fr:'', fc:'', temp:'', peso:'', medico:'', profesor:'' };
-  indicaciones[patient.id] = { fecha:fecha, hora:hora, medicos:'', dieta:'', cuidados:'', estudios:'', medicamentos:'', interconsultas:'', otros:[] };
-  applyDefaultsToNewPatient(patient.id);
-  applyDefaultsToNewIndicaciones(patient.id);
-  patients.push(patient);
-  saveState(); closeModal();
-  var pendingLab = null;
-  if (isFromLab) {
-    pendingLab = activeLab;
-    activeLab = null;
-    document.getElementById('lab-banner').style.display = 'none';
-    document.getElementById('lab-output-section').style.display = 'none';
-    document.getElementById('lab-output-box').innerHTML = '';
-    document.getElementById('lab-input').value = '';
-    switchAppTab('nota');
-  }
-  renderPatientList(); selectPatient(patient.id); showToast('Paciente agregado','success');
-  if (pendingLab) {
-    activeLab = pendingLab;
-    enviarLabsANota();
-    activeLab = null;
-  }
-}
-
 // ── Note Form ─────────────────────────────────────────────────────
 function buildPatientDemographicsCardHtml(patient) {
   return (
@@ -10038,7 +9098,7 @@ function refreshAllTodoUIs() {
     overview.style.display !== 'none' &&
     activeId &&
     activeAppTab === 'nota' &&
-    _roundOverviewMode;
+    getRoundOverviewMode();
   if (showRonda) {
     renderTodoFormIn(ronda, 'ronda-');
   } else {
@@ -12751,9 +11811,10 @@ function initBlockFShortcuts() {
 _rpcDeferInit(initBlockFShortcuts);
 _rpcDeferInit(initModalDismiss);
 _rpcDeferInit(initSidebarAutoHide);
+_rpcDeferInit(initPatientModalEnterSave);
 syncProfileSectionVisibility();
 
-Object.assign(window, chromeWindowHandlers, lanWindowHandlers, {
+Object.assign(window, chromeWindowHandlers, lanWindowHandlers, patientsWindowHandlers, {
   installUpdate,
   openUserDataFolderFromSettings,
   openQuickHelp,
@@ -12787,9 +11848,6 @@ Object.assign(window, chromeWindowHandlers, lanWindowHandlers, {
   toggleTourDockCollapsed,
   onTourDockClick,
   guidedTourClickNext,
-  openAddModal,
-  onPatientSearchInput,
-  focusPatientSearchInput,
   toggleProfileSection,
   openProfileFromHeader,
   openProfileModal,
@@ -12809,12 +11867,6 @@ Object.assign(window, chromeWindowHandlers, lanWindowHandlers, {
   openEstadoActualModal,
   estadoActualOnlyCopy,
   estadoActualSaveAndCopy,
-  togglePatientPinned,
-  togglePatientArchived,
-  togglePatientRoundSeen,
-  movePatientByOffset,
-  toggleArchivedSection,
-  toggleSidebarAutoHide,
   toggleSettingsSection,
   toggleSettingsDropdown,
   closeSettingsDropdown,
@@ -12854,7 +11906,6 @@ Object.assign(window, chromeWindowHandlers, lanWindowHandlers, {
   reprocessLabHistorySet,
   deleteLabHistorySet,
   toggleLabHistoryPanel,
-  openAddModalFromLab,
   copiarLabsAlPortapapeles,
   procesarRecetaMed,
   incrementMedDiaTratamiento,
@@ -12867,8 +11918,6 @@ Object.assign(window, chromeWindowHandlers, lanWindowHandlers, {
   mediAnadirATratamiento,
   mediLlevarASOAP,
   enviarLabsANota,
-  closeModal,
-  savePatient,
   closeTemplatesModal,
   saveTemplates,
   closeSOAPModal,
@@ -12887,8 +11936,6 @@ Object.assign(window, chromeWindowHandlers, lanWindowHandlers, {
   tendResetAllHiddenSeries,
   openTendHiddenModal,
   closeTendHiddenModal,
-  selectPatient,
-  deletePatient,
   openSOAPModal,
   updatePatient,
   renderPatientDataPane,
@@ -12897,8 +11944,6 @@ Object.assign(window, chromeWindowHandlers, lanWindowHandlers, {
   toggleTodo,
   deleteTodo,
   setTodoPriority,
-  openFullExpedienteFromRound,
-  returnToRoundOverview,
   updateNote,
   updateDx,
   removeDx,
