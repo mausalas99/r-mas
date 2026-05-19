@@ -203,7 +203,7 @@ function resolveAppVersionForTour() {
   return Promise.resolve('dev');
 }
 
-function normalizeTourVersionLabel(v) {
+export function normalizeTourVersionLabel(v) {
   var s = String(v == null ? '' : v).trim();
   return s || 'dev';
 }

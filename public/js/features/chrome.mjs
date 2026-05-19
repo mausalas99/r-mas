@@ -137,7 +137,7 @@ export function applyFontZoom() {
   document.documentElement.style.zoom = String(p / 100);
 }
 
-function syncFontZoomButtons() {
+export function syncFontZoomButtons() {
   let p = parseInt(localStorage.getItem(FONT_ZOOM_LS) || '100', 10);
   if (p !== 100 && p !== 110 && p !== 125) p = 100;
   ['100', '110', '125'].forEach((v) => {
@@ -164,7 +164,7 @@ export function applyHighContrast() {
   document.documentElement.classList.toggle('high-contrast', isHighContrast());
 }
 
-function syncHighContrastButtons() {
+export function syncHighContrastButtons() {
   const on = isHighContrast();
   const onBtn = document.getElementById('settings-hc-on');
   const offBtn = document.getElementById('settings-hc-off');
@@ -209,7 +209,7 @@ export function applyUiDensity() {
   runtime.switchAppTab(runtime.getActiveAppTab());
 }
 
-function syncUiDensityButtons() {
+export function syncUiDensityButtons() {
   const d = getUiDensity();
   const normalBtn = document.getElementById('settings-density-normal');
   const paseBtn = document.getElementById('settings-density-pase');
