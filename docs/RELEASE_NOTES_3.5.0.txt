@@ -12,7 +12,8 @@ En Expediente → Tendencias, cada estudio (BH, QS, gases, etc.) abre una vista 
 - **Tendencias — Gráfica del estudio:** botón «Gráfica» en el encabezado de cada sección; modal con pestañas Gráficas y Tabla.
 - **Gráficas:** paneles por tipo (fórmula leucocitaria %, índices eritrocitarios %, gasometría, valores absolutos); **títulos editables** (clic en el encabezado del panel; se guardan por paciente y estudio); leyenda con color y visibilidad; eje Y se ajusta al ocultar analitos; paneles arrastrables y ocultables (como tarjetas de pacientes).
 - **Tabla:** matriz fecha × analito; ocultar filas o columnas en la copia; barra «Ocultos en copia» colapsable; copiar como imagen (PNG) o texto (TSV).
-- **Atajos y UX:** Esc cierra el modal; tooltips y etiquetas de eje sin artefactos de decimales flotantes.
+- **Atajos y UX:** Esc o clic fuera cierran ventanas modales (gráfica del estudio, detalle de analito, ayuda, perfil, etc.) sin botones × / Cerrar; tooltips y etiquetas de eje sin artefactos de decimales flotantes.
+- **Corrección:** al pulsar una tarjeta de tendencias se abre de nuevo la gráfica de detalle del analito (p. ej. plaquetas).
 - **Persistencia:** colores de series globales; series visibles, orden de paneles y títulos personalizados por paciente y estudio.
 
 ## Instalación

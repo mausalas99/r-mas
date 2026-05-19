@@ -34,7 +34,8 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 - **Tendencias:** botón «Gráfica» por estudio → modal con gráficas agrupadas y tabla copiable (PNG / TSV).
 - **Gráficas:** leyenda, colores, escalas dinámicas, paneles reordenables/ocultables.
-- **Tabla:** ocultar filas/columnas en copia; barra de ocultos colapsable; **Esc** cierra el modal.
+- **Tabla:** ocultar filas/columnas en copia; barra de ocultos colapsable.
+- **UX:** **Esc** o clic fuera cierran modales; gráfica de detalle al pulsar tarjetas de tendencias.
 
 Notas: `docs/RELEASE_NOTES_3.5.0.txt`.
 
@@ -62,12 +63,6 @@ Notas: `docs/RELEASE_NOTES_3.3.2.txt`.
 
 ---
 
-
-## R+ 3.5.0 (estable — gráfica y tabla por estudio en Tendencias)
-
-- **TODO:** completar bullets en README.
-
-Notas: `docs/RELEASE_NOTES_3.5.0.txt`.
 ## R+ 3.3.1 (estable — corrección Copiar labs)
 
 - **Laboratorio** — **Copiar** vuelve a exportar el texto compacto procesado (no el informe crudo de SOME).

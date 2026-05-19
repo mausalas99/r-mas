@@ -303,19 +303,9 @@ export function createTendGroupModal(deps) {
     return !!(bd && bd.getAttribute('aria-hidden') === 'false');
   }
 
-  function onDocumentKeydown(ev) {
-    if (!isOpen()) return;
-    if (ev.key === 'Escape' || ev.key === 'Esc') {
-      ev.preventDefault();
-      ev.stopPropagation();
-      requestCloseFromUi();
-    }
-  }
-
   function closeModal() {
     destroyCharts();
     destroyPanelSortable();
-    document.removeEventListener('keydown', onDocumentKeydown, true);
     state.sectionKey = null;
     var bd = backdropEl();
     if (bd) {
@@ -954,15 +944,6 @@ export function createTendGroupModal(deps) {
   }
 
 
-  (function bindTendGroupBackdropCloseOnce() {
-    var bd = document.getElementById('tend-group-backdrop');
-    if (!bd || bd.dataset.tendBackdropClose === '1') return;
-    bd.dataset.tendBackdropClose = '1';
-    bd.addEventListener('click', function (ev) {
-      if (ev.target === bd) requestCloseFromUi();
-    });
-  })();
-
   return {
     open: function (sectionKey) {
       var patientId = deps.getActiveId();
@@ -1011,7 +992,6 @@ export function createTendGroupModal(deps) {
         console.error('tend-group renderTable', tableRenderErr);
       }
 
-      document.addEventListener('keydown', onDocumentKeydown, true);
     },
 
     close: closeModal,

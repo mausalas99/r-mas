@@ -59,7 +59,6 @@ import {
   emptyListado,
   addProblema as listadoAddProblema,
   removeProblema as listadoRemoveProblema,
-  reorderProblema as listadoReorderProblema,
 } from './listado-problemas-core.mjs';
 import { LISTADO_PROBLEMAS_AI_PROMPT } from './listado-problemas-ai-prompt.mjs';
 import {
@@ -107,6 +106,8 @@ import {
   normalizeHoraLabHistory
 } from './tend-core.mjs';
 import { createTendGroupModal } from './tend-group-modal.mjs';
+import { readTendCardOrder, writeTendCardOrder } from './tend-prefs.mjs';
+import { createModalDismissRegistry } from './modal-dismiss.mjs';
 
 
 // ════════════════════════════════════════════════════════════════════
@@ -130,8 +131,13 @@ var _lastRondaNavIds = [];
 /** Solo en densidad Pase + Expediente: resumen ronda (labs + pendientes) vs expediente con pestañas. */
 var _roundOverviewMode = true;
 var ARCHIVED_SECTION_COLLAPSED_LS = 'rpc-archived-section-collapsed';
+var SIDEBAR_AUTO_HIDE_LS = 'rpc-sidebar-auto-hide';
 /** Una instancia Sortable.js por zona (pinned / activos / archivados). */
 var _patientListSortables = [];
+/** Una instancia Sortable.js por rejilla de tendencias (por sección de laboratorio). */
+var _tendCardSortables = [];
+/** Una instancia Sortable.js por sección del listado de problemas (activos / inactivos). */
+var _listadoSortables = [];
 var profileSectionVisible = false;
 var activeLab    = null;
 var settings     = storage.getSettings();
@@ -1336,6 +1342,17 @@ function toggleTendSection(ev, sectionKey) {
   renderTendencias();
 }
 
+/** Título y unidad para tarjeta spark (evita «%» duplicado en título y unidad). */
+function tendCardLabelParts(sectionKey, fieldKey) {
+  var spec = tendFindSeriesSpec(sectionKey, fieldKey);
+  var title = spec && spec.cardTitle ? String(spec.cardTitle) : String(fieldKey);
+  var unit = tendUnitForSeries(sectionKey, fieldKey);
+  if (unit === '%') {
+    title = title.replace(/\s*%+\s*$/u, '').trim();
+  }
+  return { title: title, unit: unit };
+}
+
 function tendUnitForSeries(sectionKey, fieldKey) {
   if (sectionKey === 'GASES') {
     if (fieldKey === 'GLU') return TEND_UNITS.Glu || '';
@@ -1421,6 +1438,24 @@ function tendRefForSeries(history, sectionKey, fieldKey, preferSet) {
 
 function tendCatalogSeriesKey(sectionKey, fieldKey) {
   return String(sectionKey) + '|' + String(fieldKey);
+}
+
+function orderTrendSeriesBySaved(specs, savedOrder) {
+  var rank = Object.create(null);
+  if (savedOrder && savedOrder.length) {
+    savedOrder.forEach(function (key, i) {
+      rank[key] = i;
+    });
+  }
+  var missingBase = (savedOrder && savedOrder.length ? savedOrder.length : specs.length) + 1000;
+  return specs.slice().sort(function (a, b) {
+    var ka = tendCatalogSeriesKey(a.sectionKey, a.fieldKey);
+    var kb = tendCatalogSeriesKey(b.sectionKey, b.fieldKey);
+    var ra = Object.prototype.hasOwnProperty.call(rank, ka) ? rank[ka] : missingBase;
+    var rb = Object.prototype.hasOwnProperty.call(rank, kb) ? rank[kb] : missingBase;
+    if (ra !== rb) return ra - rb;
+    return 0;
+  });
 }
 
 function tendHiddenSeriesRead() {
@@ -4757,8 +4792,8 @@ function _autoGrowTextarea(el) {
 }
 function _renderListadoRow(seccion, p, idx) {
   return (
-    '<div class="listado-row" draggable="true" data-id="' + esc(p.id) + '" data-seccion="' + seccion + '">' +
-      '<div class="listado-num" title="Arrastra para reordenar">' + (idx + 1) + '</div>' +
+    '<div class="listado-row" data-id="' + esc(p.id) + '" data-seccion="' + seccion + '">' +
+      '<div class="listado-num listado-drag-handle" title="Arrastra para reordenar" aria-label="Arrastrar para reordenar">' + (idx + 1) + '</div>' +
       '<input type="date" value="' + esc(p.fecha || '') + '" oninput="updateProblemaField(\'' + seccion + '\',\'' + esc(p.id) + '\',\'fecha\',this.value)" aria-label="Fecha del problema">' +
       '<textarea rows="1" placeholder="Descripción del problema" oninput="updateProblemaField(\'' + seccion + '\',\'' + esc(p.id) + '\',\'descripcion\',this.value); _autoGrowTextarea(this)" aria-label="Descripción">' + esc(p.descripcion || '') + '</textarea>' +
       '<button class="btn-remove-listado" onclick="removeProblemaUI(\'' + seccion + '\',\'' + esc(p.id) + '\')" aria-label="Quitar problema" title="Quitar">×</button>' +
@@ -4775,7 +4810,7 @@ function _renderListadoSeccion(seccion, label, lst) {
       '<div class="listado-section-header ' + seccion + '">' +
         '<span>' + label + ' (' + arr.length + ')</span>' +
       '</div>' +
-      '<div class="listado-section-body" data-seccion-rows="' + seccion + '">' +
+      '<div class="listado-section-body listado-sort-zone" data-seccion-rows="' + seccion + '">' +
         rows +
       '</div>' +
       '<div class="listado-section-body" style="padding-top:0;">' +
@@ -4784,9 +4819,88 @@ function _renderListadoSeccion(seccion, label, lst) {
     '</div>'
   );
 }
+function destroyListadoSortables() {
+  _listadoSortables.forEach(function (s) {
+    try {
+      if (s && typeof s.destroy === 'function') s.destroy();
+    } catch (_e) {}
+  });
+  _listadoSortables = [];
+}
+
+function syncListadoOrderFromDom(seccion) {
+  var lst = ensureListadoForActive();
+  if (!lst || !seccion) return;
+  var zone = document.querySelector(
+    '#listado-form [data-seccion-rows="' + seccion + '"]'
+  );
+  if (!zone) return;
+  var arr = (lst[seccion] || []).slice();
+  var byId = Object.create(null);
+  for (var i = 0; i < arr.length; i++) byId[arr[i].id] = arr[i];
+  var newArr = [];
+  zone.querySelectorAll('.listado-row[data-id]').forEach(function (row) {
+    var id = row.getAttribute('data-id');
+    if (id && byId[id]) newArr.push(byId[id]);
+  });
+  if (!newArr.length || newArr.length !== arr.length) return;
+  listadoProblemas[activeId] = Object.assign({}, lst, { [seccion]: newArr });
+}
+
+function refreshListadoRowNumbers(seccion) {
+  var zone = document.querySelector(
+    '#listado-form [data-seccion-rows="' + seccion + '"]'
+  );
+  if (!zone) return;
+  zone.querySelectorAll('.listado-row').forEach(function (row, idx) {
+    var num = row.querySelector('.listado-num');
+    if (num) num.textContent = String(idx + 1);
+  });
+}
+
+function mountListadoSortables() {
+  destroyListadoSortables();
+  var SortableCtor = typeof globalThis !== 'undefined' ? globalThis.Sortable : null;
+  if (!SortableCtor || typeof SortableCtor.create !== 'function') return;
+  var scrollRoot = document.getElementById('listado-form');
+  document.querySelectorAll('#listado-form [data-seccion-rows]').forEach(function (zone) {
+    var seccion = zone.getAttribute('data-seccion-rows');
+    if (!seccion || !zone.querySelector('.listado-row')) return;
+    var sortable = SortableCtor.create(zone, {
+      animation: 200,
+      easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+      draggable: '.listado-row',
+      handle: '.listado-drag-handle',
+      filter: 'textarea, input, button, a[href], select',
+      preventOnFilter: true,
+      delay: 0,
+      delayOnTouchOnly: true,
+      direction: 'vertical',
+      forceFallback: true,
+      fallbackClass: 'listado-drag-hovercard',
+      fallbackOnBody: true,
+      fallbackTolerance: 4,
+      swapThreshold: 0.65,
+      invertedSwapThreshold: 0.58,
+      scroll: scrollRoot || true,
+      bubbleScroll: true,
+      scrollSensitivity: 54,
+      scrollSpeed: 9,
+      onEnd: function (evt) {
+        if (evt.oldIndex === evt.newIndex && evt.from === evt.to) return;
+        syncListadoOrderFromDom(seccion);
+        refreshListadoRowNumbers(seccion);
+        saveState();
+      }
+    });
+    _listadoSortables.push(sortable);
+  });
+}
+
 function renderListadoForm() {
   var c = document.getElementById('listado-form');
   if (!c) return;
+  destroyListadoSortables();
   if (!activeId) { c.innerHTML = ''; return; }
   var patient = patients.find(function(p){ return p.id === activeId; });
   if (!patient) { c.innerHTML = ''; return; }
@@ -4814,8 +4928,7 @@ function renderListadoForm() {
   );
   // auto-grow existing textareas
   c.querySelectorAll('.listado-row textarea').forEach(_autoGrowTextarea);
-  // wire drag-and-drop
-  setupListadoDragDrop();
+  mountListadoSortables();
 }
 function updateListadoMeta(field, value) {
   var lst = ensureListadoForActive(); if (!lst) return;
@@ -4845,44 +4958,6 @@ function removeProblemaUI(seccion, id) {
   listadoProblemas[activeId] = listadoRemoveProblema(lst, seccion, id);
   saveState();
   renderListadoForm();
-}
-function setupListadoDragDrop() {
-  var rows = document.querySelectorAll('#listado-form .listado-row');
-  rows.forEach(function(row) {
-    row.addEventListener('dragstart', function(e) {
-      row.classList.add('dragging');
-      try {
-        e.dataTransfer.setData('text/plain', JSON.stringify({ id: row.dataset.id, seccion: row.dataset.seccion }));
-        e.dataTransfer.effectAllowed = 'move';
-      } catch (_e) {}
-    });
-    row.addEventListener('dragend', function() {
-      row.classList.remove('dragging');
-      document.querySelectorAll('#listado-form .listado-row.drag-over').forEach(function(r){ r.classList.remove('drag-over'); });
-    });
-    row.addEventListener('dragover', function(e) {
-      e.preventDefault();
-      try { e.dataTransfer.dropEffect = 'move'; } catch (_e) {}
-      row.classList.add('drag-over');
-    });
-    row.addEventListener('dragleave', function() { row.classList.remove('drag-over'); });
-    row.addEventListener('drop', function(e) {
-      e.preventDefault();
-      row.classList.remove('drag-over');
-      var data;
-      try { data = JSON.parse(e.dataTransfer.getData('text/plain')); } catch (_e) { return; }
-      if (!data || data.seccion !== row.dataset.seccion) return; // sólo dentro de la misma sección
-      if (data.id === row.dataset.id) return;
-      var lst = ensureListadoForActive(); if (!lst) return;
-      var arr = lst[data.seccion] || [];
-      var fromIdx = arr.findIndex(function(p){ return p.id === data.id; });
-      var toIdx   = arr.findIndex(function(p){ return p.id === row.dataset.id; });
-      if (fromIdx === -1 || toIdx === -1) return;
-      listadoProblemas[activeId] = listadoReorderProblema(lst, data.seccion, fromIdx, toIdx);
-      saveState();
-      renderListadoForm();
-    });
-  });
 }
 function _renderListadoMedicosCard(lst) {
   var meds = getMedicosForListado(lst);
@@ -5068,6 +5143,59 @@ function togglePatientArchived(ev, id) {
   if (!p.archived) setArchivedSectionCollapsed(false);
   saveState();
   renderPatientList();
+}
+
+function readSidebarAutoHide() {
+  try {
+    return localStorage.getItem(SIDEBAR_AUTO_HIDE_LS) === '1';
+  } catch (_e) {
+    return false;
+  }
+}
+
+function writeSidebarAutoHide(on) {
+  try {
+    localStorage.setItem(SIDEBAR_AUTO_HIDE_LS, on ? '1' : '0');
+  } catch (_e) {}
+}
+
+function applySidebarAutoHideUi() {
+  var on = readSidebarAutoHide();
+  document.documentElement.classList.toggle('sidebar-auto-hide', on);
+  if (!on) document.documentElement.classList.remove('sidebar-reveal');
+  var btn = document.getElementById('btn-sidebar-auto-hide');
+  if (btn) {
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    btn.title = on
+      ? 'Mostrar barra de pacientes fija'
+      : 'Ocultar barra de pacientes (reaparece al acercar el mouse)';
+  }
+}
+
+function toggleSidebarAutoHide() {
+  writeSidebarAutoHide(!readSidebarAutoHide());
+  applySidebarAutoHideUi();
+}
+
+function initSidebarAutoHide() {
+  var strip = document.getElementById('sidebar-hover-strip');
+  var aside = document.getElementById('patient-sidebar');
+  applySidebarAutoHideUi();
+  if (!strip || !aside) return;
+  function reveal() {
+    if (readSidebarAutoHide()) document.documentElement.classList.add('sidebar-reveal');
+  }
+  function hide() {
+    document.documentElement.classList.remove('sidebar-reveal');
+  }
+  strip.addEventListener('mouseenter', reveal);
+  aside.addEventListener('mouseenter', reveal);
+  aside.addEventListener('mouseleave', hide);
+  strip.addEventListener('mouseleave', function (e) {
+    var rel = e.relatedTarget;
+    if (rel && (aside === rel || aside.contains(rel))) return;
+    hide();
+  });
 }
 
 function destroyPatientListSortables() {
@@ -7665,7 +7793,7 @@ var HELP_ARTICLES = [
       '<li><strong>Ctrl/⌘ + P</strong> — Alternar vista Normal ↔ Pase</li>' +
       '<li><strong>Ctrl/⌘ + Shift + P</strong> — Abrir/cerrar Mi Perfil</li>' +
       '<li><strong>Ctrl/⌘ + ,</strong> — Activa/desactiva <strong>sobrescribir</strong> en conflictos al importar JSON (sin preguntar)</li>' +
-      '<li><strong>Esc</strong> — Cerrar modal o el centro de ayuda</li>' +
+      '<li><strong>Esc</strong> o clic fuera — Cerrar ventana modal, menús o el centro de ayuda</li>' +
       '<li>Dentro del centro de ayuda: <strong>↓</strong> desde el buscador enfoca la lista; <strong>↑ / ↓</strong> navegan artículos.</li>' +
       '</ul>'
   },
@@ -7843,6 +7971,18 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '3.5.0': [
+    {
+      title: 'Gráfica y tabla por estudio',
+      body:
+        'En Tendencias, pulsa «Gráfica» en un estudio (BH, QS, gases…): tendencias agrupadas por panel y tabla copiable (PNG o TSV).',
+    },
+    {
+      title: 'Paneles, títulos y cierre unificado',
+      body:
+        'Reordena u oculta paneles; edita el título de cada gráfica con un clic. Todas las ventanas se cierran con Esc o clic fuera (sin botones × / Cerrar).',
+    },
+  ],
   '3.4.1': [
     {
       title: 'Sugerencias clínicas desde laboratorio',
@@ -8183,9 +8323,9 @@ function showReleaseNotesModal(version) {
   el.classList.add('open');
   el.setAttribute('aria-hidden', 'false');
   el.setAttribute('data-version', version);
-  setTimeout(function(){
-    var btn = document.getElementById('release-notes-close-btn');
-    if (btn) btn.focus();
+  setTimeout(function () {
+    var panel = el.querySelector('.release-notes-modal');
+    if (panel) panel.focus();
   }, 50);
 }
 
@@ -10980,59 +11120,255 @@ function openAddModalFromLab() {
 
 function closeModal() { document.getElementById('modal').classList.remove('open'); }
 
-document.getElementById('modal').addEventListener('click', function(e) {
-  if (e.target !== document.getElementById('modal')) return;
-  var hasData = ['m-area','m-servicio','m-cuarto','m-cama'].some(function(id){ return document.getElementById(id).value.trim(); });
-  if (hasData && !confirm('¿Cerrar sin guardar?')) return;
-  closeModal();
-});
-
-(function() {
-  var pm = document.getElementById('profile-modal');
-  if (!pm) return;
-  pm.addEventListener('click', function(e) {
-    if (e.target === pm) closeProfileModal();
+function confirmCloseAddPatientModal() {
+  var hasData = ['m-area', 'm-servicio', 'm-cuarto', 'm-cama'].some(function (id) {
+    var el = document.getElementById(id);
+    return el && el.value.trim();
   });
-})();
+  if (hasData && !confirm('¿Cerrar sin guardar?')) return false;
+  return true;
+}
+
+function isRpcOverlayVisible(el) {
+  if (!el) return false;
+  var d = window.getComputedStyle(el).display;
+  return d !== 'none' && d !== '';
+}
+
+var modalDismiss = createModalDismissRegistry();
+
+function initModalDismiss() {
+  var dynamicBackdropIds = [
+    'lab-dedupe-backdrop',
+    'soap-confirm-backdrop',
+    'dup-confirm-backdrop',
+    'lab-conflict-backdrop',
+    'exp-advice-backdrop'
+  ];
+
+  function el(id) {
+    return document.getElementById(id);
+  }
+
+  modalDismiss.register({
+    isOpen: function () {
+      return dynamicBackdropIds.some(function (id) {
+        return !!el(id);
+      });
+    },
+    close: function () {
+      dynamicBackdropIds.forEach(function (id) {
+        var node = el(id);
+        if (node) node.remove();
+      });
+    }
+  });
+
+  modalDismiss.register({
+    isOpen: function () {
+      return isRpcOverlayVisible(el('update-modal-backdrop'));
+    },
+    close: hideUpdateModal,
+    backdropEl: function () {
+      return el('update-modal-backdrop');
+    }
+  });
+
+  modalDismiss.register({
+    isOpen: function () {
+      return isRpcOverlayVisible(el('tend-detail-backdrop'));
+    },
+    close: closeTendDetail,
+    backdropEl: function () {
+      return el('tend-detail-backdrop');
+    }
+  });
+
+  modalDismiss.register({
+    isOpen: function () {
+      return tendGroupModal.isOpen();
+    },
+    close: closeTendGroupModal,
+    backdropEl: function () {
+      return el('tend-group-backdrop');
+    }
+  });
+
+  modalDismiss.register({
+    isOpen: function () {
+      var m = el('rpc-wipe-modal');
+      return m && m.getAttribute('aria-hidden') === 'false';
+    },
+    close: closeWipeDataModal,
+    backdropEl: function () {
+      return el('rpc-wipe-modal');
+    }
+  });
+
+  modalDismiss.register({
+    isOpen: function () {
+      var b = el('soap-modal-backdrop');
+      return b && b.classList.contains('open');
+    },
+    close: closeSOAPModal,
+    backdropEl: function () {
+      return el('soap-modal-backdrop');
+    }
+  });
+
+  modalDismiss.register({
+    isOpen: function () {
+      var m = el('procedure-agenda-modal');
+      return m && m.classList.contains('open');
+    },
+    close: closeProcedureAgendaModal,
+    backdropEl: function () {
+      return el('procedure-agenda-modal');
+    }
+  });
+
+  modalDismiss.register({
+    isOpen: function () {
+      var m = el('modal');
+      return m && m.classList.contains('open');
+    },
+    close: closeModal,
+    confirmClose: confirmCloseAddPatientModal,
+    backdropEl: function () {
+      return el('modal');
+    }
+  });
+
+  modalDismiss.register({
+    isOpen: function () {
+      var m = el('profile-modal');
+      return m && m.classList.contains('open');
+    },
+    close: closeProfileModal,
+    backdropEl: function () {
+      return el('profile-modal');
+    }
+  });
+
+  modalDismiss.register({
+    isOpen: function () {
+      return isRpcOverlayVisible(el('templates-modal'));
+    },
+    close: closeTemplatesModal,
+    backdropEl: function () {
+      return el('templates-modal');
+    }
+  });
+
+  modalDismiss.register({
+    isOpen: function () {
+      return isRpcOverlayVisible(el('extra-templates-modal'));
+    },
+    close: closeExtraTemplatesManager,
+    backdropEl: function () {
+      return el('extra-templates-modal');
+    }
+  });
+
+  modalDismiss.register({
+    isOpen: function () {
+      var b = el('unified-search-backdrop');
+      return b && b.classList.contains('open');
+    },
+    close: closeUnifiedSearch,
+    backdropEl: function () {
+      return el('unified-search-backdrop');
+    }
+  });
+
+  modalDismiss.register({
+    isOpen: function () {
+      var b = el('help-quick-backdrop');
+      return b && b.classList.contains('open');
+    },
+    close: closeQuickHelp,
+    backdropEl: function () {
+      return el('help-quick-backdrop');
+    }
+  });
+
+  modalDismiss.register({
+    isOpen: function () {
+      var b = el('release-notes-backdrop');
+      return b && b.classList.contains('open');
+    },
+    close: closeReleaseNotes,
+    backdropEl: function () {
+      return el('release-notes-backdrop');
+    }
+  });
+
+  modalDismiss.register({
+    isOpen: function () {
+      var b = el('tend-hidden-modal-backdrop');
+      return b && b.classList.contains('open');
+    },
+    close: closeTendHiddenModal,
+    backdropEl: function () {
+      return el('tend-hidden-modal-backdrop');
+    }
+  });
+
+  modalDismiss.register({
+    isOpen: function () {
+      var b = el('lab-display-prefs-backdrop');
+      return b && b.classList.contains('open');
+    },
+    close: closeLabDisplayPrefsModal,
+    backdropEl: function () {
+      return el('lab-display-prefs-backdrop');
+    }
+  });
+
+  modalDismiss.register({
+    isOpen: function () {
+      var b = el('onboarding-intro-backdrop');
+      return b && b.classList.contains('open');
+    },
+    close: hideTourIntroModal,
+    backdropEl: function () {
+      return el('onboarding-intro-backdrop');
+    }
+  });
+
+  modalDismiss.register({
+    isOpen: function () {
+      var c = el('connection-dropdown');
+      return c && c.classList.contains('open');
+    },
+    close: closeConnectionDropdown,
+    backdropEl: function () {
+      return el('connection-dropdown-backdrop');
+    }
+  });
+
+  modalDismiss.register({
+    isOpen: function () {
+      var s = el('settings-dropdown');
+      return s && s.classList.contains('open');
+    },
+    close: closeSettingsDropdown,
+    backdropEl: function () {
+      return el('settings-dropdown-backdrop');
+    }
+  });
+
+  modalDismiss.init();
+
+  document.addEventListener('click', function (ev) {
+    var t = ev.target;
+    if (!t || !t.classList || !t.classList.contains('lab-conflict-backdrop')) return;
+    if (dynamicBackdropIds.indexOf(t.id) === -1) return;
+    t.remove();
+  });
+}
 
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') {
-    var tgb = document.getElementById('tend-group-backdrop');
-    if (tgb && tgb.getAttribute('aria-hidden') === 'false') {
-      closeTendGroupModal();
-      return;
-    }
-    var rn = document.getElementById('release-notes-backdrop');
-    if (rn && rn.classList.contains('open')) {
-      closeReleaseNotes();
-      return;
-    }
-    var hq = document.getElementById('help-quick-backdrop');
-    if (hq && hq.classList.contains('open')) {
-      closeQuickHelp();
-      return;
-    }
-    var conn = document.getElementById('connection-dropdown');
-    if (conn && conn.classList.contains('open')) {
-      closeConnectionDropdown();
-      return;
-    }
-    var sdd = document.getElementById('settings-dropdown');
-    if (sdd && sdd.classList.contains('open')) {
-      closeSettingsDropdown();
-      return;
-    }
-  }
-  if (e.key === 'Escape' && document.getElementById('modal').classList.contains('open')) closeModal();
-  if (e.key === 'Escape') {
-    var pam = document.getElementById('procedure-agenda-modal');
-    if (pam && pam.classList.contains('open')) {
-      closeProcedureAgendaModal();
-      return;
-    }
-    var pm = document.getElementById('profile-modal');
-    if (pm && pm.classList.contains('open')) { closeProfileModal(); return; }
-  }
   var mod = e.metaKey || e.ctrlKey;
   if (mod) {
     var key = e.key.toLowerCase();
@@ -12227,9 +12563,218 @@ function tendSectionChartSvg() {
   );
 }
 
+function destroyTendCardSortables() {
+  _tendCardSortables.forEach(function (s) {
+    try {
+      if (s && typeof s.destroy === 'function') s.destroy();
+    } catch (_e) {}
+  });
+  _tendCardSortables = [];
+}
+
+function syncTendCardOrderFromDom(sectionKey) {
+  if (!activeId || !sectionKey) return;
+  var zone = null;
+  document.querySelectorAll('.tend-sort-zone[data-section-key]').forEach(function (el) {
+    if (el.getAttribute('data-section-key') === sectionKey) zone = el;
+  });
+  if (!zone) return;
+  var order = [];
+  zone.querySelectorAll('.tend-card[data-series-key]').forEach(function (el) {
+    var k = el.getAttribute('data-series-key');
+    if (k) order.push(k);
+  });
+  if (order.length) writeTendCardOrder(activeId, sectionKey, order);
+}
+
+var _tendPointerDidDrag = false;
+var TEND_CARD_DRAG_THRESHOLD_PX = 5;
+
+function tendCardActivate(ev, sectionKey, fieldKey) {
+  if (_tendPointerDidDrag) {
+    _tendPointerDidDrag = false;
+    if (ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+    }
+    return;
+  }
+  openTendDetail(sectionKey, fieldKey);
+}
+
+/** Arrastre por puntero (clon fixed): evita conflictos Sortable + grid/transform en Electron. */
+function mountTendCardPointerSort(zone, sectionKey) {
+  var scrollRoot = document.getElementById('tendencias-container');
+  var state = null;
+
+  function zoneCards() {
+    return Array.prototype.slice.call(zone.children).filter(function (el) {
+      return (
+        el.classList &&
+        el.classList.contains('tend-card') &&
+        el.hasAttribute('data-series-key')
+      );
+    });
+  }
+
+  function beginDragVisuals() {
+    if (!state || state.ghost) return;
+    var card = state.card;
+    var rect = card.getBoundingClientRect();
+    var ghost = card.cloneNode(true);
+    ghost.classList.add('tend-drag-hovercard');
+    ghost.setAttribute('aria-hidden', 'true');
+    ghost.style.position = 'fixed';
+    ghost.style.left = rect.left + 'px';
+    ghost.style.top = rect.top + 'px';
+    ghost.style.width = rect.width + 'px';
+    ghost.style.height = rect.height + 'px';
+    ghost.style.margin = '0';
+    ghost.style.boxSizing = 'border-box';
+    ghost.style.pointerEvents = 'none';
+    ghost.style.zIndex = '10060';
+    ghost.style.transition = 'none';
+    ghost.style.opacity = '1';
+    document.body.appendChild(ghost);
+    card.classList.add('tend-card--sort-source');
+    state.ghost = ghost;
+    state.offsetX = state.startX - rect.left;
+    state.offsetY = state.startY - rect.top;
+  }
+
+  function clearState() {
+    if (!state) return;
+    if (state.ghost && state.ghost.parentNode) state.ghost.parentNode.removeChild(state.ghost);
+    state.card.classList.remove('tend-card--sort-source');
+    state.card.style.width = '';
+    state.card.style.maxWidth = '';
+    state = null;
+  }
+
+  /** Devuelve el nodo antes del cual insertar (null = al final). Soporta huecos horizontales en la rejilla. */
+  function findInsertBefore(clientX, clientY) {
+    var cards = zoneCards().filter(function (c) {
+      return c !== state.card;
+    });
+    if (!cards.length) return null;
+
+    var i;
+    for (i = 0; i < cards.length; i++) {
+      var r = cards[i].getBoundingClientRect();
+      if (
+        clientX >= r.left &&
+        clientX <= r.right &&
+        clientY >= r.top &&
+        clientY <= r.bottom
+      ) {
+        if (clientX < r.left + r.width * 0.5) return cards[i];
+        return cards[i + 1] || null;
+      }
+    }
+
+    for (i = 0; i < cards.length - 1; i++) {
+      var ra = cards[i].getBoundingClientRect();
+      var rb = cards[i + 1].getBoundingClientRect();
+      var sameRow = Math.abs(ra.top - rb.top) < Math.min(ra.height, rb.height) * 0.45;
+      if (!sameRow) continue;
+      if (
+        clientX > ra.right &&
+        clientX < rb.left &&
+        clientY >= Math.min(ra.top, rb.top) - 10 &&
+        clientY <= Math.max(ra.bottom, rb.bottom) + 10
+      ) {
+        return cards[i + 1];
+      }
+    }
+
+    for (i = 0; i < cards.length; i++) {
+      var rj = cards[i].getBoundingClientRect();
+      if (clientY < rj.top + rj.height * 0.5) return cards[i];
+    }
+    return null;
+  }
+
+  function onPointerMove(e) {
+    if (!state || e.pointerId !== state.pointerId) return;
+    var dx = e.clientX - state.startX;
+    var dy = e.clientY - state.startY;
+    if (!state.moved) {
+      if (dx * dx + dy * dy < TEND_CARD_DRAG_THRESHOLD_PX * TEND_CARD_DRAG_THRESHOLD_PX) return;
+      state.moved = true;
+      beginDragVisuals();
+    }
+    if (!state.ghost) return;
+    state.ghost.style.left = e.clientX - state.offsetX + 'px';
+    state.ghost.style.top = e.clientY - state.offsetY + 'px';
+    var before = findInsertBefore(e.clientX, e.clientY);
+    if (before) zone.insertBefore(state.card, before);
+    else zone.appendChild(state.card);
+    if (scrollRoot) {
+      var sr = scrollRoot.getBoundingClientRect();
+      if (e.clientY < sr.top + 54) scrollRoot.scrollTop -= 9;
+      else if (e.clientY > sr.bottom - 54) scrollRoot.scrollTop += 9;
+    }
+  }
+
+  function onPointerUp(e) {
+    if (!state || e.pointerId !== state.pointerId) return;
+    document.removeEventListener('pointermove', onPointerMove);
+    document.removeEventListener('pointerup', onPointerUp);
+    document.removeEventListener('pointercancel', onPointerUp);
+    if (state.moved) {
+      syncTendCardOrderFromDom(sectionKey);
+      _tendPointerDidDrag = true;
+    }
+    clearState();
+  }
+
+  function onPointerDown(e) {
+    if (state) return;
+    if (e.button !== 0) return;
+    if (e.target.closest('button, a[href], input, textarea, select')) return;
+    var card = e.target.closest('.tend-card');
+    if (!card || !zone.contains(card)) return;
+    state = {
+      card: card,
+      ghost: null,
+      pointerId: e.pointerId,
+      offsetX: 0,
+      offsetY: 0,
+      startX: e.clientX,
+      startY: e.clientY,
+      moved: false
+    };
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp);
+    document.addEventListener('pointercancel', onPointerUp);
+  }
+
+  zone.addEventListener('pointerdown', onPointerDown);
+  return {
+    destroy: function () {
+      zone.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp);
+      document.removeEventListener('pointercancel', onPointerUp);
+      clearState();
+    }
+  };
+}
+
+function mountTendCardSortables() {
+  destroyTendCardSortables();
+  if (!activeId) return;
+  document.querySelectorAll('.tend-sort-zone[data-section-key]').forEach(function (zone) {
+    var sectionKey = zone.getAttribute('data-section-key');
+    if (!sectionKey || !zone.querySelector('.tend-card')) return;
+    _tendCardSortables.push(mountTendCardPointerSort(zone, sectionKey));
+  });
+}
+
 function renderTendencias() {
   var container = document.getElementById('tendencias-container');
   if (!container) return;
+  destroyTendCardSortables();
   Object.keys(sparkCharts).forEach(function (k) {
     if (sparkCharts[k]) {
       sparkCharts[k].destroy();
@@ -12333,7 +12878,10 @@ function renderTendencias() {
     var sectionKey = sectionsOrdered[si];
     var expanded = tendSectionIsExpanded(sectionKey);
     var secLabel = TEND_SECTION_LABELS[sectionKey] || sectionKey;
-    var list = bySection[sectionKey];
+    var list = orderTrendSeriesBySaved(
+      bySection[sectionKey],
+      readTendCardOrder(activeId, sectionKey)
+    );
     var cardParts = [];
     for (var li = 0; li < list.length; li++) {
       var spec = list[li];
@@ -12350,10 +12898,16 @@ function renderTendencias() {
       var ref = tendRefForSeries(history, sectionKey, fk, latestSet);
       var isAb = ref && latest != null && (latest < ref[0] || latest > ref[1]);
       var domId = trendSparkDomId(sectionKey, fk);
-      var disp = tendFindSeriesSpec(sectionKey, fk).cardTitle || fk;
-      var titleEsc = esc(disp);
+      var labelParts = tendCardLabelParts(sectionKey, fk);
+      var titleEsc = esc(labelParts.title);
+      var unitHtml = labelParts.unit
+        ? '<div class="tend-unit">' + esc(labelParts.unit) + '</div>'
+        : '';
+      var seriesKey = tendCatalogSeriesKey(sectionKey, fk);
       cardParts.push(
-        '<div class="tend-card" role="button" tabindex="0" onclick="openTendDetail(\'' +
+        '<div class="tend-card" role="button" tabindex="0" data-series-key="' +
+          esc(seriesKey) +
+          '" onclick="tendCardActivate(event,\'' +
           safeAttrJsString(sectionKey) +
           "','" +
           safeAttrJsString(fk) +
@@ -12375,9 +12929,7 @@ function renderTendencias() {
           (latest != null ? latest : '—') +
           '</span>' +
           '</div>' +
-          '<div class="tend-unit">' +
-          esc(tendUnitForSeries(sectionKey, fk)) +
-          '</div>' +
+          unitHtml +
           '<div class="tend-spark-wrap">' +
           '<div class="tend-spark-canvas-cell">' +
           (expanded
@@ -12419,7 +12971,9 @@ function renderTendencias() {
         '<div class="tend-section-body' +
         (expanded ? '' : ' tend-section-body--collapsed') +
         '">' +
-        '<div class="tend-grid">' +
+        '<div class="tend-grid tend-sort-zone" data-section-key="' +
+        esc(sectionKey) +
+        '">' +
         cardParts.join('') +
         '</div></div></section>'
     );
@@ -12488,6 +13042,7 @@ function renderTendencias() {
       }
     });
   }
+  mountTendCardSortables();
   syncTendHiddenModalIfOpen();
 }
 
@@ -12514,13 +13069,15 @@ function openTendDetail(sectionKey, fieldKey) {
   var values = setsAsc.map(function (s) {
     return getSetTrendValueForSeries(s, sectionKey, fieldKey);
   });
+  var labelParts = tendCardLabelParts(sectionKey, fieldKey);
   var spec = tendFindSeriesSpec(sectionKey, fieldKey);
-  var title = spec && spec.cardTitle ? spec.cardTitle : String(fieldKey);
-  var unit = tendUnitForSeries(sectionKey, fieldKey);
+  var title = labelParts.title;
+  var unit = labelParts.unit;
   var latestSet = setsDesc.length ? setsDesc[0] : null;
   var latest = latestSet ? getSetTrendValueForSeries(latestSet, sectionKey, fieldKey) : null;
   var ref = tendRefForSeries(history, sectionKey, fieldKey, latestSet);
-  document.getElementById('tend-detail-title').textContent = title + (unit ? ' (' + unit + ')' : '');
+  document.getElementById('tend-detail-title').textContent =
+    title + (labelParts.unit ? ' (' + labelParts.unit + ')' : '');
   var vbarSlot = document.getElementById('tend-detail-vbar-slot');
   if (vbarSlot) {
     vbarSlot.innerHTML = '';
@@ -13216,11 +13773,6 @@ function renderUpdateError(msg) {
       hideUpdateModal();
     };
     actions.appendChild(retry);
-    var close = document.createElement('button');
-    close.className = 'btn-secondary';
-    close.textContent = 'Cerrar';
-    close.onclick = function() { hideUpdateModal(); };
-    actions.appendChild(close);
   }
   if (sec) sec.innerHTML = '';
   showUpdateModal();
@@ -13805,20 +14357,6 @@ function initBlockFShortcuts() {
       toggleFocusMode();
       return;
     }
-    if (e.key === 'Escape') {
-      var bd = document.getElementById('unified-search-backdrop');
-      if (bd && bd.classList.contains('open')) {
-        e.preventDefault();
-        closeUnifiedSearch();
-        return;
-      }
-      var em = document.getElementById('extra-templates-modal');
-      if (em && em.style.display === 'flex') {
-        e.preventDefault();
-        closeExtraTemplatesManager();
-        return;
-      }
-    }
     if (
       isPaseMode() &&
       document.body &&
@@ -13858,6 +14396,8 @@ function initBlockFShortcuts() {
 }
 
 _rpcDeferInit(initBlockFShortcuts);
+_rpcDeferInit(initModalDismiss);
+_rpcDeferInit(initSidebarAutoHide);
 syncProfileSectionVisibility();
 
 Object.assign(window, {
@@ -13935,6 +14475,7 @@ Object.assign(window, {
   togglePatientRoundSeen,
   movePatientByOffset,
   toggleArchivedSection,
+  toggleSidebarAutoHide,
   toggleSettingsSection,
   toggleSettingsDropdown,
   closeSettingsDropdown,
@@ -14037,6 +14578,7 @@ Object.assign(window, {
   addOtro,
   generateIndicaciones,
   openTendDetail,
+  tendCardActivate,
   toggleFocusMode,
   openUnifiedSearch,
   closeUnifiedSearch,

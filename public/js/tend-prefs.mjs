@@ -2,6 +2,7 @@ const LS_SERIES_COLORS = 'rpc-tend-series-colors';
 const LS_GROUP_VISIBLE = 'rpc-tend-group-visible';
 const LS_GROUP_TABLE_HIDDEN = 'rpc-tend-group-table-hidden';
 const LS_GROUP_PANEL_ORDER = 'rpc-tend-group-panel-order';
+const LS_TEND_CARD_ORDER = 'rpc-tend-card-order';
 const LS_GROUP_PANEL_HIDDEN = 'rpc-tend-group-panel-hidden';
 const LS_GROUP_PANEL_TITLES = 'rpc-tend-group-panel-titles';
 
@@ -100,6 +101,19 @@ export function writeGroupPanelOrder(patientId, sectionKey, familyKeys) {
   var map = readJson(LS_GROUP_PANEL_ORDER, {});
   map[groupKey(patientId, sectionKey)] = (familyKeys || []).slice();
   writeJson(LS_GROUP_PANEL_ORDER, map);
+}
+
+/** Orden de tarjetas spark (claves sectionKey|fieldKey) por paciente y sección de laboratorio. */
+export function readTendCardOrder(patientId, sectionKey) {
+  var map = readJson(LS_TEND_CARD_ORDER, {});
+  var arr = map[groupKey(patientId, sectionKey)];
+  return Array.isArray(arr) ? arr.slice() : null;
+}
+
+export function writeTendCardOrder(patientId, sectionKey, seriesKeys) {
+  var map = readJson(LS_TEND_CARD_ORDER, {});
+  map[groupKey(patientId, sectionKey)] = (seriesKeys || []).slice();
+  writeJson(LS_TEND_CARD_ORDER, map);
 }
 
 export function readGroupPanelHidden(patientId, sectionKey) {

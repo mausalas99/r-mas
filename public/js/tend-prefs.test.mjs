@@ -10,6 +10,8 @@ import {
   writeGroupTableHidden,
   readGroupPanelOrder,
   writeGroupPanelOrder,
+  readTendCardOrder,
+  writeTendCardOrder,
   readGroupPanelHidden,
   writeGroupPanelHidden,
   writeGroupPanelTitle,
@@ -50,6 +52,12 @@ test('orden y ocultos de paneles por paciente+sección', () => {
   writeGroupPanelHidden('p1', 'BH', ['absolute']);
   assert.deepEqual(readGroupPanelOrder('p1', 'BH'), ['gases', 'percent-rbc']);
   assert.deepEqual(readGroupPanelHidden('p1', 'BH'), ['absolute']);
+});
+
+test('orden de tarjetas spark por paciente+sección', () => {
+  writeTendCardOrder('p1', 'BH', ['BH|Hto', 'BH|Hb', 'BH|Leu']);
+  assert.deepEqual(readTendCardOrder('p1', 'BH'), ['BH|Hto', 'BH|Hb', 'BH|Leu']);
+  assert.equal(readTendCardOrder('p1', 'QS'), null);
 });
 
 test('títulos de paneles personalizables por paciente+sección', () => {

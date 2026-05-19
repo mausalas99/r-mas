@@ -1477,7 +1477,7 @@
     box-shadow: 0 2px 12px rgba(0,0,0,0.28);
   }
   .app { display: flex; flex: 1; overflow: hidden; }
-  aside {
+  aside.patient-sidebar {
     width: var(--sidebar-width);
     background: var(--surface);
     border-right: none;
@@ -1485,12 +1485,79 @@
     min-height: 0;
     overflow: hidden;
     box-shadow: 8px 0 28px rgba(15, 23, 42, 0.055);
+    transition: width 0.22s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.18s ease, box-shadow 0.18s ease;
+  }
+  .sidebar-hover-strip {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 14px;
+    z-index: 450;
+    display: none;
+  }
+  html.sidebar-auto-hide .sidebar-hover-strip { display: block; }
+  html.sidebar-auto-hide:not(.sidebar-reveal) aside.patient-sidebar {
+    width: 0 !important;
+    min-width: 0 !important;
+    opacity: 0;
+    pointer-events: none;
+    box-shadow: none;
+    border-right: none;
+  }
+  html.sidebar-auto-hide.sidebar-reveal aside.patient-sidebar {
+    opacity: 1;
+    pointer-events: auto;
+    box-shadow: 8px 0 28px rgba(15, 23, 42, 0.055);
+  }
+  html.dark.sidebar-auto-hide.sidebar-reveal aside.patient-sidebar {
+    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.35);
   }
   .sidebar-header {
     padding: calc(14px * var(--density-space)) calc(16px * var(--density-space)) calc(15px * var(--density-space));
     border-bottom: none;
     display: flex; align-items: center; justify-content: space-between;
+    gap: 8px;
     background: transparent;
+  }
+  .sidebar-header-title-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    flex: 1;
+  }
+  .btn-sidebar-auto-hide {
+    appearance: none;
+    -webkit-appearance: none;
+    margin: 0;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  }
+  .btn-sidebar-auto-hide:hover {
+    border-color: color-mix(in oklab, var(--action) 35%, var(--border));
+    color: var(--action);
+    background: color-mix(in oklab, var(--action) 8%, var(--surface));
+  }
+  html.sidebar-auto-hide .btn-sidebar-auto-hide {
+    border-color: color-mix(in oklab, var(--action) 45%, var(--border));
+    color: var(--action);
+    background: color-mix(in oklab, var(--action) 12%, var(--surface));
+  }
+  .btn-sidebar-auto-hide:focus-visible {
+    outline: 2px solid color-mix(in oklab, var(--action) 50%, transparent);
+    outline-offset: 1px;
   }
   .sidebar-header h2 { font-size: calc(12px * var(--density-font)); font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; }
   .btn-add {
@@ -2395,18 +2462,47 @@
   .listado-section-header.activos { background: #ecfdf5; color: #065f46; }
   .listado-section-header.inactivos { background: #f3f4f6; color: #4b5563; }
   .listado-section-body { padding: 12px 14px; display:flex; flex-direction:column; gap:8px; }
+  .listado-sort-zone { gap: calc(8px * var(--density-space, 1)); }
+  .listado-sort-zone .sortable-chosen:not(.sortable-ghost):not(.sortable-drag) {
+    box-shadow: 0 4px 18px rgba(79, 86, 255, 0.12);
+  }
+  .listado-sort-zone .sortable-ghost {
+    opacity: 0.62;
+    border-style: dashed;
+    border-color: color-mix(in oklab, var(--action) 38%, var(--border));
+    background: color-mix(in oklab, var(--surface) 88%, var(--bg));
+  }
+  .listado-sort-zone .sortable-drag {
+    opacity: 0.92;
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--action) 40%, transparent);
+  }
+  .listado-drag-hovercard.listado-row {
+    cursor: grabbing !important;
+    pointer-events: none !important;
+    z-index: 10060;
+    box-sizing: border-box;
+    opacity: 1 !important;
+    background: color-mix(in oklab, var(--surface) 97%, var(--bg)) !important;
+    border: 1px solid color-mix(in oklab, var(--action) 38%, var(--border)) !important;
+    border-radius: 6px;
+    box-shadow: 0 18px 50px rgba(15, 23, 42, 0.2), 0 6px 18px rgba(79, 86, 255, 0.14) !important;
+  }
+  html.dark .listado-drag-hovercard.listado-row {
+    background: color-mix(in oklab, var(--surface) 94%, #0f172a) !important;
+    border-color: color-mix(in oklab, var(--action) 45%, var(--border)) !important;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45), 0 4px 16px rgba(79, 86, 255, 0.18) !important;
+  }
   .listado-row { display: grid; grid-template-columns: 22px 140px 1fr 32px; gap: 8px; align-items: start; padding: 6px; border-radius: 6px; border: 1px solid transparent; transition: background 0.1s, border-color 0.1s; }
   .listado-row:hover { background: var(--bg); }
-  .listado-row .listado-num { font-size: 13px; font-weight: 700; color: var(--text-muted); text-align: right; padding: 8px 0; cursor: grab; user-select: none; }
-  .listado-row .listado-num:active { cursor: grabbing; }
+  .listado-row .listado-num,
+  .listado-row .listado-drag-handle { font-size: 13px; font-weight: 700; color: var(--text-muted); text-align: right; padding: 8px 0; cursor: grab; user-select: none; touch-action: none; }
+  .listado-row .listado-drag-handle:active { cursor: grabbing; }
   .listado-row input[type="date"] { border: 1px solid var(--border); border-radius: 6px; padding: 7px 8px; font-size: 12px; font-family: inherit; background: #F8FAFC; color: var(--text); }
   .listado-row input[type="date"]:focus { outline: none; border-color: var(--action); background: white; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
   .listado-row textarea { border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; font-size: 13px; font-family: inherit; background: white; color: var(--text); resize: none; min-height: 36px; line-height: 1.4; width: 100%; transition: border-color 0.15s; overflow: hidden; }
   .listado-row textarea:focus { outline: none; border-color: var(--action); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
   .listado-row .btn-remove-listado { background: none; border: 1px solid transparent; color: var(--text-muted); font-size: 16px; cursor: pointer; padding: 4px 6px; border-radius: 4px; line-height: 1; min-width: 28px; min-height: 28px; }
   .listado-row .btn-remove-listado:hover { color: #dc2626; background: #fee2e2; border-color: #fecaca; }
-  .listado-row.dragging { opacity: 0.5; }
-  .listado-row.drag-over { border-top: 2px solid var(--action); }
   .listado-add-row { background: none; border: 1px dashed var(--border); border-radius: 6px; padding: 8px 14px; font-size: 13px; font-family: inherit; color: var(--text-muted); cursor: pointer; transition: all 0.15s; }
   .listado-add-row:hover { border-color: var(--action); color: var(--action); background: #EFF6FF; }
   .listado-empty { font-size: 12px; color: var(--text-muted); font-style: italic; padding: 8px 4px; }
@@ -3739,19 +3835,109 @@
   .tend-card-eye:hover { color: var(--text); background: var(--surface); transform: scale(1.05); }
   .tend-card-eye:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
   .tend-card .tend-card-header { padding-right: 36px; }
-  .tend-grid  { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; padding:4px; }
-  .tend-card  { position:relative; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px; cursor:pointer; transition:box-shadow 0.22s ease, transform 0.22s ease, border-color 0.2s ease; overflow:visible; min-width:0; }
+  .tend-grid,
+  .tend-grid.tend-sort-zone {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+    padding: 4px;
+    align-items: stretch;
+  }
+  .tend-sort-zone .tend-card {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    box-sizing: border-box;
+    justify-self: stretch;
+    padding: 9px 11px 8px;
+  }
+  .tend-sort-zone .tend-card-header { margin-bottom: 4px; }
+  .tend-sort-zone .tend-param-name {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    line-height: 1.2;
+  }
+  .tend-sort-zone .tend-param-value {
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+  .tend-sort-zone .tend-unit {
+    font-size: 10px;
+    margin-top: 1px;
+    line-height: 1.2;
+  }
+  .tend-sort-zone .tend-spark-wrap {
+    height: 40px;
+    margin-top: 5px;
+  }
+  .tend-sort-zone .tend-spark-placeholder { min-height: 40px; }
+  .tend-sort-zone .tend-card.tend-card--sort-source {
+    opacity: 0 !important;
+    pointer-events: none;
+    border-style: dashed !important;
+    border-color: color-mix(in oklab, var(--action) 32%, var(--border)) !important;
+    background: color-mix(in oklab, var(--action) 6%, var(--surface)) !important;
+    box-shadow: none !important;
+  }
+  .tend-sort-zone .tend-card.tend-card--sort-source * {
+    visibility: hidden;
+  }
+  .tend-sort-zone .sortable-drag {
+    opacity: 0 !important;
+  }
+  body > .tend-drag-hovercard,
+  body > .sortable-fallback {
+    cursor: grabbing !important;
+    pointer-events: none !important;
+    z-index: 10060 !important;
+    box-sizing: border-box;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transition: none !important;
+    will-change: transform;
+    background: color-mix(in oklab, var(--surface) 97%, var(--bg)) !important;
+    border: 1px solid color-mix(in oklab, var(--action) 38%, var(--border)) !important;
+    border-radius: 10px;
+    box-shadow: 0 18px 50px rgba(15, 23, 42, 0.2), 0 6px 18px rgba(79, 86, 255, 0.14) !important;
+  }
+  html.dark body > .tend-drag-hovercard,
+  html.dark body > .sortable-fallback {
+    background: color-mix(in oklab, var(--surface) 94%, #0f172a) !important;
+    border-color: color-mix(in oklab, var(--action) 45%, var(--border)) !important;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45), 0 4px 16px rgba(79, 86, 255, 0.18) !important;
+  }
+  .tend-card  { position:relative; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px; cursor:grab; transition:box-shadow 0.22s ease, border-color 0.2s ease; overflow:visible; min-width:0; }
+  .tend-card.sortable-chosen,
+  .tend-card.sortable-drag,
+  .tend-card.sortable-fallback,
+  .tend-drag-hovercard { transition: none !important; }
+  .tend-card:active { cursor: grabbing; }
   /* Modo cómodo: sidebar más ancha → menos columnas si usamos 1fr; capamos tarjetas para no inflar “cuadros”. */
-  html.ui-density-normal .tend-grid {
+  html.ui-density-normal .tend-grid:not(.tend-sort-zone) {
     grid-template-columns: repeat(auto-fill, minmax(188px, 220px));
     gap: 14px;
     justify-content: start;
   }
+  html.ui-density-normal .tend-grid,
+  html.ui-density-normal .tend-grid.tend-sort-zone {
+    grid-template-columns: repeat(auto-fill, minmax(188px, 1fr));
+    gap: 12px;
+  }
+  html.ui-density-normal .tend-sort-zone .tend-param-value { font-size: 16px; }
+  html.ui-density-normal .tend-sort-zone .tend-spark-wrap { height: 38px; }
+  html.ui-density-normal .tend-sort-zone .tend-spark-placeholder { min-height: 38px; }
   html.ui-density-normal .tend-card {
     max-width: 220px;
     width: 100%;
     padding: 10px;
     justify-self: start;
+  }
+  html.ui-density-normal .tend-sort-zone .tend-card {
+    max-width: none;
+    width: 100%;
+    justify-self: stretch;
   }
   html.ui-density-normal .tend-param-value { font-size: 16px; }
   html.ui-density-normal .tend-spark-wrap { height: 50px; margin-top: 6px; }
@@ -4190,19 +4376,18 @@
   </div>
 </div>
 
-<div id="tend-hidden-modal-backdrop" class="modal-backdrop" aria-hidden="true" onclick="if(event.target===this)closeTendHiddenModal()">
+<div id="tend-hidden-modal-backdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal tend-hidden-modal" role="dialog" aria-modal="true" aria-labelledby="tend-hidden-modal-title" onclick="event.stopPropagation()">
     <h3 id="tend-hidden-modal-title">Analitos ocultos</h3>
     <p class="tend-hidden-modal-hint">Pulsa el ícono del ojo junto a cada nombre para volver a mostrarlo en la cuadrícula de tendencias.</p>
     <div id="tend-hidden-modal-chips" class="tend-hidden-modal-chips"></div>
     <div class="modal-actions">
-      <button type="button" class="btn-cancel" onclick="closeTendHiddenModal()">Cerrar</button>
       <button type="button" class="btn-save" onclick="tendResetAllHiddenSeries()">Mostrar todos</button>
     </div>
   </div>
 </div>
 
-<div id="lab-display-prefs-backdrop" class="modal-backdrop" aria-hidden="true" onclick="if(event.target===this)closeLabDisplayPrefsModal()">
+<div id="lab-display-prefs-backdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal lab-display-prefs-modal" role="dialog" aria-modal="true" aria-labelledby="lab-display-prefs-title" onclick="event.stopPropagation()">
     <h3 id="lab-display-prefs-title">Vista de laboratorio</h3>
     <p class="lab-display-prefs-hint">Solo en este equipo · resultados, copiar y enviar a nota.</p>
@@ -4221,9 +4406,6 @@
           <span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span>
         </label>
       </div>
-    </div>
-    <div class="modal-actions" style="margin-top:20px;">
-      <button type="button" class="btn-save" onclick="closeLabDisplayPrefsModal()">Listo</button>
     </div>
   </div>
 </div>
@@ -4475,11 +4657,10 @@
   Sin conexión con el servidor local. No podrás generar documentos hasta reiniciar R+ o recuperar el servicio en segundo plano.
 </div>
 
-<div id="help-quick-backdrop" class="modal-backdrop" aria-hidden="true" onclick="if(event.target===this)closeQuickHelp()">
+<div id="help-quick-backdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal help-center-modal" role="dialog" aria-modal="true" aria-labelledby="help-quick-title" onclick="event.stopPropagation()">
     <div class="help-center-head">
       <h3 id="help-quick-title">Centro de ayuda</h3>
-      <button type="button" class="help-center-close" onclick="closeQuickHelp()" aria-label="Cerrar centro de ayuda">Cerrar (Esc)</button>
     </div>
     <div class="help-search-wrap">
       <input type="search" id="help-search-input" class="help-search-input"
@@ -4503,14 +4684,11 @@
   </div>
 </div>
 
-<div id="release-notes-backdrop" class="modal-backdrop" aria-hidden="true" onclick="if(event.target===this)closeReleaseNotes()">
-  <div class="modal release-notes-modal" role="dialog" aria-modal="true" aria-labelledby="release-notes-title" onclick="event.stopPropagation()">
+<div id="release-notes-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal release-notes-modal" role="dialog" aria-modal="true" aria-labelledby="release-notes-title" tabindex="-1" onclick="event.stopPropagation()">
     <h3 id="release-notes-title">Novedades</h3>
-    <p class="release-notes-intro" id="release-notes-intro">Esto es nuevo o mejorado en la versión recién instalada. Pulsa <strong>Entendido</strong> para cerrar; esta ventana no volverá a aparecer en esta versión.</p>
+    <p class="release-notes-intro" id="release-notes-intro">Esto es nuevo o mejorado en la versión recién instalada. Pulsa fuera o <strong>Esc</strong> para cerrar; esta ventana no volverá a aparecer en esta versión.</p>
     <ul id="release-notes-list" class="release-notes-list"></ul>
-    <div class="modal-actions">
-      <button type="button" class="btn-save" id="release-notes-close-btn" onclick="closeReleaseNotes()">Entendido</button>
-    </div>
   </div>
 </div>
 
@@ -4555,9 +4733,15 @@
 </div>
 
 <div class="app">
-  <aside>
+  <div id="sidebar-hover-strip" class="sidebar-hover-strip" aria-hidden="true"></div>
+  <aside id="patient-sidebar" class="patient-sidebar">
     <div class="sidebar-header">
-      <h2>Pacientes</h2>
+      <div class="sidebar-header-title-row">
+        <button type="button" class="btn-sidebar-auto-hide" id="btn-sidebar-auto-hide" onclick="toggleSidebarAutoHide()" aria-pressed="false" title="Ocultar barra de pacientes (reaparece al acercar el mouse)" aria-label="Ocultar barra de pacientes">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
+        </button>
+        <h2>Pacientes</h2>
+      </div>
       <button class="btn-add" onclick="openAddModal()">+ Agregar</button>
     </div>
     <div class="profile-section" id="profile-section">
@@ -4905,10 +5089,7 @@
 
 <div class="modal-backdrop" id="profile-modal" aria-hidden="true">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title" style="width:560px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-      <h3 id="profile-modal-title" style="margin:0;">👤 Mi Perfil</h3>
-      <button onclick="closeProfileModal()" aria-label="Cerrar" style="background:transparent;border:none;font-size:20px;color:var(--text-muted);cursor:pointer;line-height:1;padding:4px 8px;">×</button>
-    </div>
+    <h3 id="profile-modal-title" style="margin:0 0 14px 0;">👤 Mi Perfil</h3>
     <div class="profile-body" id="profile-body" style="display:flex;flex-direction:column;gap:12px;">
       <div>
         <div class="profile-field-label">Médico Tratante</div>
@@ -5042,13 +5223,12 @@
     </div>
 
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
       <button class="btn-save" onclick="savePatient()">Agregar Paciente</button>
     </div>
   </div>
 </div>
 
-<div class="modal-backdrop" id="procedure-agenda-modal" aria-hidden="true" onclick="if(event.target===this)closeProcedureAgendaModal()">
+<div class="modal-backdrop" id="procedure-agenda-modal" aria-hidden="true">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="procedure-agenda-modal-title">
     <h3 id="procedure-agenda-modal-title">Procedimiento agendado</h3>
     <input type="hidden" id="pa-edit-id" value="">
@@ -5084,7 +5264,6 @@
     <div class="modal-actions" style="justify-content:space-between;flex-wrap:wrap;">
       <button type="button" class="btn-cancel" id="pa-btn-delete" style="margin-right:auto;border-color:rgba(220,38,38,0.35);color:var(--error);display:none;" onclick="deleteProcedureAgendaFromModal()">Eliminar</button>
       <div style="display:flex;gap:10px;margin-left:auto;">
-        <button type="button" class="btn-cancel" onclick="closeProcedureAgendaModal()">Cancelar</button>
         <button type="button" class="btn-save" onclick="saveProcedureAgendaFromModal()">Guardar</button>
       </div>
     </div>
@@ -5110,7 +5289,6 @@
       <textarea id="tmpl-meds" rows="3" placeholder="(vacío por defecto)"></textarea>
     </div>
     <div class="templates-modal-actions">
-      <button class="btn-cancel" onclick="closeTemplatesModal()">Cancelar</button>
       <button class="btn-save" onclick="saveTemplates()">Guardar plantillas</button>
     </div>
   </div>
@@ -5125,7 +5303,6 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true" focusable="false"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         <span id="soap-modal-title-text">Plantilla de Evolución</span>
       </div>
-      <button onclick="closeSOAPModal()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.35);color:white;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">× Cerrar</button>
     </div>
     <div class="soap-modal-body">
       <!-- S: Subjetivo -->
@@ -5280,7 +5457,6 @@
       </div>
     </div><!-- /soap-modal-body -->
     <div class="soap-modal-footer">
-      <button type="button" class="soap-btn-cancel" onclick="closeSOAPModal()" style="background:white;border:1px solid var(--border);color:var(--text-muted);border-radius:6px;padding:7px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Cancelar</button>
       <button class="btn-soap-insert" onclick="insertSOAPText()" style="background:#065F46;color:white;border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:5px;">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         Insertar en evolución
@@ -5300,7 +5476,7 @@
 <div id="focus-mode-pill" aria-hidden="true">Modo enfoque · F6 para salir</div>
 
 <!-- Unified search modal -->
-<div class="modal-backdrop" id="unified-search-backdrop" aria-hidden="true" onclick="if(event.target===this)closeUnifiedSearch()">
+<div class="modal-backdrop" id="unified-search-backdrop" aria-hidden="true">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="unified-search-title" style="width:640px;max-width:95vw;">
     <h3 id="unified-search-title">Búsqueda unificada</h3>
     <div class="modal-section" style="gap:8px;">
@@ -5308,14 +5484,11 @@
       <p style="font-size:11px;color:var(--text-muted);margin:0;">Coincidencias con pacientes, notas de evolución e indicaciones. Ctrl/⌘ + K para abrir.</p>
     </div>
     <div id="unified-search-results" class="modal-section" style="max-height:380px;overflow-y:auto;gap:6px;"></div>
-    <div class="modal-actions">
-      <button type="button" class="btn-cancel" onclick="closeUnifiedSearch()">Cerrar</button>
-    </div>
   </div>
 </div>
 
 <!-- Extra templates manager modal -->
-<div class="templates-modal-backdrop" id="extra-templates-modal" style="display:none;" onclick="if(event.target===this)closeExtraTemplatesManager()">
+<div class="templates-modal-backdrop" id="extra-templates-modal" style="display:none;">
   <div class="templates-modal" role="dialog" aria-modal="true" aria-labelledby="extra-templates-title" style="max-width:520px;">
     <h3 id="extra-templates-title">Plantillas guardadas</h3>
     <p style="font-size:12px;color:var(--text-muted);margin:0;">Guarda combinaciones reutilizables de dieta, cuidados y medicamentos. Aplícalas desde Indicaciones.</p>
@@ -5331,7 +5504,6 @@
       </div>
     </div>
     <div class="templates-modal-actions">
-      <button type="button" class="btn-cancel" onclick="closeExtraTemplatesManager()">Cerrar</button>
       <button type="button" class="btn-save" onclick="startNewExtraTemplate()">+ Nueva plantilla</button>
     </div>
   </div>
@@ -5349,7 +5521,7 @@
   </div>
 </div>
 
-<div id="rpc-wipe-modal" role="dialog" aria-modal="true" aria-labelledby="rpc-wipe-title" aria-hidden="true" onclick="if(event.target===this)closeWipeDataModal()">
+<div id="rpc-wipe-modal" role="dialog" aria-modal="true" aria-labelledby="rpc-wipe-title" aria-hidden="true">
   <div class="rpc-wipe-panel" onclick="event.stopPropagation()">
     <h3 id="rpc-wipe-title">Borrar datos de R+ en este equipo</h3>
     <p>Elige qué información eliminar. Esta acción <strong>no se puede deshacer</strong>. Se registrará en la bitácora antes de borrar.</p>
@@ -5361,18 +5533,12 @@
       <strong>Borrado completo</strong>
       <span>Elimina <strong>todos</strong> los datos clínicos, ajustes, plantillas, historial de labs, bitácora, PIN de bloqueo y preferencias. R+ se reiniciará vacío.</span>
     </button>
-    <div class="rpc-wipe-actions">
-      <button type="button" class="btn-close" onclick="closeWipeDataModal()">Cancelar</button>
-    </div>
   </div>
 </div>
 
-<div id="tend-detail-backdrop" onclick="if(event.target===this)closeTendDetail()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1100;align-items:center;justify-content:center;" aria-hidden="true">
-  <div id="tend-detail-modal" role="dialog" aria-modal="true" aria-labelledby="tend-detail-title" style="background:var(--surface);border-radius:12px;padding:24px;width:min(90vw,640px);max-height:80vh;overflow-y:auto;position:relative;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <span id="tend-detail-title" style="font-size:16px;font-weight:700;color:var(--text);"></span>
-      <button onclick="closeTendDetail()" style="background:transparent;border:1px solid var(--border);border-radius:6px;padding:4px 12px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text);">Cerrar</button>
-    </div>
+<div id="tend-detail-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1100;align-items:center;justify-content:center;" aria-hidden="true">
+  <div id="tend-detail-modal" role="dialog" aria-modal="true" aria-labelledby="tend-detail-title" onclick="event.stopPropagation()" style="background:var(--surface);border-radius:12px;padding:24px;width:min(90vw,640px);max-height:80vh;overflow-y:auto;position:relative;">
+    <div id="tend-detail-title" style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:16px;"></div>
     <div class="tend-detail-chart-row">
       <div class="tend-detail-chart-cell">
         <canvas id="tend-detail-canvas"></canvas>
