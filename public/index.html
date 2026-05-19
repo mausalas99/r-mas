@@ -880,8 +880,8 @@
     height: calc(54px + 12px * (var(--density-space) - 1));
     display: flex; align-items: center; justify-content: space-between;
     flex-shrink: 0;
-    box-shadow: none;
-    border-bottom: none;
+    box-shadow: var(--shadow-sm);
+    border-bottom: 1px solid var(--divider);
     z-index: 10;
   }
   html.electron-macos-inset-bar header {
@@ -919,12 +919,15 @@
   header span { font-size: 12px; color: var(--text-muted); }
   html.dark #app-brand:hover { background: rgba(255, 255, 255, 0.06); }
   html.dark header {
-    box-shadow: none;
-    border-bottom: none;
+    box-shadow: var(--shadow-sm);
+    border-bottom: 1px solid var(--border);
   }
   html.dark aside {
-    border-right: none;
-    box-shadow: 10px 0 40px rgba(0, 0, 0, 0.42);
+    border-right: 1px solid var(--border);
+    box-shadow: none;
+  }
+  html:not(.ui-density-normal) #main-area {
+    background: var(--bg);
   }
   .main-col { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-width: 0; }
   .header-work-cluster {
@@ -1064,12 +1067,9 @@
   }
   html:not(.ui-density-normal) .pase-patient-banner {
     padding: calc(14px * var(--density-space)) calc(16px * var(--density-space));
-    border-color: color-mix(in oklab, var(--action) 22%, var(--border));
-    background: color-mix(in oklab, var(--surface) 96%, var(--action) 4%);
-  }
-  html.dark:not(.ui-density-normal) .pase-patient-banner {
-    background: color-mix(in oklab, var(--surface) 92%, var(--action) 8%);
-    border-color: color-mix(in oklab, var(--action) 28%, var(--border));
+    border-color: var(--border);
+    background: var(--surface);
+    box-shadow: var(--shadow);
   }
   html:not(.ui-density-normal) .pase-patient-banner-body {
     display: flex;
@@ -1279,12 +1279,9 @@
     z-index: 5;
   }
   html:not(.ui-density-normal) .pase-atb-tag { font-weight: 700; }
-  html:not(.ui-density-normal) .pase-atb-tag--r { color: #dc2626; }
-  html:not(.ui-density-normal) .pase-atb-tag--i { color: #ca8a04; }
-  html:not(.ui-density-normal) .pase-atb-tag--s { color: #15803d; }
-  html.dark:not(.ui-density-normal) .pase-atb-tag--r { color: #f87171; }
-  html.dark:not(.ui-density-normal) .pase-atb-tag--i { color: #fbbf24; }
-  html.dark:not(.ui-density-normal) .pase-atb-tag--s { color: #4ade80; }
+  html:not(.ui-density-normal) .pase-atb-tag--r { color: var(--error); }
+  html:not(.ui-density-normal) .pase-atb-tag--i { color: var(--todo-prio-media); }
+  html:not(.ui-density-normal) .pase-atb-tag--s { color: var(--success); }
   html:not(.ui-density-normal) .pase-med-card {
     padding: 12px 14px 11px;
     display: flex;
@@ -1687,7 +1684,7 @@
     cursor: pointer; display: flex; align-items: center; gap: calc(4px * var(--density-space));
     transition: background 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease;
     min-height: calc(32px + 6px * (var(--density-space) - 1));
-    box-shadow: 0 2px 10px rgba(79, 86, 255, 0.2);
+    box-shadow: 0 2px 10px color-mix(in oklab, var(--action) 22%, transparent);
   }
   .btn-add:hover { background: var(--action-hover); box-shadow: 0 3px 14px color-mix(in oklab, var(--action) 28%, transparent); }
   .btn-add:active { transform: scale(0.96); }
@@ -1748,19 +1745,19 @@
     border-color: color-mix(in oklab, var(--action) 38%, var(--border));
     box-shadow: 0 4px 16px rgba(79, 86, 255, 0.1);
   }
-  .patient-card.active::before { background: linear-gradient(180deg, #7379f8 0%, #4f56ff 100%); }
+  .patient-card.active::before { background: var(--action); }
   html.dark .patient-card {
-    background: color-mix(in oklab, var(--surface) 92%, var(--bg));
-    box-shadow: 0 2px 10px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.04);
+    background: color-mix(in oklab, var(--surface) 96%, var(--bg));
+    box-shadow: var(--shadow-sm);
   }
   html.dark .patient-card:hover {
-    background: color-mix(in oklab, var(--surface) 78%, #2a4f8f);
-    border-color: color-mix(in oklab, var(--action) 35%, var(--border));
-    box-shadow: 0 4px 16px rgba(0,0,0,0.22);
+    background: color-mix(in oklab, var(--surface) 88%, var(--action) 12%);
+    border-color: color-mix(in oklab, var(--action) 28%, var(--border));
+    box-shadow: var(--shadow);
   }
   html.dark .patient-card.active {
-    background: color-mix(in oklab, var(--surface) 65%, #3560ab);
-    border-color: color-mix(in oklab, var(--action) 45%, var(--border));
+    background: color-mix(in oklab, var(--surface) 82%, var(--action) 18%);
+    border-color: color-mix(in oklab, var(--action) 40%, var(--border));
   }
   .patient-card-toolbar {
     display: flex;
@@ -2172,7 +2169,7 @@
   }
   html.dark .card { box-shadow: var(--shadow); }
   .app .card:hover {
-    box-shadow: var(--shadow-md), 0 0 0 1px color-mix(in oklab, var(--action) 20%, transparent);
+    box-shadow: var(--shadow-md), 0 0 0 1px color-mix(in oklab, var(--action) 14%, transparent);
   }
   .card-header {
     background: var(--surface);
@@ -2279,9 +2276,12 @@
   .vital-label {
     background: color-mix(in oklab, var(--lab-chip-bg) 92%, transparent);
     padding: calc(6px * var(--density-space));
-    font-size: calc(10px * var(--density-font));
-    font-weight: 700; color: var(--primary);
-    text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 1px solid var(--divider);
+    font-size: calc(11px * var(--density-font));
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: none;
+    letter-spacing: 0.01em;
+    border-bottom: 1px solid var(--divider);
   }
   .vital-box input { border: none; padding: calc(10px * var(--density-space)) calc(8px * var(--density-space)); font-size: calc(16px * var(--density-font)); font-weight: 700; text-align: center; width: 100%; background: var(--surface); color: var(--text); font-family: inherit; }
   .vital-box input:focus { outline: none; background: color-mix(in oklab, var(--lab-chip-bg) 35%, var(--surface)); }
@@ -2320,21 +2320,21 @@
     font-size: calc(14px * var(--density-font));
     font-weight: 700; font-family: inherit; cursor: pointer; display: flex;
     align-items: center; gap: calc(8px * var(--density-space)); transition: background 0.15s ease, transform 0.1s, box-shadow 0.15s ease; min-height: 44px;
-    box-shadow: 0 3px 14px rgba(79, 86, 255, 0.22);
+    box-shadow: 0 3px 14px color-mix(in oklab, var(--action) 24%, transparent);
   }
   .btn-generate:hover { background: var(--action-hover); box-shadow: 0 4px 18px color-mix(in oklab, var(--action) 30%, transparent); }
   .btn-generate:active { transform: scale(0.98); }
   .btn-generate.loading { opacity: 0.65; cursor: not-allowed; }
   .btn-generate--success {
-    background: #065f46;
-    color: #ffffff;
+    background: var(--color-success-emphasis);
+    color: var(--color-on-success);
   }
   .btn-generate--success:hover {
-    background: #047857;
-    box-shadow: 0 4px 18px color-mix(in oklab, #065f46 35%, transparent);
+    background: var(--color-success-emphasis-hover);
+    box-shadow: 0 4px 18px color-mix(in oklab, var(--color-success-emphasis) 35%, transparent);
   }
-  html.dark .btn-generate--success { background: #059669; }
-  html.dark .btn-generate--success:hover { background: #10b981; }
+  html.dark .btn-generate--success { background: var(--color-success-emphasis); }
+  html.dark .btn-generate--success:hover { background: var(--color-success-emphasis-hover); }
   .med-toolbar-actions {
     display: flex;
     gap: 10px;
@@ -2371,11 +2371,7 @@
   .btn-med-secondary--dia {
     color: color-mix(in oklab, var(--action) 88%, var(--primary));
     border-color: color-mix(in oklab, var(--action) 42%, var(--border));
-    background: linear-gradient(
-      135deg,
-      color-mix(in oklab, var(--lab-chip-bg) 92%, var(--surface)) 0%,
-      color-mix(in oklab, var(--surface) 88%, var(--lab-chip-bg)) 100%
-    );
+    background: color-mix(in oklab, var(--lab-chip-bg) 75%, var(--surface));
   }
   .btn-med-secondary--dia .btn-med-secondary-icon {
     background: color-mix(in oklab, var(--action) 14%, transparent);
@@ -2576,14 +2572,19 @@
   .rpc-proc-agenda-block {
     position: absolute; left: 2px; border-radius: 10px;
     padding: 5px 7px 6px; font-size: 11px; line-height: 1.28; overflow: hidden; cursor: pointer;
-    background: linear-gradient(145deg, rgba(79,86,255,0.14), rgba(37,99,235,0.12)); color: var(--text);
-    border: 2px solid rgba(79,86,255,0.38); box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    background: var(--color-agenda-block-bg);
+    color: var(--text);
+    border: 1px solid var(--color-agenda-block-border);
+    box-shadow: var(--shadow-sm);
     z-index: 1; transition: transform 0.1s ease, border-color 0.12s, box-shadow 0.12s; box-sizing: border-box;
   }
   .rpc-proc-agenda-block:hover { transform: scale(1.02); border-color: var(--action); z-index: 5; box-shadow: 0 4px 14px rgba(0,0,0,0.1); }
   .rpc-proc-agenda-block.rpc-proc-flag { border-color: rgba(217, 119, 6, 0.65); box-shadow: 0 0 0 1px rgba(217,119,6,0.25) inset; }
   html.dark .rpc-proc-agenda-slot { background: rgba(255,255,255,0.02); }
-  html.dark .rpc-proc-agenda-block { background: linear-gradient(145deg, rgba(129,140,248,0.18), rgba(59,130,246,0.12)); border-color: rgba(129,140,248,0.45); }
+  html.dark .rpc-proc-agenda-block {
+    background: var(--color-agenda-block-bg);
+    border-color: var(--color-agenda-block-border);
+  }
   html.dark .rpc-proc-agenda-block.rpc-proc-flag { border-color: rgba(251, 191, 36, 0.55); }
   .rpc-proc-agenda-block .rpc-proc-name { font-weight: 800; letter-spacing: -0.01em; }
   .rpc-proc-agenda-block .rpc-proc-sub { margin-top: 2px; font-size: 10px; color: var(--text-muted); font-weight: 600; }
@@ -3056,9 +3057,9 @@
     background: var(--action); color: #fff; box-shadow: var(--shadow);
   }
   .settings-help-cta {
-    background: linear-gradient(135deg, var(--lab-chip-bg) 0%, var(--surface) 100%);
+    background: color-mix(in oklab, var(--lab-chip-bg) 55%, var(--surface));
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     padding: 12px;
     margin-bottom: 4px;
   }
@@ -4456,12 +4457,12 @@
     position: absolute;
     inset: 0;
     border-radius: 5px;
-    background: linear-gradient(180deg, rgba(148,163,184,0.4) 0%, rgba(148,163,184,0.12) 100%);
-    border: 1px solid rgba(148,163,184,0.25);
+    background: color-mix(in oklab, var(--text-muted) 32%, transparent);
+    border: 1px solid color-mix(in oklab, var(--text-muted) 28%, transparent);
   }
   html.dark .tend-range-vbar-track {
-    background: linear-gradient(180deg, rgba(148,163,184,0.2) 0%, rgba(148,163,184,0.06) 100%);
-    border-color: rgba(148,163,184,0.2);
+    background: color-mix(in oklab, var(--text-muted) 22%, transparent);
+    border-color: color-mix(in oklab, var(--text-muted) 20%, transparent);
   }
   .tend-range-vbar-norm {
     position: absolute;
