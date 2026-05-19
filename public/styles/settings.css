@@ -1,0 +1,385 @@
+/* ── Mi Perfil / Ajustes (barra lateral) ───────────────── */
+.profile-section, .settings-section { border-top: 1px solid var(--divider); flex-shrink: 0; }
+.profile-toggle, .settings-toggle {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  padding: calc(10px * var(--density-space)) calc(14px * var(--density-space));
+  background: none; border: none; cursor: pointer;
+  font-family: inherit; color: var(--text-muted); font-size: calc(12px * var(--density-font)); font-weight: 500;
+  transition: background 0.15s;
+}
+.profile-toggle:hover, .settings-toggle:hover { background: var(--border); }
+.profile-toggle-left, .settings-toggle-left { display: flex; align-items: center; gap: 6px; }
+.profile-toggle-icon { flex-shrink: 0; color: var(--text-muted); }
+.profile-toggle-arrow { flex-shrink: 0; color: var(--text-muted); display: block; }
+.btn-inline-help-icon { flex-shrink: 0; }
+.profile-body, .settings-body { padding: calc(10px * var(--density-space)) calc(14px * var(--density-space)); display: flex; flex-direction: column; gap: calc(8px * var(--density-space)); }
+.profile-body {
+  max-height: min(380px, 42vh);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+/* Cuando vive en un modal centrado, deja que el modal controle el scroll. */
+#profile-modal .profile-body { max-height: none; overflow: visible; padding: 0; }
+.settings-theme-row { display: flex; gap: 6px; }
+.settings-theme-btn {
+  flex: 1; margin: 0 !important; font-size: 11px; padding: 6px 4px;
+  background: var(--lab-chip-bg); color: var(--action); border: 1px solid transparent;
+  border-radius: 5px; font-family: inherit; font-weight: 600; cursor: pointer;
+}
+.settings-theme-btn:hover { opacity: 0.9; }
+.settings-theme-btn.active {
+  background: var(--action); color: white; border-color: var(--action-hover);
+}
+html.dark .settings-theme-btn.active { background: var(--action); color: #fff; }
+/* ── Header settings dropdown ──────────────────────────── */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: calc(10px * var(--density-space));
+  position: relative;
+  flex: 0 1 auto;
+  min-width: 0;
+  justify-content: flex-end;
+}
+.btn-header-icon {
+  background: color-mix(in oklab, var(--surface) 88%, transparent);
+  border: 1px solid var(--divider); border-radius: 12px;
+  min-width: 44px; min-height: 44px; width: 44px; height: 44px;
+  padding: 0;
+  cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, color 0.15s; flex-shrink: 0; color: var(--text-muted);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+}
+.btn-header-icon .btn-header-icon-svg { display: block; flex-shrink: 0; pointer-events: none; }
+.btn-header-icon:hover { background: var(--surface); color: var(--text); }
+.settings-dropdown {
+  display: none; position: absolute; top: calc(100% + 8px); right: 0; z-index: 100;
+  background: var(--surface);
+  border: none; border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg, 0 10px 25px rgba(0,0,0,0.15)); width: min(320px, calc(100vw - 32px));
+  max-height: min(85vh, calc(100vh - 56px));
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: calc(14px * var(--density-space)); flex-direction: column; gap: calc(8px * var(--density-space));
+}
+.settings-dropdown.open { display: flex; }
+.settings-dropdown-backdrop {
+  display: none; position: fixed; inset: 0; z-index: 99;
+}
+.settings-dropdown-backdrop.open { display: block; }
+/* Menú ⇄ · LAN / LiveSync (separado de Ajustes) */
+.connection-dropdown {
+  display: none; position: absolute; top: calc(100% + 8px); right: 0; z-index: 102;
+  background: var(--surface);
+  border: none; border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg, 0 10px 25px rgba(0,0,0,0.15));
+  width: min(400px, calc(100vw - 24px));
+  max-height: min(85vh, calc(100vh - 56px));
+  overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
+  padding: 14px; flex-direction: column; gap: 10px;
+}
+.connection-dropdown.open { display: flex; }
+.connection-dropdown-backdrop {
+  display: none; position: fixed; inset: 0; z-index: 101;
+}
+.connection-dropdown-backdrop.open { display: block; }
+.connection-dropdown-head {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 10px 12px; margin: -4px -4px 8px -4px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--lab-chip-bg);
+}
+.connection-dropdown-head-icon {
+  width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface); border: 1px solid var(--border);
+}
+.connection-dropdown-head-icon svg { display: block; }
+.connection-dropdown-head-title {
+  font-size: 14px; font-weight: 700; color: var(--text); line-height: 1.25;
+  margin: 0 0 2px 0;
+}
+.connection-dropdown-head-sub {
+  font-size: 11px; color: var(--text-muted); line-height: 1.4; margin: 0;
+}
+.lan-connection-panel-root { display: flex; flex-direction: column; gap: 10px; }
+.lan-connection-panel-root .lan-rooms-panel ~ .lan-rooms-panel { display: none !important; }
+.lan-connect-card {
+  border: 1px solid var(--border); border-radius: 10px; background: var(--surface);
+  padding: 12px 12px 14px; display: flex; flex-direction: column; gap: 10px;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.04);
+}
+.lan-connect-card-title {
+  font-size: 12px; font-weight: 700; color: var(--text); margin: 0 0 2px 0;
+  letter-spacing: 0.02em;
+}
+.lan-connect-card-hint {
+  font-size: 11px; color: var(--text-muted); line-height: 1.45; margin: 0;
+}
+.lan-connect-field { display: flex; flex-direction: column; gap: 4px; }
+.lan-connection-panel-root .profile-input {
+  font-size: 13px;
+}
+.lan-connect-actions {
+  display: flex; flex-direction: column; gap: 8px; margin-top: 4px;
+}
+.lan-connect-actions-row {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch;
+}
+.lan-connect-actions-row .btn-lan-primary { flex: 1; min-width: 140px; }
+.btn-lan-primary {
+  background: var(--action); color: #fff; border: none; border-radius: 8px;
+  padding: 10px 14px; font-size: 13px; font-weight: 700; font-family: inherit;
+  cursor: pointer; box-shadow: var(--shadow);
+}
+.btn-lan-primary:hover { background: var(--action-hover); }
+.btn-lan-primary:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-lan-secondary {
+  background: var(--lab-chip-bg); color: var(--action); border: 1px solid var(--border);
+  border-radius: 8px; padding: 9px 12px; font-size: 12px; font-weight: 600;
+  font-family: inherit; cursor: pointer; flex: 1; min-width: 120px;
+}
+.btn-lan-danger {
+  background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;
+  border-radius: 8px; padding: 7px 10px; font-size: 12px; font-weight: 600;
+  font-family: inherit; cursor: pointer;
+}
+.btn-lan-danger:hover { background: #fee2e2; }
+.btn-lan-danger:disabled { opacity: 0.5; cursor: not-allowed; }
+.lan-role-tabs {
+  display: flex; gap: 6px; margin-bottom: 6px; padding: 5px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+}
+.lan-role-tab {
+  flex: 1; border: none; border-radius: 8px; padding: 9px 8px;
+  font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer;
+  background: transparent; color: var(--text-muted); line-height: 1.25;
+}
+.lan-role-tab:hover { color: var(--text); background: var(--surface); }
+.lan-role-tab.active {
+  background: var(--action); color: #fff; box-shadow: var(--shadow);
+}
+.settings-help-cta {
+  background: color-mix(in oklab, var(--lab-chip-bg) 55%, var(--surface));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  margin-bottom: 4px;
+}
+.btn-settings-help-primary {
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  background: var(--action);
+  color: #fff;
+  box-shadow: var(--shadow);
+}
+.btn-settings-help-primary:hover { background: var(--action-hover); }
+.btn-settings-help-secondary {
+  width: 100%;
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  background: var(--surface);
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-start;
+  text-align: left;
+}
+.btn-settings-help-secondary:hover { background: var(--bg); }
+.settings-help-cta-hint {
+  margin: 8px 0 0 0;
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+.settings-accordion {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: calc(8px * var(--density-space));
+  background: var(--surface);
+}
+.settings-accordion > summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  list-style: none;
+  padding: calc(10px * var(--density-space)) calc(12px * var(--density-space));
+  font-size: calc(13px * var(--density-font));
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0.01em;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+}
+.settings-accordion > summary::-webkit-details-marker { display: none; }
+.settings-accordion > summary::after {
+  content: '▾';
+  font-size: 11px;
+  opacity: 0.55;
+  transition: transform 0.15s ease;
+}
+.settings-accordion[open] > summary::after { transform: rotate(-180deg); }
+.settings-accordion[open] > summary {
+  border-bottom: 1px solid var(--border);
+  background: var(--lab-chip-bg);
+}
+.settings-acc-body {
+  padding: calc(10px * var(--density-space)) calc(12px * var(--density-space)) calc(12px * var(--density-space));
+  display: flex;
+  flex-direction: column;
+  gap: calc(8px * var(--density-space));
+}
+.settings-acc-hint {
+  font-size: calc(11px * var(--density-font));
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin: 0;
+}
+.settings-acc-hint--tight { line-height: 1.35; }
+.settings-acc-hint--md { font-size: calc(12px * var(--density-font)); }
+.settings-acc-label-spaced { margin-top: calc(8px * var(--density-space)); }
+.settings-acc-label-spaced--sm { margin-top: calc(6px * var(--density-space)); }
+.settings-acc-label-spaced--xs { margin-top: calc(4px * var(--density-space)); }
+.settings-acc-label-spaced--2xs { margin-top: calc(2px * var(--density-space)); }
+.settings-acc-row {
+  display: flex;
+  align-items: center;
+  gap: calc(8px * var(--density-space));
+}
+.settings-acc-path {
+  font-size: calc(13px * var(--density-font));
+  color: var(--text-muted);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.settings-acc-path--sm {
+  font-size: calc(11px * var(--density-font));
+  min-width: 120px;
+}
+.settings-acc-select { font-size: calc(12px * var(--density-font)); }
+.settings-acc-btn-stack > .btn-edit-templates { margin-top: calc(2px * var(--density-space)); }
+.settings-acc-btn-stack > .btn-edit-templates:first-child { margin-top: 0; }
+.settings-acc-btn--inline { margin: 0; white-space: nowrap; }
+.settings-acc-btn--danger { color: var(--error); }
+.settings-acc-divider { margin: calc(8px * var(--density-space)) 0; }
+.settings-acc-version {
+  font-size: calc(12px * var(--density-font));
+  color: var(--text-muted);
+  margin-bottom: calc(6px * var(--density-space));
+}
+.settings-acc-inline-help {
+  margin: calc(4px * var(--density-space)) 0 0 0;
+  display: none;
+}
+.settings-acc-inline-help.is-visible { display: block; }
+.settings-preimport-box {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(37, 99, 235, 0.35);
+  background: var(--lab-chip-bg);
+}
+.settings-preimport-label {
+  margin: 0 0 4px 0;
+  font-size: calc(12px * var(--density-font));
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0.01em;
+  color: var(--action);
+}
+.settings-preimport-meta {
+  margin: 0 0 8px 0;
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+html.high-contrast .settings-accordion > summary { border-bottom: none; }
+html.high-contrast .settings-accordion[open] > summary { border-bottom: 2px solid var(--border); }
+.profile-field-label {
+  color: var(--text-muted); font-size: 12px; font-weight: 600;
+  text-transform: none; letter-spacing: 0.01em; margin-bottom: 3px;
+}
+.profile-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  color: var(--text);
+  font-size: 12px;
+  font-family: inherit;
+  line-height: 1.5;
+  background: var(--input-fill);
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+.profile-input:focus {
+  outline: none;
+  border-color: color-mix(in oklab, var(--action) 45%, var(--border));
+  background: var(--surface);
+  box-shadow: 0 0 0 3px rgba(79, 86, 255, 0.14), inset 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+.profile-divider { border: none; border-top: 1px solid var(--divider); margin: 4px 0; }
+.profile-defaults-title {
+  color: var(--text-muted);
+  font-size: calc(12px * var(--density-font));
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0.01em;
+  margin-bottom: calc(5px * var(--density-space));
+}
+.profile-default-preview {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 5px;
+  padding: 5px 8px; font-size: 10px; color: var(--text-muted); font-style: italic; margin-bottom: 4px;
+}
+.profile-default-preview .preview-label { font-style: normal; font-weight: 600; color: var(--text-muted); margin-bottom: 2px; font-size: calc(11px * var(--density-font)); text-transform: none; letter-spacing: 0.01em; }
+.btn-edit-templates {
+  width: 100%; background: var(--lab-chip-bg); color: var(--action);
+  border: none; border-radius: 5px; padding: 5px; font-size: 11px;
+  font-family: inherit; cursor: pointer; margin-top: 4px; font-weight: 600;
+}
+.btn-edit-templates:hover { opacity: 0.85; }
+.patient-search-wrap { padding: 0 calc(10px * var(--density-space)) calc(8px * var(--density-space)); flex-shrink: 0; }
+.patient-search-input {
+  width: 100%; box-sizing: border-box;
+  padding: calc(9px * var(--density-space)) calc(12px * var(--density-space));
+  font-size: calc(12px * var(--density-font));
+  border: 1px solid var(--border); border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--surface) 82%, var(--bg));
+  color: var(--text); font-family: inherit;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+.patient-search-input::placeholder { color: var(--text-muted); }
+.patient-search-input:focus {
+  outline: none; border-color: color-mix(in oklab, var(--action) 55%, var(--border));
+  box-shadow: 0 0 0 3px rgba(79, 86, 255, 0.12);
+}
+.btn-save-profile {
+  width: 100%; background: var(--action); color: white; border: none;
+  border-radius: var(--radius-pill); padding: 6px; font-size: 11px; font-family: inherit;
+  cursor: pointer; font-weight: 700; margin-top: 4px;
+  box-shadow: 0 2px 10px rgba(79, 86, 255, 0.2);
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+.btn-save-profile:hover { background: var(--action-hover); box-shadow: 0 3px 12px color-mix(in oklab, var(--action) 28%, transparent); }
