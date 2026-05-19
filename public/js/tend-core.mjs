@@ -4,6 +4,16 @@ export const TEND_MESES_MAP = {
   jan: '01', apr: '04', aug: '08', dec: '12'
 };
 
+/** Solo paneles de laboratorio convencional; excluye cultivos/micro (UROCULTIVO, HEMOCULTIVO, SONDA, …). */
+export function tendEligibleSectionKey(sec) {
+  var u = String(sec == null ? '' : sec)
+    .trim()
+    .replace(/:+$/, '')
+    .toUpperCase();
+  if (!u) return false;
+  return /^(BH|PLTCIT|QS|ESC|PFHS|GASES|LCR|LIQ|PROT12H|PROT24H|PIE|EGO|CUANTORINA|FROTIS)$/.test(u);
+}
+
 export function normalizeFechaLabHistory(fechaRaw) {
   if (fechaRaw == null || fechaRaw === '') return '';
   if (String(fechaRaw).trim() === 'Anterior') return 'Anterior';
