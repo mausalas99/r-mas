@@ -10,7 +10,12 @@ export const DEFAULT_PANEL_LABELS = {
   gases: 'Gasometría',
   'percent-diff': 'Fórmula leucocitaria (%)',
   'percent-rbc': 'Índices eritrocitarios (%)',
-  absolute: 'Valores absolutos'
+  absolute: 'Valores absolutos',
+  'bh-absolute': 'Conteos absolutos celulares',
+  'bh-quality': 'Calidad eritrocitaria (índices)',
+  'bh-diff': 'Diferencial manual',
+  'bh-diff-manual': 'Diferencial manual',
+  'bh-coag': 'Coagulación'
 };
 
 export const DEFAULT_COLORS = [
@@ -120,6 +125,21 @@ export function readGroupPanelHidden(patientId, sectionKey) {
   var map = readJson(LS_GROUP_PANEL_HIDDEN, {});
   var arr = map[groupKey(patientId, sectionKey)];
   return Array.isArray(arr) ? arr.slice() : [];
+}
+
+/** Lee paneles ocultos migrando claves legacy de BH (percent-rbc → bh-quality, …). */
+export function readGroupPanelHiddenMigrated(patientId, sectionKey, migrateFn) {
+  var raw = readGroupPanelHidden(patientId, sectionKey);
+  if (!migrateFn || sectionKey !== 'BH') return raw;
+  var out = [];
+  var seen = Object.create(null);
+  raw.forEach(function (fam) {
+    var m = migrateFn(sectionKey, fam);
+    if (!m || seen[m]) return;
+    seen[m] = true;
+    out.push(m);
+  });
+  return out;
 }
 
 export function writeGroupPanelHidden(patientId, sectionKey, familyKeys) {

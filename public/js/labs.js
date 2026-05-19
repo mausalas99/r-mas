@@ -46,6 +46,59 @@ function esContextoUrinario_(texto, idxNombre, nombreLen) {
   return false;
 }
 
+/** True si la etiqueta pertenece a EGO/sedimento urinario (no biometría hemática). */
+function esContextoSedimentoOrina_(texto, idxNombre, nombreLen) {
+  var w = texto.substring(idxNombre, Math.min(texto.length, idxNombre + nombreLen + 120));
+  if (/\/CAMPO\b/i.test(w)) return true;
+  if (/Leucocitos\/uL|Hem\/uL|E\.U\.\/dL/i.test(w)) return true;
+  var head = texto.substring(Math.max(0, idxNombre - 4500), idxNombre).toUpperCase();
+  if (!/URIANALISIS|EXAMEN GENERAL DE ORINA|ANALISIS DE ORINA/.test(head)) return false;
+  var lastOrina = Math.max(
+    head.lastIndexOf('URIANALISIS'),
+    head.lastIndexOf('EXAMEN GENERAL DE ORINA'),
+    head.lastIndexOf('ANALISIS DE ORINA')
+  );
+  if (lastOrina === -1) return true;
+  var after = head.substring(lastOrina);
+  return !/BIOMETRIA\s+HEMATICA|\bHGB\b|\bWBC\b|\bRBC\s+\d|\bPLT\s+\d/i.test(after);
+}
+
+/**
+ * Igual que extraerConRango pero ignora ERITROCITOS/LEUCOCITOS del sedimento urinario.
+ */
+function extraerConRangoBH(nombres, texto) {
+  if (!texto) return { valor: '---', min: null, max: null };
+  var t = texto.toUpperCase();
+  for (var i = 0; i < nombres.length; i++) {
+    var nombre = nombres[i].toUpperCase();
+    var start = 0;
+    while (true) {
+      var idx = t.indexOf(nombre, start);
+      if (idx === -1) break;
+      if (esContextoSedimentoOrina_(texto, idx, nombre.length)) {
+        start = idx + nombre.length;
+        continue;
+      }
+      var subStart = idx + nombre.length;
+      var sub = texto.substring(subStart, subStart + 220);
+      var mValor = sub.match(/(-?\d+[.,]?\d*)/);
+      if (!mValor) {
+        start = idx + nombre.length;
+        continue;
+      }
+      var valorStr = mValor[1];
+      var mRango = sub.match(/(\d+[.,]?\d*)\s*-\s*(\d+[.,]?\d*)/);
+      if (!mRango) return { valor: valorStr, min: null, max: null };
+      return {
+        valor: valorStr,
+        min: parseFloat(mRango[1].replace(',', '.')),
+        max: parseFloat(mRango[2].replace(',', '.')),
+      };
+    }
+  }
+  return { valor: '---', min: null, max: null };
+}
+
 /**
  * Igual que extraerConRango pero ignora ocurrencias en contexto urinario
  * (p. ej. SODIO EN ORINA bajo QUIMICA CLINICA cuando el reporte no trae suero).
@@ -96,6 +149,229 @@ export function fmt(val) {
   return String(n) + (star ? '*' : '');
 }
 
+/** Etiquetas legibles en salida BH (diferencial manual: Seg = segmentados, no NeuPct). */
+export const BH_EXTRA_DISPLAY_LABELS = {
+  RBC: 'Eri',
+  CHCM: 'CHCM',
+  RDW: 'RDW',
+  MPV: 'VPM',
+  Ret: 'Ret',
+  Lin: 'Lin#',
+  Mono: 'Mono#',
+  Baso: 'Baso#',
+  NeuPct: 'Seg',
+  LinPct: 'Lin',
+  MonoPct: 'Mono',
+  EosPct: 'Eos',
+  BasoPct: 'Baso',
+  Bandas: 'Band',
+  Mielo: 'Mielo',
+  Metamielo: 'Meta',
+  Promielo: 'Prom',
+  Blastos: 'Blast',
+  Atipicos: 'Atip',
+};
+
+export const BH_DIFF_DISPLAY_ORDER = [
+  'NeuPct', 'LinPct', 'MonoPct', 'EosPct', 'BasoPct',
+  'Bandas', 'Mielo', 'Metamielo', 'Promielo', 'Blastos', 'Atipicos',
+];
+
+export const BH_SCALAR_EXT_ORDER = ['RBC', 'CHCM', 'RDW', 'MPV', 'Ret', 'Lin', 'Mono', 'Baso'];
+
+var BH_DIFF_RANGE_LABELS = {
+  NeuPct: ['SEGMENTADOS', 'NEU%', 'NEUTROFILOS%'],
+  LinPct: ['LINFOCITOS', 'LYM%', 'LINFOCITOS%'],
+  MonoPct: ['MONOCITOS', 'MONO%'],
+  EosPct: ['EOSINOFILOS', 'EOS%'],
+  BasoPct: ['BASOFILOS', 'BASO%'],
+  Bandas: ['BANDAS', 'CAYADOS'],
+  Mielo: ['MIELOCITOS'],
+  Metamielo: ['METAMIELOCITOS'],
+  Promielo: ['PROMIELOCITOS'],
+  Blastos: ['BLASTOS'],
+  Atipicos: ['LINF. ATIPICOS', 'LINF ATIPICOS', 'LINFOCITOS ATIPICOS', 'VARIANTES', 'ATIPICOS'],
+};
+
+export function bhExtraDisplayLabel(key) {
+  return BH_EXTRA_DISPLAY_LABELS[key] || key;
+}
+
+/** Títulos en tablas/gráficas (como en el reporte SOME). */
+export const BH_TREND_TITLES = {
+  NeuPct: 'Segmentados',
+  LinPct: 'Linfocitos',
+  MonoPct: 'Monocitos',
+  EosPct: 'Eosinófilos',
+  BasoPct: 'Basófilos',
+  Bandas: 'Bandas',
+  Mielo: 'Mielocitos',
+  Metamielo: 'Metamielocitos',
+  Promielo: 'Promielocitos',
+  Blastos: 'Blastos',
+  Atipicos: 'Linf. atípicos',
+};
+
+export function bhTrendDisplayTitle(fieldKey) {
+  return BH_TREND_TITLES[fieldKey] || bhExtraDisplayLabel(fieldKey) || fieldKey;
+}
+
+var BH_OUTPUT_LABEL_TO_FIELD = {
+  Seg: 'NeuPct',
+  Lin: 'LinPct',
+  Mono: 'MonoPct',
+  Eos: 'EosPct',
+  Baso: 'BasoPct',
+  Band: 'Bandas',
+  Meta: 'Metamielo',
+  Mielo: 'Mielo',
+  Prom: 'Promielo',
+  Blast: 'Blastos',
+  Atip: 'Atipicos',
+  NeuPct: 'NeuPct',
+  LinPct: 'LinPct',
+  MonoPct: 'MonoPct',
+  EosPct: 'EosPct',
+  BasoPct: 'BasoPct',
+  Bandas: 'Bandas',
+  Metamielo: 'Metamielo',
+  Promielo: 'Promielo',
+  Blastos: 'Blastos',
+  Atipicos: 'Atipicos',
+  Hb: 'Hb',
+  Hto: 'Hto',
+  VCM: 'VCM',
+  HCM: 'HCM',
+  Leu: 'Leu',
+  Neu: 'Neu',
+  Plt: 'Plt',
+  RBC: 'RBC',
+  Eri: 'RBC',
+  CHCM: 'CHCM',
+  RDW: 'RDW',
+  VPM: 'MPV',
+  MPV: 'MPV',
+  Ret: 'Ret',
+  TP: 'TP',
+  TTP: 'TTP',
+  INR: 'INR',
+  Fib: 'Fib',
+  DD: 'DD',
+};
+
+function bhFieldKeyFromOutputLabel(label) {
+  return BH_OUTPUT_LABEL_TO_FIELD[label] || label;
+}
+
+function parseBhTokenPairs_(text, into) {
+  if (!text) return;
+  var tokens = String(text).trim().split(/\s+/);
+  var i = 0;
+  while (i < tokens.length) {
+    var label = tokens[i];
+    if (!label || label === '-') {
+      i++;
+      continue;
+    }
+    var next = tokens[i + 1];
+    if (next == null) {
+      i++;
+      continue;
+    }
+    var m = next.match(/^(-?\d+(?:[.,]\d+)?)(?:%)?(\*)?$/);
+    if (m) {
+      var fk = bhFieldKeyFromOutputLabel(label);
+      var val = m[1].replace(',', '.');
+      into[fk] = { val: val, ab: next.indexOf('*') >= 0 };
+      i += 2;
+    } else {
+      i++;
+    }
+  }
+}
+
+/** Extrae pares campo→valor de una entrada resLabs BH (línea compacta o bloque multilínea). */
+export function parseBhTrendValuesFromResLab(entry) {
+  var out = {};
+  if (!entry) return out;
+  var lines = String(entry).split(/\r?\n/);
+  lines.forEach(function (line) {
+    var trimmed = line.trim();
+    if (!trimmed) return;
+    var tab = trimmed.indexOf('\t');
+    if (tab < 0) return;
+    var head = trimmed.substring(0, tab).trim().replace(/:$/, '');
+    var body = trimmed.substring(tab + 1).trim();
+    if (/^BH$/i.test(head)) {
+      parseBhTokenPairs_(body, out);
+      return;
+    }
+    if (body) parseBhTokenPairs_(body, out);
+  });
+  return out;
+}
+
+function formatBhDiffPctDisplay_(key, rawVal, tNorm) {
+  var label = bhExtraDisplayLabel(key);
+  var val = String(rawVal);
+  var labels = BH_DIFF_RANGE_LABELS[key];
+  if (labels && tNorm) {
+    var d = extraerConRangoBH(labels, tNorm);
+    if (d.valor && d.valor !== '---') {
+      val = fmt(marcarSegunRango(d.valor, d.min, d.max));
+    }
+  }
+  if (val.endsWith('*')) return label + ' ' + val.slice(0, -1) + '%*';
+  return label + ' ' + val + '%';
+}
+
+/** Pares legibles para BH extendida (copiar nota / segunda fila). */
+export function formatBhExtrasDisplayParts(bhExtras, sourceText) {
+  if (!bhExtras || typeof bhExtras !== 'object') return [];
+  var tNorm = sourceText ? String(sourceText) : '';
+  var parts = [];
+  var seen = {};
+  function addScalarKey(k) {
+    if (seen[k]) return;
+    var v = bhExtras[k];
+    if (v == null || String(v).trim() === '') return;
+    seen[k] = true;
+    parts.push(bhExtraDisplayLabel(k) + ' ' + String(v));
+  }
+  BH_SCALAR_EXT_ORDER.forEach(addScalarKey);
+  BH_DIFF_DISPLAY_ORDER.forEach(function (k) {
+    if (seen[k] || !bhExtras[k]) return;
+    seen[k] = true;
+    parts.push(formatBhDiffPctDisplay_(k, bhExtras[k], tNorm));
+  });
+  Object.keys(bhExtras).forEach(function (k) {
+    if (seen[k]) return;
+    var v = bhExtras[k];
+    if (v == null || String(v).trim() === '') return;
+    seen[k] = true;
+    if (BH_DIFF_DISPLAY_ORDER.indexOf(k) !== -1) {
+      parts.push(formatBhDiffPctDisplay_(k, v, tNorm));
+    } else {
+      parts.push(bhExtraDisplayLabel(k) + ' ' + String(v));
+    }
+  });
+  return parts;
+}
+
+export function formatBhExtrasDisplayLine(bhExtras, sourceText) {
+  var parts = formatBhExtrasDisplayParts(bhExtras, sourceText);
+  if (!parts.length) return '';
+  return 'BH ext\t' + parts.join('  ');
+}
+
+function pairListToDisplay_(pairs) {
+  var out = [];
+  for (var i = 0; i < pairs.length; i += 2) {
+    if (pairs[i + 1] !== undefined) out.push(pairs[i] + ' ' + pairs[i + 1]);
+  }
+  return out.join('  ');
+}
+
 export function parseBH_(tNorm) {
   // Helper: extraer un número simple para una etiqueta tipo "NEU%" donde el
   // extractor con rango no funciona (no hay min/max). Toma el primer número
@@ -139,8 +415,10 @@ export function parseBH_(tNorm) {
   var tpData   = extraerConRango(['TIEMPO DE PROTROMBINA'], tNorm);
   var ttpData  = extraerConRango(['TIEMPO DE TROMBOPLASTINA'], tNorm);
   var inrData  = extraerConRango(['INR ', 'INR'], tNorm);
+  var fibData  = extraerConRango(['FIBRINOGENO'], tNorm);
+  var ddData   = extraerConRango(['DIMERO D', 'D-DIMERO', 'D DIMERO'], tNorm);
   // Nuevos (rojos / plaq / VPM):
-  var rbcData  = extraerConRango(['RBC ', 'ERITROCITOS', 'HEMATIES'], tNorm);
+  var rbcData  = extraerConRangoBH(['RBC ', 'ERITROCITOS', 'HEMATIES'], tNorm);
   var chcmData = extraerConRango(['MCHC', 'CHCM'], tNorm);
   var rdwData  = extraerConRango(['RDW '], tNorm);
   var mpvData  = extraerConRango(['MPV ', 'VPM '], tNorm);
@@ -160,6 +438,8 @@ export function parseBH_(tNorm) {
   var TP   = fmt(marcarSegunRango(tpData.valor,   tpData.min,   tpData.max));
   var TTP  = fmt(marcarSegunRango(ttpData.valor,  ttpData.min,  ttpData.max));
   var INR  = fmt(marcarSegunRango(inrData.valor,  inrData.min,  inrData.max));
+  var Fib  = fmt(marcarSegunRango(fibData.valor, fibData.min, fibData.max));
+  var DD   = fmt(marcarSegunRango(ddData.valor,  ddData.min,  ddData.max));
   var Neu  = fmt(marcarSegunRango(neuData.valor,  neuData.min,  neuData.max));
   var Eos  = fmt(marcarSegunRango(eosData.valor,  eosData.min,  eosData.max));
 
@@ -168,26 +448,29 @@ export function parseBH_(tNorm) {
   function pushExtra(key, value) {
     if (value && value !== '---' && value !== '') extras[key] = String(value);
   }
-  // Linfocitos / Monocitos / Basófilos absolutos (nuevos):
+  // Linfocitos / Monocitos / Basófilos absolutos: solo si hay leucocitos totales (evita
+  // confundir % del diferencial manual SOME con conteos absolutos).
   var linData  = extraerConRango(['LYM ', 'LINFOCITOS'], tNorm);
   var monoData = extraerConRango(['MONO '], tNorm);
   var basoData = extraerConRango(['BASO '], tNorm);
-  pushExtra('Lin',  linData.valor);
-  pushExtra('Mono', monoData.valor);
-  pushExtra('Baso', basoData.valor);
-  // Porcentajes (parseados pero ocultos):
-  pushExtra('NeuPct',  extraerSimple(['NEU%',  'NEUTROFILOS%'],  tNorm));
-  pushExtra('LinPct',  extraerSimple(['LYM%',  'LINFOCITOS%'],   tNorm));
-  pushExtra('MonoPct', extraerSimple(['MONO%', 'MONOCITOS%'],    tNorm));
-  pushExtra('EosPct',  extraerSimple(['EOS%',  'EOSINOFILOS%'],  tNorm));
-  pushExtra('BasoPct', extraerSimple(['BASO%', 'BASOFILOS%'],    tNorm));
+  if (Leu !== '---') {
+    pushExtra('Lin',  linData.valor);
+    pushExtra('Mono', monoData.valor);
+    pushExtra('Baso', basoData.valor);
+  }
+  // Porcentajes (BH auto o diferencial manual SOME: SEGMENTADOS, LINFOCITOS, …)
+  pushExtra('NeuPct',  extraerSimple(['NEU%', 'NEUTROFILOS%', 'SEGMENTADOS'], tNorm));
+  pushExtra('LinPct',  extraerSimple(['LYM%', 'LINFOCITOS%', 'LINFOCITOS'], tNorm));
+  pushExtra('MonoPct', extraerSimple(['MONO%', 'MONOCITOS%', 'MONOCITOS'], tNorm));
+  pushExtra('EosPct',  extraerSimple(['EOS%', 'EOSINOFILOS%', 'EOSINOFILOS'], tNorm));
+  pushExtra('BasoPct', extraerSimple(['BASO%', 'BASOFILOS%', 'BASOFILOS'], tNorm));
   // Frotis manual:
   pushExtra('Bandas',    extraerSimple(['BANDAS', 'CAYADOS'], tNorm));
   pushExtra('Mielo',     extraerSimple(['MIELOCITOS'], tNorm));
   pushExtra('Metamielo', extraerSimple(['METAMIELOCITOS'], tNorm));
   pushExtra('Promielo',  extraerSimple(['PROMIELOCITOS'], tNorm));
   pushExtra('Blastos',   extraerSimple(['BLASTOS'], tNorm));
-  pushExtra('Atipicos',  extraerSimple(['LINFOCITOS ATIPICOS', 'VARIANTES', 'ATIPICOS'], tNorm));
+  pushExtra('Atipicos',  extraerSimple(['LINF. ATIPICOS', 'LINF ATIPICOS', 'LINFOCITOS ATIPICOS', 'VARIANTES', 'ATIPICOS'], tNorm));
 
   // Línea compacta (BH extendida OFF): Hb Hto VCM HCM Leu Neu Eos Plt (+ coag si hace falta).
   // RBC, CHCM, RDW, MPV y Ret van a extras y solo se muestran en la segunda fila con BH extendida ON.
@@ -197,41 +480,67 @@ export function parseBH_(tNorm) {
   var hasExtIdx = [RBC, CHCM, RDW, MPV, Ret].some(function (v) {
     return v !== '---';
   });
-  var hasCoag = [TP, TTP, INR].some(function (v) { return v !== '---'; });
+  var hasCoag = [TP, TTP, INR, Fib, DD].some(function (v) { return v !== '---'; });
   if (!hasCore && !hasExtIdx && !hasCoag && Object.keys(extras).length === 0) {
     return { visible: '', extras: {} };
   }
 
-  var p = ['BH'];
-  if (Hb   !== '---') p.push('Hb', Hb);
-  if (Hto  !== '---') p.push('Hto', Hto);
-  if (VCM  !== '---') p.push('VCM', VCM);
-  if (HCM  !== '---') p.push('HCM', HCM);
-  if (Leu  !== '---') p.push('Leu', Leu);
-  if (Neu !== '---') p.push('Neu', Neu);
-  if (Eos !== '---') p.push('Eos', Eos);
-  if (Plt  !== '---') p.push('Plt', Plt);
+  var corePairs = [];
+  if (Hb   !== '---') corePairs.push('Hb', Hb);
+  if (Hto  !== '---') corePairs.push('Hto', Hto);
+  if (VCM  !== '---') corePairs.push('VCM', VCM);
+  if (HCM  !== '---') corePairs.push('HCM', HCM);
+  if (Leu  !== '---') corePairs.push('Leu', Leu);
+  if (Neu !== '---') corePairs.push('Neu', Neu);
+  if (Eos !== '---') corePairs.push('Eos', Eos);
+  if (Plt  !== '---') corePairs.push('Plt', Plt);
 
-  var hasCompactBody = p.length > 1;
+  var hasCompactBody = corePairs.length > 0;
   if (hasCompactBody || hasCoag) {
     if (RBC  !== '---') pushExtra('RBC', RBC);
     if (CHCM !== '---') pushExtra('CHCM', CHCM);
     if (RDW  !== '---') pushExtra('RDW', RDW);
     if (MPV  !== '---') pushExtra('MPV', MPV);
     if (Ret  !== '---') pushExtra('Ret', Ret);
-  } else {
-    if (RBC  !== '---') p.push('RBC', RBC);
-    if (CHCM !== '---') p.push('CHCM', CHCM);
-    if (RDW  !== '---') p.push('RDW', RDW);
-    if (MPV  !== '---') p.push('MPV', MPV);
-    if (Ret  !== '---') p.push('Ret', Ret);
   }
-  var coag = [];
-  if (TP  !== '---') coag.push('TP',  TP);
-  if (TTP !== '---') coag.push('TTP', TTP);
-  if (INR !== '---') coag.push('INR', INR);
-  if (coag.length) { p.push('-'); p = p.concat(coag); }
-  var visible = (p.length > 1) ? (p[0] + '\t' + p.slice(1).join(' ')) : '';
+
+  var diffDisplay = [];
+  if (!hasCompactBody) {
+    BH_DIFF_DISPLAY_ORDER.forEach(function (k) {
+      var v = extras[k];
+      if (!v || v === '0') return;
+      diffDisplay.push(formatBhDiffPctDisplay_(k, v, tNorm));
+    });
+  }
+
+  var indexDisplay = [];
+  if (!hasCompactBody) {
+    if (RBC  !== '---') indexDisplay.push('Eri ' + RBC);
+    if (CHCM !== '---') indexDisplay.push('CHCM ' + CHCM);
+    if (RDW  !== '---') indexDisplay.push('RDW ' + RDW);
+    if (MPV  !== '---') indexDisplay.push('VPM ' + MPV);
+    if (Ret  !== '---') indexDisplay.push('Ret ' + Ret);
+  }
+
+  var coagDisplay = [];
+  if (TP  !== '---') coagDisplay.push('TP ' + TP);
+  if (TTP !== '---') coagDisplay.push('TTP ' + TTP);
+  if (INR !== '---') coagDisplay.push('INR ' + INR);
+  if (Fib !== '---') coagDisplay.push('Fib ' + Fib);
+  if (DD  !== '---') coagDisplay.push('DD ' + DD);
+
+  var visible = '';
+  if (hasCompactBody) {
+    var lines = ['BH\t' + pairListToDisplay_(corePairs)];
+    if (coagDisplay.length) lines.push('  Coag.\t' + coagDisplay.join('  '));
+    visible = lines.join('\n');
+  } else if (indexDisplay.length || diffDisplay.length || coagDisplay.length) {
+    var sub = ['BH:'];
+    if (indexDisplay.length) sub.push('  Hem.\t' + indexDisplay.join('  '));
+    if (diffDisplay.length) sub.push('  Dif.\t' + diffDisplay.join('  '));
+    if (coagDisplay.length) sub.push('  Coag.\t' + coagDisplay.join('  '));
+    visible = sub.join('\n');
+  }
   return { visible: visible, extras: extras };
 }
 
@@ -1165,7 +1474,71 @@ export function parseFrotisSangre_(textoBruto) {
     if (desc) break;
   }
   if (!desc) return '';
-  return 'FROTIS\tObs ' + desc.toUpperCase();
+  var lines = formatFrotisSangreLines_(desc);
+  var plaqObs = extraerObservacionPlaquetasHema_(textoBruto);
+  if (plaqObs) {
+    lines = lines ? lines + '\nFROTIS\tPlaqObs ' + plaqObs : 'FROTIS\tPlaqObs ' + plaqObs;
+  }
+  return lines;
+}
+
+/** OBSERVACIONES del bloque hematología (p. ej. PLAQUETAS DISMINUIDAS ++). */
+function extraerObservacionPlaquetasHema_(textoBruto) {
+  if (!textoBruto || !/PLAQUETAS\s+DISMINUIDAS/i.test(textoBruto)) return '';
+  var lineas = textoBruto.split(/\r?\n/).map(function (l) {
+    return String(l || '').replace(/\*/g, '').trim();
+  });
+  for (var i = 0; i < lineas.length; i++) {
+    if (!/^OBSERVACIONES$/i.test(lineas[i])) continue;
+    for (var j = i + 1; j < Math.min(i + 6, lineas.length); j++) {
+      var t = lineas[j];
+      if (!t || /^[ABHL]$/i.test(t)) continue;
+      if (/^FROTIS|TIEMPO DE|FIBRINOGENO|DIMERO|HEMATOLOGIA/i.test(t)) break;
+      if (/PLAQUETAS/i.test(t)) return t.toUpperCase();
+    }
+  }
+  return 'PLAQUETAS DISMINUIDAS';
+}
+
+/** Separa calidad eritrocitaria (morfología) de observaciones plaquetarias/recuento en el frotis. */
+function formatFrotisSangreLines_(desc) {
+  var up = String(desc || '').toUpperCase().trim();
+  if (!up) return '';
+  var calTokens = [];
+  var plaqTokens = [];
+  var otros = [];
+  up.split(/\s*,\s*/).forEach(function (chunk) {
+    var c = chunk.trim();
+    if (!c) return;
+    if (/PLAQUET|MACROPLAQUET/i.test(c)) plaqTokens.push(c);
+    else if (
+      /HIPOCROM|ANISOCIT|POIKILOCIT|ESFEROCIT|ELIPT|DACRIOCIT|ESQUIZOCIT|BITE|ROD|HELIN|CABEZA|CUELLO|CABEZA DE FLECHA|POLICROM|NORMOCROM|NORMOCIT|MACROCIT|MICROCIT|\+/i.test(c)
+    ) {
+      calTokens.push(c);
+    } else otros.push(c);
+  });
+  var lines = [];
+  if (calTokens.length) lines.push('FROTIS\tCal ' + calTokens.join(', '));
+  if (plaqTokens.length) lines.push('FROTIS\tPlaq ' + plaqTokens.join(', '));
+  if (otros.length) lines.push('FROTIS\tObs ' + otros.join(', '));
+  if (!lines.length) lines.push('FROTIS\tObs ' + up);
+  return lines.join('\n');
+}
+
+/**
+ * Plaquetas con citrato (SOME): solo conteo plaquetario en muestra citratada.
+ */
+export function parsePlaquetasCitrato_(textoBruto, tNorm) {
+  if (!tNorm || !/PLAQUETAS\s+CON\s+CITRATO/i.test(tNorm)) return '';
+  var bloque = '';
+  var m = textoBruto.match(
+    /PLAQUETAS\s+CON\s+CITRATO[\s\S]*?(?=\n\s*(?:HEMATOLOGIA|QUIMICA\s+CLINICA|URIANALISIS|BACTERIOLOGIA|GASOMETRIA|BIOMETRIA|COAGULACION)\b|$)/i
+  );
+  bloque = m ? m[0].replace(/\s+/g, ' ') : tNorm;
+  var pltData = extraerConRango(['CUENTA DE PLAQUETAS', 'PLT '], bloque);
+  if (pltData.valor === '---') return '';
+  var Plt = fmt(marcarSegunRango(pltData.valor, pltData.min, pltData.max));
+  return 'PltCit\tPlt ' + Plt;
 }
 
 /** Na/K/Cl/Cr de QUIMICA CLINICA (orina); Cl suele venir en COMENTARIO DE MUESTRA. */
@@ -2162,12 +2535,14 @@ export function procesarLabs(textoBruto) {
   var tSinLiqCorp=tNorm;
   if (bloqueCitoLC) tSinLiqCorp=tNorm.replace(bloqueCitoLC.replace(/\r/g,'').replace(/\s+/g,' '),' ');
   var textoQS=tSinLiqCorp.replace(bloqueGaso,' ').replace(bloqueEGO,' ').replace(bloqueLCR?bloqueLCR.replace(/\s+/g,' '):'', ' ');
+  var textoParaBh = tSinLiqCorp;
+  if (bloqueEGO) textoParaBh = textoParaBh.replace(bloqueEGO, ' ');
   var esSoloGaso=/GASOMETRIA/i.test(tNorm)&&!/BIOMETRIA|QUIMICA|ELECTROLITOS|PFH|COAGULACION|CULTIVO/i.test(tNorm);
 
   var resLabs=[];
   var bhExtras = {};
   if(!esSoloGaso){
-    var bhRes = parseBH_(tSinLiqCorp);
+    var bhRes = parseBH_(textoParaBh);
     if (bhRes && bhRes.visible) resLabs.push(bhRes.visible);
     if (bhRes && bhRes.extras) bhExtras = bhRes.extras;
     var qs = parseQS_(textoQS, {
@@ -2177,7 +2552,9 @@ export function procesarLabs(textoBruto) {
     });
     if (qs) resLabs.push(qs);
     var esc=parseESC_(textoQS);if(esc)resLabs.push(esc);
-    var pfh=parsePFH_(tSinLiqCorp);  if(pfh)resLabs.push(pfh);
+    var pfh=parsePFH_(textoParaBh);  if(pfh)resLabs.push(pfh);
+    var pltCit = parsePlaquetasCitrato_(textoBruto, tNorm);
+    if (pltCit) resLabs.push(pltCit);
   }
   var gaso=parseGaso_(bloqueGaso, textoQS);if(gaso)resLabs.push(gaso);
   var gasoInterp = buildGasoInterpretacion_(bloqueGaso, textoQS); if (gasoInterp) resLabs.push(gasoInterp);
@@ -2185,7 +2562,8 @@ export function procesarLabs(textoBruto) {
   var lcr=parsearLCR(textoBruto);if(lcr)resLabs.push(lcr);
   var liq=parsearCitoquimicoLiquidos(textoBruto);if(liq)resLabs.push(liq);
   var hec=parseFisicoquimicoHeces_(textoBruto);if(hec)resLabs.push(hec);
-  var fro=parseFrotisSangre_(textoBruto);if(fro)resLabs.push(fro);
+  var fro=parseFrotisSangre_(textoBruto);
+  if (fro) fro.split('\n').forEach(function (line) { if (line) resLabs.push(line); });
   var ego=parseEGO_(textoBruto); if(ego)resLabs.push(ego);
   var cuant=parseCuantOrina_(textoBruto);if(cuant)resLabs.push(cuant);
   var cult=parseCultivo_(textoBruto,tNorm);if(cult)resLabs.push(cult);

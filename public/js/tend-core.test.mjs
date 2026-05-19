@@ -4,6 +4,8 @@ import {
   dedupeTrendSetsForSeries,
   buildTrendAxisMeta,
   classifyTendPanelFamily,
+  familyOrderForSection,
+  migratePanelFamilyKey,
   formatTendSeriesLabel,
   parseTrendNumeric,
   buildSectionTableModel,
@@ -50,14 +52,38 @@ test('buildTrendAxisMeta: mismo día → x distintos', () => {
   assert.match(meta.points[0].dayLabel, /18\/05/);
 });
 
-test('classifyTendPanelFamily: gases y porcentajes', () => {
+test('classifyTendPanelFamily: gases y QS genérico', () => {
   assert.equal(classifyTendPanelFamily('GASES', 'pH', '%'), 'gases');
-  assert.equal(classifyTendPanelFamily('BH', 'NeuPct', '%'), 'percent-diff');
-  assert.equal(classifyTendPanelFamily('BH', 'Hto', '%'), 'percent-rbc');
-  assert.equal(classifyTendPanelFamily('BH', 'hto', '%'), 'percent-rbc');
-  assert.equal(classifyTendPanelFamily('BH', 'HCT', '%'), 'percent-rbc');
-  assert.equal(classifyTendPanelFamily('BH', 'RDW', '%'), 'percent-rbc');
-  assert.equal(classifyTendPanelFamily('BH', 'Hb', 'g/dL'), 'absolute');
+  assert.equal(classifyTendPanelFamily('QS', 'Glu', 'mg/dL'), 'absolute');
+});
+
+test('classifyTendPanelFamily: BH en 4 paneles', () => {
+  assert.equal(classifyTendPanelFamily('BH', 'Hb', 'g/dL'), 'bh-absolute');
+  assert.equal(classifyTendPanelFamily('BH', 'Neu', 'K/μL'), 'bh-absolute');
+  assert.equal(classifyTendPanelFamily('BH', 'Leu', 'K/μL'), 'bh-absolute');
+  assert.equal(classifyTendPanelFamily('BH', 'Plt', 'K/μL'), 'bh-absolute');
+  assert.equal(classifyTendPanelFamily('BH', 'RDW', '%'), 'bh-quality');
+  assert.equal(classifyTendPanelFamily('BH', 'VCM', 'fL'), 'bh-quality');
+  assert.equal(classifyTendPanelFamily('BH', 'CHCM', 'g/dL'), 'bh-quality');
+  assert.equal(classifyTendPanelFamily('BH', 'Hto', '%'), 'bh-quality');
+  assert.equal(classifyTendPanelFamily('BH', 'NeuPct', '%'), 'bh-diff-manual');
+  assert.equal(classifyTendPanelFamily('BH', 'Bandas', '%'), 'bh-diff-manual');
+  assert.equal(classifyTendPanelFamily('BH', 'TP', 's'), 'bh-coag');
+  assert.equal(classifyTendPanelFamily('BH', 'INR', ''), 'bh-coag');
+});
+
+test('familyOrderForSection: BH tiene 4 familias', () => {
+  const order = familyOrderForSection('BH');
+  assert.equal(order.length, 4);
+  assert.deepEqual(order, ['bh-absolute', 'bh-quality', 'bh-diff-manual', 'bh-coag']);
+});
+
+test('migratePanelFamilyKey: BH legacy', () => {
+  assert.equal(migratePanelFamilyKey('BH', 'percent-rbc'), 'bh-quality');
+  assert.equal(migratePanelFamilyKey('BH', 'percent-diff'), 'bh-diff-manual');
+  assert.equal(migratePanelFamilyKey('BH', 'bh-diff'), 'bh-diff-manual');
+  assert.equal(migratePanelFamilyKey('BH', 'absolute'), 'bh-absolute');
+  assert.equal(migratePanelFamilyKey('QS', 'absolute'), 'absolute');
 });
 
 test('formatTrendColumnHeader: hora solo si mismo día con horas distintas', () => {

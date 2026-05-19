@@ -3634,23 +3634,55 @@
   }
   html.dark .tend-section-chart-btn:hover { border-color: rgba(96, 165, 250, 0.5); }
   .tend-section-chart-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  body.tend-group-modal-open { overflow: hidden; }
   .tend-group-backdrop {
-    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1100;
-    align-items: center; justify-content: center; padding: 16px;
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    padding: 0;
+    background: var(--surface);
+    align-items: stretch;
+    justify-content: stretch;
   }
   #tend-group-modal {
-    background: var(--surface); border-radius: 12px; border: 1px solid var(--border);
-    width: min(95vw, 900px); max-height: 80vh; overflow: hidden; display: flex; flex-direction: column;
-    font-family: inherit; box-shadow: var(--shadow-md);
+    background: var(--surface);
+    width: 100%;
+    height: 100%;
+    max-width: 100vw;
+    max-height: 100dvh;
+    border-radius: 0;
+    border: none;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    font-family: inherit;
+    box-shadow: none;
   }
   .tend-group-header {
-    display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    padding: 16px 20px; border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .tend-group-close {
+    flex-shrink: 0;
+    font-size: 22px;
+    line-height: 1;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
   .tend-group-header h2 {
     margin: 0; font-size: 16px; font-weight: 700; color: var(--text); flex: 1; min-width: 0;
   }
-  .tend-group-tabs-wrap { padding: 12px 20px 0; }
+  .tend-group-tabs-wrap { padding: 12px 20px 0; flex-shrink: 0; }
   .tend-group-tabs {
     position: relative; display: inline-flex; align-items: stretch; padding: 3px; border-radius: 10px;
     background: color-mix(in oklab, var(--primary) 14%, var(--surface)); border: 1px solid var(--border); gap: 0;
@@ -3739,7 +3771,22 @@
   .tend-group-legend-color {
     width: 28px; height: 22px; padding: 0; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; background: var(--surface);
   }
-  .tend-group-chart-wrap { height: 220px; position: relative; }
+  .tend-group-chart-wrap {
+    height: clamp(260px, 34vh, 440px);
+    min-height: 240px;
+    position: relative;
+  }
+  #tend-group-panel-table:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  #tend-group-table-wrap {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+  }
+  .tend-group-table-actions { flex-shrink: 0; }
   .tend-group-table-actions {
     display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap;
   }
@@ -5552,6 +5599,7 @@
   <div id="tend-group-modal" role="dialog" aria-modal="true" aria-labelledby="tend-group-title">
     <header class="tend-group-header">
       <h2 id="tend-group-title"></h2>
+      <button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon tend-group-close" onclick="closeTendGroupModal()" aria-label="Cerrar" title="Cerrar (Esc)">×</button>
     </header>
     <div class="tend-group-tabs-wrap">
       <nav class="tend-group-tabs" id="tend-group-tabs-track" role="tablist" aria-label="Vista del estudio" data-active="charts">

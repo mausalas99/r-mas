@@ -25,7 +25,11 @@ import {
   renderEntry,
   buildAtbRisSummaryHtml,
   extractSensCrudasForGermFromSource,
-  formatCultivoCondensedForCopy
+  formatCultivoCondensedForCopy,
+  formatBhExtrasDisplayLine,
+  parseBhTrendValuesFromResLab,
+  bhTrendDisplayTitle,
+  BH_DIFF_DISPLAY_ORDER
 } from './labs.js';
 import { formatProgressLine } from './update-helpers.mjs';
 import {
@@ -791,7 +795,7 @@ var TEND_UNITS = {
   Neu:'K/μL', Eos:'K/μL', Lin:'K/μL', Mono:'K/μL', Baso:'K/μL',
   NeuPct:'%', LinPct:'%', MonoPct:'%', EosPct:'%', BasoPct:'%',
   Bandas:'%', Mielo:'%', Metamielo:'%', Promielo:'%', Blastos:'%', Atipicos:'%',
-  Ret:'%', TP:'s', TTP:'s', INR:'',
+  Ret:'%', TP:'s', TTP:'s', INR:'', Fib:'mg/dL', DD:'ng/mL',
   Glu:'mg/dL',Cr:'mg/dL', eTFG:'mL/min/1.73m²', BUN:'mg/dL',PCR:'mg/dL',
   AU:'mg/dL', TGL:'mg/dL',COL:'mg/dL', VSG:'mm/h', CPK:'U/L',
   Na:'mEq/L', K:'mEq/L',  Cl:'mEq/L', HCO3:'mEq/L',Ca:'mg/dL', F:'mg/dL', Mg:'mEq/L',
@@ -806,7 +810,7 @@ var TEND_REF = {
   Neu:[1.5,8], Eos:[0,0.6], Lin:[0.6,3.4], Mono:[0,0.9], Baso:[0,0.2],
   NeuPct:[37,80], LinPct:[10,50], MonoPct:[0,12], EosPct:[0,7], BasoPct:[0,2.5],
   Bandas:[0,5], Mielo:[0,1], Metamielo:[0,1], Promielo:[0,1], Blastos:[0,1], Atipicos:[0,5],
-  Ret:[0.5,2.5], TP:[11,14], TTP:[25,35], INR:[0.8,1.2],
+  Ret:[0.5,2.5], TP:[11,14], TTP:[25,35], INR:[0.8,1.2], Fib:[150,400], DD:[0,500],
   Glu:[70,100], Cr:[0.5,1.3], BUN:[7,20], PCR:[0,0.5],
   AU:[3.5,7], TGL:[0,150], COL:[0,200], CPK:[30,200],
   Na:[136,145], K:[3.5,5.0], Cl:[96,106], HCO3:[22,28], Ca:[8.5,10.5], F:[2.5,4.5], Mg:[1.6,2.6],
@@ -840,10 +844,12 @@ var TEND_SECTION_LABELS = {
   Prot24h: 'Proteinuria 24 h',
   PIE: 'Prueba de embarazo',
   EGO: 'EGO',
-  CUANTORINA: 'Cuantificación urinaria'
+  CUANTORINA: 'Cuantificación urinaria',
+  PltCit: 'Plaquetas (citrato)',
+  FROTIS: 'Frotis de sangre'
 };
 var TEND_SECTION_ORDER = [
-  'BH', 'QS', 'ESC', 'PFHs', 'GASES', 'LCR', 'Liq', 'Prot12h', 'Prot24h', 'PIE', 'EGO', 'CUANTORINA'
+  'BH', 'PltCit', 'QS', 'ESC', 'PFHs', 'GASES', 'LCR', 'Liq', 'Prot12h', 'Prot24h', 'PIE', 'EGO', 'CUANTORINA', 'FROTIS'
 ];
 
 /** Solo paneles de laboratorio convencional; excluye cultivos/micro (UROCULTIVO, HEMOCULTIVO, SONDA, …). */
@@ -853,7 +859,7 @@ function tendEligibleSectionKey(sec) {
     .replace(/:+$/, '')
     .toUpperCase();
   if (!u) return false;
-  return /^(BH|QS|ESC|PFHS|GASES|LCR|LIQ|PROT12H|PROT24H|PIE|EGO|CUANTORINA)$/.test(u);
+  return /^(BH|PLTCIT|QS|ESC|PFHS|GASES|LCR|LIQ|PROT12H|PROT24H|PIE|EGO|CUANTORINA|FROTIS)$/.test(u);
 }
 /**
  * Series tendibles declaradas (parsearSecciones / resLabs). Pueden añadirse más vía merge dinámico
@@ -868,10 +874,13 @@ var TEND_SERIES_CATALOG = [
   { sectionKey: 'BH', fieldKey: 'Neu', cardTitle: 'Neutrófilos' },
   { sectionKey: 'BH', fieldKey: 'Eos', cardTitle: 'Eosinófilos' },
   { sectionKey: 'BH', fieldKey: 'Plt', cardTitle: 'Plaquetas' },
+  { sectionKey: 'PltCit', fieldKey: 'Plt', cardTitle: 'Plaquetas (citrato)' },
   { sectionKey: 'BH', fieldKey: 'Ret', cardTitle: 'Reticulocitos', hiddenByDefault: true },
   { sectionKey: 'BH', fieldKey: 'TP', cardTitle: 'TP', hiddenByDefault: true },
   { sectionKey: 'BH', fieldKey: 'TTP', cardTitle: 'TTP', hiddenByDefault: true },
   { sectionKey: 'BH', fieldKey: 'INR', cardTitle: 'INR', hiddenByDefault: true },
+  { sectionKey: 'BH', fieldKey: 'Fib', cardTitle: 'Fibrinógeno', hiddenByDefault: true },
+  { sectionKey: 'BH', fieldKey: 'DD', cardTitle: 'Dímero D', hiddenByDefault: true },
   { sectionKey: 'BH', fieldKey: 'RBC', cardTitle: 'Eritrocitos', hiddenByDefault: true },
   { sectionKey: 'BH', fieldKey: 'CHCM', cardTitle: 'CHCM', hiddenByDefault: true },
   { sectionKey: 'BH', fieldKey: 'RDW', cardTitle: 'RDW', hiddenByDefault: true },
@@ -879,17 +888,17 @@ var TEND_SERIES_CATALOG = [
   { sectionKey: 'BH', fieldKey: 'Mono', cardTitle: 'Monocitos', hiddenByDefault: true },
   { sectionKey: 'BH', fieldKey: 'Baso', cardTitle: 'Basófilos', hiddenByDefault: true },
   { sectionKey: 'BH', fieldKey: 'MPV', cardTitle: 'VPM', hiddenByDefault: true },
-  { sectionKey: 'BH', fieldKey: 'Bandas', cardTitle: 'Bandas', hiddenByDefault: true },
-  { sectionKey: 'BH', fieldKey: 'Mielo', cardTitle: 'Mielocitos', hiddenByDefault: true },
-  { sectionKey: 'BH', fieldKey: 'Metamielo', cardTitle: 'Metamielocitos', hiddenByDefault: true },
-  { sectionKey: 'BH', fieldKey: 'Promielo', cardTitle: 'Promielocitos', hiddenByDefault: true },
-  { sectionKey: 'BH', fieldKey: 'Blastos', cardTitle: 'Blastos', hiddenByDefault: true },
-  { sectionKey: 'BH', fieldKey: 'Atipicos', cardTitle: 'Linfocitos atípicos', hiddenByDefault: true },
-  { sectionKey: 'BH', fieldKey: 'NeuPct', cardTitle: 'Neutrófilos %', hiddenByDefault: true },
-  { sectionKey: 'BH', fieldKey: 'LinPct', cardTitle: 'Linfocitos %', hiddenByDefault: true },
-  { sectionKey: 'BH', fieldKey: 'MonoPct', cardTitle: 'Monocitos %', hiddenByDefault: true },
-  { sectionKey: 'BH', fieldKey: 'EosPct', cardTitle: 'Eosinófilos %', hiddenByDefault: true },
-  { sectionKey: 'BH', fieldKey: 'BasoPct', cardTitle: 'Basófilos %', hiddenByDefault: true },
+  { sectionKey: 'BH', fieldKey: 'Bandas', cardTitle: bhTrendDisplayTitle('Bandas') },
+  { sectionKey: 'BH', fieldKey: 'Mielo', cardTitle: bhTrendDisplayTitle('Mielo') },
+  { sectionKey: 'BH', fieldKey: 'Metamielo', cardTitle: bhTrendDisplayTitle('Metamielo') },
+  { sectionKey: 'BH', fieldKey: 'Promielo', cardTitle: bhTrendDisplayTitle('Promielo') },
+  { sectionKey: 'BH', fieldKey: 'Blastos', cardTitle: bhTrendDisplayTitle('Blastos') },
+  { sectionKey: 'BH', fieldKey: 'Atipicos', cardTitle: bhTrendDisplayTitle('Atipicos') },
+  { sectionKey: 'BH', fieldKey: 'NeuPct', cardTitle: bhTrendDisplayTitle('NeuPct') },
+  { sectionKey: 'BH', fieldKey: 'LinPct', cardTitle: bhTrendDisplayTitle('LinPct') },
+  { sectionKey: 'BH', fieldKey: 'MonoPct', cardTitle: bhTrendDisplayTitle('MonoPct') },
+  { sectionKey: 'BH', fieldKey: 'EosPct', cardTitle: bhTrendDisplayTitle('EosPct') },
+  { sectionKey: 'BH', fieldKey: 'BasoPct', cardTitle: bhTrendDisplayTitle('BasoPct') },
   { sectionKey: 'QS', fieldKey: 'Glu', cardTitle: 'Glucosa' },
   { sectionKey: 'QS', fieldKey: 'Cr', cardTitle: 'Creatinina' },
   { sectionKey: 'QS', fieldKey: 'eTFG', cardTitle: 'eTFG (CKD-EPI 2021)' },
@@ -1027,26 +1036,11 @@ function isGasoInterpretacionResLabChunk(text) {
 function isBhMainResLabChunk(text) {
   if (!text) return false;
   var head = String(text).split('\n')[0].trim();
-  return head.indexOf('BH\t') === 0 || /^BH\s/.test(head);
+  return head.indexOf('BH\t') === 0 || /^BH:?\s*$/.test(head) || /^BH\s/.test(head);
 }
 
-function formatBhExtendedTabLine(bhExtras) {
-  if (!bhExtras || typeof bhExtras !== 'object') return '';
-  var parts = [];
-  var seen = {};
-  function addKey(k) {
-    if (seen[k]) return;
-    var v = bhExtras[k];
-    if (v == null || String(v).trim() === '') return;
-    seen[k] = true;
-    parts.push(k, String(v));
-  }
-  LAB_BH_EXT_ORDER.forEach(addKey);
-  Object.keys(bhExtras).forEach(function (k) {
-    addKey(k);
-  });
-  if (!parts.length) return '';
-  return 'BH ext\t' + parts.join(' ');
+function formatBhExtendedTabLine(bhExtras, sourceText) {
+  return formatBhExtrasDisplayLine(bhExtras, sourceText || '');
 }
 
 function _syncLabPrefSwitchAria(el) {
@@ -1126,7 +1120,7 @@ function buildLabSetDateLineForNota(set) {
 
 /** Encabezado de sección de laboratorio tabular (BH, QS, …). */
 function isLabSectionHeaderLine(s) {
-  return /^(BH|QS|ESC|PFHs|GASES|PIE|LCR|EGO|CUANTORINA)\b/i.test(String(s).trim());
+  return /^(BH|QS|ESC|PFHs|GASES|PIE|LCR|EGO|CUANTORINA|PltCit|FROTIS)\b/i.test(String(s).trim());
 }
 
 /**
@@ -1564,7 +1558,7 @@ function buildMergedTrendSeriesCatalog(history) {
         out.push({
           sectionKey: sk,
           fieldKey: fk,
-          cardTitle: fk + ' · ' + sk,
+          cardTitle: sk === 'BH' ? bhTrendDisplayTitle(fk) : fk + ' · ' + sk,
           _dynamic: true
         });
       });
@@ -1574,9 +1568,22 @@ function buildMergedTrendSeriesCatalog(history) {
 }
 
 function getTendCatalogSpecsForSection(sectionKey, history) {
-  return buildMergedTrendSeriesCatalog(history || []).filter(function (sp) {
+  var specs = buildMergedTrendSeriesCatalog(history || []).filter(function (sp) {
     return sp.sectionKey === sectionKey;
   });
+  if (sectionKey === 'BH') {
+    var rank = Object.create(null);
+    BH_DIFF_DISPLAY_ORDER.forEach(function (fk, i) {
+      rank[fk] = i;
+    });
+    specs.sort(function (a, b) {
+      var ra = Object.prototype.hasOwnProperty.call(rank, a.fieldKey) ? rank[a.fieldKey] : 999;
+      var rb = Object.prototype.hasOwnProperty.call(rank, b.fieldKey) ? rank[b.fieldKey] : 999;
+      if (ra !== rb) return ra - rb;
+      return String(a.cardTitle).localeCompare(String(b.cardTitle), 'es');
+    });
+  }
+  return specs;
 }
 
 function getTendSectionLabel(sectionKey) {
@@ -7971,6 +7978,18 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '5.0.1': [
+    {
+      title: 'Diferencial manual y BH legible',
+      body:
+        'SOME con diferencial manual: Segmentados, bandas y coagulación en salida clara (Dif. / Coag.), sin confundir con biometría automática ni EGO.',
+    },
+    {
+      title: 'Tendencias BH y gráfica fullscreen',
+      body:
+        'Panel Diferencial manual en gráficas/tablas con nombres del reporte. Modal Gráfica del estudio a pantalla completa.',
+    },
+  ],
   '3.5.0': [
     {
       title: 'Gráfica y tabla por estudio',
@@ -10520,14 +10539,17 @@ function buildLabLines() {
   var bhExtDone = false;
   activeLab.resLabs.forEach(function(entry) {
     if (prefs.hideGasoAdvInterp && isGasoInterpretacionResLabChunk(entry)) return;
-    var cleaned = entry.replace(/\t/g, ' ').replace(/  +/g, ' ').trim();
-    lines.push(cleaned);
+    entry.split(/\r?\n/).forEach(function(subline) {
+      var cleaned = subline.replace(/\t/g, ' ').replace(/  +/g, ' ').trim();
+      if (cleaned) lines.push(cleaned);
+    });
     if (prefs.showBhExtendedLine && !bhExtDone && activeLab.bhExtras && isBhMainResLabChunk(entry)) {
-      var extPlain = formatBhExtendedTabLine(activeLab.bhExtras);
+      var extPlain = formatBhExtendedTabLine(activeLab.bhExtras, activeLab.sourceText);
       if (extPlain) {
-        lines.push(
-          extPlain.replace(/\t/g, ' ').replace(/  +/g, ' ').trim()
-        );
+        extPlain.split(/\r?\n/).forEach(function(subline) {
+          var cleanedExt = subline.replace(/\t/g, ' ').replace(/  +/g, ' ').trim();
+          if (cleanedExt) lines.push(cleanedExt);
+        });
         bhExtDone = true;
       }
     }
@@ -11042,7 +11064,7 @@ function renderOutput(result) {
       box.appendChild(div);
     });
     if (labDisp.showBhExtendedLine && result.bhExtras && isBhMainResLabChunk(text)) {
-      var extTab = formatBhExtendedTabLine(result.bhExtras);
+      var extTab = formatBhExtendedTabLine(result.bhExtras, result.sourceText);
       if (extTab) {
         renderEntry(extTab).forEach(function (html, idx) {
           var divEx = document.createElement('div');
@@ -12283,6 +12305,18 @@ function buildParsedBySectionFromResLabs(resLabs, bhExtras) {
       row[k] = n;
     });
     if (Object.keys(row).length) out[sec] = row;
+  });
+  (resLabs || []).forEach(function (entry) {
+    if (!entry || !/^BH/i.test(String(entry).split('\n')[0].trim())) return;
+    var bhCells = parseBhTrendValuesFromResLab(entry);
+    Object.keys(bhCells).forEach(function (k) {
+      var cell = bhCells[k];
+      if (!cell || cell.val == null || cell.val === '---') return;
+      var n = parseFloat(String(cell.val).replace(/\*/g, '').replace(',', '.'));
+      if (!isFinite(n)) return;
+      if (!out.BH) out.BH = {};
+      if (out.BH[k] == null) out.BH[k] = n;
+    });
   });
   if (bhExtras && typeof bhExtras === 'object') {
     if (!out.BH) out.BH = {};

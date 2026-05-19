@@ -200,14 +200,96 @@ function isErythrocytePercentField(fieldKey) {
   return false;
 }
 
+/** Paneles de la gráfica agrupada de BH (diferencial manual en panel propio). */
+export const BH_PANEL_FAMILIES = [
+  'bh-absolute',
+  'bh-quality',
+  'bh-diff-manual',
+  'bh-coag'
+];
+
+/** Paneles para estudios distintos de BH / GASES. */
+export const GENERIC_PANEL_FAMILIES = ['gases', 'percent-diff', 'percent-rbc', 'absolute'];
+
+var BH_QUALITY_FIELDS = {
+  VCM: true,
+  HCM: true,
+  CHCM: true,
+  RDW: true,
+  Hto: true,
+  Ret: true,
+  MPV: true
+};
+var BH_ABSOLUTE_FIELDS = {
+  Hb: true,
+  RBC: true,
+  Leu: true,
+  Neu: true,
+  Lin: true,
+  Mono: true,
+  Baso: true,
+  Eos: true,
+  Plt: true
+};
+var BH_DIFF_FIELDS = {
+  NeuPct: true,
+  LinPct: true,
+  MonoPct: true,
+  EosPct: true,
+  BasoPct: true,
+  Bandas: true,
+  Mielo: true,
+  Metamielo: true,
+  Promielo: true,
+  Blastos: true,
+  Atipicos: true
+};
+var BH_COAG_FIELDS = { TP: true, TTP: true, INR: true, Fib: true, DD: true };
+
+/** Orden por defecto de paneles en el modal «Gráfica del estudio». */
+export function familyOrderForSection(sectionKey) {
+  if (sectionKey === 'BH') return BH_PANEL_FAMILIES.slice();
+  return GENERIC_PANEL_FAMILIES.slice();
+}
+
+/** Migra claves de panel guardadas antes del split BH en 4 gráficas. */
+export function migratePanelFamilyKey(sectionKey, familyKey) {
+  var fam = String(familyKey || '');
+  if (sectionKey !== 'BH') return fam;
+  if (fam === 'percent-rbc') return 'bh-quality';
+  if (fam === 'percent-diff' || fam === 'bh-diff') return 'bh-diff-manual';
+  if (fam === 'absolute') return 'bh-absolute';
+  return fam;
+}
+
 /** Familias de panel para gráfica agrupada (escalas compatibles). */
 export function classifyTendPanelFamily(sectionKey, fieldKey, unit) {
+  var fk = String(fieldKey || '').trim();
   if (sectionKey === 'GASES') return 'gases';
-  if (/Pct$/i.test(fieldKey)) return 'percent-diff';
-  if (isErythrocytePercentField(fieldKey)) return 'percent-rbc';
-  var u = String(unit || '').trim();
-  if (u === '%' && !/Pct$/i.test(fieldKey)) return 'percent-rbc';
+  if (sectionKey === 'BH') {
+    if (BH_COAG_FIELDS[fk]) return 'bh-coag';
+    if (BH_DIFF_FIELDS[fk] || /Pct$/i.test(fk)) return 'bh-diff-manual';
+    if (BH_QUALITY_FIELDS[fk] || isErythrocytePercentField(fk)) return 'bh-quality';
+    if (BH_ABSOLUTE_FIELDS[fk]) return 'bh-absolute';
+    var u = String(unit || '').trim();
+    if (u === '%') return 'bh-quality';
+    return 'bh-absolute';
+  }
+  if (/Pct$/i.test(fk)) return 'percent-diff';
+  if (isErythrocytePercentField(fk)) return 'percent-rbc';
+  var u2 = String(unit || '').trim();
+  if (u2 === '%' && !/Pct$/i.test(fk)) return 'percent-rbc';
   return 'absolute';
+}
+
+export function isPercentPanelFamily(family) {
+  return (
+    family === 'percent-diff' ||
+    family === 'percent-rbc' ||
+    family === 'bh-diff-manual' ||
+    family === 'bh-diff' ||
+    family === 'bh-quality'
+  );
 }
 
 export function colKeyForTrendSet(set) {

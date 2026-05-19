@@ -6,6 +6,10 @@ import {
   parseFechaLabToMs,
   normalizeHoraLabHistory,
   classifyTendPanelFamily,
+  familyOrderForSection,
+  BH_PANEL_FAMILIES,
+  migratePanelFamilyKey,
+  isPercentPanelFamily,
   formatTendSeriesLabel,
   columnSetsForFields,
   buildSectionTableModel,
@@ -22,6 +26,7 @@ import {
   readGroupPanelOrder,
   writeGroupPanelOrder,
   readGroupPanelHidden,
+  readGroupPanelHiddenMigrated,
   writeGroupPanelHidden,
   resolvePanelTitle,
   writeGroupPanelTitle,
@@ -29,7 +34,7 @@ import {
 } from './tend-prefs.mjs';
 import { buildTableTsv, copyTableModelAsPng, copyTableText } from './tend-export.mjs';
 
-const FAMILY_ORDER = ['gases', 'percent-diff', 'percent-rbc', 'absolute'];
+const GENERIC_FAMILY_ORDER = ['gases', 'percent-diff', 'percent-rbc', 'absolute'];
 
 function roundAxisBound(n, direction) {
   if (!isFinite(n)) return n;
@@ -60,10 +65,10 @@ function yScaleBoundsForDatasets(datasets, family) {
   });
   if (!isFinite(min)) return {};
   var pad = Math.max((max - min) * 0.12, 0.35);
-  if (family === 'percent-diff') {
+  if (family === 'percent-diff' || family === 'bh-diff' || family === 'bh-diff-manual') {
     return { min: 0, max: Math.min(100, roundAxisBound(max + pad, 'up')) };
   }
-  if (family === 'percent-rbc') {
+  if (family === 'percent-rbc' || family === 'bh-quality') {
     return { min: 0, max: Math.min(60, roundAxisBound(max + pad, 'up')) };
   }
   if (min === max) {
@@ -115,19 +120,23 @@ function tendPanelEyeSvg() {
   );
 }
 
-function orderPanelFamilies(activeFamilies, savedOrder) {
+function orderPanelFamilies(activeFamilies, savedOrder, sectionKey) {
+  var baseOrder = familyOrderForSection(sectionKey);
   var rank = Object.create(null);
   if (savedOrder && savedOrder.length) {
     savedOrder.forEach(function (fam, i) {
-      rank[fam] = i;
+      var migrated = migratePanelFamilyKey(sectionKey, fam);
+      rank[migrated] = i;
     });
   }
-  var missingBase = (savedOrder && savedOrder.length ? savedOrder.length : FAMILY_ORDER.length) + 100;
+  var missingBase = (savedOrder && savedOrder.length ? savedOrder.length : baseOrder.length) + 100;
   return activeFamilies.slice().sort(function (a, b) {
-    var ra = Object.prototype.hasOwnProperty.call(rank, a) ? rank[a] : missingBase + FAMILY_ORDER.indexOf(a);
-    var rb = Object.prototype.hasOwnProperty.call(rank, b) ? rank[b] : missingBase + FAMILY_ORDER.indexOf(b);
+    var ra = Object.prototype.hasOwnProperty.call(rank, a) ? rank[a] : missingBase + baseOrder.indexOf(a);
+    var rb = Object.prototype.hasOwnProperty.call(rank, b) ? rank[b] : missingBase + baseOrder.indexOf(b);
     if (ra !== rb) return ra - rb;
-    return FAMILY_ORDER.indexOf(a) - FAMILY_ORDER.indexOf(b);
+    var ia = baseOrder.indexOf(a);
+    var ib = baseOrder.indexOf(b);
+    return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib);
   });
 }
 
@@ -307,6 +316,7 @@ export function createTendGroupModal(deps) {
     destroyCharts();
     destroyPanelSortable();
     state.sectionKey = null;
+    document.body.classList.remove('tend-group-modal-open');
     var bd = backdropEl();
     if (bd) {
       bd.style.display = 'none';
@@ -637,6 +647,22 @@ export function createTendGroupModal(deps) {
     return formatTendSeriesLabel(spec.cardTitle || spec.fieldKey, spec.fieldKey, unit).name;
   }
 
+  function specHasTrendPoints(sectionKey, fieldKey) {
+    var raw = state.historyDesc.filter(function (s) {
+      return getSetTrendValueForSeries(s, sectionKey, fieldKey) != null;
+    });
+    return dedupeTrendSetsForSeries(raw, sectionKey, fieldKey).length >= 2;
+  }
+
+  function catalogSpecsForCharts(sectionKey) {
+    if (sectionKey === 'BH') {
+      return deps.getCatalogSpecs(sectionKey, state.historyDesc) || [];
+    }
+    return Object.keys(state.specsByField).map(function (fk) {
+      return state.specsByField[fk];
+    });
+  }
+
   function renderCharts(sectionKey) {
     var panelEl = document.getElementById('tend-group-panel-charts');
     if (!panelEl) return;
@@ -645,29 +671,47 @@ export function createTendGroupModal(deps) {
     panelEl.innerHTML = '';
 
     var families = Object.create(null);
-    var chartFieldKeys = Object.keys(state.specsByField);
-    chartFieldKeys.forEach(function (fk, idx) {
-      var sp = state.specsByField[fk];
+    var catalogSpecs = catalogSpecsForCharts(sectionKey);
+    catalogSpecs.forEach(function (sp, idx) {
       if (!sp) return;
+      var fk = sp.fieldKey;
       var unit = deps.tendUnitForSeries(sectionKey, fk);
       var fam = classifyTendPanelFamily(sectionKey, fk, unit);
       if (!families[fam]) families[fam] = [];
       families[fam].push({ spec: sp, index: idx });
     });
 
-    var activeFams = FAMILY_ORDER.filter(function (fam) {
-      return families[fam] && families[fam].length;
-    });
+    var activeFams;
+    if (sectionKey === 'BH') {
+      activeFams = BH_PANEL_FAMILIES.slice();
+    } else {
+      var familyOrder = familyOrderForSection(sectionKey);
+      activeFams = familyOrder.filter(function (fam) {
+        return families[fam] && families[fam].length;
+      });
+      GENERIC_FAMILY_ORDER.forEach(function (fam) {
+        if (activeFams.indexOf(fam) >= 0) return;
+        if (families[fam] && families[fam].length) activeFams.push(fam);
+      });
+    }
     if (!activeFams.length) {
       panelEl.innerHTML =
         '<p class="tend-empty" style="margin:12px 0;font-size:13px;color:var(--text-muted);">Sin datos para graficar en este estudio.</p>';
       return;
     }
 
-    var hiddenFams = readGroupPanelHidden(state.patientId, sectionKey).filter(function (fam) {
+    var hiddenFams = readGroupPanelHiddenMigrated(
+      state.patientId,
+      sectionKey,
+      migratePanelFamilyKey
+    ).filter(function (fam) {
       return activeFams.indexOf(fam) >= 0;
     });
-    var orderedFams = orderPanelFamilies(activeFams, readGroupPanelOrder(state.patientId, sectionKey));
+    var orderedFams = orderPanelFamilies(
+      activeFams,
+      readGroupPanelOrder(state.patientId, sectionKey),
+      sectionKey
+    );
     var visibleFams = orderedFams.filter(function (fam) {
       return hiddenFams.indexOf(fam) < 0;
     });
@@ -728,7 +772,11 @@ export function createTendGroupModal(deps) {
         writeGroupPanelTitle(state.patientId, sectionKey, fam, next);
         titleEl.textContent = resolvePanelTitle(state.patientId, sectionKey, fam);
         titleDraft = titleEl.textContent;
-        var hiddenNow = readGroupPanelHidden(state.patientId, sectionKey).filter(function (f) {
+        var hiddenNow = readGroupPanelHiddenMigrated(
+          state.patientId,
+          sectionKey,
+          migratePanelFamilyKey
+        ).filter(function (f) {
           return activeFams.indexOf(f) >= 0;
         });
         renderPanelsHiddenBar(panelEl, sectionKey, hiddenNow);
@@ -740,7 +788,11 @@ export function createTendGroupModal(deps) {
           ev.preventDefault();
           ev.stopPropagation();
         }
-        var h = readGroupPanelHidden(state.patientId, sectionKey).slice();
+        var h = readGroupPanelHiddenMigrated(
+          state.patientId,
+          sectionKey,
+          migratePanelFamilyKey
+        ).slice();
         if (h.indexOf(fam) < 0) h.push(fam);
         writeGroupPanelHidden(state.patientId, sectionKey, h);
         renderCharts(sectionKey);
@@ -755,18 +807,22 @@ export function createTendGroupModal(deps) {
       var legend = document.createElement('div');
       legend.className = 'tend-group-legend';
 
-      var items = families[fam];
+      var items = (families[fam] || []).filter(function (item) {
+        return specHasTrendPoints(sectionKey, item.spec.fieldKey);
+      });
       var famFieldKeys = items.map(function (item) {
         return item.spec.fieldKey;
       });
       var colSets = columnSetsForFields(state.historyAsc, sectionKey, famFieldKeys);
-      if (!colSets.length) {
+      if (!colSets.length || !items.length) {
         var emptyP = document.createElement('p');
         emptyP.className = 'tend-empty';
         emptyP.style.margin = '8px 0 0';
         emptyP.style.fontSize = '13px';
         emptyP.style.color = 'var(--text-muted)';
-        emptyP.textContent = 'Sin puntos temporales para este panel.';
+        emptyP.textContent = items.length
+          ? 'Sin puntos temporales para este panel.'
+          : 'Ningún analito de este panel tiene 2 o más laboratorios. Procesa otro BH o activa BH extendida en Resultados.';
         block.appendChild(emptyP);
         sortZone.appendChild(block);
         return;
@@ -826,7 +882,7 @@ export function createTendGroupModal(deps) {
           font: { size: 11 },
           callback: function (v) {
             var t = formatAxisTickValue(v);
-            if (fam === 'percent-diff' || fam === 'percent-rbc') {
+            if (isPercentPanelFamily(fam)) {
               return t ? t + ' %' : '';
             }
             return t;
@@ -951,17 +1007,28 @@ export function createTendGroupModal(deps) {
       var historyDesc = sortLabHistoryChronological(deps.getHistory() || []);
       if (historyDesc.length < 2) return;
       var eligible = eligibleSpecs(sectionKey, historyDesc);
-      if (!eligible.length) return;
+      if (sectionKey === 'BH') {
+        var hasBhData = historyDesc.some(function (s) {
+          return s.parsedBySection && s.parsedBySection.BH && Object.keys(s.parsedBySection.BH).length;
+        });
+        if (!hasBhData && !eligible.length) return;
+      } else if (!eligible.length) {
+        return;
+      }
 
       state.sectionKey = sectionKey;
       state.patientId = patientId;
       state.historyDesc = historyDesc;
       state.historyAsc = toAscendingHistory(historyDesc);
       state.specsByField = Object.create(null);
-      eligible.forEach(function (sp) {
+      var specsForModal =
+        sectionKey === 'BH'
+          ? deps.getCatalogSpecs(sectionKey, historyDesc) || []
+          : eligible;
+      specsForModal.forEach(function (sp) {
         state.specsByField[sp.fieldKey] = sp;
       });
-      state.visibleFields = resolveVisibleFields(patientId, sectionKey, eligible);
+      state.visibleFields = resolveVisibleFields(patientId, sectionKey, eligible.length ? eligible : specsForModal);
 
       var titleEl = document.getElementById('tend-group-title');
       if (titleEl) {
@@ -973,6 +1040,7 @@ export function createTendGroupModal(deps) {
       if (bd) {
         bd.style.display = 'flex';
         bd.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('tend-group-modal-open');
       }
 
       setTab(state.activeTab || 'charts');

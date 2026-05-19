@@ -25,10 +25,17 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 ---
 
-**Versión estable actual:** [3.5.0](https://github.com/mausalas99/r-mas/releases/tag/v3.5.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [5.0.1](https://github.com/mausalas99/r-mas/releases/tag/v5.0.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+## R+ 5.0.1 (estable — labs manuales, tendencias BH y gráfica fullscreen)
+
+- **Laboratorios:** diferencial manual SOME (Segmentados, bandas, metamielocitos) + coagulación y frotis; salida `Dif.` / `Coag.` legible; plaquetas en citrato; EGO no contamina BH.
+- **Tendencias BH:** panel **Diferencial manual** con títulos del reporte; tablas y gráficas desde el bloque multilínea.
+- **UX:** modal Gráfica/Tabla del estudio a **pantalla completa**.
+
+Notas: `docs/RELEASE_NOTES_5.0.1.txt`.
 
 ## R+ 3.5.0 (estable — gráfica y tabla por estudio en Tendencias)
 

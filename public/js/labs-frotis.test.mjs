@@ -36,12 +36,11 @@ FROTIS DE SANGRE PERIFERICA
 HIPOCROMIA +., ANISOCITOSIS +, PLAQUETAS NORMALES EN CANTIDAD, SE OBSERVAN MACROPLAQUETAS.
 `;
 
-test('parseFrotisSangre_ extrae comentario de frotis', () => {
+test('parseFrotisSangre_ separa calidad eritrocitaria y plaquetas', () => {
   const out = parseFrotisSangre_(MUESTRA_FROTIS);
-  assert.match(out, /^FROTIS\tObs\s+/);
-  assert.match(out, /HIPOCROMIA \+\./);
+  assert.match(out, /FROTIS\tCal\s+.*HIPOCROMIA \+\./);
   assert.match(out, /ANISOCITOSIS \+/);
-  assert.match(out, /MACROPLAQUETAS/);
+  assert.match(out, /FROTIS\tPlaq\s+.*MACROPLAQUETAS/);
 });
 
 test('procesarLabs incluye bloque FROTIS cuando aparece en hematologia', () => {

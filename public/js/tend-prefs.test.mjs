@@ -13,6 +13,7 @@ import {
   readTendCardOrder,
   writeTendCardOrder,
   readGroupPanelHidden,
+  readGroupPanelHiddenMigrated,
   writeGroupPanelHidden,
   writeGroupPanelTitle,
   resolvePanelTitle,
@@ -52,6 +53,17 @@ test('orden y ocultos de paneles por paciente+sección', () => {
   writeGroupPanelHidden('p1', 'BH', ['absolute']);
   assert.deepEqual(readGroupPanelOrder('p1', 'BH'), ['gases', 'percent-rbc']);
   assert.deepEqual(readGroupPanelHidden('p1', 'BH'), ['absolute']);
+});
+
+test('readGroupPanelHiddenMigrated: claves legacy BH', () => {
+  writeGroupPanelHidden('p1', 'BH', ['percent-rbc', 'absolute', 'percent-diff']);
+  const migrated = readGroupPanelHiddenMigrated('p1', 'BH', function (_sk, fam) {
+    if (fam === 'percent-rbc') return 'bh-quality';
+    if (fam === 'absolute') return 'bh-absolute';
+    if (fam === 'percent-diff' || fam === 'bh-diff') return 'bh-diff-manual';
+    return fam;
+  });
+  assert.deepEqual(migrated, ['bh-quality', 'bh-absolute', 'bh-diff-manual']);
 });
 
 test('orden de tarjetas spark por paciente+sección', () => {
