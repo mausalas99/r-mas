@@ -193,7 +193,7 @@ function procesarYEnviarExpediente() {
 }
 
 
-function safeAttrJsString(s) {
+export function safeAttrJsString(s) {
   return String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 

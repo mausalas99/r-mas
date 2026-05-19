@@ -664,7 +664,11 @@ function guidedTourClickNext() {
 
 // Avance automático cuando el usuario ejecuta una acción real
 // (Procesar, Enviar a nota, Generar Nota/Indicaciones, etc.).
-function guidedTourAdvanceAfter(actionStep) {
+export function getGuidedTourContext() {
+  return { active: guidedTourActive, stepId: tourStepId };
+}
+
+export function guidedTourAdvanceAfter(actionStep) {
   if (!guidedTourActive || tourStepId !== actionStep) return;
   var steps = getGuidedTourSteps();
   var i = steps.indexOf(actionStep);
