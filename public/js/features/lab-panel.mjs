@@ -272,7 +272,7 @@ export function renderLabHistoryPanel() {
   var hist = sortLabHistoryChronological(rt.ensureParsedLabHistory(rt.getActiveId()));
   if (!hist.length) {
     hintEl.style.display = 'block';
-    hintEl.textContent = 'Cuando envíes un reporte a la nota con «Enviar a nota», cada conjunto queda guardado aquí (sirve para Tendencias y para volver a ver diagramas).';
+    hintEl.textContent = 'Al procesar un reporte con paciente activo, cada conjunto queda guardado aquí (sirve para Tendencias y para volver a ver diagramas).';
     listEl.innerHTML = '';
     syncLabHistoryCollapseUI();
     rt.renderRoundOverviewPanels();

@@ -289,12 +289,17 @@
               <div id="patient-ronda-todos-mount" class="ronda-overview-card-body rpc-form-stack-tight"></div>
             </section>
             <div class="ronda-overview-quick" role="group" aria-label="Accesos al expediente">
-              <button type="button" onclick="openFullExpedienteFromRound('notas')">Nota completa</button>
-              <button type="button" onclick="openFullExpedienteFromRound('indica')">Indicaciones</button>
-              <button type="button" onclick="openFullExpedienteFromRound('tend')">Tendencias</button>
-              <button type="button" onclick="openFullExpedienteFromRound('cult')">Cultivos</button>
-              <button type="button" id="ronda-quick-datos" onclick="openFullExpedienteFromRound('datos')" style="display:none;">Datos</button>
-              <button type="button" id="ronda-quick-listado" onclick="openFullExpedienteFromRound('listado')" style="display:none;">Listado de problemas</button>
+              <button type="button" class="ronda-quick-primary" onclick="openFullExpedienteFromRound('notas')">Nota completa</button>
+              <details class="ronda-quick-more">
+                <summary class="ronda-quick-more-btn" aria-label="Más secciones del expediente">Más</summary>
+                <div class="ronda-quick-more-menu" role="menu">
+                  <button type="button" class="ronda-quick-more-item" role="menuitem" onclick="closeRondaQuickMoreMenu(); openFullExpedienteFromRound('indica');">Indicaciones</button>
+                  <button type="button" class="ronda-quick-more-item" role="menuitem" onclick="closeRondaQuickMoreMenu(); openFullExpedienteFromRound('tend');">Tendencias</button>
+                  <button type="button" class="ronda-quick-more-item" role="menuitem" onclick="closeRondaQuickMoreMenu(); openFullExpedienteFromRound('cult');">Cultivos</button>
+                  <button type="button" class="ronda-quick-more-item" id="ronda-quick-datos" role="menuitem" onclick="closeRondaQuickMoreMenu(); openFullExpedienteFromRound('datos');" style="display:none;">Datos</button>
+                  <button type="button" class="ronda-quick-more-item" id="ronda-quick-listado" role="menuitem" onclick="closeRondaQuickMoreMenu(); openFullExpedienteFromRound('listado');" style="display:none;">Listado de problemas</button>
+                </div>
+              </details>
             </div>
           </div>
         </div>
@@ -349,7 +354,10 @@
 
 <div class="modal-backdrop" id="profile-modal" aria-hidden="true">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title" style="width:560px;">
-    <h3 id="profile-modal-title" style="margin:0 0 14px 0;">👤 Mi Perfil</h3>
+    <h3 id="profile-modal-title" class="profile-modal-title" style="margin:0 0 14px 0;display:flex;align-items:center;gap:8px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Mi Perfil
+    </h3>
     <div class="profile-body" id="profile-body" style="display:flex;flex-direction:column;gap:12px;">
       <div>
         <div class="profile-field-label">Médico Tratante</div>
@@ -420,9 +428,9 @@
         <span id="profile-preview-meds-txt">(vacío)</span>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;">
-        <button class="btn-edit-templates" onclick="openTemplatesModal()">✏️ Editar plantillas…</button>
-        <button class="btn-save-profile" onclick="saveSettings()">Guardar perfil</button>
-        <button class="btn-edit-templates" onclick="resetAndStartOnboarding()">🎓 Ver tutorial</button>
+        <button type="button" class="btn-edit-templates" onclick="openTemplatesModal()">Editar plantillas…</button>
+        <button type="button" class="btn-save-profile" onclick="saveSettings()">Guardar perfil</button>
+        <button type="button" class="btn-edit-templates" onclick="resetAndStartOnboarding()">Ver tutorial</button>
       </div>
     </div>
   </div>

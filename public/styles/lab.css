@@ -77,6 +77,13 @@ main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
   padding: calc(6px * var(--density-space)) calc(22px * var(--density-space)) 0;
   flex-shrink: 0;
   gap: 2px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+.inner-tab-bar .inner-tab {
+  flex-shrink: 0;
 }
 .inner-tab {
   padding: calc(8px * var(--density-space)) calc(13px * var(--density-space)) calc(7px * var(--density-space));

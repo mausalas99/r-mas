@@ -246,10 +246,29 @@ html:not(.ui-density-normal) .sidebar-ronda-hint { display: flex; }
 .ronda-overview-quick {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
   padding-top: 2px;
 }
-.ronda-overview-quick button {
+.ronda-quick-primary {
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--action);
+  color: #fff;
+  font: inherit;
+  font-size: calc(13px * var(--density-font));
+  font-weight: 700;
+  padding: 9px 16px;
+  cursor: pointer;
+  min-height: 40px;
+  box-shadow: 0 2px 10px color-mix(in oklab, var(--action) 22%, transparent);
+}
+.ronda-quick-primary:hover {
+  background: var(--action-hover, var(--action));
+}
+.ronda-quick-more { position: relative; }
+.ronda-quick-more-btn {
+  list-style: none;
   border-radius: var(--radius-pill);
   border: 1px solid var(--border);
   background: color-mix(in oklab, var(--surface) 94%, var(--bg));
@@ -257,8 +276,45 @@ html:not(.ui-density-normal) .sidebar-ronda-hint { display: flex; }
   font: inherit;
   font-size: calc(12px * var(--density-font));
   font-weight: 600;
-  padding: 7px 12px;
+  padding: 7px 14px;
   cursor: pointer;
+  min-height: 40px;
+}
+.ronda-quick-more-btn::-webkit-details-marker { display: none; }
+.ronda-quick-more-btn:hover {
+  border-color: color-mix(in oklab, var(--action) 35%, var(--border));
+  color: var(--action);
+}
+.ronda-quick-more:not([open]) .ronda-quick-more-menu { display: none; }
+.ronda-quick-more-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6px);
+  z-index: 30;
+  min-width: 180px;
+  padding: 6px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
+.ronda-quick-more-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: calc(12px * var(--density-font));
+  font-weight: 600;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.ronda-quick-more-item:hover {
+  background: color-mix(in oklab, var(--action) 8%, var(--surface));
+  color: var(--action);
 }
 /* Resumen ronda solo se usa en modo Pase; tipografía un poco más legible ahí. */
 html:not(.ui-density-normal) .ronda-overview-card-body {

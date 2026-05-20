@@ -3,6 +3,11 @@
   <span id="today-date"></span>
   <div class="header-right">
     <div class="header-work-cluster" aria-label="Contexto de trabajo">
+      <nav id="header-pase-breadcrumb" class="header-pase-breadcrumb" style="display:none;" aria-label="Navegación desde Pase">
+        <button type="button" class="header-pase-breadcrumb-link" onclick="returnToPaseBoardFromDetail()">Pase</button>
+        <span class="header-pase-breadcrumb-sep" aria-hidden="true">›</span>
+        <span id="header-pase-breadcrumb-section" class="header-pase-breadcrumb-section"></span>
+      </nav>
       <button type="button" id="btn-header-return-pase" class="header-return-pase-btn" style="display:none;" onclick="returnToPaseBoardFromDetail()" title="Volver al resumen Pase" aria-label="Volver al resumen Pase">← Pase</button>
       <div id="estado-actual-context-wrap" class="estado-actual-context-wrap" aria-live="polite">
         <span id="estado-actual-meta" class="estado-actual-meta"></span>

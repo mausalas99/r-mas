@@ -258,6 +258,7 @@ registerChromeRuntime({
   scrollActiveRondaCardIntoView,
   renderProcedureAgendaPanel,
   getActiveAppTab: function () { return rt.getActiveAppTab(); },
+  getActiveInner: function () { return rt.getActiveInner(); },
   getActiveId: function () { return rt.getActiveId(); },
   setRoundOverviewMode: setRoundOverviewMode,
   renderPaseBoard: renderPaseBoard,

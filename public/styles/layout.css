@@ -84,6 +84,44 @@ html:not(.ui-density-normal) #main-area {
   min-width: 0;
   justify-content: flex-end;
 }
+.header-pase-breadcrumb {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  min-height: 36px;
+  padding: 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.header-pase-breadcrumb-link {
+  border: none;
+  background: transparent;
+  padding: 6px 8px;
+  margin: 0;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--action);
+  cursor: pointer;
+}
+.header-pase-breadcrumb-link:hover {
+  background: color-mix(in oklab, var(--action) 10%, var(--surface));
+}
+.header-pase-breadcrumb-sep {
+  opacity: 0.5;
+  user-select: none;
+}
+.header-pase-breadcrumb-section {
+  color: var(--text);
+  font-weight: 650;
+  max-width: min(160px, 22vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .header-return-pase-btn {
   flex-shrink: 0;
   border: 1px solid color-mix(in oklab, var(--action) 35%, var(--border));
@@ -130,13 +168,14 @@ html:not(.ui-density-normal) #main-area {
   max-width: min(140px, 18vw);
 }
 .header-work-cluster .btn-estado-actual-compact {
-  padding: 5px 11px;
-  font-size: 11px;
-  gap: 5px;
+  padding: 7px 12px;
+  font-size: 12px;
+  gap: 6px;
+  min-height: 36px;
 }
 .header-work-cluster .btn-estado-actual-compact svg {
-  width: 12px;
-  height: 12px;
+  width: 13px;
+  height: 13px;
 }
 .header-work-cluster .header-app-mode-chip {
   padding: 6px 12px;

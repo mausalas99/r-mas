@@ -562,6 +562,12 @@ export function renderRoundOverviewPanels() {
   if (qList) qList.style.display = gala ? '' : 'none';
 }
 
+export function closeRondaQuickMoreMenu() {
+  document.querySelectorAll(".ronda-quick-more[open]").forEach(function (d) {
+    d.removeAttribute("open");
+  });
+}
+
 export function returnToRoundOverview() {
   if (!isPaseMode()) return;
   _roundOverviewMode = true;
@@ -1359,4 +1365,5 @@ export const windowHandlers = {
   deletePatient,
   openFullExpedienteFromRound,
   returnToRoundOverview,
+  closeRondaQuickMoreMenu,
 };

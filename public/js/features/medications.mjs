@@ -464,7 +464,7 @@ function renderMedNotaFooter() {
     previewHtml +
     '<div class="med-nota-actions">' +
     '<button type="button" class="btn-generate" onclick="mediAnadirATratamiento()">Añadir a Tratamiento</button>' +
-    '<button type="button" class="btn-generate" style="background:#065F46;" onclick="mediLlevarASOAP()">Abrir plantilla SOAP</button>' +
+    '<button type="button" class="btn-med-secondary" onclick="mediLlevarASOAP()">Abrir plantilla SOAP</button>' +
     '<button type="button" class="btn-med-secondary" onclick="limpiarSeleccionMedNota()">Limpiar</button>' +
     "</div>" +
     "</div>";

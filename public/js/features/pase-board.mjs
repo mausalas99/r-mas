@@ -726,6 +726,7 @@ export function switchInnerTab(tab, opts) {
   if (tab === "cult") renderCultivosTable();
   if (tab === "listado") renderListadoForm();
   if (tab === "todo") renderTodoForm();
+  rt.syncWorkContextChrome();
 }
 
 export function renderInnerTabs() {

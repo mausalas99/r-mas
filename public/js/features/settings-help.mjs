@@ -663,7 +663,7 @@ function guidedTourClickNext() {
 }
 
 // Avance automático cuando el usuario ejecuta una acción real
-// (Procesar, Enviar a nota, Generar Nota/Indicaciones, etc.).
+// (Procesar, Copiar resultados, Generar Nota/Indicaciones, etc.).
 export function getGuidedTourContext() {
   return { active: guidedTourActive, stepId: tourStepId };
 }
@@ -1617,14 +1617,14 @@ var LAB_MINI_TOUR_STEPS = [
     before: function(){ rt.switchAppTab('lab'); }
   },
   {
-    badge: 'Laboratorio · enviar',
-    body: 'Cada diagrama tiene un botón <strong>Copiar</strong> para pegarlo como texto en otro sistema. <strong>Enviar a nota</strong> vuelca el bloque completo al expediente del paciente activo.',
+    badge: 'Laboratorio · copiar',
+    body: 'Tras procesar, usa el botón flotante <strong>Copiar</strong> o el de cada diagrama. Con paciente activo, los resultados quedan en historial y en el expediente.',
     before: function(){ rt.switchAppTab('lab'); },
     dockLeft: true,
   },
   {
     badge: 'Laboratorio · tendencias',
-    body: 'Cada laboratorio enviado se guarda con su fecha. Con dos o más labs aparecen mini-gráficas en <strong>Expediente → Tendencias</strong>.',
+    body: 'Cada laboratorio procesado con paciente activo se guarda con su fecha. Con dos o más labs aparecen mini-gráficas en <strong>Expediente → Tendencias</strong>.',
     before: function(){ rt.switchAppTab('lab'); }
   },
   {

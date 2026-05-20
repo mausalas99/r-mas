@@ -7,6 +7,9 @@ let runtime = {
   getActiveAppTab() {
     return 'lab';
   },
+  getActiveInner() {
+    return 'todo';
+  },
   getActiveId() {
     return null;
   },
@@ -212,11 +215,32 @@ export function clearPaseDetailEscape() {
   syncPaseReturnHeaderBtn();
 }
 
+function paseSectionLabelFromContext() {
+  var tab = runtime.getActiveAppTab();
+  if (tab === 'lab') return 'Laboratorio';
+  if (tab === 'med') return 'Medicamentos';
+  if (tab === 'agenda') return 'Agenda';
+  if (tab === 'nota') {
+    var inner = runtime.getActiveInner() || 'todo';
+    if (inner === 'notas') return 'Nota';
+    if (inner === 'indica') return 'Indicaciones';
+    if (inner === 'tend') return 'Tendencias';
+    if (inner === 'cult') return 'Cultivos';
+    if (inner === 'listado') return 'Listado';
+    if (inner === 'datos') return 'Datos';
+    if (inner === 'todo') return 'Pendientes';
+  }
+  return 'Expediente';
+}
+
 export function syncPaseReturnHeaderBtn() {
-  var btn = document.getElementById('btn-header-return-pase');
-  if (!btn) return;
   var show = _openedDetailFromPase && getUiDensity() === 'normal';
-  btn.style.display = show ? 'inline-flex' : 'none';
+  var crumb = document.getElementById('header-pase-breadcrumb');
+  var section = document.getElementById('header-pase-breadcrumb-section');
+  var btn = document.getElementById('btn-header-return-pase');
+  if (crumb) crumb.style.display = show ? 'inline-flex' : 'none';
+  if (section && show) section.textContent = paseSectionLabelFromContext();
+  if (btn) btn.style.display = 'none';
 }
 
 export function returnToPaseBoardFromDetail() {
