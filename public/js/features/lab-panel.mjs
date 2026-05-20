@@ -103,9 +103,34 @@ export function rerenderParsedLabOutputAfterPrefsChange() {
   if (activeLab && activeLab.resLabs && activeLab.resLabs.length) renderOutput(activeLab);
 }
 
-export function syncLabStickyActionBar(show) {
-  var bar = document.getElementById("lab-sticky-action-bar");
-  if (bar) bar.hidden = !show;
+var labCopyFabBound = false;
+
+function ensureLabCopyFabController() {
+  var fab = document.getElementById("lab-copy-fab");
+  if (!fab || labCopyFabBound) return;
+  labCopyFabBound = true;
+  if (fab.parentElement !== document.body) document.body.appendChild(fab);
+  fab.removeAttribute("onclick");
+  fab.addEventListener(
+    "mousedown",
+    function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    },
+    true
+  );
+  fab.addEventListener("click", function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (fab.hidden) return;
+    copiarLabsAlPortapapeles();
+  });
+}
+
+export function syncLabCopyFab(show) {
+  ensureLabCopyFabController();
+  var fab = document.getElementById("lab-copy-fab");
+  if (fab) fab.hidden = !show;
 }
 
 export function closeLabHistoryMoreMenu() {
@@ -123,7 +148,7 @@ export function clearLabWorkbenchMinimalDom() {
   if (box) box.innerHTML = "";
   var ta = document.getElementById("lab-input");
   if (ta) ta.value = "";
-  syncLabStickyActionBar(false);
+  syncLabCopyFab(false);
 }
 
 function esc(s) {
@@ -773,7 +798,7 @@ export function limpiarReporte() {
   document.getElementById('lab-output-section').style.display = 'none';
   document.getElementById('lab-output-box').innerHTML = '';
   activeLab = null;
-  syncLabStickyActionBar(false);
+  syncLabCopyFab(false);
 }
 
 function openLabPatientPicker() {
@@ -1197,7 +1222,7 @@ function renderOutput(result) {
     }
   });
   document.getElementById('lab-output-section').style.display = 'block';
-  syncLabStickyActionBar(true);
+  syncLabCopyFab(true);
   rt.wireAtbRisHoverPanels(box);
 }
 

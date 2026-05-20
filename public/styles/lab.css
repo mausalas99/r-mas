@@ -395,35 +395,90 @@ input[type="checkbox"]:focus-visible {
   display: flex; justify-content: flex-end; gap: calc(10px * var(--density-space)); flex-shrink: 0;
   box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.04);
 }
-.tab-content.active .action-bar {
-  position: sticky;
-  bottom: 0;
-  z-index: 12;
-  margin-top: calc(8px * var(--density-space));
-}
 .lab-panel-root {
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  position: relative;
+  isolation: isolate;
 }
 .lab-panel-root .lab-work-scroll {
   flex: 1;
   min-height: 0;
+  position: relative;
+  z-index: 0;
 }
-.lab-sticky-action-bar {
-  flex-shrink: 0;
+.lab-panel-root:has(.lab-copy-fab:not([hidden])) .lab-work-scroll {
+  padding-bottom: calc(80px + 24px * var(--density-space));
+}
+.lab-copy-fab {
+  position: fixed;
+  right: calc(22px * var(--density-space));
+  bottom: calc(22px * var(--density-space));
+  z-index: 150;
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 0;
+  margin: 0;
+  border-radius: 50%;
+  border: 1px solid color-mix(in oklab, var(--action) 28%, var(--border));
+  background: var(--surface);
+  color: var(--action);
+  cursor: pointer;
   display: flex;
-  justify-content: flex-end;
-  gap: calc(10px * var(--density-space));
-  padding: calc(12px * var(--density-space)) calc(24px * var(--density-space));
-  border-top: 1px solid var(--divider);
-  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
-  box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.06);
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.14);
+  transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  overflow: visible;
 }
-.lab-sticky-action-bar[hidden] {
+.lab-copy-fab::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+.lab-copy-fab svg {
+  position: relative;
+  z-index: 1;
+  display: block;
+  flex-shrink: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none;
+}
+.lab-copy-fab:hover {
+  background: color-mix(in oklab, var(--surface) 86%, transparent);
+  transform: scale(1.05);
+  box-shadow: 0 6px 24px rgba(15, 23, 42, 0.18);
+}
+.lab-copy-fab:active {
+  transform: scale(0.97);
+}
+.lab-copy-fab:focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: 3px;
+}
+.lab-copy-fab[hidden] {
   display: none !important;
+  pointer-events: none !important;
+}
+html.dark .lab-copy-fab {
+  background: var(--surface);
+  box-shadow: 0 4px 22px rgba(0, 0, 0, 0.35);
+}
+html.dark .lab-copy-fab:hover {
+  background: color-mix(in oklab, var(--surface) 92%, var(--action) 8%);
 }
 .btn-generate {
   background: var(--action); color: white; border: none; border-radius: var(--radius-pill);
@@ -703,8 +758,10 @@ html.dark .rpc-proc-agenda-block.rpc-proc-flag { border-color: rgba(251, 191, 36
 
 .toast {
   position: fixed;
-  bottom: 24px;
+  top: calc(62px + 12px * (var(--density-space) - 1));
+  bottom: auto;
   right: 24px;
+  left: auto;
   background: var(--text);
   color: white;
   padding: 12px 20px;
@@ -712,13 +769,18 @@ html.dark .rpc-proc-agenda-block.rpc-proc-flag { border-color: rgba(251, 191, 36
   font-size: 14px;
   font-weight: 500;
   box-shadow: var(--shadow-md);
-  transform: translateY(12px);
+  transform: translateY(-10px);
   opacity: 0;
   transition: transform var(--dur-normal) var(--ease-out), opacity var(--dur-fast) var(--ease-out);
   z-index: 200;
   max-width: 320px;
+  pointer-events: none;
 }
-.toast.show { transform: translateY(0); opacity: 1; }
+.toast.show {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
 .toast.success { background: var(--success); }
 .toast.error { background: var(--error); }
 .lab-output-fecha {

@@ -546,16 +546,12 @@ document.addEventListener('keydown', function(e) {
         if (key === '1') openPaseSectionInNormal('labs');
         if (key === '2') openPaseSectionInNormal('expediente');
         if (key === '3') openPaseSectionInNormal('med');
-        if (key === '5') openPaseSectionInNormal('agenda');
+        if (key === '4' || key === '5') openPaseSectionInNormal('agenda');
       } else {
         if (key === '1') switchAppTab('lab');
         if (key === '2') switchAppTab('nota');
         if (key === '3') switchAppTab('med');
-        if (key === '5') switchAppTab('agenda');
-      }
-      if (key === '4') {
-        var dd = document.getElementById('settings-dropdown');
-        if (dd && !dd.classList.contains('open')) toggleSettingsDropdown();
+        if (key === '4' || key === '5') switchAppTab('agenda');
       }
     }
     if (key === 'p' && !e.altKey) {
@@ -564,12 +560,21 @@ document.addEventListener('keydown', function(e) {
       else setUiDensity(getUiDensity() === 'normal' ? 'pase' : 'normal');
     }
     if (e.key === ',' && !e.shiftKey && !e.altKey) {
-      if (typeof isTypingContext === 'function' && isTypingContext(e.target)) return;
+      var tag = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : '';
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target && e.target.isContentEditable)) return;
+      e.preventDefault();
+      var dd = document.getElementById('settings-dropdown');
+      if (dd && dd.classList.contains('open')) closeSettingsDropdown();
+      else toggleSettingsDropdown();
+    }
+    if (e.key === ',' && e.shiftKey && !e.altKey) {
+      var tag2 = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : '';
+      if (tag2 === 'INPUT' || tag2 === 'TEXTAREA' || tag2 === 'SELECT' || (e.target && e.target.isContentEditable)) return;
       e.preventDefault();
       window.__rpcPreferImportOverwrite = !window.__rpcPreferImportOverwrite;
       showToast(
         window.__rpcPreferImportOverwrite
-          ? 'Importación: conflictos → sobrescribir (⌘, o Ctrl+, de nuevo para apagar).'
+          ? 'Importación: conflictos → sobrescribir (⌘⇧, o Ctrl+Shift+, de nuevo para apagar).'
           : 'Importación: se preguntará en cada conflicto.',
         window.__rpcPreferImportOverwrite ? 'success' : 'info'
       );

@@ -512,7 +512,7 @@ function renderTourStep() {
       setBadge('pestañas');
       bodyEl.innerHTML =
         getUiDensity() !== 'normal'
-          ? '<p style="margin:0;line-height:1.5;">En <strong>Pase</strong> el centro es un <strong>resumen</strong> del paciente (pendientes, laboratorio, cultivos, medicamentos). Pulsa el título de cada bloque o usa <strong>Ctrl/⌘ + 1…3 / 5</strong> para abrir el detalle en vista <strong>Normal</strong>.</p>'
+          ? '<p style="margin:0;line-height:1.5;">En <strong>Pase</strong> el centro es un <strong>resumen</strong> del paciente (pendientes, laboratorio, cultivos, medicamentos). Pulsa el título de cada bloque o usa <strong>Ctrl/⌘ + 1…4</strong> para abrir el detalle en vista <strong>Normal</strong>.</p>'
           : '<p style="margin:0;line-height:1.5;">Arriba cambias de área: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong>, <strong>Agenda</strong>. En cada paso te resaltamos qué mirar.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
@@ -988,14 +988,14 @@ var HELP_ARTICLES = [
     html:
       '<p>Ahorra tiempo con estos atajos:</p>' +
       '<ul>' +
-      '<li><strong>Ctrl/⌘ + 1</strong> — Laboratorio · <strong>2</strong> — Expediente · <strong>3</strong> — Medicamentos · <strong>5</strong> — Agenda (<strong>Pase</strong>: abre la sección en vista Normal)</li>' +
-      '<li><strong>Ctrl/⌘ + 4</strong> — Ajustes</li>' +
+      '<li><strong>Ctrl/⌘ + 1</strong> — Laboratorio · <strong>2</strong> — Expediente · <strong>3</strong> — Medicamentos · <strong>4</strong> — Agenda (<strong>Pase</strong>: abre la sección en vista Normal)</li>' +
+      '<li><strong>Ctrl/⌘ + ,</strong> — Ajustes</li>' +
       '<li><strong>Ctrl/⌘ + N</strong> — Nuevo paciente</li>' +
       '<li><strong>Ctrl/⌘ + S</strong> — Guardar estado del paciente activo</li>' +
       '<li><strong>Ctrl/⌘ + K</strong> — Búsqueda unificada (pacientes, notas, indicaciones)</li>' +
       '<li><strong>Ctrl/⌘ + P</strong> — Alternar vista Normal ↔ Pase</li>' +
       '<li><strong>Ctrl/⌘ + Shift + P</strong> — Abrir/cerrar Mi Perfil</li>' +
-      '<li><strong>Ctrl/⌘ + ,</strong> — Activa/desactiva <strong>sobrescribir</strong> en conflictos al importar JSON (sin preguntar)</li>' +
+      '<li><strong>Ctrl/⌘ + Shift + ,</strong> — Activa/desactiva <strong>sobrescribir</strong> en conflictos al importar JSON (sin preguntar)</li>' +
       '<li><strong>Esc</strong> o clic fuera — Cerrar ventana modal, menús o el centro de ayuda</li>' +
       '<li>Dentro del centro de ayuda: <strong>↓</strong> desde el buscador enfoca la lista; <strong>↑ / ↓</strong> navegan artículos.</li>' +
       '</ul>'

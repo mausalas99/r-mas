@@ -170,7 +170,7 @@ html.dark .med-soap-preview-sec--otros .med-soap-preview-chip {
   .patient-card:hover, .app .card:hover, .tend-card:hover { transform: none; }
   .tab-content.active { animation: none; }
   .btn-add:active { transform: none; }
-  .toast { transform: translateY(12px); opacity: 0; }
+  .toast { transform: translateY(-10px); opacity: 0; }
   .toast.show { transform: translateY(0); opacity: 1; }
   .modal { animation: none; }
   .tend-range-vbar-norm,
