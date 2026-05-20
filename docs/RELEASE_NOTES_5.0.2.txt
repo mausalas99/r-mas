@@ -1,0 +1,24 @@
+R+ 5.0.2 (estable — arquitectura modular, Pase y arranque)
+==========================================================
+
+Fecha: 2026-05-20
+
+## Resumen
+
+Refactor interno del frontend: `app.js` queda como arranque liviano, la lógica vive en módulos `features/*`, estilos en `public/styles/` y el HTML se compila desde `index.src.html` + partials. Corrige selección de paciente y Modo Pase vacío tras el cambio.
+
+## Nuevo / mejorado
+
+- **Arquitectura:** bootstrap en `app.js`, shell en `app-shell.mjs`, registro de features en `app-runtimes.mjs`, historial de labs en `lab-history-set.mjs`.
+- **UI:** CSS modular (`base`, `layout`, `sidebar`, `lab`, `modals`, …) y plantilla HTML por partials (`chrome`, `layout`, `modals`).
+- **Build:** `npm run build:ui` ensambla `public/index.html` desde `index.src.html` (verificado en CI con `build:ui:check`).
+- **Correcciones:** import de `saveState` en runtimes (pacientes y guardado); Modo Pase visible con paciente seleccionado; clics en lista de pacientes y refresco del board Pase.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v5.0.2
+
+- Mac: `R+-5.0.2-arm64.dmg`, `R+-5.0.2-x64.dmg` (y zip para auto-update).
+- Windows: `R+-5.0.2-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye `write-release-yml.js`).

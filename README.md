@@ -25,10 +25,18 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 ---
 
-**Versión estable actual:** [5.0.1](https://github.com/mausalas99/r-mas/releases/tag/v5.0.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [5.0.2](https://github.com/mausalas99/r-mas/releases/tag/v5.0.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 5.0.2 (estable — arquitectura modular, Pase y arranque)
+
+- **Arquitectura:** `app.js` como bootstrap; lógica en `features/*`, estilos en `public/styles/`, HTML desde `index.src.html` + partials.
+- **Build:** `npm run build:ui` / `build:ui:check` para ensamblar `index.html`.
+- **Correcciones:** guardado y lista de pacientes; Modo Pase visible al seleccionar paciente.
+
+Notas: `docs/RELEASE_NOTES_5.0.2.txt`.
 ## R+ 5.0.1 (estable — labs manuales, tendencias BH, fullscreen y LiveSync)
 
 - **Laboratorios:** diferencial manual SOME (Segmentados, bandas, metamielocitos) + coagulación y frotis; salida `Dif.` / `Coag.` legible; plaquetas en citrato; EGO no contamina BH.

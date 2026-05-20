@@ -1182,6 +1182,18 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '5.0.2': [
+    {
+      title: 'Código más modular',
+      body:
+        'La app arranca desde un bootstrap liviano; laboratorio, pacientes, Pase y ajustes viven en módulos separados para mantener y probar más fácil.',
+    },
+    {
+      title: 'Pase y pacientes corregidos',
+      body:
+        'Tras el refactor: selección en la lista, guardado de pacientes y resumen Modo Pase vuelven a mostrarse al elegir un expediente.',
+    },
+  ],
   '5.0.1': [
     {
       title: 'Diferencial manual y BH legible',
