@@ -14,7 +14,7 @@ test('getSalaTourSteps incluye pasos clave de v3.0', () => {
   assert.ok(!steps.includes('map'), 'paso único map reemplazado por subtareas');
   assert.ok(steps.includes('servicio_default'), 'debe pedir servicio default al inicio');
   assert.ok(steps.includes('lab_parse'));
-  assert.ok(steps.includes('lab_send'));
+  assert.ok(!steps.includes('lab_send'), 'envío a nota ya no es paso del tour');
   assert.ok(steps.includes('estado_actual'), 'debe presentar Estado Actual');
   assert.ok(steps.includes('listado_problemas'), 'debe presentar Listado de Problemas');
   assert.ok(steps.includes('livesync_desktop'), 'debe explicar LiveSync en escritorio');
@@ -24,7 +24,7 @@ test('getSalaTourSteps incluye pasos clave de v3.0', () => {
   assert.equal(steps[steps.length - 3], 'livesync_desktop');
   assert.ok(steps.includes('sala_tend_chart'), 'debe presentar Gráfica del estudio');
   assert.equal(steps.indexOf('sala_tend_chart'), steps.indexOf('sala_tend') + 1);
-  assert.equal(steps.length, 17);
+  assert.equal(steps.length, 16);
   assert.equal(steps[1], 'pase_enter');
   assert.equal(steps[2], 'pase_board', 'tour en Sala incluye resumen Pase');
 });
@@ -65,12 +65,6 @@ test('getTourTarget devuelve selector para lab_parse en Laboratorio', () => {
   assert.equal(t.appTab, 'lab');
   assert.match(t.selector, /procesar|btn-procesar|lab-input/i);
   assert.equal(stepRequiresUserAction('lab_parse'), true);
-});
-
-test('getTourTarget para lab_send también requiere acción del usuario', () => {
-  const t = getTourTarget('lab_send', 'sala');
-  assert.equal(t.appTab, 'lab');
-  assert.equal(stepRequiresUserAction('lab_send'), true);
 });
 
 test('getTourTarget para estado_actual apunta al expediente con su botón', () => {

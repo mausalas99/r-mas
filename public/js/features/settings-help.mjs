@@ -390,7 +390,7 @@ function clearAllTourSpotlights() {
 }
 
 // Pasos donde el botón resaltado suele estar arriba a la derecha: dock abajo-derecha lo tapa.
-var TOUR_DOCK_LEFT_STEPS = { lab_send: 1, ic_nota: 1, ic_indica: 1, estado_actual: 1 };
+var TOUR_DOCK_LEFT_STEPS = { ic_nota: 1, ic_indica: 1, estado_actual: 1 };
 
 function syncTourDockPlacement() {
   var d = document.getElementById('tour-dock');
@@ -534,14 +534,8 @@ function renderTourStep() {
       setBadge('laboratorio · revisar');
       bodyEl.innerHTML =
         '<p style="margin:0;line-height:1.5;">Revisa diagramas y tabla de resultados. En el historial: <strong>Sincronizar</strong> quita duplicados; <strong>Consolidar</strong> junta envíos del mismo día (mismo tipo de dato).</p>' +
-        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Para seguir: <strong>Enviar a nota</strong> en la zona de resultados.</p>';
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Pulsa <strong>Siguiente</strong> para continuar el tour.</p>';
       nextBtn.textContent = 'Siguiente';
-      break;
-    case 'lab_send':
-      setBadge('laboratorio · enviar');
-      bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">Pulsa <strong>Enviar a nota</strong> para guardar este conjunto en el expediente demo.</p>';
-      nextBtn.style.display = 'none';
       break;
     case 'ic_nota':
       setBadge('énfasis · Nota .docx');
@@ -805,7 +799,7 @@ function onboardingAdvanceAfterParse() {
 
 function onboardingAdvanceAfterSend() {
   if (!guidedTourActive) return;
-  if (tourStepId === 'lab_view' || tourStepId === 'lab_send') {
+  if (tourStepId === 'lab_view') {
     clearAllTourSpotlights();
     tourStepId = 'sala_tend';
     applyTourTargetForStep(tourStepId);
@@ -910,15 +904,13 @@ var HELP_ARTICLES = [
   },
   {
     id: 'laboratorio',
-    title: 'Laboratorio: procesar y enviar',
-    keywords: 'lab laboratorio procesar reporte diagrama gamble bh quimica enviar nota copiar',
+    title: 'Laboratorio: procesar',
+    keywords: 'lab laboratorio procesar reporte diagrama gamble bh quimica copiar',
     html:
       '<p>Pega el reporte del laboratorio en el cuadro de texto de la pestaña <strong>Laboratorio</strong> y pulsa <strong>Procesar</strong>. R+ reconoce biometría, química, electrolitos, gasometría, pruebas hepáticas y más.</p>' +
       '<ul>' +
       '<li>Cada diagrama tiene un botón <strong>Copiar</strong> para pegarlo como texto en otro sistema.</li>' +
       '<li>Los valores fuera de rango se resaltan en rojo.</li>' +
-      '<li><strong>Enviar a nota</strong> vuelca el bloque al expediente del paciente activo y alimenta <strong>Tendencias</strong>.</li>' +
-      '<li>Con paciente seleccionado, <strong>Procesar y abrir expediente</strong> combina procesamiento y envío y cambia a <strong>Expediente</strong>.</li>' +
       '<li>En <strong>Historial de labs</strong> ves cada envío guardado; puedes <strong>Ver en Laboratorio</strong> para recuperar diagramas o <strong>Eliminar</strong> un conjunto si fue un error.</li>' +
       '</ul>'
   },

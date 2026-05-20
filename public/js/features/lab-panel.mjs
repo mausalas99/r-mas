@@ -162,37 +162,6 @@ function clearLabInputAfterSuccessfulParse() {
   } catch (_e) {}
 }
 
-function procesarYEnviarExpediente() {
-  if (!rt.getActiveId()) {
-    rt.showToast('Selecciona un paciente en la lista antes de enviar al expediente.', 'error');
-    return;
-  }
-  var ta = document.getElementById('lab-input');
-  var text = ta ? ta.value.trim() : '';
-  if (!text) {
-    rt.showToast('Pega el texto del reporte primero', 'error');
-    return;
-  }
-  try {
-    var result = procesarLabs(text);
-    result.sourceText = text;
-    var resStore = applyLabPastePatientResolution(result);
-    renderOutput(result);
-    rt.renderDiagramas(result.resLabs);
-    if (resStore.shouldAutoStore) autoStoreProcessedLabResult(result);
-    if (!result.resLabs.length) {
-      rt.showToast('No se encontraron resultados de laboratorio', 'error');
-      return;
-    }
-    clearLabInputAfterSuccessfulParse();
-    enviarLabsANota();
-  } catch (e) {
-    rt.showToast('Error al procesar el reporte', 'error');
-    console.error(e);
-  }
-}
-
-
 export function safeAttrJsString(s) {
   return String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
@@ -1220,7 +1189,6 @@ function renderOutput(result) {
 
 export const windowHandlers = {
   procesarReporte,
-  procesarYEnviarExpediente,
   clearLabInputAfterSuccessfulParse,
   limpiarReporte,
   replayLabHistorySet,
@@ -1231,7 +1199,6 @@ export const windowHandlers = {
   setLabHistoryPanelCollapsed,
   labHistoryPanelIsCollapsed,
   copiarLabsAlPortapapeles,
-  enviarLabsANota,
   openLabPatientPicker,
   openLabHistoryDedupeReview,
   consolidateLabHistoryByDayAndTipo,

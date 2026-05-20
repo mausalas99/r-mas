@@ -118,14 +118,6 @@ function syncMedPatientGate() {
   work.style.display = showEmpty ? 'none' : 'flex';
 }
 
-function syncLabComboButtonState() {
-  var btn = document.getElementById('btn-procesar-y-expediente');
-  var hint = document.getElementById('lab-combo-hint');
-  var ok = !!shellCtx.getActiveId();
-  if (btn) btn.disabled = !ok;
-  if (hint) hint.style.display = ok ? 'none' : 'block';
-}
-
 function setMedTabAttention(on) {
   var tab = document.getElementById('apptab-med');
   if (tab) tab.classList.toggle('app-tab-attention', !!on);
@@ -135,7 +127,6 @@ function syncWorkContextChrome() {
   syncActivePatientContextBar();
   syncHeaderAppModeChip();
   syncMedPatientGate();
-  syncLabComboButtonState();
 }
 
 

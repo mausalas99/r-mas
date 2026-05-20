@@ -83,13 +83,8 @@
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 Procesar
               </button>
-              <button type="button" id="btn-procesar-y-expediente" class="btn-generate btn-generate--success" onclick="procesarYEnviarExpediente()" style="min-width:200px;" disabled title="Con paciente activo: procesa, envía a la nota y abre Expediente">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                Procesar y abrir expediente
-              </button>
               <button type="button" class="btn-med-secondary btn-med-secondary--muted" onclick="limpiarReporte()">Limpiar</button>
             </div>
-            <p id="lab-combo-hint" class="overview-hint" style="display:none;margin:0;font-size:11px;color:var(--text-muted);line-height:1.4;">Selecciona un paciente a la izquierda para usar <strong>Procesar y abrir expediente</strong> en un solo paso.</p>
           </div>
         </div>
 
@@ -148,10 +143,6 @@
               <button type="button" class="card-header-soft-btn" onclick="copiarLabsAlPortapapeles()">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                 Copiar
-              </button>
-              <button type="button" id="btn-enviar-nota" class="card-header-soft-btn" onclick="enviarLabsANota()">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/><path d="M12 12v6m0 0l-2-2m2 2l2-2"/></svg>
-                Enviar a nota
               </button>
             </div>
           </div>
