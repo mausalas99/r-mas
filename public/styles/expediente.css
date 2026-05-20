@@ -218,6 +218,64 @@ html.dark .med-output-tab.active {
 .btn-lab-history-del:hover { background: rgba(220,38,38,0.08); border-color: var(--error); }
 html.dark .btn-lab-history-del:hover { background: rgba(248,113,113,0.12); }
 .lab-history-card-actions { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.lab-history-more { position: relative; }
+.lab-history-more-btn {
+  list-style: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.lab-history-more-btn::-webkit-details-marker { display: none; }
+.lab-history-more-btn:hover {
+  border-color: color-mix(in oklab, var(--action) 40%, var(--border));
+  color: var(--action);
+}
+.lab-history-more:not([open]) .lab-history-more-menu {
+  display: none;
+}
+.lab-history-more-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  min-width: 200px;
+  padding: 6px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg, 0 10px 25px rgba(0, 0, 0, 0.12));
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.lab-history-more-item {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  padding: 9px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+.lab-history-more-item:hover {
+  background: var(--lab-chip-bg);
+  color: var(--action);
+}
 .btn-lab-dedupe-sync { font-size: 12px; padding: 6px 10px; }
 .dcard {
   background: var(--surface);

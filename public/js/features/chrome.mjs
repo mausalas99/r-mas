@@ -11,8 +11,11 @@ let runtime = {
     return null;
   },
   setRoundOverviewMode() {},
+  renderPaseBoard() {},
   onGuidedTourPaseEnter() {},
 };
+
+var _openedDetailFromPase = false;
 
 export function registerChromeRuntime(partial) {
   if (!partial || typeof partial !== 'object') return;
@@ -199,6 +202,32 @@ export function isPaseMode() {
   return getUiDensity() === 'pase';
 }
 
+export function markOpenedDetailFromPaseBoard() {
+  _openedDetailFromPase = true;
+  syncPaseReturnHeaderBtn();
+}
+
+export function clearPaseDetailEscape() {
+  _openedDetailFromPase = false;
+  syncPaseReturnHeaderBtn();
+}
+
+export function syncPaseReturnHeaderBtn() {
+  var btn = document.getElementById('btn-header-return-pase');
+  if (!btn) return;
+  var show = _openedDetailFromPase && getUiDensity() === 'normal';
+  btn.style.display = show ? 'inline-flex' : 'none';
+}
+
+export function returnToPaseBoardFromDetail() {
+  if (!_openedDetailFromPase) return;
+  clearPaseDetailEscape();
+  setUiDensity('pase');
+  runtime.setRoundOverviewMode(true);
+  runtime.switchAppTab('nota');
+  if (typeof runtime.renderPaseBoard === 'function') runtime.renderPaseBoard();
+}
+
 export function applyUiDensity() {
   document.documentElement.classList.toggle('ui-density-normal', getUiDensity() === 'normal');
   const rondaHint = document.getElementById('sidebar-ronda-hint');
@@ -219,6 +248,7 @@ export function applyUiDensity() {
     paseRoot.setAttribute('aria-hidden', 'true');
   }
   runtime.switchAppTab(runtime.getActiveAppTab());
+  syncPaseReturnHeaderBtn();
 }
 
 export function syncUiDensityButtons() {
@@ -238,6 +268,7 @@ export function syncUiDensityButtons() {
 export function setUiDensity(mode) {
   let m = mode === 'pase' || mode === 'compact' ? 'pase' : 'normal';
   if (mode === 'comfortable') m = 'normal';
+  if (m === 'pase') clearPaseDetailEscape();
   localStorage.setItem(UI_DENSITY_LS, m);
   applyUiDensity();
   syncUiDensityButtons();
@@ -275,5 +306,6 @@ export const windowHandlers = {
   setUiDensity,
   setHighContrast,
   toggleHighContrast,
+  returnToPaseBoardFromDetail,
   t,
 };

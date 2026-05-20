@@ -6,7 +6,7 @@ import { storage } from "../storage.js";
 import { sortLabHistoryChronological, normalizeFechaLabHistory } from "../tend-core.mjs";
 import { dosisBeforeSlash } from "../med-receta-core.mjs";
 import { patients, medRecetaByPatient } from "../app-state.mjs";
-import { isPaseMode, getUiDensity, setUiDensity } from "./chrome.mjs";
+import { isPaseMode, getUiDensity, setUiDensity, markOpenedDetailFromPaseBoard } from "./chrome.mjs";
 import { isModeSala } from "../mode-features.mjs";
 import {
   extractCultivoTableRowsFromHistory,
@@ -494,9 +494,11 @@ export function renderPaseBoard() {
 
 export function openPaseSectionInNormal(which) {
   var w = String(which || "").toLowerCase();
+  var wasPase = isPaseMode();
   if (getUiDensity() !== "normal") {
     setUiDensity("normal");
   }
+  if (wasPase) markOpenedDetailFromPaseBoard();
   if (w === "labs" || w === "lab") {
     switchAppTab("lab");
   } else if (w === "pendientes" || w === "todo") {

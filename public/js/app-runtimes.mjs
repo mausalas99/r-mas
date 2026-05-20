@@ -260,6 +260,7 @@ registerChromeRuntime({
   getActiveAppTab: function () { return rt.getActiveAppTab(); },
   getActiveId: function () { return rt.getActiveId(); },
   setRoundOverviewMode: setRoundOverviewMode,
+  renderPaseBoard: renderPaseBoard,
   onGuidedTourPaseEnter: onChromeGuidedTourPaseEnter,
 });
 

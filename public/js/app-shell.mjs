@@ -12,6 +12,7 @@ import {
   getUiDensity,
   isPaseMode,
   setUiDensity,
+  syncPaseReturnHeaderBtn,
 } from './features/chrome.mjs';
 import {
   configureLanFromMobileJoin,
@@ -127,6 +128,7 @@ function syncWorkContextChrome() {
   syncActivePatientContextBar();
   syncHeaderAppModeChip();
   syncMedPatientGate();
+  syncPaseReturnHeaderBtn();
 }
 
 

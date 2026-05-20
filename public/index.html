@@ -129,6 +129,7 @@
   <span id="today-date"></span>
   <div class="header-right">
     <div class="header-work-cluster" aria-label="Contexto de trabajo">
+      <button type="button" id="btn-header-return-pase" class="header-return-pase-btn" style="display:none;" onclick="returnToPaseBoardFromDetail()" title="Volver al resumen Pase" aria-label="Volver al resumen Pase">← Pase</button>
       <div id="estado-actual-context-wrap" class="estado-actual-context-wrap" aria-live="polite">
         <span id="estado-actual-meta" class="estado-actual-meta"></span>
         <button type="button" id="btn-estado-actual" class="btn-estado-actual-compact" onclick="openEstadoActualModal()">
@@ -506,8 +507,8 @@
       <div id="pase-board-scroll" class="pase-board-scroll"></div>
     </div>
 
-    <div id="appcontent-lab" role="tabpanel" aria-labelledby="apptab-lab" aria-hidden="false" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
-      <div class="main-work-scroll">
+    <div id="appcontent-lab" role="tabpanel" aria-labelledby="apptab-lab" aria-hidden="false" class="lab-panel-root">
+      <div class="main-work-scroll lab-work-scroll">
 
         <div class="card" style="flex-shrink:0;">
           <div class="card-header card-header-row">
@@ -561,8 +562,13 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             <span class="lab-history-card-title">Historial de labs (paciente activo)</span>
             <span class="lab-history-card-actions">
-              <button type="button" class="btn-lab-history btn-lab-dedupe-sync" onclick="consolidateLabHistoryByDayAndTipo()" title="Une en una sola entrada los envíos del mismo día si todos son solo laboratorio o todos solo cultivos; los conjuntos mixtos no se tocan.">Consolidar</button>
-              <button type="button" class="btn-lab-history btn-lab-dedupe-sync" onclick="openLabHistoryDedupeReview('active')" title="Abrir checklist: duplicados exactos y posibles coincidencias por fecha/hora y valores">Sincronizar</button>
+              <details class="lab-history-more">
+                <summary class="lab-history-more-btn" aria-label="Más acciones del historial">⋯</summary>
+                <div class="lab-history-more-menu" role="menu">
+                  <button type="button" class="lab-history-more-item" role="menuitem" onclick="closeLabHistoryMoreMenu(); consolidateLabHistoryByDayAndTipo();" title="Une en una sola entrada los envíos del mismo día si todos son solo laboratorio o todos solo cultivos; los conjuntos mixtos no se tocan.">Consolidar</button>
+                  <button type="button" class="lab-history-more-item" role="menuitem" onclick="closeLabHistoryMoreMenu(); openLabHistoryDedupeReview('active');" title="Abrir checklist: duplicados exactos y posibles coincidencias por fecha/hora y valores">Sincronizar</button>
+                </div>
+              </details>
             </span>
           </div>
           <div id="lab-history-body" class="card-body" style="padding:12px 16px;">
@@ -587,18 +593,18 @@
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
               Resultados
             </span>
-            <div class="card-header-actions">
-              <button type="button" class="card-header-soft-btn" onclick="copiarLabsAlPortapapeles()">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-                Copiar
-              </button>
-            </div>
           </div>
           <div class="card-body">
             <div id="lab-output-box" style="line-height:2;"></div>
           </div>
         </div>
 
+      </div>
+      <div id="lab-sticky-action-bar" class="lab-sticky-action-bar" hidden>
+        <button type="button" class="btn-generate" onclick="copiarLabsAlPortapapeles()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          Copiar resultados
+        </button>
       </div>
     </div>
 
