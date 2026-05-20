@@ -2,6 +2,7 @@
  * Registro de runtimes de features (inyección de dependencias al cargar).
  */
 import { storage } from './storage.js';
+import { saveState } from './app-state.mjs';
 import { migrateToV3 } from './mode-features.mjs';
 import {
   splitResLabsByTipo,

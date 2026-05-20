@@ -26,6 +26,7 @@ const ROOT = path.join(__dirname, '..');
 const REPO = 'mausalas99/r-mas';
 const { allReleaseArtifactNames } = require('./lib/artifact-names');
 const APP_JS = path.join(ROOT, 'public/js/app.js');
+const SETTINGS_HELP_JS = path.join(ROOT, 'public/js/features/settings-help.mjs');
 const README = path.join(ROOT, 'README.md');
 
 function run(cmd, opts = {}) {
@@ -183,10 +184,10 @@ function updateReadme(version, title) {
 }
 
 function updateHighlightsStub(version) {
-  let text = fs.readFileSync(APP_JS, 'utf8');
+  let text = fs.readFileSync(SETTINGS_HELP_JS, 'utf8');
   const key = `'${version}':`;
   if (text.includes(key)) {
-    console.log('app.js ya tiene RELEASE_NOTES_HIGHLIGHTS para', version);
+    console.log('settings-help.mjs ya tiene RELEASE_NOTES_HIGHLIGHTS para', version);
     return;
   }
   const stub = `  '${version}': [
@@ -202,11 +203,11 @@ function updateHighlightsStub(version) {
 `;
   const marker = 'var RELEASE_NOTES_HIGHLIGHTS = {\n';
   if (!text.includes(marker)) {
-    throw new Error('app.js: no se encontró RELEASE_NOTES_HIGHLIGHTS.');
+    throw new Error('settings-help.mjs: no se encontró RELEASE_NOTES_HIGHLIGHTS.');
   }
   text = text.replace(marker, marker + stub);
-  fs.writeFileSync(APP_JS, text, 'utf8');
-  console.log('Añadido stub RELEASE_NOTES_HIGHLIGHTS en app.js');
+  fs.writeFileSync(SETTINGS_HELP_JS, text, 'utf8');
+  console.log('Añadido stub RELEASE_NOTES_HIGHLIGHTS en settings-help.mjs');
 }
 
 function readReleaseTitle(version) {
@@ -240,7 +241,7 @@ async function cmdBump(argv) {
 Edita antes de publish:
   • docs/RELEASE_NOTES_${version}.txt
   • README.md (bullets de ## R+ ${version})
-  • public/js/app.js (RELEASE_NOTES_HIGHLIGHTS['${version}'])
+  • public/js/features/settings-help.mjs (RELEASE_NOTES_HIGHLIGHTS['${version}'])
 
 Luego:
   npm run release:publish
@@ -336,9 +337,9 @@ async function cmdPublish(argv) {
   if (/TODO/i.test(notesText)) {
     console.warn('⚠ RELEASE_NOTES contiene TODO — revisa antes de continuar.');
   }
-  const appText = fs.readFileSync(APP_JS, 'utf8');
-  if (new RegExp(`'${version}':[\\s\\S]*?title: 'TODO'`).test(appText)) {
-    console.warn('⚠ RELEASE_NOTES_HIGHLIGHTS aún tiene TODO — revisa app.js.');
+  const highlightsText = fs.readFileSync(SETTINGS_HELP_JS, 'utf8');
+  if (new RegExp(`'${version}':[\\s\\S]*?title: 'TODO'`).test(highlightsText)) {
+    console.warn('⚠ RELEASE_NOTES_HIGHLIGHTS aún tiene TODO — revisa settings-help.mjs.');
   }
 
   console.log(`\nPublicar R+ ${version} (${readReleaseTitle(version)})\n`);
