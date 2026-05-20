@@ -515,6 +515,7 @@ export function syncRoundExpedienteLayout() {
     if (rm) {
       while (rm.firstChild) rm.removeChild(rm.firstChild);
     }
+    rt.syncWorkContextChrome();
     return;
   }
 
@@ -522,12 +523,14 @@ export function syncRoundExpedienteLayout() {
     !!rt.getActiveId() && rt.getActiveAppTab() === 'nota' && _roundOverviewMode;
   overview.style.display = showOverview ? 'flex' : 'none';
   classic.style.display = showOverview ? 'none' : 'flex';
+  rt.syncWorkContextChrome();
   if (fullbar) {
     var showBar = !!(rt.getActiveId() && rt.getActiveAppTab() === 'nota' && !showOverview);
     fullbar.classList.toggle('is-visible', showBar);
     fullbar.setAttribute('aria-hidden', showBar ? 'false' : 'true');
   }
   if (showOverview) renderRoundOverviewPanels();
+  rt.syncWorkContextChrome();
 }
 
 export function renderRoundOverviewPanels() {

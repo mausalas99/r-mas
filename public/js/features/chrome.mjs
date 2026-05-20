@@ -208,11 +208,13 @@ export function isPaseMode() {
 export function markOpenedDetailFromPaseBoard() {
   _openedDetailFromPase = true;
   syncPaseReturnHeaderBtn();
+  syncPaseModeHeaderChip();
 }
 
 export function clearPaseDetailEscape() {
   _openedDetailFromPase = false;
   syncPaseReturnHeaderBtn();
+  syncPaseModeHeaderChip();
 }
 
 function paseSectionLabelFromContext() {
@@ -233,6 +235,12 @@ function paseSectionLabelFromContext() {
   return 'Expediente';
 }
 
+export function syncPaseModeHeaderChip() {
+  var chip = document.getElementById('header-pase-mode-chip');
+  if (!chip) return;
+  chip.style.display = getUiDensity() === 'pase' ? 'inline-flex' : 'none';
+}
+
 export function syncPaseReturnHeaderBtn() {
   var show = _openedDetailFromPase && getUiDensity() === 'normal';
   var crumb = document.getElementById('header-pase-breadcrumb');
@@ -241,6 +249,7 @@ export function syncPaseReturnHeaderBtn() {
   if (crumb) crumb.style.display = show ? 'inline-flex' : 'none';
   if (section && show) section.textContent = paseSectionLabelFromContext();
   if (btn) btn.style.display = 'none';
+  syncPaseModeHeaderChip();
 }
 
 export function returnToPaseBoardFromDetail() {
@@ -273,6 +282,7 @@ export function applyUiDensity() {
   }
   runtime.switchAppTab(runtime.getActiveAppTab());
   syncPaseReturnHeaderBtn();
+  syncPaseModeHeaderChip();
 }
 
 export function syncUiDensityButtons() {

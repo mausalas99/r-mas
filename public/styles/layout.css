@@ -59,10 +59,30 @@ header h1 { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
   text-overflow: ellipsis;
   pointer-events: none;
 }
-#app-brand { cursor: pointer; border-radius: var(--radius-md); padding: 2px 6px; margin-left: -6px; flex-shrink: 0; }
+#app-brand {
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  padding: 2px 8px 2px 6px;
+  margin-left: -6px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  font: inherit;
+}
+.app-brand-mark { font-size: inherit; font-weight: inherit; line-height: 1; }
+.app-brand-hint {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
 #app-brand:hover { background: rgba(15, 23, 42, 0.05); }
+#app-brand:hover .app-brand-hint { color: var(--action); }
 #app-brand:focus-visible { outline: 2px solid var(--action); outline-offset: 2px; }
-header span { font-size: 12px; color: var(--text-muted); }
+header span:not(.app-brand-hint):not(.header-pase-breadcrumb-sep) { font-size: 12px; color: var(--text-muted); }
 html.dark #app-brand:hover { background: rgba(255, 255, 255, 0.06); }
 html.dark header {
   box-shadow: var(--shadow-sm);
@@ -121,6 +141,20 @@ html:not(.ui-density-normal) #main-area {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.header-pase-mode-chip {
+  display: none;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 6px 11px;
+  border-radius: var(--radius-pill);
+  border: 1px solid color-mix(in oklab, var(--action) 30%, var(--border));
+  background: color-mix(in oklab, var(--action) 8%, var(--surface));
+  color: var(--action);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  user-select: none;
 }
 .header-return-pase-btn {
   flex-shrink: 0;

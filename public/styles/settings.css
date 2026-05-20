@@ -283,6 +283,18 @@ html.dark .settings-theme-btn.active { background: var(--action); color: #fff; }
 .settings-acc-btn-stack > .btn-edit-templates:first-child { margin-top: 0; }
 .settings-acc-btn--inline { margin: 0; white-space: nowrap; }
 .settings-acc-btn--danger { color: var(--error); }
+.settings-acc-danger-label {
+  margin: calc(10px * var(--density-space)) 0 2px;
+  font-size: calc(11px * var(--density-font));
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--error);
+}
+.settings-acc-hint--danger {
+  color: color-mix(in oklab, var(--error) 75%, var(--text-muted));
+  margin-bottom: calc(8px * var(--density-space));
+}
 .settings-acc-divider { margin: calc(8px * var(--density-space)) 0; }
 .settings-acc-version {
   font-size: calc(12px * var(--density-font));

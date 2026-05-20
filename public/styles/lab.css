@@ -81,6 +81,17 @@ main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
+  position: relative;
+}
+.inner-tab-bar::after {
+  content: "";
+  position: sticky;
+  right: 0;
+  flex: 0 0 28px;
+  align-self: stretch;
+  margin-left: -28px;
+  pointer-events: none;
+  background: linear-gradient(to left, color-mix(in oklab, var(--surface) 97%, var(--bg)), transparent);
 }
 .inner-tab-bar .inner-tab {
   flex-shrink: 0;
