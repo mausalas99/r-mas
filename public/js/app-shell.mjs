@@ -106,48 +106,8 @@ export function registerAppShellContext(partial) {
   if (partial && typeof partial === 'object') Object.assign(shellCtx, partial);
 }
 
-var EXPEDIENTE_INNER_LABELS = {
-  datos: "Datos",
-  notas: "Nota",
-  indica: "Indicaciones",
-  tend: "Tendencias",
-  cult: "Cultivos",
-  listado: "Listado",
-  todo: "Pendientes",
-};
-
 function syncActivePatientContextBar() {
   /* Paciente activo solo en la barra lateral; no repetir en el header */
-}
-
-function syncExpedienteContextBar() {
-  var bar = document.getElementById("expediente-context-bar");
-  var patientEl = document.getElementById("expediente-context-patient");
-  var sectionEl = document.getElementById("expediente-context-section");
-  if (!bar) return;
-  var patientView = document.getElementById("patient-view");
-  var classic = document.getElementById("patient-expediente-classic");
-  var aid = shellCtx.getActiveId();
-  var show =
-    !!aid &&
-    patientView &&
-    patientView.style.display !== "none" &&
-    shellCtx.getActiveAppTab() === "nota" &&
-    classic &&
-    classic.style.display !== "none";
-  bar.hidden = !show;
-  if (!show) return;
-  var p = patients.find(function (x) {
-    return x.id === aid;
-  });
-  if (patientEl) {
-    patientEl.textContent = p && p.nombre ? String(p.nombre) : "Paciente";
-    patientEl.title = patientEl.textContent;
-  }
-  var inner = shellCtx.getActiveInner() || "todo";
-  if (sectionEl) {
-    sectionEl.textContent = EXPEDIENTE_INNER_LABELS[inner] || "Expediente";
-  }
 }
 
 function syncMedPatientGate() {
@@ -166,7 +126,6 @@ function setMedTabAttention(on) {
 
 function syncWorkContextChrome() {
   syncActivePatientContextBar();
-  syncExpedienteContextBar();
   syncHeaderAppModeChip();
   syncMedPatientGate();
   syncPaseReturnHeaderBtn();

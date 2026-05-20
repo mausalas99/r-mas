@@ -241,6 +241,12 @@ export function syncPaseModeHeaderChip() {
   chip.style.display = getUiDensity() === 'pase' ? 'inline-flex' : 'none';
 }
 
+export function exitPaseModeFromHeader() {
+  if (getUiDensity() !== 'pase') return;
+  clearPaseDetailEscape();
+  setUiDensity('normal');
+}
+
 export function syncPaseReturnHeaderBtn() {
   var show = _openedDetailFromPase && getUiDensity() === 'normal';
   var crumb = document.getElementById('header-pase-breadcrumb');
@@ -341,5 +347,6 @@ export const windowHandlers = {
   setHighContrast,
   toggleHighContrast,
   returnToPaseBoardFromDetail,
+  exitPaseModeFromHeader,
   t,
 };

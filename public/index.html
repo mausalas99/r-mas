@@ -125,10 +125,7 @@
 </div>
 
 <header>
-  <h1 id="app-brand" role="button" tabindex="0" title="Abrir Mi Perfil" aria-label="R+, abrir Mi Perfil" onclick="openProfileFromHeader(event)" onkeydown="if(event.key==='Enter'||event.key===' '){openProfileFromHeader(event);}">
-    <span class="app-brand-mark">R+</span>
-    <span class="app-brand-hint">Perfil</span>
-  </h1>
+  <h1 id="app-brand" role="button" tabindex="0" title="Abrir Mi Perfil" aria-label="R+, abrir Mi Perfil" onclick="openProfileFromHeader(event)" onkeydown="if(event.key==='Enter'||event.key===' '){openProfileFromHeader(event);}">R+</h1>
   <span id="today-date"></span>
   <div class="header-right">
     <div class="header-work-cluster" aria-label="Contexto de trabajo">
@@ -145,7 +142,7 @@
           Estado Actual
         </button>
       </div>
-      <span id="header-pase-mode-chip" class="header-pase-mode-chip" style="display:none;" title="Resumen por paciente. Pulsa un título de sección para ver el detalle.">Modo Pase</span>
+      <button type="button" id="header-pase-mode-chip" class="header-pase-mode-chip" style="display:none;" onclick="exitPaseModeFromHeader()" title="Salir a vista Normal (pestañas completas)" aria-label="Salir del modo Pase">Modo Pase</button>
       <button type="button" id="header-app-mode-chip" class="header-app-mode-chip mode-sala" onclick="toggleHeaderWorkMode()" title="">
         Modo: Sala
       </button>
@@ -767,11 +764,6 @@
         <div id="patient-ronda-fullbar" class="patient-ronda-fullbar" aria-hidden="true">
           <button type="button" onclick="returnToRoundOverview()">Resumen de ronda</button>
         </div>
-        <nav id="expediente-context-bar" class="expediente-context-bar" hidden aria-label="Ubicación en expediente">
-          <span id="expediente-context-patient" class="expediente-context-patient"></span>
-          <span class="expediente-context-sep" aria-hidden="true">›</span>
-          <span id="expediente-context-section" class="expediente-context-section"></span>
-        </nav>
         <div class="inner-tab-bar">
           <button class="inner-tab" id="itab-datos" onclick="switchInnerTab('datos')" style="display:none;" aria-label="Datos del paciente">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
