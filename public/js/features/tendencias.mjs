@@ -8,6 +8,7 @@ import {
   parseFechaLabToMs,
   normalizeFechaLabHistory,
   normalizeHoraLabHistory,
+  tendEligibleSectionKey,
 } from '../tend-core.mjs';
 import { createTendGroupModal } from '../tend-group-modal.mjs';
 import { readTendCardOrder, writeTendCardOrder } from '../tend-prefs.mjs';
@@ -15,6 +16,7 @@ import {
   formatBhExtrasDisplayLine,
   parseBhTrendValuesFromResLab,
   bhTrendDisplayTitle,
+  BH_DIFF_DISPLAY_ORDER,
 } from '../labs.js';
 import { safeAttrJsString } from './lab-panel.mjs';
 import { guidedTourAdvanceAfter, getGuidedTourContext } from './settings-help.mjs';
@@ -32,6 +34,7 @@ var rt = {
 export function registerTendenciasRuntime(partial) {
   if (partial && typeof partial === 'object') Object.assign(rt, partial);
   initTendGroupModal();
+  ensureTendenciasClickDelegation();
 }
 
 function aid() {
@@ -639,15 +642,13 @@ function buildTendHiddenChipsHtml() {
     var fk = desc[i].fieldKey;
     var label = esc(tendFindSeriesSpec(sk, fk).cardTitle || fk);
     chips.push(
-      '<span class="tend-hidden-chip">' +
+      '<span class="tend-hidden-chip" data-series-key="' +
+      esc(tendCatalogSeriesKey(sk, fk)) +
+      '">' +
       '<span class="tend-hidden-chip-label">' +
       label +
       '</span>' +
-      '<button type="button" class="tend-hidden-chip-btn" title="Volver a mostrar" aria-label="Mostrar de nuevo" onclick="tendUnhideSeries(\'' +
-      safeAttrJsString(sk) +
-      "','" +
-      safeAttrJsString(fk) +
-      '\')">' +
+      '<button type="button" class="tend-hidden-chip-btn" title="Volver a mostrar" aria-label="Mostrar de nuevo">' +
       svg +
       '</button></span>'
     );
@@ -672,7 +673,7 @@ function openTendHiddenModal() {
   bd.setAttribute('aria-hidden', 'false');
 }
 
-function closeTendHiddenModal() {
+export function closeTendHiddenModal() {
   var bd = document.getElementById('tend-hidden-modal-backdrop');
   if (!bd) return;
   bd.classList.remove('open');
@@ -687,7 +688,7 @@ function buildTendInlineControlsHtml(hiddenCount) {
   var toggleLabel = on ? 'Ver todas' : 'Solo fuera de rango';
   var ocultosBtn =
     hiddenCount > 0
-      ? '<button type="button" class="tend-toolbar-btn tend-ocultos-trigger" onclick="openTendHiddenModal()">Ocultos (' +
+      ? '<button type="button" class="tend-toolbar-btn tend-ocultos-trigger">Ocultos (' +
         hiddenCount +
         ')</button>'
       : '';
@@ -695,7 +696,7 @@ function buildTendInlineControlsHtml(hiddenCount) {
     '<div class="tend-inline-controls">' +
     '<button type="button" class="tend-toolbar-toggle' +
     (on ? ' is-active' : '') +
-    '" onclick="toggleTendAbnormalOnlyFilter()" aria-pressed="' +
+    '" aria-pressed="' +
     (on ? 'true' : 'false') +
     '" title="' +
     esc(hint) +
@@ -911,7 +912,7 @@ function syncTendDetailVbar(ref, latest) {
 
 var tendGroupModal = null;
 
-function closeTendGroupModal() {
+export function closeTendGroupModal() {
   var ctx = getGuidedTourContext();
   var advanceTourAfterChart = ctx.active && ctx.stepId === 'sala_tend_chart';
   if (tendGroupModal) tendGroupModal.close();
@@ -1000,6 +1001,98 @@ function syncTendCardOrderFromDom(sectionKey) {
 
 var _tendPointerDidDrag = false;
 var TEND_CARD_DRAG_THRESHOLD_PX = 5;
+var _tendenciasClickDelegationWired = false;
+
+/** Clics en Tendencias sin depender de onclick en window (módulos ES). */
+function ensureTendenciasClickDelegation() {
+  if (_tendenciasClickDelegationWired) return;
+  var root = document.getElementById('tendencias-container');
+  if (!root) {
+    if (typeof document !== 'undefined' && document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', ensureTendenciasClickDelegation, {
+        once: true,
+      });
+    }
+    return;
+  }
+  _tendenciasClickDelegationWired = true;
+  root.addEventListener('click', onTendenciasContainerClick);
+
+  var hiddenBackdrop = document.getElementById('tend-hidden-modal-backdrop');
+  if (hiddenBackdrop) {
+    hiddenBackdrop.addEventListener('click', onTendHiddenModalClick);
+    var resetBtn = hiddenBackdrop.querySelector('.modal-actions .btn-save');
+    if (resetBtn) resetBtn.setAttribute('data-tend-action', 'reset-hidden');
+  }
+}
+
+function onTendHiddenModalClick(ev) {
+  if (ev.target === ev.currentTarget) {
+    closeTendHiddenModal();
+    return;
+  }
+  onTendenciasContainerClick(ev);
+}
+
+function onTendenciasContainerClick(ev) {
+  var t = ev.target;
+  if (!t || !t.closest) return;
+
+  var abnormalBtn = t.closest('.tend-toolbar-toggle');
+  if (abnormalBtn) {
+    ev.preventDefault();
+    toggleTendAbnormalOnlyFilter();
+    return;
+  }
+  var ocultosBtn = t.closest('.tend-ocultos-trigger');
+  if (ocultosBtn) {
+    ev.preventDefault();
+    openTendHiddenModal();
+    return;
+  }
+  var sectionToggle = t.closest('.tend-section-toggle');
+  if (sectionToggle) {
+    var sectionEl = sectionToggle.closest('.tend-section');
+    var sk = sectionEl && sectionEl.getAttribute('data-section');
+    if (sk) toggleTendSection(ev, sk);
+    return;
+  }
+  var chartBtn = t.closest('.tend-section-chart-btn');
+  if (chartBtn) {
+    var sectionEl2 = chartBtn.closest('.tend-section');
+    var sk2 = sectionEl2 && sectionEl2.getAttribute('data-section');
+    if (sk2) openTendGroupModal(sk2);
+    return;
+  }
+  var unhideBtn = t.closest('.tend-hidden-chip-btn');
+  if (unhideBtn) {
+    var chip = unhideBtn.closest('.tend-hidden-chip');
+    var seriesKey = chip && chip.getAttribute('data-series-key');
+    if (seriesKey) {
+      var pipe = seriesKey.indexOf('|');
+      if (pipe > 0) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        tendUnhideSeries(seriesKey.slice(0, pipe), seriesKey.slice(pipe + 1));
+      }
+    }
+    return;
+  }
+  var resetBtn = t.closest('[data-tend-action="reset-hidden"]');
+  if (resetBtn) {
+    ev.preventDefault();
+    tendResetAllHiddenSeries();
+    return;
+  }
+  var card = t.closest('.tend-card');
+  if (card) {
+    var key = card.getAttribute('data-series-key');
+    if (key) {
+      var p = key.indexOf('|');
+      if (p > 0) tendCardActivate(ev, key.slice(0, p), key.slice(p + 1));
+    }
+  }
+}
 
 function tendCardActivate(ev, sectionKey, fieldKey) {
   if (_tendPointerDidDrag) {
@@ -1185,6 +1278,17 @@ function mountTendCardSortables() {
 function renderTendencias() {
   var container = document.getElementById('tendencias-container');
   if (!container) return;
+  ensureTendenciasClickDelegation();
+  try {
+    renderTendenciasBody(container);
+  } catch (err) {
+    console.error('[R+ Tendencias] Error al renderizar:', err);
+    container.innerHTML =
+      '<p class="tend-empty">No se pudieron cargar las tendencias. Revisa la consola (F12) o recarga la app.</p>';
+  }
+}
+
+function renderTendenciasBody(container) {
   destroyTendCardSortables();
   Object.keys(sparkCharts).forEach(function (k) {
     if (sparkCharts[k]) {
@@ -1317,11 +1421,7 @@ function renderTendencias() {
       cardParts.push(
         '<div class="tend-card" role="button" tabindex="0" data-series-key="' +
           esc(seriesKey) +
-          '" onclick="tendCardActivate(event,\'' +
-          safeAttrJsString(sectionKey) +
-          "','" +
-          safeAttrJsString(fk) +
-          '\')">' +
+          '">' +
           '<div class="tend-card-header">' +
           '<span class="tend-param-name">' +
           titleEsc +
@@ -1350,9 +1450,7 @@ function renderTendencias() {
         '<div class="tend-section-head">' +
         '<button type="button" class="tend-section-toggle" aria-expanded="' +
         (expanded ? 'true' : 'false') +
-        '" onclick="toggleTendSection(event,\'' +
-        safeAttrJsString(sectionKey) +
-        '\')">' +
+        '">' +
         '<span class="tend-section-chevron" aria-hidden="true">' +
         (expanded ? '▼' : '▶') +
         '</span>' +
@@ -1364,9 +1462,7 @@ function renderTendencias() {
         list.length +
         '</span>' +
         (list.length > 0
-          ? '<button type="button" class="tend-section-chart-btn" title="Abrir gráfica y tabla del estudio" aria-label="Gráfica del estudio" onclick="openTendGroupModal(\'' +
-            safeAttrJsString(sectionKey) +
-            '\')">' +
+          ? '<button type="button" class="tend-section-chart-btn" title="Abrir gráfica y tabla del estudio" aria-label="Gráfica del estudio">' +
             tendSectionChartSvg() +
             '<span class="tend-section-chart-label">Gráfica</span></button>'
           : '') +
@@ -1402,6 +1498,7 @@ function renderTendencias() {
     });
     var canvas2 = document.getElementById(trendSparkDomId(sk2, fk2));
     if (!canvas2) continue;
+    if (typeof Chart === 'undefined') continue;
     var ck = trendSparkChartKey(sk2, fk2);
     var latestSetSpark = setsDesc2.length ? setsDesc2[0] : null;
     var latestSpark = latestSetSpark
@@ -1487,8 +1584,14 @@ function openTendDetail(sectionKey, fieldKey) {
     vbarSlot.setAttribute('aria-hidden', 'true');
   }
   var backdrop = document.getElementById('tend-detail-backdrop');
+  if (!backdrop) return;
   backdrop.style.display = 'flex';
   var canvas = document.getElementById('tend-detail-canvas');
+  if (!canvas || typeof Chart === 'undefined') {
+    rt.showToast('Gráfica no disponible (Chart.js no cargó). Recarga la app.', 'error');
+    backdrop.style.display = 'none';
+    return;
+  }
   if (detailChart) {
     detailChart.destroy();
     detailChart = null;
@@ -1540,7 +1643,7 @@ function openTendDetail(sectionKey, fieldKey) {
   syncTendDetailVbar(ref, latest);
 }
 
-function closeTendDetail() {
+export function closeTendDetail() {
   document.getElementById('tend-detail-backdrop').style.display = 'none';
   var vbarSlot = document.getElementById('tend-detail-vbar-slot');
   if (vbarSlot) {
@@ -1548,6 +1651,10 @@ function closeTendDetail() {
     vbarSlot.setAttribute('aria-hidden', 'true');
   }
   if (detailChart) { detailChart.destroy(); detailChart = null; }
+}
+
+export function isTendGroupModalOpen() {
+  return !!(tendGroupModal && tendGroupModal.isOpen());
 }
 
 export {

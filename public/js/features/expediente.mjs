@@ -1112,6 +1112,7 @@ export {
   buildPatientDemographicsCardHtml,
   renderPatientDataPane,
   copyCultivoCondensado,
+  generateListado,
 };
 
 export const windowHandlers = {

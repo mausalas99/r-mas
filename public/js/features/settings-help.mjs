@@ -10,12 +10,9 @@ import { getUiDensity, setUiDensity, isPaseMode } from './chrome.mjs';
 import {
   openConnectionDropdown,
   closeConnectionDropdown,
+  DEFAULT_LAN_TEAM_CODE,
 } from './lan-sync.mjs';
-import {
-  renderPatientList,
-  selectPatient,
-  setPatients,
-} from './patients.mjs';
+import { renderPatientList, selectPatient } from './patients.mjs';
 import { renderNoteForm, renderIndicaForm } from './notes-indicaciones.mjs';
 import { limpiarReporte } from './lab-panel.mjs';
 import { procesarLabs } from '../labs.js';
@@ -28,7 +25,16 @@ import {
   medRecetaByPatient,
   medNotaSelectionByPatient,
   saveState,
+  setPatients,
 } from '../app-state.mjs';
+
+function esc(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 
 export const GUIDED_TOUR_LS_KEY = 'rpc-guided-tour-done-for-version';
 
@@ -131,7 +137,7 @@ function toggleSettingsDropdown() {
   if (!open) rt.syncPreimportBackupUi();
   if (!open) rt.syncSettingsLanHostDiskSection();
 }
-function closeSettingsDropdown() {
+export function closeSettingsDropdown() {
   var dd = document.getElementById('settings-dropdown');
   var bg = document.getElementById('settings-dropdown-backdrop');
   if (dd) dd.classList.remove('open');
@@ -243,7 +249,7 @@ function showTourIntroModal() {
   el.setAttribute('aria-hidden', 'false');
 }
 
-function hideTourIntroModal() {
+export function hideTourIntroModal() {
   var el = document.getElementById('onboarding-intro-backdrop');
   if (!el) return;
   el.classList.remove('open');
@@ -1040,7 +1046,7 @@ function openQuickHelp(preselectId) {
   setTimeout(function(){ if (input) input.focus(); }, 40);
 }
 
-function closeQuickHelp() {
+export function closeQuickHelp() {
   var el = document.getElementById('help-quick-backdrop');
   if (!el) return;
   el.classList.remove('open');
@@ -1551,7 +1557,7 @@ function showReleaseNotesModal(version) {
   }, 50);
 }
 
-function closeReleaseNotes() {
+export function closeReleaseNotes() {
   var el = document.getElementById('release-notes-backdrop');
   if (!el) return;
   var v = el.getAttribute('data-version');
@@ -1709,7 +1715,6 @@ export function onChromeGuidedTourPaseEnter() {
 
 export {
   DEMO_PATIENT_ID,
-  onChromeGuidedTourPaseEnter,
   maybeShowReleaseNotesFor,
   resolveAppVersionForTour,
   markGuidedTourVersionDone,
@@ -1719,6 +1724,7 @@ export {
   onboardingAdvanceAfterParse,
   onboardingAdvanceAfterSend,
   syncTeamSyncHeaderButton,
+  toggleSettingsDropdown,
 };
 
 export const settingsHelpWindowHandlers = {

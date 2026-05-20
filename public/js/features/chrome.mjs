@@ -206,6 +206,18 @@ export function applyUiDensity() {
     rondaHint.setAttribute('aria-hidden', getUiDensity() === 'pase' ? 'false' : 'true');
   }
   if (isPaseMode()) runtime.setRoundOverviewMode(true);
+  var paseRoot = document.getElementById('appcontent-pase');
+  if (isPaseMode() && paseRoot) {
+    paseRoot.style.display = 'flex';
+    paseRoot.style.flexDirection = 'column';
+    paseRoot.style.flex = '1';
+    paseRoot.style.minHeight = '0';
+    paseRoot.style.overflow = 'hidden';
+    paseRoot.setAttribute('aria-hidden', 'false');
+  } else if (!isPaseMode() && paseRoot) {
+    paseRoot.style.display = 'none';
+    paseRoot.setAttribute('aria-hidden', 'true');
+  }
   runtime.switchAppTab(runtime.getActiveAppTab());
 }
 

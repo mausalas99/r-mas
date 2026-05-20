@@ -1,0 +1,436 @@
+<div class="app">
+  <div id="sidebar-hover-strip" class="sidebar-hover-strip" aria-hidden="true"></div>
+  <aside id="patient-sidebar" class="patient-sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-header-title-row">
+        <button type="button" class="btn-sidebar-auto-hide" id="btn-sidebar-auto-hide" onclick="toggleSidebarAutoHide()" aria-pressed="false" title="Ocultar barra de pacientes (reaparece al acercar el mouse)" aria-label="Ocultar barra de pacientes">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
+        </button>
+        <h2>Pacientes</h2>
+      </div>
+      <button class="btn-add" onclick="openAddModal()">+ Agregar</button>
+    </div>
+    <div class="profile-section" id="profile-section">
+      <button class="profile-toggle" onclick="openProfileModal()" id="profile-toggle-btn" title="Abrir Mi Perfil">
+        <div class="profile-toggle-left">
+          <svg class="profile-toggle-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span id="profile-toggle-label">Mi Perfil</span>
+        </div>
+        <svg id="profile-toggle-arrow" class="profile-toggle-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
+      </button>
+    </div>
+    <div class="patient-search-wrap">
+      <input type="search" class="patient-search-input" id="patient-search" placeholder="Buscar por nombre, registro, cuarto…" autocomplete="off" oninput="onPatientSearchInput(this.value)">
+    </div>
+    <div class="sidebar-ronda-hint" id="sidebar-ronda-hint" aria-hidden="true">
+      <span class="sidebar-ronda-hint-keys"><kbd>J</kbd><kbd>K</kbd></span>
+      <span data-i18n="roundMode.hint">Ronda: paciente siguiente / anterior</span>
+    </div>
+    <div class="patient-list" id="patient-list"></div>
+  </aside>
+
+  <div class="main-col">
+    <div id="lan-connection-banner" role="status" aria-live="polite" style="display:none;padding:8px 16px;background:#7c2d12;color:#fff;font-size:13px;"></div>
+    <div class="app-tabs-row">
+      <div class="app-tabs" id="app-main-tablist" role="tablist" aria-label="Secciones principales">
+      <button type="button" class="app-tab active" role="tab" id="apptab-lab" aria-selected="true" aria-controls="appcontent-lab" tabindex="0" onclick="switchAppTab('lab')" data-i18n-aria-label="appTab.lab" data-i18n-title="appTab.lab">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+        <span class="app-tab-label" data-i18n="appTab.lab">Laboratorio</span>
+      </button>
+      <button type="button" class="app-tab" role="tab" id="apptab-nota" aria-selected="false" aria-controls="appcontent-nota" tabindex="-1" onclick="switchAppTab('nota')" data-i18n-aria-label="appTab.nota" data-i18n-title="appTab.nota">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+        <span class="app-tab-label" data-i18n="appTab.nota">Expediente</span>
+      </button>
+      <button type="button" class="app-tab" role="tab" id="apptab-med" aria-selected="false" aria-controls="appcontent-med" tabindex="-1" onclick="switchAppTab('med')" data-i18n-aria-label="appTab.med" data-i18n-title="appTab.med">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.5 4.04 3 5.5l7 7Z"/></svg>
+        <span class="app-tab-label" data-i18n="appTab.med">Medicamentos</span>
+      </button>
+      <button type="button" class="app-tab" role="tab" id="apptab-agenda" aria-selected="false" aria-controls="appcontent-agenda" tabindex="-1" onclick="switchAppTab('agenda')" data-i18n-aria-label="appTab.agenda" data-i18n-title="appTab.agenda">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        <span class="app-tab-label" data-i18n="appTab.agenda">Agenda</span>
+      </button>
+      </div>
+      <button type="button" class="app-tabs-keys-btn" onclick="openQuickHelp('atajos')" title="Atajos de teclado" aria-label="Ver atajos de teclado"><svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><path d="M6 8h.001M10 8h.001M14 8h.001M18 8h.001M8 12h.001M12 12h.001M16 12h.001M7 16h10"/></svg></button>
+    </div>
+    <main id="main-area">
+
+    <div id="appcontent-pase" class="appcontent-pase" style="display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden;" aria-hidden="true">
+      <div id="pase-board-scroll" class="pase-board-scroll"></div>
+    </div>
+
+    <div id="appcontent-lab" role="tabpanel" aria-labelledby="apptab-lab" aria-hidden="false" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
+      <div class="main-work-scroll">
+
+        <div class="card" style="flex-shrink:0;">
+          <div class="card-header card-header-row">
+            <span class="lab-report-card-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+              Reporte de Laboratorio
+            </span>
+            <div class="card-header-actions lab-report-header-actions">
+              <button type="button" class="card-header-soft-btn btn-lab-display-prefs" onclick="openLabDisplayPrefsModal()" title="Vista de laboratorio (BH extendida, gasometría extendida)" aria-label="Opciones de vista de laboratorio">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
+            <div class="field-group">
+              <label>Pega el texto del reporte aquí</label>
+              <textarea id="lab-input" rows="10" autocomplete="off" autocorrect="off" spellcheck="false" data-lpignore="true" placeholder="Copia y pega el texto completo del reporte de laboratorio..."></textarea>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+              <button id="btn-procesar" class="btn-generate" onclick="procesarReporte()" style="min-width:140px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                Procesar
+              </button>
+              <button type="button" id="btn-procesar-y-expediente" class="btn-generate btn-generate--success" onclick="procesarYEnviarExpediente()" style="min-width:200px;" disabled title="Con paciente activo: procesa, envía a la nota y abre Expediente">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                Procesar y abrir expediente
+              </button>
+              <button type="button" class="btn-med-secondary btn-med-secondary--muted" onclick="limpiarReporte()">Limpiar</button>
+            </div>
+            <p id="lab-combo-hint" class="overview-hint" style="display:none;margin:0;font-size:11px;color:var(--text-muted);line-height:1.4;">Selecciona un paciente a la izquierda para usar <strong>Procesar y abrir expediente</strong> en un solo paso.</p>
+          </div>
+        </div>
+
+        <div id="lab-banner" class="card lab-banner--detected" style="display:none;flex-shrink:0;">
+          <div class="card-body lab-banner-body">
+            <div class="lab-banner-main">
+              <div class="lab-banner-status" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Paciente detectado
+              </div>
+              <div id="lab-patient-name" class="lab-banner-name"></div>
+              <div id="lab-patient-meta" class="lab-banner-meta"></div>
+            </div>
+            <button type="button" class="btn-generate lab-banner-cta" onclick="openAddModalFromLab()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              Agregar Paciente
+            </button>
+          </div>
+        </div>
+
+        <div id="lab-history-card" class="card" style="flex-shrink:0;">
+          <div class="card-header lab-history-card-header" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <button type="button" id="btn-lab-history-toggle" class="lab-history-toggle" aria-expanded="true" aria-controls="lab-history-body" title="Ocultar o mostrar historial" onclick="toggleLabHistoryPanel(event)">
+              <svg class="lab-history-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span class="lab-history-card-title">Historial de labs (paciente activo)</span>
+            <span class="lab-history-card-actions">
+              <button type="button" class="btn-lab-history btn-lab-dedupe-sync" onclick="consolidateLabHistoryByDayAndTipo()" title="Une en una sola entrada los envíos del mismo día si todos son solo laboratorio o todos solo cultivos; los conjuntos mixtos no se tocan.">Consolidar</button>
+              <button type="button" class="btn-lab-history btn-lab-dedupe-sync" onclick="openLabHistoryDedupeReview('active')" title="Abrir checklist: duplicados exactos y posibles coincidencias por fecha/hora y valores">Sincronizar</button>
+            </span>
+          </div>
+          <div id="lab-history-body" class="card-body" style="padding:12px 16px;">
+            <p id="lab-history-hint" class="lab-history-hint" style="display:none;"></p>
+            <div id="lab-history-list" class="lab-history-list" role="list"></div>
+          </div>
+        </div>
+
+        <div id="lab-diagrams-section" class="card" style="display:none;overflow-x:auto;flex-shrink:0;">
+          <div class="card-header">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            Diagramas
+          </div>
+          <div class="card-body">
+            <div id="diagrams-grid" class="diagrams-wrap"></div>
+          </div>
+        </div>
+
+        <div id="lab-output-section" class="card" style="display:none;flex-shrink:0;">
+          <div class="card-header card-header-row">
+            <span style="display:flex;align-items:center;gap:8px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              Resultados
+            </span>
+            <div class="card-header-actions">
+              <button type="button" class="card-header-soft-btn" onclick="copiarLabsAlPortapapeles()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                Copiar
+              </button>
+              <button type="button" id="btn-enviar-nota" class="card-header-soft-btn" onclick="enviarLabsANota()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/><path d="M12 12v6m0 0l-2-2m2 2l2-2"/></svg>
+                Enviar a nota
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div id="lab-output-box" style="line-height:2;"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div id="appcontent-med" role="tabpanel" aria-labelledby="apptab-med" aria-hidden="true" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+      <div id="med-empty-guided" class="empty-state" style="display:none;" role="region" aria-label="Sin paciente para medicamentos">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.5 4.04 3 5.5l7 7Z"/></svg>
+        <h3 class="empty-state-title">Selecciona un paciente para Medicamentos</h3>
+        <p class="empty-state-lead">Elige uno en la lista de la izquierda o agrega un paciente con <strong>+ Agregar</strong>. Después podrás pegar la receta del hospital y usar <strong>Receta</strong>.</p>
+        <div class="guided-empty-actions">
+          <button type="button" class="primary" onclick="focusPatientSearchInput()">Buscar en la lista</button>
+          <button type="button" onclick="openAddModal()">Agregar paciente</button>
+        </div>
+      </div>
+      <div id="med-work-area" class="main-work-scroll">
+        <div class="card" style="flex-shrink:0;">
+          <div class="card-header">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.5 4.04 3 5.5l7 7Z"/></svg>
+            Listado del hospital
+          </div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
+            <div class="field-group">
+              <label>Pega aquí el texto copiado del sistema</label>
+              <textarea id="med-input" rows="10" placeholder="Pega el bloque de medicamentos (columnas separadas por tabulador)…"></textarea>
+            </div>
+            <div class="med-toolbar-actions">
+              <button type="button" class="btn-generate" onclick="procesarRecetaMed()" style="min-width:140px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                Receta
+              </button>
+              <button type="button" class="btn-med-secondary btn-med-secondary--dia" onclick="incrementMedDiaTratamiento()" title="Incrementa DIA# en medicamentos con día de tratamiento (sin volver a pegar)">
+                <span class="btn-med-secondary-icon" aria-hidden="true">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M12 14v4M10 16h4"/></svg>
+                </span>
+                +1 día
+              </button>
+              <button type="button" class="btn-med-secondary btn-med-secondary--muted" onclick="limpiarRecetaInput()">
+                Limpiar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="flex-shrink:0;">
+          <div class="card-header">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+            Medicamentos (paciente activo)
+          </div>
+          <div class="card-body" style="padding:12px 16px;">
+            <p id="med-hint" class="lab-history-hint" style="display:none;margin:0 0 8px 0;"></p>
+            <p id="med-fecha-actualizacion" class="lab-history-hint" style="display:none;margin:0 0 10px 0;"></p>
+            <div id="med-items-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+            <div id="med-nota-footer" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);"></div>
+          </div>
+        </div>
+
+        <div id="med-output-section" class="card" style="flex-shrink:0;">
+          <div class="card-header card-header-row">
+            <span style="display:flex;align-items:center;gap:8px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              Texto para nota de egreso
+            </span>
+            <span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <span class="med-output-tabs" id="med-output-tabs-track" role="tablist" aria-label="Vista de texto de medicamentos" data-active="full">
+                <span class="med-output-tab-pill" aria-hidden="true"></span>
+                <button id="med-tab-full" type="button" role="tab" aria-selected="true" class="med-output-tab active" onclick="setMedOutputTab('full')">Completa</button>
+                <button id="med-tab-simple" type="button" role="tab" aria-selected="false" class="med-output-tab" onclick="setMedOutputTab('simple')">Nombre + Día</button>
+              </span>
+              <button type="button" class="card-header-soft-btn card-header-soft-btn-secondary" onclick="copiarMedicamentosAlPortapapeles()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                Copiar
+              </button>
+            </span>
+          </div>
+          <div class="card-body">
+            <pre id="med-output" style="white-space:pre-wrap;font-family:inherit;font-size:13px;line-height:1.6;margin:0;color:var(--text);"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="appcontent-agenda" role="tabpanel" aria-labelledby="apptab-agenda" aria-hidden="true" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+      <div class="rpc-proc-agenda-root" id="procedure-agenda-root">
+        <div class="rpc-proc-agenda-header">
+          <div class="rpc-proc-agenda-titlewrap">
+            <h2 class="rpc-proc-agenda-title">Agenda de procedimientos</h2>
+            <div class="rpc-proc-agenda-range" id="procedure-agenda-range" aria-live="polite"></div>
+          </div>
+          <div class="rpc-proc-agenda-actions">
+            <button type="button" class="secondary" id="procedure-agenda-prev" onclick="navigateProcedureAgendaWeek(-1)" aria-label="Semana anterior">← Semana ant.</button>
+            <button type="button" class="secondary" id="procedure-agenda-next" onclick="navigateProcedureAgendaWeek(1)" aria-label="Semana siguiente">Semana sig. →</button>
+            <button type="button" class="rpc-proc-agenda-btn-new" id="procedure-agenda-new" onclick="openProcedureAgendaModal(null)">+ Nuevo procedimiento</button>
+          </div>
+        </div>
+        <div class="rpc-proc-agenda-scroll" id="procedure-agenda-scroll-host">
+          <div id="procedure-agenda-grid-mount"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="appcontent-nota" role="tabpanel" aria-labelledby="apptab-nota" aria-hidden="true" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+      <div class="empty-state" id="empty-state">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+        <h3 class="empty-state-title">Elige un paciente para ver el expediente</h3>
+        <p class="empty-state-lead">Selecciona uno en la lista de la izquierda o pulsa <strong>+ Agregar</strong>. También puedes crear un paciente al procesar un reporte de laboratorio.</p>
+        <div class="guided-empty-actions">
+          <button type="button" class="primary" onclick="focusPatientSearchInput()">Buscar en la lista</button>
+          <button type="button" onclick="openAddModal()">Agregar paciente</button>
+        </div>
+      </div>
+      <div id="patient-view" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+        <div id="patient-ronda-overview" class="patient-ronda-overview" aria-label="Vista ronda">
+          <header class="ronda-overview-header">
+            <div>
+              <h2 class="ronda-overview-title" id="patient-ronda-patient-label">Paciente</h2>
+              <p class="ronda-overview-sub" id="patient-ronda-patient-meta"></p>
+            </div>
+            <div class="ronda-overview-header-actions">
+              <button type="button" class="secondary" onclick="openFullExpedienteFromRound(null)">Expediente completo</button>
+            </div>
+          </header>
+          <div class="ronda-overview-scroll">
+            <section class="ronda-overview-card" aria-labelledby="ronda-labs-heading">
+              <div class="ronda-overview-card-head">
+                <h3 id="ronda-labs-heading">Laboratorio reciente</h3>
+                <button type="button" class="ronda-link-btn" onclick="switchAppTab('lab')">Ir a Laboratorio</button>
+              </div>
+              <div id="patient-ronda-labs-body" class="ronda-overview-card-body"></div>
+            </section>
+            <section class="ronda-overview-card" aria-labelledby="ronda-todo-heading">
+              <div class="ronda-overview-card-head">
+                <h3 id="ronda-todo-heading">Pendientes</h3>
+                <button type="button" class="ronda-link-btn" onclick="openFullExpedienteFromRound('todo')">Ver en pestaña</button>
+              </div>
+              <div id="patient-ronda-todos-mount" class="ronda-overview-card-body rpc-form-stack-tight"></div>
+            </section>
+            <div class="ronda-overview-quick" role="group" aria-label="Accesos al expediente">
+              <button type="button" onclick="openFullExpedienteFromRound('notas')">Nota completa</button>
+              <button type="button" onclick="openFullExpedienteFromRound('indica')">Indicaciones</button>
+              <button type="button" onclick="openFullExpedienteFromRound('tend')">Tendencias</button>
+              <button type="button" onclick="openFullExpedienteFromRound('cult')">Cultivos</button>
+              <button type="button" id="ronda-quick-datos" onclick="openFullExpedienteFromRound('datos')" style="display:none;">Datos</button>
+              <button type="button" id="ronda-quick-listado" onclick="openFullExpedienteFromRound('listado')" style="display:none;">Listado de problemas</button>
+            </div>
+          </div>
+        </div>
+        <div id="patient-expediente-classic" class="patient-expediente-classic">
+        <div id="patient-ronda-fullbar" class="patient-ronda-fullbar" aria-hidden="true">
+          <button type="button" onclick="returnToRoundOverview()">Resumen de ronda</button>
+        </div>
+        <div class="inner-tab-bar">
+          <button class="inner-tab" id="itab-datos" onclick="switchInnerTab('datos')" style="display:none;" aria-label="Datos del paciente">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Datos
+          </button>
+          <button class="inner-tab" id="itab-notas" onclick="switchInnerTab('notas')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+            Nota de Evolución
+          </button>
+          <button class="inner-tab" id="itab-indica" onclick="switchInnerTab('indica')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+            Indicaciones
+          </button>
+          <button class="inner-tab" id="itab-tend" onclick="switchInnerTab('tend')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Tendencias
+          </button>
+          <button class="inner-tab" id="itab-cult" onclick="switchInnerTab('cult')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2C8 6 4 9 4 14a8 8 0 1016 0c0-5-4-8-8-12z"/><circle cx="12" cy="14" r="3"/></svg>
+            Cultivos
+          </button>
+          <button class="inner-tab" id="itab-listado" onclick="switchInnerTab('listado')" style="display:none;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11h6m-6 4h6m-7-9h8a2 2 0 012 2v12a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2z"/></svg>
+            Listado de problemas
+          </button>
+          <button class="inner-tab active" id="itab-todo" onclick="switchInnerTab('todo')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3 8-8"/><path d="M21 12v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h11"/></svg>
+            Pendientes
+          </button>
+        </div>
+        <div id="itab-content-datos" class="tab-content"><div id="patient-data-form" class="rpc-form-stack"></div></div>
+        <div id="itab-content-notas" class="tab-content"><div id="note-form" class="rpc-form-stack"></div></div>
+        <div id="itab-content-indica" class="tab-content"><div id="indica-form" class="rpc-form-stack"></div></div>
+        <div id="itab-content-tend" class="tab-content"><div id="tendencias-container"></div></div>
+        <div id="itab-content-cult" class="tab-content"><div id="cultivos-table-container"></div></div>
+        <div id="itab-content-listado" class="tab-content"><div id="listado-form" class="rpc-form-stack"></div></div>
+        <div id="itab-content-todo" class="tab-content active"><div id="todo-form" class="rpc-form-stack-tight"></div></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="profile-modal" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title" style="width:560px;">
+    <h3 id="profile-modal-title" style="margin:0 0 14px 0;">👤 Mi Perfil</h3>
+    <div class="profile-body" id="profile-body" style="display:flex;flex-direction:column;gap:12px;">
+      <div>
+        <div class="profile-field-label">Médico Tratante</div>
+        <input class="profile-input" id="profile-doctor" type="text" placeholder="Dr. Nombre Apellido">
+      </div>
+      <div>
+        <div class="profile-field-label">Profesor / Responsable</div>
+        <input class="profile-input" id="profile-profesor" type="text" placeholder="Dr. Nombre Apellido">
+      </div>
+      <div>
+        <div class="profile-field-label">Grado / Servicio</div>
+        <input class="profile-input" id="profile-grado" type="text" placeholder="R3MI · Medicina Interna">
+      </div>
+      <hr class="profile-divider">
+      <div class="profile-defaults-title">Modo de trabajo</div>
+      <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="radio" name="app-mode" value="sala" id="app-mode-sala" onchange="onAppModeChange()">
+          <span>Sala (default)</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="radio" name="app-mode" value="interconsulta" id="app-mode-inter" onchange="onAppModeChange()">
+          <span>Interconsulta</span>
+        </label>
+        <p style="font-size:11px;color:var(--text-muted);margin:2px 0 8px 0;line-height:1.3;">Sala oculta Nota e Indicaciones; expone Estado Actual y Listado de problemas.</p>
+      </div>
+      <div>
+        <div class="profile-field-label settings-acc-label-spaced--sm">Servicio (Sala)</div>
+        <input class="profile-input" id="settings-default-servicio" type="text" placeholder="MEDICINA INTERNA" style="text-transform:uppercase;" onblur="onDefaultServicioBlur()">
+        <p style="font-size:11px;color:var(--text-muted);margin:4px 0 0 0;line-height:1.3;">Sin abreviaturas. Pre-llena Servicio al agregar pacientes en Sala.</p>
+        <p id="default-servicio-warning" style="display:none;color:#b45309;font-size:11px;margin:4px 0 0 0;line-height:1.3;">¿Estás seguro? Recomendamos servicio sin abreviaturas (p.ej. MEDICINA INTERNA en lugar de MI).</p>
+      </div>
+      <hr class="profile-divider">
+      <div class="profile-defaults-title">Médicos del Listado de Problemas</div>
+      <p style="font-size:11px;color:var(--text-muted);margin:0 0 4px 0;line-height:1.3;">Pre-llenan los campos del listado. Puedes editarlos por paciente desde la pestaña Listado.</p>
+      <div>
+        <div class="profile-field-label">Profesor</div>
+        <input class="profile-input" id="settings-medico-profesor" type="text" onblur="onMedicoTemplateBlur()">
+      </div>
+      <div>
+        <div class="profile-field-label">R4</div>
+        <input class="profile-input" id="settings-medico-r4" type="text" onblur="onMedicoTemplateBlur()">
+      </div>
+      <div>
+        <div class="profile-field-label">R2</div>
+        <input class="profile-input" id="settings-medico-r2" type="text" onblur="onMedicoTemplateBlur()">
+      </div>
+      <div>
+        <div class="profile-field-label">R1 (1)</div>
+        <input class="profile-input" id="settings-medico-r1a" type="text" onblur="onMedicoTemplateBlur()">
+      </div>
+      <div>
+        <div class="profile-field-label">R1 (2)</div>
+        <input class="profile-input" id="settings-medico-r1b" type="text" onblur="onMedicoTemplateBlur()">
+      </div>
+      <hr class="profile-divider">
+      <div class="profile-defaults-title">Indicaciones por defecto</div>
+      <div class="profile-default-preview">
+        <div class="preview-label">Dieta</div>
+        <span id="profile-preview-dieta-txt">(vacío)</span>
+      </div>
+      <div class="profile-default-preview">
+        <div class="preview-label">Cuidados</div>
+        <span id="profile-preview-cuidados-txt">(vacío)</span>
+      </div>
+      <div class="profile-default-preview">
+        <div class="preview-label">Medicamentos</div>
+        <span id="profile-preview-meds-txt">(vacío)</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;">
+        <button class="btn-edit-templates" onclick="openTemplatesModal()">✏️ Editar plantillas…</button>
+        <button class="btn-save-profile" onclick="saveSettings()">Guardar perfil</button>
+        <button class="btn-edit-templates" onclick="resetAndStartOnboarding()">🎓 Ver tutorial</button>
+      </div>
+    </div>
+  </div>
+</div>

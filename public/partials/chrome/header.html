@@ -1,0 +1,321 @@
+<header>
+  <h1 id="app-brand" role="button" tabindex="0" onclick="openProfileFromHeader(event)" onkeydown="if(event.key==='Enter'||event.key===' '){openProfileFromHeader(event);}">R+</h1>
+  <span id="today-date"></span>
+  <div class="header-right">
+    <div class="header-work-cluster" aria-label="Contexto de trabajo">
+      <div id="estado-actual-context-wrap" class="estado-actual-context-wrap" aria-live="polite">
+        <span id="estado-actual-meta" class="estado-actual-meta"></span>
+        <button type="button" id="btn-estado-actual" class="btn-estado-actual-compact" onclick="openEstadoActualModal()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+          Estado Actual
+        </button>
+      </div>
+      <button type="button" id="header-app-mode-chip" class="header-app-mode-chip mode-sala" onclick="toggleHeaderWorkMode()" title="">
+        Modo: Sala
+      </button>
+    </div>
+    <span id="pending-jobs-pill" class="pending-jobs-pill" role="status" aria-live="polite" aria-atomic="true" title="Tareas en curso"></span>
+    <button type="button" class="btn-header-icon" id="btn-header-team-sync" style="display:none;" onclick="toggleConnectionDropdown(event)" aria-haspopup="dialog" aria-expanded="false" data-i18n-aria-label="settings.teamSyncAria" data-i18n-title="settings.teamSyncTitle" title="Conexión LAN / LiveSync"><svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg></button>
+    <div class="connection-dropdown-backdrop" id="connection-dropdown-backdrop" onclick="closeConnectionDropdown()"></div>
+    <div class="connection-dropdown" id="connection-dropdown" role="dialog" aria-modal="true" aria-labelledby="connection-dropdown-title">
+      <h2 class="visually-hidden" id="connection-dropdown-title">Conexión LAN</h2>
+      <div class="connection-dropdown-head">
+        <div class="connection-dropdown-head-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg></div>
+        <div>
+          <div class="connection-dropdown-head-title">Sala en vivo del equipo</div>
+          <p class="connection-dropdown-head-sub">Solo en la misma red Wi‑Fi del hospital que la computadora anfitriona. Para copias de respaldo entre equipos distintos usa <strong>Ajustes → Respaldos, sync y recuperación</strong>.</p>
+        </div>
+      </div>
+      <div id="lan-connection-panel-root" class="lan-connection-panel-root"></div>
+    </div>
+    <button class="btn-header-icon" id="btn-open-settings" onclick="toggleSettingsDropdown()" title="Ajustes" aria-label="Abrir ajustes" aria-haspopup="dialog" aria-expanded="false" data-i18n-aria-label="settings.open" data-i18n-title="settings.openTitle"><svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+    <button type="button" id="theme-toggle" class="btn-header-icon" onclick="toggleTheme()" title="Cambiar tema" aria-label="Cambiar tema claro u oscuro" data-i18n-aria-label="theme.toggle" data-i18n-title="theme.toggleTitle"><svg class="btn-header-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></button>
+    <div class="settings-dropdown-backdrop" id="settings-dropdown-backdrop" onclick="closeSettingsDropdown()"></div>
+    <div class="settings-dropdown" id="settings-dropdown" role="dialog" aria-modal="false" aria-labelledby="settings-dropdown-title">
+      <h2 class="visually-hidden" id="settings-dropdown-title">Ajustes</h2>
+      <div class="settings-help-cta">
+        <button type="button" class="btn-settings-help-primary" onclick="closeSettingsDropdown(); openQuickHelp();" data-i18n="settings.quickHelp">Centro de ayuda · atajos y tours</button>
+        <button type="button" class="btn-settings-help-secondary" onclick="closeSettingsDropdown(); resetAndStartOnboarding();"><svg class="btn-inline-help-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8"/><path d="M8 11h6"/></svg> Tutorial completo · elegir Sala o Interconsulta</button>
+        <p class="settings-help-cta-hint overview-hint">Guías, atajos, tutorial Sala / Interconsulta y tours breves (Laboratorio, Ajustes).</p>
+      </div>
+
+      <details class="settings-accordion" open>
+        <summary data-i18n="settings.appearance">Apariencia</summary>
+        <div class="settings-acc-body">
+          <div class="settings-theme-row" role="group" aria-label="Tema de la aplicación" data-i18n-aria-label="settings.themeGroup">
+            <button type="button" class="settings-theme-btn" id="settings-theme-light" onclick="setThemeMode('light')" data-i18n="settings.themeLight">Claro</button>
+            <button type="button" class="settings-theme-btn" id="settings-theme-dark" onclick="setThemeMode('dark')" data-i18n="settings.themeDark">Oscuro</button>
+          </div>
+          <div class="profile-field-label settings-acc-label-spaced--xs" data-i18n="settings.fontSize">Tamaño de texto</div>
+          <p id="settings-fontsize-hint" class="overview-hint settings-acc-hint" data-i18n="settings.fontSizeHint">Escala toda la interfaz (útil en pantallas pequeñas).</p>
+          <div class="settings-theme-row" id="settings-font-zoom-row" role="group" aria-label="Tamaño de texto" aria-describedby="settings-fontsize-hint" data-i18n-aria-label="settings.fontSize">
+            <button type="button" class="settings-theme-btn" id="settings-font-100" onclick="setFontZoom(100)" data-i18n="settings.fontNormal">Normal</button>
+            <button type="button" class="settings-theme-btn" id="settings-font-110" onclick="setFontZoom(110)" data-i18n="settings.fontLarge">Grande</button>
+            <button type="button" class="settings-theme-btn" id="settings-font-125" onclick="setFontZoom(125)" data-i18n="settings.fontXLarge">Más grande</button>
+          </div>
+          <div class="profile-field-label settings-acc-label-spaced" data-i18n="settings.uiDensity">Densidad de la interfaz</div>
+          <p id="settings-density-hint" class="overview-hint settings-acc-hint" data-i18n="settings.uiDensityHint">Normal: pestañas completas y Ronda. Pase: resumen del paciente en una columna; pulsa un título para abrir el detalle en Normal. ⌘P o Ctrl+P alterna.</p>
+          <div class="settings-theme-row" role="group" aria-label="Modo de vista" aria-describedby="settings-density-hint" data-i18n-aria-label="settings.uiDensity">
+            <button type="button" class="settings-theme-btn" id="settings-density-normal" onclick="setUiDensity('normal')" data-i18n="settings.densityNormal">Normal</button>
+            <button type="button" class="settings-theme-btn" id="settings-density-pase" onclick="setUiDensity('pase')" data-i18n="settings.densityPase">Pase</button>
+          </div>
+          <div class="profile-field-label settings-acc-label-spaced--sm" data-i18n="settings.highContrast">Alto contraste</div>
+          <p id="settings-hc-hint" class="overview-hint settings-acc-hint" data-i18n="settings.highContrastHint">Aumenta el contraste de texto y bordes para mejor legibilidad.</p>
+          <div class="settings-theme-row" role="group" aria-label="Alto contraste" aria-describedby="settings-hc-hint" data-i18n-aria-label="settings.highContrast">
+            <button type="button" class="settings-theme-btn" id="settings-hc-off" onclick="setHighContrast(false)" data-i18n="settings.hcOff">Desactivado</button>
+            <button type="button" class="settings-theme-btn" id="settings-hc-on" onclick="setHighContrast(true)" data-i18n="settings.hcOn">Activado</button>
+          </div>
+        </div>
+      </details>
+
+      <details class="settings-accordion">
+        <summary>Laboratorio</summary>
+        <div class="settings-acc-body">
+          <p class="settings-acc-hint">Busca en <strong>todos los pacientes</strong> entradas repetidas en el historial de labs (misma fecha, hora y bloques de resultados) y permite eliminarlas conservando la copia más antigua.</p>
+          <button type="button" class="btn-edit-templates" onclick="openLabHistoryDedupeReview('all')">Revisar duplicados en historial…</button>
+        </div>
+      </details>
+
+      <details class="settings-accordion" id="settings-accordion-documents">
+        <summary>Documentos y salida</summary>
+        <div class="settings-acc-body">
+          <p class="settings-acc-hint" data-i18n="settings.docsFolderHint">Los .docx generados se guardan aquí (si no eliges carpeta, se usa Descargas).</p>
+          <div class="settings-acc-row">
+            <span id="settings-output-dir" class="settings-acc-path" title="">Descargas (predeterminado)</span>
+            <button type="button" class="btn-edit-templates settings-acc-btn--inline" onclick="chooseOutputDir()">Cambiar</button>
+          </div>
+          <label for="settings-quick-output-format" class="profile-field-label settings-acc-label-spaced">Salida rápida</label>
+          <p class="settings-acc-hint settings-acc-hint--md">Formato por defecto para exportar al instante la nota/indicaciones actuales.</p>
+          <select id="settings-quick-output-format" class="profile-input settings-acc-select" onchange="saveQuickOutputFormat(this.value)">
+            <option value="docx">DOCX (flujo actual)</option>
+            <option value="html">HTML descargable</option>
+            <option value="txt">Texto plano (.txt)</option>
+          </select>
+        </div>
+      </details>
+
+      <details class="settings-accordion" id="settings-accordion-lan-host-disk" style="display: none;">
+        <summary>LAN · servidor en esta computadora</summary>
+        <div class="settings-acc-body">
+          <p class="settings-acc-hint settings-acc-hint--tight">
+            Solo si esta R+ es <strong>anfitrión</strong> (el proceso en el puerto 3738). Aquí se escribe <code>lan-team-code.txt</code> en datos de la app; el mismo texto debe ir en <strong>Código del equipo</strong> al conectar por LAN. Si dejas el campo vacío, el servidor usa <strong>1234</strong>. Tras guardar aquí, <strong>reinicia R+</strong>. Si hubo error 500 por cambiar código, usa restablecer abajo.
+          </p>
+          <div id="lan-host-first-time-hint" class="settings-lan-host-first-hint" style="display:none;" role="status"></div>
+          <label for="settings-lan-host-team-code-input" class="profile-field-label">Código en el servidor (archivo)</label>
+          <input id="settings-lan-host-team-code-input" class="profile-input settings-acc-select" type="text" autocomplete="off" placeholder="1234 (recomendado; vacío = 1234)" />
+          <button type="button" class="btn-edit-templates" onclick="saveLanHostTeamCodeFromUi()">Guardar código en esta computadora</button>
+          <button type="button" class="btn-edit-templates settings-acc-btn--danger" onclick="resetLanSquadHostStateFromUi()">Restablecer estado LAN del host…</button>
+        </div>
+      </details>
+
+      <details class="settings-accordion" id="settings-accordion-backup-sync">
+        <summary>Respaldos, sync y recuperación</summary>
+        <div class="settings-acc-body settings-acc-btn-stack">
+          <div class="settings-data-sync-compare">
+            <div class="settings-sync-card">
+              <h4>Sala en vivo (LAN)</h4>
+              <p>Comparte el <strong>mismo turno</strong> en la <strong>misma red Wi‑Fi</strong>: al unirte a una sala se fusionan <strong>pacientes, notas, labs, agenda y pendientes</strong> (sin borrar los que solo tienes tú). No sustituye un respaldo completo entre turnos.</p>
+            </div>
+            <div class="settings-sync-card">
+              <h4>Respaldos y sync entre equipos</h4>
+              <p><strong>Exportar / importar</strong> JSON, paquete sync y auto‑respaldos mueven o resguardan el <strong>historial clínico local</strong> entre computadoras o después del trabajo.</p>
+            </div>
+          </div>
+          <p class="settings-sync-help-link">
+            Más detalle en el centro de ayuda:
+            <button type="button" class="btn-edit-templates" style="margin-left:6px;display:inline-flex;" onclick="closeSettingsDropdown(); openQuickHelp('lan-vs-respaldo');">LAN vs respaldos</button>
+          </p>
+          <div id="settings-preimport-restore-wrap" class="settings-preimport-box" style="display:none;">
+            <p class="settings-preimport-label">Copia automática antes de importar todo</p>
+            <p class="settings-preimport-meta" id="settings-preimport-meta">—</p>
+            <button type="button" class="btn-edit-templates" onclick="restorePreimportBackupPrompt();">Restaurar esa copia…</button>
+          </div>
+          <p class="settings-acc-hint" data-i18n="settings.backupHint">Exporta o restaura pacientes, notas e indicaciones (JSON).</p>
+          <button type="button" class="btn-edit-templates" onclick="exportDataBackup()">Exportar copia de seguridad…</button>
+          <button type="button" class="btn-edit-templates" onclick="exportActivePatientBackup()">Exportar paciente actual…</button>
+          <button type="button" class="btn-edit-templates" onclick="exportRangeBackupPrompt()">Exportar por rango…</button>
+          <button type="button" class="btn-edit-templates" onclick="triggerImportActivePatientBackup()">Importar paciente…</button>
+          <button type="button" class="btn-edit-templates" onclick="triggerImportRangeBackup()">Importar rango…</button>
+          <button type="button" class="btn-edit-templates" onclick="triggerImportBackup()">Importar copia de seguridad…</button>
+          <label for="auto-backup-frequency" class="profile-field-label settings-acc-label-spaced">Auto-respaldo</label>
+          <div style="display:flex;gap:6px;">
+            <select id="auto-backup-frequency" class="profile-input settings-acc-select" onchange="updateAutoBackupSettingsFromUi()">
+              <option value="off">Desactivado</option>
+              <option value="daily">Diario</option>
+              <option value="weekly">Semanal</option>
+            </select>
+            <select id="auto-backup-retention" class="profile-input settings-acc-select" onchange="updateAutoBackupSettingsFromUi()">
+              <option value="3">3 archivos</option>
+              <option value="7">7 archivos</option>
+              <option value="14">14 archivos</option>
+            </select>
+          </div>
+          <button type="button" class="btn-edit-templates" onclick="runAutoBackupNow()">Generar auto-respaldo ahora</button>
+          <button type="button" class="btn-edit-templates" onclick="exportAuditLog()">Exportar bitácora</button>
+          <button type="button" class="btn-edit-templates" id="btn-undo-op" onclick="undoLastOperation()" disabled title="Revierte la última operación destructiva (eliminar paciente o importar).">Deshacer última operación</button>
+          <p class="settings-acc-hint settings-acc-hint--tight">El deshacer usa una copia en memoria del momento previo. Si algo salió mal, usa <strong>Restaurar esa copia</strong> (si existe) o un archivo <strong>R-plus-auto-respaldo-</strong> / <strong>R-plus-respaldo-</strong> desde Descargas.</p>
+          <hr class="profile-divider settings-acc-divider">
+          <div class="profile-defaults-title">Catálogo medicamentos (SOAP)</div>
+          <p class="settings-acc-hint">Personaliza <strong>acentos</strong> y <strong>palabras clave</strong> por categoría para la plantilla SOAP. Sin datos de pacientes.</p>
+          <button type="button" class="btn-edit-templates" onclick="exportMedCatalogBundle()">Exportar catálogo…</button>
+          <button type="button" class="btn-edit-templates" onclick="triggerImportMedCatalog()">Importar catálogo…</button>
+          <hr class="profile-divider settings-acc-divider">
+          <div class="profile-defaults-title">Sync entre equipos</div>
+          <p class="settings-acc-hint">Paquetes JSON (opcionalmente cifrados con passphrase).</p>
+          <button type="button" class="btn-edit-templates" onclick="exportSyncBundlePrompt()">Exportar paquete sync…</button>
+          <button type="button" class="btn-edit-templates" onclick="triggerImportSyncBundle()">Importar paquete sync…</button>
+        </div>
+      </details>
+
+      <details class="settings-accordion">
+        <summary>Plantillas y flujo de trabajo</summary>
+        <div class="settings-acc-body">
+          <p class="settings-acc-hint">Combinaciones de dieta, cuidados y medicamentos aplicables desde Indicaciones.</p>
+          <button type="button" class="btn-edit-templates" onclick="openExtraTemplatesManager()">Administrar plantillas…</button>
+          <hr class="profile-divider settings-acc-divider">
+          <div class="profile-defaults-title">Búsqueda unificada</div>
+          <p class="settings-acc-hint">Pacientes, notas e indicaciones. Atajo: Ctrl/⌘ + K.</p>
+          <button type="button" class="btn-edit-templates" onclick="openUnifiedSearch()">Abrir búsqueda…</button>
+          <hr class="profile-divider settings-acc-divider">
+          <div class="profile-defaults-title">Modo enfoque</div>
+          <p class="settings-acc-hint">Oculta barra lateral y ajustes. Atajo: F6.</p>
+          <button type="button" class="btn-edit-templates" id="btn-toggle-focus-mode" onclick="toggleFocusMode()">Activar modo enfoque</button>
+        </div>
+      </details>
+
+      <details class="settings-accordion">
+        <summary>Privacidad y datos en este equipo</summary>
+        <div class="settings-acc-body">
+          <p class="settings-acc-hint">Bloqueo con PIN (hash local SHA-256, no se envía a servidores).</p>
+          <label for="settings-idle-lock" class="profile-field-label settings-acc-label-spaced--2xs">Bloqueo por inactividad</label>
+          <select id="settings-idle-lock" class="profile-input settings-acc-select" onchange="onIdleLockSelectChange(this.value)">
+            <option value="0">Desactivado</option>
+            <option value="5">5 minutos</option>
+            <option value="10">10 minutos</option>
+            <option value="30">30 minutos</option>
+          </select>
+          <button type="button" class="btn-edit-templates" style="margin-top:4px;" onclick="changeIdleLockPin()">Cambiar PIN de bloqueo…</button>
+          <hr class="profile-divider settings-acc-divider">
+          <p class="settings-acc-hint">R+ guarda pacientes, notas, labs, recetas y ajustes en el perfil local de Electron. Los <code>.docx</code> van a la carpeta de salida que elijas.</p>
+          <div class="settings-acc-row" style="flex-wrap:wrap;">
+            <span id="settings-user-data-path" class="settings-acc-path settings-acc-path--sm" title="">—</span>
+            <button type="button" class="btn-edit-templates settings-acc-btn--inline" id="settings-open-userdata-btn" onclick="openUserDataFolderFromSettings()">Abrir carpeta…</button>
+          </div>
+          <p id="settings-userdata-web-hint" class="settings-acc-hint settings-acc-hint--tight settings-acc-inline-help">Solo disponible en la aplicación de escritorio.</p>
+          <button type="button" class="btn-edit-templates settings-acc-btn--danger" onclick="openWipeDataModal()">Borrar datos de R+ en este equipo…</button>
+        </div>
+      </details>
+
+      <details class="settings-accordion" id="settings-accordion-updates">
+        <summary data-i18n="settings.application">Aplicación y actualizaciones</summary>
+        <div class="settings-acc-body">
+          <div class="profile-field-label" data-i18n="settings.version">Versión</div>
+          <div id="settings-app-version" class="settings-acc-version">—</div>
+          <label for="rpc-update-channel" class="profile-field-label settings-acc-label-spaced--xs">Canal de actualizaciones</label>
+          <p class="settings-acc-hint"><strong>Pre-releases</strong> incluye borradores de GitHub; <strong>Estable</strong> solo versiones oficiales.</p>
+          <select id="rpc-update-channel" class="profile-input settings-acc-select" onchange="setUpdateChannel(this.value)">
+            <option value="estable">Estable (recomendado)</option>
+            <option value="beta">Pre-releases (borradores)</option>
+          </select>
+          <label for="rpc-update-telemetry-toggle" style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;color:var(--text);cursor:pointer;">
+            <input type="checkbox" id="rpc-update-telemetry-toggle" onchange="setUpdateTelemetryEnabled(this.checked)" style="flex-shrink:0;">
+            <span>Enviar telemetría anónima de actualización</span>
+          </label>
+          <p class="settings-acc-hint settings-acc-hint--tight">Solo versión, resultado y plataforma. <strong>No</strong> incluye datos clínicos. Desactivado por defecto.</p>
+          <button type="button" class="btn-edit-templates" id="settings-check-updates-btn" style="margin-top:8px;" onclick="checkForAppUpdates()" data-i18n="settings.checkUpdates">Buscar actualizaciones…</button>
+          <p id="settings-updates-hint" class="settings-acc-hint settings-acc-hint--tight settings-acc-inline-help">También en el menú de la aplicación (Mac: R+, Windows: Aplicación).</p>
+        </div>
+      </details>
+
+      <label for="backup-file-input" class="visually-hidden">Archivo de copia de seguridad JSON</label>
+      <input type="file" id="backup-file-input" accept="application/json,.json" aria-label="Archivo de copia de seguridad JSON" style="display:none" onchange="onBackupFileChosen(event)">
+      <label for="patient-backup-file-input" class="visually-hidden">Archivo JSON de respaldo de paciente</label>
+      <input type="file" id="patient-backup-file-input" accept="application/json,.json" aria-label="Archivo JSON de respaldo de paciente" style="display:none" onchange="onPatientBackupFileChosen(event)">
+      <label for="range-backup-file-input" class="visually-hidden">Archivo JSON de respaldo por rango</label>
+      <input type="file" id="range-backup-file-input" accept="application/json,.json" aria-label="Archivo JSON de respaldo por rango" style="display:none" onchange="onRangeBackupFileChosen(event)">
+      <label for="sync-bundle-file-input" class="visually-hidden">Archivo JSON de paquete de sincronización</label>
+      <input type="file" id="sync-bundle-file-input" accept="application/json,.json" aria-label="Archivo JSON de paquete de sincronización" style="display:none" onchange="onSyncBundleFileChosen(event)">
+      <label for="med-catalog-file-input" class="visually-hidden">Archivo JSON de catálogo de medicamentos SOAP</label>
+      <input type="file" id="med-catalog-file-input" accept="application/json,.json" aria-label="Archivo JSON de catálogo de medicamentos SOAP" style="display:none" onchange="onMedCatalogFileChosen(event)">
+    </div>
+  </div>
+</header>
+
+<div id="rpc-offline-banner" class="rpc-offline-banner" role="alert" aria-live="assertive">
+  Sin conexión con el servidor local. No podrás generar documentos hasta reiniciar R+ o recuperar el servicio en segundo plano.
+</div>
+
+<div id="help-quick-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal help-center-modal" role="dialog" aria-modal="true" aria-labelledby="help-quick-title" onclick="event.stopPropagation()">
+    <div class="help-center-head">
+      <h3 id="help-quick-title">Centro de ayuda</h3>
+    </div>
+    <div class="help-search-wrap">
+      <input type="search" id="help-search-input" class="help-search-input"
+             placeholder="Buscar en la ayuda…" autocomplete="off"
+             aria-label="Buscar en la ayuda"
+             oninput="onHelpSearchInput(this.value)"
+             onkeydown="onHelpSearchKeydown(event)">
+    </div>
+    <div class="help-layout">
+      <div id="help-articles-list" class="help-articles-list" role="listbox"
+           aria-label="Artículos de ayuda" onkeydown="onHelpListKeydown(event)"></div>
+      <div id="help-article-content" class="help-article-content" role="region"
+           aria-live="polite" aria-label="Contenido del artículo"></div>
+    </div>
+    <div class="help-tour-section">
+      <span class="help-tour-label">Tours</span>
+      <button type="button" class="help-tour-btn" onclick="startHelpTourMain()"><svg class="btn-inline-help-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8"/><path d="M8 11h6"/></svg> Tutorial guiado (Sala o Interconsulta)</button>
+      <button type="button" class="help-tour-btn" onclick="startMiniTour('lab')"><svg class="btn-inline-help-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg> Laboratorio (breve)</button>
+      <button type="button" class="help-tour-btn" onclick="startMiniTour('ajustes')"><svg class="btn-inline-help-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Ajustes (breve)</button>
+    </div>
+  </div>
+</div>
+
+<div id="release-notes-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal release-notes-modal" role="dialog" aria-modal="true" aria-labelledby="release-notes-title" tabindex="-1" onclick="event.stopPropagation()">
+    <h3 id="release-notes-title">Novedades</h3>
+    <p class="release-notes-intro" id="release-notes-intro">Esto es nuevo o mejorado en la versión recién instalada. Pulsa fuera o <strong>Esc</strong> para cerrar; esta ventana no volverá a aparecer en esta versión.</p>
+    <ul id="release-notes-list" class="release-notes-list"></ul>
+  </div>
+</div>
+
+<div id="onboarding-intro-backdrop" aria-hidden="true">
+  <div class="onboarding-intro-modal" role="dialog" aria-modal="true" aria-labelledby="intro-modal-title">
+    <h2 id="intro-modal-title">Bienvenido a R+</h2>
+    <p class="intro-lead">Recorrido corto con <strong>DEMO PÉREZ</strong> (no se guarda). Incluye el <strong>Modo Pase</strong> (resumen de ronda), el flujo de Sala o Interconsulta y, al final, cómo sincronizar con el equipo (<strong>⇄ LiveSync</strong>) y usar <strong>R+ Móvil</strong> en iPad (Safari, misma Wi‑Fi). El panel inferior guía la interfaz paso a paso.</p>
+    <div class="intro-skip-above-paths">
+      <button type="button" class="btn-intro-skip" id="intro-btn-skip" onclick="guidedTourIntroSkip()">Omitir tutorial</button>
+    </div>
+    <div class="intro-options-grid">
+      <article class="intro-option-card">
+        <span class="intro-option-kicker">Hospitalización</span>
+        <h3 class="intro-option-h">Sala</h3>
+        <p class="intro-option-lead">Laboratorio, expediente, medicamentos y al cerrar: sync en equipo + móvil.</p>
+        <button type="button" class="btn-intro-pick" onclick="guidedTourIntroChooseSala()">Empezar · Sala</button>
+      </article>
+      <article class="intro-option-card intro-option-card-accent">
+        <span class="intro-option-kicker">Consulta externa</span>
+        <h3 class="intro-option-h">Interconsulta</h3>
+        <p class="intro-option-lead">Lo clínico de Sala + Word; al cerrar: sync en equipo + móvil.</p>
+        <button type="button" class="btn-intro-pick btn-intro-pick-secondary" onclick="guidedTourIntroChooseInterconsulta()">Empezar · Interconsulta</button>
+      </article>
+    </div>
+  </div>
+</div>
+
+<div id="tour-dock" aria-live="polite">
+  <div class="tour-dock-inner" onclick="onTourDockClick(event)">
+    <div class="tour-dock-head">
+      <span id="tour-step-badge"></span>
+      <div class="tour-dock-head-actions">
+        <button type="button" class="btn-tour-collapse" id="btn-tour-collapse" title="Minimizar / expandir" aria-label="Minimizar tutorial" onclick="toggleTourDockCollapsed()">–</button>
+      </div>
+    </div>
+    <div id="tour-dock-body"></div>
+    <div class="tour-dock-foot">
+      <button type="button" class="btn-tour-skip" onclick="skipGuidedTour()">Omitir tutorial</button>
+      <button type="button" class="btn-tour-next" id="tour-btn-next" onclick="guidedTourClickNext()">Siguiente</button>
+    </div>
+  </div>
+</div>

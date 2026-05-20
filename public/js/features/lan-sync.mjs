@@ -1589,6 +1589,27 @@ function dismissLanHostFirstTimeHint() {
   syncLanHostFirstTimeHintUi();
 }
 
+export function syncSettingsLanHostDiskSection() {
+  var acc = document.getElementById('settings-accordion-lan-host-disk');
+  if (!acc) return;
+  var desktop = !!(window.electronAPI && typeof window.electronAPI.writeLanHostTeamCode === 'function');
+  var role = typeof storage.getLanUiRole === 'function' ? storage.getLanUiRole() : 'client';
+  acc.style.display = desktop && role === 'host' ? '' : 'none';
+  if (desktop && role === 'host') {
+    syncLanHostTeamCodeSettingsInput();
+    syncLanHostFirstTimeHintUi();
+    if (!acc.dataset.lanHostToggleBound) {
+      acc.dataset.lanHostToggleBound = '1';
+      acc.addEventListener('toggle', function () {
+        if (acc.open) {
+          syncLanHostTeamCodeSettingsInput();
+          syncLanHostFirstTimeHintUi();
+        }
+      });
+    }
+  }
+}
+
 async function syncLanHostTeamCodeSettingsInput() {
   var input = document.getElementById('settings-lan-host-team-code-input');
   if (!input) return;
@@ -1701,6 +1722,8 @@ export {
   configureLanFromMobileJoin,
   syncLanHostTeamCodeSettingsInput,
   syncLanHostFirstTimeHintUi,
+  closeConnectionDropdown,
+  openConnectionDropdown,
 };
 
 export const windowHandlers = {

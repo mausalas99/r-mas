@@ -518,12 +518,12 @@ export function syncRoundExpedienteLayout() {
     return;
   }
 
-  var aid = rt.getActiveId();
-  var showOverview = !!aid && rt.getActiveAppTab() === 'nota' && _roundOverviewMode;
+  var showOverview =
+    !!rt.getActiveId() && rt.getActiveAppTab() === 'nota' && _roundOverviewMode;
   overview.style.display = showOverview ? 'flex' : 'none';
   classic.style.display = showOverview ? 'none' : 'flex';
   if (fullbar) {
-    var showBar = !!(aid && rt.getActiveAppTab() === 'nota' && !showOverview);
+    var showBar = !!(rt.getActiveId() && rt.getActiveAppTab() === 'nota' && !showOverview);
     fullbar.classList.toggle('is-visible', showBar);
     fullbar.setAttribute('aria-hidden', showBar ? 'false' : 'true');
   }
@@ -634,9 +634,7 @@ function renderPatientRoundRowHtml(p) {
     (seen ? ' patient-card--roundrow-seen' : '') +
     '" data-patient-id="' +
     p.id +
-    '" onclick="selectPatient(\'' +
-    p.id +
-    '\')">' +
+    '" role="button" tabindex="0">' +
     '<div class="patient-card-toolbar">' +
     '<div class="patient-card-toolbar-left">' +
     '<button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon btn-archive-clean" title="' +
@@ -701,9 +699,7 @@ function renderPatientCardHtml(p) {
       (p.id === aid ? 'active' : '') +
       '" data-patient-id="' +
       p.id +
-      '" onclick="selectPatient(\'' +
-      p.id +
-      '\')">' +
+      '" role="button" tabindex="0">' +
       '<div class="patient-card-toolbar">' +
       '<div class="patient-card-toolbar-left">' +
       '<button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon btn-archive-clean" title="' +
@@ -742,6 +738,7 @@ function renderPatientCardHtml(p) {
 
 export function renderPatientList() {
   ensurePatientUiState();
+  ensurePatientListClickDelegation();
   var list = document.getElementById('patient-list');
   if (!list) return;
   destroyPatientListSortables();
@@ -831,19 +828,29 @@ export function renderPatientList() {
 }
 
 export function selectPatient(id) {
+  if (id == null || id === '') return;
+  try {
+    selectPatientCore(id);
+  } catch (err) {
+    console.error('[R+] selectPatient:', err && err.message ? err.message : err);
+  }
+}
+
+function selectPatientCore(id) {
   var prevId = rt.getActiveId();
   var wasOnLab = rt.getActiveAppTab() === 'lab';
   var patientChanged = prevId != null && String(prevId) !== String(id);
   rt.setActiveId(id);
   renderPatientList();
-  document.getElementById('empty-state').style.display = 'none';
-  document.getElementById('patient-view').style.display = 'flex';
+  var emptyState = document.getElementById('empty-state');
+  var patientView = document.getElementById('patient-view');
+  if (emptyState) emptyState.style.display = 'none';
+  if (patientView) patientView.style.display = 'flex';
   rt.renderInnerTabs();
   rt.renderEstadoActualButton();
   rt.renderNoteForm();
   rt.renderIndicaForm();
   rt.renderListadoForm();
-  rt.refreshTendenciasOrCultivosPanel();
   rt.renderLabHistoryPanel();
   rt.renderMedRecetaPanel();
   var settings = rt.getSettings();
@@ -890,14 +897,40 @@ export function selectPatient(id) {
     rt.syncWorkContextChrome();
   }
   if (isPaseMode() && rt.getActiveAppTab() === 'nota') {
-    _roundOverviewMode = true;
+    if (inner === 'todo' || !inner) {
+      _roundOverviewMode = true;
+    } else {
+      _roundOverviewMode = false;
+    }
   }
   syncRoundExpedienteLayout();
+  rt.refreshTendenciasOrCultivosPanel();
+  if (isPaseMode()) {
+    rt.switchAppTab(rt.getActiveAppTab());
+    rt.renderPaseBoard();
+  }
   if (rt.getActiveId()) {
     requestAnimationFrame(function () {
       scrollActiveRondaCardIntoView();
     });
   }
+}
+
+var _patientListClickWired = false;
+
+/** Clic en tarjeta sin depender solo de onclick inline (módulos ES). */
+function ensurePatientListClickDelegation() {
+  if (_patientListClickWired) return;
+  var root = document.getElementById('patient-list');
+  if (!root) return;
+  _patientListClickWired = true;
+  root.addEventListener('click', function (ev) {
+    var card = ev.target && ev.target.closest ? ev.target.closest('.patient-card[data-patient-id]') : null;
+    if (!card) return;
+    if (ev.target.closest('button, a[href], input, textarea, select')) return;
+    var pid = card.getAttribute('data-patient-id');
+    if (pid) selectPatient(pid);
+  });
 }
 
 export function deletePatient(e, id) {
@@ -915,8 +948,10 @@ export function deletePatient(e, id) {
   renderPatientList();
   if (rt.getActiveId()) selectPatient(rt.getActiveId());
   else {
-    document.getElementById('patient-view').style.display = 'none';
-    document.getElementById('empty-state').style.display = 'flex';
+    var pv = document.getElementById('patient-view');
+    var es = document.getElementById('empty-state');
+    if (pv) pv.style.display = 'none';
+    if (es) es.style.display = 'flex';
     rt.syncWorkContextChrome();
   }
 }
@@ -1116,7 +1151,7 @@ export function savePatient() {
 }
 
 function escTxtSafe(s) {
-  return String(s == null ? '')
+  return String(s == null ? '' : s)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')

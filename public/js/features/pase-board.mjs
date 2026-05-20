@@ -507,6 +507,9 @@ export function openPaseSectionInNormal(which) {
   } else if (w === "cultivos" || w === "cult") {
     switchAppTab("nota");
     switchInnerTab("cult");
+  } else if (w === "tend" || w === "tendencias") {
+    switchAppTab("nota");
+    switchInnerTab("tend");
   } else if (w === "med" || w === "medicamentos") {
     switchAppTab("med");
   } else if (w === "expediente" || w === "nota") {
@@ -590,6 +593,7 @@ export function switchAppTab(tab) {
     if (tab === "lab") rt.renderLabHistoryPanel();
     if (tab === "med") rt.renderMedRecetaPanel();
     if (tab === "agenda") rt.renderProcedureAgendaPanel();
+    if (tab === "nota" && rt.getActiveInner() === "tend") renderTendencias();
   }
 
   syncMainAppTabA11y(tab);
@@ -715,11 +719,11 @@ export function switchInnerTab(tab, opts) {
     if (pane) pane.classList.toggle("active", tab === t);
   });
   if (tab === "datos") renderPatientDataPane();
+  syncRoundExpedienteLayout();
   if (tab === "tend") renderTendencias();
   if (tab === "cult") renderCultivosTable();
   if (tab === "listado") renderListadoForm();
   if (tab === "todo") renderTodoForm();
-  syncRoundExpedienteLayout();
 }
 
 export function renderInnerTabs() {

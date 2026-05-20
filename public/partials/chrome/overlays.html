@@ -1,0 +1,73 @@
+<a class="skip-to-main" href="#main-area">Saltar al contenido principal</a>
+
+<div id="update-banner">
+  <span id="update-banner-text">Descargando actualización…</span>
+  <div id="update-progress-track">
+    <div id="update-progress-fill"></div>
+  </div>
+  <div id="update-actions">
+    <button type="button" class="update-banner-btn-primary" onclick="installUpdate()">Instalar y reiniciar</button>
+    <button type="button" class="update-banner-btn-secondary" onclick="document.getElementById('update-banner').classList.remove('is-active')">Más tarde</button>
+  </div>
+</div>
+
+<div id="update-modal-backdrop" aria-hidden="true">
+  <div id="update-modal" role="dialog" aria-modal="true" aria-labelledby="update-modal-title" tabindex="-1">
+    <h2 id="update-modal-title">Nueva versión<span class="version-pill" id="update-modal-version-pill" style="display:none;"></span><span class="channel-pill" id="update-modal-channel-pill" style="display:none;">Pre-release</span></h2>
+    <div class="release-notes" id="update-modal-notes"></div>
+    <div class="update-state-msg" id="update-modal-state"></div>
+    <div class="error-box" id="update-modal-error" style="display:none;"></div>
+    <div class="progress-wrap" id="update-modal-progress-wrap">
+      <div class="progress-fill" id="update-modal-progress-fill"></div>
+    </div>
+    <div class="progress-label" id="update-modal-progress-label"></div>
+    <div class="modal-actions" id="update-modal-actions-primary"></div>
+    <div class="modal-actions" id="update-modal-actions-secondary" style="margin-top:8px;justify-content:flex-start;"></div>
+  </div>
+</div>
+
+<div id="min-version-backdrop" aria-hidden="true">
+  <div id="min-version-modal" role="alertdialog" aria-modal="true" aria-labelledby="min-version-title" aria-describedby="min-version-message">
+    <h2 id="min-version-title">Actualización requerida</h2>
+    <p id="min-version-message">Esta versión de R+ ya no es compatible. Instala la versión mínima soportada para continuar usando la aplicación.</p>
+    <div class="min-version-meta" id="min-version-meta"></div>
+    <div class="min-version-actions">
+      <button type="button" class="btn-secondary" id="min-version-releases-btn">Descargar desde GitHub</button>
+      <button type="button" class="btn-primary" id="min-version-check-btn">Buscar actualización</button>
+    </div>
+  </div>
+</div>
+
+<div id="tend-hidden-modal-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal tend-hidden-modal" role="dialog" aria-modal="true" aria-labelledby="tend-hidden-modal-title" onclick="event.stopPropagation()">
+    <h3 id="tend-hidden-modal-title">Analitos ocultos</h3>
+    <p class="tend-hidden-modal-hint">Pulsa el ícono del ojo junto a cada nombre para volver a mostrarlo en la cuadrícula de tendencias.</p>
+    <div id="tend-hidden-modal-chips" class="tend-hidden-modal-chips"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn-save" onclick="tendResetAllHiddenSeries()">Mostrar todos</button>
+    </div>
+  </div>
+</div>
+
+<div id="lab-display-prefs-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal lab-display-prefs-modal" role="dialog" aria-modal="true" aria-labelledby="lab-display-prefs-title" onclick="event.stopPropagation()">
+    <h3 id="lab-display-prefs-title">Vista de laboratorio</h3>
+    <p class="lab-display-prefs-hint">Solo en este equipo · resultados, copiar y enviar a nota.</p>
+    <div class="lab-display-prefs-fields">
+      <div class="lab-pref-row">
+        <span class="lab-pref-row-label" id="lab-pref-bh-extended-lbl">BH extendida</span>
+        <label class="rpc-switch">
+          <input type="checkbox" id="lab-pref-bh-extended" class="rpc-switch-input" role="switch" aria-labelledby="lab-pref-bh-extended-lbl" onchange="onLabDisplayPrefsChanged()" />
+          <span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span>
+        </label>
+      </div>
+      <div class="lab-pref-row">
+        <span class="lab-pref-row-label" id="lab-pref-gaso-extended-lbl">Gasometría extendida</span>
+        <label class="rpc-switch">
+          <input type="checkbox" id="lab-pref-gaso-extended" class="rpc-switch-input" role="switch" aria-labelledby="lab-pref-gaso-extended-lbl" onchange="onLabDisplayPrefsChanged()" />
+          <span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span>
+        </label>
+      </div>
+    </div>
+  </div>
+</div>

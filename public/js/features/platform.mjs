@@ -1621,7 +1621,7 @@ function showUpdateModal() {
   if (modal) setTimeout(function() { try { modal.focus(); } catch (_e) {} }, 50);
 }
 
-function hideUpdateModal() {
+export function hideUpdateModal() {
   var el = document.getElementById('update-modal-backdrop');
   if (!el) return;
   el.style.display = 'none';
@@ -1879,6 +1879,7 @@ export const platformWindowHandlers = {
   restorePreimportBackupPrompt,
   syncPreimportBackupUi,
   installUpdate,
+  hideUpdateModal,
 };
 
 export {
