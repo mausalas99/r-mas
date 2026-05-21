@@ -25,7 +25,7 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 ---
 
-**Versión estable actual:** [5.0.3](https://github.com/mausalas99/r-mas/releases/tag/v5.0.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [5.0.4](https://github.com/mausalas99/r-mas/releases/tag/v5.0.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -95,6 +95,12 @@ Notas: `docs/RELEASE_NOTES_3.3.1.txt`.
 
 ---
 
+
+## R+ 5.0.4 (estable — historial de labs corrupto)
+
+- **TODO:** completar bullets en README.
+
+Notas: `docs/RELEASE_NOTES_5.0.4.txt`.
 ## R+ 3.3.0 (estable — LiveSync por sala: agenda y pendientes)
 
 - **LiveSync** — En la misma sala LAN, agenda de procedimientos y pendientes se sincronizan en vivo entre equipos.

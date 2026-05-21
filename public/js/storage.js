@@ -21,6 +21,27 @@ function safeParseObject(raw) {
   return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
 }
 
+/** Asegura que el historial de un paciente sea siempre un arreglo de conjuntos. */
+export function normalizeLabHistoryPatientSets(value) {
+  if (value == null) return [];
+  if (Array.isArray(value)) return value;
+  if (typeof value !== 'object') return [];
+  if (Array.isArray(value.resLabs) || value.id != null || value.sourceText != null) {
+    return [value];
+  }
+  var keys = Object.keys(value);
+  if (!keys.length) return [];
+  if (keys.every(function (k) { return /^\d+$/.test(k); })) {
+    return keys
+      .sort(function (a, b) { return Number(a) - Number(b); })
+      .map(function (k) { return value[k]; })
+      .filter(function (s) { return s && typeof s === 'object'; });
+  }
+  return keys
+    .map(function (k) { return value[k]; })
+    .filter(function (s) { return s && typeof s === 'object'; });
+}
+
 function coerceBool(v, defaultVal) {
   if (v === true || v === false) return v;
   if (v === 'true' || v === 1) return true;
@@ -143,7 +164,12 @@ export const storage = {
    * @returns {Object} Object mapping patient IDs to arrays of lab entries
    */
   getLabHistory() {
-    return safeParseObject(localStorage.getItem('rpc-labHistory'));
+    var raw = safeParseObject(localStorage.getItem('rpc-labHistory'));
+    var out = {};
+    Object.keys(raw).forEach(function (k) {
+      out[k] = normalizeLabHistoryPatientSets(raw[k]);
+    });
+    return out;
   },
 
   /**
@@ -153,7 +179,9 @@ export const storage = {
   saveLabHistory(labHistory) {
     const lhPersist = {};
     Object.keys(labHistory).forEach(k => {
-      if (labHistory[k] && !k.startsWith('demo-')) lhPersist[k] = labHistory[k];
+      if (k.startsWith('demo-')) return;
+      var sets = normalizeLabHistoryPatientSets(labHistory[k]);
+      if (sets.length) lhPersist[k] = sets;
     });
     localStorage.setItem('rpc-labHistory', JSON.stringify(lhPersist));
   },

@@ -23,6 +23,7 @@ import {
 } from './tend-core.mjs';
 import { extractParsedValues, buildParsedBySectionFromResLabs } from './features/diagrams.mjs';
 import { inferFechaLabSetFromId } from './features/tendencias.mjs';
+import { normalizeLabHistoryPatientSets } from './storage.js';
 import {
   patients,
   notes,
@@ -248,8 +249,9 @@ export function rebuildEstudiosFromLabHistory(patientId) {
 }
 
 export function ensureParsedLabHistory(patientId) {
-  var history = labHistory[patientId] || [];
-  var changed = false;
+  var raw = labHistory[patientId];
+  var history = normalizeLabHistoryPatientSets(raw);
+  var changed = !Array.isArray(raw) || raw !== history;
   var rebuildNota = false;
   var noteLines = notes[patientId] && notes[patientId].estudios ? notes[patientId].estudios.split('\n') : [];
 
@@ -329,6 +331,11 @@ export function ensureParsedLabHistory(patientId) {
   });
   if (rebuildNota && patientId && notes[patientId]) {
     rebuildEstudiosFromLabHistory(patientId);
+    changed = true;
+  }
+  if (!Array.isArray(raw) || raw !== history) {
+    if (history.length) labHistory[patientId] = history;
+    else delete labHistory[patientId];
     changed = true;
   }
   if (changed) saveState();

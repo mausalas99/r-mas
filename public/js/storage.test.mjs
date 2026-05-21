@@ -13,7 +13,7 @@ const mock = {
 global.localStorage = mock;
 global.window = { localStorage: mock };
 
-const { storage } = await import('./storage.js');
+const { storage, normalizeLabHistoryPatientSets } = await import('./storage.js');
 
 describe('storage todos', () => {
   beforeEach(() => {
@@ -164,5 +164,48 @@ describe('scheduled procedures (agenda v1)', () => {
       storage.getScheduledProcedures().map((x) => x.id),
       ['e2']
     );
+  });
+});
+
+describe('normalizeLabHistoryPatientSets', () => {
+  it('returns [] for nullish and non-objects', () => {
+    assert.deepStrictEqual(normalizeLabHistoryPatientSets(null), []);
+    assert.deepStrictEqual(normalizeLabHistoryPatientSets('x'), []);
+  });
+
+  it('passes through arrays', () => {
+    var arr = [{ id: '1', resLabs: ['Hb 10'] }];
+    assert.strictEqual(normalizeLabHistoryPatientSets(arr), arr);
+  });
+
+  it('wraps a single set object', () => {
+    var set = { id: 'a', resLabs: ['Na 140'] };
+    assert.deepStrictEqual(normalizeLabHistoryPatientSets(set), [set]);
+  });
+
+  it('converts id map objects to arrays', () => {
+    var map = {
+      s1: { id: 's1', resLabs: ['Hb 10'] },
+      s2: { id: 's2', resLabs: ['Na 140'] },
+    };
+    assert.equal(normalizeLabHistoryPatientSets(map).length, 2);
+  });
+});
+
+describe('getLabHistory', () => {
+  beforeEach(() => {
+    for (const k of Object.keys(store)) delete store[k];
+  });
+
+  it('normalizes corrupt per-patient entries on read', () => {
+    store['rpc-labHistory'] = JSON.stringify({
+      p1: { s1: { id: 's1', resLabs: ['Hb 12'] } },
+      p2: [{ id: 'ok', resLabs: ['Cr 1'] }],
+    });
+    var lh = storage.getLabHistory();
+    assert.ok(Array.isArray(lh.p1));
+    assert.equal(lh.p1.length, 1);
+    assert.ok(Array.isArray(lh.p2));
+    assert.equal(lh.p2.length, 1);
   });
 });

@@ -1174,6 +1174,16 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '5.0.4': [
+    {
+      title: 'TODO',
+      body: 'Completar antes de publicar.',
+    },
+    {
+      title: 'TODO',
+      body: 'Completar antes de publicar.',
+    },
+  ],
   '5.0.3': [
     {
       title: 'Copiar labs en Windows',
