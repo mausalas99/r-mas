@@ -8,6 +8,11 @@ import {
   renderEntry,
 } from "../labs.js";
 import {
+  parseSomeReportTables,
+  renderSomeReportTablesHtml,
+  wireSomeTableExportButtons,
+} from "../labs-some-table.mjs";
+import {
   isDuplicateAgainstLatest,
   findDuplicateLabSetIdsToRemove,
   findExactDuplicateLabGroups,
@@ -21,6 +26,7 @@ import {
   normalizeHoraLabHistory,
 } from "../tend-core.mjs";
 import { evaluateLabSuggestions, filterNewLabSuggestions } from "../lab-clinical-suggestions.mjs";
+import { normalizeLabHistoryPatientSets } from "../storage.js";
 import { patients, notes, labHistory, saveState } from "../app-state.mjs";
 import { isPaseMode } from "./chrome.mjs";
 
@@ -228,6 +234,16 @@ export function safeAttrJsString(s) {
   return String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 
+function findLabHistorySetByRef(sets, setId) {
+  var sid = String(setId == null ? '' : setId);
+  if (sid.indexOf('__idx_') === 0) {
+    var idx = parseInt(sid.slice(6), 10);
+    if (Number.isFinite(idx) && idx >= 0 && idx < sets.length) return sets[idx];
+    return null;
+  }
+  return sets.find(function (s) { return String(s.id) === sid; }) || null;
+}
+
 function labRowSectionKey(row) {
   var s = String(row == null ? '' : row).trim();
   if (!s) return '';
@@ -305,7 +321,7 @@ export function renderLabHistoryPanel() {
     return;
   }
   hintEl.style.display = 'none';
-  listEl.innerHTML = hist.map(function(set) {
+  listEl.innerHTML = hist.map(function(set, idx) {
     var n = (set.resLabs && set.resLabs.length) ? set.resLabs.length : 0;
     var rawFe = set.fecha === 'Anterior' ? '' : (normalizeFechaLabHistory(set.fecha) || String(set.fecha || '').trim() || rt.inferFechaLabSetFromId(set) || '');
     var fe;
@@ -319,7 +335,9 @@ export function renderLabHistoryPanel() {
     if (ho) parts.push(ho);
     parts.push(n + ' bloque' + (n === 1 ? '' : 's'));
     var meta = parts.join(' · ');
-    var sid = safeAttrJsString(set.id);
+    var sid = safeAttrJsString(
+      set.id != null && String(set.id).trim() !== '' ? set.id : '__idx_' + idx
+    );
     return (
       '<div class="lab-history-row" role="listitem">' +
       '<div class="lab-history-meta">' + esc(meta) + '</div>' +
@@ -340,8 +358,8 @@ function replayLabHistorySet(setId) {
     rt.showToast('Selecciona un paciente primero', 'error');
     return;
   }
-  var sets = labHistory[rt.getActiveId()] || [];
-  var set = sets.find(function(s) { return String(s.id) === String(setId); });
+  var sets = normalizeLabHistoryPatientSets(labHistory[rt.getActiveId()]);
+  var set = findLabHistorySetByRef(sets, setId);
   if (!set || !set.resLabs || !set.resLabs.length) {
     rt.showToast('No se encontró ese estudio', 'error');
     return;
@@ -371,8 +389,8 @@ function reprocessLabHistorySet(setId) {
     rt.showToast('Selecciona un paciente primero', 'error');
     return;
   }
-  var sets = labHistory[rt.getActiveId()] || [];
-  var set = sets.find(function (s) { return String(s.id) === String(setId); });
+  var sets = normalizeLabHistoryPatientSets(labHistory[rt.getActiveId()]);
+  var set = findLabHistorySetByRef(sets, setId);
   if (!set) {
     rt.showToast('No se encontró ese estudio', 'error');
     return;
@@ -404,10 +422,20 @@ function reprocessLabHistorySet(setId) {
 }
 
 function deleteLabHistorySet(setId) {
-  if (!rt.getActiveId() || !labHistory[rt.getActiveId()]) return;
+  var pid = rt.getActiveId();
+  if (!pid) return;
+  var sets = normalizeLabHistoryPatientSets(labHistory[pid]);
+  if (!sets.length) return;
   if (!confirm('¿Eliminar este conjunto del historial? Las tendencias se recalcularán.')) return;
-  labHistory[rt.getActiveId()] = (labHistory[rt.getActiveId()] || []).filter(function(s) { return String(s.id) !== String(setId); });
-  if (!labHistory[rt.getActiveId()].length) delete labHistory[rt.getActiveId()];
+  var sid = String(setId == null ? '' : setId);
+  if (sid.indexOf('__idx_') === 0) {
+    var idx = parseInt(sid.slice(6), 10);
+    if (Number.isFinite(idx) && idx >= 0 && idx < sets.length) sets.splice(idx, 1);
+  } else {
+    sets = sets.filter(function (s) { return String(s.id) !== sid; });
+  }
+  if (sets.length) labHistory[pid] = sets;
+  else delete labHistory[pid];
   saveState();
   rt.addAuditEntry('lab-history-delete', 'ok', 1, String(setId));
   renderLabHistoryPanel();
@@ -1219,6 +1247,22 @@ function renderOutput(result) {
     box.appendChild(fechaTop);
   }
   var src = String(result.sourceText || '').trim();
+  if (src && looksLikeSomeLabReport(src)) {
+    var someParsed = parseSomeReportTables(src);
+    if (someParsed.departments && someParsed.departments.length) {
+      var someHost = document.createElement('div');
+      someHost.className = 'lab-some-tables-host';
+      someHost.innerHTML = renderSomeReportTablesHtml(someParsed);
+      box.appendChild(someHost);
+      wireSomeTableExportButtons(someHost, function (msg, kind) {
+        rt.showToast(msg, kind);
+      });
+      var someSep = document.createElement('div');
+      someSep.className = 'lab-some-compact-sep';
+      someSep.textContent = 'Resumen R+';
+      box.appendChild(someSep);
+    }
+  }
   var labDisp = rt.getLabOutputPrefs();
   resLabs.forEach(function (text) {
     if (labDisp.hideGasoAdvInterp && rt.isGasoInterpretacionResLabChunk(text)) return;

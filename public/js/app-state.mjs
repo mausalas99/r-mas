@@ -1,4 +1,4 @@
-import { storage } from './storage.js';
+import { storage, normalizeLabHistoryPatientSets } from './storage.js';
 import { applyMedCatalogOverlay } from './med-receta-core.mjs';
 
 export let patients = [];
@@ -37,6 +37,20 @@ export function setSaveStateHooks({ before, after } = {}) {
   if (after !== undefined) _afterSave = after;
 }
 
+export function repairLabHistoryInMemory() {
+  var changed = false;
+  Object.keys(labHistory || {}).forEach(function (pid) {
+    var raw = labHistory[pid];
+    var fixed = normalizeLabHistoryPatientSets(raw);
+    if (!Array.isArray(raw) || raw !== fixed || JSON.stringify(raw) !== JSON.stringify(fixed)) {
+      if (fixed.length) labHistory[pid] = fixed;
+      else delete labHistory[pid];
+      changed = true;
+    }
+  });
+  return changed;
+}
+
 export function initAppState() {
   setPatients(storage.getPatients());
   setNotes(storage.getNotes());
@@ -46,6 +60,7 @@ export function initAppState() {
   listadoProblemas = storage.getListadoProblemas();
   applyMedCatalogOverlay(storage.getMedCatalog());
   medNotaSelectionByPatient = {};
+  if (repairLabHistoryInMemory()) saveState();
 }
 
 export function saveState() {

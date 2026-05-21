@@ -21,25 +21,74 @@ function safeParseObject(raw) {
   return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
 }
 
-/** Asegura que el historial de un paciente sea siempre un arreglo de conjuntos. */
+function isMeaningfulLabHistorySet(set) {
+  if (!set || typeof set !== 'object') return false;
+  if (set.id === 'migrated-anterior' || set.id === 'migrated-recent') return true;
+  if (set.sourceText && String(set.sourceText).trim()) return true;
+  if (Array.isArray(set.resLabs) && set.resLabs.length) return true;
+  return false;
+}
+
+function ensureLabSetId(set, index, used) {
+  var raw = set.id != null ? String(set.id).trim() : '';
+  if (raw && used.indexOf(raw) === -1) {
+    used.push(raw);
+    set.id = raw;
+    return;
+  }
+  var base = raw || 'set-' + String(index);
+  var id = base;
+  var n = 2;
+  while (used.indexOf(id) !== -1) {
+    id = base + '-' + n;
+    n += 1;
+  }
+  set.id = id;
+  used.push(id);
+}
+
+/** Asegura arreglo de conjuntos válidos, con id único y sin basura vacía. */
 export function normalizeLabHistoryPatientSets(value) {
-  if (value == null) return [];
-  if (Array.isArray(value)) return value;
-  if (typeof value !== 'object') return [];
-  if (Array.isArray(value.resLabs) || value.id != null || value.sourceText != null) {
-    return [value];
+  var list = [];
+  if (value == null) return list;
+  if (Array.isArray(value)) list = value.slice();
+  else if (typeof value === 'object') {
+    if (Array.isArray(value.resLabs) || value.id != null || value.sourceText != null) {
+      list = [value];
+    } else {
+      var keys = Object.keys(value);
+      if (keys.length) {
+        if (keys.every(function (k) { return /^\d+$/.test(k); })) {
+          list = keys
+            .sort(function (a, b) { return Number(a) - Number(b); })
+            .map(function (k) { return value[k]; });
+        } else {
+          list = keys.map(function (k) {
+            var item = value[k];
+            if (!item || typeof item !== 'object') return null;
+            if (item.id == null || String(item.id).trim() === '') item.id = k;
+            return item;
+          });
+        }
+      }
+    }
   }
-  var keys = Object.keys(value);
-  if (!keys.length) return [];
-  if (keys.every(function (k) { return /^\d+$/.test(k); })) {
-    return keys
-      .sort(function (a, b) { return Number(a) - Number(b); })
-      .map(function (k) { return value[k]; })
-      .filter(function (s) { return s && typeof s === 'object'; });
-  }
-  return keys
-    .map(function (k) { return value[k]; })
-    .filter(function (s) { return s && typeof s === 'object'; });
+  var used = [];
+  var out = [];
+  list.forEach(function (set, index) {
+    if (!isMeaningfulLabHistorySet(set)) return;
+    var copy = set;
+    if (typeof set === 'object') {
+      try {
+        copy = Object.assign({}, set);
+      } catch (_e) {
+        copy = set;
+      }
+    }
+    ensureLabSetId(copy, index, used);
+    out.push(copy);
+  });
+  return out;
 }
 
 function coerceBool(v, defaultVal) {

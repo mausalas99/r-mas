@@ -173,9 +173,9 @@ describe('normalizeLabHistoryPatientSets', () => {
     assert.deepStrictEqual(normalizeLabHistoryPatientSets('x'), []);
   });
 
-  it('passes through arrays', () => {
+  it('normalizes valid arrays', () => {
     var arr = [{ id: '1', resLabs: ['Hb 10'] }];
-    assert.strictEqual(normalizeLabHistoryPatientSets(arr), arr);
+    assert.deepStrictEqual(normalizeLabHistoryPatientSets(arr), arr);
   });
 
   it('wraps a single set object', () => {
@@ -189,6 +189,13 @@ describe('normalizeLabHistoryPatientSets', () => {
       s2: { id: 's2', resLabs: ['Na 140'] },
     };
     assert.equal(normalizeLabHistoryPatientSets(map).length, 2);
+  });
+
+  it('drops empty junk sets', () => {
+    assert.deepStrictEqual(
+      normalizeLabHistoryPatientSets([{ id: 'x' }, { id: 'y', resLabs: ['Hb 10'] }]),
+      [{ id: 'y', resLabs: ['Hb 10'] }]
+    );
   });
 });
 

@@ -353,7 +353,7 @@ async function cmdPublish(argv) {
 
   if (!skipCommit) {
     run(
-      'git add package.json package-lock.json README.md docs/ public/index.html public/js/ lan-squad/'
+      'git add package.json package-lock.json README.md docs/ preload.js public/index.html public/index.src.html public/js/ public/partials/ public/styles/ lan-squad/'
     );
     const status = execSync('git status --porcelain', { cwd: ROOT, encoding: 'utf8' });
     if (status.trim()) {
