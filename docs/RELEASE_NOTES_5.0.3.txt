@@ -1,0 +1,23 @@
+R+ 5.0.3 (estable — copiar labs en Windows y tendencias)
+============================================================
+
+Fecha: 2026-05-21
+
+## Resumen
+
+Corrige el botón de copiar resultados de laboratorio en Windows y alinea el orden de series en Tendencias con el reporte SOME (BH y química sanguínea).
+
+## Nuevo / mejorado
+
+- **Laboratorio (Windows):** botón **Copiar** visible en el encabezado de Resultados y FAB flotante reposicionado por encima de la barra de tareas; copia al portapapeles con fallback seguro.
+- **Tendencias:** orden de paneles BH/QS según aparición en el informe SOME; más series de diferencial (%, bandas, eritrocitos) disponibles en el catálogo.
+- **Interfaz:** chip **Modo Pase** clicable para salir a vista Normal; pequeños ajustes de header y layout.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v5.0.3
+
+- Mac: `R+-5.0.3-arm64.dmg`, `R+-5.0.3-x64.dmg` (y zip para auto-update).
+- Windows: `R+-5.0.3-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).

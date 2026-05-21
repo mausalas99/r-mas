@@ -47,6 +47,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getWindowChromeFlags: function() {
     return {
       macTitleBarInset: process.platform === 'darwin',
+      isWindows: process.platform === 'win32',
     };
   },
   writeLanHostTeamCode: function(plain) {

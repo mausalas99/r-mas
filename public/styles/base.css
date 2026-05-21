@@ -336,37 +336,6 @@ html:not(.ui-density-normal) .ronda-labs-meta { margin-bottom: 12px; }
   min-height: 0;
   overflow: hidden;
 }
-.expediente-context-bar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-  padding: 8px calc(22px * var(--density-space)) 4px;
-  font-size: calc(12px * var(--density-font));
-  font-weight: 600;
-  color: var(--text-muted);
-  border-bottom: 1px solid color-mix(in oklab, var(--divider) 70%, transparent);
-  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
-}
-.expediente-context-bar[hidden] {
-  display: none !important;
-}
-.expediente-context-patient {
-  color: var(--text);
-  font-weight: 650;
-  max-width: min(220px, 36vw);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.expediente-context-sep {
-  opacity: 0.45;
-  user-select: none;
-}
-.expediente-context-section {
-  color: var(--action);
-  font-weight: 700;
-}
 .patient-ronda-fullbar {
   display: none;
   align-items: center;

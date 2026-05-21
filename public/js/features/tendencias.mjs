@@ -16,7 +16,7 @@ import {
   formatBhExtrasDisplayLine,
   parseBhTrendValuesFromResLab,
   bhTrendDisplayTitle,
-  BH_DIFF_DISPLAY_ORDER,
+  sortTrendSpecsBySomeOrder,
 } from '../labs.js';
 import { safeAttrJsString } from './lab-panel.mjs';
 import { guidedTourAdvanceAfter, getGuidedTourContext } from './settings-help.mjs';
@@ -121,14 +121,26 @@ var TEND_SECTION_ORDER = [
  * si aparecen pares sección/campo numéricos no listados.
  */
 var TEND_SERIES_CATALOG = [
+  { sectionKey: 'BH', fieldKey: 'RBC', cardTitle: 'Eritrocitos', hiddenByDefault: true },
   { sectionKey: 'BH', fieldKey: 'Hb', cardTitle: 'Hb' },
   { sectionKey: 'BH', fieldKey: 'Hto', cardTitle: 'Hto' },
   { sectionKey: 'BH', fieldKey: 'VCM', cardTitle: 'VCM' },
   { sectionKey: 'BH', fieldKey: 'HCM', cardTitle: 'HCM' },
+  { sectionKey: 'BH', fieldKey: 'CHCM', cardTitle: 'CHCM', hiddenByDefault: true },
+  { sectionKey: 'BH', fieldKey: 'RDW', cardTitle: 'RDW', hiddenByDefault: true },
   { sectionKey: 'BH', fieldKey: 'Leu', cardTitle: 'Leucocitos' },
   { sectionKey: 'BH', fieldKey: 'Neu', cardTitle: 'Neutrófilos' },
+  { sectionKey: 'BH', fieldKey: 'NeuPct', cardTitle: bhTrendDisplayTitle('NeuPct') },
+  { sectionKey: 'BH', fieldKey: 'Lin', cardTitle: 'Linfocitos', hiddenByDefault: true },
+  { sectionKey: 'BH', fieldKey: 'LinPct', cardTitle: bhTrendDisplayTitle('LinPct') },
+  { sectionKey: 'BH', fieldKey: 'Mono', cardTitle: 'Monocitos', hiddenByDefault: true },
+  { sectionKey: 'BH', fieldKey: 'MonoPct', cardTitle: bhTrendDisplayTitle('MonoPct') },
   { sectionKey: 'BH', fieldKey: 'Eos', cardTitle: 'Eosinófilos' },
+  { sectionKey: 'BH', fieldKey: 'EosPct', cardTitle: bhTrendDisplayTitle('EosPct') },
+  { sectionKey: 'BH', fieldKey: 'Baso', cardTitle: 'Basófilos', hiddenByDefault: true },
+  { sectionKey: 'BH', fieldKey: 'BasoPct', cardTitle: bhTrendDisplayTitle('BasoPct') },
   { sectionKey: 'BH', fieldKey: 'Plt', cardTitle: 'Plaquetas' },
+  { sectionKey: 'BH', fieldKey: 'MPV', cardTitle: 'VPM', hiddenByDefault: true },
   { sectionKey: 'PltCit', fieldKey: 'Plt', cardTitle: 'Plaquetas (citrato)' },
   { sectionKey: 'BH', fieldKey: 'Ret', cardTitle: 'Reticulocitos', hiddenByDefault: true },
   { sectionKey: 'BH', fieldKey: 'TP', cardTitle: 'TP', hiddenByDefault: true },
@@ -136,33 +148,21 @@ var TEND_SERIES_CATALOG = [
   { sectionKey: 'BH', fieldKey: 'INR', cardTitle: 'INR', hiddenByDefault: true },
   { sectionKey: 'BH', fieldKey: 'Fib', cardTitle: 'Fibrinógeno', hiddenByDefault: true },
   { sectionKey: 'BH', fieldKey: 'DD', cardTitle: 'Dímero D', hiddenByDefault: true },
-  { sectionKey: 'BH', fieldKey: 'RBC', cardTitle: 'Eritrocitos', hiddenByDefault: true },
-  { sectionKey: 'BH', fieldKey: 'CHCM', cardTitle: 'CHCM', hiddenByDefault: true },
-  { sectionKey: 'BH', fieldKey: 'RDW', cardTitle: 'RDW', hiddenByDefault: true },
-  { sectionKey: 'BH', fieldKey: 'Lin', cardTitle: 'Linfocitos', hiddenByDefault: true },
-  { sectionKey: 'BH', fieldKey: 'Mono', cardTitle: 'Monocitos', hiddenByDefault: true },
-  { sectionKey: 'BH', fieldKey: 'Baso', cardTitle: 'Basófilos', hiddenByDefault: true },
-  { sectionKey: 'BH', fieldKey: 'MPV', cardTitle: 'VPM', hiddenByDefault: true },
   { sectionKey: 'BH', fieldKey: 'Bandas', cardTitle: bhTrendDisplayTitle('Bandas') },
   { sectionKey: 'BH', fieldKey: 'Mielo', cardTitle: bhTrendDisplayTitle('Mielo') },
   { sectionKey: 'BH', fieldKey: 'Metamielo', cardTitle: bhTrendDisplayTitle('Metamielo') },
   { sectionKey: 'BH', fieldKey: 'Promielo', cardTitle: bhTrendDisplayTitle('Promielo') },
   { sectionKey: 'BH', fieldKey: 'Blastos', cardTitle: bhTrendDisplayTitle('Blastos') },
   { sectionKey: 'BH', fieldKey: 'Atipicos', cardTitle: bhTrendDisplayTitle('Atipicos') },
-  { sectionKey: 'BH', fieldKey: 'NeuPct', cardTitle: bhTrendDisplayTitle('NeuPct') },
-  { sectionKey: 'BH', fieldKey: 'LinPct', cardTitle: bhTrendDisplayTitle('LinPct') },
-  { sectionKey: 'BH', fieldKey: 'MonoPct', cardTitle: bhTrendDisplayTitle('MonoPct') },
-  { sectionKey: 'BH', fieldKey: 'EosPct', cardTitle: bhTrendDisplayTitle('EosPct') },
-  { sectionKey: 'BH', fieldKey: 'BasoPct', cardTitle: bhTrendDisplayTitle('BasoPct') },
   { sectionKey: 'QS', fieldKey: 'Glu', cardTitle: 'Glucosa' },
+  { sectionKey: 'QS', fieldKey: 'BUN', cardTitle: 'BUN' },
   { sectionKey: 'QS', fieldKey: 'Cr', cardTitle: 'Creatinina' },
   { sectionKey: 'QS', fieldKey: 'eTFG', cardTitle: 'eTFG (CKD-EPI 2021)' },
-  { sectionKey: 'QS', fieldKey: 'BUN', cardTitle: 'BUN' },
+  { sectionKey: 'QS', fieldKey: 'AU', cardTitle: 'Ácido úrico' },
   { sectionKey: 'QS', fieldKey: 'PCR', cardTitle: 'PCR' },
   { sectionKey: 'QS', fieldKey: 'PCT', cardTitle: 'Procalcitonina' },
-  { sectionKey: 'QS', fieldKey: 'AU', cardTitle: 'Ácido úrico' },
-  { sectionKey: 'QS', fieldKey: 'TGL', cardTitle: 'Triglicéridos' },
   { sectionKey: 'QS', fieldKey: 'COL', cardTitle: 'Colesterol' },
+  { sectionKey: 'QS', fieldKey: 'TGL', cardTitle: 'Triglicéridos' },
   { sectionKey: 'QS', fieldKey: 'VSG', cardTitle: 'VSG' },
   { sectionKey: 'QS', fieldKey: 'CPK', cardTitle: 'CPK' },
   { sectionKey: 'ESC', fieldKey: 'Na', cardTitle: 'Na' },
@@ -204,11 +204,6 @@ var TEND_SERIES_CATALOG = [
 ];
 var TEND_SECTION_EXPANDED_LS = 'rpc-tend-sections-expanded';
 var LAB_OUTPUT_PREFS_KEY = 'rpc-lab-output-prefs-v1';
-var LAB_BH_EXT_ORDER = [
-  'RBC', 'CHCM', 'RDW', 'MPV', 'Ret',
-  'TP', 'TTP', 'INR', 'Lin', 'Mono', 'Baso', 'NeuPct', 'LinPct', 'MonoPct', 'EosPct',
-  'BasoPct', 'Bandas', 'Mielo', 'Metamielo', 'Promielo', 'Blastos', 'Atipicos',
-];
 
 function getLabOutputPrefs() {
   try {
@@ -565,17 +560,8 @@ function getTendCatalogSpecsForSection(sectionKey, history) {
   var specs = buildMergedTrendSeriesCatalog(history || []).filter(function (sp) {
     return sp.sectionKey === sectionKey;
   });
-  if (sectionKey === 'BH') {
-    var rank = Object.create(null);
-    BH_DIFF_DISPLAY_ORDER.forEach(function (fk, i) {
-      rank[fk] = i;
-    });
-    specs.sort(function (a, b) {
-      var ra = Object.prototype.hasOwnProperty.call(rank, a.fieldKey) ? rank[a.fieldKey] : 999;
-      var rb = Object.prototype.hasOwnProperty.call(rank, b.fieldKey) ? rank[b.fieldKey] : 999;
-      if (ra !== rb) return ra - rb;
-      return String(a.cardTitle).localeCompare(String(b.cardTitle), 'es');
-    });
+  if (sectionKey === 'BH' || sectionKey === 'QS') {
+    return sortTrendSpecsBySomeOrder(sectionKey, specs);
   }
   return specs;
 }

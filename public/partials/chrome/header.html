@@ -1,8 +1,5 @@
 <header>
-  <h1 id="app-brand" role="button" tabindex="0" title="Abrir Mi Perfil" aria-label="R+, abrir Mi Perfil" onclick="openProfileFromHeader(event)" onkeydown="if(event.key==='Enter'||event.key===' '){openProfileFromHeader(event);}">
-    <span class="app-brand-mark">R+</span>
-    <span class="app-brand-hint">Perfil</span>
-  </h1>
+  <h1 id="app-brand" role="button" tabindex="0" title="Abrir Mi Perfil" aria-label="R+, abrir Mi Perfil" onclick="openProfileFromHeader(event)" onkeydown="if(event.key==='Enter'||event.key===' '){openProfileFromHeader(event);}">R+</h1>
   <span id="today-date"></span>
   <div class="header-right">
     <div class="header-work-cluster" aria-label="Contexto de trabajo">
@@ -19,7 +16,7 @@
           Estado Actual
         </button>
       </div>
-      <span id="header-pase-mode-chip" class="header-pase-mode-chip" style="display:none;" title="Resumen por paciente. Pulsa un título de sección para ver el detalle.">Modo Pase</span>
+      <button type="button" id="header-pase-mode-chip" class="header-pase-mode-chip" style="display:none;" onclick="exitPaseModeFromHeader()" title="Salir a vista Normal (pestañas completas)" aria-label="Salir del modo Pase">Modo Pase</button>
       <button type="button" id="header-app-mode-chip" class="header-app-mode-chip mode-sala" onclick="toggleHeaderWorkMode()" title="">
         Modo: Sala
       </button>

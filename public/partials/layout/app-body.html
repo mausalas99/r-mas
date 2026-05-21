@@ -144,6 +144,10 @@
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
               Resultados
             </span>
+            <button type="button" id="lab-copy-header-btn" class="card-header-soft-btn" hidden onclick="copiarLabsAlPortapapeles()" title="Copiar resultados al portapapeles" aria-label="Copiar resultados">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              Copiar
+            </button>
           </div>
           <div class="card-body">
             <div id="lab-output-box" style="line-height:2;"></div>
@@ -307,11 +311,6 @@
         <div id="patient-ronda-fullbar" class="patient-ronda-fullbar" aria-hidden="true">
           <button type="button" onclick="returnToRoundOverview()">Resumen de ronda</button>
         </div>
-        <nav id="expediente-context-bar" class="expediente-context-bar" hidden aria-label="Ubicación en expediente">
-          <span id="expediente-context-patient" class="expediente-context-patient"></span>
-          <span class="expediente-context-sep" aria-hidden="true">›</span>
-          <span id="expediente-context-section" class="expediente-context-section"></span>
-        </nav>
         <div class="inner-tab-bar">
           <button class="inner-tab" id="itab-datos" onclick="switchInnerTab('datos')" style="display:none;" aria-label="Datos del paciente">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>

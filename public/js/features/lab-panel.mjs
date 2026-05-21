@@ -61,6 +61,9 @@ let rt = {
   emitLiveSyncTodoUpsert() {},
   removeAtbRisPanelsFromBody() {},
   wireAtbRisHoverPanels() {},
+  copyToClipboardSafe(_t) {
+    return Promise.resolve(false);
+  },
   getLabOutputPrefs() {
     return { showBhExtendedLine: false, hideGasoAdvInterp: false };
   },
@@ -129,8 +132,30 @@ function ensureLabCopyFabController() {
 
 export function syncLabCopyFab(show) {
   ensureLabCopyFabController();
+  var visible = !!show;
   var fab = document.getElementById("lab-copy-fab");
-  if (fab) fab.hidden = !show;
+  var headerBtn = document.getElementById("lab-copy-header-btn");
+  if (fab) {
+    if (visible) {
+      fab.removeAttribute("hidden");
+      fab.style.display = "flex";
+      fab.setAttribute("aria-hidden", "false");
+    } else {
+      fab.setAttribute("hidden", "");
+      fab.style.display = "none";
+      fab.setAttribute("aria-hidden", "true");
+    }
+  }
+  if (headerBtn) {
+    if (visible) {
+      headerBtn.removeAttribute("hidden");
+      headerBtn.setAttribute("aria-hidden", "false");
+    } else {
+      headerBtn.setAttribute("hidden", "");
+      headerBtn.setAttribute("aria-hidden", "true");
+    }
+  }
+  document.documentElement.classList.toggle("lab-copy-fab-active", visible);
 }
 
 export function closeLabHistoryMoreMenu() {
@@ -834,14 +859,16 @@ function openLabPatientPicker() {
   document.body.appendChild(overlay);
 }
 
-function copiarLabsAlPortapapeles() {
+async function copiarLabsAlPortapapeles() {
   if (!activeLab || !activeLab.resLabs || !activeLab.resLabs.length) {
     rt.showToast('No hay resultados procesados', 'error'); return;
   }
   var text = buildLabLines().join('\n');
-  navigator.clipboard.writeText(text)
-    .then(function() { rt.showToast('Labs copiados al portapapeles ✓', 'success'); })
-    .catch(function() { rt.showToast('Error al copiar al portapapeles', 'error'); });
+  var ok = await rt.copyToClipboardSafe(text);
+  rt.showToast(
+    ok ? 'Labs copiados al portapapeles ✓' : 'Error al copiar al portapapeles',
+    ok ? 'success' : 'error'
+  );
 }
 
 export function enviarLabsANota() {

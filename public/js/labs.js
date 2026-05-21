@@ -179,6 +179,40 @@ export const BH_DIFF_DISPLAY_ORDER = [
 
 export const BH_SCALAR_EXT_ORDER = ['RBC', 'CHCM', 'RDW', 'MPV', 'Ret', 'Lin', 'Mono', 'Baso'];
 
+/** Orden de filas en tablas/gráficas de tendencia (reporte SOME, biometría hemática). */
+export const BH_SOME_TREND_ORDER = [
+  'RBC', 'Hb', 'Hto', 'VCM', 'HCM', 'CHCM', 'RDW',
+  'Leu', 'Neu', 'NeuPct', 'Lin', 'LinPct', 'Mono', 'MonoPct', 'Eos', 'EosPct', 'Baso', 'BasoPct',
+  'Plt', 'MPV',
+  'Ret',
+  'TP', 'TTP', 'INR', 'Fib', 'DD',
+  'Bandas', 'Mielo', 'Metamielo', 'Promielo', 'Blastos', 'Atipicos',
+];
+
+/** Orden QS en SOME (QUIMICA CLINICA; analitos de la sección QS en R+). */
+export const QS_SOME_TREND_ORDER = [
+  'Glu', 'BUN', 'Cr', 'eTFG', 'AU',
+  'PCR', 'PCT',
+  'COL', 'TGL',
+  'VSG', 'CPK',
+];
+
+export function sortTrendSpecsBySomeOrder(sectionKey, specs) {
+  var order =
+    sectionKey === 'BH' ? BH_SOME_TREND_ORDER : sectionKey === 'QS' ? QS_SOME_TREND_ORDER : null;
+  if (!order) return (specs || []).slice();
+  var rank = Object.create(null);
+  order.forEach(function (fk, i) {
+    rank[fk] = i;
+  });
+  return (specs || []).slice().sort(function (a, b) {
+    var ra = Object.prototype.hasOwnProperty.call(rank, a.fieldKey) ? rank[a.fieldKey] : 9999;
+    var rb = Object.prototype.hasOwnProperty.call(rank, b.fieldKey) ? rank[b.fieldKey] : 9999;
+    if (ra !== rb) return ra - rb;
+    return String(a.cardTitle || a.fieldKey).localeCompare(String(b.cardTitle || b.fieldKey), 'es');
+  });
+}
+
 var BH_DIFF_RANGE_LABELS = {
   NeuPct: ['SEGMENTADOS', 'NEU%', 'NEUTROFILOS%'],
   LinPct: ['LINFOCITOS', 'LYM%', 'LINFOCITOS%'],

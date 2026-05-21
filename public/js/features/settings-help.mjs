@@ -1174,6 +1174,18 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '5.0.3': [
+    {
+      title: 'Copiar labs en Windows',
+      body:
+        'Tras procesar un reporte verás Copiar en Resultados y el botón flotante; en Windows queda por encima de la barra de tareas.',
+    },
+    {
+      title: 'Tendencias al estilo SOME',
+      body:
+        'Las gráficas de BH y química sanguínea siguen el orden del informe; más parámetros de diferencial listos para mostrar.',
+    },
+  ],
   '5.0.2': [
     {
       title: 'Código más modular',

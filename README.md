@@ -25,7 +25,7 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 ---
 
-**Versión estable actual:** [5.0.2](https://github.com/mausalas99/r-mas/releases/tag/v5.0.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [5.0.3](https://github.com/mausalas99/r-mas/releases/tag/v5.0.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -79,6 +79,14 @@ Notas: `docs/RELEASE_NOTES_3.3.2.txt`.
 
 ---
 
+
+## R+ 5.0.3 (estable — copiar labs en Windows y tendencias)
+
+- **Laboratorio (Windows)** — **Copiar** en Resultados y FAB flotante visibles; copia al portapapeles con fallback.
+- **Tendencias** — Orden BH/QS alineado al reporte SOME; más series de diferencial en el catálogo.
+- **Interfaz** — Chip Modo Pase clicable para volver a vista Normal.
+
+Notas: `docs/RELEASE_NOTES_5.0.3.txt`.
 ## R+ 3.3.1 (estable — corrección Copiar labs)
 
 - **Laboratorio** — **Copiar** vuelve a exportar el texto compacto procesado (no el informe crudo de SOME).

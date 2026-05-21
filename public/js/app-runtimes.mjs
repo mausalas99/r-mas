@@ -474,6 +474,7 @@ registerSoapEstadoRuntime({
 
 registerLabPanelRuntime({
   showToast: showToast,
+  copyToClipboardSafe: copyToClipboardSafe,
   getActiveId: function () {
     return rt.getActiveId();
   },

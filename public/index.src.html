@@ -14,6 +14,7 @@
     if (window.electronAPI && typeof window.electronAPI.getWindowChromeFlags === 'function') {
       var f = window.electronAPI.getWindowChromeFlags();
       if (f && f.macTitleBarInset) document.documentElement.classList.add('electron-macos-inset-bar');
+      if (f && f.isWindows) document.documentElement.classList.add('electron-windows');
     }
   } catch (_e) {}
 })();
