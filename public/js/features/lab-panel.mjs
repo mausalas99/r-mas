@@ -7,11 +7,18 @@ import {
   reprocessLabResultLines_,
   renderEntry,
 } from "../labs.js";
+import { parseSomeReportTables } from "../labs-some-table.mjs";
 import {
-  parseSomeReportTables,
-  renderSomeReportTablesHtml,
-  wireSomeTableExportButtons,
-} from "../labs-some-table.mjs";
+  closeLabSomeTablesModal,
+  openLabSomeTablesModal,
+  registerLabSomeTablesModalRuntime,
+  syncLabSomeTablesBtn,
+} from "./lab-some-tables-modal.mjs";
+import {
+  closeSesionIngresoSendModal,
+  openSesionIngresoSendModal,
+  registerSesionIngresoSendRuntime,
+} from "./sesion-ingreso-send-modal.mjs";
 import {
   isDuplicateAgainstLatest,
   findDuplicateLabSetIdsToRemove,
@@ -154,33 +161,44 @@ export function syncLabCopyFab(show) {
   document.documentElement.classList.toggle("lab-copy-fab-active", visible);
 }
 
-var labSomeTablesBackdropBound = false;
+registerLabSomeTablesModalRuntime({
+  showToast: function (msg, kind) {
+    rt.showToast(msg, kind);
+  },
+  getParsed: function () {
+    return activeLab && activeLab.someTablesParsed ? activeLab.someTablesParsed : null;
+  },
+  isPaseMode: isPaseMode,
+  syncLabCopyFab: syncLabCopyFab,
+  syncLabOutputChrome: function () {
+    syncLabOutputChrome();
+  },
+});
 
-function ensureLabSomeTablesBackdropDismiss() {
-  var backdrop = document.getElementById("lab-some-tables-backdrop");
-  if (!backdrop || labSomeTablesBackdropBound) return;
-  labSomeTablesBackdropBound = true;
-  backdrop.addEventListener("click", function (ev) {
-    if (!backdrop.classList.contains("open")) return;
-    var panel = backdrop.querySelector(".lab-some-tables-modal");
-    if (panel && panel.contains(ev.target)) return;
-    closeLabSomeTablesModal();
-  });
-}
-
-function syncLabSomeTablesBtn(show) {
-  ensureLabSomeTablesBackdropDismiss();
-  var btn = document.getElementById("lab-some-tables-btn");
-  if (!btn) return;
-  var visible = !!show;
-  if (visible) {
-    btn.removeAttribute("hidden");
-    btn.setAttribute("aria-hidden", "false");
-  } else {
-    btn.setAttribute("hidden", "");
-    btn.setAttribute("aria-hidden", "true");
-  }
-}
+registerSesionIngresoSendRuntime({
+  showToast: function (msg, kind) {
+    rt.showToast(msg, kind);
+  },
+  getParsed: function () {
+    return activeLab && activeLab.someTablesParsed ? activeLab.someTablesParsed : null;
+  },
+  getPatientLabel: function () {
+    var patient = patients.find(function (p) {
+      return p.id === rt.getActiveId();
+    });
+    return patient ? patient.nombre || patient.registro || '' : '';
+  },
+  sendPayload: function (payload) {
+    if (window.electronAPI && window.electronAPI.sendToSesionIngreso) {
+      window.electronAPI.sendToSesionIngreso(payload).then(function (ok) {
+        if (ok) rt.showToast('Enviado a Sesión de Ingreso', 'ok');
+        else rt.showToast('No se pudo abrir Sesión de Ingreso', 'warn');
+      });
+      return;
+    }
+    rt.showToast('Integración disponible solo en la app de escritorio', 'warn');
+  },
+});
 
 export function syncLabOutputChrome() {
   var sec = document.getElementById("lab-output-section");
@@ -201,45 +219,7 @@ export function syncLabOutputChrome() {
   syncLabSomeTablesBtn(show && hasSome);
 }
 
-export function openLabSomeTablesModal() {
-  if (isPaseMode()) return;
-  var parsed = activeLab && activeLab.someTablesParsed;
-  if (!parsed || !parsed.departments || !parsed.departments.length) return;
-  ensureLabSomeTablesBackdropDismiss();
-  var backdrop = document.getElementById("lab-some-tables-backdrop");
-  var body = document.getElementById("lab-some-tables-modal-body");
-  if (!backdrop || !body) return;
-  body.innerHTML = renderSomeReportTablesHtml(parsed, {
-    hideGroupTitles: true,
-    modalLayout: true,
-  });
-  wireSomeTableExportButtons(
-    body,
-    function (msg, kind) {
-      rt.showToast(msg, kind);
-    },
-    function (deptIndex) {
-      return parsed.departments && parsed.departments[deptIndex]
-        ? parsed.departments[deptIndex]
-        : null;
-    }
-  );
-  backdrop.classList.add("open");
-  backdrop.setAttribute("aria-hidden", "false");
-  document.documentElement.classList.add("lab-some-tables-modal-open");
-  syncLabCopyFab(false);
-}
-
-export function closeLabSomeTablesModal() {
-  var backdrop = document.getElementById("lab-some-tables-backdrop");
-  var body = document.getElementById("lab-some-tables-modal-body");
-  if (!backdrop) return;
-  backdrop.classList.remove("open");
-  backdrop.setAttribute("aria-hidden", "true");
-  document.documentElement.classList.remove("lab-some-tables-modal-open");
-  if (body) body.innerHTML = "";
-  syncLabOutputChrome();
-}
+export { openLabSomeTablesModal, closeLabSomeTablesModal };
 
 export function closeLabHistoryMoreMenu() {
   document.querySelectorAll(".lab-history-more[open]").forEach(function (d) {
@@ -1380,6 +1360,8 @@ export const windowHandlers = {
   copiarLabsAlPortapapeles,
   openLabSomeTablesModal,
   closeLabSomeTablesModal,
+  openSesionIngresoSendModal,
+  closeSesionIngresoSendModal,
   closeLabHistoryMoreMenu,
   openLabPatientPicker,
   openLabHistoryDedupeReview,

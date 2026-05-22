@@ -22,6 +22,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openExternal: function(url) {
     return ipcRenderer.invoke('open-external', url);
   },
+  sendToSesionIngreso: function(payload) {
+    return ipcRenderer.invoke('sesion-ingreso-send', payload);
+  },
   checkForUpdates: function() {
     ipcRenderer.send('check-for-updates');
   },
