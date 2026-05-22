@@ -25,7 +25,7 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 ---
 
-**Versión estable actual:** [5.0.4](https://github.com/mausalas99/r-mas/releases/tag/v5.0.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [5.1.0](https://github.com/mausalas99/r-mas/releases/tag/v5.1.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
