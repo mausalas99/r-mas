@@ -1174,14 +1174,28 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
-  '5.0.4': [
+  '5.1.0': [
     {
-      title: 'TODO',
-      body: 'Completar antes de publicar.',
+      title: 'Tablas del reporte SOME',
+      body:
+        'Tras procesar un SOME, abre el modal desde Resultados: cada departamento en tabla con flags de alerta y secciones plegables.',
     },
     {
-      title: 'TODO',
-      body: 'Completar antes de publicar.',
+      title: 'Copiar TSV o PNG por departamento',
+      body:
+        'Desde el modal, copia una sección entera al portapapeles como tabla (TSV) o imagen (PNG) para pegar en notas o mensajes.',
+    },
+    {
+      title: 'Parser SOME más fiable',
+      body:
+        'Mejor lectura de EGO, citoquímico de líquidos y química; menos filas basura. Historial de labs más estable al restaurar respaldos.',
+    },
+  ],
+  '5.0.4': [
+    {
+      title: 'Historial de labs reparado',
+      body:
+        'Corrige respaldos con historial mal formado que impedían abrir Laboratorio (error forEach en sets corruptos).',
     },
   ],
   '5.0.3': [

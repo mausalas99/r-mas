@@ -29,6 +29,13 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 ---
 
+## R+ 5.1.0 (estable — tablas SOME del reporte)
+
+- **Laboratorio:** botón **Tablas del reporte** tras procesar un SOME; modal con tablas por departamento (BH, QS, orina, bacteriología, citoquímico, etc.).
+- **Copiar por sección:** TSV o PNG por departamento desde el modal; flags de alerta visibles en la tabla.
+- **Parser:** menos ruido (comentarios/observaciones), EGO y líquidos corporales agrupados correctamente; historial de labs más robusto al importar respaldos.
+
+Notas: `docs/RELEASE_NOTES_5.1.0.txt`.
 
 ## R+ 5.0.2 (estable — arquitectura modular, Pase y arranque)
 
