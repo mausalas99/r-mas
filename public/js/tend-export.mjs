@@ -1,15 +1,65 @@
 /**
- * Export helpers for tendencias group table (TSV + PNG).
+ * Export helpers for tendencias group table and SOME lab tables (TSV + PNG).
  */
+
+const THEMES = {
+  default: {
+    labelHeader: 'Analito',
+    fontSize: 11,
+    rowH: 22,
+    headerH: 26,
+    cellPad: 8,
+    labelMin: 100,
+    labelMax: 220,
+    colMin: 56,
+    colMax: 120,
+    titleAlign: 'left',
+    titleSize: 10,
+    zebra: false,
+    outerRadius: 0,
+  },
+  some: {
+    labelHeader: 'Estudio',
+    fontSize: 12,
+    rowH: 26,
+    headerH: 28,
+    cellPad: 10,
+    labelMin: 140,
+    labelMax: 520,
+    colMin: [140, 110],
+    colMax: [320, 360],
+    titleAlign: 'center',
+    titleSize: 13,
+    zebra: true,
+    outerRadius: 8,
+  },
+  'some-cito': {
+    labelHeader: 'Estudio',
+    fontSize: 12,
+    rowH: 26,
+    headerH: 28,
+    cellPad: 10,
+    labelMin: 140,
+    labelMax: 520,
+    colMin: [200],
+    colMax: [420],
+    titleAlign: 'center',
+    titleSize: 13,
+    zebra: true,
+    outerRadius: 8,
+  },
+};
 
 export function buildTableTsv(model) {
   if (!model || !model.columns || !model.rows) return '';
+  var theme = resolveTableTheme(model);
   var visibleCols = model.columns.filter(function (c) {
     return !c.hidden;
   });
+  var labelHeader = model.labelHeader || theme.labelHeader;
   var lines = [];
   lines.push(
-    ['Analito']
+    [labelHeader]
       .concat(
         visibleCols.map(function (c) {
           return c.header || '';
@@ -68,6 +118,23 @@ function fallbackCopyText(text) {
   }
 }
 
+function resolveTableTheme(model) {
+  if (model && model.theme && THEMES[model.theme]) return THEMES[model.theme];
+  if (model && model.columns && model.columns.length === 1 && /resultado/i.test(String(model.columns[0].header || ''))) {
+    return THEMES['some-cito'];
+  }
+  if (
+    model &&
+    model.columns &&
+    model.columns.length === 2 &&
+    /resultado/i.test(String(model.columns[0].header || '')) &&
+    /referencia/i.test(String(model.columns[1].header || ''))
+  ) {
+    return THEMES.some;
+  }
+  return THEMES.default;
+}
+
 function measureTextWidth(ctx, text, font) {
   ctx.font = font;
   return ctx.measureText(String(text || '')).width;
@@ -83,9 +150,85 @@ function truncateToWidth(ctx, text, maxW, font) {
   return t + ell;
 }
 
+function fitCellText(ctx, text, maxW, font) {
+  var t = String(text == null ? '' : text);
+  if (measureTextWidth(ctx, t, font) <= maxW) return t;
+  return truncateToWidth(ctx, t, maxW, font);
+}
+
+function drawRoundRect(ctx, x, y, w, h, r) {
+  var radius = Math.min(r, w / 2, h / 2);
+  if (radius <= 0) {
+    ctx.rect(x, y, w, h);
+    return;
+  }
+  if (typeof ctx.roundRect === 'function') {
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, radius);
+    return;
+  }
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + w - radius, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+  ctx.lineTo(x + w, y + h - radius);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+  ctx.lineTo(x + radius, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+}
+
+function cellDisplayText(cell, theme) {
+  if (!cell) return '—';
+  var text = cell.text != null ? String(cell.text) : '';
+  if (!text) text = '—';
+  if (
+    (theme === THEMES.some || theme === THEMES['some-cito']) &&
+    cell.flag &&
+    cell.flag !== '*' &&
+    text !== '—'
+  ) {
+    return String(cell.flag).toUpperCase() + ' ' + text;
+  }
+  return text;
+}
+
+function colWidthLimits(theme, colIndex) {
+  if (theme.colMin && Array.isArray(theme.colMin)) {
+    return {
+      min: theme.colMin[colIndex] || theme.colMin[0] || 56,
+      max: (theme.colMax && theme.colMax[colIndex]) || theme.colMax[0] || 160,
+    };
+  }
+  return { min: theme.colMin, max: theme.colMax };
+}
+
+function measureCellContentWidth(ctx, cell, theme, font, fontBold) {
+  if (!cell) return measureTextWidth(ctx, '—', font);
+  var text = cell.text != null ? String(cell.text) : '—';
+  if (!text) text = '—';
+  if (
+    (theme === THEMES.some || theme === THEMES['some-cito']) &&
+    cell.flag &&
+    cell.flag !== '*' &&
+    text !== '—'
+  ) {
+    var flagFont = '700 ' + theme.fontSize + 'px -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif';
+    var valueFont = cell.abnormal ? fontBold : font;
+    return (
+      measureTextWidth(ctx, String(cell.flag).toUpperCase() + ' ', flagFont) +
+      measureTextWidth(ctx, text, valueFont)
+    );
+  }
+  var useFont = cell.abnormal ? fontBold : font;
+  return measureTextWidth(ctx, cellDisplayText(cell, theme), useFont);
+}
+
 /**
  * Dibuja la tabla en canvas (fiable en Electron; sin foreignObject).
- * @param {object} model — mismo formato que buildTableTsv
+ * @param {object} model — columns, rows; opcional theme, labelHeader
  */
 export function copyTableModelAsPng(model, title, onDone) {
   var done = typeof onDone === 'function' ? onDone : function () {};
@@ -105,45 +248,60 @@ export function copyTableModelAsPng(model, title, onDone) {
     return;
   }
 
+  var theme = resolveTableTheme(model);
+  var labelHeader = model.labelHeader || theme.labelHeader;
+  var isSome = theme === THEMES.some || theme === THEMES['some-cito'];
+
   var SCALE = 2;
-  var TITLE_H = 22;
-  var MARGIN = 12;
-  var CELL_PAD = 8;
-  var ROW_H = 22;
-  var HEADER_H = 26;
-  var font = '11px Arial,sans-serif';
-  var fontBold = 'bold 11px Arial,sans-serif';
-  var fontTitle = 'bold 10px Arial,sans-serif';
+  var MARGIN = isSome ? 16 : 12;
+  var TITLE_H = isSome ? 36 : 22;
+  var CELL_PAD = theme.cellPad;
+  var ROW_H = theme.rowH;
+  var HEADER_H = theme.headerH;
+  var font = theme.fontSize + 'px -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif';
+  var fontBold = '600 ' + font;
+  var fontLabel = '600 ' + font;
+  var fontTitle = (isSome ? '600 ' : 'bold ') + theme.titleSize + 'px -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif';
+  var fontHeader = '700 ' + (isSome ? '10' : '11') + 'px -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif';
 
   var probe = document.createElement('canvas').getContext('2d');
   var labelColW = Math.max(
-    100,
-    measureTextWidth(probe, 'Analito', fontBold) + CELL_PAD * 2
+    theme.labelMin,
+    measureTextWidth(probe, labelHeader, fontHeader) + CELL_PAD * 2
   );
   visibleRows.forEach(function (row) {
     labelColW = Math.max(
       labelColW,
-      measureTextWidth(probe, row.label || '', font) + CELL_PAD * 2
+      measureTextWidth(probe, row.label || '', fontLabel) + CELL_PAD * 2
     );
   });
-  labelColW = Math.min(labelColW, 220);
+  if (theme.labelMax > 0) labelColW = Math.min(labelColW, theme.labelMax);
 
-  var colWidths = visibleCols.map(function (col) {
-    var w = measureTextWidth(probe, col.header || '', fontBold) + CELL_PAD * 2;
+  var colWidths = visibleCols.map(function (col, ci) {
+    var limits = colWidthLimits(theme, ci);
+    var hdr = col.header || '';
+    var w = measureTextWidth(probe, isSome ? hdr : hdr, fontHeader) + CELL_PAD * 2;
+    if (isSome) {
+      w = Math.max(w, measureTextWidth(probe, hdr.toUpperCase(), fontHeader) + CELL_PAD * 2);
+    }
     visibleRows.forEach(function (row) {
       var cell = row.cells[model.columns.indexOf(col)];
       if (!cell) return;
-      w = Math.max(w, measureTextWidth(probe, cell.text || '', font) + CELL_PAD * 2);
+      w = Math.max(
+        w,
+        measureCellContentWidth(probe, cell, theme, font, fontBold) + CELL_PAD * 2
+      );
     });
-    return Math.min(Math.max(w, 56), 120);
+    return Math.min(Math.max(w, limits.min), limits.max);
   });
 
   var tableW = labelColW + colWidths.reduce(function (a, b) {
     return a + b;
   }, 0);
   var tableH = HEADER_H + visibleRows.length * ROW_H;
-  var cw = tableW + MARGIN * 2;
-  var ch = tableH + TITLE_H + MARGIN * 2;
+  var framePad = theme.outerRadius > 0 ? 1 : 0;
+  var cw = tableW + MARGIN * 2 + framePad * 2;
+  var ch = tableH + TITLE_H + MARGIN * 2 + framePad * 2;
 
   var canvas = document.createElement('canvas');
   canvas.width = cw * SCALE;
@@ -154,73 +312,136 @@ export function copyTableModelAsPng(model, title, onDone) {
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, cw, ch);
 
+  var titleText = String(title || 'Tabla').trim();
+  var ox = MARGIN + framePad;
+  var oy = MARGIN + framePad;
+
+  if (theme.outerRadius > 0) {
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1;
+    drawRoundRect(ctx, ox - 1, oy - 1, tableW + 2, tableH + TITLE_H + 2, theme.outerRadius + 1);
+    ctx.stroke();
+  }
+
+  ctx.save();
   ctx.font = fontTitle;
-  ctx.fillStyle = '#9ca3af';
-  ctx.textAlign = 'left';
+  ctx.fillStyle = isSome ? '#334155' : '#9ca3af';
+  ctx.textAlign = theme.titleAlign;
   ctx.textBaseline = 'top';
-  ctx.fillText(String(title || 'Tabla').toUpperCase(), MARGIN, MARGIN);
+  var titleX = theme.titleAlign === 'center' ? ox + tableW / 2 : ox;
+  var titleY = oy + (isSome ? 10 : 0);
+  ctx.fillText(titleText, titleX, titleY);
+  if (isSome && titleText) {
+    var titleW = measureTextWidth(ctx, titleText, fontTitle);
+    var underlineY = titleY + theme.titleSize + 4;
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(titleX - titleW / 2, underlineY);
+    ctx.lineTo(titleX + titleW / 2, underlineY);
+    ctx.stroke();
+  }
+  ctx.restore();
 
-  var ox = MARGIN;
-  var oy = MARGIN + TITLE_H;
+  oy += TITLE_H;
+  var tableOx = ox;
+  var tableOy = oy;
 
-  ctx.strokeStyle = '#e5e7eb';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.strokeStyle = '#e2e8f0';
   ctx.lineWidth = 1;
+
+  function fillCell(x, y, w, h, fill) {
+    if (fill) {
+      ctx.fillStyle = fill;
+      ctx.fillRect(x, y, w, h);
+    }
+  }
 
   function strokeCell(x, y, w, h) {
     ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
   }
 
   // Header row
-  ctx.fillStyle = '#f3f4f6';
-  ctx.fillRect(ox, oy, tableW, HEADER_H);
-  ctx.font = fontBold;
-  ctx.fillStyle = '#6b7280';
-  ctx.textBaseline = 'middle';
-  var hx = ox;
-  strokeCell(hx, oy, labelColW, HEADER_H);
+  fillCell(tableOx, tableOy, tableW, HEADER_H, isSome ? '#f1f5f9' : '#f3f4f6');
+  ctx.font = fontHeader;
+  ctx.fillStyle = isSome ? '#64748b' : '#6b7280';
+  var hx = tableOx;
+  strokeCell(hx, tableOy, labelColW, HEADER_H);
+  var headerLabel = isSome ? labelHeader.toUpperCase() : labelHeader;
   ctx.fillText(
-    truncateToWidth(ctx, 'Analito', labelColW - CELL_PAD * 2, fontBold),
+    fitCellText(ctx, headerLabel, labelColW - CELL_PAD * 2, fontHeader),
     hx + CELL_PAD,
-    oy + HEADER_H / 2
+    tableOy + HEADER_H / 2
   );
   hx += labelColW;
   for (var ci = 0; ci < visibleCols.length; ci++) {
-    strokeCell(hx, oy, colWidths[ci], HEADER_H);
+    strokeCell(hx, tableOy, colWidths[ci], HEADER_H);
+    var hdr = visibleCols[ci].header || '';
+    if (isSome) hdr = hdr.toUpperCase();
     ctx.fillText(
-      truncateToWidth(ctx, visibleCols[ci].header || '', colWidths[ci] - CELL_PAD * 2, fontBold),
+      fitCellText(ctx, hdr, colWidths[ci] - CELL_PAD * 2, fontHeader),
       hx + CELL_PAD,
-      oy + HEADER_H / 2
+      tableOy + HEADER_H / 2
     );
     hx += colWidths[ci];
   }
 
   // Body
-  ctx.font = font;
   for (var ri = 0; ri < visibleRows.length; ri++) {
     var row = visibleRows[ri];
-    var ry = oy + HEADER_H + ri * ROW_H;
-    var cx = ox;
+    var ry = tableOy + HEADER_H + ri * ROW_H;
+    var zebraFill = theme.zebra && ri % 2 === 1 ? '#f8fafc' : null;
+    var cx = tableOx;
+
+    fillCell(cx, ry, labelColW, ROW_H, zebraFill);
     strokeCell(cx, ry, labelColW, ROW_H);
-    ctx.fillStyle = '#111827';
+    ctx.font = fontLabel;
+    ctx.fillStyle = '#0f172a';
     ctx.fillText(
-      truncateToWidth(ctx, row.label || '', labelColW - CELL_PAD * 2, font),
+      fitCellText(ctx, row.label || '', labelColW - CELL_PAD * 2, fontLabel),
       cx + CELL_PAD,
       ry + ROW_H / 2
     );
     cx += labelColW;
+
     for (var cj = 0; cj < visibleCols.length; cj++) {
       var colIdx = model.columns.indexOf(visibleCols[cj]);
       var cell = row.cells[colIdx];
-      var cellText = cell && cell.text != null ? String(cell.text) : '—';
+      var abnormal = !!(cell && cell.abnormal);
+      var cellText = cellDisplayText(cell, theme);
+      var cellFill = abnormal ? '#fef2f2' : zebraFill;
+
+      fillCell(cx, ry, colWidths[cj], ROW_H, cellFill);
       strokeCell(cx, ry, colWidths[cj], ROW_H);
-      ctx.fillStyle = cell && cell.abnormal ? '#dc2626' : '#111827';
-      if (cell && cell.abnormal) ctx.font = 'bold 11px Arial,sans-serif';
-      ctx.fillText(
-        truncateToWidth(ctx, cellText, colWidths[cj] - CELL_PAD * 2, ctx.font),
-        cx + CELL_PAD,
-        ry + ROW_H / 2
-      );
-      ctx.font = font;
+
+      if (isSome && cell && cell.flag && cell.flag !== '*' && cellText !== '—') {
+        var flag = String(cell.flag).toUpperCase();
+        var valuePart = cell.text != null ? String(cell.text) : '—';
+        var flagFont =
+          '700 ' + theme.fontSize + 'px -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif';
+        ctx.font = flagFont;
+        ctx.fillStyle = '#dc2626';
+        var flagLabel = flag + ' ';
+        var flagW = measureTextWidth(ctx, flagLabel, flagFont);
+        ctx.fillText(flagLabel, cx + CELL_PAD, ry + ROW_H / 2);
+        ctx.font = abnormal ? fontBold : font;
+        ctx.fillStyle = abnormal ? '#dc2626' : '#0f172a';
+        ctx.fillText(
+          fitCellText(ctx, valuePart, colWidths[cj] - CELL_PAD * 2 - flagW, ctx.font),
+          cx + CELL_PAD + flagW,
+          ry + ROW_H / 2
+        );
+      } else {
+        ctx.font = abnormal ? fontBold : font;
+        ctx.fillStyle = abnormal ? '#dc2626' : isSome && cj > 0 ? '#64748b' : '#0f172a';
+        ctx.fillText(
+          fitCellText(ctx, cellText, colWidths[cj] - CELL_PAD * 2, ctx.font),
+          cx + CELL_PAD,
+          ry + ROW_H / 2
+        );
+      }
       cx += colWidths[cj];
     }
   }
@@ -248,30 +469,47 @@ function tableDomToExportModel(tableEl) {
   var columns = [];
   var rows = [];
   var ths = tableEl.querySelectorAll('thead th');
+  var labelHeader = (ths[0] && (ths[0].textContent || '').trim()) || 'Analito';
   for (var i = 1; i < ths.length; i++) {
     var th = ths[i];
     if (th.classList.contains('is-hidden')) continue;
     columns.push({
       header: (th.textContent || '').replace(/\s+/g, ' ').trim(),
-      hidden: false
+      hidden: false,
     });
   }
+  var groupEl = tableEl.closest('.lab-some-group');
+  var variant = (groupEl && groupEl.getAttribute('data-variant')) || 'standard';
+  var isSomeTable = tableEl.classList.contains('lab-some-table');
   tableEl.querySelectorAll('tbody tr').forEach(function (tr) {
     if (tr.classList.contains('is-hidden')) return;
     var tds = tr.querySelectorAll('td');
-    if (!tds.length) return;
+    if (tds.length < 2) return;
     var label = (tds[0].textContent || '').replace(/\s+/g, ' ').trim();
-    var cells = [];
-    for (var j = 1; j < tds.length; j++) {
-      if (tds[j].classList.contains('is-hidden')) continue;
+    var resCell = tds[1];
+    var flagEl = resCell.querySelector('.lab-some-flag');
+    var cells = [
+      {
+        text: (resCell.textContent || '').replace(/^(A|B|CB|CA)\s+/i, '').trim(),
+        abnormal:
+          resCell.classList.contains('tend-abnormal') || resCell.classList.contains('lab-some-abnormal'),
+        flag: flagEl ? flagEl.textContent.trim() : undefined,
+      },
+    ];
+    if (variant !== 'cito' && tds[2]) {
       cells.push({
-        text: (tds[j].textContent || '').trim(),
-        abnormal: tds[j].classList.contains('tend-abnormal')
+        text: (tds[2].textContent || '').trim(),
+        abnormal: false,
       });
     }
     rows.push({ label: label, hidden: false, cells: cells });
   });
-  return { columns: columns, rows: rows };
+  return {
+    columns: columns,
+    rows: rows,
+    labelHeader: labelHeader,
+    theme: isSomeTable ? (variant === 'cito' ? 'some-cito' : 'some') : undefined,
+  };
 }
 
 function writePngToClipboardOrDownload(pngBlob, title, done) {

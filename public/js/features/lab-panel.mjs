@@ -140,7 +140,6 @@ export function syncLabCopyFab(show) {
   ensureLabCopyFabController();
   var visible = !!show;
   var fab = document.getElementById("lab-copy-fab");
-  var headerBtn = document.getElementById("lab-copy-header-btn");
   if (fab) {
     if (visible) {
       fab.removeAttribute("hidden");
@@ -152,16 +151,94 @@ export function syncLabCopyFab(show) {
       fab.setAttribute("aria-hidden", "true");
     }
   }
-  if (headerBtn) {
-    if (visible) {
-      headerBtn.removeAttribute("hidden");
-      headerBtn.setAttribute("aria-hidden", "false");
-    } else {
-      headerBtn.setAttribute("hidden", "");
-      headerBtn.setAttribute("aria-hidden", "true");
-    }
-  }
   document.documentElement.classList.toggle("lab-copy-fab-active", visible);
+}
+
+var labSomeTablesBackdropBound = false;
+
+function ensureLabSomeTablesBackdropDismiss() {
+  var backdrop = document.getElementById("lab-some-tables-backdrop");
+  if (!backdrop || labSomeTablesBackdropBound) return;
+  labSomeTablesBackdropBound = true;
+  backdrop.addEventListener("click", function (ev) {
+    if (!backdrop.classList.contains("open")) return;
+    var panel = backdrop.querySelector(".lab-some-tables-modal");
+    if (panel && panel.contains(ev.target)) return;
+    closeLabSomeTablesModal();
+  });
+}
+
+function syncLabSomeTablesBtn(show) {
+  ensureLabSomeTablesBackdropDismiss();
+  var btn = document.getElementById("lab-some-tables-btn");
+  if (!btn) return;
+  var visible = !!show;
+  if (visible) {
+    btn.removeAttribute("hidden");
+    btn.setAttribute("aria-hidden", "false");
+  } else {
+    btn.setAttribute("hidden", "");
+    btn.setAttribute("aria-hidden", "true");
+  }
+}
+
+export function syncLabOutputChrome() {
+  var sec = document.getElementById("lab-output-section");
+  var show = !!(sec && sec.style.display !== "none");
+  if (isPaseMode()) {
+    syncLabCopyFab(false);
+    syncLabSomeTablesBtn(false);
+    closeLabSomeTablesModal();
+    return;
+  }
+  var hasSome = !!(
+    activeLab &&
+    activeLab.someTablesParsed &&
+    activeLab.someTablesParsed.departments &&
+    activeLab.someTablesParsed.departments.length
+  );
+  syncLabCopyFab(show);
+  syncLabSomeTablesBtn(show && hasSome);
+}
+
+export function openLabSomeTablesModal() {
+  if (isPaseMode()) return;
+  var parsed = activeLab && activeLab.someTablesParsed;
+  if (!parsed || !parsed.departments || !parsed.departments.length) return;
+  ensureLabSomeTablesBackdropDismiss();
+  var backdrop = document.getElementById("lab-some-tables-backdrop");
+  var body = document.getElementById("lab-some-tables-modal-body");
+  if (!backdrop || !body) return;
+  body.innerHTML = renderSomeReportTablesHtml(parsed, {
+    hideGroupTitles: true,
+    modalLayout: true,
+  });
+  wireSomeTableExportButtons(
+    body,
+    function (msg, kind) {
+      rt.showToast(msg, kind);
+    },
+    function (deptIndex) {
+      return parsed.departments && parsed.departments[deptIndex]
+        ? parsed.departments[deptIndex]
+        : null;
+    }
+  );
+  backdrop.classList.add("open");
+  backdrop.setAttribute("aria-hidden", "false");
+  document.documentElement.classList.add("lab-some-tables-modal-open");
+  syncLabCopyFab(false);
+}
+
+export function closeLabSomeTablesModal() {
+  var backdrop = document.getElementById("lab-some-tables-backdrop");
+  var body = document.getElementById("lab-some-tables-modal-body");
+  if (!backdrop) return;
+  backdrop.classList.remove("open");
+  backdrop.setAttribute("aria-hidden", "true");
+  document.documentElement.classList.remove("lab-some-tables-modal-open");
+  if (body) body.innerHTML = "";
+  syncLabOutputChrome();
 }
 
 export function closeLabHistoryMoreMenu() {
@@ -179,7 +256,7 @@ export function clearLabWorkbenchMinimalDom() {
   if (box) box.innerHTML = "";
   var ta = document.getElementById("lab-input");
   if (ta) ta.value = "";
-  syncLabCopyFab(false);
+  syncLabOutputChrome();
 }
 
 function esc(s) {
@@ -851,7 +928,8 @@ export function limpiarReporte() {
   document.getElementById('lab-output-section').style.display = 'none';
   document.getElementById('lab-output-box').innerHTML = '';
   activeLab = null;
-  syncLabCopyFab(false);
+  closeLabSomeTablesModal();
+  syncLabOutputChrome();
 }
 
 function openLabPatientPicker() {
@@ -1247,20 +1325,11 @@ function renderOutput(result) {
     box.appendChild(fechaTop);
   }
   var src = String(result.sourceText || '').trim();
+  result.someTablesParsed = null;
   if (src && looksLikeSomeLabReport(src)) {
     var someParsed = parseSomeReportTables(src);
     if (someParsed.departments && someParsed.departments.length) {
-      var someHost = document.createElement('div');
-      someHost.className = 'lab-some-tables-host';
-      someHost.innerHTML = renderSomeReportTablesHtml(someParsed);
-      box.appendChild(someHost);
-      wireSomeTableExportButtons(someHost, function (msg, kind) {
-        rt.showToast(msg, kind);
-      });
-      var someSep = document.createElement('div');
-      someSep.className = 'lab-some-compact-sep';
-      someSep.textContent = 'Resumen R+';
-      box.appendChild(someSep);
+      result.someTablesParsed = someParsed;
     }
   }
   var labDisp = rt.getLabOutputPrefs();
@@ -1293,7 +1362,7 @@ function renderOutput(result) {
     }
   });
   document.getElementById('lab-output-section').style.display = 'block';
-  syncLabCopyFab(true);
+  syncLabOutputChrome();
   rt.wireAtbRisHoverPanels(box);
 }
 
@@ -1309,6 +1378,8 @@ export const windowHandlers = {
   setLabHistoryPanelCollapsed,
   labHistoryPanelIsCollapsed,
   copiarLabsAlPortapapeles,
+  openLabSomeTablesModal,
+  closeLabSomeTablesModal,
   closeLabHistoryMoreMenu,
   openLabPatientPicker,
   openLabHistoryDedupeReview,

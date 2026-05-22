@@ -41,6 +41,7 @@ import {
   closeLabDisplayPrefsModal,
   isTendGroupModalOpen,
 } from './features/tendencias.mjs';
+import { closeLabSomeTablesModal } from './features/lab-panel.mjs';
 import {
   closeUnifiedSearch,
   closeExtraTemplatesManager,
@@ -491,6 +492,18 @@ function initModalDismiss() {
     backdropEl: function () {
       return el('lab-display-prefs-backdrop');
     }
+  });
+
+  modalDismiss.register({
+    isOpen: function () {
+      var b = el('lab-some-tables-backdrop');
+      return b && b.classList.contains('open');
+    },
+    close: closeLabSomeTablesModal,
+    backdropEl: function () {
+      return el('lab-some-tables-backdrop');
+    },
+    panelSelector: '.lab-some-tables-modal',
   });
 
   modalDismiss.register({

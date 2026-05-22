@@ -289,6 +289,7 @@ export function applyUiDensity() {
   runtime.switchAppTab(runtime.getActiveAppTab());
   syncPaseReturnHeaderBtn();
   syncPaseModeHeaderChip();
+  if (typeof runtime.syncLabOutputChrome === 'function') runtime.syncLabOutputChrome();
 }
 
 export function syncUiDensityButtons() {

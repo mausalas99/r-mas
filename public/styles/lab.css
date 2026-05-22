@@ -494,8 +494,214 @@ html.lab-copy-fab-active .lab-panel-root .lab-work-scroll {
 html.electron-windows .lab-copy-fab:not([hidden]) {
   bottom: calc(48px + 22px * var(--density-space));
 }
-#lab-copy-header-btn[hidden] {
+.card-header.card-header-row.lab-output-card-header {
+  justify-content: space-between;
+  padding: calc(8px * var(--density-space)) calc(12px * var(--density-space));
+  min-height: 44px;
+}
+.lab-output-card-title {
+  flex: 1;
+  min-width: 0;
+}
+#lab-some-tables-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+#lab-some-tables-btn[hidden] {
   display: none !important;
+}
+.lab-icon-square-btn {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.lab-icon-square-btn:hover {
+  border-color: color-mix(in oklab, var(--action) 40%, var(--border));
+  color: var(--action);
+}
+.lab-icon-square-btn:focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: 2px;
+}
+#lab-some-tables-btn[hidden] {
+  display: none !important;
+}
+#lab-some-tables-backdrop.modal-backdrop {
+  padding: calc(12px * var(--density-space));
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+html.lab-some-tables-modal-open .lab-copy-fab {
+  display: none !important;
+  pointer-events: none !important;
+}
+#lab-some-tables-backdrop .lab-some-tables-modal {
+  width: min(96vw, calc(100vw - 24px));
+  height: min(92vh, calc(100dvh - 24px));
+  max-width: none;
+  max-height: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+}
+.lab-some-tables-modal {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.lab-some-tables-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  min-height: 32px;
+  border-bottom: 1px solid var(--divider);
+  flex-shrink: 0;
+}
+.lab-some-tables-modal-head h3 {
+  margin: 0;
+  font-size: calc(12px * var(--density-font));
+  font-weight: 700;
+  color: var(--text);
+}
+.lab-some-tables-modal-body {
+  padding: 10px 12px 14px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+.lab-some-tables--modal {
+  gap: 10px;
+}
+.lab-some-tables--modal .lab-some-dept {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: color-mix(in oklab, var(--surface) 92%, var(--bg));
+  box-shadow: 0 1px 0 color-mix(in oklab, var(--border) 65%, transparent);
+}
+.lab-some-dept-details {
+  border: 0;
+}
+.lab-some-tables--modal .lab-some-dept-details {
+  display: flex;
+  flex-direction: column;
+}
+.lab-some-dept-summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  padding: 6px 10px;
+  min-height: 34px;
+  background: var(--section-header-bg);
+  user-select: none;
+}
+.lab-some-tables--modal .lab-some-dept-details[open] > .lab-some-dept-summary {
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 0 color-mix(in oklab, var(--border) 40%, transparent);
+}
+.lab-some-dept-summary::-webkit-details-marker {
+  display: none;
+}
+.lab-some-dept-summary::before {
+  content: '';
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 6px solid var(--text-muted);
+  flex-shrink: 0;
+  margin-right: 4px;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.lab-some-dept-details[open] > .lab-some-dept-summary::before {
+  transform: rotate(90deg);
+}
+.lab-some-dept-summary-label {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.lab-some-dept-summary-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.lab-some-dept-summary-actions .lab-some-export-btn {
+  padding: 3px 8px;
+  font-size: 10px;
+  min-height: 26px;
+}
+.lab-some-dept-body {
+  padding: 0;
+}
+.lab-some-tables--modal .lab-some-dept-body {
+  padding: 8px 10px 10px;
+  background: color-mix(in oklab, var(--bg) 18%, var(--surface));
+}
+.lab-some-tables--modal .lab-some-group {
+  margin: 0;
+  border: 0;
+}
+.lab-some-tables--modal .lab-some-group-title {
+  padding: 6px 10px 4px;
+  font-size: 11px;
+}
+.lab-some-tables--modal .lab-some-table-wrap {
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--border) 35%, transparent);
+}
+.lab-some-tables--modal .lab-some-table {
+  border-radius: 0;
+}
+.lab-some-tables--modal .lab-some-table thead th:first-child {
+  border-top-left-radius: 7px;
+}
+.lab-some-tables--modal .lab-some-table thead th:last-child {
+  border-top-right-radius: 7px;
+}
+.lab-some-tables--modal .lab-some-table tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 7px;
+}
+.lab-some-tables--modal .lab-some-table tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 7px;
+}
+.lab-some-tables--modal .lab-some-table th,
+.lab-some-tables--modal .lab-some-table td {
+  padding: 4px 8px;
+  font-size: 11px;
+  line-height: 1.35;
+}
+.lab-some-tables--modal .lab-some-dept-header {
+  display: none;
 }
 html.dark .lab-copy-fab {
   background: var(--surface);
@@ -855,6 +1061,21 @@ html.dark .lab-output-fecha { color: #93c5fd; border-bottom-color: rgba(148, 163
   text-underline-offset: 3px;
   color: var(--text);
   padding: 10px 12px 6px;
+}
+.lab-some-group--cito .lab-some-group-title {
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+.lab-some-fluid-source {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text);
+  padding: 0 12px 10px;
+  line-height: 1.45;
+}
+.lab-some-fluid-label {
+  font-weight: 700;
+  color: var(--primary);
 }
 .lab-some-table-toolbar {
   display: flex;

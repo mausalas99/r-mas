@@ -126,6 +126,7 @@ import {
   clearLabWorkbenchMinimalDom,
   limpiarReporte,
   enviarLabsANota,
+  syncLabOutputChrome,
 } from './features/lab-panel.mjs';
 import {
   seedTendHiddenDefaults,
@@ -263,6 +264,7 @@ registerChromeRuntime({
   setRoundOverviewMode: setRoundOverviewMode,
   renderPaseBoard: renderPaseBoard,
   onGuidedTourPaseEnter: onChromeGuidedTourPaseEnter,
+  syncLabOutputChrome: syncLabOutputChrome,
 });
 
 registerPatientsRuntime({

@@ -3,11 +3,13 @@
  * Las capas se evalúan en orden de registro (la primera abierta gana = la más arriba).
  */
 
-export function bindBackdropDismiss(backdropEl, requestClose) {
-  if (!backdropEl || backdropEl.dataset.rpcBackdropDismiss === '1') return;
-  backdropEl.dataset.rpcBackdropDismiss = '1';
+export function bindBackdropDismiss(backdropEl, requestClose, panelSelector) {
+  if (!backdropEl || backdropEl.dataset.rpcBackdropDismiss === '2') return;
+  backdropEl.dataset.rpcBackdropDismiss = '2';
+  var selector = panelSelector || '.modal, [role="dialog"]';
   backdropEl.addEventListener('click', function (ev) {
-    if (ev.target !== backdropEl) return;
+    var panel = backdropEl.querySelector(selector);
+    if (panel && panel.contains(ev.target)) return;
     requestClose();
   });
 }
@@ -51,7 +53,7 @@ export function createModalDismissRegistry() {
       if (!el) return;
       bindBackdropDismiss(el, function () {
         tryCloseLayer(layer, null);
-      });
+      }, layer.panelSelector);
     });
   }
 
