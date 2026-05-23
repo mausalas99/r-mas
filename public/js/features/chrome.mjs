@@ -15,7 +15,6 @@ let runtime = {
   },
   setRoundOverviewMode() {},
   renderPaseBoard() {},
-  onGuidedTourPaseEnter() {},
 };
 
 var _openedDetailFromPase = false;
@@ -65,7 +64,7 @@ const I18N_ES = {
   'settings.openTitle': 'Ajustes',
   'settings.teamSyncAria': 'Abrir conexión LAN y LiveSync (salas)',
   'settings.teamSyncTitle':
-    'Conexión LAN (⇄): rol, dirección, código al conectar, salas. Archivo del código en disco (anfitrión): Ajustes → LAN · servidor en esta computadora. Paquete sync JSON: Ajustes → Respaldos, sync y recuperación.',
+    'Conexión LAN (⇄): rol, enlace de invitación, salas LiveSync. Código del servidor (solo anfitrión avanzado): Ajustes → LAN · servidor en esta computadora. Paquete sync JSON: Ajustes → Respaldos, sync y recuperación.',
   'theme.toggle': 'Cambiar tema claro u oscuro',
   'theme.toggleTitle': 'Cambiar tema',
   'appTab.lab': 'Laboratorio',
@@ -318,7 +317,6 @@ export function setUiDensity(mode) {
     requestAnimationFrame(() => runtime.scrollActiveRondaCardIntoView());
   }
   if (runtime.getActiveAppTab() === 'agenda') runtime.renderProcedureAgendaPanel();
-  runtime.onGuidedTourPaseEnter();
 }
 
 export function getProcedureAgendaRowPx() {

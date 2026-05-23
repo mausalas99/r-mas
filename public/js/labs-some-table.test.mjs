@@ -511,3 +511,54 @@ mg/dL	15 - 45
     false
   );
 });
+
+test('parseSomeReportTables — omite COMENTARIO DE LA MUESTRA y pie Expediente/Solicitud', () => {
+  const raw = `
+QUIMICA CLINICA
+Estudio		Resultado	Unidades	Valor de Referencia
+COMENTARIO DE LA MUESTRA
+GLUCOSA EN SANGRE
+GLUCOSA EN SANGRE	
+*
+95
+mg/dL	70 - 100
+OSMOLARIDAD
+OSMOLARIDAD	
+*
+277.0
+mmol/L	275 - 295
+Expediente:	1797286-1	Solicitud:	2605230312
+`;
+  const parsed = parseSomeReportTables(raw);
+  const rows = parsed.departments[0].groups[0].rows;
+  assert.equal(rows.length, 2);
+  const glu = rows.find((r) => r.estudio === 'GLUCOSA EN SANGRE');
+  assert.ok(glu);
+  assert.equal(glu.resultado, '95');
+  const osm = rows.find((r) => r.estudio === 'OSMOLARIDAD');
+  assert.ok(osm);
+  assert.equal(osm.resultado, '277.0');
+  assert.equal(osm.unidades, 'mmol/L');
+  assert.equal(osm.ref, '275 - 295');
+  assert.equal(
+    rows.some((r) => /COMENTARIO|Expediente|Solicitud/i.test(String(r.resultado || r.ref))),
+    false
+  );
+});
+
+test('parseSomeReportTables — osmolaridad con Expediente en la misma línea del valor', () => {
+  const raw = `
+QUIMICA CLINICA
+Estudio		Resultado	Unidades	Valor de Referencia
+OSMOLARIDAD
+OSMOLARIDAD	
+*
+277.0 Expediente:
+1797286-1 Solicitud: 2605230312
+`;
+  const parsed = parseSomeReportTables(raw);
+  const osm = parsed.departments[0].groups[0].rows[0];
+  assert.equal(osm.estudio, 'OSMOLARIDAD');
+  assert.equal(osm.resultado, '277.0');
+  assert.equal(/Expediente|Solicitud/i.test(String(osm.resultado || osm.ref)), false);
+});

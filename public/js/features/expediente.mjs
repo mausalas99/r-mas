@@ -818,6 +818,19 @@ function _autoGrowTextarea(el) {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 240) + 'px';
 }
+
+function bindListadoTextareaPointerIsolation(root) {
+  var scope = root || document;
+  scope.querySelectorAll('.listado-row textarea').forEach(function (ta) {
+    if (ta.dataset.listadoPointerBound === '1') return;
+    ta.dataset.listadoPointerBound = '1';
+    ['mousedown', 'touchstart', 'pointerdown'].forEach(function (type) {
+      ta.addEventListener(type, function (e) {
+        e.stopPropagation();
+      });
+    });
+  });
+}
 function _renderListadoRow(seccion, p, idx) {
   return (
     '<div class="listado-row" data-id="' + esc(p.id) + '" data-seccion="' + seccion + '">' +
@@ -954,8 +967,8 @@ function renderListadoForm() {
 
     '<div class="action-bar"><button type="button" class="btn-med-secondary rpc-doc-export" onclick="quickExportCurrentPatient()" id="btn-quick-export-listado"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida rápida</button><button type="button" class="btn-med-secondary" onclick="copyListadoProblemasAiPrompt()" title="Copia el prompt para usar en un chat de IA"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copiar prompt IA</button><button type="button" class="btn-generate rpc-doc-export" onclick="generateListado()" id="btn-gen-listado"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Listado de Problemas (.docx)</button></div>'
   );
-  // auto-grow existing textareas
   c.querySelectorAll('.listado-row textarea').forEach(_autoGrowTextarea);
+  bindListadoTextareaPointerIsolation(c);
   mountListadoSortables();
 }
 function updateListadoMeta(field, value) {

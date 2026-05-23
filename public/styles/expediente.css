@@ -41,7 +41,7 @@ html.dark .listado-drag-hovercard.listado-row {
 .listado-row .listado-drag-handle:active { cursor: grabbing; }
 .listado-row input[type="date"] { border: 1px solid var(--border); border-radius: 6px; padding: 7px 8px; font-size: 12px; font-family: inherit; background: #F8FAFC; color: var(--text); }
 .listado-row input[type="date"]:focus { outline: none; border-color: var(--action); background: white; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
-.listado-row textarea { border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; font-size: 13px; font-family: inherit; background: white; color: var(--text); resize: none; min-height: 36px; line-height: 1.4; width: 100%; transition: border-color 0.15s; overflow: hidden; }
+.listado-row textarea { border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; font-size: 13px; font-family: inherit; background: white; color: var(--text); resize: none; min-height: 36px; line-height: 1.4; width: 100%; transition: border-color 0.15s; overflow: hidden; cursor: text; user-select: text; -webkit-user-select: text; touch-action: manipulation; }
 .listado-row textarea:focus { outline: none; border-color: var(--action); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
 .listado-row .btn-remove-listado { background: none; border: 1px solid transparent; color: var(--text-muted); font-size: 16px; cursor: pointer; padding: 4px 6px; border-radius: 4px; line-height: 1; min-width: 28px; min-height: 28px; }
 .listado-row .btn-remove-listado:hover { color: #dc2626; background: #fee2e2; border-color: #fecaca; }

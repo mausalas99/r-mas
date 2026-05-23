@@ -213,7 +213,9 @@ appExpress.post('/generate-listado', async (req, res) => {
 const PORT = 3738;
 const userData = process.env.R_PLUS_USER_DATA || require('node:os').tmpdir();
 const lanStatePath = path.join(userData, 'lan-squad-host-state.json');
-const { readEffectiveLanTeamCode } = require('./lan-squad/effective-team-code.js');
+const { readEffectiveLanTeamCode, ensureLanTeamCodeFile, migratePlugAndPlayTeamCode } = require('./lan-squad/effective-team-code.js');
+migratePlugAndPlayTeamCode({ userDataPath: userData });
+ensureLanTeamCodeFile({ userDataPath: userData });
 const { code: LAN_TEAM_CODE } = readEffectiveLanTeamCode({ userDataPath: userData });
 // Existing host state is bound to one team code and throws on mismatches.
 const lanStore = createHostStore({ filePath: lanStatePath, teamCodePlain: LAN_TEAM_CODE });

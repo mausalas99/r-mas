@@ -94,7 +94,7 @@ function isCommentNoiseEstudio(name) {
   var u = cleanEstudio(name).toUpperCase();
   if (u === 'COMENTARIO') return false;
   return (
-    /^COMENTARIOS?\s+DE\s+MUESTRA\b/.test(u) ||
+    /^COMENTARIOS?\s+DE(?:\s+LA)?\s+MUESTRA\b/.test(u) ||
     /^OBSERVACIONES?\b/.test(u) ||
     /^OBSERVACION\b/.test(u) ||
     /^OBS\b/.test(u) ||
@@ -187,6 +187,21 @@ function isMetadataLine(line) {
   }
   if (/^[A-Za-z]{3}\s+\d{1,2}\s+\d{4}/.test(t) && t.indexOf('\t') !== -1) return true;
   return false;
+}
+
+/** Quita Expediente/Solicitud pegados al valor (copia parcial al final del reporte). */
+function stripSomeInlineMetadata(raw) {
+  var t = String(raw == null ? '' : raw).trim();
+  if (!t) return '';
+  if (/^(?:Expediente|Solicitud)\s*:/i.test(t)) return '';
+  return t.replace(/\s*(?:Expediente|Solicitud)\s*:[\s\S]*$/i, '').trim();
+}
+
+function lineHasSomeMetadata(line) {
+  var t = String(line || '').trim();
+  if (!t) return false;
+  if (isMetadataLine(t)) return true;
+  return /\b(?:Expediente|Solicitud)\s*:/i.test(t);
 }
 
 /** SOME row header: estudio line then flag (or duplicate estudio) before valores. */
@@ -295,13 +310,13 @@ function looksLikeUnitsRefLine(line) {
 }
 
 function parseUnitsRef(line) {
-  var t = String(line || '').trim();
+  var t = stripSomeInlineMetadata(line);
   if (!t) return { unidades: '', ref: '' };
   var tab = t.indexOf('\t');
   if (tab >= 0) {
     return {
-      unidades: t.slice(0, tab).trim(),
-      ref: t.slice(tab + 1).trim(),
+      unidades: stripSomeInlineMetadata(t.slice(0, tab)),
+      ref: stripSomeInlineMetadata(t.slice(tab + 1)),
     };
   }
   if (looksLikeReferenceValue(t)) {
@@ -321,8 +336,9 @@ function finalizeRow(estudio, flag, valueParts) {
   var unidades = '';
   var ref = '';
   for (var i = 0; i < valueParts.length; i++) {
-    var p = cleanValue(valueParts[i]);
+    var p = cleanValue(stripSomeInlineMetadata(valueParts[i]));
     if (!p) continue;
+    if (lineHasSomeMetadata(p)) continue;
     if (!value && p !== ':' && p !== '—') {
       value = p;
       continue;
@@ -383,6 +399,15 @@ function readRowAt(lines, startIdx, currentGroupTitle) {
       continue;
     }
     if (t.toUpperCase() === estudio.toUpperCase()) {
+      continue;
+    }
+    if (lineHasSomeMetadata(t)) {
+      var withoutMeta = stripSomeInlineMetadata(t);
+      if (!withoutMeta || /^\d+-\d+$/.test(withoutMeta)) {
+        j--;
+        break;
+      }
+      parts.push(withoutMeta);
       continue;
     }
     if (isLikelyGroupTitle(t, lines.slice(j), currentGroupTitle)) {
@@ -649,6 +674,7 @@ export function parseSomeReportTables(textoBruto) {
 
 function normalizeSomeGroup(group) {
   if (!group) return group;
+  if (group._someNormalized) return group;
   var isCito = group.tableVariant === 'cito' || isCitoGroupTitle(group.title);
   var fluidSource = group.fluidSource || '';
   var rows = [];
@@ -670,6 +696,7 @@ function normalizeSomeGroup(group) {
   group.rows = pruneSomeRows(rows);
   group.fluidSource = fluidSource;
   group.tableVariant = isCito ? 'cito' : 'standard';
+  group._someNormalized = true;
   return group;
 }
 
@@ -800,11 +827,15 @@ export function renderSomeTableGroupHtml(group, opts) {
     exportLabel = (exportLabel + ' — ' + g.fluidSource).trim();
   }
 
+  var deptIndex = options.deptIndex;
+  var groupIndex = options.groupIndex;
   var html =
     '<div class="lab-some-group' +
     (isCito ? ' lab-some-group--cito' : '') +
     '"' +
     (tableId ? ' data-table-id="' + escHtml(tableId) + '"' : '') +
+    (deptIndex != null ? ' data-dept-index="' + escHtml(String(deptIndex)) + '"' : '') +
+    (groupIndex != null ? ' data-group-index="' + escHtml(String(groupIndex)) + '"' : '') +
     ' data-variant="' +
     (isCito ? 'cito' : 'standard') +
     '">';
@@ -818,14 +849,24 @@ export function renderSomeTableGroupHtml(group, opts) {
       '</div>';
   }
   if (!options.hideToolbar) {
+    var deptAttr =
+      deptIndex != null ? ' data-dept-index="' + escHtml(String(deptIndex)) + '"' : '';
+    var groupAttr =
+      groupIndex != null ? ' data-group-index="' + escHtml(String(groupIndex)) + '"' : '';
     html +=
       '<div class="lab-some-table-toolbar">' +
-      '<button type="button" class="lab-some-export-btn" data-export="tsv" data-label="' +
+      '<button type="button" class="lab-some-export-btn" data-export="tsv"' +
+      deptAttr +
+      groupAttr +
+      ' data-label="' +
       escHtml(exportLabel) +
       '" title="Copiar tabla como texto">' +
       '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>' +
       'TSV</button>' +
-      '<button type="button" class="lab-some-export-btn" data-export="png" data-label="' +
+      '<button type="button" class="lab-some-export-btn" data-export="png"' +
+      deptAttr +
+      groupAttr +
+      ' data-label="' +
       escHtml(exportLabel) +
       '" title="Copiar tabla como imagen">' +
       '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>' +
@@ -884,15 +925,11 @@ function renderSomeDeptExportActions(deptLabel, deptIndex) {
 }
 
 export function buildSomeDeptTsv(dept, title) {
-  var lines = [title || dept.label || 'Tabla', 'Estudio\tResultado\tValor de Referencia'];
-  (dept.groups || []).forEach(function (group) {
-    var g = normalizeSomeGroup(group);
-    (g.rows || []).forEach(function (r) {
-      lines.push(
-        [r.estudio, formatSomeResultado(r), r.ref || ''].join('\t')
-      );
-    });
-  });
+  var tsv = buildTableTsv(buildSomeDeptExportModel(dept, title));
+  if (!tsv) return '';
+  var lines = tsv.split('\n');
+  if (lines.length) lines[0] = lines[0].replace(/^Analito\t/, 'Estudio\t');
+  if (title) lines.unshift(String(title));
   return lines.join('\n');
 }
 
@@ -963,6 +1000,8 @@ export function renderSomeReportTablesHtml(parsed, opts) {
         exportLabel: exportLabel,
         hideGroupTitles: !!options.hideGroupTitles,
         hideToolbar: modalLayout,
+        deptIndex: di,
+        groupIndex: gi,
       });
     });
     html += modalLayout ? '</div></details>' : '';
@@ -996,19 +1035,42 @@ export function exportSomeDeptCopy(dept, format, title, onDone) {
   copyTableText(buildSomeDeptTsv(dept, label), done);
 }
 
-export function wireSomeTableExportButtons(container, onToast, getDeptByIndex) {
+function resolveSomeExportLookup(lookup) {
+  if (typeof lookup === 'function') {
+    return { getDept: lookup, getGroup: null };
+  }
+  if (lookup && typeof lookup === 'object') {
+    return {
+      getDept: typeof lookup.getDept === 'function' ? lookup.getDept : null,
+      getGroup: typeof lookup.getGroup === 'function' ? lookup.getGroup : null,
+    };
+  }
+  return { getDept: null, getGroup: null };
+}
+
+function readSomeExportIndices(btn, groupEl) {
+  var di = parseInt(btn.getAttribute('data-dept-index') || '', 10);
+  var gi = parseInt(btn.getAttribute('data-group-index') || '', 10);
+  if ((!Number.isFinite(di) || !Number.isFinite(gi)) && groupEl) {
+    di = parseInt(groupEl.getAttribute('data-dept-index') || '', 10);
+    gi = parseInt(groupEl.getAttribute('data-group-index') || '', 10);
+  }
+  return { deptIndex: di, groupIndex: gi };
+}
+
+export function wireSomeTableExportButtons(container, onToast, lookup) {
   if (!container) return;
+  var resolved = resolveSomeExportLookup(lookup);
   container.querySelectorAll('.lab-some-export-btn').forEach(function (btn) {
     if (btn.dataset.someWired === '1') return;
     btn.dataset.someWired = '1';
     btn.addEventListener('click', function () {
-      var deptEl = btn.closest('.lab-some-dept');
-      if (!deptEl) return;
-      if (btn.classList.contains('lab-some-dept-export-btn') && typeof getDeptByIndex === 'function') {
-        var di = parseInt(btn.getAttribute('data-dept-index') || '', 10);
-        var dept = getDeptByIndex(di);
-        var label = btn.getAttribute('data-label') || (dept && dept.label) || '';
-        exportSomeDeptCopy(dept, btn.getAttribute('data-export'), label, function (ok) {
+      var format = btn.getAttribute('data-export');
+      var label = btn.getAttribute('data-label') || '';
+      if (btn.classList.contains('lab-some-dept-export-btn') && resolved.getDept) {
+        var deptIndex = parseInt(btn.getAttribute('data-dept-index') || '', 10);
+        var dept = resolved.getDept(deptIndex);
+        exportSomeDeptCopy(dept, format, label || (dept && dept.label) || '', function (ok) {
           if (typeof onToast === 'function') {
             onToast(
               ok ? 'Sección copiada ✓' : 'No se pudo copiar la sección',
@@ -1018,52 +1080,13 @@ export function wireSomeTableExportButtons(container, onToast, getDeptByIndex) {
         });
         return;
       }
+      if (!resolved.getGroup) return;
       var groupEl = btn.closest('.lab-some-group');
-      if (!groupEl) return;
-      var deptKey = deptEl.getAttribute('data-dept') || '';
-      var titleEl = groupEl.querySelector('.lab-some-group-title');
-      var groupTitle = titleEl ? titleEl.textContent.trim() : '';
-      var label = btn.getAttribute('data-label') || deptKey;
-      var rows = [];
-      var variant = groupEl.getAttribute('data-variant') || 'standard';
-      groupEl.querySelectorAll('tbody tr').forEach(function (tr) {
-        var tds = tr.querySelectorAll('td');
-        if (tds.length < 2) return;
-        var estudio = (tds[0].textContent || '').trim();
-        var resCell = tds[1];
-        var flagEl = resCell.querySelector('.lab-some-flag');
-        var flag = flagEl ? flagEl.textContent.trim() : '*';
-        var rawRes = (resCell.textContent || '').replace(/^(A|B|CB|CA)\s+/i, '').trim();
-        var unidades = resCell.getAttribute('data-unidades') || '';
-        var ref =
-          variant === 'cito' ? '' : (tds[2] && (tds[2].textContent || '').trim()) || resCell.getAttribute('data-ref') || '';
-        var resultado = rawRes;
-        if (unidades && resultado && resultado !== '—') {
-          var suffix = ' ' + unidades;
-          if (resultado.slice(-suffix.length) === suffix) {
-            resultado = resultado.slice(0, -suffix.length).trim();
-          }
-        }
-        rows.push({
-          estudio: estudio,
-          flag: flag,
-          resultado: resultado === '—' ? '' : resultado,
-          unidades: unidades,
-          ref: ref,
-          abnormal: resCell.classList.contains('lab-some-abnormal'),
-        });
-      });
-      var fluidEl = groupEl.querySelector('.lab-some-fluid-source');
-      var fluidSource = fluidEl
-        ? fluidEl.textContent.replace(/^Origen del líquido:\s*/i, '').trim()
-        : '';
-      var group = {
-        title: groupTitle,
-        rows: rows,
-        tableVariant: variant,
-        fluidSource: fluidSource,
-      };
-      exportSomeGroupCopy(group, btn.getAttribute('data-export'), label, function (ok) {
+      var indices = readSomeExportIndices(btn, groupEl);
+      if (!Number.isFinite(indices.deptIndex) || !Number.isFinite(indices.groupIndex)) return;
+      var group = resolved.getGroup(indices.deptIndex, indices.groupIndex);
+      if (!group) return;
+      exportSomeGroupCopy(group, format, label, function (ok) {
         if (typeof onToast === 'function') {
           onToast(
             ok ? 'Tabla copiada ✓' : 'No se pudo copiar la tabla',

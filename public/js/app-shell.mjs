@@ -41,7 +41,13 @@ import {
   closeLabDisplayPrefsModal,
   isTendGroupModalOpen,
 } from './features/tendencias.mjs';
-import { closeLabSomeTablesModal } from './features/lab-panel.mjs';
+import { closeLabSomeTablesModal } from './features/lab-some-tables-modal.mjs';
+import {
+  closeSesionIngresoSendModal,
+} from './features/sesion-ingreso-send-modal.mjs';
+import {
+  closeSesionIngresoTrendsSendModal,
+} from './features/sesion-ingreso-trends-send-modal.mjs';
 import {
   closeUnifiedSearch,
   closeExtraTemplatesManager,
@@ -508,6 +514,30 @@ function initModalDismiss() {
 
   modalDismiss.register({
     isOpen: function () {
+      var b = el('sesion-ingreso-send-backdrop');
+      return b && b.classList.contains('open');
+    },
+    close: closeSesionIngresoSendModal,
+    backdropEl: function () {
+      return el('sesion-ingreso-send-backdrop');
+    },
+    panelSelector: '.sesion-ingreso-send-modal',
+  });
+
+  modalDismiss.register({
+    isOpen: function () {
+      var b = el('sesion-ingreso-trends-send-backdrop');
+      return b && b.classList.contains('open');
+    },
+    close: closeSesionIngresoTrendsSendModal,
+    backdropEl: function () {
+      return el('sesion-ingreso-trends-send-backdrop');
+    },
+    panelSelector: '.sesion-ingreso-send-modal',
+  });
+
+  modalDismiss.register({
+    isOpen: function () {
       var b = el('onboarding-intro-backdrop');
       return b && b.classList.contains('open');
     },
@@ -593,7 +623,7 @@ document.addEventListener('keydown', function(e) {
       );
     }
   }
-});
+}, true);
 
 
 function updatePatient(field, value) {

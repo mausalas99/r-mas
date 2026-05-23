@@ -20,6 +20,13 @@ import {
 } from '../labs.js';
 import { safeAttrJsString } from './lab-panel.mjs';
 import { guidedTourAdvanceAfter, getGuidedTourContext } from './settings-help.mjs';
+import { patients } from '../app-state.mjs';
+import { registerSesionIngresoTrendsRuntime } from '../sesion-ingreso-trends-export.mjs';
+import {
+  closeSesionIngresoTrendsSendModal,
+  openSesionIngresoTrendsSendModal,
+  registerSesionIngresoTrendsSendRuntime,
+} from './sesion-ingreso-trends-send-modal.mjs';
 
 /** @type {{ getActiveId(): string|null, ensureParsedLabHistory(pid: string): any[], rerenderParsedLabOutputAfterPrefsChange(): void, rpcPrefersReducedMotion(): boolean, showToast(msg: string, type?: string): void, buildLabSetDateLine(set: any): string }} */
 var rt = {
@@ -35,6 +42,45 @@ export function registerTendenciasRuntime(partial) {
   if (partial && typeof partial === 'object') Object.assign(rt, partial);
   initTendGroupModal();
   ensureTendenciasClickDelegation();
+  registerSesionIngresoTrendsRuntime({
+    buildCatalog: buildMergedTrendSeriesCatalog,
+    sectionLabel: getTendSectionLabel,
+    refForSeries: function (history, sectionKey, fieldKey) {
+      return tendRefForSeries(history, sectionKey, fieldKey, null);
+    },
+    unitForField: function (fieldKey) {
+      return TEND_UNITS[fieldKey] || '';
+    },
+  });
+  registerSesionIngresoTrendsSendRuntime({
+    showToast: function (msg, kind) {
+      rt.showToast(msg, kind);
+    },
+    getHistory: function () {
+      var pid = aid();
+      return pid ? rt.ensureParsedLabHistory(pid) : [];
+    },
+    getPatientLabel: function () {
+      var pid = aid();
+      var patient = (patients || []).find(function (p) {
+        return p.id === pid;
+      });
+      return patient ? patient.nombre || patient.registro || '' : '';
+    },
+    getPatientId: function () {
+      return aid() || '';
+    },
+    sendPayload: function (payload) {
+      if (window.electronAPI && window.electronAPI.sendToSesionIngreso) {
+        window.electronAPI.sendToSesionIngreso(payload).then(function (ok) {
+          if (ok) rt.showToast('Tendencias enviadas a Casiopea', 'ok');
+          else rt.showToast('No se pudo abrir Casiopea', 'warn');
+        });
+        return;
+      }
+      rt.showToast('Integración disponible solo en la app de escritorio', 'warn');
+    },
+  });
 }
 
 function aid() {
@@ -690,6 +736,7 @@ function buildTendInlineControlsHtml(hiddenCount) {
     esc(toggleLabel) +
     '</button>' +
     ocultosBtn +
+    '<button type="button" class="tend-toolbar-btn" data-tour="casiopea-trends-send" onclick="openSesionIngresoTrendsSendModal()">Enviar a Casiopea</button>' +
     '</div>'
   );
 }
@@ -1659,6 +1706,8 @@ export {
 };
 
 export const tendenciasWindowHandlers = {
+  openSesionIngresoTrendsSendModal,
+  closeSesionIngresoTrendsSendModal,
   closeTendDetail,
   openTendGroupModal,
   closeTendGroupModal,

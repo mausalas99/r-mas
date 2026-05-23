@@ -4,17 +4,23 @@ import {
   getTourTarget,
   stepRequiresUserAction,
 } from '../tour-targets.mjs';
+import { syncGuidedTourContext } from '../tour-guards.mjs';
+import { DEMO_SOME_LAB_REPORT, OLDER_DEMO_SOME_LAB_REPORT } from '../tour-demo-some-lab.mjs';
+import { buildTourDemoListadoProblemas } from '../tour-demo-listado-problemas.mjs';
 import { isMobileWeb } from '../mobile-web.mjs';
 import { isModeSala } from '../mode-features.mjs';
 import { getUiDensity, setUiDensity, isPaseMode } from './chrome.mjs';
 import {
   openConnectionDropdown,
   closeConnectionDropdown,
-  DEFAULT_LAN_TEAM_CODE,
 } from './lan-sync.mjs';
 import { renderPatientList, selectPatient } from './patients.mjs';
 import { renderNoteForm, renderIndicaForm } from './notes-indicaciones.mjs';
 import { limpiarReporte } from './lab-panel.mjs';
+import { closeLabSomeTablesModal } from './lab-some-tables-modal.mjs';
+import { closeTendGroupModal } from './tendencias.mjs';
+import { closeSesionIngresoTrendsSendModal } from './sesion-ingreso-trends-send-modal.mjs';
+import { closeSOAPModal } from './soap-estado.mjs';
 import { procesarLabs } from '../labs.js';
 import { extractParsedValues } from './diagrams-parse.mjs';
 import {
@@ -22,6 +28,7 @@ import {
   notes,
   indicaciones,
   labHistory,
+  listadoProblemas,
   medRecetaByPatient,
   medNotaSelectionByPatient,
   saveState,
@@ -61,6 +68,7 @@ let rt = {
   closeProfileModal() {},
   openProfileModal() {},
   renderMedRecetaPanel() {},
+  renderListadoForm() {},
 };
 
 export function registerSettingsHelpRuntime(partial) {
@@ -76,36 +84,19 @@ var guidedTourActive = false;
 var guidedTourBranch = null;
 /** @type {string|null} paso actual del tour guiado (null = inactivo) */
 var tourStepId = null;
-var DEMO_PATIENT_ID = 'demo-onboarding';
-var DEMO_LAB_REPORT = 'LABORATORIO CLÍNICO — Hospital General\n' +
-  'Paciente: DEMO PÉREZ Juan\nFecha: Apr 11 2026\n\n' +
-  'BIOMETRÍA HEMÁTICA\n' +
-  'Hemoglobina: 11.4 g/dL\nHematocrito: 34.8%\nVCM: 86 fL\nHCM: 28.2 pg\n' +
-  'Leucocitos: 4.92 x10³/µL\nNeutrófilos: 2.76 x10³/µL\nEosinófilos: 0.275 x10³/µL\nPlaquetas: 198 x10³/µL\n\n' +
-  'QUÍMICA SANGUÍNEA\n' +
-  'Glucosa: 190 mg/dL\nCreatinina: 1.8 mg/dL\nBUN: 28 mg/dL\nPCR: 0.3 mg/dL\n' +
-  'Ácido Úrico: 6.2 mg/dL\nTriglicéridos: 153 mg/dL\nColesterol Total: 166 mg/dL\n\n' +
-  'ELECTROLITOS SÉRICOS\n' +
-  'Sodio: 139.8 mEq/L\nCloro: 105 mEq/L\nPotasio: 3.2 mEq/L\nCalcio: 7.9 mg/dL\nFósforo: 3.4 mg/dL\n\n' +
-  'PERFIL DE FUNCIÓN HEPÁTICA\n' +
-  'Albúmina: 2.5 g/dL\nAST: 11 U/L\nALT: 6 U/L\nFosfatasa Alcalina: 103 U/L\n' +
-  'Bilirrubina Total: 0.3 mg/dL\nBilirrubina Directa: 0.1 mg/dL\nBilirrubina Indirecta: 0.2 mg/dL\n' +
-  'LDH: 120 U/L\nAmilasa: 25 U/L';
 
-var OLDER_DEMO_LAB_REPORT = 'LABORATORIO CLÍNICO — Hospital General\n' +
-  'Paciente: DEMO PÉREZ Juan\nFecha: Mar 05 2026\n\n' +
-  'BIOMETRÍA HEMÁTICA\n' +
-  'Hemoglobina: 9.8 g/dL\nHematocrito: 30.1%\nVCM: 86 fL\nHCM: 28.2 pg\n' +
-  'Leucocitos: 5.1 x10³/µL\nNeutrófilos: 2.9 x10³/µL\nEosinófilos: 0.2 x10³/µL\nPlaquetas: 165 x10³/µL\n\n' +
-  'QUÍMICA SANGUÍNEA\n' +
-  'Glucosa: 225 mg/dL\nCreatinina: 2.1 mg/dL\nBUN: 32 mg/dL\nPCR: 0.6 mg/dL\n' +
-  'Triglicéridos: 180 mg/dL\nColesterol Total: 172 mg/dL\n\n' +
-  'ELECTROLITOS SÉRICOS\n' +
-  'Sodio: 138.0 mEq/L\nCloro: 104 mEq/L\nPotasio: 3.0 mEq/L\nCalcio: 7.6 mg/dL\nFósforo: 3.6 mg/dL\n\n' +
-  'PERFIL DE FUNCIÓN HEPÁTICA\n' +
-  'Albúmina: 2.3 g/dL\nAST: 14 U/L\nALT: 8 U/L\nFosfatasa Alcalina: 110 U/L\n' +
-  'Bilirrubina Total: 0.4 mg/dL\nBilirrubina Directa: 0.15 mg/dL\nBilirrubina Indirecta: 0.25 mg/dL\n' +
-  'LDH: 125 U/L\nAmilasa: 28 U/L';
+function publishTourGuardContext() {
+  syncGuidedTourContext({
+    active: guidedTourActive,
+    stepId: tourStepId,
+  });
+}
+
+publishTourGuardContext();
+
+var DEMO_PATIENT_ID = 'demo-onboarding';
+var DEMO_LAB_REPORT = DEMO_SOME_LAB_REPORT;
+var OLDER_DEMO_LAB_REPORT = OLDER_DEMO_SOME_LAB_REPORT;
 
 /** Plantilla BH de referencia (p. ej. tour guiado). El cuadro de laboratorio no se rellena solo al iniciar. */
 var LAB_INPUT_DEFAULT_REPORT =
@@ -335,6 +326,20 @@ function seedDemoTrendHistory() {
   }
 }
 
+function seedDemoListadoProblemas() {
+  if (!guidedTourActive || rt.getActiveId() !== DEMO_PATIENT_ID) return;
+  var today = new Date();
+  var fecha =
+    String(today.getDate()).padStart(2, '0') + '/'
+    + String(today.getMonth() + 1).padStart(2, '0') + '/'
+    + today.getFullYear();
+  var hora =
+    String(today.getHours()).padStart(2, '0') + ':'
+    + String(today.getMinutes()).padStart(2, '0');
+  listadoProblemas[DEMO_PATIENT_ID] = buildTourDemoListadoProblemas(fecha, hora);
+  saveState();
+}
+
 function ensureProfileExpandedForTour() {
   // Desde 3.0 el perfil vive en un modal centrado; lo abrimos directamente.
   rt.openProfileModal();
@@ -409,15 +414,14 @@ function syncTourDockPlacement() {
 // que la zona de avance sea inequívoca.
 function applyTourTargetForStep(id) {
   if (guidedTourActive) {
-    if (id === 'pase_board') {
-      setUiDensity('pase');
-    } else {
-      setUiDensity('normal');
-    }
+    setUiDensity('normal');
   }
   var t = getTourTarget(id, guidedTourBranch === 'interconsulta' ? 'interconsulta' : 'sala');
   if (!t) return;
 
+  if (id === 'listado_problemas') {
+    seedDemoListadoProblemas();
+  }
   if (t.appTab) rt.switchAppTab(t.appTab);
   if (t.innerTab) {
     rt.switchInnerTab(t.innerTab);
@@ -438,6 +442,17 @@ function applyTourTargetForStep(id) {
     if (typeof closeConnectionDropdown === 'function') closeConnectionDropdown();
   }
   if (id === 'sala_med') rt.renderMedRecetaPanel();
+
+  if (id === 'sala_casiopea_lab') {
+    closeLabSomeTablesModal();
+  }
+  if (id === 'sala_casiopea_trends') {
+    closeTendGroupModal();
+    closeSesionIngresoTrendsSendModal();
+  }
+  if (id === 'sala_med' || id === 'listado_problemas') {
+    closeSOAPModal();
+  }
 
   // Pre-pega el reporte demo cuando el siguiente click esperado es
   // "Procesar"; sin texto el botón no hace nada y bloquearía el tour.
@@ -489,25 +504,6 @@ function renderTourStep() {
         '<p style="margin:0;line-height:1.5;">La <strong>columna izquierda</strong> es tu lista de pacientes. <strong>DEMO PÉREZ</strong> solo existe para este tour.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
-    case 'pase_enter':
-      setBadge('Modo Pase · atajo');
-      bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">Para ver el <strong>resumen de ronda</strong> (Pase), usa el atajo <strong>' +
-        (navigator.platform && /Mac/i.test(navigator.platform) ? '⌘' : 'Ctrl') +
-        '+P</strong> (también en <strong>Mi Perfil → Modo de vista → Pase</strong>).</p>' +
-        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">El paso sigue solo al activar <strong>Pase</strong>; no hay botón <strong>Siguiente</strong>.</p>';
-      nextBtn.style.display = 'none';
-      break;
-    case 'pase_board':
-      setBadge('Modo Pase');
-      bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">Así se ve el <strong>resumen</strong>: pendientes, laboratorio reciente, cultivos, medicamentos. Pulsa un <strong>título de sección</strong> para abrir el detalle en modo Normal, o <strong>' +
-        (navigator.platform && /Mac/i.test(navigator.platform) ? '⌘' : 'Ctrl') +
-        '+1…3 / 5</strong> según contexto.</p>' +
-        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Siguiente</strong> vuelve a la vista en pestañas y continúa el recorrido.</p>';
-      nextBtn.textContent = 'Siguiente';
-      nextBtn.style.display = '';
-      break;
     case 'map_tabs':
       setBadge('pestañas');
       bodyEl.innerHTML =
@@ -535,6 +531,13 @@ function renderTourStep() {
       bodyEl.innerHTML =
         '<p style="margin:0;line-height:1.5;">Revisa diagramas y tabla de resultados. En el historial: <strong>Sincronizar</strong> quita duplicados; <strong>Consolidar</strong> junta envíos del mismo día (mismo tipo de dato).</p>' +
         '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Pulsa <strong>Siguiente</strong> para continuar el tour.</p>';
+      nextBtn.textContent = 'Siguiente';
+      break;
+    case 'sala_casiopea_lab':
+      setBadge('Casiopea · laboratorio');
+      bodyEl.innerHTML =
+        '<p style="margin:0;line-height:1.5;">Abre <strong>Tablas SOME</strong> (botón resaltado). Dentro verás <strong>Enviar a Casiopea</strong>: desde ahí mandas estudios al paso <strong>Paraclínicos</strong> en la app Casiopea (instalada aparte en este equipo).</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">En el tutorial el envío no abre Casiopea; fuera del tour sí. Pulsa <strong>Siguiente</strong> cuando hayas visto el botón.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'ic_nota':
@@ -569,6 +572,13 @@ function renderTourStep() {
       bodyEl.innerHTML =
         '<p style="margin:0;line-height:1.5;">Pulsa <strong>Gráfica</strong> en un estudio (p. ej. biometría) para ver tendencias agrupadas y una tabla copiable.</p>' +
         '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Cierra con clic fuera de la ventana o <strong>Esc</strong>. Es opcional en el demo: <strong>Siguiente</strong> para continuar.</p>';
+      nextBtn.textContent = 'Siguiente';
+      break;
+    case 'sala_casiopea_trends':
+      setBadge('Casiopea · tendencias');
+      bodyEl.innerHTML =
+        '<p style="margin:0;line-height:1.5;">Con varios laboratorios en el tiempo, <strong>Enviar a Casiopea</strong> (barra de Tendencias) manda gráficas agrupadas al mismo flujo de paraclínicos.</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Puedes abrir el modal para ver la selección; confirmar no envía datos durante el tutorial. <strong>Siguiente</strong> para continuar.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'sala_soap':
@@ -606,16 +616,15 @@ function renderTourStep() {
     case 'listado_problemas':
       setBadge('Listado');
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">Activa e inactivos con subítems; puedes exportar a Word. <strong>Siguiente</strong> muestra cómo sincronizar con el equipo (LiveSync).</p>';
+        '<p style="margin:0;line-height:1.5;">Exporta el <strong>listado de problemas</strong> (activos e inactivos) a Word. Cada problema va con título y subítems <strong>A) CLÍNICA</strong>, <strong>B) EXPLORACIÓN</strong>, <strong>C) PARACLÍNICA</strong>, etc.</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">El tour carga un ejemplo en ese formato (p. ej. peritonitis con incisos A–C). Pulsa <strong>Generar Listado</strong> (resaltado) o edita el texto y luego <strong>Siguiente</strong>.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'livesync_desktop':
       setBadge('LiveSync · escritorio');
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">El icono <strong>⇄</strong> (junto a Ajustes) abre la conexión LAN: elige <strong>Anfitrión</strong> (esta PC comparte) o <strong>Cliente</strong> (te unes con dirección y código). Tras conectar, entra a una <strong>sala en vivo</strong>: ahí se sincronizan pacientes, laboratorios, agenda y pendientes entre las R+ del turno.</p>' +
-        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Código por defecto del equipo: <strong>' +
-        esc(DEFAULT_LAN_TEAM_CODE) +
-        '</strong>. Los respaldos JSON manuales siguen en Ajustes → Respaldos, sync y recuperación.</p>';
+        '<p style="margin:0;line-height:1.5;">El icono <strong>⇄</strong> (junto a Ajustes) abre la conexión LAN: elige <strong>Anfitrión</strong> (esta PC comparte el enlace) o <strong>Cliente</strong> (pegas el enlace de invitación). Tras conectar, entra a una <strong>sala en vivo</strong>: ahí se sincronizan pacientes, laboratorios, agenda y pendientes entre las R+ del turno.</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Los respaldos JSON manuales siguen en Ajustes → Respaldos, sync y recuperación.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'livesync_mobile':
@@ -628,7 +637,10 @@ function renderTourStep() {
     case 'wrap':
       setBadge('listo');
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">Listo. Repite el tutorial desde <strong>Mi Perfil</strong> o <strong>Ajustes</strong>. Para el equipo en vivo usa <strong>⇄</strong> y, si hace falta, el enlace móvil.</p>';
+        '<p style="margin:0;line-height:1.5;">Listo. Repite el tutorial desde <strong>Mi Perfil</strong> o <strong>Ajustes</strong>. Para el equipo en vivo usa <strong>⇄</strong> y, si hace falta, el enlace móvil.</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Modo Pase</strong> (resumen de ronda): prueba el atajo <strong>' +
+        (navigator.platform && /Mac/i.test(navigator.platform) ? '⌘' : 'Ctrl') +
+        '+P</strong> o <strong>Ajustes → Modo de vista → Pase</strong> cuando quieras ver pendientes, labs y meds en una sola columna.</p>';
       nextBtn.textContent = 'Finalizar';
       break;
     default:
@@ -638,8 +650,7 @@ function renderTourStep() {
   // ocultamos "Siguiente" para que el avance venga del propio botón.
   if (stepRequiresUserAction(tourStepId)
       && tourStepId !== 'servicio_default'
-      && tourStepId !== 'estado_actual'
-      && tourStepId !== 'listado_problemas') {
+      && tourStepId !== 'estado_actual') {
     nextBtn.style.display = 'none';
   }
   syncTourDockPlacement();
@@ -656,8 +667,18 @@ function guidedTourClickNext() {
     completeGuidedTourWithCelebration();
     return;
   }
+  if (tourStepId === 'sala_casiopea_lab') {
+    closeLabSomeTablesModal();
+  }
+  if (tourStepId === 'sala_casiopea_trends') {
+    closeSesionIngresoTrendsSendModal();
+  }
+  if (tourStepId === 'estado_actual') {
+    closeSOAPModal();
+  }
   clearAllTourSpotlights();
   tourStepId = steps[i + 1];
+  publishTourGuardContext();
   applyTourTargetForStep(tourStepId);
   renderTourStep();
 }
@@ -675,10 +696,11 @@ export function guidedTourAdvanceAfter(actionStep) {
   if (i < 0 || i + 1 >= steps.length) return;
   clearAllTourSpotlights();
   tourStepId = steps[i + 1];
+  publishTourGuardContext();
   applyTourTargetForStep(tourStepId);
   renderTourStep();
+  publishTourGuardContext();
 }
-
 function guidedTourAdvanceAfterNotaGenerated() { guidedTourAdvanceAfter('ic_nota'); }
 function guidedTourAdvanceAfterIndicaGenerated() { guidedTourAdvanceAfter('ic_indica'); }
 
@@ -688,6 +710,7 @@ function completeGuidedTourWithCelebration() {
   guidedTourActive = false;
   tourStepId = null;
   guidedTourBranch = null;
+  publishTourGuardContext();
   hideTourDock();
   rt.launchConfetti();
   destroyDemoAndClose();
@@ -701,6 +724,7 @@ function skipGuidedTour() {
   guidedTourActive = false;
   tourStepId = null;
   guidedTourBranch = null;
+  publishTourGuardContext();
   hideTourDock();
   destroyDemoAndClose();
 }
@@ -787,12 +811,14 @@ function startOnboarding(branch) {
   applyTourNavigationForStep('map_sidebar');
   showTourDock();
   renderTourStep();
+  publishTourGuardContext();
 }
 
 function onboardingAdvanceAfterParse() {
   if (!guidedTourActive || tourStepId !== 'lab_parse') return;
   clearAllTourSpotlights();
   tourStepId = 'lab_view';
+  publishTourGuardContext();
   applyTourTargetForStep(tourStepId);
   renderTourStep();
 }
@@ -801,7 +827,8 @@ function onboardingAdvanceAfterSend() {
   if (!guidedTourActive) return;
   if (tourStepId === 'lab_view') {
     clearAllTourSpotlights();
-    tourStepId = 'sala_tend';
+    tourStepId = 'sala_casiopea_lab';
+    publishTourGuardContext();
     applyTourTargetForStep(tourStepId);
     renderTourStep();
   }
@@ -814,15 +841,18 @@ function destroyDemoAndClose() {
   delete indicaciones[DEMO_PATIENT_ID];
   delete labHistory[DEMO_PATIENT_ID];
   delete medRecetaByPatient[DEMO_PATIENT_ID];
+  delete listadoProblemas[DEMO_PATIENT_ID];
   if (medNotaSelectionByPatient[DEMO_PATIENT_ID]) delete medNotaSelectionByPatient[DEMO_PATIENT_ID];
   guidedTourActive = false;
   tourStepId = null;
   guidedTourBranch = null;
+  publishTourGuardContext();
   hideTourDock();
   if (rt.getActiveId() === DEMO_PATIENT_ID) {
     rt.setActiveId(patients.length ? patients[0].id : null);
   }
   limpiarReporte();
+  saveState();
   renderPatientList();
   if (rt.getActiveId()) selectPatient(rt.getActiveId());
   else { document.getElementById('patient-view').style.display = 'none'; document.getElementById('empty-state').style.display = 'flex'; }
@@ -844,13 +874,16 @@ function resetAndStartOnboarding() {
     delete indicaciones[DEMO_PATIENT_ID];
     delete labHistory[DEMO_PATIENT_ID];
     delete medRecetaByPatient[DEMO_PATIENT_ID];
+    delete listadoProblemas[DEMO_PATIENT_ID];
     if (medNotaSelectionByPatient[DEMO_PATIENT_ID]) delete medNotaSelectionByPatient[DEMO_PATIENT_ID];
     guidedTourActive = false;
     tourStepId = null;
     guidedTourBranch = null;
+    publishTourGuardContext();
     hideTourDock();
     hideTourIntroModal();
     limpiarReporte();
+    saveState();
     if (rt.getActiveId() === DEMO_PATIENT_ID) {
       rt.setActiveId(patients.length ? patients[0].id : null);
     }
@@ -1174,6 +1207,16 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '5.2.0': [
+    {
+      title: 'TODO',
+      body: 'Completar antes de publicar.',
+    },
+    {
+      title: 'TODO',
+      body: 'Completar antes de publicar.',
+    },
+  ],
   '5.1.0': [
     {
       title: 'Tablas del reporte SOME',
@@ -1744,13 +1787,6 @@ function startHelpTourMain() {
   if (miniTourActive) endMiniTour();
   closeQuickHelp();
   resetAndStartOnboarding();
-}
-
-/** Chrome density hook: advance guided tour after user enters Pase mode. */
-export function onChromeGuidedTourPaseEnter() {
-  if (guidedTourActive && tourStepId === 'pase_enter' && isPaseMode()) {
-    guidedTourAdvanceAfter('pase_enter');
-  }
 }
 
 export {

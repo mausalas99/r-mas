@@ -3,6 +3,8 @@ import {
   defaultSelectedIds,
   listSelectableTables,
 } from '../sesion-ingreso-export.mjs';
+import { closeLabSomeTablesModal } from './lab-some-tables-modal.mjs';
+import { isCasiopeaTourSendBlocked } from '../tour-guards.mjs';
 
 let rt = {
   showToast() {},
@@ -10,6 +12,9 @@ let rt = {
     return null;
   },
   getPatientLabel() {
+    return '';
+  },
+  getReportDate() {
     return '';
   },
   sendPayload() {},
@@ -53,7 +58,9 @@ function updateSendCount(root) {
 
 export function openSesionIngresoSendModal() {
   const parsed = rt.getParsed();
-  const items = listSelectableTables(parsed);
+  const reportDate = rt.getReportDate();
+  closeLabSomeTablesModal();
+  const items = listSelectableTables(parsed, { reportDate });
   if (!items.length) {
     rt.showToast('No hay tablas SOME para enviar', 'warn');
     return;
@@ -65,7 +72,7 @@ export function openSesionIngresoSendModal() {
 
   const selected = defaultSelectedIds(items);
   body.innerHTML = `
-    <p class="hint">Marca los estudios a incluir en Sesión de Ingreso. Las tablas de <strong>Al ingreso</strong> aparecerán primero.</p>
+    <p class="hint">Marca los estudios a enviar al paso <strong>Paraclínicos</strong> que tengas seleccionado en Casiopea.</p>
     <div class="sesion-ingreso-send-list">
       ${items
         .map(
@@ -78,22 +85,21 @@ export function openSesionIngresoSendModal() {
         )
         .join('')}
     </div>
-    <div class="modal-actions sesion-ingreso-send-actions">
+    <div class="tend-group-table-actions sesion-ingreso-send-actions">
       <button type="button" class="btn-secondary" id="sesion-ingreso-send-cancel">Cancelar</button>
-      <button type="button" class="btn-secondary" id="sesion-ingreso-send-admission">Solo al ingreso</button>
       <button type="button" class="btn-primary" id="sesion-ingreso-send-confirm">Enviar (${selected.length})</button>
     </div>
   `;
 
   body.querySelector('#sesion-ingreso-send-cancel')?.addEventListener('click', closeSesionIngresoSendModal);
-  body.querySelector('#sesion-ingreso-send-admission')?.addEventListener('click', () => {
-    const admissionIds = items.filter((i) => i.isAdmission).map((i) => i.id);
-    setSelectedIds(body, admissionIds.length ? admissionIds : selected);
-  });
   body.querySelector('#sesion-ingreso-send-confirm')?.addEventListener('click', () => {
     const ids = getSelectedIds(body);
     if (!ids.length) return;
-    const payload = buildSesionPayload(ids, parsed, rt.getPatientLabel());
+    if (isCasiopeaTourSendBlocked('lab')) {
+      closeSesionIngresoSendModal();
+      return;
+    }
+    const payload = buildSesionPayload(ids, parsed, rt.getPatientLabel(), { reportDate });
     rt.sendPayload(payload);
     closeSesionIngresoSendModal();
   });

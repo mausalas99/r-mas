@@ -20,19 +20,25 @@ test('getSalaTourSteps incluye pasos clave de v3.0', () => {
   assert.ok(steps.includes('livesync_desktop'), 'debe explicar LiveSync en escritorio');
   assert.ok(steps.includes('livesync_mobile'), 'debe explicar R+ Móvil');
   assert.ok(!steps.includes('sala_soap'), 'Sala no debe mostrar el paso heredado de Nota de evolución');
+  assert.ok(!steps.includes('pase_enter'), 'Modo Pase ya no es paso obligatorio del tour');
+  assert.ok(!steps.includes('pase_board'));
   assert.equal(steps[steps.length - 1], 'wrap');
   assert.equal(steps[steps.length - 3], 'livesync_desktop');
   assert.ok(steps.includes('sala_tend_chart'), 'debe presentar Gráfica del estudio');
   assert.equal(steps.indexOf('sala_tend_chart'), steps.indexOf('sala_tend') + 1);
+  assert.ok(steps.includes('sala_casiopea_lab'), 'debe explicar envío lab a Casiopea');
+  assert.ok(steps.includes('sala_casiopea_trends'), 'debe explicar envío tendencias a Casiopea');
+  assert.equal(steps.indexOf('sala_casiopea_lab'), steps.indexOf('lab_view') + 1);
+  assert.equal(steps.indexOf('sala_casiopea_trends'), steps.indexOf('sala_tend_chart') + 1);
   assert.equal(steps.length, 16);
-  assert.equal(steps[1], 'pase_enter');
-  assert.equal(steps[2], 'pase_board', 'tour en Sala incluye resumen Pase');
+  assert.equal(steps[1], 'map_tabs');
 });
 
-test('getInterconsultaTourSteps incluye entrada a Pase y tablero', () => {
+test('getInterconsultaTourSteps no incluye pasos de Modo Pase', () => {
   const steps = getInterconsultaTourSteps();
-  assert.equal(steps[1], 'pase_enter');
-  assert.equal(steps[2], 'pase_board');
+  assert.ok(!steps.includes('pase_enter'));
+  assert.ok(!steps.includes('pase_board'));
+  assert.equal(steps[1], 'map_tabs');
   assert.ok(steps.includes('sala_tend_chart'));
 });
 
@@ -49,17 +55,6 @@ test('getInterconsultaTourSteps mantiene pasos clásicos sin Estado Actual ni Li
   assert.equal(steps[steps.length - 1], 'wrap');
 });
 
-test('getTourTarget para pase_enter resalta el área principal', () => {
-  const t = getTourTarget('pase_enter', 'sala');
-  assert.match(t.selector || '', /main-area/);
-});
-
-test('getTourTarget para pase_board apunta al scroll del tablero Pase', () => {
-  const t = getTourTarget('pase_board', 'sala');
-  assert.equal(t.appTab, 'nota');
-  assert.match(t.selector || '', /pase-board-scroll/);
-});
-
 test('getTourTarget devuelve selector para lab_parse en Laboratorio', () => {
   const t = getTourTarget('lab_parse', 'sala');
   assert.equal(t.appTab, 'lab');
@@ -74,19 +69,18 @@ test('getTourTarget para estado_actual apunta al expediente con su botón', () =
   assert.match(t.selector, /estado-actual|btn-estado-actual/i);
 });
 
-test('getTourTarget para listado_problemas apunta al tab interno listado', () => {
+test('getTourTarget para listado_problemas abre listado y resalta Generar', () => {
   const t = getTourTarget('listado_problemas', 'sala');
   assert.equal(t.appTab, 'nota');
   assert.equal(t.innerTab, 'listado');
+  assert.equal(t.selector, '#btn-gen-listado');
+  assert.equal(t.spotlightClass, 'tour-spotlight-action');
+  assert.equal(stepRequiresUserAction('listado_problemas'), false);
 });
 
 test('getTourTarget para servicio_default apunta a Mi Perfil', () => {
   const t = getTourTarget('servicio_default', 'sala');
   assert.match(t.selector, /servicio|profile-default-servicio|profile-modal/i);
-});
-
-test('stepRequiresUserAction incluye pase_enter', () => {
-  assert.equal(stepRequiresUserAction('pase_enter'), true);
 });
 
 test('getTourTarget para sala_tend_chart resalta botón Gráfica', () => {
@@ -107,8 +101,31 @@ test('stepRequiresUserAction es false para pasos puramente narrativos', () => {
   assert.equal(stepRequiresUserAction('map_sidebar'), false);
   assert.equal(stepRequiresUserAction('map_tabs'), false);
   assert.equal(stepRequiresUserAction('map_lab_teaser'), false);
-  assert.equal(stepRequiresUserAction('pase_board'), false);
   assert.equal(stepRequiresUserAction('wrap'), false);
   assert.equal(stepRequiresUserAction('livesync_desktop'), false);
   assert.equal(stepRequiresUserAction('livesync_mobile'), false);
+  assert.equal(stepRequiresUserAction('sala_casiopea_lab'), false);
+  assert.equal(stepRequiresUserAction('sala_casiopea_trends'), false);
+});
+
+test('getTourTarget para sala_casiopea_lab apunta al botón Tablas SOME', () => {
+  const t = getTourTarget('sala_casiopea_lab', 'sala');
+  assert.equal(t.appTab, 'lab');
+  assert.match(t.selector, /lab-some-tables-btn/);
+  assert.equal(stepRequiresUserAction('sala_casiopea_lab'), false);
+});
+
+test('getTourTarget para sala_casiopea_trends apunta al botón Enviar Casiopea', () => {
+  const t = getTourTarget('sala_casiopea_trends', 'sala');
+  assert.equal(t.appTab, 'nota');
+  assert.equal(t.innerTab, 'tend');
+  assert.match(t.selector, /casiopea-trends-send/);
+  assert.equal(stepRequiresUserAction('sala_casiopea_trends'), false);
+});
+
+test('getInterconsultaTourSteps no incluye pasos Casiopea', () => {
+  const steps = getInterconsultaTourSteps();
+  assert.ok(!steps.includes('sala_casiopea_lab'));
+  assert.ok(!steps.includes('sala_casiopea_trends'));
+  assert.equal(steps.length, 16);
 });

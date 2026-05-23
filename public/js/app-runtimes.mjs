@@ -78,7 +78,6 @@ import {
 } from './features/productivity.mjs';
 import {
   registerSettingsHelpRuntime,
-  onChromeGuidedTourPaseEnter,
   syncTeamSyncHeaderButton,
   closeSettingsDropdown,
 } from './features/settings-help.mjs';
@@ -263,7 +262,6 @@ registerChromeRuntime({
   getActiveId: function () { return rt.getActiveId(); },
   setRoundOverviewMode: setRoundOverviewMode,
   renderPaseBoard: renderPaseBoard,
-  onGuidedTourPaseEnter: onChromeGuidedTourPaseEnter,
   syncLabOutputChrome: syncLabOutputChrome,
 });
 
@@ -404,6 +402,7 @@ registerSettingsHelpRuntime({
   closeProfileModal: closeProfileModal,
   openProfileModal: openProfileModal,
   renderMedRecetaPanel: renderMedRecetaPanel,
+  renderListadoForm: renderListadoForm,
 });
 
 registerExpedienteRuntime({

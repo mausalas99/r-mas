@@ -62,6 +62,8 @@
   --todo-prio-media: #b45309;
   --todo-prio-baja: #15803d;
   --titlebar-traffic-gap: 96px;
+  /* Altura de la franja arrastrable (hiddenInset) en macOS Electron */
+  --electron-macos-chrome-top: 52px;
   color-scheme: light;
   --density-space: 1;
   --density-font: 1;

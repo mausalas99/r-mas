@@ -1,0 +1,21 @@
+R+ 5.2.0 (estable — integración Casiopea)
+==========================================
+
+Fecha: 2026-05-23
+
+## Resumen
+
+Integración visible con Casiopea (antes Sesión de Ingreso): copy actualizado y dos pasos nuevos en el tutorial modo Sala que señalan cómo enviar laboratorio y tendencias sin abrir la app durante el tour.
+
+## Nuevo / mejorado
+
+- Botones y modales muestran **Casiopea** en lugar de Sesión de Ingreso.
+- Tutorial **Sala**: pasos tras revisar laboratorio y gráficas de tendencias explican **Enviar a Casiopea**.
+- Protocolo técnico sin cambios: `sesion-ingreso://import` y payloads `r-plus` / `lab-tables` / `lab-trends`.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v5.2.0
+
+- Mac: `R+-5.2.0-arm64.dmg`, `R+-5.2.0-x64.dmg`
+- Windows: `R+-5.2.0-x64.exe`

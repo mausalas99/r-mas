@@ -173,6 +173,9 @@ registerLabSomeTablesModalRuntime({
   syncLabOutputChrome: function () {
     syncLabOutputChrome();
   },
+  openSesionIngresoSend: function () {
+    openSesionIngresoSendModal();
+  },
 });
 
 registerSesionIngresoSendRuntime({
@@ -188,11 +191,17 @@ registerSesionIngresoSendRuntime({
     });
     return patient ? patient.nombre || patient.registro || '' : '';
   },
+  getReportDate: function () {
+    if (activeLab && activeLab.patient && activeLab.patient.fecha) {
+      return String(activeLab.patient.fecha).trim();
+    }
+    return '';
+  },
   sendPayload: function (payload) {
     if (window.electronAPI && window.electronAPI.sendToSesionIngreso) {
       window.electronAPI.sendToSesionIngreso(payload).then(function (ok) {
-        if (ok) rt.showToast('Enviado a Sesión de Ingreso', 'ok');
-        else rt.showToast('No se pudo abrir Sesión de Ingreso', 'warn');
+        if (ok) rt.showToast('Enviado a Casiopea', 'ok');
+        else rt.showToast('No se pudo abrir Casiopea', 'warn');
       });
       return;
     }

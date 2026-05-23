@@ -1,9 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-/** Valor exportado en lan-sync.mjs (no importar el módulo en Node: side effects + localStorage). */
-const DEFAULT_LAN_TEAM_CODE = '1234';
-
 /** Misma lógica que settings-help.mjs (no exportada). */
 function esc(s) {
   return String(s || '')
@@ -13,12 +10,12 @@ function esc(s) {
     .replace(/"/g, '&quot;');
 }
 
-test('livesync_desktop tour snippet incluye código LAN por defecto', () => {
+test('livesync_desktop tour snippet no menciona código numérico fijo', () => {
   const html =
-    '<p>Código por defecto del equipo: <strong>' +
-    esc(DEFAULT_LAN_TEAM_CODE) +
-    '</strong>.</p>';
-  assert.match(html, /1234/);
+    '<p>El icono <strong>⇄</strong> (junto a Ajustes) abre la conexión LAN.</p>' +
+    '<p>Los respaldos JSON manuales siguen en Ajustes → Respaldos, sync y recuperación.</p>';
+  assert.doesNotMatch(html, /\b1234\b/);
+  assert.match(html, /Respaldos/);
 });
 
 test('esc escapa títulos de artículos de ayuda', () => {

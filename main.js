@@ -365,7 +365,18 @@ function buildMenu() {
         { role: 'quit', label: 'Salir' },
       ],
     }] : []),
-    { role: 'editMenu' },
+    {
+      label: 'Editar',
+      submenu: [
+        { role: 'undo', label: 'Deshacer' },
+        { role: 'redo', label: 'Rehacer' },
+        { type: 'separator' },
+        { role: 'cut', label: 'Cortar' },
+        { role: 'copy', label: 'Copiar' },
+        { role: 'paste', label: 'Pegar' },
+        { role: 'selectAll', label: 'Seleccionar todo' },
+      ],
+    },
     {
       label: 'Ver',
       submenu: [

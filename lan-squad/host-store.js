@@ -55,7 +55,9 @@ function createHostStore({ filePath, teamCodePlain }) {
       return defaultState(teamCodeHash);
     }
     if (s.teamCodeHash !== teamCodeHash) {
-      throw new Error('team code mismatch for existing host file');
+      const fresh = defaultState(teamCodeHash);
+      atomicWriteJson(filePath, fresh);
+      return fresh;
     }
     s.patients = Array.isArray(s.patients) ? s.patients : [];
     s.rooms = Array.isArray(s.rooms) ? s.rooms : [];

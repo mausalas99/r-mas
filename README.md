@@ -25,10 +25,16 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 ---
 
-**Versión estable actual:** [5.1.0](https://github.com/mausalas99/r-mas/releases/tag/v5.1.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [5.2.0](https://github.com/mausalas99/r-mas/releases/tag/v5.2.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 5.2.0 (integración Casiopea)
+
+- **TODO:** completar bullets en README.
+
+Notas: `docs/RELEASE_NOTES_5.2.0.txt`.
 ## R+ 5.1.0 (estable — tablas SOME del reporte)
 
 - **Laboratorio:** botón **Tablas del reporte** tras procesar un SOME; modal con tablas por departamento (BH, QS, orina, bacteriología, citoquímico, etc.).

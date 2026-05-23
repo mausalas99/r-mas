@@ -52,6 +52,17 @@ describe('host-store', () => {
     assert.strictEqual(list[0].id, r.id);
   });
 
+  it('reinicializa host-state si cambió el código del equipo', () => {
+    const { hashTeamCode } = require('./team-code.js');
+    const storeA = createHostStore({ filePath, teamCodePlain: 'old-code' });
+    storeA.createRoom('Sala previa');
+    assert.strictEqual(storeA.listRooms().length, 1);
+    const storeB = createHostStore({ filePath, teamCodePlain: 'new-code' });
+    const st = storeB.getState();
+    assert.strictEqual(st.rooms.length, 0);
+    assert.strictEqual(st.teamCodeHash, hashTeamCode('new-code'));
+  });
+
   it('putRoomSyncBundle LWW por updatedAt del envelope', () => {
     const store = createHostStore({ filePath, teamCodePlain: 'b' });
     const r = store.createRoom('Sala sync');
