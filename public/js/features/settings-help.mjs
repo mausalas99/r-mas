@@ -534,10 +534,10 @@ function renderTourStep() {
       nextBtn.textContent = 'Siguiente';
       break;
     case 'sala_casiopea_lab':
-      setBadge('Casiopea · laboratorio');
+      setBadge('Nexo · laboratorio');
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">Abre <strong>Tablas SOME</strong> (botón resaltado). Dentro verás <strong>Enviar a Casiopea</strong>: desde ahí mandas estudios al paso <strong>Paraclínicos</strong> en la app Casiopea (instalada aparte en este equipo).</p>' +
-        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">En el tutorial el envío no abre Casiopea; fuera del tour sí. Pulsa <strong>Siguiente</strong> cuando hayas visto el botón.</p>';
+        '<p style="margin:0;line-height:1.5;">Abre <strong>Tablas SOME</strong> (botón resaltado). Dentro verás <strong>Enviar a Nexo</strong>: desde ahí mandas estudios al paso <strong>Paraclínicos</strong> en la app Nexo (instalada aparte en este equipo).</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">En el tutorial el envío no abre Nexo; fuera del tour sí. Pulsa <strong>Siguiente</strong> cuando hayas visto el botón.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'ic_nota':
@@ -575,9 +575,9 @@ function renderTourStep() {
       nextBtn.textContent = 'Siguiente';
       break;
     case 'sala_casiopea_trends':
-      setBadge('Casiopea · tendencias');
+      setBadge('Nexo · tendencias');
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">Con varios laboratorios en el tiempo, <strong>Enviar a Casiopea</strong> (barra de Tendencias) manda gráficas agrupadas al mismo flujo de paraclínicos.</p>' +
+        '<p style="margin:0;line-height:1.5;">Con varios laboratorios en el tiempo, <strong>Enviar a Nexo</strong> (barra de Tendencias) manda gráficas agrupadas al mismo flujo de paraclínicos.</p>' +
         '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Puedes abrir el modal para ver la selección; confirmar no envía datos durante el tutorial. <strong>Siguiente</strong> para continuar.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
@@ -1209,12 +1209,14 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 var RELEASE_NOTES_HIGHLIGHTS = {
   '5.2.0': [
     {
-      title: 'TODO',
-      body: 'Completar antes de publicar.',
+      title: 'Integración Nexo',
+      body:
+        'Envía tablas SOME y tendencias a la app Nexo (antes Sesión de Ingreso) con los botones Enviar a Nexo.',
     },
     {
-      title: 'TODO',
-      body: 'Completar antes de publicar.',
+      title: 'Tutorial Sala',
+      body:
+        'El tour señala dónde enviar laboratorio y gráficas; durante el tutorial no se abre Nexo.',
     },
   ],
   '5.1.0': [

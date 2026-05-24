@@ -75,7 +75,7 @@ export function openSesionIngresoTrendsSendModal() {
 
   const selected = defaultSelectedPanelIds(panels);
   body.innerHTML = `
-    <p class="hint">Selecciona los bloques de gráfica (como en «Gráfica del estudio») a enviar a Casiopea.</p>
+    <p class="hint">Selecciona los bloques de gráfica (como en «Gráfica del estudio») a enviar a Nexo.</p>
     <div class="sesion-ingreso-send-list">
       ${panels
         .map(
@@ -103,7 +103,7 @@ export function openSesionIngresoTrendsSendModal() {
     const ids = getSelectedIds(body);
     if (!ids.length) return;
     if (isCasiopeaTourSendBlocked('trends')) {
-      rt.showToast('En el tutorial no se envía a Casiopea; fuera del tour aquí se abre la app.', 'info');
+      rt.showToast('En el tutorial no se envía a Nexo; fuera del tour aquí se abre la app.', 'info');
       closeSesionIngresoTrendsSendModal();
       return;
     }

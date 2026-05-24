@@ -1,22 +1,21 @@
-R+ 5.2.0 (integración Casiopea)
+R+ 5.2.0 (integración Nexo)
 ===================================
 
 Fecha: 2026-05-23
 
 ## Resumen
 
-TODO: resumen en una o dos frases.
+Integración visible con **Nexo**: envío de laboratorio y tendencias desde R+ hacia la app externa, con pasos informativos en el tutorial modo Sala.
 
 ## Nuevo / mejorado
 
-- **TODO:** punto 1
-- **TODO:** punto 2
+- Botones y modales: **Enviar a Nexo** (laboratorio y tendencias).
+- Tutorial **Sala**: resalta Tablas SOME y el envío de gráficas sin abrir Nexo durante el tour.
+- Protocolo técnico sin cambios: `sesion-ingreso://import`.
 
 ## Instalación
 
-Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v5.2.0
+Descarga desde: https://github.com/mausalas99/r-mas/releases/latest
 
-- Mac: `R+-5.2.0-arm64.dmg`, `R+-5.2.0-x64.dmg` (y zip para auto-update).
-- Windows: `R+-5.2.0-x64.exe`.
-
-Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
+- Mac: `R+-5.2.0-arm64.dmg`, `R+-5.2.0-x64.dmg`
+- Windows: `R+-5.2.0-x64.exe`

@@ -72,7 +72,7 @@ export function openSesionIngresoSendModal() {
 
   const selected = defaultSelectedIds(items);
   body.innerHTML = `
-    <p class="hint">Marca los estudios a enviar al paso <strong>Paraclínicos</strong> que tengas seleccionado en Casiopea.</p>
+    <p class="hint">Marca los estudios a enviar al paso <strong>Paraclínicos</strong> que tengas seleccionado en Nexo.</p>
     <div class="sesion-ingreso-send-list">
       ${items
         .map(

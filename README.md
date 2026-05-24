@@ -30,9 +30,10 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 ---
 
 
-## R+ 5.2.0 (integración Casiopea)
+## R+ 5.2.0 (integración Nexo)
 
-- **TODO:** completar bullets en README.
+- **Nexo:** botones **Enviar a Nexo** en tablas SOME, laboratorio y tendencias (mismo protocolo `sesion-ingreso://`).
+- **Tutorial Sala:** pasos que muestran el envío sin abrir Nexo durante el tour.
 
 Notas: `docs/RELEASE_NOTES_5.2.0.txt`.
 ## R+ 5.1.0 (estable — tablas SOME del reporte)
