@@ -5,7 +5,8 @@ import {
   stepRequiresUserAction,
 } from '../tour-targets.mjs';
 import { syncGuidedTourContext } from '../tour-guards.mjs';
-import { DEMO_SOME_LAB_REPORT, OLDER_DEMO_SOME_LAB_REPORT } from '../tour-demo-some-lab.mjs';
+import { DEMO_TOUR_LAB_PASTE, DEMO_GARCIA_LAB_REPORT, DEMO_SOME_LAB_REPORT, OLDER_DEMO_SOME_LAB_REPORT } from '../tour-demo-some-lab.mjs';
+import { LAB_BULK_PATIENT_SEPARATOR } from '../lab-bulk-paste.mjs';
 import { buildTourDemoListadoProblemas } from '../tour-demo-listado-problemas.mjs';
 import { isMobileWeb } from '../mobile-web.mjs';
 import { isModeSala } from '../mode-features.mjs';
@@ -95,8 +96,8 @@ function publishTourGuardContext() {
 publishTourGuardContext();
 
 var DEMO_PATIENT_ID = 'demo-onboarding';
-var DEMO_LAB_REPORT = DEMO_SOME_LAB_REPORT;
-var OLDER_DEMO_LAB_REPORT = OLDER_DEMO_SOME_LAB_REPORT;
+var DEMO_PATIENT_ID_2 = 'demo-onboarding-2';
+var DEMO_LAB_REPORT = DEMO_TOUR_LAB_PASTE;
 
 /** Plantilla BH de referencia (p. ej. tour guiado). El cuadro de laboratorio no se rellena solo al iniciar. */
 var LAB_INPUT_DEFAULT_REPORT =
@@ -313,10 +314,42 @@ function onTourDockClick(ev) {
   ev.stopPropagation();
 }
 
+function openLabBulkTourHintModal() {
+  var backdrop = document.getElementById('lab-bulk-tour-hint-backdrop');
+  var sample = document.getElementById('lab-bulk-tour-hint-sample');
+  if (sample) {
+    sample.textContent = LAB_BULK_PATIENT_SEPARATOR + '\n\n' + DEMO_GARCIA_LAB_REPORT.trim();
+  }
+  if (!backdrop) return;
+  backdrop.classList.add('open');
+  backdrop.setAttribute('aria-hidden', 'false');
+}
+
+function closeLabBulkTourHintModal() {
+  var backdrop = document.getElementById('lab-bulk-tour-hint-backdrop');
+  if (!backdrop) return;
+  backdrop.classList.remove('open');
+  backdrop.setAttribute('aria-hidden', 'true');
+}
+
+function insertLabTourSecondPatientExample() {
+  var ta = document.getElementById('lab-input');
+  if (!ta) return;
+  if (String(ta.value || '').indexOf('0007755-3') !== -1) {
+    rt.showToast('El ejemplo de DEMO GARCÍA ya está en el cuadro', 'info');
+    closeLabBulkTourHintModal();
+    return;
+  }
+  if (!String(ta.value || '').trim()) ta.value = DEMO_LAB_REPORT;
+  ta.value = String(ta.value || '').trimEnd() + '\n' + LAB_BULK_PATIENT_SEPARATOR + '\n' + DEMO_GARCIA_LAB_REPORT;
+  closeLabBulkTourHintModal();
+  rt.showToast('Ejemplo de DEMO GARCÍA insertado ✓', 'success');
+}
+
 function seedDemoTrendHistory() {
   try {
-    var older = procesarLabs(OLDER_DEMO_LAB_REPORT).resLabs;
-    var newer = procesarLabs(DEMO_LAB_REPORT).resLabs;
+    var older = procesarLabs(OLDER_DEMO_SOME_LAB_REPORT).resLabs;
+    var newer = procesarLabs(DEMO_SOME_LAB_REPORT).resLabs;
     labHistory[DEMO_PATIENT_ID] = [
       { id: 'tour-trend-1', fecha: '05/03/2026', hora: '', resLabs: older, parsed: extractParsedValues(older) },
       { id: 'tour-trend-2', fecha: '11/04/2026', hora: '', resLabs: newer, parsed: extractParsedValues(newer) }
@@ -463,6 +496,9 @@ function applyTourTargetForStep(id) {
     var def = String(LAB_INPUT_DEFAULT_REPORT || '').trim();
     if (!v || v === def) li.value = DEMO_LAB_REPORT;
   }
+  if (id === 'lab_bulk_separator') {
+    openLabBulkTourHintModal();
+  }
 
   clearAllTourSpotlights();
   if (!t.selector) return;
@@ -518,14 +554,20 @@ function renderTourStep() {
       setBadge('laboratorio · texto');
       bodyEl.innerHTML =
         guidedTourBranch === 'interconsulta'
-          ? '<p style="margin:0;line-height:1.5;">Aquí pegas el reporte; ya hay un <strong>ejemplo</strong>. Pulsa <strong>Siguiente</strong> y luego el botón morado <strong>Procesar</strong>.</p>'
-          : '<p style="margin:0;line-height:1.5;">Aquí va el laboratorio (hay un <strong>ejemplo</strong>). Después definirás tu servicio en Mi Perfil y volverás para pulsar <strong>Procesar</strong>.</p>';
+          ? '<p style="margin:0;line-height:1.5;">Aquí pegas reportes SOME. Ya hay un <strong>ejemplo con dos días</strong> de DEMO PÉREZ. Pulsa <strong>Siguiente</strong>.</p>'
+          : '<p style="margin:0;line-height:1.5;">Aquí van los laboratorios: el ejemplo trae <strong>dos días</strong> de DEMO PÉREZ. Después definirás tu servicio en Mi Perfil.</p>';
+      nextBtn.textContent = 'Siguiente';
+      break;
+    case 'lab_bulk_separator':
+      setBadge('laboratorio · separador');
+      bodyEl.innerHTML =
+        '<p style="margin:0;line-height:1.5;">Lee la ventana: puedes pegar <strong>varios días</strong> del mismo paciente seguidos. Entre <strong>pacientes distintos</strong> usa el separador (botón gris). Opcional: inserta el ejemplo de <strong>DEMO GARCÍA</strong>.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'lab_parse':
       setBadge('laboratorio · procesar');
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">Pulsa <strong>Procesar</strong> (morado) para interpretar el ejemplo y ver diagramas.</p>';
+        '<p style="margin:0;line-height:1.5;">Pulsa <strong>Procesar</strong> (morado). R+ interpreta todos los reportes, agrupa por día y guarda en el historial de cada paciente.</p>';
       nextBtn.style.display = 'none';
       break;
     case 'lab_view':
@@ -696,6 +738,9 @@ function guidedTourClickNext() {
   if (tourStepId === 'sala_casiopea_trends') {
     closeSesionIngresoTrendsSendModal();
   }
+  if (tourStepId === 'lab_bulk_separator') {
+    closeLabBulkTourHintModal();
+  }
   if (tourStepId === 'estado_actual') {
     closeSOAPModal();
   }
@@ -784,9 +829,15 @@ function startOnboarding(branch) {
   var fecha = String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0')+'/'+today.getFullYear();
   var hora  = String(today.getHours()).padStart(2,'0')+':'+String(today.getMinutes()).padStart(2,'0');
   var demoPatient = {
-    id: DEMO_PATIENT_ID, nombre: 'DEMO PÉREZ', registro: '0000001',
+    id: DEMO_PATIENT_ID, nombre: 'DEMO PÉREZ', registro: '0008421-7',
     edad: '67 años', sexo: 'M', area: 'MEDICINA INTERNA',
     servicio: 'MEDICINA INTERNA', cuarto: '101', cama: '1',
+    fromLab: false, isDemo: true
+  };
+  var demoPatient2 = {
+    id: DEMO_PATIENT_ID_2, nombre: 'DEMO GARCÍA', registro: '0007755-3',
+    edad: '54 años', sexo: 'F', area: 'MEDICINA INTERNA',
+    servicio: 'MEDICINA INTERNA', cuarto: '102', cama: '2',
     fromLab: false, isDemo: true
   };
   notes[DEMO_PATIENT_ID] = {
@@ -797,6 +848,15 @@ function startOnboarding(branch) {
   indicaciones[DEMO_PATIENT_ID] = {
     fecha:fecha, hora:hora, medicos:'', dieta:'', cuidados:'',
     estudios:'', medicamentos:'', interconsultas:'', otros:[]
+  };
+  notes[DEMO_PATIENT_ID_2] = {
+    fecha: fecha, hora: hora, interrogatorio: '', evolucion: '', estudios: '',
+    diagnosticos: ['DM2 descompensada'], tratamiento: [''],
+    ta: '', fr: '', fc: '', temp: '', peso: '', medico: '', profesor: ''
+  };
+  indicaciones[DEMO_PATIENT_ID_2] = {
+    fecha: fecha, hora: hora, medicos: '', dieta: '', cuidados: '',
+    estudios: '', medicamentos: '', interconsultas: '', otros: []
   };
   seedDemoTrendHistory();
   delete medRecetaByPatient[DEMO_PATIENT_ID];
@@ -825,7 +885,8 @@ function startOnboarding(branch) {
     ],
   };
   medNotaSelectionByPatient[DEMO_PATIENT_ID] = { 'tour-med-1': true, 'tour-med-2': true };
-  setPatients(patients.filter(function(p){ return p.id !== DEMO_PATIENT_ID; }));
+  setPatients(patients.filter(function(p){ return p.id !== DEMO_PATIENT_ID && p.id !== DEMO_PATIENT_ID_2; }));
+  patients.unshift(demoPatient2);
   patients.unshift(demoPatient);
   guidedTourActive = true;
   tourStepId = 'map_sidebar';
@@ -859,10 +920,14 @@ function onboardingAdvanceAfterSend() {
 
 function destroyDemoAndClose() {
   clearTourSoapButtonHighlight();
-  setPatients(patients.filter(function(p){ return p.id !== DEMO_PATIENT_ID; }));
+  closeLabBulkTourHintModal();
+  setPatients(patients.filter(function(p){ return p.id !== DEMO_PATIENT_ID && p.id !== DEMO_PATIENT_ID_2; }));
   delete notes[DEMO_PATIENT_ID];
+  delete notes[DEMO_PATIENT_ID_2];
   delete indicaciones[DEMO_PATIENT_ID];
+  delete indicaciones[DEMO_PATIENT_ID_2];
   delete labHistory[DEMO_PATIENT_ID];
+  delete labHistory[DEMO_PATIENT_ID_2];
   delete medRecetaByPatient[DEMO_PATIENT_ID];
   delete listadoProblemas[DEMO_PATIENT_ID];
   if (medNotaSelectionByPatient[DEMO_PATIENT_ID]) delete medNotaSelectionByPatient[DEMO_PATIENT_ID];
@@ -891,11 +956,14 @@ function resetAndStartOnboarding() {
   } catch (_e) {}
   try {
     setPatients(patients.filter(function (p) {
-      return p.id !== DEMO_PATIENT_ID;
+      return p.id !== DEMO_PATIENT_ID && p.id !== DEMO_PATIENT_ID_2;
     }));
     delete notes[DEMO_PATIENT_ID];
+    delete notes[DEMO_PATIENT_ID_2];
     delete indicaciones[DEMO_PATIENT_ID];
+    delete indicaciones[DEMO_PATIENT_ID_2];
     delete labHistory[DEMO_PATIENT_ID];
+    delete labHistory[DEMO_PATIENT_ID_2];
     delete medRecetaByPatient[DEMO_PATIENT_ID];
     delete listadoProblemas[DEMO_PATIENT_ID];
     if (medNotaSelectionByPatient[DEMO_PATIENT_ID]) delete medNotaSelectionByPatient[DEMO_PATIENT_ID];
@@ -1230,6 +1298,23 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '6.0.1': [
+    {
+      title: 'Laboratorio: entrada masiva',
+      body:
+        'Pega varios reportes SOME en el mismo cuadro. Varios días del mismo paciente van seguidos; entre pacientes distintos usa Separador de paciente. Procesar agrupa por día y guarda en historial.',
+    },
+    {
+      title: 'Receta HU → PDF',
+      body:
+        'Exportación PDF con plantilla oficial HU 000-061-R-06-12 desde el servidor local de R+.',
+    },
+    {
+      title: 'Tutorial actualizado',
+      body:
+        'El tour precarga dos días de DEMO PÉREZ y explica el separador multi-paciente con ejemplo DEMO GARCÍA.',
+    },
+  ],
   '6.0.0': [
     {
       title: 'Expediente en 4 pestañas',
@@ -1853,6 +1938,7 @@ export {
   guidedTourAdvanceAfterIndicaGenerated,
   onboardingAdvanceAfterParse,
   onboardingAdvanceAfterSend,
+  closeLabBulkTourHintModal,
   syncTeamSyncHeaderButton,
   toggleSettingsDropdown,
 };
@@ -1879,4 +1965,6 @@ export const settingsHelpWindowHandlers = {
   onTourDockClick,
   guidedTourClickNext,
   resetAndStartOnboarding,
+  closeLabBulkTourHintModal,
+  insertLabTourSecondPatientExample,
 };

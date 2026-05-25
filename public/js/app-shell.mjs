@@ -64,6 +64,7 @@ import {
   hideTourIntroModal,
   toggleSettingsDropdown,
   initGuidedTourGate,
+  closeLabBulkTourHintModal,
 } from './features/settings-help.mjs';
 import {
   incrementPendingJobs,
@@ -498,6 +499,18 @@ function initModalDismiss() {
     backdropEl: function () {
       return el('lab-display-prefs-backdrop');
     }
+  });
+
+  modalDismiss.register({
+    isOpen: function () {
+      var b = el('lab-bulk-tour-hint-backdrop');
+      return b && b.classList.contains('open');
+    },
+    close: closeLabBulkTourHintModal,
+    backdropEl: function () {
+      return el('lab-bulk-tour-hint-backdrop');
+    },
+    panelSelector: '.lab-bulk-tour-hint-modal',
   });
 
   modalDismiss.register({

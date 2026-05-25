@@ -13,6 +13,7 @@ test('getSalaTourSteps incluye pasos clave de v3.0', () => {
   assert.ok(steps.includes('map_lab_teaser'));
   assert.ok(!steps.includes('map'), 'paso único map reemplazado por subtareas');
   assert.ok(steps.includes('servicio_default'), 'debe pedir servicio default al inicio');
+  assert.ok(steps.includes('lab_bulk_separator'));
   assert.ok(steps.includes('lab_parse'));
   assert.ok(!steps.includes('lab_send'), 'envío a nota ya no es paso del tour');
   assert.ok(steps.includes('estado_actual'), 'debe presentar Estado Actual');
@@ -33,7 +34,7 @@ test('getSalaTourSteps incluye pasos clave de v3.0', () => {
   assert.equal(steps.indexOf('sala_casiopea_trends'), steps.indexOf('sala_tend_chart') + 1);
   assert.ok(steps.includes('sala_expediente_tabs'));
   assert.equal(steps.indexOf('sala_expediente_tabs'), steps.indexOf('lab_view') + 1);
-  assert.equal(steps.length, 18);
+  assert.equal(steps.length, 19);
   assert.equal(steps[1], 'map_tabs');
 });
 
@@ -132,7 +133,7 @@ test('getInterconsultaTourSteps no incluye pasos Nexo', () => {
   assert.ok(!steps.includes('sala_casiopea_trends'));
   assert.ok(steps.includes('ic_expediente_tabs'));
   assert.equal(steps.indexOf('ic_expediente_tabs'), steps.indexOf('lab_view') + 1);
-  assert.equal(steps.length, 17);
+  assert.equal(steps.length, 18);
 });
 
 test('getTourTarget for sala_expediente_tabs apunta a barra de pestañas', () => {

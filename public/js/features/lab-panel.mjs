@@ -25,7 +25,13 @@ import {
   findExactDuplicateLabGroups,
   compareLabSetIdForDedupe,
   normalizeLabLine,
+  areDuplicateLabSets,
 } from "../lab-history-auto-store-core.mjs";
+import {
+  buildBulkLabPreview,
+  mergeBulkParseResults,
+  LAB_BULK_PATIENT_SEPARATOR,
+} from "../lab-bulk-paste.mjs";
 import {
   sortLabHistoryChronological,
   parseFechaLabToMs,
@@ -1032,7 +1038,7 @@ function checkStudiosAndInsertLabs() {
   }
 }
 
-function pushLabHistory(patientId, resLabs, fecha, hora, sourceText, bhExtras, refsBySection) {
+function pushLabHistory(patientId, resLabs, fecha, hora, sourceText, bhExtras, refsBySection, idSeed) {
   if (!patientId || !resLabs || !resLabs.length) return;
   if (!labHistory[patientId]) labHistory[patientId] = [];
   var extras = bhExtras && typeof bhExtras === 'object' ? bhExtras : {};
@@ -1050,7 +1056,7 @@ function pushLabHistory(patientId, resLabs, fecha, hora, sourceText, bhExtras, r
   }
   var horaNorm = normalizeHoraLabHistory(hora);
   var set = {
-    id: Date.now().toString(),
+    id: idSeed != null && String(idSeed).trim() !== '' ? String(Date.now()) + '-' + String(idSeed) : Date.now().toString(),
     fecha: fechaNorm,
     hora: horaNorm,
     resLabs: resLabs,
@@ -1085,6 +1091,108 @@ function applyManejoPending(patientId, parsed, parsedBySection, labSetId, fecha)
   };
   if (typeof rt.renderManejo === 'function') rt.renderManejo();
   if (typeof rt.refreshManejoPanel === 'function') rt.refreshManejoPanel();
+}
+
+function pushLabHistoryFromBulkPayload(patientId, payload, idSeed) {
+  if (!payload || !payload.resLabs || !payload.resLabs.length) return;
+  pushLabHistory(
+    patientId,
+    payload.resLabs,
+    payload.fecha,
+    payload.hora,
+    payload.sourceText,
+    payload.bhExtras,
+    payload.refsBySection,
+    idSeed
+  );
+}
+
+function isDuplicateInPatientHistory(patientId, payload) {
+  var list = labHistory[patientId] || [];
+  var incoming = {
+    fecha: normalizeFechaLabHistory(payload.fecha) || String(payload.fecha || '').trim(),
+    hora: normalizeHoraLabHistory(payload.hora),
+    resLabs: payload.resLabs || [],
+  };
+  return list.some(function (existing) {
+    return areDuplicateLabSets(existing, incoming);
+  });
+}
+
+function storeBulkLabBlocks(blocks, processable) {
+  if (processable.length > 1 && typeof rt.pushUndoSnapshot === 'function') {
+    rt.pushUndoSnapshot('Procesar laboratorios (' + processable.length + ' pacientes)');
+  }
+  var storedSets = 0;
+  var skippedDupes = 0;
+  processable.forEach(function (block) {
+    var patientId = block.patient.id;
+    var patientReg = String(block.patient.registro || '').trim();
+    var okItems = block.reports
+      .filter(function (r) {
+        return r.ok && r.result && (!patientReg || r.expediente === patientReg);
+      })
+      .map(function (r) {
+        return { result: r.result, reportText: r.reportText };
+      });
+    var mergedSets = mergeBulkParseResults(okItems);
+    mergedSets.forEach(function (payload, idx) {
+      if (isDuplicateInPatientHistory(patientId, payload)) {
+        skippedDupes += 1;
+        return;
+      }
+      pushLabHistoryFromBulkPayload(patientId, payload, block.blockIndex + '-' + idx);
+      applyLabClinicalSuggestions(patientId, payload.resLabs, payload.fecha, payload.bhExtras);
+      storedSets += 1;
+    });
+    rt.rebuildEstudiosFromLabHistory(patientId);
+    var hist = labHistory[patientId] || [];
+    var lastSet = hist.length ? hist[hist.length - 1] : null;
+    if (lastSet) {
+      applyManejoPending(patientId, lastSet.parsed, lastSet.parsedBySection, lastSet.id, lastSet.fecha);
+    }
+  });
+  if (storedSets || skippedDupes) {
+    saveState();
+    renderLabHistoryPanel();
+    rt.refreshTendenciasOrCultivosPanel();
+  }
+  return { storedSets: storedSets, skippedDupes: skippedDupes, skippedBlocks: blocks.length - processable.length };
+}
+
+function pickDisplayLabReport(blocks, processable, activeId) {
+  var activeBlock = null;
+  if (activeId) {
+    activeBlock = processable.find(function (b) {
+      return b.patient && String(b.patient.id) === String(activeId);
+    });
+  }
+  var block = activeBlock || processable[0] || blocks.find(function (b) {
+    return b.okReportCount > 0;
+  });
+  if (!block) return null;
+  var okReports = block.reports.filter(function (r) {
+    return r.ok && r.result;
+  });
+  if (!okReports.length) return null;
+  return okReports[okReports.length - 1];
+}
+
+export function insertLabPatientSeparator() {
+  var ta = document.getElementById('lab-input');
+  if (!ta) return;
+  var val = ta.value;
+  var start = typeof ta.selectionStart === 'number' ? ta.selectionStart : val.length;
+  var end = typeof ta.selectionEnd === 'number' ? ta.selectionEnd : start;
+  var before = val.slice(0, start);
+  var after = val.slice(end);
+  var insert = LAB_BULK_PATIENT_SEPARATOR;
+  if (before && !before.endsWith('\n')) insert = '\n' + insert;
+  insert += '\n';
+  ta.value = before + insert + after;
+  var pos = before.length + insert.length;
+  ta.focus();
+  ta.setSelectionRange(pos, pos);
 }
 
 function isDuplicateLatestLabSet(patientId, resLabs, fecha, hora) {
@@ -1299,30 +1407,120 @@ function showLabConflictModal(newLines, existingDate) {
 
 function procesarReporte() {
   var text = document.getElementById('lab-input').value.trim();
-  if (!text) { rt.showToast('Pega el texto del reporte primero','error'); return; }
-  var fromSomeExpediente = looksLikeSomeLabReport(text);
-  if (!fromSomeExpediente) {
+  if (!text) { rt.showToast('Pega el texto del reporte primero', 'error'); return; }
+
+  var blocks = buildBulkLabPreview(text, { findPatientByRegistro: rt.findPatientByRegistro });
+  if (!blocks.length) {
+    rt.showToast('No se detectaron reportes SOME en el texto pegado', 'error');
+    return;
+  }
+
+  var totalOkReports = blocks.reduce(function (acc, b) {
+    return acc + b.okReportCount;
+  }, 0);
+  if (!totalOkReports) {
     rt.showToast(
-      'No parece un reporte de SOME. En el reporte de laboratorio, copia desde «Expediente:» hasta el final del reporte y pégalo completo aquí.',
+      looksLikeSomeLabReport(text)
+        ? 'No se encontraron resultados de laboratorio en el texto pegado'
+        : 'No parece un reporte de SOME. Copia desde «Expediente:» hasta el final del reporte.',
       'error'
     );
+    return;
   }
+
   try {
-    var result = procesarLabs(text);
-    result.sourceText = text;
-    var resStore = applyLabPastePatientResolution(result);
-    renderOutput(result);
-    rt.renderDiagramas(result.resLabs);
-    if (resStore.shouldAutoStore) autoStoreProcessedLabResult(result);
-    if (!result.resLabs.length) {
-      rt.showToast(
-        fromSomeExpediente
-          ? 'No se encontraron resultados de laboratorio en el texto pegado'
-          : 'No se encontraron resultados. Copia el reporte completo desde SOME (desde «Expediente:»).',
-        'error'
-      );
-    } else clearLabInputAfterSuccessfulParse();
-  } catch(e) { rt.showToast('Error al procesar el reporte','error'); console.error(e); }
+    var processable = blocks.filter(function (b) {
+      return b.canProcess && b.okReportCount > 0 && b.patient;
+    });
+    var storeSummary = { storedSets: 0, skippedDupes: 0, skippedBlocks: blocks.length - processable.length };
+
+    if (processable.length) {
+      storeSummary = storeBulkLabBlocks(blocks, processable);
+      if (typeof rt.addAuditEntry === 'function') {
+        rt.addAuditEntry(
+          'lab-bulk-paste',
+          storeSummary.storedSets ? 'ok' : 'skip',
+          storeSummary.storedSets,
+          processable.length + ' pacientes'
+        );
+      }
+    } else if (blocks.some(function (b) {
+      return b.status === 'no-patient';
+    })) {
+      rt.showToast('Ningún expediente del pegado coincide con pacientes en la lista', 'error');
+    }
+
+    var displayReport = pickDisplayLabReport(blocks, processable, rt.getActiveId());
+    if (!displayReport) {
+      displayReport = blocks.reduce(function (found, b) {
+        if (found) return found;
+        return b.reports.find(function (r) { return r.ok && r.result; }) || null;
+      }, null);
+    }
+
+    if (!displayReport || !displayReport.result) {
+      rt.showToast('No se pudo interpretar el laboratorio pegado', 'error');
+      return;
+    }
+
+    var displayResult = displayReport.result;
+    displayResult.sourceText = displayReport.reportText || text;
+    if (processable.length === 1 && processable[0].okReportCount === 1) {
+      applyLabPastePatientResolution(displayResult);
+    } else if (displayReport.expediente) {
+      var match = rt.findPatientByRegistro(displayReport.expediente);
+      if (match && match.id !== rt.getActiveId()) {
+        rt.selectPatient(match.id);
+      }
+    }
+
+    renderOutput(displayResult);
+    rt.renderDiagramas(displayResult.resLabs);
+
+    var multi = blocks.length > 1 || totalOkReports > 1 || processable.length > 1;
+    if (multi) {
+      var parts = [];
+      if (storeSummary.storedSets) {
+        parts.push(
+          storeSummary.storedSets +
+            ' conjunto' +
+            (storeSummary.storedSets === 1 ? '' : 's') +
+            ' guardado' +
+            (storeSummary.storedSets === 1 ? '' : 's')
+        );
+      }
+      if (storeSummary.skippedDupes) {
+        parts.push(
+          storeSummary.skippedDupes +
+            ' duplicado' +
+            (storeSummary.skippedDupes === 1 ? '' : 's') +
+            ' omitido' +
+            (storeSummary.skippedDupes === 1 ? '' : 's')
+        );
+      }
+      if (storeSummary.skippedBlocks) {
+        parts.push(
+          storeSummary.skippedBlocks +
+            ' bloque' +
+            (storeSummary.skippedBlocks === 1 ? '' : 's') +
+            ' omitido' +
+            (storeSummary.skippedBlocks === 1 ? '' : 's')
+        );
+      }
+      rt.showToast(parts.length ? parts.join(' · ') + ' ✓' : 'Laboratorio procesado ✓', storeSummary.storedSets ? 'success' : 'success');
+    } else if (processable.length === 1 && storeSummary.storedSets === 0 && storeSummary.skippedDupes) {
+      rt.showToast('Resultado ya registrado en historial', 'success');
+    } else if (processable.length === 1 && !storeSummary.storedSets && blocks[0].status === 'no-patient') {
+      /* toast ya mostrado arriba */
+    } else if (processable.length === 1 && storeSummary.storedSets) {
+      /* renderOutput ya avanzó onboarding; sin toast extra en single */
+    }
+
+    clearLabInputAfterSuccessfulParse();
+  } catch (e) {
+    rt.showToast('Error al procesar el reporte', 'error');
+    console.error(e);
+  }
 }
 
 function renderOutput(result) {
@@ -1413,4 +1611,5 @@ export const windowHandlers = {
   openLabPatientPicker,
   openLabHistoryDedupeReview,
   consolidateLabHistoryByDayAndTipo,
+  insertLabPatientSeparator,
 };

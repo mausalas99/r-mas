@@ -141,3 +141,28 @@ export const OLDER_DEMO_SOME_LAB_REPORT =
   'POTASIO\n' +
   'Estudio\t\tResultado\tUnidades\tValor de Referencia\n' +
   'POTASIO\t\t*\t3.5\tmmol/L\t3.6 - 5.0\n';
+
+/** Segundo paciente demo para el tour de entrada masiva (separador --- PACIENTE ---). */
+export const DEMO_GARCIA_LAB_REPORT =
+  'Expediente:\t0007755-3\tSolicitud:\t2605110312\n' +
+  'Nombre:\tDEMO GARCÍA ANA\tFecha Registro:\tApr 11 2026 11:05AM\n' +
+  'Sexo:\tFEMENINO\tUbicación:\tMEDICINA INTERNA\n' +
+  'Edad:\t54\tMedico:\tSERVICIO DEMO\n' +
+  '\n' +
+  'HEMATOLOGIA\n' +
+  'BIOMETRIA HEMATICA COMPLETA\n' +
+  'Estudio\t\tResultado\tUnidades\tValor de Referencia\n' +
+  'HGB\t\t*\t10.40\tg/dL\t12.20 - 18.10\n' +
+  'HCT\t\t*\t33.1\t%\t37.7 - 53.7\n' +
+  'WBC\t\t*\t8.20\tK/uL\t4.00 - 11.00\n' +
+  'PLT\t\t*\t210\tK/uL\t142.00 - 424.00\n' +
+  'QUIMICA SANGUINEA\n' +
+  'GLUCOSA\n' +
+  'Estudio\t\tResultado\tUnidades\tValor de Referencia\n' +
+  'GLUCOSA\t\t*\t142\tmg/dL\t70 - 110\n' +
+  'CREATININA EN SANGRE\n' +
+  'Estudio\t\tResultado\tUnidades\tValor de Referencia\n' +
+  'CREATININA EN SANGRE\t\tA\t0.92\tmg/dL\t0.6 - 1.4\n';
+
+/** Demo Pérez: dos días de laboratorio para el tour (sin separador de paciente). */
+export const DEMO_TOUR_LAB_PASTE = DEMO_SOME_LAB_REPORT + '\n\n' + OLDER_DEMO_SOME_LAB_REPORT;

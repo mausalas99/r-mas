@@ -25,13 +25,21 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 ---
 
-**Versión estable actual:** [6.0.0](https://github.com/mausalas99/r-mas/releases/tag/v6.0.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.0.1](https://github.com/mausalas99/r-mas/releases/tag/v6.0.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
 
 ---
 
+
+## R+ 6.0.1 (entrada masiva de laboratorios y fixes rápidos)
+
+- **Laboratorio:** un solo cuadro procesa varios reportes SOME — varios días del mismo paciente seguidos, o varios pacientes con **Separador de paciente** (`--- PACIENTE ---`). Consolidación automática por día calendario.
+- **Receta HU:** exportación PDF oficial 000-061-R-06-12 vía servidor local.
+- **Tutorial:** dos días de DEMO PÉREZ precargados + paso explicativo multi-paciente con DEMO GARCÍA.
+
+Notas: `docs/RELEASE_NOTES_6.0.1.txt`.
 
 ## R+ 6.0.0 (expediente reorganizado, Manejo y Receta HU)
 
@@ -145,6 +153,12 @@ Notas: `docs/RELEASE_NOTES_3.3.0.txt`.
 
 ---
 
+
+## R+ 6.0.1 (entrada masiva de laboratorios y fixes rápidos)
+
+- **TODO:** completar bullets en README.
+
+Notas: `docs/RELEASE_NOTES_6.0.1.txt`.
 ## R+ 3.2.2 (estable — laboratorio + canal Estable en actualizaciones)
 
 - **Actualizaciones** — Canal **Estable** detecta releases oficiales al arrancar y al cambiar de canal; salto directo recomendado desde 3.0.x / 3.2.0.

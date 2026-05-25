@@ -157,6 +157,19 @@
   </div>
 </div>
 
+<div id="lab-bulk-tour-hint-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal lab-bulk-tour-hint-modal" role="dialog" aria-modal="true" aria-labelledby="lab-bulk-tour-hint-title" onclick="event.stopPropagation()">
+    <h3 id="lab-bulk-tour-hint-title">Varios días y varios pacientes</h3>
+    <p class="lab-bulk-tour-hint-lead">En el cuadro ya tienes <strong>dos días</strong> de laboratorio de <strong>DEMO PÉREZ</strong>. R+ los distingue por fecha al procesar.</p>
+    <p class="lab-bulk-tour-hint-lead">Para otro paciente, inserta el separador y pega su reporte SOME completo:</p>
+    <pre id="lab-bulk-tour-hint-sample" class="lab-bulk-tour-hint-sample" aria-label="Ejemplo de segundo paciente"></pre>
+    <div class="modal-actions lab-bulk-tour-hint-actions">
+      <button type="button" class="btn-med-secondary btn-med-secondary--dia" onclick="insertLabTourSecondPatientExample()">Insertar ejemplo en el cuadro</button>
+      <button type="button" class="btn-generate" onclick="closeLabBulkTourHintModal()">Entendido</button>
+    </div>
+  </div>
+</div>
+
 <header>
   <h1 id="app-brand" role="button" tabindex="0" title="Abrir Mi Perfil" aria-label="R+, abrir Mi Perfil" onclick="openProfileFromHeader(event)" onkeydown="if(event.key==='Enter'||event.key===' '){openProfileFromHeader(event);}">R+</h1>
   <span id="today-date"></span>
@@ -565,14 +578,15 @@
           </div>
           <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
             <div class="field-group">
-              <label>Pega el texto del reporte aquí</label>
-              <textarea id="lab-input" rows="10" autocomplete="off" autocorrect="off" spellcheck="false" data-lpignore="true" placeholder="Copia y pega el texto completo del reporte de laboratorio..."></textarea>
+              <label for="lab-input">Pega reportes SOME (uno o varios días; separador entre pacientes distintos)</label>
+              <textarea id="lab-input" rows="10" autocomplete="off" autocorrect="off" spellcheck="false" data-lpignore="true" placeholder="Copia reportes SOME completos desde «Expediente:»…&#10;Varios días del mismo paciente van seguidos.&#10;Entre pacientes distintos usa el separador."></textarea>
             </div>
             <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
               <button id="btn-procesar" class="btn-generate" onclick="procesarReporte()" style="min-width:140px;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 Procesar
               </button>
+              <button type="button" id="btn-lab-patient-separator" class="btn-med-secondary btn-med-secondary--muted" onclick="insertLabPatientSeparator()">Separador de paciente</button>
               <button type="button" class="btn-med-secondary btn-med-secondary--muted" onclick="limpiarReporte()">Limpiar</button>
             </div>
           </div>

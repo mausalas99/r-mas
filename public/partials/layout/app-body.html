@@ -75,14 +75,15 @@
           </div>
           <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
             <div class="field-group">
-              <label>Pega el texto del reporte aquí</label>
-              <textarea id="lab-input" rows="10" autocomplete="off" autocorrect="off" spellcheck="false" data-lpignore="true" placeholder="Copia y pega el texto completo del reporte de laboratorio..."></textarea>
+              <label for="lab-input">Pega reportes SOME (uno o varios días; separador entre pacientes distintos)</label>
+              <textarea id="lab-input" rows="10" autocomplete="off" autocorrect="off" spellcheck="false" data-lpignore="true" placeholder="Copia reportes SOME completos desde «Expediente:»…&#10;Varios días del mismo paciente van seguidos.&#10;Entre pacientes distintos usa el separador."></textarea>
             </div>
             <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
               <button id="btn-procesar" class="btn-generate" onclick="procesarReporte()" style="min-width:140px;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 Procesar
               </button>
+              <button type="button" id="btn-lab-patient-separator" class="btn-med-secondary btn-med-secondary--muted" onclick="insertLabPatientSeparator()">Separador de paciente</button>
               <button type="button" class="btn-med-secondary btn-med-secondary--muted" onclick="limpiarReporte()">Limpiar</button>
             </div>
           </div>
