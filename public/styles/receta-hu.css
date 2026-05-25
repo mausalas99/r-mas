@@ -221,9 +221,27 @@
   align-items: end;
 }
 
+.receta-hu-compose-proxima-fecha {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.receta-hu-field-grow {
+  flex: 1;
+  min-width: 200px;
+}
+
 @media (max-width: 720px) {
   .receta-hu-proxima-grid {
     grid-template-columns: 1fr;
+  }
+
+  .receta-hu-compose-proxima-fecha {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 

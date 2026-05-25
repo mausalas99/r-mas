@@ -29,6 +29,67 @@ export function emptyRecetaHuMedRow() {
   return { medicamento: '', presentacion: '', dosis: '' };
 }
 
+export function emptyRecetaHuProximaCitaRow() {
+  return { plazo: '2 semanas', servicio: '', texto: '', fecha: '' };
+}
+
+export function normalizeRecetaHuProximaCitaRow(row) {
+  const src = row && typeof row === 'object' ? row : {};
+  const plazo = String(src.plazo != null ? src.plazo : '2 semanas').trim() || '2 semanas';
+  const servicio = String(src.servicio != null ? src.servicio : '').trim();
+  let texto = String(src.texto != null ? src.texto : '').trim();
+  if (!texto && servicio) texto = buildProximaCitaText(plazo, servicio);
+  return {
+    plazo: plazo,
+    servicio: servicio,
+    texto: texto,
+    fecha: String(src.fecha != null ? src.fecha : '').trim(),
+  };
+}
+
+function migrateLegacyProximaCitas(src) {
+  if (Array.isArray(src.proximasCitas) && src.proximasCitas.length) {
+    return src.proximasCitas
+      .map(normalizeRecetaHuProximaCitaRow)
+      .filter(function (row) {
+        return row.texto || row.servicio || row.fecha;
+      });
+  }
+  const legacyText = String(src.proximaCita != null ? src.proximaCita : '').trim();
+  const legacyFecha = String(src.proximaCitaFecha != null ? src.proximaCitaFecha : '').trim();
+  if (!legacyText && !legacyFecha) return [];
+  return [
+    normalizeRecetaHuProximaCitaRow({
+      plazo: src.proximaPlazo,
+      servicio: '',
+      texto: legacyText,
+      fecha: legacyFecha,
+    }),
+  ];
+}
+
+export function formatProximasCitasForPdf(rows) {
+  const items = (Array.isArray(rows) ? rows : [])
+    .map(normalizeRecetaHuProximaCitaRow)
+    .filter(function (row) {
+      return row.texto || row.servicio || row.fecha;
+    });
+  const textLines = items
+    .map(function (row) {
+      return row.texto || buildProximaCitaText(row.plazo, row.servicio);
+    })
+    .filter(Boolean);
+  const fechaLines = items
+    .map(function (row) {
+      return row.fecha;
+    })
+    .filter(Boolean);
+  return {
+    proximaCita: textLines.join('\n'),
+    proximaCitaFecha: fechaLines.join('\n'),
+  };
+}
+
 export function normalizeRecetaHuDraft(raw) {
   const src = raw && typeof raw === 'object' ? raw : {};
   const meds = Array.isArray(src.meds) ? src.meds : [];
@@ -48,8 +109,7 @@ export function normalizeRecetaHuDraft(raw) {
       return String(x || '');
     }),
     cuidados: String(src.cuidados != null ? src.cuidados : ''),
-    proximaCita: String(src.proximaCita != null ? src.proximaCita : ''),
-    proximaCitaFecha: String(src.proximaCitaFecha != null ? src.proximaCitaFecha : ''),
+    proximasCitas: migrateLegacyProximaCitas(src),
     proximaPlazo: String(src.proximaPlazo != null ? src.proximaPlazo : '2 semanas'),
   };
 }
@@ -83,6 +143,7 @@ export function buildRecetaHuGeneratePayload(args) {
   const patient = (args && args.patient) || {};
   const draft = normalizeRecetaHuDraft(args && args.draft);
   const fecha = draft.fecha || formatRecetaHuFecha(new Date());
+  const proximaPdf = formatProximasCitasForPdf(draft.proximasCitas);
   return {
     patient: {
       nombre: String(patient.nombre || ''),
@@ -97,8 +158,9 @@ export function buildRecetaHuGeneratePayload(args) {
       return String(x || '').trim();
     }).filter(Boolean),
     cuidados: draft.cuidados,
-    proximaCita: draft.proximaCita,
-    proximaCitaFecha: draft.proximaCitaFecha,
+    proximasCitas: draft.proximasCitas,
+    proximaCita: proximaPdf.proximaCita,
+    proximaCitaFecha: proximaPdf.proximaCitaFecha,
     doctorName: String(args && args.doctorName ? args.doctorName : ''),
     cedulaProfesional: String(args && args.cedulaProfesional ? args.cedulaProfesional : ''),
   };

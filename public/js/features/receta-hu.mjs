@@ -152,12 +152,6 @@ function readStaticFieldsFromDom(draft) {
   if (fechaEl) draft.fecha = fechaEl.value;
   var cuidadosEl = document.getElementById('receta-hu-cuidados');
   if (cuidadosEl) draft.cuidados = cuidadosEl.value;
-  var proxEl = document.getElementById('receta-hu-proxima');
-  if (proxEl) draft.proximaCita = proxEl.value;
-  var proxFechaEl = document.getElementById('receta-hu-proxima-fecha');
-  if (proxFechaEl) draft.proximaCitaFecha = proxFechaEl.value;
-  var plazoEl = document.getElementById('receta-hu-proxima-plazo');
-  if (plazoEl) draft.proximaPlazo = plazoEl.value;
   return draft;
 }
 
@@ -225,6 +219,40 @@ function renderLabList(root, labs) {
     .join('');
 }
 
+function renderProximaCitaList(root, proximasCitas) {
+  var list = root.querySelector('#receta-hu-proximas-list');
+  if (!list) return;
+  var items = (proximasCitas || []).filter(function (row) {
+    return row && (row.texto || row.servicio || row.fecha);
+  });
+  if (!items.length) {
+    list.innerHTML = '<p class="receta-hu-list-empty">Sin consultas de seguimiento aún.</p>';
+    return;
+  }
+  list.innerHTML = items
+    .map(function (row, idx) {
+      var meta = [];
+      if (row.fecha) meta.push('Fecha: ' + row.fecha);
+      if (row.servicio && !row.texto) meta.push(row.servicio);
+      return (
+        '<div class="receta-hu-item receta-hu-item-proxima" data-proxima-idx="' +
+        idx +
+        '">' +
+        '<div class="receta-hu-item-body">' +
+        '<strong>' +
+        esc(row.texto || buildProximaCitaText(row.plazo, row.servicio) || '—') +
+        '</strong>' +
+        (meta.length ? '<span class="receta-hu-item-dose">' + esc(meta.join(' · ')) + '</span>' : '') +
+        '</div>' +
+        '<button type="button" class="btn-icon-quiet" title="Quitar" aria-label="Quitar consulta" data-receta-hu-action="remove-proxima" data-proxima-idx="' +
+        idx +
+        '">×</button>' +
+        '</div>'
+      );
+    })
+    .join('');
+}
+
 function renderConsultServiceSelect(root, draft) {
   var sel = root.querySelector('#receta-hu-consult-servicio');
   if (!sel) return;
@@ -238,7 +266,7 @@ function renderConsultServiceSelect(root, draft) {
     sel.appendChild(opt);
   });
   if (prev && services.indexOf(prev) >= 0) sel.value = prev;
-  var plazo = root.querySelector('#receta-hu-proxima-plazo');
+  var plazo = root.querySelector('#receta-hu-compose-proxima-plazo');
   if (plazo && draft.proximaPlazo) plazo.value = draft.proximaPlazo;
 }
 
@@ -265,6 +293,11 @@ function bindRecetaHuEvents(root) {
       recetaHuCommitLabFromCompose();
       return;
     }
+    if (action === 'add-proxima') {
+      ev.preventDefault();
+      recetaHuCommitProximaFromCompose();
+      return;
+    }
     if (action === 'add-service') {
       ev.preventDefault();
       recetaHuAddConsultService();
@@ -282,6 +315,12 @@ function bindRecetaHuEvents(root) {
       if (!isNaN(labIdx)) recetaHuRemoveLabRow(labIdx);
       return;
     }
+    if (action === 'remove-proxima') {
+      ev.preventDefault();
+      var proxIdx = parseInt(actionBtn.getAttribute('data-proxima-idx'), 10);
+      if (!isNaN(proxIdx)) recetaHuRemoveProximaRow(proxIdx);
+      return;
+    }
     if (action === 'open-profile') {
       ev.preventDefault();
       if (typeof window.openProfileModal === 'function') window.openProfileModal();
@@ -293,6 +332,13 @@ function bindRecetaHuEvents(root) {
     if (!t || !t.closest('#receta-hu-container')) return;
     if (t.id === 'receta-hu-compose-med-n' || t.id === 'receta-hu-compose-med-p' || t.id === 'receta-hu-compose-med-d') return;
     if (t.id === 'receta-hu-compose-lab') return;
+    if (
+      t.id === 'receta-hu-compose-proxima-plazo' ||
+      t.id === 'receta-hu-compose-proxima-texto' ||
+      t.id === 'receta-hu-compose-proxima-fecha'
+    ) {
+      return;
+    }
     var pid = aid();
     if (pid) persistDraft(pid, readDraftFromDom());
   });
@@ -300,6 +346,10 @@ function bindRecetaHuEvents(root) {
   root.addEventListener('change', function (ev) {
     var t = ev.target;
     if (t && t.id === 'receta-hu-consult-servicio') {
+      recetaHuOnConsultServicePick();
+      return;
+    }
+    if (t && t.id === 'receta-hu-compose-proxima-plazo') {
       recetaHuOnConsultServicePick();
       return;
     }
@@ -319,6 +369,14 @@ function bindRecetaHuEvents(root) {
     if (t.id === 'receta-hu-compose-med-n' || t.id === 'receta-hu-compose-med-p' || t.id === 'receta-hu-compose-med-d') {
       ev.preventDefault();
       recetaHuCommitMedFromCompose();
+      return;
+    }
+    if (
+      t.id === 'receta-hu-compose-proxima-texto' ||
+      t.id === 'receta-hu-compose-proxima-fecha'
+    ) {
+      ev.preventDefault();
+      recetaHuCommitProximaFromCompose();
     }
   });
 }
@@ -364,14 +422,19 @@ function ensureRecetaHuShell(root) {
     '<textarea class="receta-hu-textarea" id="receta-hu-cuidados" rows="4" placeholder="Texto libre…"></textarea>' +
     '</section>' +
     '<section class="receta-hu-section">' +
-    '<h4 class="receta-hu-section-title">Próxima cita</h4>' +
-    '<div class="receta-hu-proxima-grid">' +
-    '<label class="receta-hu-field"><span>Plazo</span><input type="text" class="receta-hu-input" id="receta-hu-proxima-plazo" placeholder="2 semanas"></label>' +
+    '<h4 class="receta-hu-section-title">Consultas de seguimiento</h4>' +
+    '<p class="receta-hu-hint-inline">Puedes agregar varias consultas; en el PDF aparecen una debajo de otra.</p>' +
+    '<div class="receta-hu-proxima-grid receta-hu-compose-proxima">' +
+    '<label class="receta-hu-field"><span>Plazo</span><input type="text" class="receta-hu-input" id="receta-hu-compose-proxima-plazo" placeholder="2 semanas"></label>' +
     '<label class="receta-hu-field"><span>Consulta de</span><select class="receta-hu-input" id="receta-hu-consult-servicio"></select></label>' +
     '<button type="button" class="btn-add-inline btn-add-inline-muted" data-receta-hu-action="add-service">+ Servicio</button>' +
     '</div>' +
-    '<label class="receta-hu-field"><span>Texto en receta</span><input type="text" class="receta-hu-input" id="receta-hu-proxima" placeholder="Acudir en 2 semanas a consulta de Nefrología"></label>' +
-    '<label class="receta-hu-field"><span>Fecha (opcional, campo derecho del PDF)</span><input type="text" class="receta-hu-input" id="receta-hu-proxima-fecha" placeholder="dd/mm/aaaa"></label>' +
+    '<label class="receta-hu-field"><span>Texto en receta</span><input type="text" class="receta-hu-input" id="receta-hu-compose-proxima-texto" placeholder="Acudir en 2 semanas a consulta de Nefrología"></label>' +
+    '<div class="receta-hu-compose receta-hu-compose-proxima-fecha">' +
+    '<label class="receta-hu-field receta-hu-field-grow"><span>Fecha (opcional, campo derecho del PDF)</span><input type="text" class="receta-hu-input" id="receta-hu-compose-proxima-fecha" placeholder="dd/mm/aaaa"></label>' +
+    '<button type="button" class="btn-add-inline" data-receta-hu-action="add-proxima">Agregar consulta</button>' +
+    '</div>' +
+    '<div id="receta-hu-proximas-list" class="receta-hu-added-list"></div>' +
     '</section>' +
     '<p class="receta-hu-foot">Médico y cédula se toman de <strong>Mi Perfil</strong>.</p>' +
     '</div></div>';
@@ -426,13 +489,10 @@ export function renderRecetaHu() {
   if (fechaEl) fechaEl.value = draft.fecha || formatRecetaHuFecha(new Date());
   var cuidadosEl = root.querySelector('#receta-hu-cuidados');
   if (cuidadosEl) cuidadosEl.value = draft.cuidados;
-  var proxEl = root.querySelector('#receta-hu-proxima');
-  if (proxEl) proxEl.value = draft.proximaCita;
-  var proxFechaEl = root.querySelector('#receta-hu-proxima-fecha');
-  if (proxFechaEl) proxFechaEl.value = draft.proximaCitaFecha;
 
   renderMedList(root, draft.meds);
   renderLabList(root, draft.labs);
+  renderProximaCitaList(root, draft.proximasCitas);
   renderConsultServiceSelect(root, draft);
 
   var docHint = root.querySelector('.receta-hu-foot');
@@ -515,13 +575,53 @@ function recetaHuRemoveLabRow(idx) {
 
 function recetaHuOnConsultServicePick() {
   var sel = document.getElementById('receta-hu-consult-servicio');
-  var plazoEl = document.getElementById('receta-hu-proxima-plazo');
-  var proxEl = document.getElementById('receta-hu-proxima');
-  if (!sel || !proxEl) return;
+  var plazoEl = document.getElementById('receta-hu-compose-proxima-plazo');
+  var textoEl = document.getElementById('receta-hu-compose-proxima-texto');
+  if (!sel || !textoEl) return;
   var text = buildProximaCitaText(plazoEl ? plazoEl.value : '', sel.value);
-  if (text) proxEl.value = text;
+  if (text) textoEl.value = text;
+}
+
+function recetaHuCommitProximaFromCompose() {
   var pid = aid();
-  if (pid) persistDraft(pid, readDraftFromDom());
+  if (!pid) return;
+  var plazoEl = document.getElementById('receta-hu-compose-proxima-plazo');
+  var sel = document.getElementById('receta-hu-consult-servicio');
+  var textoEl = document.getElementById('receta-hu-compose-proxima-texto');
+  var fechaEl = document.getElementById('receta-hu-compose-proxima-fecha');
+  var plazo = plazoEl ? String(plazoEl.value || '').trim() : '';
+  var servicio = sel ? String(sel.value || '').trim() : '';
+  var texto = textoEl ? String(textoEl.value || '').trim() : '';
+  var fecha = fechaEl ? String(fechaEl.value || '').trim() : '';
+  if (!texto && servicio) texto = buildProximaCitaText(plazo || '2 semanas', servicio);
+  if (!texto && !fecha) {
+    rt.showToast('Elige servicio o escribe el texto de la consulta', 'error');
+    if (sel) sel.focus();
+    return;
+  }
+  var draft = readDraftFromDom();
+  draft.proximaPlazo = plazo || draft.proximaPlazo || '2 semanas';
+  draft.proximasCitas.push({
+    plazo: plazo || draft.proximaPlazo || '2 semanas',
+    servicio: servicio,
+    texto: texto,
+    fecha: fecha,
+  });
+  persistDraft(pid, draft);
+  if (textoEl) textoEl.value = '';
+  if (fechaEl) fechaEl.value = '';
+  if (sel) sel.value = '';
+  renderProximaCitaList(document.getElementById('receta-hu-container'), draft.proximasCitas);
+  if (plazoEl) plazoEl.focus();
+}
+
+function recetaHuRemoveProximaRow(idx) {
+  var pid = aid();
+  if (!pid) return;
+  var draft = readDraftFromDom();
+  draft.proximasCitas.splice(idx, 1);
+  persistDraft(pid, draft);
+  renderProximaCitaList(document.getElementById('receta-hu-container'), draft.proximasCitas);
 }
 
 function recetaHuAddConsultService() {
@@ -648,6 +748,8 @@ export const recetaHuWindowHandlers = {
   recetaHuRemoveMedRow,
   recetaHuCommitLabFromCompose,
   recetaHuRemoveLabRow,
+  recetaHuCommitProximaFromCompose,
+  recetaHuRemoveProximaRow,
   recetaHuOnConsultServicePick,
   recetaHuAddConsultService,
   exportRecetaHuPdf,
