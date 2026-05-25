@@ -1,12 +1,18 @@
 aside.patient-sidebar {
   width: var(--sidebar-width);
   background: var(--surface);
-  border-right: none;
+  border: none;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
   display: flex; flex-direction: column; flex-shrink: 0;
   min-height: 0;
   overflow: hidden;
-  box-shadow: 8px 0 28px rgba(15, 23, 42, 0.055);
-  transition: width 0.22s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.18s ease, box-shadow 0.18s ease;
+  box-shadow: none;
+  transform: translateX(0);
+  transition:
+    width 0.22s cubic-bezier(0.25, 1, 0.5, 1),
+    opacity 0.18s ease,
+    box-shadow 0.18s ease,
+    transform var(--dur-normal) var(--ease-out);
 }
 .sidebar-hover-strip {
   position: fixed;
@@ -18,10 +24,27 @@ aside.patient-sidebar {
   display: none;
 }
 html.sidebar-auto-hide .sidebar-hover-strip { display: block; }
+html.sidebar-auto-hide:not(.sidebar-reveal) .sidebar-hover-strip::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: var(--shell-inset);
+  bottom: var(--shell-inset);
+  width: var(--sidebar-rail-width, 5px);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  background: var(--sidebar-rail-color);
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+html.sidebar-auto-hide.sidebar-reveal .sidebar-hover-strip::after {
+  opacity: 0;
+}
 html.sidebar-auto-hide:not(.sidebar-reveal) aside.patient-sidebar {
   width: 0 !important;
   min-width: 0 !important;
   opacity: 0;
+  transform: translateX(-10px);
   pointer-events: none;
   box-shadow: none;
   border-right: none;
@@ -29,10 +52,10 @@ html.sidebar-auto-hide:not(.sidebar-reveal) aside.patient-sidebar {
 html.sidebar-auto-hide.sidebar-reveal aside.patient-sidebar {
   opacity: 1;
   pointer-events: auto;
-  box-shadow: 8px 0 28px rgba(15, 23, 42, 0.055);
+  box-shadow: var(--shadow);
 }
 html.dark.sidebar-auto-hide.sidebar-reveal aside.patient-sidebar {
-  box-shadow: 8px 0 32px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-md);
 }
 .sidebar-header {
   padding: calc(14px * var(--density-space)) calc(16px * var(--density-space)) calc(15px * var(--density-space));
@@ -135,7 +158,7 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
   top: calc(7px * var(--density-space));
   bottom: calc(7px * var(--density-space));
   width: 3px;
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   background: transparent;
   transition: background 0.2s ease;
 }

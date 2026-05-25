@@ -22,6 +22,16 @@ import { inferFechaLabSetFromId, renderTendencias } from "./tendencias.mjs";
 import { renderTodoForm, todoCompareForSort, toggleTodo } from "./todos.mjs";
 import { scrollActiveRondaCardIntoView, setRoundOverviewMode, syncRoundExpedienteLayout } from "./patients.mjs";
 import { renderEstadoActualBar } from "./soap-estado.mjs";
+import {
+  animateTabPanelEnter,
+  hideAppTabPanel,
+  initTabBarMotion,
+  showAppTabPanel,
+  syncAppTabIndicator,
+  syncInnerTabIndicator,
+} from "../ui-tab-motion.mjs";
+
+export { initTabBarMotion } from "../ui-tab-motion.mjs";
 
 /** @type {{
  *   getActiveAppTab(): string,
@@ -556,41 +566,34 @@ export function switchAppTab(tab) {
   if (unified) {
     var paseRoot = document.getElementById("appcontent-pase");
     [appcontentLab, appcontentMed, appcontentNota, appcontentAgenda].forEach(function (p) {
-      if (!p) return;
-      p.style.display = "none";
+      hideAppTabPanel(p);
     });
     if (paseRoot) {
-      paseRoot.style.display = "flex";
+      var animatePase = prevAppTab !== tab || paseRoot.style.display === "none";
+      showAppTabPanel(paseRoot, animatePase);
       paseRoot.style.flexDirection = "column";
-      paseRoot.style.flex = "1";
-      paseRoot.style.minHeight = "0";
-      paseRoot.style.overflow = "hidden";
     }
     renderPaseBoard();
   } else {
     if (document.getElementById("appcontent-pase")) {
-      var pr = document.getElementById("appcontent-pase");
-      pr.style.display = "none";
+      hideAppTabPanel(document.getElementById("appcontent-pase"));
     }
+    var animatePanels = prevAppTab !== tab;
     if (appcontentLab) {
-      appcontentLab.style.display = tab === "lab" ? "flex" : "none";
-      appcontentLab.style.flex = "1";
-      appcontentLab.style.overflow = "hidden";
+      if (tab === "lab") showAppTabPanel(appcontentLab, animatePanels);
+      else hideAppTabPanel(appcontentLab);
     }
     if (appcontentMed) {
-      appcontentMed.style.display = tab === "med" ? "flex" : "none";
-      appcontentMed.style.flex = "1";
-      appcontentMed.style.overflow = "hidden";
+      if (tab === "med") showAppTabPanel(appcontentMed, animatePanels);
+      else hideAppTabPanel(appcontentMed);
     }
     if (appcontentNota) {
-      appcontentNota.style.display = tab === "nota" ? "flex" : "none";
-      appcontentNota.style.flex = "1";
-      appcontentNota.style.overflow = "hidden";
+      if (tab === "nota") showAppTabPanel(appcontentNota, animatePanels);
+      else hideAppTabPanel(appcontentNota);
     }
     if (appcontentAgenda) {
-      appcontentAgenda.style.display = tab === "agenda" ? "flex" : "none";
-      appcontentAgenda.style.flex = "1";
-      appcontentAgenda.style.overflow = "hidden";
+      if (tab === "agenda") showAppTabPanel(appcontentAgenda, animatePanels);
+      else hideAppTabPanel(appcontentAgenda);
     }
     if (tab === "lab") rt.renderLabHistoryPanel();
     if (tab === "med") rt.renderMedRecetaPanel();
@@ -602,6 +605,7 @@ export function switchAppTab(tab) {
 
   if (tab === "med") rt.setMedTabAttention(false);
 
+  syncAppTabIndicator(tab);
   rt.syncWorkContextChrome();
   if (rt.getActiveAppTab() === "nota") syncRoundExpedienteLayout();
 }
@@ -705,10 +709,12 @@ export function syncInnerTabVisualOnly() {
     if (btn) btn.classList.toggle("active", tab === t);
     if (pane) pane.classList.toggle("active", tab === t);
   });
+  syncInnerTabIndicator(tab);
 }
 
 export function switchInnerTab(tab, opts) {
   opts = opts || {};
+  var prevInner = rt.getActiveInner() || "todo";
   if (isPaseMode() && rt.getActiveAppTab() === "nota" && !opts.preserveRoundOverview) {
     setRoundOverviewMode(false);
   }
@@ -720,6 +726,9 @@ export function switchInnerTab(tab, opts) {
     if (btn) btn.classList.toggle("active", tab === t);
     if (pane) pane.classList.toggle("active", tab === t);
   });
+  if (prevInner !== tab) {
+    animateTabPanelEnter(document.getElementById("itab-content-" + tab));
+  }
   if (tab === "datos") renderPatientDataPane();
   syncRoundExpedienteLayout();
   if (tab === "tend") renderTendencias();
@@ -727,6 +736,7 @@ export function switchInnerTab(tab, opts) {
   if (tab === "listado") renderListadoForm();
   if (tab === "todo") renderTodoForm();
   rt.syncWorkContextChrome();
+  syncInnerTabIndicator(tab);
 }
 
 export function renderInnerTabs() {
@@ -766,6 +776,7 @@ export function renderInnerTabs() {
   }
 
   renderEstadoActualBar();
+  syncInnerTabIndicator(rt.getActiveInner() || "todo");
 }
 
 export function getActiveInnerTab() {
@@ -778,4 +789,5 @@ export const windowHandlers = {
   openPaseSectionInNormal,
   renderPaseBoard,
   switchInnerTab,
+  initTabBarMotion,
 };

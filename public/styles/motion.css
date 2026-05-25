@@ -1,0 +1,245 @@
+/* R+ micro-interactions (transitions.dev-inspired, vanilla CSS) */
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes field-shake {
+  0%, 100% { transform: translateX(0); }
+  18% { transform: translateX(-6px); }
+  36% { transform: translateX(5px); }
+  54% { transform: translateX(-4px); }
+  72% { transform: translateX(3px); }
+  90% { transform: translateX(-1px); }
+}
+
+.field-shake {
+  animation: field-shake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+input.field-shake,
+select.field-shake,
+textarea.field-shake {
+  border-color: color-mix(in oklab, var(--error) 55%, var(--border)) !important;
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--error) 12%, transparent);
+}
+
+.btn-label {
+  display: inline-block;
+  vertical-align: middle;
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    filter var(--dur-fast) var(--ease-out),
+    transform var(--dur-normal) var(--ease-out);
+}
+
+.btn-label.ui-text-leaving {
+  opacity: 0;
+  filter: blur(4px);
+  transform: translateY(-3px);
+}
+
+.btn-label.ui-text-entering {
+  opacity: 0;
+  filter: blur(4px);
+  transform: translateY(4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes modal-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes todo-prio-pulse {
+    from { transform: none; }
+    to { transform: none; }
+  }
+
+  .field-shake {
+    animation: none !important;
+  }
+
+  .btn-label {
+    transition: none !important;
+    filter: none !important;
+    transform: none !important;
+  }
+
+  .settings-dropdown,
+  .connection-dropdown,
+  .settings-dropdown-backdrop,
+  .connection-dropdown-backdrop {
+    transition: none !important;
+    transform: none !important;
+  }
+
+  .panel-reveal,
+  .settings-acc-body,
+  #lab-history-body,
+  .tend-section-body,
+  aside.patient-sidebar,
+  html.sidebar-auto-hide:not(.sidebar-reveal) .sidebar-hover-strip::after {
+    transition: none !important;
+  }
+}
+
+/* ── Panel reveal (height + opacity) ─────────────────── */
+
+.panel-reveal {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition:
+    max-height var(--dur-normal) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out),
+    padding var(--dur-normal) var(--ease-out);
+}
+
+.panel-reveal.is-open {
+  max-height: min(120vh, 2400px);
+  opacity: 1;
+}
+
+/* ── Todo priority chip (cycle on click) ───────────────── */
+
+@keyframes todo-prio-pulse {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.todo-prio-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 5px 10px 5px 8px;
+  background: var(--input-fill);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--text-muted);
+  transition:
+    border-color var(--dur-normal) var(--ease-out),
+    background var(--dur-normal) var(--ease-out),
+    color var(--dur-normal) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.todo-prio-chip:hover {
+  border-color: color-mix(in oklab, var(--action) 35%, var(--border));
+  background: color-mix(in oklab, var(--action) 6%, var(--surface));
+  color: var(--text);
+}
+
+.todo-prio-chip:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--action) 45%, transparent);
+  outline-offset: 2px;
+}
+
+.todo-prio-chip:active {
+  transform: scale(0.97);
+}
+
+.todo-prio-chip.todo-prio-chip--pulse {
+  animation: todo-prio-pulse 0.34s var(--ease-out);
+}
+
+.todo-prio-chip.prio-alta {
+  border-color: color-mix(in oklab, var(--todo-prio-alta) 42%, var(--border));
+  color: var(--todo-prio-alta);
+}
+
+.todo-prio-chip.prio-media {
+  border-color: color-mix(in oklab, var(--todo-prio-media) 38%, var(--border));
+  color: var(--todo-prio-media);
+}
+
+.todo-prio-chip.prio-baja {
+  border-color: color-mix(in oklab, var(--todo-prio-baja) 38%, var(--border));
+  color: var(--todo-prio-baja);
+}
+
+.todo-prio-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition:
+    background-color var(--dur-normal) var(--ease-out),
+    transform var(--dur-normal) var(--ease-out);
+}
+
+.todo-prio-chip.prio-alta .todo-prio-dot { background: var(--todo-prio-alta); }
+.todo-prio-chip.prio-media .todo-prio-dot { background: var(--todo-prio-media); }
+.todo-prio-chip.prio-baja .todo-prio-dot { background: var(--todo-prio-baja); }
+
+.todo-prio-label {
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.todo-row {
+  transition:
+    border-color var(--dur-normal) var(--ease-out),
+    background var(--dur-normal) var(--ease-out);
+}
+
+.todo-row .todo-prio:not(.todo-prio-chip) {
+  display: none;
+}
+
+/* ── Tab bars: sliding indicator + panel enter ─────────── */
+
+.tab-bar-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  width: 0;
+  opacity: 0;
+  background: var(--action);
+  border-radius: 2px 2px 0 0;
+  pointer-events: none;
+  z-index: 2;
+  transition:
+    transform var(--dur-normal) var(--ease-out),
+    width var(--dur-normal) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out);
+  will-change: transform, width;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes rpc-tab-panel-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .tab-bar-indicator {
+    transition: none !important;
+  }
+
+  .tab-panel-enter {
+    animation: none !important;
+  }
+}
+

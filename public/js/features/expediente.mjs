@@ -11,6 +11,7 @@ import {
   removeProblema as listadoRemoveProblema,
 } from "../listado-problemas-core.mjs";
 import { LISTADO_PROBLEMAS_AI_PROMPT } from "../listado-problemas-ai-prompt.mjs";
+import { setAsyncButtonLoading } from "../ui-motion.mjs";
 import {
   sortLabHistoryChronological,
   parseFechaLabToMs,
@@ -1045,7 +1046,7 @@ function generateListado() {
   }
   var medicos = getMedicosForListado(lst);
   var btn = document.getElementById('btn-gen-listado');
-  if (btn) { btn.classList.add('loading'); btn.disabled = true; }
+  setAsyncButtonLoading(btn, true, { loadingText: 'Generando…' });
   rt.incrementPendingJobs();
   function buildPayload(outputDir) {
     return {
@@ -1068,7 +1069,7 @@ function generateListado() {
   })
   .catch(function(){ rt.showToast('Error de conexión', 'error'); })
   .finally(function(){
-    if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
+    setAsyncButtonLoading(document.getElementById('btn-gen-listado'), false);
     rt.decrementPendingJobs();
     rt.syncOfflineButtonStates();
   });

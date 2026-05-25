@@ -841,10 +841,35 @@ html.dark #update-modal .channel-pill { background: var(--color-channel-pill-bg)
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: var(--font-ui);
-  background: var(--bg);
+  background: var(--shell-gap);
   color: var(--text); height: 100vh;
   display: flex; flex-direction: column; overflow: hidden; font-size: 16px; line-height: 1.5;
 }
+
+/* Esquinas suaves en controles comunes (estilo Arc) */
+.card,
+.modal,
+.soap-modal,
+.templates-modal,
+.settings-dropdown,
+.onboarding-intro-modal,
+#update-modal .modal,
+.patient-card,
+.btn-header-icon,
+.field-group input:not([type="checkbox"]):not([type="radio"]),
+.field-group select,
+.field-group textarea,
+.profile-input,
+.patient-search-input,
+.list-row input {
+  border-radius: var(--radius-md);
+}
+.card { border-radius: var(--radius-lg); }
+.modal,
+.soap-modal,
+.templates-modal,
+.onboarding-intro-modal,
+#update-modal .modal { border-radius: var(--radius-xl); }
 .type-mono { font-family: var(--font-mono); }
 #m-registro,
 #m-registro-manual,

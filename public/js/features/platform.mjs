@@ -1,6 +1,7 @@
 /** Pending jobs, RPC offline/health, idle lock, privacy wipe, backups/sync JSON, auto-updater UI. */
 import { storage } from '../storage.js';
 import { formatProgressLine } from '../update-helpers.mjs';
+import { setAsyncButtonLoading } from '../ui-motion.mjs';
 import { applyMedCatalogOverlay } from '../med-receta-core.mjs';
 import {
   GUIDED_TOUR_LS_KEY,
@@ -61,6 +62,12 @@ var idleLockDebounceId = null;
 var idleLockIsActive = false;
 var idleLockEnabledMinutes = 0;
 
+function resetUpdateCheckButtons() {
+  ['settings-check-updates-btn', 'min-version-check-btn'].forEach(function (id) {
+    setAsyncButtonLoading(document.getElementById(id), false);
+  });
+}
+
 function checkForAppUpdates() {
   if (!window.electronAPI || typeof window.electronAPI.checkForUpdates !== 'function') {
     rt.showToast('Las actualizaciones automáticas solo están en la app de escritorio.', 'error');
@@ -69,10 +76,12 @@ function checkForAppUpdates() {
   if (typeof window.electronAPI.setUpdateChannel === 'function') {
     try { window.electronAPI.setUpdateChannel(getUpdateChannel()); } catch (_e) {}
   }
+  setAsyncButtonLoading(document.getElementById('settings-check-updates-btn'), true, {
+    loadingText: 'Buscando…',
+  });
   setTimeout(function () {
     try { window.electronAPI.checkForUpdates(); } catch (_e) {}
   }, 150);
-  rt.showToast('Buscando actualizaciones…', 'success');
 }
 
 function setRpcOfflineVisible(show) {
@@ -1524,8 +1533,8 @@ function showMinVersionBlockingModal(current, minVersion, message) {
   if (checkBtn) {
     checkBtn.onclick = function () {
       if (window.electronAPI && typeof window.electronAPI.checkForUpdates === 'function') {
+        setAsyncButtonLoading(checkBtn, true, { loadingText: 'Buscando…' });
         try { window.electronAPI.checkForUpdates(); } catch (_e) {}
-        rt.showToast('Buscando actualizaciones…', 'success');
       } else if (window.electronAPI && typeof window.electronAPI.openExternal === 'function') {
         window.electronAPI.openExternal(RELEASES_LATEST_URL);
       }
@@ -1699,6 +1708,7 @@ function installUpdate() {
 if (window.electronAPI) {
   window.electronAPI.onUpdateAvailable(function(payload) {
     try {
+      resetUpdateCheckButtons();
       var version = (payload && payload.version) ? payload.version : String(payload || '');
       var rawNotes = (payload && payload.releaseNotes != null) ? String(payload.releaseNotes) : '';
       var releaseNotes = stripHtmlToPlainText(rawNotes);
@@ -1827,6 +1837,7 @@ if (window.electronAPI) {
 
   window.electronAPI.onUpdateNotAvailable(function() {
     try {
+      resetUpdateCheckButtons();
       pendingUpdaterTargetVersion = null;
       pendingUpdaterIsPrerelease = false;
       syncUpdateModalChannelPill(false);
@@ -1838,6 +1849,7 @@ if (window.electronAPI) {
 
   window.electronAPI.onUpdateError(function(msg) {
     try {
+      resetUpdateCheckButtons();
       try { sendUpdateTelemetry('fail'); } catch (_te) {}
       renderUpdateError(msg);
     } catch (e) {

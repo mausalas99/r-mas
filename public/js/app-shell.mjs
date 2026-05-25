@@ -93,7 +93,7 @@ import {
   generateIndicaciones,
   applyProfileToNoteIfEmpty,
 } from './features/notes-indicaciones.mjs';
-import { generateListado, renderPatientDataPane } from './features/expediente.mjs';
+import { generateListado } from './features/expediente.mjs';
 import {
   patients,
   notes,
@@ -641,7 +641,6 @@ function updatePatient(field, value) {
   p[field] = next;
   saveState();
   renderPatientList();
-  renderPatientDataPane();
   syncWorkContextChrome();
   if (isPaseMode()) {
     renderPaseBoard();

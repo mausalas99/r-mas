@@ -10,6 +10,7 @@ import {
   saveState,
 } from '../app-state.mjs';
 import { validatePatientForSave, buildExpedienteAdvice } from '../patient-validation.mjs';
+import { shakePatientFieldsForError } from '../ui-motion.mjs';
 import { isModeSala, getDefaultServicio } from '../mode-features.mjs';
 import { sortLabHistoryChronological } from '../tend-core.mjs';
 import { t, getUiDensity, isPaseMode } from './chrome.mjs';
@@ -1110,16 +1111,19 @@ export function savePatient() {
   var v = validatePatientForSave({ nombre: nombre, registro: registro, edadNum: edadNum, edadUnit: edadUnit });
   if (!v.ok) {
     rt.showToast(v.error, 'error');
+    shakePatientFieldsForError(v.error, isFromLab);
     return;
   }
 
   if (!edadNum) {
     rt.showToast('Ingresa la edad', 'error');
+    shakePatientFieldsForError('Ingresa la edad', isFromLab);
     return;
   }
   var ageInt = parseInt(edadNum, 10);
   if (isNaN(ageInt) || ageInt < 0 || ageInt > 120) {
     rt.showToast('Edad inválida', 'error');
+    shakePatientFieldsForError('Edad inválida', isFromLab);
     return;
   }
   var edad = String(ageInt) + (edadUnit && edadUnit !== 'años' ? ' ' + edadUnit : '');
@@ -1130,14 +1134,17 @@ export function savePatient() {
   var cama = (document.getElementById('m-cama').value || '').trim();
   if (!servicio) {
     rt.showToast(salaMode ? 'Ingresa Área / Servicio' : 'Ingresa servicio', 'error');
+    shakePatientFieldsForError(salaMode ? 'Ingresa Área / Servicio' : 'Ingresa servicio', isFromLab);
     return;
   }
   if (!salaMode && !area) {
     rt.showToast('Ingresa área / departamento', 'error');
+    shakePatientFieldsForError('Ingresa área / departamento', isFromLab);
     return;
   }
   if (!cuarto || !cama) {
     rt.showToast('Ingresa cuarto y cama', 'error');
+    shakePatientFieldsForError('Ingresa cuarto y cama', isFromLab);
     return;
   }
 

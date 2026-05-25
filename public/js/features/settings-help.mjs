@@ -1207,6 +1207,18 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '5.2.1': [
+    {
+      title: 'Interfaz Arc',
+      body:
+        'Cáscara flotante con esquinas radiales, paneles unificados y rail discreto cuando ocultas la barra de pacientes.',
+    },
+    {
+      title: 'Correcciones UX',
+      body:
+        'Agenda con un solo panel; pestaña Datos sin perder el foco al escribir; esquinas alineadas con sidebar auto-oculto.',
+    },
+  ],
   '5.2.0': [
     {
       title: 'Integración Nexo',

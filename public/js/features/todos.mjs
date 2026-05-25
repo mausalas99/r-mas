@@ -2,6 +2,11 @@
 import { storage } from '../storage.js';
 import { emitLiveSyncTodoDelete, emitLiveSyncTodoUpsert } from './lan-sync.mjs';
 import { isPaseMode } from './chrome.mjs';
+import {
+  nextTodoPriority,
+  normalizeTodoPriority,
+  todoPriorityLabel,
+} from '../todos-priority.mjs';
 
 var rt = {
   getActiveId() {
@@ -22,6 +27,61 @@ export function registerTodosRuntime(partial) {
 
 function aid() {
   return rt.getActiveId();
+}
+
+function pulseTodoPrioChip(chip) {
+  if (!chip) return;
+  chip.classList.remove('todo-prio-chip--pulse');
+  void chip.offsetWidth;
+  chip.classList.add('todo-prio-chip--pulse');
+  chip.addEventListener(
+    'animationend',
+    function onEnd(ev) {
+      if (ev.animationName !== 'todo-prio-pulse') return;
+      chip.removeEventListener('animationend', onEnd);
+      chip.classList.remove('todo-prio-chip--pulse');
+    }
+  );
+}
+
+function applyTodoPrioChip(chip, prio, pulse) {
+  var valid = normalizeTodoPriority(prio);
+  chip.classList.remove('prio-alta', 'prio-media', 'prio-baja');
+  chip.classList.add('prio-' + valid);
+  chip.dataset.priority = valid;
+  var label = chip.querySelector('.todo-prio-label');
+  if (label) label.textContent = todoPriorityLabel(valid);
+  chip.setAttribute('aria-label', 'Prioridad ' + todoPriorityLabel(valid) + '. Clic para cambiar.');
+  chip.title = 'Clic: cambiar prioridad (' + todoPriorityLabel(valid) + ')';
+  if (pulse) pulseTodoPrioChip(chip);
+  return valid;
+}
+
+function createTodoPrioChip(prio, onCycle) {
+  var chip = document.createElement('button');
+  chip.type = 'button';
+  chip.className = 'todo-prio-chip';
+  var dot = document.createElement('span');
+  dot.className = 'todo-prio-dot';
+  dot.setAttribute('aria-hidden', 'true');
+  var label = document.createElement('span');
+  label.className = 'todo-prio-label';
+  chip.appendChild(dot);
+  chip.appendChild(label);
+  applyTodoPrioChip(chip, prio, false);
+  chip.addEventListener('click', function () {
+    var next = nextTodoPriority(chip.dataset.priority || 'media');
+    applyTodoPrioChip(chip, next, true);
+    if (onCycle) onCycle(next);
+  });
+  return chip;
+}
+
+function syncTodoRowPriorityVisual(row, prio) {
+  if (!row) return;
+  var valid = normalizeTodoPriority(prio);
+  row.classList.remove('prio-alta', 'prio-media', 'prio-baja');
+  row.classList.add('prio-' + valid);
 }
 
 export function todoCompareForSort(a, b) {
@@ -78,28 +138,20 @@ export function renderTodoFormIn(container, idPrefix) {
   input.type = 'text';
   input.id = idPrefix + 'todo-input';
   input.placeholder = 'Nuevo pendiente...';
-  var sel = document.createElement('select');
-  sel.id = idPrefix + 'todo-priority';
-  [
-    { v: 'alta',  t: 'Alta'  },
-    { v: 'media', t: 'Media' },
-    { v: 'baja',  t: 'Baja'  }
-  ].forEach(function (o) {
-    var opt = document.createElement('option');
-    opt.value = o.v;
-    opt.textContent = o.t;
-    if (o.v === 'media') opt.selected = true;
-    sel.appendChild(opt);
+  var addPrio = 'media';
+  var prioChip = createTodoPrioChip(addPrio, function (next) {
+    addPrio = next;
   });
+  prioChip.id = idPrefix + 'todo-priority-chip';
   var addBtn = document.createElement('button');
   addBtn.type = 'button';
   addBtn.textContent = 'Agregar';
-  addBtn.addEventListener('click', function () { addTodo(idPrefix); });
+  addBtn.addEventListener('click', function () { addTodo(idPrefix, addPrio); });
   input.addEventListener('keypress', function (e) {
-    if (e.key === 'Enter') addTodo(idPrefix);
+    if (e.key === 'Enter') addTodo(idPrefix, addPrio);
   });
   addRow.appendChild(input);
-  addRow.appendChild(sel);
+  addRow.appendChild(prioChip);
   addRow.appendChild(addBtn);
   container.appendChild(addRow);
 
@@ -118,10 +170,11 @@ export function renderTodoFormIn(container, idPrefix) {
     var row = document.createElement('div');
     row.className = 'todo-row prio-' + prio + (t.completed ? ' completed' : '');
 
-    var chip = document.createElement('span');
-    chip.className = 'todo-prio ' + prio;
-    chip.title = 'Prioridad: ' + (prio === 'alta' ? 'Alta' : prio === 'baja' ? 'Baja' : 'Media');
-    row.appendChild(chip);
+    var prioChip = createTodoPrioChip(prio, function (next) {
+      syncTodoRowPriorityVisual(row, next);
+      setTodoPriority(t.id, next, { deferResortMs: 180 });
+    });
+    row.appendChild(prioChip);
 
     var chk = document.createElement('input');
     chk.type = 'checkbox';
@@ -152,23 +205,6 @@ export function renderTodoFormIn(container, idPrefix) {
     });
     row.appendChild(txtInput);
 
-    var prioSel = document.createElement('select');
-    prioSel.className = 'todo-row-select';
-    [
-      { v: 'alta',  t: 'Alta'  },
-      { v: 'media', t: 'Media' },
-      { v: 'baja',  t: 'Baja'  }
-    ].forEach(function (o) {
-      var opt = document.createElement('option');
-      opt.value = o.v;
-      opt.textContent = o.t;
-      if (o.v === prio) opt.selected = true;
-      prioSel.appendChild(opt);
-    });
-    prioSel.title = 'Cambiar prioridad';
-    prioSel.addEventListener('change', function () { setTodoPriority(t.id, prioSel.value); });
-    row.appendChild(prioSel);
-
     var del = document.createElement('button');
     del.type = 'button';
     del.className = 'todo-del';
@@ -182,16 +218,18 @@ export function renderTodoFormIn(container, idPrefix) {
   container.appendChild(list);
 }
 
-export function addTodo(idPrefix) {
+export function addTodo(idPrefix, priorityOverride) {
   if (idPrefix === undefined || idPrefix === null) idPrefix = '';
   if (typeof idPrefix !== 'string') idPrefix = '';
   if (!aid()) return;
   var input = document.getElementById(idPrefix + 'todo-input');
-  var sel   = document.getElementById(idPrefix + 'todo-priority');
   if (!input) return;
   var text = String(input.value || '').trim();
   if (!text) return;
-  var priority = sel && (sel.value === 'alta' || sel.value === 'baja' || sel.value === 'media') ? sel.value : 'media';
+  var chip = document.getElementById(idPrefix + 'todo-priority-chip');
+  var priority = normalizeTodoPriority(
+    priorityOverride || (chip && chip.dataset.priority) || 'media'
+  );
   var nowIso = new Date().toISOString();
   var todos = storage.getTodos(aid());
   var row = {
@@ -230,9 +268,10 @@ export function deleteTodo(id) {
   refreshAllTodoUIs();
 }
 
-export function setTodoPriority(id, priority) {
+export function setTodoPriority(id, priority, opts) {
   if (!aid()) return;
-  var valid = priority === 'alta' || priority === 'baja' || priority === 'media' ? priority : 'media';
+  opts = opts || {};
+  var valid = normalizeTodoPriority(priority);
   var todos = storage.getTodos(aid());
   var found = todos.find(function (t) { return t.id === id; });
   if (!found) return;
@@ -240,6 +279,10 @@ export function setTodoPriority(id, priority) {
   found.updatedAt = new Date().toISOString();
   storage.saveTodos(aid(), todos);
   emitLiveSyncTodoUpsert(aid(), found);
+  if (opts.deferResortMs) {
+    setTimeout(refreshAllTodoUIs, opts.deferResortMs);
+    return;
+  }
   refreshAllTodoUIs();
 }
 

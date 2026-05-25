@@ -44,7 +44,7 @@ function resolveImport(baseDir, from) {
   return path.resolve(baseDir, rel);
 }
 
-for (const bootFile of ['app-shell.mjs', 'app-runtimes.mjs']) {
+for (const bootFile of ['app.js', 'app-shell.mjs', 'app-runtimes.mjs']) {
   test(bootFile + ' — imports nombrados existen en el módulo destino', () => {
     const baseDir = __dirname;
     const bootPath = path.join(baseDir, bootFile);

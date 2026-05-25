@@ -29,8 +29,14 @@ header {
   box-shadow: var(--shadow-sm);
   border-bottom: 1px solid var(--divider);
   z-index: 10;
+  margin-left: var(--shell-inset);
+  margin-right: var(--shell-inset);
+  border-bottom-left-radius: var(--radius-md);
+  border-bottom-right-radius: var(--radius-md);
+  overflow: hidden;
 }
 html.electron-macos-inset-bar header {
+  margin-left: 0;
   padding-left: var(--titlebar-traffic-gap);
   -webkit-app-region: drag;
 }
@@ -89,14 +95,72 @@ html.dark header {
   box-shadow: var(--shadow-sm);
   border-bottom: 1px solid var(--border);
 }
-html.dark aside {
-  border-right: 1px solid var(--border);
+html.dark aside.patient-sidebar {
+  border: none;
   box-shadow: none;
 }
 html:not(.ui-density-normal) #main-area {
   background: var(--bg);
 }
-.main-col { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-width: 0; }
+.main-col {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  min-width: 0;
+  border-radius: 0;
+  background: var(--shell-gap);
+  border: none;
+  box-shadow: none;
+  padding: 0 var(--shell-frame-inset) 0;
+  gap: 0;
+  isolation: isolate;
+}
+#main-area {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+/* Panel flotante solo para el contenido (debajo de tabs / sub-tabs) */
+.shell-content-frame {
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+  border: 1px solid color-mix(in oklab, var(--border) 42%, transparent);
+  box-shadow: var(--shadow-sm);
+  min-height: 0;
+}
+#appcontent-lab > .main-work-scroll,
+#appcontent-med > #med-work-area.main-work-scroll {
+  flex: 1;
+  margin-top: var(--shell-frame-inset);
+  overflow-y: auto;
+}
+#appcontent-lab > .main-work-scroll,
+#appcontent-med > #med-work-area.main-work-scroll,
+#appcontent-agenda > .rpc-proc-agenda-root,
+.patient-expediente-classic .tab-content {
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+  border: 1px solid color-mix(in oklab, var(--border) 42%, transparent);
+  box-shadow: var(--shadow-sm);
+  min-height: 0;
+}
+#appcontent-agenda > .rpc-proc-agenda-root {
+  flex: 1;
+  margin-top: var(--shell-frame-inset);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.patient-expediente-classic .tab-content {
+  flex: 1;
+}
 .header-work-cluster {
   display: flex;
   align-items: center;
@@ -286,16 +350,48 @@ html.dark .header-app-mode-chip {
   background: var(--surface);
   box-shadow: none;
   border-bottom: none;
+  margin-left: calc(-1 * var(--shell-frame-inset));
+  margin-right: calc(-1 * var(--shell-frame-inset));
+  border-top-left-radius: var(--radius-md);
+  border-top-right-radius: var(--radius-md);
+  overflow: hidden;
+  transition: border-top-left-radius 0.22s cubic-bezier(0.25, 1, 0.5, 1);
+}
+/* Sidebar auto-oculto: sin canal lateral; esquina superior izquierda sigue la cáscara */
+html.sidebar-auto-hide:not(.sidebar-reveal) .app {
+  gap: 0;
+}
+html.sidebar-auto-hide:not(.sidebar-reveal) .app-tabs-row {
+  border-top-left-radius: var(--radius-shell);
+}
+html.sidebar-auto-hide.sidebar-reveal .app-tabs-row {
+  border-top-left-radius: var(--radius-md);
 }
 .app-tabs-row .app-tabs { flex: 1; padding: 0; box-shadow: none; background: transparent; min-width: 0; }
 /* Pase: resumen en una sola columna; vista normal = pestañas completas (Laboratorio, Expediente, …) */
 html:not(.ui-density-normal) .app-tabs-row {
   display: none;
 }
+html:not(.ui-density-normal) .main-col {
+  padding: 0 var(--shell-frame-inset) 0;
+}
 html:not(.ui-density-normal) #main-area {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+  border: 1px solid color-mix(in oklab, var(--border) 42%, transparent);
+  box-shadow: var(--shadow-sm);
+  transition: border-top-left-radius 0.22s cubic-bezier(0.25, 1, 0.5, 1);
+}
+html.sidebar-auto-hide:not(.sidebar-reveal):not(.ui-density-normal) #main-area {
+  border-top-left-radius: var(--radius-shell);
+}
+html.sidebar-auto-hide.sidebar-reveal:not(.ui-density-normal) #main-area {
+  border-top-left-radius: var(--radius-lg);
 }
 html:not(.ui-density-normal) .appcontent-pase {
   flex: 1;
@@ -313,6 +409,11 @@ html:not(.ui-density-normal) .pase-board-scroll {
   flex-direction: column;
   gap: calc(18px * var(--density-space));
   scroll-behavior: smooth;
+  margin-top: 0;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  background: transparent;
 }
 html:not(.ui-density-normal) .pase-patient-banner {
   padding: calc(14px * var(--density-space)) calc(16px * var(--density-space));
@@ -802,6 +903,7 @@ html:not(.ui-density-normal) .pase-empty-screen {
   gap: 2px;
   box-shadow: none;
   padding: 0 calc(8px * var(--density-space));
+  position: relative;
 }
 .app-tab {
   padding: calc(10px * var(--density-space)) calc(14px * var(--density-space)) calc(8px * var(--density-space));
@@ -820,6 +922,8 @@ html:not(.ui-density-normal) .pase-empty-screen {
   gap: calc(7px * var(--density-space));
   font-family: inherit;
   box-shadow: none;
+  position: relative;
+  z-index: 1;
 }
 .app-tab:hover {
   color: var(--action);
@@ -832,6 +936,10 @@ html:not(.ui-density-normal) .pase-empty-screen {
   border-bottom-color: var(--action);
   box-shadow: none;
 }
+html.tab-bar-indicators-ready .app-tab.active {
+  background: transparent;
+  border-bottom-color: transparent;
+}
 html.dark .app-tab:hover {
   background: color-mix(in oklab, var(--action) 10%, transparent);
   box-shadow: none;
@@ -841,4 +949,20 @@ html.dark .app-tab.active {
   border-bottom-color: var(--action);
   box-shadow: none;
 }
-.app { display: flex; flex: 1; overflow: hidden; }
+html.tab-bar-indicators-ready html.dark .app-tab.active {
+  background: transparent;
+  border-bottom-color: transparent;
+}
+.app {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+  margin: var(--shell-frame-inset) var(--shell-inset) var(--shell-inset);
+  gap: var(--shell-inset);
+  border-radius: var(--radius-shell);
+  border: 1px solid color-mix(in oklab, var(--border) 50%, transparent);
+  box-shadow: var(--shadow);
+  background: var(--shell-gap);
+  transition: gap 0.22s cubic-bezier(0.25, 1, 0.5, 1);
+}

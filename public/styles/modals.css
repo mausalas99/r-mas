@@ -817,7 +817,18 @@ html.dark .tend-group-drag-hovercard.tend-group-panel-card {
   display: inline-flex; align-items: center; gap: 6px; font-weight: inherit; cursor: pointer;
 }
 .tend-group-unit { font-weight: 500; color: var(--text-muted); font-size: 11px; }
-.tend-section-body--collapsed { display: none !important; }
+.tend-section-body {
+  max-height: min(120vh, 4000px);
+  opacity: 1;
+  overflow: hidden;
+  transition:
+    max-height var(--dur-normal) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out);
+}
+.tend-section-body--collapsed {
+  max-height: 0;
+  opacity: 0;
+}
 .tend-spark-placeholder { min-height: 56px; width: 100%; border-radius: 6px; background: rgba(0,0,0,0.03); }
 html.dark .tend-spark-placeholder { background: rgba(255,255,255,0.04); }
 .tend-toolbar-btn {

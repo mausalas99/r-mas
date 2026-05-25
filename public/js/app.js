@@ -34,7 +34,7 @@ import { settingsHelpWindowHandlers } from './features/settings-help.mjs';
 import { platformWindowHandlers } from './features/platform.mjs';
 import { tendenciasWindowHandlers, seedTendHiddenDefaults } from './features/tendencias.mjs';
 import { todosWindowHandlers } from './features/todos.mjs';
-import { windowHandlers as paseBoardWindowHandlers, syncMainAppTabA11y, renderInnerTabs } from './features/pase-board.mjs';
+import { windowHandlers as paseBoardWindowHandlers, syncMainAppTabA11y, renderInnerTabs, initTabBarMotion } from './features/pase-board.mjs';
 import { medicationsWindowHandlers } from './features/medications.mjs';
 import { profileWindowHandlers } from './features/profile.mjs';
 
@@ -141,6 +141,7 @@ function runDomBoot() {
     seedTendHiddenDefaults();
     syncMainAppTabA11y(activeAppTab);
     renderInnerTabs();
+    initTabBarMotion();
     if (wasV3MigratedThisBoot()) {
       setTimeout(function () {
         try {

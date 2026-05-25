@@ -6,6 +6,7 @@ import {
   saveState,
 } from "../app-state.mjs";
 import { isModeSala } from "../mode-features.mjs";
+import { setAsyncButtonLoading } from "../ui-motion.mjs";
 import { buildPatientDemographicsCardHtml, renderPatientDataPane } from "./expediente.mjs";
 
 let rt = {
@@ -131,7 +132,8 @@ function generateWord() {
   }
   var patient = patients.find(function(p){ return p.id===aid(); }); if (!patient) return;
   var note = notes[aid()]; if (!note) return;
-  var btn = document.getElementById('btn-gen'); if (btn) { btn.classList.add('loading'); btn.disabled=true; }
+  var btn = document.getElementById('btn-gen');
+  setAsyncButtonLoading(btn, true, { loadingText: 'Generando…' });
   rt.incrementPendingJobs();
   function buildPayload(outputDir) {
     return { patient: patient, note: note, outputDir: outputDir || '' };
@@ -150,7 +152,7 @@ function generateWord() {
   })
   .catch(function(){ rt.showToast('Error de conexión','error'); })
   .finally(function(){
-    if (btn) { btn.classList.remove('loading'); btn.disabled=false; }
+    setAsyncButtonLoading(document.getElementById('btn-gen'), false);
     rt.decrementPendingJobs();
     rt.syncOfflineButtonStates();
   });
@@ -273,7 +275,8 @@ function generateIndicaciones() {
   }
   var patient = patients.find(function(p){ return p.id===aid(); }); if (!patient) return;
   var ind = indicaciones[aid()]; if (!ind) return;
-  var btn = document.getElementById('btn-gen-ind'); if (btn) { btn.classList.add('loading'); btn.disabled=true; }
+  var btn = document.getElementById('btn-gen-ind');
+  setAsyncButtonLoading(btn, true, { loadingText: 'Generando…' });
   rt.incrementPendingJobs();
   function buildPayload(outputDir) {
     return { patient: patient, indicaciones: ind, outputDir: outputDir || '' };
@@ -292,7 +295,7 @@ function generateIndicaciones() {
   })
   .catch(function(){ rt.showToast('Error de conexión','error'); })
   .finally(function(){
-    if (btn) { btn.classList.remove('loading'); btn.disabled=false; }
+    setAsyncButtonLoading(document.getElementById('btn-gen-ind'), false);
     rt.decrementPendingJobs();
     rt.syncOfflineButtonStates();
   });

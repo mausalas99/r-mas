@@ -25,10 +25,22 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 ---
 
-**Versión estable actual:** [5.2.0](https://github.com/mausalas99/r-mas/releases/tag/v5.2.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [5.2.1](https://github.com/mausalas99/r-mas/releases/tag/v5.2.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+---
+
+
+## R+ 5.2.1 (cáscara Arc y correcciones UX)
+
+- **Interfaz Arc:** cáscara flotante, esquinas radiales y paneles unificados en Lab, Medicamentos, Agenda, Expediente y Pase.
+- **Sidebar:** rail al auto-ocultar; esquinas corregidas al mostrar la barra de pacientes.
+- **Pendientes:** prioridad con chip clickeable (Alta / Media / Baja) y animación al cambiar.
+- **Correcciones:** Agenda sin doble marco; pestaña Datos ya no pierde el foco al escribir.
+
+Notas: `docs/RELEASE_NOTES_5.2.1.txt`.
 
 ## R+ 5.2.0 (integración Nexo)
 

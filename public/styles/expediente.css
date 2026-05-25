@@ -1,5 +1,5 @@
 /* ── Listado de Problemas (v3.0 Sala) ────────────────────── */
-.listado-section { border: 1px solid var(--divider); border-radius: 8px; overflow: hidden; background: white; }
+.listado-section { border: 1px solid var(--divider); border-radius: var(--radius-lg); overflow: hidden; background: white; }
 .listado-section-header { background: var(--section-header-bg); padding: 8px 14px; font-size: 12px; font-weight: 600; color: var(--text); text-transform: none; letter-spacing: 0.01em; border-bottom: 1px solid var(--divider); display:flex; align-items:center; justify-content:space-between; gap:8px; }
 .listado-section-header.activos { background: #ecfdf5; color: #065f46; }
 .listado-section-header.inactivos { background: #f3f4f6; color: #4b5563; }
@@ -26,7 +26,7 @@
   opacity: 1 !important;
   background: color-mix(in oklab, var(--surface) 97%, var(--bg)) !important;
   border: 1px solid color-mix(in oklab, var(--action) 38%, var(--border)) !important;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   box-shadow: 0 18px 50px rgba(15, 23, 42, 0.2), 0 6px 18px rgba(79, 86, 255, 0.14) !important;
 }
 html.dark .listado-drag-hovercard.listado-row {
@@ -34,18 +34,18 @@ html.dark .listado-drag-hovercard.listado-row {
   border-color: color-mix(in oklab, var(--action) 45%, var(--border)) !important;
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45), 0 4px 16px rgba(79, 86, 255, 0.18) !important;
 }
-.listado-row { display: grid; grid-template-columns: 22px 140px 1fr 32px; gap: 8px; align-items: start; padding: 6px; border-radius: 6px; border: 1px solid transparent; transition: background 0.1s, border-color 0.1s; }
+.listado-row { display: grid; grid-template-columns: 22px 140px 1fr 32px; gap: 8px; align-items: start; padding: 6px; border-radius: var(--radius-md); border: 1px solid transparent; transition: background 0.1s, border-color 0.1s; }
 .listado-row:hover { background: var(--bg); }
 .listado-row .listado-num,
 .listado-row .listado-drag-handle { font-size: 13px; font-weight: 700; color: var(--text-muted); text-align: right; padding: 8px 0; cursor: grab; user-select: none; touch-action: none; }
 .listado-row .listado-drag-handle:active { cursor: grabbing; }
-.listado-row input[type="date"] { border: 1px solid var(--border); border-radius: 6px; padding: 7px 8px; font-size: 12px; font-family: inherit; background: #F8FAFC; color: var(--text); }
+.listado-row input[type="date"] { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 7px 8px; font-size: 12px; font-family: inherit; background: #F8FAFC; color: var(--text); }
 .listado-row input[type="date"]:focus { outline: none; border-color: var(--action); background: white; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
-.listado-row textarea { border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; font-size: 13px; font-family: inherit; background: white; color: var(--text); resize: none; min-height: 36px; line-height: 1.4; width: 100%; transition: border-color 0.15s; overflow: hidden; cursor: text; user-select: text; -webkit-user-select: text; touch-action: manipulation; }
+.listado-row textarea { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 7px 10px; font-size: 13px; font-family: inherit; background: white; color: var(--text); resize: none; min-height: 36px; line-height: 1.4; width: 100%; transition: border-color 0.15s; overflow: hidden; cursor: text; user-select: text; -webkit-user-select: text; touch-action: manipulation; }
 .listado-row textarea:focus { outline: none; border-color: var(--action); box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
-.listado-row .btn-remove-listado { background: none; border: 1px solid transparent; color: var(--text-muted); font-size: 16px; cursor: pointer; padding: 4px 6px; border-radius: 4px; line-height: 1; min-width: 28px; min-height: 28px; }
+.listado-row .btn-remove-listado { background: none; border: 1px solid transparent; color: var(--text-muted); font-size: 16px; cursor: pointer; padding: 4px 6px; border-radius: var(--radius-sm); line-height: 1; min-width: 28px; min-height: 28px; }
 .listado-row .btn-remove-listado:hover { color: #dc2626; background: #fee2e2; border-color: #fecaca; }
-.listado-add-row { background: none; border: 1px dashed var(--border); border-radius: 6px; padding: 8px 14px; font-size: 13px; font-family: inherit; color: var(--text-muted); cursor: pointer; transition: all 0.15s; }
+.listado-add-row { background: none; border: 1px dashed var(--border); border-radius: var(--radius-md); padding: 8px 14px; font-size: 13px; font-family: inherit; color: var(--text-muted); cursor: pointer; transition: all 0.15s; }
 .listado-add-row:hover { border-color: var(--action); color: var(--action); background: var(--section-header-bg); }
 .listado-empty { font-size: 12px; color: var(--text-muted); font-style: italic; padding: 8px 4px; }
 html.dark .listado-section { background: var(--surface); }
@@ -56,24 +56,38 @@ html.dark .listado-row textarea, html.dark .listado-row input[type="date"] { bac
 .diagrams-wrap { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
 .lab-history-card-header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .lab-history-toggle {
-  flex-shrink: 0; width: 32px; height: 32px; padding: 0; border: none; border-radius: 6px;
+  flex-shrink: 0; width: 32px; height: 32px; padding: 0; border: none; border-radius: var(--radius-md);
   background: transparent; color: inherit; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
 }
 .lab-history-toggle:hover { background: rgba(255,255,255,0.1); }
 html:not(.dark) .lab-history-toggle:hover { background: rgba(0,0,0,0.06); }
 .lab-history-chevron { transition: transform 0.2s ease; }
 #lab-history-card.is-collapsed .lab-history-chevron { transform: rotate(-90deg); }
-#lab-history-card.is-collapsed #lab-history-body { display: none; }
+#lab-history-body {
+  max-height: min(120vh, 2400px);
+  opacity: 1;
+  overflow: hidden;
+  transition:
+    max-height var(--dur-normal) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out),
+    padding var(--dur-normal) var(--ease-out);
+}
+#lab-history-card.is-collapsed #lab-history-body {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
 .lab-history-card-title { flex: 1; min-width: 0; font-size: inherit; font-weight: inherit; }
 .lab-history-list { display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto; }
 .lab-history-hint { margin: 0; font-size: 13px; line-height: 1.45; color: var(--text-muted); }
 .lab-history-row {
   display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
-  padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg);
+  padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg);
 }
 /* Medicamentos: lista alineada y pie SOAP compacto */
 .med-receta-wrap {
-  border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--bg);
+  border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: var(--bg);
 }
 .med-receta-head {
   display: grid; grid-template-columns: 40px 40px 1fr auto; gap: 8px 10px; align-items: center;
@@ -104,7 +118,7 @@ html.dark .med-receta-row:hover { background: rgba(96, 165, 250, 0.07); }
 .med-nota-toolbar { display: flex; flex-direction: column; gap: 12px; }
 .med-nota-hint { margin: 0; font-size: 12px; line-height: 1.45; color: var(--text-muted); }
 .med-soap-preview {
-  margin: 0; padding: 12px; border-radius: 8px; background: var(--surface);
+  margin: 0; padding: 12px; border-radius: var(--radius-lg); background: var(--surface);
   border: 1px solid var(--border);
 }
 .med-soap-preview-empty { margin: 0; font-size: 12px; line-height: 1.45; color: var(--text-muted); font-style: italic; }
@@ -118,7 +132,7 @@ html.dark .med-receta-row:hover { background: rgba(96, 165, 250, 0.07); }
 html.dark .med-soap-preview-sec--otros .med-soap-preview-sec-title { color: #fbbf24; }
 .med-soap-preview-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-start; }
 .med-soap-preview-chip {
-  font-size: 11px; line-height: 1.35; padding: 5px 9px; border-radius: 6px;
+  font-size: 11px; line-height: 1.35; padding: 5px 9px; border-radius: var(--radius-md);
   background: var(--bg); border: 1px solid var(--border); color: var(--text); max-width: 100%;
   word-break: break-word;
 }
@@ -130,7 +144,7 @@ html.dark .med-soap-preview-sec--otros .med-soap-preview-chip {
 }
 .med-nota-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .btn-med-secondary {
-  background: none; border: 1px solid var(--border); border-radius: 8px;
+  background: none; border: 1px solid var(--border); border-radius: var(--radius-md);
   padding: 8px 14px; font-size: 13px; font-family: inherit; font-weight: 600;
   color: var(--text-muted); cursor: pointer;
 }
@@ -151,7 +165,7 @@ html.dark .med-soap-preview-sec--otros .med-soap-preview-chip {
   bottom: 3px;
   left: 3px;
   width: calc((100% - 6px) / 2);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   background: var(--surface);
   box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
   pointer-events: none;
@@ -169,10 +183,20 @@ html.dark .med-soap-preview-sec--otros .med-soap-preview-chip {
   .app-tab:hover, .inner-tab:hover { transform: none; }
   .patient-card:hover, .app .card:hover, .tend-card:hover { transform: none; }
   .tab-content.active { animation: none; }
+  .tab-panel-enter { animation: none !important; }
+  .tab-bar-indicator { transition: none !important; }
   .btn-add:active { transform: none; }
   .toast { transform: translateY(-10px); opacity: 0; }
   .toast.show { transform: translateY(0); opacity: 1; }
   .modal { animation: none; }
+  .settings-dropdown:not(.open),
+  .connection-dropdown:not(.open) { opacity: 0; visibility: hidden; }
+  .settings-dropdown.open,
+  .connection-dropdown.open { opacity: 1; visibility: visible; transform: none; }
+  aside.patient-sidebar,
+  html.sidebar-auto-hide:not(.sidebar-reveal) aside.patient-sidebar {
+    transform: none;
+  }
   .tend-range-vbar-norm,
   .tend-range-vbar-marker { transition: none !important; transition-delay: 0ms !important; }
   .tend-range-vbar-norm { transform: scaleY(1) !important; }
@@ -183,7 +207,7 @@ html.dark .med-soap-preview-sec--otros .med-soap-preview-chip {
   flex: 1 1 0;
   min-width: 0;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   padding: 4px 10px;
   font-size: 12px;
   font-weight: 700;
@@ -209,7 +233,7 @@ html.dark .med-output-tab.active {
 .lab-history-meta { font-size: 13px; color: var(--text); flex: 1; min-width: 140px; }
 .lab-history-actions { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; }
 .btn-lab-history {
-  font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; border-radius: 6px;
+  font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; border-radius: var(--radius-md);
   padding: 6px 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text);
   min-height: 36px;
 }
@@ -267,7 +291,7 @@ html.dark .btn-lab-history-del:hover { background: rgba(248,113,113,0.12); }
   text-align: left;
   padding: 9px 12px;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--text);
   cursor: pointer;

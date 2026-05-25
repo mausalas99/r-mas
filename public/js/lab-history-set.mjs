@@ -176,7 +176,9 @@ export function primaryTipoForLabSet(resLabs) {
 export function rebuildEstudiosFromLabHistory(patientId) {
   if (!patientId) return;
   if (!notes[patientId]) notes[patientId] = {};
-  var ordered = sortLabHistoryChronological(ensureParsedLabHistory(patientId));
+  var ordered = sortLabHistoryChronological(
+    ensureParsedLabHistory(patientId, { skipRebuildNota: true })
+  );
   if (!ordered.length) {
     notes[patientId].estudios = '';
     return;
@@ -248,7 +250,8 @@ export function rebuildEstudiosFromLabHistory(patientId) {
   notes[patientId].estudios = lines.join('\n');
 }
 
-export function ensureParsedLabHistory(patientId) {
+export function ensureParsedLabHistory(patientId, options) {
+  var skipRebuildNota = !!(options && options.skipRebuildNota);
   var raw = labHistory[patientId];
   var history = normalizeLabHistoryPatientSets(raw);
   var changed = !Array.isArray(raw) || raw !== history;
@@ -287,8 +290,18 @@ export function ensureParsedLabHistory(patientId) {
     }
     if (set.resLabs && set.resLabs.length) {
       var pbNext = buildParsedBySectionFromResLabs(set.resLabs, set.bhExtras);
-      var pbStr = JSON.stringify(pbNext);
-      if (JSON.stringify(set.parsedBySection || null) !== pbStr) {
+      var pbStr = '';
+      try {
+        pbStr = JSON.stringify(pbNext);
+      } catch (_pbErr) {
+        set.parsedBySection = pbNext;
+        changed = true;
+        pbStr = null;
+      }
+      if (
+        pbStr != null &&
+        JSON.stringify(set.parsedBySection || null) !== pbStr
+      ) {
         set.parsedBySection = pbNext;
         changed = true;
       }
@@ -314,8 +327,9 @@ export function ensureParsedLabHistory(patientId) {
           changed = true;
         }
       }
-      var horaFromSrc = extractLabReportHora(set.sourceText);
-      if (horaFromSrc && horaFromSrc !== normalizeHoraLabHistory(set.hora)) {
+      var horaFromSrc = normalizeHoraLabHistory(extractLabReportHora(set.sourceText));
+      var normStoredHora = normalizeHoraLabHistory(set.hora);
+      if (horaFromSrc && horaFromSrc !== normStoredHora) {
         set.hora = horaFromSrc;
         changed = true;
         rebuildNota = true;
@@ -329,7 +343,9 @@ export function ensureParsedLabHistory(patientId) {
       }
     }
   });
-  if (rebuildNota && patientId && notes[patientId]) {
+  if (rebuildNota && patientId && notes[patientId] && !skipRebuildNota) {
+    if (history.length) labHistory[patientId] = history;
+    else delete labHistory[patientId];
     rebuildEstudiosFromLabHistory(patientId);
     changed = true;
   }

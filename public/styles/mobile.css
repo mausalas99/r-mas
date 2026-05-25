@@ -376,6 +376,51 @@ html.rpc-mobile-web header {
   z-index: 200;
   background: var(--surface);
 }
+html.rpc-mobile-web body { background: var(--bg); }
+html.rpc-mobile-web header {
+  margin-left: 0;
+  margin-right: 0;
+  border-radius: 0;
+}
+html.rpc-mobile-web .app {
+  margin: 0;
+  gap: 0;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  background: transparent;
+}
+html.rpc-mobile-web .main-col {
+  padding: 0;
+  gap: 0;
+  border: none;
+  box-shadow: none;
+  background: var(--bg);
+}
+html.rpc-mobile-web #main-area {
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+html.rpc-mobile-web #appcontent-lab > .main-work-scroll,
+html.rpc-mobile-web #appcontent-med > #med-work-area.main-work-scroll,
+html.rpc-mobile-web #appcontent-agenda > .rpc-proc-agenda-root,
+html.rpc-mobile-web:not(.ui-density-normal) .pase-board-scroll,
+html.rpc-mobile-web .patient-expediente-classic .tab-content {
+  margin-top: 0;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+html.rpc-mobile-web .inner-tab-bar {
+  margin-bottom: 0;
+}
+html.rpc-mobile-web .app-tabs-row {
+  margin-left: 0;
+  margin-right: 0;
+}
+html.rpc-mobile-web .main-col,
+html.rpc-mobile-web aside.patient-sidebar { border-radius: 0; }
 @media (max-width: 900px) {
   html.rpc-mobile-web aside {
     width: min(280px, 42vw) !important;

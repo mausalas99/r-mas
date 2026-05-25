@@ -1,0 +1,56 @@
+/* Arc-soft — overrides for hardcoded small radii (loads last) */
+
+/* Contenedores grandes */
+.listado-section,
+.lab-history-row,
+.med-receta-wrap,
+.med-soap-preview,
+.indica-section,
+.otros-item,
+.tend-card,
+.pase-section,
+.pase-mini-card {
+  border-radius: var(--radius-lg) !important;
+}
+
+/* Controles medianos */
+.listado-row,
+.listado-row input[type="date"],
+.listado-row textarea,
+.listado-add-row,
+.listado-row .btn-remove-listado,
+.btn-lab-history,
+.btn-med-secondary,
+.lab-history-more-btn,
+.lab-history-more-menu,
+.med-soap-preview-chip,
+.med-output-tabs,
+.todo-row,
+.todo-add-row input[type="text"],
+.todo-add-row button,
+.btn-remove,
+.btn-remove-otro,
+.btn-remove-listado,
+.dcard-copy,
+.settings-theme-btn,
+.btn-edit-templates,
+.btn-lab-history-del,
+.lab-history-toggle,
+.rpc-proc-agenda-block {
+  border-radius: var(--radius-md) !important;
+}
+
+.listado-drag-hovercard.listado-row {
+  border-radius: var(--radius-md) !important;
+}
+
+.indica-section-body textarea,
+.otros-item input,
+.otros-item textarea {
+  border-radius: var(--radius-md) !important;
+}
+
+#update-modal button,
+#min-version-modal button {
+  border-radius: var(--radius-md) !important;
+}
