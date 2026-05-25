@@ -687,7 +687,7 @@ export function createTendGroupModal(deps) {
 
     bd.innerHTML =
       '<div id="tend-gaso-ext-dialog" class="tend-gaso-ext-dialog" role="dialog" aria-modal="true" aria-labelledby="tend-gaso-ext-title">' +
-        '<header class="tend-gaso-ext-header">' +
+        '<div class="tend-gaso-ext-header">' +
           '<div class="tend-gaso-ext-header-text">' +
             '<h2 id="tend-gaso-ext-title">' + escHtml('Gasometría extendida') + '</h2>' +
             '<p class="tend-gaso-ext-subtitle">' + escHtml('Último estudio · interpretación ácido-base') + '</p>' +
@@ -698,16 +698,14 @@ export function createTendGroupModal(deps) {
               '<input type="number" class="tend-gaso-fio2-input" step="0.01" min="0.08" max="100" inputmode="decimal" aria-label="FiO₂ (0.21 o 21)" title="Fracción 0.21 o porcentaje 21" />' +
               '<span class="tend-gaso-fio2-chip-hint">0.21 · 21%</span>' +
             '</div>' +
-            '<button type="button" class="tend-gaso-ext-close btn-med-secondary" aria-label="Cerrar">×</button>' +
           '</div>' +
-        '</header>' +
+        '</div>' +
         '<div class="tend-gaso-extended-inner"></div>' +
       '</div>';
 
     bd.addEventListener('click', function (ev) {
       if (ev.target === bd) closeGasoExtended();
     });
-    bd.querySelector('.tend-gaso-ext-close').addEventListener('click', closeGasoExtended);
 
     document.body.appendChild(bd);
     return bd;
