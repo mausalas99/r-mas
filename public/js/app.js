@@ -1,5 +1,5 @@
 import { storage } from './storage.js';
-import { initAppState, patients } from './app-state.mjs';
+import { initAppState, patients, setSaveStateHooks, flushSaveState } from './app-state.mjs';
 import {
   registerAppRuntimeContext,
   registerAllFeatureRuntimes,
@@ -25,6 +25,7 @@ import {
   initPatientModalEnterSave,
 } from './features/patients.mjs';
 import { windowHandlers as labPanelWindowHandlers, renderLabHistoryPanel } from './features/lab-panel.mjs';
+import { windowHandlers as labBulkPreviewWindowHandlers } from './features/lab-bulk-preview-modal.mjs';
 import { windowHandlers as soapEstadoWindowHandlers } from './features/soap-estado.mjs';
 import { windowHandlers as agendaWindowHandlers } from './features/agenda.mjs';
 import { windowHandlers as expedienteWindowHandlers } from './features/expediente.mjs';
@@ -46,6 +47,7 @@ const allWindowHandlers = Object.assign(
   lanWindowHandlers,
   patientsWindowHandlers,
   labPanelWindowHandlers,
+  labBulkPreviewWindowHandlers,
   soapEstadoWindowHandlers,
   agendaWindowHandlers,
   expedienteWindowHandlers,
@@ -70,6 +72,33 @@ try {
 }
 
 initAppState();
+
+setSaveStateHooks({
+  onSaveResult(result) {
+    if (!result || result.ok) {
+      if (result && result.level === 'warn') {
+        showToast(
+          'El almacenamiento local está casi lleno. Archiva pacientes egresados, exporta un respaldo y elimina duplicados de labs.',
+          'error'
+        );
+      }
+      return;
+    }
+    if (result.code === 'QUOTA_EXCEEDED') {
+      showToast(
+        'No se pudo guardar: almacenamiento local lleno. Exporta un respaldo JSON, archiva o elimina historial de labs antes de seguir.',
+        'error'
+      );
+    }
+  },
+});
+
+window.addEventListener('beforeunload', function () {
+  flushSaveState();
+});
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'hidden') flushSaveState();
+});
 
 var activeId = null;
 var activeInner = 'todo';

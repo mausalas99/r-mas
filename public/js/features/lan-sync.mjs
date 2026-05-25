@@ -25,10 +25,12 @@ import {
   indicaciones,
   labHistory,
   medRecetaByPatient,
+  recetaHuByPatient,
   listadoProblemas,
   medNotaSelectionByPatient,
   setPatients,
   setSaveStateHooks,
+  saveState,
 } from "../app-state.mjs";
 
 export const DEFAULT_LAN_TEAM_CODE = "1234";
@@ -427,7 +429,7 @@ function applyLanPatientEntries(entries) {
     }
   }
   if (added || updated) {
-    storage.saveAll(patients, notes, indicaciones, labHistory, medRecetaByPatient, listadoProblemas);
+    saveState({ immediate: true });
     runtime.renderPatientList();
     if (runtime.getActiveId()) {
       try {
@@ -456,6 +458,7 @@ export function removePatientLocally(patientId) {
   delete indicaciones[pid];
   if (labHistory && labHistory[pid]) delete labHistory[pid];
   if (medRecetaByPatient && medRecetaByPatient[pid]) delete medRecetaByPatient[pid];
+  if (recetaHuByPatient && recetaHuByPatient[pid]) delete recetaHuByPatient[pid];
   if (medNotaSelectionByPatient && medNotaSelectionByPatient[pid]) delete medNotaSelectionByPatient[pid];
   if (listadoProblemas && listadoProblemas[pid]) delete listadoProblemas[pid];
   try {

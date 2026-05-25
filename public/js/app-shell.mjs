@@ -42,6 +42,7 @@ import {
   isTendGroupModalOpen,
 } from './features/tendencias.mjs';
 import { closeLabSomeTablesModal } from './features/lab-some-tables-modal.mjs';
+import { closeLabBulkPreviewModal } from './features/lab-bulk-preview-modal.mjs';
 import {
   closeSesionIngresoSendModal,
 } from './features/sesion-ingreso-send-modal.mjs';
@@ -499,6 +500,18 @@ function initModalDismiss() {
     backdropEl: function () {
       return el('lab-display-prefs-backdrop');
     }
+  });
+
+  modalDismiss.register({
+    isOpen: function () {
+      var b = el('lab-bulk-preview-backdrop');
+      return b && b.classList.contains('open');
+    },
+    close: closeLabBulkPreviewModal,
+    backdropEl: function () {
+      return el('lab-bulk-preview-backdrop');
+    },
+    panelSelector: '.lab-bulk-preview-modal',
   });
 
   modalDismiss.register({

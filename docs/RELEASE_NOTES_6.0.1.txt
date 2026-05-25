@@ -11,7 +11,8 @@ Parche sobre 6.0.0: el cuadro principal de **Laboratorio** procesa **varios repo
 
 ### Laboratorio — entrada masiva integrada
 
-- **Un solo cuadro de pegado** — ya no hay ventana aparte: pega uno o muchos reportes SOME completos (desde «Expediente:») y pulsa **Procesar**.
+- **Un solo cuadro de pegado** — pega uno o muchos reportes SOME completos (desde «Expediente:») y pulsa **Procesar**.
+- **Vista previa antes de guardar** — si hay varios días, varios pacientes o avisos (expediente no encontrado, error de parseo), se abre una tabla de revisión; confirmas con **Procesar todo** o cancelas.
 - **Varios días, mismo paciente** — reportes seguidos se distinguen por `Fecha Registro`; el mismo día se consolida en un conjunto (la hora es opcional).
 - **Varios pacientes** — botón **Separador de paciente** inserta `--- PACIENTE ---` entre bloques; cada expediente debe existir en la lista.
 - **Historial y nota** — cada conjunto guardado alimenta historial, tendencias y reconstrucción de `estudios` en la nota.

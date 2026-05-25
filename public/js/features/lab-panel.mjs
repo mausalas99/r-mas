@@ -31,7 +31,11 @@ import {
   buildBulkLabPreview,
   mergeBulkParseResults,
   LAB_BULK_PATIENT_SEPARATOR,
+  shouldShowBulkLabPreview,
 } from "../lab-bulk-paste.mjs";
+import {
+  openLabBulkPreviewModal,
+} from "./lab-bulk-preview-modal.mjs";
 import {
   sortLabHistoryChronological,
   parseFechaLabToMs,
@@ -371,6 +375,16 @@ function dedupeConsolidatedRowsBySection(rows, tipo) {
   });
 }
 
+var LAB_HISTORY_LIST_CAP = 50;
+var _labHistoryListExpanded = {};
+
+export function expandLabHistoryList() {
+  var pid = rt.getActiveId();
+  if (!pid) return;
+  _labHistoryListExpanded[pid] = true;
+  renderLabHistoryPanel();
+}
+
 export function renderLabHistoryPanel() {
   var card = document.getElementById('lab-history-card');
   var listEl = document.getElementById('lab-history-list');
@@ -385,7 +399,8 @@ export function renderLabHistoryPanel() {
     if (isPaseMode()) rt.renderPaseBoard();
     return;
   }
-  var hist = sortLabHistoryChronological(rt.ensureParsedLabHistory(rt.getActiveId()));
+  var pid = rt.getActiveId();
+  var hist = sortLabHistoryChronological(rt.ensureParsedLabHistory(pid));
   if (!hist.length) {
     hintEl.style.display = 'block';
     hintEl.textContent = 'Al procesar un reporte con paciente activo, cada conjunto queda guardado aquí (sirve para Tendencias y para volver a ver diagramas).';
@@ -396,7 +411,14 @@ export function renderLabHistoryPanel() {
     return;
   }
   hintEl.style.display = 'none';
-  listEl.innerHTML = hist.map(function(set, idx) {
+  var showAll = !!_labHistoryListExpanded[pid];
+  var visible = hist;
+  var hiddenCount = 0;
+  if (!showAll && hist.length > LAB_HISTORY_LIST_CAP) {
+    visible = hist.slice(0, LAB_HISTORY_LIST_CAP);
+    hiddenCount = hist.length - LAB_HISTORY_LIST_CAP;
+  }
+  var rowsHtml = visible.map(function(set, idx) {
     var n = (set.resLabs && set.resLabs.length) ? set.resLabs.length : 0;
     var rawFe = set.fecha === 'Anterior' ? '' : (normalizeFechaLabHistory(set.fecha) || String(set.fecha || '').trim() || rt.inferFechaLabSetFromId(set) || '');
     var fe;
@@ -423,6 +445,16 @@ export function renderLabHistoryPanel() {
       '</div></div>'
     );
   }).join('');
+  if (hiddenCount > 0) {
+    rowsHtml +=
+      '<div class="lab-history-more-wrap">' +
+      '<button type="button" class="btn-lab-history btn-lab-history-expand" onclick="expandLabHistoryList()">Mostrar ' +
+      hiddenCount +
+      ' entrada' +
+      (hiddenCount === 1 ? '' : 's') +
+      ' anteriores</button></div>';
+  }
+  listEl.innerHTML = rowsHtml;
   syncLabHistoryCollapseUI();
   rt.renderRoundOverviewPanels();
   if (isPaseMode()) rt.renderPaseBoard();
@@ -485,7 +517,7 @@ function reprocessLabHistorySet(setId) {
     set.parsedBySection = rt.buildParsedBySectionFromResLabs(set.resLabs, set.bhExtras);
     applyLabClinicalSuggestions(rt.getActiveId(), set.resLabs, set.fecha, set.bhExtras);
     rt.rebuildEstudiosFromLabHistory(rt.getActiveId());
-    saveState();
+    saveState({ immediate: true });
     renderLabHistoryPanel();
     rt.refreshTendenciasOrCultivosPanel();
     replayLabHistorySet(setId);
@@ -511,7 +543,7 @@ function deleteLabHistorySet(setId) {
   }
   if (sets.length) labHistory[pid] = sets;
   else delete labHistory[pid];
-  saveState();
+  saveState({ immediate: true });
   rt.addAuditEntry('lab-history-delete', 'ok', 1, String(setId));
   renderLabHistoryPanel();
   rt.refreshTendenciasOrCultivosPanel();
@@ -762,7 +794,7 @@ function showLabDedupeChecklistModal(sections) {
     }
     if (typeof rt.pushUndoSnapshot === 'function') rt.pushUndoSnapshot('Eliminar duplicados de historial de labs (' + nSel + ')');
     var removedTotal = applyLabDedupeFromChecklist(mapByPatient);
-    saveState();
+    saveState({ immediate: true });
     renderLabHistoryPanel();
     rt.refreshTendenciasOrCultivosPanel();
     var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
@@ -798,9 +830,35 @@ function openLabHistoryDedupeReview(scope) {
     return;
   }
   if (scope === 'all') {
-    var sections = [];
-    patients.forEach(function (p) {
-      if (p.isDemo) return;
+    rt.closeSettingsDropdown();
+    runLabDedupeReviewAllPatients();
+  }
+}
+
+function runLabDedupeReviewAllPatients() {
+  var list = patients.filter(function (p) {
+    return p && !p.isDemo;
+  });
+  if (!list.length) {
+    rt.showToast('No hay pacientes para revisar', 'error');
+    return;
+  }
+  rt.showToast('Buscando duplicados en ' + list.length + ' pacientes…', 'success');
+  var sections = [];
+  var index = 0;
+  function step() {
+    if (index >= list.length) {
+      if (!sections.length) {
+        rt.showToast('No se encontraron duplicados ni coincidencias por fecha/valores', 'success');
+        return;
+      }
+      showLabDedupeChecklistModal(sections);
+      return;
+    }
+    var batchEnd = Math.min(index + 4, list.length);
+    while (index < batchEnd) {
+      var p = list[index];
+      index += 1;
       var r = buildLabDedupeChecklistSections(p.id);
       if (r.length) {
         sections.push({
@@ -810,15 +868,10 @@ function openLabHistoryDedupeReview(scope) {
           rows: r,
         });
       }
-    });
-    if (!sections.length) {
-      rt.showToast('No se encontraron duplicados ni coincidencias por fecha/valores', 'success');
-      rt.closeSettingsDropdown();
-      return;
     }
-    showLabDedupeChecklistModal(sections);
-    rt.closeSettingsDropdown();
+    setTimeout(step, 0);
   }
+  setTimeout(step, 0);
 }
 
 /**
@@ -908,7 +961,7 @@ function consolidateLabHistoryByDayAndTipo() {
   });
   if (!labHistory[rt.getActiveId()].length) delete labHistory[rt.getActiveId()];
   rt.rebuildEstudiosFromLabHistory(rt.getActiveId());
-  saveState();
+  saveState({ immediate: true });
   renderLabHistoryPanel();
   rt.refreshTendenciasOrCultivosPanel();
   var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
@@ -1153,7 +1206,7 @@ function storeBulkLabBlocks(blocks, processable) {
     }
   });
   if (storedSets || skippedDupes) {
-    saveState();
+    saveState({ immediate: true });
     renderLabHistoryPanel();
     rt.refreshTendenciasOrCultivosPanel();
   }
@@ -1269,7 +1322,7 @@ function autoStoreProcessedLabResult(result) {
     );
   }
   applyLabClinicalSuggestions(rt.getActiveId(), result.resLabs, fecha, result.bhExtras);
-  saveState();
+  saveState({ immediate: true });
   renderLabHistoryPanel();
   rt.refreshTendenciasOrCultivosPanel();
 }
@@ -1324,7 +1377,7 @@ function insertLabsAsRecent(lines) {
     activeLab.refsBySection
   );
   rt.rebuildEstudiosFromLabHistory(rt.getActiveId());
-  saveState();
+  saveState({ immediate: true });
   rt.refreshTendenciasOrCultivosPanel();
   renderLabHistoryPanel();
   var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
@@ -1347,7 +1400,7 @@ function insertLabsAsAnteriorThenRecent(newLines) {
     activeLab.refsBySection
   );
   rt.rebuildEstudiosFromLabHistory(rt.getActiveId());
-  saveState();
+  saveState({ immediate: true });
   rt.refreshTendenciasOrCultivosPanel();
   renderLabHistoryPanel();
   var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
@@ -1390,7 +1443,7 @@ function showLabConflictModal(newLines, existingDate) {
       activeLab.refsBySection
     );
     rt.rebuildEstudiosFromLabHistory(rt.getActiveId());
-    saveState();
+    saveState({ immediate: true });
     rt.refreshTendenciasOrCultivosPanel();
     renderLabHistoryPanel();
     var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
@@ -1403,6 +1456,97 @@ function showLabConflictModal(newLines, existingDate) {
   document.getElementById('btn-conflict-cancel').onclick = function() {
     document.body.removeChild(backdrop);
   };
+}
+
+function finalizeBulkLabPaste(text, blocks, totalOkReports) {
+  var processable = blocks.filter(function (b) {
+    return b.canProcess && b.okReportCount > 0 && b.patient;
+  });
+  var storeSummary = { storedSets: 0, skippedDupes: 0, skippedBlocks: blocks.length - processable.length };
+
+  if (processable.length) {
+    storeSummary = storeBulkLabBlocks(blocks, processable);
+    if (typeof rt.addAuditEntry === 'function') {
+      rt.addAuditEntry(
+        'lab-bulk-paste',
+        storeSummary.storedSets ? 'ok' : 'skip',
+        storeSummary.storedSets,
+        processable.length + ' pacientes'
+      );
+    }
+  } else if (blocks.some(function (b) {
+    return b.status === 'no-patient';
+  })) {
+    rt.showToast('Ningún expediente del pegado coincide con pacientes en la lista', 'error');
+  }
+
+  var displayReport = pickDisplayLabReport(blocks, processable, rt.getActiveId());
+  if (!displayReport) {
+    displayReport = blocks.reduce(function (found, b) {
+      if (found) return found;
+      return b.reports.find(function (r) { return r.ok && r.result; }) || null;
+    }, null);
+  }
+
+  if (!displayReport || !displayReport.result) {
+    rt.showToast('No se pudo interpretar el laboratorio pegado', 'error');
+    return;
+  }
+
+  var displayResult = displayReport.result;
+  displayResult.sourceText = displayReport.reportText || text;
+  if (processable.length === 1 && processable[0].okReportCount === 1) {
+    applyLabPastePatientResolution(displayResult);
+  } else if (displayReport.expediente) {
+    var match = rt.findPatientByRegistro(displayReport.expediente);
+    if (match && match.id !== rt.getActiveId()) {
+      rt.selectPatient(match.id);
+    }
+  }
+
+  renderOutput(displayResult);
+  rt.renderDiagramas(displayResult.resLabs);
+
+  var multi = blocks.length > 1 || totalOkReports > 1 || processable.length > 1;
+  if (multi) {
+    var parts = [];
+    if (storeSummary.storedSets) {
+      parts.push(
+        storeSummary.storedSets +
+          ' conjunto' +
+          (storeSummary.storedSets === 1 ? '' : 's') +
+          ' guardado' +
+          (storeSummary.storedSets === 1 ? '' : 's')
+      );
+    }
+    if (storeSummary.skippedDupes) {
+      parts.push(
+        storeSummary.skippedDupes +
+          ' duplicado' +
+          (storeSummary.skippedDupes === 1 ? '' : 's') +
+          ' omitido' +
+          (storeSummary.skippedDupes === 1 ? '' : 's')
+      );
+    }
+    if (storeSummary.skippedBlocks) {
+      parts.push(
+        storeSummary.skippedBlocks +
+          ' bloque' +
+          (storeSummary.skippedBlocks === 1 ? '' : 's') +
+          ' omitido' +
+          (storeSummary.skippedBlocks === 1 ? '' : 's')
+      );
+    }
+    rt.showToast(parts.length ? parts.join(' · ') + ' ✓' : 'Laboratorio procesado ✓', storeSummary.storedSets ? 'success' : 'success');
+  } else if (processable.length === 1 && storeSummary.storedSets === 0 && storeSummary.skippedDupes) {
+    rt.showToast('Resultado ya registrado en historial', 'success');
+  } else if (processable.length === 1 && !storeSummary.storedSets && blocks[0].status === 'no-patient') {
+    /* toast ya mostrado arriba */
+  } else if (processable.length === 1 && storeSummary.storedSets) {
+    /* renderOutput ya avanzó onboarding; sin toast extra en single */
+  }
+
+  clearLabInputAfterSuccessfulParse();
 }
 
 function procesarReporte() {
@@ -1429,94 +1573,16 @@ function procesarReporte() {
   }
 
   try {
-    var processable = blocks.filter(function (b) {
-      return b.canProcess && b.okReportCount > 0 && b.patient;
-    });
-    var storeSummary = { storedSets: 0, skippedDupes: 0, skippedBlocks: blocks.length - processable.length };
-
-    if (processable.length) {
-      storeSummary = storeBulkLabBlocks(blocks, processable);
-      if (typeof rt.addAuditEntry === 'function') {
-        rt.addAuditEntry(
-          'lab-bulk-paste',
-          storeSummary.storedSets ? 'ok' : 'skip',
-          storeSummary.storedSets,
-          processable.length + ' pacientes'
-        );
-      }
-    } else if (blocks.some(function (b) {
-      return b.status === 'no-patient';
-    })) {
-      rt.showToast('Ningún expediente del pegado coincide con pacientes en la lista', 'error');
-    }
-
-    var displayReport = pickDisplayLabReport(blocks, processable, rt.getActiveId());
-    if (!displayReport) {
-      displayReport = blocks.reduce(function (found, b) {
-        if (found) return found;
-        return b.reports.find(function (r) { return r.ok && r.result; }) || null;
-      }, null);
-    }
-
-    if (!displayReport || !displayReport.result) {
-      rt.showToast('No se pudo interpretar el laboratorio pegado', 'error');
+    if (shouldShowBulkLabPreview(blocks, totalOkReports)) {
+      openLabBulkPreviewModal({
+        blocks: blocks,
+        onConfirm: function () {
+          finalizeBulkLabPaste(text, blocks, totalOkReports);
+        },
+      });
       return;
     }
-
-    var displayResult = displayReport.result;
-    displayResult.sourceText = displayReport.reportText || text;
-    if (processable.length === 1 && processable[0].okReportCount === 1) {
-      applyLabPastePatientResolution(displayResult);
-    } else if (displayReport.expediente) {
-      var match = rt.findPatientByRegistro(displayReport.expediente);
-      if (match && match.id !== rt.getActiveId()) {
-        rt.selectPatient(match.id);
-      }
-    }
-
-    renderOutput(displayResult);
-    rt.renderDiagramas(displayResult.resLabs);
-
-    var multi = blocks.length > 1 || totalOkReports > 1 || processable.length > 1;
-    if (multi) {
-      var parts = [];
-      if (storeSummary.storedSets) {
-        parts.push(
-          storeSummary.storedSets +
-            ' conjunto' +
-            (storeSummary.storedSets === 1 ? '' : 's') +
-            ' guardado' +
-            (storeSummary.storedSets === 1 ? '' : 's')
-        );
-      }
-      if (storeSummary.skippedDupes) {
-        parts.push(
-          storeSummary.skippedDupes +
-            ' duplicado' +
-            (storeSummary.skippedDupes === 1 ? '' : 's') +
-            ' omitido' +
-            (storeSummary.skippedDupes === 1 ? '' : 's')
-        );
-      }
-      if (storeSummary.skippedBlocks) {
-        parts.push(
-          storeSummary.skippedBlocks +
-            ' bloque' +
-            (storeSummary.skippedBlocks === 1 ? '' : 's') +
-            ' omitido' +
-            (storeSummary.skippedBlocks === 1 ? '' : 's')
-        );
-      }
-      rt.showToast(parts.length ? parts.join(' · ') + ' ✓' : 'Laboratorio procesado ✓', storeSummary.storedSets ? 'success' : 'success');
-    } else if (processable.length === 1 && storeSummary.storedSets === 0 && storeSummary.skippedDupes) {
-      rt.showToast('Resultado ya registrado en historial', 'success');
-    } else if (processable.length === 1 && !storeSummary.storedSets && blocks[0].status === 'no-patient') {
-      /* toast ya mostrado arriba */
-    } else if (processable.length === 1 && storeSummary.storedSets) {
-      /* renderOutput ya avanzó onboarding; sin toast extra en single */
-    }
-
-    clearLabInputAfterSuccessfulParse();
+    finalizeBulkLabPaste(text, blocks, totalOkReports);
   } catch (e) {
     rt.showToast('Error al procesar el reporte', 'error');
     console.error(e);
@@ -1610,6 +1676,7 @@ export const windowHandlers = {
   closeLabHistoryMoreMenu,
   openLabPatientPicker,
   openLabHistoryDedupeReview,
+  expandLabHistoryList,
   consolidateLabHistoryByDayAndTipo,
   insertLabPatientSeparator,
 };

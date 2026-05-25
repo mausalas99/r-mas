@@ -1302,7 +1302,7 @@ var RELEASE_NOTES_HIGHLIGHTS = {
     {
       title: 'Laboratorio: entrada masiva',
       body:
-        'Pega varios reportes SOME en el mismo cuadro. Varios días del mismo paciente van seguidos; entre pacientes distintos usa Separador de paciente. Procesar agrupa por día y guarda en historial.',
+        'Pega varios reportes SOME en el mismo cuadro. Varios días del mismo paciente van seguidos; entre pacientes distintos usa Separador de paciente. Al procesar pegados masivos, la vista previa muestra pacientes, días y errores antes de guardar.',
     },
     {
       title: 'Receta HU → PDF',

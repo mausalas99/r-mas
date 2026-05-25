@@ -1,5 +1,6 @@
 import { storage, normalizeLabHistoryPatientSets } from './storage.js';
 import { applyMedCatalogOverlay } from './med-receta-core.mjs';
+import { repairLabHistoryMapInPlace } from './lab-history-repair.mjs';
 
 export let patients = [];
 export let notes = {};
@@ -12,6 +13,10 @@ export let medNotaSelectionByPatient = {};
 
 let _beforeSave = null;
 let _afterSave = null;
+let _onSaveResult = null;
+let _saveTimer = null;
+let _saveInFlight = null;
+const SAVE_DEBOUNCE_MS = 400;
 
 export function setPatients(next) {
   patients = next;
@@ -37,23 +42,14 @@ export function setRecetaHuByPatient(next) {
   recetaHuByPatient = next;
 }
 
-export function setSaveStateHooks({ before, after } = {}) {
+export function setSaveStateHooks({ before, after, onSaveResult } = {}) {
   if (before !== undefined) _beforeSave = before;
   if (after !== undefined) _afterSave = after;
+  if (onSaveResult !== undefined) _onSaveResult = onSaveResult;
 }
 
 export function repairLabHistoryInMemory() {
-  var changed = false;
-  Object.keys(labHistory || {}).forEach(function (pid) {
-    var raw = labHistory[pid];
-    var fixed = normalizeLabHistoryPatientSets(raw);
-    if (!Array.isArray(raw) || raw !== fixed || JSON.stringify(raw) !== JSON.stringify(fixed)) {
-      if (fixed.length) labHistory[pid] = fixed;
-      else delete labHistory[pid];
-      changed = true;
-    }
-  });
-  return changed;
+  return repairLabHistoryMapInPlace(labHistory);
 }
 
 export function initAppState() {
@@ -66,12 +62,16 @@ export function initAppState() {
   listadoProblemas = storage.getListadoProblemas();
   applyMedCatalogOverlay(storage.getMedCatalog());
   medNotaSelectionByPatient = {};
-  if (repairLabHistoryInMemory()) saveState();
+  if (repairLabHistoryInMemory()) saveState({ immediate: true });
 }
 
-export function saveState() {
+function notifySaveResult(result) {
+  if (_onSaveResult && result) _onSaveResult(result);
+}
+
+function runSaveNow() {
   if (_beforeSave) _beforeSave();
-  storage.saveAll(
+  var promise = storage.saveAll(
     patients,
     notes,
     indicaciones,
@@ -80,5 +80,44 @@ export function saveState() {
     listadoProblemas,
     recetaHuByPatient
   );
-  if (_afterSave) _afterSave();
+  _saveInFlight = promise;
+  return promise
+    .then(function (result) {
+      notifySaveResult(result);
+      if (_afterSave) _afterSave();
+      return result;
+    })
+    .finally(function () {
+      if (_saveInFlight === promise) _saveInFlight = null;
+    });
+}
+
+/**
+ * @param {{ immediate?: boolean }} [opts] — immediate: true salta el debounce (cierre de app, import, etc.)
+ */
+export function saveState(opts) {
+  var immediate = !!(opts && opts.immediate);
+  if (_saveTimer) {
+    clearTimeout(_saveTimer);
+    _saveTimer = null;
+  }
+  if (immediate) {
+    return runSaveNow();
+  }
+  return new Promise(function (resolve) {
+    _saveTimer = setTimeout(function () {
+      _saveTimer = null;
+      runSaveNow().then(resolve);
+    }, SAVE_DEBOUNCE_MS);
+  });
+}
+
+/** Persiste de inmediato cualquier guardado pendiente (p. ej. antes de cerrar la app). */
+export function flushSaveState() {
+  if (_saveTimer) {
+    clearTimeout(_saveTimer);
+    _saveTimer = null;
+  }
+  if (_saveInFlight) return _saveInFlight;
+  return runSaveNow();
 }

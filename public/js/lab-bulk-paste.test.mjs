@@ -25,6 +25,7 @@ const {
   splitSomeReportsInBlock,
   buildBulkLabPreview,
   mergeBulkParseResults,
+  shouldShowBulkLabPreview,
 } = await import('./lab-bulk-paste.mjs');
 const { procesarLabs } = await import('./labs.js');
 const { DEMO_SOME_LAB_REPORT, OLDER_DEMO_SOME_LAB_REPORT } = await import('./tour-demo-some-lab.mjs');
@@ -104,5 +105,21 @@ describe('lab-bulk-paste', () => {
     assert.equal(preview[0].okReportCount, 2);
     assert.equal(preview[0].setsAfterMerge, 2);
     assert.ok(preview[0].days.length >= 2);
+  });
+
+  it('shouldShowBulkLabPreview abre modal con varios reportes o avisos', () => {
+    assert.equal(shouldShowBulkLabPreview([{ status: 'ok' }], 1), false);
+    assert.equal(shouldShowBulkLabPreview([{ status: 'ok' }], 2), true);
+    assert.equal(
+      shouldShowBulkLabPreview(
+        [
+          { status: 'ok' },
+          { status: 'ok' },
+        ],
+        2
+      ),
+      true
+    );
+    assert.equal(shouldShowBulkLabPreview([{ status: 'no-patient' }], 1), true);
   });
 });

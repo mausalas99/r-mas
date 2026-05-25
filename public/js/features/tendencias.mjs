@@ -1535,6 +1535,7 @@ function renderTendenciasBody(container) {
   }
   container.innerHTML = htmlParts.join('');
 
+  var sparkJobs = [];
   for (var cj = 0; cj < seriesAvail.length; cj++) {
     var spec2 = seriesAvail[cj];
     var sk2 = spec2.sectionKey;
@@ -1548,58 +1549,102 @@ function renderTendenciasBody(container) {
       fk2
     );
     var setsAsc2 = toTrendAscendingSets(setsDesc2);
-    var labels2 = buildTendChartLabels(setsAsc2);
-    var values2 = setsAsc2.map(function (s) {
+    var sampled = downsampleTrendChartSeries(buildTendChartLabels(setsAsc2), setsAsc2.map(function (s) {
       return getSetTrendValueForSeries(s, sk2, fk2);
-    });
-    var canvas2 = document.getElementById(trendSparkDomId(sk2, fk2));
-    if (!canvas2) continue;
-    if (typeof Chart === 'undefined') continue;
-    var ck = trendSparkChartKey(sk2, fk2);
-    var latestSetSpark = setsDesc2.length ? setsDesc2[0] : null;
-    var latestSpark = latestSetSpark
-      ? getSetTrendValueForSeries(latestSetSpark, sk2, fk2)
-      : null;
-    var refSpark = tendRefForSeries(history, sk2, fk2, latestSetSpark);
-    var isAbSpark =
-      refSpark &&
-      latestSpark != null &&
-      (latestSpark < refSpark[0] || latestSpark > refSpark[1]);
-    var lineColor = isAbSpark ? '#f87171' : 'rgba(52,211,153,0.95)';
-    var lineW = 2.25;
-    var pointR = 2;
-    sparkCharts[ck] = new Chart(canvas2, {
-      type: 'line',
-      data: {
-        labels: labels2,
-        datasets: [
-          {
-            data: values2,
-            borderColor: lineColor,
-            borderWidth: lineW,
-            pointRadius: pointR,
-            pointBackgroundColor: lineColor,
-            tension: 0.3,
-            fill: false,
-            clip: false
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: chartAnim,
-        layout: { padding: { left: 6, right: 6, top: 8, bottom: 6 } },
-        plugins: { legend: { display: false }, tooltip: { enabled: false } },
-        scales: {
-          x: { display: false, grid: { display: false }, offset: true },
-          y: { display: false, grid: { display: false }, grace: '12%' }
-        }
-      }
+    }));
+    sparkJobs.push({
+      sk2: sk2,
+      fk2: fk2,
+      setsDesc2: setsDesc2,
+      labels2: sampled.labels,
+      values2: sampled.values,
     });
   }
-  mountTendCardSortables();
-  syncTendHiddenModalIfOpen();
+
+  var jobIndex = 0;
+  var SPARK_BATCH = 6;
+  function runSparkBatch() {
+    var end = Math.min(jobIndex + SPARK_BATCH, sparkJobs.length);
+    for (; jobIndex < end; jobIndex += 1) {
+      mountOneTrendSparkChart(sparkJobs[jobIndex], history, chartAnim);
+    }
+    if (jobIndex < sparkJobs.length) {
+      requestAnimationFrame(runSparkBatch);
+      return;
+    }
+    mountTendCardSortables();
+    syncTendHiddenModalIfOpen();
+  }
+  if (sparkJobs.length) runSparkBatch();
+  else {
+    mountTendCardSortables();
+    syncTendHiddenModalIfOpen();
+  }
+}
+
+var TREND_SPARK_MAX_POINTS = 48;
+
+function downsampleTrendChartSeries(labels, values) {
+  if (!labels || !labels.length || labels.length <= TREND_SPARK_MAX_POINTS) {
+    return { labels: labels || [], values: values || [] };
+  }
+  var outL = [];
+  var outV = [];
+  var n = labels.length;
+  var slots = TREND_SPARK_MAX_POINTS;
+  for (var i = 0; i < slots; i += 1) {
+    var idx = Math.round((i * (n - 1)) / (slots - 1));
+    outL.push(labels[idx]);
+    outV.push(values[idx]);
+  }
+  return { labels: outL, values: outV };
+}
+
+function mountOneTrendSparkChart(job, history, chartAnim) {
+  var sk2 = job.sk2;
+  var fk2 = job.fk2;
+  var canvas2 = document.getElementById(trendSparkDomId(sk2, fk2));
+  if (!canvas2 || typeof Chart === 'undefined') return;
+  var ck = trendSparkChartKey(sk2, fk2);
+  var latestSetSpark = job.setsDesc2.length ? job.setsDesc2[0] : null;
+  var latestSpark = latestSetSpark
+    ? getSetTrendValueForSeries(latestSetSpark, sk2, fk2)
+    : null;
+  var refSpark = tendRefForSeries(history, sk2, fk2, latestSetSpark);
+  var isAbSpark =
+    refSpark &&
+    latestSpark != null &&
+    (latestSpark < refSpark[0] || latestSpark > refSpark[1]);
+  var lineColor = isAbSpark ? '#f87171' : 'rgba(52,211,153,0.95)';
+  sparkCharts[ck] = new Chart(canvas2, {
+    type: 'line',
+    data: {
+      labels: job.labels2,
+      datasets: [
+        {
+          data: job.values2,
+          borderColor: lineColor,
+          borderWidth: 2.25,
+          pointRadius: 2,
+          pointBackgroundColor: lineColor,
+          tension: 0.3,
+          fill: false,
+          clip: false,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: chartAnim,
+      layout: { padding: { left: 6, right: 6, top: 8, bottom: 6 } },
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      scales: {
+        x: { display: false, grid: { display: false }, offset: true },
+        y: { display: false, grid: { display: false }, grace: '12%' },
+      },
+    },
+  });
 }
 
 function syncTendHiddenModalIfOpen() {

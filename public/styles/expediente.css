@@ -80,6 +80,8 @@ html:not(.dark) .lab-history-toggle:hover { background: rgba(0,0,0,0.06); }
 }
 .lab-history-card-title { flex: 1; min-width: 0; font-size: inherit; font-weight: inherit; }
 .lab-history-list { display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto; }
+.lab-history-more-wrap { padding: 4px 0 2px; text-align: center; }
+.btn-lab-history-expand { width: 100%; justify-content: center; }
 .lab-history-hint { margin: 0; font-size: 13px; line-height: 1.45; color: var(--text-muted); }
 .lab-history-row {
   display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;

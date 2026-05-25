@@ -100,6 +100,19 @@
   </div>
 </div>
 
+<div id="lab-bulk-preview-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal lab-bulk-preview-modal" role="dialog" aria-modal="true" aria-labelledby="lab-bulk-preview-title" onclick="event.stopPropagation()">
+    <h3 id="lab-bulk-preview-title">Vista previa — laboratorios</h3>
+    <p class="lab-bulk-preview-hint">Revisa pacientes, días detectados y errores antes de guardar en historial.</p>
+    <p id="lab-bulk-preview-summary" class="lab-bulk-preview-summary"></p>
+    <div id="lab-bulk-preview-body" class="lab-bulk-preview-scroll"></div>
+    <div class="modal-actions lab-bulk-preview-actions">
+      <button type="button" class="btn-med-secondary btn-med-secondary--muted" onclick="closeLabBulkPreviewModal()">Cancelar</button>
+      <button type="button" class="btn-generate" id="lab-bulk-preview-confirm" onclick="confirmLabBulkPreview()">Procesar todo</button>
+    </div>
+  </div>
+</div>
+
 <div id="lab-bulk-tour-hint-backdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal lab-bulk-tour-hint-modal" role="dialog" aria-modal="true" aria-labelledby="lab-bulk-tour-hint-title" onclick="event.stopPropagation()">
     <h3 id="lab-bulk-tour-hint-title">Varios días y varios pacientes</h3>

@@ -749,7 +749,18 @@ function renderPatientCardHtml(p) {
   );
 }
 
+var _patientListRenderQueued = false;
+
 export function renderPatientList() {
+  if (_patientListRenderQueued) return;
+  _patientListRenderQueued = true;
+  requestAnimationFrame(function () {
+    _patientListRenderQueued = false;
+    renderPatientListNow();
+  });
+}
+
+function renderPatientListNow() {
   ensurePatientUiState();
   ensurePatientListClickDelegation();
   var list = document.getElementById('patient-list');
@@ -965,15 +976,17 @@ function ensurePatientListClickDelegation() {
 
 export function deletePatient(e, id) {
   e.stopPropagation();
-  if (!confirm('¿Eliminar este paciente y sus notas?')) return;
   var target = patients.find(function (p) {
     return p.id === id;
   });
+  if (!target || !target.archived) {
+    if (!confirm('¿Eliminar este paciente y sus notas?')) return;
+  }
   var label = target ? 'Eliminar ' + (target.nombre || 'paciente') : 'Eliminar paciente';
   if (typeof rt.pushUndoSnapshot === 'function') rt.pushUndoSnapshot(label);
   if (!removePatientLocally(id)) return;
   emitLiveSyncPatientDelete(target || { id: id, registro: '' });
-  saveState();
+  saveState({ immediate: true });
   rt.addAuditEntry('patient-delete', 'ok', 1, target ? target.registro || target.nombre || '' : '');
   renderPatientList();
   if (rt.getActiveId()) selectPatient(rt.getActiveId());

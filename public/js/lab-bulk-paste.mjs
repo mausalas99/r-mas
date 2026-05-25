@@ -360,6 +360,16 @@ export function mergeBulkParseResults(parsedItems) {
   return out;
 }
 
+/** Muestra vista previa antes de guardar cuando hay pegado masivo o avisos. */
+export function shouldShowBulkLabPreview(blocks, totalOkReports) {
+  if (!Array.isArray(blocks) || !blocks.length) return false;
+  if (blocks.length > 1) return true;
+  if (totalOkReports > 1) return true;
+  return blocks.some(function (b) {
+    return b && b.status !== 'ok';
+  });
+}
+
 export function bulkPreviewStatusLabel(status) {
   switch (status) {
     case 'ok':

@@ -1,6 +1,37 @@
 // storage.js — Data persistence layer
 // Wraps localStorage with consistent interface
 
+import {
+  estimateRpcPersistBytes,
+  readStorageQuotaEstimate,
+  assessStoragePressure,
+  isQuotaExceededError,
+} from './storage-quota.mjs';
+
+let _cachedQuotaEstimate = null;
+let _quotaEstimateTs = 0;
+const QUOTA_CACHE_MS = 15000;
+
+async function getCachedQuotaEstimate() {
+  var now = Date.now();
+  if (_cachedQuotaEstimate && now - _quotaEstimateTs < QUOTA_CACHE_MS) {
+    return _cachedQuotaEstimate;
+  }
+  _cachedQuotaEstimate = await readStorageQuotaEstimate();
+  _quotaEstimateTs = now;
+  return _cachedQuotaEstimate;
+}
+
+function safeLocalStorageSet(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (err) {
+    if (isQuotaExceededError(err)) return false;
+    throw err;
+  }
+}
+
 function safeParse(raw, fallback) {
   if (raw == null || raw === '') return fallback;
   try {
@@ -21,7 +52,7 @@ function safeParseObject(raw) {
   return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
 }
 
-function isMeaningfulLabHistorySet(set) {
+export function isMeaningfulLabHistorySet(set) {
   if (!set || typeof set !== 'object') return false;
   if (set.id === 'migrated-anterior' || set.id === 'migrated-recent') return true;
   if (set.sourceText && String(set.sourceText).trim()) return true;
@@ -516,15 +547,90 @@ export const storage = {
    * @param {Object} medRecetaByPatient - Object mapping patient IDs to med receta payloads
    * @param {Object} [listadoProblemas] - Optional v3.0 listado de problemas map
    */
-  saveAll(patients, notes, indicaciones, labHistory, medRecetaByPatient, listadoProblemas, recetaHuByPatient) {
-    this.savePatients(patients);
-    this.saveNotes(notes);
-    this.saveIndicaciones(indicaciones);
-    this.saveLabHistory(labHistory);
-    this.saveMedRecetaByPatient(medRecetaByPatient || {});
-    if (listadoProblemas !== undefined) this.saveListadoProblemas(listadoProblemas || {});
-    if (recetaHuByPatient !== undefined) this.saveRecetaHuByPatient(recetaHuByPatient || {});
-  }
+  /**
+   * @returns {Promise<{ ok: boolean, code?: string, level?: string }>}
+   */
+  async saveAll(
+    patients,
+    notes,
+    indicaciones,
+    labHistory,
+    medRecetaByPatient,
+    listadoProblemas,
+    recetaHuByPatient
+  ) {
+    var payload = {
+      patients: patients,
+      notes: notes,
+      indicaciones: indicaciones,
+      labHistory: labHistory,
+      medRecetaByPatient: medRecetaByPatient || {},
+      listadoProblemas: listadoProblemas !== undefined ? listadoProblemas || {} : undefined,
+      recetaHuByPatient: recetaHuByPatient !== undefined ? recetaHuByPatient || {} : undefined,
+    };
+    var pending = estimateRpcPersistBytes(payload);
+    var quotaInfo = await getCachedQuotaEstimate();
+    var level = assessStoragePressure(pending, quotaInfo);
+    if (level === 'block') {
+      return { ok: false, code: 'QUOTA_EXCEEDED', level: 'block' };
+    }
+
+    var notesPersist = {};
+    Object.keys(notes).forEach(function (k) {
+      if (notes[k] && !k.startsWith('demo-')) notesPersist[k] = notes[k];
+    });
+    var indPersist = {};
+    Object.keys(indicaciones).forEach(function (k) {
+      if (indicaciones[k] && !k.startsWith('demo-')) indPersist[k] = indicaciones[k];
+    });
+    var lhPersist = {};
+    Object.keys(labHistory || {}).forEach(function (k) {
+      if (!k.startsWith('demo-')) {
+        lhPersist[k] = normalizeLabHistoryPatientSets(labHistory[k]);
+      }
+    });
+    var medPersist = {};
+    Object.keys(medRecetaByPatient || {}).forEach(function (k) {
+      if (!k.startsWith('demo-')) medPersist[k] = medRecetaByPatient[k];
+    });
+    var listPersist = {};
+    if (listadoProblemas !== undefined) {
+      Object.keys(listadoProblemas || {}).forEach(function (k) {
+        if (listadoProblemas[k] && !k.startsWith('demo-')) listPersist[k] = listadoProblemas[k];
+      });
+    }
+    var recetaPersist = {};
+    if (recetaHuByPatient !== undefined) {
+      Object.keys(recetaHuByPatient || {}).forEach(function (k) {
+        if (!k.startsWith('demo-')) recetaPersist[k] = recetaHuByPatient[k];
+      });
+    }
+
+    var filteredPatients = patients.filter(function (p) {
+      return !p.isDemo;
+    });
+
+    var writes = [
+      ['rpc-patients', JSON.stringify(filteredPatients)],
+      ['rpc-notes', JSON.stringify(notesPersist)],
+      ['rpc-indicaciones', JSON.stringify(indPersist)],
+      ['rpc-labHistory', JSON.stringify(lhPersist)],
+      ['rpc-medRecetaByPatient', JSON.stringify(medPersist)],
+    ];
+    if (listadoProblemas !== undefined) {
+      writes.push(['rpc-listado-problemas', JSON.stringify(listPersist)]);
+    }
+    if (recetaHuByPatient !== undefined) {
+      writes.push(['rpc-recetaHuByPatient', JSON.stringify(recetaPersist)]);
+    }
+
+    for (var i = 0; i < writes.length; i++) {
+      if (!safeLocalStorageSet(writes[i][0], writes[i][1])) {
+        return { ok: false, code: 'QUOTA_EXCEEDED', level: level };
+      }
+    }
+    return { ok: true, level: level === 'warn' ? 'warn' : 'ok' };
+  },
 };
 
 // Request batching for /generate and /generate-indicaciones
