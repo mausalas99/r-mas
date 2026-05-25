@@ -47,9 +47,15 @@
   --section-header-bg: var(--color-section-header-bg);
   --section-accent: var(--color-section-accent);
 
-  --radius-lg: 14px;
-  --radius-md: 10px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --radius-xl: 28px;
+  --radius-shell: 22px;
   --radius-pill: 999px;
+  --shell-inset: 6px;
+  --shell-frame-inset: 4px;
+  --shell-gap: color-mix(in oklab, var(--color-ink) 5.5%, var(--color-paper));
   --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.05);
   --shadow: 0 6px 22px rgba(15, 23, 42, 0.06), 0 1px 4px rgba(15, 23, 42, 0.04);
   --shadow-md: 0 12px 36px rgba(15, 23, 42, 0.08), 0 3px 10px rgba(15, 23, 42, 0.04);
@@ -68,6 +74,8 @@
   --density-space: 1;
   --density-font: 1;
   --sidebar-width: 240px;
+  --sidebar-rail-width: 5px;
+  --sidebar-rail-color: color-mix(in oklab, #5c4a52 18%, var(--color-paper));
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --dur-fast: 150ms;
@@ -128,6 +136,8 @@ html.dark {
   --todo-prio-alta: #fca5a5;
   --todo-prio-media: #facc15;
   --todo-prio-baja: #86efac;
+  --shell-gap: color-mix(in oklab, #3d2430 42%, var(--color-paper));
+  --sidebar-rail-color: color-mix(in oklab, #6b4456 58%, var(--color-surface));
   color-scheme: dark;
 }
 
@@ -163,6 +173,8 @@ html.high-contrast {
   --diagram-line: #000000;
   --diagram-label: #000000;
   --diagram-value: #000000;
+  --shell-gap: var(--color-paper);
+  --sidebar-rail-color: var(--border);
 }
 
 html.high-contrast.dark {
@@ -196,4 +208,6 @@ html.high-contrast.dark {
   --diagram-line: #ffffff;
   --diagram-label: #ffffff;
   --diagram-value: #ffffff;
+  --shell-gap: var(--color-paper);
+  --sidebar-rail-color: var(--border);
 }

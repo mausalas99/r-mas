@@ -3,7 +3,8 @@ const http    = require('node:http');
 const path    = require('path');
 const fs      = require('fs');
 const os      = require('os');
-const { spawn } = require('child_process');
+const { spawn, execSync } = require('child_process');
+const { fillRecetaHuPdf } = require('./generate-receta-hu.js');
 const { createHostStore } = require('./lan-squad/host-store.js');
 const { createLanRouter } = require('./lan-squad/host-router.js');
 const { attachWsHub } = require('./lan-squad/ws-hub.js');
@@ -206,11 +207,51 @@ appExpress.post('/generate-listado', async (req, res) => {
   }
 });
 
+appExpress.post('/generate-receta-hu', async (req, res) => {
+  const { patient, receta, doctorName, cedulaProfesional, outputDir } = req.body;
+  if (!patient) return res.status(400).json({ error: 'Missing patient' });
+  const dest = (outputDir || '').trim() || DOWNLOADS;
+  if (!fs.existsSync(dest)) return res.status(400).json({ error: 'La carpeta seleccionada ya no existe. Cambia la ruta en Mi Perfil.' });
+  try { fs.accessSync(dest, fs.constants.W_OK); } catch (_) {
+    return res.status(400).json({ error: 'No se puede escribir en la carpeta seleccionada.' });
+  }
+  try {
+    const payload = Object.assign({}, receta || {}, {
+      patient,
+      doctorName: doctorName || '',
+      cedulaProfesional: cedulaProfesional || '',
+    });
+    const buf = await fillRecetaHuPdf(payload, SCRIPTS_DIR);
+    const fileName = `Receta_HU_${safeName(patient.nombre)}_${safeName(receta && receta.fecha ? receta.fecha : '')}.pdf`;
+    fs.writeFileSync(path.join(dest, fileName), buf);
+    res.json({ ok: true, fileName });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // LAN squad (host): escucha en el puerto de abajo en todas las interfaces; los clientes
 // usan http://<IP-de-esta-PC>:3738. Abre el puerto en el firewall del SO si no conecta.
 // Código de equipo: variable R_PLUS_LAN_TEAM_CODE o primer línea de userData/lan-team-code.txt
 // (tras cambiar el archivo, reinicia R+). Red local de confianza; sin TLS en LAN.
 const PORT = 3738;
+
+function portInUseProcessHint(port) {
+  try {
+    const out = execSync(`lsof -nP -iTCP:${port} -sTCP:LISTEN -t`, { encoding: 'utf8' }).trim();
+    if (!out) return '';
+    const pid = out.split('\n')[0];
+    let detail = '';
+    try {
+      detail = execSync(`ps -p ${pid} -o comm=`, { encoding: 'utf8' }).trim();
+    } catch (_e) {
+      /* ignore */
+    }
+    return detail ? ` (PID ${pid}: ${detail})` : ` (PID ${pid})`;
+  } catch (_e) {
+    return '';
+  }
+}
 const userData = process.env.R_PLUS_USER_DATA || require('node:os').tmpdir();
 const lanStatePath = path.join(userData, 'lan-squad-host-state.json');
 const { readEffectiveLanTeamCode, ensureLanTeamCodeFile, migratePlugAndPlayTeamCode } = require('./lan-squad/effective-team-code.js');
@@ -232,7 +273,9 @@ module.exports = new Promise((resolve, reject) => {
   server.once('error', (err) => {
     if (err.code === 'EADDRINUSE') {
       reject(new Error(
-        `El puerto ${PORT} ya está en uso. Cierra otra instancia de R+ o el proceso que use ese puerto y vuelve a abrir la aplicación.`
+        `El puerto ${PORT} ya está en uso${portInUseProcessHint(PORT)}. ` +
+          'Cierra la otra instancia de R+ (o el proceso que escucha en ese puerto) y vuelve a abrir la aplicación. ' +
+          'En macOS/Linux: lsof -nP -iTCP:' + PORT + ' -sTCP:LISTEN'
       ));
     } else {
       reject(err);
