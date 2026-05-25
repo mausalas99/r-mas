@@ -1025,7 +1025,7 @@ export function reprocessLabResultLines_(rows) {
   return dedupeSingletonSections_(out);
 }
 
-function computeAnionGapValue_(naStr, clStr, hco3Str, albStr) {
+export function computeAnionGapValue_(naStr, clStr, hco3Str, albStr) {
   if (naStr === '---' || clStr === '---' || hco3Str === '---') return null;
   var na = parseFloat(String(naStr).replace(',', '.'));
   var cl = parseFloat(String(clStr).replace(',', '.'));

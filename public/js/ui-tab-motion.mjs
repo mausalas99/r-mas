@@ -43,9 +43,26 @@ export function syncAppTabIndicator(tab) {
   syncTabBarIndicator(bar, btn);
 }
 
-export function syncInnerTabIndicator(tab) {
+export function innerTabButtonId(tab, opts) {
+  opts = opts || {};
+  if (opts.consolidated) {
+    if (tab === 'recetaHu') return 'itab-salida';
+    if (tab === 'datos' || tab === 'todo') return 'itab-paciente';
+    if (tab === 'notas' || tab === 'indica' || tab === 'manejo') return 'itab-clinico';
+    if (tab === 'tend' || tab === 'cult') return 'itab-resultados';
+    if (tab === 'paciente' || tab === 'clinico' || tab === 'resultados' || tab === 'salida') {
+      return 'itab-' + tab;
+    }
+    return 'itab-paciente';
+  }
+  if (tab === 'recetaHu') return 'itab-receta-hu';
+  return 'itab-' + tab;
+}
+
+export function syncInnerTabIndicator(tab, opts) {
+  opts = opts || {};
   var bar = document.querySelector('.inner-tab-bar');
-  var btn = document.getElementById('itab-' + tab);
+  var btn = document.getElementById(innerTabButtonId(tab, opts));
   syncTabBarIndicator(bar, btn);
 }
 
@@ -79,6 +96,16 @@ export function hideAppTabPanel(panelEl) {
 
 function scheduleIndicatorSync() {
   syncAppTabIndicator(getActiveAppTabFromDom());
+  if (isConsolidatedExpedienteTabsVisible()) {
+    var bar = document.querySelector('.inner-tab-bar');
+    var conTabs = document.querySelectorAll('.exp-consolidated-tab');
+    for (var i = 0; i < conTabs.length; i++) {
+      if (conTabs[i].classList.contains('active')) {
+        syncTabBarIndicator(bar, conTabs[i]);
+        return;
+      }
+    }
+  }
   syncInnerTabIndicator(getActiveInnerTabFromDom());
 }
 
@@ -91,10 +118,21 @@ function getActiveAppTabFromDom() {
   return 'lab';
 }
 
+function isConsolidatedExpedienteTabsVisible() {
+  var first = document.querySelector('.exp-consolidated-tab');
+  return !!(first && first.style.display !== 'none');
+}
+
 function getActiveInnerTabFromDom() {
-  var ids = ['datos', 'notas', 'indica', 'tend', 'cult', 'listado', 'todo'];
+  if (isConsolidatedExpedienteTabsVisible()) {
+    var conTabs = document.querySelectorAll('.exp-consolidated-tab');
+    for (var c = 0; c < conTabs.length; c++) {
+      if (conTabs[c].classList.contains('active')) return conTabs[c].id.replace(/^itab-/, '');
+    }
+  }
+  var ids = ['datos', 'notas', 'indica', 'tend', 'cult', 'listado', 'todo', 'manejo', 'recetaHu'];
   for (var i = 0; i < ids.length; i++) {
-    var btn = document.getElementById('itab-' + ids[i]);
+    var btn = document.getElementById(innerTabButtonId(ids[i]));
     if (btn && btn.classList.contains('active')) return ids[i];
   }
   return 'todo';

@@ -1,0 +1,454 @@
+/* Pestaña Manejo — electrolitos + SOME (layout en tarjetas) */
+
+#manejo-container {
+  padding: 12px 16px 24px;
+  max-width: 100%;
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.manejo-root {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.manejo-empty,
+.manejo-hint {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.manejo-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(251, 191, 36, 0.55);
+  background: rgba(251, 191, 36, 0.1);
+  font-size: 13px;
+}
+
+.manejo-banner-head {
+  font-weight: 600;
+  color: var(--text);
+  flex: 1 1 100%;
+}
+
+.manejo-banner-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.manejo-banner-fields .field-group {
+  min-width: 120px;
+  margin: 0;
+}
+
+.manejo-banner-fields label {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.manejo-banner-fields select,
+.manejo-banner-fields input[type="text"] {
+  margin-top: 4px;
+  width: 100%;
+  font-size: 13px;
+}
+
+.manejo-cross-alerts {
+  font-size: 13px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(185, 28, 28, 0.35);
+  background: rgba(254, 202, 202, 0.18);
+}
+
+.manejo-cross-alerts strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.manejo-cross-alerts ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text);
+}
+
+.manejo-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0;
+  padding: 0 2px;
+}
+
+/* —— Tarjetas por electrolito —— */
+.manejo-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 960px) {
+  .manejo-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.manejo-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface, rgba(255, 255, 255, 0.02));
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  border-left: 4px solid rgba(100, 116, 139, 0.45);
+}
+
+.manejo-card--moderada {
+  border-left-color: rgba(251, 191, 36, 0.85);
+}
+
+.manejo-card--grave,
+.manejo-card--emergencia {
+  border-left-color: rgba(239, 68, 68, 0.85);
+}
+
+.manejo-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(
+    180deg,
+    var(--rpc-subtle-alt, rgba(0, 0, 0, 0.04)) 0%,
+    transparent 100%
+  );
+}
+
+.manejo-card-ion-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.manejo-card-symbol {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.manejo-card-ion-name {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.manejo-card-dir {
+  font-size: 16px;
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.manejo-card-head-right {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.manejo-card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.manejo-severity {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.manejo-via-chip {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(37, 99, 235, 0.35);
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--primary, #2563eb);
+}
+
+.manejo-card--leve .manejo-severity {
+  background: rgba(100, 116, 139, 0.15);
+  color: var(--text-muted);
+  border-color: rgba(100, 116, 139, 0.25);
+}
+
+.manejo-card--moderada .manejo-severity {
+  background: rgba(251, 191, 36, 0.2);
+  color: #b45309;
+  border-color: rgba(251, 191, 36, 0.45);
+}
+
+.manejo-card--grave .manejo-severity,
+.manejo-card--emergencia .manejo-severity {
+  background: rgba(239, 68, 68, 0.15);
+  color: #b91c1c;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.manejo-card-value {
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.manejo-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px;
+}
+
+@media (max-width: 520px) {
+  .manejo-card-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.manejo-kv {
+  padding: 10px 11px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--rpc-subtle-alt, rgba(0, 0, 0, 0.02));
+  min-width: 0;
+  min-height: 72px;
+}
+
+.manejo-kv--wide {
+  grid-column: 1 / -1;
+}
+
+.manejo-kv-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.manejo-kv-val {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.manejo-kv-val--mono {
+  font-family: var(--mono, "IBM Plex Mono", ui-monospace, monospace);
+  font-size: 12px;
+}
+
+.manejo-card-notes,
+.manejo-card-alerts {
+  padding: 8px 14px;
+  font-size: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.manejo-card-alerts {
+  background: rgba(251, 191, 36, 0.08);
+  color: #92400e;
+}
+
+.manejo-card-alerts ul,
+.manejo-card-notes ul {
+  margin: 0;
+  padding-left: 16px;
+}
+
+.manejo-card-notes {
+  color: var(--text-muted);
+}
+
+.manejo-card-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.manejo-card-foot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.manejo-toggle-some,
+.manejo-btn-pendiente {
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+
+.manejo-btn-pendiente {
+  font-weight: 600;
+}
+
+/* SOME dentro de tarjeta */
+.manejo-some-drawer {
+  border-top: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.02);
+  padding: 12px 14px 14px;
+}
+
+.manejo-some-drawer[hidden] {
+  display: none !important;
+}
+
+.manejo-some-order {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--surface, transparent);
+}
+
+.manejo-some-order + .manejo-some-order {
+  margin-top: 10px;
+}
+
+.manejo-some-order-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.manejo-some-order-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.manejo-some-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+@media (max-width: 560px) {
+  .manejo-some-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.manejo-some-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.manejo-some-field--wide {
+  grid-column: 1 / -1;
+}
+
+.manejo-some-field-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.manejo-some-field-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.manejo-some-field-val {
+  flex: 1;
+  font-family: var(--mono, "IBM Plex Mono", ui-monospace, monospace);
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.03);
+  word-break: break-word;
+}
+
+.manejo-copy-btn {
+  flex-shrink: 0;
+  font-size: 10px;
+  padding: 4px 7px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.manejo-copy-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.manejo-copy-btn.primary {
+  font-weight: 600;
+  border-color: rgba(37, 99, 235, 0.45);
+}
+
+.manejo-some-order-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+
+.manejo-dilution-warn {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(251, 191, 36, 0.35);
+  color: var(--text);
+}

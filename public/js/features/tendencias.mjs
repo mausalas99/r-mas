@@ -712,7 +712,8 @@ export function closeTendHiddenModal() {
   bd.setAttribute('aria-hidden', 'true');
 }
 
-function buildTendInlineControlsHtml(hiddenCount) {
+function buildTendInlineControlsHtml(hiddenCount, opts) {
+  opts = opts || {};
   var on = tendAbnormalOnlyRead();
   var hint = on
     ? 'Solo analitos con último valor fuera del rango de referencia del laboratorio (si hay referencia).'
@@ -724,6 +725,9 @@ function buildTendInlineControlsHtml(hiddenCount) {
         hiddenCount +
         ')</button>'
       : '';
+  var gasoBtn = opts.showGasoExtended
+    ? '<button type="button" class="tend-toolbar-btn tend-gaso-ext-trigger" data-tend-action="gaso-extended">Gasometría extendida</button>'
+    : '';
   return (
     '<div class="tend-inline-controls">' +
     '<button type="button" class="tend-toolbar-toggle' +
@@ -736,9 +740,16 @@ function buildTendInlineControlsHtml(hiddenCount) {
     esc(toggleLabel) +
     '</button>' +
     ocultosBtn +
+    gasoBtn +
     '<button type="button" class="tend-toolbar-btn" data-tour="casiopea-trends-send" onclick="openSesionIngresoTrendsSendModal()">Enviar a Nexo</button>' +
     '</div>'
   );
+}
+
+function historyHasGasoForExtended(historyDesc) {
+  var latest = historyDesc && historyDesc[0];
+  if (!latest || !latest.parsedBySection || !latest.parsedBySection.GASES) return false;
+  return getSetTrendValueForSeries(latest, 'GASES', 'pH') != null;
 }
 
 function toggleTendAbnormalOnlyFilter() {
@@ -984,6 +995,11 @@ function openTendGroupModal(sectionKey) {
   tendGroupModal.open(sectionKey);
 }
 
+function openTendGasoExtendedModal() {
+  initTendGroupModal();
+  tendGroupModal.openGasoExtended();
+}
+
 function setTendGroupTab(name) {
   initTendGroupModal();
   tendGroupModal.setTab(name);
@@ -1081,6 +1097,12 @@ function onTendenciasContainerClick(ev) {
   if (ocultosBtn) {
     ev.preventDefault();
     openTendHiddenModal();
+    return;
+  }
+  var gasoBtn = t.closest('[data-tend-action="gaso-extended"]');
+  if (gasoBtn) {
+    ev.preventDefault();
+    openTendGasoExtendedModal();
     return;
   }
   var sectionToggle = t.closest('.tend-section-toggle');
@@ -1363,7 +1385,8 @@ function renderTendenciasBody(container) {
   }
 
   var hiddenChipN = tendHiddenChipDescriptors().length;
-  var toolbarHtml = buildTendInlineControlsHtml(hiddenChipN);
+  var toolbarOpts = { showGasoExtended: historyHasGasoForExtended(history) };
+  var toolbarHtml = buildTendInlineControlsHtml(hiddenChipN, toolbarOpts);
 
   if (!seriesAvail.length) {
     var anyData = mergedCatalog.some(function (sp) {
@@ -1420,7 +1443,7 @@ function renderTendenciasBody(container) {
     ? false
     : { duration: 600, easing: 'easeOutQuart' };
   var htmlParts = [];
-  htmlParts.push(buildTendInlineControlsHtml(hiddenChipN));
+  htmlParts.push(buildTendInlineControlsHtml(hiddenChipN, toolbarOpts));
   for (var si = 0; si < sectionsOrdered.length; si++) {
     var sectionKey = sectionsOrdered[si];
     var expanded = tendSectionIsExpanded(sectionKey);
@@ -1710,6 +1733,7 @@ export const tendenciasWindowHandlers = {
   closeSesionIngresoTrendsSendModal,
   closeTendDetail,
   openTendGroupModal,
+  openTendGasoExtendedModal,
   closeTendGroupModal,
   setTendGroupTab,
   copyTendGroupTablePng,

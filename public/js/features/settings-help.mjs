@@ -509,7 +509,9 @@ function renderTourStep() {
       bodyEl.innerHTML =
         getUiDensity() !== 'normal'
           ? '<p style="margin:0;line-height:1.5;">En <strong>Pase</strong> el centro es un <strong>resumen</strong> del paciente (pendientes, laboratorio, cultivos, medicamentos). Pulsa el título de cada bloque o usa <strong>Ctrl/⌘ + 1…4</strong> para abrir el detalle en vista <strong>Normal</strong>.</p>'
-          : '<p style="margin:0;line-height:1.5;">Arriba cambias de área: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong>, <strong>Agenda</strong>. En cada paso te resaltamos qué mirar.</p>';
+          : guidedTourBranch === 'interconsulta'
+            ? '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong>, <strong>Agenda</strong>. En <strong>Expediente</strong> verás las pestañas internas en el siguiente paso.</p>'
+            : '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong>, <strong>Agenda</strong>. En <strong>Expediente (Sala)</strong>: cuatro pestañas — <strong>Paciente</strong>, <strong>Clínico</strong> (Manejo), <strong>Resultados</strong> y <strong>Salida</strong> (Listado).</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'map_lab_teaser':
@@ -538,6 +540,27 @@ function renderTourStep() {
       bodyEl.innerHTML =
         '<p style="margin:0;line-height:1.5;">Abre <strong>Tablas SOME</strong> (botón resaltado). Dentro verás <strong>Enviar a Nexo</strong>: desde ahí mandas estudios al paso <strong>Paraclínicos</strong> en la app Nexo (instalada aparte en este equipo).</p>' +
         '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">En el tutorial el envío no abre Nexo; fuera del tour sí. Pulsa <strong>Siguiente</strong> cuando hayas visto el botón.</p>';
+      nextBtn.textContent = 'Siguiente';
+      break;
+    case 'sala_manejo':
+      setBadge('Manejo electrolítico');
+      bodyEl.innerHTML =
+        '<p style="margin:0;line-height:1.5;">Tras procesar laboratorios, <strong>Expediente → Clínico</strong> abre <strong>Manejo</strong>: interpreta alteraciones electrolíticas y gasométricas con dosis adultas, dilución, vía y bloque <strong>SOME</strong> copiable.</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Peso, talla y vía se toman del bloque colapsable <strong>Datos del paciente</strong> en la pestaña <strong>Paciente</strong>.</p>';
+      nextBtn.textContent = 'Siguiente';
+      break;
+    case 'ic_expediente_tabs':
+      setBadge('expediente · pestañas');
+      bodyEl.innerHTML =
+        '<p style="margin:0;line-height:1.5;">En <strong>Interconsulta</strong>, el expediente se agrupa en cuatro pestañas: <strong>Paciente</strong> (datos colapsables + pendientes), <strong>Clínico</strong> (Nota, Indicaciones, Manejo), <strong>Resultados</strong> (Tendencias, Cultivos) y <strong>Salida</strong> (Receta HU en PDF).</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Receta HU</strong> exporta el PDF oficial 000-061-R-06-12. <strong>Nota</strong> e <strong>Indicaciones</strong> van a Word (.docx).</p>';
+      nextBtn.textContent = 'Siguiente';
+      break;
+    case 'sala_expediente_tabs':
+      setBadge('expediente · pestañas');
+      bodyEl.innerHTML =
+        '<p style="margin:0;line-height:1.5;">En <strong>Sala</strong>, el expediente también usa cuatro pestañas: <strong>Paciente</strong> (datos colapsables + pendientes), <strong>Clínico</strong> (Manejo electrolítico), <strong>Resultados</strong> (Tendencias, Cultivos) y <strong>Salida</strong> (Listado de problemas).</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Los datos del paciente (peso, talla, vía) viven en el bloque colapsable de <strong>Paciente</strong>.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'ic_nota':
@@ -746,7 +769,7 @@ function startOnboarding(branch) {
     var inner = rt.getActiveInner();
     if (sala && (inner === 'notas' || inner === 'indica')) {
       rt.switchInnerTab('todo');
-    } else if (!sala && (inner === 'listado' || inner === 'datos')) {
+    } else if (!sala && inner === 'listado') {
       rt.switchInnerTab('todo');
     }
     rt.renderInnerTabs();
@@ -1207,6 +1230,23 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '6.0.0': [
+    {
+      title: 'Expediente en 4 pestañas',
+      body:
+        'Paciente, Clínico, Resultados y Salida — en Sala (Manejo + Listado) e Interconsulta (Nota, Indicaciones, Manejo + Receta HU). Datos del paciente en bloque colapsable.',
+    },
+    {
+      title: 'Modo Pase sin cambios en el resumen',
+      body:
+        'El tablero de ronda se ve igual que antes. Al abrir el detalle en pestañas (vista Normal) entras al expediente reorganizado.',
+    },
+    {
+      title: 'Manejo y Receta HU',
+      body:
+        'Manejo electrolítico/gasométrico con SOME copiable. Receta HU exporta PDF oficial; formulario unificado en Interconsulta → Salida.',
+    },
+  ],
   '5.2.1': [
     {
       title: 'Interfaz Arc',
@@ -1437,7 +1477,7 @@ var RELEASE_NOTES_HIGHLIGHTS = {
     {
       title: 'Modos Sala / Interconsulta',
       body:
-        'El expediente cambia según tu rol. En Mi Perfil eliges Sala o Interconsulta. Sala oculta Nota e Indicaciones, expone Estado Actual y Listado de Problemas, y usa Servicio (con default configurable) en lugar de Área. Los datos del paciente (nombre, registro, edad, sexo, área, servicio, cuarto, cama) se editan en la pestaña <strong>Datos</strong> del expediente.',
+        'El expediente cambia según tu rol. En Mi Perfil eliges Sala o Interconsulta. Sala oculta Nota e Indicaciones, expone Estado Actual y Listado de Problemas, y usa Servicio (con default configurable) en lugar de Área. Los datos del paciente se editan en la pestaña <strong>Datos</strong> del expediente.',
     },
     {
       title: 'Estado Actual',

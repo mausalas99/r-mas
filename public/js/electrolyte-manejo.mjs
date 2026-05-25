@@ -1,0 +1,699 @@
+/**
+ * Motor de manejo electrolítico (adultos) — valores derivados de laboratorio + datos paciente.
+ * Ver docs/superpowers/specs/2026-05-25-manejo-electrolitos-gasometria-design.md
+ */
+
+/** @typedef {{ medication: string, route: string, doseValue: number|string, doseUnit: string, dilution: string, infusionRateMlHr: number|null|string, requiresDilution?: boolean }} SomeOrderLike */
+
+/** @typedef {{ electrolyte: string, direction: 'hypo'|'hyper', value: number|null, unit: string, interpretation: string, severity: string, formula: string, formulaResult: string|null, suggestedDose: string, route: string, monitoring: string, alerts: string[], clinicalNotes: string[], someOrders: SomeOrderLike[], ruleId: string }} ElectrolyteRow */
+
+const MED_KCL =
+  'CLORURO DE POTASIO 20 MEQ SOL INY 5 ML (+)';
+const MED_NACL_HYPERT =
+  'CLORURO DE SODIO HIPERT. 17.7 % SOL INY 10 ML (+)';
+const MED_CA_GLUC =
+  'GLUCONATO DE CALCIO 10% SOL INY';
+const MED_MG_SO4 =
+  'SULFATO DE MAGNESIO 50% SOL INY';
+const MED_PHOS_K =
+  'FOSFATO DE POTASIO 20 MEQ SOL INY 10 ML (+)';
+const MED_INSULIN =
+  'INSULINA REGULAR';
+const MED_D50 =
+  'DEXTROSA 50% SOL INY';
+const MED_SALBUTAMOL =
+  'SALBUTAMOL';
+
+const NACL_EFFECTIVE_3_MEQ_PER_ML = 0.513;
+/** 17.7% ≈ 5.9× concentración efectiva ~3% (17.7/3). */
+const NACL_HYPERT_TO_EFFECTIVE3_RATIO = 17.7 / 3;
+
+/** mL de solución final ~3% eq. desde déficit mEq. */
+function mlEffective3FromDeficitMeq(defNaMeq) {
+  return defNaMeq > 0 ? defNaMeq / NACL_EFFECTIVE_3_MEQ_PER_ML : 0;
+}
+
+/** mL de hipertónico 17.7% para equivaler a volFinal mL ~3%. */
+export function mlHypertonic177FromEffective3(mlEffective3) {
+  if (mlEffective3 == null || !Number.isFinite(mlEffective3) || mlEffective3 <= 0) return 0;
+  return mlEffective3 / NACL_HYPERT_TO_EFFECTIVE3_RATIO;
+}
+
+function round1(n) {
+  return Math.round(n * 10) / 10;
+}
+
+/** @param {number} ml177 @param {number} volFinalMl */
+function hypertonic177DilutionText(ml177, volFinalMl) {
+  var diluent = Math.max(0, Math.round(volFinalMl - ml177));
+  return (
+    ' DILUIR ' +
+    round1(ml177) +
+    ' ML HIPERT. 17.7% EN ' +
+    diluent +
+    ' ML NACL AL 0.9% (~' +
+    Math.round(volFinalMl) +
+    ' ML FINAL ~3% EQ.)'
+  );
+}
+
+function numOrNull(v) {
+  if (v == null || v === '') return null;
+  var n = typeof v === 'number' ? v : parseFloat(String(v).replace(/\*/g, '').replace(',', '.'));
+  return Number.isFinite(n) ? n : null;
+}
+
+function pickSection(pb, section, key, parsedFlat) {
+  var sec = pb && pb[section];
+  if (sec && sec[key] != null) return numOrNull(sec[key]);
+  if (parsedFlat && parsedFlat[key] != null) return numOrNull(parsedFlat[key]);
+  return null;
+}
+
+function pickGlu(pb, parsedFlat) {
+  return (
+    pickSection(pb, 'QS', 'Glu', parsedFlat) ??
+    pickSection(pb, 'GASES', 'GLU', parsedFlat) ??
+    pickSection(pb, 'GASES', 'Glu', parsedFlat)
+  );
+}
+
+function pickAlb(pb, parsedFlat) {
+  return (
+    pickSection(pb, 'PFHs', 'Alb', parsedFlat) ??
+    pickSection(pb, 'QS', 'Alb', parsedFlat) ??
+    pickSection(pb, 'BH', 'Alb', parsedFlat)
+  );
+}
+
+function standardBagVolumeMl(minMl) {
+  var std = [100, 250, 500, 1000];
+  for (var i = 0; i < std.length; i += 1) {
+    if (std[i] >= minMl) return std[i];
+  }
+  return 1000;
+}
+
+export function toSomeUpper(s) {
+  if (s == null || s === '') return '';
+  return String(s).trim().toUpperCase();
+}
+
+/** @param {SomeOrderLike} order */
+export function formatSomeBlock(order) {
+  var o = order || {};
+  var rateRaw = o.infusionRateMlHr;
+  var rateStr =
+    rateRaw !== null &&
+    rateRaw !== undefined &&
+    rateRaw !== '' &&
+    !(typeof rateRaw === 'number' && !Number.isFinite(rateRaw))
+      ? String(rateRaw) + ' CC/HR'
+      : '';
+  var dosePart =
+    String(o.doseValue != null ? o.doseValue : '').trim() +
+    (o.doseUnit ? ' ' + String(o.doseUnit).trim() : '');
+  return (
+    'MEDICAMENTO: ' +
+    toSomeUpper(o.medication || '') +
+    '\n' +
+    'VIA: ' +
+    toSomeUpper(o.route || '') +
+    '\n' +
+    'DOSIS: ' +
+    toSomeUpper(dosePart.trim()) +
+    '\n' +
+    'DILUCION: ' +
+    toSomeUpper(o.dilution || '') +
+    '\n' +
+    'VELOCIDAD DE INFUSION: ' +
+    toSomeUpper(rateStr)
+  );
+}
+
+export function parsePatientWeightKg(patient) {
+  if (!patient) return null;
+  var n = numOrNull(patient.peso);
+  return n != null && n > 0 ? n : null;
+}
+
+/** @returns {boolean} */
+export function isCentralAccess(viaAcceso) {
+  return String(viaAcceso || '').trim().toLowerCase() === 'cvc';
+}
+
+/** Periférica / PICC / vacío: mismos límites que EV periférica. */
+export function kLimitsForAccess(viaAcceso) {
+  if (isCentralAccess(viaAcceso)) return { maxConcMeqPerL: 80, maxMeqPerHr: 40 };
+  return { maxConcMeqPerL: 40, maxMeqPerHr: 10 };
+}
+
+export function tbwFactor(patient) {
+  if (!patient) return 0.6;
+  var s = String(patient.sexo || '').trim().toUpperCase();
+  return s === 'F' ? 0.5 : 0.6;
+}
+
+/** Calcio total corregido (mg/dL) por albúmina (g/dL). */
+export function correctedCalcium(ca, alb) {
+  var caN = numOrNull(ca);
+  var albN = numOrNull(alb);
+  if (caN == null || albN == null || !Number.isFinite(caN) || !Number.isFinite(albN)) return null;
+  var v = caN + 0.8 * (4.0 - albN);
+  return Math.round(v * 100) / 100;
+}
+
+function kHypoSeverity(k) {
+  if (k == null || !Number.isFinite(k)) return null;
+  if (k < 2.5) return 'grave';
+  if (k < 3.0) return 'moderada';
+  if (k < 3.5) return 'leve';
+  return null;
+}
+
+function kHyperSeverity(k) {
+  if (k == null || !Number.isFinite(k)) return null;
+  if (k >= 6.5) return 'emergencia';
+  if (k >= 6.0) return 'moderada';
+  if (k >= 5.5) return 'leve';
+  return null;
+}
+
+function naHypoSeverity(na) {
+  if (na == null || !Number.isFinite(na)) return null;
+  if (na >= 134) return null;
+  if (na < 125) return 'grave';
+  return 'moderada';
+}
+
+function naHyperSeverity(na) {
+  if (na == null || !Number.isFinite(na)) return null;
+  if (na <= 145) return null;
+  if (na <= 150) return 'leve';
+  if (na <= 160) return 'moderada';
+  return 'grave';
+}
+
+function mgHypoSeverity(mg) {
+  if (mg == null || !Number.isFinite(mg)) return null;
+  if (mg < 1.0) return 'grave';
+  if (mg < 1.5) return 'moderada';
+  return null;
+}
+
+/** Fósforo (ESC clave `F`), mg/dL */
+function phosHypoSeverity(pMgDl) {
+  if (pMgDl == null || !Number.isFinite(pMgDl)) return null;
+  if (pMgDl < 1.0) return 'grave';
+  if (pMgDl < 2.0) return 'moderada';
+  return null;
+}
+
+/** @returns {SomeOrderLike[]} */
+function buildKHypoOrders(mEqChosen, limits, etaLow, routeLabel) {
+  var maxConc = limits.maxConcMeqPerL;
+  var minVol = (mEqChosen / maxConc) * 1000;
+  var volMl = standardBagVolumeMl(minVol);
+
+  var mEqPerHrRaw = etaLow ? Math.min(limits.maxMeqPerHr, 10, 10) : limits.maxMeqPerHr;
+  if (etaLow && mEqPerHrRaw > 10) mEqPerHrRaw = 10;
+
+  /** @type SomeOrderLike[] */
+  var orders = [];
+
+  orders.push({
+    medication: MED_KCL,
+    route: routeLabel,
+    doseValue: mEqChosen,
+    doseUnit: 'MEQ',
+    dilution:
+      volMl +
+      ' ML SOL SALINA AL 0.9% (' +
+      mEqChosen +
+      ' MEQ / ' +
+      volMl +
+      ' ML)',
+    infusionRateMlHr:
+      Math.round((mEqPerHrRaw / mEqChosen) * volMl),
+    requiresDilution: true,
+  });
+
+  return orders;
+}
+
+/** @param {'grave'|'moderada'} severity @param {number|null} mlEffective3 */
+function buildNaHypoSomeOrders(severity, mlEffective3) {
+  if (severity === 'grave') {
+    var volFinalLow = 100;
+    var volFinalHigh = 150;
+    var ml177Low = Math.round(mlHypertonic177FromEffective3(volFinalLow));
+    var ml177High = Math.round(mlHypertonic177FromEffective3(volFinalHigh));
+    return [
+      {
+        medication: MED_NACL_HYPERT,
+        route: 'INTRAVENOSA',
+        doseValue: String(ml177Low) + '–' + String(ml177High),
+        doseUnit: 'ML',
+        dilution:
+          hypertonic177DilutionText(ml177Low, volFinalLow) +
+          ' O ' +
+          hypertonic177DilutionText(ml177High, volFinalHigh) +
+          '; BOLUS 10–20 MIN',
+        infusionRateMlHr: 600,
+        requiresDilution: true,
+      },
+    ];
+  }
+
+  var volFinal = 150;
+  var ml177 = 20;
+  if (mlEffective3 != null && mlEffective3 > 0 && mlEffective3 <= 150) {
+    volFinal = Math.max(100, Math.round(mlEffective3));
+    ml177 = Math.max(10, Math.round(mlHypertonic177FromEffective3(volFinal)));
+  }
+
+  return [
+    {
+      medication: MED_NACL_HYPERT,
+      route: 'INTRAVENOSA',
+      doseValue: ml177,
+      doseUnit: 'ML',
+      dilution: hypertonic177DilutionText(ml177, volFinal),
+      infusionRateMlHr: 300,
+      requiresDilution: true,
+    },
+  ];
+}
+
+/**
+ * @param {{
+ *   parsedBySection?: Record<string, Record<string, number|string>>,
+ *   parsed?: Record<string, number|string>,
+ *   patient?: { peso?: string|number, sexo?: string, viaAcceso?: string },
+ *   refsBySection?: unknown,
+ *   labSetId?: string,
+ *   labFecha?: string,
+ * }} ctx
+ */
+export function evaluateElectrolyteManejo(ctx) {
+  ctx = ctx || {};
+  var pb = ctx.parsedBySection || {};
+  var flat = ctx.parsed || {};
+  var patient = ctx.patient || {};
+
+  /** @type ElectrolyteRow[] */
+  var rows = [];
+  /** @type string[] */
+  var crossAlerts = [];
+
+  var w = parsePatientWeightKg(patient);
+  var fTbw = tbwFactor(patient);
+  var limits = kLimitsForAccess(patient.viaAcceso);
+  var routeIv = 'INTRAVENOSA';
+  var eTFG = pickSection(pb, 'QS', 'eTFG', flat);
+  var etaLow = eTFG != null && eTFG < 30;
+
+  var kVal = pickSection(pb, 'ESC', 'K', flat);
+  var naVal = pickSection(pb, 'ESC', 'Na', flat);
+  var caVal = pickSection(pb, 'ESC', 'Ca', flat);
+  var albVal = pickAlb(pb, flat);
+  var cc = correctedCalcium(caVal, albVal);
+  var mgVal = pickSection(pb, 'ESC', 'Mg', flat);
+  var pMgDl = pickSection(pb, 'ESC', 'F', flat);
+
+  var glu = pickGlu(pb, flat);
+
+  /** @type {string[]} */
+  var kHypoAlerts = [];
+  /** @type {string[]} */
+  var mgAlerts = [];
+
+  /** K hipokalemia */
+  var ks = kHypoSeverity(kVal);
+  if (ks) {
+    if (etaLow)
+      kHypoAlerts.push('IRC (eTFG <30): considerar −50% dosis K inicial y vigilancia estrecha');
+    var defStr = null;
+    var defEq = null;
+    if (w != null && kVal != null) {
+      defEq = (4.0 - kVal) * w * 0.4;
+      defStr =
+        Math.round(defEq * 10) / 10 +
+        ' mEq estimados (formula (4−K)×peso×0.4)';
+    }
+
+    var mEqBase =
+      ks === 'grave'
+        ? 40
+        : ks === 'moderada'
+          ? 30
+          : 25;
+    if (etaLow) mEqBase = Math.round((mEqBase * 0.5) / 5) * 5;
+
+    var mEqUse = Math.max(10, Math.min(mEqBase, etaLow ? 20 : 40));
+
+    var someKs = buildKHypoOrders(mEqUse, limits, etaLow, routeIv);
+
+    rows.push({
+      electrolyte: 'K',
+      direction: 'hypo',
+      value: kVal,
+      unit: 'mEq/L',
+      interpretation: 'HIPOPOTASEMIA ' + ks.toUpperCase(),
+      severity: ks,
+      formula: defEq != null ? '(4−K)×peso×0.4' : '',
+      formulaResult: defStr,
+      suggestedDose:
+        mEqUse +
+        ' mEq IV (protocolo habitual 20–40 mEq) en volumen conforme límites de vía + SS al 0.9%',
+      route: routeIv,
+      monitoring: 'Ionograma y ECG si procede; repetir K en 4–6 h.',
+      alerts: kHypoAlerts.concat(),
+      clinicalNotes: ks === 'grave' ? ['Evitar dex en hipo K grave.', 'Preferir bomba IV.'] : [],
+      someOrders: someKs,
+      ruleId: 'k-hypo-' + ks,
+    });
+  }
+
+  var khyp = ks;
+
+  /** K hipercalemia emergencia */
+  var khypS = kHyperSeverity(kVal);
+  if (khypS === 'emergencia') {
+    /** @type SomeOrderLike[] */
+    var em = [];
+
+    em.push({
+      medication: MED_CA_GLUC,
+      route: routeIv,
+      doseValue: '10–20',
+      doseUnit: 'ML',
+      dilution:
+        glu != null && glu >= 250
+          ? 'BOLO IV 2–5 MIN (REPETIBLE SI ALTERACION DE ECG)'
+          : 'BOLO IV 2–5 MIN',
+      infusionRateMlHr: 120,
+      requiresDilution: false,
+    });
+
+    em.push({
+      medication: MED_INSULIN,
+      route: routeIv,
+      doseValue: 10,
+      doseUnit: 'U',
+      dilution:
+        glu != null && glu < 250 ? 'MAS DEXTROSA 50% SI GLU <250 MG/DL' : 'REVISAR GLUCEMIA',
+      infusionRateMlHr: 'SEGUN BOMBA / PROTOCOLO',
+      requiresDilution: false,
+    });
+
+    if (glu != null && glu < 250) {
+      em.push({
+        medication: MED_D50,
+        route: routeIv,
+        doseValue: 50,
+        doseUnit: 'ML',
+        dilution:
+          'TRAS INSULINA; MONITORIZAR GLUCEMIA C/30–60 MIN X 4–6 H',
+        infusionRateMlHr: null,
+        requiresDilution: false,
+      });
+    }
+
+    em.push({
+      medication: MED_SALBUTAMOL,
+      route: 'NEBULIZACION',
+      doseValue: '10–20',
+      doseUnit: 'MG',
+      dilution: 'EN 4 ML SS AL 0.9% (NEBULIZADO)',
+      infusionRateMlHr: null,
+      requiresDilution: false,
+    });
+
+    rows.push({
+      electrolyte: 'K',
+      direction: 'hyper',
+      value: kVal,
+      unit: 'mEq/L',
+      interpretation: 'HIPERPOTASEMIA GRAVE / URGENCIA',
+      severity: 'emergencia',
+      formula: '',
+      formulaResult: glu != null ? 'Glucosa concurrente ' + glu + ' mg/dL' : null,
+      suggestedDose: 'Secuencia estabilización membrana + desplazo K intracelular',
+      route: routeIv,
+      monitoring: 'K cada 2 h; ECG; glucometría recurrente.',
+      alerts: ['Kayexalate no recomendado en esta guía v1.', 'Valorar dialisis si refractario.'],
+      clinicalNotes:
+        glu == null ? ['Registrar glucosa QS/gasometria para regimen insulina + dextrosa.'] : [],
+      someOrders: em,
+      ruleId: 'k-hyper-emergencia',
+    });
+  }
+
+  /** Na hiponatremia — volumen/deficit texto */
+  var ns = naHypoSeverity(naVal);
+  if (ns && w != null) {
+    var tbwTot = fTbw * w;
+    var defNaMeq = tbwTot * (140 - naVal);
+    var mlEffective3 = mlEffective3FromDeficitMeq(defNaMeq);
+    var ml177 = mlHypertonic177FromEffective3(mlEffective3);
+    rows.push({
+      electrolyte: 'Na',
+      direction: 'hypo',
+      value: naVal,
+      unit: 'mEq/L',
+      interpretation: 'HIPONATREMIA ' + ns.toUpperCase(),
+      severity: ns,
+      formula:
+        'TBW×(140−Na); vol. final ~3% eq.≈mEq÷' +
+        String(NACL_EFFECTIVE_3_MEQ_PER_ML) +
+        '; mL 17.7%=vol÷' +
+        round1(NACL_HYPERT_TO_EFFECTIVE3_RATIO),
+      formulaResult:
+        'Deficit ~' +
+        round1(defNaMeq) +
+        ' mEq; ~' +
+        round1(mlEffective3) +
+        ' mL final ~3% eq.; hipert. 17.7% ~' +
+        round1(ml177) +
+        ' mL (diluir en SS 0.9%)',
+      suggestedDose:
+        ns === 'grave'
+          ? 'Hipert. 17.7% diluido a ~100–150 mL final ~3% eq.; bolo IV 10–20 min si sintomático grave'
+          : 'Hipert. 17.7% p. ej. 20 mL + 130 mL NaCl 0.9% (~150 mL ~3% eq.) en ~30 min; gradual (<10 mEq/L/24 h)',
+      route: routeIv,
+      monitoring: 'Na cada 4–8 h inicialmente; neurologico.',
+      alerts: [],
+      clinicalNotes:
+        ns === 'grave'
+          ? [
+              'Sin NaCl al 3% en vademecum HU: preparar con hipert. 17.7% + dilución a ~3% equivalente.',
+              'No corregir >10 mEq/L/24 h salvo urgencia neurologica dirigida.',
+              'Valorar causa (SIADH, etc.).',
+            ]
+          : [
+              'Sin NaCl al 3% en vademecum HU: diluir hipert. 17.7% en NaCl 0.9% hasta ~3% equivalente.',
+              'Respetar tasas maximas recomendadas.',
+            ],
+      someOrders: buildNaHypoSomeOrders(ns, mlEffective3),
+      ruleId: 'na-hypo-' + ns,
+    });
+  } else if (ns && w == null) {
+    rows.push({
+      electrolyte: 'Na',
+      direction: 'hypo',
+      value: naVal,
+      unit: 'mEq/L',
+      interpretation: 'HIPONATREMIA — FALTA PESO PARA TBW/DEFICIT',
+      severity: ns,
+      formula:
+        'TBW×(140−Na); vol. ~3% eq.≈mEq÷' +
+        NACL_EFFECTIVE_3_MEQ_PER_ML +
+        '; mL 17.7%=vol÷' +
+        round1(NACL_HYPERT_TO_EFFECTIVE3_RATIO),
+      formulaResult: null,
+      suggestedDose: '',
+      route: '',
+      monitoring: '',
+      alerts: [],
+      clinicalNotes: ['Indicar peso en datos del paciente para estimar déficit hidrosodio.'],
+      someOrders: [],
+      ruleId: 'na-hypo-no-weight',
+    });
+  }
+
+  /** Na hiper */
+  var nhs = naHyperSeverity(naVal);
+  if (nhs && w != null) {
+    var tbwTot2 = fTbw * w;
+    var fwd = tbwTot2 * (naVal / 140 - 1);
+    rows.push({
+      electrolyte: 'Na',
+      direction: 'hyper',
+      value: naVal,
+      unit: 'mEq/L',
+      interpretation: 'HIPERNATREMIA ' + nhs.toUpperCase(),
+      severity: nhs,
+      formula: 'Agua libre deficit (L)=TBW×((Na/140)−1); TBW=F×peso',
+      formulaResult:
+        (fwd > 0 ? '~' + Math.round(fwd * 1000) / 1000 + ' L aprox.' : 'Marginal por formula') +
+        '; TBW usado ~' +
+        Math.round(tbwTot2 * 10) / 10 +
+        ' L',
+      suggestedDose: 'Corregir despacio (<10–12 mEq/L/24 h); D5W o hipotonica segun contexto volumen.',
+      route: routeIv,
+      monitoring: 'Na y estado de volumen frecuentes.',
+      alerts: [],
+      clinicalNotes:
+        fwd > 0
+          ? ['Hipovolemico puede requerir fase isotonica inicial; hipervolemico: diureticos, etc.']
+          : [],
+      someOrders: [],
+      ruleId: 'na-hyper-' + nhs,
+    });
+  }
+
+  /** Mg hipo */
+  var mags = mgHypoSeverity(mgVal);
+  if (mags) {
+    var gMgEq = mags === 'grave' ? 24 : 20;
+    if (etaLow) gMgEq = Math.round(gMgEq * 0.5);
+
+    mgAlerts = mgAlerts.concat();
+    if (etaLow)
+      mgAlerts.push('IRC (eTFG <30): dosis Mg reducida 50%; monitoreo neuromuscular acentuado');
+
+    var volMg = mags === 'grave' ? 100 : 500;
+    var rateMgHr = etaLow ? 2 : mags === 'grave' ? 8 : 1.25;
+
+    rows.push({
+      electrolyte: 'Mg',
+      direction: 'hypo',
+      value: mgVal,
+      unit: 'mg/dL',
+      interpretation: 'HIPOMAGNESEMIA ' + mags.toUpperCase(),
+      severity: mags,
+      formula: etaLow ? 'Dosis Mg ajustada a eTFG' : '',
+      formulaResult: etaLow ? '−50% por eTFG <30' : null,
+      suggestedDose:
+        (mags === 'grave'
+          ? 'MgSO4 50%: carga inicial en bolus/extension segun institucion; mantenimiento prn'
+          : 'MgSO4 diluido en 500–1000 mL SS 4–8 h'),
+      route: routeIv,
+      monitoring: 'Reflejos/PFR; Mg serico y K asociados.',
+      alerts: mgAlerts,
+      clinicalNotes: [],
+      someOrders: [
+        {
+          medication: MED_MG_SO4,
+          route: routeIv,
+          doseValue: Math.round(gMgEq / 4),
+          doseUnit: 'MEQ',
+          dilution: volMg + ' ML SOL SALINA AL 0.9%',
+          infusionRateMlHr: Math.round((rateMgHr / gMgEq) * volMg),
+          requiresDilution: true,
+        },
+      ],
+      ruleId: 'mg-hypo-' + mags,
+    });
+  }
+
+  /** P / fosforo hipo — mmol/kg 0.16–0.32 */
+  var phs = phosHypoSeverity(pMgDl);
+  if (phs && w != null) {
+    var mmLo = Math.round(w * 0.16 * 10) / 10;
+    var mmHi = Math.round(w * 0.32 * 10) / 10;
+
+    rows.push({
+      electrolyte: 'P',
+      direction: 'hypo',
+      value: pMgDl,
+      unit: 'mg/dL',
+      interpretation: 'HIPOFOSFATEMIA ' + phs.toUpperCase(),
+      severity: phs,
+      formula: '0.16–0.32 mmol/kg IV (grave-moderado; max 90 mmol/dia)',
+      formulaResult: '~' + mmLo + '–' + mmHi + ' mmol para peso corporal actual',
+      suggestedDose: 'Reposicion fosfato IV lenta segun institucion; preferir fosfato de sodio si K alto.',
+      route: routeIv,
+      monitoring: 'Ca ionico / total; Mg; K funcion renal.',
+      alerts: etaLow ? ['IRC: evitar o extremar precauciones con P IV institucional.'] : [],
+      clinicalNotes:
+        kVal != null && kVal < 3.8
+          ? ['Considerar FOSFATO DE POTASIO si K permite (ver algunos pedidos combinados PDF).']
+          : [],
+      someOrders:
+        !etaLow &&
+        !(kVal != null && kVal >= 4.0)
+          ? [
+              {
+                medication: MED_PHOS_K,
+                route: routeIv,
+                doseValue: '~' + Math.min(mmHi, phs === 'grave' ? mmHi : mmLo + 15),
+                doseUnit: 'MMOL (APROX TEORICO)',
+                dilution: '250–500 ML SS AL 0.9% EN 6–12 H — VALIDACION MEDICA',
+                infusionRateMlHr: (function () {
+                  var volP = 375;
+                  var mmTarget =
+                    typeof mmHi === 'number' && mmHi > 0 ? mmHi : 18;
+                  var mmolPerHr = phs === 'grave' ? 15 : 8;
+                  return Math.round((mmolPerHr / mmTarget) * volP);
+                })(),
+                requiresDilution: true,
+              },
+            ]
+          : [],
+      ruleId: 'p-hypo-' + phs,
+    });
+  }
+
+  /** Ca corregido hipo (<8.5) */
+  if (caVal != null && cc != null && cc < 8.5) {
+    rows.push({
+      electrolyte: 'Ca',
+      direction: 'hypo',
+      value: cc,
+      unit: 'mg/dL (corr.)',
+      interpretation: 'HIPOCALCAMIA FUNCION CALCIO CORREGIDO (<8.5)',
+      severity: cc < 7.5 ? 'grave' : 'moderada',
+      formula: 'Ca total + 0.8×(4−Alb)',
+      formulaResult: String(cc),
+      suggestedDose: 'Gluconato calcio IV 10% 10–20 mL lentamente segun institucion',
+      route: routeIv,
+      monitoring: 'ECG si sintomatico; Ca total/ionizado seriados.',
+      alerts: [],
+      clinicalNotes:
+        albVal == null ? ['Alb faltante impide corroboracion; interpretar ionograma/clinica.'] : [],
+      someOrders: [
+        {
+          medication: MED_CA_GLUC,
+          route: routeIv,
+          doseValue: '10–20',
+          doseUnit: 'ML',
+          dilution: 'ADMINISTRAR LENTAMENTE IV 10–20 MIN (SEGUN PROTOCOLO INSTITUCIONAL)',
+          infusionRateMlHr: null,
+          requiresDilution: false,
+        },
+      ],
+      ruleId: 'ca-hypo-corrected',
+    });
+  }
+
+  /** Alertas cruzadas */
+  if (khyp && mags != null && kVal != null && kVal < 3.5 && mgVal != null && mgVal < 1.5) {
+    crossAlerts.push('Corregir magnesio antes del potasio (K refractario con hipomagnesemia)');
+  }
+
+  var caLow = cc != null && cc < 8.5 && caVal != null;
+  var pLow = phs != null;
+  if (caLow && pLow) {
+    crossAlerts.push('Normalizar calcio antes de fosforo IV (riesgo tetania)');
+  }
+
+  var hasAlterations = rows.some(function (r) {
+    return (
+      ['K', 'Na', 'Mg', 'P', 'Ca'].indexOf(String(r.electrolyte)) >= 0 && r.direction
+    );
+  });
+
+  return { rows: rows, crossAlerts: crossAlerts, hasAlterations: hasAlterations };
+}

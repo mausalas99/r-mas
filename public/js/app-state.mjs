@@ -6,6 +6,7 @@ export let notes = {};
 export let indicaciones = {};
 export let labHistory = {};
 export let medRecetaByPatient = {};
+export let recetaHuByPatient = {};
 export let listadoProblemas = {};
 export let medNotaSelectionByPatient = {};
 
@@ -30,6 +31,10 @@ export function setLabHistory(next) {
 
 export function setMedRecetaByPatient(next) {
   medRecetaByPatient = next;
+}
+
+export function setRecetaHuByPatient(next) {
+  recetaHuByPatient = next;
 }
 
 export function setSaveStateHooks({ before, after } = {}) {
@@ -57,6 +62,7 @@ export function initAppState() {
   setIndicaciones(storage.getIndicaciones());
   setLabHistory(storage.getLabHistory());
   setMedRecetaByPatient(storage.getMedRecetaByPatient());
+  setRecetaHuByPatient(storage.getRecetaHuByPatient());
   listadoProblemas = storage.getListadoProblemas();
   applyMedCatalogOverlay(storage.getMedCatalog());
   medNotaSelectionByPatient = {};
@@ -71,7 +77,8 @@ export function saveState() {
     indicaciones,
     labHistory,
     medRecetaByPatient,
-    listadoProblemas
+    listadoProblemas,
+    recetaHuByPatient
   );
   if (_afterSave) _afterSave();
 }

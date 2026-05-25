@@ -1084,6 +1084,15 @@ function buildPatientDemographicsCardHtml(patient) {
     '<div class="field-group"><label>Registro</label><input type="text" value="' + esc(patient.registro) + '" oninput="updatePatient(\'registro\',this.value)"></div>' +
     '<div class="field-group"><label>Edad</label><input type="text" value="' + esc(patient.edad) + '" oninput="updatePatient(\'edad\',this.value)"></div>' +
     '<div class="field-group"><label>Sexo</label><select onchange="updatePatient(\'sexo\',this.value)"><option value="M"' + (patient.sexo==='M'?' selected':'') + '>M</option><option value="F"' + (patient.sexo==='F'?' selected':'') + '>F</option></select></div></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">' +
+    '<div class="field-group"><label>Peso (kg)</label><input type="text" inputmode="decimal" value="' + esc(patient.peso || '') + '" placeholder="60" oninput="updatePatient(\'peso\',this.value)"></div>' +
+    '<div class="field-group"><label>Talla (m)</label><input type="text" inputmode="decimal" value="' + esc(patient.talla || '') + '" placeholder="1.60" oninput="updatePatient(\'talla\',this.value)"></div>' +
+    '<div class="field-group"><label>Vía de acceso</label><select onchange="updatePatient(\'viaAcceso\',this.value)">' +
+    '<option value=""' + (!patient.viaAcceso ? ' selected' : '') + '>— No especificada —</option>' +
+    '<option value="periferica"' + (patient.viaAcceso==='periferica'?' selected':'') + '>EV periférica</option>' +
+    '<option value="cvc"' + (patient.viaAcceso==='cvc'?' selected':'') + '>CVC / catéter central</option>' +
+    '<option value="picc"' + (patient.viaAcceso==='picc'?' selected':'') + '>PICC</option>' +
+    '</select></div></div>' +
     '<div class="field-group"><label>Área</label><input type="text" value="' + esc(patient.area) + '" oninput="updatePatient(\'area\',this.value)" style="text-transform:uppercase;"></div>' +
     '<div class="field-group"><label>Servicio</label><input type="text" value="' + esc(patient.servicio) + '" oninput="updatePatient(\'servicio\',this.value)" style="text-transform:uppercase;"></div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
@@ -1093,11 +1102,11 @@ function buildPatientDemographicsCardHtml(patient) {
   );
 }
 
-/** En modo Sala la pestaña Nota está oculta: los mismos campos van en #patient-data-form. */
+/** Demographics editable en pestaña Datos (#patient-data-form). */
 function renderPatientDataPane() {
   var wrap = document.getElementById('patient-data-form');
   if (!wrap) return;
-  if (!isModeSala(rt.getSettings() || {})) {
+  if (!aid()) {
     wrap.innerHTML = '';
     return;
   }

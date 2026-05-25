@@ -131,7 +131,20 @@ export function mergeListadoProblemas(a, b) {
 }
 
 function pickPatientFields(older, newer) {
-  const fields = ['nombre', 'edad', 'sexo', 'area', 'servicio', 'cuarto', 'cama', 'registro', 'fromLab'];
+  const fields = [
+    'nombre',
+    'edad',
+    'sexo',
+    'area',
+    'servicio',
+    'cuarto',
+    'cama',
+    'peso',
+    'talla',
+    'viaAcceso',
+    'registro',
+    'fromLab',
+  ];
   const out = { ...older };
   for (const f of fields) {
     const nv = newer[f];

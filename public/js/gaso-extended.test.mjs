@@ -1,0 +1,29 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { evaluateGasoExtended } from './gaso-extended.mjs';
+import { computeAnionGapValue_ } from './labs.js';
+
+test('Winter: HCO3 12 → PaCO2 esperada ≈ 26', () => {
+  const r = evaluateGasoExtended({ hco3: 12 });
+  assert.equal(r.steps.compensation.expectedPCO2, 26);
+});
+
+test('Trastorno mixto: PaCO2 por encima del rango Winter con acidosis metabólica', () => {
+  const r = evaluateGasoExtended({
+    pH: 7.08,
+    hco3: 17,
+    pCO2: 55,
+    na: 140,
+    cl: 103,
+    pO2: 75,
+    fio2: 0.21
+  });
+  assert.equal(r.steps.primary.disorder, 'mixed');
+  assert.match(r.steps.compensation.note, /discrepa|Winter/i);
+});
+
+test('Anión gap reutiliza computeAnionGapValue_ de labs.js', () => {
+  const agFromLabs = computeAnionGapValue_('140', '103', '17', '---');
+  const r = evaluateGasoExtended({ na: 140, cl: 103, hco3: 17 });
+  assert.equal(r.steps.anionGap.value, Math.round((agFromLabs + Number.EPSILON) * 10) / 10);
+});

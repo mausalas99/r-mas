@@ -1,12 +1,12 @@
 {
   "name": "r-plus",
-  "version": "5.2.1",
+  "version": "6.0.0",
   "description": "R+ — Laboratoriazo + Notas de Evolución",
   "main": "main.js",
   "scripts": {
     "build:ui": "node scripts/build-ui.mjs",
     "build:ui:check": "node scripts/build-ui.mjs --check",
-    "test": "node --test scripts/build-ui.test.mjs public/js/app-boot-imports.test.mjs public/js/app-state.test.mjs public/js/features/settings-help-imports.test.mjs scripts/lib/artifact-names.test.js public/js/lan-join-link.test.mjs public/js/mobile-web.test.mjs public/js/update-helpers.test.mjs public/js/lab-history-auto-store-core.test.mjs public/js/lab-history-set.test.mjs public/js/med-receta-core.test.mjs public/js/lab-clinical-suggestions.test.mjs public/js/labs-cultivo.test.mjs public/js/labs-citoquimico-liquidos.test.mjs public/js/labs-heces.test.mjs public/js/labs-frotis.test.mjs public/js/labs-coag.test.mjs public/js/labs-gases.test.mjs public/js/labs-pct.test.mjs public/js/labs-egfr.test.mjs public/js/mode-features.test.mjs public/js/age-calc.test.mjs public/js/listado-problemas-core.test.mjs public/js/patient-validation.test.mjs public/js/tour-targets.test.mjs public/js/quick-output.test.mjs public/js/output-dir-fallback.test.mjs public/js/storage.test.mjs public/js/procedure-agenda-week.test.mjs public/js/labs-bh-extended.test.mjs public/js/labs-fecha-hora.test.mjs public/js/labs-some-detect.test.mjs public/js/labs-some-table.test.mjs public/js/labs-differential-manual.test.mjs public/js/labs-diff-coag.test.mjs public/js/labs-ego-plt-cit.test.mjs public/js/labs-bh-trend-parse.test.mjs public/js/labs-trend-order.test.mjs public/js/lan-client.test.mjs public/js/live-sync-room.test.mjs public/js/lan-patient-merge.test.mjs public/js/livesync-patient-ids.test.mjs public/js/tend-core.test.mjs public/js/tend-prefs.test.mjs public/js/ui-motion.test.mjs public/js/todos-priority.test.mjs lan-squad/team-code.test.js lan-squad/host-store.test.js lan-squad/host-router.test.js lan-squad/effective-team-code.test.js && python3 -m unittest tests/test_generate_listado.py",
+    "test": "node --test scripts/build-ui.test.mjs public/js/electrolyte-manejo.test.mjs public/js/app-boot-imports.test.mjs public/js/app-state.test.mjs public/js/features/settings-help-imports.test.mjs scripts/lib/artifact-names.test.js public/js/lan-join-link.test.mjs public/js/mobile-web.test.mjs public/js/update-helpers.test.mjs public/js/lab-history-auto-store-core.test.mjs public/js/lab-history-set.test.mjs public/js/med-receta-core.test.mjs public/js/receta-hu-core.test.mjs public/js/lab-clinical-suggestions.test.mjs public/js/labs-cultivo.test.mjs public/js/labs-citoquimico-liquidos.test.mjs public/js/labs-heces.test.mjs public/js/labs-frotis.test.mjs public/js/labs-coag.test.mjs public/js/labs-gases.test.mjs public/js/gaso-extended.test.mjs public/js/labs-pct.test.mjs public/js/labs-egfr.test.mjs public/js/mode-features.test.mjs public/js/age-calc.test.mjs public/js/listado-problemas-core.test.mjs public/js/patient-validation.test.mjs public/js/tour-targets.test.mjs public/js/expediente-tabs.test.mjs public/js/quick-output.test.mjs public/js/output-dir-fallback.test.mjs public/js/storage.test.mjs public/js/procedure-agenda-week.test.mjs public/js/labs-bh-extended.test.mjs public/js/labs-fecha-hora.test.mjs public/js/labs-some-detect.test.mjs public/js/labs-some-table.test.mjs public/js/labs-differential-manual.test.mjs public/js/labs-diff-coag.test.mjs public/js/labs-ego-plt-cit.test.mjs public/js/labs-bh-trend-parse.test.mjs public/js/labs-trend-order.test.mjs public/js/lan-client.test.mjs public/js/live-sync-room.test.mjs public/js/lan-patient-merge.test.mjs public/js/livesync-patient-ids.test.mjs public/js/tend-core.test.mjs public/js/tend-prefs.test.mjs public/js/ui-motion.test.mjs public/js/todos-priority.test.mjs lan-squad/team-code.test.js lan-squad/host-store.test.js lan-squad/host-router.test.js lan-squad/effective-team-code.test.js && python3 -m unittest tests/test_generate_listado.py",
     "start": "electron .",
     "build:mac": "npm run prebuild:mac && electron-builder --mac",
     "build:mac:signed": "npm run build:mac",
@@ -26,6 +26,7 @@
   "dependencies": {
     "electron-updater": "^6.8.3",
     "express": "^5.2.1",
+    "pdf-lib": "^1.17.1",
     "sortablejs": "^1.15.7",
     "ws": "^8.18.0"
   },
@@ -112,9 +113,11 @@
       "generate_note.py",
       "generate_indicaciones.py",
       "generate_listado.py",
+      "generate-receta-hu.js",
       "template.docx",
       "template_indicaciones.docx",
       "template_listado.docx",
+      "templates/receta-hu-000-061-R-06-12.pdf",
       "public/**/*",
       "build/AppIcon.icns",
       "build/icon.ico"
@@ -123,9 +126,11 @@
       "generate_note.py",
       "generate_indicaciones.py",
       "generate_listado.py",
+      "generate-receta-hu.js",
       "template.docx",
       "template_indicaciones.docx",
-      "template_listado.docx"
+      "template_listado.docx",
+      "templates/receta-hu-000-061-R-06-12.pdf"
     ]
   }
 }

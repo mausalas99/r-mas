@@ -230,6 +230,8 @@ function paseSectionLabelFromContext() {
     if (inner === 'listado') return 'Listado';
     if (inner === 'datos') return 'Datos';
     if (inner === 'todo') return 'Pendientes';
+    if (inner === 'manejo') return 'Manejo';
+    if (inner === 'recetaHu') return 'Receta HU';
   }
   return 'Expediente';
 }

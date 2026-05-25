@@ -376,6 +376,9 @@ function applyLanPatientEntries(entries) {
       existing.servicio = entry.patient.servicio || existing.servicio;
       existing.cuarto = entry.patient.cuarto || existing.cuarto;
       existing.cama = entry.patient.cama || existing.cama;
+      existing.peso = entry.patient.peso || existing.peso;
+      existing.talla = entry.patient.talla || existing.talla;
+      existing.viaAcceso = entry.patient.viaAcceso || existing.viaAcceso;
       existing.registro = entry.patient.registro || existing.registro;
       if (entry.patient.fromLab) existing.fromLab = true;
       notes[existing.id] = entry.note || {};
@@ -402,6 +405,9 @@ function applyLanPatientEntries(entries) {
           servicio: entry.patient.servicio || '',
           cuarto: entry.patient.cuarto || '',
           cama: entry.patient.cama || '',
+          peso: entry.patient.peso || '',
+          talla: entry.patient.talla || '',
+          viaAcceso: entry.patient.viaAcceso || '',
           edad: entry.patient.edad || '',
           sexo: entry.patient.sexo || 'F',
           registro: entry.patient.registro || '',

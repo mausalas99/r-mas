@@ -34,6 +34,8 @@ import { settingsHelpWindowHandlers } from './features/settings-help.mjs';
 import { platformWindowHandlers } from './features/platform.mjs';
 import { tendenciasWindowHandlers, seedTendHiddenDefaults } from './features/tendencias.mjs';
 import { todosWindowHandlers } from './features/todos.mjs';
+import { manejoWindowHandlers } from './features/manejo.mjs';
+import { recetaHuWindowHandlers } from './features/receta-hu.mjs';
 import { windowHandlers as paseBoardWindowHandlers, syncMainAppTabA11y, renderInnerTabs, initTabBarMotion } from './features/pase-board.mjs';
 import { medicationsWindowHandlers } from './features/medications.mjs';
 import { profileWindowHandlers } from './features/profile.mjs';
@@ -53,6 +55,8 @@ const allWindowHandlers = Object.assign(
   platformWindowHandlers,
   tendenciasWindowHandlers,
   todosWindowHandlers,
+  manejoWindowHandlers,
+  recetaHuWindowHandlers,
   paseBoardWindowHandlers,
   medicationsWindowHandlers,
   profileWindowHandlers,

@@ -25,13 +25,22 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 ---
 
-**Versión estable actual:** [5.2.1](https://github.com/mausalas99/r-mas/releases/tag/v5.2.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.0.0](https://github.com/mausalas99/r-mas/releases/tag/v6.0.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
 
 ---
 
+
+## R+ 6.0.0 (expediente reorganizado, Manejo y Receta HU)
+
+- **Expediente (vista Normal):** cuatro pestañas — **Paciente** (datos colapsables + pendientes), **Clínico**, **Resultados**, **Salida** — en Sala e Interconsulta (Sala: Manejo + Listado; Interconsulta: Nota/Indicaciones/Manejo + Receta HU PDF).
+- **Manejo electrolítico:** dosis, dilución, vía y bloque SOME desde laboratorios procesados; peso/talla/vía en Datos del paciente.
+- **Receta HU:** formulario unificado, exportación PDF oficial 000-061-R-06-12.
+- **Modo Pase:** el resumen de ronda en pantalla principal **no cambia**; la reorganización del expediente se ve al abrir el detalle en pestañas.
+
+Notas: `docs/RELEASE_NOTES_6.0.0.txt`.
 
 ## R+ 5.2.1 (cáscara Arc y correcciones UX)
 
@@ -308,9 +317,13 @@ Notas extendidas en el repo: docs/RELEASE_NOTES_2.0.0.txt (texto plano).
 ## Funcionalidades
 
 - **Laboratoriazo** — Interpreta resultados de laboratorio y genera diagramas visuales: Biometría Hemática, Coagulación, Diagrama de Gamble, Química Sanguínea, Gasometría y más. Historial por paciente y **tendencias** con mini-gráficas.
+- **Expediente** — En vista Normal (pestañas completas): **Paciente**, **Clínico**, **Resultados** y **Salida**. En **Modo Pase** el tablero de ronda sigue igual; al abrir un bloque entras al expediente con la misma organización de cuatro pestañas.
+- **Manejo electrolítico** — Sugerencias de corrección de electrolitos y gasometría (Sala e Interconsulta), con datos de peso/talla/vía del paciente.
 - **Medicamentos** — Receta hospitalaria (TSV), copia desde sistemas tipo SOME, volcado a nota / SOAP y copia al portapapeles.
-- **Nota de Evolución** — Formulario estructurado que genera un archivo `.docx` listo para imprimir, con membrete y formato clínico. **Plantilla SOAP** integrada.
-- **Indicaciones médicas** — Generación de hoja de indicaciones en `.docx` con secciones configurables.
+- **Nota de Evolución** — Formulario estructurado que genera un archivo `.docx` listo para imprimir, con membrete y formato clínico. **Plantilla SOAP** integrada (Interconsulta).
+- **Indicaciones médicas** — Generación de hoja de indicaciones en `.docx` con secciones configurables (Interconsulta).
+- **Receta médica HU** — PDF oficial 000-061-R-06-12 desde **Salida** (Interconsulta).
+- **Listado de problemas** — Generación desde **Salida** (Sala).
 - **Salida configurable** — Exportación clínica rápida del paciente actual en `.docx`, `.html` o `.txt` desde Nota/Indicaciones.
 - **Auto-actualización** — La app detecta nuevas versiones automáticamente y se actualiza con un clic.
 - **Búsqueda** — Pacientes en la barra lateral; **búsqueda unificada** (⌘/Ctrl+K) sobre notas e indicaciones.

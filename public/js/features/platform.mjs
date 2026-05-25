@@ -127,12 +127,22 @@ function syncOfflineButtonStates() {
         b.disabled = true;
         b.setAttribute('aria-disabled', 'true');
         b.dataset.rpcOffline = '1';
-      } else if (b.dataset.rpcOffline) {
-        b.disabled = false;
-        b.removeAttribute('aria-disabled');
-        delete b.dataset.rpcOffline;
+      } else {
+        if (b.dataset.rpcOffline) delete b.dataset.rpcOffline;
+        if (!b.classList.contains('loading')) {
+          b.disabled = false;
+          b.removeAttribute('aria-disabled');
+        }
       }
     });
+    var recetaBtn = document.getElementById('btn-receta-hu-export');
+    if (recetaBtn) {
+      delete recetaBtn.dataset.rpcOffline;
+      if (!recetaBtn.classList.contains('loading')) {
+        recetaBtn.disabled = false;
+        recetaBtn.removeAttribute('aria-disabled');
+      }
+    }
   } catch (e) {
     console.error('syncOfflineButtonStates error:', e && e.message);
   }

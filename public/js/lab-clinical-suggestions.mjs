@@ -11,7 +11,7 @@ function pickSection(parsedBySection, section, key, parsedFlat) {
   return null;
 }
 
-/** Reglas v1: Hb y electrolitos (umbrales moderados). */
+/** Reglas pendientes desde laboratorio: solo Hb (electrolitos vía motor Manejo + manejoPending). */
 export const LAB_CLINICAL_RULES = [
   {
     id: 'hb-transfusion',
@@ -20,42 +20,6 @@ export const LAB_CLINICAL_RULES = [
     },
     text: function (v) {
       return 'TRANSFUSION DE CONCENTRADO ERITROCITARIO (HB ' + formatLabVal(v.hb) + ')';
-    },
-  },
-  {
-    id: 'k-repletion',
-    test: function (v) {
-      return v.k != null && v.k < 3.5;
-    },
-    text: function (v) {
-      return 'REPO DE POTASIO (K ' + formatLabVal(v.k) + ')';
-    },
-  },
-  {
-    id: 'na-repletion',
-    test: function (v) {
-      return v.na != null && v.na < 135;
-    },
-    text: function (v) {
-      return 'REPO DE SODIO (NA ' + formatLabVal(v.na) + ')';
-    },
-  },
-  {
-    id: 'mg-repletion',
-    test: function (v) {
-      return v.mg != null && v.mg < 1.6;
-    },
-    text: function (v) {
-      return 'REPO DE MAGNESIO (MG ' + formatLabVal(v.mg) + ')';
-    },
-  },
-  {
-    id: 'ca-repletion',
-    test: function (v) {
-      return v.ca != null && v.ca < 8.5;
-    },
-    text: function (v) {
-      return 'REPO DE CALCIO (CA ' + formatLabVal(v.ca) + ')';
     },
   },
 ];

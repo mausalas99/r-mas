@@ -332,3 +332,149 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
   .vitals-grid { grid-template-columns: repeat(3, 1fr); }
   html.ui-density-normal aside { width: min(100%, 268px) !important; }
 }
+
+/* ── Expediente consolidado (Interconsulta) ───────────────── */
+.expediente-panes-host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.exp-composite-pane {
+  display: none;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  gap: calc(10px * var(--density-space, 1));
+  padding: calc(12px * var(--density-space, 1)) calc(14px * var(--density-space, 1));
+}
+
+.exp-composite-pane.active {
+  display: flex;
+}
+
+.exp-datos-collapse {
+  flex-shrink: 0;
+  border: 1px solid color-mix(in oklab, var(--border) 55%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--surface) 88%, var(--bg));
+}
+
+.exp-datos-collapse-summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 12px;
+  list-style: none;
+  user-select: none;
+}
+
+.exp-datos-collapse-summary::-webkit-details-marker {
+  display: none;
+}
+
+.exp-datos-collapse-summary::before {
+  content: '▸';
+  display: inline-block;
+  margin-right: 8px;
+  transition: transform 0.15s ease;
+  color: var(--text-muted);
+}
+
+.exp-datos-collapse[open] .exp-datos-collapse-summary::before {
+  transform: rotate(90deg);
+}
+
+.exp-datos-mount,
+.exp-pendientes-mount,
+.exp-salida-mount {
+  min-width: 0;
+}
+
+.exp-salida-mount {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.exp-salida-mount > .exp-segment-panel {
+  flex: 1;
+  min-height: 0;
+}
+
+.exp-datos-mount {
+  padding: 0 12px 12px;
+}
+
+.exp-pendientes-mount {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.exp-segment-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--bg) 92%, var(--border));
+  border: 1px solid color-mix(in oklab, var(--border) 45%, transparent);
+  flex-shrink: 0;
+}
+
+.exp-segment-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 12px;
+  border-radius: calc(var(--radius-md) - 2px);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.exp-segment-btn:hover {
+  color: var(--text);
+  background: color-mix(in oklab, var(--surface) 80%, var(--bg));
+}
+
+.exp-segment-btn.active {
+  color: var(--action);
+  background: color-mix(in oklab, var(--action) 12%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--action) 24%, transparent);
+}
+
+.exp-segment-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.exp-segment-panel {
+  display: none;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  flex-direction: column;
+}
+
+.exp-segment-panel.active {
+  display: flex;
+}
+
+html.dark .exp-datos-collapse {
+  background: color-mix(in oklab, var(--surface) 94%, var(--bg));
+}
+
+html.dark .exp-segment-bar {
+  background: color-mix(in oklab, var(--surface) 90%, var(--bg));
+}

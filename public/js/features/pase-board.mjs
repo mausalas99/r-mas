@@ -20,16 +20,30 @@ import {
 } from "./expediente.mjs";
 import { inferFechaLabSetFromId, renderTendencias } from "./tendencias.mjs";
 import { renderTodoForm, todoCompareForSort, toggleTodo } from "./todos.mjs";
+import { renderManejo } from "./manejo.mjs";
+import { renderRecetaHu } from "./receta-hu.mjs";
 import { scrollActiveRondaCardIntoView, setRoundOverviewMode, syncRoundExpedienteLayout } from "./patients.mjs";
 import { renderEstadoActualBar } from "./soap-estado.mjs";
 import {
   animateTabPanelEnter,
   hideAppTabPanel,
   initTabBarMotion,
+  innerTabButtonId,
   showAppTabPanel,
   syncAppTabIndicator,
   syncInnerTabIndicator,
 } from "../ui-tab-motion.mjs";
+import {
+  applyExpedientePaneLayout,
+  consolidatedInnerTabButtonId,
+  defaultGranularForConsolidatedTab,
+  GRANULAR_TABS,
+  migrateGranularInner,
+  resetExpedientePaneLayoutCache,
+  syncConsolidatedPaneVisibility,
+  syncConsolidatedSegmentBars,
+  useConsolidatedExpedienteTabs,
+} from "../expediente-tabs.mjs";
 
 export { initTabBarMotion } from "../ui-tab-motion.mjs";
 
@@ -524,6 +538,12 @@ export function openPaseSectionInNormal(which) {
     switchInnerTab("tend");
   } else if (w === "med" || w === "medicamentos") {
     switchAppTab("med");
+  } else if (w === "manejo") {
+    switchAppTab("nota");
+    switchInnerTab("manejo");
+  } else if (w === "recetahu" || w === "receta-hu" || w === "receta_hu") {
+    switchAppTab("nota");
+    switchInnerTab("recetaHu");
   } else if (w === "expediente" || w === "nota") {
     switchAppTab("nota");
     switchInnerTab("notas");
@@ -700,11 +720,28 @@ export function syncMainAppTabA11y(tab) {
   });
 })();
 
+function wireExpedienteDatosCollapseRender() {
+  var el = document.getElementById("exp-datos-collapse");
+  if (!el || el._expDatosRenderWired) return;
+  el._expDatosRenderWired = true;
+  el.addEventListener("toggle", function () {
+    if (el.open) renderPatientDataPane();
+  });
+}
+
 export function syncInnerTabVisualOnly() {
-  var tab = rt.getActiveInner() || "todo";
-  var ids = ["datos", "notas", "indica", "tend", "cult", "listado", "todo"];
-  ids.forEach(function (t) {
-    var btn = document.getElementById("itab-" + t);
+  var settings = rt.getSettings();
+  var tab = migrateGranularInner(rt.getActiveInner() || "todo", settings);
+  var consolidated = useConsolidatedExpedienteTabs(settings);
+  if (consolidated) {
+    syncConsolidatedInnerTabButtons(tab, settings);
+    syncConsolidatedPaneVisibility(tab, settings);
+    syncConsolidatedSegmentBars(tab, settings);
+    syncInnerTabIndicator(tab, { consolidated: true });
+    return;
+  }
+  GRANULAR_TABS.forEach(function (t) {
+    var btn = document.getElementById(innerTabButtonId(t));
     var pane = document.getElementById("itab-content-" + t);
     if (btn) btn.classList.toggle("active", tab === t);
     if (pane) pane.classList.toggle("active", tab === t);
@@ -712,35 +749,101 @@ export function syncInnerTabVisualOnly() {
   syncInnerTabIndicator(tab);
 }
 
-export function switchInnerTab(tab, opts) {
-  opts = opts || {};
-  var prevInner = rt.getActiveInner() || "todo";
-  if (isPaseMode() && rt.getActiveAppTab() === "nota" && !opts.preserveRoundOverview) {
-    setRoundOverviewMode(false);
-  }
-  rt.setActiveInner(tab);
-  var ids = ["datos", "notas", "indica", "tend", "cult", "listado", "todo"];
-  ids.forEach(function (t) {
-    var btn = document.getElementById("itab-" + t);
-    var pane = document.getElementById("itab-content-" + t);
-    if (btn) btn.classList.toggle("active", tab === t);
-    if (pane) pane.classList.toggle("active", tab === t);
+function syncConsolidatedInnerTabButtons(granularTab, settings) {
+  var composite = consolidatedInnerTabButtonId(granularTab, settings).replace(/^itab-/, "");
+  document.querySelectorAll(".exp-consolidated-tab").forEach(function (btn) {
+    var id = btn.id || "";
+    var name = id.replace(/^itab-/, "");
+    btn.classList.toggle("active", name === composite);
   });
-  if (prevInner !== tab) {
-    animateTabPanelEnter(document.getElementById("itab-content-" + tab));
-  }
-  if (tab === "datos") renderPatientDataPane();
-  syncRoundExpedienteLayout();
+}
+
+function renderGranularInnerTab(tab) {
+  if (tab === "datos" || tab === "todo") renderPatientDataPane();
   if (tab === "tend") renderTendencias();
   if (tab === "cult") renderCultivosTable();
   if (tab === "listado") renderListadoForm();
   if (tab === "todo") renderTodoForm();
+  if (tab === "manejo") renderManejo();
+  if (tab === "recetaHu") renderRecetaHu();
+}
+
+export function switchConsolidatedTab(compositeTab) {
+  var settings = rt.getSettings();
+  var current = migrateGranularInner(rt.getActiveInner() || "todo", settings);
+  var currentComposite = consolidatedInnerTabButtonId(current, settings).replace(/^itab-/, "");
+  if (currentComposite === compositeTab) {
+    syncConsolidatedInnerTabButtons(current, settings);
+    syncConsolidatedPaneVisibility(current, settings);
+    syncConsolidatedSegmentBars(current, settings);
+    syncInnerTabIndicator(current, { consolidated: true });
+    return;
+  }
+  switchInnerTab(defaultGranularForConsolidatedTab(compositeTab, settings));
+}
+
+export function switchInnerTab(tab, opts) {
+  opts = opts || {};
+  var settings = rt.getSettings();
+  tab = migrateGranularInner(tab, settings);
+  var prevInner = migrateGranularInner(rt.getActiveInner() || "todo", settings);
+  var consolidated = useConsolidatedExpedienteTabs(settings);
+  var expedienteTabs = {
+    datos: 1,
+    notas: 1,
+    indica: 1,
+    tend: 1,
+    cult: 1,
+    listado: 1,
+    todo: 1,
+    manejo: 1,
+    recetaHu: 1,
+  };
+  if (expedienteTabs[tab] && isPaseMode() && getUiDensity() !== "normal") {
+    if (tab === "recetaHu") {
+      openPaseSectionInNormal("recetaHu");
+      return;
+    }
+    if (tab === "manejo") {
+      openPaseSectionInNormal("manejo");
+      return;
+    }
+  }
+  if (expedienteTabs[tab] && rt.getActiveAppTab() !== "nota") {
+    switchAppTab("nota");
+  }
+  if (isPaseMode() && rt.getActiveAppTab() === "nota" && !opts.preserveRoundOverview) {
+    setRoundOverviewMode(false);
+  }
+  rt.setActiveInner(tab);
+  if (consolidated) {
+    syncConsolidatedInnerTabButtons(tab, settings);
+    syncConsolidatedPaneVisibility(tab, settings);
+    syncConsolidatedSegmentBars(tab, settings);
+    if (prevInner !== tab) {
+      animateTabPanelEnter(document.getElementById("itab-content-" + consolidatedInnerTabButtonId(tab, settings).replace(/^itab-/, "")));
+    }
+  } else {
+    GRANULAR_TABS.forEach(function (t) {
+      var btn = document.getElementById(innerTabButtonId(t));
+      var pane = document.getElementById("itab-content-" + t);
+      if (btn) btn.classList.toggle("active", tab === t);
+      if (pane) pane.classList.toggle("active", tab === t);
+    });
+    if (prevInner !== tab) {
+      animateTabPanelEnter(document.getElementById("itab-content-" + tab));
+    }
+  }
+  renderGranularInnerTab(tab);
+  syncRoundExpedienteLayout();
   rt.syncWorkContextChrome();
-  syncInnerTabIndicator(tab);
+  syncInnerTabIndicator(tab, consolidated ? { consolidated: true } : undefined);
 }
 
 export function renderInnerTabs() {
-  var sala = isModeSala(rt.getSettings());
+  var settings = rt.getSettings();
+  var sala = isModeSala(settings);
+  var consolidated = useConsolidatedExpedienteTabs(settings);
   function show(id, visible) {
     var el = document.getElementById(id);
     if (el) el.style.display = visible ? "" : "none";
@@ -749,34 +852,68 @@ export function renderInnerTabs() {
     var el = document.getElementById(id);
     if (el) el.style.order = String(order);
   }
-  show("itab-datos", sala);
-  show("itab-notas", !sala);
-  show("itab-indica", !sala);
-  show("itab-tend", true);
-  show("itab-cult", true);
-  show("itab-listado", sala);
-  show("itab-todo", true);
+  resetExpedientePaneLayoutCache();
+  document.querySelectorAll(".exp-granular-tab").forEach(function (el) {
+    el.style.display = consolidated ? "none" : "";
+  });
+  document.querySelectorAll(".exp-consolidated-tab").forEach(function (el) {
+    el.style.display = consolidated ? "" : "none";
+  });
+  applyExpedientePaneLayout(consolidated, settings);
 
-  if (sala) {
+  if (consolidated) {
+    setOrder("itab-paciente", 1);
+    setOrder("itab-clinico", 2);
+    setOrder("itab-resultados", 3);
+    setOrder("itab-salida", 4);
+    wireExpedienteDatosCollapseRender();
+    var activeInner = migrateGranularInner(rt.getActiveInner() || "todo", settings);
+    if (activeInner !== rt.getActiveInner()) rt.setActiveInner(activeInner);
+    syncInnerTabVisualOnly();
+    renderGranularInnerTab(activeInner);
+  } else if (sala) {
+    show("itab-datos", true);
+    show("itab-notas", false);
+    show("itab-indica", false);
+    show("itab-tend", true);
+    show("itab-cult", true);
+    show("itab-listado", true);
+    show("itab-todo", true);
+    show("itab-manejo", true);
+    show("itab-receta-hu", false);
     setOrder("itab-datos", 1);
     setOrder("itab-todo", 2);
-    setOrder("itab-tend", 3);
-    setOrder("itab-cult", 4);
-    setOrder("itab-listado", 5);
+    setOrder("itab-manejo", 3);
+    setOrder("itab-tend", 4);
+    setOrder("itab-cult", 5);
+    setOrder("itab-listado", 6);
     setOrder("itab-notas", 99);
     setOrder("itab-indica", 99);
+    setOrder("itab-receta-hu", 99);
   } else {
-    setOrder("itab-notas", 1);
-    setOrder("itab-indica", 2);
-    setOrder("itab-tend", 3);
-    setOrder("itab-cult", 4);
-    setOrder("itab-todo", 5);
-    setOrder("itab-datos", 99);
+    show("itab-datos", true);
+    show("itab-notas", true);
+    show("itab-indica", true);
+    show("itab-tend", true);
+    show("itab-cult", true);
+    show("itab-listado", false);
+    show("itab-todo", true);
+    show("itab-manejo", true);
+    show("itab-receta-hu", true);
+    setOrder("itab-datos", 1);
+    setOrder("itab-todo", 2);
+    setOrder("itab-notas", 3);
+    setOrder("itab-indica", 4);
+    setOrder("itab-tend", 5);
+    setOrder("itab-cult", 6);
+    setOrder("itab-manejo", 7);
+    setOrder("itab-receta-hu", 8);
     setOrder("itab-listado", 99);
   }
 
   renderEstadoActualBar();
-  syncInnerTabIndicator(rt.getActiveInner() || "todo");
+  var active = migrateGranularInner(rt.getActiveInner() || "todo", settings);
+  syncInnerTabIndicator(active, consolidated ? { consolidated: true } : undefined);
 }
 
 export function getActiveInnerTab() {
@@ -789,5 +926,6 @@ export const windowHandlers = {
   openPaseSectionInNormal,
   renderPaseBoard,
   switchInnerTab,
+  switchConsolidatedTab,
   initTabBarMotion,
 };

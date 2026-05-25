@@ -33,6 +33,7 @@ import {
   normalizeHoraLabHistory,
 } from "../tend-core.mjs";
 import { evaluateLabSuggestions, filterNewLabSuggestions } from "../lab-clinical-suggestions.mjs";
+import { evaluateElectrolyteManejo } from "../electrolyte-manejo.mjs";
 import { normalizeLabHistoryPatientSets } from "../storage.js";
 import { patients, notes, labHistory, saveState } from "../app-state.mjs";
 import { isPaseMode } from "./chrome.mjs";
@@ -72,6 +73,8 @@ let rt = {
   primaryTipoForLabSet() {},
   refreshAllTodoUIs() {},
   emitLiveSyncTodoUpsert() {},
+  renderManejo() {},
+  refreshManejoPanel() {},
   removeAtbRisPanelsFromBody() {},
   wireAtbRisHoverPanels() {},
   copyToClipboardSafe(_t) {
@@ -1061,6 +1064,29 @@ function pushLabHistory(patientId, resLabs, fecha, hora, sourceText, bhExtras, r
   labHistory[patientId].push(set);
 }
 
+/** Tras nuevo set en historial: marca manejo electrolitos pendiente si hay alteraciones. */
+function applyManejoPending(patientId, parsed, parsedBySection, labSetId, fecha) {
+  if (!patientId || !labSetId) return;
+  var patient = patients.find(function (p) {
+    return p && String(p.id) === String(patientId);
+  });
+  if (!patient) return;
+  var evalOut = evaluateElectrolyteManejo({
+    parsedBySection: parsedBySection || {},
+    parsed: parsed || {},
+    patient: patient,
+    labSetId: labSetId,
+    labFecha: fecha,
+  });
+  if (!evalOut || !evalOut.hasAlterations) return;
+  patient.manejoPending = {
+    labSetId: labSetId,
+    detectedAt: new Date().toISOString(),
+  };
+  if (typeof rt.renderManejo === 'function') rt.renderManejo();
+  if (typeof rt.refreshManejoPanel === 'function') rt.refreshManejoPanel();
+}
+
 function isDuplicateLatestLabSet(patientId, resLabs, fecha, hora) {
   if (!patientId) return false;
   var list = labHistory[patientId] || [];
@@ -1122,6 +1148,18 @@ function autoStoreProcessedLabResult(result) {
     result.bhExtras,
     result.refsBySection
   );
+  var pid = rt.getActiveId();
+  var hist = labHistory[pid];
+  var lastSet = hist && hist.length ? hist[hist.length - 1] : null;
+  if (lastSet) {
+    applyManejoPending(
+      pid,
+      lastSet.parsed,
+      lastSet.parsedBySection,
+      lastSet.id,
+      lastSet.fecha
+    );
+  }
   applyLabClinicalSuggestions(rt.getActiveId(), result.resLabs, fecha, result.bhExtras);
   saveState();
   renderLabHistoryPanel();

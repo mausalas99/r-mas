@@ -247,6 +247,18 @@ export const storage = {
     localStorage.setItem('rpc-medRecetaByPatient', JSON.stringify(persist));
   },
 
+  getRecetaHuByPatient() {
+    return safeParseObject(localStorage.getItem('rpc-recetaHuByPatient'));
+  },
+
+  saveRecetaHuByPatient(recetaHuByPatient) {
+    const persist = {};
+    Object.keys(recetaHuByPatient || {}).forEach(k => {
+      if (recetaHuByPatient[k] && !k.startsWith('demo-')) persist[k] = recetaHuByPatient[k];
+    });
+    localStorage.setItem('rpc-recetaHuByPatient', JSON.stringify(persist));
+  },
+
   /**
    * Get to-do list for a patient. Normaliza forma de cada todo.
    * @param {string} patientId
@@ -504,13 +516,14 @@ export const storage = {
    * @param {Object} medRecetaByPatient - Object mapping patient IDs to med receta payloads
    * @param {Object} [listadoProblemas] - Optional v3.0 listado de problemas map
    */
-  saveAll(patients, notes, indicaciones, labHistory, medRecetaByPatient, listadoProblemas) {
+  saveAll(patients, notes, indicaciones, labHistory, medRecetaByPatient, listadoProblemas, recetaHuByPatient) {
     this.savePatients(patients);
     this.saveNotes(notes);
     this.saveIndicaciones(indicaciones);
     this.saveLabHistory(labHistory);
     this.saveMedRecetaByPatient(medRecetaByPatient || {});
     if (listadoProblemas !== undefined) this.saveListadoProblemas(listadoProblemas || {});
+    if (recetaHuByPatient !== undefined) this.saveRecetaHuByPatient(recetaHuByPatient || {});
   }
 };
 

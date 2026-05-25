@@ -18,6 +18,7 @@
   gap: calc(16px * var(--density-space));
 }
 header {
+  --header-bar-height: calc(54px + 12px * (var(--density-space) - 1));
   position: relative;
   background: var(--surface);
   color: var(--text);
@@ -33,22 +34,24 @@ header {
   margin-right: var(--shell-inset);
   border-bottom-left-radius: var(--radius-md);
   border-bottom-right-radius: var(--radius-md);
-  overflow: hidden;
+  /* Menús ⇄ / ⚙ cuelgan bajo .header-right; overflow:hidden los recortaba por completo */
+  overflow: visible;
 }
-html.electron-macos-inset-bar header {
+/* Solo la barra superior de la app — no otros <header> del contenido (p. ej. receta-hu-head) */
+html.electron-macos-inset-bar body > header {
   margin-left: 0;
   padding-left: var(--titlebar-traffic-gap);
   -webkit-app-region: drag;
 }
-html.electron-macos-inset-bar header #app-brand,
-html.electron-macos-inset-bar header .header-right {
+html.electron-macos-inset-bar body > header #app-brand,
+html.electron-macos-inset-bar body > header .header-right {
   -webkit-app-region: no-drag;
 }
 html.electron-macos-inset-bar #app-brand {
   margin-left: 0;
 }
 /* Con modales abiertos, el header no debe capturar arrastre ni clics bajo el overlay */
-html.electron-macos-inset-bar:has(.modal-backdrop.open) header {
+html.electron-macos-inset-bar:has(.modal-backdrop.open) body > header {
   -webkit-app-region: no-drag;
 }
 /* Toda capa modal es interactiva (no arrastrar ventana) */

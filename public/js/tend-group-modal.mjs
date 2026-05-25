@@ -33,6 +33,7 @@ import {
   defaultSeriesColor
 } from './tend-prefs.mjs';
 import { buildTableTsv, copyTableModelAsPng, copyTableText } from './tend-export.mjs';
+import { evaluateGasoExtended } from './gaso-extended.mjs';
 
 const GENERIC_FAMILY_ORDER = ['gases', 'percent-diff', 'percent-rbc', 'absolute'];
 
@@ -180,7 +181,8 @@ export function createTendGroupModal(deps) {
     historyDesc: [],
     historyAsc: [],
     visibleFields: [],
-    specsByField: Object.create(null)
+    specsByField: Object.create(null),
+    gasoExtendedFio2: 0.21
   };
 
   var _panelSortable = null;
@@ -663,6 +665,352 @@ export function createTendGroupModal(deps) {
     });
   }
 
+  function serieNumFromLabSet(set, sec, fk) {
+    var v = getSetTrendValueForSeries(set, sec, fk);
+    return v != null && isFinite(v) ? v : null;
+  }
+
+  /** @returns {HTMLElement} */
+  function ensureGasoExtendedDialog() {
+    var bd = document.getElementById('tend-gaso-ext-backdrop');
+    if (bd) return bd;
+
+    var escHtml = deps.esc || function (t) {
+      return String(t == null ? '' : t);
+    };
+
+    bd = document.createElement('div');
+    bd.id = 'tend-gaso-ext-backdrop';
+    bd.className = 'tend-gaso-ext-backdrop';
+    bd.setAttribute('aria-hidden', 'true');
+    bd.style.display = 'none';
+
+    bd.innerHTML =
+      '<div id="tend-gaso-ext-dialog" class="tend-gaso-ext-dialog" role="dialog" aria-modal="true" aria-labelledby="tend-gaso-ext-title">' +
+        '<header class="tend-gaso-ext-header">' +
+          '<div class="tend-gaso-ext-header-text">' +
+            '<h2 id="tend-gaso-ext-title">' + escHtml('Gasometría extendida') + '</h2>' +
+            '<p class="tend-gaso-ext-subtitle">' + escHtml('Último estudio · interpretación ácido-base') + '</p>' +
+          '</div>' +
+          '<div class="tend-gaso-ext-header-actions">' +
+            '<div class="tend-gaso-fio2-chip" role="group" aria-label="Fracción inspirada de oxígeno">' +
+              '<span class="tend-gaso-fio2-chip-label">FiO₂</span>' +
+              '<input type="number" class="tend-gaso-fio2-input" step="0.01" min="0.08" max="100" inputmode="decimal" aria-label="FiO₂ (0.21 o 21)" title="Fracción 0.21 o porcentaje 21" />' +
+              '<span class="tend-gaso-fio2-chip-hint">0.21 · 21%</span>' +
+            '</div>' +
+            '<button type="button" class="tend-gaso-ext-close btn-med-secondary" aria-label="Cerrar">×</button>' +
+          '</div>' +
+        '</header>' +
+        '<div class="tend-gaso-extended-inner"></div>' +
+      '</div>';
+
+    bd.addEventListener('click', function (ev) {
+      if (ev.target === bd) closeGasoExtended();
+    });
+    bd.querySelector('.tend-gaso-ext-close').addEventListener('click', closeGasoExtended);
+
+    document.body.appendChild(bd);
+    return bd;
+  }
+
+  function closeGasoExtended() {
+    var bd = document.getElementById('tend-gaso-ext-backdrop');
+    if (!bd) return;
+    bd.style.display = 'none';
+    bd.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('tend-gaso-ext-open');
+  }
+
+  function parseFio2Input(raw) {
+    var n = parseFloat(String(raw == null ? '' : raw).replace(',', '.'));
+    if (!isFinite(n)) return state.gasoExtendedFio2;
+    if (n > 3) return Math.min(Math.max(n / 100, 0.08), 1);
+    return Math.min(Math.max(n, 0.08), 1);
+  }
+
+  /** @param {HTMLElement} slot */
+  function refillGasoExtendedSlot(slot, latest) {
+    var escHtml = deps.esc || function (t) {
+      return String(t == null ? '' : t);
+    };
+    if (!slot) return;
+
+    slot.innerHTML = '';
+
+    if (!latest || !latest.parsedBySection) {
+      slot.innerHTML =
+        '<p class="tend-empty" style="font-size:13px;color:var(--text-muted);">' +
+        escHtml('Sin valores recientes disponibles para gasometría.') +
+        '</p>';
+      return;
+    }
+
+    var na =
+      serieNumFromLabSet(latest, 'QS', 'Na') ??
+      serieNumFromLabSet(latest, 'ESC', 'Na') ??
+      serieNumFromLabSet(latest, 'GASES', 'Na');
+    var cl =
+      serieNumFromLabSet(latest, 'QS', 'Cl') ??
+      serieNumFromLabSet(latest, 'ESC', 'Cl');
+    var alb = serieNumFromLabSet(latest, 'PFHs', 'Alb');
+
+    var pH = serieNumFromLabSet(latest, 'GASES', 'pH');
+    var pCO2 = serieNumFromLabSet(latest, 'GASES', 'pCO2');
+    var pO2 = serieNumFromLabSet(latest, 'GASES', 'pO2');
+    var bic = serieNumFromLabSet(latest, 'GASES', 'Bica');
+
+    function fmtNum(n, unit) {
+      if (n == null || !isFinite(n)) return '—';
+      return String(n) + (unit ? ' ' + unit : '');
+    }
+
+    function primaryDisorderLabel(disorder, type) {
+      var dMap = {
+        metabolic: 'Metabólico',
+        respiratory: 'Respiratorio',
+        mixed: 'Mixto',
+        compensated: 'Compensado',
+        unknown: 'Indeterminado',
+      };
+      var tMap = { acidosis: 'acidosis', alkalosis: 'alcalosis', none: '' };
+      var d = dMap[String(disorder || '').toLowerCase()] || String(disorder || '—');
+      var t = tMap[String(type || '').toLowerCase()] || '';
+      return t ? d + ' · ' + t : d;
+    }
+
+    function metricChip(label, value, tone) {
+      var chip = document.createElement('span');
+      chip.className = 'tend-gaso-chip' + (tone ? ' tend-gaso-chip--' + tone : '');
+      var lbl = document.createElement('span');
+      lbl.className = 'tend-gaso-chip-label';
+      lbl.textContent = label;
+      var val = document.createElement('strong');
+      val.className = 'tend-gaso-chip-val';
+      val.textContent = value;
+      chip.appendChild(lbl);
+      chip.appendChild(val);
+      return chip;
+    }
+
+    function subMetric(label, value) {
+      var sub = document.createElement('div');
+      sub.className = 'tend-gaso-sub';
+      var lbl = document.createElement('span');
+      lbl.className = 'tend-gaso-sub-label';
+      lbl.textContent = label;
+      var val = document.createElement('span');
+      val.className = 'tend-gaso-sub-val';
+      val.textContent = value;
+      sub.appendChild(lbl);
+      sub.appendChild(val);
+      return sub;
+    }
+
+    function stepCard(num, title, bodyEl) {
+      var art = document.createElement('article');
+      art.className = 'tend-gaso-step';
+      var numEl = document.createElement('span');
+      numEl.className = 'tend-gaso-step-num';
+      numEl.textContent = String(num);
+      var body = document.createElement('div');
+      body.className = 'tend-gaso-step-body';
+      var h = document.createElement('h5');
+      h.className = 'tend-gaso-step-title';
+      h.textContent = title;
+      body.appendChild(h);
+      body.appendChild(bodyEl);
+      art.appendChild(numEl);
+      art.appendChild(body);
+      return art;
+    }
+
+    function stepText(txt) {
+      var p = document.createElement('p');
+      p.className = 'tend-gaso-step-text';
+      p.textContent = String(txt || '');
+      return p;
+    }
+
+    try {
+      var ev = evaluateGasoExtended({
+        pH: pH,
+        pCO2: pCO2,
+        pO2: pO2,
+        hco3: bic,
+        na: na,
+        cl: cl,
+        alb: alb,
+        fio2: state.gasoExtendedFio2,
+      });
+
+      var panel = document.createElement('div');
+      panel.className = 'tend-gaso-ext-panel';
+
+      var metrics = document.createElement('div');
+      metrics.className = 'tend-gaso-metrics';
+      metrics.appendChild(
+        metricChip(
+          'pH',
+          fmtNum(pH),
+          pH != null && pH < 7.35 ? 'low' : pH != null && pH > 7.45 ? 'high' : ''
+        )
+      );
+      metrics.appendChild(metricChip('PaCO₂', fmtNum(pCO2, 'mmHg')));
+      metrics.appendChild(metricChip('HCO₃⁻', fmtNum(bic, 'mEq/L')));
+      metrics.appendChild(
+        metricChip(
+          'Anión gap',
+          fmtNum(ev.steps.anionGap.value, 'mEq/L'),
+          ev.steps.anionGap.value != null && ev.steps.anionGap.value > 12 ? 'high' : ''
+        )
+      );
+      panel.appendChild(metrics);
+
+      var steps = document.createElement('div');
+      steps.className = 'tend-gaso-steps';
+
+      steps.appendChild(stepCard(1, 'Estado ácido-base', stepText(ev.steps.ph.interpretation)));
+
+      var primaryBody = document.createElement('div');
+      var primaryBadge = document.createElement('span');
+      primaryBadge.className = 'tend-gaso-badge';
+      primaryBadge.textContent = primaryDisorderLabel(ev.steps.primary.disorder, ev.steps.primary.type);
+      primaryBody.appendChild(primaryBadge);
+      steps.appendChild(stepCard(2, 'Trastorno predominante', primaryBody));
+
+      var cmp = ev.steps.compensation;
+      var cmpBody = document.createElement('div');
+      var cmpGrid = document.createElement('div');
+      cmpGrid.className = 'tend-gaso-subgrid';
+      if (cmp.expectedPCO2 != null) {
+        cmpGrid.appendChild(subMetric('PaCO₂ Winter', '~' + cmp.expectedPCO2 + ' mmHg'));
+      }
+      if (cmp.expectedHCO3Acute != null) {
+        cmpGrid.appendChild(subMetric('HCO₃⁻ agudo', '~' + cmp.expectedHCO3Acute));
+      }
+      if (cmp.expectedHCO3Chronic != null) {
+        cmpGrid.appendChild(subMetric('HCO₃⁻ crónico', '~' + cmp.expectedHCO3Chronic));
+      }
+      if (cmpGrid.childNodes.length) cmpBody.appendChild(cmpGrid);
+      cmpBody.appendChild(stepText(cmp.note));
+      steps.appendChild(stepCard(3, 'Compensación esperada', cmpBody));
+
+      var agBody = document.createElement('div');
+      if (ev.steps.anionGap.value != null) {
+        var agBadge = document.createElement('span');
+        agBadge.className =
+          'tend-gaso-badge' + (ev.steps.anionGap.value > 12 ? ' tend-gaso-badge--warn' : '');
+        agBadge.textContent = ev.steps.anionGap.value + ' mEq/L';
+        agBody.appendChild(agBadge);
+      }
+      agBody.appendChild(stepText(ev.steps.anionGap.interpretation));
+      steps.appendChild(stepCard(4, 'Anión gap', agBody));
+
+      var ddBody = document.createElement('div');
+      if (ev.steps.deltaDelta.value != null) {
+        var ddBadge = document.createElement('span');
+        ddBadge.className = 'tend-gaso-badge';
+        ddBadge.textContent = String(ev.steps.deltaDelta.value);
+        ddBody.appendChild(ddBadge);
+      }
+      ddBody.appendChild(stepText(ev.steps.deltaDelta.interpretation));
+      steps.appendChild(stepCard(5, 'Delta-delta', ddBody));
+
+      var oxBody = document.createElement('div');
+      var oxGrid = document.createElement('div');
+      oxGrid.className = 'tend-gaso-subgrid';
+      if (ev.steps.oxygenation.pfRatio != null) {
+        oxGrid.appendChild(subMetric('P/F', '≈ ' + ev.steps.oxygenation.pfRatio));
+      }
+      if (ev.steps.oxygenation.aaGradient != null) {
+        oxGrid.appendChild(subMetric('Gradiente A–a', '≈ ' + ev.steps.oxygenation.aaGradient + ' mmHg'));
+      }
+      if (oxGrid.childNodes.length) oxBody.appendChild(oxGrid);
+      oxBody.appendChild(stepText(ev.steps.oxygenation.note));
+      steps.appendChild(stepCard(6, 'Oxigenación', oxBody));
+
+      panel.appendChild(steps);
+      slot.appendChild(panel);
+
+      if (ev.summaryLines && ev.summaryLines.length) {
+        var hs = document.createElement('details');
+        hs.className = 'tend-gaso-summary';
+        var sm = document.createElement('summary');
+        sm.textContent = 'Resumen rápido';
+        hs.appendChild(sm);
+        var ul = document.createElement('ul');
+        ul.className = 'tend-gaso-summary-list';
+        ev.summaryLines.forEach(function (ln) {
+          var li = document.createElement('li');
+          li.textContent = ln;
+          ul.appendChild(li);
+        });
+        hs.appendChild(ul);
+        slot.appendChild(hs);
+      }
+    } catch (e) {
+      slot.innerHTML =
+        '<p class="tend-empty" style="font-size:13px;color:var(--error);">' +
+        escHtml('No se pudo calcular la gasometría extendida.') +
+        '</p>';
+      console.error('evaluateGasoExtended', e);
+    }
+  }
+
+  function wireGasoExtendedDialog(bd) {
+    var inp = bd.querySelector('.tend-gaso-fio2-input');
+    if (!inp || inp._gasoWired) return;
+    inp._gasoWired = true;
+
+    inp.value =
+      Math.abs(state.gasoExtendedFio2 * 100 - Math.round(state.gasoExtendedFio2 * 100)) < 1e-6 &&
+      state.gasoExtendedFio2 <= 1
+        ? String(state.gasoExtendedFio2.toFixed(2))
+        : String(state.gasoExtendedFio2);
+
+    function rerun() {
+      state.gasoExtendedFio2 = parseFio2Input(inp.value);
+      var latest = state.historyDesc[0];
+      refillGasoExtendedSlot(bd.querySelector('.tend-gaso-extended-inner'), latest);
+    }
+
+    inp.addEventListener('change', rerun);
+    inp.addEventListener('input', rerun);
+  }
+
+  function openGasoExtended() {
+    var patientId = deps.getActiveId();
+    if (!patientId) return;
+
+    var historyDesc = sortLabHistoryChronological(deps.getHistory() || []);
+    if (!historyDesc.length) {
+      if (deps.showToast) deps.showToast('Sin laboratorio reciente para gasometría.', 'warn');
+      return;
+    }
+
+    state.patientId = patientId;
+    state.historyDesc = historyDesc;
+
+    var latest = historyDesc[0];
+    var hasGaso =
+      latest &&
+      latest.parsedBySection &&
+      latest.parsedBySection.GASES &&
+      serieNumFromLabSet(latest, 'GASES', 'pH') != null;
+    if (!hasGaso) {
+      if (deps.showToast) deps.showToast('No hay gasometría en el último estudio.', 'warn');
+      return;
+    }
+
+    var bd = ensureGasoExtendedDialog();
+    wireGasoExtendedDialog(bd);
+    refillGasoExtendedSlot(bd.querySelector('.tend-gaso-extended-inner'), latest);
+
+    bd.style.display = 'flex';
+    bd.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('tend-gaso-ext-open');
+  }
+
   function renderCharts(sectionKey) {
     var panelEl = document.getElementById('tend-group-panel-charts');
     if (!panelEl) return;
@@ -695,8 +1043,14 @@ export function createTendGroupModal(deps) {
       });
     }
     if (!activeFams.length) {
-      panelEl.innerHTML =
-        '<p class="tend-empty" style="margin:12px 0;font-size:13px;color:var(--text-muted);">Sin datos para graficar en este estudio.</p>';
+      var emptyP = document.createElement('p');
+      emptyP.className = 'tend-empty';
+      emptyP.style.margin = '12px 0';
+      emptyP.style.fontSize = '13px';
+      emptyP.style.color = 'var(--text-muted)';
+      emptyP.textContent = 'Sin datos para graficar en este estudio.';
+      panelEl.appendChild(emptyP);
+      renderPanelsHiddenBar(panelEl, sectionKey, []);
       return;
     }
 
@@ -1018,6 +1372,7 @@ export function createTendGroupModal(deps) {
 
       state.sectionKey = sectionKey;
       state.patientId = patientId;
+      if (sectionKey === 'GASES') state.gasoExtendedFio2 = 0.21;
       state.historyDesc = historyDesc;
       state.historyAsc = toAscendingHistory(historyDesc);
       state.specsByField = Object.create(null);
@@ -1109,6 +1464,10 @@ export function createTendGroupModal(deps) {
           );
         }
       });
-    }
+    },
+
+    openGasoExtended: openGasoExtended,
+
+    closeGasoExtended: closeGasoExtended,
   };
 }

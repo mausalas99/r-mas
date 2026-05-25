@@ -967,3 +967,312 @@ html.ui-density-normal .tend-inline-controls { margin-bottom: 12px; }
 html.ui-density-normal .tend-section { margin-bottom: 14px; }
 .tend-card:hover { box-shadow: var(--shadow-md); border-color: rgba(37, 99, 235, 0.25); }
 html.dark .tend-card:hover { border-color: rgba(96, 165, 250, 0.35); }
+
+/* Gasometría extendida — modal y bloques */
+body.tend-gaso-ext-open { overflow: hidden; }
+
+.tend-gaso-ext-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 12050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+html.dark .tend-gaso-ext-backdrop {
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.tend-gaso-ext-dialog {
+  width: min(960px, 96vw);
+  max-height: min(90vh, 940px);
+  overflow: auto;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--surface, var(--bg));
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.28);
+  padding: 0 0 16px;
+}
+
+.tend-gaso-ext-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: inherit;
+  z-index: 1;
+}
+
+.tend-gaso-ext-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.tend-gaso-fio2-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(37, 99, 235, 0.28);
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.tend-gaso-fio2-chip-label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.tend-gaso-fio2-input {
+  width: 3.4rem;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--text);
+  padding: 0;
+  outline: none;
+  -moz-appearance: textfield;
+}
+
+.tend-gaso-fio2-input::-webkit-outer-spin-button,
+.tend-gaso-fio2-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.tend-gaso-fio2-input:focus {
+  outline: none;
+}
+
+.tend-gaso-fio2-chip:focus-within {
+  border-color: rgba(37, 99, 235, 0.55);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.tend-gaso-fio2-chip-hint {
+  font-size: 10px;
+  color: var(--text-muted);
+  opacity: 0.8;
+  white-space: nowrap;
+}
+
+.tend-gaso-ext-header h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.tend-gaso-ext-subtitle {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.tend-gaso-ext-close {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  font-size: 22px;
+  line-height: 1;
+  border-radius: 10px;
+}
+
+.tend-gaso-ext-dialog .tend-gaso-extended-inner {
+  margin: 0;
+  padding: 14px 18px 4px;
+}
+
+.tend-gaso-ext-trigger {
+  border-color: rgba(37, 99, 235, 0.35);
+}
+
+.tend-gaso-ext-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tend-gaso-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 720px) {
+  .tend-gaso-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.tend-gaso-steps {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 760px) {
+  .tend-gaso-steps {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tend-gaso-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--rpc-subtle-alt, rgba(0, 0, 0, 0.03));
+}
+
+.tend-gaso-chip-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.tend-gaso-chip-val {
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.tend-gaso-chip--low {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.tend-gaso-chip--high {
+  border-color: rgba(251, 191, 36, 0.45);
+  background: rgba(251, 191, 36, 0.1);
+}
+
+.tend-gaso-step {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface, transparent);
+}
+
+.tend-gaso-step-num {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 24px;
+  color: var(--primary, #2563eb);
+  background: rgba(37, 99, 235, 0.12);
+}
+
+.tend-gaso-step-title {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.tend-gaso-step-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.tend-gaso-badge {
+  display: inline-block;
+  margin-bottom: 6px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--text);
+}
+
+.tend-gaso-badge--warn {
+  border-color: rgba(251, 191, 36, 0.5);
+  background: rgba(251, 191, 36, 0.15);
+}
+
+.tend-gaso-subgrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.tend-gaso-sub {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 96px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px dashed var(--border);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.tend-gaso-sub-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+}
+
+.tend-gaso-sub-val {
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.tend-gaso-summary {
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.tend-gaso-summary summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.tend-gaso-summary-list {
+  margin: 6px 0 2px;
+  padding-left: 18px;
+  color: var(--text);
+}
+

@@ -141,6 +141,14 @@ import {
   renderTodoForm,
 } from './features/todos.mjs';
 import {
+  registerManejoRuntime,
+  renderManejo,
+} from './features/manejo.mjs';
+import {
+  registerRecetaHuRuntime,
+  renderRecetaHu,
+} from './features/receta-hu.mjs';
+import {
   renderPaseBoard,
   switchAppTab,
   openPaseSectionInNormal,
@@ -301,6 +309,7 @@ registerPatientsRuntime({
   renderInnerTabs: renderInnerTabs,
   renderEstadoActualButton: renderEstadoActualButton,
   renderNoteForm: renderNoteForm,
+  renderPatientDataPane: renderPatientDataPane,
   renderIndicaForm: renderIndicaForm,
   renderListadoForm: renderListadoForm,
   refreshTendenciasOrCultivosPanel: refreshTendenciasOrCultivosPanel,
@@ -316,6 +325,8 @@ registerPatientsRuntime({
   rpcPrefersReducedMotion: rpcPrefersReducedMotion,
   renderProcedureAgendaPanel: renderProcedureAgendaPanel,
   refreshAllTodoUIs: refreshAllTodoUIs,
+  renderManejo: renderManejo,
+  renderRecetaHu: renderRecetaHu,
   renderPaseBoard: renderPaseBoard,
   pushUndoSnapshot: pushUndoSnapshot,
   addAuditEntry: addAuditEntry,
@@ -375,6 +386,42 @@ registerTodosRuntime({
   },
   getRoundOverviewMode: getRoundOverviewMode,
   renderPaseBoard: renderPaseBoard,
+});
+
+registerManejoRuntime({
+  getActiveId: function () {
+    return rt.getActiveId();
+  },
+  ensureParsedLabHistory: ensureParsedLabHistory,
+  saveState: saveState,
+  showToast: showToast,
+  emitLiveSyncTodoUpsert: emitLiveSyncTodoUpsert,
+  refreshAllTodoUIs: refreshAllTodoUIs,
+});
+
+registerRecetaHuRuntime({
+  getActiveId: function () {
+    return rt.getActiveId();
+  },
+  getActiveAppTab: function () {
+    return rt.getActiveAppTab();
+  },
+  getActiveInner: function () {
+    return rt.getActiveInner();
+  },
+  getSettings: function () {
+    return rt.getSettings();
+  },
+  switchAppTab: switchAppTab,
+  switchInnerTab: switchInnerTab,
+  requestDocumentJson: requestDocumentJson,
+  handleDocumentGenerateResponse: handleDocumentGenerateResponse,
+  showToast: showToast,
+  guardMobileDocExport: guardMobileDocExport,
+  isRpcOffline: isRpcOffline,
+  incrementPendingJobs: incrementPendingJobs,
+  decrementPendingJobs: decrementPendingJobs,
+  syncOfflineButtonStates: syncOfflineButtonStates,
 });
 
 registerSettingsHelpRuntime({
@@ -514,6 +561,7 @@ registerLabPanelRuntime({
   isResLabChunkPureCultivo: isResLabChunkPureCultivo,
   buildCultivoOutputHtmlFragments: buildCultivoOutputHtmlFragments,
   buildLabSetDateLine: buildLabSetDateLine,
+  refreshManejoPanel: renderManejo,
 });
 
 registerProductivityRuntime({

@@ -20,6 +20,7 @@ import { renderEstadoActualButton } from "./soap-estado.mjs";
 import { renderRoundOverviewPanels } from "./patients.mjs";
 import { isModeSala } from "../mode-features.mjs";
 import { switchInnerTab, renderInnerTabs, getActiveInnerTab } from "./pase-board.mjs";
+import { renderPatientDataPane } from "./expediente.mjs";
 
 /** @type {{
  *   showToast(msg: string, type?: string): void,
@@ -65,6 +66,7 @@ function _buildLoadSettingsSnapshot() {
   try {
     return JSON.stringify({
       d: st.doctorName || "",
+      c: st.cedulaProfesional || "",
       p: st.profesorName || "",
       g: st.grado || "",
       di: st.defaultDieta || "",
@@ -95,9 +97,11 @@ export function loadSettings() {
   }
   var st = settingsRef();
   var docEl = document.getElementById("profile-doctor");
+  var cedEl = document.getElementById("profile-cedula");
   var proEl = document.getElementById("profile-profesor");
   var grEl = document.getElementById("profile-grado");
   if (docEl) docEl.value = st.doctorName || "";
+  if (cedEl) cedEl.value = st.cedulaProfesional || "";
   if (proEl) proEl.value = st.profesorName || "";
   if (grEl) grEl.value = st.grado || "";
   var modeSala = document.getElementById("app-mode-sala");
@@ -212,6 +216,7 @@ export function loadSettings() {
 export function saveSettings() {
   var st = settingsRef();
   st.doctorName = (document.getElementById("profile-doctor").value || "").trim();
+  st.cedulaProfesional = (document.getElementById("profile-cedula").value || "").trim();
   st.profesorName = (document.getElementById("profile-profesor").value || "").trim();
   st.grado = (document.getElementById("profile-grado").value || "").trim();
   st.quickOutputFormat = normalizeQuickOutputFormat(st.quickOutputFormat);
@@ -241,11 +246,15 @@ export function syncHeaderAppModeChip() {
 export function applyAppModeSwitchEffects() {
   var current = getActiveInnerTab();
   var nowSala = isModeSala(settingsRef());
-  if (nowSala && (current === "notas" || current === "indica")) switchInnerTab("todo");
-  else if (!nowSala && (current === "listado" || current === "datos")) switchInnerTab("todo");
+  if (nowSala && (current === "notas" || current === "indica")) switchInnerTab("manejo");
+  else if (nowSala && current === "recetaHu") switchInnerTab("listado");
+  else if (!nowSala && current === "listado") switchInnerTab("recetaHu");
   renderInnerTabs();
   renderEstadoActualButton();
-  if (rt.getActiveId()) renderNoteForm();
+  if (rt.getActiveId()) {
+    renderNoteForm();
+    if (getActiveInnerTab() === "datos" || getActiveInnerTab() === "todo") renderPatientDataPane();
+  }
   rt.syncWorkContextChrome();
   if (isPaseMode()) renderRoundOverviewPanels();
   rt.showToast("Modo cambiado a " + (nowSala ? "Sala" : "Interconsulta"), "success");

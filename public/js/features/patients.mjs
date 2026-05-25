@@ -43,6 +43,7 @@ let rt = {
   renderInnerTabs() {},
   renderEstadoActualButton() {},
   renderNoteForm() {},
+  renderPatientDataPane() {},
   renderIndicaForm() {},
   renderListadoForm() {},
   refreshTendenciasOrCultivosPanel() {},
@@ -60,6 +61,8 @@ let rt = {
   },
   renderProcedureAgendaPanel() {},
   refreshAllTodoUIs() {},
+  renderManejo() {},
+  renderRecetaHu() {},
   renderPaseBoard() {},
   pushUndoSnapshot() {},
   addAuditEntry() {},
@@ -880,8 +883,25 @@ function selectPatientCore(id) {
       rt.switchInnerTab('todo');
     }
   }
+  if (!isPaseMode() && getUiDensity() === 'normal') {
+    var pmanejo = patients.find(function (p) {
+      return p && String(p.id) === String(id);
+    });
+    if (pmanejo && pmanejo.manejoPending && pmanejo.manejoPending.labSetId) {
+      rt.switchInnerTab('manejo');
+    }
+  }
+  if (rt.getActiveInner() === 'datos' || rt.getActiveInner() === 'todo') {
+    rt.renderPatientDataPane();
+  }
   if (rt.getActiveInner() === 'todo') {
     rt.renderTodoForm();
+  }
+  if (rt.getActiveInner() === 'manejo') {
+    rt.renderManejo();
+  }
+  if (rt.getActiveInner() === 'recetaHu') {
+    rt.renderRecetaHu();
   }
   if (wasOnLab && patientChanged) {
     rt.limpiarReporte();

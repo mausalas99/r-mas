@@ -5,9 +5,7 @@ import {
   patients,
   saveState,
 } from "../app-state.mjs";
-import { isModeSala } from "../mode-features.mjs";
 import { setAsyncButtonLoading } from "../ui-motion.mjs";
-import { buildPatientDemographicsCardHtml, renderPatientDataPane } from "./expediente.mjs";
 
 let rt = {
   getActiveId() { return null; },
@@ -69,11 +67,7 @@ function renderNoteForm() {
     if (applyProfileToNoteIfEmpty(notes[aid()])) saveState();
   }
   var note = notes[aid()] || {};
-  var salaMode = isModeSala((rt.getSettings() || {}));
-  var demoCard = salaMode ? '' : buildPatientDemographicsCardHtml(patient);
   document.getElementById('note-form').innerHTML = (
-    demoCard +
-
     '<div class="card"><div class="card-header" style="background:#374151;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Fecha y Hora</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
     '<div class="field-group"><label>Fecha</label><input type="text" value="' + esc(note.fecha) + '" oninput="updateNote(\'fecha\',this.value)" placeholder="DD/MM/AAAA"></div>' +
     '<div class="field-group"><label>Hora</label><input type="text" value="' + esc(note.hora) + '" oninput="updateNote(\'hora\',this.value)" placeholder="HH:MM"></div>' +
@@ -110,7 +104,6 @@ function renderNoteForm() {
 
     '<div class="action-bar"><button type="button" class="btn-med-secondary rpc-doc-export" onclick="quickExportCurrentPatient()" id="btn-quick-export-note"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida rápida</button><button type="button" class="btn-generate rpc-doc-export" onclick="generateWord()" id="btn-gen"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Nota (.docx)</button></div>'
   );
-  renderPatientDataPane();
   rt.syncOfflineButtonStates();
 }
 

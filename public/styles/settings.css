@@ -53,7 +53,11 @@ html.dark .settings-theme-btn.active { background: var(--action); color: #fff; }
 .btn-header-icon .btn-header-icon-svg { display: block; flex-shrink: 0; pointer-events: none; }
 .btn-header-icon:hover { background: var(--surface); color: var(--text); }
 .settings-dropdown {
-  display: flex; position: absolute; top: calc(100% + 8px); right: 0; z-index: 100;
+  display: flex;
+  position: fixed;
+  top: calc(var(--shell-inset, 0px) + var(--header-bar-height, 54px) + 8px);
+  right: var(--shell-inset, 24px);
+  z-index: 10200;
   background: var(--surface);
   border: none; border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg, 0 10px 25px rgba(0,0,0,0.15)); width: min(320px, calc(100vw - 32px));
@@ -84,7 +88,8 @@ html.dark .settings-theme-btn.active { background: var(--action); color: #fff; }
     visibility 0s;
 }
 .settings-dropdown-backdrop {
-  display: block; position: fixed; inset: 0; z-index: 99;
+  display: block; position: fixed; inset: 0; z-index: 10199;
+  background: rgba(15, 23, 42, 0.18);
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -98,7 +103,11 @@ html.dark .settings-theme-btn.active { background: var(--action); color: #fff; }
 }
 /* Menú ⇄ · LAN / LiveSync (separado de Ajustes) */
 .connection-dropdown {
-  display: flex; position: absolute; top: calc(100% + 8px); right: 0; z-index: 102;
+  display: flex;
+  position: fixed;
+  top: calc(var(--shell-inset, 0px) + var(--header-bar-height, 54px) + 8px);
+  right: calc(var(--shell-inset, 24px) + 52px);
+  z-index: 10202;
   background: var(--surface);
   border: none; border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg, 0 10px 25px rgba(0,0,0,0.15));
@@ -127,7 +136,8 @@ html.dark .settings-theme-btn.active { background: var(--action); color: #fff; }
     visibility 0s;
 }
 .connection-dropdown-backdrop {
-  display: block; position: fixed; inset: 0; z-index: 101;
+  display: block; position: fixed; inset: 0; z-index: 10201;
+  background: rgba(15, 23, 42, 0.18);
   opacity: 0;
   visibility: hidden;
   pointer-events: none;

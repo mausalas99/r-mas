@@ -28,9 +28,12 @@ test('getSalaTourSteps incluye pasos clave de v3.0', () => {
   assert.equal(steps.indexOf('sala_tend_chart'), steps.indexOf('sala_tend') + 1);
   assert.ok(steps.includes('sala_casiopea_lab'), 'debe explicar envío lab a Nexo');
   assert.ok(steps.includes('sala_casiopea_trends'), 'debe explicar envío tendencias a Nexo');
-  assert.equal(steps.indexOf('sala_casiopea_lab'), steps.indexOf('lab_view') + 1);
+  assert.equal(steps.indexOf('sala_casiopea_lab'), steps.indexOf('lab_view') + 2);
+  assert.equal(steps.indexOf('sala_manejo'), steps.indexOf('sala_casiopea_lab') + 1);
   assert.equal(steps.indexOf('sala_casiopea_trends'), steps.indexOf('sala_tend_chart') + 1);
-  assert.equal(steps.length, 16);
+  assert.ok(steps.includes('sala_expediente_tabs'));
+  assert.equal(steps.indexOf('sala_expediente_tabs'), steps.indexOf('lab_view') + 1);
+  assert.equal(steps.length, 18);
   assert.equal(steps[1], 'map_tabs');
 });
 
@@ -73,7 +76,7 @@ test('getTourTarget para listado_problemas abre listado y resalta Generar', () =
   const t = getTourTarget('listado_problemas', 'sala');
   assert.equal(t.appTab, 'nota');
   assert.equal(t.innerTab, 'listado');
-  assert.equal(t.selector, '#btn-gen-listado');
+  assert.equal(t.selector, '#btn-gen-listado, #itab-salida');
   assert.equal(t.spotlightClass, 'tour-spotlight-action');
   assert.equal(stepRequiresUserAction('listado_problemas'), false);
 });
@@ -127,5 +130,13 @@ test('getInterconsultaTourSteps no incluye pasos Nexo', () => {
   const steps = getInterconsultaTourSteps();
   assert.ok(!steps.includes('sala_casiopea_lab'));
   assert.ok(!steps.includes('sala_casiopea_trends'));
-  assert.equal(steps.length, 16);
+  assert.ok(steps.includes('ic_expediente_tabs'));
+  assert.equal(steps.indexOf('ic_expediente_tabs'), steps.indexOf('lab_view') + 1);
+  assert.equal(steps.length, 17);
+});
+
+test('getTourTarget for sala_expediente_tabs apunta a barra de pestañas', () => {
+  const t = getTourTarget('sala_expediente_tabs', 'sala');
+  assert.equal(t.appTab, 'nota');
+  assert.equal(t.selector, '.inner-tab-bar');
 });
