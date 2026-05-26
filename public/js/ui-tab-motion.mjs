@@ -1,4 +1,5 @@
 import { prefersReducedMotion } from './ui-motion.mjs';
+import { consolidatedInnerTabButtonId } from './expediente-tabs.mjs';
 
 var resizeTimer = null;
 var indicatorsReady = false;
@@ -62,7 +63,11 @@ export function innerTabButtonId(tab, opts) {
 export function syncInnerTabIndicator(tab, opts) {
   opts = opts || {};
   var bar = document.querySelector('.inner-tab-bar');
-  var btn = document.getElementById(innerTabButtonId(tab, opts));
+  var btnId =
+    opts.consolidated && opts.settings
+      ? consolidatedInnerTabButtonId(tab, opts.settings)
+      : innerTabButtonId(tab, opts);
+  var btn = document.getElementById(btnId);
   syncTabBarIndicator(bar, btn);
 }
 
@@ -94,6 +99,23 @@ export function hideAppTabPanel(panelEl) {
   panelEl.classList.remove('tab-panel-enter');
 }
 
+export function syncSubTabBarIndicator(barEl) {
+  if (!barEl) return;
+  var active =
+    barEl.querySelector('.exp-segment-btn.active') ||
+    barEl.querySelector('.manejo-subtab.manejo-subtab--active') ||
+    barEl.querySelector('.manejo-subtab.active') ||
+    barEl.querySelector('[aria-selected="true"]');
+  syncTabBarIndicator(barEl, active);
+}
+
+export function syncAllSubTabIndicators() {
+  document.querySelectorAll('.exp-segment-bar, .manejo-subtabs, .rpc-subtab-bar').forEach(function (bar) {
+    if (bar.offsetParent === null && window.getComputedStyle(bar).display === 'none') return;
+    syncSubTabBarIndicator(bar);
+  });
+}
+
 function scheduleIndicatorSync() {
   syncAppTabIndicator(getActiveAppTabFromDom());
   if (isConsolidatedExpedienteTabsVisible()) {
@@ -102,11 +124,13 @@ function scheduleIndicatorSync() {
     for (var i = 0; i < conTabs.length; i++) {
       if (conTabs[i].classList.contains('active')) {
         syncTabBarIndicator(bar, conTabs[i]);
+        syncAllSubTabIndicators();
         return;
       }
     }
   }
   syncInnerTabIndicator(getActiveInnerTabFromDom());
+  syncAllSubTabIndicators();
 }
 
 function getActiveAppTabFromDom() {
@@ -145,6 +169,9 @@ export function initTabBarMotion() {
   }
   ensureTabBarIndicator(document.getElementById('app-main-tablist'));
   ensureTabBarIndicator(document.querySelector('.inner-tab-bar'));
+  document.querySelectorAll('.exp-segment-bar, .manejo-subtabs, .rpc-subtab-bar').forEach(function (bar) {
+    ensureTabBarIndicator(bar);
+  });
   document.documentElement.classList.add('tab-bar-indicators-ready');
   indicatorsReady = true;
   window.addEventListener('resize', function () {

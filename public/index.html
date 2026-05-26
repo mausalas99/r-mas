@@ -850,7 +850,7 @@
           </button>
           <button type="button" class="inner-tab exp-granular-tab" id="itab-notas" onclick="switchInnerTab('notas')">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
-            Nota de Evolución
+            Nota de evolución
           </button>
           <button type="button" class="inner-tab exp-granular-tab" id="itab-indica" onclick="switchInnerTab('indica')">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
@@ -890,24 +890,24 @@
             <div class="exp-pendientes-mount"></div>
           </div>
           <div id="itab-content-clinico" class="tab-content exp-composite-pane">
-            <div class="exp-segment-bar" id="exp-segment-clinico" role="tablist" aria-label="Secciones clínicas">
-              <button type="button" class="exp-segment-btn" data-exp-segment="notas" onclick="switchInnerTab('notas')">Nota</button>
-              <button type="button" class="exp-segment-btn" data-exp-segment="indica" onclick="switchInnerTab('indica')">Indicaciones</button>
-              <button type="button" class="exp-segment-btn" data-exp-segment="manejo" onclick="switchInnerTab('manejo')">Manejo</button>
+            <div class="exp-segment-bar rpc-subtab-bar" id="exp-segment-clinico" role="tablist" aria-label="Secciones clínicas">
+              <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-notas" role="tab" data-exp-segment="notas" aria-selected="false" aria-controls="itab-content-notas" onclick="switchInnerTab('notas')">Nota de evolución</button>
+              <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-indica" role="tab" data-exp-segment="indica" aria-selected="false" aria-controls="itab-content-indica" onclick="switchInnerTab('indica')">Indicaciones</button>
+              <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-manejo" role="tab" data-exp-segment="manejo" aria-selected="false" aria-controls="itab-content-manejo" onclick="switchInnerTab('manejo')">Manejo</button>
             </div>
             <div class="exp-segment-body exp-segment-body--clinico"></div>
           </div>
           <div id="itab-content-resultados" class="tab-content exp-composite-pane">
-            <div class="exp-segment-bar" id="exp-segment-resultados" role="tablist" aria-label="Resultados de laboratorio">
-              <button type="button" class="exp-segment-btn" data-exp-segment="tend" onclick="switchInnerTab('tend')">Tendencias</button>
-              <button type="button" class="exp-segment-btn" data-exp-segment="cult" onclick="switchInnerTab('cult')">Cultivos</button>
+            <div class="exp-segment-bar rpc-subtab-bar" id="exp-segment-resultados" role="tablist" aria-label="Resultados de laboratorio">
+              <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-tend" role="tab" data-exp-segment="tend" aria-selected="false" aria-controls="itab-content-tend" onclick="switchInnerTab('tend')">Tendencias</button>
+              <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-cult" role="tab" data-exp-segment="cult" aria-selected="false" aria-controls="itab-content-cult" onclick="switchInnerTab('cult')">Cultivos</button>
             </div>
             <div class="exp-segment-body exp-segment-body--resultados"></div>
           </div>
           <div id="itab-content-salida" class="tab-content exp-composite-pane">
-            <div class="exp-segment-bar" id="exp-segment-salida" role="tablist" aria-label="Salida" style="display:none;">
-              <button type="button" class="exp-segment-btn" data-exp-segment="listado" onclick="switchInnerTab('listado')">Listado</button>
-              <button type="button" class="exp-segment-btn" data-exp-segment="recetaHu" onclick="switchInnerTab('recetaHu')">Receta HU</button>
+            <div class="exp-segment-bar rpc-subtab-bar" id="exp-segment-salida" role="tablist" aria-label="Salida" style="display:none;">
+              <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-listado" role="tab" data-exp-segment="listado" aria-selected="false" aria-controls="itab-content-listado" onclick="switchInnerTab('listado')">Listado</button>
+              <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-recetaHu" role="tab" data-exp-segment="recetaHu" aria-selected="false" aria-controls="itab-content-recetaHu" onclick="switchInnerTab('recetaHu')">Receta HU</button>
             </div>
             <div class="exp-segment-body exp-segment-body--salida exp-salida-mount"></div>
           </div>

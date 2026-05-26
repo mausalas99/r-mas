@@ -6,7 +6,7 @@ const BLEE_CAUTION_IDS = new Set([
   'ceftazidima',
   'cefepime',
 ]);
-const VRE_CAUTION_IDS = new Set(['vancomicina']);
+const VRE_CAUTION_IDS = new Set(['vancomicina-carga', 'vancomicina-mtto']);
 const CARBAPENEM_CAUTION_IDS = new Set(['meropenem', 'imipenem', 'ertapenem']);
 
 /**
@@ -43,6 +43,34 @@ export function classifyAtbForIsolate(drug, isolate) {
   });
   if (hit) return { status: 'compatible', reasons: ['S en antibiograma'] };
   return { status: 'neutral', reasons: [] };
+}
+
+/**
+ * @param {{ someAbbrev?: string[] }} drug
+ * @param {{ sensKeys?: string[], resKeys?: string[], intKeys?: string[] }} isolate
+ * @param {'s'|'r'|'i'} bucket
+ */
+export function drugMatchesRisBucket(drug, isolate, bucket) {
+  if (!drug || !isolate || !bucket) return false;
+  var keys =
+    bucket === 's'
+      ? isolate.sensKeys
+      : bucket === 'r'
+        ? isolate.resKeys
+        : isolate.intKeys;
+  var list = keys || [];
+  if (!list.length) return false;
+  var abbr = drug.someAbbrev || [];
+  return abbr.some(function (a) {
+    return list.indexOf(String(a).toUpperCase()) !== -1;
+  });
+}
+
+/** @param {'s'|'r'|'i'|null} filter */
+export function drugMatchesAtbRisFilter(drug, isolate, filter) {
+  if (!filter) return true;
+  if (!isolate) return false;
+  return drugMatchesRisBucket(drug, isolate, filter);
 }
 
 export function buildGlobalAlertsFromMarkers(markers) {

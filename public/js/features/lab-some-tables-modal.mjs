@@ -25,7 +25,7 @@ function triggerSesionIngresoSend(ev) {
     ev.stopPropagation();
   }
   if (isCasiopeaTourSendBlocked('lab')) {
-    rt.showToast('En el tutorial solo mostramos el botón; fuera del tour aquí se abre Nexo.', 'info');
+    rt.showToast('En el tutorial solo mostramos el botón; fuera del tour aquí se abre Neo.', 'info');
     return;
   }
   rt.openSesionIngresoSend();

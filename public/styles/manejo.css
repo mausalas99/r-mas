@@ -1,46 +1,20 @@
 /* Pestaña Manejo — electrolitos + SOME (layout en tarjetas) */
 
 #manejo-container {
-  padding: 12px 16px 24px;
+  padding: 0 0 calc(16px * var(--density-space, 1));
   max-width: 100%;
   overflow: auto;
   flex: 1;
   min-height: 0;
 }
 
-.manejo-subtabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-bottom: 14px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--border);
+#manejo-container button,
+#manejo-container input {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
 }
 
-.manejo-subtab {
-  padding: 6px 12px;
-  font-size: 12px;
-  font-weight: 600;
-  font-family: inherit;
-  color: var(--text-muted);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: color var(--dur-fast, 0.15s) ease, background var(--dur-fast, 0.15s) ease,
-    border-color var(--dur-fast, 0.15s) ease;
-}
-
-.manejo-subtab:hover {
-  color: var(--action, var(--primary, #2563eb));
-  background: color-mix(in oklab, var(--action, #2563eb) 6%, transparent);
-}
-
-.manejo-subtab--active {
-  color: var(--action, var(--primary, #2563eb));
-  background: color-mix(in oklab, var(--action, #2563eb) 10%, var(--surface, transparent));
-  border-color: color-mix(in oklab, var(--action, #2563eb) 35%, var(--border));
-}
+/* manejo-subtabs: estilos unificados en expediente.css (mismo lenguaje que exp-segment) */
 
 .manejo-subpanels {
   min-height: 0;
@@ -156,6 +130,12 @@
   overflow: hidden;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
   border-left: 4px solid rgba(100, 116, 139, 0.45);
+}
+
+.manejo-proto-row.manejo-card {
+  border-radius: var(--radius-md);
+  border-left-width: 1px;
+  box-shadow: none;
 }
 
 .manejo-card--moderada {
@@ -465,6 +445,15 @@
   background: transparent;
   color: var(--text);
   cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  margin: 0;
+  line-height: 1.2;
+  box-sizing: border-box;
 }
 
 .manejo-copy-btn:hover {
@@ -495,9 +484,124 @@
   color: var(--text);
 }
 
-/* —— Protocolos —— */
+/* —— Protocolos / ATB / filtros —— */
 .manejo-root--protocolos {
+  gap: 14px;
+}
+
+.manejo-filter-bar {
+  display: flex;
+  flex-direction: column;
   gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
+  background: color-mix(in oklab, var(--surface-elevated, var(--surface)) 94%, var(--bg));
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, #fff 5%, transparent),
+    0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+html.dark .manejo-filter-bar {
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, #fff 4%, transparent),
+    0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+.manejo-filter-bar-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.manejo-filter-bar--cad {
+  gap: 10px;
+}
+
+.manejo-filter-search {
+  position: relative;
+  width: 100%;
+}
+
+.manejo-filter-search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--text-muted);
+  opacity: 0.72;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.5'/%3E%3Cpath d='M20 20l-4.2-4.2'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.5'/%3E%3Cpath d='M20 20l-4.2-4.2'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+.manejo-filter-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: 10px 14px 10px 42px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text);
+  border: 1px solid color-mix(in oklab, var(--border) 92%, transparent);
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--bg) 55%, var(--surface));
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.05);
+  transition:
+    border-color var(--dur-fast, 0.15s) ease,
+    box-shadow var(--dur-fast, 0.15s) ease,
+    background var(--dur-fast, 0.15s) ease;
+}
+
+html.dark .manejo-filter-search-input {
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+.manejo-filter-search-input::placeholder {
+  color: color-mix(in oklab, var(--text-muted) 88%, transparent);
+}
+
+.manejo-filter-search-input:hover {
+  border-color: color-mix(in oklab, var(--action, #2563eb) 24%, var(--border));
+}
+
+.manejo-filter-search-input:focus {
+  outline: none;
+  border-color: color-mix(in oklab, var(--action, #2563eb) 55%, var(--border));
+  background: color-mix(in oklab, var(--surface) 82%, var(--bg));
+  box-shadow:
+    inset 0 1px 2px rgba(15, 23, 42, 0.04),
+    0 0 0 3px color-mix(in oklab, var(--action, #2563eb) 16%, transparent);
+}
+
+.manejo-filter-search-input:focus-visible {
+  outline: none;
+}
+
+.manejo-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  overflow: visible;
+}
+
+@media (max-width: 720px) {
+  .manejo-filter-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 2px;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 .manejo-proto-toolbar {
@@ -530,36 +634,58 @@
 .manejo-proto-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
 
 .manejo-proto-chip {
-  padding: 5px 10px;
-  font-size: 11px;
+  flex: 0 0 auto;
+  padding: 7px 12px;
+  font-size: 12px;
   font-weight: 600;
   font-family: inherit;
   color: var(--text-muted);
-  background: transparent;
-  border: 1px solid var(--border);
+  background: color-mix(in oklab, var(--bg) 40%, transparent);
+  border: 1px solid color-mix(in oklab, var(--border) 92%, transparent);
   border-radius: 999px;
   cursor: pointer;
-  transition: color var(--dur-fast, 0.15s) ease, background var(--dur-fast, 0.15s) ease,
-    border-color var(--dur-fast, 0.15s) ease;
+  white-space: nowrap;
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  line-height: 1.2;
+  box-sizing: border-box;
+  transition:
+    color var(--dur-fast, 0.15s) ease,
+    background var(--dur-fast, 0.15s) ease,
+    border-color var(--dur-fast, 0.15s) ease,
+    box-shadow var(--dur-fast, 0.15s) ease;
 }
 
 .manejo-proto-chip:hover {
   color: var(--action, var(--primary, #2563eb));
-  border-color: color-mix(in oklab, var(--action, #2563eb) 40%, var(--border));
+  border-color: color-mix(in oklab, var(--action, #2563eb) 38%, var(--border));
+  background: color-mix(in oklab, var(--action, #2563eb) 6%, transparent);
 }
 
 .manejo-proto-chip--active {
   color: var(--action, var(--primary, #2563eb));
-  background: color-mix(in oklab, var(--action, #2563eb) 10%, transparent);
-  border-color: color-mix(in oklab, var(--action, #2563eb) 45%, var(--border));
+  background: color-mix(in oklab, var(--action, #2563eb) 12%, transparent);
+  border-color: color-mix(in oklab, var(--action, #2563eb) 48%, var(--border));
+  box-shadow: 0 1px 2px color-mix(in oklab, var(--action, #2563eb) 12%, transparent);
+}
+
+.manejo-proto-chip:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--action, #2563eb) 55%, transparent);
+  outline-offset: 2px;
 }
 
 .manejo-card--proto {
   border-left-color: color-mix(in oklab, var(--action, #2563eb) 55%, transparent);
+  border-radius: var(--radius-md);
+  box-shadow: none;
 }
 
 .manejo-card-symbol--proto {
@@ -632,22 +758,58 @@
 }
 
 .manejo-atb-culture-banner {
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px 12px;
+  border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
+  border-radius: 14px;
+  padding: 12px 14px;
   margin-bottom: 12px;
-  background: var(--surface, transparent);
+  background: color-mix(in oklab, var(--surface-elevated, var(--surface)) 94%, var(--bg));
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, #fff 5%, transparent),
+    0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.manejo-atb-culture-banner > strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.manejo-atb-cultivo-table {
+  margin-top: 10px;
+}
+
+.manejo-atb-culture-banner .atb-chip--clickable-filter {
+  cursor: pointer;
+}
+
+.manejo-atb-culture-banner .atb-chip--filter-active {
+  box-shadow:
+    0 0 0 2px var(--action, #2563eb),
+    0 0 0 4px color-mix(in oklab, var(--action, #2563eb) 22%, transparent);
+}
+
+.manejo-atb-ris-filter-pill {
+  margin-left: 4px;
 }
 
 .manejo-atb-isolate-select {
   display: block;
-  margin-top: 8px;
+  margin-top: 0;
+  margin-bottom: 10px;
   width: 100%;
-  max-width: 480px;
+  max-width: 100%;
+  min-height: 40px;
   font-size: 13px;
-  padding: 6px 8px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in oklab, var(--border) 92%, transparent);
+  background: color-mix(in oklab, var(--bg) 55%, var(--surface));
+  color: var(--text);
+  font-family: inherit;
 }
 
 .manejo-atb-isolate-line {
@@ -671,23 +833,1503 @@
   color: var(--rpc-warn, #b45309);
 }
 
-.manejo-atb--compatible {
-  border-left: 3px solid var(--rpc-ok, #059669);
-}
-
-.manejo-atb--caution {
-  border-left: 3px solid var(--rpc-warn, #d97706);
-}
-
-.manejo-atb--neutral {
-  border-left: 3px solid transparent;
-}
-
 .manejo-cad-labs {
   margin-bottom: 12px;
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--border);
+}
+
+.manejo-cad-disclaimer {
+  margin: 0 0 10px;
+}
+
+.manejo-cad-hero {
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in oklab, var(--action, #2563eb) 28%, var(--border));
+  background: color-mix(in oklab, var(--action, #2563eb) 4%, var(--surface, transparent));
+}
+
+.manejo-cad-hero-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 16px;
+  margin-bottom: 12px;
+}
+
+.manejo-cad-hero-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.manejo-cad-mode-hint,
+.manejo-cad-mode-override-hint {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.manejo-cad-mode-override-hint {
+  color: var(--rpc-warn, #b45309);
+}
+
+.manejo-cad-mode-nav {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface, transparent);
+}
+
+.manejo-cad-mode-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-muted);
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.manejo-cad-mode-btn:hover {
+  color: var(--text);
+  background: color-mix(in oklab, var(--action, #2563eb) 8%, transparent);
+}
+
+.manejo-cad-mode-btn--active {
+  color: var(--text);
+  background: var(--surface, #fff);
+  box-shadow: 0 1px 3px color-mix(in oklab, #000 12%, transparent);
+}
+
+.manejo-cad-mode-btn--suggested:not(.manejo-cad-mode-btn--active) {
+  border: 1px dashed color-mix(in oklab, var(--action, #2563eb) 40%, transparent);
+}
+
+.manejo-cad-lab-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px;
+}
+
+.manejo-cad-lab-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface, transparent);
+}
+
+.manejo-cad-lab-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.manejo-cad-lab-val {
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.manejo-cad-resolution {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  font-size: 12px;
+}
+
+.manejo-cad-resolution-item {
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+.manejo-cad-resolution-item--ok {
+  color: var(--rpc-ok, #059669);
+  border-color: color-mix(in oklab, #059669 35%, var(--border));
+  background: color-mix(in oklab, #059669 8%, transparent);
+}
+
+.manejo-cad-checklist-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.manejo-cad-check-item {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface, transparent);
+  overflow: hidden;
+}
+
+.manejo-cad-check-item--done {
+  opacity: 0.72;
+  border-color: color-mix(in oklab, #059669 35%, var(--border));
+}
+
+.manejo-cad-check-item--done .manejo-cad-check-title {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.manejo-cad-check-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 600;
+}
+
+.manejo-cad-check-summary::-webkit-details-marker {
+  display: none;
+}
+
+.manejo-cad-check-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  font-size: 11px;
+  background: color-mix(in oklab, var(--action, #2563eb) 12%, transparent);
+  color: var(--action, #2563eb);
+}
+
+.manejo-cad-check-body {
+  padding: 0 12px 12px;
+}
+
+.manejo-cad-carrier-note {
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in oklab, #d97706 35%, transparent);
+  background: color-mix(in oklab, #d97706 8%, transparent);
+}
+
+.manejo-cad-insulin-pick {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.manejo-pump-table {
+  margin: 8px 12px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  font-family: var(--mono, ui-monospace, monospace);
+}
+
+.manejo-pump-ref {
+  margin-bottom: 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in oklab, var(--border) 92%, transparent);
+  background: color-mix(in oklab, var(--bg) 25%, var(--surface, transparent));
+  overflow: hidden;
+}
+
+.manejo-pump-ref-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-muted);
+  user-select: none;
+}
+}
+
+.manejo-pump-ref-summary::-webkit-details-marker {
+  display: none;
+}
+
+.manejo-pump-ref-summary::before {
+  content: '▸';
+  margin-right: 8px;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+
+.manejo-pump-ref[open] .manejo-pump-ref-summary::before {
+  transform: rotate(90deg);
+}
+
+.manejo-pump-ref-summary-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.manejo-pump-ref-badge {
+  display: none;
+}
+
+.manejo-pump-ref-body {
+  padding: 0 14px 12px;
+  border-top: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
+}
+
+.manejo-pump-ref-hint {
+  margin: 10px 0 12px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.manejo-pump-ref-alg-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.manejo-pump-ref-alg-tab {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
+  background: var(--surface, transparent);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.manejo-pump-ref-alg-tab--active {
+  color: var(--action, #2563eb);
+  border-color: color-mix(in oklab, var(--action, #2563eb) 45%, var(--border));
+  background: color-mix(in oklab, var(--action, #2563eb) 8%, transparent);
+}
+
+.manejo-pump-ref-glu-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-bottom: 10px;
+}
+
+.manejo-pump-ref-glu-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.manejo-pump-ref-glu-input {
+  width: 120px;
+  min-height: 36px;
+  border-radius: 10px;
+}
+
+.manejo-pump-ref-readout {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--action, #2563eb);
+}
+
+.manejo-pump-ref-readout--warn {
+  color: #b45309;
+}
+
+.manejo-pump-ref-table-host {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface, transparent);
+}
+
+.manejo-pump-ref-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  font-family: var(--mono, ui-monospace, monospace);
+}
+
+.manejo-pump-ref-table th,
+.manejo-pump-ref-table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
+}
+
+.manejo-pump-ref-table th {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: color-mix(in oklab, var(--bg) 40%, transparent);
+}
+
+.manejo-pump-ref-row--active td {
+  background: color-mix(in oklab, var(--action, #2563eb) 12%, transparent);
+  font-weight: 700;
+  color: var(--text);
+}
+
+.manejo-pump-ref-cell--suspend {
+  color: #b45309;
+  font-weight: 700;
+}
+
+.manejo-pump-ref-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.manejo-proto-chip--add {
+  border-style: dashed;
+}
+
+/* ── Protocolos: toolbar refinado ───────────────────────────── */
+.manejo-proto-toolbar-v2 {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.manejo-proto-toolbar-card {
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in oklab, var(--border) 92%, transparent);
+  background: color-mix(in oklab, var(--bg) 32%, var(--surface, transparent));
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.manejo-proto-search-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.manejo-proto-search-row .manejo-filter-search {
+  flex: 1;
+  min-width: 0;
+}
+
+.manejo-proto-count {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--surface) 70%, transparent);
+  border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
+  white-space: nowrap;
+}
+
+.manejo-proto-add-btn {
+  flex-shrink: 0;
+  min-height: 40px;
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  color: #fff;
+  background: var(--action, #2563eb);
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.manejo-proto-add-btn:hover {
+  filter: brightness(1.06);
+}
+
+.manejo-proto-filters-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.manejo-proto-segment {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
+  background: color-mix(in oklab, var(--bg) 55%, transparent);
+}
+
+.manejo-proto-chip--segment {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  padding: 6px 11px;
+  font-size: 11px;
+}
+
+.manejo-proto-segment .manejo-proto-chip--active {
+  background: var(--surface, #fff);
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+html.dark .manejo-proto-segment .manejo-proto-chip--active {
+  background: color-mix(in oklab, var(--surface) 90%, #fff 10%);
+}
+
+.manejo-proto-cat-scroll {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.manejo-proto-cat-pill {
+  flex: 0 0 auto;
+  padding: 5px 11px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.manejo-proto-cat-pill:hover {
+  color: var(--text);
+  border-color: color-mix(in oklab, var(--action, #2563eb) 30%, var(--border));
+}
+
+.manejo-proto-cat-pill--active {
+  color: var(--action, #2563eb);
+  border-color: color-mix(in oklab, var(--action, #2563eb) 45%, var(--border));
+  background: color-mix(in oklab, var(--action, #2563eb) 8%, transparent);
+}
+
+.manejo-proto-toggle {
+  margin-left: auto;
+  padding: 6px 11px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px dashed color-mix(in oklab, var(--border) 90%, transparent);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.manejo-proto-toggle:hover {
+  color: var(--text);
+  border-color: color-mix(in oklab, var(--action, #2563eb) 35%, var(--border));
+}
+
+.manejo-proto-toggle--active {
+  color: var(--action, #2563eb);
+  border-style: solid;
+  border-color: color-mix(in oklab, var(--action, #2563eb) 45%, var(--border));
+  background: color-mix(in oklab, var(--action, #2563eb) 8%, transparent);
+}
+
+.manejo-cards--proto {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: none;
+}
+
+.manejo-proto-split {
+  display: grid;
+  grid-template-columns: minmax(260px, 38%) minmax(0, 1fr);
+  gap: 12px;
+  align-items: stretch;
+  min-height: 360px;
+}
+
+.manejo-proto-list-col {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.manejo-proto-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  max-height: min(72vh, 640px);
+  padding-right: 2px;
+}
+
+.manejo-proto-detail-backdrop {
+  display: none;
+}
+
+.manejo-proto-detail-col {
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
+  border-radius: 14px;
+  background: color-mix(in oklab, var(--surface-elevated, var(--surface)) 96%, var(--bg));
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, #fff 5%, transparent),
+    0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.manejo-proto-detail-close {
+  display: none;
+}
+
+.manejo-proto-detail-host {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  max-height: min(72vh, 640px);
+  padding: 14px 16px 16px;
+}
+
+.manejo-proto-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.manejo-proto-detail-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+}
+
+.manejo-proto-detail-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.manejo-proto-detail-cat {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.manejo-proto-detail-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.manejo-proto-detail-calc {
+  border-top: none;
+  padding: 0;
+}
+
+.manejo-proto-detail-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.manejo-proto-detail-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 240px;
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.manejo-proto-detail-empty-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.manejo-proto-row {
+  border-left-width: 1px;
+  border-radius: var(--radius-md);
+  box-shadow: none;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.manejo-proto-row--selected {
+  border-left-color: var(--action, #2563eb);
+  box-shadow: inset 3px 0 0 var(--action, #2563eb);
+  background: color-mix(in oklab, var(--action, #2563eb) 6%, var(--surface, transparent));
+}
+
+.manejo-proto-row-calc-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.manejo-proto-row-shell {
+  padding: 0;
+}
+
+.manejo-proto-row-main {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.9fr) minmax(0, 1.6fr) auto;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 9px 12px;
+}
+
+.manejo-proto-row-meta {
+  min-width: 0;
+}
+
+.manejo-proto-row-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.manejo-proto-row-cat {
+  display: block;
+  margin-top: 1px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.manejo-proto-row-snippet {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.manejo-proto-row-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.manejo-proto-row-copy {
+  min-height: 28px;
+  padding: 3px 10px;
+  font-size: 11px;
+}
+
+.manejo-proto-row-mini-btn {
+  min-height: 28px;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.manejo-proto-row-mini-btn--active {
+  color: var(--action, #2563eb);
+  border-color: color-mix(in oklab, var(--action, #2563eb) 45%, var(--border));
+  background: color-mix(in oklab, var(--action, #2563eb) 8%, transparent);
+}
+
+.manejo-card-calc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface, transparent);
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.manejo-card-calc-btn:hover {
+  color: var(--text);
+  border-color: color-mix(in oklab, var(--action, #2563eb) 40%, var(--border));
+}
+
+.manejo-card-calc-btn--active {
+  color: var(--action, #2563eb);
+  border-color: color-mix(in oklab, var(--action, #2563eb) 50%, var(--border));
+  background: color-mix(in oklab, var(--action, #2563eb) 10%, transparent);
+}
+
+.manejo-card-calc-btn:focus-visible {
+  outline: 2px solid var(--action, #2563eb);
+  outline-offset: 2px;
+}
+
+.manejo-proto-row .manejo-card-fav-btn,
+.manejo-proto-row .manejo-card-edit-btn {
+  width: 28px;
+  height: 28px;
+}
+
+.manejo-proto-row-expand {
+  border-top: 1px dashed color-mix(in oklab, var(--border) 85%, transparent);
+  padding: 8px 12px 10px;
+  background: color-mix(in oklab, var(--bg) 30%, transparent);
+}
+
+.manejo-proto-row-expand[hidden] {
+  display: none !important;
+}
+
+.manejo-proto-row--open {
+  border-color: color-mix(in oklab, var(--action, #2563eb) 28%, var(--border));
+}
+
+.manejo-proto-row-expand .manejo-some-drawer--proto {
+  border-top: none;
+  padding: 0;
+}
+
+.manejo-proto-row-expand .manejo-proto-calc {
+  border-top: none;
+  padding: 0 0 8px;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 899px) {
+  .manejo-proto-split {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .manejo-proto-detail-col {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    z-index: 120;
+    max-height: min(78vh, 680px);
+    transform: translateY(calc(100% + 24px));
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      transform 0.22s ease,
+      opacity 0.18s ease;
+    box-shadow: 0 -8px 32px rgba(15, 23, 42, 0.18);
+  }
+
+  .manejo-proto-detail-col--open {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .manejo-proto-detail-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 119;
+    border: none;
+    background: rgba(15, 23, 42, 0.35);
+    cursor: pointer;
+  }
+
+  .manejo-proto-detail-backdrop[hidden] {
+    display: none !important;
+  }
+
+  .manejo-proto-detail-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 2;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface, #fff);
+    color: var(--text-muted);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .manejo-proto-detail-host {
+    max-height: min(78vh, 680px);
+    padding-top: 40px;
+  }
+
+  .manejo-proto-list {
+    max-height: none;
+  }
+}
+
+@media (max-width: 820px) {
+  .manejo-proto-row-main {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .manejo-proto-row-actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .manejo-proto-row-snippet {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+}
+
+.manejo-proto-cat-fold {
+  margin-top: 2px;
+}
+
+.manejo-proto-cat-fold-summary {
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  list-style: none;
+  user-select: none;
+  padding: 2px 0;
+}
+
+.manejo-proto-cat-fold-summary::-webkit-details-marker {
+  display: none;
+}
+
+.manejo-proto-cat-fold-summary::before {
+  content: '▸ ';
+}
+
+.manejo-proto-cat-fold[open] .manejo-proto-cat-fold-summary::before {
+  content: '▾ ';
+}
+
+.manejo-proto-cat-fold .manejo-proto-cat-scroll {
+  margin-top: 8px;
+}
+
+.manejo-card-ion-wrap--proto {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.manejo-card-ion-wrap:has(.manejo-card-proto-cat) {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.manejo-card-proto-cat {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.01em;
+}
+
+.manejo-card-icon-actions {
+  gap: 4px;
+}
+
+.manejo-card-grid--proto-compact {
+  padding: 10px 14px 12px;
+}
+
+.manejo-card-grid--proto-compact .manejo-kv-val {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.manejo-card-foot--proto {
+  padding: 8px 12px;
+  border-top: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
+}
+
+.manejo-some-drawer--proto {
+  border-top: 1px dashed color-mix(in oklab, var(--border) 85%, transparent);
+  padding: 0 12px 12px;
+}
+
+.manejo-proto-empty {
+  padding: 28px 16px;
+  text-align: center;
+  border-radius: 14px;
+  border: 1px dashed color-mix(in oklab, var(--border) 85%, transparent);
+  background: color-mix(in oklab, var(--bg) 35%, transparent);
+}
+
+.manejo-proto-empty-title {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.manejo-card-fav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface, transparent);
+  color: color-mix(in oklab, var(--text-muted) 70%, transparent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.manejo-card-fav-btn:hover {
+  color: #eab308;
+  border-color: color-mix(in oklab, #eab308 45%, var(--border));
+}
+
+.manejo-card-fav-btn--active {
+  color: #eab308;
+  border-color: color-mix(in oklab, #eab308 50%, var(--border));
+  background: color-mix(in oklab, #eab308 10%, transparent);
+}
+
+.manejo-card-fav-btn:focus-visible,
+.manejo-card-edit-btn:focus-visible {
+  outline: 2px solid var(--accent, #059669);
+  outline-offset: 2px;
+}
+
+.manejo-card-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface, transparent);
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.manejo-card-edit-btn:hover {
+  color: var(--text);
+  border-color: color-mix(in oklab, var(--accent, #059669) 40%, var(--border));
+}
+
+/* ── Modal editor SOME ─────────────────────────────────────── */
+.manejo-proto-editor-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9996;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(8, 12, 20, 0.62);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.manejo-proto-editor-backdrop.open {
+  opacity: 1;
+}
+
+.manejo-proto-editor {
+  width: min(560px, 100%);
+  max-height: min(90vh, 820px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+  background: var(--surface);
+  box-shadow:
+    0 24px 48px rgba(0, 0, 0, 0.28),
+    0 0 0 1px color-mix(in oklab, #fff 4%, transparent) inset;
+  overflow: hidden;
+  transform: translateY(8px) scale(0.98);
+  transition: transform 0.2s ease;
+}
+
+.manejo-proto-editor-backdrop.open .manejo-proto-editor {
+  transform: translateY(0) scale(1);
+}
+
+.manejo-proto-editor-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--action, #2563eb) 7%, var(--surface)) 0%,
+    var(--surface) 100%
+  );
+}
+
+.manejo-proto-editor-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.manejo-proto-editor-subtitle {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.manejo-proto-editor-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--bg) 55%, transparent);
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.manejo-proto-editor-close:hover {
+  color: var(--text);
+  background: color-mix(in oklab, var(--bg) 80%, transparent);
+}
+
+.manejo-proto-editor-body {
+  flex: 1;
+  overflow: auto;
+  padding: 16px 20px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.manejo-proto-editor-section {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
+  background: color-mix(in oklab, var(--bg) 28%, var(--surface));
+}
+
+.manejo-proto-editor-section-title {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.manejo-proto-editor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
+}
+
+.manejo-proto-editor-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.manejo-proto-editor-field--full {
+  grid-column: 1 / -1;
+}
+
+.manejo-proto-editor-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.manejo-proto-editor-input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 38px;
+  padding: 8px 11px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text);
+  border: 1px solid color-mix(in oklab, var(--border) 92%, transparent);
+  border-radius: 10px;
+  background: var(--surface);
+  transition:
+    border-color var(--dur-fast, 0.15s) ease,
+    box-shadow var(--dur-fast, 0.15s) ease;
+}
+
+.manejo-proto-editor-input:hover {
+  border-color: color-mix(in oklab, var(--action, #2563eb) 28%, var(--border));
+}
+
+.manejo-proto-editor-input:focus {
+  outline: none;
+  border-color: color-mix(in oklab, var(--action, #2563eb) 55%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--action, #2563eb) 14%, transparent);
+}
+
+.manejo-proto-editor-textarea {
+  min-height: 84px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.manejo-proto-editor-select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+.manejo-proto-editor-error {
+  margin: 0;
+  padding: 0 20px 8px;
+  font-size: 12px;
+  color: #b91c1c;
+}
+
+.manejo-proto-editor-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px 18px;
+  border-top: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
+  background: color-mix(in oklab, var(--bg) 22%, var(--surface));
+}
+
+.manejo-proto-editor-foot-secondary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.manejo-proto-editor-btn {
+  min-height: 38px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 10px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition:
+    background var(--dur-fast, 0.15s) ease,
+    border-color var(--dur-fast, 0.15s) ease,
+    color var(--dur-fast, 0.15s) ease;
+}
+
+.manejo-proto-editor-btn--ghost {
+  color: var(--text-muted);
+  background: transparent;
+  border-color: color-mix(in oklab, var(--border) 92%, transparent);
+}
+
+.manejo-proto-editor-btn--ghost:hover {
+  color: var(--text);
+  background: color-mix(in oklab, var(--bg) 50%, transparent);
+}
+
+.manejo-proto-editor-btn--primary {
+  color: #fff;
+  background: var(--action, #2563eb);
+  border-color: color-mix(in oklab, var(--action, #2563eb) 80%, #000);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.manejo-proto-editor-btn--primary:hover {
+  filter: brightness(1.06);
+}
+
+@media (max-width: 560px) {
+  .manejo-proto-editor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .manejo-proto-editor-foot {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .manejo-proto-editor-btn--primary {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .manejo-proto-editor-backdrop,
+  .manejo-proto-editor {
+    transition: none;
+  }
+}
+
+.manejo-cad-workflow {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.manejo-cad-step {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface, transparent);
+}
+
+.manejo-cad-step--k {
+  border-color: color-mix(in oklab, #059669 35%, var(--border));
+  background: color-mix(in oklab, #059669 4%, var(--surface, transparent));
+}
+
+.manejo-cad-step-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.manejo-cad-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--action, #2563eb);
+  background: color-mix(in oklab, var(--action, #2563eb) 12%, transparent);
+}
+
+.manejo-cad-step-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.manejo-cad-action-row {
+  display: grid;
+  grid-template-columns: minmax(100px, 0.75fr) minmax(0, 2fr);
+  gap: 8px 12px;
+  align-items: start;
+  padding: 8px 0;
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+}
+
+.manejo-cad-action-row:last-of-type {
+  border-bottom: none;
+}
+
+.manejo-cad-action-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  padding-top: 2px;
+}
+
+.manejo-cad-action-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.manejo-cad-action-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.manejo-cad-k-details {
+  margin-top: 8px;
+}
+
+.manejo-cad-k-details > summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--action, #2563eb);
+  list-style: none;
+}
+
+.manejo-cad-k-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.manejo-cad-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.manejo-cad-checklist-group {
+  margin: 8px 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.manejo-cad-checklist-group:first-child {
+  margin-top: 0;
+}
+
+.manejo-cad-checklist-item {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: color-mix(in oklab, var(--surface, #fff) 92%, var(--border));
+}
+
+.manejo-cad-checklist-phase {
+  display: inline-block;
+  margin-bottom: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--action, #2563eb);
+}
+
+.manejo-cad-checklist-text {
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.manejo-cad-checklist-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.manejo-cad-some-block {
+  margin-bottom: 10px;
+}
+
+.manejo-cad-some-subtitle {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.manejo-cad-lab-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.manejo-cad-step--labs {
+  border-color: color-mix(in oklab, var(--action, #2563eb) 28%, var(--border));
+  background: color-mix(in oklab, var(--action, #2563eb) 3%, var(--surface, transparent));
+}
+
+.manejo-atb-culture-banner .atb-chip--r.atb-chip--filter-active {
+  box-shadow:
+    0 0 0 2px #b91c1c,
+    0 0 0 4px color-mix(in oklab, #b91c1c 22%, transparent);
+}
+
+.manejo-atb-culture-banner .atb-chip--i.atb-chip--filter-active {
+  box-shadow:
+    0 0 0 2px #a16207,
+    0 0 0 4px color-mix(in oklab, #a16207 22%, transparent);
+}
+
+@media (max-width: 640px) {
+  .manejo-cad-action-row {
+    grid-template-columns: 1fr;
+  }
+
+  .manejo-cad-hero-top {
+    flex-direction: column;
+  }
 }
 
 .manejo-cad-lab-lines {
@@ -696,14 +2338,737 @@
   line-height: 1.45;
 }
 
-.manejo-cad-resolution {
-  margin: 8px 0 0;
-  padding-left: 18px;
+.manejo-cad-k-panel {
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in oklab, #059669 35%, var(--border));
+  background: color-mix(in oklab, #059669 5%, var(--surface, transparent));
+}
+
+.manejo-cad-k-summary {
+  margin: 8px 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.manejo-cad-k-table {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.manejo-cad-k-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.9fr) minmax(0, 2.2fr) auto;
+  gap: 8px 10px;
+  align-items: start;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface, transparent);
   font-size: 12px;
+  line-height: 1.45;
+}
+
+.manejo-cad-k-row--head {
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  padding: 0 10px 4px;
+}
+
+.manejo-cad-k-row--active {
+  border-color: color-mix(in oklab, #059669 50%, var(--border));
+  background: color-mix(in oklab, #059669 10%, var(--surface, transparent));
+  box-shadow: 0 0 0 1px color-mix(in oklab, #059669 25%, transparent);
+}
+
+.manejo-cad-k-cell--range {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.manejo-cad-k-alert {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #b45309;
+  background: color-mix(in oklab, #d97706 12%, transparent);
+  border: 1px solid color-mix(in oklab, #d97706 35%, transparent);
+}
+
+.manejo-cad-k-foot {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 640px) {
+  .manejo-cad-k-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .manejo-cad-calc-line {
   margin: 4px 0 0;
   font-size: 12px;
   font-family: var(--mono, ui-monospace, monospace);
+}
+
+/* Calculadora colapsable */
+.manejo-calc-drawer {
+  margin: 0 12px 10px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px dashed color-mix(in oklab, var(--action, #2563eb) 35%, var(--border));
+  background: color-mix(in oklab, var(--action, #2563eb) 4%, var(--surface, transparent));
+}
+
+.manejo-calc-drawer[hidden] {
+  display: none !important;
+}
+
+.manejo-btn-calc-toggle {
+  font-size: 12px;
+}
+
+.manejo-proto-calc-select {
+  min-width: 120px;
+  cursor: pointer;
+}
+
+.manejo-card-head--clickable {
+  cursor: pointer;
+}
+
+.manejo-card-head--clickable:hover {
+  background: color-mix(in oklab, var(--action, #2563eb) 5%, transparent);
+}
+
+.manejo-card--has-calc.manejo-card--calc-open {
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--action, #2563eb) 40%, var(--border));
+}
+
+.manejo-via-chip--calc {
+  background: color-mix(in oklab, var(--action, #2563eb) 12%, transparent);
+  color: var(--action, var(--primary, #2563eb));
+}
+
+.manejo-atb-status-chip--compatible {
+  background: color-mix(in oklab, #059669 15%, transparent);
+  color: #059669;
+}
+
+.manejo-atb-status-chip--caution {
+  background: color-mix(in oklab, #d97706 15%, transparent);
+  color: #b45309;
+}
+
+.manejo-atb-status-chip--neutral {
+  opacity: 0.85;
+}
+
+.manejo-atb-toolbar {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.manejo-atb-family-chips {
+  flex-wrap: wrap;
+}
+
+/* —— ATB: color por familia (4 grupos, matices suaves) —— */
+.manejo-atb-family--carbapenem {
+  --atb-family-accent: #2f6fad;
+}
+
+.manejo-atb-family--pip-tazo {
+  --atb-family-accent: #3a7ab8;
+}
+
+.manejo-atb-family--cephalosporin {
+  --atb-family-accent: #457b94;
+}
+
+.manejo-atb-family--penicillin {
+  --atb-family-accent: #5088b0;
+}
+
+.manejo-atb-family--glycopeptide {
+  --atb-family-accent: #6b5b95;
+}
+
+.manejo-atb-family--oxazolidinone {
+  --atb-family-accent: #7a6599;
+}
+
+.manejo-atb-family--lipopeptide {
+  --atb-family-accent: #896fa0;
+}
+
+.manejo-atb-family--aminoglycoside {
+  --atb-family-accent: #3d8b7a;
+}
+
+.manejo-atb-family--fluoroquinolone {
+  --atb-family-accent: #488f86;
+}
+
+.manejo-atb-family--tetracycline {
+  --atb-family-accent: #54938f;
+}
+
+.manejo-atb-family--anaerobic {
+  --atb-family-accent: #b87333;
+}
+
+.manejo-atb-family--polymyxin {
+  --atb-family-accent: #c4874a;
+}
+
+html.dark .manejo-atb-family--carbapenem {
+  --atb-family-accent: #6ba3e0;
+}
+
+html.dark .manejo-atb-family--pip-tazo {
+  --atb-family-accent: #75abe5;
+}
+
+html.dark .manejo-atb-family--cephalosporin {
+  --atb-family-accent: #7fb3c8;
+}
+
+html.dark .manejo-atb-family--penicillin {
+  --atb-family-accent: #89bbd4;
+}
+
+html.dark .manejo-atb-family--glycopeptide {
+  --atb-family-accent: #a898c8;
+}
+
+html.dark .manejo-atb-family--oxazolidinone {
+  --atb-family-accent: #b5a4d0;
+}
+
+html.dark .manejo-atb-family--lipopeptide {
+  --atb-family-accent: #c2b0d8;
+}
+
+html.dark .manejo-atb-family--aminoglycoside {
+  --atb-family-accent: #6db8a5;
+}
+
+html.dark .manejo-atb-family--fluoroquinolone {
+  --atb-family-accent: #78beb6;
+}
+
+html.dark .manejo-atb-family--tetracycline {
+  --atb-family-accent: #83c4bd;
+}
+
+html.dark .manejo-atb-family--anaerobic {
+  --atb-family-accent: #d99a5c;
+}
+
+html.dark .manejo-atb-family--polymyxin {
+  --atb-family-accent: #e5ab72;
+}
+
+.manejo-atb-disclaimer {
+  display: none;
+}
+
+.manejo-atb-toolbar-v2 {
+  margin-bottom: 14px;
+}
+
+.manejo-atb-toolbar-hint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.manejo-atb-renal-chip {
+  color: color-mix(in oklab, var(--action, #2563eb) 80%, var(--text));
+}
+
+.manejo-root--atb .manejo-proto-split {
+  min-height: 0;
+  align-items: start;
+}
+
+.manejo-atb-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.manejo-atb-empty {
+  padding: 8px 4px;
+}
+
+.manejo-proto-cat-pill[class*='manejo-atb-family--'].manejo-atb-family-pill--active {
+  color: var(--atb-family-accent);
+  border-color: color-mix(in oklab, var(--atb-family-accent) 48%, var(--border));
+  background: color-mix(in oklab, var(--atb-family-accent) 10%, transparent);
+}
+
+.manejo-proto-cat-pill[class*='manejo-atb-family--']:hover {
+  border-color: color-mix(in oklab, var(--atb-family-accent) 35%, var(--border));
+  color: var(--atb-family-accent);
+}
+
+.manejo-atb-family-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0;
+  margin: 0;
+}
+
+.manejo-atb-family-section + .manejo-atb-family-section {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid color-mix(in oklab, var(--border) 35%, transparent);
+}
+
+.manejo-atb-family-label,
+.manejo-atb-family-hints {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 2px 0 6px;
+  margin: 0;
+  border: none;
+  background: none;
+}
+
+.manejo-atb-family-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  line-height: 1.3;
+  text-transform: uppercase;
+  color: var(--atb-family-accent, var(--text-muted));
+}
+
+.manejo-atb-family-title::before {
+  content: '';
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--atb-family-accent, var(--text-muted));
+}
+
+.manejo-atb-family-section .manejo-indication-chips--section,
+.manejo-atb-family-hints .manejo-indication-chips--section {
+  margin: 0;
+  gap: 5px;
+}
+
+.manejo-atb-family-section .manejo-indication-chips--section .manejo-indication-chip,
+.manejo-atb-family-hints .manejo-indication-chips--section .manejo-indication-chip {
+  padding: 3px 9px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid color-mix(in oklab, var(--border) 82%, transparent);
+  border-radius: var(--radius-pill, 999px);
+}
+
+.manejo-atb-family-section .manejo-indication-chips--section .manejo-indication-chip--clickable:hover,
+.manejo-atb-family-hints .manejo-indication-chips--section .manejo-indication-chip--clickable:hover {
+  color: var(--atb-family-accent, var(--text));
+  border-color: color-mix(in oklab, var(--atb-family-accent, var(--action)) 42%, var(--border));
+  background: transparent;
+  box-shadow: none;
+}
+
+.manejo-atb-family-section .manejo-indication-chips--section .manejo-indication-chip--active,
+.manejo-atb-family-hints .manejo-indication-chips--section .manejo-indication-chip--active {
+  color: var(--atb-family-accent, var(--action));
+  border-color: color-mix(in oklab, var(--atb-family-accent, var(--action)) 50%, var(--border));
+  background: color-mix(in oklab, var(--atb-family-accent, var(--action)) 10%, transparent);
+  box-shadow: none;
+  font-weight: 700;
+}
+
+.manejo-atb-family-section .manejo-indication-chips--section .manejo-indication-chip--clickable:focus-visible,
+.manejo-atb-family-hints .manejo-indication-chips--section .manejo-indication-chip--clickable:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--atb-family-accent, var(--action)) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.manejo-atb-family-section .manejo-cards--proto {
+  gap: 6px;
+}
+
+.manejo-proto-row--atb .manejo-proto-row-copy {
+  min-height: 28px;
+  padding: 3px 10px;
+  font-size: 11px;
+  border-radius: var(--radius-sm);
+}
+
+.manejo-proto-row--atb .manejo-atb-row-main {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.manejo-proto-row--atb .manejo-atb-row-dose {
+  display: block;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.manejo-proto-row--atb.manejo-atb--compatible.manejo-proto-row--selected,
+.manejo-proto-row--atb.manejo-atb--compatible:hover {
+  box-shadow: inset 3px 0 0 var(--rpc-ok, #059669);
+}
+
+.manejo-proto-row--atb.manejo-atb--caution.manejo-proto-row--selected,
+.manejo-proto-row--atb.manejo-atb--caution:hover {
+  box-shadow: inset 3px 0 0 var(--rpc-warn, #d97706);
+}
+
+.manejo-proto-row--atb .manejo-atb-status-chip {
+  font-size: 9px;
+  padding: 2px 6px;
+}
+
+.manejo-proto-detail[class*='manejo-atb-family--'] .manejo-proto-detail-cat {
+  color: var(--atb-family-accent, var(--text-muted));
+}
+
+.manejo-section-head {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
+  background: color-mix(in oklab, var(--surface-elevated, var(--card)) 92%, transparent);
+}
+
+.manejo-section-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.manejo-section-hint {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.manejo-indication-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.manejo-kv--chips .manejo-indication-chips {
+  margin-top: 0;
+}
+
+.manejo-indication-chips--empty {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.manejo-indication-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.35;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.manejo-indication-chip--clickable {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  font-family: inherit;
+  margin: 0;
+  text-align: left;
+  transition:
+    box-shadow var(--dur-fast, 0.15s) ease,
+    transform var(--dur-fast, 0.1s) ease;
+}
+
+.manejo-indication-chip--clickable:hover {
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--action, #2563eb) 20%, transparent);
+}
+
+.manejo-indication-chip--clickable:active {
+  transform: scale(0.98);
+}
+
+.manejo-indication-chip--active {
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--action, #2563eb) 50%, transparent);
+  font-weight: 700;
+}
+
+.manejo-indication-chip--clickable:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--action, #2563eb) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.manejo-indication-chips--carbapenem .manejo-indication-chip--tone-0 {
+  color: #1d4ed8;
+  background: rgba(37, 99, 235, 0.14);
+  border-color: rgba(37, 99, 235, 0.32);
+}
+.manejo-indication-chips--carbapenem .manejo-indication-chip--tone-1 {
+  color: #2563eb;
+  background: rgba(59, 130, 246, 0.16);
+  border-color: rgba(59, 130, 246, 0.34);
+}
+.manejo-indication-chips--carbapenem .manejo-indication-chip--tone-2 {
+  color: #3b82f6;
+  background: rgba(96, 165, 250, 0.18);
+  border-color: rgba(96, 165, 250, 0.36);
+}
+
+.manejo-indication-chips--pip-tazo .manejo-indication-chip--tone-0 {
+  color: #0e7490;
+  background: rgba(8, 145, 178, 0.14);
+  border-color: rgba(8, 145, 178, 0.32);
+}
+.manejo-indication-chips--pip-tazo .manejo-indication-chip--tone-1 {
+  color: #0891b2;
+  background: rgba(6, 182, 212, 0.16);
+  border-color: rgba(6, 182, 212, 0.34);
+}
+.manejo-indication-chips--pip-tazo .manejo-indication-chip--tone-2 {
+  color: #06b6d4;
+  background: rgba(34, 211, 238, 0.18);
+  border-color: rgba(34, 211, 238, 0.36);
+}
+
+.manejo-indication-chips--cephalosporin .manejo-indication-chip--tone-0 {
+  color: #4338ca;
+  background: rgba(67, 56, 202, 0.14);
+  border-color: rgba(67, 56, 202, 0.32);
+}
+.manejo-indication-chips--cephalosporin .manejo-indication-chip--tone-1 {
+  color: #4f46e5;
+  background: rgba(79, 70, 229, 0.16);
+  border-color: rgba(79, 70, 229, 0.34);
+}
+.manejo-indication-chips--cephalosporin .manejo-indication-chip--tone-2 {
+  color: #6366f1;
+  background: rgba(99, 102, 241, 0.18);
+  border-color: rgba(99, 102, 241, 0.36);
+}
+
+.manejo-indication-chips--penicillin .manejo-indication-chip--tone-0 {
+  color: #15803d;
+  background: rgba(22, 163, 74, 0.14);
+  border-color: rgba(22, 163, 74, 0.32);
+}
+.manejo-indication-chips--penicillin .manejo-indication-chip--tone-1 {
+  color: #16a34a;
+  background: rgba(34, 197, 94, 0.16);
+  border-color: rgba(34, 197, 94, 0.34);
+}
+.manejo-indication-chips--penicillin .manejo-indication-chip--tone-2 {
+  color: #22c55e;
+  background: rgba(74, 222, 128, 0.18);
+  border-color: rgba(74, 222, 128, 0.36);
+}
+
+.manejo-indication-chips--glycopeptide .manejo-indication-chip--tone-0 {
+  color: #7e22ce;
+  background: rgba(126, 34, 206, 0.14);
+  border-color: rgba(126, 34, 206, 0.32);
+}
+.manejo-indication-chips--glycopeptide .manejo-indication-chip--tone-1 {
+  color: #9333ea;
+  background: rgba(147, 51, 234, 0.16);
+  border-color: rgba(147, 51, 234, 0.34);
+}
+.manejo-indication-chips--glycopeptide .manejo-indication-chip--tone-2 {
+  color: #a855f7;
+  background: rgba(168, 85, 247, 0.18);
+  border-color: rgba(168, 85, 247, 0.36);
+}
+
+.manejo-indication-chips--oxazolidinone .manejo-indication-chip--tone-0 {
+  color: #a21caf;
+  background: rgba(162, 28, 175, 0.14);
+  border-color: rgba(162, 28, 175, 0.32);
+}
+.manejo-indication-chips--oxazolidinone .manejo-indication-chip--tone-1 {
+  color: #c026d3;
+  background: rgba(192, 38, 211, 0.16);
+  border-color: rgba(192, 38, 211, 0.34);
+}
+.manejo-indication-chips--oxazolidinone .manejo-indication-chip--tone-2 {
+  color: #d946ef;
+  background: rgba(217, 70, 239, 0.18);
+  border-color: rgba(217, 70, 239, 0.36);
+}
+
+.manejo-indication-chips--lipopeptide .manejo-indication-chip--tone-0 {
+  color: #0f766e;
+  background: rgba(15, 118, 110, 0.14);
+  border-color: rgba(15, 118, 110, 0.32);
+}
+.manejo-indication-chips--lipopeptide .manejo-indication-chip--tone-1 {
+  color: #0d9488;
+  background: rgba(13, 148, 136, 0.16);
+  border-color: rgba(13, 148, 136, 0.34);
+}
+.manejo-indication-chips--lipopeptide .manejo-indication-chip--tone-2 {
+  color: #14b8a6;
+  background: rgba(20, 184, 166, 0.18);
+  border-color: rgba(20, 184, 166, 0.36);
+}
+
+.manejo-indication-chips--aminoglycoside .manejo-indication-chip--tone-0 {
+  color: #b45309;
+  background: rgba(180, 83, 9, 0.14);
+  border-color: rgba(180, 83, 9, 0.32);
+}
+.manejo-indication-chips--aminoglycoside .manejo-indication-chip--tone-1 {
+  color: #d97706;
+  background: rgba(217, 119, 6, 0.16);
+  border-color: rgba(217, 119, 6, 0.34);
+}
+.manejo-indication-chips--aminoglycoside .manejo-indication-chip--tone-2 {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.18);
+  border-color: rgba(245, 158, 11, 0.36);
+}
+
+.manejo-indication-chips--fluoroquinolone .manejo-indication-chip--tone-0 {
+  color: #0369a1;
+  background: rgba(3, 105, 161, 0.14);
+  border-color: rgba(3, 105, 161, 0.32);
+}
+.manejo-indication-chips--fluoroquinolone .manejo-indication-chip--tone-1 {
+  color: #0284c7;
+  background: rgba(2, 132, 199, 0.16);
+  border-color: rgba(2, 132, 199, 0.34);
+}
+.manejo-indication-chips--fluoroquinolone .manejo-indication-chip--tone-2 {
+  color: #0ea5e9;
+  background: rgba(14, 165, 233, 0.18);
+  border-color: rgba(14, 165, 233, 0.36);
+}
+
+.manejo-indication-chips--anaerobic .manejo-indication-chip--tone-0 {
+  color: #c2410c;
+  background: rgba(194, 65, 12, 0.14);
+  border-color: rgba(194, 65, 12, 0.32);
+}
+.manejo-indication-chips--anaerobic .manejo-indication-chip--tone-1 {
+  color: #ea580c;
+  background: rgba(234, 88, 12, 0.16);
+  border-color: rgba(234, 88, 12, 0.34);
+}
+.manejo-indication-chips--anaerobic .manejo-indication-chip--tone-2 {
+  color: #f97316;
+  background: rgba(249, 115, 22, 0.18);
+  border-color: rgba(249, 115, 22, 0.36);
+}
+
+.manejo-indication-chips--tetracycline .manejo-indication-chip--tone-0 {
+  color: #4d7c0f;
+  background: rgba(77, 124, 15, 0.14);
+  border-color: rgba(77, 124, 15, 0.32);
+}
+.manejo-indication-chips--tetracycline .manejo-indication-chip--tone-1 {
+  color: #65a30d;
+  background: rgba(101, 163, 13, 0.16);
+  border-color: rgba(101, 163, 13, 0.34);
+}
+.manejo-indication-chips--tetracycline .manejo-indication-chip--tone-2 {
+  color: #84cc16;
+  background: rgba(132, 204, 22, 0.18);
+  border-color: rgba(132, 204, 22, 0.36);
+}
+
+.manejo-indication-chips--polymyxin .manejo-indication-chip--tone-0 {
+  color: #be123c;
+  background: rgba(190, 18, 60, 0.14);
+  border-color: rgba(190, 18, 60, 0.32);
+}
+.manejo-indication-chips--polymyxin .manejo-indication-chip--tone-1 {
+  color: #e11d48;
+  background: rgba(225, 29, 72, 0.16);
+  border-color: rgba(225, 29, 72, 0.34);
+}
+.manejo-indication-chips--polymyxin .manejo-indication-chip--tone-2 {
+  color: #f43f5e;
+  background: rgba(244, 63, 94, 0.18);
+  border-color: rgba(244, 63, 94, 0.36);
+}
+
+.manejo-cards--atb {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 12px;
+}
+
+.manejo-card--stanford {
+  border-color: color-mix(in oklab, var(--action, #2563eb) 25%, var(--border));
+}
+
+.manejo-stanford-components {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+
+.manejo-stanford-row {
+  margin: 0;
+}
+
+.manejo-some-field-val--mono {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.manejo-card--proto,
+.manejo-card--atb {
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface, transparent);
+  overflow: hidden;
+  transition: box-shadow var(--dur-fast, 0.15s) ease, border-color var(--dur-fast, 0.15s) ease;
+}
+
+.manejo-card--proto:hover,
+.manejo-card--atb:not(.manejo-atb-row):hover {
+  border-color: color-mix(in oklab, var(--action, #2563eb) 22%, var(--border));
 }

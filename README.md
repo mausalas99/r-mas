@@ -25,13 +25,25 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 ---
 
-**Versión estable actual:** [6.0.1](https://github.com/mausalas99/r-mas/releases/tag/v6.0.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.1.0](https://github.com/mausalas99/r-mas/releases/tag/v6.1.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
 
----
+## R+ 6.1.0 (estable — release 6.1.0)
 
+- **TODO:** completar bullets en README.
+
+Notas: `docs/RELEASE_NOTES_6.1.0.txt`.
+## R+ 6.1.0 (Manejo clínico completo — Protocolos, ATB y CAD/EHH)
+
+- **Manejo — cuatro sub-pestañas:** **Electrolitos**, **Protocolos**, **ATB** y **CAD/EHH** en Expediente → Clínico → Manejo (Sala e Interconsulta).
+- **Protocolos:** catálogo de infusiones/sedación (32 entradas), lista + detalle, favoritos, protocolos personalizados, calculadoras y SOME copiable.
+- **ATB:** ~30 fármacos en 12 familias; sugerencias según cultivos positivos; eTFG desde laboratorio; filtros por familia/indicación; SOME sin +Pendiente.
+- **CAD/EHH:** lectura de BH/QS/gasometría, checklist ADA y bloque SOME.
+- **Expediente:** pestañas Clínico y sub-pestañas de Manejo con barra subrayada unificada y mejor accesibilidad.
+
+Notas: `docs/RELEASE_NOTES_6.1.0.txt`.
 
 ## R+ 6.0.1 (entrada masiva de laboratorios y fixes rápidos)
 
@@ -59,10 +71,10 @@ Notas: `docs/RELEASE_NOTES_6.0.0.txt`.
 
 Notas: `docs/RELEASE_NOTES_5.2.1.txt`.
 
-## R+ 5.2.0 (integración Nexo)
+## R+ 5.2.0 (integración Neo)
 
-- **Nexo:** botones **Enviar a Nexo** en tablas SOME, laboratorio y tendencias (mismo protocolo `sesion-ingreso://`).
-- **Tutorial Sala:** pasos que muestran el envío sin abrir Nexo durante el tour.
+- **Neo:** botones **Enviar a Neo** en tablas SOME, laboratorio y tendencias (mismo protocolo `sesion-ingreso://`).
+- **Tutorial Sala:** pasos que muestran el envío sin abrir Neo durante el tour.
 
 Notas: `docs/RELEASE_NOTES_5.2.0.txt`.
 ## R+ 5.1.0 (estable — tablas SOME del reporte)
@@ -154,11 +166,6 @@ Notas: `docs/RELEASE_NOTES_3.3.0.txt`.
 ---
 
 
-## R+ 6.0.1 (entrada masiva de laboratorios y fixes rápidos)
-
-- **TODO:** completar bullets en README.
-
-Notas: `docs/RELEASE_NOTES_6.0.1.txt`.
 ## R+ 3.2.2 (estable — laboratorio + canal Estable en actualizaciones)
 
 - **Actualizaciones** — Canal **Estable** detecta releases oficiales al arrancar y al cambiar de canal; salto directo recomendado desde 3.0.x / 3.2.0.
@@ -332,7 +339,7 @@ Notas extendidas en el repo: docs/RELEASE_NOTES_2.0.0.txt (texto plano).
 
 - **Laboratoriazo** — Interpreta resultados de laboratorio y genera diagramas visuales: Biometría Hemática, Coagulación, Diagrama de Gamble, Química Sanguínea, Gasometría y más. Historial por paciente y **tendencias** con mini-gráficas.
 - **Expediente** — En vista Normal (pestañas completas): **Paciente**, **Clínico**, **Resultados** y **Salida**. En **Modo Pase** el tablero de ronda sigue igual; al abrir un bloque entras al expediente con la misma organización de cuatro pestañas.
-- **Manejo electrolítico** — Sugerencias de corrección de electrolitos y gasometría (Sala e Interconsulta), con datos de peso/talla/vía del paciente.
+- **Manejo clínico** — Expediente → Clínico → **Manejo**: **Electrolitos** (alteraciones con SOME), **Protocolos** (infusiones/sedación con calculadoras), **ATB** (catálogo con sugerencias según cultivos) y **CAD/EHH** (checklist ADA con lectura de laboratorio).
 - **Medicamentos** — Receta hospitalaria (TSV), copia desde sistemas tipo SOME, volcado a nota / SOAP y copia al portapapeles.
 - **Nota de Evolución** — Formulario estructurado que genera un archivo `.docx` listo para imprimir, con membrete y formato clínico. **Plantilla SOAP** integrada (Interconsulta).
 - **Indicaciones médicas** — Generación de hoja de indicaciones en `.docx` con secciones configurables (Interconsulta).

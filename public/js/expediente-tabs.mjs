@@ -20,6 +20,7 @@ export const CONSOLIDATED_TABS = ['paciente', 'clinico', 'resultados', 'salida']
 export const CLINICO_SECTIONS_ALL = ['notas', 'indica', 'manejo'];
 export const CLINICO_SECTIONS_SALA = ['manejo'];
 export const RESULTADOS_SECTIONS = ['tend', 'cult'];
+export const SALIDA_SECTIONS_SALA = ['listado', 'recetaHu'];
 
 /** @deprecated use getClinicoSections(settings) */
 export const CLINICO_SECTIONS = CLINICO_SECTIONS_ALL;
@@ -50,8 +51,8 @@ function granularToConsolidatedMap(settings) {
     manejo: { tab: 'clinico', section: 'manejo' },
     tend: { tab: 'resultados', section: 'tend' },
     cult: { tab: 'resultados', section: 'cult' },
-    recetaHu: { tab: 'salida', section: null },
-    listado: { tab: sala ? 'salida' : 'paciente', section: null },
+    recetaHu: { tab: 'salida', section: sala ? 'recetaHu' : null },
+    listado: { tab: sala ? 'salida' : 'paciente', section: sala ? 'listado' : null },
   };
 }
 
@@ -65,14 +66,18 @@ function paneMountSpec(granularTab, settings) {
     manejo: { composite: 'clinico', selector: '.exp-segment-body--clinico' },
     tend: { composite: 'resultados', selector: '.exp-segment-body--resultados' },
     cult: { composite: 'resultados', selector: '.exp-segment-body--resultados' },
-    listado: sala ? { composite: 'salida', selector: '.exp-salida-mount' } : { composite: null, selector: null },
-    recetaHu: sala ? { composite: null, selector: null } : { composite: 'salida', selector: '.exp-salida-mount' },
+    listado: sala ? { composite: 'salida', selector: '.exp-segment-body--salida' } : { composite: null, selector: null },
+    recetaHu: { composite: 'salida', selector: '.exp-segment-body--salida' },
   };
   return map[granularTab] || null;
 }
 
 export function getClinicoSections(settings) {
   return isModeSala(settings) ? CLINICO_SECTIONS_SALA : CLINICO_SECTIONS_ALL;
+}
+
+export function getSalidaSections(settings) {
+  return isModeSala(settings) ? SALIDA_SECTIONS_SALA : [];
 }
 
 export function useConsolidatedExpedienteTabs(_settings) {
@@ -93,7 +98,6 @@ export function migrateGranularInner(granularTab, settings) {
   var map = granularToConsolidatedMap(settings || {});
   if (map[granularTab]) {
     if (isModeSala(settings) && (granularTab === 'notas' || granularTab === 'indica')) return 'manejo';
-    if (isModeSala(settings) && granularTab === 'recetaHu') return 'listado';
     if (!isModeSala(settings) && granularTab === 'listado') return 'todo';
     return granularTab;
   }
@@ -213,6 +217,8 @@ export function syncConsolidatedSegmentBarVisibility(settings) {
       if (btn) btn.style.display = sala ? 'none' : '';
     });
   }
+  var salidaBar = document.getElementById('exp-segment-salida');
+  if (salidaBar) salidaBar.style.display = sala ? '' : 'none';
 }
 
 export function applyExpedientePaneLayout(consolidated, settings) {
@@ -237,20 +243,22 @@ export function resetExpedientePaneLayoutCache() {
 export function syncConsolidatedSegmentBars(granularTab, settings) {
   var target = resolveConsolidatedTarget(granularTab, settings);
   var sections = getClinicoSections(settings);
-  var clinicoBar = document.getElementById('exp-segment-clinico');
-  if (clinicoBar) {
-    sections.forEach(function (section) {
-      var btn = clinicoBar.querySelector('[data-exp-segment="' + section + '"]');
-      if (btn) btn.classList.toggle('active', target.tab === 'clinico' && target.section === section);
+
+  function syncBar(barEl, sectionIds, compositeTab) {
+    if (!barEl) return;
+    sectionIds.forEach(function (section) {
+      var btn = barEl.querySelector('[data-exp-segment="' + section + '"]');
+      if (!btn) return;
+      var on = target.tab === compositeTab && target.section === section;
+      btn.classList.toggle('active', on);
+      btn.setAttribute('aria-selected', on ? 'true' : 'false');
+      btn.tabIndex = on ? 0 : -1;
     });
   }
-  var resBar = document.getElementById('exp-segment-resultados');
-  if (resBar) {
-    RESULTADOS_SECTIONS.forEach(function (section) {
-      var btn = resBar.querySelector('[data-exp-segment="' + section + '"]');
-      if (btn) btn.classList.toggle('active', target.tab === 'resultados' && target.section === section);
-    });
-  }
+
+  syncBar(document.getElementById('exp-segment-clinico'), sections, 'clinico');
+  syncBar(document.getElementById('exp-segment-resultados'), RESULTADOS_SECTIONS, 'resultados');
+  syncBar(document.getElementById('exp-segment-salida'), getSalidaSections(settings), 'salida');
 }
 
 export function syncConsolidatedPaneVisibility(granularTab, settings) {
@@ -273,11 +281,17 @@ export function syncConsolidatedPaneVisibility(granularTab, settings) {
   });
   var datosPane = paneEl('datos');
   var todoPane = paneEl('todo');
-  var recetaPane = paneEl('recetaHu');
-  var listadoPane = paneEl('listado');
+  var salidaSections = getSalidaSections(settings);
+  if (salidaSections.length) {
+    salidaSections.forEach(function (section) {
+      var pane = paneEl(section);
+      if (pane) pane.classList.toggle('active', target.tab === 'salida' && target.section === section);
+    });
+  } else {
+    var recetaPane = paneEl('recetaHu');
+    if (recetaPane) recetaPane.classList.toggle('active', target.tab === 'salida' && granularTab === 'recetaHu');
+  }
   if (datosPane) datosPane.classList.toggle('active', target.tab === 'paciente');
   if (todoPane) todoPane.classList.toggle('active', target.tab === 'paciente');
-  if (recetaPane) recetaPane.classList.toggle('active', target.tab === 'salida' && granularTab === 'recetaHu');
-  if (listadoPane) listadoPane.classList.toggle('active', target.tab === 'salida' && granularTab === 'listado');
   if (granularTab === 'datos') setDatosCollapseOpen(true, true);
 }

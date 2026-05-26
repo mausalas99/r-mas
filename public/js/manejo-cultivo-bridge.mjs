@@ -114,10 +114,10 @@ function normalizeChunkText(text) {
   return String(text || '').replace(/\s+/g, ' ');
 }
 
-function extractSensKeysFromRisSummary(risSummary) {
+function extractRisKeysFromSummary(risSummary, letter) {
   var keys = [];
   var seen = Object.create(null);
-  var re = /S:\s*([A-Z0-9/,.\s\-]+)/gi;
+  var re = new RegExp(String(letter).toUpperCase() + ':\\s*([A-Z0-9/,.\s\\-]+)', 'gi');
   var m;
   while ((m = re.exec(String(risSummary || '')))) {
     m[1]
@@ -135,6 +135,10 @@ function extractSensKeysFromRisSummary(risSummary) {
       });
   }
   return keys;
+}
+
+function extractSensKeysFromRisSummary(risSummary) {
+  return extractRisKeysFromSummary(risSummary, 'S');
 }
 
 function extractMarkersFromText(text) {
@@ -216,6 +220,9 @@ function isolateFromParsedBlock(block, set, chunkText) {
     markers: markers,
     risSummary: risSummary,
     sensKeys: extractSensKeysFromRisSummary(risSummary),
+    resKeys: extractRisKeysFromSummary(risSummary, 'R'),
+    intKeys: extractRisKeysFromSummary(risSummary, 'I'),
+    labSetId: set && set.id != null ? set.id : '',
   };
 }
 

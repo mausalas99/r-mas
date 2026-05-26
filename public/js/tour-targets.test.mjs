@@ -27,8 +27,8 @@ test('getSalaTourSteps incluye pasos clave de v3.0', () => {
   assert.equal(steps[steps.length - 3], 'livesync_desktop');
   assert.ok(steps.includes('sala_tend_chart'), 'debe presentar Gráfica del estudio');
   assert.equal(steps.indexOf('sala_tend_chart'), steps.indexOf('sala_tend') + 1);
-  assert.ok(steps.includes('sala_casiopea_lab'), 'debe explicar envío lab a Nexo');
-  assert.ok(steps.includes('sala_casiopea_trends'), 'debe explicar envío tendencias a Nexo');
+  assert.ok(steps.includes('sala_casiopea_lab'), 'debe explicar envío lab a Neo');
+  assert.ok(steps.includes('sala_casiopea_trends'), 'debe explicar envío tendencias a Neo');
   assert.equal(steps.indexOf('sala_casiopea_lab'), steps.indexOf('lab_view') + 2);
   assert.equal(steps.indexOf('sala_manejo'), steps.indexOf('sala_casiopea_lab') + 1);
   assert.equal(steps.indexOf('sala_casiopea_trends'), steps.indexOf('sala_tend_chart') + 1);
@@ -119,7 +119,7 @@ test('getTourTarget para sala_casiopea_lab apunta al botón Tablas SOME', () => 
   assert.equal(stepRequiresUserAction('sala_casiopea_lab'), false);
 });
 
-test('getTourTarget para sala_casiopea_trends apunta al botón Enviar Nexo', () => {
+test('getTourTarget para sala_casiopea_trends apunta al botón Enviar Neo', () => {
   const t = getTourTarget('sala_casiopea_trends', 'sala');
   assert.equal(t.appTab, 'nota');
   assert.equal(t.innerTab, 'tend');
@@ -127,7 +127,7 @@ test('getTourTarget para sala_casiopea_trends apunta al botón Enviar Nexo', () 
   assert.equal(stepRequiresUserAction('sala_casiopea_trends'), false);
 });
 
-test('getInterconsultaTourSteps no incluye pasos Nexo', () => {
+test('getInterconsultaTourSteps no incluye pasos Neo', () => {
   const steps = getInterconsultaTourSteps();
   assert.ok(!steps.includes('sala_casiopea_lab'));
   assert.ok(!steps.includes('sala_casiopea_trends'));

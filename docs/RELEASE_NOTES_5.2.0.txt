@@ -1,16 +1,16 @@
-R+ 5.2.0 (integración Nexo)
+R+ 5.2.0 (integración Neo)
 ===================================
 
 Fecha: 2026-05-23
 
 ## Resumen
 
-Integración visible con **Nexo**: envío de laboratorio y tendencias desde R+ hacia la app externa, con pasos informativos en el tutorial modo Sala.
+Integración visible con **Neo**: envío de laboratorio y tendencias desde R+ hacia la app externa, con pasos informativos en el tutorial modo Sala.
 
 ## Nuevo / mejorado
 
-- Botones y modales: **Enviar a Nexo** (laboratorio y tendencias).
-- Tutorial **Sala**: resalta Tablas SOME y el envío de gráficas sin abrir Nexo durante el tour.
+- Botones y modales: **Enviar a Neo** (laboratorio y tendencias).
+- Tutorial **Sala**: resalta Tablas SOME y el envío de gráficas sin abrir Neo durante el tour.
 - Protocolo técnico sin cambios: `sesion-ingreso://import`.
 
 ## Instalación

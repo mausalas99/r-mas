@@ -32,6 +32,7 @@ import {
   showAppTabPanel,
   syncAppTabIndicator,
   syncInnerTabIndicator,
+  syncAllSubTabIndicators,
 } from "../ui-tab-motion.mjs";
 import {
   applyExpedientePaneLayout,
@@ -737,7 +738,7 @@ export function syncInnerTabVisualOnly() {
     syncConsolidatedInnerTabButtons(tab, settings);
     syncConsolidatedPaneVisibility(tab, settings);
     syncConsolidatedSegmentBars(tab, settings);
-    syncInnerTabIndicator(tab, { consolidated: true });
+    syncInnerTabIndicator(tab, { consolidated: true, settings: settings });
     return;
   }
   GRANULAR_TABS.forEach(function (t) {
@@ -776,7 +777,7 @@ export function switchConsolidatedTab(compositeTab) {
     syncConsolidatedInnerTabButtons(current, settings);
     syncConsolidatedPaneVisibility(current, settings);
     syncConsolidatedSegmentBars(current, settings);
-    syncInnerTabIndicator(current, { consolidated: true });
+    syncInnerTabIndicator(current, { consolidated: true, settings: settings });
     return;
   }
   switchInnerTab(defaultGranularForConsolidatedTab(compositeTab, settings));
@@ -837,7 +838,8 @@ export function switchInnerTab(tab, opts) {
   renderGranularInnerTab(tab);
   syncRoundExpedienteLayout();
   rt.syncWorkContextChrome();
-  syncInnerTabIndicator(tab, consolidated ? { consolidated: true } : undefined);
+  syncInnerTabIndicator(tab, consolidated ? { consolidated: true, settings: settings } : undefined);
+  syncAllSubTabIndicators();
 }
 
 export function renderInnerTabs() {
@@ -913,7 +915,8 @@ export function renderInnerTabs() {
 
   renderEstadoActualBar();
   var active = migrateGranularInner(rt.getActiveInner() || "todo", settings);
-  syncInnerTabIndicator(active, consolidated ? { consolidated: true } : undefined);
+  syncInnerTabIndicator(active, consolidated ? { consolidated: true, settings: settings } : undefined);
+  syncAllSubTabIndicators();
 }
 
 export function getActiveInnerTab() {

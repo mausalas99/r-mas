@@ -73,8 +73,8 @@ export function registerTendenciasRuntime(partial) {
     sendPayload: function (payload) {
       if (window.electronAPI && window.electronAPI.sendToSesionIngreso) {
         window.electronAPI.sendToSesionIngreso(payload).then(function (ok) {
-          if (ok) rt.showToast('Tendencias enviadas a Nexo', 'ok');
-          else rt.showToast('No se pudo abrir Nexo', 'warn');
+          if (ok) rt.showToast('Tendencias enviadas a Neo', 'ok');
+          else rt.showToast('No se pudo abrir Neo', 'warn');
         });
         return;
       }
@@ -741,7 +741,7 @@ function buildTendInlineControlsHtml(hiddenCount, opts) {
     '</button>' +
     ocultosBtn +
     gasoBtn +
-    '<button type="button" class="tend-toolbar-btn" data-tour="casiopea-trends-send" onclick="openSesionIngresoTrendsSendModal()">Enviar a Nexo</button>' +
+    '<button type="button" class="tend-toolbar-btn" data-tour="casiopea-trends-send" onclick="openSesionIngresoTrendsSendModal()">Enviar a Neo</button>' +
     '</div>'
   );
 }

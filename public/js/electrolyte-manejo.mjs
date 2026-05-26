@@ -3,7 +3,7 @@
  * Ver docs/superpowers/specs/2026-05-25-manejo-electrolitos-gasometria-design.md
  */
 
-/** @typedef {{ medication: string, route: string, doseValue: number|string, doseUnit: string, dilution: string, infusionRateMlHr: number|null|string, requiresDilution?: boolean }} SomeOrderLike */
+/** @typedef {{ medication: string, route: string, doseValue: number|string, doseUnit: string, dilution: string, frequency: string, infusionRateMlHr: number|null|string, comments: string, requiresDilution?: boolean }} SomeOrderLike */
 
 /** @typedef {{ electrolyte: string, direction: 'hypo'|'hyper', value: number|null, unit: string, interpretation: string, severity: string, formula: string, formulaResult: string|null, suggestedDose: string, route: string, monitoring: string, alerts: string[], clinicalNotes: string[], someOrders: SomeOrderLike[], ruleId: string }} ElectrolyteRow */
 
@@ -103,13 +103,18 @@ export function toSomeUpper(s) {
 export function formatSomeBlock(order) {
   var o = order || {};
   var rateRaw = o.infusionRateMlHr;
-  var rateStr =
+  var rateStr = '';
+  if (
     rateRaw !== null &&
     rateRaw !== undefined &&
     rateRaw !== '' &&
     !(typeof rateRaw === 'number' && !Number.isFinite(rateRaw))
-      ? String(rateRaw) + ' CC/HR'
-      : '';
+  ) {
+    var rateText = String(rateRaw).trim();
+    rateStr = /mcg\/min|mg\/min|u\/min|u\/kg\/h/i.test(rateText)
+      ? toSomeUpper(rateText)
+      : toSomeUpper(rateText + ' CC/HR');
+  }
   var dosePart =
     String(o.doseValue != null ? o.doseValue : '').trim() +
     (o.doseUnit ? ' ' + String(o.doseUnit).trim() : '');
@@ -117,17 +122,23 @@ export function formatSomeBlock(order) {
     'MEDICAMENTO: ' +
     toSomeUpper(o.medication || '') +
     '\n' +
-    'VIA: ' +
-    toSomeUpper(o.route || '') +
-    '\n' +
     'DOSIS: ' +
     toSomeUpper(dosePart.trim()) +
+    '\n' +
+    'VIA: ' +
+    toSomeUpper(o.route || '') +
     '\n' +
     'DILUCION: ' +
     toSomeUpper(o.dilution || '') +
     '\n' +
+    'FRECUENCIA: ' +
+    toSomeUpper(o.frequency || '') +
+    '\n' +
     'VELOCIDAD DE INFUSION: ' +
-    toSomeUpper(rateStr)
+    rateStr +
+    '\n' +
+    'COMENTARIOS ADICIONALES: ' +
+    toSomeUpper(o.comments || '')
   );
 }
 

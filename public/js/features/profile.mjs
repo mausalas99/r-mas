@@ -247,7 +247,6 @@ export function applyAppModeSwitchEffects() {
   var current = getActiveInnerTab();
   var nowSala = isModeSala(settingsRef());
   if (nowSala && (current === "notas" || current === "indica")) switchInnerTab("manejo");
-  else if (nowSala && current === "recetaHu") switchInnerTab("listado");
   else if (!nowSala && current === "listado") switchInnerTab("recetaHu");
   renderInnerTabs();
   renderEstadoActualButton();

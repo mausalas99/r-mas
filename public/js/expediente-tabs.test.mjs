@@ -8,6 +8,7 @@ import {
   defaultGranularForConsolidatedTab,
   consolidatedInnerTabButtonId,
   getClinicoSections,
+  getSalidaSections,
 } from './expediente-tabs.mjs';
 
 const INTER = { appMode: 'interconsulta' };
@@ -28,8 +29,9 @@ test('resolveConsolidatedTarget maps granular tabs to composite groups (intercon
   assert.deepEqual(resolveConsolidatedTarget('listado', INTER), { tab: 'paciente', section: null });
 });
 
-test('resolveConsolidatedTarget maps listado to salida in sala', () => {
-  assert.deepEqual(resolveConsolidatedTarget('listado', SALA), { tab: 'salida', section: null });
+test('resolveConsolidatedTarget maps listado and recetaHu to salida in sala', () => {
+  assert.deepEqual(resolveConsolidatedTarget('listado', SALA), { tab: 'salida', section: 'listado' });
+  assert.deepEqual(resolveConsolidatedTarget('recetaHu', SALA), { tab: 'salida', section: 'recetaHu' });
   assert.deepEqual(resolveConsolidatedTarget('manejo', SALA), { tab: 'clinico', section: 'manejo' });
 });
 
@@ -38,7 +40,7 @@ test('migrateGranularInner keeps known tabs and falls back to todo', () => {
   assert.equal(migrateGranularInner('unknown', INTER), 'todo');
   assert.equal(migrateGranularInner(null, INTER), 'todo');
   assert.equal(migrateGranularInner('notas', SALA), 'manejo');
-  assert.equal(migrateGranularInner('recetaHu', SALA), 'listado');
+  assert.equal(migrateGranularInner('recetaHu', SALA), 'recetaHu');
   assert.equal(migrateGranularInner('listado', INTER), 'todo');
 });
 
@@ -67,4 +69,9 @@ test('consolidatedTabForGranular returns top-level composite tab id', () => {
 test('getClinicoSections differs by mode', () => {
   assert.deepEqual(getClinicoSections(INTER), ['notas', 'indica', 'manejo']);
   assert.deepEqual(getClinicoSections(SALA), ['manejo']);
+});
+
+test('getSalidaSections only in sala', () => {
+  assert.deepEqual(getSalidaSections(SALA), ['listado', 'recetaHu']);
+  assert.deepEqual(getSalidaSections(INTER), []);
 });

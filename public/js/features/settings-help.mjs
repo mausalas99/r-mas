@@ -1298,6 +1298,23 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '6.1.0': [
+    {
+      title: 'Manejo: Protocolos, ATB y CAD/EHH',
+      body:
+        'Expediente → Clínico → <strong>Manejo</strong> ahora incluye cuatro sub-pestañas. <strong>Protocolos</strong> (infusiones y sedación con calculadoras), <strong>ATB</strong> (catálogo con sugerencias según cultivos) y <strong>CAD/EHH</strong> (checklist ADA con lectura de laboratorio), además de <strong>Electrolitos</strong>.',
+    },
+    {
+      title: 'ATB asistido',
+      body:
+        'Filtra por familia o indicación, revisa dosis y ajuste renal desde laboratorios recientes, y copia la indicación SOME sin +Pendiente.',
+    },
+    {
+      title: 'Pestañas clínicas unificadas',
+      body:
+        'Nota, Indicaciones y las sub-pestañas de Manejo comparten la misma barra subrayada para navegar el expediente con menos fricción.',
+    },
+  ],
   '6.0.1': [
     {
       title: 'Laboratorio: entrada masiva',

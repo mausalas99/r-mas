@@ -2,7 +2,6 @@
  * Pestaña Receta médica HU (000-061-R-06-12) — Interconsulta.
  */
 import { patients, recetaHuByPatient, saveState } from '../app-state.mjs';
-import { isModeSala } from '../mode-features.mjs';
 import { setAsyncButtonLoading } from '../ui-motion.mjs';
 import {
   buildProximaCitaText,
@@ -448,13 +447,6 @@ function ensureRecetaHuShell(root) {
 export function renderRecetaHu() {
   var root = document.getElementById('receta-hu-container');
   if (!root) return;
-
-  if (isModeSala(rt.getSettings())) {
-    root.innerHTML =
-      '<p class="receta-hu-hint">La receta médica HU está disponible en modo <strong>Interconsulta</strong>.</p>';
-    root.dataset.mounted = '';
-    return;
-  }
 
   var pid = aid();
   if (!pid) {

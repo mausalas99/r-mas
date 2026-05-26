@@ -316,8 +316,12 @@ function buildCultivoOutputHtmlFragments(text, sourceText) {
 }
 
 function cultivoAntibiogramCellHtml(r) {
-  if (!aid()) return '<pre class="cultivos-atb-fallback">—</pre>';
-  var sets = labHistory[aid()] || [];
+  return buildCultivoAntibiogramCellHtmlForPatient(r, aid());
+}
+
+export function buildCultivoAntibiogramCellHtmlForPatient(r, patientId) {
+  if (!patientId) return '<pre class="cultivos-atb-fallback">—</pre>';
+  var sets = labHistory[patientId] || [];
   var set = sets.find(function (s) {
     return String(s.id) === String(r.labSetId);
   });
@@ -344,7 +348,7 @@ function cultivoAntibiogramCellHtml(r) {
   return (
     '<div class="cultivos-atb-wrap">' +
     '<pre class="cultivos-atb-fallback">' +
-    esc(r.resistencias || '—') +
+    esc(r.resistencias || r.risSummary || '—') +
     '</pre>' +
     copyBtn +
     '</div>'

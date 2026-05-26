@@ -27,8 +27,8 @@ test('MERO S → compatible', () => {
   assert.equal(r.status, 'compatible');
 });
 
-test('VRE cautions vancomicina', () => {
-  var r = classifyAtbForIsolate(drug('vancomicina'), {
+test('VRE cautions vancomicina carga', () => {
+  var r = classifyAtbForIsolate(drug('vancomicina-carga'), {
     markers: ['VRE'],
     sensKeys: ['VANCO'],
     organismo: 'Enterococcus faecium',
