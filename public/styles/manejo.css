@@ -494,3 +494,135 @@
   background: rgba(251, 191, 36, 0.35);
   color: var(--text);
 }
+
+/* —— Protocolos —— */
+.manejo-root--protocolos {
+  gap: 12px;
+}
+
+.manejo-proto-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.manejo-proto-search-wrap {
+  max-width: 360px;
+}
+
+.manejo-proto-search-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.manejo-proto-search {
+  width: 100%;
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-family: inherit;
+}
+
+.manejo-proto-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.manejo-proto-chip {
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: color var(--dur-fast, 0.15s) ease, background var(--dur-fast, 0.15s) ease,
+    border-color var(--dur-fast, 0.15s) ease;
+}
+
+.manejo-proto-chip:hover {
+  color: var(--action, var(--primary, #2563eb));
+  border-color: color-mix(in oklab, var(--action, #2563eb) 40%, var(--border));
+}
+
+.manejo-proto-chip--active {
+  color: var(--action, var(--primary, #2563eb));
+  background: color-mix(in oklab, var(--action, #2563eb) 10%, transparent);
+  border-color: color-mix(in oklab, var(--action, #2563eb) 45%, var(--border));
+}
+
+.manejo-card--proto {
+  border-left-color: color-mix(in oklab, var(--action, #2563eb) 55%, transparent);
+}
+
+.manejo-card-symbol--proto {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: normal;
+}
+
+.manejo-card-grid--proto {
+  padding-top: 0;
+}
+
+.manejo-proto-calc {
+  padding: 0 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px dashed var(--border);
+}
+
+.manejo-proto-calc-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.manejo-proto-calc-label,
+.manejo-proto-calc-check {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.manejo-proto-calc-check {
+  flex-direction: row;
+  align-items: center;
+  padding-top: 18px;
+}
+
+.manejo-proto-calc-input {
+  min-width: 88px;
+  font-size: 13px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-family: inherit;
+}
+
+.manejo-proto-calc-result {
+  font-size: 12px;
+  line-height: 1.45;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--rpc-subtle-alt, rgba(0, 0, 0, 0.03));
+  font-family: var(--mono, ui-monospace, monospace);
+}
+
+.manejo-proto-calc-result[hidden] {
+  display: none !important;
+}

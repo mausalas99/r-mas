@@ -8,6 +8,11 @@ import {
   parsePatientWeightKg,
   toSomeUpper,
 } from '../electrolyte-manejo.mjs';
+import { MANEJO_CALCULATORS } from '../manejo-calculators.mjs';
+import {
+  MANEJO_PROTOCOL_CATEGORIES,
+  MANEJO_PROTOCOLS,
+} from '../manejo-protocols-catalog.mjs';
 import { shouldAddLabSuggestionTodo } from '../lab-clinical-suggestions.mjs';
 import { storage } from '../storage.js';
 import { normalizeFechaLabHistory, sortLabHistoryChronological } from '../tend-core.mjs';
@@ -142,6 +147,33 @@ var ION_META = {
 function ionMeta(code) {
   var key = String(code || '').trim();
   return ION_META[key] || { symbol: key || '—', name: '' };
+}
+
+function addManejoGenericPendiente(ruleId, text, labFechaNorm) {
+  var pid = aid();
+  if (!pid) return;
+  var ruleScoped = 'manejo:' + ruleId;
+  var todos = storage.getTodos(pid);
+  if (!shouldAddLabSuggestionTodo(todos, ruleScoped, labFechaNorm || '')) {
+    rt.showToast('Ya hay un pendiente abierto para esta fila.', '');
+    return;
+  }
+  var nowIso = new Date().toISOString();
+  var entry = {
+    id: String(Date.now()) + '-' + Math.random().toString(36).slice(2, 6),
+    text: text,
+    completed: false,
+    priority: 'media',
+    createdAt: nowIso,
+    updatedAt: nowIso,
+    labRuleId: ruleScoped,
+    labFecha: labFechaNorm || '',
+  };
+  todos.push(entry);
+  storage.saveTodos(pid, todos);
+  rt.emitLiveSyncTodoUpsert(pid, entry);
+  rt.refreshAllTodoUIs();
+  rt.showToast('Pendiente agregado', 'success');
 }
 
 function addManejoPendiente(row, labFechaNorm) {
@@ -465,11 +497,422 @@ function buildManejoCard(row, labFechaNorm) {
   return card;
 }
 
+var PROTO_FILTER_KEY = 'manejoProtoCategory';
+var PROTO_SEARCH_KEY = 'manejoProtoSearch';
+
+function getProtoCategoryFilter() {
+  try {
+    var s = sessionStorage.getItem(PROTO_FILTER_KEY);
+    if (!s || s === 'all') return 'all';
+    if (MANEJO_PROTOCOL_CATEGORIES.some(function (c) { return c.id === s; })) return s;
+  } catch (_e) {}
+  return 'all';
+}
+
+function setProtoCategoryFilter(id) {
+  try {
+    sessionStorage.setItem(PROTO_FILTER_KEY, id || 'all');
+  } catch (_e) {}
+}
+
+function getProtoSearchQuery() {
+  try {
+    return String(sessionStorage.getItem(PROTO_SEARCH_KEY) || '').trim();
+  } catch (_e2) {}
+  return '';
+}
+
+function setProtoSearchQuery(q) {
+  try {
+    sessionStorage.setItem(PROTO_SEARCH_KEY, String(q || ''));
+  } catch (_e3) {}
+}
+
+function categoryLabelFor(catId) {
+  var hit = MANEJO_PROTOCOL_CATEGORIES.find(function (c) {
+    return c.id === catId;
+  });
+  return hit ? hit.label : catId;
+}
+
+function protocolMatchesSearch(entry, q) {
+  if (!q) return true;
+  var needle = q.toLowerCase();
+  var hay =
+    String(entry.title || '') +
+    ' ' +
+    String(entry.indicationText || '') +
+    ' ' +
+    (entry.notes || []).join(' ');
+  return hay.toLowerCase().indexOf(needle) >= 0;
+}
+
+function getProtocolLabFechaNorm(pid) {
+  if (!pid) return '';
+  var hist = rt.ensureParsedLabHistory(pid);
+  var ordered = sortLabHistoryChronological(hist);
+  var latest = ordered[0];
+  if (!latest) return '';
+  var labFechaRaw = latest.fecha || '';
+  return normalizeFechaLabHistory(labFechaRaw) || String(labFechaRaw || '').trim();
+}
+
+function buildProtocolCopyText(entry, calcResult) {
+  var parts = [];
+  var tpl = String(entry.copyTemplate || '').trim();
+  if (tpl) parts.push(tpl);
+  if (calcResult && calcResult.copyLine) parts.push(String(calcResult.copyLine).trim());
+  return parts.filter(Boolean).join('\n');
+}
+
+function buildProtocolCalcFields(calcId, entry, patient, host) {
+  host.innerHTML = '';
+  var runner = MANEJO_CALCULATORS[calcId];
+  if (!runner) {
+    var err = document.createElement('p');
+    err.className = 'manejo-hint';
+    err.textContent = 'Calculadora no disponible.';
+    host.appendChild(err);
+    return { getInputs: function () { return {}; }, run: function () { return null; } };
+  }
+
+  var wKg = patient ? parsePatientWeightKg(patient) : null;
+  var fieldsWrap = document.createElement('div');
+  fieldsWrap.className = 'manejo-proto-calc-fields';
+
+  var weightInp = document.createElement('input');
+  weightInp.type = 'text';
+  weightInp.inputMode = 'decimal';
+  weightInp.className = 'manejo-proto-calc-input';
+  weightInp.placeholder = 'Peso (kg)';
+  weightInp.value = wKg != null ? String(wKg) : String((patient && patient.peso) || '');
+  fieldsWrap.appendChild(weightInp);
+
+  var extraInputs = {};
+
+  if (calcId === 'vanco-load' || calcId === 'vanco-maint') {
+    var mgLbl = document.createElement('label');
+    mgLbl.className = 'manejo-proto-calc-label';
+    mgLbl.textContent = 'mg/kg';
+    var mgInp = document.createElement('input');
+    mgInp.type = 'text';
+    mgInp.inputMode = 'decimal';
+    mgInp.className = 'manejo-proto-calc-input';
+    mgInp.value = String(
+      (entry.calculatorParams && entry.calculatorParams.mgPerKg) ||
+        (calcId === 'vanco-maint' ? 17.5 : 25)
+    );
+    mgLbl.appendChild(mgInp);
+    fieldsWrap.appendChild(mgLbl);
+    extraInputs.mgPerKg = mgInp;
+  }
+
+  if (calcId === 'bic-hu-balanceada') {
+    var bicLbl = document.createElement('label');
+    bicLbl.className = 'manejo-proto-calc-label';
+    bicLbl.textContent = 'Bic px';
+    var bicInp = document.createElement('input');
+    bicInp.type = 'text';
+    bicInp.inputMode = 'decimal';
+    bicInp.className = 'manejo-proto-calc-input';
+    bicInp.placeholder = 'Ej. 10';
+    bicLbl.appendChild(bicInp);
+    fieldsWrap.appendChild(bicLbl);
+    extraInputs.bicPx = bicInp;
+  }
+
+  if (calcId === 'albumin-paracentesis') {
+    var lLbl = document.createElement('label');
+    lLbl.className = 'manejo-proto-calc-label';
+    lLbl.textContent = 'Litros drenados';
+    var lInp = document.createElement('input');
+    lInp.type = 'text';
+    lInp.inputMode = 'decimal';
+    lInp.className = 'manejo-proto-calc-input';
+    lInp.placeholder = 'Ej. 5';
+    lLbl.appendChild(lInp);
+    fieldsWrap.appendChild(lLbl);
+    extraInputs.litersRemoved = lInp;
+  }
+
+  if (calcId === 'hypertonic-volume') {
+    var ruleLbl = document.createElement('label');
+    ruleLbl.className = 'manejo-proto-calc-check';
+    var ruleChk = document.createElement('input');
+    ruleChk.type = 'checkbox';
+    ruleChk.checked = wKg != null;
+    ruleLbl.appendChild(ruleChk);
+    ruleLbl.appendChild(document.createTextNode(' 3 cc/kg (por peso)'));
+    fieldsWrap.appendChild(ruleLbl);
+    extraInputs.useWeightRule = ruleChk;
+  }
+
+  if (calcId === 'insulin-u-kg-h') {
+    var uLbl = document.createElement('label');
+    uLbl.className = 'manejo-proto-calc-label';
+    uLbl.textContent = 'U/kg/h';
+    var uInp = document.createElement('input');
+    uInp.type = 'text';
+    uInp.inputMode = 'decimal';
+    uInp.className = 'manejo-proto-calc-input';
+    uInp.value = String(
+      (entry.calculatorParams && entry.calculatorParams.unitsPerKgPerHour) || 0.1
+    );
+    uLbl.appendChild(uInp);
+    fieldsWrap.appendChild(uLbl);
+    extraInputs.unitsPerKgPerHour = uInp;
+  }
+
+  host.appendChild(fieldsWrap);
+
+  function getInputs() {
+    var w = Number(String(weightInp.value || '').replace(',', '.'));
+    var inputs = { weightKg: w };
+    if (entry.calculatorParams && typeof entry.calculatorParams === 'object') {
+      Object.keys(entry.calculatorParams).forEach(function (k) {
+        if (k !== 'mgPerKg' && k !== 'unitsPerKgPerHour') inputs[k] = entry.calculatorParams[k];
+      });
+    }
+    if (extraInputs.mgPerKg) {
+      inputs.mgPerKg = Number(String(extraInputs.mgPerKg.value || '').replace(',', '.'));
+    }
+    if (extraInputs.bicPx) {
+      inputs.bicPx = Number(String(extraInputs.bicPx.value || '').replace(',', '.'));
+    }
+    if (extraInputs.litersRemoved) {
+      inputs.litersRemoved = Number(
+        String(extraInputs.litersRemoved.value || '').replace(',', '.')
+      );
+    }
+    if (extraInputs.useWeightRule) {
+      inputs.useWeightRule = !!extraInputs.useWeightRule.checked;
+    }
+    if (extraInputs.unitsPerKgPerHour) {
+      inputs.unitsPerKgPerHour = Number(
+        String(extraInputs.unitsPerKgPerHour.value || '').replace(',', '.')
+      );
+    }
+    return inputs;
+  }
+
+  function run() {
+    try {
+      return runner(getInputs());
+    } catch (_e) {
+      return null;
+    }
+  }
+
+  return { getInputs: getInputs, run: run };
+}
+
+function buildProtocolCard(entry, patient, labFechaNorm) {
+  var card = document.createElement('article');
+  card.className = 'manejo-card manejo-card--proto';
+  card.setAttribute('data-protocol-id', entry.id);
+
+  var head = document.createElement('header');
+  head.className = 'manejo-card-head';
+
+  var titleWrap = document.createElement('div');
+  titleWrap.className = 'manejo-card-ion-wrap';
+  var titleEl = document.createElement('span');
+  titleEl.className = 'manejo-card-symbol manejo-card-symbol--proto';
+  titleEl.textContent = entry.title;
+  titleWrap.appendChild(titleEl);
+  head.appendChild(titleWrap);
+
+  var headRight = document.createElement('div');
+  headRight.className = 'manejo-card-head-right';
+  var chips = document.createElement('div');
+  chips.className = 'manejo-card-chips';
+  var catChip = document.createElement('span');
+  catChip.className = 'manejo-via-chip';
+  catChip.textContent = categoryLabelFor(entry.category);
+  chips.appendChild(catChip);
+  headRight.appendChild(chips);
+  head.appendChild(headRight);
+  card.appendChild(head);
+
+  var body = document.createElement('div');
+  body.className = 'manejo-card-grid manejo-card-grid--proto';
+  body.appendChild(buildKvBlock('Indicación', entry.indicationText || '—', { wide: true }));
+  card.appendChild(body);
+
+  var calcResult = null;
+  var calcApi = null;
+
+  if (entry.calculatorId) {
+    var calcSec = document.createElement('div');
+    calcSec.className = 'manejo-proto-calc';
+    var calcHost = document.createElement('div');
+    calcHost.className = 'manejo-proto-calc-inner';
+    calcApi = buildProtocolCalcFields(entry.calculatorId, entry, patient, calcHost);
+    calcSec.appendChild(calcHost);
+
+    var resultEl = document.createElement('div');
+    resultEl.className = 'manejo-proto-calc-result';
+    resultEl.hidden = true;
+    calcSec.appendChild(resultEl);
+
+    var calcBtn = document.createElement('button');
+    calcBtn.type = 'button';
+    calcBtn.className = 'manejo-copy-btn primary';
+    calcBtn.textContent = 'Calcular';
+    calcBtn.addEventListener('click', function () {
+      var r = calcApi.run();
+      if (!r) {
+        resultEl.hidden = false;
+        resultEl.textContent = 'No se pudo calcular (revisa peso y valores).';
+        calcResult = null;
+        return;
+      }
+      calcResult = r;
+      resultEl.hidden = false;
+      resultEl.textContent = r.copyLine || JSON.stringify(r);
+    });
+    calcSec.appendChild(calcBtn);
+    card.appendChild(calcSec);
+  }
+
+  if ((entry.notes || []).length) {
+    var notes = document.createElement('div');
+    notes.className = 'manejo-card-notes';
+    var nul = document.createElement('ul');
+    entry.notes.forEach(function (n) {
+      var li = document.createElement('li');
+      li.textContent = String(n);
+      nul.appendChild(li);
+    });
+    notes.appendChild(nul);
+    card.appendChild(notes);
+  }
+
+  function getCopyText() {
+    if (entry.calculatorId && calcApi) {
+      var r = calcResult || calcApi.run();
+      return buildProtocolCopyText(entry, r);
+    }
+    return buildProtocolCopyText(entry, calcResult);
+  }
+
+  var foot = document.createElement('footer');
+  foot.className = 'manejo-card-foot';
+  var actions = document.createElement('div');
+  actions.className = 'manejo-card-foot-actions';
+
+  var copyBtn = document.createElement('button');
+  copyBtn.type = 'button';
+  copyBtn.className = 'manejo-copy-btn primary';
+  copyBtn.textContent = 'Copiar';
+  attachCopy(copyBtn, getCopyText);
+  actions.appendChild(copyBtn);
+
+  var pend = document.createElement('button');
+  pend.type = 'button';
+  pend.className = 'manejo-btn-pendiente btn-med-secondary';
+  pend.textContent = '+ Pendiente';
+  pend.addEventListener('click', function () {
+    addManejoGenericPendiente(
+      'manejo-proto:' + entry.id,
+      'Proto: ' + entry.title,
+      labFechaNorm
+    );
+  });
+  actions.appendChild(pend);
+  foot.appendChild(actions);
+  card.appendChild(foot);
+
+  return card;
+}
+
 function renderManejoProtocolos(panel, pid, patient) {
-  var p = document.createElement('p');
-  p.className = 'manejo-hint';
-  p.textContent = 'En construcción';
-  panel.appendChild(p);
+  var root = document.createElement('div');
+  root.className = 'manejo-root manejo-root--protocolos';
+
+  var labFechaNorm = pid ? getProtocolLabFechaNorm(pid) : '';
+
+  var toolbar = document.createElement('div');
+  toolbar.className = 'manejo-proto-toolbar';
+
+  var searchWrap = document.createElement('div');
+  searchWrap.className = 'manejo-proto-search-wrap';
+  var searchLbl = document.createElement('label');
+  searchLbl.className = 'manejo-proto-search-label';
+  searchLbl.textContent = 'Buscar';
+  var searchInp = document.createElement('input');
+  searchInp.type = 'search';
+  searchInp.className = 'manejo-proto-search';
+  searchInp.placeholder = 'Título o indicación…';
+  searchInp.value = getProtoSearchQuery();
+  searchLbl.appendChild(searchInp);
+  searchWrap.appendChild(searchLbl);
+  toolbar.appendChild(searchWrap);
+
+  var chipsNav = document.createElement('div');
+  chipsNav.className = 'manejo-proto-chips';
+  chipsNav.setAttribute('role', 'group');
+  chipsNav.setAttribute('aria-label', 'Filtrar por categoría');
+
+  var activeCat = getProtoCategoryFilter();
+
+  function makeChip(id, label) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className =
+      'manejo-proto-chip' + (activeCat === id ? ' manejo-proto-chip--active' : '');
+    btn.textContent = label;
+    btn.setAttribute('data-category', id);
+    btn.addEventListener('click', function () {
+      setProtoCategoryFilter(id);
+      renderManejo();
+    });
+    chipsNav.appendChild(btn);
+  }
+
+  makeChip('all', 'Todos');
+  MANEJO_PROTOCOL_CATEGORIES.forEach(function (c) {
+    makeChip(c.id, c.label);
+  });
+  toolbar.appendChild(chipsNav);
+  root.appendChild(toolbar);
+
+  searchInp.addEventListener('input', function () {
+    setProtoSearchQuery(searchInp.value);
+    renderManejo();
+  });
+
+  if (!pid) {
+    var emp = document.createElement('p');
+    emp.className = 'manejo-empty';
+    emp.textContent = 'Selecciona un paciente para usar calculadoras y pendientes.';
+    root.appendChild(emp);
+  }
+
+  var q = getProtoSearchQuery();
+  var filtered = MANEJO_PROTOCOLS.filter(function (entry) {
+    if (activeCat !== 'all' && entry.category !== activeCat) return false;
+    return protocolMatchesSearch(entry, q);
+  });
+
+  if (!filtered.length) {
+    var nz = document.createElement('p');
+    nz.className = 'manejo-hint';
+    nz.textContent = q
+      ? 'Sin protocolos que coincidan con la búsqueda.'
+      : 'Sin protocolos en esta categoría.';
+    root.appendChild(nz);
+    panel.appendChild(root);
+    return;
+  }
+
+  var cards = document.createElement('div');
+  cards.className = 'manejo-cards';
+  filtered.forEach(function (entry) {
+    cards.appendChild(buildProtocolCard(entry, patient, labFechaNorm));
+  });
+  root.appendChild(cards);
+  panel.appendChild(root);
 }
 
 function renderManejoAtb(panel, pid, patient) {
