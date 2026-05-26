@@ -80,7 +80,7 @@ import {
 
 const MANEJO_SUBTABS = [
   { id: 'electrolitos', label: 'Electrolitos' },
-  { id: 'protocolos', label: 'Protocolos' },
+  { id: 'infusiones', label: 'Infusiones' },
   { id: 'atb', label: 'ATB' },
   { id: 'cad-ehh', label: 'CAD/EHH' },
 ];
@@ -89,6 +89,7 @@ const MANEJO_SUBTAB_KEY = 'manejoSubtab';
 function getActiveManejoSubtab() {
   try {
     var s = sessionStorage.getItem(MANEJO_SUBTAB_KEY);
+    if (s === 'protocolos') s = 'infusiones';
     if (MANEJO_SUBTABS.some(function (t) { return t.id === s; })) return s;
   } catch (_e) {}
   return 'electrolitos';
@@ -1404,7 +1405,7 @@ function protocolPatchFromSomeFields(fields, category) {
   var order = buildSomeOrder(fields || {});
   var block = formatSomeBlock(order);
   var patch = {
-    title: String(order.medication || '').trim() || 'Protocolo',
+    title: String(order.medication || '').trim() || 'Infusión',
     indicationText: block,
     copyTemplate: block,
     someFields: {
@@ -1488,14 +1489,14 @@ function openManejoProtocolEditorModal(opts) {
   var title = document.createElement('h3');
   title.id = 'manejo-proto-editor-title';
   title.className = 'manejo-proto-editor-title';
-  title.textContent = mode === 'add' ? 'Nuevo protocolo SOME' : 'Editar plantilla SOME';
+  title.textContent = mode === 'add' ? 'Nueva infusión SOME' : 'Editar plantilla SOME';
   headText.appendChild(title);
 
   var hint = document.createElement('p');
   hint.className = 'manejo-proto-editor-subtitle';
   hint.textContent =
     mode === 'add'
-      ? 'Se guardará en tus protocolos personalizados.'
+      ? 'Se guardará en tus infusiones personalizadas.'
       : isCustom
         ? 'Cambios en tu biblioteca local.'
         : 'Override local — no modifica el catálogo base.';
@@ -1665,10 +1666,10 @@ function openManejoProtocolEditorModal(opts) {
     if (mode === 'add') {
       addCustomProtocol(patch);
       setProtoCategoryFilter('otros');
-      rt.showToast('Protocolo guardado en Otros', 'success');
+      rt.showToast('Infusión guardada en Otros', 'success');
     } else if (isCustom) {
       updateCustomProtocol(entry.id, patch);
-      rt.showToast('Protocolo actualizado', 'success');
+      rt.showToast('Infusión actualizada', 'success');
     } else {
       saveProtocolOverride(entry.id, patch);
       rt.showToast('Plantilla actualizada', 'success');
@@ -1889,7 +1890,7 @@ function buildProtocolDetailEmpty() {
   empty.className = 'manejo-proto-detail-empty';
   var t = document.createElement('p');
   t.className = 'manejo-proto-detail-empty-title';
-  t.textContent = 'Selecciona un protocolo';
+  t.textContent = 'Selecciona una infusión';
   empty.appendChild(t);
   var h = document.createElement('p');
   h.className = 'manejo-hint';
@@ -1983,7 +1984,7 @@ function buildProtocolListRow(entry, opts) {
     var delBtn = document.createElement('button');
     delBtn.type = 'button';
     delBtn.className = 'manejo-card-edit-btn';
-    delBtn.setAttribute('aria-label', 'Eliminar protocolo');
+    delBtn.setAttribute('aria-label', 'Eliminar infusión');
     delBtn.title = 'Eliminar';
     delBtn.textContent = '×';
     delBtn.addEventListener('click', function (e) {
@@ -2060,7 +2061,7 @@ function buildManejoFilterBar(searchField, chipsEl) {
 
 function renderManejoProtocolos(panel, pid, patient) {
   var root = document.createElement('div');
-  root.className = 'manejo-root manejo-root--protocolos';
+  root.className = 'manejo-root manejo-root--infusiones';
 
   var activeCat = getProtoCategoryFilter();
   var extraFilters = getProtoExtraFilters();
@@ -2071,7 +2072,7 @@ function renderManejoProtocolos(panel, pid, patient) {
 
   var searchRow = document.createElement('div');
   searchRow.className = 'manejo-proto-search-row';
-  var search = buildManejoSearchInput('Buscar fármaco o indicación…', 'Buscar protocolos');
+  var search = buildManejoSearchInput('Buscar fármaco o indicación…', 'Buscar infusiones');
   var searchInp = search.input;
   searchRow.appendChild(search.field);
 
@@ -2083,8 +2084,8 @@ function renderManejoProtocolos(panel, pid, patient) {
   var addProtoBtn = document.createElement('button');
   addProtoBtn.type = 'button';
   addProtoBtn.className = 'manejo-proto-add-btn';
-  addProtoBtn.textContent = '+ Protocolo';
-  addProtoBtn.title = 'Agregar protocolo SOME personalizado';
+  addProtoBtn.textContent = '+ Infusión';
+  addProtoBtn.title = 'Agregar infusión SOME personalizada';
   addProtoBtn.addEventListener('click', function () {
     openManejoProtocolEditorModal({ mode: 'add' });
   });
@@ -2097,7 +2098,7 @@ function renderManejoProtocolos(panel, pid, patient) {
   var viewsSeg = document.createElement('div');
   viewsSeg.className = 'manejo-proto-segment';
   viewsSeg.setAttribute('role', 'group');
-  viewsSeg.setAttribute('aria-label', 'Vista de protocolos');
+  viewsSeg.setAttribute('aria-label', 'Vista de infusiones');
 
   function makeViewChip(id, label) {
     var btn = document.createElement('button');
@@ -2158,7 +2159,7 @@ function renderManejoProtocolos(panel, pid, patient) {
     pill.className =
       'manejo-proto-cat-pill' + (activeCat === c.id ? ' manejo-proto-cat-pill--active' : '');
     pill.textContent = c.label;
-    pill.title = count + ' protocolo' + (count === 1 ? '' : 's');
+    pill.title = count + ' infusión' + (count === 1 ? '' : 'es');
     pill.addEventListener('click', function () {
       setProtoCategoryFilter(c.id);
       renderManejo();
@@ -2263,21 +2264,21 @@ function renderManejoProtocolos(panel, pid, patient) {
     });
 
     countBadge.textContent =
-      filtered.length === 1 ? '1 protocolo' : filtered.length + ' protocolos';
+      filtered.length === 1 ? '1 infusión' : filtered.length + ' infusiones';
 
     if (!filtered.length) {
       var nz = document.createElement('div');
       nz.className = 'manejo-proto-empty';
       var nzTitle = document.createElement('p');
       nzTitle.className = 'manejo-proto-empty-title';
-      nzTitle.textContent = q ? 'Sin coincidencias' : 'Sin protocolos con estos filtros';
+      nzTitle.textContent = q ? 'Sin coincidencias' : 'Sin infusiones con estos filtros';
       nz.appendChild(nzTitle);
       var nzHint = document.createElement('p');
       nzHint.className = 'manejo-hint';
       if (activeCat === 'favorites') {
-        nzHint.textContent = 'Marca protocolos con ★ para acceder rápido aquí.';
+        nzHint.textContent = 'Marca infusiones con ★ para acceder rápido aquí.';
       } else if (activeCat === 'recent') {
-        nzHint.textContent = 'Los protocolos que copies aparecerán en Recientes.';
+        nzHint.textContent = 'Las infusiones que copies aparecerán en Recientes.';
       } else if (extraFilters.calcOnly) {
         nzHint.textContent = 'Desactiva «Con calculadora» para ver el catálogo completo.';
       } else {
@@ -3711,7 +3712,7 @@ function renderManejoElectrolitos(panelEl, pid, patient) {
 function renderActiveManejoSubpanel(panel, subtabId, pid, patient) {
   if (subtabId === 'electrolitos') {
     renderManejoElectrolitos(panel, pid, patient);
-  } else if (subtabId === 'protocolos') {
+  } else if (subtabId === 'infusiones') {
     renderManejoProtocolos(panel, pid, patient);
   } else if (subtabId === 'atb') {
     renderManejoAtb(panel, pid, patient);

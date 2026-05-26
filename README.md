@@ -29,16 +29,10 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 ---
 
+## R+ 6.1.0 (Manejo clínico completo — Infusiones, ATB y CAD/EHH)
 
-## R+ 6.1.0 (estable — release 6.1.0)
-
-- **TODO:** completar bullets en README.
-
-Notas: `docs/RELEASE_NOTES_6.1.0.txt`.
-## R+ 6.1.0 (Manejo clínico completo — Protocolos, ATB y CAD/EHH)
-
-- **Manejo — cuatro sub-pestañas:** **Electrolitos**, **Protocolos**, **ATB** y **CAD/EHH** en Expediente → Clínico → Manejo (Sala e Interconsulta).
-- **Protocolos:** catálogo de infusiones/sedación (32 entradas), lista + detalle, favoritos, protocolos personalizados, calculadoras y SOME copiable.
+- **Manejo — cuatro sub-pestañas:** **Electrolitos**, **Infusiones**, **ATB** y **CAD/EHH** en Expediente → Clínico → Manejo (Sala e Interconsulta).
+- **Infusiones:** catálogo de infusiones/sedación (32 entradas), lista + detalle, favoritos, infusiones personalizadas, calculadoras y SOME copiable.
 - **ATB:** ~30 fármacos en 12 familias; sugerencias según cultivos positivos; eTFG desde laboratorio; filtros por familia/indicación; SOME sin +Pendiente.
 - **CAD/EHH:** lectura de BH/QS/gasometría, checklist ADA y bloque SOME.
 - **Expediente:** pestañas Clínico y sub-pestañas de Manejo con barra subrayada unificada y mejor accesibilidad.
@@ -339,7 +333,7 @@ Notas extendidas en el repo: docs/RELEASE_NOTES_2.0.0.txt (texto plano).
 
 - **Laboratoriazo** — Interpreta resultados de laboratorio y genera diagramas visuales: Biometría Hemática, Coagulación, Diagrama de Gamble, Química Sanguínea, Gasometría y más. Historial por paciente y **tendencias** con mini-gráficas.
 - **Expediente** — En vista Normal (pestañas completas): **Paciente**, **Clínico**, **Resultados** y **Salida**. En **Modo Pase** el tablero de ronda sigue igual; al abrir un bloque entras al expediente con la misma organización de cuatro pestañas.
-- **Manejo clínico** — Expediente → Clínico → **Manejo**: **Electrolitos** (alteraciones con SOME), **Protocolos** (infusiones/sedación con calculadoras), **ATB** (catálogo con sugerencias según cultivos) y **CAD/EHH** (checklist ADA con lectura de laboratorio).
+- **Manejo clínico** — Expediente → Clínico → **Manejo**: **Electrolitos** (alteraciones con SOME), **Infusiones** (infusiones/sedación con calculadoras), **ATB** (catálogo con sugerencias según cultivos) y **CAD/EHH** (checklist ADA con lectura de laboratorio).
 - **Medicamentos** — Receta hospitalaria (TSV), copia desde sistemas tipo SOME, volcado a nota / SOAP y copia al portapapeles.
 - **Nota de Evolución** — Formulario estructurado que genera un archivo `.docx` listo para imprimir, con membrete y formato clínico. **Plantilla SOAP** integrada (Interconsulta).
 - **Indicaciones médicas** — Generación de hoja de indicaciones en `.docx` con secciones configurables (Interconsulta).

@@ -484,8 +484,8 @@
   color: var(--text);
 }
 
-/* —— Protocolos / ATB / filtros —— */
-.manejo-root--protocolos {
+/* —— Infusiones / ATB / filtros —— */
+.manejo-root--infusiones {
   gap: 14px;
 }
 
@@ -1217,7 +1217,7 @@ html.dark .manejo-filter-search-input {
   border-style: dashed;
 }
 
-/* ── Protocolos: toolbar refinado ───────────────────────────── */
+/* ── Infusiones: toolbar refinado ───────────────────────────── */
 .manejo-proto-toolbar-v2 {
   display: flex;
   flex-direction: column;

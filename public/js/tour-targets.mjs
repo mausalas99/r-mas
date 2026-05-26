@@ -32,6 +32,7 @@ const INTERCONSULTA_STEPS = [
   'lab_parse',
   'lab_view',
   'ic_expediente_tabs',
+  'sala_manejo',
   'sala_tend',
   'sala_tend_chart',
   'sala_soap',
@@ -80,7 +81,7 @@ const TARGETS = {
   sala_manejo: {
     appTab: 'nota',
     innerTab: 'manejo',
-    selector: '#manejo-container, #itab-clinico',
+    selector: '#manejo-container, #exp-segment-manejo, #itab-clinico',
     focus: false,
     spotlightClass: 'tour-spotlight-action',
   },

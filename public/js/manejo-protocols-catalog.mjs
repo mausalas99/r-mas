@@ -1,4 +1,4 @@
-/** Catálogo de protocolos de infusión / sedación — copiables en pestaña Manejo → Protocolos. */
+/** Catálogo de infusiones / sedación — copiables en pestaña Manejo → Infusiones. */
 
 export const MANEJO_PROTOCOL_CATEGORIES = [
   { id: 'vasopresores', label: 'Vasopresores' },

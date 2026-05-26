@@ -1,27 +1,27 @@
-R+ 6.1.0 (Manejo clínico completo — Protocolos, ATB y CAD/EHH)
+R+ 6.1.0 (Manejo clínico completo — Infusiones, ATB y CAD/EHH)
 ================================================================
 
 Fecha: 2026-05-25
 
 ## Resumen
 
-R+ 6.1.0 completa **Expediente → Clínico → Manejo** con cuatro sub-pestañas: **Electrolitos** (ya existente), **Protocolos**, **ATB** y **CAD/EHH**. Cada módulo lee laboratorio y datos del paciente activo, genera texto SOME copiable campo por campo y unifica la navegación del expediente clínico con el mismo lenguaje visual de pestañas subrayadas.
+R+ 6.1.0 completa **Expediente → Clínico → Manejo** con cuatro sub-pestañas: **Electrolitos** (ya existente), **Infusiones**, **ATB** y **CAD/EHH**. Cada módulo lee laboratorio y datos del paciente activo, genera texto SOME copiable campo por campo y unifica la navegación del expediente clínico con el mismo lenguaje visual de pestañas subrayadas.
 
 ## Nuevo / mejorado
 
 ### Manejo — sub-pestañas
 
 - **Electrolitos** — alteraciones de electrolitos y gasometría con dosis adultas, dilución, vía y bloque SOME (sin cambio de ruta).
-- **Protocolos** — catálogo hospitalario de infusiones y sedación con panel dividido lista + detalle.
+- **Infusiones** — catálogo hospitalario de vasopresores, sedación y otras infusiones con panel dividido lista + detalle.
 - **ATB** — catálogo curado (~30 fármacos, 12 familias) con sugerencias según cultivos positivos.
 - **CAD/EHH** — checklist ADA con lectura automática de BH, QS y gasometría.
 
-### Protocolos
+### Infusiones
 
-- **32 protocolos** en 10 categorías (vasopresores, sedación, anticonvulsivantes, fluidos, analgesia, respiratorio, etc.).
-- **Lista + panel de detalle** — busca, filtra por categoría, favoritos y recientes; selecciona un protocolo para ver indicación, notas y SOME.
-- **Calculadoras integradas** — sedación mg/kg/h, carga de levetiracetam, bicarbonato balanceado HU y otras según el protocolo.
-- **Protocolos personalizados** — crea y guarda entradas propias con plantilla SOME editable.
+- **32 entradas** en 10 categorías (vasopresores, sedación, anticonvulsivantes, fluidos, analgesia, respiratorio, etc.).
+- **Lista + panel de detalle** — busca, filtra por categoría, favoritos y recientes; selecciona una infusión para ver indicación, notas y SOME.
+- **Calculadoras integradas** — sedación mg/kg/h, carga de levetiracetam, bicarbonato balanceado HU y otras según la entrada.
+- **Infusiones personalizadas** — crea y guarda entradas propias con plantilla SOME editable.
 - **Copia SOME** — texto listo para pegar en el hospital, campo por campo (sin marcas +Pendiente).
 
 ### ATB (antibióticos)

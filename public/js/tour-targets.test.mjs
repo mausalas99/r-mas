@@ -133,7 +133,9 @@ test('getInterconsultaTourSteps no incluye pasos Neo', () => {
   assert.ok(!steps.includes('sala_casiopea_trends'));
   assert.ok(steps.includes('ic_expediente_tabs'));
   assert.equal(steps.indexOf('ic_expediente_tabs'), steps.indexOf('lab_view') + 1);
-  assert.equal(steps.length, 18);
+  assert.ok(steps.includes('sala_manejo'), 'Interconsulta debe presentar Manejo clínico');
+  assert.equal(steps.indexOf('sala_manejo'), steps.indexOf('ic_expediente_tabs') + 1);
+  assert.equal(steps.length, 19);
 });
 
 test('getTourTarget for sala_expediente_tabs apunta a barra de pestañas', () => {
