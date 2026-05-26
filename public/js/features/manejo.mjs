@@ -12,6 +12,26 @@ import { shouldAddLabSuggestionTodo } from '../lab-clinical-suggestions.mjs';
 import { storage } from '../storage.js';
 import { normalizeFechaLabHistory, sortLabHistoryChronological } from '../tend-core.mjs';
 
+const MANEJO_SUBTABS = [
+  { id: 'electrolitos', label: 'Electrolitos' },
+  { id: 'protocolos', label: 'Protocolos' },
+  { id: 'atb', label: 'ATB' },
+  { id: 'cad-ehh', label: 'CAD/EHH' },
+];
+const MANEJO_SUBTAB_KEY = 'manejoSubtab';
+
+function getActiveManejoSubtab() {
+  try {
+    var s = sessionStorage.getItem(MANEJO_SUBTAB_KEY);
+    if (MANEJO_SUBTABS.some(function (t) { return t.id === s; })) return s;
+  } catch (_e) {}
+  return 'electrolitos';
+}
+
+function setActiveManejoSubtab(id) {
+  try { sessionStorage.setItem(MANEJO_SUBTAB_KEY, id); } catch (_e) {}
+}
+
 /** @type {{
  *   getActiveId(): string|null,
  *   ensureParsedLabHistory(id: string): unknown[],
@@ -445,26 +465,41 @@ function buildManejoCard(row, labFechaNorm) {
   return card;
 }
 
-export function renderManejo() {
-  var container = document.getElementById('manejo-container');
-  if (!container) return;
-  while (container.firstChild) container.removeChild(container.firstChild);
+function renderManejoProtocolos(panel, pid, patient) {
+  var p = document.createElement('p');
+  p.className = 'manejo-hint';
+  p.textContent = 'En construcción';
+  panel.appendChild(p);
+}
 
-  var pid = aid();
+function renderManejoAtb(panel, pid, patient) {
+  var p = document.createElement('p');
+  p.className = 'manejo-hint';
+  p.textContent = 'En construcción';
+  panel.appendChild(p);
+}
+
+function renderManejoCadEhh(panel, pid, patient) {
+  var p = document.createElement('p');
+  p.className = 'manejo-hint';
+  p.textContent = 'En construcción';
+  panel.appendChild(p);
+}
+
+function renderManejoElectrolitos(panelEl, pid, patient) {
   if (!pid) {
     var emp = document.createElement('p');
     emp.className = 'manejo-empty';
     emp.textContent = 'Selecciona un paciente para ver el manejo electrolítico.';
-    container.appendChild(emp);
+    panelEl.appendChild(emp);
     return;
   }
 
-  var patient = findPatient(pid);
   if (!patient) {
     var e2 = document.createElement('p');
     e2.className = 'manejo-empty';
     e2.textContent = 'Paciente no encontrado.';
-    container.appendChild(e2);
+    panelEl.appendChild(e2);
     return;
   }
 
@@ -480,7 +515,7 @@ export function renderManejo() {
     var e3 = document.createElement('p');
     e3.className = 'manejo-empty';
     e3.textContent = 'Sin historial de laboratorio para este paciente.';
-    container.appendChild(e3);
+    panelEl.appendChild(e3);
     return;
   }
 
@@ -602,7 +637,7 @@ export function renderManejo() {
       ? 'No se encontraron electrolitos clave interpretables en el último conjunto.'
       : 'Sin alteraciones electrolíticas detectadas con estos valores.';
     root.appendChild(nz);
-    container.appendChild(root);
+    panelEl.appendChild(root);
     return;
   }
 
@@ -614,7 +649,67 @@ export function renderManejo() {
   });
 
   root.appendChild(cards);
-  container.appendChild(root);
+  panelEl.appendChild(root);
+}
+
+function renderActiveManejoSubpanel(panel, subtabId, pid, patient) {
+  if (subtabId === 'electrolitos') {
+    renderManejoElectrolitos(panel, pid, patient);
+  } else if (subtabId === 'protocolos') {
+    renderManejoProtocolos(panel, pid, patient);
+  } else if (subtabId === 'atb') {
+    renderManejoAtb(panel, pid, patient);
+  } else if (subtabId === 'cad-ehh') {
+    renderManejoCadEhh(panel, pid, patient);
+  }
+}
+
+export function renderManejo() {
+  var container = document.getElementById('manejo-container');
+  if (!container) return;
+  while (container.firstChild) container.removeChild(container.firstChild);
+
+  var pid = aid();
+  var patient = pid ? findPatient(pid) : null;
+  var activeId = getActiveManejoSubtab();
+
+  var nav = document.createElement('nav');
+  nav.className = 'manejo-subtabs';
+  nav.setAttribute('role', 'tablist');
+
+  var panelsWrap = document.createElement('div');
+  panelsWrap.className = 'manejo-subpanels';
+
+  var panels = {};
+  MANEJO_SUBTABS.forEach(function (tab) {
+    var isActive = tab.id === activeId;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'manejo-subtab' + (isActive ? ' manejo-subtab--active' : '');
+    btn.textContent = tab.label;
+    btn.setAttribute('role', 'tab');
+    btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    btn.setAttribute('data-subtab', tab.id);
+    btn.addEventListener('click', function () {
+      if (getActiveManejoSubtab() === tab.id) return;
+      setActiveManejoSubtab(tab.id);
+      renderManejo();
+    });
+    nav.appendChild(btn);
+
+    var panel = document.createElement('div');
+    panel.className = 'manejo-subpanel';
+    panel.id = 'manejo-subpanel-' + tab.id;
+    panel.setAttribute('role', 'tabpanel');
+    panel.hidden = !isActive;
+    panelsWrap.appendChild(panel);
+    panels[tab.id] = panel;
+  });
+
+  container.appendChild(nav);
+  container.appendChild(panelsWrap);
+
+  renderActiveManejoSubpanel(panels[activeId], activeId, pid, patient);
 }
 
 export const manejoWindowHandlers = {

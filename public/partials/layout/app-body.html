@@ -356,7 +356,7 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 11l3 3 8-8"/><path d="M21 12v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h11"/></svg>
             Pendientes
           </button>
-          <button type="button" class="inner-tab exp-granular-tab" id="itab-manejo" onclick="switchInnerTab('manejo')" aria-label="Manejo electrolítico">
+          <button type="button" class="inner-tab exp-granular-tab" id="itab-manejo" onclick="switchInnerTab('manejo')" aria-label="Manejo clínico: electrolitos, protocolos, ATB, CAD/EHH">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
             Manejo
           </button>
@@ -389,7 +389,11 @@
             <div class="exp-segment-body exp-segment-body--resultados"></div>
           </div>
           <div id="itab-content-salida" class="tab-content exp-composite-pane">
-            <div class="exp-salida-mount"></div>
+            <div class="exp-segment-bar" id="exp-segment-salida" role="tablist" aria-label="Salida" style="display:none;">
+              <button type="button" class="exp-segment-btn" data-exp-segment="listado" onclick="switchInnerTab('listado')">Listado</button>
+              <button type="button" class="exp-segment-btn" data-exp-segment="recetaHu" onclick="switchInnerTab('recetaHu')">Receta HU</button>
+            </div>
+            <div class="exp-segment-body exp-segment-body--salida exp-salida-mount"></div>
           </div>
           <div id="itab-content-datos" class="tab-content"><div id="patient-data-form" class="rpc-form-stack"></div></div>
           <div id="itab-content-notas" class="tab-content"><div id="note-form" class="rpc-form-stack"></div></div>

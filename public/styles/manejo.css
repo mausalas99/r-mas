@@ -8,6 +8,48 @@
   min-height: 0;
 }
 
+.manejo-subtabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.manejo-subtab {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color var(--dur-fast, 0.15s) ease, background var(--dur-fast, 0.15s) ease,
+    border-color var(--dur-fast, 0.15s) ease;
+}
+
+.manejo-subtab:hover {
+  color: var(--action, var(--primary, #2563eb));
+  background: color-mix(in oklab, var(--action, #2563eb) 6%, transparent);
+}
+
+.manejo-subtab--active {
+  color: var(--action, var(--primary, #2563eb));
+  background: color-mix(in oklab, var(--action, #2563eb) 10%, var(--surface, transparent));
+  border-color: color-mix(in oklab, var(--action, #2563eb) 35%, var(--border));
+}
+
+.manejo-subpanels {
+  min-height: 0;
+}
+
+.manejo-subpanel[hidden] {
+  display: none !important;
+}
+
 .manejo-root {
   display: flex;
   flex-direction: column;
