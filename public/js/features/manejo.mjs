@@ -10,6 +10,17 @@ import {
 } from '../electrolyte-manejo.mjs';
 import { MANEJO_CALCULATORS } from '../manejo-calculators.mjs';
 import {
+  MANEJO_ATB_DRUGS,
+  MANEJO_ATB_FAMILIES,
+} from '../manejo-atb-catalog.mjs';
+import { classifyAtbForIsolate } from '../manejo-atb-suggest.mjs';
+import {
+  CAD_CHECKLIST,
+  EHH_CHECKLIST,
+  evaluateCadEhh,
+} from '../manejo-cad-ehh.mjs';
+import { getCultureContextForManejo } from '../manejo-cultivo-bridge.mjs';
+import {
   MANEJO_PROTOCOL_CATEGORIES,
   MANEJO_PROTOCOLS,
 } from '../manejo-protocols-catalog.mjs';
@@ -915,18 +926,412 @@ function renderManejoProtocolos(panel, pid, patient) {
   panel.appendChild(root);
 }
 
+function familyLabelForAtb(familyId) {
+  var f = MANEJO_ATB_FAMILIES.find(function (x) {
+    return x.id === familyId;
+  });
+  return f ? f.label : familyId || '—';
+}
+
+function buildAtbCard(drug, classification, labFechaNorm) {
+  var card = document.createElement('article');
+  card.className =
+    'manejo-card manejo-card--atb manejo-atb--' + (classification.status || 'neutral');
+
+  var head = document.createElement('header');
+  head.className = 'manejo-card-head';
+  var titleWrap = document.createElement('div');
+  titleWrap.className = 'manejo-card-ion-wrap';
+  var titleEl = document.createElement('span');
+  titleEl.className = 'manejo-card-symbol manejo-card-symbol--proto';
+  titleEl.textContent = drug.name;
+  titleWrap.appendChild(titleEl);
+  head.appendChild(titleWrap);
+
+  var headRight = document.createElement('div');
+  headRight.className = 'manejo-card-head-right';
+  var chips = document.createElement('div');
+  chips.className = 'manejo-card-chips';
+  var stChip = document.createElement('span');
+  stChip.className = 'manejo-via-chip manejo-atb-status-chip';
+  stChip.textContent =
+    classification.status === 'compatible'
+      ? 'S antibiograma'
+      : classification.status === 'caution'
+        ? 'Precaución'
+        : drug.route || 'IV';
+  chips.appendChild(stChip);
+  headRight.appendChild(chips);
+  head.appendChild(headRight);
+  card.appendChild(head);
+
+  var body = document.createElement('div');
+  body.className = 'manejo-card-grid manejo-card-grid--proto';
+  body.appendChild(buildKvBlock('Dosis adulto', drug.adultDose, { wide: true }));
+  if ((drug.indications || []).length) {
+    body.appendChild(
+      buildKvBlock('Indicaciones', drug.indications.join('; '), { wide: true })
+    );
+  }
+  if (drug.renalNote) {
+    body.appendChild(buildKvBlock('Ajuste renal', drug.renalNote, { wide: true }));
+  }
+  card.appendChild(body);
+
+  if ((classification.reasons || []).length) {
+    var notes = document.createElement('div');
+    notes.className = 'manejo-card-notes';
+    var nul = document.createElement('ul');
+    classification.reasons.forEach(function (n) {
+      var li = document.createElement('li');
+      li.textContent = String(n);
+      nul.appendChild(li);
+    });
+    notes.appendChild(nul);
+    card.appendChild(notes);
+  }
+
+  function getCopyText() {
+    return (
+      drug.name.toUpperCase() +
+      ': ' +
+      drug.adultDose +
+      (drug.renalNote ? ' · ' + drug.renalNote : '')
+    );
+  }
+
+  var foot = document.createElement('footer');
+  foot.className = 'manejo-card-foot';
+  var actions = document.createElement('div');
+  actions.className = 'manejo-card-foot-actions';
+  var copyBtn = document.createElement('button');
+  copyBtn.type = 'button';
+  copyBtn.className = 'manejo-copy-btn primary';
+  copyBtn.textContent = 'Copiar';
+  attachCopy(copyBtn, getCopyText);
+  actions.appendChild(copyBtn);
+  var pend = document.createElement('button');
+  pend.type = 'button';
+  pend.className = 'manejo-btn-pendiente btn-med-secondary';
+  pend.textContent = '+ Pendiente';
+  pend.addEventListener('click', function () {
+    addManejoGenericPendiente('manejo-atb:' + drug.id, 'ATB: ' + drug.name, labFechaNorm);
+  });
+  actions.appendChild(pend);
+  foot.appendChild(actions);
+  card.appendChild(foot);
+  return card;
+}
+
 function renderManejoAtb(panel, pid, patient) {
-  var p = document.createElement('p');
-  p.className = 'manejo-hint';
-  p.textContent = 'En construcción';
-  panel.appendChild(p);
+  var root = document.createElement('div');
+  root.className = 'manejo-root manejo-root--atb';
+
+  var labFechaNorm = pid ? getProtocolLabFechaNorm(pid) : '';
+  var hist = pid ? rt.ensureParsedLabHistory(pid) : [];
+  var ctx = getCultureContextForManejo(hist, { maxAgeDays: 14 });
+  var activeIdx = ctx.activeIsolateIndex || 0;
+  try {
+    var savedIdx = sessionStorage.getItem('manejoAtbIsolateIdx');
+    if (savedIdx != null && ctx.isolates[Number(savedIdx)]) activeIdx = Number(savedIdx);
+  } catch (_e0) {}
+  var activeIso = ctx.isolates[activeIdx] || null;
+
+  var disc = document.createElement('p');
+  disc.className = 'manejo-hint manejo-atb-disclaimer';
+  disc.textContent = 'Sugerencia orientativa; confirmar clínicamente.';
+  root.appendChild(disc);
+
+  if (ctx.isolates.length) {
+    var banner = document.createElement('section');
+    banner.className = 'manejo-atb-culture-banner';
+    var bh = document.createElement('strong');
+    bh.textContent = 'Cultivo activo';
+    banner.appendChild(bh);
+
+    if (ctx.isolates.length > 1) {
+      var sel = document.createElement('select');
+      sel.className = 'manejo-atb-isolate-select';
+      ctx.isolates.forEach(function (iso, i) {
+        var o = document.createElement('option');
+        o.value = String(i);
+        o.textContent =
+          (iso.tipoLabel || 'Cultivo') +
+          ': ' +
+          (iso.organismo || '—') +
+          (iso.fecha && iso.fecha !== '—' ? ' · ' + iso.fecha : '');
+        if (i === activeIdx) o.selected = true;
+        sel.appendChild(o);
+      });
+      sel.addEventListener('change', function () {
+        try {
+          sessionStorage.setItem('manejoAtbIsolateIdx', sel.value);
+        } catch (_e) {}
+        renderManejo();
+      });
+      banner.appendChild(sel);
+    } else if (activeIso) {
+      var one = document.createElement('p');
+      one.className = 'manejo-atb-isolate-line';
+      one.textContent =
+        activeIso.tipoLabel +
+        ' · ' +
+        activeIso.organismo +
+        (activeIso.fecha !== '—' ? ' · ' + activeIso.fecha : '');
+      banner.appendChild(one);
+    }
+
+    if (activeIso && activeIso.risSummary) {
+      var rs = document.createElement('pre');
+      rs.className = 'manejo-atb-ris';
+      rs.textContent = activeIso.risSummary;
+      banner.appendChild(rs);
+    }
+
+    if (ctx.globalAlerts.length) {
+      var al = document.createElement('ul');
+      al.className = 'manejo-atb-alerts';
+      ctx.globalAlerts.forEach(function (a) {
+        var li = document.createElement('li');
+        li.textContent = a;
+        al.appendChild(li);
+      });
+      banner.appendChild(al);
+    }
+    root.appendChild(banner);
+  } else {
+    var noC = document.createElement('p');
+    noC.className = 'manejo-hint';
+    noC.textContent = 'Sin cultivos positivos recientes en historial.';
+    root.appendChild(noC);
+  }
+
+  var toolbar = document.createElement('div');
+  toolbar.className = 'manejo-proto-toolbar';
+  var searchWrap = document.createElement('div');
+  searchWrap.className = 'manejo-proto-search-wrap';
+  var searchLbl = document.createElement('label');
+  searchLbl.className = 'manejo-proto-search-label';
+  searchLbl.textContent = 'Buscar ATB';
+  var searchInp = document.createElement('input');
+  searchInp.type = 'search';
+  searchInp.className = 'manejo-proto-search';
+  searchInp.placeholder = 'Nombre o indicación…';
+  searchLbl.appendChild(searchInp);
+  searchWrap.appendChild(searchLbl);
+  toolbar.appendChild(searchWrap);
+  root.appendChild(toolbar);
+
+  var cards = document.createElement('div');
+  cards.className = 'manejo-cards';
+
+  function renderList() {
+    while (cards.firstChild) cards.removeChild(cards.firstChild);
+    var q = String(searchInp.value || '')
+      .trim()
+      .toLowerCase();
+    var sorted = MANEJO_ATB_DRUGS.slice().sort(function (a, b) {
+      var ca = classifyAtbForIsolate(a, activeIso || {});
+      var cb = classifyAtbForIsolate(b, activeIso || {});
+      var rank = { compatible: 0, caution: 1, neutral: 2 };
+      return (rank[ca.status] || 2) - (rank[cb.status] || 2);
+    });
+    sorted.forEach(function (drug) {
+      var hay =
+        !q ||
+        drug.name.toLowerCase().indexOf(q) !== -1 ||
+        (drug.adultDose || '').toLowerCase().indexOf(q) !== -1 ||
+        familyLabelForAtb(drug.family).toLowerCase().indexOf(q) !== -1;
+      if (!hay) return;
+      var cls = classifyAtbForIsolate(drug, activeIso || {});
+      cards.appendChild(buildAtbCard(drug, cls, labFechaNorm));
+    });
+    if (!cards.firstChild) {
+      var nz = document.createElement('p');
+      nz.className = 'manejo-hint';
+      nz.textContent = 'Sin antibióticos que coincidan.';
+      cards.appendChild(nz);
+    }
+  }
+
+  searchInp.addEventListener('input', renderList);
+  renderList();
+  root.appendChild(cards);
+  panel.appendChild(root);
 }
 
 function renderManejoCadEhh(panel, pid, patient) {
-  var p = document.createElement('p');
-  p.className = 'manejo-hint';
-  p.textContent = 'En construcción';
-  panel.appendChild(p);
+  var root = document.createElement('div');
+  root.className = 'manejo-root manejo-root--cad-ehh';
+
+  var labFechaNorm = pid ? getProtocolLabFechaNorm(pid) : '';
+  var latest = null;
+  if (pid) {
+    var hist = rt.ensureParsedLabHistory(pid);
+    var ordered = sortLabHistoryChronological(hist);
+    latest = ordered[0] || null;
+  }
+
+  var evalOut = evaluateCadEhh({
+    parsed: latest && latest.parsed,
+    parsedBySection: latest && latest.parsedBySection,
+    patient: patient,
+  });
+
+  var modeKey = 'manejoCadEhhMode';
+  var mode = evalOut.suggestedMode;
+  try {
+    var saved = sessionStorage.getItem(modeKey);
+    if (saved === 'cad' || saved === 'ehh' || saved === 'indeterminate') mode = saved;
+  } catch (_e) {}
+
+  var disc = document.createElement('p');
+  disc.className = 'manejo-hint';
+  disc.textContent = evalOut.disclaimer;
+  root.appendChild(disc);
+
+  var modeNav = document.createElement('div');
+  modeNav.className = 'manejo-proto-chips';
+  modeNav.setAttribute('role', 'group');
+  modeNav.setAttribute('aria-label', 'Modo protocolo');
+
+  function modeBtn(id, label) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'manejo-proto-chip' + (mode === id ? ' manejo-proto-chip--active' : '');
+    btn.textContent = label;
+    btn.addEventListener('click', function () {
+      try {
+        sessionStorage.setItem(modeKey, id);
+      } catch (_e2) {}
+      renderManejo();
+    });
+    modeNav.appendChild(btn);
+  }
+
+  modeBtn('cad', 'CAD');
+  modeBtn('ehh', 'EHH');
+  modeBtn('indeterminate', 'Indeterminado');
+  root.appendChild(modeNav);
+
+  var labBlock = document.createElement('section');
+  labBlock.className = 'manejo-cad-labs';
+  var lbTitle = document.createElement('strong');
+  lbTitle.textContent = 'Último laboratorio';
+  labBlock.appendChild(lbTitle);
+  var L = evalOut.labs || {};
+  var labLines = [
+    'Glucosa: ' + (L.glucoseMgDl != null ? L.glucoseMgDl + ' mg/dL' : '—'),
+    'pH: ' + (L.ph != null ? L.ph : '—'),
+    'HCO₃: ' + (L.hco3 != null ? L.hco3 + ' mEq/L' : '—'),
+    'K⁺: ' + (L.k != null ? L.k : '—'),
+    'Cetonas: ' + (L.ketonesPositive ? 'Positivas' : 'No positivas / sin dato'),
+    'Anion gap: ' + (L.anionGap != null ? L.anionGap : '—'),
+  ];
+  var labPre = document.createElement('p');
+  labPre.className = 'manejo-cad-lab-lines';
+  labPre.textContent = labLines.join(' · ');
+  labBlock.appendChild(labPre);
+
+  if (mode === 'cad' && evalOut.resolutionChecks) {
+    var rc = evalOut.resolutionChecks;
+    var chk = document.createElement('ul');
+    chk.className = 'manejo-cad-resolution';
+    [
+      ['pH > 7.3', rc.phOk],
+      ['HCO₃ ≥ 18', rc.hco3Ok],
+      ['Glucosa < 200', rc.glucoseOk],
+      ['Gap normalizado', rc.agOk],
+    ].forEach(function (row) {
+      var li = document.createElement('li');
+      li.textContent = (row[1] ? '✓ ' : '○ ') + row[0];
+      chk.appendChild(li);
+    });
+    labBlock.appendChild(chk);
+  }
+  root.appendChild(labBlock);
+
+  var wKg = patient ? parsePatientWeightKg(patient) : null;
+  if (wKg != null) {
+    var calcSec = document.createElement('section');
+    calcSec.className = 'manejo-proto-calc';
+    var calcTitle = document.createElement('strong');
+    calcTitle.textContent = 'Calculadoras';
+    calcSec.appendChild(calcTitle);
+    var rates =
+      mode === 'ehh'
+        ? [{ label: 'EHH 0.14 U/kg/h', rate: 0.14 }]
+        : [
+            { label: 'CAD 0.1 U/kg/h', rate: 0.1 },
+            { label: 'CAD 0.05 U/kg/h (al 250)', rate: 0.05 },
+          ];
+    rates.forEach(function (r) {
+      var line = MANEJO_CALCULATORS['insulin-u-kg-h']({
+        weightKg: wKg,
+        unitsPerKgPerHour: r.rate,
+      });
+      var p = document.createElement('p');
+      p.className = 'manejo-cad-calc-line';
+      p.textContent = r.label + ': ' + (line && line.copyLine ? line.copyLine : '—');
+      calcSec.appendChild(p);
+    });
+    var fl = document.createElement('p');
+    fl.className = 'manejo-cad-calc-line';
+    fl.textContent =
+      'Líquidos (referencia EHH): 15–20 mL/kg/h ≈ ' +
+      Math.round(wKg * 17.5) +
+      ' mL/h (peso ' +
+      wKg +
+      ' kg)';
+    calcSec.appendChild(fl);
+    root.appendChild(calcSec);
+  }
+
+  var checklist = mode === 'ehh' ? EHH_CHECKLIST : CAD_CHECKLIST;
+  if (mode === 'indeterminate') {
+    checklist = CAD_CHECKLIST.concat(EHH_CHECKLIST);
+  }
+
+  var list = document.createElement('div');
+  list.className = 'manejo-cards';
+  checklist.forEach(function (step) {
+    var card = document.createElement('article');
+    card.className = 'manejo-card manejo-card--proto';
+    var head = document.createElement('header');
+    head.className = 'manejo-card-head';
+    var t = document.createElement('span');
+    t.className = 'manejo-card-symbol manejo-card-symbol--proto';
+    t.textContent = step.phase;
+    head.appendChild(t);
+    card.appendChild(head);
+    card.appendChild(buildKvBlock('Paso', step.text, { wide: true }));
+    var foot = document.createElement('footer');
+    foot.className = 'manejo-card-foot';
+    var actions = document.createElement('div');
+    actions.className = 'manejo-card-foot-actions';
+    var copyBtn = document.createElement('button');
+    copyBtn.type = 'button';
+    copyBtn.className = 'manejo-copy-btn primary';
+    copyBtn.textContent = 'Copiar';
+    attachCopy(copyBtn, function () {
+      return step.text;
+    });
+    actions.appendChild(copyBtn);
+    var pend = document.createElement('button');
+    pend.type = 'button';
+    pend.className = 'manejo-btn-pendiente btn-med-secondary';
+    pend.textContent = '+ Pendiente';
+    pend.addEventListener('click', function () {
+      var prefix = step.id.indexOf('ehh') === 0 ? 'EHH: ' : 'CAD: ';
+      addManejoGenericPendiente('manejo-cad:' + step.id, prefix + step.phase, labFechaNorm);
+    });
+    actions.appendChild(pend);
+    foot.appendChild(actions);
+    card.appendChild(foot);
+    list.appendChild(card);
+  });
+  root.appendChild(list);
+  panel.appendChild(root);
 }
 
 function renderManejoElectrolitos(panelEl, pid, patient) {

@@ -626,3 +626,84 @@
 .manejo-proto-calc-result[hidden] {
   display: none !important;
 }
+
+.manejo-atb-disclaimer {
+  margin-bottom: 8px;
+}
+
+.manejo-atb-culture-banner {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  background: var(--surface, transparent);
+}
+
+.manejo-atb-isolate-select {
+  display: block;
+  margin-top: 8px;
+  width: 100%;
+  max-width: 480px;
+  font-size: 13px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.manejo-atb-isolate-line {
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+
+.manejo-atb-ris {
+  margin: 8px 0 0;
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  font-family: var(--mono, ui-monospace, monospace);
+  color: var(--text-muted);
+}
+
+.manejo-atb-alerts {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 12px;
+  color: var(--rpc-warn, #b45309);
+}
+
+.manejo-atb--compatible {
+  border-left: 3px solid var(--rpc-ok, #059669);
+}
+
+.manejo-atb--caution {
+  border-left: 3px solid var(--rpc-warn, #d97706);
+}
+
+.manejo-atb--neutral {
+  border-left: 3px solid transparent;
+}
+
+.manejo-cad-labs {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.manejo-cad-lab-lines {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.manejo-cad-resolution {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 12px;
+}
+
+.manejo-cad-calc-line {
+  margin: 4px 0 0;
+  font-size: 12px;
+  font-family: var(--mono, ui-monospace, monospace);
+}

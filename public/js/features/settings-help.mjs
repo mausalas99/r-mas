@@ -578,10 +578,10 @@ function renderTourStep() {
       nextBtn.textContent = 'Siguiente';
       break;
     case 'sala_casiopea_lab':
-      setBadge('Nexo · laboratorio');
+      setBadge('Neo · laboratorio');
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">Abre <strong>Tablas SOME</strong> (botón resaltado). Dentro verás <strong>Enviar a Nexo</strong>: desde ahí mandas estudios al paso <strong>Paraclínicos</strong> en la app Nexo (instalada aparte en este equipo).</p>' +
-        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">En el tutorial el envío no abre Nexo; fuera del tour sí. Pulsa <strong>Siguiente</strong> cuando hayas visto el botón.</p>';
+        '<p style="margin:0;line-height:1.5;">Abre <strong>Tablas SOME</strong> (botón resaltado). Dentro verás <strong>Enviar a Neo</strong>: desde ahí mandas estudios al paso <strong>Paraclínicos</strong> en la app Neo (instalada aparte en este equipo).</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">En el tutorial el envío no abre Neo; fuera del tour sí. Pulsa <strong>Siguiente</strong> cuando hayas visto el botón.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'sala_manejo':
@@ -640,9 +640,9 @@ function renderTourStep() {
       nextBtn.textContent = 'Siguiente';
       break;
     case 'sala_casiopea_trends':
-      setBadge('Nexo · tendencias');
+      setBadge('Neo · tendencias');
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">Con varios laboratorios en el tiempo, <strong>Enviar a Nexo</strong> (barra de Tendencias) manda gráficas agrupadas al mismo flujo de paraclínicos.</p>' +
+        '<p style="margin:0;line-height:1.5;">Con varios laboratorios en el tiempo, <strong>Enviar a Neo</strong> (barra de Tendencias) manda gráficas agrupadas al mismo flujo de paraclínicos.</p>' +
         '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Puedes abrir el modal para ver la selección; confirmar no envía datos durante el tutorial. <strong>Siguiente</strong> para continuar.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
@@ -1319,7 +1319,7 @@ var RELEASE_NOTES_HIGHLIGHTS = {
     {
       title: 'Expediente en 4 pestañas',
       body:
-        'Paciente, Clínico, Resultados y Salida — en Sala (Manejo + Listado) e Interconsulta (Nota, Indicaciones, Manejo + Receta HU). Datos del paciente en bloque colapsable.',
+        'Paciente, Clínico, Resultados y Salida — en Sala (Manejo; Salida: Listado + Receta HU) e Interconsulta (Nota, Indicaciones, Manejo + Receta HU). Datos del paciente en bloque colapsable.',
     },
     {
       title: 'Modo Pase sin cambios en el resumen',
@@ -1327,9 +1327,9 @@ var RELEASE_NOTES_HIGHLIGHTS = {
         'El tablero de ronda se ve igual que antes. Al abrir el detalle en pestañas (vista Normal) entras al expediente reorganizado.',
     },
     {
-      title: 'Manejo y Receta HU',
+      title: 'Manejo clínico',
       body:
-        'Manejo electrolítico/gasométrico con SOME copiable. Receta HU exporta PDF oficial; formulario unificado en Interconsulta → Salida.',
+        'Expediente → Clínico → <strong>Manejo</strong>: cuatro sub-pestañas — <strong>Electrolitos</strong> (alteraciones con SOME copiable), <strong>Protocolos</strong> (infusiones y sedación con calculadoras), <strong>ATB</strong> (catálogo con sugerencias según cultivos positivos) y <strong>CAD/EHH</strong> (checklist ADA con lectura de laboratorio). Receta HU exporta PDF oficial; en Sala e Interconsulta está en Expediente → Salida.',
     },
   ],
   '5.2.1': [
@@ -1346,14 +1346,14 @@ var RELEASE_NOTES_HIGHLIGHTS = {
   ],
   '5.2.0': [
     {
-      title: 'Integración Nexo',
+      title: 'Integración Neo',
       body:
-        'Envía tablas SOME y tendencias a la app Nexo (antes Sesión de Ingreso) con los botones Enviar a Nexo.',
+        'Envía tablas SOME y tendencias a la app Neo (antes Sesión de Ingreso) con los botones Enviar a Neo.',
     },
     {
       title: 'Tutorial Sala',
       body:
-        'El tour señala dónde enviar laboratorio y gráficas; durante el tutorial no se abre Nexo.',
+        'El tour señala dónde enviar laboratorio y gráficas; durante el tutorial no se abre Neo.',
     },
   ],
   '5.1.0': [
