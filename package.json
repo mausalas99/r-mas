@@ -45,6 +45,9 @@
       "icon": "AppIcon.icns",
       "category": "public.app-category.medical",
       "hardenedRuntime": true,
+      "signIgnore": [
+        "\\.exe$"
+      ],
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
       "extraResources": [
