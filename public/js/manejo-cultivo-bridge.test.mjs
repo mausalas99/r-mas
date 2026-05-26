@@ -1,0 +1,48 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { procesarLabs } from './labs.js';
+import { parseFechaLabToMs } from './tend-core.mjs';
+import { getCultureContextForManejo } from './manejo-cultivo-bridge.mjs';
+
+const HEMOCULTIVO_PSEUDOMONAS_RAW = `
+Nombre:	GONZALEZ PEREZ BRANDON
+Fecha Registro:	14/02/2026 02:18:16 p. m.
+BACTERIOLOGIA
+HEMOCULTIVO
+PRODUCTO	
+*
+PERIFERICO IZQUIERDO
+MICROORGANISMO	
+*
+Pseudomonas aeruginosa
+`;
+
+test('aislamiento positivo pseudomonas en historial mock', () => {
+  var parsed = procesarLabs(HEMOCULTIVO_PSEUDOMONAS_RAW);
+  var hist = [
+    {
+      fecha: '14/02/2026',
+      hora: '14:00',
+      resLabs: parsed.resLabs,
+    },
+  ];
+  var ref = parseFechaLabToMs('20/02/2026', '12:00');
+  var ctx = getCultureContextForManejo(hist, { maxAgeDays: 14, referenceMs: ref });
+  assert.ok(ctx.isolates.length >= 1);
+  assert.match(ctx.isolates[0].organismo, /pseudomonas/i);
+  assert.equal(ctx.activeIsolateIndex, 0);
+  assert.ok(Array.isArray(ctx.globalAlerts));
+});
+
+test('cultivo negativo no genera aislamientos', () => {
+  var hist = [
+    {
+      fecha: '20/05/2026',
+      hora: '10:00',
+      resLabs: ['HEMOCULTIVO 20/05: NEGATIVO'],
+    },
+  ];
+  var ctx = getCultureContextForManejo(hist, { maxAgeDays: 14 });
+  assert.equal(ctx.isolates.length, 0);
+  assert.equal(ctx.globalAlerts.length, 0);
+});
