@@ -30,7 +30,10 @@
   </aside>
 
   <div class="main-col">
-    <div id="lan-connection-banner" role="status" aria-live="polite" style="display:none;padding:8px 16px;background:#7c2d12;color:#fff;font-size:13px;"></div>
+    <div id="lan-connection-banner" class="lan-connection-banner" role="status" aria-live="polite" hidden>
+      <span id="lan-connection-banner-text" class="lan-connection-banner-text">Sin conexión al host LAN. LiveSync (salas y relay) puede estar limitado hasta reconectar.</span>
+      <button type="button" class="lan-connection-banner-dismiss" onclick="dismissLanDisconnectBanner()" aria-label="Ocultar aviso de desconexión LAN" title="Ocultar aviso">×</button>
+    </div>
     <div class="app-tabs-row">
       <div class="app-tabs" id="app-main-tablist" role="tablist" aria-label="Secciones principales">
       <button type="button" class="app-tab active" role="tab" id="apptab-lab" aria-selected="true" aria-controls="appcontent-lab" tabindex="0" onclick="switchAppTab('lab')" data-i18n-aria-label="appTab.lab" data-i18n-title="appTab.lab">
@@ -68,7 +71,7 @@
               Reporte de Laboratorio
             </span>
             <div class="card-header-actions lab-report-header-actions">
-              <button type="button" class="card-header-soft-btn btn-lab-display-prefs" onclick="openLabDisplayPrefsModal()" title="Vista de laboratorio (BH extendida, gasometría extendida)" aria-label="Opciones de vista de laboratorio">
+              <button type="button" class="card-header-soft-btn btn-lab-display-prefs" onclick="openLabDisplayPrefsModal()" title="Vista de laboratorio (BH extendida, gasometría extendida, salida rápida)" aria-label="Opciones de vista de laboratorio">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
               </button>
             </div>
@@ -320,8 +323,12 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
             Clínico
           </button>
+          <button type="button" class="inner-tab exp-consolidated-tab" id="itab-estadoActual" onclick="switchConsolidatedTab('estadoActual')" style="display:none;" aria-label="Estado actual">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            Estado actual
+          </button>
           <button type="button" class="inner-tab exp-consolidated-tab" id="itab-resultados" onclick="switchConsolidatedTab('resultados')" style="display:none;" aria-label="Resultados">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2v6.5L4.5 20a1 1 0 001 1h13a1 1 0 001-1L14 8.5V2"/><path d="M8 2h8"/></svg>
             Resultados
           </button>
           <button type="button" class="inner-tab exp-consolidated-tab" id="itab-salida" onclick="switchConsolidatedTab('salida')" style="display:none;" aria-label="Salida">
@@ -380,6 +387,9 @@
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-manejo" role="tab" data-exp-segment="manejo" aria-selected="false" aria-controls="itab-content-manejo" onclick="switchInnerTab('manejo')">Manejo</button>
             </div>
             <div class="exp-segment-body exp-segment-body--clinico"></div>
+          </div>
+          <div id="itab-content-estadoActual" class="tab-content exp-composite-pane">
+            <div id="exp-pane-estado-actual"></div>
           </div>
           <div id="itab-content-resultados" class="tab-content exp-composite-pane">
             <div class="exp-segment-bar rpc-subtab-bar" id="exp-segment-resultados" role="tablist" aria-label="Resultados de laboratorio">

@@ -84,6 +84,148 @@ function syncTodoRowPriorityVisual(row, prio) {
   row.classList.add('prio-' + valid);
 }
 
+function getTodoFormDraftState(container, idPrefix) {
+  if (!container) return null;
+  var active = document.activeElement;
+  if (!active || !container.contains(active)) return null;
+
+  if (active.id === idPrefix + 'todo-input') {
+    return { kind: 'new' };
+  }
+
+  if (active.classList && active.classList.contains('todo-text-input')) {
+    var row = active.closest('.todo-row');
+    var todoId = row && row.dataset ? row.dataset.todoId : '';
+    if (todoId) return { kind: 'edit', todoId: todoId };
+  }
+
+  return null;
+}
+
+function clearTodoListSection(container) {
+  Array.from(container.children).forEach(function (child) {
+    if (!child.classList.contains('todo-add-row')) container.removeChild(child);
+  });
+}
+
+function findPreservedTodoRow(container, todoId) {
+  if (!todoId) return null;
+  var rows = container.querySelectorAll('.todo-row[data-todo-id]');
+  for (var i = 0; i < rows.length; i += 1) {
+    if (rows[i].dataset.todoId === todoId) return rows[i];
+  }
+  return null;
+}
+
+function buildTodoRow(t) {
+  var prio = t.priority === 'alta' || t.priority === 'baja' ? t.priority : 'media';
+  var row = document.createElement('div');
+  row.className = 'todo-row prio-' + prio + (t.completed ? ' completed' : '');
+  row.dataset.todoId = t.id;
+
+  var prioChip = createTodoPrioChip(prio, function (next) {
+    syncTodoRowPriorityVisual(row, next);
+    setTodoPriority(t.id, next, { deferResortMs: 180 });
+  });
+  row.appendChild(prioChip);
+
+  var chk = document.createElement('input');
+  chk.type = 'checkbox';
+  chk.className = 'todo-check';
+  chk.setAttribute('aria-label', 'Completado');
+  chk.checked = !!t.completed;
+  chk.addEventListener('change', function () { toggleTodo(t.id); });
+  row.appendChild(chk);
+
+  var txtInput = document.createElement('input');
+  txtInput.type = 'text';
+  txtInput.className = 'todo-text-input';
+  txtInput.value = t.text;
+  txtInput.placeholder = 'Descripción del pendiente';
+  txtInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      txtInput.blur();
+    }
+  });
+  txtInput.addEventListener('blur', function () {
+    var v = String(txtInput.value || '').trim();
+    if (!v) {
+      txtInput.value = t.text;
+      return;
+    }
+    if (v !== String(t.text || '')) updateTodoText(t.id, v);
+  });
+  row.appendChild(txtInput);
+
+  var del = document.createElement('button');
+  del.type = 'button';
+  del.className = 'todo-del';
+  del.textContent = '×';
+  del.title = 'Eliminar';
+  del.addEventListener('click', function () { deleteTodo(t.id); });
+  row.appendChild(del);
+
+  return row;
+}
+
+function appendTodoAddRow(container, idPrefix) {
+  var addRow = document.createElement('div');
+  addRow.className = 'todo-add-row';
+  var input = document.createElement('input');
+  input.type = 'text';
+  input.id = idPrefix + 'todo-input';
+  input.placeholder = 'Nuevo pendiente...';
+  var addPrio = 'media';
+  var prioChip = createTodoPrioChip(addPrio, function (next) {
+    addPrio = next;
+  });
+  prioChip.id = idPrefix + 'todo-priority-chip';
+  var addBtn = document.createElement('button');
+  addBtn.type = 'button';
+  addBtn.textContent = 'Agregar';
+  addBtn.addEventListener('click', function () { addTodo(idPrefix, addPrio); });
+  input.addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') addTodo(idPrefix, addPrio);
+  });
+  addRow.appendChild(input);
+  addRow.appendChild(prioChip);
+  addRow.appendChild(addBtn);
+  container.appendChild(addRow);
+}
+
+function renderTodoListSection(container, preserveTodoId) {
+  var preservedRow = preserveTodoId ? findPreservedTodoRow(container, preserveTodoId) : null;
+  clearTodoListSection(container);
+
+  var todos = storage.getTodos(aid()).slice().sort(todoCompareForSort);
+  if (preservedRow) {
+    var stillExists = todos.some(function (t) {
+      return t.id === preserveTodoId;
+    });
+    if (!stillExists) preservedRow = null;
+  }
+
+  if (!todos.length && !preservedRow) {
+    var none = document.createElement('p');
+    none.className = 'todo-empty';
+    none.textContent = 'Sin pendientes. Agrega el primero arriba.';
+    container.appendChild(none);
+    return;
+  }
+
+  var list = document.createElement('div');
+  list.className = 'todo-list';
+  todos.forEach(function (t) {
+    if (preservedRow && t.id === preserveTodoId) {
+      list.appendChild(preservedRow);
+      return;
+    }
+    list.appendChild(buildTodoRow(t));
+  });
+  container.appendChild(list);
+}
+
 export function todoCompareForSort(a, b) {
   if (!!a.completed !== !!b.completed) return a.completed ? 1 : -1;
   var prioOrder = { alta: 0, media: 1, baja: 2 };
@@ -122,9 +264,9 @@ export function renderTodoForm() {
 export function renderTodoFormIn(container, idPrefix) {
   if (!container) return;
   idPrefix = idPrefix == null ? '' : String(idPrefix);
-  while (container.firstChild) container.removeChild(container.firstChild);
 
   if (!aid()) {
+    while (container.firstChild) container.removeChild(container.firstChild);
     var empty = document.createElement('p');
     empty.className = 'todo-empty';
     empty.textContent = 'Selecciona un paciente para ver sus pendientes.';
@@ -132,90 +274,22 @@ export function renderTodoFormIn(container, idPrefix) {
     return;
   }
 
-  var addRow = document.createElement('div');
-  addRow.className = 'todo-add-row';
-  var input = document.createElement('input');
-  input.type = 'text';
-  input.id = idPrefix + 'todo-input';
-  input.placeholder = 'Nuevo pendiente...';
-  var addPrio = 'media';
-  var prioChip = createTodoPrioChip(addPrio, function (next) {
-    addPrio = next;
-  });
-  prioChip.id = idPrefix + 'todo-priority-chip';
-  var addBtn = document.createElement('button');
-  addBtn.type = 'button';
-  addBtn.textContent = 'Agregar';
-  addBtn.addEventListener('click', function () { addTodo(idPrefix, addPrio); });
-  input.addEventListener('keypress', function (e) {
-    if (e.key === 'Enter') addTodo(idPrefix, addPrio);
-  });
-  addRow.appendChild(input);
-  addRow.appendChild(prioChip);
-  addRow.appendChild(addBtn);
-  container.appendChild(addRow);
-
-  var todos = storage.getTodos(aid()).slice().sort(todoCompareForSort);
-  if (!todos.length) {
-    var none = document.createElement('p');
-    none.className = 'todo-empty';
-    none.textContent = 'Sin pendientes. Agrega el primero arriba.';
-    container.appendChild(none);
-    return;
+  var draft = getTodoFormDraftState(container, idPrefix);
+  var hasAddRow = !!container.querySelector('.todo-add-row');
+  if (draft && hasAddRow) {
+    if (draft.kind === 'new') {
+      renderTodoListSection(container, null);
+      return;
+    }
+    if (draft.kind === 'edit') {
+      renderTodoListSection(container, draft.todoId);
+      return;
+    }
   }
 
-  var list = document.createElement('div');
-  todos.forEach(function (t) {
-    var prio = t.priority === 'alta' || t.priority === 'baja' ? t.priority : 'media';
-    var row = document.createElement('div');
-    row.className = 'todo-row prio-' + prio + (t.completed ? ' completed' : '');
-
-    var prioChip = createTodoPrioChip(prio, function (next) {
-      syncTodoRowPriorityVisual(row, next);
-      setTodoPriority(t.id, next, { deferResortMs: 180 });
-    });
-    row.appendChild(prioChip);
-
-    var chk = document.createElement('input');
-    chk.type = 'checkbox';
-    chk.className = 'todo-check';
-    chk.setAttribute('aria-label', 'Completado');
-    chk.checked = !!t.completed;
-    chk.addEventListener('change', function () { toggleTodo(t.id); });
-    row.appendChild(chk);
-
-    var txtInput = document.createElement('input');
-    txtInput.type = 'text';
-    txtInput.className = 'todo-text-input';
-    txtInput.value = t.text;
-    txtInput.placeholder = 'Descripción del pendiente';
-    txtInput.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        txtInput.blur();
-      }
-    });
-    txtInput.addEventListener('blur', function () {
-      var v = String(txtInput.value || '').trim();
-      if (!v) {
-        txtInput.value = t.text;
-        return;
-      }
-      if (v !== String(t.text || '')) updateTodoText(t.id, v);
-    });
-    row.appendChild(txtInput);
-
-    var del = document.createElement('button');
-    del.type = 'button';
-    del.className = 'todo-del';
-    del.textContent = '×';
-    del.title = 'Eliminar';
-    del.addEventListener('click', function () { deleteTodo(t.id); });
-    row.appendChild(del);
-
-    list.appendChild(row);
-  });
-  container.appendChild(list);
+  while (container.firstChild) container.removeChild(container.firstChild);
+  appendTodoAddRow(container, idPrefix);
+  renderTodoListSection(container, null);
 }
 
 export function addTodo(idPrefix, priorityOverride) {

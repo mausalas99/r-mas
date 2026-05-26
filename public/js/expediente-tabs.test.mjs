@@ -1,12 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  CONSOLIDATED_TABS_SALA,
   useConsolidatedExpedienteTabs,
   resolveConsolidatedTarget,
   consolidatedTabForGranular,
   migrateGranularInner,
   defaultGranularForConsolidatedTab,
   consolidatedInnerTabButtonId,
+  getConsolidatedTabs,
   getClinicoSections,
   getSalidaSections,
 } from './expediente-tabs.mjs';
@@ -35,6 +37,25 @@ test('resolveConsolidatedTarget maps listado and recetaHu to salida in sala', ()
   assert.deepEqual(resolveConsolidatedTarget('manejo', SALA), { tab: 'clinico', section: 'manejo' });
 });
 
+test('CONSOLIDATED_TABS_SALA includes estadoActual between clinico and resultados', () => {
+  assert.deepEqual(CONSOLIDATED_TABS_SALA, [
+    'paciente',
+    'clinico',
+    'estadoActual',
+    'resultados',
+    'salida',
+  ]);
+});
+
+test("resolveConsolidatedTarget estadoActual sala", () => {
+  assert.deepEqual(resolveConsolidatedTarget('estadoActual', SALA), { tab: 'estadoActual', section: null });
+});
+
+test('estadoActual is not an interconsulta consolidated tab', () => {
+  assert.equal(getConsolidatedTabs(INTER).includes('estadoActual'), false);
+  assert.equal(getConsolidatedTabs(SALA).includes('estadoActual'), true);
+});
+
 test('migrateGranularInner keeps known tabs and falls back to todo', () => {
   assert.equal(migrateGranularInner('indica', INTER), 'indica');
   assert.equal(migrateGranularInner('unknown', INTER), 'todo');
@@ -42,6 +63,8 @@ test('migrateGranularInner keeps known tabs and falls back to todo', () => {
   assert.equal(migrateGranularInner('notas', SALA), 'manejo');
   assert.equal(migrateGranularInner('recetaHu', SALA), 'recetaHu');
   assert.equal(migrateGranularInner('listado', INTER), 'todo');
+  assert.equal(migrateGranularInner('estadoActual', SALA), 'estadoActual');
+  assert.equal(migrateGranularInner('estadoActual', INTER), 'todo');
 });
 
 test('defaultGranularForConsolidatedTab returns sensible defaults per mode', () => {
@@ -51,6 +74,7 @@ test('defaultGranularForConsolidatedTab returns sensible defaults per mode', () 
   assert.equal(defaultGranularForConsolidatedTab('salida', INTER), 'recetaHu');
   assert.equal(defaultGranularForConsolidatedTab('clinico', SALA), 'manejo');
   assert.equal(defaultGranularForConsolidatedTab('salida', SALA), 'listado');
+  assert.equal(defaultGranularForConsolidatedTab('estadoActual', SALA), 'estadoActual');
 });
 
 test('consolidatedInnerTabButtonId resolves composite button ids', () => {
@@ -59,6 +83,7 @@ test('consolidatedInnerTabButtonId resolves composite button ids', () => {
   assert.equal(consolidatedInnerTabButtonId('recetaHu', INTER), 'itab-salida');
   assert.equal(consolidatedInnerTabButtonId('listado', SALA), 'itab-salida');
   assert.equal(consolidatedInnerTabButtonId('clinico', INTER), 'itab-clinico');
+  assert.equal(consolidatedInnerTabButtonId('estadoActual', SALA), 'itab-estadoActual');
 });
 
 test('consolidatedTabForGranular returns top-level composite tab id', () => {

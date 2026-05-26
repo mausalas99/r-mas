@@ -677,8 +677,8 @@ function renderTourStep() {
     case 'estado_actual':
       setBadge('Estado Actual');
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">El botón verde <strong>Estado Actual</strong> abre una plantilla tipo SOAP <em>sin subjetivo</em>: copia rápida o guarda en el paciente.</p>' +
-        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Ábrelo o pulsa <strong>Siguiente</strong>.</p>';
+        '<p style="margin:0;line-height:1.5;">En <strong>Expediente → Estado Actual</strong> (<strong>Sala</strong>): signos vitales estructurados, <strong>glucometría</strong>, balance hídrico <strong>I/O</strong>, <strong>tendencias</strong> rápidas y confirmación contra la <strong>receta hospitalaria</strong>. Genera párrafo para la nota, <strong>Copiar</strong> o <strong>Guardar y copiar</strong>.</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">El botón verde del encabezado sigue abriendo la <strong>plantilla sin subjetivo</strong>. Cambia a la pestaña resaltada o pulsa <strong>Siguiente</strong>.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'listado_problemas':
@@ -1056,6 +1056,21 @@ var HELP_ARTICLES = [
       '</ul>'
   },
   {
+    id: 'estado-actual',
+    title: 'Estado Actual y monitoreo (Sala)',
+    keywords: 'estado actual monitoreo vitales glu glucometria insulina balance hidrico entradas salidas io tendencias medicamentos confirmacion sala',
+    html:
+      '<p>En modo <strong>Sala</strong>, la pestaña <strong>Estado Actual</strong> del expediente concentra el <strong>monitoreo</strong> del turno antes de pasar todo a la nota.</p>' +
+      '<ul>' +
+      '<li><strong>Signos vitales</strong> estructurados con resaltado si salen del rango esperado.</li>' +
+      '<li><strong>Glucometrías / insulina</strong>: registro y lectura rápida en el mismo panel.</li>' +
+      '<li><strong>Balance hídrico (I/O)</strong>: entradas y salidas para el párrafo de estado.</li>' +
+      '<li><strong>Tendencias</strong>: vista compacta cuando hay historia de laboratorio útil.</li>' +
+      '<li><strong>Medicamentos</strong>: propuesta desde la receta hospitalaria para <strong>confirmar</strong> dosis vigentes antes de cerrar texto.</li>' +
+      '</ul>' +
+      '<p style="font-size:13px;color:var(--text-muted);margin:0;"><strong>Copiar</strong> lleva el texto al portapapeles; <strong>Guardar y copiar</strong> conserva snapshot por paciente. El botón verde del encabezado abre también la plantilla SOAP <em>solo objetivo/plan</em>.</p>'
+  },
+  {
     id: 'indicaciones',
     title: 'Indicaciones médicas',
     keywords: 'indicaciones dieta cuidados medicamentos estudios interconsultas otros docx',
@@ -1301,6 +1316,23 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '6.2.0': [
+    {
+      title: 'Estado Actual en Sala',
+      body:
+        'Nueva pestaña <strong>Estado actual</strong> en el expediente: signos vitales, glucometrías, balance hídrico, historial, gráficas y texto clínico copiable. Botón verde en el encabezado para abrir el panel.',
+    },
+    {
+      title: 'Laboratorio — salida rápida',
+      body:
+        'En <strong>Vista de laboratorio</strong> (engranaje) puedes activar <strong>Salida rápida</strong> para formatear SOME sin tener al paciente en tu lista.',
+    },
+    {
+      title: 'Expediente más ágil',
+      body:
+        'Menos lag al cambiar pestañas: carga diferida de Manejo, Tendencias y gráficas; precarga al pasar el mouse y caché al volver a una pestaña ya visitada.',
+    },
+  ],
   '6.1.0': [
     {
       title: 'Manejo: Infusiones, ATB y CAD/EHH',
@@ -1587,7 +1619,7 @@ var RELEASE_NOTES_HIGHLIGHTS = {
     {
       title: 'Estado Actual',
       body:
-        'Botón rápido en el expediente que abre la Plantilla de Evolución sin Subjetivo. Guarda el snapshot por paciente con timestamp y lo copia al portapapeles.',
+        'En Sala, pestaña <strong>Estado Actual</strong>: vitales estructurados, glu, balance I/O, tendencias y confirmación frente a receta hospitalaria; <strong>Copiar</strong> / <strong>Guardar y copiar</strong>. El botón verde del encabezado sigue abriendo la plantilla sin subjetivo.',
     },
     {
       title: 'Listado de Problemas',

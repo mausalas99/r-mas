@@ -11,6 +11,91 @@ export const CAD_EHH_THRESHOLDS = {
   ehhPhMin: 7.25,
 };
 
+/** Límite inferior práctico del sodio sérico normal (mEq/L) — ADA cualitativa. */
+export const SODIUM_NORMAL_LOW_MEQL = 135;
+
+/**
+ * Sodio corregido por hiperglucemia: Na + 0.016 × (glucosa − 100), glucosa en mg/dL.
+ * @param {number|null|undefined} naMeqL
+ * @param {number|null|undefined} glucoseMgDl
+ * @returns {number|null}
+ */
+export function correctedSodium(naMeqL, glucoseMgDl) {
+  if (naMeqL == null || !isFinite(Number(naMeqL))) return null;
+  var na = Number(naMeqL);
+  if (glucoseMgDl == null || !isFinite(Number(glucoseMgDl))) return na;
+  return Math.round((na + 0.016 * (Number(glucoseMgDl) - 100)) * 10) / 10;
+}
+
+/**
+ * Guía ADA para diluyente IV según sodio corregido (sin valor numérico de corte en la guía;
+ * en práctica ≥135 mEq/L → NaCl 0.45% para limitar hipernatremia).
+ * @param {{ na?: number|null, glucoseMgDl?: number|null, k?: number|null }} labs
+ */
+export function adaIvFluidGuidance(labs) {
+  var L = labs || {};
+  var na = L.na != null && isFinite(Number(L.na)) ? Number(L.na) : null;
+  var glu = L.glucoseMgDl != null && isFinite(Number(L.glucoseMgDl)) ? Number(L.glucoseMgDl) : null;
+  var corr = correctedSodium(na, glu);
+  var hasCorrected = corr != null && glu != null;
+  var decisionNa = hasCorrected ? corr : na;
+  var warnings = [];
+
+  var maintenanceFluid;
+  var maintenanceFluidFull;
+  var rationale;
+
+  if (decisionNa == null) {
+    maintenanceFluid = 'NaCl 0.9%';
+    maintenanceFluidFull = 'SOLUCIÓN DE NaCl 0.9%';
+    rationale =
+      'Sin sodio en laboratorio — iniciar NaCl 0.9% y reevaluar con sodio corregido cuando haya glucosa.';
+  } else if (decisionNa < SODIUM_NORMAL_LOW_MEQL) {
+    maintenanceFluid = 'NaCl 0.9%';
+    maintenanceFluidFull = 'SOLUCIÓN DE NaCl 0.9%';
+    rationale = hasCorrected
+      ? 'Sodio corregido ' +
+        corr +
+        ' mEq/L (<135): NaCl 0.9% (ADA — sodio corregido bajo).'
+      : 'Sodio sérico ' +
+        na +
+        ' mEq/L (<135): NaCl 0.9%. Reevaluar con sodio corregido si hay hiperglucemia.';
+  } else {
+    maintenanceFluid = 'NaCl 0.45%';
+    maintenanceFluidFull = 'SOLUCIÓN DE NaCl 0.45%';
+    rationale = hasCorrected
+      ? 'Sodio corregido ' +
+        corr +
+        ' mEq/L (≥135): NaCl 0.45% para limitar carga de sodio e hipernatremia (ADA).'
+      : 'Sodio sérico ' +
+        na +
+        ' mEq/L (≥135): NaCl 0.45%. Reevaluar con sodio corregido si hay hiperglucemia.';
+  }
+
+  if (glu != null && glu >= CAD_EHH_THRESHOLDS.cadGlucoseMgDl) {
+    warnings.push(
+      'Glucosa ' +
+        glu +
+        ' mg/dL: priorizar insulina IV; agregar dextrosa a fluidos cuando glucosa ~250 mg/dL.'
+    );
+  }
+
+  if (L.k != null && L.k >= 5.2) {
+    warnings.push('K ' + L.k + ' mEq/L: no suplementar potasio en fluidos hasta < 5.2 mEq/L.');
+  }
+
+  return {
+    measuredNa: na,
+    glucoseMgDl: glu,
+    correctedNa: hasCorrected ? corr : null,
+    maintenanceFluid: maintenanceFluid,
+    maintenanceFluidFull: maintenanceFluidFull,
+    firstHourFluid: 'NaCl 0.9%',
+    rationale: rationale,
+    warnings: warnings,
+  };
+}
+
 function toNum(v) {
   if (v == null || v === '') return null;
   if (typeof v === 'number') return isFinite(v) ? v : null;
@@ -201,13 +286,19 @@ export const CAD_CHECKLIST = [
     id: 'cad-fluids',
     phase: 'Líquidos',
     medication: 'NaCl 0.9%',
-    text: '1 L NaCl 0.9% primera hora; continuar NaCl 0.45% o NaCl 0.9%; déficit 24–48 h. Si no hay shock.',
+    text: '1 L NaCl 0.9% primera hora. Después: NaCl 0.45% si sodio corregido ≥135 mEq/L; NaCl 0.9% si sodio corregido bajo. Déficit 24–48 h. Si no hay shock.',
   },
   {
     id: 'cad-insulin',
     phase: 'Insulina',
     medication: 'INSULINA REGULAR',
-    text: 'Iniciar 1–2 h post líquidos: insulina regular 0.1 U/kg/h; si glucosa no baja ~50 mg/dL/h → +1 U/h; al 250 mg/dL → 0.05 U/kg/h; agregar dextrosa a fluidos.',
+    text: 'Iniciar 1–2 h post líquidos: insulina regular 0.1 U/kg/h; si glucosa no baja ~50 mg/dL/h → +1 U/h.',
+  },
+  {
+    id: 'cad-glucose-250',
+    phase: 'Glucosa capilar 250 mg/dL',
+    medication: 'PLAN CON DEXTROSADO',
+    text: 'Al alcanzar 250 mg/dL en glucometría capilar: insulina 0.05 U/kg/h; cambiar fluidos de mantenimiento a glucosado 5% para continuar insulina hasta cerrar cetosis.',
   },
   {
     id: 'cad-k',
@@ -407,7 +498,9 @@ export function fluidGuidanceForMode(mode, weightKg) {
     }
     return base;
   }
-  return cad ? cad.text : '1 L NaCl 0.9% primera hora; continuar NaCl 0.45% o NaCl 0.9%. Si no hay shock.';
+  return cad
+    ? cad.text
+    : '1 L NaCl 0.9% primera hora. Después: NaCl 0.45% si sodio corregido ≥135 mEq/L; NaCl 0.9% si bajo. Si no hay shock.';
 }
 
 /**
@@ -418,12 +511,14 @@ export function evaluateCadEhh(input) {
   var labs = extractCadEhhLabs(inp.parsed, inp.parsedBySection);
   var suggestedMode = suggestCadEhhMode(labs);
   var potassiumGuidance = getPotassiumRepletionGuidance(labs.k);
+  var fluidGuidance = adaIvFluidGuidance(labs);
   return {
     labs: labs,
     suggestedMode: suggestedMode,
     modeHint: describeCadEhhSuggestion(labs),
     resolutionChecks: evaluateResolutionChecks(labs),
     potassiumGuidance: potassiumGuidance,
-    disclaimer: 'Sugerencia orientativa; confirmar clínicamente.',
+    fluidGuidance: fluidGuidance,
+    disclaimer: 'Orientación según ADA; confirmar clínicamente.',
   };
 }

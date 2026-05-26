@@ -22,13 +22,13 @@ import {
 } from '../manejo-atb-renal.mjs';
 import {
   CAD_CHECKLIST,
+  CAD_LAB_MONITORING,
+  CAD_NURSING_MONITORING,
   EHH_CHECKLIST,
+  EHH_LAB_MONITORING,
+  EHH_NURSING_MONITORING,
   evaluateCadEhh,
-  checklistForCadEhhMode,
-  fluidGuidanceForMode,
   getPotassiumRepletionGuidance,
-  labMonitoringForCadEhhMode,
-  nursingMonitoringForCadEhhMode,
 } from '../manejo-cad-ehh.mjs';
 import { getCultureContextForManejo } from '../manejo-cultivo-bridge.mjs';
 import {
@@ -57,9 +57,10 @@ import {
 import {
   buildSomeOrder,
   cadEhhFluidSomeOrder,
+  cadGlucose250DextrosePlanOrder,
+  cadInsulinStartSomeOrder,
   checklistItemToSomeOrder,
   drugToSomeOrder,
-  insulinPumpSomeOrder,
   kRepletionToSomeOrder,
   labMonitorToSomeOrder,
   protocolToSomeOrder,
@@ -70,6 +71,7 @@ import {
   MANEJO_PROTOCOLS,
 } from '../manejo-protocols-catalog.mjs';
 import { syncAllSubTabIndicators } from '../ui-tab-motion.mjs';
+import { scheduleAfterPaint } from '../deferred-work.mjs';
 import { storage } from '../storage.js';
 import { normalizeFechaLabHistory, sortLabHistoryChronological } from '../tend-core.mjs';
 import {
@@ -84,6 +86,35 @@ const MANEJO_SUBTABS = [
   { id: 'atb', label: 'ATB' },
   { id: 'cad-ehh', label: 'CAD/EHH' },
 ];
+
+/** UI de copiar/pegar pedidos SOME en Manejo (oculto temporalmente). */
+const MANEJO_SOME_COPY_UI = false;
+
+function isManejoSomeCopyUiEnabled() {
+  return MANEJO_SOME_COPY_UI;
+}
+
+function buildManejoDisclaimerBar() {
+  var bar = document.createElement('div');
+  bar.className = 'manejo-disclaimer-bar';
+  bar.setAttribute('role', 'note');
+  var title = document.createElement('strong');
+  title.className = 'manejo-disclaimer-bar-title';
+  title.textContent = 'Orientación clínica de apoyo';
+  var text = document.createElement('p');
+  text.className = 'manejo-disclaimer-bar-text';
+  text.textContent =
+    'Las sugerencias de manejo son recomendaciones orientativas y no sustituyen el juicio clínico. ' +
+    'Cada paciente debe valorarse de forma individual conforme a su contexto, comorbilidades y protocolos institucionales vigentes.';
+  bar.appendChild(title);
+  bar.appendChild(text);
+  return bar;
+}
+
+function appendManejoSomeOrderArticle(parent, orderOrGetter, index) {
+  if (!isManejoSomeCopyUiEnabled() || !parent) return;
+  parent.appendChild(buildSomeOrderArticle(orderOrGetter, index == null ? 0 : index));
+}
 const MANEJO_SUBTAB_KEY = 'manejoSubtab';
 
 function getActiveManejoSubtab() {
@@ -209,33 +240,6 @@ var ION_META = {
 function ionMeta(code) {
   var key = String(code || '').trim();
   return ION_META[key] || { symbol: key || '—', name: '' };
-}
-
-function addManejoGenericPendiente(ruleId, text, labFechaNorm) {
-  var pid = aid();
-  if (!pid) return;
-  var ruleScoped = 'manejo:' + ruleId;
-  var todos = storage.getTodos(pid);
-  if (!shouldAddLabSuggestionTodo(todos, ruleScoped, labFechaNorm || '')) {
-    rt.showToast('Ya hay un pendiente abierto para esta fila.', '');
-    return;
-  }
-  var nowIso = new Date().toISOString();
-  var entry = {
-    id: String(Date.now()) + '-' + Math.random().toString(36).slice(2, 6),
-    text: text,
-    completed: false,
-    priority: 'media',
-    createdAt: nowIso,
-    updatedAt: nowIso,
-    labRuleId: ruleScoped,
-    labFecha: labFechaNorm || '',
-  };
-  todos.push(entry);
-  storage.saveTodos(pid, todos);
-  rt.emitLiveSyncTodoUpsert(pid, entry);
-  rt.refreshAllTodoUIs();
-  rt.showToast('Pendiente agregado', 'success');
 }
 
 function addManejoPendiente(row, labFechaNorm) {
@@ -389,9 +393,19 @@ function buildIndicationChips(items, familyId, opts) {
   return row;
 }
 
-function buildSomeField(label, text, copyText) {
+function buildSomeField(label, text, copyText, fieldOpts) {
+  var allowCopy = fieldOpts && fieldOpts.forceCopy ? true : isManejoSomeCopyUiEnabled();
+  if (!allowCopy) copyText = null;
   var field = document.createElement('div');
-  field.className = 'manejo-some-field' + (label === 'Medicamento' ? ' manejo-some-field--wide' : '');
+  field.className =
+    'manejo-some-field' +
+    (label === 'Medicamento' ||
+      label === 'Estudio' ||
+      label === 'Recomendación' ||
+      label === 'Criterios' ||
+      label === 'Indicación'
+      ? ' manejo-some-field--wide'
+      : '');
   var lbl = document.createElement('span');
   lbl.className = 'manejo-some-field-label';
   lbl.textContent = label;
@@ -417,7 +431,11 @@ function buildSomeField(label, text, copyText) {
   return field;
 }
 
-function buildSomeOrderArticle(orderOrGetter, oi) {
+function buildOrderBlockArticle(orderOrGetter, oi, blockOpts) {
+  blockOpts = blockOpts || {};
+  var forceCopy = !!blockOpts.forceCopy;
+  var fieldOpts = forceCopy ? { forceCopy: true } : null;
+
   function resolveOrder() {
     return typeof orderOrGetter === 'function' ? orderOrGetter() : orderOrGetter;
   }
@@ -425,32 +443,94 @@ function buildSomeOrderArticle(orderOrGetter, oi) {
   var art = document.createElement('article');
   art.className = 'manejo-some-order';
 
-  var head = document.createElement('div');
-  head.className = 'manejo-some-order-head';
-  var title = document.createElement('span');
-  title.className = 'manejo-some-order-title';
-  title.textContent = 'Pedido SOME #' + String(oi + 1);
-  head.appendChild(title);
-  if (order.requiresDilution) {
-    var wn = document.createElement('span');
-    wn.className = 'manejo-dilution-warn';
-    wn.title = 'Confirmar volumen diluyente institucional';
-    wn.textContent = 'Dilución';
-    head.appendChild(wn);
+  if (blockOpts.orderTitle) {
+    var head = document.createElement('div');
+    head.className = 'manejo-some-order-head';
+    var title = document.createElement('span');
+    title.className = 'manejo-some-order-title';
+    title.textContent = blockOpts.orderTitle;
+    head.appendChild(title);
+    if (order.requiresDilution) {
+      var wn = document.createElement('span');
+      wn.className = 'manejo-dilution-warn';
+      wn.title = 'Confirmar volumen diluyente institucional';
+      wn.textContent = 'Dilución';
+      head.appendChild(wn);
+    }
+    art.appendChild(head);
   }
-  art.appendChild(head);
 
   var grid = document.createElement('div');
   grid.className = 'manejo-some-grid';
+  var adaKind = blockOpts.adaDisplayKind || 'treatment';
 
   function appendField(label, getVal) {
     var val = getVal(order);
     if (val == null || val === '') return;
     grid.appendChild(
-      buildSomeField(label, toSomeUpper(val), function () {
-        return toSomeUpper(getVal(resolveOrder()) || '');
-      })
+      buildSomeField(
+        label,
+        toSomeUpper(val),
+        function () {
+          return toSomeUpper(getVal(resolveOrder()) || '');
+        },
+        fieldOpts
+      )
     );
+  }
+
+  if (adaKind === 'criteria' || adaKind === 'milestone') {
+    var primaryLabel = adaKind === 'criteria' ? 'Criterios' : 'Indicación';
+    appendField(primaryLabel, function (o) {
+      return (
+        o.comments ||
+        String(o.doseValue ?? '').trim() ||
+        String(o.doseUnit ?? '').trim() ||
+        String(o.medication ?? '').trim()
+      );
+    });
+    art.appendChild(grid);
+    if (blockOpts.copyAllLabel) {
+      var actionsMs = document.createElement('div');
+      actionsMs.className = 'manejo-some-order-actions';
+      var bAllMs = document.createElement('button');
+      bAllMs.type = 'button';
+      bAllMs.className = 'manejo-copy-btn primary';
+      bAllMs.textContent = blockOpts.copyAllLabel;
+      attachCopy(bAllMs, function () {
+        return formatSomeBlock(resolveOrder());
+      });
+      actionsMs.appendChild(bAllMs);
+      art.appendChild(actionsMs);
+    }
+    return art;
+  }
+
+  if (adaKind === 'monitor') {
+    appendField('Estudio', function (o) {
+      return o.medication;
+    });
+    appendField('Frecuencia', function (o) {
+      return o.frequency;
+    });
+    appendField('Comentarios adicionales', function (o) {
+      return o.comments;
+    });
+    art.appendChild(grid);
+    if (blockOpts.copyAllLabel) {
+      var actionsMon = document.createElement('div');
+      actionsMon.className = 'manejo-some-order-actions';
+      var bAllMon = document.createElement('button');
+      bAllMon.type = 'button';
+      bAllMon.className = 'manejo-copy-btn primary';
+      bAllMon.textContent = blockOpts.copyAllLabel;
+      attachCopy(bAllMon, function () {
+        return formatSomeBlock(resolveOrder());
+      });
+      actionsMon.appendChild(bAllMon);
+      art.appendChild(actionsMon);
+    }
+    return art;
   }
 
   appendField('Medicamento', function (o) {
@@ -462,13 +542,18 @@ function buildSomeOrderArticle(orderOrGetter, oi) {
     (order.doseUnit ? ' ' + toSomeUpper(order.doseUnit) : '').trim();
   if (doseStr) {
     grid.appendChild(
-      buildSomeField('Dosis', doseStr, function () {
-        var o = resolveOrder();
-        return (
-          String(o.doseValue ?? '').trim() +
-          (o.doseUnit ? ' ' + toSomeUpper(o.doseUnit) : '')
-        ).trim();
-      })
+      buildSomeField(
+        'Dosis',
+        doseStr,
+        function () {
+          var o = resolveOrder();
+          return (
+            String(o.doseValue ?? '').trim() +
+            (o.doseUnit ? ' ' + toSomeUpper(o.doseUnit) : '')
+          ).trim();
+        },
+        fieldOpts
+      )
     );
   }
 
@@ -494,10 +579,15 @@ function buildSomeOrderArticle(orderOrGetter, oi) {
       ? toSomeUpper(rateRaw)
       : toSomeUpper(rateRaw + ' CC/HR');
     grid.appendChild(
-      buildSomeField('Velocidad de infusión', rateTxt, function () {
-        var r = String(resolveOrder().infusionRateMlHr || '').trim();
-        return /mcg\/min|mg\/min|u\/min|u\/kg\/h/i.test(r) ? toSomeUpper(r) : toSomeUpper(r + ' CC/HR');
-      })
+      buildSomeField(
+        'Velocidad de infusión',
+        rateTxt,
+        function () {
+          var r = String(resolveOrder().infusionRateMlHr || '').trim();
+          return /mcg\/min|mg\/min|u\/min|u\/kg\/h/i.test(r) ? toSomeUpper(r) : toSomeUpper(r + ' CC/HR');
+        },
+        fieldOpts
+      )
     );
   }
 
@@ -507,19 +597,37 @@ function buildSomeOrderArticle(orderOrGetter, oi) {
 
   art.appendChild(grid);
 
-  var actions = document.createElement('div');
-  actions.className = 'manejo-some-order-actions';
-  var bAll = document.createElement('button');
-  bAll.type = 'button';
-  bAll.className = 'manejo-copy-btn primary';
-  bAll.textContent = 'Copiar bloque SOME';
-  attachCopy(bAll, function () {
-    return formatSomeBlock(resolveOrder());
-  });
-  actions.appendChild(bAll);
-  art.appendChild(actions);
+  if (blockOpts.copyAllLabel) {
+    var actions = document.createElement('div');
+    actions.className = 'manejo-some-order-actions';
+    var bAll = document.createElement('button');
+    bAll.type = 'button';
+    bAll.className = 'manejo-copy-btn primary';
+    bAll.textContent = blockOpts.copyAllLabel;
+    attachCopy(bAll, function () {
+      return formatSomeBlock(resolveOrder());
+    });
+    actions.appendChild(bAll);
+    art.appendChild(actions);
+  }
 
   return art;
+}
+
+function buildAdaOrderBlock(orderOrGetter, displayKind) {
+  return buildOrderBlockArticle(orderOrGetter, 0, {
+    adaDisplayKind: displayKind || 'treatment',
+  });
+}
+
+function buildSomeOrderArticle(orderOrGetter, oi) {
+  if (!isManejoSomeCopyUiEnabled()) {
+    return document.createDocumentFragment();
+  }
+  return buildOrderBlockArticle(orderOrGetter, oi, {
+    orderTitle: 'Pedido SOME #' + String(oi + 1),
+    copyAllLabel: 'Copiar bloque SOME',
+  });
 }
 
 function buildManejoCard(row, labFechaNorm) {
@@ -631,7 +739,7 @@ function buildManejoCard(row, labFechaNorm) {
   }
 
   var someOrders = row.someOrders || [];
-  var hasSome = someOrders.length > 0;
+  var hasSome = isManejoSomeCopyUiEnabled() && someOrders.length > 0;
   var drawer = document.createElement('div');
   drawer.className = 'manejo-some-drawer';
   drawer.hidden = true;
@@ -764,7 +872,9 @@ function buildAtbDetailEmpty() {
   empty.appendChild(t);
   var h = document.createElement('p');
   h.className = 'manejo-hint';
-  h.textContent = 'El pedido SOME aparece aquí, campo por campo, listo para copiar.';
+  h.textContent = isManejoSomeCopyUiEnabled()
+    ? 'El pedido SOME aparece aquí, campo por campo, listo para copiar.'
+    : 'Selecciona un antibiótico para revisar dosis, ajuste renal y contexto clínico.';
   empty.appendChild(h);
   return empty;
 }
@@ -846,17 +956,19 @@ function buildAtbDetailPanel(drug, classification, patient, renalCtx) {
   var someHint = document.createElement('p');
   someHint.className = 'manejo-proto-detail-hint';
   someHint.textContent = 'Copia cada campo en su casilla correspondiente del SOME.';
-  wrap.appendChild(someHint);
+  if (isManejoSomeCopyUiEnabled()) wrap.appendChild(someHint);
 
-  wrap.appendChild(
-    buildSomeOrderArticle(function () {
+  appendManejoSomeOrderArticle(
+    wrap,
+    function () {
       return drugToSomeOrderAtb(
         drug,
         calcDrawer ? calcDrawer.getCalcResult() : null,
         renalCtx,
         drugToSomeOrder
       );
-    }, 0)
+    },
+    0
   );
 
   return {
@@ -931,16 +1043,18 @@ function buildAtbListRow(drug, classification, opts) {
     actions.appendChild(calcBadge);
   }
 
-  var copyBtn = document.createElement('button');
-  copyBtn.type = 'button';
-  copyBtn.className = 'manejo-copy-btn manejo-proto-row-copy';
-  copyBtn.textContent = 'Copiar';
-  copyBtn.addEventListener('click', function (e) {
-    e.stopPropagation();
-    onSelect(drug.id);
-    copyToClipboard(getCopyText());
-  });
-  actions.appendChild(copyBtn);
+  if (isManejoSomeCopyUiEnabled()) {
+    var copyBtn = document.createElement('button');
+    copyBtn.type = 'button';
+    copyBtn.className = 'manejo-copy-btn manejo-proto-row-copy';
+    copyBtn.textContent = 'Copiar';
+    copyBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      onSelect(drug.id);
+      copyToClipboard(getCopyText());
+    });
+    actions.appendChild(copyBtn);
+  }
 
   main.appendChild(actions);
   shell.appendChild(main);
@@ -1462,6 +1576,9 @@ function buildManejoProtoEditorSection(titleText) {
  */
 function openManejoProtocolEditorModal(opts) {
   opts = opts || {};
+  var existingBackdrop = document.querySelector('.manejo-proto-editor-backdrop');
+  if (existingBackdrop) existingBackdrop.remove();
+
   var mode = opts.mode === 'edit' ? 'edit' : 'add';
   var entry = opts.entry || null;
   var isCustom = !!(entry && entry.isCustom);
@@ -1690,14 +1807,13 @@ function openManejoProtocolEditorModal(opts) {
   });
   document.addEventListener('keydown', onKey);
   document.body.appendChild(backdrop);
+  void backdrop.offsetHeight;
+  backdrop.classList.add('open');
   requestAnimationFrame(function () {
-    backdrop.classList.add('open');
-  });
-  setTimeout(function () {
     try {
-      medInp.focus();
+      medInp.focus({ preventScroll: true });
     } catch (_e) {}
-  }, 30);
+  });
 }
 
 function truncateProtoSnippet(text, maxLen) {
@@ -1779,14 +1895,16 @@ function buildStanfordDetailPanel(entry) {
     val.className = 'manejo-some-field-val manejo-some-field-val--mono';
     val.textContent = toSomeUpper(comp.someText) || '—';
     inner.appendChild(val);
-    var cbtn = document.createElement('button');
-    cbtn.type = 'button';
-    cbtn.className = 'manejo-copy-btn';
-    cbtn.textContent = 'Copiar';
-    attachCopy(cbtn, function () {
-      return toSomeUpper(comp.someText || '');
-    });
-    inner.appendChild(cbtn);
+    if (isManejoSomeCopyUiEnabled()) {
+      var cbtn = document.createElement('button');
+      cbtn.type = 'button';
+      cbtn.className = 'manejo-copy-btn';
+      cbtn.textContent = 'Copiar';
+      attachCopy(cbtn, function () {
+        return toSomeUpper(comp.someText || '');
+      });
+      inner.appendChild(cbtn);
+    }
     row.appendChild(inner);
     compWrap.appendChild(row);
   });
@@ -1807,15 +1925,17 @@ function buildStanfordDetailPanel(entry) {
 
   var foot = document.createElement('div');
   foot.className = 'manejo-proto-detail-foot';
-  var copyAll = document.createElement('button');
-  copyAll.type = 'button';
-  copyAll.className = 'manejo-copy-btn btn-med-secondary';
-  copyAll.textContent = 'Copiar enjuague';
-  attachCopy(copyAll, function () {
-    return toSomeUpper(entry.copyTemplate || '');
-  });
-  foot.appendChild(copyAll);
-  wrap.appendChild(foot);
+  if (isManejoSomeCopyUiEnabled()) {
+    var copyAll = document.createElement('button');
+    copyAll.type = 'button';
+    copyAll.className = 'manejo-copy-btn btn-med-secondary';
+    copyAll.textContent = 'Copiar enjuague';
+    attachCopy(copyAll, function () {
+      return toSomeUpper(entry.copyTemplate || '');
+    });
+    foot.appendChild(copyAll);
+    wrap.appendChild(foot);
+  }
 
   return { root: wrap, getCalcResult: function () { return null; } };
 }
@@ -1855,13 +1975,15 @@ function buildProtocolDetailPanel(entry, patient) {
   var someHint = document.createElement('p');
   someHint.className = 'manejo-proto-detail-hint';
   someHint.textContent = 'Copia cada campo en su casilla correspondiente del SOME.';
-  wrap.appendChild(someHint);
+  if (isManejoSomeCopyUiEnabled()) wrap.appendChild(someHint);
 
-  wrap.appendChild(
-    buildSomeOrderArticle(function () {
+  appendManejoSomeOrderArticle(
+    wrap,
+    function () {
       var r = calcDrawer ? calcDrawer.getCalcResult() : null;
       return protocolToSomeOrder(entry, r);
-    }, 0)
+    },
+    0
   );
 
   if ((entry.notes || []).length) {
@@ -1894,7 +2016,9 @@ function buildProtocolDetailEmpty() {
   empty.appendChild(t);
   var h = document.createElement('p');
   h.className = 'manejo-hint';
-  h.textContent = 'El pedido SOME aparece aquí, campo por campo, listo para copiar.';
+  h.textContent = isManejoSomeCopyUiEnabled()
+    ? 'El pedido SOME aparece aquí, campo por campo, listo para copiar.'
+    : 'Revisa indicación, calculadora y notas clínicas aquí.';
   empty.appendChild(h);
   return empty;
 }
@@ -1996,17 +2120,19 @@ function buildProtocolListRow(entry, opts) {
     actions.appendChild(delBtn);
   }
 
-  var copyBtn = document.createElement('button');
-  copyBtn.type = 'button';
-  copyBtn.className = 'manejo-copy-btn primary manejo-proto-row-copy';
-  copyBtn.textContent = 'Copiar';
-  copyBtn.addEventListener('click', function (e) {
-    e.stopPropagation();
-    onSelect(entry.id);
-    recordProtoRecent(entry.id);
-    copyToClipboard(getCopyText());
-  });
-  actions.appendChild(copyBtn);
+  if (isManejoSomeCopyUiEnabled()) {
+    var copyBtn = document.createElement('button');
+    copyBtn.type = 'button';
+    copyBtn.className = 'manejo-copy-btn primary manejo-proto-row-copy';
+    copyBtn.textContent = 'Copiar';
+    copyBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      onSelect(entry.id);
+      recordProtoRecent(entry.id);
+      copyToClipboard(getCopyText());
+    });
+    actions.appendChild(copyBtn);
+  }
 
   main.appendChild(actions);
   shell.appendChild(main);
@@ -2864,9 +2990,11 @@ function setCadStepDone(pid, stepId, done) {
   } catch (_e2) {}
 }
 
-function buildCadEhhChecklistItem(opts) {
+
+function buildCadAdaChecklistRow(opts) {
   var details = document.createElement('details');
   details.className = 'manejo-cad-check-item';
+  details.dataset.cadStepId = opts.id;
   var done = isCadStepDone(opts.pid, opts.id);
   if (done) {
     details.classList.add('manejo-cad-check-item--done');
@@ -2915,85 +3043,54 @@ function buildCadEhhChecklistItem(opts) {
     note.textContent = opts.carrierNote;
     body.appendChild(note);
   }
+  if (opts.text && !opts.orderGetter) {
+    var p = document.createElement('p');
+    p.className = 'manejo-cad-checklist-text';
+    p.textContent = opts.text;
+    body.appendChild(p);
+  }
   if (opts.orderGetter) {
-    body.appendChild(buildSomeOrderArticle(opts.orderGetter, 0));
+    var orderWrap = document.createElement('div');
+    orderWrap.className = 'manejo-cad-some-block';
+    orderWrap.appendChild(buildAdaOrderBlock(opts.orderGetter, opts.displayKind));
+    body.appendChild(orderWrap);
   }
   if (opts.extra) body.appendChild(opts.extra);
-  if (opts.onPendiente) {
-    var actions = document.createElement('div');
-    actions.className = 'manejo-cad-checklist-actions';
-    var pend = document.createElement('button');
-    pend.type = 'button';
-    pend.className = 'manejo-btn-pendiente btn-med-secondary';
-    pend.textContent = '+ Pendiente';
-    pend.addEventListener('click', opts.onPendiente);
-    actions.appendChild(pend);
-    body.appendChild(actions);
-  }
   details.appendChild(body);
   return details;
 }
 
-function buildCadEhhPotassiumTableExtra(kGuide, labs) {
+function buildAdaPotassiumTableExtra(kGuide) {
   var wrap = document.createElement('details');
   wrap.className = 'manejo-cad-k-details';
   var summary = document.createElement('summary');
-  summary.textContent = 'Ver tabla completa de K⁺';
+  summary.textContent = 'Ver tabla completa de K⁺ (ADA)';
   wrap.appendChild(summary);
-  var kTable = document.createElement('div');
-  kTable.className = 'manejo-cad-k-table';
-  (kGuide.ranges || []).forEach(function (row) {
-    var isActive = kGuide.active && kGuide.active.id === row.id;
-    var tr = document.createElement('div');
-    tr.className = 'manejo-cad-k-row' + (isActive ? ' manejo-cad-k-row--active' : '');
-    var cRange = document.createElement('span');
-    cRange.className = 'manejo-cad-k-cell manejo-cad-k-cell--range';
-    cRange.textContent = row.rangeLabel;
-    var cAct = document.createElement('span');
-    cAct.className = 'manejo-cad-k-cell manejo-cad-k-cell--action';
-    cAct.textContent = row.detail;
-    var cCopy = document.createElement('span');
-    cCopy.className = 'manejo-cad-k-cell manejo-cad-k-cell--copy';
-    var kCopyBtn = document.createElement('button');
-    kCopyBtn.type = 'button';
-    kCopyBtn.className = 'manejo-copy-btn';
-    kCopyBtn.textContent = 'Copiar';
-    attachCopy(kCopyBtn, function () {
-      return formatSomeBlock(kRepletionToSomeOrder(row, labs));
-    });
-    cCopy.appendChild(kCopyBtn);
-    tr.appendChild(cRange);
-    tr.appendChild(cAct);
-    tr.appendChild(cCopy);
-    kTable.appendChild(tr);
-  });
-  wrap.appendChild(kTable);
+  wrap.appendChild(buildAdaPotassiumSection(kGuide, { compact: true }));
   return wrap;
 }
 
-function buildCadEhhChecklistWorkflow(mode, pid, patient, evalOut, labFechaNorm) {
-  var labs = evalOut.labs || {};
-  var wKg = patient ? parsePatientWeightKg(patient) : null;
-  var kGuide = evalOut.potassiumGuidance || getPotassiumRepletionGuidance(labs.k);
+function buildAdaFluidsInsulinFlow(ctx) {
+  var flow = document.createElement('div');
+  flow.className = 'manejo-cad-checklist-flow';
+  var labs = (ctx.evalOut && ctx.evalOut.labs) || {};
+  var wKg = ctx.patient ? parsePatientWeightKg(ctx.patient) : null;
+  var kGuide = ctx.kGuide || getPotassiumRepletionGuidance(labs.k);
   var carrier = suggestIvFluidCarrier(labs);
   var carrierNote = carrier.warnings.length ? carrier.warnings.join(' ') : '';
-  var host = document.createElement('div');
-  host.className = 'manejo-cad-checklist-flow';
+  var protocolMode = ctx.protocolMode;
   var stepIdx = 1;
 
-  host.appendChild(
-    buildCadEhhChecklistItem({
-      id: 'fluids',
-      pid: pid,
+  flow.appendChild(
+    buildCadAdaChecklistRow({
+      id: protocolMode === 'ehh' ? 'ehh-fluids' : 'cad-fluids',
+      pid: ctx.pid,
       index: stepIdx++,
       title: 'Fluidos IV',
       defaultOpen: true,
       carrierNote: carrierNote,
       orderGetter: function () {
-        return cadEhhFluidSomeOrder(mode === 'ehh' ? 'ehh' : 'cad', wKg, labs);
-      },
-      onPendiente: function () {
-        addManejoGenericPendiente('manejo-cad:fluids', 'CAD/EHH: Fluidos', labFechaNorm);
+        return cadEhhFluidSomeOrder(protocolMode, wKg, labs);
       },
     })
   );
@@ -3004,185 +3101,298 @@ function buildCadEhhChecklistWorkflow(mode, pid, patient, evalOut, labFechaNorm)
         kGuide.kValue +
         ' mEq/L — suspender insulina hasta K⁺ > 3.3 mEq/L y reponer potasio IV.'
       : null;
-  var kExtra = buildCadEhhPotassiumTableExtra(kGuide, labs);
-  host.appendChild(
-    buildCadEhhChecklistItem({
-      id: 'potassium',
-      pid: pid,
+  flow.appendChild(
+    buildCadAdaChecklistRow({
+      id: protocolMode + '-potassium',
+      pid: ctx.pid,
       index: stepIdx++,
       title: 'Cloruro de potasio',
-      defaultOpen: !isCadStepDone(pid, 'fluids'),
+      defaultOpen: !isCadStepDone(ctx.pid, protocolMode === 'ehh' ? 'ehh-fluids' : 'cad-fluids'),
       alert: kAlert,
       carrierNote: carrierNote,
+      text: kGuide.active ? null : kGuide.summary,
       orderGetter: kGuide.active
         ? function () {
             return kRepletionToSomeOrder(kGuide.active, labs);
           }
         : null,
-      extra: kGuide.active ? kExtra : null,
-      onPendiente: function () {
-        addManejoGenericPendiente('manejo-cad:k', 'CAD/EHH: Potasio', labFechaNorm);
-      },
+      extra: buildAdaPotassiumTableExtra(kGuide),
     })
   );
 
-  if (wKg != null) {
-    var glu = labs.glucoseMgDl;
-    var algPick = document.createElement('div');
-    algPick.className = 'manejo-cad-insulin-pick';
-    var algLbl = document.createElement('label');
-    algLbl.textContent = 'Algoritmo bomba insulina';
-    var algSel = document.createElement('select');
-    algSel.className = 'manejo-atb-isolate-select';
-    INSULIN_PUMP_ALGORITHMS.forEach(function (alg, i) {
-      var o = document.createElement('option');
-      o.value = String(i);
-      o.textContent = alg.label;
-      algSel.appendChild(o);
+  filterChecklistByIds(ctx.checklist, ctx.fluidsInsulinIds)
+    .filter(function (item) {
+      return item.id.indexOf('fluids') === -1;
+    })
+    .forEach(function (item) {
+      flow.appendChild(
+        buildCadAdaChecklistRow({
+          id: item.id,
+          pid: ctx.pid,
+          index: stepIdx++,
+          title: item.phase,
+          orderGetter: function () {
+            if (item.id === 'cad-insulin' || item.id === 'ehh-insulin') {
+              return cadInsulinStartSomeOrder(wKg, item);
+            }
+            return checklistItemToSomeOrder(item);
+          },
+        })
+      );
+      if (protocolMode === 'cad' && item.id === 'cad-insulin') {
+        flow.appendChild(
+          buildCadAdaChecklistRow({
+            id: 'cad-glucose-250',
+            pid: ctx.pid,
+            index: stepIdx++,
+            title: 'Glucosa capilar 250 mg/dL',
+            orderGetter: function () {
+              return cadGlucose250DextrosePlanOrder(wKg, labs);
+            },
+          })
+        );
+      }
     });
-    algPick.appendChild(algLbl);
-    algPick.appendChild(algSel);
 
-    host.appendChild(
-      buildCadEhhChecklistItem({
-        id: 'insulin-pump',
+  return flow;
+}
+
+function buildAdaMonitoringFlow(pid, items, idPrefix) {
+  var flow = document.createElement('div');
+  flow.className = 'manejo-cad-checklist-flow';
+  (items || []).forEach(function (item, i) {
+    flow.appendChild(
+      buildCadAdaChecklistRow({
+        id: idPrefix + item.id,
         pid: pid,
-        index: stepIdx++,
-        title: 'Insulina — bomba (algoritmo hospital)',
+        index: i + 1,
+        title: item.study,
+        defaultOpen: i === 0,
+        displayKind: 'monitor',
         orderGetter: function () {
-          return insulinPumpSomeOrder(glu, Number(algSel.value || 0));
-        },
-        extra: algPick,
-        onPendiente: function () {
-          addManejoGenericPendiente('manejo-cad:insulin-pump', 'CAD/EHH: Insulina bomba', labFechaNorm);
+          return labMonitorToSomeOrder(item);
         },
       })
     );
+  });
+  return flow;
+}
 
-    var rates =
-      mode === 'ehh'
-        ? [{ label: 'Insulina EHH 0.14 U/kg/h', rate: 0.14 }]
-        : [
-            { label: 'Insulina CAD inicio 0.1 U/kg/h', rate: 0.1 },
-            { label: 'Insulina CAD al 250 mg/dL 0.05 U/kg/h', rate: 0.05 },
-          ];
-    rates.forEach(function (r, ri) {
-      host.appendChild(
-        buildCadEhhChecklistItem({
-          id: 'insulin-rate-' + ri,
-          pid: pid,
-          index: stepIdx++,
-          title: r.label,
-          orderGetter: function () {
-            var line = MANEJO_CALCULATORS['insulin-u-kg-h']({
-              weightKg: wKg,
-              unitsPerKgPerHour: r.rate,
-            });
-            return drugToSomeOrder(
-              {
-                name: 'Insulina regular',
-                route: 'IV',
-                adultDose: line && line.copyLine ? line.copyLine : '',
-                renalNote: 'INFUSIÓN CONTINUA; REEVALUAR CON GLUCOMETRÍA CAPILAR C/1 H',
-              },
-              line
-            );
-          },
-        })
-      );
-    });
-  } else {
-    var needW = document.createElement('p');
-    needW.className = 'manejo-hint';
-    needW.textContent = 'Registra peso en el expediente para calcular insulina.';
-    host.appendChild(needW);
+function adaFooterDisplayKind(item) {
+  if (!item || !item.id) return 'milestone';
+  if (item.id.indexOf('resolution') !== -1 || item.id.indexOf('transition') !== -1) {
+    return 'criteria';
+  }
+  return 'milestone';
+}
+
+function buildAdaFooterFlow(pid, items) {
+  var flow = document.createElement('div');
+  flow.className = 'manejo-cad-checklist-flow';
+  (items || []).forEach(function (item, i) {
+    flow.appendChild(
+      buildCadAdaChecklistRow({
+        id: item.id,
+        pid: pid,
+        index: i + 1,
+        title: item.phase,
+        defaultOpen: i === 0,
+        displayKind: adaFooterDisplayKind(item),
+        orderGetter: function () {
+          return checklistItemToSomeOrder(item);
+        },
+      })
+    );
+  });
+  return flow;
+}
+
+
+function buildAdaPotassiumSection(kGuide, opts) {
+  opts = opts || {};
+  var section = document.createElement('section');
+  section.className = 'manejo-cad-step manejo-cad-step--k';
+
+  if (!opts.compact) {
+    var head = document.createElement('div');
+    head.className = 'manejo-cad-step-head';
+    var title = document.createElement('h3');
+    title.className = 'manejo-cad-step-title';
+    title.textContent = 'Reposición de potasio (ADA)';
+    head.appendChild(title);
+    section.appendChild(head);
   }
 
-  function appendMonitorGroup(title, items, prefix) {
-    if (title) {
-      var gh = document.createElement('h4');
-      gh.className = 'manejo-cad-checklist-group';
-      gh.textContent = title;
-      host.appendChild(gh);
-    }
-    items.forEach(function (item) {
-      host.appendChild(
-        buildCadEhhChecklistItem({
-          id: prefix + item.id,
-          pid: pid,
-          index: stepIdx++,
-          title: item.study,
-          orderGetter: function () {
-            return labMonitorToSomeOrder(item);
-          },
-          onPendiente: function () {
-            addManejoGenericPendiente(
-              'manejo-cad:' + item.id,
-              'CAD/EHH: ' + item.study,
-              labFechaNorm
-            );
-          },
-        })
-      );
-    });
+  if (kGuide && kGuide.summary) {
+    var summary = document.createElement('p');
+    summary.className = 'manejo-cad-k-summary';
+    summary.textContent = kGuide.summary;
+    section.appendChild(summary);
   }
 
-  if (mode === 'indeterminate') {
-    appendMonitorGroup('Laboratorio — CAD', labMonitoringForCadEhhMode('cad'), 'lab-');
-    appendMonitorGroup('Laboratorio — EHH', labMonitoringForCadEhhMode('ehh'), 'lab-');
-    appendMonitorGroup('Enfermería — CAD', nursingMonitoringForCadEhhMode('cad'), 'nur-');
-    appendMonitorGroup('Enfermería — EHH', nursingMonitoringForCadEhhMode('ehh'), 'nur-');
-  } else {
-    appendMonitorGroup('Estudios de laboratorio', labMonitoringForCadEhhMode(mode), 'lab-');
-    appendMonitorGroup('Cuidados de enfermería', nursingMonitoringForCadEhhMode(mode), 'nur-');
+  var table = document.createElement('div');
+  table.className = 'manejo-cad-k-table';
+  var headRow = document.createElement('div');
+  headRow.className = 'manejo-cad-k-row manejo-cad-k-row--head';
+  ['Rango K⁺', 'Recomendación ADA'].forEach(function (label) {
+    var cell = document.createElement('span');
+    cell.className = 'manejo-cad-k-cell manejo-cad-k-cell--range';
+    cell.textContent = label;
+    headRow.appendChild(cell);
+  });
+  table.appendChild(headRow);
+
+  (kGuide && kGuide.ranges ? kGuide.ranges : []).forEach(function (row) {
+    var isActive = kGuide.active && kGuide.active.id === row.id;
+    var tr = document.createElement('div');
+    tr.className = 'manejo-cad-k-row' + (isActive ? ' manejo-cad-k-row--active' : '');
+    var cRange = document.createElement('span');
+    cRange.className = 'manejo-cad-k-cell manejo-cad-k-cell--range';
+    cRange.textContent = row.rangeLabel;
+    var cAct = document.createElement('span');
+    cAct.className = 'manejo-cad-k-cell manejo-cad-k-cell--action';
+    cAct.textContent = row.detail;
+    tr.appendChild(cRange);
+    tr.appendChild(cAct);
+    table.appendChild(tr);
+  });
+  section.appendChild(table);
+  return section;
+}
+
+var CAD_FLUIDS_INSULIN_IDS = ['cad-fluids', 'cad-insulin', 'cad-bicarb'];
+var CAD_FOOTER_IDS = ['cad-resolution', 'cad-transition'];
+var EHH_FLUIDS_INSULIN_IDS = ['ehh-fluids', 'ehh-insulin'];
+var EHH_FOOTER_IDS = ['ehh-precipitant'];
+
+function filterChecklistByIds(checklist, ids) {
+  return (ids || [])
+    .map(function (id) {
+      return (checklist || []).find(function (item) {
+        return item.id === id;
+      });
+    })
+    .filter(Boolean);
+}
+
+function buildAdaCollapsibleFold(summaryText, contentEl, open, foldId) {
+  var details = document.createElement('details');
+  details.className = 'manejo-cad-ada-fold';
+  if (foldId) details.dataset.cadFold = foldId;
+  if (open) details.setAttribute('open', '');
+  var summary = document.createElement('summary');
+  summary.className = 'manejo-cad-ada-fold-summary';
+  summary.textContent = summaryText;
+  details.appendChild(summary);
+  var body = document.createElement('div');
+  body.className = 'manejo-cad-ada-fold-body';
+  body.appendChild(contentEl);
+  details.appendChild(body);
+  return details;
+}
+
+function buildCadEhhAdaProtocolPanel(opts) {
+  opts = opts || {};
+  var panel = document.createElement('section');
+  panel.className = 'manejo-cad-ada-protocol';
+
+  if (opts.title) {
+    var heading = document.createElement('h3');
+    heading.className = 'manejo-cad-ada-protocol-title';
+    heading.textContent = opts.title;
+    panel.appendChild(heading);
   }
 
-  function appendProtocolGroup(title, items) {
-    if (title) {
-      var gh2 = document.createElement('h4');
-      gh2.className = 'manejo-cad-checklist-group';
-      gh2.textContent = title;
-      host.appendChild(gh2);
-    }
-    items.forEach(function (stepItem) {
-      host.appendChild(
-        buildCadEhhChecklistItem({
-          id: stepItem.id,
-          pid: pid,
-          index: stepIdx++,
-          title: stepItem.phase,
-          orderGetter: function () {
-            return checklistItemToSomeOrder(stepItem);
-          },
-          onPendiente: function () {
-            var prefix = stepItem.id.indexOf('ehh') === 0 ? 'EHH: ' : 'CAD: ';
-            addManejoGenericPendiente(
-              'manejo-cad:' + stepItem.id,
-              prefix + stepItem.phase,
-              labFechaNorm
-            );
-          },
-        })
-      );
-    });
+  var fluidsWrap = buildAdaFluidsInsulinFlow({
+    protocolMode: opts.protocolMode,
+    pid: opts.pid,
+    patient: opts.patient,
+    evalOut: opts.evalOut,
+    checklist: opts.checklist,
+    fluidsInsulinIds: opts.fluidsInsulinIds,
+    kGuide: opts.kGuide,
+  });
+  panel.appendChild(
+    buildAdaCollapsibleFold('1 · Fluidos e insulina', fluidsWrap, !!opts.openFluids, 'fluids')
+  );
+
+  panel.appendChild(
+    buildAdaCollapsibleFold(
+      '2 · Laboratorio',
+      buildAdaMonitoringFlow(opts.pid, opts.labItems, 'lab-'),
+      !!opts.openLabs,
+      'labs'
+    )
+  );
+
+  panel.appendChild(
+    buildAdaCollapsibleFold(
+      '3 · Cuidados de enfermería',
+      buildAdaMonitoringFlow(opts.pid, opts.nursingItems, 'nur-'),
+      !!opts.openNursing,
+      'nursing'
+    )
+  );
+
+  var footerItems = filterChecklistByIds(opts.checklist, opts.footerIds);
+  if (footerItems.length) {
+    var footer = document.createElement('section');
+    footer.className = 'manejo-cad-ada-footer';
+    footer.appendChild(buildAdaFooterFlow(opts.pid, footerItems));
+    panel.appendChild(footer);
   }
 
-  if (mode === 'indeterminate') {
-    appendProtocolGroup('Protocolo CAD', CAD_CHECKLIST.filter(function (x) {
-      return x.id !== 'cad-fluids' && x.id !== 'cad-k' && x.id !== 'cad-insulin';
-    }));
-    appendProtocolGroup('Protocolo EHH', EHH_CHECKLIST.filter(function (x) {
-      return x.id !== 'ehh-fluids' && x.id !== 'ehh-k' && x.id !== 'ehh-insulin';
-    }));
-  } else {
-    appendProtocolGroup(
-      null,
-      checklistForCadEhhMode(mode).filter(function (x) {
-        return (
-          x.id.indexOf('fluids') === -1 &&
-          x.id.indexOf('-k') === -1 &&
-          x.id.indexOf('insulin') === -1
-        );
+  return panel;
+}
+
+function buildCadEhhAdaRecommendations(mode, evalOut, pid, patient) {
+  var host = document.createElement('div');
+  host.className = 'manejo-cad-ada-host';
+
+  var ref = document.createElement('p');
+  ref.className = 'manejo-hint manejo-cad-ada-ref';
+  ref.textContent =
+    'Recomendaciones de manejo según ADA (adultos). Texto de referencia; confirmar con protocolos institucionales y contexto clínico.';
+  host.appendChild(ref);
+
+  var kGuide = evalOut.potassiumGuidance || getPotassiumRepletionGuidance(evalOut.labs && evalOut.labs.k);
+  var showCad = mode === 'cad' || mode === 'indeterminate';
+  var showEhh = mode === 'ehh' || mode === 'indeterminate';
+
+  if (showCad) {
+    host.appendChild(
+      buildCadEhhAdaProtocolPanel({
+        title: mode === 'indeterminate' ? 'Cetoacidosis diabética (ADA)' : null,
+        protocolMode: 'cad',
+        pid: pid,
+        patient: patient,
+        evalOut: evalOut,
+        checklist: CAD_CHECKLIST,
+        fluidsInsulinIds: CAD_FLUIDS_INSULIN_IDS,
+        footerIds: CAD_FOOTER_IDS,
+        labItems: CAD_LAB_MONITORING,
+        nursingItems: CAD_NURSING_MONITORING,
+        kGuide: kGuide,
+        openFluids: mode === 'cad',
+      })
+    );
+  }
+
+  if (showEhh) {
+    host.appendChild(
+      buildCadEhhAdaProtocolPanel({
+        title: mode === 'indeterminate' ? 'Estado hiperosmolar hiperglicémico (ADA)' : null,
+        protocolMode: 'ehh',
+        pid: pid,
+        patient: patient,
+        evalOut: evalOut,
+        checklist: EHH_CHECKLIST,
+        fluidsInsulinIds: EHH_FLUIDS_INSULIN_IDS,
+        footerIds: EHH_FOOTER_IDS,
+        labItems: EHH_LAB_MONITORING,
+        nursingItems: EHH_NURSING_MONITORING,
+        kGuide: kGuide,
+        openFluids: mode === 'ehh',
       })
     );
   }
@@ -3379,8 +3589,9 @@ function buildInsulinPumpReferencePanel() {
   gluInp.addEventListener('input', paintTable);
   details.addEventListener('toggle', function () {
     setPumpRefOpen(details.open);
+    if (details.open) paintTable();
   });
-  paintTable();
+  if (details.open) paintTable();
   return details;
 }
 
@@ -3390,7 +3601,6 @@ function renderManejoCadEhh(panel, pid, patient) {
   var root = document.createElement('div');
   root.className = 'manejo-root manejo-root--cad-ehh';
 
-  var labFechaNorm = pid ? getProtocolLabFechaNorm(pid) : '';
   var latest = null;
   if (pid) {
     var hist = rt.ensureParsedLabHistory(pid);
@@ -3416,12 +3626,6 @@ function renderManejoCadEhh(panel, pid, patient) {
   });
   var mode = getCadEhhModeOverride(evalOut.suggestedMode);
   var L = evalOut.labs || {};
-  var wKg = patient ? parsePatientWeightKg(patient) : null;
-
-  var disc = document.createElement('p');
-  disc.className = 'manejo-hint manejo-cad-disclaimer';
-  disc.textContent = evalOut.disclaimer;
-  root.appendChild(disc);
 
   var hero = document.createElement('section');
   hero.className = 'manejo-cad-hero';
@@ -3485,14 +3689,25 @@ function renderManejoCadEhh(panel, pid, patient) {
 
   var labGrid = document.createElement('div');
   labGrid.className = 'manejo-cad-lab-grid';
-  [
+  var fluidGuide = evalOut.fluidGuidance || {};
+  var labCells = [
     ['Glucosa', L.glucoseMgDl != null ? L.glucoseMgDl + ' mg/dL' : '—'],
+    ['Na⁺', L.na != null ? L.na + ' mEq/L' : '—'],
+    [
+      'Na⁺ corregido',
+      fluidGuide.correctedNa != null ? fluidGuide.correctedNa + ' mEq/L' : '—',
+    ],
+    [
+      'Fluido (mant.)',
+      fluidGuide.maintenanceFluid || '—',
+    ],
     ['pH', L.ph != null ? String(L.ph) : '—'],
     ['HCO₃', L.hco3 != null ? L.hco3 + ' mEq/L' : '—'],
     ['K⁺', L.k != null ? L.k + ' mEq/L' : '—'],
     ['Cetonas', L.ketonesPositive ? 'Positivas' : 'No positivas'],
     ['Anion gap', L.anionGap != null ? String(L.anionGap) : '—'],
-  ].forEach(function (pair) {
+  ];
+  labCells.forEach(function (pair) {
     var cell = document.createElement('div');
     cell.className = 'manejo-cad-lab-cell';
     var lbl = document.createElement('span');
@@ -3527,17 +3742,9 @@ function renderManejoCadEhh(panel, pid, patient) {
 
   root.appendChild(hero);
 
-  if (wKg == null) {
-    var wBan = document.createElement('section');
-    wBan.className = 'manejo-banner';
-    wBan.innerHTML =
-      '<span class="manejo-banner-head">Registra peso en el expediente para calcular insulina U/kg/h.</span>';
-    root.appendChild(wBan);
-  }
-
   var workflow = document.createElement('div');
   workflow.className = 'manejo-cad-workflow';
-  workflow.appendChild(buildCadEhhChecklistWorkflow(mode, pid, patient, evalOut, labFechaNorm));
+  workflow.appendChild(buildCadEhhAdaRecommendations(mode, evalOut, pid, patient));
   root.appendChild(workflow);
 
   panel.appendChild(root);
@@ -3721,9 +3928,14 @@ function renderActiveManejoSubpanel(panel, subtabId, pid, patient) {
   }
 }
 
-export function renderManejo() {
+export function renderManejo(opts) {
+  opts = opts || {};
+  var onReady = typeof opts.onReady === 'function' ? opts.onReady : null;
   var container = document.getElementById('manejo-container');
-  if (!container) return;
+  if (!container) {
+    if (onReady) onReady();
+    return;
+  }
   while (container.firstChild) container.removeChild(container.firstChild);
 
   var pid = aid();
@@ -3763,17 +3975,33 @@ export function renderManejo() {
     panel.id = 'manejo-subpanel-' + tab.id;
     panel.setAttribute('role', 'tabpanel');
     panel.hidden = !isActive;
+    if (isActive) {
+      panel.innerHTML = '<p class="manejo-hint manejo-loading">Cargando…</p>';
+    }
     panelsWrap.appendChild(panel);
     panels[tab.id] = panel;
   });
 
+  container.appendChild(buildManejoDisclaimerBar());
   container.appendChild(nav);
   container.appendChild(panelsWrap);
 
-  renderActiveManejoSubpanel(panels[activeId], activeId, pid, patient);
-  requestAnimationFrame(function () {
-    syncAllSubTabIndicators();
-  });
+  var activePanel = panels[activeId];
+  var paintSubpanel = function () {
+    if (activePanel) activePanel.innerHTML = '';
+    renderActiveManejoSubpanel(activePanel, activeId, pid, patient);
+    requestAnimationFrame(function () {
+      syncAllSubTabIndicators();
+    });
+    if (onReady) onReady();
+  };
+
+  if (opts.syncHeavy) {
+    paintSubpanel();
+    return;
+  }
+
+  scheduleAfterPaint(paintSubpanel);
 }
 
 export const manejoWindowHandlers = {

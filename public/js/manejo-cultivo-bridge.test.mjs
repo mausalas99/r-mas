@@ -46,3 +46,29 @@ test('cultivo negativo no genera aislamientos', () => {
   assert.equal(ctx.isolates.length, 0);
   assert.equal(ctx.globalAlerts.length, 0);
 });
+
+test('ATB condensado: filas separadas en resLabs → todos los sensibles', () => {
+  var hist = [
+    {
+      fecha: '07/05/2026',
+      hora: '16:32',
+      resLabs: [
+        'LIQUIDO PERITONEAL 07/05: PSEUDOMONAS AERUGINOSA',
+        'ATB R: CAZ | I: FEP | S: CIPRO, IMI, LVX, MERO, PIP/TAZO, TOBRA',
+      ],
+    },
+  ];
+  var ctx = getCultureContextForManejo(hist, { maxAgeDays: 14 });
+  assert.equal(ctx.isolates.length, 1);
+  assert.match(ctx.isolates[0].organismo, /PSEUDOMONAS/i);
+  assert.deepEqual(ctx.isolates[0].sensKeys, [
+    'CIPRO',
+    'IMI',
+    'LVX',
+    'MERO',
+    'PIP/TAZO',
+    'TOBRA',
+  ]);
+  assert.deepEqual(ctx.isolates[0].resKeys, ['CAZ']);
+  assert.deepEqual(ctx.isolates[0].intKeys, ['FEP']);
+});

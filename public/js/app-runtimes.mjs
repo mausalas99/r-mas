@@ -62,6 +62,10 @@ import {
   registerSoapEstadoRuntime,
 } from './features/soap-estado.mjs';
 import {
+  registerEstadoActualPanelRuntime,
+  navigateToEstadoActualPanel,
+} from './features/estado-actual-panel.mjs';
+import {
   registerProcedureAgendaRuntime,
 } from './features/agenda.mjs';
 import {
@@ -153,6 +157,8 @@ import {
   switchAppTab,
   openPaseSectionInNormal,
   switchInnerTab,
+  switchConsolidatedTab,
+  invalidateInnerTabRenderCache,
   renderInnerTabs,
   syncInnerTabVisualOnly,
 } from './features/pase-board.mjs';
@@ -223,6 +229,10 @@ export function registerAllFeatureRuntimes() {
     return rt.getActiveId();
   },
   showToast: showToast,
+  getSettings: function () {
+    return rt.getSettings();
+  },
+  navigateToEstadoActualPanel: navigateToEstadoActualPanel,
 });
 registerProfileRuntime({
   showToast: showToast,
@@ -307,6 +317,7 @@ registerPatientsRuntime({
   switchAppTab: switchAppTab,
   showToast: showToast,
   renderInnerTabs: renderInnerTabs,
+  invalidateInnerTabRenderCache: invalidateInnerTabRenderCache,
   renderEstadoActualButton: renderEstadoActualButton,
   renderNoteForm: renderNoteForm,
   renderPatientDataPane: renderPatientDataPane,
@@ -518,6 +529,19 @@ registerSoapEstadoRuntime({
   getSettings: function () {
     return rt.getSettings();
   },
+  navigateToEstadoActualPanel: navigateToEstadoActualPanel,
+});
+
+registerEstadoActualPanelRuntime({
+  getActiveId: function () {
+    return rt.getActiveId();
+  },
+  showToast: showToast,
+  getSettings: function () {
+    return rt.getSettings();
+  },
+  switchConsolidatedTab: switchConsolidatedTab,
+  copyToClipboardSafe: copyToClipboardSafe,
 });
 
 registerLabPanelRuntime({

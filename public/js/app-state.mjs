@@ -1,6 +1,7 @@
 import { storage, normalizeLabHistoryPatientSets } from './storage.js';
 import { applyMedCatalogOverlay } from './med-receta-core.mjs';
 import { repairLabHistoryMapInPlace } from './lab-history-repair.mjs';
+import { migratePatientMonitoreo } from './features/estado-actual-data.mjs';
 
 export let patients = [];
 export let notes = {};
@@ -62,7 +63,11 @@ export function initAppState() {
   listadoProblemas = storage.getListadoProblemas();
   applyMedCatalogOverlay(storage.getMedCatalog());
   medNotaSelectionByPatient = {};
-  if (repairLabHistoryInMemory()) saveState({ immediate: true });
+  var monitoreoMigrated = false;
+  for (var pi = 0; pi < patients.length; pi += 1) {
+    if (migratePatientMonitoreo(patients[pi])) monitoreoMigrated = true;
+  }
+  if (repairLabHistoryInMemory() || monitoreoMigrated) saveState({ immediate: true });
 }
 
 function notifySaveResult(result) {

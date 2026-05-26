@@ -51,7 +51,7 @@ export function innerTabButtonId(tab, opts) {
     if (tab === 'datos' || tab === 'todo') return 'itab-paciente';
     if (tab === 'notas' || tab === 'indica' || tab === 'manejo') return 'itab-clinico';
     if (tab === 'tend' || tab === 'cult') return 'itab-resultados';
-    if (tab === 'paciente' || tab === 'clinico' || tab === 'resultados' || tab === 'salida') {
+    if (tab === 'paciente' || tab === 'clinico' || tab === 'estadoActual' || tab === 'resultados' || tab === 'salida') {
       return 'itab-' + tab;
     }
     return 'itab-paciente';

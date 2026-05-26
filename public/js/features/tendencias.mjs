@@ -11,6 +11,7 @@ import {
   tendEligibleSectionKey,
 } from '../tend-core.mjs';
 import { createTendGroupModal } from '../tend-group-modal.mjs';
+import { scheduleAfterPaint } from '../deferred-work.mjs';
 import { readTendCardOrder, writeTendCardOrder } from '../tend-prefs.mjs';
 import {
   formatBhExtrasDisplayLine,
@@ -258,9 +259,10 @@ function getLabOutputPrefs() {
     return {
       showBhExtendedLine: !!o.showBhExtendedLine,
       hideGasoAdvInterp: !!o.hideGasoAdvInterp,
+      quickLabOutput: !!o.quickLabOutput,
     };
   } catch (_e) {
-    return { showBhExtendedLine: false, hideGasoAdvInterp: false };
+    return { showBhExtendedLine: false, hideGasoAdvInterp: false, quickLabOutput: false };
   }
 }
 
@@ -268,6 +270,7 @@ function setLabOutputPrefs(partial) {
   var cur = getLabOutputPrefs();
   if (partial.showBhExtendedLine != null) cur.showBhExtendedLine = !!partial.showBhExtendedLine;
   if (partial.hideGasoAdvInterp != null) cur.hideGasoAdvInterp = !!partial.hideGasoAdvInterp;
+  if (partial.quickLabOutput != null) cur.quickLabOutput = !!partial.quickLabOutput;
   try {
     localStorage.setItem(LAB_OUTPUT_PREFS_KEY, JSON.stringify(cur));
   } catch (_e) {}
@@ -300,6 +303,7 @@ function openLabDisplayPrefsModal() {
   var p = getLabOutputPrefs();
   var cbBh = document.getElementById('lab-pref-bh-extended');
   var cbGaso = document.getElementById('lab-pref-gaso-extended');
+  var cbQuick = document.getElementById('lab-pref-quick-output');
   if (cbBh) {
     cbBh.checked = p.showBhExtendedLine;
     _syncLabPrefSwitchAria(cbBh);
@@ -307,6 +311,10 @@ function openLabDisplayPrefsModal() {
   if (cbGaso) {
     cbGaso.checked = !p.hideGasoAdvInterp;
     _syncLabPrefSwitchAria(cbGaso);
+  }
+  if (cbQuick) {
+    cbQuick.checked = p.quickLabOutput;
+    _syncLabPrefSwitchAria(cbQuick);
   }
   backdrop.classList.add('open');
   backdrop.setAttribute('aria-hidden', 'false');
@@ -322,12 +330,15 @@ function closeLabDisplayPrefsModal() {
 function onLabDisplayPrefsChanged() {
   var cbBh = document.getElementById('lab-pref-bh-extended');
   var cbGaso = document.getElementById('lab-pref-gaso-extended');
+  var cbQuick = document.getElementById('lab-pref-quick-output');
   setLabOutputPrefs({
     showBhExtendedLine: cbBh ? cbBh.checked : false,
     hideGasoAdvInterp: cbGaso ? !cbGaso.checked : false,
+    quickLabOutput: cbQuick ? cbQuick.checked : false,
   });
   _syncLabPrefSwitchAria(cbBh);
   _syncLabPrefSwitchAria(cbGaso);
+  _syncLabPrefSwitchAria(cbQuick);
   rt.rerenderParsedLabOutputAfterPrefsChange();
 }
 
@@ -1330,17 +1341,36 @@ function mountTendCardSortables() {
   });
 }
 
-function renderTendencias() {
+function renderTendencias(opts) {
+  opts = opts || {};
+  var onReady = typeof opts.onReady === 'function' ? opts.onReady : null;
   var container = document.getElementById('tendencias-container');
-  if (!container) return;
-  ensureTendenciasClickDelegation();
-  try {
-    renderTendenciasBody(container);
-  } catch (err) {
-    console.error('[R+ Tendencias] Error al renderizar:', err);
-    container.innerHTML =
-      '<p class="tend-empty">No se pudieron cargar las tendencias. Revisa la consola (F12) o recarga la app.</p>';
+  if (!container) {
+    if (onReady) onReady();
+    return;
   }
+  ensureTendenciasClickDelegation();
+
+  var paint = function () {
+    try {
+      renderTendenciasBody(container);
+    } catch (err) {
+      console.error('[R+ Tendencias] Error al renderizar:', err);
+      container.innerHTML =
+        '<p class="tend-empty">No se pudieron cargar las tendencias. Revisa la consola (F12) o recarga la app.</p>';
+    }
+    if (onReady) onReady();
+  };
+
+  if (opts.syncHeavy) {
+    paint();
+    return;
+  }
+
+  if (!container.querySelector('.tend-grid, .tend-toolbar, .tend-empty')) {
+    container.innerHTML = '<p class="tend-empty tend-loading">Cargando tendencias…</p>';
+  }
+  scheduleAfterPaint(paint);
 }
 
 function renderTendenciasBody(container) {

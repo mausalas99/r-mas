@@ -3,6 +3,17 @@
 var STORAGE_KEY = 'rpc-manejo-custom-protocols';
 var OVERRIDES_KEY = 'rpc-manejo-protocol-overrides';
 
+/** @type {Record<string, object>|null} */
+var overridesCache = null;
+/** @type {object[]|null} */
+var customProtocolsCache = null;
+
+function getProtocolOverridesMap() {
+  if (overridesCache) return overridesCache;
+  overridesCache = loadProtocolOverridesFromStorage();
+  return overridesCache;
+}
+
 function safeParseArray(raw) {
   try {
     var parsed = JSON.parse(raw || '[]');
@@ -13,17 +24,20 @@ function safeParseArray(raw) {
 }
 
 export function loadCustomProtocols() {
+  if (customProtocolsCache) return customProtocolsCache.slice();
   try {
-    return safeParseArray(localStorage.getItem(STORAGE_KEY));
+    customProtocolsCache = safeParseArray(localStorage.getItem(STORAGE_KEY));
   } catch (_e2) {
-    return [];
+    customProtocolsCache = [];
   }
+  return customProtocolsCache.slice();
 }
 
 /** @param {object[]} entries */
 export function saveCustomProtocols(entries) {
+  customProtocolsCache = Array.isArray(entries) ? entries.slice() : [];
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries || []));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(customProtocolsCache));
   } catch (_e3) {}
 }
 
@@ -73,7 +87,7 @@ function safeParseObject(raw) {
   }
 }
 
-export function loadProtocolOverrides() {
+function loadProtocolOverridesFromStorage() {
   try {
     return safeParseObject(localStorage.getItem(OVERRIDES_KEY));
   } catch (_e5) {
@@ -81,10 +95,15 @@ export function loadProtocolOverrides() {
   }
 }
 
+export function loadProtocolOverrides() {
+  var cached = getProtocolOverridesMap();
+  return Object.assign({}, cached);
+}
+
 /** @param {string} id @param {object} patch */
 export function saveProtocolOverride(id, patch) {
   if (!id) return;
-  var all = loadProtocolOverrides();
+  var all = getProtocolOverridesMap();
   all[id] = Object.assign({}, all[id] || {}, patch, { id: id });
   try {
     localStorage.setItem(OVERRIDES_KEY, JSON.stringify(all));
@@ -93,7 +112,7 @@ export function saveProtocolOverride(id, patch) {
 
 export function removeProtocolOverride(id) {
   if (!id) return;
-  var all = loadProtocolOverrides();
+  var all = getProtocolOverridesMap();
   delete all[id];
   try {
     localStorage.setItem(OVERRIDES_KEY, JSON.stringify(all));
@@ -103,11 +122,11 @@ export function removeProtocolOverride(id) {
 /** @param {object} entry */
 export function applyEntryOverrides(entry) {
   if (!entry || entry.isCustom) return entry;
-  var o = loadProtocolOverrides()[entry.id];
+  var o = getProtocolOverridesMap()[entry.id];
   if (!o) return entry;
   return Object.assign({}, entry, o);
 }
 
 export function hasProtocolOverride(id) {
-  return !!loadProtocolOverrides()[id];
+  return !!getProtocolOverridesMap()[id];
 }

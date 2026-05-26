@@ -117,11 +117,11 @@ function normalizeChunkText(text) {
 function extractRisKeysFromSummary(risSummary, letter) {
   var keys = [];
   var seen = Object.create(null);
-  var re = new RegExp(String(letter).toUpperCase() + ':\\s*([A-Z0-9/,.\s\\-]+)', 'gi');
+  var re = new RegExp(String(letter).toUpperCase() + ':\\s*([A-Z0-9/,\\s\\-]+)', 'gi');
   var m;
   while ((m = re.exec(String(risSummary || '')))) {
     m[1]
-      .split(/[,/|]/)
+      .split(/[,|]/)
       .map(function (tok) {
         return tok.replace(/\s+/g, ' ').trim();
       })
@@ -282,6 +282,27 @@ function isSetWithinMaxAge(set, maxDays, referenceMs) {
   return ref - setMs <= maxDays * 86400000;
 }
 
+function groupCultivoRows(rows) {
+  var groups = [];
+  var buf = [];
+
+  function flush() {
+    if (buf.length) {
+      groups.push(buf.join('\n'));
+      buf = [];
+    }
+  }
+
+  (rows || []).forEach(function (row) {
+    var s = String(row || '').trim();
+    if (!s) return;
+    if (buf.length && isCultureTableHeaderLine(s)) flush();
+    buf.push(s);
+  });
+  flush();
+  return groups;
+}
+
 function collectIsolatesFromHistory(history, opts) {
   var maxDays = opts.maxAgeDays == null ? 14 : opts.maxAgeDays;
   var referenceMs = opts.referenceMs;
@@ -292,7 +313,7 @@ function collectIsolatesFromHistory(history, opts) {
     if (!set || !set.resLabs || !set.resLabs.length) return;
     var cult = splitResLabsByTipo(set.resLabs).cultivo;
     var setIsolates = [];
-    cult.forEach(function (chunk) {
+    groupCultivoRows(cult).forEach(function (chunk) {
       isolatesFromCultivoChunk(chunk, set).forEach(function (iso) {
         setIsolates.push(iso);
       });

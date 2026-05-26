@@ -172,6 +172,16 @@ html.dark .settings-theme-btn.active { background: var(--action); color: #fff; }
   font-size: 11px; color: var(--text-muted); line-height: 1.4; margin: 0;
 }
 .lan-connection-panel-root { display: flex; flex-direction: column; gap: 10px; }
+.lan-disconnect-banner-pref {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+  line-height: 1.35;
+}
+.lan-disconnect-banner-pref input { flex-shrink: 0; margin-top: 2px; }
 .lan-connection-panel-root .lan-rooms-panel ~ .lan-rooms-panel { display: none !important; }
 .lan-connect-card {
   border: 1px solid var(--border); border-radius: 10px; background: var(--surface);

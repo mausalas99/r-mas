@@ -109,8 +109,13 @@ const TARGETS = {
   },
   sala_soap:         { appTab: 'nota', innerTab: 'notas',   selector: '#btn-soap-template',  focus: false,
                        spotlightClass: 'tour-spotlight-soap' },
-  estado_actual:     { appTab: 'nota', selector: '#btn-estado-actual',                      focus: false,
-                       spotlightClass: 'tour-spotlight-soap' },
+  estado_actual: {
+    appTab: 'nota',
+    innerTab: 'estadoActual',
+    selector: '#itab-estadoActual',
+    focus: false,
+    spotlightClass: 'tour-spotlight-action',
+  },
   sala_med:          { appTab: 'med',  selector: '#med-input',                               focus: false },
   listado_problemas: {
     appTab: 'nota',

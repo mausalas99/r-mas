@@ -6,10 +6,21 @@ import { toSomeUpper } from './electrolyte-manejo.mjs';
 import {
   DEXTROSE_5,
   DEXTROSE_5_FULL,
+  DEXTROSE_5_GRAMS_PER_LITER,
+  DEXTROSE_50,
+  DEXTROSE_50_FULL,
+  DEXTROSE_5_IN_NACL_045,
+  DEXTROSE_5_IN_NACL_045_FULL,
+  DEXTROSE_5_IN_NACL_09,
+  DEXTROSE_5_IN_NACL_09_FULL,
+  NACL_045,
+  NACL_045_FULL,
   NACL_09,
   NACL_09_FULL,
   normalizeFluidTerms,
 } from './manejo-fluid-terms.mjs';
+import { adaIvFluidGuidance } from './manejo-cad-ehh.mjs';
+import { calcInsulinUnitsPerHour } from './manejo-calculators.mjs';
 import { insulinUnitsPerHourForGlucose } from './manejo-insulin-pump-algorithms.mjs';
 
 /** @typedef {{ medication: string, route: string, doseValue: number|string, doseUnit: string, dilution: string, frequency: string, infusionRateMlHr: number|null|string, comments: string, requiresDilution?: boolean }} SomeOrderLike */
@@ -219,59 +230,37 @@ function normalizeSomeOrder(order) {
  * @param {{ na?: number|null, k?: number|null, glucoseMgDl?: number|null }} labs
  */
 export function suggestIvFluidCarrier(labs) {
-  var L = labs || {};
-  var na = L.na != null && isFinite(Number(L.na)) ? Number(L.na) : null;
-  var glu = L.glucoseMgDl != null && isFinite(Number(L.glucoseMgDl)) ? Number(L.glucoseMgDl) : null;
-  var warnings = [];
-  var useDextrose = false;
-  var bagLabel = NACL_09_FULL + ' (1000 ML)';
-
-  if (na != null && na >= 145) {
-    warnings.push(
-      'Na ' + na + ' mEq/L: evitar carga adicional de sodio; preferir ' + DEXTROSE_5 + ' si la glucosa lo permite.'
-    );
-    if (glu != null && glu < 250) {
-      useDextrose = true;
-      bagLabel = DEXTROSE_5_FULL + ' (1000 ML)';
-    } else {
-      warnings.push(
-        'Hiperglucemia concurrente: mantener ' +
-          NACL_09 +
-          ' con vigilancia estrecha de Na; reevaluar diluyente al corregir glucosa.'
-      );
-    }
-  }
-
-  if (glu != null && glu >= 250 && !useDextrose) {
-    warnings.push(
-      'Glucosa ' + glu + ' mg/dL: priorizar corrección con insulina IV; agregar dextrosa a fluidos cuando glucosa ~250 mg/dL.'
-    );
-  }
-
-  if (L.k != null && L.k >= 5.2) {
-    warnings.push('K ' + L.k + ' mEq/L: no suplementar potasio en fluidos hasta < 5.2 mEq/L.');
-  }
-
+  var guidance = adaIvFluidGuidance(labs || {});
+  var bagLabel = guidance.maintenanceFluidFull + ' (1000 ML)';
   return {
-    carrier: useDextrose ? DEXTROSE_5 : NACL_09,
+    carrier: guidance.maintenanceFluid,
     bagLabel: bagLabel,
     dilutionPhrase: 'EN ' + bagLabel,
-    warnings: warnings,
-    useDextrose: useDextrose,
+    warnings: [guidance.rationale].concat(guidance.warnings),
+    useDextrose: false,
+    correctedNa: guidance.correctedNa,
+    measuredNa: guidance.measuredNa,
+    maintenanceFluid: guidance.maintenanceFluid,
+    rationale: guidance.rationale,
   };
 }
 
 /** @param {'cad'|'ehh'} mode @param {number|null} weightKg @param {{ na?: number, k?: number, glucoseMgDl?: number }} labs */
 export function cadEhhFluidSomeOrder(mode, weightKg, labs) {
+  var guidance = adaIvFluidGuidance(labs || {});
   var carrier = suggestIvFluidCarrier(labs);
   var comments = carrier.warnings.slice();
+  var maint =
+    guidance.maintenanceFluid === 'NaCl 0.45%'
+      ? NACL_045
+      : NACL_09;
 
   if (mode === 'ehh') {
     var mlHr = weightKg != null && isFinite(weightKg) ? Math.round(weightKg * 17.5) : null;
     comments.unshift('CORREGIR OSMOLALIDAD < 3 MOSM/KG/H');
     return normalizeSomeOrder(
       buildSomeOrder({
-        medication: NACL_09,
+        medication: maint,
         doseValue: mlHr != null ? String(mlHr) : '15–20',
         doseUnit: mlHr != null ? 'ML/H' : 'ML/KG/H',
         route: 'IV',
@@ -284,7 +273,11 @@ export function cadEhhFluidSomeOrder(mode, weightKg, labs) {
   }
 
   comments.unshift(
-    'SI NO HAY SHOCK. CONTINUAR NaCl 0.45% O NaCl 0.9%; REPOSICIÓN DE DÉFICIT EN 24–48 H'
+    'PRIMERA HORA: 1 L ' +
+      NACL_09 +
+      '. DESPUÉS: ' +
+      maint +
+      ' SI NO HAY SHOCK; REPOSICIÓN DE DÉFICIT EN 24–48 H (ADA)'
   );
   return normalizeSomeOrder(
     buildSomeOrder({
@@ -408,6 +401,102 @@ export function protocolToSomeOrder(entry, calcResult) {
   }
 
   return normalizeSomeOrder(base);
+}
+
+/**
+ * Al 250 mg/dL: qué agregar al carrier de mantenimiento para glucosado 5%.
+ * Regla habitual: 100 mL de dextrosa 50% por litro de solución (= 50 g/L).
+ * @param {{ na?: number|null, glucoseMgDl?: number|null }} labs
+ */
+export function cadGlucose250MaintenanceFluid(labs) {
+  var guidance = adaIvFluidGuidance(labs || {});
+  var isHypoNa = guidance.maintenanceFluid === 'NaCl 0.9%';
+  var carrierFull = isHypoNa ? NACL_09_FULL : NACL_045_FULL;
+  var carrierShort = isHypoNa ? NACL_09 : NACL_045;
+  var resultingSolution = isHypoNa ? DEXTROSE_5_IN_NACL_09 : DEXTROSE_5_IN_NACL_045;
+  var bagMl = 1000;
+  var d50Ml = 100;
+
+  return {
+    medication: DEXTROSE_50,
+    doseValue: String(d50Ml),
+    doseUnit: 'ML',
+    dilution:
+      'AGREGAR A ' +
+      bagMl +
+      ' ML DE ' +
+      carrierFull +
+      ' (= ' +
+      DEXTROSE_5_GRAMS_PER_LITER +
+      ' G/L · GLUCOSADO 5%)',
+    carrierNote:
+      'A ' +
+      bagMl +
+      ' ML DE ' +
+      carrierShort +
+      ': AGREGAR ' +
+      d50Ml +
+      ' ML DE DEXTROSA 50% (' +
+      DEXTROSE_5_GRAMS_PER_LITER +
+      ' G DE DEXTROSA → ' +
+      resultingSolution +
+      ').',
+    resultingSolution: resultingSolution,
+  };
+}
+
+/** @param {number|null} weightKg @param {{ na?: number, glucoseMgDl?: number, ketonesPositive?: boolean }} labs */
+export function cadGlucose250DextrosePlanOrder(weightKg, labs) {
+  var guidance = adaIvFluidGuidance(labs || {});
+  var fluid = cadGlucose250MaintenanceFluid(labs);
+  var insulinComment = 'INSULINA REGULAR 0.05 U/kg/h';
+  var insulinDose = '';
+  var insulinUnit = 'U/KG/H';
+  if (weightKg != null && isFinite(Number(weightKg))) {
+    var calc = calcInsulinUnitsPerHour({
+      weightKg: Number(weightKg),
+      unitsPerKgPerHour: 0.05,
+    });
+    insulinComment = calc.copyLine;
+    insulinDose = String(calc.unitsPerHour);
+    insulinUnit = 'U/H';
+  } else {
+    insulinDose = '0.05';
+  }
+  return normalizeSomeOrder(
+    buildSomeOrder({
+      medication: fluid.medication,
+      doseValue: fluid.doseValue,
+      doseUnit: fluid.doseUnit,
+      route: 'IV',
+      dilution: fluid.dilution,
+      frequency: 'AL GLUCOSA CAPILAR 250 MG/DL',
+      comments: [
+        'DISPARADOR: GLUCOMETRÍA CAPILAR 250 MG/DL',
+        fluid.carrierNote,
+        insulinComment + ' · BOMBA EN 100 ML DE ' + NACL_09,
+        'MANTENER INSULINA IV HASTA RESOLVER CETOSIS',
+        guidance.rationale,
+      ]
+        .filter(Boolean)
+        .join('; '),
+    })
+  );
+}
+
+/** @param {number|null} weightKg @param {{ phase?: string, text?: string, medication?: string }} item */
+export function cadInsulinStartSomeOrder(weightKg, item) {
+  var order = checklistItemToSomeOrder(item);
+  if (weightKg != null && isFinite(Number(weightKg))) {
+    var calc = calcInsulinUnitsPerHour({
+      weightKg: Number(weightKg),
+      unitsPerKgPerHour: 0.1,
+    });
+    order.doseValue = String(calc.unitsPerHour);
+    order.doseUnit = 'U/H';
+    order.comments = [calc.copyLine, order.comments].filter(Boolean).join('; ');
+  }
+  return normalizeSomeOrder(order);
 }
 
 /** @param {{ phase?: string, text?: string, medication?: string }} item */

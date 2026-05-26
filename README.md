@@ -25,9 +25,18 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 ---
 
-**Versión estable actual:** [6.1.0](https://github.com/mausalas99/r-mas/releases/tag/v6.1.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.2.0](https://github.com/mausalas99/r-mas/releases/tag/v6.2.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+## R+ 6.2.0 (Estado Actual estructurado — monitoreo en Sala)
+
+- **Estado Actual (Sala)** — Nueva pestaña en el expediente: registro de SV, glucometrías e I/O; snapshot, historial, gráficas de tendencia y texto clínico copiable; estado clínico colapsable y propuestas de medicación desde SOAP.
+- **Laboratorio** — **Salida rápida** en Vista de laboratorio: procesa y formatea SOME sin necesidad de tener al paciente en la lista (no guarda historial).
+- **Expediente más fluido** — Caché al volver a pestañas, carga diferida de paneles pesados y precarga al pasar el mouse.
+- **Correcciones** — Layout de Clínico/Manejo; SV alterados sin falsos positivos en campos vacíos.
+
+Notas: `docs/RELEASE_NOTES_6.2.0.txt`.
 
 ## R+ 6.1.0 (Manejo clínico completo — Infusiones, ATB y CAD/EHH)
 
@@ -332,7 +341,8 @@ Notas extendidas en el repo: docs/RELEASE_NOTES_2.0.0.txt (texto plano).
 ## Funcionalidades
 
 - **Laboratoriazo** — Interpreta resultados de laboratorio y genera diagramas visuales: Biometría Hemática, Coagulación, Diagrama de Gamble, Química Sanguínea, Gasometría y más. Historial por paciente y **tendencias** con mini-gráficas.
-- **Expediente** — En vista Normal (pestañas completas): **Paciente**, **Clínico**, **Resultados** y **Salida**. En **Modo Pase** el tablero de ronda sigue igual; al abrir un bloque entras al expediente con la misma organización de cuatro pestañas.
+- **Expediente** — En vista Normal: **Paciente**, **Clínico**, **Resultados** y **Salida** (en **Sala** también **Estado actual** entre Clínico y Resultados). En **Modo Pase** el tablero de ronda sigue igual; al abrir un bloque entras al expediente con la misma organización de pestañas.
+- **Estado Actual (Sala)** — Monitoreo estructurado: medición, snapshot, balance hídrico, historial, tendencias y texto copiable; integración con medicamentos y LiveSync por sala.
 - **Manejo clínico** — Expediente → Clínico → **Manejo**: **Electrolitos** (alteraciones con SOME), **Infusiones** (infusiones/sedación con calculadoras), **ATB** (catálogo con sugerencias según cultivos) y **CAD/EHH** (checklist ADA con lectura de laboratorio).
 - **Medicamentos** — Receta hospitalaria (TSV), copia desde sistemas tipo SOME, volcado a nota / SOAP y copia al portapapeles.
 - **Nota de Evolución** — Formulario estructurado que genera un archivo `.docx` listo para imprimir, con membrete y formato clínico. **Plantilla SOAP** integrada (Interconsulta).

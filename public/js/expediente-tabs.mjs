@@ -15,7 +15,15 @@ export const GRANULAR_TABS = [
   'recetaHu',
 ];
 
-export const CONSOLIDATED_TABS = ['paciente', 'clinico', 'resultados', 'salida'];
+export const CONSOLIDATED_TABS_SALA = ['paciente', 'clinico', 'estadoActual', 'resultados', 'salida'];
+export const CONSOLIDATED_TABS_INTER = ['paciente', 'clinico', 'resultados', 'salida'];
+
+/** @deprecated alias of CONSOLIDATED_TABS_INTER for backward compatibility */
+export const CONSOLIDATED_TABS = CONSOLIDATED_TABS_INTER;
+
+export function getConsolidatedTabs(settings) {
+  return isModeSala(settings) ? CONSOLIDATED_TABS_SALA : CONSOLIDATED_TABS_INTER;
+}
 
 export const CLINICO_SECTIONS_ALL = ['notas', 'indica', 'manejo'];
 export const CLINICO_SECTIONS_SALA = ['manejo'];
@@ -36,6 +44,7 @@ const GRANULAR_PANE_ORDER = [
   'listado',
   'todo',
   'manejo',
+  'estadoActual',
   'recetaHu',
 ];
 
@@ -43,7 +52,7 @@ let layoutMode = null;
 
 function granularToConsolidatedMap(settings) {
   var sala = isModeSala(settings);
-  return {
+  var map = {
     datos: { tab: 'paciente', section: null },
     todo: { tab: 'paciente', section: null },
     notas: { tab: 'clinico', section: 'notas' },
@@ -54,6 +63,8 @@ function granularToConsolidatedMap(settings) {
     recetaHu: { tab: 'salida', section: sala ? 'recetaHu' : null },
     listado: { tab: sala ? 'salida' : 'paciente', section: sala ? 'listado' : null },
   };
+  if (sala) map.estadoActual = { tab: 'estadoActual', section: null };
+  return map;
 }
 
 function paneMountSpec(granularTab, settings) {
@@ -68,6 +79,7 @@ function paneMountSpec(granularTab, settings) {
     cult: { composite: 'resultados', selector: '.exp-segment-body--resultados' },
     listado: sala ? { composite: 'salida', selector: '.exp-segment-body--salida' } : { composite: null, selector: null },
     recetaHu: { composite: 'salida', selector: '.exp-segment-body--salida' },
+    estadoActual: { composite: null, selector: null },
   };
   return map[granularTab] || null;
 }
@@ -95,6 +107,7 @@ export function consolidatedTabForGranular(granularTab, settings) {
 
 export function migrateGranularInner(granularTab, settings) {
   if (!granularTab) return 'todo';
+  if (granularTab === 'estadoActual' && !isModeSala(settings)) return 'todo';
   var map = granularToConsolidatedMap(settings || {});
   if (map[granularTab]) {
     if (isModeSala(settings) && (granularTab === 'notas' || granularTab === 'indica')) return 'manejo';
@@ -109,6 +122,7 @@ export function defaultGranularForConsolidatedTab(compositeTab, settings) {
   var defaults = {
     paciente: 'todo',
     clinico: sala ? 'manejo' : 'notas',
+    estadoActual: 'estadoActual',
     resultados: 'tend',
     salida: sala ? 'listado' : 'recetaHu',
   };
@@ -116,7 +130,8 @@ export function defaultGranularForConsolidatedTab(compositeTab, settings) {
 }
 
 export function consolidatedInnerTabButtonId(tab, settings) {
-  if (CONSOLIDATED_TABS.includes(tab)) return 'itab-' + tab;
+  var tabs = getConsolidatedTabs(settings || {});
+  if (tabs.includes(tab)) return 'itab-' + tab;
   return 'itab-' + consolidatedTabForGranular(tab, settings);
 }
 
@@ -191,7 +206,7 @@ function mountGranularFlat() {
     pane.classList.remove('exp-segment-panel', 'active');
     if (pane.parentElement !== host) host.appendChild(pane);
   });
-  CONSOLIDATED_TABS.forEach(function (tab) {
+  CONSOLIDATED_TABS_SALA.forEach(function (tab) {
     var composite = compositeEl(tab);
     if (composite) composite.classList.remove('active');
   });
@@ -201,7 +216,7 @@ function mountConsolidatedNested(settings) {
   GRANULAR_PANE_ORDER.forEach(function (tab) {
     mountPaneInComposite(tab, settings);
   });
-  CONSOLIDATED_TABS.forEach(function (tab) {
+  getConsolidatedTabs(settings || {}).forEach(function (tab) {
     var composite = compositeEl(tab);
     if (composite) composite.classList.add('tab-content', 'exp-composite-pane');
   });
@@ -219,6 +234,8 @@ export function syncConsolidatedSegmentBarVisibility(settings) {
   }
   var salidaBar = document.getElementById('exp-segment-salida');
   if (salidaBar) salidaBar.style.display = sala ? '' : 'none';
+  var estadoActualTab = document.getElementById('itab-estadoActual');
+  if (estadoActualTab) estadoActualTab.style.display = sala ? '' : 'none';
 }
 
 export function applyExpedientePaneLayout(consolidated, settings) {
@@ -263,10 +280,12 @@ export function syncConsolidatedSegmentBars(granularTab, settings) {
 
 export function syncConsolidatedPaneVisibility(granularTab, settings) {
   var target = resolveConsolidatedTarget(granularTab, settings);
-  CONSOLIDATED_TABS.forEach(function (tab) {
+  getConsolidatedTabs(settings || {}).forEach(function (tab) {
     var composite = compositeEl(tab);
     if (composite) composite.classList.toggle('active', tab === target.tab);
   });
+  var estadoCompOnlyInter = compositeEl('estadoActual');
+  if (estadoCompOnlyInter && !isModeSala(settings)) estadoCompOnlyInter.classList.remove('active');
   getClinicoSections(settings).forEach(function (section) {
     var pane = paneEl(section);
     if (pane) {

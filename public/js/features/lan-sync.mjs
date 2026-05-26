@@ -18,7 +18,7 @@ import {
   mergeTodoListsById,
   attachTodosMapToPatientEntries,
 } from "../livesync-patient-ids.mjs";
-import { buildLanJoinUrls, parseLanInviteInput } from "../lan-join-link.mjs";
+import { mergePatientMonitoreoFromImported } from "./estado-actual-data.mjs";
 import {
   patients,
   notes,
@@ -34,6 +34,8 @@ import {
 } from "../app-state.mjs";
 
 export const DEFAULT_LAN_TEAM_CODE = "1234";
+/** Tokens opacos de versiones anteriores; el servidor ya usa 1234 por defecto. */
+var LEGACY_RANDOM_LAN_TEAM_CODE_RE = /^[a-f0-9]{32}$/i;
 
 let runtime = {
   showToast() {},
@@ -140,10 +142,64 @@ function rememberLanRoomJoined(roomId, displayName) {
 function isLanSessionConfiguredForRest() {
   try {
     var c = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() : null;
-    return !!(c && String(c.hostUrl || '').trim() && String(c.teamCode || '').trim());
+    return !!(c && String(c.hostUrl || '').trim());
   } catch (_e) {
     return false;
   }
+}
+
+function normalizeStoredLanTeamCode(code) {
+  var t = String(code || '').trim();
+  if (!t || LEGACY_RANDOM_LAN_TEAM_CODE_RE.test(t)) return DEFAULT_LAN_TEAM_CODE;
+  return t;
+}
+
+function persistLanClientConfig(hostUrl, teamCode) {
+  var url = String(hostUrl || '').trim().replace(/\/+$/, '');
+  var code = normalizeStoredLanTeamCode(teamCode);
+  if (!url || !code) return false;
+  var prev = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
+  var prevUrl = String(prev.hostUrl || '').trim().replace(/\/+$/, '');
+  var prevCode = normalizeStoredLanTeamCode(prev.teamCode);
+  var changed = prevUrl !== url || prevCode !== code;
+  storage.saveLanConfig({ hostUrl: url, teamCode: code });
+  lanClient.configure({ hostUrl: url, teamCode: code });
+  if (changed) {
+    try {
+      lanClient.disconnect();
+      lanClient.connectSyncChannel();
+    } catch (_e) {}
+  }
+  return changed;
+}
+
+/** Alinea rpc-lan-config / LanClient antes de REST (p. ej. migrar token legacy → 1234). */
+async function ensureLanClientTeamCodeAligned() {
+  var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
+  var hostUrl = String(cfg.hostUrl || '').trim().replace(/\/+$/, '');
+  var uiRole = typeof storage.getLanUiRole === 'function' ? storage.getLanUiRole() : 'client';
+  if (
+    uiRole === 'host' &&
+    window.electronAPI &&
+    typeof window.electronAPI.getLanEffectiveTeamCode === 'function'
+  ) {
+    return !!(await syncLanSavedTeamCodeWithEffectiveHostCode());
+  }
+  if (!hostUrl) return false;
+  return persistLanClientConfig(hostUrl, cfg.teamCode);
+}
+
+async function lanFetchAuthed(path, opts) {
+  await ensureLanClientTeamCodeAligned();
+  var resp = await lanClient.fetch(path, opts);
+  if (resp.status !== 401) return resp;
+  if (window.electronAPI && typeof window.electronAPI.getLanEffectiveTeamCode === 'function') {
+    await syncLanSavedTeamCodeWithEffectiveHostCode();
+  } else {
+    var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
+    persistLanClientConfig(cfg.hostUrl, DEFAULT_LAN_TEAM_CODE);
+  }
+  return lanClient.fetch(path, opts);
 }
 
 /** En anfitrión Electron: alinea rpc-lan-config con el código efectivo del servidor. */
@@ -165,12 +221,7 @@ async function syncLanSavedTeamCodeWithEffectiveHostCode() {
       hostUrl = String(await window.electronAPI.getLanCandidateBaseUrl() || '').trim().replace(/\/+$/, '');
     } catch (_eUrl) {}
   }
-  storage.saveLanConfig({ hostUrl: hostUrl, teamCode: info.code });
-  lanClient.configure({ hostUrl: hostUrl, teamCode: info.code });
-  try {
-    lanClient.disconnect();
-    lanClient.connectSyncChannel();
-  } catch (_e) {}
+  persistLanClientConfig(hostUrl || String(cfg.hostUrl || '').trim().replace(/\/+$/, ''), info.code);
   return true;
 }
 
@@ -193,7 +244,7 @@ async function resolveLanTeamCodeForShare() {
   var teamInput = document.getElementById('lan-input-team-code');
   var fromInput = teamInput && teamInput.value != null ? String(teamInput.value).trim() : '';
   if (fromInput) return fromInput;
-  if (cfg.teamCode) return String(cfg.teamCode);
+  if (cfg.teamCode) return normalizeStoredLanTeamCode(cfg.teamCode);
   return DEFAULT_LAN_TEAM_CODE;
 }
 function appendLanKnownSessionsSection(root) {
@@ -273,22 +324,80 @@ function appendLanKnownSessionsSection(root) {
 }
 function initLanClientFromStorage() {
   var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() : null;
-  if (cfg && cfg.hostUrl && cfg.teamCode) {
-    lanClient.configure(cfg);
-    try { lanClient.connectSyncChannel(); } catch (_e) {}
-  }
+  if (!cfg || !String(cfg.hostUrl || '').trim()) return;
+  persistLanClientConfig(cfg.hostUrl, cfg.teamCode);
+  try {
+    lanClient.connectSyncChannel();
+  } catch (_e) {}
 }
 initLanClientFromStorage();
-lanClient.addEventListener('lan-status', function (ev) {
+
+var LAN_DISCONNECT_BANNER_MSG =
+  'Sin conexión al host LAN. LiveSync (salas y relay) puede estar limitado hasta reconectar.';
+var _lanLastConnected = true;
+
+function readLanHideDisconnectBanner() {
+  return typeof storage.getLanHideDisconnectBanner === 'function' && storage.getLanHideDisconnectBanner();
+}
+
+function updateLanConnectionBanner(connected) {
+  _lanLastConnected = !!connected;
   var el = document.getElementById('lan-connection-banner');
   if (!el) return;
-  if (ev.detail && ev.detail.connected) {
-    el.style.display = 'none';
-    el.textContent = '';
-  } else {
-    el.style.display = 'block';
-    el.textContent = 'Sin conexión al host LAN. LiveSync (salas y relay) puede estar limitado hasta reconectar.';
+  var textEl = document.getElementById('lan-connection-banner-text');
+  if (connected || readLanHideDisconnectBanner()) {
+    el.hidden = true;
+    return;
   }
+  if (textEl) textEl.textContent = LAN_DISCONNECT_BANNER_MSG;
+  el.hidden = false;
+}
+
+function syncLanDisconnectBannerPrefUi() {
+  var cb = document.getElementById('lan-hide-disconnect-banner');
+  if (cb) cb.checked = readLanHideDisconnectBanner();
+}
+
+function dismissLanDisconnectBanner() {
+  if (typeof storage.saveLanHideDisconnectBanner === 'function') {
+    storage.saveLanHideDisconnectBanner(true);
+  }
+  updateLanConnectionBanner(_lanLastConnected);
+  syncLanDisconnectBannerPrefUi();
+}
+
+function setLanHideDisconnectBannerFromUi(hide) {
+  if (typeof storage.saveLanHideDisconnectBanner === 'function') {
+    storage.saveLanHideDisconnectBanner(!!hide);
+  }
+  updateLanConnectionBanner(_lanLastConnected);
+}
+
+function appendLanDisconnectBannerPref(root) {
+  if (!root) return;
+  var wrap = document.createElement('div');
+  wrap.className = 'lan-connect-field';
+  wrap.style.marginTop = '6px';
+  var label = document.createElement('label');
+  label.className = 'lan-disconnect-banner-pref';
+  label.setAttribute('for', 'lan-hide-disconnect-banner');
+  var cb = document.createElement('input');
+  cb.type = 'checkbox';
+  cb.id = 'lan-hide-disconnect-banner';
+  cb.checked = readLanHideDisconnectBanner();
+  cb.onchange = function () {
+    setLanHideDisconnectBannerFromUi(cb.checked);
+  };
+  var span = document.createElement('span');
+  span.textContent = 'Ocultar la franja de aviso cuando se pierde la conexión LAN';
+  label.appendChild(cb);
+  label.appendChild(span);
+  wrap.appendChild(label);
+  root.appendChild(wrap);
+}
+
+lanClient.addEventListener('lan-status', function (ev) {
+  updateLanConnectionBanner(!!(ev.detail && ev.detail.connected));
 });
 lanClient.addEventListener('lan-patch', function () {
   if (typeof renderLanPanel === 'function') renderLanPanel();
@@ -389,6 +498,7 @@ function applyLanPatientEntries(entries) {
       if (entry.medReceta) medRecetaByPatient[existing.id] = entry.medReceta;
       else delete medRecetaByPatient[existing.id];
       if (entry.listadoProblemas) listadoProblemas[existing.id] = entry.listadoProblemas;
+      mergePatientMonitoreoFromImported(existing, entry.patient);
       saveEntryTodosOnLocalPatient(existing.id, entry);
       updated += 1;
     } else {
@@ -400,7 +510,7 @@ function applyLanPatientEntries(entries) {
         });
       var newId;
       if (remoteId && !idTaken) {
-        patients.unshift({
+        var newPat = {
           id: remoteId,
           nombre: runtime.ensureUniquePatientName(entry.patient.nombre || 'PACIENTE SIN NOMBRE'),
           area: entry.patient.area || '',
@@ -414,7 +524,9 @@ function applyLanPatientEntries(entries) {
           sexo: entry.patient.sexo || 'F',
           registro: entry.patient.registro || '',
           fromLab: !!entry.patient.fromLab,
-        });
+        };
+        mergePatientMonitoreoFromImported(newPat, entry.patient);
+        patients.unshift(newPat);
         notes[remoteId] = entry.note || {};
         indicaciones[remoteId] = entry.indicaciones || {};
         labHistory[remoteId] = Array.isArray(entry.labHistory) ? entry.labHistory : [];
@@ -996,6 +1108,7 @@ async function renderLanPanelOnce() {
     }
 
     root.appendChild(card);
+    appendLanDisconnectBannerPref(root);
     if (uiRole === 'host' && !String(cfg.hostUrl || '').trim()) {
       resolveLanHostUrlForShare().then(function (u) {
         if (lanPanelRenderStale(gen)) return;
@@ -1006,9 +1119,10 @@ async function renderLanPanelOnce() {
     return;
   }
 
+  await ensureLanClientTeamCodeAligned();
   var roomsFetch = { ok: false, rooms: [], httpStatus: 0, errorDetail: '', networkError: false };
   try {
-    var respRooms = await lanClient.fetch('/api/lan/v1/rooms');
+    var respRooms = await lanFetchAuthed('/api/lan/v1/rooms');
     if (lanPanelRenderStale(gen)) return;
     if (!respRooms.ok) {
       roomsFetch.httpStatus = respRooms.status;
@@ -1218,6 +1332,7 @@ async function renderLanPanelOnce() {
   }
   if (lanPanelRenderStale(gen)) return;
   root.appendChild(roomsCard);
+  appendLanDisconnectBannerPref(root);
   purgeDuplicateLanRoomsPanels(root);
 }
 
@@ -1515,9 +1630,10 @@ function joinLanRoom(roomId, displayName) {
 
 async function createLanRoomFromUi() {
   if (!isLanSessionConfiguredForRest()) {
-    runtime.showToast('Falta dirección o código LAN. Desconecta, escribe ambos y guarda de nuevo.', 'error');
+    runtime.showToast('Falta la dirección LAN. Configura la conexión en ⇄ y vuelve a intentar.', 'error');
     return;
   }
+  await ensureLanClientTeamCodeAligned();
   var input = document.getElementById('lan-input-room-name');
   var displayName = String(input && input.value ? input.value : '').trim();
   if (!displayName) {
@@ -1526,7 +1642,7 @@ async function createLanRoomFromUi() {
   }
   var resp;
   try {
-    resp = await lanClient.fetch('/api/lan/v1/rooms', {
+    resp = await lanFetchAuthed('/api/lan/v1/rooms', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ displayName: displayName })
@@ -1556,6 +1672,7 @@ async function deleteLanRoom(roomId) {
     runtime.showToast('Falta configuración LAN para eliminar salas.', 'error');
     return;
   }
+  await ensureLanClientTeamCodeAligned();
   var id = String(roomId || '').trim();
   if (!id) return;
   if (activeLiveSyncRoomId === id) {
@@ -1563,7 +1680,7 @@ async function deleteLanRoom(roomId) {
   }
   var resp;
   try {
-    resp = await lanClient.fetch('/api/lan/v1/rooms/' + encodeURIComponent(id), { method: 'DELETE' });
+    resp = await lanFetchAuthed('/api/lan/v1/rooms/' + encodeURIComponent(id), { method: 'DELETE' });
   } catch (_e) {
     runtime.showToast('No se pudo eliminar la sala', 'error');
     return;
@@ -1741,6 +1858,8 @@ export const windowHandlers = {
   saveLanHostTeamCodeFromUi,
   resetLanSquadHostStateFromUi,
   dismissLanHostFirstTimeHint,
+  dismissLanDisconnectBanner,
+  setLanHideDisconnectBannerFromUi,
   joinLanRoom,
   joinLanFromInviteUi,
   createLanRoomFromUi,

@@ -2,6 +2,7 @@
 
 import { compareIso } from './live-sync-room.mjs';
 import { mergeTodoListsById } from './livesync-patient-ids.mjs';
+import { mergeMonitoreo } from './features/estado-actual-data.mjs';
 
 export function isDemoPatientId(patientId) {
   return String(patientId || '').indexOf('demo-') === 0;
@@ -59,6 +60,45 @@ function medRecetaTimestamp(med) {
   return docTimestamp(med.fecha, med.hora);
 }
 
+/**
+ * Timestamp más reciente del bloque Estado actual / monitoreo para sync LWW (historial + texto guardado).
+ * @param {unknown} monitoreo
+ */
+export function monitoreoUpdatedAt(monitoreo) {
+  if (!monitoreo || typeof monitoreo !== 'object') return '';
+  let best = '';
+  /** @type {any} */
+  const m = monitoreo;
+  const tg = m.textoGuardado && typeof m.textoGuardado === 'object' ? m.textoGuardado : null;
+  if (tg != null && tg.savedAt != null && String(tg.savedAt).trim()) {
+    const s = String(tg.savedAt);
+    if (compareIso(s, best) > 0) best = s;
+  }
+  const hist = Array.isArray(m.historial) ? m.historial : [];
+  for (let i = 0; i < hist.length; i += 1) {
+    const row = hist[i];
+    if (!row || typeof row !== 'object') continue;
+    const ra =
+      /** @type {any} */ (row).recordedAt != null ? String(/** @type {any} */ (row).recordedAt) : '';
+    if (ra && compareIso(ra, best) > 0) best = ra;
+  }
+  return best;
+}
+
+/** @param {unknown} monitoreo */
+function monitoreoHasLanPayload(monitoreo) {
+  if (!monitoreo || typeof monitoreo !== 'object') return false;
+  /** @type {any} */
+  const m = monitoreo;
+  const hist = Array.isArray(m.historial) ? m.historial : [];
+  if (hist.length > 0) return true;
+  const tg = m.textoGuardado && typeof m.textoGuardado === 'object' ? m.textoGuardado : null;
+  if (!tg) return false;
+  if (tg.savedAt != null && String(tg.savedAt).trim()) return true;
+  if (String(tg.text || '').trim()) return true;
+  return false;
+}
+
 /** @param {object} entry */
 export function entryUpdatedAt(entry) {
   if (!entry) return '';
@@ -69,6 +109,7 @@ export function entryUpdatedAt(entry) {
     noteTimestamp(entry.indicaciones),
     medRecetaTimestamp(entry.medReceta),
     listadoTimestamp(entry.listadoProblemas),
+    monitoreoUpdatedAt(p.monitoreo),
   ];
   const labs = Array.isArray(entry.labHistory) ? entry.labHistory : [];
   for (let i = 0; i < labs.length; i += 1) {
@@ -191,6 +232,20 @@ export function mergePatientEntry(a, b) {
         ? { ...b.medReceta }
         : null;
 
+  const monOlder = second.patient?.monitoreo;
+  const monNewer = first.patient?.monitoreo;
+  const payOlder = monitoreoHasLanPayload(monOlder);
+  const payNewer = monitoreoHasLanPayload(monNewer);
+  if (payOlder && payNewer) {
+    patient.monitoreo = mergeMonitoreo(monOlder, monNewer);
+  } else if (payNewer && monNewer) {
+    patient.monitoreo = structuredClone(monNewer);
+  } else if (payOlder && monOlder) {
+    patient.monitoreo = structuredClone(monOlder);
+  } else {
+    delete patient.monitoreo;
+  }
+
   return {
     patient,
     note,
@@ -202,9 +257,17 @@ export function mergePatientEntry(a, b) {
   };
 }
 
-function cloneEntry(entry) {
+/** @param {object} entry */
+export function cloneEntry(entry) {
+  const patRaw = entry.patient || {};
+  const patient =
+    typeof patRaw === 'object' && patRaw != null ? { ...patRaw } : /** @type {any} */ ({});
+  const monSrc = patient.monitoreo;
+  if (monSrc != null && typeof monSrc === 'object') {
+    patient.monitoreo = structuredClone(monSrc);
+  }
   return {
-    patient: { ...(entry.patient || {}) },
+    patient,
     note: { ...(entry.note || {}) },
     indicaciones: { ...(entry.indicaciones || {}) },
     labHistory: Array.isArray(entry.labHistory) ? entry.labHistory.map((s) => ({ ...s })) : [],

@@ -11,9 +11,12 @@ import {
   classifyMedicationSoapCategory,
   incrementMedItemsDiaTratamiento,
 } from "../med-receta-core.mjs";
-import { medRecetaByPatient, medNotaSelectionByPatient, notes, saveState } from "../app-state.mjs";
+import { medRecetaByPatient, medNotaSelectionByPatient, notes, patients, saveState } from "../app-state.mjs";
+import { isModeSala } from "../mode-features.mjs";
 import { isPaseMode } from "./chrome.mjs";
 import { mergeSoapMedField, openSOAPModalDirect } from "./soap-estado.mjs";
+import { ensureMonitoreo } from "./estado-actual-data.mjs";
+import { applyRecetaProposal, bucketsFromRecetaItems } from "./estado-actual-meds.mjs";
 import { renderNoteForm } from "./notes-indicaciones.mjs";
 import { safeAttrJsString } from "./lab-panel.mjs";
 import { openPaseSectionInNormal, renderPaseBoard } from "./pase-board.mjs";
@@ -21,12 +24,17 @@ import { openPaseSectionInNormal, renderPaseBoard } from "./pase-board.mjs";
 /** @type {{
  *   getActiveId(): string|null,
  *   showToast(msg: string, type?: string): void,
+ *   getSettings(): Record<string, unknown>,
+ *   navigateToEstadoActualPanel?(): void,
  * }} */
 let rt = {
   getActiveId() {
     return null;
   },
   showToast() {},
+  getSettings() {
+    return {};
+  },
 };
 
 export function registerMedicationsRuntime(partial) {
@@ -243,44 +251,52 @@ export function mediLlevarASOAP() {
     rt.showToast("Marca «SOAP» en al menos un medicamento de la receta", "error");
     return;
   }
-  var buckets = { analgesia: [], abx: [], antihta: [], vasop: [], otros: [] };
-  if (block && block.items) {
-    block.items.forEach(function (it) {
-      if (!sel[it.id] || it.suspendido) return;
-      var cat = classifyMedicationSoapCategory(it.nombreRaw);
-      buckets[cat].push(medInstructionFragmentForSoap(it));
-    });
-  }
-  var otrosN = buckets.otros.length;
-  buckets.otros.forEach(function (t) {
-    buckets.abx.push(t);
+  var buckets = bucketsFromRecetaItems(block ? block.items : [], sel, classifyMedicationSoapCategory);
+  var hasBuckets = ["analgesia", "abx", "antihta", "vasop"].some(function (k) {
+    return buckets[k] && String(buckets[k]).trim();
   });
-  if (
-    !buckets.analgesia.length &&
-    !buckets.abx.length &&
-    !buckets.antihta.length &&
-    !buckets.vasop.length
-  ) {
+  if (!hasBuckets) {
     rt.showToast("No quedó nada que volcar", "error");
     return;
   }
-  buckets.analgesia.forEach(function (t) {
-    mergeSoapMedField("soap-analgesia", t);
-  });
-  buckets.abx.forEach(function (t) {
-    mergeSoapMedField("soap-abx", t);
-  });
-  buckets.antihta.forEach(function (t) {
-    mergeSoapMedField("soap-antihta", t);
-  });
-  buckets.vasop.forEach(function (t) {
-    mergeSoapMedField("soap-vasop", t);
+  if (isModeSala(rt.getSettings())) {
+    var patient = patients.find(function (p) {
+      return p.id === activeId;
+    });
+    if (!patient) {
+      rt.showToast("Paciente no encontrado", "error");
+      return;
+    }
+    ensureMonitoreo(patient);
+    applyRecetaProposal(patient.monitoreo, buckets);
+    saveState();
+    if (typeof rt.navigateToEstadoActualPanel === "function") {
+      rt.navigateToEstadoActualPanel();
+    }
+    rt.showToast("Propuesta en Estado Actual — confirma en Estado clínico general", "success");
+    renderMedRecetaPanel();
+    return;
+  }
+  ["analgesia", "abx", "antihta", "vasop"].forEach(function (cat) {
+    var parts = String(buckets[cat] || "")
+      .split(" | ")
+      .filter(Boolean);
+    var fieldId =
+      cat === "analgesia"
+        ? "soap-analgesia"
+        : cat === "abx"
+          ? "soap-abx"
+          : cat === "antihta"
+            ? "soap-antihta"
+            : "soap-vasop";
+    parts.forEach(function (t) {
+      mergeSoapMedField(fieldId, t);
+    });
   });
   openPaseSectionInNormal("expediente");
   renderNoteForm();
   openSOAPModalDirect();
   var toastMsg = "Campos SOAP actualizados · completa e Insertar en evolución";
-  if (otrosN) toastMsg += " · Revisa Antibióticos (incluye «Otros»)";
   rt.showToast(toastMsg, "success");
   renderMedRecetaPanel();
 }
@@ -458,13 +474,19 @@ function renderMedNotaFooter() {
       "</div>"
     : '<p class="med-soap-preview-empty">Marcá <strong>SOAP</strong> en el listado para ver aquí cómo se repartirán en la plantilla.</p>';
 
+  var soapBtnLabel = isModeSala(rt.getSettings())
+    ? "Enviar a Estado Actual"
+    : "Abrir plantilla SOAP";
+
   foot.innerHTML =
     '<div class="med-nota-toolbar">' +
     '<p class="med-nota-hint">Solo los medicamentos con <strong>SOAP</strong> activo aparecen abajo, clasificados según el nombre del fármaco en la receta.</p>' +
     previewHtml +
     '<div class="med-nota-actions">' +
     '<button type="button" class="btn-generate" onclick="mediAnadirATratamiento()">Añadir a Tratamiento</button>' +
-    '<button type="button" class="btn-med-secondary" onclick="mediLlevarASOAP()">Abrir plantilla SOAP</button>' +
+    '<button type="button" class="btn-med-secondary" onclick="mediLlevarASOAP()">' +
+    soapBtnLabel +
+    '</button>' +
     '<button type="button" class="btn-med-secondary" onclick="limpiarSeleccionMedNota()">Limpiar</button>' +
     "</div>" +
     "</div>";

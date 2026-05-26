@@ -66,11 +66,12 @@ test('getTourTarget devuelve selector para lab_parse en Laboratorio', () => {
   assert.equal(stepRequiresUserAction('lab_parse'), true);
 });
 
-test('getTourTarget para estado_actual apunta al expediente con su botón', () => {
+test('getTourTarget para estado_actual apunta a la pestaña Estado Actual (Sala)', () => {
   const t = getTourTarget('estado_actual', 'sala');
   assert.equal(t.appTab, 'nota');
-  assert.equal(t.innerTab, undefined);
-  assert.match(t.selector, /estado-actual|btn-estado-actual/i);
+  assert.equal(t.innerTab, 'estadoActual');
+  assert.equal(t.selector, '#itab-estadoActual');
+  assert.equal(t.spotlightClass, 'tour-spotlight-action');
 });
 
 test('getTourTarget para listado_problemas abre listado y resalta Generar', () => {

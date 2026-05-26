@@ -276,6 +276,80 @@ html.dark .card { box-shadow: var(--shadow); }
   justify-content: space-between;
   flex-wrap: wrap;
 }
+/* Barras de sección con tono — texto claro en light y dark */
+.card-header[class*="card-header--tone"] {
+  color: #f9fafb;
+  border-bottom-color: transparent;
+}
+.card-header--tone-slate { background: #374151; }
+.card-header--tone-green { background: #065f46; }
+.card-header--tone-indigo { background: #3730a3; }
+.card-header--tone-rose { background: #881337; }
+.card-header--tone-amber { background: #78350f; }
+.card-header--tone-teal { background: #134e4a; }
+.card-header--tone-teal-md { background: #0f766e; }
+.card-header--tone-violet { background: #4a1d96; }
+html.dark .card-header--tone-slate {
+  background: color-mix(in oklab, #4b5563 36%, var(--surface));
+}
+html.dark .card-header--tone-green {
+  background: color-mix(in oklab, #065f46 40%, var(--surface));
+}
+html.dark .card-header--tone-indigo {
+  background: color-mix(in oklab, #4338ca 38%, var(--surface));
+}
+html.dark .card-header--tone-rose {
+  background: color-mix(in oklab, #9f1239 36%, var(--surface));
+}
+html.dark .card-header--tone-amber {
+  background: color-mix(in oklab, #92400e 38%, var(--surface));
+}
+html.dark .card-header--tone-teal {
+  background: color-mix(in oklab, #115e59 38%, var(--surface));
+}
+html.dark .card-header--tone-teal-md {
+  background: color-mix(in oklab, #0d9488 36%, var(--surface));
+}
+html.dark .card-header--tone-violet {
+  background: color-mix(in oklab, #6d28d9 36%, var(--surface));
+}
+.card-header-subhint {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+}
+.card-header-ghost-btn {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #fff;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: background 0.15s;
+}
+.card-header-ghost-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+html.high-contrast .card-header[class*="card-header--tone"] {
+  background: var(--section-header-bg) !important;
+  color: var(--text) !important;
+  border-bottom: 2px solid var(--border);
+}
+html.high-contrast .card-header-subhint {
+  color: var(--text-muted);
+}
+html.high-contrast .card-header-ghost-btn {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border: 2px solid var(--border) !important;
+}
 .lab-report-card-title {
   display: flex;
   align-items: center;
@@ -979,6 +1053,22 @@ html.dark .btn-med-secondary--muted:hover {
   flex: 1;
   min-width: 0;
 }
+.lab-pref-row--stack {
+  align-items: flex-start;
+}
+.lab-pref-row-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.lab-pref-row-hint {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
 .rpc-switch {
   position: relative;
   display: inline-flex;
@@ -1342,7 +1432,7 @@ html.dark .lab-output-fecha { color: #93c5fd; border-bottom-color: rgba(148, 163
 .lab-bulk-preview-table td {
   padding: 8px 10px;
   text-align: left;
-  border-bottom: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.08));
+  border-bottom: 1px solid var(--divider);
   vertical-align: top;
 }
 .lab-bulk-preview-table th {
@@ -1352,7 +1442,7 @@ html.dark .lab-output-fecha { color: #93c5fd; border-bottom-color: rgba(148, 163
   color: var(--text-muted);
   position: sticky;
   top: 0;
-  background: var(--surface-elevated, #fff);
+  background: var(--section-header-bg);
   z-index: 1;
 }
 .lab-bulk-preview-exp {

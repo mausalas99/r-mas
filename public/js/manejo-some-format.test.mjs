@@ -7,6 +7,8 @@ import {
   labMonitorToSomeOrder,
   protocolToSomeOrder,
   suggestIvFluidCarrier,
+  cadGlucose250DextrosePlanOrder,
+  cadInsulinStartSomeOrder,
 } from './manejo-some-format.mjs';
 import { drugMatchesAtbRisFilter, drugMatchesRisBucket } from './manejo-atb-suggest.mjs';
 import { labMonitoringForCadEhhMode } from './manejo-cad-ehh.mjs';
@@ -92,21 +94,70 @@ test('drugMatchesRisBucket filtra S R I', () => {
   assert.equal(drugMatchesAtbRisFilter({ someAbbrev: ['MERO'] }, iso, 'r'), false);
 });
 
-test('kRepletionToSomeOrder usa dosis en mEq y NaCl 0.9%', () => {
-  var order = kRepletionToSomeOrder(
+test('drugMatchesAtbRisFilter: abreviatura PIP/TAZO intacta', () => {
+  var iso = {
+    sensKeys: ['CIPRO', 'IMI', 'LVX', 'MERO', 'PIP/TAZO', 'TOBRA'],
+    resKeys: ['CAZ'],
+    intKeys: ['FEP'],
+  };
+  assert.equal(drugMatchesAtbRisFilter({ someAbbrev: ['PIP/TAZO', 'TZP'] }, iso, 's'), true);
+  assert.equal(drugMatchesAtbRisFilter({ someAbbrev: ['CAZ'] }, iso, 'r'), true);
+  assert.equal(drugMatchesAtbRisFilter({ someAbbrev: ['FEP'] }, iso, 'i'), true);
+});
+
+test('kRepletionToSomeOrder usa diluyente según sodio corregido ADA', () => {
+  var orderLowNa = kRepletionToSomeOrder(
+    { addMeqPerLiter: 20, detail: 'Con diuresis' },
+    { na: 125, k: 4.2, glucoseMgDl: 300 }
+  );
+  assert.equal(orderLowNa.doseValue, '20');
+  assert.match(orderLowNa.dilution, /NaCl 0\.9%/i);
+
+  var orderHighNa = kRepletionToSomeOrder(
     { addMeqPerLiter: 20, detail: 'Con diuresis' },
     { na: 140, k: 4.2, glucoseMgDl: 300 }
   );
-  assert.equal(order.medication, 'CLORURO DE POTASIO');
-  assert.equal(order.doseValue, '20');
-  assert.equal(order.doseUnit, 'MEQ');
-  assert.match(order.dilution, /NaCl 0\.9%/i);
-  assert.match(order.comments, /DIURESIS/i);
+  assert.match(orderHighNa.dilution, /NaCl 0\.45%/i);
+  assert.match(orderHighNa.comments, /DIURESIS/i);
 });
 
-test('suggestIvFluidCarrier prefiere glucosado si Na alto y glucosa < 250', () => {
+test('cadGlucose250DextrosePlanOrder — agrega dextrosa 50% al carrier para glucosado 5%', () => {
+  var order = cadGlucose250DextrosePlanOrder(80, { na: 142, glucoseMgDl: 280 });
+  assert.match(order.medication, /DEXTROSA 50%/i);
+  assert.equal(order.doseValue, '100');
+  assert.equal(order.doseUnit, 'ML');
+  assert.match(order.dilution, /AGREGAR A 1000 ML DE SOLUCIÓN DE NaCl 0\.45%/i);
+  assert.match(order.dilution, /50 G\/L/i);
+  assert.match(order.comments, /100 ML DE DEXTROSA 50%/i);
+  assert.match(order.comments, /GLUCOSADO 5% EN NaCl 0\.45%/i);
+
+  var orderLowNa = cadGlucose250DextrosePlanOrder(80, { na: 125, glucoseMgDl: 280 });
+  assert.match(orderLowNa.dilution, /NaCl 0\.9%/i);
+  assert.match(orderLowNa.comments, /GLUCOSADO 5% EN NaCl 0\.9%/i);
+});
+
+test('cadInsulinStartSomeOrder calcula 0.1 U/kg/h con peso', () => {
+  var item = {
+    phase: 'Insulina',
+    medication: 'INSULINA REGULAR',
+    text: 'Iniciar 1–2 h post líquidos: insulina regular 0.1 U/kg/h',
+  };
+  var order = cadInsulinStartSomeOrder(80, item);
+  assert.equal(order.doseValue, '8');
+  assert.equal(order.doseUnit, 'U/H');
+});
+
+test('suggestIvFluidCarrier — sodio corregido alto → NaCl 0.45%', () => {
   var s = suggestIvFluidCarrier({ na: 148, glucoseMgDl: 200, k: 4 });
-  assert.match(s.carrier, /GLUCOSADO/i);
+  assert.match(s.carrier, /0\.45%/);
+  assert.equal(s.correctedNa, 149.6);
+  assert.match(s.rationale, /0\.45%/);
+});
+
+test('suggestIvFluidCarrier — sodio corregido bajo → NaCl 0.9%', () => {
+  var s = suggestIvFluidCarrier({ na: 130, glucoseMgDl: 400, k: 4 });
+  assert.match(s.carrier, /0\.9%/);
+  assert.ok(s.correctedNa < 135);
 });
 
 test('labMonitoringForCadEhhMode devuelve estudios por modo', () => {

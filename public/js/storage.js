@@ -538,6 +538,21 @@ export const storage = {
     }
   },
 
+  /** Ocultar la franja «Sin conexión al host LAN» cuando se pierde el enlace. */
+  getLanHideDisconnectBanner() {
+    try {
+      return localStorage.getItem('rpc-lan-hide-disconnect-banner') === '1';
+    } catch (_e) {
+      return false;
+    }
+  },
+
+  saveLanHideDisconnectBanner(hide) {
+    try {
+      localStorage.setItem('rpc-lan-hide-disconnect-banner', hide ? '1' : '0');
+    } catch (_e) {}
+  },
+
   /**
    * Batch save all data to localStorage
    * @param {Array} patients - Array of patient objects

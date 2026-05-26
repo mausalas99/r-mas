@@ -14,6 +14,30 @@
   app-region: no-drag;
 }
 
+.manejo-disclaimer-bar {
+  margin: 0 0 calc(12px * var(--density-space, 1));
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in oklab, var(--accent, #2563eb) 28%, var(--border));
+  background: color-mix(in oklab, var(--accent, #2563eb) 6%, var(--surface));
+}
+
+.manejo-disclaimer-bar-title {
+  display: block;
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  color: var(--text);
+}
+
+.manejo-disclaimer-bar-text {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
 /* manejo-subtabs: estilos unificados en expediente.css (mismo lenguaje que exp-segment) */
 
 .manejo-subpanels {
@@ -36,6 +60,10 @@
   font-size: 14px;
   color: var(--text-muted);
   line-height: 1.5;
+}
+
+.manejo-loading {
+  opacity: 0.72;
 }
 
 .manejo-banner {
@@ -840,7 +868,10 @@ html.dark .manejo-filter-search-input {
   border: 1px solid var(--border);
 }
 
-.manejo-cad-disclaimer {
+.manejo-cad-disclaimer,
+.manejo-cad-ada-ref {
+  margin: 0 0 12px;
+}
   margin: 0 0 10px;
 }
 
@@ -1068,7 +1099,6 @@ html.dark .manejo-filter-search-input {
   font-size: 12px;
   color: var(--text-muted);
   user-select: none;
-}
 }
 
 .manejo-pump-ref-summary::-webkit-details-marker {
@@ -1893,10 +1923,9 @@ html.dark .manejo-proto-segment .manejo-proto-chip--active {
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background: rgba(8, 12, 20, 0.62);
-  backdrop-filter: blur(4px);
+  background: rgba(8, 12, 20, 0.72);
   opacity: 0;
-  transition: opacity 0.18s ease;
+  transition: opacity 0.12s ease;
 }
 
 .manejo-proto-editor-backdrop.open {
@@ -1916,7 +1945,7 @@ html.dark .manejo-proto-segment .manejo-proto-chip--active {
     0 0 0 1px color-mix(in oklab, #fff 4%, transparent) inset;
   overflow: hidden;
   transform: translateY(8px) scale(0.98);
-  transition: transform 0.2s ease;
+  transition: transform 0.14s ease;
 }
 
 .manejo-proto-editor-backdrop.open .manejo-proto-editor {
@@ -2235,6 +2264,89 @@ html.dark .manejo-proto-segment .manejo-proto-chip--active {
 
 .manejo-cad-k-details > summary::-webkit-details-marker {
   display: none;
+}
+
+.manejo-cad-ada-host {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.manejo-cad-ada-protocol {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.manejo-cad-ada-protocol-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.manejo-cad-ada-fold {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--surface, #fff) 94%, var(--border));
+  overflow: hidden;
+}
+
+.manejo-cad-ada-fold-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--text);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.manejo-cad-ada-fold-summary::-webkit-details-marker {
+  display: none;
+}
+
+.manejo-cad-ada-fold-summary::before {
+  content: '▸';
+  font-size: 11px;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+
+.manejo-cad-ada-fold[open] > .manejo-cad-ada-fold-summary::before {
+  transform: rotate(90deg);
+}
+
+.manejo-cad-ada-fold-body {
+  padding: 0 14px 14px;
+  border-top: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
+}
+
+.manejo-cad-ada-fold-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 12px;
+}
+
+.manejo-cad-ada-fold-body .manejo-cad-checklist-flow {
+  padding-top: 10px;
+}
+
+.manejo-cad-ada-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.manejo-cad-ada-footer .manejo-cad-check-item {
+  border-color: color-mix(in oklab, var(--action, #2563eb) 22%, var(--border));
+  background: color-mix(in oklab, var(--action, #2563eb) 4%, var(--surface, transparent));
 }
 
 .manejo-cad-checklist {

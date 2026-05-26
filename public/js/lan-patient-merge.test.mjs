@@ -6,7 +6,121 @@ import {
   mergeLabHistorySets,
   entryMatchKey,
   filterEntriesByPatientDeletes,
+  entryUpdatedAt,
+  monitoreoUpdatedAt,
+  cloneEntry,
 } from './lan-patient-merge.mjs';
+
+test('entryUpdatedAt incluye textoGuardado.savedAt de monitoreo', () => {
+  const e = {
+    patient: {
+      id: 'p1',
+      monitoreo: {
+        historial: [],
+        textoGuardado: { text: 'x', savedAt: '2026-05-20T12:00:00.000Z' },
+      },
+    },
+    note: { fecha: '01/01/2026' },
+    labHistory: [],
+  };
+  assert.equal(entryUpdatedAt(e), '2026-05-20T12:00:00.000Z');
+});
+
+test('entryUpdatedAt incluye el recordedAt más reciente del historial', () => {
+  const e = {
+    patient: {
+      id: 'p1',
+      monitoreo: {
+        historial: [
+          { id: '1', recordedAt: '2026-04-01T08:00:00.000Z' },
+          { id: '2', recordedAt: '2026-05-21T10:00:00.000Z' },
+        ],
+        textoGuardado: { text: '', savedAt: '2026-05-01T00:00:00.000Z' },
+      },
+    },
+    note: {},
+    labHistory: [],
+  };
+  assert.equal(entryUpdatedAt(e), '2026-05-21T10:00:00.000Z');
+});
+
+test('monitoreoUpdatedAt combina historial y texto guardado', () => {
+  assert.equal(
+    monitoreoUpdatedAt({
+      historial: [{ id: '1', recordedAt: '2026-01-01T00:00:00.000Z' }],
+      textoGuardado: { text: 'x', savedAt: '2026-06-01T00:00:00.000Z' },
+    }),
+    '2026-06-01T00:00:00.000Z'
+  );
+});
+
+test('mergePatientEntry fusiona monitoreo con mergeMonitoreo si ambos tienen carga', () => {
+  const longHist = {
+    historial: [
+      { id: 'x', recordedAt: '2026-01-02T00:00:00.000Z', vitals: { fc: '90' } },
+      { id: 'y', recordedAt: '2026-01-03T00:00:00.000Z', vitals: { fc: '100' } },
+    ],
+    textoGuardado: { text: '', savedAt: null },
+  };
+  const shortHist = {
+    historial: [{ id: 'z', recordedAt: '2026-01-04T00:00:00.000Z', vitals: { fc: '110' } }],
+    textoGuardado: { text: '', savedAt: null },
+  };
+  const newerNote = {
+    patient: { id: 'p', registro: 'R', nombre: 'X', monitoreo: shortHist },
+    note: { fecha: '10/01/2026' },
+    labHistory: [],
+  };
+  const olderNote = {
+    patient: { id: 'p', registro: 'R', nombre: 'X', monitoreo: longHist },
+    note: { fecha: '01/01/2026' },
+    labHistory: [],
+  };
+  const m = mergePatientEntry(olderNote, newerNote);
+  assert.equal(m.patient.monitoreo.historial.length, 2);
+  assert.equal(m.patient.monitoreo.historial[0].id, 'x');
+});
+
+test('mergePatientEntry conserva solo el monitoreo del lado que tiene datos', () => {
+  const withText = {
+    patient: {
+      id: 'p',
+      registro: 'R',
+      monitoreo: {
+        historial: [],
+        textoGuardado: { text: 'solo acá', savedAt: '2026-02-01T00:00:00.000Z' },
+      },
+    },
+    note: { fecha: '05/01/2026' },
+    labHistory: [],
+  };
+  const emptyMon = {
+    patient: {
+      id: 'p',
+      registro: 'R',
+      monitoreo: { historial: [], textoGuardado: { text: '', savedAt: null } },
+    },
+    note: { fecha: '01/01/2026' },
+    labHistory: [],
+  };
+  const m = mergePatientEntry(emptyMon, withText);
+  assert.equal(m.patient.monitoreo.textoGuardado.text, 'solo acá');
+});
+
+test('cloneEntry copia monitoreo en profundidad', () => {
+  const inner = {
+    historial: [{ id: 'h1', recordedAt: '2026-01-01T00:00:00.000Z' }],
+    textoGuardado: { text: 't', savedAt: null },
+  };
+  const e = {
+    patient: { id: 'p1', registro: 'x', monitoreo: inner },
+    note: {},
+    labHistory: [],
+  };
+  const c = cloneEntry(e);
+  c.patient.monitoreo.historial.push({ id: 'h2', recordedAt: '2026-01-02T00:00:00.000Z' });
+  assert.equal(e.patient.monitoreo.historial.length, 1);
+});
 
 test('entryMatchKey usa registro cuando existe', () => {
   assert.equal(entryMatchKey({ patient: { id: 'a', registro: '123' } }), 'reg:123');

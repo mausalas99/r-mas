@@ -27,6 +27,7 @@ import {
 import { windowHandlers as labPanelWindowHandlers, renderLabHistoryPanel } from './features/lab-panel.mjs';
 import { windowHandlers as labBulkPreviewWindowHandlers } from './features/lab-bulk-preview-modal.mjs';
 import { windowHandlers as soapEstadoWindowHandlers } from './features/soap-estado.mjs';
+import { windowHandlers as estadoActualPanelWindowHandlers } from './features/estado-actual-panel.mjs';
 import { windowHandlers as agendaWindowHandlers } from './features/agenda.mjs';
 import { windowHandlers as expedienteWindowHandlers } from './features/expediente.mjs';
 import { windowHandlers as notesIndicacionesWindowHandlers } from './features/notes-indicaciones.mjs';
@@ -49,6 +50,7 @@ const allWindowHandlers = Object.assign(
   labPanelWindowHandlers,
   labBulkPreviewWindowHandlers,
   soapEstadoWindowHandlers,
+  estadoActualPanelWindowHandlers,
   agendaWindowHandlers,
   expedienteWindowHandlers,
   notesIndicacionesWindowHandlers,

@@ -361,10 +361,20 @@ export function mergeBulkParseResults(parsedItems) {
 }
 
 /** Muestra vista previa antes de guardar cuando hay pegado masivo o avisos. */
-export function shouldShowBulkLabPreview(blocks, totalOkReports) {
+export function shouldShowBulkLabPreview(blocks, totalOkReports, opts) {
   if (!Array.isArray(blocks) || !blocks.length) return false;
   if (blocks.length > 1) return true;
   if (totalOkReports > 1) return true;
+  var quickLabOutput = !!(opts && opts.quickLabOutput);
+  if (
+    quickLabOutput &&
+    blocks.length === 1 &&
+    totalOkReports === 1 &&
+    blocks[0] &&
+    blocks[0].status === 'no-patient'
+  ) {
+    return false;
+  }
   return blocks.some(function (b) {
     return b && b.status !== 'ok';
   });

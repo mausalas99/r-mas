@@ -7,6 +7,8 @@ import {
   describeCadEhhSuggestion,
   checklistForCadEhhMode,
   fluidGuidanceForMode,
+  correctedSodium,
+  adaIvFluidGuidance,
   CAD_CHECKLIST,
   EHH_CHECKLIST,
 } from './manejo-cad-ehh.mjs';
@@ -84,4 +86,21 @@ test('evaluateCadEhh incluye modeHint', () => {
   });
   assert.ok(r.modeHint);
   assert.match(r.modeHint, /CAD/);
+});
+
+test('correctedSodium aplica fórmula ADA', () => {
+  assert.equal(correctedSodium(140, 400), 144.8);
+  assert.equal(correctedSodium(140, null), 140);
+});
+
+test('adaIvFluidGuidance — Na corregido ≥135 → NaCl 0.45%', () => {
+  var g = adaIvFluidGuidance({ na: 142, glucoseMgDl: 350 });
+  assert.equal(g.correctedNa, 146);
+  assert.match(g.maintenanceFluid, /0\.45%/);
+});
+
+test('adaIvFluidGuidance — Na corregido <135 → NaCl 0.9%', () => {
+  var g = adaIvFluidGuidance({ na: 125, glucoseMgDl: 300 });
+  assert.ok(g.correctedNa < 135);
+  assert.match(g.maintenanceFluid, /0\.9%/);
 });

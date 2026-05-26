@@ -4,6 +4,9 @@ var FAV_KEY = 'rpc-manejo-protocol-favorites';
 var RECENT_KEY = 'rpc-manejo-protocol-recent';
 var RECENT_MAX = 12;
 
+/** @type {Set<string>|null} */
+var favoritesCache = null;
+
 function safeParseArray(raw) {
   try {
     var parsed = JSON.parse(raw || '[]');
@@ -13,7 +16,13 @@ function safeParseArray(raw) {
   }
 }
 
-export function loadProtoFavorites() {
+function getFavoritesSet() {
+  if (favoritesCache) return favoritesCache;
+  favoritesCache = new Set(loadProtoFavoritesFromStorage());
+  return favoritesCache;
+}
+
+function loadProtoFavoritesFromStorage() {
   try {
     return safeParseArray(localStorage.getItem(FAV_KEY));
   } catch (_e2) {
@@ -21,28 +30,32 @@ export function loadProtoFavorites() {
   }
 }
 
+export function loadProtoFavorites() {
+  return Array.from(getFavoritesSet());
+}
+
 function saveProtoFavorites(ids) {
+  favoritesCache = new Set(ids || []);
   try {
-    localStorage.setItem(FAV_KEY, JSON.stringify(ids || []));
+    localStorage.setItem(FAV_KEY, JSON.stringify(Array.from(favoritesCache)));
   } catch (_e3) {}
 }
 
 export function isProtoFavorite(id) {
   if (!id) return false;
-  return loadProtoFavorites().indexOf(id) >= 0;
+  return getFavoritesSet().has(id);
 }
 
 /** @returns {boolean} now favorited */
 export function toggleProtoFavorite(id) {
   if (!id) return false;
-  var list = loadProtoFavorites();
-  var idx = list.indexOf(id);
-  if (idx >= 0) {
-    list.splice(idx, 1);
-    saveProtoFavorites(list);
+  var set = getFavoritesSet();
+  if (set.has(id)) {
+    set.delete(id);
+    saveProtoFavorites(Array.from(set));
     return false;
   }
-  list.unshift(id);
+  var list = [id].concat(Array.from(set));
   saveProtoFavorites(list);
   return true;
 }

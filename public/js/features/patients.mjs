@@ -15,6 +15,7 @@ import { isModeSala, getDefaultServicio } from '../mode-features.mjs';
 import { sortLabHistoryChronological } from '../tend-core.mjs';
 import { t, getUiDensity, isPaseMode } from './chrome.mjs';
 import { emitLiveSyncPatientDelete, removePatientLocally } from './lan-sync.mjs';
+import { ensureMonitoreo } from './estado-actual-data.mjs';
 
 const DEMO_PATIENT_ID = 'demo-onboarding';
 
@@ -41,6 +42,7 @@ let rt = {
   switchAppTab() {},
   showToast() {},
   renderInnerTabs() {},
+  invalidateInnerTabRenderCache() {},
   renderEstadoActualButton() {},
   renderNoteForm() {},
   renderPatientDataPane() {},
@@ -865,6 +867,7 @@ function selectPatientCore(id) {
   var wasOnLab = rt.getActiveAppTab() === 'lab';
   var patientChanged = prevId != null && String(prevId) !== String(id);
   rt.setActiveId(id);
+  if (patientChanged) rt.invalidateInnerTabRenderCache();
   renderPatientList();
   var emptyState = document.getElementById('empty-state');
   var patientView = document.getElementById('patient-view');
@@ -1330,8 +1333,13 @@ export function buildPatientEntry(patientId) {
     return p.id === patientId;
   });
   if (!patient || patient.id === DEMO_PATIENT_ID) return null;
+  var patientSnap = { ...patient };
+  ensureMonitoreo(patientSnap);
+  if (patient.monitoreo != null && typeof patient.monitoreo === 'object') {
+    patientSnap.monitoreo = structuredClone(patient.monitoreo);
+  }
   return {
-    patient: patient,
+    patient: patientSnap,
     note: notes[patientId] || {},
     indicaciones: indicaciones[patientId] || {},
     labHistory: Array.isArray(labHistory[patientId]) ? labHistory[patientId] : [],

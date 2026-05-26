@@ -1,6 +1,7 @@
 // Built from app.js refactor — Plantilla SOAP (modal) + Estado Actual (Sala)
 import { patients, notes, saveState } from "../app-state.mjs";
 import { isModeSala } from "../mode-features.mjs";
+import { ensureMonitoreo, migratePatientMonitoreo } from "./estado-actual-data.mjs";
 
 let rt = {
   getActiveId() {
@@ -123,6 +124,12 @@ export function openEstadoActualModal() {
     rt.showToast("Selecciona un paciente primero", "error");
     return;
   }
+  if (isModeSala(rt.getSettings())) {
+    if (typeof rt.navigateToEstadoActualPanel === "function") {
+      rt.navigateToEstadoActualPanel();
+    }
+    return;
+  }
   document.body.setAttribute("data-estado-actual-mode", "true");
   var title = document.getElementById("soap-modal-title-text");
   if (title) title.textContent = "Estado Actual";
@@ -139,6 +146,15 @@ function estadoActualTextForCopy() {
 
 export async function estadoActualOnlyCopy() {
   if (!rt.getActiveId()) return;
+  if (isModeSala(rt.getSettings())) {
+    /** @type {any} */
+    var gCopy = typeof globalThis !== "undefined" ? globalThis : {};
+    if (typeof gCopy.estadoActualCopiar === "function") {
+      await gCopy.estadoActualCopiar();
+      closeSOAPModal();
+      return;
+    }
+  }
   var text = estadoActualTextForCopy();
   var ok = await copyToClipboardSafe(text);
   rt.showToast(ok ? "Estado Actual copiado al portapapeles ✓" : "No se pudo copiar", ok ? "success" : "error");
@@ -148,12 +164,26 @@ export async function estadoActualOnlyCopy() {
 export async function estadoActualSaveAndCopy() {
   var activeId = rt.getActiveId();
   if (!activeId) return;
+  if (isModeSala(rt.getSettings())) {
+    /** @type {any} */
+    var gSave = typeof globalThis !== "undefined" ? globalThis : {};
+    if (typeof gSave.estadoActualGuardarCopiar === "function") {
+      await gSave.estadoActualGuardarCopiar();
+      closeSOAPModal();
+      return;
+    }
+  }
   var patient = patients.find(function (p) {
     return p.id === activeId;
   });
   if (!patient) return;
   var text = estadoActualTextForCopy();
-  patient.estadoActual = { text: text, savedAt: new Date().toISOString() };
+  migratePatientMonitoreo(patient);
+  ensureMonitoreo(patient);
+  patient.monitoreo.textoGuardado = {
+    text: text,
+    savedAt: new Date().toISOString(),
+  };
   saveState();
   renderEstadoActualBar();
   var ok = await copyToClipboardSafe(text);
@@ -183,8 +213,12 @@ export function renderEstadoActualBar() {
     return p.id === activeId;
   });
   var saved = false;
-  if (patient && patient.estadoActual && patient.estadoActual.savedAt) {
-    var d = new Date(patient.estadoActual.savedAt);
+  if (patient) {
+    migratePatientMonitoreo(patient);
+  }
+  var tg = patient && patient.monitoreo && patient.monitoreo.textoGuardado;
+  if (tg && tg.savedAt) {
+    var d = new Date(tg.savedAt);
     if (!isNaN(d.getTime())) {
       var label =
         String(d.getDate()).padStart(2, "0") +
@@ -319,7 +353,7 @@ export function buildSOAPText() {
       num(g("soap-glu2")) +
       ", " +
       num(g("soap-glu3")) +
-      " MG/DL) || RESCATES DE INSULINA DISPONIBLES, NO APLICADOS ACTUALMENTE"
+      " MG/DL)"
   );
 
   return lines.join("\n");

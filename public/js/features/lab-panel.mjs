@@ -1277,10 +1277,12 @@ function applyLabPastePatientResolution(result) {
   if (!reg) return { shouldAutoStore: true };
   var match = rt.findPatientByRegistro(reg);
   if (!match) {
-    rt.showToast(
-      'Registro ' + reg + ' no está en la lista. No se guardó en el historial.',
-      'error'
-    );
+    if (!rt.getLabOutputPrefs().quickLabOutput) {
+      rt.showToast(
+        'Registro ' + reg + ' no está en la lista. No se guardó en el historial.',
+        'error'
+      );
+    }
     return { shouldAutoStore: false };
   }
   if (match.id !== rt.getActiveId()) {
@@ -1459,6 +1461,7 @@ function showLabConflictModal(newLines, existingDate) {
 }
 
 function finalizeBulkLabPaste(text, blocks, totalOkReports) {
+  var quickOut = rt.getLabOutputPrefs().quickLabOutput;
   var processable = blocks.filter(function (b) {
     return b.canProcess && b.okReportCount > 0 && b.patient;
   });
@@ -1477,7 +1480,9 @@ function finalizeBulkLabPaste(text, blocks, totalOkReports) {
   } else if (blocks.some(function (b) {
     return b.status === 'no-patient';
   })) {
-    rt.showToast('Ningún expediente del pegado coincide con pacientes en la lista', 'error');
+    if (!quickOut) {
+      rt.showToast('Ningún expediente del pegado coincide con pacientes en la lista', 'error');
+    }
   }
 
   var displayReport = pickDisplayLabReport(blocks, processable, rt.getActiveId());
@@ -1540,6 +1545,14 @@ function finalizeBulkLabPaste(text, blocks, totalOkReports) {
     rt.showToast(parts.length ? parts.join(' · ') + ' ✓' : 'Laboratorio procesado ✓', storeSummary.storedSets ? 'success' : 'success');
   } else if (processable.length === 1 && storeSummary.storedSets === 0 && storeSummary.skippedDupes) {
     rt.showToast('Resultado ya registrado en historial', 'success');
+  } else if (
+    processable.length === 0 &&
+    blocks.length === 1 &&
+    blocks[0].status === 'no-patient' &&
+    quickOut &&
+    displayReport
+  ) {
+    rt.showToast('Laboratorio formateado · salida rápida ✓', 'success');
   } else if (processable.length === 1 && !storeSummary.storedSets && blocks[0].status === 'no-patient') {
     /* toast ya mostrado arriba */
   } else if (processable.length === 1 && storeSummary.storedSets) {
@@ -1573,7 +1586,11 @@ function procesarReporte() {
   }
 
   try {
-    if (shouldShowBulkLabPreview(blocks, totalOkReports)) {
+    if (
+      shouldShowBulkLabPreview(blocks, totalOkReports, {
+        quickLabOutput: rt.getLabOutputPrefs().quickLabOutput,
+      })
+    ) {
       openLabBulkPreviewModal({
         blocks: blocks,
         onConfirm: function () {

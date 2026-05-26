@@ -960,7 +960,7 @@ function renderListadoForm() {
       '<div class="field-group"><label>Cama</label><input type="text" value="' + esc(patient.cama) + '" class="field-readonly" readonly></div>' +
     '</div></div></div>' +
 
-    '<div class="card"><div class="card-header" style="background:#374151;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Fecha y Hora del Listado</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
+    '<div class="card"><div class="card-header card-header--tone-slate"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Fecha y Hora del Listado</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
       '<div class="field-group"><label>Fecha</label><input type="text" value="' + esc(lst.fecha) + '" placeholder="DD/MM/AAAA" oninput="updateListadoMeta(\'fecha\',this.value)"></div>' +
       '<div class="field-group"><label>Hora</label><input type="text" value="' + esc(lst.hora) + '" placeholder="HH:MM" oninput="updateListadoMeta(\'hora\',this.value)"></div>' +
     '</div></div></div>' +
@@ -1015,10 +1015,10 @@ function _renderListadoMedicosCard(lst) {
     );
   }
   return (
-    '<div class="card"><div class="card-header" style="background:#0f766e;">' +
+    '<div class="card"><div class="card-header card-header--tone-teal-md card-header-row">' +
       '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' +
       'Médicos (firma)' +
-      '<span style="margin-left:auto;font-size:11px;font-weight:500;color:rgba(255,255,255,0.85);">Pre-llena desde Mi Perfil. Edita aquí para este paciente.</span>' +
+      '<span class="card-header-subhint">Pre-llena desde Mi Perfil. Edita aquí para este paciente.</span>' +
     '</div><div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
       row('profesor', 'Profesor') +
       row('r4',       'R4') +

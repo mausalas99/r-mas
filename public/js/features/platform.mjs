@@ -21,6 +21,7 @@ import {
   setLabHistory,
   setMedRecetaByPatient,
 } from '../app-state.mjs';
+import { mergePatientMonitoreoFromImported } from './estado-actual-data.mjs';
 import {
   renderPatientList,
   selectPatient,
@@ -956,10 +957,11 @@ function applyImportEntry(entry, action, existing) {
     labHistory[existing.id] = Array.isArray(entry.labHistory) ? entry.labHistory : [];
     if (entry.medReceta) medRecetaByPatient[existing.id] = entry.medReceta;
     else delete medRecetaByPatient[existing.id];
+    mergePatientMonitoreoFromImported(existing, entry.patient);
     return existing.id;
   }
   var newId = generatePatientId();
-  patients.unshift({
+  var newPatient = {
     id: newId,
     nombre: ensureUniquePatientName(entry.patient.nombre || 'PACIENTE SIN NOMBRE'),
     area: entry.patient.area || '',
@@ -970,7 +972,9 @@ function applyImportEntry(entry, action, existing) {
     sexo: entry.patient.sexo || 'F',
     registro: entry.patient.registro || '',
     fromLab: !!entry.patient.fromLab,
-  });
+  };
+  mergePatientMonitoreoFromImported(newPatient, entry.patient);
+  patients.unshift(newPatient);
   notes[newId] = entry.note || {};
   indicaciones[newId] = entry.indicaciones || {};
   labHistory[newId] = Array.isArray(entry.labHistory) ? entry.labHistory : [];
@@ -1162,6 +1166,7 @@ function onPatientBackupFileChosen(ev) {
         labHistory[targetId] = Array.isArray(payload.labHistory) ? payload.labHistory : [];
         if (payload.medReceta) medRecetaByPatient[targetId] = payload.medReceta;
         else delete medRecetaByPatient[targetId];
+        mergePatientMonitoreoFromImported(existsByRegistro, imported);
         rt.setActiveId(targetId);
       } else {
         var newId = generatePatientId();
@@ -1177,6 +1182,7 @@ function onPatientBackupFileChosen(ev) {
           registro: imported.registro || '',
           fromLab: !!imported.fromLab,
         };
+        mergePatientMonitoreoFromImported(newPatient, imported);
         patients.unshift(newPatient);
         notes[newId] = payload.note || {};
         indicaciones[newId] = payload.indicaciones || {};
