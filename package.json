@@ -111,6 +111,7 @@
     },
     "files": [
       "main.js",
+      "scripts/lib/release-notes-body.js",
       "preload.js",
       "server.js",
       "lan-squad/host-store.js",
