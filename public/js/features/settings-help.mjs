@@ -1316,14 +1316,36 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
-  '6.3.0': [
+  '6.3.1': [
     {
-      title: 'TODO',
-      body: 'Completar antes de publicar.',
+      title: 'Cultivos y micobacterias',
+      body:
+        'Secreción de herida con paréntesis en el nombre, reportes <strong>MYCOBACTERIAS</strong> (baciloscopia + cultivo) y muestra desde <strong>OBSERVACIONES</strong> vuelven a reflejarse bien en <strong>Cultivos</strong>.',
     },
     {
-      title: 'TODO',
-      body: 'Completar antes de publicar.',
+      title: 'Gasometría venosa / mixta',
+      body:
+        'pH, PCO2 y HCO3 aunque los flags A/B vayan en líneas separadas; la interpretación puede incluir trastorno metabólico concomitante.',
+    },
+    {
+      title: 'Estado Actual',
+      body: 'Cuadritos de signos vitales sin artefactos en las esquinas.',
+    },
+  ],
+  '6.3.0': [
+    {
+      title: 'Sala en vivo más simple',
+      body:
+        'En Mac: sin pestañas Anfitrión/Cliente; <strong>Activar sala en vivo</strong>, crear o unirse a salas y compartir el enlace. Opción para unirse a la sala de otra computadora.',
+    },
+    {
+      title: 'Reconexión estable',
+      body:
+        'Corregido el estado <strong>reconectando…</strong> que podía quedarse fijo al reconectar LiveSync en la misma sala.',
+    },
+    {
+      title: 'Sesiones guardadas',
+      body: 'Si ya estás en una sala, el botón muestra <strong>En sala</strong> en lugar de <strong>Unirse</strong>.',
     },
   ],
   '6.2.1': [

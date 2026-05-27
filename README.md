@@ -29,10 +29,20 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 ---
 
+## R+ 6.3.1 (Correcciones menores — cultivos, gasometría y Estado Actual)
 
-## R+ 6.3.0 (Mejoras en performace)
+- **Cultivos** — Cabeceras con paréntesis (p. ej. secreción de herida) vuelven a listarse en la pestaña **Cultivos** del expediente.
+- **Micobacterias** — Reportes SOME de sección **MYCOBACTERIAS**: baciloscopia y cultivo micobacteriano por separado, con muestra tomada de **OBSERVACIONES** (p. ej. tejido de lengua); ya no se etiqueta erróneamente como «1 MUESTRA».
+- **Gasometría** — Extracción de pH / PCO2 / HCO3 cuando los flags A y B van en líneas aparte; interpretación de trastornos mixtos (p. ej. alcalosis respiratoria con acidosis metabólica concomitante).
+- **Estado Actual** — Cuadritos de signos vitales sin artefactos en las esquinas al unir etiqueta y valor.
 
-- **TODO:** completar bullets en README.
+Notas: `docs/RELEASE_NOTES_6.3.1.txt`.
+
+## R+ 6.3.0 (Sala en vivo — LAN estable y flujo simplificado)
+
+- **Sala en vivo (⇄)** — En Mac, la app asume servidor del turno (IP automática); panel sin pestañas Anfitrión/Cliente; **Activar sala en vivo**, **Salas en vivo** y enlace de invitación.
+- **Otra Mac** — Sección para unirse con enlace de invitación; **Usar esta Mac como servidor del turno** para volver al modo local.
+- **LiveSync** — Corregida reconexión permanente («reconectando…»); sesiones guardadas muestran **En sala** cuando ya estás en esa sala.
 
 Notas: `docs/RELEASE_NOTES_6.3.0.txt`.
 ## R+ 6.2.1 (Expediente más fluido — Manejo opcional en Interconsulta)
