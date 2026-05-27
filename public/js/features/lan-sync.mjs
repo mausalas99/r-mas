@@ -18,6 +18,18 @@ import {
   mergeTodoListsById,
   attachTodosMapToPatientEntries,
 } from "../livesync-patient-ids.mjs";
+import {
+  getRoomMembership,
+  setRoomMembership,
+  clearRoomMembership,
+  migrateLastRoomToMembership,
+} from "../live-sync-membership.mjs";
+import { enqueueOutbox, drainOutbox } from "../live-sync-outbox.mjs";
+import {
+  collectManejoRoomPayload,
+  mergeManejoFromSources,
+  applyManejoRoomDataToLocal,
+} from "../manejo-room-data.mjs";
 import { mergePatientMonitoreoFromImported } from "./estado-actual-data.mjs";
 import {
   patients,
@@ -91,6 +103,10 @@ var activeLiveSyncRoomId = '';
 var activeLiveSyncRoomLabel = '';
 var _liveSyncPushTimer = null;
 var LIVE_SYNC_PUSH_DEBOUNCE_MS = 900;
+var LIVE_SYNC_OUTBOX_FLUSH_MS = 60000;
+var _liveSyncReconnectTimer = null;
+var _liveSyncReconnectAttempt = 0;
+var _liveSyncOutboxFlushTimer = null;
 var _lanPanelRenderGen = 0;
 var _lanPanelRenderChain = Promise.resolve();
 var LAN_HOST_CODE_HINT_SEEN_KEY = 'rpc-lan-host-code-hint-seen';
@@ -329,6 +345,9 @@ function initLanClientFromStorage() {
   try {
     lanClient.connectSyncChannel();
   } catch (_e) {}
+  setTimeout(function () {
+    bootLanRoomMembership();
+  }, 0);
 }
 initLanClientFromStorage();
 
@@ -445,6 +464,7 @@ function mergeLiveSyncFullBundles(sources) {
   var entries = mergeLanPatientEntrySources(sources);
   entries = filterEntriesByPatientDeletes(entries, base.patientDeletes || []);
   base.entries = attachTodosMapToPatientEntries(entries, base.todos);
+  base.manejo = mergeManejoFromSources(sources);
   return base;
 }
 
@@ -655,6 +675,9 @@ function applyLiveSyncMerged(merged) {
       runtime.renderLabHistoryPanel();
     } catch (_eLab) {}
   }
+  if (merged.manejo) {
+    applyManejoRoomDataToLocal(merged.manejo);
+  }
 }
 function liveSyncBundleHasPayload(bundle) {
   if (!bundle) return false;
@@ -666,27 +689,134 @@ function liveSyncBundleHasPayload(bundle) {
   for (var i = 0; i < keys.length; i += 1) {
     if (Array.isArray(todos[keys[i]]) && todos[keys[i]].length > 0) return true;
   }
+  var manejo = bundle.manejo;
+  if (manejo && typeof manejo === 'object') {
+    if (Array.isArray(manejo.customProtocols) && manejo.customProtocols.length > 0) return true;
+    if (manejo.overrides && Object.keys(manejo.overrides).length > 0) return true;
+    if (Array.isArray(manejo.favorites) && manejo.favorites.length > 0) return true;
+  }
   return false;
 }
+function hostBundleBodyFromEnvelope(envelope) {
+  return {
+    updatedAt: envelope.savedAt || new Date().toISOString(),
+    uploadedByClientId: envelope.clientId || getLanClientId(),
+    agenda: envelope.agenda || [],
+    todos: envelope.todos || {},
+    entries: envelope.entries || [],
+    manejo: envelope.manejo || null,
+  };
+}
 function pushRoomSyncBundleToHost(roomId, envelope) {
-  if (!isLanSessionConfiguredForRest()) return;
+  if (!isLanSessionConfiguredForRest()) return Promise.resolve(false);
   var rid = String(roomId || '').trim();
-  if (!rid || !envelope || !liveSyncBundleHasPayload(envelope)) return;
-  lanClient
+  if (!rid || !envelope || !liveSyncBundleHasPayload(envelope)) return Promise.resolve(false);
+  return lanClient
     .fetch('/api/lan/v1/rooms/' + encodeURIComponent(rid) + '/sync-bundle', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        bundle: {
-          updatedAt: envelope.savedAt || new Date().toISOString(),
-          uploadedByClientId: envelope.clientId || getLanClientId(),
-          agenda: envelope.agenda || [],
-          todos: envelope.todos || {},
-          entries: envelope.entries || [],
-        },
+        bundle: hostBundleBodyFromEnvelope(envelope),
       }),
     })
-    .catch(function () {});
+    .then(function (resp) {
+      return !!(resp && resp.ok);
+    })
+    .catch(function () {
+      return false;
+    });
+}
+function flushLiveSyncOutbox(roomId) {
+  var rid = String(roomId || '').trim();
+  if (!rid || !isLanSessionConfiguredForRest()) return Promise.resolve();
+  var items = drainOutbox(rid);
+  if (!items.length) return Promise.resolve();
+  var chain = Promise.resolve();
+  items.forEach(function (item) {
+    chain = chain.then(function () {
+      if (!item || item.kind !== 'bundle' || !item.payload) return;
+      return pushRoomSyncBundleToHost(rid, item.payload).then(function (ok) {
+        if (!ok) enqueueOutbox(rid, item);
+      });
+    });
+  });
+  return chain;
+}
+function scheduleLiveSyncOutboxFlush() {
+  if (_liveSyncOutboxFlushTimer) return;
+  _liveSyncOutboxFlushTimer = setInterval(function () {
+    var m = getRoomMembership();
+    if (!m || !m.roomId) return;
+    flushLiveSyncOutbox(m.roomId);
+  }, LIVE_SYNC_OUTBOX_FLUSH_MS);
+}
+function stopLiveSyncReconnectLoop() {
+  if (_liveSyncReconnectTimer) {
+    clearTimeout(_liveSyncReconnectTimer);
+    _liveSyncReconnectTimer = null;
+  }
+}
+function startLiveSyncReconnectLoop() {
+  stopLiveSyncReconnectLoop();
+  var m = getRoomMembership();
+  if (!m || !m.roomId) return;
+  function tick() {
+    var mem = getRoomMembership();
+    if (!mem || !mem.roomId) {
+      stopLiveSyncReconnectLoop();
+      return;
+    }
+    if (!activeLiveSyncRoomId) {
+      activeLiveSyncRoomId = mem.roomId;
+      activeLiveSyncRoomLabel = mem.label;
+    }
+    if (lanClient.liveConnected && String(lanClient.liveRoomId || '') === mem.roomId) {
+      _liveSyncReconnectAttempt = 0;
+      syncLiveSyncStatusChrome();
+      scheduleReconnect();
+      return;
+    }
+    if (isLanSessionConfiguredForRest()) {
+      try {
+        if (!lanClient.connected) lanClient.connectSyncChannel();
+        lanClient.connectLiveChannel(mem.roomId);
+        syncLiveSyncAfterRoomJoin(mem.roomId);
+      } catch (_e) {}
+    }
+    _liveSyncReconnectAttempt += 1;
+    syncLiveSyncStatusChrome();
+    scheduleReconnect();
+  }
+  function scheduleReconnect() {
+    var delay = Math.min(30000, 1000 * Math.pow(2, Math.min(_liveSyncReconnectAttempt, 5)));
+    _liveSyncReconnectTimer = setTimeout(tick, delay);
+  }
+  tick();
+}
+export function getActiveLiveSyncRoomId() {
+  return activeLiveSyncRoomId;
+}
+
+export function bootLanRoomMembership() {
+  migrateLastRoomToMembership();
+  var m = getRoomMembership();
+  if (!m || !m.roomId || !isLanSessionConfiguredForRest()) return;
+  activeLiveSyncRoomId = m.roomId;
+  activeLiveSyncRoomLabel = m.label;
+  scheduleLiveSyncOutboxFlush();
+  reconcileLiveSyncRoom(m.roomId)
+    .then(function () {
+      return flushLiveSyncOutbox(m.roomId);
+    })
+    .then(function () {
+      if (!getRoomMembership()) return;
+      try {
+        if (!lanClient.connected) lanClient.connectSyncChannel();
+        lanClient.connectLiveChannel(m.roomId);
+      } catch (_e) {}
+      startLiveSyncReconnectLoop();
+      syncLiveSyncStatusChrome();
+    });
 }
 function saveLocalRoomSnapshot(roomId) {
   var rid = String(roomId || '').trim();
@@ -700,6 +830,7 @@ function saveLocalRoomSnapshot(roomId) {
     agenda: snap.agenda,
     todos: snap.todos,
     entries: entries,
+    manejo: collectManejoRoomPayload(),
   });
 }
 function buildLiveSyncBundleEnvelope(roomId) {
@@ -716,20 +847,28 @@ function buildLiveSyncBundleEnvelope(roomId) {
     agenda: snap.agenda,
     todos: snap.todos,
     entries: entries,
+    manejo: collectManejoRoomPayload(),
   };
 }
 function scheduleLiveSyncPush() {
-  if (!activeLiveSyncRoomId || !lanClient.liveConnected) return;
+  if (!activeLiveSyncRoomId) return;
   if (_liveSyncPushTimer) clearTimeout(_liveSyncPushTimer);
   _liveSyncPushTimer = setTimeout(function () {
     _liveSyncPushTimer = null;
-    if (!activeLiveSyncRoomId || !lanClient.liveConnected) return;
-    var bundle = buildLiveSyncBundleEnvelope(activeLiveSyncRoomId);
-    try {
-      lanClient.sendLive(bundle);
-    } catch (_e) {}
-    pushRoomSyncBundleToHost(activeLiveSyncRoomId, bundle);
-    saveLocalRoomSnapshot(activeLiveSyncRoomId);
+    var roomId = activeLiveSyncRoomId;
+    if (!roomId) return;
+    var bundle = buildLiveSyncBundleEnvelope(roomId);
+    if (lanClient.liveConnected) {
+      try {
+        lanClient.sendLive(bundle);
+      } catch (_e) {}
+    }
+    saveLocalRoomSnapshot(roomId);
+    if (isLanSessionConfiguredForRest()) {
+      pushRoomSyncBundleToHost(roomId, bundle).then(function (ok) {
+        if (!ok) enqueueOutbox(roomId, { kind: 'bundle', payload: bundle });
+      });
+    }
   }, LIVE_SYNC_PUSH_DEBOUNCE_MS);
 }
 
@@ -745,6 +884,8 @@ function syncLiveSyncStatusChrome() {
   var label = activeLiveSyncRoomLabel || activeLiveSyncRoomId;
   if (lanClient.liveConnected) {
     el.textContent = 'Sala: ' + label + ' · sincronizando pacientes, labs, agenda y pendientes';
+  } else if (getRoomMembership() && getRoomMembership().roomId === activeLiveSyncRoomId) {
+    el.textContent = 'Sala: ' + label + ' · reconectando…';
   } else {
     el.textContent = 'Sala: ' + label + ' · solo local (sin sync en vivo)';
   }
@@ -881,6 +1022,7 @@ async function reconcileLiveSyncRoom(roomId) {
   if (sources.length) {
     applyLiveSyncMerged(mergeLiveSyncFullBundles(sources));
   }
+  return flushLiveSyncOutbox(roomId);
 }
 function syncLiveSyncAfterRoomJoin(roomId) {
   var rid = String(roomId || '').trim();
@@ -923,6 +1065,8 @@ function leaveLiveSyncRoom(opts) {
   }
   activeLiveSyncRoomId = '';
   activeLiveSyncRoomLabel = '';
+  clearRoomMembership();
+  stopLiveSyncReconnectLoop();
   lanClient.disconnectLiveChannel();
   syncLiveSyncStatusChrome();
   if (typeof renderLanPanel === 'function') renderLanPanel();
@@ -934,8 +1078,10 @@ lanClient.addEventListener('lan-live-status', function (ev) {
   if (!ev.detail) return;
   if (ev.detail.connected && activeLiveSyncRoomId) {
     syncLiveSyncAfterRoomJoin(activeLiveSyncRoomId);
+    flushLiveSyncOutbox(activeLiveSyncRoomId);
   } else if (!ev.detail.connected && activeLiveSyncRoomId) {
     saveLocalRoomSnapshot(activeLiveSyncRoomId);
+    startLiveSyncReconnectLoop();
   }
   syncLiveSyncStatusChrome();
 });
@@ -1614,8 +1760,10 @@ function joinLanRoom(roomId, displayName) {
       } catch (_sync) {}
     }
     lanClient.connectLiveChannel(id);
-    localStorage.setItem('rpc-lan-last-room', id);
+    setRoomMembership({ roomId: id, label: activeLiveSyncRoomLabel });
     rememberLanRoomJoined(id, activeLiveSyncRoomLabel);
+    scheduleLiveSyncOutboxFlush();
+    startLiveSyncReconnectLoop();
   } catch (_e) {
     activeLiveSyncRoomId = '';
     activeLiveSyncRoomLabel = '';
@@ -1841,6 +1989,7 @@ export {
   emitLiveSyncTodoUpsert,
   emitLiveSyncTodoDelete,
   emitLiveSyncPatientDelete,
+  scheduleLiveSyncPush,
   renderLanPanel,
   configureLanFromMobileJoin,
   syncLanHostTeamCodeSettingsInput,

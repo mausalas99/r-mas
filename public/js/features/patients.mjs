@@ -13,8 +13,15 @@ import { validatePatientForSave, buildExpedienteAdvice } from '../patient-valida
 import { shakePatientFieldsForError } from '../ui-motion.mjs';
 import { isModeSala, getDefaultServicio } from '../mode-features.mjs';
 import { sortLabHistoryChronological } from '../tend-core.mjs';
+import { ensureParsedLabHistoryCached } from '../lab-history-set.mjs';
 import { t, getUiDensity, isPaseMode } from './chrome.mjs';
-import { emitLiveSyncPatientDelete, removePatientLocally } from './lan-sync.mjs';
+import {
+  emitLiveSyncPatientDelete,
+  removePatientLocally,
+  getActiveLiveSyncRoomId,
+  scheduleLiveSyncPush,
+} from './lan-sync.mjs';
+import { stagePatientDelete } from '../patient-delete-sync.mjs';
 import { ensureMonitoreo } from './estado-actual-data.mjs';
 
 const DEMO_PATIENT_ID = 'demo-onboarding';
@@ -42,6 +49,7 @@ let rt = {
   switchAppTab() {},
   showToast() {},
   renderInnerTabs() {},
+  refreshExpedienteAfterPatientSelect() {},
   invalidateInnerTabRenderCache() {},
   renderEstadoActualButton() {},
   renderNoteForm() {},
@@ -429,7 +437,7 @@ function buildRondaRecentLabsBlockHtml(patientId) {
   if (!patientId) {
     return '<p class="ronda-panel-empty">Sin datos.</p>';
   }
-  var hist = sortLabHistoryChronological(rt.ensureParsedLabHistory(patientId));
+  var hist = sortLabHistoryChronological(ensureParsedLabHistoryCached(patientId));
   if (hist.length) {
     var newest = hist[0];
     var parts = [];
@@ -753,6 +761,21 @@ function renderPatientCardHtml(p) {
 
 var _patientListRenderQueued = false;
 
+/** Solo actualiza .active en tarjetas visibles (evita innerHTML al cambiar paciente). */
+function patchPatientListActiveHighlight(nextId) {
+  var list = document.getElementById('patient-list');
+  if (!list) return false;
+  var cards = list.querySelectorAll('.patient-card[data-patient-id]');
+  if (!cards.length) return false;
+  var filtered = patients.filter(patientMatchesSearch);
+  if (filtered.length !== cards.length) return false;
+  cards.forEach(function (el) {
+    var pid = el.getAttribute('data-patient-id');
+    el.classList.toggle('active', String(pid) === String(nextId));
+  });
+  return true;
+}
+
 export function renderPatientList() {
   if (_patientListRenderQueued) return;
   _patientListRenderQueued = true;
@@ -865,21 +888,18 @@ export function selectPatient(id) {
 function selectPatientCore(id) {
   var prevId = rt.getActiveId();
   var wasOnLab = rt.getActiveAppTab() === 'lab';
+  var appTab = rt.getActiveAppTab();
   var patientChanged = prevId != null && String(prevId) !== String(id);
   rt.setActiveId(id);
   if (patientChanged) rt.invalidateInnerTabRenderCache();
-  renderPatientList();
+  if (!patientChanged || !patchPatientListActiveHighlight(id)) {
+    renderPatientList();
+  }
   var emptyState = document.getElementById('empty-state');
   var patientView = document.getElementById('patient-view');
   if (emptyState) emptyState.style.display = 'none';
   if (patientView) patientView.style.display = 'flex';
-  rt.renderInnerTabs();
   rt.renderEstadoActualButton();
-  rt.renderNoteForm();
-  rt.renderIndicaForm();
-  rt.renderListadoForm();
-  rt.renderLabHistoryPanel();
-  rt.renderMedRecetaPanel();
   var settings = rt.getSettings();
   var inner = rt.getActiveInner();
   if (isModeSala(settings) && (inner === 'notas' || inner === 'indica' || !inner)) {
@@ -905,18 +925,10 @@ function selectPatientCore(id) {
       rt.switchInnerTab('manejo');
     }
   }
-  if (rt.getActiveInner() === 'datos' || rt.getActiveInner() === 'todo') {
-    rt.renderPatientDataPane();
-  }
-  if (rt.getActiveInner() === 'todo') {
-    rt.renderTodoForm();
-  }
-  if (rt.getActiveInner() === 'manejo') {
-    rt.renderManejo();
-  }
-  if (rt.getActiveInner() === 'recetaHu') {
-    rt.renderRecetaHu();
-  }
+  rt.syncInnerTabVisualOnly();
+  rt.refreshExpedienteAfterPatientSelect({ patientChanged: patientChanged });
+  if (appTab === 'lab') rt.renderLabHistoryPanel();
+  if (appTab === 'med') rt.renderMedRecetaPanel();
   if (wasOnLab && patientChanged) {
     rt.limpiarReporte();
     rt.setLabHistoryPanelCollapsed(false);
@@ -949,10 +961,7 @@ function selectPatientCore(id) {
   }
   syncRoundExpedienteLayout();
   rt.refreshTendenciasOrCultivosPanel();
-  if (isPaseMode()) {
-    rt.switchAppTab(rt.getActiveAppTab());
-    rt.renderPaseBoard();
-  }
+  if (isPaseMode()) rt.renderPaseBoard();
   if (rt.getActiveId()) {
     requestAnimationFrame(function () {
       scrollActiveRondaCardIntoView();
@@ -988,7 +997,15 @@ export function deletePatient(e, id) {
   var label = target ? 'Eliminar ' + (target.nombre || 'paciente') : 'Eliminar paciente';
   if (typeof rt.pushUndoSnapshot === 'function') rt.pushUndoSnapshot(label);
   if (!removePatientLocally(id)) return;
-  emitLiveSyncPatientDelete(target || { id: id, registro: '' });
+  var snap = target || { id: id, registro: '' };
+  if (getActiveLiveSyncRoomId()) {
+    stagePatientDelete(id, snap, function (p) {
+      emitLiveSyncPatientDelete(p);
+      scheduleLiveSyncPush();
+    });
+  } else {
+    emitLiveSyncPatientDelete(snap);
+  }
   saveState({ immediate: true });
   rt.addAuditEntry('patient-delete', 'ok', 1, target ? target.registro || target.nombre || '' : '');
   renderPatientList();

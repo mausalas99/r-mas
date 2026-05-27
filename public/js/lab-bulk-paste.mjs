@@ -360,21 +360,33 @@ export function mergeBulkParseResults(parsedItems) {
   return out;
 }
 
+function bulkBlocksHaveProcessablePatient(blocks) {
+  return blocks.some(function (b) {
+    return b && b.canProcess && b.okReportCount > 0 && b.patient;
+  });
+}
+
+function bulkBlocksHaveDisplayableReports(blocks) {
+  return blocks.some(function (b) {
+    return b && b.okReportCount > 0;
+  });
+}
+
 /** Muestra vista previa antes de guardar cuando hay pegado masivo o avisos. */
 export function shouldShowBulkLabPreview(blocks, totalOkReports, opts) {
   if (!Array.isArray(blocks) || !blocks.length) return false;
-  if (blocks.length > 1) return true;
-  if (totalOkReports > 1) return true;
   var quickLabOutput = !!(opts && opts.quickLabOutput);
+  // Salida rápida: si ningún expediente está en la lista, formatear sin modal
+  // (varios días/reportes en un pegado también aplican).
   if (
     quickLabOutput &&
-    blocks.length === 1 &&
-    totalOkReports === 1 &&
-    blocks[0] &&
-    blocks[0].status === 'no-patient'
+    bulkBlocksHaveDisplayableReports(blocks) &&
+    !bulkBlocksHaveProcessablePatient(blocks)
   ) {
     return false;
   }
+  if (blocks.length > 1) return true;
+  if (totalOkReports > 1) return true;
   return blocks.some(function (b) {
     return b && b.status !== 'ok';
   });

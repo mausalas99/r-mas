@@ -20,6 +20,7 @@ import {
 } from "./expediente.mjs";
 import { inferFechaLabSetFromId, renderTendencias } from "./tendencias.mjs";
 import { renderTodoForm, todoCompareForSort, toggleTodo } from "./todos.mjs";
+import { renderNoteForm, renderIndicaForm } from "./notes-indicaciones.mjs";
 import { renderManejo } from "./manejo.mjs";
 import { renderEstadoActualPanel } from "./estado-actual-panel.mjs";
 import { renderRecetaHu } from "./receta-hu.mjs";
@@ -40,13 +41,15 @@ import {
   consolidatedInnerTabButtonId,
   defaultGranularForConsolidatedTab,
   GRANULAR_TABS,
+  isClinicoCompositeVisible,
   migrateGranularInner,
   resetExpedientePaneLayoutCache,
   syncConsolidatedPaneVisibility,
   syncConsolidatedSegmentBars,
   useConsolidatedExpedienteTabs,
 } from "../expediente-tabs.mjs";
-import { scheduleAfterPaint } from "../deferred-work.mjs";
+import { getLabHistoryRevision } from "../lab-history-cache.mjs";
+import { scheduleAfterPaint, scheduleIdle } from "../deferred-work.mjs";
 
 export { initTabBarMotion } from "../ui-tab-motion.mjs";
 
@@ -64,12 +67,58 @@ export function invalidateInnerTabRenderCache(tab) {
   innerTabRenderCache = Object.create(null);
 }
 
+function estadoActualCacheSuffix(patientId) {
+  var p = patients.find(function (x) {
+    return String(x.id) === String(patientId);
+  });
+  if (!p || !p.monitoreo) return "0";
+  var m = p.monitoreo;
+  var h = Array.isArray(m.historial) ? m.historial.length : 0;
+  var s =
+    m.textoGuardado && m.textoGuardado.savedAt != null ? String(m.textoGuardado.savedAt) : "";
+  return String(h) + ":" + s;
+}
+
 function innerTabRenderCacheKey(tab) {
-  return String(tab || "") + "|" + String(rt.getActiveId() || "");
+  var pid = String(rt.getActiveId() || "");
+  var key = String(tab || "") + "|" + pid;
+  if (tab === "tend" || tab === "cult") {
+    key += "|L" + getLabHistoryRevision(pid);
+  }
+  if (tab === "estadoActual") {
+    key += "|E" + estadoActualCacheSuffix(pid);
+  }
+  return key;
+}
+
+function isInnerTabContentFresh(tab, settings) {
+  tab = migrateGranularInner(tab, settings);
+  return innerTabRenderCache[tab] === innerTabRenderCacheKey(tab);
 }
 
 function markInnerTabRendered(tab) {
   innerTabRenderCache[tab] = innerTabRenderCacheKey(tab);
+}
+
+var _expedienteWarmQueued = false;
+
+/** Precalienta Estado actual + Tendencias en idle (Sala). */
+export function warmExpedienteHeavyTabs() {
+  if (_expedienteWarmQueued || typeof document === "undefined") return;
+  if (!isModeSala(rt.getSettings())) return;
+  if (!rt.getActiveId() || rt.getActiveAppTab() !== "nota") return;
+  _expedienteWarmQueued = true;
+  scheduleIdle(function () {
+    _expedienteWarmQueued = false;
+    if (!rt.getActiveId() || rt.getActiveAppTab() !== "nota") return;
+    var settings = rt.getSettings();
+    var active = migrateGranularInner(rt.getActiveInner() || "todo", settings);
+    ["estadoActual", "tend"].forEach(function (tab) {
+      if (tab === active) return;
+      if (isInnerTabContentFresh(tab, settings)) return;
+      renderGranularInnerTab(tab);
+    });
+  }, 400);
 }
 
 function resolvePreloadGranularTab(el) {
@@ -860,12 +909,33 @@ function renderGranularInnerTab(tab, opts) {
     return;
   }
 
+  if (tab === 'notas') {
+    renderNoteForm();
+    markInnerTabRendered(tab);
+    return;
+  }
+  if (tab === 'indica') {
+    renderIndicaForm();
+    markInnerTabRendered(tab);
+    return;
+  }
   if (tab === 'datos' || tab === 'todo') renderPatientDataPane();
   if (tab === 'cult') renderCultivosTable();
   if (tab === 'listado') renderListadoForm();
   if (tab === 'todo') renderTodoForm();
   if (tab === 'recetaHu') renderRecetaHu();
   markInnerTabRendered(tab);
+}
+
+/** Tras cambiar de paciente: repinta solo la pestaña interna activa (sin reset de layout). */
+export function refreshExpedienteAfterPatientSelect(opts) {
+  opts = opts || {};
+  var settings = rt.getSettings();
+  var tab = migrateGranularInner(rt.getActiveInner() || "todo", settings);
+  if (opts.patientChanged || !isInnerTabContentFresh(tab, settings)) {
+    renderGranularInnerTab(tab, opts.patientChanged ? { force: true } : undefined);
+  }
+  warmExpedienteHeavyTabs();
 }
 
 export function switchConsolidatedTab(compositeTab) {
@@ -921,9 +991,6 @@ export function switchInnerTab(tab, opts) {
     syncConsolidatedInnerTabButtons(tab, settings);
     syncConsolidatedPaneVisibility(tab, settings);
     syncConsolidatedSegmentBars(tab, settings);
-    if (prevInner !== tab) {
-      animateTabPanelEnter(document.getElementById("itab-content-" + consolidatedInnerTabButtonId(tab, settings).replace(/^itab-/, "")));
-    }
   } else {
     GRANULAR_TABS.forEach(function (t) {
       var btn = document.getElementById(innerTabButtonId(t));
@@ -931,20 +998,32 @@ export function switchInnerTab(tab, opts) {
       if (btn) btn.classList.toggle("active", tab === t);
       if (pane) pane.classList.toggle("active", tab === t);
     });
-    if (prevInner !== tab) {
-      animateTabPanelEnter(document.getElementById("itab-content-" + tab));
-    }
   }
-  if (prevInner !== tab || opts.forceRender) {
+  var needsContentRender =
+    (prevInner !== tab || opts.forceRender) &&
+    (opts.forceRender || !isInnerTabContentFresh(tab, settings));
+  if (needsContentRender) {
     var targetTab = tab;
+    var forceRender = !!opts.forceRender;
+    if (prevInner !== tab) {
+      var panelEl = consolidated
+        ? document.getElementById(
+            "itab-content-" + consolidatedInnerTabButtonId(tab, settings).replace(/^itab-/, "")
+          )
+        : document.getElementById("itab-content-" + tab);
+      animateTabPanelEnter(panelEl);
+    }
     scheduleAfterPaint(function () {
       if (migrateGranularInner(rt.getActiveInner() || "todo", settings) !== targetTab) return;
-      renderGranularInnerTab(targetTab, opts.forceRender ? { force: true } : undefined);
+      renderGranularInnerTab(targetTab, forceRender ? { force: true } : undefined);
+      syncAllSubTabIndicators();
     });
-  }
-  scheduleAfterPaint(function () {
+  } else if (prevInner !== tab) {
     syncAllSubTabIndicators();
-  });
+  }
+  if (prevInner !== tab && isModeSala(settings) && (tab === "estadoActual" || tab === "tend")) {
+    warmExpedienteHeavyTabs();
+  }
   syncRoundExpedienteLayout();
   rt.syncWorkContextChrome();
   syncInnerTabIndicator(tab, consolidated ? { consolidated: true, settings: settings } : undefined);
@@ -972,15 +1051,18 @@ export function renderInnerTabs() {
   applyExpedientePaneLayout(consolidated, settings);
 
   if (consolidated) {
-    setOrder("itab-paciente", 1);
-    setOrder("itab-clinico", 2);
+    var showClinico = isClinicoCompositeVisible(settings);
+    show("itab-clinico", showClinico);
+    var order = 1;
+    setOrder("itab-paciente", order++);
+    if (showClinico) setOrder("itab-clinico", order++);
     if (sala) {
-      setOrder("itab-estadoActual", 3);
-      setOrder("itab-resultados", 4);
-      setOrder("itab-salida", 5);
+      setOrder("itab-estadoActual", order++);
+      setOrder("itab-resultados", order++);
+      setOrder("itab-salida", order++);
     } else {
-      setOrder("itab-resultados", 3);
-      setOrder("itab-salida", 4);
+      setOrder("itab-resultados", order++);
+      setOrder("itab-salida", order++);
     }
     wireExpedienteDatosCollapseRender();
     var activeInner = migrateGranularInner(rt.getActiveInner() || "todo", settings);

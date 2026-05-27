@@ -45,6 +45,7 @@
 <link rel="stylesheet" href="styles/expediente.css">
 <link rel="stylesheet" href="styles/estado-actual.css">
 <link rel="stylesheet" href="styles/manejo.css">
+<link rel="stylesheet" href="styles/manejo-guia.css">
 <link rel="stylesheet" href="styles/receta-hu.css">
 <link rel="stylesheet" href="styles/settings.css">
 <link rel="stylesheet" href="styles/modals.css">
@@ -53,7 +54,7 @@
 <link rel="stylesheet" href="styles/mobile.css">
 <script src="vendor/chart.umd.min.js"></script>
 <script src="vendor/sortable.min.js"></script>
-<script type="module" src="js/app.js"></script>
+<script type="module" src="js/app.bundle.mjs"></script>
 </head>
 <body>
 <a class="skip-to-main" href="#main-area">Saltar al contenido principal</a>
@@ -371,6 +372,19 @@
       </details>
 
       <details class="settings-accordion">
+        <summary>Expediente</summary>
+        <div class="settings-acc-body">
+          <label for="settings-hide-manejo-section" style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text);cursor:pointer;">
+            <input type="checkbox" id="settings-hide-manejo-section" onchange="setHideManejoSection(this.checked)" style="flex-shrink:0;margin-top:2px;">
+            <span>
+              <strong>Ocultar Manejo en Clínico</strong>
+              <span class="settings-acc-hint settings-acc-hint--tight" style="display:block;margin-top:4px;">En interconsulta mantiene Nota de evolución e Indicaciones; solo quita el segmento Manejo. En Sala oculta la pestaña Clínico (solo incluye Manejo).</span>
+            </span>
+          </label>
+        </div>
+      </details>
+
+      <details class="settings-accordion">
         <summary>Plantillas y flujo de trabajo</summary>
         <div class="settings-acc-body">
           <p class="settings-acc-hint">Combinaciones de dieta, cuidados y medicamentos aplicables desde Indicaciones.</p>
@@ -659,16 +673,6 @@
           </div>
         </div>
 
-        <div id="lab-diagrams-section" class="card" style="display:none;overflow-x:auto;flex-shrink:0;">
-          <div class="card-header">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-            Diagramas
-          </div>
-          <div class="card-body">
-            <div id="diagrams-grid" class="diagrams-wrap"></div>
-          </div>
-        </div>
-
         <div id="lab-output-section" class="card" style="display:none;flex-shrink:0;">
           <div class="card-header card-header-row lab-output-card-header">
             <span class="lab-output-card-title" style="display:flex;align-items:center;gap:8px;">
@@ -681,6 +685,16 @@
           </div>
           <div class="card-body">
             <div id="lab-output-box" style="line-height:2;"></div>
+          </div>
+        </div>
+
+        <div id="lab-diagrams-section" class="card" style="display:none;overflow-x:auto;flex-shrink:0;">
+          <div class="card-header">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            Diagramas
+          </div>
+          <div class="card-body">
+            <div id="diagrams-grid" class="diagrams-wrap"></div>
           </div>
         </div>
 

@@ -1316,6 +1316,33 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '6.3.0': [
+    {
+      title: 'TODO',
+      body: 'Completar antes de publicar.',
+    },
+    {
+      title: 'TODO',
+      body: 'Completar antes de publicar.',
+    },
+  ],
+  '6.2.1': [
+    {
+      title: 'Expediente más fluido',
+      body:
+        'Menos pausa al cambiar de paciente y al volver a <strong>Estado actual</strong> o <strong>Resultados</strong>. La app carga el frontend en un solo bundle y reutiliza paneles ya pintados.',
+    },
+    {
+      title: 'Ocultar solo Manejo',
+      body:
+        'En <strong>Mi Perfil → Expediente</strong>, <strong>Ocultar Manejo en Clínico</strong> deja visibles Nota e Indicaciones en Interconsulta; solo quita el segmento Manejo.',
+    },
+    {
+      title: 'Corrección Sala',
+      body:
+        'En modo Sala, la pestaña <strong>Resultados</strong> ya no muestra el formulario de Nota encima de Tendencias.',
+    },
+  ],
   '6.2.0': [
     {
       title: 'Estado Actual en Sala',
@@ -1489,7 +1516,7 @@ var RELEASE_NOTES_HIGHLIGHTS = {
     {
       title: 'Sugerencias clínicas desde laboratorio',
       body:
-        'Al procesar o reprocesar labs, R+ agrega pendientes en mayúsculas (p. ej. TRANSFUSION, REPO DE POTASIO) según umbrales de Hb y electrolitos. Sin duplicar la misma regla el mismo día.',
+        'Al procesar labs, R+ puede agregar un pendiente automático si Hb < 7 g/dL (transfusión). Las reposiciones electrolíticas no se agregan solas: usa Manejo → Electrolitos y el botón + Pendiente. Sin duplicar la misma regla el mismo día.',
     },
     {
       title: 'Medicamentos: +1 día (DIA#)',

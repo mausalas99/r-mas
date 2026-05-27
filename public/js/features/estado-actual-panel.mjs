@@ -557,36 +557,39 @@ function renderSnapshotSection(snapshot, balTurno, balGlobal) {
       : '<span class="ea-muted">—</span>';
 
   return (
-    '<section class="ea-section ea-card" id="ea-snapshot">' +
+    '<section class="ea-section ea-card ea-snapshot-strip" id="ea-snapshot">' +
+    '<div class="ea-snapshot-strip-head">' +
     '<h3 class="ea-section-title">Snapshot actual</h3>' +
-    '<div class="ea-snapshot-grid">' +
-    '<div class="ea-snapshot-card">' +
-    '<h4 class="ea-snapshot-card-title">Signos vitales</h4>' +
+    '<p class="ea-muted ea-snapshot-hint">Último valor registrado por parámetro</p>' +
+    '</div>' +
+    '<div class="ea-snapshot-strip-body">' +
+    '<div class="ea-snapshot-zone">' +
+    '<h4 class="ea-snapshot-zone-title">Signos vitales</h4>' +
     '<div class="ea-snapshot-vitals">' +
     vitalsHtml +
     '</div>' +
     '</div>' +
-    '<div class="ea-snapshot-card">' +
-    '<h4 class="ea-snapshot-card-title">Glucometrías</h4>' +
+    '<div class="ea-snapshot-zone">' +
+    '<h4 class="ea-snapshot-zone-title">Glucometrías</h4>' +
     '<div class="ea-snapshot-glu">' +
     gluHtml +
     '</div>' +
     '</div>' +
-    '<div class="ea-snapshot-card">' +
-    '<h4 class="ea-snapshot-card-title">Balance hídrico</h4>' +
+    '<div class="ea-snapshot-zone">' +
+    '<h4 class="ea-snapshot-zone-title">Balance hídrico</h4>' +
     '<div class="ea-snapshot-io">' +
-    '<div><span class="ea-snapshot-label">Ingresos</span> ' +
+    '<div><span class="ea-snapshot-label">Ingresos</span><span class="ea-snapshot-io-val">' +
     displayValue(snapshot.io.ing) +
-    ' cc</div>' +
-    '<div><span class="ea-snapshot-label">Egresos</span> ' +
+    ' cc</span></div>' +
+    '<div><span class="ea-snapshot-label">Egresos</span><span class="ea-snapshot-io-val">' +
     displayValue(snapshot.io.egr) +
-    ' cc</div>' +
-    '<div><span class="ea-snapshot-label">Balance turno</span> ' +
+    ' cc</span></div>' +
+    '<div><span class="ea-snapshot-label">Turno</span><span class="ea-snapshot-io-val">' +
     displayBalance(balTurno) +
-    '</div>' +
-    '<div><span class="ea-snapshot-label">Balance global</span> ' +
+    '</span></div>' +
+    '<div><span class="ea-snapshot-label">Global</span><span class="ea-snapshot-io-val">' +
     displayBalance(balGlobal) +
-    '</div>' +
+    '</span></div>' +
     '</div>' +
     '</div>' +
     '</div>' +
@@ -673,7 +676,9 @@ function buildFormSection() {
       key +
       '">' +
       '<div class="vital-label">' +
+      '<span class="ea-vital-name">' +
       VITAL_LABELS[key] +
+      '</span>' +
       '<span class="ea-vital-unit">' +
       (VITAL_UNITS[key] || '') +
       '</span></div>' +
@@ -696,7 +701,7 @@ function buildFormSection() {
   }).join('');
 
   return (
-    '<section class="ea-section ea-card">' +
+    '<section class="ea-section ea-card ea-form-card">' +
     '<h3 class="ea-section-title">Registrar medición</h3>' +
     '<form id="ea-form" class="ea-form" onsubmit="return false;">' +
     '<label class="ea-field ea-field--datetime">' +
@@ -767,16 +772,17 @@ export function renderEstadoActualPanel(opts) {
 
   mount.innerHTML =
     '<div class="estado-actual-panel">' +
+    '<header class="ea-panel-header ea-card">' +
     '<div class="ea-action-bar">' +
     '<button type="button" class="ea-btn" onclick="estadoActualCopiar()">Copiar</button>' +
     '<button type="button" class="ea-btn ea-btn--primary" onclick="estadoActualGuardarCopiar()">Guardar y copiar</button>' +
     '<span id="ea-meta-guardado" class="ea-meta-guardado">' +
     savedLabel +
     '</span>' +
-    '</div>' +
+    '</div></header>' +
     renderEstadoClinicoSection(monitoreo, activeId, patient) +
-    renderSnapshotSection(snapshot, balTurno, balGlobal) +
     buildFormSection() +
+    renderSnapshotSection(snapshot, balTurno, balGlobal) +
     renderHistorialSection(Array.isArray(monitoreo.historial) ? monitoreo.historial : []) +
     '<div id="ea-charts-mount" class="ea-charts-mount"><p class="ea-muted ea-charts-loading">Cargando tendencias…</p></div>' +
     '<section class="ea-section ea-card">' +
@@ -894,6 +900,7 @@ export function registrarEstadoActualMedicion() {
     })
   );
   saveState();
+  if (rt.invalidateInnerTabRenderCache) rt.invalidateInnerTabRenderCache('estadoActual');
   renderEstadoActualPanel({ syncHeavy: true });
   rt.showToast('Medición registrada ✓', 'success');
 }

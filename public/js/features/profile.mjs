@@ -19,6 +19,7 @@ import { renderNoteForm, applyProfileToNoteIfEmpty } from "./notes-indicaciones.
 import { renderEstadoActualButton } from "./soap-estado.mjs";
 import { renderRoundOverviewPanels } from "./patients.mjs";
 import { isModeSala } from "../mode-features.mjs";
+import { isManejoSectionHidden, migrateGranularInner } from "../expediente-tabs.mjs";
 import { switchInnerTab, renderInnerTabs, getActiveInnerTab } from "./pase-board.mjs";
 import { renderPatientDataPane } from "./expediente.mjs";
 
@@ -91,6 +92,7 @@ export function loadSettings() {
     syncUiDensityButtons();
     syncUpdateChannelUI();
     syncUpdateTelemetryUI();
+    syncHideClinicoTabUI();
     if (typeof syncSettingsLanHostDiskSection === "function") syncSettingsLanHostDiskSection();
     rt.syncWorkContextChrome();
     return;
@@ -207,6 +209,7 @@ export function loadSettings() {
   syncUiDensityButtons();
   syncUpdateChannelUI();
   syncUpdateTelemetryUI();
+  syncHideClinicoTabUI();
   syncIdleLockSelectUi();
   syncPreimportBackupUi();
   if (typeof syncSettingsLanHostDiskSection === "function") syncSettingsLanHostDiskSection();
@@ -251,7 +254,7 @@ export function applyAppModeSwitchEffects() {
   renderInnerTabs();
   renderEstadoActualButton();
   if (rt.getActiveId()) {
-    renderNoteForm();
+    if (!nowSala) renderNoteForm();
     if (getActiveInnerTab() === "datos" || getActiveInnerTab() === "todo") renderPatientDataPane();
   }
   rt.syncWorkContextChrome();
@@ -343,6 +346,63 @@ export function saveQuickOutputFormat(format) {
   rt.showToast("Formato de salida rápida actualizado", "success");
 }
 
+export function isHideManejoSectionEnabled() {
+  return isManejoSectionHidden(settingsRef());
+}
+
+/** @deprecated alias */
+export function isHideClinicoTabEnabled() {
+  return isHideManejoSectionEnabled();
+}
+
+export function syncHideManejoSectionUI() {
+  var cb = document.getElementById("settings-hide-manejo-section");
+  if (!cb) cb = document.getElementById("settings-hide-clinico-tab");
+  if (cb) cb.checked = isHideManejoSectionEnabled();
+}
+
+/** @deprecated alias */
+export function syncHideClinicoTabUI() {
+  syncHideManejoSectionUI();
+}
+
+export function applyHideManejoSectionEffects() {
+  var settings = settingsRef();
+  var current = getActiveInnerTab();
+  if (current) {
+    var migrated = migrateGranularInner(current, settings);
+    if (migrated !== current) switchInnerTab(migrated);
+  }
+  renderInnerTabs();
+  rt.syncWorkContextChrome();
+}
+
+/** @deprecated alias */
+export function applyHideClinicoTabEffects() {
+  applyHideManejoSectionEffects();
+}
+
+export function setHideManejoSection(enabled) {
+  var st = settingsRef();
+  st.hideManejoSection = !!enabled;
+  if (enabled) st.hideClinicoTab = true;
+  else delete st.hideClinicoTab;
+  localStorage.setItem("rpc-settings", JSON.stringify(st));
+  syncHideManejoSectionUI();
+  applyHideManejoSectionEffects();
+  rt.showToast(
+    enabled
+      ? "Manejo oculto en Clínico (Nota e Indicaciones siguen disponibles)."
+      : "Manejo visible en el expediente.",
+    "success"
+  );
+}
+
+/** @deprecated alias — mismo control, solo oculta Manejo en interconsulta */
+export function setHideClinicoTab(enabled) {
+  setHideManejoSection(enabled);
+}
+
 export const profileWindowHandlers = {
   toggleProfileSection,
   openProfileFromHeader,
@@ -351,6 +411,8 @@ export const profileWindowHandlers = {
   onAppModeChange,
   toggleHeaderWorkMode,
   saveQuickOutputFormat,
+  setHideManejoSection,
+  setHideClinicoTab,
   openTemplatesModal,
   saveSettings,
   closeTemplatesModal,

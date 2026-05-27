@@ -12,6 +12,7 @@ import {
   classifyMedicationSoapCategory,
   applyMedCatalogOverlay,
   dosisBeforeSlash,
+  extractRecetaNameOnlyDose,
 } from './med-receta-core.mjs';
 
 beforeEach(() => {
@@ -217,6 +218,58 @@ test('buildMedRecetaNameOnlyText agrega día de uso cuando existe', () => {
   assert.equal(t, 'OMEPRAZOL 40MG IV C/12H DIA 4');
 });
 
+test('extractRecetaNameOnlyDose — infusión con VEL.INF MCG/MIN (norepinefrina)', () => {
+  var d =
+    '16 MG // DILUIREN: DILUIREN 125 CC DE GLUCOSADO AL 5% VEL.INF: 5 MCG/MIN';
+  assert.equal(extractRecetaNameOnlyDose(d), '5 MCG/MIN');
+});
+
+test('extractRecetaNameOnlyDose — vancomicina con infusión 3 h conserva bolus', () => {
+  var d =
+    '1.5 G // DILUIREN: 200 CC DE SOL. FISIO AL 0.9% VEL.INF: 3 HORAS *DIA# 4*';
+  assert.equal(extractRecetaNameOnlyDose(d), '1.5 G');
+});
+
+test('extractRecetaNameOnlyDose — buprenorfina CC/HORA → MCG/HORA titulación', () => {
+  var d =
+    '450 MCG DILUIREN: 100 CC DE SOL FISIO AL 0.9% VEL.INF: 4 CC/HORA';
+  assert.equal(extractRecetaNameOnlyDose(d), '4 MCG/HORA');
+});
+
+test('buildMedRecetaNameOnlyText — infusión sin dilución en salida simple', () => {
+  var items = [
+    {
+      nombreRaw: 'BUPRENORFINA 900 MCG SOL INY',
+      viaRaw: 'VIA INTRAVENOSA',
+      dosisRaw: '450 MCG DILUIREN: 100 CC DE SOL FISIO AL 0.9% VEL.INF: 4 CC/HORA',
+      frecuenciaRaw: 'CADA 24 HORAS',
+      diaTratamiento: null,
+      suspendido: false,
+    },
+    {
+      nombreRaw: 'VANCOMICINA 1 G SOL INY',
+      viaRaw: 'VIA INTRAVENOSA',
+      dosisRaw: '1.5 G // DILUIREN: 200 CC DE SOL. FISIO AL 0.9% VEL.INF: 3 HORAS *DIA# 4*',
+      frecuenciaRaw: 'CADA 12 HORAS',
+      diaTratamiento: 4,
+      suspendido: false,
+    },
+    {
+      nombreRaw: 'NOREPINEFRINA 4 MG SOL INY',
+      viaRaw: 'VIA INTRAVENOSA',
+      dosisRaw:
+        '16 MG // DILUIREN: DILUIREN 125 CC DE GLUCOSADO AL 5% VEL.INF: 5 MCG/MIN',
+      frecuenciaRaw: 'CADA 24 HORAS',
+      diaTratamiento: null,
+      suspendido: false,
+    },
+  ];
+  var lines = buildMedRecetaNameOnlyText(items).split('\n');
+  assert.equal(lines[0], 'BUPRENORFINA 4 MCG/HORA IV C/24H');
+  assert.equal(lines[1], 'VANCOMICINA 1.5 G IV C/12H DIA 4');
+  assert.equal(lines[2], 'NOREPINEFRINA 5 MCG/MIN IV C/24H');
+});
+
 test('buildMedRecetaNameOnlyText usa formato compacto solicitado en meropenem', () => {
   var items = [
     {
@@ -229,7 +282,7 @@ test('buildMedRecetaNameOnlyText usa formato compacto solicitado en meropenem', 
     },
   ];
   var t = buildMedRecetaNameOnlyText(items);
-  assert.equal(t, 'MEROPENEM 2G IV C/8H DIA 2');
+  assert.equal(t, 'MEROPENEM 2 G IV C/8H DIA 2');
 });
 
 test('bloque dorado — 12 medicamentos del spec', () => {

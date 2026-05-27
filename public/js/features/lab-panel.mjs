@@ -46,6 +46,7 @@ import { evaluateLabSuggestions, filterNewLabSuggestions } from "../lab-clinical
 import { evaluateElectrolyteManejo } from "../electrolyte-manejo.mjs";
 import { normalizeLabHistoryPatientSets } from "../storage.js";
 import { patients, notes, labHistory, saveState } from "../app-state.mjs";
+import { bumpLabHistoryRevision } from "../lab-history-cache.mjs";
 import { isPaseMode } from "./chrome.mjs";
 
 let rt = {
@@ -400,7 +401,11 @@ export function renderLabHistoryPanel() {
     return;
   }
   var pid = rt.getActiveId();
-  var hist = sortLabHistoryChronological(rt.ensureParsedLabHistory(pid));
+  var hist = sortLabHistoryChronological(
+    rt.ensureParsedLabHistoryCached
+      ? rt.ensureParsedLabHistoryCached(pid)
+      : rt.ensureParsedLabHistory(pid, { readOnly: true })
+  );
   if (!hist.length) {
     hintEl.style.display = 'block';
     hintEl.textContent = 'Al procesar un reporte con paciente activo, cada conjunto queda guardado aquí (sirve para Tendencias y para volver a ver diagramas).';
@@ -485,9 +490,9 @@ function replayLabHistorySet(setId) {
   rt.addAuditEntry('lab-history-replay', 'ok', 1, String(setId));
   rt.showToast('Estudio cargado en Laboratorio', 'success');
   rt.openPaseSectionInNormal('labs');
-  var diag = document.getElementById('lab-diagrams-section');
-  if (diag && diag.style.display !== 'none') {
-    try { diag.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (_e) { diag.scrollIntoView(true); }
+  var outSec = document.getElementById('lab-output-section');
+  if (outSec && outSec.style.display !== 'none') {
+    try { outSec.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (_e) { outSec.scrollIntoView(true); }
   }
 }
 
@@ -515,6 +520,8 @@ function reprocessLabHistorySet(setId) {
     set.resLabs = repro.slice();
     set.parsed = rt.extractParsedValues(set.resLabs);
     set.parsedBySection = rt.buildParsedBySectionFromResLabs(set.resLabs, set.bhExtras);
+    delete set._parseFingerprint;
+    bumpLabHistoryRevision(rt.getActiveId());
     applyLabClinicalSuggestions(rt.getActiveId(), set.resLabs, set.fecha, set.bhExtras);
     rt.rebuildEstudiosFromLabHistory(rt.getActiveId());
     saveState({ immediate: true });
@@ -543,6 +550,7 @@ function deleteLabHistorySet(setId) {
   }
   if (sets.length) labHistory[pid] = sets;
   else delete labHistory[pid];
+  bumpLabHistoryRevision(pid);
   saveState({ immediate: true });
   rt.addAuditEntry('lab-history-delete', 'ok', 1, String(setId));
   renderLabHistoryPanel();
@@ -562,6 +570,7 @@ function removeDuplicateLabSetsForPatient(patientId) {
   });
   if (!labHistory[patientId].length) delete labHistory[patientId];
   rt.rebuildEstudiosFromLabHistory(patientId);
+  bumpLabHistoryRevision(patientId);
   return before - (labHistory[patientId] ? labHistory[patientId].length : 0);
 }
 
@@ -671,6 +680,7 @@ function applyLabDedupeFromChecklist(mapByPatient) {
     if (!labHistory[pid].length) delete labHistory[pid];
     rt.rebuildEstudiosFromLabHistory(pid);
     removedTotal += before - (labHistory[pid] ? labHistory[pid].length : 0);
+    if (before !== (labHistory[pid] ? labHistory[pid].length : 0)) bumpLabHistoryRevision(pid);
   });
   return removedTotal;
 }
@@ -1116,11 +1126,13 @@ function pushLabHistory(patientId, resLabs, fecha, hora, sourceText, bhExtras, r
     bhExtras: extras,
     parsed: rt.extractParsedValues(resLabs),
     parsedBySection: rt.buildParsedBySectionFromResLabs(resLabs, extras),
-    refsBySection: refs
+    refsBySection: refs,
+    updatedAt: new Date().toISOString(),
   };
   var raw = String(sourceText || '').trim();
   if (raw) set.sourceText = raw;
   labHistory[patientId].push(set);
+  bumpLabHistoryRevision(patientId);
 }
 
 /** Tras nuevo set en historial: marca manejo electrolitos pendiente si hay alteraciones. */

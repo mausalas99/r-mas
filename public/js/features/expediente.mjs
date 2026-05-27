@@ -17,6 +17,7 @@ import {
   parseFechaLabToMs,
   normalizeFechaLabHistory,
 } from "../tend-core.mjs";
+import { TREND_REFRESH_DEBOUNCE_MS } from "../lab-history-cache.mjs";
 import { isPaseMode } from "./chrome.mjs";
 import {
   renderEntry,
@@ -736,10 +737,16 @@ function renderCultivosTable() {
   if (isPaseMode()) rt.renderPaseBoard();
 }
 
+var _tendRefreshTimer = null;
+
 function refreshTendenciasOrCultivosPanel() {
   if (rt.getActiveAppTab() !== 'nota') return;
-  if (rt.getActiveInner() === 'tend') rt.renderTendencias();
-  else if (rt.getActiveInner() === 'cult') renderCultivosTable();
+  if (_tendRefreshTimer) clearTimeout(_tendRefreshTimer);
+  _tendRefreshTimer = setTimeout(function () {
+    _tendRefreshTimer = null;
+    if (rt.getActiveInner() === 'tend') rt.renderTendencias();
+    else if (rt.getActiveInner() === 'cult') renderCultivosTable();
+  }, TREND_REFRESH_DEBOUNCE_MS);
 }
 
 // ── Pase cultivos (antibiograma) ───────────────────────────────────

@@ -21,8 +21,32 @@ export const CONSOLIDATED_TABS_INTER = ['paciente', 'clinico', 'resultados', 'sa
 /** @deprecated alias of CONSOLIDATED_TABS_INTER for backward compatibility */
 export const CONSOLIDATED_TABS = CONSOLIDATED_TABS_INTER;
 
+const CLINICO_GRANULAR_TABS = ['notas', 'indica', 'manejo'];
+
+/** @deprecated use isManejoSectionHidden — hideClinicoTab ahora solo oculta Manejo (compat). */
+export function isClinicoTabHidden(settings) {
+  return isManejoSectionHidden(settings) && isModeSala(settings);
+}
+
+/** Interconsulta: oculta segmento Manejo; mantiene Nota + Indicaciones en Clínico. */
+export function isManejoSectionHidden(settings) {
+  if (!settings) return false;
+  return !!(settings.hideManejoSection || settings.hideClinicoTab);
+}
+
+export function isClinicoCompositeVisible(settings) {
+  if (!isModeSala(settings)) return true;
+  return !isManejoSectionHidden(settings);
+}
+
 export function getConsolidatedTabs(settings) {
-  return isModeSala(settings) ? CONSOLIDATED_TABS_SALA : CONSOLIDATED_TABS_INTER;
+  var tabs = isModeSala(settings) ? CONSOLIDATED_TABS_SALA.slice() : CONSOLIDATED_TABS_INTER.slice();
+  if (!isClinicoCompositeVisible(settings)) {
+    return tabs.filter(function (tab) {
+      return tab !== 'clinico';
+    });
+  }
+  return tabs;
 }
 
 export const CLINICO_SECTIONS_ALL = ['notas', 'indica', 'manejo'];
@@ -85,7 +109,13 @@ function paneMountSpec(granularTab, settings) {
 }
 
 export function getClinicoSections(settings) {
-  return isModeSala(settings) ? CLINICO_SECTIONS_SALA : CLINICO_SECTIONS_ALL;
+  if (isModeSala(settings)) {
+    return isManejoSectionHidden(settings) ? [] : CLINICO_SECTIONS_SALA;
+  }
+  if (isManejoSectionHidden(settings)) {
+    return ['notas', 'indica'];
+  }
+  return CLINICO_SECTIONS_ALL;
 }
 
 export function getSalidaSections(settings) {
@@ -97,17 +127,28 @@ export function useConsolidatedExpedienteTabs(_settings) {
 }
 
 export function resolveConsolidatedTarget(granularTab, settings) {
+  if (isManejoSectionHidden(settings) && granularTab === 'manejo') {
+    return isModeSala(settings)
+      ? { tab: 'paciente', section: null }
+      : { tab: 'clinico', section: 'notas' };
+  }
   var map = granularToConsolidatedMap(settings || {});
   return map[granularTab] || { tab: 'paciente', section: null };
 }
 
 export function consolidatedTabForGranular(granularTab, settings) {
+  if (isManejoSectionHidden(settings) && granularTab === 'manejo') {
+    return isModeSala(settings) ? 'paciente' : 'clinico';
+  }
   return resolveConsolidatedTarget(granularTab, settings).tab;
 }
 
 export function migrateGranularInner(granularTab, settings) {
   if (!granularTab) return 'todo';
   if (granularTab === 'estadoActual' && !isModeSala(settings)) return 'todo';
+  if (isManejoSectionHidden(settings) && granularTab === 'manejo') {
+    return isModeSala(settings) ? 'todo' : 'notas';
+  }
   var map = granularToConsolidatedMap(settings || {});
   if (map[granularTab]) {
     if (isModeSala(settings) && (granularTab === 'notas' || granularTab === 'indica')) return 'manejo';
@@ -119,9 +160,11 @@ export function migrateGranularInner(granularTab, settings) {
 
 export function defaultGranularForConsolidatedTab(compositeTab, settings) {
   var sala = isModeSala(settings);
+  var clinicoDefault = 'notas';
+  if (sala) clinicoDefault = isManejoSectionHidden(settings) ? 'todo' : 'manejo';
   var defaults = {
     paciente: 'todo',
-    clinico: sala ? 'manejo' : 'notas',
+    clinico: clinicoDefault,
     estadoActual: 'estadoActual',
     resultados: 'tend',
     salida: sala ? 'listado' : 'recetaHu',
@@ -224,12 +267,18 @@ function mountConsolidatedNested(settings) {
 
 export function syncConsolidatedSegmentBarVisibility(settings) {
   var sala = isModeSala(settings);
+  var hideManejo = isManejoSectionHidden(settings);
   var clinicoBar = document.getElementById('exp-segment-clinico');
   if (clinicoBar) {
-    clinicoBar.style.display = sala ? 'none' : '';
-    ['notas', 'indica'].forEach(function (section) {
+    clinicoBar.style.display = sala || !isClinicoCompositeVisible(settings) ? 'none' : '';
+    ['notas', 'indica', 'manejo'].forEach(function (section) {
       var btn = clinicoBar.querySelector('[data-exp-segment="' + section + '"]');
-      if (btn) btn.style.display = sala ? 'none' : '';
+      if (!btn) return;
+      if (section === 'manejo') {
+        btn.style.display = hideManejo ? 'none' : sala ? 'none' : '';
+      } else {
+        btn.style.display = sala ? 'none' : '';
+      }
     });
   }
   var salidaBar = document.getElementById('exp-segment-salida');
@@ -286,11 +335,14 @@ export function syncConsolidatedPaneVisibility(granularTab, settings) {
   });
   var estadoCompOnlyInter = compositeEl('estadoActual');
   if (estadoCompOnlyInter && !isModeSala(settings)) estadoCompOnlyInter.classList.remove('active');
-  getClinicoSections(settings).forEach(function (section) {
+  CLINICO_GRANULAR_TABS.forEach(function (section) {
     var pane = paneEl(section);
-    if (pane) {
-      pane.classList.toggle('active', target.tab === 'clinico' && target.section === section);
-    }
+    if (!pane) return;
+    var allowed = getClinicoSections(settings).indexOf(section) >= 0;
+    pane.classList.toggle(
+      'active',
+      allowed && target.tab === 'clinico' && target.section === section
+    );
   });
   RESULTADOS_SECTIONS.forEach(function (section) {
     var pane = paneEl(section);

@@ -1,0 +1,671 @@
+/* Guía clínica — index + reading (single column) */
+
+.manejo-guia-root {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  min-height: 0;
+}
+
+.manejo-guia-mode-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
+  background: color-mix(in oklab, var(--surface, var(--card)) 70%, var(--bg));
+}
+
+.manejo-guia-mode-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 38px;
+  text-align: center;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 650;
+  font-family: inherit;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.manejo-guia-mode-btn:hover {
+  color: var(--text);
+  background: color-mix(in oklab, var(--surface-elevated, var(--surface)) 80%, transparent);
+}
+
+.manejo-guia-mode-btn--active {
+  color: var(--action, #2563eb);
+  border-color: color-mix(in oklab, var(--action, #2563eb) 28%, transparent);
+  background: color-mix(in oklab, var(--action, #2563eb) 12%, var(--surface, var(--card)));
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.manejo-guia-host {
+  width: 100%;
+  min-height: 0;
+  flex: 1;
+}
+
+.manejo-guia-reading {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding-bottom: 24px;
+}
+
+.manejo-guia-reading-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 10px;
+  height: auto;
+  min-height: 0;
+  margin: 0 0 16px;
+  padding: 0 0 16px;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.manejo-guia-reading-bar-top {
+  display: flex;
+  align-items: center;
+}
+
+.manejo-guia-reading-bar-main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.manejo-guia-back {
+  align-self: flex-start;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
+  background: var(--surface, var(--card));
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.manejo-guia-back:hover {
+  border-color: color-mix(in oklab, var(--action, #2563eb) 35%, var(--border));
+  background: color-mix(in oklab, var(--action, #2563eb) 6%, var(--surface));
+}
+
+.manejo-guia-reading-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text);
+  width: 100%;
+}
+
+.manejo-guia-reading-summary {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-muted);
+  width: 100%;
+}
+
+.manejo-guia-branch-chip {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--pathology-branch-accent, var(--accent)) 40%, var(--border));
+  color: var(--pathology-branch-accent, var(--accent));
+  background: color-mix(in oklab, var(--pathology-branch-accent, var(--accent)) 12%, var(--surface));
+}
+
+.manejo-guia-index-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.manejo-guia-index-search-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.manejo-guia-index-search-row .manejo-filter-search {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.manejo-guia-index-search-row .manejo-pathology-branch-menu {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 11.5rem;
+}
+
+.manejo-guia-index-search-row .manejo-pathology-branch-trigger {
+  min-height: 44px;
+  height: 100%;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 999px;
+  box-shadow: none;
+  background: color-mix(in oklab, var(--bg) 55%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--border) 92%, transparent);
+}
+
+.manejo-guia-index-search-row .manejo-pathology-branch-trigger:hover {
+  border-color: color-mix(in oklab, var(--action, #2563eb) 24%, var(--border));
+  box-shadow: none;
+}
+
+.manejo-guia-index-search-row
+  .manejo-pathology-branch-menu[class*='manejo-pathology-branch--']
+  .manejo-pathology-branch-trigger {
+  color: var(--text);
+  border-color: color-mix(in oklab, var(--pathology-branch-accent) 38%, var(--border));
+  background: color-mix(in oklab, var(--bg) 55%, var(--surface));
+  box-shadow: none;
+}
+
+.manejo-guia-index-search-row .manejo-pathology-branch-menu--open .manejo-pathology-branch-trigger {
+  border-color: color-mix(in oklab, var(--action, #2563eb) 55%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--action, #2563eb) 16%, transparent);
+}
+
+.manejo-guia-index-search-row .manejo-proto-count {
+  align-self: center;
+  flex-shrink: 0;
+  padding: 0 2px;
+  border: none;
+  background: transparent;
+}
+
+@media (max-width: 560px) {
+  .manejo-guia-index-search-row {
+    flex-wrap: wrap;
+  }
+
+  .manejo-guia-index-search-row .manejo-filter-search {
+    flex: 1 1 100%;
+  }
+
+  .manejo-guia-index-search-row .manejo-pathology-branch-menu {
+    flex: 1 1 auto;
+    max-width: none;
+  }
+
+  .manejo-guia-index-search-row .manejo-proto-count {
+    margin-left: auto;
+  }
+}
+
+.manejo-guia-index-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.manejo-guia-index-section-title {
+  margin: 14px 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.manejo-guia-index-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
+  border-radius: 10px;
+  background: var(--surface, var(--card));
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  color: inherit;
+}
+
+.manejo-guia-index-row:hover {
+  border-color: color-mix(in oklab, var(--action, #2563eb) 28%, var(--border));
+}
+
+.manejo-guia-index-row-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.manejo-guia-index-row-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.manejo-guia-index-row-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--text-muted) 12%, transparent);
+  color: var(--text-muted);
+}
+
+.manejo-guia-details {
+  margin: 0 0 16px;
+  font-size: 14px;
+}
+
+.manejo-guia-details summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.manejo-guia-timeline-section {
+  margin-bottom: 20px;
+}
+
+.manejo-guia-timeline-section h2 {
+  margin: 0 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--pathology-branch-accent, var(--accent, #2563eb));
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+.manejo-guia-step {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 0 0 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 55%, transparent);
+}
+
+.manejo-guia-step:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.manejo-guia-step-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--pathology-branch-accent, var(--accent, #2563eb));
+  background: color-mix(in oklab, var(--pathology-branch-accent, var(--accent)) 14%, transparent);
+  border-radius: 999px;
+}
+
+.manejo-guia-step-card {
+  min-width: 0;
+}
+
+.manejo-guia-step-card--action {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface, var(--card));
+}
+
+.manejo-guia-step-action-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 10px;
+}
+
+.manejo-guia-step-body {
+  min-width: 0;
+}
+
+.manejo-guia-step-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.manejo-guia-step-action-title {
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.manejo-guia-step-tier {
+  font-size: 11px;
+  font-weight: 650;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: color-mix(in oklab, var(--accent) 12%, transparent);
+  color: var(--accent, #2563eb);
+}
+
+.manejo-guia-step-tier--alt {
+  background: color-mix(in oklab, var(--text-muted) 14%, transparent);
+  color: var(--text-muted);
+}
+
+.manejo-guia-step-criteria {
+  display: block;
+  flex: 1 1 100%;
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: color-mix(in oklab, var(--text) 72%, var(--text-muted));
+}
+
+.manejo-guia-step-toggle {
+  margin-top: 12px;
+  width: 100%;
+  max-width: 220px;
+  min-height: 36px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.manejo-guia-step-expand {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
+  background: color-mix(in oklab, var(--surface-2, var(--surface)) 65%, var(--bg));
+}
+
+.manejo-guia-step-expand[hidden] {
+  display: none !important;
+}
+
+.manejo-guia-step-expand-foot {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+}
+
+.manejo-guia-link-tertiary {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  text-decoration: underline;
+}
+
+.manejo-guia-monitoring {
+  margin-top: 20px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
+  background: color-mix(in oklab, var(--surface-2, var(--surface)) 70%, transparent);
+}
+
+.manejo-guia-monitoring h3 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.manejo-guia-related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.manejo-guia-related-chip {
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface, var(--card));
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.manejo-guia-placeholder {
+  margin: 0;
+  padding: 24px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.manejo-guia-breadcrumb {
+  flex: 1 1 100%;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.manejo-guia-breadcrumb-link {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: var(--action, #2563eb);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.manejo-guia-reading-foot {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+}
+
+.manejo-guia-reading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.manejo-guia-index-row .manejo-card-fav-btn {
+  flex-shrink: 0;
+}
+
+/* ATB — cultivo colapsable + lectura */
+.manejo-guia-atb-culture-banner {
+  margin-bottom: 10px;
+}
+
+.manejo-guia-atb-culture-summary-line {
+  margin: 6px 0 0;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.manejo-guia-atb-antibiogram-details {
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+.manejo-guia-atb-antibiogram-details summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.manejo-guia-atb-antibiogram-body {
+  margin-top: 8px;
+}
+
+.manejo-guia-atb-culture-summary {
+  margin-top: 20px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
+  background: color-mix(in oklab, var(--surface-2, var(--surface)) 70%, transparent);
+}
+
+.manejo-guia-atb-culture-summary-title {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.manejo-guia-atb-culture-reasons {
+  margin: 8px 0 0;
+  padding-left: 1.2rem;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.manejo-guia-index-row--atb.manejo-atb--compatible {
+  border-color: color-mix(in oklab, #16a34a 35%, var(--border));
+}
+
+.manejo-guia-index-row--atb.manejo-atb--caution {
+  border-color: color-mix(in oklab, #d97706 35%, var(--border));
+}
+
+/* Lectura — contenido clínico legible (sin truncar criterios) */
+.manejo-guia-reading .manejo-clinical-text {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.manejo-guia-reading .manejo-clinical-def-grid {
+  gap: 0;
+}
+
+.manejo-guia-reading .manejo-clinical-def-box {
+  padding: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  border: none;
+  background: transparent;
+}
+
+.manejo-guia-reading .manejo-clinical-criterion {
+  grid-template-columns: 1fr;
+  gap: 4px;
+  padding: 10px 0;
+}
+
+.manejo-guia-reading .manejo-clinical-criterion-detail {
+  text-align: left;
+  white-space: normal;
+  max-width: none;
+  overflow: visible;
+  text-overflow: unset;
+  color: color-mix(in oklab, var(--text) 78%, var(--text-muted));
+  font-weight: 400;
+  font-size: 14px;
+}
+
+.manejo-guia-reading .manejo-proto-admin {
+  padding: 10px 12px;
+  background: color-mix(in oklab, var(--bg) 30%, var(--surface-2, var(--surface)));
+  border-color: color-mix(in oklab, var(--border) 75%, transparent);
+}
+
+.manejo-guia-reading .manejo-proto-admin-drug,
+.manejo-guia-reading .manejo-kv-label {
+  color: var(--text);
+}
+
+.manejo-guia-reading .manejo-kv-val,
+.manejo-guia-reading .manejo-proto-admin-note {
+  color: color-mix(in oklab, var(--text) 85%, var(--text-muted));
+  line-height: 1.55;
+}
+
+.manejo-guia-reading .manejo-kv {
+  margin-bottom: 8px;
+}
+
+.manejo-guia-reading .manejo-guia-details {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+  background: color-mix(in oklab, var(--surface) 60%, transparent);
+}
+
+html.dark .manejo-guia-step-criteria,
+html.dark .manejo-guia-reading .manejo-clinical-criterion-detail {
+  color: color-mix(in oklab, var(--text) 80%, #94a3b8);
+}
+
+/* ATB lectura — datos compactos en rejilla, no bandas anchas vacías */
+.manejo-guia-atb-reading .manejo-proto-detail {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr));
+  gap: 10px;
+}
+
+.manejo-guia-atb-reading .manejo-kv,
+.manejo-guia-atb-reading .manejo-kv--wide {
+  grid-column: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 10px 12px;
+}
+
+.manejo-guia-atb-reading .manejo-kv-label {
+  margin-bottom: 6px;
+  font-size: 11px;
+}
+
+.manejo-guia-atb-reading .manejo-kv-val {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.manejo-guia-atb-reading .manejo-proto-detail-calc,
+.manejo-guia-atb-reading .manejo-proto-detail-hint,
+.manejo-guia-atb-reading .manejo-guia-atb-culture-summary {
+  grid-column: 1 / -1;
+}

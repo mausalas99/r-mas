@@ -3,6 +3,7 @@
 import { compareIso } from './live-sync-room.mjs';
 import { mergeTodoListsById } from './livesync-patient-ids.mjs';
 import { mergeMonitoreo } from './features/estado-actual-data.mjs';
+import { bumpLabHistoryRevision } from './lab-history-cache.mjs';
 
 export function isDemoPatientId(patientId) {
   return String(patientId || '').indexOf('demo-') === 0;
@@ -245,6 +246,8 @@ export function mergePatientEntry(a, b) {
   } else {
     delete patient.monitoreo;
   }
+
+  if (patient.id) bumpLabHistoryRevision(patient.id);
 
   return {
     patient,

@@ -69,18 +69,18 @@ export function calcSedationMgPerHour(p) {
   var drug = String(p.drug || 'midazolam').toLowerCase();
 
   if (drug === 'propofol') {
-    var minMcgKgMin = 20;
-    var maxMcgKgMin = 40;
+    var minMcgKgMin = 5;
+    var maxMcgKgMin = 20;
     var mgMin = Math.round(w * minMcgKgMin * 0.06 * 10) / 10;
     var mgMax = Math.round(w * maxMcgKgMin * 0.06 * 10) / 10;
     return {
       drug,
       mgPerHourMin: mgMin,
       mgPerHourMax: mgMax,
-      rangeText: '20–40 mcg/kg/min (no diluir)',
+      rangeText: '5–20 mcg/kg/min (no diluir; máx 4 mg/kg/h)',
       copyLine:
         'Propofol ' + minMcgKgMin + '–' + maxMcgKgMin + ' mcg/kg/min (~' + mgMin + '–' + mgMax +
-        ' mg/h). No diluir. Permitir titular.',
+        ' mg/h). No diluir. Máx 4 mg/kg/h. Permitir titular.',
     };
   }
 
@@ -100,18 +100,18 @@ export function calcSedationMgPerHour(p) {
     };
   }
 
-  var minMgKgH = 0.1;
-  var maxMgKgH = 1.2;
-  var mgPerHourMin = Math.round(w * minMgKgH * 10) / 10;
-  var mgPerHourMax = Math.round(w * maxMgKgH * 10) / 10;
+  var minMgKgH = 0.02;
+  var maxMgKgH = 0.1;
+  var mgPerHourMin = Math.round(w * minMgKgH * 100) / 100;
+  var mgPerHourMax = Math.round(w * maxMgKgH * 100) / 100;
   return {
     drug: 'midazolam',
     mgPerHourMin,
     mgPerHourMax,
-    rangeText: '0.1–1.2 mg/kg/h',
+    rangeText: '0.02–0.1 mg/kg/h (50 mg en 100 cc SS0.9%)',
     copyLine:
       'Midazolam ' + mgPerHourMin + '–' + mgPerHourMax +
-      ' mg/h (0.1–1.2 mg/kg/h). Permitir titular.',
+      ' mg/h (0.02–0.1 mg/kg/h). 50 mg en 100 cc SS0.9%. Permitir titular.',
   };
 }
 

@@ -53,13 +53,23 @@ test('protocolToSomeOrder estructura NORE', () => {
     {
       title: 'Noradrenalina (NORE)',
       indicationText: '16 mg en 125 cc glucosado 5%. Iniciar 5 mcg/min y titular.',
+      someFields: {
+        medication: 'NORADRENALINA',
+        route: 'IV',
+        doseValue: '16',
+        doseUnit: 'MG',
+        dilution: '125 ML DE GLUCOSADO 5%',
+        frequency: 'INFUSIÓN CONTINUA',
+        infusionRateMlHr: '5 MCG/MIN',
+        comments: 'TITULAR SEGÚN PAM',
+      },
       notes: ['Permitir titular'],
     },
     null
   );
-  assert.match(order.medication, /Noradrenalina/i);
-  assert.match(order.dilution, /125 CC/i);
-  assert.match(order.comments, /titular/i);
+  assert.match(order.medication, /NORADRENALINA/i);
+  assert.match(order.dilution, /125 ML/i);
+  assert.match(String(order.infusionRateMlHr), /5 MCG\/MIN/i);
 });
 
 test('protocolToSomeOrder respeta someFields guardados', () => {

@@ -88,4 +88,25 @@ describe('host-store', () => {
     });
     assert.strictEqual(store.getRoomSyncBundle(r.id).agenda[0].procedure, 'NEW');
   });
+
+  it('putRoomSyncBundle persiste manejo', () => {
+    const store = createHostStore({ filePath, teamCodePlain: 'b' });
+    const r = store.createRoom('Sala');
+    store.putRoomSyncBundle(r.id, {
+      updatedAt: '2026-05-26T10:00:00.000Z',
+      uploadedByClientId: 'c1',
+      agenda: [],
+      todos: {},
+      entries: [],
+      manejo: {
+        customProtocols: [{ id: 'p1', name: 'X' }],
+        overrides: {},
+        favorites: [],
+        recent: [],
+        updatedAt: '2026-05-26T10:00:00.000Z',
+      },
+    });
+    const got = store.getRoomSyncBundle(r.id);
+    assert.strictEqual(got.manejo.customProtocols[0].id, 'p1');
+  });
 });

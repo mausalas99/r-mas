@@ -53,6 +53,7 @@ export function addCustomProtocol(entry) {
     calculatorId: null,
     copyTemplate: entry.copyTemplate || entry.indicationText || '',
     notes: entry.notes || [],
+    linkedPathologyIds: entry.linkedPathologyIds || [],
     isCustom: true,
   });
   saveCustomProtocols(list);

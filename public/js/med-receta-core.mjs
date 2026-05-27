@@ -314,6 +314,108 @@ export function dosisBeforeSlash(dosisRaw) {
   return stripDiaMarkersFromDosis(left);
 }
 
+/** Inserta espacios en textos SOME pegados sin separación (p. ej. 450MCGDILUIREN:). */
+function expandSmashedInfusionDosis(s) {
+  return String(s || '')
+    .replace(/DILUIREN/gi, ' DILUIREN ')
+    .replace(/DILUIR\s*EN/gi, ' DILUIR EN ')
+    .replace(/VEL\.?\s*INF\.?/gi, ' VEL.INF ')
+    .replace(/(MCG|MG|G|ML|UI)(?=\/)/gi, '$1 ')
+    .replace(/(MCG|MG|G|ML|UI)(?=[A-Z])/gi, '$1 ')
+    .replace(/(CC)(?=\/)/gi, '$1 ')
+    .replace(/(CC)(?=\d)/gi, '$1 ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function dosisForInfusionParse(dosisRaw) {
+  var raw = trimStr(dosisRaw);
+  if (!raw) return '';
+  var left = dosisBeforeSlash(raw);
+  var after =
+    raw.indexOf('//') === -1
+      ? ''
+      : stripDiaMarkersFromDosis(raw.slice(raw.indexOf('//') + 2));
+  return normalizeSpacesPct(expandSmashedInfusionDosis(left + ' ' + after)).toUpperCase();
+}
+
+function extractVelInfSegment(dosisParsed) {
+  var m = String(dosisParsed || '').match(/VEL\.INF\s*:\s*(.+)$/i);
+  return m ? trimStr(m[1]) : '';
+}
+
+function extractBolusBeforeDilution(dosisLeft) {
+  var t = normalizeSpacesPct(expandSmashedInfusionDosis(dosisLeft)).toUpperCase();
+  var cut = t.split(/\bDILUIREN\b|\bDILUIR\s+EN\b/i)[0];
+  cut = trimStr(cut.replace(/\bVEL\.INF\b.*$/i, ''));
+  var amount = cut.match(
+    /(\d+(?:[.,]\d+)?)\s*(MCG\/(?:MIN|HORA|H)|MG\/(?:MIN|HORA|H)|MCG|MG|G|ML|UI|U)\b/i
+  );
+  return amount ? trimStr(amount[1] + ' ' + amount[2]).replace(/\s+/g, ' ') : cut;
+}
+
+function compactRecetaDoseToken(dosePhrase) {
+  var t = trimStr(dosePhrase).toUpperCase().replace(/\s+/g, ' ');
+  var rate = t.match(
+    /^(\d+(?:[.,]\d+)?)\s*(MCG\/(?:MIN|HORA|H)|MG\/(?:MIN|HORA|H)|CC\/(?:HORA|H))$/i
+  );
+  if (rate) {
+    return String(rate[1]).replace(',', '.') + ' ' + rate[2].replace(/\s+/g, '');
+  }
+  var grams = t.match(/^(\d+(?:[.,]\d+)?)\s*G$/i);
+  if (grams) return String(grams[1]).replace(',', '.') + ' G';
+  return t
+    .replace(/(\d(?:[.,]\d+)?)\s*(MG|G|ML|MCG|UI|U)\b/gi, function (_m, n, u) {
+      return String(n).replace(',', '.') + String(u).toUpperCase();
+    })
+    .replace(/\s+/g, '');
+}
+
+/**
+ * Dosis compacta para pestaña «Simple» de receta: omite dilución y usa tasa VEL.INF
+ * (MCG/MIN, MCG/HORA) o dosis bolus cuando la infusión es por tiempo (p. ej. vancomicina 3 h).
+ */
+export function extractRecetaNameOnlyDose(dosisRaw) {
+  var parsed = dosisForInfusionParse(dosisRaw);
+  if (!parsed) return '';
+
+  var vel = extractVelInfSegment(parsed);
+  if (vel) {
+    var mcgMin = vel.match(/(\d+(?:[.,]\d+)?)\s*MCG\s*\/\s*MIN\b/i);
+    if (mcgMin) return compactRecetaDoseToken(mcgMin[1] + ' MCG/MIN');
+
+    var mcgHr = vel.match(/(\d+(?:[.,]\d+)?)\s*MCG\s*\/\s*(?:HORA|H)\b/i);
+    if (mcgHr) return compactRecetaDoseToken(mcgHr[1] + ' MCG/HORA');
+
+    var mgHr = vel.match(/(\d+(?:[.,]\d+)?)\s*MG\s*\/\s*(?:HORA|H)\b/i);
+    if (mgHr) return compactRecetaDoseToken(mgHr[1] + ' MG/HORA');
+
+    var ccHr = vel.match(/(\d+(?:[.,]\d+)?)\s*CC\s*\/\s*(?:HORA|H)\b/i);
+    if (ccHr) {
+      var bolusMcg = extractBolusBeforeDilution(dosisBeforeSlash(dosisRaw));
+      if (/\bMCG\b/i.test(bolusMcg) && !/\bMG\b/i.test(bolusMcg.replace(/\bMCG\b/gi, ''))) {
+        return compactRecetaDoseToken(ccHr[1] + ' MCG/HORA');
+      }
+      return compactRecetaDoseToken(ccHr[1] + ' CC/HORA');
+    }
+
+    if (/^\d+(?:[.,]\d+)?\s*HORAS?\b/i.test(vel)) {
+      var bolusTimed = extractBolusBeforeDilution(dosisBeforeSlash(dosisRaw));
+      if (bolusTimed) return compactRecetaDoseToken(bolusTimed);
+    }
+  }
+
+  var anywhereMcgMin = parsed.match(/(\d+(?:[.,]\d+)?)\s*MCG\s*\/\s*MIN\b/i);
+  if (anywhereMcgMin) return compactRecetaDoseToken(anywhereMcgMin[1] + ' MCG/MIN');
+
+  var anywhereMcgHr = parsed.match(/(\d+(?:[.,]\d+)?)\s*MCG\s*\/\s*(?:HORA|H)\b/i);
+  if (anywhereMcgHr) return compactRecetaDoseToken(anywhereMcgHr[1] + ' MCG/HORA');
+
+  var bolus = extractBolusBeforeDilution(dosisBeforeSlash(dosisRaw));
+  if (bolus) return compactRecetaDoseToken(bolus);
+  return compactRecetaDoseToken(dosisBeforeSlash(dosisRaw));
+}
+
 function isPrnItem(item) {
   var f = trimStr(item.frecuenciaRaw).toUpperCase();
   if (f === 'PRN') return true;
@@ -467,13 +569,6 @@ export function buildMedRecetaNameOnlyText(items) {
     if (m) return 'C/' + m[1] + 'H';
     return t;
   }
-  function doseShort(dosis) {
-    return trimStr(dosis)
-      .toUpperCase()
-      .replace(/\s+/g, ' ')
-      .replace(/(\d(?:[.,]\d+)?)\s*(MG|G|ML|MCG|UI)\b/g, '$1$2')
-      .replace(/\s+/g, '');
-  }
   function compactName(nombreExpandido) {
     var n = trimStr(nombreExpandido).toUpperCase();
     var trimmed = trimStr(n.replace(/\s+\d.*$/, ''));
@@ -482,10 +577,10 @@ export function buildMedRecetaNameOnlyText(items) {
   var lines = list.map(function (it) {
     var nombre = compactName(applyNombreAccents(expandNombrePresentacion(it.nombreRaw)));
     var via = normalizeVia(it.viaRaw);
-    var dosis = dosisBeforeSlash(it.dosisRaw);
     var freq = normalizeFrecuencia(it.frecuenciaRaw);
     var parts = [nombre];
-    if (dosis) parts.push(doseShort(dosis));
+    var dosisCompact = extractRecetaNameOnlyDose(it.dosisRaw);
+    if (dosisCompact) parts.push(dosisCompact);
     if (via) parts.push(viaShort(via));
     if (freq) parts.push(freqShort(freq));
     if (it.diaTratamiento != null) parts.push('DIA ' + it.diaTratamiento);

@@ -11,6 +11,7 @@ import {
   dayKeyFromLabSet,
   rebuildEstudiosFromLabHistory,
   ensureParsedLabHistory,
+  ensureParsedLabHistoryCached,
 } from './lab-history-set.mjs';
 import { normalizeFechaLabHistory } from './tend-core.mjs';
 import {
@@ -159,6 +160,8 @@ import {
   switchInnerTab,
   switchConsolidatedTab,
   invalidateInnerTabRenderCache,
+  refreshExpedienteAfterPatientSelect,
+  warmExpedienteHeavyTabs,
   renderInnerTabs,
   syncInnerTabVisualOnly,
 } from './features/pase-board.mjs';
@@ -266,6 +269,7 @@ registerPaseBoardRuntime({
   setMedTabAttention: setMedTabAttention,
   syncWorkContextChrome: syncWorkContextChrome,
   ensureParsedLabHistory: ensureParsedLabHistory,
+  ensureParsedLabHistoryCached: ensureParsedLabHistoryCached,
   splitResLabsByTipo: splitResLabsByTipo,
   primaryTipoForLabSet: primaryTipoForLabSet,
 });
@@ -318,6 +322,7 @@ registerPatientsRuntime({
   showToast: showToast,
   renderInnerTabs: renderInnerTabs,
   invalidateInnerTabRenderCache: invalidateInnerTabRenderCache,
+  refreshExpedienteAfterPatientSelect: refreshExpedienteAfterPatientSelect,
   renderEstadoActualButton: renderEstadoActualButton,
   renderNoteForm: renderNoteForm,
   renderPatientDataPane: renderPatientDataPane,
@@ -345,6 +350,7 @@ registerPatientsRuntime({
   applyDefaultsToNewIndicaciones: applyDefaultsToNewIndicaciones,
   enviarLabsANota: enviarLabsANota,
   ensureParsedLabHistory: ensureParsedLabHistory,
+  ensureParsedLabHistoryCached: ensureParsedLabHistoryCached,
   primaryTipoForLabSet: primaryTipoForLabSet,
   normalizeFechaLabHistory: normalizeFechaLabHistory,
 });
@@ -382,6 +388,7 @@ registerTendenciasRuntime({
     return rt.getActiveId();
   },
   ensureParsedLabHistory: ensureParsedLabHistory,
+  ensureParsedLabHistoryCached: ensureParsedLabHistoryCached,
   rerenderParsedLabOutputAfterPrefsChange: rerenderParsedLabOutputAfterPrefsChange,
   rpcPrefersReducedMotion: rpcPrefersReducedMotion,
   showToast: showToast,
@@ -404,6 +411,7 @@ registerManejoRuntime({
     return rt.getActiveId();
   },
   ensureParsedLabHistory: ensureParsedLabHistory,
+  ensureParsedLabHistoryCached: ensureParsedLabHistoryCached,
   saveState: saveState,
   showToast: showToast,
   emitLiveSyncTodoUpsert: emitLiveSyncTodoUpsert,
@@ -482,6 +490,7 @@ registerExpedienteRuntime({
   splitResLabsByTipo: splitResLabsByTipo,
   buildLabSetDateLine: buildLabSetDateLine,
   ensureParsedLabHistory: ensureParsedLabHistory,
+  ensureParsedLabHistoryCached: ensureParsedLabHistoryCached,
   guardMobileDocExport: guardMobileDocExport,
   isRpcOffline: isRpcOffline,
   incrementPendingJobs: incrementPendingJobs,
@@ -542,6 +551,7 @@ registerEstadoActualPanelRuntime({
   },
   switchConsolidatedTab: switchConsolidatedTab,
   copyToClipboardSafe: copyToClipboardSafe,
+  invalidateInnerTabRenderCache: invalidateInnerTabRenderCache,
 });
 
 registerLabPanelRuntime({
@@ -570,6 +580,7 @@ registerLabPanelRuntime({
   extractParsedValues: extractParsedValues,
   buildParsedBySectionFromResLabs: buildParsedBySectionFromResLabs,
   ensureParsedLabHistory: ensureParsedLabHistory,
+  ensureParsedLabHistoryCached: ensureParsedLabHistoryCached,
   rebuildEstudiosFromLabHistory: rebuildEstudiosFromLabHistory,
   inferFechaLabSetFromId: inferFechaLabSetFromId,
   dayKeyFromLabSet: dayKeyFromLabSet,

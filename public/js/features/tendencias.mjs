@@ -12,6 +12,14 @@ import {
 } from '../tend-core.mjs';
 import { createTendGroupModal } from '../tend-group-modal.mjs';
 import { scheduleAfterPaint } from '../deferred-work.mjs';
+import {
+  buildTrendSeriesIndex,
+  getLabHistoryRevision,
+  getTrendRenderWindow,
+  TREND_DETAIL_DOWNSAMPLE,
+  TREND_SPARK_WINDOW,
+  trendCatalogSeriesKey,
+} from '../lab-history-cache.mjs';
 import { readTendCardOrder, writeTendCardOrder } from '../tend-prefs.mjs';
 import {
   formatBhExtrasDisplayLine,
@@ -29,10 +37,11 @@ import {
   registerSesionIngresoTrendsSendRuntime,
 } from './sesion-ingreso-trends-send-modal.mjs';
 
-/** @type {{ getActiveId(): string|null, ensureParsedLabHistory(pid: string): any[], rerenderParsedLabOutputAfterPrefsChange(): void, rpcPrefersReducedMotion(): boolean, showToast(msg: string, type?: string): void, buildLabSetDateLine(set: any): string }} */
+/** @type {{ getActiveId(): string|null, ensureParsedLabHistory(pid: string): any[], ensureParsedLabHistoryCached?(pid: string): any[], rerenderParsedLabOutputAfterPrefsChange(): void, rpcPrefersReducedMotion(): boolean, showToast(msg: string, type?: string): void, buildLabSetDateLine(set: any): string }} */
 var rt = {
   getActiveId() { return null; },
   ensureParsedLabHistory() { return []; },
+  ensureParsedLabHistoryCached() { return []; },
   rerenderParsedLabOutputAfterPrefsChange() {},
   rpcPrefersReducedMotion() { return false; },
   showToast() {},
@@ -59,7 +68,7 @@ export function registerTendenciasRuntime(partial) {
     },
     getHistory: function () {
       var pid = aid();
-      return pid ? rt.ensureParsedLabHistory(pid) : [];
+      return pid ? tendParsedHistoryDesc(pid) : [];
     },
     getPatientLabel: function () {
       var pid = aid();
@@ -99,6 +108,105 @@ function esc(s) {
 var _tendCardSortables = [];
 var sparkCharts = {};
 var detailChart = null;
+var _tendRenderState = { key: null, seriesKeys: [] };
+
+function buildTendRenderKey(patientId, revision, prefsHash, sectionsExpanded) {
+  return [patientId, revision, prefsHash, sectionsExpanded].join('::');
+}
+
+function tendPrefsHash() {
+  return String(tendAbnormalOnlyRead()) + '|' + String(tendHiddenSeriesRead().join(','));
+}
+
+function tendExpandedSectionsKey() {
+  return TEND_SECTION_ORDER.filter(function (sk) {
+    return tendSectionIsExpanded(sk);
+  }).join(',');
+}
+
+function tendSeriesKeySelector(seriesKey) {
+  if (typeof CSS !== 'undefined' && CSS.escape) {
+    return '.tend-card[data-series-key="' + CSS.escape(seriesKey) + '"]';
+  }
+  return '.tend-card[data-series-key="' + String(seriesKey).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"]';
+}
+
+function patchTendCardsFromIndex(seriesIndex, seriesAvail) {
+  var patched = 0;
+  for (var i = 0; i < seriesAvail.length; i += 1) {
+    var sp = seriesAvail[i];
+    var key = tendCatalogSeriesKey(sp.sectionKey, sp.fieldKey);
+    var idx = seriesIndex[key];
+    if (!idx) return false;
+    var card = document.querySelector(tendSeriesKeySelector(key));
+    if (!card) return false;
+    var valEl = card.querySelector('.tend-param-value');
+    if (valEl) {
+      valEl.textContent = idx.latest != null ? String(idx.latest) : '—';
+      valEl.classList.toggle('tend-abnormal', !!idx.isAbnormal);
+    }
+    patched += 1;
+  }
+  return patched > 0;
+}
+
+function updateSparkChartsFromJobs(sparkJobs, chartAnim) {
+  for (var i = 0; i < sparkJobs.length; i += 1) {
+    var job = sparkJobs[i];
+    var ck = trendSparkChartKey(job.sk2, job.fk2);
+    var chart = sparkCharts[ck];
+    if (chart) {
+      chart.data.labels = job.labels2;
+      chart.data.datasets[0].data = job.values2;
+      chart.update(chartAnim === false ? 'none' : undefined);
+    } else {
+      mountOneTrendSparkChart(job, null, chartAnim);
+    }
+  }
+}
+
+function buildSparkJobsFromIndex(seriesAvail, seriesIndex, chartAnim) {
+  var sparkJobs = [];
+  for (var cj = 0; cj < seriesAvail.length; cj += 1) {
+    var spec2 = seriesAvail[cj];
+    var sk2 = spec2.sectionKey;
+    var fk2 = spec2.fieldKey;
+    if (!tendSectionIsExpanded(sk2)) continue;
+    var idx = seriesIndex[tendCatalogSeriesKey(sk2, fk2)];
+    if (!idx || !idx.setsDesc.length) continue;
+    var sparkDesc = idx.setsDesc.slice(0, TREND_SPARK_WINDOW);
+    var setsAsc2 = toTrendAscendingSets(sparkDesc);
+    sparkJobs.push({
+      sk2: sk2,
+      fk2: fk2,
+      setsDesc2: sparkDesc,
+      labels2: buildTendChartLabels(setsAsc2),
+      values2: setsAsc2.map(function (s) {
+        return getSetTrendValueForSeries(s, sk2, fk2);
+      }),
+    });
+  }
+  var jobIndex = 0;
+  var SPARK_BATCH = 6;
+  function runSparkBatch() {
+    var end = Math.min(jobIndex + SPARK_BATCH, sparkJobs.length);
+    for (; jobIndex < end; jobIndex += 1) {
+      mountOneTrendSparkChart(sparkJobs[jobIndex], null, chartAnim);
+    }
+    if (jobIndex < sparkJobs.length) {
+      requestAnimationFrame(runSparkBatch);
+      return;
+    }
+    mountTendCardSortables();
+    syncTendHiddenModalIfOpen();
+  }
+  if (sparkJobs.length) runSparkBatch();
+  else {
+    mountTendCardSortables();
+    syncTendHiddenModalIfOpen();
+  }
+  return sparkJobs;
+}
 
 var TEND_UNITS = {
   Hb:'g/dL',  Hto:'%',    Leu:'K/μL', Plt:'K/μL', VCM:'fL', HCM:'pg',
@@ -476,8 +584,15 @@ function tendRefForSeries(history, sectionKey, fieldKey, preferSet) {
   return tendRefOrientative(sectionKey, fieldKey);
 }
 
+function tendParsedHistoryDesc(patientId) {
+  if (rt.ensureParsedLabHistoryCached) {
+    return sortLabHistoryChronological(rt.ensureParsedLabHistoryCached(patientId));
+  }
+  return sortLabHistoryChronological(rt.ensureParsedLabHistory(patientId));
+}
+
 function tendCatalogSeriesKey(sectionKey, fieldKey) {
-  return String(sectionKey) + '|' + String(fieldKey);
+  return trendCatalogSeriesKey(sectionKey, fieldKey);
 }
 
 function orderTrendSeriesBySaved(specs, savedOrder) {
@@ -982,7 +1097,8 @@ function initTendGroupModal() {
       return aid();
     },
     getHistory: function () {
-      return rt.ensureParsedLabHistory(aid());
+      var pid = aid();
+      return pid ? tendParsedHistoryDesc(pid) : [];
     },
     getSectionLabel: getTendSectionLabel,
     getCatalogSpecs: getTendCatalogSpecsForSection,
@@ -1382,57 +1498,64 @@ function renderTendenciasBody(container) {
     }
   });
   if (!aid()) {
+    _tendRenderState.key = null;
+    _tendRenderState.seriesKeys = [];
     closeTendHiddenModal();
     container.innerHTML = '<p class="tend-empty">Selecciona un paciente.</p>';
     return;
   }
-  var history = sortLabHistoryChronological(rt.ensureParsedLabHistory(aid()));
-  if (history.length < 2) {
+  var historyDesc = tendParsedHistoryDesc(aid());
+  if (historyDesc.length < 2) {
+    _tendRenderState.key = null;
+    _tendRenderState.seriesKeys = [];
     closeTendHiddenModal();
     container.innerHTML = '<p class="tend-empty">Agrega al menos 2 sets de laboratorio para ver tendencias.</p>';
     return;
   }
+  var historyAsc = historyDesc.slice().reverse();
+  var catalogAsc = getTrendRenderWindow(historyAsc, 'catalog');
 
-  var mergedCatalog = buildMergedTrendSeriesCatalog(history);
+  var mergedCatalog = buildMergedTrendSeriesCatalog(historyDesc);
+  var seriesIndex = buildTrendSeriesIndex({
+    catalogSpecs: mergedCatalog,
+    historyFullDesc: historyDesc,
+    windowHistoryAsc: catalogAsc,
+    tendRefForSeries: tendRefForSeries,
+  });
   var seriesAvail = [];
   for (var ci = 0; ci < mergedCatalog.length; ci++) {
     var sp = mergedCatalog[ci];
     var sk = sp.sectionKey;
     var fk = sp.fieldKey;
     if (tendSeriesIsUserHidden(sk, fk)) continue;
-    var raw = history.filter(function (s) {
-      return getSetTrendValueForSeries(s, sk, fk) != null;
-    });
-    if (dedupeTrendSetsForSeries(raw, sk, fk).length < 2) continue;
+    var idxAvail = seriesIndex[tendCatalogSeriesKey(sk, fk)];
+    if (!idxAvail || idxAvail.setsDesc.length < 2) continue;
     seriesAvail.push(sp);
   }
   var seriesAvailFull = seriesAvail.slice();
   var abnormalOnly = tendAbnormalOnlyRead();
   if (abnormalOnly) {
     seriesAvail = seriesAvail.filter(function (sp) {
-      return tendSeriesLatestAbnormal(history, sp.sectionKey, sp.fieldKey);
+      var idxAb = seriesIndex[tendCatalogSeriesKey(sp.sectionKey, sp.fieldKey)];
+      return idxAb && idxAb.isAbnormal;
     });
   }
 
   var hiddenChipN = tendHiddenChipDescriptors().length;
-  var toolbarOpts = { showGasoExtended: historyHasGasoForExtended(history) };
+  var toolbarOpts = { showGasoExtended: historyHasGasoForExtended(historyDesc) };
   var toolbarHtml = buildTendInlineControlsHtml(hiddenChipN, toolbarOpts);
 
   if (!seriesAvail.length) {
     var anyData = mergedCatalog.some(function (sp) {
-      var r = history.filter(function (s) {
-        return getSetTrendValueForSeries(s, sp.sectionKey, sp.fieldKey) != null;
-      });
-      return dedupeTrendSetsForSeries(r, sp.sectionKey, sp.fieldKey).length >= 2;
+      var idxAny = seriesIndex[tendCatalogSeriesKey(sp.sectionKey, sp.fieldKey)];
+      return idxAny && idxAny.setsDesc.length >= 2;
     });
     var hiddenAll =
       anyData &&
       !mergedCatalog.some(function (sp) {
         if (tendSeriesIsUserHidden(sp.sectionKey, sp.fieldKey)) return false;
-        var r2 = history.filter(function (s) {
-          return getSetTrendValueForSeries(s, sp.sectionKey, sp.fieldKey) != null;
-        });
-        return dedupeTrendSetsForSeries(r2, sp.sectionKey, sp.fieldKey).length >= 2;
+        var idxVis = seriesIndex[tendCatalogSeriesKey(sp.sectionKey, sp.fieldKey)];
+        return idxVis && idxVis.setsDesc.length >= 2;
       });
     if (abnormalOnly && seriesAvailFull.length) {
       container.innerHTML =
@@ -1472,6 +1595,53 @@ function renderTendenciasBody(container) {
   var chartAnim = rt.rpcPrefersReducedMotion()
     ? false
     : { duration: 600, easing: 'easeOutQuart' };
+
+  var renderKey = buildTendRenderKey(
+    aid(),
+    getLabHistoryRevision(aid()),
+    tendPrefsHash(),
+    tendExpandedSectionsKey()
+  );
+  var nextSeriesKeys = seriesAvail.map(function (sp) {
+    return tendCatalogSeriesKey(sp.sectionKey, sp.fieldKey);
+  });
+  var canPatch =
+    _tendRenderState.key === renderKey &&
+    _tendRenderState.seriesKeys.length === nextSeriesKeys.length &&
+    _tendRenderState.seriesKeys.every(function (k, i) {
+      return k === nextSeriesKeys[i];
+    }) &&
+    container.querySelector('.tend-grid');
+
+  if (canPatch && patchTendCardsFromIndex(seriesIndex, seriesAvail)) {
+    var patchJobs = [];
+    for (var pj = 0; pj < seriesAvail.length; pj += 1) {
+      var spP = seriesAvail[pj];
+      var skP = spP.sectionKey;
+      var fkP = spP.fieldKey;
+      if (!tendSectionIsExpanded(skP)) continue;
+      var idxP = seriesIndex[tendCatalogSeriesKey(skP, fkP)];
+      if (!idxP || !idxP.setsDesc.length) continue;
+      var sparkDescP = idxP.setsDesc.slice(0, TREND_SPARK_WINDOW);
+      var setsAscP = toTrendAscendingSets(sparkDescP);
+      patchJobs.push({
+        sk2: skP,
+        fk2: fkP,
+        setsDesc2: sparkDescP,
+        labels2: buildTendChartLabels(setsAscP),
+        values2: setsAscP.map(function (s) {
+          return getSetTrendValueForSeries(s, skP, fkP);
+        }),
+      });
+    }
+    updateSparkChartsFromJobs(patchJobs, chartAnim);
+    syncTendHiddenModalIfOpen();
+    return;
+  }
+
+  _tendRenderState.key = renderKey;
+  _tendRenderState.seriesKeys = nextSeriesKeys;
+
   var htmlParts = [];
   htmlParts.push(buildTendInlineControlsHtml(hiddenChipN, toolbarOpts));
   for (var si = 0; si < sectionsOrdered.length; si++) {
@@ -1486,17 +1656,9 @@ function renderTendenciasBody(container) {
     for (var li = 0; li < list.length; li++) {
       var spec = list[li];
       var fk = spec.fieldKey;
-      var setsDesc = dedupeTrendSetsForSeries(
-        history.filter(function (s) {
-          return getSetTrendValueForSeries(s, sectionKey, fk) != null;
-        }),
-        sectionKey,
-        fk
-      );
-      var latestSet = setsDesc.length ? setsDesc[0] : null;
-      var latest = latestSet ? getSetTrendValueForSeries(latestSet, sectionKey, fk) : null;
-      var ref = tendRefForSeries(history, sectionKey, fk, latestSet);
-      var isAb = ref && latest != null && (latest < ref[0] || latest > ref[1]);
+      var idxCard = seriesIndex[tendCatalogSeriesKey(sectionKey, fk)];
+      var latest = idxCard ? idxCard.latest : null;
+      var isAb = idxCard ? idxCard.isAbnormal : false;
       var domId = trendSparkDomId(sectionKey, fk);
       var labelParts = tendCardLabelParts(sectionKey, fk);
       var titleEsc = esc(labelParts.title);
@@ -1565,63 +1727,17 @@ function renderTendenciasBody(container) {
   }
   container.innerHTML = htmlParts.join('');
 
-  var sparkJobs = [];
-  for (var cj = 0; cj < seriesAvail.length; cj++) {
-    var spec2 = seriesAvail[cj];
-    var sk2 = spec2.sectionKey;
-    var fk2 = spec2.fieldKey;
-    if (!tendSectionIsExpanded(sk2)) continue;
-    var setsDesc2 = dedupeTrendSetsForSeries(
-      history.filter(function (s) {
-        return getSetTrendValueForSeries(s, sk2, fk2) != null;
-      }),
-      sk2,
-      fk2
-    );
-    var setsAsc2 = toTrendAscendingSets(setsDesc2);
-    var sampled = downsampleTrendChartSeries(buildTendChartLabels(setsAsc2), setsAsc2.map(function (s) {
-      return getSetTrendValueForSeries(s, sk2, fk2);
-    }));
-    sparkJobs.push({
-      sk2: sk2,
-      fk2: fk2,
-      setsDesc2: setsDesc2,
-      labels2: sampled.labels,
-      values2: sampled.values,
-    });
-  }
-
-  var jobIndex = 0;
-  var SPARK_BATCH = 6;
-  function runSparkBatch() {
-    var end = Math.min(jobIndex + SPARK_BATCH, sparkJobs.length);
-    for (; jobIndex < end; jobIndex += 1) {
-      mountOneTrendSparkChart(sparkJobs[jobIndex], history, chartAnim);
-    }
-    if (jobIndex < sparkJobs.length) {
-      requestAnimationFrame(runSparkBatch);
-      return;
-    }
-    mountTendCardSortables();
-    syncTendHiddenModalIfOpen();
-  }
-  if (sparkJobs.length) runSparkBatch();
-  else {
-    mountTendCardSortables();
-    syncTendHiddenModalIfOpen();
-  }
+  buildSparkJobsFromIndex(seriesAvail, seriesIndex, chartAnim);
 }
 
-var TREND_SPARK_MAX_POINTS = 48;
-
-function downsampleTrendChartSeries(labels, values) {
-  if (!labels || !labels.length || labels.length <= TREND_SPARK_MAX_POINTS) {
+function downsampleTrendChartSeries(labels, values, maxPoints) {
+  var slots = maxPoints == null ? TREND_DETAIL_DOWNSAMPLE : maxPoints;
+  if (!labels || !labels.length || labels.length <= slots) {
     return { labels: labels || [], values: values || [] };
   }
   var outL = [];
   var outV = [];
   var n = labels.length;
-  var slots = TREND_SPARK_MAX_POINTS;
   for (var i = 0; i < slots; i += 1) {
     var idx = Math.round((i * (n - 1)) / (slots - 1));
     outL.push(labels[idx]);
@@ -1686,7 +1802,7 @@ function syncTendHiddenModalIfOpen() {
 
 function openTendDetail(sectionKey, fieldKey) {
   if (!aid() || sectionKey == null || fieldKey == null) return;
-  var history = sortLabHistoryChronological(rt.ensureParsedLabHistory(aid()));
+  var history = tendParsedHistoryDesc(aid());
   var setsDesc = dedupeTrendSetsForSeries(
     history.filter(function (s) {
       return getSetTrendValueForSeries(s, sectionKey, fieldKey) != null;
@@ -1700,6 +1816,12 @@ function openTendDetail(sectionKey, fieldKey) {
   var values = setsAsc.map(function (s) {
     return getSetTrendValueForSeries(s, sectionKey, fieldKey);
   });
+  var sampled =
+    labels.length > TREND_DETAIL_DOWNSAMPLE
+      ? downsampleTrendChartSeries(labels, values, TREND_DETAIL_DOWNSAMPLE)
+      : { labels: labels, values: values };
+  labels = sampled.labels;
+  values = sampled.values;
   var labelParts = tendCardLabelParts(sectionKey, fieldKey);
   var spec = tendFindSeriesSpec(sectionKey, fieldKey);
   var title = labelParts.title;

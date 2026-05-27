@@ -153,6 +153,12 @@ function createHostStore({ filePath, teamCodePlain }) {
       agenda: Array.isArray(incoming.agenda) ? incoming.agenda : [],
       todos: incoming.todos && typeof incoming.todos === 'object' ? incoming.todos : {},
       entries: Array.isArray(incoming.entries) ? incoming.entries : [],
+      manejo:
+        incoming.manejo && typeof incoming.manejo === 'object'
+          ? incoming.manejo
+          : cur && cur.manejo
+            ? cur.manejo
+            : null,
     };
     state.roomSyncBundles[rid] = next;
     save(state);

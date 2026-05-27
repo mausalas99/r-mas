@@ -122,8 +122,35 @@ describe('lab-bulk-paste', () => {
     );
     assert.equal(shouldShowBulkLabPreview([{ status: 'no-patient' }], 1), true);
     assert.equal(
-      shouldShowBulkLabPreview([{ status: 'no-patient' }], 1, { quickLabOutput: true }),
+      shouldShowBulkLabPreview([{ status: 'no-patient', okReportCount: 1 }], 1, { quickLabOutput: true }),
       false
+    );
+    assert.equal(
+      shouldShowBulkLabPreview(
+        [{ status: 'no-patient', okReportCount: 2 }],
+        2,
+        { quickLabOutput: true }
+      ),
+      false
+    );
+    assert.equal(
+      shouldShowBulkLabPreview(
+        [
+          { status: 'no-patient', okReportCount: 1 },
+          { status: 'no-patient', okReportCount: 1 },
+        ],
+        2,
+        { quickLabOutput: true }
+      ),
+      false
+    );
+    assert.equal(
+      shouldShowBulkLabPreview(
+        [{ status: 'ok', okReportCount: 2, canProcess: true, patient: { id: 'p1' } }],
+        2,
+        { quickLabOutput: true }
+      ),
+      true
     );
   });
 });

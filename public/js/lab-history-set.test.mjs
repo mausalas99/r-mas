@@ -65,4 +65,24 @@ describe('lab-history-set', () => {
     assert.match(String(appState.notes[PATIENT_ID].estudios || ''), /24\/05/);
     assert.equal(appState.labHistory[PATIENT_ID][0].hora, '02:40');
   });
+
+  it('ensureParsedLabHistory readOnly sets fingerprint and skips re-parse', () => {
+    const history = ensureParsedLabHistory(PATIENT_ID, { readOnly: true });
+    assert.ok(history[0]._parseFingerprint);
+    assert.ok(history[0].parsedBySection);
+    const fp = history[0]._parseFingerprint;
+    const again = ensureParsedLabHistory(PATIENT_ID, { readOnly: true });
+    assert.equal(again[0]._parseFingerprint, fp);
+  });
+
+  it('ensureParsedLabHistory readOnly does not call saveState', () => {
+    let saveCount = 0;
+    appState.setSaveStateHooks({
+      before: () => {
+        saveCount += 1;
+      },
+    });
+    ensureParsedLabHistory(PATIENT_ID, { readOnly: true });
+    assert.equal(saveCount, 0);
+  });
 });

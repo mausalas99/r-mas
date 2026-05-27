@@ -24,6 +24,7 @@ import {
 import { extractParsedValues, buildParsedBySectionFromResLabs } from './features/diagrams.mjs';
 import { inferFechaLabSetFromId } from './features/tendencias.mjs';
 import { normalizeLabHistoryPatientSets } from './storage.js';
+import { bumpLabHistoryRevision } from './lab-history-cache.mjs';
 import {
   patients,
   notes,
@@ -44,6 +45,23 @@ let maintRt = {
 
 export function registerLabHistoryMaintRuntime(partial) {
   if (partial && typeof partial === 'object') Object.assign(maintRt, partial);
+}
+
+export { bumpLabHistoryRevision };
+
+function labSetParseFingerprint(set) {
+  if (!set) return '';
+  var parts = [];
+  if (set.resLabs && set.resLabs.length) {
+    parts.push('r:' + set.resLabs.join('\n'));
+  }
+  if (set.sourceText) parts.push('s:' + String(set.sourceText));
+  if (set.bhExtras) {
+    try {
+      parts.push('b:' + JSON.stringify(set.bhExtras));
+    } catch (_e) {}
+  }
+  return parts.join('|');
 }
 
 export function isLikelyLabDataLine(line) {
@@ -252,6 +270,7 @@ export function rebuildEstudiosFromLabHistory(patientId) {
 
 export function ensureParsedLabHistory(patientId, options) {
   var skipRebuildNota = !!(options && options.skipRebuildNota);
+  var readOnly = !!(options && options.readOnly);
   var raw = labHistory[patientId];
   var history = normalizeLabHistoryPatientSets(raw);
   var changed = !Array.isArray(raw) || raw !== history;
@@ -277,6 +296,14 @@ export function ensureParsedLabHistory(patientId, options) {
         set.bhExtras = {};
       }
       changed = true;
+    }
+    var fp = labSetParseFingerprint(set);
+    if (
+      set._parseFingerprint === fp &&
+      set.parsedBySection &&
+      Object.keys(set.parsedBySection).length
+    ) {
+      return;
     }
     var needsParse = !set.parsed || !Object.keys(set.parsed).length;
     if (needsParse) {
@@ -342,6 +369,7 @@ export function ensureParsedLabHistory(patientId, options) {
         changed = true;
       }
     }
+    set._parseFingerprint = labSetParseFingerprint(set);
   });
   if (rebuildNota && patientId && notes[patientId] && !skipRebuildNota) {
     if (history.length) labHistory[patientId] = history;
@@ -354,8 +382,14 @@ export function ensureParsedLabHistory(patientId, options) {
     else delete labHistory[patientId];
     changed = true;
   }
-  if (changed) saveState();
+  if (changed && !readOnly) saveState();
   return history;
+}
+
+export function ensureParsedLabHistoryCached(patientId, options) {
+  var opts = options && typeof options === 'object' ? Object.assign({}, options) : {};
+  if (opts.readOnly == null) opts.readOnly = true;
+  return ensureParsedLabHistory(patientId, opts);
 }
 
 var _labMaintTimer = null;
@@ -384,6 +418,7 @@ export function runLabHistoryPostSaveMaintenance() {
         set.resLabs = repro.slice();
         set.parsed = extractParsedValues(repro);
         set.parsedBySection = buildParsedBySectionFromResLabs(repro, set.bhExtras);
+        delete set._parseFingerprint;
         changed = true;
         report.reprocessedSetCount++;
         if (report.patientsReprocessed.indexOf(pid) === -1) report.patientsReprocessed.push(pid);
@@ -412,6 +447,11 @@ export function runLabHistoryPostSaveMaintenance() {
     report.sameDateTimeConflicts.length > 0;
   if (noise) {
     console.info('[R+ Laboratorio] Auditoría tras guardado — revisa window.__rpcLabAudit:', report);
+  }
+  if (changed && report.patientsReprocessed.length) {
+    report.patientsReprocessed.forEach(function (pid) {
+      bumpLabHistoryRevision(pid);
+    });
   }
   return changed;
 }

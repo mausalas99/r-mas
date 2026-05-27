@@ -11,10 +11,15 @@ import {
   getConsolidatedTabs,
   getClinicoSections,
   getSalidaSections,
+  isClinicoTabHidden,
+  isManejoSectionHidden,
+  isClinicoCompositeVisible,
 } from './expediente-tabs.mjs';
 
 const INTER = { appMode: 'interconsulta' };
 const SALA = { appMode: 'sala' };
+const HIDE_MANEJO_INTER = { appMode: 'interconsulta', hideManejoSection: true };
+const HIDE_MANEJO_LEGACY = { appMode: 'interconsulta', hideClinicoTab: true };
 
 test('useConsolidatedExpedienteTabs is always true', () => {
   assert.equal(useConsolidatedExpedienteTabs(SALA), true);
@@ -99,4 +104,48 @@ test('getClinicoSections differs by mode', () => {
 test('getSalidaSections only in sala', () => {
   assert.deepEqual(getSalidaSections(SALA), ['listado', 'recetaHu']);
   assert.deepEqual(getSalidaSections(INTER), []);
+});
+
+test('isManejoSectionHidden respects hideManejoSection and legacy hideClinicoTab', () => {
+  assert.equal(isManejoSectionHidden({}), false);
+  assert.equal(isManejoSectionHidden({ hideManejoSection: true }), true);
+  assert.equal(isManejoSectionHidden(HIDE_MANEJO_LEGACY), true);
+});
+
+test('interconsulta keeps clinico tab when only manejo is hidden', () => {
+  assert.equal(isClinicoCompositeVisible(INTER), true);
+  assert.equal(isClinicoCompositeVisible(HIDE_MANEJO_INTER), true);
+  assert.equal(getConsolidatedTabs(HIDE_MANEJO_INTER).includes('clinico'), true);
+  assert.deepEqual(getClinicoSections(HIDE_MANEJO_INTER), ['notas', 'indica']);
+});
+
+test('sala omits clinico composite when manejo is hidden', () => {
+  const hiddenSala = { appMode: 'sala', hideManejoSection: true };
+  assert.equal(isClinicoCompositeVisible(hiddenSala), false);
+  assert.equal(getConsolidatedTabs(hiddenSala).includes('clinico'), false);
+  assert.deepEqual(getClinicoSections(hiddenSala), []);
+});
+
+test('migrateGranularInner keeps notas and indica when manejo is hidden (inter)', () => {
+  assert.equal(migrateGranularInner('notas', HIDE_MANEJO_INTER), 'notas');
+  assert.equal(migrateGranularInner('indica', HIDE_MANEJO_INTER), 'indica');
+  assert.equal(migrateGranularInner('manejo', HIDE_MANEJO_INTER), 'notas');
+});
+
+test('consolidatedInnerTabButtonId keeps clinico for notas when manejo hidden', () => {
+  assert.equal(consolidatedInnerTabButtonId('notas', HIDE_MANEJO_INTER), 'itab-clinico');
+  assert.equal(consolidatedInnerTabButtonId('indica', HIDE_MANEJO_INTER), 'itab-clinico');
+  assert.equal(consolidatedInnerTabButtonId('manejo', HIDE_MANEJO_INTER), 'itab-clinico');
+});
+
+test('resolveConsolidatedTarget redirects manejo to notas when hidden (inter)', () => {
+  assert.deepEqual(resolveConsolidatedTarget('manejo', HIDE_MANEJO_INTER), {
+    tab: 'clinico',
+    section: 'notas',
+  });
+});
+
+test('legacy isClinicoTabHidden only true in sala', () => {
+  assert.equal(isClinicoTabHidden(HIDE_MANEJO_INTER), false);
+  assert.equal(isClinicoTabHidden({ appMode: 'sala', hideClinicoTab: true }), true);
 });

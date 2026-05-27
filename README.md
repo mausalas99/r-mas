@@ -25,9 +25,23 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 ---
 
-**Versión estable actual:** [6.2.0](https://github.com/mausalas99/r-mas/releases/tag/v6.2.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.3.0](https://github.com/mausalas99/r-mas/releases/tag/v6.3.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+
+## R+ 6.3.0 (Mejoras en performace)
+
+- **TODO:** completar bullets en README.
+
+Notas: `docs/RELEASE_NOTES_6.3.0.txt`.
+## R+ 6.2.1 (Expediente más fluido — Manejo opcional en Interconsulta)
+
+- **Rendimiento** — Bundle único del frontend al compilar; menos lag al cambiar paciente y al alternar **Estado actual** ↔ **Resultados** (caché de pestañas, precalentado en Sala, tendencias con parseo cacheado e render incremental).
+- **Ajustes → Expediente** — **Ocultar Manejo en Clínico**: en Interconsulta conserva **Nota** e **Indicaciones**; solo oculta Manejo (antes la opción quitaba toda la pestaña Clínico).
+- **Sala** — Corregido: el formulario de Nota ya no se superpone en **Resultados**.
+
+Notas: `docs/RELEASE_NOTES_6.2.1.txt`.
 
 ## R+ 6.2.0 (Estado Actual estructurado — monitoreo en Sala)
 
@@ -374,7 +388,10 @@ Los documentos generados se guardan en tu carpeta **Descargas** por defecto. Pue
 # Instalar dependencias
 npm install
 
-# Ejecutar en modo desarrollo
+# Ensamblar index.html + bundle del renderer (requerido antes de start o release)
+npm run build:ui
+
+# Ejecutar en modo desarrollo (prestart regenera el bundle si hace falta)
 npm start
 
 # Compilar para Mac (arm64 + x64). Con certificado de firma en el llavero, electron-builder firma automáticamente.

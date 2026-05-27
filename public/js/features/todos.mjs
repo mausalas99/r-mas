@@ -188,8 +188,12 @@ function appendTodoAddRow(container, idPrefix) {
   input.addEventListener('keypress', function (e) {
     if (e.key === 'Enter') addTodo(idPrefix, addPrio);
   });
-  addRow.appendChild(input);
+  var chkSpacer = document.createElement('span');
+  chkSpacer.className = 'todo-check-spacer';
+  chkSpacer.setAttribute('aria-hidden', 'true');
   addRow.appendChild(prioChip);
+  addRow.appendChild(chkSpacer);
+  addRow.appendChild(input);
   addRow.appendChild(addBtn);
   container.appendChild(addRow);
 }
@@ -372,6 +376,24 @@ export function updateTodoText(id, text) {
   storage.saveTodos(aid(), todos);
   emitLiveSyncTodoUpsert(aid(), found);
   refreshAllTodoUIs();
+}
+
+/**
+ * Marca como completados pendientes legacy de reposición electrolítica (Manejo automático).
+ * @param {string} patientId
+ */
+export function archiveLegacyRepoTodos(patientId) {
+  if (!patientId) return;
+  var todos = storage.getTodos(patientId).map(function (t) {
+    if (!t || t.completed) return t;
+    var rid = String(t.labRuleId || '');
+    var txt = String(t.text || '');
+    if (rid.indexOf('manejo:') === 0 || /^Repo /i.test(txt)) {
+      return { ...t, completed: true, updatedAt: new Date().toISOString() };
+    }
+    return t;
+  });
+  storage.saveTodos(patientId, todos);
 }
 
 export const todosWindowHandlers = {
