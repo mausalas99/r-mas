@@ -1,8 +1,8 @@
 version: 6.3.2
 files:
   - url: R+-6.3.2-x64.exe
-    sha512: QoOoxpTzOsHVYw/PSgg50O+orcxdpZa1w7zj6ANH2oN+sDVRZvy/Ad6R+CtWUaH7t54A/mYJ3ZYlNB24TdRzGg==
-    size: 114374152
+    sha512: JPH0X0Dw12I2af6MAgLn5eVpmW9/4V/bQPyjT4tji8gceBsD5AJGg8+/TWrdAGkijPjtL7pm4/sQWCiobUJqDw==
+    size: 114379663
 path: R+-6.3.2-x64.exe
-sha512: QoOoxpTzOsHVYw/PSgg50O+orcxdpZa1w7zj6ANH2oN+sDVRZvy/Ad6R+CtWUaH7t54A/mYJ3ZYlNB24TdRzGg==
-releaseDate: '2026-05-27T22:07:06.000Z'
+sha512: JPH0X0Dw12I2af6MAgLn5eVpmW9/4V/bQPyjT4tji8gceBsD5AJGg8+/TWrdAGkijPjtL7pm4/sQWCiobUJqDw==
+releaseDate: '2026-05-27T22:28:08.000Z'
