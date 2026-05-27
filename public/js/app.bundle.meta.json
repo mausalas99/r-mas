@@ -69,7 +69,7 @@
       "format": "esm"
     },
     "public/js/labs.js": {
-      "bytes": 112516,
+      "bytes": 117768,
       "imports": [],
       "format": "esm"
     },
@@ -259,7 +259,7 @@
       "format": "esm"
     },
     "public/js/lab-bulk-paste.mjs": {
-      "bytes": 13194,
+      "bytes": 13157,
       "imports": [
         {
           "path": "public/js/labs.js",
@@ -706,7 +706,7 @@
       "format": "esm"
     },
     "public/js/features/settings-help.mjs": {
-      "bytes": 90879,
+      "bytes": 91983,
       "imports": [
         {
           "path": "public/js/tour-targets.mjs",
@@ -873,7 +873,7 @@
       "format": "esm"
     },
     "public/js/lab-history-set.mjs": {
-      "bytes": 18344,
+      "bytes": 18419,
       "imports": [
         {
           "path": "public/js/labs.js",
@@ -1011,7 +1011,7 @@
       "format": "esm"
     },
     "public/js/features/expediente.mjs": {
-      "bytes": 45378,
+      "bytes": 45143,
       "imports": [
         {
           "path": "public/js/app-state.mjs",
@@ -1119,7 +1119,7 @@
       "format": "esm"
     },
     "public/js/manejo-cultivo-bridge.mjs": {
-      "bytes": 11906,
+      "bytes": 11605,
       "imports": [
         {
           "path": "public/js/labs.js",
@@ -2728,7 +2728,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 2727108
+      "bytes": 2736416
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -2757,7 +2757,7 @@
           "bytesInOutput": 530
         },
         "public/js/labs.js": {
-          "bytesInOutput": 105563
+          "bytesInOutput": 110463
         },
         "public/js/lab-history-auto-store-core.mjs": {
           "bytesInOutput": 4218
@@ -2808,7 +2808,7 @@
           "bytesInOutput": 3372
         },
         "public/js/lab-bulk-paste.mjs": {
-          "bytesInOutput": 11726
+          "bytesInOutput": 11662
         },
         "public/js/features/lab-bulk-preview-modal.mjs": {
           "bytesInOutput": 5003
@@ -2895,13 +2895,13 @@
           "bytesInOutput": 10524
         },
         "public/js/features/settings-help.mjs": {
-          "bytesInOutput": 84183
+          "bytesInOutput": 85250
         },
         "public/js/features/tendencias.mjs": {
           "bytesInOutput": 60882
         },
         "public/js/lab-history-set.mjs": {
-          "bytesInOutput": 17000
+          "bytesInOutput": 17048
         },
         "public/js/lan-join-link.mjs": {
           "bytesInOutput": 554
@@ -2928,7 +2928,7 @@
           "bytesInOutput": 3570
         },
         "public/js/features/expediente.mjs": {
-          "bytesInOutput": 41091
+          "bytesInOutput": 40853
         },
         "public/js/todos-priority.mjs": {
           "bytesInOutput": 524
@@ -2949,7 +2949,7 @@
           "bytesInOutput": 5031
         },
         "public/js/manejo-cultivo-bridge.mjs": {
-          "bytesInOutput": 11278
+          "bytesInOutput": 10976
         },
         "public/js/manejo-fluid-terms.mjs": {
           "bytesInOutput": 986
@@ -3096,7 +3096,7 @@
           "bytesInOutput": 4231
         }
       },
-      "bytes": 1510152
+      "bytes": 1515563
     }
   }
 }

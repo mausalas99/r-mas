@@ -6,6 +6,7 @@ import {
   extractMicSortKey,
   buildAtbRisSummaryHtml,
   formatCultivoCondensedForCopy,
+  isParsedCultivoHeaderLine,
 } from './labs.js';
 
 const norm = (t) => t.replace(/\s+/g, ' ');
@@ -86,6 +87,34 @@ Pseudomonas aeruginosa
   const out = parseCultivo_(raw, tNorm);
   assert.match(out, /CATETER \(PUNTA CVC\)/);
   assert.match(out, /PSEUDOMONAS/);
+});
+
+test('secreción de herida con muestra entre paréntesis: parse y cabecera para Cultivos', () => {
+  const raw = `
+Nombre:	VAZQUEZ MARTINEZ GABINO GABRIEL	Fecha Registro:	24/05/2026 12:47:53 p. m.
+BACTERIOLOGIA
+Estudio		Resultado
+SECRECION DE HERIDA
+PRODUCTO	
+*
+HERIDA DE TRAQUEOSTOMIA
+MICROORGANISMO	
+*
+Pseudomonas aeruginosa
+ANTIBIOGRAMA	
+*
+CEFTAZIDIMA
+4	S
+CIPROFLOXACINA
+<=1	S
+`;
+  const tNorm = norm(raw);
+  const out = parseCultivo_(raw, tNorm);
+  const header = out.split('\n\n')[0].split('\n')[0];
+  assert.match(out, /SECRECION DE HERIDA/i);
+  assert.match(out, /HERIDA DE TRAQUEOSTOMIA/i);
+  assert.match(out, /PSEUDOMONAS AERUGINOSA/i);
+  assert.strictEqual(isParsedCultivoHeaderLine(header), true, 'debe mostrarse en pestaña Cultivos');
 });
 
 test('cultivo líquido peritoneal: tipo, pseudomonas y antibiograma', () => {
@@ -311,6 +340,40 @@ test('formatCultivoCondensedForCopy: fecha, cabecera y ATB', () => {
     out,
     '07/05/2026\nLIQUIDO PERITONEAL 07/05: PSEUDOMONAS AERUGINOSA\nATB R: CAZ | I: FEP | S: CIPRO, IMI, LVX, MERO, PIP/TAZO, TOBRA'
   );
+});
+
+test('micobacterias: baciloscopia y cultivo con muestra en OBSERVACIONES', () => {
+  const raw = `Expediente:\t2007285-3\tSolicitud:\t2605250577
+Nombre:\tVELAZQUEZ GARCIA MIGUEL ANGEL\tFecha Registro:\t25/05/2026 09:37:01 a. m.
+Sexo:\tMASCULINO\tUbicación:\tMEDICINA INTERNA 2
+Edad:\t53\tMedico:\tA QUIEN CORRESPONDA
+
+MYCOBACTERIAS
+Estudio\t\tResultado\tUnidades\tValor de Referencia
+BACILOSCOPIA DE PRODUCTOS DIVERSOS (1 MUESTRA)
+1 MUESTRA\t
+*
+NEGATIVO
+OBSERVACIONES\t
+*
+TEJIDO DE LENGUA
+CULTIVO DE MICOBACTERIAS (POR MUESTRA)
+SECCION DE MICOBACTERIAS\t
+*
+REPORTE PRELIMINAR MOP-647-07-RC-052
+CULTIVO\t
+*
+NEGATIVO A LA FECHA.`;
+  const tNorm = norm(raw);
+  const out = parseCultivo_(raw, tNorm);
+  assert.match(out, /BACILOSCOPIA DE PRODUCTOS DIVERSOS.*25\/05:\s*NEGATIVO/i);
+  assert.match(out, /CULTIVO DE MICOBACTERIAS.*25\/05:\s*NEGATIVO A LA FECHA/i);
+  assert.match(out, /TEJIDO DE LENGUA/i);
+  assert.ok(!/CULTIVO \(1 MUESTRA\)/i.test(out), 'no debe confundir 1 MUESTRA con sitio');
+  const lines = out.split('\n\n');
+  assert.equal(lines.length, 2);
+  assert.ok(isParsedCultivoHeaderLine(lines[0]));
+  assert.ok(isParsedCultivoHeaderLine(lines[1]));
 });
 
 test('buildAtbRisSummaryHtml: títulos por categoría y orden S por CMI ascendente', () => {

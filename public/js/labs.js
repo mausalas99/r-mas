@@ -756,22 +756,31 @@ export function parsePFH_(tNorm) {
   return p[0]+'\t'+p.slice(1).join(' ');
 }
 
+/** SOME copia pH/PCO2/HCO3 con flags A/B en líneas aparte; colapsar espacios para extraerConRango. */
+function gasoBlockForExtract_(bloqueGaso) {
+  return String(bloqueGaso || '').replace(/\r/g, '').replace(/\s+/g, ' ');
+}
+
 export function parseGaso_(bloqueGaso, textoFuera) {
   if (!bloqueGaso) return '';
-  var phData   = extraerConRango(['PH '], bloqueGaso);
+  var bloqueX = gasoBlockForExtract_(bloqueGaso);
+  var phData   = extraerConRango(['PH '], bloqueX);
+  if (phData.valor === '---') {
+    phData = extraerConRango(['PH'], bloqueX);
+  }
   if (phData.valor === '---') return '';
-  var pco2Data = extraerConRango(['PCO2'], bloqueGaso);
-  var po2Data  = extraerConRango(['PO2 '], bloqueGaso);
-  var naData   = extraerConRango(['SODIO'], bloqueGaso);
-  var kData    = extraerConRango(['POTASIO'], bloqueGaso);
-  var gluData  = extraerConRango(['GLUCOSA'], bloqueGaso);
-  var lacData  = extraerConRango(['LACTATO'], bloqueGaso);
-  var hco3Data = extraerConRango(['HCO3'], bloqueGaso);
-  var htoData  = extraerConRango(['HCT ', 'HEMATOCRITO'], bloqueGaso);
+  var pco2Data = extraerConRango(['PCO2'], bloqueX);
+  var po2Data  = extraerConRango(['PO2 '], bloqueX);
+  var naData   = extraerConRango(['SODIO'], bloqueX);
+  var kData    = extraerConRango(['POTASIO'], bloqueX);
+  var gluData  = extraerConRango(['GLUCOSA'], bloqueX);
+  var lacData  = extraerConRango(['LACTATO'], bloqueX);
+  var hco3Data = extraerConRango(['HCO3'], bloqueX);
+  var htoData  = extraerConRango(['HCT ', 'HEMATOCRITO'], bloqueX);
   // Ca++ ionizado suele aparecer en OBSERVACIONES como texto libre
   // (p. ej. "Ca++ IONIZADO: 0.92 mmol/L"). Sin rango explícito en el
   // reporte; se aplica el rango adulto estándar 1.12-1.32 mmol/L.
-  var iCaData = extraerConRango(['CA++ IONIZADO', 'CALCIO IONIZADO', 'CA IONIZADO'], bloqueGaso);
+  var iCaData = extraerConRango(['CA++ IONIZADO', 'CALCIO IONIZADO', 'CA IONIZADO'], bloqueX);
   var iCaMin = iCaData.min != null ? iCaData.min : 1.12;
   var iCaMax = iCaData.max != null ? iCaData.max : 1.32;
 
@@ -822,10 +831,12 @@ function toNum_(v) {
 
 export function buildGasoInterpretacion_(bloqueGaso, textoFuera) {
   if (!bloqueGaso) return '';
-  var phData   = extraerConRango(['PH '], bloqueGaso);
+  var bloqueX = gasoBlockForExtract_(bloqueGaso);
+  var phData   = extraerConRango(['PH '], bloqueX);
+  if (phData.valor === '---') phData = extraerConRango(['PH'], bloqueX);
   if (phData.valor === '---') return '';
-  var pco2Data = extraerConRango(['PCO2'], bloqueGaso);
-  var hco3Data = extraerConRango(['HCO3'], bloqueGaso);
+  var pco2Data = extraerConRango(['PCO2'], bloqueX);
+  var hco3Data = extraerConRango(['HCO3'], bloqueX);
   var naAG = textoFuera ? extraerConRangoSuero(['SODIO'], textoFuera) : { valor: '---' };
   var clAG = textoFuera ? extraerConRangoSuero(['CLORO'], textoFuera) : { valor: '---' };
   var albAG = textoFuera ? extraerConRangoSuero(['ALBUMINA'], textoFuera) : { valor: '---' };
@@ -936,26 +947,41 @@ function formatNumericToken_(n) {
 
 function buildGasoInterpretacionFromValues_(pH, pCO2, hco3, ag, dd) {
   if (pH == null || (pCO2 == null && hco3 == null)) return '';
+  var metaLow = hco3 != null && hco3 < 22;
+  var metaHigh = hco3 != null && hco3 > 26;
+  var respLow = pCO2 != null && pCO2 < 35;
+  var respHigh = pCO2 != null && pCO2 > 45;
   var primaria = '';
   if (pH < 7.35) {
-    if (hco3 != null && hco3 < 22) primaria = 'Acidosis metabólica';
-    else if (pCO2 != null && pCO2 > 45) primaria = 'Acidosis respiratoria';
+    if (metaLow) primaria = 'Acidosis metabólica';
+    else if (respHigh) primaria = 'Acidosis respiratoria';
   } else if (pH > 7.45) {
-    if (hco3 != null && hco3 > 26) primaria = 'Alcalosis metabólica';
-    else if (pCO2 != null && pCO2 < 35) primaria = 'Alcalosis respiratoria';
+    if (metaHigh) primaria = 'Alcalosis metabólica';
+    else if (respLow) primaria = 'Alcalosis respiratoria';
   } else if (hco3 != null && pCO2 != null) {
-    if (hco3 < 22 && pCO2 < 35) primaria = 'Acidosis metabólica con compensación respiratoria';
-    else if (hco3 > 26 && pCO2 > 45) primaria = 'Alcalosis metabólica con compensación respiratoria';
-    else if (hco3 < 22) primaria = 'Acidosis metabólica con compensación respiratoria';
-    else if (hco3 > 26) primaria = 'Alcalosis metabólica con compensación respiratoria';
+    if (metaLow && respLow) primaria = 'Acidosis metabólica con compensación respiratoria';
+    else if (metaHigh && respHigh) primaria = 'Alcalosis metabólica con compensación respiratoria';
+    else if (metaLow) primaria = 'Acidosis metabólica con compensación respiratoria';
+    else if (metaHigh) primaria = 'Alcalosis metabólica con compensación respiratoria';
   }
   if (!primaria && pH >= 7.35 && pH <= 7.45 && hco3 != null) {
-    if (hco3 < 22) primaria = 'Acidosis metabólica';
-    else if (hco3 > 26) primaria = 'Alcalosis metabólica';
+    if (metaLow) primaria = 'Acidosis metabólica';
+    else if (metaHigh) primaria = 'Alcalosis metabólica';
   }
   var partes = [];
   if (primaria) partes.push(primaria);
   if (!primaria) partes.push('Trastorno ácido-base compensado');
+  if (metaLow && respLow && /respiratoria/i.test(primaria)) {
+    partes.push('Acidosis metabólica concomitante (HCO3 bajo)');
+  } else if (metaLow && respLow && /alcalosis respiratoria/i.test(primaria)) {
+    partes.push('Acidosis metabólica concomitante (HCO3 bajo)');
+  } else if (metaHigh && respHigh && /respiratoria/i.test(primaria)) {
+    partes.push('Alcalosis metabólica concomitante (HCO3 alto)');
+  } else if (metaLow && respHigh && /metabólica/i.test(primaria)) {
+    partes.push('Acidosis respiratoria concomitante (PCO2 alto)');
+  } else if (metaHigh && respLow && /metabólica/i.test(primaria)) {
+    partes.push('Alcalosis respiratoria concomitante (PCO2 bajo)');
+  }
   if (ag != null && ag > 12 && dd != null) {
     if (dd < 0.8) {
       if (/^Acidosis metabólica/i.test(primaria)) {
@@ -1736,12 +1762,16 @@ export function parseCuantOrina_(textoBruto) {
 
 function detectTipoCultivoLine(lineasTexto) {
   var idxBact = -1;
+  var idxMyco = -1;
   for (var i = 0; i < lineasTexto.length; i++) {
-    if (/BACTERIOLOGIA/i.test(lineasTexto[i])) { idxBact = i; break; }
+    var sec = lineasTexto[i].replace(/\r/g, '').replace(/\s+/g, ' ').trim();
+    if (/^BACTERIOLOGIA$/i.test(sec)) { idxBact = i; break; }
+    if (/^MYCOBACTERIAS$/i.test(sec)) idxMyco = i;
   }
-  if (idxBact === -1) return '';
+  var idxSec = idxBact !== -1 ? idxBact : idxMyco;
+  if (idxSec === -1) return '';
   var candidate = '';
-  for (var i = idxBact + 1; i < Math.min(idxBact + 35, lineasTexto.length); i++) {
+  for (var i = idxSec + 1; i < Math.min(idxSec + 35, lineasTexto.length); i++) {
     var l = lineasTexto[i].replace(/\r/g, '').replace(/\*/g, ' ').replace(/\s+/g, ' ').trim();
     if (!l) continue;
     var lUp = l.toUpperCase();
@@ -1751,17 +1781,87 @@ function detectTipoCultivoLine(lineasTexto) {
     if (/^PRODUCTO$/.test(lUp)) break;
     if (/\bUROCULTIVO\b/i.test(l) || /\bHEMOCULTIVO\b/i.test(l) || /^CATETER(\b|$)/i.test(lUp))
       return l;
-    if (!candidate && !/^(TINCION|CALIDAD|ESTADO|MICROORGANISMO|COMENTARIO|CUENTA|ANTIBIOGRAMA)\b/i.test(lUp)) {
+    if (/^BACILOSCOPIA\b/i.test(lUp) || /^CULTIVO\s+DE\s+MICOBACTERIAS\b/i.test(lUp)) return l;
+    if (!candidate && !/^(TINCION|CALIDAD|ESTADO|MICROORGANISMO|COMENTARIO|CUENTA|ANTIBIOGRAMA|1\s+MUESTRA|OBSERVACIONES|SECCION)\b/i.test(lUp)) {
       candidate = l;
     }
   }
   return candidate;
 }
 
+function cleanMycoLine_(line) {
+  return String(line || '').replace(/\r/g, '').replace(/\*+/g, '').replace(/\s+/g, ' ').trim();
+}
+
+function extractMuestraMycobacterias_(slice) {
+  for (var o = 0; o < slice.length; o++) {
+    if (!/^OBSERVACIONES\b/i.test(cleanMycoLine_(slice[o]))) continue;
+    for (var o2 = o + 1; o2 < Math.min(o + 8, slice.length); o2++) {
+      var obs = cleanMycoLine_(slice[o2]);
+      if (!obs || /^OBSERVACIONES$/i.test(obs)) continue;
+      if (/^(ESTUDIO|RESULTADO|UNIDADES|\*+)$/i.test(obs)) continue;
+      return obs.toUpperCase();
+    }
+    break;
+  }
+  return '';
+}
+
+function findMycoStudyResult_(slice, fromIdx) {
+  for (var k = fromIdx + 1; k < Math.min(fromIdx + 22, slice.length); k++) {
+    var t = cleanMycoLine_(slice[k]);
+    if (!t) continue;
+    var tUp = t.toUpperCase();
+    if (/^(BACILOSCOPIA|CULTIVO\s+DE\s+MICOBACTERIAS)/i.test(tUp)) break;
+    if (/^OBSERVACIONES/i.test(tUp)) break;
+    if (/^(ESTUDIO|RESULTADO|UNIDADES|VALOR DE REFERENCIA|1\s+MUESTRA)$/i.test(tUp)) continue;
+    if (/^SECCION\s+DE\s+MICOBACTERIAS/i.test(tUp)) continue;
+    if (/^REPORTE\s+PRELIMINAR/i.test(tUp)) continue;
+    if (/^CULTIVO$/i.test(tUp)) {
+      for (var k2 = k + 1; k2 < Math.min(k + 6, slice.length); k2++) {
+        var v = cleanMycoLine_(slice[k2]);
+        if (v && v.length > 2) return v.toUpperCase();
+      }
+      continue;
+    }
+    if (/NEGATIVO|POSITIVO|PENDIENTE|EN CURSO|CRECIMIENTO|NO SE AISL/i.test(tUp) && t.length < 120) return tUp;
+  }
+  return 'NEGATIVO';
+}
+
+/** Reportes SOME solo MYCOBACTERIAS (baciloscopia + cultivo micobacteriano). */
+function parseMycobacteriasStudies_(lineasTexto, fechaC) {
+  var idxM = -1;
+  for (var i = 0; i < lineasTexto.length; i++) {
+    if (/^MYCOBACTERIAS$/i.test(cleanMycoLine_(lineasTexto[i]))) { idxM = i; break; }
+  }
+  if (idxM === -1) return '';
+  var end = lineasTexto.length;
+  for (var j = idxM + 1; j < lineasTexto.length; j++) {
+    var sec = cleanMycoLine_(lineasTexto[j]);
+    if (/^(HEMATOLOGIA|BACTERIOLOGIA|QUIMICA|BIOMETRIA|GASOMETRIA)\b/i.test(sec)) { end = j; break; }
+  }
+  var slice = lineasTexto.slice(idxM, end);
+  var muestra = extractMuestraMycobacterias_(slice);
+  var studyRe = /^(BACILOSCOPIA|CULTIVO\s+DE\s+MICOBACTERIAS|CULTIVO\s+DE\s+MYCOBACTERIAS)\b/i;
+  var chunks = [];
+  for (var si = 0; si < slice.length; si++) {
+    var tipo = cleanMycoLine_(slice[si]);
+    if (!studyRe.test(tipo)) continue;
+    tipo = tipo.toUpperCase();
+    var resultado = findMycoStudyResult_(slice, si);
+    var header = tipo;
+    if (muestra && header.indexOf(muestra) === -1) header += ' (' + muestra + ')';
+    chunks.push(header + ' ' + fechaC + ': ' + resultado);
+  }
+  return chunks.length ? chunks.join('\n\n') : '';
+}
+
 function detectMuestraDesdeProducto(lineasTexto) {
   var idxProd = -1;
   for (var i = 0; i < lineasTexto.length; i++) {
-    if (lineasTexto[i].toUpperCase().indexOf('PRODUCTO') !== -1) { idxProd = i; break; }
+    var prodLine = lineasTexto[i].replace(/\r/g, '').replace(/\*+/g, '').trim();
+    if (/^PRODUCTO\b/i.test(prodLine)) { idxProd = i; break; }
   }
   if (idxProd === -1) return '';
   for (var j = idxProd + 1; j < Math.min(idxProd + 14, lineasTexto.length); j++) {
@@ -2241,6 +2341,23 @@ export function extractSensCrudasForGermFromSource(sourceText, germQuery) {
   return null;
 }
 
+/**
+ * Cabecera de bloque generado por parseCultivo_ (p. ej. SECRECION DE HERIDA (TRAQUEO) 24/05: PSEUDOMONAS).
+ * Usar en Cultivos / historial para no descartar muestras con paréntesis.
+ */
+export function isParsedCultivoHeaderLine(t) {
+  var s = String(t || '').trim();
+  if (!s) return false;
+  if (/^CULTIVO\b/i.test(s)) return true;
+  if (/^(UROCULTIVO|HEMOCULTIVO|FUNGICULTIVO)\b/i.test(s)) return true;
+  if (/^TINCION\s+DE\s+GRAM/i.test(s)) return true;
+  if (/^CATETER\b/i.test(s)) return true;
+  if (/^BACILOSCOPIA\b/i.test(s)) return true;
+  if (/^CULTIVO\s+DE\s+MICOBACTERIAS\b/i.test(s)) return true;
+  if (/^(SECRECION|LIQUIDO|ASPIRADO|ABSCESO|BRONCOALVEOLAR)\b/i.test(s)) return true;
+  return /^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ()\s\/.-]*\s+\d{1,2}\/\d{1,2}(?:\/\d{2,4})?:\s+\S/i.test(s);
+}
+
 export function parseCultivo_(textoBruto, tNorm) {
   var tUpper=tNorm.toUpperCase();
   if(tUpper.indexOf('HEMOCULTIVO')===-1&&tUpper.indexOf('CULTIVO')===-1&&tUpper.indexOf('MICROORGANISMO')===-1&&tUpper.indexOf('MYCOBACTERIAS')===-1&&tUpper.indexOf('BACILOSCOPIA')===-1)return '';
@@ -2248,8 +2365,10 @@ export function parseCultivo_(textoBruto, tNorm) {
   var mFecha=tNorm.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
   if(mFecha)fechaC=mFecha[1].padStart(2,'0')+'/'+mFecha[2].padStart(2,'0');
   var lineasTexto=textoBruto.split('\n').map(function(l){return l.replace(/\r/g,'');});
-  var sitio = buildCultivoTipoDisplay(detectTipoCultivoLine(lineasTexto), detectMuestraDesdeProducto(lineasTexto));
   var germenRuns = findCultivoGermenRuns(lineasTexto);
+  var mycoOut = parseMycobacteriasStudies_(lineasTexto, fechaC);
+  if (mycoOut && !germenRuns.length) return mycoOut;
+  var sitio = buildCultivoTipoDisplay(detectTipoCultivoLine(lineasTexto), detectMuestraDesdeProducto(lineasTexto));
   var marcasRes = detectMarcasResistenciaCultivo(lineasTexto);
   function abreviarAb(n){
     n=n.toUpperCase().trim();

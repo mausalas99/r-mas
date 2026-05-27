@@ -6,6 +6,7 @@ import {
   buildRefsBySectionFromReport,
   extractLabReportHora,
   reprocessLabResultLines_,
+  isParsedCultivoHeaderLine,
 } from './labs.js';
 import {
   findExactDuplicateLabGroups,
@@ -103,12 +104,14 @@ export function isCultivoBlockStartLine(s) {
   var t = String(s).trim();
   if (!t) return false;
   if (/^CULTIVO\b/i.test(t)) return true;
-  if (/^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s\/.-]*\s+\d{1,2}\/\d{1,2}(?:\/\d{2,4})?:\s+\S/i.test(t)) return true;
+  if (isParsedCultivoHeaderLine(t)) return true;
   if (/^BACTERIOLOGIA\b/i.test(t)) return true;
   if (/^UROCULTIVO\b/i.test(t)) return true;
   if (/^HEMOCULTIVO\b/i.test(t)) return true;
   if (/^FUNGICULTIVO\b/i.test(t)) return true;
   if (/^TINCION\s+DE\s+GRAM/i.test(t)) return true;
+  if (/^BACILOSCOPIA\b/i.test(t)) return true;
+  if (/^CULTIVO\s+DE\s+MICOBACTERIAS\b/i.test(t)) return true;
   if (/^CATETER\b/i.test(t)) return true;
   if (/^ATB\b/i.test(t)) return true;
   if (/^Cuenta:/i.test(t)) return true;

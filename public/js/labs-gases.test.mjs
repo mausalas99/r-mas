@@ -177,6 +177,38 @@ test('renderEntry normaliza interpretación gasométrica legacy a mayúsculas', 
   assert.doesNotMatch(html, /Acidosis metabólica/);
 });
 
+test('parseGaso_ e interpretación con flags A/B en líneas separadas (SOME)', () => {
+  const raw = `GASOMETRIAS
+GASOMETRIA VENOSA
+PH
+A
+7.48
+PCO2
+B
+24
+HCO3
+B
+17.9`;
+  const out = parseGaso_(raw, '');
+  assert.match(out, /pH 7\.48/);
+  const interp = buildGasoInterpretacion_(raw, '');
+  assert.match(interp, /^INTERPRETACIÓN GASOMETRÍA:\t/);
+  assert.match(interp, /ACIDOSIS METABÓLICA CONCOMITANTE/i);
+});
+
+test('gasometría venosa Velázquez: alcalosis respiratoria + acidosis metabólica', () => {
+  const raw = `
+GASOMETRIAS
+GASOMETRIA VENOSA
+PH	A	7.48
+PCO2	B	24
+HCO3	B	17.9
+`.replace(/\s+/g, ' ');
+  const interp = buildGasoInterpretacion_(raw, '');
+  assert.match(interp, /ALCALOSIS RESPIRATORIA/);
+  assert.match(interp, /ACIDOSIS METABÓLICA CONCOMITANTE/);
+});
+
 test('buildGasoInterpretacion_ no muestra línea si faltan datos mínimos', () => {
   const soloPH = `GASOMETRIA VENOSA PARCIAL
 PH	N	7.40

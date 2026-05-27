@@ -25,10 +25,16 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 ---
 
-**Versión estable actual:** [6.3.0](https://github.com/mausalas99/r-mas/releases/tag/v6.3.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.3.1](https://github.com/mausalas99/r-mas/releases/tag/v6.3.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 6.3.1 (R+ 6.3.1 — Correcciones menores: cultivos, gasometría y Estado Actual)
+
+- **TODO:** completar bullets en README.
+
+Notas: `docs/RELEASE_NOTES_6.3.1.txt`.
 ## R+ 6.3.1 (Correcciones menores — cultivos, gasometría y Estado Actual)
 
 - **Cultivos** — Cabeceras con paréntesis (p. ej. secreción de herida) vuelven a listarse en la pestaña **Cultivos** del expediente.

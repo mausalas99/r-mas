@@ -2,7 +2,7 @@
  * Entrada masiva de laboratorios SOME: separadores de paciente, split por Expediente:,
  * vista previa y consolidación por día + tipo antes de guardar en historial.
  */
-import { procesarLabs, looksLikeSomeLabReport } from './labs.js';
+import { procesarLabs, looksLikeSomeLabReport, isParsedCultivoHeaderLine } from './labs.js';
 import { normalizeFechaLabHistory, normalizeHoraLabHistory, parseFechaLabToMs } from './tend-core.mjs';
 import { normalizeLabLine } from './lab-history-auto-store-core.mjs';
 
@@ -16,7 +16,7 @@ function isCultivoBlockStartLine(s) {
   var t = String(s).trim();
   if (!t) return false;
   if (/^CULTIVO\b/i.test(t)) return true;
-  if (/^[A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s\/.-]*\s+\d{1,2}\/\d{1,2}(?:\/\d{2,4})?:\s+\S/i.test(t)) return true;
+  if (isParsedCultivoHeaderLine(t)) return true;
   if (/^BACTERIOLOGIA\b/i.test(t)) return true;
   if (/^UROCULTIVO\b/i.test(t)) return true;
   if (/^HEMOCULTIVO\b/i.test(t)) return true;

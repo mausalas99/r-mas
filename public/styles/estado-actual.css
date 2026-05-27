@@ -485,7 +485,7 @@ html.dark .ea-snapshot-glu-chip {
 }
 
 .ea-vital-box.ea-vital-box {
-  overflow: visible;
+  overflow: hidden;
   box-shadow: none;
   border-radius: var(--radius-sm);
 }
