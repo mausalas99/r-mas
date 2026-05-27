@@ -44,6 +44,7 @@ import {
 } from "../tend-core.mjs";
 import { evaluateLabSuggestions, filterNewLabSuggestions } from "../lab-clinical-suggestions.mjs";
 import { evaluateElectrolyteManejo } from "../electrolyte-manejo.mjs";
+import { shouldClearManejoPendingForDismissals } from "../manejo-todo-dismiss.mjs";
 import { normalizeLabHistoryPatientSets } from "../storage.js";
 import { patients, notes, labHistory, saveState } from "../app-state.mjs";
 import { bumpLabHistoryRevision } from "../lab-history-cache.mjs";
@@ -1150,6 +1151,11 @@ function applyManejoPending(patientId, parsed, parsedBySection, labSetId, fecha)
     labFecha: fecha,
   });
   if (!evalOut || !evalOut.hasAlterations) return;
+  var fechaNorm = normalizeFechaLabHistory(fecha) || String(fecha || "").trim();
+  if (shouldClearManejoPendingForDismissals(patient, null, evalOut, fechaNorm)) {
+    patient.manejoPending = null;
+    return;
+  }
   patient.manejoPending = {
     labSetId: labSetId,
     detectedAt: new Date().toISOString(),

@@ -5,9 +5,12 @@ import {
   evaluateElectrolyteManejo,
   parsePatientWeightKg,
 } from '../electrolyte-manejo.mjs';
-import { shouldAddLabSuggestionTodo } from '../lab-clinical-suggestions.mjs';
 import { storage } from '../storage.js';
 import { normalizeFechaLabHistory, sortLabHistoryChronological } from '../tend-core.mjs';
+import {
+  isManejoTodoDismissed,
+  shouldAllowManejoTodo,
+} from '../manejo-todo-dismiss.mjs';
 
 /** @type {{
  *   getActiveId(): string|null,
@@ -71,7 +74,11 @@ function addManejoPendiente(row, labFechaNorm) {
   if (!pid || !row) return;
   var ruleScoped = 'manejo:' + String(row.ruleId || '');
   var todos = storage.getTodos(pid);
-  if (!shouldAddLabSuggestionTodo(todos, ruleScoped, labFechaNorm)) {
+  if (isManejoTodoDismissed(pid, ruleScoped, labFechaNorm)) {
+    rt.showToast('Reposición bloqueada: no volverá a aparecer en pendientes.', 'info');
+    return;
+  }
+  if (!shouldAllowManejoTodo(pid, ruleScoped, labFechaNorm, todos)) {
     rt.showToast('Ya hay un pendiente abierto para esta fila del mismo día de lab.', '');
     return;
   }

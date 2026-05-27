@@ -94,6 +94,17 @@ function persistDraft(pid, draft) {
   saveState();
 }
 
+/** Si el panel HU está montado para ese paciente, persiste fecha/cuidados antes de cambiar de paciente. */
+export function flushRecetaHuDraftIfMountedFor(patientId) {
+  if (!patientId || String(patientId).indexOf('demo-') === 0) return;
+  var root = document.getElementById('receta-hu-container');
+  if (!root || root.dataset.mounted !== '1') return;
+  if (String(root.dataset.patientId || '') !== String(patientId)) return;
+  var draft = getDraft(patientId);
+  readStaticFieldsFromDom(draft);
+  persistDraft(patientId, draft);
+}
+
 function consultServices() {
   return normalizeRecetaHuConsultServices(rt.getSettings().recetaHuConsultServices);
 }

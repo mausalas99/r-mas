@@ -43,6 +43,37 @@ export function registerMedicationsRuntime(partial) {
 
 var medOutputTab = "full";
 
+function isDemoPatientId(patientId) {
+  return String(patientId || "").indexOf("demo-") === 0;
+}
+
+/** Guarda el pegado del textarea antes de cambiar de paciente. */
+export function stashMedInputForPatient(patientId) {
+  if (!patientId || isDemoPatientId(patientId)) return;
+  var ta = document.getElementById("med-input");
+  if (!ta) return;
+  var raw = ta.value || "";
+  var block = medRecetaByPatient[patientId];
+  if (!raw) {
+    if (block) {
+      delete block.pasteRaw;
+      if (!block.items || !block.items.length) delete medRecetaByPatient[patientId];
+      else saveState();
+    }
+    return;
+  }
+  if (!block) medRecetaByPatient[patientId] = { pasteRaw: raw };
+  else block.pasteRaw = raw;
+  saveState();
+}
+
+function restoreMedInputForPatient(patientId) {
+  var ta = document.getElementById("med-input");
+  if (!ta) return;
+  var block = patientId ? medRecetaByPatient[patientId] : null;
+  ta.value = block && block.pasteRaw ? block.pasteRaw : "";
+}
+
 function esc(s) {
   return String(s || "")
     .replace(/&/g, "&amp;")
@@ -75,6 +106,7 @@ export function renderMedRecetaPanel() {
     if (isPaseMode()) renderPaseBoard();
     return;
   }
+  restoreMedInputForPatient(activeId);
   var block = medRecetaByPatient[activeId];
   if (!block || !block.items || !block.items.length) {
     hintEl.style.display = "block";
@@ -332,6 +364,7 @@ export function procesarRecetaMed() {
   medRecetaByPatient[activeId] = {
     fechaActualizacion: fecha,
     items: parsed.items,
+    pasteRaw: raw,
   };
   medNotaSelectionByPatient[activeId] = {};
   saveState();

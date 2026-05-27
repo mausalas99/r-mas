@@ -7,6 +7,7 @@ import {
   normalizeTodoPriority,
   todoPriorityLabel,
 } from '../todos-priority.mjs';
+import { dismissManejoTodoFromTodo } from '../manejo-todo-dismiss.mjs';
 
 var rt = {
   getActiveId() {
@@ -331,6 +332,7 @@ export function toggleTodo(id) {
   var found = todos.find(function (t) { return t.id === id; });
   if (!found) return;
   found.completed = !found.completed;
+  if (found.completed) dismissManejoTodoFromTodo(aid(), found);
   found.updatedAt = new Date().toISOString();
   storage.saveTodos(aid(), todos);
   emitLiveSyncTodoUpsert(aid(), found);
@@ -340,7 +342,14 @@ export function toggleTodo(id) {
 export function deleteTodo(id) {
   if (!aid()) return;
   var delAt = new Date().toISOString();
-  var todos = storage.getTodos(aid()).filter(function (t) { return t.id !== id; });
+  var todos = storage.getTodos(aid());
+  var victim = todos.find(function (t) {
+    return t.id === id;
+  });
+  if (victim) dismissManejoTodoFromTodo(aid(), victim);
+  todos = todos.filter(function (t) {
+    return t.id !== id;
+  });
   storage.saveTodos(aid(), todos);
   emitLiveSyncTodoDelete(aid(), id, delAt);
   refreshAllTodoUIs();

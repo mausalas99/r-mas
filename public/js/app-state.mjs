@@ -2,6 +2,7 @@ import { storage, normalizeLabHistoryPatientSets } from './storage.js';
 import { applyMedCatalogOverlay } from './med-receta-core.mjs';
 import { repairLabHistoryMapInPlace } from './lab-history-repair.mjs';
 import { migratePatientMonitoreo } from './features/estado-actual-data.mjs';
+import { syncManejoTodoDismissalsOnBoot } from './manejo-todo-dismiss.mjs';
 
 export let patients = [];
 export let notes = {};
@@ -67,7 +68,11 @@ export function initAppState() {
   for (var pi = 0; pi < patients.length; pi += 1) {
     if (migratePatientMonitoreo(patients[pi])) monitoreoMigrated = true;
   }
-  if (repairLabHistoryInMemory() || monitoreoMigrated) saveState({ immediate: true });
+  if (syncManejoTodoDismissalsOnBoot(patients, labHistory, storage)) {
+    saveState({ immediate: true });
+  } else if (repairLabHistoryInMemory() || monitoreoMigrated) {
+    saveState({ immediate: true });
+  }
 }
 
 function notifySaveResult(result) {

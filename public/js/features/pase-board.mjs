@@ -814,6 +814,7 @@ export function syncMainAppTabA11y(tab) {
   });
 }
 
+if (typeof document !== "undefined") {
 (function setupMainAppTabKeyboard() {
   var list = document.getElementById("app-main-tablist");
   if (!list) return;
@@ -845,6 +846,7 @@ export function syncMainAppTabA11y(tab) {
     if (btn) btn.focus();
   });
 })();
+}
 
 function wireExpedienteDatosCollapseRender() {
   var el = document.getElementById("exp-datos-collapse");

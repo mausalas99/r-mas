@@ -11,6 +11,8 @@ import {
   resolveDietWeightKg,
   computeDietKcalTotal,
   syncDietKcalFromWeight,
+  parseIoEgresoField,
+  isIoNumericValue,
 } from './estado-actual-data.mjs';
 
 test('emptyMonitoreo — stable canonical shape', () => {
@@ -128,12 +130,10 @@ test('appendMedicion rechaza medición sin núcleo', () => {
   assert.equal(m.historial.length, 0);
 });
 
-test('resolveDietWeightKg prioriza peso del paciente', () => {
-  assert.equal(
-    resolveDietWeightKg({ patientPeso: 72, snapshotPeso: 68, pesoRef: 60 }),
-    72
-  );
-  assert.equal(resolveDietWeightKg({ snapshotPeso: 68, pesoRef: 60 }), 68);
+test('resolveDietWeightKg usa datos del paciente (no signos vitales)', () => {
+  assert.equal(resolveDietWeightKg({ patientPeso: 72, pesoRef: 60 }), 72);
+  assert.equal(resolveDietWeightKg({ pesoRef: 60 }), 60);
+  assert.equal(resolveDietWeightKg({}), null);
 });
 
 test('computeDietKcalTotal y syncDietKcalFromWeight', () => {
@@ -141,4 +141,35 @@ test('computeDietKcalTotal y syncDietKcalFromWeight', () => {
   const ec = { kcalKg: '25', kcal: '' };
   assert.equal(syncDietKcalFromWeight(ec, 70), true);
   assert.equal(ec.kcal, '1750');
+});
+
+test('parseIoEgresoField acepta NC y cc numéricos', () => {
+  assert.equal(parseIoEgresoField(''), null);
+  assert.equal(parseIoEgresoField('  nc  '), 'NC');
+  assert.equal(parseIoEgresoField('300'), 300);
+  assert.equal(isIoNumericValue('NC'), false);
+  assert.equal(isIoNumericValue(300), true);
+});
+
+test('balanceTurno ignora turno con egresos NC', () => {
+  /** @type {any} */
+  const monitoreo = {
+    historial: [
+      {
+        id: 'a',
+        recordedAt: '2026-05-01T07:00:00.000Z',
+        vitals: {},
+        glucometrias: [],
+        io: { ing: 500, egr: 'NC' },
+      },
+      {
+        id: 'b',
+        recordedAt: '2026-05-01T09:00:00.000Z',
+        vitals: {},
+        glucometrias: [],
+        io: { ing: 600, egr: 450 },
+      },
+    ],
+  };
+  assert.equal(balanceTurno(monitoreo), 150);
 });

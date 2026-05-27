@@ -1,0 +1,35 @@
+R+ 6.3.2 (Receta por paciente, Estado Actual y pendientes Repo)
+============================================================
+
+Fecha: 2026-05-27
+
+## Resumen
+
+Parche de correcciones de uso diario en **Medicamentos**, **Estado Actual** y **Pendientes**: la receta hospitalaria y los pendientes de reposición electrolítica ya no se mezclan entre pacientes ni reaparecen tras reiniciar; el bloque **Estado clínico general** es más estable al tabular.
+
+## Correcciones
+
+### Medicamentos (receta hospitalaria)
+
+- **Cambio de paciente** — El texto pegado y la receta procesada se guardan por paciente; al volver a un paciente recuperas su borrador y su listado.
+- **Guardado al cambiar** — Se fuerza la persistencia al seleccionar otro paciente para no perder una receta recién procesada.
+
+### Estado Actual (Sala)
+
+- **Estado clínico general** — Al pulsar Tab entre campos el acordeón ya no se colapsa (antes se re-renderizaba todo el panel).
+- **Egresos** — Puedes registrar **NC** (sin cambio) además de cc numéricos; el balance del turno solo se calcula cuando ingreso y egreso son numéricos.
+- **Peso** — Ya no aparece como signo vital en Estado Actual; el peso para kcal/dieta se toma solo de **Datos del paciente**.
+
+### Pendientes (reposiciones electrolíticas)
+
+- **Bloqueo persistente** — Si eliminas o marcas como hecho un pendiente «Repo …», no vuelve a salir al reiniciar la app ni al sincronizar en sala LiveSync.
+- **+ Pendiente** — Si la alteración ya fue bloqueada, verás un aviso en lugar de duplicar el pendiente.
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v6.3.2
+
+- Mac: `R+-6.3.2-arm64.dmg`, `R+-6.3.2-x64.dmg` (y zip para auto-update).
+- Windows: `R+-6.3.2-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye `build:ui` y bundle del renderer).

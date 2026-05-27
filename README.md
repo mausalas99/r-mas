@@ -25,16 +25,19 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 ---
 
-**Versión estable actual:** [6.3.1](https://github.com/mausalas99/r-mas/releases/tag/v6.3.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.3.2](https://github.com/mausalas99/r-mas/releases/tag/v6.3.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
 
-## R+ 6.3.1 (R+ 6.3.1 — Correcciones menores: cultivos, gasometría y Estado Actual)
+## R+ 6.3.2 (Receta por paciente, Estado Actual y pendientes Repo)
 
-- **TODO:** completar bullets en README.
+- **Medicamentos** — La receta hospitalaria (pegado y listado procesado) se conserva por paciente al cambiar en la barra lateral.
+- **Estado Actual** — Tab entre campos ya no cierra «Estado clínico general»; egresos aceptan **NC**; el peso solo se captura en Datos del paciente (no en signos vitales del panel).
+- **Pendientes** — Los «Repo …» de reposición electrolítica que elimines o marques hechos no reaparecen tras reiniciar ni al sincronizar en sala.
 
-Notas: `docs/RELEASE_NOTES_6.3.1.txt`.
+Notas: `docs/RELEASE_NOTES_6.3.2.txt`.
+
 ## R+ 6.3.1 (Correcciones menores — cultivos, gasometría y Estado Actual)
 
 - **Cultivos** — Cabeceras con paréntesis (p. ej. secreción de herida) vuelven a listarse en la pestaña **Cultivos** del expediente.

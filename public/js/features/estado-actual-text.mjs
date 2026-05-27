@@ -66,7 +66,6 @@ export function buildEstadoActualText(estadoClinico, snapshot, balances, options
 
   const weightKg = resolveDietWeightKg({
     patientPeso: options.patientPeso,
-    snapshotPeso: v.peso,
     pesoRef: ec.pesoRef,
   });
   const kcalComputed = computeDietKcalTotal(ec.kcalKg, weightKg);

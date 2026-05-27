@@ -8,7 +8,10 @@ import {
   medRecetaByPatient,
   listadoProblemas,
   saveState,
+  flushSaveState,
 } from '../app-state.mjs';
+import { stashMedInputForPatient } from './medications.mjs';
+import { flushRecetaHuDraftIfMountedFor } from './receta-hu.mjs';
 import { validatePatientForSave, buildExpedienteAdvice } from '../patient-validation.mjs';
 import { shakePatientFieldsForError } from '../ui-motion.mjs';
 import { isModeSala, getDefaultServicio } from '../mode-features.mjs';
@@ -890,6 +893,11 @@ function selectPatientCore(id) {
   var wasOnLab = rt.getActiveAppTab() === 'lab';
   var appTab = rt.getActiveAppTab();
   var patientChanged = prevId != null && String(prevId) !== String(id);
+  if (patientChanged) {
+    flushRecetaHuDraftIfMountedFor(prevId);
+    stashMedInputForPatient(prevId);
+    flushSaveState();
+  }
   rt.setActiveId(id);
   if (patientChanged) rt.invalidateInnerTabRenderCache();
   if (!patientChanged || !patchPatientListActiveHighlight(id)) {

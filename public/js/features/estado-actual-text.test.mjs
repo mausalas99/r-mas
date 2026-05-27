@@ -13,6 +13,14 @@ test('buildEstadoActualText usa placeholders y omite línea S', () => {
     glucometrias: [{ value: 140, time: '08:00' }],
     io: { ing: 500, egr: 300 },
   });
+  const textNc = buildEstadoActualText(
+    m.estadoClinico,
+    { vitals: {}, glucometrias: [], io: { ing: 500, egr: 'NC' } },
+    { balanceTurno: NaN },
+    {}
+  );
+  assert.match(textNc, /EGRESOS NC CC/);
+
   const text = buildEstadoActualText(m.estadoClinico, deriveSnapshot(m), {
     balanceTurno: 200,
     balanceGlobal: 200,

@@ -31,6 +31,7 @@ import {
   applyManejoRoomDataToLocal,
 } from "../manejo-room-data.mjs";
 import { mergePatientMonitoreoFromImported } from "./estado-actual-data.mjs";
+import { filterTodosRespectingDismissals } from "../manejo-todo-dismiss.mjs";
 import {
   patients,
   notes,
@@ -540,7 +541,10 @@ function saveEntryTodosOnLocalPatient(localPatientId, entry) {
   if (!incoming.length) return;
   storage.saveTodos(
     localPatientId,
-    mergeTodoListsById(storage.getTodos(localPatientId), incoming)
+    filterTodosRespectingDismissals(
+      localPatientId,
+      mergeTodoListsById(storage.getTodos(localPatientId), incoming)
+    )
   );
 }
 
@@ -709,7 +713,8 @@ function applyLiveSyncMerged(merged) {
     if (mapped) saveTodoPids[mapped] = true;
   });
   Object.keys(saveTodoPids).forEach(function (pid) {
-    storage.saveTodos(pid, todosMap[pid] || []);
+    var todoList = todosMap[pid] || [];
+    storage.saveTodos(pid, filterTodosRespectingDismissals(pid, todoList));
   });
   if (patientRemoved) {
     runtime.renderPatientList();

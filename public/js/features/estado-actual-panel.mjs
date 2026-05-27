@@ -12,6 +12,8 @@ import {
   resolveDietWeightKg,
   syncDietKcalFromWeight,
   parseWeightKg,
+  parseIoEgresoField,
+  isIoNumericValue,
 } from './estado-actual-data.mjs';
 import { isVitalAltered, buildAlteredAtDefaults } from './estado-actual-ranges.mjs';
 import { buildEstadoActualText } from './estado-actual-text.mjs';
@@ -27,7 +29,7 @@ import { renderEstadoActualCharts } from './estado-actual-charts.mjs';
 import { scheduleAfterPaint, scheduleIdle } from '../deferred-work.mjs';
 
 /** @type {readonly string[]} */
-const VITAL_KEYS = ['tas', 'tad', 'fc', 'fr', 'temp', 'sat', 'peso'];
+const VITAL_KEYS = ['tas', 'tad', 'fc', 'fr', 'temp', 'sat'];
 
 /** @type {Record<string, string>} */
 const VITAL_LABELS = {
@@ -37,7 +39,6 @@ const VITAL_LABELS = {
   fr: 'FR',
   temp: 'Temp',
   sat: 'SatO₂',
-  peso: 'Peso',
 };
 
 /** @type {Record<string, string>} */
@@ -48,7 +49,6 @@ const VITAL_UNITS = {
   fr: 'rpm',
   temp: '°C',
   sat: '%',
-  peso: 'kg',
 };
 
 /** @type {readonly string[]} */
@@ -199,13 +199,13 @@ function renderEstadoClinicoSection(monitoreo, activeId, patient) {
   var snapshot = deriveSnapshot(monitoreo);
   var dietWeight = resolveDietWeightKg({
     patientPeso: patient && patient.peso,
-    snapshotPeso: snapshot.vitals && snapshot.vitals.peso,
     pesoRef: ec.pesoRef,
   });
   syncDietKcalFromWeight(ec, dietWeight);
-  var dietWeightHint = dietWeight != null
-    ? 'Peso para cálculo: ' + dietWeight + ' kg' + (patient && parseWeightKg(patient.peso) === dietWeight ? ' (datos del paciente)' : ' (último registro)')
-    : 'Peso para cálculo: — (captura peso en Datos o en signos vitales)';
+  var dietWeightHint =
+    dietWeight != null
+      ? 'Peso para cálculo: ' + dietWeight + ' kg (datos del paciente)'
+      : 'Peso para cálculo: — (captura peso en Datos del paciente)';
   var pend = monitoreo.pendienteReceta || {};
   var anyPending = hasPendingMedProposals(pend);
 
@@ -348,26 +348,60 @@ function persistEstadoClinicoAndRefresh(monitoreo, toastMsg, patient) {
   if (toastMsg) rt.showToast(toastMsg, 'success');
 }
 
+function persistEstadoClinicoLight(monitoreo, patient) {
+  saveState();
+  syncEstadoActualTextarea(monitoreo, patient);
+}
+
+/**
+ * @param {HTMLElement | null} mount
+ */
+function captureEaPanelUiState(mount) {
+  if (!mount) return { clinicoOpen: false };
+  var det = mount.querySelector('.ea-estado-clinico');
+  return { clinicoOpen: !!(det && det.open) };
+}
+
+/**
+ * @param {HTMLElement | null} mount
+ * @param {{ clinicoOpen?: boolean }} state
+ */
+function restoreEaPanelUiState(mount, state) {
+  if (!mount || !state || !state.clinicoOpen) return;
+  var det = mount.querySelector('.ea-estado-clinico');
+  if (det) det.open = true;
+}
+
+function applyEstadoClinicoFieldChange(el, monitoreo, patient) {
+  var key = el.getAttribute('data-ea-ec');
+  if (!key || !monitoreo.estadoClinico) return;
+  if (key === 'kcal') return;
+  monitoreo.estadoClinico[key] = 'value' in el ? String(el.value) : '';
+  if (key === 'kcalKg') {
+    var snap = deriveSnapshot(monitoreo);
+    var w = resolveDietWeightKg({
+      patientPeso: patient.peso,
+      pesoRef: monitoreo.estadoClinico.pesoRef,
+    });
+    syncDietKcalFromWeight(monitoreo.estadoClinico, w);
+  }
+  persistEstadoClinicoLight(monitoreo, patient);
+}
+
 function wireEstadoClinicoInteractions(mount, patient) {
   if (!mount || !patient) return;
   var monitoreo = patient.monitoreo;
 
   mount.querySelectorAll('[data-ea-ec]').forEach(function (el) {
-    el.addEventListener('change', function () {
-      var key = el.getAttribute('data-ea-ec');
-      if (!key || !monitoreo.estadoClinico) return;
-      if (key === 'kcal') return;
-      monitoreo.estadoClinico[key] = 'value' in el ? String(el.value) : '';
-      if (key === 'kcalKg') {
-        var snap = deriveSnapshot(monitoreo);
-        var w = resolveDietWeightKg({
-          patientPeso: patient.peso,
-          snapshotPeso: snap.vitals && snap.vitals.peso,
-          pesoRef: monitoreo.estadoClinico.pesoRef,
-        });
-        syncDietKcalFromWeight(monitoreo.estadoClinico, w);
-      }
-      persistEstadoClinicoAndRefresh(monitoreo, '', patient);
+    var tag = (el.tagName || '').toUpperCase();
+    if (tag === 'SELECT') {
+      el.addEventListener('change', function () {
+        applyEstadoClinicoFieldChange(el, monitoreo, patient);
+      });
+      return;
+    }
+    el.addEventListener('input', function () {
+      applyEstadoClinicoFieldChange(el, monitoreo, patient);
     });
   });
 
@@ -418,7 +452,6 @@ function generateEstadoActualText(monitoreo, patient) {
   var snapshot = deriveSnapshot(monitoreo);
   var weightKg = resolveDietWeightKg({
     patientPeso: patient && patient.peso,
-    snapshotPeso: snapshot.vitals && snapshot.vitals.peso,
     pesoRef: monitoreo.estadoClinico && monitoreo.estadoClinico.pesoRef,
   });
   if (monitoreo.estadoClinico) syncDietKcalFromWeight(monitoreo.estadoClinico, weightKg);
@@ -457,9 +490,9 @@ function wireFormInteractions(form) {
     var out = form.querySelector('#ea-balance-turno-live');
     if (!ingEl || !egrEl || !out) return;
     var ing = parseNumOrNull(ingEl.value);
-    var egr = parseNumOrNull(egrEl.value);
-    if (ing != null && egr != null) {
-      var diff = ing - egr;
+    var egr = parseIoEgresoField(egrEl.value);
+    if (ing != null && isIoNumericValue(egr)) {
+      var diff = ing - Number(egr);
       out.textContent = (diff > 0 ? '+' : '') + diff + ' cc';
     } else {
       out.textContent = '—';
@@ -726,8 +759,8 @@ function buildFormSection() {
     '<input type="number" class="ea-input" id="ea-io-ing" min="0" step="1">' +
     '</label>' +
     '<label class="ea-field">' +
-    '<span class="ea-label">Egresos (cc)</span>' +
-    '<input type="number" class="ea-input" id="ea-io-egr" min="0" step="1">' +
+    '<span class="ea-label">Egresos (cc o NC)</span>' +
+    '<input type="text" class="ea-input" id="ea-io-egr" inputmode="text" autocomplete="off" placeholder="cc o NC">' +
     '</label>' +
     '<div class="ea-field ea-io-balance">' +
     '<span class="ea-label">Balance turno</span>' +
@@ -769,6 +802,7 @@ export function renderEstadoActualPanel(opts) {
   var balGlobal = balanceGlobalHistorico(monitoreo);
   var savedLabel = formatEaSavedLabel(monitoreo.textoGuardado && monitoreo.textoGuardado.savedAt);
   var activeId = rt.getActiveId();
+  var eaUiState = captureEaPanelUiState(mount);
 
   mount.innerHTML =
     '<div class="estado-actual-panel">' +
@@ -793,6 +827,8 @@ export function renderEstadoActualPanel(opts) {
     '<textarea id="ea-texto" class="ea-texto" rows="8" placeholder="Generando texto…"></textarea>' +
     '</section>' +
     '</div>';
+
+  restoreEaPanelUiState(mount, eaUiState);
 
   var gluList = mount.querySelector('#ea-glu-list');
   if (gluList) gluList.appendChild(buildGluRow());
@@ -869,7 +905,7 @@ function parseFormMedicion() {
     glucometrias: glucometrias,
     io: {
       ing: parseNumOrNull(ingEl && 'value' in ingEl ? ingEl.value : ''),
-      egr: parseNumOrNull(egrEl && 'value' in egrEl ? egrEl.value : ''),
+      egr: parseIoEgresoField(egrEl && 'value' in egrEl ? egrEl.value : ''),
     },
   };
 }
@@ -895,7 +931,6 @@ export function registrarEstadoActualMedicion() {
     patient.monitoreo.estadoClinico,
     resolveDietWeightKg({
       patientPeso: patient.peso,
-      snapshotPeso: deriveSnapshot(patient.monitoreo).vitals.peso,
       pesoRef: patient.monitoreo.estadoClinico && patient.monitoreo.estadoClinico.pesoRef,
     })
   );

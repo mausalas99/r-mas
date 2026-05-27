@@ -7,6 +7,7 @@ import {
   GUIDED_TOUR_LS_KEY,
   closeSettingsDropdown,
   DEMO_PATIENT_ID,
+  formatCuratedReleaseNotesPlain,
 } from './settings-help.mjs';
 import {
   patients,
@@ -1727,7 +1728,8 @@ if (window.electronAPI) {
       resetUpdateCheckButtons();
       var version = (payload && payload.version) ? payload.version : String(payload || '');
       var rawNotes = (payload && payload.releaseNotes != null) ? String(payload.releaseNotes) : '';
-      var releaseNotes = stripHtmlToPlainText(rawNotes);
+      var releaseNotes = formatCuratedReleaseNotesPlain(version);
+      if (!releaseNotes) releaseNotes = stripHtmlToPlainText(rawNotes);
       pendingUpdaterTargetVersion = version;
       pendingUpdaterIsPrerelease = !!(payload && payload.prerelease);
       if (isSnoozeActiveForVersion(version)) return;

@@ -1,7 +1,7 @@
 import { isVitalAltered } from './estado-actual-ranges.mjs';
 
 /** @type {readonly string[]} */
-const VITAL_KEYS = ['tas', 'tad', 'fc', 'fr', 'temp', 'sat', 'peso'];
+const VITAL_KEYS = ['tas', 'tad', 'fc', 'fr', 'temp', 'sat'];
 
 /** @type {Record<string, string>} */
 const VITAL_LABELS = {
@@ -11,14 +11,13 @@ const VITAL_LABELS = {
   fr: 'FR',
   temp: 'Temp',
   sat: 'SatO₂',
-  peso: 'Peso',
 };
 
 /** @type {readonly { id: string, title: string, keys: readonly string[] }[]} */
 const VITAL_FAMILIES = [
   { id: 'hemo', title: 'Hemodinámico', keys: ['tas', 'tad', 'fc'] },
   { id: 'resp', title: 'Respiratorio', keys: ['fr', 'sat'] },
-  { id: 'metab', title: 'Metabólico', keys: ['temp', 'peso'] },
+  { id: 'metab', title: 'Metabólico', keys: ['temp'] },
 ];
 
 const FAMILY_COLORS = ['#2563eb', '#dc2626', '#059669', '#7c3aed', '#b45309', '#0891b2'];
@@ -45,7 +44,10 @@ function hasIoPair(io) {
   if (!io || typeof io !== 'object') return false;
   var ing = /** @type {{ ing?: unknown, egr?: unknown }} */ (io).ing;
   var egr = /** @type {{ ing?: unknown, egr?: unknown }} */ (io).egr;
-  return ing != null && ing !== '' && egr != null && egr !== '';
+  if (ing == null || ing === '' || egr == null || egr === '') return false;
+  var ingN = Number(ing);
+  var egrN = Number(egr);
+  return Number.isFinite(ingN) && Number.isFinite(egrN);
 }
 
 /**

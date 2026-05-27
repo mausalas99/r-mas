@@ -1316,6 +1316,23 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '6.3.2': [
+    {
+      title: 'Receta por paciente',
+      body:
+        'En <strong>Medicamentos</strong>, el pegado y la receta procesada se guardan por paciente al cambiar en la lista.',
+    },
+    {
+      title: 'Estado Actual',
+      body:
+        '«Estado clínico general» no se cierra al tabular; egresos con <strong>NC</strong>; peso solo en <strong>Datos del paciente</strong>.',
+    },
+    {
+      title: 'Pendientes Repo bloqueados',
+      body:
+        'Si eliminas o completas un pendiente de reposición electrolítica, no vuelve tras reiniciar ni con LiveSync.',
+    },
+  ],
   '6.3.1': [
     {
       title: 'Cultivos y micobacterias',
@@ -1838,6 +1855,33 @@ var RELEASE_NOTES_HIGHLIGHTS = {
 function getCuratedReleaseNotes(v) {
   if (v && RELEASE_NOTES_HIGHLIGHTS[v]) return RELEASE_NOTES_HIGHLIGHTS[v];
   return RELEASE_NOTES_HIGHLIGHTS_DEFAULT;
+}
+
+function stripHtmlFromReleaseBody(html) {
+  var raw = html == null ? '' : String(html);
+  if (!raw.trim()) return '';
+  try {
+    var el = document.createElement('div');
+    el.innerHTML = raw;
+    return (el.textContent || '').replace(/\s+/g, ' ').trim();
+  } catch (_err) {
+    return raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+}
+
+/** Texto breve para el modal de actualización (no el changelog completo de GitHub). */
+export function formatCuratedReleaseNotesPlain(version) {
+  var notes = getCuratedReleaseNotes(version);
+  if (!notes || !notes.length) return '';
+  return notes
+    .map(function (n) {
+      var title = n.title ? String(n.title).trim() : '';
+      var body = stripHtmlFromReleaseBody(n.body || '');
+      if (title && body) return title + ' — ' + body;
+      return title || body;
+    })
+    .filter(Boolean)
+    .join('\n\n');
 }
 
 function maybeShowReleaseNotesFor(version, prevVersion) {

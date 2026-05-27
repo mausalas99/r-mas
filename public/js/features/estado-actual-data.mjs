@@ -48,13 +48,36 @@ export function emptyMonitoreo() {
 }
 
 /** @type {readonly string[]} */
-const VITAL_KEYS = ['tas', 'tad', 'fc', 'fr', 'temp', 'sat', 'peso'];
+const VITAL_KEYS = ['tas', 'tad', 'fc', 'fr', 'temp', 'sat'];
 
 /**
  * @param {unknown} v
  */
 function hasIoNumber(v) {
   return v != null && v !== '';
+}
+
+/**
+ * @param {unknown} v
+ * @returns {boolean}
+ */
+export function isIoNumericValue(v) {
+  if (v == null || v === '') return false;
+  var n = Number(v);
+  return Number.isFinite(n);
+}
+
+/**
+ * Egresos: cc numéricos o «NC» (sin cambio).
+ * @param {unknown} raw
+ * @returns {number | string | null}
+ */
+export function parseIoEgresoField(raw) {
+  var s = String(raw == null ? '' : raw).trim();
+  if (!s) return null;
+  if (/^nc$/i.test(s)) return 'NC';
+  var n = Number(s);
+  return Number.isFinite(n) ? n : s;
 }
 
 /**
@@ -272,7 +295,7 @@ export function balanceTurno(monitoreoLike) {
       /** @type {any} */ (row).io && typeof /** @type {any} */ (row).io === 'object'
         ? /** @type {{ ing?: unknown, egr?: unknown }} */ (/** @type {any} */ (row).io)
         : {};
-    if (!hasIoNumber(io.ing) || !hasIoNumber(io.egr)) continue;
+    if (!isIoNumericValue(io.ing) || !isIoNumericValue(io.egr)) continue;
     return Number(io.ing) - Number(io.egr);
   }
   return NaN;
@@ -295,7 +318,7 @@ export function balanceGlobalHistorico(monitoreoLike) {
       /** @type {any} */ (row).io && typeof /** @type {any} */ (row).io === 'object'
         ? /** @type {{ ing?: unknown, egr?: unknown }} */ (/** @type {any} */ (row).io)
         : {};
-    if (!hasIoNumber(io.ing) || !hasIoNumber(io.egr)) continue;
+    if (!isIoNumericValue(io.ing) || !isIoNumericValue(io.egr)) continue;
     sum += Number(io.ing) - Number(io.egr);
     any = true;
   }
@@ -398,17 +421,13 @@ export function parseWeightKg(raw) {
 }
 
 /**
- * Peso para cálculo dietético: datos del paciente → último SV → pesoRef.
- * @param {{ patientPeso?: unknown, snapshotPeso?: unknown, pesoRef?: unknown }} [opts]
+ * Peso para cálculo dietético: solo datos del paciente (o pesoRef legacy en monitoreo).
+ * @param {{ patientPeso?: unknown, pesoRef?: unknown }} [opts]
  * @returns {number | null}
  */
 export function resolveDietWeightKg(opts) {
   opts = opts || {};
-  return (
-    parseWeightKg(opts.patientPeso) ??
-    parseWeightKg(opts.snapshotPeso) ??
-    parseWeightKg(opts.pesoRef)
-  );
+  return parseWeightKg(opts.patientPeso) ?? parseWeightKg(opts.pesoRef);
 }
 
 /**
