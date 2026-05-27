@@ -691,7 +691,7 @@ function renderTourStep() {
     case 'livesync_desktop':
       setBadge('LiveSync · escritorio');
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">El icono <strong>⇄</strong> (junto a Ajustes) abre la conexión LAN: elige <strong>Anfitrión</strong> (esta PC comparte el enlace) o <strong>Cliente</strong> (pegas el enlace de invitación). Tras conectar, entra a una <strong>sala en vivo</strong>: ahí se sincronizan pacientes, laboratorios, agenda y pendientes entre las R+ del turno.</p>' +
+        '<p style="margin:0;line-height:1.5;">El icono <strong>⇄</strong> (junto a Ajustes) abre la sala en vivo: en escritorio se activa la red del turno y luego <strong>creas una sala</strong> o <strong>te unes</strong> a una existente. En iPad o otra Mac pegas el enlace de invitación. Ahí se sincronizan pacientes, laboratorios, agenda y pendientes entre las R+ del equipo.</p>' +
         '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Los respaldos JSON manuales siguen en Ajustes → Respaldos, sync y recuperación.</p>';
       nextBtn.textContent = 'Siguiente';
       break;

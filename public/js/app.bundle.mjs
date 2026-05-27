@@ -512,6 +512,9 @@ var storage = {
   getLanUiRole() {
     var v = localStorage.getItem("rpc-lan-ui-role");
     if (v === "host" || v === "client") return v;
+    if (typeof window !== "undefined" && window.electronAPI && typeof window.electronAPI.getLanCandidateBaseUrl === "function") {
+      return "host";
+    }
     return "client";
   },
   saveLanUiRole(role) {
@@ -9280,7 +9283,7 @@ var I18N_ES = {
   "settings.open": "Abrir ajustes",
   "settings.openTitle": "Ajustes",
   "settings.teamSyncAria": "Abrir conexión LAN y LiveSync (salas)",
-  "settings.teamSyncTitle": "Conexión LAN (⇄): rol, enlace de invitación, salas LiveSync. Código del servidor (solo anfitrión avanzado): Ajustes → LAN · servidor en esta computadora. Paquete sync JSON: Ajustes → Respaldos, sync y recuperación.",
+  "settings.teamSyncTitle": "Conexión LAN (⇄): crear o unirse a sala en vivo, copiar invitación. Código del servidor (avanzado): Ajustes → LAN · servidor en esta computadora. Paquete sync JSON: Ajustes → Respaldos, sync y recuperación.",
   "theme.toggle": "Cambiar tema claro u oscuro",
   "theme.toggleTitle": "Cambiar tema",
   "appTab.lab": "Laboratorio",
@@ -11295,6 +11298,16 @@ var LanClient = class extends EventTarget {
   get liveRoomId() {
     return this._liveRoomId;
   }
+  /** true si el canal live de esta sala está conectando o abierto (evita reconexiones que lo cortan). */
+  isLiveChannelBusy(roomId) {
+    const want = String(roomId || "").trim();
+    const have = String(this._liveRoomId || "").trim();
+    const ws = this._liveWs;
+    if (!ws) return false;
+    const rs = ws.readyState;
+    if (rs !== WebSocket.CONNECTING && rs !== WebSocket.OPEN) return false;
+    return !want || want === have;
+  }
   configure(cfg) {
     this._cfg = cfg;
   }
@@ -11368,6 +11381,7 @@ var LanClient = class extends EventTarget {
     const ws = new WebSocket(u);
     this[prop] = ws;
     ws.onopen = () => {
+      if (this[prop] !== ws) return;
       if (kind === "sync") {
         this._syncConnected = true;
         this.dispatchEvent(new CustomEvent("lan-status", { detail: { connected: true, channel: "sync" } }));
@@ -11379,6 +11393,7 @@ var LanClient = class extends EventTarget {
       }
     };
     ws.onclose = () => {
+      if (this[prop] !== ws) return;
       if (kind === "sync") {
         this._syncConnected = false;
         this.dispatchEvent(new CustomEvent("lan-status", { detail: { connected: false, channel: "sync" } }));
@@ -11390,6 +11405,7 @@ var LanClient = class extends EventTarget {
       }
     };
     ws.onmessage = (ev) => {
+      if (this[prop] !== ws) return;
       const data = parseWsPayload(ev.data);
       if (!data) return;
       if (kind === "sync") {
@@ -12531,11 +12547,51 @@ async function syncLanSavedTeamCodeWithEffectiveHostCode() {
   persistLanClientConfig(hostUrl || String(cfg.hostUrl || "").trim().replace(/\/+$/, ""), info.code);
   return true;
 }
-async function initLanHostPlugAndPlay() {
-  var role = typeof storage.getLanUiRole === "function" ? storage.getLanUiRole() : "client";
-  if (role !== "host") return;
-  if (!window.electronAPI || typeof window.electronAPI.getLanEffectiveTeamCode !== "function") return;
+function isLanElectronDesktop() {
+  return !!(typeof window !== "undefined" && window.electronAPI && typeof window.electronAPI.getLanCandidateBaseUrl === "function");
+}
+function isLanRemoteJoinMode() {
+  return typeof storage.getLanUiRole === "function" && storage.getLanUiRole() === "client";
+}
+async function resolveLanHostUrlAuto() {
+  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
+  var fromCfg = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
+  if (fromCfg) return fromCfg;
+  if (!isLanElectronDesktop()) return "";
+  try {
+    return String(await window.electronAPI.getLanCandidateBaseUrl() || "").trim().replace(/\/+$/, "");
+  } catch (_e) {
+    return "";
+  }
+}
+function migrateLanElectronStaleClientRole() {
+  if (!isLanElectronDesktop() || !isLanRemoteJoinMode()) return;
+  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() : null;
+  if (cfg && String(cfg.hostUrl || "").trim()) return;
+  if (typeof storage.saveLanUiRole === "function") storage.saveLanUiRole("host");
+}
+async function ensureLanElectronHostReady() {
+  migrateLanElectronStaleClientRole();
+  if (!isLanElectronDesktop() || isLanRemoteJoinMode()) return false;
   await syncLanSavedTeamCodeWithEffectiveHostCode();
+  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
+  var url = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
+  if (url) {
+    persistLanClientConfig(url, cfg.teamCode);
+    return false;
+  }
+  var autoUrl = await resolveLanHostUrlAuto();
+  if (!autoUrl) return false;
+  persistLanClientConfig(autoUrl, cfg.teamCode || DEFAULT_LAN_TEAM_CODE);
+  try {
+    lanClient.connectSyncChannel();
+  } catch (_e) {
+  }
+  return true;
+}
+async function initLanHostPlugAndPlay() {
+  if (!isLanElectronDesktop() || isLanRemoteJoinMode()) return;
+  await ensureLanElectronHostReady();
 }
 async function resolveLanTeamCodeForShare() {
   var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
@@ -12595,12 +12651,15 @@ function appendLanKnownSessionsSection(root) {
     lab.style.whiteSpace = "nowrap";
     lab.textContent = String(rec.label || rec.id);
     lab.title = String(rec.id);
+    var inThisRoom = String(activeLiveSyncRoomId || "") === String(rec.id || "");
     var join = document.createElement("button");
     join.type = "button";
     join.className = "btn-lan-secondary";
     join.style.flex = "0 0 auto";
-    join.textContent = "Unirse";
+    join.textContent = inThisRoom ? "En sala" : "Unirse";
+    join.disabled = inThisRoom;
     join.onclick = function() {
+      if (inThisRoom) return;
       joinLanRoom(rec.id, rec.label);
     };
     var del = document.createElement("button");
@@ -13049,6 +13108,11 @@ function startLiveSyncReconnectLoop() {
       scheduleReconnect();
       return;
     }
+    if (typeof lanClient.isLiveChannelBusy === "function" && lanClient.isLiveChannelBusy(mem.roomId)) {
+      syncLiveSyncStatusChrome();
+      scheduleReconnect();
+      return;
+    }
     if (isLanSessionConfiguredForRest()) {
       try {
         if (!lanClient.connected) lanClient.connectSyncChannel();
@@ -13363,42 +13427,74 @@ if (typeof window !== "undefined") {
     if (activeLiveSyncRoomId) saveLocalRoomSnapshot(activeLiveSyncRoomId);
   });
 }
-function appendLanRoleTabs(root) {
-  if (!root || typeof storage.getLanUiRole !== "function" || typeof storage.saveLanUiRole !== "function") return;
-  var wrap = document.createElement("div");
-  wrap.className = "lan-role-tabs";
-  wrap.setAttribute("role", "group");
-  wrap.setAttribute("aria-label", "Modo de conexión");
-  var role = storage.getLanUiRole();
-  function mk(shortLabel, longTitle, value) {
-    var b = document.createElement("button");
-    b.type = "button";
-    b.className = "lan-role-tab" + (role === value ? " active" : "");
-    b.textContent = shortLabel;
-    b.title = longTitle;
-    b.onclick = function() {
-      storage.saveLanUiRole(value);
-      runtime2.syncSettingsLanHostDiskSection();
-      if (value === "host") void initLanHostPlugAndPlay();
-      renderLanPanel();
-    };
-    return b;
-  }
-  wrap.appendChild(
-    mk(
-      "Anfitrión",
-      "Esta computadora tiene el servidor y comparte la invitación con el equipo",
-      "host"
-    )
-  );
-  wrap.appendChild(
-    mk(
-      "Cliente",
-      "Esta computadora se une con el enlace de invitación que te compartieron",
-      "client"
-    )
-  );
-  root.appendChild(wrap);
+function resetLanToLocalHostFromUi() {
+  if (!isLanElectronDesktop()) return;
+  if (typeof storage.saveLanUiRole === "function") storage.saveLanUiRole("host");
+  storage.saveLanConfig(null);
+  lanClient.disconnect();
+  activeLiveSyncRoomId = "";
+  activeLiveSyncRoomLabel = "";
+  clearRoomMembership();
+  void ensureLanElectronHostReady().then(function() {
+    renderLanPanel();
+    runtime2.showToast("Esta Mac vuelve a ser el servidor del turno. Crea o únete a una sala.", "success");
+  });
+}
+function appendLanJoinOtherMacSection(root) {
+  if (!root || !isLanElectronDesktop() || isLanRemoteJoinMode()) return;
+  var details = document.createElement("details");
+  details.className = "lan-connect-other-mac";
+  details.style.marginBottom = "12px";
+  var sum = document.createElement("summary");
+  sum.style.cursor = "pointer";
+  sum.style.fontSize = "12px";
+  sum.style.color = "var(--text-muted)";
+  sum.textContent = "Unirme a la sala de otra computadora (enlace de invitación)";
+  details.appendChild(sum);
+  var inner = document.createElement("div");
+  inner.style.marginTop = "8px";
+  var hint = document.createElement("p");
+  hint.className = "lan-connect-card-hint";
+  hint.style.marginTop = "0";
+  hint.innerHTML = "Pega el enlace que te compartieron. Esta R+ dejará de usar el servidor de <strong>esta</strong> Mac y se conectará a la otra.";
+  inner.appendChild(hint);
+  var inputInvite = document.createElement("textarea");
+  inputInvite.className = "profile-input";
+  inputInvite.id = "lan-input-invite-link";
+  inputInvite.rows = 2;
+  inputInvite.autocomplete = "off";
+  inputInvite.placeholder = "http://…/join?code=… o …/mobile/?code=…";
+  inner.appendChild(inputInvite);
+  var row = document.createElement("div");
+  row.className = "lan-connect-actions-row";
+  row.style.marginTop = "8px";
+  var btnJoin = document.createElement("button");
+  btnJoin.type = "button";
+  btnJoin.className = "btn-lan-secondary";
+  btnJoin.style.flex = "1";
+  btnJoin.textContent = "Unirse con enlace";
+  btnJoin.onclick = function() {
+    if (typeof storage.saveLanUiRole === "function") storage.saveLanUiRole("client");
+    joinLanFromInviteUi();
+  };
+  row.appendChild(btnJoin);
+  inner.appendChild(row);
+  details.appendChild(inner);
+  root.appendChild(details);
+}
+function appendLanBackToLocalHostSection(root) {
+  if (!root || !isLanElectronDesktop() || !isLanRemoteJoinMode()) return;
+  var row = document.createElement("div");
+  row.className = "lan-connect-actions-row";
+  row.style.marginBottom = "12px";
+  var btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "btn-lan-secondary";
+  btn.style.flex = "1";
+  btn.textContent = "Usar esta Mac como servidor del turno";
+  btn.onclick = resetLanToLocalHostFromUi;
+  row.appendChild(btn);
+  root.appendChild(row);
 }
 function lanPanelRenderStale(gen) {
   return gen !== _lanPanelRenderGen;
@@ -13421,32 +13517,33 @@ async function renderLanPanelOnce() {
   var gen = ++_lanPanelRenderGen;
   var root = document.getElementById("lan-connection-panel-root");
   if (!root) return;
+  await ensureLanElectronHostReady();
   var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
-  var uiRole = typeof storage.getLanUiRole === "function" ? storage.getLanUiRole() : "client";
+  var desktopHost = isLanElectronDesktop() && !isLanRemoteJoinMode();
   if (!lanClient.baseUrl()) {
     root.innerHTML = "";
-    appendLanRoleTabs(root);
     appendLanKnownSessionsSection(root);
+    appendLanJoinOtherMacSection(root);
     var card = document.createElement("div");
     card.className = "lan-connect-card";
     var title = document.createElement("div");
     title.className = "lan-connect-card-title";
-    title.textContent = uiRole === "host" ? "Anfitrión (abres la sala)" : "Cliente (te unes al equipo)";
+    title.textContent = desktopHost ? "Activar sala en vivo" : "Unirse al equipo";
     card.appendChild(title);
     var hint = document.createElement("p");
     hint.className = "lan-connect-card-hint";
-    if (uiRole === "host") {
-      hint.innerHTML = "Las otras R+ deben estar en la <strong>misma red Wi‑Fi</strong>. La dirección suele ser <code>http://</code> más la IP de <strong>esta</strong> computadora. Si dejas vacío el campo de dirección, usamos la IP que detectamos aquí. Comparte solo el <strong>enlace de invitación</strong> (WhatsApp, correo); no hace falta configurar códigos.";
+    if (desktopHost) {
+      hint.innerHTML = "Esta Mac comparte el servidor del turno. Las otras R+ deben estar en la <strong>misma Wi‑Fi</strong>. Después crea una sala o únete a una existente; comparte el enlace de invitación con el equipo.";
     } else {
-      hint.innerHTML = "Pide al anfitrión el <strong>enlace de invitación</strong> y pégalo abajo. También puedes abrir ese enlace en Safari (iPad) o en el navegador de esta computadora.";
+      hint.innerHTML = "Pega el <strong>enlace de invitación</strong> que te compartieron (WhatsApp, correo). También puedes abrirlo en Safari en iPad.";
     }
     card.appendChild(hint);
-    if (uiRole === "host") {
+    if (desktopHost) {
       var fieldHost = document.createElement("div");
       fieldHost.className = "lan-connect-field";
       var labelHost = document.createElement("label");
       labelHost.className = "profile-field-label";
-      labelHost.textContent = "Dirección que verán las otras R+";
+      labelHost.textContent = "Dirección en la red (opcional)";
       labelHost.setAttribute("for", "lan-input-host-url");
       var inputHost = document.createElement("input");
       inputHost.className = "profile-input";
@@ -13470,7 +13567,7 @@ async function renderLanPanelOnce() {
       inputInvite.id = "lan-input-invite-link";
       inputInvite.rows = 3;
       inputInvite.autocomplete = "off";
-      inputInvite.placeholder = "Pega aquí el enlace que te envió el anfitrión (http://…/join?… o …/mobile/?…)";
+      inputInvite.placeholder = "Pega aquí el enlace (http://…/join?… o …/mobile/?…)";
       fieldInvite.appendChild(labelInvite);
       fieldInvite.appendChild(inputInvite);
       card.appendChild(fieldInvite);
@@ -13479,12 +13576,12 @@ async function renderLanPanelOnce() {
     actions.className = "lan-connect-actions";
     var row = document.createElement("div");
     row.className = "lan-connect-actions-row";
-    if (uiRole === "host") {
+    if (desktopHost) {
       var btnHostStart = document.createElement("button");
       btnHostStart.type = "button";
       btnHostStart.className = "btn-lan-primary";
       btnHostStart.style.flex = "1";
-      btnHostStart.textContent = "Iniciar como anfitrión y copiar invitación";
+      btnHostStart.textContent = "Activar y copiar invitación";
       btnHostStart.onclick = function() {
         saveLanSettingsFromUi({ copyInviteAfter: true });
       };
@@ -13496,22 +13593,25 @@ async function renderLanPanelOnce() {
       btnJoinLink.style.flex = "1";
       btnJoinLink.textContent = "Unirse con enlace";
       btnJoinLink.onclick = function() {
+        if (isLanElectronDesktop() && typeof storage.saveLanUiRole === "function") {
+          storage.saveLanUiRole("client");
+        }
         joinLanFromInviteUi();
       };
       row.appendChild(btnJoinLink);
     }
     actions.appendChild(row);
     card.appendChild(actions);
-    if (uiRole === "host") {
+    if (desktopHost) {
       var postHint = document.createElement("p");
       postHint.className = "lan-connect-card-hint";
       postHint.style.marginTop = "2px";
-      postHint.textContent = "Al pulsar el botón se guarda la conexión, se prueba el servidor y se copia al portapapeles el enlace para compartir.";
+      postHint.textContent = "Si el campo de dirección está vacío, usamos la IP que detectamos en esta Mac.";
       card.appendChild(postHint);
     }
     root.appendChild(card);
     appendLanDisconnectBannerPref(root);
-    if (uiRole === "host" && !String(cfg.hostUrl || "").trim()) {
+    if (desktopHost && !String(cfg.hostUrl || "").trim()) {
       resolveLanHostUrlForShare().then(function(u) {
         if (lanPanelRenderStale(gen)) return;
         var inp = document.getElementById("lan-input-host-url");
@@ -13547,13 +13647,14 @@ async function renderLanPanelOnce() {
   }
   if (lanPanelRenderStale(gen)) return;
   root.innerHTML = "";
-  appendLanRoleTabs(root);
+  appendLanBackToLocalHostSection(root);
   appendLanKnownSessionsSection(root);
+  appendLanJoinOtherMacSection(root);
   var statusCard = document.createElement("div");
   statusCard.className = "lan-connect-card";
   var stTitle = document.createElement("div");
   stTitle.className = "lan-connect-card-title";
-  stTitle.textContent = uiRole === "host" ? "Conectado como anfitrión" : "Conectado como cliente";
+  stTitle.textContent = isLanRemoteJoinMode() ? "Conectado a la sala de otra Mac" : "Red del equipo lista";
   statusCard.appendChild(stTitle);
   var topRow = document.createElement("p");
   topRow.className = "lan-connect-card-hint";
@@ -13714,20 +13815,10 @@ async function renderLanPanelOnce() {
   purgeDuplicateLanRoomsPanels(root);
 }
 async function resolveLanHostUrlForShare() {
-  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
   var el = document.getElementById("lan-input-host-url");
   var fromInput = el && String(el.value || "").trim();
   if (fromInput) return fromInput.replace(/\/+$/, "");
-  var fromCfg = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
-  if (fromCfg) return fromCfg;
-  var uiRole = typeof storage.getLanUiRole === "function" ? storage.getLanUiRole() : "client";
-  if (uiRole !== "host") return "";
-  if (!window.electronAPI || typeof window.electronAPI.getLanCandidateBaseUrl !== "function") return "";
-  try {
-    return String(await window.electronAPI.getLanCandidateBaseUrl() || "").trim().replace(/\/+$/, "");
-  } catch (_e) {
-    return "";
-  }
+  return resolveLanHostUrlAuto();
 }
 async function saveLanHostTeamCodeFromUi() {
   if (!window.electronAPI || typeof window.electronAPI.writeLanHostTeamCode !== "function") {
@@ -14058,10 +14149,9 @@ function dismissLanHostFirstTimeHint() {
 function syncSettingsLanHostDiskSection() {
   var acc = document.getElementById("settings-accordion-lan-host-disk");
   if (!acc) return;
-  var desktop = !!(window.electronAPI && typeof window.electronAPI.writeLanHostTeamCode === "function");
-  var role = typeof storage.getLanUiRole === "function" ? storage.getLanUiRole() : "client";
-  acc.style.display = desktop && role === "host" ? "" : "none";
-  if (desktop && role === "host") {
+  var desktop = isLanElectronDesktop();
+  acc.style.display = desktop && !isLanRemoteJoinMode() ? "" : "none";
+  if (desktop && !isLanRemoteJoinMode()) {
     syncLanHostTeamCodeSettingsInput();
     syncLanHostFirstTimeHintUi();
     if (!acc.dataset.lanHostToggleBound) {
@@ -14123,6 +14213,9 @@ function openTeamSyncFromHeader() {
 function configureLanFromMobileJoin(hostUrl, teamCode, roomId) {
   var cfg = { hostUrl: hostUrl.replace(/\/+$/, ""), teamCode: String(teamCode || "").trim() };
   if (!cfg.teamCode) return;
+  if (isLanElectronDesktop() && typeof storage.saveLanUiRole === "function") {
+    storage.saveLanUiRole("client");
+  }
   storage.saveLanConfig(cfg);
   lanClient.configure(cfg);
   try {
@@ -16959,7 +17052,7 @@ function renderTourStep() {
       break;
     case "livesync_desktop":
       setBadge("LiveSync · escritorio");
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">El icono <strong>⇄</strong> (junto a Ajustes) abre la conexión LAN: elige <strong>Anfitrión</strong> (esta PC comparte el enlace) o <strong>Cliente</strong> (pegas el enlace de invitación). Tras conectar, entra a una <strong>sala en vivo</strong>: ahí se sincronizan pacientes, laboratorios, agenda y pendientes entre las R+ del turno.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Los respaldos JSON manuales siguen en Ajustes → Respaldos, sync y recuperación.</p>';
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">El icono <strong>⇄</strong> (junto a Ajustes) abre la sala en vivo: en escritorio se activa la red del turno y luego <strong>creas una sala</strong> o <strong>te unes</strong> a una existente. En iPad o otra Mac pegas el enlace de invitación. Ahí se sincronizan pacientes, laboratorios, agenda y pendientes entre las R+ del equipo.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Los respaldos JSON manuales siguen en Ajustes → Respaldos, sync y recuperación.</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "livesync_mobile":

@@ -6,7 +6,7 @@
       "format": "esm"
     },
     "public/js/storage.js": {
-      "bytes": 22079,
+      "bytes": 22260,
       "imports": [
         {
           "path": "public/js/storage-quota.mjs",
@@ -301,7 +301,7 @@
       "format": "esm"
     },
     "public/js/features/chrome.mjs": {
-      "bytes": 12796,
+      "bytes": 12787,
       "imports": [],
       "format": "esm"
     },
@@ -418,7 +418,7 @@
       "format": "esm"
     },
     "public/js/lan-client.mjs": {
-      "bytes": 3714,
+      "bytes": 4266,
       "imports": [],
       "format": "esm"
     },
@@ -500,7 +500,7 @@
       "format": "esm"
     },
     "public/js/features/lan-sync.mjs": {
-      "bytes": 70978,
+      "bytes": 74211,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -706,7 +706,7 @@
       "format": "esm"
     },
     "public/js/features/settings-help.mjs": {
-      "bytes": 90885,
+      "bytes": 90879,
       "imports": [
         {
           "path": "public/js/tour-targets.mjs",
@@ -2728,7 +2728,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 2720820
+      "bytes": 2727108
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -2739,7 +2739,7 @@
           "bytesInOutput": 1788
         },
         "public/js/storage.js": {
-          "bytesInOutput": 20618
+          "bytesInOutput": 20775
         },
         "public/js/med-receta-core.mjs": {
           "bytesInOutput": 20439
@@ -2820,7 +2820,7 @@
           "bytesInOutput": 19067
         },
         "public/js/features/chrome.mjs": {
-          "bytesInOutput": 12499
+          "bytesInOutput": 12490
         },
         "public/js/features/lab-panel.mjs": {
           "bytesInOutput": 57453
@@ -2841,7 +2841,7 @@
           "bytesInOutput": 541
         },
         "public/js/lan-client.mjs": {
-          "bytesInOutput": 3625
+          "bytesInOutput": 4176
         },
         "public/js/live-sync-room.mjs": {
           "bytesInOutput": 5725
@@ -2868,7 +2868,7 @@
           "bytesInOutput": 3966
         },
         "public/js/features/lan-sync.mjs": {
-          "bytesInOutput": 68379
+          "bytesInOutput": 71284
         },
         "public/js/patient-validation.mjs": {
           "bytesInOutput": 971
@@ -2895,7 +2895,7 @@
           "bytesInOutput": 10524
         },
         "public/js/features/settings-help.mjs": {
-          "bytesInOutput": 84189
+          "bytesInOutput": 84183
         },
         "public/js/features/tendencias.mjs": {
           "bytesInOutput": 60882
@@ -3096,7 +3096,7 @@
           "bytesInOutput": 4231
         }
       },
-      "bytes": 1506554
+      "bytes": 1510152
     }
   }
 }

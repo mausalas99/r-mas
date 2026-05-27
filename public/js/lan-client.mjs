@@ -30,6 +30,17 @@ export class LanClient extends EventTarget {
     return this._liveRoomId;
   }
 
+  /** true si el canal live de esta sala está conectando o abierto (evita reconexiones que lo cortan). */
+  isLiveChannelBusy(roomId) {
+    const want = String(roomId || '').trim();
+    const have = String(this._liveRoomId || '').trim();
+    const ws = this._liveWs;
+    if (!ws) return false;
+    const rs = ws.readyState;
+    if (rs !== WebSocket.CONNECTING && rs !== WebSocket.OPEN) return false;
+    return !want || want === have;
+  }
+
   configure(cfg) {
     this._cfg = cfg;
   }
@@ -115,6 +126,7 @@ export class LanClient extends EventTarget {
     this[prop] = ws;
 
     ws.onopen = () => {
+      if (this[prop] !== ws) return;
       if (kind === 'sync') {
         this._syncConnected = true;
         this.dispatchEvent(new CustomEvent('lan-status', { detail: { connected: true, channel: 'sync' } }));
@@ -127,6 +139,7 @@ export class LanClient extends EventTarget {
     };
 
     ws.onclose = () => {
+      if (this[prop] !== ws) return;
       if (kind === 'sync') {
         this._syncConnected = false;
         this.dispatchEvent(new CustomEvent('lan-status', { detail: { connected: false, channel: 'sync' } }));
@@ -139,6 +152,7 @@ export class LanClient extends EventTarget {
     };
 
     ws.onmessage = (ev) => {
+      if (this[prop] !== ws) return;
       const data = parseWsPayload(ev.data);
       if (!data) return;
       if (kind === 'sync') {
