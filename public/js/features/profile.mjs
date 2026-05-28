@@ -14,7 +14,11 @@ import {
   syncIdleLockSelectUi,
   syncPreimportBackupUi,
 } from "./platform.mjs";
-import { maybeShowReleaseNotesFor } from "./settings-help.mjs";
+import {
+  maybeShowReleaseNotesFor,
+  initReleaseNotesDevPreviewIfEnabled,
+  RELEASE_NOTES_DEV_FORCE_SHOW,
+} from "./settings-help.mjs";
 import { notes, saveState } from "../app-state.mjs";
 import { renderNoteForm, applyProfileToNoteIfEmpty } from "./notes-indicaciones.mjs";
 import { renderEstadoActualButton } from "./soap-estado.mjs";
@@ -163,7 +167,9 @@ export function loadSettings() {
           verEl.textContent = v || "—";
           var LAST_SEEN_VERSION_KEY = "rplus-last-seen-app-version";
           var prev = localStorage.getItem(LAST_SEEN_VERSION_KEY);
-          if (prev && v && prev !== v) {
+          if (RELEASE_NOTES_DEV_FORCE_SHOW) {
+            initReleaseNotesDevPreviewIfEnabled(v);
+          } else if (prev && v && prev !== v) {
             rt.showToast(
               "Actualizado a v" +
                 v +

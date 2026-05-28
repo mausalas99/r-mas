@@ -438,7 +438,24 @@ html.dark .help-center-modal { background: var(--surface); color: var(--text); }
 }
 .help-tour-btn:hover { border-color: var(--action); }
 /* ── Novedades (release notes) ─────────────────────────────── */
+#release-notes-backdrop.modal-backdrop.open { z-index: 200010; }
 .release-notes-modal { width: 560px; max-width: 95vw; padding: 24px 24px 18px; }
+.release-notes-actions {
+  display: flex; justify-content: flex-end; margin-top: 16px; padding-top: 4px;
+}
+.release-notes-dismiss-btn {
+  min-width: 120px;
+  background: var(--action);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+.release-notes-dismiss-btn:hover { background: var(--action-hover); }
 html.dark .release-notes-modal { background: var(--surface); color: var(--text); }
 .release-notes-modal h3 { margin: 0 0 6px; }
 .release-notes-intro {

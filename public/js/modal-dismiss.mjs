@@ -34,7 +34,7 @@ export function createModalDismissRegistry() {
   }
 
   function closeTopmost(ev) {
-    for (var i = 0; i < layers.length; i++) {
+    for (var i = layers.length - 1; i >= 0; i--) {
       if (tryCloseLayer(layers[i], ev)) return true;
     }
     return false;

@@ -33692,6 +33692,7 @@ function selectHelpArticle(id) {
     });
   }
 }
+var RELEASE_NOTES_DEV_FORCE_SHOW = false;
 var RELEASE_NOTES_SEEN_PREFIX = "rpc-release-notes-seen-";
 var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
   {
@@ -34176,6 +34177,9 @@ function stripHtmlFromReleaseBody(html) {
     return raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
   }
 }
+function releaseNoteBodyHtml(raw) {
+  return raw == null ? "" : String(raw);
+}
 function formatCuratedReleaseNotesPlain(version) {
   var notes2 = getCuratedReleaseNotes(version);
   if (!notes2 || !notes2.length) return "";
@@ -34197,7 +34201,42 @@ function maybeShowReleaseNotesFor(version, prevVersion) {
     showReleaseNotesModal(version);
   }, 150);
 }
+function initReleaseNotesDevPreviewIfEnabled(version) {
+  if (!RELEASE_NOTES_DEV_FORCE_SHOW || !version) return;
+  try {
+    localStorage.removeItem(RELEASE_NOTES_SEEN_PREFIX + version);
+  } catch (_err) {
+  }
+  setTimeout(function() {
+    showReleaseNotesModal(version);
+  }, 400);
+}
+var releaseNotesDismissWired = false;
+function wireReleaseNotesDismiss() {
+  if (releaseNotesDismissWired) return;
+  releaseNotesDismissWired = true;
+  var bd = document.getElementById("release-notes-backdrop");
+  if (!bd) return;
+  bd.addEventListener("click", function(ev) {
+    if (!bd.classList.contains("open")) return;
+    var panel = bd.querySelector(".release-notes-modal");
+    if (panel && panel.contains(ev.target)) return;
+    closeReleaseNotes();
+  });
+  document.addEventListener(
+    "keydown",
+    function(ev) {
+      if (ev.key !== "Escape" && ev.key !== "Esc") return;
+      if (!bd.classList.contains("open")) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      closeReleaseNotes();
+    },
+    true
+  );
+}
 function showReleaseNotesModal(version) {
+  wireReleaseNotesDismiss();
   var el = document.getElementById("release-notes-backdrop");
   if (!el) return;
   var title = document.getElementById("release-notes-title");
@@ -34213,7 +34252,7 @@ function showReleaseNotesModal(version) {
       li.appendChild(strong);
       li.appendChild(document.createTextNode(" — "));
       var span = document.createElement("span");
-      span.textContent = n.body || "";
+      span.innerHTML = releaseNoteBodyHtml(n.body);
       li.appendChild(span);
       list.appendChild(li);
     });
@@ -34232,7 +34271,7 @@ function closeReleaseNotes() {
   var v = el.getAttribute("data-version");
   el.classList.remove("open");
   el.setAttribute("aria-hidden", "true");
-  if (v) {
+  if (v && !RELEASE_NOTES_DEV_FORCE_SHOW) {
     try {
       localStorage.setItem(RELEASE_NOTES_SEEN_PREFIX + v, "1");
     } catch (_err) {
@@ -36807,7 +36846,7 @@ function createModalDismissRegistry() {
     return true;
   }
   function closeTopmost(ev) {
-    for (var i = 0; i < layers.length; i++) {
+    for (var i = layers.length - 1; i >= 0; i--) {
       if (tryCloseLayer(layers[i], ev)) return true;
     }
     return false;
@@ -38742,7 +38781,9 @@ function loadSettings() {
         verEl.textContent = v || "—";
         var LAST_SEEN_VERSION_KEY = "rplus-last-seen-app-version";
         var prev = localStorage.getItem(LAST_SEEN_VERSION_KEY);
-        if (prev && v && prev !== v) {
+        if (RELEASE_NOTES_DEV_FORCE_SHOW) {
+          initReleaseNotesDevPreviewIfEnabled(v);
+        } else if (prev && v && prev !== v) {
           rt24.showToast(
             "Actualizado a v" + v + ". Consulta Ajustes o el menú para buscar actualizaciones.",
             "success"
@@ -40092,7 +40133,9 @@ function initModalDismiss() {
   modalDismiss.register({
     isOpen: function() {
       return dynamicBackdropIds.some(function(id) {
-        return !!el(id);
+        var node = el(id);
+        if (!node) return false;
+        return isRpcOverlayVisible(node);
       });
     },
     close: function() {
@@ -40226,7 +40269,8 @@ function initModalDismiss() {
     close: closeReleaseNotes,
     backdropEl: function() {
       return el("release-notes-backdrop");
-    }
+    },
+    panelSelector: ".release-notes-modal"
   });
   modalDismiss.register({
     isOpen: function() {

@@ -330,7 +330,9 @@ function initModalDismiss() {
   modalDismiss.register({
     isOpen: function () {
       return dynamicBackdropIds.some(function (id) {
-        return !!el(id);
+        var node = el(id);
+        if (!node) return false;
+        return isRpcOverlayVisible(node);
       });
     },
     close: function () {
@@ -477,7 +479,8 @@ function initModalDismiss() {
     close: closeReleaseNotes,
     backdropEl: function () {
       return el('release-notes-backdrop');
-    }
+    },
+    panelSelector: '.release-notes-modal',
   });
 
   modalDismiss.register({
