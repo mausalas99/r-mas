@@ -287,9 +287,29 @@ export function deriveSnapshot(monitoreoLike) {
 
   /** @type {Array<{ value?: unknown, time?: string }>} */
   var gluChosen = [];
+  /** @type {Array<{ value: number, units: number, time?: string }>} */
+  var bombaChosen = [];
   for (var j = sortedAsc.length - 1; j >= 0; j--) {
     var r2 = sortedAsc[j];
     if (!r2 || typeof r2 !== 'object') continue;
+    var barr = Array.isArray(/** @type {any} */ (r2).bombaInsulina) ? /** @type {any} */ (r2).bombaInsulina : [];
+    if (barr.length) {
+      bombaChosen = barr
+        .map(function (e) {
+          if (!e || typeof e !== 'object') return null;
+          var v = Number(/** @type {any} */ (e).value);
+          var u = Number(/** @type {any} */ (e).units);
+          if (!Number.isFinite(v)) return null;
+          return {
+            value: v,
+            units: Number.isFinite(u) ? u : 0,
+            time: /** @type {any} */ (e).time != null ? String(/** @type {any} */ (e).time) : undefined,
+          };
+        })
+        .filter(Boolean);
+      gluChosen = [];
+      break;
+    }
     var garr = Array.isArray(/** @type {any} */ (r2).glucometrias) ? /** @type {any} */ (r2).glucometrias : [];
     var nonempty = /** @type {typeof gluChosen} */ ([]);
     for (var gg of garr) {
@@ -298,6 +318,7 @@ export function deriveSnapshot(monitoreoLike) {
     }
     if (nonempty.length > 0) {
       gluChosen = nonempty;
+      bombaChosen = [];
       break;
     }
   }
@@ -347,29 +368,6 @@ export function deriveSnapshot(monitoreoLike) {
   snap.alteredAt = alteredAt;
   snap.vitalSeries = vitalSeries;
   snap.glucometrias = gluChosen.slice();
-  /** @type {Array<{ value: number, units: number, time?: string }>} */
-  var bombaChosen = [];
-  for (var bj = sortedAsc.length - 1; bj >= 0; bj--) {
-    var rB = sortedAsc[bj];
-    if (!rB || typeof rB !== 'object') continue;
-    var barr = Array.isArray(/** @type {any} */ (rB).bombaInsulina) ? /** @type {any} */ (rB).bombaInsulina : [];
-    if (barr.length) {
-      bombaChosen = barr
-        .map(function (e) {
-          if (!e || typeof e !== 'object') return null;
-          var v = Number(/** @type {any} */ (e).value);
-          var u = Number(/** @type {any} */ (e).units);
-          if (!Number.isFinite(v)) return null;
-          return {
-            value: v,
-            units: Number.isFinite(u) ? u : 0,
-            time: /** @type {any} */ (e).time != null ? String(/** @type {any} */ (e).time) : undefined,
-          };
-        })
-        .filter(Boolean);
-      break;
-    }
-  }
   snap.bombaInsulina = bombaChosen;
   /** @type {{ ing: null | unknown, egr: null | unknown, egrParts?: IoEgresoPart[], evac?: unknown }} */
   var snapIo = { ing: ingSeen, egr: egrSeen };

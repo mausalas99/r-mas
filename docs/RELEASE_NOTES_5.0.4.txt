@@ -5,12 +5,11 @@ Fecha: 2026-05-21
 
 ## Resumen
 
-TODO: resumen en una o dos frases.
+Corrige respaldos con historial de laboratorio mal formado que impedían abrir la pestaña Laboratorio (error al iterar sets corruptos).
 
-## Nuevo / mejorado
+## Correcciones
 
-- **TODO:** punto 1
-- **TODO:** punto 2
+- **Historial de labs** — Normalización al cargar respaldos: evita historiales corruptos que rompían la vista o lanzaban errores en `forEach` sobre estructuras inválidas.
 
 ## Instalación
 

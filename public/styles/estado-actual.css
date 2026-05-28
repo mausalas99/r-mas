@@ -610,27 +610,82 @@ html.dark .ea-vital-box--altered {
   border-color: color-mix(in oklab, #fbbf24 50%, var(--border));
 }
 
-.ea-bomba-toggle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 4px 0 2px;
-  cursor: pointer;
-}
-
-.ea-bomba-toggle input {
-  width: auto;
-  margin: 0;
-}
-
-.ea-bomba-block-wrap {
+.ea-glu-section {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid var(--divider);
+}
+
+.ea-glu-mode-row {
+  margin: 0;
+  min-height: 40px;
+}
+
+.ea-glu-mode-switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.ea-glu-mode-switch-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.ea-glu-pane--off {
+  display: none !important;
+}
+
+.ea-glu-section > .ea-glu-pane {
+  border-top: none;
+  padding-top: 0;
+}
+
+.ea-glu-section > .ea-glu-pane .ea-glu-head {
+  justify-content: flex-end;
+}
+
+.ea-snapshot-glu-chip--bomba {
+  border-color: color-mix(in oklab, var(--action) 35%, var(--border));
 }
 
 .ea-registro-modal .ea-bomba-row {
-  grid-template-columns: minmax(0, 1fr) minmax(72px, 88px) minmax(100px, 120px) auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(72px, 88px) minmax(100px, 120px) 36px;
+  align-items: end;
+  gap: 8px;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--divider);
+  background: color-mix(in oklab, var(--surface) 94%, var(--bg));
+}
+
+.ea-registro-modal .ea-bomba-row .ea-field--inline {
+  min-width: 0;
+}
+
+.ea-registro-modal .ea-bomba-row .ea-btn--icon {
+  align-self: end;
+  justify-self: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 520px) {
+  .ea-registro-modal .ea-bomba-row {
+    grid-template-columns: minmax(0, 1fr) minmax(64px, 76px) minmax(92px, 108px) 36px;
+  }
 }
 
 /* Glu rows */
@@ -667,7 +722,7 @@ html.dark .ea-vital-box--altered {
 }
 
 @media (max-width: 520px) {
-  .ea-glu-row {
+  .ea-glu-row:not(.ea-bomba-row) {
     grid-template-columns: 1fr;
   }
 }

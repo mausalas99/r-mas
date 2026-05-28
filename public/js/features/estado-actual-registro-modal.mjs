@@ -73,6 +73,7 @@ export function openEstadoActualRegistroModal(opts) {
   }
   rt.ensureForm();
   if (!opts || !opts.preserveForm) rt.resetForm();
+  else if (typeof rt.syncGluMode === 'function') rt.syncGluMode();
   backdrop.classList.add('open');
   backdrop.setAttribute('aria-hidden', 'false');
   document.documentElement.classList.add('ea-registro-modal-open');

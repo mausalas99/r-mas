@@ -69,6 +69,7 @@ import {
   renderEstadoActualPanel,
   ensureEaRegistroModalForm,
   resetEaRegistroForm,
+  syncEaRegistroGluMode,
   toDatetimeLocalValue,
 } from './features/estado-actual-panel.mjs';
 import {
@@ -598,6 +599,7 @@ registerEstadoActualPasteModalRuntime({
 registerEstadoActualRegistroModalRuntime({
   showToast: showToast,
   ensureForm: ensureEaRegistroModalForm,
+  syncGluMode: syncEaRegistroGluMode,
   resetForm: function () {
     var activeId = rt.getActiveId();
     var patient =

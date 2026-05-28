@@ -568,14 +568,7 @@ function wireFormInteractions(form) {
     form.addEventListener('change', function (ev) {
       var target = /** @type {HTMLElement | null} */ (ev.target);
       if (!target || target.id !== 'ea-bomba-enabled') return;
-      var bombaToggle = /** @type {HTMLInputElement} */ (target);
-      var bombaBlock = form.querySelector('#ea-bomba-block');
-      var bombaList = form.querySelector('#ea-bomba-list');
-      if (!bombaBlock) return;
-      bombaBlock.hidden = !bombaToggle.checked;
-      if (bombaToggle.checked && bombaList && !bombaList.querySelector('.ea-bomba-row')) {
-        bombaList.appendChild(buildBombaRow());
-      }
+      syncEaGluMode(form);
     });
 
     form.addEventListener('input', function (ev) {
@@ -667,9 +660,37 @@ function buildGluRow(data) {
  * @param {{ value?: number, units?: number, time?: string } | null | undefined} [data]
  * @returns {HTMLDivElement}
  */
+/**
+ * Muestra glucometrías normales o bloque bomba (mutuamente excluyentes).
+ * @param {HTMLFormElement | null | undefined} form
+ */
+function syncEaGluMode(form) {
+  if (!form) return;
+  var toggle = form.querySelector('#ea-bomba-enabled');
+  var normalBlock = form.querySelector('#ea-glu-normal-block');
+  var bombaBlock = form.querySelector('#ea-bomba-block');
+  if (!toggle || !normalBlock || !bombaBlock) return;
+  var bombaOn = /** @type {HTMLInputElement} */ (toggle).checked;
+  normalBlock.hidden = bombaOn;
+  bombaBlock.hidden = !bombaOn;
+  normalBlock.classList.toggle('ea-glu-pane--off', bombaOn);
+  bombaBlock.classList.toggle('ea-glu-pane--off', !bombaOn);
+  if (bombaOn) {
+    var bombaList = form.querySelector('#ea-bomba-list');
+    if (bombaList && !bombaList.querySelector('.ea-bomba-row')) {
+      bombaList.appendChild(buildBombaRow());
+    }
+  } else {
+    var gluList = form.querySelector('#ea-glu-list');
+    if (gluList && !gluList.querySelector('.ea-glu-row')) {
+      gluList.appendChild(buildGluRow());
+    }
+  }
+}
+
 function buildBombaRow(data) {
   var row = document.createElement('div');
-  row.className = 'ea-bomba-row ea-glu-row';
+  row.className = 'ea-bomba-row';
   row.innerHTML =
     '<label class="ea-field ea-field--inline">' +
     '<span class="ea-label">Glu</span>' +
@@ -874,15 +895,33 @@ function renderSnapshotSection(snapshot, balTurno, balGlobal) {
     );
   }).join('');
 
-  var gluHtml =
-    snapshot.glucometrias && snapshot.glucometrias.length
-      ? snapshot.glucometrias
-          .map(function (g) {
-            var t = g.time ? ' <span class="ea-snapshot-glu-time">' + g.time + '</span>' : '';
-            return '<span class="ea-snapshot-glu-chip">' + displayValue(g.value) + ' MG/DL' + t + '</span>';
-          })
-          .join('')
-      : '<span class="ea-muted">—</span>';
+  var gluHtml = '<span class="ea-muted">—</span>';
+  if (snapshot.bombaInsulina && snapshot.bombaInsulina.length) {
+    gluHtml = snapshot.bombaInsulina
+      .map(function (b) {
+        var t = b.time ? ' <span class="ea-snapshot-glu-time">' + b.time + '</span>' : '';
+        var u =
+          b.units != null && b.units !== '' && Number(b.units) !== 0
+            ? ' <span class="ea-snapshot-glu-units">(' + displayValue(b.units) + ' U)</span>'
+            : '';
+        return (
+          '<span class="ea-snapshot-glu-chip ea-snapshot-glu-chip--bomba">' +
+          displayValue(b.value) +
+          ' MG/DL' +
+          u +
+          t +
+          '</span>'
+        );
+      })
+      .join('');
+  } else if (snapshot.glucometrias && snapshot.glucometrias.length) {
+    gluHtml = snapshot.glucometrias
+      .map(function (g) {
+        var t = g.time ? ' <span class="ea-snapshot-glu-time">' + g.time + '</span>' : '';
+        return '<span class="ea-snapshot-glu-chip">' + displayValue(g.value) + ' MG/DL' + t + '</span>';
+      })
+      .join('');
+  }
 
   return (
     '<section class="ea-section ea-card ea-snapshot-strip ea-snapshot-strip--primary" id="ea-snapshot">' +
@@ -979,20 +1018,23 @@ function renderHistorialSection(historial) {
         }
       });
       var bombas = Array.isArray(row.bombaInsulina) ? row.bombaInsulina : [];
-      bombas.forEach(function (b) {
-        if (!b || typeof b !== 'object') return;
-        if (b.value == null || b.value === '') return;
-        var bp = 'Bomba Glu ' + b.value;
-        if (b.units != null && b.units !== '') bp += ' (' + b.units + ' U)';
-        if (b.time) bp += ' @ ' + b.time;
-        parts.push(bp);
-      });
-      var glus = Array.isArray(row.glucometrias) ? row.glucometrias : [];
-      glus.forEach(function (g) {
-        if (g && g.value != null && g.value !== '') {
-          parts.push('Glu ' + g.value + (g.time ? ' @ ' + g.time : ''));
-        }
-      });
+      if (bombas.length) {
+        bombas.forEach(function (b) {
+          if (!b || typeof b !== 'object') return;
+          if (b.value == null || b.value === '') return;
+          var bp = 'Bomba Glu ' + b.value;
+          if (b.units != null && b.units !== '') bp += ' (' + b.units + ' U)';
+          if (b.time) bp += ' @ ' + b.time;
+          parts.push(bp);
+        });
+      } else {
+        var glus = Array.isArray(row.glucometrias) ? row.glucometrias : [];
+        glus.forEach(function (g) {
+          if (g && g.value != null && g.value !== '') {
+            parts.push('Glu ' + g.value + (g.time ? ' @ ' + g.time : ''));
+          }
+        });
+      }
       var io = row.io || {};
       if (io.ing != null && io.ing !== '') parts.push('Ing ' + io.ing);
       if (Array.isArray(io.egrParts) && io.egrParts.length) {
@@ -1377,28 +1419,13 @@ function prefillRegistroFormFromMonitoreo(form, monitoreo) {
     evacEl.value = typeof io.evac === 'number' ? String(io.evac) : String(io.evac);
   }
 
-  var gluList = form.querySelector('#ea-glu-list');
-  if (gluList) {
-    var glus = collectGlucometriasForRegistroWindow(
-      Array.isArray(monitoreo.historial) ? monitoreo.historial : []
-    );
-    gluList.innerHTML = '';
-    if (glus.length) {
-      glus.forEach(function (g) {
-        gluList.appendChild(buildGluRow(g));
-      });
-    } else {
-      gluList.appendChild(buildGluRow());
-    }
-  }
-
   var bombaToggle = form.querySelector('#ea-bomba-enabled');
-  var bombaBlock = form.querySelector('#ea-bomba-block');
   var bombaList = form.querySelector('#ea-bomba-list');
-  if (bombaToggle && bombaBlock && bombaList) {
-    var bombas = collectBombaInsulinaForRegistroWindow(hist);
+  var bombas = collectBombaInsulinaForRegistroWindow(hist);
+  if (bombaToggle && 'checked' in bombaToggle) {
     bombaToggle.checked = bombas.length > 0;
-    bombaBlock.hidden = !bombaToggle.checked;
+  }
+  if (bombaList) {
     bombaList.innerHTML = '';
     if (bombas.length) {
       bombas.forEach(function (b) {
@@ -1409,6 +1436,26 @@ function prefillRegistroFormFromMonitoreo(form, monitoreo) {
     }
   }
 
+  var gluList = form.querySelector('#ea-glu-list');
+  if (gluList) {
+    gluList.innerHTML = '';
+    if (!bombaToggle || !bombaToggle.checked) {
+      var glus = collectGlucometriasForRegistroWindow(
+        Array.isArray(monitoreo.historial) ? monitoreo.historial : []
+      );
+      if (glus.length) {
+        glus.forEach(function (g) {
+          gluList.appendChild(buildGluRow(g));
+        });
+      } else {
+        gluList.appendChild(buildGluRow());
+      }
+    } else {
+      gluList.appendChild(buildGluRow());
+    }
+  }
+
+  syncEaGluMode(form);
   syncAllVitalAddButtonVisibility(form);
 }
 
@@ -1431,21 +1478,25 @@ export function buildRegistroFormMarkup() {
     '<div class="vitals-grid ea-vitals-grid">' +
     vitalFields +
     '</div>' +
-    '<div class="ea-glu-block">' +
+    '<div class="ea-glu-section">' +
+    '<div class="ea-glu-mode-row lab-pref-row">' +
+    '<span class="lab-pref-row-label" id="ea-glu-section-lbl">Glucometrías</span>' +
+    '<div class="ea-glu-mode-switch">' +
+    '<span class="ea-glu-mode-switch-label" id="ea-bomba-enabled-lbl">Bomba de insulina</span>' +
+    '<label class="rpc-switch">' +
+    '<input type="checkbox" id="ea-bomba-enabled" class="rpc-switch-input" role="switch" aria-labelledby="ea-bomba-enabled-lbl">' +
+    '<span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span>' +
+    '</label>' +
+    '</div>' +
+    '</div>' +
+    '<div id="ea-glu-normal-block" class="ea-glu-pane ea-glu-block">' +
     '<div class="ea-glu-head">' +
-    '<span class="ea-label">Glucometrías</span>' +
     '<button type="button" class="ea-btn ea-btn--ghost" id="ea-add-glu">+ Agregar</button>' +
     '</div>' +
     '<div id="ea-glu-list" class="ea-glu-list"></div>' +
     '</div>' +
-    '<div class="ea-bomba-block-wrap">' +
-    '<label class="ea-bomba-toggle ea-field ea-field--switch">' +
-    '<input type="checkbox" id="ea-bomba-enabled">' +
-    '<span class="ea-label">Bomba de insulina</span>' +
-    '</label>' +
-    '<div id="ea-bomba-block" class="ea-glu-block ea-bomba-block" hidden>' +
+    '<div id="ea-bomba-block" class="ea-glu-pane ea-glu-block ea-bomba-block ea-glu-pane--off" hidden>' +
     '<div class="ea-glu-head">' +
-    '<span class="ea-label">Registros bomba (glu + unidades)</span>' +
     '<button type="button" class="ea-btn ea-btn--ghost" id="ea-add-bomba">+ Agregar</button>' +
     '</div>' +
     '<div id="ea-bomba-list" class="ea-glu-list"></div>' +
@@ -1493,6 +1544,12 @@ export function wireEaRegistroForm() {
   if (bombaList && !bombaList.querySelector('.ea-bomba-row')) {
     bombaList.appendChild(buildBombaRow());
   }
+  syncEaGluMode(form);
+}
+
+/** Sincroniza visibilidad glu normal vs bomba (p. ej. al reabrir modal con formulario conservado). */
+export function syncEaRegistroGluMode() {
+  syncEaGluMode(document.getElementById('ea-form'));
 }
 
 /**
@@ -1535,7 +1592,6 @@ export function resetEaRegistroForm(patient) {
   var bombaBlock = document.getElementById('ea-bomba-block');
   var bombaList = document.getElementById('ea-bomba-list');
   if (bombaToggle && 'checked' in bombaToggle) bombaToggle.checked = false;
-  if (bombaBlock) bombaBlock.hidden = true;
   if (bombaList) {
     bombaList.innerHTML = '';
     bombaList.appendChild(buildBombaRow());
@@ -1545,6 +1601,7 @@ export function resetEaRegistroForm(patient) {
     prefillRegistroFormFromMonitoreo(form, patient.monitoreo);
   }
 
+  syncEaGluMode(form);
   syncIoBalanceFromForm(form);
   syncAllVitalAddButtonVisibility(form);
 }
@@ -1752,22 +1809,26 @@ function parseFormMedicion() {
     }
   });
 
+  var bombaToggle = /** @type {HTMLInputElement | null} */ (document.getElementById('ea-bomba-enabled'));
+  var bombaOn = !!(bombaToggle && bombaToggle.checked);
+
   /** @type {Array<{ value: number | null, time: string }>} */
   var glucometrias = [];
-  form.querySelectorAll('.ea-glu-row').forEach(function (row) {
-    var valEl = row.querySelector('[data-ea-glu-value]');
-    var timeEl = row.querySelector('[data-ea-glu-time]');
-    var value = parseNumOrNull(valEl && 'value' in valEl ? valEl.value : '');
-    if (value == null) return;
-    var time =
-      timeEl && 'value' in timeEl && timeEl.value ? String(timeEl.value) : defaultTime;
-    glucometrias.push({ value: value, time: time });
-  });
+  if (!bombaOn) {
+    form.querySelectorAll('.ea-glu-row').forEach(function (row) {
+      var valEl = row.querySelector('[data-ea-glu-value]');
+      var timeEl = row.querySelector('[data-ea-glu-time]');
+      var value = parseNumOrNull(valEl && 'value' in valEl ? valEl.value : '');
+      if (value == null) return;
+      var time =
+        timeEl && 'value' in timeEl && timeEl.value ? String(timeEl.value) : defaultTime;
+      glucometrias.push({ value: value, time: time });
+    });
+  }
 
   /** @type {Array<{ value: number, units: number, time: string }>} */
   var bombaInsulina = [];
-  var bombaToggle = /** @type {HTMLInputElement | null} */ (document.getElementById('ea-bomba-enabled'));
-  if (bombaToggle && bombaToggle.checked) {
+  if (bombaOn) {
     form.querySelectorAll('.ea-bomba-row').forEach(function (row) {
       var valEl = row.querySelector('[data-ea-bomba-value]');
       var unitsEl = row.querySelector('[data-ea-bomba-units]');

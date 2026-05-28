@@ -29,9 +29,11 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 ---
 
-## R+ 6.3.4 (Sala en vivo — copiar invitación)
+## R+ 6.3.4 (Estado Actual multilectura, bomba de insulina y Sala en vivo)
 
-- **Sala en vivo (⇄)** — Corregido **Copiar invitación para enviar**, **Copiar enlace móvil** y **Activar y copiar invitación**: antes no copiaban al portapapeles ni mostraban error; ahora el enlace se copia correctamente para compartir por WhatsApp, correo, etc.
+- **Estado Actual** — Hasta **4 lecturas** del mismo signo vital en el turno (**+1** en T°, TA, FC, FR, SatO₂); bloque opcional **bomba de insulina** (glu, unidades, hora) en el texto SOAP; glucometrías en gráficas acotadas a la ventana del registro.
+- **Expediente** — Al cambiar de paciente se conserva la pestaña activa (**Estado actual**, **Tendencias**, **Cultivos**, etc.).
+- **Sala en vivo (⇄)** — Corregido **Copiar invitación**, **Copiar enlace móvil** y **Activar y copiar invitación** (el enlace vuelve al portapapeles).
 
 Notas: `docs/RELEASE_NOTES_6.3.4.txt`.
 
@@ -203,7 +205,7 @@ Notas: `docs/RELEASE_NOTES_3.3.1.txt`.
 
 ## R+ 5.0.4 (estable — historial de labs corrupto)
 
-- **TODO:** completar bullets en README.
+- **Historial de labs** — Repara respaldos con historial mal formado que impedían abrir Laboratorio (sets corruptos en `forEach`).
 
 Notas: `docs/RELEASE_NOTES_5.0.4.txt`.
 ## R+ 3.3.0 (estable — LiveSync por sala: agenda y pendientes)
@@ -226,11 +228,6 @@ Notas: `docs/RELEASE_NOTES_3.2.2.txt`.
 ---
 
 
-## R+ 6.3.4 (estable — release 6.3.4)
-
-- **Sala en vivo (⇄)** — **Copiar invitación** y **Copiar enlace móvil** vuelven a funcionar (el enlace llega al portapapeles).
-
-Notas: `docs/RELEASE_NOTES_6.3.4.txt`.
 ## R+ 3.2.1 (parche — laboratorio: BH compacta, copiar, asteriscos)
 
 - **Laboratorio** — **Copiar** en Resultados visible de nuevo en vista normal; **BH** sin línea extendida: solo núcleo compacto en la primera fila; **RBC, CHCM, RDW, MPV, Ret** en la segunda solo con **BH extendida** activada.

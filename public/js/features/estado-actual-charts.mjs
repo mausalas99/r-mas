@@ -232,23 +232,44 @@ export function buildGluSeries(histAsc, now) {
     var row = histAsc[i];
     if (!row || typeof row !== 'object') continue;
     var recordedAt = String(/** @type {any} */ (row).recordedAt || '');
-    var glus = Array.isArray(/** @type {any} */ (row).glucometrias)
-      ? /** @type {any} */ (/** @type {any} */ (row).glucometrias)
+    var bombas = Array.isArray(/** @type {any} */ (row).bombaInsulina)
+      ? /** @type {any} */ (/** @type {any} */ (row).bombaInsulina)
       : [];
-    for (var g = 0; g < glus.length; g++) {
-      var glu = glus[g];
-      if (!glu || typeof glu !== 'object') continue;
-      var val = Number(/** @type {any} */ (glu).value);
-      if (!Number.isFinite(val)) continue;
-      var timeHm = /** @type {any} */ (glu).time ? String(/** @type {any} */ (glu).time) : '';
-      var ms = gluPointMs(recordedAt, timeHm);
-      if (!isGluPointInRegistroWindow(ms, now)) continue;
-      var whenLabel = timeHm || formatChartLabel(recordedAt);
-      points.push({
-        ms: ms,
-        label: whenLabel + ' · ' + formatChartLabel(recordedAt),
-        value: val,
-      });
+    if (bombas.length) {
+      for (var b = 0; b < bombas.length; b++) {
+        var bomba = bombas[b];
+        if (!bomba || typeof bomba !== 'object') continue;
+        var bval = Number(/** @type {any} */ (bomba).value);
+        if (!Number.isFinite(bval)) continue;
+        var btimeHm = /** @type {any} */ (bomba).time ? String(/** @type {any} */ (bomba).time) : '';
+        var bms = gluPointMs(recordedAt, btimeHm);
+        if (!isGluPointInRegistroWindow(bms, now)) continue;
+        var bwhenLabel = btimeHm || formatChartLabel(recordedAt);
+        points.push({
+          ms: bms,
+          label: bwhenLabel + ' · ' + formatChartLabel(recordedAt),
+          value: bval,
+        });
+      }
+    } else {
+      var glus = Array.isArray(/** @type {any} */ (row).glucometrias)
+        ? /** @type {any} */ (/** @type {any} */ (row).glucometrias)
+        : [];
+      for (var g = 0; g < glus.length; g++) {
+        var glu = glus[g];
+        if (!glu || typeof glu !== 'object') continue;
+        var val = Number(/** @type {any} */ (glu).value);
+        if (!Number.isFinite(val)) continue;
+        var timeHm = /** @type {any} */ (glu).time ? String(/** @type {any} */ (glu).time) : '';
+        var ms = gluPointMs(recordedAt, timeHm);
+        if (!isGluPointInRegistroWindow(ms, now)) continue;
+        var whenLabel = timeHm || formatChartLabel(recordedAt);
+        points.push({
+          ms: ms,
+          label: whenLabel + ' · ' + formatChartLabel(recordedAt),
+          value: val,
+        });
+      }
     }
   }
 

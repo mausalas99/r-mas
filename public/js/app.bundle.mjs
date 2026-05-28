@@ -1849,9 +1849,44 @@ function deriveSnapshot(monitoreoLike) {
     }
   }
   var gluChosen = [];
+  var bombaChosen = [];
   for (var j = sortedAsc.length - 1; j >= 0; j--) {
     var r2 = sortedAsc[j];
     if (!r2 || typeof r2 !== "object") continue;
+    var barr = Array.isArray(
+      /** @type {any} */
+      r2.bombaInsulina
+    ) ? (
+      /** @type {any} */
+      r2.bombaInsulina
+    ) : [];
+    if (barr.length) {
+      bombaChosen = barr.map(function(e) {
+        if (!e || typeof e !== "object") return null;
+        var v = Number(
+          /** @type {any} */
+          e.value
+        );
+        var u = Number(
+          /** @type {any} */
+          e.units
+        );
+        if (!Number.isFinite(v)) return null;
+        return {
+          value: v,
+          units: Number.isFinite(u) ? u : 0,
+          time: (
+            /** @type {any} */
+            e.time != null ? String(
+              /** @type {any} */
+              e.time
+            ) : void 0
+          )
+        };
+      }).filter(Boolean);
+      gluChosen = [];
+      break;
+    }
     var garr = Array.isArray(
       /** @type {any} */
       r2.glucometrias
@@ -1873,6 +1908,7 @@ function deriveSnapshot(monitoreoLike) {
     }
     if (nonempty.length > 0) {
       gluChosen = nonempty;
+      bombaChosen = [];
       break;
     }
   }
@@ -1931,44 +1967,6 @@ function deriveSnapshot(monitoreoLike) {
   snap.alteredAt = alteredAt;
   snap.vitalSeries = vitalSeries;
   snap.glucometrias = gluChosen.slice();
-  var bombaChosen = [];
-  for (var bj = sortedAsc.length - 1; bj >= 0; bj--) {
-    var rB = sortedAsc[bj];
-    if (!rB || typeof rB !== "object") continue;
-    var barr = Array.isArray(
-      /** @type {any} */
-      rB.bombaInsulina
-    ) ? (
-      /** @type {any} */
-      rB.bombaInsulina
-    ) : [];
-    if (barr.length) {
-      bombaChosen = barr.map(function(e) {
-        if (!e || typeof e !== "object") return null;
-        var v = Number(
-          /** @type {any} */
-          e.value
-        );
-        var u = Number(
-          /** @type {any} */
-          e.units
-        );
-        if (!Number.isFinite(v)) return null;
-        return {
-          value: v,
-          units: Number.isFinite(u) ? u : 0,
-          time: (
-            /** @type {any} */
-            e.time != null ? String(
-              /** @type {any} */
-              e.time
-            ) : void 0
-          )
-        };
-      }).filter(Boolean);
-      break;
-    }
-  }
   snap.bombaInsulina = bombaChosen;
   var snapIo = { ing: ingSeen, egr: egrSeen };
   if (egrPartsSeen) snapIo.egrParts = egrPartsSeen;
@@ -28059,41 +28057,76 @@ function buildGluSeries(histAsc, now) {
       /** @type {any} */
       row.recordedAt || ""
     );
-    var glus = Array.isArray(
+    var bombas = Array.isArray(
       /** @type {any} */
-      row.glucometrias
+      row.bombaInsulina
     ) ? (
       /** @type {any} */
       /** @type {any} */
-      row.glucometrias
+      row.bombaInsulina
     ) : [];
-    for (var g3 = 0; g3 < glus.length; g3++) {
-      var glu = glus[g3];
-      if (!glu || typeof glu !== "object") continue;
-      var val2 = Number(
-        /** @type {any} */
-        glu.value
-      );
-      if (!Number.isFinite(val2)) continue;
-      var timeHm = (
-        /** @type {any} */
-        glu.time ? String(
+    if (bombas.length) {
+      for (var b = 0; b < bombas.length; b++) {
+        var bomba = bombas[b];
+        if (!bomba || typeof bomba !== "object") continue;
+        var bval = Number(
           /** @type {any} */
-          glu.time
-        ) : ""
-      );
-      var ms = gluPointMs(recordedAt, timeHm);
-      if (!isGluPointInRegistroWindow(ms, now)) continue;
-      var whenLabel = timeHm || formatChartLabel(recordedAt);
-      points.push({
-        ms,
-        label: whenLabel + " \xB7 " + formatChartLabel(recordedAt),
-        value: val2
-      });
+          bomba.value
+        );
+        if (!Number.isFinite(bval)) continue;
+        var btimeHm = (
+          /** @type {any} */
+          bomba.time ? String(
+            /** @type {any} */
+            bomba.time
+          ) : ""
+        );
+        var bms = gluPointMs(recordedAt, btimeHm);
+        if (!isGluPointInRegistroWindow(bms, now)) continue;
+        var bwhenLabel = btimeHm || formatChartLabel(recordedAt);
+        points.push({
+          ms: bms,
+          label: bwhenLabel + " \xB7 " + formatChartLabel(recordedAt),
+          value: bval
+        });
+      }
+    } else {
+      var glus = Array.isArray(
+        /** @type {any} */
+        row.glucometrias
+      ) ? (
+        /** @type {any} */
+        /** @type {any} */
+        row.glucometrias
+      ) : [];
+      for (var g3 = 0; g3 < glus.length; g3++) {
+        var glu = glus[g3];
+        if (!glu || typeof glu !== "object") continue;
+        var val2 = Number(
+          /** @type {any} */
+          glu.value
+        );
+        if (!Number.isFinite(val2)) continue;
+        var timeHm = (
+          /** @type {any} */
+          glu.time ? String(
+            /** @type {any} */
+            glu.time
+          ) : ""
+        );
+        var ms = gluPointMs(recordedAt, timeHm);
+        if (!isGluPointInRegistroWindow(ms, now)) continue;
+        var whenLabel = timeHm || formatChartLabel(recordedAt);
+        points.push({
+          ms,
+          label: whenLabel + " \xB7 " + formatChartLabel(recordedAt),
+          value: val2
+        });
+      }
     }
   }
-  points.sort(function(a, b) {
-    return a.ms - b.ms;
+  points.sort(function(a, b2) {
+    return a.ms - b2.ms;
   });
   return {
     labels: points.map(function(p) {
@@ -28794,17 +28827,7 @@ function wireFormInteractions(form) {
         ev.target
       );
       if (!target || target.id !== "ea-bomba-enabled") return;
-      var bombaToggle = (
-        /** @type {HTMLInputElement} */
-        target
-      );
-      var bombaBlock = form.querySelector("#ea-bomba-block");
-      var bombaList = form.querySelector("#ea-bomba-list");
-      if (!bombaBlock) return;
-      bombaBlock.hidden = !bombaToggle.checked;
-      if (bombaToggle.checked && bombaList && !bombaList.querySelector(".ea-bomba-row")) {
-        bombaList.appendChild(buildBombaRow());
-      }
+      syncEaGluMode(form);
     });
     form.addEventListener("input", function(ev) {
       var target = (
@@ -28870,9 +28893,35 @@ function buildGluRow(data) {
   wireGluRowKeyboard(row);
   return row;
 }
+function syncEaGluMode(form) {
+  if (!form) return;
+  var toggle = form.querySelector("#ea-bomba-enabled");
+  var normalBlock = form.querySelector("#ea-glu-normal-block");
+  var bombaBlock = form.querySelector("#ea-bomba-block");
+  if (!toggle || !normalBlock || !bombaBlock) return;
+  var bombaOn = (
+    /** @type {HTMLInputElement} */
+    toggle.checked
+  );
+  normalBlock.hidden = bombaOn;
+  bombaBlock.hidden = !bombaOn;
+  normalBlock.classList.toggle("ea-glu-pane--off", bombaOn);
+  bombaBlock.classList.toggle("ea-glu-pane--off", !bombaOn);
+  if (bombaOn) {
+    var bombaList = form.querySelector("#ea-bomba-list");
+    if (bombaList && !bombaList.querySelector(".ea-bomba-row")) {
+      bombaList.appendChild(buildBombaRow());
+    }
+  } else {
+    var gluList = form.querySelector("#ea-glu-list");
+    if (gluList && !gluList.querySelector(".ea-glu-row")) {
+      gluList.appendChild(buildGluRow());
+    }
+  }
+}
 function buildBombaRow(data) {
   var row = document.createElement("div");
-  row.className = "ea-bomba-row ea-glu-row";
+  row.className = "ea-bomba-row";
   row.innerHTML = '<label class="ea-field ea-field--inline"><span class="ea-label">Glu</span><input type="number" class="ea-input" data-ea-bomba-value min="0" step="1" placeholder="mg/dL"></label><label class="ea-field ea-field--inline"><span class="ea-label">Unidades</span><input type="number" class="ea-input" data-ea-bomba-units min="0" step="0.1" placeholder="U"></label><label class="ea-field ea-field--inline"><span class="ea-label">Hora</span><input type="time" class="ea-input ea-input--time" data-ea-bomba-time></label><button type="button" class="ea-btn ea-btn--ghost ea-btn--icon" data-ea-bomba-remove title="Quitar" aria-label="Quitar registro bomba">\xD7</button>';
   if (data) {
     var val2 = row.querySelector("[data-ea-bomba-value]");
@@ -29010,10 +29059,19 @@ function renderSnapshotSection(snapshot, balTurno, balGlobal) {
     }).join(" \xB7 ") : displayValue(val2);
     return '<div class="' + cls + '"><span class="ea-snapshot-label">' + VITAL_LABELS2[key] + '</span><span class="ea-snapshot-value">' + display + '</span><span class="ea-snapshot-unit">' + (VITAL_UNITS[key] || "") + "</span>" + meta + "</div>";
   }).join("");
-  var gluHtml = snapshot.glucometrias && snapshot.glucometrias.length ? snapshot.glucometrias.map(function(g3) {
-    var t2 = g3.time ? ' <span class="ea-snapshot-glu-time">' + g3.time + "</span>" : "";
-    return '<span class="ea-snapshot-glu-chip">' + displayValue(g3.value) + " MG/DL" + t2 + "</span>";
-  }).join("") : '<span class="ea-muted">\u2014</span>';
+  var gluHtml = '<span class="ea-muted">\u2014</span>';
+  if (snapshot.bombaInsulina && snapshot.bombaInsulina.length) {
+    gluHtml = snapshot.bombaInsulina.map(function(b) {
+      var t2 = b.time ? ' <span class="ea-snapshot-glu-time">' + b.time + "</span>" : "";
+      var u = b.units != null && b.units !== "" && Number(b.units) !== 0 ? ' <span class="ea-snapshot-glu-units">(' + displayValue(b.units) + " U)</span>" : "";
+      return '<span class="ea-snapshot-glu-chip ea-snapshot-glu-chip--bomba">' + displayValue(b.value) + " MG/DL" + u + t2 + "</span>";
+    }).join("");
+  } else if (snapshot.glucometrias && snapshot.glucometrias.length) {
+    gluHtml = snapshot.glucometrias.map(function(g3) {
+      var t2 = g3.time ? ' <span class="ea-snapshot-glu-time">' + g3.time + "</span>" : "";
+      return '<span class="ea-snapshot-glu-chip">' + displayValue(g3.value) + " MG/DL" + t2 + "</span>";
+    }).join("");
+  }
   return '<section class="ea-section ea-card ea-snapshot-strip ea-snapshot-strip--primary" id="ea-snapshot"><div class="ea-snapshot-strip-head"><div class="ea-snapshot-strip-head-text"><h3 class="ea-section-title">Snapshot actual</h3><p class="ea-muted ea-snapshot-hint">Resumen del monitoreo \xB7 las tendencias est\xE1n debajo</p></div><div class="ea-snapshot-actions"><button type="button" class="ea-btn ea-btn--primary" onclick="openEstadoActualRegistroModal()">Registro manual</button><button type="button" class="ea-btn ea-btn--ghost" onclick="openEstadoActualPasteModal()">Pegar monitoreo</button></div></div><div class="ea-snapshot-strip-body"><div class="ea-snapshot-zone"><h4 class="ea-snapshot-zone-title">Signos vitales</h4><div class="ea-snapshot-vitals">' + vitalsHtml + '</div></div><div class="ea-snapshot-zone"><h4 class="ea-snapshot-zone-title">Glucometr\xEDas</h4><div class="ea-snapshot-glu">' + gluHtml + '</div></div><div class="ea-snapshot-zone"><h4 class="ea-snapshot-zone-title">Balance h\xEDdrico</h4><div class="ea-snapshot-io"><div><span class="ea-snapshot-label">Ingresos</span><span class="ea-snapshot-io-val">' + displayValue(snapshot.io.ing) + ' CC</span></div><div class="ea-snapshot-io-egr"><span class="ea-snapshot-label">Egresos</span><span class="ea-snapshot-io-val">' + formatSnapshotEgresos(snapshot.io) + "</span></div>" + (snapshot.io.evac != null && snapshot.io.evac !== "" ? '<div><span class="ea-snapshot-label">Evacuaciones</span><span class="ea-snapshot-io-val">' + escHtml3(formatEvacForText(snapshot.io.evac)) + "</span></div>" : "") + '<div><span class="ea-snapshot-label">Turno</span><span class="ea-snapshot-io-val">' + displayBalance(balTurno) + '</span></div><div><span class="ea-snapshot-label">Global</span><span class="ea-snapshot-io-val">' + displayBalance(balGlobal) + "</span></div></div></div></div></section>";
 }
 function renderHistorialSection(historial) {
@@ -29039,20 +29097,23 @@ function renderHistorialSection(historial) {
       }
     });
     var bombas = Array.isArray(row.bombaInsulina) ? row.bombaInsulina : [];
-    bombas.forEach(function(b) {
-      if (!b || typeof b !== "object") return;
-      if (b.value == null || b.value === "") return;
-      var bp = "Bomba Glu " + b.value;
-      if (b.units != null && b.units !== "") bp += " (" + b.units + " U)";
-      if (b.time) bp += " @ " + b.time;
-      parts.push(bp);
-    });
-    var glus = Array.isArray(row.glucometrias) ? row.glucometrias : [];
-    glus.forEach(function(g3) {
-      if (g3 && g3.value != null && g3.value !== "") {
-        parts.push("Glu " + g3.value + (g3.time ? " @ " + g3.time : ""));
-      }
-    });
+    if (bombas.length) {
+      bombas.forEach(function(b) {
+        if (!b || typeof b !== "object") return;
+        if (b.value == null || b.value === "") return;
+        var bp = "Bomba Glu " + b.value;
+        if (b.units != null && b.units !== "") bp += " (" + b.units + " U)";
+        if (b.time) bp += " @ " + b.time;
+        parts.push(bp);
+      });
+    } else {
+      var glus = Array.isArray(row.glucometrias) ? row.glucometrias : [];
+      glus.forEach(function(g3) {
+        if (g3 && g3.value != null && g3.value !== "") {
+          parts.push("Glu " + g3.value + (g3.time ? " @ " + g3.time : ""));
+        }
+      });
+    }
     var io = row.io || {};
     if (io.ing != null && io.ing !== "") parts.push("Ing " + io.ing);
     if (Array.isArray(io.egrParts) && io.egrParts.length) {
@@ -29277,27 +29338,13 @@ function prefillRegistroFormFromMonitoreo(form, monitoreo) {
   if (evacEl && io.evac != null && io.evac !== "" && "value" in evacEl) {
     evacEl.value = typeof io.evac === "number" ? String(io.evac) : String(io.evac);
   }
-  var gluList = form.querySelector("#ea-glu-list");
-  if (gluList) {
-    var glus = collectGlucometriasForRegistroWindow(
-      Array.isArray(monitoreo.historial) ? monitoreo.historial : []
-    );
-    gluList.innerHTML = "";
-    if (glus.length) {
-      glus.forEach(function(g3) {
-        gluList.appendChild(buildGluRow(g3));
-      });
-    } else {
-      gluList.appendChild(buildGluRow());
-    }
-  }
   var bombaToggle = form.querySelector("#ea-bomba-enabled");
-  var bombaBlock = form.querySelector("#ea-bomba-block");
   var bombaList = form.querySelector("#ea-bomba-list");
-  if (bombaToggle && bombaBlock && bombaList) {
-    var bombas = collectBombaInsulinaForRegistroWindow(hist);
+  var bombas = collectBombaInsulinaForRegistroWindow(hist);
+  if (bombaToggle && "checked" in bombaToggle) {
     bombaToggle.checked = bombas.length > 0;
-    bombaBlock.hidden = !bombaToggle.checked;
+  }
+  if (bombaList) {
     bombaList.innerHTML = "";
     if (bombas.length) {
       bombas.forEach(function(b) {
@@ -29307,13 +29354,32 @@ function prefillRegistroFormFromMonitoreo(form, monitoreo) {
       bombaList.appendChild(buildBombaRow());
     }
   }
+  var gluList = form.querySelector("#ea-glu-list");
+  if (gluList) {
+    gluList.innerHTML = "";
+    if (!bombaToggle || !bombaToggle.checked) {
+      var glus = collectGlucometriasForRegistroWindow(
+        Array.isArray(monitoreo.historial) ? monitoreo.historial : []
+      );
+      if (glus.length) {
+        glus.forEach(function(g3) {
+          gluList.appendChild(buildGluRow(g3));
+        });
+      } else {
+        gluList.appendChild(buildGluRow());
+      }
+    } else {
+      gluList.appendChild(buildGluRow());
+    }
+  }
+  syncEaGluMode(form);
   syncAllVitalAddButtonVisibility(form);
 }
 function buildRegistroFormMarkup() {
   var vitalFields = VITAL_KEYS2.map(function(key) {
     return buildVitalStackHtml(key);
   }).join("");
-  return '<div class="ea-registro-shell"><div class="ea-registro-form-scroll"><form id="ea-form" class="ea-form ea-form--registro" onsubmit="return false;"><p class="ea-registro-hint ea-muted">Cierre de turno: <strong>00:00 de hoy</strong>. Signos e I/O del snapshot; glucometr\xEDas desde ayer 08:00.</p><label class="ea-field ea-field--datetime"><span class="ea-label">Fecha y hora del registro</span><input type="datetime-local" class="ea-input" id="ea-recorded-at" value="' + toDatetimeLocalValue(getDefaultRegistroRecordedAt()) + '"></label><div class="vitals-grid ea-vitals-grid">' + vitalFields + '</div><div class="ea-glu-block"><div class="ea-glu-head"><span class="ea-label">Glucometr\xEDas</span><button type="button" class="ea-btn ea-btn--ghost" id="ea-add-glu">+ Agregar</button></div><div id="ea-glu-list" class="ea-glu-list"></div></div><div class="ea-bomba-block-wrap"><label class="ea-bomba-toggle ea-field ea-field--switch"><input type="checkbox" id="ea-bomba-enabled"><span class="ea-label">Bomba de insulina</span></label><div id="ea-bomba-block" class="ea-glu-block ea-bomba-block" hidden><div class="ea-glu-head"><span class="ea-label">Registros bomba (glu + unidades)</span><button type="button" class="ea-btn ea-btn--ghost" id="ea-add-bomba">+ Agregar</button></div><div id="ea-bomba-list" class="ea-glu-list"></div></div></div><div class="ea-io-grid"><label class="ea-field"><span class="ea-label">Ingresos (cc)</span><input type="number" class="ea-input" id="ea-io-ing" min="0" step="1"></label><label class="ea-field ea-field--full"><span class="ea-label">Egresos (diuresis, drenajes, nefrostom\xEDas\u2026)</span><input type="text" class="ea-input" id="ea-io-egr" inputmode="text" autocomplete="off" placeholder="DIURESIS NC, DRENAJE 50 CC, NEFRO IZQ 20 CC"></label><label class="ea-field"><span class="ea-label">Evacuaciones</span><input type="text" class="ea-input" id="ea-io-evac" inputmode="text" autocomplete="off" placeholder="NC, cc o texto"></label><div class="ea-field ea-io-balance"><span class="ea-label">Balance turno</span><span id="ea-balance-turno-live" class="ea-balance-live">\u2014</span></div></div></form></div><footer class="ea-registro-modal-foot"><button type="button" class="ea-btn ea-btn--ghost" onclick="closeEstadoActualRegistroModal()">Cancelar</button><button type="button" class="ea-btn ea-btn--primary" onclick="registrarEstadoActualMedicion()">Registrar</button></footer></div>';
+  return '<div class="ea-registro-shell"><div class="ea-registro-form-scroll"><form id="ea-form" class="ea-form ea-form--registro" onsubmit="return false;"><p class="ea-registro-hint ea-muted">Cierre de turno: <strong>00:00 de hoy</strong>. Signos e I/O del snapshot; glucometr\xEDas desde ayer 08:00.</p><label class="ea-field ea-field--datetime"><span class="ea-label">Fecha y hora del registro</span><input type="datetime-local" class="ea-input" id="ea-recorded-at" value="' + toDatetimeLocalValue(getDefaultRegistroRecordedAt()) + '"></label><div class="vitals-grid ea-vitals-grid">' + vitalFields + '</div><div class="ea-glu-section"><div class="ea-glu-mode-row lab-pref-row"><span class="lab-pref-row-label" id="ea-glu-section-lbl">Glucometr\xEDas</span><div class="ea-glu-mode-switch"><span class="ea-glu-mode-switch-label" id="ea-bomba-enabled-lbl">Bomba de insulina</span><label class="rpc-switch"><input type="checkbox" id="ea-bomba-enabled" class="rpc-switch-input" role="switch" aria-labelledby="ea-bomba-enabled-lbl"><span class="rpc-switch-track" aria-hidden="true"><span class="rpc-switch-thumb"></span></span></label></div></div><div id="ea-glu-normal-block" class="ea-glu-pane ea-glu-block"><div class="ea-glu-head"><button type="button" class="ea-btn ea-btn--ghost" id="ea-add-glu">+ Agregar</button></div><div id="ea-glu-list" class="ea-glu-list"></div></div><div id="ea-bomba-block" class="ea-glu-pane ea-glu-block ea-bomba-block ea-glu-pane--off" hidden><div class="ea-glu-head"><button type="button" class="ea-btn ea-btn--ghost" id="ea-add-bomba">+ Agregar</button></div><div id="ea-bomba-list" class="ea-glu-list"></div></div></div><div class="ea-io-grid"><label class="ea-field"><span class="ea-label">Ingresos (cc)</span><input type="number" class="ea-input" id="ea-io-ing" min="0" step="1"></label><label class="ea-field ea-field--full"><span class="ea-label">Egresos (diuresis, drenajes, nefrostom\xEDas\u2026)</span><input type="text" class="ea-input" id="ea-io-egr" inputmode="text" autocomplete="off" placeholder="DIURESIS NC, DRENAJE 50 CC, NEFRO IZQ 20 CC"></label><label class="ea-field"><span class="ea-label">Evacuaciones</span><input type="text" class="ea-input" id="ea-io-evac" inputmode="text" autocomplete="off" placeholder="NC, cc o texto"></label><div class="ea-field ea-io-balance"><span class="ea-label">Balance turno</span><span id="ea-balance-turno-live" class="ea-balance-live">\u2014</span></div></div></form></div><footer class="ea-registro-modal-foot"><button type="button" class="ea-btn ea-btn--ghost" onclick="closeEstadoActualRegistroModal()">Cancelar</button><button type="button" class="ea-btn ea-btn--primary" onclick="registrarEstadoActualMedicion()">Registrar</button></footer></div>';
 }
 function wireEaRegistroForm() {
   var form = document.getElementById("ea-form");
@@ -29326,6 +29392,10 @@ function wireEaRegistroForm() {
   if (bombaList && !bombaList.querySelector(".ea-bomba-row")) {
     bombaList.appendChild(buildBombaRow());
   }
+  syncEaGluMode(form);
+}
+function syncEaRegistroGluMode() {
+  syncEaGluMode(document.getElementById("ea-form"));
 }
 function resetEaRegistroForm(patient) {
   var form = document.getElementById("ea-form");
@@ -29363,7 +29433,6 @@ function resetEaRegistroForm(patient) {
   var bombaBlock = document.getElementById("ea-bomba-block");
   var bombaList = document.getElementById("ea-bomba-list");
   if (bombaToggle && "checked" in bombaToggle) bombaToggle.checked = false;
-  if (bombaBlock) bombaBlock.hidden = true;
   if (bombaList) {
     bombaList.innerHTML = "";
     bombaList.appendChild(buildBombaRow());
@@ -29371,6 +29440,7 @@ function resetEaRegistroForm(patient) {
   if (patient && patient.monitoreo) {
     prefillRegistroFormFromMonitoreo(form, patient.monitoreo);
   }
+  syncEaGluMode(form);
   syncIoBalanceFromForm(form);
   syncAllVitalAddButtonVisibility(form);
 }
@@ -29523,21 +29593,24 @@ function parseFormMedicion() {
       }
     }
   });
-  var glucometrias = [];
-  form.querySelectorAll(".ea-glu-row").forEach(function(row) {
-    var valEl = row.querySelector("[data-ea-glu-value]");
-    var timeEl = row.querySelector("[data-ea-glu-time]");
-    var value = parseNumOrNull(valEl && "value" in valEl ? valEl.value : "");
-    if (value == null) return;
-    var time = timeEl && "value" in timeEl && timeEl.value ? String(timeEl.value) : defaultTime;
-    glucometrias.push({ value, time });
-  });
-  var bombaInsulina = [];
   var bombaToggle = (
     /** @type {HTMLInputElement | null} */
     document.getElementById("ea-bomba-enabled")
   );
-  if (bombaToggle && bombaToggle.checked) {
+  var bombaOn = !!(bombaToggle && bombaToggle.checked);
+  var glucometrias = [];
+  if (!bombaOn) {
+    form.querySelectorAll(".ea-glu-row").forEach(function(row) {
+      var valEl = row.querySelector("[data-ea-glu-value]");
+      var timeEl = row.querySelector("[data-ea-glu-time]");
+      var value = parseNumOrNull(valEl && "value" in valEl ? valEl.value : "");
+      if (value == null) return;
+      var time = timeEl && "value" in timeEl && timeEl.value ? String(timeEl.value) : defaultTime;
+      glucometrias.push({ value, time });
+    });
+  }
+  var bombaInsulina = [];
+  if (bombaOn) {
     form.querySelectorAll(".ea-bomba-row").forEach(function(row) {
       var valEl = row.querySelector("[data-ea-bomba-value]");
       var unitsEl = row.querySelector("[data-ea-bomba-units]");
@@ -34353,8 +34426,16 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 var RELEASE_NOTES_HIGHLIGHTS = {
   "6.3.4": [
     {
-      title: "Sala en vivo (\u21C4)",
-      body: "Corregido <strong>Copiar invitaci\xF3n</strong>, <strong>Copiar enlace m\xF3vil</strong> y <strong>Activar y copiar invitaci\xF3n</strong>: el enlace vuelve al portapapeles para compartir con el equipo."
+      title: "Estado Actual \u2014 multilectura",
+      body: "Hasta <strong>4 lecturas</strong> del mismo signo vital en el turno con bot\xF3n <strong>+1</strong> en T\xB0, TA, FC, FR y SatO\u2082; hora opcional por lectura."
+    },
+    {
+      title: "Bomba de insulina",
+      body: "Registro opcional de glu + unidades + hora; el texto SOAP incluye <strong>BOMBA DE INSULINA</strong> cuando aplica."
+    },
+    {
+      title: "Expediente y Sala en vivo",
+      body: "Al cambiar de paciente conservas la pesta\xF1a (<strong>Estado actual</strong>, Tendencias\u2026). Corregido <strong>Copiar invitaci\xF3n</strong> en \u21C4."
     }
   ],
   "6.3.3": [
@@ -41890,6 +41971,7 @@ function openEstadoActualRegistroModal(opts) {
   }
   rt28.ensureForm();
   if (!opts || !opts.preserveForm) rt28.resetForm();
+  else if (typeof rt28.syncGluMode === "function") rt28.syncGluMode();
   backdrop.classList.add("open");
   backdrop.setAttribute("aria-hidden", "false");
   document.documentElement.classList.add("ea-registro-modal-open");
@@ -42285,6 +42367,7 @@ function registerAllFeatureRuntimes() {
   registerEstadoActualRegistroModalRuntime({
     showToast,
     ensureForm: ensureEaRegistroModalForm,
+    syncGluMode: syncEaRegistroGluMode,
     resetForm: function() {
       var activeId2 = rt29.getActiveId();
       var patient = activeId2 && patients.find(function(p) {

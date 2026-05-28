@@ -64,7 +64,7 @@
       "format": "esm"
     },
     "public/js/features/estado-actual-data.mjs": {
-      "bytes": 19410,
+      "bytes": 19320,
       "imports": [
         {
           "path": "public/js/features/estado-actual-io.mjs",
@@ -1588,7 +1588,7 @@
       "format": "esm"
     },
     "public/js/features/estado-actual-charts.mjs": {
-      "bytes": 22252,
+      "bytes": 23161,
       "imports": [
         {
           "path": "public/js/features/estado-actual-ranges.mjs",
@@ -1604,7 +1604,7 @@
       "format": "esm"
     },
     "public/js/features/estado-actual-panel.mjs": {
-      "bytes": 67033,
+      "bytes": 69085,
       "imports": [
         {
           "path": "public/js/app-state.mjs",
@@ -1991,7 +1991,7 @@
       "format": "esm"
     },
     "public/js/features/settings-help.mjs": {
-      "bytes": 95901,
+      "bytes": 96284,
       "imports": [
         {
           "path": "public/js/tour-targets.mjs",
@@ -2581,7 +2581,7 @@
       "format": "esm"
     },
     "public/js/features/estado-actual-registro-modal.mjs": {
-      "bytes": 2858,
+      "bytes": 2925,
       "imports": [
         {
           "path": "public/js/features/estado-actual-paste-modal.mjs",
@@ -2592,7 +2592,7 @@
       "format": "esm"
     },
     "public/js/app-runtimes.mjs": {
-      "bytes": 20439,
+      "bytes": 20502,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -2969,7 +2969,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 2965771
+      "bytes": 2970945
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -3001,7 +3001,7 @@
           "bytesInOutput": 5079
         },
         "public/js/features/estado-actual-data.mjs": {
-          "bytesInOutput": 15359
+          "bytesInOutput": 15269
         },
         "public/js/lab-clinical-suggestions.mjs": {
           "bytesInOutput": 2336
@@ -3277,10 +3277,10 @@
           "bytesInOutput": 4339
         },
         "public/js/features/estado-actual-charts.mjs": {
-          "bytesInOutput": 18894
+          "bytesInOutput": 19952
         },
         "public/js/features/estado-actual-panel.mjs": {
-          "bytesInOutput": 58074
+          "bytesInOutput": 59737
         },
         "public/js/receta-hu-core.mjs": {
           "bytesInOutput": 4886
@@ -3310,7 +3310,7 @@
           "bytesInOutput": 4407
         },
         "public/js/features/settings-help.mjs": {
-          "bytesInOutput": 89988
+          "bytesInOutput": 90364
         },
         "public/js/features/tendencias.mjs": {
           "bytesInOutput": 64999
@@ -3358,16 +3358,16 @@
           "bytesInOutput": 2602
         },
         "public/js/features/estado-actual-registro-modal.mjs": {
-          "bytesInOutput": 2548
+          "bytesInOutput": 2619
         },
         "public/js/app-runtimes.mjs": {
-          "bytesInOutput": 11932
+          "bytesInOutput": 11972
         },
         "public/js/app.js": {
           "bytesInOutput": 4305
         }
       },
-      "bytes": 1632373
+      "bytes": 1635491
     }
   }
 }

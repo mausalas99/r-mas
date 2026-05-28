@@ -1320,9 +1320,19 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 var RELEASE_NOTES_HIGHLIGHTS = {
   '6.3.4': [
     {
-      title: 'Sala en vivo (⇄)',
+      title: 'Estado Actual — multilectura',
       body:
-        'Corregido <strong>Copiar invitación</strong>, <strong>Copiar enlace móvil</strong> y <strong>Activar y copiar invitación</strong>: el enlace vuelve al portapapeles para compartir con el equipo.',
+        'Hasta <strong>4 lecturas</strong> del mismo signo vital en el turno con botón <strong>+1</strong> en T°, TA, FC, FR y SatO₂; hora opcional por lectura.',
+    },
+    {
+      title: 'Bomba de insulina',
+      body:
+        'Registro opcional de glu + unidades + hora; el texto SOAP incluye <strong>BOMBA DE INSULINA</strong> cuando aplica.',
+    },
+    {
+      title: 'Expediente y Sala en vivo',
+      body:
+        'Al cambiar de paciente conservas la pestaña (<strong>Estado actual</strong>, Tendencias…). Corregido <strong>Copiar invitación</strong> en ⇄.',
     },
   ],
   '6.3.3': [
