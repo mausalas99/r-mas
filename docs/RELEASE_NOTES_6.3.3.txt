@@ -5,7 +5,7 @@ Fecha: 2026-05-27
 
 ## Resumen
 
-Parche de uso diario: **Manejo / Guía clínica** queda oculta hasta un desbloqueo explícito con frase de confirmación; vuelven a funcionar **Esc** y **clic fuera** en modales; en **Tendencias** la gasometría extendida muestra el razonamiento del trastorno y las mini-gráficas son más ligeras; **Estado Actual** actualiza las gráficas sin rearmar todo el panel en cada cambio.
+Parche de uso diario: **Manejo / Guía clínica** queda oculta hasta un desbloqueo explícito con frase de confirmación; vuelven a funcionar **Esc** y **clic fuera** en modales; en **Tendencias** la gasometría extendida muestra el razonamiento del trastorno y las mini-gráficas son más ligeras; **Estado Actual** actualiza las gráficas sin rearmar el panel completo en cada cambio.
 
 ## Nuevo / mejorado
 
@@ -27,7 +27,7 @@ Parche de uso diario: **Manejo / Guía clínica** queda oculta hasta un desbloqu
 
 ### Estado Actual (Sala)
 
-- **Gráficas más estables** — Signos, glucometrías e I/O se actualizan de forma incremental cuando cambia el historial, sin destruir y recrear todos los charts en cada pulsación.
+- **Gráficas más estables** — Signos, glucometrías e I/O se actualizan de forma incremental cuando cambia el historial, sin destruir y recrear cada gráfica en cada pulsación.
 
 ## Correcciones
 
