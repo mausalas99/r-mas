@@ -10,6 +10,7 @@ import {
   appendMedicion,
   resolveDietWeightKg,
   computeDietKcalTotal,
+  computeDietKcalKgFromTotal,
   syncDietKcalFromWeight,
   parseIoEgresoField,
   isIoNumericValue,
@@ -141,6 +142,11 @@ test('computeDietKcalTotal y syncDietKcalFromWeight', () => {
   const ec = { kcalKg: '25', kcal: '' };
   assert.equal(syncDietKcalFromWeight(ec, 70), true);
   assert.equal(ec.kcal, '1750');
+});
+
+test('computeDietKcalKgFromTotal — inverso de kcal total', () => {
+  assert.equal(computeDietKcalKgFromTotal(1750, 70), 25);
+  assert.equal(computeDietKcalKgFromTotal('', 70), null);
 });
 
 test('parseIoEgresoField acepta NC y cc numéricos', () => {

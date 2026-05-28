@@ -1131,6 +1131,246 @@ function repairLabHistoryMapInPlace(labHistoryMap) {
   return changed;
 }
 
+// public/js/features/estado-actual-io.mjs
+function toEaSalidaText(raw) {
+  if (raw == null || raw === "") return "";
+  return String(raw).toUpperCase();
+}
+function formatBalanceLive(bal) {
+  if (!Number.isFinite(bal)) return "—";
+  return (bal > 0 ? "+" : "") + bal + " CC";
+}
+function parseIoIngresoField(raw) {
+  var s = String(raw == null ? "" : raw).trim();
+  if (!s) return null;
+  var numMatch = s.match(/([\d.,]+)\s*(?:CC|ML)?\b/i);
+  if (numMatch) {
+    var n = parseIoNumber(numMatch[1]);
+    if (n != null) return n;
+  }
+  return parseIoNumber(s);
+}
+function parseIoNumber(raw) {
+  if (raw == null) return null;
+  var s = String(raw).trim().replace(/\s/g, "").replace(/,/g, "");
+  if (!s) return null;
+  var n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+function isIoNumericValue(v) {
+  if (v == null || v === "") return false;
+  if (v === "NC" || String(v).toUpperCase() === "NC") return false;
+  var n = Number(v);
+  return Number.isFinite(n);
+}
+function normalizeEvacAbbrev(val2) {
+  if (val2 == null || val2 === "") return val2;
+  var s = String(val2).trim();
+  if (/^nc$/i.test(s)) return "NC";
+  if (/no\s+reportad|sin\s+evacuacion|sin\s+evac\b|no\s+hubo\s+evac/i.test(s)) return "NC";
+  return val2;
+}
+function parseIoEvacField(raw) {
+  var s = String(raw == null ? "" : raw).trim();
+  if (!s) return null;
+  var abbrev = normalizeEvacAbbrev(s);
+  if (abbrev === "NC") return "NC";
+  if (/sin\s+evacuaciones/i.test(s)) return toEaSalidaText(s);
+  var numMatch = s.match(/([\d.,]+)\s*(?:CC|ML)?\b/i);
+  if (numMatch) {
+    var n = parseIoNumber(numMatch[1]);
+    if (n != null) return n;
+  }
+  var n2 = parseIoNumber(s);
+  if (n2 != null) return n2;
+  return s.toUpperCase();
+}
+function normalizeIoNcAbbrev(val2) {
+  if (val2 == null || val2 === "") return val2;
+  if (val2 === "NC" || String(val2).toUpperCase() === "NC") return "NC";
+  if (typeof val2 === "string" && /no\s+cuantificad/i.test(val2)) return "NC";
+  return val2;
+}
+function parseSegmentValue(seg) {
+  var s = String(seg || "").trim();
+  if (/^nc$/i.test(s)) return "NC";
+  if (/no\s+cuantificad/i.test(s)) return "NC";
+  var numMatch = s.match(/([\d.,]+)\s*(?:CC|ML)?\b/i);
+  if (numMatch) {
+    var n = parseIoNumber(numMatch[1]);
+    if (n != null) return n;
+  }
+  var n2 = parseIoNumber(s);
+  if (n2 != null) return n2;
+  return s.toUpperCase();
+}
+function splitIoSegments(text) {
+  var s = String(text || "").trim();
+  if (!s) return [];
+  var tokens = [];
+  var buf = "";
+  var depth = 0;
+  for (var i = 0; i < s.length; i++) {
+    var ch = s[i];
+    if (ch === "(") {
+      depth++;
+      buf += ch;
+      continue;
+    }
+    if (ch === ")") {
+      depth = Math.max(0, depth - 1);
+      buf += ch;
+      continue;
+    }
+    if ((ch === "," || ch === ";") && depth === 0) {
+      if (buf.trim()) tokens.push(buf.trim());
+      buf = "";
+      continue;
+    }
+    buf += ch;
+  }
+  if (buf.trim()) tokens.push(buf.trim());
+  return tokens;
+}
+function classifyEgresoSegment(seg) {
+  var s = String(seg || "").trim();
+  var u = s.toUpperCase();
+  if (/^NC$/i.test(s) || /^no\s+cuantificad/i.test(s)) {
+    return { kind: "diuresis", label: "DIURESIS", value: "NC" };
+  }
+  if (/^DIURESIS\b/i.test(s) || /^ORINA\b/i.test(s)) {
+    var rest = s.replace(/^(?:DIURESIS|ORINA)\s*/i, "").trim();
+    if (!rest || /no\s+cuantificad/i.test(rest)) {
+      return { kind: "diuresis", label: "DIURESIS", value: rest ? parseSegmentValue(rest) : "NC" };
+    }
+    return { kind: "diuresis", label: "DIURESIS", value: parseSegmentValue(rest) };
+  }
+  if (/DRENAJ/i.test(u)) {
+    var dRest = s.replace(/^DRENAJ(?:E|ES)?\s*/i, "").trim();
+    return { kind: "drain", label: "DRENAJE", value: parseSegmentValue(dRest || s) };
+  }
+  if (/GASTROSTOM/i.test(u)) {
+    var gRest = s.replace(/^GASTROSTOM(?:ÍA|IA)?\s*/i, "").trim();
+    return { kind: "gastrostomy", label: "GASTROSTOMÍA", value: parseSegmentValue(gRest || s) };
+  }
+  if (/NEFRO/i.test(u)) {
+    var side = "";
+    if (/IZQ|IZQUIERDA/i.test(u)) side = "IZQUIERDA";
+    else if (/\bDER\b|DERECHA/i.test(u)) side = "DERECHA";
+    var nRest = s.replace(/^NEFRO(?:STOM(?:ÍA|IA))?/i, "").trim();
+    nRest = nRest.replace(/\b(IZQ|IZQUIERDA|DER|DERECHA)\b/gi, "").trim();
+    var label = side ? "NEFROSTOMÍA " + side : "NEFROSTOMÍA";
+    return { kind: "nephro", label, value: parseSegmentValue(nRest || s) };
+  }
+  var n = parseIoNumber(s);
+  if (n != null) return { kind: "diuresis", label: "DIURESIS", value: n };
+  if (/no\s+cuantificad/i.test(s)) {
+    return { kind: "diuresis", label: "DIURESIS", value: "NC" };
+  }
+  return { kind: "diuresis", label: "DIURESIS", value: u };
+}
+function parseIoEgresoLine(raw) {
+  var s = String(raw == null ? "" : raw).trim();
+  if (!s) return [];
+  var segments = splitIoSegments(s);
+  if (!segments.length) segments = [s];
+  return segments.map(classifyEgresoSegment);
+}
+function diuresisValueFromParts(parts) {
+  if (!Array.isArray(parts)) return null;
+  for (var i = 0; i < parts.length; i++) {
+    var p = parts[i];
+    if (p && p.kind === "diuresis") return p.value;
+  }
+  return null;
+}
+function sumNumericEgressFromParts(parts) {
+  if (!Array.isArray(parts)) return 0;
+  var sum = 0;
+  var any = false;
+  for (var i = 0; i < parts.length; i++) {
+    var p = parts[i];
+    if (!p) continue;
+    if (isIoNumericValue(p.value)) {
+      sum += Number(p.value);
+      any = true;
+    }
+  }
+  return any ? sum : 0;
+}
+function ioNumericEgressTotal(io) {
+  if (!io || typeof io !== "object") return null;
+  var o = io;
+  if (Array.isArray(o.egrParts) && o.egrParts.length) {
+    var sum = sumNumericEgressFromParts(o.egrParts);
+    return sum > 0 ? sum : null;
+  }
+  if (isIoNumericValue(o.egr)) return Number(o.egr);
+  return null;
+}
+function ioDiuresisForBalance(io) {
+  if (!io || typeof io !== "object") return null;
+  var o = io;
+  if (Array.isArray(o.egrParts) && o.egrParts.length) {
+    return diuresisValueFromParts(o.egrParts);
+  }
+  return o.egr != null && o.egr !== "" ? o.egr : null;
+}
+function computeIoBalanceFromIngEgr(ing, io) {
+  if (!isIoNumericValue(ing)) return NaN;
+  var egrTotal = ioNumericEgressTotal(io);
+  if (egrTotal == null) return NaN;
+  return Number(ing) - egrTotal;
+}
+function formatEgresoPartForText(part) {
+  if (!part) return "";
+  var val2 = normalizeIoNcAbbrev(part.value);
+  var valStr = val2 === "NC" ? "NC" : isIoNumericValue(val2) ? String(val2) + " CC" : String(val2).toUpperCase();
+  return part.label.toUpperCase() + " " + valStr;
+}
+function serializeEgrPartsToFormText(parts) {
+  if (!Array.isArray(parts) || !parts.length) return "";
+  return parts.map(formatEgresoPartForText).join(", ");
+}
+function legacyEgrToParts(egrLegacy) {
+  if (egrLegacy == null || egrLegacy === "") return [];
+  return parseIoEgresoLine(String(egrLegacy));
+}
+function formatEvacForText(evac) {
+  if (evac == null || evac === "") return "___";
+  var norm = normalizeEvacAbbrev(evac);
+  if (norm === "NC" || String(norm).toUpperCase() === "NC") return "NC";
+  if (isIoNumericValue(evac)) return String(evac) + " CC";
+  return String(evac).toUpperCase();
+}
+function formatIoClauseForSoap(io, balanceTurno2) {
+  io = io || {};
+  var clauses = ["INGRESOS " + (io.ing != null && io.ing !== "" ? String(io.ing) : "___") + " CC"];
+  var parts = Array.isArray(io.egrParts) && io.egrParts.length ? io.egrParts : legacyEgrToParts(io.egr);
+  if (parts.length) {
+    for (var i = 0; i < parts.length; i++) {
+      clauses.push(formatEgresoPartForText(parts[i]));
+    }
+  } else if (io.egr != null && io.egr !== "") {
+    var egrNorm = normalizeIoNcAbbrev(io.egr);
+    if (isIoNumericValue(egrNorm)) {
+      clauses.push("DIURESIS " + String(egrNorm) + " CC");
+    } else if (egrNorm === "NC") {
+      clauses.push("DIURESIS NC");
+    } else {
+      clauses.push(String(egrNorm).toUpperCase());
+    }
+  } else {
+    clauses.push("DIURESIS ___");
+  }
+  if (io.evac != null && io.evac !== "") {
+    clauses.push("EVACUACIONES " + formatEvacForText(io.evac));
+  }
+  var balance = balanceTurno2 != null && balanceTurno2 !== "" && Number.isFinite(Number(balanceTurno2)) ? (Number(balanceTurno2) > 0 ? "+" : "") + balanceTurno2 : "___";
+  clauses.push("BALANCE " + balance + " CC");
+  return clauses.join(", ");
+}
+
 // public/js/features/estado-actual-data.mjs
 var MED_FIELD_KEYS = (
   /** @type {const} */
@@ -1176,17 +1416,8 @@ var VITAL_KEYS = ["tas", "tad", "fc", "fr", "temp", "sat"];
 function hasIoNumber(v) {
   return v != null && v !== "";
 }
-function isIoNumericValue(v) {
-  if (v == null || v === "") return false;
-  var n = Number(v);
-  return Number.isFinite(n);
-}
-function parseIoEgresoField(raw) {
-  var s = String(raw == null ? "" : raw).trim();
-  if (!s) return null;
-  if (/^nc$/i.test(s)) return "NC";
-  var n = Number(s);
-  return Number.isFinite(n) ? n : s;
+function isIoNumericValue2(v) {
+  return isIoNumericValue(v);
 }
 function compareSavedAt(a, b) {
   if ((a == null || a === "") && (b == null || b === "")) return 0;
@@ -1249,6 +1480,7 @@ function medicionHasCoreData(medicion) {
     var vv = vit[vk];
     if (vv != null && vv !== "") return true;
   }
+  if (vit.tempPeak != null && vit.tempPeak !== "") return true;
   var glus = Array.isArray(m.glucometrias) ? m.glucometrias : [];
   for (var i = 0; i < glus.length; i++) {
     var g3 = glus[i];
@@ -1263,7 +1495,12 @@ function medicionHasCoreData(medicion) {
     /** @type {any} */
     m.io
   ) : {};
-  return hasIoNumber(io.ing) || hasIoNumber(io.egr);
+  if (hasIoNumber(io.ing)) return true;
+  if (ioNumericEgressTotal(io) != null) return true;
+  if (ioDiuresisForBalance(io) != null && ioDiuresisForBalance(io) !== "") return true;
+  if (Array.isArray(io.egrParts) && io.egrParts.length) return true;
+  if (io.evac != null && io.evac !== "") return true;
+  return hasIoNumber(io.egr);
 }
 function historialSortedAsc(historial) {
   return historial.slice().sort(function(a, b) {
@@ -1333,6 +1570,15 @@ function deriveSnapshot(monitoreoLike) {
         }
       }
     }
+    var peakVal = rv.tempPeak;
+    if (peakVal != null && peakVal !== "") {
+      vitals.tempPeak = peakVal;
+      if (rowAlt && rowAlt.tempPeak != null && String(rowAlt.tempPeak).length > 0) {
+        alteredAt.tempPeak = String(rowAlt.tempPeak);
+      } else {
+        delete alteredAt.tempPeak;
+      }
+    }
   }
   var gluChosen = [];
   for (var j = sortedAsc.length - 1; j >= 0; j--) {
@@ -1370,6 +1616,11 @@ function deriveSnapshot(monitoreoLike) {
     /** @type {null | unknown} */
     null
   );
+  var egrPartsSeen = null;
+  var evacSeen = (
+    /** @type {null | unknown} */
+    null
+  );
   for (var k2 = sortedAsc.length - 1; k2 >= 0; k2--) {
     var rIo = sortedAsc[k2];
     if (!rIo || typeof rIo !== "object") continue;
@@ -1382,14 +1633,22 @@ function deriveSnapshot(monitoreoLike) {
         rIo.io
       ) : {}
     );
-    if (egrSeen === null && hasIoNumber(ioObj.egr)) egrSeen = ioObj.egr;
+    if (egrPartsSeen === null && Array.isArray(ioObj.egrParts) && ioObj.egrParts.length) {
+      egrPartsSeen = ioObj.egrParts.slice();
+      egrSeen = ioNumericEgressTotal(ioObj) ?? ioDiuresisForBalance(ioObj);
+    }
+    if (egrSeen === null && ioObj.egr != null && ioObj.egr !== "") egrSeen = ioObj.egr;
+    if (evacSeen === null && ioObj.evac != null && ioObj.evac !== "") evacSeen = ioObj.evac;
     if (ingSeen === null && hasIoNumber(ioObj.ing)) ingSeen = ioObj.ing;
-    if (ingSeen !== null && egrSeen !== null) break;
+    if (ingSeen !== null && (egrSeen !== null || egrPartsSeen) && evacSeen !== null) break;
   }
   snap.vitals = vitals;
   snap.alteredAt = alteredAt;
   snap.glucometrias = gluChosen.slice();
-  snap.io = { ing: ingSeen, egr: egrSeen };
+  var snapIo = { ing: ingSeen, egr: egrSeen };
+  if (egrPartsSeen) snapIo.egrParts = egrPartsSeen;
+  if (evacSeen !== null) snapIo.evac = evacSeen;
+  snap.io = snapIo;
   return snap;
 }
 function balanceTurno(monitoreoLike) {
@@ -1403,13 +1662,14 @@ function balanceTurno(monitoreoLike) {
       /** @type {any} */
       row.io && typeof /** @type {any} */
       row.io === "object" ? (
-        /** @type {{ ing?: unknown, egr?: unknown }} */
+        /** @type {any} */
         /** @type {any} */
         row.io
       ) : {}
     );
-    if (!isIoNumericValue(io.ing) || !isIoNumericValue(io.egr)) continue;
-    return Number(io.ing) - Number(io.egr);
+    var bal = computeIoBalanceFromIngEgr(io.ing, io);
+    if (!Number.isFinite(bal)) continue;
+    return bal;
   }
   return NaN;
 }
@@ -1426,13 +1686,14 @@ function balanceGlobalHistorico(monitoreoLike) {
       /** @type {any} */
       row.io && typeof /** @type {any} */
       row.io === "object" ? (
-        /** @type {{ ing?: unknown, egr?: unknown }} */
+        /** @type {any} */
         /** @type {any} */
         row.io
       ) : {}
     );
-    if (!isIoNumericValue(io.ing) || !isIoNumericValue(io.egr)) continue;
-    sum += Number(io.ing) - Number(io.egr);
+    var bal = computeIoBalanceFromIngEgr(io.ing, io);
+    if (!Number.isFinite(bal)) continue;
+    sum += bal;
     any = true;
   }
   return any ? sum : NaN;
@@ -1511,6 +1772,11 @@ function computeDietKcalTotal(kcalKg, weightKg) {
   var k = Number(kcalKg);
   if (!Number.isFinite(k) || k <= 0 || weightKg == null) return null;
   return Math.round(k * weightKg);
+}
+function computeDietKcalKgFromTotal(kcalTotal, weightKg) {
+  var t2 = Number(kcalTotal);
+  if (!Number.isFinite(t2) || t2 <= 0 || weightKg == null || weightKg <= 0) return null;
+  return Math.round(t2 / weightKg * 10) / 10;
 }
 function syncDietKcalFromWeight(estadoClinico, weightKg) {
   if (!estadoClinico || typeof estadoClinico !== "object" || weightKg == null) return false;
@@ -7745,6 +8011,11 @@ function createTendGroupModal(deps) {
 }
 
 // public/js/deferred-work.mjs
+var idleGeneration = 0;
+function cancelDeferredIdleWork() {
+  idleGeneration += 1;
+  return idleGeneration;
+}
 function scheduleAfterPaint(fn) {
   if (typeof fn !== "function") return;
   if (typeof requestAnimationFrame === "function") {
@@ -7757,12 +8028,112 @@ function scheduleAfterPaint(fn) {
 }
 function scheduleIdle(fn, timeoutMs) {
   if (typeof fn !== "function") return;
-  var timeout = timeoutMs == null ? 150 : timeoutMs;
+  const gen = idleGeneration;
+  const timeout = timeoutMs == null ? 150 : timeoutMs;
+  const run = function() {
+    if (gen !== idleGeneration) return;
+    fn();
+  };
   if (typeof requestIdleCallback === "function") {
-    requestIdleCallback(fn, { timeout });
+    requestIdleCallback(run, { timeout });
     return;
   }
-  setTimeout(fn, 0);
+  setTimeout(run, 0);
+}
+
+// public/js/trend-spark-canvas.mjs
+function fitCanvas(canvas) {
+  var rect = canvas.getBoundingClientRect();
+  var w = Math.max(1, Math.round(rect.width || canvas.clientWidth || 120));
+  var h = Math.max(1, Math.round(rect.height || canvas.clientHeight || 40));
+  var dpr = typeof window !== "undefined" && window.devicePixelRatio ? window.devicePixelRatio : 1;
+  var pw = Math.round(w * dpr);
+  var ph = Math.round(h * dpr);
+  if (canvas.width !== pw || canvas.height !== ph) {
+    canvas.width = pw;
+    canvas.height = ph;
+  }
+  return { ctx: canvas.getContext("2d"), w: pw, h: ph, dpr };
+}
+function drawTrendSparkLine(canvas, values, color) {
+  if (!canvas) return;
+  var fit = fitCanvas(canvas);
+  var ctx = fit.ctx;
+  if (!ctx) return;
+  var w = fit.w;
+  var h = fit.h;
+  var dpr = fit.dpr;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  ctx.scale(dpr, dpr);
+  var cssW = w / dpr;
+  var cssH = h / dpr;
+  var nums = (values || []).map(function(v3) {
+    if (v3 == null || v3 === "") return null;
+    var n2 = Number(v3);
+    return Number.isFinite(n2) ? n2 : null;
+  });
+  var finite = nums.filter(function(n2) {
+    return n2 != null;
+  });
+  if (finite.length < 1) return;
+  var min = Math.min.apply(null, finite);
+  var max = Math.max.apply(null, finite);
+  if (max === min) {
+    min -= 1;
+    max += 1;
+  }
+  var padX = 6;
+  var padY = 6;
+  var innerW = Math.max(1, cssW - padX * 2);
+  var innerH = Math.max(1, cssH - padY * 2);
+  var n = nums.length;
+  var step = n > 1 ? innerW / (n - 1) : 0;
+  ctx.lineWidth = 2.25;
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.strokeStyle = color || "rgba(52,211,153,0.95)";
+  ctx.beginPath();
+  var started = false;
+  for (var i = 0; i < n; i += 1) {
+    var v = nums[i];
+    if (v == null) {
+      started = false;
+      continue;
+    }
+    var x = padX + (n > 1 ? i * step : innerW / 2);
+    var y = padY + innerH - (v - min) / (max - min) * innerH;
+    if (!started) {
+      ctx.moveTo(x, y);
+      started = true;
+    } else {
+      ctx.lineTo(x, y);
+    }
+  }
+  if (started) ctx.stroke();
+  ctx.fillStyle = ctx.strokeStyle;
+  for (var j = 0; j < n; j += 1) {
+    var v2 = nums[j];
+    if (v2 == null) continue;
+    var x2 = padX + (n > 1 ? j * step : innerW / 2);
+    var y2 = padY + innerH - (v2 - min) / (max - min) * innerH;
+    ctx.beginPath();
+    ctx.arc(x2, y2, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+function mountTrendSparkCanvas(canvas, values, color) {
+  drawTrendSparkLine(canvas, values, color);
+  return {
+    update(nextValues, nextColor) {
+      drawTrendSparkLine(canvas, nextValues, nextColor || color);
+    },
+    destroy() {
+      if (!canvas) return;
+      var ctx = canvas.getContext("2d");
+      if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  };
 }
 
 // public/js/lab-history-cache.mjs
@@ -7771,10 +8142,16 @@ var TREND_CATALOG_WINDOW = 12;
 var TREND_DETAIL_DOWNSAMPLE = 100;
 var TREND_REFRESH_DEBOUNCE_MS = 80;
 var _revisionByPatient = /* @__PURE__ */ Object.create(null);
+var _trendSeriesIndexCache = { key: "", index: null };
+function invalidateTrendSeriesIndexCache() {
+  _trendSeriesIndexCache.key = "";
+  _trendSeriesIndexCache.index = null;
+}
 function bumpLabHistoryRevision(patientId) {
   if (patientId == null || patientId === "") return;
   var k = String(patientId);
   _revisionByPatient[k] = (_revisionByPatient[k] || 0) + 1;
+  invalidateTrendSeriesIndexCache();
 }
 function getLabHistoryRevision(patientId) {
   if (patientId == null || patientId === "") return 0;
@@ -7823,6 +8200,18 @@ function buildTrendSeriesIndex(opts) {
     };
   }
   return out;
+}
+function buildTrendSeriesIndexCached(cacheKey, opts) {
+  var key = String(cacheKey || "");
+  if (key && _trendSeriesIndexCache.key === key && _trendSeriesIndexCache.index) {
+    return _trendSeriesIndexCache.index;
+  }
+  var index = buildTrendSeriesIndex(opts);
+  if (key) {
+    _trendSeriesIndexCache.key = key;
+    _trendSeriesIndexCache.index = index;
+  }
+  return index;
 }
 
 // public/js/labs-some-table.mjs
@@ -16009,9 +16398,43 @@ function filterCultivoRowsSignificantFlip(rows) {
   });
   return out;
 }
+var _cultivosTableCacheKey = "";
+var CULTIVOS_CHUNK_ROWS = 40;
+var CULTIVOS_CHUNKED_THRESHOLD = 72;
+function renderCultivosTableBodyChunked(container, shellHtml, rowChunks, onDone) {
+  container.innerHTML = shellHtml;
+  var tbody = container.querySelector(".cultivos-table tbody");
+  if (!tbody || !rowChunks.length) {
+    onDone();
+    return;
+  }
+  var i = 0;
+  function appendChunk() {
+    var end = Math.min(i + CULTIVOS_CHUNK_ROWS, rowChunks.length);
+    for (; i < end; i += 1) {
+      tbody.insertAdjacentHTML("beforeend", rowChunks[i]);
+    }
+    if (i < rowChunks.length) {
+      scheduleIdle(appendChunk, 12);
+      return;
+    }
+    onDone();
+  }
+  scheduleIdle(appendChunk, 0);
+}
 function renderCultivosTable() {
   var container = document.getElementById("cultivos-table-container");
   if (!container) return;
+  var pid = aid2();
+  if (pid) {
+    var cultKey = String(pid) + "|L" + getLabHistoryRevision(pid);
+    if (_cultivosTableCacheKey === cultKey && container.querySelector(".cultivos-table")) {
+      return;
+    }
+    _cultivosTableCacheKey = cultKey;
+  } else {
+    _cultivosTableCacheKey = "";
+  }
   removeAtbRisPanelsFromBody();
   if (!aid2()) {
     container.innerHTML = '<p class="tend-empty">Selecciona un paciente.</p>';
@@ -16053,16 +16476,30 @@ function renderCultivosTable() {
     }).join(' <span class="cultivos-neg-sep">|</span> ') + "</div>";
   }
   var thead = "<thead><tr><th>Fecha</th><th>Sitio / muestra</th><th>Organismo</th><th>Antibiograma</th></tr></thead>";
-  var tbody = groups.map(function(g3) {
-    var section = '<tr class="cultivos-section-row"><td colspan="4">' + esc5(g3.label) + "</td></tr>";
-    var body = g3.rows.map(function(r) {
-      return '<tr class="' + (r.negativo ? "cultivos-row-neg" : "") + '"><td>' + esc5(rowFechaDisplay(r)) + "</td><td>" + esc5(r.sitio) + "</td><td>" + esc5(r.organismo) + '</td><td class="cultivos-cell-atb">' + cultivoAntibiogramCellHtml(r) + "</td></tr>";
-    }).join("");
-    return section + body;
-  }).join("");
-  container.innerHTML = negStrip + '<p class="cultivos-table-hint">Por categoría (tipo de estudio), orden cronológico de más reciente a más antiguo.</p><div class="cultivos-table-wrap"><table class="cultivos-table">' + thead + "<tbody>" + tbody + "</tbody></table></div>";
-  wireAtbRisHoverPanels(container);
-  if (isPaseMode()) rt7.renderPaseBoard();
+  var rowChunks = [];
+  var totalRows = 0;
+  groups.forEach(function(g3) {
+    rowChunks.push(
+      '<tr class="cultivos-section-row"><td colspan="4">' + esc5(g3.label) + "</td></tr>"
+    );
+    g3.rows.forEach(function(r) {
+      totalRows += 1;
+      rowChunks.push(
+        '<tr class="' + (r.negativo ? "cultivos-row-neg" : "") + '"><td>' + esc5(rowFechaDisplay(r)) + "</td><td>" + esc5(r.sitio) + "</td><td>" + esc5(r.organismo) + '</td><td class="cultivos-cell-atb">' + cultivoAntibiogramCellHtml(r) + "</td></tr>"
+      );
+    });
+  });
+  var shellHtml = negStrip + '<p class="cultivos-table-hint">Por categoría (tipo de estudio), orden cronológico de más reciente a más antiguo.</p><div class="cultivos-table-wrap"><table class="cultivos-table">' + thead + "<tbody></tbody></table></div>";
+  var finishTable = function() {
+    wireAtbRisHoverPanels(container);
+    if (isPaseMode()) rt7.renderPaseBoard();
+  };
+  if (totalRows > CULTIVOS_CHUNKED_THRESHOLD) {
+    renderCultivosTableBodyChunked(container, shellHtml, rowChunks, finishTable);
+    return;
+  }
+  container.innerHTML = negStrip + '<p class="cultivos-table-hint">Por categoría (tipo de estudio), orden cronológico de más reciente a más antiguo.</p><div class="cultivos-table-wrap"><table class="cultivos-table">' + thead + "<tbody>" + rowChunks.join("") + "</tbody></table></div>";
+  finishTable();
 }
 var _tendRefreshTimer = null;
 function refreshTendenciasOrCultivosPanel() {
@@ -25964,16 +26401,32 @@ var MODE_LABELS = {
   infusion: "Infusión",
   atb: "Antibiótico"
 };
-function renderManejoGuia(panel, ctx) {
-  ctx = ctx || {};
-  if (!ctx.ui) {
-    var err = document.createElement("p");
-    err.className = "manejo-hint";
-    err.textContent = "No se pudo cargar la guía clínica (contexto inválido).";
-    panel.appendChild(err);
-    return;
+function paintGuiaHost(host, ctx) {
+  while (host.firstChild) host.removeChild(host.firstChild);
+  var activeMode = getGuiaMode();
+  var view = getGuiaView();
+  if (activeMode === "patologia") {
+    if (view === "lectura") renderGuiaPatologiaReading(host, ctx);
+    else renderGuiaPatologiaIndex(host, ctx);
+  } else if (activeMode === "infusion") {
+    if (view === "lectura") renderGuiaInfusionReading(host, ctx);
+    else renderGuiaInfusionIndex(host, ctx);
+  } else if (activeMode === "atb") {
+    if (view === "lectura") renderGuiaAtbReading(host, ctx);
+    else renderGuiaAtbIndex(host, ctx);
   }
-  ensureManejoSubtabMigrated();
+}
+function syncGuiaModeBar(root, activeMode) {
+  var modeBar = root.querySelector(".manejo-guia-mode-bar");
+  if (!modeBar) return;
+  modeBar.querySelectorAll("[data-guia-mode]").forEach(function(btn) {
+    var mode = btn.getAttribute("data-guia-mode") || "";
+    var on = mode === activeMode;
+    btn.classList.toggle("manejo-guia-mode-btn--active", on);
+    btn.setAttribute("aria-selected", on ? "true" : "false");
+  });
+}
+function buildGuiaShell(panel, ctx) {
   while (panel.firstChild) panel.removeChild(panel.firstChild);
   var root = document.createElement("div");
   root.className = "manejo-guia-root manejo-root";
@@ -25989,6 +26442,7 @@ function renderManejoGuia(panel, ctx) {
     btn.textContent = MODE_LABELS[mode] || mode;
     btn.setAttribute("role", "tab");
     btn.setAttribute("aria-selected", mode === activeMode ? "true" : "false");
+    btn.setAttribute("data-guia-mode", mode);
     btn.addEventListener("click", function() {
       if (getGuiaMode() === mode) return;
       setGuiaMode(mode);
@@ -26000,18 +26454,27 @@ function renderManejoGuia(panel, ctx) {
   var host = document.createElement("div");
   host.className = "manejo-guia-host";
   root.appendChild(host);
-  var view = getGuiaView();
-  if (activeMode === "patologia") {
-    if (view === "lectura") renderGuiaPatologiaReading(host, ctx);
-    else renderGuiaPatologiaIndex(host, ctx);
-  } else if (activeMode === "infusion") {
-    if (view === "lectura") renderGuiaInfusionReading(host, ctx);
-    else renderGuiaInfusionIndex(host, ctx);
-  } else if (activeMode === "atb") {
-    if (view === "lectura") renderGuiaAtbReading(host, ctx);
-    else renderGuiaAtbIndex(host, ctx);
-  }
   panel.appendChild(root);
+  return host;
+}
+function renderManejoGuia(panel, ctx) {
+  ctx = ctx || {};
+  if (!ctx.ui) {
+    var err = document.createElement("p");
+    err.className = "manejo-hint";
+    err.textContent = "No se pudo cargar la guía clínica (contexto inválido).";
+    panel.appendChild(err);
+    return;
+  }
+  ensureManejoSubtabMigrated();
+  var root = panel.querySelector(".manejo-guia-root");
+  var host = root && root.querySelector(".manejo-guia-host");
+  if (!root || !host) {
+    host = buildGuiaShell(panel, ctx);
+  } else {
+    syncGuiaModeBar(root, getGuiaMode());
+  }
+  paintGuiaHost(host, ctx);
 }
 
 // public/js/expediente-tabs.mjs
@@ -26415,11 +26878,24 @@ function syncSubTabBarIndicator(barEl) {
   var active = barEl.querySelector(".exp-segment-btn.active") || barEl.querySelector(".manejo-subtab.manejo-subtab--active") || barEl.querySelector(".manejo-subtab.active") || barEl.querySelector('[aria-selected="true"]');
   syncTabBarIndicator(barEl, active);
 }
-function syncAllSubTabIndicators() {
+function syncAllSubTabIndicators2() {
   document.querySelectorAll(".exp-segment-bar, .manejo-subtabs, .rpc-subtab-bar").forEach(function(bar) {
     if (bar.offsetParent === null && window.getComputedStyle(bar).display === "none") return;
     syncSubTabBarIndicator(bar);
   });
+}
+function syncExpedienteSegmentIndicators(settings2, granularTab) {
+  var target = resolveConsolidatedTarget(granularTab, settings2 || {});
+  if (target.tab === "clinico") {
+    syncSubTabBarIndicator(document.getElementById("exp-segment-clinico"));
+    if (target.section === "manejo") {
+      syncSubTabBarIndicator(document.querySelector(".manejo-subtabs"));
+    }
+  } else if (target.tab === "resultados") {
+    syncSubTabBarIndicator(document.getElementById("exp-segment-resultados"));
+  } else if (target.tab === "salida") {
+    syncSubTabBarIndicator(document.getElementById("exp-segment-salida"));
+  }
 }
 function scheduleIndicatorSync() {
   syncAppTabIndicator(getActiveAppTabFromDom());
@@ -26429,13 +26905,13 @@ function scheduleIndicatorSync() {
     for (var i = 0; i < conTabs.length; i++) {
       if (conTabs[i].classList.contains("active")) {
         syncTabBarIndicator(bar, conTabs[i]);
-        syncAllSubTabIndicators();
+        syncAllSubTabIndicators2();
         return;
       }
     }
   }
   syncInnerTabIndicator(getActiveInnerTabFromDom());
-  syncAllSubTabIndicators();
+  syncAllSubTabIndicators2();
 }
 function getActiveAppTabFromDom() {
   var tabs = ["lab", "nota", "med", "agenda"];
@@ -26485,6 +26961,7 @@ function initTabBarMotion() {
 }
 
 // public/js/features/manejo.mjs
+var _manejoShellPatientId = null;
 var MANEJO_SUBTABS = [
   { id: "electrolitos", label: "Electrolitos" },
   { id: "guia", label: "Guía clínica" }
@@ -26672,25 +27149,38 @@ function renderActiveManejoSubpanel(panel, subtabId, pid, patient) {
     });
   }
 }
-function renderManejo(opts) {
-  opts = opts || {};
-  var onReady = typeof opts.onReady === "function" ? opts.onReady : null;
-  var container = document.getElementById("manejo-container");
-  if (!container) {
-    if (onReady) onReady();
-    return;
+function syncManejoSubtabChrome(activeId2) {
+  var nav = document.querySelector("#manejo-container .manejo-subtabs");
+  if (!nav) return;
+  nav.querySelectorAll(".manejo-subtab").forEach(function(btn) {
+    var id = btn.getAttribute("data-subtab");
+    var on = id === activeId2;
+    btn.classList.toggle("manejo-subtab--active", on);
+    btn.classList.toggle("active", on);
+    btn.setAttribute("aria-selected", on ? "true" : "false");
+    btn.tabIndex = on ? 0 : -1;
+  });
+  MANEJO_SUBTABS.forEach(function(tab) {
+    var panel = document.getElementById("manejo-subpanel-" + tab.id);
+    if (panel) panel.hidden = tab.id !== activeId2;
+  });
+  syncSubTabBarIndicator(nav);
+}
+function ensureManejoShell(container, pid, activeId2) {
+  if (_manejoShellPatientId !== pid || !container.querySelector(".manejo-subtabs")) {
+    return null;
   }
+  syncManejoSubtabChrome(activeId2);
+  return document.getElementById("manejo-subpanel-" + activeId2);
+}
+function buildManejoShell(container, pid, activeId2) {
   while (container.firstChild) container.removeChild(container.firstChild);
-  var pid = aid4();
-  var patient = pid ? findPatient(pid) : null;
-  var activeId2 = getActiveManejoSubtab();
   var nav = document.createElement("nav");
   nav.className = "manejo-subtabs rpc-subtab-bar";
   nav.setAttribute("role", "tablist");
   nav.setAttribute("aria-label", "Secciones de manejo");
   var panelsWrap = document.createElement("div");
   panelsWrap.className = "manejo-subpanels";
-  var panels = {};
   MANEJO_SUBTABS.forEach(function(tab) {
     var isActive = tab.id === activeId2;
     var btn = document.createElement("button");
@@ -26713,22 +27203,54 @@ function renderManejo(opts) {
     panel.id = "manejo-subpanel-" + tab.id;
     panel.setAttribute("role", "tabpanel");
     panel.hidden = !isActive;
-    if (isActive) {
-      panel.innerHTML = '<p class="manejo-hint manejo-loading">Cargando…</p>';
-    }
     panelsWrap.appendChild(panel);
-    panels[tab.id] = panel;
   });
   container.appendChild(buildManejoDisclaimerBar());
   container.appendChild(nav);
   container.appendChild(panelsWrap);
-  var activePanel = panels[activeId2];
+  _manejoShellPatientId = pid;
+  syncManejoSubtabChrome(activeId2);
+  return document.getElementById("manejo-subpanel-" + activeId2);
+}
+function invalidateManejoShell() {
+  _manejoShellPatientId = null;
+}
+function renderManejo(opts) {
+  opts = opts || {};
+  var onReady = typeof opts.onReady === "function" ? opts.onReady : null;
+  var container = document.getElementById("manejo-container");
+  if (!container) {
+    if (onReady) onReady();
+    return;
+  }
+  var pid = aid4();
+  var patient = pid ? findPatient(pid) : null;
+  var activeId2 = getActiveManejoSubtab();
+  var activePanel = ensureManejoShell(container, pid, activeId2);
+  if (!activePanel) {
+    activePanel = buildManejoShell(container, pid, activeId2);
+  }
+  if (activePanel) {
+    if (activeId2 === "guia") {
+      var guiaHost = activePanel.querySelector(".manejo-guia-host");
+      if (guiaHost) {
+        guiaHost.innerHTML = '<p class="manejo-hint manejo-loading">Cargando…</p>';
+      } else {
+        activePanel.innerHTML = '<p class="manejo-hint manejo-loading">Cargando…</p>';
+      }
+    } else {
+      activePanel.innerHTML = '<p class="manejo-hint manejo-loading">Cargando…</p>';
+    }
+  }
   var paintSubpanel = function() {
-    if (activePanel) activePanel.innerHTML = "";
+    if (!activePanel) {
+      if (onReady) onReady();
+      return;
+    }
+    if (activeId2 !== "guia") {
+      activePanel.innerHTML = "";
+    }
     renderActiveManejoSubpanel(activePanel, activeId2, pid, patient);
-    requestAnimationFrame(function() {
-      syncAllSubTabIndicators();
-    });
     if (onReady) onReady();
   };
   if (opts.syncHeavy) {
@@ -26818,22 +27340,15 @@ function buildEstadoActualText(estadoClinico, snapshot, balances, options) {
     estadoClinico
   ) : {};
   const v = snapshot && typeof snapshot === "object" && snapshot.vitals && typeof snapshot.vitals === "object" ? snapshot.vitals : {};
-  var ing = snapshot && typeof snapshot === "object" && snapshot.io && typeof snapshot.io === "object" ? (
-    /** @type {{ ing?: unknown }} */
-    snapshot.io.ing
-  ) : void 0;
-  var egr = snapshot && typeof snapshot === "object" && snapshot.io && typeof snapshot.io === "object" ? (
-    /** @type {{ egr?: unknown }} */
-    snapshot.io.egr
-  ) : void 0;
+  var snapIo = snapshot && typeof snapshot === "object" && snapshot.io && typeof snapshot.io === "object" ? (
+    /** @type {{ ing?: unknown, egr?: unknown, egrParts?: unknown[], evac?: unknown }} */
+    snapshot.io
+  ) : {};
   var btTurno = balances && typeof balances === "object" ? (
     /** @type {{ balanceTurno?: unknown }} */
     balances.balanceTurno
   ) : void 0;
-  const balance = btTurno != null && btTurno !== "" ? (
-    /** @type {string} */
-    (Number(btTurno) > 0 ? "+" : "") + btTurno
-  ) : "___";
+  const ioClause = formatIoClauseForSoap(snapIo, btTurno);
   const soporteMap = {
     "Aire ambiente": "AL AIRE AMBIENTE",
     "Puntillas nasales": "POR PUNTILLAS NASALES",
@@ -26842,6 +27357,18 @@ function buildEstadoActualText(estadoClinico, snapshot, balances, options) {
   };
   const soporteKey = ec.soporte != null ? String(ec.soporte) : "";
   const soporte = soporteMap[soporteKey] || "AL AIRE AMBIENTE";
+  var snapAlt = snapshot && typeof snapshot === "object" && snapshot.alteredAt && typeof snapshot.alteredAt === "object" ? (
+    /** @type {Record<string, string>} */
+    snapshot.alteredAt
+  ) : {};
+  var tempActual = v.temp;
+  var tempPeak = v.tempPeak;
+  var hiTemp = "TEMPERATURA " + num(tempActual) + " °C";
+  if (tempPeak != null && tempPeak !== "" && String(tempPeak) !== String(tempActual)) {
+    hiTemp += ", PICO FEBRIL " + num(tempPeak) + " °C" + (snapAlt.tempPeak ? " @ " + snapAlt.tempPeak : "");
+  } else if (snapAlt.temp) {
+    hiTemp += " @ " + snapAlt.temp;
+  }
   const gluParts = [];
   const glSrc = snapshot && typeof snapshot === "object" && Array.isArray(snapshot.glucometrias) ? snapshot.glucometrias : [];
   for (var gi = 0; gi < glSrc.length; gi++) {
@@ -26863,8 +27390,8 @@ function buildEstadoActualText(estadoClinico, snapshot, balances, options) {
     "N: FOUR " + num(ec.four) + "/16 PUNTOS, SIN DATOS DE FOCALIZACIÓN, ORIENTADO EN " + num(ec.esferas) + " ESFERAS, ALERTA || ANALGESIA CON " + val(ec.analgesia),
     "V: FR " + num(v.fr) + " RPM, SATO2 " + num(v.sat) + "% " + soporte + " | SIN DATOS DE DIFICULTAD RESPIRATORIA || CAMPOS PULMONARES BIEN VENTILADOS",
     "HD: ESTABLE, TA " + num(v.tas) + "/" + num(v.tad) + " MMHG, FC " + num(v.fc) + " LPM || ANTIHIPERTENSIVOS: " + val(ec.antihta || "NINGUNO") + " || VASOPRESORES: " + val(ec.vasop || "NINGUNO"),
-    "HI: AFEBRIL, TEMPERATURA " + num(v.temp) + " °C || ANTIBIÓTICOS: " + val(ec.abx || "NINGUNO"),
-    "NM: DIETA " + val(ec.dieta) + " CALCULADA A " + num(ec.kcalKg) + " KCAL/KG (" + num(kcalDisplay) + " KCAL) PARA PESO DE " + num(weightKg != null ? weightKg : "") + " KG || INGRESOS " + num(ing) + " CC, EGRESOS " + num(egr) + " CC, BALANCE " + balance + " CC || GLUCOMETRÍAS CAPILARES (" + gluParts.join(", ") + " MG/DL)" + (options.includeInsulinRescates ? " || RESCATES DE INSULINA DISPONIBLES, NO APLICADOS ACTUALMENTE" : "")
+    "HI: AFEBRIL, " + hiTemp + " || ANTIBIÓTICOS: " + val(ec.abx || "NINGUNO"),
+    "NM: DIETA " + val(ec.dieta) + " CALCULADA A " + num(ec.kcalKg) + " KCAL/KG (" + num(kcalDisplay) + " KCAL) PARA PESO DE " + num(weightKg != null ? weightKg : "") + " KG || " + ioClause + " || GLUCOMETRÍAS CAPILARES (" + gluParts.join(", ") + " MG/DL)" + (options.includeInsulinRescates ? " || RESCATES DE INSULINA DISPONIBLES, NO APLICADOS ACTUALMENTE" : "")
   ];
   return lines.join("\n");
 }
@@ -27115,6 +27642,123 @@ function destroyEstadoActualCharts(mountEl) {
     });
   }
   mountEl._eaCharts = [];
+  mountEl._eaChartsSig = "";
+  mountEl._eaChartsLayoutKey = "";
+  mountEl._eaChartSlotIds = [];
+}
+function buildEaChartsLayoutKey(monitoreo) {
+  var m = monitoreo || {};
+  var hist = Array.isArray(m.historial) ? m.historial : [];
+  var histAsc = historialSortedAsc2(hist);
+  var parts = [];
+  VITAL_FAMILIES.forEach(function(fam) {
+    parts.push(fam.id + ":" + (buildVitalsFamilyData(histAsc, fam.keys) ? "1" : "0"));
+  });
+  var glu = buildGluSeries(histAsc);
+  parts.push("g" + glu.values.length);
+  var io = buildIoChartData(histAsc);
+  parts.push("i" + io.labels.length);
+  return parts.join("|");
+}
+function buildEaChartSlotData(histAsc) {
+  var out = {};
+  VITAL_FAMILIES.forEach(function(fam) {
+    var famData = buildVitalsFamilyData(histAsc, fam.keys);
+    if (famData) {
+      out["vital:" + fam.id] = { labels: famData.labels, datasets: famData.datasets };
+    }
+  });
+  var gluSeries = buildGluSeries(histAsc);
+  if (gluSeries.values.length >= 2) {
+    out.glu = {
+      labels: gluSeries.labels,
+      datasets: [
+        {
+          label: "Glu (mg/dL)",
+          data: gluSeries.values,
+          borderColor: "#047857",
+          backgroundColor: "#047857"
+        }
+      ]
+    };
+  }
+  var ioData = buildIoChartData(histAsc);
+  if (ioData.labels.length >= 2) {
+    out.io = {
+      labels: ioData.labels,
+      datasets: [
+        { label: "Ingresos", data: ioData.ing },
+        { label: "Egresos", data: ioData.egr },
+        {
+          type: "line",
+          label: "Balance global",
+          data: ioData.globalBalance
+        }
+      ]
+    };
+  }
+  return out;
+}
+function updateEstadoActualChartsInPlace(mountEl, monitoreo) {
+  var charts = mountEl._eaCharts;
+  var slotIds = mountEl._eaChartSlotIds;
+  if (!Array.isArray(charts) || !Array.isArray(slotIds) || charts.length !== slotIds.length) {
+    return false;
+  }
+  var m = monitoreo || {};
+  var hist = Array.isArray(m.historial) ? m.historial : [];
+  var histAsc = historialSortedAsc2(hist);
+  var slotData = buildEaChartSlotData(histAsc);
+  for (var i = 0; i < charts.length; i += 1) {
+    var chart = charts[i];
+    var slotId = slotIds[i];
+    var next = slotData[slotId];
+    if (!chart || !chart.data || !next) return false;
+    chart.data.labels = next.labels;
+    var dsIn = next.datasets || [];
+    for (var d = 0; d < dsIn.length; d += 1) {
+      if (!chart.data.datasets[d]) {
+        chart.data.datasets[d] = dsIn[d];
+      } else {
+        var target = chart.data.datasets[d];
+        var patch = dsIn[d];
+        target.data = patch.data;
+        if (patch.label != null) target.label = patch.label;
+        if (patch.borderColor != null) target.borderColor = patch.borderColor;
+        if (patch.backgroundColor != null) target.backgroundColor = patch.backgroundColor;
+        if (patch.type != null) target.type = patch.type;
+        if (patch.borderDash != null) target.borderDash = patch.borderDash;
+        if (patch.yAxisID != null) target.yAxisID = patch.yAxisID;
+        if (patch.pointRadius != null) target.pointRadius = patch.pointRadius;
+        if (patch.pointBackgroundColor != null) {
+          target.pointBackgroundColor = patch.pointBackgroundColor;
+        }
+        if (patch.pointBorderColor != null) target.pointBorderColor = patch.pointBorderColor;
+        if (patch.tension != null) target.tension = patch.tension;
+      }
+    }
+    if (typeof chart.update === "function") chart.update("none");
+  }
+  return true;
+}
+function buildEaChartsSignature(monitoreo) {
+  var m = monitoreo || {};
+  var hist = Array.isArray(m.historial) ? m.historial : [];
+  var histAsc = historialSortedAsc2(hist);
+  var parts = ["n" + histAsc.length];
+  for (var i = 0; i < histAsc.length; i += 1) {
+    var row = histAsc[i];
+    if (!row || typeof row !== "object") continue;
+    parts.push(String(
+      /** @type {any} */
+      row.recordedAt || ""
+    ));
+    parts.push(String(
+      /** @type {any} */
+      row.id || ""
+    ));
+  }
+  return parts.join("|");
 }
 function resolveChartCtor(ChartCtor) {
   if (ChartCtor) return ChartCtor;
@@ -27154,7 +27798,7 @@ function lineDataset(labels, values, alteredFlags, color) {
     spanGaps: true
   };
 }
-function mountChart(wrap, title, ChartCtor, config, mountEl, chartStore) {
+function mountChart(wrap, title, ChartCtor, config, mountEl, chartStore, slotId) {
   wrap.innerHTML = '<h4 class="ea-chart-subtitle">' + title + '</h4><div class="ea-chart-canvas-wrap"><canvas></canvas></div>';
   var canvas = (
     /** @type {HTMLCanvasElement | null} */
@@ -27164,6 +27808,7 @@ function mountChart(wrap, title, ChartCtor, config, mountEl, chartStore) {
   try {
     var chart = new /** @type {any} */
     ChartCtor(canvas, config);
+    chart._eaSlotId = slotId;
     chartStore.push(chart);
     mountEl._eaCharts = chartStore;
   } catch (_e) {
@@ -27172,6 +27817,13 @@ function mountChart(wrap, title, ChartCtor, config, mountEl, chartStore) {
 }
 function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor) {
   if (!mountEl) return;
+  var sig = buildEaChartsSignature(monitoreo);
+  if (mountEl._eaChartsSig === sig && mountEl.querySelector("#ea-charts")) return;
+  var layoutKey = buildEaChartsLayoutKey(monitoreo);
+  if (mountEl._eaChartsLayoutKey === layoutKey && mountEl._eaChartsSig !== sig && updateEstadoActualChartsInPlace(mountEl, monitoreo)) {
+    mountEl._eaChartsSig = sig;
+    return;
+  }
   destroyEstadoActualCharts(mountEl);
   var Chart2 = resolveChartCtor(ChartCtor);
   var m = monitoreo || {};
@@ -27219,6 +27871,7 @@ function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor) {
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          animation: false,
           plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 11 } } } },
           scales: {
             y: { grace: "5%", ticks: { font: { size: 11 } } },
@@ -27227,7 +27880,8 @@ function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor) {
         }
       },
       mountEl,
-      chartStore
+      chartStore,
+      "vital:" + fam.id
     );
     svGrid.appendChild(famWrap);
   });
@@ -27264,6 +27918,7 @@ function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor) {
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          animation: false,
           plugins: { legend: { display: false } },
           scales: {
             y: { grace: "5%", title: { display: true, text: "mg/dL", font: { size: 11 } } },
@@ -27272,7 +27927,8 @@ function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor) {
         }
       },
       mountEl,
-      chartStore
+      chartStore,
+      "glu"
     );
     gluBlock.appendChild(gluWrap);
   } else {
@@ -27327,6 +27983,7 @@ function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor) {
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          animation: false,
           plugins: { legend: { position: "bottom", labels: { font: { size: 11 } } } },
           scales: {
             y: {
@@ -27345,7 +28002,8 @@ function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor) {
         }
       },
       mountEl,
-      chartStore
+      chartStore,
+      "io"
     );
     ioBlock.appendChild(ioWrap);
   } else {
@@ -27354,9 +28012,81 @@ function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor) {
   grid.appendChild(ioBlock);
   mountEl.replaceChildren(section);
   mountEl._eaCharts = chartStore;
+  mountEl._eaChartSlotIds = chartStore.map(function(ch) {
+    return ch && ch._eaSlotId ? String(ch._eaSlotId) : "";
+  }).filter(Boolean);
+  mountEl._eaChartsLayoutKey = layoutKey;
+  mountEl._eaChartsSig = sig;
+}
+
+// public/js/features/estado-actual-registro-defaults.mjs
+function startOfLocalDay(d) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+}
+function getDefaultRegistroRecordedAt(now) {
+  var ref = now instanceof Date && !isNaN(now.getTime()) ? now : /* @__PURE__ */ new Date();
+  return startOfLocalDay(ref);
+}
+function getGlucometriaRegistroWindow(now) {
+  var ref = now instanceof Date && !isNaN(now.getTime()) ? now : /* @__PURE__ */ new Date();
+  var end = startOfLocalDay(ref);
+  var start = new Date(end);
+  start.setDate(start.getDate() - 1);
+  start.setHours(8, 0, 0, 0);
+  return { start, end };
+}
+function parseRecordedAt(iso) {
+  if (!iso) return null;
+  var d = new Date(iso);
+  return isNaN(d.getTime()) ? null : d;
+}
+function collectGlucometriasForRegistroWindow(historial, now) {
+  var hist = Array.isArray(historial) ? historial : [];
+  var win = getGlucometriaRegistroWindow(now);
+  var out = [];
+  var seen = /* @__PURE__ */ new Set();
+  for (var i = 0; i < hist.length; i++) {
+    var row = hist[i];
+    if (!row || typeof row !== "object") continue;
+    var at = parseRecordedAt(row.recordedAt);
+    if (!at || at < win.start || at > win.end) continue;
+    var glus = Array.isArray(row.glucometrias) ? row.glucometrias : [];
+    for (var j = 0; j < glus.length; j++) {
+      var g3 = glus[j];
+      if (!g3 || typeof g3 !== "object") continue;
+      var val2 = (
+        /** @type {any} */
+        g3.value
+      );
+      if (val2 == null || val2 === "") continue;
+      var time = (
+        /** @type {any} */
+        g3.time != null ? String(
+          /** @type {any} */
+          g3.time
+        ) : ""
+      );
+      var key = String(val2) + "@" + time;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ value: val2, time });
+    }
+  }
+  out.sort(function(a, b) {
+    var ta = String(a.time || "");
+    var tb = String(b.time || "");
+    if (ta !== tb) return ta.localeCompare(tb);
+    return String(a.value).localeCompare(String(b.value));
+  });
+  return out;
 }
 
 // public/js/features/estado-actual-panel.mjs
+var _eaPanelCache = { shellKey: "", dataKey: "" };
+function invalidateEaPanelCache() {
+  _eaPanelCache.shellKey = "";
+  _eaPanelCache.dataKey = "";
+}
 var VITAL_KEYS2 = ["tas", "tad", "fc", "fr", "temp", "sat"];
 var VITAL_LABELS2 = {
   tas: "TAS",
@@ -27364,7 +28094,7 @@ var VITAL_LABELS2 = {
   fc: "FC",
   fr: "FR",
   temp: "Temp",
-  sat: "SatO₂"
+  sat: "Saturación"
 };
 var VITAL_UNITS = {
   tas: "mmHg",
@@ -27434,7 +28164,7 @@ function displayValue(value) {
 }
 function displayBalance(n) {
   if (typeof n !== "number" || !Number.isFinite(n)) return "—";
-  return (n > 0 ? "+" : "") + n + " cc";
+  return formatBalanceLive(n);
 }
 function escHtml3(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -27478,7 +28208,7 @@ function renderEstadoClinicoSection(monitoreo, activeId2, patient) {
     var sel = ec.soporte === opt ? " selected" : "";
     return '<option value="' + escAttr(opt) + '"' + sel + ">" + escHtml3(opt) + "</option>";
   }).join("");
-  return '<details class="ea-estado-clinico ea-card"' + (anyPending ? " open" : "") + '><summary>Estado clínico general</summary><div class="ea-clinico-body"><div class="ea-clinico-grid"><label class="ea-field"><span class="ea-label">FOUR (/16)</span><input type="number" class="ea-input" data-ea-ec="four" min="0" max="16" step="1" value="' + escAttr(ec.four) + '"></label><label class="ea-field"><span class="ea-label">Esferas</span><input type="number" class="ea-input" data-ea-ec="esferas" min="0" step="1" value="' + escAttr(ec.esferas) + '"></label><label class="ea-field ea-field--full"><span class="ea-label">Soporte respiratorio</span><select class="ea-input" data-ea-ec="soporte">' + soporteOpts + '</select></label><label class="ea-field"><span class="ea-label">Dieta</span><input type="text" class="ea-input" data-ea-ec="dieta" value="' + escAttr(ec.dieta) + '"></label><label class="ea-field"><span class="ea-label">Kcal/kg</span><input type="number" class="ea-input" data-ea-ec="kcalKg" step="any" value="' + escAttr(ec.kcalKg) + '"></label><label class="ea-field"><span class="ea-label">Kcal total (auto)</span><input type="number" class="ea-input ea-input--readonly" data-ea-ec="kcal" step="any" value="' + escAttr(ec.kcal) + '" readonly tabindex="-1" aria-readonly="true"></label></div><p class="ea-diet-weight-hint">' + escHtml3(dietWeightHint) + '</p><div class="ea-clinico-med-grid">' + medFieldsHtml + "</div>" + (anyPending ? '<div class="ea-clinico-actions"><button type="button" class="ea-btn ea-btn--primary" onclick="confirmAllEaMedProposals()">Confirmar todas las propuestas</button></div>' : "") + "</div></details>";
+  return '<details class="ea-estado-clinico ea-card"' + (anyPending ? " open" : "") + '><summary>Estado clínico general</summary><div class="ea-clinico-body"><div class="ea-clinico-grid"><label class="ea-field"><span class="ea-label">FOUR (/16)</span><input type="number" class="ea-input" data-ea-ec="four" min="0" max="16" step="1" value="' + escAttr(ec.four) + '"></label><label class="ea-field"><span class="ea-label">Esferas</span><input type="number" class="ea-input" data-ea-ec="esferas" min="0" step="1" value="' + escAttr(ec.esferas) + '"></label><label class="ea-field ea-field--full"><span class="ea-label">Soporte respiratorio</span><select class="ea-input" data-ea-ec="soporte">' + soporteOpts + '</select></label><label class="ea-field"><span class="ea-label">Dieta</span><input type="text" class="ea-input" data-ea-ec="dieta" value="' + escAttr(ec.dieta) + '"></label><label class="ea-field"><span class="ea-label">Kcal/kg</span><input type="number" class="ea-input" data-ea-ec="kcalKg" step="any" value="' + escAttr(ec.kcalKg) + '"></label><label class="ea-field"><span class="ea-label">Kcal total</span><input type="number" class="ea-input" data-ea-ec="kcal" step="any" min="0" value="' + escAttr(ec.kcal) + '" placeholder="Total"></label></div><p class="ea-diet-weight-hint">' + escHtml3(dietWeightHint) + '</p><div class="ea-clinico-med-grid">' + medFieldsHtml + "</div>" + (anyPending ? '<div class="ea-clinico-actions"><button type="button" class="ea-btn ea-btn--primary" onclick="confirmAllEaMedProposals()">Confirmar todas las propuestas</button></div>' : "") + "</div></details>";
 }
 function syncEstadoActualTextarea(monitoreo, patient) {
   var texto = generateEstadoActualText(monitoreo, patient);
@@ -27488,7 +28218,7 @@ function syncEstadoActualTextarea(monitoreo, patient) {
 function persistEstadoClinicoAndRefresh(monitoreo, toastMsg, patient) {
   saveState();
   syncEstadoActualTextarea(monitoreo, patient);
-  renderEstadoActualPanel({ syncHeavy: true });
+  renderEstadoActualPanel({ syncHeavy: true, dataOnly: true, refreshClinico: true });
   if (toastMsg) rt14.showToast(toastMsg, "success");
 }
 function persistEstadoClinicoLight(monitoreo, patient) {
@@ -27508,15 +28238,23 @@ function restoreEaPanelUiState(mount, state) {
 function applyEstadoClinicoFieldChange(el, monitoreo, patient) {
   var key = el.getAttribute("data-ea-ec");
   if (!key || !monitoreo.estadoClinico) return;
-  if (key === "kcal") return;
   monitoreo.estadoClinico[key] = "value" in el ? String(el.value) : "";
+  var w = resolveDietWeightKg({
+    patientPeso: patient.peso,
+    pesoRef: monitoreo.estadoClinico.pesoRef
+  });
+  var panel = document.getElementById("exp-pane-estado-actual");
   if (key === "kcalKg") {
-    var snap = deriveSnapshot(monitoreo);
-    var w = resolveDietWeightKg({
-      patientPeso: patient.peso,
-      pesoRef: monitoreo.estadoClinico.pesoRef
-    });
     syncDietKcalFromWeight(monitoreo.estadoClinico, w);
+    var kcalInput = panel && panel.querySelector('[data-ea-ec="kcal"]');
+    if (kcalInput && "value" in kcalInput) kcalInput.value = String(monitoreo.estadoClinico.kcal || "");
+  } else if (key === "kcal") {
+    var kg = computeDietKcalKgFromTotal(monitoreo.estadoClinico.kcal, w);
+    if (kg != null) {
+      monitoreo.estadoClinico.kcalKg = String(kg);
+      var kcalKgInput = panel && panel.querySelector('[data-ea-ec="kcalKg"]');
+      if (kcalKgInput && "value" in kcalKgInput) kcalKgInput.value = String(kg);
+    }
   }
   persistEstadoClinicoLight(monitoreo, patient);
 }
@@ -27596,29 +28334,41 @@ function wireFormInteractions(form) {
       wrap.hidden = !altered;
       if (box) box.classList.toggle("ea-vital-box--altered", altered);
     });
+    var peakInput = form.querySelector('[data-ea-vital="tempPeak"]');
+    var peakWrap = form.querySelector('[data-ea-altered-wrap="tempPeak"]');
+    var peakBox = form.querySelector('[data-ea-vital-box="tempPeak"]');
+    if (peakInput && peakWrap) {
+      var peakVal = peakInput.value;
+      var showPeak = String(peakVal).trim() !== "";
+      var peakFever = showPeak && isVitalAltered("temp", peakVal);
+      peakWrap.classList.toggle("ea-altered-slot--hidden", !showPeak);
+      peakWrap.hidden = !showPeak;
+      if (peakBox) peakBox.classList.toggle("ea-vital-box--altered", peakFever);
+    }
+    syncTempAddButtonVisibility(form);
   }
   VITAL_KEYS2.forEach(function(key) {
     var input = form.querySelector('[data-ea-vital="' + key + '"]');
     if (input) input.addEventListener("input", syncAlteredFields);
   });
+  var peakInput0 = form.querySelector('[data-ea-vital="tempPeak"]');
+  if (peakInput0) peakInput0.addEventListener("input", syncAlteredFields);
+  var addTempBtn = form.querySelector("#ea-add-temp");
+  if (addTempBtn && !addTempBtn.dataset.eaTempWired) {
+    addTempBtn.dataset.eaTempWired = "1";
+    addTempBtn.addEventListener("click", function() {
+      expandTempSecondSlot(form);
+    });
+  }
   function syncIoBalance() {
-    var ingEl2 = form.querySelector("#ea-io-ing");
-    var egrEl2 = form.querySelector("#ea-io-egr");
-    var out = form.querySelector("#ea-balance-turno-live");
-    if (!ingEl2 || !egrEl2 || !out) return;
-    var ing = parseNumOrNull(ingEl2.value);
-    var egr = parseIoEgresoField(egrEl2.value);
-    if (ing != null && isIoNumericValue(egr)) {
-      var diff = ing - Number(egr);
-      out.textContent = (diff > 0 ? "+" : "") + diff + " cc";
-    } else {
-      out.textContent = "—";
-    }
+    syncIoBalanceFromForm(form);
   }
   var ingEl = form.querySelector("#ea-io-ing");
   var egrEl = form.querySelector("#ea-io-egr");
+  var evacEl = form.querySelector("#ea-io-evac");
   if (ingEl) ingEl.addEventListener("input", syncIoBalance);
   if (egrEl) egrEl.addEventListener("input", syncIoBalance);
+  if (evacEl) evacEl.addEventListener("input", syncIoBalance);
   var addGluBtn = form.querySelector("#ea-add-glu");
   var gluList = form.querySelector("#ea-glu-list");
   if (addGluBtn && gluList) {
@@ -27629,26 +28379,140 @@ function wireFormInteractions(form) {
   syncAlteredFields();
   syncIoBalance();
 }
-function buildGluRow() {
+function wireGluRowKeyboard(row) {
+  row.querySelectorAll("[data-ea-glu-value], [data-ea-glu-time]").forEach(function(el) {
+    el.addEventListener("keydown", function(ev) {
+      if (ev.key !== "Enter") return;
+      ev.preventDefault();
+      var list = row.parentElement;
+      if (!list) return;
+      var rows = list.querySelectorAll(".ea-glu-row");
+      if (row === rows[rows.length - 1]) {
+        var newRow = buildGluRow();
+        list.appendChild(newRow);
+        var focusEl = newRow.querySelector("[data-ea-glu-value]");
+        if (focusEl && "focus" in focusEl) focusEl.focus();
+      } else {
+        var next = row.nextElementSibling;
+        var nextFocus = next && next.querySelector("[data-ea-glu-value]");
+        if (nextFocus && "focus" in nextFocus) nextFocus.focus();
+      }
+    });
+  });
+}
+function buildGluRow(data) {
   var row = document.createElement("div");
   row.className = "ea-glu-row";
   row.innerHTML = '<label class="ea-field ea-field--inline"><span class="ea-label">Glu</span><input type="number" class="ea-input" data-ea-glu-value min="0" step="1" placeholder="mg/dL"></label><label class="ea-field ea-field--inline"><span class="ea-label">Hora</span><input type="time" class="ea-input ea-input--time" data-ea-glu-time></label><button type="button" class="ea-btn ea-btn--ghost ea-btn--icon" data-ea-glu-remove title="Quitar fila" aria-label="Quitar glucometría">×</button>';
+  if (data) {
+    var val2 = row.querySelector("[data-ea-glu-value]");
+    var time = row.querySelector("[data-ea-glu-time]");
+    if (val2 && data.value != null && "value" in val2) val2.value = String(data.value);
+    if (time && data.time && "value" in time) time.value = String(data.time);
+  }
   var removeBtn = row.querySelector("[data-ea-glu-remove]");
   if (removeBtn) {
     removeBtn.addEventListener("click", function() {
       var list = row.parentElement;
       if (!list) return;
       if (list.querySelectorAll(".ea-glu-row").length <= 1) {
-        var val2 = row.querySelector("[data-ea-glu-value]");
-        var time = row.querySelector("[data-ea-glu-time]");
-        if (val2) val2.value = "";
-        if (time) time.value = "";
+        var valEl = row.querySelector("[data-ea-glu-value]");
+        var timeEl = row.querySelector("[data-ea-glu-time]");
+        if (valEl) valEl.value = "";
+        if (timeEl) timeEl.value = "";
         return;
       }
       row.remove();
     });
   }
+  wireGluRowKeyboard(row);
   return row;
+}
+function applyEstadoActualParsedToForm(parsed) {
+  var form = document.getElementById("ea-form");
+  if (!form || !parsed || !parsed.ok) return;
+  VITAL_KEYS2.forEach(function(key) {
+    var el = form.querySelector('[data-ea-vital="' + key + '"]');
+    var v = parsed.vitals[key];
+    if (el && v != null && "value" in el) el.value = String(v);
+  });
+  VITAL_KEYS2.forEach(function(key) {
+    var wrap = form.querySelector('[data-ea-altered-wrap="' + key + '"]');
+    var box = form.querySelector('[data-ea-vital-box="' + key + '"]');
+    var timeEl = form.querySelector('[data-ea-altered="' + key + '"]');
+    var vitalEl = form.querySelector('[data-ea-vital="' + key + '"]');
+    var alteredTime = parsed.alteredAt[key];
+    var altered = !!(alteredTime || vitalEl && isVitalAltered(key, vitalEl.value));
+    if (wrap) {
+      wrap.classList.toggle("ea-altered-slot--hidden", !altered);
+      wrap.hidden = !altered;
+    }
+    if (box) box.classList.toggle("ea-vital-box--altered", altered);
+    if (timeEl && alteredTime && "value" in timeEl) timeEl.value = alteredTime;
+  });
+  var peakEl = form.querySelector('[data-ea-vital="tempPeak"]');
+  if (peakEl && parsed.vitals.tempPeak != null && "value" in peakEl) {
+    peakEl.value = String(parsed.vitals.tempPeak);
+  }
+  var peakTimeEl = form.querySelector('[data-ea-altered="tempPeak"]');
+  if (peakTimeEl && parsed.alteredAt.tempPeak && "value" in peakTimeEl) {
+    peakTimeEl.value = parsed.alteredAt.tempPeak;
+  }
+  if (parsed.vitals.tempPeak != null && form) expandTempSecondSlot(form);
+  var gluList = form.querySelector("#ea-glu-list");
+  if (gluList && parsed.glucometrias.length) {
+    gluList.innerHTML = "";
+    parsed.glucometrias.forEach(function(g3) {
+      gluList.appendChild(buildGluRow(g3));
+    });
+  }
+  var ingEl = document.getElementById("ea-io-ing");
+  var egrEl = document.getElementById("ea-io-egr");
+  if (ingEl && parsed.io.ing != null && "value" in ingEl) ingEl.value = String(parsed.io.ing);
+  if (egrEl) {
+    if (parsed.io.egrParts && parsed.io.egrParts.length && "value" in egrEl) {
+      egrEl.value = serializeEgrPartsToFormText(parsed.io.egrParts);
+    } else if (parsed.io.egr != null && "value" in egrEl) {
+      egrEl.value = typeof parsed.io.egr === "number" ? String(parsed.io.egr) : String(parsed.io.egr);
+    }
+  }
+  var evacEl = document.getElementById("ea-io-evac");
+  if (evacEl && parsed.io.evac != null && "value" in evacEl) {
+    evacEl.value = typeof parsed.io.evac === "number" ? String(parsed.io.evac) : String(parsed.io.evac);
+  }
+  syncIoBalanceFromForm(form);
+  if (parsed.soporteHint) {
+    var patient = findActivePatient();
+    if (patient) {
+      ensureMonitoreo(patient);
+      if (!patient.monitoreo.estadoClinico) patient.monitoreo.estadoClinico = {};
+      patient.monitoreo.estadoClinico.soporte = parsed.soporteHint;
+      var soporteSel = document.querySelector('[data-ea-ec="soporte"]');
+      if (soporteSel && "value" in soporteSel) soporteSel.value = parsed.soporteHint;
+      persistEstadoClinicoLight(patient.monitoreo, patient);
+    }
+  }
+}
+function syncIoBalanceFromForm(form) {
+  if (!form) return;
+  var ingEl = form.querySelector("#ea-io-ing");
+  var egrEl = form.querySelector("#ea-io-egr");
+  var out = form.querySelector("#ea-balance-turno-live");
+  if (!ingEl || !egrEl || !out) return;
+  var ing = parseNumOrNull(ingEl.value);
+  var egrParts = parseIoEgresoLine(egrEl.value);
+  var bal = computeIoBalanceFromIngEgr(ing, { egrParts, egr: diuresisValueFromParts(egrParts) });
+  out.textContent = formatBalanceLive(bal);
+}
+function formatSnapshotEgresos(io) {
+  io = io || {};
+  if (Array.isArray(io.egrParts) && io.egrParts.length) {
+    return escHtml3(io.egrParts.map(formatEgresoPartForText).join(" · "));
+  }
+  var egr = io.egr;
+  if (egr == null || egr === "") return "—";
+  if (isIoNumericValue2(egr)) return escHtml3(String(egr) + " CC (DIURESIS)");
+  return escHtml3(toEaSalidaText(egr));
 }
 function renderSnapshotSection(snapshot, balTurno, balGlobal) {
   var vitalsHtml = VITAL_KEYS2.map(function(key) {
@@ -27656,13 +28520,20 @@ function renderSnapshotSection(snapshot, balTurno, balGlobal) {
     var altered = snapshot.alteredAt && snapshot.alteredAt[key];
     var cls = "ea-snapshot-item" + (altered ? " ea-snapshot-item--altered" : "");
     var meta = altered ? '<span class="ea-snapshot-altered-at">' + altered + "</span>" : "";
-    return '<div class="' + cls + '"><span class="ea-snapshot-label">' + VITAL_LABELS2[key] + '</span><span class="ea-snapshot-value">' + displayValue(val2) + '</span><span class="ea-snapshot-unit">' + (VITAL_UNITS[key] || "") + "</span>" + meta + "</div>";
+    var display = displayValue(val2);
+    if (key === "temp") {
+      var peak = snapshot.vitals.tempPeak;
+      if (peak != null && peak !== "" && String(peak) !== String(val2)) {
+        display = displayValue(val2) + " · pico " + displayValue(peak) + (snapshot.alteredAt && snapshot.alteredAt.tempPeak ? " @ " + escHtml3(snapshot.alteredAt.tempPeak) : "");
+      }
+    }
+    return '<div class="' + cls + '"><span class="ea-snapshot-label">' + VITAL_LABELS2[key] + '</span><span class="ea-snapshot-value">' + display + '</span><span class="ea-snapshot-unit">' + (VITAL_UNITS[key] || "") + "</span>" + meta + "</div>";
   }).join("");
   var gluHtml = snapshot.glucometrias && snapshot.glucometrias.length ? snapshot.glucometrias.map(function(g3) {
     var t2 = g3.time ? ' <span class="ea-snapshot-glu-time">' + g3.time + "</span>" : "";
-    return '<span class="ea-snapshot-glu-chip">' + displayValue(g3.value) + " mg/dL" + t2 + "</span>";
+    return '<span class="ea-snapshot-glu-chip">' + displayValue(g3.value) + " MG/DL" + t2 + "</span>";
   }).join("") : '<span class="ea-muted">—</span>';
-  return '<section class="ea-section ea-card ea-snapshot-strip" id="ea-snapshot"><div class="ea-snapshot-strip-head"><h3 class="ea-section-title">Snapshot actual</h3><p class="ea-muted ea-snapshot-hint">Último valor registrado por parámetro</p></div><div class="ea-snapshot-strip-body"><div class="ea-snapshot-zone"><h4 class="ea-snapshot-zone-title">Signos vitales</h4><div class="ea-snapshot-vitals">' + vitalsHtml + '</div></div><div class="ea-snapshot-zone"><h4 class="ea-snapshot-zone-title">Glucometrías</h4><div class="ea-snapshot-glu">' + gluHtml + '</div></div><div class="ea-snapshot-zone"><h4 class="ea-snapshot-zone-title">Balance hídrico</h4><div class="ea-snapshot-io"><div><span class="ea-snapshot-label">Ingresos</span><span class="ea-snapshot-io-val">' + displayValue(snapshot.io.ing) + ' cc</span></div><div><span class="ea-snapshot-label">Egresos</span><span class="ea-snapshot-io-val">' + displayValue(snapshot.io.egr) + ' cc</span></div><div><span class="ea-snapshot-label">Turno</span><span class="ea-snapshot-io-val">' + displayBalance(balTurno) + '</span></div><div><span class="ea-snapshot-label">Global</span><span class="ea-snapshot-io-val">' + displayBalance(balGlobal) + "</span></div></div></div></div></section>";
+  return '<section class="ea-section ea-card ea-snapshot-strip ea-snapshot-strip--primary" id="ea-snapshot"><div class="ea-snapshot-strip-head"><div class="ea-snapshot-strip-head-text"><h3 class="ea-section-title">Snapshot actual</h3><p class="ea-muted ea-snapshot-hint">Resumen del monitoreo · las tendencias están debajo</p></div><div class="ea-snapshot-actions"><button type="button" class="ea-btn ea-btn--primary" onclick="openEstadoActualRegistroModal()">Registro manual</button><button type="button" class="ea-btn ea-btn--ghost" onclick="openEstadoActualPasteModal()">Pegar monitoreo</button></div></div><div class="ea-snapshot-strip-body"><div class="ea-snapshot-zone"><h4 class="ea-snapshot-zone-title">Signos vitales</h4><div class="ea-snapshot-vitals">' + vitalsHtml + '</div></div><div class="ea-snapshot-zone"><h4 class="ea-snapshot-zone-title">Glucometrías</h4><div class="ea-snapshot-glu">' + gluHtml + '</div></div><div class="ea-snapshot-zone"><h4 class="ea-snapshot-zone-title">Balance hídrico</h4><div class="ea-snapshot-io"><div><span class="ea-snapshot-label">Ingresos</span><span class="ea-snapshot-io-val">' + displayValue(snapshot.io.ing) + ' CC</span></div><div class="ea-snapshot-io-egr"><span class="ea-snapshot-label">Egresos</span><span class="ea-snapshot-io-val">' + formatSnapshotEgresos(snapshot.io) + "</span></div>" + (snapshot.io.evac != null && snapshot.io.evac !== "" ? '<div><span class="ea-snapshot-label">Evacuaciones</span><span class="ea-snapshot-io-val">' + escHtml3(formatEvacForText(snapshot.io.evac)) + "</span></div>" : "") + '<div><span class="ea-snapshot-label">Turno</span><span class="ea-snapshot-io-val">' + displayBalance(balTurno) + '</span></div><div><span class="ea-snapshot-label">Global</span><span class="ea-snapshot-io-val">' + displayBalance(balGlobal) + "</span></div></div></div></div></section>";
 }
 function renderHistorialSection(historial) {
   var sorted = historial.slice().sort(function(a, b) {
@@ -27680,6 +28551,11 @@ function renderHistorialSection(historial) {
     VITAL_KEYS2.forEach(function(k) {
       if (vit[k] != null && vit[k] !== "") parts.push(VITAL_LABELS2[k] + " " + vit[k]);
     });
+    if (vit.tempPeak != null && vit.tempPeak !== "" && String(vit.tempPeak) !== String(vit.temp)) {
+      var peakPart = "Pico " + vit.tempPeak;
+      if (row.alteredAt && row.alteredAt.tempPeak) peakPart += " @ " + row.alteredAt.tempPeak;
+      parts.push(peakPart);
+    }
     var glus = Array.isArray(row.glucometrias) ? row.glucometrias : [];
     glus.forEach(function(g3) {
       if (g3 && g3.value != null && g3.value !== "") {
@@ -27688,17 +28564,283 @@ function renderHistorialSection(historial) {
     });
     var io = row.io || {};
     if (io.ing != null && io.ing !== "") parts.push("Ing " + io.ing);
-    if (io.egr != null && io.egr !== "") parts.push("Egr " + io.egr);
+    if (Array.isArray(io.egrParts) && io.egrParts.length) {
+      parts.push(
+        io.egrParts.map(function(p) {
+          return formatEgresoPartForText(p);
+        }).join(", ")
+      );
+    } else if (io.egr != null && io.egr !== "") {
+      parts.push("Egr " + io.egr);
+    }
+    if (io.evac != null && io.evac !== "") parts.push("Evac " + io.evac);
     var summary = parts.length ? parts.join(" · ") : "Registro vacío";
     return '<li class="ea-historial-row"><div class="ea-historial-main"><span class="ea-historial-when">' + when + '</span><span class="ea-historial-summary">' + summary + `</span></div><button type="button" class="ea-btn ea-btn--ghost ea-btn--danger" onclick="eliminarEstadoActualMedicion('` + String(row.id || "").replace(/'/g, "\\'") + `')">Eliminar</button></li>`;
   }).join("");
   return '<section class="ea-section ea-card" id="ea-historial"><h3 class="ea-section-title">Historial reciente</h3><ul class="ea-historial-list">' + rows + "</ul></section>";
 }
-function buildFormSection() {
+function buildVitalChipHtml(key, labelOverride, opts) {
+  opts = opts || {};
+  var label = labelOverride || VITAL_LABELS2[key] || key;
+  var boxKey = key === "tempPeak" ? "tempPeak" : key;
+  var unit = VITAL_UNITS[key === "tempPeak" ? "temp" : key] || "";
+  var tempPlusBtn = opts.tempPlus ? '<button type="button" class="ea-temp-add-btn" id="ea-add-temp" title="Segunda temperatura (pico febril)">+1</button>' : "";
+  var labelHtml = opts.tempPlus ? '<div class="vital-label ea-vital-label-row"><div class="ea-vital-label-text"><span class="ea-vital-name">' + label + '</span><span class="ea-vital-unit">' + unit + "</span></div>" + tempPlusBtn + "</div>" : '<div class="vital-label"><span class="ea-vital-name">' + label + '</span><span class="ea-vital-unit">' + unit + "</span></div>";
+  return '<div class="vital-box ea-vital-box ea-vital-chip" data-ea-vital-box="' + boxKey + '">' + labelHtml + '<div class="ea-vital-value-wrap"><input type="number" class="ea-vital-input" data-ea-vital="' + key + '" step="any" inputmode="decimal" placeholder="—" aria-label="' + label + '"></div><div class="ea-altered-slot ea-altered-slot--hidden" data-ea-altered-wrap="' + boxKey + '" hidden><span class="ea-altered-label">Alterado</span><input type="time" class="ea-altered-time-input" data-ea-altered="' + boxKey + '" aria-label="Hora ' + label + ' alterado"></div></div>';
+}
+function buildTempStackHtml() {
+  return '<div class="ea-temp-stack" data-ea-temp-stack><div class="ea-temp-stack-slots"><div class="ea-temp-slot ea-temp-slot--primary" data-ea-temp-slot="primary">' + buildVitalChipHtml("temp", void 0, { tempPlus: true }) + '<div class="ea-temp-prev-view" data-ea-temp-prev-view hidden><span class="ea-temp-prev-summary" data-ea-temp-prev-summary></span></div></div><div class="ea-temp-slot ea-temp-slot--peak" data-ea-temp-slot="peak" hidden>' + buildVitalChipHtml("tempPeak", "Pico") + "</div></div></div>";
+}
+function syncTempPrevSummary(form) {
+  if (!form) return;
+  var summary = form.querySelector("[data-ea-temp-prev-summary]");
+  var primaryInput = form.querySelector('[data-ea-temp-slot="primary"] [data-ea-vital="temp"]');
+  var timeEl = form.querySelector('[data-ea-temp-slot="primary"] [data-ea-altered="temp"]');
+  if (!summary) return;
+  var val2 = primaryInput && "value" in primaryInput ? String(primaryInput.value).trim() : "";
+  if (!val2) {
+    summary.textContent = "—";
+    return;
+  }
+  var time = timeEl && "value" in timeEl && timeEl.value ? String(timeEl.value) : "";
+  summary.textContent = val2 + " °C" + (time ? " @ " + time : "");
+}
+function syncTempAddButtonVisibility(form) {
+  if (!form) return;
+  var stack = form.querySelector("[data-ea-temp-stack]");
+  var addBtn = form.querySelector("#ea-add-temp");
+  var primaryInput = form.querySelector('[data-ea-temp-slot="primary"] [data-ea-vital="temp"]');
+  if (!addBtn) return;
+  var dual = stack && stack.classList.contains("ea-temp-stack--dual");
+  var hasVal = primaryInput && "value" in primaryInput && String(primaryInput.value).trim() !== "";
+  addBtn.hidden = dual || !hasVal;
+}
+function expandTempSecondSlot(form) {
+  if (!form) return;
+  var stack = form.querySelector("[data-ea-temp-stack]");
+  var primarySlot = form.querySelector('[data-ea-temp-slot="primary"]');
+  var peakSlot = form.querySelector('[data-ea-temp-slot="peak"]');
+  var prevView = form.querySelector("[data-ea-temp-prev-view]");
+  var primaryChip = primarySlot && primarySlot.querySelector('[data-ea-vital-box="temp"]');
+  if (!stack || !primarySlot || !peakSlot) return;
+  syncTempPrevSummary(form);
+  stack.classList.add("ea-temp-stack--dual");
+  if (primaryChip) primaryChip.hidden = true;
+  if (prevView) prevView.hidden = false;
+  peakSlot.hidden = false;
+  syncTempAddButtonVisibility(form);
+  var peakInput = peakSlot.querySelector('[data-ea-vital="tempPeak"]');
+  if (peakInput && "focus" in peakInput) peakInput.focus();
+}
+function collapseTempStack(form) {
+  if (!form) return;
+  var stack = form.querySelector("[data-ea-temp-stack]");
+  var primarySlot = form.querySelector('[data-ea-temp-slot="primary"]');
+  var peakSlot = form.querySelector('[data-ea-temp-slot="peak"]');
+  var prevView = form.querySelector("[data-ea-temp-prev-view]");
+  var primaryChip = primarySlot && primarySlot.querySelector('[data-ea-vital-box="temp"]');
+  if (stack) stack.classList.remove("ea-temp-stack--dual");
+  if (primaryChip) primaryChip.hidden = false;
+  if (prevView) prevView.hidden = true;
+  if (peakSlot) {
+    peakSlot.hidden = true;
+    var peakInput = peakSlot.querySelector('[data-ea-vital="tempPeak"]');
+    var peakTime = peakSlot.querySelector('[data-ea-altered="tempPeak"]');
+    if (peakInput && "value" in peakInput) peakInput.value = "";
+    if (peakTime && "value" in peakTime) peakTime.value = "";
+  }
+  syncTempAddButtonVisibility(form);
+}
+function prefillRegistroFormFromMonitoreo(form, monitoreo) {
+  var snap = deriveSnapshot(monitoreo);
+  var vit = snap.vitals || {};
+  var alt = snap.alteredAt || {};
+  VITAL_KEYS2.forEach(function(key) {
+    var el = form.querySelector('[data-ea-vital="' + key + '"]');
+    if (el && vit[key] != null && vit[key] !== "" && "value" in el) el.value = String(vit[key]);
+  });
+  var peakEl = form.querySelector('[data-ea-vital="tempPeak"]');
+  if (peakEl && vit.tempPeak != null && vit.tempPeak !== "" && "value" in peakEl) {
+    peakEl.value = String(vit.tempPeak);
+  }
+  VITAL_KEYS2.forEach(function(key) {
+    var wrap = form.querySelector('[data-ea-altered-wrap="' + key + '"]');
+    var box = form.querySelector('[data-ea-vital-box="' + key + '"]');
+    var timeEl = form.querySelector('[data-ea-altered="' + key + '"]');
+    var vitalEl = form.querySelector('[data-ea-vital="' + key + '"]');
+    var alteredTime = alt[key];
+    var altered = !!(alteredTime || vitalEl && isVitalAltered(key, vitalEl.value));
+    if (wrap) {
+      wrap.classList.toggle("ea-altered-slot--hidden", !altered);
+      wrap.hidden = !altered;
+    }
+    if (box) box.classList.toggle("ea-vital-box--altered", altered);
+    if (timeEl && alteredTime && "value" in timeEl) timeEl.value = alteredTime;
+  });
+  var peakWrap = form.querySelector('[data-ea-altered-wrap="tempPeak"]');
+  var peakBox = form.querySelector('[data-ea-vital-box="tempPeak"]');
+  var peakTimeEl = form.querySelector('[data-ea-altered="tempPeak"]');
+  if (peakEl && vit.tempPeak != null && vit.tempPeak !== "") {
+    expandTempSecondSlot(form);
+    if (peakWrap) {
+      var showPeak = String(peakEl.value).trim() !== "";
+      peakWrap.classList.toggle("ea-altered-slot--hidden", !showPeak);
+      peakWrap.hidden = !showPeak;
+      if (peakTimeEl && alt.tempPeak && "value" in peakTimeEl) peakTimeEl.value = alt.tempPeak;
+      if (peakBox) peakBox.classList.toggle("ea-vital-box--altered", showPeak && isVitalAltered("temp", peakEl.value));
+    }
+  } else {
+    collapseTempStack(form);
+  }
+  var io = snap.io || {};
+  var ingEl = form.querySelector("#ea-io-ing");
+  var egrEl = form.querySelector("#ea-io-egr");
+  var evacEl = form.querySelector("#ea-io-evac");
+  if (ingEl && io.ing != null && io.ing !== "" && "value" in ingEl) ingEl.value = String(io.ing);
+  if (egrEl) {
+    if (io.egrParts && io.egrParts.length && "value" in egrEl) {
+      egrEl.value = serializeEgrPartsToFormText(io.egrParts);
+    } else if (io.egr != null && io.egr !== "" && "value" in egrEl) {
+      egrEl.value = typeof io.egr === "number" ? String(io.egr) : String(io.egr);
+    }
+  }
+  if (evacEl && io.evac != null && io.evac !== "" && "value" in evacEl) {
+    evacEl.value = typeof io.evac === "number" ? String(io.evac) : String(io.evac);
+  }
+  var gluList = form.querySelector("#ea-glu-list");
+  if (gluList) {
+    var glus = collectGlucometriasForRegistroWindow(
+      Array.isArray(monitoreo.historial) ? monitoreo.historial : []
+    );
+    gluList.innerHTML = "";
+    if (glus.length) {
+      glus.forEach(function(g3) {
+        gluList.appendChild(buildGluRow(g3));
+      });
+    } else {
+      gluList.appendChild(buildGluRow());
+    }
+  }
+  syncTempAddButtonVisibility(form);
+}
+function buildRegistroFormMarkup() {
   var vitalFields = VITAL_KEYS2.map(function(key) {
-    return '<div class="vital-box ea-vital-box" data-ea-vital-box="' + key + '"><div class="vital-label"><span class="ea-vital-name">' + VITAL_LABELS2[key] + '</span><span class="ea-vital-unit">' + (VITAL_UNITS[key] || "") + '</span></div><input type="number" class="ea-vital-input" data-ea-vital="' + key + '" step="any" inputmode="decimal" placeholder="—" aria-label="' + VITAL_LABELS2[key] + '"><div class="ea-altered-slot ea-altered-slot--hidden" data-ea-altered-wrap="' + key + '" hidden><span class="ea-altered-label">Alterado</span><input type="time" class="ea-altered-time-input" data-ea-altered="' + key + '" aria-label="Hora ' + VITAL_LABELS2[key] + ' alterado"></div></div>';
+    if (key === "temp") return buildTempStackHtml();
+    return buildVitalChipHtml(key);
   }).join("");
-  return '<section class="ea-section ea-card ea-form-card"><h3 class="ea-section-title">Registrar medición</h3><form id="ea-form" class="ea-form" onsubmit="return false;"><label class="ea-field ea-field--datetime"><span class="ea-label">Fecha y hora del registro</span><input type="datetime-local" class="ea-input" id="ea-recorded-at" value="' + toDatetimeLocalValue(/* @__PURE__ */ new Date()) + '"></label><div class="vitals-grid ea-vitals-grid">' + vitalFields + '</div><div class="ea-glu-block"><div class="ea-glu-head"><span class="ea-label">Glucometrías</span><button type="button" class="ea-btn ea-btn--ghost" id="ea-add-glu">+ Agregar</button></div><div id="ea-glu-list" class="ea-glu-list"></div></div><div class="ea-io-grid"><label class="ea-field"><span class="ea-label">Ingresos (cc)</span><input type="number" class="ea-input" id="ea-io-ing" min="0" step="1"></label><label class="ea-field"><span class="ea-label">Egresos (cc o NC)</span><input type="text" class="ea-input" id="ea-io-egr" inputmode="text" autocomplete="off" placeholder="cc o NC"></label><div class="ea-field ea-io-balance"><span class="ea-label">Balance turno</span><span id="ea-balance-turno-live" class="ea-balance-live">—</span></div></div><div class="ea-form-actions"><button type="button" class="ea-btn ea-btn--primary" onclick="registrarEstadoActualMedicion()">Registrar</button></div></form></section>';
+  return '<div class="ea-registro-shell"><div class="ea-registro-form-scroll"><form id="ea-form" class="ea-form ea-form--registro" onsubmit="return false;"><p class="ea-registro-hint ea-muted">Cierre de turno: <strong>00:00 de hoy</strong>. Signos e I/O del snapshot; glucometrías desde ayer 08:00.</p><label class="ea-field ea-field--datetime"><span class="ea-label">Fecha y hora del registro</span><input type="datetime-local" class="ea-input" id="ea-recorded-at" value="' + toDatetimeLocalValue(getDefaultRegistroRecordedAt()) + '"></label><div class="vitals-grid ea-vitals-grid">' + vitalFields + '</div><div class="ea-glu-block"><div class="ea-glu-head"><span class="ea-label">Glucometrías</span><button type="button" class="ea-btn ea-btn--ghost" id="ea-add-glu">+ Agregar</button></div><div id="ea-glu-list" class="ea-glu-list"></div></div><div class="ea-io-grid"><label class="ea-field"><span class="ea-label">Ingresos (cc)</span><input type="number" class="ea-input" id="ea-io-ing" min="0" step="1"></label><label class="ea-field ea-field--full"><span class="ea-label">Egresos (diuresis, drenajes, nefrostomías…)</span><input type="text" class="ea-input" id="ea-io-egr" inputmode="text" autocomplete="off" placeholder="DIURESIS NC, DRENAJE 50 CC, NEFRO IZQ 20 CC"></label><label class="ea-field"><span class="ea-label">Evacuaciones</span><input type="text" class="ea-input" id="ea-io-evac" inputmode="text" autocomplete="off" placeholder="NC, cc o texto"></label><div class="ea-field ea-io-balance"><span class="ea-label">Balance turno</span><span id="ea-balance-turno-live" class="ea-balance-live">—</span></div></div></form></div><footer class="ea-registro-modal-foot"><button type="button" class="ea-btn ea-btn--ghost" onclick="closeEstadoActualRegistroModal()">Cancelar</button><button type="button" class="ea-btn ea-btn--primary" onclick="registrarEstadoActualMedicion()">Registrar</button></footer></div>';
+}
+function wireEaRegistroForm() {
+  var form = document.getElementById("ea-form");
+  wireFormInteractions(form);
+  var gluList = document.getElementById("ea-glu-list");
+  if (gluList && !gluList.querySelector(".ea-glu-row")) {
+    gluList.appendChild(buildGluRow());
+  }
+}
+function resetEaRegistroForm(patient) {
+  var form = document.getElementById("ea-form");
+  if (!form) return;
+  form.querySelectorAll("[data-ea-vital]").forEach(function(el) {
+    if ("value" in el) el.value = "";
+  });
+  form.querySelectorAll("[data-ea-altered]").forEach(function(el) {
+    if ("value" in el) el.value = "";
+  });
+  form.querySelectorAll(".ea-altered-slot").forEach(function(el) {
+    el.classList.add("ea-altered-slot--hidden");
+    el.hidden = true;
+  });
+  form.querySelectorAll(".ea-vital-box").forEach(function(el) {
+    el.classList.remove("ea-vital-box--altered");
+  });
+  collapseTempStack(form);
+  var recorded = document.getElementById("ea-recorded-at");
+  if (recorded && "value" in recorded) {
+    recorded.value = toDatetimeLocalValue(getDefaultRegistroRecordedAt());
+  }
+  var ing = document.getElementById("ea-io-ing");
+  var egr = document.getElementById("ea-io-egr");
+  var evac = document.getElementById("ea-io-evac");
+  if (ing && "value" in ing) ing.value = "";
+  if (egr && "value" in egr) egr.value = "";
+  if (evac && "value" in evac) evac.value = "";
+  var gluList = document.getElementById("ea-glu-list");
+  if (gluList) {
+    gluList.innerHTML = "";
+    gluList.appendChild(buildGluRow());
+  }
+  if (patient && patient.monitoreo) {
+    prefillRegistroFormFromMonitoreo(form, patient.monitoreo);
+  }
+  syncIoBalanceFromForm(form);
+  syncTempAddButtonVisibility(form);
+}
+function buildEaShellKey(activeId2, monitoreo) {
+  var ec = monitoreo && monitoreo.estadoClinico || {};
+  return [
+    String(activeId2 || ""),
+    String(ec.soporte || ""),
+    String(ec.dieta || ""),
+    String(ec.pesoRef || ""),
+    String(ec.kcalKg || ""),
+    String(ec.kcal || "")
+  ].join("|");
+}
+function buildEaDataKey(monitoreo) {
+  var h = Array.isArray(monitoreo.historial) ? monitoreo.historial : [];
+  var parts = ["h" + h.length];
+  for (var i = 0; i < Math.min(4, h.length); i += 1) {
+    var row = h[i];
+    parts.push(String(row.id || "") + "@" + String(row.recordedAt || ""));
+  }
+  var tg = monitoreo.textoGuardado && monitoreo.textoGuardado.savedAt ? String(monitoreo.textoGuardado.savedAt) : "";
+  parts.push("t" + tg);
+  return parts.join("|");
+}
+function patchEaPanelDynamicSections(mount, patient, monitoreo, patchOpts) {
+  patchOpts = patchOpts || {};
+  var snapshot = deriveSnapshot(monitoreo);
+  var balTurno = balanceTurno(monitoreo);
+  var balGlobal = balanceGlobalHistorico(monitoreo);
+  var savedLabel = formatEaSavedLabel(monitoreo.textoGuardado && monitoreo.textoGuardado.savedAt);
+  if (patchOpts.refreshClinico) {
+    var clinicoDet = mount.querySelector(".ea-estado-clinico");
+    if (clinicoDet) {
+      clinicoDet.outerHTML = renderEstadoClinicoSection(monitoreo, rt14.getActiveId(), patient);
+      wireEstadoClinicoInteractions(mount, patient);
+    }
+  }
+  var snapEl = mount.querySelector("#ea-snapshot");
+  if (snapEl) {
+    snapEl.outerHTML = renderSnapshotSection(snapshot, balTurno, balGlobal);
+  }
+  var histEl = mount.querySelector("#ea-historial");
+  if (histEl) {
+    histEl.outerHTML = renderHistorialSection(Array.isArray(monitoreo.historial) ? monitoreo.historial : []);
+  }
+  var meta = mount.querySelector("#ea-meta-guardado");
+  if (meta) meta.textContent = savedLabel;
+  syncEstadoActualTextarea(monitoreo, patient);
+}
+function finishEaChartsAndReady(mount, monitoreo, patient, onReady, syncHeavy) {
+  var chartsMount = mount.querySelector("#ea-charts-mount");
+  var finishDeferred = function() {
+    syncEstadoActualTextarea(monitoreo, patient);
+    if (chartsMount) renderEstadoActualCharts(
+      /** @type {HTMLElement} */
+      chartsMount,
+      monitoreo
+    );
+    if (onReady) onReady();
+  };
+  if (syncHeavy) {
+    finishDeferred();
+    return;
+  }
+  scheduleAfterPaint(function() {
+    scheduleIdle(finishDeferred);
+  });
 }
 function renderEstadoActualPanel(opts) {
   opts = opts || {};
@@ -27710,6 +28852,7 @@ function renderEstadoActualPanel(opts) {
   }
   var patient = findActivePatient();
   if (!patient) {
+    invalidateEaPanelCache();
     mount.innerHTML = '<div class="estado-actual-panel ea-empty"><p class="ea-muted">Selecciona un paciente para registrar monitoreo.</p></div>';
     if (onReady) onReady();
     return;
@@ -27722,31 +28865,33 @@ function renderEstadoActualPanel(opts) {
   var balGlobal = balanceGlobalHistorico(monitoreo);
   var savedLabel = formatEaSavedLabel(monitoreo.textoGuardado && monitoreo.textoGuardado.savedAt);
   var activeId2 = rt14.getActiveId();
-  var eaUiState = captureEaPanelUiState(mount);
-  mount.innerHTML = '<div class="estado-actual-panel"><header class="ea-panel-header ea-card"><div class="ea-action-bar"><button type="button" class="ea-btn" onclick="estadoActualCopiar()">Copiar</button><button type="button" class="ea-btn ea-btn--primary" onclick="estadoActualGuardarCopiar()">Guardar y copiar</button><span id="ea-meta-guardado" class="ea-meta-guardado">' + savedLabel + "</span></div></header>" + renderEstadoClinicoSection(monitoreo, activeId2, patient) + buildFormSection() + renderSnapshotSection(snapshot, balTurno, balGlobal) + renderHistorialSection(Array.isArray(monitoreo.historial) ? monitoreo.historial : []) + '<div id="ea-charts-mount" class="ea-charts-mount"><p class="ea-muted ea-charts-loading">Cargando tendencias…</p></div><section class="ea-section ea-card"><div class="ea-texto-head"><h3 class="ea-section-title">Texto Estado Actual</h3><button type="button" class="ea-btn ea-btn--ghost" onclick="regenerarEstadoActualTexto()">Regenerar</button></div><textarea id="ea-texto" class="ea-texto" rows="8" placeholder="Generando texto…"></textarea></section></div>';
-  restoreEaPanelUiState(mount, eaUiState);
-  var gluList = mount.querySelector("#ea-glu-list");
-  if (gluList) gluList.appendChild(buildGluRow());
-  var form = mount.querySelector("#ea-form");
-  wireFormInteractions(form);
-  wireEstadoClinicoInteractions(mount, patient);
-  var chartsMount = mount.querySelector("#ea-charts-mount");
-  var finishDeferred = function() {
-    syncEstadoActualTextarea(monitoreo, patient);
-    if (chartsMount) renderEstadoActualCharts(
-      /** @type {HTMLElement} */
-      chartsMount,
-      monitoreo
-    );
-    if (onReady) onReady();
-  };
-  if (opts.syncHeavy) {
-    finishDeferred();
+  var shellKey = buildEaShellKey(activeId2, monitoreo);
+  var dataKey = buildEaDataKey(monitoreo);
+  if (mount.querySelector(".estado-actual-panel") && _eaPanelCache.shellKey === shellKey && (opts.dataOnly || _eaPanelCache.dataKey !== dataKey)) {
+    if (_eaPanelCache.dataKey === dataKey && !opts.dataOnly) {
+      syncEstadoActualTextarea(monitoreo, patient);
+      if (onReady) onReady();
+      return;
+    }
+    patchEaPanelDynamicSections(mount, patient, monitoreo, {
+      refreshClinico: !!opts.refreshClinico
+    });
+    _eaPanelCache.dataKey = dataKey;
+    finishEaChartsAndReady(mount, monitoreo, patient, onReady, !!opts.syncHeavy);
     return;
   }
-  scheduleAfterPaint(function() {
-    scheduleIdle(finishDeferred);
-  });
+  if (mount.querySelector(".estado-actual-panel") && _eaPanelCache.shellKey === shellKey && _eaPanelCache.dataKey === dataKey && !opts.force) {
+    syncEstadoActualTextarea(monitoreo, patient);
+    if (onReady) onReady();
+    return;
+  }
+  var eaUiState = captureEaPanelUiState(mount);
+  mount.innerHTML = '<div class="estado-actual-panel"><header class="ea-panel-header ea-card"><div class="ea-action-bar"><button type="button" class="ea-btn" onclick="estadoActualCopiar()">Copiar</button><button type="button" class="ea-btn ea-btn--primary" onclick="estadoActualGuardarCopiar()">Guardar y copiar</button><span id="ea-meta-guardado" class="ea-meta-guardado">' + savedLabel + "</span></div></header>" + renderSnapshotSection(snapshot, balTurno, balGlobal) + '<section class="ea-section ea-card ea-charts-section"><h3 class="ea-section-title">Tendencias</h3><div id="ea-charts-mount" class="ea-charts-mount"><p class="ea-muted ea-charts-loading">Cargando tendencias…</p></div></section>' + renderEstadoClinicoSection(monitoreo, activeId2, patient) + renderHistorialSection(Array.isArray(monitoreo.historial) ? monitoreo.historial : []) + '<section class="ea-section ea-card"><div class="ea-texto-head"><h3 class="ea-section-title">Texto Estado Actual</h3><button type="button" class="ea-btn ea-btn--ghost" onclick="regenerarEstadoActualTexto()">Regenerar</button></div><textarea id="ea-texto" class="ea-texto" rows="8" placeholder="Generando texto…"></textarea></section></div>';
+  restoreEaPanelUiState(mount, eaUiState);
+  wireEstadoClinicoInteractions(mount, patient);
+  _eaPanelCache.shellKey = shellKey;
+  _eaPanelCache.dataKey = dataKey;
+  finishEaChartsAndReady(mount, monitoreo, patient, onReady, !!opts.syncHeavy);
 }
 function navigateToEstadoActualPanel() {
   rt14.switchConsolidatedTab("estadoActual");
@@ -27765,6 +28910,9 @@ function parseFormMedicion() {
     var el = form.querySelector('[data-ea-vital="' + key + '"]');
     vitals[key] = parseNumOrNull(el && "value" in el ? el.value : "");
   });
+  var peakEl = form.querySelector('[data-ea-vital="tempPeak"]');
+  var tempPeak = parseNumOrNull(peakEl && "value" in peakEl ? peakEl.value : "");
+  if (tempPeak != null) vitals.tempPeak = tempPeak;
   var alteredDefaults = buildAlteredAtDefaults(vitals, defaultTime);
   var alteredAt = {};
   Object.keys(alteredDefaults).forEach(function(key) {
@@ -27772,6 +28920,11 @@ function parseFormMedicion() {
     var val2 = el && "value" in el && el.value ? String(el.value) : alteredDefaults[key];
     if (val2) alteredAt[key] = val2;
   });
+  if (tempPeak != null) {
+    var peakTimeEl = form.querySelector('[data-ea-altered="tempPeak"]');
+    var peakTime = peakTimeEl && "value" in peakTimeEl && peakTimeEl.value ? String(peakTimeEl.value) : isVitalAltered("temp", tempPeak) ? defaultTime : "";
+    if (peakTime) alteredAt.tempPeak = peakTime;
+  }
   var glucometrias = [];
   form.querySelectorAll(".ea-glu-row").forEach(function(row) {
     var valEl = row.querySelector("[data-ea-glu-value]");
@@ -27783,6 +28936,9 @@ function parseFormMedicion() {
   });
   var ingEl = document.getElementById("ea-io-ing");
   var egrEl = document.getElementById("ea-io-egr");
+  var evacEl = document.getElementById("ea-io-evac");
+  var egrRaw = egrEl && "value" in egrEl ? String(egrEl.value) : "";
+  var egrParts = parseIoEgresoLine(egrRaw);
   return {
     id: Date.now().toString() + "-ea",
     recordedAt,
@@ -27791,7 +28947,9 @@ function parseFormMedicion() {
     glucometrias,
     io: {
       ing: parseNumOrNull(ingEl && "value" in ingEl ? ingEl.value : ""),
-      egr: parseIoEgresoField(egrEl && "value" in egrEl ? egrEl.value : "")
+      egr: diuresisValueFromParts(egrParts),
+      egrParts,
+      evac: parseIoEvacField(evacEl && "value" in evacEl ? evacEl.value : "")
     }
   };
 }
@@ -27821,8 +28979,17 @@ function registrarEstadoActualMedicion() {
   );
   saveState();
   if (rt14.invalidateInnerTabRenderCache) rt14.invalidateInnerTabRenderCache("estadoActual");
-  renderEstadoActualPanel({ syncHeavy: true });
+  if (typeof window.closeEstadoActualRegistroModal === "function") window.closeEstadoActualRegistroModal();
+  renderEstadoActualPanel({ syncHeavy: true, dataOnly: true });
   rt14.showToast("Medición registrada ✓", "success");
+}
+function ensureEaRegistroModalForm() {
+  var body = document.getElementById("ea-registro-modal-body");
+  if (!body) return;
+  if (!body.querySelector("#ea-form") || !body.querySelector(".ea-registro-shell") || !body.querySelector(".ea-vital-label-row")) {
+    body.innerHTML = buildRegistroFormMarkup();
+    wireEaRegistroForm();
+  }
 }
 function eliminarEstadoActualMedicion(id) {
   var patient = findActivePatient();
@@ -27909,7 +29076,8 @@ var windowHandlers8 = {
   confirmEaMedField,
   discardEaMedProposal,
   confirmAllEaMedProposals,
-  toggleEaEstadoClinico
+  toggleEaEstadoClinico,
+  applyEstadoActualParsedToForm
 };
 
 // public/js/receta-hu-core.mjs
@@ -28654,13 +29822,40 @@ function markInnerTabRendered(tab) {
   innerTabRenderCache[tab] = innerTabRenderCacheKey(tab);
 }
 var _expedienteWarmQueued = false;
+var _expedienteWarmGen = 0;
+var _paseBoardCacheKey = "";
+function cancelExpedienteWarm() {
+  _expedienteWarmGen += 1;
+  _expedienteWarmQueued = false;
+  if (expedientePreloadTimer) {
+    clearTimeout(expedientePreloadTimer);
+    expedientePreloadTimer = null;
+    expedientePreloadTab = null;
+  }
+}
+function expedienteCompositeTab(granularTab, settings2) {
+  if (!useConsolidatedExpedienteTabs(settings2)) return granularTab;
+  return consolidatedTabForGranular(granularTab, settings2);
+}
+function buildPaseBoardCacheKey(pid) {
+  var todos = storage.getTodos(pid);
+  var done = 0;
+  for (var i = 0; i < todos.length; i += 1) {
+    if (todos[i].completed) done += 1;
+  }
+  var med = medRecetaByPatient[pid] && medRecetaByPatient[pid].items || [];
+  var ag = getPaseAgendaForPatient(pid);
+  return String(pid) + "|L" + getLabHistoryRevision(pid) + "|T" + todos.length + ":" + done + "|M" + med.length + "|A" + ag.length;
+}
 function warmExpedienteHeavyTabs() {
   if (_expedienteWarmQueued || typeof document === "undefined") return;
   if (!isModeSala(rt16.getSettings())) return;
   if (!rt16.getActiveId() || rt16.getActiveAppTab() !== "nota") return;
   _expedienteWarmQueued = true;
+  var warmGen = _expedienteWarmGen;
   scheduleIdle(function() {
     _expedienteWarmQueued = false;
+    if (warmGen !== _expedienteWarmGen) return;
     if (!rt16.getActiveId() || rt16.getActiveAppTab() !== "nota") return;
     var settings2 = rt16.getSettings();
     var active = migrateGranularInner(rt16.getActiveInner() || "todo", settings2);
@@ -28669,7 +29864,7 @@ function warmExpedienteHeavyTabs() {
       if (isInnerTabContentFresh(tab, settings2)) return;
       renderGranularInnerTab(tab);
     });
-  }, 400);
+  }, 1200);
 }
 function resolvePreloadGranularTab(el) {
   if (!el || !el.id) return null;
@@ -28878,6 +30073,16 @@ function buildPasePatientHeaderHtml(patient) {
 function renderPaseBoard() {
   var host = document.getElementById("pase-board-scroll");
   if (!host || !isPaseMode()) return;
+  var aid7 = rt16.getActiveId();
+  if (aid7) {
+    var cacheKey = buildPaseBoardCacheKey(aid7);
+    if (_paseBoardCacheKey === cacheKey && host.querySelector(".pase-patient-header")) {
+      return;
+    }
+    _paseBoardCacheKey = cacheKey;
+  } else {
+    _paseBoardCacheKey = "";
+  }
   removeAtbRisPanelsFromBody();
   if (!host._paseDelegate) {
     host._paseDelegate = true;
@@ -28889,7 +30094,6 @@ function renderPaseBoard() {
       }
     });
   }
-  var aid7 = rt16.getActiveId();
   if (!aid7) {
     host.innerHTML = '<div class="pase-empty-screen" role="status">Selecciona un paciente en la lista para ver el resumen.</div>';
     return;
@@ -29079,6 +30283,8 @@ function openPaseSectionInNormal(which) {
 }
 function switchAppTab(tab) {
   if (tab === "lan") tab = "lab";
+  cancelExpedienteWarm();
+  cancelDeferredIdleWork();
   var prevAppTab = rt16.getActiveAppTab();
   rt16.setActiveAppTab(tab);
   if (tab === "nota" && isPaseMode() && prevAppTab !== "nota") {
@@ -29301,8 +30507,16 @@ function renderGranularInnerTab(tab, opts) {
   if (tab === "recetaHu") renderRecetaHu();
   markInnerTabRendered(tab);
 }
+function invalidatePaseBoardCache() {
+  _paseBoardCacheKey = "";
+}
 function refreshExpedienteAfterPatientSelect(opts) {
   opts = opts || {};
+  cancelExpedienteWarm();
+  cancelDeferredIdleWork();
+  invalidatePaseBoardCache();
+  invalidateEaPanelCache();
+  invalidateManejoShell();
   var settings2 = rt16.getSettings();
   var tab = migrateGranularInner(rt16.getActiveInner() || "todo", settings2);
   if (opts.patientChanged || !isInnerTabContentFresh(tab, settings2)) {
@@ -29325,10 +30539,14 @@ function switchConsolidatedTab(compositeTab) {
 }
 function switchInnerTab(tab, opts) {
   opts = opts || {};
+  cancelExpedienteWarm();
+  cancelDeferredIdleWork();
   var settings2 = rt16.getSettings();
   tab = migrateGranularInner(tab, settings2);
   var prevInner = migrateGranularInner(rt16.getActiveInner() || "todo", settings2);
   var consolidated = useConsolidatedExpedienteTabs(settings2);
+  var prevComposite = expedienteCompositeTab(prevInner, settings2);
+  var nextComposite = expedienteCompositeTab(tab, settings2);
   var expedienteTabs = {
     datos: 1,
     notas: 1,
@@ -29374,7 +30592,7 @@ function switchInnerTab(tab, opts) {
   if (needsContentRender) {
     var targetTab = tab;
     var forceRender = !!opts.forceRender;
-    if (prevInner !== tab) {
+    if (prevInner !== tab && prevComposite !== nextComposite) {
       var panelEl = consolidated ? document.getElementById(
         "itab-content-" + consolidatedInnerTabButtonId(tab, settings2).replace(/^itab-/, "")
       ) : document.getElementById("itab-content-" + tab);
@@ -29383,10 +30601,10 @@ function switchInnerTab(tab, opts) {
     scheduleAfterPaint(function() {
       if (migrateGranularInner(rt16.getActiveInner() || "todo", settings2) !== targetTab) return;
       renderGranularInnerTab(targetTab, forceRender ? { force: true } : void 0);
-      syncAllSubTabIndicators();
+      if (consolidated) syncExpedienteSegmentIndicators(settings2, targetTab);
     });
-  } else if (prevInner !== tab) {
-    syncAllSubTabIndicators();
+  } else if (prevInner !== tab && consolidated) {
+    syncExpedienteSegmentIndicators(settings2, tab);
   }
   if (prevInner !== tab && isModeSala(settings2) && (tab === "estadoActual" || tab === "tend")) {
     warmExpedienteHeavyTabs();
@@ -32500,16 +33718,16 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 var RELEASE_NOTES_HIGHLIGHTS = {
   "6.3.2": [
     {
-      title: "Receta por paciente",
-      body: "En <strong>Medicamentos</strong>, el pegado y la receta procesada se guardan por paciente al cambiar en la lista."
+      title: "Pegar monitoreo",
+      body: "En <strong>Estado Actual</strong>, pega T°, FC, TA, DXT, I, E y EVAC; el balance resta todas las salidas en cc (ignora <strong>B:</strong>)."
     },
     {
-      title: "Estado Actual",
-      body: "«Estado clínico general» no se cierra al tabular; egresos con <strong>NC</strong>; peso solo en <strong>Datos del paciente</strong>."
+      title: "Egresos en el SOAP",
+      body: "Diuresis, drenajes y nefrostomías se listan por separado en el texto; evacuaciones con <strong>NC</strong> o frase libre."
     },
     {
-      title: "Pendientes Repo bloqueados",
-      body: "Si eliminas o completas un pendiente de reposición electrolítica, no vuelve tras reiniciar ni con LiveSync."
+      title: "Receta y pendientes",
+      body: "Receta hospitalaria por paciente; pendientes <strong>Repo</strong> eliminados o hechos no reaparecen tras reiniciar ni con LiveSync."
     }
   ],
   "6.3.1": [
@@ -33280,7 +34498,12 @@ function esc12(s) {
 var _tendCardSortables = [];
 var sparkCharts = {};
 var detailChart = null;
-var _tendRenderState = { key: null, seriesKeys: [] };
+var _tendRenderState = {
+  key: null,
+  seriesKeys: [],
+  seriesIndex: null,
+  seriesAvail: null
+};
 function buildTendRenderKey(patientId, revision, prefsHash, sectionsExpanded) {
   return [patientId, revision, prefsHash, sectionsExpanded].join("::");
 }
@@ -33316,18 +34539,33 @@ function patchTendCardsFromIndex(seriesIndex, seriesAvail) {
   }
   return patched > 0;
 }
+function destroySparkChartEntry(ck) {
+  var chart = sparkCharts[ck];
+  if (!chart) return;
+  if (typeof chart.destroy === "function") chart.destroy();
+  delete sparkCharts[ck];
+}
+function sparkLineColor(job, history) {
+  var sk2 = job.sk2;
+  var fk2 = job.fk2;
+  var latestSetSpark = job.setsDesc2.length ? job.setsDesc2[0] : null;
+  var latestSpark = latestSetSpark ? getSetTrendValueForSeries(latestSetSpark, sk2, fk2) : null;
+  var refSpark = tendRefForSeries(history, sk2, fk2, latestSetSpark);
+  var isAbSpark = refSpark && latestSpark != null && (latestSpark < refSpark[0] || latestSpark > refSpark[1]);
+  return isAbSpark ? "#f87171" : "rgba(52,211,153,0.95)";
+}
 function updateSparkChartsFromJobs(sparkJobs, chartAnim) {
+  void chartAnim;
   for (var i = 0; i < sparkJobs.length; i += 1) {
     var job = sparkJobs[i];
     var ck = trendSparkChartKey(job.sk2, job.fk2);
-    var chart = sparkCharts[ck];
-    if (chart) {
-      chart.data.labels = job.labels2;
-      chart.data.datasets[0].data = job.values2;
-      chart.update(chartAnim === false ? "none" : void 0);
-    } else {
-      mountOneTrendSparkChart(job, null, chartAnim);
+    var existing = sparkCharts[ck];
+    var color = sparkLineColor(job, null);
+    if (existing && typeof existing.update === "function") {
+      existing.update(job.values2, color);
+      continue;
     }
+    mountOneTrendSparkChart(job, null, false);
   }
 }
 function buildSparkJobsFromIndex(seriesAvail, seriesIndex, chartAnim) {
@@ -33352,14 +34590,14 @@ function buildSparkJobsFromIndex(seriesAvail, seriesIndex, chartAnim) {
     });
   }
   var jobIndex = 0;
-  var SPARK_BATCH = 6;
+  var SPARK_BATCH = 8;
   function runSparkBatch() {
     var end = Math.min(jobIndex + SPARK_BATCH, sparkJobs.length);
     for (; jobIndex < end; jobIndex += 1) {
       mountOneTrendSparkChart(sparkJobs[jobIndex], null, chartAnim);
     }
     if (jobIndex < sparkJobs.length) {
-      requestAnimationFrame(runSparkBatch);
+      scheduleIdle(runSparkBatch, 20);
       return;
     }
     mountTendCardSortables();
@@ -33745,6 +34983,79 @@ function tendSectionIsExpanded(sectionKey) {
   if (!Object.prototype.hasOwnProperty.call(m, sectionKey)) return true;
   return m[sectionKey] !== false;
 }
+function destroySparkChartsForSection(sectionKey) {
+  var prefix = String(sectionKey) + "";
+  Object.keys(sparkCharts).forEach(function(ck) {
+    if (!ck.startsWith(prefix)) return;
+    destroySparkChartEntry(ck);
+  });
+}
+function mountSectionSparkCharts(sectionKey, chartAnim) {
+  var seriesIndex = _tendRenderState.seriesIndex;
+  var seriesAvail = _tendRenderState.seriesAvail;
+  if (!seriesIndex || !seriesAvail) return;
+  var jobs = [];
+  for (var i = 0; i < seriesAvail.length; i += 1) {
+    var spec = seriesAvail[i];
+    if (spec.sectionKey !== sectionKey) continue;
+    var sk2 = spec.sectionKey;
+    var fk2 = spec.fieldKey;
+    var idx = seriesIndex[tendCatalogSeriesKey(sk2, fk2)];
+    if (!idx || !idx.setsDesc.length) continue;
+    var sparkDesc = idx.setsDesc.slice(0, TREND_SPARK_WINDOW);
+    var setsAsc2 = toTrendAscendingSets(sparkDesc);
+    jobs.push({
+      sk2,
+      fk2,
+      setsDesc2: sparkDesc,
+      labels2: buildTendChartLabels(setsAsc2),
+      values2: setsAsc2.map(function(s) {
+        return getSetTrendValueForSeries(s, sk2, fk2);
+      })
+    });
+  }
+  if (!jobs.length) return;
+  var jobIndex = 0;
+  var SPARK_BATCH = 8;
+  function runBatch() {
+    var end = Math.min(jobIndex + SPARK_BATCH, jobs.length);
+    for (; jobIndex < end; jobIndex += 1) {
+      mountOneTrendSparkChart(jobs[jobIndex], null, chartAnim);
+    }
+    if (jobIndex < jobs.length) scheduleIdle(runBatch, 24);
+  }
+  runBatch();
+}
+function applyTendSectionExpandedState(sectionEl, sectionKey, expanded) {
+  var btn = sectionEl.querySelector(".tend-section-toggle");
+  var body = sectionEl.querySelector(".tend-section-body");
+  var chevron = sectionEl.querySelector(".tend-section-chevron");
+  if (btn) btn.setAttribute("aria-expanded", expanded ? "true" : "false");
+  if (chevron) chevron.textContent = expanded ? "▼" : "▶";
+  if (body) body.classList.toggle("tend-section-body--collapsed", !expanded);
+  if (!expanded) {
+    destroySparkChartsForSection(sectionKey);
+    sectionEl.querySelectorAll(".tend-spark-canvas-cell").forEach(function(cell) {
+      if (cell.querySelector("canvas")) {
+        cell.innerHTML = '<div class="tend-spark-placeholder" aria-hidden="true"></div>';
+      }
+    });
+    return;
+  }
+  sectionEl.querySelectorAll(".tend-card").forEach(function(card) {
+    var seriesKey = card.getAttribute("data-series-key");
+    if (!seriesKey) return;
+    var pipe = seriesKey.indexOf("|");
+    if (pipe < 0) return;
+    var sk = seriesKey.slice(0, pipe);
+    var fk = seriesKey.slice(pipe + 1);
+    var cell = card.querySelector(".tend-spark-canvas-cell");
+    if (!cell || cell.querySelector("canvas")) return;
+    cell.innerHTML = '<canvas id="' + trendSparkDomId(sk, fk) + '"></canvas>';
+  });
+  var chartAnim = rt22.rpcPrefersReducedMotion() ? false : { duration: 400, easing: "easeOutQuart" };
+  mountSectionSparkCharts(sectionKey, chartAnim);
+}
 function toggleTendSection(ev, sectionKey) {
   if (ev) {
     ev.preventDefault();
@@ -33752,9 +35063,36 @@ function toggleTendSection(ev, sectionKey) {
   }
   var m = tendSectionExpandedRead();
   var cur = tendSectionIsExpanded(sectionKey);
-  m[sectionKey] = !cur;
+  var next = !cur;
+  m[sectionKey] = next;
   tendSectionExpandedWrite(m);
+  var container = document.getElementById("tendencias-container");
+  var sectionEl = container && container.querySelector('.tend-section[data-section="' + String(sectionKey).replace(/"/g, '\\"') + '"]');
+  if (sectionEl && container.querySelector(".tend-grid") && _tendRenderState.seriesIndex) {
+    applyTendSectionExpandedState(sectionEl, sectionKey, next);
+    return;
+  }
   renderTendencias();
+}
+function syncTendAbnormalEmptyState(container, abnormalOnly) {
+  if (!container) return;
+  var existing = container.querySelector(".tend-abnormal-empty");
+  if (!abnormalOnly) {
+    if (existing) existing.remove();
+    return;
+  }
+  var anyVisible = container.querySelector('.tend-card[data-abnormal="1"]');
+  if (anyVisible) {
+    if (existing) existing.remove();
+    return;
+  }
+  if (existing) return;
+  var msg = document.createElement("p");
+  msg.className = "tend-empty tend-abnormal-empty";
+  msg.innerHTML = "Ningún analito está fuera de rango de referencia. Pulsa <strong>Ver todas</strong> para volver a la vista completa.";
+  var firstSection = container.querySelector(".tend-section");
+  if (firstSection) firstSection.parentElement.insertBefore(msg, firstSection);
+  else container.appendChild(msg);
 }
 function tendCardLabelParts(sectionKey, fieldKey) {
   var spec = tendFindSeriesSpec(sectionKey, fieldKey);
@@ -34063,7 +35401,19 @@ function historyHasGasoForExtended(historyDesc) {
   return getSetTrendValueForSeries(latest, "GASES", "pH") != null;
 }
 function toggleTendAbnormalOnlyFilter() {
-  tendAbnormalOnlyWrite(!tendAbnormalOnlyRead());
+  var on = !tendAbnormalOnlyRead();
+  tendAbnormalOnlyWrite(on);
+  var container = document.getElementById("tendencias-container");
+  if (container && container.querySelector(".tend-grid")) {
+    container.classList.toggle("tend-filter-abnormal-only", on);
+    var toggle = container.querySelector(".tend-toolbar-toggle");
+    if (toggle) {
+      toggle.classList.toggle("is-active", on);
+      toggle.setAttribute("aria-pressed", on ? "true" : "false");
+    }
+    syncTendAbnormalEmptyState(container, on);
+    return;
+  }
   renderTendencias();
 }
 function tendHideSeriesFromCard(ev, sectionKey, fieldKey) {
@@ -34539,10 +35889,7 @@ function renderTendencias(opts) {
 function renderTendenciasBody(container) {
   destroyTendCardSortables();
   Object.keys(sparkCharts).forEach(function(k) {
-    if (sparkCharts[k]) {
-      sparkCharts[k].destroy();
-      delete sparkCharts[k];
-    }
+    destroySparkChartEntry(k);
   });
   if (!aid6()) {
     _tendRenderState.key = null;
@@ -34562,12 +35909,15 @@ function renderTendenciasBody(container) {
   var historyAsc = historyDesc.slice().reverse();
   var catalogAsc = getTrendRenderWindow(historyAsc, "catalog");
   var mergedCatalog = buildMergedTrendSeriesCatalog(historyDesc);
-  var seriesIndex = buildTrendSeriesIndex({
+  var indexCacheKey = String(aid6()) + "|" + getLabHistoryRevision(aid6()) + "|" + mergedCatalog.length + "|" + historyDesc.length;
+  var seriesIndex = buildTrendSeriesIndexCached(indexCacheKey, {
     catalogSpecs: mergedCatalog,
     historyFullDesc: historyDesc,
     windowHistoryAsc: catalogAsc,
     tendRefForSeries
   });
+  _tendRenderState.seriesIndex = seriesIndex;
+  _tendRenderState.seriesAvail = null;
   var seriesAvail = [];
   for (var ci = 0; ci < mergedCatalog.length; ci++) {
     var sp = mergedCatalog[ci];
@@ -34579,17 +35929,16 @@ function renderTendenciasBody(container) {
     seriesAvail.push(sp);
   }
   var seriesAvailFull = seriesAvail.slice();
+  _tendRenderState.seriesAvail = seriesAvailFull;
   var abnormalOnly = tendAbnormalOnlyRead();
-  if (abnormalOnly) {
-    seriesAvail = seriesAvail.filter(function(sp2) {
-      var idxAb = seriesIndex[tendCatalogSeriesKey(sp2.sectionKey, sp2.fieldKey)];
-      return idxAb && idxAb.isAbnormal;
-    });
-  }
+  var seriesAvailVisible = abnormalOnly ? seriesAvailFull.filter(function(sp2) {
+    var idxAb = seriesIndex[tendCatalogSeriesKey(sp2.sectionKey, sp2.fieldKey)];
+    return idxAb && idxAb.isAbnormal;
+  }) : seriesAvailFull;
   var hiddenChipN = tendHiddenChipDescriptors().length;
   var toolbarOpts = { showGasoExtended: historyHasGasoForExtended(historyDesc) };
   var toolbarHtml = buildTendInlineControlsHtml(hiddenChipN, toolbarOpts);
-  if (!seriesAvail.length) {
+  if (!seriesAvailVisible.length) {
     var anyData = mergedCatalog.some(function(sp2) {
       var idxAny = seriesIndex[tendCatalogSeriesKey(sp2.sectionKey, sp2.fieldKey)];
       return idxAny && idxAny.setsDesc.length >= 2;
@@ -34613,7 +35962,7 @@ function renderTendenciasBody(container) {
     return;
   }
   var bySection = /* @__PURE__ */ Object.create(null);
-  seriesAvail.forEach(function(spec2) {
+  seriesAvailFull.forEach(function(spec2) {
     var k = spec2.sectionKey;
     if (!bySection[k]) bySection[k] = [];
     bySection[k].push(spec2);
@@ -34633,16 +35982,16 @@ function renderTendenciasBody(container) {
     tendPrefsHash(),
     tendExpandedSectionsKey()
   );
-  var nextSeriesKeys = seriesAvail.map(function(sp2) {
+  var nextSeriesKeys = seriesAvailFull.map(function(sp2) {
     return tendCatalogSeriesKey(sp2.sectionKey, sp2.fieldKey);
   });
   var canPatch = _tendRenderState.key === renderKey && _tendRenderState.seriesKeys.length === nextSeriesKeys.length && _tendRenderState.seriesKeys.every(function(k, i) {
     return k === nextSeriesKeys[i];
   }) && container.querySelector(".tend-grid");
-  if (canPatch && patchTendCardsFromIndex(seriesIndex, seriesAvail)) {
+  if (canPatch && patchTendCardsFromIndex(seriesIndex, seriesAvailFull)) {
     var patchJobs = [];
-    for (var pj = 0; pj < seriesAvail.length; pj += 1) {
-      var spP = seriesAvail[pj];
+    for (var pj = 0; pj < seriesAvailFull.length; pj += 1) {
+      var spP = seriesAvailFull[pj];
       var skP = spP.sectionKey;
       var fkP = spP.fieldKey;
       if (!tendSectionIsExpanded(skP)) continue;
@@ -34689,7 +36038,7 @@ function renderTendenciasBody(container) {
       var unitHtml = labelParts.unit ? '<div class="tend-unit">' + esc12(labelParts.unit) + "</div>" : "";
       var seriesKey = tendCatalogSeriesKey(sectionKey, fk);
       cardParts.push(
-        '<div class="tend-card" role="button" tabindex="0" data-series-key="' + esc12(seriesKey) + '"><div class="tend-card-header"><span class="tend-param-name">' + titleEsc + '</span><span class="tend-param-value' + (isAb ? " tend-abnormal" : "") + '">' + (latest != null ? latest : "—") + "</span></div>" + unitHtml + '<div class="tend-spark-wrap"><div class="tend-spark-canvas-cell">' + (expanded ? '<canvas id="' + domId + '"></canvas>' : '<div class="tend-spark-placeholder" aria-hidden="true"></div>') + "</div></div></div>"
+        '<div class="tend-card" role="button" tabindex="0" data-series-key="' + esc12(seriesKey) + '" data-abnormal="' + (isAb ? "1" : "0") + '"><div class="tend-card-header"><span class="tend-param-name">' + titleEsc + '</span><span class="tend-param-value' + (isAb ? " tend-abnormal" : "") + '">' + (latest != null ? latest : "—") + "</span></div>" + unitHtml + '<div class="tend-spark-wrap"><div class="tend-spark-canvas-cell">' + (expanded ? '<canvas id="' + domId + '"></canvas>' : '<div class="tend-spark-placeholder" aria-hidden="true"></div>') + "</div></div></div>"
       );
     }
     htmlParts.push(
@@ -34697,7 +36046,9 @@ function renderTendenciasBody(container) {
     );
   }
   container.innerHTML = htmlParts.join("");
-  buildSparkJobsFromIndex(seriesAvail, seriesIndex, chartAnim);
+  container.classList.toggle("tend-filter-abnormal-only", abnormalOnly);
+  syncTendAbnormalEmptyState(container, abnormalOnly);
+  buildSparkJobsFromIndex(seriesAvailFull, seriesIndex, chartAnim);
 }
 function downsampleTrendChartSeries(labels, values, maxPoints) {
   var slots = maxPoints == null ? TREND_DETAIL_DOWNSAMPLE : maxPoints;
@@ -34715,45 +36066,14 @@ function downsampleTrendChartSeries(labels, values, maxPoints) {
   return { labels: outL, values: outV };
 }
 function mountOneTrendSparkChart(job, history, chartAnim) {
+  void chartAnim;
   var sk2 = job.sk2;
   var fk2 = job.fk2;
   var canvas2 = document.getElementById(trendSparkDomId(sk2, fk2));
-  if (!canvas2 || typeof Chart === "undefined") return;
+  if (!canvas2) return;
   var ck = trendSparkChartKey(sk2, fk2);
-  var latestSetSpark = job.setsDesc2.length ? job.setsDesc2[0] : null;
-  var latestSpark = latestSetSpark ? getSetTrendValueForSeries(latestSetSpark, sk2, fk2) : null;
-  var refSpark = tendRefForSeries(history, sk2, fk2, latestSetSpark);
-  var isAbSpark = refSpark && latestSpark != null && (latestSpark < refSpark[0] || latestSpark > refSpark[1]);
-  var lineColor = isAbSpark ? "#f87171" : "rgba(52,211,153,0.95)";
-  sparkCharts[ck] = new Chart(canvas2, {
-    type: "line",
-    data: {
-      labels: job.labels2,
-      datasets: [
-        {
-          data: job.values2,
-          borderColor: lineColor,
-          borderWidth: 2.25,
-          pointRadius: 2,
-          pointBackgroundColor: lineColor,
-          tension: 0.3,
-          fill: false,
-          clip: false
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: chartAnim,
-      layout: { padding: { left: 6, right: 6, top: 8, bottom: 6 } },
-      plugins: { legend: { display: false }, tooltip: { enabled: false } },
-      scales: {
-        x: { display: false, grid: { display: false }, offset: true },
-        y: { display: false, grid: { display: false }, grace: "12%" }
-      }
-    }
-  });
+  var lineColor = sparkLineColor(job, history);
+  sparkCharts[ck] = mountTrendSparkCanvas(canvas2, job.values2, lineColor);
 }
 function syncTendHiddenModalIfOpen() {
   var bd = document.getElementById("tend-hidden-modal-backdrop");
@@ -36934,6 +38254,36 @@ function syncUpdateTelemetryUI() {
   var cb = document.getElementById("rpc-update-telemetry-toggle");
   if (cb) cb.checked = getUpdateTelemetryEnabled();
 }
+function syncHardwareAccelerationUI() {
+  var acc = document.getElementById("settings-accordion-performance");
+  var cb = document.getElementById("settings-hardware-acceleration");
+  if (!acc || !cb) return;
+  var api = window.electronAPI;
+  if (!api || typeof api.getPerformancePrefs !== "function") {
+    acc.style.display = "none";
+    return;
+  }
+  acc.style.display = "";
+  api.getPerformancePrefs().then(function(prefs) {
+    cb.checked = !!(prefs && prefs.hardwareAcceleration);
+  }).catch(function() {
+    cb.checked = false;
+  });
+}
+function onHardwareAccelerationChange(enabled) {
+  var api = window.electronAPI;
+  if (!api || typeof api.setHardwareAcceleration !== "function") {
+    rt23.showToast("Solo disponible en la aplicación de escritorio.", "error");
+    syncHardwareAccelerationUI();
+    return;
+  }
+  api.setHardwareAcceleration(!!enabled).then(function() {
+    rt23.showToast("Reinicia R+ para aplicar la aceleración por hardware.", "info");
+  }).catch(function() {
+    rt23.showToast("No se pudo guardar la preferencia.", "error");
+    syncHardwareAccelerationUI();
+  });
+}
 function resolvePlatformForTelemetry() {
   if (window.electronAPI && typeof window.electronAPI.getPlatform === "function") {
     return window.electronAPI.getPlatform().catch(function() {
@@ -37229,6 +38579,7 @@ if (window.electronAPI) {
 }
 var platformWindowHandlers = {
   openUserDataFolderFromSettings,
+  onHardwareAccelerationChange,
   onIdleLockSelectChange,
   changeIdleLockPin,
   submitIdleLockPin,
@@ -37432,6 +38783,7 @@ function loadSettings() {
   syncUiDensityButtons();
   syncUpdateChannelUI();
   syncUpdateTelemetryUI();
+  syncHardwareAccelerationUI();
   syncHideClinicoTabUI();
   syncIdleLockSelectUi();
   syncPreimportBackupUi();
@@ -39280,8 +40632,533 @@ function scheduleDeferredUiInits() {
   _rpcDeferInit(initModalDismiss);
 }
 
-// public/js/app-runtimes.mjs
+// public/js/features/estado-actual-parse-variants.mjs
+var SOPORTE_FROM_TAIL = [
+  [/VM\s+NO\s+INVASIVA|VMNI|VNI/i, "VM no invasiva"],
+  [/ALTO\s+FLUJO|OAF\b/i, "Alto flujo"],
+  [/PUNTILLAS?\s+NASALES?|C[Nn]?\s*AF/i, "Puntillas nasales"],
+  [/AIRE\s+AMBIENTE|\bAA\b/i, "Aire ambiente"]
+];
+function soporteFromSatTail(tail) {
+  var s = String(tail || "").trim();
+  if (!s) return null;
+  var u = s.toUpperCase();
+  for (var i = 0; i < SOPORTE_FROM_TAIL.length; i++) {
+    if (SOPORTE_FROM_TAIL[i][0].test(u)) return SOPORTE_FROM_TAIL[i][1];
+  }
+  return null;
+}
+function parseSatLineVariants(line) {
+  var m = line.match(
+    /^(?:SATURACI(?:O|Ó)N(?:\s+O2)?|SAT(?:O2)?|SPO2)\s*:?\s*([\d.,]+)\s*%?\s*(.*)$/i
+  );
+  if (!m) return null;
+  var n = Number(String(m[1]).replace(/,/g, ""));
+  if (!Number.isFinite(n)) return null;
+  return { value: n, soporteHint: soporteFromSatTail(m[2]) };
+}
+function stripVitalUnitSuffix(raw) {
+  return String(raw || "").replace(/\s*(?:LPM|RPM|X\/MIN|\/MIN|MMHG|MM\s*HG|MG\/DL|CC|ML)\s*$/i, "").trim();
+}
+
+// public/js/features/estado-actual-parser.mjs
+function parseNumberToken(raw) {
+  if (raw == null) return null;
+  var s = String(raw).trim().replace(/\s/g, "").replace(/,/g, "");
+  if (!s) return null;
+  var n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+function parseGlucometriaToken(token) {
+  var s = String(token || "").trim();
+  if (!s) return null;
+  var m = s.match(/^([\d.,]+)(?:\s*(?:@|\s)\s*(\d{1,2}:\d{2}))?$/i);
+  if (!m) {
+    m = s.match(/^([\d.,]+)\s*\(\s*(\d{1,2}:\d{2})\s*\)$/i);
+  }
+  if (!m) return null;
+  var value = parseNumberToken(m[1]);
+  if (value == null) return null;
+  var out = { value };
+  if (m[2]) {
+    var parts = m[2].split(":");
+    out.time = pad23(parts[0]) + ":" + pad23(parts[1]);
+  }
+  return out;
+}
+function pad23(n) {
+  return String(n).padStart(2, "0");
+}
+function splitGlucoseList(rest) {
+  var s = String(rest || "").replace(/\s*MG\s*\/?\s*DL\s*$/i, "").trim();
+  if (!s) return [];
+  var tokens = [];
+  var buf = "";
+  var depth = 0;
+  for (var i = 0; i < s.length; i++) {
+    var ch = s[i];
+    if (ch === "(") {
+      depth++;
+      buf += ch;
+      continue;
+    }
+    if (ch === ")") {
+      depth = Math.max(0, depth - 1);
+      buf += ch;
+      continue;
+    }
+    if (ch === "," && depth === 0) {
+      if (buf.trim()) tokens.push(buf.trim());
+      buf = "";
+      continue;
+    }
+    buf += ch;
+  }
+  if (buf.trim()) tokens.push(buf.trim());
+  return tokens;
+}
+function parseTempLine(line) {
+  var m = line.match(
+    /^(?:T[°º]?\s*:?|TEMP(?:ERATURA)?\s*:?)\s*([\d.,]+)\s*(?:°\s*C|°C)?(?:\s*(?:@|\s|-|a\s+las?\s+)?\s*(\d{1,2}:\d{2}))?/i
+  );
+  if (!m) return null;
+  var temp = parseNumberToken(m[1]);
+  if (temp == null) return null;
+  var out = { temp };
+  if (m[2]) {
+    var p = m[2].split(":");
+    out.time = pad23(p[0]) + ":" + pad23(p[1]);
+  }
+  return out;
+}
+function parseLine(line, result) {
+  var trimmed = String(line || "").trim();
+  if (!trimmed) return;
+  var temp = parseTempLine(trimmed);
+  if (temp) {
+    result.vitals.temp = temp.temp;
+    if (temp.time) result.alteredAt.temp = temp.time;
+    result.recognized.push("temp");
+    return;
+  }
+  var fc = trimmed.match(/^(?:FC|F\.?\s*C\.?)\s*:?\s*([\d.,]+)/i);
+  if (fc) {
+    result.vitals.fc = parseNumberToken(stripVitalUnitSuffix(fc[1]));
+    result.recognized.push("fc");
+    return;
+  }
+  var fr = trimmed.match(/^(?:FR|F\.?\s*R\.?)\s*:?\s*([\d.,]+)/i);
+  if (fr) {
+    result.vitals.fr = parseNumberToken(stripVitalUnitSuffix(fr[1]));
+    result.recognized.push("fr");
+    return;
+  }
+  var sat = parseSatLineVariants(trimmed);
+  if (sat != null) {
+    result.vitals.sat = sat.value;
+    if (sat.soporteHint) result.soporteHint = sat.soporteHint;
+    result.recognized.push("sat");
+    return;
+  }
+  var ta = trimmed.match(/^(?:TA|T\.?\s*A\.?)\s*:?\s*([\d.,]+)\s*\/\s*([\d.,]+)/i);
+  if (ta) {
+    result.vitals.tas = parseNumberToken(ta[1]);
+    result.vitals.tad = parseNumberToken(ta[2]);
+    result.recognized.push("ta");
+    return;
+  }
+  var dxt = trimmed.match(/^(?:DXT|DESTROX(?:IAS)?|GLUCOMETR(?:ÍA|IA)?(?:S)?)\s*:?\s*(.+)$/i);
+  if (dxt) {
+    var tokens = splitGlucoseList(dxt[1]);
+    for (var i = 0; i < tokens.length; i++) {
+      var g3 = parseGlucometriaToken(tokens[i]);
+      if (g3) result.glucometrias.push(g3);
+    }
+    if (tokens.length && !result.glucometrias.length) {
+      result.warnings.push("No se pudieron leer valores DXT en: " + dxt[1]);
+    } else {
+      result.recognized.push("dxt");
+    }
+    return;
+  }
+  var ing = trimmed.match(/^(?:I|ING(?:RESOS)?)\s*:?\s*(.+)$/i);
+  if (ing) {
+    result.io.ing = parseIoIngresoField(ing[1]);
+    result.recognized.push("ing");
+    return;
+  }
+  var evac = trimmed.match(/^(?:EVAC|EVACUAC(?:IONES)?)\s*:?\s*(.+)$/i);
+  if (evac) {
+    result.io.evac = parseIoEvacField(evac[1]);
+    result.recognized.push("evac");
+    return;
+  }
+  var egr = trimmed.match(/^(?:E(?!VAC)|EGR(?:ESOS)?)\s*:?\s*(.+)$/i);
+  if (egr) {
+    var egrBody = String(egr[1]).trim();
+    if (/^(?:NC|NO\s+CUANTIFICADA)$/i.test(egrBody)) {
+      result.io.egrParts = [{ kind: "diuresis", label: "DIURESIS", value: "NC" }];
+    } else {
+      result.io.egrParts = parseIoEgresoLine(egrBody);
+    }
+    result.io.egr = diuresisValueFromParts(result.io.egrParts);
+    result.recognized.push("egr");
+    return;
+  }
+  var bal = trimmed.match(/^(?:B|BAL(?:ANCE)?)\s*:?\s*(.+)$/i);
+  if (bal) {
+    result.recognized.push("balance-ignored");
+    return;
+  }
+  result.warnings.push("Línea no reconocida: " + trimmed);
+}
+function scanInlinePatterns(text, result) {
+  if (result.recognized.indexOf("temp") < 0) {
+    var t2 = text.match(/(?:T[°º]?\s*:?|TEMP(?:ERATURA)?\s*:?)\s*([\d.,]+)/i);
+    if (t2) {
+      result.vitals.temp = parseNumberToken(t2[1]);
+      result.recognized.push("temp");
+    }
+  }
+  if (result.recognized.indexOf("fc") < 0) {
+    var fc = text.match(/\bFC\s*:?\s*([\d.,]+)/i);
+    if (fc) {
+      result.vitals.fc = parseNumberToken(fc[1]);
+      result.recognized.push("fc");
+    }
+  }
+  if (result.recognized.indexOf("fr") < 0) {
+    var fr = text.match(/\bFR\s*:?\s*([\d.,]+)/i);
+    if (fr) {
+      result.vitals.fr = parseNumberToken(fr[1]);
+      result.recognized.push("fr");
+    }
+  }
+  if (result.recognized.indexOf("sat") < 0) {
+    var satM = text.match(
+      /^(?:SATURACI(?:O|Ó)N(?:\s+O2)?|SAT(?:O2)?|SPO2)\s*:?\s*([\d.,]+)\s*%?\s*(.*)$/im
+    );
+    if (satM) {
+      var satInline = parseSatLineVariants(satM[0]);
+      if (satInline) {
+        result.vitals.sat = satInline.value;
+        if (satInline.soporteHint) result.soporteHint = satInline.soporteHint;
+        result.recognized.push("sat");
+      }
+    }
+  }
+  if (result.recognized.indexOf("ta") < 0) {
+    var ta = text.match(/\bTA\s*:?\s*([\d.,]+)\s*\/\s*([\d.,]+)/i);
+    if (ta) {
+      result.vitals.tas = parseNumberToken(ta[1]);
+      result.vitals.tad = parseNumberToken(ta[2]);
+      result.recognized.push("ta");
+    }
+  }
+  if (result.recognized.indexOf("dxt") < 0) {
+    var dxt = text.match(/\b(?:DXT|DESTROX(?:IAS)?)\s*:?\s*([^|\n]+?)(?:\s*(?:\||$)|\s+I\s*:|\s+E\s*:)/i);
+    if (!dxt) dxt = text.match(/\b(?:DXT|DESTROX(?:IAS)?)\s*:?\s*(.+)$/im);
+    if (dxt) {
+      var tokens = splitGlucoseList(dxt[1]);
+      for (var i = 0; i < tokens.length; i++) {
+        var g3 = parseGlucometriaToken(tokens[i]);
+        if (g3) result.glucometrias.push(g3);
+      }
+      if (result.glucometrias.length) result.recognized.push("dxt");
+    }
+  }
+  if (result.recognized.indexOf("ing") < 0) {
+    var ing = text.match(/\bI\s*:?\s*([\d.,]+)/i);
+    if (ing) {
+      result.io.ing = parseIoIngresoField(ing[1]);
+      result.recognized.push("ing");
+    }
+  }
+  if (result.recognized.indexOf("egr") < 0) {
+    var egr = text.match(/\bE\s*:?\s*(.+?)(?:\s*$)/im);
+    if (egr) {
+      result.io.egrParts = parseIoEgresoLine(egr[1]);
+      result.io.egr = diuresisValueFromParts(result.io.egrParts);
+      result.recognized.push("egr");
+    }
+  }
+  if (result.recognized.indexOf("evac") < 0) {
+    var evac = text.match(/\bEVAC(?:UAC(?:IONES)?)?\s*:?\s*(.+?)(?:\s*$)/im);
+    if (evac) {
+      result.io.evac = parseIoEvacField(evac[1]);
+      result.recognized.push("evac");
+    }
+  }
+}
+function parseEstadoActualPaste(raw) {
+  var text = String(raw == null ? "" : raw).trim();
+  var vitals = {
+    tas: null,
+    tad: null,
+    fc: null,
+    fr: null,
+    temp: null,
+    sat: null
+  };
+  var alteredAt = {};
+  var glucometrias = [];
+  var io = { ing: null, egr: null, egrParts: [], evac: null };
+  var recognized = [];
+  var warnings = [];
+  if (!text) {
+    return {
+      ok: false,
+      error: "Pega el texto de monitoreo",
+      vitals,
+      alteredAt,
+      glucometrias,
+      io,
+      recognized,
+      warnings
+    };
+  }
+  var result = {
+    ok: true,
+    vitals,
+    alteredAt,
+    glucometrias,
+    io,
+    recognized,
+    warnings,
+    soporteHint: null
+  };
+  var lines = text.split(/\r?\n/).map(function(l) {
+    return l.trim();
+  });
+  var nonEmpty = lines.filter(Boolean);
+  if (!nonEmpty.length) nonEmpty = [text];
+  for (var i = 0; i < nonEmpty.length; i++) {
+    parseLine(nonEmpty[i], result);
+  }
+  if (!result.recognized.length) {
+    scanInlinePatterns(text, result);
+  }
+  var hasData = result.recognized.length > 0 || Object.keys(result.vitals).some(function(k) {
+    return result.vitals[k] != null;
+  }) || result.glucometrias.length > 0 || result.io.ing != null || result.io.egr != null || result.io.egrParts && result.io.egrParts.length > 0 || result.io.evac != null;
+  if (!hasData) {
+    result.ok = false;
+    result.error = "No se reconoció ningún campo (T°, FC, TA, DXT, I, E…)";
+  }
+  return result;
+}
+function formatEstadoActualParsePreview(parsed) {
+  if (!parsed || !parsed.ok) {
+    return toEaSalidaText(parsed && parsed.error ? parsed.error : "Sin datos");
+  }
+  var parts = [];
+  if (parsed.vitals.temp != null) {
+    parts.push("TEMP " + parsed.vitals.temp + " °C" + (parsed.alteredAt.temp ? " @ " + parsed.alteredAt.temp : ""));
+  }
+  if (parsed.vitals.fc != null) parts.push("FC " + parsed.vitals.fc + " LPM");
+  if (parsed.vitals.fr != null) parts.push("FR " + parsed.vitals.fr + " RPM");
+  if (parsed.vitals.sat != null) {
+    var satLine = "SATURACION " + parsed.vitals.sat + "%";
+    if (parsed.soporteHint) satLine += " " + toEaSalidaText(parsed.soporteHint);
+    parts.push(satLine);
+  }
+  if (parsed.vitals.tas != null || parsed.vitals.tad != null) {
+    parts.push("TA " + (parsed.vitals.tas ?? "—") + "/" + (parsed.vitals.tad ?? "—") + " MMHG");
+  }
+  if (parsed.glucometrias.length) {
+    parts.push(
+      "DXT " + parsed.glucometrias.map(function(g3) {
+        return String(g3.value) + (g3.time ? "@" + g3.time : "");
+      }).join(", ") + " MG/DL"
+    );
+  }
+  if (parsed.io.ing != null) parts.push("I " + parsed.io.ing + " CC");
+  if (parsed.io.egrParts && parsed.io.egrParts.length) {
+    parts.push("E " + serializeEgrPartsToFormText(parsed.io.egrParts));
+  } else if (parsed.io.egr != null) {
+    parts.push("E " + toEaSalidaText(parsed.io.egr));
+  }
+  if (parsed.io.evac != null) parts.push("EVAC " + toEaSalidaText(parsed.io.evac));
+  if (parsed.recognized.indexOf("balance-ignored") >= 0) {
+    parts.push("B (CALCULADO AL APLICAR)");
+  }
+  if (parsed.warnings.length) {
+    parts.push("AVISOS: " + parsed.warnings.join("; "));
+  }
+  return toEaSalidaText(parts.length ? parts.join(" · ") : "Sin campos detectados");
+}
+
+// public/js/features/estado-actual-paste-modal.mjs
 var rt27 = {
+  showToast() {
+  },
+  applyParsed() {
+  }
+};
+var SAMPLE_TEXT = "T°: 38.7 °C\nFC: 113 LPM\nFR: 19 RPM\nTA: 140/60 MMHG\nDXT: 198, 174, 101, 252 MG/DL\nSAT: 97% AL AIRE AMBIENTE\nI: 2,815 CC\nE: NO CUANTIFICADA\nB: NC\nEVAC: NO REPORTADAS";
+function registerEstadoActualPasteModalRuntime(partial) {
+  if (partial && typeof partial === "object") Object.assign(rt27, partial);
+}
+function getTextarea() {
+  return (
+    /** @type {HTMLTextAreaElement | null} */
+    document.getElementById("ea-paste-input")
+  );
+}
+function getPreviewEl() {
+  return document.getElementById("ea-paste-preview");
+}
+function refreshPreview() {
+  var ta = getTextarea();
+  var preview = getPreviewEl();
+  if (!preview) return;
+  var parsed = parseEstadoActualPaste(ta ? ta.value : "");
+  preview.textContent = formatEstadoActualParsePreview(parsed);
+  preview.classList.toggle("ea-paste-preview--error", !parsed.ok);
+}
+function ensureRegistroModalOpen() {
+  var reg = document.getElementById("ea-registro-backdrop");
+  if (reg && reg.classList.contains("open")) return;
+  if (typeof window.openEstadoActualRegistroModal === "function") {
+    window.openEstadoActualRegistroModal();
+  }
+}
+function openEstadoActualPasteModal() {
+  ensureRegistroModalOpen();
+  var backdrop = document.getElementById("ea-paste-backdrop");
+  var ta = getTextarea();
+  if (!backdrop || !ta) {
+    rt27.showToast("Pegar monitoreo no disponible", "error");
+    return;
+  }
+  ta.value = "";
+  refreshPreview();
+  backdrop.classList.add("open");
+  backdrop.setAttribute("aria-hidden", "false");
+  ta.focus();
+}
+function closeEstadoActualPasteModal() {
+  var backdrop = document.getElementById("ea-paste-backdrop");
+  if (!backdrop) return;
+  backdrop.classList.remove("open");
+  backdrop.setAttribute("aria-hidden", "true");
+}
+function confirmEstadoActualPaste() {
+  var ta = getTextarea();
+  var parsed = parseEstadoActualPaste(ta ? ta.value : "");
+  if (!parsed.ok) {
+    rt27.showToast(parsed.error || "No se pudo interpretar el texto", "error");
+    return;
+  }
+  closeEstadoActualPasteModal();
+  if (typeof rt27.applyParsed === "function") {
+    rt27.applyParsed(parsed, { fromNestedPaste: true });
+    rt27.showToast("Datos aplicados — revisa y registra", "success");
+  }
+}
+function wireEstadoActualPasteModal() {
+  var ta = getTextarea();
+  if (ta && !ta.dataset.eaPasteWired) {
+    ta.dataset.eaPasteWired = "1";
+    ta.addEventListener("input", refreshPreview);
+    ta.placeholder = SAMPLE_TEXT;
+  }
+}
+var windowHandlers12 = {
+  openEstadoActualPasteModal,
+  closeEstadoActualPasteModal,
+  confirmEstadoActualPaste
+};
+
+// public/js/features/estado-actual-registro-modal.mjs
+var rt28 = {
+  ensureForm() {
+  },
+  resetForm() {
+  },
+  showToast() {
+  }
+};
+var dismissWired = false;
+function registerEstadoActualRegistroModalRuntime(partial) {
+  if (partial && typeof partial === "object") Object.assign(rt28, partial);
+}
+function getBackdrop() {
+  return document.getElementById("ea-registro-backdrop");
+}
+function getPasteBackdrop() {
+  return document.getElementById("ea-paste-backdrop");
+}
+function handleEaModalEscape(ev) {
+  if (ev.key !== "Escape" && ev.key !== "Esc") return;
+  var pasteBd = getPasteBackdrop();
+  if (pasteBd && pasteBd.classList.contains("open")) {
+    closeEstadoActualPasteModal();
+    ev.preventDefault();
+    ev.stopPropagation();
+    return;
+  }
+  var reg = getBackdrop();
+  if (reg && reg.classList.contains("open")) {
+    closeEstadoActualRegistroModal();
+    ev.preventDefault();
+    ev.stopPropagation();
+  }
+}
+function handlePasteBackdropClick(ev) {
+  var pasteBd = getPasteBackdrop();
+  if (!pasteBd || !pasteBd.classList.contains("open")) return;
+  var panel = pasteBd.querySelector(".ea-paste-modal");
+  if (panel && panel.contains(
+    /** @type {Node} */
+    ev.target
+  )) return;
+  closeEstadoActualPasteModal();
+}
+function handleRegistroBackdropClick(ev) {
+  var reg = getBackdrop();
+  if (!reg || !reg.classList.contains("open")) return;
+  if (ev.target !== reg) return;
+  closeEstadoActualRegistroModal();
+}
+function wireEaModalDismiss() {
+  if (dismissWired) return;
+  dismissWired = true;
+  document.addEventListener("keydown", handleEaModalEscape, true);
+  var reg = getBackdrop();
+  var pasteBd = getPasteBackdrop();
+  if (reg) reg.addEventListener("click", handleRegistroBackdropClick);
+  if (pasteBd) pasteBd.addEventListener("click", handlePasteBackdropClick);
+}
+function openEstadoActualRegistroModal(opts) {
+  var backdrop = getBackdrop();
+  if (!backdrop) {
+    rt28.showToast("Formulario de registro no disponible", "error");
+    return;
+  }
+  rt28.ensureForm();
+  if (!opts || !opts.preserveForm) rt28.resetForm();
+  backdrop.classList.add("open");
+  backdrop.setAttribute("aria-hidden", "false");
+  document.documentElement.classList.add("ea-registro-modal-open");
+  var first = backdrop.querySelector('[data-ea-vital="tas"], [data-ea-vital="temp"]');
+  if (first && "focus" in first) first.focus();
+}
+function closeEstadoActualRegistroModal() {
+  closeEstadoActualPasteModal();
+  var backdrop = getBackdrop();
+  if (!backdrop) return;
+  backdrop.classList.remove("open");
+  backdrop.setAttribute("aria-hidden", "true");
+  document.documentElement.classList.remove("ea-registro-modal-open");
+}
+var windowHandlers13 = {
+  openEstadoActualRegistroModal,
+  closeEstadoActualRegistroModal
+};
+
+// public/js/app-runtimes.mjs
+var rt29 = {
   getActiveId() {
     return null;
   },
@@ -39308,44 +41185,44 @@ function wasV3MigratedThisBoot() {
   return v3MigratedThisBoot;
 }
 function registerAppRuntimeContext(partial) {
-  if (partial && typeof partial === "object") Object.assign(rt27, partial);
+  if (partial && typeof partial === "object") Object.assign(rt29, partial);
 }
 function registerAllFeatureRuntimes() {
   registerMedicationsRuntime({
     getActiveId: function() {
-      return rt27.getActiveId();
+      return rt29.getActiveId();
     },
     showToast,
     getSettings: function() {
-      return rt27.getSettings();
+      return rt29.getSettings();
     },
     navigateToEstadoActualPanel
   });
   registerProfileRuntime({
     showToast,
     getActiveId: function() {
-      return rt27.getActiveId();
+      return rt29.getActiveId();
     },
     syncWorkContextChrome
   });
   registerPaseBoardRuntime({
     getActiveAppTab: function() {
-      return rt27.getActiveAppTab();
+      return rt29.getActiveAppTab();
     },
     setActiveAppTab: function(v) {
-      rt27.setActiveAppTab(v);
+      rt29.setActiveAppTab(v);
     },
     getActiveInner: function() {
-      return rt27.getActiveInner();
+      return rt29.getActiveInner();
     },
     setActiveInner: function(v) {
-      rt27.setActiveInner(v);
+      rt29.setActiveInner(v);
     },
     getActiveId: function() {
-      return rt27.getActiveId();
+      return rt29.getActiveId();
     },
     getSettings: function() {
-      return rt27.getSettings();
+      return rt29.getSettings();
     },
     renderMedRecetaPanel,
     renderLabHistoryPanel,
@@ -39363,13 +41240,13 @@ function registerAllFeatureRuntimes() {
     scrollActiveRondaCardIntoView,
     renderProcedureAgendaPanel,
     getActiveAppTab: function() {
-      return rt27.getActiveAppTab();
+      return rt29.getActiveAppTab();
     },
     getActiveInner: function() {
-      return rt27.getActiveInner();
+      return rt29.getActiveInner();
     },
     getActiveId: function() {
-      return rt27.getActiveId();
+      return rt29.getActiveId();
     },
     setRoundOverviewMode,
     renderPaseBoard,
@@ -39377,22 +41254,22 @@ function registerAllFeatureRuntimes() {
   });
   registerPatientsRuntime({
     getActiveId: function() {
-      return rt27.getActiveId();
+      return rt29.getActiveId();
     },
     setActiveId: function(id) {
-      rt27.setActiveId(id);
+      rt29.setActiveId(id);
     },
     getActiveAppTab: function() {
-      return rt27.getActiveAppTab();
+      return rt29.getActiveAppTab();
     },
     getActiveInner: function() {
-      return rt27.getActiveInner();
+      return rt29.getActiveInner();
     },
     setActiveInner: function(v) {
-      rt27.setActiveInner(v);
+      rt29.setActiveInner(v);
     },
     getSettings: function() {
-      return rt27.getSettings();
+      return rt29.getSettings();
     },
     getActiveLab: function() {
       return getActiveLab();
@@ -39442,11 +41319,11 @@ function registerAllFeatureRuntimes() {
     primaryTipoForLabSet,
     normalizeFechaLabHistory
   });
-  v3MigratedThisBoot = migrateToV3(rt27.getSettings());
-  if (v3MigratedThisBoot) storage.saveSettings(rt27.getSettings());
+  v3MigratedThisBoot = migrateToV3(rt29.getSettings());
+  if (v3MigratedThisBoot) storage.saveSettings(rt29.getSettings());
   registerLabHistoryMaintRuntime({
     getActiveId: function() {
-      return rt27.getActiveId();
+      return rt29.getActiveId();
     },
     renderLabHistoryPanel,
     refreshTendenciasOrCultivosPanel
@@ -39455,13 +41332,13 @@ function registerAllFeatureRuntimes() {
   registerLanSaveHooks({ scheduleLabHistoryPostSaveMaintenance });
   registerPlatformRuntime({
     getActiveId: function() {
-      return rt27.getActiveId();
+      return rt29.getActiveId();
     },
     setActiveId: function(id) {
-      rt27.setActiveId(id);
+      rt29.setActiveId(id);
     },
     getSettings: function() {
-      return rt27.getSettings();
+      return rt29.getSettings();
     },
     showToast,
     syncTeamSyncHeaderButton: syncTeamSyncHeaderButton2,
@@ -39469,7 +41346,7 @@ function registerAllFeatureRuntimes() {
   });
   registerTendenciasRuntime({
     getActiveId: function() {
-      return rt27.getActiveId();
+      return rt29.getActiveId();
     },
     ensureParsedLabHistory,
     ensureParsedLabHistoryCached,
@@ -39480,17 +41357,17 @@ function registerAllFeatureRuntimes() {
   });
   registerTodosRuntime({
     getActiveId: function() {
-      return rt27.getActiveId();
+      return rt29.getActiveId();
     },
     getActiveAppTab: function() {
-      return rt27.getActiveAppTab();
+      return rt29.getActiveAppTab();
     },
     getRoundOverviewMode,
     renderPaseBoard
   });
   registerManejoRuntime({
     getActiveId: function() {
-      return rt27.getActiveId();
+      return rt29.getActiveId();
     },
     ensureParsedLabHistory,
     ensureParsedLabHistoryCached,
@@ -39501,16 +41378,16 @@ function registerAllFeatureRuntimes() {
   });
   registerRecetaHuRuntime({
     getActiveId: function() {
-      return rt27.getActiveId();
+      return rt29.getActiveId();
     },
     getActiveAppTab: function() {
-      return rt27.getActiveAppTab();
+      return rt29.getActiveAppTab();
     },
     getActiveInner: function() {
-      return rt27.getActiveInner();
+      return rt29.getActiveInner();
     },
     getSettings: function() {
-      return rt27.getSettings();
+      return rt29.getSettings();
     },
     switchAppTab,
     switchInnerTab,
@@ -39525,16 +41402,16 @@ function registerAllFeatureRuntimes() {
   });
   registerSettingsHelpRuntime({
     getSettings: function() {
-      return rt27.getSettings();
+      return rt29.getSettings();
     },
     getActiveInner: function() {
-      return rt27.getActiveInner();
+      return rt29.getActiveInner();
     },
     getActiveId: function() {
-      return rt27.getActiveId();
+      return rt29.getActiveId();
     },
     setActiveId: function(id) {
-      rt27.setActiveId(id);
+      rt29.setActiveId(id);
     },
     switchInnerTab,
     renderInnerTabs,
@@ -39552,16 +41429,16 @@ function registerAllFeatureRuntimes() {
   });
   registerExpedienteRuntime({
     getActiveId: function() {
-      return rt27.getActiveId();
+      return rt29.getActiveId();
     },
     getActiveAppTab: function() {
-      return rt27.getActiveAppTab();
+      return rt29.getActiveAppTab();
     },
     getActiveInner: function() {
-      return rt27.getActiveInner();
+      return rt29.getActiveInner();
     },
     getSettings: function() {
-      return rt27.getSettings();
+      return rt29.getSettings();
     },
     showToast,
     renderTendencias,
@@ -39581,10 +41458,10 @@ function registerAllFeatureRuntimes() {
   });
   registerNotesIndicacionesRuntime({
     getActiveId: function() {
-      return rt27.getActiveId();
+      return rt29.getActiveId();
     },
     getSettings: function() {
-      return rt27.getSettings();
+      return rt29.getSettings();
     },
     showToast,
     renderRoundOverviewPanels,
@@ -39601,41 +41478,77 @@ function registerAllFeatureRuntimes() {
   });
   registerProcedureAgendaRuntime({
     getActiveId: function() {
-      return rt27.getActiveId();
+      return rt29.getActiveId();
     },
     showToast,
     renderPaseBoard
   });
   registerSoapEstadoRuntime({
     getActiveId: function() {
-      return rt27.getActiveId();
+      return rt29.getActiveId();
     },
     showToast,
     getSettings: function() {
-      return rt27.getSettings();
+      return rt29.getSettings();
     },
     navigateToEstadoActualPanel
   });
   registerEstadoActualPanelRuntime({
     getActiveId: function() {
-      return rt27.getActiveId();
+      return rt29.getActiveId();
     },
     showToast,
     getSettings: function() {
-      return rt27.getSettings();
+      return rt29.getSettings();
     },
     switchConsolidatedTab,
     copyToClipboardSafe,
     invalidateInnerTabRenderCache
   });
+  registerEstadoActualPasteModalRuntime({
+    showToast,
+    applyParsed: function(parsed, opts) {
+      opts = opts || {};
+      if (opts.fromNestedPaste) {
+        applyEstadoActualParsedToForm(parsed);
+        var recorded = document.getElementById("ea-recorded-at");
+        if (recorded && "value" in recorded) {
+          recorded.value = toDatetimeLocalValue(getDefaultRegistroRecordedAt());
+        }
+        return;
+      }
+      navigateToEstadoActualPanel();
+      renderEstadoActualPanel({
+        onReady: function() {
+          openEstadoActualRegistroModal({ preserveForm: true });
+          applyEstadoActualParsedToForm(parsed);
+          var recorded2 = document.getElementById("ea-recorded-at");
+          if (recorded2 && "value" in recorded2) {
+            recorded2.value = toDatetimeLocalValue(getDefaultRegistroRecordedAt());
+          }
+        }
+      });
+    }
+  });
+  registerEstadoActualRegistroModalRuntime({
+    showToast,
+    ensureForm: ensureEaRegistroModalForm,
+    resetForm: function() {
+      var activeId2 = rt29.getActiveId();
+      var patient = activeId2 && patients.find(function(p) {
+        return p.id === activeId2;
+      });
+      resetEaRegistroForm(patient || null);
+    }
+  });
   registerLabPanelRuntime({
     showToast,
     copyToClipboardSafe,
     getActiveId: function() {
-      return rt27.getActiveId();
+      return rt29.getActiveId();
     },
     setActiveId: function(id) {
-      rt27.setActiveId(id);
+      rt29.setActiveId(id);
     },
     selectPatient,
     renderRoundOverviewPanels,
@@ -39674,10 +41587,10 @@ function registerAllFeatureRuntimes() {
   });
   registerProductivityRuntime({
     getActiveId: function() {
-      return rt27.getActiveId();
+      return rt29.getActiveId();
     },
     getSettings: function() {
-      return rt27.getSettings();
+      return rt29.getSettings();
     },
     selectPatient,
     switchAppTab,
@@ -39696,13 +41609,13 @@ function registerAllFeatureRuntimes() {
     renderNoteForm,
     renderLabHistoryPanel,
     getActiveId: function() {
-      return rt27.getActiveId();
+      return rt29.getActiveId();
     },
     setActiveId: function(id) {
-      rt27.setActiveId(id);
+      rt29.setActiveId(id);
     },
     getActiveAppTab: function() {
-      return rt27.getActiveAppTab();
+      return rt29.getActiveAppTab();
     },
     selectPatient,
     isMobileWeb,
@@ -39720,6 +41633,8 @@ function registerAllFeatureRuntimes() {
 function runInitialFeatureBoot() {
   initChromeAppearance();
   syncLabHistoryCollapseUI();
+  wireEstadoActualPasteModal();
+  wireEaModalDismiss();
 }
 
 // public/js/app.js
@@ -39732,6 +41647,8 @@ var allWindowHandlers = Object.assign(
   windowHandlers,
   windowHandlers5,
   windowHandlers8,
+  windowHandlers12,
+  windowHandlers13,
   windowHandlers11,
   windowHandlers7,
   windowHandlers6,

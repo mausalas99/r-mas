@@ -13,12 +13,22 @@ var _revisionByPatient = Object.create(null);
 
 export function resetLabHistoryCacheForTests() {
   _revisionByPatient = Object.create(null);
+  invalidateTrendSeriesIndexCache();
+}
+
+/** @type {{ key: string, index: object|null }} */
+var _trendSeriesIndexCache = { key: '', index: null };
+
+export function invalidateTrendSeriesIndexCache() {
+  _trendSeriesIndexCache.key = '';
+  _trendSeriesIndexCache.index = null;
 }
 
 export function bumpLabHistoryRevision(patientId) {
   if (patientId == null || patientId === '') return;
   var k = String(patientId);
   _revisionByPatient[k] = (_revisionByPatient[k] || 0) + 1;
+  invalidateTrendSeriesIndexCache();
 }
 
 export function getLabHistoryRevision(patientId) {
@@ -85,4 +95,21 @@ export function buildTrendSeriesIndex(opts) {
     };
   }
   return out;
+}
+
+/**
+ * Memoiza buildTrendSeriesIndex mientras el historial del paciente no cambia.
+ * @param {string} cacheKey p. ej. `${patientId}|${revision}|${catalogLen}`
+ */
+export function buildTrendSeriesIndexCached(cacheKey, opts) {
+  var key = String(cacheKey || '');
+  if (key && _trendSeriesIndexCache.key === key && _trendSeriesIndexCache.index) {
+    return _trendSeriesIndexCache.index;
+  }
+  var index = buildTrendSeriesIndex(opts);
+  if (key) {
+    _trendSeriesIndexCache.key = key;
+    _trendSeriesIndexCache.index = index;
+  }
+  return index;
 }

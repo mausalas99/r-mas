@@ -561,6 +561,9 @@ html.dark #rpc-wipe-modal { background: rgba(0,0,0,0.65); }
   border-color: color-mix(in oklab, var(--action) 38%, var(--border));
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
 }
+.tendencias-container.tend-filter-abnormal-only .tend-card[data-abnormal="0"] {
+  display: none;
+}
 .tend-toolbar-toggle.is-active {
   border-color: color-mix(in oklab, var(--error) 42%, var(--border));
   background: color-mix(in oklab, var(--error) 7%, var(--surface));

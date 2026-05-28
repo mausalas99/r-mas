@@ -18,22 +18,39 @@ var MODE_LABELS = {
   atb: 'Antibiótico',
 };
 
-/**
- * @param {HTMLElement} panel
- * @param {object} ctx
- */
-export function renderManejoGuia(panel, ctx) {
-  ctx = ctx || {};
-  if (!ctx.ui) {
-    var err = document.createElement('p');
-    err.className = 'manejo-hint';
-    err.textContent = 'No se pudo cargar la guía clínica (contexto inválido).';
-    panel.appendChild(err);
-    return;
-  }
-  ensureManejoSubtabMigrated();
-  while (panel.firstChild) panel.removeChild(panel.firstChild);
+export function invalidateManejoGuiaShell() {
+  /* shell lives in DOM; cleared when Manejo shell rebuilds on patient change */
+}
 
+function paintGuiaHost(host, ctx) {
+  while (host.firstChild) host.removeChild(host.firstChild);
+  var activeMode = getGuiaMode();
+  var view = getGuiaView();
+  if (activeMode === 'patologia') {
+    if (view === 'lectura') renderGuiaPatologiaReading(host, ctx);
+    else renderGuiaPatologiaIndex(host, ctx);
+  } else if (activeMode === 'infusion') {
+    if (view === 'lectura') renderGuiaInfusionReading(host, ctx);
+    else renderGuiaInfusionIndex(host, ctx);
+  } else if (activeMode === 'atb') {
+    if (view === 'lectura') renderGuiaAtbReading(host, ctx);
+    else renderGuiaAtbIndex(host, ctx);
+  }
+}
+
+function syncGuiaModeBar(root, activeMode) {
+  var modeBar = root.querySelector('.manejo-guia-mode-bar');
+  if (!modeBar) return;
+  modeBar.querySelectorAll('[data-guia-mode]').forEach(function (btn) {
+    var mode = btn.getAttribute('data-guia-mode') || '';
+    var on = mode === activeMode;
+    btn.classList.toggle('manejo-guia-mode-btn--active', on);
+    btn.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+}
+
+function buildGuiaShell(panel, ctx) {
+  while (panel.firstChild) panel.removeChild(panel.firstChild);
   var root = document.createElement('div');
   root.className = 'manejo-guia-root manejo-root';
 
@@ -51,6 +68,7 @@ export function renderManejoGuia(panel, ctx) {
     btn.textContent = MODE_LABELS[mode] || mode;
     btn.setAttribute('role', 'tab');
     btn.setAttribute('aria-selected', mode === activeMode ? 'true' : 'false');
+    btn.setAttribute('data-guia-mode', mode);
     btn.addEventListener('click', function () {
       if (getGuiaMode() === mode) return;
       setGuiaMode(mode);
@@ -64,17 +82,30 @@ export function renderManejoGuia(panel, ctx) {
   host.className = 'manejo-guia-host';
   root.appendChild(host);
 
-  var view = getGuiaView();
-  if (activeMode === 'patologia') {
-    if (view === 'lectura') renderGuiaPatologiaReading(host, ctx);
-    else renderGuiaPatologiaIndex(host, ctx);
-  } else if (activeMode === 'infusion') {
-    if (view === 'lectura') renderGuiaInfusionReading(host, ctx);
-    else renderGuiaInfusionIndex(host, ctx);
-  } else if (activeMode === 'atb') {
-    if (view === 'lectura') renderGuiaAtbReading(host, ctx);
-    else renderGuiaAtbIndex(host, ctx);
-  }
-
   panel.appendChild(root);
+  return host;
+}
+
+/**
+ * @param {HTMLElement} panel
+ * @param {object} ctx
+ */
+export function renderManejoGuia(panel, ctx) {
+  ctx = ctx || {};
+  if (!ctx.ui) {
+    var err = document.createElement('p');
+    err.className = 'manejo-hint';
+    err.textContent = 'No se pudo cargar la guía clínica (contexto inválido).';
+    panel.appendChild(err);
+    return;
+  }
+  ensureManejoSubtabMigrated();
+  var root = panel.querySelector('.manejo-guia-root');
+  var host = root && root.querySelector('.manejo-guia-host');
+  if (!root || !host) {
+    host = buildGuiaShell(panel, ctx);
+  } else {
+    syncGuiaModeBar(root, getGuiaMode());
+  }
+  paintGuiaHost(host, ctx);
 }

@@ -1,5 +1,13 @@
 /** @typedef {{ text: string, savedAt: string | null }} TextoGuardado */
-/** @typedef {{ id: string, recordedAt: string, vitals?: Record<string, unknown>, glucometrias?: Array<{ value?: unknown, time?: string }>, io?: { ing?: unknown, egr?: unknown }, alteredAt?: Record<string, string> }} MedicionHistorial */
+/** @typedef {{ kind: 'diuresis' | 'drain' | 'gastrostomy' | 'nephro', label: string, value: number | string }} IoEgresoPart */
+/** @typedef {{ id: string, recordedAt: string, vitals?: Record<string, unknown>, glucometrias?: Array<{ value?: unknown, time?: string }>, io?: { ing?: unknown, egr?: unknown, egrParts?: IoEgresoPart[], evac?: unknown }, alteredAt?: Record<string, string> }} MedicionHistorial */
+
+import {
+  isIoNumericValue as isIoNumericValueIo,
+  ioDiuresisForBalance,
+  ioNumericEgressTotal,
+  computeIoBalanceFromIngEgr,
+} from './estado-actual-io.mjs';
 
 export const MED_FIELD_KEYS = /** @type {const} */ (['analgesia', 'abx', 'antihta', 'vasop']);
 
@@ -62,9 +70,7 @@ function hasIoNumber(v) {
  * @returns {boolean}
  */
 export function isIoNumericValue(v) {
-  if (v == null || v === '') return false;
-  var n = Number(v);
-  return Number.isFinite(n);
+  return isIoNumericValueIo(v);
 }
 
 /**
@@ -171,6 +177,7 @@ export function medicionHasCoreData(medicion) {
     var vv = vit[vk];
     if (vv != null && vv !== '') return true;
   }
+  if (vit.tempPeak != null && vit.tempPeak !== '') return true;
   var glus = Array.isArray(m.glucometrias) ? m.glucometrias : [];
   for (var i = 0; i < glus.length; i++) {
     var g = glus[i];
@@ -179,7 +186,12 @@ export function medicionHasCoreData(medicion) {
     if (val != null && val !== '') return true;
   }
   var io = m.io && typeof m.io === 'object' ? /** @type {any} */ (m.io) : {};
-  return hasIoNumber(io.ing) || hasIoNumber(io.egr);
+  if (hasIoNumber(io.ing)) return true;
+  if (ioNumericEgressTotal(io) != null) return true;
+  if (ioDiuresisForBalance(io) != null && ioDiuresisForBalance(io) !== '') return true;
+  if (Array.isArray(io.egrParts) && io.egrParts.length) return true;
+  if (io.evac != null && io.evac !== '') return true;
+  return hasIoNumber(io.egr);
 }
 
 /**
@@ -240,6 +252,15 @@ export function deriveSnapshot(monitoreoLike) {
         }
       }
     }
+    var peakVal = rv.tempPeak;
+    if (peakVal != null && peakVal !== '') {
+      vitals.tempPeak = peakVal;
+      if (rowAlt && rowAlt.tempPeak != null && String(rowAlt.tempPeak).length > 0) {
+        alteredAt.tempPeak = String(rowAlt.tempPeak);
+      } else {
+        delete alteredAt.tempPeak;
+      }
+    }
   }
 
   /** @type {Array<{ value?: unknown, time?: string }>} */
@@ -261,6 +282,9 @@ export function deriveSnapshot(monitoreoLike) {
 
   var ingSeen = /** @type {null | unknown} */ (null);
   var egrSeen = /** @type {null | unknown} */ (null);
+  /** @type {IoEgresoPart[] | null} */
+  var egrPartsSeen = null;
+  var evacSeen = /** @type {null | unknown} */ (null);
   for (var k2 = sortedAsc.length - 1; k2 >= 0; k2--) {
     var rIo = sortedAsc[k2];
     if (!rIo || typeof rIo !== 'object') continue;
@@ -268,15 +292,24 @@ export function deriveSnapshot(monitoreoLike) {
       /** @type {any} */ (rIo).io && typeof /** @type {any} */ (rIo).io === 'object'
         ? /** @type {any} */ (/** @type {any} */ (rIo).io)
         : {};
-    if (egrSeen === null && hasIoNumber(ioObj.egr)) egrSeen = ioObj.egr;
+    if (egrPartsSeen === null && Array.isArray(ioObj.egrParts) && ioObj.egrParts.length) {
+      egrPartsSeen = ioObj.egrParts.slice();
+      egrSeen = ioNumericEgressTotal(ioObj) ?? ioDiuresisForBalance(ioObj);
+    }
+    if (egrSeen === null && ioObj.egr != null && ioObj.egr !== '') egrSeen = ioObj.egr;
+    if (evacSeen === null && ioObj.evac != null && ioObj.evac !== '') evacSeen = ioObj.evac;
     if (ingSeen === null && hasIoNumber(ioObj.ing)) ingSeen = ioObj.ing;
-    if (ingSeen !== null && egrSeen !== null) break;
+    if (ingSeen !== null && (egrSeen !== null || egrPartsSeen) && evacSeen !== null) break;
   }
 
   snap.vitals = vitals;
   snap.alteredAt = alteredAt;
   snap.glucometrias = gluChosen.slice();
-  snap.io = { ing: ingSeen, egr: egrSeen };
+  /** @type {{ ing: null | unknown, egr: null | unknown, egrParts?: IoEgresoPart[], evac?: unknown }} */
+  var snapIo = { ing: ingSeen, egr: egrSeen };
+  if (egrPartsSeen) snapIo.egrParts = egrPartsSeen;
+  if (evacSeen !== null) snapIo.evac = evacSeen;
+  snap.io = snapIo;
   return snap;
 }
 
@@ -293,10 +326,11 @@ export function balanceTurno(monitoreoLike) {
     if (!row || typeof row !== 'object') continue;
     var io =
       /** @type {any} */ (row).io && typeof /** @type {any} */ (row).io === 'object'
-        ? /** @type {{ ing?: unknown, egr?: unknown }} */ (/** @type {any} */ (row).io)
+        ? /** @type {any} */ (/** @type {any} */ (row).io)
         : {};
-    if (!isIoNumericValue(io.ing) || !isIoNumericValue(io.egr)) continue;
-    return Number(io.ing) - Number(io.egr);
+    var bal = computeIoBalanceFromIngEgr(io.ing, io);
+    if (!Number.isFinite(bal)) continue;
+    return bal;
   }
   return NaN;
 }
@@ -316,10 +350,11 @@ export function balanceGlobalHistorico(monitoreoLike) {
     if (!row || typeof row !== 'object') continue;
     var io =
       /** @type {any} */ (row).io && typeof /** @type {any} */ (row).io === 'object'
-        ? /** @type {{ ing?: unknown, egr?: unknown }} */ (/** @type {any} */ (row).io)
+        ? /** @type {any} */ (/** @type {any} */ (row).io)
         : {};
-    if (!isIoNumericValue(io.ing) || !isIoNumericValue(io.egr)) continue;
-    sum += Number(io.ing) - Number(io.egr);
+    var bal = computeIoBalanceFromIngEgr(io.ing, io);
+    if (!Number.isFinite(bal)) continue;
+    sum += bal;
     any = true;
   }
   return any ? sum : NaN;
@@ -439,6 +474,17 @@ export function computeDietKcalTotal(kcalKg, weightKg) {
   var k = Number(kcalKg);
   if (!Number.isFinite(k) || k <= 0 || weightKg == null) return null;
   return Math.round(k * weightKg);
+}
+
+/**
+ * @param {unknown} kcalTotal
+ * @param {number | null} weightKg
+ * @returns {number | null}
+ */
+export function computeDietKcalKgFromTotal(kcalTotal, weightKg) {
+  var t = Number(kcalTotal);
+  if (!Number.isFinite(t) || t <= 0 || weightKg == null || weightKg <= 0) return null;
+  return Math.round((t / weightKg) * 10) / 10;
 }
 
 /**

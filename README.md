@@ -30,10 +30,10 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 ---
 
 
-## R+ 6.3.2 (Receta por paciente, Estado Actual y pendientes Repo)
+## R+ 6.3.2 (Pegar monitoreo en Estado Actual — I/O, EVAC y correcciones)
 
+- **Estado Actual** — Modal **Pegar monitoreo** (T°, FC, TA, DXT, I, E, EVAC); egresos desglosados (diuresis, drenajes, nefrostomías) en el texto SOAP; balance solo con diuresis numérica; salida en mayúsculas.
 - **Medicamentos** — La receta hospitalaria (pegado y listado procesado) se conserva por paciente al cambiar en la barra lateral.
-- **Estado Actual** — Tab entre campos ya no cierra «Estado clínico general»; egresos aceptan **NC**; el peso solo se captura en Datos del paciente (no en signos vitales del panel).
 - **Pendientes** — Los «Repo …» de reposición electrolítica que elimines o marques hechos no reaparecen tras reiniciar ni al sincronizar en sala.
 
 Notas: `docs/RELEASE_NOTES_6.3.2.txt`.

@@ -21,8 +21,8 @@ import {
 import { inferFechaLabSetFromId, renderTendencias } from "./tendencias.mjs";
 import { renderTodoForm, todoCompareForSort, toggleTodo } from "./todos.mjs";
 import { renderNoteForm, renderIndicaForm } from "./notes-indicaciones.mjs";
-import { renderManejo } from "./manejo.mjs";
-import { renderEstadoActualPanel } from "./estado-actual-panel.mjs";
+import { invalidateManejoShell, renderManejo } from "./manejo.mjs";
+import { invalidateEaPanelCache, renderEstadoActualPanel } from "./estado-actual-panel.mjs";
 import { renderRecetaHu } from "./receta-hu.mjs";
 import { scrollActiveRondaCardIntoView, setRoundOverviewMode, syncRoundExpedienteLayout } from "./patients.mjs";
 import { renderEstadoActualBar } from "./soap-estado.mjs";
@@ -34,10 +34,11 @@ import {
   showAppTabPanel,
   syncAppTabIndicator,
   syncInnerTabIndicator,
-  syncAllSubTabIndicators,
+  syncExpedienteSegmentIndicators,
 } from "../ui-tab-motion.mjs";
 import {
   applyExpedientePaneLayout,
+  consolidatedTabForGranular,
   consolidatedInnerTabButtonId,
   defaultGranularForConsolidatedTab,
   GRANULAR_TABS,
@@ -49,7 +50,7 @@ import {
   useConsolidatedExpedienteTabs,
 } from "../expediente-tabs.mjs";
 import { getLabHistoryRevision } from "../lab-history-cache.mjs";
-import { scheduleAfterPaint, scheduleIdle } from "../deferred-work.mjs";
+import { cancelDeferredIdleWork, scheduleAfterPaint, scheduleIdle } from "../deferred-work.mjs";
 
 export { initTabBarMotion } from "../ui-tab-motion.mjs";
 
@@ -101,6 +102,46 @@ function markInnerTabRendered(tab) {
 }
 
 var _expedienteWarmQueued = false;
+var _expedienteWarmGen = 0;
+var _paseBoardCacheKey = "";
+
+export function cancelExpedienteWarm() {
+  _expedienteWarmGen += 1;
+  _expedienteWarmQueued = false;
+  if (expedientePreloadTimer) {
+    clearTimeout(expedientePreloadTimer);
+    expedientePreloadTimer = null;
+    expedientePreloadTab = null;
+  }
+}
+
+function expedienteCompositeTab(granularTab, settings) {
+  if (!useConsolidatedExpedienteTabs(settings)) return granularTab;
+  return consolidatedTabForGranular(granularTab, settings);
+}
+
+function buildPaseBoardCacheKey(pid) {
+  var todos = storage.getTodos(pid);
+  var done = 0;
+  for (var i = 0; i < todos.length; i += 1) {
+    if (todos[i].completed) done += 1;
+  }
+  var med = (medRecetaByPatient[pid] && medRecetaByPatient[pid].items) || [];
+  var ag = getPaseAgendaForPatient(pid);
+  return (
+    String(pid) +
+    "|L" +
+    getLabHistoryRevision(pid) +
+    "|T" +
+    todos.length +
+    ":" +
+    done +
+    "|M" +
+    med.length +
+    "|A" +
+    ag.length
+  );
+}
 
 /** Precalienta Estado actual + Tendencias en idle (Sala). */
 export function warmExpedienteHeavyTabs() {
@@ -108,8 +149,10 @@ export function warmExpedienteHeavyTabs() {
   if (!isModeSala(rt.getSettings())) return;
   if (!rt.getActiveId() || rt.getActiveAppTab() !== "nota") return;
   _expedienteWarmQueued = true;
+  var warmGen = _expedienteWarmGen;
   scheduleIdle(function () {
     _expedienteWarmQueued = false;
+    if (warmGen !== _expedienteWarmGen) return;
     if (!rt.getActiveId() || rt.getActiveAppTab() !== "nota") return;
     var settings = rt.getSettings();
     var active = migrateGranularInner(rt.getActiveInner() || "todo", settings);
@@ -118,7 +161,7 @@ export function warmExpedienteHeavyTabs() {
       if (isInnerTabContentFresh(tab, settings)) return;
       renderGranularInnerTab(tab);
     });
-  }, 400);
+  }, 1200);
 }
 
 function resolvePreloadGranularTab(el) {
@@ -417,6 +460,16 @@ function buildPasePatientHeaderHtml(patient) {
 export function renderPaseBoard() {
   var host = document.getElementById("pase-board-scroll");
   if (!host || !isPaseMode()) return;
+  var aid = rt.getActiveId();
+  if (aid) {
+    var cacheKey = buildPaseBoardCacheKey(aid);
+    if (_paseBoardCacheKey === cacheKey && host.querySelector(".pase-patient-header")) {
+      return;
+    }
+    _paseBoardCacheKey = cacheKey;
+  } else {
+    _paseBoardCacheKey = "";
+  }
   removeAtbRisPanelsFromBody();
   if (!host._paseDelegate) {
     host._paseDelegate = true;
@@ -428,7 +481,6 @@ export function renderPaseBoard() {
       }
     });
   }
-  var aid = rt.getActiveId();
   if (!aid) {
     host.innerHTML =
       '<div class="pase-empty-screen" role="status">Selecciona un paciente en la lista para ver el resumen.</div>';
@@ -686,6 +738,8 @@ export function openPaseSectionInNormal(which) {
 
 export function switchAppTab(tab) {
   if (tab === "lan") tab = "lab";
+  cancelExpedienteWarm();
+  cancelDeferredIdleWork();
   var prevAppTab = rt.getActiveAppTab();
   rt.setActiveAppTab(tab);
   if (tab === "nota" && isPaseMode() && prevAppTab !== "nota") {
@@ -929,9 +983,18 @@ function renderGranularInnerTab(tab, opts) {
   markInnerTabRendered(tab);
 }
 
+export function invalidatePaseBoardCache() {
+  _paseBoardCacheKey = "";
+}
+
 /** Tras cambiar de paciente: repinta solo la pestaña interna activa (sin reset de layout). */
 export function refreshExpedienteAfterPatientSelect(opts) {
   opts = opts || {};
+  cancelExpedienteWarm();
+  cancelDeferredIdleWork();
+  invalidatePaseBoardCache();
+  invalidateEaPanelCache();
+  invalidateManejoShell();
   var settings = rt.getSettings();
   var tab = migrateGranularInner(rt.getActiveInner() || "todo", settings);
   if (opts.patientChanged || !isInnerTabContentFresh(tab, settings)) {
@@ -956,10 +1019,14 @@ export function switchConsolidatedTab(compositeTab) {
 
 export function switchInnerTab(tab, opts) {
   opts = opts || {};
+  cancelExpedienteWarm();
+  cancelDeferredIdleWork();
   var settings = rt.getSettings();
   tab = migrateGranularInner(tab, settings);
   var prevInner = migrateGranularInner(rt.getActiveInner() || "todo", settings);
   var consolidated = useConsolidatedExpedienteTabs(settings);
+  var prevComposite = expedienteCompositeTab(prevInner, settings);
+  var nextComposite = expedienteCompositeTab(tab, settings);
   var expedienteTabs = {
     datos: 1,
     notas: 1,
@@ -1007,7 +1074,7 @@ export function switchInnerTab(tab, opts) {
   if (needsContentRender) {
     var targetTab = tab;
     var forceRender = !!opts.forceRender;
-    if (prevInner !== tab) {
+    if (prevInner !== tab && prevComposite !== nextComposite) {
       var panelEl = consolidated
         ? document.getElementById(
             "itab-content-" + consolidatedInnerTabButtonId(tab, settings).replace(/^itab-/, "")
@@ -1018,10 +1085,10 @@ export function switchInnerTab(tab, opts) {
     scheduleAfterPaint(function () {
       if (migrateGranularInner(rt.getActiveInner() || "todo", settings) !== targetTab) return;
       renderGranularInnerTab(targetTab, forceRender ? { force: true } : undefined);
-      syncAllSubTabIndicators();
+      if (consolidated) syncExpedienteSegmentIndicators(settings, targetTab);
     });
-  } else if (prevInner !== tab) {
-    syncAllSubTabIndicators();
+  } else if (prevInner !== tab && consolidated) {
+    syncExpedienteSegmentIndicators(settings, tab);
   }
   if (prevInner !== tab && isModeSala(settings) && (tab === "estadoActual" || tab === "tend")) {
     warmExpedienteHeavyTabs();

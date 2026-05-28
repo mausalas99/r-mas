@@ -32,9 +32,20 @@
       ],
       "format": "esm"
     },
-    "public/js/features/estado-actual-data.mjs": {
-      "bytes": 14769,
+    "public/js/features/estado-actual-io.mjs": {
+      "bytes": 10351,
       "imports": [],
+      "format": "esm"
+    },
+    "public/js/features/estado-actual-data.mjs": {
+      "bytes": 16675,
+      "imports": [
+        {
+          "path": "public/js/features/estado-actual-io.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-io.mjs"
+        }
+      ],
       "format": "esm"
     },
     "public/js/lab-clinical-suggestions.mjs": {
@@ -215,12 +226,17 @@
       "format": "esm"
     },
     "public/js/deferred-work.mjs": {
-      "bytes": 606,
+      "bytes": 928,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/trend-spark-canvas.mjs": {
+      "bytes": 3155,
       "imports": [],
       "format": "esm"
     },
     "public/js/lab-history-cache.mjs": {
-      "bytes": 2957,
+      "bytes": 3815,
       "imports": [
         {
           "path": "public/js/tend-core.mjs",
@@ -655,7 +671,7 @@
       "format": "esm"
     },
     "public/js/features/expediente.mjs": {
-      "bytes": 45143,
+      "bytes": 46588,
       "imports": [
         {
           "path": "public/js/app-state.mjs",
@@ -686,6 +702,11 @@
           "path": "public/js/lab-history-cache.mjs",
           "kind": "import-statement",
           "original": "../lab-history-cache.mjs"
+        },
+        {
+          "path": "public/js/deferred-work.mjs",
+          "kind": "import-statement",
+          "original": "../deferred-work.mjs"
         },
         {
           "path": "public/js/features/chrome.mjs",
@@ -1350,7 +1371,7 @@
       "format": "esm"
     },
     "public/js/features/manejo-guia.mjs": {
-      "bytes": 2591,
+      "bytes": 3646,
       "imports": [
         {
           "path": "public/js/features/manejo-guia-state.mjs",
@@ -1387,7 +1408,7 @@
       "format": "esm"
     },
     "public/js/ui-tab-motion.mjs": {
-      "bytes": 6389,
+      "bytes": 7122,
       "imports": [
         {
           "path": "public/js/ui-motion.mjs",
@@ -1414,7 +1435,7 @@
       "format": "esm"
     },
     "public/js/features/manejo.mjs": {
-      "bytes": 12990,
+      "bytes": 14661,
       "imports": [
         {
           "path": "public/js/app-state.mjs",
@@ -1495,18 +1516,23 @@
       "format": "esm"
     },
     "public/js/features/estado-actual-text.mjs": {
-      "bytes": 4467,
+      "bytes": 4849,
       "imports": [
         {
           "path": "public/js/features/estado-actual-data.mjs",
           "kind": "import-statement",
           "original": "./estado-actual-data.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-io.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-io.mjs"
         }
       ],
       "format": "esm"
     },
     "public/js/features/estado-actual-charts.mjs": {
-      "bytes": 17426,
+      "bytes": 22626,
       "imports": [
         {
           "path": "public/js/features/estado-actual-ranges.mjs",
@@ -1516,8 +1542,13 @@
       ],
       "format": "esm"
     },
+    "public/js/features/estado-actual-registro-defaults.mjs": {
+      "bytes": 2724,
+      "imports": [],
+      "format": "esm"
+    },
     "public/js/features/estado-actual-panel.mjs": {
-      "bytes": 33975,
+      "bytes": 57925,
       "imports": [
         {
           "path": "public/js/app-state.mjs",
@@ -1528,6 +1559,11 @@
           "path": "public/js/features/estado-actual-data.mjs",
           "kind": "import-statement",
           "original": "./estado-actual-data.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-io.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-io.mjs"
         },
         {
           "path": "public/js/features/estado-actual-ranges.mjs",
@@ -1563,6 +1599,11 @@
           "path": "public/js/deferred-work.mjs",
           "kind": "import-statement",
           "original": "../deferred-work.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-registro-defaults.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-registro-defaults.mjs"
         }
       ],
       "format": "esm"
@@ -1594,7 +1635,7 @@
       "format": "esm"
     },
     "public/js/features/pase-board.mjs": {
-      "bytes": 39066,
+      "bytes": 41056,
       "imports": [
         {
           "path": "public/js/labs.js",
@@ -1879,7 +1920,7 @@
       "format": "esm"
     },
     "public/js/features/settings-help.mjs": {
-      "bytes": 93453,
+      "bytes": 93485,
       "imports": [
         {
           "path": "public/js/tour-targets.mjs",
@@ -1980,7 +2021,7 @@
       "format": "esm"
     },
     "public/js/features/tendencias.mjs": {
-      "bytes": 66866,
+      "bytes": 71644,
       "imports": [
         {
           "path": "public/js/app-state.mjs",
@@ -2001,6 +2042,11 @@
           "path": "public/js/deferred-work.mjs",
           "kind": "import-statement",
           "original": "../deferred-work.mjs"
+        },
+        {
+          "path": "public/js/trend-spark-canvas.mjs",
+          "kind": "import-statement",
+          "original": "../trend-spark-canvas.mjs"
         },
         {
           "path": "public/js/lab-history-cache.mjs",
@@ -2122,7 +2168,7 @@
       "format": "esm"
     },
     "public/js/features/platform.mjs": {
-      "bytes": 72738,
+      "bytes": 73979,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -2168,7 +2214,7 @@
       "format": "esm"
     },
     "public/js/features/profile.mjs": {
-      "bytes": 14417,
+      "bytes": 14479,
       "imports": [
         {
           "path": "public/js/features/chrome.mjs",
@@ -2426,8 +2472,56 @@
       ],
       "format": "esm"
     },
+    "public/js/features/estado-actual-parse-variants.mjs": {
+      "bytes": 1507,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/features/estado-actual-parser.mjs": {
+      "bytes": 13016,
+      "imports": [
+        {
+          "path": "public/js/features/estado-actual-io.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-io.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-parse-variants.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-parse-variants.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-io.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-io.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/features/estado-actual-paste-modal.mjs": {
+      "bytes": 3107,
+      "imports": [
+        {
+          "path": "public/js/features/estado-actual-parser.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-parser.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/features/estado-actual-registro-modal.mjs": {
+      "bytes": 2991,
+      "imports": [
+        {
+          "path": "public/js/features/estado-actual-paste-modal.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-paste-modal.mjs"
+        }
+      ],
+      "format": "esm"
+    },
     "public/js/app-runtimes.mjs": {
-      "bytes": 18654,
+      "bytes": 20439,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -2513,6 +2607,21 @@
           "path": "public/js/features/estado-actual-panel.mjs",
           "kind": "import-statement",
           "original": "./features/estado-actual-panel.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-paste-modal.mjs",
+          "kind": "import-statement",
+          "original": "./features/estado-actual-paste-modal.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-registro-modal.mjs",
+          "kind": "import-statement",
+          "original": "./features/estado-actual-registro-modal.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-registro-defaults.mjs",
+          "kind": "import-statement",
+          "original": "./features/estado-actual-registro-defaults.mjs"
         },
         {
           "path": "public/js/features/agenda.mjs",
@@ -2643,7 +2752,7 @@
       "format": "esm"
     },
     "public/js/app.js": {
-      "bytes": 6698,
+      "bytes": 6997,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -2704,6 +2813,16 @@
           "path": "public/js/features/estado-actual-panel.mjs",
           "kind": "import-statement",
           "original": "./features/estado-actual-panel.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-paste-modal.mjs",
+          "kind": "import-statement",
+          "original": "./features/estado-actual-paste-modal.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-registro-modal.mjs",
+          "kind": "import-statement",
+          "original": "./features/estado-actual-registro-modal.mjs"
         },
         {
           "path": "public/js/features/agenda.mjs",
@@ -2779,7 +2898,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 2757784
+      "bytes": 2894791
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -2798,8 +2917,11 @@
         "public/js/lab-history-repair.mjs": {
           "bytesInOutput": 892
         },
+        "public/js/features/estado-actual-io.mjs": {
+          "bytesInOutput": 8162
+        },
         "public/js/features/estado-actual-data.mjs": {
-          "bytesInOutput": 11833
+          "bytesInOutput": 12962
         },
         "public/js/lab-clinical-suggestions.mjs": {
           "bytesInOutput": 2336
@@ -2847,10 +2969,13 @@
           "bytesInOutput": 49260
         },
         "public/js/deferred-work.mjs": {
-          "bytesInOutput": 510
+          "bytesInOutput": 736
+        },
+        "public/js/trend-spark-canvas.mjs": {
+          "bytesInOutput": 2747
         },
         "public/js/lab-history-cache.mjs": {
-          "bytesInOutput": 2255
+          "bytesInOutput": 2845
         },
         "public/js/labs-some-table.mjs": {
           "bytesInOutput": 32650
@@ -2940,7 +3065,7 @@
           "bytesInOutput": 3570
         },
         "public/js/features/expediente.mjs": {
-          "bytesInOutput": 40815
+          "bytesInOutput": 42325
         },
         "public/js/todos-priority.mjs": {
           "bytesInOutput": 524
@@ -3051,28 +3176,31 @@
           "bytesInOutput": 12037
         },
         "public/js/features/manejo-guia.mjs": {
-          "bytesInOutput": 2030
+          "bytesInOutput": 2953
         },
         "public/js/expediente-tabs.mjs": {
           "bytesInOutput": 11779
         },
         "public/js/ui-tab-motion.mjs": {
-          "bytesInOutput": 6140
+          "bytesInOutput": 6754
         },
         "public/js/features/manejo.mjs": {
-          "bytesInOutput": 9071
+          "bytesInOutput": 10741
         },
         "public/js/features/estado-actual-ranges.mjs": {
           "bytesInOutput": 642
         },
         "public/js/features/estado-actual-text.mjs": {
-          "bytesInOutput": 3331
+          "bytesInOutput": 3609
         },
         "public/js/features/estado-actual-charts.mjs": {
-          "bytesInOutput": 14546
+          "bytesInOutput": 19260
+        },
+        "public/js/features/estado-actual-registro-defaults.mjs": {
+          "bytesInOutput": 1978
         },
         "public/js/features/estado-actual-panel.mjs": {
-          "bytesInOutput": 28805
+          "bytesInOutput": 50610
         },
         "public/js/receta-hu-core.mjs": {
           "bytesInOutput": 4874
@@ -3081,7 +3209,7 @@
           "bytesInOutput": 24258
         },
         "public/js/features/pase-board.mjs": {
-          "bytesInOutput": 34456
+          "bytesInOutput": 36276
         },
         "public/js/features/medications.mjs": {
           "bytesInOutput": 15560
@@ -3102,10 +3230,10 @@
           "bytesInOutput": 4382
         },
         "public/js/features/settings-help.mjs": {
-          "bytesInOutput": 86574
+          "bytesInOutput": 86606
         },
         "public/js/features/tendencias.mjs": {
-          "bytesInOutput": 60894
+          "bytesInOutput": 65505
         },
         "public/js/lab-history-set.mjs": {
           "bytesInOutput": 17048
@@ -3126,10 +3254,10 @@
           "bytesInOutput": 630
         },
         "public/js/features/platform.mjs": {
-          "bytesInOutput": 64478
+          "bytesInOutput": 65609
         },
         "public/js/features/profile.mjs": {
-          "bytesInOutput": 12581
+          "bytesInOutput": 12613
         },
         "public/js/procedure-agenda-week.mjs": {
           "bytesInOutput": 2224
@@ -3143,14 +3271,26 @@
         "public/js/app-shell.mjs": {
           "bytesInOutput": 26804
         },
+        "public/js/features/estado-actual-parse-variants.mjs": {
+          "bytesInOutput": 982
+        },
+        "public/js/features/estado-actual-parser.mjs": {
+          "bytesInOutput": 10350
+        },
+        "public/js/features/estado-actual-paste-modal.mjs": {
+          "bytesInOutput": 2595
+        },
+        "public/js/features/estado-actual-registro-modal.mjs": {
+          "bytesInOutput": 2669
+        },
         "public/js/app-runtimes.mjs": {
-          "bytesInOutput": 10647
+          "bytesInOutput": 11932
         },
         "public/js/app.js": {
-          "bytesInOutput": 4231
+          "bytesInOutput": 4271
         }
       },
-      "bytes": 1525834
+      "bytes": 1598080
     }
   }
 }

@@ -11,9 +11,10 @@ import {
   tendEligibleSectionKey,
 } from '../tend-core.mjs';
 import { createTendGroupModal } from '../tend-group-modal.mjs';
-import { scheduleAfterPaint } from '../deferred-work.mjs';
+import { scheduleAfterPaint, scheduleIdle } from '../deferred-work.mjs';
+import { mountTrendSparkCanvas } from '../trend-spark-canvas.mjs';
 import {
-  buildTrendSeriesIndex,
+  buildTrendSeriesIndexCached,
   getLabHistoryRevision,
   getTrendRenderWindow,
   TREND_DETAIL_DOWNSAMPLE,
@@ -108,7 +109,12 @@ function esc(s) {
 var _tendCardSortables = [];
 var sparkCharts = {};
 var detailChart = null;
-var _tendRenderState = { key: null, seriesKeys: [] };
+var _tendRenderState = {
+  key: null,
+  seriesKeys: [],
+  seriesIndex: null,
+  seriesAvail: null,
+};
 
 function buildTendRenderKey(patientId, revision, prefsHash, sectionsExpanded) {
   return [patientId, revision, prefsHash, sectionsExpanded].join('::');
@@ -150,18 +156,36 @@ function patchTendCardsFromIndex(seriesIndex, seriesAvail) {
   return patched > 0;
 }
 
+function destroySparkChartEntry(ck) {
+  var chart = sparkCharts[ck];
+  if (!chart) return;
+  if (typeof chart.destroy === 'function') chart.destroy();
+  delete sparkCharts[ck];
+}
+
+function sparkLineColor(job, history) {
+  var sk2 = job.sk2;
+  var fk2 = job.fk2;
+  var latestSetSpark = job.setsDesc2.length ? job.setsDesc2[0] : null;
+  var latestSpark = latestSetSpark ? getSetTrendValueForSeries(latestSetSpark, sk2, fk2) : null;
+  var refSpark = tendRefForSeries(history, sk2, fk2, latestSetSpark);
+  var isAbSpark =
+    refSpark && latestSpark != null && (latestSpark < refSpark[0] || latestSpark > refSpark[1]);
+  return isAbSpark ? '#f87171' : 'rgba(52,211,153,0.95)';
+}
+
 function updateSparkChartsFromJobs(sparkJobs, chartAnim) {
+  void chartAnim;
   for (var i = 0; i < sparkJobs.length; i += 1) {
     var job = sparkJobs[i];
     var ck = trendSparkChartKey(job.sk2, job.fk2);
-    var chart = sparkCharts[ck];
-    if (chart) {
-      chart.data.labels = job.labels2;
-      chart.data.datasets[0].data = job.values2;
-      chart.update(chartAnim === false ? 'none' : undefined);
-    } else {
-      mountOneTrendSparkChart(job, null, chartAnim);
+    var existing = sparkCharts[ck];
+    var color = sparkLineColor(job, null);
+    if (existing && typeof existing.update === 'function') {
+      existing.update(job.values2, color);
+      continue;
     }
+    mountOneTrendSparkChart(job, null, false);
   }
 }
 
@@ -187,14 +211,14 @@ function buildSparkJobsFromIndex(seriesAvail, seriesIndex, chartAnim) {
     });
   }
   var jobIndex = 0;
-  var SPARK_BATCH = 6;
+  var SPARK_BATCH = 8;
   function runSparkBatch() {
     var end = Math.min(jobIndex + SPARK_BATCH, sparkJobs.length);
     for (; jobIndex < end; jobIndex += 1) {
       mountOneTrendSparkChart(sparkJobs[jobIndex], null, chartAnim);
     }
     if (jobIndex < sparkJobs.length) {
-      requestAnimationFrame(runSparkBatch);
+      scheduleIdle(runSparkBatch, 20);
       return;
     }
     mountTendCardSortables();
@@ -478,6 +502,85 @@ function tendSectionIsExpanded(sectionKey) {
   return m[sectionKey] !== false;
 }
 
+function destroySparkChartsForSection(sectionKey) {
+  var prefix = String(sectionKey) + '\x01';
+  Object.keys(sparkCharts).forEach(function (ck) {
+    if (!ck.startsWith(prefix)) return;
+    destroySparkChartEntry(ck);
+  });
+}
+
+function mountSectionSparkCharts(sectionKey, chartAnim) {
+  var seriesIndex = _tendRenderState.seriesIndex;
+  var seriesAvail = _tendRenderState.seriesAvail;
+  if (!seriesIndex || !seriesAvail) return;
+  var jobs = [];
+  for (var i = 0; i < seriesAvail.length; i += 1) {
+    var spec = seriesAvail[i];
+    if (spec.sectionKey !== sectionKey) continue;
+    var sk2 = spec.sectionKey;
+    var fk2 = spec.fieldKey;
+    var idx = seriesIndex[tendCatalogSeriesKey(sk2, fk2)];
+    if (!idx || !idx.setsDesc.length) continue;
+    var sparkDesc = idx.setsDesc.slice(0, TREND_SPARK_WINDOW);
+    var setsAsc2 = toTrendAscendingSets(sparkDesc);
+    jobs.push({
+      sk2: sk2,
+      fk2: fk2,
+      setsDesc2: sparkDesc,
+      labels2: buildTendChartLabels(setsAsc2),
+      values2: setsAsc2.map(function (s) {
+        return getSetTrendValueForSeries(s, sk2, fk2);
+      }),
+    });
+  }
+  if (!jobs.length) return;
+  var jobIndex = 0;
+  var SPARK_BATCH = 8;
+  function runBatch() {
+    var end = Math.min(jobIndex + SPARK_BATCH, jobs.length);
+    for (; jobIndex < end; jobIndex += 1) {
+      mountOneTrendSparkChart(jobs[jobIndex], null, chartAnim);
+    }
+    if (jobIndex < jobs.length) scheduleIdle(runBatch, 24);
+  }
+  runBatch();
+}
+
+function applyTendSectionExpandedState(sectionEl, sectionKey, expanded) {
+  var btn = sectionEl.querySelector('.tend-section-toggle');
+  var body = sectionEl.querySelector('.tend-section-body');
+  var chevron = sectionEl.querySelector('.tend-section-chevron');
+  if (btn) btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+  if (chevron) chevron.textContent = expanded ? '▼' : '▶';
+  if (body) body.classList.toggle('tend-section-body--collapsed', !expanded);
+
+  if (!expanded) {
+    destroySparkChartsForSection(sectionKey);
+    sectionEl.querySelectorAll('.tend-spark-canvas-cell').forEach(function (cell) {
+      if (cell.querySelector('canvas')) {
+        cell.innerHTML = '<div class="tend-spark-placeholder" aria-hidden="true"></div>';
+      }
+    });
+    return;
+  }
+
+  sectionEl.querySelectorAll('.tend-card').forEach(function (card) {
+    var seriesKey = card.getAttribute('data-series-key');
+    if (!seriesKey) return;
+    var pipe = seriesKey.indexOf('|');
+    if (pipe < 0) return;
+    var sk = seriesKey.slice(0, pipe);
+    var fk = seriesKey.slice(pipe + 1);
+    var cell = card.querySelector('.tend-spark-canvas-cell');
+    if (!cell || cell.querySelector('canvas')) return;
+    cell.innerHTML = '<canvas id="' + trendSparkDomId(sk, fk) + '"></canvas>';
+  });
+
+  var chartAnim = rt.rpcPrefersReducedMotion() ? false : { duration: 400, easing: 'easeOutQuart' };
+  mountSectionSparkCharts(sectionKey, chartAnim);
+}
+
 function toggleTendSection(ev, sectionKey) {
   if (ev) {
     ev.preventDefault();
@@ -485,9 +588,41 @@ function toggleTendSection(ev, sectionKey) {
   }
   var m = tendSectionExpandedRead();
   var cur = tendSectionIsExpanded(sectionKey);
-  m[sectionKey] = !cur;
+  var next = !cur;
+  m[sectionKey] = next;
   tendSectionExpandedWrite(m);
+
+  var container = document.getElementById('tendencias-container');
+  var sectionEl =
+    container &&
+    container.querySelector('.tend-section[data-section="' + String(sectionKey).replace(/"/g, '\\"') + '"]');
+  if (sectionEl && container.querySelector('.tend-grid') && _tendRenderState.seriesIndex) {
+    applyTendSectionExpandedState(sectionEl, sectionKey, next);
+    return;
+  }
   renderTendencias();
+}
+
+function syncTendAbnormalEmptyState(container, abnormalOnly) {
+  if (!container) return;
+  var existing = container.querySelector('.tend-abnormal-empty');
+  if (!abnormalOnly) {
+    if (existing) existing.remove();
+    return;
+  }
+  var anyVisible = container.querySelector('.tend-card[data-abnormal="1"]');
+  if (anyVisible) {
+    if (existing) existing.remove();
+    return;
+  }
+  if (existing) return;
+  var msg = document.createElement('p');
+  msg.className = 'tend-empty tend-abnormal-empty';
+  msg.innerHTML =
+    'Ningún analito está fuera de rango de referencia. Pulsa <strong>Ver todas</strong> para volver a la vista completa.';
+  var firstSection = container.querySelector('.tend-section');
+  if (firstSection) firstSection.parentElement.insertBefore(msg, firstSection);
+  else container.appendChild(msg);
 }
 
 /** Título y unidad para tarjeta spark (evita «%» duplicado en título y unidad). */
@@ -879,7 +1014,19 @@ function historyHasGasoForExtended(historyDesc) {
 }
 
 function toggleTendAbnormalOnlyFilter() {
-  tendAbnormalOnlyWrite(!tendAbnormalOnlyRead());
+  var on = !tendAbnormalOnlyRead();
+  tendAbnormalOnlyWrite(on);
+  var container = document.getElementById('tendencias-container');
+  if (container && container.querySelector('.tend-grid')) {
+    container.classList.toggle('tend-filter-abnormal-only', on);
+    var toggle = container.querySelector('.tend-toolbar-toggle');
+    if (toggle) {
+      toggle.classList.toggle('is-active', on);
+      toggle.setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+    syncTendAbnormalEmptyState(container, on);
+    return;
+  }
   renderTendencias();
 }
 
@@ -1492,10 +1639,7 @@ function renderTendencias(opts) {
 function renderTendenciasBody(container) {
   destroyTendCardSortables();
   Object.keys(sparkCharts).forEach(function (k) {
-    if (sparkCharts[k]) {
-      sparkCharts[k].destroy();
-      delete sparkCharts[k];
-    }
+    destroySparkChartEntry(k);
   });
   if (!aid()) {
     _tendRenderState.key = null;
@@ -1516,12 +1660,22 @@ function renderTendenciasBody(container) {
   var catalogAsc = getTrendRenderWindow(historyAsc, 'catalog');
 
   var mergedCatalog = buildMergedTrendSeriesCatalog(historyDesc);
-  var seriesIndex = buildTrendSeriesIndex({
+  var indexCacheKey =
+    String(aid()) +
+    '|' +
+    getLabHistoryRevision(aid()) +
+    '|' +
+    mergedCatalog.length +
+    '|' +
+    historyDesc.length;
+  var seriesIndex = buildTrendSeriesIndexCached(indexCacheKey, {
     catalogSpecs: mergedCatalog,
     historyFullDesc: historyDesc,
     windowHistoryAsc: catalogAsc,
     tendRefForSeries: tendRefForSeries,
   });
+  _tendRenderState.seriesIndex = seriesIndex;
+  _tendRenderState.seriesAvail = null;
   var seriesAvail = [];
   for (var ci = 0; ci < mergedCatalog.length; ci++) {
     var sp = mergedCatalog[ci];
@@ -1533,19 +1687,20 @@ function renderTendenciasBody(container) {
     seriesAvail.push(sp);
   }
   var seriesAvailFull = seriesAvail.slice();
+  _tendRenderState.seriesAvail = seriesAvailFull;
   var abnormalOnly = tendAbnormalOnlyRead();
-  if (abnormalOnly) {
-    seriesAvail = seriesAvail.filter(function (sp) {
-      var idxAb = seriesIndex[tendCatalogSeriesKey(sp.sectionKey, sp.fieldKey)];
-      return idxAb && idxAb.isAbnormal;
-    });
-  }
+  var seriesAvailVisible = abnormalOnly
+    ? seriesAvailFull.filter(function (sp) {
+        var idxAb = seriesIndex[tendCatalogSeriesKey(sp.sectionKey, sp.fieldKey)];
+        return idxAb && idxAb.isAbnormal;
+      })
+    : seriesAvailFull;
 
   var hiddenChipN = tendHiddenChipDescriptors().length;
   var toolbarOpts = { showGasoExtended: historyHasGasoForExtended(historyDesc) };
   var toolbarHtml = buildTendInlineControlsHtml(hiddenChipN, toolbarOpts);
 
-  if (!seriesAvail.length) {
+  if (!seriesAvailVisible.length) {
     var anyData = mergedCatalog.some(function (sp) {
       var idxAny = seriesIndex[tendCatalogSeriesKey(sp.sectionKey, sp.fieldKey)];
       return idxAny && idxAny.setsDesc.length >= 2;
@@ -1578,7 +1733,7 @@ function renderTendenciasBody(container) {
   }
 
   var bySection = Object.create(null);
-  seriesAvail.forEach(function (spec) {
+  seriesAvailFull.forEach(function (spec) {
     var k = spec.sectionKey;
     if (!bySection[k]) bySection[k] = [];
     bySection[k].push(spec);
@@ -1602,7 +1757,7 @@ function renderTendenciasBody(container) {
     tendPrefsHash(),
     tendExpandedSectionsKey()
   );
-  var nextSeriesKeys = seriesAvail.map(function (sp) {
+  var nextSeriesKeys = seriesAvailFull.map(function (sp) {
     return tendCatalogSeriesKey(sp.sectionKey, sp.fieldKey);
   });
   var canPatch =
@@ -1613,10 +1768,10 @@ function renderTendenciasBody(container) {
     }) &&
     container.querySelector('.tend-grid');
 
-  if (canPatch && patchTendCardsFromIndex(seriesIndex, seriesAvail)) {
+  if (canPatch && patchTendCardsFromIndex(seriesIndex, seriesAvailFull)) {
     var patchJobs = [];
-    for (var pj = 0; pj < seriesAvail.length; pj += 1) {
-      var spP = seriesAvail[pj];
+    for (var pj = 0; pj < seriesAvailFull.length; pj += 1) {
+      var spP = seriesAvailFull[pj];
       var skP = spP.sectionKey;
       var fkP = spP.fieldKey;
       if (!tendSectionIsExpanded(skP)) continue;
@@ -1669,6 +1824,8 @@ function renderTendenciasBody(container) {
       cardParts.push(
         '<div class="tend-card" role="button" tabindex="0" data-series-key="' +
           esc(seriesKey) +
+          '" data-abnormal="' +
+          (isAb ? '1' : '0') +
           '">' +
           '<div class="tend-card-header">' +
           '<span class="tend-param-name">' +
@@ -1726,8 +1883,10 @@ function renderTendenciasBody(container) {
     );
   }
   container.innerHTML = htmlParts.join('');
+  container.classList.toggle('tend-filter-abnormal-only', abnormalOnly);
+  syncTendAbnormalEmptyState(container, abnormalOnly);
 
-  buildSparkJobsFromIndex(seriesAvail, seriesIndex, chartAnim);
+  buildSparkJobsFromIndex(seriesAvailFull, seriesIndex, chartAnim);
 }
 
 function downsampleTrendChartSeries(labels, values, maxPoints) {
@@ -1747,50 +1906,14 @@ function downsampleTrendChartSeries(labels, values, maxPoints) {
 }
 
 function mountOneTrendSparkChart(job, history, chartAnim) {
+  void chartAnim;
   var sk2 = job.sk2;
   var fk2 = job.fk2;
   var canvas2 = document.getElementById(trendSparkDomId(sk2, fk2));
-  if (!canvas2 || typeof Chart === 'undefined') return;
+  if (!canvas2) return;
   var ck = trendSparkChartKey(sk2, fk2);
-  var latestSetSpark = job.setsDesc2.length ? job.setsDesc2[0] : null;
-  var latestSpark = latestSetSpark
-    ? getSetTrendValueForSeries(latestSetSpark, sk2, fk2)
-    : null;
-  var refSpark = tendRefForSeries(history, sk2, fk2, latestSetSpark);
-  var isAbSpark =
-    refSpark &&
-    latestSpark != null &&
-    (latestSpark < refSpark[0] || latestSpark > refSpark[1]);
-  var lineColor = isAbSpark ? '#f87171' : 'rgba(52,211,153,0.95)';
-  sparkCharts[ck] = new Chart(canvas2, {
-    type: 'line',
-    data: {
-      labels: job.labels2,
-      datasets: [
-        {
-          data: job.values2,
-          borderColor: lineColor,
-          borderWidth: 2.25,
-          pointRadius: 2,
-          pointBackgroundColor: lineColor,
-          tension: 0.3,
-          fill: false,
-          clip: false,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: chartAnim,
-      layout: { padding: { left: 6, right: 6, top: 8, bottom: 6 } },
-      plugins: { legend: { display: false }, tooltip: { enabled: false } },
-      scales: {
-        x: { display: false, grid: { display: false }, offset: true },
-        y: { display: false, grid: { display: false }, grace: '12%' },
-      },
-    },
-  });
+  var lineColor = sparkLineColor(job, history);
+  sparkCharts[ck] = mountTrendSparkCanvas(canvas2, job.values2, lineColor);
 }
 
 function syncTendHiddenModalIfOpen() {

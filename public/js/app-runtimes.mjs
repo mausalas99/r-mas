@@ -2,7 +2,7 @@
  * Registro de runtimes de features (inyección de dependencias al cargar).
  */
 import { storage } from './storage.js';
-import { saveState } from './app-state.mjs';
+import { patients, saveState } from './app-state.mjs';
 import { migrateToV3 } from './mode-features.mjs';
 import {
   splitResLabsByTipo,
@@ -65,7 +65,22 @@ import {
 import {
   registerEstadoActualPanelRuntime,
   navigateToEstadoActualPanel,
+  applyEstadoActualParsedToForm,
+  renderEstadoActualPanel,
+  ensureEaRegistroModalForm,
+  resetEaRegistroForm,
+  toDatetimeLocalValue,
 } from './features/estado-actual-panel.mjs';
+import {
+  registerEstadoActualPasteModalRuntime,
+  wireEstadoActualPasteModal,
+} from './features/estado-actual-paste-modal.mjs';
+import {
+  registerEstadoActualRegistroModalRuntime,
+  openEstadoActualRegistroModal,
+  wireEaModalDismiss,
+} from './features/estado-actual-registro-modal.mjs';
+import { getDefaultRegistroRecordedAt } from './features/estado-actual-registro-defaults.mjs';
 import {
   registerProcedureAgendaRuntime,
 } from './features/agenda.mjs';
@@ -554,6 +569,46 @@ registerEstadoActualPanelRuntime({
   invalidateInnerTabRenderCache: invalidateInnerTabRenderCache,
 });
 
+registerEstadoActualPasteModalRuntime({
+  showToast: showToast,
+  applyParsed: function (parsed, opts) {
+    opts = opts || {};
+    if (opts.fromNestedPaste) {
+      applyEstadoActualParsedToForm(parsed);
+      var recorded = document.getElementById('ea-recorded-at');
+      if (recorded && 'value' in recorded) {
+        recorded.value = toDatetimeLocalValue(getDefaultRegistroRecordedAt());
+      }
+      return;
+    }
+    navigateToEstadoActualPanel();
+    renderEstadoActualPanel({
+      onReady: function () {
+        openEstadoActualRegistroModal({ preserveForm: true });
+        applyEstadoActualParsedToForm(parsed);
+        var recorded = document.getElementById('ea-recorded-at');
+        if (recorded && 'value' in recorded) {
+          recorded.value = toDatetimeLocalValue(getDefaultRegistroRecordedAt());
+        }
+      },
+    });
+  },
+});
+
+registerEstadoActualRegistroModalRuntime({
+  showToast: showToast,
+  ensureForm: ensureEaRegistroModalForm,
+  resetForm: function () {
+    var activeId = rt.getActiveId();
+    var patient =
+      activeId &&
+      patients.find(function (p) {
+        return p.id === activeId;
+      });
+    resetEaRegistroForm(patient || null);
+  },
+});
+
 registerLabPanelRuntime({
   showToast: showToast,
   copyToClipboardSafe: copyToClipboardSafe,
@@ -650,4 +705,6 @@ registerLanRuntime({
 export function runInitialFeatureBoot() {
   initChromeAppearance();
   syncLabHistoryCollapseUI();
+  wireEstadoActualPasteModal();
+  wireEaModalDismiss();
 }

@@ -1318,19 +1318,19 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 var RELEASE_NOTES_HIGHLIGHTS = {
   '6.3.2': [
     {
-      title: 'Receta por paciente',
+      title: 'Pegar monitoreo',
       body:
-        'En <strong>Medicamentos</strong>, el pegado y la receta procesada se guardan por paciente al cambiar en la lista.',
+        'En <strong>Estado Actual</strong>, pega T°, FC, TA, DXT, I, E y EVAC; el balance resta todas las salidas en cc (ignora <strong>B:</strong>).',
     },
     {
-      title: 'Estado Actual',
+      title: 'Egresos en el SOAP',
       body:
-        '«Estado clínico general» no se cierra al tabular; egresos con <strong>NC</strong>; peso solo en <strong>Datos del paciente</strong>.',
+        'Diuresis, drenajes y nefrostomías se listan por separado en el texto; evacuaciones con <strong>NC</strong> o frase libre.',
     },
     {
-      title: 'Pendientes Repo bloqueados',
+      title: 'Receta y pendientes',
       body:
-        'Si eliminas o completas un pendiente de reposición electrolítica, no vuelve tras reiniciar ni con LiveSync.',
+        'Receta hospitalaria por paciente; pendientes <strong>Repo</strong> eliminados o hechos no reaparecen tras reiniciar ni con LiveSync.',
     },
   ],
   '6.3.1': [

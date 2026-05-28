@@ -1487,6 +1487,44 @@ function syncUpdateTelemetryUI() {
   if (cb) cb.checked = getUpdateTelemetryEnabled();
 }
 
+function syncHardwareAccelerationUI() {
+  var acc = document.getElementById('settings-accordion-performance');
+  var cb = document.getElementById('settings-hardware-acceleration');
+  if (!acc || !cb) return;
+  var api = window.electronAPI;
+  if (!api || typeof api.getPerformancePrefs !== 'function') {
+    acc.style.display = 'none';
+    return;
+  }
+  acc.style.display = '';
+  api
+    .getPerformancePrefs()
+    .then(function (prefs) {
+      cb.checked = !!(prefs && prefs.hardwareAcceleration);
+    })
+    .catch(function () {
+      cb.checked = false;
+    });
+}
+
+function onHardwareAccelerationChange(enabled) {
+  var api = window.electronAPI;
+  if (!api || typeof api.setHardwareAcceleration !== 'function') {
+    rt.showToast('Solo disponible en la aplicación de escritorio.', 'error');
+    syncHardwareAccelerationUI();
+    return;
+  }
+  api
+    .setHardwareAcceleration(!!enabled)
+    .then(function () {
+      rt.showToast('Reinicia R+ para aplicar la aceleración por hardware.', 'info');
+    })
+    .catch(function () {
+      rt.showToast('No se pudo guardar la preferencia.', 'error');
+      syncHardwareAccelerationUI();
+    });
+}
+
 function resolvePlatformForTelemetry() {
   if (window.electronAPI && typeof window.electronAPI.getPlatform === 'function') {
     return window.electronAPI.getPlatform().catch(function () { return 'unknown'; });
@@ -1878,6 +1916,7 @@ if (window.electronAPI) {
 
 export const platformWindowHandlers = {
   openUserDataFolderFromSettings,
+  onHardwareAccelerationChange,
   onIdleLockSelectChange,
   changeIdleLockPin,
   submitIdleLockPin,
@@ -1984,6 +2023,8 @@ export {
   setUpdateChannel,
   syncUpdateChannelUI,
   syncUpdateTelemetryUI,
+  syncHardwareAccelerationUI,
+  onHardwareAccelerationChange,
   initUpdateChannelAndGate,
   getUpdateTelemetryEnabled,
   setUpdateTelemetryEnabled,

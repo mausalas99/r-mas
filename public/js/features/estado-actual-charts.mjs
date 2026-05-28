@@ -297,6 +297,143 @@ export function destroyEstadoActualCharts(mountEl) {
     });
   }
   mountEl._eaCharts = [];
+  mountEl._eaChartsSig = '';
+  mountEl._eaChartsLayoutKey = '';
+  mountEl._eaChartSlotIds = [];
+}
+
+/**
+ * @param {unknown} monitoreo
+ * @returns {string}
+ */
+export function buildEaChartsLayoutKey(monitoreo) {
+  /** @type {any} */
+  var m = monitoreo || {};
+  var hist = Array.isArray(m.historial) ? m.historial : [];
+  var histAsc = historialSortedAsc(hist);
+  var parts = [];
+  VITAL_FAMILIES.forEach(function (fam) {
+    parts.push(fam.id + ':' + (buildVitalsFamilyData(histAsc, fam.keys) ? '1' : '0'));
+  });
+  var glu = buildGluSeries(histAsc);
+  parts.push('g' + glu.values.length);
+  var io = buildIoChartData(histAsc);
+  parts.push('i' + io.labels.length);
+  return parts.join('|');
+}
+
+/**
+ * @param {unknown[]} histAsc
+ * @returns {Record<string, { labels: string[], datasets: object[] }>}
+ */
+function buildEaChartSlotData(histAsc) {
+  /** @type {Record<string, { labels: string[], datasets: object[] }>} */
+  var out = {};
+  VITAL_FAMILIES.forEach(function (fam) {
+    var famData = buildVitalsFamilyData(histAsc, fam.keys);
+    if (famData) {
+      out['vital:' + fam.id] = { labels: famData.labels, datasets: famData.datasets };
+    }
+  });
+  var gluSeries = buildGluSeries(histAsc);
+  if (gluSeries.values.length >= 2) {
+    out.glu = {
+      labels: gluSeries.labels,
+      datasets: [
+        {
+          label: 'Glu (mg/dL)',
+          data: gluSeries.values,
+          borderColor: '#047857',
+          backgroundColor: '#047857',
+        },
+      ],
+    };
+  }
+  var ioData = buildIoChartData(histAsc);
+  if (ioData.labels.length >= 2) {
+    out.io = {
+      labels: ioData.labels,
+      datasets: [
+        { label: 'Ingresos', data: ioData.ing },
+        { label: 'Egresos', data: ioData.egr },
+        {
+          type: 'line',
+          label: 'Balance global',
+          data: ioData.globalBalance,
+        },
+      ],
+    };
+  }
+  return out;
+}
+
+/**
+ * @param {HTMLElement} mountEl
+ * @param {unknown} monitoreo
+ * @returns {boolean}
+ */
+export function updateEstadoActualChartsInPlace(mountEl, monitoreo) {
+  var charts = mountEl._eaCharts;
+  var slotIds = mountEl._eaChartSlotIds;
+  if (!Array.isArray(charts) || !Array.isArray(slotIds) || charts.length !== slotIds.length) {
+    return false;
+  }
+  /** @type {any} */
+  var m = monitoreo || {};
+  var hist = Array.isArray(m.historial) ? m.historial : [];
+  var histAsc = historialSortedAsc(hist);
+  var slotData = buildEaChartSlotData(histAsc);
+
+  for (var i = 0; i < charts.length; i += 1) {
+    var chart = charts[i];
+    var slotId = slotIds[i];
+    var next = slotData[slotId];
+    if (!chart || !chart.data || !next) return false;
+    chart.data.labels = next.labels;
+    var dsIn = next.datasets || [];
+    for (var d = 0; d < dsIn.length; d += 1) {
+      if (!chart.data.datasets[d]) {
+        chart.data.datasets[d] = dsIn[d];
+      } else {
+        var target = chart.data.datasets[d];
+        var patch = dsIn[d];
+        target.data = patch.data;
+        if (patch.label != null) target.label = patch.label;
+        if (patch.borderColor != null) target.borderColor = patch.borderColor;
+        if (patch.backgroundColor != null) target.backgroundColor = patch.backgroundColor;
+        if (patch.type != null) target.type = patch.type;
+        if (patch.borderDash != null) target.borderDash = patch.borderDash;
+        if (patch.yAxisID != null) target.yAxisID = patch.yAxisID;
+        if (patch.pointRadius != null) target.pointRadius = patch.pointRadius;
+        if (patch.pointBackgroundColor != null) {
+          target.pointBackgroundColor = patch.pointBackgroundColor;
+        }
+        if (patch.pointBorderColor != null) target.pointBorderColor = patch.pointBorderColor;
+        if (patch.tension != null) target.tension = patch.tension;
+      }
+    }
+    if (typeof chart.update === 'function') chart.update('none');
+  }
+  return true;
+}
+
+/**
+ * @param {unknown} monitoreo
+ * @returns {string}
+ */
+export function buildEaChartsSignature(monitoreo) {
+  /** @type {any} */
+  var m = monitoreo || {};
+  var hist = Array.isArray(m.historial) ? m.historial : [];
+  var histAsc = historialSortedAsc(hist);
+  var parts = ['n' + histAsc.length];
+  for (var i = 0; i < histAsc.length; i += 1) {
+    var row = histAsc[i];
+    if (!row || typeof row !== 'object') continue;
+    parts.push(String(/** @type {any} */ (row).recordedAt || ''));
+    parts.push(String(/** @type {any} */ (row).id || ''));
+  }
+  return parts.join('|');
 }
 
 /**
@@ -349,7 +486,7 @@ function lineDataset(labels, values, alteredFlags, color) {
  * @param {HTMLElement} mountEl
  * @param {unknown[]} chartStore
  */
-function mountChart(wrap, title, ChartCtor, config, mountEl, chartStore) {
+function mountChart(wrap, title, ChartCtor, config, mountEl, chartStore, slotId) {
   wrap.innerHTML =
     '<h4 class="ea-chart-subtitle">' +
     title +
@@ -359,6 +496,7 @@ function mountChart(wrap, title, ChartCtor, config, mountEl, chartStore) {
   if (!canvas) return;
   try {
     var chart = new /** @type {any} */ (ChartCtor)(canvas, config);
+    chart._eaSlotId = slotId;
     chartStore.push(chart);
     mountEl._eaCharts = chartStore;
   } catch (_e) {
@@ -373,6 +511,17 @@ function mountChart(wrap, title, ChartCtor, config, mountEl, chartStore) {
  */
 export function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor) {
   if (!mountEl) return;
+  var sig = buildEaChartsSignature(monitoreo);
+  if (mountEl._eaChartsSig === sig && mountEl.querySelector('#ea-charts')) return;
+  var layoutKey = buildEaChartsLayoutKey(monitoreo);
+  if (
+    mountEl._eaChartsLayoutKey === layoutKey &&
+    mountEl._eaChartsSig !== sig &&
+    updateEstadoActualChartsInPlace(mountEl, monitoreo)
+  ) {
+    mountEl._eaChartsSig = sig;
+    return;
+  }
   destroyEstadoActualCharts(mountEl);
 
   var Chart = resolveChartCtor(ChartCtor);
@@ -436,6 +585,7 @@ export function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor) {
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          animation: false,
           plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } },
           scales: {
             y: { grace: '5%', ticks: { font: { size: 11 } } },
@@ -444,7 +594,8 @@ export function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor) {
         },
       },
       mountEl,
-      chartStore
+      chartStore,
+      'vital:' + fam.id
     );
     svGrid.appendChild(famWrap);
   });
@@ -485,6 +636,7 @@ export function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor) {
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          animation: false,
           plugins: { legend: { display: false } },
           scales: {
             y: { grace: '5%', title: { display: true, text: 'mg/dL', font: { size: 11 } } },
@@ -493,7 +645,8 @@ export function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor) {
         },
       },
       mountEl,
-      chartStore
+      chartStore,
+      'glu'
     );
     gluBlock.appendChild(gluWrap);
   } else {
@@ -551,6 +704,7 @@ export function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor) {
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          animation: false,
           plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } },
           scales: {
             y: {
@@ -569,7 +723,8 @@ export function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor) {
         },
       },
       mountEl,
-      chartStore
+      chartStore,
+      'io'
     );
     ioBlock.appendChild(ioWrap);
   } else {
@@ -580,4 +735,11 @@ export function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor) {
 
   mountEl.replaceChildren(section);
   mountEl._eaCharts = chartStore;
+  mountEl._eaChartSlotIds = chartStore
+    .map(function (ch) {
+      return ch && ch._eaSlotId ? String(ch._eaSlotId) : '';
+    })
+    .filter(Boolean);
+  mountEl._eaChartsLayoutKey = layoutKey;
+  mountEl._eaChartsSig = sig;
 }

@@ -83,8 +83,10 @@ import {
   toggleAtbRisFilter,
   wireManejoAtbRisChipFilters,
 } from './manejo-atb-ui.mjs';
-import { syncAllSubTabIndicators } from '../ui-tab-motion.mjs';
+import { syncSubTabBarIndicator } from '../ui-tab-motion.mjs';
 import { scheduleAfterPaint } from '../deferred-work.mjs';
+
+var _manejoShellPatientId = null;
 
 const MANEJO_SUBTABS = [
   { id: 'electrolitos', label: 'Electrolitos' },
@@ -296,19 +298,34 @@ function renderActiveManejoSubpanel(panel, subtabId, pid, patient) {
   }
 }
 
-export function renderManejo(opts) {
-  opts = opts || {};
-  var onReady = typeof opts.onReady === 'function' ? opts.onReady : null;
-  var container = document.getElementById('manejo-container');
-  if (!container) {
-    if (onReady) onReady();
-    return;
-  }
-  while (container.firstChild) container.removeChild(container.firstChild);
+function syncManejoSubtabChrome(activeId) {
+  var nav = document.querySelector('#manejo-container .manejo-subtabs');
+  if (!nav) return;
+  nav.querySelectorAll('.manejo-subtab').forEach(function (btn) {
+    var id = btn.getAttribute('data-subtab');
+    var on = id === activeId;
+    btn.classList.toggle('manejo-subtab--active', on);
+    btn.classList.toggle('active', on);
+    btn.setAttribute('aria-selected', on ? 'true' : 'false');
+    btn.tabIndex = on ? 0 : -1;
+  });
+  MANEJO_SUBTABS.forEach(function (tab) {
+    var panel = document.getElementById('manejo-subpanel-' + tab.id);
+    if (panel) panel.hidden = tab.id !== activeId;
+  });
+  syncSubTabBarIndicator(nav);
+}
 
-  var pid = aid();
-  var patient = pid ? findPatient(pid) : null;
-  var activeId = getActiveManejoSubtab();
+function ensureManejoShell(container, pid, activeId) {
+  if (_manejoShellPatientId !== pid || !container.querySelector('.manejo-subtabs')) {
+    return null;
+  }
+  syncManejoSubtabChrome(activeId);
+  return document.getElementById('manejo-subpanel-' + activeId);
+}
+
+function buildManejoShell(container, pid, activeId) {
+  while (container.firstChild) container.removeChild(container.firstChild);
 
   var nav = document.createElement('nav');
   nav.className = 'manejo-subtabs rpc-subtab-bar';
@@ -318,7 +335,6 @@ export function renderManejo(opts) {
   var panelsWrap = document.createElement('div');
   panelsWrap.className = 'manejo-subpanels';
 
-  var panels = {};
   MANEJO_SUBTABS.forEach(function (tab) {
     var isActive = tab.id === activeId;
     var btn = document.createElement('button');
@@ -343,24 +359,60 @@ export function renderManejo(opts) {
     panel.id = 'manejo-subpanel-' + tab.id;
     panel.setAttribute('role', 'tabpanel');
     panel.hidden = !isActive;
-    if (isActive) {
-      panel.innerHTML = '<p class="manejo-hint manejo-loading">Cargando…</p>';
-    }
     panelsWrap.appendChild(panel);
-    panels[tab.id] = panel;
   });
 
   container.appendChild(buildManejoDisclaimerBar());
   container.appendChild(nav);
   container.appendChild(panelsWrap);
+  _manejoShellPatientId = pid;
+  syncManejoSubtabChrome(activeId);
+  return document.getElementById('manejo-subpanel-' + activeId);
+}
 
-  var activePanel = panels[activeId];
+export function invalidateManejoShell() {
+  _manejoShellPatientId = null;
+}
+
+export function renderManejo(opts) {
+  opts = opts || {};
+  var onReady = typeof opts.onReady === 'function' ? opts.onReady : null;
+  var container = document.getElementById('manejo-container');
+  if (!container) {
+    if (onReady) onReady();
+    return;
+  }
+
+  var pid = aid();
+  var patient = pid ? findPatient(pid) : null;
+  var activeId = getActiveManejoSubtab();
+
+  var activePanel = ensureManejoShell(container, pid, activeId);
+  if (!activePanel) {
+    activePanel = buildManejoShell(container, pid, activeId);
+  }
+  if (activePanel) {
+    if (activeId === 'guia') {
+      var guiaHost = activePanel.querySelector('.manejo-guia-host');
+      if (guiaHost) {
+        guiaHost.innerHTML = '<p class="manejo-hint manejo-loading">Cargando…</p>';
+      } else {
+        activePanel.innerHTML = '<p class="manejo-hint manejo-loading">Cargando…</p>';
+      }
+    } else {
+      activePanel.innerHTML = '<p class="manejo-hint manejo-loading">Cargando…</p>';
+    }
+  }
+
   var paintSubpanel = function () {
-    if (activePanel) activePanel.innerHTML = '';
+    if (!activePanel) {
+      if (onReady) onReady();
+      return;
+    }
+    if (activeId !== 'guia') {
+      activePanel.innerHTML = '';
+    }
     renderActiveManejoSubpanel(activePanel, activeId, pid, patient);
-    requestAnimationFrame(function () {
-      syncAllSubTabIndicators();
-    });
     if (onReady) onReady();
   };
 

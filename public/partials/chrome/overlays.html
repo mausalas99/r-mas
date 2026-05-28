@@ -110,6 +110,27 @@
   </div>
 </div>
 
+<div id="ea-registro-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal ea-registro-modal" role="dialog" aria-modal="true" aria-labelledby="ea-registro-title" onclick="event.stopPropagation()">
+    <header class="ea-registro-modal-head">
+      <h3 id="ea-registro-title">Registrar medición</h3>
+    </header>
+    <div id="ea-registro-modal-body" class="ea-registro-modal-body"></div>
+    <div id="ea-paste-backdrop" class="ea-paste-nested-backdrop" aria-hidden="true">
+      <div class="modal ea-paste-modal" role="dialog" aria-modal="true" aria-labelledby="ea-paste-title" onclick="event.stopPropagation()">
+        <h3 id="ea-paste-title">Pegar monitoreo</h3>
+        <p class="ea-paste-hint">Pega T°, FC, FR, TA, DXT, <strong>SAT/SATURACION</strong>, I, E, EVAC y opcional B (se ignora). Balance = ingresos − salidas en cc. DXT: <code>198@08:30</code>.</p>
+        <textarea id="ea-paste-input" class="ea-paste-input" rows="9" spellcheck="false" aria-label="Texto de monitoreo"></textarea>
+        <p id="ea-paste-preview" class="ea-paste-preview" aria-live="polite"></p>
+        <div class="modal-actions ea-paste-actions">
+          <button type="button" class="btn-med-secondary btn-med-secondary--muted" onclick="closeEstadoActualPasteModal()">Cancelar</button>
+          <button type="button" class="btn-generate" onclick="confirmEstadoActualPaste()">Aplicar al formulario</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="lab-bulk-preview-backdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal lab-bulk-preview-modal" role="dialog" aria-modal="true" aria-labelledby="lab-bulk-preview-title" onclick="event.stopPropagation()">
     <h3 id="lab-bulk-preview-title">Vista previa — laboratorios</h3>

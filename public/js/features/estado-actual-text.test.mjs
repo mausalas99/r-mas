@@ -19,7 +19,7 @@ test('buildEstadoActualText usa placeholders y omite línea S', () => {
     { balanceTurno: NaN },
     {}
   );
-  assert.match(textNc, /EGRESOS NC CC/);
+  assert.match(textNc, /DIURESIS NC/);
 
   const text = buildEstadoActualText(m.estadoClinico, deriveSnapshot(m), {
     balanceTurno: 200,
@@ -30,6 +30,7 @@ test('buildEstadoActualText usa placeholders y omite línea S', () => {
   assert.match(text, /TA 120\/80/);
   assert.match(text, /GLUCOMETRÍAS CAPILARES \(140/);
   assert.match(text, /BALANCE \+200 CC/);
+  assert.match(text, /INGRESOS 500 CC, DIURESIS 300 CC/);
   // Formato igual a soap-estado: "ANALGESIA CON ___" (no hay subjetivo S:)
   assert.match(text, /ANALGESIA CON ___/);
   assert.doesNotMatch(text, /RESCATES DE INSULINA/);

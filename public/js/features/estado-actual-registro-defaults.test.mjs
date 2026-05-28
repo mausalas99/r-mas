@@ -1,0 +1,52 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  getDefaultRegistroRecordedAt,
+  getGlucometriaRegistroWindow,
+  collectGlucometriasForRegistroWindow,
+} from './estado-actual-registro-defaults.mjs';
+
+describe('estado-actual-registro-defaults', () => {
+  it('getDefaultRegistroRecordedAt is today at 00:00 local', () => {
+    var now = new Date(2026, 4, 27, 14, 30, 0);
+    var d = getDefaultRegistroRecordedAt(now);
+    assert.equal(d.getFullYear(), 2026);
+    assert.equal(d.getMonth(), 4);
+    assert.equal(d.getDate(), 27);
+    assert.equal(d.getHours(), 0);
+    assert.equal(d.getMinutes(), 0);
+  });
+
+  it('collectGlucometriasForRegistroWindow keeps glus from yesterday 08:00 until today 00:00', () => {
+    var now = new Date(2026, 4, 27, 9, 0, 0);
+    var historial = [
+      {
+        recordedAt: new Date(2026, 4, 26, 7, 0, 0).toISOString(),
+        glucometrias: [{ value: 99, time: '07:00' }],
+      },
+      {
+        recordedAt: new Date(2026, 4, 26, 10, 0, 0).toISOString(),
+        glucometrias: [{ value: 120, time: '10:00' }],
+      },
+      {
+        recordedAt: new Date(2026, 4, 27, 0, 0, 0).toISOString(),
+        glucometrias: [{ value: 180, time: '00:00' }],
+      },
+      {
+        recordedAt: new Date(2026, 4, 27, 8, 0, 0).toISOString(),
+        glucometrias: [{ value: 200, time: '08:00' }],
+      },
+    ];
+    var glus = collectGlucometriasForRegistroWindow(historial, now);
+    assert.deepEqual(
+      glus.map(function (g) {
+        return g.value + '@' + g.time;
+      }),
+      ['180@00:00', '120@10:00']
+    );
+    var win = getGlucometriaRegistroWindow(now);
+    assert.equal(win.start.getHours(), 8);
+    assert.equal(win.end.getHours(), 0);
+    assert.equal(win.end.getDate(), 27);
+  });
+});

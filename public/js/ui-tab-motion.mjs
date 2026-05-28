@@ -1,5 +1,5 @@
 import { prefersReducedMotion } from './ui-motion.mjs';
-import { consolidatedInnerTabButtonId } from './expediente-tabs.mjs';
+import { consolidatedInnerTabButtonId, resolveConsolidatedTarget } from './expediente-tabs.mjs';
 
 var resizeTimer = null;
 var indicatorsReady = false;
@@ -114,6 +114,21 @@ export function syncAllSubTabIndicators() {
     if (bar.offsetParent === null && window.getComputedStyle(bar).display === 'none') return;
     syncSubTabBarIndicator(bar);
   });
+}
+
+/** Solo la barra de segmento activa (evita layout de todas las barras en cada clic). */
+export function syncExpedienteSegmentIndicators(settings, granularTab) {
+  var target = resolveConsolidatedTarget(granularTab, settings || {});
+  if (target.tab === 'clinico') {
+    syncSubTabBarIndicator(document.getElementById('exp-segment-clinico'));
+    if (target.section === 'manejo') {
+      syncSubTabBarIndicator(document.querySelector('.manejo-subtabs'));
+    }
+  } else if (target.tab === 'resultados') {
+    syncSubTabBarIndicator(document.getElementById('exp-segment-resultados'));
+  } else if (target.tab === 'salida') {
+    syncSubTabBarIndicator(document.getElementById('exp-segment-salida'));
+  }
 }
 
 function scheduleIndicatorSync() {

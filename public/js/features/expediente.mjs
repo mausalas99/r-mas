@@ -17,7 +17,8 @@ import {
   parseFechaLabToMs,
   normalizeFechaLabHistory,
 } from "../tend-core.mjs";
-import { TREND_REFRESH_DEBOUNCE_MS } from "../lab-history-cache.mjs";
+import { getLabHistoryRevision, TREND_REFRESH_DEBOUNCE_MS } from "../lab-history-cache.mjs";
+import { scheduleIdle } from "../deferred-work.mjs";
 import { isPaseMode } from "./chrome.mjs";
 import {
   renderEntry,
@@ -637,9 +638,45 @@ function filterCultivoRowsSignificantFlip(rows) {
   return out;
 }
 
+var _cultivosTableCacheKey = '';
+var CULTIVOS_CHUNK_ROWS = 40;
+var CULTIVOS_CHUNKED_THRESHOLD = 72;
+
+function renderCultivosTableBodyChunked(container, shellHtml, rowChunks, onDone) {
+  container.innerHTML = shellHtml;
+  var tbody = container.querySelector(".cultivos-table tbody");
+  if (!tbody || !rowChunks.length) {
+    onDone();
+    return;
+  }
+  var i = 0;
+  function appendChunk() {
+    var end = Math.min(i + CULTIVOS_CHUNK_ROWS, rowChunks.length);
+    for (; i < end; i += 1) {
+      tbody.insertAdjacentHTML("beforeend", rowChunks[i]);
+    }
+    if (i < rowChunks.length) {
+      scheduleIdle(appendChunk, 12);
+      return;
+    }
+    onDone();
+  }
+  scheduleIdle(appendChunk, 0);
+}
+
 function renderCultivosTable() {
   var container = document.getElementById('cultivos-table-container');
   if (!container) return;
+  var pid = aid();
+  if (pid) {
+    var cultKey = String(pid) + '|L' + getLabHistoryRevision(pid);
+    if (_cultivosTableCacheKey === cultKey && container.querySelector('.cultivos-table')) {
+      return;
+    }
+    _cultivosTableCacheKey = cultKey;
+  } else {
+    _cultivosTableCacheKey = '';
+  }
   removeAtbRisPanelsFromBody();
   if (!aid()) {
     container.innerHTML = '<p class="tend-empty">Selecciona un paciente.</p>';
@@ -691,44 +728,52 @@ function renderCultivosTable() {
     '<th>Organismo</th>' +
     '<th>Antibiograma</th>' +
     '</tr></thead>';
-  var tbody = groups
-    .map(function (g) {
-      var section =
-        '<tr class="cultivos-section-row"><td colspan="4">' + esc(g.label) + '</td></tr>';
-      var body = g.rows
-        .map(function (r) {
-          return (
-            '<tr class="' +
-            (r.negativo ? 'cultivos-row-neg' : '') +
-            '">' +
-            '<td>' +
-            esc(rowFechaDisplay(r)) +
-            '</td>' +
-            '<td>' +
-            esc(r.sitio) +
-            '</td>' +
-            '<td>' +
-            esc(r.organismo) +
-            '</td>' +
-            '<td class="cultivos-cell-atb">' + cultivoAntibiogramCellHtml(r) + '</td>' +
-            '</tr>'
-          );
-        })
-        .join('');
-      return section + body;
-    })
-    .join('');
+  var rowChunks = [];
+  var totalRows = 0;
+  groups.forEach(function (g) {
+    rowChunks.push(
+      '<tr class="cultivos-section-row"><td colspan="4">' + esc(g.label) + "</td></tr>"
+    );
+    g.rows.forEach(function (r) {
+      totalRows += 1;
+      rowChunks.push(
+        '<tr class="' +
+          (r.negativo ? "cultivos-row-neg" : "") +
+          '"><td>' +
+          esc(rowFechaDisplay(r)) +
+          "</td><td>" +
+          esc(r.sitio) +
+          "</td><td>" +
+          esc(r.organismo) +
+          '</td><td class="cultivos-cell-atb">' +
+          cultivoAntibiogramCellHtml(r) +
+          "</td></tr>"
+      );
+    });
+  });
+  var shellHtml =
+    negStrip +
+    '<p class="cultivos-table-hint">Por categoría (tipo de estudio), orden cronológico de más reciente a más antiguo.</p>' +
+    '<div class="cultivos-table-wrap"><table class="cultivos-table">' +
+    thead +
+    "<tbody></tbody></table></div>";
+  var finishTable = function () {
+    wireAtbRisHoverPanels(container);
+    if (isPaseMode()) rt.renderPaseBoard();
+  };
+  if (totalRows > CULTIVOS_CHUNKED_THRESHOLD) {
+    renderCultivosTableBodyChunked(container, shellHtml, rowChunks, finishTable);
+    return;
+  }
   container.innerHTML =
     negStrip +
     '<p class="cultivos-table-hint">Por categoría (tipo de estudio), orden cronológico de más reciente a más antiguo.</p>' +
-    '<div class="cultivos-table-wrap">' +
-    '<table class="cultivos-table">' +
+    '<div class="cultivos-table-wrap"><table class="cultivos-table">' +
     thead +
-    '<tbody>' +
-    tbody +
-    '</tbody></table></div>';
-  wireAtbRisHoverPanels(container);
-  if (isPaseMode()) rt.renderPaseBoard();
+    "<tbody>" +
+    rowChunks.join("") +
+    "</tbody></table></div>";
+  finishTable();
 }
 
 var _tendRefreshTimer = null;

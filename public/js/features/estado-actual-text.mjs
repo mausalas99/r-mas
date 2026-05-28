@@ -15,11 +15,12 @@ function val(v) {
 }
 
 import { resolveDietWeightKg, computeDietKcalTotal } from './estado-actual-data.mjs';
+import { formatIoClauseForSoap } from './estado-actual-io.mjs';
 
 /**
  * Pure SOAP Estado Actual texto (sin Subjetivo): snapshot SV/glu/io + estado clínico + balance de turno.
  * @param {Record<string, unknown> | null | undefined} estadoClinico
- * @param {{ vitals?: Record<string, unknown>, glucometrias?: Array<{ value?: unknown }>, io?: { ing?: unknown, egr?: unknown } } | null | undefined} snapshot
+ * @param {{ vitals?: Record<string, unknown>, glucometrias?: Array<{ value?: unknown }>, io?: { ing?: unknown, egr?: unknown, egrParts?: unknown[], evac?: unknown } } | null | undefined} snapshot
  * @param {{ balanceTurno?: unknown } | null | undefined} balances
  * @param {{ patientPeso?: unknown, includeInsulinRescates?: boolean } | null | undefined} [options]
  * @returns {string}
@@ -30,20 +31,13 @@ export function buildEstadoActualText(estadoClinico, snapshot, balances, options
   const ec = estadoClinico && typeof estadoClinico === 'object' ? /** @type {Record<string, unknown>} */ (estadoClinico) : {};
   /** @type {Record<string, unknown>} */
   const v = snapshot && typeof snapshot === 'object' && snapshot.vitals && typeof snapshot.vitals === 'object' ? snapshot.vitals : {};
-  var ing =
+  var snapIo =
     snapshot && typeof snapshot === 'object' && snapshot.io && typeof snapshot.io === 'object'
-      ? /** @type {{ ing?: unknown }} */ (snapshot.io).ing
-      : undefined;
-  var egr =
-    snapshot && typeof snapshot === 'object' && snapshot.io && typeof snapshot.io === 'object'
-      ? /** @type {{ egr?: unknown }} */ (snapshot.io).egr
-      : undefined;
+      ? /** @type {{ ing?: unknown, egr?: unknown, egrParts?: unknown[], evac?: unknown }} */ (snapshot.io)
+      : {};
   var btTurno =
     balances && typeof balances === 'object' ? /** @type {{ balanceTurno?: unknown }} */ (balances).balanceTurno : undefined;
-  const balance =
-    btTurno != null && btTurno !== ''
-      ? /** @type {string} */ ((Number(btTurno) > 0 ? '+' : '') + btTurno)
-      : '___';
+  const ioClause = formatIoClauseForSoap(snapIo, btTurno);
   /** @type {Record<string, string>} */
   const soporteMap = {
     'Aire ambiente': 'AL AIRE AMBIENTE',
@@ -53,6 +47,25 @@ export function buildEstadoActualText(estadoClinico, snapshot, balances, options
   };
   const soporteKey = ec.soporte != null ? String(ec.soporte) : '';
   const soporte = soporteMap[soporteKey] || 'AL AIRE AMBIENTE';
+  var snapAlt =
+    snapshot && typeof snapshot === 'object' && snapshot.alteredAt && typeof snapshot.alteredAt === 'object'
+      ? /** @type {Record<string, string>} */ (snapshot.alteredAt)
+      : {};
+  var tempActual = v.temp;
+  var tempPeak = v.tempPeak;
+  var hiTemp =
+    'TEMPERATURA ' +
+    num(tempActual) +
+    ' °C';
+  if (tempPeak != null && tempPeak !== '' && String(tempPeak) !== String(tempActual)) {
+    hiTemp +=
+      ', PICO FEBRIL ' +
+      num(tempPeak) +
+      ' °C' +
+      (snapAlt.tempPeak ? ' @ ' + snapAlt.tempPeak : '');
+  } else if (snapAlt.temp) {
+    hiTemp += ' @ ' + snapAlt.temp;
+  }
 
   const gluParts = [];
   const glSrc =
@@ -100,9 +113,9 @@ export function buildEstadoActualText(estadoClinico, snapshot, balances, options
       val(ec.antihta || 'NINGUNO') +
       ' || VASOPRESORES: ' +
       val(ec.vasop || 'NINGUNO'),
-    'HI: AFEBRIL, TEMPERATURA ' +
-      num(v.temp) +
-      ' °C || ANTIBIÓTICOS: ' +
+    'HI: AFEBRIL, ' +
+      hiTemp +
+      ' || ANTIBIÓTICOS: ' +
       val(ec.abx || 'NINGUNO'),
     'NM: DIETA ' +
       val(ec.dieta) +
@@ -112,13 +125,9 @@ export function buildEstadoActualText(estadoClinico, snapshot, balances, options
       num(kcalDisplay) +
       ' KCAL) PARA PESO DE ' +
       num(weightKg != null ? weightKg : '') +
-      ' KG || INGRESOS ' +
-      num(ing) +
-      ' CC, EGRESOS ' +
-      num(egr) +
-      ' CC, BALANCE ' +
-      balance +
-      ' CC || GLUCOMETRÍAS CAPILARES (' +
+      ' KG || ' +
+      ioClause +
+      ' || GLUCOMETRÍAS CAPILARES (' +
       gluParts.join(', ') +
       ' MG/DL)' +
       (options.includeInsulinRescates

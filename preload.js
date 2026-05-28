@@ -68,4 +68,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   relaunchApp: function() {
     ipcRenderer.send('relaunch-app');
   },
+  getPerformancePrefs: function() {
+    return ipcRenderer.invoke('get-performance-prefs');
+  },
+  setHardwareAcceleration: function(enabled) {
+    return ipcRenderer.invoke('set-hardware-acceleration', !!enabled);
+  },
 });

@@ -28,6 +28,8 @@ import { windowHandlers as labPanelWindowHandlers, renderLabHistoryPanel } from 
 import { windowHandlers as labBulkPreviewWindowHandlers } from './features/lab-bulk-preview-modal.mjs';
 import { windowHandlers as soapEstadoWindowHandlers } from './features/soap-estado.mjs';
 import { windowHandlers as estadoActualPanelWindowHandlers } from './features/estado-actual-panel.mjs';
+import { windowHandlers as estadoActualPasteWindowHandlers } from './features/estado-actual-paste-modal.mjs';
+import { windowHandlers as estadoActualRegistroWindowHandlers } from './features/estado-actual-registro-modal.mjs';
 import { windowHandlers as agendaWindowHandlers } from './features/agenda.mjs';
 import { windowHandlers as expedienteWindowHandlers } from './features/expediente.mjs';
 import { windowHandlers as notesIndicacionesWindowHandlers } from './features/notes-indicaciones.mjs';
@@ -51,6 +53,8 @@ const allWindowHandlers = Object.assign(
   labBulkPreviewWindowHandlers,
   soapEstadoWindowHandlers,
   estadoActualPanelWindowHandlers,
+  estadoActualPasteWindowHandlers,
+  estadoActualRegistroWindowHandlers,
   agendaWindowHandlers,
   expedienteWindowHandlers,
   notesIndicacionesWindowHandlers,

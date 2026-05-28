@@ -10,6 +10,7 @@ import { syncSettingsLanHostDiskSection } from "./lan-sync.mjs";
 import {
   syncUpdateChannelUI,
   syncUpdateTelemetryUI,
+  syncHardwareAccelerationUI,
   syncIdleLockSelectUi,
   syncPreimportBackupUi,
 } from "./platform.mjs";
@@ -209,6 +210,7 @@ export function loadSettings() {
   syncUiDensityButtons();
   syncUpdateChannelUI();
   syncUpdateTelemetryUI();
+  syncHardwareAccelerationUI();
   syncHideClinicoTabUI();
   syncIdleLockSelectUi();
   syncPreimportBackupUi();

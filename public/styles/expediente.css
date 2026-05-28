@@ -556,6 +556,13 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
   display: flex;
 }
 
+/* Menos trabajo de layout en paneles ocultos del expediente */
+.exp-composite-pane:not(.active) .exp-segment-panel,
+.exp-segment-panel:not(.active) {
+  content-visibility: hidden;
+  contain-intrinsic-size: auto 360px;
+}
+
 html.dark .exp-datos-collapse {
   background: color-mix(in oklab, var(--surface) 94%, var(--bg));
 }
