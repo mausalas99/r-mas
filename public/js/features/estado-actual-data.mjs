@@ -1,6 +1,6 @@
 /** @typedef {{ text: string, savedAt: string | null }} TextoGuardado */
 /** @typedef {{ kind: 'diuresis' | 'drain' | 'gastrostomy' | 'nephro', label: string, value: number | string }} IoEgresoPart */
-/** @typedef {{ id: string, recordedAt: string, vitals?: Record<string, unknown>, glucometrias?: Array<{ value?: unknown, time?: string }>, io?: { ing?: unknown, egr?: unknown, egrParts?: IoEgresoPart[], evac?: unknown }, alteredAt?: Record<string, string> }} MedicionHistorial */
+/** @typedef {{ id: string, recordedAt: string, vitals?: Record<string, unknown>, vitalSeries?: Record<string, Array<{ value?: number, time?: string }>>, glucometrias?: Array<{ value?: unknown, time?: string }>, bombaInsulina?: Array<{ value?: unknown, units?: unknown, time?: string }>, io?: { ing?: unknown, egr?: unknown, egrParts?: IoEgresoPart[], evac?: unknown }, alteredAt?: Record<string, string> }} MedicionHistorial */
 
 import {
   isIoNumericValue as isIoNumericValueIo,
@@ -8,6 +8,8 @@ import {
   ioNumericEgressTotal,
   computeIoBalanceFromIngEgr,
 } from './estado-actual-io.mjs';
+import { getVitalExtraStorageKey, VITAL_BASE_KEYS } from './estado-actual-vital-extras.mjs';
+import { vitalSeriesFromMedicion } from './estado-actual-vital-series.mjs';
 
 export const MED_FIELD_KEYS = /** @type {const} */ (['analgesia', 'abx', 'antihta', 'vasop']);
 
@@ -177,7 +179,23 @@ export function medicionHasCoreData(medicion) {
     var vv = vit[vk];
     if (vv != null && vv !== '') return true;
   }
-  if (vit.tempPeak != null && vit.tempPeak !== '') return true;
+  for (var ek = 0; ek < VITAL_BASE_KEYS.length; ek++) {
+    var extraKey = getVitalExtraStorageKey(VITAL_BASE_KEYS[ek]);
+    if (vit[extraKey] != null && vit[extraKey] !== '') return true;
+  }
+  var vs = m.vitalSeries;
+  if (vs && typeof vs === 'object') {
+    for (var vk2 in vs) {
+      if (Array.isArray(vs[vk2]) && vs[vk2].length) return true;
+    }
+  }
+  var bombas = Array.isArray(m.bombaInsulina) ? m.bombaInsulina : [];
+  for (var bi = 0; bi < bombas.length; bi++) {
+    var b = bombas[bi];
+    if (b && typeof b === 'object' && /** @type {any} */ (b).value != null && /** @type {any} */ (b).value !== '') {
+      return true;
+    }
+  }
   var glus = Array.isArray(m.glucometrias) ? m.glucometrias : [];
   for (var i = 0; i < glus.length; i++) {
     var g = glus[i];
@@ -252,13 +270,17 @@ export function deriveSnapshot(monitoreoLike) {
         }
       }
     }
-    var peakVal = rv.tempPeak;
-    if (peakVal != null && peakVal !== '') {
-      vitals.tempPeak = peakVal;
-      if (rowAlt && rowAlt.tempPeak != null && String(rowAlt.tempPeak).length > 0) {
-        alteredAt.tempPeak = String(rowAlt.tempPeak);
-      } else {
-        delete alteredAt.tempPeak;
+    for (var ex = 0; ex < VITAL_BASE_KEYS.length; ex++) {
+      var baseK = VITAL_BASE_KEYS[ex];
+      var extraK = getVitalExtraStorageKey(baseK);
+      var extraVal = rv[extraK];
+      if (extraVal != null && extraVal !== '') {
+        vitals[extraK] = extraVal;
+        if (rowAlt && rowAlt[extraK] != null && String(rowAlt[extraK]).length > 0) {
+          alteredAt[extraK] = String(rowAlt[extraK]);
+        } else {
+          delete alteredAt[extraK];
+        }
       }
     }
   }
@@ -302,9 +324,53 @@ export function deriveSnapshot(monitoreoLike) {
     if (ingSeen !== null && (egrSeen !== null || egrPartsSeen) && evacSeen !== null) break;
   }
 
+  /** @type {Record<string, Array<{ value: number, time?: string }>>} */
+  var vitalSeries = {};
+  for (var si = sortedAsc.length - 1; si >= 0; si--) {
+    var srow = sortedAsc[si];
+    if (!srow || typeof srow !== 'object') continue;
+    var fromRow = vitalSeriesFromMedicion(srow);
+    VITAL_BASE_KEYS.forEach(function (bk) {
+      if (!vitalSeries[bk]) vitalSeries[bk] = [];
+      var list = fromRow[bk] || [];
+      for (var ri = 0; ri < list.length; ri++) {
+        var rd = list[ri];
+        var dup = vitalSeries[bk].some(function (x) {
+          return x.value === rd.value && (x.time || '') === (rd.time || '');
+        });
+        if (!dup) vitalSeries[bk].push(rd);
+      }
+    });
+  }
+
   snap.vitals = vitals;
   snap.alteredAt = alteredAt;
+  snap.vitalSeries = vitalSeries;
   snap.glucometrias = gluChosen.slice();
+  /** @type {Array<{ value: number, units: number, time?: string }>} */
+  var bombaChosen = [];
+  for (var bj = sortedAsc.length - 1; bj >= 0; bj--) {
+    var rB = sortedAsc[bj];
+    if (!rB || typeof rB !== 'object') continue;
+    var barr = Array.isArray(/** @type {any} */ (rB).bombaInsulina) ? /** @type {any} */ (rB).bombaInsulina : [];
+    if (barr.length) {
+      bombaChosen = barr
+        .map(function (e) {
+          if (!e || typeof e !== 'object') return null;
+          var v = Number(/** @type {any} */ (e).value);
+          var u = Number(/** @type {any} */ (e).units);
+          if (!Number.isFinite(v)) return null;
+          return {
+            value: v,
+            units: Number.isFinite(u) ? u : 0,
+            time: /** @type {any} */ (e).time != null ? String(/** @type {any} */ (e).time) : undefined,
+          };
+        })
+        .filter(Boolean);
+      break;
+    }
+  }
+  snap.bombaInsulina = bombaChosen;
   /** @type {{ ing: null | unknown, egr: null | unknown, egrParts?: IoEgresoPart[], evac?: unknown }} */
   var snapIo = { ing: ingSeen, egr: egrSeen };
   if (egrPartsSeen) snapIo.egrParts = egrPartsSeen;

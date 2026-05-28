@@ -42,6 +42,15 @@ import {
   getDefaultRegistroRecordedAt,
   collectGlucometriasForRegistroWindow,
 } from './estado-actual-registro-defaults.mjs';
+import { getVitalExtraStorageKey, getBaseVitalKey } from './estado-actual-vital-extras.mjs';
+import {
+  MAX_VITAL_LAYERS_IN_FORM,
+  MAX_VITAL_READINGS_PER_DAY,
+  vitalSeriesFromMedicion,
+  vitalSeriesToLegacyFields,
+  countVitalReadingsInRegistroWindow,
+  collectBombaInsulinaForRegistroWindow,
+} from './estado-actual-vital-series.mjs';
 
 var _eaPanelCache = { shellKey: '', dataKey: '' };
 
@@ -497,61 +506,89 @@ function wireFormInteractions(form) {
   if (!form) return;
 
   function syncAlteredFields() {
-    VITAL_KEYS.forEach(function (key) {
-      var input = form.querySelector('[data-ea-vital="' + key + '"]');
-      var wrap = form.querySelector('[data-ea-altered-wrap="' + key + '"]');
-      var box = form.querySelector('[data-ea-vital-box="' + key + '"]');
+    function syncLayer(baseKey, layerIdx) {
+      var boxKey = vitalLayerBoxKey(baseKey, layerIdx);
+      var input = form.querySelector(
+        '[data-ea-vital="' + baseKey + '"][data-ea-layer-idx="' + layerIdx + '"]'
+      );
+      var wrap = form.querySelector('[data-ea-altered-wrap="' + boxKey + '"]');
+      var box = form.querySelector('[data-ea-vital-box="' + boxKey + '"]');
       if (!input || !wrap) return;
-      var altered = isVitalAltered(key, input.value);
+      var val = input.value;
+      var showSlot = String(val).trim() !== '';
+      var altered = showSlot && isVitalAltered(baseKey, val);
       wrap.classList.toggle('ea-altered-slot--hidden', !altered);
       wrap.hidden = !altered;
       if (box) box.classList.toggle('ea-vital-box--altered', altered);
-    });
-    var peakInput = form.querySelector('[data-ea-vital="tempPeak"]');
-    var peakWrap = form.querySelector('[data-ea-altered-wrap="tempPeak"]');
-    var peakBox = form.querySelector('[data-ea-vital-box="tempPeak"]');
-    if (peakInput && peakWrap) {
-      var peakVal = peakInput.value;
-      var showPeak = String(peakVal).trim() !== '';
-      var peakFever = showPeak && isVitalAltered('temp', peakVal);
-      peakWrap.classList.toggle('ea-altered-slot--hidden', !showPeak);
-      peakWrap.hidden = !showPeak;
-      if (peakBox) peakBox.classList.toggle('ea-vital-box--altered', peakFever);
     }
-    syncTempAddButtonVisibility(form);
-  }
-
-  VITAL_KEYS.forEach(function (key) {
-    var input = form.querySelector('[data-ea-vital="' + key + '"]');
-    if (input) input.addEventListener('input', syncAlteredFields);
-  });
-  var peakInput0 = form.querySelector('[data-ea-vital="tempPeak"]');
-  if (peakInput0) peakInput0.addEventListener('input', syncAlteredFields);
-
-  var addTempBtn = form.querySelector('#ea-add-temp');
-  if (addTempBtn && !addTempBtn.dataset.eaTempWired) {
-    addTempBtn.dataset.eaTempWired = '1';
-    addTempBtn.addEventListener('click', function () {
-      expandTempSecondSlot(form);
+    form.querySelectorAll('[data-ea-vital][data-ea-layer-idx]').forEach(function (input) {
+      var baseKey = input.getAttribute('data-ea-vital') || '';
+      var layerIdx = input.getAttribute('data-ea-layer-idx') || '0';
+      syncLayer(baseKey, layerIdx);
     });
+    syncAllVitalAddButtonVisibility(form);
   }
 
   function syncIoBalance() {
     syncIoBalanceFromForm(form);
   }
 
-  var ingEl = form.querySelector('#ea-io-ing');
-  var egrEl = form.querySelector('#ea-io-egr');
-  var evacEl = form.querySelector('#ea-io-evac');
-  if (ingEl) ingEl.addEventListener('input', syncIoBalance);
-  if (egrEl) egrEl.addEventListener('input', syncIoBalance);
-  if (evacEl) evacEl.addEventListener('input', syncIoBalance);
+  if (!form.dataset.eaRegistroFormWired) {
+    form.dataset.eaRegistroFormWired = '1';
 
-  var addGluBtn = form.querySelector('#ea-add-glu');
-  var gluList = form.querySelector('#ea-glu-list');
-  if (addGluBtn && gluList) {
-    addGluBtn.addEventListener('click', function () {
-      gluList.appendChild(buildGluRow());
+    form.addEventListener('click', function (ev) {
+      var target = /** @type {HTMLElement | null} */ (ev.target);
+      if (!target || !form.contains(target)) return;
+
+      var addBtn = target.closest('[data-ea-vital-add]');
+      if (addBtn) {
+        var vitalKey = addBtn.getAttribute('data-ea-vital-add');
+        if (!vitalKey) return;
+        var patient = findActivePatient();
+        var hist =
+          patient && patient.monitoreo && Array.isArray(patient.monitoreo.historial)
+            ? patient.monitoreo.historial
+            : [];
+        expandVitalNextLayer(form, vitalKey, hist);
+        return;
+      }
+
+      if (target.id === 'ea-add-glu' || target.closest('#ea-add-glu')) {
+        var gluList = form.querySelector('#ea-glu-list');
+        if (gluList) gluList.appendChild(buildGluRow());
+        return;
+      }
+
+      if (target.id === 'ea-add-bomba' || target.closest('#ea-add-bomba')) {
+        var bombaList = form.querySelector('#ea-bomba-list');
+        if (bombaList) bombaList.appendChild(buildBombaRow());
+      }
+    });
+
+    form.addEventListener('change', function (ev) {
+      var target = /** @type {HTMLElement | null} */ (ev.target);
+      if (!target || target.id !== 'ea-bomba-enabled') return;
+      var bombaToggle = /** @type {HTMLInputElement} */ (target);
+      var bombaBlock = form.querySelector('#ea-bomba-block');
+      var bombaList = form.querySelector('#ea-bomba-list');
+      if (!bombaBlock) return;
+      bombaBlock.hidden = !bombaToggle.checked;
+      if (bombaToggle.checked && bombaList && !bombaList.querySelector('.ea-bomba-row')) {
+        bombaList.appendChild(buildBombaRow());
+      }
+    });
+
+    form.addEventListener('input', function (ev) {
+      var target = /** @type {HTMLElement | null} */ (ev.target);
+      if (!target) return;
+      if (target.matches('[data-ea-vital][data-ea-layer-idx]')) syncAlteredFields();
+      else if (
+        target.id === 'ea-io-ing' ||
+        target.id === 'ea-io-egr' ||
+        target.id === 'ea-io-evac'
+      ) {
+        syncIoBalance();
+      }
     });
   }
 
@@ -627,6 +664,77 @@ function buildGluRow(data) {
 }
 
 /**
+ * @param {{ value?: number, units?: number, time?: string } | null | undefined} [data]
+ * @returns {HTMLDivElement}
+ */
+function buildBombaRow(data) {
+  var row = document.createElement('div');
+  row.className = 'ea-bomba-row ea-glu-row';
+  row.innerHTML =
+    '<label class="ea-field ea-field--inline">' +
+    '<span class="ea-label">Glu</span>' +
+    '<input type="number" class="ea-input" data-ea-bomba-value min="0" step="1" placeholder="mg/dL">' +
+    '</label>' +
+    '<label class="ea-field ea-field--inline">' +
+    '<span class="ea-label">Unidades</span>' +
+    '<input type="number" class="ea-input" data-ea-bomba-units min="0" step="0.1" placeholder="U">' +
+    '</label>' +
+    '<label class="ea-field ea-field--inline">' +
+    '<span class="ea-label">Hora</span>' +
+    '<input type="time" class="ea-input ea-input--time" data-ea-bomba-time>' +
+    '</label>' +
+    '<button type="button" class="ea-btn ea-btn--ghost ea-btn--icon" data-ea-bomba-remove title="Quitar" aria-label="Quitar registro bomba">×</button>';
+  if (data) {
+    var val = row.querySelector('[data-ea-bomba-value]');
+    var units = row.querySelector('[data-ea-bomba-units]');
+    var time = row.querySelector('[data-ea-bomba-time]');
+    if (val && data.value != null && 'value' in val) val.value = String(data.value);
+    if (units && data.units != null && 'value' in units) units.value = String(data.units);
+    if (time && data.time && 'value' in time) time.value = String(data.time);
+  }
+  var removeBtn = row.querySelector('[data-ea-bomba-remove]');
+  if (removeBtn) {
+    removeBtn.addEventListener('click', function () {
+      var list = row.parentElement;
+      if (!list) return;
+      if (list.querySelectorAll('.ea-bomba-row').length <= 1) {
+        var valEl = row.querySelector('[data-ea-bomba-value]');
+        var unitsEl = row.querySelector('[data-ea-bomba-units]');
+        var timeEl = row.querySelector('[data-ea-bomba-time]');
+        if (valEl) valEl.value = '';
+        if (unitsEl) unitsEl.value = '';
+        if (timeEl) timeEl.value = '';
+        return;
+      }
+      row.remove();
+    });
+  }
+  return row;
+}
+
+/**
+ * @param {unknown[]} historial
+ * @param {string} vitalKey
+ * @returns {Array<{ value: number, time?: string }>}
+ */
+function mergeVitalSeriesFromHistorial(historial, vitalKey) {
+  var hist = Array.isArray(historial) ? historial : [];
+  /** @type {Array<{ value: number, time?: string }>} */
+  var out = [];
+  for (var i = 0; i < hist.length; i++) {
+    var list = vitalSeriesFromMedicion(hist[i])[vitalKey] || [];
+    for (var j = 0; j < list.length; j++) {
+      var rd = list[j];
+      var dup = out.some(function (x) {
+        return x.value === rd.value && (x.time || '') === (rd.time || '');
+      });
+      if (!dup) out.push(rd);
+    }
+  }
+  return out.slice(-MAX_VITAL_READINGS_PER_DAY);
+}
+
+/**
  * @param {ReturnType<typeof import('./estado-actual-parser.mjs').parseEstadoActualPaste>} parsed
  */
 export function applyEstadoActualParsedToForm(parsed) {
@@ -634,35 +742,23 @@ export function applyEstadoActualParsedToForm(parsed) {
   if (!form || !parsed || !parsed.ok) return;
 
   VITAL_KEYS.forEach(function (key) {
-    var el = form.querySelector('[data-ea-vital="' + key + '"]');
-    var v = parsed.vitals[key];
-    if (el && v != null && 'value' in el) el.value = String(v);
-  });
-
-  VITAL_KEYS.forEach(function (key) {
-    var wrap = form.querySelector('[data-ea-altered-wrap="' + key + '"]');
-    var box = form.querySelector('[data-ea-vital-box="' + key + '"]');
-    var timeEl = form.querySelector('[data-ea-altered="' + key + '"]');
-    var vitalEl = form.querySelector('[data-ea-vital="' + key + '"]');
-    var alteredTime = parsed.alteredAt[key];
-    var altered = !!(alteredTime || (vitalEl && isVitalAltered(key, vitalEl.value)));
-    if (wrap) {
-      wrap.classList.toggle('ea-altered-slot--hidden', !altered);
-      wrap.hidden = !altered;
+    /** @type {Array<{ value: number, time?: string }>} */
+    var readings = [];
+    if (parsed.vitals[key] != null && parsed.vitals[key] !== '') {
+      readings.push({
+        value: Number(parsed.vitals[key]),
+        time: parsed.alteredAt[key] ? String(parsed.alteredAt[key]) : undefined,
+      });
     }
-    if (box) box.classList.toggle('ea-vital-box--altered', altered);
-    if (timeEl && alteredTime && 'value' in timeEl) timeEl.value = alteredTime;
+    var extraKey = getVitalExtraStorageKey(key);
+    if (parsed.vitals[extraKey] != null && parsed.vitals[extraKey] !== '') {
+      readings.push({
+        value: Number(parsed.vitals[extraKey]),
+        time: parsed.alteredAt[extraKey] ? String(parsed.alteredAt[extraKey]) : undefined,
+      });
+    }
+    setVitalStackFromSeries(form, key, readings.slice(0, MAX_VITAL_LAYERS_IN_FORM));
   });
-
-  var peakEl = form.querySelector('[data-ea-vital="tempPeak"]');
-  if (peakEl && parsed.vitals.tempPeak != null && 'value' in peakEl) {
-    peakEl.value = String(parsed.vitals.tempPeak);
-  }
-  var peakTimeEl = form.querySelector('[data-ea-altered="tempPeak"]');
-  if (peakTimeEl && parsed.alteredAt.tempPeak && 'value' in peakTimeEl) {
-    peakTimeEl.value = parsed.alteredAt.tempPeak;
-  }
-  if (parsed.vitals.tempPeak != null && form) expandTempSecondSlot(form);
 
   var gluList = form.querySelector('#ea-glu-list');
   if (gluList && parsed.glucometrias.length) {
@@ -744,19 +840,22 @@ function renderSnapshotSection(snapshot, balTurno, balGlobal) {
     var altered = snapshot.alteredAt && snapshot.alteredAt[key];
     var cls = 'ea-snapshot-item' + (altered ? ' ea-snapshot-item--altered' : '');
     var meta = altered ? '<span class="ea-snapshot-altered-at">' + altered + '</span>' : '';
-    var display = displayValue(val);
-    if (key === 'temp') {
-      var peak = snapshot.vitals.tempPeak;
-      if (peak != null && peak !== '' && String(peak) !== String(val)) {
-        display =
-          displayValue(val) +
-          ' · pico ' +
-          displayValue(peak) +
-          (snapshot.alteredAt && snapshot.alteredAt.tempPeak
-            ? ' @ ' + escHtml(snapshot.alteredAt.tempPeak)
-            : '');
-      }
-    }
+    var fakeMed = {
+      vitals: snapshot.vitals,
+      alteredAt: snapshot.alteredAt,
+      vitalSeries: snapshot.vitalSeries,
+    };
+    var series = vitalSeriesFromMedicion(fakeMed)[key] || [];
+    var display =
+      series.length > 0
+        ? series
+            .map(function (rd) {
+              var bit = displayValue(rd.value);
+              if (rd.time) bit += ' @ ' + escHtml(rd.time);
+              return bit;
+            })
+            .join(' · ')
+        : displayValue(val);
     return (
       '<div class="' +
       cls +
@@ -869,15 +968,25 @@ function renderHistorialSection(historial) {
           ':' +
           pad2(d.getMinutes());
       var parts = [];
-      var vit = row.vitals || {};
-      VITAL_KEYS.forEach(function (k) {
-        if (vit[k] != null && vit[k] !== '') parts.push(VITAL_LABELS[k] + ' ' + vit[k]);
+      var rowSeries = vitalSeriesFromMedicion(row);
+      VITAL_KEYS.forEach(function (vk) {
+        var list = rowSeries[vk] || [];
+        for (var rsi = 0; rsi < list.length; rsi++) {
+          var rd = list[rsi];
+          var part = (VITAL_LABELS[vk] || vk) + ' ' + rd.value;
+          if (rd.time) part += ' @ ' + rd.time;
+          parts.push(part);
+        }
       });
-      if (vit.tempPeak != null && vit.tempPeak !== '' && String(vit.tempPeak) !== String(vit.temp)) {
-        var peakPart = 'Pico ' + vit.tempPeak;
-        if (row.alteredAt && row.alteredAt.tempPeak) peakPart += ' @ ' + row.alteredAt.tempPeak;
-        parts.push(peakPart);
-      }
+      var bombas = Array.isArray(row.bombaInsulina) ? row.bombaInsulina : [];
+      bombas.forEach(function (b) {
+        if (!b || typeof b !== 'object') return;
+        if (b.value == null || b.value === '') return;
+        var bp = 'Bomba Glu ' + b.value;
+        if (b.units != null && b.units !== '') bp += ' (' + b.units + ' U)';
+        if (b.time) bp += ' @ ' + b.time;
+        parts.push(bp);
+      });
       var glus = Array.isArray(row.glucometrias) ? row.glucometrias : [];
       glus.forEach(function (g) {
         if (g && g.value != null && g.value !== '') {
@@ -933,32 +1042,24 @@ function renderHistorialSection(historial) {
  * @param {{ tempPlus?: boolean } | undefined} [opts]
  * @returns {string}
  */
-function buildVitalChipHtml(key, labelOverride, opts) {
+function vitalLayerBoxKey(baseKey, layerIdx) {
+  return baseKey + '__L' + layerIdx;
+}
+
+function buildVitalChipHtml(baseKey, labelOverride, opts) {
   opts = opts || {};
-  var label = labelOverride || VITAL_LABELS[key] || key;
-  var boxKey = key === 'tempPeak' ? 'tempPeak' : key;
-  var unit = VITAL_UNITS[key === 'tempPeak' ? 'temp' : key] || '';
-  var tempPlusBtn = opts.tempPlus
-    ? '<button type="button" class="ea-temp-add-btn" id="ea-add-temp" title="Segunda temperatura (pico febril)">+1</button>'
-    : '';
-  var labelHtml = opts.tempPlus
-    ? '<div class="vital-label ea-vital-label-row">' +
-      '<div class="ea-vital-label-text">' +
-      '<span class="ea-vital-name">' +
-      label +
-      '</span>' +
-      '<span class="ea-vital-unit">' +
-      unit +
-      '</span></div>' +
-      tempPlusBtn +
-      '</div>'
-    : '<div class="vital-label">' +
-      '<span class="ea-vital-name">' +
-      label +
-      '</span>' +
-      '<span class="ea-vital-unit">' +
-      unit +
-      '</span></div>';
+  var label = labelOverride || VITAL_LABELS[baseKey] || baseKey;
+  var layerIdx = opts.layerIdx != null ? opts.layerIdx : 0;
+  var boxKey = vitalLayerBoxKey(baseKey, layerIdx);
+  var unit = VITAL_UNITS[baseKey] || '';
+  var labelHtml =
+    '<div class="vital-label">' +
+    '<span class="ea-vital-name">' +
+    label +
+    '</span>' +
+    '<span class="ea-vital-unit">' +
+    unit +
+    '</span></div>';
   return (
     '<div class="vital-box ea-vital-box ea-vital-chip" data-ea-vital-box="' +
     boxKey +
@@ -966,7 +1067,9 @@ function buildVitalChipHtml(key, labelOverride, opts) {
     labelHtml +
     '<div class="ea-vital-value-wrap">' +
     '<input type="number" class="ea-vital-input" data-ea-vital="' +
-    key +
+    baseKey +
+    '" data-ea-layer-idx="' +
+    layerIdx +
     '" step="any" inputmode="decimal" placeholder="—" aria-label="' +
     label +
     '">' +
@@ -984,98 +1087,261 @@ function buildVitalChipHtml(key, labelOverride, opts) {
   );
 }
 
-function buildTempStackHtml() {
+/**
+ * @param {string} vitalKey
+ * @returns {string}
+ */
+function buildVitalStackHtml(vitalKey) {
+  var label = VITAL_LABELS[vitalKey] || vitalKey;
+  var slots = '';
+  for (var li = 0; li < MAX_VITAL_LAYERS_IN_FORM; li++) {
+    slots +=
+      '<div class="ea-vital-slot" data-ea-layer="' +
+      li +
+      '"' +
+      (li > 0 ? ' hidden' : '') +
+      '>' +
+      buildVitalChipHtml(vitalKey, label, { layerIdx: li }) +
+      '</div>';
+  }
   return (
-    '<div class="ea-temp-stack" data-ea-temp-stack>' +
-    '<div class="ea-temp-stack-slots">' +
-    '<div class="ea-temp-slot ea-temp-slot--primary" data-ea-temp-slot="primary">' +
-    buildVitalChipHtml('temp', undefined, { tempPlus: true }) +
-    '<div class="ea-temp-prev-view" data-ea-temp-prev-view hidden>' +
-    '<span class="ea-temp-prev-summary" data-ea-temp-prev-summary></span>' +
-    '</div>' +
-    '</div>' +
-    '<div class="ea-temp-slot ea-temp-slot--peak" data-ea-temp-slot="peak" hidden>' +
-    buildVitalChipHtml('tempPeak', 'Pico') +
-    '</div>' +
+    '<div class="ea-vital-stack" data-ea-vital-stack="' +
+    vitalKey +
+    '" data-ea-layer-count="1">' +
+    slots +
+    '<button type="button" class="ea-vital-add-btn ea-temp-add-btn" data-ea-vital-add="' +
+    vitalKey +
+    '" hidden title="Otra lectura de ' +
+    label +
+    ' (máx. ' +
+    MAX_VITAL_READINGS_PER_DAY +
+    '/día)">+1</button>' +
+    '<div class="ea-vital-prev-badge" data-ea-vital-prev-view hidden>' +
+    '<span class="ea-vital-prev-summary" data-ea-vital-prev-summary></span>' +
     '</div>' +
     '</div>'
   );
 }
 
 /**
+ * @param {HTMLElement} stack
+ * @returns {number}
+ */
+function getVitalStackLayerCount(stack) {
+  return Math.min(
+    MAX_VITAL_LAYERS_IN_FORM,
+    Math.max(1, Number(stack.getAttribute('data-ea-layer-count') || '1'))
+  );
+}
+
+/**
+ * @param {HTMLElement} stack
+ * @param {number} count
+ */
+function setVitalStackLayerCount(stack, count) {
+  stack.setAttribute('data-ea-layer-count', String(count));
+  stack.classList.toggle('ea-vital-stack--multi', count > 1);
+  stack.classList.toggle('ea-vital-stack--dual', count > 1);
+}
+
+/**
+ * @param {HTMLElement | null} form
+ * @param {string} vitalKey
+ */
+function updateVitalStackLayerVisibility(form, vitalKey) {
+  if (!form) return;
+  var stack = form.querySelector('[data-ea-vital-stack="' + vitalKey + '"]');
+  if (!stack) return;
+  var count = getVitalStackLayerCount(stack);
+  var active = count - 1;
+  for (var li = 0; li < MAX_VITAL_LAYERS_IN_FORM; li++) {
+    var slot = stack.querySelector('[data-ea-layer="' + li + '"]');
+    if (!slot) continue;
+    var on = li === active;
+    slot.hidden = !on;
+    slot.style.visibility = '';
+    slot.style.pointerEvents = '';
+    slot.style.zIndex = '';
+  }
+  var prevBadge = stack.querySelector('[data-ea-vital-prev-view]');
+  if (prevBadge) prevBadge.hidden = count <= 1;
+}
+
+/**
+ * @param {HTMLElement | null} form
+ * @param {string} vitalKey
+ */
+function syncVitalPrevSummary(form, vitalKey) {
+  if (!form) return;
+  var stack = form.querySelector('[data-ea-vital-stack="' + vitalKey + '"]');
+  if (!stack) return;
+  var summary = stack.querySelector('[data-ea-vital-prev-summary]');
+  if (!summary) return;
+  var count = getVitalStackLayerCount(stack);
+  var unit = VITAL_UNITS[vitalKey] || '';
+  /** @type {string[]} */
+  var parts = [];
+  for (var li = 0; li < count - 1; li++) {
+    var input = stack.querySelector(
+      '[data-ea-vital="' + vitalKey + '"][data-ea-layer-idx="' + li + '"]'
+    );
+    var boxKey = vitalLayerBoxKey(vitalKey, li);
+    var timeEl = stack.querySelector('[data-ea-altered="' + boxKey + '"]');
+    var val = input && 'value' in input ? String(input.value).trim() : '';
+    if (!val) continue;
+    var time = timeEl && 'value' in timeEl && timeEl.value ? String(timeEl.value) : '';
+    parts.push(val + (unit ? ' ' + unit : '') + (time ? ' @ ' + time : ''));
+  }
+  summary.textContent = parts.length ? parts.join(' · ') : '—';
+}
+
+/**
+ * @param {HTMLElement | null} form
+ * @param {string} vitalKey
+ */
+function syncVitalAddButtonVisibility(form, vitalKey) {
+  if (!form) return;
+  var stack = form.querySelector('[data-ea-vital-stack="' + vitalKey + '"]');
+  if (!stack) return;
+  var addBtn = stack.querySelector('[data-ea-vital-add="' + vitalKey + '"]');
+  if (!addBtn) return;
+  var count = getVitalStackLayerCount(stack);
+  var active = count - 1;
+  var activeInput = stack.querySelector(
+    '[data-ea-vital="' + vitalKey + '"][data-ea-layer-idx="' + active + '"]'
+  );
+  var hasVal =
+    activeInput && 'value' in activeInput && String(activeInput.value).trim() !== '';
+  var atFormMax = count >= MAX_VITAL_LAYERS_IN_FORM;
+  addBtn.hidden = !hasVal || atFormMax;
+  if (atFormMax) {
+    addBtn.title = 'Máximo ' + MAX_VITAL_LAYERS_IN_FORM + ' lecturas en este registro';
+  }
+}
+
+/**
  * @param {HTMLElement | null} form
  */
-function syncTempPrevSummary(form) {
+function syncAllVitalAddButtonVisibility(form) {
+  VITAL_KEYS.forEach(function (key) {
+    syncVitalAddButtonVisibility(form, key);
+  });
+}
+
+/**
+ * @param {HTMLElement | null} form
+ * @param {string} vitalKey
+ * @param {unknown} [historial]
+ */
+function expandVitalNextLayer(form, vitalKey, historial) {
   if (!form) return;
-  var summary = form.querySelector('[data-ea-temp-prev-summary]');
-  var primaryInput = form.querySelector('[data-ea-temp-slot="primary"] [data-ea-vital="temp"]');
-  var timeEl = form.querySelector('[data-ea-temp-slot="primary"] [data-ea-altered="temp"]');
-  if (!summary) return;
-  var val = primaryInput && 'value' in primaryInput ? String(primaryInput.value).trim() : '';
-  if (!val) {
-    summary.textContent = '—';
+  var stack = form.querySelector('[data-ea-vital-stack="' + vitalKey + '"]');
+  if (!stack) return;
+  var count = getVitalStackLayerCount(stack);
+  if (count >= MAX_VITAL_LAYERS_IN_FORM) {
+    rt.showToast('Máximo ' + MAX_VITAL_LAYERS_IN_FORM + ' lecturas por signo en este registro', 'error');
     return;
   }
-  var time = timeEl && 'value' in timeEl && timeEl.value ? String(timeEl.value) : '';
-  summary.textContent = val + ' °C' + (time ? ' @ ' + time : '');
-}
-
-/**
- * @param {HTMLElement | null} form
- */
-function syncTempAddButtonVisibility(form) {
-  if (!form) return;
-  var stack = form.querySelector('[data-ea-temp-stack]');
-  var addBtn = form.querySelector('#ea-add-temp');
-  var primaryInput = form.querySelector('[data-ea-temp-slot="primary"] [data-ea-vital="temp"]');
-  if (!addBtn) return;
-  var dual = stack && stack.classList.contains('ea-temp-stack--dual');
-  var hasVal = primaryInput && 'value' in primaryInput && String(primaryInput.value).trim() !== '';
-  addBtn.hidden = dual || !hasVal;
-}
-
-/**
- * @param {HTMLElement | null} form
- */
-function expandTempSecondSlot(form) {
-  if (!form) return;
-  var stack = form.querySelector('[data-ea-temp-stack]');
-  var primarySlot = form.querySelector('[data-ea-temp-slot="primary"]');
-  var peakSlot = form.querySelector('[data-ea-temp-slot="peak"]');
-  var prevView = form.querySelector('[data-ea-temp-prev-view]');
-  var primaryChip = primarySlot && primarySlot.querySelector('[data-ea-vital-box="temp"]');
-  if (!stack || !primarySlot || !peakSlot) return;
-  syncTempPrevSummary(form);
-  stack.classList.add('ea-temp-stack--dual');
-  if (primaryChip) primaryChip.hidden = true;
-  if (prevView) prevView.hidden = false;
-  peakSlot.hidden = false;
-  syncTempAddButtonVisibility(form);
-  var peakInput = peakSlot.querySelector('[data-ea-vital="tempPeak"]');
-  if (peakInput && 'focus' in peakInput) peakInput.focus();
-}
-
-/**
- * @param {HTMLElement | null} form
- */
-function collapseTempStack(form) {
-  if (!form) return;
-  var stack = form.querySelector('[data-ea-temp-stack]');
-  var primarySlot = form.querySelector('[data-ea-temp-slot="primary"]');
-  var peakSlot = form.querySelector('[data-ea-temp-slot="peak"]');
-  var prevView = form.querySelector('[data-ea-temp-prev-view]');
-  var primaryChip = primarySlot && primarySlot.querySelector('[data-ea-vital-box="temp"]');
-  if (stack) stack.classList.remove('ea-temp-stack--dual');
-  if (primaryChip) primaryChip.hidden = false;
-  if (prevView) prevView.hidden = true;
-  if (peakSlot) {
-    peakSlot.hidden = true;
-    var peakInput = peakSlot.querySelector('[data-ea-vital="tempPeak"]');
-    var peakTime = peakSlot.querySelector('[data-ea-altered="tempPeak"]');
-    if (peakInput && 'value' in peakInput) peakInput.value = '';
-    if (peakTime && 'value' in peakTime) peakTime.value = '';
+  var hist = historial || [];
+  var inWindow = countVitalReadingsInRegistroWindow(hist, vitalKey);
+  if (inWindow + count >= MAX_VITAL_READINGS_PER_DAY) {
+    rt.showToast(
+      'Máximo ' + MAX_VITAL_READINGS_PER_DAY + ' lecturas de ' + (VITAL_LABELS[vitalKey] || vitalKey) + ' en el turno',
+      'error'
+    );
+    return;
   }
-  syncTempAddButtonVisibility(form);
+  var active = count - 1;
+  var activeInput = stack.querySelector(
+    '[data-ea-vital="' + vitalKey + '"][data-ea-layer-idx="' + active + '"]'
+  );
+  if (!activeInput || !('value' in activeInput) || !String(activeInput.value).trim()) {
+    rt.showToast('Captura el valor actual antes de agregar otra lectura', 'error');
+    return;
+  }
+  setVitalStackLayerCount(stack, count + 1);
+  updateVitalStackLayerVisibility(form, vitalKey);
+  syncVitalPrevSummary(form, vitalKey);
+  syncVitalAddButtonVisibility(form, vitalKey);
+  var nextInput = stack.querySelector(
+    '[data-ea-vital="' + vitalKey + '"][data-ea-layer-idx="' + count + '"]'
+  );
+  if (nextInput && 'focus' in nextInput) nextInput.focus();
+}
+
+/**
+ * @param {HTMLElement | null} form
+ * @param {string} vitalKey
+ * @param {number} [layerCount]
+ */
+function setVitalStackFromSeries(form, vitalKey, readings, layerCount) {
+  if (!form) return;
+  var stack = form.querySelector('[data-ea-vital-stack="' + vitalKey + '"]');
+  if (!stack) return;
+  var list = Array.isArray(readings) ? readings.slice(0, MAX_VITAL_LAYERS_IN_FORM) : [];
+  var count = layerCount != null ? layerCount : Math.max(1, list.length);
+  count = Math.min(MAX_VITAL_LAYERS_IN_FORM, count);
+  setVitalStackLayerCount(stack, count);
+  for (var li = 0; li < MAX_VITAL_LAYERS_IN_FORM; li++) {
+    var input = stack.querySelector(
+      '[data-ea-vital="' + vitalKey + '"][data-ea-layer-idx="' + li + '"]'
+    );
+    var boxKey = vitalLayerBoxKey(vitalKey, li);
+    var timeEl = stack.querySelector('[data-ea-altered="' + boxKey + '"]');
+    var rd = list[li];
+    if (input && 'value' in input) input.value = rd && rd.value != null ? String(rd.value) : '';
+    if (timeEl && 'value' in timeEl) timeEl.value = rd && rd.time ? String(rd.time) : '';
+  }
+  updateVitalStackLayerVisibility(form, vitalKey);
+  syncVitalPrevSummary(form, vitalKey);
+  syncVitalAddButtonVisibility(form, vitalKey);
+}
+
+/**
+ * @param {HTMLElement | null} form
+ * @param {string} vitalKey
+ */
+function collapseVitalStack(form, vitalKey) {
+  setVitalStackFromSeries(form, vitalKey, [], 1);
+}
+
+/**
+ * @param {HTMLElement | null} form
+ */
+function collapseAllVitalStacks(form) {
+  VITAL_KEYS.forEach(function (key) {
+    collapseVitalStack(form, key);
+  });
+}
+
+/**
+ * @param {HTMLElement | null} form
+ * @param {string} vitalKey
+ * @returns {Array<{ value: number, time?: string }>}
+ */
+function readVitalSeriesFromStack(form, vitalKey) {
+  /** @type {Array<{ value: number, time?: string }>} */
+  var out = [];
+  if (!form) return out;
+  var stack = form.querySelector('[data-ea-vital-stack="' + vitalKey + '"]');
+  if (!stack) return out;
+  var count = getVitalStackLayerCount(stack);
+  for (var li = 0; li < count; li++) {
+    var input = stack.querySelector(
+      '[data-ea-vital="' + vitalKey + '"][data-ea-layer-idx="' + li + '"]'
+    );
+    var boxKey = vitalLayerBoxKey(vitalKey, li);
+    var timeEl = stack.querySelector('[data-ea-altered="' + boxKey + '"]');
+    if (!input || !('value' in input)) continue;
+    var raw = String(input.value).trim();
+    if (!raw) continue;
+    var n = Number(raw);
+    if (!Number.isFinite(n)) continue;
+    var time =
+      timeEl && 'value' in timeEl && timeEl.value ? String(timeEl.value) : undefined;
+    out.push({ value: n, time: time });
+  }
+  return out;
 }
 
 /**
@@ -1083,50 +1349,17 @@ function collapseTempStack(form) {
  * @param {ReturnType<typeof emptyMonitoreo>} monitoreo
  */
 function prefillRegistroFormFromMonitoreo(form, monitoreo) {
+  var hist = Array.isArray(monitoreo.historial) ? monitoreo.historial : [];
   var snap = deriveSnapshot(monitoreo);
-  var vit = snap.vitals || {};
-  var alt = snap.alteredAt || {};
 
   VITAL_KEYS.forEach(function (key) {
-    var el = form.querySelector('[data-ea-vital="' + key + '"]');
-    if (el && vit[key] != null && vit[key] !== '' && 'value' in el) el.value = String(vit[key]);
-  });
-
-  var peakEl = form.querySelector('[data-ea-vital="tempPeak"]');
-  if (peakEl && vit.tempPeak != null && vit.tempPeak !== '' && 'value' in peakEl) {
-    peakEl.value = String(vit.tempPeak);
-  }
-
-  VITAL_KEYS.forEach(function (key) {
-    var wrap = form.querySelector('[data-ea-altered-wrap="' + key + '"]');
-    var box = form.querySelector('[data-ea-vital-box="' + key + '"]');
-    var timeEl = form.querySelector('[data-ea-altered="' + key + '"]');
-    var vitalEl = form.querySelector('[data-ea-vital="' + key + '"]');
-    var alteredTime = alt[key];
-    var altered = !!(alteredTime || (vitalEl && isVitalAltered(key, vitalEl.value)));
-    if (wrap) {
-      wrap.classList.toggle('ea-altered-slot--hidden', !altered);
-      wrap.hidden = !altered;
+    var readings = mergeVitalSeriesFromHistorial(hist, key);
+    if (readings.length) {
+      setVitalStackFromSeries(form, key, readings);
+    } else {
+      collapseVitalStack(form, key);
     }
-    if (box) box.classList.toggle('ea-vital-box--altered', altered);
-    if (timeEl && alteredTime && 'value' in timeEl) timeEl.value = alteredTime;
   });
-
-  var peakWrap = form.querySelector('[data-ea-altered-wrap="tempPeak"]');
-  var peakBox = form.querySelector('[data-ea-vital-box="tempPeak"]');
-  var peakTimeEl = form.querySelector('[data-ea-altered="tempPeak"]');
-  if (peakEl && vit.tempPeak != null && vit.tempPeak !== '') {
-    expandTempSecondSlot(form);
-    if (peakWrap) {
-      var showPeak = String(peakEl.value).trim() !== '';
-      peakWrap.classList.toggle('ea-altered-slot--hidden', !showPeak);
-      peakWrap.hidden = !showPeak;
-      if (peakTimeEl && alt.tempPeak && 'value' in peakTimeEl) peakTimeEl.value = alt.tempPeak;
-      if (peakBox) peakBox.classList.toggle('ea-vital-box--altered', showPeak && isVitalAltered('temp', peakEl.value));
-    }
-  } else {
-    collapseTempStack(form);
-  }
 
   var io = snap.io || {};
   var ingEl = form.querySelector('#ea-io-ing');
@@ -1159,13 +1392,29 @@ function prefillRegistroFormFromMonitoreo(form, monitoreo) {
     }
   }
 
-  syncTempAddButtonVisibility(form);
+  var bombaToggle = form.querySelector('#ea-bomba-enabled');
+  var bombaBlock = form.querySelector('#ea-bomba-block');
+  var bombaList = form.querySelector('#ea-bomba-list');
+  if (bombaToggle && bombaBlock && bombaList) {
+    var bombas = collectBombaInsulinaForRegistroWindow(hist);
+    bombaToggle.checked = bombas.length > 0;
+    bombaBlock.hidden = !bombaToggle.checked;
+    bombaList.innerHTML = '';
+    if (bombas.length) {
+      bombas.forEach(function (b) {
+        bombaList.appendChild(buildBombaRow(b));
+      });
+    } else {
+      bombaList.appendChild(buildBombaRow());
+    }
+  }
+
+  syncAllVitalAddButtonVisibility(form);
 }
 
 export function buildRegistroFormMarkup() {
   var vitalFields = VITAL_KEYS.map(function (key) {
-    if (key === 'temp') return buildTempStackHtml();
-    return buildVitalChipHtml(key);
+    return buildVitalStackHtml(key);
   }).join('');
 
   return (
@@ -1188,6 +1437,19 @@ export function buildRegistroFormMarkup() {
     '<button type="button" class="ea-btn ea-btn--ghost" id="ea-add-glu">+ Agregar</button>' +
     '</div>' +
     '<div id="ea-glu-list" class="ea-glu-list"></div>' +
+    '</div>' +
+    '<div class="ea-bomba-block-wrap">' +
+    '<label class="ea-bomba-toggle ea-field ea-field--switch">' +
+    '<input type="checkbox" id="ea-bomba-enabled">' +
+    '<span class="ea-label">Bomba de insulina</span>' +
+    '</label>' +
+    '<div id="ea-bomba-block" class="ea-glu-block ea-bomba-block" hidden>' +
+    '<div class="ea-glu-head">' +
+    '<span class="ea-label">Registros bomba (glu + unidades)</span>' +
+    '<button type="button" class="ea-btn ea-btn--ghost" id="ea-add-bomba">+ Agregar</button>' +
+    '</div>' +
+    '<div id="ea-bomba-list" class="ea-glu-list"></div>' +
+    '</div>' +
     '</div>' +
     '<div class="ea-io-grid">' +
     '<label class="ea-field">' +
@@ -1227,6 +1489,10 @@ export function wireEaRegistroForm() {
   if (gluList && !gluList.querySelector('.ea-glu-row')) {
     gluList.appendChild(buildGluRow());
   }
+  var bombaList = document.getElementById('ea-bomba-list');
+  if (bombaList && !bombaList.querySelector('.ea-bomba-row')) {
+    bombaList.appendChild(buildBombaRow());
+  }
 }
 
 /**
@@ -1249,7 +1515,7 @@ export function resetEaRegistroForm(patient) {
   form.querySelectorAll('.ea-vital-box').forEach(function (el) {
     el.classList.remove('ea-vital-box--altered');
   });
-  collapseTempStack(form);
+  collapseAllVitalStacks(form);
   var recorded = document.getElementById('ea-recorded-at');
   if (recorded && 'value' in recorded) {
     recorded.value = toDatetimeLocalValue(getDefaultRegistroRecordedAt());
@@ -1265,13 +1531,22 @@ export function resetEaRegistroForm(patient) {
     gluList.innerHTML = '';
     gluList.appendChild(buildGluRow());
   }
+  var bombaToggle = document.getElementById('ea-bomba-enabled');
+  var bombaBlock = document.getElementById('ea-bomba-block');
+  var bombaList = document.getElementById('ea-bomba-list');
+  if (bombaToggle && 'checked' in bombaToggle) bombaToggle.checked = false;
+  if (bombaBlock) bombaBlock.hidden = true;
+  if (bombaList) {
+    bombaList.innerHTML = '';
+    bombaList.appendChild(buildBombaRow());
+  }
 
   if (patient && patient.monitoreo) {
     prefillRegistroFormFromMonitoreo(form, patient.monitoreo);
   }
 
   syncIoBalanceFromForm(form);
-  syncTempAddButtonVisibility(form);
+  syncAllVitalAddButtonVisibility(form);
 }
 
 function buildEaShellKey(activeId, monitoreo) {
@@ -1455,36 +1730,27 @@ function parseFormMedicion() {
   var recordedAt = datetimeLocalToIso(recordedLocal ? recordedLocal.value : '');
   var defaultTime = isoToHHmm(recordedAt);
 
-  /** @type {Record<string, number | null>} */
-  var vitals = {};
+  /** @type {Record<string, Array<{ value: number, time?: string }>>} */
+  var vitalSeries = {};
   VITAL_KEYS.forEach(function (key) {
-    var el = form.querySelector('[data-ea-vital="' + key + '"]');
-    vitals[key] = parseNumOrNull(el && 'value' in el ? el.value : '');
+    vitalSeries[key] = readVitalSeriesFromStack(form, key);
   });
-
-  var peakEl = form.querySelector('[data-ea-vital="tempPeak"]');
-  var tempPeak = parseNumOrNull(peakEl && 'value' in peakEl ? peakEl.value : '');
-  if (tempPeak != null) vitals.tempPeak = tempPeak;
-
-  var alteredDefaults = buildAlteredAtDefaults(vitals, defaultTime);
-  /** @type {Record<string, string>} */
-  var alteredAt = {};
-  Object.keys(alteredDefaults).forEach(function (key) {
-    var el = form.querySelector('[data-ea-altered="' + key + '"]');
-    var val = el && 'value' in el && el.value ? String(el.value) : alteredDefaults[key];
-    if (val) alteredAt[key] = val;
+  var legacy = vitalSeriesToLegacyFields(vitalSeries);
+  var vitals = legacy.vitals;
+  var alteredAt = legacy.alteredAt;
+  VITAL_KEYS.forEach(function (key) {
+    var list = vitalSeries[key] || [];
+    for (var li = 0; li < list.length; li++) {
+      var rd = list[li];
+      if (rd.time) {
+        if (li === list.length - 1) alteredAt[key] = rd.time;
+        else if (li === list.length - 2 && key === 'temp') alteredAt.tempPeak = rd.time;
+        else if (li === list.length - 2) alteredAt[getVitalExtraStorageKey(key)] = rd.time;
+      } else if (li === list.length - 1 && isVitalAltered(key, rd.value)) {
+        alteredAt[key] = defaultTime;
+      }
+    }
   });
-
-  if (tempPeak != null) {
-    var peakTimeEl = form.querySelector('[data-ea-altered="tempPeak"]');
-    var peakTime =
-      peakTimeEl && 'value' in peakTimeEl && peakTimeEl.value
-        ? String(peakTimeEl.value)
-        : isVitalAltered('temp', tempPeak)
-          ? defaultTime
-          : '';
-    if (peakTime) alteredAt.tempPeak = peakTime;
-  }
 
   /** @type {Array<{ value: number | null, time: string }>} */
   var glucometrias = [];
@@ -1498,6 +1764,27 @@ function parseFormMedicion() {
     glucometrias.push({ value: value, time: time });
   });
 
+  /** @type {Array<{ value: number, units: number, time: string }>} */
+  var bombaInsulina = [];
+  var bombaToggle = /** @type {HTMLInputElement | null} */ (document.getElementById('ea-bomba-enabled'));
+  if (bombaToggle && bombaToggle.checked) {
+    form.querySelectorAll('.ea-bomba-row').forEach(function (row) {
+      var valEl = row.querySelector('[data-ea-bomba-value]');
+      var unitsEl = row.querySelector('[data-ea-bomba-units]');
+      var timeEl = row.querySelector('[data-ea-bomba-time]');
+      var value = parseNumOrNull(valEl && 'value' in valEl ? valEl.value : '');
+      if (value == null) return;
+      var units = parseNumOrNull(unitsEl && 'value' in unitsEl ? unitsEl.value : '');
+      var time =
+        timeEl && 'value' in timeEl && timeEl.value ? String(timeEl.value) : defaultTime;
+      bombaInsulina.push({
+        value: value,
+        units: units != null ? units : 0,
+        time: time,
+      });
+    });
+  }
+
   var ingEl = document.getElementById('ea-io-ing');
   var egrEl = document.getElementById('ea-io-egr');
   var evacEl = document.getElementById('ea-io-evac');
@@ -1508,8 +1795,10 @@ function parseFormMedicion() {
     id: Date.now().toString() + '-ea',
     recordedAt: recordedAt,
     vitals: vitals,
+    vitalSeries: vitalSeries,
     alteredAt: alteredAt,
     glucometrias: glucometrias,
+    bombaInsulina: bombaInsulina,
     io: {
       ing: parseNumOrNull(ingEl && 'value' in ingEl ? ingEl.value : ''),
       egr: diuresisValueFromParts(egrParts),
@@ -1556,11 +1845,11 @@ export function ensureEaRegistroModalForm() {
   if (
     !body.querySelector('#ea-form') ||
     !body.querySelector('.ea-registro-shell') ||
-    !body.querySelector('.ea-vital-label-row')
+    !body.querySelector('[data-ea-vital-stack="tas"]')
   ) {
     body.innerHTML = buildRegistroFormMarkup();
-    wireEaRegistroForm();
   }
+  wireEaRegistroForm();
 }
 
 /**

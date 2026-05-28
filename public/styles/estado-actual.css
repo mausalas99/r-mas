@@ -610,6 +610,29 @@ html.dark .ea-vital-box--altered {
   border-color: color-mix(in oklab, #fbbf24 50%, var(--border));
 }
 
+.ea-bomba-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 2px;
+  cursor: pointer;
+}
+
+.ea-bomba-toggle input {
+  width: auto;
+  margin: 0;
+}
+
+.ea-bomba-block-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ea-registro-modal .ea-bomba-row {
+  grid-template-columns: minmax(0, 1fr) minmax(72px, 88px) minmax(100px, 120px) auto;
+}
+
 /* Glu rows */
 .ea-glu-block {
   display: flex;
@@ -845,31 +868,71 @@ html.dark .ea-io-balance .ea-balance-live {
   line-height: 1.35;
 }
 
-.ea-temp-stack {
+/* Una celda de la grilla: lecturas +1 se superponen, no se apilan abajo */
+.ea-registro-modal .ea-vital-stack {
+  position: relative;
+  width: 100%;
   min-width: 0;
+  aspect-ratio: 1;
+  max-height: 5.75rem;
 }
 
-.ea-temp-stack-slots {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
+.ea-registro-modal .ea-vital-stack .ea-vital-slot {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  z-index: 1;
 }
 
+.ea-registro-modal .ea-vital-stack .ea-vital-slot[hidden] {
+  display: none !important;
+}
 
-.ea-temp-prev-view {
-  padding: 3px 6px;
+.ea-registro-modal .ea-vital-stack .ea-vital-slot:not([hidden]) {
+  z-index: 2;
+}
+
+.ea-registro-modal .ea-vital-stack .ea-vital-slot:not([hidden]) .ea-vital-chip {
+  background: var(--surface);
+}
+
+.ea-registro-modal .ea-vital-stack .ea-vital-slot .ea-vital-chip {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  box-sizing: border-box;
+}
+
+.ea-registro-modal .ea-vital-prev-badge {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  bottom: 4px;
+  z-index: 4;
+  padding: 2px 4px;
   border-radius: var(--radius-sm);
-  background: color-mix(in oklab, var(--surface) 90%, var(--bg));
+  background: color-mix(in oklab, var(--surface) 94%, var(--bg));
   border: 1px dashed var(--divider);
   text-align: center;
+  pointer-events: none;
+  line-height: 1.15;
 }
 
-.ea-temp-prev-summary {
-  font-size: calc(10px * var(--density-font, 1));
+.ea-registro-modal .ea-vital-stack:not(.ea-vital-stack--multi) .ea-vital-prev-badge {
+  display: none;
+}
+
+.ea-vital-prev-summary {
+  font-size: calc(9px * var(--density-font, 1));
   font-weight: 600;
   color: var(--text-muted);
-  line-height: 1.2;
+  line-height: 1.15;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ea-registro-modal .ea-vitals-grid {
@@ -888,14 +951,17 @@ html.dark .ea-io-balance .ea-balance-live {
   align-items: start;
 }
 
-.ea-registro-modal .ea-vital-chip,
-.ea-registro-modal .ea-temp-stack .ea-vital-chip {
+.ea-registro-modal .ea-vital-chip {
   display: flex;
   flex-direction: column;
   width: 100%;
   min-width: 0;
   aspect-ratio: 1;
   max-height: 5.75rem;
+}
+
+.ea-registro-modal .ea-vital-stack .ea-vital-chip {
+  aspect-ratio: unset;
 }
 
 .ea-registro-modal .ea-vital-chip.ea-vital-box--altered {
@@ -934,11 +1000,14 @@ html.dark .ea-io-balance .ea-balance-live {
   box-sizing: border-box;
 }
 
+.ea-registro-modal .ea-vital-stack > .ea-vital-add-btn,
+.ea-registro-modal .ea-vital-stack > .ea-temp-add-btn,
+.ea-registro-modal .ea-vital-chip .ea-vital-label-row .ea-vital-add-btn,
 .ea-registro-modal .ea-vital-chip .ea-vital-label-row .ea-temp-add-btn {
   position: absolute;
   top: 3px;
   right: 3px;
-  z-index: 1;
+  z-index: 6;
   appearance: none;
   width: 1.125rem;
   height: 1.125rem;
@@ -965,6 +1034,9 @@ html.dark .ea-io-balance .ea-balance-live {
   flex-shrink: 0;
 }
 
+.ea-registro-modal .ea-vital-stack > .ea-vital-add-btn:hover,
+.ea-registro-modal .ea-vital-stack > .ea-temp-add-btn:hover,
+.ea-registro-modal .ea-vital-chip .ea-vital-label-row .ea-vital-add-btn:hover,
 .ea-registro-modal .ea-vital-chip .ea-vital-label-row .ea-temp-add-btn:hover {
   background: color-mix(in oklab, var(--surface) 80%, var(--bg));
 }
@@ -1067,26 +1139,17 @@ html.dark .ea-io-balance .ea-balance-live {
   opacity: 0.85;
 }
 
-.ea-registro-modal .ea-temp-stack {
+.ea-registro-modal .ea-vital-stack.ea-vital-stack--dual {
   aspect-ratio: auto;
   max-height: none;
+  min-height: 5.75rem;
 }
 
-.ea-registro-modal .ea-temp-stack-slots {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.ea-registro-modal .ea-temp-slot--primary .ea-vital-chip.ea-vital-box--altered,
-.ea-registro-modal .ea-temp-slot--peak .ea-vital-chip {
-  aspect-ratio: 1;
-  max-height: 5.75rem;
-}
-
-.ea-registro-modal .ea-temp-slot--peak .ea-vital-chip.ea-vital-box--altered {
+.ea-registro-modal .ea-vital-stack.ea-vital-stack--dual .ea-vital-slot--extra .ea-vital-chip.ea-vital-box--altered {
   aspect-ratio: auto;
   max-height: none;
+  height: auto;
+  min-height: 100%;
 }
 
 .ea-registro-modal .ea-form--registro {

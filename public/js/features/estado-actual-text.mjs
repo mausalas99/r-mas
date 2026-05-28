@@ -59,7 +59,7 @@ export function buildEstadoActualText(estadoClinico, snapshot, balances, options
     ' °C';
   if (tempPeak != null && tempPeak !== '' && String(tempPeak) !== String(tempActual)) {
     hiTemp +=
-      ', PICO FEBRIL ' +
+      ', TEMPERATURA ' +
       num(tempPeak) +
       ' °C' +
       (snapAlt.tempPeak ? ' @ ' + snapAlt.tempPeak : '');
@@ -76,6 +76,23 @@ export function buildEstadoActualText(estadoClinico, snapshot, balances, options
     gluParts.push(num(gv));
   }
   while (gluParts.length < 3) gluParts.push('___');
+
+  var bombaParts = [];
+  var bombaSrc =
+    snapshot && typeof snapshot === 'object' && Array.isArray(snapshot.bombaInsulina)
+      ? snapshot.bombaInsulina
+      : [];
+  for (var bi = 0; bi < bombaSrc.length; bi++) {
+    var bb = bombaSrc[bi];
+    if (!bb || typeof bb !== 'object') continue;
+    var bv = /** @type {{ value?: unknown, units?: unknown }} */ (bb).value;
+    var bu = /** @type {{ value?: unknown, units?: unknown }} */ (bb).units;
+    var seg = num(bv) + ' mg/dL';
+    if (bu != null && bu !== '') seg += ' (' + num(bu) + ' U)';
+    bombaParts.push(seg);
+  }
+  var bombaClause =
+    bombaParts.length > 0 ? ' || BOMBA DE INSULINA (' + bombaParts.join(', ') + ')' : '';
 
   const weightKg = resolveDietWeightKg({
     patientPeso: options.patientPeso,
@@ -130,6 +147,7 @@ export function buildEstadoActualText(estadoClinico, snapshot, balances, options
       ' || GLUCOMETRÍAS CAPILARES (' +
       gluParts.join(', ') +
       ' MG/DL)' +
+      bombaClause +
       (options.includeInsulinRescates
         ? ' || RESCATES DE INSULINA DISPONIBLES, NO APLICADOS ACTUALMENTE'
         : ''),

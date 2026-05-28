@@ -15,6 +15,7 @@ import { flushRecetaHuDraftIfMountedFor } from './receta-hu.mjs';
 import { validatePatientForSave, buildExpedienteAdvice } from '../patient-validation.mjs';
 import { shakePatientFieldsForError } from '../ui-motion.mjs';
 import { isModeSala, getDefaultServicio } from '../mode-features.mjs';
+import { migrateGranularInner } from '../expediente-tabs.mjs';
 import { sortLabHistoryChronological } from '../tend-core.mjs';
 import { ensureParsedLabHistoryCached } from '../lab-history-set.mjs';
 import { t, getUiDensity, isPaseMode } from './chrome.mjs';
@@ -910,27 +911,42 @@ function selectPatientCore(id) {
   rt.renderEstadoActualButton();
   var settings = rt.getSettings();
   var inner = rt.getActiveInner();
-  if (isModeSala(settings) && (inner === 'notas' || inner === 'indica' || !inner)) {
-    if (getUiDensity() === 'normal') {
-      rt.setActiveInner('todo');
-      rt.syncInnerTabVisualOnly();
-    } else {
-      rt.switchInnerTab('todo');
+  if (patientChanged) {
+    var migrated = migrateGranularInner(inner || 'todo', settings);
+    if (migrated !== inner) {
+      inner = migrated;
+      rt.setActiveInner(migrated);
     }
-  } else if (!isModeSala(settings) && inner === 'listado') {
-    if (getUiDensity() === 'normal') {
-      rt.setActiveInner('todo');
-      rt.syncInnerTabVisualOnly();
-    } else {
-      rt.switchInnerTab('todo');
+  } else {
+    if (isModeSala(settings) && (inner === 'notas' || inner === 'indica' || !inner)) {
+      if (getUiDensity() === 'normal') {
+        rt.setActiveInner('todo');
+        rt.syncInnerTabVisualOnly();
+      } else {
+        rt.switchInnerTab('todo');
+      }
+    } else if (!isModeSala(settings) && inner === 'listado') {
+      if (getUiDensity() === 'normal') {
+        rt.setActiveInner('todo');
+        rt.syncInnerTabVisualOnly();
+      } else {
+        rt.switchInnerTab('todo');
+      }
     }
-  }
-  if (!isPaseMode() && getUiDensity() === 'normal') {
-    var pmanejo = patients.find(function (p) {
-      return p && String(p.id) === String(id);
-    });
-    if (pmanejo && pmanejo.manejoPending && pmanejo.manejoPending.labSetId) {
-      rt.switchInnerTab('manejo');
+    if (!isPaseMode() && getUiDensity() === 'normal') {
+      var pmanejo = patients.find(function (p) {
+        return p && String(p.id) === String(id);
+      });
+      if (pmanejo && pmanejo.manejoPending && pmanejo.manejoPending.labSetId) {
+        rt.switchInnerTab('manejo');
+      }
+    }
+    if (isPaseMode() && rt.getActiveAppTab() === 'nota') {
+      if (inner === 'todo' || !inner) {
+        _roundOverviewMode = true;
+      } else {
+        _roundOverviewMode = false;
+      }
     }
   }
   rt.syncInnerTabVisualOnly();
@@ -959,13 +975,6 @@ function selectPatientCore(id) {
     }
   } else {
     rt.syncWorkContextChrome();
-  }
-  if (isPaseMode() && rt.getActiveAppTab() === 'nota') {
-    if (inner === 'todo' || !inner) {
-      _roundOverviewMode = true;
-    } else {
-      _roundOverviewMode = false;
-    }
   }
   syncRoundExpedienteLayout();
   rt.refreshTendenciasOrCultivosPanel();

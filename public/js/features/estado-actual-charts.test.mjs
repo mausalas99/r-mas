@@ -3,10 +3,37 @@ import assert from 'node:assert/strict';
 import {
   buildEaChartsLayoutKey,
   buildEaChartsSignature,
+  buildGluSeries,
   buildIoChartData,
   buildVitalsSeries,
   updateEstadoActualChartsInPlace,
 } from './estado-actual-charts.mjs';
+
+test('buildGluSeries only plots glucometrias from yesterday 08:00 through today 00:00', () => {
+  var now = new Date(2026, 4, 28, 8, 39, 0);
+  var hist = [
+    {
+      recordedAt: new Date(2026, 4, 27, 17, 20, 0).toISOString(),
+      glucometrias: [
+        { value: 190, time: '08:00' },
+        { value: 280, time: '10:00' },
+        { value: 221, time: '16:00' },
+        { value: 136, time: '20:00' },
+      ],
+    },
+    {
+      recordedAt: new Date(2026, 4, 28, 0, 0, 0).toISOString(),
+      glucometrias: [
+        { value: 159, time: '00:00' },
+        { value: 135, time: '08:00' },
+        { value: 191, time: '12:00' },
+        { value: 194, time: '16:00' },
+      ],
+    },
+  ];
+  var s = buildGluSeries(hist, now);
+  assert.deepEqual(s.values, [190, 280, 221, 136, 159]);
+});
 
 test('buildIoChartData produces turn balance and global line', () => {
   const hist = [

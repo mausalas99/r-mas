@@ -46,13 +46,43 @@ function parseRecordedAt(iso) {
 }
 
 /**
+ * Instantánea local de una glucometría (fecha del registro + hora de la toma).
+ * @param {string} recordedAt
+ * @param {string | undefined} timeHm
+ * @returns {number}
+ */
+export function gluPointMs(recordedAt, timeHm) {
+  var base = parseRecordedAt(recordedAt);
+  if (!base) return 0;
+  if (!timeHm || !String(timeHm).trim()) return base.getTime();
+  var parts = String(timeHm).trim().split(':');
+  var h = Number(parts[0]);
+  var m = Number(parts[1] != null ? parts[1] : 0);
+  if (!Number.isFinite(h)) return base.getTime();
+  var d = new Date(base);
+  d.setHours(h, Number.isFinite(m) ? m : 0, 0, 0);
+  return d.getTime();
+}
+
+/**
+ * @param {number} ms
+ * @param {Date} [now]
+ * @returns {boolean}
+ */
+export function isGluPointInRegistroWindow(ms, now) {
+  if (!ms) return false;
+  var win = getGlucometriaRegistroWindow(now);
+  return ms >= win.start.getTime() && ms <= win.end.getTime();
+}
+
+/**
  * @param {Array<{ recordedAt?: string, glucometrias?: Array<{ value?: unknown, time?: string }> }>} historial
  * @param {Date} [now]
  * @returns {Array<{ value: unknown, time: string }>}
  */
 export function collectGlucometriasForRegistroWindow(historial, now) {
+  var ref = now instanceof Date && !isNaN(now.getTime()) ? now : new Date();
   var hist = Array.isArray(historial) ? historial : [];
-  var win = getGlucometriaRegistroWindow(now);
   /** @type {Array<{ value: unknown, time: string }>} */
   var out = [];
   /** @type {Set<string>} */
@@ -61,8 +91,7 @@ export function collectGlucometriasForRegistroWindow(historial, now) {
   for (var i = 0; i < hist.length; i++) {
     var row = hist[i];
     if (!row || typeof row !== 'object') continue;
-    var at = parseRecordedAt(row.recordedAt);
-    if (!at || at < win.start || at > win.end) continue;
+    var recordedAt = row.recordedAt != null ? String(row.recordedAt) : '';
     var glus = Array.isArray(row.glucometrias) ? row.glucometrias : [];
     for (var j = 0; j < glus.length; j++) {
       var g = glus[j];
@@ -70,6 +99,8 @@ export function collectGlucometriasForRegistroWindow(historial, now) {
       var val = /** @type {any} */ (g).value;
       if (val == null || val === '') continue;
       var time = /** @type {any} */ (g).time != null ? String(/** @type {any} */ (g).time) : '';
+      var ms = gluPointMs(recordedAt, time);
+      if (!isGluPointInRegistroWindow(ms, ref)) continue;
       var key = String(val) + '@' + time;
       if (seen.has(key)) continue;
       seen.add(key);

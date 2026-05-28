@@ -1,4 +1,5 @@
 import { isVitalAltered } from './estado-actual-ranges.mjs';
+import { gluPointMs, isGluPointInRegistroWindow } from './estado-actual-registro-defaults.mjs';
 
 /** @type {readonly string[]} */
 const VITAL_KEYS = ['tas', 'tad', 'fc', 'fr', 'temp', 'sat'];
@@ -220,27 +221,10 @@ function buildVitalsFamilyData(histAsc, keys) {
 }
 
 /**
- * @param {string} recordedAt
- * @param {string | undefined} timeHm
- * @returns {number}
- */
-function gluPointMs(recordedAt, timeHm) {
-  var base = new Date(recordedAt);
-  if (isNaN(base.getTime())) return 0;
-  if (!timeHm || !String(timeHm).trim()) return base.getTime();
-  var parts = String(timeHm).trim().split(':');
-  var h = Number(parts[0]);
-  var m = Number(parts[1] != null ? parts[1] : 0);
-  if (!Number.isFinite(h)) return base.getTime();
-  var d = new Date(base);
-  d.setHours(h, Number.isFinite(m) ? m : 0, 0, 0);
-  return d.getTime();
-}
-
-/**
  * @param {unknown[]} histAsc
+ * @param {Date} [now]
  */
-export function buildGluSeries(histAsc) {
+export function buildGluSeries(histAsc, now) {
   /** @type {Array<{ ms: number, label: string, value: number }>} */
   var points = [];
 
@@ -258,6 +242,7 @@ export function buildGluSeries(histAsc) {
       if (!Number.isFinite(val)) continue;
       var timeHm = /** @type {any} */ (glu).time ? String(/** @type {any} */ (glu).time) : '';
       var ms = gluPointMs(recordedAt, timeHm);
+      if (!isGluPointInRegistroWindow(ms, now)) continue;
       var whenLabel = timeHm || formatChartLabel(recordedAt);
       points.push({
         ms: ms,

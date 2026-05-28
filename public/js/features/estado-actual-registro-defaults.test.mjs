@@ -49,4 +49,35 @@ describe('estado-actual-registro-defaults', () => {
     assert.equal(win.end.getHours(), 0);
     assert.equal(win.end.getDate(), 27);
   });
+
+  it('collectGlucometriasForRegistroWindow drops glus after today 00:00 even in midnight row', () => {
+    var now = new Date(2026, 4, 28, 8, 39, 0);
+    var historial = [
+      {
+        recordedAt: new Date(2026, 4, 27, 17, 20, 0).toISOString(),
+        glucometrias: [
+          { value: 190, time: '08:00' },
+          { value: 280, time: '10:00' },
+          { value: 221, time: '16:00' },
+          { value: 136, time: '20:00' },
+        ],
+      },
+      {
+        recordedAt: new Date(2026, 4, 28, 0, 0, 0).toISOString(),
+        glucometrias: [
+          { value: 159, time: '00:00' },
+          { value: 135, time: '08:00' },
+          { value: 191, time: '12:00' },
+          { value: 194, time: '16:00' },
+        ],
+      },
+    ];
+    var glus = collectGlucometriasForRegistroWindow(historial, now);
+    assert.deepEqual(
+      glus.map(function (g) {
+        return g.value + '@' + g.time;
+      }),
+      ['159@00:00', '190@08:00', '280@10:00', '221@16:00', '136@20:00']
+    );
+  });
 });
