@@ -19,8 +19,11 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execSync, spawnSync } = require('child_process');
+const { execSync, spawnSync, spawn } = require('child_process');
 const readline = require('readline');
+const { buildPublishSteps, createReleaseProgress } = require('./lib/release-progress');
+const { applyBuildLogLine, resetBuildLogState } = require('./lib/release-build-log');
+const { prepareMacSigning } = require('./lib/mac-signing-prep');
 
 const ROOT = path.join(__dirname, '..');
 const REPO = 'mausalas99/r-mas';
@@ -116,6 +119,19 @@ function getArg(argv, name, fallback = '') {
 
 function hasFlag(argv, name) {
   return argv.includes(name);
+}
+
+function hasScript(name) {
+  const scripts = readJson('package.json').scripts || {};
+  return typeof scripts[name] === 'string' && scripts[name].trim().length > 0;
+}
+
+function buildMacPublishCmd() {
+  return 'npm run build:mac';
+}
+
+function buildWinPublishCmd() {
+  return 'npm run build:win';
 }
 
 function writeReleaseNotes(version, title) {
@@ -250,6 +266,7 @@ Luego:
 
 function confirm(question, yesFlag) {
   if (yesFlag) return Promise.resolve(true);
+  if (!process.stdin.isTTY) return Promise.resolve(false);
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   return new Promise((resolve) => {
     rl.question(`${question} [y/N] `, (a) => {
@@ -310,6 +327,111 @@ function commitMessage(version) {
   return `release: R+ ${version} — ${short}`;
 }
 
+function streamChildLines(stream, onLine) {
+  let buf = '';
+  stream.on('data', (chunk) => {
+    buf += chunk.toString();
+    const lines = buf.split('\n');
+    buf = lines.pop() || '';
+    for (const line of lines) onLine(line);
+  });
+  return () => {
+    if (buf.trim()) onLine(buf);
+  };
+}
+
+function runPublishCmd(progress, stepId, cmd) {
+  progress.start(stepId);
+  progress.logCommand(cmd);
+
+  if (!progress.jsonMode) {
+    if (stepId === 'build-mac') {
+      try {
+        prepareMacSigning(process.env);
+      } catch (err) {
+        console.error('Firma Mac:', err.message || err);
+        throw err;
+      }
+    }
+    try {
+      execSync(cmd, { cwd: ROOT, stdio: 'inherit' });
+      progress.complete(stepId);
+    } catch (err) {
+      progress.fail(stepId);
+      throw err;
+    }
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve, reject) => {
+    resetBuildLogState();
+    if (stepId === 'build-mac') {
+      try {
+        const prep = prepareMacSigning(process.env);
+        if (prep.unlocked) {
+          progress.emitLog({ stream: 'meta', line: 'Llavero Mac desbloqueado para codesign.' });
+        }
+        if (prep.notarize) {
+          progress.emitLog({ stream: 'meta', line: 'Notarización Apple activa (APPLE_ID en entorno).' });
+        } else if (prep.signed) {
+          progress.emitLog({ stream: 'meta', line: 'Build Mac firmado (certificado / llavero).' });
+        }
+      } catch (err) {
+        progress.emitLog({
+          stream: 'stderr',
+          line: `Firma Mac: ${err.message || err}`,
+        });
+        progress.fail(stepId);
+        reject(err);
+        return;
+      }
+    }
+    const child = spawn(cmd, {
+      cwd: ROOT,
+      shell: true,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: { ...process.env, FORCE_COLOR: '0' },
+    });
+
+    const onLine = (line, stream) => {
+      applyBuildLogLine(progress, stepId, line);
+      progress.emitLog({ stream, line });
+    };
+
+    const flushOut = streamChildLines(child.stdout, (line) => onLine(line, 'stdout'));
+    const flushErr = streamChildLines(child.stderr, (line) => onLine(line, 'stderr'));
+
+    const isBuild = stepId === 'build-mac' || stepId === 'build-win';
+    let heartbeatPct = 12;
+    const heartbeat = isBuild
+      ? setInterval(() => {
+          heartbeatPct = Math.min(90, heartbeatPct + 3);
+          progress.subProgress(stepId, heartbeatPct, 'Compilando… (puede tardar varios minutos)');
+        }, 30000)
+      : null;
+
+    child.on('close', (code) => {
+      if (heartbeat) clearInterval(heartbeat);
+      flushOut();
+      flushErr();
+      if (code === 0) {
+        progress.complete(stepId);
+        resolve();
+      } else {
+        const line = `${cmd} falló (código ${code}). Revisa el log.`;
+        progress.emitLog({ stream: 'stderr', line });
+        progress.fail(stepId);
+        reject(Object.assign(new Error(line), { status: code }));
+      }
+    });
+    child.on('error', (err) => {
+      if (heartbeat) clearInterval(heartbeat);
+      progress.fail(stepId);
+      reject(err);
+    });
+  });
+}
+
 async function cmdPublish(argv) {
   const yes = hasFlag(argv, '--yes') || hasFlag(argv, '-y');
   const skipTests = hasFlag(argv, '--skip-tests');
@@ -320,6 +442,7 @@ async function cmdPublish(argv) {
   const winOnly = hasFlag(argv, '--win-only');
   const noManifestCommit = hasFlag(argv, '--no-manifest-commit');
   const skipCommit = hasFlag(argv, '--skip-commit');
+  const progressJson = hasFlag(argv, '--progress-json');
 
   if (macOnly && winOnly) {
     console.error('Usa solo uno de --mac-only o --win-only');
@@ -334,98 +457,187 @@ async function cmdPublish(argv) {
   }
 
   const notesText = fs.readFileSync(notesFile, 'utf8');
-  if (/TODO/i.test(notesText)) {
-    console.warn('⚠ RELEASE_NOTES contiene TODO — revisa antes de continuar.');
+  if (/\bTODO\b|TODO:|title: 'TODO'|\*\*TODO:\*\*/i.test(notesText)) {
+    const warn = '⚠ RELEASE_NOTES contiene TODO — revisa antes de continuar.';
+    if (progressJson) {
+      process.stdout.write(`${JSON.stringify({ type: 'log', stream: 'stderr', line: warn })}\n`);
+    } else {
+      console.warn(warn);
+    }
   }
   const highlightsText = fs.readFileSync(SETTINGS_HELP_JS, 'utf8');
   if (new RegExp(`'${version}':[\\s\\S]*?title: 'TODO'`).test(highlightsText)) {
-    console.warn('⚠ RELEASE_NOTES_HIGHLIGHTS aún tiene TODO — revisa settings-help.mjs.');
+    const warn = '⚠ RELEASE_NOTES_HIGHLIGHTS aún tiene TODO — revisa settings-help.mjs.';
+    if (progressJson) {
+      process.stdout.write(`${JSON.stringify({ type: 'log', stream: 'stderr', line: warn })}\n`);
+    } else {
+      console.warn(warn);
+    }
   }
 
-  console.log(`\nPublicar R+ ${version} (${readReleaseTitle(version)})\n`);
+  if (progressJson) {
+    process.stdout.write(
+      `${JSON.stringify({
+        type: 'meta',
+        version,
+        title: `R+ ${version} (${readReleaseTitle(version)})`,
+      })}\n`
+    );
+  } else {
+    console.log(`\nPublicar R+ ${version} (${readReleaseTitle(version)})\n`);
+  }
 
   if (!(await confirm('¿Continuar con tests, commit, builds y GitHub release?', yes))) {
+    if (progressJson) process.stdout.write(`${JSON.stringify({ type: 'cancelled' })}\n`);
     console.log('Cancelado.');
     process.exit(0);
   }
 
-  if (!skipTests) run('npm test');
-
-  if (!skipCommit) {
-    run(
-      'git add package.json package-lock.json README.md docs/ preload.js public/index.html public/index.src.html public/js/ public/partials/ public/styles/ lan-squad/'
-    );
-    const status = execSync('git status --porcelain', { cwd: ROOT, encoding: 'utf8' });
-    if (status.trim()) {
-      gitCommit(commitMessage(version));
-    } else {
-      console.log('Nada que commitear (working tree limpio para paths de release).');
-    }
-  }
-
-  if (!skipPush) run('git push origin main');
-
-  if (!skipBuild) {
-    if (!winOnly) run('npm run build:mac');
-    if (!macOnly) run('npm run build:win');
-  } else {
-    console.log('--skip-build: se asume dist/ ya generado.');
-  }
-
-  assertDist(version, { macOnly, winOnly });
-  verifyYmlNames(version);
+  const progress = createReleaseProgress(
+    buildPublishSteps({
+      skipTests,
+      skipCommit,
+      skipPush,
+      skipBuild,
+      macOnly,
+      winOnly,
+      skipGh,
+      noManifestCommit,
+    }),
+    { jsonMode: progressJson }
+  );
 
   const tag = `v${version}`;
+
   try {
-    execSync(`git rev-parse ${tag}`, { cwd: ROOT, stdio: 'pipe' });
-    console.log(`Tag ${tag} ya existe — no se recrea.`);
-  } catch {
-    gitTag(tag, commitMessage(version));
-    if (!skipPush) run(`git push origin ${tag}`);
-  }
+    if (!skipTests) await runPublishCmd(progress, 'tests', 'npm test');
+    else progress.skip('tests');
 
-  if (!skipGh) {
-    const assets = distFiles(version, { macOnly, winOnly }).map((f) =>
-      path.relative(ROOT, f)
-    );
-    const ghArgs = [
-      'release',
-      'create',
-      tag,
-      '--repo',
-      REPO,
-      '--title',
-      `R+ ${version}`,
-      '--notes-file',
-      `docs/RELEASE_NOTES_${version}.txt`,
-      ...assets,
-    ];
-    console.log('\n→ gh', ghArgs.join(' '));
-    const created = spawnSync('gh', ghArgs, { cwd: ROOT, stdio: 'inherit' });
-    if (created.status !== 0) {
-      console.log('\nSi el release ya existe, sube assets con:');
-      console.log(`  gh release upload ${tag} --repo ${REPO} ${assets.join(' ')} --clobber`);
-      process.exit(created.status || 1);
+    if (!skipCommit) {
+      progress.start('git-commit');
+      run(
+        'git add package.json package-lock.json README.md docs/ main.js preload.js public/index.html public/index.src.html public/js/ public/partials/ public/styles/ lan-squad/'
+      );
+      const status = execSync('git status --porcelain', { cwd: ROOT, encoding: 'utf8' });
+      if (status.trim()) {
+        gitCommit(commitMessage(version));
+      } else {
+        const line = 'Nada que commitear (working tree limpio para paths de release).';
+        if (progressJson) {
+          progress.emitLog({ stream: 'meta', line });
+        } else {
+          console.log(line);
+        }
+      }
+      progress.complete('git-commit');
     }
-  }
 
-  if (!noManifestCommit && !skipPush) {
-    const hasYml =
-      fs.existsSync(path.join(ROOT, 'dist', 'latest-mac.yml')) ||
-      fs.existsSync(path.join(ROOT, 'dist', 'latest.yml'));
-    if (hasYml && (await confirm('¿Commitear latest*.yml en main (-f dist/)?', yes))) {
-      run('git add -f dist/latest-mac.yml dist/latest.yml');
-      run(`git commit -m "chore(release): publish ${version} update manifests"`);
-      run('git push origin main');
+    if (!skipPush) await runPublishCmd(progress, 'git-push', 'git push origin main');
+
+    if (!skipBuild) {
+      if (!winOnly) await runPublishCmd(progress, 'build-mac', buildMacPublishCmd());
+      if (!macOnly) await runPublishCmd(progress, 'build-win', buildWinPublishCmd());
+    } else {
+      progress.emitLog({ stream: 'meta', line: '--skip-build: se asume dist/ ya generado.' });
+      progress.skip('build-mac');
+      progress.skip('build-win');
+      progress.skip('verify-dist');
     }
-  }
 
-  console.log(`
+    if (!skipBuild) {
+      progress.start('verify-dist');
+      assertDist(version, { macOnly, winOnly });
+      verifyYmlNames(version);
+      progress.complete('verify-dist');
+    }
+
+    progress.start('git-tag');
+    let tagCreated = false;
+    try {
+      execSync(`git rev-parse ${tag}`, { cwd: ROOT, stdio: 'pipe' });
+      const line = `Tag ${tag} ya existe — no se recrea.`;
+      if (progressJson) progress.emitLog({ stream: 'meta', line });
+      else console.log(line);
+    } catch {
+      gitTag(tag, commitMessage(version));
+      tagCreated = true;
+    }
+    progress.complete('git-tag');
+
+    if (!skipPush && tagCreated) {
+      await runPublishCmd(progress, 'git-push-tag', `git push origin ${tag}`);
+    } else if (!skipPush) {
+      progress.skip('git-push-tag');
+    }
+
+    if (!skipGh) {
+      progress.start('gh-release');
+      const assets = distFiles(version, { macOnly, winOnly }).map((f) => path.relative(ROOT, f));
+      const ghArgs = [
+        'release',
+        'create',
+        tag,
+        '--repo',
+        REPO,
+        '--title',
+        `R+ ${version}`,
+        '--notes-file',
+        `docs/RELEASE_NOTES_${version}.txt`,
+        ...assets,
+      ];
+      progress.logCommand(`gh ${ghArgs.join(' ')}`);
+      const created = spawnSync('gh', ghArgs, {
+        cwd: ROOT,
+        stdio: progressJson ? 'pipe' : 'inherit',
+        encoding: 'utf8',
+      });
+      if (progressJson && created.stdout) {
+        for (const line of String(created.stdout).split('\n')) {
+          if (line.trim()) progress.emitLog({ stream: 'stdout', line });
+        }
+      }
+      if (progressJson && created.stderr) {
+        for (const line of String(created.stderr).split('\n')) {
+          if (line.trim()) progress.emitLog({ stream: 'stderr', line });
+        }
+      }
+      if (created.status !== 0) {
+        const hint = `gh release upload ${tag} --repo ${REPO} ${assets.join(' ')} --clobber`;
+        progress.emitLog({ stream: 'stderr', line: `Si el release ya existe: ${hint}` });
+        progress.fail('gh-release');
+        process.exit(created.status || 1);
+      }
+      progress.complete('gh-release');
+    }
+
+    if (!noManifestCommit && !skipPush) {
+      const hasYml =
+        fs.existsSync(path.join(ROOT, 'dist', 'latest-mac.yml')) ||
+        fs.existsSync(path.join(ROOT, 'dist', 'latest.yml'));
+      if (hasYml && (await confirm('¿Commitear latest*.yml en main (-f dist/)?', yes))) {
+        progress.start('manifest-commit');
+        run('git add -f dist/latest-mac.yml dist/latest.yml');
+        run(`git commit -m "chore(release): publish ${version} update manifests"`);
+        await runPublishCmd(progress, 'manifest-commit', 'git push origin main');
+      } else {
+        progress.skip('manifest-commit');
+      }
+    }
+
+    progress.finish();
+
+    if (!progressJson) {
+      console.log(`
 ── Parte 2 lista: ${version} ──
 Verificar:
   gh release view ${tag} --repo ${REPO} --json assets --jq '.assets[].name'
   curl -sL "https://github.com/${REPO}/releases/download/${tag}/latest-mac.yml" | head -8
 `);
+    }
+  } catch (err) {
+    if (err && err.status) process.exit(err.status);
+    process.exit(1);
+  }
 }
 
 function main() {
@@ -433,7 +645,7 @@ function main() {
   if (!sub || sub === '--help' || sub === '-h') {
     console.log(`Uso:
   node scripts/release.js bump [VERSION|patch|minor|major] [--title "estable — …"]
-  node scripts/release.js publish [--yes] [--mac-only|--win-only] [--skip-build] [--skip-push] [--no-gh]
+  node scripts/release.js publish [--yes] [--progress-json] [--mac-only|--win-only] [--skip-build] [--skip-push] [--no-gh]
 
 npm:
   npm run release:bump -- 3.4.3
