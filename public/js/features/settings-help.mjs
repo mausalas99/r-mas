@@ -1318,6 +1318,23 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '6.3.3': [
+    {
+      title: 'Guía clínica',
+      body:
+        '<strong>Manejo</strong> oculto hasta confirmar con la frase del modal; <strong>Nota</strong> e <strong>Indicaciones</strong> siguen en Clínico.',
+    },
+    {
+      title: 'Modales',
+      body:
+        '<strong>Esc</strong> y clic en el fondo vuelven a cerrar ayuda, laboratorio, perfil, Estado Actual y capas anidadas.',
+    },
+    {
+      title: 'Tendencias y gasometría',
+      body:
+        'Interpretación extendida con <strong>razonamiento</strong> y tooltips; sparks ligeros; filtro <strong>Solo fuera de rango</strong>.',
+    },
+  ],
   '6.3.2': [
     {
       title: 'Pegar monitoreo',

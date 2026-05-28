@@ -25,10 +25,19 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 ---
 
-**Versión estable actual:** [6.3.2](https://github.com/mausalas99/r-mas/releases/tag/v6.3.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.3.3](https://github.com/mausalas99/r-mas/releases/tag/v6.3.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 6.3.3 (Guía clínica desbloqueable, modales y gasometría explicada)
+
+- **Guía clínica (Manejo)** — Oculta hasta desbloquear con frase de confirmación; **Ocultar Manejo en Clínico** en Ajustes vuelve a pedir activación si aplica.
+- **Modales** — **Esc** y clic fuera restaurados (capas anidadas y arranque al inicio del boot).
+- **Tendencias** — Gasometría extendida con razonamiento y tooltips; sparks en canvas; filtro **Solo fuera de rango** coherente con referencias del laboratorio.
+- **Estado Actual** — Gráficas de monitoreo con actualización incremental (menos parpadeo).
+
+Notas: `docs/RELEASE_NOTES_6.3.3.txt`.
 
 ## R+ 6.3.2 (Pegar monitoreo en Estado Actual — I/O, EVAC y correcciones)
 
