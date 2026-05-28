@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, shell, dialog, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, shell, dialog, ipcMain, clipboard } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -349,6 +349,15 @@ function pickLanCandidateBaseUrl() {
 }
 
 ipcMain.handle('get-lan-candidate-base-url', () => pickLanCandidateBaseUrl());
+
+ipcMain.handle('clipboard-write-text', (_e, text) => {
+  try {
+    clipboard.writeText(String(text == null ? '' : text));
+    return true;
+  } catch (_err) {
+    return false;
+  }
+});
 function buildMenu() {
   const version = app.getVersion();
   const isMac = process.platform === 'darwin';
