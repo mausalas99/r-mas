@@ -1,6 +1,6 @@
 {
   "name": "r-plus",
-  "version": "6.3.3",
+  "version": "6.3.4",
   "description": "R+ — Laboratoriazo + Notas de Evolución",
   "main": "main.js",
   "scripts": {
@@ -49,6 +49,7 @@
     "mac": {
       "icon": "AppIcon.icns",
       "category": "public.app-category.medical",
+      "notarize": true,
       "hardenedRuntime": true,
       "signIgnore": [
         "\\.exe$"

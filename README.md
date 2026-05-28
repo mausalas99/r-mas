@@ -25,7 +25,7 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 ---
 
-**Versión estable actual:** [6.3.3](https://github.com/mausalas99/r-mas/releases/tag/v6.3.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.3.4](https://github.com/mausalas99/r-mas/releases/tag/v6.3.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -220,6 +220,12 @@ Notas: `docs/RELEASE_NOTES_3.2.2.txt`.
 
 ---
 
+
+## R+ 6.3.4 (estable — release 6.3.4)
+
+- **TODO:** completar bullets en README.
+
+Notas: `docs/RELEASE_NOTES_6.3.4.txt`.
 ## R+ 3.2.1 (parche — laboratorio: BH compacta, copiar, asteriscos)
 
 - **Laboratorio** — **Copiar** en Resultados visible de nuevo en vista normal; **BH** sin línea extendida: solo núcleo compacto en la primera fila; **RBC, CHCM, RDW, MPV, Ret** en la segunda solo con **BH extendida** activada.

@@ -32,6 +32,8 @@ import {
 } from "../manejo-room-data.mjs";
 import { mergePatientMonitoreoFromImported } from "./estado-actual-data.mjs";
 import { filterTodosRespectingDismissals } from "../manejo-todo-dismiss.mjs";
+import { copyToClipboardSafe } from "./soap-estado.mjs";
+import { buildLanJoinUrls, parseLanInviteInput } from "../lan-join-link.mjs";
 import {
   patients,
   notes,
@@ -1448,7 +1450,10 @@ async function renderLanPanelOnce() {
   btnCopyStored.style.flex = '1';
   btnCopyStored.textContent = 'Copiar invitación para enviar';
   btnCopyStored.onclick = function () {
-    copyLanInviteLinkFromUi();
+    void copyLanInviteLinkFromUi().catch(function (err) {
+      console.error('copyLanInviteLinkFromUi', err);
+      runtime.showToast('No se pudo copiar la invitación.', 'error');
+    });
   };
   var btnCopyMobile = document.createElement('button');
   btnCopyMobile.type = 'button';
@@ -1457,7 +1462,10 @@ async function renderLanPanelOnce() {
   btnCopyMobile.textContent = 'Copiar enlace móvil';
   btnCopyMobile.title = 'Solo URL para iPad o teléfono (Safari, misma Wi‑Fi)';
   btnCopyMobile.onclick = function () {
-    copyMobileLanLinkFromUi();
+    void copyMobileLanLinkFromUi().catch(function (err) {
+      console.error('copyMobileLanLinkFromUi', err);
+      runtime.showToast('No se pudo copiar el enlace móvil.', 'error');
+    });
   };
   rowInvite.appendChild(btnCopyStored);
   rowInvite.appendChild(btnCopyMobile);
@@ -1685,25 +1693,20 @@ async function copyMobileLanLinkFromUi(opts) {
   }
   var roomId = String(activeLiveSyncRoomId || '').trim();
   var urls = buildLanJoinUrls(hostUrl, teamCode, roomId);
-  try {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(urls.mobileUrl);
-      if (!silent) {
-        runtime.showToast(
-          roomId
-            ? 'Enlace móvil copiado (incluye sala). Ábrelo en Safari en la misma Wi‑Fi.'
-            : 'Enlace móvil copiado. En el iPad elige la misma sala LiveSync que el equipo.',
-          'success'
-        );
-      }
-      return true;
+  var copied = await copyToClipboardSafe(urls.mobileUrl);
+  if (copied) {
+    if (!silent) {
+      runtime.showToast(
+        roomId
+          ? 'Enlace móvil copiado (incluye sala). Ábrelo en Safari en la misma Wi‑Fi.'
+          : 'Enlace móvil copiado. En el iPad elige la misma sala LiveSync que el equipo.',
+        'success'
+      );
     }
-    if (!silent) runtime.showToast('Tu navegador no permite copiar automáticamente.', 'error');
-    return false;
-  } catch (_e) {
-    if (!silent) runtime.showToast('No se pudo copiar al portapapeles.', 'error');
-    return false;
+    return true;
   }
+  if (!silent) runtime.showToast('No se pudo copiar al portapapeles.', 'error');
+  return false;
 }
 
 async function copyLanInviteLinkFromUi(opts) {
@@ -1724,25 +1727,20 @@ async function copyLanInviteLinkFromUi(opts) {
   }
   var roomId = String(activeLiveSyncRoomId || '').trim();
   var urls = buildLanJoinUrls(hostUrl, teamCode, roomId);
-  try {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(urls.joinUrl);
-      if (!silent) {
-        runtime.showToast(
-          roomId
-            ? 'Enlace de invitación copiado (incluye sala). Compártelo por WhatsApp, correo o una nota.'
-            : 'Enlace de invitación copiado. Compártelo por WhatsApp, correo o una nota.',
-          'success'
-        );
-      }
-      return true;
+  var copied = await copyToClipboardSafe(urls.joinUrl);
+  if (copied) {
+    if (!silent) {
+      runtime.showToast(
+        roomId
+          ? 'Enlace de invitación copiado (incluye sala). Compártelo por WhatsApp, correo o una nota.'
+          : 'Enlace de invitación copiado. Compártelo por WhatsApp, correo o una nota.',
+        'success'
+      );
     }
-    if (!silent) runtime.showToast('Tu navegador no permite copiar automáticamente.', 'error');
-    return false;
-  } catch (_e) {
-    if (!silent) runtime.showToast('No se pudo copiar al portapapeles.', 'error');
-    return false;
+    return true;
   }
+  if (!silent) runtime.showToast('No se pudo copiar al portapapeles.', 'error');
+  return false;
 }
 
 function joinLanFromInviteUi() {

@@ -34,17 +34,28 @@ export function openSOAPModalDirect() {
 }
 
 export async function copyToClipboardSafe(text) {
+  var t = text == null ? "" : String(text);
+  if (
+    typeof window !== "undefined" &&
+    window.electronAPI &&
+    typeof window.electronAPI.writeClipboardText === "function"
+  ) {
+    try {
+      if (await window.electronAPI.writeClipboardText(t)) return true;
+    } catch (_eElectron) {}
+  }
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(t);
       return true;
     }
   } catch (_e) {}
   try {
     var ta = document.createElement("textarea");
-    ta.value = text;
+    ta.value = t;
+    ta.setAttribute("readonly", "");
     ta.style.position = "fixed";
-    ta.style.opacity = "0";
+    ta.style.left = "-9999px";
     document.body.appendChild(ta);
     ta.select();
     var ok = document.execCommand("copy");
