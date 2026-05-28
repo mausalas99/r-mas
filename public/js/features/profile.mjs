@@ -25,6 +25,12 @@ import { renderEstadoActualButton } from "./soap-estado.mjs";
 import { renderRoundOverviewPanels } from "./patients.mjs";
 import { isModeSala } from "../mode-features.mjs";
 import { isManejoSectionHidden, migrateGranularInner } from "../expediente-tabs.mjs";
+import {
+  isClinicoUnlocked,
+  openClinicoUnlockModal,
+  closeClinicoUnlockModal,
+  confirmClinicoUnlock,
+} from "../clinico-access.mjs";
 import { switchInnerTab, renderInnerTabs, getActiveInnerTab } from "./pase-board.mjs";
 import { renderPatientDataPane } from "./expediente.mjs";
 
@@ -98,6 +104,7 @@ export function loadSettings() {
     syncUpdateChannelUI();
     syncUpdateTelemetryUI();
     syncHideClinicoTabUI();
+    ensureClinicoTabConsistency();
     if (typeof syncSettingsLanHostDiskSection === "function") syncSettingsLanHostDiskSection();
     rt.syncWorkContextChrome();
     return;
@@ -218,6 +225,7 @@ export function loadSettings() {
   syncUpdateTelemetryUI();
   syncHardwareAccelerationUI();
   syncHideClinicoTabUI();
+  ensureClinicoTabConsistency();
   syncIdleLockSelectUi();
   syncPreimportBackupUi();
   if (typeof syncSettingsLanHostDiskSection === "function") syncSettingsLanHostDiskSection();
@@ -374,13 +382,16 @@ export function syncHideClinicoTabUI() {
   syncHideManejoSectionUI();
 }
 
-export function applyHideManejoSectionEffects() {
+export function ensureClinicoTabConsistency() {
   var settings = settingsRef();
   var current = getActiveInnerTab();
-  if (current) {
-    var migrated = migrateGranularInner(current, settings);
-    if (migrated !== current) switchInnerTab(migrated);
-  }
+  if (!current) return;
+  var migrated = migrateGranularInner(current, settings);
+  if (migrated !== current) switchInnerTab(migrated);
+}
+
+export function applyHideManejoSectionEffects() {
+  ensureClinicoTabConsistency();
   renderInnerTabs();
   rt.syncWorkContextChrome();
 }
@@ -392,6 +403,20 @@ export function applyHideClinicoTabEffects() {
 
 export function setHideManejoSection(enabled) {
   var st = settingsRef();
+  if (!enabled && !isClinicoUnlocked(st)) {
+    syncHideManejoSectionUI();
+    openClinicoUnlockModal(function () {
+      var next = settingsRef();
+      next.clinicoUnlocked = true;
+      next.hideManejoSection = false;
+      delete next.hideClinicoTab;
+      localStorage.setItem("rpc-settings", JSON.stringify(next));
+      syncHideManejoSectionUI();
+      applyHideManejoSectionEffects();
+      rt.showToast("Guía clínica disponible en el expediente.", "success");
+    });
+    return;
+  }
   st.hideManejoSection = !!enabled;
   if (enabled) st.hideClinicoTab = true;
   else delete st.hideClinicoTab;
@@ -421,6 +446,8 @@ export const profileWindowHandlers = {
   saveQuickOutputFormat,
   setHideManejoSection,
   setHideClinicoTab,
+  closeClinicoUnlockModal,
+  confirmClinicoUnlock,
   openTemplatesModal,
   saveSettings,
   closeTemplatesModal,

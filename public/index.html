@@ -216,6 +216,21 @@
   </div>
 </div>
 
+<div id="clinico-unlock-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal clinico-unlock-modal" role="dialog" aria-modal="true" aria-labelledby="clinico-unlock-title" onclick="event.stopPropagation()">
+    <h3 id="clinico-unlock-title">Guía clínica de orientación</h3>
+    <p class="clinico-unlock-lead">Las sugerencias de Manejo y Guía clínica en R+ son material de <strong>orientación</strong> y apoyo a la decisión. No sustituyen el juicio clínico: el <strong>criterio clínico del médico tratante siempre va primero</strong>, conforme al contexto del paciente, comorbilidades y protocolos institucionales vigentes.</p>
+    <label for="clinico-unlock-input" class="clinico-unlock-label">Para activar la pestaña Clínico, escribe la frase siguiente:</label>
+    <input type="text" id="clinico-unlock-input" class="clinico-unlock-input" autocomplete="off" spellcheck="false" aria-describedby="clinico-unlock-phrase-hint clinico-unlock-error" onkeydown="if(event.key==='Enter')confirmClinicoUnlock()">
+    <p id="clinico-unlock-phrase-hint" class="clinico-unlock-phrase-hint">entiendo, usare mi criterio clincio</p>
+    <p id="clinico-unlock-error" class="clinico-unlock-error" hidden aria-live="polite"></p>
+    <div class="modal-actions clinico-unlock-actions">
+      <button type="button" class="btn-med-secondary btn-med-secondary--muted" onclick="closeClinicoUnlockModal()">Cancelar</button>
+      <button type="button" class="btn-generate" onclick="confirmClinicoUnlock()">Activar guía clínica</button>
+    </div>
+  </div>
+</div>
+
 <header>
   <h1 id="app-brand" role="button" tabindex="0" title="Abrir Mi Perfil" aria-label="R+, abrir Mi Perfil" onclick="openProfileFromHeader(event)" onkeydown="if(event.key==='Enter'||event.key===' '){openProfileFromHeader(event);}">R+</h1>
   <span id="today-date"></span>
@@ -399,7 +414,7 @@
             <input type="checkbox" id="settings-hide-manejo-section" onchange="setHideManejoSection(this.checked)" style="flex-shrink:0;margin-top:2px;">
             <span>
               <strong>Ocultar Manejo en Clínico</strong>
-              <span class="settings-acc-hint settings-acc-hint--tight" style="display:block;margin-top:4px;">En interconsulta mantiene Nota de evolución e Indicaciones; solo quita el segmento Manejo. En Sala oculta la pestaña Clínico (solo incluye Manejo).</span>
+              <span class="settings-acc-hint settings-acc-hint--tight" style="display:block;margin-top:4px;">Oculto por defecto hasta que lo actives. Al desmarcar por primera vez se pide confirmar que la guía es orientativa y que usarás tu criterio clínico. En interconsulta mantiene Nota e Indicaciones; solo quita Manejo. En Sala oculta la pestaña Clínico.</span>
             </span>
           </label>
         </div>

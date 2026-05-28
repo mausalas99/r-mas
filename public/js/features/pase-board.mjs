@@ -1005,6 +1005,9 @@ export function refreshExpedienteAfterPatientSelect(opts) {
 
 export function switchConsolidatedTab(compositeTab) {
   var settings = rt.getSettings();
+  if (compositeTab === "clinico" && !isClinicoCompositeVisible(settings)) {
+    compositeTab = isModeSala(settings) ? "estadoActual" : "paciente";
+  }
   var current = migrateGranularInner(rt.getActiveInner() || "todo", settings);
   var currentComposite = consolidatedInnerTabButtonId(current, settings).replace(/^itab-/, "");
   if (currentComposite === compositeTab) {
@@ -1122,6 +1125,8 @@ export function renderInnerTabs() {
   if (consolidated) {
     var showClinico = isClinicoCompositeVisible(settings);
     show("itab-clinico", showClinico);
+    var clinicoPane = document.getElementById("itab-content-clinico");
+    if (clinicoPane) clinicoPane.hidden = !showClinico;
     var order = 1;
     setOrder("itab-paciente", order++);
     if (showClinico) setOrder("itab-clinico", order++);

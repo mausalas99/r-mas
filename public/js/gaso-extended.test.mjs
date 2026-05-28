@@ -20,6 +20,23 @@ test('Trastorno mixto: PaCO2 por encima del rango Winter con acidosis metabólic
   });
   assert.equal(r.steps.primary.disorder, 'mixed');
   assert.match(r.steps.compensation.note, /discrepa|Winter/i);
+  assert.match(r.steps.primary.rationale, /Winter/i);
+  assert.match(r.steps.primary.rationale, /por encima/i);
+});
+
+test('Trastorno mixto alcalino: HCO3 bajo y PaCO2 bajo frente a Winter', () => {
+  const r = evaluateGasoExtended({
+    pH: 7.48,
+    hco3: 17.9,
+    pCO2: 24,
+    na: 140,
+    cl: 100,
+  });
+  assert.equal(r.steps.primary.disorder, 'mixed');
+  assert.equal(r.steps.primary.type, 'alkalosis');
+  assert.match(r.steps.primary.rationale, /alcalemia/i);
+  assert.match(r.steps.primary.rationale, /Winter/i);
+  assert.match(r.steps.primary.rationale, /por debajo/i);
 });
 
 test('Anión gap reutiliza computeAnionGapValue_ de labs.js', () => {

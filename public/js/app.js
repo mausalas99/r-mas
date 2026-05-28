@@ -12,6 +12,7 @@ import {
   showToast,
   scheduleDeferredShellInits,
   scheduleDeferredUiInits,
+  initModalDismiss,
   syncWorkContextChrome,
 } from './app-shell.mjs';
 import { attachProfileSettingsGetter, loadSettings, syncProfileSectionVisibility } from './features/profile.mjs';
@@ -163,6 +164,7 @@ try {
 
 function runDomBoot() {
   try {
+    initModalDismiss();
     var todayEl = document.getElementById('today-date');
     if (todayEl) {
       todayEl.textContent = new Date().toLocaleDateString('es-MX', {

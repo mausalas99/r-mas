@@ -40,6 +40,138 @@ function deltaDeltaValue_(agValue, hco3) {
 }
 
 /**
+ * @param {number|null} n
+ * @param {number} [decimals]
+ * @returns {string}
+ */
+function fmtLab_(n, decimals) {
+  if (n == null || !isFinite(n)) return '—';
+  if (decimals == null) return String(n);
+  var p = Math.pow(10, decimals);
+  return String(Math.round((n + Number.EPSILON) * p) / p);
+}
+
+/**
+ * Texto breve que explica por qué se etiquetó el trastorno predominante.
+ * @param {{
+ *   pH: number|null,
+ *   hco3: number|null,
+ *   pCO2: number|null,
+ *   primary: { disorder: string, type: string },
+ *   mixedFromWinter: boolean,
+ *   winterCenter: number|null,
+ *   metaLow: boolean,
+ *   metaHigh: boolean,
+ *   respLow: boolean,
+ *   respHigh: boolean,
+ * }} ctx
+ * @returns {string}
+ */
+function buildPrimaryRationale_(ctx) {
+  var pH = ctx.pH;
+  var hco3 = ctx.hco3;
+  var pCO2 = ctx.pCO2;
+  var primary = ctx.primary;
+  var mixedFromWinter = ctx.mixedFromWinter;
+  var winterCenter = ctx.winterCenter;
+  var metaLow = ctx.metaLow;
+  var metaHigh = ctx.metaHigh;
+  var respLow = ctx.respLow;
+  var respHigh = ctx.respHigh;
+
+  /** @type {string[]} */
+  var lines = [];
+
+  if (pH == null) {
+    return 'Sin pH no se puede inferir el trastorno predominante con estas reglas.';
+  }
+
+  if (pH < 7.35) lines.push('pH ' + fmtLab_(pH, 2) + ': acidemia.');
+  else if (pH > 7.45) lines.push('pH ' + fmtLab_(pH, 2) + ': alcalemia.');
+  else lines.push('pH ' + fmtLab_(pH, 2) + ': en rango o compensado.');
+
+  if (mixedFromWinter && hco3 != null && pCO2 != null && winterCenter != null) {
+    var w = fmtLab_(winterCenter, 1);
+    if (pCO2 < winterCenter - 2) {
+      lines.push(
+        'HCO₃⁻ ' +
+          fmtLab_(hco3, 1) +
+          ' < 22 (acidosis metabólica). Winter predice PaCO₂ ≈ ' +
+          w +
+          ' mmHg, pero la medida es ' +
+          fmtLab_(pCO2) +
+          ' mmHg (por debajo del margen ±2): hiperventilación / segundo proceso respiratorio.'
+      );
+    } else {
+      lines.push(
+        'HCO₃⁻ ' +
+          fmtLab_(hco3, 1) +
+          ' < 22. Winter predice PaCO₂ ≈ ' +
+          w +
+          ' mmHg, pero la medida es ' +
+          fmtLab_(pCO2) +
+          ' mmHg (por encima del margen ±2): retención de CO₂ adicional.'
+      );
+    }
+    if (primary.type === 'alkalosis') {
+      lines.push('El pH alcalino orienta el etiquetado hacia alcalosis en el cuadro mixto.');
+    } else if (primary.type === 'acidosis') {
+      lines.push('El pH ácido orienta el etiquetado hacia acidosis en el cuadro mixto.');
+    }
+    return lines.join(' ');
+  }
+
+  if (primary.disorder === 'metabolic' && primary.type === 'acidosis') {
+    lines.push('HCO₃⁻ ' + fmtLab_(hco3, 1) + ' < 22: acidosis metabólica primaria.');
+    if (pCO2 != null && winterCenter != null && Math.abs(pCO2 - winterCenter) <= 2) {
+      lines.push(
+        'PaCO₂ ' +
+          fmtLab_(pCO2) +
+          ' mmHg coincide con compensación respiratoria esperada (Winter ≈ ' +
+          fmtLab_(winterCenter, 1) +
+          ').'
+      );
+    }
+  } else if (primary.disorder === 'metabolic' && primary.type === 'alkalosis') {
+    lines.push('HCO₃⁻ ' + fmtLab_(hco3, 1) + ' > 26: alcalosis metabólica primaria.');
+  } else if (primary.disorder === 'respiratory' && primary.type === 'acidosis') {
+    lines.push('PaCO₂ ' + fmtLab_(pCO2) + ' mmHg > 45: acidosis respiratoria primaria.');
+    if (metaLow) {
+      lines.push('HCO₃⁻ bajo coexisten; la hipercapnia y el pH ácido predominan para nombrar el trastorno respiratorio.');
+    }
+  } else if (primary.disorder === 'respiratory' && primary.type === 'alkalosis') {
+    lines.push('PaCO₂ ' + fmtLab_(pCO2) + ' mmHg < 35: alcalosis respiratoria primaria.');
+    if (metaLow) {
+      lines.push('HCO₃⁻ bajo coexisten; la hipocapnia y el pH alcalino predominan frente al componente metabólico ácido.');
+    }
+  } else if (primary.disorder === 'mixed' && primary.type === 'acidosis') {
+    lines.push(
+      'En acidemia, HCO₃⁻ y PaCO₂ no encajan con un solo trastorno primario (ni acidosis metabólica clara con compensación, ni hipercapnia aislada).'
+    );
+    if (metaLow) lines.push('Hay acidosis metabólica (HCO₃⁻ bajo).');
+    if (respHigh) lines.push('Hay retención de CO₂ (PaCO₂ elevada).');
+  } else if (primary.disorder === 'mixed' && primary.type === 'alkalosis') {
+    lines.push('En alcalemia, HCO₃⁻ y PaCO₂ apuntan a procesos opuestos.');
+    if (metaLow && respLow) {
+      lines.push(
+        'HCO₃⁻ bajo (tendencia metabólica ácida) con PaCO₂ baja (alcalosis respiratoria); el pH alto indica que la hipocapnia pesa más en el balance.'
+      );
+    } else {
+      if (metaLow) lines.push('HCO₃⁻ bajo sin alcalosis metabólica (HCO₃⁻ no elevado).');
+      if (respLow) lines.push('PaCO₂ baja (hipocapnia).');
+    }
+  } else if (primary.disorder === 'compensated') {
+    lines.push('Alteraciones de HCO₃⁻ y PaCO₂ se equilibran y dejan el pH casi normal.');
+    if (metaLow && respLow) lines.push('Patrón acidótico compensado (HCO₃⁻ bajo + PaCO₂ baja).');
+    if (metaHigh && respHigh) lines.push('Patrón alcalótico compensado (HCO₃⁻ alto + PaCO₂ alta).');
+  } else if (primary.disorder === 'unknown') {
+    lines.push('Datos insuficientes para clasificar con las reglas automatizadas.');
+  }
+
+  return lines.join(' ');
+}
+
+/**
  * @param {GasoExtendedInput} input
  * @returns {{ steps: Record<string, any>, summaryLines: string[] }}
  */
@@ -80,6 +212,13 @@ export function evaluateGasoExtended(input) {
     phStep.interpretation = 'Sin dato de pH para clasificar estado ácido-base.';
   }
 
+  /** @type {{ disorder: string, type: string, rationale: string }} */
+  var primary = {
+    disorder: 'unknown',
+    type: 'none',
+    rationale: '',
+  };
+
   var metaLow = hco3 != null && hco3 < 22;
   var metaHigh = hco3 != null && hco3 > 26;
   var respLow = pCO2 != null && pCO2 < 35;
@@ -98,12 +237,6 @@ export function evaluateGasoExtended(input) {
     if (pCO2 > winterCenter + 2) mixedFromWinter = true;
     else if (pCO2 < winterCenter - 2) mixedFromWinter = true;
   }
-
-  /** @type {{ disorder: string, type: string }} */
-  var primary = {
-    disorder: 'unknown',
-    type: 'none'
-  };
 
   if (mixedFromWinter) {
     primary.disorder = 'mixed';
@@ -142,6 +275,19 @@ export function evaluateGasoExtended(input) {
       } else primary.type = 'none';
     }
   }
+
+  primary.rationale = buildPrimaryRationale_({
+    pH: pH,
+    hco3: hco3,
+    pCO2: pCO2,
+    primary: primary,
+    mixedFromWinter: mixedFromWinter,
+    winterCenter: winterCenter,
+    metaLow: metaLow,
+    metaHigh: metaHigh,
+    respLow: respLow,
+    respHigh: respHigh,
+  });
 
   /** @type {{ expectedPCO2: number|null, expectedHCO3Acute: number|null, expectedHCO3Chronic: number|null, note: string }} */
   var compensation = {

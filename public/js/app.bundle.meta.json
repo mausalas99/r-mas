@@ -189,7 +189,7 @@
       "format": "esm"
     },
     "public/js/gaso-extended.mjs": {
-      "bytes": 10744,
+      "bytes": 16365,
       "imports": [
         {
           "path": "public/js/labs.js",
@@ -200,7 +200,7 @@
       "format": "esm"
     },
     "public/js/tend-group-modal.mjs": {
-      "bytes": 51699,
+      "bytes": 52288,
       "imports": [
         {
           "path": "public/js/tend-core.mjs",
@@ -227,11 +227,6 @@
     },
     "public/js/deferred-work.mjs": {
       "bytes": 928,
-      "imports": [],
-      "format": "esm"
-    },
-    "public/js/trend-spark-canvas.mjs": {
-      "bytes": 3155,
       "imports": [],
       "format": "esm"
     },
@@ -1396,13 +1391,23 @@
       ],
       "format": "esm"
     },
+    "public/js/clinico-access.mjs": {
+      "bytes": 2811,
+      "imports": [],
+      "format": "esm"
+    },
     "public/js/expediente-tabs.mjs": {
-      "bytes": 12820,
+      "bytes": 13387,
       "imports": [
         {
           "path": "public/js/mode-features.mjs",
           "kind": "import-statement",
           "original": "./mode-features.mjs"
+        },
+        {
+          "path": "public/js/clinico-access.mjs",
+          "kind": "import-statement",
+          "original": "./clinico-access.mjs"
         }
       ],
       "format": "esm"
@@ -1635,7 +1640,7 @@
       "format": "esm"
     },
     "public/js/features/pase-board.mjs": {
-      "bytes": 41056,
+      "bytes": 41334,
       "imports": [
         {
           "path": "public/js/labs.js",
@@ -2021,7 +2026,7 @@
       "format": "esm"
     },
     "public/js/features/tendencias.mjs": {
-      "bytes": 71644,
+      "bytes": 70907,
       "imports": [
         {
           "path": "public/js/app-state.mjs",
@@ -2042,11 +2047,6 @@
           "path": "public/js/deferred-work.mjs",
           "kind": "import-statement",
           "original": "../deferred-work.mjs"
-        },
-        {
-          "path": "public/js/trend-spark-canvas.mjs",
-          "kind": "import-statement",
-          "original": "../trend-spark-canvas.mjs"
         },
         {
           "path": "public/js/lab-history-cache.mjs",
@@ -2158,7 +2158,7 @@
       "format": "esm"
     },
     "public/js/modal-dismiss.mjs": {
-      "bytes": 1836,
+      "bytes": 3397,
       "imports": [],
       "format": "esm"
     },
@@ -2214,7 +2214,7 @@
       "format": "esm"
     },
     "public/js/features/profile.mjs": {
-      "bytes": 14658,
+      "bytes": 15494,
       "imports": [
         {
           "path": "public/js/features/chrome.mjs",
@@ -2265,6 +2265,11 @@
           "path": "public/js/expediente-tabs.mjs",
           "kind": "import-statement",
           "original": "../expediente-tabs.mjs"
+        },
+        {
+          "path": "public/js/clinico-access.mjs",
+          "kind": "import-statement",
+          "original": "../clinico-access.mjs"
         },
         {
           "path": "public/js/features/pase-board.mjs",
@@ -2337,7 +2342,7 @@
       "format": "esm"
     },
     "public/js/app-shell.mjs": {
-      "bytes": 30633,
+      "bytes": 32196,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -2388,6 +2393,11 @@
           "path": "public/js/features/profile.mjs",
           "kind": "import-statement",
           "original": "./features/profile.mjs"
+        },
+        {
+          "path": "public/js/clinico-access.mjs",
+          "kind": "import-statement",
+          "original": "./clinico-access.mjs"
         },
         {
           "path": "public/js/features/soap-estado.mjs",
@@ -2510,7 +2520,7 @@
       "format": "esm"
     },
     "public/js/features/estado-actual-registro-modal.mjs": {
-      "bytes": 2991,
+      "bytes": 2858,
       "imports": [
         {
           "path": "public/js/features/estado-actual-paste-modal.mjs",
@@ -2752,7 +2762,7 @@
       "format": "esm"
     },
     "public/js/app.js": {
-      "bytes": 6997,
+      "bytes": 7041,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -2898,7 +2908,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 2897569
+      "bytes": 2929832
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -2912,13 +2922,13 @@
           "bytesInOutput": 20775
         },
         "public/js/med-receta-core.mjs": {
-          "bytesInOutput": 20439
+          "bytesInOutput": 20487
         },
         "public/js/lab-history-repair.mjs": {
           "bytesInOutput": 892
         },
         "public/js/features/estado-actual-io.mjs": {
-          "bytesInOutput": 8162
+          "bytesInOutput": 8171
         },
         "public/js/features/estado-actual-data.mjs": {
           "bytesInOutput": 12962
@@ -2927,7 +2937,7 @@
           "bytesInOutput": 2336
         },
         "public/js/electrolyte-manejo.mjs": {
-          "bytesInOutput": 19067
+          "bytesInOutput": 19214
         },
         "public/js/tend-core.mjs": {
           "bytesInOutput": 12513
@@ -2942,10 +2952,10 @@
           "bytesInOutput": 530
         },
         "public/js/labs.js": {
-          "bytesInOutput": 110463
+          "bytesInOutput": 110583
         },
         "public/js/lab-history-auto-store-core.mjs": {
-          "bytesInOutput": 4218
+          "bytesInOutput": 4221
         },
         "public/js/features/diagrams-parse.mjs": {
           "bytesInOutput": 3028
@@ -2954,70 +2964,67 @@
           "bytesInOutput": 0
         },
         "public/js/features/diagrams-render.mjs": {
-          "bytesInOutput": 11840
+          "bytesInOutput": 11867
         },
         "public/js/tend-prefs.mjs": {
-          "bytesInOutput": 6058
+          "bytesInOutput": 6068
         },
         "public/js/tend-export.mjs": {
-          "bytesInOutput": 13714
+          "bytesInOutput": 13744
         },
         "public/js/gaso-extended.mjs": {
-          "bytesInOutput": 9127
+          "bytesInOutput": 14340
         },
         "public/js/tend-group-modal.mjs": {
-          "bytesInOutput": 49260
+          "bytesInOutput": 49995
         },
         "public/js/deferred-work.mjs": {
           "bytesInOutput": 736
-        },
-        "public/js/trend-spark-canvas.mjs": {
-          "bytesInOutput": 2747
         },
         "public/js/lab-history-cache.mjs": {
           "bytesInOutput": 2845
         },
         "public/js/labs-some-table.mjs": {
-          "bytesInOutput": 32650
+          "bytesInOutput": 32702
         },
         "public/js/tour-guards.mjs": {
           "bytesInOutput": 411
         },
         "public/js/features/lab-some-tables-modal.mjs": {
-          "bytesInOutput": 2999
+          "bytesInOutput": 3003
         },
         "public/js/sesion-ingreso-export.mjs": {
-          "bytesInOutput": 4083
+          "bytesInOutput": 4088
         },
         "public/js/features/sesion-ingreso-send-modal.mjs": {
-          "bytesInOutput": 3372
+          "bytesInOutput": 3376
         },
         "public/js/lab-bulk-paste.mjs": {
-          "bytesInOutput": 11662
+          "bytesInOutput": 11680
         },
         "public/js/features/lab-bulk-preview-modal.mjs": {
-          "bytesInOutput": 5003
+          "bytesInOutput": 5015
         },
         "public/js/features/chrome.mjs": {
-          "bytesInOutput": 12490
+          "bytesInOutput": 12543
         },
         "public/js/features/lab-panel.mjs": {
-          "bytesInOutput": 57666
+          "bytesInOutput": 57821
         },
         "public/js/tour-targets.mjs": {
           "bytesInOutput": 4823
         },
         "public/js/tour-demo-some-lab.mjs": {
-          "bytesInOutput": 5323
+          "bytesInOutput": 5335
         },
         "public/js/listado-problemas-core.mjs": {
-          "bytesInOutput": 1027
+          "bytesInOutput": 1031
         },
         "public/js/tour-demo-listado-problemas.mjs": {
-          "bytesInOutput": 1457
+          "bytesInOutput": 1510
         },
         "public/js/mobile-web.mjs": {
-          "bytesInOutput": 541
+          "bytesInOutput": 545
         },
         "public/js/lan-client.mjs": {
           "bytesInOutput": 4176
@@ -3047,76 +3054,76 @@
           "bytesInOutput": 3966
         },
         "public/js/features/lan-sync.mjs": {
-          "bytesInOutput": 71418
+          "bytesInOutput": 71703
         },
         "public/js/features/soap-estado.mjs": {
-          "bytesInOutput": 10524
+          "bytesInOutput": 10561
         },
         "public/js/features/estado-actual-meds.mjs": {
           "bytesInOutput": 3603
         },
         "public/js/ui-motion.mjs": {
-          "bytesInOutput": 4074
+          "bytesInOutput": 4081
         },
         "public/js/features/notes-indicaciones.mjs": {
-          "bytesInOutput": 21733
+          "bytesInOutput": 21826
         },
         "public/js/listado-problemas-ai-prompt.mjs": {
-          "bytesInOutput": 3570
+          "bytesInOutput": 3689
         },
         "public/js/features/expediente.mjs": {
-          "bytesInOutput": 42325
+          "bytesInOutput": 42428
         },
         "public/js/todos-priority.mjs": {
           "bytesInOutput": 524
         },
         "public/js/features/todos.mjs": {
-          "bytesInOutput": 11901
+          "bytesInOutput": 11905
         },
         "public/js/manejo-atb-catalog.mjs": {
-          "bytesInOutput": 11731
+          "bytesInOutput": 11898
         },
         "public/js/manejo-atb-suggest.mjs": {
-          "bytesInOutput": 1995
+          "bytesInOutput": 2001
         },
         "public/js/manejo-atb-family-colors.mjs": {
           "bytesInOutput": 194
         },
         "public/js/manejo-atb-renal.mjs": {
-          "bytesInOutput": 5031
+          "bytesInOutput": 5043
         },
         "public/js/manejo-cultivo-bridge.mjs": {
-          "bytesInOutput": 10976
+          "bytesInOutput": 11013
         },
         "public/js/manejo-fluid-terms.mjs": {
-          "bytesInOutput": 986
+          "bytesInOutput": 990
         },
         "public/js/manejo-cad-ehh.mjs": {
-          "bytesInOutput": 13885
+          "bytesInOutput": 14172
         },
         "public/js/manejo-calculators.mjs": {
-          "bytesInOutput": 3969
+          "bytesInOutput": 4009
         },
         "public/js/manejo-insulin-pump-algorithms.mjs": {
-          "bytesInOutput": 2425
+          "bytesInOutput": 2455
         },
         "public/js/manejo-some-format.mjs": {
-          "bytesInOutput": 15922
+          "bytesInOutput": 15972
         },
         "public/js/features/manejo-some-ui.mjs": {
-          "bytesInOutput": 10523
+          "bytesInOutput": 10548
         },
         "public/js/features/manejo-atb-ui.mjs": {
-          "bytesInOutput": 13765
+          "bytesInOutput": 13817
         },
         "public/js/manejo-pathology-catalog.mjs": {
-          "bytesInOutput": 35896
+          "bytesInOutput": 36753
         },
         "public/js/manejo-protocol-links.mjs": {
-          "bytesInOutput": 7430
+          "bytesInOutput": 7440
         },
         "public/js/manejo-pathology-focus.mjs": {
-          "bytesInOutput": 2593
+          "bytesInOutput": 2595
         },
         "public/js/manejo-pathology-branch-colors.mjs": {
           "bytesInOutput": 218
@@ -3125,13 +3132,13 @@
           "bytesInOutput": 2780
         },
         "public/js/manejo-proto-admin-display.mjs": {
-          "bytesInOutput": 28262
+          "bytesInOutput": 28327
         },
         "public/js/manejo-clinical-text.mjs": {
-          "bytesInOutput": 11161
+          "bytesInOutput": 11180
         },
         "public/js/features/manejo-patologias.mjs": {
-          "bytesInOutput": 5969
+          "bytesInOutput": 5979
         },
         "public/js/features/manejo-guia-state.mjs": {
           "bytesInOutput": 3041
@@ -3140,157 +3147,160 @@
           "bytesInOutput": 852
         },
         "public/js/features/manejo-electrolitos.mjs": {
-          "bytesInOutput": 13959
+          "bytesInOutput": 14071
         },
         "public/js/manejo-protocols-catalog.mjs": {
-          "bytesInOutput": 20342
+          "bytesInOutput": 20946
         },
         "public/js/features/manejo-proto-editor.mjs": {
-          "bytesInOutput": 12734
+          "bytesInOutput": 12782
         },
         "public/js/manejo-proto-category-colors.mjs": {
           "bytesInOutput": 285
         },
         "public/js/manejo-dose-units.mjs": {
-          "bytesInOutput": 1966
+          "bytesInOutput": 1977
         },
         "public/js/features/manejo-proto-detail.mjs": {
-          "bytesInOutput": 21031
+          "bytesInOutput": 21055
         },
         "public/js/features/manejo-proto-toolbar.mjs": {
-          "bytesInOutput": 17957
+          "bytesInOutput": 17980
         },
         "public/js/features/manejo-cad-ada-ui.mjs": {
-          "bytesInOutput": 13377
+          "bytesInOutput": 13427
         },
         "public/js/features/manejo-guia-steps.mjs": {
-          "bytesInOutput": 495
+          "bytesInOutput": 499
         },
         "public/js/features/manejo-guia-patologia.mjs": {
-          "bytesInOutput": 16507
+          "bytesInOutput": 16539
         },
         "public/js/features/manejo-guia-infusion.mjs": {
-          "bytesInOutput": 14062
+          "bytesInOutput": 14112
         },
         "public/js/features/manejo-guia-atb.mjs": {
-          "bytesInOutput": 12037
+          "bytesInOutput": 12087
         },
         "public/js/features/manejo-guia.mjs": {
-          "bytesInOutput": 2953
+          "bytesInOutput": 2969
+        },
+        "public/js/clinico-access.mjs": {
+          "bytesInOutput": 2262
         },
         "public/js/expediente-tabs.mjs": {
-          "bytesInOutput": 11779
+          "bytesInOutput": 12186
         },
         "public/js/ui-tab-motion.mjs": {
           "bytesInOutput": 6754
         },
         "public/js/features/manejo.mjs": {
-          "bytesInOutput": 10741
+          "bytesInOutput": 10760
         },
         "public/js/features/estado-actual-ranges.mjs": {
           "bytesInOutput": 642
         },
         "public/js/features/estado-actual-text.mjs": {
-          "bytesInOutput": 3609
+          "bytesInOutput": 3623
         },
         "public/js/features/estado-actual-charts.mjs": {
-          "bytesInOutput": 19260
+          "bytesInOutput": 19289
         },
         "public/js/features/estado-actual-registro-defaults.mjs": {
           "bytesInOutput": 1978
         },
         "public/js/features/estado-actual-panel.mjs": {
-          "bytesInOutput": 50610
+          "bytesInOutput": 50709
         },
         "public/js/receta-hu-core.mjs": {
-          "bytesInOutput": 4874
+          "bytesInOutput": 4886
         },
         "public/js/features/receta-hu.mjs": {
-          "bytesInOutput": 24258
+          "bytesInOutput": 24341
         },
         "public/js/features/pase-board.mjs": {
-          "bytesInOutput": 36276
+          "bytesInOutput": 36607
         },
         "public/js/features/medications.mjs": {
-          "bytesInOutput": 15560
+          "bytesInOutput": 15642
         },
         "public/js/patient-validation.mjs": {
-          "bytesInOutput": 971
+          "bytesInOutput": 983
         },
         "public/js/patient-delete-sync.mjs": {
           "bytesInOutput": 1055
         },
         "public/js/features/patients.mjs": {
-          "bytesInOutput": 43793
+          "bytesInOutput": 43879
         },
         "public/js/sesion-ingreso-trends-export.mjs": {
           "bytesInOutput": 5132
         },
         "public/js/features/sesion-ingreso-trends-send-modal.mjs": {
-          "bytesInOutput": 4382
+          "bytesInOutput": 4407
         },
         "public/js/features/settings-help.mjs": {
-          "bytesInOutput": 87830
+          "bytesInOutput": 89104
         },
         "public/js/features/tendencias.mjs": {
-          "bytesInOutput": 65505
+          "bytesInOutput": 64999
         },
         "public/js/lab-history-set.mjs": {
-          "bytesInOutput": 17048
+          "bytesInOutput": 17055
         },
         "public/js/lan-join-link.mjs": {
           "bytesInOutput": 554
         },
         "public/js/quick-output.mjs": {
-          "bytesInOutput": 879
+          "bytesInOutput": 881
         },
         "public/js/output-dir-fallback.mjs": {
           "bytesInOutput": 1389
         },
         "public/js/modal-dismiss.mjs": {
-          "bytesInOutput": 1496
+          "bytesInOutput": 2048
         },
         "public/js/update-helpers.mjs": {
-          "bytesInOutput": 630
+          "bytesInOutput": 635
         },
         "public/js/features/platform.mjs": {
-          "bytesInOutput": 65609
+          "bytesInOutput": 65766
         },
         "public/js/features/profile.mjs": {
-          "bytesInOutput": 12714
+          "bytesInOutput": 13447
         },
         "public/js/procedure-agenda-week.mjs": {
           "bytesInOutput": 2224
         },
         "public/js/features/agenda.mjs": {
-          "bytesInOutput": 14186
+          "bytesInOutput": 14203
         },
         "public/js/features/productivity.mjs": {
-          "bytesInOutput": 16366
+          "bytesInOutput": 16407
         },
         "public/js/app-shell.mjs": {
-          "bytesInOutput": 26924
+          "bytesInOutput": 28230
         },
         "public/js/features/estado-actual-parse-variants.mjs": {
           "bytesInOutput": 982
         },
         "public/js/features/estado-actual-parser.mjs": {
-          "bytesInOutput": 10350
+          "bytesInOutput": 10371
         },
         "public/js/features/estado-actual-paste-modal.mjs": {
-          "bytesInOutput": 2595
+          "bytesInOutput": 2602
         },
         "public/js/features/estado-actual-registro-modal.mjs": {
-          "bytesInOutput": 2669
+          "bytesInOutput": 2548
         },
         "public/js/app-runtimes.mjs": {
           "bytesInOutput": 11932
         },
         "public/js/app.js": {
-          "bytesInOutput": 4271
+          "bytesInOutput": 4305
         }
       },
-      "bytes": 1599530
+      "bytes": 1613832
     }
   }
 }

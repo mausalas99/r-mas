@@ -871,8 +871,20 @@ export function createTendGroupModal(deps) {
 
       var primaryBody = document.createElement('div');
       var primaryBadge = document.createElement('span');
-      primaryBadge.className = 'tend-gaso-badge';
+      primaryBadge.className = 'tend-gaso-badge tend-gaso-badge--tip';
+      primaryBadge.tabIndex = 0;
       primaryBadge.textContent = primaryDisorderLabel(ev.steps.primary.disorder, ev.steps.primary.type);
+      var primaryRationale = String(ev.steps.primary.rationale || '').trim();
+      if (primaryRationale) {
+        var primaryTipId = 'tend-gaso-primary-rationale';
+        primaryBadge.setAttribute('aria-describedby', primaryTipId);
+        var primaryTip = document.createElement('span');
+        primaryTip.id = primaryTipId;
+        primaryTip.className = 'tend-gaso-tip';
+        primaryTip.setAttribute('role', 'tooltip');
+        primaryTip.textContent = primaryRationale;
+        primaryBadge.appendChild(primaryTip);
+      }
       primaryBody.appendChild(primaryBadge);
       steps.appendChild(stepCard(2, 'Trastorno predominante', primaryBody));
 

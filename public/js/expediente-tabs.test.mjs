@@ -14,12 +14,13 @@ import {
   isClinicoTabHidden,
   isManejoSectionHidden,
   isClinicoCompositeVisible,
+  getConsolidatedCompositeState,
 } from './expediente-tabs.mjs';
 
-const INTER = { appMode: 'interconsulta' };
-const SALA = { appMode: 'sala' };
-const HIDE_MANEJO_INTER = { appMode: 'interconsulta', hideManejoSection: true };
-const HIDE_MANEJO_LEGACY = { appMode: 'interconsulta', hideClinicoTab: true };
+const INTER = { appMode: 'interconsulta', hideManejoSection: false };
+const SALA = { appMode: 'sala', hideManejoSection: false };
+const HIDE_MANEJO_INTER = { appMode: 'interconsulta', hideManejoSection: true, clinicoUnlocked: true };
+const HIDE_MANEJO_LEGACY = { appMode: 'interconsulta', hideClinicoTab: true, clinicoUnlocked: true };
 
 test('useConsolidatedExpedienteTabs is always true', () => {
   assert.equal(useConsolidatedExpedienteTabs(SALA), true);
@@ -107,8 +108,9 @@ test('getSalidaSections only in sala', () => {
 });
 
 test('isManejoSectionHidden respects hideManejoSection and legacy hideClinicoTab', () => {
-  assert.equal(isManejoSectionHidden({}), false);
-  assert.equal(isManejoSectionHidden({ hideManejoSection: true }), true);
+  assert.equal(isManejoSectionHidden({}), true);
+  assert.equal(isManejoSectionHidden({ hideManejoSection: false }), false);
+  assert.equal(isManejoSectionHidden({ hideManejoSection: true, clinicoUnlocked: true }), true);
   assert.equal(isManejoSectionHidden(HIDE_MANEJO_LEGACY), true);
 });
 
@@ -120,7 +122,7 @@ test('interconsulta keeps clinico tab when only manejo is hidden', () => {
 });
 
 test('sala omits clinico composite when manejo is hidden', () => {
-  const hiddenSala = { appMode: 'sala', hideManejoSection: true };
+  const hiddenSala = { appMode: 'sala', hideManejoSection: true, clinicoUnlocked: true };
   assert.equal(isClinicoCompositeVisible(hiddenSala), false);
   assert.equal(getConsolidatedTabs(hiddenSala).includes('clinico'), false);
   assert.deepEqual(getClinicoSections(hiddenSala), []);
@@ -147,5 +149,21 @@ test('resolveConsolidatedTarget redirects manejo to notas when hidden (inter)', 
 
 test('legacy isClinicoTabHidden only true in sala', () => {
   assert.equal(isClinicoTabHidden(HIDE_MANEJO_INTER), false);
-  assert.equal(isClinicoTabHidden({ appMode: 'sala', hideClinicoTab: true }), true);
+  assert.equal(isClinicoTabHidden({ appMode: 'sala', hideClinicoTab: true, clinicoUnlocked: true }), true);
+});
+
+test('getConsolidatedCompositeState deactivates clinico pane when hidden in sala', () => {
+  const hiddenSala = { appMode: 'sala', hideManejoSection: true, clinicoUnlocked: true };
+  const state = getConsolidatedCompositeState('todo', hiddenSala);
+  assert.equal(state.paciente.visible, true);
+  assert.equal(state.paciente.active, true);
+  assert.equal(state.clinico.visible, false);
+  assert.equal(state.clinico.active, false);
+});
+
+test('getConsolidatedCompositeState keeps clinico visible in inter when only manejo hidden', () => {
+  const state = getConsolidatedCompositeState('notas', HIDE_MANEJO_INTER);
+  assert.equal(state.clinico.visible, true);
+  assert.equal(state.clinico.active, true);
+  assert.equal(state.estadoActual.visible, false);
 });

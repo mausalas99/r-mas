@@ -7,7 +7,11 @@ import { parseLanJoinQuery } from './lan-join-link.mjs';
 import { isMobileWeb, blockIfMobileDocExport, mobileDocExportToast } from './mobile-web.mjs';
 import { resolveQuickOutputAction } from './quick-output.mjs';
 import { handleOutputDirFallback } from './output-dir-fallback.mjs';
-import { createModalDismissRegistry } from './modal-dismiss.mjs';
+import {
+  createModalDismissRegistry,
+  isRpcOverlayVisible,
+  getOverlayZIndex,
+} from './modal-dismiss.mjs';
 import {
   getUiDensity,
   isPaseMode,
@@ -28,6 +32,7 @@ import {
   closeTemplatesModal,
   normalizeQuickOutputFormat,
 } from './features/profile.mjs';
+import { closeClinicoUnlockModal } from './clinico-access.mjs';
 import {
   closeSOAPModal,
 } from './features/soap-estado.mjs';
@@ -306,42 +311,23 @@ function onMedicoTemplateBlur() {
   localStorage.setItem('rpc-settings', JSON.stringify(shellCtx.getSettings()));
 }
 
-function isRpcOverlayVisible(el) {
-  if (!el) return false;
-  var d = window.getComputedStyle(el).display;
-  return d !== 'none' && d !== '';
-}
-
 var modalDismiss = createModalDismissRegistry();
+var modalDismissInited = false;
 
 function initModalDismiss() {
+  if (modalDismissInited) return;
   var dynamicBackdropIds = [
     'lab-dedupe-backdrop',
     'soap-confirm-backdrop',
     'dup-confirm-backdrop',
     'lab-conflict-backdrop',
-    'exp-advice-backdrop'
+    'exp-advice-backdrop',
+    'tend-gaso-ext-backdrop',
   ];
 
   function el(id) {
     return document.getElementById(id);
   }
-
-  modalDismiss.register({
-    isOpen: function () {
-      return dynamicBackdropIds.some(function (id) {
-        var node = el(id);
-        if (!node) return false;
-        return isRpcOverlayVisible(node);
-      });
-    },
-    close: function () {
-      dynamicBackdropIds.forEach(function (id) {
-        var node = el(id);
-        if (node) node.remove();
-      });
-    }
-  });
 
   modalDismiss.register({
     isOpen: function () {
@@ -360,17 +346,21 @@ function initModalDismiss() {
     close: closeTendDetail,
     backdropEl: function () {
       return el('tend-detail-backdrop');
-    }
+    },
+    panelSelector: '#tend-detail-modal',
   });
 
   modalDismiss.register({
     isOpen: function () {
+      var bd = el('tend-group-backdrop');
+      if (bd && bd.getAttribute('aria-hidden') === 'false') return true;
       return isTendGroupModalOpen();
     },
     close: closeTendGroupModal,
     backdropEl: function () {
       return el('tend-group-backdrop');
-    }
+    },
+    panelSelector: '#tend-group-modal',
   });
 
   modalDismiss.register({
@@ -403,7 +393,8 @@ function initModalDismiss() {
     close: closeProcedureAgendaModal,
     backdropEl: function () {
       return el('procedure-agenda-modal');
-    }
+    },
+    panelSelector: '.modal',
   });
 
   modalDismiss.register({
@@ -502,7 +493,8 @@ function initModalDismiss() {
     close: closeLabDisplayPrefsModal,
     backdropEl: function () {
       return el('lab-display-prefs-backdrop');
-    }
+    },
+    panelSelector: '.lab-display-prefs-modal',
   });
 
   modalDismiss.register({
@@ -527,6 +519,18 @@ function initModalDismiss() {
       return el('lab-bulk-tour-hint-backdrop');
     },
     panelSelector: '.lab-bulk-tour-hint-modal',
+  });
+
+  modalDismiss.register({
+    isOpen: function () {
+      var b = el('clinico-unlock-backdrop');
+      return b && b.classList.contains('open');
+    },
+    close: closeClinicoUnlockModal,
+    backdropEl: function () {
+      return el('clinico-unlock-backdrop');
+    },
+    panelSelector: '.clinico-unlock-modal',
   });
 
   modalDismiss.register({
@@ -598,7 +602,53 @@ function initModalDismiss() {
     }
   });
 
+  // Diálogos dinámicos (lab dedupe, confirmaciones): registrados al final para
+  // que Escape los cierre antes que modales estáticos cuando están visibles.
+  modalDismiss.register({
+    isOpen: function () {
+      return dynamicBackdropIds.some(function (id) {
+        var node = el(id);
+        return isRpcOverlayVisible(node);
+      });
+    },
+    close: function () {
+      var top = null;
+      var bestZ = -1;
+      dynamicBackdropIds.forEach(function (id) {
+        var node = el(id);
+        var z = getOverlayZIndex(node);
+        if (z > bestZ) {
+          bestZ = z;
+          top = node;
+        }
+      });
+      if (!top) return;
+      if (top.id === 'tend-gaso-ext-backdrop') {
+        top.style.display = 'none';
+        top.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('tend-gaso-ext-open');
+        return;
+      }
+      top.remove();
+    },
+    backdropEl: function () {
+      var best = null;
+      var bestZ = -1;
+      dynamicBackdropIds.forEach(function (id) {
+        var node = el(id);
+        var z = getOverlayZIndex(node);
+        if (z > bestZ) {
+          bestZ = z;
+          best = node;
+        }
+      });
+      return best;
+    },
+    panelSelector: '.lab-conflict-modal, .tend-gaso-ext-dialog, [role="dialog"]',
+  });
+
   modalDismiss.init();
+  modalDismissInited = true;
 
   document.addEventListener('click', function (ev) {
     var t = ev.target;
@@ -943,5 +993,4 @@ export function scheduleDeferredShellInits() {
 
 export function scheduleDeferredUiInits() {
   _rpcDeferInit(initProductivityKeyboardShortcuts);
-  _rpcDeferInit(initModalDismiss);
 }

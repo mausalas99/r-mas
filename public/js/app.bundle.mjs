@@ -730,9 +730,9 @@ function resolveFechaActualizacion(fechas, fallbackDMY) {
   return best;
 }
 var ACCENT_FIRST_WORD = {
-  LOSARTAN: "LOSARTÁN",
-  ONDANSETRON: "ONDANSETRÓN",
-  SENOSIDOS: "SENÓSIDOS"
+  LOSARTAN: "LOSART\xC1N",
+  ONDANSETRON: "ONDANSETR\xD3N",
+  SENOSIDOS: "SEN\xD3SIDOS"
 };
 var MAX_CUSTOM_TOKENS_PER_CAT = 400;
 var MAX_CUSTOM_TOKEN_LEN = 120;
@@ -827,17 +827,17 @@ function expandSolInyClause(n) {
     var idx = arguments[arguments.length - 2];
     var before = str.slice(0, idx);
     if (/\b50\s*%/i.test(before) && String(ml).replace(",", ".") === "50") {
-      return "SOLUCIÓN INYECTABLE 50 ML";
+      return "SOLUCI\xD3N INYECTABLE 50 ML";
     }
-    return "SOLUCIÓN INYECTABLE";
-  }).replace(/\bSOL INY\b/gi, "SOLUCIÓN INYECTABLE");
+    return "SOLUCI\xD3N INYECTABLE";
+  }).replace(/\bSOL INY\b/gi, "SOLUCI\xD3N INYECTABLE");
 }
 function expandNombrePresentacion(nombre) {
   var n = normalizeSpacesPct(stripListaMarkers(nombre));
   n = expandSolInyClause(n);
   n = n.replace(/\bCOMPRIMIDO\b/gi, "TABLETA");
-  n = n.replace(/\bCAPSULA\b/gi, "CÁPSULA");
-  n = n.replace(/\bCAPSULAS\b/gi, "CÁPSULAS");
+  n = n.replace(/\bCAPSULA\b/gi, "C\xC1PSULA");
+  n = n.replace(/\bCAPSULAS\b/gi, "C\xC1PSULAS");
   n = n.replace(/\bJARABE\s+\d+\s*ML\b/gi, "JARABE");
   n = n.replace(/\bGEL\s+\d+\s*ML\b/gi, "GEL");
   var m = n.match(/^(POLIETILENGLICOL\s+3350)\s+POLVO\s+(\d+\s*G)\s*$/i);
@@ -848,14 +848,14 @@ function expandNombrePresentacion(nombre) {
 }
 function normalizeVia(viaRaw) {
   var v = trimStr(viaRaw).toUpperCase();
-  if (v === "VIA ORAL") return "VÍA ORAL";
-  if (v === "VIA INTRAVENOSA") return "VÍA INTRAVENOSA";
-  if (v === "VIA SUBCUTANEA") return "VÍA SUBCUTÁNEA";
+  if (v === "VIA ORAL") return "V\xCDA ORAL";
+  if (v === "VIA INTRAVENOSA") return "V\xCDA INTRAVENOSA";
+  if (v === "VIA SUBCUTANEA") return "V\xCDA SUBCUT\xC1NEA";
   return viaRaw;
 }
 function verbForVia(viaNorm) {
-  if (viaNorm === "VÍA ORAL") return "TOMAR";
-  if (viaNorm === "VÍA SUBCUTÁNEA") return "APLICAR";
+  if (viaNorm === "V\xCDA ORAL") return "TOMAR";
+  if (viaNorm === "V\xCDA SUBCUT\xC1NEA") return "APLICAR";
   return "ADMINISTRAR";
 }
 function normalizeFrecuencia(fr) {
@@ -953,7 +953,7 @@ function polishHypoPrnCriterion(crit) {
   var c = normalizeFrecuencia(trimStr(crit));
   c = c.replace(/\bHIPOGLUCEMIA\s*<\s*70\b/gi, "HIPOGLUCEMIA <70 MG/DL");
   if (!/SEG[ÚU]N\s+REQUERIMIENTO/i.test(c)) {
-    c = trimStr(c) + " SEGÚN REQUERIMIENTO";
+    c = trimStr(c) + " SEG\xDAN REQUERIMIENTO";
   }
   return c;
 }
@@ -976,7 +976,7 @@ function instructionAmountPhrase(item, viaNorm, dosisPrincipal, nombreExpandido)
     return "TOMAR 1 TABLETA (" + mMg[1].replace(",", ".") + " MG)";
   }
   if (verb === "TOMAR" && isCap && mMg) {
-    return "TOMAR 1 CÁPSULA (" + mMg[1].replace(",", ".") + " MG)";
+    return "TOMAR 1 C\xC1PSULA (" + mMg[1].replace(",", ".") + " MG)";
   }
   if (verb === "TOMAR" && isTab && mG) {
     return "TOMAR 1 TABLETA (" + mG[1].replace(",", ".") + " G)";
@@ -1010,7 +1010,7 @@ function formatMedicationEgresoLine(item) {
     }
     if (/(NAUSEA|NÁUSEA|NAUSEAS|NÁUSEAS)/i.test(critRaw) && /VÓMITO|VOMITO/i.test(critRaw)) {
       var cadaN = extractCadaHorasFromCrit(critRaw) || normalizeFrecuencia("CADA 8 HORAS");
-      return nombreExpandido + " || ADMINISTRAR " + dosisPrincipal + " " + viaNorm + " " + cadaN + " EN CASO DE NÁUSEA O VÓMITO.";
+      return nombreExpandido + " || ADMINISTRAR " + dosisPrincipal + " " + viaNorm + " " + cadaN + " EN CASO DE N\xC1USEA O V\xD3MITO.";
     }
     var startFallback = instructionAmountPhrase(item, viaNorm, dosisPrincipal, nombreExpandido);
     return nombreExpandido + " || " + startFallback + " " + normalizeFrecuencia(critRaw) + ".";
@@ -1018,7 +1018,7 @@ function formatMedicationEgresoLine(item) {
   var instr = instructionAmountPhrase(item, viaNorm, dosisPrincipal, nombreExpandido);
   var mid = instr + " " + viaNorm + " " + freqNorm;
   if (item.diaTratamiento != null) {
-    return nombreExpandido + " || " + mid + " (DÍA " + item.diaTratamiento + " DE TRATAMIENTO).";
+    return nombreExpandido + " || " + mid + " (D\xCDA " + item.diaTratamiento + " DE TRATAMIENTO).";
   }
   return nombreExpandido + " || " + mid + ", SIN SUSPENDER HASTA NUEVO AVISO.";
 }
@@ -1036,9 +1036,9 @@ function buildMedRecetaNameOnlyText(items) {
     return it && !it.suspendido;
   });
   function viaShort(viaNorm) {
-    if (viaNorm === "VÍA INTRAVENOSA") return "IV";
-    if (viaNorm === "VÍA ORAL") return "VO";
-    if (viaNorm === "VÍA SUBCUTÁNEA") return "SC";
+    if (viaNorm === "V\xCDA INTRAVENOSA") return "IV";
+    if (viaNorm === "V\xCDA ORAL") return "VO";
+    if (viaNorm === "V\xCDA SUBCUT\xC1NEA") return "SC";
     return trimStr(viaNorm).toUpperCase();
   }
   function freqShort(freqNorm) {
@@ -1137,7 +1137,7 @@ function toEaSalidaText(raw) {
   return String(raw).toUpperCase();
 }
 function formatBalanceLive(bal) {
-  if (!Number.isFinite(bal)) return "—";
+  if (!Number.isFinite(bal)) return "\u2014";
   return (bal > 0 ? "+" : "") + bal + " CC";
 }
 function parseIoIngresoField(raw) {
@@ -1251,7 +1251,7 @@ function classifyEgresoSegment(seg) {
   }
   if (/GASTROSTOM/i.test(u)) {
     var gRest = s.replace(/^GASTROSTOM(?:ÍA|IA)?\s*/i, "").trim();
-    return { kind: "gastrostomy", label: "GASTROSTOMÍA", value: parseSegmentValue(gRest || s) };
+    return { kind: "gastrostomy", label: "GASTROSTOM\xCDA", value: parseSegmentValue(gRest || s) };
   }
   if (/NEFRO/i.test(u)) {
     var side = "";
@@ -1259,7 +1259,7 @@ function classifyEgresoSegment(seg) {
     else if (/\bDER\b|DERECHA/i.test(u)) side = "DERECHA";
     var nRest = s.replace(/^NEFRO(?:STOM(?:ÍA|IA))?/i, "").trim();
     nRest = nRest.replace(/\b(IZQ|IZQUIERDA|DER|DERECHA)\b/gi, "").trim();
-    var label = side ? "NEFROSTOMÍA " + side : "NEFROSTOMÍA";
+    var label = side ? "NEFROSTOM\xCDA " + side : "NEFROSTOM\xCDA";
     return { kind: "nephro", label, value: parseSegmentValue(nRest || s) };
   }
   var n = parseIoNumber(s);
@@ -2011,9 +2011,9 @@ function buildNaHypoSomeOrders(severity, mlEffective3) {
       {
         medication: MED_NACL_HYPERT,
         route: "INTRAVENOSA",
-        doseValue: String(ml177Low) + "–" + String(ml177High),
+        doseValue: String(ml177Low) + "\u2013" + String(ml177High),
         doseUnit: "ML",
-        dilution: hypertonic177DilutionText(ml177Low, volFinalLow) + " O " + hypertonic177DilutionText(ml177High, volFinalHigh) + "; BOLUS 10–20 MIN",
+        dilution: hypertonic177DilutionText(ml177Low, volFinalLow) + " O " + hypertonic177DilutionText(ml177High, volFinalHigh) + "; BOLUS 10\u201320 MIN",
         infusionRateMlHr: 600,
         requiresDilution: true
       }
@@ -2063,12 +2063,12 @@ function evaluateElectrolyteManejo(ctx) {
   var ks = kHypoSeverity(kVal);
   if (ks) {
     if (etaLow)
-      kHypoAlerts.push("IRC (eTFG <30): considerar −50% dosis K inicial y vigilancia estrecha");
+      kHypoAlerts.push("IRC (eTFG <30): considerar \u221250% dosis K inicial y vigilancia estrecha");
     var defStr = null;
     var defEq = null;
     if (w != null && kVal != null) {
       defEq = (4 - kVal) * w * 0.4;
-      defStr = Math.round(defEq * 10) / 10 + " mEq estimados (formula (4−K)×peso×0.4)";
+      defStr = Math.round(defEq * 10) / 10 + " mEq estimados (formula (4\u2212K)\xD7peso\xD70.4)";
     }
     var mEqBase = ks === "grave" ? 40 : ks === "moderada" ? 30 : 25;
     if (etaLow) mEqBase = Math.round(mEqBase * 0.5 / 5) * 5;
@@ -2081,11 +2081,11 @@ function evaluateElectrolyteManejo(ctx) {
       unit: "mEq/L",
       interpretation: "HIPOPOTASEMIA " + ks.toUpperCase(),
       severity: ks,
-      formula: defEq != null ? "(4−K)×peso×0.4" : "",
+      formula: defEq != null ? "(4\u2212K)\xD7peso\xD70.4" : "",
       formulaResult: defStr,
-      suggestedDose: mEqUse + " mEq IV (protocolo habitual 20–40 mEq) en volumen conforme límites de vía + SS al 0.9%",
+      suggestedDose: mEqUse + " mEq IV (protocolo habitual 20\u201340 mEq) en volumen conforme l\xEDmites de v\xEDa + SS al 0.9%",
       route: routeIv,
-      monitoring: "Ionograma y ECG si procede; repetir K en 4–6 h.",
+      monitoring: "Ionograma y ECG si procede; repetir K en 4\u20136 h.",
       alerts: kHypoAlerts.concat(),
       clinicalNotes: ks === "grave" ? ["Evitar dex en hipo K grave.", "Preferir bomba IV."] : [],
       someOrders: someKs,
@@ -2099,9 +2099,9 @@ function evaluateElectrolyteManejo(ctx) {
     em.push({
       medication: MED_CA_GLUC,
       route: routeIv,
-      doseValue: "10–20",
+      doseValue: "10\u201320",
       doseUnit: "ML",
-      dilution: glu != null && glu >= 250 ? "BOLO IV 2–5 MIN (REPETIBLE SI ALTERACION DE ECG)" : "BOLO IV 2–5 MIN",
+      dilution: glu != null && glu >= 250 ? "BOLO IV 2\u20135 MIN (REPETIBLE SI ALTERACION DE ECG)" : "BOLO IV 2\u20135 MIN",
       infusionRateMlHr: 120,
       requiresDilution: false
     });
@@ -2120,7 +2120,7 @@ function evaluateElectrolyteManejo(ctx) {
         route: routeIv,
         doseValue: 50,
         doseUnit: "ML",
-        dilution: "TRAS INSULINA; MONITORIZAR GLUCEMIA C/30–60 MIN X 4–6 H",
+        dilution: "TRAS INSULINA; MONITORIZAR GLUCEMIA C/30\u201360 MIN X 4\u20136 H",
         infusionRateMlHr: null,
         requiresDilution: false
       });
@@ -2128,7 +2128,7 @@ function evaluateElectrolyteManejo(ctx) {
     em.push({
       medication: MED_SALBUTAMOL,
       route: "NEBULIZACION",
-      doseValue: "10–20",
+      doseValue: "10\u201320",
       doseUnit: "MG",
       dilution: "EN 4 ML SS AL 0.9% (NEBULIZADO)",
       infusionRateMlHr: null,
@@ -2143,10 +2143,10 @@ function evaluateElectrolyteManejo(ctx) {
       severity: "emergencia",
       formula: "",
       formulaResult: glu != null ? "Glucosa concurrente " + glu + " mg/dL" : null,
-      suggestedDose: "Secuencia estabilización membrana + desplazo K intracelular",
+      suggestedDose: "Secuencia estabilizaci\xF3n membrana + desplazo K intracelular",
       route: routeIv,
-      monitoring: "K cada 2 h; ECG; glucometría recurrente.",
-      alerts: ["Kayexalate no recomendado en esta guía v1.", "Valorar dialisis si refractario."],
+      monitoring: "K cada 2 h; ECG; glucometr\xEDa recurrente.",
+      alerts: ["Kayexalate no recomendado en esta gu\xEDa v1.", "Valorar dialisis si refractario."],
       clinicalNotes: glu == null ? ["Registrar glucosa QS/gasometria para regimen insulina + dextrosa."] : [],
       someOrders: em,
       ruleId: "k-hyper-emergencia"
@@ -2165,14 +2165,14 @@ function evaluateElectrolyteManejo(ctx) {
       unit: "mEq/L",
       interpretation: "HIPONATREMIA " + ns.toUpperCase(),
       severity: ns,
-      formula: "TBW×(140−Na); vol. final ~3% eq.≈mEq÷" + String(NACL_EFFECTIVE_3_MEQ_PER_ML) + "; mL 17.7%=vol÷" + round1(NACL_HYPERT_TO_EFFECTIVE3_RATIO),
+      formula: "TBW\xD7(140\u2212Na); vol. final ~3% eq.\u2248mEq\xF7" + String(NACL_EFFECTIVE_3_MEQ_PER_ML) + "; mL 17.7%=vol\xF7" + round1(NACL_HYPERT_TO_EFFECTIVE3_RATIO),
       formulaResult: "Deficit ~" + round1(defNaMeq) + " mEq; ~" + round1(mlEffective3) + " mL final ~3% eq.; hipert. 17.7% ~" + round1(ml177) + " mL (diluir en SS 0.9%)",
-      suggestedDose: ns === "grave" ? "Hipert. 17.7% diluido a ~100–150 mL final ~3% eq.; bolo IV 10–20 min si sintomático grave" : "Hipert. 17.7% p. ej. 20 mL + 130 mL NaCl 0.9% (~150 mL ~3% eq.) en ~30 min; gradual (<10 mEq/L/24 h)",
+      suggestedDose: ns === "grave" ? "Hipert. 17.7% diluido a ~100\u2013150 mL final ~3% eq.; bolo IV 10\u201320 min si sintom\xE1tico grave" : "Hipert. 17.7% p. ej. 20 mL + 130 mL NaCl 0.9% (~150 mL ~3% eq.) en ~30 min; gradual (<10 mEq/L/24 h)",
       route: routeIv,
-      monitoring: "Na cada 4–8 h inicialmente; neurologico.",
+      monitoring: "Na cada 4\u20138 h inicialmente; neurologico.",
       alerts: [],
       clinicalNotes: ns === "grave" ? [
-        "Sin NaCl al 3% en vademecum HU: preparar con hipert. 17.7% + dilución a ~3% equivalente.",
+        "Sin NaCl al 3% en vademecum HU: preparar con hipert. 17.7% + diluci\xF3n a ~3% equivalente.",
         "No corregir >10 mEq/L/24 h salvo urgencia neurologica dirigida.",
         "Valorar causa (SIADH, etc.)."
       ] : [
@@ -2188,15 +2188,15 @@ function evaluateElectrolyteManejo(ctx) {
       direction: "hypo",
       value: naVal,
       unit: "mEq/L",
-      interpretation: "HIPONATREMIA — FALTA PESO PARA TBW/DEFICIT",
+      interpretation: "HIPONATREMIA \u2014 FALTA PESO PARA TBW/DEFICIT",
       severity: ns,
-      formula: "TBW×(140−Na); vol. ~3% eq.≈mEq÷" + NACL_EFFECTIVE_3_MEQ_PER_ML + "; mL 17.7%=vol÷" + round1(NACL_HYPERT_TO_EFFECTIVE3_RATIO),
+      formula: "TBW\xD7(140\u2212Na); vol. ~3% eq.\u2248mEq\xF7" + NACL_EFFECTIVE_3_MEQ_PER_ML + "; mL 17.7%=vol\xF7" + round1(NACL_HYPERT_TO_EFFECTIVE3_RATIO),
       formulaResult: null,
       suggestedDose: "",
       route: "",
       monitoring: "",
       alerts: [],
-      clinicalNotes: ["Indicar peso en datos del paciente para estimar déficit hidrosodio."],
+      clinicalNotes: ["Indicar peso en datos del paciente para estimar d\xE9ficit hidrosodio."],
       someOrders: [],
       ruleId: "na-hypo-no-weight"
     });
@@ -2212,9 +2212,9 @@ function evaluateElectrolyteManejo(ctx) {
       unit: "mEq/L",
       interpretation: "HIPERNATREMIA " + nhs.toUpperCase(),
       severity: nhs,
-      formula: "Agua libre deficit (L)=TBW×((Na/140)−1); TBW=F×peso",
+      formula: "Agua libre deficit (L)=TBW\xD7((Na/140)\u22121); TBW=F\xD7peso",
       formulaResult: (fwd > 0 ? "~" + Math.round(fwd * 1e3) / 1e3 + " L aprox." : "Marginal por formula") + "; TBW usado ~" + Math.round(tbwTot2 * 10) / 10 + " L",
-      suggestedDose: "Corregir despacio (<10–12 mEq/L/24 h); D5W o hipotonica segun contexto volumen.",
+      suggestedDose: "Corregir despacio (<10\u201312 mEq/L/24 h); D5W o hipotonica segun contexto volumen.",
       route: routeIv,
       monitoring: "Na y estado de volumen frecuentes.",
       alerts: [],
@@ -2240,8 +2240,8 @@ function evaluateElectrolyteManejo(ctx) {
       interpretation: "HIPOMAGNESEMIA " + mags.toUpperCase(),
       severity: mags,
       formula: etaLow ? "Dosis Mg ajustada a eTFG" : "",
-      formulaResult: etaLow ? "−50% por eTFG <30" : null,
-      suggestedDose: mags === "grave" ? "MgSO4 50%: carga inicial en bolus/extension segun institucion; mantenimiento prn" : "MgSO4 diluido en 500–1000 mL SS 4–8 h",
+      formulaResult: etaLow ? "\u221250% por eTFG <30" : null,
+      suggestedDose: mags === "grave" ? "MgSO4 50%: carga inicial en bolus/extension segun institucion; mantenimiento prn" : "MgSO4 diluido en 500\u20131000 mL SS 4\u20138 h",
       route: routeIv,
       monitoring: "Reflejos/PFR; Mg serico y K asociados.",
       alerts: mgAlerts,
@@ -2271,8 +2271,8 @@ function evaluateElectrolyteManejo(ctx) {
       unit: "mg/dL",
       interpretation: "HIPOFOSFATEMIA " + phs.toUpperCase(),
       severity: phs,
-      formula: "0.16–0.32 mmol/kg IV (grave-moderado; max 90 mmol/dia)",
-      formulaResult: "~" + mmLo + "–" + mmHi + " mmol para peso corporal actual",
+      formula: "0.16\u20130.32 mmol/kg IV (grave-moderado; max 90 mmol/dia)",
+      formulaResult: "~" + mmLo + "\u2013" + mmHi + " mmol para peso corporal actual",
       suggestedDose: "Reposicion fosfato IV lenta segun institucion; preferir fosfato de sodio si K alto.",
       route: routeIv,
       monitoring: "Ca ionico / total; Mg; K funcion renal.",
@@ -2284,7 +2284,7 @@ function evaluateElectrolyteManejo(ctx) {
           route: routeIv,
           doseValue: "~" + Math.min(mmHi, phs === "grave" ? mmHi : mmLo + 15),
           doseUnit: "MMOL (APROX TEORICO)",
-          dilution: "250–500 ML SS AL 0.9% EN 6–12 H — VALIDACION MEDICA",
+          dilution: "250\u2013500 ML SS AL 0.9% EN 6\u201312 H \u2014 VALIDACION MEDICA",
           infusionRateMlHr: (function() {
             var volP = 375;
             var mmTarget = typeof mmHi === "number" && mmHi > 0 ? mmHi : 18;
@@ -2305,9 +2305,9 @@ function evaluateElectrolyteManejo(ctx) {
       unit: "mg/dL (corr.)",
       interpretation: "HIPOCALCAMIA FUNCION CALCIO CORREGIDO (<8.5)",
       severity: cc < 7.5 ? "grave" : "moderada",
-      formula: "Ca total + 0.8×(4−Alb)",
+      formula: "Ca total + 0.8\xD7(4\u2212Alb)",
       formulaResult: String(cc),
-      suggestedDose: "Gluconato calcio IV 10% 10–20 mL lentamente segun institucion",
+      suggestedDose: "Gluconato calcio IV 10% 10\u201320 mL lentamente segun institucion",
       route: routeIv,
       monitoring: "ECG si sintomatico; Ca total/ionizado seriados.",
       alerts: [],
@@ -2316,9 +2316,9 @@ function evaluateElectrolyteManejo(ctx) {
         {
           medication: MED_CA_GLUC,
           route: routeIv,
-          doseValue: "10–20",
+          doseValue: "10\u201320",
           doseUnit: "ML",
-          dilution: "ADMINISTRAR LENTAMENTE IV 10–20 MIN (SEGUN PROTOCOLO INSTITUCIONAL)",
+          dilution: "ADMINISTRAR LENTAMENTE IV 10\u201320 MIN (SEGUN PROTOCOLO INSTITUCIONAL)",
           infusionRateMlHr: null,
           requiresDilution: false
         }
@@ -3194,14 +3194,14 @@ var BH_TREND_TITLES = {
   NeuPct: "Segmentados",
   LinPct: "Linfocitos",
   MonoPct: "Monocitos",
-  EosPct: "Eosinófilos",
-  BasoPct: "Basófilos",
+  EosPct: "Eosin\xF3filos",
+  BasoPct: "Bas\xF3filos",
   Bandas: "Bandas",
   Mielo: "Mielocitos",
   Metamielo: "Metamielocitos",
   Promielo: "Promielocitos",
   Blastos: "Blastos",
-  Atipicos: "Linf. atípicos"
+  Atipicos: "Linf. at\xEDpicos"
 };
 function bhTrendDisplayTitle(fieldKey) {
   return BH_TREND_TITLES[fieldKey] || bhExtraDisplayLabel(fieldKey) || fieldKey;
@@ -3533,9 +3533,9 @@ function extraerProcalcitonina_(texto) {
 function ageYearsFromLabDemographics(edadRaw, edadUnidad) {
   var n = parseInt(String(edadRaw == null ? "" : edadRaw).trim(), 10);
   if (!isFinite(n) || n < 0) return null;
-  var u = String(edadUnidad || "años").toLowerCase();
+  var u = String(edadUnidad || "a\xF1os").toLowerCase();
   if (u === "meses") return n / 12;
-  if (u === "días" || u === "dias") return n / 365.25;
+  if (u === "d\xEDas" || u === "dias") return n / 365.25;
   if (u === "semanas") return n / 52.143;
   return n;
 }
@@ -3557,10 +3557,10 @@ function parseQS_(texto, patientCtx) {
   var gluData = extraerConRangoSuero(["GLUCOSA EN SANGRE", "GLUCOSA EN", "GLUCOSA"], texto);
   var crData = extraerConRangoSuero(["CREATININA EN SANGRE", "CREATININA"], texto);
   var bunData = extraerConRangoSuero(["NITROGENO DE LA UREA EN SANGRE", "NITROGENO DE LA UREA", "UREA"], texto);
-  var pcrData = extraerConRangoSuero(["PROTEINA C REACTIVA", "PROTEÍNA C REACTIVA"], texto);
+  var pcrData = extraerConRangoSuero(["PROTEINA C REACTIVA", "PROTE\xCDNA C REACTIVA"], texto);
   var pctData = extraerProcalcitonina_(texto);
-  var auData = extraerConRangoSuero(["ACIDO URICO EN SANGRE", "ACIDO URICO", "ÁCIDO ÚRICO"], texto);
-  var tglData = extraerConRangoSuero(["TRIGLICERIDOS", "TRIGLICÉRIDOS"], texto);
+  var auData = extraerConRangoSuero(["ACIDO URICO EN SANGRE", "ACIDO URICO", "\xC1CIDO \xDARICO"], texto);
+  var tglData = extraerConRangoSuero(["TRIGLICERIDOS", "TRIGLIC\xC9RIDOS"], texto);
   var colData = extraerConRangoSuero(["COLESTEROL"], texto);
   var vsgData = extraerConRangoSuero(["VSG ", "VELOCIDAD DE SEDIMENTACION"], texto);
   var cpkData = extraerConRangoSuero(["CPK CREATIN FOSFO QUINASA", "CPK "], texto);
@@ -3607,7 +3607,7 @@ function parseESC_(texto) {
   var clData = extraerConRangoSuero(["CLORO"], texto);
   var kData = extraerConRangoSuero(["POTASIO"], texto);
   var caData = extraerConRangoSuero(["CALCIO EN SUERO", "CALCIO"], texto);
-  var fData = extraerConRangoSuero(["FOSFORO EN SANGRE", "FOSFORO", "FÓSFORO"], texto);
+  var fData = extraerConRangoSuero(["FOSFORO EN SANGRE", "FOSFORO", "F\xD3SFORO"], texto);
   var mgData = extraerConRangoSuero(["MAGNESIO"], texto);
   var Na = fmt(marcarSegunRango(naData.valor, naData.min, naData.max));
   var Cl = fmt(marcarSegunRango(clData.valor, clData.min, clData.max));
@@ -3779,7 +3779,7 @@ function dedupeSingletonSections_(rows) {
     EGO: 1,
     PROT12H: 1,
     PROT24H: 1,
-    "INTERPRETACIÓN GASOMETRÍA:": 1
+    "INTERPRETACI\xD3N GASOMETR\xCDA:": 1
   };
   var list = (rows || []).filter(function(r) {
     return normalizeLabLine_(labRowText_(r)) !== "";
@@ -3843,30 +3843,30 @@ function buildGasoInterpretacionFromValues_(pH, pCO2, hco3, ag, dd) {
   var respHigh = pCO2 != null && pCO2 > 45;
   var primaria = "";
   if (pH < 7.35) {
-    if (metaLow) primaria = "Acidosis metabólica";
+    if (metaLow) primaria = "Acidosis metab\xF3lica";
     else if (respHigh) primaria = "Acidosis respiratoria";
   } else if (pH > 7.45) {
-    if (metaHigh) primaria = "Alcalosis metabólica";
+    if (metaHigh) primaria = "Alcalosis metab\xF3lica";
     else if (respLow) primaria = "Alcalosis respiratoria";
   } else if (hco3 != null && pCO2 != null) {
-    if (metaLow && respLow) primaria = "Acidosis metabólica con compensación respiratoria";
-    else if (metaHigh && respHigh) primaria = "Alcalosis metabólica con compensación respiratoria";
-    else if (metaLow) primaria = "Acidosis metabólica con compensación respiratoria";
-    else if (metaHigh) primaria = "Alcalosis metabólica con compensación respiratoria";
+    if (metaLow && respLow) primaria = "Acidosis metab\xF3lica con compensaci\xF3n respiratoria";
+    else if (metaHigh && respHigh) primaria = "Alcalosis metab\xF3lica con compensaci\xF3n respiratoria";
+    else if (metaLow) primaria = "Acidosis metab\xF3lica con compensaci\xF3n respiratoria";
+    else if (metaHigh) primaria = "Alcalosis metab\xF3lica con compensaci\xF3n respiratoria";
   }
   if (!primaria && pH >= 7.35 && pH <= 7.45 && hco3 != null) {
-    if (metaLow) primaria = "Acidosis metabólica";
-    else if (metaHigh) primaria = "Alcalosis metabólica";
+    if (metaLow) primaria = "Acidosis metab\xF3lica";
+    else if (metaHigh) primaria = "Alcalosis metab\xF3lica";
   }
   var partes = [];
   if (primaria) partes.push(primaria);
-  if (!primaria) partes.push("Trastorno ácido-base compensado");
+  if (!primaria) partes.push("Trastorno \xE1cido-base compensado");
   if (metaLow && respLow && /respiratoria/i.test(primaria)) {
-    partes.push("Acidosis metabólica concomitante (HCO3 bajo)");
+    partes.push("Acidosis metab\xF3lica concomitante (HCO3 bajo)");
   } else if (metaLow && respLow && /alcalosis respiratoria/i.test(primaria)) {
-    partes.push("Acidosis metabólica concomitante (HCO3 bajo)");
+    partes.push("Acidosis metab\xF3lica concomitante (HCO3 bajo)");
   } else if (metaHigh && respHigh && /respiratoria/i.test(primaria)) {
-    partes.push("Alcalosis metabólica concomitante (HCO3 alto)");
+    partes.push("Alcalosis metab\xF3lica concomitante (HCO3 alto)");
   } else if (metaLow && respHigh && /metabólica/i.test(primaria)) {
     partes.push("Acidosis respiratoria concomitante (PCO2 alto)");
   } else if (metaHigh && respLow && /metabólica/i.test(primaria)) {
@@ -3875,19 +3875,19 @@ function buildGasoInterpretacionFromValues_(pH, pCO2, hco3, ag, dd) {
   if (ag != null && ag > 12 && dd != null) {
     if (dd < 0.8) {
       if (/^Acidosis metabólica/i.test(primaria)) {
-        partes.push("Componente hiperclorémico con anion gap elevado (Delta-Delta bajo)");
+        partes.push("Componente hiperclor\xE9mico con anion gap elevado (Delta-Delta bajo)");
       } else {
-        partes.push("Acidosis metabólica hiperclorémica con anion gap elevado (Delta-Delta bajo)");
+        partes.push("Acidosis metab\xF3lica hiperclor\xE9mica con anion gap elevado (Delta-Delta bajo)");
       }
     } else if (dd > 2) {
       if (/^Alcalosis metabólica/i.test(primaria)) {
-        partes.push("Componente agregado con anion gap elevado (Delta-Delta alto), considerar acidosis respiratoria crónica");
+        partes.push("Componente agregado con anion gap elevado (Delta-Delta alto), considerar acidosis respiratoria cr\xF3nica");
       } else {
-        partes.push("Alcalosis metabólica agregada o acidosis respiratoria crónica con anion gap elevado (Delta-Delta alto)");
+        partes.push("Alcalosis metab\xF3lica agregada o acidosis respiratoria cr\xF3nica con anion gap elevado (Delta-Delta alto)");
       }
     } else partes.push("Anion gap elevado");
   }
-  return ("Interpretación gasometría:	" + partes.join("; ")).toUpperCase();
+  return ("Interpretaci\xF3n gasometr\xEDa:	" + partes.join("; ")).toUpperCase();
 }
 function rebuildGasesFromResults_(rows) {
   var gases = pickBestSectionLine_(rows, "GASES");
@@ -3927,7 +3927,7 @@ function reprocessLabResultLines_(rows) {
   var rebuilt = rebuildGasesFromResults_(clean);
   var out = clean.filter(function(r) {
     var k = labSectionKey_(r);
-    return k !== "GASES" && k !== "INTERPRETACIÓN GASOMETRÍA:";
+    return k !== "GASES" && k !== "INTERPRETACI\xD3N GASOMETR\xCDA:";
   });
   if (rebuilt.gasesLine) out.push(rebuilt.gasesLine);
   if (rebuilt.interpLine) out.push(rebuilt.interpLine);
@@ -4122,21 +4122,21 @@ function evaluarCriteriosLight_(pleuralProtGdl, pleuralLdh, serumProtGdl, serumL
     var r1 = pleuralProtGdl / serumProtGdl;
     var ok1 = r1 > 0.5;
     if (ok1) hits.push("prot");
-    details.push("Prot " + r1.toFixed(2) + (ok1 ? "" : "−"));
+    details.push("Prot " + r1.toFixed(2) + (ok1 ? "" : "\u2212"));
   }
   if (pleuralLdh != null && serumLdh != null && serumLdh > 0) {
     nLdh = 1;
     var r2 = pleuralLdh / serumLdh;
     var ok2 = r2 > 0.6;
     if (ok2) hits.push("ldh");
-    details.push("LDH " + r2.toFixed(2) + (ok2 ? "" : "−"));
+    details.push("LDH " + r2.toFixed(2) + (ok2 ? "" : "\u2212"));
   }
   if (pleuralLdh != null && serumLdhUln != null && serumLdhUln > 0) {
     nUln = 1;
     var umbral = 2 / 3 * serumLdhUln;
     var ok3 = pleuralLdh > umbral;
     if (ok3) hits.push("ldhUln");
-    details.push("LDH>2/3" + (ok3 ? "" : "−"));
+    details.push("LDH>2/3" + (ok3 ? "" : "\u2212"));
   }
   var nEval = nProt + nLdh + nUln;
   if (!nEval || !details.length) return "";
@@ -4583,7 +4583,7 @@ function parseEGO_(textoBruto) {
   var color = buscarValor(["COLOR"]), aspecto = buscarValor(["ASPECTO"]), ph = buscarValor(["PH"]), dens = buscarValor(["DENSIDAD", "GRAVEDAD ESPECIFICA"]);
   var prot = buscarValor(["PROTEINAS", "PROTEINURIA"]), glu = buscarValor(["GLUCOSA"]), cet = buscarValor(["CETONAS", "CUERPOS CETONICOS"]);
   var bilis = buscarValor(["BILIRRUBINAS", "BILIRRUBINA"]), sangre = buscarValor(["SANGRE"]), nitr = buscarValor(["NITRITOS"]);
-  var urobil = buscarValor(["UROBILINOGENO", "UROBILINÓGENO"]), estLeu = buscarValor(["ESTERASA LEUCOCITARIA"]);
+  var urobil = buscarValor(["UROBILINOGENO", "UROBILIN\xD3GENO"]), estLeu = buscarValor(["ESTERASA LEUCOCITARIA"]);
   var leu = buscarValor(["LEUCOCITOS"]), eri = buscarValor(["ERITROCITOS", "HEMATIES"]), bact = buscarValor(["BACTERIAS"]);
   var celEpit = buscarValor(["CELULAS EPITELIALES"]), cilinG = buscarValor(["CILINDROS GRANOLOSOS"]), cilinH = buscarValor(["CILINDROS HIALINOS"]);
   var levad = buscarValor(["LEVADURAS"]), moco = buscarValor(["MOCO"]);
@@ -5016,7 +5016,7 @@ function compactarLineasAntibiograma(sensCrudas, abreviarFn) {
 function formatCultivoCondensedForCopy(chunkText, studyDateLine) {
   var lines = [];
   var dateLine = String(studyDateLine || "").trim();
-  if (dateLine && dateLine !== "—") lines.push(dateLine);
+  if (dateLine && dateLine !== "\u2014") lines.push(dateLine);
   var chunkLines = String(chunkText || "").trim().split(/\n/).map(function(l) {
     return l.trim();
   }).filter(Boolean);
@@ -5135,7 +5135,7 @@ function formatAtbDetailRowHtml(s) {
   var med = String(s.med || "").trim();
   var mic = String(s.mic || "").trim();
   var itTrim = String(s.interp || "").trim();
-  var medEl = '<span class="atb-ris-drug">' + escTxt(med || "—") + "</span>";
+  var medEl = '<span class="atb-ris-drug">' + escTxt(med || "\u2014") + "</span>";
   var chunks = [];
   if (mic) {
     chunks.push(
@@ -5147,7 +5147,7 @@ function formatAtbDetailRowHtml(s) {
       '<span class="atb-ris-int atb-ris-int--' + escTxt(classifyAtbInterp(itTrim)) + '">' + escTxt(itTrim) + "</span>"
     );
   }
-  var meta = chunks.length > 0 ? '<span class="atb-ris-meta">' + chunks.join('<span class="atb-ris-meta-sep" aria-hidden="true">·</span>') + "</span>" : "";
+  var meta = chunks.length > 0 ? '<span class="atb-ris-meta">' + chunks.join('<span class="atb-ris-meta-sep" aria-hidden="true">\xB7</span>') + "</span>" : "";
   return '<li class="atb-ris-detail-item"><div class="atb-ris-detail-line">' + medEl + (meta ? meta : "") + "</div></li>";
 }
 function buildAtbRisSummaryHtml(sensCrudas) {
@@ -5175,7 +5175,7 @@ function buildAtbRisSummaryHtml(sensCrudas) {
 }
 function extractSensCrudasForGermFromSource(sourceText, germQuery) {
   var q = String(germQuery || "").replace(/\s+/g, " ").trim().toUpperCase();
-  if (!q || q === "—" || q === "NEGATIVO") return null;
+  if (!q || q === "\u2014" || q === "NEGATIVO") return null;
   var lineasTexto = String(sourceText || "").split("\n").map(function(l) {
     return l.replace(/\r/g, "");
   });
@@ -5269,7 +5269,7 @@ function parseCultivo_(textoBruto, tNorm) {
       var subNorm = sliceLines.join("\n");
       var idxAbLoc = subNorm.toUpperCase().indexOf("ANTIBIOGRAMA");
       var head = ri === 0 ? sitio + " " + fechaC + ": " + run.germen : run.germen;
-      if (ri === 0 && marcasRes.length) head += " · " + marcasRes.join(" · ");
+      if (ri === 0 && marcasRes.length) head += " \xB7 " + marcasRes.join(" \xB7 ");
       var chunk = head;
       if (idxAbLoc !== -1) {
         var lineasAb = subNorm.substring(idxAbLoc).split("\n").map(function(l) {
@@ -5430,10 +5430,10 @@ function buildRefsBySectionFromReport(textoBruto) {
     putTrendRef_(refs, "QS", "Glu", extraerConRangoSuero(["GLUCOSA EN SANGRE", "GLUCOSA EN", "GLUCOSA"], textoQS));
     putTrendRef_(refs, "QS", "Cr", extraerConRangoSuero(["CREATININA EN SANGRE", "CREATININA"], textoQS));
     putTrendRef_(refs, "QS", "BUN", extraerConRangoSuero(["NITROGENO DE LA UREA EN SANGRE", "NITROGENO DE LA UREA", "UREA"], textoQS));
-    putTrendRef_(refs, "QS", "PCR", extraerConRangoSuero(["PROTEINA C REACTIVA", "PROTEÍNA C REACTIVA"], textoQS));
+    putTrendRef_(refs, "QS", "PCR", extraerConRangoSuero(["PROTEINA C REACTIVA", "PROTE\xCDNA C REACTIVA"], textoQS));
     putTrendRef_(refs, "QS", "PCT", extraerProcalcitonina_(textoQS));
-    putTrendRef_(refs, "QS", "AU", extraerConRangoSuero(["ACIDO URICO EN SANGRE", "ACIDO URICO", "ÁCIDO ÚRICO"], textoQS));
-    putTrendRef_(refs, "QS", "TGL", extraerConRangoSuero(["TRIGLICERIDOS", "TRIGLICÉRIDOS"], textoQS));
+    putTrendRef_(refs, "QS", "AU", extraerConRangoSuero(["ACIDO URICO EN SANGRE", "ACIDO URICO", "\xC1CIDO \xDARICO"], textoQS));
+    putTrendRef_(refs, "QS", "TGL", extraerConRangoSuero(["TRIGLICERIDOS", "TRIGLIC\xC9RIDOS"], textoQS));
     putTrendRef_(refs, "QS", "COL", extraerConRangoSuero(["COLESTEROL"], textoQS));
     putTrendRef_(refs, "QS", "VSG", extraerConRangoSuero(["VSG ", "VELOCIDAD DE SEDIMENTACION"], textoQS));
     putTrendRef_(refs, "QS", "CPK", extraerConRangoSuero(["CPK CREATIN FOSFO QUINASA", "CPK "], textoQS));
@@ -5441,7 +5441,7 @@ function buildRefsBySectionFromReport(textoBruto) {
     putTrendRef_(refs, "ESC", "Cl", extraerConRangoSuero(["CLORO"], textoQS));
     putTrendRef_(refs, "ESC", "K", extraerConRangoSuero(["POTASIO"], textoQS));
     putTrendRef_(refs, "ESC", "Ca", extraerConRangoSuero(["CALCIO EN SUERO", "CALCIO"], textoQS));
-    putTrendRef_(refs, "ESC", "F", extraerConRangoSuero(["FOSFORO EN SANGRE", "FOSFORO", "FÓSFORO"], textoQS));
+    putTrendRef_(refs, "ESC", "F", extraerConRangoSuero(["FOSFORO EN SANGRE", "FOSFORO", "F\xD3SFORO"], textoQS));
     putTrendRef_(refs, "ESC", "Mg", extraerConRangoSuero(["MAGNESIO"], textoQS));
     putTrendRef_(refs, "PFHs", "Alb", extraerConRangoSuero(["ALBUMINA"], tNorm));
     putTrendRef_(refs, "PFHs", "AST", extraerConRango(["AST(ASPARTATO AMINOTRANSFERASA)", "AST "], tNorm));
@@ -5482,8 +5482,8 @@ function procesarLabs(textoBruto) {
   var horaLab = extractLabReportHora(textoBruto);
   var expRaw = mExp ? mExp[1].split(/\s+(?:Solicitud|Medico|Médico|Fecha|Sexo|Edad|Ubicaci)/i)[0].trim() : "";
   var edadRaw = mEdad ? (mEdad[1].match(/^\d+/) || [""])[0] : "";
-  var edadUnidad = mEdad ? (mEdad[1].match(/\b(años|meses|dias|días|semanas)\b/i) || ["años"])[0].toLowerCase() : "años";
-  if (edadUnidad === "dias" || edadUnidad === "días") edadUnidad = "días";
+  var edadUnidad = mEdad ? (mEdad[1].match(/\b(años|meses|dias|días|semanas)\b/i) || ["a\xF1os"])[0].toLowerCase() : "a\xF1os";
+  if (edadUnidad === "dias" || edadUnidad === "d\xEDas") edadUnidad = "d\xEDas";
   var sexoRaw = "";
   if (mSexo) {
     var sm = mSexo[1].match(/^(MASCULINO|FEMENINO|HOMBRE|MUJER|MALE|FEMALE|M\b|F\b)/i);
@@ -5692,7 +5692,7 @@ function findNormalizedSourceDuplicateGroups(sets) {
     arr.sort(compareLabSetIdForDedupe);
     groups.push({
       kind: "sourceText",
-      preview: k2.slice(0, 72) + (k2.length > 72 ? "…" : ""),
+      preview: k2.slice(0, 72) + (k2.length > 72 ? "\u2026" : ""),
       ids: arr.map(function(x) {
         return String(x.id);
       }),
@@ -5851,7 +5851,7 @@ function spBlock(x, cy, lbl, obj, anchor) {
   var ax = anchor === "start" ? "start" : anchor === "end" ? "end" : "middle";
   var isAb = obj && obj.ab;
   var vc = isAb ? "var(--error)" : "var(--diagram-value)";
-  var vt = obj ? escTxt(obj.val) : "—";
+  var vt = obj ? escTxt(obj.val) : "\u2014";
   var dec = isAb ? ' text-decoration="underline"' : "";
   return '<g transform="translate(' + x + "," + cy + ')"><text x="0" y="-9" text-anchor="' + ax + '" dominant-baseline="middle" font-size="10" fill="var(--diagram-label)" font-family="Arial,sans-serif">' + lbl + '</text><text x="0" y="10" text-anchor="' + ax + '" dominant-baseline="middle" font-size="13" fill="' + vc + '" font-weight="bold" font-family="Arial,sans-serif"' + dec + ">" + vt + "</text></g>";
 }
@@ -5875,7 +5875,7 @@ function svgGamble(secs) {
   function cell(x, lbl, obj, isTop) {
     var cy = isTop ? 40 : 92;
     var vc = obj && obj.ab ? "var(--error)" : "var(--diagram-value)";
-    var vt = obj ? escTxt(obj.val) : "—";
+    var vt = obj ? escTxt(obj.val) : "\u2014";
     var dec = obj && obj.ab ? ' text-decoration="underline"' : "";
     return '<g transform="translate(' + x + "," + cy + ')"><text x="0" y="-10" text-anchor="middle" dominant-baseline="middle" font-size="10" fill="var(--diagram-label)" font-family="Arial,sans-serif">' + lbl + '</text><text x="0" y="11" text-anchor="middle" dominant-baseline="middle" font-size="14" fill="' + vc + '" font-weight="bold" font-family="Arial,sans-serif"' + dec + ">" + vt + "</text></g>";
   }
@@ -5897,7 +5897,7 @@ function svgPFH(secs) {
   function gcell(x, lbl, obj, y_lbl) {
     var cy = y_lbl + 7.5;
     var vc = obj && obj.ab ? "var(--error)" : "var(--diagram-value)";
-    var vt = obj ? escTxt(obj.val) : "—";
+    var vt = obj ? escTxt(obj.val) : "\u2014";
     var dec = obj && obj.ab ? ' text-decoration="underline"' : "";
     return '<g transform="translate(' + x + "," + cy + ')"><text x="0" y="-10" text-anchor="middle" dominant-baseline="middle" font-size="10" fill="var(--diagram-label)" font-family="Arial,sans-serif">' + lbl + '</text><text x="0" y="11" text-anchor="middle" dominant-baseline="middle" font-size="14" fill="' + vc + '" font-weight="bold" font-family="Arial,sans-serif"' + dec + ">" + vt + "</text></g>";
   }
@@ -5917,7 +5917,7 @@ function svgGases(secs) {
   function gcell(x, lbl, obj, y_lbl) {
     var cy = y_lbl + 7.5;
     var vc = obj && obj.ab ? "var(--error)" : "var(--diagram-value)";
-    var vt = obj ? escTxt(obj.val) : "—";
+    var vt = obj ? escTxt(obj.val) : "\u2014";
     var dec = obj && obj.ab ? ' text-decoration="underline"' : "";
     return '<g transform="translate(' + x + "," + cy + ')"><text x="0" y="-10" text-anchor="middle" dominant-baseline="middle" font-size="10" fill="var(--diagram-label)" font-family="Arial,sans-serif">' + lbl + '</text><text x="0" y="11" text-anchor="middle" dominant-baseline="middle" font-size="14" fill="' + vc + '" font-weight="bold" font-family="Arial,sans-serif"' + dec + ">" + vt + "</text></g>";
   }
@@ -5974,7 +5974,7 @@ function copiarDiagrama(svgStr, vw, vh, title, btn) {
       if (!pngBlob) return;
       if (navigator.clipboard && window.ClipboardItem) {
         navigator.clipboard.write([new ClipboardItem({ "image/png": pngBlob })]).then(function() {
-          btn.textContent = "Copiado ✓";
+          btn.textContent = "Copiado \u2713";
           btn.classList.add("copied");
           setTimeout(function() {
             btn.textContent = "Copiar";
@@ -6004,11 +6004,11 @@ function renderDiagramas(resLabs) {
   var grid = document.getElementById("diagrams-grid");
   grid.innerHTML = "";
   var cards = [
-    { title: "Biometría Hemática", svg: svgBH(secs), w: 260, vw: 300, vh: 192 },
-    { title: "Coagulación", svg: svgCoag(secs), w: 240, vw: 270, vh: 172 },
+    { title: "Biometr\xEDa Hem\xE1tica", svg: svgBH(secs), w: 260, vw: 300, vh: 192 },
+    { title: "Coagulaci\xF3n", svg: svgCoag(secs), w: 240, vw: 270, vh: 172 },
     { title: "Electrolitos / QS", svg: svgGamble(secs), w: 480, vw: 470, vh: 130 },
-    { title: "Función Hepática", svg: svgPFH(secs), w: 220, vw: 270, vh: 230 },
-    { title: "Gasometría", svg: svgGases(secs), w: 240, vw: 270, vh: 162 }
+    { title: "Funci\xF3n Hep\xE1tica", svg: svgPFH(secs), w: 220, vw: 270, vh: 230 },
+    { title: "Gasometr\xEDa", svg: svgGases(secs), w: 240, vw: 270, vh: 162 }
   ];
   var any = false;
   cards.forEach(function(c) {
@@ -6040,15 +6040,15 @@ var LS_TEND_CARD_ORDER = "rpc-tend-card-order";
 var LS_GROUP_PANEL_HIDDEN = "rpc-tend-group-panel-hidden";
 var LS_GROUP_PANEL_TITLES = "rpc-tend-group-panel-titles";
 var DEFAULT_PANEL_LABELS = {
-  gases: "Gasometría",
-  "percent-diff": "Fórmula leucocitaria (%)",
-  "percent-rbc": "Índices eritrocitarios (%)",
+  gases: "Gasometr\xEDa",
+  "percent-diff": "F\xF3rmula leucocitaria (%)",
+  "percent-rbc": "\xCDndices eritrocitarios (%)",
   absolute: "Valores absolutos",
   "bh-absolute": "Conteos absolutos celulares",
-  "bh-quality": "Calidad eritrocitaria (índices)",
+  "bh-quality": "Calidad eritrocitaria (\xEDndices)",
   "bh-diff": "Diferencial manual",
   "bh-diff-manual": "Diferencial manual",
-  "bh-coag": "Coagulación"
+  "bh-coag": "Coagulaci\xF3n"
 };
 var DEFAULT_COLORS = [
   "#10b981",
@@ -6322,7 +6322,7 @@ function measureTextWidth(ctx, text, font) {
 function truncateToWidth(ctx, text, maxW, font) {
   var t2 = String(text == null ? "" : text);
   if (measureTextWidth(ctx, t2, font) <= maxW) return t2;
-  var ell = "…";
+  var ell = "\u2026";
   while (t2.length > 1 && measureTextWidth(ctx, t2 + ell, font) > maxW) {
     t2 = t2.slice(0, -1);
   }
@@ -6357,10 +6357,10 @@ function drawRoundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 function cellDisplayText(cell, theme) {
-  if (!cell) return "—";
+  if (!cell) return "\u2014";
   var text = cell.text != null ? String(cell.text) : "";
-  if (!text) text = "—";
-  if ((theme === THEMES.some || theme === THEMES["some-cito"]) && cell.flag && cell.flag !== "*" && text !== "—") {
+  if (!text) text = "\u2014";
+  if ((theme === THEMES.some || theme === THEMES["some-cito"]) && cell.flag && cell.flag !== "*" && text !== "\u2014") {
     return String(cell.flag).toUpperCase() + " " + text;
   }
   return text;
@@ -6375,10 +6375,10 @@ function colWidthLimits(theme, colIndex) {
   return { min: theme.colMin, max: theme.colMax };
 }
 function measureCellContentWidth(ctx, cell, theme, font, fontBold) {
-  if (!cell) return measureTextWidth(ctx, "—", font);
-  var text = cell.text != null ? String(cell.text) : "—";
-  if (!text) text = "—";
-  if ((theme === THEMES.some || theme === THEMES["some-cito"]) && cell.flag && cell.flag !== "*" && text !== "—") {
+  if (!cell) return measureTextWidth(ctx, "\u2014", font);
+  var text = cell.text != null ? String(cell.text) : "\u2014";
+  if (!text) text = "\u2014";
+  if ((theme === THEMES.some || theme === THEMES["some-cito"]) && cell.flag && cell.flag !== "*" && text !== "\u2014") {
     var flagFont = "700 " + theme.fontSize + 'px -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif';
     var valueFont = cell.abnormal ? fontBold : font;
     return measureTextWidth(ctx, String(cell.flag).toUpperCase() + " ", flagFont) + measureTextWidth(ctx, text, valueFont);
@@ -6550,9 +6550,9 @@ function copyTableModelAsPng(model, title, onDone) {
       var cellFill = abnormal ? "#fef2f2" : zebraFill;
       fillCell(cx, ry, colWidths[cj], ROW_H, cellFill);
       strokeCell(cx, ry, colWidths[cj], ROW_H);
-      if (isSome && cell && cell.flag && cell.flag !== "*" && cellText !== "—") {
+      if (isSome && cell && cell.flag && cell.flag !== "*" && cellText !== "\u2014") {
         var flag = String(cell.flag).toUpperCase();
-        var valuePart = cell.text != null ? String(cell.text) : "—";
+        var valuePart = cell.text != null ? String(cell.text) : "\u2014";
         var flagFont = "700 " + theme.fontSize + 'px -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif';
         ctx.font = flagFont;
         ctx.fillStyle = "#dc2626";
@@ -6624,6 +6624,92 @@ function deltaDeltaValue_(agValue, hco3) {
   if (deltaHco3 <= 0) return null;
   return (agValue - 12) / deltaHco3;
 }
+function fmtLab_(n, decimals) {
+  if (n == null || !isFinite(n)) return "\u2014";
+  if (decimals == null) return String(n);
+  var p = Math.pow(10, decimals);
+  return String(Math.round((n + Number.EPSILON) * p) / p);
+}
+function buildPrimaryRationale_(ctx) {
+  var pH = ctx.pH;
+  var hco3 = ctx.hco3;
+  var pCO2 = ctx.pCO2;
+  var primary = ctx.primary;
+  var mixedFromWinter = ctx.mixedFromWinter;
+  var winterCenter = ctx.winterCenter;
+  var metaLow = ctx.metaLow;
+  var metaHigh = ctx.metaHigh;
+  var respLow = ctx.respLow;
+  var respHigh = ctx.respHigh;
+  var lines = [];
+  if (pH == null) {
+    return "Sin pH no se puede inferir el trastorno predominante con estas reglas.";
+  }
+  if (pH < 7.35) lines.push("pH " + fmtLab_(pH, 2) + ": acidemia.");
+  else if (pH > 7.45) lines.push("pH " + fmtLab_(pH, 2) + ": alcalemia.");
+  else lines.push("pH " + fmtLab_(pH, 2) + ": en rango o compensado.");
+  if (mixedFromWinter && hco3 != null && pCO2 != null && winterCenter != null) {
+    var w = fmtLab_(winterCenter, 1);
+    if (pCO2 < winterCenter - 2) {
+      lines.push(
+        "HCO\u2083\u207B " + fmtLab_(hco3, 1) + " < 22 (acidosis metab\xF3lica). Winter predice PaCO\u2082 \u2248 " + w + " mmHg, pero la medida es " + fmtLab_(pCO2) + " mmHg (por debajo del margen \xB12): hiperventilaci\xF3n / segundo proceso respiratorio."
+      );
+    } else {
+      lines.push(
+        "HCO\u2083\u207B " + fmtLab_(hco3, 1) + " < 22. Winter predice PaCO\u2082 \u2248 " + w + " mmHg, pero la medida es " + fmtLab_(pCO2) + " mmHg (por encima del margen \xB12): retenci\xF3n de CO\u2082 adicional."
+      );
+    }
+    if (primary.type === "alkalosis") {
+      lines.push("El pH alcalino orienta el etiquetado hacia alcalosis en el cuadro mixto.");
+    } else if (primary.type === "acidosis") {
+      lines.push("El pH \xE1cido orienta el etiquetado hacia acidosis en el cuadro mixto.");
+    }
+    return lines.join(" ");
+  }
+  if (primary.disorder === "metabolic" && primary.type === "acidosis") {
+    lines.push("HCO\u2083\u207B " + fmtLab_(hco3, 1) + " < 22: acidosis metab\xF3lica primaria.");
+    if (pCO2 != null && winterCenter != null && Math.abs(pCO2 - winterCenter) <= 2) {
+      lines.push(
+        "PaCO\u2082 " + fmtLab_(pCO2) + " mmHg coincide con compensaci\xF3n respiratoria esperada (Winter \u2248 " + fmtLab_(winterCenter, 1) + ")."
+      );
+    }
+  } else if (primary.disorder === "metabolic" && primary.type === "alkalosis") {
+    lines.push("HCO\u2083\u207B " + fmtLab_(hco3, 1) + " > 26: alcalosis metab\xF3lica primaria.");
+  } else if (primary.disorder === "respiratory" && primary.type === "acidosis") {
+    lines.push("PaCO\u2082 " + fmtLab_(pCO2) + " mmHg > 45: acidosis respiratoria primaria.");
+    if (metaLow) {
+      lines.push("HCO\u2083\u207B bajo coexisten; la hipercapnia y el pH \xE1cido predominan para nombrar el trastorno respiratorio.");
+    }
+  } else if (primary.disorder === "respiratory" && primary.type === "alkalosis") {
+    lines.push("PaCO\u2082 " + fmtLab_(pCO2) + " mmHg < 35: alcalosis respiratoria primaria.");
+    if (metaLow) {
+      lines.push("HCO\u2083\u207B bajo coexisten; la hipocapnia y el pH alcalino predominan frente al componente metab\xF3lico \xE1cido.");
+    }
+  } else if (primary.disorder === "mixed" && primary.type === "acidosis") {
+    lines.push(
+      "En acidemia, HCO\u2083\u207B y PaCO\u2082 no encajan con un solo trastorno primario (ni acidosis metab\xF3lica clara con compensaci\xF3n, ni hipercapnia aislada)."
+    );
+    if (metaLow) lines.push("Hay acidosis metab\xF3lica (HCO\u2083\u207B bajo).");
+    if (respHigh) lines.push("Hay retenci\xF3n de CO\u2082 (PaCO\u2082 elevada).");
+  } else if (primary.disorder === "mixed" && primary.type === "alkalosis") {
+    lines.push("En alcalemia, HCO\u2083\u207B y PaCO\u2082 apuntan a procesos opuestos.");
+    if (metaLow && respLow) {
+      lines.push(
+        "HCO\u2083\u207B bajo (tendencia metab\xF3lica \xE1cida) con PaCO\u2082 baja (alcalosis respiratoria); el pH alto indica que la hipocapnia pesa m\xE1s en el balance."
+      );
+    } else {
+      if (metaLow) lines.push("HCO\u2083\u207B bajo sin alcalosis metab\xF3lica (HCO\u2083\u207B no elevado).");
+      if (respLow) lines.push("PaCO\u2082 baja (hipocapnia).");
+    }
+  } else if (primary.disorder === "compensated") {
+    lines.push("Alteraciones de HCO\u2083\u207B y PaCO\u2082 se equilibran y dejan el pH casi normal.");
+    if (metaLow && respLow) lines.push("Patr\xF3n acid\xF3tico compensado (HCO\u2083\u207B bajo + PaCO\u2082 baja).");
+    if (metaHigh && respHigh) lines.push("Patr\xF3n alcal\xF3tico compensado (HCO\u2083\u207B alto + PaCO\u2082 alta).");
+  } else if (primary.disorder === "unknown") {
+    lines.push("Datos insuficientes para clasificar con las reglas automatizadas.");
+  }
+  return lines.join(" ");
+}
 function evaluateGasoExtended(input) {
   var inp = input || {};
   var pH = toFiniteNum_(inp.pH);
@@ -6648,11 +6734,16 @@ function evaluateGasoExtended(input) {
     } else if (pH > 7.45) {
       phStep.interpretation = "Alcalemia (pH > 7.45).";
     } else {
-      phStep.interpretation = "pH dentro del rango fisiológico típico (7.35–7.45) o apenas compensado.";
+      phStep.interpretation = "pH dentro del rango fisiol\xF3gico t\xEDpico (7.35\u20137.45) o apenas compensado.";
     }
   } else {
-    phStep.interpretation = "Sin dato de pH para clasificar estado ácido-base.";
+    phStep.interpretation = "Sin dato de pH para clasificar estado \xE1cido-base.";
   }
+  var primary = {
+    disorder: "unknown",
+    type: "none",
+    rationale: ""
+  };
   var metaLow = hco3 != null && hco3 < 22;
   var metaHigh = hco3 != null && hco3 > 26;
   var respLow = pCO2 != null && pCO2 < 35;
@@ -6663,10 +6754,6 @@ function evaluateGasoExtended(input) {
     if (pCO2 > winterCenter + 2) mixedFromWinter = true;
     else if (pCO2 < winterCenter - 2) mixedFromWinter = true;
   }
-  var primary = {
-    disorder: "unknown",
-    type: "none"
-  };
   if (mixedFromWinter) {
     primary.disorder = "mixed";
     if (pH != null && pH < 7.35) primary.type = "acidosis";
@@ -6704,6 +6791,18 @@ function evaluateGasoExtended(input) {
       } else primary.type = "none";
     }
   }
+  primary.rationale = buildPrimaryRationale_({
+    pH,
+    hco3,
+    pCO2,
+    primary,
+    mixedFromWinter,
+    winterCenter,
+    metaLow,
+    metaHigh,
+    respLow,
+    respHigh
+  });
   var compensation = {
     expectedPCO2: null,
     expectedHCO3Acute: null,
@@ -6714,11 +6813,11 @@ function evaluateGasoExtended(input) {
   if (hco3 != null && metaLow && winterCenter != null && isFinite(winterCenter)) {
     compensation.expectedPCO2 = Math.round((winterCenter + Number.EPSILON) * 10) / 10;
     compParts.push(
-      "Acidosis metabólica esperada Winter: PaCO₂ ≈ 1.5 × HCO₃⁻ + 8 (= " + compensation.expectedPCO2 + ", margen habitual ±2 mmHg)."
+      "Acidosis metab\xF3lica esperada Winter: PaCO\u2082 \u2248 1.5 \xD7 HCO\u2083\u207B + 8 (= " + compensation.expectedPCO2 + ", margen habitual \xB12 mmHg)."
     );
     if (metaLow && pCO2 != null && winterCenter != null && (pCO2 > winterCenter + 2 || pCO2 < winterCenter - 2)) {
       compParts.push(
-        "La PaCO₂ medida discrepa del rango esperado para compensación de una acidosis metabólica única."
+        "La PaCO\u2082 medida discrepa del rango esperado para compensaci\xF3n de una acidosis metab\xF3lica \xFAnica."
       );
     }
   }
@@ -6727,29 +6826,29 @@ function evaluateGasoExtended(input) {
     compensation.expectedHCO3Acute = Math.round((24 + 0.1 * deltaPCO2 + Number.EPSILON) * 10) / 10;
     compensation.expectedHCO3Chronic = Math.round((24 + 0.4 * deltaPCO2 + Number.EPSILON) * 10) / 10;
     compParts.push(
-      "Trastorno primario respiratorio (referencia ΔPaCO₂ frente a 40 mmHg): HCO₃⁻ esperada aguda ≈ 24 + 0.1×Δ (= " + compensation.expectedHCO3Acute + "), crónica ≈ 24 + 0.4×Δ (= " + compensation.expectedHCO3Chronic + ")."
+      "Trastorno primario respiratorio (referencia \u0394PaCO\u2082 frente a 40 mmHg): HCO\u2083\u207B esperada aguda \u2248 24 + 0.1\xD7\u0394 (= " + compensation.expectedHCO3Acute + "), cr\xF3nica \u2248 24 + 0.4\xD7\u0394 (= " + compensation.expectedHCO3Chronic + ")."
     );
     if (hco3 != null) {
       if (Math.abs(hco3 - compensation.expectedHCO3Acute) < 2) {
-        compParts.push("El HCO₃⁻ coincide mejor con patrón agudo (~0.1/ΔPaCO₂).");
+        compParts.push("El HCO\u2083\u207B coincide mejor con patr\xF3n agudo (~0.1/\u0394PaCO\u2082).");
       } else if (Math.abs(hco3 - compensation.expectedHCO3Chronic) < 2) {
         compParts.push(
-          "El HCO₃⁻ coincide mejor con patrón crónico/compensatorio (~0.4/ΔPaCO₂)."
+          "El HCO\u2083\u207B coincide mejor con patr\xF3n cr\xF3nico/compensatorio (~0.4/\u0394PaCO\u2082)."
         );
       }
     }
   }
-  compensation.note = compParts.length ? compParts.join(" ") : "Sin suficientes datos para estimar compensación.";
+  compensation.note = compParts.length ? compParts.join(" ") : "Sin suficientes datos para estimar compensaci\xF3n.";
   var anionGap = { value: agVal != null ? Math.round((agVal + Number.EPSILON) * 10) / 10 : null, interpretation: "" };
   if (agVal != null && isFinite(agVal)) {
-    if (agVal < 8) anionGap.interpretation = "Anión gap por debajo del rango usual (referencia habitual 8–12 mEq/L).";
+    if (agVal < 8) anionGap.interpretation = "Ani\xF3n gap por debajo del rango usual (referencia habitual 8\u201312 mEq/L).";
     else if (agVal > 12) {
-      anionGap.interpretation = "Anión gap elevado (>12): favorézcase gap en acidosis metabólica (lista amplia diferencial).";
+      anionGap.interpretation = "Ani\xF3n gap elevado (>12): favor\xE9zcase gap en acidosis metab\xF3lica (lista amplia diferencial).";
     } else {
-      anionGap.interpretation = "Anión gap dentro del rango usual (aproximadamente 8–12).";
+      anionGap.interpretation = "Ani\xF3n gap dentro del rango usual (aproximadamente 8\u201312).";
     }
   } else {
-    anionGap.interpretation = "No se puede calcular (falta Na, Cl u HCO₃⁻).";
+    anionGap.interpretation = "No se puede calcular (falta Na, Cl u HCO\u2083\u207B).";
   }
   var ddValue = deltaDeltaValue_(agVal, hco3);
   var deltaDelta = {
@@ -6758,14 +6857,14 @@ function evaluateGasoExtended(input) {
   };
   if (agVal != null && agVal > 12 && ddValue != null) {
     if (ddValue < 0.8) {
-      deltaDelta.interpretation = "Delta-delta bajo: componente hiperclorémico destacado coexistiendo con AG elevado (coexistencia plausible).";
+      deltaDelta.interpretation = "Delta-delta bajo: componente hiperclor\xE9mico destacado coexistiendo con AG elevado (coexistencia plausible).";
     } else if (ddValue > 2) {
-      deltaDelta.interpretation = "Delta-delta alto: bicarbonato menor al esperado sólo por gap (alcalosis metabólica coexistiente o otros factores).";
+      deltaDelta.interpretation = "Delta-delta alto: bicarbonato menor al esperado s\xF3lo por gap (alcalosis metab\xF3lica coexistiente o otros factores).";
     } else {
-      deltaDelta.interpretation = "Delta-delta cercano al patrón de acidosis típico de gap elevado.";
+      deltaDelta.interpretation = "Delta-delta cercano al patr\xF3n de acidosis t\xEDpico de gap elevado.";
     }
   } else if (agVal != null && agVal <= 12) {
-    deltaDelta.interpretation = "Sin relevancia de delta-delta habitual si el AG no está elevado.";
+    deltaDelta.interpretation = "Sin relevancia de delta-delta habitual si el AG no est\xE1 elevado.";
   } else {
     deltaDelta.interpretation = "No disponible.";
   }
@@ -6774,28 +6873,28 @@ function evaluateGasoExtended(input) {
   if (pO2 != null && isFinite(pO2) && fio2 > 0) {
     oxygenation.pfRatio = Math.round((pO2 / fio2 + Number.EPSILON) * 10) / 10;
     if (oxygenation.pfRatio >= 400) {
-      oxBits.push("P/F alta (usualmente mejor perfusión/tejido si FiO₂ es confiable).");
+      oxBits.push("P/F alta (usualmente mejor perfusi\xF3n/tejido si FiO\u2082 es confiable).");
     } else if (oxygenation.pfRatio < 400 && oxygenation.pfRatio >= 300) {
       oxBits.push("P/F discretamente alterada.");
     } else if (oxygenation.pfRatio < 300 && oxygenation.pfRatio >= 200) {
-      oxBits.push("P/F compatible con déficit leve/moderado de oxigenación.");
+      oxBits.push("P/F compatible con d\xE9ficit leve/moderado de oxigenaci\xF3n.");
     } else if (oxygenation.pfRatio > 0) {
-      oxBits.push("P/F bajo: hipoxemia significativa con la FiO₂ indicada.");
+      oxBits.push("P/F bajo: hipoxemia significativa con la FiO\u2082 indicada.");
     }
-    oxBits.push("P/F ≈ " + oxygenation.pfRatio + " (PaO₂ / FiO₂).");
+    oxBits.push("P/F \u2248 " + oxygenation.pfRatio + " (PaO\u2082 / FiO\u2082).");
   }
   if (pO2 != null && pCO2 != null && fio2 > 0 && isFinite(fio2)) {
     var RQ = 0.8;
     var PAO2approx = fio2 * (760 - 47) - pCO2 / RQ;
     oxygenation.aaGradient = Math.round((PAO2approx - pO2 + Number.EPSILON) * 10) / 10;
     oxBits.push(
-      "Gradiente A–a simplificado (~nivel del mar; PAO₂ ≈ FiO₂×713 − PaCO₂/0.8): ≈ " + oxygenation.aaGradient + " mmHg."
+      "Gradiente A\u2013a simplificado (~nivel del mar; PAO\u2082 \u2248 FiO\u2082\xD7713 \u2212 PaCO\u2082/0.8): \u2248 " + oxygenation.aaGradient + " mmHg."
     );
     var ageYears = ageMonths != null ? ageMonths / 12 : null;
     if (ageYears != null && ageYears >= 18) {
       var expAa = Math.round((ageYears / 4 + 4 + Number.EPSILON) * 10) / 10;
       oxBits.push(
-        "Regla práctica esperada en adultos (orientativa ~edad años/4+4): ≈ " + expAa + " mmHg."
+        "Regla pr\xE1ctica esperada en adultos (orientativa ~edad a\xF1os/4+4): \u2248 " + expAa + " mmHg."
       );
     }
   }
@@ -6804,15 +6903,15 @@ function evaluateGasoExtended(input) {
   if (phStep.interpretation)
     summaryLines.push(phStep.label + ": " + phStep.interpretation);
   summaryLines.push(
-    "Primario predominante inferido — " + primary.disorder + (primary.type !== "none" ? " (" + primary.type + ")" : "")
+    "Primario predominante inferido \u2014 " + primary.disorder + (primary.type !== "none" ? " (" + primary.type + ")" : "")
   );
-  if (compensation.note) summaryLines.push("Compensación: " + compensation.note);
+  if (compensation.note) summaryLines.push("Compensaci\xF3n: " + compensation.note);
   if (anionGap.value != null) {
-    summaryLines.push("Anión gap: " + String(anionGap.value) + ". " + anionGap.interpretation);
+    summaryLines.push("Ani\xF3n gap: " + String(anionGap.value) + ". " + anionGap.interpretation);
   }
   if (deltaDelta.value != null) summaryLines.push("Delta-delta: " + deltaDelta.interpretation);
   if (oxygenation.pfRatio != null || oxygenation.aaGradient != null || oxygenation.note) {
-    summaryLines.push("Oxigenación: " + oxygenation.note);
+    summaryLines.push("Oxigenaci\xF3n: " + oxygenation.note);
   }
   return {
     steps: {
@@ -6924,7 +7023,7 @@ function orderPanelFamilies(activeFamilies, savedOrder, sectionKey) {
   });
 }
 function formatTrendDisplayValue(val2) {
-  if (val2 == null || !isFinite(val2)) return "—";
+  if (val2 == null || !isFinite(val2)) return "\u2014";
   if (val2 !== 0 && Math.abs(val2) < 0.1) return val2.toFixed(2);
   if (Math.abs(val2) < 10 && Math.floor(val2) !== val2) {
     return String(Math.round(val2 * 100) / 100);
@@ -7035,7 +7134,7 @@ function createTendGroupModal(deps) {
       return;
     }
     var chips = hiddenFams.map(function(fam) {
-      return '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-panel="' + esc15(fam) + '">' + esc15(resolvePanelTitle(state.patientId, sectionKey, fam)) + ' <span aria-hidden="true">×</span></button>';
+      return '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-panel="' + esc15(fam) + '">' + esc15(resolvePanelTitle(state.patientId, sectionKey, fam)) + ' <span aria-hidden="true">\xD7</span></button>';
     });
     bar.style.display = "";
     bar.innerHTML = '<span class="tend-group-hidden-label">Paneles ocultos:</span>' + chips.join("") + '<button type="button" class="tend-toolbar-btn tend-group-show-all-btn tend-group-panels-show-all">Mostrar todo</button>';
@@ -7102,7 +7201,7 @@ function createTendGroupModal(deps) {
   }
   function formatCellValue(val2, abnormal) {
     var t2 = formatTrendDisplayValue(val2);
-    return abnormal && t2 !== "—" ? t2 + "*" : t2;
+    return abnormal && t2 !== "\u2014" ? t2 + "*" : t2;
   }
   function renderTableHiddenBar(wrap, sectionKey, hidden, raw) {
     var bar = wrap.querySelector("#tend-group-table-hidden-bar");
@@ -7123,14 +7222,14 @@ function createTendGroupModal(deps) {
         }
       }
       chips.push(
-        '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-col="' + esc15(ck) + '">' + esc15(label) + ' <span aria-hidden="true">×</span></button>'
+        '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-col="' + esc15(ck) + '">' + esc15(label) + ' <span aria-hidden="true">\xD7</span></button>'
       );
     });
     hidden.rows.forEach(function(fk) {
       var sp = state.specsByField[fk];
       var lab = sp ? legendLabelForSpec(sectionKey, sp) : fk;
       chips.push(
-        '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-row="' + esc15(fk) + '">' + esc15(lab) + ' <span aria-hidden="true">×</span></button>'
+        '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-row="' + esc15(fk) + '">' + esc15(lab) + ' <span aria-hidden="true">\xD7</span></button>'
       );
     });
     if (!chips.length) {
@@ -7142,7 +7241,7 @@ function createTendGroupModal(deps) {
     var collapsed = !!state.tableHiddenBarCollapsed;
     bar.style.display = "";
     bar.className = "tend-group-table-hidden-bar" + (collapsed ? " is-collapsed" : "");
-    bar.innerHTML = '<div class="tend-group-hidden-bar-head"><button type="button" class="tend-group-hidden-bar-toggle" aria-expanded="' + (collapsed ? "false" : "true") + '"><span class="tend-section-chevron" aria-hidden="true">' + (collapsed ? "▶" : "▼") + '</span><span class="tend-group-hidden-label">Ocultos en copia (' + count + ')</span></button><button type="button" class="tend-toolbar-btn tend-group-show-all-btn">Mostrar todo</button></div><div class="tend-group-hidden-bar-body' + (collapsed ? " tend-section-body--collapsed" : "") + '">' + chips.join("") + "</div>";
+    bar.innerHTML = '<div class="tend-group-hidden-bar-head"><button type="button" class="tend-group-hidden-bar-toggle" aria-expanded="' + (collapsed ? "false" : "true") + '"><span class="tend-section-chevron" aria-hidden="true">' + (collapsed ? "\u25B6" : "\u25BC") + '</span><span class="tend-group-hidden-label">Ocultos en copia (' + count + ')</span></button><button type="button" class="tend-toolbar-btn tend-group-show-all-btn">Mostrar todo</button></div><div class="tend-group-hidden-bar-body' + (collapsed ? " tend-section-body--collapsed" : "") + '">' + chips.join("") + "</div>";
     bar.querySelector(".tend-group-hidden-bar-toggle").onclick = function() {
       state.tableHiddenBarCollapsed = !state.tableHiddenBarCollapsed;
       renderTableHiddenBar(wrap, sectionKey, hidden, raw);
@@ -7327,9 +7426,9 @@ function createTendGroupModal(deps) {
     var unit = deps.tendUnitForSeries(sectionKey, spec.fieldKey);
     var parts = formatTendSeriesLabel(spec.cardTitle || spec.fieldKey, spec.fieldKey, unit);
     var valStr = formatTrendDisplayValue(value);
-    if (parts.unit === "%") return parts.name + " · " + valStr + (valStr !== "—" ? " %" : "");
-    if (parts.unit) return parts.name + " · " + valStr + (valStr !== "—" ? " " + parts.unit : "");
-    return parts.name + " · " + valStr;
+    if (parts.unit === "%") return parts.name + " \xB7 " + valStr + (valStr !== "\u2014" ? " %" : "");
+    if (parts.unit) return parts.name + " \xB7 " + valStr + (valStr !== "\u2014" ? " " + parts.unit : "");
+    return parts.name + " \xB7 " + valStr;
   }
   function legendLabelForSpec(sectionKey, spec) {
     var unit = deps.tendUnitForSeries(sectionKey, spec.fieldKey);
@@ -7364,7 +7463,7 @@ function createTendGroupModal(deps) {
     bd.className = "tend-gaso-ext-backdrop";
     bd.setAttribute("aria-hidden", "true");
     bd.style.display = "none";
-    bd.innerHTML = '<div id="tend-gaso-ext-dialog" class="tend-gaso-ext-dialog" role="dialog" aria-modal="true" aria-labelledby="tend-gaso-ext-title"><div class="tend-gaso-ext-header"><div class="tend-gaso-ext-header-text"><h2 id="tend-gaso-ext-title">' + escHtml6("Gasometría extendida") + '</h2><p class="tend-gaso-ext-subtitle">' + escHtml6("Último estudio · interpretación ácido-base") + '</p></div><div class="tend-gaso-ext-header-actions"><div class="tend-gaso-fio2-chip" role="group" aria-label="Fracción inspirada de oxígeno"><span class="tend-gaso-fio2-chip-label">FiO₂</span><input type="number" class="tend-gaso-fio2-input" step="0.01" min="0.08" max="100" inputmode="decimal" aria-label="FiO₂ (0.21 o 21)" title="Fracción 0.21 o porcentaje 21" /><span class="tend-gaso-fio2-chip-hint">0.21 · 21%</span></div></div></div><div class="tend-gaso-extended-inner"></div></div>';
+    bd.innerHTML = '<div id="tend-gaso-ext-dialog" class="tend-gaso-ext-dialog" role="dialog" aria-modal="true" aria-labelledby="tend-gaso-ext-title"><div class="tend-gaso-ext-header"><div class="tend-gaso-ext-header-text"><h2 id="tend-gaso-ext-title">' + escHtml6("Gasometr\xEDa extendida") + '</h2><p class="tend-gaso-ext-subtitle">' + escHtml6("\xDAltimo estudio \xB7 interpretaci\xF3n \xE1cido-base") + '</p></div><div class="tend-gaso-ext-header-actions"><div class="tend-gaso-fio2-chip" role="group" aria-label="Fracci\xF3n inspirada de ox\xEDgeno"><span class="tend-gaso-fio2-chip-label">FiO\u2082</span><input type="number" class="tend-gaso-fio2-input" step="0.01" min="0.08" max="100" inputmode="decimal" aria-label="FiO\u2082 (0.21 o 21)" title="Fracci\xF3n 0.21 o porcentaje 21" /><span class="tend-gaso-fio2-chip-hint">0.21 \xB7 21%</span></div></div></div><div class="tend-gaso-extended-inner"></div></div>';
     bd.addEventListener("click", function(ev) {
       if (ev.target === bd) closeGasoExtended();
     });
@@ -7391,7 +7490,7 @@ function createTendGroupModal(deps) {
     if (!slot) return;
     slot.innerHTML = "";
     if (!latest || !latest.parsedBySection) {
-      slot.innerHTML = '<p class="tend-empty" style="font-size:13px;color:var(--text-muted);">' + escHtml6("Sin valores recientes disponibles para gasometría.") + "</p>";
+      slot.innerHTML = '<p class="tend-empty" style="font-size:13px;color:var(--text-muted);">' + escHtml6("Sin valores recientes disponibles para gasometr\xEDa.") + "</p>";
       return;
     }
     var na = serieNumFromLabSet(latest, "QS", "Na") ?? serieNumFromLabSet(latest, "ESC", "Na") ?? serieNumFromLabSet(latest, "GASES", "Na");
@@ -7402,21 +7501,21 @@ function createTendGroupModal(deps) {
     var pO2 = serieNumFromLabSet(latest, "GASES", "pO2");
     var bic = serieNumFromLabSet(latest, "GASES", "Bica");
     function fmtNum(n, unit) {
-      if (n == null || !isFinite(n)) return "—";
+      if (n == null || !isFinite(n)) return "\u2014";
       return String(n) + (unit ? " " + unit : "");
     }
     function primaryDisorderLabel(disorder, type) {
       var dMap = {
-        metabolic: "Metabólico",
+        metabolic: "Metab\xF3lico",
         respiratory: "Respiratorio",
         mixed: "Mixto",
         compensated: "Compensado",
         unknown: "Indeterminado"
       };
       var tMap = { acidosis: "acidosis", alkalosis: "alcalosis", none: "" };
-      var d = dMap[String(disorder || "").toLowerCase()] || String(disorder || "—");
+      var d = dMap[String(disorder || "").toLowerCase()] || String(disorder || "\u2014");
       var t2 = tMap[String(type || "").toLowerCase()] || "";
-      return t2 ? d + " · " + t2 : d;
+      return t2 ? d + " \xB7 " + t2 : d;
     }
     function metricChip(label, value, tone) {
       var chip = document.createElement("span");
@@ -7489,11 +7588,11 @@ function createTendGroupModal(deps) {
           pH != null && pH < 7.35 ? "low" : pH != null && pH > 7.45 ? "high" : ""
         )
       );
-      metrics.appendChild(metricChip("PaCO₂", fmtNum(pCO2, "mmHg")));
-      metrics.appendChild(metricChip("HCO₃⁻", fmtNum(bic, "mEq/L")));
+      metrics.appendChild(metricChip("PaCO\u2082", fmtNum(pCO2, "mmHg")));
+      metrics.appendChild(metricChip("HCO\u2083\u207B", fmtNum(bic, "mEq/L")));
       metrics.appendChild(
         metricChip(
-          "Anión gap",
+          "Ani\xF3n gap",
           fmtNum(ev.steps.anionGap.value, "mEq/L"),
           ev.steps.anionGap.value != null && ev.steps.anionGap.value > 12 ? "high" : ""
         )
@@ -7501,11 +7600,23 @@ function createTendGroupModal(deps) {
       panel.appendChild(metrics);
       var steps = document.createElement("div");
       steps.className = "tend-gaso-steps";
-      steps.appendChild(stepCard(1, "Estado ácido-base", stepText(ev.steps.ph.interpretation)));
+      steps.appendChild(stepCard(1, "Estado \xE1cido-base", stepText(ev.steps.ph.interpretation)));
       var primaryBody = document.createElement("div");
       var primaryBadge = document.createElement("span");
-      primaryBadge.className = "tend-gaso-badge";
+      primaryBadge.className = "tend-gaso-badge tend-gaso-badge--tip";
+      primaryBadge.tabIndex = 0;
       primaryBadge.textContent = primaryDisorderLabel(ev.steps.primary.disorder, ev.steps.primary.type);
+      var primaryRationale = String(ev.steps.primary.rationale || "").trim();
+      if (primaryRationale) {
+        var primaryTipId = "tend-gaso-primary-rationale";
+        primaryBadge.setAttribute("aria-describedby", primaryTipId);
+        var primaryTip = document.createElement("span");
+        primaryTip.id = primaryTipId;
+        primaryTip.className = "tend-gaso-tip";
+        primaryTip.setAttribute("role", "tooltip");
+        primaryTip.textContent = primaryRationale;
+        primaryBadge.appendChild(primaryTip);
+      }
       primaryBody.appendChild(primaryBadge);
       steps.appendChild(stepCard(2, "Trastorno predominante", primaryBody));
       var cmp = ev.steps.compensation;
@@ -7513,17 +7624,17 @@ function createTendGroupModal(deps) {
       var cmpGrid = document.createElement("div");
       cmpGrid.className = "tend-gaso-subgrid";
       if (cmp.expectedPCO2 != null) {
-        cmpGrid.appendChild(subMetric("PaCO₂ Winter", "~" + cmp.expectedPCO2 + " mmHg"));
+        cmpGrid.appendChild(subMetric("PaCO\u2082 Winter", "~" + cmp.expectedPCO2 + " mmHg"));
       }
       if (cmp.expectedHCO3Acute != null) {
-        cmpGrid.appendChild(subMetric("HCO₃⁻ agudo", "~" + cmp.expectedHCO3Acute));
+        cmpGrid.appendChild(subMetric("HCO\u2083\u207B agudo", "~" + cmp.expectedHCO3Acute));
       }
       if (cmp.expectedHCO3Chronic != null) {
-        cmpGrid.appendChild(subMetric("HCO₃⁻ crónico", "~" + cmp.expectedHCO3Chronic));
+        cmpGrid.appendChild(subMetric("HCO\u2083\u207B cr\xF3nico", "~" + cmp.expectedHCO3Chronic));
       }
       if (cmpGrid.childNodes.length) cmpBody.appendChild(cmpGrid);
       cmpBody.appendChild(stepText(cmp.note));
-      steps.appendChild(stepCard(3, "Compensación esperada", cmpBody));
+      steps.appendChild(stepCard(3, "Compensaci\xF3n esperada", cmpBody));
       var agBody = document.createElement("div");
       if (ev.steps.anionGap.value != null) {
         var agBadge = document.createElement("span");
@@ -7532,7 +7643,7 @@ function createTendGroupModal(deps) {
         agBody.appendChild(agBadge);
       }
       agBody.appendChild(stepText(ev.steps.anionGap.interpretation));
-      steps.appendChild(stepCard(4, "Anión gap", agBody));
+      steps.appendChild(stepCard(4, "Ani\xF3n gap", agBody));
       var ddBody = document.createElement("div");
       if (ev.steps.deltaDelta.value != null) {
         var ddBadge = document.createElement("span");
@@ -7546,21 +7657,21 @@ function createTendGroupModal(deps) {
       var oxGrid = document.createElement("div");
       oxGrid.className = "tend-gaso-subgrid";
       if (ev.steps.oxygenation.pfRatio != null) {
-        oxGrid.appendChild(subMetric("P/F", "≈ " + ev.steps.oxygenation.pfRatio));
+        oxGrid.appendChild(subMetric("P/F", "\u2248 " + ev.steps.oxygenation.pfRatio));
       }
       if (ev.steps.oxygenation.aaGradient != null) {
-        oxGrid.appendChild(subMetric("Gradiente A–a", "≈ " + ev.steps.oxygenation.aaGradient + " mmHg"));
+        oxGrid.appendChild(subMetric("Gradiente A\u2013a", "\u2248 " + ev.steps.oxygenation.aaGradient + " mmHg"));
       }
       if (oxGrid.childNodes.length) oxBody.appendChild(oxGrid);
       oxBody.appendChild(stepText(ev.steps.oxygenation.note));
-      steps.appendChild(stepCard(6, "Oxigenación", oxBody));
+      steps.appendChild(stepCard(6, "Oxigenaci\xF3n", oxBody));
       panel.appendChild(steps);
       slot.appendChild(panel);
       if (ev.summaryLines && ev.summaryLines.length) {
         var hs = document.createElement("details");
         hs.className = "tend-gaso-summary";
         var sm = document.createElement("summary");
-        sm.textContent = "Resumen rápido";
+        sm.textContent = "Resumen r\xE1pido";
         hs.appendChild(sm);
         var ul = document.createElement("ul");
         ul.className = "tend-gaso-summary-list";
@@ -7573,7 +7684,7 @@ function createTendGroupModal(deps) {
         slot.appendChild(hs);
       }
     } catch (e) {
-      slot.innerHTML = '<p class="tend-empty" style="font-size:13px;color:var(--error);">' + escHtml6("No se pudo calcular la gasometría extendida.") + "</p>";
+      slot.innerHTML = '<p class="tend-empty" style="font-size:13px;color:var(--error);">' + escHtml6("No se pudo calcular la gasometr\xEDa extendida.") + "</p>";
       console.error("evaluateGasoExtended", e);
     }
   }
@@ -7595,7 +7706,7 @@ function createTendGroupModal(deps) {
     if (!patientId) return;
     var historyDesc = sortLabHistoryChronological(deps.getHistory() || []);
     if (!historyDesc.length) {
-      if (deps.showToast) deps.showToast("Sin laboratorio reciente para gasometría.", "warn");
+      if (deps.showToast) deps.showToast("Sin laboratorio reciente para gasometr\xEDa.", "warn");
       return;
     }
     state.patientId = patientId;
@@ -7603,7 +7714,7 @@ function createTendGroupModal(deps) {
     var latest = historyDesc[0];
     var hasGaso = latest && latest.parsedBySection && latest.parsedBySection.GASES && serieNumFromLabSet(latest, "GASES", "pH") != null;
     if (!hasGaso) {
-      if (deps.showToast) deps.showToast("No hay gasometría en el último estudio.", "warn");
+      if (deps.showToast) deps.showToast("No hay gasometr\xEDa en el \xFAltimo estudio.", "warn");
       return;
     }
     var bd = ensureGasoExtendedDialog();
@@ -7679,7 +7790,7 @@ function createTendGroupModal(deps) {
       block.setAttribute("data-panel-family", fam);
       var toolbar = document.createElement("div");
       toolbar.className = "patient-card-toolbar tend-group-panel-toolbar";
-      toolbar.innerHTML = '<div class="patient-card-toolbar-left"><button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon tend-group-panel-eye" title="Ocultar panel" aria-label="Ocultar panel">' + tendPanelEyeSvg() + '</button></div><span class="tend-group-panel-drag-hint" aria-hidden="true" title="Arrastrar para reordenar">⋮⋮</span>';
+      toolbar.innerHTML = '<div class="patient-card-toolbar-left"><button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon tend-group-panel-eye" title="Ocultar panel" aria-label="Ocultar panel">' + tendPanelEyeSvg() + '</button></div><span class="tend-group-panel-drag-hint" aria-hidden="true" title="Arrastrar para reordenar">\u22EE\u22EE</span>';
       block.appendChild(toolbar);
       var titleEl = document.createElement("h3");
       titleEl.className = "tend-group-family-title tend-group-family-title--editable";
@@ -7688,7 +7799,7 @@ function createTendGroupModal(deps) {
       titleEl.setAttribute("role", "textbox");
       titleEl.setAttribute(
         "aria-label",
-        "Título del panel, editable. Enter para guardar, Esc para cancelar."
+        "T\xEDtulo del panel, editable. Enter para guardar, Esc para cancelar."
       );
       titleEl.textContent = resolvePanelTitle(state.patientId, sectionKey, fam);
       var titleDraft = titleEl.textContent;
@@ -7758,7 +7869,7 @@ function createTendGroupModal(deps) {
         emptyP2.style.margin = "8px 0 0";
         emptyP2.style.fontSize = "13px";
         emptyP2.style.color = "var(--text-muted)";
-        emptyP2.textContent = items.length ? "Sin puntos temporales para este panel." : "Ningún analito de este panel tiene 2 o más laboratorios. Procesa otro BH o activa BH extendida en Resultados.";
+        emptyP2.textContent = items.length ? "Sin puntos temporales para este panel." : "Ning\xFAn analito de este panel tiene 2 o m\xE1s laboratorios. Procesa otro BH o activa BH extendida en Resultados.";
         block.appendChild(emptyP2);
         sortZone.appendChild(block);
         return;
@@ -7939,7 +8050,7 @@ function createTendGroupModal(deps) {
       state.visibleFields = resolveVisibleFields(patientId, sectionKey, eligible.length ? eligible : specsForModal);
       var titleEl = document.getElementById("tend-group-title");
       if (titleEl) {
-        titleEl.textContent = (deps.getSectionLabel(sectionKey) || sectionKey) + " — Gráfica del estudio";
+        titleEl.textContent = (deps.getSectionLabel(sectionKey) || sectionKey) + " \u2014 Gr\xE1fica del estudio";
       }
       var bd = backdropEl();
       if (bd) {
@@ -7954,7 +8065,7 @@ function createTendGroupModal(deps) {
         console.error("tend-group renderCharts", chartRenderErr);
         var panelErr = document.getElementById("tend-group-panel-charts");
         if (panelErr) {
-          panelErr.innerHTML = '<p class="tend-empty">No se pudieron cargar las gráficas. Recarga la app e intenta de nuevo.</p>';
+          panelErr.innerHTML = '<p class="tend-empty">No se pudieron cargar las gr\xE1ficas. Recarga la app e intenta de nuevo.</p>';
         }
       }
       try {
@@ -7983,11 +8094,11 @@ function createTendGroupModal(deps) {
         }
         return;
       }
-      var title = (deps.getSectionLabel(state.sectionKey) || state.sectionKey || "Tabla") + " — Tendencias";
+      var title = (deps.getSectionLabel(state.sectionKey) || state.sectionKey || "Tabla") + " \u2014 Tendencias";
       copyTableModelAsPng(state.tableModel, title, function(ok) {
         if (deps.showToast) {
           deps.showToast(
-            ok ? "Tabla copiada como imagen ✓" : "No se pudo copiar la imagen",
+            ok ? "Tabla copiada como imagen \u2713" : "No se pudo copiar la imagen",
             ok ? "success" : "error"
           );
         }
@@ -8039,101 +8150,6 @@ function scheduleIdle(fn, timeoutMs) {
     return;
   }
   setTimeout(run, 0);
-}
-
-// public/js/trend-spark-canvas.mjs
-function fitCanvas(canvas) {
-  var rect = canvas.getBoundingClientRect();
-  var w = Math.max(1, Math.round(rect.width || canvas.clientWidth || 120));
-  var h = Math.max(1, Math.round(rect.height || canvas.clientHeight || 40));
-  var dpr = typeof window !== "undefined" && window.devicePixelRatio ? window.devicePixelRatio : 1;
-  var pw = Math.round(w * dpr);
-  var ph = Math.round(h * dpr);
-  if (canvas.width !== pw || canvas.height !== ph) {
-    canvas.width = pw;
-    canvas.height = ph;
-  }
-  return { ctx: canvas.getContext("2d"), w: pw, h: ph, dpr };
-}
-function drawTrendSparkLine(canvas, values, color) {
-  if (!canvas) return;
-  var fit = fitCanvas(canvas);
-  var ctx = fit.ctx;
-  if (!ctx) return;
-  var w = fit.w;
-  var h = fit.h;
-  var dpr = fit.dpr;
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.clearRect(0, 0, w, h);
-  ctx.scale(dpr, dpr);
-  var cssW = w / dpr;
-  var cssH = h / dpr;
-  var nums = (values || []).map(function(v3) {
-    if (v3 == null || v3 === "") return null;
-    var n2 = Number(v3);
-    return Number.isFinite(n2) ? n2 : null;
-  });
-  var finite = nums.filter(function(n2) {
-    return n2 != null;
-  });
-  if (finite.length < 1) return;
-  var min = Math.min.apply(null, finite);
-  var max = Math.max.apply(null, finite);
-  if (max === min) {
-    min -= 1;
-    max += 1;
-  }
-  var padX = 6;
-  var padY = 6;
-  var innerW = Math.max(1, cssW - padX * 2);
-  var innerH = Math.max(1, cssH - padY * 2);
-  var n = nums.length;
-  var step = n > 1 ? innerW / (n - 1) : 0;
-  ctx.lineWidth = 2.25;
-  ctx.lineJoin = "round";
-  ctx.lineCap = "round";
-  ctx.strokeStyle = color || "rgba(52,211,153,0.95)";
-  ctx.beginPath();
-  var started = false;
-  for (var i = 0; i < n; i += 1) {
-    var v = nums[i];
-    if (v == null) {
-      started = false;
-      continue;
-    }
-    var x = padX + (n > 1 ? i * step : innerW / 2);
-    var y = padY + innerH - (v - min) / (max - min) * innerH;
-    if (!started) {
-      ctx.moveTo(x, y);
-      started = true;
-    } else {
-      ctx.lineTo(x, y);
-    }
-  }
-  if (started) ctx.stroke();
-  ctx.fillStyle = ctx.strokeStyle;
-  for (var j = 0; j < n; j += 1) {
-    var v2 = nums[j];
-    if (v2 == null) continue;
-    var x2 = padX + (n > 1 ? j * step : innerW / 2);
-    var y2 = padY + innerH - (v2 - min) / (max - min) * innerH;
-    ctx.beginPath();
-    ctx.arc(x2, y2, 2, 0, Math.PI * 2);
-    ctx.fill();
-  }
-}
-function mountTrendSparkCanvas(canvas, values, color) {
-  drawTrendSparkLine(canvas, values, color);
-  return {
-    update(nextValues, nextColor) {
-      drawTrendSparkLine(canvas, nextValues, nextColor || color);
-    },
-    destroy() {
-      if (!canvas) return;
-      var ctx = canvas.getContext("2d");
-      if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
-  };
 }
 
 // public/js/lab-history-cache.mjs
@@ -8316,7 +8332,7 @@ function pruneSomeRows(rows) {
   (rows || []).forEach(function(r) {
     if (!r || !r.estudio || isSectionDividerRow(r)) return;
     var res = String(r.resultado || "").trim();
-    if (!res || res === ":" || res === "—") return;
+    if (!res || res === ":" || res === "\u2014") return;
     var key = r.estudio.toUpperCase();
     var idx = -1;
     for (var k = 0; k < out.length; k++) {
@@ -8327,7 +8343,7 @@ function pruneSomeRows(rows) {
     }
     if (idx >= 0) {
       var prevRes = String(out[idx].resultado || "").trim();
-      if (!prevRes || prevRes === "—") out[idx] = r;
+      if (!prevRes || prevRes === "\u2014") out[idx] = r;
       return;
     }
     out.push(r);
@@ -8345,9 +8361,9 @@ function isSectionDividerRow(row) {
   return false;
 }
 function formatSomeResultado(row) {
-  if (!row) return "—";
+  if (!row) return "\u2014";
   var val2 = String(row.resultado == null ? "" : row.resultado).trim();
-  if (!val2) return "—";
+  if (!val2) return "\u2014";
   var units = String(row.unidades || "").trim();
   return units ? val2 + " " + units : val2;
 }
@@ -8492,11 +8508,11 @@ function finalizeRow(estudio, flag, valueParts) {
     var p = cleanValue(stripSomeInlineMetadata(valueParts[i]));
     if (!p) continue;
     if (lineHasSomeMetadata(p)) continue;
-    if (!value && p !== ":" && p !== "—") {
+    if (!value && p !== ":" && p !== "\u2014") {
       value = p;
       continue;
     }
-    if (value === ":" && p !== ":" && p !== "—") {
+    if (value === ":" && p !== ":" && p !== "\u2014") {
       value = p;
       continue;
     }
@@ -8519,7 +8535,7 @@ function finalizeRow(estudio, flag, valueParts) {
 }
 function readRowAt(lines, startIdx, currentGroupTitle) {
   var estudio = cleanEstudio(lines[startIdx]);
-  if (!estudio || isFlagToken(estudio) || isTableHeaderLine(estudio) || isDepartmentLine(estudio) || isSkippedGroupTitle(estudio) || isCommentNoiseEstudio(estudio) || isSectionDividerEstudio(estudio) || estudio === ":" || estudio === "—") {
+  if (!estudio || isFlagToken(estudio) || isTableHeaderLine(estudio) || isDepartmentLine(estudio) || isSkippedGroupTitle(estudio) || isCommentNoiseEstudio(estudio) || isSectionDividerEstudio(estudio) || estudio === ":" || estudio === "\u2014") {
     return null;
   }
   var j = startIdx + 1;
@@ -8621,7 +8637,7 @@ function parseSomeReportTables(textoBruto) {
     if (isSectionDividerRow({ estudio: trimmed, resultado: "", unidades: "", ref: "" })) {
       continue;
     }
-    if (trimmed === ":" || trimmed === "—") continue;
+    if (trimmed === ":" || trimmed === "\u2014") continue;
     if (isSectionDividerEstudio(trimmed)) {
       i = skipSectionDividerBlock(lines, i) - 1;
       continue;
@@ -8859,7 +8875,7 @@ function buildSomeGroupExportModel(group) {
     columns,
     rows: rows.map(function(r) {
       var resTxt = formatSomeResultado(r);
-      if (r.flag && r.flag !== "*" && resTxt === "—") resTxt = r.flag;
+      if (r.flag && r.flag !== "*" && resTxt === "\u2014") resTxt = r.flag;
       var cells = [
         {
           text: resTxt,
@@ -8900,7 +8916,7 @@ function renderSomeTableGroupHtml(group, opts) {
   var tableId = options.tableId || "";
   var exportLabel = options.exportLabel || title || "Tabla";
   if (!options.exportLabel && isCito && g3.fluidSource) {
-    exportLabel = (exportLabel + " — " + g3.fluidSource).trim();
+    exportLabel = (exportLabel + " \u2014 " + g3.fluidSource).trim();
   }
   var deptIndex = options.deptIndex;
   var groupIndex = options.groupIndex;
@@ -8909,7 +8925,7 @@ function renderSomeTableGroupHtml(group, opts) {
     html += '<div class="lab-some-group-title">' + escHtml(title) + "</div>";
   }
   if (isCito && g3.fluidSource) {
-    html += '<div class="lab-some-fluid-source"><span class="lab-some-fluid-label">Origen del líquido:</span> ' + escHtml(g3.fluidSource) + "</div>";
+    html += '<div class="lab-some-fluid-source"><span class="lab-some-fluid-label">Origen del l\xEDquido:</span> ' + escHtml(g3.fluidSource) + "</div>";
   }
   if (!options.hideToolbar) {
     var deptAttr = deptIndex != null ? ' data-dept-index="' + escHtml(String(deptIndex)) + '"' : "";
@@ -8937,7 +8953,7 @@ function renderSomeTableGroupHtml(group, opts) {
 }
 function renderSomeDeptExportActions(deptLabel, deptIndex) {
   var label = escHtml(deptLabel);
-  return '<span class="lab-some-dept-summary-actions" onclick="event.stopPropagation()"><button type="button" class="lab-some-export-btn lab-some-dept-export-btn" data-export="tsv" data-dept-index="' + deptIndex + '" data-label="' + label + '" title="Copiar sección como texto">TSV</button><button type="button" class="lab-some-export-btn lab-some-dept-export-btn" data-export="png" data-dept-index="' + deptIndex + '" data-label="' + label + '" title="Copiar sección como imagen">PNG</button></span>';
+  return '<span class="lab-some-dept-summary-actions" onclick="event.stopPropagation()"><button type="button" class="lab-some-export-btn lab-some-dept-export-btn" data-export="tsv" data-dept-index="' + deptIndex + '" data-label="' + label + '" title="Copiar secci\xF3n como texto">TSV</button><button type="button" class="lab-some-export-btn lab-some-dept-export-btn" data-export="png" data-dept-index="' + deptIndex + '" data-label="' + label + '" title="Copiar secci\xF3n como imagen">PNG</button></span>';
 }
 function buildSomeDeptTsv(dept, title) {
   var tsv = buildTableTsv(buildSomeDeptExportModel(dept, title));
@@ -8987,9 +9003,9 @@ function renderSomeReportTablesHtml(parsed, opts) {
     dept.groups.forEach(function(group, gi) {
       var tableId = "some-" + di + "-" + gi;
       var g3 = normalizeSomeGroup(group);
-      var exportLabel = (dept.label + (g3.title ? " — " + g3.title : "")).trim();
+      var exportLabel = (dept.label + (g3.title ? " \u2014 " + g3.title : "")).trim();
       if (g3.tableVariant === "cito" && g3.fluidSource) {
-        exportLabel += " — " + g3.fluidSource;
+        exportLabel += " \u2014 " + g3.fluidSource;
       }
       html += renderSomeTableGroupHtml(g3, {
         tableId,
@@ -9066,7 +9082,7 @@ function wireSomeTableExportButtons(container, onToast, lookup) {
         exportSomeDeptCopy(dept, format, label || dept && dept.label || "", function(ok) {
           if (typeof onToast === "function") {
             onToast(
-              ok ? "Sección copiada ✓" : "No se pudo copiar la sección",
+              ok ? "Secci\xF3n copiada \u2713" : "No se pudo copiar la secci\xF3n",
               ok ? "success" : "error"
             );
           }
@@ -9082,7 +9098,7 @@ function wireSomeTableExportButtons(container, onToast, lookup) {
       exportSomeGroupCopy(group, format, label, function(ok) {
         if (typeof onToast === "function") {
           onToast(
-            ok ? "Tabla copiada ✓" : "No se pudo copiar la tabla",
+            ok ? "Tabla copiada \u2713" : "No se pudo copiar la tabla",
             ok ? "success" : "error"
           );
         }
@@ -9129,7 +9145,7 @@ function triggerSesionIngresoSend(ev) {
     ev.stopPropagation();
   }
   if (isCasiopeaTourSendBlocked("lab")) {
-    rt.showToast("En el tutorial solo mostramos el botón; fuera del tour aquí se abre Neo.", "info");
+    rt.showToast("En el tutorial solo mostramos el bot\xF3n; fuera del tour aqu\xED se abre Neo.", "info");
     return;
   }
   rt.openSesionIngresoSend();
@@ -9240,7 +9256,7 @@ function formatTabTitleWithContext(tabTitle, reportDate) {
   if (!date || date === "Anterior") return base;
   const shortDate = date.length >= 5 && date.includes("/") ? date.slice(0, 5) : date;
   if (base.includes(shortDate) || base.includes(date)) return base;
-  return `${shortDate} · ${base}`;
+  return `${shortDate} \xB7 ${base}`;
 }
 function groupToSesionTable(group, meta) {
   const model = buildSomeGroupExportModel(group);
@@ -9275,7 +9291,7 @@ function listSelectableTables(parsed, { reportDate } = {}) {
     (dept.groups || []).forEach((group, groupIndex) => {
       if (!group.rows?.length) return;
       const groupTitle = group.title ? String(group.title).trim() : "";
-      const baseTitle = groupTitle ? `${deptLabel} — ${groupTitle}` : deptLabel;
+      const baseTitle = groupTitle ? `${deptLabel} \u2014 ${groupTitle}` : deptLabel;
       const tabTitle = formatTabTitleWithContext(baseTitle, reportDate);
       const admission = isAdmissionTitle(groupTitle) || isAdmissionTitle(deptLabel);
       items.push({
@@ -9372,14 +9388,14 @@ function openSesionIngresoSendModal() {
   if (!backdrop || !body) return;
   const selected = defaultSelectedIds(items);
   body.innerHTML = `
-    <p class="hint">Marca los estudios a enviar al paso <strong>Paraclínicos</strong> que tengas seleccionado en Neo.</p>
+    <p class="hint">Marca los estudios a enviar al paso <strong>Paracl\xEDnicos</strong> que tengas seleccionado en Neo.</p>
     <div class="sesion-ingreso-send-list">
       ${items.map(
     (item) => `
         <label class="sesion-ingreso-send-item">
           <input type="checkbox" data-table-id="${escHtml2(item.id)}" ${selected.includes(item.id) ? "checked" : ""} />
           <span>${escHtml2(item.tabTitle)}</span>
-          <small>${item.rowCount} fila(s)${item.isAdmission ? " · Al ingreso" : ""}</small>
+          <small>${item.rowCount} fila(s)${item.isAdmission ? " \xB7 Al ingreso" : ""}</small>
         </label>`
   ).join("")}
     </div>
@@ -9574,7 +9590,7 @@ function parseReportChunk(reportText, reportIndex) {
     return {
       reportIndex,
       ok: false,
-      error: "No parece reporte SOME (copia desde «Expediente:»)"
+      error: "No parece reporte SOME (copia desde \xABExpediente:\xBB)"
     };
   }
   try {
@@ -9656,10 +9672,10 @@ function buildBulkLabPreview(text, opts) {
       reports,
       expedientes,
       patient: match,
-      patientName: match ? match.nombre || "Sin nombre" : okReports[0] ? okReports[0].nombre || "—" : "—",
+      patientName: match ? match.nombre || "Sin nombre" : okReports[0] ? okReports[0].nombre || "\u2014" : "\u2014",
       primaryExpediente: patientReg || primaryExp,
       days: sortDaysDesc(days),
-      daysLabel: sortDaysDesc(days).join(", ") || "—",
+      daysLabel: sortDaysDesc(days).join(", ") || "\u2014",
       setsAfterMerge,
       status,
       canProcess: !!match && usableReports.length > 0
@@ -9765,9 +9781,9 @@ function bulkPreviewStatusLabel(status) {
     case "parse-errors":
       return "Error al parsear";
     case "empty":
-      return "Vacío";
+      return "Vac\xEDo";
     default:
-      return status || "—";
+      return status || "\u2014";
   }
 }
 
@@ -9804,7 +9820,7 @@ function renderPreviewSummary(blocks) {
   }).length;
   var parts = [
     blocks.length + " bloque" + (blocks.length === 1 ? "" : "s"),
-    okReports + " reporte" + (okReports === 1 ? "" : "s") + " válido" + (okReports === 1 ? "" : "s"),
+    okReports + " reporte" + (okReports === 1 ? "" : "s") + " v\xE1lido" + (okReports === 1 ? "" : "s"),
     sets + " conjunto" + (sets === 1 ? "" : "s") + " a guardar"
   ];
   if (processable) {
@@ -9813,7 +9829,7 @@ function renderPreviewSummary(blocks) {
   if (issues) {
     parts.push(issues + " con aviso" + (issues === 1 ? "" : "s"));
   }
-  return parts.join(" · ");
+  return parts.join(" \xB7 ");
 }
 function renderReportIssues(block) {
   var bad = (block.reports || []).filter(function(r) {
@@ -9829,9 +9845,9 @@ function renderReportIssues(block) {
 function renderPreviewTable(blocks) {
   var rows = blocks.map(function(block, idx) {
     var issues = renderReportIssues(block);
-    return '<tr class="lab-bulk-preview-row lab-bulk-preview-row--' + esc(block.status || "unknown") + '"><td>' + (idx + 1) + "</td><td><strong>" + esc(block.patientName || "—") + "</strong>" + (block.primaryExpediente ? '<span class="lab-bulk-preview-exp">Exp. ' + esc(block.primaryExpediente) + "</span>" : "") + "</td><td>" + (block.reportCount || 0) + ' <span class="lab-bulk-preview-muted">(' + (block.okReportCount || 0) + " ok)</span></td><td>" + esc(block.daysLabel || "—") + "</td><td>" + (block.setsAfterMerge || 0) + '</td><td><span class="lab-bulk-preview-status ' + statusClass(block.status) + '">' + esc(bulkPreviewStatusLabel(block.status)) + "</span></td></tr>" + (issues ? '<tr class="lab-bulk-preview-detail-row"><td colspan="6">' + issues + "</td></tr>" : "");
+    return '<tr class="lab-bulk-preview-row lab-bulk-preview-row--' + esc(block.status || "unknown") + '"><td>' + (idx + 1) + "</td><td><strong>" + esc(block.patientName || "\u2014") + "</strong>" + (block.primaryExpediente ? '<span class="lab-bulk-preview-exp">Exp. ' + esc(block.primaryExpediente) + "</span>" : "") + "</td><td>" + (block.reportCount || 0) + ' <span class="lab-bulk-preview-muted">(' + (block.okReportCount || 0) + " ok)</span></td><td>" + esc(block.daysLabel || "\u2014") + "</td><td>" + (block.setsAfterMerge || 0) + '</td><td><span class="lab-bulk-preview-status ' + statusClass(block.status) + '">' + esc(bulkPreviewStatusLabel(block.status)) + "</span></td></tr>" + (issues ? '<tr class="lab-bulk-preview-detail-row"><td colspan="6">' + issues + "</td></tr>" : "");
   }).join("");
-  return '<table class="lab-bulk-preview-table"><thead><tr><th>#</th><th>Paciente</th><th>Reportes</th><th>Días</th><th>Conjuntos</th><th>Estado</th></tr></thead><tbody>' + rows + "</tbody></table>";
+  return '<table class="lab-bulk-preview-table"><thead><tr><th>#</th><th>Paciente</th><th>Reportes</th><th>D\xEDas</th><th>Conjuntos</th><th>Estado</th></tr></thead><tbody>' + rows + "</tbody></table>";
 }
 function openLabBulkPreviewModal(opts) {
   var blocks = opts && opts.blocks || [];
@@ -9916,16 +9932,16 @@ var HIGH_CONTRAST_LS = "rpc-high-contrast";
 var UI_DENSITY_LS = "rpc-ui-density";
 var I18N_ES = {
   "settings.appearance": "Apariencia",
-  "settings.themeGroup": "Tema de la aplicación",
+  "settings.themeGroup": "Tema de la aplicaci\xF3n",
   "settings.themeLight": "Claro",
   "settings.themeDark": "Oscuro",
-  "settings.fontSize": "Tamaño de texto",
-  "settings.fontSizeHint": "Escala toda la interfaz (útil en pantallas pequeñas).",
+  "settings.fontSize": "Tama\xF1o de texto",
+  "settings.fontSizeHint": "Escala toda la interfaz (\xFAtil en pantallas peque\xF1as).",
   "settings.fontNormal": "Normal",
   "settings.fontLarge": "Grande",
-  "settings.fontXLarge": "Más grande",
+  "settings.fontXLarge": "M\xE1s grande",
   "settings.uiDensity": "Modo de vista",
-  "settings.uiDensityHint": "Normal: Laboratorio, Expediente, Medicamentos y Agenda en pestañas completas (vista Ronda centrada). Pase: resumen del paciente en una columna; pulsa un título de sección para abrir el detalle en Normal. ⌘P o Ctrl+P alterna.",
+  "settings.uiDensityHint": "Normal: Laboratorio, Expediente, Medicamentos y Agenda en pesta\xF1as completas (vista Ronda centrada). Pase: resumen del paciente en una columna; pulsa un t\xEDtulo de secci\xF3n para abrir el detalle en Normal. \u2318P o Ctrl+P alterna.",
   "settings.densityNormal": "Normal",
   "settings.densityPase": "Pase",
   "settings.highContrast": "Alto contraste",
@@ -9933,17 +9949,17 @@ var I18N_ES = {
   "settings.hcOff": "Desactivado",
   "settings.hcOn": "Activado",
   "settings.docsFolder": "Carpeta de documentos",
-  "settings.docsFolderHint": "Los .docx generados se guardan aquí (si no eliges carpeta, se usa Descargas).",
+  "settings.docsFolderHint": "Los .docx generados se guardan aqu\xED (si no eliges carpeta, se usa Descargas).",
   "settings.backup": "Respaldo local",
   "settings.backupHint": "Exporta o restaura pacientes, notas e indicaciones (JSON).",
-  "settings.application": "Aplicación",
-  "settings.quickHelp": "Centro de ayuda · atajos y tours",
-  "settings.version": "Versión",
-  "settings.checkUpdates": "Buscar actualizaciones…",
+  "settings.application": "Aplicaci\xF3n",
+  "settings.quickHelp": "Centro de ayuda \xB7 atajos y tours",
+  "settings.version": "Versi\xF3n",
+  "settings.checkUpdates": "Buscar actualizaciones\u2026",
   "settings.open": "Abrir ajustes",
   "settings.openTitle": "Ajustes",
-  "settings.teamSyncAria": "Abrir conexión LAN y LiveSync (salas)",
-  "settings.teamSyncTitle": "Conexión LAN (⇄): crear o unirse a sala en vivo, copiar invitación. Código del servidor (avanzado): Ajustes → LAN · servidor en esta computadora. Paquete sync JSON: Ajustes → Respaldos, sync y recuperación.",
+  "settings.teamSyncAria": "Abrir conexi\xF3n LAN y LiveSync (salas)",
+  "settings.teamSyncTitle": "Conexi\xF3n LAN (\u21C4): crear o unirse a sala en vivo, copiar invitaci\xF3n. C\xF3digo del servidor (avanzado): Ajustes \u2192 LAN \xB7 servidor en esta computadora. Paquete sync JSON: Ajustes \u2192 Respaldos, sync y recuperaci\xF3n.",
   "theme.toggle": "Cambiar tema claro u oscuro",
   "theme.toggleTitle": "Cambiar tema",
   "appTab.lab": "Laboratorio",
@@ -9951,7 +9967,7 @@ var I18N_ES = {
   "appTab.med": "Medicamentos",
   "appTab.agenda": "Agenda",
   "roundMode.hint": "Ronda: paciente siguiente / anterior",
-  "roundMode.seenTitle": "Visto en ronda (se reinicia cada día)",
+  "roundMode.seenTitle": "Visto en ronda (se reinicia cada d\xEDa)",
   "roundMode.sectionNota": "Nota e indicaciones",
   "roundMode.sectionLabs": "Laboratorio reciente",
   "roundMode.sectionTodos": "Pendientes"
@@ -10389,7 +10405,7 @@ registerSesionIngresoSendRuntime({
       });
       return;
     }
-    rt4.showToast("Integración disponible solo en la app de escritorio", "warn");
+    rt4.showToast("Integraci\xF3n disponible solo en la app de escritorio", "warn");
   }
 });
 function syncLabOutputChrome() {
@@ -10551,7 +10567,7 @@ function renderLabHistoryPanel() {
   );
   if (!hist.length) {
     hintEl.style.display = "block";
-    hintEl.textContent = "Al procesar un reporte con paciente activo, cada conjunto queda guardado aquí (sirve para Tendencias y para volver a ver diagramas).";
+    hintEl.textContent = "Al procesar un reporte con paciente activo, cada conjunto queda guardado aqu\xED (sirve para Tendencias y para volver a ver diagramas).";
     listEl.innerHTML = "";
     syncLabHistoryCollapseUI();
     rt4.renderRoundOverviewPanels();
@@ -10571,15 +10587,15 @@ function renderLabHistoryPanel() {
     var rawFe = set.fecha === "Anterior" ? "" : normalizeFechaLabHistory(set.fecha) || String(set.fecha || "").trim() || rt4.inferFechaLabSetFromId(set) || "";
     var fe;
     if (set.id === "migrated-anterior") {
-      fe = rawFe ? "Anterior · " + rawFe : "Anterior (sin fecha en bloque)";
+      fe = rawFe ? "Anterior \xB7 " + rawFe : "Anterior (sin fecha en bloque)";
     } else {
-      fe = rawFe || (set.fecha === "Anterior" ? "Anterior" : "—");
+      fe = rawFe || (set.fecha === "Anterior" ? "Anterior" : "\u2014");
     }
     var ho = set.hora && String(set.hora).trim() ? String(set.hora).trim().slice(0, 8) : "";
     var parts = [fe];
     if (ho) parts.push(ho);
     parts.push(n + " bloque" + (n === 1 ? "" : "s"));
-    var meta = parts.join(" · ");
+    var meta = parts.join(" \xB7 ");
     var sid = safeAttrJsString(
       set.id != null && String(set.id).trim() !== "" ? set.id : "__idx_" + idx
     );
@@ -10601,7 +10617,7 @@ function replayLabHistorySet(setId) {
   var sets = normalizeLabHistoryPatientSets(labHistory[rt4.getActiveId()]);
   var set = findLabHistorySetByRef(sets, setId);
   if (!set || !set.resLabs || !set.resLabs.length) {
-    rt4.showToast("No se encontró ese estudio", "error");
+    rt4.showToast("No se encontr\xF3 ese estudio", "error");
     return;
   }
   var patient = patients.find(function(p) {
@@ -10637,7 +10653,7 @@ function reprocessLabHistorySet(setId) {
   var sets = normalizeLabHistoryPatientSets(labHistory[rt4.getActiveId()]);
   var set = findLabHistorySetByRef(sets, setId);
   if (!set) {
-    rt4.showToast("No se encontró ese estudio", "error");
+    rt4.showToast("No se encontr\xF3 ese estudio", "error");
     return;
   }
   if (!set.resLabs || !set.resLabs.length) {
@@ -10662,7 +10678,7 @@ function reprocessLabHistorySet(setId) {
     rt4.refreshTendenciasOrCultivosPanel();
     replayLabHistorySet(setId);
     rt4.addAuditEntry("lab-history-reprocess", "ok", 1, String(setId));
-    rt4.showToast("Estudio reprocesado desde resultados ✓", "success");
+    rt4.showToast("Estudio reprocesado desde resultados \u2713", "success");
   } catch (_e) {
     rt4.showToast("Error al reprocesar este estudio", "error");
   }
@@ -10672,7 +10688,7 @@ function deleteLabHistorySet(setId) {
   if (!pid) return;
   var sets = normalizeLabHistoryPatientSets(labHistory[pid]);
   if (!sets.length) return;
-  if (!confirm("¿Eliminar este conjunto del historial? Las tendencias se recalcularán.")) return;
+  if (!confirm("\xBFEliminar este conjunto del historial? Las tendencias se recalcular\xE1n.")) return;
   var sid = String(setId == null ? "" : setId);
   if (sid.indexOf("__idx_") === 0) {
     var idx = parseInt(sid.slice(6), 10);
@@ -10692,16 +10708,16 @@ function deleteLabHistorySet(setId) {
   rt4.showToast("Eliminado del historial", "success");
 }
 function labDedupeSummaryLine(set) {
-  if (!set) return "—";
+  if (!set) return "\u2014";
   var rawFe = set.fecha === "Anterior" ? "" : normalizeFechaLabHistory(set.fecha) || String(set.fecha || "").trim() || rt4.inferFechaLabSetFromId(set) || "";
-  var fe = set.id === "migrated-anterior" ? rawFe ? "Anterior · " + rawFe : "Anterior (sin fecha en bloque)" : rawFe || (set.fecha === "Anterior" ? "Anterior" : "—");
+  var fe = set.id === "migrated-anterior" ? rawFe ? "Anterior \xB7 " + rawFe : "Anterior (sin fecha en bloque)" : rawFe || (set.fecha === "Anterior" ? "Anterior" : "\u2014");
   var ho = set.hora && String(set.hora).trim() ? String(set.hora).trim().slice(0, 8) : "";
   var n = set.resLabs && set.resLabs.length ? set.resLabs.length : 0;
   var parts = [fe];
   if (ho) parts.push(ho);
-  parts.push(n + " línea" + (n === 1 ? "" : "s"));
+  parts.push(n + " l\xEDnea" + (n === 1 ? "" : "s"));
   parts.push("id " + String(set.id).slice(-12));
-  return parts.join(" · ");
+  return parts.join(" \xB7 ");
 }
 function labParsedFingerprintForDedupe(set) {
   var p = set && set.parsed;
@@ -10799,7 +10815,7 @@ function showLabDedupeChecklistModal(sections) {
     var loose = sec.rows.filter(function(r) {
       return r.kind === "loose";
     });
-    var head = '<h4 style="margin:12px 0 8px;font-size:14px;font-weight:700;color:var(--text);">' + esc2(sec.nombre || "—") + (sec.registro ? ' <span style="opacity:0.85;font-weight:500">· ' + esc2(sec.registro) + "</span>" : "") + "</h4>";
+    var head = '<h4 style="margin:12px 0 8px;font-size:14px;font-weight:700;color:var(--text);">' + esc2(sec.nombre || "\u2014") + (sec.registro ? ' <span style="opacity:0.85;font-weight:500">\xB7 ' + esc2(sec.registro) + "</span>" : "") + "</h4>";
     var part = '<div class="lab-dedupe-patient-block">' + head;
     if (exact.length) {
       part += '<p style="margin:0 0 6px;font-size:12px;color:var(--text-muted);font-weight:600;">Duplicados exactos (misma fecha, hora y texto del reporte)</p><ul style="margin:0 0 14px;padding-left:0;list-style:none;max-height:220px;overflow-y:auto;font-size:13px;">';
@@ -10809,7 +10825,7 @@ function showLabDedupeChecklistModal(sections) {
       part += "</ul>";
     }
     if (loose.length) {
-      part += '<p style="margin:0 0 6px;font-size:12px;color:var(--text-muted);font-weight:600;">Posibles duplicados (misma fecha/hora y mismos valores numéricos parseados; el texto del reporte puede diferir)</p><ul style="margin:0 0 14px;padding-left:0;list-style:none;max-height:220px;overflow-y:auto;font-size:13px;">';
+      part += '<p style="margin:0 0 6px;font-size:12px;color:var(--text-muted);font-weight:600;">Posibles duplicados (misma fecha/hora y mismos valores num\xE9ricos parseados; el texto del reporte puede diferir)</p><ul style="margin:0 0 14px;padding-left:0;list-style:none;max-height:220px;overflow-y:auto;font-size:13px;">';
       loose.forEach(function(r) {
         part += '<li style="margin:6px 0;"><label style="cursor:pointer;display:flex;gap:8px;align-items:flex-start;"><input type="checkbox" class="lab-dedupe-cb" data-pid="' + esc2(r.patientId) + '" data-sid="' + esc2(r.id) + '" checked style="margin-top:3px;flex-shrink:0;" /> <span>' + esc2(r.summary) + "</span></label></li>";
       });
@@ -10820,7 +10836,7 @@ function showLabDedupeChecklistModal(sections) {
   var defaultCount = sections.reduce(function(acc, s) {
     return acc + s.rows.length;
   }, 0);
-  backdrop.innerHTML = '<div class="lab-conflict-modal" style="max-width:520px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;"><h3 style="margin:0 0 8px;">Sincronizar historial de laboratorio</h3><p style="font-size:13px;line-height:1.45;margin:0 0 10px;color:var(--text-muted);">Marca las entradas a eliminar. Por defecto se seleccionan las copias redundantes y se conserva el conjunto con id más antiguo en cada grupo.</p><div style="overflow-y:auto;flex:1;min-height:0;padding-right:4px;">' + blocks + '</div><div style="display:flex;gap:10px;margin-top:14px;justify-content:space-between;flex-wrap:wrap;align-items:center;"><span style="font-size:12px;color:var(--text-muted);" id="lab-dedupe-count">' + defaultCount + " seleccionada" + (defaultCount === 1 ? "" : "s") + '</span><div style="display:flex;gap:10px;flex-wrap:wrap;"><button type="button" id="lab-dedupe-none" style="background:transparent;border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Quitar todas</button><button type="button" id="lab-dedupe-all" style="background:transparent;border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Seleccionar todas</button><button type="button" id="lab-dedupe-cancel" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Cancelar</button><button type="button" id="lab-dedupe-ok" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Eliminar seleccionadas</button></div></div></div>';
+  backdrop.innerHTML = '<div class="lab-conflict-modal" style="max-width:520px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;"><h3 style="margin:0 0 8px;">Sincronizar historial de laboratorio</h3><p style="font-size:13px;line-height:1.45;margin:0 0 10px;color:var(--text-muted);">Marca las entradas a eliminar. Por defecto se seleccionan las copias redundantes y se conserva el conjunto con id m\xE1s antiguo en cada grupo.</p><div style="overflow-y:auto;flex:1;min-height:0;padding-right:4px;">' + blocks + '</div><div style="display:flex;gap:10px;margin-top:14px;justify-content:space-between;flex-wrap:wrap;align-items:center;"><span style="font-size:12px;color:var(--text-muted);" id="lab-dedupe-count">' + defaultCount + " seleccionada" + (defaultCount === 1 ? "" : "s") + '</span><div style="display:flex;gap:10px;flex-wrap:wrap;"><button type="button" id="lab-dedupe-none" style="background:transparent;border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Quitar todas</button><button type="button" id="lab-dedupe-all" style="background:transparent;border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Seleccionar todas</button><button type="button" id="lab-dedupe-cancel" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Cancelar</button><button type="button" id="lab-dedupe-ok" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Eliminar seleccionadas</button></div></div></div>';
   document.body.appendChild(backdrop);
   function updateCount() {
     var n = backdrop.querySelectorAll(".lab-dedupe-cb:checked").length;
@@ -10872,7 +10888,7 @@ function showLabDedupeChecklistModal(sections) {
     var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
     if (el && rt4.getActiveId() && notes[rt4.getActiveId()]) el.value = notes[rt4.getActiveId()].estudios || "";
     rt4.addAuditEntry("lab-history-dedupe", "ok", removedTotal, Object.keys(mapByPatient).length + " pacientes");
-    rt4.showToast("Eliminadas " + removedTotal + " entrada" + (removedTotal === 1 ? "" : "s") + " ✓", "success");
+    rt4.showToast("Eliminadas " + removedTotal + " entrada" + (removedTotal === 1 ? "" : "s") + " \u2713", "success");
   };
 }
 function openLabHistoryDedupeReview(scope) {
@@ -10913,7 +10929,7 @@ function runLabDedupeReviewAllPatients() {
     rt4.showToast("No hay pacientes para revisar", "error");
     return;
   }
-  rt4.showToast("Buscando duplicados en " + list.length + " pacientes…", "success");
+  rt4.showToast("Buscando duplicados en " + list.length + " pacientes\u2026", "success");
   var sections = [];
   var index = 0;
   function step() {
@@ -10933,7 +10949,7 @@ function runLabDedupeReviewAllPatients() {
       if (r.length) {
         sections.push({
           patientId: p.id,
-          nombre: p.nombre || "—",
+          nombre: p.nombre || "\u2014",
           registro: p.registro || "",
           rows: r
         });
@@ -10954,7 +10970,7 @@ function consolidateLabHistoryByDayAndTipo() {
     return;
   }
   if (!confirm(
-    "¿Consolidar el historial por día?\n\nR+ agrupa entradas que comparten la misma fecha (día calendario) solo si son del mismo tipo:\n\n1) Varios envíos que traen únicamente laboratorio (sin bloque de cultivos) ese día → se unen en una sola entrada.\n\n2) Varios envíos que traen únicamente cultivos ese día → se unen en una sola entrada.\n\n3) Si un envío mezcla laboratorio y cultivos en el mismo conjunto, no se fusiona con otros ni se modifica.\n\nEn cada grupo se conserva la entrada más antigua (id más viejo), se combinan todos los renglones y las líneas de texto idénticas se guardan una sola vez."
+    "\xBFConsolidar el historial por d\xEDa?\n\nR+ agrupa entradas que comparten la misma fecha (d\xEDa calendario) solo si son del mismo tipo:\n\n1) Varios env\xEDos que traen \xFAnicamente laboratorio (sin bloque de cultivos) ese d\xEDa \u2192 se unen en una sola entrada.\n\n2) Varios env\xEDos que traen \xFAnicamente cultivos ese d\xEDa \u2192 se unen en una sola entrada.\n\n3) Si un env\xEDo mezcla laboratorio y cultivos en el mismo conjunto, no se fusiona con otros ni se modifica.\n\nEn cada grupo se conserva la entrada m\xE1s antigua (id m\xE1s viejo), se combinan todos los renglones y las l\xEDneas de texto id\xE9nticas se guardan una sola vez."
   )) {
     return;
   }
@@ -11009,10 +11025,10 @@ function consolidateLabHistoryByDayAndTipo() {
     }
   });
   if (!todo.length) {
-    rt4.showToast("No hay grupos del mismo día y tipo homogéneo para fusionar", "success");
+    rt4.showToast("No hay grupos del mismo d\xEDa y tipo homog\xE9neo para fusionar", "success");
     return;
   }
-  if (typeof rt4.pushUndoSnapshot === "function") rt4.pushUndoSnapshot("Consolidar historial de labs por día y tipo");
+  if (typeof rt4.pushUndoSnapshot === "function") rt4.pushUndoSnapshot("Consolidar historial de labs por d\xEDa y tipo");
   var idRemove = new Set(todo);
   labHistory[rt4.getActiveId()] = labHistory[rt4.getActiveId()].filter(function(s) {
     return !idRemove.has(String(s.id));
@@ -11025,7 +11041,7 @@ function consolidateLabHistoryByDayAndTipo() {
   var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
   if (el && notes[rt4.getActiveId()]) el.value = notes[rt4.getActiveId()].estudios || "";
   rt4.addAuditEntry("lab-history-consolidate", "ok", todo.length, String(rt4.getActiveId()));
-  rt4.showToast("Fusionados " + todo.length + " conjunto(s) ✓", "success");
+  rt4.showToast("Fusionados " + todo.length + " conjunto(s) \u2713", "success");
 }
 function limpiarReporte() {
   document.getElementById("lab-input").value = "";
@@ -11045,12 +11061,12 @@ function openLabPatientPicker() {
   var box = document.createElement("div");
   box.style.cssText = "background:#1f2937;border-radius:10px;padding:20px;min-width:260px;max-width:360px;width:90%;";
   var title = document.createElement("div");
-  title.textContent = "¿A qué paciente enviar los labs?";
+  title.textContent = "\xBFA qu\xE9 paciente enviar los labs?";
   title.style.cssText = "color:#f9fafb;font-size:14px;font-weight:600;margin-bottom:14px;";
   box.appendChild(title);
   patients.forEach(function(p) {
     var btn = document.createElement("button");
-    btn.textContent = p.nombre + (p.registro ? "  •  " + p.registro : "");
+    btn.textContent = p.nombre + (p.registro ? "  \u2022  " + p.registro : "");
     btn.style.cssText = "display:block;width:100%;text-align:left;background:#374151;color:#f3f4f6;border:none;border-radius:6px;padding:10px 12px;margin-bottom:8px;cursor:pointer;font-size:13px;";
     btn.onmouseenter = function() {
       this.style.background = "#4b5563";
@@ -11086,7 +11102,7 @@ async function copiarLabsAlPortapapeles() {
   var text = buildLabLines().join("\n");
   var ok = await rt4.copyToClipboardSafe(text);
   rt4.showToast(
-    ok ? "Labs copiados al portapapeles ✓" : "Error al copiar al portapapeles",
+    ok ? "Labs copiados al portapapeles \u2713" : "Error al copiar al portapapeles",
     ok ? "success" : "error"
   );
 }
@@ -11318,7 +11334,7 @@ function applyLabPastePatientResolution(result) {
   if (!match) {
     if (!rt4.getLabOutputPrefs().quickLabOutput) {
       rt4.showToast(
-        "Registro " + reg + " no está en la lista. No se guardó en el historial.",
+        "Registro " + reg + " no est\xE1 en la lista. No se guard\xF3 en el historial.",
         "error"
       );
     }
@@ -11326,7 +11342,7 @@ function applyLabPastePatientResolution(result) {
   }
   if (match.id !== rt4.getActiveId()) {
     rt4.selectPatient(match.id);
-    rt4.showToast("Paciente: " + (match.nombre || "Sin nombre") + " · Exp " + reg, "success");
+    rt4.showToast("Paciente: " + (match.nombre || "Sin nombre") + " \xB7 Exp " + reg, "success");
     rt4.addAuditEntry("lab-patient-auto-switch", "ok", 1, reg);
   }
   return { shouldAutoStore: true };
@@ -11386,7 +11402,7 @@ function insertLabsAsRecent(lines) {
   var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
   if (el) el.value = notes[rt4.getActiveId()].estudios;
   rt4.onboardingAdvanceAfterSend();
-  rt4.showToast("Labs enviados a la nota ✓", "success");
+  rt4.showToast("Labs enviados a la nota \u2713", "success");
   rt4.setMedTabAttention(true);
   rt4.openPaseSectionInNormal("expediente");
 }
@@ -11408,7 +11424,7 @@ function insertLabsAsAnteriorThenRecent(newLines) {
   var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
   if (el) el.value = notes[rt4.getActiveId()].estudios;
   rt4.onboardingAdvanceAfterSend();
-  rt4.showToast("Fecha anterior guardada + nuevos labs agregados ✓", "success");
+  rt4.showToast("Fecha anterior guardada + nuevos labs agregados \u2713", "success");
   rt4.setMedTabAttention(true);
   rt4.openPaseSectionInNormal("expediente");
 }
@@ -11416,7 +11432,7 @@ function showLabConflictModal(newLines, existingDate) {
   var backdrop = document.createElement("div");
   backdrop.className = "lab-conflict-backdrop";
   backdrop.id = "lab-conflict-backdrop";
-  backdrop.innerHTML = '<div class="lab-conflict-modal"><h3>Los estudios ya tienen datos</h3><p>El bloque reciente ya tiene labs del <strong>' + esc2(existingDate) + '</strong>. ¿Qué hago con los nuevos labs?</p><div class="lab-conflict-actions"><button class="btn-conflict-primary" id="btn-conflict-move">📋 Mover anterior + agregar reciente<br><span style="font-size:11px;font-weight:400;opacity:0.8;">Los labs actuales pasan al bloque anterior y los nuevos quedan como recientes</span></button><button class="btn-conflict-secondary" id="btn-conflict-replace">🔄 Reemplazar fecha reciente<br><span style="font-size:11px;font-weight:400;opacity:0.7;">Los labs actuales se borran, se escriben los nuevos</span></button><button class="btn-conflict-cancel" id="btn-conflict-cancel">Cancelar</button></div></div>';
+  backdrop.innerHTML = '<div class="lab-conflict-modal"><h3>Los estudios ya tienen datos</h3><p>El bloque reciente ya tiene labs del <strong>' + esc2(existingDate) + '</strong>. \xBFQu\xE9 hago con los nuevos labs?</p><div class="lab-conflict-actions"><button class="btn-conflict-primary" id="btn-conflict-move">\u{1F4CB} Mover anterior + agregar reciente<br><span style="font-size:11px;font-weight:400;opacity:0.8;">Los labs actuales pasan al bloque anterior y los nuevos quedan como recientes</span></button><button class="btn-conflict-secondary" id="btn-conflict-replace">\u{1F504} Reemplazar fecha reciente<br><span style="font-size:11px;font-weight:400;opacity:0.7;">Los labs actuales se borran, se escriben los nuevos</span></button><button class="btn-conflict-cancel" id="btn-conflict-cancel">Cancelar</button></div></div>';
   document.body.appendChild(backdrop);
   document.getElementById("btn-conflict-move").onclick = function() {
     document.body.removeChild(backdrop);
@@ -11441,7 +11457,7 @@ function showLabConflictModal(newLines, existingDate) {
     var el = document.querySelector('#note-form textarea[oninput*="estudios"]');
     if (el) el.value = notes[rt4.getActiveId()].estudios;
     rt4.onboardingAdvanceAfterSend();
-    rt4.showToast("Fecha reciente reemplazada ✓", "success");
+    rt4.showToast("Fecha reciente reemplazada \u2713", "success");
     rt4.setMedTabAttention(true);
     rt4.openPaseSectionInNormal("expediente");
   };
@@ -11469,7 +11485,7 @@ function finalizeBulkLabPaste(text, blocks, totalOkReports) {
     return b.status === "no-patient";
   })) {
     if (!quickOut) {
-      rt4.showToast("Ningún expediente del pegado coincide con pacientes en la lista", "error");
+      rt4.showToast("Ning\xFAn expediente del pegado coincide con pacientes en la lista", "error");
     }
   }
   var displayReport = pickDisplayLabReport(blocks, processable, rt4.getActiveId());
@@ -11515,11 +11531,11 @@ function finalizeBulkLabPaste(text, blocks, totalOkReports) {
         storeSummary.skippedBlocks + " bloque" + (storeSummary.skippedBlocks === 1 ? "" : "s") + " omitido" + (storeSummary.skippedBlocks === 1 ? "" : "s")
       );
     }
-    rt4.showToast(parts.length ? parts.join(" · ") + " ✓" : "Laboratorio procesado ✓", storeSummary.storedSets ? "success" : "success");
+    rt4.showToast(parts.length ? parts.join(" \xB7 ") + " \u2713" : "Laboratorio procesado \u2713", storeSummary.storedSets ? "success" : "success");
   } else if (processable.length === 1 && storeSummary.storedSets === 0 && storeSummary.skippedDupes) {
     rt4.showToast("Resultado ya registrado en historial", "success");
   } else if (processable.length === 0 && blocks.length === 1 && blocks[0].status === "no-patient" && quickOut && displayReport) {
-    rt4.showToast("Laboratorio formateado · salida rápida ✓", "success");
+    rt4.showToast("Laboratorio formateado \xB7 salida r\xE1pida \u2713", "success");
   } else if (processable.length === 1 && !storeSummary.storedSets && blocks[0].status === "no-patient") {
   } else if (processable.length === 1 && storeSummary.storedSets) {
   }
@@ -11541,7 +11557,7 @@ function procesarReporte() {
   }, 0);
   if (!totalOkReports) {
     rt4.showToast(
-      looksLikeSomeLabReport(text) ? "No se encontraron resultados de laboratorio en el texto pegado" : "No parece un reporte de SOME. Copia desde «Expediente:» hasta el final del reporte.",
+      looksLikeSomeLabReport(text) ? "No se encontraron resultados de laboratorio en el texto pegado" : "No parece un reporte de SOME. Copia desde \xABExpediente:\xBB hasta el final del reporte.",
       "error"
     );
     return;
@@ -11856,9 +11872,9 @@ function getTourTarget(stepId, _branch) {
 }
 
 // public/js/tour-demo-some-lab.mjs
-var DEMO_SOME_LAB_REPORT = "Expediente:	0008421-7	Solicitud:	2605110244\nNombre:	DEMO PÉREZ JUAN	Fecha Registro:	Apr 11 2026 9:42AM\nSexo:	MASCULINO	Ubicación:	MEDICINA INTERNA\nEdad:	67	Medico:	SERVICIO DEMO\n\nHEMATOLOGIA\nBIOMETRIA HEMATICA COMPLETA\nEstudio		Resultado	Unidades	Valor de Referencia\nRBC		4.71	M/uL	4.04 - 6.13\nHGB		*	11.85	g/dL	12.20 - 18.10\nHCT		*	38.4	%	37.7 - 53.7\nMCV		*	82	fL	80 - 97\nMCH		B	26.1	pg	27.0 - 31.2\nMCHC		*	32.0	g/dL	29.9 - 34.2\nRDW		*	13.2	%	11.6 - 14.8\nWBC		*	6.12	K/uL	4.00 - 11.00\nNEU		*	3.88	K/uL	2.00 - 6.90\nNEU%		*	63.4	%	37.0 - 80.0\nLYM		*	1.05	K/uL	0.60 - 3.40\nLYM%		*	17.2	%	10.0 - 50.0\nMONO		*	0.71	K/uL	0.000 - 0.900\nMONO%		*	11.6	%	0.00 - 12.00\nEOS		*	0.11	K/uL	0.000 - 0.700\nEOS%		*	1.8	%	0.00 - 7.00\nBASO		*	0.12	K/uL	0.000 - 0.200\nBASO%		*	2.0	%	0.00 - 2.50\nPLT		*	248	K/uL	142.00 - 424.00\nMPV		B	7.2	fL	7.4 - 10.4\n\nQUIMICA CLINICA\nCOMENTARIO DE MUESTRA\nEstudio		Resultado	Unidades	Valor de Referencia\nCOMENTARIO DE LA MUESTRA		*	\nGLUCOSA EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nGLUCOSA EN SANGRE		*	94	mg/dL	60 - 100\nNITROGENO DE LA UREA EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nNITROGENO DE LA UREA EN SANGRE		A	22	mg/dL	7 - 20\nCREATININA EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nCREATININA EN SANGRE		A	1.35	mg/dL	0.6 - 1.4\nACIDO URICO EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nACIDO URICO EN SANGRE		A	7.4	mg/dL	4.8 - 8.7\nPROTEINAS TOTALES\nEstudio		Resultado	Unidades	Valor de Referencia\nPROTEINAS TOTALES		A	7.6	g/dL	6.1 - 7.9\nALBUMINA\nEstudio		Resultado	Unidades	Valor de Referencia\nALBUMINA		*	4.1	g/dL	3.2 - 5.5\nGLOBULINA SERICA\nEstudio		Resultado	Unidades	Valor de Referencia\nGLOBULINA SERICA		*	3.5	g/dL	\nRELACION A/G\nEstudio		Resultado	Unidades	Valor de Referencia\nRELACION A/G		*	1.17	\nAST(ASPARTATO AMINOTRANSFERASA)\nEstudio		Resultado	Unidades	Valor de Referencia\nAST(ASPARTATO AMINOTRANSFERASA)		*	19	UI/L	10 - 42\nALT ALANIN AMINO TRANSFERASA\nEstudio		Resultado	Unidades	Valor de Referencia\nALT ALANIN AMINO TRANSFERASA		*	14	UI/L	10 - 42\nALP FOSFATASA ALCALINA\nEstudio		Resultado	Unidades	Valor de Referencia\nALP FOSFATASA ALCALINA		A	118	UI/L	38 - 126\nBILIRRUBINA\nEstudio		Resultado	Unidades	Valor de Referencia\nBILIRRUBINA TOTAL		A	1.2	mg/dL	0.2 - 1.0\nBILIRRUBINA DIRECTA		A	0.5	mg/dL	0.0 - 0.2\nBILIRRUBINA INDIRECTA		A	0.7	mg/dL	0.2 - 0.8\nLDH DESHIDROGENASA LACTICA\nEstudio		Resultado	Unidades	Valor de Referencia\nLDH DESHIDROGENASA LACTICA		*	142	UI/L	91 - 180\nAMILASA SERICA\nEstudio		Resultado	Unidades	Valor de Referencia\nAMILASA		*	68	U/L	28 - 100\nCOLESTEROL\nEstudio		Resultado	Unidades	Valor de Referencia\nCOLESTEROL		B	142	mg/dL	130 - 200\nTRIGLICERIDOS\nEstudio		Resultado	Unidades	Valor de Referencia\nTRIGLICERIDOS		*	118	mg/dL	35 - 150\nCLORO\nEstudio		Resultado	Unidades	Valor de Referencia\nCLORO		*	102	mmol/L	101.0 - 110.0\nSODIO\nEstudio		Resultado	Unidades	Valor de Referencia\nSODIO		*	138	mmol/L	135.0 - 145.0\nPOTASIO\nEstudio		Resultado	Unidades	Valor de Referencia\nPOTASIO		*	3.9	mmol/L	3.6 - 5.0\nCALCIO\nEstudio		Resultado	Unidades	Valor de Referencia\nCALCIO EN SUERO		*	8.8	mg/dL	8.4 - 10.2\nFOSFORO EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nFOSFORO		*	3.8	mg/dL	2.5 - 4.6\n";
-var OLDER_DEMO_SOME_LAB_REPORT = "Expediente:	0008421-7	Solicitud:	2603050188\nNombre:	DEMO PÉREZ JUAN	Fecha Registro:	Mar 05 2026 7:18AM\nSexo:	MASCULINO	Ubicación:	MEDICINA INTERNA\nEdad:	67	Medico:	SERVICIO DEMO\n\nHEMATOLOGIA\nBIOMETRIA HEMATICA COMPLETA\nEstudio		Resultado	Unidades	Valor de Referencia\nRBC		4.55	M/uL	4.04 - 6.13\nHGB		*	10.20	g/dL	12.20 - 18.10\nHCT		*	35.8	%	37.7 - 53.7\nMCV		*	81	fL	80 - 97\nWBC		*	5.40	K/uL	4.00 - 11.00\nPLT		*	198	K/uL	142.00 - 424.00\n\nQUIMICA CLINICA\nGLUCOSA EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nGLUCOSA EN SANGRE		*	108	mg/dL	60 - 100\nNITROGENO DE LA UREA EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nNITROGENO DE LA UREA EN SANGRE		A	28	mg/dL	7 - 20\nCREATININA EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nCREATININA EN SANGRE		A	1.55	mg/dL	0.6 - 1.4\nCOLESTEROL\nEstudio		Resultado	Unidades	Valor de Referencia\nCOLESTEROL		B	155	mg/dL	130 - 200\nTRIGLICERIDOS\nEstudio		Resultado	Unidades	Valor de Referencia\nTRIGLICERIDOS		*	132	mg/dL	35 - 150\nSODIO\nEstudio		Resultado	Unidades	Valor de Referencia\nSODIO		B	134	mmol/L	135.0 - 145.0\nPOTASIO\nEstudio		Resultado	Unidades	Valor de Referencia\nPOTASIO		*	3.5	mmol/L	3.6 - 5.0\n";
-var DEMO_GARCIA_LAB_REPORT = "Expediente:	0007755-3	Solicitud:	2605110312\nNombre:	DEMO GARCÍA ANA	Fecha Registro:	Apr 11 2026 11:05AM\nSexo:	FEMENINO	Ubicación:	MEDICINA INTERNA\nEdad:	54	Medico:	SERVICIO DEMO\n\nHEMATOLOGIA\nBIOMETRIA HEMATICA COMPLETA\nEstudio		Resultado	Unidades	Valor de Referencia\nHGB		*	10.40	g/dL	12.20 - 18.10\nHCT		*	33.1	%	37.7 - 53.7\nWBC		*	8.20	K/uL	4.00 - 11.00\nPLT		*	210	K/uL	142.00 - 424.00\nQUIMICA SANGUINEA\nGLUCOSA\nEstudio		Resultado	Unidades	Valor de Referencia\nGLUCOSA		*	142	mg/dL	70 - 110\nCREATININA EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nCREATININA EN SANGRE		A	0.92	mg/dL	0.6 - 1.4\n";
+var DEMO_SOME_LAB_REPORT = "Expediente:	0008421-7	Solicitud:	2605110244\nNombre:	DEMO P\xC9REZ JUAN	Fecha Registro:	Apr 11 2026 9:42AM\nSexo:	MASCULINO	Ubicaci\xF3n:	MEDICINA INTERNA\nEdad:	67	Medico:	SERVICIO DEMO\n\nHEMATOLOGIA\nBIOMETRIA HEMATICA COMPLETA\nEstudio		Resultado	Unidades	Valor de Referencia\nRBC		4.71	M/uL	4.04 - 6.13\nHGB		*	11.85	g/dL	12.20 - 18.10\nHCT		*	38.4	%	37.7 - 53.7\nMCV		*	82	fL	80 - 97\nMCH		B	26.1	pg	27.0 - 31.2\nMCHC		*	32.0	g/dL	29.9 - 34.2\nRDW		*	13.2	%	11.6 - 14.8\nWBC		*	6.12	K/uL	4.00 - 11.00\nNEU		*	3.88	K/uL	2.00 - 6.90\nNEU%		*	63.4	%	37.0 - 80.0\nLYM		*	1.05	K/uL	0.60 - 3.40\nLYM%		*	17.2	%	10.0 - 50.0\nMONO		*	0.71	K/uL	0.000 - 0.900\nMONO%		*	11.6	%	0.00 - 12.00\nEOS		*	0.11	K/uL	0.000 - 0.700\nEOS%		*	1.8	%	0.00 - 7.00\nBASO		*	0.12	K/uL	0.000 - 0.200\nBASO%		*	2.0	%	0.00 - 2.50\nPLT		*	248	K/uL	142.00 - 424.00\nMPV		B	7.2	fL	7.4 - 10.4\n\nQUIMICA CLINICA\nCOMENTARIO DE MUESTRA\nEstudio		Resultado	Unidades	Valor de Referencia\nCOMENTARIO DE LA MUESTRA		*	\nGLUCOSA EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nGLUCOSA EN SANGRE		*	94	mg/dL	60 - 100\nNITROGENO DE LA UREA EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nNITROGENO DE LA UREA EN SANGRE		A	22	mg/dL	7 - 20\nCREATININA EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nCREATININA EN SANGRE		A	1.35	mg/dL	0.6 - 1.4\nACIDO URICO EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nACIDO URICO EN SANGRE		A	7.4	mg/dL	4.8 - 8.7\nPROTEINAS TOTALES\nEstudio		Resultado	Unidades	Valor de Referencia\nPROTEINAS TOTALES		A	7.6	g/dL	6.1 - 7.9\nALBUMINA\nEstudio		Resultado	Unidades	Valor de Referencia\nALBUMINA		*	4.1	g/dL	3.2 - 5.5\nGLOBULINA SERICA\nEstudio		Resultado	Unidades	Valor de Referencia\nGLOBULINA SERICA		*	3.5	g/dL	\nRELACION A/G\nEstudio		Resultado	Unidades	Valor de Referencia\nRELACION A/G		*	1.17	\nAST(ASPARTATO AMINOTRANSFERASA)\nEstudio		Resultado	Unidades	Valor de Referencia\nAST(ASPARTATO AMINOTRANSFERASA)		*	19	UI/L	10 - 42\nALT ALANIN AMINO TRANSFERASA\nEstudio		Resultado	Unidades	Valor de Referencia\nALT ALANIN AMINO TRANSFERASA		*	14	UI/L	10 - 42\nALP FOSFATASA ALCALINA\nEstudio		Resultado	Unidades	Valor de Referencia\nALP FOSFATASA ALCALINA		A	118	UI/L	38 - 126\nBILIRRUBINA\nEstudio		Resultado	Unidades	Valor de Referencia\nBILIRRUBINA TOTAL		A	1.2	mg/dL	0.2 - 1.0\nBILIRRUBINA DIRECTA		A	0.5	mg/dL	0.0 - 0.2\nBILIRRUBINA INDIRECTA		A	0.7	mg/dL	0.2 - 0.8\nLDH DESHIDROGENASA LACTICA\nEstudio		Resultado	Unidades	Valor de Referencia\nLDH DESHIDROGENASA LACTICA		*	142	UI/L	91 - 180\nAMILASA SERICA\nEstudio		Resultado	Unidades	Valor de Referencia\nAMILASA		*	68	U/L	28 - 100\nCOLESTEROL\nEstudio		Resultado	Unidades	Valor de Referencia\nCOLESTEROL		B	142	mg/dL	130 - 200\nTRIGLICERIDOS\nEstudio		Resultado	Unidades	Valor de Referencia\nTRIGLICERIDOS		*	118	mg/dL	35 - 150\nCLORO\nEstudio		Resultado	Unidades	Valor de Referencia\nCLORO		*	102	mmol/L	101.0 - 110.0\nSODIO\nEstudio		Resultado	Unidades	Valor de Referencia\nSODIO		*	138	mmol/L	135.0 - 145.0\nPOTASIO\nEstudio		Resultado	Unidades	Valor de Referencia\nPOTASIO		*	3.9	mmol/L	3.6 - 5.0\nCALCIO\nEstudio		Resultado	Unidades	Valor de Referencia\nCALCIO EN SUERO		*	8.8	mg/dL	8.4 - 10.2\nFOSFORO EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nFOSFORO		*	3.8	mg/dL	2.5 - 4.6\n";
+var OLDER_DEMO_SOME_LAB_REPORT = "Expediente:	0008421-7	Solicitud:	2603050188\nNombre:	DEMO P\xC9REZ JUAN	Fecha Registro:	Mar 05 2026 7:18AM\nSexo:	MASCULINO	Ubicaci\xF3n:	MEDICINA INTERNA\nEdad:	67	Medico:	SERVICIO DEMO\n\nHEMATOLOGIA\nBIOMETRIA HEMATICA COMPLETA\nEstudio		Resultado	Unidades	Valor de Referencia\nRBC		4.55	M/uL	4.04 - 6.13\nHGB		*	10.20	g/dL	12.20 - 18.10\nHCT		*	35.8	%	37.7 - 53.7\nMCV		*	81	fL	80 - 97\nWBC		*	5.40	K/uL	4.00 - 11.00\nPLT		*	198	K/uL	142.00 - 424.00\n\nQUIMICA CLINICA\nGLUCOSA EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nGLUCOSA EN SANGRE		*	108	mg/dL	60 - 100\nNITROGENO DE LA UREA EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nNITROGENO DE LA UREA EN SANGRE		A	28	mg/dL	7 - 20\nCREATININA EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nCREATININA EN SANGRE		A	1.55	mg/dL	0.6 - 1.4\nCOLESTEROL\nEstudio		Resultado	Unidades	Valor de Referencia\nCOLESTEROL		B	155	mg/dL	130 - 200\nTRIGLICERIDOS\nEstudio		Resultado	Unidades	Valor de Referencia\nTRIGLICERIDOS		*	132	mg/dL	35 - 150\nSODIO\nEstudio		Resultado	Unidades	Valor de Referencia\nSODIO		B	134	mmol/L	135.0 - 145.0\nPOTASIO\nEstudio		Resultado	Unidades	Valor de Referencia\nPOTASIO		*	3.5	mmol/L	3.6 - 5.0\n";
+var DEMO_GARCIA_LAB_REPORT = "Expediente:	0007755-3	Solicitud:	2605110312\nNombre:	DEMO GARC\xCDA ANA	Fecha Registro:	Apr 11 2026 11:05AM\nSexo:	FEMENINO	Ubicaci\xF3n:	MEDICINA INTERNA\nEdad:	54	Medico:	SERVICIO DEMO\n\nHEMATOLOGIA\nBIOMETRIA HEMATICA COMPLETA\nEstudio		Resultado	Unidades	Valor de Referencia\nHGB		*	10.40	g/dL	12.20 - 18.10\nHCT		*	33.1	%	37.7 - 53.7\nWBC		*	8.20	K/uL	4.00 - 11.00\nPLT		*	210	K/uL	142.00 - 424.00\nQUIMICA SANGUINEA\nGLUCOSA\nEstudio		Resultado	Unidades	Valor de Referencia\nGLUCOSA		*	142	mg/dL	70 - 110\nCREATININA EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nCREATININA EN SANGRE		A	0.92	mg/dL	0.6 - 1.4\n";
 var DEMO_TOUR_LAB_PASTE = DEMO_SOME_LAB_REPORT + "\n\n" + OLDER_DEMO_SOME_LAB_REPORT;
 
 // public/js/listado-problemas-core.mjs
@@ -11876,7 +11892,7 @@ function emptyListado(fecha, hora) {
 }
 function ensureSeccion(seccion) {
   if (!SECCIONES.includes(seccion)) {
-    throw new Error("sección inválida: " + seccion);
+    throw new Error("secci\xF3n inv\xE1lida: " + seccion);
   }
 }
 function addProblema(listado, seccion, datos) {
@@ -11899,7 +11915,7 @@ function removeProblema(listado, seccion, id) {
 }
 
 // public/js/tour-demo-listado-problemas.mjs
-var TOUR_DEMO_PERITONITIS_BLOCK = "PERITONITIS ASOCIADA A DIÁLISIS PERITONEAL\nA) CLÍNICA: SOMNOLENCIA EXCESIVA DESDE 04/05/2026, NÁUSEA DESDE 06/05/2026, VÓMITO (1 EPISODIO 06/05/2026), DOLOR ABDOMINAL LEVE 5/10 DESDE 06/05/2026, LÍQUIDO DE DIÁLISIS TURBIO CON FIBRINA DESDE 05/05/2026\nB) EXPLORACIÓN FÍSICA: ABDOMEN DISTENDIDO, DOLOR A LA PALPACIÓN SUPERFICIAL Y PROFUNDA DIFUSO CON PREDOMINIO EN HIPOGASTRIO Y FOSA ILÍACA DERECHA, SIGNO DE BLUMBERG POSITIVO, SITIO DE INSERCIÓN DE CATÉTER SIN DATOS DE INFECCIÓN LOCAL\nC) PARACLÍNICA: LÍQUIDO PERITONEAL CON 4650 CÉLULAS, 94% POLIMORFONUCLEARES, GLUCOSA 300 MG/DL, LEUCOCITOSIS 18,000/UL, PCR 21 MG/L ELEVADA, CULTIVO PENDIENTE";
+var TOUR_DEMO_PERITONITIS_BLOCK = "PERITONITIS ASOCIADA A DI\xC1LISIS PERITONEAL\nA) CL\xCDNICA: SOMNOLENCIA EXCESIVA DESDE 04/05/2026, N\xC1USEA DESDE 06/05/2026, V\xD3MITO (1 EPISODIO 06/05/2026), DOLOR ABDOMINAL LEVE 5/10 DESDE 06/05/2026, L\xCDQUIDO DE DI\xC1LISIS TURBIO CON FIBRINA DESDE 05/05/2026\nB) EXPLORACI\xD3N F\xCDSICA: ABDOMEN DISTENDIDO, DOLOR A LA PALPACI\xD3N SUPERFICIAL Y PROFUNDA DIFUSO CON PREDOMINIO EN HIPOGASTRIO Y FOSA IL\xCDACA DERECHA, SIGNO DE BLUMBERG POSITIVO, SITIO DE INSERCI\xD3N DE CAT\xC9TER SIN DATOS DE INFECCI\xD3N LOCAL\nC) PARACL\xCDNICA: L\xCDQUIDO PERITONEAL CON 4650 C\xC9LULAS, 94% POLIMORFONUCLEARES, GLUCOSA 300 MG/DL, LEUCOCITOSIS 18,000/UL, PCR 21 MG/L ELEVADA, CULTIVO PENDIENTE";
 function buildTourDemoListadoProblemas(fecha, hora) {
   var l = emptyListado(fecha, hora);
   l = addProblema(l, "activos", {
@@ -11908,11 +11924,11 @@ function buildTourDemoListadoProblemas(fecha, hora) {
   });
   l = addProblema(l, "activos", {
     fecha: "15/01/2024",
-    descripcion: "DIABETES MELLITUS TIPO 2\nA) CLÍNICA: POLIURIA Y POLIDIPSIA DE 2 SEMANAS, GLUCOMETRÍAS CAPILARES 180–220 MG/DL\nB) EXPLORACIÓN FÍSICA: PACIENTE ALERTA, MUCOSAS HÚMEDAS\nC) PARACLÍNICA: HBA1C 8.2%, GLUCOSA EN AYUNO 198 MG/DL"
+    descripcion: "DIABETES MELLITUS TIPO 2\nA) CL\xCDNICA: POLIURIA Y POLIDIPSIA DE 2 SEMANAS, GLUCOMETR\xCDAS CAPILARES 180\u2013220 MG/DL\nB) EXPLORACI\xD3N F\xCDSICA: PACIENTE ALERTA, MUCOSAS H\xDAMEDAS\nC) PARACL\xCDNICA: HBA1C 8.2%, GLUCOSA EN AYUNO 198 MG/DL"
   });
   l = addProblema(l, "inactivos", {
     fecha: "08/02/2026",
-    descripcion: "NEUMONÍA ADQUIRIDA EN LA COMUNIDAD (RESUELTA)\nA) CUADRO FEBRIL Y TOS PRODUCTIVA HOSPITALIZADO EN FEBRERO/2026, ALTA CON MEJORÍA CLÍNICA"
+    descripcion: "NEUMON\xCDA ADQUIRIDA EN LA COMUNIDAD (RESUELTA)\nA) CUADRO FEBRIL Y TOS PRODUCTIVA HOSPITALIZADO EN FEBRERO/2026, ALTA CON MEJOR\xCDA CL\xCDNICA"
   });
   return l;
 }
@@ -11929,7 +11945,7 @@ function blockIfMobileDocExport() {
 function mobileDocExportToast(showToastFn) {
   if (typeof showToastFn === "function") {
     showToastFn(
-      "En R+ Móvil no se generan documentos (.docx). Usa la app de escritorio para Word y salida rápida.",
+      "En R+ M\xF3vil no se generan documentos (.docx). Usa la app de escritorio para Word y salida r\xE1pida.",
       "error"
     );
   }
@@ -13111,7 +13127,7 @@ function migrateLanLastRoomToKnown() {
     last = String(localStorage.getItem("rpc-lan-last-room") || "").trim();
   } catch (_e) {
   }
-  if (last) writeLanKnownRooms([{ id: last, label: "Última sala", joinedAt: Date.now() }]);
+  if (last) writeLanKnownRooms([{ id: last, label: "\xDAltima sala", joinedAt: Date.now() }]);
 }
 function forgetLanRoomSession(roomId) {
   var id = String(roomId || "").trim();
@@ -13297,7 +13313,7 @@ function appendLanKnownSessionsSection(root) {
     empty.style.color = "var(--text-muted)";
     empty.style.margin = "0";
     empty.style.lineHeight = "1.45";
-    empty.textContent = "Aún no hay salas guardadas. Cuando estés conectado por LAN, elige una sala abajo y pulsa «Unirse»; después podrás volver a entrar desde aquí.";
+    empty.textContent = "A\xFAn no hay salas guardadas. Cuando est\xE9s conectado por LAN, elige una sala abajo y pulsa \xABUnirse\xBB; despu\xE9s podr\xE1s volver a entrar desde aqu\xED.";
     sec.appendChild(empty);
     root.appendChild(sec);
     return;
@@ -13364,7 +13380,7 @@ function initLanClientFromStorage() {
   }, 0);
 }
 initLanClientFromStorage();
-var LAN_DISCONNECT_BANNER_MSG = "Sin conexión al host LAN. LiveSync (salas y relay) puede estar limitado hasta reconectar.";
+var LAN_DISCONNECT_BANNER_MSG = "Sin conexi\xF3n al host LAN. LiveSync (salas y relay) puede estar limitado hasta reconectar.";
 var _lanLastConnected = true;
 function readLanHideDisconnectBanner() {
   return typeof storage.getLanHideDisconnectBanner === "function" && storage.getLanHideDisconnectBanner();
@@ -13414,7 +13430,7 @@ function appendLanDisconnectBannerPref(root) {
     setLanHideDisconnectBannerFromUi(cb.checked);
   };
   var span = document.createElement("span");
-  span.textContent = "Ocultar la franja de aviso cuando se pierde la conexión LAN";
+  span.textContent = "Ocultar la franja de aviso cuando se pierde la conexi\xF3n LAN";
   label.appendChild(cb);
   label.appendChild(span);
   wrap.appendChild(label);
@@ -13888,11 +13904,11 @@ function syncLiveSyncStatusChrome() {
   el.style.display = "block";
   var label = activeLiveSyncRoomLabel || activeLiveSyncRoomId;
   if (lanClient.liveConnected) {
-    el.textContent = "Sala: " + label + " · sincronizando pacientes, labs, agenda y pendientes";
+    el.textContent = "Sala: " + label + " \xB7 sincronizando pacientes, labs, agenda y pendientes";
   } else if (getRoomMembership() && getRoomMembership().roomId === activeLiveSyncRoomId) {
-    el.textContent = "Sala: " + label + " · reconectando…";
+    el.textContent = "Sala: " + label + " \xB7 reconectando\u2026";
   } else {
-    el.textContent = "Sala: " + label + " · solo local (sin sync en vivo)";
+    el.textContent = "Sala: " + label + " \xB7 solo local (sin sync en vivo)";
   }
 }
 function emitLiveSyncAgendaUpsert(eventObj) {
@@ -14106,7 +14122,7 @@ function resetLanToLocalHostFromUi() {
   clearRoomMembership();
   void ensureLanElectronHostReady().then(function() {
     renderLanPanel();
-    runtime2.showToast("Esta Mac vuelve a ser el servidor del turno. Crea o únete a una sala.", "success");
+    runtime2.showToast("Esta Mac vuelve a ser el servidor del turno. Crea o \xFAnete a una sala.", "success");
   });
 }
 function appendLanJoinOtherMacSection(root) {
@@ -14118,21 +14134,21 @@ function appendLanJoinOtherMacSection(root) {
   sum.style.cursor = "pointer";
   sum.style.fontSize = "12px";
   sum.style.color = "var(--text-muted)";
-  sum.textContent = "Unirme a la sala de otra computadora (enlace de invitación)";
+  sum.textContent = "Unirme a la sala de otra computadora (enlace de invitaci\xF3n)";
   details.appendChild(sum);
   var inner = document.createElement("div");
   inner.style.marginTop = "8px";
   var hint = document.createElement("p");
   hint.className = "lan-connect-card-hint";
   hint.style.marginTop = "0";
-  hint.innerHTML = "Pega el enlace que te compartieron. Esta R+ dejará de usar el servidor de <strong>esta</strong> Mac y se conectará a la otra.";
+  hint.innerHTML = "Pega el enlace que te compartieron. Esta R+ dejar\xE1 de usar el servidor de <strong>esta</strong> Mac y se conectar\xE1 a la otra.";
   inner.appendChild(hint);
   var inputInvite = document.createElement("textarea");
   inputInvite.className = "profile-input";
   inputInvite.id = "lan-input-invite-link";
   inputInvite.rows = 2;
   inputInvite.autocomplete = "off";
-  inputInvite.placeholder = "http://…/join?code=… o …/mobile/?code=…";
+  inputInvite.placeholder = "http://\u2026/join?code=\u2026 o \u2026/mobile/?code=\u2026";
   inner.appendChild(inputInvite);
   var row = document.createElement("div");
   row.className = "lan-connect-actions-row";
@@ -14202,9 +14218,9 @@ async function renderLanPanelOnce() {
     var hint = document.createElement("p");
     hint.className = "lan-connect-card-hint";
     if (desktopHost) {
-      hint.innerHTML = "Esta Mac comparte el servidor del turno. Las otras R+ deben estar en la <strong>misma Wi‑Fi</strong>. Después crea una sala o únete a una existente; comparte el enlace de invitación con el equipo.";
+      hint.innerHTML = "Esta Mac comparte el servidor del turno. Las otras R+ deben estar en la <strong>misma Wi\u2011Fi</strong>. Despu\xE9s crea una sala o \xFAnete a una existente; comparte el enlace de invitaci\xF3n con el equipo.";
     } else {
-      hint.innerHTML = "Pega el <strong>enlace de invitación</strong> que te compartieron (WhatsApp, correo). También puedes abrirlo en Safari en iPad.";
+      hint.innerHTML = "Pega el <strong>enlace de invitaci\xF3n</strong> que te compartieron (WhatsApp, correo). Tambi\xE9n puedes abrirlo en Safari en iPad.";
     }
     card.appendChild(hint);
     if (desktopHost) {
@@ -14212,7 +14228,7 @@ async function renderLanPanelOnce() {
       fieldHost.className = "lan-connect-field";
       var labelHost = document.createElement("label");
       labelHost.className = "profile-field-label";
-      labelHost.textContent = "Dirección en la red (opcional)";
+      labelHost.textContent = "Direcci\xF3n en la red (opcional)";
       labelHost.setAttribute("for", "lan-input-host-url");
       var inputHost = document.createElement("input");
       inputHost.className = "profile-input";
@@ -14229,14 +14245,14 @@ async function renderLanPanelOnce() {
       fieldInvite.className = "lan-connect-field";
       var labelInvite = document.createElement("label");
       labelInvite.className = "profile-field-label";
-      labelInvite.textContent = "Enlace de invitación";
+      labelInvite.textContent = "Enlace de invitaci\xF3n";
       labelInvite.setAttribute("for", "lan-input-invite-link");
       var inputInvite = document.createElement("textarea");
       inputInvite.className = "profile-input";
       inputInvite.id = "lan-input-invite-link";
       inputInvite.rows = 3;
       inputInvite.autocomplete = "off";
-      inputInvite.placeholder = "Pega aquí el enlace (http://…/join?… o …/mobile/?…)";
+      inputInvite.placeholder = "Pega aqu\xED el enlace (http://\u2026/join?\u2026 o \u2026/mobile/?\u2026)";
       fieldInvite.appendChild(labelInvite);
       fieldInvite.appendChild(inputInvite);
       card.appendChild(fieldInvite);
@@ -14250,7 +14266,7 @@ async function renderLanPanelOnce() {
       btnHostStart.type = "button";
       btnHostStart.className = "btn-lan-primary";
       btnHostStart.style.flex = "1";
-      btnHostStart.textContent = "Activar y copiar invitación";
+      btnHostStart.textContent = "Activar y copiar invitaci\xF3n";
       btnHostStart.onclick = function() {
         saveLanSettingsFromUi({ copyInviteAfter: true });
       };
@@ -14275,7 +14291,7 @@ async function renderLanPanelOnce() {
       var postHint = document.createElement("p");
       postHint.className = "lan-connect-card-hint";
       postHint.style.marginTop = "2px";
-      postHint.textContent = "Si el campo de dirección está vacío, usamos la IP que detectamos en esta Mac.";
+      postHint.textContent = "Si el campo de direcci\xF3n est\xE1 vac\xEDo, usamos la IP que detectamos en esta Mac.";
       card.appendChild(postHint);
     }
     root.appendChild(card);
@@ -14328,7 +14344,7 @@ async function renderLanPanelOnce() {
   var topRow = document.createElement("p");
   topRow.className = "lan-connect-card-hint";
   topRow.style.marginBottom = "10px";
-  topRow.innerHTML = "<strong>Dirección:</strong> " + esc3(lanClient.baseUrl());
+  topRow.innerHTML = "<strong>Direcci\xF3n:</strong> " + esc3(lanClient.baseUrl());
   statusCard.appendChild(topRow);
   var liveStatus = document.createElement("p");
   liveStatus.id = "lan-livesync-status";
@@ -14357,7 +14373,7 @@ async function renderLanPanelOnce() {
   btnCopyStored.type = "button";
   btnCopyStored.className = "btn-lan-secondary";
   btnCopyStored.style.flex = "1";
-  btnCopyStored.textContent = "Copiar invitación para enviar";
+  btnCopyStored.textContent = "Copiar invitaci\xF3n para enviar";
   btnCopyStored.onclick = function() {
     copyLanInviteLinkFromUi();
   };
@@ -14365,8 +14381,8 @@ async function renderLanPanelOnce() {
   btnCopyMobile.type = "button";
   btnCopyMobile.className = "btn-lan-secondary";
   btnCopyMobile.style.flex = "1";
-  btnCopyMobile.textContent = "Copiar enlace móvil";
-  btnCopyMobile.title = "Solo URL para iPad o teléfono (Safari, misma Wi‑Fi)";
+  btnCopyMobile.textContent = "Copiar enlace m\xF3vil";
+  btnCopyMobile.title = "Solo URL para iPad o tel\xE9fono (Safari, misma Wi\u2011Fi)";
   btnCopyMobile.onclick = function() {
     copyMobileLanLinkFromUi();
   };
@@ -14382,7 +14398,7 @@ async function renderLanPanelOnce() {
   roomsCard.appendChild(roomsTitle);
   var roomsHint = document.createElement("p");
   roomsHint.className = "lan-connect-card-hint";
-  roomsHint.textContent = "Cada sala es un canal para que varias R+ compartan señal en tiempo real. Si no ves salas, pide a un compañero que cree una o créala tú.";
+  roomsHint.textContent = "Cada sala es un canal para que varias R+ compartan se\xF1al en tiempo real. Si no ves salas, pide a un compa\xF1ero que cree una o cr\xE9ala t\xFA.";
   roomsCard.appendChild(roomsHint);
   var createRow = document.createElement("div");
   createRow.style.display = "flex";
@@ -14410,14 +14426,14 @@ async function renderLanPanelOnce() {
     runtime2.showToast("No se pudo consultar salas LAN", "error");
     var errNet = document.createElement("p");
     errNet.className = "lan-connect-card-hint";
-    errNet.textContent = "No se pudo consultar la lista de salas. Revisa el Wi‑Fi o la dirección del servidor.";
+    errNet.textContent = "No se pudo consultar la lista de salas. Revisa el Wi\u2011Fi o la direcci\xF3n del servidor.";
     roomsCard.appendChild(errNet);
   } else if (!roomsFetch.ok) {
     runtime2.showToast("Error al cargar salas LAN", "error");
     var errHttp = document.createElement("p");
     errHttp.className = "lan-connect-card-hint";
     if (roomsFetch.httpStatus === 401) {
-      errHttp.innerHTML = "El <strong>código del equipo</strong> que guardaste en esta R+ no coincide con el que usa el proceso servidor (archivo <code>lan-team-code.txt</code>, variable <code>R_PLUS_LAN_TEAM_CODE</code> o el valor por defecto <code>" + esc3(DEFAULT_LAN_TEAM_CODE) + "</code>). Deben ser <strong>exactamente el mismo texto</strong> en ambos sitios. Tras cambiar el archivo, reinicia R+.";
+      errHttp.innerHTML = "El <strong>c\xF3digo del equipo</strong> que guardaste en esta R+ no coincide con el que usa el proceso servidor (archivo <code>lan-team-code.txt</code>, variable <code>R_PLUS_LAN_TEAM_CODE</code> o el valor por defecto <code>" + esc3(DEFAULT_LAN_TEAM_CODE) + "</code>). Deben ser <strong>exactamente el mismo texto</strong> en ambos sitios. Tras cambiar el archivo, reinicia R+.";
     } else {
       var rawBody = String(roomsFetch.errorDetail || "");
       var detail = "";
@@ -14427,14 +14443,14 @@ async function renderLanPanelOnce() {
       } catch (_e3) {
         if (rawBody) detail = rawBody.replace(/\s+/g, " ").trim().slice(0, 200);
       }
-      var hint500 = detail && /team code mismatch|host file/i.test(detail) ? " El archivo <code>lan-squad-host-state.json</code> se creó con <strong>otro</strong> código: o vuelves al código anterior, o (solo si puedes perder salas/pacientes LAN de prueba en ese archivo) cierra R+, borra ese JSON en datos de la app y vuelve a abrir para regenerarlo con el código actual." : "";
-      errHttp.innerHTML = "<strong>HTTP " + esc3(String(roomsFetch.httpStatus)) + "</strong>" + (detail ? ": " + esc3(detail) : ".") + (hint500 ? hint500 : " Comprueba la URL del anfitrión y que R+ siga abierto en esa máquina.");
+      var hint500 = detail && /team code mismatch|host file/i.test(detail) ? " El archivo <code>lan-squad-host-state.json</code> se cre\xF3 con <strong>otro</strong> c\xF3digo: o vuelves al c\xF3digo anterior, o (solo si puedes perder salas/pacientes LAN de prueba en ese archivo) cierra R+, borra ese JSON en datos de la app y vuelve a abrir para regenerarlo con el c\xF3digo actual." : "";
+      errHttp.innerHTML = "<strong>HTTP " + esc3(String(roomsFetch.httpStatus)) + "</strong>" + (detail ? ": " + esc3(detail) : ".") + (hint500 ? hint500 : " Comprueba la URL del anfitri\xF3n y que R+ siga abierto en esa m\xE1quina.");
     }
     roomsCard.appendChild(errHttp);
   } else if (!roomsFetch.rooms.length) {
     var empty = document.createElement("p");
     empty.className = "lan-connect-card-hint";
-    empty.textContent = "Todavía no hay salas. Crea una arriba o espera a que alguien del equipo la cree.";
+    empty.textContent = "Todav\xEDa no hay salas. Crea una arriba o espera a que alguien del equipo la cree.";
     roomsCard.appendChild(empty);
   } else {
     var list = document.createElement("ul");
@@ -14527,7 +14543,7 @@ async function resetLanSquadHostStateFromUi() {
     return;
   }
   if (!confirm(
-    "Se borrará el archivo lan-squad-host-state.json en esta computadora (salas y datos de pacientes del host LAN guardados ahí). ¿Seguir?"
+    "Se borrar\xE1 el archivo lan-squad-host-state.json en esta computadora (salas y datos de pacientes del host LAN guardados ah\xED). \xBFSeguir?"
   )) {
     return;
   }
@@ -14541,7 +14557,7 @@ async function resetLanSquadHostStateFromUi() {
   if (res && res.ok) {
     var synced = await syncLanSavedTeamCodeWithEffectiveHostCode();
     runtime2.showToast(
-      synced ? "Estado LAN del host borrado. El «Código del equipo» guardado en esta R+ quedó alineado con archivo / variable de entorno / valor por defecto del servidor." : "Estado LAN del host borrado. Si sigues con error 401, escribe en «Código del equipo» el mismo texto que el servidor (o reinicia R+ tras cambiar el archivo).",
+      synced ? "Estado LAN del host borrado. El \xABC\xF3digo del equipo\xBB guardado en esta R+ qued\xF3 alineado con archivo / variable de entorno / valor por defecto del servidor." : "Estado LAN del host borrado. Si sigues con error 401, escribe en \xABC\xF3digo del equipo\xBB el mismo texto que el servidor (o reinicia R+ tras cambiar el archivo).",
       "success"
     );
     if (typeof renderLanPanel === "function") renderLanPanel();
@@ -14557,7 +14573,7 @@ async function copyMobileLanLinkFromUi(opts) {
   if (!hostUrl || !teamCode) {
     if (!silent) {
       runtime2.showToast(
-        !hostUrl ? "Falta la dirección del servidor (o no pudimos detectar la IP en esta computadora)." : "Falta el código del equipo.",
+        !hostUrl ? "Falta la direcci\xF3n del servidor (o no pudimos detectar la IP en esta computadora)." : "Falta el c\xF3digo del equipo.",
         "error"
       );
     }
@@ -14570,13 +14586,13 @@ async function copyMobileLanLinkFromUi(opts) {
       await navigator.clipboard.writeText(urls.mobileUrl);
       if (!silent) {
         runtime2.showToast(
-          roomId ? "Enlace móvil copiado (incluye sala). Ábrelo en Safari en la misma Wi‑Fi." : "Enlace móvil copiado. En el iPad elige la misma sala LiveSync que el equipo.",
+          roomId ? "Enlace m\xF3vil copiado (incluye sala). \xC1brelo en Safari en la misma Wi\u2011Fi." : "Enlace m\xF3vil copiado. En el iPad elige la misma sala LiveSync que el equipo.",
           "success"
         );
       }
       return true;
     }
-    if (!silent) runtime2.showToast("Tu navegador no permite copiar automáticamente.", "error");
+    if (!silent) runtime2.showToast("Tu navegador no permite copiar autom\xE1ticamente.", "error");
     return false;
   } catch (_e) {
     if (!silent) runtime2.showToast("No se pudo copiar al portapapeles.", "error");
@@ -14591,7 +14607,7 @@ async function copyLanInviteLinkFromUi(opts) {
   if (!hostUrl || !teamCode) {
     if (!silent) {
       runtime2.showToast(
-        !hostUrl ? "Falta la dirección del servidor (o no pudimos detectar la IP en esta computadora)." : "Falta el código del equipo.",
+        !hostUrl ? "Falta la direcci\xF3n del servidor (o no pudimos detectar la IP en esta computadora)." : "Falta el c\xF3digo del equipo.",
         "error"
       );
     }
@@ -14604,13 +14620,13 @@ async function copyLanInviteLinkFromUi(opts) {
       await navigator.clipboard.writeText(urls.joinUrl);
       if (!silent) {
         runtime2.showToast(
-          roomId ? "Enlace de invitación copiado (incluye sala). Compártelo por WhatsApp, correo o una nota." : "Enlace de invitación copiado. Compártelo por WhatsApp, correo o una nota.",
+          roomId ? "Enlace de invitaci\xF3n copiado (incluye sala). Comp\xE1rtelo por WhatsApp, correo o una nota." : "Enlace de invitaci\xF3n copiado. Comp\xE1rtelo por WhatsApp, correo o una nota.",
           "success"
         );
       }
       return true;
     }
-    if (!silent) runtime2.showToast("Tu navegador no permite copiar automáticamente.", "error");
+    if (!silent) runtime2.showToast("Tu navegador no permite copiar autom\xE1ticamente.", "error");
     return false;
   } catch (_e) {
     if (!silent) runtime2.showToast("No se pudo copiar al portapapeles.", "error");
@@ -14621,7 +14637,7 @@ function joinLanFromInviteUi() {
   var input = document.getElementById("lan-input-invite-link");
   var raw = String(input && input.value ? input.value : "").trim();
   if (!raw) {
-    runtime2.showToast("Pega el enlace de invitación que te envió el anfitrión.", "error");
+    runtime2.showToast("Pega el enlace de invitaci\xF3n que te envi\xF3 el anfitri\xF3n.", "error");
     return;
   }
   var parsed = parseLanInviteInput(raw);
@@ -14630,7 +14646,7 @@ function joinLanFromInviteUi() {
   var roomId = String(parsed.roomId || "").trim();
   if (!hostUrl || !teamCode) {
     runtime2.showToast(
-      "No reconocimos un enlace válido. Pide al anfitrión que te reenvíe el enlace (…/join?code=… o …/mobile/?code=…).",
+      "No reconocimos un enlace v\xE1lido. Pide al anfitri\xF3n que te reenv\xEDe el enlace (\u2026/join?code=\u2026 o \u2026/mobile/?code=\u2026).",
       "error"
     );
     return;
@@ -14650,7 +14666,7 @@ async function saveLanSettingsFromUi(opts) {
   var teamCode = String(await resolveLanTeamCodeForShare()).trim();
   if (!hostUrl || !teamCode) {
     runtime2.showToast(
-      !hostUrl ? uiRole === "host" ? "No pudimos detectar la IP. Escribe la dirección http://… que verán las otras R+." : "Escribe la dirección del servidor que te dio el anfitrión." : uiRole === "host" ? "Escribe el código del equipo (por defecto " + DEFAULT_LAN_TEAM_CODE + ")." : "Escribe el código que te dio quien abrió la sala.",
+      !hostUrl ? uiRole === "host" ? "No pudimos detectar la IP. Escribe la direcci\xF3n http://\u2026 que ver\xE1n las otras R+." : "Escribe la direcci\xF3n del servidor que te dio el anfitri\xF3n." : uiRole === "host" ? "Escribe el c\xF3digo del equipo (por defecto " + DEFAULT_LAN_TEAM_CODE + ")." : "Escribe el c\xF3digo que te dio quien abri\xF3 la sala.",
       "error"
     );
     return;
@@ -14678,23 +14694,23 @@ async function saveLanSettingsFromUi(opts) {
   if (pingOk) {
     if (copyInviteAfter) {
       runtime2.showToast(
-        copiedOk ? "Anfitrión listo. La invitación ya está en el portapapeles; compártela por WhatsApp o correo." : "Anfitrión listo, pero no se pudo copiar solo. Pulsa «Copiar invitación otra vez».",
+        copiedOk ? "Anfitri\xF3n listo. La invitaci\xF3n ya est\xE1 en el portapapeles; comp\xE1rtela por WhatsApp o correo." : "Anfitri\xF3n listo, pero no se pudo copiar solo. Pulsa \xABCopiar invitaci\xF3n otra vez\xBB.",
         copiedOk ? "success" : "error"
       );
     } else {
-      runtime2.showToast("Listo: ya iniciaste sesión en la sala del equipo.", "success");
+      runtime2.showToast("Listo: ya iniciaste sesi\xF3n en la sala del equipo.", "success");
     }
   } else if (pingStatus === 401) {
-    runtime2.showToast("El código no coincide con el del servidor. Pide el código correcto a quien tiene la computadora anfitriona.", "error");
+    runtime2.showToast("El c\xF3digo no coincide con el del servidor. Pide el c\xF3digo correcto a quien tiene la computadora anfitriona.", "error");
   } else {
     if (copyInviteAfter && copiedOk) {
       runtime2.showToast(
-        "Invitación copiada al portapapeles. Aun así no hubo respuesta del servidor: revisa el Wi‑Fi o que R+ siga abierto en el anfitrión.",
+        "Invitaci\xF3n copiada al portapapeles. Aun as\xED no hubo respuesta del servidor: revisa el Wi\u2011Fi o que R+ siga abierto en el anfitri\xF3n.",
         "error"
       );
     } else {
       runtime2.showToast(
-        "Guardamos los datos, pero no hubo respuesta del servidor. Revisa la dirección y que ambas computadoras estén en el mismo Wi‑Fi.",
+        "Guardamos los datos, pero no hubo respuesta del servidor. Revisa la direcci\xF3n y que ambas computadoras est\xE9n en el mismo Wi\u2011Fi.",
         "error"
       );
     }
@@ -14739,7 +14755,7 @@ function joinLanRoom(roomId, displayName) {
 }
 async function createLanRoomFromUi() {
   if (!isLanSessionConfiguredForRest()) {
-    runtime2.showToast("Falta la dirección LAN. Configura la conexión en ⇄ y vuelve a intentar.", "error");
+    runtime2.showToast("Falta la direcci\xF3n LAN. Configura la conexi\xF3n en \u21C4 y vuelve a intentar.", "error");
     return;
   }
   await ensureLanClientTeamCodeAligned();
@@ -14763,7 +14779,7 @@ async function createLanRoomFromUi() {
   if (!resp.ok) {
     if (resp.status === 401) {
       runtime2.showToast(
-        "El código del equipo no coincide con el servidor. Igualálo al conectar y en lan-team-code.txt; reinicia R+ en el anfitrión si cambiaste el archivo.",
+        "El c\xF3digo del equipo no coincide con el servidor. Igual\xE1lo al conectar y en lan-team-code.txt; reinicia R+ en el anfitri\xF3n si cambiaste el archivo.",
         "error"
       );
     } else {
@@ -14777,7 +14793,7 @@ async function createLanRoomFromUi() {
 }
 async function deleteLanRoom(roomId) {
   if (!isLanSessionConfiguredForRest()) {
-    runtime2.showToast("Falta configuración LAN para eliminar salas.", "error");
+    runtime2.showToast("Falta configuraci\xF3n LAN para eliminar salas.", "error");
     return;
   }
   await ensureLanClientTeamCodeAligned();
@@ -14795,7 +14811,7 @@ async function deleteLanRoom(roomId) {
   }
   if (!resp.ok) {
     if (resp.status === 401) {
-      runtime2.showToast("El código del equipo no coincide con el servidor; no se pudo eliminar la sala.", "error");
+      runtime2.showToast("El c\xF3digo del equipo no coincide con el servidor; no se pudo eliminar la sala.", "error");
     } else {
       runtime2.showToast("No se pudo eliminar la sala", "error");
     }
@@ -14894,7 +14910,7 @@ function configureLanFromMobileJoin(hostUrl, teamCode, roomId) {
   lanClient.fetch("/api/lan/v1/ping").then(function(r) {
     if (!r || !r.ok) {
       runtime2.showToast(
-        "No se pudo conectar al servidor. Revisa Wi‑Fi y que R+ esté abierto en el anfitrión.",
+        "No se pudo conectar al servidor. Revisa Wi\u2011Fi y que R+ est\xE9 abierto en el anfitri\xF3n.",
         "error"
       );
       renderLanPanel();
@@ -14909,13 +14925,13 @@ function configureLanFromMobileJoin(hostUrl, teamCode, roomId) {
       runtime2.showToast("Sincronizando con la sala LiveSync del equipo", "success");
       return;
     }
-    runtime2.showToast("Conectado al servidor. Elige la misma sala LiveSync en ⇄", "success");
+    runtime2.showToast("Conectado al servidor. Elige la misma sala LiveSync en \u21C4", "success");
     renderLanPanel();
     setTimeout(function() {
       if (typeof openConnectionDropdown === "function") openConnectionDropdown();
     }, 500);
   }).catch(function() {
-    runtime2.showToast("Error de red al conectar con el anfitrión", "error");
+    runtime2.showToast("Error de red al conectar con el anfitri\xF3n", "error");
     renderLanPanel();
   });
 }
@@ -15011,7 +15027,7 @@ function openSOAPModal() {
     var backdrop = document.createElement("div");
     backdrop.className = "lab-conflict-backdrop";
     backdrop.id = "soap-confirm-backdrop";
-    backdrop.innerHTML = `<div class="lab-conflict-modal"><h3>¿Reemplazar evolución?</h3><p>La evolución ya tiene contenido. ¿Reemplazarlo con la plantilla?</p><div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;"><button onclick="document.getElementById('soap-confirm-backdrop').remove()" style="background:#F3F4F6;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Cancelar</button><button onclick="document.getElementById('soap-confirm-backdrop').remove();document.getElementById('soap-modal-backdrop').classList.add('open')" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Reemplazar</button></div></div>`;
+    backdrop.innerHTML = `<div class="lab-conflict-modal"><h3>\xBFReemplazar evoluci\xF3n?</h3><p>La evoluci\xF3n ya tiene contenido. \xBFReemplazarlo con la plantilla?</p><div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;"><button onclick="document.getElementById('soap-confirm-backdrop').remove()" style="background:#F3F4F6;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Cancelar</button><button onclick="document.getElementById('soap-confirm-backdrop').remove();document.getElementById('soap-modal-backdrop').classList.add('open')" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Reemplazar</button></div></div>`;
     document.body.appendChild(backdrop);
   } else {
     document.getElementById("soap-modal-backdrop").classList.add("open");
@@ -15051,7 +15067,7 @@ function closeSOAPModal() {
   if (sel) sel.selectedIndex = 0;
   document.body.removeAttribute("data-estado-actual-mode");
   var title = document.getElementById("soap-modal-title-text");
-  if (title) title.textContent = "Plantilla de Evolución";
+  if (title) title.textContent = "Plantilla de Evoluci\xF3n";
 }
 function openEstadoActualModal() {
   var activeId2 = rt5.getActiveId();
@@ -15089,7 +15105,7 @@ async function estadoActualOnlyCopy() {
   }
   var text = estadoActualTextForCopy();
   var ok = await copyToClipboardSafe(text);
-  rt5.showToast(ok ? "Estado Actual copiado al portapapeles ✓" : "No se pudo copiar", ok ? "success" : "error");
+  rt5.showToast(ok ? "Estado Actual copiado al portapapeles \u2713" : "No se pudo copiar", ok ? "success" : "error");
   closeSOAPModal();
 }
 async function estadoActualSaveAndCopy() {
@@ -15118,7 +15134,7 @@ async function estadoActualSaveAndCopy() {
   renderEstadoActualBar();
   var ok = await copyToClipboardSafe(text);
   rt5.showToast(
-    ok ? "Estado Actual guardado y copiado ✓" : "Guardado, pero no se pudo copiar",
+    ok ? "Estado Actual guardado y copiado \u2713" : "Guardado, pero no se pudo copiar",
     ok ? "success" : "error"
   );
   closeSOAPModal();
@@ -15149,9 +15165,9 @@ function renderEstadoActualBar() {
   if (tg && tg.savedAt) {
     var d = new Date(tg.savedAt);
     if (!isNaN(d.getTime())) {
-      var label = String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0") + "/" + d.getFullYear() + " · " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+      var label = String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0") + "/" + d.getFullYear() + " \xB7 " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
       meta.textContent = "Guardado " + label;
-      btn.title = "Abrir Estado Actual · " + meta.textContent;
+      btn.title = "Abrir Estado Actual \xB7 " + meta.textContent;
       btn.removeAttribute("aria-label");
       btn.classList.remove("btn-estado-actual-compact--pending");
       saved = true;
@@ -15162,7 +15178,7 @@ function renderEstadoActualBar() {
     btn.title = "";
     btn.setAttribute(
       "aria-label",
-      "Estado Actual: abrir plantilla (SOAP sin Subjetivo). Aún sin guardar para este paciente."
+      "Estado Actual: abrir plantilla (SOAP sin Subjetivo). A\xFAn sin guardar para este paciente."
     );
     btn.classList.add("btn-estado-actual-compact--pending");
   }
@@ -15193,7 +15209,7 @@ function buildSOAPText() {
     "Aire ambiente": "AL AIRE AMBIENTE",
     "Puntillas nasales": "POR PUNTILLAS NASALES",
     "Alto flujo": "POR ALTO FLUJO",
-    "VM no invasiva": "CON VENTILACIÓN MECÁNICA NO INVASIVA"
+    "VM no invasiva": "CON VENTILACI\xD3N MEC\xC1NICA NO INVASIVA"
   };
   var soporte = soporteMap[g3("soap-soporte")] || "AL AIRE AMBIENTE";
   var ing = g3("soap-ing");
@@ -15209,7 +15225,7 @@ function buildSOAPText() {
     lines.push("");
   }
   lines.push(
-    "N: FOUR " + num2(g3("soap-four")) + "/16 PUNTOS, SIN DATOS DE FOCALIZACIÓN, ORIENTADO EN " + num2(g3("soap-esferas")) + " ESFERAS, ALERTA || ANALGESIA CON " + val2(g3("soap-analgesia"))
+    "N: FOUR " + num2(g3("soap-four")) + "/16 PUNTOS, SIN DATOS DE FOCALIZACI\xD3N, ORIENTADO EN " + num2(g3("soap-esferas")) + " ESFERAS, ALERTA || ANALGESIA CON " + val2(g3("soap-analgesia"))
   );
   lines.push(
     "V: FR " + num2(g3("soap-fr")) + " RPM, SATO2 " + num2(g3("soap-sat")) + "% " + soporte + " | SIN DATOS DE DIFICULTAD RESPIRATORIA || CAMPOS PULMONARES BIEN VENTILADOS"
@@ -15218,10 +15234,10 @@ function buildSOAPText() {
     "HD: ESTABLE, TA " + num2(g3("soap-tas")) + "/" + num2(g3("soap-tad")) + " MMHG, FC " + num2(g3("soap-fc")) + " LPM || ANTIHIPERTENSIVOS: " + val2(g3("soap-antihta") || "NINGUNO") + " || VASOPRESORES: " + val2(g3("soap-vasop") || "NINGUNO")
   );
   lines.push(
-    "HI: AFEBRIL, TEMPERATURA " + num2(g3("soap-temp")) + " °C || ANTIBIÓTICOS: " + val2(g3("soap-abx") || "NINGUNO")
+    "HI: AFEBRIL, TEMPERATURA " + num2(g3("soap-temp")) + " \xB0C || ANTIBI\xD3TICOS: " + val2(g3("soap-abx") || "NINGUNO")
   );
   lines.push(
-    "NM: DIETA " + val2(g3("soap-dieta")) + " CALCULADA A " + num2(g3("soap-kcalkg")) + " KCAL/KG (" + num2(g3("soap-kcal")) + " KCAL) PARA PESO DE " + num2(g3("soap-peso")) + " KG || INGRESOS " + num2(ing) + " CC, EGRESOS " + num2(egr) + " CC, BALANCE " + balance + " CC || GLUCOMETRÍAS CAPILARES (" + num2(g3("soap-glu1")) + ", " + num2(g3("soap-glu2")) + ", " + num2(g3("soap-glu3")) + " MG/DL)"
+    "NM: DIETA " + val2(g3("soap-dieta")) + " CALCULADA A " + num2(g3("soap-kcalkg")) + " KCAL/KG (" + num2(g3("soap-kcal")) + " KCAL) PARA PESO DE " + num2(g3("soap-peso")) + " KG || INGRESOS " + num2(ing) + " CC, EGRESOS " + num2(egr) + " CC, BALANCE " + balance + " CC || GLUCOMETR\xCDAS CAPILARES (" + num2(g3("soap-glu1")) + ", " + num2(g3("soap-glu2")) + ", " + num2(g3("soap-glu3")) + " MG/DL)"
   );
   return lines.join("\n");
 }
@@ -15238,7 +15254,7 @@ function insertSOAPText() {
   var el = document.querySelector('#note-form textarea[oninput*="evolucion"]');
   if (el) el.value = text;
   closeSOAPModal();
-  rt5.showToast("Plantilla insertada ✓", "success");
+  rt5.showToast("Plantilla insertada \u2713", "success");
 }
 function renderEstadoActualButton() {
 }
@@ -15391,9 +15407,9 @@ function resolvePatientFieldIds(errorMessage, isFromLab) {
   if (msg.indexOf("edad") >= 0) {
     ids.push(isFromLab ? "m-edad-num" : "m-edad-num-manual");
   }
-  if (msg.indexOf("servicio") >= 0 || msg.indexOf("área") >= 0 || msg.indexOf("area") >= 0) {
+  if (msg.indexOf("servicio") >= 0 || msg.indexOf("\xE1rea") >= 0 || msg.indexOf("area") >= 0) {
     ids.push("m-servicio");
-    if (!isFromLab && (msg.indexOf("área") >= 0 || msg.indexOf("area") >= 0 || msg.indexOf("departamento") >= 0)) {
+    if (!isFromLab && (msg.indexOf("\xE1rea") >= 0 || msg.indexOf("area") >= 0 || msg.indexOf("departamento") >= 0)) {
       ids.push("m-area");
     }
   }
@@ -15466,7 +15482,7 @@ function swapLabelText(label, nextText) {
 function setAsyncButtonLoading(btn, loading, opts) {
   if (!btn) return;
   opts = opts || {};
-  var loadingText = opts.loadingText || "Procesando…";
+  var loadingText = opts.loadingText || "Procesando\u2026";
   var label = ensureButtonLabel(btn);
   if (loading) {
     if (!btn.dataset.uiMotionDefaultLabel) {
@@ -15560,11 +15576,11 @@ function renderNoteForm() {
     if (applyProfileToNoteIfEmpty(notes[aid()])) saveState();
   }
   var note = notes[aid()] || {};
-  document.getElementById("note-form").innerHTML = '<div class="card"><div class="card-header card-header--tone-slate"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Fecha y Hora</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="field-group"><label>Fecha</label><input type="text" value="' + esc4(note.fecha) + `" oninput="updateNote('fecha',this.value)" placeholder="DD/MM/AAAA"></div><div class="field-group"><label>Hora</label><input type="text" value="` + esc4(note.hora) + `" oninput="updateNote('hora',this.value)" placeholder="HH:MM"></div></div></div></div><div class="card"><div class="card-header"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Resumen de Interrogatorio, Exploración Física y Estado Mental</div><div class="card-body"><div class="field-group"><textarea rows="5" placeholder="Ingresa el resumen de interrogatorio, exploración física y estado mental..." oninput="updateNote('interrogatorio',this.value)">` + esc4(note.interrogatorio) + `</textarea></div></div></div><div class="card"><div class="card-header card-header--tone-green card-header-row"><span style="display:flex;align-items:center;gap:8px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Evolución y Actualización del Cuadro Clínico</span><button type="button" id="btn-soap-template" class="card-header-ghost-btn" onclick="openSOAPModal()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>Plantilla SOAP</button></div><div class="card-body"><div class="field-group"><textarea rows="7" placeholder="N: [Neurológico]&#10;V: [Ventilatorio]&#10;HD: [Hemodinámico]&#10;HI: [Infeccioso]&#10;NM: [Nutricional/Metabólico]" oninput="updateNote('evolucion',this.value)">` + esc4(note.evolucion) + `</textarea></div></div></div><div class="card"><div class="card-header card-header--tone-indigo"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>Resultados de Estudios Auxiliares</div><div class="card-body"><div class="field-group"><textarea rows="9" placeholder="Una línea por renglón del documento:&#10;FECHA (ej. 09.04.26)&#10;QS Glu Cr BUN..." oninput="updateNote('estudios',this.value)">` + esc4(note.estudios) + '</textarea></div></div></div><div class="card"><div class="card-header card-header--tone-rose"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>Diagnóstico(s)</div><div class="card-body"><div class="list-rows" id="dx-list">' + (note.diagnosticos || [""]).map(function(dx, i) {
-    return '<div class="list-row"><input type="text" value="' + esc4(dx) + '" placeholder="Diagnóstico ' + (i + 1) + '" oninput="updateDx(' + i + ',this.value)" style="text-transform:uppercase;"><button class="btn-remove" onclick="removeDx(' + i + ')"' + ((note.diagnosticos || [""]).length <= 1 ? ' style="visibility:hidden"' : "") + ' aria-label="Eliminar">×</button></div>';
-  }).join("") + '</div><button class="btn-add-row" onclick="addDx()">+ Agregar diagnóstico</button></div></div><div class="card"><div class="card-header card-header--tone-amber"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Signos Vitales</div><div class="card-body"><div class="vitals-grid"><div class="vital-box"><div class="vital-label">T.A.</div><input type="text" value="' + esc4(note.ta) + `" placeholder="120/80" oninput="updateNote('ta',this.value)"></div><div class="vital-box"><div class="vital-label">F.R.</div><input type="text" value="` + esc4(note.fr) + `" placeholder="16" oninput="updateNote('fr',this.value)"></div><div class="vital-box"><div class="vital-label">F.C.</div><input type="text" value="` + esc4(note.fc) + `" placeholder="72" oninput="updateNote('fc',this.value)"></div><div class="vital-box"><div class="vital-label">Temperatura</div><input type="text" value="` + esc4(note.temp) + `" placeholder="36.6" oninput="updateNote('temp',this.value)"></div><div class="vital-box"><div class="vital-label">Peso (kg)</div><input type="text" value="` + esc4(note.peso) + `" placeholder="70.0" oninput="updateNote('peso',this.value)"></div></div></div></div><div class="card"><div class="card-header card-header--tone-teal"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>Tratamiento e Indicaciones Médicas</div><div class="card-body"><div class="list-rows" id="tx-list">` + (note.tratamiento || [""]).map(function(tx, i) {
-    return '<div class="list-row"><span class="list-num">' + (i + 1) + '.</span><input type="text" value="' + esc4(tx) + '" placeholder="Indicación, dosis, vía y periodicidad" oninput="updateTx(' + i + ',this.value)"><button class="btn-remove" onclick="removeTx(' + i + ')"' + ((note.tratamiento || [""]).length <= 1 ? ' style="visibility:hidden"' : "") + ' aria-label="Eliminar">×</button></div>';
-  }).join("") + '</div><button class="btn-add-row" onclick="addTx()">+ Agregar indicación</button></div></div><div class="card"><div class="card-header card-header--tone-violet"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Médico y Profesor</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="field-group"><label>Médico Tratante</label><input type="text" value="' + esc4(note.medico) + `" placeholder="Nombre completo" oninput="updateNote('medico',this.value)"></div><div class="field-group"><label>Profesor Responsable</label><input type="text" value="` + esc4(note.profesor) + `" placeholder="Nombre completo" oninput="updateNote('profesor',this.value)"></div></div></div></div><div class="action-bar"><button type="button" class="btn-med-secondary rpc-doc-export" onclick="quickExportCurrentPatient()" id="btn-quick-export-note"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida rápida</button><button type="button" class="btn-generate rpc-doc-export" onclick="generateWord()" id="btn-gen"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Nota (.docx)</button></div>`;
+  document.getElementById("note-form").innerHTML = '<div class="card"><div class="card-header card-header--tone-slate"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Fecha y Hora</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="field-group"><label>Fecha</label><input type="text" value="' + esc4(note.fecha) + `" oninput="updateNote('fecha',this.value)" placeholder="DD/MM/AAAA"></div><div class="field-group"><label>Hora</label><input type="text" value="` + esc4(note.hora) + `" oninput="updateNote('hora',this.value)" placeholder="HH:MM"></div></div></div></div><div class="card"><div class="card-header"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Resumen de Interrogatorio, Exploraci\xF3n F\xEDsica y Estado Mental</div><div class="card-body"><div class="field-group"><textarea rows="5" placeholder="Ingresa el resumen de interrogatorio, exploraci\xF3n f\xEDsica y estado mental..." oninput="updateNote('interrogatorio',this.value)">` + esc4(note.interrogatorio) + `</textarea></div></div></div><div class="card"><div class="card-header card-header--tone-green card-header-row"><span style="display:flex;align-items:center;gap:8px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Evoluci\xF3n y Actualizaci\xF3n del Cuadro Cl\xEDnico</span><button type="button" id="btn-soap-template" class="card-header-ghost-btn" onclick="openSOAPModal()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>Plantilla SOAP</button></div><div class="card-body"><div class="field-group"><textarea rows="7" placeholder="N: [Neurol\xF3gico]&#10;V: [Ventilatorio]&#10;HD: [Hemodin\xE1mico]&#10;HI: [Infeccioso]&#10;NM: [Nutricional/Metab\xF3lico]" oninput="updateNote('evolucion',this.value)">` + esc4(note.evolucion) + `</textarea></div></div></div><div class="card"><div class="card-header card-header--tone-indigo"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>Resultados de Estudios Auxiliares</div><div class="card-body"><div class="field-group"><textarea rows="9" placeholder="Una l\xEDnea por rengl\xF3n del documento:&#10;FECHA (ej. 09.04.26)&#10;QS Glu Cr BUN..." oninput="updateNote('estudios',this.value)">` + esc4(note.estudios) + '</textarea></div></div></div><div class="card"><div class="card-header card-header--tone-rose"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>Diagn\xF3stico(s)</div><div class="card-body"><div class="list-rows" id="dx-list">' + (note.diagnosticos || [""]).map(function(dx, i) {
+    return '<div class="list-row"><input type="text" value="' + esc4(dx) + '" placeholder="Diagn\xF3stico ' + (i + 1) + '" oninput="updateDx(' + i + ',this.value)" style="text-transform:uppercase;"><button class="btn-remove" onclick="removeDx(' + i + ')"' + ((note.diagnosticos || [""]).length <= 1 ? ' style="visibility:hidden"' : "") + ' aria-label="Eliminar">\xD7</button></div>';
+  }).join("") + '</div><button class="btn-add-row" onclick="addDx()">+ Agregar diagn\xF3stico</button></div></div><div class="card"><div class="card-header card-header--tone-amber"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Signos Vitales</div><div class="card-body"><div class="vitals-grid"><div class="vital-box"><div class="vital-label">T.A.</div><input type="text" value="' + esc4(note.ta) + `" placeholder="120/80" oninput="updateNote('ta',this.value)"></div><div class="vital-box"><div class="vital-label">F.R.</div><input type="text" value="` + esc4(note.fr) + `" placeholder="16" oninput="updateNote('fr',this.value)"></div><div class="vital-box"><div class="vital-label">F.C.</div><input type="text" value="` + esc4(note.fc) + `" placeholder="72" oninput="updateNote('fc',this.value)"></div><div class="vital-box"><div class="vital-label">Temperatura</div><input type="text" value="` + esc4(note.temp) + `" placeholder="36.6" oninput="updateNote('temp',this.value)"></div><div class="vital-box"><div class="vital-label">Peso (kg)</div><input type="text" value="` + esc4(note.peso) + `" placeholder="70.0" oninput="updateNote('peso',this.value)"></div></div></div></div><div class="card"><div class="card-header card-header--tone-teal"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>Tratamiento e Indicaciones M\xE9dicas</div><div class="card-body"><div class="list-rows" id="tx-list">` + (note.tratamiento || [""]).map(function(tx, i) {
+    return '<div class="list-row"><span class="list-num">' + (i + 1) + '.</span><input type="text" value="' + esc4(tx) + '" placeholder="Indicaci\xF3n, dosis, v\xEDa y periodicidad" oninput="updateTx(' + i + ',this.value)"><button class="btn-remove" onclick="removeTx(' + i + ')"' + ((note.tratamiento || [""]).length <= 1 ? ' style="visibility:hidden"' : "") + ' aria-label="Eliminar">\xD7</button></div>';
+  }).join("") + '</div><button class="btn-add-row" onclick="addTx()">+ Agregar indicaci\xF3n</button></div></div><div class="card"><div class="card-header card-header--tone-violet"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>M\xE9dico y Profesor</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="field-group"><label>M\xE9dico Tratante</label><input type="text" value="' + esc4(note.medico) + `" placeholder="Nombre completo" oninput="updateNote('medico',this.value)"></div><div class="field-group"><label>Profesor Responsable</label><input type="text" value="` + esc4(note.profesor) + `" placeholder="Nombre completo" oninput="updateNote('profesor',this.value)"></div></div></div></div><div class="action-bar"><button type="button" class="btn-med-secondary rpc-doc-export" onclick="quickExportCurrentPatient()" id="btn-quick-export-note"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida r\xE1pida</button><button type="button" class="btn-generate rpc-doc-export" onclick="generateWord()" id="btn-gen"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Nota (.docx)</button></div>`;
   rt6.syncOfflineButtonStates();
 }
 function updateNote(field, value) {
@@ -15610,7 +15626,7 @@ function removeTx(i) {
 function generateWord() {
   if (rt6.guardMobileDocExport()) return;
   if (rt6.isRpcOffline()) {
-    rt6.showToast("Sin conexión con el servidor local. Reinicia R+ para generar documentos.", "error");
+    rt6.showToast("Sin conexi\xF3n con el servidor local. Reinicia R+ para generar documentos.", "error");
     return;
   }
   var patient = patients.find(function(p) {
@@ -15620,7 +15636,7 @@ function generateWord() {
   var note = notes[aid()];
   if (!note) return;
   var btn = document.getElementById("btn-gen");
-  setAsyncButtonLoading(btn, true, { loadingText: "Generando…" });
+  setAsyncButtonLoading(btn, true, { loadingText: "Generando\u2026" });
   rt6.incrementPendingJobs();
   function buildPayload(outputDir) {
     return { patient, note, outputDir: outputDir || "" };
@@ -15636,7 +15652,7 @@ function generateWord() {
       }
     });
   }).catch(function() {
-    rt6.showToast("Error de conexión", "error");
+    rt6.showToast("Error de conexi\xF3n", "error");
   }).finally(function() {
     setAsyncButtonLoading(document.getElementById("btn-gen"), false);
     rt6.decrementPendingJobs();
@@ -15654,17 +15670,17 @@ function renderIndicaForm() {
   }
   var ind = indicaciones[aid()];
   var SECTIONS = [
-    { key: "dieta", label: "Dieta", placeholder: "DIETA NORMAL DIABÉTICA ALTA EN FIBRA..." },
-    { key: "cuidados", label: "Cuidados", placeholder: "COLOCAR SONDA FOLEY.\nCUANTIFICACIÓN ESTRICTA DE INGRESOS Y EGRESOS..." },
+    { key: "dieta", label: "Dieta", placeholder: "DIETA NORMAL DIAB\xC9TICA ALTA EN FIBRA..." },
+    { key: "cuidados", label: "Cuidados", placeholder: "COLOCAR SONDA FOLEY.\nCUANTIFICACI\xD3N ESTRICTA DE INGRESOS Y EGRESOS..." },
     { key: "estudios", label: "Estudios", placeholder: "BH, QS, EGO..." },
     { key: "medicamentos", label: "Medicamentos", placeholder: "PARACETAMOL 1G VO CADA 8 HORAS PRN..." },
-    { key: "interconsultas", label: "Interconsultas", placeholder: "CONTINUAR INDICACIONES DE INFECTOLOGÍA..." }
+    { key: "interconsultas", label: "Interconsultas", placeholder: "CONTINUAR INDICACIONES DE INFECTOLOG\xCDA..." }
   ];
-  document.getElementById("indica-form").innerHTML = '<div class="card"><div class="card-header"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Datos del Paciente</div><div class="card-body"><div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:10px;align-items:end;"><div class="field-group"><label>Nombre</label><input type="text" value="' + esc4(patient.nombre) + '" class="field-readonly" readonly></div><div class="field-group"><label>Registro</label><input type="text" value="' + esc4(patient.registro) + '" class="field-readonly" readonly></div><div class="field-group"><label>Edad/Sexo</label><input type="text" value="' + esc4(patient.edad) + " / " + esc4(patient.sexo) + '" class="field-readonly" readonly></div><div class="field-group"><label>Cuarto</label><input type="text" value="' + esc4(patient.cuarto) + '" class="field-readonly" readonly></div><div class="field-group"><label>Cama</label><input type="text" value="' + esc4(patient.cama) + '" class="field-readonly" readonly></div></div></div></div><div class="card"><div class="card-header card-header--tone-slate"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Fecha, Hora y Médicos</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:12px;"><div class="field-group"><label>Fecha</label><input type="text" value="' + esc4(ind.fecha) + `" placeholder="DD/MM/AAAA" oninput="updateIndica('fecha',this.value)"></div><div class="field-group"><label>Hora</label><input type="text" value="` + esc4(ind.hora) + `" placeholder="HH:MM" oninput="updateIndica('hora',this.value)"></div><div class="field-group"><label>Médicos (uno por línea)</label><textarea rows="3" placeholder="R3 NOMBRE APELLIDO" oninput="updateIndica('medicos',this.value)">` + esc4(ind.medicos) + "</textarea></div></div></div></div>" + buildExtraTemplatesSelectorHtml() + SECTIONS.map(function(s) {
+  document.getElementById("indica-form").innerHTML = '<div class="card"><div class="card-header"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Datos del Paciente</div><div class="card-body"><div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:10px;align-items:end;"><div class="field-group"><label>Nombre</label><input type="text" value="' + esc4(patient.nombre) + '" class="field-readonly" readonly></div><div class="field-group"><label>Registro</label><input type="text" value="' + esc4(patient.registro) + '" class="field-readonly" readonly></div><div class="field-group"><label>Edad/Sexo</label><input type="text" value="' + esc4(patient.edad) + " / " + esc4(patient.sexo) + '" class="field-readonly" readonly></div><div class="field-group"><label>Cuarto</label><input type="text" value="' + esc4(patient.cuarto) + '" class="field-readonly" readonly></div><div class="field-group"><label>Cama</label><input type="text" value="' + esc4(patient.cama) + '" class="field-readonly" readonly></div></div></div></div><div class="card"><div class="card-header card-header--tone-slate"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Fecha, Hora y M\xE9dicos</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:12px;"><div class="field-group"><label>Fecha</label><input type="text" value="' + esc4(ind.fecha) + `" placeholder="DD/MM/AAAA" oninput="updateIndica('fecha',this.value)"></div><div class="field-group"><label>Hora</label><input type="text" value="` + esc4(ind.hora) + `" placeholder="HH:MM" oninput="updateIndica('hora',this.value)"></div><div class="field-group"><label>M\xE9dicos (uno por l\xEDnea)</label><textarea rows="3" placeholder="R3 NOMBRE APELLIDO" oninput="updateIndica('medicos',this.value)">` + esc4(ind.medicos) + "</textarea></div></div></div></div>" + buildExtraTemplatesSelectorHtml() + SECTIONS.map(function(s) {
     return '<div class="indica-section"><div class="indica-section-header">' + s.label + '</div><div class="indica-section-body"><textarea rows="3" placeholder="' + s.placeholder + `" oninput="updateIndica('` + s.key + `',this.value)">` + esc4(ind[s.key]) + "</textarea></div></div>";
   }).join("") + '<div class="card"><div class="card-header card-header--tone-violet"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 4v16m8-8H4"/></svg>Otros</div><div class="card-body" style="display:flex;flex-direction:column;gap:10px;"><div id="otros-list">' + (ind.otros || []).map(function(o, i) {
-    return '<div class="otros-item"><button class="btn-remove-otro" onclick="removeOtro(' + i + ')">×</button><input type="text" placeholder="TÍTULO DE LA SECCIÓN" value="' + esc4(o.titulo) + '" oninput="updateOtro(' + i + `,'titulo',this.value)"><textarea rows="2" placeholder="Indicaciones..." oninput="updateOtro(` + i + `,'contenido',this.value)">` + esc4(o.contenido) + "</textarea></div>";
-  }).join("") + '</div><button class="btn-add-row" onclick="addOtro()">+ Agregar sección</button></div></div><div class="action-bar"><button type="button" class="btn-med-secondary rpc-doc-export" onclick="quickExportCurrentPatient()" id="btn-quick-export-indica"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida rápida</button><button type="button" class="btn-generate rpc-doc-export" onclick="generateIndicaciones()" id="btn-gen-ind"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Indicaciones (.docx)</button></div>';
+    return '<div class="otros-item"><button class="btn-remove-otro" onclick="removeOtro(' + i + ')">\xD7</button><input type="text" placeholder="T\xCDTULO DE LA SECCI\xD3N" value="' + esc4(o.titulo) + '" oninput="updateOtro(' + i + `,'titulo',this.value)"><textarea rows="2" placeholder="Indicaciones..." oninput="updateOtro(` + i + `,'contenido',this.value)">` + esc4(o.contenido) + "</textarea></div>";
+  }).join("") + '</div><button class="btn-add-row" onclick="addOtro()">+ Agregar secci\xF3n</button></div></div><div class="action-bar"><button type="button" class="btn-med-secondary rpc-doc-export" onclick="quickExportCurrentPatient()" id="btn-quick-export-indica"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida r\xE1pida</button><button type="button" class="btn-generate rpc-doc-export" onclick="generateIndicaciones()" id="btn-gen-ind"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Indicaciones (.docx)</button></div>';
   rt6.syncOfflineButtonStates();
 }
 function updateIndica(field, value) {
@@ -15693,9 +15709,9 @@ function removeOtro(i) {
 function buildExtraTemplatesSelectorHtml() {
   var arr = (rt6.getSettings() || {}) && Array.isArray((rt6.getSettings() || {}).extraTemplates) ? (rt6.getSettings() || {}).extraTemplates : [];
   if (!arr.length) {
-    return '<div class="indica-extra-tmpl"><span class="iet-hint">Guarda combinaciones reutilizables en Ajustes → Plantillas guardadas.</span></div>';
+    return '<div class="indica-extra-tmpl"><span class="iet-hint">Guarda combinaciones reutilizables en Ajustes \u2192 Plantillas guardadas.</span></div>';
   }
-  var opts = '<option value="">— Aplicar plantilla guardada —</option>' + arr.map(function(t2) {
+  var opts = '<option value="">\u2014 Aplicar plantilla guardada \u2014</option>' + arr.map(function(t2) {
     return '<option value="' + esc4(t2.id) + '">' + esc4(t2.label || "(sin nombre)") + "</option>";
   }).join("");
   return '<div class="indica-extra-tmpl"><select id="indica-extra-tmpl-select" aria-label="Seleccionar plantilla guardada">' + opts + '</select><button type="button" onclick="applyExtraTemplateFromIndica()">Aplicar</button></div>';
@@ -15740,7 +15756,7 @@ function applyExtraTemplateFromIndica() {
 function generateIndicaciones() {
   if (rt6.guardMobileDocExport()) return;
   if (rt6.isRpcOffline()) {
-    rt6.showToast("Sin conexión con el servidor local. Reinicia R+ para generar documentos.", "error");
+    rt6.showToast("Sin conexi\xF3n con el servidor local. Reinicia R+ para generar documentos.", "error");
     return;
   }
   var patient = patients.find(function(p) {
@@ -15750,7 +15766,7 @@ function generateIndicaciones() {
   var ind = indicaciones[aid()];
   if (!ind) return;
   var btn = document.getElementById("btn-gen-ind");
-  setAsyncButtonLoading(btn, true, { loadingText: "Generando…" });
+  setAsyncButtonLoading(btn, true, { loadingText: "Generando\u2026" });
   rt6.incrementPendingJobs();
   function buildPayload(outputDir) {
     return { patient, indicaciones: ind, outputDir: outputDir || "" };
@@ -15766,7 +15782,7 @@ function generateIndicaciones() {
       }
     });
   }).catch(function() {
-    rt6.showToast("Error de conexión", "error");
+    rt6.showToast("Error de conexi\xF3n", "error");
   }).finally(function() {
     setAsyncButtonLoading(document.getElementById("btn-gen-ind"), false);
     rt6.decrementPendingJobs();
@@ -15794,78 +15810,78 @@ var windowHandlers6 = {
 // public/js/listado-problemas-ai-prompt.mjs
 var LISTADO_PROBLEMAS_AI_PROMPT = `prompt:
 LISTADO DE PROBLEMAS
-CON BASE EN TODOS LOS DATOS CLÍNICOS PROPORCIONADOS, GENERA UN LISTADO DE
-PROBLEMAS DIVIDIDO EN ACTIVOS E INACTIVOS. SÉ CONCISO. EL OUTPUT COMPLETO
+CON BASE EN TODOS LOS DATOS CL\xCDNICOS PROPORCIONADOS, GENERA UN LISTADO DE
+PROBLEMAS DIVIDIDO EN ACTIVOS E INACTIVOS. S\xC9 CONCISO. EL OUTPUT COMPLETO
 NO DEBE EXCEDER DOS HOJAS.
 
 --- PROBLEMAS ACTIVOS ---
-(INCLUYE: DIAGNÓSTICO PRINCIPAL, ENFERMEDADES DE BASE, COMPLICACIONES ACTIVAS,
+(INCLUYE: DIAGN\xD3STICO PRINCIPAL, ENFERMEDADES DE BASE, COMPLICACIONES ACTIVAS,
 CONDICIONES EN CURSO)
 
-PROBLEMA X: [NOMBRE] → [ESCALA/CLASIFICACIÓN/ESTADIO SI APLICA]
-A) CLÍNICA: [SÍNTOMAS RELEVANTES]
-B) EXPLORACIÓN FÍSICA: [HALLAZGOS PERTINENTES]
-C) PARACLÍNICA: [SOLO RESULTADOS ALTERADOS CON VALOR E INTERPRETACIÓN]
+PROBLEMA X: [NOMBRE] \u2192 [ESCALA/CLASIFICACI\xD3N/ESTADIO SI APLICA]
+A) CL\xCDNICA: [S\xCDNTOMAS RELEVANTES]
+B) EXPLORACI\xD3N F\xCDSICA: [HALLAZGOS PERTINENTES]
+C) PARACL\xCDNICA: [SOLO RESULTADOS ALTERADOS CON VALOR E INTERPRETACI\xD3N]
 D) IMAGEN: [HALLAZGO RELEVANTE]
 
 --- PROBLEMAS INACTIVOS ---
 (INCLUYE: ANTECEDENTES RESUELTOS, TABAQUISMO/ALCOHOLISMO SUSPENDIDO,
-CIRUGÍAS PREVIAS, ENFERMEDADES YA RESUELTAS)
+CIRUG\xCDAS PREVIAS, ENFERMEDADES YA RESUELTAS)
 
 PROBLEMA X: [NOMBRE]
-A) [DESCRIPCIÓN BREVE DEL ANTECEDENTE]
+A) [DESCRIPCI\xD3N BREVE DEL ANTECEDENTE]
 
 REGLAS DE FORMATO:
 
 SI UN INCISO NO APLICA O NO HAY DATOS, OMITIRLO COMPLETAMENTE.
-EJEMPLO: SI NO HAY IMAGEN, NO PONER D). SI NO HAY PARACLÍNICA ALTERADA,
+EJEMPLO: SI NO HAY IMAGEN, NO PONER D). SI NO HAY PARACL\xCDNICA ALTERADA,
 NO PONER C).
-SOLO RESULTADOS ALTERADOS EN PARACLÍNICA, NUNCA VALORES NORMALES.
-EL PROBLEMA 1 ACTIVO SIEMPRE ES EL DIAGNÓSTICO PRINCIPAL.
-SI HAY GASOMETRÍA: CALCULAR ANIÓN GAP, WINTERS Y ESTADO DE COMPENSACIÓN
+SOLO RESULTADOS ALTERADOS EN PARACL\xCDNICA, NUNCA VALORES NORMALES.
+EL PROBLEMA 1 ACTIVO SIEMPRE ES EL DIAGN\xD3STICO PRINCIPAL.
+SI HAY GASOMETR\xCDA: CALCULAR ANI\xD3N GAP, WINTERS Y ESTADO DE COMPENSACI\xD3N
 DENTRO DEL INCISO C) DEL PROBLEMA CORRESPONDIENTE.
-AL FINAL INDICAR "DIAGNÓSTICOS A CONFIRMAR:" SI ALGUNO ES DUDOSO.
+AL FINAL INDICAR "DIAGN\xD3STICOS A CONFIRMAR:" SI ALGUNO ES DUDOSO.
 SIN TRATAMIENTO, SIN MANEJO, SIN TEXTO INNECESARIO.
-TODO EN MAYÚSCULAS.
-REGLAS DE AGRUPACIÓN:
+TODO EN MAY\xDASCULAS.
+REGLAS DE AGRUPACI\xD3N:
 
-NO SEPARAR LO QUE ES PARTE DEL MISMO PROCESO CLÍNICO. SI UN HALLAZGO ES
+NO SEPARAR LO QUE ES PARTE DEL MISMO PROCESO CL\xCDNICO. SI UN HALLAZGO ES
 CONSECUENCIA DIRECTA Y ESPERABLE DEL PROBLEMA PRINCIPAL, VA DENTRO DE ESE
 PROBLEMA EN EL INCISO CORRESPONDIENTE, NO COMO PROBLEMA APARTE.
-EJEMPLO: NEUMONÍA CON HIPOXEMIA → LA HIPOXEMIA VA DENTRO DE LA NEUMONÍA.
+EJEMPLO: NEUMON\xCDA CON HIPOXEMIA \u2192 LA HIPOXEMIA VA DENTRO DE LA NEUMON\xCDA.
 SOLO SEPARAR COMO PROBLEMA DISTINTO SI TIENE ENTIDAD PROPIA, MANEJO
-INDEPENDIENTE O ETIOLOGÍA DIFERENTE.
+INDEPENDIENTE O ETIOLOG\xCDA DIFERENTE.
 INTENTAR LIGAR CADA PROBLEMA AL PRINCIPAL. SI NO SE PUEDE, LISTARLO COMO
 PROBLEMA SEPARADO SIN ETIQUETA ADICIONAL.
-REGLAS DE ETIOLOGÍA:
+REGLAS DE ETIOLOG\xCDA:
 
-CORRELACIONAR SIEMPRE LA ETIOLOGÍA CON EL PERFIL DEL PACIENTE: EDAD, SEXO,
-ANTECEDENTES Y CONTEXTO CLÍNICO.
-SI LA ETIOLOGÍA NO ENCAJA CON EL PERFIL, NO ASIGNARLA. MARCARLA COMO
-"ETIOLOGÍA A DETERMINAR" Y LISTAR ALTERNATIVAS DIAGNÓSTICAS PERTINENTES.
-EJEMPLO: BLOQUEO AV TERCER GRADO EN PACIENTE DE 45 AÑOS → NO ASUMIR
+CORRELACIONAR SIEMPRE LA ETIOLOG\xCDA CON EL PERFIL DEL PACIENTE: EDAD, SEXO,
+ANTECEDENTES Y CONTEXTO CL\xCDNICO.
+SI LA ETIOLOG\xCDA NO ENCAJA CON EL PERFIL, NO ASIGNARLA. MARCARLA COMO
+"ETIOLOG\xCDA A DETERMINAR" Y LISTAR ALTERNATIVAS DIAGN\xD3STICAS PERTINENTES.
+EJEMPLO: BLOQUEO AV TERCER GRADO EN PACIENTE DE 45 A\xD1OS \u2192 NO ASUMIR
 DEGENERATIVO. CONSIDERAR: LYME, SARCOIDOSIS, MIOCARDITIS, ISQUEMIA,
-FÁRMACOS, CHAGAS.
-ESTA REGLA APLICA TAMBIÉN EN PLANES INICIALES.
+F\xC1RMACOS, CHAGAS.
+ESTA REGLA APLICA TAMBI\xC9N EN PLANES INICIALES.
 PLANES INICIALES
-REDACTAR UN PÁRRAFO ESTRUCTURADO POR CADA UNO DE LOS SIGUIENTES EJES, TODO EN
-MAYÚSCULAS, SIN INVENTAR DATOS, BASÁNDOSE ÚNICAMENTE EN LO MENCIONADO EN EL
+REDACTAR UN P\xC1RRAFO ESTRUCTURADO POR CADA UNO DE LOS SIGUIENTES EJES, TODO EN
+MAY\xDASCULAS, SIN INVENTAR DATOS, BAS\xC1NDOSE \xDANICAMENTE EN LO MENCIONADO EN EL
 INTERROGATORIO Y EXPEDIENTE. CADA EJE DEBE SER CONSISTENTE CON LOS PROBLEMAS
 ACTIVOS E INACTIVOS YA IDENTIFICADOS EN EL LISTADO DE PROBLEMAS, SIN
 CONTRADICCIONES NI REPETICIONES INNECESARIAS:
 
 EXPLICAR LA CAUSA DE BASE DE LA ENFERMEDAD
-PRINCIPAL Y EL MECANISMO FISIOPATOLÓGICO QUE LLEVÓ AL CUADRO ACTUAL,
+PRINCIPAL Y EL MECANISMO FISIOPATOL\xD3GICO QUE LLEV\xD3 AL CUADRO ACTUAL,
 REFERENCIANDO LOS PROBLEMAS ACTIVOS CORRESPONDIENTES.
 
-DESCRIBIR LOS ELEMENTOS CLÍNICOS, BIOQUÍMICOS, RADIOLÓGICOS
-Y/O PATOLÓGICOS QUE SUSTENTAN EL DIAGNÓSTICO PRINCIPAL Y LOS DIAGNÓSTICOS
-ASOCIADOS, SIENDO CONSISTENTE CON LA CLASIFICACIÓN Y ESTADIO YA ESTABLECIDOS
+DESCRIBIR LOS ELEMENTOS CL\xCDNICOS, BIOQU\xCDMICOS, RADIOL\xD3GICOS
+Y/O PATOL\xD3GICOS QUE SUSTENTAN EL DIAGN\xD3STICO PRINCIPAL Y LOS DIAGN\xD3STICOS
+ASOCIADOS, SIENDO CONSISTENTE CON LA CLASIFICACI\xD3N Y ESTADIO YA ESTABLECIDOS
 EN EL LISTADO DE PROBLEMAS.
 
-DETALLAR EL TRATAMIENTO INSTAURADO EN EL SERVICIO, INCLUYENDO PROCEDIMIENTOS REALIZADOS, ESQUEMAS FARMACOLÓGICOS Y RESPUESTA CLÍNICA DOCUMENTADA.
+DETALLAR EL TRATAMIENTO INSTAURADO EN EL SERVICIO, INCLUYENDO PROCEDIMIENTOS REALIZADOS, ESQUEMAS FARMACOL\xD3GICOS Y RESPUESTA CL\xCDNICA DOCUMENTADA.
 
-ESTABLECER EL PRONÓSTICO PARA LA FUNCIÓN DEL ÓRGANO O SISTEMA AFECTADO PRINCIPAL Y EL PRONÓSTICO VITAL, VINCULÁNDOLO A LAS CONDICIONES CLÍNICAS ACTUALES, COMPLICACIONES POTENCIALES Y PROBLEMAS ACTIVOS IDENTIFICADOS.`;
+ESTABLECER EL PRON\xD3STICO PARA LA FUNCI\xD3N DEL \xD3RGANO O SISTEMA AFECTADO PRINCIPAL Y EL PRON\xD3STICO VITAL, VINCUL\xC1NDOLO A LAS CONDICIONES CL\xCDNICAS ACTUALES, COMPLICACIONES POTENCIALES Y PROBLEMAS ACTIVOS IDENTIFICADOS.`;
 
 // public/js/features/expediente.mjs
 var rt7 = {
@@ -15939,8 +15955,8 @@ var CULTIVO_TIPO_ORDER = ["hemo", "uro", "cateter", "gram", "fungi", "otro"];
 var CULTIVO_TIPO_LABELS = {
   hemo: "Hemocultivo",
   uro: "Urocultivo",
-  cateter: "Cultivo de catéter",
-  gram: "Tinción Gram",
+  cateter: "Cultivo de cat\xE9ter",
+  gram: "Tinci\xF3n Gram",
   fungi: "Fungicultivo",
   otro: "Otros cultivos"
 };
@@ -15983,7 +15999,7 @@ function parseCultureBlockFromLineArray(lines, set, seq) {
   var rawHeader = String(lines[0] || "");
   var line = rawHeader.replace(/\s+/g, " ").trim();
   var tipoKey = classifyCultureTipoKeyFromHeaderLine(rawHeader);
-  var studyDate = rt7.buildLabSetDateLine(set) || "—";
+  var studyDate = rt7.buildLabSetDateLine(set) || "\u2014";
   var sortMs = parseFechaLabToMs(set.fecha, set.hora);
   if (typeof sortMs !== "number" || !isFinite(sortMs)) sortMs = 0;
   var colon = line.indexOf(":");
@@ -16000,7 +16016,7 @@ function parseCultureBlockFromLineArray(lines, set, seq) {
   var negativo = cultureBlockLooksNegative(left, right);
   if (negativo && !organismo) organismo = "Negativo";
   else if (negativo && /^NEGATIVO$/i.test(organismo)) organismo = "Negativo";
-  else if (!organismo) organismo = "—";
+  else if (!organismo) organismo = "\u2014";
   var resistencias = lines.slice(1);
   var resStr = resistencias.join("\n").trim();
   var sortKeyMs = sortMs;
@@ -16012,10 +16028,10 @@ function parseCultureBlockFromLineArray(lines, set, seq) {
   return {
     row: {
       studyDate,
-      fechaMuestra: fechaMuestra || "—",
-      sitio: sitio || "—",
+      fechaMuestra: fechaMuestra || "\u2014",
+      sitio: sitio || "\u2014",
       organismo,
-      resistencias: resStr || (negativo ? "—" : ""),
+      resistencias: resStr || (negativo ? "\u2014" : ""),
       negativo,
       sortMs,
       sortKeyMs,
@@ -16029,7 +16045,7 @@ function parseCultureBlockFromLineArray(lines, set, seq) {
 function findCultivoChunkInSet(set, organismoQuery) {
   if (!set || !set.resLabs) return null;
   var q = String(organismoQuery || "").replace(/\s+/g, " ").trim().toUpperCase();
-  if (!q || q === "—") return null;
+  if (!q || q === "\u2014") return null;
   var cult = rt7.splitResLabsByTipo(set.resLabs).cultivo;
   for (var ei = 0; ei < cult.length; ei++) {
     var chunks = String(cult[ei] || "").split(/\n\n+/).map(function(s) {
@@ -16060,7 +16076,7 @@ function copyCultivoCondensado(setId, organismo) {
     return String(s.id) === String(setId);
   });
   if (!set) {
-    rt7.showToast("No se encontró el envío en historial", "error");
+    rt7.showToast("No se encontr\xF3 el env\xEDo en historial", "error");
     return;
   }
   var chunk = findCultivoChunkInSet(set, organismo);
@@ -16134,7 +16150,7 @@ function cultivoAntibiogramCellHtml(r) {
   return buildCultivoAntibiogramCellHtmlForPatient(r, aid2());
 }
 function buildCultivoAntibiogramCellHtmlForPatient(r, patientId) {
-  if (!patientId) return '<pre class="cultivos-atb-fallback">—</pre>';
+  if (!patientId) return '<pre class="cultivos-atb-fallback">\u2014</pre>';
   var sets = labHistory[patientId] || [];
   var set = sets.find(function(s) {
     return String(s.id) === String(r.labSetId);
@@ -16144,7 +16160,7 @@ function buildCultivoAntibiogramCellHtmlForPatient(r, patientId) {
   if (sens && sens.length) {
     return '<div class="cultivos-atb-wrap"><div class="cultivos-atb-chips" role="list">' + buildAtbRisSummaryHtml(sens) + "</div>" + copyBtn + "</div>";
   }
-  return '<div class="cultivos-atb-wrap"><pre class="cultivos-atb-fallback">' + esc5(r.resistencias || r.risSummary || "—") + "</pre>" + copyBtn + "</div>";
+  return '<div class="cultivos-atb-wrap"><pre class="cultivos-atb-fallback">' + esc5(r.resistencias || r.risSummary || "\u2014") + "</pre>" + copyBtn + "</div>";
 }
 var _atbRisScrollResizeWired = false;
 var _atbRisScrollRootsWired = /* @__PURE__ */ new WeakSet();
@@ -16443,14 +16459,14 @@ function renderCultivosTable() {
   }
   var flatRows = extractCultivoTableRowsFromHistory(aid2());
   if (!flatRows.length) {
-    container.innerHTML = '<p class="tend-empty">No hay cultivos en el historial. Aparecen urocultivos, hemocultivos, tinción Gram y cultivos de catéter enviados desde Laboratorio.</p>';
+    container.innerHTML = '<p class="tend-empty">No hay cultivos en el historial. Aparecen urocultivos, hemocultivos, tinci\xF3n Gram y cultivos de cat\xE9ter enviados desde Laboratorio.</p>';
     if (isPaseMode()) rt7.renderPaseBoard();
     return;
   }
   var groups = groupCultivoRowsByTipoChronologic(flatRows);
   function rowFechaDisplay(r) {
-    if (r.fechaMuestra && r.fechaMuestra !== "—") return r.fechaMuestra;
-    return r.studyDate || "—";
+    if (r.fechaMuestra && r.fechaMuestra !== "\u2014") return r.fechaMuestra;
+    return r.studyDate || "\u2014";
   }
   var negs = flatRows.filter(function(r) {
     return r.negativo;
@@ -16469,9 +16485,9 @@ function renderCultivosTable() {
     var parts = negs.map(function(r) {
       var fd = rowFechaDisplay(r);
       var lab = r.tipoLabel || "";
-      return lab + " · " + fd + " · " + (r.sitio.length > 36 ? r.sitio.slice(0, 34) + "…" : r.sitio);
+      return lab + " \xB7 " + fd + " \xB7 " + (r.sitio.length > 36 ? r.sitio.slice(0, 34) + "\u2026" : r.sitio);
     });
-    negStrip = '<div class="cultivos-neg-strip" role="status"><strong>Cultivos negativos</strong> (en la tabla, por tipo y fecha) · ' + parts.map(function(p) {
+    negStrip = '<div class="cultivos-neg-strip" role="status"><strong>Cultivos negativos</strong> (en la tabla, por tipo y fecha) \xB7 ' + parts.map(function(p) {
       return "<span>" + esc5(p) + "</span>";
     }).join(' <span class="cultivos-neg-sep">|</span> ') + "</div>";
   }
@@ -16489,7 +16505,7 @@ function renderCultivosTable() {
       );
     });
   });
-  var shellHtml = negStrip + '<p class="cultivos-table-hint">Por categoría (tipo de estudio), orden cronológico de más reciente a más antiguo.</p><div class="cultivos-table-wrap"><table class="cultivos-table">' + thead + "<tbody></tbody></table></div>";
+  var shellHtml = negStrip + '<p class="cultivos-table-hint">Por categor\xEDa (tipo de estudio), orden cronol\xF3gico de m\xE1s reciente a m\xE1s antiguo.</p><div class="cultivos-table-wrap"><table class="cultivos-table">' + thead + "<tbody></tbody></table></div>";
   var finishTable = function() {
     wireAtbRisHoverPanels(container);
     if (isPaseMode()) rt7.renderPaseBoard();
@@ -16498,7 +16514,7 @@ function renderCultivosTable() {
     renderCultivosTableBodyChunked(container, shellHtml, rowChunks, finishTable);
     return;
   }
-  container.innerHTML = negStrip + '<p class="cultivos-table-hint">Por categoría (tipo de estudio), orden cronológico de más reciente a más antiguo.</p><div class="cultivos-table-wrap"><table class="cultivos-table">' + thead + "<tbody>" + rowChunks.join("") + "</tbody></table></div>";
+  container.innerHTML = negStrip + '<p class="cultivos-table-hint">Por categor\xEDa (tipo de estudio), orden cronol\xF3gico de m\xE1s reciente a m\xE1s antiguo.</p><div class="cultivos-table-wrap"><table class="cultivos-table">' + thead + "<tbody>" + rowChunks.join("") + "</tbody></table></div>";
   finishTable();
 }
 var _tendRefreshTimer = null;
@@ -16590,7 +16606,7 @@ function bindListadoTextareaPointerIsolation(root) {
   });
 }
 function _renderListadoRow(seccion, p, idx) {
-  return '<div class="listado-row" data-id="' + esc5(p.id) + '" data-seccion="' + seccion + '"><div class="listado-num listado-drag-handle" title="Arrastra para reordenar" aria-label="Arrastrar para reordenar">' + (idx + 1) + '</div><input type="date" value="' + esc5(p.fecha || "") + `" oninput="updateProblemaField('` + seccion + "','" + esc5(p.id) + `','fecha',this.value)" aria-label="Fecha del problema"><textarea rows="1" placeholder="Descripción del problema" oninput="updateProblemaField('` + seccion + "','" + esc5(p.id) + `','descripcion',this.value); _autoGrowTextarea(this)" aria-label="Descripción">` + esc5(p.descripcion || "") + `</textarea><button class="btn-remove-listado" onclick="removeProblemaUI('` + seccion + "','" + esc5(p.id) + `')" aria-label="Quitar problema" title="Quitar">×</button></div>`;
+  return '<div class="listado-row" data-id="' + esc5(p.id) + '" data-seccion="' + seccion + '"><div class="listado-num listado-drag-handle" title="Arrastra para reordenar" aria-label="Arrastrar para reordenar">' + (idx + 1) + '</div><input type="date" value="' + esc5(p.fecha || "") + `" oninput="updateProblemaField('` + seccion + "','" + esc5(p.id) + `','fecha',this.value)" aria-label="Fecha del problema"><textarea rows="1" placeholder="Descripci\xF3n del problema" oninput="updateProblemaField('` + seccion + "','" + esc5(p.id) + `','descripcion',this.value); _autoGrowTextarea(this)" aria-label="Descripci\xF3n">` + esc5(p.descripcion || "") + `</textarea><button class="btn-remove-listado" onclick="removeProblemaUI('` + seccion + "','" + esc5(p.id) + `')" aria-label="Quitar problema" title="Quitar">\xD7</button></div>`;
 }
 function _renderListadoSeccion(seccion, label, lst) {
   var arr = lst[seccion] || [];
@@ -16690,7 +16706,7 @@ function renderListadoForm() {
     return;
   }
   var lst = ensureListadoForActive();
-  c.innerHTML = '<div class="card"><div class="card-header"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Datos del Paciente</div><div class="card-body"><div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:10px;align-items:end;"><div class="field-group"><label>Nombre</label><input type="text" value="' + esc5(patient.nombre) + '" class="field-readonly" readonly></div><div class="field-group"><label>Registro</label><input type="text" value="' + esc5(patient.registro) + '" class="field-readonly" readonly></div><div class="field-group"><label>Edad/Sexo</label><input type="text" value="' + esc5(patient.edad) + " / " + esc5(patient.sexo) + '" class="field-readonly" readonly></div><div class="field-group"><label>Cuarto</label><input type="text" value="' + esc5(patient.cuarto) + '" class="field-readonly" readonly></div><div class="field-group"><label>Cama</label><input type="text" value="' + esc5(patient.cama) + '" class="field-readonly" readonly></div></div></div></div><div class="card"><div class="card-header card-header--tone-slate"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Fecha y Hora del Listado</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="field-group"><label>Fecha</label><input type="text" value="' + esc5(lst.fecha) + `" placeholder="DD/MM/AAAA" oninput="updateListadoMeta('fecha',this.value)"></div><div class="field-group"><label>Hora</label><input type="text" value="` + esc5(lst.hora) + `" placeholder="HH:MM" oninput="updateListadoMeta('hora',this.value)"></div></div></div></div>` + _renderListadoSeccion("activos", "Activos", lst) + _renderListadoSeccion("inactivos", "Inactivos", lst) + _renderListadoMedicosCard(lst) + '<div class="action-bar"><button type="button" class="btn-med-secondary rpc-doc-export" onclick="quickExportCurrentPatient()" id="btn-quick-export-listado"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida rápida</button><button type="button" class="btn-med-secondary" onclick="copyListadoProblemasAiPrompt()" title="Copia el prompt para usar en un chat de IA"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copiar prompt IA</button><button type="button" class="btn-generate rpc-doc-export" onclick="generateListado()" id="btn-gen-listado"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Listado de Problemas (.docx)</button></div>';
+  c.innerHTML = '<div class="card"><div class="card-header"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Datos del Paciente</div><div class="card-body"><div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:10px;align-items:end;"><div class="field-group"><label>Nombre</label><input type="text" value="' + esc5(patient.nombre) + '" class="field-readonly" readonly></div><div class="field-group"><label>Registro</label><input type="text" value="' + esc5(patient.registro) + '" class="field-readonly" readonly></div><div class="field-group"><label>Edad/Sexo</label><input type="text" value="' + esc5(patient.edad) + " / " + esc5(patient.sexo) + '" class="field-readonly" readonly></div><div class="field-group"><label>Cuarto</label><input type="text" value="' + esc5(patient.cuarto) + '" class="field-readonly" readonly></div><div class="field-group"><label>Cama</label><input type="text" value="' + esc5(patient.cama) + '" class="field-readonly" readonly></div></div></div></div><div class="card"><div class="card-header card-header--tone-slate"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Fecha y Hora del Listado</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="field-group"><label>Fecha</label><input type="text" value="' + esc5(lst.fecha) + `" placeholder="DD/MM/AAAA" oninput="updateListadoMeta('fecha',this.value)"></div><div class="field-group"><label>Hora</label><input type="text" value="` + esc5(lst.hora) + `" placeholder="HH:MM" oninput="updateListadoMeta('hora',this.value)"></div></div></div></div>` + _renderListadoSeccion("activos", "Activos", lst) + _renderListadoSeccion("inactivos", "Inactivos", lst) + _renderListadoMedicosCard(lst) + '<div class="action-bar"><button type="button" class="btn-med-secondary rpc-doc-export" onclick="quickExportCurrentPatient()" id="btn-quick-export-listado"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida r\xE1pida</button><button type="button" class="btn-med-secondary" onclick="copyListadoProblemasAiPrompt()" title="Copia el prompt para usar en un chat de IA"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copiar prompt IA</button><button type="button" class="btn-generate rpc-doc-export" onclick="generateListado()" id="btn-gen-listado"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Listado de Problemas (.docx)</button></div>';
   c.querySelectorAll(".listado-row textarea").forEach(_autoGrowTextarea);
   bindListadoTextareaPointerIsolation(c);
   mountListadoSortables();
@@ -16735,16 +16751,16 @@ function _renderListadoMedicosCard(lst) {
   function row(key, label) {
     return '<div class="field-group"><label>' + label + '</label><input type="text" value="' + esc5(meds[key] || "") + `" oninput="updateListadoMedico('` + key + `', this.value)"></div>`;
   }
-  return '<div class="card"><div class="card-header card-header--tone-teal-md card-header-row"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Médicos (firma)<span class="card-header-subhint">Pre-llena desde Mi Perfil. Edita aquí para este paciente.</span></div><div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' + row("profesor", "Profesor") + row("r4", "R4") + row("r2", "R2") + row("r1a", "R1 (1)") + row("r1b", "R1 (2)") + "</div></div>";
+  return '<div class="card"><div class="card-header card-header--tone-teal-md card-header-row"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>M\xE9dicos (firma)<span class="card-header-subhint">Pre-llena desde Mi Perfil. Edita aqu\xED para este paciente.</span></div><div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' + row("profesor", "Profesor") + row("r4", "R4") + row("r2", "R2") + row("r1a", "R1 (1)") + row("r1b", "R1 (2)") + "</div></div>";
 }
 async function copyListadoProblemasAiPrompt() {
   var ok = await rt7.copyToClipboardSafe(LISTADO_PROBLEMAS_AI_PROMPT);
-  rt7.showToast(ok ? "Prompt copiado al portapapeles ✓" : "No se pudo copiar el prompt", ok ? "success" : "error");
+  rt7.showToast(ok ? "Prompt copiado al portapapeles \u2713" : "No se pudo copiar el prompt", ok ? "success" : "error");
 }
 function generateListado() {
   if (rt7.guardMobileDocExport()) return;
   if (rt7.isRpcOffline()) {
-    rt7.showToast("Sin conexión con el servidor local. Reinicia R+ para generar documentos.", "error");
+    rt7.showToast("Sin conexi\xF3n con el servidor local. Reinicia R+ para generar documentos.", "error");
     return;
   }
   if (!aid2()) {
@@ -16764,7 +16780,7 @@ function generateListado() {
   }
   var medicos = getMedicosForListado(lst);
   var btn = document.getElementById("btn-gen-listado");
-  setAsyncButtonLoading(btn, true, { loadingText: "Generando…" });
+  setAsyncButtonLoading(btn, true, { loadingText: "Generando\u2026" });
   rt7.incrementPendingJobs();
   function buildPayload(outputDir) {
     return {
@@ -16784,7 +16800,7 @@ function generateListado() {
       }
     });
   }).catch(function() {
-    rt7.showToast("Error de conexión", "error");
+    rt7.showToast("Error de conexi\xF3n", "error");
   }).finally(function() {
     setAsyncButtonLoading(document.getElementById("btn-gen-listado"), false);
     rt7.decrementPendingJobs();
@@ -16792,7 +16808,7 @@ function generateListado() {
   });
 }
 function buildPatientDemographicsCardHtml(patient) {
-  return '<div class="card"><div class="card-header"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Datos del Paciente</div><div class="card-body"><div style="display:flex;flex-direction:column;gap:10px;"><div class="field-group"><label>Nombre</label><input type="text" value="' + esc5(patient.nombre) + `" oninput="updatePatient('nombre',this.value)" style="text-transform:uppercase;"></div><div style="display:grid;grid-template-columns:1fr 100px 60px;gap:10px;"><div class="field-group"><label>Registro</label><input type="text" value="` + esc5(patient.registro) + `" oninput="updatePatient('registro',this.value)"></div><div class="field-group"><label>Edad</label><input type="text" value="` + esc5(patient.edad) + `" oninput="updatePatient('edad',this.value)"></div><div class="field-group"><label>Sexo</label><select onchange="updatePatient('sexo',this.value)"><option value="M"` + (patient.sexo === "M" ? " selected" : "") + '>M</option><option value="F"' + (patient.sexo === "F" ? " selected" : "") + '>F</option></select></div></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;"><div class="field-group"><label>Peso (kg)</label><input type="text" inputmode="decimal" value="' + esc5(patient.peso || "") + `" placeholder="60" oninput="updatePatient('peso',this.value)"></div><div class="field-group"><label>Talla (m)</label><input type="text" inputmode="decimal" value="` + esc5(patient.talla || "") + `" placeholder="1.60" oninput="updatePatient('talla',this.value)"></div><div class="field-group"><label>Vía de acceso</label><select onchange="updatePatient('viaAcceso',this.value)"><option value=""` + (!patient.viaAcceso ? " selected" : "") + '>— No especificada —</option><option value="periferica"' + (patient.viaAcceso === "periferica" ? " selected" : "") + '>EV periférica</option><option value="cvc"' + (patient.viaAcceso === "cvc" ? " selected" : "") + '>CVC / catéter central</option><option value="picc"' + (patient.viaAcceso === "picc" ? " selected" : "") + '>PICC</option></select></div></div><div class="field-group"><label>Área</label><input type="text" value="' + esc5(patient.area) + `" oninput="updatePatient('area',this.value)" style="text-transform:uppercase;"></div><div class="field-group"><label>Servicio</label><input type="text" value="` + esc5(patient.servicio) + `" oninput="updatePatient('servicio',this.value)" style="text-transform:uppercase;"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><div class="field-group"><label>Cuarto</label><input type="text" value="` + esc5(patient.cuarto) + `" oninput="updatePatient('cuarto',this.value)"></div><div class="field-group"><label>Cama</label><input type="text" value="` + esc5(patient.cama) + `" oninput="updatePatient('cama',this.value)"></div></div></div></div></div>`;
+  return '<div class="card"><div class="card-header"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Datos del Paciente</div><div class="card-body"><div style="display:flex;flex-direction:column;gap:10px;"><div class="field-group"><label>Nombre</label><input type="text" value="' + esc5(patient.nombre) + `" oninput="updatePatient('nombre',this.value)" style="text-transform:uppercase;"></div><div style="display:grid;grid-template-columns:1fr 100px 60px;gap:10px;"><div class="field-group"><label>Registro</label><input type="text" value="` + esc5(patient.registro) + `" oninput="updatePatient('registro',this.value)"></div><div class="field-group"><label>Edad</label><input type="text" value="` + esc5(patient.edad) + `" oninput="updatePatient('edad',this.value)"></div><div class="field-group"><label>Sexo</label><select onchange="updatePatient('sexo',this.value)"><option value="M"` + (patient.sexo === "M" ? " selected" : "") + '>M</option><option value="F"' + (patient.sexo === "F" ? " selected" : "") + '>F</option></select></div></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;"><div class="field-group"><label>Peso (kg)</label><input type="text" inputmode="decimal" value="' + esc5(patient.peso || "") + `" placeholder="60" oninput="updatePatient('peso',this.value)"></div><div class="field-group"><label>Talla (m)</label><input type="text" inputmode="decimal" value="` + esc5(patient.talla || "") + `" placeholder="1.60" oninput="updatePatient('talla',this.value)"></div><div class="field-group"><label>V\xEDa de acceso</label><select onchange="updatePatient('viaAcceso',this.value)"><option value=""` + (!patient.viaAcceso ? " selected" : "") + '>\u2014 No especificada \u2014</option><option value="periferica"' + (patient.viaAcceso === "periferica" ? " selected" : "") + '>EV perif\xE9rica</option><option value="cvc"' + (patient.viaAcceso === "cvc" ? " selected" : "") + '>CVC / cat\xE9ter central</option><option value="picc"' + (patient.viaAcceso === "picc" ? " selected" : "") + '>PICC</option></select></div></div><div class="field-group"><label>\xC1rea</label><input type="text" value="' + esc5(patient.area) + `" oninput="updatePatient('area',this.value)" style="text-transform:uppercase;"></div><div class="field-group"><label>Servicio</label><input type="text" value="` + esc5(patient.servicio) + `" oninput="updatePatient('servicio',this.value)" style="text-transform:uppercase;"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><div class="field-group"><label>Cuarto</label><input type="text" value="` + esc5(patient.cuarto) + `" oninput="updatePatient('cuarto',this.value)"></div><div class="field-group"><label>Cama</label><input type="text" value="` + esc5(patient.cama) + `" oninput="updatePatient('cama',this.value)"></div></div></div></div></div>`;
 }
 function renderPatientDataPane() {
   var wrap = document.getElementById("patient-data-form");
@@ -16960,7 +16976,7 @@ function buildTodoRow(t2) {
   txtInput.type = "text";
   txtInput.className = "todo-text-input";
   txtInput.value = t2.text;
-  txtInput.placeholder = "Descripción del pendiente";
+  txtInput.placeholder = "Descripci\xF3n del pendiente";
   txtInput.addEventListener("keydown", function(e) {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -16979,7 +16995,7 @@ function buildTodoRow(t2) {
   var del = document.createElement("button");
   del.type = "button";
   del.className = "todo-del";
-  del.textContent = "×";
+  del.textContent = "\xD7";
   del.title = "Eliminar";
   del.addEventListener("click", function() {
     deleteTodo(t2.id);
@@ -17199,17 +17215,17 @@ var todosWindowHandlers = {
 
 // public/js/manejo-atb-catalog.mjs
 var MANEJO_ATB_FAMILIES = [
-  { id: "carbapenem", label: "Carbapenémicos", hint: "Gramnegativos, Sepsis, Infección nosocomial" },
+  { id: "carbapenem", label: "Carbapen\xE9micos", hint: "Gramnegativos, Sepsis, Infecci\xF3n nosocomial" },
   { id: "pip-tazo", label: "Piperacilina-tazobactam", hint: "Pseudomonas, Intraabdominal, Sepsis" },
-  { id: "cephalosporin", label: "Cefalosporinas", hint: "Comunitaria, Meningitis, Anti-pseudomonal según generación" },
+  { id: "cephalosporin", label: "Cefalosporinas", hint: "Comunitaria, Meningitis, Anti-pseudomonal seg\xFAn generaci\xF3n" },
   { id: "penicillin", label: "Penicilinas", hint: "Enterococcus, Anaerobios, Comunitaria" },
-  { id: "glycopeptide", label: "Glicopéptidos", hint: "MRSA, Staphylococcus, Enterococcus sensible" },
-  { id: "oxazolidinone", label: "Oxazolidinonas", hint: "VRE, MRSA, Neumonía nosocomial" },
-  { id: "lipopeptide", label: "Lipopéptidos", hint: "Bacteriemia MRSA/VRE, Endocarditis" },
-  { id: "aminoglycoside", label: "Aminoglucósidos", hint: "Sinergia, Gramnegativos, Pseudomonas" },
-  { id: "fluoroquinolone", label: "Fluoroquinolonas", hint: "ITU, Pseudomonas, Atípicos" },
+  { id: "glycopeptide", label: "Glicop\xE9ptidos", hint: "MRSA, Staphylococcus, Enterococcus sensible" },
+  { id: "oxazolidinone", label: "Oxazolidinonas", hint: "VRE, MRSA, Neumon\xEDa nosocomial" },
+  { id: "lipopeptide", label: "Lipop\xE9ptidos", hint: "Bacteriemia MRSA/VRE, Endocarditis" },
+  { id: "aminoglycoside", label: "Aminogluc\xF3sidos", hint: "Sinergia, Gramnegativos, Pseudomonas" },
+  { id: "fluoroquinolone", label: "Fluoroquinolonas", hint: "ITU, Pseudomonas, At\xEDpicos" },
   { id: "anaerobic", label: "Anaerobicidas", hint: "Anaerobios, Intraabdominal, Piel" },
-  { id: "tetracycline", label: "Tetraciclinas", hint: "MDR, Atípicos" },
+  { id: "tetracycline", label: "Tetraciclinas", hint: "MDR, At\xEDpicos" },
   { id: "polymyxin", label: "Polimixinas", hint: "Carbapenemasa, Gramnegativos MDR" }
 ];
 var MANEJO_ATB_DRUGS = [
@@ -17218,8 +17234,8 @@ var MANEJO_ATB_DRUGS = [
     family: "carbapenem",
     name: "Meropenem",
     adultDose: "1 g IV c/8h (ajustar ClCr <40)",
-    indications: ["Sepsis", "infección nosocomial", "Pseudomonas"],
-    renalNote: "ClCr 10–20: 500 mg c/12h; ClCr <10: 500 mg c/24h",
+    indications: ["Sepsis", "infecci\xF3n nosocomial", "Pseudomonas"],
+    renalNote: "ClCr 10\u201320: 500 mg c/12h; ClCr <10: 500 mg c/24h",
     route: "IV",
     someAbbrev: ["MERO", "MER"],
     organismHints: ["pseudomonas", "enterobacteriaceae"]
@@ -17250,9 +17266,9 @@ var MANEJO_ATB_DRUGS = [
     id: "piperacilina-tazobactam",
     family: "pip-tazo",
     name: "Piperacilina-tazobactam",
-    adultDose: "4.5 g IV c/6h o infusión extendida 3.375 g c/8h",
+    adultDose: "4.5 g IV c/6h o infusi\xF3n extendida 3.375 g c/8h",
     indications: ["Sepsis", "intraabdominal", "Pseudomonas"],
-    renalNote: "ClCr 20–40: ajustar dosis e intervalo",
+    renalNote: "ClCr 20\u201340: ajustar dosis e intervalo",
     route: "IV",
     someAbbrev: ["PIP/TAZO", "PIP-TAZO", "TZP"],
     organismHints: ["pseudomonas", "enterobacteriaceae"]
@@ -17261,8 +17277,8 @@ var MANEJO_ATB_DRUGS = [
     id: "ceftriaxona",
     family: "cephalosporin",
     name: "Ceftriaxona",
-    adultDose: "1–2 g IV/IM c/24h",
-    indications: ["Meningitis", "neumonía", "infecciones comunitarias"],
+    adultDose: "1\u20132 g IV/IM c/24h",
+    indications: ["Meningitis", "neumon\xEDa", "infecciones comunitarias"],
     renalNote: "No requiere ajuste renal habitual",
     route: "IV",
     someAbbrev: ["CFTX", "CTX", "CEFTRI"],
@@ -17272,7 +17288,7 @@ var MANEJO_ATB_DRUGS = [
     id: "cefotaxima",
     family: "cephalosporin",
     name: "Cefotaxima",
-    adultDose: "1–2 g IV c/6–8h",
+    adultDose: "1\u20132 g IV c/6\u20138h",
     indications: ["Meningitis", "sepsis"],
     renalNote: "ClCr <10: reducir frecuencia",
     route: "IV",
@@ -17283,7 +17299,7 @@ var MANEJO_ATB_DRUGS = [
     id: "cefepime",
     family: "cephalosporin",
     name: "Cefepime",
-    adultDose: "1–2 g IV c/8h",
+    adultDose: "1\u20132 g IV c/8h",
     indications: ["Neutropenia febril", "Pseudomonas", "nosocomial"],
     renalNote: "ClCr <60: ajustar dosis",
     route: "IV",
@@ -17294,7 +17310,7 @@ var MANEJO_ATB_DRUGS = [
     id: "ceftazidima",
     family: "cephalosporin",
     name: "Ceftazidima",
-    adultDose: "1–2 g IV c/8h",
+    adultDose: "1\u20132 g IV c/8h",
     indications: ["Pseudomonas", "infecciones nosocomiales"],
     renalNote: "ClCr <50: ajustar dosis",
     route: "IV",
@@ -17305,9 +17321,9 @@ var MANEJO_ATB_DRUGS = [
     id: "ampicilina",
     family: "penicillin",
     name: "Ampicilina",
-    adultDose: "1–2 g IV c/4–6h",
+    adultDose: "1\u20132 g IV c/4\u20136h",
     indications: ["Enterococcus", "Listeria", "meningitis"],
-    renalNote: "ClCr 10: c/12–24h",
+    renalNote: "ClCr 10: c/12\u201324h",
     route: "IV",
     someAbbrev: ["AMP"],
     organismHints: ["enterococcus", "listeria"]
@@ -17316,8 +17332,8 @@ var MANEJO_ATB_DRUGS = [
     id: "ampicilina-sulbactam",
     family: "penicillin",
     name: "Ampicilina-sulbactam",
-    adultDose: "1.5–3 g IV c/6h",
-    indications: ["Intraabdominal", "neumonía aspirativa"],
+    adultDose: "1.5\u20133 g IV c/6h",
+    indications: ["Intraabdominal", "neumon\xEDa aspirativa"],
     renalNote: "ClCr 30: ajustar intervalo",
     route: "IV",
     someAbbrev: ["AMP-SULB", "AMP/SULB"],
@@ -17337,10 +17353,10 @@ var MANEJO_ATB_DRUGS = [
   {
     id: "vancomicina-carga",
     family: "glycopeptide",
-    name: "Vancomicina — carga",
-    adultDose: "20–30 mg/kg; cada 5 mg = 1 ml en glucosado 5%; 2 h c/12 h",
+    name: "Vancomicina \u2014 carga",
+    adultDose: "20\u201330 mg/kg; cada 5 mg = 1 ml en glucosado 5%; 2 h c/12 h",
     indications: ["MRSA", "Staphylococcus", "Enterococcus sensible"],
-    renalNote: "TDM valle 15–20 mcg/mL en infecciones graves",
+    renalNote: "TDM valle 15\u201320 mcg/mL en infecciones graves",
     route: "IV",
     someAbbrev: ["VANCO"],
     organismHints: ["staphylococcus", "enterococcus"],
@@ -17351,10 +17367,10 @@ var MANEJO_ATB_DRUGS = [
   {
     id: "vancomicina-mtto",
     family: "glycopeptide",
-    name: "Vancomicina — mantenimiento",
-    adultDose: "15–20 mg/kg; misma dilución mg/5 = cc; 2 h c/12 h",
+    name: "Vancomicina \u2014 mantenimiento",
+    adultDose: "15\u201320 mg/kg; misma diluci\xF3n mg/5 = cc; 2 h c/12 h",
     indications: ["MRSA", "Staphylococcus", "Enterococcus sensible"],
-    renalNote: "Niveles antes de 4ª dosis de mantenimiento",
+    renalNote: "Niveles antes de 4\xAA dosis de mantenimiento",
     route: "IV",
     someAbbrev: ["VANCO"],
     organismHints: ["staphylococcus", "enterococcus"],
@@ -17365,10 +17381,10 @@ var MANEJO_ATB_DRUGS = [
   {
     id: "vancomicina-niveles",
     family: "glycopeptide",
-    name: "Vancomicina — niveles",
-    adultDose: "Valle objetivo 15–20 mcg/mL (ajustar según institución)",
+    name: "Vancomicina \u2014 niveles",
+    adultDose: "Valle objetivo 15\u201320 mcg/mL (ajustar seg\xFAn instituci\xF3n)",
     indications: ["Monitoreo TDM"],
-    renalNote: "Antes de 4ª dosis de mantenimiento",
+    renalNote: "Antes de 4\xAA dosis de mantenimiento",
     route: "IV",
     someAbbrev: ["VANCO"],
     organismHints: []
@@ -17378,8 +17394,8 @@ var MANEJO_ATB_DRUGS = [
     family: "oxazolidinone",
     name: "Linezolid",
     adultDose: "600 mg IV/VO c/12h",
-    indications: ["VRE", "MRSA", "neumonía nosocomial"],
-    renalNote: "No ajuste renal; precaución >14 días (mielotoxicidad)",
+    indications: ["VRE", "MRSA", "neumon\xEDa nosocomial"],
+    renalNote: "No ajuste renal; precauci\xF3n >14 d\xEDas (mielotoxicidad)",
     route: "IV/VO",
     someAbbrev: ["LINEZ", "LZD"],
     organismHints: ["enterococcus", "staphylococcus"]
@@ -17388,7 +17404,7 @@ var MANEJO_ATB_DRUGS = [
     id: "daptomicina",
     family: "lipopeptide",
     name: "Daptomicina",
-    adultDose: "6–10 mg/kg IV c/24h",
+    adultDose: "6\u201310 mg/kg IV c/24h",
     indications: ["Bacteriemia por MRSA", "VRE", "endocarditis"],
     renalNote: "ClCr <30: c/48h; monitorear CPK",
     route: "IV",
@@ -17399,8 +17415,8 @@ var MANEJO_ATB_DRUGS = [
     id: "gentamicina",
     family: "aminoglycoside",
     name: "Gentamicina",
-    adultDose: "5–7 mg/kg IV dosis única diaria",
-    indications: ["Sepsis gramnegativa", "sinergia enterocócica"],
+    adultDose: "5\u20137 mg/kg IV dosis \xFAnica diaria",
+    indications: ["Sepsis gramnegativa", "sinergia enteroc\xF3cica"],
     renalNote: "TDM valle <1 mcg/mL",
     route: "IV",
     someAbbrev: ["GENT", "GEN"],
@@ -17410,9 +17426,9 @@ var MANEJO_ATB_DRUGS = [
     id: "tobramicina",
     family: "aminoglycoside",
     name: "Tobramicina",
-    adultDose: "5–7 mg/kg IV dosis única diaria",
+    adultDose: "5\u20137 mg/kg IV dosis \xFAnica diaria",
     indications: ["Pseudomonas"],
-    renalNote: "TDM valle según protocolo",
+    renalNote: "TDM valle seg\xFAn protocolo",
     route: "IV",
     someAbbrev: ["TOBRA", "TOB"],
     organismHints: ["pseudomonas"]
@@ -17421,7 +17437,7 @@ var MANEJO_ATB_DRUGS = [
     id: "amikacina",
     family: "aminoglycoside",
     name: "Amikacina",
-    adultDose: "15–20 mg/kg IV dosis única diaria",
+    adultDose: "15\u201320 mg/kg IV dosis \xFAnica diaria",
     indications: ["Gramnegativos resistentes"],
     renalNote: "TDM obligatorio",
     route: "IV",
@@ -17444,7 +17460,7 @@ var MANEJO_ATB_DRUGS = [
     family: "fluoroquinolone",
     name: "Levofloxacino",
     adultDose: "750 mg IV/VO c/24h",
-    indications: ["Neumonía nosocomial", "Pseudomonas (combinación)"],
+    indications: ["Neumon\xEDa nosocomial", "Pseudomonas (combinaci\xF3n)"],
     renalNote: "ClCr <50: ajustar dosis",
     route: "IV/VO",
     someAbbrev: ["LVX", "LEVO"],
@@ -17456,7 +17472,7 @@ var MANEJO_ATB_DRUGS = [
     name: "Metronidazol",
     adultDose: "500 mg IV c/8h",
     indications: ["Anaerobios", "intraabdominal", "C. difficile (VO)"],
-    renalNote: "Precaución función hepática",
+    renalNote: "Precauci\xF3n funci\xF3n hep\xE1tica",
     route: "IV/VO",
     someAbbrev: ["METRO", "MNZ"],
     organismHints: ["anaerobio"]
@@ -17465,7 +17481,7 @@ var MANEJO_ATB_DRUGS = [
     id: "clindamicina",
     family: "anaerobic",
     name: "Clindamicina",
-    adultDose: "600–900 mg IV c/8h",
+    adultDose: "600\u2013900 mg IV c/8h",
     indications: ["Anaerobios", "piel/tejidos blandos"],
     renalNote: "No ajuste renal",
     route: "IV/VO",
@@ -17478,7 +17494,7 @@ var MANEJO_ATB_DRUGS = [
     name: "Tigeciclina",
     adultDose: "100 mg bolo + 50 mg IV c/12h",
     indications: ["Polimicrobiano resistente", "intraabdominal complicada"],
-    renalNote: "Precaución hepática; no Pseudomonas",
+    renalNote: "Precauci\xF3n hep\xE1tica; no Pseudomonas",
     route: "IV",
     someAbbrev: ["TIGE", "TGC"],
     organismHints: ["enterobacteriaceae"]
@@ -17487,7 +17503,7 @@ var MANEJO_ATB_DRUGS = [
     id: "colistina",
     family: "polymyxin",
     name: "Colistina (colistimetato)",
-    adultDose: "Carga + mantenimiento según peso (protocolo local)",
+    adultDose: "Carga + mantenimiento seg\xFAn peso (protocolo local)",
     indications: ["Gramnegativos MDR", "carbapenemasa"],
     renalNote: "Nefrotoxicidad; ajuste estricto por ClCr",
     route: "IV",
@@ -17498,8 +17514,8 @@ var MANEJO_ATB_DRUGS = [
     id: "aztreonam",
     family: "cephalosporin",
     name: "Aztreonam",
-    adultDose: "1–2 g IV c/8h",
-    indications: ["Gramnegativos (incl. Pseudomonas) en alergia a beta-lactámicos"],
+    adultDose: "1\u20132 g IV c/8h",
+    indications: ["Gramnegativos (incl. Pseudomonas) en alergia a beta-lact\xE1micos"],
     renalNote: "ClCr <30: ajustar",
     route: "IV",
     someAbbrev: ["ATM", "AZT"],
@@ -17509,8 +17525,8 @@ var MANEJO_ATB_DRUGS = [
     id: "cefazolina",
     family: "cephalosporin",
     name: "Cefazolina",
-    adultDose: "1–2 g IV c/8h",
-    indications: ["Profilaxis quirúrgica", "MSSA"],
+    adultDose: "1\u20132 g IV c/8h",
+    indications: ["Profilaxis quir\xFArgica", "MSSA"],
     renalNote: "ClCr 55: ajustar intervalo",
     route: "IV",
     someAbbrev: ["CFZ", "CEFAZ"],
@@ -17520,8 +17536,8 @@ var MANEJO_ATB_DRUGS = [
     id: "cefoxitina",
     family: "cephalosporin",
     name: "Cefoxitina",
-    adultDose: "1–2 g IV c/6–8h",
-    indications: ["Intraabdominal", "profilaxis ginecológica"],
+    adultDose: "1\u20132 g IV c/6\u20138h",
+    indications: ["Intraabdominal", "profilaxis ginecol\xF3gica"],
     renalNote: "ClCr 50: ajustar dosis",
     route: "IV",
     someAbbrev: ["CFXN", "CEFOX"],
@@ -17532,7 +17548,7 @@ var MANEJO_ATB_DRUGS = [
     family: "tetracycline",
     name: "Doxiciclina",
     adultDose: "100 mg IV/VO c/12h",
-    indications: ["Atípicos", "MRSA comunitario (alternativa)"],
+    indications: ["At\xEDpicos", "MRSA comunitario (alternativa)"],
     renalNote: "No ajuste renal",
     route: "IV/VO",
     someAbbrev: ["DOXY", "DOX"],
@@ -17542,7 +17558,7 @@ var MANEJO_ATB_DRUGS = [
     id: "trimethoprim-sulfamethoxazole",
     family: "penicillin",
     name: "Trimetoprim-sulfametoxazol",
-    adultDose: "15–20 mg/kg/día (componente TMP) dividido c/6–12h",
+    adultDose: "15\u201320 mg/kg/d\xEDa (componente TMP) dividido c/6\u201312h",
     indications: ["Stenotrophomonas", "PCP", "ITU"],
     renalNote: "ClCr <30: evitar o reducir",
     route: "IV/VO",
@@ -17565,10 +17581,10 @@ function classifyAtbForIsolate(drug, isolate) {
   var reasons = [];
   var markers = isolate.markers || [];
   if (markers.indexOf("BLEE") !== -1 && BLEE_CAUTION_IDS.has(drug.id)) {
-    reasons.push("BLEE: evitar cefalosporinas 3ª gen");
+    reasons.push("BLEE: evitar cefalosporinas 3\xAA gen");
   }
   if (markers.indexOf("ESBL") !== -1 && BLEE_CAUTION_IDS.has(drug.id)) {
-    reasons.push("ESBL: evitar cefalosporinas 3ª gen");
+    reasons.push("ESBL: evitar cefalosporinas 3\xAA gen");
   }
   if (markers.indexOf("VRE") !== -1 && VRE_CAUTION_IDS.has(drug.id)) {
     reasons.push("VRE: vancomicina no indicada");
@@ -17576,7 +17592,7 @@ function classifyAtbForIsolate(drug, isolate) {
   if (markers.some(function(m) {
     return /^(KPC|NDM|VIM|IMP|MBL|CRE|Carb-R)$/.test(m);
   }) && CARBAPENEM_CAUTION_IDS.has(drug.id)) {
-    reasons.push("Carbapenemasa: evitar carbapenémicos");
+    reasons.push("Carbapenemasa: evitar carbapen\xE9micos");
   }
   if (reasons.length) return { status: "caution", reasons };
   var sens = isolate.sensKeys || [];
@@ -17631,7 +17647,7 @@ function getRenalLabContext(latestLabSet, patient) {
   var source = "lab";
   if (egfr == null && cr != null) {
     var ageRaw = patient && patient.edad || latestLabSet.edad || latestLabSet.patientCtx && latestLabSet.patientCtx.edad;
-    var ageUnit = patient && patient.edadUnidad || latestLabSet.edadUnidad || latestLabSet.patientCtx && latestLabSet.patientCtx.edadUnidad || "años";
+    var ageUnit = patient && patient.edadUnidad || latestLabSet.edadUnidad || latestLabSet.patientCtx && latestLabSet.patientCtx.edadUnidad || "a\xF1os";
     var sexo = patient && patient.sexo || latestLabSet.sexo || latestLabSet.patientCtx && latestLabSet.patientCtx.sexo;
     var ageY = ageYearsFromLabDemographics(ageRaw, ageUnit);
     if (ageY != null && ageY >= 18 && (sexo === "M" || sexo === "F")) {
@@ -17719,19 +17735,19 @@ function resolveAtbRenalGuidance(drug, renalCtx) {
   var egfr = renalCtx.egfr;
   var note = String(drug && drug.renalNote || "").trim();
   var parts = [];
-  parts.push("eTFG " + egfr + " mL/min/1.73m²");
+  parts.push("eTFG " + egfr + " mL/min/1.73m\xB2");
   if (renalCtx.creatinineMgDl != null) {
     parts.push("Cr " + renalCtx.creatinineMgDl + " mg/dL");
   }
   if (renalCtx.fecha) parts.push("lab " + renalCtx.fecha);
-  var summaryLine = parts.join(" · ");
+  var summaryLine = parts.join(" \xB7 ");
   if (/no requiere ajuste renal/i.test(note) && egfr >= 60) {
     return {
       hasEgfr: true,
       summaryLine,
       adjustment: "Sin ajuste renal habitual con eTFG actual.",
       severity: "none",
-      someComment: "eTFG " + egfr + " — sin ajuste renal habitual"
+      someComment: "eTFG " + egfr + " \u2014 sin ajuste renal habitual"
     };
   }
   var band = matchRenalBand(egfr, parseRenalBands(note));
@@ -17751,7 +17767,7 @@ function resolveAtbRenalGuidance(drug, renalCtx) {
       summaryLine,
       adjustment: note,
       severity: egfr < 30 ? "adjust" : "caution",
-      someComment: "eTFG " + egfr + " — " + note
+      someComment: "eTFG " + egfr + " \u2014 " + note
     };
   }
   return {
@@ -17775,22 +17791,22 @@ function drugToSomeOrderAtb(drug, calcResult, renalCtx, drugToSomeOrderFn) {
 var CULTIVO_TIPO_LABELS2 = {
   hemo: "Hemocultivo",
   uro: "Urocultivo",
-  cateter: "Cultivo de catéter",
-  gram: "Tinción Gram",
+  cateter: "Cultivo de cat\xE9ter",
+  gram: "Tinci\xF3n Gram",
   fungi: "Fungicultivo",
   otro: "Otros cultivos"
 };
 var MARKER_ALERTS = {
-  BLEE: "BLEE: evitar cefalosporinas 3ª gen (ceftriaxona, cefotaxima, ceftazidima salvo combinaciones documentadas)",
-  ESBL: "ESBL: evitar cefalosporinas 3ª gen salvo combinaciones documentadas",
-  VRE: "VRE: vancomicina no indicada; preferir linezolid/daptomicina según antibiograma",
-  KPC: "Carbapenemasa (KPC): evitar meropenem/imipenem; valorar ceftazidima-avibactam/colistina según nota local",
-  NDM: "Carbapenemasa (NDM): evitar meropenem/imipenem; valorar ceftazidima-avibactam/colistina según nota local",
-  VIM: "Carbapenemasa (VIM): evitar meropenem/imipenem; valorar ceftazidima-avibactam/colistina según nota local",
-  IMP: "Carbapenemasa (IMP): evitar meropenem/imipenem; valorar ceftazidima-avibactam/colistina según nota local",
-  MBL: "Metalobetalactamasa (MBL): evitar carbapenémicos según antibiograma y nota local",
-  MRSA: "MRSA: valorar oxacilina/cefazolina vs vancomicina según S",
-  CRE: "CRE: evitar carbapenémicos según mecanismo y antibiograma"
+  BLEE: "BLEE: evitar cefalosporinas 3\xAA gen (ceftriaxona, cefotaxima, ceftazidima salvo combinaciones documentadas)",
+  ESBL: "ESBL: evitar cefalosporinas 3\xAA gen salvo combinaciones documentadas",
+  VRE: "VRE: vancomicina no indicada; preferir linezolid/daptomicina seg\xFAn antibiograma",
+  KPC: "Carbapenemasa (KPC): evitar meropenem/imipenem; valorar ceftazidima-avibactam/colistina seg\xFAn nota local",
+  NDM: "Carbapenemasa (NDM): evitar meropenem/imipenem; valorar ceftazidima-avibactam/colistina seg\xFAn nota local",
+  VIM: "Carbapenemasa (VIM): evitar meropenem/imipenem; valorar ceftazidima-avibactam/colistina seg\xFAn nota local",
+  IMP: "Carbapenemasa (IMP): evitar meropenem/imipenem; valorar ceftazidima-avibactam/colistina seg\xFAn nota local",
+  MBL: "Metalobetalactamasa (MBL): evitar carbapen\xE9micos seg\xFAn antibiograma y nota local",
+  MRSA: "MRSA: valorar oxacilina/cefazolina vs vancomicina seg\xFAn S",
+  CRE: "CRE: evitar carbapen\xE9micos seg\xFAn mecanismo y antibiograma"
 };
 var MARKER_TOKEN_RE = /\b(BLEE|ESBL|VRE|KPC|NDM|VIM|IMP|MBL|MRSA|CRE)\b/gi;
 function isLabSectionHeaderLine2(s) {
@@ -17929,9 +17945,9 @@ function parseHeaderFields(headerLine, set) {
   var organismo = right.replace(/\s*·\s*.*$/, "").replace(/\s+/g, " ").trim();
   return {
     tipoLabel: CULTIVO_TIPO_LABELS2[tipoKey] || CULTIVO_TIPO_LABELS2.otro,
-    sitio: sitio || "—",
-    organismo: organismo || "—",
-    fecha: fecha || "—"
+    sitio: sitio || "\u2014",
+    organismo: organismo || "\u2014",
+    fecha: fecha || "\u2014"
   };
 }
 function isolateFromParsedBlock(block, set, chunkText) {
@@ -18086,9 +18102,9 @@ function getCultureContextForManejo(labHistory2, opts) {
 
 // public/js/manejo-fluid-terms.mjs
 var NACL_09 = "NaCl 0.9%";
-var NACL_09_FULL = "SOLUCIÓN DE NaCl 0.9%";
+var NACL_09_FULL = "SOLUCI\xD3N DE NaCl 0.9%";
 var NACL_045 = "NaCl 0.45%";
-var NACL_045_FULL = "SOLUCIÓN DE NaCl 0.45%";
+var NACL_045_FULL = "SOLUCI\xD3N DE NaCl 0.45%";
 var DEXTROSE_50 = "DEXTROSA 50%";
 var DEXTROSE_5_GRAMS_PER_LITER = 50;
 var DEXTROSE_5_IN_NACL_045 = "GLUCOSADO 5% EN NaCl 0.45%";
@@ -18135,16 +18151,16 @@ function adaIvFluidGuidance(labs) {
   var rationale;
   if (decisionNa == null) {
     maintenanceFluid = "NaCl 0.9%";
-    maintenanceFluidFull = "SOLUCIÓN DE NaCl 0.9%";
-    rationale = "Sin sodio en laboratorio — iniciar NaCl 0.9% y reevaluar con sodio corregido cuando haya glucosa.";
+    maintenanceFluidFull = "SOLUCI\xD3N DE NaCl 0.9%";
+    rationale = "Sin sodio en laboratorio \u2014 iniciar NaCl 0.9% y reevaluar con sodio corregido cuando haya glucosa.";
   } else if (decisionNa < SODIUM_NORMAL_LOW_MEQL) {
     maintenanceFluid = "NaCl 0.9%";
-    maintenanceFluidFull = "SOLUCIÓN DE NaCl 0.9%";
-    rationale = hasCorrected ? "Sodio corregido " + corr + " mEq/L (<135): NaCl 0.9% (ADA — sodio corregido bajo)." : "Sodio sérico " + na + " mEq/L (<135): NaCl 0.9%. Reevaluar con sodio corregido si hay hiperglucemia.";
+    maintenanceFluidFull = "SOLUCI\xD3N DE NaCl 0.9%";
+    rationale = hasCorrected ? "Sodio corregido " + corr + " mEq/L (<135): NaCl 0.9% (ADA \u2014 sodio corregido bajo)." : "Sodio s\xE9rico " + na + " mEq/L (<135): NaCl 0.9%. Reevaluar con sodio corregido si hay hiperglucemia.";
   } else {
     maintenanceFluid = "NaCl 0.45%";
-    maintenanceFluidFull = "SOLUCIÓN DE NaCl 0.45%";
-    rationale = hasCorrected ? "Sodio corregido " + corr + " mEq/L (≥135): NaCl 0.45% para limitar carga de sodio e hipernatremia (ADA)." : "Sodio sérico " + na + " mEq/L (≥135): NaCl 0.45%. Reevaluar con sodio corregido si hay hiperglucemia.";
+    maintenanceFluidFull = "SOLUCI\xD3N DE NaCl 0.45%";
+    rationale = hasCorrected ? "Sodio corregido " + corr + " mEq/L (\u2265135): NaCl 0.45% para limitar carga de sodio e hipernatremia (ADA)." : "Sodio s\xE9rico " + na + " mEq/L (\u2265135): NaCl 0.45%. Reevaluar con sodio corregido si hay hiperglucemia.";
   }
   if (glu != null && glu >= CAD_EHH_THRESHOLDS.cadGlucoseMgDl) {
     warnings.push(
@@ -18240,47 +18256,47 @@ function suggestCadEhhMode(labs) {
 var CAD_EHH_K_REPLETION_RANGES = [
   {
     id: "k-lt-3.3",
-    rangeLabel: "K⁺ < 3.3 mEq/L",
+    rangeLabel: "K\u207A < 3.3 mEq/L",
     min: null,
     maxExclusive: 3.3,
     holdInsulin: true,
     addMeqPerLiter: null,
-    meqPerHour: "20 mEq/h IV (máx 40 mEq/h con monitor ECG)",
+    meqPerHour: "20 mEq/h IV (m\xE1x 40 mEq/h con monitor ECG)",
     copyLine: "K < 3.3: SUSPENDER INSULINA. REPONER POTASIO 20 MEQ/H IV (MAX 40 MEQ/H). REEVALUAR K C/2 H. REINICIAR INSULINA CUANDO K > 3.3 MEQ/L",
-    detail: "Hipokalemia grave. No iniciar o suspender infusión de insulina hasta K⁺ > 3.3 mEq/L. Reponer potasio IV 20 mEq/h (hasta 40 mEq/h si protocolo local y monitorización)."
+    detail: "Hipokalemia grave. No iniciar o suspender infusi\xF3n de insulina hasta K\u207A > 3.3 mEq/L. Reponer potasio IV 20 mEq/h (hasta 40 mEq/h si protocolo local y monitorizaci\xF3n)."
   },
   {
     id: "k-3.3-3.9",
-    rangeLabel: "K⁺ 3.3 – 3.9 mEq/L",
+    rangeLabel: "K\u207A 3.3 \u2013 3.9 mEq/L",
     min: 3.3,
     maxExclusive: 4,
     holdInsulin: false,
     addMeqPerLiter: 30,
     meqPerHour: null,
-    copyLine: "K 3.3–3.9: AGREGAR 30 MEQ KCL/LITRO A SOLUCIÓN IV (SI HAY DIURESIS). MONITOR K C/2–4 H",
-    detail: "Agregar 30 mEq de KCl por cada litro de solución IV. Continuar insulina si K⁺ ≥ 3.3. Vigilar K⁺ cada 2–4 h (insulina desplaza K⁺ intracelular)."
+    copyLine: "K 3.3\u20133.9: AGREGAR 30 MEQ KCL/LITRO A SOLUCI\xD3N IV (SI HAY DIURESIS). MONITOR K C/2\u20134 H",
+    detail: "Agregar 30 mEq de KCl por cada litro de soluci\xF3n IV. Continuar insulina si K\u207A \u2265 3.3. Vigilar K\u207A cada 2\u20134 h (insulina desplaza K\u207A intracelular)."
   },
   {
     id: "k-4.0-5.2",
-    rangeLabel: "K⁺ 4.0 – 5.2 mEq/L",
+    rangeLabel: "K\u207A 4.0 \u2013 5.2 mEq/L",
     min: 4,
     maxExclusive: 5.21,
     holdInsulin: false,
     addMeqPerLiter: 20,
     meqPerHour: null,
-    copyLine: "K 4.0–5.2: AGREGAR 20 MEQ KCL/LITRO A SOLUCIÓN IV (SI HAY DIURESIS). MONITOR K C/2–4 H",
-    detail: "Agregar 20 mEq de KCl por cada litro de solución IV cuando haya diuresis y K⁺ por debajo del límite superior normal. Monitor K⁺ cada 2–4 h."
+    copyLine: "K 4.0\u20135.2: AGREGAR 20 MEQ KCL/LITRO A SOLUCI\xD3N IV (SI HAY DIURESIS). MONITOR K C/2\u20134 H",
+    detail: "Agregar 20 mEq de KCl por cada litro de soluci\xF3n IV cuando haya diuresis y K\u207A por debajo del l\xEDmite superior normal. Monitor K\u207A cada 2\u20134 h."
   },
   {
     id: "k-gt-5.2",
-    rangeLabel: "K⁺ > 5.2 mEq/L",
+    rangeLabel: "K\u207A > 5.2 mEq/L",
     min: 5.21,
     maxExclusive: null,
     holdInsulin: false,
     addMeqPerLiter: 0,
     meqPerHour: null,
     copyLine: "K > 5.2: NO AGREGAR POTASIO A FLUIDOS. MONITOR K SERIADO HASTA < 5.2",
-    detail: "No suplementar potasio en fluidos IV. Monitorizar K⁺ seriado; agregar K⁺ solo cuando descienda < 5.2 mEq/L (con diuresis)."
+    detail: "No suplementar potasio en fluidos IV. Monitorizar K\u207A seriado; agregar K\u207A solo cuando descienda < 5.2 mEq/L (con diuresis)."
   }
 ];
 function getPotassiumRepletionGuidance(kMeqL) {
@@ -18297,7 +18313,7 @@ function getPotassiumRepletionGuidance(kMeqL) {
       }
     }
   }
-  var summary = active ? "K⁺ " + (k != null ? k + " mEq/L" : "—") + " → " + active.rangeLabel + (active.holdInsulin ? " · Suspender insulina" : "") : k != null ? "K⁺ " + k + " mEq/L — revisar rango manualmente" : "Sin K⁺ en último laboratorio — aplicar tabla según valor inicial";
+  var summary = active ? "K\u207A " + (k != null ? k + " mEq/L" : "\u2014") + " \u2192 " + active.rangeLabel + (active.holdInsulin ? " \xB7 Suspender insulina" : "") : k != null ? "K\u207A " + k + " mEq/L \u2014 revisar rango manualmente" : "Sin K\u207A en \xFAltimo laboratorio \u2014 aplicar tabla seg\xFAn valor inicial";
   return {
     active,
     ranges: CAD_EHH_K_REPLETION_RANGES,
@@ -18308,27 +18324,27 @@ function getPotassiumRepletionGuidance(kMeqL) {
 var CAD_CHECKLIST = [
   {
     id: "cad-fluids",
-    phase: "Líquidos",
+    phase: "L\xEDquidos",
     medication: "NaCl 0.9%",
-    text: "1 L NaCl 0.9% primera hora. Después: NaCl 0.45% si sodio corregido ≥135 mEq/L; NaCl 0.9% si sodio corregido bajo. Déficit 24–48 h. Si no hay shock."
+    text: "1 L NaCl 0.9% primera hora. Despu\xE9s: NaCl 0.45% si sodio corregido \u2265135 mEq/L; NaCl 0.9% si sodio corregido bajo. D\xE9ficit 24\u201348 h. Si no hay shock."
   },
   {
     id: "cad-insulin",
     phase: "Insulina",
     medication: "INSULINA REGULAR",
-    text: "Iniciar 1–2 h post líquidos: insulina regular 0.1 U/kg/h; si glucosa no baja ~50 mg/dL/h → +1 U/h."
+    text: "Iniciar 1\u20132 h post l\xEDquidos: insulina regular 0.1 U/kg/h; si glucosa no baja ~50 mg/dL/h \u2192 +1 U/h."
   },
   {
     id: "cad-glucose-250",
     phase: "Glucosa capilar 250 mg/dL",
     medication: "PLAN CON DEXTROSADO",
-    text: "Al alcanzar 250 mg/dL en glucometría capilar: insulina 0.05 U/kg/h; cambiar fluidos de mantenimiento a glucosado 5% para continuar insulina hasta cerrar cetosis."
+    text: "Al alcanzar 250 mg/dL en glucometr\xEDa capilar: insulina 0.05 U/kg/h; cambiar fluidos de mantenimiento a glucosado 5% para continuar insulina hasta cerrar cetosis."
   },
   {
     id: "cad-k",
     phase: "Potasio",
     medication: "CLORURO DE POTASIO (KCL)",
-    text: "Ver tabla de reposición por rango de K⁺ (ADA). Agregar KCl a fluidos solo con diuresis; monitor K⁺ c/2–4 h."
+    text: "Ver tabla de reposici\xF3n por rango de K\u207A (ADA). Agregar KCl a fluidos solo con diuresis; monitor K\u207A c/2\u20134 h."
   },
   {
     id: "cad-bicarb",
@@ -18338,73 +18354,73 @@ var CAD_CHECKLIST = [
   },
   {
     id: "cad-resolution",
-    phase: "Resolución",
+    phase: "Resoluci\xF3n",
     medication: "MONITOREO DE LABORATORIO",
-    text: "Criterios: pH >7.3, HCO3 ≥18, gap normalizado, glucosa <200 mg/dL."
+    text: "Criterios: pH >7.3, HCO3 \u226518, gap normalizado, glucosa <200 mg/dL."
   },
   {
     id: "cad-transition",
-    phase: "Transición",
+    phase: "Transici\xF3n",
     medication: "INSULINA BASAL SC",
-    text: "Insulina basal SC 2–4 h antes de suspender insulina IV."
+    text: "Insulina basal SC 2\u20134 h antes de suspender insulina IV."
   }
 ];
 var EHH_CHECKLIST = [
   {
     id: "ehh-fluids",
-    phase: "Líquidos",
+    phase: "L\xEDquidos",
     medication: "NaCl 0.9%",
-    text: "NaCl 0.9% 15–20 mL/kg/h o 1–1.5 L/h; ~9 L/48 h; corregir osmol <3 mOsm/kg/h."
+    text: "NaCl 0.9% 15\u201320 mL/kg/h o 1\u20131.5 L/h; ~9 L/48 h; corregir osmol <3 mOsm/kg/h."
   },
   {
     id: "ehh-insulin",
     phase: "Insulina",
     medication: "INSULINA REGULAR",
-    text: "Tras rehidratación parcial: bolo 0.1 U/kg o infusión 0.14 U/kg/h sin bolo; hasta glucosa <300 mg/dL."
+    text: "Tras rehidrataci\xF3n parcial: bolo 0.1 U/kg o infusi\xF3n 0.14 U/kg/h sin bolo; hasta glucosa <300 mg/dL."
   },
   {
     id: "ehh-k",
     phase: "Potasio",
     medication: "CLORURO DE POTASIO (KCL)",
-    text: "Misma tabla de K⁺ que CAD durante insulina IV: reponer según rango; no agregar K si > 5.2 mEq/L."
+    text: "Misma tabla de K\u207A que CAD durante insulina IV: reponer seg\xFAn rango; no agregar K si > 5.2 mEq/L."
   },
   {
     id: "ehh-precipitant",
     phase: "Precipitante",
-    medication: "ESTUDIOS DIAGNÓSTICOS",
-    text: "Buscar infección, IAM, ACV u otra causa precipitante."
+    medication: "ESTUDIOS DIAGN\xD3STICOS",
+    text: "Buscar infecci\xF3n, IAM, ACV u otra causa precipitante."
   }
 ];
 var CAD_LAB_MONITORING = [
   {
     id: "cad-lab-electrolytes",
-    study: "ELECTROLITOS SÉRICOS",
-    frequency: "CADA 2–4 H",
-    comments: "Incluye Na, K, Cl; durante reposición y titulación de insulina; reevaluar si K < 3.3 mEq/L c/2 h."
+    study: "ELECTROLITOS S\xC9RICOS",
+    frequency: "CADA 2\u20134 H",
+    comments: "Incluye Na, K, Cl; durante reposici\xF3n y titulaci\xF3n de insulina; reevaluar si K < 3.3 mEq/L c/2 h."
   },
   {
     id: "cad-lab-bmp",
     study: "BH / QS / GASES (PH, HCO3, ANION GAP)",
-    frequency: "CADA 2–4 H",
-    comments: "Hasta criterios de resolución: pH > 7.3, HCO3 ≥ 18, gap normalizado."
+    frequency: "CADA 2\u20134 H",
+    comments: "Hasta criterios de resoluci\xF3n: pH > 7.3, HCO3 \u2265 18, gap normalizado."
   },
   {
     id: "cad-lab-ketones",
     study: "CETONAS (ORINA O SANGRE)",
-    frequency: "CADA 4–6 H",
-    comments: "Hasta resolución de cetosis; correlacionar con gap y clínica."
+    frequency: "CADA 4\u20136 H",
+    comments: "Hasta resoluci\xF3n de cetosis; correlacionar con gap y cl\xEDnica."
   },
   {
     id: "cad-lab-mag",
-    study: "MAGNESIO SÉRICO",
-    frequency: "CADA 12–24 H",
-    comments: "Si reposición prolongada o diuresis osmótica marcada."
+    study: "MAGNESIO S\xC9RICO",
+    frequency: "CADA 12\u201324 H",
+    comments: "Si reposici\xF3n prolongada o diuresis osm\xF3tica marcada."
   }
 ];
 var CAD_NURSING_MONITORING = [
   {
     id: "cad-nursing-glucometry",
-    study: "GLUCOMETRÍA CAPILAR",
+    study: "GLUCOMETR\xCDA CAPILAR",
     frequency: "CADA 1 H",
     kind: "nursing",
     comments: "Durante insulina IV; meta descenso ~50 mg/dL/h; agregar dextrosa al 250 mg/dL."
@@ -18413,37 +18429,37 @@ var CAD_NURSING_MONITORING = [
 var EHH_LAB_MONITORING = [
   {
     id: "ehh-lab-electrolytes",
-    study: "ELECTROLITOS SÉRICOS",
-    frequency: "CADA 2–4 H",
-    comments: "Incluye Na, K, Cl; durante insulina y diuresis osmótica; misma tabla de reposición que CAD."
+    study: "ELECTROLITOS S\xC9RICOS",
+    frequency: "CADA 2\u20134 H",
+    comments: "Incluye Na, K, Cl; durante insulina y diuresis osm\xF3tica; misma tabla de reposici\xF3n que CAD."
   },
   {
     id: "ehh-lab-osm",
-    study: "OSMOLALIDAD SÉRICA",
-    frequency: "CADA 4–6 H",
-    comments: "Meta corrección < 3 mOsm/kg/h; evitar corrección rápida de sodio/osmol."
+    study: "OSMOLALIDAD S\xC9RICA",
+    frequency: "CADA 4\u20136 H",
+    comments: "Meta correcci\xF3n < 3 mOsm/kg/h; evitar correcci\xF3n r\xE1pida de sodio/osmol."
   },
   {
     id: "ehh-lab-bmp",
     study: "BH / QS",
-    frequency: "CADA 4–6 H",
-    comments: "Monitoreo de función renal y electrolitos durante rehidratación."
+    frequency: "CADA 4\u20136 H",
+    comments: "Monitoreo de funci\xF3n renal y electrolitos durante rehidrataci\xF3n."
   }
 ];
 var EHH_NURSING_MONITORING = [
   {
     id: "ehh-nursing-glucometry",
-    study: "GLUCOMETRÍA CAPILAR",
+    study: "GLUCOMETR\xCDA CAPILAR",
     frequency: "CADA 1 H",
     kind: "nursing",
     comments: "Durante insulina IV; meta descenso gradual; evitar >100 mg/dL/h."
   },
   {
     id: "ehh-nursing-neuro",
-    study: "VALORACIÓN NEUROLÓGICA / ESTADO MENTAL",
-    frequency: "CADA 2–4 H",
+    study: "VALORACI\xD3N NEUROL\xD3GICA / ESTADO MENTAL",
+    frequency: "CADA 2\u20134 H",
     kind: "nursing",
-    comments: "Correlacionar con osmolalidad; buscar precipitante (IAM, ACV, infección)."
+    comments: "Correlacionar con osmolalidad; buscar precipitante (IAM, ACV, infecci\xF3n)."
   }
 ];
 function evaluateResolutionChecks(labs) {
@@ -18459,15 +18475,15 @@ function describeCadEhhSuggestion(labs) {
   var L = labs || {};
   var mode = suggestCadEhhMode(L);
   if (mode === "cad") {
-    return "Glucosa elevada con acidosis o cetosis — priorizar protocolo CAD.";
+    return "Glucosa elevada con acidosis o cetosis \u2014 priorizar protocolo CAD.";
   }
   if (mode === "ehh") {
-    return "Hiperglucemia severa sin acidosis significativa — priorizar EHH.";
+    return "Hiperglucemia severa sin acidosis significativa \u2014 priorizar EHH.";
   }
   if (L.glucoseMgDl == null) {
-    return "Sin glucosa en el último laboratorio — confirma modo clínicamente.";
+    return "Sin glucosa en el \xFAltimo laboratorio \u2014 confirma modo cl\xEDnicamente.";
   }
-  return "Criterios mixtos o incompletos — comparar CAD vs EHH antes de indicar.";
+  return "Criterios mixtos o incompletos \u2014 comparar CAD vs EHH antes de indicar.";
 }
 function evaluateCadEhh(input) {
   var inp = input || {};
@@ -18482,7 +18498,7 @@ function evaluateCadEhh(input) {
     resolutionChecks: evaluateResolutionChecks(labs),
     potassiumGuidance,
     fluidGuidance,
-    disclaimer: "Orientación según ADA; confirmar clínicamente."
+    disclaimer: "Orientaci\xF3n seg\xFAn ADA; confirmar cl\xEDnicamente."
   };
 }
 
@@ -18504,7 +18520,7 @@ function calcBicHuBalanceada(p) {
     thirds: [
       { phase: "bolo", meq: third, note: "Sin diluir" },
       { phase: "4h", meq: third, note: "Diluido balanceada HU" },
-      { phase: "24h", meq: third, note: "Infusión titular 24 h" }
+      { phase: "24h", meq: third, note: "Infusi\xF3n titular 24 h" }
     ],
     copyLine: "Balanceada HU total ~" + rounded + " mEq (3 tercios: " + third + "/" + third + "/" + third + ")"
   };
@@ -18522,16 +18538,16 @@ function calcAlbuminParacentesis(p) {
 function calcHypertonicVolume(p) {
   if (p.useWeightRule && p.weightKg != null) {
     var vol = Math.round(Number(p.weightKg) * 3);
-    return { volumeCc: vol, copyLine: "Hipertónica: pasar " + vol + " cc (3 cc/kg)" };
+    return { volumeCc: vol, copyLine: "Hipert\xF3nica: pasar " + vol + " cc (3 cc/kg)" };
   }
-  return { volumeCc: 100, copyLine: "Hipertónica: 100 cc SS 0.9% + 3 amp NaCl 17.7% en 20 min" };
+  return { volumeCc: 100, copyLine: "Hipert\xF3nica: 100 cc SS 0.9% + 3 amp NaCl 17.7% en 20 min" };
 }
 function calcInsulinUnitsPerHour(p) {
   var u = Number(p.weightKg) * Number(p.unitsPerKgPerHour);
   var rounded = Math.round(u * 10) / 10;
   return {
     unitsPerHour: rounded,
-    copyLine: "Insulina regular " + p.unitsPerKgPerHour + " U/kg/h → " + rounded + " U/h"
+    copyLine: "Insulina regular " + p.unitsPerKgPerHour + " U/kg/h \u2192 " + rounded + " U/h"
   };
 }
 function calcLevetiracetamLoad(p) {
@@ -18550,8 +18566,8 @@ function calcSedationMgPerHour(p) {
       drug,
       mgPerHourMin: mgMin,
       mgPerHourMax: mgMax,
-      rangeText: "5–20 mcg/kg/min (no diluir; máx 4 mg/kg/h)",
-      copyLine: "Propofol " + minMcgKgMin + "–" + maxMcgKgMin + " mcg/kg/min (~" + mgMin + "–" + mgMax + " mg/h). No diluir. Máx 4 mg/kg/h. Permitir titular."
+      rangeText: "5\u201320 mcg/kg/min (no diluir; m\xE1x 4 mg/kg/h)",
+      copyLine: "Propofol " + minMcgKgMin + "\u2013" + maxMcgKgMin + " mcg/kg/min (~" + mgMin + "\u2013" + mgMax + " mg/h). No diluir. M\xE1x 4 mg/kg/h. Permitir titular."
     };
   }
   if (drug === "dexmed") {
@@ -18563,8 +18579,8 @@ function calcSedationMgPerHour(p) {
       drug,
       mgPerHourMin: dexMin,
       mgPerHourMax: dexMax,
-      rangeText: "0.2–0.7 mcg/kg/h (IOT: 0.5 mcg/kg/h)",
-      copyLine: "Dexmedetomidina 0.2–0.7 mcg/kg/h (~" + dexMin + "–" + dexMax + " mg/h). IOT: 0.5 mcg/kg/h. Permitir titular."
+      rangeText: "0.2\u20130.7 mcg/kg/h (IOT: 0.5 mcg/kg/h)",
+      copyLine: "Dexmedetomidina 0.2\u20130.7 mcg/kg/h (~" + dexMin + "\u2013" + dexMax + " mg/h). IOT: 0.5 mcg/kg/h. Permitir titular."
     };
   }
   var minMgKgH = 0.02;
@@ -18575,8 +18591,8 @@ function calcSedationMgPerHour(p) {
     drug: "midazolam",
     mgPerHourMin,
     mgPerHourMax,
-    rangeText: "0.02–0.1 mg/kg/h (50 mg en 100 cc SS0.9%)",
-    copyLine: "Midazolam " + mgPerHourMin + "–" + mgPerHourMax + " mg/h (0.02–0.1 mg/kg/h). 50 mg en 100 cc SS0.9%. Permitir titular."
+    rangeText: "0.02\u20130.1 mg/kg/h (50 mg en 100 cc SS0.9%)",
+    copyLine: "Midazolam " + mgPerHourMin + "\u2013" + mgPerHourMax + " mg/h (0.02\u20130.1 mg/kg/h). 50 mg en 100 cc SS0.9%. Permitir titular."
   };
 }
 var MANEJO_CALCULATORS = {
@@ -18593,16 +18609,16 @@ var MANEJO_CALCULATORS = {
 // public/js/manejo-insulin-pump-algorithms.mjs
 var INSULIN_PUMP_GLUCOSE_BANDS = [
   { label: "< 70", min: null, maxExclusive: 70, suspend: true },
-  { label: "70 – 109", min: 70, maxExclusive: 110 },
-  { label: "110 – 119", min: 110, maxExclusive: 120 },
-  { label: "120 – 149", min: 120, maxExclusive: 150 },
-  { label: "150 – 179", min: 150, maxExclusive: 180 },
-  { label: "180 – 209", min: 180, maxExclusive: 210 },
-  { label: "210 – 239", min: 210, maxExclusive: 240 },
-  { label: "240 – 269", min: 240, maxExclusive: 270 },
-  { label: "270 – 299", min: 270, maxExclusive: 300 },
-  { label: "300 – 329", min: 300, maxExclusive: 330 },
-  { label: "330 – 359", min: 330, maxExclusive: 360 },
+  { label: "70 \u2013 109", min: 70, maxExclusive: 110 },
+  { label: "110 \u2013 119", min: 110, maxExclusive: 120 },
+  { label: "120 \u2013 149", min: 120, maxExclusive: 150 },
+  { label: "150 \u2013 179", min: 150, maxExclusive: 180 },
+  { label: "180 \u2013 209", min: 180, maxExclusive: 210 },
+  { label: "210 \u2013 239", min: 210, maxExclusive: 240 },
+  { label: "240 \u2013 269", min: 240, maxExclusive: 270 },
+  { label: "270 \u2013 299", min: 270, maxExclusive: 300 },
+  { label: "300 \u2013 329", min: 300, maxExclusive: 330 },
+  { label: "330 \u2013 359", min: 330, maxExclusive: 360 },
   { label: "> 360", min: 360, maxExclusive: null }
 ];
 var INSULIN_PUMP_ALGORITHMS = [
@@ -18677,7 +18693,7 @@ function normalizeFrequency(raw) {
   if (cada) return "CADA " + cada[1] + " H";
   var qH = s.match(/\bq\s*(\d+)\s*h\b/i);
   if (qH) return "CADA " + qH[1] + " H";
-  if (/dosis\s+[úu]nica\s+diaria/i.test(s)) return "CADA 24 H (DOSIS ÚNICA)";
+  if (/dosis\s+[úu]nica\s+diaria/i.test(s)) return "CADA 24 H (DOSIS \xDANICA)";
   if (/c\/24\s*h/i.test(s)) return "CADA 24 H";
   if (/c\/12\s*h/i.test(s)) return "CADA 12 H";
   if (/c\/8\s*h/i.test(s)) return "CADA 8 H";
@@ -18793,7 +18809,7 @@ function drugToSomeOrder(drug, calcResult) {
         dilution: vol != null ? vol + " ML DE GLUCOSADO 5%" : "",
         frequency: "CADA 12 H",
         infusionRateMlHr: rate,
-        comments: [drug.renalNote, "INFUSIÓN 2 H"].filter(Boolean).join("; "),
+        comments: [drug.renalNote, "INFUSI\xD3N 2 H"].filter(Boolean).join("; "),
         requiresDilution: true
       });
     }
@@ -18805,7 +18821,7 @@ function drugToSomeOrder(drug, calcResult) {
         doseUnit: "U/H",
         route: "IV",
         dilution: "100 ML DE " + NACL_09,
-        frequency: "INFUSIÓN CONTINUA",
+        frequency: "INFUSI\xD3N CONTINUA",
         infusionRateMlHr: null,
         comments: normalizeFluidTerms([copy, drug.renalNote].filter(Boolean).join("; "))
       });
@@ -18860,18 +18876,18 @@ function cadEhhFluidSomeOrder(mode, weightKg, labs) {
     return normalizeSomeOrder(
       buildSomeOrder({
         medication: maint,
-        doseValue: mlHr != null ? String(mlHr) : "15–20",
+        doseValue: mlHr != null ? String(mlHr) : "15\u201320",
         doseUnit: mlHr != null ? "ML/H" : "ML/KG/H",
         route: "IV",
         dilution: "",
-        frequency: "INFUSIÓN CONTINUA",
+        frequency: "INFUSI\xD3N CONTINUA",
         infusionRateMlHr: mlHr,
         comments: comments.join("; ")
       })
     );
   }
   comments.unshift(
-    "PRIMERA HORA: 1 L " + NACL_09 + ". DESPUÉS: " + maint + " SI NO HAY SHOCK; REPOSICIÓN DE DÉFICIT EN 24–48 H (ADA)"
+    "PRIMERA HORA: 1 L " + NACL_09 + ". DESPU\xC9S: " + maint + " SI NO HAY SHOCK; REPOSICI\xD3N DE D\xC9FICIT EN 24\u201348 H (ADA)"
   );
   return normalizeSomeOrder(
     buildSomeOrder({
@@ -18897,10 +18913,10 @@ function kRepletionToSomeOrder(row, labs) {
         doseValue: "20",
         doseUnit: "MEQ/H",
         route: "IV",
-        dilution: "EN " + NACL_09_FULL + " (VOLUMEN SEGÚN CONCENTRACIÓN MÁXIMA INSTITUCIONAL)",
-        frequency: "INFUSIÓN CONTINUA",
+        dilution: "EN " + NACL_09_FULL + " (VOLUMEN SEG\xDAN CONCENTRACI\xD3N M\xC1XIMA INSTITUCIONAL)",
+        frequency: "INFUSI\xD3N CONTINUA",
         infusionRateMlHr: null,
-        comments: "SUSPENDER INSULINA HASTA K > 3.3 MEQ/L. MÁX 40 MEQ/H CON MONITOR ECG. REEVALUAR ELECTROLITOS SÉRICOS C/2 H. " + comments.join("; ")
+        comments: "SUSPENDER INSULINA HASTA K > 3.3 MEQ/L. M\xC1X 40 MEQ/H CON MONITOR ECG. REEVALUAR ELECTROLITOS S\xC9RICOS C/2 H. " + comments.join("; ")
       })
     );
   }
@@ -18914,7 +18930,7 @@ function kRepletionToSomeOrder(row, labs) {
         dilution: carrier.dilutionPhrase,
         frequency: "CONTINUO EN FLUIDOS DE MANTENIMIENTO",
         infusionRateMlHr: null,
-        comments: "AGREGAR " + row.addMeqPerLiter + " MEQ POR LITRO DE " + carrier.carrier + " SI HAY DIURESIS. VIGILAR ELECTROLITOS SÉRICOS C/2–4 H. " + comments.join("; ")
+        comments: "AGREGAR " + row.addMeqPerLiter + " MEQ POR LITRO DE " + carrier.carrier + " SI HAY DIURESIS. VIGILAR ELECTROLITOS S\xC9RICOS C/2\u20134 H. " + comments.join("; ")
       })
     );
   }
@@ -18927,7 +18943,7 @@ function kRepletionToSomeOrder(row, labs) {
       dilution: "",
       frequency: "MONITOREO",
       infusionRateMlHr: null,
-      comments: "NO AGREGAR POTASIO A FLUIDOS. VIGILAR ELECTROLITOS SÉRICOS SERIADOS HASTA K < 5.2 MEQ/L. " + comments.join("; ")
+      comments: "NO AGREGAR POTASIO A FLUIDOS. VIGILAR ELECTROLITOS S\xC9RICOS SERIADOS HASTA K < 5.2 MEQ/L. " + comments.join("; ")
     })
   );
 }
@@ -18987,8 +19003,8 @@ function cadGlucose250MaintenanceFluid(labs) {
     medication: DEXTROSE_50,
     doseValue: String(d50Ml),
     doseUnit: "ML",
-    dilution: "AGREGAR A " + bagMl + " ML DE " + carrierFull + " (= " + DEXTROSE_5_GRAMS_PER_LITER + " G/L · GLUCOSADO 5%)",
-    carrierNote: "A " + bagMl + " ML DE " + carrierShort + ": AGREGAR " + d50Ml + " ML DE DEXTROSA 50% (" + DEXTROSE_5_GRAMS_PER_LITER + " G DE DEXTROSA → " + resultingSolution + ").",
+    dilution: "AGREGAR A " + bagMl + " ML DE " + carrierFull + " (= " + DEXTROSE_5_GRAMS_PER_LITER + " G/L \xB7 GLUCOSADO 5%)",
+    carrierNote: "A " + bagMl + " ML DE " + carrierShort + ": AGREGAR " + d50Ml + " ML DE DEXTROSA 50% (" + DEXTROSE_5_GRAMS_PER_LITER + " G DE DEXTROSA \u2192 " + resultingSolution + ").",
     resultingSolution
   };
 }
@@ -19018,9 +19034,9 @@ function cadGlucose250DextrosePlanOrder(weightKg, labs) {
       dilution: fluid.dilution,
       frequency: "AL GLUCOSA CAPILAR 250 MG/DL",
       comments: [
-        "DISPARADOR: GLUCOMETRÍA CAPILAR 250 MG/DL",
+        "DISPARADOR: GLUCOMETR\xCDA CAPILAR 250 MG/DL",
         fluid.carrierNote,
-        insulinComment + " · BOMBA EN 100 ML DE " + NACL_09,
+        insulinComment + " \xB7 BOMBA EN 100 ML DE " + NACL_09,
         "MANTENER INSULINA IV HASTA RESOLVER CETOSIS",
         guidance.rationale
       ].filter(Boolean).join("; ")
@@ -19057,7 +19073,7 @@ function labMonitorToSomeOrder(item) {
       medication: item.study || "ESTUDIO DE LABORATORIO",
       doseValue: "",
       doseUnit: "",
-      route: item.route || (item.kind === "nursing" ? "CUIDADOS DE ENFERMERÍA" : "LABORATORIO"),
+      route: item.route || (item.kind === "nursing" ? "CUIDADOS DE ENFERMER\xCDA" : "LABORATORIO"),
       dilution: "",
       frequency: item.frequency || "",
       infusionRateMlHr: null,
@@ -19080,7 +19096,7 @@ function buildKvBlock(label, value, opts) {
   lbl.textContent = label;
   var val2 = document.createElement("div");
   val2.className = "manejo-kv-val" + (opts.mono ? " manejo-kv-val--mono" : "");
-  val2.textContent = value || "—";
+  val2.textContent = value || "\u2014";
   kv.appendChild(lbl);
   kv.appendChild(val2);
   return kv;
@@ -19119,10 +19135,10 @@ function buildIndicationChips(items, familyId, opts) {
   if (opts.clickable) {
     row.classList.add("manejo-indication-chips--clickable");
     row.setAttribute("role", "group");
-    row.setAttribute("aria-label", "Filtrar por indicación");
+    row.setAttribute("aria-label", "Filtrar por indicaci\xF3n");
   }
   if (!tokens.length) {
-    row.textContent = "—";
+    row.textContent = "\u2014";
     row.className += " manejo-indication-chips--empty";
     return row;
   }
@@ -19157,7 +19173,7 @@ function createManejoSomeUi(deps) {
     var allowCopy = fieldOpts && fieldOpts.forceCopy ? true : isManejoSomeCopyUiEnabled();
     if (!allowCopy) copyText = null;
     var field = document.createElement("div");
-    field.className = "manejo-some-field" + (label === "Medicamento" || label === "Estudio" || label === "Recomendación" || label === "Criterios" || label === "Indicación" ? " manejo-some-field--wide" : "");
+    field.className = "manejo-some-field" + (label === "Medicamento" || label === "Estudio" || label === "Recomendaci\xF3n" || label === "Criterios" || label === "Indicaci\xF3n" ? " manejo-some-field--wide" : "");
     var lbl = document.createElement("span");
     lbl.className = "manejo-some-field-label";
     lbl.textContent = label;
@@ -19166,7 +19182,7 @@ function createManejoSomeUi(deps) {
     row.className = "manejo-some-field-row";
     var val2 = document.createElement("div");
     val2.className = "manejo-some-field-val";
-    val2.textContent = text ? toSomeUpper(text) : "—";
+    val2.textContent = text ? toSomeUpper(text) : "\u2014";
     row.appendChild(val2);
     if (copyText) {
       var btn = document.createElement("button");
@@ -19203,7 +19219,7 @@ function createManejoSomeUi(deps) {
         var wn = document.createElement("span");
         wn.className = "manejo-dilution-warn";
         wn.title = "Confirmar volumen diluyente institucional";
-        wn.textContent = "Dilución";
+        wn.textContent = "Diluci\xF3n";
         head.appendChild(wn);
       }
       art.appendChild(head);
@@ -19226,7 +19242,7 @@ function createManejoSomeUi(deps) {
       );
     }
     if (adaKind === "criteria" || adaKind === "milestone") {
-      var primaryLabel = adaKind === "criteria" ? "Criterios" : "Indicación";
+      var primaryLabel = adaKind === "criteria" ? "Criterios" : "Indicaci\xF3n";
       appendField(primaryLabel, function(o) {
         return o.comments || String(o.doseValue ?? "").trim() || String(o.doseUnit ?? "").trim() || String(o.medication ?? "").trim();
       });
@@ -19289,10 +19305,10 @@ function createManejoSomeUi(deps) {
         )
       );
     }
-    appendField("Vía", function(o) {
+    appendField("V\xEDa", function(o) {
       return o.route;
     });
-    appendField("Dilución", function(o) {
+    appendField("Diluci\xF3n", function(o) {
       return o.dilution;
     });
     appendField("Frecuencia", function(o) {
@@ -19303,7 +19319,7 @@ function createManejoSomeUi(deps) {
       var rateTxt = /mcg\/min|mg\/min|u\/min|u\/kg\/h/i.test(rateRaw) ? toSomeUpper(rateRaw) : toSomeUpper(rateRaw + " CC/HR");
       grid.appendChild(
         buildSomeField(
-          "Velocidad de infusión",
+          "Velocidad de infusi\xF3n",
           rateTxt,
           function() {
             var r = String(resolveOrder().infusionRateMlHr || "").trim();
@@ -19360,9 +19376,9 @@ var ATB_HINT_KEY = "manejoAtbHint";
 var ATB_RIS_FILTER_KEY = "manejoAtbRisFilter";
 var ATB_SELECTED_KEY = "manejoAtbSelectedId";
 var ATB_RIS_FILTER_META = {
-  s: { chip: "s", label: "Sensibles (S)", title: "Antibióticos con S en antibiograma" },
-  r: { chip: "r", label: "Resistentes (R)", title: "Antibióticos con R en antibiograma" },
-  i: { chip: "i", label: "Intermedios (I)", title: "Antibióticos con I en antibiograma" }
+  s: { chip: "s", label: "Sensibles (S)", title: "Antibi\xF3ticos con S en antibiograma" },
+  r: { chip: "r", label: "Resistentes (R)", title: "Antibi\xF3ticos con R en antibiograma" },
+  i: { chip: "i", label: "Intermedios (I)", title: "Antibi\xF3ticos con I en antibiograma" }
 };
 var atbRuntime = {};
 var readingPanelDeps = {};
@@ -19395,7 +19411,7 @@ function findAtbDrugById(id) {
 function atbStatusLabel(classification, drug) {
   var status = classification && classification.status || "neutral";
   if (status === "compatible") return "S antibiograma";
-  if (status === "caution") return "Precaución";
+  if (status === "caution") return "Precauci\xF3n";
   return drug.route || "IV";
 }
 function buildAtbReadingPanel(drug, classification, patient, renalCtx, activeIso) {
@@ -19409,7 +19425,7 @@ function buildAtbReadingPanel(drug, classification, patient, renalCtx, activeIso
     wrap.appendChild(
       buildKvBlock(
         "Indicaciones",
-        drug.indications.map(formatIndicationChipLabel).join(" · "),
+        drug.indications.map(formatIndicationChipLabel).join(" \xB7 "),
         { wide: true }
       )
     );
@@ -19597,9 +19613,9 @@ function syncManejoAtbRisChipFilterUi(root) {
 function wireManejoAtbRisChipFilters(root, onChange) {
   if (!root) return;
   [
-    { key: "s", title: "Clic para filtrar antibióticos sensibles (S)" },
-    { key: "r", title: "Clic para filtrar antibióticos resistentes (R)" },
-    { key: "i", title: "Clic para filtrar antibióticos intermedios (I)" }
+    { key: "s", title: "Clic para filtrar antibi\xF3ticos sensibles (S)" },
+    { key: "r", title: "Clic para filtrar antibi\xF3ticos resistentes (R)" },
+    { key: "i", title: "Clic para filtrar antibi\xF3ticos intermedios (I)" }
   ].forEach(function(cfg) {
     root.querySelectorAll(".manejo-atb-culture-banner .atb-chip--" + cfg.key).forEach(function(chip) {
       chip.classList.add("atb-chip--clickable-filter");
@@ -19630,7 +19646,7 @@ function familyLabelForAtb(familyId) {
   var f = MANEJO_ATB_FAMILIES.find(function(x) {
     return x.id === familyId;
   });
-  return f ? f.label : familyId || "—";
+  return f ? f.label : familyId || "\u2014";
 }
 function familyHintForAtb(familyId) {
   var f = MANEJO_ATB_FAMILIES.find(function(x) {
@@ -19651,8 +19667,8 @@ function isolateToCultivoRow(iso) {
   };
 }
 function cultivoRowFechaDisplay(r) {
-  if (r.fechaMuestra && r.fechaMuestra !== "—") return r.fechaMuestra;
-  return r.studyDate || "—";
+  if (r.fechaMuestra && r.fechaMuestra !== "\u2014") return r.fechaMuestra;
+  return r.studyDate || "\u2014";
 }
 function getAtbPatientContext(pid, patient) {
   var ensure = atbRuntime.ensureParsedLabHistory;
@@ -19691,8 +19707,8 @@ function buildGuiaAtbCultureBanner(cultureCtx, activeIdx, pid, onRerender) {
     isolates.forEach(function(iso, i) {
       var o = document.createElement("option");
       o.value = String(i);
-      var sitio2 = iso.sitio && iso.sitio !== "—" ? iso.sitio : iso.tipoLabel || "Cultivo";
-      o.textContent = sitio2 + " · " + (iso.organismo || "—") + (iso.fecha && iso.fecha !== "—" ? " · " + iso.fecha : "");
+      var sitio2 = iso.sitio && iso.sitio !== "\u2014" ? iso.sitio : iso.tipoLabel || "Cultivo";
+      o.textContent = sitio2 + " \xB7 " + (iso.organismo || "\u2014") + (iso.fecha && iso.fecha !== "\u2014" ? " \xB7 " + iso.fecha : "");
       if (i === activeIdx) o.selected = true;
       sel.appendChild(o);
     });
@@ -19709,12 +19725,12 @@ function buildGuiaAtbCultureBanner(cultureCtx, activeIdx, pid, onRerender) {
   if (activeIso) {
     var row = isolateToCultivoRow(activeIso);
     var fecha = cultivoRowFechaDisplay(row);
-    var sitio = row.sitio && row.sitio !== "—" ? row.sitio : row.tipoLabel || "—";
+    var sitio = row.sitio && row.sitio !== "\u2014" ? row.sitio : row.tipoLabel || "\u2014";
     var summaryLine = document.createElement("p");
     summaryLine.className = "manejo-guia-atb-culture-summary-line";
-    summaryLine.textContent = [fecha, sitio, row.organismo || "—"].filter(function(part) {
-      return part && part !== "—";
-    }).join(" · ");
+    summaryLine.textContent = [fecha, sitio, row.organismo || "\u2014"].filter(function(part) {
+      return part && part !== "\u2014";
+    }).join(" \xB7 ");
     banner.appendChild(summaryLine);
     var details = document.createElement("details");
     details.className = "manejo-guia-atb-antibiogram-details";
@@ -19749,12 +19765,12 @@ function getAtbFamilies() {
 // public/js/manejo-pathology-catalog.mjs
 var MANEJO_PATHOLOGY_BRANCHES = [
   { id: "cardio", label: "Cardiovascular", hint: "EAP, TEP, crisis hipertensiva" },
-  { id: "neuro", label: "Neurología", hint: "Estado epiléptico, encefalopatía" },
-  { id: "gastro", label: "Gastroenterología", hint: "HDA, EH, pancreatitis" },
-  { id: "nefro", label: "Nefrología", hint: "K+, Na+, Ca++" },
-  { id: "endo", label: "Endocrinología", hint: "CAD, EHH, tormenta tiroidea" },
-  { id: "pulmo", label: "Neumología", hint: "EAP, TEP, VNI" },
-  { id: "heme-onc", label: "Hemato-oncología", hint: "Neutropenia febril" },
+  { id: "neuro", label: "Neurolog\xEDa", hint: "Estado epil\xE9ptico, encefalopat\xEDa" },
+  { id: "gastro", label: "Gastroenterolog\xEDa", hint: "HDA, EH, pancreatitis" },
+  { id: "nefro", label: "Nefrolog\xEDa", hint: "K+, Na+, Ca++" },
+  { id: "endo", label: "Endocrinolog\xEDa", hint: "CAD, EHH, tormenta tiroidea" },
+  { id: "pulmo", label: "Neumolog\xEDa", hint: "EAP, TEP, VNI" },
+  { id: "heme-onc", label: "Hemato-oncolog\xEDa", hint: "Neutropenia febril" },
   { id: "infecc", label: "Infecciosas", hint: "Sepsis, shock" },
   { id: "urgencias", label: "Urgencias", hint: "Anafilaxia, emergencias" }
 ];
@@ -19763,8 +19779,8 @@ var MANEJO_PATHOLOGIES = [
     id: "hyperkalemia-acute",
     branch: "nefro",
     title: "Hiperpotasemia aguda",
-    summary: "K+ >6.5 mmol/L o cambios en ECG — estabilizar, redistribuir y eliminar.",
-    definition: "Emergencia electrolítica con riesgo de arritmias ventriculares.",
+    summary: "K+ >6.5 mmol/L o cambios en ECG \u2014 estabilizar, redistribuir y eliminar.",
+    definition: "Emergencia electrol\xEDtica con riesgo de arritmias ventriculares.",
     tags: ["emergencia", "electrolitos"],
     linkedProtocolIds: [
       "ca-gluconate-bolus",
@@ -19776,39 +19792,39 @@ var MANEJO_PATHOLOGIES = [
     sections: [
       {
         id: "membrane",
-        title: "Estabilización de membrana cardíaca",
+        title: "Estabilizaci\xF3n de membrana card\xEDaca",
         items: [
           {
             type: "text",
-            text: "Gluconato de calcio 10%: 10–20 ml (1–2 g) IV en 2–5 min. Repetir en 5 min si persisten cambios en ECG."
+            text: "Gluconato de calcio 10%: 10\u201320 ml (1\u20132 g) IV en 2\u20135 min. Repetir en 5 min si persisten cambios en ECG."
           },
           {
             type: "protocol",
             protocolId: "ca-gluconate-bolus",
-            label: "Gluconato de calcio — bolo",
+            label: "Gluconato de calcio \u2014 bolo",
             tier: "first-line",
-            criteria: "Cambios en ECG o K+ ≥6.5 mmol/L"
+            criteria: "Cambios en ECG o K+ \u22656.5 mmol/L"
           }
         ]
       },
       {
         id: "shift",
-        title: "Redistribución (shift intracelular)",
+        title: "Redistribuci\xF3n (shift intracelular)",
         items: [
           {
             type: "text",
-            text: "Insulina regular 10 UI IV + dextrosa 50% 50 ml (25 g). Salbutamol nebulizado 10–20 mg en 10 min (puede repetir)."
+            text: "Insulina regular 10 UI IV + dextrosa 50% 50 ml (25 g). Salbutamol nebulizado 10\u201320 mg en 10 min (puede repetir)."
           },
           {
             type: "text",
-            text: "Bicarbonato 50 mEq IV en 5 min solo si acidosis metabólica severa pH <7.2."
+            text: "Bicarbonato 50 mEq IV en 5 min solo si acidosis metab\xF3lica severa pH <7.2."
           },
           {
             type: "protocol",
             protocolId: "bicarb-hyperkalemia",
-            label: "Bicarbonato — hiperpotasemia",
+            label: "Bicarbonato \u2014 hiperpotasemia",
             tier: "alternative",
-            criteria: "Acidosis metabólica severa pH <7.2"
+            criteria: "Acidosis metab\xF3lica severa pH <7.2"
           },
           {
             type: "protocol",
@@ -19821,38 +19837,38 @@ var MANEJO_PATHOLOGIES = [
       },
       {
         id: "elimination",
-        title: "Eliminación de potasio",
+        title: "Eliminaci\xF3n de potasio",
         items: [
           {
             type: "text",
-            text: "Furosemida 40–80 mg IV si función renal preservada y euvolémico. Patiromer o zirconium ciclosilicato si disponibles."
+            text: "Furosemida 40\u201380 mg IV si funci\xF3n renal preservada y euvol\xE9mico. Patiromer o zirconium ciclosilicato si disponibles."
           },
           {
             type: "protocol",
             protocolId: "furo-bolus",
-            label: "Furosemida — bolo",
+            label: "Furosemida \u2014 bolo",
             tier: "alternative",
-            criteria: "Función renal preservada y euvolémico"
+            criteria: "Funci\xF3n renal preservada y euvol\xE9mico"
           },
           {
             type: "text",
-            text: "Hemodiálisis urgente si K+ refractario, ERC terminal u oliguria/anuria."
+            text: "Hemodi\xE1lisis urgente si K+ refractario, ERC terminal u oliguria/anuria."
           }
         ]
       }
     ],
     monitoring: [
       "ECG continuo",
-      "K+ sérico cada 2–4 h",
-      "Glucosa cada 30–60 min × 4 h post-insulina"
+      "K+ s\xE9rico cada 2\u20134 h",
+      "Glucosa cada 30\u201360 min \xD7 4 h post-insulina"
     ],
-    notes: ["Ajustar según función renal y volumen"]
+    notes: ["Ajustar seg\xFAn funci\xF3n renal y volumen"]
   },
   {
     id: "cardiogenic-pulmonary-edema",
     branch: "cardio",
-    title: "Edema agudo pulmonar cardiogénico",
-    summary: "Disnea, estertores y sobrecarga con función ventricular comprometida.",
+    title: "Edema agudo pulmonar cardiog\xE9nico",
+    summary: "Disnea, estertores y sobrecarga con funci\xF3n ventricular comprometida.",
     tags: ["emergencia", "cardio"],
     linkedProtocolIds: [
       "nitro-sublingual-eap",
@@ -19870,47 +19886,47 @@ var MANEJO_PATHOLOGIES = [
         id: "general",
         title: "Medidas generales",
         items: [
-          { type: "text", text: "Oxígeno para SpO2 >90%; posición sentado (Fowler 90°); monitoreo continuo." }
+          { type: "text", text: "Ox\xEDgeno para SpO2 >90%; posici\xF3n sentado (Fowler 90\xB0); monitoreo continuo." }
         ]
       },
       {
         id: "pharm",
-        title: "Tratamiento farmacológico",
+        title: "Tratamiento farmacol\xF3gico",
         items: [
           {
             type: "protocol",
             protocolId: "nitro-sublingual-eap",
-            label: "Nitroglicerina — sublingual",
+            label: "Nitroglicerina \u2014 sublingual",
             tier: "first-line",
-            criteria: "0.4 mg SL c/5 min × 3 antes de infusión IV"
+            criteria: "0.4 mg SL c/5 min \xD7 3 antes de infusi\xF3n IV"
           },
           {
             type: "protocol",
             protocolId: "nitro-iam",
-            label: "Nitroglicerina — infusión IV",
+            label: "Nitroglicerina \u2014 infusi\xF3n IV",
             tier: "first-line",
-            criteria: "Tras SL o si no responde; PAS ≥90 mmHg"
+            criteria: "Tras SL o si no responde; PAS \u226590 mmHg"
           },
           {
             type: "protocol",
             protocolId: "furo-bolus",
-            label: "Furosemida — bolo",
+            label: "Furosemida \u2014 bolo",
             tier: "first-line",
-            criteria: "Sobrecarga hídrica con estertores / edema"
+            criteria: "Sobrecarga h\xEDdrica con estertores / edema"
           },
           {
             type: "protocol",
             protocolId: "morphine-eap-bolus",
-            label: "Morfina — bolo IV",
+            label: "Morfina \u2014 bolo IV",
             tier: "alternative",
-            criteria: "Ansiedad severa sin hipotensión — usar con precaución"
+            criteria: "Ansiedad severa sin hipotensi\xF3n \u2014 usar con precauci\xF3n"
           },
           {
             type: "protocol",
             protocolId: "fentanyl-infusion",
             label: "Fentanilo",
             tier: "alternative",
-            criteria: "Disnea o ansiedad severa — preferible a morfina si inestabilidad"
+            criteria: "Disnea o ansiedad severa \u2014 preferible a morfina si inestabilidad"
           },
           {
             type: "protocol",
@@ -19923,7 +19939,7 @@ var MANEJO_PATHOLOGIES = [
       },
       {
         id: "hypotension",
-        title: "Si hipotensión (PAS <90 mmHg)",
+        title: "Si hipotensi\xF3n (PAS <90 mmHg)",
         items: [
           { type: "text", text: "Suspender nitroglicerina." },
           {
@@ -19931,13 +19947,13 @@ var MANEJO_PATHOLOGIES = [
             protocolId: "dobutamine-infusion",
             label: "Dobutamina",
             tier: "first-line",
-            criteria: "PAS <90 mmHg con bajo gasto — suspender nitroglicerina"
+            criteria: "PAS <90 mmHg con bajo gasto \u2014 suspender nitroglicerina"
           }
         ]
       },
       {
         id: "niv",
-        title: "Ventilación no invasiva",
+        title: "Ventilaci\xF3n no invasiva",
         items: [
           {
             type: "text",
@@ -19951,8 +19967,8 @@ var MANEJO_PATHOLOGIES = [
   {
     id: "diabetic-ketoacidosis",
     branch: "endo",
-    title: "Cetoacidosis diabética (CAD)",
-    summary: "Hiperglucemia con acidosis y cetosis — fluidos, insulina y K+.",
+    title: "Cetoacidosis diab\xE9tica (CAD)",
+    summary: "Hiperglucemia con acidosis y cetosis \u2014 fluidos, insulina y K+.",
     tags: ["emergencia", "metabolismo"],
     cadEhhMode: "cad",
     linkedProtocolIds: ["insulin-cad-01", "insulin-cad-005", "bic-hu-balanceada"],
@@ -19960,11 +19976,11 @@ var MANEJO_PATHOLOGIES = [
     sections: [
       {
         id: "fluids",
-        title: "Reanimación con líquidos",
+        title: "Reanimaci\xF3n con l\xEDquidos",
         items: [
           {
             type: "text",
-            text: "NaCl 0.9% 1000 ml primera hora; luego 250–500 ml/h. Al glucosa <250 mg/dl: glucosado 5% + NaCl 0.45% 150–250 ml/h."
+            text: "NaCl 0.9% 1000 ml primera hora; luego 250\u2013500 ml/h. Al glucosa <250 mg/dl: glucosado 5% + NaCl 0.45% 150\u2013250 ml/h."
           }
         ]
       },
@@ -19974,25 +19990,25 @@ var MANEJO_PATHOLOGIES = [
         items: [
           {
             type: "text",
-            text: "Bolo 0.1 UI/kg opcional. Infusión 0.1 UI/kg/h (100 UI en 100 cc SS0.9%). Meta descenso 50–75 mg/dl/h."
+            text: "Bolo 0.1 UI/kg opcional. Infusi\xF3n 0.1 UI/kg/h (100 UI en 100 cc SS0.9%). Meta descenso 50\u201375 mg/dl/h."
           },
           {
             type: "protocol",
             protocolId: "insulin-cad-01",
             label: "Insulina 0.1 U/kg/h",
             tier: "first-line",
-            criteria: "Inicio estándar tras reponer K+ si <3.3"
+            criteria: "Inicio est\xE1ndar tras reponer K+ si <3.3"
           },
           {
             type: "text",
-            text: "Al glucosa <250 mg/dl: reducir a 0.05 U/kg/h y mantener 150–200 mg/dl hasta resolver acidosis."
+            text: "Al glucosa <250 mg/dl: reducir a 0.05 U/kg/h y mantener 150\u2013200 mg/dl hasta resolver acidosis."
           },
           {
             type: "protocol",
             protocolId: "insulin-cad-005",
             label: "Insulina 0.05 U/kg/h",
             tier: "alternative",
-            criteria: "Glucosa <250 mg/dl — mantener 150–200 hasta resolver acidosis"
+            criteria: "Glucosa <250 mg/dl \u2014 mantener 150\u2013200 hasta resolver acidosis"
           }
         ]
       },
@@ -20002,29 +20018,29 @@ var MANEJO_PATHOLOGIES = [
         items: [
           {
             type: "text",
-            text: "K <3.3: reponer ANTES de insulina. K 3.3–5.2: 20–30 mEq KCl/L. K >5.2: no agregar inicialmente."
+            text: "K <3.3: reponer ANTES de insulina. K 3.3\u20135.2: 20\u201330 mEq KCl/L. K >5.2: no agregar inicialmente."
           }
         ]
       },
       {
         id: "resolution",
-        title: "Criterios de resolución",
+        title: "Criterios de resoluci\xF3n",
         items: [
           {
             type: "text",
-            text: "Glucosa <200 mg/dl, HCO3 ≥15, pH >7.3, anion gap <12."
+            text: "Glucosa <200 mg/dl, HCO3 \u226515, pH >7.3, anion gap <12."
           }
         ]
       }
     ],
-    monitoring: ["Glucosa c/h", "Gasometría y electrolitos c/2–4 h"],
-    notes: ["Checklist ADA integrado arriba — confirmar con protocolos institucionales"]
+    monitoring: ["Glucosa c/h", "Gasometr\xEDa y electrolitos c/2\u20134 h"],
+    notes: ["Checklist ADA integrado arriba \u2014 confirmar con protocolos institucionales"]
   },
   {
     id: "hyperosmolar-state",
     branch: "endo",
     title: "Estado hiperosmolar (EHH)",
-    summary: "Hiperglucemia severa sin acidosis significativa — rehidratación e insulina cauta.",
+    summary: "Hiperglucemia severa sin acidosis significativa \u2014 rehidrataci\xF3n e insulina cauta.",
     tags: ["emergencia", "metabolismo"],
     cadEhhMode: "ehh",
     linkedProtocolIds: ["insulin-ehh-014"],
@@ -20032,11 +20048,11 @@ var MANEJO_PATHOLOGIES = [
     sections: [
       {
         id: "fluids",
-        title: "Rehidratación",
+        title: "Rehidrataci\xF3n",
         items: [
           {
             type: "text",
-            text: "Corregir osmolalidad <3 mOsm/kg/h. NaCl 0.9% o 0.45% según sodio corregido; ~15–20 ml/kg/h inicial."
+            text: "Corregir osmolalidad <3 mOsm/kg/h. NaCl 0.9% o 0.45% seg\xFAn sodio corregido; ~15\u201320 ml/kg/h inicial."
           }
         ]
       },
@@ -20046,54 +20062,54 @@ var MANEJO_PATHOLOGIES = [
         items: [
           {
             type: "text",
-            text: "Tras rehidratación parcial: 0.14 U/kg/h sin bolo hasta glucosa <300 mg/dl."
+            text: "Tras rehidrataci\xF3n parcial: 0.14 U/kg/h sin bolo hasta glucosa <300 mg/dl."
           },
           {
             type: "protocol",
             protocolId: "insulin-ehh-014",
             label: "Insulina 0.14 U/kg/h (EHH)",
             tier: "first-line",
-            criteria: "Tras rehidratación parcial; sin bolo"
+            criteria: "Tras rehidrataci\xF3n parcial; sin bolo"
           }
         ]
       }
     ],
-    monitoring: ["Osmolalidad", "Na corregido", "Glucosa c/1–2 h"],
-    notes: ["Checklist ADA integrado arriba — rehidratación prioritaria"]
+    monitoring: ["Osmolalidad", "Na corregido", "Glucosa c/1\u20132 h"],
+    notes: ["Checklist ADA integrado arriba \u2014 rehidrataci\xF3n prioritaria"]
   },
   {
     id: "upper-gi-bleed",
     branch: "gastro",
     title: "Hemorragia digestiva alta",
-    summary: "Reanimación, IBP IV y manejo de varices si aplica.",
+    summary: "Reanimaci\xF3n, IBP IV y manejo de varices si aplica.",
     tags: ["emergencia", "sangrado"],
     linkedProtocolIds: ["platelets-volume"],
     relatedPathologyIds: ["hepatic-encephalopathy"],
     sections: [
       {
         id: "resus",
-        title: "Reanimación",
+        title: "Reanimaci\xF3n",
         items: [
           {
             type: "text",
-            text: "2 accesos 16–18G; cristaloides 500–1000 ml bolo. Meta Hb 7–9 g/dl (restrictiva). Transfundir si Hb <7."
+            text: "2 accesos 16\u201318G; cristaloides 500\u20131000 ml bolo. Meta Hb 7\u20139 g/dl (restrictiva). Transfundir si Hb <7."
           },
           {
             type: "protocol",
             protocolId: "platelets-volume",
             label: "Plaquetas (si <50 000)",
             tier: "alternative",
-            criteria: "Plaquetas <50 000 o sangrado activo con coagulopatía"
+            criteria: "Plaquetas <50 000 o sangrado activo con coagulopat\xEDa"
           }
         ]
       },
       {
         id: "ppi",
-        title: "Protección gástrica",
+        title: "Protecci\xF3n g\xE1strica",
         items: [
           {
             type: "text",
-            text: "Omeprazol 80 mg bolo → 8 mg/h × 72 h (200 mg en 250 cc a 10 cc/h) o pantoprazol equivalente."
+            text: "Omeprazol 80 mg bolo \u2192 8 mg/h \xD7 72 h (200 mg en 250 cc a 10 cc/h) o pantoprazol equivalente."
           }
         ]
       },
@@ -20103,17 +20119,17 @@ var MANEJO_PATHOLOGIES = [
         items: [
           {
             type: "text",
-            text: "Octreótido 50 mcg bolo → 50 mcg/h × 2–5 días o terlipresina 2 mg c/4 h × 48 h."
+            text: "Octre\xF3tido 50 mcg bolo \u2192 50 mcg/h \xD7 2\u20135 d\xEDas o terlipresina 2 mg c/4 h \xD7 48 h."
           },
           {
             type: "text",
-            text: "Ceftriaxona 1 g c/24 h × 7 días. Endoscopia urgente <12 h."
+            text: "Ceftriaxona 1 g c/24 h \xD7 7 d\xEDas. Endoscopia urgente <12 h."
           }
         ]
       },
       {
         id: "coag",
-        title: "Coagulopatía",
+        title: "Coagulopat\xEDa",
         items: [
           {
             type: "text",
@@ -20128,30 +20144,30 @@ var MANEJO_PATHOLOGIES = [
     id: "hypertensive-emergency",
     branch: "cardio",
     title: "Crisis hipertensiva",
-    summary: "PAS >180 o PAD >120 con daño agudo a órgano blanco.",
+    summary: "PAS >180 o PAD >120 con da\xF1o agudo a \xF3rgano blanco.",
     tags: ["emergencia", "cardio", "neuro"],
     linkedProtocolIds: ["nitro-iam", "nitro-standard", "furo-bolus", "amiodarone-load"],
     relatedPathologyIds: ["cardiogenic-pulmonary-edema"],
     sections: [
       {
         id: "goal",
-        title: "Meta de reducción",
+        title: "Meta de reducci\xF3n",
         items: [
           {
             type: "text",
-            text: "Reducir PAM 10–20% primera hora; ~25% en 2 h (excepto disección: PAS 100–120 en 20 min)."
+            text: "Reducir PAM 10\u201320% primera hora; ~25% en 2 h (excepto disecci\xF3n: PAS 100\u2013120 en 20 min)."
           }
         ]
       },
       {
         id: "encephalopathy",
-        title: "Encefalopatía / ACV",
+        title: "Encefalopat\xEDa / ACV",
         items: [
           {
             type: "text",
-            text: "Labetalol 10–20 mg IV bolo → 20–80 mg c/10 min (máx 300 mg) o infusión 2–8 mg/min."
+            text: "Labetalol 10\u201320 mg IV bolo \u2192 20\u201380 mg c/10 min (m\xE1x 300 mg) o infusi\xF3n 2\u20138 mg/min."
           },
-          { type: "text", text: "Alternativa: nicardipino 5 mg/h, titular 2.5 mg/h c/5–15 min (máx 15 mg/h)." }
+          { type: "text", text: "Alternativa: nicardipino 5 mg/h, titular 2.5 mg/h c/5\u201315 min (m\xE1x 15 mg/h)." }
         ]
       },
       {
@@ -20163,14 +20179,14 @@ var MANEJO_PATHOLOGIES = [
             protocolId: "nitro-iam",
             label: "Nitroglicerina IV",
             tier: "first-line",
-            criteria: "EAP hipertensivo o crisis con congestión pulmonar"
+            criteria: "EAP hipertensivo o crisis con congesti\xF3n pulmonar"
           },
           {
             type: "protocol",
             protocolId: "furo-bolus",
             label: "Furosemida",
             tier: "first-line",
-            criteria: "Sobrecarga hídrica asociada a crisis hipertensiva"
+            criteria: "Sobrecarga h\xEDdrica asociada a crisis hipertensiva"
           }
         ]
       },
@@ -20181,30 +20197,30 @@ var MANEJO_PATHOLOGIES = [
           {
             type: "protocol",
             protocolId: "amiodarone-load",
-            label: "Amiodarona — carga",
+            label: "Amiodarona \u2014 carga",
             tier: "alternative",
-            criteria: "Taquiarritmia ventricular o FA rápida con inestabilidad hemodinámica"
+            criteria: "Taquiarritmia ventricular o FA r\xE1pida con inestabilidad hemodin\xE1mica"
           }
         ]
       },
       {
         id: "dissection",
-        title: "Disección aórtica",
+        title: "Disecci\xF3n a\xF3rtica",
         items: [
           {
             type: "text",
-            text: "Labetalol IV o esmolol + nitroprusiato. Meta PAS 100–120 mmHg en 20 min."
+            text: "Labetalol IV o esmolol + nitroprusiato. Meta PAS 100\u2013120 mmHg en 20 min."
           }
         ]
       }
     ],
-    monitoring: ["PA continua", "neurológico", "ECG"]
+    monitoring: ["PA continua", "neurol\xF3gico", "ECG"]
   },
   {
     id: "anaphylaxis",
     branch: "urgencias",
     title: "Anafilaxia",
-    summary: "Reacción alérgica sistémica — epinefrina IM de inmediato.",
+    summary: "Reacci\xF3n al\xE9rgica sist\xE9mica \u2014 epinefrina IM de inmediato.",
     tags: ["emergencia", "alergia"],
     linkedProtocolIds: ["epinephrine-infusion", "salbutamol-nebul"],
     sections: [
@@ -20214,15 +20230,15 @@ var MANEJO_PATHOLOGIES = [
         items: [
           {
             type: "text",
-            text: "Epinefrina IM 0.3–0.5 mg (1:1000) cara anterolateral del muslo; repetir c/5–15 min."
+            text: "Epinefrina IM 0.3\u20130.5 mg (1:1000) cara anterolateral del muslo; repetir c/5\u201315 min."
           },
-          { type: "text", text: "O2 8–10 L/min; posición supina con piernas elevadas si hipotensión." }
+          { type: "text", text: "O2 8\u201310 L/min; posici\xF3n supina con piernas elevadas si hipotensi\xF3n." }
         ]
       },
       {
         id: "fluids",
-        title: "Líquidos",
-        items: [{ type: "text", text: "NaCl 0.9% 1000–2000 ml IV rápido en adultos." }]
+        title: "L\xEDquidos",
+        items: [{ type: "text", text: "NaCl 0.9% 1000\u20132000 ml IV r\xE1pido en adultos." }]
       },
       {
         id: "adjunct",
@@ -20230,7 +20246,7 @@ var MANEJO_PATHOLOGIES = [
         items: [
           {
             type: "text",
-            text: "Difenhidramina 25–50 mg IV; ranitidina 50 mg o famotidina 20 mg; metilprednisolona 125 mg o hidrocortisona 200 mg."
+            text: "Difenhidramina 25\u201350 mg IV; ranitidina 50 mg o famotidina 20 mg; metilprednisolona 125 mg o hidrocortisona 200 mg."
           },
           {
             type: "protocol",
@@ -20243,25 +20259,25 @@ var MANEJO_PATHOLOGIES = [
       },
       {
         id: "refractory",
-        title: "Hipotensión refractaria",
+        title: "Hipotensi\xF3n refractaria",
         items: [
           {
             type: "protocol",
             protocolId: "epinephrine-infusion",
-            label: "Epinefrina IV en infusión",
+            label: "Epinefrina IV en infusi\xF3n",
             tier: "alternative",
-            criteria: "Hipotensión refractaria tras IM y líquidos"
+            criteria: "Hipotensi\xF3n refractaria tras IM y l\xEDquidos"
           }
         ]
       }
     ],
-    monitoring: ["Observación mínimo 4–6 h (reacción bifásica 20%)"]
+    monitoring: ["Observaci\xF3n m\xEDnimo 4\u20136 h (reacci\xF3n bif\xE1sica 20%)"]
   },
   {
     id: "status-epilepticus",
     branch: "neuro",
-    title: "Estado epiléptico",
-    summary: "Convulsión >5 min o recurrencia sin recuperación — escalonar benzodiacepinas, antiepilépticos e IOT.",
+    title: "Estado epil\xE9ptico",
+    summary: "Convulsi\xF3n >5 min o recurrencia sin recuperaci\xF3n \u2014 escalonar benzodiacepinas, antiepil\xE9pticos e IOT.",
     tags: ["emergencia", "neuro"],
     linkedProtocolIds: [
       "levetiracetam-load",
@@ -20274,102 +20290,102 @@ var MANEJO_PATHOLOGIES = [
     sections: [
       {
         id: "first",
-        title: "Primera línea (0–5 min)",
+        title: "Primera l\xEDnea (0\u20135 min)",
         items: [
           {
             type: "text",
-            text: "Lorazepam 0.1 mg/kg IV (4 mg) a 2 mg/min; repetir ×1 a 5 min. Alternativa: diazepam 0.15 mg/kg o midazolam 10 mg IM."
+            text: "Lorazepam 0.1 mg/kg IV (4 mg) a 2 mg/min; repetir \xD71 a 5 min. Alternativa: diazepam 0.15 mg/kg o midazolam 10 mg IM."
           }
         ]
       },
       {
         id: "second",
-        title: "Segunda línea (5–20 min)",
+        title: "Segunda l\xEDnea (5\u201320 min)",
         items: [
           {
             type: "protocol",
             protocolId: "phenytoin-load",
-            label: "Fenitoína 20 mg/kg",
+            label: "Fenito\xEDna 20 mg/kg",
             tier: "first-line",
-            criteria: "Segunda línea tras benzodiacepina"
+            criteria: "Segunda l\xEDnea tras benzodiacepina"
           },
           {
             type: "protocol",
             protocolId: "levetiracetam-load",
             label: "Levetiracetam 60 mg/kg",
             tier: "alternative",
-            criteria: "Alternativa a fenitoína o si contraindicación"
+            criteria: "Alternativa a fenito\xEDna o si contraindicaci\xF3n"
           },
-          { type: "text", text: "Alternativa: ácido valproico 40 mg/kg IV (máx 3000 mg)." }
+          { type: "text", text: "Alternativa: \xE1cido valproico 40 mg/kg IV (m\xE1x 3000 mg)." }
         ]
       },
       {
         id: "refractory",
-        title: "Estado epiléptico refractario (>20 min)",
+        title: "Estado epil\xE9ptico refractario (>20 min)",
         items: [
           {
             type: "protocol",
             protocolId: "sedation-iot-bundle",
-            label: "Sedación IOT (bundle)",
+            label: "Sedaci\xF3n IOT (bundle)",
             tier: "first-line",
-            criteria: "Estado epiléptico refractario >20 min"
+            criteria: "Estado epil\xE9ptico refractario >20 min"
           },
-          { type: "text", text: "Requiere intubación y EEG continuo. Alternativa: pentobarbital." },
+          { type: "text", text: "Requiere intubaci\xF3n y EEG continuo. Alternativa: pentobarbital." },
           {
             type: "protocol",
             protocolId: "midazolam-infusion",
-            label: "Midazolam en infusión",
+            label: "Midazolam en infusi\xF3n",
             tier: "alternative",
-            criteria: "Componente del bundle o sedación escalonada pre-IOT"
+            criteria: "Componente del bundle o sedaci\xF3n escalonada pre-IOT"
           },
           {
             type: "protocol",
             protocolId: "propofol-infusion",
-            label: "Propofol en infusión",
+            label: "Propofol en infusi\xF3n",
             tier: "alternative",
-            criteria: "Alternativa a midazolam en sedación IOT continua"
+            criteria: "Alternativa a midazolam en sedaci\xF3n IOT continua"
           }
         ]
       }
     ],
-    monitoring: ["EEG", "gasometría", "lactato"]
+    monitoring: ["EEG", "gasometr\xEDa", "lactato"]
   },
   {
     id: "pulmonary-embolism",
     branch: "pulmo",
     title: "Tromboembolismo pulmonar (TEP) agudo",
-    summary: "Estratificar riesgo; anticoagulación y trombólisis si inestabilidad.",
+    summary: "Estratificar riesgo; anticoagulaci\xF3n y tromb\xF3lisis si inestabilidad.",
     tags: ["emergencia", "trombosis"],
     linkedProtocolIds: ["nore-standard", "dobutamine-infusion"],
     relatedPathologyIds: ["cardiogenic-pulmonary-edema", "septic-shock"],
     sections: [
       {
         id: "risk",
-        title: "Estratificación",
+        title: "Estratificaci\xF3n",
         items: [
           {
             type: "text",
-            text: "Alto riesgo: PAS <90 >15 min o choque. Intermedio: estable + disfunción VD o biomarcadores. Bajo: estable sin VD/biomarcadores."
+            text: "Alto riesgo: PAS <90 >15 min o choque. Intermedio: estable + disfunci\xF3n VD o biomarcadores. Bajo: estable sin VD/biomarcadores."
           }
         ]
       },
       {
         id: "anticoag",
-        title: "Anticoagulación",
+        title: "Anticoagulaci\xF3n",
         items: [
           {
             type: "text",
-            text: "HNF: bolo 80 UI/kg (máx 10 000) + 18 UI/kg/h; meta TTPa 1.5–2.5×. HBPM o DOAC si estable."
+            text: "HNF: bolo 80 UI/kg (m\xE1x 10 000) + 18 UI/kg/h; meta TTPa 1.5\u20132.5\xD7. HBPM o DOAC si estable."
           }
         ]
       },
       {
         id: "lysis",
-        title: "Trombólisis (alto riesgo)",
+        title: "Tromb\xF3lisis (alto riesgo)",
         items: [
           {
             type: "text",
-            text: "Alteplase 100 mg en 2 h o dosis reducida 50 mg/2 h. Tenecteplase según peso en bolo."
+            text: "Alteplase 100 mg en 2 h o dosis reducida 50 mg/2 h. Tenecteplase seg\xFAn peso en bolo."
           }
         ]
       },
@@ -20377,11 +20393,11 @@ var MANEJO_PATHOLOGIES = [
         id: "support",
         title: "Soporte",
         items: [
-          { type: "text", text: "O2 SpO2 >90%; líquidos con precaución (500 ml)." },
+          { type: "text", text: "O2 SpO2 >90%; l\xEDquidos con precauci\xF3n (500 ml)." },
           {
             type: "protocol",
             protocolId: "nore-standard",
-            label: "Norepinefrina si hipotensión",
+            label: "Norepinefrina si hipotensi\xF3n",
             tier: "first-line",
             criteria: "PAS <90 mmHg >15 min o choque obstructivo"
           },
@@ -20390,54 +20406,54 @@ var MANEJO_PATHOLOGIES = [
             protocolId: "dobutamine-infusion",
             label: "Dobutamina",
             tier: "alternative",
-            criteria: "Disfunción VD con PAS preservada y bajo gasto"
+            criteria: "Disfunci\xF3n VD con PAS preservada y bajo gasto"
           }
         ]
       }
     ],
-    monitoring: ["Signos vitales post-lisis", "examen neurológico c/h × 24 h"]
+    monitoring: ["Signos vitales post-lisis", "examen neurol\xF3gico c/h \xD7 24 h"]
   },
   {
     id: "febrile-neutropenia",
     branch: "heme-onc",
     title: "Neutropenia febril",
-    summary: "T ≥38.3°C y neutrófilos <500 — antibiótico empírico en <1 h.",
-    tags: ["infección", "oncología"],
+    summary: "T \u226538.3\xB0C y neutr\xF3filos <500 \u2014 antibi\xF3tico emp\xEDrico en <1 h.",
+    tags: ["infecci\xF3n", "oncolog\xEDa"],
     linkedProtocolIds: [],
     sections: [
       {
         id: "definition",
-        title: "Definición y riesgo",
+        title: "Definici\xF3n y riesgo",
         items: [
           {
             type: "text",
-            text: "T ≥38.3°C o ≥38°C sostenida >1 h + neutrófilos <500 (o <1000 con descenso esperado a <500). MASCC ≥21: bajo riesgo."
+            text: "T \u226538.3\xB0C o \u226538\xB0C sostenida >1 h + neutr\xF3filos <500 (o <1000 con descenso esperado a <500). MASCC \u226521: bajo riesgo."
           }
         ]
       },
       {
         id: "workup",
-        title: "Evaluación (<1 h)",
+        title: "Evaluaci\xF3n (<1 h)",
         items: [
           {
             type: "text",
-            text: "Hemocultivos ×2 periféricos + de catéter si aplica; urocultivo; Rx tórax; examen físico completo incl. perianal y cavidad oral."
+            text: "Hemocultivos \xD72 perif\xE9ricos + de cat\xE9ter si aplica; urocultivo; Rx t\xF3rax; examen f\xEDsico completo incl. perianal y cavidad oral."
           }
         ]
       },
       {
         id: "high-risk",
-        title: "Alto riesgo — monoterapia empírica",
+        title: "Alto riesgo \u2014 monoterapia emp\xEDrica",
         items: [
           {
             type: "text",
-            text: "Cefepime 2 g c/8 h, meropenem 1 g c/8 h o pip/tazo 4.5 g c/6 h. Agregar vancomicina según foco/MRSA. Antifúngico a las 96 h si fiebre persistente."
+            text: "Cefepime 2 g c/8 h, meropenem 1 g c/8 h o pip/tazo 4.5 g c/6 h. Agregar vancomicina seg\xFAn foco/MRSA. Antif\xFAngico a las 96 h si fiebre persistente."
           }
         ]
       },
       {
         id: "low-risk",
-        title: "Bajo riesgo — ambulatorio posible",
+        title: "Bajo riesgo \u2014 ambulatorio posible",
         items: [
           {
             type: "text",
@@ -20446,53 +20462,53 @@ var MANEJO_PATHOLOGIES = [
         ]
       }
     ],
-    monitoring: ["Cultivos", "procalcitonina si disponible", "revaluación 48–72 h"],
-    notes: ["Ver pestaña ATB para esquemas detallados y ajuste renal"]
+    monitoring: ["Cultivos", "procalcitonina si disponible", "revaluaci\xF3n 48\u201372 h"],
+    notes: ["Ver pesta\xF1a ATB para esquemas detallados y ajuste renal"]
   },
   {
     id: "thyroid-storm",
     branch: "endo",
-    title: "Crisis tirotóxica (tormenta tiroidea)",
-    summary: "Descompensación aguda de hipertiroidismo — 5 líneas simultáneas.",
+    title: "Crisis tirot\xF3xica (tormenta tiroidea)",
+    summary: "Descompensaci\xF3n aguda de hipertiroidismo \u2014 5 l\xEDneas simult\xE1neas.",
     tags: ["emergencia", "tiroides"],
     linkedProtocolIds: ["mg-bolus-2g", "mg-infusion-slow", "nore-standard"],
     sections: [
       {
         id: "block-synthesis",
-        title: "1. Bloqueo de síntesis",
+        title: "1. Bloqueo de s\xEDntesis",
         items: [
           {
             type: "text",
             label: "PTU o metimazol",
             tier: "first-line",
-            criteria: "Iniciar de inmediato — PTU preferido si embarazo o mixedema",
-            text: "PTU carga 600–1000 mg → 200–250 mg c/4 h (preferido) o metimazol 60–80 mg → 20 mg c/4–6 h."
+            criteria: "Iniciar de inmediato \u2014 PTU preferido si embarazo o mixedema",
+            text: "PTU carga 600\u20131000 mg \u2192 200\u2013250 mg c/4 h (preferido) o metimazol 60\u201380 mg \u2192 20 mg c/4\u20136 h."
           }
         ]
       },
       {
         id: "block-release",
-        title: "2. Bloqueo de liberación (yodo)",
+        title: "2. Bloqueo de liberaci\xF3n (yodo)",
         items: [
           {
             type: "text",
             label: "Yodo (Lugol o SSKI)",
             tier: "first-line",
-            criteria: "Al menos 1 h después del antitiroideo",
-            text: "Lugol 8–10 gotas c/6–8 h o SSKI 5 gotas c/6 h — AL MENOS 1 H DESPUÉS del antitiroideo."
+            criteria: "Al menos 1 h despu\xE9s del antitiroideo",
+            text: "Lugol 8\u201310 gotas c/6\u20138 h o SSKI 5 gotas c/6 h \u2014 AL MENOS 1 H DESPU\xC9S del antitiroideo."
           }
         ]
       },
       {
         id: "block-conversion",
-        title: "3. Bloqueo T4→T3",
+        title: "3. Bloqueo T4\u2192T3",
         items: [
           {
             type: "text",
             label: "Propranolol IV/VO",
             tier: "first-line",
-            criteria: "Taquicardia o temblor; alternativa diltiazem/verapamilo si contraindicación",
-            text: "Propranolol 60–80 mg c/4–6 h o 1–2 mg IV lento. Si contraindicación: diltiazem o verapamilo."
+            criteria: "Taquicardia o temblor; alternativa diltiazem/verapamilo si contraindicaci\xF3n",
+            text: "Propranolol 60\u201380 mg c/4\u20136 h o 1\u20132 mg IV lento. Si contraindicaci\xF3n: diltiazem o verapamilo."
           }
         ]
       },
@@ -20504,7 +20520,7 @@ var MANEJO_PATHOLOGIES = [
             type: "text",
             label: "Hidrocortisona o dexametasona",
             tier: "first-line",
-            criteria: "Bloqueo periférico T4→T3 y tratar posible insuficiencia suprarrenal relativa",
+            criteria: "Bloqueo perif\xE9rico T4\u2192T3 y tratar posible insuficiencia suprarrenal relativa",
             text: "Hidrocortisona 100 mg c/8 h o dexametasona 2 mg c/6 h."
           }
         ]
@@ -20516,40 +20532,40 @@ var MANEJO_PATHOLOGIES = [
           {
             type: "text",
             label: "Soporte general",
-            text: "Paracetamol (NO AINEs). SS0.9% 250–500 ml/h. Tratar precipitante (infección más común)."
+            text: "Paracetamol (NO AINEs). SS0.9% 250\u2013500 ml/h. Tratar precipitante (infecci\xF3n m\xE1s com\xFAn)."
           },
           {
             type: "protocol",
             protocolId: "mg-bolus-2g",
-            label: "Magnesio — bolo",
+            label: "Magnesio \u2014 bolo",
             tier: "alternative",
-            criteria: "Taquiarritmias, FA rápida o hipomagnesemia"
+            criteria: "Taquiarritmias, FA r\xE1pida o hipomagnesemia"
           },
           {
             type: "protocol",
             protocolId: "mg-infusion-slow",
-            label: "Magnesio — infusión lenta",
+            label: "Magnesio \u2014 infusi\xF3n lenta",
             tier: "alternative",
-            criteria: "Reposición prolongada si déficit documentado"
+            criteria: "Reposici\xF3n prolongada si d\xE9ficit documentado"
           },
           {
             type: "protocol",
             protocolId: "nore-standard",
             label: "Norepinefrina si shock",
             tier: "alternative",
-            criteria: "Shock refractario tras rehidratación IV"
+            criteria: "Shock refractario tras rehidrataci\xF3n IV"
           }
         ]
       }
     ],
-    monitoring: ["TSH, T4L, T3 c/24–48 h", "telemetría", "glucosa c/4–6 h"],
-    notes: ["Mortalidad 10–30% incluso con tratamiento"]
+    monitoring: ["TSH, T4L, T3 c/24\u201348 h", "telemetr\xEDa", "glucosa c/4\u20136 h"],
+    notes: ["Mortalidad 10\u201330% incluso con tratamiento"]
   },
   {
     id: "severe-hyponatremia",
     branch: "nefro",
-    title: "Hiponatremia severa sintomática",
-    summary: "Na+ <120 mEq/L con síntomas neurológicos — hipertónico urgente con límites estrictos.",
+    title: "Hiponatremia severa sintom\xE1tica",
+    summary: "Na+ <120 mEq/L con s\xEDntomas neurol\xF3gicos \u2014 hipert\xF3nico urgente con l\xEDmites estrictos.",
     tags: ["emergencia", "electrolitos"],
     linkedProtocolIds: ["hypertonic-saline"],
     sections: [
@@ -20559,55 +20575,55 @@ var MANEJO_PATHOLOGIES = [
         items: [
           {
             type: "text",
-            text: "NaCl 3%: 100 ml bolo en 10 min; repetir c/10 min hasta mejoría (máx 3 bolos = 300 ml)."
+            text: "NaCl 3%: 100 ml bolo en 10 min; repetir c/10 min hasta mejor\xEDa (m\xE1x 3 bolos = 300 ml)."
           },
           {
             type: "protocol",
             protocolId: "hypertonic-saline",
-            label: "Solución hipertónica",
+            label: "Soluci\xF3n hipert\xF3nica",
             tier: "first-line",
-            criteria: "Convulsión, coma o síntomas neurológicos graves"
+            criteria: "Convulsi\xF3n, coma o s\xEDntomas neurol\xF3gicos graves"
           }
         ]
       },
       {
         id: "limits",
-        title: "Límites de corrección",
+        title: "L\xEDmites de correcci\xF3n",
         items: [
           {
             type: "text",
-            text: "Máx +8 mEq/L en 24 h (+6 en alto riesgo: alcoholismo, cirrosis, K+ bajo). Meta inicial +4–6 mEq/L en 4–6 h."
+            text: "M\xE1x +8 mEq/L en 24 h (+6 en alto riesgo: alcoholismo, cirrosis, K+ bajo). Meta inicial +4\u20136 mEq/L en 4\u20136 h."
           }
         ]
       },
       {
         id: "chronic",
-        title: "Hiponatremia crónica asintomática",
+        title: "Hiponatremia cr\xF3nica asintom\xE1tica",
         items: [
           {
             type: "text",
-            text: "Restricción hídrica 800–1000 ml/día; tratar causa (SIADH, hipotiroidismo). Tolvaptán 15 mg c/24 h en SIADH refractario."
+            text: "Restricci\xF3n h\xEDdrica 800\u20131000 ml/d\xEDa; tratar causa (SIADH, hipotiroidismo). Tolvapt\xE1n 15 mg c/24 h en SIADH refractario."
           }
         ]
       }
     ],
-    monitoring: ["Na+ c/2–4 h durante corrección activa"]
+    monitoring: ["Na+ c/2\u20134 h durante correcci\xF3n activa"]
   },
   {
     id: "severe-hypercalcemia",
     branch: "nefro",
     title: "Hipercalcemia severa",
-    summary: "Ca++ >14 mg/dl o >12 con síntomas — hidratación, calcitonina y bifosfonatos.",
+    summary: "Ca++ >14 mg/dl o >12 con s\xEDntomas \u2014 hidrataci\xF3n, calcitonina y bifosfonatos.",
     tags: ["emergencia", "metabolismo"],
     linkedProtocolIds: ["furo-bolus"],
     sections: [
       {
         id: "hydration",
-        title: "Hidratación",
+        title: "Hidrataci\xF3n",
         items: [
           {
             type: "text",
-            text: "NaCl 0.9% 200–300 ml/h (4–6 L/24 h). Meta diuresis 100–150 ml/h. Vigilar sobrecarga."
+            text: "NaCl 0.9% 200\u2013300 ml/h (4\u20136 L/24 h). Meta diuresis 100\u2013150 ml/h. Vigilar sobrecarga."
           }
         ]
       },
@@ -20617,7 +20633,7 @@ var MANEJO_PATHOLOGIES = [
         items: [
           {
             type: "text",
-            text: "4 UI/kg IM/SC c/12 h — efecto en 4–6 h, taquifilaxia a 48 h."
+            text: "4 UI/kg IM/SC c/12 h \u2014 efecto en 4\u20136 h, taquifilaxia a 48 h."
           }
         ]
       },
@@ -20627,7 +20643,7 @@ var MANEJO_PATHOLOGIES = [
         items: [
           {
             type: "text",
-            text: "Ácido zoledrónico 4 mg IV en 15 min (preferido) o pamidronato 60–90 mg en 2–4 h."
+            text: "\xC1cido zoledr\xF3nico 4 mg IV en 15 min (preferido) o pamidronato 60\u201390 mg en 2\u20134 h."
           }
         ]
       },
@@ -20640,13 +20656,13 @@ var MANEJO_PATHOLOGIES = [
             protocolId: "furo-bolus",
             label: "Furosemida",
             tier: "alternative",
-            criteria: "Solo si sobrecarga hídrica — no usar de forma rutinaria"
+            criteria: "Solo si sobrecarga h\xEDdrica \u2014 no usar de forma rutinaria"
           }
         ]
       },
       {
         id: "dialysis",
-        title: "Hemodiálisis",
+        title: "Hemodi\xE1lisis",
         items: [
           {
             type: "text",
@@ -20655,25 +20671,25 @@ var MANEJO_PATHOLOGIES = [
         ]
       }
     ],
-    monitoring: ["Ca++ c/24 h", "función renal", "ECG"],
+    monitoring: ["Ca++ c/24 h", "funci\xF3n renal", "ECG"],
     notes: ["Evitar furosemida rutinaria; no usar tiazidas"]
   },
   {
     id: "hepatic-encephalopathy",
     branch: "gastro",
-    title: "Encefalopatía hepática aguda",
-    summary: "Confusión en cirrosis — lactulosa, tratar precipitantes, rifaximina.",
-    tags: ["hepático", "neuro"],
+    title: "Encefalopat\xEDa hep\xE1tica aguda",
+    summary: "Confusi\xF3n en cirrosis \u2014 lactulosa, tratar precipitantes, rifaximina.",
+    tags: ["hep\xE1tico", "neuro"],
     linkedProtocolIds: ["albumin-paracentesis", "propofol-infusion"],
     relatedPathologyIds: ["upper-gi-bleed"],
     sections: [
       {
         id: "lactulose",
-        title: "Lactulosa (primera línea)",
+        title: "Lactulosa (primera l\xEDnea)",
         items: [
           {
             type: "text",
-            text: "30 ml c/1–2 h hasta evacuación → 15–30 ml c/6–8 h. Meta 2–3 evacuaciones blandas/día."
+            text: "30 ml c/1\u20132 h hasta evacuaci\xF3n \u2192 15\u201330 ml c/6\u20138 h. Meta 2\u20133 evacuaciones blandas/d\xEDa."
           }
         ]
       },
@@ -20681,7 +20697,7 @@ var MANEJO_PATHOLOGIES = [
         id: "rifaximin",
         title: "Rifaximina",
         items: [
-          { type: "text", text: "550 mg c/12 h en grados 2–4 o encefalopatía recurrente." }
+          { type: "text", text: "550 mg c/12 h en grados 2\u20134 o encefalopat\xEDa recurrente." }
         ]
       },
       {
@@ -20690,7 +20706,7 @@ var MANEJO_PATHOLOGIES = [
         items: [
           {
             type: "text",
-            text: "Infección (paracentesis, cultivos), sangrado GI, constipación, deshidratación, benzodiacepinas/opioides, PBE (PMN >250)."
+            text: "Infecci\xF3n (paracentesis, cultivos), sangrado GI, constipaci\xF3n, deshidrataci\xF3n, benzodiacepinas/opioides, PBE (PMN >250)."
           },
           {
             type: "protocol",
@@ -20707,36 +20723,36 @@ var MANEJO_PATHOLOGIES = [
         items: [
           {
             type: "text",
-            text: "Intubación; propofol preferido sobre benzodiacepinas."
+            text: "Intubaci\xF3n; propofol preferido sobre benzodiacepinas."
           },
           {
             type: "protocol",
             protocolId: "propofol-infusion",
             label: "Propofol",
             tier: "first-line",
-            criteria: "Grado 4 EH con IOT — preferido sobre benzodiacepinas"
+            criteria: "Grado 4 EH con IOT \u2014 preferido sobre benzodiacepinas"
           }
         ]
       }
     ],
     monitoring: ["Grado EH", "electrolitos", "amoniaco (limitado)"],
-    notes: ["No restringir proteínas: 1.2–1.5 g/kg/día vegetal/láctea"]
+    notes: ["No restringir prote\xEDnas: 1.2\u20131.5 g/kg/d\xEDa vegetal/l\xE1ctea"]
   },
   {
     id: "severe-pancreatitis",
     branch: "gastro",
     title: "Pancreatitis aguda severa",
-    summary: "Falla orgánica >48 h — líquidos agresivos, analgesia, nutrición temprana.",
+    summary: "Falla org\xE1nica >48 h \u2014 l\xEDquidos agresivos, analgesia, nutrici\xF3n temprana.",
     tags: ["emergencia", "abdomen"],
     linkedProtocolIds: ["fentanyl-infusion", "buprenorphine-infusion"],
     sections: [
       {
         id: "fluids",
-        title: "Reanimación (primeras 24 h)",
+        title: "Reanimaci\xF3n (primeras 24 h)",
         items: [
           {
             type: "text",
-            text: "Ringer lactato 250–500 ml/h × 12–24 h. Meta diuresis >0.5 ml/kg/h, BUN descendente."
+            text: "Ringer lactato 250\u2013500 ml/h \xD7 12\u201324 h. Meta diuresis >0.5 ml/kg/h, BUN descendente."
           }
         ]
       },
@@ -20760,24 +20776,24 @@ var MANEJO_PATHOLOGIES = [
             protocolId: "buprenorphine-infusion",
             label: "Buprenorfina",
             tier: "alternative",
-            criteria: "Alternativa si intolerancia a fentanilo u opioides clásicos"
+            criteria: "Alternativa si intolerancia a fentanilo u opioides cl\xE1sicos"
           }
         ]
       },
       {
         id: "nutrition",
-        title: "Nutrición",
+        title: "Nutrici\xF3n",
         items: [
           {
             type: "text",
-            text: "Vía oral temprana 24–48 h si tolera. Enteral preferida sobre parenteral. No ayuno prolongado."
+            text: "V\xEDa oral temprana 24\u201348 h si tolera. Enteral preferida sobre parenteral. No ayuno prolongado."
           }
         ]
       },
       {
         id: "abx",
-        title: "Antibióticos",
-        items: [{ type: "text", text: "NO profilaxis antibiótica rutinaria." }]
+        title: "Antibi\xF3ticos",
+        items: [{ type: "text", text: "NO profilaxis antibi\xF3tica rutinaria." }]
       }
     ],
     monitoring: ["Diuresis", "lactato", "SOFA", "necrosis en TC"]
@@ -20785,19 +20801,19 @@ var MANEJO_PATHOLOGIES = [
   {
     id: "septic-shock",
     branch: "infecc",
-    title: "Shock séptico",
-    summary: "Sepsis con hipotensión persistente — líquidos, antibióticos tempranos y vasopresores.",
+    title: "Shock s\xE9ptico",
+    summary: "Sepsis con hipotensi\xF3n persistente \u2014 l\xEDquidos, antibi\xF3ticos tempranos y vasopresores.",
     tags: ["emergencia", "sepsis"],
     linkedProtocolIds: ["nore-standard", "vasopressin-standard", "epinephrine-infusion"],
     relatedPathologyIds: ["pulmonary-embolism", "febrile-neutropenia"],
     sections: [
       {
         id: "initial",
-        title: "Reanimación inicial",
+        title: "Reanimaci\xF3n inicial",
         items: [
           {
             type: "text",
-            text: "Cultivos antes de ATB si no retrasa >45 min. Antibiótico empírico en primera hora. Cristaloides 30 ml/kg si hipotensión/lactato."
+            text: "Cultivos antes de ATB si no retrasa >45 min. Antibi\xF3tico emp\xEDrico en primera hora. Cristaloides 30 ml/kg si hipotensi\xF3n/lactato."
           }
         ]
       },
@@ -20807,21 +20823,21 @@ var MANEJO_PATHOLOGIES = [
         items: [
           {
             type: "text",
-            text: "Norepinefrina primera línea; meta PAM ≥65 mmHg. Vasopresina 0.03 UI/min fija si NORE ≥0.25–0.5 mcg/kg/min sin meta."
+            text: "Norepinefrina primera l\xEDnea; meta PAM \u226565 mmHg. Vasopresina 0.03 UI/min fija si NORE \u22650.25\u20130.5 mcg/kg/min sin meta."
           },
           {
             type: "protocol",
             protocolId: "nore-standard",
             label: "Noradrenalina (NORE)",
             tier: "first-line",
-            criteria: "Meta PAM ≥65 mmHg tras cristaloides"
+            criteria: "Meta PAM \u226565 mmHg tras cristaloides"
           },
           {
             type: "protocol",
             protocolId: "vasopressin-standard",
             label: "Vasopresina",
             tier: "alternative",
-            criteria: "NORE ≥0.25–0.5 mcg/kg/min sin alcanzar meta"
+            criteria: "NORE \u22650.25\u20130.5 mcg/kg/min sin alcanzar meta"
           },
           {
             type: "protocol",
@@ -20833,8 +20849,8 @@ var MANEJO_PATHOLOGIES = [
         ]
       }
     ],
-    monitoring: ["Lactato c/2–4 h", "diuresis", "SOFA"],
-    notes: ["Ver pestaña ATB para esquema antibiótico", "Surviving Sepsis 2021/2026"]
+    monitoring: ["Lactato c/2\u20134 h", "diuresis", "SOFA"],
+    notes: ["Ver pesta\xF1a ATB para esquema antibi\xF3tico", "Surviving Sepsis 2021/2026"]
   }
 ];
 function pathologyBranchLabelFor(branchId) {
@@ -20876,15 +20892,15 @@ function pathologyStepCount(entry2) {
 
 // public/js/manejo-protocol-links.mjs
 var MANEJO_PROTOCOL_USE_CATEGORIES = [
-  { id: "vasopresor", label: "Vasopresor / inotrópico" },
-  { id: "sedacion-analgesia", label: "Sedación / analgesia" },
+  { id: "vasopresor", label: "Vasopresor / inotr\xF3pico" },
+  { id: "sedacion-analgesia", label: "Sedaci\xF3n / analgesia" },
   { id: "antiarritmico", label: "Antiarritmico" },
   { id: "anticonvulsivante", label: "Anticonvulsivante" },
   { id: "electrolito", label: "Electrolito / fluido" },
-  { id: "diuretico", label: "Diurético" },
+  { id: "diuretico", label: "Diur\xE9tico" },
   { id: "respiratorio", label: "Respiratorio" },
-  { id: "soporte-metabolico", label: "Soporte metabólico" },
-  { id: "hemostasia-transfusion", label: "Hemostasia / transfusión" },
+  { id: "soporte-metabolico", label: "Soporte metab\xF3lico" },
+  { id: "hemostasia-transfusion", label: "Hemostasia / transfusi\xF3n" },
   { id: "otro", label: "Otro" }
 ];
 var MANEJO_PROTOCOL_LINK_META = {
@@ -21175,7 +21191,7 @@ function openPathologyFocusModal(title, content, opts) {
   return { close };
 }
 function tierLabel(tier) {
-  if (tier === "first-line") return "Primera línea";
+  if (tier === "first-line") return "Primera l\xEDnea";
   if (tier === "alternative") return "Alternativa";
   return "";
 }
@@ -21288,7 +21304,7 @@ function humanizeAdminValue(val2) {
 }
 function humanizeDrugName(name) {
   name = trim(name);
-  if (!name) return "—";
+  if (!name) return "\u2014";
   if (name === name.toUpperCase()) {
     return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
   }
@@ -21384,14 +21400,14 @@ function mergeDoseParts(parts) {
       merged = part;
       continue;
     }
-    merged = merged + " · " + part;
+    merged = merged + " \xB7 " + part;
   }
   return humanizeAdminValue(merged);
 }
 function splitDoseClauses(text) {
   text = trim(text);
   if (!text) return [];
-  if (text.indexOf(" · ") >= 0) {
+  if (text.indexOf(" \xB7 ") >= 0) {
     var mergedBits = text.split(/\s·\s/).map(trim).filter(Boolean);
     if (mergedBits.length > 1) {
       var mergedOut = [];
@@ -21497,7 +21513,7 @@ function classifyDoseClause(clause, drugName) {
   var text = trim(clause);
   drugName = trim(drugName);
   if (drugName) {
-    var drugRe = new RegExp("^" + drugName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "[\\s—–-]+", "i");
+    var drugRe = new RegExp("^" + drugName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "[\\s\u2014\u2013-]+", "i");
     text = trim(text.replace(drugRe, ""));
   }
   if (/^si\s/i.test(text)) {
@@ -21519,13 +21535,13 @@ function classifyDoseClause(clause, drugName) {
     return { tag: "Ejemplo", text: humanizeAdminValue(text.replace(/^ej\.\s*/i, "")) };
   }
   if (/^hasta\s/i.test(text)) {
-    return { tag: "Límite", text: humanizeAdminValue(text) };
+    return { tag: "L\xEDmite", text: humanizeAdminValue(text) };
   }
   if (/^ajustar\b|^meta\b/i.test(text)) {
-    return { tag: "Acción", text: humanizeAdminValue(text) };
+    return { tag: "Acci\xF3n", text: humanizeAdminValue(text) };
   }
   if (/mg\/ml|mcg\/ml|ui\/ml|meq\/ml/i.test(text) && text.length < 32) {
-    return { tag: "Concentración", text: humanizeAdminValue(text) };
+    return { tag: "Concentraci\xF3n", text: humanizeAdminValue(text) };
   }
   var componentMatch = text.match(/^([A-Za-zÁÉÍÓÚáéíóúÑñ/+\-().]{2,42}?)\s+(\d.+)$/);
   if (componentMatch && !/^(infusi[oó]n|esquema|meta|cad|ehh|solo|permitir|m[aá]x|no|luego|si)$/i.test(trim(componentMatch[1]))) {
@@ -21535,22 +21551,22 @@ function classifyDoseClause(clause, drugName) {
     };
   }
   if (/^no diluir|\ben\s+\d+\s*(cc|ml)\b|\d.+\s+(mg|mcg|g|ui|meq)\s+en\s+\d|\d.+\s+(ml|cc)\s+de\s+(glucosado|ss|fisiol|nacl)/i.test(text)) {
-    return { tag: "Preparación", text: humanizeAdminValue(text) };
+    return { tag: "Preparaci\xF3n", text: humanizeAdminValue(text) };
   }
   if (/por (cada )?litro|por litro de sangre/i.test(text)) {
     return { tag: "Regla", text: humanizeAdminValue(text) };
   }
   if (/^máx|^max\b|máximo/i.test(text)) {
-    return { tag: "Límite", text: humanizeAdminValue(text) };
+    return { tag: "L\xEDmite", text: humanizeAdminValue(text) };
   }
   if (/permitir titular|^titular\b/i.test(text)) {
-    return { tag: "Acción", text: humanizeAdminValue(text) };
+    return { tag: "Acci\xF3n", text: humanizeAdminValue(text) };
   }
   if (/^iniciar|^administrar|^pasar|^infundir|^nebuliz|^agregar/i.test(text)) {
-    return { tag: "Acción", text: humanizeAdminValue(text) };
+    return { tag: "Acci\xF3n", text: humanizeAdminValue(text) };
   }
   if (/^fórmula|^cad:|^ehh:/i.test(text)) {
-    return { tag: "Fórmula", text: humanizeAdminValue(text) };
+    return { tag: "F\xF3rmula", text: humanizeAdminValue(text) };
   }
   if (/^luego\s/i.test(text) || /×\s*\d|→/.test(text)) {
     return { tag: "Esquema", text: humanizeAdminValue(text) };
@@ -21697,8 +21713,8 @@ function normalizeAdminView(view) {
     }
     if (!value) return;
     if (label === "dosis") doseParts.push(value);
-    else if (label === "dilución" || label === "dilucion") doseParts.push(value);
-    else if (label === "vía" || label === "via") via = value;
+    else if (label === "diluci\xF3n" || label === "dilucion") doseParts.push(value);
+    else if (label === "v\xEDa" || label === "via") via = value;
     else appendNotePart(noteParts, value);
   });
   var rows = [];
@@ -21723,7 +21739,7 @@ function normalizeAdminView(view) {
       lines: doseLines || void 0
     });
   }
-  if (via) rows.push({ label: "Vía", value: via });
+  if (via) rows.push({ label: "V\xEDa", value: via });
   return {
     drug: view.drug,
     rows,
@@ -21741,8 +21757,8 @@ function isMessySomeOrder(order) {
 }
 var SOME_LABELS = {
   DOSIS: "Dosis",
-  VIA: "Vía",
-  DILUCION: "Dilución",
+  VIA: "V\xEDa",
+  DILUCION: "Diluci\xF3n",
   FRECUENCIA: "Frecuencia",
   "VELOCIDAD DE INFUSION": "Velocidad",
   "COMENTARIOS ADICIONALES": "Notas"
@@ -21755,7 +21771,7 @@ function rowsFromSomeBlock(text) {
     if (!m) return;
     var key = trim(m[1]).toUpperCase();
     var val2 = humanizeAdminValue(m[2]);
-    if (!val2 || val2 === "—") return;
+    if (!val2 || val2 === "\u2014") return;
     if (key === "MEDICAMENTO") {
       drug = humanizeDrugName(val2);
       return;
@@ -21769,8 +21785,8 @@ function rowsFromSomeFields(fields) {
   var rows = [];
   var dose = trim(fields.doseValue) + (fields.doseUnit ? " " + trim(fields.doseUnit) : "");
   if (trim(dose)) rows.push({ label: "Dosis", value: humanizeAdminValue(dose) });
-  if (fields.route) rows.push({ label: "Vía", value: humanizeAdminValue(fields.route) });
-  if (fields.dilution) rows.push({ label: "Dilución", value: humanizeAdminValue(fields.dilution) });
+  if (fields.route) rows.push({ label: "V\xEDa", value: humanizeAdminValue(fields.route) });
+  if (fields.dilution) rows.push({ label: "Diluci\xF3n", value: humanizeAdminValue(fields.dilution) });
   if (fields.frequency) rows.push({ label: "Frecuencia", value: humanizeAdminValue(fields.frequency) });
   if (fields.infusionRateMlHr != null && fields.infusionRateMlHr !== "") {
     rows.push({ label: "Velocidad", value: formatInfusionRate(fields.infusionRateMlHr) });
@@ -21790,8 +21806,8 @@ function rowsFromSomeOrder(order) {
   } else if (dose) {
     rows.push({ label: "Dosis", value: humanizeAdminValue(dose) });
   }
-  if (order.route) rows.push({ label: "Vía", value: humanizeAdminValue(order.route) });
-  if (order.dilution) rows.push({ label: "Dilución", value: humanizeAdminValue(order.dilution) });
+  if (order.route) rows.push({ label: "V\xEDa", value: humanizeAdminValue(order.route) });
+  if (order.dilution) rows.push({ label: "Diluci\xF3n", value: humanizeAdminValue(order.dilution) });
   if (order.frequency) rows.push({ label: "Frecuencia", value: humanizeAdminValue(order.frequency) });
   if (order.infusionRateMlHr != null && order.infusionRateMlHr !== "") {
     rows.push({ label: "Velocidad", value: formatInfusionRate(order.infusionRateMlHr) });
@@ -21847,9 +21863,9 @@ function rowsFromIndicationText(entry2, order) {
   var route = extractRoute(first) || humanizeAdminValue(order && order.route);
   var doseLine = stripRouteWords(first, route);
   if (trim(doseLine)) rows.push({ label: "Dosis", value: humanizeAdminValue(doseLine) });
-  if (route) rows.push({ label: "Vía", value: route });
+  if (route) rows.push({ label: "V\xEDa", value: route });
   if (order && trim(order.dilution)) {
-    rows.push({ label: "Dilución", value: humanizeAdminValue(order.dilution) });
+    rows.push({ label: "Diluci\xF3n", value: humanizeAdminValue(order.dilution) });
   }
   if (order && trim(order.frequency)) {
     rows.push({ label: "Frecuencia", value: humanizeAdminValue(order.frequency) });
@@ -21901,7 +21917,7 @@ function resolveClinicalTextAdminView(text, opts) {
       );
     }
   }
-  var drugTitle = humanizeDrugName(opts.label || opts.title || "") || inferDrugNameFromText(text) || "—";
+  var drugTitle = humanizeDrugName(opts.label || opts.title || "") || inferDrugNameFromText(text) || "\u2014";
   var regimen = parseDrugRegimen(text);
   if (regimen && (regimen.bolo || regimen.infusion)) {
     var drug = /^[A-Za-zÁÉÍÓÚÑ]/.test(trim(regimen.drug)) ? humanizeDrugName(regimen.drug) : drugTitle;
@@ -21909,7 +21925,7 @@ function resolveClinicalTextAdminView(text, opts) {
     var rows = [];
     var dosePart = regimen.bolo || (/^\d/.test(trim(regimen.drug)) ? trim(regimen.drug) : "");
     if (dosePart) rows.push({ label: "Dosis", value: humanizeAdminValue(dosePart) });
-    if (route) rows.push({ label: "Vía", value: route });
+    if (route) rows.push({ label: "V\xEDa", value: route });
     var noteParts = [];
     if (regimen.infusion) noteParts.push(humanizeAdminValue(regimen.infusion));
     if (regimen.prep) noteParts.push(humanizeAdminValue(regimen.prep));
@@ -21935,7 +21951,7 @@ function resolveClinicalTextAdminView(text, opts) {
 function appendAdminRow(grid, label, value, lines) {
   value = trim(value);
   lines = lines || null;
-  if ((!value || value === "—") && !(lines && lines.length)) return;
+  if ((!value || value === "\u2014") && !(lines && lines.length)) return;
   var row = document.createElement("div");
   row.className = "manejo-proto-admin-row";
   if (lines && lines.length) row.className += " manejo-proto-admin-row--stacked";
@@ -21992,7 +22008,7 @@ function buildAdminGridShell(drug, rows, note, opts) {
     wrap.appendChild(noteEl);
   }
   if (!wrap.childElementCount) {
-    wrap.textContent = "—";
+    wrap.textContent = "\u2014";
   }
   return wrap;
 }
@@ -22033,7 +22049,7 @@ function truncatePreview(text, maxLen) {
   var cut = text.slice(0, maxLen - 1);
   var lastSpace = cut.lastIndexOf(" ");
   if (lastSpace > maxLen * 0.55) cut = cut.slice(0, lastSpace);
-  return cut + "…";
+  return cut + "\u2026";
 }
 function inferPresentationMode(sectionTitle) {
   var t2 = String(sectionTitle || "").toLowerCase();
@@ -22132,7 +22148,7 @@ function splitDrugAlternatives(line) {
 }
 function parseCriterionPart(text) {
   text = capitalizeLead(text);
-  if (!text) return { label: "—", detail: "" };
+  if (!text) return { label: "\u2014", detail: "" };
   if (/(→|->)/.test(text)) {
     return { label: text, detail: "" };
   }
@@ -22246,7 +22262,7 @@ function buildClinicalTextElement(value, opts) {
   if (Array.isArray(value)) {
     var items = value.map(trim2).filter(Boolean);
     if (!items.length) {
-      wrap.textContent = "—";
+      wrap.textContent = "\u2014";
       return wrap;
     }
     var arrayCard = document.createElement("div");
@@ -22264,7 +22280,7 @@ function buildClinicalTextElement(value, opts) {
   }
   var text = trim2(value);
   if (!text) {
-    wrap.textContent = "—";
+    wrap.textContent = "\u2014";
     return wrap;
   }
   var adminView = resolveClinicalTextAdminView(text, {
@@ -22278,7 +22294,7 @@ function buildClinicalTextElement(value, opts) {
       adminView,
       Object.assign({}, opts, { hideDrug })
     );
-    if (trim2(adminEl.textContent) && adminEl.textContent !== "—") {
+    if (trim2(adminEl.textContent) && adminEl.textContent !== "\u2014") {
       wrap.appendChild(adminEl);
       return wrap;
     }
@@ -22305,7 +22321,7 @@ function clinicalTextPreview(text, maxLen, sectionTitle) {
   var criteria = expandClinicalCriteria(text, sectionTitle);
   if (!criteria.length) return "";
   var first = criteria[0];
-  var line = first.detail ? first.label + " · " + first.detail : first.label;
+  var line = first.detail ? first.label + " \xB7 " + first.detail : first.label;
   return truncatePreview(line, maxLen);
 }
 function recommendationCardTitle(item, sectionTitle, opts) {
@@ -22315,7 +22331,7 @@ function recommendationCardTitle(item, sectionTitle, opts) {
   if (sectionTitle) return sectionTitle;
   var first = expandClinicalCriteria(item.text, sectionTitle)[0];
   if (first) {
-    var t2 = first.detail ? first.label + " · " + first.detail : first.label;
+    var t2 = first.detail ? first.label + " \xB7 " + first.detail : first.label;
     if (t2.length <= 72) return t2;
   }
   return clinicalTextPreview(item.text, 72, sectionTitle);
@@ -22385,7 +22401,7 @@ function buildPathologyBranchMenu(activeBranch, onSelect) {
   trigger.className = "manejo-pathology-branch-trigger";
   trigger.setAttribute("aria-haspopup", "listbox");
   trigger.setAttribute("aria-expanded", "false");
-  trigger.setAttribute("aria-label", "Filtrar por rama clínica");
+  trigger.setAttribute("aria-label", "Filtrar por rama cl\xEDnica");
   var triggerDot = document.createElement("span");
   triggerDot.className = "manejo-pathology-branch-trigger-dot";
   triggerDot.hidden = activeBranch === "all";
@@ -22402,7 +22418,7 @@ function buildPathologyBranchMenu(activeBranch, onSelect) {
   var panel = document.createElement("div");
   panel.className = "manejo-pathology-branch-panel";
   panel.setAttribute("role", "listbox");
-  panel.setAttribute("aria-label", "Ramas clínicas");
+  panel.setAttribute("aria-label", "Ramas cl\xEDnicas");
   panel.setAttribute("aria-hidden", "true");
   var outsideHandler = null;
   var keyHandler = null;
@@ -22440,7 +22456,7 @@ function buildPathologyBranchMenu(activeBranch, onSelect) {
     if (activeBranch === id) {
       var check = document.createElement("span");
       check.className = "manejo-pathology-branch-option-check";
-      check.textContent = "✓";
+      check.textContent = "\u2713";
       btn.appendChild(check);
     }
     btn.addEventListener("click", function() {
@@ -22487,7 +22503,7 @@ function buildPathologyBranchMenu(activeBranch, onSelect) {
       if (isActive && !check) {
         check = document.createElement("span");
         check.className = "manejo-pathology-branch-option-check";
-        check.textContent = "✓";
+        check.textContent = "\u2713";
         btn.appendChild(check);
       } else if (!isActive && check) {
         check.remove();
@@ -22647,22 +22663,22 @@ function registerManejoElectrolitosRuntime(partial) {
   if (partial && typeof partial === "object") Object.assign(rt9, partial);
 }
 var ION_META = {
-  K: { symbol: "K⁺", name: "Potasio" },
-  Na: { symbol: "Na⁺", name: "Sodio" },
-  Ca: { symbol: "Ca²⁺", name: "Calcio" },
-  Mg: { symbol: "Mg²⁺", name: "Magnesio" },
-  P: { symbol: "P", name: "Fósforo" }
+  K: { symbol: "K\u207A", name: "Potasio" },
+  Na: { symbol: "Na\u207A", name: "Sodio" },
+  Ca: { symbol: "Ca\xB2\u207A", name: "Calcio" },
+  Mg: { symbol: "Mg\xB2\u207A", name: "Magnesio" },
+  P: { symbol: "P", name: "F\xF3sforo" }
 };
 function ionMeta(code) {
   var key = String(code || "").trim();
-  return ION_META[key] || { symbol: key || "—", name: "" };
+  return ION_META[key] || { symbol: key || "\u2014", name: "" };
 }
 function buildManejoTodoText(row) {
   var ion = String(row.electrolyte || "").trim();
   var meta = ionMeta(ion);
-  var ionLabel = meta.symbol || ion || "—";
-  if (row.direction === "hyper") ionLabel += " ↑";
-  else if (row.direction === "hypo") ionLabel += " ↓";
+  var ionLabel = meta.symbol || ion || "\u2014";
+  if (row.direction === "hyper") ionLabel += " \u2191";
+  else if (row.direction === "hypo") ionLabel += " \u2193";
   var valStr = "";
   if (row.value != null && row.value !== "" && !(typeof row.value === "number" && !Number.isFinite(row.value))) {
     valStr = String(row.value).trim() + (row.unit ? " " + String(row.unit).trim() : "");
@@ -22675,11 +22691,11 @@ function addManejoPendiente(row, labFechaNorm) {
   var ruleScoped = "manejo:" + String(row.ruleId || "");
   var todos = storage.getTodos(pid);
   if (isManejoTodoDismissed(pid, ruleScoped, labFechaNorm)) {
-    rt9.showToast("Reposición bloqueada: no volverá a aparecer en pendientes.", "info");
+    rt9.showToast("Reposici\xF3n bloqueada: no volver\xE1 a aparecer en pendientes.", "info");
     return;
   }
   if (!shouldAllowManejoTodo(pid, ruleScoped, labFechaNorm, todos)) {
-    rt9.showToast("Ya hay un pendiente abierto para esta fila del mismo día de lab.", "");
+    rt9.showToast("Ya hay un pendiente abierto para esta fila del mismo d\xEDa de lab.", "");
     return;
   }
   var nowIso = (/* @__PURE__ */ new Date()).toISOString();
@@ -22712,7 +22728,7 @@ function severityLabel(severity) {
     grave: "Grave",
     emergencia: "Emergencia"
   };
-  return map[String(severity || "").toLowerCase()] || String(severity || "—");
+  return map[String(severity || "").toLowerCase()] || String(severity || "\u2014");
 }
 function routeChipLabel(route) {
   var r = String(route || "").trim();
@@ -22722,7 +22738,7 @@ function routeChipLabel(route) {
   if (u.indexOf("ORAL") >= 0 || u === "VO") return "VO";
   if (u.indexOf("PICC") >= 0) return "PICC";
   if (u.indexOf("CVC") >= 0 || u.indexOf("CENTRAL") >= 0) return "CVC";
-  return r.length > 14 ? r.slice(0, 14) + "…" : r;
+  return r.length > 14 ? r.slice(0, 14) + "\u2026" : r;
 }
 function renderManejoElectrolitos(panelEl, pid, patient, ui) {
   ui = ui || {};
@@ -22737,7 +22753,7 @@ function renderManejoElectrolitos(panelEl, pid, patient, ui) {
   if (!pid) {
     var emp = document.createElement("p");
     emp.className = "manejo-empty";
-    emp.textContent = "Selecciona un paciente para ver el manejo electrolítico.";
+    emp.textContent = "Selecciona un paciente para ver el manejo electrol\xEDtico.";
     panelEl.appendChild(emp);
     return;
   }
@@ -22782,7 +22798,7 @@ function renderManejoElectrolitos(panelEl, pid, patient, ui) {
     ban.setAttribute("role", "status");
     var bh = document.createElement("span");
     bh.className = "manejo-banner-head";
-    bh.textContent = "Completa peso y vía de acceso para cálculos TBW y límites de infusión.";
+    bh.textContent = "Completa peso y v\xEDa de acceso para c\xE1lculos TBW y l\xEDmites de infusi\xF3n.";
     ban.appendChild(bh);
     var fields = document.createElement("div");
     fields.className = "manejo-banner-fields";
@@ -22813,11 +22829,11 @@ function renderManejoElectrolitos(panelEl, pid, patient, ui) {
       var fgV = document.createElement("div");
       fgV.className = "field-group";
       var lv = document.createElement("label");
-      lv.textContent = "Vía de acceso";
+      lv.textContent = "V\xEDa de acceso";
       var sel = document.createElement("select");
-      addOpt("", "— No especificada —");
-      addOpt("periferica", "EV periférica");
-      addOpt("cvc", "CVC / catéter central");
+      addOpt("", "\u2014 No especificada \u2014");
+      addOpt("periferica", "EV perif\xE9rica");
+      addOpt("cvc", "CVC / cat\xE9ter central");
       addOpt("picc", "PICC");
       sel.value = String(patient.viaAcceso || "");
       sel.addEventListener("change", function() {
@@ -22832,7 +22848,7 @@ function renderManejoElectrolitos(panelEl, pid, patient, ui) {
   }
   var meta = document.createElement("p");
   meta.className = "manejo-meta";
-  meta.innerHTML = "Laboratorio más reciente: <strong>" + esc15(String(latest.fecha || labFechaNorm || "—")) + "</strong>" + (latest.hora ? " · <span>" + esc15(String(latest.hora).slice(0, 8)) + "</span>" : "");
+  meta.innerHTML = "Laboratorio m\xE1s reciente: <strong>" + esc15(String(latest.fecha || labFechaNorm || "\u2014")) + "</strong>" + (latest.hora ? " \xB7 <span>" + esc15(String(latest.hora).slice(0, 8)) + "</span>" : "");
   root.appendChild(meta);
   if (evalOut.crossAlerts && evalOut.crossAlerts.length) {
     var xc = document.createElement("aside");
@@ -22853,7 +22869,7 @@ function renderManejoElectrolitos(panelEl, pid, patient, ui) {
   if (!(evalOut.rows && evalOut.rows.length) || !hasInterpretableIon) {
     var nz = document.createElement("p");
     nz.className = "manejo-hint";
-    nz.textContent = !(evalOut.rows && evalOut.rows.length) ? "No se encontraron electrolitos clave interpretables en el último conjunto." : "Sin alteraciones electrolíticas detectadas con estos valores.";
+    nz.textContent = !(evalOut.rows && evalOut.rows.length) ? "No se encontraron electrolitos clave interpretables en el \xFAltimo conjunto." : "Sin alteraciones electrol\xEDticas detectadas con estos valores.";
     root.appendChild(nz);
     panelEl.appendChild(root);
     return;
@@ -22896,12 +22912,12 @@ function buildManejoCard(row, labFechaNorm, ui) {
   if (row.direction === "hyper") {
     var up = document.createElement("span");
     up.className = "manejo-card-dir";
-    up.textContent = "↑";
+    up.textContent = "\u2191";
     ionWrap.appendChild(up);
   } else if (row.direction === "hypo") {
     var dn = document.createElement("span");
     dn.className = "manejo-card-dir";
-    dn.textContent = "↓";
+    dn.textContent = "\u2193";
     ionWrap.appendChild(dn);
   }
   head.appendChild(ionWrap);
@@ -22926,7 +22942,7 @@ function buildManejoCard(row, labFechaNorm, ui) {
   if (row.value != null && row.value !== "" && !(typeof row.value === "number" && !Number.isFinite(row.value))) {
     valEl.textContent = String(row.value) + (row.unit ? " " + String(row.unit).trim() : "");
   } else {
-    valEl.textContent = "—";
+    valEl.textContent = "\u2014";
     valEl.style.opacity = "0.55";
   }
   headRight.appendChild(valEl);
@@ -22934,14 +22950,14 @@ function buildManejoCard(row, labFechaNorm, ui) {
   card.appendChild(head);
   var grid = document.createElement("div");
   grid.className = "manejo-card-grid";
-  grid.appendChild(buildKvBlock2("Interpretación", row.interpretation || "—"));
+  grid.appendChild(buildKvBlock2("Interpretaci\xF3n", row.interpretation || "\u2014"));
   var formulaTxt = row.formula || "";
   if (row.formulaResult) {
-    formulaTxt = formulaTxt ? formulaTxt + " → " + String(row.formulaResult) : String(row.formulaResult);
+    formulaTxt = formulaTxt ? formulaTxt + " \u2192 " + String(row.formulaResult) : String(row.formulaResult);
   }
-  grid.appendChild(buildKvBlock2("Dosis sugerida", row.suggestedDose || "—"));
-  grid.appendChild(buildKvBlock2("Fórmula", formulaTxt || "—", { mono: true }));
-  grid.appendChild(buildKvBlock2("Monitoreo", row.monitoring || "—"));
+  grid.appendChild(buildKvBlock2("Dosis sugerida", row.suggestedDose || "\u2014"));
+  grid.appendChild(buildKvBlock2("F\xF3rmula", formulaTxt || "\u2014", { mono: true }));
+  grid.appendChild(buildKvBlock2("Monitoreo", row.monitoring || "\u2014"));
   card.appendChild(grid);
   if ((row.alerts || []).length) {
     var alerts = document.createElement("div");
@@ -22983,13 +22999,13 @@ function buildManejoCard(row, labFechaNorm, ui) {
     var tg = document.createElement("button");
     tg.type = "button";
     tg.className = "manejo-toggle-some btn-med-secondary";
-    tg.textContent = "SOME ▸";
+    tg.textContent = "SOME \u25B8";
     tg.setAttribute("aria-expanded", "false");
     tg.addEventListener("click", function() {
       var open = drawer.hidden;
       drawer.hidden = !open;
       tg.setAttribute("aria-expanded", open ? "true" : "false");
-      tg.textContent = open ? "SOME ▾" : "SOME ▸";
+      tg.textContent = open ? "SOME \u25BE" : "SOME \u25B8";
     });
     actions.appendChild(tg);
   }
@@ -23013,13 +23029,13 @@ function buildManejoCard(row, labFechaNorm, ui) {
 var MANEJO_PROTOCOL_CATEGORIES = [
   { id: "vasopresores", label: "Vasopresores" },
   { id: "cardiovascular", label: "Cardiovascular" },
-  { id: "sedacion", label: "Sedación" },
+  { id: "sedacion", label: "Sedaci\xF3n" },
   { id: "anticonvulsivantes", label: "Anticonvulsivantes" },
   { id: "fluidos", label: "Fluidos / electrolitos" },
   { id: "analgesia", label: "Analgesia" },
   { id: "respiratorio", label: "Respiratorio" },
-  { id: "hierro", label: "Hierro / transfusión" },
-  { id: "diureticos-albumina", label: "Diuréticos / albumina" },
+  { id: "hierro", label: "Hierro / transfusi\xF3n" },
+  { id: "diureticos-albumina", label: "Diur\xE9ticos / albumina" },
   { id: "otros", label: "Otros" }
 ];
 var MANEJO_PROTOCOLS = [
@@ -23027,15 +23043,15 @@ var MANEJO_PROTOCOLS = [
     id: "nore-standard",
     category: "vasopresores",
     title: "Noradrenalina (NORE)",
-    indicationText: "16 mg en 125 cc glucosado 5%. Iniciar 5 mcg/min (HU) o 0.05–0.1 mcg/kg/min (estándar) y titular según PAM ≥65 mmHg.",
+    indicationText: "16 mg en 125 cc glucosado 5%. Iniciar 5 mcg/min (HU) o 0.05\u20130.1 mcg/kg/min (est\xE1ndar) y titular seg\xFAn PAM \u226565 mmHg.",
     calculatorId: null,
     copyTemplate: "NORE: 16 MG EN 125 CC DE GLUCOSADO AL 5%, INICIAR A 5 MCG/MIN Y TITULAR",
-    notes: ["Permitir titular", "Dosis máxima usual: 0.5–1 mcg/kg/min"],
+    notes: ["Permitir titular", "Dosis m\xE1xima usual: 0.5\u20131 mcg/kg/min"],
     doseUnitSwitch: {
       perKgRange: [0.05, 0.1],
       maxPerKg: [0.5, 1],
       hu: {
-        indicationText: "16 mg en 125 cc glucosado 5%. Iniciar 5 mcg/min y titular según PAM ≥65 mmHg.",
+        indicationText: "16 mg en 125 cc glucosado 5%. Iniciar 5 mcg/min y titular seg\xFAn PAM \u226565 mmHg.",
         copyTemplate: "NORE: 16 MG EN 125 CC DE GLUCOSADO AL 5%, INICIAR A 5 MCG/MIN Y TITULAR",
         someFields: {
           medication: "NORADRENALINA",
@@ -23043,25 +23059,25 @@ var MANEJO_PROTOCOLS = [
           doseValue: "16",
           doseUnit: "MG",
           dilution: "125 ML DE GLUCOSADO 5%",
-          frequency: "INFUSIÓN CONTINUA",
+          frequency: "INFUSI\xD3N CONTINUA",
           infusionRateMlHr: "5 MCG/MIN",
-          comments: "TITULAR SEGÚN PAM ≥65 MMHG; PERMITIR TITULAR"
+          comments: "TITULAR SEG\xDAN PAM \u226565 MMHG; PERMITIR TITULAR"
         }
       },
       standard: {
-        indicationText: "16 mg en 125 cc glucosado 5%. Iniciar 0.05–0.1 mcg/kg/min y titular según PAM ≥65 mmHg.",
-        copyTemplate: "NORE: 16 MG EN 125 CC DE GLUCOSADO AL 5%, INICIAR A 0.05–0.1 MCG/KG/MIN Y TITULAR",
+        indicationText: "16 mg en 125 cc glucosado 5%. Iniciar 0.05\u20130.1 mcg/kg/min y titular seg\xFAn PAM \u226565 mmHg.",
+        copyTemplate: "NORE: 16 MG EN 125 CC DE GLUCOSADO AL 5%, INICIAR A 0.05\u20130.1 MCG/KG/MIN Y TITULAR",
         someFields: {
           medication: "NORADRENALINA",
           route: "IV",
-          doseValue: "0.05–0.1",
+          doseValue: "0.05\u20130.1",
           doseUnit: "MCG/KG/MIN",
           dilution: "125 ML DE GLUCOSADO 5%",
-          frequency: "INFUSIÓN CONTINUA",
-          infusionRateMlHr: "0.05–0.1 MCG/KG/MIN",
-          comments: "TITULAR SEGÚN PAM ≥65 MMHG; MÁX USUAL 0.5–1 MCG/KG/MIN; PERMITIR TITULAR"
+          frequency: "INFUSI\xD3N CONTINUA",
+          infusionRateMlHr: "0.05\u20130.1 MCG/KG/MIN",
+          comments: "TITULAR SEG\xDAN PAM \u226565 MMHG; M\xC1X USUAL 0.5\u20131 MCG/KG/MIN; PERMITIR TITULAR"
         },
-        notes: ["Permitir titular", "Dosis máxima usual: 0.5–1 mcg/kg/min"]
+        notes: ["Permitir titular", "Dosis m\xE1xima usual: 0.5\u20131 mcg/kg/min"]
       }
     }
   },
@@ -23073,45 +23089,45 @@ var MANEJO_PROTOCOLS = [
     calculatorId: null,
     copyTemplate: "VASOPRESINA: 20 UI EN 100 CC GLUCOSADO 5%, 0.03 UI/MIN (NO TITULAR)",
     notes: [
-      "Agregar si norepinefrina ≥0.25–0.5 mcg/kg/min sin meta de PAM",
-      "Dosis fija — no titular"
+      "Agregar si norepinefrina \u22650.25\u20130.5 mcg/kg/min sin meta de PAM",
+      "Dosis fija \u2014 no titular"
     ]
   },
   {
     id: "epinephrine-infusion",
     category: "vasopresores",
     title: "Epinefrina",
-    indicationText: "4 mg en 250 cc glucosado 5%. Iniciar 0.05–0.1 mcg/kg/min (estándar) o titular en mcg/min (HU).",
+    indicationText: "4 mg en 250 cc glucosado 5%. Iniciar 0.05\u20130.1 mcg/kg/min (est\xE1ndar) o titular en mcg/min (HU).",
     calculatorId: null,
-    copyTemplate: "EPINEFRINA: 4 MG EN 250 CC GLUCOSADO 5%, INICIAR A 0.05–0.1 MCG/KG/MIN Y TITULAR",
+    copyTemplate: "EPINEFRINA: 4 MG EN 250 CC GLUCOSADO 5%, INICIAR A 0.05\u20130.1 MCG/KG/MIN Y TITULAR",
     notes: ["Agregar si no se alcanza meta con norepinefrina + vasopresina"],
     doseUnitSwitch: {
       perKgRange: [0.05, 0.1],
       hu: {
-        indicationText: "4 mg en 250 cc glucosado 5%. Iniciar 5–10 mcg/min y titular según respuesta hemodinámica.",
-        copyTemplate: "EPINEFRINA: 4 MG EN 250 CC GLUCOSADO 5%, INICIAR A 5–10 MCG/MIN Y TITULAR",
+        indicationText: "4 mg en 250 cc glucosado 5%. Iniciar 5\u201310 mcg/min y titular seg\xFAn respuesta hemodin\xE1mica.",
+        copyTemplate: "EPINEFRINA: 4 MG EN 250 CC GLUCOSADO 5%, INICIAR A 5\u201310 MCG/MIN Y TITULAR",
         someFields: {
           medication: "EPINEFRINA",
           route: "IV",
           doseValue: "4",
           doseUnit: "MG",
           dilution: "250 ML DE GLUCOSADO 5%",
-          frequency: "INFUSIÓN CONTINUA",
-          infusionRateMlHr: "5–10 MCG/MIN",
+          frequency: "INFUSI\xD3N CONTINUA",
+          infusionRateMlHr: "5\u201310 MCG/MIN",
           comments: "PERMITIR TITULAR"
         }
       },
       standard: {
-        indicationText: "4 mg en 250 cc glucosado 5%. Iniciar 0.05–0.1 mcg/kg/min y titular.",
-        copyTemplate: "EPINEFRINA: 4 MG EN 250 CC GLUCOSADO 5%, INICIAR A 0.05–0.1 MCG/KG/MIN Y TITULAR",
+        indicationText: "4 mg en 250 cc glucosado 5%. Iniciar 0.05\u20130.1 mcg/kg/min y titular.",
+        copyTemplate: "EPINEFRINA: 4 MG EN 250 CC GLUCOSADO 5%, INICIAR A 0.05\u20130.1 MCG/KG/MIN Y TITULAR",
         someFields: {
           medication: "EPINEFRINA",
           route: "IV",
-          doseValue: "0.05–0.1",
+          doseValue: "0.05\u20130.1",
           doseUnit: "MCG/KG/MIN",
           dilution: "250 ML DE GLUCOSADO 5%",
-          frequency: "INFUSIÓN CONTINUA",
-          infusionRateMlHr: "0.05–0.1 MCG/KG/MIN",
+          frequency: "INFUSI\xD3N CONTINUA",
+          infusionRateMlHr: "0.05\u20130.1 MCG/KG/MIN",
           comments: "PERMITIR TITULAR"
         }
       }
@@ -23121,222 +23137,222 @@ var MANEJO_PROTOCOLS = [
     id: "dobutamine-infusion",
     category: "vasopresores",
     title: "Dobutamina",
-    indicationText: "250 mg en 250 cc glucosado 5%. Iniciar 2.5–5 mcg/kg/min y titular hasta 20 mcg/kg/min.",
+    indicationText: "250 mg en 250 cc glucosado 5%. Iniciar 2.5\u20135 mcg/kg/min y titular hasta 20 mcg/kg/min.",
     calculatorId: null,
-    copyTemplate: "DOBUTAMINA: 250 MG EN 250 CC GLUCOSADO 5%, INICIAR 2.5–5 MCG/KG/MIN, TITULAR HASTA 20 MCG/KG/MIN",
-    notes: ["Permitir titular según respuesta"]
+    copyTemplate: "DOBUTAMINA: 250 MG EN 250 CC GLUCOSADO 5%, INICIAR 2.5\u20135 MCG/KG/MIN, TITULAR HASTA 20 MCG/KG/MIN",
+    notes: ["Permitir titular seg\xFAn respuesta"]
   },
   {
     id: "nitro-standard",
     category: "cardiovascular",
     title: "Nitroglicerina",
-    indicationText: "50 mg en 250 cc solución salina 0.9%. Iniciar 5–10 mcg/min y titular de 5 en 5 mcg/min.",
+    indicationText: "50 mg en 250 cc soluci\xF3n salina 0.9%. Iniciar 5\u201310 mcg/min y titular de 5 en 5 mcg/min.",
     calculatorId: null,
-    copyTemplate: "NITROGLICERINA: 50 MG EN 250 CC SS0.9%, INICIAR 5–10 MCG/MIN, TITULAR DE 5 EN 5 MCG/MIN",
+    copyTemplate: "NITROGLICERINA: 50 MG EN 250 CC SS0.9%, INICIAR 5\u201310 MCG/MIN, TITULAR DE 5 EN 5 MCG/MIN",
     notes: ["Permitir titular", "Meta habitual: PAM <140/90 mmHg en IAM"]
   },
   {
     id: "nitro-sublingual-eap",
     category: "cardiovascular",
-    title: "Nitroglicerina — sublingual",
-    indicationText: "0.4 mg sublingual c/5 min × 3 dosis. Si persiste disnea o congestión → infusión IV titulada.",
+    title: "Nitroglicerina \u2014 sublingual",
+    indicationText: "0.4 mg sublingual c/5 min \xD7 3 dosis. Si persiste disnea o congesti\xF3n \u2192 infusi\xF3n IV titulada.",
     calculatorId: null,
-    copyTemplate: "NITROGLICERINA: 0.4 MG SL C/5 MIN × 3",
-    notes: ["Verificar PAS antes de cada dosis", "Preparar infusión IV si no responde"]
+    copyTemplate: "NITROGLICERINA: 0.4 MG SL C/5 MIN \xD7 3",
+    notes: ["Verificar PAS antes de cada dosis", "Preparar infusi\xF3n IV si no responde"]
   },
   {
     id: "nitro-iam",
     category: "cardiovascular",
-    title: "IAM — nitroglicerina",
-    indicationText: "50 mg en 250 cc fisiológico. Iniciar 10–20 mcg/min; titular cada 5–10 min (incrementos de 10 mcg/min) hasta mejoría o PAM <90 mmHg.",
+    title: "IAM \u2014 nitroglicerina",
+    indicationText: "50 mg en 250 cc fisiol\xF3gico. Iniciar 10\u201320 mcg/min; titular cada 5\u201310 min (incrementos de 10 mcg/min) hasta mejor\xEDa o PAM <90 mmHg.",
     calculatorId: null,
-    copyTemplate: "IAM NITRO: 50 MG EN 250 CC SS0.9%, 10–20 MCG/MIN, TITULAR CADA 5–10 MIN",
-    notes: ["Meta presión arterial <140/90 mmHg", "Suspender si PAM <90 mmHg"]
+    copyTemplate: "IAM NITRO: 50 MG EN 250 CC SS0.9%, 10\u201320 MCG/MIN, TITULAR CADA 5\u201310 MIN",
+    notes: ["Meta presi\xF3n arterial <140/90 mmHg", "Suspender si PAM <90 mmHg"]
   },
   {
     id: "amiodarone-load",
     category: "cardiovascular",
-    title: "Amiodarona — impregnación",
+    title: "Amiodarona \u2014 impregnaci\xF3n",
     indicationText: "150 mg en 100 cc glucosado 5%. Pasar en 10 minutos.",
     calculatorId: null,
-    copyTemplate: "AMIODARONA IMPREGNACIÓN: 150 MG EN 100 CC G5%, PASAR EN 10 MIN",
+    copyTemplate: "AMIODARONA IMPREGNACI\xD3N: 150 MG EN 100 CC G5%, PASAR EN 10 MIN",
     notes: ["Monitorizar TA y FC durante bolus"]
   },
   {
     id: "amiodarone-infusion",
     category: "cardiovascular",
-    title: "Amiodarona — infusión",
-    indicationText: "900 mg en 250 cc glucosado 5%. 1 mg/min × 6 h (15 cc/h), luego 0.5 mg/min × 18 h (7.5 cc/h).",
+    title: "Amiodarona \u2014 infusi\xF3n",
+    indicationText: "900 mg en 250 cc glucosado 5%. 1 mg/min \xD7 6 h (15 cc/h), luego 0.5 mg/min \xD7 18 h (7.5 cc/h).",
     calculatorId: null,
     copyTemplate: "AMIODARONA: 900 MG EN 250 CC G5%, 1 MG/MIN 6 H (15 CC/H), LUEGO 0.5 MG/MIN 18 H (7.5 CC/H)",
-    notes: ["Vigilar función tiroidea y pulmonar con uso prolongado"]
+    notes: ["Vigilar funci\xF3n tiroidea y pulmonar con uso prolongado"]
   },
   {
     id: "midazolam-infusion",
     category: "sedacion",
     title: "Midazolam",
-    indicationText: "50 mg en 100 cc SS 0.9% (0.5 mg/ml). 0.02–0.1 mg/kg/h (20–100 mcg/kg/h) y titular.",
+    indicationText: "50 mg en 100 cc SS 0.9% (0.5 mg/ml). 0.02\u20130.1 mg/kg/h (20\u2013100 mcg/kg/h) y titular.",
     calculatorId: "sedation-mg-kg-h",
     calculatorParams: { drug: "midazolam" },
-    copyTemplate: "MIDAZOLAM: 50 MG EN 100 CC SS0.9%, 0.02–0.1 MG/KG/H — PERMITIR TITULAR",
-    notes: ["Permitir titular", "Rango 0.02–0.1 mg/kg/h"]
+    copyTemplate: "MIDAZOLAM: 50 MG EN 100 CC SS0.9%, 0.02\u20130.1 MG/KG/H \u2014 PERMITIR TITULAR",
+    notes: ["Permitir titular", "Rango 0.02\u20130.1 mg/kg/h"]
   },
   {
     id: "propofol-infusion",
     category: "sedacion",
     title: "Propofol",
-    indicationText: "No diluir (1% = 10 mg/ml). Iniciar 5–20 mcg/kg/min y titular. Máx 4 mg/kg/h (síndrome de infusión).",
+    indicationText: "No diluir (1% = 10 mg/ml). Iniciar 5\u201320 mcg/kg/min y titular. M\xE1x 4 mg/kg/h (s\xEDndrome de infusi\xF3n).",
     calculatorId: "sedation-mg-kg-h",
     calculatorParams: { drug: "propofol" },
-    copyTemplate: "PROPOFOL: NO DILUIR, 5–20 MCG/KG/MIN, PERMITIR TITULAR",
-    notes: ["No diluir", "Permitir titular", "Máx 4 mg/kg/h"]
+    copyTemplate: "PROPOFOL: NO DILUIR, 5\u201320 MCG/KG/MIN, PERMITIR TITULAR",
+    notes: ["No diluir", "Permitir titular", "M\xE1x 4 mg/kg/h"]
   },
   {
     id: "dexmed-infusion",
     category: "sedacion",
     title: "Dexmedetomidina",
-    indicationText: "200 mcg en 100 cc SS 0.9%. 0.2–0.7 mcg/kg/h (hasta 1.4 mcg/kg/h).",
+    indicationText: "200 mcg en 100 cc SS 0.9%. 0.2\u20130.7 mcg/kg/h (hasta 1.4 mcg/kg/h).",
     calculatorId: "sedation-mg-kg-h",
     calculatorParams: { drug: "dexmed" },
-    copyTemplate: "DEXMEDETOMIDINA: 200 MCG EN 100 CC SS0.9%, 0.2–0.7 MCG/KG/H",
+    copyTemplate: "DEXMEDETOMIDINA: 200 MCG EN 100 CC SS0.9%, 0.2\u20130.7 MCG/KG/H",
     notes: ["Permitir titular", "IOT: considerar 0.5 mcg/kg/h"]
   },
   {
     id: "sedation-iot-bundle",
     category: "sedacion",
-    title: "Sedación IOT (bundle)",
+    title: "Sedaci\xF3n IOT (bundle)",
     indicationText: "Midazolam 0.1 mg/kg/h + propofol 40 mcg/kg/min + dexmedetomidina 0.5 mcg/kg/h. Permitir titular cada componente.",
     calculatorId: null,
-    copyTemplate: "SEDACIÓN IOT: MIDAZOLAM 0.1 MG/KG/H + PROPOFOL 40 MCG/KG/MIN + DEXMED 0.5 MCG/KG/H — PERMITIR TITULAR",
-    notes: ["Bundle orientativo; ajustar según hemodinámica y RASS"]
+    copyTemplate: "SEDACI\xD3N IOT: MIDAZOLAM 0.1 MG/KG/H + PROPOFOL 40 MCG/KG/MIN + DEXMED 0.5 MCG/KG/H \u2014 PERMITIR TITULAR",
+    notes: ["Bundle orientativo; ajustar seg\xFAn hemodin\xE1mica y RASS"]
   },
   {
     id: "midazolam-iot-01",
     category: "sedacion",
-    title: "Midazolam — dosis IOT",
-    indicationText: "En intubación: 0.1 mg/kg/h (ajustar con calculadora por peso).",
+    title: "Midazolam \u2014 dosis IOT",
+    indicationText: "En intubaci\xF3n: 0.1 mg/kg/h (ajustar con calculadora por peso).",
     calculatorId: "sedation-mg-kg-h",
     calculatorParams: { drug: "midazolam" },
-    copyTemplate: "MIDAZOLAM IOT: 0.1 MG/KG/H — PERMITIR TITULAR",
+    copyTemplate: "MIDAZOLAM IOT: 0.1 MG/KG/H \u2014 PERMITIR TITULAR",
     notes: ["Componente del bundle IOT"]
   },
   {
     id: "propofol-iot-40",
     category: "sedacion",
-    title: "Propofol — dosis IOT",
-    indicationText: "En intubación: 40 mcg/kg/min; no diluir.",
+    title: "Propofol \u2014 dosis IOT",
+    indicationText: "En intubaci\xF3n: 40 mcg/kg/min; no diluir.",
     calculatorId: "sedation-mg-kg-h",
     calculatorParams: { drug: "propofol" },
-    copyTemplate: "PROPOFOL IOT: 40 MCG/KG/MIN, NO DILUIR — PERMITIR TITULAR",
+    copyTemplate: "PROPOFOL IOT: 40 MCG/KG/MIN, NO DILUIR \u2014 PERMITIR TITULAR",
     notes: ["Componente del bundle IOT"]
   },
   {
     id: "dexmed-iot-05",
     category: "sedacion",
-    title: "Dexmedetomidina — dosis IOT",
-    indicationText: "En intubación: 0.5 mcg/kg/h.",
+    title: "Dexmedetomidina \u2014 dosis IOT",
+    indicationText: "En intubaci\xF3n: 0.5 mcg/kg/h.",
     calculatorId: "sedation-mg-kg-h",
     calculatorParams: { drug: "dexmed" },
-    copyTemplate: "DEXMED IOT: 0.5 MCG/KG/H — PERMITIR TITULAR",
+    copyTemplate: "DEXMED IOT: 0.5 MCG/KG/H \u2014 PERMITIR TITULAR",
     notes: ["Componente del bundle IOT"]
   },
   {
     id: "levetiracetam-load",
     category: "anticonvulsivantes",
-    title: "Levetiracetam — impregnación",
+    title: "Levetiracetam \u2014 impregnaci\xF3n",
     indicationText: "60 mg/kg diluido en 100 cc SS 0.9%; pasar en 15 minutos.",
     calculatorId: "levetiracetam-load",
-    copyTemplate: "LEVETIRACETAM IMPREGNACIÓN 60 MG/KG EN 100 CC SS0.9%, 15 MIN",
-    notes: ["Verificar función renal en dosis de mantenimiento"]
+    copyTemplate: "LEVETIRACETAM IMPREGNACI\xD3N 60 MG/KG EN 100 CC SS0.9%, 15 MIN",
+    notes: ["Verificar funci\xF3n renal en dosis de mantenimiento"]
   },
   {
     id: "levetiracetam-maint",
     category: "anticonvulsivantes",
-    title: "Levetiracetam — mantenimiento",
-    indicationText: "500–1500 mg IV cada 12 h (sin diluir o diluir en 100 cc SS 0.9% para 15 min).",
+    title: "Levetiracetam \u2014 mantenimiento",
+    indicationText: "500\u20131500 mg IV cada 12 h (sin diluir o diluir en 100 cc SS 0.9% para 15 min).",
     calculatorId: null,
-    copyTemplate: "LEVETIRACETAM: 500–1500 MG IV C/12 H (15 MIN SI SE DILUYE)",
-    notes: ["Ajustar según función renal"]
+    copyTemplate: "LEVETIRACETAM: 500\u20131500 MG IV C/12 H (15 MIN SI SE DILUYE)",
+    notes: ["Ajustar seg\xFAn funci\xF3n renal"]
   },
   {
     id: "phenytoin-load",
     category: "anticonvulsivantes",
-    title: "Fenitoína — impregnación",
-    indicationText: "15–20 mg/kg diluido en SS 0.9% (máx 50 mg/ml); pasar a ≤50 mg/min con monitoreo cardíaco.",
+    title: "Fenito\xEDna \u2014 impregnaci\xF3n",
+    indicationText: "15\u201320 mg/kg diluido en SS 0.9% (m\xE1x 50 mg/ml); pasar a \u226450 mg/min con monitoreo card\xEDaco.",
     calculatorId: null,
-    copyTemplate: "FENITOÍNA: 15–20 MG/KG EN SS0.9% (MÁX 50 MG/ML), ≤50 MG/MIN CON MONITOR",
-    notes: ["Monitor cardíaco continuo durante infusión"]
+    copyTemplate: "FENITO\xCDNA: 15\u201320 MG/KG EN SS0.9% (M\xC1X 50 MG/ML), \u226450 MG/MIN CON MONITOR",
+    notes: ["Monitor card\xEDaco continuo durante infusi\xF3n"]
   },
   {
     id: "bic-hu-balanceada",
     category: "fluidos",
     title: "Balanceada HU (bicarbonato)",
-    indicationText: "Fórmula: (24 − bic px) × peso × 0.3 / 8.5 mEq total; fraccionar en bolo, 4 h diluido e infusión 24 h.",
+    indicationText: "F\xF3rmula: (24 \u2212 bic px) \xD7 peso \xD7 0.3 / 8.5 mEq total; fraccionar en bolo, 4 h diluido e infusi\xF3n 24 h.",
     calculatorId: "bic-hu-balanceada",
-    copyTemplate: "BALANCEADA HU — VER CÁLCULO",
-    notes: ["Tercios: bolo sin diluir / 4 h diluido / 24 h infusión titular"]
+    copyTemplate: "BALANCEADA HU \u2014 VER C\xC1LCULO",
+    notes: ["Tercios: bolo sin diluir / 4 h diluido / 24 h infusi\xF3n titular"]
   },
   {
     id: "bicarb-hyperkalemia",
     category: "fluidos",
-    title: "Bicarbonato — hiperpotasemia",
-    indicationText: "50 mEq (1 ampolla 50 ml al 8.4%) diluido en 100 cc glucosado 5%; pasar en 5–10 min (solo si acidosis metabólica severa pH <7.2).",
+    title: "Bicarbonato \u2014 hiperpotasemia",
+    indicationText: "50 mEq (1 ampolla 50 ml al 8.4%) diluido en 100 cc glucosado 5%; pasar en 5\u201310 min (solo si acidosis metab\xF3lica severa pH <7.2).",
     calculatorId: null,
-    copyTemplate: "BICARB HIPERK: 50 MEQ EN 100 CC G5%, 5–10 MIN (SI ACIDOSIS pH <7.2)",
-    notes: ["Solo si acidosis metabólica severa", "Parte del manejo de hiperpotasemia"]
+    copyTemplate: "BICARB HIPERK: 50 MEQ EN 100 CC G5%, 5\u201310 MIN (SI ACIDOSIS pH <7.2)",
+    notes: ["Solo si acidosis metab\xF3lica severa", "Parte del manejo de hiperpotasemia"]
   },
   {
     id: "mg-infusion-slow",
     category: "fluidos",
-    title: "Magnesio sulfato — infusión",
-    indicationText: "4–8 g en 500 cc SS 0.9%; pasar en 12–24 h. Repetir hasta Mg >1 mg/dl.",
+    title: "Magnesio sulfato \u2014 infusi\xF3n",
+    indicationText: "4\u20138 g en 500 cc SS 0.9%; pasar en 12\u201324 h. Repetir hasta Mg >1 mg/dl.",
     calculatorId: null,
-    copyTemplate: "MAGNESIO: 4–8 G EN 500 CC SS0.9%, INFUSIÓN 12–24 H",
-    notes: ["Vigilar reflejos y función renal"]
+    copyTemplate: "MAGNESIO: 4\u20138 G EN 500 CC SS0.9%, INFUSI\xD3N 12\u201324 H",
+    notes: ["Vigilar reflejos y funci\xF3n renal"]
   },
   {
     id: "mg-bolus-2g",
     category: "fluidos",
-    title: "Magnesio — bolo urgente",
-    indicationText: "2 g (4 ml al 50%) en 100 cc SS 0.9%; pasar en 15–30 min.",
+    title: "Magnesio \u2014 bolo urgente",
+    indicationText: "2 g (4 ml al 50%) en 100 cc SS 0.9%; pasar en 15\u201330 min.",
     calculatorId: null,
-    copyTemplate: "MAGNESIO BOLO: 2 G EN 100 CC SS0.9%, 15–30 MIN",
-    notes: ["Indicado en hipomagnesemia sintomática o arritmias"]
+    copyTemplate: "MAGNESIO BOLO: 2 G EN 100 CC SS0.9%, 15\u201330 MIN",
+    notes: ["Indicado en hipomagnesemia sintom\xE1tica o arritmias"]
   },
   {
     id: "ca-gluconate-bolus",
     category: "fluidos",
-    title: "Gluconato de calcio — bolo",
-    indicationText: "1–2 g (10–20 ml al 10%) en 50 cc glucosado 5%; pasar en 10–20 min. Indicado en hiperpotasemia con cambios ECG o K+ ≥6.5.",
+    title: "Gluconato de calcio \u2014 bolo",
+    indicationText: "1\u20132 g (10\u201320 ml al 10%) en 50 cc glucosado 5%; pasar en 10\u201320 min. Indicado en hiperpotasemia con cambios ECG o K+ \u22656.5.",
     calculatorId: null,
-    copyTemplate: "CA GLUCONATO BOLO: 1–2 G EN 50 CC G5%, 10–20 MIN",
-    notes: ["Monitorizar ECG", "Estabilización de membrana en hiperpotasemia"]
+    copyTemplate: "CA GLUCONATO BOLO: 1\u20132 G EN 50 CC G5%, 10\u201320 MIN",
+    notes: ["Monitorizar ECG", "Estabilizaci\xF3n de membrana en hiperpotasemia"]
   },
   {
     id: "ca-gluconate-infusion",
     category: "fluidos",
-    title: "Gluconato de calcio — infusión",
+    title: "Gluconato de calcio \u2014 infusi\xF3n",
     indicationText: "10 g en 1000 cc glucosado 5%; velocidad 50 cc/h (0.5 g/h).",
     calculatorId: null,
-    copyTemplate: "CA GLUCONATO INFUSIÓN: 10 G EN 1000 CC G5% A 50 CC/H",
-    notes: ["Valorar calcio iónico seriado"]
+    copyTemplate: "CA GLUCONATO INFUSI\xD3N: 10 G EN 1000 CC G5% A 50 CC/H",
+    notes: ["Valorar calcio i\xF3nico seriado"]
   },
   {
     id: "hypertonic-saline",
     category: "fluidos",
-    title: "Solución hipertónica",
+    title: "Soluci\xF3n hipert\xF3nica",
     indicationText: "250 cc SS 0.9% + 3 ampollas NaCl 17.7%; pasar 100 cc en 20 min (o 3 cc/kg si se usa regla por peso).",
     calculatorId: "hypertonic-volume",
-    copyTemplate: "HIPERTÓNICA: 250 CC SS0.9% + 3 AMP NaCl 17.7%, 100 CC EN 20 MIN",
-    notes: ["Hiponatremia sintomática severa", "Usar regla 3 cc/kg solo si protocolo lo indica"]
+    copyTemplate: "HIPERT\xD3NICA: 250 CC SS0.9% + 3 AMP NaCl 17.7%, 100 CC EN 20 MIN",
+    notes: ["Hiponatremia sintom\xE1tica severa", "Usar regla 3 cc/kg solo si protocolo lo indica"]
   },
   {
     id: "bicarb-capsules",
     category: "fluidos",
-    title: "Bicarbonato oral (cápsulas)",
-    indicationText: "500 mg–1 g vía oral cada 12–8 h según acidosis.",
+    title: "Bicarbonato oral (c\xE1psulas)",
+    indicationText: "500 mg\u20131 g v\xEDa oral cada 12\u20138 h seg\xFAn acidosis.",
     calculatorId: null,
-    copyTemplate: "BICARB CÁPSULAS: 500 MG–1 G VO C/12–8 H",
+    copyTemplate: "BICARB C\xC1PSULAS: 500 MG\u20131 G VO C/12\u20138 H",
     notes: ["No sustituye manejo de causa de acidosis"]
   },
   {
@@ -23346,40 +23362,40 @@ var MANEJO_PROTOCOLS = [
     indicationText: "900 mcg en 100 cc SS 0.9%; administrar 4 cc/h (36 mcg/h) y titular.",
     calculatorId: null,
     copyTemplate: "BUPRENORFINA: 900 MCG EN 100 CC A 4 CC/H (36 MCG/H)",
-    notes: ["Riesgo de depresión respiratoria con sedantes"]
+    notes: ["Riesgo de depresi\xF3n respiratoria con sedantes"]
   },
   {
     id: "fentanyl-infusion",
     category: "analgesia",
     title: "Fentanilo",
-    indicationText: "1000 mcg (1 mg) en 100 cc SS 0.9%; iniciar 25–50 mcg/h (2.5–5 cc/h) y titular.",
+    indicationText: "1000 mcg (1 mg) en 100 cc SS 0.9%; iniciar 25\u201350 mcg/h (2.5\u20135 cc/h) y titular.",
     calculatorId: null,
-    copyTemplate: "FENTANILO: 1000 MCG EN 100 CC SS0.9%, 25–50 MCG/H (2.5–5 CC/H)",
-    notes: ["Permitir titular", "Vigilar depresión respiratoria"]
+    copyTemplate: "FENTANILO: 1000 MCG EN 100 CC SS0.9%, 25\u201350 MCG/H (2.5\u20135 CC/H)",
+    notes: ["Permitir titular", "Vigilar depresi\xF3n respiratoria"]
   },
   {
     id: "morphine-eap-bolus",
     category: "analgesia",
-    title: "Morfina — bolo IV",
-    indicationText: "2–4 mg IV lento (2–4 min); repetir c/5–15 min según ansiedad o disnea. Usar con precaución.",
+    title: "Morfina \u2014 bolo IV",
+    indicationText: "2\u20134 mg IV lento (2\u20134 min); repetir c/5\u201315 min seg\xFAn ansiedad o disnea. Usar con precauci\xF3n.",
     calculatorId: null,
-    copyTemplate: "MORFINA: 2–4 MG IV LENTO (2–4 MIN)",
-    notes: ["Precaución si hipotensión o bradicardia", "Preferir fentanilo si inestabilidad hemodinámica"]
+    copyTemplate: "MORFINA: 2\u20134 MG IV LENTO (2\u20134 MIN)",
+    notes: ["Precauci\xF3n si hipotensi\xF3n o bradicardia", "Preferir fentanilo si inestabilidad hemodin\xE1mica"]
   },
   {
     id: "salbutamol-nebul",
     category: "respiratorio",
     title: "Salbutamol nebulizado",
-    indicationText: "2.5–5 mg (0.5–1 ml al 0.5%) en 3–5 ml SS 0.9%; nebulizar cada 4–6 h.",
+    indicationText: "2.5\u20135 mg (0.5\u20131 ml al 0.5%) en 3\u20135 ml SS 0.9%; nebulizar cada 4\u20136 h.",
     calculatorId: null,
-    copyTemplate: "SALBUTAMOL: 2.5–5 MG EN 3–5 CC SS0.9% NEBUL C/4–6 H",
-    notes: ["Monitorizar FC y K⁺ con uso repetido"]
+    copyTemplate: "SALBUTAMOL: 2.5\u20135 MG EN 3\u20135 CC SS0.9% NEBUL C/4\u20136 H",
+    notes: ["Monitorizar FC y K\u207A con uso repetido"]
   },
   {
     id: "carboxymaltose-iron",
     category: "hierro",
-    title: "Carboximaltosa férrica",
-    indicationText: "500 mg en 250 cc SS 0.9%; infundir en 30 min (primeros 10 min a goteo lento). Premedicación: paracetamol 1 g + clorfenamina 10 mg IV.",
+    title: "Carboximaltosa f\xE9rrica",
+    indicationText: "500 mg en 250 cc SS 0.9%; infundir en 30 min (primeros 10 min a goteo lento). Premedicaci\xF3n: paracetamol 1 g + clorfenamina 10 mg IV.",
     calculatorId: null,
     copyTemplate: "CARBOXIMALTOSA: 500 MG EN 250 CC SS0.9% 30 MIN + PARACETAMOL 1 G + CLORFENAMINA 10 MG IV",
     notes: ["Observar reacciones infusionales"]
@@ -23387,25 +23403,25 @@ var MANEJO_PROTOCOLS = [
   {
     id: "venofer-dose",
     category: "hierro",
-    title: "Venofer (sacarato férrico)",
-    indicationText: "100–200 mg en 100–200 cc SS 0.9%; pasar en 15–30 min.",
+    title: "Venofer (sacarato f\xE9rrico)",
+    indicationText: "100\u2013200 mg en 100\u2013200 cc SS 0.9%; pasar en 15\u201330 min.",
     calculatorId: null,
-    copyTemplate: "VENOFER: 100–200 MG EN 100–200 CC SS0.9%, 15–30 MIN",
-    notes: ["No mezclar con otros electrolitos en misma línea"]
+    copyTemplate: "VENOFER: 100\u2013200 MG EN 100\u2013200 CC SS0.9%, 15\u201330 MIN",
+    notes: ["No mezclar con otros electrolitos en misma l\xEDnea"]
   },
   {
     id: "platelets-volume",
     category: "hierro",
     title: "Plaquetas",
-    indicationText: "10–20 cc por litro de sangre del paciente (ajustar a meta plaquetaria).",
+    indicationText: "10\u201320 cc por litro de sangre del paciente (ajustar a meta plaquetaria).",
     calculatorId: null,
-    copyTemplate: "PLAQUETAS: 10–20 CC/L DE SANGRE DEL PACIENTE",
+    copyTemplate: "PLAQUETAS: 10\u201320 CC/L DE SANGRE DEL PACIENTE",
     notes: ["Confirmar tipo y compatibilidad en banco"]
   },
   {
     id: "furo-infusion",
     category: "diureticos-albumina",
-    title: "Furosemida infusión",
+    title: "Furosemida infusi\xF3n",
     indicationText: "360 mg en 100 cc SS 0.9%; velocidad 4 cc/h (14.4 mg/h).",
     calculatorId: null,
     copyTemplate: "FUROSEMIDA: 360 MG EN 100 CC SS0.9% A 4 CC/H (14.4 MG/H)",
@@ -23414,59 +23430,59 @@ var MANEJO_PROTOCOLS = [
   {
     id: "furo-bolus",
     category: "diureticos-albumina",
-    title: "Furosemida — bolo IV",
-    indicationText: "20–80 mg IV directo lento (2–4 min); repetir según respuesta diurética.",
+    title: "Furosemida \u2014 bolo IV",
+    indicationText: "20\u201380 mg IV directo lento (2\u20134 min); repetir seg\xFAn respuesta diur\xE9tica.",
     calculatorId: null,
-    copyTemplate: "FUROSEMIDA: 20–80 MG IV BOLO LENTO (2–4 MIN)",
-    notes: ["Escalar a infusión si oligoanuria persistente"]
+    copyTemplate: "FUROSEMIDA: 20\u201380 MG IV BOLO LENTO (2\u20134 MIN)",
+    notes: ["Escalar a infusi\xF3n si oligoanuria persistente"]
   },
   {
     id: "insulin-cad-01",
     category: "fluidos",
-    title: "Insulina regular — 0.1 U/kg/h",
-    indicationText: "CAD: 100 UI en 100 cc SS 0.9% (1 UI/ml). Infusión 0.1 U/kg/h; meta descenso glucosa 50–75 mg/dl/h.",
+    title: "Insulina regular \u2014 0.1 U/kg/h",
+    indicationText: "CAD: 100 UI en 100 cc SS 0.9% (1 UI/ml). Infusi\xF3n 0.1 U/kg/h; meta descenso glucosa 50\u201375 mg/dl/h.",
     calculatorId: "insulin-u-kg-h",
     calculatorParams: { unitsPerKgPerHour: 0.1 },
     copyTemplate: "INSULINA REGULAR 0.1 U/KG/H EN 100 CC SS0.9%",
-    notes: ["Si glucosa no baja ~50 mg/dL/h → +1 U/h", "Al 250 mg/dL → 0.05 U/kg/h"]
+    notes: ["Si glucosa no baja ~50 mg/dL/h \u2192 +1 U/h", "Al 250 mg/dL \u2192 0.05 U/kg/h"]
   },
   {
     id: "insulin-cad-005",
     category: "fluidos",
-    title: "Insulina regular — 0.05 U/kg/h",
+    title: "Insulina regular \u2014 0.05 U/kg/h",
     indicationText: "CAD: cuando glucosa ~250 mg/dL; 0.05 U/kg/h y agregar dextrosa a fluidos.",
     calculatorId: "insulin-u-kg-h",
     calculatorParams: { unitsPerKgPerHour: 0.05 },
     copyTemplate: "INSULINA REGULAR 0.05 U/KG/H",
-    notes: ["Agregar dextrosa a solución de mantenimiento"]
+    notes: ["Agregar dextrosa a soluci\xF3n de mantenimiento"]
   },
   {
     id: "insulin-ehh-014",
     category: "fluidos",
-    title: "Insulina regular — 0.14 U/kg/h",
-    indicationText: "EHH: tras rehidratación parcial; 0.14 U/kg/h sin bolo hasta glucosa < 300 mg/dL.",
+    title: "Insulina regular \u2014 0.14 U/kg/h",
+    indicationText: "EHH: tras rehidrataci\xF3n parcial; 0.14 U/kg/h sin bolo hasta glucosa < 300 mg/dL.",
     calculatorId: "insulin-u-kg-h",
     calculatorParams: { unitsPerKgPerHour: 0.14 },
     copyTemplate: "INSULINA REGULAR 0.14 U/KG/H (EHH)",
-    notes: ["Sin bolo en EHH según protocolo ADA orientativo"]
+    notes: ["Sin bolo en EHH seg\xFAn protocolo ADA orientativo"]
   },
   {
     id: "albumin-paracentesis",
     category: "diureticos-albumina",
     title: "Albumina post-paracentesis",
-    indicationText: "8 g de albumina por cada litro drenado si >5 litros (ej. 12 L → 96 g ≈ 10 ampollas 20%).",
+    indicationText: "8 g de albumina por cada litro drenado si >5 litros (ej. 12 L \u2192 96 g \u2248 10 ampollas 20%).",
     calculatorId: "albumin-paracentesis",
-    copyTemplate: "ALBUMINA POST-PARACENTESIS — VER CÁLCULO",
-    notes: ["Ampollas 20% ≈ 10 g por ampolla de 50 ml"]
+    copyTemplate: "ALBUMINA POST-PARACENTESIS \u2014 VER C\xC1LCULO",
+    notes: ["Ampollas 20% \u2248 10 g por ampolla de 50 ml"]
   },
   {
     id: "stanford-solution",
     category: "otros",
-    title: "Solución Stanford",
+    title: "Soluci\xF3n Stanford",
     indicationText: "Enjuagues 20 ml cada 8 h antes de alimentos (escupir). Copia cada componente por separado para SOME.",
     calculatorId: null,
     copyTemplate: "ENJUAGUE STANFORD: 20 ML C/8H ANTES DE ALIMENTOS",
-    notes: ["Mezcla oral institucional — volcar componentes en SOME uno por uno"],
+    notes: ["Mezcla oral institucional \u2014 volcar componentes en SOME uno por uno"],
     isComponentGroup: true,
     components: [
       {
@@ -23476,8 +23492,8 @@ var MANEJO_PROTOCOLS = [
       },
       {
         id: "stanford-al-mag",
-        label: "Hidróxido Al/Mg",
-        someText: "200 ML HIDRÓXIDO DE ALUMINIO/MAGNESIO"
+        label: "Hidr\xF3xido Al/Mg",
+        someText: "200 ML HIDR\xD3XIDO DE ALUMINIO/MAGNESIO"
       },
       {
         id: "stanford-diphen",
@@ -23496,7 +23512,7 @@ var MANEJO_PROTOCOLS = [
       },
       {
         id: "stanford-rinse",
-        label: "Indicación de enjuague",
+        label: "Indicaci\xF3n de enjuague",
         someText: "ENJUAGUE 20 ML C/8H ANTES DE ALIMENTOS, ESCUPIR"
       }
     ]
@@ -23515,7 +23531,7 @@ function protocolPatchFromSomeFields(fields, category) {
   var order = buildSomeOrder(fields || {});
   var block = formatSomeBlock(order);
   var patch = {
-    title: String(order.medication || "").trim() || "Infusión",
+    title: String(order.medication || "").trim() || "Infusi\xF3n",
     indicationText: block,
     copyTemplate: block,
     someFields: {
@@ -23590,11 +23606,11 @@ function openManejoProtocolEditorModal(opts, deps) {
   var title = document.createElement("h3");
   title.id = "manejo-proto-editor-title";
   title.className = "manejo-proto-editor-title";
-  title.textContent = mode === "add" ? "Nueva infusión SOME" : "Editar plantilla SOME";
+  title.textContent = mode === "add" ? "Nueva infusi\xF3n SOME" : "Editar plantilla SOME";
   headText.appendChild(title);
   var hint = document.createElement("p");
   hint.className = "manejo-proto-editor-subtitle";
-  hint.textContent = mode === "add" ? "Se guardará en tus infusiones personalizadas." : isCustom ? "Cambios en tu biblioteca local." : "Override local — no modifica el catálogo base.";
+  hint.textContent = mode === "add" ? "Se guardar\xE1 en tus infusiones personalizadas." : isCustom ? "Cambios en tu biblioteca local." : "Override local \u2014 no modifica el cat\xE1logo base.";
   headText.appendChild(hint);
   head.appendChild(headText);
   var closeBtn = document.createElement("button");
@@ -23613,14 +23629,14 @@ function openManejoProtocolEditorModal(opts, deps) {
   var doseValInp = buildManejoProtoFormInput("text", "manejo-proto-editor-input", "16");
   doseValInp.value = seed.doseValue != null ? String(seed.doseValue) : "";
   medSec.grid.appendChild(buildManejoProtoFormField("Dosis", doseValInp));
-  var doseUnitInp = buildManejoProtoFormInput("text", "manejo-proto-editor-input", "MG, MCG, MEQ…");
+  var doseUnitInp = buildManejoProtoFormInput("text", "manejo-proto-editor-input", "MG, MCG, MEQ\u2026");
   doseUnitInp.value = seed.doseUnit || "";
   medSec.grid.appendChild(buildManejoProtoFormField("Unidad", doseUnitInp));
   body.appendChild(medSec.section);
-  var adminSec = buildManejoProtoEditorSection("Administración");
+  var adminSec = buildManejoProtoEditorSection("Administraci\xF3n");
   var routeInp = buildManejoProtoFormInput("text", "manejo-proto-editor-input", "IV");
   routeInp.value = seed.route || "IV";
-  adminSec.grid.appendChild(buildManejoProtoFormField("Vía", routeInp));
+  adminSec.grid.appendChild(buildManejoProtoFormField("V\xEDa", routeInp));
   var rateInp = buildManejoProtoFormInput("number", "manejo-proto-editor-input", "ml/h");
   rateInp.min = "0";
   rateInp.step = "any";
@@ -23630,8 +23646,8 @@ function openManejoProtocolEditorModal(opts, deps) {
   adminSec.grid.appendChild(buildManejoProtoFormField("Velocidad", rateInp));
   var dilInp = buildManejoProtoFormInput("text", "manejo-proto-editor-input", "EN NaCl 0.9% 1000 ML");
   dilInp.value = seed.dilution || "";
-  adminSec.grid.appendChild(buildManejoProtoFormField("Dilución", dilInp, { full: true }));
-  var freqInp = buildManejoProtoFormInput("text", "manejo-proto-editor-input", "CONTINUO, CADA 8 H…");
+  adminSec.grid.appendChild(buildManejoProtoFormField("Diluci\xF3n", dilInp, { full: true }));
+  var freqInp = buildManejoProtoFormInput("text", "manejo-proto-editor-input", "CONTINUO, CADA 8 H\u2026");
   freqInp.value = seed.frequency || "";
   adminSec.grid.appendChild(buildManejoProtoFormField("Frecuencia", freqInp, { full: true }));
   body.appendChild(adminSec.section);
@@ -23639,19 +23655,19 @@ function openManejoProtocolEditorModal(opts, deps) {
   var commentsTa = document.createElement("textarea");
   commentsTa.className = "manejo-proto-editor-input manejo-proto-editor-textarea";
   commentsTa.rows = 3;
-  commentsTa.placeholder = "Titular, vigilancia, metas clínicas…";
+  commentsTa.placeholder = "Titular, vigilancia, metas cl\xEDnicas\u2026";
   commentsTa.value = seed.comments || "";
   notesSec.grid.appendChild(buildManejoProtoFormField("Notas SOME", commentsTa, { full: true }));
   body.appendChild(notesSec.section);
-  var pathSec = buildManejoProtoEditorSection("Patologías vinculadas");
+  var pathSec = buildManejoProtoEditorSection("Patolog\xEDas vinculadas");
   var pathHint = document.createElement("p");
   pathHint.className = "manejo-hint manejo-proto-editor-path-hint";
-  pathHint.textContent = "Opcional. Aparecerá enlazada en esas patologías y podrás abrirla desde la wiki clínica.";
+  pathHint.textContent = "Opcional. Aparecer\xE1 enlazada en esas patolog\xEDas y podr\xE1s abrirla desde la wiki cl\xEDnica.";
   pathSec.section.insertBefore(pathHint, pathSec.grid);
   var pathGrid = document.createElement("div");
   pathGrid.className = "manejo-proto-editor-path-grid";
   pathGrid.setAttribute("role", "group");
-  pathGrid.setAttribute("aria-label", "Patologías vinculadas");
+  pathGrid.setAttribute("aria-label", "Patolog\xEDas vinculadas");
   var pathChecks = {};
   var selectedPaths = entry2 ? enrichProtocolEntry(entry2).linkedPathologyIds || [] : [];
   MANEJO_PATHOLOGIES.slice().sort(function(a, b) {
@@ -23674,7 +23690,7 @@ function openManejoProtocolEditorModal(opts, deps) {
   body.appendChild(pathSec.section);
   var catSelect = null;
   if (mode === "add" || isCustom) {
-    var catSec = buildManejoProtoEditorSection("Clasificación");
+    var catSec = buildManejoProtoEditorSection("Clasificaci\xF3n");
     catSelect = document.createElement("select");
     catSelect.className = "manejo-proto-editor-input manejo-proto-editor-select";
     MANEJO_PROTOCOL_CATEGORIES.forEach(function(c) {
@@ -23687,7 +23703,7 @@ function openManejoProtocolEditorModal(opts, deps) {
     catSelect.value = MANEJO_PROTOCOL_CATEGORIES.some(function(c) {
       return c.id === catId;
     }) ? catId : "otros";
-    catSec.grid.appendChild(buildManejoProtoFormField("Categoría", catSelect, { full: true }));
+    catSec.grid.appendChild(buildManejoProtoFormField("Categor\xEDa", catSelect, { full: true }));
     body.appendChild(catSec.section);
   }
   modal.appendChild(body);
@@ -23768,10 +23784,10 @@ function openManejoProtocolEditorModal(opts, deps) {
     if (mode === "add") {
       addCustomProtocol(patch);
       if (typeof setProtoCategoryFilter2 === "function") setProtoCategoryFilter2("otros");
-      rt10.showToast("Infusión guardada en Otros", "success");
+      rt10.showToast("Infusi\xF3n guardada en Otros", "success");
     } else if (isCustom) {
       updateCustomProtocol(entry2.id, patch);
-      rt10.showToast("Infusión actualizada", "success");
+      rt10.showToast("Infusi\xF3n actualizada", "success");
     } else {
       saveProtocolOverride(entry2.id, patch);
       rt10.showToast("Plantilla actualizada", "success");
@@ -23833,11 +23849,11 @@ function calcMcgMinFromPerKg(weightKg, mcgKgMinLow, mcgKgMinHigh) {
   }
   var mcgMinLow = Math.round(w * lo * 100) / 100;
   var mcgMinHigh = Math.round(w * hi * 100) / 100;
-  var range = mcgMinLow === mcgMinHigh ? String(mcgMinLow) : mcgMinLow + "–" + mcgMinHigh;
+  var range = mcgMinLow === mcgMinHigh ? String(mcgMinLow) : mcgMinLow + "\u2013" + mcgMinHigh;
   return {
     mcgMinLow,
     mcgMinHigh,
-    copyLine: "≈ " + range + " mcg/min (" + lo + (hi !== lo ? "–" + hi : "") + " mcg/kg/min × " + w + " kg)"
+    copyLine: "\u2248 " + range + " mcg/min (" + lo + (hi !== lo ? "\u2013" + hi : "") + " mcg/kg/min \xD7 " + w + " kg)"
   };
 }
 function resolveProtocolWithDoseMode(entry2, mode, weightKg) {
@@ -23983,7 +23999,7 @@ function buildManejoDoseUnitSwitch(entry2, patient, onChange) {
   if (wKg != null && entry2.doseUnitSwitch && entry2.doseUnitSwitch.perKgRange) {
     var hint = document.createElement("p");
     hint.className = "manejo-hint manejo-dose-unit-switch-hint";
-    hint.textContent = "Peso paciente: " + wKg + " kg — en modo estándar se muestra equivalencia en mcg/min.";
+    hint.textContent = "Peso paciente: " + wKg + " kg \u2014 en modo est\xE1ndar se muestra equivalencia en mcg/min.";
     wrap.appendChild(hint);
   }
   return wrap;
@@ -24150,7 +24166,7 @@ function buildManejoCalcDrawer(calcId, entry2, patient) {
     }
     calcResult = r;
     resultEl.hidden = false;
-    resultEl.textContent = toSomeUpper(r.copyLine) || "—";
+    resultEl.textContent = toSomeUpper(r.copyLine) || "\u2014";
   });
   drawer.appendChild(calcBtn);
   return {
@@ -24194,7 +24210,7 @@ function buildStanfordDetailPanel(entry2) {
   head.appendChild(cat);
   wrap.appendChild(head);
   wrap.appendChild(
-    buildKvBlock("Indicación", toSomeUpper(entry2.indicationText || "") || "—", { wide: true })
+    buildKvBlock("Indicaci\xF3n", toSomeUpper(entry2.indicationText || "") || "\u2014", { wide: true })
   );
   var compWrap = document.createElement("div");
   compWrap.className = "manejo-stanford-components";
@@ -24209,7 +24225,7 @@ function buildStanfordDetailPanel(entry2) {
     inner.className = "manejo-some-field-row";
     var val2 = document.createElement("div");
     val2.className = "manejo-some-field-val manejo-some-field-val--mono";
-    val2.textContent = toSomeUpper(comp.someText) || "—";
+    val2.textContent = toSomeUpper(comp.someText) || "\u2014";
     inner.appendChild(val2);
     if (isManejoSomeCopyUiEnabled()) {
       var cbtn = document.createElement("button");
@@ -24356,7 +24372,7 @@ function buildProtocolDetailPanel(entry2, patient, panelOpts) {
     if ((entry2.useCategories || []).length) {
       var embedUse = document.createElement("span");
       embedUse.className = "manejo-proto-detail-embed-use";
-      embedUse.textContent = entry2.useCategories.map(useCategoryLabelFor).join(" · ");
+      embedUse.textContent = entry2.useCategories.map(useCategoryLabelFor).join(" \xB7 ");
       embedMeta.appendChild(embedUse);
     }
     wrap.insertBefore(embedMeta, indicationBlock);
@@ -24367,7 +24383,7 @@ function buildProtocolDetailPanel(entry2, patient, panelOpts) {
     pathSec.className = "manejo-proto-pathology-links";
     var pathLbl = document.createElement("span");
     pathLbl.className = "manejo-proto-pathology-links-label";
-    pathLbl.textContent = "Patologías vinculadas";
+    pathLbl.textContent = "Patolog\xEDas vinculadas";
     pathSec.appendChild(pathLbl);
     var pathRow = document.createElement("div");
     pathRow.className = "manejo-pathology-related-row";
@@ -24391,13 +24407,13 @@ function buildProtocolDetailPanel(entry2, patient, panelOpts) {
   if ((entry2.useCategories || []).length && !panelOpts.embed) {
     wrap.appendChild(
       buildKvBlock(
-        "Categoría de uso",
+        "Categor\xEDa de uso",
         entry2.useCategories.map(function(id) {
           var hit = MANEJO_PROTOCOL_USE_CATEGORIES.find(function(c) {
             return c.id === id;
           });
           return hit ? hit.label : id;
-        }).join(" · "),
+        }).join(" \xB7 "),
         { wide: true }
       )
     );
@@ -24682,7 +24698,7 @@ function buildManejoProtoFilterMenu(opts) {
     if (activeId2 === opt.id) {
       var check = document.createElement("span");
       check.className = "manejo-proto-filter-option-check";
-      check.textContent = "✓";
+      check.textContent = "\u2713";
       btn.appendChild(check);
     }
     btn.addEventListener("click", function() {
@@ -24731,7 +24747,7 @@ function buildManejoProtoFilterMenu(opts) {
       if (isActive && !check) {
         check = document.createElement("span");
         check.className = "manejo-proto-filter-option-check";
-        check.textContent = "✓";
+        check.textContent = "\u2713";
         btn.appendChild(check);
       } else if (!isActive && check) {
         check.remove();
@@ -24818,7 +24834,7 @@ function buildInsulinPumpReferencePanel() {
   body.className = "manejo-pump-ref-body";
   var hint = document.createElement("p");
   hint.className = "manejo-pump-ref-hint";
-  hint.textContent = "Consulta rápida como las tablas en islas — no genera pedido SOME. Reevaluar cada 1 h con glucometría capilar; suspender si glucosa < 70 mg/dL.";
+  hint.textContent = "Consulta r\xE1pida como las tablas en islas \u2014 no genera pedido SOME. Reevaluar cada 1 h con glucometr\xEDa capilar; suspender si glucosa < 70 mg/dL.";
   body.appendChild(hint);
   var algNav = document.createElement("div");
   algNav.className = "manejo-pump-ref-alg-nav";
@@ -24831,7 +24847,7 @@ function buildInsulinPumpReferencePanel() {
   gluRow.className = "manejo-pump-ref-glu-row";
   var gluLbl = document.createElement("label");
   gluLbl.className = "manejo-pump-ref-glu-label";
-  gluLbl.textContent = "Resaltar fila según glucosa";
+  gluLbl.textContent = "Resaltar fila seg\xFAn glucosa";
   var gluInp = document.createElement("input");
   gluInp.type = "number";
   gluInp.className = "manejo-filter-search-input manejo-pump-ref-glu-input";
@@ -24855,10 +24871,10 @@ function buildInsulinPumpReferencePanel() {
       var hit = insulinUnitsPerHourForGlucose(g3, activeAlg);
       readout.hidden = false;
       if (hit.suspend) {
-        readout.textContent = g3 + " mg/dL → Suspender infusión";
+        readout.textContent = g3 + " mg/dL \u2192 Suspender infusi\xF3n";
         readout.className = "manejo-pump-ref-readout manejo-pump-ref-readout--warn";
       } else if (hit.unitsPerHour != null) {
-        readout.textContent = g3 + " mg/dL → " + hit.unitsPerHour + " U/h (banda " + hit.band + ")";
+        readout.textContent = g3 + " mg/dL \u2192 " + hit.unitsPerHour + " U/h (banda " + hit.band + ")";
         readout.className = "manejo-pump-ref-readout";
       } else {
         readout.hidden = true;
@@ -24997,7 +25013,7 @@ function buildAdaPotassiumTableExtra(kGuide) {
   var wrap = document.createElement("details");
   wrap.className = "manejo-cad-k-details";
   var summary = document.createElement("summary");
-  summary.textContent = "Ver tabla completa de K⁺ (ADA)";
+  summary.textContent = "Ver tabla completa de K\u207A (ADA)";
   wrap.appendChild(summary);
   wrap.appendChild(buildAdaPotassiumSection(kGuide, { compact: true }));
   return wrap;
@@ -25026,7 +25042,7 @@ function buildAdaFluidsInsulinFlow(ctx, stepBuilder) {
       }
     })
   );
-  var kAlert = kGuide.active && kGuide.active.holdInsulin ? "K⁺ " + kGuide.kValue + " mEq/L — suspender insulina hasta K⁺ > 3.3 mEq/L y reponer potasio IV." : null;
+  var kAlert = kGuide.active && kGuide.active.holdInsulin ? "K\u207A " + kGuide.kValue + " mEq/L \u2014 suspender insulina hasta K\u207A > 3.3 mEq/L y reponer potasio IV." : null;
   flow.appendChild(
     stepBuilder({
       id: protocolMode + "-potassium",
@@ -25134,7 +25150,7 @@ function buildAdaPotassiumSection(kGuide, opts) {
     head.className = "manejo-cad-step-head";
     var title = document.createElement("h3");
     title.className = "manejo-cad-step-title";
-    title.textContent = "Reposición de potasio (ADA)";
+    title.textContent = "Reposici\xF3n de potasio (ADA)";
     head.appendChild(title);
     section.appendChild(head);
   }
@@ -25148,7 +25164,7 @@ function buildAdaPotassiumSection(kGuide, opts) {
   table.className = "manejo-cad-k-table";
   var headRow = document.createElement("div");
   headRow.className = "manejo-cad-k-row manejo-cad-k-row--head";
-  ["Rango K⁺", "Recomendación ADA"].forEach(function(label) {
+  ["Rango K\u207A", "Recomendaci\xF3n ADA"].forEach(function(label) {
     var cell = document.createElement("span");
     cell.className = "manejo-cad-k-cell manejo-cad-k-cell--range";
     cell.textContent = label;
@@ -25192,7 +25208,7 @@ function buildPathologyCadEhhBlock(entry2, pid, patient) {
   section.appendChild(h4);
   var ref = document.createElement("p");
   ref.className = "manejo-hint manejo-cad-ada-ref";
-  ref.textContent = "Recomendaciones según ADA (adultos). Haz clic en cada paso para ver el detalle y pedido SOME.";
+  ref.textContent = "Recomendaciones seg\xFAn ADA (adultos). Haz clic en cada paso para ver el detalle y pedido SOME.";
   section.appendChild(ref);
   if (!pid) {
     var emp = document.createElement("p");
@@ -25207,7 +25223,7 @@ function buildPathologyCadEhhBlock(entry2, pid, patient) {
   if (!latest) {
     var emp2 = document.createElement("p");
     emp2.className = "manejo-hint";
-    emp2.textContent = "Sin laboratorio reciente — envía BH/QS/gasometría para sugerencias ADA.";
+    emp2.textContent = "Sin laboratorio reciente \u2014 env\xEDa BH/QS/gasometr\xEDa para sugerencias ADA.";
     section.appendChild(emp2);
     return section;
   }
@@ -25227,10 +25243,10 @@ function buildPathologyCadEhhBlock(entry2, pid, patient) {
   labGrid.className = "manejo-cad-lab-grid manejo-pathology-cad-labs";
   var L = evalOut.labs || {};
   [
-    ["Glucosa", L.glucoseMgDl != null ? L.glucoseMgDl + " mg/dL" : "—"],
-    ["pH", L.ph != null ? String(L.ph) : "—"],
-    ["HCO₃", L.hco3 != null ? L.hco3 + " mEq/L" : "—"],
-    ["K⁺", L.k != null ? L.k + " mEq/L" : "—"]
+    ["Glucosa", L.glucoseMgDl != null ? L.glucoseMgDl + " mg/dL" : "\u2014"],
+    ["pH", L.ph != null ? String(L.ph) : "\u2014"],
+    ["HCO\u2083", L.hco3 != null ? L.hco3 + " mEq/L" : "\u2014"],
+    ["K\u207A", L.k != null ? L.k + " mEq/L" : "\u2014"]
   ].forEach(function(pair) {
     var cell = document.createElement("div");
     cell.className = "manejo-cad-lab-cell";
@@ -25274,12 +25290,12 @@ function buildPathologyCadEhhBlock(entry2, pid, patient) {
   );
   addGroup("Laboratorio", buildAdaMonitoringFlow(pid, labItems, "lab-", buildCadAdaRecommendationButton));
   addGroup(
-    "Cuidados de enfermería",
+    "Cuidados de enfermer\xEDa",
     buildAdaMonitoringFlow(pid, nursingItems, "nur-", buildCadAdaRecommendationButton)
   );
   var footerItems = filterChecklistByIds(checklist, footerIds);
   if (footerItems.length) {
-    addGroup("Criterios y transición", buildAdaFooterFlow(pid, footerItems, buildCadAdaRecommendationButton));
+    addGroup("Criterios y transici\xF3n", buildAdaFooterFlow(pid, footerItems, buildCadAdaRecommendationButton));
   }
   section.appendChild(groups);
   return section;
@@ -25303,7 +25319,7 @@ function flattenPathologySteps(entry2) {
   return out;
 }
 function tierChipLabel(tier) {
-  if (tier === "first-line") return "1.ª línea";
+  if (tier === "first-line") return "1.\xAA l\xEDnea";
   if (tier === "alternative") return "Alternativa";
   return "";
 }
@@ -25315,7 +25331,7 @@ function renderGuiaPatologiaIndex(host, ctx) {
   toolbar.className = "manejo-guia-index-toolbar";
   var searchRow = document.createElement("div");
   searchRow.className = "manejo-guia-index-search-row manejo-proto-search-row";
-  var search = ui.buildManejoSearchInput("Patología, síntoma o rama…", "Buscar patologías");
+  var search = ui.buildManejoSearchInput("Patolog\xEDa, s\xEDntoma o rama\u2026", "Buscar patolog\xEDas");
   searchRow.appendChild(search.field);
   var countBadge = document.createElement("span");
   countBadge.className = "manejo-proto-count";
@@ -25341,11 +25357,11 @@ function renderGuiaPatologiaIndex(host, ctx) {
       if (branch !== "all" && entry2.branch !== branch) return false;
       return pathologyMatchesSearch(entry2, q);
     });
-    countBadge.textContent = filtered.length === 1 ? "1 patología" : filtered.length + " patologías";
+    countBadge.textContent = filtered.length === 1 ? "1 patolog\xEDa" : filtered.length + " patolog\xEDas";
     if (!filtered.length) {
       var nz = document.createElement("p");
       nz.className = "manejo-guia-placeholder";
-      nz.textContent = q ? "Sin coincidencias" : "Sin patologías con estos filtros";
+      nz.textContent = q ? "Sin coincidencias" : "Sin patolog\xEDas con estos filtros";
       listHost.appendChild(nz);
       return;
     }
@@ -25410,8 +25426,8 @@ function renderGuiaPatologiaReading(host, ctx) {
   if (!entry2) {
     var miss = document.createElement("p");
     miss.className = "manejo-guia-placeholder";
-    miss.textContent = "Patología no encontrada.";
-    wrap.appendChild(buildReadingBar(ctx, "Patología"));
+    miss.textContent = "Patolog\xEDa no encontrada.";
+    wrap.appendChild(buildReadingBar(ctx, "Patolog\xEDa"));
     wrap.appendChild(miss);
     host.appendChild(wrap);
     return;
@@ -25421,7 +25437,7 @@ function renderGuiaPatologiaReading(host, ctx) {
     var def = document.createElement("details");
     def.className = "manejo-guia-details";
     var sum = document.createElement("summary");
-    sum.textContent = "Definición clínica";
+    sum.textContent = "Definici\xF3n cl\xEDnica";
     def.appendChild(sum);
     var defBody = document.createElement("p");
     defBody.className = "manejo-guia-step-text";
@@ -25466,7 +25482,7 @@ function buildReadingBar(ctx, title, entry2) {
   var back = document.createElement("button");
   back.type = "button";
   back.className = "manejo-guia-back";
-  back.textContent = "← Índice";
+  back.textContent = "\u2190 \xCDndice";
   back.addEventListener("click", function() {
     navigateGuia({ view: "indice", entityId: "" });
     ctx.rerender();
@@ -25613,7 +25629,7 @@ function buildActionStep(item, step, entry2, patient, allProtocols, linkOpts, ui
         var linkInf = document.createElement("button");
         linkInf.type = "button";
         linkInf.className = "manejo-guia-link-tertiary";
-        linkInf.textContent = "Abrir en modo Infusión";
+        linkInf.textContent = "Abrir en modo Infusi\xF3n";
         linkInf.addEventListener("click", function() {
           navigateGuia({
             mode: "infusion",
@@ -25626,7 +25642,7 @@ function buildActionStep(item, step, entry2, patient, allProtocols, linkOpts, ui
         foot.appendChild(linkInf);
         expand.appendChild(foot);
       } else {
-        expand.textContent = "Protocolo no encontrado en catálogo.";
+        expand.textContent = "Protocolo no encontrado en cat\xE1logo.";
       }
     }
     expand.hidden = !open;
@@ -25762,7 +25778,7 @@ function renderGuiaInfusionIndex(host, ctx) {
   toolbar.className = "manejo-guia-index-toolbar";
   var searchRow = document.createElement("div");
   searchRow.className = "manejo-guia-index-search-row manejo-proto-search-row";
-  var search = ui.buildManejoSearchInput("Buscar fármaco o indicación…", "Buscar infusiones");
+  var search = ui.buildManejoSearchInput("Buscar f\xE1rmaco o indicaci\xF3n\u2026", "Buscar infusiones");
   searchRow.appendChild(search.field);
   var countBadge = document.createElement("span");
   countBadge.className = "manejo-proto-count";
@@ -25771,8 +25787,8 @@ function renderGuiaInfusionIndex(host, ctx) {
   var addProtoBtn = document.createElement("button");
   addProtoBtn.type = "button";
   addProtoBtn.className = "manejo-proto-add-btn";
-  addProtoBtn.textContent = "+ Infusión";
-  addProtoBtn.title = "Agregar infusión SOME personalizada";
+  addProtoBtn.textContent = "+ Infusi\xF3n";
+  addProtoBtn.title = "Agregar infusi\xF3n SOME personalizada";
   addProtoBtn.addEventListener("click", function() {
     ui.openManejoProtocolEditorModal({ mode: "add" });
   });
@@ -25782,7 +25798,7 @@ function renderGuiaInfusionIndex(host, ctx) {
   filtersRow.className = "manejo-proto-filters-row";
   var viewsSeg = ui.buildManejoProtoSegmentGroup("Vista de infusiones");
   viewsSeg.appendChild(
-    ui.buildManejoProtoSegmentChip("★ Favoritos", activeCat === "favorites", function() {
+    ui.buildManejoProtoSegmentChip("\u2605 Favoritos", activeCat === "favorites", function() {
       ui.setProtoCategoryFilter("favorites");
       ctx.rerender();
     })
@@ -25810,13 +25826,13 @@ function renderGuiaInfusionIndex(host, ctx) {
   var isCatDropdown = activeCat !== "all" && activeCat !== "favorites" && activeCat !== "recent";
   filtersRow.appendChild(
     ui.buildManejoProtoFilterMenu({
-      fieldLabel: "Categoría",
+      fieldLabel: "Categor\xEDa",
       wrapClass: "manejo-proto-filter--category",
       activeId: isCatDropdown ? activeCat : "all",
       activeAccentClass: isCatDropdown ? protoCategoryCssClass(activeCat) : "",
-      defaultOptionLabel: "Todas las categorías",
-      ariaLabel: "Filtrar por categoría de infusión",
-      options: [{ id: "all", label: "Todas las categorías" }].concat(
+      defaultOptionLabel: "Todas las categor\xEDas",
+      ariaLabel: "Filtrar por categor\xEDa de infusi\xF3n",
+      options: [{ id: "all", label: "Todas las categor\xEDas" }].concat(
         MANEJO_PROTOCOL_CATEGORIES.map(function(c) {
           var count = allProtocols.filter(function(p) {
             return p.category === c.id;
@@ -25825,7 +25841,7 @@ function renderGuiaInfusionIndex(host, ctx) {
           return {
             id: c.id,
             label: c.label,
-            hint: count + (count === 1 ? " infusión" : " infusiones"),
+            hint: count + (count === 1 ? " infusi\xF3n" : " infusiones"),
             accentClass: protoCategoryCssClass(c.id)
           };
         }).filter(Boolean)
@@ -25843,7 +25859,7 @@ function renderGuiaInfusionIndex(host, ctx) {
       wrapClass: "manejo-proto-filter--use",
       activeId: activeUseCat,
       defaultOptionLabel: "Todos los usos",
-      ariaLabel: "Filtrar por categoría de uso",
+      ariaLabel: "Filtrar por categor\xEDa de uso",
       options: [{ id: "all", label: "Todos los usos" }].concat(
         MANEJO_PROTOCOL_USE_CATEGORIES.map(function(c) {
           var count = allProtocols.filter(function(p) {
@@ -25853,7 +25869,7 @@ function renderGuiaInfusionIndex(host, ctx) {
           return {
             id: c.id,
             label: c.label,
-            hint: count + (count === 1 ? " infusión" : " infusiones")
+            hint: count + (count === 1 ? " infusi\xF3n" : " infusiones")
           };
         }).filter(Boolean)
       ),
@@ -25887,7 +25903,7 @@ function renderGuiaInfusionIndex(host, ctx) {
       query: q,
       extra: extraNow
     });
-    countBadge.textContent = filtered.length === 1 ? "1 infusión" : filtered.length + " infusiones";
+    countBadge.textContent = filtered.length === 1 ? "1 infusi\xF3n" : filtered.length + " infusiones";
     if (!filtered.length) {
       var nz = document.createElement("p");
       nz.className = "manejo-guia-placeholder";
@@ -25918,10 +25934,10 @@ function renderGuiaInfusionReading(host, ctx) {
   var wrap = document.createElement("div");
   wrap.className = "manejo-guia-reading" + (entry2 ? " " + protoCategoryCssClass(entry2.category) : "");
   if (!entry2) {
-    wrap.appendChild(buildReadingBar2(ctx, "Infusión"));
+    wrap.appendChild(buildReadingBar2(ctx, "Infusi\xF3n"));
     var miss = document.createElement("p");
     miss.className = "manejo-guia-placeholder";
-    miss.textContent = "Infusión no encontrada.";
+    miss.textContent = "Infusi\xF3n no encontrada.";
     wrap.appendChild(miss);
     host.appendChild(wrap);
     return;
@@ -25987,7 +26003,7 @@ function buildReadingBar2(ctx, entryOrTitle) {
   var back = document.createElement("button");
   back.type = "button";
   back.className = "manejo-guia-back";
-  back.textContent = "← Índice";
+  back.textContent = "\u2190 \xCDndice";
   back.addEventListener("click", function() {
     navigateGuia({ view: "indice", entityId: "" });
     ctx.rerender();
@@ -26016,7 +26032,7 @@ function buildReadingBar2(ctx, entryOrTitle) {
       ctx.rerender();
     });
     parts.appendChild(pathLink);
-    parts.appendChild(document.createTextNode(" › "));
+    parts.appendChild(document.createTextNode(" \u203A "));
     parts.appendChild(document.createTextNode(entry2.title));
     crumb.appendChild(parts);
     bar.appendChild(crumb);
@@ -26061,9 +26077,9 @@ function buildReadingFoot(entry2, ui, ctx) {
     var delBtn = document.createElement("button");
     delBtn.type = "button";
     delBtn.className = "manejo-card-edit-btn";
-    delBtn.setAttribute("aria-label", "Eliminar infusión");
+    delBtn.setAttribute("aria-label", "Eliminar infusi\xF3n");
     delBtn.title = "Eliminar";
-    delBtn.textContent = "×";
+    delBtn.textContent = "\xD7";
     delBtn.addEventListener("click", function() {
       deleteCustomProtocol(entry2.id);
       navigateGuia({ view: "indice", entityId: "" });
@@ -26078,7 +26094,7 @@ function buildReadingFoot(entry2, ui, ctx) {
     pathSec.className = "manejo-guia-related";
     var pathLbl = document.createElement("span");
     pathLbl.className = "manejo-proto-pathology-links-label";
-    pathLbl.textContent = "Patologías vinculadas";
+    pathLbl.textContent = "Patolog\xEDas vinculadas";
     pathSec.appendChild(pathLbl);
     linked.forEach(function(p) {
       var btn = document.createElement("button");
@@ -26119,8 +26135,8 @@ function renderGuiaAtbIndex(host, ctx) {
   var searchRow = document.createElement("div");
   searchRow.className = "manejo-guia-index-search-row manejo-proto-search-row";
   var search = ui.buildManejoSearchInput(
-    "Buscar fármaco, familia o indicación…",
-    "Buscar antibióticos"
+    "Buscar f\xE1rmaco, familia o indicaci\xF3n\u2026",
+    "Buscar antibi\xF3ticos"
   );
   searchRow.appendChild(search.field);
   var countBadge = document.createElement("span");
@@ -26132,8 +26148,8 @@ function renderGuiaAtbIndex(host, ctx) {
     renalChip.className = "manejo-proto-count manejo-atb-renal-chip";
     var renalParts = ["eTFG " + renalCtx.egfr];
     if (renalCtx.creatinineMgDl != null) renalParts.push("Cr " + renalCtx.creatinineMgDl);
-    renalChip.textContent = renalParts.join(" · ");
-    renalChip.title = "Laboratorio" + (renalCtx.fecha ? " " + renalCtx.fecha : "") + (renalCtx.source === "computed" ? " · eTFG calculada CKD-EPI" : "") + ". Se usa para sugerir ajuste renal.";
+    renalChip.textContent = renalParts.join(" \xB7 ");
+    renalChip.title = "Laboratorio" + (renalCtx.fecha ? " " + renalCtx.fecha : "") + (renalCtx.source === "computed" ? " \xB7 eTFG calculada CKD-EPI" : "") + ". Se usa para sugerir ajuste renal.";
     searchRow.appendChild(renalChip);
   }
   toolbar.appendChild(searchRow);
@@ -26142,7 +26158,7 @@ function renderGuiaAtbIndex(host, ctx) {
   var hintFilter = ui.getAtbHintFilter();
   var filtersRow = document.createElement("div");
   filtersRow.className = "manejo-proto-filters-row";
-  var viewsSeg = ui.buildManejoProtoSegmentGroup("Vista de antibióticos");
+  var viewsSeg = ui.buildManejoProtoSegmentGroup("Vista de antibi\xF3ticos");
   viewsSeg.appendChild(
     ui.buildManejoProtoSegmentChip("Todos", !risFilter, function() {
       ui.clearAtbRisFilter();
@@ -26178,7 +26194,7 @@ function renderGuiaAtbIndex(host, ctx) {
       activeId: activeFam,
       activeAccentClass: activeFam !== "all" ? ui.atbFamilyCssClass(activeFam) : "",
       defaultOptionLabel: "Todas las familias",
-      ariaLabel: "Filtrar por familia de antibiótico",
+      ariaLabel: "Filtrar por familia de antibi\xF3tico",
       options: [{ id: "all", label: "Todas las familias" }].concat(
         ui.getAtbFamilies().map(function(f) {
           var count = ui.getAtbDrugs().filter(function(d) {
@@ -26201,7 +26217,7 @@ function renderGuiaAtbIndex(host, ctx) {
   toolbar.appendChild(filtersRow);
   var discInline = document.createElement("p");
   discInline.className = "manejo-hint manejo-atb-toolbar-hint";
-  discInline.textContent = "Sugerencia orientativa; confirmar clínicamente." + (cultureCtx.isolates.length ? "" : " Sin cultivos positivos recientes.");
+  discInline.textContent = "Sugerencia orientativa; confirmar cl\xEDnicamente." + (cultureCtx.isolates.length ? "" : " Sin cultivos positivos recientes.");
   toolbar.appendChild(discInline);
   root.appendChild(toolbar);
   var listHost = document.createElement("div");
@@ -26256,12 +26272,12 @@ function renderGuiaAtbIndex(host, ctx) {
     if (st === "compatible" || st === "caution") {
       var badge = document.createElement("span");
       badge.className = "manejo-via-chip manejo-atb-status-chip manejo-atb-status-chip--" + st + " manejo-guia-index-row-badge";
-      badge.textContent = st === "compatible" ? "S antibiograma" : st === "caution" ? "Precaución" : "";
+      badge.textContent = st === "compatible" ? "S antibiograma" : st === "caution" ? "Precauci\xF3n" : "";
       row.appendChild(badge);
     } else if (drug.adultDose) {
       var doseBadge = document.createElement("span");
       doseBadge.className = "manejo-guia-index-row-badge";
-      doseBadge.textContent = drug.adultDose.length > 28 ? drug.adultDose.slice(0, 28) + "…" : drug.adultDose;
+      doseBadge.textContent = drug.adultDose.length > 28 ? drug.adultDose.slice(0, 28) + "\u2026" : drug.adultDose;
       doseBadge.title = drug.adultDose;
       row.appendChild(doseBadge);
     }
@@ -26292,7 +26308,7 @@ function renderGuiaAtbIndex(host, ctx) {
     if (!filtered.length) {
       var nz = document.createElement("p");
       nz.className = "manejo-guia-placeholder";
-      nz.textContent = currentRisFilter === "s" ? "Sin antibióticos del catálogo con S en este antibiograma." : currentRisFilter === "r" ? "Sin antibióticos del catálogo con R en este antibiograma." : currentRisFilter === "i" ? "Sin antibióticos del catálogo con I en este antibiograma." : q ? "Sin coincidencias" : "Sin antibióticos con estos filtros";
+      nz.textContent = currentRisFilter === "s" ? "Sin antibi\xF3ticos del cat\xE1logo con S en este antibiograma." : currentRisFilter === "r" ? "Sin antibi\xF3ticos del cat\xE1logo con R en este antibiograma." : currentRisFilter === "i" ? "Sin antibi\xF3ticos del cat\xE1logo con I en este antibiograma." : q ? "Sin coincidencias" : "Sin antibi\xF3ticos con estos filtros";
       listHost.appendChild(nz);
       return;
     }
@@ -26325,7 +26341,7 @@ function renderGuiaAtbReading(host, ctx) {
   if (!drug) {
     var miss = document.createElement("p");
     miss.className = "manejo-guia-placeholder";
-    miss.textContent = "Antibiótico no encontrado.";
+    miss.textContent = "Antibi\xF3tico no encontrado.";
     wrap.appendChild(miss);
     host.appendChild(wrap);
     return;
@@ -26348,7 +26364,7 @@ function buildReadingBar3(ctx, drug) {
   var back = document.createElement("button");
   back.type = "button";
   back.className = "manejo-guia-back";
-  back.textContent = "← Índice";
+  back.textContent = "\u2190 \xCDndice";
   back.addEventListener("click", function() {
     navigateGuia({ view: "indice", entityId: "" });
     ctx.rerender();
@@ -26374,7 +26390,7 @@ function buildReadingBar3(ctx, drug) {
       ctx.rerender();
     });
     crumb.appendChild(pathLink);
-    crumb.appendChild(document.createTextNode(" › " + drug.name));
+    crumb.appendChild(document.createTextNode(" \u203A " + drug.name));
     bar.appendChild(crumb);
   }
   if (drug) {
@@ -26389,7 +26405,7 @@ function buildReadingBar3(ctx, drug) {
   } else {
     var h1miss = document.createElement("h1");
     h1miss.className = "manejo-guia-reading-title";
-    h1miss.textContent = "Antibiótico";
+    h1miss.textContent = "Antibi\xF3tico";
     bar.appendChild(h1miss);
   }
   return bar;
@@ -26397,9 +26413,9 @@ function buildReadingBar3(ctx, drug) {
 
 // public/js/features/manejo-guia.mjs
 var MODE_LABELS = {
-  patologia: "Patología",
-  infusion: "Infusión",
-  atb: "Antibiótico"
+  patologia: "Patolog\xEDa",
+  infusion: "Infusi\xF3n",
+  atb: "Antibi\xF3tico"
 };
 function paintGuiaHost(host, ctx) {
   while (host.firstChild) host.removeChild(host.firstChild);
@@ -26433,7 +26449,7 @@ function buildGuiaShell(panel, ctx) {
   var modeBar = document.createElement("div");
   modeBar.className = "manejo-guia-mode-bar";
   modeBar.setAttribute("role", "tablist");
-  modeBar.setAttribute("aria-label", "Modo de guía clínica");
+  modeBar.setAttribute("aria-label", "Modo de gu\xEDa cl\xEDnica");
   var activeMode = getGuiaMode();
   GUIA_MODES.forEach(function(mode) {
     var btn = document.createElement("button");
@@ -26462,7 +26478,7 @@ function renderManejoGuia(panel, ctx) {
   if (!ctx.ui) {
     var err = document.createElement("p");
     err.className = "manejo-hint";
-    err.textContent = "No se pudo cargar la guía clínica (contexto inválido).";
+    err.textContent = "No se pudo cargar la gu\xEDa cl\xEDnica (contexto inv\xE1lido).";
     panel.appendChild(err);
     return;
   }
@@ -26475,6 +26491,71 @@ function renderManejoGuia(panel, ctx) {
     syncGuiaModeBar(root, getGuiaMode());
   }
   paintGuiaHost(host, ctx);
+}
+
+// public/js/clinico-access.mjs
+var CLINICO_UNLOCK_PHRASE = "entiendo, usare mi criterio clincio";
+function normalizeClinicoUnlockPhrase(text) {
+  return String(text || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ");
+}
+function matchesClinicoUnlockPhrase(text) {
+  return normalizeClinicoUnlockPhrase(text) === normalizeClinicoUnlockPhrase(CLINICO_UNLOCK_PHRASE);
+}
+function isClinicoUnlocked(settings2) {
+  if (!settings2 || typeof settings2 !== "object") return false;
+  if (settings2.clinicoUnlocked) return true;
+  if (settings2.hideManejoSection === false && !settings2.hideClinicoTab) return true;
+  return false;
+}
+function isClinicoAccessHidden(settings2) {
+  if (!isClinicoUnlocked(settings2)) return true;
+  if (!settings2) return true;
+  return !!(settings2.hideManejoSection || settings2.hideClinicoTab);
+}
+var _unlockSuccessCb = null;
+function openClinicoUnlockModal(onSuccess) {
+  var backdrop = document.getElementById("clinico-unlock-backdrop");
+  var input = document.getElementById("clinico-unlock-input");
+  var err = document.getElementById("clinico-unlock-error");
+  if (!backdrop || !input) {
+    if (typeof onSuccess === "function") onSuccess();
+    return;
+  }
+  _unlockSuccessCb = typeof onSuccess === "function" ? onSuccess : null;
+  input.value = "";
+  if (err) {
+    err.textContent = "";
+    err.hidden = true;
+  }
+  backdrop.classList.add("open");
+  backdrop.setAttribute("aria-hidden", "false");
+  window.setTimeout(function() {
+    input.focus();
+  }, 40);
+}
+function closeClinicoUnlockModal() {
+  var backdrop = document.getElementById("clinico-unlock-backdrop");
+  if (!backdrop) return;
+  backdrop.classList.remove("open");
+  backdrop.setAttribute("aria-hidden", "true");
+  _unlockSuccessCb = null;
+}
+function confirmClinicoUnlock() {
+  var input = document.getElementById("clinico-unlock-input");
+  var err = document.getElementById("clinico-unlock-error");
+  if (!input) return;
+  if (!matchesClinicoUnlockPhrase(input.value)) {
+    if (err) {
+      err.textContent = "Escribe exactamente: \xAB" + CLINICO_UNLOCK_PHRASE + "\xBB (sin comillas).";
+      err.hidden = false;
+    }
+    input.focus();
+    input.select();
+    return;
+  }
+  var cb = _unlockSuccessCb;
+  closeClinicoUnlockModal();
+  if (cb) cb();
 }
 
 // public/js/expediente-tabs.mjs
@@ -26492,9 +26573,9 @@ var GRANULAR_TABS = [
 var CONSOLIDATED_TABS_SALA = ["paciente", "clinico", "estadoActual", "resultados", "salida"];
 var CONSOLIDATED_TABS_INTER = ["paciente", "clinico", "resultados", "salida"];
 var CLINICO_GRANULAR_TABS = ["notas", "indica", "manejo"];
+var COMPOSITE_PANE_IDS = ["paciente", "clinico", "estadoActual", "resultados", "salida"];
 function isManejoSectionHidden(settings2) {
-  if (!settings2) return false;
-  return !!(settings2.hideManejoSection || settings2.hideClinicoTab);
+  return isClinicoAccessHidden(settings2);
 }
 function isClinicoCompositeVisible(settings2) {
   if (!isModeSala(settings2)) return true;
@@ -26747,14 +26828,26 @@ function syncConsolidatedSegmentBars(granularTab, settings2) {
   syncBar(document.getElementById("exp-segment-resultados"), RESULTADOS_SECTIONS, "resultados");
   syncBar(document.getElementById("exp-segment-salida"), getSalidaSections(settings2), "salida");
 }
+function getConsolidatedCompositeState(granularTab, settings2) {
+  var target = resolveConsolidatedTarget(granularTab, settings2);
+  var visibleTabs = getConsolidatedTabs(settings2 || {});
+  var state = {};
+  COMPOSITE_PANE_IDS.forEach(function(tab) {
+    var visible = visibleTabs.indexOf(tab) >= 0;
+    state[tab] = { visible, active: visible && tab === target.tab };
+  });
+  return state;
+}
 function syncConsolidatedPaneVisibility(granularTab, settings2) {
   var target = resolveConsolidatedTarget(granularTab, settings2);
-  getConsolidatedTabs(settings2 || {}).forEach(function(tab) {
+  var compositeState = getConsolidatedCompositeState(granularTab, settings2);
+  COMPOSITE_PANE_IDS.forEach(function(tab) {
     var composite = compositeEl(tab);
-    if (composite) composite.classList.toggle("active", tab === target.tab);
+    if (!composite) return;
+    var pane = compositeState[tab];
+    composite.hidden = !pane.visible;
+    composite.classList.toggle("active", pane.active);
   });
-  var estadoCompOnlyInter = compositeEl("estadoActual");
-  if (estadoCompOnlyInter && !isModeSala(settings2)) estadoCompOnlyInter.classList.remove("active");
   CLINICO_GRANULAR_TABS.forEach(function(section) {
     var pane = paneEl(section);
     if (!pane) return;
@@ -26964,7 +27057,7 @@ function initTabBarMotion() {
 var _manejoShellPatientId = null;
 var MANEJO_SUBTABS = [
   { id: "electrolitos", label: "Electrolitos" },
-  { id: "guia", label: "Guía clínica" }
+  { id: "guia", label: "Gu\xEDa cl\xEDnica" }
 ];
 var MANEJO_SUBTAB_KEY2 = "manejoSubtab";
 function buildManejoDisclaimerBar() {
@@ -26973,10 +27066,10 @@ function buildManejoDisclaimerBar() {
   bar.setAttribute("role", "note");
   var title = document.createElement("strong");
   title.className = "manejo-disclaimer-bar-title";
-  title.textContent = "Orientación clínica de apoyo";
+  title.textContent = "Orientaci\xF3n cl\xEDnica de apoyo";
   var text = document.createElement("p");
   text.className = "manejo-disclaimer-bar-text";
-  text.textContent = "Las sugerencias de manejo son recomendaciones orientativas y no sustituyen el juicio clínico. Cada paciente debe valorarse de forma individual conforme a su contexto, comorbilidades y protocolos institucionales vigentes.";
+  text.textContent = "Las sugerencias de manejo son recomendaciones orientativas y no sustituyen el juicio cl\xEDnico. Cada paciente debe valorarse de forma individual conforme a su contexto, comorbilidades y protocolos institucionales vigentes.";
   bar.appendChild(title);
   bar.appendChild(text);
   return bar;
@@ -27234,12 +27327,12 @@ function renderManejo(opts) {
     if (activeId2 === "guia") {
       var guiaHost = activePanel.querySelector(".manejo-guia-host");
       if (guiaHost) {
-        guiaHost.innerHTML = '<p class="manejo-hint manejo-loading">Cargando…</p>';
+        guiaHost.innerHTML = '<p class="manejo-hint manejo-loading">Cargando\u2026</p>';
       } else {
-        activePanel.innerHTML = '<p class="manejo-hint manejo-loading">Cargando…</p>';
+        activePanel.innerHTML = '<p class="manejo-hint manejo-loading">Cargando\u2026</p>';
       }
     } else {
-      activePanel.innerHTML = '<p class="manejo-hint manejo-loading">Cargando…</p>';
+      activePanel.innerHTML = '<p class="manejo-hint manejo-loading">Cargando\u2026</p>';
     }
   }
   var paintSubpanel = function() {
@@ -27353,7 +27446,7 @@ function buildEstadoActualText(estadoClinico, snapshot, balances, options) {
     "Aire ambiente": "AL AIRE AMBIENTE",
     "Puntillas nasales": "POR PUNTILLAS NASALES",
     "Alto flujo": "POR ALTO FLUJO",
-    "VM no invasiva": "CON VENTILACIÓN MECÁNICA NO INVASIVA"
+    "VM no invasiva": "CON VENTILACI\xD3N MEC\xC1NICA NO INVASIVA"
   };
   const soporteKey = ec.soporte != null ? String(ec.soporte) : "";
   const soporte = soporteMap[soporteKey] || "AL AIRE AMBIENTE";
@@ -27363,9 +27456,9 @@ function buildEstadoActualText(estadoClinico, snapshot, balances, options) {
   ) : {};
   var tempActual = v.temp;
   var tempPeak = v.tempPeak;
-  var hiTemp = "TEMPERATURA " + num(tempActual) + " °C";
+  var hiTemp = "TEMPERATURA " + num(tempActual) + " \xB0C";
   if (tempPeak != null && tempPeak !== "" && String(tempPeak) !== String(tempActual)) {
-    hiTemp += ", PICO FEBRIL " + num(tempPeak) + " °C" + (snapAlt.tempPeak ? " @ " + snapAlt.tempPeak : "");
+    hiTemp += ", PICO FEBRIL " + num(tempPeak) + " \xB0C" + (snapAlt.tempPeak ? " @ " + snapAlt.tempPeak : "");
   } else if (snapAlt.temp) {
     hiTemp += " @ " + snapAlt.temp;
   }
@@ -27387,11 +27480,11 @@ function buildEstadoActualText(estadoClinico, snapshot, balances, options) {
   const kcalComputed = computeDietKcalTotal(ec.kcalKg, weightKg);
   const kcalDisplay = kcalComputed != null ? String(kcalComputed) : ec.kcal != null && ec.kcal !== "" ? ec.kcal : "";
   const lines = [
-    "N: FOUR " + num(ec.four) + "/16 PUNTOS, SIN DATOS DE FOCALIZACIÓN, ORIENTADO EN " + num(ec.esferas) + " ESFERAS, ALERTA || ANALGESIA CON " + val(ec.analgesia),
+    "N: FOUR " + num(ec.four) + "/16 PUNTOS, SIN DATOS DE FOCALIZACI\xD3N, ORIENTADO EN " + num(ec.esferas) + " ESFERAS, ALERTA || ANALGESIA CON " + val(ec.analgesia),
     "V: FR " + num(v.fr) + " RPM, SATO2 " + num(v.sat) + "% " + soporte + " | SIN DATOS DE DIFICULTAD RESPIRATORIA || CAMPOS PULMONARES BIEN VENTILADOS",
     "HD: ESTABLE, TA " + num(v.tas) + "/" + num(v.tad) + " MMHG, FC " + num(v.fc) + " LPM || ANTIHIPERTENSIVOS: " + val(ec.antihta || "NINGUNO") + " || VASOPRESORES: " + val(ec.vasop || "NINGUNO"),
-    "HI: AFEBRIL, " + hiTemp + " || ANTIBIÓTICOS: " + val(ec.abx || "NINGUNO"),
-    "NM: DIETA " + val(ec.dieta) + " CALCULADA A " + num(ec.kcalKg) + " KCAL/KG (" + num(kcalDisplay) + " KCAL) PARA PESO DE " + num(weightKg != null ? weightKg : "") + " KG || " + ioClause + " || GLUCOMETRÍAS CAPILARES (" + gluParts.join(", ") + " MG/DL)" + (options.includeInsulinRescates ? " || RESCATES DE INSULINA DISPONIBLES, NO APLICADOS ACTUALMENTE" : "")
+    "HI: AFEBRIL, " + hiTemp + " || ANTIBI\xD3TICOS: " + val(ec.abx || "NINGUNO"),
+    "NM: DIETA " + val(ec.dieta) + " CALCULADA A " + num(ec.kcalKg) + " KCAL/KG (" + num(kcalDisplay) + " KCAL) PARA PESO DE " + num(weightKg != null ? weightKg : "") + " KG || " + ioClause + " || GLUCOMETR\xCDAS CAPILARES (" + gluParts.join(", ") + " MG/DL)" + (options.includeInsulinRescates ? " || RESCATES DE INSULINA DISPONIBLES, NO APLICADOS ACTUALMENTE" : "")
   ];
   return lines.join("\n");
 }
@@ -27403,12 +27496,12 @@ var VITAL_LABELS = {
   fc: "FC",
   fr: "FR",
   temp: "Temp",
-  sat: "SatO₂"
+  sat: "SatO\u2082"
 };
 var VITAL_FAMILIES = [
-  { id: "hemo", title: "Hemodinámico", keys: ["tas", "tad", "fc"] },
+  { id: "hemo", title: "Hemodin\xE1mico", keys: ["tas", "tad", "fc"] },
   { id: "resp", title: "Respiratorio", keys: ["fr", "sat"] },
-  { id: "metab", title: "Metabólico", keys: ["temp"] }
+  { id: "metab", title: "Metab\xF3lico", keys: ["temp"] }
 ];
 var FAMILY_COLORS = ["#2563eb", "#dc2626", "#059669", "#7c3aed", "#b45309", "#0891b2"];
 function pad2(n) {
@@ -27613,7 +27706,7 @@ function buildGluSeries(histAsc) {
       var whenLabel = timeHm || formatChartLabel(recordedAt);
       points.push({
         ms,
-        label: whenLabel + " · " + formatChartLabel(recordedAt),
+        label: whenLabel + " \xB7 " + formatChartLabel(recordedAt),
         value: val2
       });
     }
@@ -27812,7 +27905,7 @@ function mountChart(wrap, title, ChartCtor, config, mountEl, chartStore, slotId)
     chartStore.push(chart);
     mountEl._eaCharts = chartStore;
   } catch (_e) {
-    wrap.innerHTML = '<p class="ea-muted">No se pudo dibujar la gráfica.</p>';
+    wrap.innerHTML = '<p class="ea-muted">No se pudo dibujar la gr\xE1fica.</p>';
   }
 }
 function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor) {
@@ -27839,7 +27932,7 @@ function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor) {
     return;
   }
   if (!Chart2) {
-    section.innerHTML = '<h3 class="ea-section-title">Tendencias</h3><p class="ea-muted ea-charts-empty">Chart.js no está disponible. Recarga la aplicación.</p>';
+    section.innerHTML = '<h3 class="ea-section-title">Tendencias</h3><p class="ea-muted ea-charts-empty">Chart.js no est\xE1 disponible. Recarga la aplicaci\xF3n.</p>';
     mountEl.replaceChildren(section);
     return;
   }
@@ -27886,12 +27979,12 @@ function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor) {
     svGrid.appendChild(famWrap);
   });
   if (!svRendered && svBlock.querySelector(".ea-chart-family-grid")) {
-    svBlock.querySelector(".ea-chart-family-grid").innerHTML = '<p class="ea-muted">Sin suficientes puntos de signos vitales (mín. 2 por parámetro).</p>';
+    svBlock.querySelector(".ea-chart-family-grid").innerHTML = '<p class="ea-muted">Sin suficientes puntos de signos vitales (m\xEDn. 2 por par\xE1metro).</p>';
   }
   grid.appendChild(svBlock);
   var gluBlock = document.createElement("div");
   gluBlock.className = "ea-chart-block";
-  gluBlock.innerHTML = '<h4 class="ea-chart-block-title">Glucometrías</h4>';
+  gluBlock.innerHTML = '<h4 class="ea-chart-block-title">Glucometr\xEDas</h4>';
   var gluSeries = buildGluSeries(histAsc);
   if (gluSeries.values.length >= 2) {
     var gluWrap = document.createElement("div");
@@ -27932,12 +28025,12 @@ function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor) {
     );
     gluBlock.appendChild(gluWrap);
   } else {
-    gluBlock.innerHTML += '<p class="ea-muted">Sin suficientes glucometrías (mín. 2 puntos).</p>';
+    gluBlock.innerHTML += '<p class="ea-muted">Sin suficientes glucometr\xEDas (m\xEDn. 2 puntos).</p>';
   }
   grid.appendChild(gluBlock);
   var ioBlock = document.createElement("div");
   ioBlock.className = "ea-chart-block";
-  ioBlock.innerHTML = '<h4 class="ea-chart-block-title">Balance hídrico</h4>';
+  ioBlock.innerHTML = '<h4 class="ea-chart-block-title">Balance h\xEDdrico</h4>';
   var ioData = buildIoChartData(histAsc);
   if (ioData.labels.length >= 2) {
     var ioWrap = document.createElement("div");
@@ -28007,7 +28100,7 @@ function renderEstadoActualCharts(mountEl, monitoreo, ChartCtor) {
     );
     ioBlock.appendChild(ioWrap);
   } else {
-    ioBlock.innerHTML += '<p class="ea-muted">Sin suficientes registros de I/O con ingreso y egreso (mín. 2).</p>';
+    ioBlock.innerHTML += '<p class="ea-muted">Sin suficientes registros de I/O con ingreso y egreso (m\xEDn. 2).</p>';
   }
   grid.appendChild(ioBlock);
   mountEl.replaceChildren(section);
@@ -28094,21 +28187,21 @@ var VITAL_LABELS2 = {
   fc: "FC",
   fr: "FR",
   temp: "Temp",
-  sat: "Saturación"
+  sat: "Saturaci\xF3n"
 };
 var VITAL_UNITS = {
   tas: "mmHg",
   tad: "mmHg",
   fc: "lpm",
   fr: "rpm",
-  temp: "°C",
+  temp: "\xB0C",
   sat: "%"
 };
 var SOPORTE_OPTIONS = ["Aire ambiente", "Puntillas nasales", "Alto flujo", "VM no invasiva"];
 var MED_FIELD_LABELS = {
   analgesia: "Analgesia",
-  abx: "Antibióticos",
-  antihta: "AntiHTA / diuréticos",
+  abx: "Antibi\xF3ticos",
+  antihta: "AntiHTA / diur\xE9ticos",
   vasop: "Vasopresores"
 };
 var rt14 = {
@@ -28160,10 +28253,10 @@ function parseNumOrNull(raw) {
   return Number.isFinite(n) ? n : null;
 }
 function displayValue(value) {
-  return value != null && value !== "" ? String(value) : "—";
+  return value != null && value !== "" ? String(value) : "\u2014";
 }
 function displayBalance(n) {
-  if (typeof n !== "number" || !Number.isFinite(n)) return "—";
+  if (typeof n !== "number" || !Number.isFinite(n)) return "\u2014";
   return formatBalanceLive(n);
 }
 function escHtml3(s) {
@@ -28185,7 +28278,7 @@ function renderEstadoClinicoSection(monitoreo, activeId2, patient) {
     pesoRef: ec.pesoRef
   });
   syncDietKcalFromWeight(ec, dietWeight);
-  var dietWeightHint = dietWeight != null ? "Peso para cálculo: " + dietWeight + " kg (datos del paciente)" : "Peso para cálculo: — (captura peso en Datos del paciente)";
+  var dietWeightHint = dietWeight != null ? "Peso para c\xE1lculo: " + dietWeight + " kg (datos del paciente)" : "Peso para c\xE1lculo: \u2014 (captura peso en Datos del paciente)";
   var pend = monitoreo.pendienteReceta || {};
   var anyPending = hasPendingMedProposals(pend);
   var medFieldsHtml = MED_FIELD_KEYS.map(function(key) {
@@ -28198,7 +28291,7 @@ function renderEstadoClinicoSection(monitoreo, activeId2, patient) {
     var currentVal = ec[key] != null ? String(ec[key]) : "";
     var pendingVal = pend[key] != null ? String(pend[key]).trim() : "";
     var badge = pendingVal ? '<span class="ea-pendiente-badge">Propuesta receta</span>' : monitoreo.confirmado && monitoreo.confirmado[key] ? '<span class="ea-confirmed-badge">Confirmado</span>' : "";
-    var selectOpts = '<option value="">— Seleccionar de receta —</option>' + options.map(function(opt) {
+    var selectOpts = '<option value="">\u2014 Seleccionar de receta \u2014</option>' + options.map(function(opt) {
       var sel = opt === currentVal ? " selected" : "";
       return '<option value="' + escAttr(opt) + '"' + sel + ">" + escHtml3(opt) + "</option>";
     }).join("");
@@ -28208,7 +28301,7 @@ function renderEstadoClinicoSection(monitoreo, activeId2, patient) {
     var sel = ec.soporte === opt ? " selected" : "";
     return '<option value="' + escAttr(opt) + '"' + sel + ">" + escHtml3(opt) + "</option>";
   }).join("");
-  return '<details class="ea-estado-clinico ea-card"' + (anyPending ? " open" : "") + '><summary>Estado clínico general</summary><div class="ea-clinico-body"><div class="ea-clinico-grid"><label class="ea-field"><span class="ea-label">FOUR (/16)</span><input type="number" class="ea-input" data-ea-ec="four" min="0" max="16" step="1" value="' + escAttr(ec.four) + '"></label><label class="ea-field"><span class="ea-label">Esferas</span><input type="number" class="ea-input" data-ea-ec="esferas" min="0" step="1" value="' + escAttr(ec.esferas) + '"></label><label class="ea-field ea-field--full"><span class="ea-label">Soporte respiratorio</span><select class="ea-input" data-ea-ec="soporte">' + soporteOpts + '</select></label><label class="ea-field"><span class="ea-label">Dieta</span><input type="text" class="ea-input" data-ea-ec="dieta" value="' + escAttr(ec.dieta) + '"></label><label class="ea-field"><span class="ea-label">Kcal/kg</span><input type="number" class="ea-input" data-ea-ec="kcalKg" step="any" value="' + escAttr(ec.kcalKg) + '"></label><label class="ea-field"><span class="ea-label">Kcal total</span><input type="number" class="ea-input" data-ea-ec="kcal" step="any" min="0" value="' + escAttr(ec.kcal) + '" placeholder="Total"></label></div><p class="ea-diet-weight-hint">' + escHtml3(dietWeightHint) + '</p><div class="ea-clinico-med-grid">' + medFieldsHtml + "</div>" + (anyPending ? '<div class="ea-clinico-actions"><button type="button" class="ea-btn ea-btn--primary" onclick="confirmAllEaMedProposals()">Confirmar todas las propuestas</button></div>' : "") + "</div></details>";
+  return '<details class="ea-estado-clinico ea-card"' + (anyPending ? " open" : "") + '><summary>Estado cl\xEDnico general</summary><div class="ea-clinico-body"><div class="ea-clinico-grid"><label class="ea-field"><span class="ea-label">FOUR (/16)</span><input type="number" class="ea-input" data-ea-ec="four" min="0" max="16" step="1" value="' + escAttr(ec.four) + '"></label><label class="ea-field"><span class="ea-label">Esferas</span><input type="number" class="ea-input" data-ea-ec="esferas" min="0" step="1" value="' + escAttr(ec.esferas) + '"></label><label class="ea-field ea-field--full"><span class="ea-label">Soporte respiratorio</span><select class="ea-input" data-ea-ec="soporte">' + soporteOpts + '</select></label><label class="ea-field"><span class="ea-label">Dieta</span><input type="text" class="ea-input" data-ea-ec="dieta" value="' + escAttr(ec.dieta) + '"></label><label class="ea-field"><span class="ea-label">Kcal/kg</span><input type="number" class="ea-input" data-ea-ec="kcalKg" step="any" value="' + escAttr(ec.kcalKg) + '"></label><label class="ea-field"><span class="ea-label">Kcal total</span><input type="number" class="ea-input" data-ea-ec="kcal" step="any" min="0" value="' + escAttr(ec.kcal) + '" placeholder="Total"></label></div><p class="ea-diet-weight-hint">' + escHtml3(dietWeightHint) + '</p><div class="ea-clinico-med-grid">' + medFieldsHtml + "</div>" + (anyPending ? '<div class="ea-clinico-actions"><button type="button" class="ea-btn ea-btn--primary" onclick="confirmAllEaMedProposals()">Confirmar todas las propuestas</button></div>' : "") + "</div></details>";
 }
 function syncEstadoActualTextarea(monitoreo, patient) {
   var texto = generateEstadoActualText(monitoreo, patient);
@@ -28403,7 +28496,7 @@ function wireGluRowKeyboard(row) {
 function buildGluRow(data) {
   var row = document.createElement("div");
   row.className = "ea-glu-row";
-  row.innerHTML = '<label class="ea-field ea-field--inline"><span class="ea-label">Glu</span><input type="number" class="ea-input" data-ea-glu-value min="0" step="1" placeholder="mg/dL"></label><label class="ea-field ea-field--inline"><span class="ea-label">Hora</span><input type="time" class="ea-input ea-input--time" data-ea-glu-time></label><button type="button" class="ea-btn ea-btn--ghost ea-btn--icon" data-ea-glu-remove title="Quitar fila" aria-label="Quitar glucometría">×</button>';
+  row.innerHTML = '<label class="ea-field ea-field--inline"><span class="ea-label">Glu</span><input type="number" class="ea-input" data-ea-glu-value min="0" step="1" placeholder="mg/dL"></label><label class="ea-field ea-field--inline"><span class="ea-label">Hora</span><input type="time" class="ea-input ea-input--time" data-ea-glu-time></label><button type="button" class="ea-btn ea-btn--ghost ea-btn--icon" data-ea-glu-remove title="Quitar fila" aria-label="Quitar glucometr\xEDa">\xD7</button>';
   if (data) {
     var val2 = row.querySelector("[data-ea-glu-value]");
     var time = row.querySelector("[data-ea-glu-time]");
@@ -28507,10 +28600,10 @@ function syncIoBalanceFromForm(form) {
 function formatSnapshotEgresos(io) {
   io = io || {};
   if (Array.isArray(io.egrParts) && io.egrParts.length) {
-    return escHtml3(io.egrParts.map(formatEgresoPartForText).join(" · "));
+    return escHtml3(io.egrParts.map(formatEgresoPartForText).join(" \xB7 "));
   }
   var egr = io.egr;
-  if (egr == null || egr === "") return "—";
+  if (egr == null || egr === "") return "\u2014";
   if (isIoNumericValue2(egr)) return escHtml3(String(egr) + " CC (DIURESIS)");
   return escHtml3(toEaSalidaText(egr));
 }
@@ -28524,7 +28617,7 @@ function renderSnapshotSection(snapshot, balTurno, balGlobal) {
     if (key === "temp") {
       var peak = snapshot.vitals.tempPeak;
       if (peak != null && peak !== "" && String(peak) !== String(val2)) {
-        display = displayValue(val2) + " · pico " + displayValue(peak) + (snapshot.alteredAt && snapshot.alteredAt.tempPeak ? " @ " + escHtml3(snapshot.alteredAt.tempPeak) : "");
+        display = displayValue(val2) + " \xB7 pico " + displayValue(peak) + (snapshot.alteredAt && snapshot.alteredAt.tempPeak ? " @ " + escHtml3(snapshot.alteredAt.tempPeak) : "");
       }
     }
     return '<div class="' + cls + '"><span class="ea-snapshot-label">' + VITAL_LABELS2[key] + '</span><span class="ea-snapshot-value">' + display + '</span><span class="ea-snapshot-unit">' + (VITAL_UNITS[key] || "") + "</span>" + meta + "</div>";
@@ -28532,8 +28625,8 @@ function renderSnapshotSection(snapshot, balTurno, balGlobal) {
   var gluHtml = snapshot.glucometrias && snapshot.glucometrias.length ? snapshot.glucometrias.map(function(g3) {
     var t2 = g3.time ? ' <span class="ea-snapshot-glu-time">' + g3.time + "</span>" : "";
     return '<span class="ea-snapshot-glu-chip">' + displayValue(g3.value) + " MG/DL" + t2 + "</span>";
-  }).join("") : '<span class="ea-muted">—</span>';
-  return '<section class="ea-section ea-card ea-snapshot-strip ea-snapshot-strip--primary" id="ea-snapshot"><div class="ea-snapshot-strip-head"><div class="ea-snapshot-strip-head-text"><h3 class="ea-section-title">Snapshot actual</h3><p class="ea-muted ea-snapshot-hint">Resumen del monitoreo · las tendencias están debajo</p></div><div class="ea-snapshot-actions"><button type="button" class="ea-btn ea-btn--primary" onclick="openEstadoActualRegistroModal()">Registro manual</button><button type="button" class="ea-btn ea-btn--ghost" onclick="openEstadoActualPasteModal()">Pegar monitoreo</button></div></div><div class="ea-snapshot-strip-body"><div class="ea-snapshot-zone"><h4 class="ea-snapshot-zone-title">Signos vitales</h4><div class="ea-snapshot-vitals">' + vitalsHtml + '</div></div><div class="ea-snapshot-zone"><h4 class="ea-snapshot-zone-title">Glucometrías</h4><div class="ea-snapshot-glu">' + gluHtml + '</div></div><div class="ea-snapshot-zone"><h4 class="ea-snapshot-zone-title">Balance hídrico</h4><div class="ea-snapshot-io"><div><span class="ea-snapshot-label">Ingresos</span><span class="ea-snapshot-io-val">' + displayValue(snapshot.io.ing) + ' CC</span></div><div class="ea-snapshot-io-egr"><span class="ea-snapshot-label">Egresos</span><span class="ea-snapshot-io-val">' + formatSnapshotEgresos(snapshot.io) + "</span></div>" + (snapshot.io.evac != null && snapshot.io.evac !== "" ? '<div><span class="ea-snapshot-label">Evacuaciones</span><span class="ea-snapshot-io-val">' + escHtml3(formatEvacForText(snapshot.io.evac)) + "</span></div>" : "") + '<div><span class="ea-snapshot-label">Turno</span><span class="ea-snapshot-io-val">' + displayBalance(balTurno) + '</span></div><div><span class="ea-snapshot-label">Global</span><span class="ea-snapshot-io-val">' + displayBalance(balGlobal) + "</span></div></div></div></div></section>";
+  }).join("") : '<span class="ea-muted">\u2014</span>';
+  return '<section class="ea-section ea-card ea-snapshot-strip ea-snapshot-strip--primary" id="ea-snapshot"><div class="ea-snapshot-strip-head"><div class="ea-snapshot-strip-head-text"><h3 class="ea-section-title">Snapshot actual</h3><p class="ea-muted ea-snapshot-hint">Resumen del monitoreo \xB7 las tendencias est\xE1n debajo</p></div><div class="ea-snapshot-actions"><button type="button" class="ea-btn ea-btn--primary" onclick="openEstadoActualRegistroModal()">Registro manual</button><button type="button" class="ea-btn ea-btn--ghost" onclick="openEstadoActualPasteModal()">Pegar monitoreo</button></div></div><div class="ea-snapshot-strip-body"><div class="ea-snapshot-zone"><h4 class="ea-snapshot-zone-title">Signos vitales</h4><div class="ea-snapshot-vitals">' + vitalsHtml + '</div></div><div class="ea-snapshot-zone"><h4 class="ea-snapshot-zone-title">Glucometr\xEDas</h4><div class="ea-snapshot-glu">' + gluHtml + '</div></div><div class="ea-snapshot-zone"><h4 class="ea-snapshot-zone-title">Balance h\xEDdrico</h4><div class="ea-snapshot-io"><div><span class="ea-snapshot-label">Ingresos</span><span class="ea-snapshot-io-val">' + displayValue(snapshot.io.ing) + ' CC</span></div><div class="ea-snapshot-io-egr"><span class="ea-snapshot-label">Egresos</span><span class="ea-snapshot-io-val">' + formatSnapshotEgresos(snapshot.io) + "</span></div>" + (snapshot.io.evac != null && snapshot.io.evac !== "" ? '<div><span class="ea-snapshot-label">Evacuaciones</span><span class="ea-snapshot-io-val">' + escHtml3(formatEvacForText(snapshot.io.evac)) + "</span></div>" : "") + '<div><span class="ea-snapshot-label">Turno</span><span class="ea-snapshot-io-val">' + displayBalance(balTurno) + '</span></div><div><span class="ea-snapshot-label">Global</span><span class="ea-snapshot-io-val">' + displayBalance(balGlobal) + "</span></div></div></div></div></section>";
 }
 function renderHistorialSection(historial) {
   var sorted = historial.slice().sort(function(a, b) {
@@ -28545,7 +28638,7 @@ function renderHistorialSection(historial) {
   }
   var rows = recent.map(function(row) {
     var d = new Date(row.recordedAt || "");
-    var when = isNaN(d.getTime()) ? "—" : pad22(d.getDate()) + "/" + pad22(d.getMonth() + 1) + " " + pad22(d.getHours()) + ":" + pad22(d.getMinutes());
+    var when = isNaN(d.getTime()) ? "\u2014" : pad22(d.getDate()) + "/" + pad22(d.getMonth() + 1) + " " + pad22(d.getHours()) + ":" + pad22(d.getMinutes());
     var parts = [];
     var vit = row.vitals || {};
     VITAL_KEYS2.forEach(function(k) {
@@ -28574,7 +28667,7 @@ function renderHistorialSection(historial) {
       parts.push("Egr " + io.egr);
     }
     if (io.evac != null && io.evac !== "") parts.push("Evac " + io.evac);
-    var summary = parts.length ? parts.join(" · ") : "Registro vacío";
+    var summary = parts.length ? parts.join(" \xB7 ") : "Registro vac\xEDo";
     return '<li class="ea-historial-row"><div class="ea-historial-main"><span class="ea-historial-when">' + when + '</span><span class="ea-historial-summary">' + summary + `</span></div><button type="button" class="ea-btn ea-btn--ghost ea-btn--danger" onclick="eliminarEstadoActualMedicion('` + String(row.id || "").replace(/'/g, "\\'") + `')">Eliminar</button></li>`;
   }).join("");
   return '<section class="ea-section ea-card" id="ea-historial"><h3 class="ea-section-title">Historial reciente</h3><ul class="ea-historial-list">' + rows + "</ul></section>";
@@ -28586,7 +28679,7 @@ function buildVitalChipHtml(key, labelOverride, opts) {
   var unit = VITAL_UNITS[key === "tempPeak" ? "temp" : key] || "";
   var tempPlusBtn = opts.tempPlus ? '<button type="button" class="ea-temp-add-btn" id="ea-add-temp" title="Segunda temperatura (pico febril)">+1</button>' : "";
   var labelHtml = opts.tempPlus ? '<div class="vital-label ea-vital-label-row"><div class="ea-vital-label-text"><span class="ea-vital-name">' + label + '</span><span class="ea-vital-unit">' + unit + "</span></div>" + tempPlusBtn + "</div>" : '<div class="vital-label"><span class="ea-vital-name">' + label + '</span><span class="ea-vital-unit">' + unit + "</span></div>";
-  return '<div class="vital-box ea-vital-box ea-vital-chip" data-ea-vital-box="' + boxKey + '">' + labelHtml + '<div class="ea-vital-value-wrap"><input type="number" class="ea-vital-input" data-ea-vital="' + key + '" step="any" inputmode="decimal" placeholder="—" aria-label="' + label + '"></div><div class="ea-altered-slot ea-altered-slot--hidden" data-ea-altered-wrap="' + boxKey + '" hidden><span class="ea-altered-label">Alterado</span><input type="time" class="ea-altered-time-input" data-ea-altered="' + boxKey + '" aria-label="Hora ' + label + ' alterado"></div></div>';
+  return '<div class="vital-box ea-vital-box ea-vital-chip" data-ea-vital-box="' + boxKey + '">' + labelHtml + '<div class="ea-vital-value-wrap"><input type="number" class="ea-vital-input" data-ea-vital="' + key + '" step="any" inputmode="decimal" placeholder="\u2014" aria-label="' + label + '"></div><div class="ea-altered-slot ea-altered-slot--hidden" data-ea-altered-wrap="' + boxKey + '" hidden><span class="ea-altered-label">Alterado</span><input type="time" class="ea-altered-time-input" data-ea-altered="' + boxKey + '" aria-label="Hora ' + label + ' alterado"></div></div>';
 }
 function buildTempStackHtml() {
   return '<div class="ea-temp-stack" data-ea-temp-stack><div class="ea-temp-stack-slots"><div class="ea-temp-slot ea-temp-slot--primary" data-ea-temp-slot="primary">' + buildVitalChipHtml("temp", void 0, { tempPlus: true }) + '<div class="ea-temp-prev-view" data-ea-temp-prev-view hidden><span class="ea-temp-prev-summary" data-ea-temp-prev-summary></span></div></div><div class="ea-temp-slot ea-temp-slot--peak" data-ea-temp-slot="peak" hidden>' + buildVitalChipHtml("tempPeak", "Pico") + "</div></div></div>";
@@ -28599,11 +28692,11 @@ function syncTempPrevSummary(form) {
   if (!summary) return;
   var val2 = primaryInput && "value" in primaryInput ? String(primaryInput.value).trim() : "";
   if (!val2) {
-    summary.textContent = "—";
+    summary.textContent = "\u2014";
     return;
   }
   var time = timeEl && "value" in timeEl && timeEl.value ? String(timeEl.value) : "";
-  summary.textContent = val2 + " °C" + (time ? " @ " + time : "");
+  summary.textContent = val2 + " \xB0C" + (time ? " @ " + time : "");
 }
 function syncTempAddButtonVisibility(form) {
   if (!form) return;
@@ -28728,7 +28821,7 @@ function buildRegistroFormMarkup() {
     if (key === "temp") return buildTempStackHtml();
     return buildVitalChipHtml(key);
   }).join("");
-  return '<div class="ea-registro-shell"><div class="ea-registro-form-scroll"><form id="ea-form" class="ea-form ea-form--registro" onsubmit="return false;"><p class="ea-registro-hint ea-muted">Cierre de turno: <strong>00:00 de hoy</strong>. Signos e I/O del snapshot; glucometrías desde ayer 08:00.</p><label class="ea-field ea-field--datetime"><span class="ea-label">Fecha y hora del registro</span><input type="datetime-local" class="ea-input" id="ea-recorded-at" value="' + toDatetimeLocalValue(getDefaultRegistroRecordedAt()) + '"></label><div class="vitals-grid ea-vitals-grid">' + vitalFields + '</div><div class="ea-glu-block"><div class="ea-glu-head"><span class="ea-label">Glucometrías</span><button type="button" class="ea-btn ea-btn--ghost" id="ea-add-glu">+ Agregar</button></div><div id="ea-glu-list" class="ea-glu-list"></div></div><div class="ea-io-grid"><label class="ea-field"><span class="ea-label">Ingresos (cc)</span><input type="number" class="ea-input" id="ea-io-ing" min="0" step="1"></label><label class="ea-field ea-field--full"><span class="ea-label">Egresos (diuresis, drenajes, nefrostomías…)</span><input type="text" class="ea-input" id="ea-io-egr" inputmode="text" autocomplete="off" placeholder="DIURESIS NC, DRENAJE 50 CC, NEFRO IZQ 20 CC"></label><label class="ea-field"><span class="ea-label">Evacuaciones</span><input type="text" class="ea-input" id="ea-io-evac" inputmode="text" autocomplete="off" placeholder="NC, cc o texto"></label><div class="ea-field ea-io-balance"><span class="ea-label">Balance turno</span><span id="ea-balance-turno-live" class="ea-balance-live">—</span></div></div></form></div><footer class="ea-registro-modal-foot"><button type="button" class="ea-btn ea-btn--ghost" onclick="closeEstadoActualRegistroModal()">Cancelar</button><button type="button" class="ea-btn ea-btn--primary" onclick="registrarEstadoActualMedicion()">Registrar</button></footer></div>';
+  return '<div class="ea-registro-shell"><div class="ea-registro-form-scroll"><form id="ea-form" class="ea-form ea-form--registro" onsubmit="return false;"><p class="ea-registro-hint ea-muted">Cierre de turno: <strong>00:00 de hoy</strong>. Signos e I/O del snapshot; glucometr\xEDas desde ayer 08:00.</p><label class="ea-field ea-field--datetime"><span class="ea-label">Fecha y hora del registro</span><input type="datetime-local" class="ea-input" id="ea-recorded-at" value="' + toDatetimeLocalValue(getDefaultRegistroRecordedAt()) + '"></label><div class="vitals-grid ea-vitals-grid">' + vitalFields + '</div><div class="ea-glu-block"><div class="ea-glu-head"><span class="ea-label">Glucometr\xEDas</span><button type="button" class="ea-btn ea-btn--ghost" id="ea-add-glu">+ Agregar</button></div><div id="ea-glu-list" class="ea-glu-list"></div></div><div class="ea-io-grid"><label class="ea-field"><span class="ea-label">Ingresos (cc)</span><input type="number" class="ea-input" id="ea-io-ing" min="0" step="1"></label><label class="ea-field ea-field--full"><span class="ea-label">Egresos (diuresis, drenajes, nefrostom\xEDas\u2026)</span><input type="text" class="ea-input" id="ea-io-egr" inputmode="text" autocomplete="off" placeholder="DIURESIS NC, DRENAJE 50 CC, NEFRO IZQ 20 CC"></label><label class="ea-field"><span class="ea-label">Evacuaciones</span><input type="text" class="ea-input" id="ea-io-evac" inputmode="text" autocomplete="off" placeholder="NC, cc o texto"></label><div class="ea-field ea-io-balance"><span class="ea-label">Balance turno</span><span id="ea-balance-turno-live" class="ea-balance-live">\u2014</span></div></div></form></div><footer class="ea-registro-modal-foot"><button type="button" class="ea-btn ea-btn--ghost" onclick="closeEstadoActualRegistroModal()">Cancelar</button><button type="button" class="ea-btn ea-btn--primary" onclick="registrarEstadoActualMedicion()">Registrar</button></footer></div>';
 }
 function wireEaRegistroForm() {
   var form = document.getElementById("ea-form");
@@ -28886,7 +28979,7 @@ function renderEstadoActualPanel(opts) {
     return;
   }
   var eaUiState = captureEaPanelUiState(mount);
-  mount.innerHTML = '<div class="estado-actual-panel"><header class="ea-panel-header ea-card"><div class="ea-action-bar"><button type="button" class="ea-btn" onclick="estadoActualCopiar()">Copiar</button><button type="button" class="ea-btn ea-btn--primary" onclick="estadoActualGuardarCopiar()">Guardar y copiar</button><span id="ea-meta-guardado" class="ea-meta-guardado">' + savedLabel + "</span></div></header>" + renderSnapshotSection(snapshot, balTurno, balGlobal) + '<section class="ea-section ea-card ea-charts-section"><h3 class="ea-section-title">Tendencias</h3><div id="ea-charts-mount" class="ea-charts-mount"><p class="ea-muted ea-charts-loading">Cargando tendencias…</p></div></section>' + renderEstadoClinicoSection(monitoreo, activeId2, patient) + renderHistorialSection(Array.isArray(monitoreo.historial) ? monitoreo.historial : []) + '<section class="ea-section ea-card"><div class="ea-texto-head"><h3 class="ea-section-title">Texto Estado Actual</h3><button type="button" class="ea-btn ea-btn--ghost" onclick="regenerarEstadoActualTexto()">Regenerar</button></div><textarea id="ea-texto" class="ea-texto" rows="8" placeholder="Generando texto…"></textarea></section></div>';
+  mount.innerHTML = '<div class="estado-actual-panel"><header class="ea-panel-header ea-card"><div class="ea-action-bar"><button type="button" class="ea-btn" onclick="estadoActualCopiar()">Copiar</button><button type="button" class="ea-btn ea-btn--primary" onclick="estadoActualGuardarCopiar()">Guardar y copiar</button><span id="ea-meta-guardado" class="ea-meta-guardado">' + savedLabel + "</span></div></header>" + renderSnapshotSection(snapshot, balTurno, balGlobal) + '<section class="ea-section ea-card ea-charts-section"><h3 class="ea-section-title">Tendencias</h3><div id="ea-charts-mount" class="ea-charts-mount"><p class="ea-muted ea-charts-loading">Cargando tendencias\u2026</p></div></section>' + renderEstadoClinicoSection(monitoreo, activeId2, patient) + renderHistorialSection(Array.isArray(monitoreo.historial) ? monitoreo.historial : []) + '<section class="ea-section ea-card"><div class="ea-texto-head"><h3 class="ea-section-title">Texto Estado Actual</h3><button type="button" class="ea-btn ea-btn--ghost" onclick="regenerarEstadoActualTexto()">Regenerar</button></div><textarea id="ea-texto" class="ea-texto" rows="8" placeholder="Generando texto\u2026"></textarea></section></div>';
   restoreEaPanelUiState(mount, eaUiState);
   wireEstadoClinicoInteractions(mount, patient);
   _eaPanelCache.shellKey = shellKey;
@@ -28967,7 +29060,7 @@ function registrarEstadoActualMedicion() {
   }
   var result = appendMedicion(patient.monitoreo, medicion);
   if (!result.ok) {
-    rt14.showToast("Agrega al menos un signo vital, glucometría o I/O", "error");
+    rt14.showToast("Agrega al menos un signo vital, glucometr\xEDa o I/O", "error");
     return;
   }
   syncDietKcalFromWeight(
@@ -28981,7 +29074,7 @@ function registrarEstadoActualMedicion() {
   if (rt14.invalidateInnerTabRenderCache) rt14.invalidateInnerTabRenderCache("estadoActual");
   if (typeof window.closeEstadoActualRegistroModal === "function") window.closeEstadoActualRegistroModal();
   renderEstadoActualPanel({ syncHeavy: true, dataOnly: true });
-  rt14.showToast("Medición registrada ✓", "success");
+  rt14.showToast("Medici\xF3n registrada \u2713", "success");
 }
 function ensureEaRegistroModalForm() {
   var body = document.getElementById("ea-registro-modal-body");
@@ -28998,7 +29091,7 @@ function eliminarEstadoActualMedicion(id) {
   removeMedicion(patient.monitoreo, id);
   saveState();
   renderEstadoActualPanel({ syncHeavy: true });
-  rt14.showToast("Medición eliminada", "success");
+  rt14.showToast("Medici\xF3n eliminada", "success");
 }
 async function estadoActualCopiar() {
   if (!rt14.getActiveId()) return;
@@ -29009,7 +29102,7 @@ async function estadoActualCopiar() {
     return;
   }
   var ok = await rt14.copyToClipboardSafe(text);
-  rt14.showToast(ok ? "Estado Actual copiado al portapapeles ✓" : "No se pudo copiar", ok ? "success" : "error");
+  rt14.showToast(ok ? "Estado Actual copiado al portapapeles \u2713" : "No se pudo copiar", ok ? "success" : "error");
 }
 async function estadoActualGuardarCopiar() {
   var patient = findActivePatient();
@@ -29031,7 +29124,7 @@ async function estadoActualGuardarCopiar() {
   if (meta) meta.textContent = formatEaSavedLabel(patient.monitoreo.textoGuardado.savedAt);
   var ok = await rt14.copyToClipboardSafe(text);
   rt14.showToast(
-    ok ? "Estado Actual guardado y copiado ✓" : "Guardado, pero no se pudo copiar",
+    ok ? "Estado Actual guardado y copiado \u2713" : "Guardado, pero no se pudo copiar",
     ok ? "success" : "error"
   );
 }
@@ -29082,13 +29175,13 @@ var windowHandlers8 = {
 
 // public/js/receta-hu-core.mjs
 var DEFAULT_RECETA_HU_CONSULT_SERVICES = [
-  "Nefrología",
-  "Oncología",
+  "Nefrolog\xEDa",
+  "Oncolog\xEDa",
   "Medicina Interna",
-  "Cardiología",
-  "Endocrinología",
-  "Gastroenterología",
-  "Neurología"
+  "Cardiolog\xEDa",
+  "Endocrinolog\xEDa",
+  "Gastroenterolog\xEDa",
+  "Neurolog\xEDa"
 ];
 function normalizeRecetaHuConsultServices(list) {
   const seen = /* @__PURE__ */ new Set();
@@ -29352,11 +29445,11 @@ function renderMedList(root, meds) {
   var list = root.querySelector("#receta-hu-meds-list");
   if (!list) return;
   if (!meds.length) {
-    list.innerHTML = '<p class="receta-hu-list-empty">Sin medicamentos aún.</p>';
+    list.innerHTML = '<p class="receta-hu-list-empty">Sin medicamentos a\xFAn.</p>';
     return;
   }
   list.innerHTML = meds.map(function(row, idx) {
-    return '<div class="receta-hu-item" data-med-idx="' + idx + '"><div class="receta-hu-item-body"><strong>' + esc7(row.medicamento || "—") + "</strong>" + (row.presentacion ? "<span>" + esc7(row.presentacion) + "</span>" : "") + (row.dosis ? '<span class="receta-hu-item-dose">' + esc7(row.dosis) + "</span>" : "") + '</div><button type="button" class="btn-icon-quiet" title="Quitar" aria-label="Quitar medicamento" data-receta-hu-action="remove-med" data-med-idx="' + idx + '">×</button></div>';
+    return '<div class="receta-hu-item" data-med-idx="' + idx + '"><div class="receta-hu-item-body"><strong>' + esc7(row.medicamento || "\u2014") + "</strong>" + (row.presentacion ? "<span>" + esc7(row.presentacion) + "</span>" : "") + (row.dosis ? '<span class="receta-hu-item-dose">' + esc7(row.dosis) + "</span>" : "") + '</div><button type="button" class="btn-icon-quiet" title="Quitar" aria-label="Quitar medicamento" data-receta-hu-action="remove-med" data-med-idx="' + idx + '">\xD7</button></div>';
   }).join("");
 }
 function renderLabList(root, labs) {
@@ -29366,11 +29459,11 @@ function renderLabList(root, labs) {
     return String(x || "").trim();
   });
   if (!items.length) {
-    list.innerHTML = '<p class="receta-hu-list-empty">Sin estudios aún.</p>';
+    list.innerHTML = '<p class="receta-hu-list-empty">Sin estudios a\xFAn.</p>';
     return;
   }
   list.innerHTML = items.map(function(name, idx) {
-    return '<div class="receta-hu-item receta-hu-item-lab" data-lab-idx="' + idx + '"><span class="receta-hu-item-body">' + esc7(name) + '</span><button type="button" class="btn-icon-quiet" title="Quitar" aria-label="Quitar estudio" data-receta-hu-action="remove-lab" data-lab-idx="' + idx + '">×</button></div>';
+    return '<div class="receta-hu-item receta-hu-item-lab" data-lab-idx="' + idx + '"><span class="receta-hu-item-body">' + esc7(name) + '</span><button type="button" class="btn-icon-quiet" title="Quitar" aria-label="Quitar estudio" data-receta-hu-action="remove-lab" data-lab-idx="' + idx + '">\xD7</button></div>';
   }).join("");
 }
 function renderProximaCitaList(root, proximasCitas) {
@@ -29380,14 +29473,14 @@ function renderProximaCitaList(root, proximasCitas) {
     return row && (row.texto || row.servicio || row.fecha);
   });
   if (!items.length) {
-    list.innerHTML = '<p class="receta-hu-list-empty">Sin consultas de seguimiento aún.</p>';
+    list.innerHTML = '<p class="receta-hu-list-empty">Sin consultas de seguimiento a\xFAn.</p>';
     return;
   }
   list.innerHTML = items.map(function(row, idx) {
     var meta = [];
     if (row.fecha) meta.push("Fecha: " + row.fecha);
     if (row.servicio && !row.texto) meta.push(row.servicio);
-    return '<div class="receta-hu-item receta-hu-item-proxima" data-proxima-idx="' + idx + '"><div class="receta-hu-item-body"><strong>' + esc7(row.texto || buildProximaCitaText(row.plazo, row.servicio) || "—") + "</strong>" + (meta.length ? '<span class="receta-hu-item-dose">' + esc7(meta.join(" · ")) + "</span>" : "") + '</div><button type="button" class="btn-icon-quiet" title="Quitar" aria-label="Quitar consulta" data-receta-hu-action="remove-proxima" data-proxima-idx="' + idx + '">×</button></div>';
+    return '<div class="receta-hu-item receta-hu-item-proxima" data-proxima-idx="' + idx + '"><div class="receta-hu-item-body"><strong>' + esc7(row.texto || buildProximaCitaText(row.plazo, row.servicio) || "\u2014") + "</strong>" + (meta.length ? '<span class="receta-hu-item-dose">' + esc7(meta.join(" \xB7 ")) + "</span>" : "") + '</div><button type="button" class="btn-icon-quiet" title="Quitar" aria-label="Quitar consulta" data-receta-hu-action="remove-proxima" data-proxima-idx="' + idx + '">\xD7</button></div>';
   }).join("");
 }
 function renderConsultServiceSelect(root, draft) {
@@ -29395,7 +29488,7 @@ function renderConsultServiceSelect(root, draft) {
   if (!sel) return;
   var services = consultServices();
   var prev = sel.value;
-  sel.innerHTML = '<option value="">— Servicio —</option>';
+  sel.innerHTML = '<option value="">\u2014 Servicio \u2014</option>';
   services.forEach(function(s) {
     var opt = document.createElement("option");
     opt.value = s;
@@ -29508,7 +29601,7 @@ function bindRecetaHuEvents(root) {
 function ensureRecetaHuShell(root) {
   var pid = aid5();
   if (root.dataset.mounted === "1" && root.dataset.patientId === pid) return;
-  root.innerHTML = '<div class="receta-hu-root"><div class="receta-hu-sheet"><div class="receta-hu-head"><div><h3 class="receta-hu-title">Receta médica HU</h3><p class="receta-hu-sub">Formato oficial <strong>000-061-R-06-12</strong>. Firma a mano al imprimir.</p></div><button type="button" class="btn-generate rpc-doc-export" id="btn-receta-hu-export" data-receta-hu-action="export">Exportar PDF</button></div><section class="receta-hu-section"><h4 class="receta-hu-section-title">Paciente</h4><div class="receta-hu-meta" id="receta-hu-patient-meta"></div><label class="receta-hu-field"><span>Fecha</span><input type="text" class="receta-hu-input" id="receta-hu-fecha" placeholder="dd/mm/aaaa"></label></section><section class="receta-hu-section"><h4 class="receta-hu-section-title">Medicamentos</h4><div class="receta-hu-compose receta-hu-compose-med"><input type="text" class="receta-hu-input" id="receta-hu-compose-med-n" placeholder="Medicamento" aria-label="Medicamento"><input type="text" class="receta-hu-input" id="receta-hu-compose-med-p" placeholder="Presentación" aria-label="Presentación"><input type="text" class="receta-hu-input" id="receta-hu-compose-med-d" placeholder="Dosis" aria-label="Dosis"><button type="button" class="btn-add-inline" data-receta-hu-action="add-med">Agregar</button></div><div id="receta-hu-meds-list" class="receta-hu-added-list"></div></section><section class="receta-hu-section"><h4 class="receta-hu-section-title">Exámenes de laboratorio y/o gabinete</h4><p class="receta-hu-hint-inline">Solo el nombre del estudio — para que el paciente acuda a tomarlos.</p><div class="receta-hu-compose receta-hu-compose-lab"><input type="text" class="receta-hu-input" id="receta-hu-compose-lab" placeholder="Nombre del estudio" aria-label="Estudio de laboratorio"><button type="button" class="btn-add-inline" data-receta-hu-action="add-lab">Agregar</button></div><div id="receta-hu-labs-added" class="receta-hu-added-list"></div></section><section class="receta-hu-section"><h4 class="receta-hu-section-title">Cuidados higiénicos dietéticos</h4><textarea class="receta-hu-textarea" id="receta-hu-cuidados" rows="4" placeholder="Texto libre…"></textarea></section><section class="receta-hu-section"><h4 class="receta-hu-section-title">Consultas de seguimiento</h4><p class="receta-hu-hint-inline">Puedes agregar varias consultas; en el PDF aparecen una debajo de otra.</p><div class="receta-hu-proxima-grid receta-hu-compose-proxima"><label class="receta-hu-field"><span>Plazo</span><input type="text" class="receta-hu-input" id="receta-hu-compose-proxima-plazo" placeholder="2 semanas"></label><label class="receta-hu-field"><span>Consulta de</span><select class="receta-hu-input" id="receta-hu-consult-servicio"></select></label><button type="button" class="btn-add-inline btn-add-inline-muted" data-receta-hu-action="add-service">+ Servicio</button></div><label class="receta-hu-field"><span>Texto en receta</span><input type="text" class="receta-hu-input" id="receta-hu-compose-proxima-texto" placeholder="Acudir en 2 semanas a consulta de Nefrología"></label><div class="receta-hu-compose receta-hu-compose-proxima-fecha"><label class="receta-hu-field receta-hu-field-grow"><span>Fecha (opcional, campo derecho del PDF)</span><input type="text" class="receta-hu-input" id="receta-hu-compose-proxima-fecha" placeholder="dd/mm/aaaa"></label><button type="button" class="btn-add-inline" data-receta-hu-action="add-proxima">Agregar consulta</button></div><div id="receta-hu-proximas-list" class="receta-hu-added-list"></div></section><p class="receta-hu-foot">Médico y cédula se toman de <strong>Mi Perfil</strong>.</p></div></div>';
+  root.innerHTML = '<div class="receta-hu-root"><div class="receta-hu-sheet"><div class="receta-hu-head"><div><h3 class="receta-hu-title">Receta m\xE9dica HU</h3><p class="receta-hu-sub">Formato oficial <strong>000-061-R-06-12</strong>. Firma a mano al imprimir.</p></div><button type="button" class="btn-generate rpc-doc-export" id="btn-receta-hu-export" data-receta-hu-action="export">Exportar PDF</button></div><section class="receta-hu-section"><h4 class="receta-hu-section-title">Paciente</h4><div class="receta-hu-meta" id="receta-hu-patient-meta"></div><label class="receta-hu-field"><span>Fecha</span><input type="text" class="receta-hu-input" id="receta-hu-fecha" placeholder="dd/mm/aaaa"></label></section><section class="receta-hu-section"><h4 class="receta-hu-section-title">Medicamentos</h4><div class="receta-hu-compose receta-hu-compose-med"><input type="text" class="receta-hu-input" id="receta-hu-compose-med-n" placeholder="Medicamento" aria-label="Medicamento"><input type="text" class="receta-hu-input" id="receta-hu-compose-med-p" placeholder="Presentaci\xF3n" aria-label="Presentaci\xF3n"><input type="text" class="receta-hu-input" id="receta-hu-compose-med-d" placeholder="Dosis" aria-label="Dosis"><button type="button" class="btn-add-inline" data-receta-hu-action="add-med">Agregar</button></div><div id="receta-hu-meds-list" class="receta-hu-added-list"></div></section><section class="receta-hu-section"><h4 class="receta-hu-section-title">Ex\xE1menes de laboratorio y/o gabinete</h4><p class="receta-hu-hint-inline">Solo el nombre del estudio \u2014 para que el paciente acuda a tomarlos.</p><div class="receta-hu-compose receta-hu-compose-lab"><input type="text" class="receta-hu-input" id="receta-hu-compose-lab" placeholder="Nombre del estudio" aria-label="Estudio de laboratorio"><button type="button" class="btn-add-inline" data-receta-hu-action="add-lab">Agregar</button></div><div id="receta-hu-labs-added" class="receta-hu-added-list"></div></section><section class="receta-hu-section"><h4 class="receta-hu-section-title">Cuidados higi\xE9nicos diet\xE9ticos</h4><textarea class="receta-hu-textarea" id="receta-hu-cuidados" rows="4" placeholder="Texto libre\u2026"></textarea></section><section class="receta-hu-section"><h4 class="receta-hu-section-title">Consultas de seguimiento</h4><p class="receta-hu-hint-inline">Puedes agregar varias consultas; en el PDF aparecen una debajo de otra.</p><div class="receta-hu-proxima-grid receta-hu-compose-proxima"><label class="receta-hu-field"><span>Plazo</span><input type="text" class="receta-hu-input" id="receta-hu-compose-proxima-plazo" placeholder="2 semanas"></label><label class="receta-hu-field"><span>Consulta de</span><select class="receta-hu-input" id="receta-hu-consult-servicio"></select></label><button type="button" class="btn-add-inline btn-add-inline-muted" data-receta-hu-action="add-service">+ Servicio</button></div><label class="receta-hu-field"><span>Texto en receta</span><input type="text" class="receta-hu-input" id="receta-hu-compose-proxima-texto" placeholder="Acudir en 2 semanas a consulta de Nefrolog\xEDa"></label><div class="receta-hu-compose receta-hu-compose-proxima-fecha"><label class="receta-hu-field receta-hu-field-grow"><span>Fecha (opcional, campo derecho del PDF)</span><input type="text" class="receta-hu-input" id="receta-hu-compose-proxima-fecha" placeholder="dd/mm/aaaa"></label><button type="button" class="btn-add-inline" data-receta-hu-action="add-proxima">Agregar consulta</button></div><div id="receta-hu-proximas-list" class="receta-hu-added-list"></div></section><p class="receta-hu-foot">M\xE9dico y c\xE9dula se toman de <strong>Mi Perfil</strong>.</p></div></div>';
   root.dataset.mounted = "1";
   root.dataset.patientId = pid || "";
   root.dataset.eventsBound = "0";
@@ -29546,7 +29639,7 @@ function renderRecetaHu() {
   renderConsultServiceSelect(root, draft);
   var docHint = root.querySelector(".receta-hu-foot");
   if (docHint) {
-    docHint.innerHTML = "Médico: <strong>" + esc7(st.doctorName || "—") + "</strong> · Cédula: <strong>" + esc7(st.cedulaProfesional || "—") + '</strong> (<a href="#" data-receta-hu-action="open-profile">Mi Perfil</a>)';
+    docHint.innerHTML = "M\xE9dico: <strong>" + esc7(st.doctorName || "\u2014") + "</strong> \xB7 C\xE9dula: <strong>" + esc7(st.cedulaProfesional || "\u2014") + '</strong> (<a href="#" data-receta-hu-action="open-profile">Mi Perfil</a>)';
   }
   resetExportButtonState();
   if (typeof rt15.syncOfflineButtonStates === "function") rt15.syncOfflineButtonStates();
@@ -29662,7 +29755,7 @@ function recetaHuRemoveProximaRow(idx) {
 function recetaHuAddConsultService() {
   var sel = document.getElementById("receta-hu-consult-servicio");
   if (!sel) return;
-  var name = window.prompt("Nombre del servicio para el menú (ej. Nefrología):", sel.value || "");
+  var name = window.prompt("Nombre del servicio para el men\xFA (ej. Nefrolog\xEDa):", sel.value || "");
   if (!name) return;
   var trimmed = String(name).trim();
   if (!trimmed) return;
@@ -29677,7 +29770,7 @@ function recetaHuAddConsultService() {
     sel2.value = trimmed;
     recetaHuOnConsultServicePick();
   }
-  rt15.showToast("Servicio agregado al menú", "success");
+  rt15.showToast("Servicio agregado al men\xFA", "success");
 }
 function exportRecetaHuPdf() {
   try {
@@ -29702,7 +29795,7 @@ function exportRecetaHuPdf() {
       ensureRecetaHuPanelVisible();
     }
     if (rt15.isRpcOffline && rt15.isRpcOffline()) {
-      rt15.showToast("Sin conexión con el servidor local. Reinicia R+ para generar documentos.", "error");
+      rt15.showToast("Sin conexi\xF3n con el servidor local. Reinicia R+ para generar documentos.", "error");
       return;
     }
     var pid = aid5();
@@ -29717,11 +29810,11 @@ function exportRecetaHuPdf() {
     }
     var st = rt15.getSettings();
     if (!String(st.doctorName || "").trim()) {
-      rt15.showToast("Configura el médico tratante en Mi Perfil", "error");
+      rt15.showToast("Configura el m\xE9dico tratante en Mi Perfil", "error");
       return;
     }
     if (!String(st.cedulaProfesional || "").trim()) {
-      rt15.showToast("Configura la cédula profesional en Mi Perfil", "error");
+      rt15.showToast("Configura la c\xE9dula profesional en Mi Perfil", "error");
       return;
     }
     var draft = readDraftFromDom();
@@ -29733,7 +29826,7 @@ function exportRecetaHuPdf() {
       cedulaProfesional: st.cedulaProfesional
     });
     var btn = document.getElementById("btn-receta-hu-export");
-    setAsyncButtonLoading(btn, true, { loadingText: "Exportando…" });
+    setAsyncButtonLoading(btn, true, { loadingText: "Exportando\u2026" });
     rt15.incrementPendingJobs();
     rt15.requestDocumentJson("/generate-receta-hu", buildPayload((st.outputDir || "").trim())).then(function(response) {
       return rt15.handleDocumentGenerateResponse({
@@ -29750,11 +29843,11 @@ function exportRecetaHuPdf() {
           rt15.showToast("Selecciona una carpeta para guardar el PDF.", "error");
         },
         onCancel: function() {
-          rt15.showToast("No se guardó el PDF: no se eligió carpeta.", "error");
+          rt15.showToast("No se guard\xF3 el PDF: no se eligi\xF3 carpeta.", "error");
         }
       });
     }).catch(function() {
-      rt15.showToast("Error de conexión al generar el PDF", "error");
+      rt15.showToast("Error de conexi\xF3n al generar el PDF", "error");
     }).finally(function() {
       if (btn && !btn.dataset.uiMotionDefaultLabel) {
         btn.dataset.uiMotionDefaultLabel = "Exportar PDF";
@@ -29975,8 +30068,8 @@ function buildPaseLabBlockHtml(labChunks) {
 function cleanPaseMedDosisForCard(dosisRaw) {
   var s = String(dosisBeforeSlash(dosisRaw) || "").replace(/\s+/g, " ").trim();
   if (!s) return "";
-  var día = /\b(?:LOS\s+)?(?:LUNES|MARTES|MIERCOLES|MIÉRCOLES|JUEVES|VIERNES|SABADO|SÁBADO|DOMINGO)\b/i;
-  var m = s.match(día);
+  var d\u00EDa = /\b(?:LOS\s+)?(?:LUNES|MARTES|MIERCOLES|MIÉRCOLES|JUEVES|VIERNES|SABADO|SÁBADO|DOMINGO)\b/i;
+  var m = s.match(d\u00EDa);
   if (m && m.index != null && m.index > 0) {
     s = s.slice(0, m.index).replace(/\s*(?:,\s*|\bY\b|\bO\b)\s*$/gi, "").replace(/[,\s]+$/g, "").trim();
   }
@@ -30017,7 +30110,7 @@ function abbreviatePaseMedVia(viaRaw) {
   if (/\bINTRAVENOSA\b/.test(u)) return "IV";
   if (/\bORAL\b/.test(u)) return "VO";
   var fallback = String(viaRaw || "").trim();
-  return fallback.length > 28 ? fallback.slice(0, 26) + "…" : fallback;
+  return fallback.length > 28 ? fallback.slice(0, 26) + "\u2026" : fallback;
 }
 function paseMedPrincipioActivoTitle(nombreRaw) {
   var s = String(nombreRaw || "").trim();
@@ -30040,9 +30133,9 @@ function findPaseLatestLabSend(patientId) {
     });
     if (!labChunks.length) continue;
     var rawFe = set.fecha === "Anterior" ? "" : normalizeFechaLabHistory(set.fecha) || String(set.fecha || "").trim() || inferFechaLabSetFromId(set) || "";
-    var fe = set.id === "migrated-anterior" ? rawFe ? "Anterior · " + rawFe : "Anterior" : rawFe || (set.fecha === "Anterior" ? "Anterior" : "—");
+    var fe = set.id === "migrated-anterior" ? rawFe ? "Anterior \xB7 " + rawFe : "Anterior" : rawFe || (set.fecha === "Anterior" ? "Anterior" : "\u2014");
     var ho = set.hora && String(set.hora).trim() ? String(set.hora).trim().slice(0, 8) : "";
-    var meta = ho ? fe + " · " + ho : fe;
+    var meta = ho ? fe + " \xB7 " + ho : fe;
     return { meta, labChunks };
   }
   return null;
@@ -30113,19 +30206,19 @@ function renderPaseBoard() {
     todos.forEach(function(t2) {
       var prio = t2.priority === "alta" ? "alta" : t2.priority === "baja" ? "baja" : "media";
       todoParts.push(
-        '<div class="pase-mini-card pase-todo-card todo-prio-' + prio + (t2.completed ? " pase-mini-card--todo-done" : "") + '"><button type="button" class="pase-todo-hit" data-pase-todo="' + esc8(String(t2.id)) + '" aria-label="' + (t2.completed ? "Marcar como pendiente" : "Marcar como hecho") + '">' + (t2.completed ? "✓" : "○") + "</button><span>" + esc8(String(t2.text || "")) + "</span></div>"
+        '<div class="pase-mini-card pase-todo-card todo-prio-' + prio + (t2.completed ? " pase-mini-card--todo-done" : "") + '"><button type="button" class="pase-todo-hit" data-pase-todo="' + esc8(String(t2.id)) + '" aria-label="' + (t2.completed ? "Marcar como pendiente" : "Marcar como hecho") + '">' + (t2.completed ? "\u2713" : "\u25CB") + "</button><span>" + esc8(String(t2.text || "")) + "</span></div>"
       );
     });
   }
   var agParts = [];
   if (!ag.length) {
-    agParts.push('<div class="pase-mini-card pase-mini-card--dim">Sin procedimientos próximos.</div>');
+    agParts.push('<div class="pase-mini-card pase-mini-card--dim">Sin procedimientos pr\xF3ximos.</div>');
   } else {
     ag.forEach(function(ev) {
       var when = new Date(ev.start);
-      var whenStr = isNaN(when.getTime()) ? "—" : when.toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" });
+      var whenStr = isNaN(when.getTime()) ? "\u2014" : when.toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" });
       agParts.push(
-        '<div class="pase-mini-card"><strong>' + esc8(String(ev.procedure || "Procedimiento")) + '</strong><span class="pase-sub">' + esc8(whenStr + " · " + String(ev.location || "").trim()) + "</span></div>"
+        '<div class="pase-mini-card"><strong>' + esc8(String(ev.procedure || "Procedimiento")) + '</strong><span class="pase-sub">' + esc8(whenStr + " \xB7 " + String(ev.location || "").trim()) + "</span></div>"
       );
     });
   }
@@ -30156,7 +30249,7 @@ function renderPaseBoard() {
   parts.push('</div><div class="pase-card-grid">');
   if (!labSend) {
     parts.push(
-      '<div class="pase-mini-card pase-mini-card--dim">Sin envíos de laboratorio convencional en el historial.</div>'
+      '<div class="pase-mini-card pase-mini-card--dim">Sin env\xEDos de laboratorio convencional en el historial.</div>'
     );
   } else {
     parts.push(
@@ -30184,10 +30277,10 @@ function renderPaseBoard() {
     );
   } else {
     displayRows.slice(0, 10).forEach(function(r) {
-      var fd = r.fechaMuestra && r.fechaMuestra !== "—" ? r.fechaMuestra : r.studyDate || "—";
+      var fd = r.fechaMuestra && r.fechaMuestra !== "\u2014" ? r.fechaMuestra : r.studyDate || "\u2014";
       var atbBlock = paseCultivoAtbBlockHtml(pid, r);
       parts.push(
-        '<div class="pase-mini-card pase-cultivo-card' + (r.negativo ? " pase-mini-card--dim" : "") + '"><div class="pase-cult-org">' + esc8(String(r.organismo || "—")) + "</div>" + atbBlock + '<div class="pase-sub">' + esc8(String(r.tipoLabel || "") + " · " + String(r.sitio || "").slice(0, 72)) + "<br>" + esc8(fd) + "</div></div>"
+        '<div class="pase-mini-card pase-cultivo-card' + (r.negativo ? " pase-mini-card--dim" : "") + '"><div class="pase-cult-org">' + esc8(String(r.organismo || "\u2014")) + "</div>" + atbBlock + '<div class="pase-sub">' + esc8(String(r.tipoLabel || "") + " \xB7 " + String(r.sitio || "").slice(0, 72)) + "<br>" + esc8(fd) + "</div></div>"
       );
     });
   }
@@ -30213,7 +30306,7 @@ function renderPaseBoard() {
       var freq = String(it.frecuenciaRaw || "").trim();
       var dosis = cleanPaseMedDosisForCard(it.dosisRaw || "");
       var dosisSplit = dosis ? splitPaseMedDosisForDisplay(dosis) : { core: "", extra: "", splitOk: false };
-      var diaBadge = it.diaTratamiento != null ? '<div class="pase-med-dia-badge" title="Día de tratamiento">Día ' + esc8(String(it.diaTratamiento)) + "</div>" : "";
+      var diaBadge = it.diaTratamiento != null ? '<div class="pase-med-dia-badge" title="D\xEDa de tratamiento">D\xEDa ' + esc8(String(it.diaTratamiento)) + "</div>" : "";
       var metaParts = [];
       if (dosisSplit.core || dosisSplit.extra) {
         if (dosisSplit.splitOk) {
@@ -30377,7 +30470,7 @@ function syncMainAppTabA11y(tab) {
     var paseRoot = document.getElementById("appcontent-pase");
     if (paseRoot) {
       paseRoot.setAttribute("role", "region");
-      paseRoot.setAttribute("aria-label", "Vista Pase — resumen del paciente");
+      paseRoot.setAttribute("aria-label", "Vista Pase \u2014 resumen del paciente");
       paseRoot.setAttribute("aria-hidden", "false");
     }
     return;
@@ -30526,6 +30619,9 @@ function refreshExpedienteAfterPatientSelect(opts) {
 }
 function switchConsolidatedTab(compositeTab) {
   var settings2 = rt16.getSettings();
+  if (compositeTab === "clinico" && !isClinicoCompositeVisible(settings2)) {
+    compositeTab = isModeSala(settings2) ? "estadoActual" : "paciente";
+  }
   var current = migrateGranularInner(rt16.getActiveInner() || "todo", settings2);
   var currentComposite = consolidatedInnerTabButtonId(current, settings2).replace(/^itab-/, "");
   if (currentComposite === compositeTab) {
@@ -30636,6 +30732,8 @@ function renderInnerTabs() {
   if (consolidated) {
     var showClinico = isClinicoCompositeVisible(settings2);
     show("itab-clinico", showClinico);
+    var clinicoPane = document.getElementById("itab-content-clinico");
+    if (clinicoPane) clinicoPane.hidden = !showClinico;
     var order = 1;
     setOrder("itab-paciente", order++);
     if (showClinico) setOrder("itab-clinico", order++);
@@ -30783,7 +30881,7 @@ function renderMedRecetaPanel() {
   var block = medRecetaByPatient[activeId2];
   if (!block || !block.items || !block.items.length) {
     hintEl.style.display = "block";
-    hintEl.textContent = "Pega el listado del hospital arriba y pulsa Receta. Cada día puedes volver a pegar; se guarda la fecha del recorte.";
+    hintEl.textContent = "Pega el listado del hospital arriba y pulsa Receta. Cada d\xEDa puedes volver a pegar; se guarda la fecha del recorte.";
     if (fechaEl) fechaEl.style.display = "none";
     listEl.innerHTML = "";
     outPre.textContent = "";
@@ -30795,17 +30893,17 @@ function renderMedRecetaPanel() {
   hintEl.style.display = "none";
   if (fechaEl) {
     fechaEl.style.display = "block";
-    fechaEl.textContent = "Actualizado: " + (block.fechaActualizacion || "—");
+    fechaEl.textContent = "Actualizado: " + (block.fechaActualizacion || "\u2014");
   }
   var rows = block.items.map(function(it) {
     var sid = String(it.id || "");
     var label = esc9((it.nombreRaw || "").slice(0, 120));
     var chk = it.suspendido ? " checked" : "";
     var paraNota = isMedNotaSelected(activeId2, sid) ? " checked" : "";
-    var diaCell = it.diaTratamiento != null ? '<span class="med-receta-dia">Día ' + esc9(String(it.diaTratamiento)) + "</span>" : "";
+    var diaCell = it.diaTratamiento != null ? '<span class="med-receta-dia">D\xEDa ' + esc9(String(it.diaTratamiento)) + "</span>" : "";
     return '<div class="med-receta-row"><div class="med-receta-checkcell"><input type="checkbox"' + chk + ` title="Excluir del texto de egreso" onchange="toggleMedRecetaSuspendido('` + safeAttrJsString(sid) + `', this.checked)"/></div><div class="med-receta-checkcell"><input type="checkbox"` + paraNota + ` title="Incluir en Tratamiento y campos SOAP (Analgesia / ABX / AntiHTA)" onchange="toggleMedRecetaParaNota('` + safeAttrJsString(sid) + `', this.checked)"/></div><div class="med-receta-name">` + label + "</div>" + diaCell + "</div>";
   });
-  listEl.innerHTML = '<div class="med-receta-wrap"><div class="med-receta-head"><span>Excl.</span><span>SOAP</span><span>Medicamento</span><span>Día</span></div>' + rows.join("") + "</div>";
+  listEl.innerHTML = '<div class="med-receta-wrap"><div class="med-receta-head"><span>Excl.</span><span>SOAP</span><span>Medicamento</span><span>D\xEDa</span></div>' + rows.join("") + "</div>";
   renderMedNotaFooter();
   var tabFull = document.getElementById("med-tab-full");
   var tabSimple = document.getElementById("med-tab-simple");
@@ -30852,7 +30950,7 @@ function limpiarSeleccionMedNota() {
   var activeId2 = rt17.getActiveId();
   if (activeId2) medNotaSelectionByPatient[activeId2] = {};
   renderMedRecetaPanel();
-  rt17.showToast("Selección limpiada", "success");
+  rt17.showToast("Selecci\xF3n limpiada", "success");
 }
 function mediAnadirATratamiento() {
   var activeId2 = rt17.getActiveId();
@@ -30872,7 +30970,7 @@ function mediAnadirATratamiento() {
     return formatMedicationEgresoLine(it);
   });
   if (!lines.length) {
-    rt17.showToast("Marca «SOAP» en al menos un medicamento activo", "error");
+    rt17.showToast("Marca \xABSOAP\xBB en al menos un medicamento activo", "error");
     return;
   }
   if (!notes[activeId2]) notes[activeId2] = {};
@@ -30890,7 +30988,7 @@ function mediAnadirATratamiento() {
   saveState();
   openPaseSectionInNormal("expediente");
   renderNoteForm();
-  rt17.showToast(lines.length + " línea(s) añadidas a Tratamiento", "success");
+  rt17.showToast(lines.length + " l\xEDnea(s) a\xF1adidas a Tratamiento", "success");
 }
 function mediLlevarASOAP() {
   var activeId2 = rt17.getActiveId();
@@ -30904,7 +31002,7 @@ function mediLlevarASOAP() {
     return sel[it.id] && !it.suspendido;
   });
   if (!hasReceta) {
-    rt17.showToast("Marca «SOAP» en al menos un medicamento de la receta", "error");
+    rt17.showToast("Marca \xABSOAP\xBB en al menos un medicamento de la receta", "error");
     return;
   }
   var buckets = bucketsFromRecetaItems(block ? block.items : [], sel, classifyMedicationSoapCategory);
@@ -30912,7 +31010,7 @@ function mediLlevarASOAP() {
     return buckets[k] && String(buckets[k]).trim();
   });
   if (!hasBuckets) {
-    rt17.showToast("No quedó nada que volcar", "error");
+    rt17.showToast("No qued\xF3 nada que volcar", "error");
     return;
   }
   if (isModeSala(rt17.getSettings())) {
@@ -30929,7 +31027,7 @@ function mediLlevarASOAP() {
     if (typeof rt17.navigateToEstadoActualPanel === "function") {
       rt17.navigateToEstadoActualPanel();
     }
-    rt17.showToast("Propuesta en Estado Actual — confirma en Estado clínico general", "success");
+    rt17.showToast("Propuesta en Estado Actual \u2014 confirma en Estado cl\xEDnico general", "success");
     renderMedRecetaPanel();
     return;
   }
@@ -30943,7 +31041,7 @@ function mediLlevarASOAP() {
   openPaseSectionInNormal("expediente");
   renderNoteForm();
   openSOAPModalDirect();
-  var toastMsg = "Campos SOAP actualizados · completa e Insertar en evolución";
+  var toastMsg = "Campos SOAP actualizados \xB7 completa e Insertar en evoluci\xF3n";
   rt17.showToast(toastMsg, "success");
   renderMedRecetaPanel();
 }
@@ -30959,11 +31057,11 @@ function procesarRecetaMed() {
   if (!parsed.items.length) {
     if (!looksLikeSomeMedicationPaste(raw || "")) {
       rt17.showToast(
-        "No parece el bloque de SOME. En expediente, copia desde la columna Fecha y hora hasta el final de medicamentos (con tabuladores) y pégalo aquí.",
+        "No parece el bloque de SOME. En expediente, copia desde la columna Fecha y hora hasta el final de medicamentos (con tabuladores) y p\xE9galo aqu\xED.",
         "error"
       );
     } else {
-      rt17.showToast("No se encontraron filas MEDICAMENTOS válidas en el pegado", "error");
+      rt17.showToast("No se encontraron filas MEDICAMENTOS v\xE1lidas en el pegado", "error");
     }
     return;
   }
@@ -30979,7 +31077,7 @@ function procesarRecetaMed() {
   saveState();
   renderMedRecetaPanel();
   var msg = "Receta actualizada (" + parsed.items.length + " medicamentos)";
-  if (parsed.skipped > 0) msg += ". Omitidas " + parsed.skipped + " líneas.";
+  if (parsed.skipped > 0) msg += ". Omitidas " + parsed.skipped + " l\xEDneas.";
   rt17.showToast(msg, "success");
 }
 function limpiarRecetaInput() {
@@ -30999,14 +31097,14 @@ function incrementMedDiaTratamiento() {
   }
   var res = incrementMedItemsDiaTratamiento(block.items);
   if (!res.count) {
-    rt17.showToast("Ningún medicamento con DIA# activo", "error");
+    rt17.showToast("Ning\xFAn medicamento con DIA# activo", "error");
     return;
   }
   block.items = res.items;
   saveState();
   renderMedRecetaPanel();
   rt17.showToast(
-    res.count === 1 ? "Día de tratamiento +1 (1 medicamento)" : "Día de tratamiento +1 (" + res.count + " medicamentos)",
+    res.count === 1 ? "D\xEDa de tratamiento +1 (1 medicamento)" : "D\xEDa de tratamiento +1 (" + res.count + " medicamentos)",
     "success"
   );
 }
@@ -31028,7 +31126,7 @@ function copiarMedicamentosAlPortapapeles() {
   }
   navigator.clipboard.writeText(text).then(
     function() {
-      rt17.showToast("Medicamentos copiados al portapapeles ✓", "success");
+      rt17.showToast("Medicamentos copiados al portapapeles \u2713", "success");
     },
     function() {
       rt17.showToast("Error al copiar al portapapeles", "error");
@@ -31072,9 +31170,9 @@ function renderMedNotaFooter() {
     if (!groups[cat].length) return "";
     return '<div class="med-soap-preview-sec med-soap-preview-sec--' + cat + '"><div class="med-soap-preview-sec-title">' + esc9(title) + '</div><div class="med-soap-preview-chips">' + chipsFor(groups[cat]) + "</div></div>";
   }
-  var previewHtml = soapItems.length ? '<div class="med-soap-preview">' + section("analgesia", "Analgésicos / antieméticos") + section("antihta", "AntiHTA / diuréticos") + section("abx", "Antibióticos / antifúngicos") + section("vasop", "Vasopresores / inotrópicos") + section("otros", "Otros (se copian en Antibióticos — revisar)") + "</div>" : '<p class="med-soap-preview-empty">Marcá <strong>SOAP</strong> en el listado para ver aquí cómo se repartirán en la plantilla.</p>';
+  var previewHtml = soapItems.length ? '<div class="med-soap-preview">' + section("analgesia", "Analg\xE9sicos / antiem\xE9ticos") + section("antihta", "AntiHTA / diur\xE9ticos") + section("abx", "Antibi\xF3ticos / antif\xFAngicos") + section("vasop", "Vasopresores / inotr\xF3picos") + section("otros", "Otros (se copian en Antibi\xF3ticos \u2014 revisar)") + "</div>" : '<p class="med-soap-preview-empty">Marc\xE1 <strong>SOAP</strong> en el listado para ver aqu\xED c\xF3mo se repartir\xE1n en la plantilla.</p>';
   var soapBtnLabel = isModeSala(rt17.getSettings()) ? "Enviar a Estado Actual" : "Abrir plantilla SOAP";
-  foot.innerHTML = '<div class="med-nota-toolbar"><p class="med-nota-hint">Solo los medicamentos con <strong>SOAP</strong> activo aparecen abajo, clasificados según el nombre del fármaco en la receta.</p>' + previewHtml + '<div class="med-nota-actions"><button type="button" class="btn-generate" onclick="mediAnadirATratamiento()">Añadir a Tratamiento</button><button type="button" class="btn-med-secondary" onclick="mediLlevarASOAP()">' + soapBtnLabel + '</button><button type="button" class="btn-med-secondary" onclick="limpiarSeleccionMedNota()">Limpiar</button></div></div>';
+  foot.innerHTML = '<div class="med-nota-toolbar"><p class="med-nota-hint">Solo los medicamentos con <strong>SOAP</strong> activo aparecen abajo, clasificados seg\xFAn el nombre del f\xE1rmaco en la receta.</p>' + previewHtml + '<div class="med-nota-actions"><button type="button" class="btn-generate" onclick="mediAnadirATratamiento()">A\xF1adir a Tratamiento</button><button type="button" class="btn-med-secondary" onclick="mediLlevarASOAP()">' + soapBtnLabel + '</button><button type="button" class="btn-med-secondary" onclick="limpiarSeleccionMedNota()">Limpiar</button></div></div>';
 }
 function hideMedNotaFooter() {
   var foot = document.getElementById("med-nota-footer");
@@ -31105,7 +31203,7 @@ function validatePatientForSave(input) {
   if (edadNum) {
     const n = Number(edadNum);
     if (!Number.isFinite(n) || n < 0) {
-      return { ok: false, error: "La edad debe ser un número válido." };
+      return { ok: false, error: "La edad debe ser un n\xFAmero v\xE1lido." };
     }
   }
   if (!registro) return { ok: true, warning: "missing_expediente" };
@@ -31113,8 +31211,8 @@ function validatePatientForSave(input) {
 }
 function buildExpedienteAdvice() {
   return {
-    title: "Falta el número de expediente",
-    body: 'No capturaste expediente. Para ingresar pacientes en un solo paso, copia el texto desde "Expediente:" hasta el final del reporte y pégalo en la pestaña Laboratorio: R+ rellena nombre, expediente, edad y sexo automáticamente.',
+    title: "Falta el n\xFAmero de expediente",
+    body: 'No capturaste expediente. Para ingresar pacientes en un solo paso, copia el texto desde "Expediente:" hasta el final del reporte y p\xE9galo en la pesta\xF1a Laboratorio: R+ rellena nombre, expediente, edad y sexo autom\xE1ticamente.',
     confirmLabel: "Guardar sin expediente",
     cancelLabel: "Volver y completar"
   };
@@ -31551,9 +31649,9 @@ function buildRondaRecentLabsBlockHtml(patientId) {
     parts.push('<div class="ronda-labs-meta">');
     var rawFe = newest.fecha === "Anterior" ? "" : normalizeFechaForRonda(newest.fecha) || String(newest.fecha || "").trim() || "";
     if (newest.id === "migrated-anterior") {
-      parts.push('<span class="ronda-labs-date">' + esc10(rawFe ? "Anterior · " + rawFe : "Anterior") + "</span>");
+      parts.push('<span class="ronda-labs-date">' + esc10(rawFe ? "Anterior \xB7 " + rawFe : "Anterior") + "</span>");
     } else {
-      parts.push('<span class="ronda-labs-date">' + esc10(rawFe || "—") + "</span>");
+      parts.push('<span class="ronda-labs-date">' + esc10(rawFe || "\u2014") + "</span>");
     }
     if (newest.hora && String(newest.hora).trim()) {
       parts.push("<span>" + esc10(String(newest.hora).trim().slice(0, 8)) + "</span>");
@@ -31589,10 +31687,10 @@ function buildRondaRecentLabsBlockHtml(patientId) {
       body.push("<li>" + esc10(L) + "</li>");
     });
     if (body.length) {
-      return '<p class="ronda-labs-fallback-label">Desde nota · estudios auxiliares</p><ul class="ronda-labs-lines">' + body.join("") + "</ul>";
+      return '<p class="ronda-labs-fallback-label">Desde nota \xB7 estudios auxiliares</p><ul class="ronda-labs-lines">' + body.join("") + "</ul>";
     }
   }
-  return '<p class="ronda-panel-empty">Sin laboratorios recientes. Puedes cargar o enviar resultados desde la pestaña Laboratorio.</p>';
+  return '<p class="ronda-panel-empty">Sin laboratorios recientes. Puedes cargar o enviar resultados desde la pesta\xF1a Laboratorio.</p>';
 }
 function normalizeFechaForRonda(fecha) {
   if (typeof rt18.normalizeFechaLabHistory === "function") {
@@ -31643,7 +31741,7 @@ function renderRoundOverviewPanels() {
   if (metaEl) {
     if (!p) metaEl.textContent = "";
     else {
-      metaEl.textContent = "Cto. " + (p.cuarto || "—") + " · Cama " + (p.cama || "—") + " · " + (p.servicio || "—") + (p.registro ? " · Reg. " + String(p.registro) : "");
+      metaEl.textContent = "Cto. " + (p.cuarto || "\u2014") + " \xB7 Cama " + (p.cama || "\u2014") + " \xB7 " + (p.servicio || "\u2014") + (p.registro ? " \xB7 Reg. " + String(p.registro) : "");
     }
   }
   var labsBody = document.getElementById("patient-ronda-labs-body");
@@ -31717,19 +31815,19 @@ function renderPatientRoundRowHtml(p) {
   var seen = isPatientRoundSeen(p.id);
   var pinTitle = pinOn ? "Quitar de Pinned" : "Mover a Pinned";
   var archTitle = archOn ? "Restaurar del archivo" : "Archivar paciente";
-  var archiveIcon = archOn ? "↩" : '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"></rect><path d="M5 8h14v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8z"></path><path d="M10 12h4"></path></svg>';
+  var archiveIcon = archOn ? "\u21A9" : '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"></rect><path d="M5 8h14v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8z"></path><path d="M10 12h4"></path></svg>';
   var seenTitle = typeof t === "function" ? t("roundMode.seenTitle") : "Visto en ronda";
   var aid7 = rt18.getActiveId();
-  return '<div class="patient-card patient-card--roundrow ' + (p.id === aid7 ? "active" : "") + (seen ? " patient-card--roundrow-seen" : "") + '" data-patient-id="' + p.id + '" role="button" tabindex="0"><div class="patient-card-toolbar"><div class="patient-card-toolbar-left"><button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon btn-archive-clean" title="' + archTitle + '" aria-label="' + archTitle + `" onclick="togglePatientArchived(event,'` + p.id + `')">` + archiveIcon + '</button><button type="button" class="patient-toolbar-chip btn-pinned-text" title="' + pinTitle + '" aria-label="' + pinTitle + `" onclick="togglePatientPinned(event,'` + p.id + `')">Pinned</button></div><button type="button" class="btn-delete-card" onclick="deletePatient(event,'` + p.id + `')" aria-label="Eliminar">×</button></div><div class="roundrow-main"><div class="roundrow-text"><div class="p-name">` + esc10(p.nombre || "Sin nombre") + '</div><div class="p-meta"><span>Cto. ' + esc10(p.cuarto || "-") + "</span><span>Cama " + esc10(p.cama || "-") + "</span><span>" + esc10(p.servicio || "-") + '</span></div></div><button type="button" class="btn-round-seen" title="' + esc10(seenTitle) + '" aria-label="' + esc10(seenTitle) + '" aria-pressed="' + (seen ? "true" : "false") + `" onclick="togglePatientRoundSeen(event,'` + p.id + `')">` + (seen ? "✓" : "○") + "</button></div></div>";
+  return '<div class="patient-card patient-card--roundrow ' + (p.id === aid7 ? "active" : "") + (seen ? " patient-card--roundrow-seen" : "") + '" data-patient-id="' + p.id + '" role="button" tabindex="0"><div class="patient-card-toolbar"><div class="patient-card-toolbar-left"><button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon btn-archive-clean" title="' + archTitle + '" aria-label="' + archTitle + `" onclick="togglePatientArchived(event,'` + p.id + `')">` + archiveIcon + '</button><button type="button" class="patient-toolbar-chip btn-pinned-text" title="' + pinTitle + '" aria-label="' + pinTitle + `" onclick="togglePatientPinned(event,'` + p.id + `')">Pinned</button></div><button type="button" class="btn-delete-card" onclick="deletePatient(event,'` + p.id + `')" aria-label="Eliminar">\xD7</button></div><div class="roundrow-main"><div class="roundrow-text"><div class="p-name">` + esc10(p.nombre || "Sin nombre") + '</div><div class="p-meta"><span>Cto. ' + esc10(p.cuarto || "-") + "</span><span>Cama " + esc10(p.cama || "-") + "</span><span>" + esc10(p.servicio || "-") + '</span></div></div><button type="button" class="btn-round-seen" title="' + esc10(seenTitle) + '" aria-label="' + esc10(seenTitle) + '" aria-pressed="' + (seen ? "true" : "false") + `" onclick="togglePatientRoundSeen(event,'` + p.id + `')">` + (seen ? "\u2713" : "\u25CB") + "</button></div></div>";
 }
 function renderPatientCardHtml(p) {
   var pinOn = !!p.pinned;
   var archOn = !!p.archived;
   var pinTitle = pinOn ? "Quitar de Pinned" : "Mover a Pinned";
   var archTitle = archOn ? "Restaurar del archivo" : "Archivar paciente";
-  var archiveIcon = archOn ? "↩" : '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"></rect><path d="M5 8h14v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8z"></path><path d="M10 12h4"></path></svg>';
+  var archiveIcon = archOn ? "\u21A9" : '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"></rect><path d="M5 8h14v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8z"></path><path d="M10 12h4"></path></svg>';
   var aid7 = rt18.getActiveId();
-  return '<div class="patient-card ' + (p.id === aid7 ? "active" : "") + '" data-patient-id="' + p.id + '" role="button" tabindex="0"><div class="patient-card-toolbar"><div class="patient-card-toolbar-left"><button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon btn-archive-clean" title="' + archTitle + '" aria-label="' + archTitle + `" onclick="togglePatientArchived(event,'` + p.id + `')">` + archiveIcon + '</button><button type="button" class="patient-toolbar-chip btn-pinned-text" title="' + pinTitle + '" aria-label="' + pinTitle + `" onclick="togglePatientPinned(event,'` + p.id + `')">Pinned</button></div><button type="button" class="btn-delete-card" onclick="deletePatient(event,'` + p.id + `')" aria-label="Eliminar">×</button></div><div class="p-name">` + esc10(p.nombre || "Sin nombre") + '</div><div class="p-meta"><span>Cto. ' + esc10(p.cuarto || "-") + "</span><span>Cama " + esc10(p.cama || "-") + "</span><span>" + esc10(p.servicio || "-") + "</span></div></div>";
+  return '<div class="patient-card ' + (p.id === aid7 ? "active" : "") + '" data-patient-id="' + p.id + '" role="button" tabindex="0"><div class="patient-card-toolbar"><div class="patient-card-toolbar-left"><button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon btn-archive-clean" title="' + archTitle + '" aria-label="' + archTitle + `" onclick="togglePatientArchived(event,'` + p.id + `')">` + archiveIcon + '</button><button type="button" class="patient-toolbar-chip btn-pinned-text" title="' + pinTitle + '" aria-label="' + pinTitle + `" onclick="togglePatientPinned(event,'` + p.id + `')">Pinned</button></div><button type="button" class="btn-delete-card" onclick="deletePatient(event,'` + p.id + `')" aria-label="Eliminar">\xD7</button></div><div class="p-name">` + esc10(p.nombre || "Sin nombre") + '</div><div class="p-meta"><span>Cto. ' + esc10(p.cuarto || "-") + "</span><span>Cama " + esc10(p.cama || "-") + "</span><span>" + esc10(p.servicio || "-") + "</span></div></div>";
 }
 var _patientListRenderQueued = false;
 function patchPatientListActiveHighlight(nextId) {
@@ -31762,14 +31860,14 @@ function renderPatientListNow() {
   var isRonda = isPaseMode();
   list.classList.toggle("patient-list--ronda", isRonda);
   if (!patients.length) {
-    list.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">Sin pacientes aún</div>';
+    list.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">Sin pacientes a\xFAn</div>';
     _lastRondaNavIds = [];
     if (rt18.getActiveAppTab() === "agenda") rt18.renderProcedureAgendaPanel();
     return;
   }
   var filtered = patients.filter(patientMatchesSearch);
   if (!filtered.length) {
-    list.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">Ningún paciente coincide con la búsqueda</div>';
+    list.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">Ning\xFAn paciente coincide con la b\xFAsqueda</div>';
     _lastRondaNavIds = [];
     if (rt18.getActiveAppTab() === "agenda") rt18.renderProcedureAgendaPanel();
     return;
@@ -31811,7 +31909,7 @@ function renderPatientListNow() {
   if (archived.length) {
     var collapsed = isArchivedSectionCollapsed();
     parts.push(
-      '<button type="button" class="patient-list-section-toggle" onclick="toggleArchivedSection(event)" aria-expanded="' + (!collapsed ? "true" : "false") + '">Archivados <span>(' + archived.length + ")</span> <span>" + (collapsed ? "▶" : "▼") + "</span></button>"
+      '<button type="button" class="patient-list-section-toggle" onclick="toggleArchivedSection(event)" aria-expanded="' + (!collapsed ? "true" : "false") + '">Archivados <span>(' + archived.length + ")</span> <span>" + (collapsed ? "\u25B6" : "\u25BC") + "</span></button>"
     );
     if (!collapsed) {
       parts.push('<div class="patient-sort-zone" data-patient-zone="archived">');
@@ -31943,7 +32041,7 @@ function deletePatient(e, id) {
     return p.id === id;
   });
   if (!target || !target.archived) {
-    if (!confirm("¿Eliminar este paciente y sus notas?")) return;
+    if (!confirm("\xBFEliminar este paciente y sus notas?")) return;
   }
   var label = target ? "Eliminar " + (target.nombre || "paciente") : "Eliminar paciente";
   if (typeof rt18.pushUndoSnapshot === "function") rt18.pushUndoSnapshot(label);
@@ -31979,7 +32077,7 @@ function _syncPatientModalModeFields() {
   var servicioLabel = document.getElementById("m-servicio-label");
   var servicioInput = document.getElementById("m-servicio");
   if (areaGroup) areaGroup.style.display = sala ? "none" : "";
-  if (servicioLabel) servicioLabel.textContent = sala ? "Área / Servicio *" : "Servicio *";
+  if (servicioLabel) servicioLabel.textContent = sala ? "\xC1rea / Servicio *" : "Servicio *";
   if (servicioInput) servicioInput.placeholder = sala ? "ej. MEDICINA INTERNA" : "ej. MEDICINA INTERNA";
 }
 function openAddModal() {
@@ -31993,7 +32091,7 @@ function openAddModal() {
   var edadNumManual = document.getElementById("m-edad-num-manual");
   var edadUnitManual = document.getElementById("m-edad-unit-manual");
   if (edadNumManual) edadNumManual.value = "";
-  if (edadUnitManual) edadUnitManual.value = "años";
+  if (edadUnitManual) edadUnitManual.value = "a\xF1os";
   document.getElementById("m-sexo").value = "F";
   _syncPatientModalModeFields();
   _prefillServicioForSala();
@@ -32020,7 +32118,7 @@ function openAddModalFromLab() {
     var ageNum = parseInt(p.edad, 10);
     edadNum.value = isNaN(ageNum) ? "" : String(ageNum);
   }
-  if (edadUnit) edadUnit.value = "años";
+  if (edadUnit) edadUnit.value = "a\xF1os";
   document.getElementById("m-sexo-ro").value = p.sexo === "M" ? "M" : "F";
   ["area", "servicio", "cuarto", "cama"].forEach(function(f) {
     document.getElementById("m-" + f).value = "";
@@ -32041,7 +32139,7 @@ function confirmCloseAddPatientModal() {
     var el = document.getElementById(id);
     return el && el.value.trim();
   });
-  if (hasData && !confirm("¿Cerrar sin guardar?")) return false;
+  if (hasData && !confirm("\xBFCerrar sin guardar?")) return false;
   return true;
 }
 function normalizeName(str) {
@@ -32058,7 +32156,7 @@ function findDuplicatePatient(nombre, registro) {
 function showDuplicateWarning(existing, onConfirm) {
   var fecha = notes[existing.id] ? notes[existing.id].fecha : "";
   var body = "<strong>" + esc10(existing.nombre) + "</strong>";
-  body += "<br>Cto. " + esc10(existing.cuarto || "—") + " Cama " + esc10(existing.cama || "—");
+  body += "<br>Cto. " + esc10(existing.cuarto || "\u2014") + " Cama " + esc10(existing.cama || "\u2014");
   if (existing.registro) body += "<br>Registro: " + esc10(existing.registro);
   if (fecha) body += "<br>Ingreso: " + esc10(fecha);
   var backdrop = document.createElement("div");
@@ -32078,13 +32176,13 @@ function savePatient() {
     nombre = (document.getElementById("m-nombre").value || "").trim().toUpperCase();
     registro = (document.getElementById("m-registro").value || "").trim();
     edadNum = (document.getElementById("m-edad-num").value || "").trim();
-    edadUnit = document.getElementById("m-edad-unit").value || "años";
+    edadUnit = document.getElementById("m-edad-unit").value || "a\xF1os";
     sexo = document.getElementById("m-sexo-ro").value || "F";
   } else {
     nombre = (document.getElementById("m-nombre-manual").value || "").trim().toUpperCase();
     registro = (document.getElementById("m-registro-manual").value || "").trim();
     edadNum = (document.getElementById("m-edad-num-manual").value || "").trim();
-    edadUnit = document.getElementById("m-edad-unit-manual").value || "años";
+    edadUnit = document.getElementById("m-edad-unit-manual").value || "a\xF1os";
     sexo = document.getElementById("m-sexo").value;
   }
   var v = validatePatientForSave({ nombre, registro, edadNum, edadUnit });
@@ -32100,24 +32198,24 @@ function savePatient() {
   }
   var ageInt = parseInt(edadNum, 10);
   if (isNaN(ageInt) || ageInt < 0 || ageInt > 120) {
-    rt18.showToast("Edad inválida", "error");
-    shakePatientFieldsForError("Edad inválida", isFromLab);
+    rt18.showToast("Edad inv\xE1lida", "error");
+    shakePatientFieldsForError("Edad inv\xE1lida", isFromLab);
     return;
   }
-  var edad = String(ageInt) + (edadUnit && edadUnit !== "años" ? " " + edadUnit : "");
+  var edad = String(ageInt) + (edadUnit && edadUnit !== "a\xF1os" ? " " + edadUnit : "");
   var salaMode = isModeSala(rt18.getSettings());
   var servicio = (document.getElementById("m-servicio").value || "").trim().toUpperCase();
   var area = salaMode ? servicio : (document.getElementById("m-area").value || "").trim().toUpperCase();
   var cuarto = (document.getElementById("m-cuarto").value || "").trim();
   var cama = (document.getElementById("m-cama").value || "").trim();
   if (!servicio) {
-    rt18.showToast(salaMode ? "Ingresa Área / Servicio" : "Ingresa servicio", "error");
-    shakePatientFieldsForError(salaMode ? "Ingresa Área / Servicio" : "Ingresa servicio", isFromLab);
+    rt18.showToast(salaMode ? "Ingresa \xC1rea / Servicio" : "Ingresa servicio", "error");
+    shakePatientFieldsForError(salaMode ? "Ingresa \xC1rea / Servicio" : "Ingresa servicio", isFromLab);
     return;
   }
   if (!salaMode && !area) {
-    rt18.showToast("Ingresa área / departamento", "error");
-    shakePatientFieldsForError("Ingresa área / departamento", isFromLab);
+    rt18.showToast("Ingresa \xE1rea / departamento", "error");
+    shakePatientFieldsForError("Ingresa \xE1rea / departamento", isFromLab);
     return;
   }
   if (!cuarto || !cama) {
@@ -32507,7 +32605,7 @@ function updateSendCount2(root) {
   const n = getSelectedIds2(root).length;
   const btn = root.querySelector("#sesion-ingreso-trends-send-confirm");
   if (btn) {
-    btn.textContent = n ? `Enviar gráficas (${n})` : "Enviar gráficas";
+    btn.textContent = n ? `Enviar gr\xE1ficas (${n})` : "Enviar gr\xE1ficas";
     btn.disabled = n === 0;
   }
 }
@@ -32520,7 +32618,7 @@ function openSesionIngresoTrendsSendModal() {
   const patientId = rt20.getPatientId();
   const panels = listSelectablePanels(history, patientId);
   if (!panels.length) {
-    rt20.showToast("Se requieren al menos 2 tomas por panel para generar gráficas", "warn");
+    rt20.showToast("Se requieren al menos 2 tomas por panel para generar gr\xE1ficas", "warn");
     return;
   }
   const backdrop = document.getElementById("sesion-ingreso-trends-send-backdrop");
@@ -32528,13 +32626,13 @@ function openSesionIngresoTrendsSendModal() {
   if (!backdrop || !body) return;
   const selected = defaultSelectedPanelIds(panels);
   body.innerHTML = `
-    <p class="hint">Selecciona los bloques de gráfica (como en «Gráfica del estudio») a enviar a Neo.</p>
+    <p class="hint">Selecciona los bloques de gr\xE1fica (como en \xABGr\xE1fica del estudio\xBB) a enviar a Neo.</p>
     <div class="sesion-ingreso-send-list">
       ${panels.map(
     (item) => `
         <label class="sesion-ingreso-send-item">
           <input type="checkbox" data-panel-id="${escHtml4(item.id)}" ${selected.includes(item.id) ? "checked" : ""} />
-          <span>${escHtml4(item.sectionLabel)} — ${escHtml4(item.title)}</span>
+          <span>${escHtml4(item.sectionLabel)} \u2014 ${escHtml4(item.title)}</span>
           <small>${item.seriesCount} serie(s)</small>
         </label>`
   ).join("")}
@@ -32542,7 +32640,7 @@ function openSesionIngresoTrendsSendModal() {
     <div class="tend-group-table-actions sesion-ingreso-send-actions">
       <button type="button" class="btn-secondary" id="sesion-ingreso-trends-send-cancel">Cancelar</button>
       <button type="button" class="btn-secondary" id="sesion-ingreso-trends-send-all">Seleccionar todo</button>
-      <button type="button" class="btn-primary" id="sesion-ingreso-trends-send-confirm">Enviar gráficas (${selected.length})</button>
+      <button type="button" class="btn-primary" id="sesion-ingreso-trends-send-confirm">Enviar gr\xE1ficas (${selected.length})</button>
     </div>
   `;
   body.querySelector("#sesion-ingreso-trends-send-cancel")?.addEventListener("click", closeSesionIngresoTrendsSendModal);
@@ -32553,7 +32651,7 @@ function openSesionIngresoTrendsSendModal() {
     const ids = getSelectedIds2(body);
     if (!ids.length) return;
     if (isCasiopeaTourSendBlocked("trends")) {
-      rt20.showToast("En el tutorial no se envía a Neo; fuera del tour aquí se abre la app.", "info");
+      rt20.showToast("En el tutorial no se env\xEDa a Neo; fuera del tour aqu\xED se abre la app.", "info");
       closeSesionIngresoTrendsSendModal();
       return;
     }
@@ -32562,7 +32660,7 @@ function openSesionIngresoTrendsSendModal() {
       patientId
     });
     if (!payload.trends?.length) {
-      rt20.showToast("No hay gráficas para los paneles seleccionados", "warn");
+      rt20.showToast("No hay gr\xE1ficas para los paneles seleccionados", "warn");
       return;
     }
     rt20.sendPayload(payload);
@@ -32647,7 +32745,7 @@ publishTourGuardContext();
 var DEMO_PATIENT_ID2 = "demo-onboarding";
 var DEMO_PATIENT_ID_2 = "demo-onboarding-2";
 var DEMO_LAB_REPORT = DEMO_TOUR_LAB_PASTE;
-var LAB_INPUT_DEFAULT_REPORT = "BIOMETRÍA HEMÁTICA\nHemoglobina: 7.44 g/dL\nHematocrito: 24%\nVCM: 97 fL\nHCM: 30.2 pg\nLeucocitos: 29.1 x10³/µL\nNeutrófilos: 25.8 x10³/µL\nEosinófilos: 0 x10³/µL\nPlaquetas: 163 x10³/µL\n";
+var LAB_INPUT_DEFAULT_REPORT = "BIOMETR\xCDA HEM\xC1TICA\nHemoglobina: 7.44 g/dL\nHematocrito: 24%\nVCM: 97 fL\nHCM: 30.2 pg\nLeucocitos: 29.1 x10\xB3/\xB5L\nNeutr\xF3filos: 25.8 x10\xB3/\xB5L\nEosin\xF3filos: 0 x10\xB3/\xB5L\nPlaquetas: 163 x10\xB3/\xB5L\n";
 function toggleSettingsSection() {
   toggleSettingsDropdown();
 }
@@ -32756,7 +32854,7 @@ function showTourIntroModal() {
   }
   var ver = normalizeTourVersionLabel(window.__RPC_APP_VERSION__);
   var h2 = document.getElementById("intro-modal-title");
-  if (h2) h2.textContent = ver && ver !== "dev" ? "R+ · versión " + ver : "Bienvenido a R+";
+  if (h2) h2.textContent = ver && ver !== "dev" ? "R+ \xB7 versi\xF3n " + ver : "Bienvenido a R+";
   el.classList.add("open");
   el.setAttribute("aria-hidden", "false");
 }
@@ -32795,7 +32893,7 @@ function hideTourDock() {
   d.classList.remove("tour-dock-pos-left");
   var btn = document.getElementById("btn-tour-collapse");
   if (btn) {
-    btn.textContent = "–";
+    btn.textContent = "\u2013";
     btn.setAttribute("aria-label", "Minimizar tutorial");
   }
 }
@@ -32811,7 +32909,7 @@ function setTourDockCollapsed(collapsed) {
   else d.classList.remove("tour-dock-collapsed");
   var btn = document.getElementById("btn-tour-collapse");
   if (btn) {
-    btn.textContent = collapsed ? "+" : "–";
+    btn.textContent = collapsed ? "+" : "\u2013";
     btn.setAttribute("aria-label", collapsed ? "Expandir tutorial" : "Minimizar tutorial");
   }
 }
@@ -32843,14 +32941,14 @@ function insertLabTourSecondPatientExample() {
   var ta = document.getElementById("lab-input");
   if (!ta) return;
   if (String(ta.value || "").indexOf("0007755-3") !== -1) {
-    rt21.showToast("El ejemplo de DEMO GARCÍA ya está en el cuadro", "info");
+    rt21.showToast("El ejemplo de DEMO GARC\xCDA ya est\xE1 en el cuadro", "info");
     closeLabBulkTourHintModal();
     return;
   }
   if (!String(ta.value || "").trim()) ta.value = DEMO_LAB_REPORT;
   ta.value = String(ta.value || "").trimEnd() + "\n" + LAB_BULK_PATIENT_SEPARATOR + "\n" + DEMO_GARCIA_LAB_REPORT;
   closeLabBulkTourHintModal();
-  rt21.showToast("Ejemplo de DEMO GARCÍA insertado ✓", "success");
+  rt21.showToast("Ejemplo de DEMO GARC\xCDA insertado \u2713", "success");
 }
 function seedDemoTrendHistory() {
   try {
@@ -33013,134 +33111,134 @@ function renderTourStep() {
   var idx = guidedTourStepIndex() + 1;
   var branchLabel = guidedTourBranch === "interconsulta" ? "Interconsulta" : "Sala";
   function setBadge(sub) {
-    badge.textContent = "Paso " + idx + " de " + total + " · " + branchLabel + (sub ? " · " + sub : "");
+    badge.textContent = "Paso " + idx + " de " + total + " \xB7 " + branchLabel + (sub ? " \xB7 " + sub : "");
   }
   nextBtn.style.display = "";
   nextBtn.disabled = false;
   switch (tourStepId2) {
     case "map_sidebar":
       setBadge("pacientes");
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">La <strong>columna izquierda</strong> es tu lista de pacientes. <strong>DEMO PÉREZ</strong> solo existe para este tour.</p>';
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">La <strong>columna izquierda</strong> es tu lista de pacientes. <strong>DEMO P\xC9REZ</strong> solo existe para este tour.</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "map_tabs":
-      setBadge("pestañas");
-      bodyEl.innerHTML = getUiDensity() !== "normal" ? '<p style="margin:0;line-height:1.5;">En <strong>Pase</strong> el centro es un <strong>resumen</strong> del paciente (pendientes, laboratorio, cultivos, medicamentos). Pulsa el título de cada bloque o usa <strong>Ctrl/⌘ + 1…4</strong> para abrir el detalle en vista <strong>Normal</strong>.</p>' : guidedTourBranch === "interconsulta" ? '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong>, <strong>Agenda</strong>. En <strong>Expediente</strong> verás las pestañas internas en el siguiente paso.</p>' : '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong>, <strong>Agenda</strong>. En <strong>Expediente (Sala)</strong>: cuatro pestañas — <strong>Paciente</strong>, <strong>Clínico</strong> (<strong>Manejo</strong>), <strong>Resultados</strong> y <strong>Salida</strong> (Listado). El tour mostrará las sub-pestañas de Manejo más adelante.</p>';
+      setBadge("pesta\xF1as");
+      bodyEl.innerHTML = getUiDensity() !== "normal" ? '<p style="margin:0;line-height:1.5;">En <strong>Pase</strong> el centro es un <strong>resumen</strong> del paciente (pendientes, laboratorio, cultivos, medicamentos). Pulsa el t\xEDtulo de cada bloque o usa <strong>Ctrl/\u2318 + 1\u20264</strong> para abrir el detalle en vista <strong>Normal</strong>.</p>' : guidedTourBranch === "interconsulta" ? '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong>, <strong>Agenda</strong>. En <strong>Expediente</strong> ver\xE1s las pesta\xF1as internas en el siguiente paso.</p>' : '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong>, <strong>Agenda</strong>. En <strong>Expediente (Sala)</strong>: cuatro pesta\xF1as \u2014 <strong>Paciente</strong>, <strong>Cl\xEDnico</strong> (<strong>Manejo</strong>), <strong>Resultados</strong> y <strong>Salida</strong> (Listado). El tour mostrar\xE1 las sub-pesta\xF1as de Manejo m\xE1s adelante.</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "map_lab_teaser":
-      setBadge("laboratorio · texto");
-      bodyEl.innerHTML = guidedTourBranch === "interconsulta" ? '<p style="margin:0;line-height:1.5;">Aquí pegas reportes SOME. Ya hay un <strong>ejemplo con dos días</strong> de DEMO PÉREZ. Pulsa <strong>Siguiente</strong>.</p>' : '<p style="margin:0;line-height:1.5;">Aquí van los laboratorios: el ejemplo trae <strong>dos días</strong> de DEMO PÉREZ. Después definirás tu servicio en Mi Perfil.</p>';
+      setBadge("laboratorio \xB7 texto");
+      bodyEl.innerHTML = guidedTourBranch === "interconsulta" ? '<p style="margin:0;line-height:1.5;">Aqu\xED pegas reportes SOME. Ya hay un <strong>ejemplo con dos d\xEDas</strong> de DEMO P\xC9REZ. Pulsa <strong>Siguiente</strong>.</p>' : '<p style="margin:0;line-height:1.5;">Aqu\xED van los laboratorios: el ejemplo trae <strong>dos d\xEDas</strong> de DEMO P\xC9REZ. Despu\xE9s definir\xE1s tu servicio en Mi Perfil.</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "lab_bulk_separator":
-      setBadge("laboratorio · separador");
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Lee la ventana: puedes pegar <strong>varios días</strong> del mismo paciente seguidos. Entre <strong>pacientes distintos</strong> usa el separador (botón gris). Opcional: inserta el ejemplo de <strong>DEMO GARCÍA</strong>.</p>';
+      setBadge("laboratorio \xB7 separador");
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Lee la ventana: puedes pegar <strong>varios d\xEDas</strong> del mismo paciente seguidos. Entre <strong>pacientes distintos</strong> usa el separador (bot\xF3n gris). Opcional: inserta el ejemplo de <strong>DEMO GARC\xCDA</strong>.</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "lab_parse":
-      setBadge("laboratorio · procesar");
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Pulsa <strong>Procesar</strong> (morado). R+ interpreta todos los reportes, agrupa por día y guarda en el historial de cada paciente.</p>';
+      setBadge("laboratorio \xB7 procesar");
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Pulsa <strong>Procesar</strong> (morado). R+ interpreta todos los reportes, agrupa por d\xEDa y guarda en el historial de cada paciente.</p>';
       nextBtn.style.display = "none";
       break;
     case "lab_view":
-      setBadge("laboratorio · revisar");
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Revisa diagramas y tabla de resultados. En el historial: <strong>Sincronizar</strong> quita duplicados; <strong>Consolidar</strong> junta envíos del mismo día (mismo tipo de dato).</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Pulsa <strong>Siguiente</strong> para continuar el tour.</p>';
+      setBadge("laboratorio \xB7 revisar");
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Revisa diagramas y tabla de resultados. En el historial: <strong>Sincronizar</strong> quita duplicados; <strong>Consolidar</strong> junta env\xEDos del mismo d\xEDa (mismo tipo de dato).</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Pulsa <strong>Siguiente</strong> para continuar el tour.</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "sala_casiopea_lab":
-      setBadge("Neo · laboratorio");
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Abre <strong>Tablas SOME</strong> (botón resaltado). Dentro verás <strong>Enviar a Neo</strong>: desde ahí mandas estudios al paso <strong>Paraclínicos</strong> en la app Neo (instalada aparte en este equipo).</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">En el tutorial el envío no abre Neo; fuera del tour sí. Pulsa <strong>Siguiente</strong> cuando hayas visto el botón.</p>';
+      setBadge("Neo \xB7 laboratorio");
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Abre <strong>Tablas SOME</strong> (bot\xF3n resaltado). Dentro ver\xE1s <strong>Enviar a Neo</strong>: desde ah\xED mandas estudios al paso <strong>Paracl\xEDnicos</strong> en la app Neo (instalada aparte en este equipo).</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">En el tutorial el env\xEDo no abre Neo; fuera del tour s\xED. Pulsa <strong>Siguiente</strong> cuando hayas visto el bot\xF3n.</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "sala_manejo":
-      setBadge("Manejo clínico");
-      bodyEl.innerHTML = (guidedTourBranch === "interconsulta" ? '<p style="margin:0;line-height:1.5;">En <strong>Expediente → Clínico → Manejo</strong> (pestaña resaltada) hay cuatro sub-pestañas: <strong>Electrolitos</strong>, <strong>Infusiones</strong>, <strong>ATB</strong> y <strong>CAD/EHH</strong>.</p>' : '<p style="margin:0;line-height:1.5;">En <strong>Sala</strong>, <strong>Expediente → Clínico</strong> abre <strong>Manejo</strong> directamente, con las mismas cuatro sub-pestañas: <strong>Electrolitos</strong>, <strong>Infusiones</strong>, <strong>ATB</strong> y <strong>CAD/EHH</strong>.</p>') + '<p style="margin:10px 0 0;line-height:1.5;">Tras procesar laboratorios, <strong>Electrolitos</strong> sugiere correcciones con dosis, dilución y vía; <strong>Infusiones</strong> y <strong>ATB</strong> ofrecen catálogos con texto <strong>SOME</strong> copiable; <strong>CAD/EHH</strong> lee BH/QS/gasometría para el checklist ADA.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Peso, talla y vía se toman del bloque colapsable <strong>Datos del paciente</strong> en la pestaña <strong>Paciente</strong>.</p>';
+      setBadge("Manejo cl\xEDnico");
+      bodyEl.innerHTML = (guidedTourBranch === "interconsulta" ? '<p style="margin:0;line-height:1.5;">En <strong>Expediente \u2192 Cl\xEDnico \u2192 Manejo</strong> (pesta\xF1a resaltada) hay cuatro sub-pesta\xF1as: <strong>Electrolitos</strong>, <strong>Infusiones</strong>, <strong>ATB</strong> y <strong>CAD/EHH</strong>.</p>' : '<p style="margin:0;line-height:1.5;">En <strong>Sala</strong>, <strong>Expediente \u2192 Cl\xEDnico</strong> abre <strong>Manejo</strong> directamente, con las mismas cuatro sub-pesta\xF1as: <strong>Electrolitos</strong>, <strong>Infusiones</strong>, <strong>ATB</strong> y <strong>CAD/EHH</strong>.</p>') + '<p style="margin:10px 0 0;line-height:1.5;">Tras procesar laboratorios, <strong>Electrolitos</strong> sugiere correcciones con dosis, diluci\xF3n y v\xEDa; <strong>Infusiones</strong> y <strong>ATB</strong> ofrecen cat\xE1logos con texto <strong>SOME</strong> copiable; <strong>CAD/EHH</strong> lee BH/QS/gasometr\xEDa para el checklist ADA.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Peso, talla y v\xEDa se toman del bloque colapsable <strong>Datos del paciente</strong> en la pesta\xF1a <strong>Paciente</strong>.</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "ic_expediente_tabs":
-      setBadge("expediente · pestañas");
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">En <strong>Interconsulta</strong>, el expediente se agrupa en cuatro pestañas: <strong>Paciente</strong> (datos colapsables + pendientes), <strong>Clínico</strong> (Nota, Indicaciones, <strong>Manejo</strong>), <strong>Resultados</strong> (Tendencias, Cultivos) y <strong>Salida</strong> (Receta HU en PDF). En el siguiente paso verás <strong>Manejo</strong> con Electrolitos, Infusiones, ATB y CAD/EHH.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Receta HU</strong> exporta el PDF oficial 000-061-R-06-12. <strong>Nota</strong> e <strong>Indicaciones</strong> van a Word (.docx).</p>';
+      setBadge("expediente \xB7 pesta\xF1as");
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">En <strong>Interconsulta</strong>, el expediente se agrupa en cuatro pesta\xF1as: <strong>Paciente</strong> (datos colapsables + pendientes), <strong>Cl\xEDnico</strong> (Nota, Indicaciones, <strong>Manejo</strong>), <strong>Resultados</strong> (Tendencias, Cultivos) y <strong>Salida</strong> (Receta HU en PDF). En el siguiente paso ver\xE1s <strong>Manejo</strong> con Electrolitos, Infusiones, ATB y CAD/EHH.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Receta HU</strong> exporta el PDF oficial 000-061-R-06-12. <strong>Nota</strong> e <strong>Indicaciones</strong> van a Word (.docx).</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "sala_expediente_tabs":
-      setBadge("expediente · pestañas");
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">En <strong>Sala</strong>, el expediente también usa cuatro pestañas: <strong>Paciente</strong> (datos colapsables + pendientes), <strong>Clínico</strong> (<strong>Manejo</strong>: Electrolitos, Infusiones, ATB, CAD/EHH), <strong>Resultados</strong> (Tendencias, Cultivos) y <strong>Salida</strong> (Listado de problemas).</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Los datos del paciente (peso, talla, vía) viven en el bloque colapsable de <strong>Paciente</strong>.</p>';
+      setBadge("expediente \xB7 pesta\xF1as");
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">En <strong>Sala</strong>, el expediente tambi\xE9n usa cuatro pesta\xF1as: <strong>Paciente</strong> (datos colapsables + pendientes), <strong>Cl\xEDnico</strong> (<strong>Manejo</strong>: Electrolitos, Infusiones, ATB, CAD/EHH), <strong>Resultados</strong> (Tendencias, Cultivos) y <strong>Salida</strong> (Listado de problemas).</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Los datos del paciente (peso, talla, v\xEDa) viven en el bloque colapsable de <strong>Paciente</strong>.</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "ic_nota":
-      setBadge("énfasis · Nota .docx");
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Genera la <strong>Nota (.docx)</strong> desde el botón correspondiente. Si el servidor local falla, puedes <strong>Omitir</strong> el tutorial.</p>';
+      setBadge("\xE9nfasis \xB7 Nota .docx");
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Genera la <strong>Nota (.docx)</strong> desde el bot\xF3n correspondiente. Si el servidor local falla, puedes <strong>Omitir</strong> el tutorial.</p>';
       nextBtn.style.display = "none";
       break;
     case "ic_indica":
-      setBadge("énfasis · Indicaciones .docx");
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Aquí exportas las <strong>Indicaciones (.docx)</strong> para entrega o impresión.</p>';
+      setBadge("\xE9nfasis \xB7 Indicaciones .docx");
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Aqu\xED exportas las <strong>Indicaciones (.docx)</strong> para entrega o impresi\xF3n.</p>';
       nextBtn.style.display = "none";
       break;
     case "ic_exports":
-      setBadge("exportación");
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">En <strong>Ajustes (⚙)</strong>: carpeta de documentos, formato de <strong>salida rápida</strong>, respaldos y sync. En <strong>Laboratorio → duplicados</strong> puedes revisar todos los pacientes.</p>' + (window.electronAPI && typeof window.electronAPI.getAppVersion === "function" ? '<p style="margin:10px 0 0;font-size:12px;color:var(--text-muted);">Escritorio: <strong>⇄</strong> junto a Ajustes abre LAN; sync entre equipos en <strong>Respaldos, sync y recuperación</strong>.</p>' : "");
+      setBadge("exportaci\xF3n");
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">En <strong>Ajustes (\u2699)</strong>: carpeta de documentos, formato de <strong>salida r\xE1pida</strong>, respaldos y sync. En <strong>Laboratorio \u2192 duplicados</strong> puedes revisar todos los pacientes.</p>' + (window.electronAPI && typeof window.electronAPI.getAppVersion === "function" ? '<p style="margin:10px 0 0;font-size:12px;color:var(--text-muted);">Escritorio: <strong>\u21C4</strong> junto a Ajustes abre LAN; sync entre equipos en <strong>Respaldos, sync y recuperaci\xF3n</strong>.</p>' : "");
       nextBtn.textContent = "Siguiente";
       break;
     case "sala_tend":
       setBadge("tendencias");
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">En <strong>Expediente → Tendencias</strong> ves mini-gráficas cuando hay varios laboratorios en el tiempo.</p>';
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">En <strong>Expediente \u2192 Tendencias</strong> ves mini-gr\xE1ficas cuando hay varios laboratorios en el tiempo.</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "sala_tend_chart":
-      setBadge("tendencias · gráfica");
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Pulsa <strong>Gráfica</strong> en un estudio (p. ej. biometría) para ver tendencias agrupadas y una tabla copiable.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Cierra con clic fuera de la ventana o <strong>Esc</strong>. Es opcional en el demo: <strong>Siguiente</strong> para continuar.</p>';
+      setBadge("tendencias \xB7 gr\xE1fica");
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Pulsa <strong>Gr\xE1fica</strong> en un estudio (p. ej. biometr\xEDa) para ver tendencias agrupadas y una tabla copiable.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Cierra con clic fuera de la ventana o <strong>Esc</strong>. Es opcional en el demo: <strong>Siguiente</strong> para continuar.</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "sala_casiopea_trends":
-      setBadge("Neo · tendencias");
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Con varios laboratorios en el tiempo, <strong>Enviar a Neo</strong> (barra de Tendencias) manda gráficas agrupadas al mismo flujo de paraclínicos.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Puedes abrir el modal para ver la selección; confirmar no envía datos durante el tutorial. <strong>Siguiente</strong> para continuar.</p>';
+      setBadge("Neo \xB7 tendencias");
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Con varios laboratorios en el tiempo, <strong>Enviar a Neo</strong> (barra de Tendencias) manda gr\xE1ficas agrupadas al mismo flujo de paracl\xEDnicos.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Puedes abrir el modal para ver la selecci\xF3n; confirmar no env\xEDa datos durante el tutorial. <strong>Siguiente</strong> para continuar.</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "sala_soap":
       setBadge("plantilla SOAP");
-      bodyEl.innerHTML = '<p style="margin:0 0 8px;line-height:1.5;"><strong>Expediente → Nota</strong>: en la tarjeta verde de evolución, el botón <strong>Plantilla SOAP</strong> está arriba a la derecha del encabezado verde (lleva resaltado).</p><p style="margin:0;font-size:13px;color:var(--text-muted);">Ábrelo e inserta en evolución cuando quieras.</p>';
+      bodyEl.innerHTML = '<p style="margin:0 0 8px;line-height:1.5;"><strong>Expediente \u2192 Nota</strong>: en la tarjeta verde de evoluci\xF3n, el bot\xF3n <strong>Plantilla SOAP</strong> est\xE1 arriba a la derecha del encabezado verde (lleva resaltado).</p><p style="margin:0;font-size:13px;color:var(--text-muted);">\xC1brelo e inserta en evoluci\xF3n cuando quieras.</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "sala_med":
       setBadge("medicamentos");
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Pega el bloque TSV del hospital y pulsa <strong>Receta</strong>. Marca filas para <strong>SOAP</strong> o <strong>Tratamiento</strong>; el demo ya trae dos fármacos de ejemplo.</p>';
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Pega el bloque TSV del hospital y pulsa <strong>Receta</strong>. Marca filas para <strong>SOAP</strong> o <strong>Tratamiento</strong>; el demo ya trae dos f\xE1rmacos de ejemplo.</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "profile":
       setBadge("perfil");
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;"><strong>Mi Perfil</strong> (nombre arriba): médico, plantillas y valores por defecto. <strong>Ajustes</strong>: carpeta, tema, respaldos y ayuda. <strong>Siguiente</strong>: sincronización en equipo (⇄) y versión móvil.</p>';
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;"><strong>Mi Perfil</strong> (nombre arriba): m\xE9dico, plantillas y valores por defecto. <strong>Ajustes</strong>: carpeta, tema, respaldos y ayuda. <strong>Siguiente</strong>: sincronizaci\xF3n en equipo (\u21C4) y versi\xF3n m\xF3vil.</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "servicio_default":
-      setBadge("servicio · Sala");
+      setBadge("servicio \xB7 Sala");
       bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Escribe tu <strong>Servicio (Sala)</strong> en Mi Perfil (ej. <strong>MEDICINA INTERNA</strong>) y sal del campo para guardar. Luego <strong>Siguiente</strong>.</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "estado_actual":
       setBadge("Estado Actual");
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">En <strong>Expediente → Estado Actual</strong> (<strong>Sala</strong>): signos vitales estructurados, <strong>glucometría</strong>, balance hídrico <strong>I/O</strong>, <strong>tendencias</strong> rápidas y confirmación contra la <strong>receta hospitalaria</strong>. Genera párrafo para la nota, <strong>Copiar</strong> o <strong>Guardar y copiar</strong>.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">El botón verde del encabezado sigue abriendo la <strong>plantilla sin subjetivo</strong>. Cambia a la pestaña resaltada o pulsa <strong>Siguiente</strong>.</p>';
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">En <strong>Expediente \u2192 Estado Actual</strong> (<strong>Sala</strong>): signos vitales estructurados, <strong>glucometr\xEDa</strong>, balance h\xEDdrico <strong>I/O</strong>, <strong>tendencias</strong> r\xE1pidas y confirmaci\xF3n contra la <strong>receta hospitalaria</strong>. Genera p\xE1rrafo para la nota, <strong>Copiar</strong> o <strong>Guardar y copiar</strong>.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">El bot\xF3n verde del encabezado sigue abriendo la <strong>plantilla sin subjetivo</strong>. Cambia a la pesta\xF1a resaltada o pulsa <strong>Siguiente</strong>.</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "listado_problemas":
       setBadge("Listado");
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Exporta el <strong>listado de problemas</strong> (activos e inactivos) a Word. Cada problema va con título y subítems <strong>A) CLÍNICA</strong>, <strong>B) EXPLORACIÓN</strong>, <strong>C) PARACLÍNICA</strong>, etc.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">El tour carga un ejemplo en ese formato (p. ej. peritonitis con incisos A–C). Pulsa <strong>Generar Listado</strong> (resaltado) o edita el texto y luego <strong>Siguiente</strong>.</p>';
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Exporta el <strong>listado de problemas</strong> (activos e inactivos) a Word. Cada problema va con t\xEDtulo y sub\xEDtems <strong>A) CL\xCDNICA</strong>, <strong>B) EXPLORACI\xD3N</strong>, <strong>C) PARACL\xCDNICA</strong>, etc.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">El tour carga un ejemplo en ese formato (p. ej. peritonitis con incisos A\u2013C). Pulsa <strong>Generar Listado</strong> (resaltado) o edita el texto y luego <strong>Siguiente</strong>.</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "livesync_desktop":
-      setBadge("LiveSync · escritorio");
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">El icono <strong>⇄</strong> (junto a Ajustes) abre la sala en vivo: en escritorio se activa la red del turno y luego <strong>creas una sala</strong> o <strong>te unes</strong> a una existente. En iPad o otra Mac pegas el enlace de invitación. Ahí se sincronizan pacientes, laboratorios, agenda y pendientes entre las R+ del equipo.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Los respaldos JSON manuales siguen en Ajustes → Respaldos, sync y recuperación.</p>';
+      setBadge("LiveSync \xB7 escritorio");
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">El icono <strong>\u21C4</strong> (junto a Ajustes) abre la sala en vivo: en escritorio se activa la red del turno y luego <strong>creas una sala</strong> o <strong>te unes</strong> a una existente. En iPad o otra Mac pegas el enlace de invitaci\xF3n. Ah\xED se sincronizan pacientes, laboratorios, agenda y pendientes entre las R+ del equipo.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Los respaldos JSON manuales siguen en Ajustes \u2192 Respaldos, sync y recuperaci\xF3n.</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "livesync_mobile":
-      setBadge("LiveSync · iPad / móvil");
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">En ⇄ usa <strong>Copiar enlace móvil</strong>. En iPad o teléfono (misma Wi‑Fi) abre ese enlace en Safari: verás <strong>la misma interfaz R+</strong> (pacientes, laboratorio, expediente, medicamentos, agenda), sin botones de Word.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">El Mac anfitrión debe tener R+ abierto. En móvil elige la <strong>misma sala LiveSync</strong> que el equipo de escritorio.</p>';
+      setBadge("LiveSync \xB7 iPad / m\xF3vil");
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">En \u21C4 usa <strong>Copiar enlace m\xF3vil</strong>. En iPad o tel\xE9fono (misma Wi\u2011Fi) abre ese enlace en Safari: ver\xE1s <strong>la misma interfaz R+</strong> (pacientes, laboratorio, expediente, medicamentos, agenda), sin botones de Word.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">El Mac anfitri\xF3n debe tener R+ abierto. En m\xF3vil elige la <strong>misma sala LiveSync</strong> que el equipo de escritorio.</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "wrap":
       setBadge("listo");
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Listo. Repite el tutorial desde <strong>Mi Perfil</strong> o <strong>Ajustes</strong>. Para el equipo en vivo usa <strong>⇄</strong> y, si hace falta, el enlace móvil.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Modo Pase</strong> (resumen de ronda): prueba el atajo <strong>' + (navigator.platform && /Mac/i.test(navigator.platform) ? "⌘" : "Ctrl") + "+P</strong> o <strong>Ajustes → Modo de vista → Pase</strong> cuando quieras ver pendientes, labs y meds en una sola columna.</p>";
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Listo. Repite el tutorial desde <strong>Mi Perfil</strong> o <strong>Ajustes</strong>. Para el equipo en vivo usa <strong>\u21C4</strong> y, si hace falta, el enlace m\xF3vil.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Modo Pase</strong> (resumen de ronda): prueba el atajo <strong>' + (navigator.platform && /Mac/i.test(navigator.platform) ? "\u2318" : "Ctrl") + "+P</strong> o <strong>Ajustes \u2192 Modo de vista \u2192 Pase</strong> cuando quieras ver pendientes, labs y meds en una sola columna.</p>";
       nextBtn.textContent = "Finalizar";
       break;
     default:
@@ -33261,9 +33359,9 @@ function startOnboarding(branch) {
   var hora = String(today.getHours()).padStart(2, "0") + ":" + String(today.getMinutes()).padStart(2, "0");
   var demoPatient = {
     id: DEMO_PATIENT_ID2,
-    nombre: "DEMO PÉREZ",
+    nombre: "DEMO P\xC9REZ",
     registro: "0008421-7",
-    edad: "67 años",
+    edad: "67 a\xF1os",
     sexo: "M",
     area: "MEDICINA INTERNA",
     servicio: "MEDICINA INTERNA",
@@ -33274,9 +33372,9 @@ function startOnboarding(branch) {
   };
   var demoPatient2 = {
     id: DEMO_PATIENT_ID_2,
-    nombre: "DEMO GARCÍA",
+    nombre: "DEMO GARC\xCDA",
     registro: "0007755-3",
-    edad: "54 años",
+    edad: "54 a\xF1os",
     sexo: "F",
     area: "MEDICINA INTERNA",
     servicio: "MEDICINA INTERNA",
@@ -33484,67 +33582,67 @@ var HELP_ARTICLES = [
     id: "primer-paciente",
     title: "Tu primer paciente",
     keywords: "agregar paciente nuevo registro edad sexo cuarto cama duplicado",
-    html: "<p>Agrega un paciente desde la barra lateral con <strong>+ Agregar</strong> o directamente desde un reporte de laboratorio procesado (<strong>Agregar paciente del lab</strong>).</p><ul><li>Puedes capturar nombre, registro, edad, sexo, área / servicio, cuarto y cama.</li><li>R+ avisa si detecta un paciente con el mismo nombre o registro para evitar duplicados.</li><li>El paciente queda guardado solo en esta computadora; no se sube a la nube.</li></ul>"
+    html: "<p>Agrega un paciente desde la barra lateral con <strong>+ Agregar</strong> o directamente desde un reporte de laboratorio procesado (<strong>Agregar paciente del lab</strong>).</p><ul><li>Puedes capturar nombre, registro, edad, sexo, \xE1rea / servicio, cuarto y cama.</li><li>R+ avisa si detecta un paciente con el mismo nombre o registro para evitar duplicados.</li><li>El paciente queda guardado solo en esta computadora; no se sube a la nube.</li></ul>"
   },
   {
     id: "lan-vs-respaldo",
     title: "LAN en vivo vs respaldos entre equipos",
     keywords: "lan wifi sala equipo respaldo sync paquete red wifi sincronizar vivo copia snapshot exportar",
-    html: '<p>R+ usa dos ideas distintas que no compiten; sirven para cosas diferentes:</p><ul><li><strong>Sala en vivo (LAN / ⇄):</strong> trabajar en <strong>sesión</strong> con colegas en la <strong>misma red local</strong>. Es colaboración en tiempo real sobre la misma sala; no es una copia permanente de tu historial para llevar a otro equipo.</li><li><strong>Respaldos y sync (Ajustes → Respaldos, sync y recuperación):</strong> exportar/importar <strong>JSON</strong>, auto‑respaldos y <strong>paquete sync</strong> para mover o recuperar el contenido clínico entre computadoras o después del turno.</li></ul><p style="font-size:13px;color:var(--text-muted);margin:0;">¿Continuar el mismo caso en otro equipo físico? Usa <strong>exportar/importar</strong> o el paquete sync. ¿Ver en vivo lo que hace el equipo en sala? Usa <strong>LAN</strong>.</p>'
+    html: '<p>R+ usa dos ideas distintas que no compiten; sirven para cosas diferentes:</p><ul><li><strong>Sala en vivo (LAN / \u21C4):</strong> trabajar en <strong>sesi\xF3n</strong> con colegas en la <strong>misma red local</strong>. Es colaboraci\xF3n en tiempo real sobre la misma sala; no es una copia permanente de tu historial para llevar a otro equipo.</li><li><strong>Respaldos y sync (Ajustes \u2192 Respaldos, sync y recuperaci\xF3n):</strong> exportar/importar <strong>JSON</strong>, auto\u2011respaldos y <strong>paquete sync</strong> para mover o recuperar el contenido cl\xEDnico entre computadoras o despu\xE9s del turno.</li></ul><p style="font-size:13px;color:var(--text-muted);margin:0;">\xBFContinuar el mismo caso en otro equipo f\xEDsico? Usa <strong>exportar/importar</strong> o el paquete sync. \xBFVer en vivo lo que hace el equipo en sala? Usa <strong>LAN</strong>.</p>'
   },
   {
     id: "laboratorio",
     title: "Laboratorio: procesar",
     keywords: "lab laboratorio procesar reporte diagrama gamble bh quimica copiar",
-    html: "<p>Pega el reporte del laboratorio en el cuadro de texto de la pestaña <strong>Laboratorio</strong> y pulsa <strong>Procesar</strong>. R+ reconoce biometría, química, electrolitos, gasometría, pruebas hepáticas y más.</p><ul><li>Cada diagrama tiene un botón <strong>Copiar</strong> para pegarlo como texto en otro sistema.</li><li>Los valores fuera de rango se resaltan en rojo.</li><li>En <strong>Historial de labs</strong> ves cada envío guardado; puedes <strong>Ver en Laboratorio</strong> para recuperar diagramas o <strong>Eliminar</strong> un conjunto si fue un error.</li></ul>"
+    html: "<p>Pega el reporte del laboratorio en el cuadro de texto de la pesta\xF1a <strong>Laboratorio</strong> y pulsa <strong>Procesar</strong>. R+ reconoce biometr\xEDa, qu\xEDmica, electrolitos, gasometr\xEDa, pruebas hep\xE1ticas y m\xE1s.</p><ul><li>Cada diagrama tiene un bot\xF3n <strong>Copiar</strong> para pegarlo como texto en otro sistema.</li><li>Los valores fuera de rango se resaltan en rojo.</li><li>En <strong>Historial de labs</strong> ves cada env\xEDo guardado; puedes <strong>Ver en Laboratorio</strong> para recuperar diagramas o <strong>Eliminar</strong> un conjunto si fue un error.</li></ul>"
   },
   {
     id: "nota-evolucion",
-    title: "Nota de evolución",
+    title: "Nota de evoluci\xF3n",
     keywords: "nota evolucion docx generar expediente soap vitales diagnosticos plantilla",
-    html: "<p>En <strong>Expediente → Notas</strong> completa fecha, hora, signos vitales, interrogatorio, evolución, estudios, diagnósticos y tratamiento.</p><ul><li>La <strong>plantilla SOAP</strong> (modal) concentra subjetivo/objetivo breve, GCS, analgesia, antibióticos, antiHTA, vasopresores, temperatura, dieta, balance hídrico y glucometrías. <strong>Insertar en evolución</strong> pega el párrafo en el cuadro de texto.</li><li>Desde <strong>Medicamentos</strong> puedes marcar fármacos para SOAP y abrir el modal ya relleno en analgesia / ABX / antiHTA / vasopresores.</li><li><strong>Generar Nota (.docx)</strong> crea el documento con membrete; la carpeta de salida está en <strong>Ajustes</strong>.</li><li><strong>Salida rápida</strong> exporta el paciente activo en docx, html o txt según el formato elegido.</li><li>Los datos se guardan por paciente en este equipo.</li></ul>"
+    html: "<p>En <strong>Expediente \u2192 Notas</strong> completa fecha, hora, signos vitales, interrogatorio, evoluci\xF3n, estudios, diagn\xF3sticos y tratamiento.</p><ul><li>La <strong>plantilla SOAP</strong> (modal) concentra subjetivo/objetivo breve, GCS, analgesia, antibi\xF3ticos, antiHTA, vasopresores, temperatura, dieta, balance h\xEDdrico y glucometr\xEDas. <strong>Insertar en evoluci\xF3n</strong> pega el p\xE1rrafo en el cuadro de texto.</li><li>Desde <strong>Medicamentos</strong> puedes marcar f\xE1rmacos para SOAP y abrir el modal ya relleno en analgesia / ABX / antiHTA / vasopresores.</li><li><strong>Generar Nota (.docx)</strong> crea el documento con membrete; la carpeta de salida est\xE1 en <strong>Ajustes</strong>.</li><li><strong>Salida r\xE1pida</strong> exporta el paciente activo en docx, html o txt seg\xFAn el formato elegido.</li><li>Los datos se guardan por paciente en este equipo.</li></ul>"
   },
   {
     id: "estado-actual",
     title: "Estado Actual y monitoreo (Sala)",
     keywords: "estado actual monitoreo vitales glu glucometria insulina balance hidrico entradas salidas io tendencias medicamentos confirmacion sala",
-    html: '<p>En modo <strong>Sala</strong>, la pestaña <strong>Estado Actual</strong> del expediente concentra el <strong>monitoreo</strong> del turno antes de pasar todo a la nota.</p><ul><li><strong>Signos vitales</strong> estructurados con resaltado si salen del rango esperado.</li><li><strong>Glucometrías / insulina</strong>: registro y lectura rápida en el mismo panel.</li><li><strong>Balance hídrico (I/O)</strong>: entradas y salidas para el párrafo de estado.</li><li><strong>Tendencias</strong>: vista compacta cuando hay historia de laboratorio útil.</li><li><strong>Medicamentos</strong>: propuesta desde la receta hospitalaria para <strong>confirmar</strong> dosis vigentes antes de cerrar texto.</li></ul><p style="font-size:13px;color:var(--text-muted);margin:0;"><strong>Copiar</strong> lleva el texto al portapapeles; <strong>Guardar y copiar</strong> conserva snapshot por paciente. El botón verde del encabezado abre también la plantilla SOAP <em>solo objetivo/plan</em>.</p>'
+    html: '<p>En modo <strong>Sala</strong>, la pesta\xF1a <strong>Estado Actual</strong> del expediente concentra el <strong>monitoreo</strong> del turno antes de pasar todo a la nota.</p><ul><li><strong>Signos vitales</strong> estructurados con resaltado si salen del rango esperado.</li><li><strong>Glucometr\xEDas / insulina</strong>: registro y lectura r\xE1pida en el mismo panel.</li><li><strong>Balance h\xEDdrico (I/O)</strong>: entradas y salidas para el p\xE1rrafo de estado.</li><li><strong>Tendencias</strong>: vista compacta cuando hay historia de laboratorio \xFAtil.</li><li><strong>Medicamentos</strong>: propuesta desde la receta hospitalaria para <strong>confirmar</strong> dosis vigentes antes de cerrar texto.</li></ul><p style="font-size:13px;color:var(--text-muted);margin:0;"><strong>Copiar</strong> lleva el texto al portapapeles; <strong>Guardar y copiar</strong> conserva snapshot por paciente. El bot\xF3n verde del encabezado abre tambi\xE9n la plantilla SOAP <em>solo objetivo/plan</em>.</p>'
   },
   {
     id: "indicaciones",
-    title: "Indicaciones médicas",
+    title: "Indicaciones m\xE9dicas",
     keywords: "indicaciones dieta cuidados medicamentos estudios interconsultas otros docx",
-    html: "<p>En <strong>Expediente → Indicaciones</strong> arma la hoja por secciones (dieta, cuidados, medicamentos, estudios, interconsultas y otros).</p><ul><li>Define <strong>plantillas por defecto</strong> en Mi Perfil para prellenar dieta, cuidados y medicamentos.</li><li><strong>Generar Indicaciones (.docx)</strong> produce la hoja final con el membrete del hospital.</li><li>La <strong>Salida rápida</strong> (Ajustes) exporta el paciente activo en docx, html o txt de un solo clic.</li></ul>"
+    html: "<p>En <strong>Expediente \u2192 Indicaciones</strong> arma la hoja por secciones (dieta, cuidados, medicamentos, estudios, interconsultas y otros).</p><ul><li>Define <strong>plantillas por defecto</strong> en Mi Perfil para prellenar dieta, cuidados y medicamentos.</li><li><strong>Generar Indicaciones (.docx)</strong> produce la hoja final con el membrete del hospital.</li><li>La <strong>Salida r\xE1pida</strong> (Ajustes) exporta el paciente activo en docx, html o txt de un solo clic.</li></ul>"
   },
   {
     id: "medicamentos-receta",
     title: "Medicamentos (receta hospitalaria)",
     keywords: "medicamentos receta tsv hospital soap tratamiento analgesia abx antihta vasopresores copiar",
-    html: "<p>En la pestaña <strong>Medicamentos</strong> pegas el listado copiado del sistema hospitalario (columnas separadas por tabulador) y pulsas <strong>Receta</strong>.</p><p>En <strong>SOME</strong>, para reutilizar el mismo bloque, copia normalmente <strong>desde la columna Fecha y hora</strong> hasta el <strong>final de la sección</strong> de medicamentos y pégalo en R+.</p><ul><li><strong>Excl.</strong> excluye el fármaco del texto de egreso; <strong>SOAP</strong> marca qué filas se volcarán a la plantilla SOAP o al tratamiento.</li><li>La vista previa inferior agrupa por categoría (analgésicos, antiHTA, antibióticos, vasopresores, otros).</li><li><strong>Añadir a Tratamiento</strong> inserta líneas en la nota; <strong>Abrir plantilla SOAP</strong> rellena los campos del modal según esa clasificación.</li><li><strong>Copiar</strong> en la tarjeta inferior genera texto tipo nota de egreso.</li></ul>"
+    html: "<p>En la pesta\xF1a <strong>Medicamentos</strong> pegas el listado copiado del sistema hospitalario (columnas separadas por tabulador) y pulsas <strong>Receta</strong>.</p><p>En <strong>SOME</strong>, para reutilizar el mismo bloque, copia normalmente <strong>desde la columna Fecha y hora</strong> hasta el <strong>final de la secci\xF3n</strong> de medicamentos y p\xE9galo en R+.</p><ul><li><strong>Excl.</strong> excluye el f\xE1rmaco del texto de egreso; <strong>SOAP</strong> marca qu\xE9 filas se volcar\xE1n a la plantilla SOAP o al tratamiento.</li><li>La vista previa inferior agrupa por categor\xEDa (analg\xE9sicos, antiHTA, antibi\xF3ticos, vasopresores, otros).</li><li><strong>A\xF1adir a Tratamiento</strong> inserta l\xEDneas en la nota; <strong>Abrir plantilla SOAP</strong> rellena los campos del modal seg\xFAn esa clasificaci\xF3n.</li><li><strong>Copiar</strong> en la tarjeta inferior genera texto tipo nota de egreso.</li></ul>"
   },
   {
     id: "respaldo",
     title: "Respaldo y portabilidad",
     keywords: "respaldo backup copia seguridad exportar importar paciente rango sync pasarela equipos auditoria",
-    html: "<p><strong>¿LAN o respaldo?</strong> Lee primero <strong>LAN en vivo vs respaldos entre equipos</strong> en este centro de ayuda.</p><p>R+ ofrece varias vías para mover o resguardar datos desde <strong>Ajustes</strong>:</p><ul><li><strong>Copia de seguridad</strong>: JSON completo de pacientes, notas, indicaciones y labs.</li><li><strong>Exportar paciente actual</strong> o por <strong>rango de fechas</strong> para mover casos específicos.</li><li><strong>Copia automática</strong> guarda hasta 14 snapshots locales rotativos.</li><li><strong>Paquete sync</strong> cifrado con passphrase para combinar datos entre equipos sin pisar los del otro lado.</li><li><strong>Registro de auditoría</strong>: descarga un JSON con exportaciones e importaciones relevantes.</li></ul>"
+    html: "<p><strong>\xBFLAN o respaldo?</strong> Lee primero <strong>LAN en vivo vs respaldos entre equipos</strong> en este centro de ayuda.</p><p>R+ ofrece varias v\xEDas para mover o resguardar datos desde <strong>Ajustes</strong>:</p><ul><li><strong>Copia de seguridad</strong>: JSON completo de pacientes, notas, indicaciones y labs.</li><li><strong>Exportar paciente actual</strong> o por <strong>rango de fechas</strong> para mover casos espec\xEDficos.</li><li><strong>Copia autom\xE1tica</strong> guarda hasta 14 snapshots locales rotativos.</li><li><strong>Paquete sync</strong> cifrado con passphrase para combinar datos entre equipos sin pisar los del otro lado.</li><li><strong>Registro de auditor\xEDa</strong>: descarga un JSON con exportaciones e importaciones relevantes.</li></ul>"
   },
   {
     id: "actualizacion",
     title: "Actualizar R+",
     keywords: "actualizacion actualizar update instalar reiniciar rollback version",
-    html: "<p>R+ busca nuevas versiones al iniciar. Cuando hay una disponible, la app muestra un modal con el progreso de descarga.</p><ul><li>Puedes buscar manualmente desde <strong>Ajustes → Buscar actualizaciones…</strong> o el menú nativo (Mac: R+; Windows: Aplicación).</li><li>Al detectar una versión nueva instalada, R+ muestra una ventana de <strong>Novedades</strong> con los cambios relevantes.</li><li>Para volver a una versión anterior, descarga el instalador correspondiente desde la página de Releases.</li></ul>"
+    html: "<p>R+ busca nuevas versiones al iniciar. Cuando hay una disponible, la app muestra un modal con el progreso de descarga.</p><ul><li>Puedes buscar manualmente desde <strong>Ajustes \u2192 Buscar actualizaciones\u2026</strong> o el men\xFA nativo (Mac: R+; Windows: Aplicaci\xF3n).</li><li>Al detectar una versi\xF3n nueva instalada, R+ muestra una ventana de <strong>Novedades</strong> con los cambios relevantes.</li><li>Para volver a una versi\xF3n anterior, descarga el instalador correspondiente desde la p\xE1gina de Releases.</li></ul>"
   },
   {
     id: "atajos",
     title: "Atajos de teclado",
     keywords: "atajos shortcuts teclado ctrl cmd escape tab",
-    html: "<p>Ahorra tiempo con estos atajos:</p><ul><li><strong>Ctrl/⌘ + 1</strong> — Laboratorio · <strong>2</strong> — Expediente · <strong>3</strong> — Medicamentos · <strong>4</strong> — Agenda (<strong>Pase</strong>: abre la sección en vista Normal)</li><li><strong>Ctrl/⌘ + ,</strong> — Ajustes</li><li><strong>Ctrl/⌘ + N</strong> — Nuevo paciente</li><li><strong>Ctrl/⌘ + S</strong> — Guardar estado del paciente activo</li><li><strong>Ctrl/⌘ + K</strong> — Búsqueda unificada (pacientes, notas, indicaciones)</li><li><strong>Ctrl/⌘ + P</strong> — Alternar vista Normal ↔ Pase</li><li><strong>Ctrl/⌘ + Shift + P</strong> — Abrir/cerrar Mi Perfil</li><li><strong>Ctrl/⌘ + Shift + ,</strong> — Activa/desactiva <strong>sobrescribir</strong> en conflictos al importar JSON (sin preguntar)</li><li><strong>Esc</strong> o clic fuera — Cerrar ventana modal, menús o el centro de ayuda</li><li>Dentro del centro de ayuda: <strong>↓</strong> desde el buscador enfoca la lista; <strong>↑ / ↓</strong> navegan artículos.</li></ul>"
+    html: "<p>Ahorra tiempo con estos atajos:</p><ul><li><strong>Ctrl/\u2318 + 1</strong> \u2014 Laboratorio \xB7 <strong>2</strong> \u2014 Expediente \xB7 <strong>3</strong> \u2014 Medicamentos \xB7 <strong>4</strong> \u2014 Agenda (<strong>Pase</strong>: abre la secci\xF3n en vista Normal)</li><li><strong>Ctrl/\u2318 + ,</strong> \u2014 Ajustes</li><li><strong>Ctrl/\u2318 + N</strong> \u2014 Nuevo paciente</li><li><strong>Ctrl/\u2318 + S</strong> \u2014 Guardar estado del paciente activo</li><li><strong>Ctrl/\u2318 + K</strong> \u2014 B\xFAsqueda unificada (pacientes, notas, indicaciones)</li><li><strong>Ctrl/\u2318 + P</strong> \u2014 Alternar vista Normal \u2194 Pase</li><li><strong>Ctrl/\u2318 + Shift + P</strong> \u2014 Abrir/cerrar Mi Perfil</li><li><strong>Ctrl/\u2318 + Shift + ,</strong> \u2014 Activa/desactiva <strong>sobrescribir</strong> en conflictos al importar JSON (sin preguntar)</li><li><strong>Esc</strong> o clic fuera \u2014 Cerrar ventana modal, men\xFAs o el centro de ayuda</li><li>Dentro del centro de ayuda: <strong>\u2193</strong> desde el buscador enfoca la lista; <strong>\u2191 / \u2193</strong> navegan art\xEDculos.</li></ul>"
   },
   {
     id: "privacidad",
     title: "Privacidad de datos",
     keywords: "privacidad datos locales electron userdata carpeta no subir nube sensibles",
-    html: "<p>R+ guarda toda la información en el <strong>almacenamiento local</strong> de Electron en esta computadora. No envía pacientes ni notas a ningún servidor externo.</p><ul><li>En Ajustes, <strong>Abrir carpeta…</strong> muestra la ruta exacta del perfil de la app.</li><li>No compartas esa carpeta ni los archivos JSON exportados si contienen información sensible sin cifrado.</li><li>Los paquetes <strong>sync</strong> y las exportaciones pueden cifrarse con una passphrase para intercambio seguro entre equipos.</li></ul>"
+    html: "<p>R+ guarda toda la informaci\xF3n en el <strong>almacenamiento local</strong> de Electron en esta computadora. No env\xEDa pacientes ni notas a ning\xFAn servidor externo.</p><ul><li>En Ajustes, <strong>Abrir carpeta\u2026</strong> muestra la ruta exacta del perfil de la app.</li><li>No compartas esa carpeta ni los archivos JSON exportados si contienen informaci\xF3n sensible sin cifrado.</li><li>Los paquetes <strong>sync</strong> y las exportaciones pueden cifrarse con una passphrase para intercambio seguro entre equipos.</li></ul>"
   }
 ];
 var helpCurrentArticleId = null;
@@ -33649,7 +33747,7 @@ function renderHelpArticles(query) {
   if (filtered.length === 0) {
     var empty = document.createElement("div");
     empty.className = "help-empty";
-    empty.textContent = "Sin resultados para “" + q + "”.";
+    empty.textContent = "Sin resultados para \u201C" + q + "\u201D.";
     list.appendChild(empty);
     return;
   }
@@ -33696,35 +33794,35 @@ var RELEASE_NOTES_DEV_FORCE_SHOW = false;
 var RELEASE_NOTES_SEEN_PREFIX = "rpc-release-notes-seen-";
 var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
   {
-    title: "Copia automática programada",
-    body: "R+ puede generar snapshots locales (hasta 14 rotativos) y restaurarlos desde Ajustes → Copias de seguridad."
+    title: "Copia autom\xE1tica programada",
+    body: "R+ puede generar snapshots locales (hasta 14 rotativos) y restaurarlos desde Ajustes \u2192 Copias de seguridad."
   },
   {
     title: "Exportar por paciente o por rango de fechas",
-    body: "Respalda solo al paciente activo, o selecciona un rango de fechas (ingreso / última nota) para mover casos acotados entre equipos."
+    body: "Respalda solo al paciente activo, o selecciona un rango de fechas (ingreso / \xFAltima nota) para mover casos acotados entre equipos."
   },
   {
     title: "Paquete sync cifrado con passphrase",
-    body: "Intercambia datos entre equipos sin pisar los del otro lado: el paquete combina cambios y se cifra con una frase que tú eliges."
+    body: "Intercambia datos entre equipos sin pisar los del otro lado: el paquete combina cambios y se cifra con una frase que t\xFA eliges."
   },
   {
-    title: "Registro de auditoría ligero",
-    body: "Exporta un JSON con exportaciones, importaciones y borrados recientes desde Ajustes, útil para rastrear movimientos."
+    title: "Registro de auditor\xEDa ligero",
+    body: "Exporta un JSON con exportaciones, importaciones y borrados recientes desde Ajustes, \xFAtil para rastrear movimientos."
   },
   {
-    title: "Salida rápida en varios formatos",
-    body: "Elige docx, html o txt como formato de la Salida rápida para exportar el contenido clínico del paciente activo de un solo clic."
+    title: "Salida r\xE1pida en varios formatos",
+    body: "Elige docx, html o txt como formato de la Salida r\xE1pida para exportar el contenido cl\xEDnico del paciente activo de un solo clic."
   }
 ];
 var RELEASE_NOTES_HIGHLIGHTS = {
   "6.3.2": [
     {
       title: "Pegar monitoreo",
-      body: "En <strong>Estado Actual</strong>, pega T°, FC, TA, DXT, I, E y EVAC; el balance resta todas las salidas en cc (ignora <strong>B:</strong>)."
+      body: "En <strong>Estado Actual</strong>, pega T\xB0, FC, TA, DXT, I, E y EVAC; el balance resta todas las salidas en cc (ignora <strong>B:</strong>)."
     },
     {
       title: "Egresos en el SOAP",
-      body: "Diuresis, drenajes y nefrostomías se listan por separado en el texto; evacuaciones con <strong>NC</strong> o frase libre."
+      body: "Diuresis, drenajes y nefrostom\xEDas se listan por separado en el texto; evacuaciones con <strong>NC</strong> o frase libre."
     },
     {
       title: "Receta y pendientes",
@@ -33734,11 +33832,11 @@ var RELEASE_NOTES_HIGHLIGHTS = {
   "6.3.1": [
     {
       title: "Cultivos y micobacterias",
-      body: "Secreción de herida con paréntesis en el nombre, reportes <strong>MYCOBACTERIAS</strong> (baciloscopia + cultivo) y muestra desde <strong>OBSERVACIONES</strong> vuelven a reflejarse bien en <strong>Cultivos</strong>."
+      body: "Secreci\xF3n de herida con par\xE9ntesis en el nombre, reportes <strong>MYCOBACTERIAS</strong> (baciloscopia + cultivo) y muestra desde <strong>OBSERVACIONES</strong> vuelven a reflejarse bien en <strong>Cultivos</strong>."
     },
     {
-      title: "Gasometría venosa / mixta",
-      body: "pH, PCO2 y HCO3 aunque los flags A/B vayan en líneas separadas; la interpretación puede incluir trastorno metabólico concomitante."
+      title: "Gasometr\xEDa venosa / mixta",
+      body: "pH, PCO2 y HCO3 aunque los flags A/B vayan en l\xEDneas separadas; la interpretaci\xF3n puede incluir trastorno metab\xF3lico concomitante."
     },
     {
       title: "Estado Actual",
@@ -33747,106 +33845,106 @@ var RELEASE_NOTES_HIGHLIGHTS = {
   ],
   "6.3.0": [
     {
-      title: "Sala en vivo más simple",
-      body: "En Mac: sin pestañas Anfitrión/Cliente; <strong>Activar sala en vivo</strong>, crear o unirse a salas y compartir el enlace. Opción para unirse a la sala de otra computadora."
+      title: "Sala en vivo m\xE1s simple",
+      body: "En Mac: sin pesta\xF1as Anfitri\xF3n/Cliente; <strong>Activar sala en vivo</strong>, crear o unirse a salas y compartir el enlace. Opci\xF3n para unirse a la sala de otra computadora."
     },
     {
-      title: "Reconexión estable",
-      body: "Corregido el estado <strong>reconectando…</strong> que podía quedarse fijo al reconectar LiveSync en la misma sala."
+      title: "Reconexi\xF3n estable",
+      body: "Corregido el estado <strong>reconectando\u2026</strong> que pod\xEDa quedarse fijo al reconectar LiveSync en la misma sala."
     },
     {
       title: "Sesiones guardadas",
-      body: "Si ya estás en una sala, el botón muestra <strong>En sala</strong> en lugar de <strong>Unirse</strong>."
+      body: "Si ya est\xE1s en una sala, el bot\xF3n muestra <strong>En sala</strong> en lugar de <strong>Unirse</strong>."
     }
   ],
   "6.2.1": [
     {
-      title: "Expediente más fluido",
+      title: "Expediente m\xE1s fluido",
       body: "Menos pausa al cambiar de paciente y al volver a <strong>Estado actual</strong> o <strong>Resultados</strong>. La app carga el frontend en un solo bundle y reutiliza paneles ya pintados."
     },
     {
       title: "Ocultar solo Manejo",
-      body: "En <strong>Mi Perfil → Expediente</strong>, <strong>Ocultar Manejo en Clínico</strong> deja visibles Nota e Indicaciones en Interconsulta; solo quita el segmento Manejo."
+      body: "En <strong>Mi Perfil \u2192 Expediente</strong>, <strong>Ocultar Manejo en Cl\xEDnico</strong> deja visibles Nota e Indicaciones en Interconsulta; solo quita el segmento Manejo."
     },
     {
-      title: "Corrección Sala",
-      body: "En modo Sala, la pestaña <strong>Resultados</strong> ya no muestra el formulario de Nota encima de Tendencias."
+      title: "Correcci\xF3n Sala",
+      body: "En modo Sala, la pesta\xF1a <strong>Resultados</strong> ya no muestra el formulario de Nota encima de Tendencias."
     }
   ],
   "6.2.0": [
     {
       title: "Estado Actual en Sala",
-      body: "Nueva pestaña <strong>Estado actual</strong> en el expediente: signos vitales, glucometrías, balance hídrico, historial, gráficas y texto clínico copiable. Botón verde en el encabezado para abrir el panel."
+      body: "Nueva pesta\xF1a <strong>Estado actual</strong> en el expediente: signos vitales, glucometr\xEDas, balance h\xEDdrico, historial, gr\xE1ficas y texto cl\xEDnico copiable. Bot\xF3n verde en el encabezado para abrir el panel."
     },
     {
-      title: "Laboratorio — salida rápida",
-      body: "En <strong>Vista de laboratorio</strong> (engranaje) puedes activar <strong>Salida rápida</strong> para formatear SOME sin tener al paciente en tu lista."
+      title: "Laboratorio \u2014 salida r\xE1pida",
+      body: "En <strong>Vista de laboratorio</strong> (engranaje) puedes activar <strong>Salida r\xE1pida</strong> para formatear SOME sin tener al paciente en tu lista."
     },
     {
-      title: "Expediente más ágil",
-      body: "Menos lag al cambiar pestañas: carga diferida de Manejo, Tendencias y gráficas; precarga al pasar el mouse y caché al volver a una pestaña ya visitada."
+      title: "Expediente m\xE1s \xE1gil",
+      body: "Menos lag al cambiar pesta\xF1as: carga diferida de Manejo, Tendencias y gr\xE1ficas; precarga al pasar el mouse y cach\xE9 al volver a una pesta\xF1a ya visitada."
     }
   ],
   "6.1.0": [
     {
       title: "Manejo: Infusiones, ATB y CAD/EHH",
-      body: "Expediente → Clínico → <strong>Manejo</strong> ahora incluye cuatro sub-pestañas. <strong>Infusiones</strong> (vasopresores, sedación y calculadoras), <strong>ATB</strong> (catálogo con sugerencias según cultivos) y <strong>CAD/EHH</strong> (checklist ADA con lectura de laboratorio), además de <strong>Electrolitos</strong>."
+      body: "Expediente \u2192 Cl\xEDnico \u2192 <strong>Manejo</strong> ahora incluye cuatro sub-pesta\xF1as. <strong>Infusiones</strong> (vasopresores, sedaci\xF3n y calculadoras), <strong>ATB</strong> (cat\xE1logo con sugerencias seg\xFAn cultivos) y <strong>CAD/EHH</strong> (checklist ADA con lectura de laboratorio), adem\xE1s de <strong>Electrolitos</strong>."
     },
     {
       title: "ATB asistido",
-      body: "Filtra por familia o indicación, revisa dosis y ajuste renal desde laboratorios recientes, y copia la indicación SOME sin +Pendiente."
+      body: "Filtra por familia o indicaci\xF3n, revisa dosis y ajuste renal desde laboratorios recientes, y copia la indicaci\xF3n SOME sin +Pendiente."
     },
     {
-      title: "Pestañas clínicas unificadas",
-      body: "Nota, Indicaciones y las sub-pestañas de Manejo comparten la misma barra subrayada para navegar el expediente con menos fricción."
+      title: "Pesta\xF1as cl\xEDnicas unificadas",
+      body: "Nota, Indicaciones y las sub-pesta\xF1as de Manejo comparten la misma barra subrayada para navegar el expediente con menos fricci\xF3n."
     }
   ],
   "6.0.1": [
     {
       title: "Laboratorio: entrada masiva",
-      body: "Pega varios reportes SOME en el mismo cuadro. Varios días del mismo paciente van seguidos; entre pacientes distintos usa Separador de paciente. Al procesar pegados masivos, la vista previa muestra pacientes, días y errores antes de guardar."
+      body: "Pega varios reportes SOME en el mismo cuadro. Varios d\xEDas del mismo paciente van seguidos; entre pacientes distintos usa Separador de paciente. Al procesar pegados masivos, la vista previa muestra pacientes, d\xEDas y errores antes de guardar."
     },
     {
-      title: "Receta HU → PDF",
-      body: "Exportación PDF con plantilla oficial HU 000-061-R-06-12 desde el servidor local de R+."
+      title: "Receta HU \u2192 PDF",
+      body: "Exportaci\xF3n PDF con plantilla oficial HU 000-061-R-06-12 desde el servidor local de R+."
     },
     {
       title: "Tutorial actualizado",
-      body: "El tour precarga dos días de DEMO PÉREZ y explica el separador multi-paciente con ejemplo DEMO GARCÍA."
+      body: "El tour precarga dos d\xEDas de DEMO P\xC9REZ y explica el separador multi-paciente con ejemplo DEMO GARC\xCDA."
     }
   ],
   "6.0.0": [
     {
-      title: "Expediente en 4 pestañas",
-      body: "Paciente, Clínico, Resultados y Salida — en Sala (Manejo; Salida: Listado + Receta HU) e Interconsulta (Nota, Indicaciones, Manejo + Receta HU). Datos del paciente en bloque colapsable."
+      title: "Expediente en 4 pesta\xF1as",
+      body: "Paciente, Cl\xEDnico, Resultados y Salida \u2014 en Sala (Manejo; Salida: Listado + Receta HU) e Interconsulta (Nota, Indicaciones, Manejo + Receta HU). Datos del paciente en bloque colapsable."
     },
     {
       title: "Modo Pase sin cambios en el resumen",
-      body: "El tablero de ronda se ve igual que antes. Al abrir el detalle en pestañas (vista Normal) entras al expediente reorganizado."
+      body: "El tablero de ronda se ve igual que antes. Al abrir el detalle en pesta\xF1as (vista Normal) entras al expediente reorganizado."
     },
     {
-      title: "Manejo clínico",
-      body: "Expediente → Clínico → <strong>Manejo</strong>: cuatro sub-pestañas — <strong>Electrolitos</strong> (alteraciones con SOME copiable), <strong>Infusiones</strong> (infusiones y sedación con calculadoras), <strong>ATB</strong> (catálogo con sugerencias según cultivos positivos) y <strong>CAD/EHH</strong> (checklist ADA con lectura de laboratorio). Receta HU exporta PDF oficial; en Sala e Interconsulta está en Expediente → Salida."
+      title: "Manejo cl\xEDnico",
+      body: "Expediente \u2192 Cl\xEDnico \u2192 <strong>Manejo</strong>: cuatro sub-pesta\xF1as \u2014 <strong>Electrolitos</strong> (alteraciones con SOME copiable), <strong>Infusiones</strong> (infusiones y sedaci\xF3n con calculadoras), <strong>ATB</strong> (cat\xE1logo con sugerencias seg\xFAn cultivos positivos) y <strong>CAD/EHH</strong> (checklist ADA con lectura de laboratorio). Receta HU exporta PDF oficial; en Sala e Interconsulta est\xE1 en Expediente \u2192 Salida."
     }
   ],
   "5.2.1": [
     {
       title: "Interfaz Arc",
-      body: "Cáscara flotante con esquinas radiales, paneles unificados y rail discreto cuando ocultas la barra de pacientes."
+      body: "C\xE1scara flotante con esquinas radiales, paneles unificados y rail discreto cuando ocultas la barra de pacientes."
     },
     {
       title: "Correcciones UX",
-      body: "Agenda con un solo panel; pestaña Datos sin perder el foco al escribir; esquinas alineadas con sidebar auto-oculto."
+      body: "Agenda con un solo panel; pesta\xF1a Datos sin perder el foco al escribir; esquinas alineadas con sidebar auto-oculto."
     }
   ],
   "5.2.0": [
     {
-      title: "Integración Neo",
-      body: "Envía tablas SOME y tendencias a la app Neo (antes Sesión de Ingreso) con los botones Enviar a Neo."
+      title: "Integraci\xF3n Neo",
+      body: "Env\xEDa tablas SOME y tendencias a la app Neo (antes Sesi\xF3n de Ingreso) con los botones Enviar a Neo."
     },
     {
       title: "Tutorial Sala",
-      body: "El tour señala dónde enviar laboratorio y gráficas; durante el tutorial no se abre Neo."
+      body: "El tour se\xF1ala d\xF3nde enviar laboratorio y gr\xE1ficas; durante el tutorial no se abre Neo."
     }
   ],
   "5.1.0": [
@@ -33856,87 +33954,87 @@ var RELEASE_NOTES_HIGHLIGHTS = {
     },
     {
       title: "Copiar TSV o PNG por departamento",
-      body: "Desde el modal, copia una sección entera al portapapeles como tabla (TSV) o imagen (PNG) para pegar en notas o mensajes."
+      body: "Desde el modal, copia una secci\xF3n entera al portapapeles como tabla (TSV) o imagen (PNG) para pegar en notas o mensajes."
     },
     {
-      title: "Parser SOME más fiable",
-      body: "Mejor lectura de EGO, citoquímico de líquidos y química; menos filas basura. Historial de labs más estable al restaurar respaldos."
+      title: "Parser SOME m\xE1s fiable",
+      body: "Mejor lectura de EGO, citoqu\xEDmico de l\xEDquidos y qu\xEDmica; menos filas basura. Historial de labs m\xE1s estable al restaurar respaldos."
     }
   ],
   "5.0.4": [
     {
       title: "Historial de labs reparado",
-      body: "Corrige respaldos con historial mal formado que impedían abrir Laboratorio (error forEach en sets corruptos)."
+      body: "Corrige respaldos con historial mal formado que imped\xEDan abrir Laboratorio (error forEach en sets corruptos)."
     }
   ],
   "5.0.3": [
     {
       title: "Copiar labs en Windows",
-      body: "Tras procesar un reporte verás Copiar en Resultados y el botón flotante; en Windows queda por encima de la barra de tareas."
+      body: "Tras procesar un reporte ver\xE1s Copiar en Resultados y el bot\xF3n flotante; en Windows queda por encima de la barra de tareas."
     },
     {
       title: "Tendencias al estilo SOME",
-      body: "Las gráficas de BH y química sanguínea siguen el orden del informe; más parámetros de diferencial listos para mostrar."
+      body: "Las gr\xE1ficas de BH y qu\xEDmica sangu\xEDnea siguen el orden del informe; m\xE1s par\xE1metros de diferencial listos para mostrar."
     }
   ],
   "5.0.2": [
     {
-      title: "Código más modular",
-      body: "La app arranca desde un bootstrap liviano; laboratorio, pacientes, Pase y ajustes viven en módulos separados para mantener y probar más fácil."
+      title: "C\xF3digo m\xE1s modular",
+      body: "La app arranca desde un bootstrap liviano; laboratorio, pacientes, Pase y ajustes viven en m\xF3dulos separados para mantener y probar m\xE1s f\xE1cil."
     },
     {
       title: "Pase y pacientes corregidos",
-      body: "Tras el refactor: selección en la lista, guardado de pacientes y resumen Modo Pase vuelven a mostrarse al elegir un expediente."
+      body: "Tras el refactor: selecci\xF3n en la lista, guardado de pacientes y resumen Modo Pase vuelven a mostrarse al elegir un expediente."
     }
   ],
   "5.0.1": [
     {
       title: "Diferencial manual y BH legible",
-      body: "SOME con diferencial manual: Segmentados, bandas y coagulación en salida clara (Dif. / Coag.), sin confundir con biometría automática ni EGO."
+      body: "SOME con diferencial manual: Segmentados, bandas y coagulaci\xF3n en salida clara (Dif. / Coag.), sin confundir con biometr\xEDa autom\xE1tica ni EGO."
     },
     {
-      title: "Tendencias BH y gráfica fullscreen",
-      body: "Panel Diferencial manual en gráficas y tablas con nombres del reporte. Modal Gráfica del estudio a pantalla completa."
+      title: "Tendencias BH y gr\xE1fica fullscreen",
+      body: "Panel Diferencial manual en gr\xE1ficas y tablas con nombres del reporte. Modal Gr\xE1fica del estudio a pantalla completa."
     },
     {
       title: "LiveSync: borrados en la sala",
-      body: "Al quitar un pendiente o eliminar un paciente en la sala ⇄, el cambio se aplica en todos los equipos conectados."
+      body: "Al quitar un pendiente o eliminar un paciente en la sala \u21C4, el cambio se aplica en todos los equipos conectados."
     }
   ],
   "3.5.0": [
     {
-      title: "Gráfica y tabla por estudio",
-      body: "En Tendencias, pulsa «Gráfica» en un estudio (BH, QS, gases…): tendencias agrupadas por panel y tabla copiable (PNG o TSV)."
+      title: "Gr\xE1fica y tabla por estudio",
+      body: "En Tendencias, pulsa \xABGr\xE1fica\xBB en un estudio (BH, QS, gases\u2026): tendencias agrupadas por panel y tabla copiable (PNG o TSV)."
     },
     {
-      title: "Paneles, títulos y cierre unificado",
-      body: "Reordena u oculta paneles; edita el título de cada gráfica con un clic. Todas las ventanas se cierran con Esc o clic fuera (sin botones × / Cerrar)."
+      title: "Paneles, t\xEDtulos y cierre unificado",
+      body: "Reordena u oculta paneles; edita el t\xEDtulo de cada gr\xE1fica con un clic. Todas las ventanas se cierran con Esc o clic fuera (sin botones \xD7 / Cerrar)."
     }
   ],
   "3.4.1": [
     {
-      title: "Sugerencias clínicas desde laboratorio",
-      body: "Al procesar labs, R+ puede agregar un pendiente automático si Hb < 7 g/dL (transfusión). Las reposiciones electrolíticas no se agregan solas: usa Manejo → Electrolitos y el botón + Pendiente. Sin duplicar la misma regla el mismo día."
+      title: "Sugerencias cl\xEDnicas desde laboratorio",
+      body: "Al procesar labs, R+ puede agregar un pendiente autom\xE1tico si Hb < 7 g/dL (transfusi\xF3n). Las reposiciones electrol\xEDticas no se agregan solas: usa Manejo \u2192 Electrolitos y el bot\xF3n + Pendiente. Sin duplicar la misma regla el mismo d\xEDa."
     },
     {
-      title: "Medicamentos: +1 día (DIA#)",
-      body: "Botón +1 día en Medicamentos para incrementar el día de tratamiento sin volver a pegar del hospital (todos los ítems con DIA# activos)."
+      title: "Medicamentos: +1 d\xEDa (DIA#)",
+      body: "Bot\xF3n +1 d\xEDa en Medicamentos para incrementar el d\xEDa de tratamiento sin volver a pegar del hospital (todos los \xEDtems con DIA# activos)."
     }
   ],
   "3.4.0": [
     {
-      title: "R+ Móvil (Safari, misma Wi‑Fi)",
-      body: "Abre el enlace móvil en iPad o teléfono: la misma interfaz R+ que en escritorio (sin generar Word). Sincroniza pacientes, labs, pendientes y agenda por sala LiveSync. Copia el enlace en ⇄ → Copiar enlace móvil."
+      title: "R+ M\xF3vil (Safari, misma Wi\u2011Fi)",
+      body: "Abre el enlace m\xF3vil en iPad o tel\xE9fono: la misma interfaz R+ que en escritorio (sin generar Word). Sincroniza pacientes, labs, pendientes y agenda por sala LiveSync. Copia el enlace en \u21C4 \u2192 Copiar enlace m\xF3vil."
     },
     {
       title: "Tutorial: LiveSync al terminar",
-      body: "Al completar el recorrido Sala o Interconsulta, el tutorial explica ⇄, salas en vivo y la versión móvil."
+      body: "Al completar el recorrido Sala o Interconsulta, el tutorial explica \u21C4, salas en vivo y la versi\xF3n m\xF3vil."
     }
   ],
   "3.3.2": [
     {
-      title: "LAN: código 1234 y expediente en sala",
-      body: "El código de equipo por defecto es 1234. Al unirte a una sala ⇄ se fusionan pacientes, notas, laboratorios, agenda y pendientes entre el equipo, sin borrar los pacientes que solo existen en tu R+."
+      title: "LAN: c\xF3digo 1234 y expediente en sala",
+      body: "El c\xF3digo de equipo por defecto es 1234. Al unirte a una sala \u21C4 se fusionan pacientes, notas, laboratorios, agenda y pendientes entre el equipo, sin borrar los pacientes que solo existen en tu R+."
     },
     {
       title: "Copiar labs (3.3.1)",
@@ -33946,17 +34044,17 @@ var RELEASE_NOTES_HIGHLIGHTS = {
   "3.3.1": [
     {
       title: "Copiar labs corregido",
-      body: "El botón Copiar en Resultados vuelve a copiar el texto compacto de R+ (BH, QS, gases, etc.), no el informe crudo pegado desde SOME con tablas y flags sueltos."
+      body: "El bot\xF3n Copiar en Resultados vuelve a copiar el texto compacto de R+ (BH, QS, gases, etc.), no el informe crudo pegado desde SOME con tablas y flags sueltos."
     }
   ],
   "3.3.0": [
     {
       title: "LiveSync por sala",
-      body: "Al unirte a una sala LAN (⇄), la agenda de procedimientos y los pendientes del expediente se comparten en tiempo real con el equipo en esa sala. Al salir se guarda un snapshot local para reconciliar al volver."
+      body: "Al unirte a una sala LAN (\u21C4), la agenda de procedimientos y los pendientes del expediente se comparten en tiempo real con el equipo en esa sala. Al salir se guarda un snapshot local para reconciliar al volver."
     },
     {
       title: "Copiar prompt IA (Listado)",
-      body: "En Listado de problemas, el botón Copiar prompt IA lleva al portapapeles la plantilla para generar el listado activo/inactivo y planes iniciales en un chat externo."
+      body: "En Listado de problemas, el bot\xF3n Copiar prompt IA lleva al portapapeles la plantilla para generar el listado activo/inactivo y planes iniciales en un chat externo."
     }
   ],
   "3.2.2": [
@@ -33966,33 +34064,33 @@ var RELEASE_NOTES_HIGHLIGHTS = {
     },
     {
       title: "Laboratorio (BH, Copiar, asteriscos)",
-      body: "BH compacta sin línea extendida; botón Copiar en Resultados; valores alterados con * al copiar. Ver detalle en notas de 3.2.1 si vienes de 3.2.0."
+      body: "BH compacta sin l\xEDnea extendida; bot\xF3n Copiar en Resultados; valores alterados con * al copiar. Ver detalle en notas de 3.2.1 si vienes de 3.2.0."
     }
   ],
   "3.2.1": [
     {
       title: "Laboratorio: BH compacta y Copiar visible",
-      body: "Con BH extendida apagada, la primera línea solo lleva Hb, Hto, VCM, HCM, Leu, Neu, Eos y Plt (más coag si aplica); RBC, CHCM, RDW, MPV y reticulocitos van a la segunda línea solo cuando activas la preferencia. El botón Copiar del encabezado de Resultados vuelve a verse en densidad de interfaz normal."
+      body: "Con BH extendida apagada, la primera l\xEDnea solo lleva Hb, Hto, VCM, HCM, Leu, Neu, Eos y Plt (m\xE1s coag si aplica); RBC, CHCM, RDW, MPV y reticulocitos van a la segunda l\xEDnea solo cuando activas la preferencia. El bot\xF3n Copiar del encabezado de Resultados vuelve a verse en densidad de interfaz normal."
     },
     {
       title: "Alterados con asterisco al copiar",
-      body: "El texto generado para portapapeles y nota conserva el * en valores fuera de rango. En pantalla el asterisco aparece en rojo junto al valor; se evita copiar el texto “, alterado” al seleccionar los resultados."
+      body: "El texto generado para portapapeles y nota conserva el * en valores fuera de rango. En pantalla el asterisco aparece en rojo junto al valor; se evita copiar el texto \u201C, alterado\u201D al seleccionar los resultados."
     }
   ],
   "3.2.0": [
     {
-      title: "Interfaz “soft” y rendimiento",
-      body: "Superficies sólidas (sin vidrio animado pesado para la GPU), sombras más ligeras, lista de pacientes y tarjetas sin desplazamientos costosos al hacer hover; botón principal en degradados solo violeta (--action)."
+      title: "Interfaz \u201Csoft\u201D y rendimiento",
+      body: "Superficies s\xF3lidas (sin vidrio animado pesado para la GPU), sombras m\xE1s ligeras, lista de pacientes y tarjetas sin desplazamientos costosos al hacer hover; bot\xF3n principal en degradados solo violeta (--action)."
     },
     {
       title: "Tutorial: Modo Pase en ambos flujos",
-      body: "El recorrido guiado para Sala y para Interconsulta incluye el mismo paso de vista Pase (resumen de ronda); después el tour continúa en pestañas completas. Versión estable 3.2."
+      body: "El recorrido guiado para Sala y para Interconsulta incluye el mismo paso de vista Pase (resumen de ronda); despu\xE9s el tour contin\xFAa en pesta\xF1as completas. Versi\xF3n estable 3.2."
     }
   ],
   "3.0.2": [
     {
-      title: "Gasometría e historial",
-      body: "Delta-delta e interpretación clínica cuando hay datos. Reprocesar desde el historial usando el texto guardado y deduplicación al consolidar entradas muy similares."
+      title: "Gasometr\xEDa e historial",
+      body: "Delta-delta e interpretaci\xF3n cl\xEDnica cuando hay datos. Reprocesar desde el historial usando el texto guardado y deduplicaci\xF3n al consolidar entradas muy similares."
     },
     {
       title: "Laboratorio al cambiar de paciente",
@@ -34000,7 +34098,7 @@ var RELEASE_NOTES_HIGHLIGHTS = {
     },
     {
       title: "Listado de Problemas (.docx)",
-      body: "Cada problema va en su propia tabla para evitar cortes entre páginas; el texto largo en a) b) c) se parte en párrafos más cortos con cortes en frases."
+      body: "Cada problema va en su propia tabla para evitar cortes entre p\xE1ginas; el texto largo en a) b) c) se parte en p\xE1rrafos m\xE1s cortos con cortes en frases."
     },
     {
       title: "Tutorial y Mac",
@@ -34010,115 +34108,115 @@ var RELEASE_NOTES_HIGHLIGHTS = {
   "3.0.1": [
     {
       title: "Procalcitonina (PCT)",
-      body: "El bloque de Estudios Especiales se procesa: la procalcitonina aparece en QS junto a PCR y se marca cuando excede el límite de adulto (por defecto 0.05 ng/mL). Disponible también como serie en Tendencias."
+      body: "El bloque de Estudios Especiales se procesa: la procalcitonina aparece en QS junto a PCR y se marca cuando excede el l\xEDmite de adulto (por defecto 0.05 ng/mL). Disponible tambi\xE9n como serie en Tendencias."
     },
     {
       title: "Listado de Problemas en 8 pt",
-      body: "El texto dinámico del .docx (fecha, número, descripción) ahora sale en 8 pt para que entren más problemas por hoja sin romper el template."
+      body: "El texto din\xE1mico del .docx (fecha, n\xFAmero, descripci\xF3n) ahora sale en 8 pt para que entren m\xE1s problemas por hoja sin romper el template."
     }
   ],
   "3.0.0": [
     {
       title: "Modos Sala / Interconsulta",
-      body: "El expediente cambia según tu rol. En Mi Perfil eliges Sala o Interconsulta. Sala oculta Nota e Indicaciones, expone Estado Actual y Listado de Problemas, y usa Servicio (con default configurable) en lugar de Área. Los datos del paciente se editan en la pestaña <strong>Datos</strong> del expediente."
+      body: "El expediente cambia seg\xFAn tu rol. En Mi Perfil eliges Sala o Interconsulta. Sala oculta Nota e Indicaciones, expone Estado Actual y Listado de Problemas, y usa Servicio (con default configurable) en lugar de \xC1rea. Los datos del paciente se editan en la pesta\xF1a <strong>Datos</strong> del expediente."
     },
     {
       title: "Estado Actual",
-      body: "En Sala, pestaña <strong>Estado Actual</strong>: vitales estructurados, glu, balance I/O, tendencias y confirmación frente a receta hospitalaria; <strong>Copiar</strong> / <strong>Guardar y copiar</strong>. El botón verde del encabezado sigue abriendo la plantilla sin subjetivo."
+      body: "En Sala, pesta\xF1a <strong>Estado Actual</strong>: vitales estructurados, glu, balance I/O, tendencias y confirmaci\xF3n frente a receta hospitalaria; <strong>Copiar</strong> / <strong>Guardar y copiar</strong>. El bot\xF3n verde del encabezado sigue abriendo la plantilla sin subjetivo."
     },
     {
       title: "Listado de Problemas",
-      body: "Pestaña nueva con Activos e Inactivos sin límite, drag-and-drop, fechas por problema y generador .docx con numeración a) b) c) de Word, títulos en negritas y firma editable (médicos por defecto se configuran en Mi Perfil)."
+      body: "Pesta\xF1a nueva con Activos e Inactivos sin l\xEDmite, drag-and-drop, fechas por problema y generador .docx con numeraci\xF3n a) b) c) de Word, t\xEDtulos en negritas y firma editable (m\xE9dicos por defecto se configuran en Mi Perfil)."
     },
     {
-      title: "Anion gap en gasometría",
-      body: "AG (Na − (Cl + HCO3)) se calcula desde Na y Cl de Química Sanguínea o Electrolitos Séricos; si no hay química, no se muestra. Se marca cuando cae fuera de 8–12 mEq/L."
+      title: "Anion gap en gasometr\xEDa",
+      body: "AG (Na \u2212 (Cl + HCO3)) se calcula desde Na y Cl de Qu\xEDmica Sangu\xEDnea o Electrolitos S\xE9ricos; si no hay qu\xEDmica, no se muestra. Se marca cuando cae fuera de 8\u201312 mEq/L."
     },
     {
       title: "Calcio ionizado",
-      body: "El bloque de gases extrae Ca++ ionizado desde Observaciones y lo marca según rango."
+      body: "El bloque de gases extrae Ca++ ionizado desde Observaciones y lo marca seg\xFAn rango."
     },
     {
-      title: "Tutorial más actionable",
-      body: "El tour navega a la zona correcta, resalta el control y espera tu acción antes de avanzar. Dock pequeño y semitransparente en la esquina; clic en la barra colapsada para expandirlo. Aviso preventivo si guardas un paciente sin expediente."
+      title: "Tutorial m\xE1s actionable",
+      body: "El tour navega a la zona correcta, resalta el control y espera tu acci\xF3n antes de avanzar. Dock peque\xF1o y semitransparente en la esquina; clic en la barra colapsada para expandirlo. Aviso preventivo si guardas un paciente sin expediente."
     },
     {
-      title: "Salida rápida ramificada",
+      title: "Salida r\xE1pida ramificada",
       body: "En Sala exporta Listado de Problemas (.docx) si hay datos. En Interconsulta exporta Nota igual que antes."
     }
   ],
   "2.4.1": [
     {
-      title: "Medicamentos (nombre + día) en formato compacto",
-      body: "La salida resumida ahora usa formato corto: medicamento, dosis, vía abreviada, frecuencia abreviada y día de uso (por ejemplo: MEROPENEM 2G IV C/8H DIA 2)."
+      title: "Medicamentos (nombre + d\xEDa) en formato compacto",
+      body: "La salida resumida ahora usa formato corto: medicamento, dosis, v\xEDa abreviada, frecuencia abreviada y d\xEDa de uso (por ejemplo: MEROPENEM 2G IV C/8H DIA 2)."
     },
     {
-      title: "Tendencias: hover del último punto",
-      body: "En la mini-gráfica ampliada ya aparece el tooltip con la fecha y el valor cuando pasas el cursor sobre el último punto de la serie."
+      title: "Tendencias: hover del \xFAltimo punto",
+      body: "En la mini-gr\xE1fica ampliada ya aparece el tooltip con la fecha y el valor cuando pasas el cursor sobre el \xFAltimo punto de la serie."
     }
   ],
   "2.4.0": [
     {
       title: "Sidebar de pacientes renovado",
-      body: "Nueva organización del listado con Pinned/Fijados, archivado de pacientes y reordenamiento por arrastrar y soltar con animación más fluida."
+      body: "Nueva organizaci\xF3n del listado con Pinned/Fijados, archivado de pacientes y reordenamiento por arrastrar y soltar con animaci\xF3n m\xE1s fluida."
     },
     {
-      title: "Interacción y limpieza visual",
-      body: "Mi Perfil se abre tocando R+ en el encabezado. Se simplificaron acciones de cada tarjeta para un layout más limpio y se ajustaron scrollbars translúcidos sin barras horizontales innecesarias en el sidebar."
+      title: "Interacci\xF3n y limpieza visual",
+      body: "Mi Perfil se abre tocando R+ en el encabezado. Se simplificaron acciones de cada tarjeta para un layout m\xE1s limpio y se ajustaron scrollbars transl\xFAcidos sin barras horizontales innecesarias en el sidebar."
     },
     {
       title: "Nuevos parsers de laboratorio",
-      body: "R+ ahora procesa Fisicoquímico de heces y Frotis de sangre periférica para que esos resultados se integren al flujo clínico."
+      body: "R+ ahora procesa Fisicoqu\xEDmico de heces y Frotis de sangre perif\xE9rica para que esos resultados se integren al flujo cl\xEDnico."
     }
   ],
   "2.3.1": [
     {
       title: "Tendencias y cultivos",
-      body: "El panel de tendencias solo incluye analitos de laboratorio convencional (biometría, química, electrolitos, etc.). Los bloques de urocultivo, hemocultivo y similares dejan de aparecer como gráficas; siguen en la pestaña Cultivos del expediente."
+      body: "El panel de tendencias solo incluye analitos de laboratorio convencional (biometr\xEDa, qu\xEDmica, electrolitos, etc.). Los bloques de urocultivo, hemocultivo y similares dejan de aparecer como gr\xE1ficas; siguen en la pesta\xF1a Cultivos del expediente."
     }
   ],
   "2.3.0": [
     {
       title: "Tendencias por tipo de estudio",
-      body: "Las gráficas se agrupan por sección (biometría, química, gases, LCR, etc.) y puedes colapsar cada bloque. El mismo analito no se mezcla entre paneles distintos (por ejemplo hematocrito de biometría frente al de gasometría)."
+      body: "Las gr\xE1ficas se agrupan por secci\xF3n (biometr\xEDa, qu\xEDmica, gases, LCR, etc.) y puedes colapsar cada bloque. El mismo analito no se mezcla entre paneles distintos (por ejemplo hematocrito de biometr\xEDa frente al de gasometr\xEDa)."
     },
     {
-      title: "Catálogo amplio y series ocultas",
-      body: "Más analitos en tendencias; puedes ocultar cada gráfica con el ícono del ojo. Los ocultos aparecen en una barra con chips, «Mostrar todos» y la barra se puede colapsar (se recuerda tu preferencia)."
+      title: "Cat\xE1logo amplio y series ocultas",
+      body: "M\xE1s analitos en tendencias; puedes ocultar cada gr\xE1fica con el \xEDcono del ojo. Los ocultos aparecen en una barra con chips, \xABMostrar todos\xBB y la barra se puede colapsar (se recuerda tu preferencia)."
     },
     {
-      title: "Gasometría",
-      body: "Si el bloque de gases incluye hematocrito, también se extrae para tendencias en esa sección."
+      title: "Gasometr\xEDa",
+      body: "Si el bloque de gases incluye hematocrito, tambi\xE9n se extrae para tendencias en esa secci\xF3n."
     }
   ],
   "2.2.1": [
     {
-      title: "Tutorial y ayuda al día",
-      body: "El recorrido Sala / Interconsulta incluye un paso de <strong>Modo Pase</strong> (resumen de ronda) en ambos flujos; el modal inicial y el tour explican Sincronizar y Consolidar en el historial, la pestaña Cultivos, tendencias y duplicados en Ajustes → Laboratorio. El mini-tour de Laboratorio incluye un paso sobre el historial."
+      title: "Tutorial y ayuda al d\xEDa",
+      body: "El recorrido Sala / Interconsulta incluye un paso de <strong>Modo Pase</strong> (resumen de ronda) en ambos flujos; el modal inicial y el tour explican Sincronizar y Consolidar en el historial, la pesta\xF1a Cultivos, tendencias y duplicados en Ajustes \u2192 Laboratorio. El mini-tour de Laboratorio incluye un paso sobre el historial."
     },
     {
-      title: "Consolidar, más claro",
-      body: "El mensaje de confirmación y el tooltip del botón Consolidar describen en lenguaje sencillo cuándo se fusionan envíos del mismo día (solo laboratorio o solo cultivos) y qué pasa con los conjuntos mixtos."
+      title: "Consolidar, m\xE1s claro",
+      body: "El mensaje de confirmaci\xF3n y el tooltip del bot\xF3n Consolidar describen en lenguaje sencillo cu\xE1ndo se fusionan env\xEDos del mismo d\xEDa (solo laboratorio o solo cultivos) y qu\xE9 pasa con los conjuntos mixtos."
     }
   ],
   "2.2.0": [
     {
-      title: "Pestaña Cultivos en el expediente",
-      body: "Tabla con hemocultivo, urocultivo, catéter, Gram y fungicultivo: agrupada por tipo y ordenada del más reciente al más antiguo; arriba un resumen de cultivos negativos."
+      title: "Pesta\xF1a Cultivos en el expediente",
+      body: "Tabla con hemocultivo, urocultivo, cat\xE9ter, Gram y fungicultivo: agrupada por tipo y ordenada del m\xE1s reciente al m\xE1s antiguo; arriba un resumen de cultivos negativos."
     },
     {
       title: "Historial y tendencias",
-      body: "Consolidar estudios del mismo día (solo labs o solo cultivos), mejor clasificación de bloques de cultivo, tendencias sin puntos duplicados y fechas al copiar labs."
+      body: "Consolidar estudios del mismo d\xEDa (solo labs o solo cultivos), mejor clasificaci\xF3n de bloques de cultivo, tendencias sin puntos duplicados y fechas al copiar labs."
     }
   ],
   "2.1.2": [
     {
       title: "Duplicados en historial de labs",
-      body: "Sincronizar desde Laboratorio o revisar todos los pacientes en Ajustes → Laboratorio; se quitan entradas repetidas y se mantiene la copia más antigua."
+      body: "Sincronizar desde Laboratorio o revisar todos los pacientes en Ajustes \u2192 Laboratorio; se quitan entradas repetidas y se mantiene la copia m\xE1s antigua."
     },
     {
       title: "Expediente al pegar el reporte",
-      body: "Si el texto trae un registro que coincide con otro paciente, R+ cambia a ese paciente. Si el registro no está en la lista, no se guarda el lab en el historial del activo por error."
+      body: "Si el texto trae un registro que coincide con otro paciente, R+ cambia a ese paciente. Si el registro no est\xE1 en la lista, no se guarda el lab en el historial del activo por error."
     }
   ],
   "2.1.1": [
@@ -34133,8 +34231,8 @@ var RELEASE_NOTES_HIGHLIGHTS = {
       body: "Tipo de cultivo y muestra en el resumen; marcas de resistencia (BLEE, carbapenemasas, etc.); antibiograma compacto solo con R, I y ESBL."
     },
     {
-      title: "Citoquímico de líquidos",
-      body: "Se procesa el bloque de líquidos corporales (Liq:) sin mezclar esos valores con la química de suero."
+      title: "Citoqu\xEDmico de l\xEDquidos",
+      body: "Se procesa el bloque de l\xEDquidos corporales (Liq:) sin mezclar esos valores con la qu\xEDmica de suero."
     },
     {
       title: "Barra lateral",
@@ -34143,22 +34241,22 @@ var RELEASE_NOTES_HIGHLIGHTS = {
   ],
   "2.0.1": [
     {
-      title: "Modal de actualización",
-      body: "Las notas de la nueva versión se muestran como texto legible dentro de la app, sin etiquetas HTML visibles."
+      title: "Modal de actualizaci\xF3n",
+      body: "Las notas de la nueva versi\xF3n se muestran como texto legible dentro de la app, sin etiquetas HTML visibles."
     }
   ],
   "2.0.0": [
     {
       title: "Medicamentos y plantilla SOAP",
-      body: "Nueva pestaña Medicamentos: importa la receta en TSV, copia desde SOME, vuelca a tratamiento o a la plantilla SOAP. Catálogo de clasificación exportable e importable desde Ajustes."
+      body: "Nueva pesta\xF1a Medicamentos: importa la receta en TSV, copia desde SOME, vuelca a tratamiento o a la plantilla SOAP. Cat\xE1logo de clasificaci\xF3n exportable e importable desde Ajustes."
     },
     {
-      title: "Ajustes y recuperación de datos",
-      body: "Panel en secciones plegables, centro de ayuda arriba, scroll corregido. Deshacer usa copia en memoria fiable; respaldo automático antes de importar todo, restaurable desde Respaldos."
+      title: "Ajustes y recuperaci\xF3n de datos",
+      body: "Panel en secciones plegables, centro de ayuda arriba, scroll corregido. Deshacer usa copia en memoria fiable; respaldo autom\xE1tico antes de importar todo, restaurable desde Respaldos."
     },
     {
       title: "Laboratorio y tutorial",
-      body: "Mejoras en historial de laboratorio y recorridos Sala e Interconsulta, con guías más claras en el centro de ayuda."
+      body: "Mejoras en historial de laboratorio y recorridos Sala e Interconsulta, con gu\xEDas m\xE1s claras en el centro de ayuda."
     }
   ]
 };
@@ -34186,7 +34284,7 @@ function formatCuratedReleaseNotesPlain(version) {
   return notes2.map(function(n) {
     var title = n.title ? String(n.title).trim() : "";
     var body = stripHtmlFromReleaseBody(n.body || "");
-    if (title && body) return title + " — " + body;
+    if (title && body) return title + " \u2014 " + body;
     return title || body;
   }).filter(Boolean).join("\n\n");
 }
@@ -34250,7 +34348,7 @@ function showReleaseNotesModal(version) {
       var strong = document.createElement("strong");
       strong.textContent = n.title;
       li.appendChild(strong);
-      li.appendChild(document.createTextNode(" — "));
+      li.appendChild(document.createTextNode(" \u2014 "));
       var span = document.createElement("span");
       span.innerHTML = releaseNoteBodyHtml(n.body);
       li.appendChild(span);
@@ -34283,38 +34381,38 @@ var miniTourSteps = null;
 var miniTourIdx = 0;
 var SETTINGS_MINI_TOUR_STEPS = [
   {
-    badge: "Ajustes · panel",
-    body: "Abrimos el panel de <strong>Ajustes</strong> (icono ⚙ arriba a la derecha). Desde aquí defines la <strong>carpeta de documentos</strong> y el <strong>formato de Salida rápida</strong> (docx / html / txt) para el paciente activo.",
+    badge: "Ajustes \xB7 panel",
+    body: "Abrimos el panel de <strong>Ajustes</strong> (icono \u2699 arriba a la derecha). Desde aqu\xED defines la <strong>carpeta de documentos</strong> y el <strong>formato de Salida r\xE1pida</strong> (docx / html / txt) para el paciente activo.",
     before: function() {
       ensureSettingsDropdownOpen();
     }
   },
   {
-    badge: "Ajustes · respaldo",
-    body: "<strong>Copias de seguridad</strong>: exporta todo, solo al paciente activo, un rango de fechas, o activa la <strong>copia automática</strong> (hasta 14 snapshots locales rotativos).",
-    before: function() {
-      ensureSettingsDropdownOpen();
-      expandSettingsAccordionBackupSync();
-    }
-  },
-  {
-    badge: "Ajustes · sync",
-    body: "Si usas R+ en más de un equipo, el <strong>Paquete sync</strong> intercambia JSON cifrados con passphrase y combina cambios sin pisar lo que ya tenías.",
+    badge: "Ajustes \xB7 respaldo",
+    body: "<strong>Copias de seguridad</strong>: exporta todo, solo al paciente activo, un rango de fechas, o activa la <strong>copia autom\xE1tica</strong> (hasta 14 snapshots locales rotativos).",
     before: function() {
       ensureSettingsDropdownOpen();
       expandSettingsAccordionBackupSync();
     }
   },
   {
-    badge: "Ajustes · datos",
-    body: "En <strong>Datos en esta computadora</strong> puedes abrir la carpeta del perfil donde Electron guarda pacientes y notas. No compartas esa carpeta si contiene información sensible.",
+    badge: "Ajustes \xB7 sync",
+    body: "Si usas R+ en m\xE1s de un equipo, el <strong>Paquete sync</strong> intercambia JSON cifrados con passphrase y combina cambios sin pisar lo que ya ten\xEDas.",
+    before: function() {
+      ensureSettingsDropdownOpen();
+      expandSettingsAccordionBackupSync();
+    }
+  },
+  {
+    badge: "Ajustes \xB7 datos",
+    body: "En <strong>Datos en esta computadora</strong> puedes abrir la carpeta del perfil donde Electron guarda pacientes y notas. No compartas esa carpeta si contiene informaci\xF3n sensible.",
     before: function() {
       ensureSettingsDropdownOpen();
     }
   },
   {
-    badge: "Ajustes · aplicación",
-    body: "Arriba del panel está el acceso directo al <strong>centro de ayuda</strong>. En <strong>Aplicación</strong> (sección inferior) ves la versión y puedes <strong>buscar actualizaciones</strong>.",
+    badge: "Ajustes \xB7 aplicaci\xF3n",
+    body: "Arriba del panel est\xE1 el acceso directo al <strong>centro de ayuda</strong>. En <strong>Aplicaci\xF3n</strong> (secci\xF3n inferior) ves la versi\xF3n y puedes <strong>buscar actualizaciones</strong>.",
     before: function() {
       ensureSettingsDropdownOpen();
     }
@@ -34322,44 +34420,44 @@ var SETTINGS_MINI_TOUR_STEPS = [
 ];
 var LAB_MINI_TOUR_STEPS = [
   {
-    badge: "Laboratorio · pegar",
-    body: "Estás en la pestaña <strong>Laboratorio</strong>. Pega el reporte del laboratorio en el cuadro de texto. R+ reconoce biometría, química, electrolitos, gasometría, pruebas hepáticas y más.",
+    badge: "Laboratorio \xB7 pegar",
+    body: "Est\xE1s en la pesta\xF1a <strong>Laboratorio</strong>. Pega el reporte del laboratorio en el cuadro de texto. R+ reconoce biometr\xEDa, qu\xEDmica, electrolitos, gasometr\xEDa, pruebas hep\xE1ticas y m\xE1s.",
     before: function() {
       rt21.switchAppTab("lab");
     }
   },
   {
-    badge: "Laboratorio · procesar",
-    body: "Pulsa <strong>Procesar</strong>: R+ genera diagramas automáticos (Gamble, BH, Química, Coagulación…) y una tabla de resultados con los valores alterados resaltados en rojo.",
+    badge: "Laboratorio \xB7 procesar",
+    body: "Pulsa <strong>Procesar</strong>: R+ genera diagramas autom\xE1ticos (Gamble, BH, Qu\xEDmica, Coagulaci\xF3n\u2026) y una tabla de resultados con los valores alterados resaltados en rojo.",
     before: function() {
       rt21.switchAppTab("lab");
     }
   },
   {
-    badge: "Laboratorio · copiar",
-    body: "Tras procesar, usa el botón flotante <strong>Copiar</strong> o el de cada diagrama. Con paciente activo, los resultados quedan en historial y en el expediente.",
+    badge: "Laboratorio \xB7 copiar",
+    body: "Tras procesar, usa el bot\xF3n flotante <strong>Copiar</strong> o el de cada diagrama. Con paciente activo, los resultados quedan en historial y en el expediente.",
     before: function() {
       rt21.switchAppTab("lab");
     },
     dockLeft: true
   },
   {
-    badge: "Laboratorio · tendencias",
-    body: "Cada laboratorio procesado con paciente activo se guarda con su fecha. Con dos o más labs aparecen mini-gráficas en <strong>Expediente → Tendencias</strong>.",
+    badge: "Laboratorio \xB7 tendencias",
+    body: "Cada laboratorio procesado con paciente activo se guarda con su fecha. Con dos o m\xE1s labs aparecen mini-gr\xE1ficas en <strong>Expediente \u2192 Tendencias</strong>.",
     before: function() {
       rt21.switchAppTab("lab");
     }
   },
   {
-    badge: "Laboratorio · historial",
-    body: "En la tarjeta <strong>Historial de laboratorio</strong>, <strong>Sincronizar</strong> abre el checklist para eliminar duplicados (misma fecha/hora y mismos valores). <strong>Consolidar</strong> fusiona conjuntos del mismo día si son homogéneos (solo labs o solo cultivos). Así las tendencias y la nota no arrastran repeticiones.",
+    badge: "Laboratorio \xB7 historial",
+    body: "En la tarjeta <strong>Historial de laboratorio</strong>, <strong>Sincronizar</strong> abre el checklist para eliminar duplicados (misma fecha/hora y mismos valores). <strong>Consolidar</strong> fusiona conjuntos del mismo d\xEDa si son homog\xE9neos (solo labs o solo cultivos). As\xED las tendencias y la nota no arrastran repeticiones.",
     before: function() {
       rt21.switchAppTab("lab");
     }
   },
   {
-    badge: "Evolución · SOAP y medicamentos",
-    body: "En <strong>Expediente → Notas</strong> usa la <strong>plantilla SOAP</strong> para párrafos estructurados. La pestaña <strong>Medicamentos</strong> importa la receta del hospital y puede mandar dosis a SOAP o al tratamiento.",
+    badge: "Evoluci\xF3n \xB7 SOAP y medicamentos",
+    body: "En <strong>Expediente \u2192 Notas</strong> usa la <strong>plantilla SOAP</strong> para p\xE1rrafos estructurados. La pesta\xF1a <strong>Medicamentos</strong> importa la receta del hospital y puede mandar dosis a SOAP o al tratamiento.",
     before: function() {
       rt21.switchAppTab("nota");
     }
@@ -34403,7 +34501,7 @@ function renderMiniTourStep() {
   var nextBtn = document.getElementById("tour-btn-next");
   var skipBtn = document.querySelector("#tour-dock .btn-tour-skip");
   if (badge) {
-    badge.textContent = step.badge + " · " + (miniTourIdx + 1) + " / " + miniTourSteps.length;
+    badge.textContent = step.badge + " \xB7 " + (miniTourIdx + 1) + " / " + miniTourSteps.length;
   }
   if (body) body.innerHTML = step.body;
   if (nextBtn) {
@@ -34524,7 +34622,7 @@ function registerTendenciasRuntime(partial) {
         });
         return;
       }
-      rt22.showToast("Integración disponible solo en la app de escritorio", "warn");
+      rt22.showToast("Integraci\xF3n disponible solo en la app de escritorio", "warn");
     }
   });
 }
@@ -34571,9 +34669,10 @@ function patchTendCardsFromIndex(seriesIndex, seriesAvail) {
     if (!card) return false;
     var valEl = card.querySelector(".tend-param-value");
     if (valEl) {
-      valEl.textContent = idx.latest != null ? String(idx.latest) : "—";
+      valEl.textContent = idx.latest != null ? String(idx.latest) : "\u2014";
       valEl.classList.toggle("tend-abnormal", !!idx.isAbnormal);
     }
+    card.setAttribute("data-abnormal", idx.isAbnormal ? "1" : "0");
     patched += 1;
   }
   return patched > 0;
@@ -34584,27 +34683,18 @@ function destroySparkChartEntry(ck) {
   if (typeof chart.destroy === "function") chart.destroy();
   delete sparkCharts[ck];
 }
-function sparkLineColor(job, history) {
-  var sk2 = job.sk2;
-  var fk2 = job.fk2;
-  var latestSetSpark = job.setsDesc2.length ? job.setsDesc2[0] : null;
-  var latestSpark = latestSetSpark ? getSetTrendValueForSeries(latestSetSpark, sk2, fk2) : null;
-  var refSpark = tendRefForSeries(history, sk2, fk2, latestSetSpark);
-  var isAbSpark = refSpark && latestSpark != null && (latestSpark < refSpark[0] || latestSpark > refSpark[1]);
-  return isAbSpark ? "#f87171" : "rgba(52,211,153,0.95)";
-}
 function updateSparkChartsFromJobs(sparkJobs, chartAnim) {
-  void chartAnim;
   for (var i = 0; i < sparkJobs.length; i += 1) {
     var job = sparkJobs[i];
     var ck = trendSparkChartKey(job.sk2, job.fk2);
-    var existing = sparkCharts[ck];
-    var color = sparkLineColor(job, null);
-    if (existing && typeof existing.update === "function") {
-      existing.update(job.values2, color);
-      continue;
+    var chart = sparkCharts[ck];
+    if (chart) {
+      chart.data.labels = job.labels2;
+      chart.data.datasets[0].data = job.values2;
+      chart.update(chartAnim === false ? "none" : void 0);
+    } else {
+      mountOneTrendSparkChart(job, null, chartAnim);
     }
-    mountOneTrendSparkChart(job, null, false);
   }
 }
 function buildSparkJobsFromIndex(seriesAvail, seriesIndex, chartAnim) {
@@ -34629,14 +34719,14 @@ function buildSparkJobsFromIndex(seriesAvail, seriesIndex, chartAnim) {
     });
   }
   var jobIndex = 0;
-  var SPARK_BATCH = 8;
+  var SPARK_BATCH = 6;
   function runSparkBatch() {
     var end = Math.min(jobIndex + SPARK_BATCH, sparkJobs.length);
     for (; jobIndex < end; jobIndex += 1) {
       mountOneTrendSparkChart(sparkJobs[jobIndex], null, chartAnim);
     }
     if (jobIndex < sparkJobs.length) {
-      scheduleIdle(runSparkBatch, 20);
+      requestAnimationFrame(runSparkBatch);
       return;
     }
     mountTendCardSortables();
@@ -34652,19 +34742,19 @@ function buildSparkJobsFromIndex(seriesAvail, seriesIndex, chartAnim) {
 var TEND_UNITS = {
   Hb: "g/dL",
   Hto: "%",
-  Leu: "K/μL",
-  Plt: "K/μL",
+  Leu: "K/\u03BCL",
+  Plt: "K/\u03BCL",
   VCM: "fL",
   HCM: "pg",
-  RBC: "M/μL",
+  RBC: "M/\u03BCL",
   CHCM: "g/dL",
   RDW: "%",
   MPV: "fL",
-  Neu: "K/μL",
-  Eos: "K/μL",
-  Lin: "K/μL",
-  Mono: "K/μL",
-  Baso: "K/μL",
+  Neu: "K/\u03BCL",
+  Eos: "K/\u03BCL",
+  Lin: "K/\u03BCL",
+  Mono: "K/\u03BCL",
+  Baso: "K/\u03BCL",
   NeuPct: "%",
   LinPct: "%",
   MonoPct: "%",
@@ -34684,7 +34774,7 @@ var TEND_UNITS = {
   DD: "ng/mL",
   Glu: "mg/dL",
   Cr: "mg/dL",
-  eTFG: "mL/min/1.73m²",
+  eTFG: "mL/min/1.73m\xB2",
   BUN: "mg/dL",
   PCR: "mg/dL",
   AU: "mg/dL",
@@ -34801,18 +34891,18 @@ var TEND_REF_GASES = {
   iCa: [1.12, 1.32]
 };
 var TEND_SECTION_LABELS = {
-  BH: "Biometría hemática",
-  QS: "Química sanguínea",
-  ESC: "Electrolitos séricos",
-  PFHs: "Función hepática",
-  GASES: "Gasometría",
-  LCR: "LCR (citoquímico)",
-  Liq: "Líquidos corporales",
+  BH: "Biometr\xEDa hem\xE1tica",
+  QS: "Qu\xEDmica sangu\xEDnea",
+  ESC: "Electrolitos s\xE9ricos",
+  PFHs: "Funci\xF3n hep\xE1tica",
+  GASES: "Gasometr\xEDa",
+  LCR: "LCR (citoqu\xEDmico)",
+  Liq: "L\xEDquidos corporales",
   Prot12h: "Proteinuria 12 h",
   Prot24h: "Proteinuria 24 h",
   PIE: "Prueba de embarazo",
   EGO: "EGO",
-  CUANTORINA: "Cuantificación urinaria",
+  CUANTORINA: "Cuantificaci\xF3n urinaria",
   PltCit: "Plaquetas (citrato)",
   FROTIS: "Frotis de sangre"
 };
@@ -34841,15 +34931,15 @@ var TEND_SERIES_CATALOG = [
   { sectionKey: "BH", fieldKey: "CHCM", cardTitle: "CHCM", hiddenByDefault: true },
   { sectionKey: "BH", fieldKey: "RDW", cardTitle: "RDW", hiddenByDefault: true },
   { sectionKey: "BH", fieldKey: "Leu", cardTitle: "Leucocitos" },
-  { sectionKey: "BH", fieldKey: "Neu", cardTitle: "Neutrófilos" },
+  { sectionKey: "BH", fieldKey: "Neu", cardTitle: "Neutr\xF3filos" },
   { sectionKey: "BH", fieldKey: "NeuPct", cardTitle: bhTrendDisplayTitle("NeuPct") },
   { sectionKey: "BH", fieldKey: "Lin", cardTitle: "Linfocitos", hiddenByDefault: true },
   { sectionKey: "BH", fieldKey: "LinPct", cardTitle: bhTrendDisplayTitle("LinPct") },
   { sectionKey: "BH", fieldKey: "Mono", cardTitle: "Monocitos", hiddenByDefault: true },
   { sectionKey: "BH", fieldKey: "MonoPct", cardTitle: bhTrendDisplayTitle("MonoPct") },
-  { sectionKey: "BH", fieldKey: "Eos", cardTitle: "Eosinófilos" },
+  { sectionKey: "BH", fieldKey: "Eos", cardTitle: "Eosin\xF3filos" },
   { sectionKey: "BH", fieldKey: "EosPct", cardTitle: bhTrendDisplayTitle("EosPct") },
-  { sectionKey: "BH", fieldKey: "Baso", cardTitle: "Basófilos", hiddenByDefault: true },
+  { sectionKey: "BH", fieldKey: "Baso", cardTitle: "Bas\xF3filos", hiddenByDefault: true },
   { sectionKey: "BH", fieldKey: "BasoPct", cardTitle: bhTrendDisplayTitle("BasoPct") },
   { sectionKey: "BH", fieldKey: "Plt", cardTitle: "Plaquetas" },
   { sectionKey: "BH", fieldKey: "MPV", cardTitle: "VPM", hiddenByDefault: true },
@@ -34858,8 +34948,8 @@ var TEND_SERIES_CATALOG = [
   { sectionKey: "BH", fieldKey: "TP", cardTitle: "TP", hiddenByDefault: true },
   { sectionKey: "BH", fieldKey: "TTP", cardTitle: "TTP", hiddenByDefault: true },
   { sectionKey: "BH", fieldKey: "INR", cardTitle: "INR", hiddenByDefault: true },
-  { sectionKey: "BH", fieldKey: "Fib", cardTitle: "Fibrinógeno", hiddenByDefault: true },
-  { sectionKey: "BH", fieldKey: "DD", cardTitle: "Dímero D", hiddenByDefault: true },
+  { sectionKey: "BH", fieldKey: "Fib", cardTitle: "Fibrin\xF3geno", hiddenByDefault: true },
+  { sectionKey: "BH", fieldKey: "DD", cardTitle: "D\xEDmero D", hiddenByDefault: true },
   { sectionKey: "BH", fieldKey: "Bandas", cardTitle: bhTrendDisplayTitle("Bandas") },
   { sectionKey: "BH", fieldKey: "Mielo", cardTitle: bhTrendDisplayTitle("Mielo") },
   { sectionKey: "BH", fieldKey: "Metamielo", cardTitle: bhTrendDisplayTitle("Metamielo") },
@@ -34870,20 +34960,20 @@ var TEND_SERIES_CATALOG = [
   { sectionKey: "QS", fieldKey: "BUN", cardTitle: "BUN" },
   { sectionKey: "QS", fieldKey: "Cr", cardTitle: "Creatinina" },
   { sectionKey: "QS", fieldKey: "eTFG", cardTitle: "eTFG (CKD-EPI 2021)" },
-  { sectionKey: "QS", fieldKey: "AU", cardTitle: "Ácido úrico" },
+  { sectionKey: "QS", fieldKey: "AU", cardTitle: "\xC1cido \xFArico" },
   { sectionKey: "QS", fieldKey: "PCR", cardTitle: "PCR" },
   { sectionKey: "QS", fieldKey: "PCT", cardTitle: "Procalcitonina" },
   { sectionKey: "QS", fieldKey: "COL", cardTitle: "Colesterol" },
-  { sectionKey: "QS", fieldKey: "TGL", cardTitle: "Triglicéridos" },
+  { sectionKey: "QS", fieldKey: "TGL", cardTitle: "Triglic\xE9ridos" },
   { sectionKey: "QS", fieldKey: "VSG", cardTitle: "VSG" },
   { sectionKey: "QS", fieldKey: "CPK", cardTitle: "CPK" },
   { sectionKey: "ESC", fieldKey: "Na", cardTitle: "Na" },
   { sectionKey: "ESC", fieldKey: "K", cardTitle: "K" },
   { sectionKey: "ESC", fieldKey: "Cl", cardTitle: "Cl" },
   { sectionKey: "ESC", fieldKey: "Ca", cardTitle: "Ca" },
-  { sectionKey: "ESC", fieldKey: "F", cardTitle: "Fósforo" },
+  { sectionKey: "ESC", fieldKey: "F", cardTitle: "F\xF3sforo" },
   { sectionKey: "ESC", fieldKey: "Mg", cardTitle: "Mg" },
-  { sectionKey: "PFHs", fieldKey: "Alb", cardTitle: "Albúmina" },
+  { sectionKey: "PFHs", fieldKey: "Alb", cardTitle: "Alb\xFAmina" },
   { sectionKey: "PFHs", fieldKey: "AST", cardTitle: "AST" },
   { sectionKey: "PFHs", fieldKey: "ALT", cardTitle: "ALT" },
   { sectionKey: "PFHs", fieldKey: "FA", cardTitle: "FA" },
@@ -34893,28 +34983,30 @@ var TEND_SERIES_CATALOG = [
   { sectionKey: "PFHs", fieldKey: "LDH", cardTitle: "LDH" },
   { sectionKey: "PFHs", fieldKey: "Amil", cardTitle: "Amilasa" },
   { sectionKey: "GASES", fieldKey: "pH", cardTitle: "pH (gas)" },
-  { sectionKey: "GASES", fieldKey: "pCO2", cardTitle: "pCO₂ (gas)" },
-  { sectionKey: "GASES", fieldKey: "pO2", cardTitle: "pO₂ (gas)" },
+  { sectionKey: "GASES", fieldKey: "pCO2", cardTitle: "pCO\u2082 (gas)" },
+  { sectionKey: "GASES", fieldKey: "pO2", cardTitle: "pO\u2082 (gas)" },
   { sectionKey: "GASES", fieldKey: "Na", cardTitle: "Na (gas)" },
   { sectionKey: "GASES", fieldKey: "K", cardTitle: "K (gas)" },
   { sectionKey: "GASES", fieldKey: "GLU", cardTitle: "Glu (gas)" },
   { sectionKey: "GASES", fieldKey: "Lactato", cardTitle: "Lactato (gas)" },
-  { sectionKey: "GASES", fieldKey: "Bica", cardTitle: "HCO₃⁻ (gas)" },
+  { sectionKey: "GASES", fieldKey: "Bica", cardTitle: "HCO\u2083\u207B (gas)" },
   { sectionKey: "GASES", fieldKey: "Hto", cardTitle: "Hto (gas)" },
-  { sectionKey: "GASES", fieldKey: "iCa", cardTitle: "Ca²⁺ ionizado (gas)" },
+  { sectionKey: "GASES", fieldKey: "iCa", cardTitle: "Ca\xB2\u207A ionizado (gas)" },
   { sectionKey: "LCR", fieldKey: "pH", cardTitle: "pH (LCR)" },
   { sectionKey: "LCR", fieldKey: "Leu", cardTitle: "Leucocitos (LCR)" },
   { sectionKey: "LCR", fieldKey: "Glu", cardTitle: "Glucosa (LCR)" },
-  { sectionKey: "LCR", fieldKey: "Prot", cardTitle: "Proteínas (LCR)" },
+  { sectionKey: "LCR", fieldKey: "Prot", cardTitle: "Prote\xEDnas (LCR)" },
   { sectionKey: "LCR", fieldKey: "Cl", cardTitle: "Cl (LCR)" },
   { sectionKey: "Liq", fieldKey: "Dens", cardTitle: "Densidad (liq.)" },
   { sectionKey: "Liq", fieldKey: "pH", cardTitle: "pH (liq.)" },
   { sectionKey: "Liq", fieldKey: "Glu", cardTitle: "Glucosa (liq.)" },
-  { sectionKey: "Liq", fieldKey: "Prot", cardTitle: "Proteínas (liq.)" },
+  { sectionKey: "Liq", fieldKey: "Prot", cardTitle: "Prote\xEDnas (liq.)" },
   { sectionKey: "Liq", fieldKey: "LDH", cardTitle: "LDH (liq.)" },
   { sectionKey: "Liq", fieldKey: "Leu", cardTitle: "Leucocitos (liq.)" }
 ];
 var TEND_SECTION_EXPANDED_LS = "rpc-tend-sections-expanded";
+var TEND_HIDDEN_SERIES_LS = "rpc-tend-hidden-series";
+var TEND_ABNORMAL_ONLY_LS = "rpc-tend-abnormal-only";
 var LAB_OUTPUT_PREFS_KEY = "rpc-lab-output-prefs-v1";
 function getLabOutputPrefs() {
   try {
@@ -35070,7 +35162,7 @@ function applyTendSectionExpandedState(sectionEl, sectionKey, expanded) {
   var body = sectionEl.querySelector(".tend-section-body");
   var chevron = sectionEl.querySelector(".tend-section-chevron");
   if (btn) btn.setAttribute("aria-expanded", expanded ? "true" : "false");
-  if (chevron) chevron.textContent = expanded ? "▼" : "▶";
+  if (chevron) chevron.textContent = expanded ? "\u25BC" : "\u25B6";
   if (body) body.classList.toggle("tend-section-body--collapsed", !expanded);
   if (!expanded) {
     destroySparkChartsForSection(sectionKey);
@@ -35113,26 +35205,6 @@ function toggleTendSection(ev, sectionKey) {
   }
   renderTendencias();
 }
-function syncTendAbnormalEmptyState(container, abnormalOnly) {
-  if (!container) return;
-  var existing = container.querySelector(".tend-abnormal-empty");
-  if (!abnormalOnly) {
-    if (existing) existing.remove();
-    return;
-  }
-  var anyVisible = container.querySelector('.tend-card[data-abnormal="1"]');
-  if (anyVisible) {
-    if (existing) existing.remove();
-    return;
-  }
-  if (existing) return;
-  var msg = document.createElement("p");
-  msg.className = "tend-empty tend-abnormal-empty";
-  msg.innerHTML = "Ningún analito está fuera de rango de referencia. Pulsa <strong>Ver todas</strong> para volver a la vista completa.";
-  var firstSection = container.querySelector(".tend-section");
-  if (firstSection) firstSection.parentElement.insertBefore(msg, firstSection);
-  else container.appendChild(msg);
-}
 function tendCardLabelParts(sectionKey, fieldKey) {
   var spec = tendFindSeriesSpec(sectionKey, fieldKey);
   var title = spec && spec.cardTitle ? String(spec.cardTitle) : String(fieldKey);
@@ -35155,7 +35227,7 @@ function tendUnitForSeries(sectionKey, fieldKey) {
   }
   if (sectionKey === "LCR") {
     if (fieldKey === "pH") return "";
-    if (fieldKey === "Leu") return "/μL";
+    if (fieldKey === "Leu") return "/\u03BCL";
     if (fieldKey === "Glu") return TEND_UNITS.Glu || "";
     if (fieldKey === "Prot") return "mg/dL";
     if (fieldKey === "Cl") return TEND_UNITS.Cl || "";
@@ -35166,7 +35238,7 @@ function tendUnitForSeries(sectionKey, fieldKey) {
     if (fieldKey === "Glu") return TEND_UNITS.Glu || "";
     if (fieldKey === "Prot") return "mg/dL";
     if (fieldKey === "LDH") return TEND_UNITS.LDH || "";
-    if (fieldKey === "Leu") return "/μL";
+    if (fieldKey === "Leu") return "/\u03BCL";
   }
   return TEND_UNITS[fieldKey] || "";
 }
@@ -35310,7 +35382,7 @@ function tendFindSeriesSpec(sectionKey, fieldKey) {
   return {
     sectionKey,
     fieldKey,
-    cardTitle: fieldKey + " · " + sectionKey
+    cardTitle: fieldKey + " \xB7 " + sectionKey
   };
 }
 function buildMergedTrendSeriesCatalog(history) {
@@ -35341,7 +35413,7 @@ function buildMergedTrendSeriesCatalog(history) {
         out.push({
           sectionKey: sk,
           fieldKey: fk,
-          cardTitle: sk === "BH" ? bhTrendDisplayTitle(fk) : fk + " · " + sk,
+          cardTitle: sk === "BH" ? bhTrendDisplayTitle(fk) : fk + " \xB7 " + sk,
           _dynamic: true
         });
       });
@@ -35428,10 +35500,10 @@ function closeTendHiddenModal() {
 function buildTendInlineControlsHtml(hiddenCount, opts) {
   opts = opts || {};
   var on = tendAbnormalOnlyRead();
-  var hint = on ? "Solo analitos con último valor fuera del rango de referencia del laboratorio (si hay referencia)." : "Vista completa: todos los analitos con datos suficientes para tendencia.";
+  var hint = on ? "Solo analitos con \xFAltimo valor fuera del rango de referencia del laboratorio (si hay referencia)." : "Vista completa: todos los analitos con datos suficientes para tendencia.";
   var toggleLabel = on ? "Ver todas" : "Solo fuera de rango";
   var ocultosBtn = hiddenCount > 0 ? '<button type="button" class="tend-toolbar-btn tend-ocultos-trigger">Ocultos (' + hiddenCount + ")</button>" : "";
-  var gasoBtn = opts.showGasoExtended ? '<button type="button" class="tend-toolbar-btn tend-gaso-ext-trigger" data-tend-action="gaso-extended">Gasometría extendida</button>' : "";
+  var gasoBtn = opts.showGasoExtended ? '<button type="button" class="tend-toolbar-btn tend-gaso-ext-trigger" data-tend-action="gaso-extended">Gasometr\xEDa extendida</button>' : "";
   return '<div class="tend-inline-controls"><button type="button" class="tend-toolbar-toggle' + (on ? " is-active" : "") + '" aria-pressed="' + (on ? "true" : "false") + '" title="' + esc12(hint) + '">' + esc12(toggleLabel) + "</button>" + ocultosBtn + gasoBtn + '<button type="button" class="tend-toolbar-btn" data-tour="casiopea-trends-send" onclick="openSesionIngresoTrendsSendModal()">Enviar a Neo</button></div>';
 }
 function historyHasGasoForExtended(historyDesc) {
@@ -35440,19 +35512,7 @@ function historyHasGasoForExtended(historyDesc) {
   return getSetTrendValueForSeries(latest, "GASES", "pH") != null;
 }
 function toggleTendAbnormalOnlyFilter() {
-  var on = !tendAbnormalOnlyRead();
-  tendAbnormalOnlyWrite(on);
-  var container = document.getElementById("tendencias-container");
-  if (container && container.querySelector(".tend-grid")) {
-    container.classList.toggle("tend-filter-abnormal-only", on);
-    var toggle = container.querySelector(".tend-toolbar-toggle");
-    if (toggle) {
-      toggle.classList.toggle("is-active", on);
-      toggle.setAttribute("aria-pressed", on ? "true" : "false");
-    }
-    syncTendAbnormalEmptyState(container, on);
-    return;
-  }
+  tendAbnormalOnlyWrite(!tendAbnormalOnlyRead());
   renderTendencias();
 }
 function tendHideSeriesFromCard(ev, sectionKey, fieldKey) {
@@ -35557,7 +35617,7 @@ function tendRefVbarMarkup(ref, latest, delayMs, extraClass, yBounds) {
   if (normH <= 0) return "";
   var stateClass = isAb ? " is-abnormal" : " is-normal";
   var d = delayMs != null ? delayMs : 0;
-  return '<div class="tend-range-vbar' + extraClass + stateClass + '" style="--tend-vbar-delay:' + d + 'ms" title="Rango de referencia (' + low + "–" + high + ") · último " + latest + '"><div class="tend-range-vbar-track"></div><div class="tend-range-vbar-norm" style="bottom:' + normBottom.toFixed(2) + "%;height:" + normH.toFixed(2) + '%"></div><div class="tend-range-vbar-marker" data-target-bottom="' + pos.toFixed(2) + '"></div></div>';
+  return '<div class="tend-range-vbar' + extraClass + stateClass + '" style="--tend-vbar-delay:' + d + 'ms" title="Rango de referencia (' + low + "\u2013" + high + ") \xB7 \xFAltimo " + latest + '"><div class="tend-range-vbar-track"></div><div class="tend-range-vbar-norm" style="bottom:' + normBottom.toFixed(2) + "%;height:" + normH.toFixed(2) + '%"></div><div class="tend-range-vbar-marker" data-target-bottom="' + pos.toFixed(2) + '"></div></div>';
 }
 function tendDetailChartYBounds(chart) {
   if (!chart || !chart.scales || !chart.scales.y) return null;
@@ -35921,7 +35981,7 @@ function renderTendencias(opts) {
     return;
   }
   if (!container.querySelector(".tend-grid, .tend-toolbar, .tend-empty")) {
-    container.innerHTML = '<p class="tend-empty tend-loading">Cargando tendencias…</p>';
+    container.innerHTML = '<p class="tend-empty tend-loading">Cargando tendencias\u2026</p>';
   }
   scheduleAfterPaint(paint);
 }
@@ -35968,16 +36028,18 @@ function renderTendenciasBody(container) {
     seriesAvail.push(sp);
   }
   var seriesAvailFull = seriesAvail.slice();
-  _tendRenderState.seriesAvail = seriesAvailFull;
   var abnormalOnly = tendAbnormalOnlyRead();
-  var seriesAvailVisible = abnormalOnly ? seriesAvailFull.filter(function(sp2) {
-    var idxAb = seriesIndex[tendCatalogSeriesKey(sp2.sectionKey, sp2.fieldKey)];
-    return idxAb && idxAb.isAbnormal;
-  }) : seriesAvailFull;
+  if (abnormalOnly) {
+    seriesAvail = seriesAvail.filter(function(sp2) {
+      var idxAb = seriesIndex[tendCatalogSeriesKey(sp2.sectionKey, sp2.fieldKey)];
+      return idxAb && idxAb.isAbnormal;
+    });
+  }
+  _tendRenderState.seriesAvail = seriesAvail;
   var hiddenChipN = tendHiddenChipDescriptors().length;
   var toolbarOpts = { showGasoExtended: historyHasGasoForExtended(historyDesc) };
   var toolbarHtml = buildTendInlineControlsHtml(hiddenChipN, toolbarOpts);
-  if (!seriesAvailVisible.length) {
+  if (!seriesAvail.length) {
     var anyData = mergedCatalog.some(function(sp2) {
       var idxAny = seriesIndex[tendCatalogSeriesKey(sp2.sectionKey, sp2.fieldKey)];
       return idxAny && idxAny.setsDesc.length >= 2;
@@ -35988,20 +36050,20 @@ function renderTendenciasBody(container) {
       return idxVis && idxVis.setsDesc.length >= 2;
     });
     if (abnormalOnly && seriesAvailFull.length) {
-      container.innerHTML = toolbarHtml + '<p class="tend-empty">Ningún analito está fuera de rango de referencia (o no tiene referencia en el reporte). Pulsa <strong>Ver todas</strong> (tooltip en el botón) para volver a la vista completa.</p>';
+      container.innerHTML = toolbarHtml + '<p class="tend-empty">Ning\xFAn analito est\xE1 fuera de rango de referencia (o no tiene referencia en el reporte). Pulsa <strong>Ver todas</strong> (tooltip en el bot\xF3n) para volver a la vista completa.</p>';
       syncTendHiddenModalIfOpen();
       return;
     }
     if (hiddenAll) {
-      container.innerHTML = toolbarHtml + '<p class="tend-empty">Los analitos con datos están <strong>ocultos</strong>. Pulsa <strong>Ocultos</strong> y restaura con el ojo o <strong>Mostrar todos</strong>.</p>';
+      container.innerHTML = toolbarHtml + '<p class="tend-empty">Los analitos con datos est\xE1n <strong>ocultos</strong>. Pulsa <strong>Ocultos</strong> y restaura con el ojo o <strong>Mostrar todos</strong>.</p>';
     } else {
-      container.innerHTML = toolbarHtml + '<p class="tend-empty">No hay parámetros con suficientes datos para graficar.</p>';
+      container.innerHTML = toolbarHtml + '<p class="tend-empty">No hay par\xE1metros con suficientes datos para graficar.</p>';
     }
     syncTendHiddenModalIfOpen();
     return;
   }
   var bySection = /* @__PURE__ */ Object.create(null);
-  seriesAvailFull.forEach(function(spec2) {
+  seriesAvail.forEach(function(spec2) {
     var k = spec2.sectionKey;
     if (!bySection[k]) bySection[k] = [];
     bySection[k].push(spec2);
@@ -36021,16 +36083,16 @@ function renderTendenciasBody(container) {
     tendPrefsHash(),
     tendExpandedSectionsKey()
   );
-  var nextSeriesKeys = seriesAvailFull.map(function(sp2) {
+  var nextSeriesKeys = seriesAvail.map(function(sp2) {
     return tendCatalogSeriesKey(sp2.sectionKey, sp2.fieldKey);
   });
   var canPatch = _tendRenderState.key === renderKey && _tendRenderState.seriesKeys.length === nextSeriesKeys.length && _tendRenderState.seriesKeys.every(function(k, i) {
     return k === nextSeriesKeys[i];
   }) && container.querySelector(".tend-grid");
-  if (canPatch && patchTendCardsFromIndex(seriesIndex, seriesAvailFull)) {
+  if (canPatch && patchTendCardsFromIndex(seriesIndex, seriesAvail)) {
     var patchJobs = [];
-    for (var pj = 0; pj < seriesAvailFull.length; pj += 1) {
-      var spP = seriesAvailFull[pj];
+    for (var pj = 0; pj < seriesAvail.length; pj += 1) {
+      var spP = seriesAvail[pj];
       var skP = spP.sectionKey;
       var fkP = spP.fieldKey;
       if (!tendSectionIsExpanded(skP)) continue;
@@ -36077,17 +36139,15 @@ function renderTendenciasBody(container) {
       var unitHtml = labelParts.unit ? '<div class="tend-unit">' + esc12(labelParts.unit) + "</div>" : "";
       var seriesKey = tendCatalogSeriesKey(sectionKey, fk);
       cardParts.push(
-        '<div class="tend-card" role="button" tabindex="0" data-series-key="' + esc12(seriesKey) + '" data-abnormal="' + (isAb ? "1" : "0") + '"><div class="tend-card-header"><span class="tend-param-name">' + titleEsc + '</span><span class="tend-param-value' + (isAb ? " tend-abnormal" : "") + '">' + (latest != null ? latest : "—") + "</span></div>" + unitHtml + '<div class="tend-spark-wrap"><div class="tend-spark-canvas-cell">' + (expanded ? '<canvas id="' + domId + '"></canvas>' : '<div class="tend-spark-placeholder" aria-hidden="true"></div>') + "</div></div></div>"
+        '<div class="tend-card" role="button" tabindex="0" data-series-key="' + esc12(seriesKey) + '" data-abnormal="' + (isAb ? "1" : "0") + '"><div class="tend-card-header"><span class="tend-param-name">' + titleEsc + '</span><span class="tend-param-value' + (isAb ? " tend-abnormal" : "") + '">' + (latest != null ? latest : "\u2014") + "</span></div>" + unitHtml + '<div class="tend-spark-wrap"><div class="tend-spark-canvas-cell">' + (expanded ? '<canvas id="' + domId + '"></canvas>' : '<div class="tend-spark-placeholder" aria-hidden="true"></div>') + "</div></div></div>"
       );
     }
     htmlParts.push(
-      '<section class="tend-section" data-section="' + esc12(sectionKey) + '"><div class="tend-section-head"><button type="button" class="tend-section-toggle" aria-expanded="' + (expanded ? "true" : "false") + '"><span class="tend-section-chevron" aria-hidden="true">' + (expanded ? "▼" : "▶") + '</span><span class="tend-section-title">' + esc12(secLabel) + '</span></button><span class="tend-section-toggle-end"><span class="tend-section-count">' + list.length + "</span>" + (list.length > 0 ? '<button type="button" class="tend-section-chart-btn" title="Abrir gráfica y tabla del estudio" aria-label="Gráfica del estudio">' + tendSectionChartSvg() + '<span class="tend-section-chart-label">Gráfica</span></button>' : "") + '</span></div><div class="tend-section-body' + (expanded ? "" : " tend-section-body--collapsed") + '"><div class="tend-grid tend-sort-zone" data-section-key="' + esc12(sectionKey) + '">' + cardParts.join("") + "</div></div></section>"
+      '<section class="tend-section" data-section="' + esc12(sectionKey) + '"><div class="tend-section-head"><button type="button" class="tend-section-toggle" aria-expanded="' + (expanded ? "true" : "false") + '"><span class="tend-section-chevron" aria-hidden="true">' + (expanded ? "\u25BC" : "\u25B6") + '</span><span class="tend-section-title">' + esc12(secLabel) + '</span></button><span class="tend-section-toggle-end"><span class="tend-section-count">' + list.length + "</span>" + (list.length > 0 ? '<button type="button" class="tend-section-chart-btn" title="Abrir gr\xE1fica y tabla del estudio" aria-label="Gr\xE1fica del estudio">' + tendSectionChartSvg() + '<span class="tend-section-chart-label">Gr\xE1fica</span></button>' : "") + '</span></div><div class="tend-section-body' + (expanded ? "" : " tend-section-body--collapsed") + '"><div class="tend-grid tend-sort-zone" data-section-key="' + esc12(sectionKey) + '">' + cardParts.join("") + "</div></div></section>"
     );
   }
   container.innerHTML = htmlParts.join("");
-  container.classList.toggle("tend-filter-abnormal-only", abnormalOnly);
-  syncTendAbnormalEmptyState(container, abnormalOnly);
-  buildSparkJobsFromIndex(seriesAvailFull, seriesIndex, chartAnim);
+  buildSparkJobsFromIndex(seriesAvail, seriesIndex, chartAnim);
 }
 function downsampleTrendChartSeries(labels, values, maxPoints) {
   var slots = maxPoints == null ? TREND_DETAIL_DOWNSAMPLE : maxPoints;
@@ -36105,14 +36165,45 @@ function downsampleTrendChartSeries(labels, values, maxPoints) {
   return { labels: outL, values: outV };
 }
 function mountOneTrendSparkChart(job, history, chartAnim) {
-  void chartAnim;
   var sk2 = job.sk2;
   var fk2 = job.fk2;
   var canvas2 = document.getElementById(trendSparkDomId(sk2, fk2));
-  if (!canvas2) return;
+  if (!canvas2 || typeof Chart === "undefined") return;
   var ck = trendSparkChartKey(sk2, fk2);
-  var lineColor = sparkLineColor(job, history);
-  sparkCharts[ck] = mountTrendSparkCanvas(canvas2, job.values2, lineColor);
+  var latestSetSpark = job.setsDesc2.length ? job.setsDesc2[0] : null;
+  var latestSpark = latestSetSpark ? getSetTrendValueForSeries(latestSetSpark, sk2, fk2) : null;
+  var refSpark = tendRefForSeries(history, sk2, fk2, latestSetSpark);
+  var isAbSpark = refSpark && latestSpark != null && (latestSpark < refSpark[0] || latestSpark > refSpark[1]);
+  var lineColor = isAbSpark ? "#f87171" : "rgba(52,211,153,0.95)";
+  sparkCharts[ck] = new Chart(canvas2, {
+    type: "line",
+    data: {
+      labels: job.labels2,
+      datasets: [
+        {
+          data: job.values2,
+          borderColor: lineColor,
+          borderWidth: 2.25,
+          pointRadius: 2,
+          pointBackgroundColor: lineColor,
+          tension: 0.3,
+          fill: false,
+          clip: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: chartAnim,
+      layout: { padding: { left: 6, right: 6, top: 8, bottom: 6 } },
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      scales: {
+        x: { display: false, grid: { display: false }, offset: true },
+        y: { display: false, grid: { display: false }, grace: "12%" }
+      }
+    }
+  });
 }
 function syncTendHiddenModalIfOpen() {
   var bd = document.getElementById("tend-hidden-modal-backdrop");
@@ -36157,7 +36248,7 @@ function openTendDetail(sectionKey, fieldKey) {
   backdrop.style.display = "flex";
   var canvas = document.getElementById("tend-detail-canvas");
   if (!canvas || typeof Chart === "undefined") {
-    rt22.showToast("Gráfica no disponible (Chart.js no cargó). Recarga la app.", "error");
+    rt22.showToast("Gr\xE1fica no disponible (Chart.js no carg\xF3). Recarga la app.", "error");
     backdrop.style.display = "none";
     return;
   }
@@ -36637,7 +36728,7 @@ function runLabHistoryPostSaveMaintenance() {
   }
   var noise = report.reprocessedSetCount > 0 || report.exactDuplicates.length > 0 || report.sourceDuplicates.length > 0 || report.sameDateTimeConflicts.length > 0;
   if (noise) {
-    console.info("[R+ Laboratorio] Auditoría tras guardado — revisa window.__rpcLabAudit:", report);
+    console.info("[R+ Laboratorio] Auditor\xEDa tras guardado \u2014 revisa window.__rpcLabAudit:", report);
   }
   if (changed && report.patientsReprocessed.length) {
     report.patientsReprocessed.forEach(function(pid) {
@@ -36669,7 +36760,7 @@ function scheduleLabHistoryPostSaveMaintenance() {
         }
       }
     } catch (err) {
-      console.warn("[R+ Laboratorio] Falló mantenimiento post-guardado:", err);
+      console.warn("[R+ Laboratorio] Fall\xF3 mantenimiento post-guardado:", err);
     } finally {
       _labMaintRunning = false;
     }
@@ -36779,7 +36870,7 @@ function resolveQuickOutputAction(opts) {
     if (listadoHasProblems(opts.listado)) return { kind: "listado" };
     return {
       kind: "listado_empty",
-      message: "Agrega un problema al Listado para usar Salida rápida en Sala."
+      message: "Agrega un problema al Listado para usar Salida r\xE1pida en Sala."
     };
   }
   if (opts && opts.activeInner === "indica") return { kind: "indicaciones" };
@@ -36820,6 +36911,19 @@ async function handleOutputDirFallback(opts) {
 }
 
 // public/js/modal-dismiss.mjs
+function isRpcOverlayVisible(el) {
+  if (!el || !el.isConnected) return false;
+  var cs = window.getComputedStyle(el);
+  if (cs.display === "none" || cs.visibility === "hidden") return false;
+  var op = parseFloat(cs.opacity);
+  if (!Number.isNaN(op) && op <= 0) return false;
+  return true;
+}
+function getOverlayZIndex(el) {
+  if (!el || !isRpcOverlayVisible(el)) return -1;
+  var z = parseInt(window.getComputedStyle(el).zIndex, 10);
+  return Number.isNaN(z) ? 0 : z;
+}
 function bindBackdropDismiss(backdropEl, requestClose, panelSelector) {
   if (!backdropEl || backdropEl.dataset.rpcBackdropDismiss === "2") return;
   backdropEl.dataset.rpcBackdropDismiss = "2";
@@ -36832,6 +36936,7 @@ function bindBackdropDismiss(backdropEl, requestClose, panelSelector) {
 }
 function createModalDismissRegistry() {
   var layers = [];
+  var globalWired = false;
   function register(layer) {
     layers.push(layer);
   }
@@ -36856,6 +36961,8 @@ function createModalDismissRegistry() {
     closeTopmost(ev);
   }
   function init() {
+    if (globalWired) return;
+    globalWired = true;
     document.addEventListener("keydown", onKeydown, true);
     layers.forEach(function(layer) {
       if (!layer.backdropEl) return;
@@ -36878,14 +36985,14 @@ function formatBytes(bytes) {
   return `${mb.toFixed(2)} MB`;
 }
 function formatSpeed(bytesPerSecond) {
-  if (!Number.isFinite(bytesPerSecond) || bytesPerSecond <= 0) return "—";
+  if (!Number.isFinite(bytesPerSecond) || bytesPerSecond <= 0) return "\u2014";
   return `${formatBytes(bytesPerSecond)}/s`;
 }
 function formatProgressLine(p) {
   const t2 = formatBytes(p.transferred || 0);
   const tot = formatBytes(p.total || 0);
   const sp = formatSpeed(p.bytesPerSecond);
-  return `Descargando ${t2} / ${tot} · ${sp}`;
+  return `Descargando ${t2} / ${tot} \xB7 ${sp}`;
 }
 
 // public/js/features/platform.mjs
@@ -36932,7 +37039,7 @@ function resetUpdateCheckButtons() {
 }
 function checkForAppUpdates() {
   if (!window.electronAPI || typeof window.electronAPI.checkForUpdates !== "function") {
-    rt23.showToast("Las actualizaciones automáticas solo están en la app de escritorio.", "error");
+    rt23.showToast("Las actualizaciones autom\xE1ticas solo est\xE1n en la app de escritorio.", "error");
     return;
   }
   if (typeof window.electronAPI.setUpdateChannel === "function") {
@@ -36942,7 +37049,7 @@ function checkForAppUpdates() {
     }
   }
   setAsyncButtonLoading(document.getElementById("settings-check-updates-btn"), true, {
-    loadingText: "Buscando…"
+    loadingText: "Buscando\u2026"
   });
   setTimeout(function() {
     try {
@@ -37017,7 +37124,7 @@ function setRpcOffline(offline) {
   syncOfflineButtonStates();
   if (!prev && rpcOffline) {
     try {
-      rt23.showToast("Sin conexión con el servidor local. Generación de documentos desactivada.", "error");
+      rt23.showToast("Sin conexi\xF3n con el servidor local. Generaci\xF3n de documentos desactivada.", "error");
     } catch (_e) {
     }
   } else if (prev && !rpcOffline) {
@@ -37092,11 +37199,11 @@ async function computeSha256Hex(text) {
   return hex;
 }
 async function promptForIdleLockPinSetup(reason) {
-  var label = reason === "change" ? "Ingresa un nuevo PIN de 4 a 8 dígitos para el bloqueo:" : "Elige un PIN de 4 a 8 dígitos para el bloqueo por inactividad:";
+  var label = reason === "change" ? "Ingresa un nuevo PIN de 4 a 8 d\xEDgitos para el bloqueo:" : "Elige un PIN de 4 a 8 d\xEDgitos para el bloqueo por inactividad:";
   var p1 = prompt(label, "");
   if (p1 == null) return { ok: false, cancelled: true };
   if (!isIdleLockPinFormatValid(p1)) {
-    rt23.showToast("PIN inválido (solo 4-8 dígitos).", "error");
+    rt23.showToast("PIN inv\xE1lido (solo 4-8 d\xEDgitos).", "error");
     return { ok: false, cancelled: false };
   }
   var p2 = prompt("Confirma el PIN:", "");
@@ -37151,7 +37258,7 @@ async function changeIdleLockPin() {
     var current = prompt("Ingresa el PIN actual para continuar:", "");
     if (current == null) return;
     if (!isIdleLockPinFormatValid(current)) {
-      rt23.showToast("PIN con formato inválido.", "error");
+      rt23.showToast("PIN con formato inv\xE1lido.", "error");
       addAuditEntry("idle-lock-pin-change", "error", 0, "invalid-format");
       return;
     }
@@ -37170,7 +37277,7 @@ async function changeIdleLockPin() {
   }
   var setup = await promptForIdleLockPinSetup("change");
   if (setup.ok) {
-    rt23.showToast("PIN actualizado ✓", "success");
+    rt23.showToast("PIN actualizado \u2713", "success");
     restartIdleLockTimer();
   }
 }
@@ -37245,7 +37352,7 @@ async function submitIdleLockPin() {
   if (!isIdleLockPinFormatValid(pin)) {
     if (err) {
       err.style.display = "block";
-      err.textContent = "Formato inválido (4-8 dígitos).";
+      err.textContent = "Formato inv\xE1lido (4-8 d\xEDgitos).";
     }
     addAuditEntry("idle-lock-unlock", "error", 0, "invalid-format");
     if (input) {
@@ -37354,7 +37461,7 @@ function collectFullWipeKeys() {
   return keys;
 }
 function wipeCacheConfirmed() {
-  var confirmMsg = "Se eliminarán caché y temporales: respaldo pre-importación, bitácora, auto-respaldos y el recordatorio de tiempo de bloqueo. No se puede deshacer. ¿Continuar?";
+  var confirmMsg = "Se eliminar\xE1n cach\xE9 y temporales: respaldo pre-importaci\xF3n, bit\xE1cora, auto-respaldos y el recordatorio de tiempo de bloqueo. No se puede deshacer. \xBFContinuar?";
   if (!confirm(confirmMsg)) {
     addAuditEntry("data-wipe-cache", "cancelled", 0, "user-cancelled");
     return;
@@ -37382,12 +37489,12 @@ function wipeCacheConfirmed() {
   rt23.showToast("Se eliminaron " + keys.length + " elementos temporales.", "success");
 }
 function wipeAllConfirmed() {
-  var firstOk = confirm("Esto BORRARÁ todos los pacientes, notas, indicaciones, historial de labs, ajustes y PIN de bloqueo de esta computadora. No se puede deshacer. ¿Continuar?");
+  var firstOk = confirm("Esto BORRAR\xC1 todos los pacientes, notas, indicaciones, historial de labs, ajustes y PIN de bloqueo de esta computadora. No se puede deshacer. \xBFContinuar?");
   if (!firstOk) {
     addAuditEntry("data-wipe-full", "cancelled", 0, "first-cancel");
     return;
   }
-  var typed = prompt("Escribe BORRAR en mayúsculas para confirmar el borrado completo:", "");
+  var typed = prompt("Escribe BORRAR en may\xFAsculas para confirmar el borrado completo:", "");
   if (String(typed == null ? "" : typed).trim().toUpperCase() !== "BORRAR") {
     addAuditEntry("data-wipe-full", "cancelled", 0, "confirmation-failed");
     rt23.showToast("Borrado cancelado.", "error");
@@ -37413,7 +37520,7 @@ function wipeAllConfirmed() {
 }
 function openUserDataFolderFromSettings() {
   if (!window.electronAPI || !window.electronAPI.openUserDataFolder) {
-    rt23.showToast("Solo disponible en la aplicación de escritorio.", "error");
+    rt23.showToast("Solo disponible en la aplicaci\xF3n de escritorio.", "error");
     return;
   }
   window.electronAPI.openUserDataFolder().then(function(res) {
@@ -37455,7 +37562,7 @@ function exportAuditLog() {
     exportedAt: (/* @__PURE__ */ new Date()).toISOString(),
     entries: log
   }, "R-plus-bitacora-" + formatDateSlug(/* @__PURE__ */ new Date()) + ".json");
-  rt23.showToast("Bitácora exportada", "success");
+  rt23.showToast("Bit\xE1cora exportada", "success");
 }
 var MED_CATALOG_MERGE_CAP = 400;
 function mergeMedCatalogStored(incoming) {
@@ -37505,7 +37612,7 @@ function exportMedCatalogBundle() {
     "R-plus-catalogo-medicamentos-" + formatDateSlug(/* @__PURE__ */ new Date()) + ".json"
   );
   addAuditEntry("med-catalog-export", "ok", Object.keys(data.accents || {}).length, "soap-export");
-  rt23.showToast("Catálogo exportado", "success");
+  rt23.showToast("Cat\xE1logo exportado", "success");
 }
 function triggerImportMedCatalog() {
   var el = document.getElementById("med-catalog-file-input");
@@ -37526,7 +37633,7 @@ function onMedCatalogFileChosen(ev) {
       var hasAcc = accents && typeof accents === "object";
       var hasSoap = soapTokens && typeof soapTokens === "object";
       if (!hasAcc && !hasSoap) {
-        rt23.showToast("El archivo no es un catálogo válido (faltan accents o soapTokens).", "error");
+        rt23.showToast("El archivo no es un cat\xE1logo v\xE1lido (faltan accents o soapTokens).", "error");
         return;
       }
       var merged = mergeMedCatalogStored({
@@ -37538,9 +37645,9 @@ function onMedCatalogFileChosen(ev) {
       var nAcc = Object.keys(merged.accents || {}).length;
       var nTok = (merged.soapTokens.vasop || []).length + (merged.soapTokens.abx || []).length + (merged.soapTokens.analgesia || []).length + (merged.soapTokens.antihta || []).length;
       addAuditEntry("med-catalog-import", "ok", nTok, "accents:" + nAcc);
-      rt23.showToast("Catálogo importado (fusionado con el tuyo)", "success");
+      rt23.showToast("Cat\xE1logo importado (fusionado con el tuyo)", "success");
     } catch (_err) {
-      rt23.showToast("No se pudo leer el catálogo", "error");
+      rt23.showToast("No se pudo leer el cat\xE1logo", "error");
     }
   };
   reader.readAsText(f);
@@ -37559,20 +37666,20 @@ function syncPreimportBackupUi() {
         has = true;
         var n = (p.data.patients || []).length;
         var when = p.exportedAt ? String(p.exportedAt).slice(0, 19).replace("T", " ") : "";
-        meta = (when ? when + " · " : "") + n + " paciente(s)";
+        meta = (when ? when + " \xB7 " : "") + n + " paciente(s)";
       }
     }
   } catch (_e) {
   }
   wrap.style.display = has ? "block" : "none";
   var el = document.getElementById("settings-preimport-meta");
-  if (el) el.textContent = has ? meta : "—";
+  if (el) el.textContent = has ? meta : "\u2014";
 }
 function restorePreimportBackupPrompt() {
   var raw = localStorage.getItem(PREIMPORT_BACKUP_KEY);
   if (!raw) {
     rt23.showToast(
-      "No hay copia automática previa a una importación. Revisa Descargas por archivos R-plus-respaldo- o R-plus-auto-respaldo-.",
+      "No hay copia autom\xE1tica previa a una importaci\xF3n. Revisa Descargas por archivos R-plus-respaldo- o R-plus-auto-respaldo-.",
       "error"
     );
     syncPreimportBackupUi();
@@ -37582,20 +37689,20 @@ function restorePreimportBackupPrompt() {
   try {
     payload = JSON.parse(raw);
   } catch (_e) {
-    rt23.showToast("La copia automática previa está dañada.", "error");
+    rt23.showToast("La copia autom\xE1tica previa est\xE1 da\xF1ada.", "error");
     return;
   }
   if (!payload || payload.format !== "r-plus-backup" || payload.version !== 1 || !payload.data) {
-    rt23.showToast("Formato de respaldo no válido.", "error");
+    rt23.showToast("Formato de respaldo no v\xE1lido.", "error");
     return;
   }
   var n = (payload.data.patients || []).length;
   if (!confirm(
-    "¿Restaurar la copia guardada automáticamente antes de la última importación completa? (" + n + " pacientes). La aplicación se recargará."
+    "\xBFRestaurar la copia guardada autom\xE1ticamente antes de la \xFAltima importaci\xF3n completa? (" + n + " pacientes). La aplicaci\xF3n se recargar\xE1."
   )) {
     return;
   }
-  if (typeof pushUndoSnapshot === "function") rt23.pushUndoSnapshot("Antes de restaurar copia pre-importación");
+  if (typeof pushUndoSnapshot === "function") rt23.pushUndoSnapshot("Antes de restaurar copia pre-importaci\xF3n");
   localStorage.setItem("rpc-patients", JSON.stringify(payload.data.patients || []));
   localStorage.setItem("rpc-notes", JSON.stringify(payload.data.notes || {}));
   localStorage.setItem("rpc-indicaciones", JSON.stringify(payload.data.indicaciones || {}));
@@ -37890,7 +37997,7 @@ function exportActivePatientBackup() {
     return;
   }
   if (aid7 === DEMO_PATIENT_ID2) {
-    rt23.showToast("El paciente de demostración no se exporta.", "error");
+    rt23.showToast("El paciente de demostraci\xF3n no se exporta.", "error");
     return;
   }
   var patient = patients.find(function(p) {
@@ -37918,7 +38025,7 @@ function exportRangeBackupPrompt() {
   if (raw == null) return;
   var range = parseDateRangePrompt(raw);
   if (!range) {
-    rt23.showToast("Rango inválido. Usa dd/mm/yyyy - dd/mm/yyyy", "error");
+    rt23.showToast("Rango inv\xE1lido. Usa dd/mm/yyyy - dd/mm/yyyy", "error");
     return;
   }
   var entries = [];
@@ -37955,13 +38062,13 @@ function onRangeBackupFileChosen(ev) {
     try {
       var payload = JSON.parse(reader.result);
       if (!payload || payload.format !== "r-plus-range-export" || payload.version !== 1 || !Array.isArray(payload.entries)) {
-        rt23.showToast("Archivo de rango inválido.", "error");
+        rt23.showToast("Archivo de rango inv\xE1lido.", "error");
         return;
       }
       if (typeof pushUndoSnapshot === "function") rt23.pushUndoSnapshot("Importar rango (" + payload.entries.length + ")");
       var res = importEntriesWithConflicts(payload.entries, "range-import");
       if (res.cancelled) {
-        rt23.showToast("Importación cancelada", "error");
+        rt23.showToast("Importaci\xF3n cancelada", "error");
       } else {
         rt23.showToast("Rango importado: " + (res.imported + res.overwritten + res.duplicated), "success");
       }
@@ -37988,13 +38095,13 @@ function onPatientBackupFileChosen(ev) {
     try {
       var payload = JSON.parse(reader.result);
       if (!payload || payload.format !== "r-plus-patient-export" || payload.version !== 1 || !payload.patient) {
-        rt23.showToast("El archivo no es una exportación válida de paciente.", "error");
+        rt23.showToast("El archivo no es una exportaci\xF3n v\xE1lida de paciente.", "error");
         return;
       }
       var imported = payload.patient || {};
       var registro = String(imported.registro || "").trim();
       var existsByRegistro = findPatientByRegistro(registro);
-      var msg = existsByRegistro ? "Ya existe un paciente con el registro " + registro + ". Esto sobrescribirá su nota, indicaciones y labs. ¿Continuar?" : 'Se importará el paciente "' + (imported.nombre || "Sin nombre") + '". ¿Continuar?';
+      var msg = existsByRegistro ? "Ya existe un paciente con el registro " + registro + ". Esto sobrescribir\xE1 su nota, indicaciones y labs. \xBFContinuar?" : 'Se importar\xE1 el paciente "' + (imported.nombre || "Sin nombre") + '". \xBFContinuar?';
       if (!confirm(msg)) return;
       if (existsByRegistro) {
         var targetId = existsByRegistro.id;
@@ -38041,7 +38148,7 @@ function onPatientBackupFileChosen(ev) {
       addAuditEntry("backup-patient-import", "ok", 1, registro || "");
       rt23.showToast("Paciente importado correctamente.", "success");
     } catch (_err) {
-      rt23.showToast("No se pudo leer la exportación de paciente.", "error");
+      rt23.showToast("No se pudo leer la exportaci\xF3n de paciente.", "error");
       addAuditEntry("backup-patient-import", "error", 0, "read-error");
     }
   };
@@ -38056,11 +38163,11 @@ function onBackupFileChosen(ev) {
     try {
       var payload = JSON.parse(reader.result);
       if (!payload || payload.format !== "r-plus-backup" || payload.version !== 1 || !payload.data) {
-        rt23.showToast("El archivo no es un respaldo válido de R+", "error");
+        rt23.showToast("El archivo no es un respaldo v\xE1lido de R+", "error");
         return;
       }
       var n = (payload.data.patients || []).length;
-      if (!confirm("Esto reemplaza todos los pacientes y datos locales en esta computadora (" + n + " pacientes en el archivo). No se puede deshacer. ¿Continuar?")) {
+      if (!confirm("Esto reemplaza todos los pacientes y datos locales en esta computadora (" + n + " pacientes en el archivo). No se puede deshacer. \xBFContinuar?")) {
         return;
       }
       if (typeof pushUndoSnapshot === "function") rt23.pushUndoSnapshot("Importar respaldo completo");
@@ -38165,7 +38272,7 @@ async function exportSyncBundlePrompt() {
     rt23.showToast("No hay datos para sincronizar.", "error");
     return;
   }
-  var passphrase = prompt("Passphrase opcional para cifrar (deja vacío para sin cifrado):", "");
+  var passphrase = prompt("Passphrase opcional para cifrar (deja vac\xEDo para sin cifrado):", "");
   var base = {
     format: "r-plus-sync-bundle",
     version: 1,
@@ -38200,21 +38307,21 @@ function onSyncBundleFileChosen(ev) {
     try {
       var bundle = JSON.parse(reader.result);
       if (!bundle || bundle.format !== "r-plus-sync-bundle" || bundle.version !== 1 || !bundle.payload) {
-        rt23.showToast("Paquete sync inválido.", "error");
+        rt23.showToast("Paquete sync inv\xE1lido.", "error");
         return;
       }
       var data = bundle.payload;
       if (data.encrypted) {
-        var passphrase = prompt("Este paquete está cifrado. Ingresa la passphrase:", "");
+        var passphrase = prompt("Este paquete est\xE1 cifrado. Ingresa la passphrase:", "");
         if (!passphrase) {
-          rt23.showToast("Importación cancelada.", "error");
+          rt23.showToast("Importaci\xF3n cancelada.", "error");
           addAuditEntry("sync-import", "cancelled", 0, "no-passphrase");
           return;
         }
         data = await decryptSyncPayload(data, passphrase);
       }
       if (!data || !Array.isArray(data.entries)) {
-        rt23.showToast("Contenido sync inválido.", "error");
+        rt23.showToast("Contenido sync inv\xE1lido.", "error");
         addAuditEntry("sync-import", "error", 0, "invalid-content");
         return;
       }
@@ -38254,7 +38361,7 @@ function setUpdateChannel(channel) {
   }
   if (previous !== normalized) {
     rt23.showToast(
-      normalized === "beta" ? "Canal pre-releases activado: recibirás borradores de GitHub." : "Canal estable activado.",
+      normalized === "beta" ? "Canal pre-releases activado: recibir\xE1s borradores de GitHub." : "Canal estable activado.",
       "success"
     );
     if (window.electronAPI && typeof window.electronAPI.checkForUpdates === "function") {
@@ -38287,7 +38394,7 @@ function setUpdateTelemetryEnabled(enabled) {
   s.updateTelemetryEnabled = value;
   localStorage.setItem("rpc-settings", JSON.stringify(s));
   syncUpdateTelemetryUI();
-  rt23.showToast(value ? "Telemetría de actualización activada." : "Telemetría desactivada.", "success");
+  rt23.showToast(value ? "Telemetr\xEDa de actualizaci\xF3n activada." : "Telemetr\xEDa desactivada.", "success");
 }
 function syncUpdateTelemetryUI() {
   var cb = document.getElementById("rpc-update-telemetry-toggle");
@@ -38312,12 +38419,12 @@ function syncHardwareAccelerationUI() {
 function onHardwareAccelerationChange(enabled) {
   var api = window.electronAPI;
   if (!api || typeof api.setHardwareAcceleration !== "function") {
-    rt23.showToast("Solo disponible en la aplicación de escritorio.", "error");
+    rt23.showToast("Solo disponible en la aplicaci\xF3n de escritorio.", "error");
     syncHardwareAccelerationUI();
     return;
   }
   api.setHardwareAcceleration(!!enabled).then(function() {
-    rt23.showToast("Reinicia R+ para aplicar la aceleración por hardware.", "info");
+    rt23.showToast("Reinicia R+ para aplicar la aceleraci\xF3n por hardware.", "info");
   }).catch(function() {
     rt23.showToast("No se pudo guardar la preferencia.", "error");
     syncHardwareAccelerationUI();
@@ -38472,7 +38579,7 @@ if (window.electronAPI) {
       resetUpdateModalPanels();
       var title = document.getElementById("update-modal-title");
       if (title && title.firstChild && title.firstChild.nodeType === 3) {
-        title.firstChild.textContent = "Nueva versión";
+        title.firstChild.textContent = "Nueva versi\xF3n";
       }
       var pill = document.getElementById("update-modal-version-pill");
       if (pill) {
@@ -38483,7 +38590,7 @@ if (window.electronAPI) {
       var notes2 = document.getElementById("update-modal-notes");
       if (notes2) notes2.textContent = releaseNotes;
       var state = document.getElementById("update-modal-state");
-      if (state) state.textContent = "Conectando… La descarga comenzará en breve.";
+      if (state) state.textContent = "Conectando\u2026 La descarga comenzar\xE1 en breve.";
       var fill = document.getElementById("update-modal-progress-fill");
       if (fill) fill.style.width = "0%";
       var label = document.getElementById("update-modal-progress-label");
@@ -38493,7 +38600,7 @@ if (window.electronAPI) {
         actions.innerHTML = "";
         var later = document.createElement("button");
         later.className = "btn-secondary";
-        later.textContent = "Más tarde";
+        later.textContent = "M\xE1s tarde";
         later.onclick = function() {
           markDismissedVersion(version);
           hideUpdateModal();
@@ -38529,7 +38636,7 @@ if (window.electronAPI) {
       resetUpdateModalPanels();
       syncUpdateModalChannelPill(pendingUpdaterIsPrerelease);
       var state = document.getElementById("update-modal-state");
-      if (state) state.textContent = "Descargando…";
+      if (state) state.textContent = "Descargando\u2026";
       var fill = document.getElementById("update-modal-progress-fill");
       if (fill) fill.style.width = pct + "%";
       var label = document.getElementById("update-modal-progress-label");
@@ -38561,7 +38668,7 @@ if (window.electronAPI) {
       syncUpdateModalChannelPill(pendingUpdaterIsPrerelease);
       var state = document.getElementById("update-modal-state");
       if (state) {
-        state.textContent = "Listo para instalar. También se instalará al cerrar la aplicación si eliges esperar.";
+        state.textContent = "Listo para instalar. Tambi\xE9n se instalar\xE1 al cerrar la aplicaci\xF3n si eliges esperar.";
       }
       var fill = document.getElementById("update-modal-progress-fill");
       if (fill) fill.style.width = "100%";
@@ -38598,7 +38705,7 @@ if (window.electronAPI) {
       pendingUpdaterTargetVersion = null;
       pendingUpdaterIsPrerelease = false;
       syncUpdateModalChannelPill(false);
-      rt23.showToast("R+ está actualizado.", "success");
+      rt23.showToast("R+ est\xE1 actualizado.", "success");
     } catch (e) {
       console.error("onUpdateNotAvailable callback error:", e && e.message);
     }
@@ -38714,6 +38821,7 @@ function loadSettings() {
     syncUpdateChannelUI();
     syncUpdateTelemetryUI();
     syncHideClinicoTabUI();
+    ensureClinicoTabConsistency();
     if (typeof syncSettingsLanHostDiskSection === "function") syncSettingsLanHostDiskSection();
     rt24.syncWorkContextChrome();
     return;
@@ -38746,7 +38854,7 @@ function loadSettings() {
       var parts = [];
       if (st.doctorName) parts.push(st.doctorName);
       if (st.grado) parts.push(st.grado);
-      lbl.textContent = parts.join(" · ");
+      lbl.textContent = parts.join(" \xB7 ");
     } else {
       lbl.textContent = "Mi Perfil";
     }
@@ -38755,7 +38863,7 @@ function loadSettings() {
   var cEl = document.getElementById("profile-preview-cuidados-txt");
   var mEl = document.getElementById("profile-preview-meds-txt");
   function preview(val2) {
-    return val2 ? val2.slice(0, 40) + (val2.length > 40 ? "…" : "") : "(vacío)";
+    return val2 ? val2.slice(0, 40) + (val2.length > 40 ? "\u2026" : "") : "(vac\xEDo)";
   }
   if (dEl) dEl.textContent = preview(st.defaultDieta);
   if (cEl) cEl.textContent = preview(st.defaultCuidados);
@@ -38778,21 +38886,21 @@ function loadSettings() {
   if (verEl) {
     if (window.electronAPI && typeof window.electronAPI.getAppVersion === "function") {
       window.electronAPI.getAppVersion().then(function(v) {
-        verEl.textContent = v || "—";
+        verEl.textContent = v || "\u2014";
         var LAST_SEEN_VERSION_KEY = "rplus-last-seen-app-version";
         var prev = localStorage.getItem(LAST_SEEN_VERSION_KEY);
         if (RELEASE_NOTES_DEV_FORCE_SHOW) {
           initReleaseNotesDevPreviewIfEnabled(v);
         } else if (prev && v && prev !== v) {
           rt24.showToast(
-            "Actualizado a v" + v + ". Consulta Ajustes o el menú para buscar actualizaciones.",
+            "Actualizado a v" + v + ". Consulta Ajustes o el men\xFA para buscar actualizaciones.",
             "success"
           );
           maybeShowReleaseNotesFor(v, prev);
         }
         if (v) localStorage.setItem(LAST_SEEN_VERSION_KEY, v);
       }).catch(function() {
-        verEl.textContent = "—";
+        verEl.textContent = "\u2014";
       });
     } else {
       verEl.textContent = "Web / desarrollo";
@@ -38808,11 +38916,11 @@ function loadSettings() {
     if (udBtn) udBtn.disabled = false;
     window.electronAPI.getUserDataPath().then(function(p) {
       if (udEl) {
-        udEl.textContent = p || "—";
+        udEl.textContent = p || "\u2014";
         udEl.title = p || "";
       }
     }).catch(function() {
-      if (udEl) udEl.textContent = "—";
+      if (udEl) udEl.textContent = "\u2014";
     });
   } else {
     if (udEl) udEl.textContent = "Navegador / modo desarrollo";
@@ -38826,6 +38934,7 @@ function loadSettings() {
   syncUpdateTelemetryUI();
   syncHardwareAccelerationUI();
   syncHideClinicoTabUI();
+  ensureClinicoTabConsistency();
   syncIdleLockSelectUi();
   syncPreimportBackupUi();
   if (typeof syncSettingsLanHostDiskSection === "function") syncSettingsLanHostDiskSection();
@@ -38846,14 +38955,14 @@ function saveSettings() {
   if (backfill) saveState();
   loadSettings();
   if (rt24.getActiveId()) renderNoteForm();
-  rt24.showToast("Perfil guardado ✓", "success");
+  rt24.showToast("Perfil guardado \u2713", "success");
 }
 function syncHeaderAppModeChip() {
   var chip = document.getElementById("header-app-mode-chip");
   if (!chip) return;
   var sala = isModeSala(settingsRef());
   chip.textContent = sala ? "Modo: Sala" : "Modo: Interconsulta";
-  chip.title = sala ? "Pulsa para cambiar a Interconsulta (Nota de evolución, Indicaciones…). Ajustes finos en Mi Perfil." : "Pulsa para cambiar a Sala (Estado actual, Listado de problemas…). Ajustes finos en Mi Perfil.";
+  chip.title = sala ? "Pulsa para cambiar a Interconsulta (Nota de evoluci\xF3n, Indicaciones\u2026). Ajustes finos en Mi Perfil." : "Pulsa para cambiar a Sala (Estado actual, Listado de problemas\u2026). Ajustes finos en Mi Perfil.";
   chip.classList.toggle("mode-sala", sala);
   chip.classList.toggle("mode-inter", !sala);
 }
@@ -38935,14 +39044,14 @@ function saveTemplates() {
   localStorage.setItem("rpc-settings", JSON.stringify(st));
   closeTemplatesModal();
   loadSettings();
-  rt24.showToast("Plantillas guardadas ✓", "success");
+  rt24.showToast("Plantillas guardadas \u2713", "success");
 }
 function saveQuickOutputFormat(format) {
   var st = settingsRef();
   st.quickOutputFormat = normalizeQuickOutputFormat(format);
   localStorage.setItem("rpc-settings", JSON.stringify(st));
   loadSettings();
-  rt24.showToast("Formato de salida rápida actualizado", "success");
+  rt24.showToast("Formato de salida r\xE1pida actualizado", "success");
 }
 function isHideManejoSectionEnabled() {
   return isManejoSectionHidden(settingsRef());
@@ -38955,18 +39064,34 @@ function syncHideManejoSectionUI() {
 function syncHideClinicoTabUI() {
   syncHideManejoSectionUI();
 }
-function applyHideManejoSectionEffects() {
+function ensureClinicoTabConsistency() {
   var settings2 = settingsRef();
   var current = getActiveInnerTab();
-  if (current) {
-    var migrated = migrateGranularInner(current, settings2);
-    if (migrated !== current) switchInnerTab(migrated);
-  }
+  if (!current) return;
+  var migrated = migrateGranularInner(current, settings2);
+  if (migrated !== current) switchInnerTab(migrated);
+}
+function applyHideManejoSectionEffects() {
+  ensureClinicoTabConsistency();
   renderInnerTabs();
   rt24.syncWorkContextChrome();
 }
 function setHideManejoSection(enabled) {
   var st = settingsRef();
+  if (!enabled && !isClinicoUnlocked(st)) {
+    syncHideManejoSectionUI();
+    openClinicoUnlockModal(function() {
+      var next = settingsRef();
+      next.clinicoUnlocked = true;
+      next.hideManejoSection = false;
+      delete next.hideClinicoTab;
+      localStorage.setItem("rpc-settings", JSON.stringify(next));
+      syncHideManejoSectionUI();
+      applyHideManejoSectionEffects();
+      rt24.showToast("Gu\xEDa cl\xEDnica disponible en el expediente.", "success");
+    });
+    return;
+  }
   st.hideManejoSection = !!enabled;
   if (enabled) st.hideClinicoTab = true;
   else delete st.hideClinicoTab;
@@ -38974,7 +39099,7 @@ function setHideManejoSection(enabled) {
   syncHideManejoSectionUI();
   applyHideManejoSectionEffects();
   rt24.showToast(
-    enabled ? "Manejo oculto en Clínico (Nota e Indicaciones siguen disponibles)." : "Manejo visible en el expediente.",
+    enabled ? "Manejo oculto en Cl\xEDnico (Nota e Indicaciones siguen disponibles)." : "Manejo visible en el expediente.",
     "success"
   );
 }
@@ -38991,6 +39116,8 @@ var profileWindowHandlers = {
   saveQuickOutputFormat,
   setHideManejoSection,
   setHideClinicoTab,
+  closeClinicoUnlockModal,
+  confirmClinicoUnlock,
   openTemplatesModal,
   saveSettings,
   closeTemplatesModal,
@@ -39128,7 +39255,7 @@ function formatProcedureAgendaRangeLabel(monday) {
     var oMon = { month: "short" };
     var a = monday.toLocaleDateString("es", oWd).replace(".", "") + " " + monday.toLocaleDateString("es", oDay) + " " + monday.toLocaleDateString("es", oMon);
     var b = sun.toLocaleDateString("es", oWd).replace(".", "") + " " + sun.toLocaleDateString("es", oDay) + " " + sun.toLocaleDateString("es", oMon) + " " + sun.getFullYear();
-    return a.charAt(0).toUpperCase() + a.slice(1) + " — " + b;
+    return a.charAt(0).toUpperCase() + a.slice(1) + " \u2014 " + b;
   } catch (_e) {
     return "";
   }
@@ -39268,11 +39395,11 @@ function renderProcedureAgendaPanel() {
       }
       blk.setAttribute(
         "title",
-        (ev.procedure || "") + " · " + (ev.location || "") + " · " + cell.patientLabel
+        (ev.procedure || "") + " \xB7 " + (ev.location || "") + " \xB7 " + cell.patientLabel
       );
       blk.setAttribute("aria-label", "Editar procedimiento para " + cell.patientLabel);
       if (!(ev.materialApproved && ev.anesthesiaScheduled)) blk.classList.add("rpc-proc-flag");
-      blk.innerHTML = '<div class="rpc-proc-name">' + esc13(String(ev.procedure || "")) + '</div><div class="rpc-proc-sub">' + esc13(String(startClock + " · " + (ev.location || ""))) + '</div><div class="rpc-proc-pat">' + esc13(String(cell.patientLabel)) + "</div>";
+      blk.innerHTML = '<div class="rpc-proc-name">' + esc13(String(ev.procedure || "")) + '</div><div class="rpc-proc-sub">' + esc13(String(startClock + " \xB7 " + (ev.location || ""))) + '</div><div class="rpc-proc-pat">' + esc13(String(cell.patientLabel)) + "</div>";
       blk.addEventListener("click", function(e) {
         e.preventDefault();
         openProcedureAgendaModal(ev.id);
@@ -39373,7 +39500,7 @@ function saveProcedureAgendaFromModal() {
   if (!patientId || !elig.some(function(p) {
     return String(p.id) === patientId;
   })) {
-    showPaErr("Elige un paciente válido de la lista.");
+    showPaErr("Elige un paciente v\xE1lido de la lista.");
     return;
   }
   if (!procedure) {
@@ -39385,7 +39512,7 @@ function saveProcedureAgendaFromModal() {
     return;
   }
   if (!sd) {
-    showPaErr("Fecha u hora de inicio inválidas.");
+    showPaErr("Fecha u hora de inicio inv\xE1lidas.");
     return;
   }
   var nowIso = (/* @__PURE__ */ new Date()).toISOString();
@@ -39425,7 +39552,7 @@ function deleteProcedureAgendaFromModal() {
   var editId = (document.getElementById("pa-edit-id").value || "").trim();
   if (!editId) return;
   if (!confirm(
-    "¿Eliminar este procedimiento de la agenda? No se puede deshacer desde aquí."
+    "\xBFEliminar este procedimiento de la agenda? No se puede deshacer desde aqu\xED."
   ))
     return;
   var delAt = (/* @__PURE__ */ new Date()).toISOString();
@@ -39501,7 +39628,7 @@ function cloneForUndo(value) {
 }
 function buildUndoSnapshotPayload(label) {
   return {
-    label: label || "operación",
+    label: label || "operaci\xF3n",
     at: (/* @__PURE__ */ new Date()).toISOString(),
     theme: localStorage.getItem("theme") || "light",
     activeId: rt26.getActiveId(),
@@ -39545,9 +39672,9 @@ function refreshUndoButtonState() {
   var stack = getUndoStack();
   btn.disabled = stack.length === 0;
   if (stack.length > 0) {
-    btn.textContent = "Deshacer: " + (stack[0].label || "última operación");
+    btn.textContent = "Deshacer: " + (stack[0].label || "\xFAltima operaci\xF3n");
   } else {
-    btn.textContent = "Deshacer última operación";
+    btn.textContent = "Deshacer \xFAltima operaci\xF3n";
   }
 }
 function undoLastOperation() {
@@ -39557,7 +39684,7 @@ function undoLastOperation() {
     return;
   }
   var snap = stack[0];
-  if (!confirm('¿Revertir "' + (snap.label || "última operación") + '"? La aplicación se recargará.')) return;
+  if (!confirm('\xBFRevertir "' + (snap.label || "\xFAltima operaci\xF3n") + '"? La aplicaci\xF3n se recargar\xE1.')) return;
   var rest = stack.slice(1);
   saveUndoStack(rest);
   localStorage.setItem("rpc-patients", JSON.stringify(snap.data.patients || []));
@@ -39590,7 +39717,7 @@ function toggleFocusMode() {
   var btn = document.getElementById("btn-toggle-focus-mode");
   if (btn) btn.textContent = on ? "Desactivar modo enfoque" : "Activar modo enfoque";
   if (on) rt26.closeSettingsDropdown();
-  rt26.showToast(on ? "Modo enfoque activado · F6 para salir" : "Modo enfoque desactivado", "success");
+  rt26.showToast(on ? "Modo enfoque activado \xB7 F6 para salir" : "Modo enfoque desactivado", "success");
   rt26.addAuditEntry("focus-mode", "ok", 0, on ? "on" : "off");
 }
 var _unifiedSearchCurrent = [];
@@ -39620,8 +39747,8 @@ function snippetAround(text, q, maxLen) {
   var start = Math.max(0, idx - half);
   var end = Math.min(src.length, idx + q.length + half);
   var out = src.slice(start, end);
-  if (start > 0) out = "… " + out;
-  if (end < src.length) out = out + " …";
+  if (start > 0) out = "\u2026 " + out;
+  if (end < src.length) out = out + " \u2026";
   return out;
 }
 function escapeRegExp2(s) {
@@ -39671,9 +39798,9 @@ function updateUnifiedSearchResults() {
   for (var i = 0; i < patients.length && out.length < MAX; i += 1) {
     var p = patients[i];
     if (p.isDemo) continue;
-    var meta = [p.nombre, p.registro, p.cuarto, p.cama, p.servicio, p.area].filter(Boolean).join(" · ");
+    var meta = [p.nombre, p.registro, p.cuarto, p.cama, p.servicio, p.area].filter(Boolean).join(" \xB7 ");
     var metaLc = meta.toLowerCase();
-    var metaStr = "Cto. " + (p.cuarto || "-") + " · Cama " + (p.cama || "-") + (p.registro ? " · " + p.registro : "");
+    var metaStr = "Cto. " + (p.cuarto || "-") + " \xB7 Cama " + (p.cama || "-") + (p.registro ? " \xB7 " + p.registro : "");
     if (metaLc.indexOf(q) !== -1) {
       out.push({
         id: p.id,
@@ -39757,7 +39884,7 @@ function renderExtraTemplatesList() {
   if (!list) return;
   var arr = ensureExtraTemplatesArray();
   if (!arr.length) {
-    list.innerHTML = '<div class="unified-search-empty">Aún no tienes plantillas guardadas.</div>';
+    list.innerHTML = '<div class="unified-search-empty">A\xFAn no tienes plantillas guardadas.</div>';
     return;
   }
   list.innerHTML = arr.map(function(tmpl) {
@@ -39842,7 +39969,7 @@ function deleteExtraTemplate(id) {
     return t2.id === id;
   });
   if (!tmpl) return;
-  if (!confirm('¿Eliminar la plantilla "' + (tmpl.label || "") + '"?')) return;
+  if (!confirm('\xBFEliminar la plantilla "' + (tmpl.label || "") + '"?')) return;
   var settings2 = rt26.getSettings();
   settings2.extraTemplates = arr.filter(function(t2) {
     return t2.id !== id;
@@ -39902,7 +40029,7 @@ function initProductivityKeyboardShortcuts() {
       }
       rt26.saveState();
       rt26.addAuditEntry("quick-save", "ok", 1, String(rt26.getActiveId()));
-      rt26.showToast("Estado guardado ✓", "success");
+      rt26.showToast("Estado guardado \u2713", "success");
     }
   });
   applyFocusModeFromStorage();
@@ -39964,7 +40091,7 @@ function syncWorkContextChrome() {
 }
 function chooseOutputDir() {
   if (!window.electronAPI || !window.electronAPI.selectOutputDir) {
-    showToast("Función no disponible en este entorno", "error");
+    showToast("Funci\xF3n no disponible en este entorno", "error");
     return;
   }
   window.electronAPI.selectOutputDir().then(function(dir) {
@@ -39972,7 +40099,7 @@ function chooseOutputDir() {
     shellCtx.getSettings().outputDir = dir;
     localStorage.setItem("rpc-settings", JSON.stringify(shellCtx.getSettings()));
     loadSettings();
-    showToast("Carpeta actualizada ✓", "success");
+    showToast("Carpeta actualizada \u2713", "success");
   });
 }
 function saveOutputDirSelection(dir) {
@@ -40012,7 +40139,7 @@ function handleDocumentGenerateResponse(opts) {
       showToast("Selecciona una carpeta para guardar el documento.", "error");
     },
     onCancel: function() {
-      showToast("No se guardó el documento: no se eligió carpeta.", "error");
+      showToast("No se guard\xF3 el documento: no se eligi\xF3 carpeta.", "error");
     }
   });
 }
@@ -40024,7 +40151,7 @@ function guardMobileDocExport() {
 async function initMobileWebBoot() {
   if (!isMobileWeb()) return;
   try {
-    document.title = "R+ Móvil";
+    document.title = "R+ M\xF3vil";
   } catch (_e) {
   }
   syncTeamSyncHeaderButton2();
@@ -40113,38 +40240,21 @@ function onMedicoTemplateBlur() {
   shellCtx.getSettings().medicosPlantilla = tpl;
   localStorage.setItem("rpc-settings", JSON.stringify(shellCtx.getSettings()));
 }
-function isRpcOverlayVisible(el) {
-  if (!el) return false;
-  var d = window.getComputedStyle(el).display;
-  return d !== "none" && d !== "";
-}
 var modalDismiss = createModalDismissRegistry();
+var modalDismissInited = false;
 function initModalDismiss() {
+  if (modalDismissInited) return;
   var dynamicBackdropIds = [
     "lab-dedupe-backdrop",
     "soap-confirm-backdrop",
     "dup-confirm-backdrop",
     "lab-conflict-backdrop",
-    "exp-advice-backdrop"
+    "exp-advice-backdrop",
+    "tend-gaso-ext-backdrop"
   ];
   function el(id) {
     return document.getElementById(id);
   }
-  modalDismiss.register({
-    isOpen: function() {
-      return dynamicBackdropIds.some(function(id) {
-        var node = el(id);
-        if (!node) return false;
-        return isRpcOverlayVisible(node);
-      });
-    },
-    close: function() {
-      dynamicBackdropIds.forEach(function(id) {
-        var node = el(id);
-        if (node) node.remove();
-      });
-    }
-  });
   modalDismiss.register({
     isOpen: function() {
       return isRpcOverlayVisible(el("update-modal-backdrop"));
@@ -40161,16 +40271,20 @@ function initModalDismiss() {
     close: closeTendDetail,
     backdropEl: function() {
       return el("tend-detail-backdrop");
-    }
+    },
+    panelSelector: "#tend-detail-modal"
   });
   modalDismiss.register({
     isOpen: function() {
+      var bd = el("tend-group-backdrop");
+      if (bd && bd.getAttribute("aria-hidden") === "false") return true;
       return isTendGroupModalOpen();
     },
     close: closeTendGroupModal,
     backdropEl: function() {
       return el("tend-group-backdrop");
-    }
+    },
+    panelSelector: "#tend-group-modal"
   });
   modalDismiss.register({
     isOpen: function() {
@@ -40200,7 +40314,8 @@ function initModalDismiss() {
     close: closeProcedureAgendaModal,
     backdropEl: function() {
       return el("procedure-agenda-modal");
-    }
+    },
+    panelSelector: ".modal"
   });
   modalDismiss.register({
     isOpen: function() {
@@ -40290,7 +40405,8 @@ function initModalDismiss() {
     close: closeLabDisplayPrefsModal,
     backdropEl: function() {
       return el("lab-display-prefs-backdrop");
-    }
+    },
+    panelSelector: ".lab-display-prefs-modal"
   });
   modalDismiss.register({
     isOpen: function() {
@@ -40313,6 +40429,17 @@ function initModalDismiss() {
       return el("lab-bulk-tour-hint-backdrop");
     },
     panelSelector: ".lab-bulk-tour-hint-modal"
+  });
+  modalDismiss.register({
+    isOpen: function() {
+      var b = el("clinico-unlock-backdrop");
+      return b && b.classList.contains("open");
+    },
+    close: closeClinicoUnlockModal,
+    backdropEl: function() {
+      return el("clinico-unlock-backdrop");
+    },
+    panelSelector: ".clinico-unlock-modal"
   });
   modalDismiss.register({
     isOpen: function() {
@@ -40377,7 +40504,50 @@ function initModalDismiss() {
       return el("settings-dropdown-backdrop");
     }
   });
+  modalDismiss.register({
+    isOpen: function() {
+      return dynamicBackdropIds.some(function(id) {
+        var node = el(id);
+        return isRpcOverlayVisible(node);
+      });
+    },
+    close: function() {
+      var top = null;
+      var bestZ = -1;
+      dynamicBackdropIds.forEach(function(id) {
+        var node = el(id);
+        var z = getOverlayZIndex(node);
+        if (z > bestZ) {
+          bestZ = z;
+          top = node;
+        }
+      });
+      if (!top) return;
+      if (top.id === "tend-gaso-ext-backdrop") {
+        top.style.display = "none";
+        top.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("tend-gaso-ext-open");
+        return;
+      }
+      top.remove();
+    },
+    backdropEl: function() {
+      var best = null;
+      var bestZ = -1;
+      dynamicBackdropIds.forEach(function(id) {
+        var node = el(id);
+        var z = getOverlayZIndex(node);
+        if (z > bestZ) {
+          bestZ = z;
+          best = node;
+        }
+      });
+      return best;
+    },
+    panelSelector: '.lab-conflict-modal, .tend-gaso-ext-dialog, [role="dialog"]'
+  });
   modalDismiss.init();
+  modalDismissInited = true;
   document.addEventListener("click", function(ev) {
     var t2 = ev.target;
     if (!t2 || !t2.classList || !t2.classList.contains("lab-conflict-backdrop")) return;
@@ -40422,7 +40592,7 @@ document.addEventListener("keydown", function(e) {
       e.preventDefault();
       window.__rpcPreferImportOverwrite = !window.__rpcPreferImportOverwrite;
       showToast(
-        window.__rpcPreferImportOverwrite ? "Importación: conflictos → sobrescribir (⌘⇧, o Ctrl+Shift+, de nuevo para apagar)." : "Importación: se preguntará en cada conflicto.",
+        window.__rpcPreferImportOverwrite ? "Importaci\xF3n: conflictos \u2192 sobrescribir (\u2318\u21E7, o Ctrl+Shift+, de nuevo para apagar)." : "Importaci\xF3n: se preguntar\xE1 en cada conflicto.",
         window.__rpcPreferImportOverwrite ? "success" : "info"
       );
     }
@@ -40673,7 +40843,6 @@ function scheduleDeferredShellInits() {
 }
 function scheduleDeferredUiInits() {
   _rpcDeferInit(initProductivityKeyboardShortcuts);
-  _rpcDeferInit(initModalDismiss);
 }
 
 // public/js/features/estado-actual-parse-variants.mjs
@@ -40854,7 +41023,7 @@ function parseLine(line, result) {
     result.recognized.push("balance-ignored");
     return;
   }
-  result.warnings.push("Línea no reconocida: " + trimmed);
+  result.warnings.push("L\xEDnea no reconocida: " + trimmed);
 }
 function scanInlinePatterns(text, result) {
   if (result.recognized.indexOf("temp") < 0) {
@@ -40987,7 +41156,7 @@ function parseEstadoActualPaste(raw) {
   }) || result.glucometrias.length > 0 || result.io.ing != null || result.io.egr != null || result.io.egrParts && result.io.egrParts.length > 0 || result.io.evac != null;
   if (!hasData) {
     result.ok = false;
-    result.error = "No se reconoció ningún campo (T°, FC, TA, DXT, I, E…)";
+    result.error = "No se reconoci\xF3 ning\xFAn campo (T\xB0, FC, TA, DXT, I, E\u2026)";
   }
   return result;
 }
@@ -40997,7 +41166,7 @@ function formatEstadoActualParsePreview(parsed) {
   }
   var parts = [];
   if (parsed.vitals.temp != null) {
-    parts.push("TEMP " + parsed.vitals.temp + " °C" + (parsed.alteredAt.temp ? " @ " + parsed.alteredAt.temp : ""));
+    parts.push("TEMP " + parsed.vitals.temp + " \xB0C" + (parsed.alteredAt.temp ? " @ " + parsed.alteredAt.temp : ""));
   }
   if (parsed.vitals.fc != null) parts.push("FC " + parsed.vitals.fc + " LPM");
   if (parsed.vitals.fr != null) parts.push("FR " + parsed.vitals.fr + " RPM");
@@ -41007,7 +41176,7 @@ function formatEstadoActualParsePreview(parsed) {
     parts.push(satLine);
   }
   if (parsed.vitals.tas != null || parsed.vitals.tad != null) {
-    parts.push("TA " + (parsed.vitals.tas ?? "—") + "/" + (parsed.vitals.tad ?? "—") + " MMHG");
+    parts.push("TA " + (parsed.vitals.tas ?? "\u2014") + "/" + (parsed.vitals.tad ?? "\u2014") + " MMHG");
   }
   if (parsed.glucometrias.length) {
     parts.push(
@@ -41029,7 +41198,7 @@ function formatEstadoActualParsePreview(parsed) {
   if (parsed.warnings.length) {
     parts.push("AVISOS: " + parsed.warnings.join("; "));
   }
-  return toEaSalidaText(parts.length ? parts.join(" · ") : "Sin campos detectados");
+  return toEaSalidaText(parts.length ? parts.join(" \xB7 ") : "Sin campos detectados");
 }
 
 // public/js/features/estado-actual-paste-modal.mjs
@@ -41039,7 +41208,7 @@ var rt27 = {
   applyParsed() {
   }
 };
-var SAMPLE_TEXT = "T°: 38.7 °C\nFC: 113 LPM\nFR: 19 RPM\nTA: 140/60 MMHG\nDXT: 198, 174, 101, 252 MG/DL\nSAT: 97% AL AIRE AMBIENTE\nI: 2,815 CC\nE: NO CUANTIFICADA\nB: NC\nEVAC: NO REPORTADAS";
+var SAMPLE_TEXT = "T\xB0: 38.7 \xB0C\nFC: 113 LPM\nFR: 19 RPM\nTA: 140/60 MMHG\nDXT: 198, 174, 101, 252 MG/DL\nSAT: 97% AL AIRE AMBIENTE\nI: 2,815 CC\nE: NO CUANTIFICADA\nB: NC\nEVAC: NO REPORTADAS";
 function registerEstadoActualPasteModalRuntime(partial) {
   if (partial && typeof partial === "object") Object.assign(rt27, partial);
 }
@@ -41097,7 +41266,7 @@ function confirmEstadoActualPaste() {
   closeEstadoActualPasteModal();
   if (typeof rt27.applyParsed === "function") {
     rt27.applyParsed(parsed, { fromNestedPaste: true });
-    rt27.showToast("Datos aplicados — revisa y registra", "success");
+    rt27.showToast("Datos aplicados \u2014 revisa y registra", "success");
   }
 }
 function wireEstadoActualPasteModal() {
@@ -41149,30 +41318,30 @@ function handleEaModalEscape(ev) {
     ev.stopPropagation();
   }
 }
-function handlePasteBackdropClick(ev) {
-  var pasteBd = getPasteBackdrop();
-  if (!pasteBd || !pasteBd.classList.contains("open")) return;
-  var panel = pasteBd.querySelector(".ea-paste-modal");
-  if (panel && panel.contains(
-    /** @type {Node} */
-    ev.target
-  )) return;
-  closeEstadoActualPasteModal();
-}
-function handleRegistroBackdropClick(ev) {
-  var reg = getBackdrop();
-  if (!reg || !reg.classList.contains("open")) return;
-  if (ev.target !== reg) return;
-  closeEstadoActualRegistroModal();
-}
 function wireEaModalDismiss() {
   if (dismissWired) return;
   dismissWired = true;
   document.addEventListener("keydown", handleEaModalEscape, true);
   var reg = getBackdrop();
   var pasteBd = getPasteBackdrop();
-  if (reg) reg.addEventListener("click", handleRegistroBackdropClick);
-  if (pasteBd) pasteBd.addEventListener("click", handlePasteBackdropClick);
+  if (reg) {
+    reg.addEventListener("click", function(ev) {
+      if (!reg.classList.contains("open")) return;
+      if (ev.target !== reg) return;
+      closeEstadoActualRegistroModal();
+    });
+  }
+  if (pasteBd) {
+    pasteBd.addEventListener("click", function(ev) {
+      if (!pasteBd.classList.contains("open")) return;
+      var panel = pasteBd.querySelector(".ea-paste-modal");
+      if (panel && panel.contains(
+        /** @type {Node} */
+        ev.target
+      )) return;
+      closeEstadoActualPasteModal();
+    });
+  }
 }
 function openEstadoActualRegistroModal(opts) {
   var backdrop = getBackdrop();
@@ -41719,7 +41888,7 @@ setSaveStateHooks({
     if (!result || result.ok) {
       if (result && result.level === "warn") {
         showToast(
-          "El almacenamiento local está casi lleno. Archiva pacientes egresados, exporta un respaldo y elimina duplicados de labs.",
+          "El almacenamiento local est\xE1 casi lleno. Archiva pacientes egresados, exporta un respaldo y elimina duplicados de labs.",
           "error"
         );
       }
@@ -41791,6 +41960,7 @@ try {
 }
 function runDomBoot() {
   try {
+    initModalDismiss();
     var todayEl = document.getElementById("today-date");
     if (todayEl) {
       todayEl.textContent = (/* @__PURE__ */ new Date()).toLocaleDateString("es-MX", {
@@ -41812,7 +41982,7 @@ function runDomBoot() {
     if (wasV3MigratedThisBoot()) {
       setTimeout(function() {
         try {
-          showToast("R+ 3.0 — Sala activado por defecto. Cambia en Mi Perfil → Aplicación.");
+          showToast("R+ 3.0 \u2014 Sala activado por defecto. Cambia en Mi Perfil \u2192 Aplicaci\xF3n.");
         } catch (_e) {
         }
       }, 800);

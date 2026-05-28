@@ -2,6 +2,7 @@
  * Consolidated expediente tabs (Sala + Interconsulta; granular fallback unused).
  */
 import { isModeSala } from './mode-features.mjs';
+import { isClinicoAccessHidden } from './clinico-access.mjs';
 
 export const GRANULAR_TABS = [
   'datos',
@@ -22,6 +23,7 @@ export const CONSOLIDATED_TABS_INTER = ['paciente', 'clinico', 'resultados', 'sa
 export const CONSOLIDATED_TABS = CONSOLIDATED_TABS_INTER;
 
 const CLINICO_GRANULAR_TABS = ['notas', 'indica', 'manejo'];
+export const COMPOSITE_PANE_IDS = ['paciente', 'clinico', 'estadoActual', 'resultados', 'salida'];
 
 /** @deprecated use isManejoSectionHidden — hideClinicoTab ahora solo oculta Manejo (compat). */
 export function isClinicoTabHidden(settings) {
@@ -30,8 +32,7 @@ export function isClinicoTabHidden(settings) {
 
 /** Interconsulta: oculta segmento Manejo; mantiene Nota + Indicaciones en Clínico. */
 export function isManejoSectionHidden(settings) {
-  if (!settings) return false;
-  return !!(settings.hideManejoSection || settings.hideClinicoTab);
+  return isClinicoAccessHidden(settings);
 }
 
 export function isClinicoCompositeVisible(settings) {
@@ -327,14 +328,28 @@ export function syncConsolidatedSegmentBars(granularTab, settings) {
   syncBar(document.getElementById('exp-segment-salida'), getSalidaSections(settings), 'salida');
 }
 
+export function getConsolidatedCompositeState(granularTab, settings) {
+  var target = resolveConsolidatedTarget(granularTab, settings);
+  var visibleTabs = getConsolidatedTabs(settings || {});
+  /** @type {Record<string, { visible: boolean, active: boolean }>} */
+  var state = {};
+  COMPOSITE_PANE_IDS.forEach(function (tab) {
+    var visible = visibleTabs.indexOf(tab) >= 0;
+    state[tab] = { visible: visible, active: visible && tab === target.tab };
+  });
+  return state;
+}
+
 export function syncConsolidatedPaneVisibility(granularTab, settings) {
   var target = resolveConsolidatedTarget(granularTab, settings);
-  getConsolidatedTabs(settings || {}).forEach(function (tab) {
+  var compositeState = getConsolidatedCompositeState(granularTab, settings);
+  COMPOSITE_PANE_IDS.forEach(function (tab) {
     var composite = compositeEl(tab);
-    if (composite) composite.classList.toggle('active', tab === target.tab);
+    if (!composite) return;
+    var pane = compositeState[tab];
+    composite.hidden = !pane.visible;
+    composite.classList.toggle('active', pane.active);
   });
-  var estadoCompOnlyInter = compositeEl('estadoActual');
-  if (estadoCompOnlyInter && !isModeSala(settings)) estadoCompOnlyInter.classList.remove('active');
   CLINICO_GRANULAR_TABS.forEach(function (section) {
     var pane = paneEl(section);
     if (!pane) return;

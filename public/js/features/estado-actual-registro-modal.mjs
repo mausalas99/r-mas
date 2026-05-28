@@ -38,21 +38,6 @@ function handleEaModalEscape(ev) {
   }
 }
 
-function handlePasteBackdropClick(ev) {
-  var pasteBd = getPasteBackdrop();
-  if (!pasteBd || !pasteBd.classList.contains('open')) return;
-  var panel = pasteBd.querySelector('.ea-paste-modal');
-  if (panel && panel.contains(/** @type {Node} */ (ev.target))) return;
-  closeEstadoActualPasteModal();
-}
-
-function handleRegistroBackdropClick(ev) {
-  var reg = getBackdrop();
-  if (!reg || !reg.classList.contains('open')) return;
-  if (ev.target !== reg) return;
-  closeEstadoActualRegistroModal();
-}
-
 /** Escape y clic fuera (registro + pegar anidado). */
 export function wireEaModalDismiss() {
   if (dismissWired) return;
@@ -60,8 +45,21 @@ export function wireEaModalDismiss() {
   document.addEventListener('keydown', handleEaModalEscape, true);
   var reg = getBackdrop();
   var pasteBd = getPasteBackdrop();
-  if (reg) reg.addEventListener('click', handleRegistroBackdropClick);
-  if (pasteBd) pasteBd.addEventListener('click', handlePasteBackdropClick);
+  if (reg) {
+    reg.addEventListener('click', function (ev) {
+      if (!reg.classList.contains('open')) return;
+      if (ev.target !== reg) return;
+      closeEstadoActualRegistroModal();
+    });
+  }
+  if (pasteBd) {
+    pasteBd.addEventListener('click', function (ev) {
+      if (!pasteBd.classList.contains('open')) return;
+      var panel = pasteBd.querySelector('.ea-paste-modal');
+      if (panel && panel.contains(/** @type {Node} */ (ev.target))) return;
+      closeEstadoActualPasteModal();
+    });
+  }
 }
 
 /**
