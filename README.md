@@ -21,6 +21,8 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 1. En la misma página de *Releases*, descarga **`R+-<versión>-x64.exe`**.
 2. Ejecuta el instalador y sigue los pasos.
 
+Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/INSTALLER_EXIT_CODES.md`](docs/INSTALLER_EXIT_CODES.md).
+
 > Si **SmartScreen** muestra una advertencia: **Más información** → **Ejecutar de todas formas**.
 
 ---
