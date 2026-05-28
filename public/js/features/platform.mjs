@@ -15,6 +15,8 @@ import {
   indicaciones,
   labHistory,
   medRecetaByPatient,
+  listadoProblemas,
+  replaceAppStateFromBackupData,
   saveState,
   setPatients,
   setNotes,
@@ -692,6 +694,36 @@ function syncPreimportBackupUi() {
   if (el) el.textContent = has ? meta : '—';
 }
 
+async function persistFullBackupPayload(payload) {
+  if (!payload || !payload.data) throw new Error('invalid-backup');
+  replaceAppStateFromBackupData(payload.data);
+  try {
+    localStorage.setItem(
+      'rpc-scheduled-procedures',
+      JSON.stringify(
+        Array.isArray(payload.data.scheduledProcedures) ? payload.data.scheduledProcedures : []
+      )
+    );
+  } catch (_e) {}
+  localStorage.setItem('rpc-settings', JSON.stringify(payload.data.settings || {}));
+  if (payload.data.medCatalog && typeof payload.data.medCatalog === 'object') {
+    storage.saveMedCatalog(payload.data.medCatalog);
+  }
+  if (payload.theme === 'dark' || payload.theme === 'light') {
+    localStorage.setItem('theme', payload.theme);
+  }
+  if (payload.guidedTourDoneForVersion) {
+    localStorage.setItem(GUIDED_TOUR_LS_KEY, payload.guidedTourDoneForVersion);
+  } else {
+    localStorage.removeItem(GUIDED_TOUR_LS_KEY);
+  }
+  var result = await saveState({ immediate: true });
+  if (!result || !result.ok) {
+    throw new Error((result && result.code) || 'SAVE_FAILED');
+  }
+  return result;
+}
+
 function restorePreimportBackupPrompt() {
   var raw = localStorage.getItem(PREIMPORT_BACKUP_KEY);
   if (!raw) {
@@ -724,30 +756,14 @@ function restorePreimportBackupPrompt() {
     return;
   }
   if (typeof pushUndoSnapshot === 'function') rt.pushUndoSnapshot('Antes de restaurar copia pre-importación');
-  localStorage.setItem('rpc-patients', JSON.stringify(payload.data.patients || []));
-  localStorage.setItem('rpc-notes', JSON.stringify(payload.data.notes || {}));
-  localStorage.setItem('rpc-indicaciones', JSON.stringify(payload.data.indicaciones || {}));
-  localStorage.setItem('rpc-labHistory', JSON.stringify(payload.data.labHistory || {}));
-  localStorage.setItem('rpc-medRecetaByPatient', JSON.stringify(payload.data.medRecetaByPatient || {}));
-  localStorage.setItem('rpc-listado-problemas', JSON.stringify(payload.data.listadoProblemas || {}));
-  localStorage.setItem(
-    'rpc-scheduled-procedures',
-    JSON.stringify(payload.data.scheduledProcedures || [])
-  );
-  localStorage.setItem('rpc-settings', JSON.stringify(payload.data.settings || {}));
-  if (payload.data.medCatalog && typeof payload.data.medCatalog === 'object') {
-    storage.saveMedCatalog(payload.data.medCatalog);
-  }
-  if (payload.theme === 'dark' || payload.theme === 'light') {
-    localStorage.setItem('theme', payload.theme);
-  }
-  if (payload.guidedTourDoneForVersion) {
-    localStorage.setItem(GUIDED_TOUR_LS_KEY, payload.guidedTourDoneForVersion);
-  } else {
-    localStorage.removeItem(GUIDED_TOUR_LS_KEY);
-  }
-  addAuditEntry('preimport-restore', 'ok', n, payload.exportedAt || '');
-  location.reload();
+  persistFullBackupPayload(payload)
+    .then(function () {
+      addAuditEntry('preimport-restore', 'ok', n, payload.exportedAt || '');
+      location.reload();
+    })
+    .catch(function () {
+      rt.showToast('No se pudo restaurar la copia automática.', 'error');
+    });
 }
 
 function formatDateSlug(d) {
@@ -849,8 +865,8 @@ function restartAutoBackupScheduler() {
   }, 30 * 60 * 1000);
 }
 
-function runAutoBackupNow(isScheduled) {
-  saveState();
+async function runAutoBackupNow(isScheduled) {
+  await saveState({ immediate: true });
   var cfg = getAutoBackupSettings();
   var payload = buildFullBackupPayload();
   payload.autoBackup = { scheduled: !!isScheduled };
@@ -873,6 +889,48 @@ function initGoalGFeatures() {
   restartAutoBackupScheduler();
 }
 
+/** Snapshot for backup export — uses in-memory app state (what is on screen), not stale localStorage. */
+function buildBackupDataFromMemory() {
+  var filteredPatients = patients.filter(function (p) {
+    return p && !p.isDemo;
+  });
+  var notesPersist = {};
+  Object.keys(notes || {}).forEach(function (k) {
+    if (notes[k] && !String(k).startsWith('demo-')) notesPersist[k] = notes[k];
+  });
+  var indPersist = {};
+  Object.keys(indicaciones || {}).forEach(function (k) {
+    if (indicaciones[k] && !String(k).startsWith('demo-')) indPersist[k] = indicaciones[k];
+  });
+  var lhPersist = {};
+  Object.keys(labHistory || {}).forEach(function (k) {
+    if (!String(k).startsWith('demo-')) lhPersist[k] = labHistory[k];
+  });
+  var medPersist = {};
+  Object.keys(medRecetaByPatient || {}).forEach(function (k) {
+    if (!String(k).startsWith('demo-')) medPersist[k] = medRecetaByPatient[k];
+  });
+  var listPersist = {};
+  Object.keys(listadoProblemas || {}).forEach(function (k) {
+    if (listadoProblemas[k] && !String(k).startsWith('demo-')) listPersist[k] = listadoProblemas[k];
+  });
+  var settings = rt.getSettings();
+  if (!settings || typeof settings !== 'object' || !Object.keys(settings).length) {
+    settings = storage.getSettings();
+  }
+  return {
+    patients: filteredPatients,
+    notes: notesPersist,
+    indicaciones: indPersist,
+    labHistory: lhPersist,
+    medRecetaByPatient: medPersist,
+    listadoProblemas: listPersist,
+    scheduledProcedures: storage.getScheduledProcedures(),
+    settings: settings,
+    medCatalog: storage.getMedCatalog(),
+  };
+}
+
 function buildFullBackupPayload() {
   return {
     format: 'r-plus-backup',
@@ -881,17 +939,7 @@ function buildFullBackupPayload() {
     appVersion: window.__RPC_APP_VERSION__ || null,
     theme: localStorage.getItem('theme') || 'light',
     guidedTourDoneForVersion: localStorage.getItem(GUIDED_TOUR_LS_KEY),
-    data: {
-      patients: storage.getPatients(),
-      notes: storage.getNotes(),
-      indicaciones: storage.getIndicaciones(),
-      labHistory: storage.getLabHistory(),
-      medRecetaByPatient: storage.getMedRecetaByPatient(),
-      listadoProblemas: storage.getListadoProblemas(),
-      scheduledProcedures: storage.getScheduledProcedures(),
-      settings: storage.getSettings(),
-      medCatalog: storage.getMedCatalog(),
-    }
+    data: buildBackupDataFromMemory(),
   };
 }
 
@@ -1024,12 +1072,20 @@ function importEntriesWithConflicts(entries, actionLabel) {
   return out;
 }
 
-function exportDataBackup() {
-  saveState();
+async function exportDataBackup() {
+  await saveState({ immediate: true });
   var payload = buildFullBackupPayload();
+  var n = (payload.data.patients || []).length;
   downloadJsonPayload(payload, 'R-plus-respaldo-' + formatDateSlug(new Date()) + '.json');
-  addAuditEntry('backup-full-export', 'ok', (payload.data.patients || []).length, '');
-  rt.showToast('Respaldo descargado', 'success');
+  addAuditEntry('backup-full-export', 'ok', n, '');
+  if (n === 0) {
+    rt.showToast(
+      'Respaldo descargado sin pacientes. Si esperabas datos, revisa la lista y exporta de nuevo.',
+      'error'
+    );
+  } else {
+    rt.showToast('Respaldo descargado (' + n + ' paciente' + (n === 1 ? '' : 's') + ')', 'success');
+  }
 }
 
 function exportActivePatientBackup() {
@@ -1210,7 +1266,7 @@ function onBackupFileChosen(ev) {
   ev.target.value = '';
   if (!f) return;
   var reader = new FileReader();
-  reader.onload = function() {
+  reader.onload = async function() {
     try {
       var payload = JSON.parse(reader.result);
       if (!payload || payload.format !== 'r-plus-backup' || payload.version !== 1 || !payload.data) {
@@ -1218,38 +1274,40 @@ function onBackupFileChosen(ev) {
         return;
       }
       var n = (payload.data.patients || []).length;
-      if (!confirm('Esto reemplaza todos los pacientes y datos locales en esta computadora (' + n + ' pacientes en el archivo). No se puede deshacer. ¿Continuar?')) {
+      var confirmMsg =
+        'Esto reemplaza todos los pacientes y datos locales en esta computadora (' +
+        n +
+        ' pacientes en el archivo). No se puede deshacer.';
+      if (n === 0) {
+        confirmMsg +=
+          '\n\nEl archivo no trae pacientes (solo ajustes/plantillas). Si esperabas pacientes, pide un respaldo nuevo desde el equipo origen.';
+      }
+      if (!confirm(confirmMsg + '\n\n¿Continuar?')) {
         return;
       }
       if (typeof pushUndoSnapshot === 'function') rt.pushUndoSnapshot('Importar respaldo completo');
-      localStorage.setItem('rpc-preimport-backup', JSON.stringify(buildFullBackupPayload()));
-      localStorage.setItem('rpc-patients', JSON.stringify(payload.data.patients || []));
-      localStorage.setItem('rpc-notes', JSON.stringify(payload.data.notes || {}));
-      localStorage.setItem('rpc-indicaciones', JSON.stringify(payload.data.indicaciones || {}));
-      localStorage.setItem('rpc-labHistory', JSON.stringify(payload.data.labHistory || {}));
-      localStorage.setItem('rpc-medRecetaByPatient', JSON.stringify(payload.data.medRecetaByPatient || {}));
-      localStorage.setItem('rpc-listado-problemas', JSON.stringify(payload.data.listadoProblemas || {}));
-      localStorage.setItem(
-        'rpc-scheduled-procedures',
-        JSON.stringify(payload.data.scheduledProcedures || [])
-      );
-      localStorage.setItem('rpc-settings', JSON.stringify(payload.data.settings || {}));
-      if (payload.data.medCatalog && typeof payload.data.medCatalog === 'object') {
-        storage.saveMedCatalog(payload.data.medCatalog);
-      }
-      if (payload.theme === 'dark' || payload.theme === 'light') {
-        localStorage.setItem('theme', payload.theme);
-      }
-      if (payload.guidedTourDoneForVersion) {
-        localStorage.setItem(GUIDED_TOUR_LS_KEY, payload.guidedTourDoneForVersion);
-      } else {
-        localStorage.removeItem(GUIDED_TOUR_LS_KEY);
-      }
+      await saveState({ immediate: true });
+      try {
+        localStorage.setItem('rpc-preimport-backup', JSON.stringify(buildFullBackupPayload()));
+      } catch (_pre) {}
+      await persistFullBackupPayload(payload);
       addAuditEntry('backup-full-import', 'ok', n, '');
+      rt.showToast(
+        'Respaldo importado (' + n + ' paciente' + (n === 1 ? '' : 's') + '). Recargando…',
+        'success'
+      );
       location.reload();
     } catch (err) {
-      rt.showToast('No se pudo leer el respaldo', 'error');
-      addAuditEntry('backup-full-import', 'error', 0, 'read-error');
+      var code = err && err.message;
+      if (code === 'SAVE_FAILED' || code === 'QUOTA_EXCEEDED') {
+        rt.showToast(
+          'No se pudo guardar el respaldo: almacenamiento local lleno. Libera espacio e intenta de nuevo.',
+          'error'
+        );
+      } else {
+        rt.showToast('No se pudo leer el respaldo', 'error');
+      }
+      addAuditEntry('backup-full-import', 'error', 0, code || 'read-error');
     }
   };
   reader.readAsText(f);

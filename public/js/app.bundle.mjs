@@ -3185,6 +3185,29 @@ function setMedRecetaByPatient(next) {
 function setRecetaHuByPatient(next) {
   recetaHuByPatient = next;
 }
+function clonePlainRecord(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch (_e) {
+    return {};
+  }
+}
+function replaceAppStateFromBackupData(data) {
+  if (!data || typeof data !== "object") return;
+  var nextPatients = Array.isArray(data.patients) ? data.patients : [];
+  setPatients(
+    nextPatients.filter(function(p) {
+      return p && !p.isDemo;
+    })
+  );
+  setNotes(clonePlainRecord(data.notes));
+  setIndicaciones(clonePlainRecord(data.indicaciones));
+  setLabHistory(clonePlainRecord(data.labHistory));
+  setMedRecetaByPatient(clonePlainRecord(data.medRecetaByPatient));
+  listadoProblemas = clonePlainRecord(data.listadoProblemas);
+  medNotaSelectionByPatient = {};
+}
 function setSaveStateHooks({ before, after, onSaveResult } = {}) {
   if (before !== void 0) _beforeSave = before;
   if (after !== void 0) _afterSave = after;
@@ -14023,20 +14046,17 @@ function appendLanKnownSessionsSection(root) {
     join.style.flex = "0 0 auto";
     join.textContent = inThisRoom ? "En sala" : "Unirse";
     join.disabled = inThisRoom;
-    join.onclick = function() {
-      if (inThisRoom) return;
-      joinLanRoom(rec.id, rec.label);
-    };
+    join.setAttribute("data-lan-action", "join-known");
+    join.setAttribute("data-room-id", String(rec.id || ""));
+    join.setAttribute("data-room-label", String(rec.label || rec.id || ""));
     var del = document.createElement("button");
     del.type = "button";
     del.className = "btn-lan-danger";
     del.style.flex = "0 0 auto";
     del.textContent = "Quitar";
     del.title = "Quitar de la lista";
-    del.onclick = function() {
-      forgetLanRoomSession(rec.id);
-      renderLanPanel();
-    };
+    del.setAttribute("data-lan-action", "forget-known");
+    del.setAttribute("data-room-id", String(rec.id || ""));
     row.appendChild(lab);
     row.appendChild(join);
     row.appendChild(del);
@@ -14063,7 +14083,10 @@ function initLanClientFromStorage() {
     bootLanRoomMembership();
   }, 0);
 }
-initLanClientFromStorage();
+if (typeof document !== "undefined") {
+  initLanClientFromStorage();
+  wireLanPanelDelegation();
+}
 var LAN_DISCONNECT_BANNER_MSG = "Sin conexi\xF3n al host LAN. LiveSync (salas y relay) puede estar limitado hasta reconectar.";
 var _lanLastConnected = true;
 function readLanHideDisconnectBanner() {
@@ -14124,8 +14147,56 @@ lanClient.addEventListener("lan-status", function(ev) {
   updateLanConnectionBanner(!!(ev.detail && ev.detail.connected));
 });
 lanClient.addEventListener("lan-patch", function() {
-  if (typeof renderLanPanel === "function") renderLanPanel();
+  syncLiveSyncStatusChrome();
 });
+function patchLanPanelJoinButtons() {
+  if (typeof document === "undefined") return;
+  var root = document.getElementById("lan-connection-panel-root");
+  if (!root) return;
+  root.querySelectorAll('[data-lan-action="join-room"], [data-lan-action="join-known"]').forEach(function(btn) {
+    var rid = btn.getAttribute("data-room-id") || "";
+    var inRoom = String(activeLiveSyncRoomId || "") === String(rid);
+    btn.textContent = inRoom ? "En sala" : "Unirse";
+    btn.disabled = inRoom;
+  });
+}
+var _lanPanelDelegationWired = false;
+function wireLanPanelDelegation() {
+  if (_lanPanelDelegationWired) return;
+  if (typeof document === "undefined") return;
+  var root = document.getElementById("lan-connection-panel-root");
+  if (!root) return;
+  _lanPanelDelegationWired = true;
+  root.addEventListener("click", function(ev) {
+    var btn = (
+      /** @type {HTMLElement | null} */
+      ev.target && ev.target.closest ? ev.target.closest("[data-lan-action]") : null
+    );
+    if (!btn || !root.contains(btn) || /** @type {HTMLButtonElement} */
+    btn.disabled) return;
+    var action = btn.getAttribute("data-lan-action") || "";
+    if (!action) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    if (action === "join-room" || action === "join-known") {
+      joinLanRoom(btn.getAttribute("data-room-id"), btn.getAttribute("data-room-label"));
+    } else if (action === "forget-known") {
+      forgetLanRoomSession(btn.getAttribute("data-room-id"));
+      renderLanPanel();
+    } else if (action === "delete-room") {
+      deleteLanRoom(btn.getAttribute("data-room-id"));
+    } else if (action === "join-invite") {
+      if (isLanElectronDesktop() && typeof storage.saveLanUiRole === "function") {
+        storage.saveLanUiRole("client");
+      }
+      joinLanFromInviteUi();
+    } else if (action === "host-activate") {
+      saveLanSettingsFromUi({ copyInviteAfter: true });
+    } else if (action === "create-room") {
+      createLanRoomFromUi();
+    }
+  });
+}
 function getLanClientId() {
   try {
     var id = localStorage.getItem("rpc-lan-client-id");
@@ -14775,6 +14846,7 @@ function leaveLiveSyncRoom(opts) {
   stopLiveSyncReconnectLoop();
   lanClient.disconnectLiveChannel();
   syncLiveSyncStatusChrome();
+  patchLanPanelJoinButtons();
   if (typeof renderLanPanel === "function") renderLanPanel();
 }
 lanClient.addEventListener("lan-live", function(ev) {
@@ -14842,10 +14914,7 @@ function appendLanJoinOtherMacSection(root) {
   btnJoin.className = "btn-lan-secondary";
   btnJoin.style.flex = "1";
   btnJoin.textContent = "Unirse con enlace";
-  btnJoin.onclick = function() {
-    if (typeof storage.saveLanUiRole === "function") storage.saveLanUiRole("client");
-    joinLanFromInviteUi();
-  };
+  btnJoin.setAttribute("data-lan-action", "join-invite");
   row.appendChild(btnJoin);
   inner.appendChild(row);
   details.appendChild(inner);
@@ -14951,9 +15020,7 @@ async function renderLanPanelOnce() {
       btnHostStart.className = "btn-lan-primary";
       btnHostStart.style.flex = "1";
       btnHostStart.textContent = "Activar y copiar invitaci\xF3n";
-      btnHostStart.onclick = function() {
-        saveLanSettingsFromUi({ copyInviteAfter: true });
-      };
+      btnHostStart.setAttribute("data-lan-action", "host-activate");
       row.appendChild(btnHostStart);
     } else {
       var btnJoinLink = document.createElement("button");
@@ -14961,12 +15028,7 @@ async function renderLanPanelOnce() {
       btnJoinLink.className = "btn-lan-primary";
       btnJoinLink.style.flex = "1";
       btnJoinLink.textContent = "Unirse con enlace";
-      btnJoinLink.onclick = function() {
-        if (isLanElectronDesktop() && typeof storage.saveLanUiRole === "function") {
-          storage.saveLanUiRole("client");
-        }
-        joinLanFromInviteUi();
-      };
+      btnJoinLink.setAttribute("data-lan-action", "join-invite");
       row.appendChild(btnJoinLink);
     }
     actions.appendChild(row);
@@ -15108,7 +15170,7 @@ async function renderLanPanelOnce() {
   createBtn.className = "btn-lan-primary";
   createBtn.textContent = "Crear sala";
   createBtn.disabled = !isLanSessionConfiguredForRest();
-  createBtn.onclick = createLanRoomFromUi;
+  createBtn.setAttribute("data-lan-action", "create-room");
   createRow.appendChild(newRoomInput);
   createRow.appendChild(createBtn);
   roomsCard.appendChild(createRow);
@@ -15164,19 +15226,19 @@ async function renderLanPanelOnce() {
       joinBtn.type = "button";
       joinBtn.className = "btn-lan-secondary";
       joinBtn.style.flex = "0 0 auto";
-      joinBtn.textContent = activeLiveSyncRoomId === id ? "En sala" : "Unirse";
-      joinBtn.disabled = activeLiveSyncRoomId === id;
-      joinBtn.onclick = function() {
-        joinLanRoom(id, disp);
-      };
+      var inRoom = activeLiveSyncRoomId === id;
+      joinBtn.textContent = inRoom ? "En sala" : "Unirse";
+      joinBtn.disabled = inRoom;
+      joinBtn.setAttribute("data-lan-action", "join-room");
+      joinBtn.setAttribute("data-room-id", id);
+      joinBtn.setAttribute("data-room-label", disp);
       var delBtn = document.createElement("button");
       delBtn.type = "button";
       delBtn.className = "btn-lan-danger";
       delBtn.textContent = "Eliminar";
       delBtn.disabled = !lanClient.connected;
-      delBtn.onclick = function() {
-        deleteLanRoom(id);
-      };
+      delBtn.setAttribute("data-lan-action", "delete-room");
+      delBtn.setAttribute("data-room-id", id);
       li.appendChild(name);
       li.appendChild(joinBtn);
       li.appendChild(delBtn);
@@ -15188,6 +15250,7 @@ async function renderLanPanelOnce() {
   root.appendChild(roomsCard);
   appendLanDisconnectBannerPref(root);
   purgeDuplicateLanRoomsPanels(root);
+  patchLanPanelJoinButtons();
 }
 async function resolveLanHostUrlForShare() {
   var el = document.getElementById("lan-input-host-url");
@@ -15399,10 +15462,32 @@ async function saveLanSettingsFromUi(opts) {
 }
 function joinLanRoom(roomId, displayName) {
   var id = String(roomId || "").trim();
-  if (!id) return;
+  if (!id) {
+    runtime2.showToast("No se pudo identificar la sala. Vuelve a abrir \u21C4 e int\xE9ntalo.", "error");
+    return;
+  }
+  if (!isLanSessionConfiguredForRest()) {
+    runtime2.showToast(
+      "Primero conecta al servidor del equipo (Activar sala en vivo o pega el enlace de invitaci\xF3n).",
+      "error"
+    );
+    return;
+  }
+  if (!lanClient.baseUrl()) {
+    try {
+      initLanClientFromStorage();
+    } catch (_boot) {
+    }
+  }
+  if (!lanClient.baseUrl()) {
+    runtime2.showToast("Falta la direcci\xF3n del servidor LAN. Config\xFArala en \u21C4 antes de unirte.", "error");
+    return;
+  }
   if (activeLiveSyncRoomId === id && String(lanClient.liveRoomId || "") === id && lanClient.liveConnected) {
     syncLiveSyncAfterRoomJoin(id);
     syncLiveSyncStatusChrome();
+    patchLanPanelJoinButtons();
+    runtime2.showToast("Ya est\xE1s en esta sala", "success");
     return;
   }
   if (activeLiveSyncRoomId && activeLiveSyncRoomId !== id) {
@@ -15430,7 +15515,7 @@ function joinLanRoom(roomId, displayName) {
   }
   runtime2.showToast("Sala: sincronizando expediente, agenda y pendientes", "success");
   syncLiveSyncStatusChrome();
-  renderLanPanel();
+  patchLanPanelJoinButtons();
   syncLiveSyncAfterRoomJoin(id);
 }
 async function createLanRoomFromUi() {
@@ -15560,6 +15645,7 @@ function openConnectionDropdown() {
   if (bg) bg.classList.add("open");
   var syncBtn = document.getElementById("btn-header-team-sync");
   if (syncBtn) syncBtn.setAttribute("aria-expanded", "true");
+  wireLanPanelDelegation();
   if (typeof renderLanPanel === "function") renderLanPanel();
 }
 function toggleConnectionDropdown(ev) {
@@ -34424,6 +34510,16 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
   }
 ];
 var RELEASE_NOTES_HIGHLIGHTS = {
+  "6.3.5": [
+    {
+      title: "Bomba de insulina (switch)",
+      body: "Interruptor como en <strong>Vista de laboratorio</strong>: activado solo filas con <strong>unidades</strong>; apagado, glucometr\xEDas normales."
+    },
+    {
+      title: "Sala en vivo \u2014 Unirse",
+      body: "Corregido <strong>Unirse</strong> en la lista de salas: el bot\xF3n vuelve a responder al primer clic."
+    }
+  ],
   "6.3.4": [
     {
       title: "Estado Actual \u2014 multilectura",
@@ -38295,6 +38391,36 @@ function syncPreimportBackupUi() {
   var el = document.getElementById("settings-preimport-meta");
   if (el) el.textContent = has ? meta : "\u2014";
 }
+async function persistFullBackupPayload(payload) {
+  if (!payload || !payload.data) throw new Error("invalid-backup");
+  replaceAppStateFromBackupData(payload.data);
+  try {
+    localStorage.setItem(
+      "rpc-scheduled-procedures",
+      JSON.stringify(
+        Array.isArray(payload.data.scheduledProcedures) ? payload.data.scheduledProcedures : []
+      )
+    );
+  } catch (_e) {
+  }
+  localStorage.setItem("rpc-settings", JSON.stringify(payload.data.settings || {}));
+  if (payload.data.medCatalog && typeof payload.data.medCatalog === "object") {
+    storage.saveMedCatalog(payload.data.medCatalog);
+  }
+  if (payload.theme === "dark" || payload.theme === "light") {
+    localStorage.setItem("theme", payload.theme);
+  }
+  if (payload.guidedTourDoneForVersion) {
+    localStorage.setItem(GUIDED_TOUR_LS_KEY, payload.guidedTourDoneForVersion);
+  } else {
+    localStorage.removeItem(GUIDED_TOUR_LS_KEY);
+  }
+  var result = await saveState({ immediate: true });
+  if (!result || !result.ok) {
+    throw new Error(result && result.code || "SAVE_FAILED");
+  }
+  return result;
+}
 function restorePreimportBackupPrompt() {
   var raw = localStorage.getItem(PREIMPORT_BACKUP_KEY);
   if (!raw) {
@@ -38323,30 +38449,12 @@ function restorePreimportBackupPrompt() {
     return;
   }
   if (typeof pushUndoSnapshot === "function") rt23.pushUndoSnapshot("Antes de restaurar copia pre-importaci\xF3n");
-  localStorage.setItem("rpc-patients", JSON.stringify(payload.data.patients || []));
-  localStorage.setItem("rpc-notes", JSON.stringify(payload.data.notes || {}));
-  localStorage.setItem("rpc-indicaciones", JSON.stringify(payload.data.indicaciones || {}));
-  localStorage.setItem("rpc-labHistory", JSON.stringify(payload.data.labHistory || {}));
-  localStorage.setItem("rpc-medRecetaByPatient", JSON.stringify(payload.data.medRecetaByPatient || {}));
-  localStorage.setItem("rpc-listado-problemas", JSON.stringify(payload.data.listadoProblemas || {}));
-  localStorage.setItem(
-    "rpc-scheduled-procedures",
-    JSON.stringify(payload.data.scheduledProcedures || [])
-  );
-  localStorage.setItem("rpc-settings", JSON.stringify(payload.data.settings || {}));
-  if (payload.data.medCatalog && typeof payload.data.medCatalog === "object") {
-    storage.saveMedCatalog(payload.data.medCatalog);
-  }
-  if (payload.theme === "dark" || payload.theme === "light") {
-    localStorage.setItem("theme", payload.theme);
-  }
-  if (payload.guidedTourDoneForVersion) {
-    localStorage.setItem(GUIDED_TOUR_LS_KEY, payload.guidedTourDoneForVersion);
-  } else {
-    localStorage.removeItem(GUIDED_TOUR_LS_KEY);
-  }
-  addAuditEntry("preimport-restore", "ok", n, payload.exportedAt || "");
-  location.reload();
+  persistFullBackupPayload(payload).then(function() {
+    addAuditEntry("preimport-restore", "ok", n, payload.exportedAt || "");
+    location.reload();
+  }).catch(function() {
+    rt23.showToast("No se pudo restaurar la copia autom\xE1tica.", "error");
+  });
 }
 function formatDateSlug(d) {
   return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
@@ -38433,8 +38541,8 @@ function restartAutoBackupScheduler() {
     maybeRunScheduledAutoBackup();
   }, 30 * 60 * 1e3);
 }
-function runAutoBackupNow(isScheduled) {
-  saveState();
+async function runAutoBackupNow(isScheduled) {
+  await saveState({ immediate: true });
   var cfg = getAutoBackupSettings();
   var payload = buildFullBackupPayload();
   payload.autoBackup = { scheduled: !!isScheduled };
@@ -38455,6 +38563,46 @@ function initGoalGFeatures() {
   maybeRunScheduledAutoBackup();
   restartAutoBackupScheduler();
 }
+function buildBackupDataFromMemory() {
+  var filteredPatients = patients.filter(function(p) {
+    return p && !p.isDemo;
+  });
+  var notesPersist = {};
+  Object.keys(notes || {}).forEach(function(k) {
+    if (notes[k] && !String(k).startsWith("demo-")) notesPersist[k] = notes[k];
+  });
+  var indPersist = {};
+  Object.keys(indicaciones || {}).forEach(function(k) {
+    if (indicaciones[k] && !String(k).startsWith("demo-")) indPersist[k] = indicaciones[k];
+  });
+  var lhPersist = {};
+  Object.keys(labHistory || {}).forEach(function(k) {
+    if (!String(k).startsWith("demo-")) lhPersist[k] = labHistory[k];
+  });
+  var medPersist = {};
+  Object.keys(medRecetaByPatient || {}).forEach(function(k) {
+    if (!String(k).startsWith("demo-")) medPersist[k] = medRecetaByPatient[k];
+  });
+  var listPersist = {};
+  Object.keys(listadoProblemas || {}).forEach(function(k) {
+    if (listadoProblemas[k] && !String(k).startsWith("demo-")) listPersist[k] = listadoProblemas[k];
+  });
+  var settings2 = rt23.getSettings();
+  if (!settings2 || typeof settings2 !== "object" || !Object.keys(settings2).length) {
+    settings2 = storage.getSettings();
+  }
+  return {
+    patients: filteredPatients,
+    notes: notesPersist,
+    indicaciones: indPersist,
+    labHistory: lhPersist,
+    medRecetaByPatient: medPersist,
+    listadoProblemas: listPersist,
+    scheduledProcedures: storage.getScheduledProcedures(),
+    settings: settings2,
+    medCatalog: storage.getMedCatalog()
+  };
+}
 function buildFullBackupPayload() {
   return {
     format: "r-plus-backup",
@@ -38463,17 +38611,7 @@ function buildFullBackupPayload() {
     appVersion: window.__RPC_APP_VERSION__ || null,
     theme: localStorage.getItem("theme") || "light",
     guidedTourDoneForVersion: localStorage.getItem(GUIDED_TOUR_LS_KEY),
-    data: {
-      patients: storage.getPatients(),
-      notes: storage.getNotes(),
-      indicaciones: storage.getIndicaciones(),
-      labHistory: storage.getLabHistory(),
-      medRecetaByPatient: storage.getMedRecetaByPatient(),
-      listadoProblemas: storage.getListadoProblemas(),
-      scheduledProcedures: storage.getScheduledProcedures(),
-      settings: storage.getSettings(),
-      medCatalog: storage.getMedCatalog()
-    }
+    data: buildBackupDataFromMemory()
   };
 }
 function parseDateDMY2(value) {
@@ -38603,12 +38741,20 @@ function importEntriesWithConflicts(entries, actionLabel) {
   );
   return out;
 }
-function exportDataBackup() {
-  saveState();
+async function exportDataBackup() {
+  await saveState({ immediate: true });
   var payload = buildFullBackupPayload();
+  var n = (payload.data.patients || []).length;
   downloadJsonPayload(payload, "R-plus-respaldo-" + formatDateSlug(/* @__PURE__ */ new Date()) + ".json");
-  addAuditEntry("backup-full-export", "ok", (payload.data.patients || []).length, "");
-  rt23.showToast("Respaldo descargado", "success");
+  addAuditEntry("backup-full-export", "ok", n, "");
+  if (n === 0) {
+    rt23.showToast(
+      "Respaldo descargado sin pacientes. Si esperabas datos, revisa la lista y exporta de nuevo.",
+      "error"
+    );
+  } else {
+    rt23.showToast("Respaldo descargado (" + n + " paciente" + (n === 1 ? "" : "s") + ")", "success");
+  }
 }
 function exportActivePatientBackup() {
   var aid7 = rt23.getActiveId();
@@ -38779,7 +38925,7 @@ function onBackupFileChosen(ev) {
   ev.target.value = "";
   if (!f) return;
   var reader = new FileReader();
-  reader.onload = function() {
+  reader.onload = async function() {
     try {
       var payload = JSON.parse(reader.result);
       if (!payload || payload.format !== "r-plus-backup" || payload.version !== 1 || !payload.data) {
@@ -38787,38 +38933,37 @@ function onBackupFileChosen(ev) {
         return;
       }
       var n = (payload.data.patients || []).length;
-      if (!confirm("Esto reemplaza todos los pacientes y datos locales en esta computadora (" + n + " pacientes en el archivo). No se puede deshacer. \xBFContinuar?")) {
+      var confirmMsg = "Esto reemplaza todos los pacientes y datos locales en esta computadora (" + n + " pacientes en el archivo). No se puede deshacer.";
+      if (n === 0) {
+        confirmMsg += "\n\nEl archivo no trae pacientes (solo ajustes/plantillas). Si esperabas pacientes, pide un respaldo nuevo desde el equipo origen.";
+      }
+      if (!confirm(confirmMsg + "\n\n\xBFContinuar?")) {
         return;
       }
       if (typeof pushUndoSnapshot === "function") rt23.pushUndoSnapshot("Importar respaldo completo");
-      localStorage.setItem("rpc-preimport-backup", JSON.stringify(buildFullBackupPayload()));
-      localStorage.setItem("rpc-patients", JSON.stringify(payload.data.patients || []));
-      localStorage.setItem("rpc-notes", JSON.stringify(payload.data.notes || {}));
-      localStorage.setItem("rpc-indicaciones", JSON.stringify(payload.data.indicaciones || {}));
-      localStorage.setItem("rpc-labHistory", JSON.stringify(payload.data.labHistory || {}));
-      localStorage.setItem("rpc-medRecetaByPatient", JSON.stringify(payload.data.medRecetaByPatient || {}));
-      localStorage.setItem("rpc-listado-problemas", JSON.stringify(payload.data.listadoProblemas || {}));
-      localStorage.setItem(
-        "rpc-scheduled-procedures",
-        JSON.stringify(payload.data.scheduledProcedures || [])
-      );
-      localStorage.setItem("rpc-settings", JSON.stringify(payload.data.settings || {}));
-      if (payload.data.medCatalog && typeof payload.data.medCatalog === "object") {
-        storage.saveMedCatalog(payload.data.medCatalog);
+      await saveState({ immediate: true });
+      try {
+        localStorage.setItem("rpc-preimport-backup", JSON.stringify(buildFullBackupPayload()));
+      } catch (_pre) {
       }
-      if (payload.theme === "dark" || payload.theme === "light") {
-        localStorage.setItem("theme", payload.theme);
-      }
-      if (payload.guidedTourDoneForVersion) {
-        localStorage.setItem(GUIDED_TOUR_LS_KEY, payload.guidedTourDoneForVersion);
-      } else {
-        localStorage.removeItem(GUIDED_TOUR_LS_KEY);
-      }
+      await persistFullBackupPayload(payload);
       addAuditEntry("backup-full-import", "ok", n, "");
+      rt23.showToast(
+        "Respaldo importado (" + n + " paciente" + (n === 1 ? "" : "s") + "). Recargando\u2026",
+        "success"
+      );
       location.reload();
     } catch (err) {
-      rt23.showToast("No se pudo leer el respaldo", "error");
-      addAuditEntry("backup-full-import", "error", 0, "read-error");
+      var code = err && err.message;
+      if (code === "SAVE_FAILED" || code === "QUOTA_EXCEEDED") {
+        rt23.showToast(
+          "No se pudo guardar el respaldo: almacenamiento local lleno. Libera espacio e intenta de nuevo.",
+          "error"
+        );
+      } else {
+        rt23.showToast("No se pudo leer el respaldo", "error");
+      }
+      addAuditEntry("backup-full-import", "error", 0, code || "read-error");
     }
   };
   reader.readAsText(f);
@@ -40297,7 +40442,7 @@ function refreshUndoButtonState() {
     btn.textContent = "Deshacer \xFAltima operaci\xF3n";
   }
 }
-function undoLastOperation() {
+async function undoLastOperation() {
   var stack = getUndoStack();
   if (!stack.length) {
     rt26.showToast("No hay operaciones para deshacer.", "error");
@@ -40307,21 +40452,20 @@ function undoLastOperation() {
   if (!confirm('\xBFRevertir "' + (snap.label || "\xFAltima operaci\xF3n") + '"? La aplicaci\xF3n se recargar\xE1.')) return;
   var rest = stack.slice(1);
   saveUndoStack(rest);
-  localStorage.setItem("rpc-patients", JSON.stringify(snap.data.patients || []));
-  localStorage.setItem("rpc-notes", JSON.stringify(snap.data.notes || {}));
-  localStorage.setItem("rpc-indicaciones", JSON.stringify(snap.data.indicaciones || {}));
-  localStorage.setItem("rpc-labHistory", JSON.stringify(snap.data.labHistory || {}));
-  localStorage.setItem("rpc-medRecetaByPatient", JSON.stringify(snap.data.medRecetaByPatient || {}));
-  localStorage.setItem("rpc-listado-problemas", JSON.stringify(snap.data.listadoProblemas || {}));
-  localStorage.setItem(
-    "rpc-scheduled-procedures",
-    JSON.stringify(snap.data.scheduledProcedures || [])
-  );
+  replaceAppStateFromBackupData(snap.data || {});
+  try {
+    localStorage.setItem(
+      "rpc-scheduled-procedures",
+      JSON.stringify(snap.data.scheduledProcedures || [])
+    );
+  } catch (_e) {
+  }
   localStorage.setItem("rpc-settings", JSON.stringify(snap.data.settings || {}));
   if (snap.data.medCatalog && typeof snap.data.medCatalog === "object") {
     storage.saveMedCatalog(snap.data.medCatalog);
   }
   if (snap.theme === "dark" || snap.theme === "light") localStorage.setItem("theme", snap.theme);
+  await saveState({ immediate: true });
   rt26.addAuditEntry("undo-restore", "ok", 0, snap.label || "");
   location.reload();
 }

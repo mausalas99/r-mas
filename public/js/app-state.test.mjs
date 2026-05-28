@@ -51,6 +51,24 @@ describe('app-state', () => {
     assert.strictEqual(ran, true);
   });
 
+  it('replaceAppStateFromBackupData + flushSaveState persists imported patients', async () => {
+    appState.replaceAppStateFromBackupData({
+      patients: [{ id: 'p2', nombre: 'Luis' }],
+      notes: { p2: { estudios: 'x' } },
+    });
+    await appState.flushSaveState();
+    const fromStorage = storage.getPatients();
+    assert.strictEqual(fromStorage.length, 1);
+    assert.strictEqual(fromStorage[0].id, 'p2');
+  });
+
+  it('localStorage-only import is wiped by flushSaveState when memory is empty', async () => {
+    storage.savePatients([{ id: 'imported', nombre: 'X' }]);
+    assert.strictEqual(appState.patients.length, 0);
+    await appState.flushSaveState();
+    assert.strictEqual(storage.getPatients().length, 0);
+  });
+
   it('flushSaveState persists without debounce wait', async () => {
     const orig = storage.saveAll.bind(storage);
     let calls = 0;

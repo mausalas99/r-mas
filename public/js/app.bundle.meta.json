@@ -121,7 +121,7 @@
       "format": "esm"
     },
     "public/js/app-state.mjs": {
-      "bytes": 3671,
+      "bytes": 4558,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -604,7 +604,7 @@
       "format": "esm"
     },
     "public/js/features/lan-sync.mjs": {
-      "bytes": 74444,
+      "bytes": 77179,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -1991,7 +1991,7 @@
       "format": "esm"
     },
     "public/js/features/settings-help.mjs": {
-      "bytes": 96284,
+      "bytes": 96701,
       "imports": [
         {
           "path": "public/js/tour-targets.mjs",
@@ -2229,7 +2229,7 @@
       "format": "esm"
     },
     "public/js/features/platform.mjs": {
-      "bytes": 73979,
+      "bytes": 75123,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -2382,7 +2382,7 @@
       "format": "esm"
     },
     "public/js/features/productivity.mjs": {
-      "bytes": 17029,
+      "bytes": 16670,
       "imports": [
         {
           "path": "public/js/app-state.mjs",
@@ -2969,7 +2969,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 2970945
+      "bytes": 2978802
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -3016,7 +3016,7 @@
           "bytesInOutput": 5396
         },
         "public/js/app-state.mjs": {
-          "bytesInOutput": 2916
+          "bytesInOutput": 3699
         },
         "public/js/mode-features.mjs": {
           "bytesInOutput": 530
@@ -3130,7 +3130,7 @@
           "bytesInOutput": 1727
         },
         "public/js/features/lan-sync.mjs": {
-          "bytesInOutput": 71595
+          "bytesInOutput": 74366
         },
         "public/js/features/estado-actual-meds.mjs": {
           "bytesInOutput": 3603
@@ -3310,7 +3310,7 @@
           "bytesInOutput": 4407
         },
         "public/js/features/settings-help.mjs": {
-          "bytesInOutput": 90364
+          "bytesInOutput": 90769
         },
         "public/js/features/tendencias.mjs": {
           "bytesInOutput": 64999
@@ -3331,7 +3331,7 @@
           "bytesInOutput": 635
         },
         "public/js/features/platform.mjs": {
-          "bytesInOutput": 65766
+          "bytesInOutput": 66713
         },
         "public/js/features/profile.mjs": {
           "bytesInOutput": 13447
@@ -3343,7 +3343,7 @@
           "bytesInOutput": 14203
         },
         "public/js/features/productivity.mjs": {
-          "bytesInOutput": 16407
+          "bytesInOutput": 16005
         },
         "public/js/app-shell.mjs": {
           "bytesInOutput": 28230
@@ -3367,7 +3367,7 @@
           "bytesInOutput": 4305
         }
       },
-      "bytes": 1635491
+      "bytes": 1639995
     }
   }
 }

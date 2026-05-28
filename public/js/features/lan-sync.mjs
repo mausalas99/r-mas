@@ -372,20 +372,17 @@ function appendLanKnownSessionsSection(root) {
     join.style.flex = '0 0 auto';
     join.textContent = inThisRoom ? 'En sala' : 'Unirse';
     join.disabled = inThisRoom;
-    join.onclick = function () {
-      if (inThisRoom) return;
-      joinLanRoom(rec.id, rec.label);
-    };
+    join.setAttribute('data-lan-action', 'join-known');
+    join.setAttribute('data-room-id', String(rec.id || ''));
+    join.setAttribute('data-room-label', String(rec.label || rec.id || ''));
     var del = document.createElement('button');
     del.type = 'button';
     del.className = 'btn-lan-danger';
     del.style.flex = '0 0 auto';
     del.textContent = 'Quitar';
     del.title = 'Quitar de la lista';
-    del.onclick = function () {
-      forgetLanRoomSession(rec.id);
-      renderLanPanel();
-    };
+    del.setAttribute('data-lan-action', 'forget-known');
+    del.setAttribute('data-room-id', String(rec.id || ''));
     row.appendChild(lab);
     row.appendChild(join);
     row.appendChild(del);
@@ -411,7 +408,10 @@ function initLanClientFromStorage() {
     bootLanRoomMembership();
   }, 0);
 }
-initLanClientFromStorage();
+if (typeof document !== 'undefined') {
+  initLanClientFromStorage();
+  wireLanPanelDelegation();
+}
 
 var LAN_DISCONNECT_BANNER_MSG =
   'Sin conexión al host LAN. LiveSync (salas y relay) puede estar limitado hasta reconectar.';
@@ -481,8 +481,56 @@ lanClient.addEventListener('lan-status', function (ev) {
   updateLanConnectionBanner(!!(ev.detail && ev.detail.connected));
 });
 lanClient.addEventListener('lan-patch', function () {
-  if (typeof renderLanPanel === 'function') renderLanPanel();
+  syncLiveSyncStatusChrome();
 });
+
+function patchLanPanelJoinButtons() {
+  if (typeof document === 'undefined') return;
+  var root = document.getElementById('lan-connection-panel-root');
+  if (!root) return;
+  root.querySelectorAll('[data-lan-action="join-room"], [data-lan-action="join-known"]').forEach(function (btn) {
+    var rid = btn.getAttribute('data-room-id') || '';
+    var inRoom = String(activeLiveSyncRoomId || '') === String(rid);
+    btn.textContent = inRoom ? 'En sala' : 'Unirse';
+    btn.disabled = inRoom;
+  });
+}
+
+var _lanPanelDelegationWired = false;
+function wireLanPanelDelegation() {
+  if (_lanPanelDelegationWired) return;
+  if (typeof document === 'undefined') return;
+  var root = document.getElementById('lan-connection-panel-root');
+  if (!root) return;
+  _lanPanelDelegationWired = true;
+  root.addEventListener('click', function (ev) {
+    var btn = /** @type {HTMLElement | null} */ (
+      ev.target && ev.target.closest ? ev.target.closest('[data-lan-action]') : null
+    );
+    if (!btn || !root.contains(btn) || /** @type {HTMLButtonElement} */ (btn).disabled) return;
+    var action = btn.getAttribute('data-lan-action') || '';
+    if (!action) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    if (action === 'join-room' || action === 'join-known') {
+      joinLanRoom(btn.getAttribute('data-room-id'), btn.getAttribute('data-room-label'));
+    } else if (action === 'forget-known') {
+      forgetLanRoomSession(btn.getAttribute('data-room-id'));
+      renderLanPanel();
+    } else if (action === 'delete-room') {
+      deleteLanRoom(btn.getAttribute('data-room-id'));
+    } else if (action === 'join-invite') {
+      if (isLanElectronDesktop() && typeof storage.saveLanUiRole === 'function') {
+        storage.saveLanUiRole('client');
+      }
+      joinLanFromInviteUi();
+    } else if (action === 'host-activate') {
+      saveLanSettingsFromUi({ copyInviteAfter: true });
+    } else if (action === 'create-room') {
+      createLanRoomFromUi();
+    }
+  });
+}
 function getLanClientId() {
   try {
     var id = localStorage.getItem('rpc-lan-client-id');
@@ -1140,6 +1188,7 @@ function leaveLiveSyncRoom(opts) {
   stopLiveSyncReconnectLoop();
   lanClient.disconnectLiveChannel();
   syncLiveSyncStatusChrome();
+  patchLanPanelJoinButtons();
   if (typeof renderLanPanel === 'function') renderLanPanel();
 }
 lanClient.addEventListener('lan-live', function (ev) {
@@ -1211,10 +1260,7 @@ function appendLanJoinOtherMacSection(root) {
   btnJoin.className = 'btn-lan-secondary';
   btnJoin.style.flex = '1';
   btnJoin.textContent = 'Unirse con enlace';
-  btnJoin.onclick = function () {
-    if (typeof storage.saveLanUiRole === 'function') storage.saveLanUiRole('client');
-    joinLanFromInviteUi();
-  };
+  btnJoin.setAttribute('data-lan-action', 'join-invite');
   row.appendChild(btnJoin);
   inner.appendChild(row);
   details.appendChild(inner);
@@ -1335,9 +1381,7 @@ async function renderLanPanelOnce() {
       btnHostStart.className = 'btn-lan-primary';
       btnHostStart.style.flex = '1';
       btnHostStart.textContent = 'Activar y copiar invitación';
-      btnHostStart.onclick = function () {
-        saveLanSettingsFromUi({ copyInviteAfter: true });
-      };
+      btnHostStart.setAttribute('data-lan-action', 'host-activate');
       row.appendChild(btnHostStart);
     } else {
       var btnJoinLink = document.createElement('button');
@@ -1345,12 +1389,7 @@ async function renderLanPanelOnce() {
       btnJoinLink.className = 'btn-lan-primary';
       btnJoinLink.style.flex = '1';
       btnJoinLink.textContent = 'Unirse con enlace';
-      btnJoinLink.onclick = function () {
-        if (isLanElectronDesktop() && typeof storage.saveLanUiRole === 'function') {
-          storage.saveLanUiRole('client');
-        }
-        joinLanFromInviteUi();
-      };
+      btnJoinLink.setAttribute('data-lan-action', 'join-invite');
       row.appendChild(btnJoinLink);
     }
     actions.appendChild(row);
@@ -1504,7 +1543,7 @@ async function renderLanPanelOnce() {
   createBtn.className = 'btn-lan-primary';
   createBtn.textContent = 'Crear sala';
   createBtn.disabled = !isLanSessionConfiguredForRest();
-  createBtn.onclick = createLanRoomFromUi;
+  createBtn.setAttribute('data-lan-action', 'create-room');
 
   createRow.appendChild(newRoomInput);
   createRow.appendChild(createBtn);
@@ -1575,20 +1614,20 @@ async function renderLanPanelOnce() {
       joinBtn.type = 'button';
       joinBtn.className = 'btn-lan-secondary';
       joinBtn.style.flex = '0 0 auto';
-      joinBtn.textContent = activeLiveSyncRoomId === id ? 'En sala' : 'Unirse';
-      joinBtn.disabled = activeLiveSyncRoomId === id;
-      joinBtn.onclick = function () {
-        joinLanRoom(id, disp);
-      };
+      var inRoom = activeLiveSyncRoomId === id;
+      joinBtn.textContent = inRoom ? 'En sala' : 'Unirse';
+      joinBtn.disabled = inRoom;
+      joinBtn.setAttribute('data-lan-action', 'join-room');
+      joinBtn.setAttribute('data-room-id', id);
+      joinBtn.setAttribute('data-room-label', disp);
 
       var delBtn = document.createElement('button');
       delBtn.type = 'button';
       delBtn.className = 'btn-lan-danger';
       delBtn.textContent = 'Eliminar';
       delBtn.disabled = !lanClient.connected;
-      delBtn.onclick = function () {
-        deleteLanRoom(id);
-      };
+      delBtn.setAttribute('data-lan-action', 'delete-room');
+      delBtn.setAttribute('data-room-id', id);
 
       li.appendChild(name);
       li.appendChild(joinBtn);
@@ -1601,6 +1640,7 @@ async function renderLanPanelOnce() {
   root.appendChild(roomsCard);
   appendLanDisconnectBannerPref(root);
   purgeDuplicateLanRoomsPanels(root);
+  patchLanPanelJoinButtons();
 }
 
 async function resolveLanHostUrlForShare() {
@@ -1839,7 +1879,26 @@ async function saveLanSettingsFromUi(opts) {
 
 function joinLanRoom(roomId, displayName) {
   var id = String(roomId || '').trim();
-  if (!id) return;
+  if (!id) {
+    runtime.showToast('No se pudo identificar la sala. Vuelve a abrir ⇄ e inténtalo.', 'error');
+    return;
+  }
+  if (!isLanSessionConfiguredForRest()) {
+    runtime.showToast(
+      'Primero conecta al servidor del equipo (Activar sala en vivo o pega el enlace de invitación).',
+      'error'
+    );
+    return;
+  }
+  if (!lanClient.baseUrl()) {
+    try {
+      initLanClientFromStorage();
+    } catch (_boot) {}
+  }
+  if (!lanClient.baseUrl()) {
+    runtime.showToast('Falta la dirección del servidor LAN. Configúrala en ⇄ antes de unirte.', 'error');
+    return;
+  }
   if (
     activeLiveSyncRoomId === id &&
     String(lanClient.liveRoomId || '') === id &&
@@ -1847,6 +1906,8 @@ function joinLanRoom(roomId, displayName) {
   ) {
     syncLiveSyncAfterRoomJoin(id);
     syncLiveSyncStatusChrome();
+    patchLanPanelJoinButtons();
+    runtime.showToast('Ya estás en esta sala', 'success');
     return;
   }
   if (activeLiveSyncRoomId && activeLiveSyncRoomId !== id) {
@@ -1873,7 +1934,7 @@ function joinLanRoom(roomId, displayName) {
   }
   runtime.showToast('Sala: sincronizando expediente, agenda y pendientes', 'success');
   syncLiveSyncStatusChrome();
-  renderLanPanel();
+  patchLanPanelJoinButtons();
   syncLiveSyncAfterRoomJoin(id);
 }
 
@@ -2008,6 +2069,7 @@ function openConnectionDropdown() {
   if (bg) bg.classList.add('open');
   var syncBtn = document.getElementById('btn-header-team-sync');
   if (syncBtn) syncBtn.setAttribute('aria-expanded', 'true');
+  wireLanPanelDelegation();
   if (typeof renderLanPanel === 'function') renderLanPanel();
 }
 

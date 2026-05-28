@@ -44,6 +44,32 @@ export function setRecetaHuByPatient(next) {
   recetaHuByPatient = next;
 }
 
+function clonePlainRecord(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch (_e) {
+    return {};
+  }
+}
+
+/** Sustituye pacientes y datos clínicos en memoria (importación de respaldo, deshacer). */
+export function replaceAppStateFromBackupData(data) {
+  if (!data || typeof data !== 'object') return;
+  var nextPatients = Array.isArray(data.patients) ? data.patients : [];
+  setPatients(
+    nextPatients.filter(function (p) {
+      return p && !p.isDemo;
+    })
+  );
+  setNotes(clonePlainRecord(data.notes));
+  setIndicaciones(clonePlainRecord(data.indicaciones));
+  setLabHistory(clonePlainRecord(data.labHistory));
+  setMedRecetaByPatient(clonePlainRecord(data.medRecetaByPatient));
+  listadoProblemas = clonePlainRecord(data.listadoProblemas);
+  medNotaSelectionByPatient = {};
+}
+
 export function setSaveStateHooks({ before, after, onSaveResult } = {}) {
   if (before !== undefined) _beforeSave = before;
   if (after !== undefined) _afterSave = after;

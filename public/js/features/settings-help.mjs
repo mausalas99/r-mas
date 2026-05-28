@@ -1318,6 +1318,18 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '6.3.5': [
+    {
+      title: 'Bomba de insulina (switch)',
+      body:
+        'Interruptor como en <strong>Vista de laboratorio</strong>: activado solo filas con <strong>unidades</strong>; apagado, glucometrías normales.',
+    },
+    {
+      title: 'Sala en vivo — Unirse',
+      body:
+        'Corregido <strong>Unirse</strong> en la lista de salas: el botón vuelve a responder al primer clic.',
+    },
+  ],
   '6.3.4': [
     {
       title: 'Estado Actual — multilectura',

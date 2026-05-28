@@ -5,6 +5,8 @@ import {
   indicaciones,
   labHistory,
   medRecetaByPatient,
+  replaceAppStateFromBackupData,
+  saveState,
 } from "../app-state.mjs";
 import { storage } from "../storage.js";
 import { isPaseMode } from "./chrome.mjs";
@@ -116,7 +118,7 @@ export function refreshUndoButtonState() {
   }
 }
 
-export function undoLastOperation() {
+export async function undoLastOperation() {
   var stack = getUndoStack();
   if (!stack.length) {
     rt.showToast("No hay operaciones para deshacer.", "error");
@@ -126,21 +128,19 @@ export function undoLastOperation() {
   if (!confirm('¿Revertir "' + (snap.label || "última operación") + '"? La aplicación se recargará.')) return;
   var rest = stack.slice(1);
   saveUndoStack(rest);
-  localStorage.setItem("rpc-patients", JSON.stringify(snap.data.patients || []));
-  localStorage.setItem("rpc-notes", JSON.stringify(snap.data.notes || {}));
-  localStorage.setItem("rpc-indicaciones", JSON.stringify(snap.data.indicaciones || {}));
-  localStorage.setItem("rpc-labHistory", JSON.stringify(snap.data.labHistory || {}));
-  localStorage.setItem("rpc-medRecetaByPatient", JSON.stringify(snap.data.medRecetaByPatient || {}));
-  localStorage.setItem("rpc-listado-problemas", JSON.stringify(snap.data.listadoProblemas || {}));
-  localStorage.setItem(
-    "rpc-scheduled-procedures",
-    JSON.stringify(snap.data.scheduledProcedures || [])
-  );
+  replaceAppStateFromBackupData(snap.data || {});
+  try {
+    localStorage.setItem(
+      "rpc-scheduled-procedures",
+      JSON.stringify(snap.data.scheduledProcedures || [])
+    );
+  } catch (_e) {}
   localStorage.setItem("rpc-settings", JSON.stringify(snap.data.settings || {}));
   if (snap.data.medCatalog && typeof snap.data.medCatalog === "object") {
     storage.saveMedCatalog(snap.data.medCatalog);
   }
   if (snap.theme === "dark" || snap.theme === "light") localStorage.setItem("theme", snap.theme);
+  await saveState({ immediate: true });
   rt.addAuditEntry("undo-restore", "ok", 0, snap.label || "");
   location.reload();
 }
