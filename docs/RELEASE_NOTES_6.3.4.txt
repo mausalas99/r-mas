@@ -1,11 +1,24 @@
-R+ 6.3.4 (Sala en vivo — copiar invitación)
-============================================
+R+ 6.3.4 (Estado Actual multilectura, bomba de insulina y Sala en vivo)
+========================================================================
 
 Fecha: 2026-05-28
 
 ## Resumen
 
-Parche único: en **Sala en vivo (⇄)** los botones para copiar el enlace de invitación al equipo dejaban de hacer nada sin mensaje de error; ahora el enlace se copia al portapapeles como corresponde.
+Parche de monitoreo en **Sala**: en **Estado Actual** puedes registrar hasta cuatro lecturas del mismo signo vital en el turno (T°, TA, FC, etc.), llevar **bomba de insulina** en el SOAP, y las gráficas de glucometría respetan la ventana del registro. Al cambiar de paciente se conserva la pestaña del expediente (p. ej. Estado Actual o Tendencias). Además, en **Sala en vivo (⇄)** vuelve a funcionar copiar la invitación al portapapeles.
+
+## Nuevo / mejorado
+
+### Estado Actual (Sala)
+
+- **Multilectura por signo** — Botón **+1** en cada chip de signo vital (no solo temperatura): hasta 4 lecturas por signo en el modal y hasta 4 en el mismo día de turno; hora opcional por lectura.
+- **Bomba de insulina** — Bloque opcional con glucometría, unidades y hora; varias filas; el texto SOAP incluye `BOMBA DE INSULINA (…)`.
+- **Historial y snapshot** — Las lecturas extra se guardan en `vitalSeries` con compatibilidad hacia atrás (`tempPeak`, `*Extra` en registros antiguos).
+- **Gráficas** — Glucometrías fuera de la ventana del turno no se mezclan en la tendencia del registro actual.
+
+### Expediente (Sala)
+
+- **Pestaña al cambiar paciente** — Si estabas en **Estado actual**, **Tendencias** o **Cultivos**, al seleccionar otro paciente permaneces en esa vista (ya no vuelves siempre a Pendientes).
 
 ## Correcciones
 
