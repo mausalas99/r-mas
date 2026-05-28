@@ -1,16 +1,19 @@
-R+ 6.3.4 (estable — release 6.3.4)
-======================================
+R+ 6.3.4 (Sala en vivo — copiar invitación)
+============================================
 
 Fecha: 2026-05-28
 
 ## Resumen
 
-TODO: resumen en una o dos frases.
+Parche único: en **Sala en vivo (⇄)** los botones para copiar el enlace de invitación al equipo dejaban de hacer nada sin mensaje de error; ahora el enlace se copia al portapapeles como corresponde.
 
-## Nuevo / mejorado
+## Correcciones
 
-- **TODO:** punto 1
-- **TODO:** punto 2
+### Sala en vivo (⇄)
+
+- **Copiar invitación para enviar** — Vuelve a copiar el enlace `…/join?code=…` (con sala activa, incluye `room=…`).
+- **Copiar enlace móvil** — Vuelve a copiar la URL para iPad/Safari en la misma Wi‑Fi.
+- **Activar y copiar invitación** — Tras activar el anfitrión, la invitación se copia de nuevo al portapapeles cuando el servidor responde.
 
 ## Instalación
 

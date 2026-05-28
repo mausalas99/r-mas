@@ -1940,7 +1940,7 @@
       "format": "esm"
     },
     "public/js/features/settings-help.mjs": {
-      "bytes": 95615,
+      "bytes": 95901,
       "imports": [
         {
           "path": "public/js/tour-targets.mjs",
@@ -2918,7 +2918,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 2932267
+      "bytes": 2932650
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -3253,7 +3253,7 @@
           "bytesInOutput": 4407
         },
         "public/js/features/settings-help.mjs": {
-          "bytesInOutput": 89703
+          "bytesInOutput": 89988
         },
         "public/js/features/tendencias.mjs": {
           "bytesInOutput": 64999
@@ -3310,7 +3310,7 @@
           "bytesInOutput": 4305
         }
       },
-      "bytes": 1615820
+      "bytes": 1616105
     }
   }
 }

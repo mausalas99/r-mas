@@ -29,6 +29,11 @@ Todo se descarga desde **[Releases — última versión](https://github.com/maus
 
 ---
 
+## R+ 6.3.4 (Sala en vivo — copiar invitación)
+
+- **Sala en vivo (⇄)** — Corregido **Copiar invitación para enviar**, **Copiar enlace móvil** y **Activar y copiar invitación**: antes no copiaban al portapapeles ni mostraban error; ahora el enlace se copia correctamente para compartir por WhatsApp, correo, etc.
+
+Notas: `docs/RELEASE_NOTES_6.3.4.txt`.
 
 ## R+ 6.3.3 (Guía clínica desbloqueable, modales y gasometría explicada)
 
@@ -223,7 +228,7 @@ Notas: `docs/RELEASE_NOTES_3.2.2.txt`.
 
 ## R+ 6.3.4 (estable — release 6.3.4)
 
-- **TODO:** completar bullets en README.
+- **Sala en vivo (⇄)** — **Copiar invitación** y **Copiar enlace móvil** vuelven a funcionar (el enlace llega al portapapeles).
 
 Notas: `docs/RELEASE_NOTES_6.3.4.txt`.
 ## R+ 3.2.1 (parche — laboratorio: BH compacta, copiar, asteriscos)

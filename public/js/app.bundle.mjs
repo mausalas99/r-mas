@@ -33871,6 +33871,12 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
   }
 ];
 var RELEASE_NOTES_HIGHLIGHTS = {
+  "6.3.4": [
+    {
+      title: "Sala en vivo (\u21C4)",
+      body: "Corregido <strong>Copiar invitaci\xF3n</strong>, <strong>Copiar enlace m\xF3vil</strong> y <strong>Activar y copiar invitaci\xF3n</strong>: el enlace vuelve al portapapeles para compartir con el equipo."
+    }
+  ],
   "6.3.3": [
     {
       title: "Gu\xEDa cl\xEDnica",

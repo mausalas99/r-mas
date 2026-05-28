@@ -1320,12 +1320,9 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 var RELEASE_NOTES_HIGHLIGHTS = {
   '6.3.4': [
     {
-      title: 'TODO',
-      body: 'Completar antes de publicar.',
-    },
-    {
-      title: 'TODO',
-      body: 'Completar antes de publicar.',
+      title: 'Sala en vivo (⇄)',
+      body:
+        'Corregido <strong>Copiar invitación</strong>, <strong>Copiar enlace móvil</strong> y <strong>Activar y copiar invitación</strong>: el enlace vuelve al portapapeles para compartir con el equipo.',
     },
   ],
   '6.3.3': [
