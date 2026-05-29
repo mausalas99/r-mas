@@ -978,6 +978,7 @@
             <div class="exp-segment-bar rpc-subtab-bar" id="exp-segment-clinico" role="tablist" aria-label="Secciones clínicas">
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-notas" role="tab" data-exp-segment="notas" aria-selected="false" aria-controls="itab-content-notas" onclick="switchInnerTab('notas')">Nota de evolución</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-indica" role="tab" data-exp-segment="indica" aria-selected="false" aria-controls="itab-content-indica" onclick="switchInnerTab('indica')">Indicaciones</button>
+              <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-vpo" role="tab" data-exp-segment="vpo" aria-selected="false" aria-controls="itab-content-vpo" onclick="switchInnerTab('vpo')">VPO</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-manejo" role="tab" data-exp-segment="manejo" aria-selected="false" aria-controls="itab-content-manejo" onclick="switchInnerTab('manejo')">Manejo</button>
             </div>
             <div class="exp-segment-body exp-segment-body--clinico"></div>
@@ -995,6 +996,7 @@
           <div id="itab-content-salida" class="tab-content exp-composite-pane">
             <div class="exp-segment-bar rpc-subtab-bar" id="exp-segment-salida" role="tablist" aria-label="Salida" style="display:none;">
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-listado" role="tab" data-exp-segment="listado" aria-selected="false" aria-controls="itab-content-listado" onclick="switchInnerTab('listado')">Listado</button>
+              <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-vpo-salida" role="tab" data-exp-segment="vpo" aria-selected="false" aria-controls="itab-content-vpo" onclick="switchInnerTab('vpo')">VPO</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-recetaHu" role="tab" data-exp-segment="recetaHu" aria-selected="false" aria-controls="itab-content-recetaHu" onclick="switchInnerTab('recetaHu')">Receta HU</button>
             </div>
             <div class="exp-segment-body exp-segment-body--salida exp-salida-mount"></div>
@@ -1007,6 +1009,7 @@
           <div id="itab-content-listado" class="tab-content"><div id="listado-form" class="rpc-form-stack"></div></div>
           <div id="itab-content-todo" class="tab-content active"><div id="todo-form" class="rpc-form-stack-tight"></div></div>
           <div id="itab-content-manejo" class="tab-content"><div id="manejo-container"></div></div>
+          <div id="itab-content-vpo" class="tab-content"><div id="vpo-container" class="rpc-form-stack"></div></div>
           <div id="itab-content-recetaHu" class="tab-content"><div id="receta-hu-container"></div></div>
         </div>
         </div>

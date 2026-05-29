@@ -21,6 +21,7 @@ export function estimateJsonBytes(value) {
  *   medRecetaByPatient?: unknown,
  *   listadoProblemas?: unknown,
  *   recetaHuByPatient?: unknown,
+ *   vpoByPatient?: unknown,
  * }} data
  */
 export function estimateRpcPersistBytes(data) {
@@ -32,7 +33,8 @@ export function estimateRpcPersistBytes(data) {
     estimateJsonBytes(d.labHistory) +
     estimateJsonBytes(d.medRecetaByPatient) +
     estimateJsonBytes(d.listadoProblemas) +
-    estimateJsonBytes(d.recetaHuByPatient)
+    estimateJsonBytes(d.recetaHuByPatient) +
+    estimateJsonBytes(d.vpoByPatient)
   );
 }
 

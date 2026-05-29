@@ -13,6 +13,7 @@ export const GRANULAR_TABS = [
   'listado',
   'todo',
   'manejo',
+  'vpo',
   'recetaHu',
 ];
 
@@ -22,7 +23,7 @@ export const CONSOLIDATED_TABS_INTER = ['paciente', 'clinico', 'resultados', 'sa
 /** @deprecated alias of CONSOLIDATED_TABS_INTER for backward compatibility */
 export const CONSOLIDATED_TABS = CONSOLIDATED_TABS_INTER;
 
-const CLINICO_GRANULAR_TABS = ['notas', 'indica', 'manejo'];
+const CLINICO_GRANULAR_TABS = ['notas', 'indica', 'vpo', 'manejo'];
 export const COMPOSITE_PANE_IDS = ['paciente', 'clinico', 'estadoActual', 'resultados', 'salida'];
 
 /** @deprecated use isManejoSectionHidden — hideClinicoTab ahora solo oculta Manejo (compat). */
@@ -50,10 +51,10 @@ export function getConsolidatedTabs(settings) {
   return tabs;
 }
 
-export const CLINICO_SECTIONS_ALL = ['notas', 'indica', 'manejo'];
+export const CLINICO_SECTIONS_ALL = ['notas', 'indica', 'vpo', 'manejo'];
 export const CLINICO_SECTIONS_SALA = ['manejo'];
 export const RESULTADOS_SECTIONS = ['tend', 'cult'];
-export const SALIDA_SECTIONS_SALA = ['listado', 'recetaHu'];
+export const SALIDA_SECTIONS_SALA = ['listado', 'vpo', 'recetaHu'];
 
 /** @deprecated use getClinicoSections(settings) */
 export const CLINICO_SECTIONS = CLINICO_SECTIONS_ALL;
@@ -69,6 +70,7 @@ const GRANULAR_PANE_ORDER = [
   'listado',
   'todo',
   'manejo',
+  'vpo',
   'estadoActual',
   'recetaHu',
 ];
@@ -87,6 +89,7 @@ function granularToConsolidatedMap(settings) {
     cult: { tab: 'resultados', section: 'cult' },
     recetaHu: { tab: 'salida', section: sala ? 'recetaHu' : null },
     listado: { tab: sala ? 'salida' : 'paciente', section: sala ? 'listado' : null },
+    vpo: sala ? { tab: 'salida', section: 'vpo' } : { tab: 'clinico', section: 'vpo' },
   };
   if (sala) map.estadoActual = { tab: 'estadoActual', section: null };
   return map;
@@ -94,6 +97,11 @@ function granularToConsolidatedMap(settings) {
 
 function paneMountSpec(granularTab, settings) {
   var sala = isModeSala(settings);
+  if (granularTab === 'vpo') {
+    return sala
+      ? { composite: 'salida', selector: '.exp-segment-body--salida' }
+      : { composite: 'clinico', selector: '.exp-segment-body--clinico' };
+  }
   var map = {
     datos: { composite: 'paciente', selector: '.exp-datos-mount' },
     todo: { composite: 'paciente', selector: '.exp-pendientes-mount' },
@@ -114,7 +122,7 @@ export function getClinicoSections(settings) {
     return isManejoSectionHidden(settings) ? [] : CLINICO_SECTIONS_SALA;
   }
   if (isManejoSectionHidden(settings)) {
-    return ['notas', 'indica'];
+    return ['notas', 'indica', 'vpo'];
   }
   return CLINICO_SECTIONS_ALL;
 }
@@ -272,10 +280,12 @@ export function syncConsolidatedSegmentBarVisibility(settings) {
   var clinicoBar = document.getElementById('exp-segment-clinico');
   if (clinicoBar) {
     clinicoBar.style.display = sala || !isClinicoCompositeVisible(settings) ? 'none' : '';
-    ['notas', 'indica', 'manejo'].forEach(function (section) {
+    ['notas', 'indica', 'vpo', 'manejo'].forEach(function (section) {
       var btn = clinicoBar.querySelector('[data-exp-segment="' + section + '"]');
       if (!btn) return;
-      if (section === 'manejo') {
+      if (section === 'vpo') {
+        btn.style.display = sala ? 'none' : '';
+      } else if (section === 'manejo') {
         btn.style.display = hideManejo ? 'none' : sala ? 'none' : '';
       } else {
         btn.style.display = sala ? 'none' : '';
@@ -283,7 +293,11 @@ export function syncConsolidatedSegmentBarVisibility(settings) {
     });
   }
   var salidaBar = document.getElementById('exp-segment-salida');
-  if (salidaBar) salidaBar.style.display = sala ? '' : 'none';
+  if (salidaBar) {
+    salidaBar.style.display = sala ? '' : 'none';
+    var vpoSalidaBtn = salidaBar.querySelector('[data-exp-segment="vpo"]');
+    if (vpoSalidaBtn) vpoSalidaBtn.style.display = sala ? '' : 'none';
+  }
   var estadoActualTab = document.getElementById('itab-estadoActual');
   if (estadoActualTab) estadoActualTab.style.display = sala ? '' : 'none';
 }
@@ -354,10 +368,9 @@ export function syncConsolidatedPaneVisibility(granularTab, settings) {
     var pane = paneEl(section);
     if (!pane) return;
     var allowed = getClinicoSections(settings).indexOf(section) >= 0;
-    pane.classList.toggle(
-      'active',
-      allowed && target.tab === 'clinico' && target.section === section
-    );
+    var onClinico = target.tab === 'clinico' && target.section === section;
+    var onSalida = target.tab === 'salida' && target.section === section && section === 'vpo';
+    pane.classList.toggle('active', allowed && (onClinico || onSalida));
   });
   RESULTADOS_SECTIONS.forEach(function (section) {
     var pane = paneEl(section);

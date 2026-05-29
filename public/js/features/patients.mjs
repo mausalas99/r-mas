@@ -7,10 +7,12 @@ import {
   labHistory,
   medRecetaByPatient,
   listadoProblemas,
+  vpoByPatient,
   saveState,
   flushSaveState,
 } from '../app-state.mjs';
 import { stashMedInputForPatient } from './medications.mjs';
+import { stashVpoForPatient } from './vpo.mjs';
 import { flushRecetaHuDraftIfMountedFor } from './receta-hu.mjs';
 import { validatePatientForSave, buildExpedienteAdvice } from '../patient-validation.mjs';
 import { shakePatientFieldsForError } from '../ui-motion.mjs';
@@ -903,6 +905,7 @@ function selectPatientCore(id) {
   if (patientChanged) {
     flushRecetaHuDraftIfMountedFor(prevId);
     stashMedInputForPatient(prevId);
+    stashVpoForPatient(prevId);
     flushSaveState();
   }
   rt.setActiveId(id);
@@ -1384,6 +1387,7 @@ export function buildPatientEntry(patientId) {
     indicaciones: indicaciones[patientId] || {},
     labHistory: Array.isArray(labHistory[patientId]) ? labHistory[patientId] : [],
     medReceta: medRecetaByPatient[patientId] || null,
+    vpo: vpoByPatient[patientId] || null,
     listadoProblemas: listadoProblemas[patientId] || null,
     todos: storage.getTodos(patientId),
   };

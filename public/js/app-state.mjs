@@ -11,6 +11,7 @@ export let labHistory = {};
 export let medRecetaByPatient = {};
 export let recetaHuByPatient = {};
 export let listadoProblemas = {};
+export let vpoByPatient = {};
 export let medNotaSelectionByPatient = {};
 
 let _beforeSave = null;
@@ -64,6 +65,10 @@ export function setMedRecetaByPatient(next) {
   medRecetaByPatient = next;
 }
 
+export function setVpoByPatient(next) {
+  vpoByPatient = next;
+}
+
 export function setRecetaHuByPatient(next) {
   recetaHuByPatient = next;
 }
@@ -91,6 +96,7 @@ export function replaceAppStateFromBackupData(data) {
   setLabHistory(clonePlainRecord(data.labHistory));
   setMedRecetaByPatient(clonePlainRecord(data.medRecetaByPatient));
   listadoProblemas = clonePlainRecord(data.listadoProblemas);
+  vpoByPatient = clonePlainRecord(data.vpoByPatient);
   medNotaSelectionByPatient = {};
 }
 
@@ -112,6 +118,7 @@ export function initAppState() {
   setMedRecetaByPatient(storage.getMedRecetaByPatient());
   setRecetaHuByPatient(storage.getRecetaHuByPatient());
   listadoProblemas = storage.getListadoProblemas();
+  vpoByPatient = storage.getVpoByPatient();
   applyMedCatalogOverlay(storage.getMedCatalog());
   medNotaSelectionByPatient = {};
   var monitoreoMigrated = false;
@@ -138,7 +145,8 @@ function runSaveNow() {
     labHistory,
     medRecetaByPatient,
     listadoProblemas,
-    recetaHuByPatient
+    recetaHuByPatient,
+    vpoByPatient
   );
   _saveInFlight = promise;
   return promise

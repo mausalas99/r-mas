@@ -166,6 +166,10 @@ import {
   renderManejo,
 } from './features/manejo.mjs';
 import {
+  registerVpoRuntime,
+  renderVpo,
+} from './features/vpo.mjs';
+import {
   registerRecetaHuRuntime,
   renderRecetaHu,
 } from './features/receta-hu.mjs';
@@ -358,6 +362,7 @@ registerPatientsRuntime({
   renderProcedureAgendaPanel: renderProcedureAgendaPanel,
   refreshAllTodoUIs: refreshAllTodoUIs,
   renderManejo: renderManejo,
+  renderVpo: renderVpo,
   renderRecetaHu: renderRecetaHu,
   renderPaseBoard: renderPaseBoard,
   pushUndoSnapshot: pushUndoSnapshot,
@@ -432,6 +437,14 @@ registerManejoRuntime({
   showToast: showToast,
   emitLiveSyncTodoUpsert: emitLiveSyncTodoUpsert,
   refreshAllTodoUIs: refreshAllTodoUIs,
+});
+
+registerVpoRuntime({
+  getActiveId: function () {
+    return rt.getActiveId();
+  },
+  showToast: showToast,
+  switchAppTab: switchAppTab,
 });
 
 registerRecetaHuRuntime({

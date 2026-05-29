@@ -278,6 +278,18 @@ export const storage = {
     localStorage.setItem('rpc-medRecetaByPatient', JSON.stringify(persist));
   },
 
+  getVpoByPatient() {
+    return safeParseObject(localStorage.getItem('rpc-vpoByPatient'));
+  },
+
+  saveVpoByPatient(vpoByPatient) {
+    const persist = {};
+    Object.keys(vpoByPatient || {}).forEach((k) => {
+      if (vpoByPatient[k] && !k.startsWith('demo-')) persist[k] = vpoByPatient[k];
+    });
+    localStorage.setItem('rpc-vpoByPatient', JSON.stringify(persist));
+  },
+
   getRecetaHuByPatient() {
     return safeParseObject(localStorage.getItem('rpc-recetaHuByPatient'));
   },
@@ -579,7 +591,8 @@ export const storage = {
     labHistory,
     medRecetaByPatient,
     listadoProblemas,
-    recetaHuByPatient
+    recetaHuByPatient,
+    vpoByPatient
   ) {
     var payload = {
       patients: patients,
@@ -589,6 +602,7 @@ export const storage = {
       medRecetaByPatient: medRecetaByPatient || {},
       listadoProblemas: listadoProblemas !== undefined ? listadoProblemas || {} : undefined,
       recetaHuByPatient: recetaHuByPatient !== undefined ? recetaHuByPatient || {} : undefined,
+      vpoByPatient: vpoByPatient !== undefined ? vpoByPatient || {} : undefined,
     };
     var pending = estimateRpcPersistBytes(payload);
     var quotaInfo = await getCachedQuotaEstimate();
@@ -627,6 +641,12 @@ export const storage = {
         if (!k.startsWith('demo-')) recetaPersist[k] = recetaHuByPatient[k];
       });
     }
+    var vpoPersist = {};
+    if (vpoByPatient !== undefined) {
+      Object.keys(vpoByPatient || {}).forEach(function (k) {
+        if (!k.startsWith('demo-')) vpoPersist[k] = vpoByPatient[k];
+      });
+    }
 
     var filteredPatients = patients.filter(function (p) {
       return !p.isDemo;
@@ -644,6 +664,9 @@ export const storage = {
     }
     if (recetaHuByPatient !== undefined) {
       writes.push(['rpc-recetaHuByPatient', JSON.stringify(recetaPersist)]);
+    }
+    if (vpoByPatient !== undefined) {
+      writes.push(['rpc-vpoByPatient', JSON.stringify(vpoPersist)]);
     }
 
     for (var i = 0; i < writes.length; i++) {

@@ -22,6 +22,7 @@ import { inferFechaLabSetFromId, renderTendencias } from "./tendencias.mjs";
 import { renderTodoForm, todoCompareForSort, toggleTodo } from "./todos.mjs";
 import { renderNoteForm, renderIndicaForm } from "./notes-indicaciones.mjs";
 import { invalidateManejoShell, renderManejo } from "./manejo.mjs";
+import { renderVpo } from "./vpo.mjs";
 import { invalidateEaPanelCache, renderEstadoActualPanel } from "./estado-actual-panel.mjs";
 import { renderRecetaHu } from "./receta-hu.mjs";
 import { scrollActiveRondaCardIntoView, setRoundOverviewMode, syncRoundExpedienteLayout } from "./patients.mjs";
@@ -956,6 +957,11 @@ function renderGranularInnerTab(tab, opts) {
     renderHeavyInnerTab(tab, function (done) {
       renderManejo({ onReady: done, syncHeavy: !!opts.force });
     }, opts);
+    return;
+  }
+  if (tab === 'vpo') {
+    renderVpo();
+    markInnerTabRendered(tab);
     return;
   }
   if (tab === 'tend') {

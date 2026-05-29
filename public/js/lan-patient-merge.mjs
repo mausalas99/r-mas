@@ -255,9 +255,22 @@ export function mergePatientEntry(a, b) {
     indicaciones,
     labHistory: mergeLabHistorySets(a.labHistory, b.labHistory),
     medReceta,
+    vpo: mergeVpoPayload(a.vpo, b.vpo),
     listadoProblemas: mergeListadoProblemas(a.listadoProblemas, b.listadoProblemas),
     todos: mergeTodoListsById(a.todos, b.todos),
   };
+}
+
+/** @param {object|null|undefined} a @param {object|null|undefined} b */
+function mergeVpoPayload(a, b) {
+  if (!a && !b) return null;
+  if (!a) return b ? structuredClone(b) : null;
+  if (!b) return structuredClone(a);
+  try {
+    return JSON.parse(JSON.stringify(b));
+  } catch (_e) {
+    return structuredClone(b);
+  }
 }
 
 /** @param {object} entry */
@@ -275,6 +288,7 @@ export function cloneEntry(entry) {
     indicaciones: { ...(entry.indicaciones || {}) },
     labHistory: Array.isArray(entry.labHistory) ? entry.labHistory.map((s) => ({ ...s })) : [],
     medReceta: entry.medReceta ? { ...entry.medReceta } : null,
+    vpo: entry.vpo ? structuredClone(entry.vpo) : null,
     listadoProblemas: entry.listadoProblemas ? { ...entry.listadoProblemas } : null,
     todos: Array.isArray(entry.todos) ? entry.todos.map((t) => ({ ...t })) : [],
   };

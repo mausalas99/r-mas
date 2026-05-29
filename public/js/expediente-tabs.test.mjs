@@ -98,12 +98,12 @@ test('consolidatedTabForGranular returns top-level composite tab id', () => {
 });
 
 test('getClinicoSections differs by mode', () => {
-  assert.deepEqual(getClinicoSections(INTER), ['notas', 'indica', 'manejo']);
+  assert.deepEqual(getClinicoSections(INTER), ['notas', 'indica', 'vpo', 'manejo']);
   assert.deepEqual(getClinicoSections(SALA), ['manejo']);
 });
 
 test('getSalidaSections only in sala', () => {
-  assert.deepEqual(getSalidaSections(SALA), ['listado', 'recetaHu']);
+  assert.deepEqual(getSalidaSections(SALA), ['listado', 'vpo', 'recetaHu']);
   assert.deepEqual(getSalidaSections(INTER), []);
 });
 
@@ -114,11 +114,27 @@ test('isManejoSectionHidden respects hideManejoSection and legacy hideClinicoTab
   assert.equal(isManejoSectionHidden(HIDE_MANEJO_LEGACY), true);
 });
 
+test('inter clinico sections include vpo before manejo', () => {
+  assert.deepEqual(getClinicoSections(INTER), ['notas', 'indica', 'vpo', 'manejo']);
+});
+
+test('sala salida sections include vpo between listado and recetaHu', () => {
+  assert.deepEqual(getSalidaSections(SALA), ['listado', 'vpo', 'recetaHu']);
+});
+
+test('resolveConsolidatedTarget vpo in inter maps to clinico', () => {
+  assert.deepEqual(resolveConsolidatedTarget('vpo', INTER), { tab: 'clinico', section: 'vpo' });
+});
+
+test('resolveConsolidatedTarget vpo in sala maps to salida', () => {
+  assert.deepEqual(resolveConsolidatedTarget('vpo', SALA), { tab: 'salida', section: 'vpo' });
+});
+
 test('interconsulta keeps clinico tab when only manejo is hidden', () => {
   assert.equal(isClinicoCompositeVisible(INTER), true);
   assert.equal(isClinicoCompositeVisible(HIDE_MANEJO_INTER), true);
   assert.equal(getConsolidatedTabs(HIDE_MANEJO_INTER).includes('clinico'), true);
-  assert.deepEqual(getClinicoSections(HIDE_MANEJO_INTER), ['notas', 'indica']);
+  assert.deepEqual(getClinicoSections(HIDE_MANEJO_INTER), ['notas', 'indica', 'vpo']);
 });
 
 test('sala omits clinico composite when manejo is hidden', () => {

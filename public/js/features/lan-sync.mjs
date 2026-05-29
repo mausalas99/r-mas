@@ -53,6 +53,7 @@ import {
   indicaciones,
   labHistory,
   medRecetaByPatient,
+  vpoByPatient,
   recetaHuByPatient,
   listadoProblemas,
   medNotaSelectionByPatient,
@@ -855,6 +856,8 @@ function applyLanPatientEntries(entries) {
       labHistory[existing.id] = Array.isArray(entry.labHistory) ? entry.labHistory : [];
       if (entry.medReceta) medRecetaByPatient[existing.id] = entry.medReceta;
       else delete medRecetaByPatient[existing.id];
+      if (entry.vpo) vpoByPatient[existing.id] = entry.vpo;
+      else delete vpoByPatient[existing.id];
       if (entry.listadoProblemas) listadoProblemas[existing.id] = entry.listadoProblemas;
       mergePatientMonitoreoFromImported(existing, entry.patient);
       saveEntryTodosOnLocalPatient(existing.id, entry);
@@ -889,6 +892,7 @@ function applyLanPatientEntries(entries) {
         indicaciones[remoteId] = entry.indicaciones || {};
         labHistory[remoteId] = Array.isArray(entry.labHistory) ? entry.labHistory : [];
         if (entry.medReceta) medRecetaByPatient[remoteId] = entry.medReceta;
+        if (entry.vpo) vpoByPatient[remoteId] = entry.vpo;
         newId = remoteId;
       } else {
         newId = runtime.applyImportEntry(entry, 'duplicate', null);
@@ -928,6 +932,7 @@ export function removePatientLocally(patientId) {
   delete indicaciones[pid];
   if (labHistory && labHistory[pid]) delete labHistory[pid];
   if (medRecetaByPatient && medRecetaByPatient[pid]) delete medRecetaByPatient[pid];
+  if (typeof vpoByPatient !== 'undefined' && vpoByPatient && vpoByPatient[pid]) delete vpoByPatient[pid];
   if (recetaHuByPatient && recetaHuByPatient[pid]) delete recetaHuByPatient[pid];
   if (medNotaSelectionByPatient && medNotaSelectionByPatient[pid]) delete medNotaSelectionByPatient[pid];
   if (listadoProblemas && listadoProblemas[pid]) delete listadoProblemas[pid];
