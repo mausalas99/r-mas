@@ -17,6 +17,7 @@ const MED_MG_SO4 =
   'SULFATO DE MAGNESIO 50% SOL INY';
 const MED_PHOS_K =
   'FOSFATO DE POTASIO 20 MEQ SOL INY 10 ML (+)';
+const MED_PHOS_NA = 'FOSFATO DE SODIO SOL INY';
 const MED_INSULIN =
   'INSULINA REGULAR';
 const MED_D50 =
@@ -159,6 +160,36 @@ export function kLimitsForAccess(viaAcceso) {
   return { maxConcMeqPerL: 40, maxMeqPerHr: 10 };
 }
 
+function accessRouteLabel(viaAcceso) {
+  return isCentralAccess(viaAcceso) ? 'central (CVC)' : 'periférica / PICC';
+}
+
+/**
+ * Texto breve para tarjeta UI: dosis + dilución + velocidad (sin "según institución").
+ * @param {SomeOrderLike|null|undefined} order
+ * @param {{ accessLabel?: string, meqPerHr?: number|null, extra?: string }} [opts]
+ */
+export function formatSuggestedDoseFromOrder(order, opts) {
+  opts = opts || {};
+  if (!order) return opts.extra || '';
+  var parts = [];
+  var dose = String(order.doseValue != null ? order.doseValue : '').trim();
+  if (dose && order.doseUnit) parts.push(dose + ' ' + String(order.doseUnit).trim());
+  if (order.dilution) parts.push('Dilución: ' + order.dilution);
+  if (opts.accessLabel) parts.push('Acceso ' + opts.accessLabel);
+  if (opts.meqPerHr != null && Number.isFinite(opts.meqPerHr)) {
+    parts.push('Vel. reposición: ~' + opts.meqPerHr + ' mEq/h máx');
+  }
+  var rate = order.infusionRateMlHr;
+  if (rate != null && rate !== '' && Number.isFinite(Number(rate))) {
+    parts.push('Vel. infusión: ~' + Math.round(Number(rate)) + ' mL/h');
+  } else if (rate != null && rate !== '') {
+    parts.push('Vel. infusión: ' + rate);
+  }
+  if (opts.extra) parts.push(opts.extra);
+  return parts.join(' · ');
+}
+
 export function tbwFactor(patient) {
   if (!patient) return 0.6;
   var s = String(patient.sexo || '').trim().toUpperCase();
@@ -220,13 +251,15 @@ function phosHypoSeverity(pMgDl) {
   return null;
 }
 
-/** @returns {SomeOrderLike[]} */
+/**
+ * @returns {{ orders: SomeOrderLike[], volMl: number, mEqPerHr: number }}
+ */
 function buildKHypoOrders(mEqChosen, limits, etaLow, routeLabel) {
   var maxConc = limits.maxConcMeqPerL;
   var minVol = (mEqChosen / maxConc) * 1000;
   var volMl = standardBagVolumeMl(minVol);
 
-  var mEqPerHrRaw = etaLow ? Math.min(limits.maxMeqPerHr, 10, 10) : limits.maxMeqPerHr;
+  var mEqPerHrRaw = etaLow ? Math.min(limits.maxMeqPerHr, 10) : limits.maxMeqPerHr;
   if (etaLow && mEqPerHrRaw > 10) mEqPerHrRaw = 10;
 
   /** @type SomeOrderLike[] */
@@ -243,13 +276,50 @@ function buildKHypoOrders(mEqChosen, limits, etaLow, routeLabel) {
       mEqChosen +
       ' MEQ / ' +
       volMl +
-      ' ML)',
-    infusionRateMlHr:
-      Math.round((mEqPerHrRaw / mEqChosen) * volMl),
+      ' ML; CONC. ≤' +
+      maxConc +
+      ' MEQ/L)',
+    infusionRateMlHr: Math.round((mEqPerHrRaw / mEqChosen) * volMl),
     requiresDilution: true,
   });
 
-  return orders;
+  return { orders: orders, volMl: volMl, mEqPerHr: mEqPerHrRaw };
+}
+
+/**
+ * @param {'grave'|'moderada'} phs
+ * @param {number} mmLo
+ * @param {number} mmHi
+ * @param {number|null} kVal
+ * @returns {{ orders: SomeOrderLike[], mmTarget: number, mmolPerHr: number, usePotassium: boolean }}
+ */
+function buildPhosHypoOrders(phs, mmLo, mmHi, kVal) {
+  var usePotassium = !(kVal != null && kVal >= 4.0);
+  var mmTarget =
+    phs === 'grave'
+      ? Math.min(mmHi, 30)
+      : Math.max(mmLo, Math.round(((mmLo + mmHi) / 2) * 10) / 10);
+  var volMl = phs === 'grave' ? 500 : 250;
+  var hours = phs === 'grave' ? 8 : 10;
+  var mmolPerHr = Math.round((mmTarget / hours) * 10) / 10;
+  var med = usePotassium ? MED_PHOS_K : MED_PHOS_NA;
+
+  return {
+    orders: [
+      {
+        medication: med,
+        route: 'INTRAVENOSA',
+        doseValue: mmTarget,
+        doseUnit: 'MMOL P',
+        dilution: volMl + ' ML SOL SALINA AL 0.9% EN ' + hours + ' H',
+        infusionRateMlHr: Math.round((mmolPerHr / mmTarget) * volMl),
+        requiresDilution: true,
+      },
+    ],
+    mmTarget: mmTarget,
+    mmolPerHr: mmolPerHr,
+    usePotassium: usePotassium,
+  };
 }
 
 /** @param {'grave'|'moderada'} severity @param {number|null} mlEffective3 */
@@ -363,7 +433,9 @@ export function evaluateElectrolyteManejo(ctx) {
 
     var mEqUse = Math.max(10, Math.min(mEqBase, etaLow ? 20 : 40));
 
-    var someKs = buildKHypoOrders(mEqUse, limits, etaLow, routeIv);
+    var kPack = buildKHypoOrders(mEqUse, limits, etaLow, routeIv);
+    var someKs = kPack.orders;
+    var kOrder = someKs[0];
 
     rows.push({
       electrolyte: 'K',
@@ -374,9 +446,10 @@ export function evaluateElectrolyteManejo(ctx) {
       severity: ks,
       formula: defEq != null ? '(4−K)×peso×0.4' : '',
       formulaResult: defStr,
-      suggestedDose:
-        mEqUse +
-        ' mEq IV (protocolo habitual 20–40 mEq) en volumen conforme límites de vía + SS al 0.9%',
+      suggestedDose: formatSuggestedDoseFromOrder(kOrder, {
+        accessLabel: accessRouteLabel(patient.viaAcceso),
+        meqPerHr: kPack.mEqPerHr,
+      }),
       route: routeIv,
       monitoring: 'Ionograma y ECG si procede; repetir K en 4–6 h.',
       alerts: kHypoAlerts.concat(),
@@ -574,8 +647,26 @@ export function evaluateElectrolyteManejo(ctx) {
     if (etaLow)
       mgAlerts.push('IRC (eTFG <30): dosis Mg reducida 50%; monitoreo neuromuscular acentuado');
 
-    var volMg = mags === 'grave' ? 100 : 500;
-    var rateMgHr = etaLow ? 2 : mags === 'grave' ? 8 : 1.25;
+    var volMg = mags === 'grave' ? 250 : 500;
+    var mgMeq = gMgEq;
+    var mgHours = mags === 'grave' ? 0.5 : 6;
+    var mgMlHr =
+      mags === 'grave'
+        ? Math.round(volMg / 0.5)
+        : Math.round(volMg / mgHours);
+
+    var mgOrder = {
+      medication: MED_MG_SO4,
+      route: routeIv,
+      doseValue: mgMeq,
+      doseUnit: 'MEQ Mg (~' + Math.round(mgMeq / 4) + ' mL MgSO4 50%)',
+      dilution:
+        volMg +
+        ' ML SOL SALINA AL 0.9%' +
+        (mags === 'grave' ? ' EN 15–60 MIN' : ' EN 4–8 H'),
+      infusionRateMlHr: mgMlHr,
+      requiresDilution: true,
+    };
 
     rows.push({
       electrolyte: 'Mg',
@@ -586,25 +677,14 @@ export function evaluateElectrolyteManejo(ctx) {
       severity: mags,
       formula: etaLow ? 'Dosis Mg ajustada a eTFG' : '',
       formulaResult: etaLow ? '−50% por eTFG <30' : null,
-      suggestedDose:
-        (mags === 'grave'
-          ? 'MgSO4 50%: carga inicial en bolus/extension segun institucion; mantenimiento prn'
-          : 'MgSO4 diluido en 500–1000 mL SS 4–8 h'),
+      suggestedDose: formatSuggestedDoseFromOrder(mgOrder, {
+        accessLabel: accessRouteLabel(patient.viaAcceso),
+      }),
       route: routeIv,
       monitoring: 'Reflejos/PFR; Mg serico y K asociados.',
       alerts: mgAlerts,
       clinicalNotes: [],
-      someOrders: [
-        {
-          medication: MED_MG_SO4,
-          route: routeIv,
-          doseValue: Math.round(gMgEq / 4),
-          doseUnit: 'MEQ',
-          dilution: volMg + ' ML SOL SALINA AL 0.9%',
-          infusionRateMlHr: Math.round((rateMgHr / gMgEq) * volMg),
-          requiresDilution: true,
-        },
-      ],
+      someOrders: [mgOrder],
       ruleId: 'mg-hypo-' + mags,
     });
   }
@@ -615,6 +695,16 @@ export function evaluateElectrolyteManejo(ctx) {
     var mmLo = Math.round(w * 0.16 * 10) / 10;
     var mmHi = Math.round(w * 0.32 * 10) / 10;
 
+    var phPack = !etaLow ? buildPhosHypoOrders(phs, mmLo, mmHi, kVal) : null;
+    var phOrder = phPack && phPack.orders[0] ? phPack.orders[0] : null;
+    var phSuggested = etaLow
+      ? 'IRC (eTFG <30): evitar fosfato IV; si imprescindible: ≤' +
+        Math.round(mmLo * 0.5 * 10) / 10 +
+        ' mmol en 250 mL SS 0.9%, ≤4 mmol/h, monitor Ca/Mg/K'
+      : formatSuggestedDoseFromOrder(phOrder, {
+          extra: phPack && !phPack.usePotassium ? 'Usar fosfato de sodio (K ≥4 mEq/L)' : null,
+        });
+
     rows.push({
       electrolyte: 'P',
       direction: 'hypo',
@@ -624,41 +714,31 @@ export function evaluateElectrolyteManejo(ctx) {
       severity: phs,
       formula: '0.16–0.32 mmol/kg IV (grave-moderado; max 90 mmol/dia)',
       formulaResult: '~' + mmLo + '–' + mmHi + ' mmol para peso corporal actual',
-      suggestedDose: 'Reposicion fosfato IV lenta segun institucion; preferir fosfato de sodio si K alto.',
+      suggestedDose: phSuggested,
       route: routeIv,
       monitoring: 'Ca ionico / total; Mg; K funcion renal.',
-      alerts: etaLow ? ['IRC: evitar o extremar precauciones con P IV institucional.'] : [],
+      alerts: etaLow ? ['IRC: evitar o extremar precauciones con P IV.'] : [],
       clinicalNotes:
-        kVal != null && kVal < 3.8
-          ? ['Considerar FOSFATO DE POTASIO si K permite (ver algunos pedidos combinados PDF).']
+        kVal != null && kVal < 3.8 && phPack && phPack.usePotassium
+          ? ['Fosfato de potasio aporta K+; vigilar hipocalcemia antes de iniciar.']
           : [],
-      someOrders:
-        !etaLow &&
-        !(kVal != null && kVal >= 4.0)
-          ? [
-              {
-                medication: MED_PHOS_K,
-                route: routeIv,
-                doseValue: '~' + Math.min(mmHi, phs === 'grave' ? mmHi : mmLo + 15),
-                doseUnit: 'MMOL (APROX TEORICO)',
-                dilution: '250–500 ML SS AL 0.9% EN 6–12 H — VALIDACION MEDICA',
-                infusionRateMlHr: (function () {
-                  var volP = 375;
-                  var mmTarget =
-                    typeof mmHi === 'number' && mmHi > 0 ? mmHi : 18;
-                  var mmolPerHr = phs === 'grave' ? 15 : 8;
-                  return Math.round((mmolPerHr / mmTarget) * volP);
-                })(),
-                requiresDilution: true,
-              },
-            ]
-          : [],
+      someOrders: phPack ? phPack.orders : [],
       ruleId: 'p-hypo-' + phs,
     });
   }
 
   /** Ca corregido hipo (<8.5) */
   if (caVal != null && cc != null && cc < 8.5) {
+    var caOrder = {
+      medication: MED_CA_GLUC,
+      route: routeIv,
+      doseValue: cc < 7.5 ? '20' : '10–20',
+      doseUnit: 'ML (1–2 G)',
+      dilution: 'IV DIRECTO O DILUIDO EN 50–100 ML D5W/SS 0.9%',
+      infusionRateMlHr: cc < 7.5 ? 200 : 100,
+      requiresDilution: false,
+    };
+
     rows.push({
       electrolyte: 'Ca',
       direction: 'hypo',
@@ -668,23 +748,14 @@ export function evaluateElectrolyteManejo(ctx) {
       severity: cc < 7.5 ? 'grave' : 'moderada',
       formula: 'Ca total + 0.8×(4−Alb)',
       formulaResult: String(cc),
-      suggestedDose: 'Gluconato calcio IV 10% 10–20 mL lentamente segun institucion',
+      suggestedDose:
+        formatSuggestedDoseFromOrder(caOrder) + ' · Administrar en 10–20 min con monitor ECG',
       route: routeIv,
       monitoring: 'ECG si sintomatico; Ca total/ionizado seriados.',
       alerts: [],
       clinicalNotes:
         albVal == null ? ['Alb faltante impide corroboracion; interpretar ionograma/clinica.'] : [],
-      someOrders: [
-        {
-          medication: MED_CA_GLUC,
-          route: routeIv,
-          doseValue: '10–20',
-          doseUnit: 'ML',
-          dilution: 'ADMINISTRAR LENTAMENTE IV 10–20 MIN (SEGUN PROTOCOLO INSTITUCIONAL)',
-          infusionRateMlHr: null,
-          requiresDilution: false,
-        },
-      ],
+      someOrders: [caOrder],
       ruleId: 'ca-hypo-corrected',
     });
   }

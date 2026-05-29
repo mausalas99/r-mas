@@ -31,12 +31,14 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
+## R+ 6.3.6 (Cultivos multipaciente SOME y tour pitch)
 
-## R+ 6.3.6 (estable — release 6.3.6)
-
-- **TODO:** completar bullets en README.
+- **Cultivos** — Varios `MICROORGANISMO` en un informe: **una fila por aislamiento**, cuenta y antibiograma (chips R/I/S) por germen; **Preliminar** sin ATB; marcas BLEE, Carb-R y BLAC por aislamiento.
+- **Manejo → ATB** — Alertas **Carb-R** cuando el cultivo lo indica.
+- **Tour pitch** — Dock y paso de cultivos con chips desde `sourceText`; lista de pacientes estable al omitir el tour.
 
 Notas: `docs/RELEASE_NOTES_6.3.6.txt`.
+
 ## R+ 6.3.5 (Bomba con switch, Unirse a sala y ajustes de monitoreo)
 
 - **Estado Actual** — Interruptor **Bomba de insulina** (estilo laboratorio): activado sustituye las glucometrías normales por filas Glu + Unidades + Hora; layout del botón × corregido.

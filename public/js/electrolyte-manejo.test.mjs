@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   toSomeUpper,
   formatSomeBlock,
+  formatSuggestedDoseFromOrder,
   kLimitsForAccess,
   tbwFactor,
   correctedCalcium,
@@ -113,6 +114,52 @@ test('K hipo incluye algun someOrder del medicamento de potasio', () => {
   assert.ok(kRow, 'debe haber fila K hipo');
   assert.ok(Array.isArray(kRow.someOrders) && kRow.someOrders.length > 0);
   assert.equal(kRow.someOrders[0].medication, MED_K_EXPECT);
+});
+
+test('K hipo: dosis sugerida incluye dilución, acceso y velocidad (sin institución)', () => {
+  var r = evaluateElectrolyteManejo({
+    parsedBySection: { ESC: { K: 3.1, F: 1.7 } },
+    patient: { peso: 70, viaAcceso: 'periferica' },
+  });
+  var kRow = r.rows.find(function (row) {
+    return row.electrolyte === 'K' && row.direction === 'hypo';
+  });
+  assert.ok(kRow);
+  assert.doesNotMatch(String(kRow.suggestedDose), /institucion/i);
+  assert.match(String(kRow.suggestedDose), /Dilución:/i);
+  assert.match(String(kRow.suggestedDose), /Vel\. infusión:/i);
+  assert.match(String(kRow.suggestedDose), /periférica/i);
+});
+
+test('P hipo: dosis sugerida con mmol, dilución y velocidad', () => {
+  var r = evaluateElectrolyteManejo({
+    parsedBySection: { ESC: { K: 3.1, F: 1.7 } },
+    patient: { peso: 70, viaAcceso: 'cvc' },
+  });
+  var pRow = r.rows.find(function (row) {
+    return row.electrolyte === 'P' && row.direction === 'hypo';
+  });
+  assert.ok(pRow);
+  assert.doesNotMatch(String(pRow.suggestedDose), /institucion/i);
+  assert.match(String(pRow.suggestedDose), /Dilución:/i);
+  assert.match(String(pRow.suggestedDose), /Vel\. infusión:/i);
+  assert.ok(pRow.someOrders.length > 0);
+  assert.match(String(pRow.someOrders[0].medication), /FOSFATO DE POTASIO/);
+});
+
+test('formatSuggestedDoseFromOrder arma texto legible', () => {
+  var t = formatSuggestedDoseFromOrder(
+    {
+      doseValue: 25,
+      doseUnit: 'MEQ',
+      dilution: '500 ML SS 0.9%',
+      infusionRateMlHr: 50,
+    },
+    { accessLabel: 'central (CVC)', meqPerHr: 20 }
+  );
+  assert.match(t, /25 MEQ/);
+  assert.match(t, /500 ML/);
+  assert.match(t, /50 mL\/h/);
 });
 
 test('Na TBW factor mujer aplicado en déficit teorico Na', () => {

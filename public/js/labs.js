@@ -1782,7 +1782,7 @@ function detectTipoCultivoLine(lineasTexto) {
     if (/\bUROCULTIVO\b/i.test(l) || /\bHEMOCULTIVO\b/i.test(l) || /^CATETER(\b|$)/i.test(lUp))
       return l;
     if (/^BACILOSCOPIA\b/i.test(lUp) || /^CULTIVO\s+DE\s+MICOBACTERIAS\b/i.test(lUp)) return l;
-    if (!candidate && !/^(TINCION|CALIDAD|ESTADO|MICROORGANISMO|COMENTARIO|CUENTA|ANTIBIOGRAMA|1\s+MUESTRA|OBSERVACIONES|SECCION)\b/i.test(lUp)) {
+    if (!candidate && !/^(TINCION|CALIDAD|ESTADO|MICROORGANISMO|COMENTARIO|CUENTA|ANTIBIOGRAMA|REPORTE\s+PRELIMINAR|1\s+MUESTRA|OBSERVACIONES|SECCION)\b/i.test(lUp)) {
       candidate = l;
     }
   }
@@ -1894,12 +1894,12 @@ function parseInterpAntibiograma(vL) {
   if (tabs.length >= 2) {
     var interp = tabs[tabs.length - 1].toUpperCase().replace(/\*+$/, '');
     var mic = tabs.slice(0, -1).join(' ').trim();
-    if (/^(S|R|I|NEG|POS|ESBL|BLEE|KPC|NDM|VIM|IMP|MBL)$/.test(interp)) return { mic: mic, interp: interp };
+    if (/^(S|R|I|NEG|POS|ESBL|BLEE|BLAC|KPC|NDM|VIM|IMP|MBL)$/.test(interp)) return { mic: mic, interp: interp };
     if (/^NO\s+SUSCEPTIBLE$/i.test(interp)) return { mic: mic, interp: 'NO SUSCEPTIBLE' };
   }
-  var mV = vClean.match(/^([<>]=?\s*\d+(?:\.\d+)?)\s+(S|R|I|NEG|POS|ESBL|BLEE|KPC|NDM|VIM|IMP|MBL)$/i);
+  var mV = vClean.match(/^([<>]=?\s*\d+(?:\.\d+)?(?:\/\d+)?)\s+(S|R|I|NEG|POS|ESBL|BLEE|BLAC|KPC|NDM|VIM|IMP|MBL)$/i);
   if (mV) return { mic: mV[1].replace(/\s/g, ''), interp: mV[2].toUpperCase() };
-  var mN = vClean.match(/^(\d+)\s+(S|R|I|ESBL|BLEE|KPC|NDM|VIM|IMP|MBL)$/i);
+  var mN = vClean.match(/^(\d+)\s+(S|R|I|ESBL|BLEE|BLAC|KPC|NDM|VIM|IMP|MBL)$/i);
   if (mN) return { mic: mN[1], interp: mN[2].toUpperCase() };
   var lim = vClean.toUpperCase();
   if (/^(S|R|I)$/.test(lim)) return { mic: '', interp: lim };
@@ -1936,7 +1936,11 @@ function extractMarcasResistenciaDesdeTexto(texto) {
   if (/\bSPM\b|SPM-/.test(u)) add('SPM');
   if (/\bGIM\b|GIM-/.test(u)) add('GIM');
   if (/\bCPE\b|\bCRE\b|ENTEROBACTER(I)?A\s+RESISTENTE\s+A\s+CARBAPEN|BACILO\s+CARBAPEN/.test(u)) add('CRE');
-  if (/RESISTEN(CIA|TE)\s+.*CARBAPEN|CARBAPEN.*RESIST|NO\s+SUSCEPTIB.*CARBAPEN|ANTICARBAPEN|ANTI-?CARBAPEN|PRODUCTOR\s+DE\s+CARBAPENEMASA|PRODUCTOR(ES)?\s+CARBAPEN/.test(u)) {
+  if (
+    /RESISTEN(CIA|TE)\s+.*CARBAPEN|CARBAPEN.*RESIST|NO\s+SUSCEPTIB.*CARBAPEN|ANTICARBAPEN|ANTI-?CARBAPEN|PRODUCTOR\s+DE\s+CARBAPENEMASA|PRODUCTOR(ES)?\s+CARBAPEN|DETECTO\s+CARBAPENEMASA|DETECT[OÓ]\s+CARBAPENEMASA|CARBAPENEMASA\s+DETECTAD/i.test(
+      u
+    )
+  ) {
     if (!seen.KPC && !seen.NDM && !seen.VIM && !seen.IMP && !seen['OXA-48'] && !seen.MBL) add('Carb-R');
   }
   if (/\bESBL\b|BETALACTAMASAS?\s+DE\s+ESPECTRO|ESPECTRO\s+EXTENDIDO|BLEE\s*\+\s*ESBL/.test(u)) add('ESBL');
@@ -1951,29 +1955,7 @@ function extractMarcasResistenciaDesdeTexto(texto) {
   return tags;
 }
 
-function detectMarcasResistenciaCultivo(lineasTexto) {
-  var b0 = -1;
-  for (var i = 0; i < lineasTexto.length; i++) {
-    if (/BACTERIOLOGIA/i.test(lineasTexto[i])) { b0 = i; break; }
-  }
-  var slice = b0 === -1 ? lineasTexto : lineasTexto.slice(b0, Math.min(b0 + 280, lineasTexto.length));
-  var blob = slice.join('\n');
-  var marcas = extractMarcasResistenciaDesdeTexto(blob);
-  var seen = {};
-  marcas.forEach(function(m) { seen[m] = 1; });
-  var inAb = false;
-  for (i = 0; i < lineasTexto.length; i++) {
-    var L = lineasTexto[i].replace(/\*+$/g, '').trim();
-    if (/^ANTIBIOGRAMA/i.test(L)) { inAb = true; continue; }
-    if (inAb && /^MICROORGANISMO|^IDENTIFICACION/i.test(L)) { inAb = false; continue; }
-    if (!inAb) continue;
-    var p = parseInterpAntibiograma(L);
-    if (!p || !p.interp) continue;
-    var it = p.interp.toUpperCase();
-    if (it === 'ESBL' && !seen.ESBL) { marcas.push('ESBL'); seen.ESBL = 1; }
-    if (it === 'BLEE' && !seen.BLEE) { marcas.push('BLEE'); seen.BLEE = 1; }
-    if (/^(KPC|NDM|VIM|IMP|MBL)$/.test(it) && !seen[it]) { marcas.push(it); seen[it] = 1; }
-  }
+function finalizeMarcasResistencia_(marcas) {
   marcas.sort(function(a, b) {
     return (ORDEN_MARCA_RESISTENCIA[a] || 99) - (ORDEN_MARCA_RESISTENCIA[b] || 99);
   });
@@ -1985,13 +1967,44 @@ function detectMarcasResistenciaCultivo(lineasTexto) {
   return marcas;
 }
 
+/** Marcas de resistencia en un solo aislamiento (comentario + antibiograma del slice). */
+function detectMarcasResistenciaCultivoSlice(sliceLines) {
+  var blob = sliceLines.join('\n');
+  var marcas = extractMarcasResistenciaDesdeTexto(blob);
+  var seen = {};
+  marcas.forEach(function(m) { seen[m] = 1; });
+  var inAb = false;
+  for (var i = 0; i < sliceLines.length; i++) {
+    var L = sliceLines[i].replace(/\*+$/g, '').trim();
+    if (/^ANTIBIOGRAMA/i.test(L)) { inAb = true; continue; }
+    if (inAb && /^MICROORGANISMO|^IDENTIFICACION/i.test(L)) { inAb = false; continue; }
+    if (!inAb) continue;
+    var p = parseInterpAntibiograma(L);
+    if (!p || !p.interp) continue;
+    var it = p.interp.toUpperCase();
+    if (it === 'ESBL' && !seen.ESBL) { marcas.push('ESBL'); seen.ESBL = 1; }
+    if (it === 'BLEE' && !seen.BLEE) { marcas.push('BLEE'); seen.BLEE = 1; }
+    if (/^(KPC|NDM|VIM|IMP|MBL)$/.test(it) && !seen[it]) { marcas.push(it); seen[it] = 1; }
+  }
+  return finalizeMarcasResistencia_(marcas);
+}
+
+function detectMarcasResistenciaCultivo(lineasTexto) {
+  var b0 = -1;
+  for (var i = 0; i < lineasTexto.length; i++) {
+    if (/BACTERIOLOGIA/i.test(lineasTexto[i])) { b0 = i; break; }
+  }
+  var slice = b0 === -1 ? lineasTexto : lineasTexto.slice(b0, Math.min(b0 + 280, lineasTexto.length));
+  return detectMarcasResistenciaCultivoSlice(slice);
+}
+
 /**
  * Resumen ATB sin CMI: conserva R | I | ESBL/BLEE y también S para mostrar
  * el biograma completo sin los valores MIC.
  */
 function compactarLineasAntibiograma(sensCrudas, abreviarFn) {
   if (!sensCrudas.length) return '';
-  var rank = { R: 4, 'NO SUSCEPTIBLE': 4, ESBL: 4, BLEE: 4, KPC: 4, NDM: 4, VIM: 4, IMP: 4, MBL: 4, I: 2, S: 1, POS: 1 };
+  var rank = { R: 4, 'NO SUSCEPTIBLE': 4, ESBL: 4, BLEE: 4, BLAC: 4, KPC: 4, NDM: 4, VIM: 4, IMP: 4, MBL: 4, I: 2, S: 1, POS: 1 };
   var byKey = {};
   sensCrudas.forEach(function(s) {
     var key = abreviarFn(s.med);
@@ -2099,8 +2112,14 @@ function extractCuentaKassFromLineas(sliceLines) {
   if (pCuenta === -1) return '';
   var fragC = tNorm.substring(pCuenta, pCuenta + 110);
   var fragBeforeAb = fragC.split(/\bANTIBIOGRAMA\b/i)[0];
-  var mUfc = fragBeforeAb.match(/\+?\d[\d,]*(?:\.\d+)?\s*UFC/i);
-  if (mUfc) return mUfc[0].replace(/\s+/g, '').toUpperCase();
+  var mUfc = fragBeforeAb.match(/\+?\d[\d,]*(?:\.\d+)?\s*UFC(?:\s*\/\s*M?L)?/i);
+  if (mUfc) {
+    return mUfc[0]
+      .replace(/\s+/g, ' ')
+      .replace(/\s*\/\s*/g, '/')
+      .trim()
+      .toUpperCase();
+  }
   var mC = fragBeforeAb.match(/([<>]=?\s?\d+(\.\d+)?\s*[A-Z%\/]*)/i);
   if (mC) return mC[1].trim().toUpperCase();
   return '';
@@ -2369,7 +2388,7 @@ export function parseCultivo_(textoBruto, tNorm) {
   var mycoOut = parseMycobacteriasStudies_(lineasTexto, fechaC);
   if (mycoOut && !germenRuns.length) return mycoOut;
   var sitio = buildCultivoTipoDisplay(detectTipoCultivoLine(lineasTexto), detectMuestraDesdeProducto(lineasTexto));
-  var marcasRes = detectMarcasResistenciaCultivo(lineasTexto);
+  var reportePreliminar = /REPORTE\s+PRELIMINAR/i.test(lineasTexto.join('\n'));
   function abreviarAb(n){
     n=n.toUpperCase().trim();
     if(/PIPERACILINA|PIP\/TAZ/.test(n))return 'PIP/TAZO';
@@ -2410,7 +2429,13 @@ export function parseCultivo_(textoBruto, tNorm) {
       var subNorm = sliceLines.join('\n');
       var idxAbLoc = subNorm.toUpperCase().indexOf('ANTIBIOGRAMA');
       var head = sitio + ' ' + fechaC + ': ' + run.germen;
-      if (ri === 0 && marcasRes.length) head += ' · ' + marcasRes.join(' · ');
+      var headTags = [];
+      if (reportePreliminar) headTags.push('Preliminar');
+      var marcasRun = detectMarcasResistenciaCultivoSlice(sliceLines);
+      marcasRun.forEach(function(m) {
+        if (headTags.indexOf(m) === -1) headTags.push(m);
+      });
+      if (headTags.length) head += ' · ' + headTags.join(' · ');
       var chunk = head;
       if (idxAbLoc !== -1) {
         var lineasAb = subNorm.substring(idxAbLoc).split('\n').map(function(l) {

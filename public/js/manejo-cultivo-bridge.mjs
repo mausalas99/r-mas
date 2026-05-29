@@ -28,9 +28,13 @@ var MARKER_ALERTS = {
   MBL: 'Metalobetalactamasa (MBL): evitar carbapenémicos según antibiograma y nota local',
   MRSA: 'MRSA: valorar oxacilina/cefazolina vs vancomicina según S',
   CRE: 'CRE: evitar carbapenémicos según mecanismo y antibiograma',
+  'Carb-R':
+    'Carbapenemasa / resistencia a carbapenémicos: evitar meropenem/imipenem salvo combinaciones documentadas; valorar alternativas según antibiograma',
+  'CARB-R':
+    'Carbapenemasa / resistencia a carbapenémicos: evitar meropenem/imipenem salvo combinaciones documentadas; valorar alternativas según antibiograma',
 };
 
-var MARKER_TOKEN_RE = /\b(BLEE|ESBL|VRE|KPC|NDM|VIM|IMP|MBL|MRSA|CRE)\b/gi;
+var MARKER_TOKEN_RE = /\b(BLEE|ESBL|VRE|KPC|NDM|VIM|IMP|MBL|MRSA|CRE|Carb-R)\b/gi;
 
 function isLabSectionHeaderLine(s) {
   return /^(BH|QS|ESC|PFHs|GASES|PIE|LCR|EGO|CUANTORINA|PltCit|FROTIS)\b/i.test(String(s).trim());
@@ -141,7 +145,8 @@ function extractMarkersFromText(text) {
   var m;
   MARKER_TOKEN_RE.lastIndex = 0;
   while ((m = MARKER_TOKEN_RE.exec(src))) {
-    var token = m[1].toUpperCase();
+    var token = String(m[1] || '').toUpperCase();
+    if (token === 'CARB-R') token = 'Carb-R';
     if (token === 'ESBL' && seen.BLEE) continue;
     if (!seen[token]) {
       seen[token] = 1;
@@ -158,10 +163,13 @@ export function buildGlobalAlerts(markers) {
   var seen = Object.create(null);
   var alerts = [];
   (markers || []).forEach(function (mk) {
-    var key = String(mk || '').toUpperCase();
-    if (!key || seen[key]) return;
-    seen[key] = 1;
-    if (MARKER_ALERTS[key]) alerts.push(MARKER_ALERTS[key]);
+    var raw = String(mk || '').trim();
+    if (!raw || seen[raw]) return;
+    seen[raw] = 1;
+    var key = raw.toUpperCase();
+    if (key === 'CARB-R') key = 'Carb-R';
+    if (MARKER_ALERTS[raw]) alerts.push(MARKER_ALERTS[raw]);
+    else if (MARKER_ALERTS[key]) alerts.push(MARKER_ALERTS[key]);
     else alerts.push(key + ': revisar mecanismo de resistencia');
   });
   return alerts;

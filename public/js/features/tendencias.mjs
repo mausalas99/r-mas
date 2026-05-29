@@ -51,6 +51,7 @@ var rt = {
 export function registerTendenciasRuntime(partial) {
   if (partial && typeof partial === 'object') Object.assign(rt, partial);
   initTendGroupModal();
+  ensureTendHiddenModalDelegation();
   ensureTendenciasClickDelegation();
   registerSesionIngresoTrendsRuntime({
     buildCatalog: buildMergedTrendSeriesCatalog,
@@ -853,6 +854,15 @@ function tendEyeVisibilitySvg() {
   );
 }
 
+function tendEyeHideSvg() {
+  return (
+    '<svg class="tend-eye-svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>' +
+    '<path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>' +
+    '<line x1="1" y1="1" x2="23" y2="23"/></svg>'
+  );
+}
+
 function tendAbnormalOnlyRead() {
   try {
     return localStorage.getItem(TEND_ABNORMAL_ONLY_LS) === '1';
@@ -904,15 +914,19 @@ function buildTendHiddenChipsHtml() {
     var fk = desc[i].fieldKey;
     var label = esc(tendFindSeriesSpec(sk, fk).cardTitle || fk);
     chips.push(
-      '<span class="tend-hidden-chip" data-series-key="' +
+      '<button type="button" class="tend-hidden-chip" data-series-key="' +
       esc(tendCatalogSeriesKey(sk, fk)) +
+      '" title="Volver a mostrar ' +
+      label +
+      '" aria-label="Mostrar de nuevo ' +
+      label +
       '">' +
       '<span class="tend-hidden-chip-label">' +
       label +
       '</span>' +
-      '<button type="button" class="tend-hidden-chip-btn" title="Volver a mostrar" aria-label="Mostrar de nuevo">' +
+      '<span class="tend-hidden-chip-eye" aria-hidden="true">' +
       svg +
-      '</button></span>'
+      '</span></button>'
     );
   }
   return chips.join('');
@@ -1282,6 +1296,58 @@ function syncTendCardOrderFromDom(sectionKey) {
 var _tendPointerDidDrag = false;
 var TEND_CARD_DRAG_THRESHOLD_PX = 5;
 var _tendenciasClickDelegationWired = false;
+var _tendHiddenModalWired = false;
+
+/** Modal «Analitos ocultos»: el panel usa stopPropagation; los clics deben escucharse en el panel, no en el backdrop. */
+function ensureTendHiddenModalDelegation() {
+  if (_tendHiddenModalWired) return;
+  var hiddenBackdrop = document.getElementById('tend-hidden-modal-backdrop');
+  if (!hiddenBackdrop) {
+    if (typeof document !== 'undefined' && document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', ensureTendHiddenModalDelegation, {
+        once: true,
+      });
+    }
+    return;
+  }
+  _tendHiddenModalWired = true;
+  hiddenBackdrop.addEventListener('click', onTendHiddenBackdropClick);
+  var panel = hiddenBackdrop.querySelector('.tend-hidden-modal');
+  if (panel) panel.addEventListener('click', onTendHiddenModalPanelClick);
+  var resetBtn = hiddenBackdrop.querySelector('[data-tend-action="reset-hidden"]');
+  if (!resetBtn) {
+    resetBtn = hiddenBackdrop.querySelector('.modal-actions .btn-save');
+    if (resetBtn) resetBtn.setAttribute('data-tend-action', 'reset-hidden');
+  }
+}
+
+function onTendHiddenBackdropClick(ev) {
+  if (ev.target === ev.currentTarget) closeTendHiddenModal();
+}
+
+function onTendHiddenModalPanelClick(ev) {
+  var t = ev.target;
+  if (!t || !t.closest) return;
+
+  var resetBtn = t.closest('[data-tend-action="reset-hidden"]');
+  if (resetBtn) {
+    ev.preventDefault();
+    tendResetAllHiddenSeries();
+    return;
+  }
+
+  var chip = t.closest('.tend-hidden-chip');
+  if (chip) {
+    var seriesKey = chip.getAttribute('data-series-key');
+    if (seriesKey) {
+      var pipe = seriesKey.indexOf('|');
+      if (pipe > 0) {
+        ev.preventDefault();
+        tendUnhideSeries(seriesKey.slice(0, pipe), seriesKey.slice(pipe + 1));
+      }
+    }
+  }
+}
 
 /** Clics en Tendencias sin depender de onclick en window (módulos ES). */
 function ensureTendenciasClickDelegation() {
@@ -1297,21 +1363,6 @@ function ensureTendenciasClickDelegation() {
   }
   _tendenciasClickDelegationWired = true;
   root.addEventListener('click', onTendenciasContainerClick);
-
-  var hiddenBackdrop = document.getElementById('tend-hidden-modal-backdrop');
-  if (hiddenBackdrop) {
-    hiddenBackdrop.addEventListener('click', onTendHiddenModalClick);
-    var resetBtn = hiddenBackdrop.querySelector('.modal-actions .btn-save');
-    if (resetBtn) resetBtn.setAttribute('data-tend-action', 'reset-hidden');
-  }
-}
-
-function onTendHiddenModalClick(ev) {
-  if (ev.target === ev.currentTarget) {
-    closeTendHiddenModal();
-    return;
-  }
-  onTendenciasContainerClick(ev);
 }
 
 function onTendenciasContainerClick(ev) {
@@ -1350,24 +1401,18 @@ function onTendenciasContainerClick(ev) {
     if (sk2) openTendGroupModal(sk2);
     return;
   }
-  var unhideBtn = t.closest('.tend-hidden-chip-btn');
-  if (unhideBtn) {
-    var chip = unhideBtn.closest('.tend-hidden-chip');
-    var seriesKey = chip && chip.getAttribute('data-series-key');
-    if (seriesKey) {
-      var pipe = seriesKey.indexOf('|');
-      if (pipe > 0) {
+  var hideCardBtn = t.closest('.tend-card-hide-btn');
+  if (hideCardBtn) {
+    var hideCard = hideCardBtn.closest('.tend-card');
+    var hideKey = hideCard && hideCard.getAttribute('data-series-key');
+    if (hideKey) {
+      var hidePipe = hideKey.indexOf('|');
+      if (hidePipe > 0) {
         ev.preventDefault();
         ev.stopPropagation();
-        tendUnhideSeries(seriesKey.slice(0, pipe), seriesKey.slice(pipe + 1));
+        tendHideSeriesFromCard(ev, hideKey.slice(0, hidePipe), hideKey.slice(hidePipe + 1));
       }
     }
-    return;
-  }
-  var resetBtn = t.closest('[data-tend-action="reset-hidden"]');
-  if (resetBtn) {
-    ev.preventDefault();
-    tendResetAllHiddenSeries();
     return;
   }
   var card = t.closest('.tend-card');
@@ -1788,12 +1833,16 @@ function renderTendenciasBody(container) {
           '<span class="tend-param-name">' +
           titleEsc +
           '</span>' +
+          '<span class="tend-card-header-end">' +
+          '<button type="button" class="tend-card-hide-btn" title="Ocultar analito" aria-label="Ocultar analito">' +
+          tendEyeHideSvg() +
+          '</button>' +
           '<span class="tend-param-value' +
           (isAb ? ' tend-abnormal' : '') +
           '">' +
           (latest != null ? latest : '—') +
           '</span>' +
-          '</div>' +
+          '</span></div>' +
           unitHtml +
           '<div class="tend-spark-wrap">' +
           '<div class="tend-spark-canvas-cell">' +

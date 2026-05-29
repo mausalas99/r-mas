@@ -1340,12 +1340,19 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 var RELEASE_NOTES_HIGHLIGHTS = {
   '6.3.6': [
     {
-      title: 'TODO',
-      body: 'Completar antes de publicar.',
+      title: 'Cultivos multipaciente',
+      body:
+        'Varios <strong>MICROORGANISMO</strong> en un informe SOME: <strong>una fila por aislamiento</strong> en Cultivos, con cuenta y antibiograma (R/I/S) por germen.',
     },
     {
-      title: 'TODO',
-      body: 'Completar antes de publicar.',
+      title: 'Preliminar y resistencia',
+      body:
+        'Cabecera <strong>Preliminar</strong> sin ATB; marcas <strong>BLEE</strong>, <strong>Carb-R</strong> y <strong>BLAC</strong> por aislamiento; alertas en <strong>Manejo → ATB</strong>.',
+    },
+    {
+      title: 'Tour pitch',
+      body:
+        'Demostración: dock y paso <strong>Cultivos</strong> con chips S/I/R; al omitir el tour no se vacía la lista de pacientes.',
     },
   ],
   '6.3.5': [

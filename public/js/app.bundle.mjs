@@ -2185,6 +2185,7 @@ var MED_NACL_HYPERT = "CLORURO DE SODIO HIPERT. 17.7 % SOL INY 10 ML (+)";
 var MED_CA_GLUC = "GLUCONATO DE CALCIO 10% SOL INY";
 var MED_MG_SO4 = "SULFATO DE MAGNESIO 50% SOL INY";
 var MED_PHOS_K = "FOSFATO DE POTASIO 20 MEQ SOL INY 10 ML (+)";
+var MED_PHOS_NA = "FOSFATO DE SODIO SOL INY";
 var MED_INSULIN = "INSULINA REGULAR";
 var MED_D50 = "DEXTROSA 50% SOL INY";
 var MED_SALBUTAMOL = "SALBUTAMOL";
@@ -2255,6 +2256,29 @@ function kLimitsForAccess(viaAcceso) {
   if (isCentralAccess(viaAcceso)) return { maxConcMeqPerL: 80, maxMeqPerHr: 40 };
   return { maxConcMeqPerL: 40, maxMeqPerHr: 10 };
 }
+function accessRouteLabel(viaAcceso) {
+  return isCentralAccess(viaAcceso) ? "central (CVC)" : "perif\xE9rica / PICC";
+}
+function formatSuggestedDoseFromOrder(order, opts) {
+  opts = opts || {};
+  if (!order) return opts.extra || "";
+  var parts = [];
+  var dose = String(order.doseValue != null ? order.doseValue : "").trim();
+  if (dose && order.doseUnit) parts.push(dose + " " + String(order.doseUnit).trim());
+  if (order.dilution) parts.push("Diluci\xF3n: " + order.dilution);
+  if (opts.accessLabel) parts.push("Acceso " + opts.accessLabel);
+  if (opts.meqPerHr != null && Number.isFinite(opts.meqPerHr)) {
+    parts.push("Vel. reposici\xF3n: ~" + opts.meqPerHr + " mEq/h m\xE1x");
+  }
+  var rate = order.infusionRateMlHr;
+  if (rate != null && rate !== "" && Number.isFinite(Number(rate))) {
+    parts.push("Vel. infusi\xF3n: ~" + Math.round(Number(rate)) + " mL/h");
+  } else if (rate != null && rate !== "") {
+    parts.push("Vel. infusi\xF3n: " + rate);
+  }
+  if (opts.extra) parts.push(opts.extra);
+  return parts.join(" \xB7 ");
+}
 function tbwFactor(patient) {
   if (!patient) return 0.6;
   var s = String(patient.sexo || "").trim().toUpperCase();
@@ -2310,7 +2334,7 @@ function buildKHypoOrders(mEqChosen, limits, etaLow, routeLabel) {
   var maxConc = limits.maxConcMeqPerL;
   var minVol = mEqChosen / maxConc * 1e3;
   var volMl = standardBagVolumeMl(minVol);
-  var mEqPerHrRaw = etaLow ? Math.min(limits.maxMeqPerHr, 10, 10) : limits.maxMeqPerHr;
+  var mEqPerHrRaw = etaLow ? Math.min(limits.maxMeqPerHr, 10) : limits.maxMeqPerHr;
   if (etaLow && mEqPerHrRaw > 10) mEqPerHrRaw = 10;
   var orders = [];
   orders.push({
@@ -2318,11 +2342,35 @@ function buildKHypoOrders(mEqChosen, limits, etaLow, routeLabel) {
     route: routeLabel,
     doseValue: mEqChosen,
     doseUnit: "MEQ",
-    dilution: volMl + " ML SOL SALINA AL 0.9% (" + mEqChosen + " MEQ / " + volMl + " ML)",
+    dilution: volMl + " ML SOL SALINA AL 0.9% (" + mEqChosen + " MEQ / " + volMl + " ML; CONC. \u2264" + maxConc + " MEQ/L)",
     infusionRateMlHr: Math.round(mEqPerHrRaw / mEqChosen * volMl),
     requiresDilution: true
   });
-  return orders;
+  return { orders, volMl, mEqPerHr: mEqPerHrRaw };
+}
+function buildPhosHypoOrders(phs, mmLo, mmHi, kVal) {
+  var usePotassium = !(kVal != null && kVal >= 4);
+  var mmTarget = phs === "grave" ? Math.min(mmHi, 30) : Math.max(mmLo, Math.round((mmLo + mmHi) / 2 * 10) / 10);
+  var volMl = phs === "grave" ? 500 : 250;
+  var hours = phs === "grave" ? 8 : 10;
+  var mmolPerHr = Math.round(mmTarget / hours * 10) / 10;
+  var med = usePotassium ? MED_PHOS_K : MED_PHOS_NA;
+  return {
+    orders: [
+      {
+        medication: med,
+        route: "INTRAVENOSA",
+        doseValue: mmTarget,
+        doseUnit: "MMOL P",
+        dilution: volMl + " ML SOL SALINA AL 0.9% EN " + hours + " H",
+        infusionRateMlHr: Math.round(mmolPerHr / mmTarget * volMl),
+        requiresDilution: true
+      }
+    ],
+    mmTarget,
+    mmolPerHr,
+    usePotassium
+  };
 }
 function buildNaHypoSomeOrders(severity, mlEffective3) {
   if (severity === "grave") {
@@ -2396,7 +2444,9 @@ function evaluateElectrolyteManejo(ctx) {
     var mEqBase = ks === "grave" ? 40 : ks === "moderada" ? 30 : 25;
     if (etaLow) mEqBase = Math.round(mEqBase * 0.5 / 5) * 5;
     var mEqUse = Math.max(10, Math.min(mEqBase, etaLow ? 20 : 40));
-    var someKs = buildKHypoOrders(mEqUse, limits, etaLow, routeIv);
+    var kPack = buildKHypoOrders(mEqUse, limits, etaLow, routeIv);
+    var someKs = kPack.orders;
+    var kOrder = someKs[0];
     rows.push({
       electrolyte: "K",
       direction: "hypo",
@@ -2406,7 +2456,10 @@ function evaluateElectrolyteManejo(ctx) {
       severity: ks,
       formula: defEq != null ? "(4\u2212K)\xD7peso\xD70.4" : "",
       formulaResult: defStr,
-      suggestedDose: mEqUse + " mEq IV (protocolo habitual 20\u201340 mEq) en volumen conforme l\xEDmites de v\xEDa + SS al 0.9%",
+      suggestedDose: formatSuggestedDoseFromOrder(kOrder, {
+        accessLabel: accessRouteLabel(patient.viaAcceso),
+        meqPerHr: kPack.mEqPerHr
+      }),
       route: routeIv,
       monitoring: "Ionograma y ECG si procede; repetir K en 4\u20136 h.",
       alerts: kHypoAlerts.concat(),
@@ -2553,8 +2606,19 @@ function evaluateElectrolyteManejo(ctx) {
     mgAlerts = mgAlerts.concat();
     if (etaLow)
       mgAlerts.push("IRC (eTFG <30): dosis Mg reducida 50%; monitoreo neuromuscular acentuado");
-    var volMg = mags === "grave" ? 100 : 500;
-    var rateMgHr = etaLow ? 2 : mags === "grave" ? 8 : 1.25;
+    var volMg = mags === "grave" ? 250 : 500;
+    var mgMeq = gMgEq;
+    var mgHours = mags === "grave" ? 0.5 : 6;
+    var mgMlHr = mags === "grave" ? Math.round(volMg / 0.5) : Math.round(volMg / mgHours);
+    var mgOrder = {
+      medication: MED_MG_SO4,
+      route: routeIv,
+      doseValue: mgMeq,
+      doseUnit: "MEQ Mg (~" + Math.round(mgMeq / 4) + " mL MgSO4 50%)",
+      dilution: volMg + " ML SOL SALINA AL 0.9%" + (mags === "grave" ? " EN 15\u201360 MIN" : " EN 4\u20138 H"),
+      infusionRateMlHr: mgMlHr,
+      requiresDilution: true
+    };
     rows.push({
       electrolyte: "Mg",
       direction: "hypo",
@@ -2564,22 +2628,14 @@ function evaluateElectrolyteManejo(ctx) {
       severity: mags,
       formula: etaLow ? "Dosis Mg ajustada a eTFG" : "",
       formulaResult: etaLow ? "\u221250% por eTFG <30" : null,
-      suggestedDose: mags === "grave" ? "MgSO4 50%: carga inicial en bolus/extension segun institucion; mantenimiento prn" : "MgSO4 diluido en 500\u20131000 mL SS 4\u20138 h",
+      suggestedDose: formatSuggestedDoseFromOrder(mgOrder, {
+        accessLabel: accessRouteLabel(patient.viaAcceso)
+      }),
       route: routeIv,
       monitoring: "Reflejos/PFR; Mg serico y K asociados.",
       alerts: mgAlerts,
       clinicalNotes: [],
-      someOrders: [
-        {
-          medication: MED_MG_SO4,
-          route: routeIv,
-          doseValue: Math.round(gMgEq / 4),
-          doseUnit: "MEQ",
-          dilution: volMg + " ML SOL SALINA AL 0.9%",
-          infusionRateMlHr: Math.round(rateMgHr / gMgEq * volMg),
-          requiresDilution: true
-        }
-      ],
+      someOrders: [mgOrder],
       ruleId: "mg-hypo-" + mags
     });
   }
@@ -2587,6 +2643,11 @@ function evaluateElectrolyteManejo(ctx) {
   if (phs && w != null) {
     var mmLo = Math.round(w * 0.16 * 10) / 10;
     var mmHi = Math.round(w * 0.32 * 10) / 10;
+    var phPack = !etaLow ? buildPhosHypoOrders(phs, mmLo, mmHi, kVal) : null;
+    var phOrder = phPack && phPack.orders[0] ? phPack.orders[0] : null;
+    var phSuggested = etaLow ? "IRC (eTFG <30): evitar fosfato IV; si imprescindible: \u2264" + Math.round(mmLo * 0.5 * 10) / 10 + " mmol en 250 mL SS 0.9%, \u22644 mmol/h, monitor Ca/Mg/K" : formatSuggestedDoseFromOrder(phOrder, {
+      extra: phPack && !phPack.usePotassium ? "Usar fosfato de sodio (K \u22654 mEq/L)" : null
+    });
     rows.push({
       electrolyte: "P",
       direction: "hypo",
@@ -2596,31 +2657,25 @@ function evaluateElectrolyteManejo(ctx) {
       severity: phs,
       formula: "0.16\u20130.32 mmol/kg IV (grave-moderado; max 90 mmol/dia)",
       formulaResult: "~" + mmLo + "\u2013" + mmHi + " mmol para peso corporal actual",
-      suggestedDose: "Reposicion fosfato IV lenta segun institucion; preferir fosfato de sodio si K alto.",
+      suggestedDose: phSuggested,
       route: routeIv,
       monitoring: "Ca ionico / total; Mg; K funcion renal.",
-      alerts: etaLow ? ["IRC: evitar o extremar precauciones con P IV institucional."] : [],
-      clinicalNotes: kVal != null && kVal < 3.8 ? ["Considerar FOSFATO DE POTASIO si K permite (ver algunos pedidos combinados PDF)."] : [],
-      someOrders: !etaLow && !(kVal != null && kVal >= 4) ? [
-        {
-          medication: MED_PHOS_K,
-          route: routeIv,
-          doseValue: "~" + Math.min(mmHi, phs === "grave" ? mmHi : mmLo + 15),
-          doseUnit: "MMOL (APROX TEORICO)",
-          dilution: "250\u2013500 ML SS AL 0.9% EN 6\u201312 H \u2014 VALIDACION MEDICA",
-          infusionRateMlHr: (function() {
-            var volP = 375;
-            var mmTarget = typeof mmHi === "number" && mmHi > 0 ? mmHi : 18;
-            var mmolPerHr = phs === "grave" ? 15 : 8;
-            return Math.round(mmolPerHr / mmTarget * volP);
-          })(),
-          requiresDilution: true
-        }
-      ] : [],
+      alerts: etaLow ? ["IRC: evitar o extremar precauciones con P IV."] : [],
+      clinicalNotes: kVal != null && kVal < 3.8 && phPack && phPack.usePotassium ? ["Fosfato de potasio aporta K+; vigilar hipocalcemia antes de iniciar."] : [],
+      someOrders: phPack ? phPack.orders : [],
       ruleId: "p-hypo-" + phs
     });
   }
   if (caVal != null && cc != null && cc < 8.5) {
+    var caOrder = {
+      medication: MED_CA_GLUC,
+      route: routeIv,
+      doseValue: cc < 7.5 ? "20" : "10\u201320",
+      doseUnit: "ML (1\u20132 G)",
+      dilution: "IV DIRECTO O DILUIDO EN 50\u2013100 ML D5W/SS 0.9%",
+      infusionRateMlHr: cc < 7.5 ? 200 : 100,
+      requiresDilution: false
+    };
     rows.push({
       electrolyte: "Ca",
       direction: "hypo",
@@ -2630,22 +2685,12 @@ function evaluateElectrolyteManejo(ctx) {
       severity: cc < 7.5 ? "grave" : "moderada",
       formula: "Ca total + 0.8\xD7(4\u2212Alb)",
       formulaResult: String(cc),
-      suggestedDose: "Gluconato calcio IV 10% 10\u201320 mL lentamente segun institucion",
+      suggestedDose: formatSuggestedDoseFromOrder(caOrder) + " \xB7 Administrar en 10\u201320 min con monitor ECG",
       route: routeIv,
       monitoring: "ECG si sintomatico; Ca total/ionizado seriados.",
       alerts: [],
       clinicalNotes: albVal == null ? ["Alb faltante impide corroboracion; interpretar ionograma/clinica."] : [],
-      someOrders: [
-        {
-          medication: MED_CA_GLUC,
-          route: routeIv,
-          doseValue: "10\u201320",
-          doseUnit: "ML",
-          dilution: "ADMINISTRAR LENTAMENTE IV 10\u201320 MIN (SEGUN PROTOCOLO INSTITUCIONAL)",
-          infusionRateMlHr: null,
-          requiresDilution: false
-        }
-      ],
+      someOrders: [caOrder],
       ruleId: "ca-hypo-corrected"
     });
   }
@@ -5086,7 +5131,7 @@ function detectTipoCultivoLine(lineasTexto) {
     if (/\bUROCULTIVO\b/i.test(l) || /\bHEMOCULTIVO\b/i.test(l) || /^CATETER(\b|$)/i.test(lUp))
       return l;
     if (/^BACILOSCOPIA\b/i.test(lUp) || /^CULTIVO\s+DE\s+MICOBACTERIAS\b/i.test(lUp)) return l;
-    if (!candidate && !/^(TINCION|CALIDAD|ESTADO|MICROORGANISMO|COMENTARIO|CUENTA|ANTIBIOGRAMA|1\s+MUESTRA|OBSERVACIONES|SECCION)\b/i.test(lUp)) {
+    if (!candidate && !/^(TINCION|CALIDAD|ESTADO|MICROORGANISMO|COMENTARIO|CUENTA|ANTIBIOGRAMA|REPORTE\s+PRELIMINAR|1\s+MUESTRA|OBSERVACIONES|SECCION)\b/i.test(lUp)) {
       candidate = l;
     }
   }
@@ -5201,12 +5246,12 @@ function parseInterpAntibiograma(vL) {
   if (tabs.length >= 2) {
     var interp = tabs[tabs.length - 1].toUpperCase().replace(/\*+$/, "");
     var mic = tabs.slice(0, -1).join(" ").trim();
-    if (/^(S|R|I|NEG|POS|ESBL|BLEE|KPC|NDM|VIM|IMP|MBL)$/.test(interp)) return { mic, interp };
+    if (/^(S|R|I|NEG|POS|ESBL|BLEE|BLAC|KPC|NDM|VIM|IMP|MBL)$/.test(interp)) return { mic, interp };
     if (/^NO\s+SUSCEPTIBLE$/i.test(interp)) return { mic, interp: "NO SUSCEPTIBLE" };
   }
-  var mV = vClean.match(/^([<>]=?\s*\d+(?:\.\d+)?)\s+(S|R|I|NEG|POS|ESBL|BLEE|KPC|NDM|VIM|IMP|MBL)$/i);
+  var mV = vClean.match(/^([<>]=?\s*\d+(?:\.\d+)?(?:\/\d+)?)\s+(S|R|I|NEG|POS|ESBL|BLEE|BLAC|KPC|NDM|VIM|IMP|MBL)$/i);
   if (mV) return { mic: mV[1].replace(/\s/g, ""), interp: mV[2].toUpperCase() };
-  var mN = vClean.match(/^(\d+)\s+(S|R|I|ESBL|BLEE|KPC|NDM|VIM|IMP|MBL)$/i);
+  var mN = vClean.match(/^(\d+)\s+(S|R|I|ESBL|BLEE|BLAC|KPC|NDM|VIM|IMP|MBL)$/i);
   if (mN) return { mic: mN[1], interp: mN[2].toUpperCase() };
   var lim = vClean.toUpperCase();
   if (/^(S|R|I)$/.test(lim)) return { mic: "", interp: lim };
@@ -5251,7 +5296,9 @@ function extractMarcasResistenciaDesdeTexto(texto) {
   if (/\bSPM\b|SPM-/.test(u)) add("SPM");
   if (/\bGIM\b|GIM-/.test(u)) add("GIM");
   if (/\bCPE\b|\bCRE\b|ENTEROBACTER(I)?A\s+RESISTENTE\s+A\s+CARBAPEN|BACILO\s+CARBAPEN/.test(u)) add("CRE");
-  if (/RESISTEN(CIA|TE)\s+.*CARBAPEN|CARBAPEN.*RESIST|NO\s+SUSCEPTIB.*CARBAPEN|ANTICARBAPEN|ANTI-?CARBAPEN|PRODUCTOR\s+DE\s+CARBAPENEMASA|PRODUCTOR(ES)?\s+CARBAPEN/.test(u)) {
+  if (/RESISTEN(CIA|TE)\s+.*CARBAPEN|CARBAPEN.*RESIST|NO\s+SUSCEPTIB.*CARBAPEN|ANTICARBAPEN|ANTI-?CARBAPEN|PRODUCTOR\s+DE\s+CARBAPENEMASA|PRODUCTOR(ES)?\s+CARBAPEN|DETECTO\s+CARBAPENEMASA|DETECT[OÓ]\s+CARBAPENEMASA|CARBAPENEMASA\s+DETECTAD/i.test(
+    u
+  )) {
     if (!seen.KPC && !seen.NDM && !seen.VIM && !seen.IMP && !seen["OXA-48"] && !seen.MBL) add("Carb-R");
   }
   if (/\bESBL\b|BETALACTAMASAS?\s+DE\s+ESPECTRO|ESPECTRO\s+EXTENDIDO|BLEE\s*\+\s*ESBL/.test(u)) add("ESBL");
@@ -5265,24 +5312,35 @@ function extractMarcasResistenciaDesdeTexto(texto) {
   });
   return tags;
 }
-function detectMarcasResistenciaCultivo(lineasTexto) {
-  var b0 = -1;
-  for (var i = 0; i < lineasTexto.length; i++) {
-    if (/BACTERIOLOGIA/i.test(lineasTexto[i])) {
-      b0 = i;
-      break;
-    }
+function finalizeMarcasResistencia_(marcas) {
+  marcas.sort(function(a, b) {
+    return (ORDEN_MARCA_RESISTENCIA[a] || 99) - (ORDEN_MARCA_RESISTENCIA[b] || 99);
+  });
+  if (marcas.indexOf("BLEE") !== -1) marcas = marcas.filter(function(m) {
+    return m !== "ESBL";
+  });
+  if (marcas.some(function(m) {
+    return /^(KPC|NDM|VIM|IMP|OXA-48|OXA-otras|MBL|SPM|GIM)$/.test(m);
+  })) {
+    marcas = marcas.filter(function(m) {
+      return m !== "Carb-R";
+    });
   }
-  var slice = b0 === -1 ? lineasTexto : lineasTexto.slice(b0, Math.min(b0 + 280, lineasTexto.length));
-  var blob = slice.join("\n");
+  if (marcas.indexOf("CRE") !== -1) marcas = marcas.filter(function(m) {
+    return m !== "Carb-R";
+  });
+  return marcas;
+}
+function detectMarcasResistenciaCultivoSlice(sliceLines) {
+  var blob = sliceLines.join("\n");
   var marcas = extractMarcasResistenciaDesdeTexto(blob);
   var seen = {};
   marcas.forEach(function(m) {
     seen[m] = 1;
   });
   var inAb = false;
-  for (i = 0; i < lineasTexto.length; i++) {
-    var L = lineasTexto[i].replace(/\*+$/g, "").trim();
+  for (var i = 0; i < sliceLines.length; i++) {
+    var L = sliceLines[i].replace(/\*+$/g, "").trim();
     if (/^ANTIBIOGRAMA/i.test(L)) {
       inAb = true;
       continue;
@@ -5308,27 +5366,11 @@ function detectMarcasResistenciaCultivo(lineasTexto) {
       seen[it] = 1;
     }
   }
-  marcas.sort(function(a, b) {
-    return (ORDEN_MARCA_RESISTENCIA[a] || 99) - (ORDEN_MARCA_RESISTENCIA[b] || 99);
-  });
-  if (marcas.indexOf("BLEE") !== -1) marcas = marcas.filter(function(m) {
-    return m !== "ESBL";
-  });
-  if (marcas.some(function(m) {
-    return /^(KPC|NDM|VIM|IMP|OXA-48|OXA-otras|MBL|SPM|GIM)$/.test(m);
-  })) {
-    marcas = marcas.filter(function(m) {
-      return m !== "Carb-R";
-    });
-  }
-  if (marcas.indexOf("CRE") !== -1) marcas = marcas.filter(function(m) {
-    return m !== "Carb-R";
-  });
-  return marcas;
+  return finalizeMarcasResistencia_(marcas);
 }
 function compactarLineasAntibiograma(sensCrudas, abreviarFn) {
   if (!sensCrudas.length) return "";
-  var rank = { R: 4, "NO SUSCEPTIBLE": 4, ESBL: 4, BLEE: 4, KPC: 4, NDM: 4, VIM: 4, IMP: 4, MBL: 4, I: 2, S: 1, POS: 1 };
+  var rank = { R: 4, "NO SUSCEPTIBLE": 4, ESBL: 4, BLEE: 4, BLAC: 4, KPC: 4, NDM: 4, VIM: 4, IMP: 4, MBL: 4, I: 2, S: 1, POS: 1 };
   var byKey = {};
   sensCrudas.forEach(function(s) {
     var key = abreviarFn(s.med);
@@ -5422,8 +5464,10 @@ function extractCuentaKassFromLineas(sliceLines) {
   if (pCuenta === -1) return "";
   var fragC = tNorm.substring(pCuenta, pCuenta + 110);
   var fragBeforeAb = fragC.split(/\bANTIBIOGRAMA\b/i)[0];
-  var mUfc = fragBeforeAb.match(/\+?\d[\d,]*(?:\.\d+)?\s*UFC/i);
-  if (mUfc) return mUfc[0].replace(/\s+/g, "").toUpperCase();
+  var mUfc = fragBeforeAb.match(/\+?\d[\d,]*(?:\.\d+)?\s*UFC(?:\s*\/\s*M?L)?/i);
+  if (mUfc) {
+    return mUfc[0].replace(/\s+/g, " ").replace(/\s*\/\s*/g, "/").trim().toUpperCase();
+  }
   var mC = fragBeforeAb.match(/([<>]=?\s?\d+(\.\d+)?\s*[A-Z%\/]*)/i);
   if (mC) return mC[1].trim().toUpperCase();
   return "";
@@ -5575,7 +5619,7 @@ function parseCultivo_(textoBruto, tNorm) {
   var mycoOut = parseMycobacteriasStudies_(lineasTexto, fechaC);
   if (mycoOut && !germenRuns.length) return mycoOut;
   var sitio = buildCultivoTipoDisplay(detectTipoCultivoLine(lineasTexto), detectMuestraDesdeProducto(lineasTexto));
-  var marcasRes = detectMarcasResistenciaCultivo(lineasTexto);
+  var reportePreliminar = /REPORTE\s+PRELIMINAR/i.test(lineasTexto.join("\n"));
   function abreviarAb(n) {
     n = n.toUpperCase().trim();
     if (/PIPERACILINA|PIP\/TAZ/.test(n)) return "PIP/TAZO";
@@ -5616,7 +5660,13 @@ function parseCultivo_(textoBruto, tNorm) {
       var subNorm = sliceLines.join("\n");
       var idxAbLoc = subNorm.toUpperCase().indexOf("ANTIBIOGRAMA");
       var head = sitio + " " + fechaC + ": " + run.germen;
-      if (ri === 0 && marcasRes.length) head += " \xB7 " + marcasRes.join(" \xB7 ");
+      var headTags = [];
+      if (reportePreliminar) headTags.push("Preliminar");
+      var marcasRun = detectMarcasResistenciaCultivoSlice(sliceLines);
+      marcasRun.forEach(function(m) {
+        if (headTags.indexOf(m) === -1) headTags.push(m);
+      });
+      if (headTags.length) head += " \xB7 " + headTags.join(" \xB7 ");
       var chunk = head;
       if (idxAbLoc !== -1) {
         var lineasAb = subNorm.substring(idxAbLoc).split("\n").map(function(l) {
@@ -21854,6 +21904,20 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
   }
 ];
 var RELEASE_NOTES_HIGHLIGHTS = {
+  "6.3.6": [
+    {
+      title: "Cultivos multipaciente",
+      body: "Varios <strong>MICROORGANISMO</strong> en un informe SOME: <strong>una fila por aislamiento</strong> en Cultivos, con cuenta y antibiograma (R/I/S) por germen."
+    },
+    {
+      title: "Preliminar y resistencia",
+      body: "Cabecera <strong>Preliminar</strong> sin ATB; marcas <strong>BLEE</strong>, <strong>Carb-R</strong> y <strong>BLAC</strong> por aislamiento; alertas en <strong>Manejo \u2192 ATB</strong>."
+    },
+    {
+      title: "Tour pitch",
+      body: "Demostraci\xF3n: dock y paso <strong>Cultivos</strong> con chips S/I/R; al omitir el tour no se vac\xEDa la lista de pacientes."
+    }
+  ],
   "6.3.5": [
     {
       title: "Bomba de insulina (switch)",
@@ -22678,6 +22742,7 @@ var rt13 = {
 function registerTendenciasRuntime(partial) {
   if (partial && typeof partial === "object") Object.assign(rt13, partial);
   initTendGroupModal();
+  ensureTendHiddenModalDelegation();
   ensureTendenciasClickDelegation();
   registerSesionIngresoTrendsRuntime({
     buildCatalog: buildMergedTrendSeriesCatalog,
@@ -23529,6 +23594,9 @@ function getTendSectionLabel(sectionKey) {
 function tendEyeVisibilitySvg() {
   return '<svg class="tend-eye-svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
 }
+function tendEyeHideSvg() {
+  return '<svg class="tend-eye-svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+}
 function tendAbnormalOnlyRead() {
   try {
     return localStorage.getItem(TEND_ABNORMAL_ONLY_LS) === "1";
@@ -23566,7 +23634,7 @@ function buildTendHiddenChipsHtml() {
     var fk = desc[i].fieldKey;
     var label = esc7(tendFindSeriesSpec(sk, fk).cardTitle || fk);
     chips.push(
-      '<span class="tend-hidden-chip" data-series-key="' + esc7(tendCatalogSeriesKey(sk, fk)) + '"><span class="tend-hidden-chip-label">' + label + '</span><button type="button" class="tend-hidden-chip-btn" title="Volver a mostrar" aria-label="Mostrar de nuevo">' + svg + "</button></span>"
+      '<button type="button" class="tend-hidden-chip" data-series-key="' + esc7(tendCatalogSeriesKey(sk, fk)) + '" title="Volver a mostrar ' + label + '" aria-label="Mostrar de nuevo ' + label + '"><span class="tend-hidden-chip-label">' + label + '</span><span class="tend-hidden-chip-eye" aria-hidden="true">' + svg + "</span></button>"
     );
   }
   return chips.join("");
@@ -23809,6 +23877,52 @@ function syncTendCardOrderFromDom(sectionKey) {
 var _tendPointerDidDrag = false;
 var TEND_CARD_DRAG_THRESHOLD_PX = 5;
 var _tendenciasClickDelegationWired = false;
+var _tendHiddenModalWired = false;
+function ensureTendHiddenModalDelegation() {
+  if (_tendHiddenModalWired) return;
+  var hiddenBackdrop = document.getElementById("tend-hidden-modal-backdrop");
+  if (!hiddenBackdrop) {
+    if (typeof document !== "undefined" && document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", ensureTendHiddenModalDelegation, {
+        once: true
+      });
+    }
+    return;
+  }
+  _tendHiddenModalWired = true;
+  hiddenBackdrop.addEventListener("click", onTendHiddenBackdropClick);
+  var panel = hiddenBackdrop.querySelector(".tend-hidden-modal");
+  if (panel) panel.addEventListener("click", onTendHiddenModalPanelClick);
+  var resetBtn = hiddenBackdrop.querySelector('[data-tend-action="reset-hidden"]');
+  if (!resetBtn) {
+    resetBtn = hiddenBackdrop.querySelector(".modal-actions .btn-save");
+    if (resetBtn) resetBtn.setAttribute("data-tend-action", "reset-hidden");
+  }
+}
+function onTendHiddenBackdropClick(ev) {
+  if (ev.target === ev.currentTarget) closeTendHiddenModal();
+}
+function onTendHiddenModalPanelClick(ev) {
+  var t2 = ev.target;
+  if (!t2 || !t2.closest) return;
+  var resetBtn = t2.closest('[data-tend-action="reset-hidden"]');
+  if (resetBtn) {
+    ev.preventDefault();
+    tendResetAllHiddenSeries();
+    return;
+  }
+  var chip = t2.closest(".tend-hidden-chip");
+  if (chip) {
+    var seriesKey = chip.getAttribute("data-series-key");
+    if (seriesKey) {
+      var pipe = seriesKey.indexOf("|");
+      if (pipe > 0) {
+        ev.preventDefault();
+        tendUnhideSeries(seriesKey.slice(0, pipe), seriesKey.slice(pipe + 1));
+      }
+    }
+  }
+}
 function ensureTendenciasClickDelegation() {
   if (_tendenciasClickDelegationWired) return;
   var root = document.getElementById("tendencias-container");
@@ -23822,19 +23936,6 @@ function ensureTendenciasClickDelegation() {
   }
   _tendenciasClickDelegationWired = true;
   root.addEventListener("click", onTendenciasContainerClick);
-  var hiddenBackdrop = document.getElementById("tend-hidden-modal-backdrop");
-  if (hiddenBackdrop) {
-    hiddenBackdrop.addEventListener("click", onTendHiddenModalClick);
-    var resetBtn = hiddenBackdrop.querySelector(".modal-actions .btn-save");
-    if (resetBtn) resetBtn.setAttribute("data-tend-action", "reset-hidden");
-  }
-}
-function onTendHiddenModalClick(ev) {
-  if (ev.target === ev.currentTarget) {
-    closeTendHiddenModal();
-    return;
-  }
-  onTendenciasContainerClick(ev);
 }
 function onTendenciasContainerClick(ev) {
   var t2 = ev.target;
@@ -23871,24 +23972,18 @@ function onTendenciasContainerClick(ev) {
     if (sk2) openTendGroupModal(sk2);
     return;
   }
-  var unhideBtn = t2.closest(".tend-hidden-chip-btn");
-  if (unhideBtn) {
-    var chip = unhideBtn.closest(".tend-hidden-chip");
-    var seriesKey = chip && chip.getAttribute("data-series-key");
-    if (seriesKey) {
-      var pipe = seriesKey.indexOf("|");
-      if (pipe > 0) {
+  var hideCardBtn = t2.closest(".tend-card-hide-btn");
+  if (hideCardBtn) {
+    var hideCard = hideCardBtn.closest(".tend-card");
+    var hideKey = hideCard && hideCard.getAttribute("data-series-key");
+    if (hideKey) {
+      var hidePipe = hideKey.indexOf("|");
+      if (hidePipe > 0) {
         ev.preventDefault();
         ev.stopPropagation();
-        tendUnhideSeries(seriesKey.slice(0, pipe), seriesKey.slice(pipe + 1));
+        tendHideSeriesFromCard(ev, hideKey.slice(0, hidePipe), hideKey.slice(hidePipe + 1));
       }
     }
-    return;
-  }
-  var resetBtn = t2.closest('[data-tend-action="reset-hidden"]');
-  if (resetBtn) {
-    ev.preventDefault();
-    tendResetAllHiddenSeries();
     return;
   }
   var card = t2.closest(".tend-card");
@@ -24232,7 +24327,7 @@ function renderTendenciasBody(container) {
       var unitHtml = labelParts.unit ? '<div class="tend-unit">' + esc7(labelParts.unit) + "</div>" : "";
       var seriesKey = tendCatalogSeriesKey(sectionKey, fk);
       cardParts.push(
-        '<div class="tend-card" role="button" tabindex="0" data-series-key="' + esc7(seriesKey) + '" data-abnormal="' + (isAb ? "1" : "0") + '"><div class="tend-card-header"><span class="tend-param-name">' + titleEsc + '</span><span class="tend-param-value' + (isAb ? " tend-abnormal" : "") + '">' + (latest != null ? latest : "\u2014") + "</span></div>" + unitHtml + '<div class="tend-spark-wrap"><div class="tend-spark-canvas-cell">' + (expanded ? '<canvas id="' + domId + '"></canvas>' : '<div class="tend-spark-placeholder" aria-hidden="true"></div>') + "</div></div></div>"
+        '<div class="tend-card" role="button" tabindex="0" data-series-key="' + esc7(seriesKey) + '" data-abnormal="' + (isAb ? "1" : "0") + '"><div class="tend-card-header"><span class="tend-param-name">' + titleEsc + '</span><span class="tend-card-header-end"><button type="button" class="tend-card-hide-btn" title="Ocultar analito" aria-label="Ocultar analito">' + tendEyeHideSvg() + '</button><span class="tend-param-value' + (isAb ? " tend-abnormal" : "") + '">' + (latest != null ? latest : "\u2014") + "</span></span></div>" + unitHtml + '<div class="tend-spark-wrap"><div class="tend-spark-canvas-cell">' + (expanded ? '<canvas id="' + domId + '"></canvas>' : '<div class="tend-spark-placeholder" aria-hidden="true"></div>') + "</div></div></div>"
       );
     }
     htmlParts.push(
@@ -25401,9 +25496,11 @@ var MARKER_ALERTS = {
   IMP: "Carbapenemasa (IMP): evitar meropenem/imipenem; valorar ceftazidima-avibactam/colistina seg\xFAn nota local",
   MBL: "Metalobetalactamasa (MBL): evitar carbapen\xE9micos seg\xFAn antibiograma y nota local",
   MRSA: "MRSA: valorar oxacilina/cefazolina vs vancomicina seg\xFAn S",
-  CRE: "CRE: evitar carbapen\xE9micos seg\xFAn mecanismo y antibiograma"
+  CRE: "CRE: evitar carbapen\xE9micos seg\xFAn mecanismo y antibiograma",
+  "Carb-R": "Carbapenemasa / resistencia a carbapen\xE9micos: evitar meropenem/imipenem salvo combinaciones documentadas; valorar alternativas seg\xFAn antibiograma",
+  "CARB-R": "Carbapenemasa / resistencia a carbapen\xE9micos: evitar meropenem/imipenem salvo combinaciones documentadas; valorar alternativas seg\xFAn antibiograma"
 };
-var MARKER_TOKEN_RE = /\b(BLEE|ESBL|VRE|KPC|NDM|VIM|IMP|MBL|MRSA|CRE)\b/gi;
+var MARKER_TOKEN_RE = /\b(BLEE|ESBL|VRE|KPC|NDM|VIM|IMP|MBL|MRSA|CRE|Carb-R)\b/gi;
 function isLabSectionHeaderLine2(s) {
   return /^(BH|QS|ESC|PFHs|GASES|PIE|LCR|EGO|CUANTORINA|PltCit|FROTIS)\b/i.test(String(s).trim());
 }
@@ -25500,7 +25597,8 @@ function extractMarkersFromText(text) {
   var m;
   MARKER_TOKEN_RE.lastIndex = 0;
   while (m = MARKER_TOKEN_RE.exec(src)) {
-    var token = m[1].toUpperCase();
+    var token = String(m[1] || "").toUpperCase();
+    if (token === "CARB-R") token = "Carb-R";
     if (token === "ESBL" && seen.BLEE) continue;
     if (!seen[token]) {
       seen[token] = 1;
@@ -25516,10 +25614,13 @@ function buildGlobalAlerts(markers) {
   var seen = /* @__PURE__ */ Object.create(null);
   var alerts = [];
   (markers || []).forEach(function(mk) {
-    var key = String(mk || "").toUpperCase();
-    if (!key || seen[key]) return;
-    seen[key] = 1;
-    if (MARKER_ALERTS[key]) alerts.push(MARKER_ALERTS[key]);
+    var raw = String(mk || "").trim();
+    if (!raw || seen[raw]) return;
+    seen[raw] = 1;
+    var key = raw.toUpperCase();
+    if (key === "CARB-R") key = "Carb-R";
+    if (MARKER_ALERTS[raw]) alerts.push(MARKER_ALERTS[raw]);
+    else if (MARKER_ALERTS[key]) alerts.push(MARKER_ALERTS[key]);
     else alerts.push(key + ": revisar mecanismo de resistencia");
   });
   return alerts;

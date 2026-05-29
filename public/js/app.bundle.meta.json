@@ -90,7 +90,7 @@
       "format": "esm"
     },
     "public/js/electrolyte-manejo.mjs": {
-      "bytes": 22334,
+      "bytes": 24757,
       "imports": [],
       "format": "esm"
     },
@@ -152,7 +152,7 @@
       "format": "esm"
     },
     "public/js/labs.js": {
-      "bytes": 117740,
+      "bytes": 118551,
       "imports": [],
       "format": "esm"
     },
@@ -997,7 +997,7 @@
       "format": "esm"
     },
     "public/js/features/settings-help.mjs": {
-      "bytes": 97808,
+      "bytes": 98510,
       "imports": [
         {
           "path": "public/js/tour-targets.mjs",
@@ -1128,7 +1128,7 @@
       "format": "esm"
     },
     "public/js/features/tendencias.mjs": {
-      "bytes": 70907,
+      "bytes": 72861,
       "imports": [
         {
           "path": "public/js/app-state.mjs",
@@ -1256,7 +1256,7 @@
       "format": "esm"
     },
     "public/js/manejo-cultivo-bridge.mjs": {
-      "bytes": 11605,
+      "bytes": 12140,
       "imports": [
         {
           "path": "public/js/labs.js",
@@ -3121,7 +3121,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 3033777
+      "bytes": 3043296
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -3159,7 +3159,7 @@
           "bytesInOutput": 2336
         },
         "public/js/electrolyte-manejo.mjs": {
-          "bytesInOutput": 19214
+          "bytesInOutput": 21162
         },
         "public/js/tend-core.mjs": {
           "bytesInOutput": 12513
@@ -3171,7 +3171,7 @@
           "bytesInOutput": 4386
         },
         "public/js/labs.js": {
-          "bytesInOutput": 110559
+          "bytesInOutput": 110874
         },
         "public/js/features/diagrams-parse.mjs": {
           "bytesInOutput": 3028
@@ -3327,10 +3327,10 @@
           "bytesInOutput": 4407
         },
         "public/js/features/settings-help.mjs": {
-          "bytesInOutput": 91415
+          "bytesInOutput": 92096
         },
         "public/js/features/tendencias.mjs": {
-          "bytesInOutput": 64987
+          "bytesInOutput": 66705
         },
         "public/js/todos-priority.mjs": {
           "bytesInOutput": 524
@@ -3351,7 +3351,7 @@
           "bytesInOutput": 5043
         },
         "public/js/manejo-cultivo-bridge.mjs": {
-          "bytesInOutput": 11013
+          "bytesInOutput": 11548
         },
         "public/js/manejo-fluid-terms.mjs": {
           "bytesInOutput": 990
@@ -3531,7 +3531,7 @@
           "bytesInOutput": 4453
         }
       },
-      "bytes": 1669578
+      "bytes": 1674775
     }
   }
 }

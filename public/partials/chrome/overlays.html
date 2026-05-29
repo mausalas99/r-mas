@@ -39,12 +39,12 @@
 </div>
 
 <div id="tend-hidden-modal-backdrop" class="modal-backdrop" aria-hidden="true">
-  <div class="modal tend-hidden-modal" role="dialog" aria-modal="true" aria-labelledby="tend-hidden-modal-title" onclick="event.stopPropagation()">
+  <div class="modal tend-hidden-modal" role="dialog" aria-modal="true" aria-labelledby="tend-hidden-modal-title">
     <h3 id="tend-hidden-modal-title">Analitos ocultos</h3>
-    <p class="tend-hidden-modal-hint">Pulsa el ícono del ojo junto a cada nombre para volver a mostrarlo en la cuadrícula de tendencias.</p>
+    <p class="tend-hidden-modal-hint">Pulsa un analito o el ícono del ojo para volver a mostrarlo en la cuadrícula de tendencias.</p>
     <div id="tend-hidden-modal-chips" class="tend-hidden-modal-chips"></div>
     <div class="modal-actions">
-      <button type="button" class="btn-save" onclick="tendResetAllHiddenSeries()">Mostrar todos</button>
+      <button type="button" class="btn-save" data-tend-action="reset-hidden">Mostrar todos</button>
     </div>
   </div>
 </div>

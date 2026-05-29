@@ -72,3 +72,21 @@ test('ATB condensado: filas separadas en resLabs → todos los sensibles', () =>
   assert.deepEqual(ctx.isolates[0].resKeys, ['CAZ']);
   assert.deepEqual(ctx.isolates[0].intKeys, ['FEP']);
 });
+
+test('Carb-R en cabecera genera alerta global en Manejo', () => {
+  var hist = [
+    {
+      fecha: '05/05/2026',
+      hora: '18:16',
+      resLabs: [
+        'UROCULTIVO POR SONDA 05/05: PSEUDOMONAS AERUGINOSA · Carb-R',
+        'ATB R: IMI | S: PIP/TAZO',
+      ],
+    },
+  ];
+  var ctx = getCultureContextForManejo(hist, { maxAgeDays: 14 });
+  assert.equal(ctx.isolates.length, 1);
+  assert.ok(ctx.isolates[0].markers.indexOf('Carb-R') !== -1 || ctx.globalAlerts.some(function (a) {
+    return /carbapen/i.test(a);
+  }));
+});

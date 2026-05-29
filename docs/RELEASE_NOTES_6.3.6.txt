@@ -1,16 +1,37 @@
-R+ 6.3.6 (estable — release 6.3.6)
-======================================
+R+ 6.3.6 (Cultivos multipaciente SOME y tour pitch)
+=================================================
 
 Fecha: 2026-05-29
 
 ## Resumen
 
-TODO: resumen en una o dos frases.
+Parche que mejora el parseo SOME de **cultivos** con varios microorganismos por informe (tabla Cultivos, ATB por germen, preliminares y marcas de resistencia) y corrige el **tour pitch** de demostración (dock, cultivos con chips S/I/R, lista de pacientes).
 
 ## Nuevo / mejorado
 
-- **TODO:** punto 1
-- **TODO:** punto 2
+### Cultivos (expediente y laboratorio)
+
+- **Una fila por microorganismo** — Todos los aislamientos con nombre reciben cabecera `SITIO dd/mm: GERMEN` (antes solo el primero entraba en la tabla **Cultivos**).
+- **Antibiograma por germen** — Chips R / I / S (y ESBL, etc.) desde el `sourceText` del informe para cada organismo, sin mezclar el ATB del vecino.
+- **Marcas por aislamiento** — BLEE, ESBL, Carb-R y similares del comentario y antibiograma **de ese slice**, no del informe entero.
+- **Reporte preliminar** — Si el informe trae `REPORTE PRELIMINAR`, cabecera con **Preliminar**; identificación y **Cuenta** (p. ej. UFC/mL) aunque aún no haya antibiograma.
+- **Cuenta UFC** — Formato legible (`+100,000 UFC/mL`).
+- **Comentarios SOME** — «SE DETECTO CARBAPENEMASA» y variantes marcan **Carb-R** en cabecera.
+- **BLAC** — Interpretación en penicilina (p. ej. Staphylococcus aureus) en el detalle del antibiograma.
+
+### Manejo (ATB)
+
+- **Alertas Carb-R / CRE** — Si la cabecera del cultivo trae esas marcas, **Manejo** muestra la advertencia al elegir antibióticos.
+
+### Tour pitch (demostración)
+
+- **Dock** — Badge alineado con etiquetas del callout; spotlight cuando el dock está colapsado; pie del dock visible al minimizar.
+- **Cultivos en tour** — Historial de laboratorio con `sourceText` para chips S/I/R por germen en el paso de cultivos.
+- **Pacientes** — Al omitir el tour no se deja la lista de pacientes vacía.
+
+## Regresión
+
+- Tests golden G1–G5 en `public/js/labs-cultivo.test.mjs`.
 
 ## Instalación
 
@@ -19,4 +40,4 @@ Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v6.3.6
 - Mac: `R+-6.3.6-arm64.dmg`, `R+-6.3.6-x64.dmg` (y zip para auto-update).
 - Windows: `R+-6.3.6-x64.exe`.
 
-Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye `build:ui` y bundle del renderer).
