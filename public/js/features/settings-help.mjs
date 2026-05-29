@@ -1044,7 +1044,7 @@ var HELP_ARTICLES = [
     html:
       '<p>R+ usa dos ideas distintas que no compiten; sirven para cosas diferentes:</p>' +
       '<ul>' +
-      '<li><strong>Sala en vivo (LAN / ⇄):</strong> trabajar en <strong>sesión</strong> con colegas en la <strong>misma red local</strong>. Es colaboración en tiempo real sobre la misma sala; no es una copia permanente de tu historial para llevar a otro equipo.</li>' +
+      '<li><strong>Sala en vivo (LAN / ⇄):</strong> trabajar en <strong>sesión</strong> con colegas en la <strong>misma red local</strong>. Es colaboración en tiempo real sobre la misma sala; no es una copia permanente de tu historial para llevar a otro equipo. Si el anfitrión cierra R+, otra <strong>Mac o Windows</strong> con R+ de escritorio (unida con invitación) puede ser <strong>anfitrión suplente</strong> hasta que vuelva el equipo original.</li>' +
       '<li><strong>Respaldos y sync (Ajustes → Respaldos, sync y recuperación):</strong> exportar/importar <strong>JSON</strong>, auto‑respaldos y <strong>paquete sync</strong> para mover o recuperar el contenido clínico entre computadoras o después del turno.</li>' +
       '</ul>' +
       '<p style="font-size:13px;color:var(--text-muted);margin:0;">¿Continuar el mismo caso en otro equipo físico? Usa <strong>exportar/importar</strong> o el paquete sync. ¿Ver en vivo lo que hace el equipo en sala? Usa <strong>LAN</strong>.</p>'
@@ -1350,9 +1350,9 @@ var RELEASE_NOTES_HIGHLIGHTS = {
         'Cabecera <strong>Preliminar</strong> sin ATB; marcas <strong>BLEE</strong>, <strong>Carb-R</strong> y <strong>BLAC</strong> por aislamiento; alertas en <strong>Manejo → ATB</strong>.',
     },
     {
-      title: 'Tour pitch',
+      title: 'Sala en vivo — anfitrión suplente',
       body:
-        'Demostración: dock y paso <strong>Cultivos</strong> con chips S/I/R; al omitir el tour no se vacía la lista de pacientes.',
+        'Si el anfitrión cierra R+ o deja de responder, otra <strong>Mac o Windows</strong> con R+ de escritorio (enlace de invitación) asume el servidor hasta que vuelva; el equipo reconecta solo cuando puede.',
     },
   ],
   '6.3.5': [

@@ -31,11 +31,11 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-## R+ 6.3.6 (Cultivos multipaciente SOME y tour pitch)
+## R+ 6.3.6 (Cultivos multipaciente SOME · sala en vivo resiliente)
 
 - **Cultivos** — Varios `MICROORGANISMO` en un informe: **una fila por aislamiento**, cuenta y antibiograma (chips R/I/S) por germen; **Preliminar** sin ATB; marcas BLEE, Carb-R y BLAC por aislamiento.
 - **Manejo → ATB** — Alertas **Carb-R** cuando el cultivo lo indica.
-- **Tour pitch** — Dock y paso de cultivos con chips desde `sourceText`; lista de pacientes estable al omitir el tour.
+- **Sala en vivo (⇄)** — Si el anfitrión cierra R+ o deja de responder en la red, **otra Mac o Windows con R+ de escritorio** (unida con el enlace de invitación) asume el servidor temporalmente hasta que el anfitrión original vuelva; el resto del equipo intenta reconectar solo. En Windows puede hacer falta permitir R+ en el firewall la primera vez (puerto 3738).
 
 Notas: `docs/RELEASE_NOTES_6.3.6.txt`.
 
@@ -82,8 +82,8 @@ Notas: `docs/RELEASE_NOTES_6.3.1.txt`.
 
 ## R+ 6.3.0 (Sala en vivo — LAN estable y flujo simplificado)
 
-- **Sala en vivo (⇄)** — En Mac, la app asume servidor del turno (IP automática); panel sin pestañas Anfitrión/Cliente; **Activar sala en vivo**, **Salas en vivo** y enlace de invitación.
-- **Otra Mac** — Sección para unirse con enlace de invitación; **Usar esta Mac como servidor del turno** para volver al modo local.
+- **Sala en vivo (⇄)** — En escritorio (Mac o Windows), la app asume servidor del turno (IP automática); panel sin pestañas Anfitrión/Cliente; **Activar sala en vivo**, **Salas en vivo** y enlace de invitación.
+- **Otra computadora** — Sección para unirse con enlace de invitación; **Usar esta Mac como servidor del turno** (o equivalente en Windows) para volver al modo local.
 - **LiveSync** — Corregida reconexión permanente («reconectando…»); sesiones guardadas muestran **En sala** cuando ya estás en esa sala.
 
 Notas: `docs/RELEASE_NOTES_6.3.0.txt`.

@@ -136,11 +136,25 @@ function createHostStore({ filePath, teamCodePlain }) {
     return b && typeof b === 'object' ? b : null;
   }
 
+  function ensureRoomRecord(state, roomId, displayName) {
+    const rid = String(roomId || '');
+    if (!rid) return;
+    const rooms = Array.isArray(state.rooms) ? state.rooms : [];
+    if (rooms.some((x) => x && x.id === rid)) return;
+    rooms.push({
+      id: rid,
+      displayName: String(displayName || 'Sala en vivo').trim() || 'Sala en vivo',
+      createdAt: nowIso(),
+    });
+    state.rooms = rooms;
+  }
+
   function putRoomSyncBundle(roomId, bundle) {
     const state = load();
     const rid = String(roomId || '');
     if (!rid) throw new Error('room id required');
     const incoming = bundle && typeof bundle === 'object' ? bundle : {};
+    ensureRoomRecord(state, rid, incoming.roomDisplayName);
     const at = String(incoming.updatedAt || nowIso());
     if (!state.roomSyncBundles) state.roomSyncBundles = {};
     const cur = state.roomSyncBundles[rid];

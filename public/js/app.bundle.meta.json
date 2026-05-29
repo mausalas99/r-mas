@@ -735,8 +735,13 @@
       "imports": [],
       "format": "esm"
     },
+    "public/js/lan-surrogate-host.mjs": {
+      "bytes": 4414,
+      "imports": [],
+      "format": "esm"
+    },
     "public/js/features/lan-sync.mjs": {
-      "bytes": 77350,
+      "bytes": 86412,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -802,6 +807,11 @@
           "path": "public/js/lan-join-link.mjs",
           "kind": "import-statement",
           "original": "../lan-join-link.mjs"
+        },
+        {
+          "path": "public/js/lan-surrogate-host.mjs",
+          "kind": "import-statement",
+          "original": "../lan-surrogate-host.mjs"
         },
         {
           "path": "public/js/app-state.mjs",
@@ -997,7 +1007,7 @@
       "format": "esm"
     },
     "public/js/features/settings-help.mjs": {
-      "bytes": 98510,
+      "bytes": 98809,
       "imports": [
         {
           "path": "public/js/tour-targets.mjs",
@@ -3121,7 +3131,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 3043296
+      "bytes": 3066575
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -3299,8 +3309,11 @@
         "public/js/lan-join-link.mjs": {
           "bytesInOutput": 1727
         },
+        "public/js/lan-surrogate-host.mjs": {
+          "bytesInOutput": 4074
+        },
         "public/js/features/lan-sync.mjs": {
-          "bytesInOutput": 74460
+          "bytesInOutput": 83198
         },
         "public/js/update-helpers.mjs": {
           "bytesInOutput": 635
@@ -3327,7 +3340,7 @@
           "bytesInOutput": 4407
         },
         "public/js/features/settings-help.mjs": {
-          "bytesInOutput": 92096
+          "bytesInOutput": 92406
         },
         "public/js/features/tendencias.mjs": {
           "bytesInOutput": 66705
@@ -3531,7 +3544,7 @@
           "bytesInOutput": 4453
         }
       },
-      "bytes": 1674775
+      "bytes": 1687934
     }
   }
 }
