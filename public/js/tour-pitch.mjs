@@ -5,6 +5,7 @@ import { getPitchTourSteps } from './tour-pitch-steps.mjs';
 import {
   getPitchTourTarget,
   pitchStepRequiresUserAction,
+  resolvePitchScrollPolicy,
 } from './tour-pitch-targets.mjs';
 import {
   seedPitchDemo,
@@ -251,6 +252,73 @@ function applyPitchSpotlights(target) {
       el.classList.add('tour-spotlight-pitch');
     });
   }
+}
+
+export function isPitchDockCollapsedDom() {
+  var dock = document.getElementById('tour-dock');
+  return !!(dock && dock.classList.contains('tour-dock-collapsed'));
+}
+
+export function shouldApplyPitchSpotlight(opts) {
+  opts = opts || {};
+  return !!opts.tourActive && !opts.dockCollapsed;
+}
+
+function clearPitchSpotlightClasses() {
+  clearPitchSpotlightAncestors();
+  var cls = [
+    'tour-spotlight-pitch',
+    'tour-spotlight-pitch-secondary',
+    'tour-spotlight-soap',
+    'tour-spotlight-action',
+  ];
+  cls.forEach(function (c) {
+    document.querySelectorAll('.' + c).forEach(function (el) {
+      el.classList.remove(c);
+    });
+  });
+}
+
+export function applyPitchVisuals(stepId, opts) {
+  opts = opts || {};
+  if (
+    !shouldApplyPitchSpotlight({
+      tourActive: pitchTourActive,
+      dockCollapsed: opts.dockCollapsed,
+    })
+  ) {
+    clearPitchSpotlightClasses();
+    schedulePitchDockPlacement();
+    return;
+  }
+  var t = stepId ? getPitchTourTarget(stepId) : null;
+  if (!t || !t.selector) {
+    schedulePitchDockPlacement();
+    return;
+  }
+  var scrollPolicy = resolvePitchScrollPolicy(stepId);
+  if (scrollPolicy === 'target') {
+    var els = querySelectorList(t.selector);
+    if (els.length) {
+      try {
+        els[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } catch (_e) {}
+    }
+  }
+  applyPitchSpotlights(t);
+  schedulePitchDockPlacement();
+}
+
+export function onPitchDockCollapsedChange(collapsed) {
+  if (!pitchTourActive) return;
+  if (collapsed) {
+    clearPitchTourVisuals();
+    showPitchScrim(false);
+    syncPitchTourModalChrome(pitchStepId);
+  } else {
+    applyPitchVisuals(pitchStepId, { dockCollapsed: false });
+  }
+  schedulePitchDockPlacement();
 }
 
 function getPitchDockAnchorElements(target) {
