@@ -450,6 +450,7 @@ function positionAtbRisHoverPanel(wrap) {
   panel.style.left = left + 'px';
   panel.style.top = top + 'px';
   panel.style.visibility = '';
+  panel.style.zIndex = '';
 }
 
 function wireAtbRisHoverPanels(rootEl) {
@@ -640,6 +641,11 @@ function filterCultivoRowsSignificantFlip(rows) {
 
 var _cultivosTableCacheKey = '';
 var CULTIVOS_CHUNK_ROWS = 40;
+
+/** Fuerza re-render de Cultivos (p. ej. tras re-seed del tour pitch). */
+export function invalidateCultivosTableCache() {
+  _cultivosTableCacheKey = '';
+}
 var CULTIVOS_CHUNKED_THRESHOLD = 72;
 
 function renderCultivosTableBodyChunked(container, shellHtml, rowChunks, onDone) {

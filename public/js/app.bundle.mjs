@@ -3302,247 +3302,6 @@ function flushSaveState() {
   return runSaveNow();
 }
 
-// public/js/tour-pitch-steps.mjs
-var PITCH_TOUR_STEPS = [
-  "pitch_intro",
-  "pitch_problem_laboratoriazo",
-  "map_sidebar",
-  "map_tabs",
-  "pitch_mode_chips",
-  "map_lab_teaser",
-  "lab_bulk_separator",
-  "pitch_lab_ready",
-  "sala_casiopea_lab",
-  "sala_expediente_tabs",
-  "pitch_cultivos",
-  "sala_tend",
-  "sala_tend_chart",
-  "sala_casiopea_trends",
-  "estado_actual",
-  "pitch_pegar_monitoreo",
-  "sala_med",
-  "listado_problemas",
-  "pitch_modo_pase",
-  "pitch_switch_interconsulta",
-  "ic_expediente_tabs",
-  "ic_nota",
-  "ic_indica",
-  "pitch_receta_hu",
-  "pitch_agenda",
-  "livesync_desktop",
-  "livesync_mobile",
-  "pitch_seguridad",
-  "wrap"
-];
-function getPitchTourSteps() {
-  return PITCH_TOUR_STEPS.slice();
-}
-
-// public/js/tour-pitch-targets.mjs
-var PITCH_TARGETS = {
-  pitch_intro: {
-    selector: "#main-area",
-    scrim: false,
-    calloutLabel: ""
-  },
-  pitch_problem_laboratoriazo: {
-    selector: "#main-area",
-    scrim: false,
-    calloutLabel: ""
-  },
-  map_sidebar: {
-    selector: "aside",
-    secondarySelector: "#main-area",
-    spotlight: "primary",
-    dockPrefer: "right",
-    calloutLabel: "\u2460 Lista de pacientes"
-  },
-  map_tabs: {
-    selector: "#app-main-tablist",
-    spotlight: "primary",
-    dockPrefer: "below",
-    calloutLabel: "\u2461 Pesta\xF1as principales"
-  },
-  pitch_mode_chips: {
-    selector: "#header-app-mode-chip",
-    spotlight: "primary",
-    calloutLabel: "\u2462 Modo de trabajo"
-  },
-  map_lab_teaser: {
-    appTab: "lab",
-    selector: "#lab-input",
-    calloutLabel: "\u2463 Cuadro SOME"
-  },
-  lab_bulk_separator: {
-    appTab: "lab",
-    selector: "#btn-lab-patient-separator, #lab-input",
-    scrollPolicy: "none",
-    calloutLabel: "\u2464 Separador multipaciente"
-  },
-  pitch_lab_ready: {
-    appTab: "lab",
-    selector: "#lab-output-section .lab-output-card-title, #lab-output-box",
-    dockPrefer: "left",
-    calloutLabel: "\u2465 Procesar y ver resultados"
-  },
-  sala_casiopea_lab: {
-    appTab: "lab",
-    selector: ".lab-some-tables-modal",
-    secondarySelector: "#lab-some-tables-modal-title, #lab-some-tables-modal-body .lab-some-table-wrap",
-    spotlight: "both",
-    dockPrefer: "left",
-    dockFixedCorner: "bottom-left",
-    pitchModal: "labSomeTables",
-    scrollPolicy: "none",
-    calloutLabel: "\u2466 Tablas SOME"
-  },
-  sala_expediente_tabs: {
-    appTab: "nota",
-    selector: ".inner-tab-bar",
-    calloutLabel: "\u2467 Pesta\xF1as expediente"
-  },
-  pitch_cultivos: {
-    appTab: "nota",
-    innerTab: "cult",
-    selector: "#cultivos-table-container .cultivos-table, #itab-cult",
-    dockPrefer: "right",
-    calloutLabel: "\u2468 Cultivos + antibiograma"
-  },
-  sala_tend: {
-    appTab: "nota",
-    innerTab: "tend",
-    selector: "#tendencias-container",
-    calloutLabel: "\u2469 Tendencias"
-  },
-  sala_tend_chart: {
-    appTab: "nota",
-    innerTab: "tend",
-    selector: "#tend-group-modal .tend-group-modal-head, #tend-group-modal .tend-group-plot-wrap, #tend-group-modal canvas",
-    secondarySelector: "#tend-group-modal",
-    spotlight: "both",
-    pitchModal: "tendChart",
-    dockPrefer: "left",
-    dockFixedCorner: "top-left",
-    scrollPolicy: "none",
-    calloutLabel: "\u246A Gr\xE1fica pantalla completa"
-  },
-  sala_casiopea_trends: {
-    appTab: "nota",
-    innerTab: "tend",
-    selector: '[data-tour="casiopea-trends-send"]',
-    calloutLabel: "\u246B Enviar a Neo (tendencias)"
-  },
-  estado_actual: {
-    appTab: "nota",
-    innerTab: "estadoActual",
-    selector: "#itab-estadoActual, #estado-actual-panel",
-    dockPrefer: "left",
-    calloutLabel: "\u246C Estado Actual"
-  },
-  pitch_pegar_monitoreo: {
-    appTab: "nota",
-    innerTab: "estadoActual",
-    selector: "#ea-paste-backdrop.open .modal, #ea-paste-input",
-    pitchModal: "estadoPaste",
-    dockPrefer: "left",
-    dockFixedCorner: "bottom-left",
-    scrollPolicy: "none",
-    calloutLabel: "\u246D Pegar monitoreo"
-  },
-  sala_med: {
-    appTab: "med",
-    selector: "#med-input",
-    calloutLabel: "\u246E Medicamentos"
-  },
-  listado_problemas: {
-    appTab: "nota",
-    innerTab: "listado",
-    selector: "#btn-gen-listado, #itab-salida",
-    dockPrefer: "left",
-    scrollPolicy: "target",
-    calloutLabel: "\u246F Listado de problemas"
-  },
-  pitch_modo_pase: {
-    appTab: "nota",
-    selector: "#appcontent-pase, #pase-board-scroll",
-    setDensity: "pase",
-    spotlight: "primary",
-    dockPrefer: "right",
-    scrollPolicy: "target",
-    calloutLabel: "\u2470 Modo Pase"
-  },
-  pitch_switch_interconsulta: {
-    selector: "#header-app-mode-chip",
-    spotlight: "primary",
-    switchMode: "interconsulta",
-    dockPrefer: "below",
-    calloutLabel: "\u2471 Cambio a Interconsulta"
-  },
-  ic_expediente_tabs: {
-    appTab: "nota",
-    innerTab: "notas",
-    selector: ".inner-tab-bar, #btn-gen",
-    spotlight: "both",
-    calloutLabel: "\u2472 Expediente IC"
-  },
-  ic_nota: {
-    appTab: "nota",
-    innerTab: "notas",
-    selector: "#btn-gen",
-    dockPrefer: "left",
-    calloutLabel: "\u2473 Generar Nota"
-  },
-  ic_indica: {
-    appTab: "nota",
-    innerTab: "indica",
-    selector: "#btn-gen-ind",
-    dockPrefer: "left",
-    calloutLabel: "\u3251 Generar Indicaciones"
-  },
-  pitch_receta_hu: {
-    appTab: "nota",
-    innerTab: "recetaHu",
-    selector: "#itab-receta-hu, #receta-hu-panel",
-    calloutLabel: "\u3252 Receta HU"
-  },
-  pitch_agenda: {
-    appTab: "agenda",
-    selector: "#main-area",
-    calloutLabel: "\u3253 Agenda"
-  },
-  livesync_desktop: {
-    selector: "#btn-header-team-sync",
-    openConnection: true,
-    calloutLabel: "\u3254 Sala en vivo"
-  },
-  livesync_mobile: {
-    selector: "#connection-dropdown",
-    openConnection: true,
-    calloutLabel: "\u3255 R+ M\xF3vil"
-  },
-  pitch_seguridad: {
-    appTab: "nota",
-    selector: "#settings-dropdown.open, #settings-accordion-backup-sync",
-    openSettings: true,
-    dockPrefer: "left",
-    dockFixedCorner: "bottom-left",
-    calloutLabel: "\u3256 Respaldos y datos"
-  },
-  wrap: {
-    selector: "#main-area",
-    scrim: false,
-    calloutLabel: ""
-  }
-};
-function getPitchTourTarget(stepId) {
-  return PITCH_TARGETS[stepId] || null;
-}
-function resolvePitchScrollPolicy(stepId) {
-  const t2 = getPitchTourTarget(stepId);
-  if (!t2) return "target";
-  return t2.scrollPolicy || "target";
-}
-
 // public/js/labs.js
 function extraerConRango(nombres, texto) {
   if (!texto) return { valor: "---", min: null, max: null };
@@ -4488,10 +4247,10 @@ function rebuildGasesFromResults_(rows) {
     values[k] = valueFromSectionLine_(base, k);
   });
   var qs = pickBestSectionLine_(rows, "QS");
-  var esc16 = pickBestSectionLine_(rows, "ESC");
+  var esc15 = pickBestSectionLine_(rows, "ESC");
   var pfhs = pickBestSectionLine_(rows, "PFHS");
-  var na = valueFromSectionLine_(qs, "Na") || valueFromSectionLine_(esc16, "Na") || values.Na;
-  var cl = valueFromSectionLine_(qs, "Cl") || valueFromSectionLine_(esc16, "Cl");
+  var na = valueFromSectionLine_(qs, "Na") || valueFromSectionLine_(esc15, "Na") || values.Na;
+  var cl = valueFromSectionLine_(qs, "Cl") || valueFromSectionLine_(esc15, "Cl");
   var alb = valueFromSectionLine_(pfhs, "Alb");
   var bica = values.Bica;
   orderedKeys.forEach(function(k) {
@@ -6115,8 +5874,8 @@ function procesarLabs(textoBruto) {
       sexo: sexoRaw
     });
     if (qs) resLabs.push(qs);
-    var esc16 = parseESC_(textoQS);
-    if (esc16) resLabs.push(esc16);
+    var esc15 = parseESC_(textoQS);
+    if (esc15) resLabs.push(esc15);
     var pfh = parsePFH_(textoParaBh);
     if (pfh) resLabs.push(pfh);
     var pltCit = parsePlaquetasCitrato_(textoBruto, tNorm);
@@ -7143,21 +6902,6 @@ function clearPitchDemo(state) {
   saveState2();
   renderPatientList2();
 }
-function reconcilePitchCultivoHistory(labHistoryMap) {
-  const pid = PITCH_DEMO_PATIENT_ID2;
-  const list = Array.isArray(labHistoryMap[pid]) ? labHistoryMap[pid].slice() : [];
-  const byId = /* @__PURE__ */ Object.create(null);
-  list.forEach(function(entry2) {
-    if (entry2 && entry2.id) byId[entry2.id] = entry2;
-  });
-  PITCH_CULTIVO_LAB_SPECS.forEach(function(spec) {
-    byId[spec.id] = buildPitchLabHistoryEntry(spec);
-  });
-  labHistoryMap[pid] = Object.keys(byId).map(function(id) {
-    return byId[id];
-  });
-  bumpLabHistoryRevision(pid);
-}
 function buildPitchLabHistoryEntries() {
   const trendSpecs = [
     { id: "pitch-lab-trend-1", fecha: "01/05/2026", report: OLDER_DEMO_SOME_LAB_REPORT },
@@ -7171,33 +6915,6 @@ function buildPitchLabHistoryEntries() {
     out.push(buildPitchLabHistoryEntry(spec));
   });
   return out;
-}
-
-// public/js/tour-guards.mjs
-var guidedTourActive = false;
-var tourStepId = null;
-var pitchTourActive = false;
-var pitchStepId = null;
-function syncGuidedTourContext({ active, stepId } = {}) {
-  guidedTourActive = !!active;
-  tourStepId = stepId || null;
-}
-function syncPitchTourContext({ active, stepId } = {}) {
-  pitchTourActive = !!active;
-  pitchStepId = stepId || null;
-}
-function isPitchTourActive() {
-  return pitchTourActive;
-}
-function isCasiopeaTourSendBlocked(kind) {
-  if (pitchTourActive) {
-    if (kind === "lab" && pitchStepId === "sala_casiopea_lab") return true;
-    if (kind === "trends" && pitchStepId === "sala_casiopea_trends") return true;
-  }
-  if (!guidedTourActive) return false;
-  if (kind === "lab") return tourStepId === "sala_casiopea_lab";
-  if (kind === "trends") return tourStepId === "sala_casiopea_trends";
-  return false;
 }
 
 // public/js/mode-features.mjs
@@ -7539,6 +7256,414 @@ var windowHandlers = {
   t
 };
 
+// public/js/features/soap-estado.mjs
+var rt = {
+  getActiveId() {
+    return null;
+  },
+  showToast() {
+  },
+  getSettings() {
+    return {};
+  }
+};
+function registerSoapEstadoRuntime(partial) {
+  if (!partial || typeof partial !== "object") return;
+  Object.assign(rt, partial);
+}
+function mergeSoapMedField(fieldId, fragment) {
+  var el = document.getElementById(fieldId);
+  if (!el || !fragment) return;
+  var f = String(fragment).trim();
+  if (!f) return;
+  var cur = el.value.trim();
+  el.value = cur ? cur + " | " + f : f;
+}
+function openSOAPModalDirect() {
+  var bd = document.getElementById("soap-modal-backdrop");
+  if (bd) bd.classList.add("open");
+}
+async function copyToClipboardSafe(text) {
+  var t2 = text == null ? "" : String(text);
+  if (typeof window !== "undefined" && window.electronAPI && typeof window.electronAPI.writeClipboardText === "function") {
+    try {
+      if (await window.electronAPI.writeClipboardText(t2)) return true;
+    } catch (_eElectron) {
+    }
+  }
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(t2);
+      return true;
+    }
+  } catch (_e) {
+  }
+  try {
+    var ta = document.createElement("textarea");
+    ta.value = t2;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.select();
+    var ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch (_e) {
+    return false;
+  }
+}
+function openSOAPModal() {
+  var activeId2 = rt.getActiveId();
+  if (!activeId2) {
+    rt.showToast("Selecciona un paciente primero", "error");
+    return;
+  }
+  var existing = notes[activeId2] && notes[activeId2].evolucion ? notes[activeId2].evolucion.trim() : "";
+  if (existing) {
+    var backdrop = document.createElement("div");
+    backdrop.className = "lab-conflict-backdrop";
+    backdrop.id = "soap-confirm-backdrop";
+    backdrop.innerHTML = `<div class="lab-conflict-modal"><h3>\xBFReemplazar evoluci\xF3n?</h3><p>La evoluci\xF3n ya tiene contenido. \xBFReemplazarlo con la plantilla?</p><div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;"><button onclick="document.getElementById('soap-confirm-backdrop').remove()" style="background:#F3F4F6;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Cancelar</button><button onclick="document.getElementById('soap-confirm-backdrop').remove();document.getElementById('soap-modal-backdrop').classList.add('open')" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Reemplazar</button></div></div>`;
+    document.body.appendChild(backdrop);
+  } else {
+    document.getElementById("soap-modal-backdrop").classList.add("open");
+  }
+}
+function closeSOAPModal() {
+  document.getElementById("soap-modal-backdrop").classList.remove("open");
+  [
+    "soap-s",
+    "soap-four",
+    "soap-esferas",
+    "soap-analgesia",
+    "soap-fr",
+    "soap-sat",
+    "soap-tas",
+    "soap-tad",
+    "soap-fc",
+    "soap-antihta",
+    "soap-vasop",
+    "soap-temp",
+    "soap-abx",
+    "soap-dieta",
+    "soap-kcalkg",
+    "soap-kcal",
+    "soap-peso",
+    "soap-ing",
+    "soap-egr",
+    "soap-balance",
+    "soap-glu1",
+    "soap-glu2",
+    "soap-glu3"
+  ].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+  var sel = document.getElementById("soap-soporte");
+  if (sel) sel.selectedIndex = 0;
+  document.body.removeAttribute("data-estado-actual-mode");
+  var title = document.getElementById("soap-modal-title-text");
+  if (title) title.textContent = "Plantilla de Evoluci\xF3n";
+}
+function openEstadoActualModal() {
+  var activeId2 = rt.getActiveId();
+  if (!activeId2) {
+    rt.showToast("Selecciona un paciente primero", "error");
+    return;
+  }
+  if (isModeSala(rt.getSettings())) {
+    if (typeof rt.navigateToEstadoActualPanel === "function") {
+      rt.navigateToEstadoActualPanel();
+    }
+    return;
+  }
+  document.body.setAttribute("data-estado-actual-mode", "true");
+  var title = document.getElementById("soap-modal-title-text");
+  if (title) title.textContent = "Estado Actual";
+  var s = document.getElementById("soap-s");
+  if (s) s.value = "";
+  document.getElementById("soap-modal-backdrop").classList.add("open");
+}
+function estadoActualTextForCopy() {
+  var s = document.getElementById("soap-s");
+  if (s) s.value = "";
+  return buildSOAPText().replace(/^\s*\n+/, "");
+}
+async function estadoActualOnlyCopy() {
+  if (!rt.getActiveId()) return;
+  if (isModeSala(rt.getSettings())) {
+    var gCopy = typeof globalThis !== "undefined" ? globalThis : {};
+    if (typeof gCopy.estadoActualCopiar === "function") {
+      await gCopy.estadoActualCopiar();
+      closeSOAPModal();
+      return;
+    }
+  }
+  var text = estadoActualTextForCopy();
+  var ok = await copyToClipboardSafe(text);
+  rt.showToast(ok ? "Estado Actual copiado al portapapeles \u2713" : "No se pudo copiar", ok ? "success" : "error");
+  closeSOAPModal();
+}
+async function estadoActualSaveAndCopy() {
+  var activeId2 = rt.getActiveId();
+  if (!activeId2) return;
+  if (isModeSala(rt.getSettings())) {
+    var gSave = typeof globalThis !== "undefined" ? globalThis : {};
+    if (typeof gSave.estadoActualGuardarCopiar === "function") {
+      await gSave.estadoActualGuardarCopiar();
+      closeSOAPModal();
+      return;
+    }
+  }
+  var patient = patients.find(function(p) {
+    return p.id === activeId2;
+  });
+  if (!patient) return;
+  var text = estadoActualTextForCopy();
+  migratePatientMonitoreo(patient);
+  ensureMonitoreo(patient);
+  patient.monitoreo.textoGuardado = {
+    text,
+    savedAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+  saveState();
+  renderEstadoActualBar();
+  var ok = await copyToClipboardSafe(text);
+  rt.showToast(
+    ok ? "Estado Actual guardado y copiado \u2713" : "Guardado, pero no se pudo copiar",
+    ok ? "success" : "error"
+  );
+  closeSOAPModal();
+}
+function renderEstadoActualBar() {
+  var wrap = document.getElementById("estado-actual-context-wrap");
+  var meta = document.getElementById("estado-actual-meta");
+  var btn = document.getElementById("btn-estado-actual");
+  if (!wrap || !meta || !btn) return;
+  var sala = isModeSala(rt.getSettings());
+  var activeId2 = rt.getActiveId();
+  if (!sala || !activeId2) {
+    wrap.style.display = "none";
+    meta.textContent = "";
+    btn.classList.remove("btn-estado-actual-compact--pending");
+    btn.removeAttribute("aria-label");
+    return;
+  }
+  wrap.style.display = "flex";
+  var patient = patients.find(function(p) {
+    return p.id === activeId2;
+  });
+  var saved = false;
+  if (patient) {
+    migratePatientMonitoreo(patient);
+  }
+  var tg = patient && patient.monitoreo && patient.monitoreo.textoGuardado;
+  if (tg && tg.savedAt) {
+    var d = new Date(tg.savedAt);
+    if (!isNaN(d.getTime())) {
+      var label = String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0") + "/" + d.getFullYear() + " \xB7 " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+      meta.textContent = "Guardado " + label;
+      btn.title = "Abrir Estado Actual \xB7 " + meta.textContent;
+      btn.removeAttribute("aria-label");
+      btn.classList.remove("btn-estado-actual-compact--pending");
+      saved = true;
+    }
+  }
+  if (!saved) {
+    meta.textContent = "";
+    btn.title = "";
+    btn.setAttribute(
+      "aria-label",
+      "Estado Actual: abrir plantilla (SOAP sin Subjetivo). A\xFAn sin guardar para este paciente."
+    );
+    btn.classList.add("btn-estado-actual-compact--pending");
+  }
+}
+function updateSOAPBalance() {
+  var ing = parseFloat(document.getElementById("soap-ing").value);
+  var egr = parseFloat(document.getElementById("soap-egr").value);
+  var bal = document.getElementById("soap-balance");
+  if (!isNaN(ing) && !isNaN(egr)) {
+    var diff = ing - egr;
+    bal.value = (diff > 0 ? "+" : "") + diff;
+  } else {
+    bal.value = "";
+  }
+}
+function buildSOAPText() {
+  function g3(id) {
+    var el = document.getElementById(id);
+    return el ? el.value.trim() : "";
+  }
+  function val2(v) {
+    return v ? v.toUpperCase() : "___";
+  }
+  function num2(v) {
+    return v !== "" ? v : "___";
+  }
+  var soporteMap = {
+    "Aire ambiente": "AL AIRE AMBIENTE",
+    "Puntillas nasales": "POR PUNTILLAS NASALES",
+    "Alto flujo": "POR ALTO FLUJO",
+    "VM no invasiva": "CON VENTILACI\xD3N MEC\xC1NICA NO INVASIVA"
+  };
+  var soporte = soporteMap[g3("soap-soporte")] || "AL AIRE AMBIENTE";
+  var ing = g3("soap-ing");
+  var egr = g3("soap-egr");
+  var balance = ing && egr ? (function() {
+    var d = parseFloat(ing) - parseFloat(egr);
+    return (d > 0 ? "+" : "") + d;
+  })() : "___";
+  var lines = [];
+  var subj = g3("soap-s");
+  if (subj) {
+    lines.push("S: " + subj);
+    lines.push("");
+  }
+  lines.push(
+    "N: FOUR " + num2(g3("soap-four")) + "/16 PUNTOS, SIN DATOS DE FOCALIZACI\xD3N, ORIENTADO EN " + num2(g3("soap-esferas")) + " ESFERAS, ALERTA || ANALGESIA CON " + val2(g3("soap-analgesia"))
+  );
+  lines.push(
+    "V: FR " + num2(g3("soap-fr")) + " RPM, SATO2 " + num2(g3("soap-sat")) + "% " + soporte + " | SIN DATOS DE DIFICULTAD RESPIRATORIA || CAMPOS PULMONARES BIEN VENTILADOS"
+  );
+  lines.push(
+    "HD: ESTABLE, TA " + num2(g3("soap-tas")) + "/" + num2(g3("soap-tad")) + " MMHG, FC " + num2(g3("soap-fc")) + " LPM || ANTIHIPERTENSIVOS: " + val2(g3("soap-antihta") || "NINGUNO") + " || VASOPRESORES: " + val2(g3("soap-vasop") || "NINGUNO")
+  );
+  lines.push(
+    "HI: AFEBRIL, TEMPERATURA " + num2(g3("soap-temp")) + " \xB0C || ANTIBI\xD3TICOS: " + val2(g3("soap-abx") || "NINGUNO")
+  );
+  lines.push(
+    "NM: DIETA " + val2(g3("soap-dieta")) + " CALCULADA A " + num2(g3("soap-kcalkg")) + " KCAL/KG (" + num2(g3("soap-kcal")) + " KCAL) PARA PESO DE " + num2(g3("soap-peso")) + " KG || INGRESOS " + num2(ing) + " CC, EGRESOS " + num2(egr) + " CC, BALANCE " + balance + " CC || GLUCOMETR\xCDAS CAPILARES (" + num2(g3("soap-glu1")) + ", " + num2(g3("soap-glu2")) + ", " + num2(g3("soap-glu3")) + " MG/DL)"
+  );
+  return lines.join("\n");
+}
+function insertSOAPText() {
+  var activeId2 = rt.getActiveId();
+  if (!activeId2) {
+    rt.showToast("Selecciona un paciente primero", "error");
+    return;
+  }
+  var text = buildSOAPText();
+  if (!notes[activeId2]) notes[activeId2] = {};
+  notes[activeId2].evolucion = text;
+  saveState();
+  var el = document.querySelector('#note-form textarea[oninput*="evolucion"]');
+  if (el) el.value = text;
+  closeSOAPModal();
+  rt.showToast("Plantilla insertada \u2713", "success");
+}
+function renderEstadoActualButton() {
+}
+var windowHandlers2 = {
+  closeSOAPModal,
+  insertSOAPText,
+  updateSOAPBalance,
+  openSOAPModal,
+  openEstadoActualModal,
+  estadoActualOnlyCopy,
+  estadoActualSaveAndCopy
+};
+
+// public/js/features/estado-actual-meds.mjs
+function medInstructionFragmentForSoap(it) {
+  var full = formatMedicationEgresoLine(it);
+  var parts = full.split("||");
+  if (parts.length < 2) return full.replace(/\.\s*$/, "").trim();
+  return parts[1].replace(/^\s+/, "").replace(/\.\s*$/, "").trim();
+}
+function bucketsFromRecetaItems(items, selMap, classifyFn) {
+  var arrays = { analgesia: [], abx: [], antihta: [], vasop: [], otros: [] };
+  var list = Array.isArray(items) ? items : [];
+  list.forEach(function(it) {
+    if (!it || !selMap[it.id] || it.suspendido) return;
+    var cat = classifyFn(it.nombreRaw);
+    if (arrays[cat]) arrays[cat].push(medInstructionFragmentForSoap(it));
+    else arrays.otros.push(medInstructionFragmentForSoap(it));
+  });
+  arrays.otros.forEach(function(t2) {
+    arrays.abx.push(t2);
+  });
+  var buckets = {};
+  for (var k of MED_FIELD_KEYS) {
+    buckets[k] = arrays[k].join(" | ");
+  }
+  return buckets;
+}
+function applyRecetaProposal(monitoreo, buckets) {
+  if (!monitoreo || typeof monitoreo !== "object") return;
+  if (!monitoreo.pendienteReceta || typeof monitoreo.pendienteReceta !== "object") {
+    monitoreo.pendienteReceta = {};
+  }
+  for (var k of MED_FIELD_KEYS) {
+    if (monitoreo.confirmado && monitoreo.confirmado[k]) continue;
+    var val2 = buckets && buckets[k];
+    if (val2 != null && String(val2).trim()) {
+      monitoreo.pendienteReceta[k] = String(val2).trim();
+    }
+  }
+}
+function confirmMedField(monitoreo, key) {
+  if (!monitoreo || !MED_FIELD_KEYS.includes(
+    /** @type {typeof MED_FIELD_KEYS[number]} */
+    key
+  )) return;
+  if (!monitoreo.estadoClinico || typeof monitoreo.estadoClinico !== "object") {
+    monitoreo.estadoClinico = {};
+  }
+  var pending2 = monitoreo.pendienteReceta && typeof monitoreo.pendienteReceta === "object" && monitoreo.pendienteReceta[key];
+  if (pending2 != null && String(pending2).trim()) {
+    monitoreo.estadoClinico[key] = String(pending2).trim();
+  }
+  if (!monitoreo.confirmado || typeof monitoreo.confirmado !== "object") {
+    monitoreo.confirmado = {};
+  }
+  monitoreo.confirmado[key] = true;
+  if (monitoreo.pendienteReceta && typeof monitoreo.pendienteReceta === "object") {
+    monitoreo.pendienteReceta[key] = "";
+  }
+}
+function discardMedProposal(monitoreo, key) {
+  if (!monitoreo || !monitoreo.pendienteReceta || typeof monitoreo.pendienteReceta !== "object") return;
+  if (MED_FIELD_KEYS.includes(
+    /** @type {typeof MED_FIELD_KEYS[number]} */
+    key
+  )) {
+    monitoreo.pendienteReceta[key] = "";
+  }
+}
+function confirmAllMedProposals(monitoreo) {
+  for (var k of MED_FIELD_KEYS) {
+    if (monitoreo.pendienteReceta && typeof monitoreo.pendienteReceta === "object" && monitoreo.pendienteReceta[k]) {
+      confirmMedField(monitoreo, k);
+    }
+  }
+}
+function buildMedDropdownOptions(activeId2, category, medRecetaByPatient2, classifyFn) {
+  var options = [];
+  var seen = /* @__PURE__ */ Object.create(null);
+  var block = activeId2 && medRecetaByPatient2 ? medRecetaByPatient2[activeId2] : null;
+  var items = block && Array.isArray(block.items) ? block.items : [];
+  items.forEach(function(it) {
+    if (!it || /** @type {{ suspendido?: boolean }} */
+    it.suspendido) return;
+    var cat = classifyFn(
+      /** @type {{ nombreRaw?: string }} */
+      it.nombreRaw
+    );
+    var matchCat = cat === category || category === "abx" && cat === "otros";
+    if (!matchCat) return;
+    var frag = medInstructionFragmentForSoap(
+      /** @type {Parameters<typeof medInstructionFragmentForSoap>[0]} */
+      it
+    );
+    if (!frag || seen[frag]) return;
+    seen[frag] = 1;
+    options.push(frag);
+  });
+  return options;
+}
+
 // public/js/ui-motion.mjs
 function prefersReducedMotion() {
   try {
@@ -7676,7 +7801,7 @@ function setAsyncButtonLoading(btn, loading, opts) {
 }
 
 // public/js/features/notes-indicaciones.mjs
-var rt = {
+var rt2 = {
   getActiveId() {
     return null;
   },
@@ -7719,10 +7844,10 @@ var rt = {
 };
 function registerNotesIndicacionesRuntime(partial) {
   if (!partial || typeof partial !== "object") return;
-  Object.assign(rt, partial);
+  Object.assign(rt2, partial);
 }
 function aid() {
-  return rt.getActiveId();
+  return rt2.getActiveId();
 }
 function esc(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -7730,12 +7855,12 @@ function esc(s) {
 function applyProfileToNoteIfEmpty(note) {
   if (!note) return false;
   var changed = false;
-  if ((rt.getSettings() || {}).doctorName && !String(note.medico || "").trim()) {
-    note.medico = (rt.getSettings() || {}).doctorName;
+  if ((rt2.getSettings() || {}).doctorName && !String(note.medico || "").trim()) {
+    note.medico = (rt2.getSettings() || {}).doctorName;
     changed = true;
   }
-  if ((rt.getSettings() || {}).profesorName && !String(note.profesor || "").trim()) {
-    note.profesor = (rt.getSettings() || {}).profesorName;
+  if ((rt2.getSettings() || {}).profesorName && !String(note.profesor || "").trim()) {
+    note.profesor = (rt2.getSettings() || {}).profesorName;
     changed = true;
   }
   return changed;
@@ -7755,13 +7880,13 @@ function renderNoteForm() {
   }).join("") + '</div><button class="btn-add-row" onclick="addDx()">+ Agregar diagn\xF3stico</button></div></div><div class="card"><div class="card-header card-header--tone-amber"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Signos Vitales</div><div class="card-body"><div class="vitals-grid"><div class="vital-box"><div class="vital-label">T.A.</div><input type="text" value="' + esc(note.ta) + `" placeholder="120/80" oninput="updateNote('ta',this.value)"></div><div class="vital-box"><div class="vital-label">F.R.</div><input type="text" value="` + esc(note.fr) + `" placeholder="16" oninput="updateNote('fr',this.value)"></div><div class="vital-box"><div class="vital-label">F.C.</div><input type="text" value="` + esc(note.fc) + `" placeholder="72" oninput="updateNote('fc',this.value)"></div><div class="vital-box"><div class="vital-label">Temperatura</div><input type="text" value="` + esc(note.temp) + `" placeholder="36.6" oninput="updateNote('temp',this.value)"></div><div class="vital-box"><div class="vital-label">Peso (kg)</div><input type="text" value="` + esc(note.peso) + `" placeholder="70.0" oninput="updateNote('peso',this.value)"></div></div></div></div><div class="card"><div class="card-header card-header--tone-teal"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>Tratamiento e Indicaciones M\xE9dicas</div><div class="card-body"><div class="list-rows" id="tx-list">` + (note.tratamiento || [""]).map(function(tx, i) {
     return '<div class="list-row"><span class="list-num">' + (i + 1) + '.</span><input type="text" value="' + esc(tx) + '" placeholder="Indicaci\xF3n, dosis, v\xEDa y periodicidad" oninput="updateTx(' + i + ',this.value)"><button class="btn-remove" onclick="removeTx(' + i + ')"' + ((note.tratamiento || [""]).length <= 1 ? ' style="visibility:hidden"' : "") + ' aria-label="Eliminar">\xD7</button></div>';
   }).join("") + '</div><button class="btn-add-row" onclick="addTx()">+ Agregar indicaci\xF3n</button></div></div><div class="card"><div class="card-header card-header--tone-violet"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>M\xE9dico y Profesor</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="field-group"><label>M\xE9dico Tratante</label><input type="text" value="' + esc(note.medico) + `" placeholder="Nombre completo" oninput="updateNote('medico',this.value)"></div><div class="field-group"><label>Profesor Responsable</label><input type="text" value="` + esc(note.profesor) + `" placeholder="Nombre completo" oninput="updateNote('profesor',this.value)"></div></div></div></div><div class="action-bar"><button type="button" class="btn-med-secondary rpc-doc-export" onclick="quickExportCurrentPatient()" id="btn-quick-export-note"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida r\xE1pida</button><button type="button" class="btn-generate rpc-doc-export" onclick="generateWord()" id="btn-gen"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Nota (.docx)</button></div>`;
-  rt.syncOfflineButtonStates();
+  rt2.syncOfflineButtonStates();
 }
 function updateNote(field, value) {
   if (!notes[aid()]) notes[aid()] = {};
   notes[aid()][field] = value;
   saveState();
-  if (field === "estudios") rt.renderRoundOverviewPanels();
+  if (field === "estudios") rt2.renderRoundOverviewPanels();
 }
 function updateDx(i, val2) {
   if (!notes[aid()]) return;
@@ -7798,9 +7923,9 @@ function removeTx(i) {
   renderNoteForm();
 }
 function generateWord() {
-  if (rt.guardMobileDocExport()) return;
-  if (rt.isRpcOffline()) {
-    rt.showToast("Sin conexi\xF3n con el servidor local. Reinicia R+ para generar documentos.", "error");
+  if (rt2.guardMobileDocExport()) return;
+  if (rt2.isRpcOffline()) {
+    rt2.showToast("Sin conexi\xF3n con el servidor local. Reinicia R+ para generar documentos.", "error");
     return;
   }
   var patient = patients.find(function(p) {
@@ -7811,27 +7936,27 @@ function generateWord() {
   if (!note) return;
   var btn = document.getElementById("btn-gen");
   setAsyncButtonLoading(btn, true, { loadingText: "Generando\u2026" });
-  rt.incrementPendingJobs();
+  rt2.incrementPendingJobs();
   function buildPayload(outputDir) {
     return { patient, note, outputDir: outputDir || "" };
   }
-  rt.requestDocumentJson("/generate", buildPayload((rt.getSettings() || {}).outputDir || "")).then(function(d) {
-    return rt.handleDocumentGenerateResponse({
+  rt2.requestDocumentJson("/generate", buildPayload((rt2.getSettings() || {}).outputDir || "")).then(function(d) {
+    return rt2.handleDocumentGenerateResponse({
       response: d,
       url: "/generate",
       buildPayload,
       onSuccess: function(data) {
-        rt.showToast("Nota guardada: " + data.fileName, "success");
-        rt.guidedTourAdvanceAfterNotaGenerated();
+        rt2.showToast("Nota guardada: " + data.fileName, "success");
+        rt2.guidedTourAdvanceAfterNotaGenerated();
       }
     });
   }).catch(function() {
-    rt.showToast("Error de conexi\xF3n", "error");
-    if (typeof rt.onPitchTourDocFailed === "function") rt.onPitchTourDocFailed("ic_nota");
+    rt2.showToast("Error de conexi\xF3n", "error");
+    if (typeof rt2.onPitchTourDocFailed === "function") rt2.onPitchTourDocFailed("ic_nota");
   }).finally(function() {
     setAsyncButtonLoading(document.getElementById("btn-gen"), false);
-    rt.decrementPendingJobs();
-    rt.syncOfflineButtonStates();
+    rt2.decrementPendingJobs();
+    rt2.syncOfflineButtonStates();
   });
 }
 function renderIndicaForm() {
@@ -7856,7 +7981,7 @@ function renderIndicaForm() {
   }).join("") + '<div class="card"><div class="card-header card-header--tone-violet"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 4v16m8-8H4"/></svg>Otros</div><div class="card-body" style="display:flex;flex-direction:column;gap:10px;"><div id="otros-list">' + (ind.otros || []).map(function(o, i) {
     return '<div class="otros-item"><button class="btn-remove-otro" onclick="removeOtro(' + i + ')">\xD7</button><input type="text" placeholder="T\xCDTULO DE LA SECCI\xD3N" value="' + esc(o.titulo) + '" oninput="updateOtro(' + i + `,'titulo',this.value)"><textarea rows="2" placeholder="Indicaciones..." oninput="updateOtro(` + i + `,'contenido',this.value)">` + esc(o.contenido) + "</textarea></div>";
   }).join("") + '</div><button class="btn-add-row" onclick="addOtro()">+ Agregar secci\xF3n</button></div></div><div class="action-bar"><button type="button" class="btn-med-secondary rpc-doc-export" onclick="quickExportCurrentPatient()" id="btn-quick-export-indica"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida r\xE1pida</button><button type="button" class="btn-generate rpc-doc-export" onclick="generateIndicaciones()" id="btn-gen-ind"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Indicaciones (.docx)</button></div>';
-  rt.syncOfflineButtonStates();
+  rt2.syncOfflineButtonStates();
 }
 function updateIndica(field, value) {
   if (!indicaciones[aid()]) return;
@@ -7882,7 +8007,7 @@ function removeOtro(i) {
   renderIndicaForm();
 }
 function buildExtraTemplatesSelectorHtml() {
-  var arr = (rt.getSettings() || {}) && Array.isArray((rt.getSettings() || {}).extraTemplates) ? (rt.getSettings() || {}).extraTemplates : [];
+  var arr = (rt2.getSettings() || {}) && Array.isArray((rt2.getSettings() || {}).extraTemplates) ? (rt2.getSettings() || {}).extraTemplates : [];
   if (!arr.length) {
     return '<div class="indica-extra-tmpl"><span class="iet-hint">Guarda combinaciones reutilizables en Ajustes \u2192 Plantillas guardadas.</span></div>';
   }
@@ -7894,14 +8019,14 @@ function buildExtraTemplatesSelectorHtml() {
 function applyExtraTemplateFromIndica() {
   var sel = document.getElementById("indica-extra-tmpl-select");
   if (!sel || !sel.value) {
-    rt.showToast("Elige una plantilla", "error");
+    rt2.showToast("Elige una plantilla", "error");
     return;
   }
   if (!aid() || !indicaciones[aid()]) {
-    rt.showToast("Selecciona un paciente primero", "error");
+    rt2.showToast("Selecciona un paciente primero", "error");
     return;
   }
-  var tmpl = ((rt.getSettings() || {}).extraTemplates || []).find(function(t2) {
+  var tmpl = ((rt2.getSettings() || {}).extraTemplates || []).find(function(t2) {
     return t2.id === sel.value;
   });
   if (!tmpl) return;
@@ -7925,13 +8050,13 @@ function applyExtraTemplateFromIndica() {
   target.medicamentos = merge(target.medicamentos || "", tmpl.medicamentos || "");
   saveState();
   renderIndicaForm();
-  rt.addAuditEntry("extra-template-apply", "ok", 1, tmpl.label || "");
-  rt.showToast("Plantilla aplicada: " + (tmpl.label || ""), "success");
+  rt2.addAuditEntry("extra-template-apply", "ok", 1, tmpl.label || "");
+  rt2.showToast("Plantilla aplicada: " + (tmpl.label || ""), "success");
 }
 function generateIndicaciones() {
-  if (rt.guardMobileDocExport()) return;
-  if (rt.isRpcOffline()) {
-    rt.showToast("Sin conexi\xF3n con el servidor local. Reinicia R+ para generar documentos.", "error");
+  if (rt2.guardMobileDocExport()) return;
+  if (rt2.isRpcOffline()) {
+    rt2.showToast("Sin conexi\xF3n con el servidor local. Reinicia R+ para generar documentos.", "error");
     return;
   }
   var patient = patients.find(function(p) {
@@ -7942,30 +8067,30 @@ function generateIndicaciones() {
   if (!ind) return;
   var btn = document.getElementById("btn-gen-ind");
   setAsyncButtonLoading(btn, true, { loadingText: "Generando\u2026" });
-  rt.incrementPendingJobs();
+  rt2.incrementPendingJobs();
   function buildPayload(outputDir) {
     return { patient, indicaciones: ind, outputDir: outputDir || "" };
   }
-  rt.requestDocumentJson("/generate-indicaciones", buildPayload((rt.getSettings() || {}).outputDir || "")).then(function(d) {
-    return rt.handleDocumentGenerateResponse({
+  rt2.requestDocumentJson("/generate-indicaciones", buildPayload((rt2.getSettings() || {}).outputDir || "")).then(function(d) {
+    return rt2.handleDocumentGenerateResponse({
       response: d,
       url: "/generate-indicaciones",
       buildPayload,
       onSuccess: function(data) {
-        rt.showToast("Indicaciones guardadas: " + data.fileName, "success");
-        rt.guidedTourAdvanceAfterIndicaGenerated();
+        rt2.showToast("Indicaciones guardadas: " + data.fileName, "success");
+        rt2.guidedTourAdvanceAfterIndicaGenerated();
       }
     });
   }).catch(function() {
-    rt.showToast("Error de conexi\xF3n", "error");
-    if (typeof rt.onPitchTourDocFailed === "function") rt.onPitchTourDocFailed("ic_indica");
+    rt2.showToast("Error de conexi\xF3n", "error");
+    if (typeof rt2.onPitchTourDocFailed === "function") rt2.onPitchTourDocFailed("ic_indica");
   }).finally(function() {
     setAsyncButtonLoading(document.getElementById("btn-gen-ind"), false);
-    rt.decrementPendingJobs();
-    rt.syncOfflineButtonStates();
+    rt2.decrementPendingJobs();
+    rt2.syncOfflineButtonStates();
   });
 }
-var windowHandlers2 = {
+var windowHandlers3 = {
   updateNote,
   updateDx,
   addDx,
@@ -7982,414 +8107,6 @@ var windowHandlers2 = {
   generateIndicaciones,
   applyExtraTemplateFromIndica
 };
-
-// public/js/features/soap-estado.mjs
-var rt2 = {
-  getActiveId() {
-    return null;
-  },
-  showToast() {
-  },
-  getSettings() {
-    return {};
-  }
-};
-function registerSoapEstadoRuntime(partial) {
-  if (!partial || typeof partial !== "object") return;
-  Object.assign(rt2, partial);
-}
-function mergeSoapMedField(fieldId, fragment) {
-  var el = document.getElementById(fieldId);
-  if (!el || !fragment) return;
-  var f = String(fragment).trim();
-  if (!f) return;
-  var cur = el.value.trim();
-  el.value = cur ? cur + " | " + f : f;
-}
-function openSOAPModalDirect() {
-  var bd = document.getElementById("soap-modal-backdrop");
-  if (bd) bd.classList.add("open");
-}
-async function copyToClipboardSafe(text) {
-  var t2 = text == null ? "" : String(text);
-  if (typeof window !== "undefined" && window.electronAPI && typeof window.electronAPI.writeClipboardText === "function") {
-    try {
-      if (await window.electronAPI.writeClipboardText(t2)) return true;
-    } catch (_eElectron) {
-    }
-  }
-  try {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(t2);
-      return true;
-    }
-  } catch (_e) {
-  }
-  try {
-    var ta = document.createElement("textarea");
-    ta.value = t2;
-    ta.setAttribute("readonly", "");
-    ta.style.position = "fixed";
-    ta.style.left = "-9999px";
-    document.body.appendChild(ta);
-    ta.select();
-    var ok = document.execCommand("copy");
-    document.body.removeChild(ta);
-    return ok;
-  } catch (_e) {
-    return false;
-  }
-}
-function openSOAPModal() {
-  var activeId2 = rt2.getActiveId();
-  if (!activeId2) {
-    rt2.showToast("Selecciona un paciente primero", "error");
-    return;
-  }
-  var existing = notes[activeId2] && notes[activeId2].evolucion ? notes[activeId2].evolucion.trim() : "";
-  if (existing) {
-    var backdrop = document.createElement("div");
-    backdrop.className = "lab-conflict-backdrop";
-    backdrop.id = "soap-confirm-backdrop";
-    backdrop.innerHTML = `<div class="lab-conflict-modal"><h3>\xBFReemplazar evoluci\xF3n?</h3><p>La evoluci\xF3n ya tiene contenido. \xBFReemplazarlo con la plantilla?</p><div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;"><button onclick="document.getElementById('soap-confirm-backdrop').remove()" style="background:#F3F4F6;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Cancelar</button><button onclick="document.getElementById('soap-confirm-backdrop').remove();document.getElementById('soap-modal-backdrop').classList.add('open')" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Reemplazar</button></div></div>`;
-    document.body.appendChild(backdrop);
-  } else {
-    document.getElementById("soap-modal-backdrop").classList.add("open");
-  }
-}
-function closeSOAPModal() {
-  document.getElementById("soap-modal-backdrop").classList.remove("open");
-  [
-    "soap-s",
-    "soap-four",
-    "soap-esferas",
-    "soap-analgesia",
-    "soap-fr",
-    "soap-sat",
-    "soap-tas",
-    "soap-tad",
-    "soap-fc",
-    "soap-antihta",
-    "soap-vasop",
-    "soap-temp",
-    "soap-abx",
-    "soap-dieta",
-    "soap-kcalkg",
-    "soap-kcal",
-    "soap-peso",
-    "soap-ing",
-    "soap-egr",
-    "soap-balance",
-    "soap-glu1",
-    "soap-glu2",
-    "soap-glu3"
-  ].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.value = "";
-  });
-  var sel = document.getElementById("soap-soporte");
-  if (sel) sel.selectedIndex = 0;
-  document.body.removeAttribute("data-estado-actual-mode");
-  var title = document.getElementById("soap-modal-title-text");
-  if (title) title.textContent = "Plantilla de Evoluci\xF3n";
-}
-function openEstadoActualModal() {
-  var activeId2 = rt2.getActiveId();
-  if (!activeId2) {
-    rt2.showToast("Selecciona un paciente primero", "error");
-    return;
-  }
-  if (isModeSala(rt2.getSettings())) {
-    if (typeof rt2.navigateToEstadoActualPanel === "function") {
-      rt2.navigateToEstadoActualPanel();
-    }
-    return;
-  }
-  document.body.setAttribute("data-estado-actual-mode", "true");
-  var title = document.getElementById("soap-modal-title-text");
-  if (title) title.textContent = "Estado Actual";
-  var s = document.getElementById("soap-s");
-  if (s) s.value = "";
-  document.getElementById("soap-modal-backdrop").classList.add("open");
-}
-function estadoActualTextForCopy() {
-  var s = document.getElementById("soap-s");
-  if (s) s.value = "";
-  return buildSOAPText().replace(/^\s*\n+/, "");
-}
-async function estadoActualOnlyCopy() {
-  if (!rt2.getActiveId()) return;
-  if (isModeSala(rt2.getSettings())) {
-    var gCopy = typeof globalThis !== "undefined" ? globalThis : {};
-    if (typeof gCopy.estadoActualCopiar === "function") {
-      await gCopy.estadoActualCopiar();
-      closeSOAPModal();
-      return;
-    }
-  }
-  var text = estadoActualTextForCopy();
-  var ok = await copyToClipboardSafe(text);
-  rt2.showToast(ok ? "Estado Actual copiado al portapapeles \u2713" : "No se pudo copiar", ok ? "success" : "error");
-  closeSOAPModal();
-}
-async function estadoActualSaveAndCopy() {
-  var activeId2 = rt2.getActiveId();
-  if (!activeId2) return;
-  if (isModeSala(rt2.getSettings())) {
-    var gSave = typeof globalThis !== "undefined" ? globalThis : {};
-    if (typeof gSave.estadoActualGuardarCopiar === "function") {
-      await gSave.estadoActualGuardarCopiar();
-      closeSOAPModal();
-      return;
-    }
-  }
-  var patient = patients.find(function(p) {
-    return p.id === activeId2;
-  });
-  if (!patient) return;
-  var text = estadoActualTextForCopy();
-  migratePatientMonitoreo(patient);
-  ensureMonitoreo(patient);
-  patient.monitoreo.textoGuardado = {
-    text,
-    savedAt: (/* @__PURE__ */ new Date()).toISOString()
-  };
-  saveState();
-  renderEstadoActualBar();
-  var ok = await copyToClipboardSafe(text);
-  rt2.showToast(
-    ok ? "Estado Actual guardado y copiado \u2713" : "Guardado, pero no se pudo copiar",
-    ok ? "success" : "error"
-  );
-  closeSOAPModal();
-}
-function renderEstadoActualBar() {
-  var wrap = document.getElementById("estado-actual-context-wrap");
-  var meta = document.getElementById("estado-actual-meta");
-  var btn = document.getElementById("btn-estado-actual");
-  if (!wrap || !meta || !btn) return;
-  var sala = isModeSala(rt2.getSettings());
-  var activeId2 = rt2.getActiveId();
-  if (!sala || !activeId2) {
-    wrap.style.display = "none";
-    meta.textContent = "";
-    btn.classList.remove("btn-estado-actual-compact--pending");
-    btn.removeAttribute("aria-label");
-    return;
-  }
-  wrap.style.display = "flex";
-  var patient = patients.find(function(p) {
-    return p.id === activeId2;
-  });
-  var saved = false;
-  if (patient) {
-    migratePatientMonitoreo(patient);
-  }
-  var tg = patient && patient.monitoreo && patient.monitoreo.textoGuardado;
-  if (tg && tg.savedAt) {
-    var d = new Date(tg.savedAt);
-    if (!isNaN(d.getTime())) {
-      var label = String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0") + "/" + d.getFullYear() + " \xB7 " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
-      meta.textContent = "Guardado " + label;
-      btn.title = "Abrir Estado Actual \xB7 " + meta.textContent;
-      btn.removeAttribute("aria-label");
-      btn.classList.remove("btn-estado-actual-compact--pending");
-      saved = true;
-    }
-  }
-  if (!saved) {
-    meta.textContent = "";
-    btn.title = "";
-    btn.setAttribute(
-      "aria-label",
-      "Estado Actual: abrir plantilla (SOAP sin Subjetivo). A\xFAn sin guardar para este paciente."
-    );
-    btn.classList.add("btn-estado-actual-compact--pending");
-  }
-}
-function updateSOAPBalance() {
-  var ing = parseFloat(document.getElementById("soap-ing").value);
-  var egr = parseFloat(document.getElementById("soap-egr").value);
-  var bal = document.getElementById("soap-balance");
-  if (!isNaN(ing) && !isNaN(egr)) {
-    var diff = ing - egr;
-    bal.value = (diff > 0 ? "+" : "") + diff;
-  } else {
-    bal.value = "";
-  }
-}
-function buildSOAPText() {
-  function g3(id) {
-    var el = document.getElementById(id);
-    return el ? el.value.trim() : "";
-  }
-  function val2(v) {
-    return v ? v.toUpperCase() : "___";
-  }
-  function num2(v) {
-    return v !== "" ? v : "___";
-  }
-  var soporteMap = {
-    "Aire ambiente": "AL AIRE AMBIENTE",
-    "Puntillas nasales": "POR PUNTILLAS NASALES",
-    "Alto flujo": "POR ALTO FLUJO",
-    "VM no invasiva": "CON VENTILACI\xD3N MEC\xC1NICA NO INVASIVA"
-  };
-  var soporte = soporteMap[g3("soap-soporte")] || "AL AIRE AMBIENTE";
-  var ing = g3("soap-ing");
-  var egr = g3("soap-egr");
-  var balance = ing && egr ? (function() {
-    var d = parseFloat(ing) - parseFloat(egr);
-    return (d > 0 ? "+" : "") + d;
-  })() : "___";
-  var lines = [];
-  var subj = g3("soap-s");
-  if (subj) {
-    lines.push("S: " + subj);
-    lines.push("");
-  }
-  lines.push(
-    "N: FOUR " + num2(g3("soap-four")) + "/16 PUNTOS, SIN DATOS DE FOCALIZACI\xD3N, ORIENTADO EN " + num2(g3("soap-esferas")) + " ESFERAS, ALERTA || ANALGESIA CON " + val2(g3("soap-analgesia"))
-  );
-  lines.push(
-    "V: FR " + num2(g3("soap-fr")) + " RPM, SATO2 " + num2(g3("soap-sat")) + "% " + soporte + " | SIN DATOS DE DIFICULTAD RESPIRATORIA || CAMPOS PULMONARES BIEN VENTILADOS"
-  );
-  lines.push(
-    "HD: ESTABLE, TA " + num2(g3("soap-tas")) + "/" + num2(g3("soap-tad")) + " MMHG, FC " + num2(g3("soap-fc")) + " LPM || ANTIHIPERTENSIVOS: " + val2(g3("soap-antihta") || "NINGUNO") + " || VASOPRESORES: " + val2(g3("soap-vasop") || "NINGUNO")
-  );
-  lines.push(
-    "HI: AFEBRIL, TEMPERATURA " + num2(g3("soap-temp")) + " \xB0C || ANTIBI\xD3TICOS: " + val2(g3("soap-abx") || "NINGUNO")
-  );
-  lines.push(
-    "NM: DIETA " + val2(g3("soap-dieta")) + " CALCULADA A " + num2(g3("soap-kcalkg")) + " KCAL/KG (" + num2(g3("soap-kcal")) + " KCAL) PARA PESO DE " + num2(g3("soap-peso")) + " KG || INGRESOS " + num2(ing) + " CC, EGRESOS " + num2(egr) + " CC, BALANCE " + balance + " CC || GLUCOMETR\xCDAS CAPILARES (" + num2(g3("soap-glu1")) + ", " + num2(g3("soap-glu2")) + ", " + num2(g3("soap-glu3")) + " MG/DL)"
-  );
-  return lines.join("\n");
-}
-function insertSOAPText() {
-  var activeId2 = rt2.getActiveId();
-  if (!activeId2) {
-    rt2.showToast("Selecciona un paciente primero", "error");
-    return;
-  }
-  var text = buildSOAPText();
-  if (!notes[activeId2]) notes[activeId2] = {};
-  notes[activeId2].evolucion = text;
-  saveState();
-  var el = document.querySelector('#note-form textarea[oninput*="evolucion"]');
-  if (el) el.value = text;
-  closeSOAPModal();
-  rt2.showToast("Plantilla insertada \u2713", "success");
-}
-function renderEstadoActualButton() {
-}
-var windowHandlers3 = {
-  closeSOAPModal,
-  insertSOAPText,
-  updateSOAPBalance,
-  openSOAPModal,
-  openEstadoActualModal,
-  estadoActualOnlyCopy,
-  estadoActualSaveAndCopy
-};
-
-// public/js/features/estado-actual-meds.mjs
-function medInstructionFragmentForSoap(it) {
-  var full = formatMedicationEgresoLine(it);
-  var parts = full.split("||");
-  if (parts.length < 2) return full.replace(/\.\s*$/, "").trim();
-  return parts[1].replace(/^\s+/, "").replace(/\.\s*$/, "").trim();
-}
-function bucketsFromRecetaItems(items, selMap, classifyFn) {
-  var arrays = { analgesia: [], abx: [], antihta: [], vasop: [], otros: [] };
-  var list = Array.isArray(items) ? items : [];
-  list.forEach(function(it) {
-    if (!it || !selMap[it.id] || it.suspendido) return;
-    var cat = classifyFn(it.nombreRaw);
-    if (arrays[cat]) arrays[cat].push(medInstructionFragmentForSoap(it));
-    else arrays.otros.push(medInstructionFragmentForSoap(it));
-  });
-  arrays.otros.forEach(function(t2) {
-    arrays.abx.push(t2);
-  });
-  var buckets = {};
-  for (var k of MED_FIELD_KEYS) {
-    buckets[k] = arrays[k].join(" | ");
-  }
-  return buckets;
-}
-function applyRecetaProposal(monitoreo, buckets) {
-  if (!monitoreo || typeof monitoreo !== "object") return;
-  if (!monitoreo.pendienteReceta || typeof monitoreo.pendienteReceta !== "object") {
-    monitoreo.pendienteReceta = {};
-  }
-  for (var k of MED_FIELD_KEYS) {
-    if (monitoreo.confirmado && monitoreo.confirmado[k]) continue;
-    var val2 = buckets && buckets[k];
-    if (val2 != null && String(val2).trim()) {
-      monitoreo.pendienteReceta[k] = String(val2).trim();
-    }
-  }
-}
-function confirmMedField(monitoreo, key) {
-  if (!monitoreo || !MED_FIELD_KEYS.includes(
-    /** @type {typeof MED_FIELD_KEYS[number]} */
-    key
-  )) return;
-  if (!monitoreo.estadoClinico || typeof monitoreo.estadoClinico !== "object") {
-    monitoreo.estadoClinico = {};
-  }
-  var pending2 = monitoreo.pendienteReceta && typeof monitoreo.pendienteReceta === "object" && monitoreo.pendienteReceta[key];
-  if (pending2 != null && String(pending2).trim()) {
-    monitoreo.estadoClinico[key] = String(pending2).trim();
-  }
-  if (!monitoreo.confirmado || typeof monitoreo.confirmado !== "object") {
-    monitoreo.confirmado = {};
-  }
-  monitoreo.confirmado[key] = true;
-  if (monitoreo.pendienteReceta && typeof monitoreo.pendienteReceta === "object") {
-    monitoreo.pendienteReceta[key] = "";
-  }
-}
-function discardMedProposal(monitoreo, key) {
-  if (!monitoreo || !monitoreo.pendienteReceta || typeof monitoreo.pendienteReceta !== "object") return;
-  if (MED_FIELD_KEYS.includes(
-    /** @type {typeof MED_FIELD_KEYS[number]} */
-    key
-  )) {
-    monitoreo.pendienteReceta[key] = "";
-  }
-}
-function confirmAllMedProposals(monitoreo) {
-  for (var k of MED_FIELD_KEYS) {
-    if (monitoreo.pendienteReceta && typeof monitoreo.pendienteReceta === "object" && monitoreo.pendienteReceta[k]) {
-      confirmMedField(monitoreo, k);
-    }
-  }
-}
-function buildMedDropdownOptions(activeId2, category, medRecetaByPatient2, classifyFn) {
-  var options = [];
-  var seen = /* @__PURE__ */ Object.create(null);
-  var block = activeId2 && medRecetaByPatient2 ? medRecetaByPatient2[activeId2] : null;
-  var items = block && Array.isArray(block.items) ? block.items : [];
-  items.forEach(function(it) {
-    if (!it || /** @type {{ suspendido?: boolean }} */
-    it.suspendido) return;
-    var cat = classifyFn(
-      /** @type {{ nombreRaw?: string }} */
-      it.nombreRaw
-    );
-    var matchCat = cat === category || category === "abx" && cat === "otros";
-    if (!matchCat) return;
-    var frag = medInstructionFragmentForSoap(
-      /** @type {Parameters<typeof medInstructionFragmentForSoap>[0]} */
-      it
-    );
-    if (!frag || seen[frag]) return;
-    seen[frag] = 1;
-    options.push(frag);
-  });
-  return options;
-}
 
 // public/js/tend-export.mjs
 var THEMES = {
@@ -9676,6 +9393,20 @@ function wireSomeTableExportButtons(container, onToast, lookup) {
       });
     });
   });
+}
+
+// public/js/tour-guards.mjs
+var guidedTourActive = false;
+var tourStepId = null;
+function syncGuidedTourContext({ active, stepId } = {}) {
+  guidedTourActive = !!active;
+  tourStepId = stepId || null;
+}
+function isCasiopeaTourSendBlocked(kind) {
+  if (!guidedTourActive) return false;
+  if (kind === "lab") return tourStepId === "sala_casiopea_lab";
+  if (kind === "trends") return tourStepId === "sala_casiopea_trends";
+  return false;
 }
 
 // public/js/features/lab-some-tables-modal.mjs
@@ -11941,10 +11672,6 @@ function procesarReporte() {
     if (shouldShowBulkLabPreview(blocks, totalOkReports, {
       quickLabOutput: rt6.getLabOutputPrefs().quickLabOutput
     })) {
-      if (isPitchTourActive()) {
-        finalizeBulkLabPaste(text, blocks, totalOkReports);
-        return;
-      }
       openLabBulkPreviewModal({
         blocks,
         onConfirm: function() {
@@ -12528,11 +12255,7 @@ function positionAtbRisHoverPanel(wrap) {
   panel.style.left = left + "px";
   panel.style.top = top + "px";
   panel.style.visibility = "";
-  if (document.body.classList.contains("pitch-tour-active")) {
-    panel.style.zIndex = "104600";
-  } else {
-    panel.style.zIndex = "";
-  }
+  panel.style.zIndex = "";
 }
 function wireAtbRisHoverPanels(rootEl) {
   if (!rootEl) return;
@@ -13808,14 +13531,14 @@ function createTendGroupModal(deps) {
       bar.className = "tend-group-table-hidden-bar tend-group-panels-hidden-bar";
       panelEl.insertBefore(bar, panelEl.firstChild);
     }
-    var esc16 = deps.esc;
+    var esc15 = deps.esc;
     if (!hiddenFams.length) {
       bar.style.display = "none";
       bar.innerHTML = "";
       return;
     }
     var chips = hiddenFams.map(function(fam) {
-      return '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-panel="' + esc16(fam) + '">' + esc16(resolvePanelTitle(state.patientId, sectionKey, fam)) + ' <span aria-hidden="true">\xD7</span></button>';
+      return '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-panel="' + esc15(fam) + '">' + esc15(resolvePanelTitle(state.patientId, sectionKey, fam)) + ' <span aria-hidden="true">\xD7</span></button>';
     });
     bar.style.display = "";
     bar.innerHTML = '<span class="tend-group-hidden-label">Paneles ocultos:</span>' + chips.join("") + '<button type="button" class="tend-toolbar-btn tend-group-show-all-btn tend-group-panels-show-all">Mostrar todo</button>';
@@ -13892,7 +13615,7 @@ function createTendGroupModal(deps) {
       bar.className = "tend-group-table-hidden-bar";
       wrap.insertBefore(bar, wrap.firstChild);
     }
-    var esc16 = deps.esc;
+    var esc15 = deps.esc;
     var chips = [];
     hidden.cols.forEach(function(ck) {
       var label = ck;
@@ -13903,14 +13626,14 @@ function createTendGroupModal(deps) {
         }
       }
       chips.push(
-        '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-col="' + esc16(ck) + '">' + esc16(label) + ' <span aria-hidden="true">\xD7</span></button>'
+        '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-col="' + esc15(ck) + '">' + esc15(label) + ' <span aria-hidden="true">\xD7</span></button>'
       );
     });
     hidden.rows.forEach(function(fk) {
       var sp = state.specsByField[fk];
       var lab = sp ? legendLabelForSpec(sectionKey, sp) : fk;
       chips.push(
-        '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-row="' + esc16(fk) + '">' + esc16(lab) + ' <span aria-hidden="true">\xD7</span></button>'
+        '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-row="' + esc15(fk) + '">' + esc15(lab) + ' <span aria-hidden="true">\xD7</span></button>'
       );
     });
     if (!chips.length) {
@@ -14036,7 +13759,7 @@ function createTendGroupModal(deps) {
       }
     );
     state.tableModel = buildTableExportModel(sectionKey, raw, hidden);
-    var esc16 = deps.esc;
+    var esc15 = deps.esc;
     var html = ['<div class="cultivos-table-wrap"><table id="tend-group-table" class="cultivos-table tend-group-table">'];
     html.push("<thead><tr><th>Analito</th>");
     raw.columns.forEach(function(set) {
@@ -14044,7 +13767,7 @@ function createTendGroupModal(deps) {
       var colHidden = hidden.cols.indexOf(ck) >= 0;
       var colLabel = columnHeader(set, raw.columns);
       html.push(
-        '<th class="' + (colHidden ? "is-hidden" : "") + '"><label class="tend-group-col-toggle"><input type="checkbox" data-col-key="' + esc16(ck) + '"' + (colHidden ? " checked" : "") + ' aria-label="Ocultar columna"> ' + esc16(colLabel) + "</label></th>"
+        '<th class="' + (colHidden ? "is-hidden" : "") + '"><label class="tend-group-col-toggle"><input type="checkbox" data-col-key="' + esc15(ck) + '"' + (colHidden ? " checked" : "") + ' aria-label="Ocultar columna"> ' + esc15(colLabel) + "</label></th>"
       );
     });
     html.push("</tr></thead><tbody>");
@@ -14055,7 +13778,7 @@ function createTendGroupModal(deps) {
       var rowDisp = spRow ? formatTendSeriesLabel(spRow.cardTitle || row.fieldKey, row.fieldKey, rowUnit) : formatTendSeriesLabel(row.label, row.fieldKey, row.unit || rowUnit);
       var rowLabel = rowDisp.unit && rowDisp.unit !== "%" ? rowDisp.name + " (" + rowDisp.unit + ")" : rowDisp.name;
       html.push(
-        '<tr data-field="' + esc16(row.fieldKey) + '" class="' + (rowHidden ? " tend-group-row--data-hidden" : "") + '"><td><label class="tend-group-row-toggle"><input type="checkbox" data-field-key="' + esc16(row.fieldKey) + '"' + (rowHidden ? " checked" : "") + ' aria-label="Ocultar valores de fila (la fila sigue visible)"> ' + esc16(rowLabel) + "</label></td>"
+        '<tr data-field="' + esc15(row.fieldKey) + '" class="' + (rowHidden ? " tend-group-row--data-hidden" : "") + '"><td><label class="tend-group-row-toggle"><input type="checkbox" data-field-key="' + esc15(row.fieldKey) + '"' + (rowHidden ? " checked" : "") + ' aria-label="Ocultar valores de fila (la fila sigue visible)"> ' + esc15(rowLabel) + "</label></td>"
       );
       raw.columns.forEach(function(set, ci) {
         var ck = colKeyForSet(set);
@@ -14063,7 +13786,7 @@ function createTendGroupModal(deps) {
         var val2 = row.values[ci];
         var ab = isAbnormal(set, sectionKey, row.fieldKey, val2, state.historyDesc);
         html.push(
-          '<td class="' + (colHidden ? "is-hidden" : "") + (ab ? " tend-abnormal" : "") + '">' + esc16(formatCellValue(val2, ab)) + "</td>"
+          '<td class="' + (colHidden ? "is-hidden" : "") + (ab ? " tend-abnormal" : "") + '">' + esc15(formatCellValue(val2, ab)) + "</td>"
         );
       });
       html.push("</tr>");
@@ -18579,7 +18302,7 @@ function initIdleLockFeature() {
   restartIdleLockTimer();
 }
 function openWipeDataModal() {
-  closeSettingsDropdown2();
+  closeSettingsDropdown();
   var m = document.getElementById("rpc-wipe-modal");
   if (!m) return;
   m.style.display = "flex";
@@ -21042,17 +20765,11 @@ var rt12 = {
 function registerSettingsHelpRuntime(partial) {
   if (!partial || typeof partial !== "object") return;
   Object.assign(rt12, partial);
-  registerPitchTourRuntime(Object.assign({}, rt12, {
-    toggleSettingsDropdown,
-    closeSettingsDropdown: closeSettingsDropdown2,
-    openLabBulkTourHintModal,
-    closeLabBulkTourHintModal,
-    applyAppModeSwitchEffects,
-    renderPaseBoard,
-    renderRoundOverviewPanels,
-    renderLabHistoryPanel,
-    setRoundOverviewMode
-  }));
+  registerPresentationRuntime({
+    getActiveId: rt12.getActiveId,
+    setActiveId: rt12.setActiveId,
+    showToast: rt12.showToast
+  });
 }
 var guidedTourActive2 = false;
 var guidedTourBranch = null;
@@ -21083,9 +20800,8 @@ function toggleSettingsDropdown() {
   if (trigger) trigger.setAttribute("aria-expanded", !open ? "true" : "false");
   if (!open) rt12.syncPreimportBackupUi();
   if (!open) rt12.syncSettingsLanHostDiskSection();
-  if (!open) syncPitchTourUnlockButton();
 }
-function closeSettingsDropdown2() {
+function closeSettingsDropdown() {
   var dd = document.getElementById("settings-dropdown");
   var bg = document.getElementById("settings-dropdown-backdrop");
   if (dd) dd.classList.remove("open");
@@ -21148,8 +20864,6 @@ function normalizeTourVersionLabel(v) {
   return s || "dev";
 }
 function initGuidedTourGate() {
-  initPitchTourUnlockShortcut();
-  syncPitchTourUnlockButton();
   if (isMobileWeb()) return;
   resolveAppVersionForTour().then(function(v) {
     window.__RPC_APP_VERSION__ = normalizeTourVersionLabel(v);
@@ -21237,14 +20951,10 @@ function setTourDockCollapsed(collapsed) {
     btn.textContent = collapsed ? "+" : "\u2013";
     btn.setAttribute("aria-label", collapsed ? "Expandir tutorial" : "Minimizar tutorial");
   }
-  if (document.body.classList.contains("pitch-tour-active")) {
-    onPitchDockCollapsedChange(collapsed);
-  }
 }
 function onTourDockClick(ev) {
   var d = document.getElementById("tour-dock");
   if (!d || !d.classList.contains("tour-dock-collapsed")) return;
-  if (document.body.classList.contains("pitch-tour-active")) return;
   var t2 = ev && ev.target;
   if (t2 && t2.closest && t2.closest(".btn-tour-skip, .btn-tour-collapse, .btn-tour-next")) return;
   setTourDockCollapsed(false);
@@ -21308,7 +21018,7 @@ function ensureSettingsExpandedForTour() {
   if (!dd.classList.contains("open")) toggleSettingsDropdown();
 }
 function ensureConnectionExpandedForTour() {
-  if (typeof closeSettingsDropdown2 === "function") closeSettingsDropdown2();
+  if (typeof closeSettingsDropdown === "function") closeSettingsDropdown();
   var dd = document.getElementById("connection-dropdown");
   if (!dd) return;
   if (!dd.classList.contains("open") && typeof openConnectionDropdown === "function") {
@@ -21379,7 +21089,7 @@ function applyTourTargetForStep(id) {
   if (t2.openConnection) ensureConnectionExpandedForTour();
   else if (t2.openSettings) ensureSettingsExpandedForTour();
   else {
-    if (typeof closeSettingsDropdown2 === "function") closeSettingsDropdown2();
+    if (typeof closeSettingsDropdown === "function") closeSettingsDropdown();
     if (typeof closeConnectionDropdown === "function") closeConnectionDropdown();
   }
   if (id === "sala_med") rt12.renderMedRecetaPanel();
@@ -21584,10 +21294,6 @@ function guidedTourClickNext() {
     miniTourNext();
     return;
   }
-  if (isPitchTourActive2()) {
-    pitchTourClickNext();
-    return;
-  }
   if (!guidedTourActive2) return;
   var steps = getGuidedTourSteps();
   var i = steps.indexOf(tourStepId2);
@@ -21630,12 +21336,10 @@ function guidedTourAdvanceAfter(actionStep) {
   publishTourGuardContext();
 }
 function guidedTourAdvanceAfterNotaGenerated() {
-  if (isPitchTourActive2()) pitchTourAdvanceAfter("ic_nota");
-  else guidedTourAdvanceAfter("ic_nota");
+  guidedTourAdvanceAfter("ic_nota");
 }
 function guidedTourAdvanceAfterIndicaGenerated() {
-  if (isPitchTourActive2()) pitchTourAdvanceAfter("ic_indica");
-  else guidedTourAdvanceAfter("ic_indica");
+  guidedTourAdvanceAfter("ic_indica");
 }
 function completeGuidedTourWithCelebration() {
   clearTourSoapButtonHighlight();
@@ -21652,10 +21356,6 @@ function completeGuidedTourWithCelebration() {
 function skipGuidedTour() {
   if (miniTourActive) {
     endMiniTour();
-    return;
-  }
-  if (isPitchTourActive2()) {
-    skipPitchTour();
     return;
   }
   clearTourSoapButtonHighlight();
@@ -21869,7 +21569,7 @@ function destroyDemoAndClose() {
 }
 function resetAndStartOnboarding() {
   rt12.closeProfileModal();
-  closeSettingsDropdown2();
+  closeSettingsDropdown();
   try {
     localStorage.removeItem(GUIDED_TOUR_LS_KEY);
   } catch (_e) {
@@ -21990,7 +21690,7 @@ function openQuickHelp(preselectId) {
   if (!el) return;
   el.classList.add("open");
   el.setAttribute("aria-hidden", "false");
-  closeSettingsDropdown2();
+  closeSettingsDropdown();
   var input = document.getElementById("help-search-input");
   if (input) input.value = "";
   renderHelpArticles("");
@@ -22908,27 +22608,28 @@ function endMiniTour() {
 }
 function startHelpTourMain() {
   if (miniTourActive) endMiniTour();
-  if (isPitchTourActive2()) {
-    rt12.showToast("Finaliza el tour pitch antes de iniciar el tutorial guiado.", "error");
+  if (isPresentationModeActive()) {
+    rt12.showToast("Finaliza el modo presentaci\xF3n antes de iniciar el tutorial guiado.", "error");
     return;
   }
   closeQuickHelp();
   resetAndStartOnboarding();
 }
-function startPitchTourFromHelp() {
+function togglePresentationModeFromHelp() {
   if (guidedTourActive2) {
-    rt12.showToast("Finaliza el tutorial guiado antes del tour pitch.", "error");
+    rt12.showToast("Finaliza el tutorial guiado antes del modo presentaci\xF3n.", "error");
     return;
   }
   if (miniTourActive) endMiniTour();
   closeQuickHelp();
-  closeSettingsDropdown2();
-  startPitchTour();
+  closeSettingsDropdown();
+  if (isPresentationModeActive()) stopPresentationMode();
+  else startPresentationMode();
 }
 var settingsHelpWindowHandlers = {
   toggleSettingsSection,
   toggleSettingsDropdown,
-  closeSettingsDropdown: closeSettingsDropdown2,
+  closeSettingsDropdown,
   expandSettingsAccordionBackupSync,
   syncTeamSyncHeaderButton: syncTeamSyncHeaderButton2,
   openQuickHelp,
@@ -22939,7 +22640,7 @@ var settingsHelpWindowHandlers = {
   closeReleaseNotes,
   startMiniTour,
   startHelpTourMain,
-  startPitchTourFromHelp,
+  togglePresentationModeFromHelp,
   guidedTourIntroChooseSala,
   guidedTourIntroChooseInterconsulta,
   guidedTourIntroSkip,
@@ -30636,7 +30337,7 @@ function routeChipLabel(route) {
 }
 function renderManejoElectrolitos(panelEl, pid, patient, ui) {
   ui = ui || {};
-  var esc16 = ui.esc || function(s) {
+  var esc15 = ui.esc || function(s) {
     return String(s || "");
   };
   var buildKvBlock2 = ui.buildKvBlock;
@@ -30742,7 +30443,7 @@ function renderManejoElectrolitos(panelEl, pid, patient, ui) {
   }
   var meta = document.createElement("p");
   meta.className = "manejo-meta";
-  meta.innerHTML = "Laboratorio m\xE1s reciente: <strong>" + esc16(String(latest.fecha || labFechaNorm || "\u2014")) + "</strong>" + (latest.hora ? " \xB7 <span>" + esc16(String(latest.hora).slice(0, 8)) + "</span>" : "");
+  meta.innerHTML = "Laboratorio m\xE1s reciente: <strong>" + esc15(String(latest.fecha || labFechaNorm || "\u2014")) + "</strong>" + (latest.hora ? " \xB7 <span>" + esc15(String(latest.hora).slice(0, 8)) + "</span>" : "");
   root.appendChild(meta);
   if (evalOut.crossAlerts && evalOut.crossAlerts.length) {
     var xc = document.createElement("aside");
@@ -40718,1555 +40419,25 @@ var windowHandlers10 = {
   closeRondaQuickMoreMenu
 };
 
-// public/js/features/estado-actual-parse-variants.mjs
-var SOPORTE_FROM_TAIL = [
-  [/VM\s+NO\s+INVASIVA|VMNI|VNI/i, "VM no invasiva"],
-  [/ALTO\s+FLUJO|OAF\b/i, "Alto flujo"],
-  [/PUNTILLAS?\s+NASALES?|C[Nn]?\s*AF/i, "Puntillas nasales"],
-  [/AIRE\s+AMBIENTE|\bAA\b/i, "Aire ambiente"]
-];
-function soporteFromSatTail(tail) {
-  var s = String(tail || "").trim();
-  if (!s) return null;
-  var u = s.toUpperCase();
-  for (var i = 0; i < SOPORTE_FROM_TAIL.length; i++) {
-    if (SOPORTE_FROM_TAIL[i][0].test(u)) return SOPORTE_FROM_TAIL[i][1];
-  }
-  return null;
-}
-function parseSatLineVariants(line) {
-  var m = line.match(
-    /^(?:SATURACI(?:O|Ó)N(?:\s+O2)?|SAT(?:O2)?|SPO2)\s*:?\s*([\d.,]+)\s*%?\s*(.*)$/i
-  );
-  if (!m) return null;
-  var n = Number(String(m[1]).replace(/,/g, ""));
-  if (!Number.isFinite(n)) return null;
-  return { value: n, soporteHint: soporteFromSatTail(m[2]) };
-}
-function stripVitalUnitSuffix(raw) {
-  return String(raw || "").replace(/\s*(?:LPM|RPM|X\/MIN|\/MIN|MMHG|MM\s*HG|MG\/DL|CC|ML)\s*$/i, "").trim();
-}
-
-// public/js/features/estado-actual-parser.mjs
-function parseNumberToken(raw) {
-  if (raw == null) return null;
-  var s = String(raw).trim().replace(/\s/g, "").replace(/,/g, "");
-  if (!s) return null;
-  var n = Number(s);
-  return Number.isFinite(n) ? n : null;
-}
-function parseGlucometriaToken(token) {
-  var s = String(token || "").trim();
-  if (!s) return null;
-  var m = s.match(/^([\d.,]+)(?:\s*(?:@|\s)\s*(\d{1,2}:\d{2}))?$/i);
-  if (!m) {
-    m = s.match(/^([\d.,]+)\s*\(\s*(\d{1,2}:\d{2})\s*\)$/i);
-  }
-  if (!m) return null;
-  var value = parseNumberToken(m[1]);
-  if (value == null) return null;
-  var out = { value };
-  if (m[2]) {
-    var parts = m[2].split(":");
-    out.time = pad23(parts[0]) + ":" + pad23(parts[1]);
-  }
-  return out;
-}
-function pad23(n) {
-  return String(n).padStart(2, "0");
-}
-function splitGlucoseList(rest) {
-  var s = String(rest || "").replace(/\s*MG\s*\/?\s*DL\s*$/i, "").trim();
-  if (!s) return [];
-  var tokens = [];
-  var buf = "";
-  var depth = 0;
-  for (var i = 0; i < s.length; i++) {
-    var ch = s[i];
-    if (ch === "(") {
-      depth++;
-      buf += ch;
-      continue;
-    }
-    if (ch === ")") {
-      depth = Math.max(0, depth - 1);
-      buf += ch;
-      continue;
-    }
-    if (ch === "," && depth === 0) {
-      if (buf.trim()) tokens.push(buf.trim());
-      buf = "";
-      continue;
-    }
-    buf += ch;
-  }
-  if (buf.trim()) tokens.push(buf.trim());
-  return tokens;
-}
-function parseTempLine(line) {
-  var m = line.match(
-    /^(?:T[°º]?\s*:?|TEMP(?:ERATURA)?\s*:?)\s*([\d.,]+)\s*(?:°\s*C|°C)?(?:\s*(?:@|\s|-|a\s+las?\s+)?\s*(\d{1,2}:\d{2}))?/i
-  );
-  if (!m) return null;
-  var temp = parseNumberToken(m[1]);
-  if (temp == null) return null;
-  var out = { temp };
-  if (m[2]) {
-    var p = m[2].split(":");
-    out.time = pad23(p[0]) + ":" + pad23(p[1]);
-  }
-  return out;
-}
-function parseLine(line, result) {
-  var trimmed = String(line || "").trim();
-  if (!trimmed) return;
-  var temp = parseTempLine(trimmed);
-  if (temp) {
-    result.vitals.temp = temp.temp;
-    if (temp.time) result.alteredAt.temp = temp.time;
-    result.recognized.push("temp");
-    return;
-  }
-  var fc = trimmed.match(/^(?:FC|F\.?\s*C\.?)\s*:?\s*([\d.,]+)/i);
-  if (fc) {
-    result.vitals.fc = parseNumberToken(stripVitalUnitSuffix(fc[1]));
-    result.recognized.push("fc");
-    return;
-  }
-  var fr = trimmed.match(/^(?:FR|F\.?\s*R\.?)\s*:?\s*([\d.,]+)/i);
-  if (fr) {
-    result.vitals.fr = parseNumberToken(stripVitalUnitSuffix(fr[1]));
-    result.recognized.push("fr");
-    return;
-  }
-  var sat = parseSatLineVariants(trimmed);
-  if (sat != null) {
-    result.vitals.sat = sat.value;
-    if (sat.soporteHint) result.soporteHint = sat.soporteHint;
-    result.recognized.push("sat");
-    return;
-  }
-  var ta = trimmed.match(/^(?:TA|T\.?\s*A\.?)\s*:?\s*([\d.,]+)\s*\/\s*([\d.,]+)/i);
-  if (ta) {
-    result.vitals.tas = parseNumberToken(ta[1]);
-    result.vitals.tad = parseNumberToken(ta[2]);
-    result.recognized.push("ta");
-    return;
-  }
-  var dxt = trimmed.match(/^(?:DXT|DESTROX(?:IAS)?|GLUCOMETR(?:ÍA|IA)?(?:S)?)\s*:?\s*(.+)$/i);
-  if (dxt) {
-    var tokens = splitGlucoseList(dxt[1]);
-    for (var i = 0; i < tokens.length; i++) {
-      var g3 = parseGlucometriaToken(tokens[i]);
-      if (g3) result.glucometrias.push(g3);
-    }
-    if (tokens.length && !result.glucometrias.length) {
-      result.warnings.push("No se pudieron leer valores DXT en: " + dxt[1]);
-    } else {
-      result.recognized.push("dxt");
-    }
-    return;
-  }
-  var ing = trimmed.match(/^(?:I|ING(?:RESOS)?)\s*:?\s*(.+)$/i);
-  if (ing) {
-    result.io.ing = parseIoIngresoField(ing[1]);
-    result.recognized.push("ing");
-    return;
-  }
-  var evac = trimmed.match(/^(?:EVAC|EVACUAC(?:IONES)?)\s*:?\s*(.+)$/i);
-  if (evac) {
-    result.io.evac = parseIoEvacField(evac[1]);
-    result.recognized.push("evac");
-    return;
-  }
-  var egr = trimmed.match(/^(?:E(?!VAC)|EGR(?:ESOS)?)\s*:?\s*(.+)$/i);
-  if (egr) {
-    var egrBody = String(egr[1]).trim();
-    if (/^(?:NC|NO\s+CUANTIFICADA)$/i.test(egrBody)) {
-      result.io.egrParts = [{ kind: "diuresis", label: "DIURESIS", value: "NC" }];
-    } else {
-      result.io.egrParts = parseIoEgresoLine(egrBody);
-    }
-    result.io.egr = diuresisValueFromParts(result.io.egrParts);
-    result.recognized.push("egr");
-    return;
-  }
-  var bal = trimmed.match(/^(?:B|BAL(?:ANCE)?)\s*:?\s*(.+)$/i);
-  if (bal) {
-    result.recognized.push("balance-ignored");
-    return;
-  }
-  result.warnings.push("L\xEDnea no reconocida: " + trimmed);
-}
-function scanInlinePatterns(text, result) {
-  if (result.recognized.indexOf("temp") < 0) {
-    var t2 = text.match(/(?:T[°º]?\s*:?|TEMP(?:ERATURA)?\s*:?)\s*([\d.,]+)/i);
-    if (t2) {
-      result.vitals.temp = parseNumberToken(t2[1]);
-      result.recognized.push("temp");
-    }
-  }
-  if (result.recognized.indexOf("fc") < 0) {
-    var fc = text.match(/\bFC\s*:?\s*([\d.,]+)/i);
-    if (fc) {
-      result.vitals.fc = parseNumberToken(fc[1]);
-      result.recognized.push("fc");
-    }
-  }
-  if (result.recognized.indexOf("fr") < 0) {
-    var fr = text.match(/\bFR\s*:?\s*([\d.,]+)/i);
-    if (fr) {
-      result.vitals.fr = parseNumberToken(fr[1]);
-      result.recognized.push("fr");
-    }
-  }
-  if (result.recognized.indexOf("sat") < 0) {
-    var satM = text.match(
-      /^(?:SATURACI(?:O|Ó)N(?:\s+O2)?|SAT(?:O2)?|SPO2)\s*:?\s*([\d.,]+)\s*%?\s*(.*)$/im
-    );
-    if (satM) {
-      var satInline = parseSatLineVariants(satM[0]);
-      if (satInline) {
-        result.vitals.sat = satInline.value;
-        if (satInline.soporteHint) result.soporteHint = satInline.soporteHint;
-        result.recognized.push("sat");
-      }
-    }
-  }
-  if (result.recognized.indexOf("ta") < 0) {
-    var ta = text.match(/\bTA\s*:?\s*([\d.,]+)\s*\/\s*([\d.,]+)/i);
-    if (ta) {
-      result.vitals.tas = parseNumberToken(ta[1]);
-      result.vitals.tad = parseNumberToken(ta[2]);
-      result.recognized.push("ta");
-    }
-  }
-  if (result.recognized.indexOf("dxt") < 0) {
-    var dxt = text.match(/\b(?:DXT|DESTROX(?:IAS)?)\s*:?\s*([^|\n]+?)(?:\s*(?:\||$)|\s+I\s*:|\s+E\s*:)/i);
-    if (!dxt) dxt = text.match(/\b(?:DXT|DESTROX(?:IAS)?)\s*:?\s*(.+)$/im);
-    if (dxt) {
-      var tokens = splitGlucoseList(dxt[1]);
-      for (var i = 0; i < tokens.length; i++) {
-        var g3 = parseGlucometriaToken(tokens[i]);
-        if (g3) result.glucometrias.push(g3);
-      }
-      if (result.glucometrias.length) result.recognized.push("dxt");
-    }
-  }
-  if (result.recognized.indexOf("ing") < 0) {
-    var ing = text.match(/\bI\s*:?\s*([\d.,]+)/i);
-    if (ing) {
-      result.io.ing = parseIoIngresoField(ing[1]);
-      result.recognized.push("ing");
-    }
-  }
-  if (result.recognized.indexOf("egr") < 0) {
-    var egr = text.match(/\bE\s*:?\s*(.+?)(?:\s*$)/im);
-    if (egr) {
-      result.io.egrParts = parseIoEgresoLine(egr[1]);
-      result.io.egr = diuresisValueFromParts(result.io.egrParts);
-      result.recognized.push("egr");
-    }
-  }
-  if (result.recognized.indexOf("evac") < 0) {
-    var evac = text.match(/\bEVAC(?:UAC(?:IONES)?)?\s*:?\s*(.+?)(?:\s*$)/im);
-    if (evac) {
-      result.io.evac = parseIoEvacField(evac[1]);
-      result.recognized.push("evac");
-    }
-  }
-}
-function parseEstadoActualPaste(raw) {
-  var text = String(raw == null ? "" : raw).trim();
-  var vitals = {
-    tas: null,
-    tad: null,
-    fc: null,
-    fr: null,
-    temp: null,
-    sat: null
-  };
-  var alteredAt = {};
-  var glucometrias = [];
-  var io = { ing: null, egr: null, egrParts: [], evac: null };
-  var recognized = [];
-  var warnings = [];
-  if (!text) {
-    return {
-      ok: false,
-      error: "Pega el texto de monitoreo",
-      vitals,
-      alteredAt,
-      glucometrias,
-      io,
-      recognized,
-      warnings
-    };
-  }
-  var result = {
-    ok: true,
-    vitals,
-    alteredAt,
-    glucometrias,
-    io,
-    recognized,
-    warnings,
-    soporteHint: null
-  };
-  var lines = text.split(/\r?\n/).map(function(l) {
-    return l.trim();
-  });
-  var nonEmpty = lines.filter(Boolean);
-  if (!nonEmpty.length) nonEmpty = [text];
-  for (var i = 0; i < nonEmpty.length; i++) {
-    parseLine(nonEmpty[i], result);
-  }
-  if (!result.recognized.length) {
-    scanInlinePatterns(text, result);
-  }
-  var hasData = result.recognized.length > 0 || Object.keys(result.vitals).some(function(k) {
-    return result.vitals[k] != null;
-  }) || result.glucometrias.length > 0 || result.io.ing != null || result.io.egr != null || result.io.egrParts && result.io.egrParts.length > 0 || result.io.evac != null;
-  if (!hasData) {
-    result.ok = false;
-    result.error = "No se reconoci\xF3 ning\xFAn campo (T\xB0, FC, TA, DXT, I, E\u2026)";
-  }
-  return result;
-}
-function formatEstadoActualParsePreview(parsed) {
-  if (!parsed || !parsed.ok) {
-    return toEaSalidaText(parsed && parsed.error ? parsed.error : "Sin datos");
-  }
-  var parts = [];
-  if (parsed.vitals.temp != null) {
-    parts.push("TEMP " + parsed.vitals.temp + " \xB0C" + (parsed.alteredAt.temp ? " @ " + parsed.alteredAt.temp : ""));
-  }
-  if (parsed.vitals.fc != null) parts.push("FC " + parsed.vitals.fc + " LPM");
-  if (parsed.vitals.fr != null) parts.push("FR " + parsed.vitals.fr + " RPM");
-  if (parsed.vitals.sat != null) {
-    var satLine = "SATURACION " + parsed.vitals.sat + "%";
-    if (parsed.soporteHint) satLine += " " + toEaSalidaText(parsed.soporteHint);
-    parts.push(satLine);
-  }
-  if (parsed.vitals.tas != null || parsed.vitals.tad != null) {
-    parts.push("TA " + (parsed.vitals.tas ?? "\u2014") + "/" + (parsed.vitals.tad ?? "\u2014") + " MMHG");
-  }
-  if (parsed.glucometrias.length) {
-    parts.push(
-      "DXT " + parsed.glucometrias.map(function(g3) {
-        return String(g3.value) + (g3.time ? "@" + g3.time : "");
-      }).join(", ") + " MG/DL"
-    );
-  }
-  if (parsed.io.ing != null) parts.push("I " + parsed.io.ing + " CC");
-  if (parsed.io.egrParts && parsed.io.egrParts.length) {
-    parts.push("E " + serializeEgrPartsToFormText(parsed.io.egrParts));
-  } else if (parsed.io.egr != null) {
-    parts.push("E " + toEaSalidaText(parsed.io.egr));
-  }
-  if (parsed.io.evac != null) parts.push("EVAC " + toEaSalidaText(parsed.io.evac));
-  if (parsed.recognized.indexOf("balance-ignored") >= 0) {
-    parts.push("B (CALCULADO AL APLICAR)");
-  }
-  if (parsed.warnings.length) {
-    parts.push("AVISOS: " + parsed.warnings.join("; "));
-  }
-  return toEaSalidaText(parts.length ? parts.join(" \xB7 ") : "Sin campos detectados");
-}
-
-// public/js/features/estado-actual-paste-modal.mjs
+// public/js/presentation-mode.mjs
+var presentationActive = false;
 var rt25 = {
-  showToast() {
-  },
-  applyParsed() {
-  }
-};
-var SAMPLE_TEXT = "T\xB0: 38.7 \xB0C\nFC: 113 LPM\nFR: 19 RPM\nTA: 140/60 MMHG\nDXT: 198, 174, 101, 252 MG/DL\nSAT: 97% AL AIRE AMBIENTE\nI: 2,815 CC\nE: NO CUANTIFICADA\nB: NC\nEVAC: NO REPORTADAS";
-function registerEstadoActualPasteModalRuntime(partial) {
-  if (partial && typeof partial === "object") Object.assign(rt25, partial);
-}
-function getTextarea() {
-  return (
-    /** @type {HTMLTextAreaElement | null} */
-    document.getElementById("ea-paste-input")
-  );
-}
-function getPreviewEl() {
-  return document.getElementById("ea-paste-preview");
-}
-function refreshPreview() {
-  var ta = getTextarea();
-  var preview = getPreviewEl();
-  if (!preview) return;
-  var parsed = parseEstadoActualPaste(ta ? ta.value : "");
-  preview.textContent = formatEstadoActualParsePreview(parsed);
-  preview.classList.toggle("ea-paste-preview--error", !parsed.ok);
-}
-function ensureRegistroModalOpen() {
-  var reg = document.getElementById("ea-registro-backdrop");
-  if (reg && reg.classList.contains("open")) return;
-  if (typeof window.openEstadoActualRegistroModal === "function") {
-    window.openEstadoActualRegistroModal();
-  }
-}
-function openEstadoActualPasteModal(opts) {
-  opts = opts || {};
-  if (!opts.skipRegistro) ensureRegistroModalOpen();
-  var backdrop = document.getElementById("ea-paste-backdrop");
-  var ta = getTextarea();
-  if (!backdrop || !ta) {
-    rt25.showToast("Pegar monitoreo no disponible", "error");
-    return;
-  }
-  ta.value = opts.prefillSample ? SAMPLE_TEXT : "";
-  refreshPreview();
-  backdrop.classList.add("open");
-  backdrop.setAttribute("aria-hidden", "false");
-  ta.focus();
-}
-function closeEstadoActualPasteModal() {
-  var backdrop = document.getElementById("ea-paste-backdrop");
-  if (!backdrop) return;
-  backdrop.classList.remove("open");
-  backdrop.setAttribute("aria-hidden", "true");
-}
-function confirmEstadoActualPaste() {
-  var ta = getTextarea();
-  var parsed = parseEstadoActualPaste(ta ? ta.value : "");
-  if (!parsed.ok) {
-    rt25.showToast(parsed.error || "No se pudo interpretar el texto", "error");
-    return;
-  }
-  closeEstadoActualPasteModal();
-  if (typeof rt25.applyParsed === "function") {
-    rt25.applyParsed(parsed, { fromNestedPaste: true });
-    rt25.showToast("Datos aplicados \u2014 revisa y registra", "success");
-  }
-}
-function wireEstadoActualPasteModal() {
-  var ta = getTextarea();
-  if (ta && !ta.dataset.eaPasteWired) {
-    ta.dataset.eaPasteWired = "1";
-    ta.addEventListener("input", refreshPreview);
-    ta.placeholder = SAMPLE_TEXT;
-  }
-}
-var windowHandlers11 = {
-  openEstadoActualPasteModal,
-  closeEstadoActualPasteModal,
-  confirmEstadoActualPaste
-};
-
-// public/js/features/estado-actual-registro-modal.mjs
-var rt26 = {
-  ensureForm() {
-  },
-  resetForm() {
-  },
-  showToast() {
-  }
-};
-var dismissWired = false;
-function registerEstadoActualRegistroModalRuntime(partial) {
-  if (partial && typeof partial === "object") Object.assign(rt26, partial);
-}
-function getBackdrop() {
-  return document.getElementById("ea-registro-backdrop");
-}
-function getPasteBackdrop() {
-  return document.getElementById("ea-paste-backdrop");
-}
-function handleEaModalEscape(ev) {
-  if (ev.key !== "Escape" && ev.key !== "Esc") return;
-  var pasteBd = getPasteBackdrop();
-  if (pasteBd && pasteBd.classList.contains("open")) {
-    closeEstadoActualPasteModal();
-    ev.preventDefault();
-    ev.stopPropagation();
-    return;
-  }
-  var reg = getBackdrop();
-  if (reg && reg.classList.contains("open")) {
-    closeEstadoActualRegistroModal();
-    ev.preventDefault();
-    ev.stopPropagation();
-  }
-}
-function wireEaModalDismiss() {
-  if (dismissWired) return;
-  dismissWired = true;
-  document.addEventListener("keydown", handleEaModalEscape, true);
-  var reg = getBackdrop();
-  var pasteBd = getPasteBackdrop();
-  if (reg) {
-    reg.addEventListener("click", function(ev) {
-      if (!reg.classList.contains("open")) return;
-      if (ev.target !== reg) return;
-      closeEstadoActualRegistroModal();
-    });
-  }
-  if (pasteBd) {
-    pasteBd.addEventListener("click", function(ev) {
-      if (!pasteBd.classList.contains("open")) return;
-      var panel = pasteBd.querySelector(".ea-paste-modal");
-      if (panel && panel.contains(
-        /** @type {Node} */
-        ev.target
-      )) return;
-      closeEstadoActualPasteModal();
-    });
-  }
-}
-function openEstadoActualRegistroModal(opts) {
-  var backdrop = getBackdrop();
-  if (!backdrop) {
-    rt26.showToast("Formulario de registro no disponible", "error");
-    return;
-  }
-  rt26.ensureForm();
-  if (!opts || !opts.preserveForm) rt26.resetForm();
-  else if (typeof rt26.syncGluMode === "function") rt26.syncGluMode();
-  backdrop.classList.add("open");
-  backdrop.setAttribute("aria-hidden", "false");
-  document.documentElement.classList.add("ea-registro-modal-open");
-  var first = backdrop.querySelector('[data-ea-vital="tas"], [data-ea-vital="temp"]');
-  if (first && "focus" in first) first.focus();
-}
-function closeEstadoActualRegistroModal() {
-  closeEstadoActualPasteModal();
-  var backdrop = getBackdrop();
-  if (!backdrop) return;
-  backdrop.classList.remove("open");
-  backdrop.setAttribute("aria-hidden", "true");
-  document.documentElement.classList.remove("ea-registro-modal-open");
-}
-var windowHandlers12 = {
-  openEstadoActualRegistroModal,
-  closeEstadoActualRegistroModal
-};
-
-// public/js/tour-pitch-dock-placement.mjs
-function clamp(n, min, max) {
-  return Math.max(min, Math.min(max, n));
-}
-function rectsOverlap(a, b, pad) {
-  var p = pad || 0;
-  return !(a.right + p < b.left || a.left - p > b.right || a.bottom + p < b.top || a.top - p > b.bottom);
-}
-function unionElementsRect(elements) {
-  if (!elements || !elements.length) {
-    return { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 };
-  }
-  var r = elements[0].getBoundingClientRect();
-  for (var i = 1; i < elements.length; i++) {
-    var b = elements[i].getBoundingClientRect();
-    r = {
-      top: Math.min(r.top, b.top),
-      left: Math.min(r.left, b.left),
-      bottom: Math.max(r.bottom, b.bottom),
-      right: Math.max(r.right, b.right),
-      width: 0,
-      height: 0
-    };
-  }
-  return {
-    top: r.top,
-    left: r.left,
-    bottom: r.bottom,
-    right: r.right,
-    width: r.right - r.left,
-    height: r.bottom - r.top
-  };
-}
-function positionPitchTourDock(dockEl, anchorElements, opts) {
-  if (!dockEl) return;
-  opts = opts || {};
-  var margin = 16;
-  var gap = 22;
-  var vw = window.innerWidth;
-  var vh = window.innerHeight;
-  dockEl.classList.add("tour-dock--pitch-positioned");
-  dockEl.classList.remove("tour-dock-pos-left");
-  var dockW = dockEl.offsetWidth || 400;
-  var dockH = dockEl.offsetHeight || 160;
-  var fixedCorner = String(opts.fixedCorner || "").toLowerCase();
-  if (fixedCorner === "bottom-left" || fixedCorner === "bottom-right") {
-    var left = fixedCorner === "bottom-left" ? margin : vw - dockW - margin;
-    dockEl.style.left = Math.round(left) + "px";
-    dockEl.style.top = Math.round(vh - dockH - margin) + "px";
-    dockEl.style.right = "auto";
-    dockEl.style.bottom = "auto";
-    return;
-  }
-  var anchors = anchorElements && anchorElements.length ? anchorElements : [document.querySelector("#main-area")].filter(Boolean);
-  if (!anchors.length) return;
-  var target = unionElementsRect(anchors);
-  var tcx = (target.left + target.right) / 2;
-  var tcy = (target.top + target.bottom) / 2;
-  var prefer = String(opts.prefer || "").toLowerCase();
-  var candidates = [];
-  function pushCandidate(left2, top, baseScore) {
-    candidates.push({
-      left: clamp(left2, margin, vw - dockW - margin),
-      top: clamp(top, margin, vh - dockH - margin),
-      score: baseScore
-    });
-  }
-  pushCandidate(target.right + gap, tcy - dockH / 2, prefer === "right" ? 14 : 11);
-  pushCandidate(target.left - gap - dockW, tcy - dockH / 2, prefer === "left" ? 14 : 11);
-  pushCandidate(tcx - dockW / 2, target.bottom + gap, prefer === "below" ? 14 : 10);
-  pushCandidate(tcx - dockW / 2, target.top - gap - dockH, prefer === "above" ? 14 : 10);
-  if (tcx < vw * 0.42) {
-    pushCandidate(vw - dockW - margin, clamp(tcy - dockH / 2, margin, vh - dockH - margin), 9);
-  } else {
-    pushCandidate(margin, clamp(tcy - dockH / 2, margin, vh - dockH - margin), 9);
-  }
-  pushCandidate(vw - dockW - margin, vh - dockH - margin, 6);
-  pushCandidate(margin, vh - dockH - margin, 6);
-  var best = null;
-  var bestScore = -Infinity;
-  for (var c = 0; c < candidates.length; c++) {
-    var cand = candidates[c];
-    var dockRect = {
-      left: cand.left,
-      top: cand.top,
-      right: cand.left + dockW,
-      bottom: cand.top + dockH
-    };
-    var overlap = rectsOverlap(
-      {
-        left: dockRect.left,
-        top: dockRect.top,
-        right: dockRect.right,
-        bottom: dockRect.bottom
-      },
-      target,
-      12
-    );
-    var score = cand.score - (overlap ? 80 : 0);
-    var centerDist = Math.hypot(tcx - (dockRect.left + dockW / 2), tcy - (dockRect.top + dockH / 2));
-    score -= centerDist / Math.max(vw, vh);
-    if (score > bestScore) {
-      bestScore = score;
-      best = cand;
-    }
-  }
-  if (!best) {
-    best = { left: vw - dockW - margin, top: vh - dockH - margin, score: 0 };
-  }
-  dockEl.style.left = Math.round(best.left) + "px";
-  dockEl.style.top = Math.round(best.top) + "px";
-  dockEl.style.right = "auto";
-  dockEl.style.bottom = "auto";
-}
-function resetPitchTourDockPosition(dockEl) {
-  if (!dockEl) return;
-  dockEl.classList.remove("tour-dock--pitch-positioned");
-  dockEl.style.left = "";
-  dockEl.style.top = "";
-  dockEl.style.right = "";
-  dockEl.style.bottom = "";
-}
-
-// public/js/tour-pitch.mjs
-var PITCH_TOUR_UNLOCK_LS_KEY = "rpc-pitch-tour-unlock";
-var pitchTourActive2 = false;
-var pitchStepId2 = null;
-var pitchDockRepositionRaf = 0;
-var pitchDockListenersBound = false;
-var pitchTourIdx = 0;
-var pitchLabPasteText = null;
-var rt27 = {
-  getSettings() {
-    return (
-      /** @type {any} */
-      {}
-    );
-  },
-  getActiveInner() {
-    return null;
-  },
   getActiveId() {
     return null;
   },
   setActiveId() {
   },
-  switchInnerTab() {
-  },
-  renderInnerTabs() {
-  },
-  renderEstadoActualButton() {
-  },
-  renderEstadoActualBar() {
-  },
-  switchAppTab() {
-  },
   showToast() {
-  },
-  launchConfetti() {
-  },
-  closeProfileModal() {
-  },
-  openProfileModal() {
-  },
-  renderMedRecetaPanel() {
-  },
-  renderListadoForm() {
-  },
-  renderPaseBoard() {
-  },
-  renderRoundOverviewPanels() {
-  },
-  renderLabHistoryPanel() {
-  },
-  setRoundOverviewMode() {
-  },
-  applyAppModeSwitchEffects() {
-  },
-  toggleSettingsDropdown() {
-  },
-  closeSettingsDropdown() {
-  },
-  openLabBulkTourHintModal() {
-  },
-  closeLabBulkTourHintModal() {
   }
 };
-function registerPitchTourRuntime(partial) {
+function registerPresentationRuntime(partial) {
   if (!partial || typeof partial !== "object") return;
-  Object.assign(rt27, partial);
+  Object.assign(rt25, partial);
 }
-function publishPitchGuardContext() {
-  document.body.classList.toggle("pitch-tour-active", pitchTourActive2);
-  syncPitchTourContext({ active: pitchTourActive2, stepId: pitchStepId2 });
+function isPresentationModeActive() {
+  return presentationActive;
 }
-function isPitchTourActive2() {
-  return pitchTourActive2;
-}
-function esc13(s) {
-  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
-function showPitchScrim(on) {
-  var el = document.getElementById("tour-pitch-scrim");
-  if (!el) return;
-  if (on) {
-    el.hidden = false;
-    el.setAttribute("aria-hidden", "false");
-    el.classList.add("is-active");
-  } else {
-    el.classList.remove("is-active");
-    el.hidden = true;
-    el.setAttribute("aria-hidden", "true");
-  }
-}
-function isPitchFullscreenSlide(stepId) {
-  return stepId === "pitch_intro" || stepId === "pitch_problem_laboratoriazo" || stepId === "wrap";
-}
-function showPitchSlideForStep(stepId) {
-  var root = document.getElementById("tour-pitch-slide");
-  if (!root) return;
-  if (!stepId || !isPitchFullscreenSlide(stepId)) {
-    root.classList.remove("is-active");
-    root.hidden = true;
-    root.setAttribute("aria-hidden", "true");
-    root.querySelectorAll(".tour-pitch-slide-panel").forEach(function(panel) {
-      panel.hidden = true;
-    });
-    return;
-  }
-  root.hidden = false;
-  root.setAttribute("aria-hidden", "false");
-  root.classList.add("is-active");
-  root.querySelectorAll(".tour-pitch-slide-panel").forEach(function(panel) {
-    var key = panel.getAttribute("data-pitch-slide");
-    var show = key === stepId;
-    panel.hidden = !show;
-  });
-}
-function clearPitchSpotlightAncestors() {
-  document.querySelectorAll(".tour-pitch-spotlight-ancestor").forEach(function(el) {
-    el.classList.remove("tour-pitch-spotlight-ancestor");
-  });
-}
-function clearPitchTourVisuals() {
-  showPitchScrim(false);
-  showPitchSlideForStep(null);
-  clearPitchSpotlightAncestors();
-  var cls = [
-    "tour-spotlight-pitch",
-    "tour-spotlight-pitch-secondary",
-    "tour-spotlight-soap",
-    "tour-spotlight-action"
-  ];
-  cls.forEach(function(c) {
-    document.querySelectorAll("." + c).forEach(function(el) {
-      el.classList.remove(c);
-    });
-  });
-}
-function querySelectorList(sel) {
-  if (!sel) return [];
-  return String(sel).split(",").map(function(s) {
-    return s.trim();
-  }).filter(Boolean).map(function(s) {
-    return document.querySelector(s);
-  }).filter(Boolean);
-}
-function elevatePitchSpotlightChain(el) {
-  clearPitchSpotlightAncestors();
-  var node = el;
-  while (node && node !== document.body) {
-    node.classList.add("tour-pitch-spotlight-ancestor");
-    node = node.parentElement;
-  }
-}
-function applyPitchSpotlights(target) {
-  if (!target) return;
-  var primarySel = target.selector;
-  var secondarySel = target.secondarySelector;
-  var mode = target.spotlight || "primary";
-  var primaries = querySelectorList(primarySel);
-  var secondaries = secondarySel ? querySelectorList(secondarySel) : [];
-  if (mode === "secondary" || mode === "both") {
-    secondaries.forEach(function(el) {
-      elevatePitchSpotlightChain(el);
-      el.classList.add("tour-spotlight-pitch-secondary");
-    });
-  }
-  if (mode === "primary" || mode === "both" || !secondarySel) {
-    primaries.forEach(function(el) {
-      elevatePitchSpotlightChain(el);
-      el.classList.add("tour-spotlight-pitch");
-    });
-  }
-}
-function isPitchDockCollapsedDom() {
-  var dock = document.getElementById("tour-dock");
-  return !!(dock && dock.classList.contains("tour-dock-collapsed"));
-}
-function shouldApplyPitchSpotlight(opts) {
-  opts = opts || {};
-  return !!opts.tourActive && !opts.dockCollapsed;
-}
-function clearPitchSpotlightClasses() {
-  clearPitchSpotlightAncestors();
-  var cls = [
-    "tour-spotlight-pitch",
-    "tour-spotlight-pitch-secondary",
-    "tour-spotlight-soap",
-    "tour-spotlight-action"
-  ];
-  cls.forEach(function(c) {
-    document.querySelectorAll("." + c).forEach(function(el) {
-      el.classList.remove(c);
-    });
-  });
-}
-function applyPitchVisuals(stepId, opts) {
-  opts = opts || {};
-  if (!shouldApplyPitchSpotlight({
-    tourActive: pitchTourActive2,
-    dockCollapsed: opts.dockCollapsed
-  })) {
-    clearPitchSpotlightClasses();
-    schedulePitchDockPlacement();
-    return;
-  }
-  var t2 = stepId ? getPitchTourTarget(stepId) : null;
-  if (!t2 || !t2.selector) {
-    schedulePitchDockPlacement();
-    return;
-  }
-  var scrollPolicy = resolvePitchScrollPolicy(stepId);
-  if (scrollPolicy === "target") {
-    var els = querySelectorList(t2.selector);
-    if (els.length) {
-      try {
-        els[0].scrollIntoView({ behavior: "smooth", block: "center" });
-      } catch (_e) {
-      }
-    }
-  }
-  applyPitchSpotlights(t2);
-  schedulePitchDockPlacement();
-}
-function onPitchDockCollapsedChange(collapsed) {
-  if (!pitchTourActive2) return;
-  if (collapsed) {
-    clearPitchTourVisuals();
-    showPitchScrim(false);
-    syncPitchTourModalChrome(pitchStepId2);
-  } else {
-    applyPitchVisuals(pitchStepId2, { dockCollapsed: false });
-  }
-  schedulePitchDockPlacement();
-}
-function getPitchDockAnchorElements(target) {
-  if (!target || !target.selector) return [];
-  var mode = target.spotlight || "primary";
-  var primaries = querySelectorList(target.selector);
-  var secondaries = target.secondarySelector ? querySelectorList(target.secondarySelector) : [];
-  if (mode === "secondary") return secondaries.length ? secondaries : primaries;
-  if (mode === "both") return primaries.concat(secondaries);
-  return primaries.length ? primaries : secondaries;
-}
-function onPitchDockViewportChange() {
-  if (!pitchTourActive2) return;
-  schedulePitchDockPlacement();
-}
-function ensurePitchDockListeners() {
-  if (pitchDockListenersBound) return;
-  pitchDockListenersBound = true;
-  window.addEventListener("resize", onPitchDockViewportChange, { passive: true });
-  window.addEventListener("scroll", onPitchDockViewportChange, { passive: true, capture: true });
-}
-function removePitchDockListeners() {
-  if (!pitchDockListenersBound) return;
-  pitchDockListenersBound = false;
-  window.removeEventListener("resize", onPitchDockViewportChange);
-  window.removeEventListener("scroll", onPitchDockViewportChange, true);
-}
-function schedulePitchDockPlacement() {
-  if (pitchDockRepositionRaf) cancelAnimationFrame(pitchDockRepositionRaf);
-  pitchDockRepositionRaf = requestAnimationFrame(function() {
-    pitchDockRepositionRaf = requestAnimationFrame(function() {
-      pitchDockRepositionRaf = 0;
-      if (!pitchTourActive2 || isPitchFullscreenSlide(pitchStepId2)) return;
-      var dock = document.getElementById("tour-dock");
-      var t2 = pitchStepId2 ? getPitchTourTarget(pitchStepId2) : null;
-      if (!dock || !t2) return;
-      var anchors = getPitchDockAnchorElements(t2);
-      if (!anchors.length) return;
-      var placeOpts = { prefer: t2.dockPrefer || "" };
-      if (t2.dockFixedCorner) placeOpts.fixedCorner = t2.dockFixedCorner;
-      positionPitchTourDock(dock, anchors, placeOpts);
-    });
-  });
-}
-function syncPitchDockPlacement() {
-  schedulePitchDockPlacement();
-}
-function closePitchTourOverlays(opts) {
-  opts = opts || {};
-  closeLabSomeTablesModal();
-  closeTendGroupModal();
-  closeSesionIngresoTrendsSendModal();
-  closeEstadoActualPasteModal();
-  closeEstadoActualRegistroModal();
-  if (typeof rt27.closeLabBulkTourHintModal === "function") rt27.closeLabBulkTourHintModal();
-  closeLabBulkPreviewModal();
-  closeSOAPModal();
-  if (!opts.keepConnection) closeConnectionDropdown();
-  if (!opts.keepSettings && typeof rt27.closeSettingsDropdown === "function") {
-    rt27.closeSettingsDropdown();
-  }
-  document.body.classList.remove("pitch-tour-modal-step");
-  document.body.classList.remove("pitch-tour-tend-chart-step");
-  document.body.classList.remove("pitch-tour-lab-some-step");
-  var dock = document.getElementById("tour-dock");
-  if (dock) {
-    dock.classList.remove("tour-dock--pitch-yield");
-    dock.classList.remove("tour-dock--pitch-front");
-  }
-}
-function syncPitchTourModalChrome(stepId) {
-  var t2 = stepId ? getPitchTourTarget(stepId) : null;
-  var modal = t2 && t2.pitchModal;
-  document.body.classList.toggle("pitch-tour-modal-step", !!modal);
-  document.body.classList.toggle("pitch-tour-tend-chart-step", modal === "tendChart");
-  document.body.classList.toggle("pitch-tour-lab-some-step", modal === "labSomeTables");
-  var dock = document.getElementById("tour-dock");
-  if (dock) {
-    dock.classList.remove("tour-dock--pitch-yield", "tour-dock--pitch-front");
-    if (modal === "tendChart" || modal === "labSomeTables" || modal === "estadoPaste") {
-      dock.classList.add("tour-dock--pitch-front");
-    }
-  }
-}
-function runPitchLabProcess() {
-  var li = document.getElementById("lab-input");
-  if (!li || !pitchLabPasteText) return;
-  closeLabBulkPreviewModal();
-  if (typeof rt27.closeLabBulkTourHintModal === "function") rt27.closeLabBulkTourHintModal();
-  li.value = pitchLabPasteText;
-  try {
-    if (typeof windowHandlers5.procesarReporte === "function") {
-      windowHandlers5.procesarReporte();
-    }
-  } catch (_e) {
-  }
-  closeLabBulkPreviewModal();
-}
-function getLabWorkScroller() {
-  return document.querySelector("#appcontent-lab .lab-work-scroll");
-}
-function scrollPitchLabResultsIntoView() {
-  var sec = document.getElementById("lab-output-section");
-  if (!sec || sec.style.display === "none") return false;
-  var scroller = getLabWorkScroller();
-  if (scroller) {
-    var scRect = scroller.getBoundingClientRect();
-    var elRect = sec.getBoundingClientRect();
-    var nextTop = scroller.scrollTop + (elRect.top - scRect.top) - 16;
-    try {
-      scroller.scrollTo({ top: Math.max(0, nextTop), behavior: "smooth" });
-    } catch (_e) {
-      scroller.scrollTop = Math.max(0, nextTop);
-    }
-  } else {
-    try {
-      sec.scrollIntoView({ behavior: "smooth", block: "start" });
-    } catch (_e2) {
-      try {
-        sec.scrollIntoView(true);
-      } catch (_e3) {
-      }
-    }
-  }
-  return true;
-}
-function finishPitchLabReadyStep(t2) {
-  function tryFocus(attempt) {
-    if (!pitchTourActive2 || pitchStepId2 !== "pitch_lab_ready") return;
-    if (scrollPitchLabResultsIntoView() || attempt >= 10) {
-      applyPitchVisuals("pitch_lab_ready", { dockCollapsed: isPitchDockCollapsedDom() });
-      return;
-    }
-    setTimeout(function() {
-      tryFocus(attempt + 1);
-    }, 100);
-  }
-  tryFocus(0);
-}
-function openPitchSomeTablesModal() {
-  try {
-    openLabSomeTablesModal();
-  } catch (_e) {
-  }
-  var body = document.getElementById("lab-some-tables-modal-body");
-  if (!body) return;
-  body.querySelectorAll(".lab-some-dept-details").forEach(function(det, i) {
-    if (det && i === 0) det.open = true;
-  });
-  var table = body.querySelector(".lab-some-table-wrap");
-  if (table) {
-    try {
-      table.scrollIntoView({ behavior: "smooth", block: "center" });
-    } catch (_e) {
-    }
-  }
-}
-function openPitchTendChartModal() {
-  var open = tendenciasWindowHandlers && tendenciasWindowHandlers.openTendGroupModal;
-  if (typeof open !== "function") return;
-  try {
-    open("bh");
-  } catch (_e) {
-    try {
-      open("qs");
-    } catch (_e2) {
-    }
-  }
-}
-function scrollPitchTendChartModalBody() {
-  var modal = document.getElementById("tend-group-modal");
-  if (!modal) return false;
-  var body = modal.querySelector(".tend-group-modal-body");
-  if (body) {
-    try {
-      body.scrollTop = 0;
-    } catch (_e3) {
-    }
-  }
-  return true;
-}
-function scrollPitchPaseBoardIntoView() {
-  var host = document.getElementById("pase-board-scroll") || document.getElementById("appcontent-pase");
-  if (!host) return false;
-  try {
-    host.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  } catch (_e) {
-    try {
-      host.scrollIntoView(true);
-    } catch (_e2) {
-    }
-  }
-  return true;
-}
-function openPitchMonitoreoPasteModal() {
-  closeEstadoActualRegistroModal();
-  openEstadoActualPasteModal({ skipRegistro: true, prefillSample: true });
-}
-function ensureSettingsExpandedForPitch() {
-  var dd = document.getElementById("settings-dropdown");
-  if (!dd) return;
-  if (!dd.classList.contains("open") && typeof rt27.toggleSettingsDropdown === "function") {
-    rt27.toggleSettingsDropdown();
-  }
-}
-function ensureConnectionExpandedForPitch() {
-  if (typeof closeSettingsDropdown === "function") closeSettingsDropdown();
-  var dd = document.getElementById("connection-dropdown");
-  if (!dd) return;
-  if (!dd.classList.contains("open") && typeof openConnectionDropdown === "function") {
-    openConnectionDropdown();
-  }
-}
-function switchAppModeForPitch(mode) {
-  var st = rt27.getSettings();
-  var target = mode === "interconsulta" ? "interconsulta" : "sala";
-  if ((st.appMode || "sala") === target) return;
-  st.appMode = target;
-  try {
-    localStorage.setItem("rpc-settings", JSON.stringify(st));
-  } catch (_e) {
-  }
-  var modeRadioSala = document.getElementById("app-mode-sala");
-  var modeRadioInter = document.getElementById("app-mode-inter");
-  if (modeRadioSala) modeRadioSala.checked = target === "sala";
-  if (modeRadioInter) modeRadioInter.checked = target === "interconsulta";
-  if (typeof rt27.applyAppModeSwitchEffects === "function") {
-    rt27.applyAppModeSwitchEffects();
-  } else {
-    var sala = isModeSala(st);
-    var inner = rt27.getActiveInner();
-    if (sala && (inner === "notas" || inner === "indica")) rt27.switchInnerTab("todo");
-    else if (!sala && inner === "listado") rt27.switchInnerTab("todo");
-    rt27.renderInnerTabs();
-    rt27.renderEstadoActualButton();
-    rt27.renderEstadoActualBar();
-  }
-}
-function seedPitchListadoIfNeeded() {
-  if (rt27.getActiveId() !== PITCH_DEMO_PATIENT_ID2) return;
-  var today = /* @__PURE__ */ new Date();
-  var fecha = String(today.getDate()).padStart(2, "0") + "/" + String(today.getMonth() + 1).padStart(2, "0") + "/" + today.getFullYear();
-  var hora = String(today.getHours()).padStart(2, "0") + ":" + String(today.getMinutes()).padStart(2, "0");
-  listadoProblemas[PITCH_DEMO_PATIENT_ID2] = buildTourDemoListadoProblemas(fecha, hora);
-  saveState();
-}
-function syncPitchTourLayoutBodyClasses(stepId) {
-  document.body.classList.toggle("pitch-step-listado", stepId === "listado_problemas");
-  document.body.classList.toggle("pitch-step-pase-mode", stepId === "pitch_modo_pase");
-}
-function applyPitchListadoStep() {
-  syncPitchTourLayoutBodyClasses("listado_problemas");
-  setUiDensity("normal");
-  setRoundOverviewMode(false);
-  switchAppTab("nota");
-  switchInnerTab("listado", { forceRender: true });
-  seedPitchListadoIfNeeded();
-  if (typeof rt27.renderListadoForm === "function") rt27.renderListadoForm();
-}
-function applyPitchPaseModeStep() {
-  syncPitchTourLayoutBodyClasses("pitch_modo_pase");
-  clearPaseDetailEscape();
-  setRoundOverviewMode(false);
-  setUiDensity("pase");
-  invalidatePaseBoardCache();
-  seedPitchDemoTodos();
-  switchAppTab("nota");
-  syncPaseModeHeaderChip();
-  renderPaseBoard();
-  refreshAllTodoUIs();
-}
-function leavePitchStep(stepId) {
-  if (!stepId) return;
-  if (stepId === "pitch_modo_pase") {
-    document.body.classList.remove("pitch-step-pase-mode");
-    setUiDensity("normal");
-    invalidatePaseBoardCache();
-    if (typeof rt27.renderRoundOverviewPanels === "function") rt27.renderRoundOverviewPanels();
-  }
-  closePitchTourOverlays({
-    keepConnection: stepId === "livesync_mobile",
-    keepSettings: stepId === "pitch_seguridad"
-  });
-}
-function enterPitchStep(stepId) {
-  var t2 = getPitchTourTarget(stepId);
-  if (!t2) return;
-  if (isPitchFullscreenSlide(stepId)) {
-    clearPitchSpotlightAncestors();
-    document.querySelectorAll(
-      ".tour-spotlight-pitch, .tour-spotlight-pitch-secondary, .tour-spotlight-soap, .tour-spotlight-action"
-    ).forEach(function(el) {
-      el.classList.remove(
-        "tour-spotlight-pitch",
-        "tour-spotlight-pitch-secondary",
-        "tour-spotlight-soap",
-        "tour-spotlight-action"
-      );
-    });
-    showPitchScrim(false);
-    if (stepId === "wrap") {
-      closePitchTourOverlays();
-      switchAppModeForPitch("sala");
-      setUiDensity("normal");
-    }
-    showPitchSlideForStep(stepId);
-    return;
-  }
-  showPitchSlideForStep(null);
-  if (stepId === "pitch_switch_interconsulta" || t2.switchMode === "interconsulta") {
-    switchAppModeForPitch("interconsulta");
-  } else if (stepId === "wrap") {
-    switchAppModeForPitch("sala");
-    setUiDensity("normal");
-  } else if (stepId !== "pitch_modo_pase") {
-    setUiDensity("normal");
-  }
-  if (stepId === "listado_problemas") {
-    applyPitchListadoStep();
-  } else if (stepId === "pitch_modo_pase") {
-    applyPitchPaseModeStep();
-  } else {
-    syncPitchTourLayoutBodyClasses(stepId);
-    if (t2.appTab) rt27.switchAppTab(t2.appTab);
-    if (stepId === "ic_expediente_tabs") {
-      rt27.switchAppTab("nota");
-      setRoundOverviewMode(false);
-      rt27.switchInnerTab("notas");
-      renderNoteForm();
-    } else if (t2.innerTab) {
-      if (typeof rt27.setRoundOverviewMode === "function" && (t2.innerTab === "listado" || t2.innerTab === "notas" || t2.innerTab === "indica" || t2.innerTab === "recetaHu" || t2.innerTab === "tend" || t2.innerTab === "cult")) {
-        rt27.setRoundOverviewMode(false);
-      }
-      rt27.switchInnerTab(t2.innerTab);
-      if (t2.innerTab === "notas") renderNoteForm();
-      else if (t2.innerTab === "indica") renderIndicaForm();
-    }
-  }
-  rt27.closeProfileModal();
-  if (t2.openSettings) ensureSettingsExpandedForPitch();
-  else if (typeof rt27.closeSettingsDropdown === "function") rt27.closeSettingsDropdown();
-  if (t2.openConnection) ensureConnectionExpandedForPitch();
-  else if (typeof closeConnectionDropdown === "function") closeConnectionDropdown();
-  if (stepId === "sala_med") rt27.renderMedRecetaPanel();
-  if (stepId === "sala_casiopea_trends") {
-    closeSesionIngresoTrendsSendModal();
-  }
-  if (stepId === "map_lab_teaser") {
-    var li = document.getElementById("lab-input");
-    if (li && pitchLabPasteText) li.value = pitchLabPasteText;
-  }
-  if (stepId === "pitch_lab_ready") {
-    if (typeof rt27.renderLabHistoryPanel === "function") rt27.renderLabHistoryPanel();
-    setTimeout(function() {
-      if (!pitchTourActive2 || pitchStepId2 !== "pitch_lab_ready") return;
-      runPitchLabProcess();
-      finishPitchLabReadyStep(t2);
-    }, 120);
-  }
-  if (stepId === "sala_casiopea_lab") {
-    var tablesBtn = document.getElementById("lab-some-tables-btn");
-    if (tablesBtn) {
-      tablesBtn.removeAttribute("hidden");
-      tablesBtn.setAttribute("aria-hidden", "false");
-    }
-    setTimeout(function() {
-      if (!pitchTourActive2 || pitchStepId2 !== "sala_casiopea_lab") return;
-      openPitchSomeTablesModal();
-      syncPitchTourModalChrome("sala_casiopea_lab");
-      applyPitchVisuals(stepId, { dockCollapsed: isPitchDockCollapsedDom() });
-    }, 320);
-  }
-  if (stepId === "lab_bulk_separator" && typeof rt27.openLabBulkTourHintModal === "function") {
-    setTimeout(function() {
-      if (!pitchTourActive2 || pitchStepId2 !== "lab_bulk_separator") return;
-      rt27.openLabBulkTourHintModal();
-      syncPitchTourModalChrome("lab_bulk_separator");
-    }, 200);
-  }
-  if (stepId === "pitch_cultivos") {
-    reconcilePitchCultivoHistory(labHistory);
-    invalidateCultivosTableCache();
-    seedPitchDemoTodos();
-    if (typeof rt27.renderLabHistoryPanel === "function") rt27.renderLabHistoryPanel();
-    setTimeout(function() {
-      if (!pitchTourActive2 || pitchStepId2 !== "pitch_cultivos") return;
-      invalidateCultivosTableCache();
-      try {
-        renderCultivosTable();
-      } catch (_e) {
-      }
-      var wrap = document.querySelector("#cultivos-table-container .cultivos-table-wrap");
-      if (wrap) {
-        try {
-          wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        } catch (_e2) {
-        }
-      }
-      applyPitchVisuals(stepId, { dockCollapsed: isPitchDockCollapsedDom() });
-    }, 280);
-  }
-  if (stepId === "sala_tend_chart") {
-    setTimeout(function() {
-      if (!pitchTourActive2 || pitchStepId2 !== "sala_tend_chart") return;
-      openPitchTendChartModal();
-      syncPitchTourModalChrome("sala_tend_chart");
-      setTimeout(function() {
-        if (!pitchTourActive2 || pitchStepId2 !== "sala_tend_chart") return;
-        scrollPitchTendChartModalBody();
-        applyPitchVisuals(stepId, { dockCollapsed: isPitchDockCollapsedDom() });
-      }, 120);
-    }, 280);
-  }
-  if (stepId === "pitch_modo_pase") {
-    setTimeout(function() {
-      if (!pitchTourActive2 || pitchStepId2 !== "pitch_modo_pase") return;
-      scrollPitchPaseBoardIntoView();
-      applyPitchVisuals(stepId, { dockCollapsed: isPitchDockCollapsedDom() });
-    }, 220);
-  }
-  if (stepId === "pitch_switch_interconsulta") {
-    setTimeout(function() {
-      if (!pitchTourActive2 || pitchStepId2 !== "pitch_switch_interconsulta") return;
-      applyPitchVisuals(stepId, { dockCollapsed: isPitchDockCollapsedDom() });
-    }, 360);
-  }
-  if (stepId === "pitch_pegar_monitoreo") {
-    setTimeout(function() {
-      if (!pitchTourActive2 || pitchStepId2 !== "pitch_pegar_monitoreo") return;
-      openPitchMonitoreoPasteModal();
-      syncPitchTourModalChrome("pitch_pegar_monitoreo");
-      applyPitchVisuals(stepId, { dockCollapsed: isPitchDockCollapsedDom() });
-    }, 220);
-  }
-  if (stepId === "pitch_seguridad") {
-    var det = document.getElementById("settings-accordion-backup-sync");
-    if (det) det.open = true;
-    setTimeout(function() {
-      if (!pitchTourActive2 || pitchStepId2 !== "pitch_seguridad") return;
-      var acc = document.getElementById("settings-accordion-backup-sync");
-      if (acc) {
-        try {
-          acc.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        } catch (_e) {
-        }
-      }
-      applyPitchVisuals(stepId, { dockCollapsed: isPitchDockCollapsedDom() });
-    }, 280);
-  }
-  clearPitchTourVisuals();
-  showPitchScrim(false);
-  syncPitchTourModalChrome(stepId);
-  if (!t2.selector || !t2.focus) return;
-  setTimeout(function() {
-    if (!pitchTourActive2 || pitchStepId2 !== stepId) return;
-    var els = querySelectorList(t2.selector);
-    if (!els.length || typeof els[0].focus !== "function") return;
-    try {
-      els[0].focus({ preventScroll: true });
-    } catch (_e2) {
-      try {
-        els[0].focus();
-      } catch (_e3) {
-      }
-    }
-  }, 180);
-}
-function pitchTourBodyHtml(calloutLabel, paragraphs) {
-  var html = "";
-  if (calloutLabel) {
-    html += '<p class="tour-pitch-callout">' + esc13(calloutLabel) + "</p>";
-  }
-  for (var i = 0; i < paragraphs.length; i++) {
-    html += '<p style="margin:0' + (i < paragraphs.length - 1 ? " 0 8px" : "") + ';line-height:1.5;">' + paragraphs[i] + "</p>";
-  }
-  return html;
-}
-var PITCH_SLIDE_BADGE = {
-  pitch_intro: "Pitch \xB7 Intro",
-  pitch_problem_laboratoriazo: "Pitch \xB7 El problema",
-  wrap: "Pitch \xB7 Cierre"
-};
-function getPitchStepBadgeText(stepId) {
-  if (PITCH_SLIDE_BADGE[stepId]) return PITCH_SLIDE_BADGE[stepId];
-  const t2 = getPitchTourTarget(stepId);
-  if (t2 && t2.calloutLabel) return String(t2.calloutLabel);
-  return "Pitch";
-}
-function renderPitchTourStep() {
-  if (!pitchTourActive2) return;
-  var badge = document.getElementById("tour-step-badge");
-  var bodyEl = document.getElementById("tour-dock-body");
-  var nextBtn = document.getElementById("tour-btn-next");
-  var dock = document.getElementById("tour-dock");
-  var steps = getPitchTourSteps();
-  var total = steps.length;
-  var idx = pitchTourIdx + 1;
-  var t2 = getPitchTourTarget(pitchStepId2);
-  if (dock && !isPitchFullscreenSlide(pitchStepId2)) dock.classList.add("tour-dock-visible");
-  if (dock) dock.classList.add("tour-dock--pitch");
-  if (badge) badge.textContent = getPitchStepBadgeText(pitchStepId2);
-  var slideNext = document.querySelector(".tour-pitch-slide-next");
-  if (slideNext) {
-    slideNext.textContent = pitchStepId2 === "wrap" ? "Finalizar" : "Siguiente";
-  }
-  if (!bodyEl || !nextBtn) return;
-  nextBtn.style.display = "";
-  nextBtn.disabled = false;
-  nextBtn.textContent = pitchStepId2 === "wrap" ? "Finalizar" : "Siguiente";
-  var callout = t2 && t2.calloutLabel ? t2.calloutLabel : "";
-  switch (pitchStepId2) {
-    case "pitch_intro":
-    case "pitch_problem_laboratoriazo":
-    case "wrap":
-      if (dock) dock.classList.remove("tour-dock-visible");
-      break;
-    case "map_sidebar":
-      bodyEl.innerHTML = pitchTourBodyHtml(callout, [
-        "<strong>DEMO P\xC9REZ</strong> y <strong>DEMO GARC\xCDA</strong> solo existen para esta presentaci\xF3n."
-      ]);
-      break;
-    case "map_tabs":
-      bodyEl.innerHTML = pitchTourBodyHtml(callout, [
-        "Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong>, <strong>Agenda</strong>."
-      ]);
-      break;
-    case "pitch_mode_chips":
-      bodyEl.innerHTML = pitchTourBodyHtml(callout, [
-        "Alterna <strong>Sala</strong> (hospitalizaci\xF3n) e <strong>Interconsulta</strong> (consulta + Word)."
-      ]);
-      break;
-    case "map_lab_teaser":
-      bodyEl.innerHTML = pitchTourBodyHtml(callout, [
-        "Texto SOME con <strong>dos d\xEDas</strong> ya cargado; en producci\xF3n pegas del hospital."
-      ]);
-      break;
-    case "lab_bulk_separator":
-      bodyEl.innerHTML = pitchTourBodyHtml(callout, [
-        "Entre pacientes distintos usa el <strong>separador</strong> (bot\xF3n gris). Ventana opcional."
-      ]);
-      break;
-    case "pitch_lab_ready":
-      bodyEl.innerHTML = pitchTourBodyHtml(callout, [
-        "El reporte se <strong>procesa aqu\xED</strong>: diagramas, tabla y bloques de cultivos en el panel."
-      ]);
-      break;
-    case "sala_casiopea_lab":
-      bodyEl.innerHTML = pitchTourBodyHtml(callout, [
-        "Tablas del reporte SOME: estudios en filas, valores y referencia. El bot\xF3n <strong>Tablas</strong> en Laboratorio abre esta vista.",
-        "Se cierra con <strong>Siguiente</strong>. Neo no se abre en el pitch."
-      ]);
-      break;
-    case "sala_expediente_tabs":
-      bodyEl.innerHTML = pitchTourBodyHtml(callout, [
-        "Expediente en cuatro pesta\xF1as: <strong>Paciente</strong>, <strong>Cl\xEDnico</strong>, <strong>Resultados</strong>, <strong>Salida</strong>."
-      ]);
-      break;
-    case "pitch_cultivos":
-      bodyEl.innerHTML = pitchTourBodyHtml(callout, [
-        "Tabla con <strong>S / I / R</strong> y comentarios <strong>ESBL</strong> \u2014 como en producci\xF3n."
-      ]);
-      break;
-    case "sala_tend":
-      bodyEl.innerHTML = pitchTourBodyHtml(callout, [
-        "Mini-gr\xE1ficas cuando hay varios laboratorios en el tiempo."
-      ]);
-      break;
-    case "sala_tend_chart":
-      bodyEl.innerHTML = pitchTourBodyHtml(callout, [
-        "Gr\xE1fica a pantalla completa abierta para la audiencia. <strong>Siguiente</strong> la cierra."
-      ]);
-      break;
-    case "sala_casiopea_trends":
-      bodyEl.innerHTML = pitchTourBodyHtml(callout, [
-        "<strong>Enviar a Neo</strong> desde tendencias; en el pitch no se env\xEDan datos."
-      ]);
-      break;
-    case "estado_actual":
-      bodyEl.innerHTML = pitchTourBodyHtml(callout, [
-        "Signos vitales, glucometr\xEDas, balance <strong>I/O</strong> y gr\xE1ficas de <strong>3 d\xEDas</strong>."
-      ]);
-      break;
-    case "pitch_pegar_monitoreo":
-      bodyEl.innerHTML = pitchTourBodyHtml(callout, [
-        "Texto de monitoreo de ejemplo ya cargado; en uso real pegas del hospital."
-      ]);
-      break;
-    case "sala_med":
-      bodyEl.innerHTML = pitchTourBodyHtml(callout, [
-        "Receta hospitalaria demo con dos f\xE1rmacos para SOAP / tratamiento."
-      ]);
-      break;
-    case "listado_problemas":
-      bodyEl.innerHTML = pitchTourBodyHtml(callout, [
-        "Exporta listado de problemas a Word (ejemplo peritonitis con incisos A\u2013C)."
-      ]);
-      break;
-    case "pitch_modo_pase":
-      bodyEl.innerHTML = pitchTourBodyHtml(callout, [
-        "Vista <strong>Pase</strong>: resumen de ronda en una columna. Tambi\xE9n <strong>\u2318/Ctrl+P</strong>."
-      ]);
-      break;
-    case "pitch_switch_interconsulta":
-      bodyEl.innerHTML = pitchTourBodyHtml(callout, [
-        "Cambia a <strong>Interconsulta</strong> (chip arriba) para nota, indicaciones y Receta HU."
-      ]);
-      break;
-    case "ic_expediente_tabs":
-      bodyEl.innerHTML = pitchTourBodyHtml(callout, [
-        "<strong>Nota</strong>, <strong>Indicaciones</strong>, <strong>Resultados</strong> y <strong>Salida</strong> (Receta HU)."
-      ]);
-      break;
-    case "ic_nota":
-      bodyEl.innerHTML = pitchTourBodyHtml(callout, [
-        "Genera <strong>Nota (.docx)</strong> (evoluci\xF3n prellenada) o contin\xFAa sin Word."
-      ]);
-      nextBtn.textContent = "Siguiente (sin generar)";
-      break;
-    case "ic_indica":
-      bodyEl.innerHTML = pitchTourBodyHtml(callout, [
-        "Exporta <strong>Indicaciones (.docx)</strong> o contin\xFAa sin generar."
-      ]);
-      nextBtn.textContent = "Siguiente (sin generar)";
-      break;
-    case "pitch_receta_hu":
-      bodyEl.innerHTML = pitchTourBodyHtml(callout, [
-        "Receta HU oficial <strong>PDF</strong> con medicamentos y labs demo."
-      ]);
-      break;
-    case "pitch_agenda":
-      bodyEl.innerHTML = pitchTourBodyHtml(callout, [
-        "Agenda con procedimientos y estudios programados para DEMO P\xC9REZ."
-      ]);
-      break;
-    case "livesync_desktop":
-      bodyEl.innerHTML = pitchTourBodyHtml(callout, [
-        "Icono <strong>\u21C4</strong>: sala en vivo entre <strong>dispositivos</strong> del equipo (pacientes, labs, agenda)."
-      ]);
-      break;
-    case "livesync_mobile":
-      bodyEl.innerHTML = pitchTourBodyHtml(callout, [
-        "<strong>Copiar enlace m\xF3vil</strong> para iPad/Safari en la misma Wi\u2011Fi."
-      ]);
-      break;
-    case "pitch_seguridad":
-      bodyEl.innerHTML = pitchTourBodyHtml(callout, [
-        "Respaldos JSON, sync y recuperaci\xF3n en <strong>Ajustes</strong>."
-      ]);
-      break;
-    default:
-      bodyEl.innerHTML = "";
-  }
-  syncPitchDockPlacement();
-}
-function showTourDock2() {
-  var d = document.getElementById("tour-dock");
-  if (d) d.classList.add("tour-dock-visible");
-}
-function hideTourDockPitch() {
-  var d = document.getElementById("tour-dock");
-  if (!d) return;
-  resetPitchTourDockPosition(d);
-  d.classList.remove("tour-dock-visible");
-  d.classList.remove("tour-dock-collapsed");
-  d.classList.remove("tour-dock-pos-left");
-  d.classList.remove("tour-dock--pitch");
-}
-function getPitchDemoState() {
+function getDemoState() {
   return {
     patients,
     notes,
@@ -42281,15 +40452,55 @@ function getPitchDemoState() {
     renderPatientList,
     selectPatient,
     getActiveId: function() {
-      return rt27.getActiveId();
+      return rt25.getActiveId();
     },
     setActiveId: function(id) {
-      rt27.setActiveId(id);
+      rt25.setActiveId(id);
     }
   };
 }
-function recoverPitchTourPatientsOnBoot() {
-  var state = getPitchDemoState();
+function syncPresentationBodyClass() {
+  document.body.classList.toggle("presentation-mode-active", presentationActive);
+}
+function startPresentationMode() {
+  if (presentationActive) return;
+  setPersistPatientsResolver(resolvePitchPersistPatients);
+  markPitchTourSessionActive(true);
+  seedPitchDemo(getDemoState());
+  invalidateCultivosTableCache();
+  presentationActive = true;
+  syncPresentationBodyClass();
+  var pv = document.getElementById("patient-view");
+  var es = document.getElementById("empty-state");
+  if (pv) pv.style.display = "";
+  if (es) es.style.display = "none";
+  rt25.showToast("Modo presentaci\xF3n: DEMO P\xC9REZ y DEMO GARC\xCDA", "info");
+}
+function stopPresentationMode() {
+  if (!presentationActive) return;
+  setPersistPatientsResolver(null);
+  setPitchPatientIsolation(false);
+  markPitchTourSessionActive(false);
+  clearPitchDemo(getDemoState());
+  presentationActive = false;
+  syncPresentationBodyClass();
+  limpiarReporte();
+  var pv = document.getElementById("patient-view");
+  var es = document.getElementById("empty-state");
+  if (!rt25.getActiveId()) {
+    if (pv) pv.style.display = "none";
+    if (es) es.style.display = "flex";
+  } else {
+    selectPatient(rt25.getActiveId());
+  }
+  rt25.showToast("Modo presentaci\xF3n terminado", "info");
+}
+function togglePresentationMode() {
+  if (presentationActive) stopPresentationMode();
+  else startPresentationMode();
+}
+function recoverPresentationPatientsOnBoot() {
+  var state = getDemoState();
   var recovered = false;
   try {
     if (sessionStorage.getItem("rpc-pitch-tour-active") === "1") {
@@ -42304,146 +40515,35 @@ function recoverPitchTourPatientsOnBoot() {
     recovered = true;
   }
   if (!recovered) return false;
+  presentationActive = false;
+  syncPresentationBodyClass();
   renderPatientList();
-  if (rt27.getActiveId()) selectPatient(rt27.getActiveId());
+  if (rt25.getActiveId()) selectPatient(rt25.getActiveId());
   else if (patients.length) selectPatient(patients[0].id);
   return true;
 }
-function exitPitchTour(opts) {
-  var celebrate = opts && opts.celebrate;
-  closePitchTourOverlays();
-  removePitchDockListeners();
-  if (pitchDockRepositionRaf) {
-    cancelAnimationFrame(pitchDockRepositionRaf);
-    pitchDockRepositionRaf = 0;
-  }
-  setPersistPatientsResolver(null);
-  clearPitchTourVisuals();
-  pitchTourActive2 = false;
-  pitchStepId2 = null;
-  pitchTourIdx = 0;
-  publishPitchGuardContext();
-  hideTourDockPitch();
-  setUiDensity("normal");
-  switchAppModeForPitch("sala");
-  clearPitchDemo(getPitchDemoState());
-  document.body.classList.remove("pitch-tour-active", "pitch-step-listado", "pitch-step-pase-mode");
-  limpiarReporte();
-  if (typeof rt27.closeLabBulkTourHintModal === "function") rt27.closeLabBulkTourHintModal();
-  if (typeof rt27.closeSettingsDropdown === "function") rt27.closeSettingsDropdown();
-  closeConnectionDropdown();
-  var pv = document.getElementById("patient-view");
-  var es = document.getElementById("empty-state");
-  if (!rt27.getActiveId()) {
-    if (pv) pv.style.display = "none";
-    if (es) es.style.display = "flex";
-  } else {
-    selectPatient(rt27.getActiveId());
-  }
-  if (celebrate && typeof rt27.launchConfetti === "function") rt27.launchConfetti();
-}
-function stopPitchTour(opts) {
-  exitPitchTour(opts);
-}
-function skipPitchTour() {
-  stopPitchTour();
-  rt27.showToast("Tour pitch cerrado", "info");
-}
-function startPitchTour() {
-  if (pitchTourActive2) return;
-  setUiDensity("normal");
-  switchAppModeForPitch("sala");
-  setPersistPatientsResolver(resolvePitchPersistPatients);
-  markPitchTourSessionActive(true);
-  var seeded = seedPitchDemo(getPitchDemoState());
-  pitchLabPasteText = seeded.labPasteText;
-  invalidateCultivosTableCache();
-  pitchTourActive2 = true;
-  pitchTourIdx = 0;
-  pitchStepId2 = getPitchTourSteps()[0];
-  ensurePitchDockListeners();
-  publishPitchGuardContext();
-  var pv = document.getElementById("patient-view");
-  var es = document.getElementById("empty-state");
-  if (pv) pv.style.display = "";
-  if (es) es.style.display = "none";
-  enterPitchStep(pitchStepId2);
-  if (!isPitchFullscreenSlide(pitchStepId2)) showTourDock2();
-  renderPitchTourStep();
-  applyPitchVisuals(pitchStepId2, { dockCollapsed: isPitchDockCollapsedDom() });
-}
-function pitchTourClickNext() {
-  if (!pitchTourActive2) return;
-  var steps = getPitchTourSteps();
-  if (pitchStepId2 === "wrap") {
-    stopPitchTour({ celebrate: true });
-    rt27.showToast("Tour pitch completado", "success");
-    return;
-  }
-  leavePitchStep(pitchStepId2);
-  if (pitchTourIdx + 1 >= steps.length) return;
-  pitchTourIdx += 1;
-  pitchStepId2 = steps[pitchTourIdx];
-  publishPitchGuardContext();
-  closeLabBulkPreviewModal();
-  enterPitchStep(pitchStepId2);
-  if (!isPitchFullscreenSlide(pitchStepId2)) showTourDock2();
-  renderPitchTourStep();
-  applyPitchVisuals(pitchStepId2, { dockCollapsed: isPitchDockCollapsedDom() });
-}
-function pitchTourAdvanceAfter(actionStep) {
-  if (!pitchTourActive2 || pitchStepId2 !== actionStep) return;
-  var steps = getPitchTourSteps();
-  var i = steps.indexOf(actionStep);
-  if (i < 0 || i + 1 >= steps.length) return;
-  leavePitchStep(pitchStepId2);
-  pitchTourIdx = i + 1;
-  pitchStepId2 = steps[pitchTourIdx];
-  publishPitchGuardContext();
-  enterPitchStep(pitchStepId2);
-  renderPitchTourStep();
-  applyPitchVisuals(pitchStepId2, { dockCollapsed: isPitchDockCollapsedDom() });
-}
-function unlockPitchTour() {
-  try {
-    localStorage.setItem(PITCH_TOUR_UNLOCK_LS_KEY, "1");
-  } catch (_e) {
-  }
-  syncPitchTourUnlockButton();
-  rt27.showToast("Tour pitch desbloqueado", "success");
-}
-function syncPitchTourUnlockButton() {
-  var btn = document.getElementById("btn-start-pitch-tour");
-  if (!btn) return;
-  var unlocked = false;
-  try {
-    unlocked = localStorage.getItem(PITCH_TOUR_UNLOCK_LS_KEY) === "1";
-  } catch (_e) {
-  }
-  btn.style.display = unlocked ? "" : "none";
-}
-function isPitchTourUnlockShortcut(e) {
+function isPresentationShortcut(e) {
   if (!e || !e.altKey || !e.shiftKey) return false;
   if (!(e.metaKey || e.ctrlKey)) return false;
   if (e.code === "KeyP") return true;
   return String(e.key || "").toLowerCase() === "p";
 }
-function initPitchTourUnlockShortcut() {
-  if (initPitchTourUnlockShortcut._bound) return;
-  initPitchTourUnlockShortcut._bound = true;
+function initPresentationShortcut() {
+  if (initPresentationShortcut._bound) return;
+  initPresentationShortcut._bound = true;
   if (typeof window !== "undefined") {
-    window.unlockPitchTour = unlockPitchTour;
+    window.togglePresentationMode = togglePresentationMode;
   }
   document.addEventListener(
     "keydown",
     function(e) {
-      if (!isPitchTourUnlockShortcut(e)) return;
+      if (!isPresentationShortcut(e)) return;
       var tag = e.target && e.target.tagName ? String(e.target.tagName).toUpperCase() : "";
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
       if (e.target && e.target.isContentEditable) return;
       e.preventDefault();
       e.stopPropagation();
-      unlockPitchTour();
+      togglePresentationMode();
     },
     true
   );
@@ -42451,10 +40551,10 @@ function initPitchTourUnlockShortcut() {
 if (typeof document !== "undefined") {
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", function() {
-      initPitchTourUnlockShortcut();
+      initPresentationShortcut();
     });
   } else {
-    initPitchTourUnlockShortcut();
+    initPresentationShortcut();
   }
 }
 
@@ -42657,7 +40757,7 @@ function assignLanesByInterval(items) {
 }
 
 // public/js/features/agenda.mjs
-var rt28 = {
+var rt26 = {
   getActiveId() {
     return null;
   },
@@ -42668,10 +40768,10 @@ var rt28 = {
 };
 function registerProcedureAgendaRuntime(partial) {
   if (!partial || typeof partial !== "object") return;
-  Object.assign(rt28, partial);
+  Object.assign(rt26, partial);
 }
 var procedureAgendaWeekOffset = 0;
-function esc14(s) {
+function esc13(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function agendaEligiblePatients() {
@@ -42761,7 +40861,7 @@ function renderProcedureAgendaPanel() {
     );
     wd = wd.charAt(0).toUpperCase() + wd.slice(1);
     dm = dm.charAt(0).toUpperCase() + dm.slice(1);
-    hc.innerHTML = "<span>" + esc14(wd) + "</span><strong>" + esc14(dm) + "</strong>";
+    hc.innerHTML = "<span>" + esc13(wd) + "</span><strong>" + esc13(dm) + "</strong>";
     head.appendChild(hc);
   }
   board.appendChild(head);
@@ -42854,7 +40954,7 @@ function renderProcedureAgendaPanel() {
       );
       blk.setAttribute("aria-label", "Editar procedimiento para " + cell.patientLabel);
       if (!(ev.materialApproved && ev.anesthesiaScheduled)) blk.classList.add("rpc-proc-flag");
-      blk.innerHTML = '<div class="rpc-proc-name">' + esc14(String(ev.procedure || "")) + '</div><div class="rpc-proc-sub">' + esc14(String(startClock + " \xB7 " + (ev.location || ""))) + '</div><div class="rpc-proc-pat">' + esc14(String(cell.patientLabel)) + "</div>";
+      blk.innerHTML = '<div class="rpc-proc-name">' + esc13(String(ev.procedure || "")) + '</div><div class="rpc-proc-sub">' + esc13(String(startClock + " \xB7 " + (ev.location || ""))) + '</div><div class="rpc-proc-pat">' + esc13(String(cell.patientLabel)) + "</div>";
       blk.addEventListener("click", function(e) {
         e.preventDefault();
         openProcedureAgendaModal(ev.id);
@@ -42866,7 +40966,7 @@ function renderProcedureAgendaPanel() {
   board.appendChild(bodyRow);
   mount.innerHTML = "";
   mount.appendChild(board);
-  if (isPaseMode()) rt28.renderPaseBoard();
+  if (isPaseMode()) rt26.renderPaseBoard();
 }
 function openProcedureAgendaModal(editEventId) {
   var bd = document.getElementById("procedure-agenda-modal");
@@ -42909,7 +41009,7 @@ function openProcedureAgendaModal(editEventId) {
       document.getElementById("pa-anesthesia").checked = !!found.anesthesiaScheduled;
     }
   } else {
-    var aid7 = rt28.getActiveId();
+    var aid7 = rt26.getActiveId();
     if (sel && elig.length && aid7 && elig.some(function(p) {
       return p.id === aid7;
     })) {
@@ -42936,7 +41036,7 @@ function saveProcedureAgendaFromModal() {
   function showPaErr(msg) {
     errEl.style.display = "block";
     errEl.textContent = msg;
-    rt28.showToast(msg, "error");
+    rt26.showToast(msg, "error");
   }
   if (errEl) {
     errEl.style.display = "none";
@@ -43000,7 +41100,7 @@ function saveProcedureAgendaFromModal() {
   storage.saveScheduledProcedures(next);
   emitLiveSyncAgendaUpsert(eventObj);
   closeProcedureAgendaModal();
-  rt28.showToast("Procedimiento guardado", "success");
+  rt26.showToast("Procedimiento guardado", "success");
   renderProcedureAgendaPanel();
 }
 function deleteProcedureAgendaFromModal() {
@@ -43017,10 +41117,10 @@ function deleteProcedureAgendaFromModal() {
   storage.saveScheduledProcedures(arr);
   emitLiveSyncAgendaDelete(editId, delAt);
   closeProcedureAgendaModal();
-  rt28.showToast("Eliminado de la agenda", "success");
+  rt26.showToast("Eliminado de la agenda", "success");
   renderProcedureAgendaPanel();
 }
-var windowHandlers13 = {
+var windowHandlers11 = {
   navigateProcedureAgendaWeek,
   openProcedureAgendaModal,
   closeProcedureAgendaModal,
@@ -43029,7 +41129,7 @@ var windowHandlers13 = {
 };
 
 // public/js/features/productivity.mjs
-var rt29 = {
+var rt27 = {
   getActiveId() {
     return null;
   },
@@ -43066,9 +41166,9 @@ var rt29 = {
 };
 function registerProductivityRuntime(partial) {
   if (!partial || typeof partial !== "object") return;
-  Object.assign(rt29, partial);
+  Object.assign(rt27, partial);
 }
-function esc15(s) {
+function esc14(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 var UNDO_STACK_KEY = "rpc-undo-stack";
@@ -43086,7 +41186,7 @@ function buildUndoSnapshotPayload(label) {
     label: label || "operaci\xF3n",
     at: (/* @__PURE__ */ new Date()).toISOString(),
     theme: localStorage.getItem("theme") || "light",
-    activeId: rt29.getActiveId(),
+    activeId: rt27.getActiveId(),
     data: {
       patients: cloneForUndo(patients) || [],
       notes: cloneForUndo(notes) || {},
@@ -43094,7 +41194,7 @@ function buildUndoSnapshotPayload(label) {
       labHistory: cloneForUndo(labHistory) || {},
       medRecetaByPatient: cloneForUndo(medRecetaByPatient) || [],
       scheduledProcedures: cloneForUndo(storage.getScheduledProcedures()) || [],
-      settings: cloneForUndo(rt29.getSettings()) || {},
+      settings: cloneForUndo(rt27.getSettings()) || {},
       medCatalog: cloneForUndo(storage.getMedCatalog()) || storage.getMedCatalog()
     }
   };
@@ -43119,7 +41219,7 @@ function pushUndoSnapshot2(label) {
   stack.unshift(snap);
   saveUndoStack(stack);
   refreshUndoButtonState();
-  rt29.addAuditEntry("undo-snapshot", "ok", 0, snap.label);
+  rt27.addAuditEntry("undo-snapshot", "ok", 0, snap.label);
 }
 function refreshUndoButtonState() {
   var btn = document.getElementById("btn-undo-op");
@@ -43135,7 +41235,7 @@ function refreshUndoButtonState() {
 async function undoLastOperation() {
   var stack = getUndoStack();
   if (!stack.length) {
-    rt29.showToast("No hay operaciones para deshacer.", "error");
+    rt27.showToast("No hay operaciones para deshacer.", "error");
     return;
   }
   var snap = stack[0];
@@ -43156,7 +41256,7 @@ async function undoLastOperation() {
   }
   if (snap.theme === "dark" || snap.theme === "light") localStorage.setItem("theme", snap.theme);
   await saveState({ immediate: true });
-  rt29.addAuditEntry("undo-restore", "ok", 0, snap.label || "");
+  rt27.addAuditEntry("undo-restore", "ok", 0, snap.label || "");
   location.reload();
 }
 function applyFocusModeFromStorage() {
@@ -43170,9 +41270,9 @@ function toggleFocusMode() {
   localStorage.setItem(FOCUS_MODE_KEY, on ? "1" : "0");
   var btn = document.getElementById("btn-toggle-focus-mode");
   if (btn) btn.textContent = on ? "Desactivar modo enfoque" : "Activar modo enfoque";
-  if (on) rt29.closeSettingsDropdown();
-  rt29.showToast(on ? "Modo enfoque activado \xB7 F6 para salir" : "Modo enfoque desactivado", "success");
-  rt29.addAuditEntry("focus-mode", "ok", 0, on ? "on" : "off");
+  if (on) rt27.closeSettingsDropdown();
+  rt27.showToast(on ? "Modo enfoque activado \xB7 F6 para salir" : "Modo enfoque desactivado", "success");
+  rt27.addAuditEntry("focus-mode", "ok", 0, on ? "on" : "off");
 }
 var _unifiedSearchCurrent = [];
 function openUnifiedSearch() {
@@ -43209,7 +41309,7 @@ function escapeRegExp2(s) {
   return String(s || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 function highlightSnippet(snippet, q) {
-  var safe = esc15(snippet);
+  var safe = esc14(snippet);
   if (!q) return safe;
   var qEsc = escapeRegExp2(q);
   try {
@@ -43301,25 +41401,25 @@ function updateUnifiedSearchResults() {
     return;
   }
   box.innerHTML = out.map(function(r, idx) {
-    return '<div class="unified-search-result" onclick="selectUnifiedSearchResult(' + idx + ')"><div class="usr-title"><span>' + esc15(r.title) + '</span><span class="usr-tag">' + esc15(r.tag) + '</span></div><div class="usr-meta">' + esc15(r.meta) + "</div>" + (r.snippet ? '<div class="usr-snippet">' + highlightSnippet(r.snippet, q) + "</div>" : "") + "</div>";
+    return '<div class="unified-search-result" onclick="selectUnifiedSearchResult(' + idx + ')"><div class="usr-title"><span>' + esc14(r.title) + '</span><span class="usr-tag">' + esc14(r.tag) + '</span></div><div class="usr-meta">' + esc14(r.meta) + "</div>" + (r.snippet ? '<div class="usr-snippet">' + highlightSnippet(r.snippet, q) + "</div>" : "") + "</div>";
   }).join("");
 }
 function selectUnifiedSearchResult(idx) {
   var r = _unifiedSearchCurrent[idx];
   if (!r) return;
-  rt29.selectPatient(r.id);
-  rt29.switchAppTab(r.tab);
-  if (r.inner) rt29.switchInnerTab(r.inner);
+  rt27.selectPatient(r.id);
+  rt27.switchAppTab(r.tab);
+  if (r.inner) rt27.switchInnerTab(r.inner);
   closeUnifiedSearch();
 }
 var _extraTemplateEditing = null;
 function ensureExtraTemplatesArray() {
-  var settings2 = rt29.getSettings();
+  var settings2 = rt27.getSettings();
   if (!Array.isArray(settings2.extraTemplates)) settings2.extraTemplates = [];
   return settings2.extraTemplates;
 }
 function persistSettings() {
-  localStorage.setItem("rpc-settings", JSON.stringify(rt29.getSettings()));
+  localStorage.setItem("rpc-settings", JSON.stringify(rt27.getSettings()));
 }
 function openExtraTemplatesManager() {
   var m = document.getElementById("extra-templates-modal");
@@ -43343,8 +41443,8 @@ function renderExtraTemplatesList() {
     return;
   }
   list.innerHTML = arr.map(function(tmpl) {
-    var id = esc15(tmpl.id || "");
-    return '<div class="extra-tmpl-row"><span class="etr-label" title="' + esc15(tmpl.label || "") + '">' + esc15(tmpl.label || "(sin nombre)") + `</span><div class="etr-actions"><button type="button" onclick="editExtraTemplate('` + id + `')">Editar</button><button type="button" class="etr-del" onclick="deleteExtraTemplate('` + id + `')">Eliminar</button></div></div>`;
+    var id = esc14(tmpl.id || "");
+    return '<div class="extra-tmpl-row"><span class="etr-label" title="' + esc14(tmpl.label || "") + '">' + esc14(tmpl.label || "(sin nombre)") + `</span><div class="etr-actions"><button type="button" onclick="editExtraTemplate('` + id + `')">Editar</button><button type="button" class="etr-del" onclick="deleteExtraTemplate('` + id + `')">Eliminar</button></div></div>`;
   }).join("");
 }
 function startNewExtraTemplate() {
@@ -43385,7 +41485,7 @@ function cancelExtraTemplateEdit() {
 function saveExtraTemplateFromEditor() {
   var label = (document.getElementById("extra-tmpl-label").value || "").trim();
   if (!label) {
-    rt29.showToast("Ingresa un nombre para la plantilla", "error");
+    rt27.showToast("Ingresa un nombre para la plantilla", "error");
     return;
   }
   var dieta = (document.getElementById("extra-tmpl-dieta").value || "").trim();
@@ -43412,11 +41512,11 @@ function saveExtraTemplateFromEditor() {
     });
   }
   persistSettings();
-  rt29.addAuditEntry("extra-template-save", "ok", arr.length, label);
-  rt29.showToast("Plantilla guardada", "success");
+  rt27.addAuditEntry("extra-template-save", "ok", arr.length, label);
+  rt27.showToast("Plantilla guardada", "success");
   renderExtraTemplatesList();
   cancelExtraTemplateEdit();
-  if (rt29.getActiveId()) rt29.renderIndicaForm();
+  if (rt27.getActiveId()) rt27.renderIndicaForm();
 }
 function deleteExtraTemplate(id) {
   var arr = ensureExtraTemplatesArray();
@@ -43425,12 +41525,12 @@ function deleteExtraTemplate(id) {
   });
   if (!tmpl) return;
   if (!confirm('\xBFEliminar la plantilla "' + (tmpl.label || "") + '"?')) return;
-  var settings2 = rt29.getSettings();
+  var settings2 = rt27.getSettings();
   settings2.extraTemplates = arr.filter(function(t2) {
     return t2.id !== id;
   });
   persistSettings();
-  rt29.addAuditEntry(
+  rt27.addAuditEntry(
     "extra-template-delete",
     "ok",
     settings2.extraTemplates.length,
@@ -43438,7 +41538,7 @@ function deleteExtraTemplate(id) {
   );
   renderExtraTemplatesList();
   cancelExtraTemplateEdit();
-  if (rt29.getActiveId()) rt29.renderIndicaForm();
+  if (rt27.getActiveId()) rt27.renderIndicaForm();
 }
 function isTypingContext(target) {
   if (!target) return false;
@@ -43459,7 +41559,7 @@ function initProductivityKeyboardShortcuts() {
         var roundKey = (e.key || "").toLowerCase();
         if (roundKey === "j" || roundKey === "k") {
           e.preventDefault();
-          rt29.advanceRondaPatient(roundKey === "j" ? 1 : -1);
+          rt27.advanceRondaPatient(roundKey === "j" ? 1 : -1);
           return;
         }
       }
@@ -43475,16 +41575,16 @@ function initProductivityKeyboardShortcuts() {
       else openUnifiedSearch();
     } else if (k === "n") {
       e.preventDefault();
-      rt29.openAddModal();
+      rt27.openAddModal();
     } else if (k === "s") {
       e.preventDefault();
-      if (!rt29.getActiveId()) {
-        rt29.showToast("Selecciona un paciente primero", "error");
+      if (!rt27.getActiveId()) {
+        rt27.showToast("Selecciona un paciente primero", "error");
         return;
       }
-      rt29.saveState();
-      rt29.addAuditEntry("quick-save", "ok", 1, String(rt29.getActiveId()));
-      rt29.showToast("Estado guardado \u2713", "success");
+      rt27.saveState();
+      rt27.addAuditEntry("quick-save", "ok", 1, String(rt27.getActiveId()));
+      rt27.showToast("Estado guardado \u2713", "success");
     }
   });
   applyFocusModeFromStorage();
@@ -43954,7 +42054,7 @@ function initModalDismiss() {
       var s = el("settings-dropdown");
       return s && s.classList.contains("open");
     },
-    close: closeSettingsDropdown2,
+    close: closeSettingsDropdown,
     backdropEl: function() {
       return el("settings-dropdown-backdrop");
     }
@@ -44038,7 +42138,7 @@ document.addEventListener("keydown", function(e) {
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || e.target && e.target.isContentEditable) return;
       e.preventDefault();
       var dd = document.getElementById("settings-dropdown");
-      if (dd && dd.classList.contains("open")) closeSettingsDropdown2();
+      if (dd && dd.classList.contains("open")) closeSettingsDropdown();
       else toggleSettingsDropdown();
     }
     if (e.key === "," && e.shiftKey && !e.altKey) {
@@ -44299,6 +42399,533 @@ function scheduleDeferredShellInits() {
 function scheduleDeferredUiInits() {
   _rpcDeferInit(initProductivityKeyboardShortcuts);
 }
+
+// public/js/features/estado-actual-parse-variants.mjs
+var SOPORTE_FROM_TAIL = [
+  [/VM\s+NO\s+INVASIVA|VMNI|VNI/i, "VM no invasiva"],
+  [/ALTO\s+FLUJO|OAF\b/i, "Alto flujo"],
+  [/PUNTILLAS?\s+NASALES?|C[Nn]?\s*AF/i, "Puntillas nasales"],
+  [/AIRE\s+AMBIENTE|\bAA\b/i, "Aire ambiente"]
+];
+function soporteFromSatTail(tail) {
+  var s = String(tail || "").trim();
+  if (!s) return null;
+  var u = s.toUpperCase();
+  for (var i = 0; i < SOPORTE_FROM_TAIL.length; i++) {
+    if (SOPORTE_FROM_TAIL[i][0].test(u)) return SOPORTE_FROM_TAIL[i][1];
+  }
+  return null;
+}
+function parseSatLineVariants(line) {
+  var m = line.match(
+    /^(?:SATURACI(?:O|Ó)N(?:\s+O2)?|SAT(?:O2)?|SPO2)\s*:?\s*([\d.,]+)\s*%?\s*(.*)$/i
+  );
+  if (!m) return null;
+  var n = Number(String(m[1]).replace(/,/g, ""));
+  if (!Number.isFinite(n)) return null;
+  return { value: n, soporteHint: soporteFromSatTail(m[2]) };
+}
+function stripVitalUnitSuffix(raw) {
+  return String(raw || "").replace(/\s*(?:LPM|RPM|X\/MIN|\/MIN|MMHG|MM\s*HG|MG\/DL|CC|ML)\s*$/i, "").trim();
+}
+
+// public/js/features/estado-actual-parser.mjs
+function parseNumberToken(raw) {
+  if (raw == null) return null;
+  var s = String(raw).trim().replace(/\s/g, "").replace(/,/g, "");
+  if (!s) return null;
+  var n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+function parseGlucometriaToken(token) {
+  var s = String(token || "").trim();
+  if (!s) return null;
+  var m = s.match(/^([\d.,]+)(?:\s*(?:@|\s)\s*(\d{1,2}:\d{2}))?$/i);
+  if (!m) {
+    m = s.match(/^([\d.,]+)\s*\(\s*(\d{1,2}:\d{2})\s*\)$/i);
+  }
+  if (!m) return null;
+  var value = parseNumberToken(m[1]);
+  if (value == null) return null;
+  var out = { value };
+  if (m[2]) {
+    var parts = m[2].split(":");
+    out.time = pad23(parts[0]) + ":" + pad23(parts[1]);
+  }
+  return out;
+}
+function pad23(n) {
+  return String(n).padStart(2, "0");
+}
+function splitGlucoseList(rest) {
+  var s = String(rest || "").replace(/\s*MG\s*\/?\s*DL\s*$/i, "").trim();
+  if (!s) return [];
+  var tokens = [];
+  var buf = "";
+  var depth = 0;
+  for (var i = 0; i < s.length; i++) {
+    var ch = s[i];
+    if (ch === "(") {
+      depth++;
+      buf += ch;
+      continue;
+    }
+    if (ch === ")") {
+      depth = Math.max(0, depth - 1);
+      buf += ch;
+      continue;
+    }
+    if (ch === "," && depth === 0) {
+      if (buf.trim()) tokens.push(buf.trim());
+      buf = "";
+      continue;
+    }
+    buf += ch;
+  }
+  if (buf.trim()) tokens.push(buf.trim());
+  return tokens;
+}
+function parseTempLine(line) {
+  var m = line.match(
+    /^(?:T[°º]?\s*:?|TEMP(?:ERATURA)?\s*:?)\s*([\d.,]+)\s*(?:°\s*C|°C)?(?:\s*(?:@|\s|-|a\s+las?\s+)?\s*(\d{1,2}:\d{2}))?/i
+  );
+  if (!m) return null;
+  var temp = parseNumberToken(m[1]);
+  if (temp == null) return null;
+  var out = { temp };
+  if (m[2]) {
+    var p = m[2].split(":");
+    out.time = pad23(p[0]) + ":" + pad23(p[1]);
+  }
+  return out;
+}
+function parseLine(line, result) {
+  var trimmed = String(line || "").trim();
+  if (!trimmed) return;
+  var temp = parseTempLine(trimmed);
+  if (temp) {
+    result.vitals.temp = temp.temp;
+    if (temp.time) result.alteredAt.temp = temp.time;
+    result.recognized.push("temp");
+    return;
+  }
+  var fc = trimmed.match(/^(?:FC|F\.?\s*C\.?)\s*:?\s*([\d.,]+)/i);
+  if (fc) {
+    result.vitals.fc = parseNumberToken(stripVitalUnitSuffix(fc[1]));
+    result.recognized.push("fc");
+    return;
+  }
+  var fr = trimmed.match(/^(?:FR|F\.?\s*R\.?)\s*:?\s*([\d.,]+)/i);
+  if (fr) {
+    result.vitals.fr = parseNumberToken(stripVitalUnitSuffix(fr[1]));
+    result.recognized.push("fr");
+    return;
+  }
+  var sat = parseSatLineVariants(trimmed);
+  if (sat != null) {
+    result.vitals.sat = sat.value;
+    if (sat.soporteHint) result.soporteHint = sat.soporteHint;
+    result.recognized.push("sat");
+    return;
+  }
+  var ta = trimmed.match(/^(?:TA|T\.?\s*A\.?)\s*:?\s*([\d.,]+)\s*\/\s*([\d.,]+)/i);
+  if (ta) {
+    result.vitals.tas = parseNumberToken(ta[1]);
+    result.vitals.tad = parseNumberToken(ta[2]);
+    result.recognized.push("ta");
+    return;
+  }
+  var dxt = trimmed.match(/^(?:DXT|DESTROX(?:IAS)?|GLUCOMETR(?:ÍA|IA)?(?:S)?)\s*:?\s*(.+)$/i);
+  if (dxt) {
+    var tokens = splitGlucoseList(dxt[1]);
+    for (var i = 0; i < tokens.length; i++) {
+      var g3 = parseGlucometriaToken(tokens[i]);
+      if (g3) result.glucometrias.push(g3);
+    }
+    if (tokens.length && !result.glucometrias.length) {
+      result.warnings.push("No se pudieron leer valores DXT en: " + dxt[1]);
+    } else {
+      result.recognized.push("dxt");
+    }
+    return;
+  }
+  var ing = trimmed.match(/^(?:I|ING(?:RESOS)?)\s*:?\s*(.+)$/i);
+  if (ing) {
+    result.io.ing = parseIoIngresoField(ing[1]);
+    result.recognized.push("ing");
+    return;
+  }
+  var evac = trimmed.match(/^(?:EVAC|EVACUAC(?:IONES)?)\s*:?\s*(.+)$/i);
+  if (evac) {
+    result.io.evac = parseIoEvacField(evac[1]);
+    result.recognized.push("evac");
+    return;
+  }
+  var egr = trimmed.match(/^(?:E(?!VAC)|EGR(?:ESOS)?)\s*:?\s*(.+)$/i);
+  if (egr) {
+    var egrBody = String(egr[1]).trim();
+    if (/^(?:NC|NO\s+CUANTIFICADA)$/i.test(egrBody)) {
+      result.io.egrParts = [{ kind: "diuresis", label: "DIURESIS", value: "NC" }];
+    } else {
+      result.io.egrParts = parseIoEgresoLine(egrBody);
+    }
+    result.io.egr = diuresisValueFromParts(result.io.egrParts);
+    result.recognized.push("egr");
+    return;
+  }
+  var bal = trimmed.match(/^(?:B|BAL(?:ANCE)?)\s*:?\s*(.+)$/i);
+  if (bal) {
+    result.recognized.push("balance-ignored");
+    return;
+  }
+  result.warnings.push("L\xEDnea no reconocida: " + trimmed);
+}
+function scanInlinePatterns(text, result) {
+  if (result.recognized.indexOf("temp") < 0) {
+    var t2 = text.match(/(?:T[°º]?\s*:?|TEMP(?:ERATURA)?\s*:?)\s*([\d.,]+)/i);
+    if (t2) {
+      result.vitals.temp = parseNumberToken(t2[1]);
+      result.recognized.push("temp");
+    }
+  }
+  if (result.recognized.indexOf("fc") < 0) {
+    var fc = text.match(/\bFC\s*:?\s*([\d.,]+)/i);
+    if (fc) {
+      result.vitals.fc = parseNumberToken(fc[1]);
+      result.recognized.push("fc");
+    }
+  }
+  if (result.recognized.indexOf("fr") < 0) {
+    var fr = text.match(/\bFR\s*:?\s*([\d.,]+)/i);
+    if (fr) {
+      result.vitals.fr = parseNumberToken(fr[1]);
+      result.recognized.push("fr");
+    }
+  }
+  if (result.recognized.indexOf("sat") < 0) {
+    var satM = text.match(
+      /^(?:SATURACI(?:O|Ó)N(?:\s+O2)?|SAT(?:O2)?|SPO2)\s*:?\s*([\d.,]+)\s*%?\s*(.*)$/im
+    );
+    if (satM) {
+      var satInline = parseSatLineVariants(satM[0]);
+      if (satInline) {
+        result.vitals.sat = satInline.value;
+        if (satInline.soporteHint) result.soporteHint = satInline.soporteHint;
+        result.recognized.push("sat");
+      }
+    }
+  }
+  if (result.recognized.indexOf("ta") < 0) {
+    var ta = text.match(/\bTA\s*:?\s*([\d.,]+)\s*\/\s*([\d.,]+)/i);
+    if (ta) {
+      result.vitals.tas = parseNumberToken(ta[1]);
+      result.vitals.tad = parseNumberToken(ta[2]);
+      result.recognized.push("ta");
+    }
+  }
+  if (result.recognized.indexOf("dxt") < 0) {
+    var dxt = text.match(/\b(?:DXT|DESTROX(?:IAS)?)\s*:?\s*([^|\n]+?)(?:\s*(?:\||$)|\s+I\s*:|\s+E\s*:)/i);
+    if (!dxt) dxt = text.match(/\b(?:DXT|DESTROX(?:IAS)?)\s*:?\s*(.+)$/im);
+    if (dxt) {
+      var tokens = splitGlucoseList(dxt[1]);
+      for (var i = 0; i < tokens.length; i++) {
+        var g3 = parseGlucometriaToken(tokens[i]);
+        if (g3) result.glucometrias.push(g3);
+      }
+      if (result.glucometrias.length) result.recognized.push("dxt");
+    }
+  }
+  if (result.recognized.indexOf("ing") < 0) {
+    var ing = text.match(/\bI\s*:?\s*([\d.,]+)/i);
+    if (ing) {
+      result.io.ing = parseIoIngresoField(ing[1]);
+      result.recognized.push("ing");
+    }
+  }
+  if (result.recognized.indexOf("egr") < 0) {
+    var egr = text.match(/\bE\s*:?\s*(.+?)(?:\s*$)/im);
+    if (egr) {
+      result.io.egrParts = parseIoEgresoLine(egr[1]);
+      result.io.egr = diuresisValueFromParts(result.io.egrParts);
+      result.recognized.push("egr");
+    }
+  }
+  if (result.recognized.indexOf("evac") < 0) {
+    var evac = text.match(/\bEVAC(?:UAC(?:IONES)?)?\s*:?\s*(.+?)(?:\s*$)/im);
+    if (evac) {
+      result.io.evac = parseIoEvacField(evac[1]);
+      result.recognized.push("evac");
+    }
+  }
+}
+function parseEstadoActualPaste(raw) {
+  var text = String(raw == null ? "" : raw).trim();
+  var vitals = {
+    tas: null,
+    tad: null,
+    fc: null,
+    fr: null,
+    temp: null,
+    sat: null
+  };
+  var alteredAt = {};
+  var glucometrias = [];
+  var io = { ing: null, egr: null, egrParts: [], evac: null };
+  var recognized = [];
+  var warnings = [];
+  if (!text) {
+    return {
+      ok: false,
+      error: "Pega el texto de monitoreo",
+      vitals,
+      alteredAt,
+      glucometrias,
+      io,
+      recognized,
+      warnings
+    };
+  }
+  var result = {
+    ok: true,
+    vitals,
+    alteredAt,
+    glucometrias,
+    io,
+    recognized,
+    warnings,
+    soporteHint: null
+  };
+  var lines = text.split(/\r?\n/).map(function(l) {
+    return l.trim();
+  });
+  var nonEmpty = lines.filter(Boolean);
+  if (!nonEmpty.length) nonEmpty = [text];
+  for (var i = 0; i < nonEmpty.length; i++) {
+    parseLine(nonEmpty[i], result);
+  }
+  if (!result.recognized.length) {
+    scanInlinePatterns(text, result);
+  }
+  var hasData = result.recognized.length > 0 || Object.keys(result.vitals).some(function(k) {
+    return result.vitals[k] != null;
+  }) || result.glucometrias.length > 0 || result.io.ing != null || result.io.egr != null || result.io.egrParts && result.io.egrParts.length > 0 || result.io.evac != null;
+  if (!hasData) {
+    result.ok = false;
+    result.error = "No se reconoci\xF3 ning\xFAn campo (T\xB0, FC, TA, DXT, I, E\u2026)";
+  }
+  return result;
+}
+function formatEstadoActualParsePreview(parsed) {
+  if (!parsed || !parsed.ok) {
+    return toEaSalidaText(parsed && parsed.error ? parsed.error : "Sin datos");
+  }
+  var parts = [];
+  if (parsed.vitals.temp != null) {
+    parts.push("TEMP " + parsed.vitals.temp + " \xB0C" + (parsed.alteredAt.temp ? " @ " + parsed.alteredAt.temp : ""));
+  }
+  if (parsed.vitals.fc != null) parts.push("FC " + parsed.vitals.fc + " LPM");
+  if (parsed.vitals.fr != null) parts.push("FR " + parsed.vitals.fr + " RPM");
+  if (parsed.vitals.sat != null) {
+    var satLine = "SATURACION " + parsed.vitals.sat + "%";
+    if (parsed.soporteHint) satLine += " " + toEaSalidaText(parsed.soporteHint);
+    parts.push(satLine);
+  }
+  if (parsed.vitals.tas != null || parsed.vitals.tad != null) {
+    parts.push("TA " + (parsed.vitals.tas ?? "\u2014") + "/" + (parsed.vitals.tad ?? "\u2014") + " MMHG");
+  }
+  if (parsed.glucometrias.length) {
+    parts.push(
+      "DXT " + parsed.glucometrias.map(function(g3) {
+        return String(g3.value) + (g3.time ? "@" + g3.time : "");
+      }).join(", ") + " MG/DL"
+    );
+  }
+  if (parsed.io.ing != null) parts.push("I " + parsed.io.ing + " CC");
+  if (parsed.io.egrParts && parsed.io.egrParts.length) {
+    parts.push("E " + serializeEgrPartsToFormText(parsed.io.egrParts));
+  } else if (parsed.io.egr != null) {
+    parts.push("E " + toEaSalidaText(parsed.io.egr));
+  }
+  if (parsed.io.evac != null) parts.push("EVAC " + toEaSalidaText(parsed.io.evac));
+  if (parsed.recognized.indexOf("balance-ignored") >= 0) {
+    parts.push("B (CALCULADO AL APLICAR)");
+  }
+  if (parsed.warnings.length) {
+    parts.push("AVISOS: " + parsed.warnings.join("; "));
+  }
+  return toEaSalidaText(parts.length ? parts.join(" \xB7 ") : "Sin campos detectados");
+}
+
+// public/js/features/estado-actual-paste-modal.mjs
+var rt28 = {
+  showToast() {
+  },
+  applyParsed() {
+  }
+};
+var SAMPLE_TEXT = "T\xB0: 38.7 \xB0C\nFC: 113 LPM\nFR: 19 RPM\nTA: 140/60 MMHG\nDXT: 198, 174, 101, 252 MG/DL\nSAT: 97% AL AIRE AMBIENTE\nI: 2,815 CC\nE: NO CUANTIFICADA\nB: NC\nEVAC: NO REPORTADAS";
+function registerEstadoActualPasteModalRuntime(partial) {
+  if (partial && typeof partial === "object") Object.assign(rt28, partial);
+}
+function getTextarea() {
+  return (
+    /** @type {HTMLTextAreaElement | null} */
+    document.getElementById("ea-paste-input")
+  );
+}
+function getPreviewEl() {
+  return document.getElementById("ea-paste-preview");
+}
+function refreshPreview() {
+  var ta = getTextarea();
+  var preview = getPreviewEl();
+  if (!preview) return;
+  var parsed = parseEstadoActualPaste(ta ? ta.value : "");
+  preview.textContent = formatEstadoActualParsePreview(parsed);
+  preview.classList.toggle("ea-paste-preview--error", !parsed.ok);
+}
+function ensureRegistroModalOpen() {
+  var reg = document.getElementById("ea-registro-backdrop");
+  if (reg && reg.classList.contains("open")) return;
+  if (typeof window.openEstadoActualRegistroModal === "function") {
+    window.openEstadoActualRegistroModal();
+  }
+}
+function openEstadoActualPasteModal(opts) {
+  opts = opts || {};
+  if (!opts.skipRegistro) ensureRegistroModalOpen();
+  var backdrop = document.getElementById("ea-paste-backdrop");
+  var ta = getTextarea();
+  if (!backdrop || !ta) {
+    rt28.showToast("Pegar monitoreo no disponible", "error");
+    return;
+  }
+  ta.value = opts.prefillSample ? SAMPLE_TEXT : "";
+  refreshPreview();
+  backdrop.classList.add("open");
+  backdrop.setAttribute("aria-hidden", "false");
+  ta.focus();
+}
+function closeEstadoActualPasteModal() {
+  var backdrop = document.getElementById("ea-paste-backdrop");
+  if (!backdrop) return;
+  backdrop.classList.remove("open");
+  backdrop.setAttribute("aria-hidden", "true");
+}
+function confirmEstadoActualPaste() {
+  var ta = getTextarea();
+  var parsed = parseEstadoActualPaste(ta ? ta.value : "");
+  if (!parsed.ok) {
+    rt28.showToast(parsed.error || "No se pudo interpretar el texto", "error");
+    return;
+  }
+  closeEstadoActualPasteModal();
+  if (typeof rt28.applyParsed === "function") {
+    rt28.applyParsed(parsed, { fromNestedPaste: true });
+    rt28.showToast("Datos aplicados \u2014 revisa y registra", "success");
+  }
+}
+function wireEstadoActualPasteModal() {
+  var ta = getTextarea();
+  if (ta && !ta.dataset.eaPasteWired) {
+    ta.dataset.eaPasteWired = "1";
+    ta.addEventListener("input", refreshPreview);
+    ta.placeholder = SAMPLE_TEXT;
+  }
+}
+var windowHandlers12 = {
+  openEstadoActualPasteModal,
+  closeEstadoActualPasteModal,
+  confirmEstadoActualPaste
+};
+
+// public/js/features/estado-actual-registro-modal.mjs
+var rt29 = {
+  ensureForm() {
+  },
+  resetForm() {
+  },
+  showToast() {
+  }
+};
+var dismissWired = false;
+function registerEstadoActualRegistroModalRuntime(partial) {
+  if (partial && typeof partial === "object") Object.assign(rt29, partial);
+}
+function getBackdrop() {
+  return document.getElementById("ea-registro-backdrop");
+}
+function getPasteBackdrop() {
+  return document.getElementById("ea-paste-backdrop");
+}
+function handleEaModalEscape(ev) {
+  if (ev.key !== "Escape" && ev.key !== "Esc") return;
+  var pasteBd = getPasteBackdrop();
+  if (pasteBd && pasteBd.classList.contains("open")) {
+    closeEstadoActualPasteModal();
+    ev.preventDefault();
+    ev.stopPropagation();
+    return;
+  }
+  var reg = getBackdrop();
+  if (reg && reg.classList.contains("open")) {
+    closeEstadoActualRegistroModal();
+    ev.preventDefault();
+    ev.stopPropagation();
+  }
+}
+function wireEaModalDismiss() {
+  if (dismissWired) return;
+  dismissWired = true;
+  document.addEventListener("keydown", handleEaModalEscape, true);
+  var reg = getBackdrop();
+  var pasteBd = getPasteBackdrop();
+  if (reg) {
+    reg.addEventListener("click", function(ev) {
+      if (!reg.classList.contains("open")) return;
+      if (ev.target !== reg) return;
+      closeEstadoActualRegistroModal();
+    });
+  }
+  if (pasteBd) {
+    pasteBd.addEventListener("click", function(ev) {
+      if (!pasteBd.classList.contains("open")) return;
+      var panel = pasteBd.querySelector(".ea-paste-modal");
+      if (panel && panel.contains(
+        /** @type {Node} */
+        ev.target
+      )) return;
+      closeEstadoActualPasteModal();
+    });
+  }
+}
+function openEstadoActualRegistroModal(opts) {
+  var backdrop = getBackdrop();
+  if (!backdrop) {
+    rt29.showToast("Formulario de registro no disponible", "error");
+    return;
+  }
+  rt29.ensureForm();
+  if (!opts || !opts.preserveForm) rt29.resetForm();
+  else if (typeof rt29.syncGluMode === "function") rt29.syncGluMode();
+  backdrop.classList.add("open");
+  backdrop.setAttribute("aria-hidden", "false");
+  document.documentElement.classList.add("ea-registro-modal-open");
+  var first = backdrop.querySelector('[data-ea-vital="tas"], [data-ea-vital="temp"]');
+  if (first && "focus" in first) first.focus();
+}
+function closeEstadoActualRegistroModal() {
+  closeEstadoActualPasteModal();
+  var backdrop = getBackdrop();
+  if (!backdrop) return;
+  backdrop.classList.remove("open");
+  backdrop.setAttribute("aria-hidden", "true");
+  document.documentElement.classList.remove("ea-registro-modal-open");
+}
+var windowHandlers13 = {
+  openEstadoActualRegistroModal,
+  closeEstadoActualRegistroModal
+};
 
 // public/js/app-runtimes.mjs
 var rt30 = {
@@ -44617,9 +43244,6 @@ function registerAllFeatureRuntimes() {
     handleDocumentGenerateResponse,
     guidedTourAdvanceAfterNotaGenerated,
     guidedTourAdvanceAfterIndicaGenerated,
-    onPitchTourDocFailed: function(step) {
-      if (isPitchTourActive2()) pitchTourAdvanceAfter(step);
-    },
     addAuditEntry
   });
   registerProcedureAgendaRuntime({
@@ -44710,7 +43334,7 @@ function registerAllFeatureRuntimes() {
     pushUndoSnapshot: pushUndoSnapshot2,
     setMedTabAttention,
     switchAppTab,
-    closeSettingsDropdown: closeSettingsDropdown2,
+    closeSettingsDropdown,
     extractParsedValues,
     buildParsedBySectionFromResLabs,
     ensureParsedLabHistory,
@@ -44744,7 +43368,7 @@ function registerAllFeatureRuntimes() {
     switchInnerTab,
     saveState,
     renderIndicaForm,
-    closeSettingsDropdown: closeSettingsDropdown2,
+    closeSettingsDropdown,
     openAddModal,
     addAuditEntry,
     showToast,
@@ -44774,7 +43398,7 @@ function registerAllFeatureRuntimes() {
     applyImportEntry,
     syncSettingsLanHostDiskSection,
     buildPatientEntry,
-    closeSettingsDropdown: closeSettingsDropdown2
+    closeSettingsDropdown
   });
 }
 function runInitialFeatureBoot() {
@@ -44792,13 +43416,13 @@ var allWindowHandlers = Object.assign(
   windowHandlers10,
   windowHandlers5,
   windowHandlers4,
-  windowHandlers3,
+  windowHandlers2,
   windowHandlers8,
-  windowHandlers11,
   windowHandlers12,
   windowHandlers13,
+  windowHandlers11,
   windowHandlers6,
-  windowHandlers2,
+  windowHandlers3,
   productivityWindowHandlers,
   settingsHelpWindowHandlers,
   platformWindowHandlers,
@@ -44894,8 +43518,8 @@ try {
 }
 function runDomBoot() {
   try {
-    if (recoverPitchTourPatientsOnBoot()) {
-      showToast("Se restaur\xF3 tu lista de pacientes tras el tour pitch.", "info");
+    if (recoverPresentationPatientsOnBoot()) {
+      showToast("Se restaur\xF3 tu lista de pacientes tras el modo presentaci\xF3n.", "info");
     }
     initModalDismiss();
     var todayEl = document.getElementById("today-date");

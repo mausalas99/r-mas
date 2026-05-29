@@ -21,6 +21,7 @@ let rt = {
   handleDocumentGenerateResponse() { return Promise.resolve(null); },
   guidedTourAdvanceAfterNotaGenerated() {},
   guidedTourAdvanceAfterIndicaGenerated() {},
+  onPitchTourDocFailed() {},
   addAuditEntry() {},
 };
 
@@ -143,7 +144,10 @@ function generateWord() {
       },
     });
   })
-  .catch(function(){ rt.showToast('Error de conexión','error'); })
+  .catch(function(){
+    rt.showToast('Error de conexión','error');
+    if (typeof rt.onPitchTourDocFailed === 'function') rt.onPitchTourDocFailed('ic_nota');
+  })
   .finally(function(){
     setAsyncButtonLoading(document.getElementById('btn-gen'), false);
     rt.decrementPendingJobs();
@@ -286,7 +290,10 @@ function generateIndicaciones() {
       },
     });
   })
-  .catch(function(){ rt.showToast('Error de conexión','error'); })
+  .catch(function(){
+    rt.showToast('Error de conexión','error');
+    if (typeof rt.onPitchTourDocFailed === 'function') rt.onPitchTourDocFailed('ic_indica');
+  })
   .finally(function(){
     setAsyncButtonLoading(document.getElementById('btn-gen-ind'), false);
     rt.decrementPendingJobs();

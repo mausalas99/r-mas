@@ -50,15 +50,19 @@ function ensureRegistroModalOpen() {
   }
 }
 
-export function openEstadoActualPasteModal() {
-  ensureRegistroModalOpen();
+/**
+ * @param {{ skipRegistro?: boolean, prefillSample?: boolean }} [opts]
+ */
+export function openEstadoActualPasteModal(opts) {
+  opts = opts || {};
+  if (!opts.skipRegistro) ensureRegistroModalOpen();
   var backdrop = document.getElementById('ea-paste-backdrop');
   var ta = getTextarea();
   if (!backdrop || !ta) {
     rt.showToast('Pegar monitoreo no disponible', 'error');
     return;
   }
-  ta.value = '';
+  ta.value = opts.prefillSample ? SAMPLE_TEXT : '';
   refreshPreview();
   backdrop.classList.add('open');
   backdrop.setAttribute('aria-hidden', 'false');

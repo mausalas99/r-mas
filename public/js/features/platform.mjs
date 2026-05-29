@@ -1818,7 +1818,7 @@ function installUpdate() {
   if (window.electronAPI) window.electronAPI.installUpdate();
 }
 
-if (window.electronAPI) {
+if (typeof window !== 'undefined' && window.electronAPI) {
   window.electronAPI.onUpdateAvailable(function(payload) {
     try {
       resetUpdateCheckButtons();

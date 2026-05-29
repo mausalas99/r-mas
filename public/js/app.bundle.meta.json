@@ -151,22 +151,6 @@
       ],
       "format": "esm"
     },
-    "public/js/tour-pitch-steps.mjs": {
-      "bytes": 780,
-      "imports": [],
-      "format": "esm"
-    },
-    "public/js/tour-pitch-targets.mjs": {
-      "bytes": 6388,
-      "imports": [
-        {
-          "path": "public/js/tour-pitch-steps.mjs",
-          "kind": "import-statement",
-          "original": "./tour-pitch-steps.mjs"
-        }
-      ],
-      "format": "esm"
-    },
     "public/js/labs.js": {
       "bytes": 117740,
       "imports": [],
@@ -291,11 +275,6 @@
       ],
       "format": "esm"
     },
-    "public/js/tour-guards.mjs": {
-      "bytes": 948,
-      "imports": [],
-      "format": "esm"
-    },
     "public/js/mode-features.mjs": {
       "bytes": 750,
       "imports": [],
@@ -304,27 +283,6 @@
     "public/js/features/chrome.mjs": {
       "bytes": 12787,
       "imports": [],
-      "format": "esm"
-    },
-    "public/js/ui-motion.mjs": {
-      "bytes": 4307,
-      "imports": [],
-      "format": "esm"
-    },
-    "public/js/features/notes-indicaciones.mjs": {
-      "bytes": 23729,
-      "imports": [
-        {
-          "path": "public/js/app-state.mjs",
-          "kind": "import-statement",
-          "original": "../app-state.mjs"
-        },
-        {
-          "path": "public/js/ui-motion.mjs",
-          "kind": "import-statement",
-          "original": "../ui-motion.mjs"
-        }
-      ],
       "format": "esm"
     },
     "public/js/features/soap-estado.mjs": {
@@ -364,6 +322,27 @@
       ],
       "format": "esm"
     },
+    "public/js/ui-motion.mjs": {
+      "bytes": 4307,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/features/notes-indicaciones.mjs": {
+      "bytes": 23729,
+      "imports": [
+        {
+          "path": "public/js/app-state.mjs",
+          "kind": "import-statement",
+          "original": "../app-state.mjs"
+        },
+        {
+          "path": "public/js/ui-motion.mjs",
+          "kind": "import-statement",
+          "original": "../ui-motion.mjs"
+        }
+      ],
+      "format": "esm"
+    },
     "public/js/tend-export.mjs": {
       "bytes": 16297,
       "imports": [],
@@ -378,6 +357,11 @@
           "original": "./tend-export.mjs"
         }
       ],
+      "format": "esm"
+    },
+    "public/js/tour-guards.mjs": {
+      "bytes": 512,
+      "imports": [],
       "format": "esm"
     },
     "public/js/features/lab-some-tables-modal.mjs": {
@@ -466,7 +450,7 @@
       "format": "esm"
     },
     "public/js/features/lab-panel.mjs": {
-      "bytes": 63878,
+      "bytes": 63705,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -507,11 +491,6 @@
           "path": "public/js/features/lab-bulk-preview-modal.mjs",
           "kind": "import-statement",
           "original": "./lab-bulk-preview-modal.mjs"
-        },
-        {
-          "path": "public/js/tour-guards.mjs",
-          "kind": "import-statement",
-          "original": "../tour-guards.mjs"
         },
         {
           "path": "public/js/tend-core.mjs",
@@ -567,7 +546,7 @@
       "format": "esm"
     },
     "public/js/features/expediente.mjs": {
-      "bytes": 46887,
+      "bytes": 46772,
       "imports": [
         {
           "path": "public/js/app-state.mjs",
@@ -1018,7 +997,7 @@
       "format": "esm"
     },
     "public/js/features/settings-help.mjs": {
-      "bytes": 98734,
+      "bytes": 97808,
       "imports": [
         {
           "path": "public/js/tour-targets.mjs",
@@ -1031,9 +1010,9 @@
           "original": "../tour-guards.mjs"
         },
         {
-          "path": "public/js/tour-pitch.mjs",
+          "path": "public/js/presentation-mode.mjs",
           "kind": "import-statement",
-          "original": "../tour-pitch.mjs"
+          "original": "../presentation-mode.mjs"
         },
         {
           "path": "public/js/features/profile.mjs",
@@ -2457,72 +2436,9 @@
       ],
       "format": "esm"
     },
-    "public/js/features/estado-actual-parse-variants.mjs": {
-      "bytes": 1507,
-      "imports": [],
-      "format": "esm"
-    },
-    "public/js/features/estado-actual-parser.mjs": {
-      "bytes": 13016,
+    "public/js/presentation-mode.mjs": {
+      "bytes": 4860,
       "imports": [
-        {
-          "path": "public/js/features/estado-actual-io.mjs",
-          "kind": "import-statement",
-          "original": "./estado-actual-io.mjs"
-        },
-        {
-          "path": "public/js/features/estado-actual-parse-variants.mjs",
-          "kind": "import-statement",
-          "original": "./estado-actual-parse-variants.mjs"
-        },
-        {
-          "path": "public/js/features/estado-actual-io.mjs",
-          "kind": "import-statement",
-          "original": "./estado-actual-io.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/features/estado-actual-paste-modal.mjs": {
-      "bytes": 3270,
-      "imports": [
-        {
-          "path": "public/js/features/estado-actual-parser.mjs",
-          "kind": "import-statement",
-          "original": "./estado-actual-parser.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/features/estado-actual-registro-modal.mjs": {
-      "bytes": 2925,
-      "imports": [
-        {
-          "path": "public/js/features/estado-actual-paste-modal.mjs",
-          "kind": "import-statement",
-          "original": "./estado-actual-paste-modal.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/tour-pitch-dock-placement.mjs": {
-      "bytes": 4792,
-      "imports": [],
-      "format": "esm"
-    },
-    "public/js/tour-pitch.mjs": {
-      "bytes": 40821,
-      "imports": [
-        {
-          "path": "public/js/tour-pitch-steps.mjs",
-          "kind": "import-statement",
-          "original": "./tour-pitch-steps.mjs"
-        },
-        {
-          "path": "public/js/tour-pitch-targets.mjs",
-          "kind": "import-statement",
-          "original": "./tour-pitch-targets.mjs"
-        },
         {
           "path": "public/js/tour-pitch-demo-seed.mjs",
           "kind": "import-statement",
@@ -2534,34 +2450,9 @@
           "original": "./app-state.mjs"
         },
         {
-          "path": "public/js/tour-guards.mjs",
-          "kind": "import-statement",
-          "original": "./tour-guards.mjs"
-        },
-        {
-          "path": "public/js/tour-demo-listado-problemas.mjs",
-          "kind": "import-statement",
-          "original": "./tour-demo-listado-problemas.mjs"
-        },
-        {
-          "path": "public/js/mode-features.mjs",
-          "kind": "import-statement",
-          "original": "./mode-features.mjs"
-        },
-        {
-          "path": "public/js/features/chrome.mjs",
-          "kind": "import-statement",
-          "original": "./features/chrome.mjs"
-        },
-        {
           "path": "public/js/app-state.mjs",
           "kind": "import-statement",
           "original": "./app-state.mjs"
-        },
-        {
-          "path": "public/js/features/notes-indicaciones.mjs",
-          "kind": "import-statement",
-          "original": "./features/notes-indicaciones.mjs"
         },
         {
           "path": "public/js/features/patients.mjs",
@@ -2569,79 +2460,14 @@
           "original": "./features/patients.mjs"
         },
         {
-          "path": "public/js/features/pase-board.mjs",
-          "kind": "import-statement",
-          "original": "./features/pase-board.mjs"
-        },
-        {
-          "path": "public/js/features/todos.mjs",
-          "kind": "import-statement",
-          "original": "./features/todos.mjs"
-        },
-        {
-          "path": "public/js/tour-pitch-demo-todos.mjs",
-          "kind": "import-statement",
-          "original": "./tour-pitch-demo-todos.mjs"
-        },
-        {
-          "path": "public/js/features/lab-panel.mjs",
-          "kind": "import-statement",
-          "original": "./features/lab-panel.mjs"
-        },
-        {
-          "path": "public/js/features/sesion-ingreso-trends-send-modal.mjs",
-          "kind": "import-statement",
-          "original": "./features/sesion-ingreso-trends-send-modal.mjs"
-        },
-        {
-          "path": "public/js/features/soap-estado.mjs",
-          "kind": "import-statement",
-          "original": "./features/soap-estado.mjs"
-        },
-        {
-          "path": "public/js/features/lan-sync.mjs",
-          "kind": "import-statement",
-          "original": "./features/lan-sync.mjs"
-        },
-        {
-          "path": "public/js/features/lab-some-tables-modal.mjs",
-          "kind": "import-statement",
-          "original": "./features/lab-some-tables-modal.mjs"
-        },
-        {
-          "path": "public/js/features/lab-panel.mjs",
-          "kind": "import-statement",
-          "original": "./features/lab-panel.mjs"
-        },
-        {
-          "path": "public/js/features/lab-bulk-preview-modal.mjs",
-          "kind": "import-statement",
-          "original": "./features/lab-bulk-preview-modal.mjs"
-        },
-        {
           "path": "public/js/features/expediente.mjs",
           "kind": "import-statement",
           "original": "./features/expediente.mjs"
         },
         {
-          "path": "public/js/features/tendencias.mjs",
+          "path": "public/js/features/lab-panel.mjs",
           "kind": "import-statement",
-          "original": "./features/tendencias.mjs"
-        },
-        {
-          "path": "public/js/features/estado-actual-paste-modal.mjs",
-          "kind": "import-statement",
-          "original": "./features/estado-actual-paste-modal.mjs"
-        },
-        {
-          "path": "public/js/features/estado-actual-registro-modal.mjs",
-          "kind": "import-statement",
-          "original": "./features/estado-actual-registro-modal.mjs"
-        },
-        {
-          "path": "public/js/tour-pitch-dock-placement.mjs",
-          "kind": "import-statement",
-          "original": "./tour-pitch-dock-placement.mjs"
+          "original": "./features/lab-panel.mjs"
         }
       ],
       "format": "esm"
@@ -2864,8 +2690,56 @@
       ],
       "format": "esm"
     },
+    "public/js/features/estado-actual-parse-variants.mjs": {
+      "bytes": 1507,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/features/estado-actual-parser.mjs": {
+      "bytes": 13016,
+      "imports": [
+        {
+          "path": "public/js/features/estado-actual-io.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-io.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-parse-variants.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-parse-variants.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-io.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-io.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/features/estado-actual-paste-modal.mjs": {
+      "bytes": 3270,
+      "imports": [
+        {
+          "path": "public/js/features/estado-actual-parser.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-parser.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/features/estado-actual-registro-modal.mjs": {
+      "bytes": 2925,
+      "imports": [
+        {
+          "path": "public/js/features/estado-actual-paste-modal.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-paste-modal.mjs"
+        }
+      ],
+      "format": "esm"
+    },
     "public/js/app-runtimes.mjs": {
-      "bytes": 20684,
+      "bytes": 20502,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -2993,11 +2867,6 @@
           "original": "./features/settings-help.mjs"
         },
         {
-          "path": "public/js/tour-pitch.mjs",
-          "kind": "import-statement",
-          "original": "./tour-pitch.mjs"
-        },
-        {
           "path": "public/js/features/platform.mjs",
           "kind": "import-statement",
           "original": "./features/platform.mjs"
@@ -3101,7 +2970,7 @@
       "format": "esm"
     },
     "public/js/app.js": {
-      "bytes": 7241,
+      "bytes": 7262,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -3114,9 +2983,9 @@
           "original": "./app-state.mjs"
         },
         {
-          "path": "public/js/tour-pitch.mjs",
+          "path": "public/js/presentation-mode.mjs",
           "kind": "import-statement",
-          "original": "./tour-pitch.mjs"
+          "original": "./presentation-mode.mjs"
         },
         {
           "path": "public/js/app-runtimes.mjs",
@@ -3252,7 +3121,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 3113845
+      "bytes": 3033777
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -3301,12 +3170,6 @@
         "public/js/app-state.mjs": {
           "bytesInOutput": 4386
         },
-        "public/js/tour-pitch-steps.mjs": {
-          "bytesInOutput": 695
-        },
-        "public/js/tour-pitch-targets.mjs": {
-          "bytesInOutput": 5512
-        },
         "public/js/labs.js": {
           "bytesInOutput": 110559
         },
@@ -3335,10 +3198,7 @@
           "bytesInOutput": 2535
         },
         "public/js/tour-pitch-demo-seed.mjs": {
-          "bytesInOutput": 16536
-        },
-        "public/js/tour-guards.mjs": {
-          "bytesInOutput": 831
+          "bytesInOutput": 15982
         },
         "public/js/mode-features.mjs": {
           "bytesInOutput": 530
@@ -3346,23 +3206,26 @@
         "public/js/features/chrome.mjs": {
           "bytesInOutput": 12542
         },
+        "public/js/features/soap-estado.mjs": {
+          "bytesInOutput": 10865
+        },
+        "public/js/features/estado-actual-meds.mjs": {
+          "bytesInOutput": 3603
+        },
         "public/js/ui-motion.mjs": {
           "bytesInOutput": 4081
         },
         "public/js/features/notes-indicaciones.mjs": {
-          "bytesInOutput": 21971
-        },
-        "public/js/features/soap-estado.mjs": {
-          "bytesInOutput": 10885
-        },
-        "public/js/features/estado-actual-meds.mjs": {
-          "bytesInOutput": 3603
+          "bytesInOutput": 22017
         },
         "public/js/tend-export.mjs": {
           "bytesInOutput": 13748
         },
         "public/js/labs-some-table.mjs": {
           "bytesInOutput": 32702
+        },
+        "public/js/tour-guards.mjs": {
+          "bytesInOutput": 411
         },
         "public/js/features/lab-some-tables-modal.mjs": {
           "bytesInOutput": 3012
@@ -3383,7 +3246,7 @@
           "bytesInOutput": 5024
         },
         "public/js/features/lab-panel.mjs": {
-          "bytesInOutput": 57938
+          "bytesInOutput": 57821
         },
         "public/js/listado-problemas-ai-prompt.mjs": {
           "bytesInOutput": 3689
@@ -3392,7 +3255,7 @@
           "bytesInOutput": 736
         },
         "public/js/features/expediente.mjs": {
-          "bytesInOutput": 42645
+          "bytesInOutput": 42530
         },
         "public/js/tend-prefs.mjs": {
           "bytesInOutput": 6068
@@ -3443,7 +3306,7 @@
           "bytesInOutput": 635
         },
         "public/js/features/platform.mjs": {
-          "bytesInOutput": 66667
+          "bytesInOutput": 66666
         },
         "public/js/clinico-access.mjs": {
           "bytesInOutput": 2262
@@ -3464,7 +3327,7 @@
           "bytesInOutput": 4407
         },
         "public/js/features/settings-help.mjs": {
-          "bytesInOutput": 92092
+          "bytesInOutput": 91415
         },
         "public/js/features/tendencias.mjs": {
           "bytesInOutput": 64987
@@ -3625,23 +3488,8 @@
         "public/js/features/patients.mjs": {
           "bytesInOutput": 44299
         },
-        "public/js/features/estado-actual-parse-variants.mjs": {
-          "bytesInOutput": 982
-        },
-        "public/js/features/estado-actual-parser.mjs": {
-          "bytesInOutput": 10371
-        },
-        "public/js/features/estado-actual-paste-modal.mjs": {
-          "bytesInOutput": 2686
-        },
-        "public/js/features/estado-actual-registro-modal.mjs": {
-          "bytesInOutput": 2619
-        },
-        "public/js/tour-pitch-dock-placement.mjs": {
-          "bytesInOutput": 4204
-        },
-        "public/js/tour-pitch.mjs": {
-          "bytesInOutput": 37557
+        "public/js/presentation-mode.mjs": {
+          "bytesInOutput": 3984
         },
         "public/js/quick-output.mjs": {
           "bytesInOutput": 881
@@ -3662,16 +3510,28 @@
           "bytesInOutput": 16114
         },
         "public/js/app-shell.mjs": {
-          "bytesInOutput": 28232
+          "bytesInOutput": 28230
+        },
+        "public/js/features/estado-actual-parse-variants.mjs": {
+          "bytesInOutput": 982
+        },
+        "public/js/features/estado-actual-parser.mjs": {
+          "bytesInOutput": 10371
+        },
+        "public/js/features/estado-actual-paste-modal.mjs": {
+          "bytesInOutput": 2686
+        },
+        "public/js/features/estado-actual-registro-modal.mjs": {
+          "bytesInOutput": 2619
         },
         "public/js/app-runtimes.mjs": {
-          "bytesInOutput": 12155
+          "bytesInOutput": 11972
         },
         "public/js/app.js": {
-          "bytesInOutput": 4440
+          "bytesInOutput": 4453
         }
       },
-      "bytes": 1715701
+      "bytes": 1669578
     }
   }
 }

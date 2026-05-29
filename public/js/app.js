@@ -1,5 +1,6 @@
 import { storage } from './storage.js';
 import { initAppState, patients, setSaveStateHooks, flushSaveState } from './app-state.mjs';
+import { recoverPresentationPatientsOnBoot } from './presentation-mode.mjs';
 import {
   registerAppRuntimeContext,
   registerAllFeatureRuntimes,
@@ -164,6 +165,9 @@ try {
 
 function runDomBoot() {
   try {
+    if (recoverPresentationPatientsOnBoot()) {
+      showToast('Se restauró tu lista de pacientes tras el modo presentación.', 'info');
+    }
     initModalDismiss();
     var todayEl = document.getElementById('today-date');
     if (todayEl) {

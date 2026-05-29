@@ -6,16 +6,11 @@ import {
 } from '../tour-targets.mjs';
 import { syncGuidedTourContext } from '../tour-guards.mjs';
 import {
-  isPitchTourActive,
-  pitchTourClickNext,
-  pitchTourAdvanceAfter,
-  skipPitchTour,
-  startPitchTour,
-  syncPitchTourUnlockButton,
-  initPitchTourUnlockShortcut,
-  registerPitchTourRuntime,
-  onPitchDockCollapsedChange,
-} from '../tour-pitch.mjs';
+  isPresentationModeActive,
+  startPresentationMode,
+  stopPresentationMode,
+  registerPresentationRuntime,
+} from '../presentation-mode.mjs';
 import { applyAppModeSwitchEffects } from './profile.mjs';
 import { DEMO_TOUR_LAB_PASTE, DEMO_GARCIA_LAB_REPORT, DEMO_SOME_LAB_REPORT, OLDER_DEMO_SOME_LAB_REPORT } from '../tour-demo-some-lab.mjs';
 import { LAB_BULK_PATIENT_SEPARATOR } from '../lab-bulk-paste.mjs';
@@ -91,17 +86,11 @@ let rt = {
 export function registerSettingsHelpRuntime(partial) {
   if (!partial || typeof partial !== 'object') return;
   Object.assign(rt, partial);
-  registerPitchTourRuntime(Object.assign({}, rt, {
-    toggleSettingsDropdown: toggleSettingsDropdown,
-    closeSettingsDropdown: closeSettingsDropdown,
-    openLabBulkTourHintModal: openLabBulkTourHintModal,
-    closeLabBulkTourHintModal: closeLabBulkTourHintModal,
-    applyAppModeSwitchEffects: applyAppModeSwitchEffects,
-    renderPaseBoard: renderPaseBoard,
-    renderRoundOverviewPanels: renderRoundOverviewPanels,
-    renderLabHistoryPanel: renderLabHistoryPanel,
-    setRoundOverviewMode: setRoundOverviewMode,
-  }));
+  registerPresentationRuntime({
+    getActiveId: rt.getActiveId,
+    setActiveId: rt.setActiveId,
+    showToast: rt.showToast,
+  });
 }
 
 var TEND_SECTION_EXPANDED_LS = 'rpc-tend-sections-expanded';
@@ -155,7 +144,6 @@ function toggleSettingsDropdown() {
   if (trigger) trigger.setAttribute('aria-expanded', !open ? 'true' : 'false');
   if (!open) rt.syncPreimportBackupUi();
   if (!open) rt.syncSettingsLanHostDiskSection();
-  if (!open) syncPitchTourUnlockButton();
 }
 export function closeSettingsDropdown() {
   var dd = document.getElementById('settings-dropdown');
@@ -235,8 +223,6 @@ export function normalizeTourVersionLabel(v) {
 }
 
 function initGuidedTourGate() {
-  initPitchTourUnlockShortcut();
-  syncPitchTourUnlockButton();
   if (isMobileWeb()) return;
   resolveAppVersionForTour()
     .then(function (v) {
@@ -331,9 +317,6 @@ function setTourDockCollapsed(collapsed) {
     btn.textContent = collapsed ? '+' : '–';
     btn.setAttribute('aria-label', collapsed ? 'Expandir tutorial' : 'Minimizar tutorial');
   }
-  if (document.body.classList.contains('pitch-tour-active')) {
-    onPitchDockCollapsedChange(collapsed);
-  }
 }
 
 // Click en cualquier parte del dock colapsado lo expande (excepto en
@@ -341,7 +324,6 @@ function setTourDockCollapsed(collapsed) {
 function onTourDockClick(ev) {
   var d = document.getElementById('tour-dock');
   if (!d || !d.classList.contains('tour-dock-collapsed')) return;
-  if (document.body.classList.contains('pitch-tour-active')) return;
   var t = ev && ev.target;
   if (t && t.closest && t.closest('.btn-tour-skip, .btn-tour-collapse, .btn-tour-next')) return;
   setTourDockCollapsed(false);
@@ -761,7 +743,6 @@ function renderTourStep() {
 
 function guidedTourClickNext() {
   if (miniTourActive) { miniTourNext(); return; }
-  if (isPitchTourActive()) { pitchTourClickNext(); return; }
   if (!guidedTourActive) return;
   var steps = getGuidedTourSteps();
   var i = steps.indexOf(tourStepId);
@@ -808,12 +789,10 @@ export function guidedTourAdvanceAfter(actionStep) {
   publishTourGuardContext();
 }
 function guidedTourAdvanceAfterNotaGenerated() {
-  if (isPitchTourActive()) pitchTourAdvanceAfter('ic_nota');
-  else guidedTourAdvanceAfter('ic_nota');
+  guidedTourAdvanceAfter('ic_nota');
 }
 function guidedTourAdvanceAfterIndicaGenerated() {
-  if (isPitchTourActive()) pitchTourAdvanceAfter('ic_indica');
-  else guidedTourAdvanceAfter('ic_indica');
+  guidedTourAdvanceAfter('ic_indica');
 }
 
 function completeGuidedTourWithCelebration() {
@@ -831,7 +810,6 @@ function completeGuidedTourWithCelebration() {
 
 function skipGuidedTour() {
   if (miniTourActive) { endMiniTour(); return; }
-  if (isPitchTourActive()) { skipPitchTour(); return; }
   clearTourSoapButtonHighlight();
   markGuidedTourVersionDone();
   guidedTourActive = false;
@@ -1360,6 +1338,16 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '6.3.6': [
+    {
+      title: 'TODO',
+      body: 'Completar antes de publicar.',
+    },
+    {
+      title: 'TODO',
+      body: 'Completar antes de publicar.',
+    },
+  ],
   '6.3.5': [
     {
       title: 'Bomba de insulina (switch)',
@@ -2202,23 +2190,24 @@ function endMiniTour() {
 
 function startHelpTourMain() {
   if (miniTourActive) endMiniTour();
-  if (isPitchTourActive()) {
-    rt.showToast('Finaliza el tour pitch antes de iniciar el tutorial guiado.', 'error');
+  if (isPresentationModeActive()) {
+    rt.showToast('Finaliza el modo presentación antes de iniciar el tutorial guiado.', 'error');
     return;
   }
   closeQuickHelp();
   resetAndStartOnboarding();
 }
 
-function startPitchTourFromHelp() {
+function togglePresentationModeFromHelp() {
   if (guidedTourActive) {
-    rt.showToast('Finaliza el tutorial guiado antes del tour pitch.', 'error');
+    rt.showToast('Finaliza el tutorial guiado antes del modo presentación.', 'error');
     return;
   }
   if (miniTourActive) endMiniTour();
   closeQuickHelp();
   closeSettingsDropdown();
-  startPitchTour();
+  if (isPresentationModeActive()) stopPresentationMode();
+  else startPresentationMode();
 }
 
 export {
@@ -2250,7 +2239,7 @@ export const settingsHelpWindowHandlers = {
   closeReleaseNotes,
   startMiniTour,
   startHelpTourMain,
-  startPitchTourFromHelp,
+  togglePresentationModeFromHelp,
   guidedTourIntroChooseSala,
   guidedTourIntroChooseInterconsulta,
   guidedTourIntroSkip,

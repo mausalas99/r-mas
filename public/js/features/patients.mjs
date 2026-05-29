@@ -27,8 +27,13 @@ import {
 } from './lan-sync.mjs';
 import { stagePatientDelete } from '../patient-delete-sync.mjs';
 import { ensureMonitoreo } from './estado-actual-data.mjs';
+import { filterPatientsForPitchTour } from '../tour-pitch-demo-seed.mjs';
 
 const DEMO_PATIENT_ID = 'demo-onboarding';
+
+function patientsVisibleInSidebar() {
+  return filterPatientsForPitchTour(patients);
+}
 
 let rt = {
   getActiveId() {
@@ -798,14 +803,15 @@ function renderPatientListNow() {
   var isRonda = isPaseMode();
   list.classList.toggle('patient-list--ronda', isRonda);
 
-  if (!patients.length) {
+  var visiblePatients = patientsVisibleInSidebar();
+  if (!visiblePatients.length) {
     list.innerHTML =
       '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">Sin pacientes aún</div>';
     _lastRondaNavIds = [];
     if (rt.getActiveAppTab() === 'agenda') rt.renderProcedureAgendaPanel();
     return;
   }
-  var filtered = patients.filter(patientMatchesSearch);
+  var filtered = visiblePatients.filter(patientMatchesSearch);
   if (!filtered.length) {
     list.innerHTML =
       '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">Ningún paciente coincide con la búsqueda</div>';

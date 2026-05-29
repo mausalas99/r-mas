@@ -27,10 +27,16 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [6.3.5](https://github.com/mausalas99/r-mas/releases/tag/v6.3.5) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.3.6](https://github.com/mausalas99/r-mas/releases/tag/v6.3.6) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 6.3.6 (estable — release 6.3.6)
+
+- **TODO:** completar bullets en README.
+
+Notas: `docs/RELEASE_NOTES_6.3.6.txt`.
 ## R+ 6.3.5 (Bomba con switch, Unirse a sala y ajustes de monitoreo)
 
 - **Estado Actual** — Interruptor **Bomba de insulina** (estilo laboratorio): activado sustituye las glucometrías normales por filas Glu + Unidades + Hora; layout del botón × corregido.

@@ -2409,7 +2409,7 @@ export function parseCultivo_(textoBruto, tNorm) {
       var sliceLines = lineasTexto.slice(run.i0, run.i1);
       var subNorm = sliceLines.join('\n');
       var idxAbLoc = subNorm.toUpperCase().indexOf('ANTIBIOGRAMA');
-      var head = (ri === 0) ? (sitio + ' ' + fechaC + ': ' + run.germen) : run.germen;
+      var head = sitio + ' ' + fechaC + ': ' + run.germen;
       if (ri === 0 && marcasRes.length) head += ' · ' + marcasRes.join(' · ');
       var chunk = head;
       if (idxAbLoc !== -1) {

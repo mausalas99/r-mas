@@ -10,6 +10,10 @@ import {
 } from "../app-state.mjs";
 import { storage } from "../storage.js";
 import { isPaseMode } from "./chrome.mjs";
+import {
+  filterPatientsForPitchTour,
+  isPitchPatientIsolationActive,
+} from "../tour-pitch-demo-seed.mjs";
 
 let rt = {
   getActiveId() {
@@ -246,9 +250,10 @@ export function updateUnifiedSearchResults() {
   }
   var out = [];
   var MAX = 40;
-  for (var i = 0; i < patients.length && out.length < MAX; i += 1) {
-    var p = patients[i];
-    if (p.isDemo) continue;
+  var searchPatients = filterPatientsForPitchTour(patients);
+  for (var i = 0; i < searchPatients.length && out.length < MAX; i += 1) {
+    var p = searchPatients[i];
+    if (p.isDemo && !isPitchPatientIsolationActive()) continue;
     var meta = [p.nombre, p.registro, p.cuarto, p.cama, p.servicio, p.area].filter(Boolean).join(" · ");
     var metaLc = meta.toLowerCase();
     var metaStr =

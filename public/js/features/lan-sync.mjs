@@ -1,5 +1,6 @@
 // Built from app.js refactor — LAN / LiveSync
 import { storage } from "../storage.js";
+import { isPitchPatientIsolationActive } from "../tour-pitch-demo-seed.mjs";
 import { LanClient } from "../lan-client.mjs";
 import {
   mergeLiveSyncBundles,
@@ -746,6 +747,7 @@ function applyLiveSyncPatientDeletes(deletes, idMap) {
 
 function applyLiveSyncMerged(merged) {
   if (!merged) return;
+  if (isPitchPatientIsolationActive()) return;
   var entries = merged.entries || [];
   if (entries.length) {
     applyLanPatientEntries(entries);
@@ -971,6 +973,7 @@ function buildLiveSyncBundleEnvelope(roomId) {
 }
 function scheduleLiveSyncPush() {
   if (!activeLiveSyncRoomId) return;
+  if (isPitchPatientIsolationActive()) return;
   if (_liveSyncPushTimer) clearTimeout(_liveSyncPushTimer);
   _liveSyncPushTimer = setTimeout(function () {
     _liveSyncPushTimer = null;
