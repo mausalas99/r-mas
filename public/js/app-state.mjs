@@ -16,9 +16,33 @@ export let medNotaSelectionByPatient = {};
 let _beforeSave = null;
 let _afterSave = null;
 let _onSaveResult = null;
+let _persistPatientsResolver = null;
 let _saveTimer = null;
 let _saveInFlight = null;
 const SAVE_DEBOUNCE_MS = 400;
+
+/**
+ * Durante el tour pitch la lista en memoria son solo demos; al persistir se usa el respaldo real.
+ * @param {(() => import('./app-state.mjs').patients | undefined) | null} fn
+ */
+export function setPersistPatientsResolver(fn) {
+  _persistPatientsResolver = typeof fn === 'function' ? fn : null;
+}
+
+function patientsForPersistence() {
+  if (_persistPatientsResolver) {
+    const overridden = _persistPatientsResolver();
+    if (Array.isArray(overridden) && overridden.length) return overridden;
+    const filtered = patients.filter(function (p) {
+      return p && p.id !== 'demo-pitch' && p.id !== 'demo-pitch-2' && !p.isDemo;
+    });
+    if (filtered.length) return filtered;
+    const stored = storage.getPatients();
+    if (Array.isArray(stored) && stored.length) return stored;
+    return [];
+  }
+  return patients;
+}
 
 export function setPatients(next) {
   patients = next;
@@ -108,7 +132,7 @@ function notifySaveResult(result) {
 function runSaveNow() {
   if (_beforeSave) _beforeSave();
   var promise = storage.saveAll(
-    patients,
+    patientsForPersistence(),
     notes,
     indicaciones,
     labHistory,

@@ -526,15 +526,34 @@ export function clearPitchDemo(state) {
   } = state;
 
   setPitchPatientIsolation(false);
-  const restoredPatients = restorePitchPatientsBackup();
+  let restoredPatients = restorePitchPatientsBackup();
+  if (!restoredPatients || !restoredPatients.length) {
+    const sandbox = readPitchSandboxBackup();
+    if (sandbox && Array.isArray(sandbox.patients) && sandbox.patients.length) {
+      restoredPatients = sandbox.patients.slice();
+    }
+  }
   if (restoredPatients && restoredPatients.length) {
     setPatients(restoredPatients);
   } else {
-    setPatients(
-      patients.filter(function (p) {
-        return p.id !== PITCH_DEMO_PATIENT_ID && p.id !== PITCH_DEMO_PATIENT_ID_2;
-      })
-    );
+    const filtered = patients.filter(function (p) {
+      return (
+        p &&
+        p.id !== PITCH_DEMO_PATIENT_ID &&
+        p.id !== PITCH_DEMO_PATIENT_ID_2 &&
+        !p.isDemo
+      );
+    });
+    if (filtered.length) {
+      setPatients(filtered);
+    } else {
+      const sandbox = readPitchSandboxBackup();
+      if (sandbox && Array.isArray(sandbox.patients) && sandbox.patients.length) {
+        setPatients(sandbox.patients.slice());
+      } else {
+        setPatients(filtered);
+      }
+    }
   }
   pitchPatientsBackup = null;
 

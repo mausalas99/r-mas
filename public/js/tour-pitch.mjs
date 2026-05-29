@@ -1091,7 +1091,7 @@ export function recoverPitchTourPatientsOnBoot() {
   return true;
 }
 
-export function stopPitchTour(opts) {
+export function exitPitchTour(opts) {
   var celebrate = opts && opts.celebrate;
   closePitchTourOverlays();
   removePitchDockListeners();
@@ -1100,7 +1100,6 @@ export function stopPitchTour(opts) {
     pitchDockRepositionRaf = 0;
   }
   setPersistPatientsResolver(null);
-  setPitchPatientIsolation(false);
   clearPitchTourVisuals();
   pitchTourActive = false;
   pitchStepId = null;
@@ -1110,7 +1109,6 @@ export function stopPitchTour(opts) {
   setUiDensity('normal');
   switchAppModeForPitch('sala');
   clearPitchDemo(getPitchDemoState());
-  markPitchTourSessionActive(false);
   document.body.classList.remove('pitch-tour-active', 'pitch-step-listado', 'pitch-step-pase-mode');
   limpiarReporte();
   if (typeof rt.closeLabBulkTourHintModal === 'function') rt.closeLabBulkTourHintModal();
@@ -1125,6 +1123,10 @@ export function stopPitchTour(opts) {
     selectPatient(rt.getActiveId());
   }
   if (celebrate && typeof rt.launchConfetti === 'function') rt.launchConfetti();
+}
+
+export function stopPitchTour(opts) {
+  exitPitchTour(opts);
 }
 
 export function skipPitchTour() {
