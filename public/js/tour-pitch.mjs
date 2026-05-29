@@ -10,6 +10,7 @@ import {
 import {
   seedPitchDemo,
   clearPitchDemo,
+  reconcilePitchCultivoHistory,
   setPitchPatientIsolation,
   resolvePitchPersistPatients,
   markPitchTourSessionActive,
@@ -746,7 +747,9 @@ export function enterPitchStep(stepId) {
     }, 200);
   }
   if (stepId === 'pitch_cultivos') {
+    reconcilePitchCultivoHistory(labHistory);
     invalidateCultivosTableCache();
+    seedPitchDemoTodos();
     if (typeof rt.renderLabHistoryPanel === 'function') rt.renderLabHistoryPanel();
     setTimeout(function () {
       if (!pitchTourActive || pitchStepId !== 'pitch_cultivos') return;
