@@ -5,6 +5,18 @@ import {
   stepRequiresUserAction,
 } from '../tour-targets.mjs';
 import { syncGuidedTourContext } from '../tour-guards.mjs';
+import {
+  isPitchTourActive,
+  pitchTourClickNext,
+  pitchTourAdvanceAfter,
+  skipPitchTour,
+  startPitchTour,
+  syncPitchTourUnlockButton,
+  initPitchTourUnlockShortcut,
+  registerPitchTourRuntime,
+  onPitchDockCollapsedChange,
+} from '../tour-pitch.mjs';
+import { applyAppModeSwitchEffects } from './profile.mjs';
 import { DEMO_TOUR_LAB_PASTE, DEMO_GARCIA_LAB_REPORT, DEMO_SOME_LAB_REPORT, OLDER_DEMO_SOME_LAB_REPORT } from '../tour-demo-some-lab.mjs';
 import { LAB_BULK_PATIENT_SEPARATOR } from '../lab-bulk-paste.mjs';
 import { buildTourDemoListadoProblemas } from '../tour-demo-listado-problemas.mjs';
@@ -17,6 +29,10 @@ import {
 } from './lan-sync.mjs';
 import { renderPatientList, selectPatient } from './patients.mjs';
 import { renderNoteForm, renderIndicaForm } from './notes-indicaciones.mjs';
+import { renderPaseBoard } from './pase-board.mjs';
+import { setRoundOverviewMode } from './patients.mjs';
+import { renderRoundOverviewPanels } from './patients.mjs';
+import { renderLabHistoryPanel } from './lab-panel.mjs';
 import { limpiarReporte } from './lab-panel.mjs';
 import { closeLabSomeTablesModal } from './lab-some-tables-modal.mjs';
 import { closeTendGroupModal } from './tendencias.mjs';
@@ -75,6 +91,17 @@ let rt = {
 export function registerSettingsHelpRuntime(partial) {
   if (!partial || typeof partial !== 'object') return;
   Object.assign(rt, partial);
+  registerPitchTourRuntime(Object.assign({}, rt, {
+    toggleSettingsDropdown: toggleSettingsDropdown,
+    closeSettingsDropdown: closeSettingsDropdown,
+    openLabBulkTourHintModal: openLabBulkTourHintModal,
+    closeLabBulkTourHintModal: closeLabBulkTourHintModal,
+    applyAppModeSwitchEffects: applyAppModeSwitchEffects,
+    renderPaseBoard: renderPaseBoard,
+    renderRoundOverviewPanels: renderRoundOverviewPanels,
+    renderLabHistoryPanel: renderLabHistoryPanel,
+    setRoundOverviewMode: setRoundOverviewMode,
+  }));
 }
 
 var TEND_SECTION_EXPANDED_LS = 'rpc-tend-sections-expanded';
@@ -128,6 +155,7 @@ function toggleSettingsDropdown() {
   if (trigger) trigger.setAttribute('aria-expanded', !open ? 'true' : 'false');
   if (!open) rt.syncPreimportBackupUi();
   if (!open) rt.syncSettingsLanHostDiskSection();
+  if (!open) syncPitchTourUnlockButton();
 }
 export function closeSettingsDropdown() {
   var dd = document.getElementById('settings-dropdown');
@@ -207,6 +235,8 @@ export function normalizeTourVersionLabel(v) {
 }
 
 function initGuidedTourGate() {
+  initPitchTourUnlockShortcut();
+  syncPitchTourUnlockButton();
   if (isMobileWeb()) return;
   resolveAppVersionForTour()
     .then(function (v) {
@@ -301,6 +331,9 @@ function setTourDockCollapsed(collapsed) {
     btn.textContent = collapsed ? '+' : '–';
     btn.setAttribute('aria-label', collapsed ? 'Expandir tutorial' : 'Minimizar tutorial');
   }
+  if (document.body.classList.contains('pitch-tour-active')) {
+    onPitchDockCollapsedChange(collapsed);
+  }
 }
 
 // Click en cualquier parte del dock colapsado lo expande (excepto en
@@ -308,6 +341,7 @@ function setTourDockCollapsed(collapsed) {
 function onTourDockClick(ev) {
   var d = document.getElementById('tour-dock');
   if (!d || !d.classList.contains('tour-dock-collapsed')) return;
+  if (document.body.classList.contains('pitch-tour-active')) return;
   var t = ev && ev.target;
   if (t && t.closest && t.closest('.btn-tour-skip, .btn-tour-collapse, .btn-tour-next')) return;
   setTourDockCollapsed(false);
@@ -727,6 +761,7 @@ function renderTourStep() {
 
 function guidedTourClickNext() {
   if (miniTourActive) { miniTourNext(); return; }
+  if (isPitchTourActive()) { pitchTourClickNext(); return; }
   if (!guidedTourActive) return;
   var steps = getGuidedTourSteps();
   var i = steps.indexOf(tourStepId);
@@ -772,8 +807,14 @@ export function guidedTourAdvanceAfter(actionStep) {
   renderTourStep();
   publishTourGuardContext();
 }
-function guidedTourAdvanceAfterNotaGenerated() { guidedTourAdvanceAfter('ic_nota'); }
-function guidedTourAdvanceAfterIndicaGenerated() { guidedTourAdvanceAfter('ic_indica'); }
+function guidedTourAdvanceAfterNotaGenerated() {
+  if (isPitchTourActive()) pitchTourAdvanceAfter('ic_nota');
+  else guidedTourAdvanceAfter('ic_nota');
+}
+function guidedTourAdvanceAfterIndicaGenerated() {
+  if (isPitchTourActive()) pitchTourAdvanceAfter('ic_indica');
+  else guidedTourAdvanceAfter('ic_indica');
+}
 
 function completeGuidedTourWithCelebration() {
   clearTourSoapButtonHighlight();
@@ -790,6 +831,7 @@ function completeGuidedTourWithCelebration() {
 
 function skipGuidedTour() {
   if (miniTourActive) { endMiniTour(); return; }
+  if (isPitchTourActive()) { skipPitchTour(); return; }
   clearTourSoapButtonHighlight();
   markGuidedTourVersionDone();
   guidedTourActive = false;
@@ -2160,8 +2202,23 @@ function endMiniTour() {
 
 function startHelpTourMain() {
   if (miniTourActive) endMiniTour();
+  if (isPitchTourActive()) {
+    rt.showToast('Finaliza el tour pitch antes de iniciar el tutorial guiado.', 'error');
+    return;
+  }
   closeQuickHelp();
   resetAndStartOnboarding();
+}
+
+function startPitchTourFromHelp() {
+  if (guidedTourActive) {
+    rt.showToast('Finaliza el tutorial guiado antes del tour pitch.', 'error');
+    return;
+  }
+  if (miniTourActive) endMiniTour();
+  closeQuickHelp();
+  closeSettingsDropdown();
+  startPitchTour();
 }
 
 export {
@@ -2193,6 +2250,7 @@ export const settingsHelpWindowHandlers = {
   closeReleaseNotes,
   startMiniTour,
   startHelpTourMain,
+  startPitchTourFromHelp,
   guidedTourIntroChooseSala,
   guidedTourIntroChooseInterconsulta,
   guidedTourIntroSkip,
