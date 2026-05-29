@@ -463,8 +463,7 @@ function finishPitchLabReadyStep(t) {
   function tryFocus(attempt) {
     if (!pitchTourActive || pitchStepId !== 'pitch_lab_ready') return;
     if (scrollPitchLabResultsIntoView() || attempt >= 10) {
-      applyPitchSpotlights(t);
-      schedulePitchDockPlacement();
+      applyPitchVisuals('pitch_lab_ready', { dockCollapsed: isPitchDockCollapsedDom() });
       return;
     }
     setTimeout(function () {
@@ -503,21 +502,9 @@ function openPitchTendChartModal() {
   }
 }
 
-function scrollPitchTendChartIntoView() {
+function scrollPitchTendChartModalBody() {
   var modal = document.getElementById('tend-group-modal');
   if (!modal) return false;
-  var plot =
-    modal.querySelector('.tend-group-plot-wrap') ||
-    modal.querySelector('canvas') ||
-    modal.querySelector('.tend-group-modal-body');
-  var target = plot || modal;
-  try {
-    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  } catch (_e) {
-    try {
-      target.scrollIntoView(true);
-    } catch (_e2) {}
-  }
   var body = modal.querySelector('.tend-group-modal-body');
   if (body) {
     try {
@@ -622,6 +609,7 @@ function applyPitchListadoStep() {
 function applyPitchPaseModeStep() {
   syncPitchTourLayoutBodyClasses('pitch_modo_pase');
   clearPaseDetailEscape();
+  setRoundOverviewMode(false);
   setUiDensity('pase');
   invalidatePaseBoardCache();
   seedPitchDemoTodos();
@@ -631,7 +619,21 @@ function applyPitchPaseModeStep() {
   refreshAllTodoUIs();
 }
 
-export function applyPitchTourStep(stepId) {
+function leavePitchStep(stepId) {
+  if (!stepId) return;
+  if (stepId === 'pitch_modo_pase') {
+    document.body.classList.remove('pitch-step-pase-mode');
+    setUiDensity('normal');
+    invalidatePaseBoardCache();
+    if (typeof rt.renderRoundOverviewPanels === 'function') rt.renderRoundOverviewPanels();
+  }
+  closePitchTourOverlays({
+    keepConnection: stepId === 'livesync_mobile',
+    keepSettings: stepId === 'pitch_seguridad',
+  });
+}
+
+export function enterPitchStep(stepId) {
   var t = getPitchTourTarget(stepId);
   if (!t) return;
 
@@ -660,11 +662,6 @@ export function applyPitchTourStep(stepId) {
   }
   showPitchSlideForStep(null);
 
-  closePitchTourOverlays({
-    keepConnection: stepId === 'livesync_mobile',
-    keepSettings: stepId === 'pitch_seguridad',
-  });
-
   if (stepId === 'pitch_switch_interconsulta' || t.switchMode === 'interconsulta') {
     switchAppModeForPitch('interconsulta');
   } else if (stepId === 'wrap') {
@@ -681,7 +678,12 @@ export function applyPitchTourStep(stepId) {
   } else {
     syncPitchTourLayoutBodyClasses(stepId);
     if (t.appTab) rt.switchAppTab(t.appTab);
-    if (t.innerTab) {
+    if (stepId === 'ic_expediente_tabs') {
+      rt.switchAppTab('nota');
+      setRoundOverviewMode(false);
+      rt.switchInnerTab('notas');
+      renderNoteForm();
+    } else if (t.innerTab) {
       if (
         typeof rt.setRoundOverviewMode === 'function' &&
         (t.innerTab === 'listado' ||
@@ -733,8 +735,7 @@ export function applyPitchTourStep(stepId) {
       if (!pitchTourActive || pitchStepId !== 'sala_casiopea_lab') return;
       openPitchSomeTablesModal();
       syncPitchTourModalChrome('sala_casiopea_lab');
-      applyPitchSpotlights(t);
-      schedulePitchDockPlacement();
+      applyPitchVisuals(stepId, { dockCollapsed: isPitchDockCollapsedDom() });
     }, 320);
   }
   if (stepId === 'lab_bulk_separator' && typeof rt.openLabBulkTourHintModal === 'function') {
@@ -759,8 +760,7 @@ export function applyPitchTourStep(stepId) {
           wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         } catch (_e2) {}
       }
-      applyPitchSpotlights(t);
-      schedulePitchDockPlacement();
+      applyPitchVisuals(stepId, { dockCollapsed: isPitchDockCollapsedDom() });
     }, 280);
   }
   if (stepId === 'sala_tend_chart') {
@@ -770,9 +770,8 @@ export function applyPitchTourStep(stepId) {
       syncPitchTourModalChrome('sala_tend_chart');
       setTimeout(function () {
         if (!pitchTourActive || pitchStepId !== 'sala_tend_chart') return;
-        scrollPitchTendChartIntoView();
-        applyPitchSpotlights(t);
-        schedulePitchDockPlacement();
+        scrollPitchTendChartModalBody();
+        applyPitchVisuals(stepId, { dockCollapsed: isPitchDockCollapsedDom() });
       }, 120);
     }, 280);
   }
@@ -780,15 +779,13 @@ export function applyPitchTourStep(stepId) {
     setTimeout(function () {
       if (!pitchTourActive || pitchStepId !== 'pitch_modo_pase') return;
       scrollPitchPaseBoardIntoView();
-      applyPitchSpotlights(t);
-      schedulePitchDockPlacement();
+      applyPitchVisuals(stepId, { dockCollapsed: isPitchDockCollapsedDom() });
     }, 220);
   }
   if (stepId === 'pitch_switch_interconsulta') {
     setTimeout(function () {
       if (!pitchTourActive || pitchStepId !== 'pitch_switch_interconsulta') return;
-      applyPitchSpotlights(t);
-      schedulePitchDockPlacement();
+      applyPitchVisuals(stepId, { dockCollapsed: isPitchDockCollapsedDom() });
     }, 360);
   }
   if (stepId === 'pitch_pegar_monitoreo') {
@@ -796,8 +793,7 @@ export function applyPitchTourStep(stepId) {
       if (!pitchTourActive || pitchStepId !== 'pitch_pegar_monitoreo') return;
       openPitchMonitoreoPasteModal();
       syncPitchTourModalChrome('pitch_pegar_monitoreo');
-      applyPitchSpotlights(t);
-      schedulePitchDockPlacement();
+      applyPitchVisuals(stepId, { dockCollapsed: isPitchDockCollapsedDom() });
     }, 220);
   }
   if (stepId === 'pitch_seguridad') {
@@ -811,8 +807,7 @@ export function applyPitchTourStep(stepId) {
           acc.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         } catch (_e) {}
       }
-      applyPitchSpotlights(t);
-      schedulePitchDockPlacement();
+      applyPitchVisuals(stepId, { dockCollapsed: isPitchDockCollapsedDom() });
     }, 280);
   }
 
@@ -820,40 +815,22 @@ export function applyPitchTourStep(stepId) {
   showPitchScrim(false);
   syncPitchTourModalChrome(stepId);
 
-  if (!t.selector) return;
-  if (
-    stepId === 'pitch_lab_ready' ||
-    stepId === 'sala_casiopea_lab' ||
-    stepId === 'pitch_cultivos' ||
-    stepId === 'sala_tend_chart' ||
-    stepId === 'pitch_pegar_monitoreo' ||
-    stepId === 'pitch_modo_pase' ||
-    stepId === 'pitch_switch_interconsulta' ||
-    stepId === 'pitch_seguridad'
-  ) {
-    return;
-  }
-  var delay = 180;
+  if (!t.selector || !t.focus) return;
   setTimeout(function () {
     if (!pitchTourActive || pitchStepId !== stepId) return;
     var els = querySelectorList(t.selector);
-    if (!els.length) return;
+    if (!els.length || typeof els[0].focus !== 'function') return;
     try {
-      els[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-    } catch (_e) {}
-    applyPitchSpotlights(t);
-    schedulePitchDockPlacement();
-    if (t.focus && typeof els[0].focus === 'function') {
+      els[0].focus({ preventScroll: true });
+    } catch (_e2) {
       try {
-        els[0].focus({ preventScroll: true });
-      } catch (_e2) {
-        try {
-          els[0].focus();
-        } catch (_e3) {}
-      }
+        els[0].focus();
+      } catch (_e3) {}
     }
-  }, delay);
+  }, 180);
 }
+
+export { enterPitchStep as applyPitchTourStep };
 
 function pitchTourBodyHtml(calloutLabel, paragraphs) {
   var html = '';
@@ -1171,9 +1148,10 @@ export function startPitchTour() {
   var es = document.getElementById('empty-state');
   if (pv) pv.style.display = '';
   if (es) es.style.display = 'none';
-  applyPitchTourStep(pitchStepId);
+  enterPitchStep(pitchStepId);
   if (!isPitchFullscreenSlide(pitchStepId)) showTourDock();
   renderPitchTourStep();
+  applyPitchVisuals(pitchStepId, { dockCollapsed: isPitchDockCollapsedDom() });
 }
 
 export function pitchTourClickNext() {
@@ -1185,22 +1163,17 @@ export function pitchTourClickNext() {
     return;
   }
 
-  if (pitchStepId === 'pitch_modo_pase') {
-    document.body.classList.remove('pitch-step-pase-mode');
-    setUiDensity('normal');
-    invalidatePaseBoardCache();
-    if (typeof rt.renderRoundOverviewPanels === 'function') rt.renderRoundOverviewPanels();
-  }
-  closePitchTourOverlays();
+  leavePitchStep(pitchStepId);
 
   if (pitchTourIdx + 1 >= steps.length) return;
   pitchTourIdx += 1;
   pitchStepId = steps[pitchTourIdx];
   publishPitchGuardContext();
   closeLabBulkPreviewModal();
-  applyPitchTourStep(pitchStepId);
+  enterPitchStep(pitchStepId);
   if (!isPitchFullscreenSlide(pitchStepId)) showTourDock();
   renderPitchTourStep();
+  applyPitchVisuals(pitchStepId, { dockCollapsed: isPitchDockCollapsedDom() });
 }
 
 export function pitchTourAdvanceAfter(actionStep) {
@@ -1208,11 +1181,13 @@ export function pitchTourAdvanceAfter(actionStep) {
   var steps = getPitchTourSteps();
   var i = steps.indexOf(actionStep);
   if (i < 0 || i + 1 >= steps.length) return;
+  leavePitchStep(pitchStepId);
   pitchTourIdx = i + 1;
   pitchStepId = steps[pitchTourIdx];
   publishPitchGuardContext();
-  applyPitchTourStep(pitchStepId);
+  enterPitchStep(pitchStepId);
   renderPitchTourStep();
+  applyPitchVisuals(pitchStepId, { dockCollapsed: isPitchDockCollapsedDom() });
 }
 
 export function unlockPitchTour() {
