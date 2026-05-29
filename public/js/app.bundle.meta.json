@@ -173,12 +173,12 @@
       "format": "esm"
     },
     "public/js/tour-demo-some-lab.mjs": {
-      "bytes": 7246,
+      "bytes": 7237,
       "imports": [],
       "format": "esm"
     },
     "public/js/tour-pitch-cultivos-some.mjs": {
-      "bytes": 6781,
+      "bytes": 6775,
       "imports": [],
       "format": "esm"
     },
@@ -199,7 +199,7 @@
       "format": "esm"
     },
     "public/js/receta-hu-core.mjs": {
-      "bytes": 5509,
+      "bytes": 5487,
       "imports": [],
       "format": "esm"
     },
@@ -220,7 +220,7 @@
       "format": "esm"
     },
     "public/js/tour-pitch-demo-seed.mjs": {
-      "bytes": 18428,
+      "bytes": 18413,
       "imports": [
         {
           "path": "public/js/labs.js",
@@ -276,7 +276,7 @@
       "format": "esm"
     },
     "public/js/mode-features.mjs": {
-      "bytes": 750,
+      "bytes": 900,
       "imports": [],
       "format": "esm"
     },
@@ -327,8 +327,24 @@
       "imports": [],
       "format": "esm"
     },
+    "public/js/profile-templates.mjs": {
+      "bytes": 3625,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/profile-formats-editor.mjs": {
+      "bytes": 5698,
+      "imports": [
+        {
+          "path": "public/js/profile-templates.mjs",
+          "kind": "import-statement",
+          "original": "./profile-templates.mjs"
+        }
+      ],
+      "format": "esm"
+    },
     "public/js/features/notes-indicaciones.mjs": {
-      "bytes": 23729,
+      "bytes": 24636,
       "imports": [
         {
           "path": "public/js/app-state.mjs",
@@ -339,6 +355,16 @@
           "path": "public/js/ui-motion.mjs",
           "kind": "import-statement",
           "original": "../ui-motion.mjs"
+        },
+        {
+          "path": "public/js/profile-templates.mjs",
+          "kind": "import-statement",
+          "original": "../profile-templates.mjs"
+        },
+        {
+          "path": "public/js/profile-formats-editor.mjs",
+          "kind": "import-statement",
+          "original": "../profile-formats-editor.mjs"
         }
       ],
       "format": "esm"
@@ -894,7 +920,7 @@
       "format": "esm"
     },
     "public/js/features/profile.mjs": {
-      "bytes": 15494,
+      "bytes": 18140,
       "imports": [
         {
           "path": "public/js/features/chrome.mjs",
@@ -960,6 +986,16 @@
           "path": "public/js/features/expediente.mjs",
           "kind": "import-statement",
           "original": "./expediente.mjs"
+        },
+        {
+          "path": "public/js/profile-templates.mjs",
+          "kind": "import-statement",
+          "original": "../profile-templates.mjs"
+        },
+        {
+          "path": "public/js/profile-formats-editor.mjs",
+          "kind": "import-statement",
+          "original": "../profile-formats-editor.mjs"
         }
       ],
       "format": "esm"
@@ -1007,7 +1043,7 @@
       "format": "esm"
     },
     "public/js/features/settings-help.mjs": {
-      "bytes": 98809,
+      "bytes": 99562,
       "imports": [
         {
           "path": "public/js/tour-targets.mjs",
@@ -1421,7 +1457,7 @@
       "format": "esm"
     },
     "public/js/manejo-pathology-catalog.mjs": {
-      "bytes": 37207,
+      "bytes": 37211,
       "imports": [],
       "format": "esm"
     },
@@ -1977,7 +2013,7 @@
       "format": "esm"
     },
     "public/js/vpo-lookups.mjs": {
-      "bytes": 6175,
+      "bytes": 6350,
       "imports": [],
       "format": "esm"
     },
@@ -1992,13 +2028,28 @@
       ],
       "format": "esm"
     },
+    "public/js/vpo-display.mjs": {
+      "bytes": 2079,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/vpo-dx-inference.mjs": {
+      "bytes": 5115,
+      "imports": [],
+      "format": "esm"
+    },
     "public/js/vpo-data.mjs": {
-      "bytes": 5704,
+      "bytes": 11365,
       "imports": [
         {
           "path": "public/js/vpo-lookups.mjs",
           "kind": "import-statement",
           "original": "./vpo-lookups.mjs"
+        },
+        {
+          "path": "public/js/vpo-dx-inference.mjs",
+          "kind": "import-statement",
+          "original": "./vpo-dx-inference.mjs"
         },
         {
           "path": "public/js/tend-core.mjs",
@@ -2024,7 +2075,7 @@
       "format": "esm"
     },
     "public/js/features/vpo-panel.mjs": {
-      "bytes": 17451,
+      "bytes": 25699,
       "imports": [
         {
           "path": "public/js/app-state.mjs",
@@ -2042,9 +2093,19 @@
           "original": "../vpo-lookups.mjs"
         },
         {
+          "path": "public/js/vpo-display.mjs",
+          "kind": "import-statement",
+          "original": "../vpo-display.mjs"
+        },
+        {
           "path": "public/js/vpo-data.mjs",
           "kind": "import-statement",
           "original": "../vpo-data.mjs"
+        },
+        {
+          "path": "public/js/vpo-dx-inference.mjs",
+          "kind": "import-statement",
+          "original": "../vpo-dx-inference.mjs"
         },
         {
           "path": "public/js/vpo-periop-meds.mjs",
@@ -2470,7 +2531,7 @@
       "format": "esm"
     },
     "public/js/features/patients.mjs": {
-      "bytes": 47287,
+      "bytes": 47255,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -2669,7 +2730,7 @@
       "format": "esm"
     },
     "public/js/app-shell.mjs": {
-      "bytes": 32196,
+      "bytes": 32548,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -2720,6 +2781,11 @@
           "path": "public/js/features/profile.mjs",
           "kind": "import-statement",
           "original": "./features/profile.mjs"
+        },
+        {
+          "path": "public/js/profile-templates.mjs",
+          "kind": "import-statement",
+          "original": "./profile-templates.mjs"
         },
         {
           "path": "public/js/clinico-access.mjs",
@@ -3094,7 +3160,7 @@
       "format": "esm"
     },
     "public/js/app.js": {
-      "bytes": 7262,
+      "bytes": 7310,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -3245,7 +3311,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 3133586
+      "bytes": 3188110
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -3301,10 +3367,10 @@
           "bytesInOutput": 3028
         },
         "public/js/tour-demo-some-lab.mjs": {
-          "bytesInOutput": 5335
+          "bytesInOutput": 5326
         },
         "public/js/tour-pitch-cultivos-some.mjs": {
-          "bytesInOutput": 4764
+          "bytesInOutput": 4758
         },
         "public/js/listado-problemas-core.mjs": {
           "bytesInOutput": 1031
@@ -3313,7 +3379,7 @@
           "bytesInOutput": 1510
         },
         "public/js/receta-hu-core.mjs": {
-          "bytesInOutput": 4886
+          "bytesInOutput": 4871
         },
         "public/js/lab-history-cache.mjs": {
           "bytesInOutput": 2845
@@ -3322,7 +3388,7 @@
           "bytesInOutput": 2535
         },
         "public/js/tour-pitch-demo-seed.mjs": {
-          "bytesInOutput": 15982
+          "bytesInOutput": 15967
         },
         "public/js/mode-features.mjs": {
           "bytesInOutput": 530
@@ -3339,8 +3405,14 @@
         "public/js/ui-motion.mjs": {
           "bytesInOutput": 4081
         },
+        "public/js/profile-templates.mjs": {
+          "bytesInOutput": 1968
+        },
+        "public/js/profile-formats-editor.mjs": {
+          "bytesInOutput": 4772
+        },
         "public/js/features/notes-indicaciones.mjs": {
-          "bytesInOutput": 22017
+          "bytesInOutput": 22690
         },
         "public/js/tend-export.mjs": {
           "bytesInOutput": 13748
@@ -3442,7 +3514,7 @@
           "bytesInOutput": 12876
         },
         "public/js/features/profile.mjs": {
-          "bytesInOutput": 13432
+          "bytesInOutput": 15529
         },
         "public/js/mobile-web.mjs": {
           "bytesInOutput": 545
@@ -3454,7 +3526,7 @@
           "bytesInOutput": 4407
         },
         "public/js/features/settings-help.mjs": {
-          "bytesInOutput": 92406
+          "bytesInOutput": 93147
         },
         "public/js/features/tendencias.mjs": {
           "bytesInOutput": 66705
@@ -3463,7 +3535,7 @@
           "bytesInOutput": 524
         },
         "public/js/features/todos.mjs": {
-          "bytesInOutput": 11911
+          "bytesInOutput": 11916
         },
         "public/js/manejo-atb-catalog.mjs": {
           "bytesInOutput": 11898
@@ -3577,13 +3649,19 @@
           "bytesInOutput": 10760
         },
         "public/js/vpo-lookups.mjs": {
-          "bytesInOutput": 5217
+          "bytesInOutput": 5362
         },
         "public/js/vpo-calculator.mjs": {
           "bytesInOutput": 3964
         },
+        "public/js/vpo-display.mjs": {
+          "bytesInOutput": 1740
+        },
+        "public/js/vpo-dx-inference.mjs": {
+          "bytesInOutput": 4133
+        },
         "public/js/vpo-data.mjs": {
-          "bytesInOutput": 4812
+          "bytesInOutput": 9055
         },
         "public/js/vpo-periop-meds.mjs": {
           "bytesInOutput": 3009
@@ -3592,7 +3670,7 @@
           "bytesInOutput": 2227
         },
         "public/js/features/vpo-panel.mjs": {
-          "bytesInOutput": 15229
+          "bytesInOutput": 22657
         },
         "public/js/features/vpo.mjs": {
           "bytesInOutput": 368
@@ -3610,7 +3688,7 @@
           "bytesInOutput": 59737
         },
         "public/js/features/receta-hu.mjs": {
-          "bytesInOutput": 24353
+          "bytesInOutput": 24413
         },
         "public/js/features/pase-board.mjs": {
           "bytesInOutput": 36713
@@ -3634,7 +3712,7 @@
           "bytesInOutput": 1055
         },
         "public/js/features/patients.mjs": {
-          "bytesInOutput": 44373
+          "bytesInOutput": 44343
         },
         "public/js/presentation-mode.mjs": {
           "bytesInOutput": 3984
@@ -3658,7 +3736,7 @@
           "bytesInOutput": 16114
         },
         "public/js/app-shell.mjs": {
-          "bytesInOutput": 28230
+          "bytesInOutput": 28541
         },
         "public/js/features/estado-actual-parse-variants.mjs": {
           "bytesInOutput": 982
@@ -3676,10 +3754,10 @@
           "bytesInOutput": 12118
         },
         "public/js/app.js": {
-          "bytesInOutput": 4453
+          "bytesInOutput": 4477
         }
       },
-      "bytes": 1725599
+      "bytes": 1754006
     }
   }
 }

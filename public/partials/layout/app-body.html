@@ -427,87 +427,74 @@
 </div>
 
 <div class="modal-backdrop" id="profile-modal" aria-hidden="true">
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title" style="width:560px;">
-    <h3 id="profile-modal-title" class="profile-modal-title" style="margin:0 0 14px 0;display:flex;align-items:center;gap:8px;">
+  <div class="modal profile-modal" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
+    <h3 id="profile-modal-title" class="profile-modal-title">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       Mi Perfil
     </h3>
-    <div class="profile-body" id="profile-body" style="display:flex;flex-direction:column;gap:12px;">
-      <div>
-        <div class="profile-field-label">Médico Tratante</div>
-        <input class="profile-input" id="profile-doctor" type="text" placeholder="Dr. Nombre Apellido">
-      </div>
-      <div>
-        <div class="profile-field-label">Cédula profesional</div>
-        <input class="profile-input" id="profile-cedula" type="text" placeholder="12345678" inputmode="numeric" autocomplete="off">
-        <p style="font-size:11px;color:var(--text-muted);margin:4px 0 0 0;line-height:1.3;">Se usa en la receta médica HU (000-061-R-06-12).</p>
-      </div>
-      <div>
-        <div class="profile-field-label">Profesor / Responsable</div>
-        <input class="profile-input" id="profile-profesor" type="text" placeholder="Dr. Nombre Apellido">
-      </div>
-      <div>
-        <div class="profile-field-label">Grado / Servicio</div>
-        <input class="profile-input" id="profile-grado" type="text" placeholder="R3MI · Medicina Interna">
-      </div>
-      <hr class="profile-divider">
-      <div class="profile-defaults-title">Modo de trabajo</div>
-      <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;">
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-          <input type="radio" name="app-mode" value="sala" id="app-mode-sala" onchange="onAppModeChange()">
-          <span>Sala (default)</span>
-        </label>
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-          <input type="radio" name="app-mode" value="interconsulta" id="app-mode-inter" onchange="onAppModeChange()">
-          <span>Interconsulta</span>
-        </label>
-        <p style="font-size:11px;color:var(--text-muted);margin:2px 0 8px 0;line-height:1.3;">Sala oculta Nota e Indicaciones; expone Estado Actual y Listado de problemas.</p>
-      </div>
-      <div>
-        <div class="profile-field-label settings-acc-label-spaced--sm">Servicio (Sala)</div>
-        <input class="profile-input" id="settings-default-servicio" type="text" placeholder="MEDICINA INTERNA" style="text-transform:uppercase;" onblur="onDefaultServicioBlur()">
-        <p style="font-size:11px;color:var(--text-muted);margin:4px 0 0 0;line-height:1.3;">Sin abreviaturas. Pre-llena Servicio al agregar pacientes en Sala.</p>
-        <p id="default-servicio-warning" style="display:none;color:#b45309;font-size:11px;margin:4px 0 0 0;line-height:1.3;">¿Estás seguro? Recomendamos servicio sin abreviaturas (p.ej. MEDICINA INTERNA en lugar de MI).</p>
-      </div>
-      <hr class="profile-divider">
-      <div class="profile-defaults-title">Médicos del Listado de Problemas</div>
-      <p style="font-size:11px;color:var(--text-muted);margin:0 0 4px 0;line-height:1.3;">Pre-llenan los campos del listado. Puedes editarlos por paciente desde la pestaña Listado.</p>
-      <div>
-        <div class="profile-field-label">Profesor</div>
-        <input class="profile-input" id="settings-medico-profesor" type="text" onblur="onMedicoTemplateBlur()">
-      </div>
-      <div>
-        <div class="profile-field-label">R4</div>
-        <input class="profile-input" id="settings-medico-r4" type="text" onblur="onMedicoTemplateBlur()">
-      </div>
-      <div>
-        <div class="profile-field-label">R2</div>
-        <input class="profile-input" id="settings-medico-r2" type="text" onblur="onMedicoTemplateBlur()">
-      </div>
-      <div>
-        <div class="profile-field-label">R1 (1)</div>
-        <input class="profile-input" id="settings-medico-r1a" type="text" onblur="onMedicoTemplateBlur()">
-      </div>
-      <div>
-        <div class="profile-field-label">R1 (2)</div>
-        <input class="profile-input" id="settings-medico-r1b" type="text" onblur="onMedicoTemplateBlur()">
-      </div>
-      <hr class="profile-divider">
-      <div class="profile-defaults-title">Indicaciones por defecto</div>
-      <div class="profile-default-preview">
-        <div class="preview-label">Dieta</div>
-        <span id="profile-preview-dieta-txt">(vacío)</span>
-      </div>
-      <div class="profile-default-preview">
-        <div class="preview-label">Cuidados</div>
-        <span id="profile-preview-cuidados-txt">(vacío)</span>
-      </div>
-      <div class="profile-default-preview">
-        <div class="preview-label">Medicamentos</div>
-        <span id="profile-preview-meds-txt">(vacío)</span>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;">
-        <button type="button" class="btn-edit-templates" onclick="openTemplatesModal()">Editar plantillas…</button>
+    <p class="profile-modal-lead">Tu identificación y los formatos en blanco que R+ usa al abrir notas e indicaciones nuevas. No reemplaza datos ya escritos en pacientes existentes.</p>
+    <div class="profile-body" id="profile-body">
+      <section class="profile-block">
+        <h4 class="profile-block-title">Identificación</h4>
+        <p class="profile-hint">Aparece en notas, indicaciones y documentos Word. Solo afecta campos vacíos al crear o abrir un paciente.</p>
+        <div class="profile-field">
+          <label class="profile-field-label" for="profile-doctor">Médico tratante</label>
+          <input class="profile-input" id="profile-doctor" type="text" placeholder="Dr. Nombre Apellido">
+        </div>
+        <div class="profile-field">
+          <label class="profile-field-label" for="profile-cedula">Cédula profesional</label>
+          <input class="profile-input" id="profile-cedula" type="text" placeholder="Número de cédula" inputmode="numeric" autocomplete="off">
+          <p class="profile-hint">Receta médica HU (formato 000-061-R-06-12).</p>
+        </div>
+        <div class="profile-field">
+          <label class="profile-field-label" for="profile-profesor">Profesor / responsable</label>
+          <input class="profile-input" id="profile-profesor" type="text" placeholder="Dr. Nombre Apellido">
+        </div>
+        <div class="profile-field">
+          <label class="profile-field-label" for="profile-grado">Grado / servicio</label>
+          <input class="profile-input" id="profile-grado" type="text" placeholder="R3 · Tu servicio">
+        </div>
+      </section>
+
+      <section class="profile-block">
+        <h4 class="profile-block-title">Modo de trabajo</h4>
+        <p class="profile-hint">Define qué pestañas del expediente ves por defecto (Sala vs Interconsulta).</p>
+        <div class="profile-radio-group">
+          <label class="profile-radio"><input type="radio" name="app-mode" value="sala" id="app-mode-sala" onchange="onAppModeChange()"><span>Sala</span></label>
+          <label class="profile-radio"><input type="radio" name="app-mode" value="interconsulta" id="app-mode-inter" onchange="onAppModeChange()"><span>Interconsulta</span></label>
+        </div>
+        <p class="profile-hint">Sala: Estado actual y listado de problemas. Interconsulta: nota de evolución e indicaciones.</p>
+        <div class="profile-field">
+          <label class="profile-field-label" for="settings-default-servicio">Servicio predeterminado (Sala)</label>
+          <input class="profile-input" id="settings-default-servicio" type="text" placeholder="CIRUGÍA GENERAL" style="text-transform:uppercase;" onblur="onDefaultServicioBlur()">
+          <p class="profile-hint">Nombre completo del servicio (sin abreviaturas de 1–3 letras). Pre-llena el campo Servicio al agregar pacientes en modo Sala.</p>
+          <p id="default-servicio-warning" class="profile-hint profile-hint--warn" style="display:none;">Recomendamos el nombre completo del servicio (sin abreviaturas de 1–3 letras).</p>
+        </div>
+      </section>
+
+      <section class="profile-block">
+        <h4 class="profile-block-title">Listado de problemas</h4>
+        <p class="profile-hint">Nombres que se copian al bloque «Médicos (firma)» del listado. Puedes cambiarlos por paciente en Salida → Listado.</p>
+        <div class="profile-grid-2">
+          <div class="profile-field"><label class="profile-field-label" for="settings-medico-profesor">Profesor</label><input class="profile-input" id="settings-medico-profesor" type="text" onblur="onMedicoTemplateBlur()"></div>
+          <div class="profile-field"><label class="profile-field-label" for="settings-medico-r4">R4</label><input class="profile-input" id="settings-medico-r4" type="text" onblur="onMedicoTemplateBlur()"></div>
+          <div class="profile-field"><label class="profile-field-label" for="settings-medico-r2">R2</label><input class="profile-input" id="settings-medico-r2" type="text" onblur="onMedicoTemplateBlur()"></div>
+          <div class="profile-field"><label class="profile-field-label" for="settings-medico-r1a">R1 (1)</label><input class="profile-input" id="settings-medico-r1a" type="text" onblur="onMedicoTemplateBlur()"></div>
+          <div class="profile-field"><label class="profile-field-label" for="settings-medico-r1b">R1 (2)</label><input class="profile-input" id="settings-medico-r1b" type="text" onblur="onMedicoTemplateBlur()"></div>
+        </div>
+      </section>
+
+      <section class="profile-block profile-block--formats">
+        <h4 class="profile-block-title">Formatos clínicos (plantillas en blanco)</h4>
+        <p class="profile-hint">Esquemas sin datos del paciente. Se editan en las pestañas <strong>Nota</strong> e <strong>Indicaciones</strong> del expediente (misma vista que al atender). Se aplican solo en secciones vacías.</p>
+        <div class="profile-actions profile-actions--formats">
+          <button type="button" class="btn-edit-templates" onclick="openNoteFormatsFromProfile()">Editar formatos de nota →</button>
+          <button type="button" class="btn-edit-templates" onclick="openIndicaFormatsFromProfile()">Editar formatos de indicaciones →</button>
+          <button type="button" class="btn-edit-templates" onclick="resetProfileTemplates()">Restablecer formatos en blanco</button>
+        </div>
+      </section>
+
+      <div class="profile-actions profile-actions--footer">
         <button type="button" class="btn-save-profile" onclick="saveSettings()">Guardar perfil</button>
         <button type="button" class="btn-edit-templates" onclick="resetAndStartOnboarding()">Ver tutorial</button>
       </div>

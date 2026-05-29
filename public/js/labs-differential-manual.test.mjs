@@ -5,7 +5,7 @@ import { parseBH_, procesarLabs } from './labs.js';
 const ROGELIO_DIFF_ONLY = `
 Expediente:\t1936787-7\tSolicitud:\t2605050735
 Nombre:\tROGELIO GONZALEZ ESQUIVEL\tFecha Registro:\tMay 5 2026 4:07PM
-Sexo:\tMASCULINO\tUbicación:\tMEDICINA INTERNA 2
+Sexo:\tMASCULINO\tUbicación:\tSERVICIO CLÍNICO 2
 Edad:\t81\tMedico:\tA QUIEN CORRESPONDA
 
 HEMATOLOGIA

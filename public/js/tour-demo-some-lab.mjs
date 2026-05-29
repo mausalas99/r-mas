@@ -6,7 +6,7 @@
 export const DEMO_SOME_LAB_REPORT =
   'Expediente:\t0008421-7\tSolicitud:\t2605110244\n' +
   'Nombre:\tDEMO PÉREZ JUAN\tFecha Registro:\tApr 11 2026 9:42AM\n' +
-  'Sexo:\tMASCULINO\tUbicación:\tMEDICINA INTERNA\n' +
+  'Sexo:\tMASCULINO\tUbicación:\tSERVICIO DEMO\n' +
   'Edad:\t67\tMedico:\tSERVICIO DEMO\n' +
   '\n' +
   'HEMATOLOGIA\n' +
@@ -106,7 +106,7 @@ export const DEMO_SOME_LAB_REPORT =
 export const OLDER_DEMO_SOME_LAB_REPORT =
   'Expediente:\t0008421-7\tSolicitud:\t2603050188\n' +
   'Nombre:\tDEMO PÉREZ JUAN\tFecha Registro:\tMar 05 2026 7:18AM\n' +
-  'Sexo:\tMASCULINO\tUbicación:\tMEDICINA INTERNA\n' +
+  'Sexo:\tMASCULINO\tUbicación:\tSERVICIO DEMO\n' +
   'Edad:\t67\tMedico:\tSERVICIO DEMO\n' +
   '\n' +
   'HEMATOLOGIA\n' +
@@ -146,7 +146,7 @@ export const OLDER_DEMO_SOME_LAB_REPORT =
 export const DEMO_GARCIA_LAB_REPORT =
   'Expediente:\t0007755-3\tSolicitud:\t2605110312\n' +
   'Nombre:\tDEMO GARCÍA ANA\tFecha Registro:\tApr 11 2026 11:05AM\n' +
-  'Sexo:\tFEMENINO\tUbicación:\tMEDICINA INTERNA\n' +
+  'Sexo:\tFEMENINO\tUbicación:\tSERVICIO DEMO\n' +
   'Edad:\t54\tMedico:\tSERVICIO DEMO\n' +
   '\n' +
   'HEMATOLOGIA\n' +

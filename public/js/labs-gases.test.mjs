@@ -5,7 +5,7 @@ import { parseGaso_, procesarLabs, buildGasoInterpretacion_, reprocessLabResultL
 const MUESTRA_GASO_VENOSA = `
 Expediente:	2213511-4	Solicitud:	2605070398
 Nombre:	BENITO CASTILLO JUAREZ	Fecha Registro:	May 7 2026 6:43AM
-Sexo:	MASCULINO	Ubicación:	MEDICINA INTERNA 1
+Sexo:	MASCULINO	Ubicación:	SERVICIO CLÍNICO 1
 Edad:	58	Medico:	A QUIEN CORRESPONDA
 
 
@@ -118,7 +118,7 @@ SODIO	N	140	mmol/L	136 - 146
 test('procesarLabs calcula AG combinando gases y electrolitos séricos', () => {
   const reporte = `Expediente:	1	Solicitud:	1
 Nombre:	X	Fecha Registro:	May 7 2026 6:43AM
-Sexo:	M	Ubicación:	MI
+Sexo:	M	Ubicación:	SERVICIO CLÍNICO
 Edad:	30	Medico:	X
 
 GASOMETRIAS
@@ -150,7 +150,7 @@ test('buildGasoInterpretacion_ genera una línea separada con interpretación', 
 test('procesarLabs agrega interpretación de gasometría en línea separada', () => {
   const reporte = `Expediente:	1	Solicitud:	1
 Nombre:	X	Fecha Registro:	May 7 2026 6:43AM
-Sexo:	M	Ubicación:	MI
+Sexo:	M	Ubicación:	SERVICIO CLÍNICO
 Edad:	30	Medico:	X
 
 GASOMETRIAS

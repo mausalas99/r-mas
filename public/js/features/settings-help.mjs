@@ -687,7 +687,7 @@ function renderTourStep() {
     case 'servicio_default':
       setBadge('servicio · Sala');
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">Escribe tu <strong>Servicio (Sala)</strong> en Mi Perfil (ej. <strong>MEDICINA INTERNA</strong>) y sal del campo para guardar. Luego <strong>Siguiente</strong>.</p>';
+        '<p style="margin:0;line-height:1.5;">Escribe tu <strong>Servicio (Sala)</strong> en Mi Perfil (nombre completo, sin abreviaturas) y sal del campo para guardar. Luego <strong>Siguiente</strong>.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'estado_actual':
@@ -853,14 +853,14 @@ function startOnboarding(branch) {
   var hora  = String(today.getHours()).padStart(2,'0')+':'+String(today.getMinutes()).padStart(2,'0');
   var demoPatient = {
     id: DEMO_PATIENT_ID, nombre: 'DEMO PÉREZ', registro: '0008421-7',
-    edad: '67 años', sexo: 'M', area: 'MEDICINA INTERNA',
-    servicio: 'MEDICINA INTERNA', cuarto: '101', cama: '1',
+    edad: '67 años', sexo: 'M', area: 'SERVICIO DEMO',
+    servicio: 'SERVICIO DEMO', cuarto: '101', cama: '1',
     fromLab: false, isDemo: true
   };
   var demoPatient2 = {
     id: DEMO_PATIENT_ID_2, nombre: 'DEMO GARCÍA', registro: '0007755-3',
-    edad: '54 años', sexo: 'F', area: 'MEDICINA INTERNA',
-    servicio: 'MEDICINA INTERNA', cuarto: '102', cama: '2',
+    edad: '54 años', sexo: 'F', area: 'SERVICIO DEMO',
+    servicio: 'SERVICIO DEMO', cuarto: '102', cama: '2',
     fromLab: false, isDemo: true
   };
   notes[DEMO_PATIENT_ID] = {
@@ -1338,6 +1338,23 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '6.4.0': [
+    {
+      title: 'Valoración preoperatoria (VPO)',
+      body:
+        'Nueva pestaña <strong>VPO</strong> con calculadora ASA, RCRI, Gupta, ARISCAT y Caprini; EKG/Rx editables; fármacos perioperatorios desde la receta SOME y bloques para copiar.',
+    },
+    {
+      title: 'Procedimiento y diagnósticos',
+      body:
+        'Catálogo <strong>Gupta</strong> con búsqueda; diagnósticos importables desde la nota; botones para tomar labs y signos del expediente sin pisar lo escrito.',
+    },
+    {
+      title: 'Formatos en Nota e Indicaciones',
+      body:
+        'Desde <strong>Mi Perfil</strong>, edita plantillas en blanco en las pestañas del expediente (misma vista que al atender) y pulsa <strong>Guardar</strong> al final.',
+    },
+  ],
   '6.3.6': [
     {
       title: 'Cultivos multipaciente',

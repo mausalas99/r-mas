@@ -32,6 +32,7 @@ import {
   closeTemplatesModal,
   normalizeQuickOutputFormat,
 } from './features/profile.mjs';
+import { applyNotaFormatScaffoldIfEmpty } from './profile-templates.mjs';
 import { closeClinicoUnlockModal } from './clinico-access.mjs';
 import {
   closeSOAPModal,
@@ -246,13 +247,17 @@ async function initMobileWebBoot() {
 function applyDefaultsToNewPatient(patientId) {
   if (!notes[patientId]) return;
   applyProfileToNoteIfEmpty(notes[patientId]);
+  applyNotaFormatScaffoldIfEmpty(notes[patientId], shellCtx.getSettings() || {});
 }
 
 function applyDefaultsToNewIndicaciones(patientId) {
   if (!indicaciones[patientId]) return;
-  if (shellCtx.getSettings().defaultDieta        && !indicaciones[patientId].dieta)        indicaciones[patientId].dieta        = shellCtx.getSettings().defaultDieta;
-  if (shellCtx.getSettings().defaultCuidados     && !indicaciones[patientId].cuidados)     indicaciones[patientId].cuidados     = shellCtx.getSettings().defaultCuidados;
-  if (shellCtx.getSettings().defaultMedicamentos && !indicaciones[patientId].medicamentos) indicaciones[patientId].medicamentos = shellCtx.getSettings().defaultMedicamentos;
+  var st = shellCtx.getSettings() || {};
+  if (st.defaultDieta && !indicaciones[patientId].dieta) indicaciones[patientId].dieta = st.defaultDieta;
+  if (st.defaultCuidados && !indicaciones[patientId].cuidados) indicaciones[patientId].cuidados = st.defaultCuidados;
+  if (st.defaultMedicamentos && !indicaciones[patientId].medicamentos) indicaciones[patientId].medicamentos = st.defaultMedicamentos;
+  if (st.defaultIndicacionesEstudios && !indicaciones[patientId].estudios) indicaciones[patientId].estudios = st.defaultIndicacionesEstudios;
+  if (st.defaultIndicacionesInterconsultas && !indicaciones[patientId].interconsultas) indicaciones[patientId].interconsultas = st.defaultIndicacionesInterconsultas;
 }
 
 

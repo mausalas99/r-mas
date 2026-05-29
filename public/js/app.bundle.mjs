@@ -4316,10 +4316,10 @@ function rebuildGasesFromResults_(rows) {
     values[k] = valueFromSectionLine_(base, k);
   });
   var qs = pickBestSectionLine_(rows, "QS");
-  var esc16 = pickBestSectionLine_(rows, "ESC");
+  var esc17 = pickBestSectionLine_(rows, "ESC");
   var pfhs = pickBestSectionLine_(rows, "PFHS");
-  var na = valueFromSectionLine_(qs, "Na") || valueFromSectionLine_(esc16, "Na") || values.Na;
-  var cl = valueFromSectionLine_(qs, "Cl") || valueFromSectionLine_(esc16, "Cl");
+  var na = valueFromSectionLine_(qs, "Na") || valueFromSectionLine_(esc17, "Na") || values.Na;
+  var cl = valueFromSectionLine_(qs, "Cl") || valueFromSectionLine_(esc17, "Cl");
   var alb = valueFromSectionLine_(pfhs, "Alb");
   var bica = values.Bica;
   orderedKeys.forEach(function(k) {
@@ -5948,8 +5948,8 @@ function procesarLabs(textoBruto) {
       sexo: sexoRaw
     });
     if (qs) resLabs.push(qs);
-    var esc16 = parseESC_(textoQS);
-    if (esc16) resLabs.push(esc16);
+    var esc17 = parseESC_(textoQS);
+    if (esc17) resLabs.push(esc17);
     var pfh = parsePFH_(textoParaBh);
     if (pfh) resLabs.push(pfh);
     var pltCit = parsePlaquetasCitrato_(textoBruto, tNorm);
@@ -6119,15 +6119,15 @@ function buildParsedBySectionFromResLabs(resLabs, bhExtras) {
 }
 
 // public/js/tour-demo-some-lab.mjs
-var DEMO_SOME_LAB_REPORT = "Expediente:	0008421-7	Solicitud:	2605110244\nNombre:	DEMO P\xC9REZ JUAN	Fecha Registro:	Apr 11 2026 9:42AM\nSexo:	MASCULINO	Ubicaci\xF3n:	MEDICINA INTERNA\nEdad:	67	Medico:	SERVICIO DEMO\n\nHEMATOLOGIA\nBIOMETRIA HEMATICA COMPLETA\nEstudio		Resultado	Unidades	Valor de Referencia\nRBC		4.71	M/uL	4.04 - 6.13\nHGB		*	11.85	g/dL	12.20 - 18.10\nHCT		*	38.4	%	37.7 - 53.7\nMCV		*	82	fL	80 - 97\nMCH		B	26.1	pg	27.0 - 31.2\nMCHC		*	32.0	g/dL	29.9 - 34.2\nRDW		*	13.2	%	11.6 - 14.8\nWBC		*	6.12	K/uL	4.00 - 11.00\nNEU		*	3.88	K/uL	2.00 - 6.90\nNEU%		*	63.4	%	37.0 - 80.0\nLYM		*	1.05	K/uL	0.60 - 3.40\nLYM%		*	17.2	%	10.0 - 50.0\nMONO		*	0.71	K/uL	0.000 - 0.900\nMONO%		*	11.6	%	0.00 - 12.00\nEOS		*	0.11	K/uL	0.000 - 0.700\nEOS%		*	1.8	%	0.00 - 7.00\nBASO		*	0.12	K/uL	0.000 - 0.200\nBASO%		*	2.0	%	0.00 - 2.50\nPLT		*	248	K/uL	142.00 - 424.00\nMPV		B	7.2	fL	7.4 - 10.4\n\nQUIMICA CLINICA\nCOMENTARIO DE MUESTRA\nEstudio		Resultado	Unidades	Valor de Referencia\nCOMENTARIO DE LA MUESTRA		*	\nGLUCOSA EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nGLUCOSA EN SANGRE		*	94	mg/dL	60 - 100\nNITROGENO DE LA UREA EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nNITROGENO DE LA UREA EN SANGRE		A	22	mg/dL	7 - 20\nCREATININA EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nCREATININA EN SANGRE		A	1.35	mg/dL	0.6 - 1.4\nACIDO URICO EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nACIDO URICO EN SANGRE		A	7.4	mg/dL	4.8 - 8.7\nPROTEINAS TOTALES\nEstudio		Resultado	Unidades	Valor de Referencia\nPROTEINAS TOTALES		A	7.6	g/dL	6.1 - 7.9\nALBUMINA\nEstudio		Resultado	Unidades	Valor de Referencia\nALBUMINA		*	4.1	g/dL	3.2 - 5.5\nGLOBULINA SERICA\nEstudio		Resultado	Unidades	Valor de Referencia\nGLOBULINA SERICA		*	3.5	g/dL	\nRELACION A/G\nEstudio		Resultado	Unidades	Valor de Referencia\nRELACION A/G		*	1.17	\nAST(ASPARTATO AMINOTRANSFERASA)\nEstudio		Resultado	Unidades	Valor de Referencia\nAST(ASPARTATO AMINOTRANSFERASA)		*	19	UI/L	10 - 42\nALT ALANIN AMINO TRANSFERASA\nEstudio		Resultado	Unidades	Valor de Referencia\nALT ALANIN AMINO TRANSFERASA		*	14	UI/L	10 - 42\nALP FOSFATASA ALCALINA\nEstudio		Resultado	Unidades	Valor de Referencia\nALP FOSFATASA ALCALINA		A	118	UI/L	38 - 126\nBILIRRUBINA\nEstudio		Resultado	Unidades	Valor de Referencia\nBILIRRUBINA TOTAL		A	1.2	mg/dL	0.2 - 1.0\nBILIRRUBINA DIRECTA		A	0.5	mg/dL	0.0 - 0.2\nBILIRRUBINA INDIRECTA		A	0.7	mg/dL	0.2 - 0.8\nLDH DESHIDROGENASA LACTICA\nEstudio		Resultado	Unidades	Valor de Referencia\nLDH DESHIDROGENASA LACTICA		*	142	UI/L	91 - 180\nAMILASA SERICA\nEstudio		Resultado	Unidades	Valor de Referencia\nAMILASA		*	68	U/L	28 - 100\nCOLESTEROL\nEstudio		Resultado	Unidades	Valor de Referencia\nCOLESTEROL		B	142	mg/dL	130 - 200\nTRIGLICERIDOS\nEstudio		Resultado	Unidades	Valor de Referencia\nTRIGLICERIDOS		*	118	mg/dL	35 - 150\nCLORO\nEstudio		Resultado	Unidades	Valor de Referencia\nCLORO		*	102	mmol/L	101.0 - 110.0\nSODIO\nEstudio		Resultado	Unidades	Valor de Referencia\nSODIO		*	138	mmol/L	135.0 - 145.0\nPOTASIO\nEstudio		Resultado	Unidades	Valor de Referencia\nPOTASIO		*	3.9	mmol/L	3.6 - 5.0\nCALCIO\nEstudio		Resultado	Unidades	Valor de Referencia\nCALCIO EN SUERO		*	8.8	mg/dL	8.4 - 10.2\nFOSFORO EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nFOSFORO		*	3.8	mg/dL	2.5 - 4.6\n";
-var OLDER_DEMO_SOME_LAB_REPORT = "Expediente:	0008421-7	Solicitud:	2603050188\nNombre:	DEMO P\xC9REZ JUAN	Fecha Registro:	Mar 05 2026 7:18AM\nSexo:	MASCULINO	Ubicaci\xF3n:	MEDICINA INTERNA\nEdad:	67	Medico:	SERVICIO DEMO\n\nHEMATOLOGIA\nBIOMETRIA HEMATICA COMPLETA\nEstudio		Resultado	Unidades	Valor de Referencia\nRBC		4.55	M/uL	4.04 - 6.13\nHGB		*	10.20	g/dL	12.20 - 18.10\nHCT		*	35.8	%	37.7 - 53.7\nMCV		*	81	fL	80 - 97\nWBC		*	5.40	K/uL	4.00 - 11.00\nPLT		*	198	K/uL	142.00 - 424.00\n\nQUIMICA CLINICA\nGLUCOSA EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nGLUCOSA EN SANGRE		*	108	mg/dL	60 - 100\nNITROGENO DE LA UREA EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nNITROGENO DE LA UREA EN SANGRE		A	28	mg/dL	7 - 20\nCREATININA EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nCREATININA EN SANGRE		A	1.55	mg/dL	0.6 - 1.4\nCOLESTEROL\nEstudio		Resultado	Unidades	Valor de Referencia\nCOLESTEROL		B	155	mg/dL	130 - 200\nTRIGLICERIDOS\nEstudio		Resultado	Unidades	Valor de Referencia\nTRIGLICERIDOS		*	132	mg/dL	35 - 150\nSODIO\nEstudio		Resultado	Unidades	Valor de Referencia\nSODIO		B	134	mmol/L	135.0 - 145.0\nPOTASIO\nEstudio		Resultado	Unidades	Valor de Referencia\nPOTASIO		*	3.5	mmol/L	3.6 - 5.0\n";
-var DEMO_GARCIA_LAB_REPORT = "Expediente:	0007755-3	Solicitud:	2605110312\nNombre:	DEMO GARC\xCDA ANA	Fecha Registro:	Apr 11 2026 11:05AM\nSexo:	FEMENINO	Ubicaci\xF3n:	MEDICINA INTERNA\nEdad:	54	Medico:	SERVICIO DEMO\n\nHEMATOLOGIA\nBIOMETRIA HEMATICA COMPLETA\nEstudio		Resultado	Unidades	Valor de Referencia\nHGB		*	10.40	g/dL	12.20 - 18.10\nHCT		*	33.1	%	37.7 - 53.7\nWBC		*	8.20	K/uL	4.00 - 11.00\nPLT		*	210	K/uL	142.00 - 424.00\nQUIMICA SANGUINEA\nGLUCOSA\nEstudio		Resultado	Unidades	Valor de Referencia\nGLUCOSA		*	142	mg/dL	70 - 110\nCREATININA EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nCREATININA EN SANGRE		A	0.92	mg/dL	0.6 - 1.4\n";
+var DEMO_SOME_LAB_REPORT = "Expediente:	0008421-7	Solicitud:	2605110244\nNombre:	DEMO P\xC9REZ JUAN	Fecha Registro:	Apr 11 2026 9:42AM\nSexo:	MASCULINO	Ubicaci\xF3n:	SERVICIO DEMO\nEdad:	67	Medico:	SERVICIO DEMO\n\nHEMATOLOGIA\nBIOMETRIA HEMATICA COMPLETA\nEstudio		Resultado	Unidades	Valor de Referencia\nRBC		4.71	M/uL	4.04 - 6.13\nHGB		*	11.85	g/dL	12.20 - 18.10\nHCT		*	38.4	%	37.7 - 53.7\nMCV		*	82	fL	80 - 97\nMCH		B	26.1	pg	27.0 - 31.2\nMCHC		*	32.0	g/dL	29.9 - 34.2\nRDW		*	13.2	%	11.6 - 14.8\nWBC		*	6.12	K/uL	4.00 - 11.00\nNEU		*	3.88	K/uL	2.00 - 6.90\nNEU%		*	63.4	%	37.0 - 80.0\nLYM		*	1.05	K/uL	0.60 - 3.40\nLYM%		*	17.2	%	10.0 - 50.0\nMONO		*	0.71	K/uL	0.000 - 0.900\nMONO%		*	11.6	%	0.00 - 12.00\nEOS		*	0.11	K/uL	0.000 - 0.700\nEOS%		*	1.8	%	0.00 - 7.00\nBASO		*	0.12	K/uL	0.000 - 0.200\nBASO%		*	2.0	%	0.00 - 2.50\nPLT		*	248	K/uL	142.00 - 424.00\nMPV		B	7.2	fL	7.4 - 10.4\n\nQUIMICA CLINICA\nCOMENTARIO DE MUESTRA\nEstudio		Resultado	Unidades	Valor de Referencia\nCOMENTARIO DE LA MUESTRA		*	\nGLUCOSA EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nGLUCOSA EN SANGRE		*	94	mg/dL	60 - 100\nNITROGENO DE LA UREA EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nNITROGENO DE LA UREA EN SANGRE		A	22	mg/dL	7 - 20\nCREATININA EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nCREATININA EN SANGRE		A	1.35	mg/dL	0.6 - 1.4\nACIDO URICO EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nACIDO URICO EN SANGRE		A	7.4	mg/dL	4.8 - 8.7\nPROTEINAS TOTALES\nEstudio		Resultado	Unidades	Valor de Referencia\nPROTEINAS TOTALES		A	7.6	g/dL	6.1 - 7.9\nALBUMINA\nEstudio		Resultado	Unidades	Valor de Referencia\nALBUMINA		*	4.1	g/dL	3.2 - 5.5\nGLOBULINA SERICA\nEstudio		Resultado	Unidades	Valor de Referencia\nGLOBULINA SERICA		*	3.5	g/dL	\nRELACION A/G\nEstudio		Resultado	Unidades	Valor de Referencia\nRELACION A/G		*	1.17	\nAST(ASPARTATO AMINOTRANSFERASA)\nEstudio		Resultado	Unidades	Valor de Referencia\nAST(ASPARTATO AMINOTRANSFERASA)		*	19	UI/L	10 - 42\nALT ALANIN AMINO TRANSFERASA\nEstudio		Resultado	Unidades	Valor de Referencia\nALT ALANIN AMINO TRANSFERASA		*	14	UI/L	10 - 42\nALP FOSFATASA ALCALINA\nEstudio		Resultado	Unidades	Valor de Referencia\nALP FOSFATASA ALCALINA		A	118	UI/L	38 - 126\nBILIRRUBINA\nEstudio		Resultado	Unidades	Valor de Referencia\nBILIRRUBINA TOTAL		A	1.2	mg/dL	0.2 - 1.0\nBILIRRUBINA DIRECTA		A	0.5	mg/dL	0.0 - 0.2\nBILIRRUBINA INDIRECTA		A	0.7	mg/dL	0.2 - 0.8\nLDH DESHIDROGENASA LACTICA\nEstudio		Resultado	Unidades	Valor de Referencia\nLDH DESHIDROGENASA LACTICA		*	142	UI/L	91 - 180\nAMILASA SERICA\nEstudio		Resultado	Unidades	Valor de Referencia\nAMILASA		*	68	U/L	28 - 100\nCOLESTEROL\nEstudio		Resultado	Unidades	Valor de Referencia\nCOLESTEROL		B	142	mg/dL	130 - 200\nTRIGLICERIDOS\nEstudio		Resultado	Unidades	Valor de Referencia\nTRIGLICERIDOS		*	118	mg/dL	35 - 150\nCLORO\nEstudio		Resultado	Unidades	Valor de Referencia\nCLORO		*	102	mmol/L	101.0 - 110.0\nSODIO\nEstudio		Resultado	Unidades	Valor de Referencia\nSODIO		*	138	mmol/L	135.0 - 145.0\nPOTASIO\nEstudio		Resultado	Unidades	Valor de Referencia\nPOTASIO		*	3.9	mmol/L	3.6 - 5.0\nCALCIO\nEstudio		Resultado	Unidades	Valor de Referencia\nCALCIO EN SUERO		*	8.8	mg/dL	8.4 - 10.2\nFOSFORO EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nFOSFORO		*	3.8	mg/dL	2.5 - 4.6\n";
+var OLDER_DEMO_SOME_LAB_REPORT = "Expediente:	0008421-7	Solicitud:	2603050188\nNombre:	DEMO P\xC9REZ JUAN	Fecha Registro:	Mar 05 2026 7:18AM\nSexo:	MASCULINO	Ubicaci\xF3n:	SERVICIO DEMO\nEdad:	67	Medico:	SERVICIO DEMO\n\nHEMATOLOGIA\nBIOMETRIA HEMATICA COMPLETA\nEstudio		Resultado	Unidades	Valor de Referencia\nRBC		4.55	M/uL	4.04 - 6.13\nHGB		*	10.20	g/dL	12.20 - 18.10\nHCT		*	35.8	%	37.7 - 53.7\nMCV		*	81	fL	80 - 97\nWBC		*	5.40	K/uL	4.00 - 11.00\nPLT		*	198	K/uL	142.00 - 424.00\n\nQUIMICA CLINICA\nGLUCOSA EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nGLUCOSA EN SANGRE		*	108	mg/dL	60 - 100\nNITROGENO DE LA UREA EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nNITROGENO DE LA UREA EN SANGRE		A	28	mg/dL	7 - 20\nCREATININA EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nCREATININA EN SANGRE		A	1.55	mg/dL	0.6 - 1.4\nCOLESTEROL\nEstudio		Resultado	Unidades	Valor de Referencia\nCOLESTEROL		B	155	mg/dL	130 - 200\nTRIGLICERIDOS\nEstudio		Resultado	Unidades	Valor de Referencia\nTRIGLICERIDOS		*	132	mg/dL	35 - 150\nSODIO\nEstudio		Resultado	Unidades	Valor de Referencia\nSODIO		B	134	mmol/L	135.0 - 145.0\nPOTASIO\nEstudio		Resultado	Unidades	Valor de Referencia\nPOTASIO		*	3.5	mmol/L	3.6 - 5.0\n";
+var DEMO_GARCIA_LAB_REPORT = "Expediente:	0007755-3	Solicitud:	2605110312\nNombre:	DEMO GARC\xCDA ANA	Fecha Registro:	Apr 11 2026 11:05AM\nSexo:	FEMENINO	Ubicaci\xF3n:	SERVICIO DEMO\nEdad:	54	Medico:	SERVICIO DEMO\n\nHEMATOLOGIA\nBIOMETRIA HEMATICA COMPLETA\nEstudio		Resultado	Unidades	Valor de Referencia\nHGB		*	10.40	g/dL	12.20 - 18.10\nHCT		*	33.1	%	37.7 - 53.7\nWBC		*	8.20	K/uL	4.00 - 11.00\nPLT		*	210	K/uL	142.00 - 424.00\nQUIMICA SANGUINEA\nGLUCOSA\nEstudio		Resultado	Unidades	Valor de Referencia\nGLUCOSA		*	142	mg/dL	70 - 110\nCREATININA EN SANGRE\nEstudio		Resultado	Unidades	Valor de Referencia\nCREATININA EN SANGRE		A	0.92	mg/dL	0.6 - 1.4\n";
 var DEMO_TOUR_LAB_PASTE = DEMO_SOME_LAB_REPORT + "\n\n" + OLDER_DEMO_SOME_LAB_REPORT;
 
 // public/js/tour-pitch-cultivos-some.mjs
-var PITCH_HEADER = "Expediente:	0008421-7	Solicitud:	2605000001\nNombre:	DEMO P\xC9REZ JUAN	Fecha Registro:	11/04/2026 08:00:00 a. m.\nSexo:	MASCULINO	Ubicaci\xF3n:	MEDICINA INTERNA\nEdad:	67	Medico:	SERVICIO DEMO\n";
+var PITCH_HEADER = "Expediente:	0008421-7	Solicitud:	2605000001\nNombre:	DEMO P\xC9REZ JUAN	Fecha Registro:	11/04/2026 08:00:00 a. m.\nSexo:	MASCULINO	Ubicaci\xF3n:	SERVICIO DEMO\nEdad:	67	Medico:	SERVICIO DEMO\n";
 function hdr(fecha, solicitud) {
-  return "Expediente:	0008421-7	Solicitud:	" + solicitud + "\nNombre:	DEMO P\xC9REZ JUAN	Fecha Registro:	" + fecha + "\nSexo:	MASCULINO	Ubicaci\xF3n:	MEDICINA INTERNA\nEdad:	67	Medico:	SERVICIO DEMO\n";
+  return "Expediente:	0008421-7	Solicitud:	" + solicitud + "\nNombre:	DEMO P\xC9REZ JUAN	Fecha Registro:	" + fecha + "\nSexo:	MASCULINO	Ubicaci\xF3n:	SERVICIO DEMO\nEdad:	67	Medico:	SERVICIO DEMO\n";
 }
 var PITCH_CULTIVO_PERITONEAL_SOME = hdr("07/05/2026 02:04:18 p. m.", "2605071010") + "\nBACTERIOLOGIA\nLIQUIDO PERITONEAL\nPRODUCTO\n*\nEN FRASCO DE HEMOCULTIVO ANAEROBIO\nMICROORGANISMO\n*\nPseudomonas aeruginosa\nANTIBIOGRAMA\n*\nCEFTAZIDIMA\n>16	R\nCIPROFLOXACINA\n<=1	S\nCEFEPIMA\n>16	R\nIMIPENEM\n2	S\nLEVOFLOXACINA\n<=2	S\nMEROPENEM\n<=1	S\nPIP/TAZO\n>64	R\nTOBRAMICINA\n<=4	S\n";
 var PITCH_CULTIVO_URO_SOME = hdr("05/05/2026 06:16:18 p. m.", "2605050805") + "\nBACTERIOLOGIA\nUROCULTIVO POR SONDA\nPRODUCTO\n*\nMICROORGANISMO\n*\nPseudomonas aeruginosa\nCOMENTARIO:\n*\nSE DETECTO CARBAPENEMASA. (METODO DE INACTIVACION DE DISCO)\nCUENTA DE KASS\n*\n50,000 UFC/mL\nANTIBIOGRAMA\n*\nAMIKACINA\n>32	R\nAZTREONAM\n>16	R\nCEFTAZIDIMA\n>16	R\nCIPROFLOXACINA\n>2	R\nCEFEPIMA\n>16	R\nCEFTAZIDIMA/AVIBACTAM\n>16	R\nIMIPENEM\n>4	R\nLEVOFLOXACINA\n>4	R\nMEROPENEM\n>8	R\nPIP/TAZO\n<=16	S\nTOBRAMICINA\n>8	R\n";
@@ -6202,7 +6202,6 @@ function buildTourDemoListadoProblemas(fecha, hora) {
 var DEFAULT_RECETA_HU_CONSULT_SERVICES = [
   "Nefrolog\xEDa",
   "Oncolog\xEDa",
-  "Medicina Interna",
   "Cardiolog\xEDa",
   "Endocrinolog\xEDa",
   "Gastroenterolog\xEDa",
@@ -6308,9 +6307,9 @@ function buildProximaCitaText(plazo, servicio) {
 }
 function buildRecetaHuGeneratePayload(args) {
   const patient = args && args.patient || {};
-  const draft = normalizeRecetaHuDraft(args && args.draft);
-  const fecha = draft.fecha || formatRecetaHuFecha(/* @__PURE__ */ new Date());
-  const proximaPdf = formatProximasCitasForPdf(draft.proximasCitas);
+  const draft2 = normalizeRecetaHuDraft(args && args.draft);
+  const fecha = draft2.fecha || formatRecetaHuFecha(/* @__PURE__ */ new Date());
+  const proximaPdf = formatProximasCitasForPdf(draft2.proximasCitas);
   return {
     patient: {
       nombre: String(patient.nombre || ""),
@@ -6318,14 +6317,14 @@ function buildRecetaHuGeneratePayload(args) {
       servicio: String(patient.servicio || "")
     },
     fecha,
-    meds: draft.meds.filter(function(row) {
+    meds: draft2.meds.filter(function(row) {
       return row.medicamento.trim() || row.presentacion.trim() || row.dosis.trim();
     }),
-    labs: draft.labs.map(function(x) {
+    labs: draft2.labs.map(function(x) {
       return String(x || "").trim();
     }).filter(Boolean),
-    cuidados: draft.cuidados,
-    proximasCitas: draft.proximasCitas,
+    cuidados: draft2.cuidados,
+    proximasCitas: draft2.proximasCitas,
     proximaCita: proximaPdf.proximaCita,
     proximaCitaFecha: proximaPdf.proximaCitaFecha,
     doctorName: String(args && args.doctorName ? args.doctorName : ""),
@@ -6725,8 +6724,8 @@ function seedPitchDemo(state) {
     registro: "0008421-7",
     edad: "67 a\xF1os",
     sexo: "M",
-    area: "MEDICINA INTERNA",
-    servicio: "MEDICINA INTERNA",
+    area: "SERVICIO DEMO",
+    servicio: "SERVICIO DEMO",
     cuarto: "101",
     cama: "1",
     fromLab: false,
@@ -6739,8 +6738,8 @@ function seedPitchDemo(state) {
     registro: "0007755-3",
     edad: "54 a\xF1os",
     sexo: "F",
-    area: "MEDICINA INTERNA",
-    servicio: "MEDICINA INTERNA",
+    area: "SERVICIO DEMO",
+    servicio: "SERVICIO DEMO",
     cuarto: "102",
     cama: "2",
     fromLab: false,
@@ -6770,7 +6769,7 @@ function seedPitchDemo(state) {
   indicaciones2[PITCH_DEMO_PATIENT_ID2] = {
     fecha,
     hora,
-    medicos: "Dr. Demo \xB7 MEDICINA INTERNA",
+    medicos: "Dr. Demo \xB7 SERVICIO DEMO",
     dieta: "Dieta renal, restricci\xF3n de K y P",
     cuidados: "Signos vitales c/8h, glucometr\xEDa c/6h, balance h\xEDdrico estricto",
     estudios: "Control de BH y QS ma\xF1ana",
@@ -7874,6 +7873,159 @@ function setAsyncButtonLoading(btn, loading, opts) {
   delete btn.dataset.uiMotionDefaultLabel;
 }
 
+// public/js/profile-templates.mjs
+var BLANK_NOTA_EVOLUCION = "N: [Neurol\xF3gico]\nV: [Ventilatorio]\nHD: [Hemodin\xE1mico]\nHI: [Infeccioso]\nNM: [Nutricional / Metab\xF3lico]";
+var BLANK_NOTA_ESTUDIOS = "FECHA (DD/MM/AA)\nQS\nBH\nEGO\n\nFECHA (DD/MM/AA)\nQS\nBH";
+var PROFILE_TEMPLATE_DEFAULTS = {
+  defaultNotaEvolucion: BLANK_NOTA_EVOLUCION,
+  defaultNotaEstudios: BLANK_NOTA_ESTUDIOS,
+  defaultDieta: "",
+  defaultCuidados: "",
+  defaultMedicamentos: "",
+  defaultIndicacionesEstudios: "",
+  defaultIndicacionesInterconsultas: ""
+};
+function ensureProfileTemplateDefaults(st) {
+  if (!st || typeof st !== "object") return;
+  Object.keys(PROFILE_TEMPLATE_DEFAULTS).forEach(function(key) {
+    if (st[key] == null || st[key] === "") {
+      st[key] = PROFILE_TEMPLATE_DEFAULTS[key];
+    }
+  });
+}
+function resetProfileTemplatesToBlank(st) {
+  if (!st || typeof st !== "object") return;
+  Object.assign(st, PROFILE_TEMPLATE_DEFAULTS);
+}
+function applyNotaFormatScaffoldIfEmpty(note, settings2) {
+  if (!note) return false;
+  var st = settings2 || {};
+  var changed = false;
+  if (!String(note.evolucion || "").trim() && st.defaultNotaEvolucion) {
+    note.evolucion = String(st.defaultNotaEvolucion);
+    changed = true;
+  }
+  if (!String(note.estudios || "").trim() && st.defaultNotaEstudios) {
+    note.estudios = String(st.defaultNotaEstudios);
+    changed = true;
+  }
+  return changed;
+}
+function applyIndicacionesFormatScaffoldIfEmpty(ind, settings2) {
+  if (!ind) return false;
+  var st = settings2 || {};
+  var changed = false;
+  var map = [
+    ["dieta", "defaultDieta"],
+    ["cuidados", "defaultCuidados"],
+    ["medicamentos", "defaultMedicamentos"],
+    ["estudios", "defaultIndicacionesEstudios"],
+    ["interconsultas", "defaultIndicacionesInterconsultas"]
+  ];
+  map.forEach(function(pair) {
+    var field = pair[0];
+    var key = pair[1];
+    if (!String(ind[field] || "").trim() && st[key]) {
+      ind[field] = String(st[key]);
+      changed = true;
+    }
+  });
+  return changed;
+}
+
+// public/js/profile-formats-editor.mjs
+var formatsEditMode = null;
+function getFormatsEditMode() {
+  return formatsEditMode;
+}
+function setFormatsEditMode(mode) {
+  formatsEditMode = mode;
+}
+function clearFormatsEditMode() {
+  formatsEditMode = null;
+}
+function esc(s) {
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function editorBanner(title, subtitle) {
+  return '<div class="formats-defaults-editor-banner" role="status"><div class="formats-defaults-editor-banner-text"><strong>' + esc(title) + "</strong><p>" + esc(subtitle) + '</p></div><div class="formats-defaults-editor-actions"><button type="button" class="btn-cancel" onclick="exitFormatsEditor()">Volver al expediente</button></div></div>';
+}
+function editorFooter() {
+  return '<div class="formats-defaults-editor-footer"><button type="button" class="btn-save formats-defaults-save-btn" onclick="saveDefaultFormatsFromEditor()">Guardar</button></div>';
+}
+function buildNoteDefaultsEditorHtml(st) {
+  ensureProfileTemplateDefaults(st);
+  return '<div class="formats-defaults-editor">' + editorBanner(
+    "Formatos por defecto \xB7 Nota de evoluci\xF3n",
+    "Misma vista que en el expediente. Estos textos se copian a pacientes nuevos o a secciones vac\xEDas."
+  ) + `<div class="card"><div class="card-header card-header--tone-green card-header-row"><span>Evoluci\xF3n y actualizaci\xF3n del cuadro cl\xEDnico</span></div><div class="card-body"><div class="field-group"><textarea id="fmt-default-nota-evolucion" rows="7" placeholder="N: [Neurol\xF3gico]&#10;V: [Ventilatorio]\u2026" oninput="updateDefaultFormatField('notaEvolucion',this.value)">` + esc(st.defaultNotaEvolucion) + `</textarea></div></div></div><div class="card"><div class="card-header card-header--tone-indigo"><span>Resultados de estudios auxiliares</span></div><div class="card-body"><div class="field-group"><textarea id="fmt-default-nota-estudios" rows="9" placeholder="FECHA (DD/MM/AA)&#10;QS&#10;BH\u2026" oninput="updateDefaultFormatField('notaEstudios',this.value)">` + esc(st.defaultNotaEstudios) + "</textarea></div></div></div>" + editorFooter() + "</div>";
+}
+function buildIndicaDefaultsEditorHtml(st) {
+  ensureProfileTemplateDefaults(st);
+  var sections = [
+    { key: "dieta", label: "Dieta", ph: "Escriba la dieta\u2026", val: st.defaultDieta },
+    { key: "cuidados", label: "Cuidados", ph: "Signos vitales, balance\u2026", val: st.defaultCuidados },
+    {
+      key: "medicamentos",
+      label: "Medicamentos",
+      ph: "F\xE1rmaco, dosis, v\xEDa\u2026",
+      val: st.defaultMedicamentos
+    },
+    { key: "estudios", label: "Estudios", ph: "BH, QS, EGO\u2026", val: st.defaultIndicacionesEstudios },
+    {
+      key: "interconsultas",
+      label: "Interconsultas",
+      ph: "Servicio y motivo\u2026",
+      val: st.defaultIndicacionesInterconsultas
+    }
+  ];
+  var body = sections.map(function(s) {
+    return '<div class="indica-section formats-defaults-indica-section"><div class="indica-section-header">' + esc(s.label) + '</div><div class="indica-section-body"><textarea id="fmt-default-ind-' + s.key + '" rows="3" placeholder="' + esc(s.ph) + `" oninput="updateDefaultFormatField('` + s.key + `',this.value)">` + esc(s.val) + "</textarea></div></div>";
+  }).join("");
+  return '<div class="formats-defaults-editor">' + editorBanner(
+    "Formatos por defecto \xB7 Indicaciones",
+    "Misma vista que en el expediente. Se aplican al abrir indicaciones vac\xEDas de un paciente nuevo."
+  ) + body + editorFooter() + "</div>";
+}
+var draft = {};
+function loadDraftFromSettings(st) {
+  ensureProfileTemplateDefaults(st);
+  draft = {
+    notaEvolucion: String(st.defaultNotaEvolucion || ""),
+    notaEstudios: String(st.defaultNotaEstudios || ""),
+    dieta: String(st.defaultDieta || ""),
+    cuidados: String(st.defaultCuidados || ""),
+    medicamentos: String(st.defaultMedicamentos || ""),
+    estudios: String(st.defaultIndicacionesEstudios || ""),
+    interconsultas: String(st.defaultIndicacionesInterconsultas || "")
+  };
+}
+function applyDraftToSettings(st) {
+  st.defaultNotaEvolucion = draft.notaEvolucion.trim();
+  st.defaultNotaEstudios = draft.notaEstudios.trim();
+  st.defaultDieta = draft.dieta.trim();
+  st.defaultCuidados = draft.cuidados.trim();
+  st.defaultMedicamentos = draft.medicamentos.trim();
+  st.defaultIndicacionesEstudios = draft.estudios.trim();
+  st.defaultIndicacionesInterconsultas = draft.interconsultas.trim();
+}
+function updateDefaultFormatField(field, value) {
+  if (Object.prototype.hasOwnProperty.call(draft, field)) {
+    draft[field] = value;
+  }
+}
+function resetDraftToBlank() {
+  draft = {
+    notaEvolucion: "",
+    notaEstudios: "",
+    dieta: "",
+    cuidados: "",
+    medicamentos: "",
+    estudios: "",
+    interconsultas: ""
+  };
+}
+
 // public/js/features/notes-indicaciones.mjs
 var rt2 = {
   getActiveId() {
@@ -7923,7 +8075,7 @@ function registerNotesIndicacionesRuntime(partial) {
 function aid() {
   return rt2.getActiveId();
 }
-function esc(s) {
+function esc2(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function applyProfileToNoteIfEmpty(note) {
@@ -7940,20 +8092,28 @@ function applyProfileToNoteIfEmpty(note) {
   return changed;
 }
 function renderNoteForm() {
+  if (getFormatsEditMode() === "nota") {
+    var st = rt2.getSettings() || {};
+    loadDraftFromSettings(st);
+    document.getElementById("note-form").innerHTML = buildNoteDefaultsEditorHtml(st);
+    return;
+  }
   var patient = patients.find(function(p) {
     return String(p.id) === String(aid());
   });
   if (!patient) return;
   if (aid()) {
     if (!notes[aid()]) notes[aid()] = {};
-    if (applyProfileToNoteIfEmpty(notes[aid()])) saveState();
+    var changed = applyProfileToNoteIfEmpty(notes[aid()]);
+    if (applyNotaFormatScaffoldIfEmpty(notes[aid()], rt2.getSettings() || {})) changed = true;
+    if (changed) saveState();
   }
   var note = notes[aid()] || {};
-  document.getElementById("note-form").innerHTML = '<div class="card"><div class="card-header card-header--tone-slate"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Fecha y Hora</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="field-group"><label>Fecha</label><input type="text" value="' + esc(note.fecha) + `" oninput="updateNote('fecha',this.value)" placeholder="DD/MM/AAAA"></div><div class="field-group"><label>Hora</label><input type="text" value="` + esc(note.hora) + `" oninput="updateNote('hora',this.value)" placeholder="HH:MM"></div></div></div></div><div class="card"><div class="card-header"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Resumen de Interrogatorio, Exploraci\xF3n F\xEDsica y Estado Mental</div><div class="card-body"><div class="field-group"><textarea rows="5" placeholder="Ingresa el resumen de interrogatorio, exploraci\xF3n f\xEDsica y estado mental..." oninput="updateNote('interrogatorio',this.value)">` + esc(note.interrogatorio) + `</textarea></div></div></div><div class="card"><div class="card-header card-header--tone-green card-header-row"><span style="display:flex;align-items:center;gap:8px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Evoluci\xF3n y Actualizaci\xF3n del Cuadro Cl\xEDnico</span><button type="button" id="btn-soap-template" class="card-header-ghost-btn" onclick="openSOAPModal()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>Plantilla SOAP</button></div><div class="card-body"><div class="field-group"><textarea rows="7" placeholder="N: [Neurol\xF3gico]&#10;V: [Ventilatorio]&#10;HD: [Hemodin\xE1mico]&#10;HI: [Infeccioso]&#10;NM: [Nutricional/Metab\xF3lico]" oninput="updateNote('evolucion',this.value)">` + esc(note.evolucion) + `</textarea></div></div></div><div class="card"><div class="card-header card-header--tone-indigo"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>Resultados de Estudios Auxiliares</div><div class="card-body"><div class="field-group"><textarea rows="9" placeholder="Una l\xEDnea por rengl\xF3n del documento:&#10;FECHA (ej. 09.04.26)&#10;QS Glu Cr BUN..." oninput="updateNote('estudios',this.value)">` + esc(note.estudios) + '</textarea></div></div></div><div class="card"><div class="card-header card-header--tone-rose"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>Diagn\xF3stico(s)</div><div class="card-body"><div class="list-rows" id="dx-list">' + (note.diagnosticos || [""]).map(function(dx, i) {
-    return '<div class="list-row"><input type="text" value="' + esc(dx) + '" placeholder="Diagn\xF3stico ' + (i + 1) + '" oninput="updateDx(' + i + ',this.value)" style="text-transform:uppercase;"><button class="btn-remove" onclick="removeDx(' + i + ')"' + ((note.diagnosticos || [""]).length <= 1 ? ' style="visibility:hidden"' : "") + ' aria-label="Eliminar">\xD7</button></div>';
-  }).join("") + '</div><button class="btn-add-row" onclick="addDx()">+ Agregar diagn\xF3stico</button></div></div><div class="card"><div class="card-header card-header--tone-amber"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Signos Vitales</div><div class="card-body"><div class="vitals-grid"><div class="vital-box"><div class="vital-label">T.A.</div><input type="text" value="' + esc(note.ta) + `" placeholder="120/80" oninput="updateNote('ta',this.value)"></div><div class="vital-box"><div class="vital-label">F.R.</div><input type="text" value="` + esc(note.fr) + `" placeholder="16" oninput="updateNote('fr',this.value)"></div><div class="vital-box"><div class="vital-label">F.C.</div><input type="text" value="` + esc(note.fc) + `" placeholder="72" oninput="updateNote('fc',this.value)"></div><div class="vital-box"><div class="vital-label">Temperatura</div><input type="text" value="` + esc(note.temp) + `" placeholder="36.6" oninput="updateNote('temp',this.value)"></div><div class="vital-box"><div class="vital-label">Peso (kg)</div><input type="text" value="` + esc(note.peso) + `" placeholder="70.0" oninput="updateNote('peso',this.value)"></div></div></div></div><div class="card"><div class="card-header card-header--tone-teal"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>Tratamiento e Indicaciones M\xE9dicas</div><div class="card-body"><div class="list-rows" id="tx-list">` + (note.tratamiento || [""]).map(function(tx, i) {
-    return '<div class="list-row"><span class="list-num">' + (i + 1) + '.</span><input type="text" value="' + esc(tx) + '" placeholder="Indicaci\xF3n, dosis, v\xEDa y periodicidad" oninput="updateTx(' + i + ',this.value)"><button class="btn-remove" onclick="removeTx(' + i + ')"' + ((note.tratamiento || [""]).length <= 1 ? ' style="visibility:hidden"' : "") + ' aria-label="Eliminar">\xD7</button></div>';
-  }).join("") + '</div><button class="btn-add-row" onclick="addTx()">+ Agregar indicaci\xF3n</button></div></div><div class="card"><div class="card-header card-header--tone-violet"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>M\xE9dico y Profesor</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="field-group"><label>M\xE9dico Tratante</label><input type="text" value="' + esc(note.medico) + `" placeholder="Nombre completo" oninput="updateNote('medico',this.value)"></div><div class="field-group"><label>Profesor Responsable</label><input type="text" value="` + esc(note.profesor) + `" placeholder="Nombre completo" oninput="updateNote('profesor',this.value)"></div></div></div></div><div class="action-bar"><button type="button" class="btn-med-secondary rpc-doc-export" onclick="quickExportCurrentPatient()" id="btn-quick-export-note"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida r\xE1pida</button><button type="button" class="btn-generate rpc-doc-export" onclick="generateWord()" id="btn-gen"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Nota (.docx)</button></div>`;
+  document.getElementById("note-form").innerHTML = '<div class="card"><div class="card-header card-header--tone-slate"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Fecha y Hora</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="field-group"><label>Fecha</label><input type="text" value="' + esc2(note.fecha) + `" oninput="updateNote('fecha',this.value)" placeholder="DD/MM/AAAA"></div><div class="field-group"><label>Hora</label><input type="text" value="` + esc2(note.hora) + `" oninput="updateNote('hora',this.value)" placeholder="HH:MM"></div></div></div></div><div class="card"><div class="card-header"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Resumen de Interrogatorio, Exploraci\xF3n F\xEDsica y Estado Mental</div><div class="card-body"><div class="field-group"><textarea rows="5" placeholder="Ingresa el resumen de interrogatorio, exploraci\xF3n f\xEDsica y estado mental..." oninput="updateNote('interrogatorio',this.value)">` + esc2(note.interrogatorio) + `</textarea></div></div></div><div class="card"><div class="card-header card-header--tone-green card-header-row"><span style="display:flex;align-items:center;gap:8px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Evoluci\xF3n y Actualizaci\xF3n del Cuadro Cl\xEDnico</span><button type="button" id="btn-soap-template" class="card-header-ghost-btn" onclick="openSOAPModal()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>Plantilla SOAP</button></div><div class="card-body"><div class="field-group"><textarea rows="7" placeholder="Estructura N / V / HD / HI / NM. Usa Plantilla SOAP o edita los formatos en Mi Perfil." oninput="updateNote('evolucion',this.value)">` + esc2(note.evolucion) + `</textarea></div></div></div><div class="card"><div class="card-header card-header--tone-indigo"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>Resultados de Estudios Auxiliares</div><div class="card-body"><div class="field-group"><textarea rows="9" placeholder="FECHA (DD/MM/AA)&#10;QS&#10;BH&#10;EGO&#10;(una l\xEDnea por rengl\xF3n; sin valores de ejemplo)" oninput="updateNote('estudios',this.value)">` + esc2(note.estudios) + '</textarea></div></div></div><div class="card"><div class="card-header card-header--tone-rose"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>Diagn\xF3stico(s)</div><div class="card-body"><div class="list-rows" id="dx-list">' + (note.diagnosticos || [""]).map(function(dx, i) {
+    return '<div class="list-row"><input type="text" value="' + esc2(dx) + '" placeholder="Diagn\xF3stico ' + (i + 1) + '" oninput="updateDx(' + i + ',this.value)" style="text-transform:uppercase;"><button class="btn-remove" onclick="removeDx(' + i + ')"' + ((note.diagnosticos || [""]).length <= 1 ? ' style="visibility:hidden"' : "") + ' aria-label="Eliminar">\xD7</button></div>';
+  }).join("") + '</div><button class="btn-add-row" onclick="addDx()">+ Agregar diagn\xF3stico</button></div></div><div class="card"><div class="card-header card-header--tone-amber"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Signos Vitales</div><div class="card-body"><div class="vitals-grid"><div class="vital-box"><div class="vital-label">T.A.</div><input type="text" value="' + esc2(note.ta) + `" placeholder="120/80" oninput="updateNote('ta',this.value)"></div><div class="vital-box"><div class="vital-label">F.R.</div><input type="text" value="` + esc2(note.fr) + `" placeholder="16" oninput="updateNote('fr',this.value)"></div><div class="vital-box"><div class="vital-label">F.C.</div><input type="text" value="` + esc2(note.fc) + `" placeholder="72" oninput="updateNote('fc',this.value)"></div><div class="vital-box"><div class="vital-label">Temperatura</div><input type="text" value="` + esc2(note.temp) + `" placeholder="36.6" oninput="updateNote('temp',this.value)"></div><div class="vital-box"><div class="vital-label">Peso (kg)</div><input type="text" value="` + esc2(note.peso) + `" placeholder="70.0" oninput="updateNote('peso',this.value)"></div></div></div></div><div class="card"><div class="card-header card-header--tone-teal"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>Tratamiento e Indicaciones M\xE9dicas</div><div class="card-body"><div class="list-rows" id="tx-list">` + (note.tratamiento || [""]).map(function(tx, i) {
+    return '<div class="list-row"><span class="list-num">' + (i + 1) + '.</span><input type="text" value="' + esc2(tx) + '" placeholder="Indicaci\xF3n, dosis, v\xEDa y periodicidad" oninput="updateTx(' + i + ',this.value)"><button class="btn-remove" onclick="removeTx(' + i + ')"' + ((note.tratamiento || [""]).length <= 1 ? ' style="visibility:hidden"' : "") + ' aria-label="Eliminar">\xD7</button></div>';
+  }).join("") + '</div><button class="btn-add-row" onclick="addTx()">+ Agregar indicaci\xF3n</button></div></div><div class="card"><div class="card-header card-header--tone-violet"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>M\xE9dico y Profesor</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="field-group"><label>M\xE9dico Tratante</label><input type="text" value="' + esc2(note.medico) + `" placeholder="Nombre completo" oninput="updateNote('medico',this.value)"></div><div class="field-group"><label>Profesor Responsable</label><input type="text" value="` + esc2(note.profesor) + `" placeholder="Nombre completo" oninput="updateNote('profesor',this.value)"></div></div></div></div><div class="action-bar"><button type="button" class="btn-med-secondary rpc-doc-export" onclick="quickExportCurrentPatient()" id="btn-quick-export-note"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida r\xE1pida</button><button type="button" class="btn-generate rpc-doc-export" onclick="generateWord()" id="btn-gen"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Nota (.docx)</button></div>`;
   rt2.syncOfflineButtonStates();
 }
 function updateNote(field, value) {
@@ -8034,6 +8194,12 @@ function generateWord() {
   });
 }
 function renderIndicaForm() {
+  if (getFormatsEditMode() === "indica") {
+    var st = rt2.getSettings() || {};
+    loadDraftFromSettings(st);
+    document.getElementById("indica-form").innerHTML = buildIndicaDefaultsEditorHtml(st);
+    return;
+  }
   var patient = patients.find(function(p) {
     return p.id === aid();
   });
@@ -8041,19 +8207,21 @@ function renderIndicaForm() {
   if (!indicaciones[aid()]) {
     var today = /* @__PURE__ */ new Date();
     indicaciones[aid()] = { fecha: String(today.getDate()).padStart(2, "0") + "/" + String(today.getMonth() + 1).padStart(2, "0") + "/" + today.getFullYear(), hora: String(today.getHours()).padStart(2, "0") + ":" + String(today.getMinutes()).padStart(2, "0"), medicos: "", dieta: "", cuidados: "", estudios: "", medicamentos: "", interconsultas: "", otros: [] };
+    applyIndicacionesFormatScaffoldIfEmpty(indicaciones[aid()], rt2.getSettings() || {});
+    saveState();
   }
   var ind = indicaciones[aid()];
   var SECTIONS = [
-    { key: "dieta", label: "Dieta", placeholder: "DIETA NORMAL DIAB\xC9TICA ALTA EN FIBRA..." },
-    { key: "cuidados", label: "Cuidados", placeholder: "COLOCAR SONDA FOLEY.\nCUANTIFICACI\xD3N ESTRICTA DE INGRESOS Y EGRESOS..." },
-    { key: "estudios", label: "Estudios", placeholder: "BH, QS, EGO..." },
-    { key: "medicamentos", label: "Medicamentos", placeholder: "PARACETAMOL 1G VO CADA 8 HORAS PRN..." },
-    { key: "interconsultas", label: "Interconsultas", placeholder: "CONTINUAR INDICACIONES DE INFECTOLOG\xCDA..." }
+    { key: "dieta", label: "Dieta", placeholder: "Escriba la dieta (una indicaci\xF3n por l\xEDnea si aplica)\u2026" },
+    { key: "cuidados", label: "Cuidados", placeholder: "Signos vitales, balance, dispositivos, etc.\u2026" },
+    { key: "estudios", label: "Estudios", placeholder: "BH, QS, EGO, im\xE1genes\u2026" },
+    { key: "medicamentos", label: "Medicamentos", placeholder: "F\xE1rmaco, dosis, v\xEDa y horario\u2026" },
+    { key: "interconsultas", label: "Interconsultas", placeholder: "Servicio y motivo de interconsulta\u2026" }
   ];
-  document.getElementById("indica-form").innerHTML = '<div class="card"><div class="card-header"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Datos del Paciente</div><div class="card-body"><div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:10px;align-items:end;"><div class="field-group"><label>Nombre</label><input type="text" value="' + esc(patient.nombre) + '" class="field-readonly" readonly></div><div class="field-group"><label>Registro</label><input type="text" value="' + esc(patient.registro) + '" class="field-readonly" readonly></div><div class="field-group"><label>Edad/Sexo</label><input type="text" value="' + esc(patient.edad) + " / " + esc(patient.sexo) + '" class="field-readonly" readonly></div><div class="field-group"><label>Cuarto</label><input type="text" value="' + esc(patient.cuarto) + '" class="field-readonly" readonly></div><div class="field-group"><label>Cama</label><input type="text" value="' + esc(patient.cama) + '" class="field-readonly" readonly></div></div></div></div><div class="card"><div class="card-header card-header--tone-slate"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Fecha, Hora y M\xE9dicos</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:12px;"><div class="field-group"><label>Fecha</label><input type="text" value="' + esc(ind.fecha) + `" placeholder="DD/MM/AAAA" oninput="updateIndica('fecha',this.value)"></div><div class="field-group"><label>Hora</label><input type="text" value="` + esc(ind.hora) + `" placeholder="HH:MM" oninput="updateIndica('hora',this.value)"></div><div class="field-group"><label>M\xE9dicos (uno por l\xEDnea)</label><textarea rows="3" placeholder="R3 NOMBRE APELLIDO" oninput="updateIndica('medicos',this.value)">` + esc(ind.medicos) + "</textarea></div></div></div></div>" + buildExtraTemplatesSelectorHtml() + SECTIONS.map(function(s) {
-    return '<div class="indica-section"><div class="indica-section-header">' + s.label + '</div><div class="indica-section-body"><textarea rows="3" placeholder="' + s.placeholder + `" oninput="updateIndica('` + s.key + `',this.value)">` + esc(ind[s.key]) + "</textarea></div></div>";
+  document.getElementById("indica-form").innerHTML = '<div class="card"><div class="card-header"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Datos del Paciente</div><div class="card-body"><div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:10px;align-items:end;"><div class="field-group"><label>Nombre</label><input type="text" value="' + esc2(patient.nombre) + '" class="field-readonly" readonly></div><div class="field-group"><label>Registro</label><input type="text" value="' + esc2(patient.registro) + '" class="field-readonly" readonly></div><div class="field-group"><label>Edad/Sexo</label><input type="text" value="' + esc2(patient.edad) + " / " + esc2(patient.sexo) + '" class="field-readonly" readonly></div><div class="field-group"><label>Cuarto</label><input type="text" value="' + esc2(patient.cuarto) + '" class="field-readonly" readonly></div><div class="field-group"><label>Cama</label><input type="text" value="' + esc2(patient.cama) + '" class="field-readonly" readonly></div></div></div></div><div class="card"><div class="card-header card-header--tone-slate"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Fecha, Hora y M\xE9dicos</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:12px;"><div class="field-group"><label>Fecha</label><input type="text" value="' + esc2(ind.fecha) + `" placeholder="DD/MM/AAAA" oninput="updateIndica('fecha',this.value)"></div><div class="field-group"><label>Hora</label><input type="text" value="` + esc2(ind.hora) + `" placeholder="HH:MM" oninput="updateIndica('hora',this.value)"></div><div class="field-group"><label>M\xE9dicos (uno por l\xEDnea)</label><textarea rows="3" placeholder="R3 NOMBRE APELLIDO" oninput="updateIndica('medicos',this.value)">` + esc2(ind.medicos) + "</textarea></div></div></div></div>" + buildExtraTemplatesSelectorHtml() + SECTIONS.map(function(s) {
+    return '<div class="indica-section"><div class="indica-section-header">' + s.label + '</div><div class="indica-section-body"><textarea rows="3" placeholder="' + s.placeholder + `" oninput="updateIndica('` + s.key + `',this.value)">` + esc2(ind[s.key]) + "</textarea></div></div>";
   }).join("") + '<div class="card"><div class="card-header card-header--tone-violet"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 4v16m8-8H4"/></svg>Otros</div><div class="card-body" style="display:flex;flex-direction:column;gap:10px;"><div id="otros-list">' + (ind.otros || []).map(function(o, i) {
-    return '<div class="otros-item"><button class="btn-remove-otro" onclick="removeOtro(' + i + ')">\xD7</button><input type="text" placeholder="T\xCDTULO DE LA SECCI\xD3N" value="' + esc(o.titulo) + '" oninput="updateOtro(' + i + `,'titulo',this.value)"><textarea rows="2" placeholder="Indicaciones..." oninput="updateOtro(` + i + `,'contenido',this.value)">` + esc(o.contenido) + "</textarea></div>";
+    return '<div class="otros-item"><button class="btn-remove-otro" onclick="removeOtro(' + i + ')">\xD7</button><input type="text" placeholder="T\xCDTULO DE LA SECCI\xD3N" value="' + esc2(o.titulo) + '" oninput="updateOtro(' + i + `,'titulo',this.value)"><textarea rows="2" placeholder="Indicaciones..." oninput="updateOtro(` + i + `,'contenido',this.value)">` + esc2(o.contenido) + "</textarea></div>";
   }).join("") + '</div><button class="btn-add-row" onclick="addOtro()">+ Agregar secci\xF3n</button></div></div><div class="action-bar"><button type="button" class="btn-med-secondary rpc-doc-export" onclick="quickExportCurrentPatient()" id="btn-quick-export-indica"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida r\xE1pida</button><button type="button" class="btn-generate rpc-doc-export" onclick="generateIndicaciones()" id="btn-gen-ind"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Indicaciones (.docx)</button></div>';
   rt2.syncOfflineButtonStates();
 }
@@ -8086,7 +8254,7 @@ function buildExtraTemplatesSelectorHtml() {
     return '<div class="indica-extra-tmpl"><span class="iet-hint">Guarda combinaciones reutilizables en Ajustes \u2192 Plantillas guardadas.</span></div>';
   }
   var opts = '<option value="">\u2014 Aplicar plantilla guardada \u2014</option>' + arr.map(function(t2) {
-    return '<option value="' + esc(t2.id) + '">' + esc(t2.label || "(sin nombre)") + "</option>";
+    return '<option value="' + esc2(t2.id) + '">' + esc2(t2.label || "(sin nombre)") + "</option>";
   }).join("");
   return '<div class="indica-extra-tmpl"><select id="indica-extra-tmpl-select" aria-label="Seleccionar plantilla guardada">' + opts + '</select><button type="button" onclick="applyExtraTemplateFromIndica()">Aplicar</button></div>';
 }
@@ -10295,7 +10463,7 @@ var rt5 = {
   }
 };
 var pendingConfirm = null;
-function esc2(s) {
+function esc3(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function statusClass(status) {
@@ -10341,13 +10509,13 @@ function renderReportIssues(block) {
   return '<ul class="lab-bulk-preview-issues">' + bad.map(function(r, idx) {
     var msg = r.error || "No se pudo parsear el reporte";
     var label = r.expediente ? "Exp. " + r.expediente : "Reporte " + (idx + 1);
-    return "<li><strong>" + esc2(label) + ":</strong> " + esc2(msg) + "</li>";
+    return "<li><strong>" + esc3(label) + ":</strong> " + esc3(msg) + "</li>";
   }).join("") + "</ul>";
 }
 function renderPreviewTable(blocks) {
   var rows = blocks.map(function(block, idx) {
     var issues = renderReportIssues(block);
-    return '<tr class="lab-bulk-preview-row lab-bulk-preview-row--' + esc2(block.status || "unknown") + '"><td>' + (idx + 1) + "</td><td><strong>" + esc2(block.patientName || "\u2014") + "</strong>" + (block.primaryExpediente ? '<span class="lab-bulk-preview-exp">Exp. ' + esc2(block.primaryExpediente) + "</span>" : "") + "</td><td>" + (block.reportCount || 0) + ' <span class="lab-bulk-preview-muted">(' + (block.okReportCount || 0) + " ok)</span></td><td>" + esc2(block.daysLabel || "\u2014") + "</td><td>" + (block.setsAfterMerge || 0) + '</td><td><span class="lab-bulk-preview-status ' + statusClass(block.status) + '">' + esc2(bulkPreviewStatusLabel(block.status)) + "</span></td></tr>" + (issues ? '<tr class="lab-bulk-preview-detail-row"><td colspan="6">' + issues + "</td></tr>" : "");
+    return '<tr class="lab-bulk-preview-row lab-bulk-preview-row--' + esc3(block.status || "unknown") + '"><td>' + (idx + 1) + "</td><td><strong>" + esc3(block.patientName || "\u2014") + "</strong>" + (block.primaryExpediente ? '<span class="lab-bulk-preview-exp">Exp. ' + esc3(block.primaryExpediente) + "</span>" : "") + "</td><td>" + (block.reportCount || 0) + ' <span class="lab-bulk-preview-muted">(' + (block.okReportCount || 0) + " ok)</span></td><td>" + esc3(block.daysLabel || "\u2014") + "</td><td>" + (block.setsAfterMerge || 0) + '</td><td><span class="lab-bulk-preview-status ' + statusClass(block.status) + '">' + esc3(bulkPreviewStatusLabel(block.status)) + "</span></td></tr>" + (issues ? '<tr class="lab-bulk-preview-detail-row"><td colspan="6">' + issues + "</td></tr>" : "");
   }).join("");
   return '<table class="lab-bulk-preview-table"><thead><tr><th>#</th><th>Paciente</th><th>Reportes</th><th>D\xEDas</th><th>Conjuntos</th><th>Estado</th></tr></thead><tbody>' + rows + "</tbody></table>";
 }
@@ -10617,7 +10785,7 @@ function clearLabWorkbenchMinimalDom() {
   if (ta) ta.value = "";
   syncLabOutputChrome();
 }
-function esc3(s) {
+function esc4(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 var LAB_HISTORY_COLLAPSED_LS = "rpc-ui-labHistoryCollapsed";
@@ -10779,7 +10947,7 @@ function renderLabHistoryPanel() {
     var sid = safeAttrJsString(
       set.id != null && String(set.id).trim() !== "" ? set.id : "__idx_" + idx
     );
-    return '<div class="lab-history-row" role="listitem"><div class="lab-history-meta">' + esc3(meta) + `</div><div class="lab-history-actions"><button type="button" class="btn-lab-history" onclick="replayLabHistorySet('` + sid + `')">Ver en Laboratorio</button><button type="button" class="btn-lab-history" onclick="reprocessLabHistorySet('` + sid + `')">Reprocesar</button><button type="button" class="btn-lab-history btn-lab-history-del" onclick="deleteLabHistorySet('` + sid + `')">Eliminar</button></div></div>`;
+    return '<div class="lab-history-row" role="listitem"><div class="lab-history-meta">' + esc4(meta) + `</div><div class="lab-history-actions"><button type="button" class="btn-lab-history" onclick="replayLabHistorySet('` + sid + `')">Ver en Laboratorio</button><button type="button" class="btn-lab-history" onclick="reprocessLabHistorySet('` + sid + `')">Reprocesar</button><button type="button" class="btn-lab-history btn-lab-history-del" onclick="deleteLabHistorySet('` + sid + `')">Eliminar</button></div></div>`;
   }).join("");
   if (hiddenCount > 0) {
     rowsHtml += '<div class="lab-history-more-wrap"><button type="button" class="btn-lab-history btn-lab-history-expand" onclick="expandLabHistoryList()">Mostrar ' + hiddenCount + " entrada" + (hiddenCount === 1 ? "" : "s") + " anteriores</button></div>";
@@ -10995,19 +11163,19 @@ function showLabDedupeChecklistModal(sections) {
     var loose = sec.rows.filter(function(r) {
       return r.kind === "loose";
     });
-    var head = '<h4 style="margin:12px 0 8px;font-size:14px;font-weight:700;color:var(--text);">' + esc3(sec.nombre || "\u2014") + (sec.registro ? ' <span style="opacity:0.85;font-weight:500">\xB7 ' + esc3(sec.registro) + "</span>" : "") + "</h4>";
+    var head = '<h4 style="margin:12px 0 8px;font-size:14px;font-weight:700;color:var(--text);">' + esc4(sec.nombre || "\u2014") + (sec.registro ? ' <span style="opacity:0.85;font-weight:500">\xB7 ' + esc4(sec.registro) + "</span>" : "") + "</h4>";
     var part = '<div class="lab-dedupe-patient-block">' + head;
     if (exact.length) {
       part += '<p style="margin:0 0 6px;font-size:12px;color:var(--text-muted);font-weight:600;">Duplicados exactos (misma fecha, hora y texto del reporte)</p><ul style="margin:0 0 14px;padding-left:0;list-style:none;max-height:220px;overflow-y:auto;font-size:13px;">';
       exact.forEach(function(r) {
-        part += '<li style="margin:6px 0;"><label style="cursor:pointer;display:flex;gap:8px;align-items:flex-start;"><input type="checkbox" class="lab-dedupe-cb" data-pid="' + esc3(r.patientId) + '" data-sid="' + esc3(r.id) + '" checked style="margin-top:3px;flex-shrink:0;" /> <span>' + esc3(r.summary) + "</span></label></li>";
+        part += '<li style="margin:6px 0;"><label style="cursor:pointer;display:flex;gap:8px;align-items:flex-start;"><input type="checkbox" class="lab-dedupe-cb" data-pid="' + esc4(r.patientId) + '" data-sid="' + esc4(r.id) + '" checked style="margin-top:3px;flex-shrink:0;" /> <span>' + esc4(r.summary) + "</span></label></li>";
       });
       part += "</ul>";
     }
     if (loose.length) {
       part += '<p style="margin:0 0 6px;font-size:12px;color:var(--text-muted);font-weight:600;">Posibles duplicados (misma fecha/hora y mismos valores num\xE9ricos parseados; el texto del reporte puede diferir)</p><ul style="margin:0 0 14px;padding-left:0;list-style:none;max-height:220px;overflow-y:auto;font-size:13px;">';
       loose.forEach(function(r) {
-        part += '<li style="margin:6px 0;"><label style="cursor:pointer;display:flex;gap:8px;align-items:flex-start;"><input type="checkbox" class="lab-dedupe-cb" data-pid="' + esc3(r.patientId) + '" data-sid="' + esc3(r.id) + '" checked style="margin-top:3px;flex-shrink:0;" /> <span>' + esc3(r.summary) + "</span></label></li>";
+        part += '<li style="margin:6px 0;"><label style="cursor:pointer;display:flex;gap:8px;align-items:flex-start;"><input type="checkbox" class="lab-dedupe-cb" data-pid="' + esc4(r.patientId) + '" data-sid="' + esc4(r.id) + '" checked style="margin-top:3px;flex-shrink:0;" /> <span>' + esc4(r.summary) + "</span></label></li>";
       });
       part += "</ul>";
     }
@@ -11612,7 +11780,7 @@ function showLabConflictModal(newLines, existingDate) {
   var backdrop = document.createElement("div");
   backdrop.className = "lab-conflict-backdrop";
   backdrop.id = "lab-conflict-backdrop";
-  backdrop.innerHTML = '<div class="lab-conflict-modal"><h3>Los estudios ya tienen datos</h3><p>El bloque reciente ya tiene labs del <strong>' + esc3(existingDate) + '</strong>. \xBFQu\xE9 hago con los nuevos labs?</p><div class="lab-conflict-actions"><button class="btn-conflict-primary" id="btn-conflict-move">\u{1F4CB} Mover anterior + agregar reciente<br><span style="font-size:11px;font-weight:400;opacity:0.8;">Los labs actuales pasan al bloque anterior y los nuevos quedan como recientes</span></button><button class="btn-conflict-secondary" id="btn-conflict-replace">\u{1F504} Reemplazar fecha reciente<br><span style="font-size:11px;font-weight:400;opacity:0.7;">Los labs actuales se borran, se escriben los nuevos</span></button><button class="btn-conflict-cancel" id="btn-conflict-cancel">Cancelar</button></div></div>';
+  backdrop.innerHTML = '<div class="lab-conflict-modal"><h3>Los estudios ya tienen datos</h3><p>El bloque reciente ya tiene labs del <strong>' + esc4(existingDate) + '</strong>. \xBFQu\xE9 hago con los nuevos labs?</p><div class="lab-conflict-actions"><button class="btn-conflict-primary" id="btn-conflict-move">\u{1F4CB} Mover anterior + agregar reciente<br><span style="font-size:11px;font-weight:400;opacity:0.8;">Los labs actuales pasan al bloque anterior y los nuevos quedan como recientes</span></button><button class="btn-conflict-secondary" id="btn-conflict-replace">\u{1F504} Reemplazar fecha reciente<br><span style="font-size:11px;font-weight:400;opacity:0.7;">Los labs actuales se borran, se escriben los nuevos</span></button><button class="btn-conflict-cancel" id="btn-conflict-cancel">Cancelar</button></div></div>';
   document.body.appendChild(backdrop);
   document.getElementById("btn-conflict-move").onclick = function() {
     document.body.removeChild(backdrop);
@@ -12023,7 +12191,7 @@ function registerExpedienteRuntime(partial) {
 function aid2() {
   return rt7.getActiveId();
 }
-function esc4(s) {
+function esc5(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 var _listadoSortables = [];
@@ -12236,7 +12404,7 @@ function buildCultivoAntibiogramCellHtmlForPatient(r, patientId) {
   if (sens && sens.length) {
     return '<div class="cultivos-atb-wrap"><div class="cultivos-atb-chips" role="list">' + buildAtbRisSummaryHtml(sens) + "</div>" + copyBtn + "</div>";
   }
-  return '<div class="cultivos-atb-wrap"><pre class="cultivos-atb-fallback">' + esc4(r.resistencias || r.risSummary || "\u2014") + "</pre>" + copyBtn + "</div>";
+  return '<div class="cultivos-atb-wrap"><pre class="cultivos-atb-fallback">' + esc5(r.resistencias || r.risSummary || "\u2014") + "</pre>" + copyBtn + "</div>";
 }
 var _atbRisScrollResizeWired = false;
 var _atbRisScrollRootsWired = /* @__PURE__ */ new WeakSet();
@@ -12568,7 +12736,7 @@ function renderCultivosTable() {
       return lab + " \xB7 " + fd + " \xB7 " + (r.sitio.length > 36 ? r.sitio.slice(0, 34) + "\u2026" : r.sitio);
     });
     negStrip = '<div class="cultivos-neg-strip" role="status"><strong>Cultivos negativos</strong> (en la tabla, por tipo y fecha) \xB7 ' + parts.map(function(p) {
-      return "<span>" + esc4(p) + "</span>";
+      return "<span>" + esc5(p) + "</span>";
     }).join(' <span class="cultivos-neg-sep">|</span> ') + "</div>";
   }
   var thead = "<thead><tr><th>Fecha</th><th>Sitio / muestra</th><th>Organismo</th><th>Antibiograma</th></tr></thead>";
@@ -12576,12 +12744,12 @@ function renderCultivosTable() {
   var totalRows = 0;
   groups.forEach(function(g3) {
     rowChunks.push(
-      '<tr class="cultivos-section-row"><td colspan="4">' + esc4(g3.label) + "</td></tr>"
+      '<tr class="cultivos-section-row"><td colspan="4">' + esc5(g3.label) + "</td></tr>"
     );
     g3.rows.forEach(function(r) {
       totalRows += 1;
       rowChunks.push(
-        '<tr class="' + (r.negativo ? "cultivos-row-neg" : "") + '"><td>' + esc4(rowFechaDisplay(r)) + "</td><td>" + esc4(r.sitio) + "</td><td>" + esc4(r.organismo) + '</td><td class="cultivos-cell-atb">' + cultivoAntibiogramCellHtml(r) + "</td></tr>"
+        '<tr class="' + (r.negativo ? "cultivos-row-neg" : "") + '"><td>' + esc5(rowFechaDisplay(r)) + "</td><td>" + esc5(r.sitio) + "</td><td>" + esc5(r.organismo) + '</td><td class="cultivos-cell-atb">' + cultivoAntibiogramCellHtml(r) + "</td></tr>"
       );
     });
   });
@@ -12608,7 +12776,7 @@ function refreshTendenciasOrCultivosPanel() {
   }, TREND_REFRESH_DEBOUNCE_MS);
 }
 function formatPaseCultivoResistenciasHtml(raw) {
-  var t2 = esc4(String(raw || ""));
+  var t2 = esc5(String(raw || ""));
   t2 = t2.replace(/\bR:/g, '<span class="pase-atb-tag pase-atb-tag--r">R:</span>');
   t2 = t2.replace(/\bI:/g, '<span class="pase-atb-tag pase-atb-tag--i">I:</span>');
   t2 = t2.replace(/\bS:/g, '<span class="pase-atb-tag pase-atb-tag--s">S:</span>');
@@ -12686,7 +12854,7 @@ function bindListadoTextareaPointerIsolation(root) {
   });
 }
 function _renderListadoRow(seccion, p, idx) {
-  return '<div class="listado-row" data-id="' + esc4(p.id) + '" data-seccion="' + seccion + '"><div class="listado-num listado-drag-handle" title="Arrastra para reordenar" aria-label="Arrastrar para reordenar">' + (idx + 1) + '</div><input type="date" value="' + esc4(p.fecha || "") + `" oninput="updateProblemaField('` + seccion + "','" + esc4(p.id) + `','fecha',this.value)" aria-label="Fecha del problema"><textarea rows="1" placeholder="Descripci\xF3n del problema" oninput="updateProblemaField('` + seccion + "','" + esc4(p.id) + `','descripcion',this.value); _autoGrowTextarea(this)" aria-label="Descripci\xF3n">` + esc4(p.descripcion || "") + `</textarea><button class="btn-remove-listado" onclick="removeProblemaUI('` + seccion + "','" + esc4(p.id) + `')" aria-label="Quitar problema" title="Quitar">\xD7</button></div>`;
+  return '<div class="listado-row" data-id="' + esc5(p.id) + '" data-seccion="' + seccion + '"><div class="listado-num listado-drag-handle" title="Arrastra para reordenar" aria-label="Arrastrar para reordenar">' + (idx + 1) + '</div><input type="date" value="' + esc5(p.fecha || "") + `" oninput="updateProblemaField('` + seccion + "','" + esc5(p.id) + `','fecha',this.value)" aria-label="Fecha del problema"><textarea rows="1" placeholder="Descripci\xF3n del problema" oninput="updateProblemaField('` + seccion + "','" + esc5(p.id) + `','descripcion',this.value); _autoGrowTextarea(this)" aria-label="Descripci\xF3n">` + esc5(p.descripcion || "") + `</textarea><button class="btn-remove-listado" onclick="removeProblemaUI('` + seccion + "','" + esc5(p.id) + `')" aria-label="Quitar problema" title="Quitar">\xD7</button></div>`;
 }
 function _renderListadoSeccion(seccion, label, lst) {
   var arr = lst[seccion] || [];
@@ -12786,7 +12954,7 @@ function renderListadoForm() {
     return;
   }
   var lst = ensureListadoForActive();
-  c.innerHTML = '<div class="card"><div class="card-header"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Datos del Paciente</div><div class="card-body"><div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:10px;align-items:end;"><div class="field-group"><label>Nombre</label><input type="text" value="' + esc4(patient.nombre) + '" class="field-readonly" readonly></div><div class="field-group"><label>Registro</label><input type="text" value="' + esc4(patient.registro) + '" class="field-readonly" readonly></div><div class="field-group"><label>Edad/Sexo</label><input type="text" value="' + esc4(patient.edad) + " / " + esc4(patient.sexo) + '" class="field-readonly" readonly></div><div class="field-group"><label>Cuarto</label><input type="text" value="' + esc4(patient.cuarto) + '" class="field-readonly" readonly></div><div class="field-group"><label>Cama</label><input type="text" value="' + esc4(patient.cama) + '" class="field-readonly" readonly></div></div></div></div><div class="card"><div class="card-header card-header--tone-slate"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Fecha y Hora del Listado</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="field-group"><label>Fecha</label><input type="text" value="' + esc4(lst.fecha) + `" placeholder="DD/MM/AAAA" oninput="updateListadoMeta('fecha',this.value)"></div><div class="field-group"><label>Hora</label><input type="text" value="` + esc4(lst.hora) + `" placeholder="HH:MM" oninput="updateListadoMeta('hora',this.value)"></div></div></div></div>` + _renderListadoSeccion("activos", "Activos", lst) + _renderListadoSeccion("inactivos", "Inactivos", lst) + _renderListadoMedicosCard(lst) + '<div class="action-bar"><button type="button" class="btn-med-secondary rpc-doc-export" onclick="quickExportCurrentPatient()" id="btn-quick-export-listado"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida r\xE1pida</button><button type="button" class="btn-med-secondary" onclick="copyListadoProblemasAiPrompt()" title="Copia el prompt para usar en un chat de IA"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copiar prompt IA</button><button type="button" class="btn-generate rpc-doc-export" onclick="generateListado()" id="btn-gen-listado"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Listado de Problemas (.docx)</button></div>';
+  c.innerHTML = '<div class="card"><div class="card-header"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Datos del Paciente</div><div class="card-body"><div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:10px;align-items:end;"><div class="field-group"><label>Nombre</label><input type="text" value="' + esc5(patient.nombre) + '" class="field-readonly" readonly></div><div class="field-group"><label>Registro</label><input type="text" value="' + esc5(patient.registro) + '" class="field-readonly" readonly></div><div class="field-group"><label>Edad/Sexo</label><input type="text" value="' + esc5(patient.edad) + " / " + esc5(patient.sexo) + '" class="field-readonly" readonly></div><div class="field-group"><label>Cuarto</label><input type="text" value="' + esc5(patient.cuarto) + '" class="field-readonly" readonly></div><div class="field-group"><label>Cama</label><input type="text" value="' + esc5(patient.cama) + '" class="field-readonly" readonly></div></div></div></div><div class="card"><div class="card-header card-header--tone-slate"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Fecha y Hora del Listado</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="field-group"><label>Fecha</label><input type="text" value="' + esc5(lst.fecha) + `" placeholder="DD/MM/AAAA" oninput="updateListadoMeta('fecha',this.value)"></div><div class="field-group"><label>Hora</label><input type="text" value="` + esc5(lst.hora) + `" placeholder="HH:MM" oninput="updateListadoMeta('hora',this.value)"></div></div></div></div>` + _renderListadoSeccion("activos", "Activos", lst) + _renderListadoSeccion("inactivos", "Inactivos", lst) + _renderListadoMedicosCard(lst) + '<div class="action-bar"><button type="button" class="btn-med-secondary rpc-doc-export" onclick="quickExportCurrentPatient()" id="btn-quick-export-listado"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida r\xE1pida</button><button type="button" class="btn-med-secondary" onclick="copyListadoProblemasAiPrompt()" title="Copia el prompt para usar en un chat de IA"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copiar prompt IA</button><button type="button" class="btn-generate rpc-doc-export" onclick="generateListado()" id="btn-gen-listado"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Listado de Problemas (.docx)</button></div>';
   c.querySelectorAll(".listado-row textarea").forEach(_autoGrowTextarea);
   bindListadoTextareaPointerIsolation(c);
   mountListadoSortables();
@@ -12829,7 +12997,7 @@ function removeProblemaUI(seccion, id) {
 function _renderListadoMedicosCard(lst) {
   var meds = getMedicosForListado(lst);
   function row(key, label) {
-    return '<div class="field-group"><label>' + label + '</label><input type="text" value="' + esc4(meds[key] || "") + `" oninput="updateListadoMedico('` + key + `', this.value)"></div>`;
+    return '<div class="field-group"><label>' + label + '</label><input type="text" value="' + esc5(meds[key] || "") + `" oninput="updateListadoMedico('` + key + `', this.value)"></div>`;
   }
   return '<div class="card"><div class="card-header card-header--tone-teal-md card-header-row"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>M\xE9dicos (firma)<span class="card-header-subhint">Pre-llena desde Mi Perfil. Edita aqu\xED para este paciente.</span></div><div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' + row("profesor", "Profesor") + row("r4", "R4") + row("r2", "R2") + row("r1a", "R1 (1)") + row("r1b", "R1 (2)") + "</div></div>";
 }
@@ -12888,7 +13056,7 @@ function generateListado() {
   });
 }
 function buildPatientDemographicsCardHtml(patient) {
-  return '<div class="card"><div class="card-header"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Datos del Paciente</div><div class="card-body"><div style="display:flex;flex-direction:column;gap:10px;"><div class="field-group"><label>Nombre</label><input type="text" value="' + esc4(patient.nombre) + `" oninput="updatePatient('nombre',this.value)" style="text-transform:uppercase;"></div><div style="display:grid;grid-template-columns:1fr 100px 60px;gap:10px;"><div class="field-group"><label>Registro</label><input type="text" value="` + esc4(patient.registro) + `" oninput="updatePatient('registro',this.value)"></div><div class="field-group"><label>Edad</label><input type="text" value="` + esc4(patient.edad) + `" oninput="updatePatient('edad',this.value)"></div><div class="field-group"><label>Sexo</label><select onchange="updatePatient('sexo',this.value)"><option value="M"` + (patient.sexo === "M" ? " selected" : "") + '>M</option><option value="F"' + (patient.sexo === "F" ? " selected" : "") + '>F</option></select></div></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;"><div class="field-group"><label>Peso (kg)</label><input type="text" inputmode="decimal" value="' + esc4(patient.peso || "") + `" placeholder="60" oninput="updatePatient('peso',this.value)"></div><div class="field-group"><label>Talla (m)</label><input type="text" inputmode="decimal" value="` + esc4(patient.talla || "") + `" placeholder="1.60" oninput="updatePatient('talla',this.value)"></div><div class="field-group"><label>V\xEDa de acceso</label><select onchange="updatePatient('viaAcceso',this.value)"><option value=""` + (!patient.viaAcceso ? " selected" : "") + '>\u2014 No especificada \u2014</option><option value="periferica"' + (patient.viaAcceso === "periferica" ? " selected" : "") + '>EV perif\xE9rica</option><option value="cvc"' + (patient.viaAcceso === "cvc" ? " selected" : "") + '>CVC / cat\xE9ter central</option><option value="picc"' + (patient.viaAcceso === "picc" ? " selected" : "") + '>PICC</option></select></div></div><div class="field-group"><label>\xC1rea</label><input type="text" value="' + esc4(patient.area) + `" oninput="updatePatient('area',this.value)" style="text-transform:uppercase;"></div><div class="field-group"><label>Servicio</label><input type="text" value="` + esc4(patient.servicio) + `" oninput="updatePatient('servicio',this.value)" style="text-transform:uppercase;"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><div class="field-group"><label>Cuarto</label><input type="text" value="` + esc4(patient.cuarto) + `" oninput="updatePatient('cuarto',this.value)"></div><div class="field-group"><label>Cama</label><input type="text" value="` + esc4(patient.cama) + `" oninput="updatePatient('cama',this.value)"></div></div></div></div></div>`;
+  return '<div class="card"><div class="card-header"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Datos del Paciente</div><div class="card-body"><div style="display:flex;flex-direction:column;gap:10px;"><div class="field-group"><label>Nombre</label><input type="text" value="' + esc5(patient.nombre) + `" oninput="updatePatient('nombre',this.value)" style="text-transform:uppercase;"></div><div style="display:grid;grid-template-columns:1fr 100px 60px;gap:10px;"><div class="field-group"><label>Registro</label><input type="text" value="` + esc5(patient.registro) + `" oninput="updatePatient('registro',this.value)"></div><div class="field-group"><label>Edad</label><input type="text" value="` + esc5(patient.edad) + `" oninput="updatePatient('edad',this.value)"></div><div class="field-group"><label>Sexo</label><select onchange="updatePatient('sexo',this.value)"><option value="M"` + (patient.sexo === "M" ? " selected" : "") + '>M</option><option value="F"' + (patient.sexo === "F" ? " selected" : "") + '>F</option></select></div></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;"><div class="field-group"><label>Peso (kg)</label><input type="text" inputmode="decimal" value="' + esc5(patient.peso || "") + `" placeholder="60" oninput="updatePatient('peso',this.value)"></div><div class="field-group"><label>Talla (m)</label><input type="text" inputmode="decimal" value="` + esc5(patient.talla || "") + `" placeholder="1.60" oninput="updatePatient('talla',this.value)"></div><div class="field-group"><label>V\xEDa de acceso</label><select onchange="updatePatient('viaAcceso',this.value)"><option value=""` + (!patient.viaAcceso ? " selected" : "") + '>\u2014 No especificada \u2014</option><option value="periferica"' + (patient.viaAcceso === "periferica" ? " selected" : "") + '>EV perif\xE9rica</option><option value="cvc"' + (patient.viaAcceso === "cvc" ? " selected" : "") + '>CVC / cat\xE9ter central</option><option value="picc"' + (patient.viaAcceso === "picc" ? " selected" : "") + '>PICC</option></select></div></div><div class="field-group"><label>\xC1rea</label><input type="text" value="' + esc5(patient.area) + `" oninput="updatePatient('area',this.value)" style="text-transform:uppercase;"></div><div class="field-group"><label>Servicio</label><input type="text" value="` + esc5(patient.servicio) + `" oninput="updatePatient('servicio',this.value)" style="text-transform:uppercase;"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><div class="field-group"><label>Cuarto</label><input type="text" value="` + esc5(patient.cuarto) + `" oninput="updatePatient('cuarto',this.value)"></div><div class="field-group"><label>Cama</label><input type="text" value="` + esc5(patient.cama) + `" oninput="updatePatient('cama',this.value)"></div></div></div></div></div>`;
 }
 function renderPatientDataPane() {
   var wrap = document.getElementById("patient-data-form");
@@ -13605,14 +13773,14 @@ function createTendGroupModal(deps) {
       bar.className = "tend-group-table-hidden-bar tend-group-panels-hidden-bar";
       panelEl.insertBefore(bar, panelEl.firstChild);
     }
-    var esc16 = deps.esc;
+    var esc17 = deps.esc;
     if (!hiddenFams.length) {
       bar.style.display = "none";
       bar.innerHTML = "";
       return;
     }
     var chips = hiddenFams.map(function(fam) {
-      return '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-panel="' + esc16(fam) + '">' + esc16(resolvePanelTitle(state.patientId, sectionKey, fam)) + ' <span aria-hidden="true">\xD7</span></button>';
+      return '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-panel="' + esc17(fam) + '">' + esc17(resolvePanelTitle(state.patientId, sectionKey, fam)) + ' <span aria-hidden="true">\xD7</span></button>';
     });
     bar.style.display = "";
     bar.innerHTML = '<span class="tend-group-hidden-label">Paneles ocultos:</span>' + chips.join("") + '<button type="button" class="tend-toolbar-btn tend-group-show-all-btn tend-group-panels-show-all">Mostrar todo</button>';
@@ -13689,7 +13857,7 @@ function createTendGroupModal(deps) {
       bar.className = "tend-group-table-hidden-bar";
       wrap.insertBefore(bar, wrap.firstChild);
     }
-    var esc16 = deps.esc;
+    var esc17 = deps.esc;
     var chips = [];
     hidden.cols.forEach(function(ck) {
       var label = ck;
@@ -13700,14 +13868,14 @@ function createTendGroupModal(deps) {
         }
       }
       chips.push(
-        '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-col="' + esc16(ck) + '">' + esc16(label) + ' <span aria-hidden="true">\xD7</span></button>'
+        '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-col="' + esc17(ck) + '">' + esc17(label) + ' <span aria-hidden="true">\xD7</span></button>'
       );
     });
     hidden.rows.forEach(function(fk) {
       var sp = state.specsByField[fk];
       var lab = sp ? legendLabelForSpec(sectionKey, sp) : fk;
       chips.push(
-        '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-row="' + esc16(fk) + '">' + esc16(lab) + ' <span aria-hidden="true">\xD7</span></button>'
+        '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-row="' + esc17(fk) + '">' + esc17(lab) + ' <span aria-hidden="true">\xD7</span></button>'
       );
     });
     if (!chips.length) {
@@ -13833,7 +14001,7 @@ function createTendGroupModal(deps) {
       }
     );
     state.tableModel = buildTableExportModel(sectionKey, raw, hidden);
-    var esc16 = deps.esc;
+    var esc17 = deps.esc;
     var html = ['<div class="cultivos-table-wrap"><table id="tend-group-table" class="cultivos-table tend-group-table">'];
     html.push("<thead><tr><th>Analito</th>");
     raw.columns.forEach(function(set) {
@@ -13841,7 +14009,7 @@ function createTendGroupModal(deps) {
       var colHidden = hidden.cols.indexOf(ck) >= 0;
       var colLabel = columnHeader(set, raw.columns);
       html.push(
-        '<th class="' + (colHidden ? "is-hidden" : "") + '"><label class="tend-group-col-toggle"><input type="checkbox" data-col-key="' + esc16(ck) + '"' + (colHidden ? " checked" : "") + ' aria-label="Ocultar columna"> ' + esc16(colLabel) + "</label></th>"
+        '<th class="' + (colHidden ? "is-hidden" : "") + '"><label class="tend-group-col-toggle"><input type="checkbox" data-col-key="' + esc17(ck) + '"' + (colHidden ? " checked" : "") + ' aria-label="Ocultar columna"> ' + esc17(colLabel) + "</label></th>"
       );
     });
     html.push("</tr></thead><tbody>");
@@ -13852,7 +14020,7 @@ function createTendGroupModal(deps) {
       var rowDisp = spRow ? formatTendSeriesLabel(spRow.cardTitle || row.fieldKey, row.fieldKey, rowUnit) : formatTendSeriesLabel(row.label, row.fieldKey, row.unit || rowUnit);
       var rowLabel = rowDisp.unit && rowDisp.unit !== "%" ? rowDisp.name + " (" + rowDisp.unit + ")" : rowDisp.name;
       html.push(
-        '<tr data-field="' + esc16(row.fieldKey) + '" class="' + (rowHidden ? " tend-group-row--data-hidden" : "") + '"><td><label class="tend-group-row-toggle"><input type="checkbox" data-field-key="' + esc16(row.fieldKey) + '"' + (rowHidden ? " checked" : "") + ' aria-label="Ocultar valores de fila (la fila sigue visible)"> ' + esc16(rowLabel) + "</label></td>"
+        '<tr data-field="' + esc17(row.fieldKey) + '" class="' + (rowHidden ? " tend-group-row--data-hidden" : "") + '"><td><label class="tend-group-row-toggle"><input type="checkbox" data-field-key="' + esc17(row.fieldKey) + '"' + (rowHidden ? " checked" : "") + ' aria-label="Ocultar valores de fila (la fila sigue visible)"> ' + esc17(rowLabel) + "</label></td>"
       );
       raw.columns.forEach(function(set, ci) {
         var ck = colKeyForSet(set);
@@ -13860,7 +14028,7 @@ function createTendGroupModal(deps) {
         var val2 = row.values[ci];
         var ab = isAbnormal(set, sectionKey, row.fieldKey, val2, state.historyDesc);
         html.push(
-          '<td class="' + (colHidden ? "is-hidden" : "") + (ab ? " tend-abnormal" : "") + '">' + esc16(formatCellValue(val2, ab)) + "</td>"
+          '<td class="' + (colHidden ? "is-hidden" : "") + (ab ? " tend-abnormal" : "") + '">' + esc17(formatCellValue(val2, ab)) + "</td>"
         );
       });
       html.push("</tr>");
@@ -16142,7 +16310,7 @@ function registerLanRuntime(partial) {
   Object.assign(runtime2, partial);
   void initLanHostPlugAndPlay();
 }
-function esc5(s) {
+function esc6(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 var lanClient = new LanClient();
@@ -17663,7 +17831,7 @@ async function renderLanPanelOnce() {
   var topRow = document.createElement("p");
   topRow.className = "lan-connect-card-hint";
   topRow.style.marginBottom = "10px";
-  topRow.innerHTML = "<strong>Direcci\xF3n:</strong> " + esc5(lanClient.baseUrl());
+  topRow.innerHTML = "<strong>Direcci\xF3n:</strong> " + esc6(lanClient.baseUrl());
   statusCard.appendChild(topRow);
   var liveStatus = document.createElement("p");
   liveStatus.id = "lan-livesync-status";
@@ -17758,7 +17926,7 @@ async function renderLanPanelOnce() {
     var errHttp = document.createElement("p");
     errHttp.className = "lan-connect-card-hint";
     if (roomsFetch.httpStatus === 401) {
-      errHttp.innerHTML = "El <strong>c\xF3digo del equipo</strong> que guardaste en esta R+ no coincide con el que usa el proceso servidor (archivo <code>lan-team-code.txt</code>, variable <code>R_PLUS_LAN_TEAM_CODE</code> o el valor por defecto <code>" + esc5(DEFAULT_LAN_TEAM_CODE) + "</code>). Deben ser <strong>exactamente el mismo texto</strong> en ambos sitios. Tras cambiar el archivo, reinicia R+.";
+      errHttp.innerHTML = "El <strong>c\xF3digo del equipo</strong> que guardaste en esta R+ no coincide con el que usa el proceso servidor (archivo <code>lan-team-code.txt</code>, variable <code>R_PLUS_LAN_TEAM_CODE</code> o el valor por defecto <code>" + esc6(DEFAULT_LAN_TEAM_CODE) + "</code>). Deben ser <strong>exactamente el mismo texto</strong> en ambos sitios. Tras cambiar el archivo, reinicia R+.";
     } else {
       var rawBody = String(roomsFetch.errorDetail || "");
       var detail = "";
@@ -17769,7 +17937,7 @@ async function renderLanPanelOnce() {
         if (rawBody) detail = rawBody.replace(/\s+/g, " ").trim().slice(0, 200);
       }
       var hint500 = detail && /team code mismatch|host file/i.test(detail) ? " El archivo <code>lan-squad-host-state.json</code> se cre\xF3 con <strong>otro</strong> c\xF3digo: o vuelves al c\xF3digo anterior, o (solo si puedes perder salas/pacientes LAN de prueba en ese archivo) cierra R+, borra ese JSON en datos de la app y vuelve a abrir para regenerarlo con el c\xF3digo actual." : "";
-      errHttp.innerHTML = "<strong>HTTP " + esc5(String(roomsFetch.httpStatus)) + "</strong>" + (detail ? ": " + esc5(detail) : ".") + (hint500 ? hint500 : " Comprueba la URL del anfitri\xF3n y que R+ siga abierto en esa m\xE1quina.");
+      errHttp.innerHTML = "<strong>HTTP " + esc6(String(roomsFetch.httpStatus)) + "</strong>" + (detail ? ": " + esc6(detail) : ".") + (hint500 ? hint500 : " Comprueba la URL del anfitri\xF3n y que R+ siga abierto en esa m\xE1quina.");
     }
     roomsCard.appendChild(errHttp);
   } else if (!roomsFetch.rooms.length) {
@@ -20581,6 +20749,8 @@ function _buildLoadSettingsSnapshot() {
       di: st.defaultDieta || "",
       cu: st.defaultCuidados || "",
       me: st.defaultMedicamentos || "",
+      ne: st.defaultNotaEvolucion || "",
+      ns: st.defaultNotaEstudios || "",
       od: st.outputDir || "",
       qf: normalizeQuickOutputFormat(st.quickOutputFormat)
     });
@@ -20637,15 +20807,6 @@ function loadSettings() {
       lbl.textContent = "Mi Perfil";
     }
   }
-  var dEl = document.getElementById("profile-preview-dieta-txt");
-  var cEl = document.getElementById("profile-preview-cuidados-txt");
-  var mEl = document.getElementById("profile-preview-meds-txt");
-  function preview(val2) {
-    return val2 ? val2.slice(0, 40) + (val2.length > 40 ? "\u2026" : "") : "(vac\xEDo)";
-  }
-  if (dEl) dEl.textContent = preview(st.defaultDieta);
-  if (cEl) cEl.textContent = preview(st.defaultCuidados);
-  if (mEl) mEl.textContent = preview(st.defaultMedicamentos);
   var dirEl = document.getElementById("settings-output-dir");
   if (dirEl) {
     if (st.outputDir) {
@@ -20804,25 +20965,103 @@ function openProfileFromHeader(ev) {
   if (ev) ev.preventDefault();
   openProfileModal();
 }
-function openTemplatesModal() {
+function ensureInterconsultaModeForFormats() {
   var st = settingsRef();
-  document.getElementById("tmpl-dieta").value = st.defaultDieta || "";
-  document.getElementById("tmpl-cuidados").value = st.defaultCuidados || "";
-  document.getElementById("tmpl-meds").value = st.defaultMedicamentos || "";
-  document.getElementById("templates-modal").style.display = "flex";
+  if (!isModeSala(st)) return;
+  st.appMode = "interconsulta";
+  localStorage.setItem("rpc-settings", JSON.stringify(st));
+  var modeSalaEl = document.getElementById("app-mode-sala");
+  var modeInterEl = document.getElementById("app-mode-inter");
+  if (modeInterEl) modeInterEl.checked = true;
+  if (modeSalaEl) modeSalaEl.checked = false;
+  renderInnerTabs();
+  syncHeaderAppModeChip();
+  rt9.syncWorkContextChrome();
+}
+function syncDraftFromFormatEditorDom() {
+  var map = [
+    ["fmt-default-nota-evolucion", "notaEvolucion"],
+    ["fmt-default-nota-estudios", "notaEstudios"],
+    ["fmt-default-ind-dieta", "dieta"],
+    ["fmt-default-ind-cuidados", "cuidados"],
+    ["fmt-default-ind-medicamentos", "medicamentos"],
+    ["fmt-default-ind-estudios", "estudios"],
+    ["fmt-default-ind-interconsultas", "interconsultas"]
+  ];
+  map.forEach(function(pair) {
+    var el = document.getElementById(pair[0]);
+    if (el) updateDefaultFormatField(pair[1], el.value);
+  });
+}
+function scrollFormatsEditorIntoView() {
+  requestAnimationFrame(function() {
+    var root = getFormatsEditMode() === "indica" ? document.getElementById("indica-form") : document.getElementById("note-form");
+    if (root) root.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+}
+function openNoteFormatsFromProfile() {
+  closeProfileModal();
+  var st = settingsRef();
+  ensureProfileTemplateDefaults(st);
+  ensureInterconsultaModeForFormats();
+  loadDraftFromSettings(st);
+  setFormatsEditMode("nota");
+  switchAppTab("nota");
+  switchInnerTab("notas");
+  renderNoteForm();
+  scrollFormatsEditorIntoView();
+}
+function openIndicaFormatsFromProfile() {
+  closeProfileModal();
+  var st = settingsRef();
+  ensureProfileTemplateDefaults(st);
+  ensureInterconsultaModeForFormats();
+  loadDraftFromSettings(st);
+  setFormatsEditMode("indica");
+  switchAppTab("nota");
+  switchInnerTab("indica");
+  renderIndicaForm();
+  scrollFormatsEditorIntoView();
+}
+function openTemplatesModal() {
+  openNoteFormatsFromProfile();
 }
 function closeTemplatesModal() {
-  document.getElementById("templates-modal").style.display = "none";
+  var m = document.getElementById("templates-modal");
+  if (m) m.style.display = "none";
 }
 function saveTemplates() {
+  saveDefaultFormatsFromEditor();
+}
+function saveDefaultFormatsFromEditor() {
+  syncDraftFromFormatEditorDom();
   var st = settingsRef();
-  st.defaultDieta = document.getElementById("tmpl-dieta").value.trim();
-  st.defaultCuidados = document.getElementById("tmpl-cuidados").value.trim();
-  st.defaultMedicamentos = document.getElementById("tmpl-meds").value.trim();
+  applyDraftToSettings(st);
   localStorage.setItem("rpc-settings", JSON.stringify(st));
-  closeTemplatesModal();
   loadSettings();
-  rt9.showToast("Plantillas guardadas \u2713", "success");
+  rt9.showToast("Formatos guardados \u2713", "success");
+}
+function exitFormatsEditor() {
+  var was = getFormatsEditMode();
+  clearFormatsEditMode();
+  if (was === "nota") renderNoteForm();
+  else if (was === "indica") renderIndicaForm();
+}
+function resetProfileTemplates() {
+  var st = settingsRef();
+  resetProfileTemplatesToBlank(st);
+  resetDraftToBlank();
+  localStorage.setItem("rpc-settings", JSON.stringify(st));
+  loadSettings();
+  var mode = getFormatsEditMode();
+  if (mode === "nota") renderNoteForm();
+  else if (mode === "indica") renderIndicaForm();
+  rt9.showToast("Formatos restablecidos (plantillas en blanco)", "success");
+}
+function hydrateProfileSettings(st) {
+  if (!st || typeof st !== "object") return st;
+  ensureProfileTemplateDefaults(st);
+  return st;
 }
 function saveQuickOutputFormat(format) {
   var st = settingsRef();
@@ -20897,6 +21136,12 @@ var profileWindowHandlers = {
   closeClinicoUnlockModal,
   confirmClinicoUnlock,
   openTemplatesModal,
+  openNoteFormatsFromProfile,
+  openIndicaFormatsFromProfile,
+  saveDefaultFormatsFromEditor,
+  exitFormatsEditor,
+  updateDefaultFormatField,
+  resetProfileTemplates,
   saveSettings,
   closeTemplatesModal,
   saveTemplates
@@ -21181,7 +21426,7 @@ function closeSesionIngresoTrendsSendModal() {
 }
 
 // public/js/features/settings-help.mjs
-function esc6(s) {
+function esc7(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 var GUIDED_TOUR_LS_KEY = "rpc-guided-tour-done-for-version";
@@ -21717,7 +21962,7 @@ function renderTourStep() {
       break;
     case "servicio_default":
       setBadge("servicio \xB7 Sala");
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Escribe tu <strong>Servicio (Sala)</strong> en Mi Perfil (ej. <strong>MEDICINA INTERNA</strong>) y sal del campo para guardar. Luego <strong>Siguiente</strong>.</p>';
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Escribe tu <strong>Servicio (Sala)</strong> en Mi Perfil (nombre completo, sin abreviaturas) y sal del campo para guardar. Luego <strong>Siguiente</strong>.</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "estado_actual":
@@ -21867,8 +22112,8 @@ function startOnboarding(branch) {
     registro: "0008421-7",
     edad: "67 a\xF1os",
     sexo: "M",
-    area: "MEDICINA INTERNA",
-    servicio: "MEDICINA INTERNA",
+    area: "SERVICIO DEMO",
+    servicio: "SERVICIO DEMO",
     cuarto: "101",
     cama: "1",
     fromLab: false,
@@ -21880,8 +22125,8 @@ function startOnboarding(branch) {
     registro: "0007755-3",
     edad: "54 a\xF1os",
     sexo: "F",
-    area: "MEDICINA INTERNA",
-    servicio: "MEDICINA INTERNA",
+    area: "SERVICIO DEMO",
+    servicio: "SERVICIO DEMO",
     cuarto: "102",
     cama: "2",
     fromLab: false,
@@ -22284,7 +22529,7 @@ function selectHelpArticle(id) {
   helpCurrentArticleId = id;
   var contentEl = document.getElementById("help-article-content");
   if (contentEl) {
-    contentEl.innerHTML = "<h4>" + esc6(article.title) + "</h4>" + article.html;
+    contentEl.innerHTML = "<h4>" + esc7(article.title) + "</h4>" + article.html;
   }
   var list = document.getElementById("help-articles-list");
   if (list) {
@@ -22319,6 +22564,20 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
   }
 ];
 var RELEASE_NOTES_HIGHLIGHTS = {
+  "6.4.0": [
+    {
+      title: "Valoraci\xF3n preoperatoria (VPO)",
+      body: "Nueva pesta\xF1a <strong>VPO</strong> con calculadora ASA, RCRI, Gupta, ARISCAT y Caprini; EKG/Rx editables; f\xE1rmacos perioperatorios desde la receta SOME y bloques para copiar."
+    },
+    {
+      title: "Procedimiento y diagn\xF3sticos",
+      body: "Cat\xE1logo <strong>Gupta</strong> con b\xFAsqueda; diagn\xF3sticos importables desde la nota; botones para tomar labs y signos del expediente sin pisar lo escrito."
+    },
+    {
+      title: "Formatos en Nota e Indicaciones",
+      body: "Desde <strong>Mi Perfil</strong>, edita plantillas en blanco en las pesta\xF1as del expediente (misma vista que al atender) y pulsa <strong>Guardar</strong> al final."
+    }
+  ],
   "6.3.6": [
     {
       title: "Cultivos multipaciente",
@@ -23202,7 +23461,7 @@ function registerTendenciasRuntime(partial) {
 function aid3() {
   return rt13.getActiveId();
 }
-function esc7(s) {
+function esc8(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 var _tendCardSortables = [];
@@ -24047,9 +24306,9 @@ function buildTendHiddenChipsHtml() {
   for (var i = 0; i < desc.length; i++) {
     var sk = desc[i].sectionKey;
     var fk = desc[i].fieldKey;
-    var label = esc7(tendFindSeriesSpec(sk, fk).cardTitle || fk);
+    var label = esc8(tendFindSeriesSpec(sk, fk).cardTitle || fk);
     chips.push(
-      '<button type="button" class="tend-hidden-chip" data-series-key="' + esc7(tendCatalogSeriesKey(sk, fk)) + '" title="Volver a mostrar ' + label + '" aria-label="Mostrar de nuevo ' + label + '"><span class="tend-hidden-chip-label">' + label + '</span><span class="tend-hidden-chip-eye" aria-hidden="true">' + svg + "</span></button>"
+      '<button type="button" class="tend-hidden-chip" data-series-key="' + esc8(tendCatalogSeriesKey(sk, fk)) + '" title="Volver a mostrar ' + label + '" aria-label="Mostrar de nuevo ' + label + '"><span class="tend-hidden-chip-label">' + label + '</span><span class="tend-hidden-chip-eye" aria-hidden="true">' + svg + "</span></button>"
     );
   }
   return chips.join("");
@@ -24080,7 +24339,7 @@ function buildTendInlineControlsHtml(hiddenCount, opts) {
   var toggleLabel = on ? "Ver todas" : "Solo fuera de rango";
   var ocultosBtn = hiddenCount > 0 ? '<button type="button" class="tend-toolbar-btn tend-ocultos-trigger">Ocultos (' + hiddenCount + ")</button>" : "";
   var gasoBtn = opts.showGasoExtended ? '<button type="button" class="tend-toolbar-btn tend-gaso-ext-trigger" data-tend-action="gaso-extended">Gasometr\xEDa extendida</button>' : "";
-  return '<div class="tend-inline-controls"><button type="button" class="tend-toolbar-toggle' + (on ? " is-active" : "") + '" aria-pressed="' + (on ? "true" : "false") + '" title="' + esc7(hint) + '">' + esc7(toggleLabel) + "</button>" + ocultosBtn + gasoBtn + '<button type="button" class="tend-toolbar-btn" data-tour="casiopea-trends-send" onclick="openSesionIngresoTrendsSendModal()">Enviar a Neo</button></div>';
+  return '<div class="tend-inline-controls"><button type="button" class="tend-toolbar-toggle' + (on ? " is-active" : "") + '" aria-pressed="' + (on ? "true" : "false") + '" title="' + esc8(hint) + '">' + esc8(toggleLabel) + "</button>" + ocultosBtn + gasoBtn + '<button type="button" class="tend-toolbar-btn" data-tour="casiopea-trends-send" onclick="openSesionIngresoTrendsSendModal()">Enviar a Neo</button></div>';
 }
 function historyHasGasoForExtended(historyDesc) {
   var latest = historyDesc && historyDesc[0];
@@ -24236,7 +24495,7 @@ function initTendGroupModal() {
     buildColHeader: function(set) {
       return rt13.buildLabSetDateLine(set);
     },
-    esc: esc7,
+    esc: esc8,
     Chart: typeof Chart !== "undefined" ? Chart : void 0,
     showToast: function(a, b) {
       rt13.showToast(a, b);
@@ -24738,15 +24997,15 @@ function renderTendenciasBody(container) {
       var isAb = idxCard ? idxCard.isAbnormal : false;
       var domId = trendSparkDomId(sectionKey, fk);
       var labelParts = tendCardLabelParts(sectionKey, fk);
-      var titleEsc = esc7(labelParts.title);
-      var unitHtml = labelParts.unit ? '<div class="tend-unit">' + esc7(labelParts.unit) + "</div>" : "";
+      var titleEsc = esc8(labelParts.title);
+      var unitHtml = labelParts.unit ? '<div class="tend-unit">' + esc8(labelParts.unit) + "</div>" : "";
       var seriesKey = tendCatalogSeriesKey(sectionKey, fk);
       cardParts.push(
-        '<div class="tend-card" role="button" tabindex="0" data-series-key="' + esc7(seriesKey) + '" data-abnormal="' + (isAb ? "1" : "0") + '"><div class="tend-card-header"><span class="tend-param-name">' + titleEsc + '</span><span class="tend-card-header-end"><button type="button" class="tend-card-hide-btn" title="Ocultar analito" aria-label="Ocultar analito">' + tendEyeHideSvg() + '</button><span class="tend-param-value' + (isAb ? " tend-abnormal" : "") + '">' + (latest != null ? latest : "\u2014") + "</span></span></div>" + unitHtml + '<div class="tend-spark-wrap"><div class="tend-spark-canvas-cell">' + (expanded ? '<canvas id="' + domId + '"></canvas>' : '<div class="tend-spark-placeholder" aria-hidden="true"></div>') + "</div></div></div>"
+        '<div class="tend-card" role="button" tabindex="0" data-series-key="' + esc8(seriesKey) + '" data-abnormal="' + (isAb ? "1" : "0") + '"><div class="tend-card-header"><span class="tend-param-name">' + titleEsc + '</span><span class="tend-card-header-end"><button type="button" class="tend-card-hide-btn" title="Ocultar analito" aria-label="Ocultar analito">' + tendEyeHideSvg() + '</button><span class="tend-param-value' + (isAb ? " tend-abnormal" : "") + '">' + (latest != null ? latest : "\u2014") + "</span></span></div>" + unitHtml + '<div class="tend-spark-wrap"><div class="tend-spark-canvas-cell">' + (expanded ? '<canvas id="' + domId + '"></canvas>' : '<div class="tend-spark-placeholder" aria-hidden="true"></div>') + "</div></div></div>"
       );
     }
     htmlParts.push(
-      '<section class="tend-section" data-section="' + esc7(sectionKey) + '"><div class="tend-section-head"><button type="button" class="tend-section-toggle" aria-expanded="' + (expanded ? "true" : "false") + '"><span class="tend-section-chevron" aria-hidden="true">' + (expanded ? "\u25BC" : "\u25B6") + '</span><span class="tend-section-title">' + esc7(secLabel) + '</span></button><span class="tend-section-toggle-end"><span class="tend-section-count">' + list.length + "</span>" + (list.length > 0 ? '<button type="button" class="tend-section-chart-btn" title="Abrir gr\xE1fica y tabla del estudio" aria-label="Gr\xE1fica del estudio">' + tendSectionChartSvg() + '<span class="tend-section-chart-label">Gr\xE1fica</span></button>' : "") + '</span></div><div class="tend-section-body' + (expanded ? "" : " tend-section-body--collapsed") + '"><div class="tend-grid tend-sort-zone" data-section-key="' + esc7(sectionKey) + '">' + cardParts.join("") + "</div></div></section>"
+      '<section class="tend-section" data-section="' + esc8(sectionKey) + '"><div class="tend-section-head"><button type="button" class="tend-section-toggle" aria-expanded="' + (expanded ? "true" : "false") + '"><span class="tend-section-chevron" aria-hidden="true">' + (expanded ? "\u25BC" : "\u25B6") + '</span><span class="tend-section-title">' + esc8(secLabel) + '</span></button><span class="tend-section-toggle-end"><span class="tend-section-count">' + list.length + "</span>" + (list.length > 0 ? '<button type="button" class="tend-section-chart-btn" title="Abrir gr\xE1fica y tabla del estudio" aria-label="Gr\xE1fica del estudio">' + tendSectionChartSvg() + '<span class="tend-section-chart-label">Gr\xE1fica</span></button>' : "") + '</span></div><div class="tend-section-body' + (expanded ? "" : " tend-section-body--collapsed") + '"><div class="tend-grid tend-sort-zone" data-section-key="' + esc8(sectionKey) + '">' + cardParts.join("") + "</div></div></section>"
     );
   }
   container.innerHTML = htmlParts.join("");
@@ -25203,15 +25462,15 @@ function renderTodoFormIn(container, idPrefix) {
     container.appendChild(empty);
     return;
   }
-  var draft = getTodoFormDraftState(container, idPrefix);
+  var draft2 = getTodoFormDraftState(container, idPrefix);
   var hasAddRow = !!container.querySelector(".todo-add-row");
-  if (draft && hasAddRow) {
-    if (draft.kind === "new") {
+  if (draft2 && hasAddRow) {
+    if (draft2.kind === "new") {
       renderTodoListSection(container, null);
       return;
     }
-    if (draft.kind === "edit") {
-      renderTodoListSection(container, draft.todoId);
+    if (draft2.kind === "edit") {
+      renderTodoListSection(container, draft2.todoId);
       return;
     }
   }
@@ -30853,7 +31112,7 @@ function routeChipLabel(route) {
 }
 function renderManejoElectrolitos(panelEl, pid, patient, ui) {
   ui = ui || {};
-  var esc16 = ui.esc || function(s) {
+  var esc17 = ui.esc || function(s) {
     return String(s || "");
   };
   var buildKvBlock2 = ui.buildKvBlock;
@@ -30959,7 +31218,7 @@ function renderManejoElectrolitos(panelEl, pid, patient, ui) {
   }
   var meta = document.createElement("p");
   meta.className = "manejo-meta";
-  meta.innerHTML = "Laboratorio m\xE1s reciente: <strong>" + esc16(String(latest.fecha || labFechaNorm || "\u2014")) + "</strong>" + (latest.hora ? " \xB7 <span>" + esc16(String(latest.hora).slice(0, 8)) + "</span>" : "");
+  meta.innerHTML = "Laboratorio m\xE1s reciente: <strong>" + esc17(String(latest.fecha || labFechaNorm || "\u2014")) + "</strong>" + (latest.hora ? " \xB7 <span>" + esc17(String(latest.hora).slice(0, 8)) + "</span>" : "");
   root.appendChild(meta);
   if (evalOut.crossAlerts && evalOut.crossAlerts.length) {
     var xc = document.createElement("aside");
@@ -34855,7 +35114,7 @@ function registerManejoRuntime(partial) {
 function aid5() {
   return rt19.getActiveId();
 }
-function esc8(s) {
+function esc9(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function copyToClipboard3(txt) {
@@ -34952,7 +35211,7 @@ function buildManejoGuiaContext() {
 function renderActiveManejoSubpanel(panel, subtabId, pid, patient) {
   if (subtabId === "electrolitos") {
     renderManejoElectrolitos(panel, pid, patient, {
-      esc: esc8,
+      esc: esc9,
       buildKvBlock,
       buildSomeOrderArticle: buildSomeOrderArticle2,
       isManejoSomeCopyUiEnabled
@@ -35191,10 +35450,15 @@ function creatinineGuptaCoef(creatinina) {
   if (!Number.isFinite(cr)) return 0;
   return cr <= 1.5 ? 0 : 0.42;
 }
-function searchProcedures(q) {
+function searchProcedures(q, searchTextFn) {
   var n = normSearch(q).trim();
   if (!n) return PROCEDURES.slice();
-  return PROCEDURES.filter((p) => normSearch(p.labelEn).includes(n));
+  var textOf = typeof searchTextFn === "function" ? searchTextFn : function(p) {
+    return p.labelEn;
+  };
+  return PROCEDURES.filter(function(p) {
+    return normSearch(textOf(p)).includes(n);
+  });
 }
 function suggestAhaClinicoFromAsa(asaKey) {
   var a = getAsaByKey(asaKey);
@@ -35327,7 +35591,167 @@ function computeVpoScores(input) {
   };
 }
 
+// public/js/vpo-display.mjs
+function asaOptionLabel(a) {
+  var es = {
+    "asa-i": "Sin enfermedad sist\xE9mica",
+    "asa-ii": "Enfermedad sist\xE9mica leve controlada",
+    "asa-iii": "Enfermedad sist\xE9mica grave",
+    "asa-iv": "Enfermedad grave, amenaza constante a la vida",
+    "asa-v": "Moribundo, no se espera sobrevivir sin cirug\xEDa"
+  };
+  return "ASA " + a.asaClass + " \u2014 " + (es[a.key] || a.labelEn);
+}
+function functionalLabel(f) {
+  var es = {
+    independent: "Independiente",
+    "partially-dependent": "Parcialmente dependiente",
+    "totally-dependent": "Totalmente dependiente"
+  };
+  return es[f.key] || f.labelEn;
+}
+var PROCEDURE_ES = {
+  "gupta-anorectal": "Anorrectal",
+  "gupta-aortic": "A\xF3rtica",
+  "gupta-bariatric": "Bari\xE1trica",
+  "gupta-brain": "Cerebral",
+  "gupta-breast": "Mama",
+  "gupta-cardiac": "Card\xEDaca",
+  "gupta-ent": "ORL (excepto tiroides/paratiroides)",
+  "gupta-foregut-hpb": "Esofagog\xE1strica / hepatopancreatobiliar (excepto colecistectom\xEDa aislada)",
+  "gupta-gallbladder-appendix": "Ves\xEDcula biliar / ap\xE9ndice / suprarrenales / bazo",
+  "gupta-hernia": "Hernia",
+  "gupta-intestinal": "Intestinal bajo duodeno",
+  "gupta-neck-thyroid": "Cuello (incl. tiroides/paratiroides)",
+  "gupta-ob-gyn": "Obst\xE9trica / ginecol\xF3gica",
+  "gupta-orthopedic": "Ortop\xE9dica",
+  "gupta-abdomen-other": "Abdomen \u2014 otra",
+  "gupta-peripheral-vascular": "Vascular perif\xE9rica",
+  "gupta-skin": "Piel",
+  "gupta-spine": "Columna",
+  "gupta-thoracic": "Tor\xE1cica no esof\xE1gica",
+  "gupta-vein": "Vena",
+  "gupta-urology": "Urolog\xEDa"
+};
+function procedureLabel(p) {
+  return PROCEDURE_ES[p.id] || p.labelEn;
+}
+function procedureSearchText(p) {
+  return procedureLabel(p) + " " + p.labelEn;
+}
+
+// public/js/vpo-dx-inference.mjs
+function normalizePlusSeparators(text) {
+  return String(text || "").replace(/[\uFF0B\u2795]/g, "+").replace(/\s+\+\s+/g, " + ");
+}
+function parseDiagnosticosText(text) {
+  var raw = normalizePlusSeparators(String(text || "").trim());
+  if (!raw) return [];
+  var parts = /\+/.test(raw) ? raw.split(/\s*\+\s*/) : raw.split(/\r?\n/);
+  return parts.map(function(p) {
+    return String(p || "").trim().replace(/^\d+\.\s*/, "").toUpperCase();
+  }).filter(Boolean);
+}
+function formatDiagnosticosCopy(list) {
+  return (list || []).map(function(d, i) {
+    return i + 1 + ". " + String(d || "").trim();
+  }).filter(function(line) {
+    return line.length > 2;
+  }).join("\n");
+}
+function normDx(s) {
+  return String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+function anyDxMatch(list, re) {
+  for (var i = 0; i < list.length; i++) {
+    if (re.test(normDx(list[i]))) return true;
+  }
+  return false;
+}
+function inferRiskFromDiagnosticos(diagnosticosList) {
+  var list = (diagnosticosList || []).filter(Boolean);
+  var rcri = {
+    cardiopatiaIsquemica: anyDxMatch(list, /isquemi|infarto agudo|iam\b|angina|coronari|cardiopatia isquemica/),
+    insuficienciaCardiaca: anyDxMatch(
+      list,
+      /insuficiencia cardiaca|fevi reducida|icc\b|ic con|ic cronic|falla cardiaca|heart failure/
+    ),
+    evc: anyDxMatch(list, /\bevc\b|ait\b|acv\b|ictus|infarto cerebral|evento cerebrovascular/),
+    dmInsulina: anyDxMatch(
+      list,
+      /dm tipo 1|diabetes mellitus tipo 1|insulinodepend|con insulina|dm con insulina|diabet.*insulin/
+    )
+  };
+  var caprini = {
+    imcMayor25: anyDxMatch(list, /obesidad|obeso|imc\s*>?\s*25|sobrepeso morbido/),
+    insuficienciaVenosa: anyDxMatch(list, /varices|insuficiencia venosa|\bivc\b/),
+    reposoMovilidadReducida: anyDxMatch(list, /reposo prolongado|inmovil|paraplej|tetraplej|movilidad reducida/),
+    antecedenteEvc: anyDxMatch(
+      list,
+      /tromboembolia venosa|\btev\b|embolia pulmonar|trombosis venosa|tvpe\b/
+    ),
+    trombofilia: anyDxMatch(list, /trombofilia/),
+    esteroideCronico: anyDxMatch(list, /esteroide cronico|corticoterapia cronica|prednisona cronica/),
+    artritisInflamatoria: anyDxMatch(
+      list,
+      /artritis reumatoide|lupus|artritis inflamatoria|enfermedad inflamatoria/
+    )
+  };
+  var ariscat = {
+    infeccionRespiratoriaUltimoMes: anyDxMatch(
+      list,
+      /infeccion respiratoria|neumonia reciente|neumonia aguda|iras\b/
+    )
+  };
+  var asaKey = "";
+  if (anyDxMatch(list, /moribundo|shock refractario|falla multiorganica|paro cardiaco/)) {
+    asaKey = "asa-v";
+  } else if (anyDxMatch(
+    list,
+    /erc estadio 5|enfermedad renal cronica estadio 5|estadio v\b|dialisis peritoneal|hemodialisis|sepsis severa|insuficiencia respiratoria aguda|falla hepatica aguda/
+  )) {
+    asaKey = "asa-iv";
+  } else if (anyDxMatch(
+    list,
+    /insuficiencia cardiaca|fevi reducida|cardiopatia isquemica|epoc gold|epoc severa|cirrosis|cancer activo|leucemia|linfoma|vih avanzado|diabetes mellitus tipo 2 complicada|peritonitis/
+  )) {
+    asaKey = "asa-iii";
+  } else if (anyDxMatch(list, /diabetes mellitus|hipertension|hta\b|asma|epoc|hipotiroidismo|anemia cronica/)) {
+    asaKey = "asa-ii";
+  }
+  return { rcri, caprini, ariscat, asaKey };
+}
+function applyDiagnosticosInference(state) {
+  var list = (state.diagnosticosList || []).filter(function(d) {
+    return String(d || "").trim();
+  });
+  var inf = inferRiskFromDiagnosticos(list);
+  if (!state.rcri) state.rcri = {};
+  if (!state.caprini) state.caprini = {};
+  if (!state.ariscat) state.ariscat = {};
+  Object.keys(inf.rcri).forEach(function(k) {
+    if (inf.rcri[k]) state.rcri[k] = true;
+  });
+  Object.keys(inf.caprini).forEach(function(k) {
+    if (inf.caprini[k]) state.caprini[k] = true;
+  });
+  Object.keys(inf.ariscat).forEach(function(k) {
+    if (inf.ariscat[k]) state.ariscat[k] = true;
+  });
+  state.diagnosticosText = formatDiagnosticosCopy(list);
+  if (inf.asaKey && (!state.asaKey || state.asaFromDiagnosticos)) {
+    state.asaKey = inf.asaKey;
+    state.asaFromDiagnosticos = true;
+  }
+  if (!list.length) state.asaFromDiagnosticos = false;
+}
+
 // public/js/vpo-data.mjs
+var DURACION_OPCIONES = [
+  { key: "le2", label: "\u2264 2 horas", hours: 2 },
+  { key: "2to3", label: "2\u20133 horas", hours: 2.5 },
+  { key: "gt3", label: "> 3 horas", hours: 4 }
+];
 var DEFAULT_EKG_TEXT = "ELECTROCARDIOGRAMA DE 12 DERIVACIONES, RITMO SINUSAL, EJE EL\xC9CTRICO NORMAL (ENTRE 0 Y 90 GRADOS), FC ___ LPM, ONDA P PRESENTE Y DE MORFOLOG\xCDA NORMAL, INTERVALO PR CONSERVADO (120-200 MS), COMPLEJO QRS DE DURACI\xD3N NORMAL (<120 MS), SIN SUPRA O INFRA DESNIVELES DEL SEGMENTO ST, ONDAS T SIM\xC9TRICAS SIN INVERSIONES, INTERVALO QTC DENTRO DE PAR\xC1METROS NORMALES. SIN DATOS DE BLOQUEO, HIPERTROFIA, ISQUEMIA O NECROSIS.";
 var DEFAULT_RX_TEXT = "RADIOGRAF\xCDA DE T\xD3RAX AP, SIN ROTACI\xD3N, ADECUADA PENETRACI\xD3N, TEJIDOS BLANDOS SIN ALTERACIONES, MARCO \xD3SEO \xCDNTEGRO, CAMPOS PULMONARES SIN REDISTRIBUCI\xD3N DE FLUJO, \xC1NGULOS CARDIOFR\xC9NICOS Y COSTODIAFRAGM\xC1TICOS LIBRES, \xCDNDICE CARDIOTOR\xC1CICO <50% SIN CARDIOMEGALIA, SILUETA MEDIASTINAL NORMAL, TR\xC1QUEA CENTRAL. SIN INFILTRADOS, DERRAME PLEURAL, CONSOLIDACIONES NI MASAS.";
 function emptyVpoState() {
@@ -35337,6 +35761,7 @@ function emptyVpoState() {
     hemoglobina: "",
     spo2: "",
     duracionCirugiaHoras: "",
+    duracionCirugiaKey: "",
     asaKey: "",
     functionalKey: "independent",
     procedureId: "",
@@ -35368,7 +35793,12 @@ function emptyVpoState() {
     ekgText: DEFAULT_EKG_TEXT,
     rxText: DEFAULT_RX_TEXT,
     diagnosticosText: "",
+    diagnosticosList: (
+      /** @type {string[]} */
+      []
+    ),
     diagnosticosTouched: false,
+    asaFromDiagnosticos: false,
     valoracionIntro: "SE REALIZA VALORACI\xD3N PREOPERATORIA. SE OTORGA RIESGO QUIR\xDARGICO:",
     farmacos: [],
     fcLpm: "",
@@ -35379,7 +35809,29 @@ function emptyVpoState() {
 function ensureVpoState(map, patientId) {
   if (!patientId) return emptyVpoState();
   if (!map[patientId]) map[patientId] = emptyVpoState();
+  ensureDiagnosticosList(map[patientId]);
   return map[patientId];
+}
+function ensureDiagnosticosList(state) {
+  if (!state) return;
+  if (!Array.isArray(state.diagnosticosList)) state.diagnosticosList = [];
+  if (!state.diagnosticosList.length && state.diagnosticosText) {
+    state.diagnosticosList = parseDiagnosticosText(state.diagnosticosText);
+  }
+  if (!state.diagnosticosList.length) state.diagnosticosList = [""];
+  state.diagnosticosText = formatDiagnosticosCopy(
+    state.diagnosticosList.filter(function(d) {
+      return String(d || "").trim();
+    })
+  );
+}
+function setDiagnosticosList(state, list) {
+  var cleaned = (list || []).map(function(d) {
+    return String(d || "").trim().toUpperCase();
+  }).filter(Boolean);
+  state.diagnosticosList = cleaned.length ? cleaned.concat([""]) : [""];
+  applyDiagnosticosInference(state);
+  syncAhaFields(state);
 }
 function applyProcedureSelection(state, procedureId) {
   var proc = getProcedureById(procedureId);
@@ -35391,9 +35843,95 @@ function applyProcedureSelection(state, procedureId) {
 }
 function applyAsaSuggestion(state, asaKey) {
   state.asaKey = asaKey || "";
-  if (!state.ahaClinico || state.ahaClinico === suggestAhaClinicoFromAsa(state.asaKey)) {
-    state.ahaClinico = suggestAhaClinicoFromAsa(asaKey);
+  syncAhaFields(state);
+}
+function syncAhaFields(state) {
+  if (state.asaKey) state.ahaClinico = suggestAhaClinicoFromAsa(state.asaKey);
+  var proc = getProcedureById(state.procedureId);
+  if (proc) state.ahaQuirurgico = proc.ahaQuirurgico;
+}
+function duracionKeyToHours(key) {
+  var o = DURACION_OPCIONES.find(function(d) {
+    return d.key === key;
+  });
+  return o ? o.hours : null;
+}
+function duracionHoursToKey(hours) {
+  var h = typeof hours === "number" ? hours : parseFloat(String(hours || "").replace(",", "."));
+  if (!Number.isFinite(h)) return "";
+  if (h <= 2) return "le2";
+  if (h <= 3) return "2to3";
+  return "gt3";
+}
+function ensureDuracionKey(state) {
+  if (state.duracionCirugiaKey) {
+    var h = duracionKeyToHours(state.duracionCirugiaKey);
+    if (h != null) state.duracionCirugiaHoras = String(h);
+    return;
   }
+  if (state.duracionCirugiaHoras) {
+    state.duracionCirugiaKey = duracionHoursToKey(state.duracionCirugiaHoras);
+  }
+}
+function applyDuracionKey(state, key) {
+  state.duracionCirugiaKey = key || "";
+  var h = duracionKeyToHours(key);
+  state.duracionCirugiaHoras = h != null ? String(h) : "";
+}
+function getVitalsFromMonitoreo(monitoreoLike) {
+  var m = monitoreoLike || {};
+  var hist = Array.isArray(m.historial) ? m.historial.slice() : [];
+  hist.sort(function(a, b) {
+    var ra = a && typeof a === "object" && "recordedAt" in a ? String(
+      /** @type {any} */
+      a.recordedAt
+    ) : "";
+    var rb = b && typeof b === "object" && "recordedAt" in b ? String(
+      /** @type {any} */
+      b.recordedAt
+    ) : "";
+    return rb.localeCompare(ra);
+  });
+  function pick(key) {
+    for (var i = 0; i < hist.length; i++) {
+      var row = hist[i];
+      if (!row || typeof row !== "object") continue;
+      var rv = (
+        /** @type {any} */
+        row.vitals && typeof /** @type {any} */
+        row.vitals === "object" ? (
+          /** @type {any} */
+          row.vitals
+        ) : {}
+      );
+      var val2 = rv[key];
+      if (val2 != null && val2 !== "") return String(val2).trim();
+    }
+    return "";
+  }
+  return { fc: pick("fc"), sat: pick("sat") };
+}
+function applyVitalsFromMonitoreo(state, patient) {
+  if (!patient || !patient.monitoreo) return false;
+  var v = getVitalsFromMonitoreo(patient.monitoreo);
+  var ok = false;
+  if (v.fc) {
+    state.fcLpm = v.fc;
+    state.lastFcApplied = v.fc;
+    ok = true;
+  }
+  if (v.sat) {
+    state.spo2 = v.sat;
+    ok = true;
+  }
+  return ok;
+}
+function effectiveDuracionHoras(state) {
+  ensureDuracionKey(state);
+  var fromKey = duracionKeyToHours(state.duracionCirugiaKey);
+  if (fromKey != null) return fromKey;
+  var h = parseFloat(String(state.duracionCirugiaHoras || "").replace(",", "."));
+  return Number.isFinite(h) ? h : null;
 }
 function mergeFarmacosFromMedReceta(state, medItems, suggestFn) {
   if (!state.farmacos) state.farmacos = [];
@@ -35412,13 +35950,21 @@ function mergeFarmacosFromMedReceta(state, medItems, suggestFn) {
     existing.add(it.id);
   });
 }
-function buildDiagnosticosFromNota(diagnosticos) {
-  var lines = (diagnosticos || []).map(function(d) {
-    return String(d || "").trim();
+function importDiagnosticosFromNota(state, notaDx) {
+  var lines = (notaDx || []).map(function(d) {
+    return String(d || "").trim().toUpperCase();
   }).filter(Boolean);
-  return lines.map(function(d, i) {
-    return i + 1 + ". " + d;
-  }).join("\n");
+  if (!lines.length) return false;
+  setDiagnosticosList(state, lines);
+  state.diagnosticosTouched = true;
+  return true;
+}
+function importDiagnosticosFromPaste(state, pasteText) {
+  var parsed = parseDiagnosticosText(pasteText);
+  if (!parsed.length) return false;
+  setDiagnosticosList(state, parsed);
+  state.diagnosticosTouched = true;
+  return true;
 }
 function getLatestLabValues(labHistoryPatient, patient) {
   var hist = Array.isArray(labHistoryPatient) ? labHistoryPatient : [];
@@ -35444,11 +35990,14 @@ function applyLabValues(state, vals) {
   if (vals.hemoglobina != null && vals.hemoglobina !== "") state.hemoglobina = String(vals.hemoglobina);
   state.lastLabApplied = { fecha: vals.fecha || "", creatinina: state.creatinina, hemoglobina: state.hemoglobina };
 }
-function applyFcFromNote(state, fc) {
-  var v = String(fc || "").trim();
-  if (!v) return;
-  state.fcLpm = v;
-  state.lastFcApplied = v;
+function autofillVitalsFromMonitoreoIfEmpty(state, patient) {
+  if (!patient || !patient.monitoreo) return;
+  var v = getVitalsFromMonitoreo(patient.monitoreo);
+  if (!String(state.spo2 || "").trim() && v.sat) state.spo2 = v.sat;
+  if (!String(state.fcLpm || "").trim() && v.fc) {
+    state.fcLpm = v.fc;
+    state.lastFcApplied = v.fc;
+  }
 }
 
 // public/js/vpo-periop-meds.mjs
@@ -35573,7 +36122,7 @@ var _saveTimer2 = null;
 function registerVpoPanelRuntime(partial) {
   if (partial && typeof partial === "object") Object.assign(rt20, partial);
 }
-function esc9(s) {
+function esc10(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function scheduleSave() {
@@ -35594,12 +36143,13 @@ function copyText(label, text) {
   });
 }
 function buildScores(state) {
+  ensureDuracionKey(state);
   return computeVpoScores({
     edad: state.edad,
     creatinina: state.creatinina,
     hemoglobina: state.hemoglobina,
     spo2: state.spo2,
-    duracionCirugiaHoras: state.duracionCirugiaHoras,
+    duracionCirugiaHoras: effectiveDuracionHoras(state),
     asaKey: state.asaKey,
     functionalKey: state.functionalKey,
     procedureId: state.procedureId,
@@ -35608,8 +36158,24 @@ function buildScores(state) {
     caprini: state.caprini
   });
 }
+function renderAhaBadges(state) {
+  syncAhaFields(state);
+  var c = state.ahaClinico || "\u2014";
+  var q = state.ahaQuirurgico || "\u2014";
+  return '<div class="vpo-aha-row"><div class="vpo-aha-badge vpo-aha-clinico"><span>AHA cl\xEDnico</span> ' + esc10(c) + '</div><div class="vpo-aha-badge vpo-aha-quirurgico"><span>AHA quir\xFArgico</span> ' + esc10(q) + "</div></div>";
+}
 function renderSummaryHtml(scores) {
-  return '<div class="vpo-summary card"><div class="card-body" style="font-size:13px;line-height:1.5;"><div><strong>ASA</strong> ' + esc9(scores.asaClass) + "</div><div><strong>RCRI (Lee)</strong> " + scores.rcri.points + " \u2014 " + esc9(scores.rcri.riskLabel) + "</div><div><strong>Gupta MICA</strong> " + (scores.gupta.micaPercent * 100).toFixed(2) + "% \u2014 " + esc9(scores.gupta.interpretation) + "</div><div><strong>ARISCAT</strong> " + scores.ariscat.points + " \u2014 " + esc9(scores.ariscat.riskLabel) + " " + esc9(scores.ariscat.detailPct) + "</div><div><strong>Caprini</strong> " + scores.caprini.points + " \u2014 " + esc9(scores.caprini.riskLabel) + '</div><p class="overview-hint" style="margin:8px 0 0;">Gupta: aproximaci\xF3n del Excel; validar con juicio cl\xEDnico.</p></div></div>';
+  return '<div class="vpo-summary-lines"><div><strong>ASA</strong> ' + esc10(scores.asaClass) + "</div><div><strong>RCRI (Lee)</strong> " + scores.rcri.points + " \u2014 " + esc10(scores.rcri.riskLabel) + "</div><div><strong>Gupta MICA</strong> " + (scores.gupta.micaPercent * 100).toFixed(2) + "% \u2014 " + esc10(scores.gupta.interpretation) + "</div><div><strong>ARISCAT</strong> " + scores.ariscat.points + " \u2014 " + esc10(scores.ariscat.riskLabel) + " " + esc10(scores.ariscat.detailPct) + "</div><div><strong>Caprini</strong> " + scores.caprini.points + " \u2014 " + esc10(scores.caprini.riskLabel) + '</div><p class="overview-hint" style="margin:8px 0 0;">Gupta: aproximaci\xF3n del Excel; validar con juicio cl\xEDnico.</p></div>';
+}
+function vpoSection(title, tone, open, body) {
+  return '<details class="vpo-section ea-card"' + (open ? " open" : "") + '><summary class="card-header card-header--tone-' + tone + '">' + esc10(title) + '</summary><div class="vpo-section-body">' + body + "</div></details>";
+}
+function updateSummaryAndAha(mount, state) {
+  syncAhaFields(state);
+  var summary = mount.querySelector(".vpo-summary-wrap");
+  if (summary) summary.innerHTML = renderSummaryHtml(buildScores(state));
+  var ahaWrap = mount.querySelector(".vpo-aha-wrap");
+  if (ahaWrap) ahaWrap.innerHTML = renderAhaBadges(state);
 }
 function wireForm(mount, state, patientId) {
   var form = mount.querySelector(".vpo-form");
@@ -35627,22 +36193,30 @@ function wireForm(mount, state, patientId) {
     } else {
       state[field] = el.type === "checkbox" ? el.checked : el.value;
     }
-    if (field === "diagnosticosText") state.diagnosticosTouched = true;
+    if (field === "asaKey") {
+      state.asaFromDiagnosticos = false;
+      applyAsaSuggestion(state, state.asaKey);
+    }
     scheduleSave();
-    var summary = mount.querySelector(".vpo-summary-wrap");
-    if (summary) summary.innerHTML = renderSummaryHtml(buildScores(state));
+    updateSummaryAndAha(mount, state);
   });
   form.addEventListener("change", function(ev) {
     var el = ev.target;
     if (el && el.id === "vpo-procedure-select") {
       applyProcedureSelection(state, el.value);
       scheduleSave();
-      var summary = mount.querySelector(".vpo-summary-wrap");
-      if (summary) summary.innerHTML = renderSummaryHtml(buildScores(state));
+      updateSummaryAndAha(mount, state);
     }
     if (el && el.id === "vpo-asa-select") {
+      state.asaFromDiagnosticos = false;
       applyAsaSuggestion(state, el.value);
       scheduleSave();
+      updateSummaryAndAha(mount, state);
+    }
+    if (el && el.id === "vpo-duracion-select") {
+      applyDuracionKey(state, el.value);
+      scheduleSave();
+      updateSummaryAndAha(mount, state);
     }
   });
   mount.querySelector('[data-vpo-action="tomar-lab"]')?.addEventListener("click", function() {
@@ -35656,31 +36230,33 @@ function wireForm(mount, state, patientId) {
     renderVpoPanel(mount, patientId);
     rt20.showToast("Valores de laboratorio aplicados", "success");
   });
-  mount.querySelector('[data-vpo-action="tomar-fc"]')?.addEventListener("click", function() {
-    var note = notes[patientId] || {};
-    if (!note.fc) {
-      rt20.showToast("Sin FC en la nota", "error");
+  mount.querySelector('[data-vpo-action="tomar-estado"]')?.addEventListener("click", function() {
+    var patient = patients.find(function(p) {
+      return p.id === patientId;
+    });
+    if (!applyVitalsFromMonitoreo(state, patient || null)) {
+      rt20.showToast("Sin FC o SpO\u2082 en Estado actual", "error");
       return;
     }
-    applyFcFromNote(state, note.fc);
     scheduleSave();
     renderVpoPanel(mount, patientId);
-    rt20.showToast("FC tomada de la nota", "success");
+    rt20.showToast("FC y SpO\u2082 tomados de Estado actual", "success");
   });
   mount.querySelector('[data-vpo-action="tomar-dx"]')?.addEventListener("click", function() {
     var note = notes[patientId] || {};
-    var dx = buildDiagnosticosFromNota(note.diagnosticos);
-    if (!dx) {
-      rt20.showToast("Sin diagn\xF3sticos en la nota", "error");
-      return;
-    }
-    if (state.diagnosticosTouched && state.diagnosticosText.trim()) {
+    if (state.diagnosticosTouched && (state.diagnosticosList || []).some(function(d) {
+      return String(d).trim();
+    })) {
       rt20.showToast("Diagn\xF3sticos ya editados \u2014 no se sobrescriben", "error");
       return;
     }
-    state.diagnosticosText = dx;
+    if (!importDiagnosticosFromNota(state, note.diagnosticos || [])) {
+      rt20.showToast("Sin diagn\xF3sticos en la nota", "error");
+      return;
+    }
     scheduleSave();
     renderVpoPanel(mount, patientId);
+    rt20.showToast("Diagn\xF3sticos importados; factores de riesgo actualizados", "success");
   });
   mount.querySelector('[data-vpo-action="tomar-meds"]')?.addEventListener("click", function() {
     var block = medRecetaByPatient[patientId];
@@ -35702,9 +36278,9 @@ function wireForm(mount, state, patientId) {
   var procSelect = form.querySelector("#vpo-procedure-select");
   if (procSearch && procSelect) {
     procSearch.addEventListener("input", function() {
-      var hits = searchProcedures(procSearch.value);
+      var hits = searchProcedures(procSearch.value, procedureSearchText);
       procSelect.innerHTML = hits.map(function(p) {
-        return '<option value="' + esc9(p.id) + '">' + esc9(p.labelEn) + "</option>";
+        return '<option value="' + esc10(p.id) + '">' + esc10(procedureLabel(p)) + "</option>";
       }).join("");
     });
   }
@@ -35740,13 +36316,190 @@ function renderFarmacosList(farmacos) {
     return '<p class="overview-hint">Sin f\xE1rmacos en VPO. Usa \xABTomar de Medicamentos (SOME)\xBB.</p>';
   }
   return farmacos.map(function(f, idx) {
-    return '<div class="vpo-farm-row" style="margin-bottom:10px;"><div style="font-weight:600;font-size:12px;">' + esc9(f.nombreDisplay) + '</div><textarea class="vpo-farm-nota" data-vpo-farm-idx="' + idx + '" rows="2" style="width:100%;margin-top:4px;">' + esc9(f.notaEditable || "") + "</textarea></div>";
+    return '<div class="vpo-farm-row"><div class="vpo-farm-name">' + esc10(f.nombreDisplay) + '</div><textarea class="vpo-farm-nota ea-input" data-vpo-farm-idx="' + idx + '" rows="2">' + esc10(f.notaEditable || "") + "</textarea></div>";
   }).join("");
+}
+var FLAG_GROUPS = [
+  {
+    title: "RCRI (Lee)",
+    flags: [
+      ["rcri.cardiopatiaIsquemica", "Cardiopat\xEDa isqu\xE9mica"],
+      ["rcri.insuficienciaCardiaca", "Insuficiencia card\xEDaca"],
+      ["rcri.evc", "EVC / AIT"],
+      ["rcri.dmInsulina", "DM con insulina"],
+      ["rcri.cirugiaAltoRiesgo", "Cirug\xEDa alto riesgo"],
+      ["rcri.urgente", "Urgente"]
+    ]
+  },
+  {
+    title: "ARISCAT",
+    flags: [
+      ["ariscat.infeccionRespiratoriaUltimoMes", "IR \xFAltimo mes"],
+      ["ariscat.cirugiaMayor45Min", "Cirug\xEDa >45 min"],
+      ["ariscat.urgente", "Urgente"]
+    ]
+  },
+  {
+    title: "Caprini",
+    flags: [
+      ["caprini.imcMayor25", "IMC >25"],
+      ["caprini.insuficienciaVenosa", "IVC / varices"],
+      ["caprini.reposoMovilidadReducida", "Reposo / movilidad"],
+      ["caprini.antecedenteEvc", "TEV previo"],
+      ["caprini.trombofilia", "Trombofilia"],
+      ["caprini.esteroideCronico", "Esteroide cr\xF3nico"],
+      ["caprini.artritisInflamatoria", "AR / inflamatoria"]
+    ]
+  }
+];
+function isFlagChecked(state, fieldPath) {
+  var parts = fieldPath.split(".");
+  return !!(state[parts[0]] && state[parts[0]][parts[1]]);
+}
+function renderFlagChip(state, fieldPath, label) {
+  var checked = isFlagChecked(state, fieldPath);
+  return '<label class="vpo-chip"><input type="checkbox" data-vpo-field="' + esc10(fieldPath) + '"' + (checked ? " checked" : "") + "><span>" + esc10(label) + "</span></label>";
+}
+function renderFlagGroups(state) {
+  return '<div class="vpo-flag-groups">' + FLAG_GROUPS.map(function(group) {
+    return '<div class="vpo-flag-group"><p class="vpo-flag-group-title">' + esc10(group.title) + '</p><div class="vpo-flag-chips">' + group.flags.map(function(pair) {
+      return renderFlagChip(state, pair[0], pair[1]);
+    }).join("") + "</div></div>";
+  }).join("") + '<p class="overview-hint" style="margin:4px 0 0;">Los diagn\xF3sticos marcan autom\xE1ticamente los criterios compatibles; puedes ajustarlos manualmente.</p></div>';
+}
+function dxRowsForRender(state) {
+  var list = (state.diagnosticosList || []).slice();
+  return list.length ? list : [""];
+}
+function renderDxListHtml(state) {
+  var rows = dxRowsForRender(state);
+  return rows.map(function(dx, i) {
+    var canRemove = rows.length > 1;
+    return '<div class="vpo-dx-row list-row"><input type="text" class="ea-input" data-vpo-dx-idx="' + i + '" value="' + esc10(dx) + '" placeholder="Diagn\xF3stico ' + (i + 1) + '"><button type="button" class="btn-remove" data-vpo-dx-remove="' + i + '"' + (canRemove ? "" : ' style="visibility:hidden"') + ' aria-label="Eliminar">\xD7</button></div>';
+  }).join("");
+}
+function refreshDxListDom(mount, state) {
+  var listEl = mount.querySelector(".vpo-dx-list");
+  if (!listEl) return;
+  listEl.innerHTML = renderDxListHtml(state);
+}
+function renderDiagnosticosSection(state) {
+  return '<div class="vpo-toolbar"><button type="button" class="btn-med-secondary" data-vpo-action="tomar-dx">Tomar de la nota</button><button type="button" class="btn-add-row" data-vpo-action="dx-add-row">+ Agregar diagn\xF3stico</button></div><div class="vpo-dx-list">' + renderDxListHtml(state) + '</div><div class="vpo-dx-paste"><span class="ea-label">Pegar lista con \xAB + \xBB entre diagn\xF3sticos</span><textarea class="ea-input vpo-dx-paste-input" data-vpo-dx-paste placeholder="DX1 + DX2 + DX3\u2026"></textarea><button type="button" class="btn-med-secondary" data-vpo-action="dx-split-plus">Separar por +</button></div>';
+}
+function liveVpoState(mount) {
+  var pid = mount._vpoPatientId;
+  if (!pid) return null;
+  return ensureVpoState(vpoByPatient, pid);
+}
+function syncDxInferenceOnly(state) {
+  if (!state) return;
+  var nonEmpty = (state.diagnosticosList || []).filter(function(d) {
+    return String(d || "").trim();
+  });
+  state.diagnosticosText = formatDiagnosticosCopy(nonEmpty);
+  applyDiagnosticosInference(state);
+  syncAhaFields(state);
+}
+function commitDxList(mount, state) {
+  if (!state) return;
+  state.diagnosticosTouched = true;
+  setDiagnosticosList(state, state.diagnosticosList);
+  scheduleSave();
+  refreshDxListDom(mount, state);
+  refreshFlagsAndSummary(mount, state);
+}
+function ensureVpoMountDelegation(mount) {
+  if (mount._vpoDelegationWired) return;
+  mount._vpoDelegationWired = true;
+  mount.addEventListener("click", function(ev) {
+    var btn = ev.target && ev.target.closest ? ev.target.closest("[data-vpo-action]") : null;
+    if (!btn || !mount.contains(btn)) return;
+    var action = btn.getAttribute("data-vpo-action");
+    var state = liveVpoState(mount);
+    if (!state) return;
+    var pid = mount._vpoPatientId;
+    if (action === "dx-split-plus") {
+      ev.preventDefault();
+      var ta = mount.querySelector("[data-vpo-dx-paste]");
+      if (!importDiagnosticosFromPaste(state, ta ? ta.value : "")) {
+        rt20.showToast("Pega diagn\xF3sticos separados por +", "error");
+        return;
+      }
+      if (ta) ta.value = "";
+      scheduleSave();
+      refreshDxListDom(mount, state);
+      refreshFlagsAndSummary(mount, state);
+      var asaSel = mount.querySelector("#vpo-asa-select");
+      if (asaSel) asaSel.value = state.asaKey || "";
+      rt20.showToast("Diagn\xF3sticos separados; riesgo actualizado", "success");
+      return;
+    }
+    if (action === "dx-add-row") {
+      ev.preventDefault();
+      if (!state.diagnosticosList) state.diagnosticosList = [""];
+      if (state.diagnosticosList[state.diagnosticosList.length - 1]) {
+        state.diagnosticosList.push("");
+      }
+      commitDxList(mount, state);
+      var lastInput = mount.querySelector(
+        '[data-vpo-dx-idx="' + (state.diagnosticosList.length - 1) + '"]'
+      );
+      if (lastInput) lastInput.focus();
+      return;
+    }
+    var removeBtn = ev.target.closest ? ev.target.closest("[data-vpo-dx-remove]") : null;
+    if (removeBtn && mount.contains(removeBtn)) {
+      ev.preventDefault();
+      var idx = parseInt(removeBtn.getAttribute("data-vpo-dx-remove"), 10);
+      if (!state.diagnosticosList || state.diagnosticosList.length <= 1) return;
+      state.diagnosticosList.splice(idx, 1);
+      if (!state.diagnosticosList.length) state.diagnosticosList = [""];
+      commitDxList(mount, state);
+    }
+  });
+  mount.addEventListener("input", function(ev) {
+    var el = ev.target;
+    if (!el || el.getAttribute("data-vpo-dx-idx") == null || !mount.contains(el)) return;
+    var state = liveVpoState(mount);
+    if (!state) return;
+    var idx = parseInt(el.getAttribute("data-vpo-dx-idx"), 10);
+    if (!state.diagnosticosList) state.diagnosticosList = [""];
+    state.diagnosticosList[idx] = el.value.toUpperCase();
+    state.diagnosticosTouched = true;
+    syncDxInferenceOnly(state);
+    scheduleSave();
+    refreshFlagsAndSummary(mount, state);
+    var asaSel = mount.querySelector("#vpo-asa-select");
+    if (asaSel) asaSel.value = state.asaKey || "";
+  });
+  mount.addEventListener("keydown", function(ev) {
+    var el = ev.target;
+    if (!el || el.getAttribute("data-vpo-dx-idx") == null || !mount.contains(el)) return;
+    if (ev.key !== "Enter") return;
+    ev.preventDefault();
+    var state = liveVpoState(mount);
+    if (!state) return;
+    var idx = parseInt(el.getAttribute("data-vpo-dx-idx"), 10);
+    if (!state.diagnosticosList) state.diagnosticosList = [""];
+    if (idx >= state.diagnosticosList.length - 1) {
+      state.diagnosticosList.push("");
+    }
+    commitDxList(mount, state);
+    var next = mount.querySelector('[data-vpo-dx-idx="' + (idx + 1) + '"]');
+    if (next) next.focus();
+  });
+}
+function refreshFlagsAndSummary(mount, state) {
+  var flagsWrap = mount.querySelector(".vpo-flags-wrap");
+  if (flagsWrap) flagsWrap.innerHTML = renderFlagGroups(state);
+  var asaSel = mount.querySelector("#vpo-asa-select");
+  if (asaSel) asaSel.value = state.asaKey || "";
+  updateSummaryAndAha(mount, state);
 }
 function renderVpoPanel(mount, patientId) {
   if (!mount) return;
   if (!patientId) {
-    mount.innerHTML = '<p class="overview-hint">Selecciona un paciente para valoraci\xF3n preoperatoria.</p>';
+    mount.innerHTML = '<p class="overview-hint vpo-panel">Selecciona un paciente para valoraci\xF3n preoperatoria.</p>';
     return;
   }
   var state = ensureVpoState(vpoByPatient, patientId);
@@ -35757,42 +36510,35 @@ function renderVpoPanel(mount, patientId) {
     var m = String(patient.edad).match(/(\d+)/);
     if (m) state.edad = m[1];
   }
+  ensureDuracionKey(state);
+  ensureDiagnosticosList(state);
+  syncAhaFields(state);
+  autofillVitalsFromMonitoreoIfEmpty(state, patient || null);
+  mount._vpoPatientId = patientId;
   var scores = buildScores(state);
   var procOptions = PROCEDURES.map(function(p) {
     var sel = p.id === state.procedureId ? " selected" : "";
-    return '<option value="' + esc9(p.id) + '"' + sel + ">" + esc9(p.labelEn) + "</option>";
+    return '<option value="' + esc10(p.id) + '"' + sel + ">" + esc10(procedureLabel(p)) + "</option>";
   }).join("");
-  mount.innerHTML = '<div class="vpo-form rpc-form-stack"><div class="card"><div class="card-header">Riesgo preoperatorio</div><div class="card-body"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;"><div class="field-group"><label>Edad</label><input data-vpo-field="edad" type="text" value="' + esc9(state.edad) + '"></div><div class="field-group"><label>Creatinina</label><input data-vpo-field="creatinina" type="text" value="' + esc9(state.creatinina) + '"></div><div class="field-group"><label>Hb</label><input data-vpo-field="hemoglobina" type="text" value="' + esc9(state.hemoglobina) + '"></div><div class="field-group"><label>SpO\u2082 %</label><input data-vpo-field="spo2" type="text" value="' + esc9(state.spo2) + '"></div><div class="field-group"><label>Duraci\xF3n (h)</label><input data-vpo-field="duracionCirugiaHoras" type="text" value="' + esc9(state.duracionCirugiaHoras) + '"></div><div class="field-group"><label>FC (lpm)</label><input data-vpo-field="fcLpm" type="text" value="' + esc9(state.fcLpm) + '"></div></div><div style="margin:10px 0;"><button type="button" class="btn-edit-templates" data-vpo-action="tomar-lab">Tomar del laboratorio</button> <button type="button" class="btn-edit-templates" data-vpo-action="tomar-fc">Tomar FC de la nota</button></div><div class="field-group"><label>ASA</label><select id="vpo-asa-select" data-vpo-field="asaKey"><option value="">\u2014</option>' + ASA_OPTIONS.map(function(a) {
-    return '<option value="' + esc9(a.key) + '"' + (a.key === state.asaKey ? " selected" : "") + ">" + esc9(a.asaClass + " \u2014 " + a.labelEn) + "</option>";
-  }).join("") + '</select></div><div class="field-group"><label>Dependencia funcional</label><select data-vpo-field="functionalKey">' + FUNCTIONAL_STATUS.map(function(f) {
-    return '<option value="' + esc9(f.key) + '"' + (f.key === state.functionalKey ? " selected" : "") + ">" + esc9(f.labelEn) + "</option>";
-  }).join("") + '</select></div><div class="field-group"><label>Buscar procedimiento</label><input id="vpo-procedure-search" type="search" placeholder="colecist, tor\xE1cica\u2026"></div><div class="field-group"><label>Procedimiento Gupta</label><select id="vpo-procedure-select">' + procOptions + '</select></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><div class="field-group"><label>AHA cl\xEDnico</label><select data-vpo-field="ahaClinico">' + ["", "Bajo", "Intermedio", "Alto"].map(function(v) {
-    return '<option value="' + esc9(v) + '"' + (v === state.ahaClinico ? " selected" : "") + ">" + (v || "\u2014") + "</option>";
-  }).join("") + '</select></div><div class="field-group"><label>AHA quir\xFArgico</label><select data-vpo-field="ahaQuirurgico">' + ["", "Bajo", "Intermedio", "Alto"].map(function(v) {
-    return '<option value="' + esc9(v) + '"' + (v === state.ahaQuirurgico ? " selected" : "") + ">" + (v || "\u2014") + "</option>";
-  }).join("") + '</select></div></div><div class="vpo-flags" style="margin-top:10px;font-size:12px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">' + [
-    ["rcri.cardiopatiaIsquemica", "Cardiopat\xEDa isqu\xE9mica"],
-    ["rcri.insuficienciaCardiaca", "IC"],
-    ["rcri.evc", "EVC/AIT"],
-    ["rcri.dmInsulina", "DM con insulina"],
-    ["rcri.cirugiaAltoRiesgo", "Cirug\xEDa alto riesgo RCRI"],
-    ["rcri.urgente", "Urgente (RCRI)"],
-    ["ariscat.infeccionRespiratoriaUltimoMes", "IR \xFAltimo mes"],
-    ["ariscat.cirugiaMayor45Min", "Cirug\xEDa >45 min"],
-    ["ariscat.urgente", "Urgente (ARISCAT)"],
-    ["caprini.imcMayor25", "IMC >25"],
-    ["caprini.insuficienciaVenosa", "IVC/varices"],
-    ["caprini.reposoMovilidadReducida", "Reposo/movilidad reducida"],
-    ["caprini.antecedenteEvc", "TEV previo"],
-    ["caprini.trombofilia", "Trombofilia"],
-    ["caprini.esteroideCronico", "Esteroide cr\xF3nico"],
-    ["caprini.artritisInflamatoria", "AR/inflamatoria"]
-  ].map(function(pair) {
-    var checked = false;
-    var parts = pair[0].split(".");
-    if (state[parts[0]] && state[parts[0]][parts[1]]) checked = true;
-    return '<label><input type="checkbox" data-vpo-field="' + pair[0] + '"' + (checked ? " checked" : "") + "> " + esc9(pair[1]) + "</label>";
-  }).join("") + '</div><div class="vpo-summary-wrap" style="margin-top:12px;">' + renderSummaryHtml(scores) + '</div></div></div><div class="card"><div class="card-header">EKG / Rx (editable)</div><div class="card-body"><label>EKG</label><textarea data-vpo-field="ekgText" rows="5" style="width:100%;">' + esc9(state.ekgText) + '</textarea><label style="margin-top:10px;display:block;">Rx t\xF3rax</label><textarea data-vpo-field="rxText" rows="5" style="width:100%;">' + esc9(state.rxText) + '</textarea></div></div><div class="card"><div class="card-header">Diagn\xF3sticos</div><div class="card-body"><button type="button" class="btn-edit-templates" data-vpo-action="tomar-dx">Tomar de la nota</button><textarea data-vpo-field="diagnosticosText" rows="4" style="width:100%;margin-top:8px;">' + esc9(state.diagnosticosText) + '</textarea></div></div><div class="card"><div class="card-header">F\xE1rmacos perioperatorios</div><div class="card-body"><p class="overview-hint">Orientativo. Fuente: receta SOME en Medicamentos.</p><button type="button" class="btn-edit-templates" data-vpo-action="tomar-meds">Tomar de Medicamentos (SOME)</button> <button type="button" class="btn-edit-templates" data-vpo-action="ir-med">Ir a Medicamentos</button><div class="vpo-farm-list" style="margin-top:10px;">' + renderFarmacosList(state.farmacos) + '</div></div></div><div class="vpo-actions" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;"><button type="button" class="manejo-copy-btn primary" data-vpo-action="copy-full">Copiar valoraci\xF3n completa</button><button type="button" class="manejo-copy-btn" data-vpo-action="copy-ekg">Copiar EKG</button><button type="button" class="manejo-copy-btn" data-vpo-action="copy-rx">Copiar Rx</button><button type="button" class="manejo-copy-btn" data-vpo-action="copy-risk">Copiar riesgos</button><button type="button" class="manejo-copy-btn" data-vpo-action="copy-farm">Copiar f\xE1rmacos</button></div></div>';
+  var durOpts = '<option value="">\u2014</option>' + DURACION_OPCIONES.map(function(d) {
+    return '<option value="' + esc10(d.key) + '"' + (d.key === state.duracionCirugiaKey ? " selected" : "") + ">" + esc10(d.label) + "</option>";
+  }).join("");
+  var riesgoBody = '<div class="vpo-grid"><div class="field-group"><label>Edad</label><input class="ea-input" data-vpo-field="edad" type="text" value="' + esc10(state.edad) + '"></div><div class="field-group"><label>Creatinina</label><input class="ea-input" data-vpo-field="creatinina" type="text" value="' + esc10(state.creatinina) + '"></div><div class="field-group"><label>Hemoglobina</label><input class="ea-input" data-vpo-field="hemoglobina" type="text" value="' + esc10(state.hemoglobina) + '"></div><div class="field-group"><label>SpO\u2082 %</label><input class="ea-input" data-vpo-field="spo2" type="text" value="' + esc10(state.spo2) + '"></div><div class="field-group"><label>Duraci\xF3n estimada</label><select class="ea-input" id="vpo-duracion-select">' + durOpts + '</select></div><div class="field-group"><label>FC (lpm)</label><input class="ea-input" data-vpo-field="fcLpm" type="text" value="' + esc10(state.fcLpm) + '"></div></div><div class="vpo-toolbar"><button type="button" class="btn-med-secondary" data-vpo-action="tomar-lab">Tomar del laboratorio</button><button type="button" class="btn-med-secondary" data-vpo-action="tomar-estado">Tomar de Estado actual</button></div><div class="field-group"><label>ASA</label><select class="ea-input" id="vpo-asa-select" data-vpo-field="asaKey"><option value="">\u2014</option>' + ASA_OPTIONS.map(function(a) {
+    return '<option value="' + esc10(a.key) + '"' + (a.key === state.asaKey ? " selected" : "") + ">" + esc10(asaOptionLabel(a)) + "</option>";
+  }).join("") + '</select></div><div class="field-group"><label>Dependencia funcional</label><select class="ea-input" data-vpo-field="functionalKey">' + FUNCTIONAL_STATUS.map(function(f) {
+    return '<option value="' + esc10(f.key) + '"' + (f.key === state.functionalKey ? " selected" : "") + ">" + esc10(functionalLabel(f)) + "</option>";
+  }).join("") + '</select></div><div class="field-group"><label>Buscar procedimiento</label><input class="ea-input" id="vpo-procedure-search" type="search" placeholder="colecistectom\xEDa, tor\xE1cica\u2026"></div><div class="field-group"><label>Procedimiento (Gupta)</label><select class="ea-input" id="vpo-procedure-select">' + procOptions + '</select></div><div class="vpo-aha-wrap">' + renderAhaBadges(state) + '</div><div class="vpo-flags-wrap">' + renderFlagGroups(state) + '</div><div class="vpo-summary-wrap" style="margin-top:12px;">' + renderSummaryHtml(scores) + "</div>";
+  mount.innerHTML = '<div class="vpo-panel vpo-form rpc-form-stack">' + vpoSection("Riesgo preoperatorio", "amber", true, riesgoBody) + vpoSection(
+    "EKG y Rx t\xF3rax",
+    "indigo",
+    false,
+    '<label class="ea-label">EKG</label><textarea class="ea-input" data-vpo-field="ekgText" rows="5">' + esc10(state.ekgText) + '</textarea><label class="ea-label" style="margin-top:10px;display:block;">Rx t\xF3rax</label><textarea class="ea-input" data-vpo-field="rxText" rows="5">' + esc10(state.rxText) + "</textarea>"
+  ) + vpoSection("Diagn\xF3sticos", "rose", true, renderDiagnosticosSection(state)) + vpoSection(
+    "F\xE1rmacos perioperatorios",
+    "teal",
+    false,
+    '<p class="overview-hint">Orientativo. Fuente: receta SOME en Medicamentos.</p><div class="vpo-toolbar"><button type="button" class="btn-med-secondary" data-vpo-action="tomar-meds">Tomar de Medicamentos (SOME)</button> <button type="button" class="btn-med-secondary" data-vpo-action="ir-med">Ir a Medicamentos</button></div><div class="vpo-farm-list">' + renderFarmacosList(state.farmacos) + "</div>"
+  ) + '<div class="vpo-actions"><button type="button" class="manejo-copy-btn primary" data-vpo-action="copy-full">Copiar valoraci\xF3n completa</button><button type="button" class="manejo-copy-btn" data-vpo-action="copy-ekg">Copiar EKG</button><button type="button" class="manejo-copy-btn" data-vpo-action="copy-rx">Copiar Rx</button><button type="button" class="manejo-copy-btn" data-vpo-action="copy-risk">Copiar riesgos</button><button type="button" class="manejo-copy-btn" data-vpo-action="copy-farm">Copiar f\xE1rmacos</button></div></div>';
   mount.querySelectorAll(".vpo-farm-nota").forEach(function(ta) {
     ta.addEventListener("input", function() {
       var idx = parseInt(ta.getAttribute("data-vpo-farm-idx"), 10);
@@ -35802,6 +36548,7 @@ function renderVpoPanel(mount, patientId) {
       }
     });
   });
+  ensureVpoMountDelegation(mount);
   mount._vpoWired = false;
   var form = mount.querySelector(".vpo-form");
   if (form) form._vpoWired = false;
@@ -37875,7 +38622,7 @@ function registerRecetaHuRuntime(partial) {
 function aid6() {
   return rt23.getActiveId();
 }
-function esc10(s) {
+function esc11(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function getDraft(pid) {
@@ -37889,9 +38636,9 @@ function getDraft(pid) {
   }
   return normalizeRecetaHuDraft(recetaHuByPatient[pid]);
 }
-function persistDraft(pid, draft) {
+function persistDraft(pid, draft2) {
   if (!pid || pid.indexOf("demo-") === 0) return;
-  recetaHuByPatient[pid] = normalizeRecetaHuDraft(draft);
+  recetaHuByPatient[pid] = normalizeRecetaHuDraft(draft2);
   saveState();
 }
 function flushRecetaHuDraftIfMountedFor(patientId) {
@@ -37899,9 +38646,9 @@ function flushRecetaHuDraftIfMountedFor(patientId) {
   var root = document.getElementById("receta-hu-container");
   if (!root || root.dataset.mounted !== "1") return;
   if (String(root.dataset.patientId || "") !== String(patientId)) return;
-  var draft = getDraft(patientId);
-  readStaticFieldsFromDom(draft);
-  persistDraft(patientId, draft);
+  var draft2 = getDraft(patientId);
+  readStaticFieldsFromDom(draft2);
+  persistDraft(patientId, draft2);
 }
 function consultServices() {
   return normalizeRecetaHuConsultServices(rt23.getSettings().recetaHuConsultServices);
@@ -37950,18 +38697,18 @@ function resetExportButtonState() {
     btn.removeAttribute("aria-disabled");
   }
 }
-function readStaticFieldsFromDom(draft) {
+function readStaticFieldsFromDom(draft2) {
   var fechaEl = document.getElementById("receta-hu-fecha");
-  if (fechaEl) draft.fecha = fechaEl.value;
+  if (fechaEl) draft2.fecha = fechaEl.value;
   var cuidadosEl = document.getElementById("receta-hu-cuidados");
-  if (cuidadosEl) draft.cuidados = cuidadosEl.value;
-  return draft;
+  if (cuidadosEl) draft2.cuidados = cuidadosEl.value;
+  return draft2;
 }
 function readDraftFromDom() {
   var pid = aid6();
-  var draft = getDraft(pid);
-  readStaticFieldsFromDom(draft);
-  return draft;
+  var draft2 = getDraft(pid);
+  readStaticFieldsFromDom(draft2);
+  return draft2;
 }
 function renderMedList(root, meds) {
   var list = root.querySelector("#receta-hu-meds-list");
@@ -37971,7 +38718,7 @@ function renderMedList(root, meds) {
     return;
   }
   list.innerHTML = meds.map(function(row, idx) {
-    return '<div class="receta-hu-item" data-med-idx="' + idx + '"><div class="receta-hu-item-body"><strong>' + esc10(row.medicamento || "\u2014") + "</strong>" + (row.presentacion ? "<span>" + esc10(row.presentacion) + "</span>" : "") + (row.dosis ? '<span class="receta-hu-item-dose">' + esc10(row.dosis) + "</span>" : "") + '</div><button type="button" class="btn-icon-quiet" title="Quitar" aria-label="Quitar medicamento" data-receta-hu-action="remove-med" data-med-idx="' + idx + '">\xD7</button></div>';
+    return '<div class="receta-hu-item" data-med-idx="' + idx + '"><div class="receta-hu-item-body"><strong>' + esc11(row.medicamento || "\u2014") + "</strong>" + (row.presentacion ? "<span>" + esc11(row.presentacion) + "</span>" : "") + (row.dosis ? '<span class="receta-hu-item-dose">' + esc11(row.dosis) + "</span>" : "") + '</div><button type="button" class="btn-icon-quiet" title="Quitar" aria-label="Quitar medicamento" data-receta-hu-action="remove-med" data-med-idx="' + idx + '">\xD7</button></div>';
   }).join("");
 }
 function renderLabList(root, labs) {
@@ -37985,7 +38732,7 @@ function renderLabList(root, labs) {
     return;
   }
   list.innerHTML = items.map(function(name, idx) {
-    return '<div class="receta-hu-item receta-hu-item-lab" data-lab-idx="' + idx + '"><span class="receta-hu-item-body">' + esc10(name) + '</span><button type="button" class="btn-icon-quiet" title="Quitar" aria-label="Quitar estudio" data-receta-hu-action="remove-lab" data-lab-idx="' + idx + '">\xD7</button></div>';
+    return '<div class="receta-hu-item receta-hu-item-lab" data-lab-idx="' + idx + '"><span class="receta-hu-item-body">' + esc11(name) + '</span><button type="button" class="btn-icon-quiet" title="Quitar" aria-label="Quitar estudio" data-receta-hu-action="remove-lab" data-lab-idx="' + idx + '">\xD7</button></div>';
   }).join("");
 }
 function renderProximaCitaList(root, proximasCitas) {
@@ -38002,10 +38749,10 @@ function renderProximaCitaList(root, proximasCitas) {
     var meta = [];
     if (row.fecha) meta.push("Fecha: " + row.fecha);
     if (row.servicio && !row.texto) meta.push(row.servicio);
-    return '<div class="receta-hu-item receta-hu-item-proxima" data-proxima-idx="' + idx + '"><div class="receta-hu-item-body"><strong>' + esc10(row.texto || buildProximaCitaText(row.plazo, row.servicio) || "\u2014") + "</strong>" + (meta.length ? '<span class="receta-hu-item-dose">' + esc10(meta.join(" \xB7 ")) + "</span>" : "") + '</div><button type="button" class="btn-icon-quiet" title="Quitar" aria-label="Quitar consulta" data-receta-hu-action="remove-proxima" data-proxima-idx="' + idx + '">\xD7</button></div>';
+    return '<div class="receta-hu-item receta-hu-item-proxima" data-proxima-idx="' + idx + '"><div class="receta-hu-item-body"><strong>' + esc11(row.texto || buildProximaCitaText(row.plazo, row.servicio) || "\u2014") + "</strong>" + (meta.length ? '<span class="receta-hu-item-dose">' + esc11(meta.join(" \xB7 ")) + "</span>" : "") + '</div><button type="button" class="btn-icon-quiet" title="Quitar" aria-label="Quitar consulta" data-receta-hu-action="remove-proxima" data-proxima-idx="' + idx + '">\xD7</button></div>';
   }).join("");
 }
-function renderConsultServiceSelect(root, draft) {
+function renderConsultServiceSelect(root, draft2) {
   var sel = root.querySelector("#receta-hu-consult-servicio");
   if (!sel) return;
   var services = consultServices();
@@ -38019,7 +38766,7 @@ function renderConsultServiceSelect(root, draft) {
   });
   if (prev && services.indexOf(prev) >= 0) sel.value = prev;
   var plazo = root.querySelector("#receta-hu-compose-proxima-plazo");
-  if (plazo && draft.proximaPlazo) plazo.value = draft.proximaPlazo;
+  if (plazo && draft2.proximaPlazo) plazo.value = draft2.proximaPlazo;
 }
 function bindRecetaHuEvents(root) {
   if (root.dataset.eventsBound === "1") return;
@@ -38143,25 +38890,25 @@ function renderRecetaHu() {
     root.dataset.eventsBound = "0";
   }
   var patient = activePatient();
-  var draft = getDraft(pid);
+  var draft2 = getDraft(pid);
   var st = rt23.getSettings();
   ensureRecetaHuShell(root);
   bindRecetaHuEvents(root);
   var meta = root.querySelector("#receta-hu-patient-meta");
   if (meta && patient) {
-    meta.innerHTML = "<span><strong>" + esc10(patient.nombre) + "</strong></span>" + (patient.registro ? "<span>Reg. " + esc10(patient.registro) + "</span>" : "") + (patient.servicio ? "<span>Serv. " + esc10(patient.servicio) + "</span>" : "");
+    meta.innerHTML = "<span><strong>" + esc11(patient.nombre) + "</strong></span>" + (patient.registro ? "<span>Reg. " + esc11(patient.registro) + "</span>" : "") + (patient.servicio ? "<span>Serv. " + esc11(patient.servicio) + "</span>" : "");
   }
   var fechaEl = root.querySelector("#receta-hu-fecha");
-  if (fechaEl) fechaEl.value = draft.fecha || formatRecetaHuFecha(/* @__PURE__ */ new Date());
+  if (fechaEl) fechaEl.value = draft2.fecha || formatRecetaHuFecha(/* @__PURE__ */ new Date());
   var cuidadosEl = root.querySelector("#receta-hu-cuidados");
-  if (cuidadosEl) cuidadosEl.value = draft.cuidados;
-  renderMedList(root, draft.meds);
-  renderLabList(root, draft.labs);
-  renderProximaCitaList(root, draft.proximasCitas);
-  renderConsultServiceSelect(root, draft);
+  if (cuidadosEl) cuidadosEl.value = draft2.cuidados;
+  renderMedList(root, draft2.meds);
+  renderLabList(root, draft2.labs);
+  renderProximaCitaList(root, draft2.proximasCitas);
+  renderConsultServiceSelect(root, draft2);
   var docHint = root.querySelector(".receta-hu-foot");
   if (docHint) {
-    docHint.innerHTML = "M\xE9dico: <strong>" + esc10(st.doctorName || "\u2014") + "</strong> \xB7 C\xE9dula: <strong>" + esc10(st.cedulaProfesional || "\u2014") + '</strong> (<a href="#" data-receta-hu-action="open-profile">Mi Perfil</a>)';
+    docHint.innerHTML = "M\xE9dico: <strong>" + esc11(st.doctorName || "\u2014") + "</strong> \xB7 C\xE9dula: <strong>" + esc11(st.cedulaProfesional || "\u2014") + '</strong> (<a href="#" data-receta-hu-action="open-profile">Mi Perfil</a>)';
   }
   resetExportButtonState();
   if (typeof rt23.syncOfflineButtonStates === "function") rt23.syncOfflineButtonStates();
@@ -38180,22 +38927,22 @@ function recetaHuCommitMedFromCompose() {
     if (nEl) nEl.focus();
     return;
   }
-  var draft = readDraftFromDom();
-  draft.meds.push({ medicamento, presentacion, dosis });
-  persistDraft(pid, draft);
+  var draft2 = readDraftFromDom();
+  draft2.meds.push({ medicamento, presentacion, dosis });
+  persistDraft(pid, draft2);
   if (nEl) nEl.value = "";
   if (pEl) pEl.value = "";
   if (dEl) dEl.value = "";
-  renderMedList(document.getElementById("receta-hu-container"), draft.meds);
+  renderMedList(document.getElementById("receta-hu-container"), draft2.meds);
   if (nEl) nEl.focus();
 }
 function recetaHuRemoveMedRow(idx) {
   var pid = aid6();
   if (!pid) return;
-  var draft = readDraftFromDom();
-  draft.meds.splice(idx, 1);
-  persistDraft(pid, draft);
-  renderMedList(document.getElementById("receta-hu-container"), draft.meds);
+  var draft2 = readDraftFromDom();
+  draft2.meds.splice(idx, 1);
+  persistDraft(pid, draft2);
+  renderMedList(document.getElementById("receta-hu-container"), draft2.meds);
 }
 function recetaHuCommitLabFromCompose() {
   var pid = aid6();
@@ -38207,24 +38954,24 @@ function recetaHuCommitLabFromCompose() {
     if (inp) inp.focus();
     return;
   }
-  var draft = readDraftFromDom();
-  draft.labs.push(name);
-  persistDraft(pid, draft);
+  var draft2 = readDraftFromDom();
+  draft2.labs.push(name);
+  persistDraft(pid, draft2);
   if (inp) inp.value = "";
-  renderLabList(document.getElementById("receta-hu-container"), draft.labs);
+  renderLabList(document.getElementById("receta-hu-container"), draft2.labs);
   if (inp) inp.focus();
 }
 function recetaHuRemoveLabRow(idx) {
   var pid = aid6();
   if (!pid) return;
-  var draft = readDraftFromDom();
-  var items = draft.labs.filter(function(x) {
+  var draft2 = readDraftFromDom();
+  var items = draft2.labs.filter(function(x) {
     return String(x || "").trim();
   });
   items.splice(idx, 1);
-  draft.labs = items;
-  persistDraft(pid, draft);
-  renderLabList(document.getElementById("receta-hu-container"), draft.labs);
+  draft2.labs = items;
+  persistDraft(pid, draft2);
+  renderLabList(document.getElementById("receta-hu-container"), draft2.labs);
 }
 function recetaHuOnConsultServicePick() {
   var sel = document.getElementById("receta-hu-consult-servicio");
@@ -38251,28 +38998,28 @@ function recetaHuCommitProximaFromCompose() {
     if (sel) sel.focus();
     return;
   }
-  var draft = readDraftFromDom();
-  draft.proximaPlazo = plazo || draft.proximaPlazo || "2 semanas";
-  draft.proximasCitas.push({
-    plazo: plazo || draft.proximaPlazo || "2 semanas",
+  var draft2 = readDraftFromDom();
+  draft2.proximaPlazo = plazo || draft2.proximaPlazo || "2 semanas";
+  draft2.proximasCitas.push({
+    plazo: plazo || draft2.proximaPlazo || "2 semanas",
     servicio,
     texto,
     fecha
   });
-  persistDraft(pid, draft);
+  persistDraft(pid, draft2);
   if (textoEl) textoEl.value = "";
   if (fechaEl) fechaEl.value = "";
   if (sel) sel.value = "";
-  renderProximaCitaList(document.getElementById("receta-hu-container"), draft.proximasCitas);
+  renderProximaCitaList(document.getElementById("receta-hu-container"), draft2.proximasCitas);
   if (plazoEl) plazoEl.focus();
 }
 function recetaHuRemoveProximaRow(idx) {
   var pid = aid6();
   if (!pid) return;
-  var draft = readDraftFromDom();
-  draft.proximasCitas.splice(idx, 1);
-  persistDraft(pid, draft);
-  renderProximaCitaList(document.getElementById("receta-hu-container"), draft.proximasCitas);
+  var draft2 = readDraftFromDom();
+  draft2.proximasCitas.splice(idx, 1);
+  persistDraft(pid, draft2);
+  renderProximaCitaList(document.getElementById("receta-hu-container"), draft2.proximasCitas);
 }
 function recetaHuAddConsultService() {
   var sel = document.getElementById("receta-hu-consult-servicio");
@@ -38339,11 +39086,11 @@ function exportRecetaHuPdf() {
       rt23.showToast("Configura la c\xE9dula profesional en Mi Perfil", "error");
       return;
     }
-    var draft = readDraftFromDom();
-    persistDraft(pid, draft);
+    var draft2 = readDraftFromDom();
+    persistDraft(pid, draft2);
     var body = buildRecetaHuGeneratePayload({
       patient,
-      draft,
+      draft: draft2,
       doctorName: st.doctorName,
       cedulaProfesional: st.cedulaProfesional
     });
@@ -38572,7 +39319,7 @@ var rt24 = {
 function registerPaseBoardRuntime(partial) {
   if (partial && typeof partial === "object") Object.assign(rt24, partial);
 }
-function esc11(s) {
+function esc12(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function buildPaseLabBlockHtml(labChunks) {
@@ -38681,9 +39428,9 @@ function buildPasePatientHeaderHtml(patient) {
   if (patient.servicio) chips.push({ label: "Servicio", value: String(patient.servicio) });
   if (patient.registro) chips.push({ label: "Reg.", value: String(patient.registro), mono: true });
   var chipsHtml = chips.map(function(c) {
-    return '<span class="pase-patient-chip' + (c.mono ? " pase-patient-chip--mono" : "") + '"><span class="pase-patient-chip-label">' + esc11(c.label) + "</span> " + esc11(c.value) + "</span>";
+    return '<span class="pase-patient-chip' + (c.mono ? " pase-patient-chip--mono" : "") + '"><span class="pase-patient-chip-label">' + esc12(c.label) + "</span> " + esc12(c.value) + "</span>";
   }).join("");
-  return '<section class="pase-section pase-patient-banner" aria-label="Paciente activo"><div class="pase-patient-banner-body"><div class="pase-patient-name">' + esc11(patient.nombre || "Paciente") + "</div>" + (chipsHtml ? '<div class="pase-patient-meta-row">' + chipsHtml + "</div>" : "") + "</div></section>";
+  return '<section class="pase-section pase-patient-banner" aria-label="Paciente activo"><div class="pase-patient-banner-body"><div class="pase-patient-name">' + esc12(patient.nombre || "Paciente") + "</div>" + (chipsHtml ? '<div class="pase-patient-meta-row">' + chipsHtml + "</div>" : "") + "</div></section>";
 }
 function renderPaseBoard() {
   var host = document.getElementById("pase-board-scroll");
@@ -38728,7 +39475,7 @@ function renderPaseBoard() {
     todos.forEach(function(t2) {
       var prio = t2.priority === "alta" ? "alta" : t2.priority === "baja" ? "baja" : "media";
       todoParts.push(
-        '<div class="pase-mini-card pase-todo-card todo-prio-' + prio + (t2.completed ? " pase-mini-card--todo-done" : "") + '"><button type="button" class="pase-todo-hit" data-pase-todo="' + esc11(String(t2.id)) + '" aria-label="' + (t2.completed ? "Marcar como pendiente" : "Marcar como hecho") + '">' + (t2.completed ? "\u2713" : "\u25CB") + "</button><span>" + esc11(String(t2.text || "")) + "</span></div>"
+        '<div class="pase-mini-card pase-todo-card todo-prio-' + prio + (t2.completed ? " pase-mini-card--todo-done" : "") + '"><button type="button" class="pase-todo-hit" data-pase-todo="' + esc12(String(t2.id)) + '" aria-label="' + (t2.completed ? "Marcar como pendiente" : "Marcar como hecho") + '">' + (t2.completed ? "\u2713" : "\u25CB") + "</button><span>" + esc12(String(t2.text || "")) + "</span></div>"
       );
     });
   }
@@ -38740,7 +39487,7 @@ function renderPaseBoard() {
       var when = new Date(ev.start);
       var whenStr = isNaN(when.getTime()) ? "\u2014" : when.toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" });
       agParts.push(
-        '<div class="pase-mini-card"><strong>' + esc11(String(ev.procedure || "Procedimiento")) + '</strong><span class="pase-sub">' + esc11(whenStr + " \xB7 " + String(ev.location || "").trim()) + "</span></div>"
+        '<div class="pase-mini-card"><strong>' + esc12(String(ev.procedure || "Procedimiento")) + '</strong><span class="pase-sub">' + esc12(whenStr + " \xB7 " + String(ev.location || "").trim()) + "</span></div>"
       );
     });
   }
@@ -38775,7 +39522,7 @@ function renderPaseBoard() {
     );
   } else {
     parts.push(
-      '<div class="pase-mini-card pase-mini-card--wide pase-mini-card--lab"><div class="pase-lab-meta">' + esc11(labSend.meta) + "</div>" + buildPaseLabBlockHtml(labSend.labChunks) + "</div>"
+      '<div class="pase-mini-card pase-mini-card--wide pase-mini-card--lab"><div class="pase-lab-meta">' + esc12(labSend.meta) + "</div>" + buildPaseLabBlockHtml(labSend.labChunks) + "</div>"
     );
   }
   parts.push("</div></section>");
@@ -38802,7 +39549,7 @@ function renderPaseBoard() {
       var fd = r.fechaMuestra && r.fechaMuestra !== "\u2014" ? r.fechaMuestra : r.studyDate || "\u2014";
       var atbBlock = paseCultivoAtbBlockHtml(pid, r);
       parts.push(
-        '<div class="pase-mini-card pase-cultivo-card' + (r.negativo ? " pase-mini-card--dim" : "") + '"><div class="pase-cult-org">' + esc11(String(r.organismo || "\u2014")) + "</div>" + atbBlock + '<div class="pase-sub">' + esc11(String(r.tipoLabel || "") + " \xB7 " + String(r.sitio || "").slice(0, 72)) + "<br>" + esc11(fd) + "</div></div>"
+        '<div class="pase-mini-card pase-cultivo-card' + (r.negativo ? " pase-mini-card--dim" : "") + '"><div class="pase-cult-org">' + esc12(String(r.organismo || "\u2014")) + "</div>" + atbBlock + '<div class="pase-sub">' + esc12(String(r.tipoLabel || "") + " \xB7 " + String(r.sitio || "").slice(0, 72)) + "<br>" + esc12(fd) + "</div></div>"
       );
     });
   }
@@ -38828,26 +39575,26 @@ function renderPaseBoard() {
       var freq = String(it.frecuenciaRaw || "").trim();
       var dosis = cleanPaseMedDosisForCard(it.dosisRaw || "");
       var dosisSplit = dosis ? splitPaseMedDosisForDisplay(dosis) : { core: "", extra: "", splitOk: false };
-      var diaBadge = it.diaTratamiento != null ? '<div class="pase-med-dia-badge" title="D\xEDa de tratamiento">D\xEDa ' + esc11(String(it.diaTratamiento)) + "</div>" : "";
+      var diaBadge = it.diaTratamiento != null ? '<div class="pase-med-dia-badge" title="D\xEDa de tratamiento">D\xEDa ' + esc12(String(it.diaTratamiento)) + "</div>" : "";
       var metaParts = [];
       if (dosisSplit.core || dosisSplit.extra) {
         if (dosisSplit.splitOk) {
           metaParts.push(
-            '<span class="pase-med-chip pase-med-chip--dosis">' + (dosisSplit.core ? '<span class="pase-med-dosis-core">' + esc11(abbreviatePaseMedDosisCore(dosisSplit.core)) + "</span>" : "") + (dosisSplit.extra ? '<span class="pase-med-dosis-rest">' + esc11(dosisSplit.extra) + "</span>" : "") + "</span>"
+            '<span class="pase-med-chip pase-med-chip--dosis">' + (dosisSplit.core ? '<span class="pase-med-dosis-core">' + esc12(abbreviatePaseMedDosisCore(dosisSplit.core)) + "</span>" : "") + (dosisSplit.extra ? '<span class="pase-med-dosis-rest">' + esc12(dosisSplit.extra) + "</span>" : "") + "</span>"
           );
         } else {
-          metaParts.push('<span class="pase-med-chip">' + esc11(dosisSplit.core) + "</span>");
+          metaParts.push('<span class="pase-med-chip">' + esc12(dosisSplit.core) + "</span>");
         }
       }
       if (viaAbbr) {
-        metaParts.push('<span class="pase-med-chip">' + esc11(viaAbbr) + "</span>");
+        metaParts.push('<span class="pase-med-chip">' + esc12(viaAbbr) + "</span>");
       }
       if (freq) {
-        metaParts.push('<span class="pase-med-chip">' + esc11(freq) + "</span>");
+        metaParts.push('<span class="pase-med-chip">' + esc12(freq) + "</span>");
       }
       var metaRow = metaParts.length > 0 ? '<div class="pase-med-meta-row">' + metaParts.join("") + "</div>" : "";
       parts.push(
-        '<div class="pase-mini-card pase-med-card"><div class="pase-med-card-head"><div class="pase-med-name">' + esc11(nombre) + "</div>" + diaBadge + "</div>" + metaRow + "</div>"
+        '<div class="pase-mini-card pase-med-card"><div class="pase-med-card-head"><div class="pase-med-name">' + esc12(nombre) + "</div>" + diaBadge + "</div>" + metaRow + "</div>"
       );
     });
   }
@@ -39378,7 +40125,7 @@ function restoreMedInputForPatient(patientId) {
   var block = patientId ? medRecetaByPatient[patientId] : null;
   ta.value = block && block.pasteRaw ? block.pasteRaw : "";
 }
-function esc12(s) {
+function esc13(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function getMedNotaSelMap(patientId) {
@@ -39424,10 +40171,10 @@ function renderMedRecetaPanel() {
   }
   var rows = block.items.map(function(it) {
     var sid = String(it.id || "");
-    var label = esc12((it.nombreRaw || "").slice(0, 120));
+    var label = esc13((it.nombreRaw || "").slice(0, 120));
     var chk = it.suspendido ? " checked" : "";
     var paraNota = isMedNotaSelected(activeId2, sid) ? " checked" : "";
-    var diaCell = it.diaTratamiento != null ? '<span class="med-receta-dia">D\xEDa ' + esc12(String(it.diaTratamiento)) + "</span>" : "";
+    var diaCell = it.diaTratamiento != null ? '<span class="med-receta-dia">D\xEDa ' + esc13(String(it.diaTratamiento)) + "</span>" : "";
     return '<div class="med-receta-row"><div class="med-receta-checkcell"><input type="checkbox"' + chk + ` title="Excluir del texto de egreso" onchange="toggleMedRecetaSuspendido('` + safeAttrJsString(sid) + `', this.checked)"/></div><div class="med-receta-checkcell"><input type="checkbox"` + paraNota + ` title="Incluir en Tratamiento y campos SOAP (Analgesia / ABX / AntiHTA)" onchange="toggleMedRecetaParaNota('` + safeAttrJsString(sid) + `', this.checked)"/></div><div class="med-receta-name">` + label + "</div>" + diaCell + "</div>";
   });
   listEl.innerHTML = '<div class="med-receta-wrap"><div class="med-receta-head"><span>Excl.</span><span>SOAP</span><span>Medicamento</span><span>D\xEDa</span></div>' + rows.join("") + "</div>";
@@ -39690,12 +40437,12 @@ function renderMedNotaFooter() {
   function chipsFor(arr) {
     return arr.map(function(it) {
       var frag = medInstructionFragmentForSoap2(it);
-      return '<span class="med-soap-preview-chip" title="' + esc12((it.nombreRaw || "").slice(0, 220)) + '">' + esc12(frag) + "</span>";
+      return '<span class="med-soap-preview-chip" title="' + esc13((it.nombreRaw || "").slice(0, 220)) + '">' + esc13(frag) + "</span>";
     }).join("");
   }
   function section(cat, title) {
     if (!groups[cat].length) return "";
-    return '<div class="med-soap-preview-sec med-soap-preview-sec--' + cat + '"><div class="med-soap-preview-sec-title">' + esc12(title) + '</div><div class="med-soap-preview-chips">' + chipsFor(groups[cat]) + "</div></div>";
+    return '<div class="med-soap-preview-sec med-soap-preview-sec--' + cat + '"><div class="med-soap-preview-sec-title">' + esc13(title) + '</div><div class="med-soap-preview-chips">' + chipsFor(groups[cat]) + "</div></div>";
   }
   var previewHtml = soapItems.length ? '<div class="med-soap-preview">' + section("analgesia", "Analg\xE9sicos / antiem\xE9ticos") + section("antihta", "AntiHTA / diur\xE9ticos") + section("abx", "Antibi\xF3ticos / antif\xFAngicos") + section("vasop", "Vasopresores / inotr\xF3picos") + section("otros", "Otros (se copian en Antibi\xF3ticos \u2014 revisar)") + "</div>" : '<p class="med-soap-preview-empty">Marc\xE1 <strong>SOAP</strong> en el listado para ver aqu\xED c\xF3mo se repartir\xE1n en la plantilla.</p>';
   var soapBtnLabel = isModeSala(rt25.getSettings()) ? "Enviar a Estado Actual" : "Abrir plantilla SOAP";
@@ -40576,7 +41323,7 @@ function registerPatientsRuntime(partial) {
   if (!partial || typeof partial !== "object") return;
   Object.assign(rt26, partial);
 }
-function esc13(s) {
+function esc14(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 var patientSearchFilter = "";
@@ -40870,17 +41617,17 @@ function buildRondaRecentLabsBlockHtml(patientId) {
     parts.push('<div class="ronda-labs-meta">');
     var rawFe = newest.fecha === "Anterior" ? "" : normalizeFechaForRonda(newest.fecha) || String(newest.fecha || "").trim() || "";
     if (newest.id === "migrated-anterior") {
-      parts.push('<span class="ronda-labs-date">' + esc13(rawFe ? "Anterior \xB7 " + rawFe : "Anterior") + "</span>");
+      parts.push('<span class="ronda-labs-date">' + esc14(rawFe ? "Anterior \xB7 " + rawFe : "Anterior") + "</span>");
     } else {
-      parts.push('<span class="ronda-labs-date">' + esc13(rawFe || "\u2014") + "</span>");
+      parts.push('<span class="ronda-labs-date">' + esc14(rawFe || "\u2014") + "</span>");
     }
     if (newest.hora && String(newest.hora).trim()) {
-      parts.push("<span>" + esc13(String(newest.hora).trim().slice(0, 8)) + "</span>");
+      parts.push("<span>" + esc14(String(newest.hora).trim().slice(0, 8)) + "</span>");
     }
     var tipo = rt26.primaryTipoForLabSet(newest.resLabs);
     if (tipo && tipo !== "labs") {
       parts.push(
-        "<span>" + esc13(tipo === "mixed" ? "Mixto" : tipo === "cultivo" ? "Cultivo" : tipo) + "</span>"
+        "<span>" + esc14(tipo === "mixed" ? "Mixto" : tipo === "cultivo" ? "Cultivo" : tipo) + "</span>"
       );
     }
     parts.push("</div>");
@@ -40889,7 +41636,7 @@ function buildRondaRecentLabsBlockHtml(patientId) {
       newest.resLabs.forEach(function(L) {
         var line = String(L || "").trim();
         if (!line) return;
-        parts.push("<li>" + esc13(line) + "</li>");
+        parts.push("<li>" + esc14(line) + "</li>");
       });
       parts.push("</ul>");
       return parts.join("");
@@ -40905,7 +41652,7 @@ function buildRondaRecentLabsBlockHtml(patientId) {
     lines.forEach(function(L) {
       if (skip[L.toLowerCase()]) return;
       if (/^fecha|^----/i.test(L)) return;
-      body.push("<li>" + esc13(L) + "</li>");
+      body.push("<li>" + esc14(L) + "</li>");
     });
     if (body.length) {
       return '<p class="ronda-labs-fallback-label">Desde nota \xB7 estudios auxiliares</p><ul class="ronda-labs-lines">' + body.join("") + "</ul>";
@@ -41039,7 +41786,7 @@ function renderPatientRoundRowHtml(p) {
   var archiveIcon = archOn ? "\u21A9" : '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"></rect><path d="M5 8h14v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8z"></path><path d="M10 12h4"></path></svg>';
   var seenTitle = typeof t === "function" ? t("roundMode.seenTitle") : "Visto en ronda";
   var aid7 = rt26.getActiveId();
-  return '<div class="patient-card patient-card--roundrow ' + (p.id === aid7 ? "active" : "") + (seen ? " patient-card--roundrow-seen" : "") + '" data-patient-id="' + p.id + '" role="button" tabindex="0"><div class="patient-card-toolbar"><div class="patient-card-toolbar-left"><button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon btn-archive-clean" title="' + archTitle + '" aria-label="' + archTitle + `" onclick="togglePatientArchived(event,'` + p.id + `')">` + archiveIcon + '</button><button type="button" class="patient-toolbar-chip btn-pinned-text" title="' + pinTitle + '" aria-label="' + pinTitle + `" onclick="togglePatientPinned(event,'` + p.id + `')">Pinned</button></div><button type="button" class="btn-delete-card" onclick="deletePatient(event,'` + p.id + `')" aria-label="Eliminar">\xD7</button></div><div class="roundrow-main"><div class="roundrow-text"><div class="p-name">` + esc13(p.nombre || "Sin nombre") + '</div><div class="p-meta"><span>Cto. ' + esc13(p.cuarto || "-") + "</span><span>Cama " + esc13(p.cama || "-") + "</span><span>" + esc13(p.servicio || "-") + '</span></div></div><button type="button" class="btn-round-seen" title="' + esc13(seenTitle) + '" aria-label="' + esc13(seenTitle) + '" aria-pressed="' + (seen ? "true" : "false") + `" onclick="togglePatientRoundSeen(event,'` + p.id + `')">` + (seen ? "\u2713" : "\u25CB") + "</button></div></div>";
+  return '<div class="patient-card patient-card--roundrow ' + (p.id === aid7 ? "active" : "") + (seen ? " patient-card--roundrow-seen" : "") + '" data-patient-id="' + p.id + '" role="button" tabindex="0"><div class="patient-card-toolbar"><div class="patient-card-toolbar-left"><button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon btn-archive-clean" title="' + archTitle + '" aria-label="' + archTitle + `" onclick="togglePatientArchived(event,'` + p.id + `')">` + archiveIcon + '</button><button type="button" class="patient-toolbar-chip btn-pinned-text" title="' + pinTitle + '" aria-label="' + pinTitle + `" onclick="togglePatientPinned(event,'` + p.id + `')">Pinned</button></div><button type="button" class="btn-delete-card" onclick="deletePatient(event,'` + p.id + `')" aria-label="Eliminar">\xD7</button></div><div class="roundrow-main"><div class="roundrow-text"><div class="p-name">` + esc14(p.nombre || "Sin nombre") + '</div><div class="p-meta"><span>Cto. ' + esc14(p.cuarto || "-") + "</span><span>Cama " + esc14(p.cama || "-") + "</span><span>" + esc14(p.servicio || "-") + '</span></div></div><button type="button" class="btn-round-seen" title="' + esc14(seenTitle) + '" aria-label="' + esc14(seenTitle) + '" aria-pressed="' + (seen ? "true" : "false") + `" onclick="togglePatientRoundSeen(event,'` + p.id + `')">` + (seen ? "\u2713" : "\u25CB") + "</button></div></div>";
 }
 function renderPatientCardHtml(p) {
   var pinOn = !!p.pinned;
@@ -41048,7 +41795,7 @@ function renderPatientCardHtml(p) {
   var archTitle = archOn ? "Restaurar del archivo" : "Archivar paciente";
   var archiveIcon = archOn ? "\u21A9" : '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"></rect><path d="M5 8h14v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8z"></path><path d="M10 12h4"></path></svg>';
   var aid7 = rt26.getActiveId();
-  return '<div class="patient-card ' + (p.id === aid7 ? "active" : "") + '" data-patient-id="' + p.id + '" role="button" tabindex="0"><div class="patient-card-toolbar"><div class="patient-card-toolbar-left"><button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon btn-archive-clean" title="' + archTitle + '" aria-label="' + archTitle + `" onclick="togglePatientArchived(event,'` + p.id + `')">` + archiveIcon + '</button><button type="button" class="patient-toolbar-chip btn-pinned-text" title="' + pinTitle + '" aria-label="' + pinTitle + `" onclick="togglePatientPinned(event,'` + p.id + `')">Pinned</button></div><button type="button" class="btn-delete-card" onclick="deletePatient(event,'` + p.id + `')" aria-label="Eliminar">\xD7</button></div><div class="p-name">` + esc13(p.nombre || "Sin nombre") + '</div><div class="p-meta"><span>Cto. ' + esc13(p.cuarto || "-") + "</span><span>Cama " + esc13(p.cama || "-") + "</span><span>" + esc13(p.servicio || "-") + "</span></div></div>";
+  return '<div class="patient-card ' + (p.id === aid7 ? "active" : "") + '" data-patient-id="' + p.id + '" role="button" tabindex="0"><div class="patient-card-toolbar"><div class="patient-card-toolbar-left"><button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon btn-archive-clean" title="' + archTitle + '" aria-label="' + archTitle + `" onclick="togglePatientArchived(event,'` + p.id + `')">` + archiveIcon + '</button><button type="button" class="patient-toolbar-chip btn-pinned-text" title="' + pinTitle + '" aria-label="' + pinTitle + `" onclick="togglePatientPinned(event,'` + p.id + `')">Pinned</button></div><button type="button" class="btn-delete-card" onclick="deletePatient(event,'` + p.id + `')" aria-label="Eliminar">\xD7</button></div><div class="p-name">` + esc14(p.nombre || "Sin nombre") + '</div><div class="p-meta"><span>Cto. ' + esc14(p.cuarto || "-") + "</span><span>Cama " + esc14(p.cama || "-") + "</span><span>" + esc14(p.servicio || "-") + "</span></div></div>";
 }
 var _patientListRenderQueued = false;
 function patchPatientListActiveHighlight(nextId) {
@@ -41309,7 +42056,7 @@ function _syncPatientModalModeFields() {
   var servicioInput = document.getElementById("m-servicio");
   if (areaGroup) areaGroup.style.display = sala ? "none" : "";
   if (servicioLabel) servicioLabel.textContent = sala ? "\xC1rea / Servicio *" : "Servicio *";
-  if (servicioInput) servicioInput.placeholder = sala ? "ej. MEDICINA INTERNA" : "ej. MEDICINA INTERNA";
+  if (servicioInput) servicioInput.placeholder = "ej. CIRUG\xCDA GENERAL";
 }
 function openAddModal() {
   document.getElementById("modal-title").textContent = "Nuevo Paciente";
@@ -41386,10 +42133,10 @@ function findDuplicatePatient(nombre, registro) {
 }
 function showDuplicateWarning(existing, onConfirm) {
   var fecha = notes[existing.id] ? notes[existing.id].fecha : "";
-  var body = "<strong>" + esc13(existing.nombre) + "</strong>";
-  body += "<br>Cto. " + esc13(existing.cuarto || "\u2014") + " Cama " + esc13(existing.cama || "\u2014");
-  if (existing.registro) body += "<br>Registro: " + esc13(existing.registro);
-  if (fecha) body += "<br>Ingreso: " + esc13(fecha);
+  var body = "<strong>" + esc14(existing.nombre) + "</strong>";
+  body += "<br>Cto. " + esc14(existing.cuarto || "\u2014") + " Cama " + esc14(existing.cama || "\u2014");
+  if (existing.registro) body += "<br>Registro: " + esc14(existing.registro);
+  if (fecha) body += "<br>Ingreso: " + esc14(fecha);
   var backdrop = document.createElement("div");
   backdrop.className = "lab-conflict-backdrop";
   backdrop.id = "dup-confirm-backdrop";
@@ -42005,7 +42752,7 @@ function registerProcedureAgendaRuntime(partial) {
   Object.assign(rt28, partial);
 }
 var procedureAgendaWeekOffset = 0;
-function esc14(s) {
+function esc15(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function agendaEligiblePatients() {
@@ -42095,7 +42842,7 @@ function renderProcedureAgendaPanel() {
     );
     wd = wd.charAt(0).toUpperCase() + wd.slice(1);
     dm = dm.charAt(0).toUpperCase() + dm.slice(1);
-    hc.innerHTML = "<span>" + esc14(wd) + "</span><strong>" + esc14(dm) + "</strong>";
+    hc.innerHTML = "<span>" + esc15(wd) + "</span><strong>" + esc15(dm) + "</strong>";
     head.appendChild(hc);
   }
   board.appendChild(head);
@@ -42188,7 +42935,7 @@ function renderProcedureAgendaPanel() {
       );
       blk.setAttribute("aria-label", "Editar procedimiento para " + cell.patientLabel);
       if (!(ev.materialApproved && ev.anesthesiaScheduled)) blk.classList.add("rpc-proc-flag");
-      blk.innerHTML = '<div class="rpc-proc-name">' + esc14(String(ev.procedure || "")) + '</div><div class="rpc-proc-sub">' + esc14(String(startClock + " \xB7 " + (ev.location || ""))) + '</div><div class="rpc-proc-pat">' + esc14(String(cell.patientLabel)) + "</div>";
+      blk.innerHTML = '<div class="rpc-proc-name">' + esc15(String(ev.procedure || "")) + '</div><div class="rpc-proc-sub">' + esc15(String(startClock + " \xB7 " + (ev.location || ""))) + '</div><div class="rpc-proc-pat">' + esc15(String(cell.patientLabel)) + "</div>";
       blk.addEventListener("click", function(e) {
         e.preventDefault();
         openProcedureAgendaModal(ev.id);
@@ -42402,7 +43149,7 @@ function registerProductivityRuntime(partial) {
   if (!partial || typeof partial !== "object") return;
   Object.assign(rt29, partial);
 }
-function esc15(s) {
+function esc16(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 var UNDO_STACK_KEY = "rpc-undo-stack";
@@ -42543,7 +43290,7 @@ function escapeRegExp2(s) {
   return String(s || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 function highlightSnippet(snippet, q) {
-  var safe = esc15(snippet);
+  var safe = esc16(snippet);
   if (!q) return safe;
   var qEsc = escapeRegExp2(q);
   try {
@@ -42635,7 +43382,7 @@ function updateUnifiedSearchResults() {
     return;
   }
   box.innerHTML = out.map(function(r, idx) {
-    return '<div class="unified-search-result" onclick="selectUnifiedSearchResult(' + idx + ')"><div class="usr-title"><span>' + esc15(r.title) + '</span><span class="usr-tag">' + esc15(r.tag) + '</span></div><div class="usr-meta">' + esc15(r.meta) + "</div>" + (r.snippet ? '<div class="usr-snippet">' + highlightSnippet(r.snippet, q) + "</div>" : "") + "</div>";
+    return '<div class="unified-search-result" onclick="selectUnifiedSearchResult(' + idx + ')"><div class="usr-title"><span>' + esc16(r.title) + '</span><span class="usr-tag">' + esc16(r.tag) + '</span></div><div class="usr-meta">' + esc16(r.meta) + "</div>" + (r.snippet ? '<div class="usr-snippet">' + highlightSnippet(r.snippet, q) + "</div>" : "") + "</div>";
   }).join("");
 }
 function selectUnifiedSearchResult(idx) {
@@ -42677,8 +43424,8 @@ function renderExtraTemplatesList() {
     return;
   }
   list.innerHTML = arr.map(function(tmpl) {
-    var id = esc15(tmpl.id || "");
-    return '<div class="extra-tmpl-row"><span class="etr-label" title="' + esc15(tmpl.label || "") + '">' + esc15(tmpl.label || "(sin nombre)") + `</span><div class="etr-actions"><button type="button" onclick="editExtraTemplate('` + id + `')">Editar</button><button type="button" class="etr-del" onclick="deleteExtraTemplate('` + id + `')">Eliminar</button></div></div>`;
+    var id = esc16(tmpl.id || "");
+    return '<div class="extra-tmpl-row"><span class="etr-label" title="' + esc16(tmpl.label || "") + '">' + esc16(tmpl.label || "(sin nombre)") + `</span><div class="etr-actions"><button type="button" onclick="editExtraTemplate('` + id + `')">Editar</button><button type="button" class="etr-del" onclick="deleteExtraTemplate('` + id + `')">Eliminar</button></div></div>`;
   }).join("");
 }
 function startNewExtraTemplate() {
@@ -42969,12 +43716,16 @@ async function initMobileWebBoot() {
 function applyDefaultsToNewPatient(patientId) {
   if (!notes[patientId]) return;
   applyProfileToNoteIfEmpty(notes[patientId]);
+  applyNotaFormatScaffoldIfEmpty(notes[patientId], shellCtx.getSettings() || {});
 }
 function applyDefaultsToNewIndicaciones(patientId) {
   if (!indicaciones[patientId]) return;
-  if (shellCtx.getSettings().defaultDieta && !indicaciones[patientId].dieta) indicaciones[patientId].dieta = shellCtx.getSettings().defaultDieta;
-  if (shellCtx.getSettings().defaultCuidados && !indicaciones[patientId].cuidados) indicaciones[patientId].cuidados = shellCtx.getSettings().defaultCuidados;
-  if (shellCtx.getSettings().defaultMedicamentos && !indicaciones[patientId].medicamentos) indicaciones[patientId].medicamentos = shellCtx.getSettings().defaultMedicamentos;
+  var st = shellCtx.getSettings() || {};
+  if (st.defaultDieta && !indicaciones[patientId].dieta) indicaciones[patientId].dieta = st.defaultDieta;
+  if (st.defaultCuidados && !indicaciones[patientId].cuidados) indicaciones[patientId].cuidados = st.defaultCuidados;
+  if (st.defaultMedicamentos && !indicaciones[patientId].medicamentos) indicaciones[patientId].medicamentos = st.defaultMedicamentos;
+  if (st.defaultIndicacionesEstudios && !indicaciones[patientId].estudios) indicaciones[patientId].estudios = st.defaultIndicacionesEstudios;
+  if (st.defaultIndicacionesInterconsultas && !indicaciones[patientId].interconsultas) indicaciones[patientId].interconsultas = st.defaultIndicacionesInterconsultas;
 }
 function launchConfetti() {
   var colors = ["#60a5fa", "#34d399", "#fbbf24", "#f87171", "#a78bfa", "#fb7185"];
@@ -44711,7 +45462,7 @@ document.addEventListener("visibilitychange", function() {
 var activeId = null;
 var activeInner = "todo";
 var activeAppTab = "lab";
-var settings = storage.getSettings();
+var settings = hydrateProfileSettings(storage.getSettings());
 attachProfileSettingsGetter(function() {
   return settings;
 });

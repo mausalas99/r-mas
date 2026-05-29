@@ -5,7 +5,7 @@ import { parseFrotisSangre_, procesarLabs } from './labs.js';
 const MUESTRA_FROTIS = `
 Expediente:	2180481-3	Solicitud:	2605050388
 Nombre:	MARGARITA LIZETH GARZA HERNANDEZ	Fecha Registro:	May 5 2026 5:40AM
-Sexo:	FEMENINO	Ubicación:	MEDICINA INTERNA 1
+Sexo:	FEMENINO	Ubicación:	SERVICIO CLÍNICO 1
 Edad:	36	Medico:	A QUIEN CORRESPONDA
 
 HEMATOLOGIA

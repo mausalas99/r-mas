@@ -6,7 +6,7 @@
 const PITCH_HEADER =
   'Expediente:\t0008421-7\tSolicitud:\t2605000001\n' +
   'Nombre:\tDEMO PÉREZ JUAN\tFecha Registro:\t11/04/2026 08:00:00 a. m.\n' +
-  'Sexo:\tMASCULINO\tUbicación:\tMEDICINA INTERNA\n' +
+  'Sexo:\tMASCULINO\tUbicación:\tSERVICIO DEMO\n' +
   'Edad:\t67\tMedico:\tSERVICIO DEMO\n';
 
 function hdr(fecha, solicitud) {
@@ -17,7 +17,7 @@ function hdr(fecha, solicitud) {
     'Nombre:\tDEMO PÉREZ JUAN\tFecha Registro:\t' +
     fecha +
     '\n' +
-    'Sexo:\tMASCULINO\tUbicación:\tMEDICINA INTERNA\n' +
+    'Sexo:\tMASCULINO\tUbicación:\tSERVICIO DEMO\n' +
     'Edad:\t67\tMedico:\tSERVICIO DEMO\n'
   );
 }

@@ -111,10 +111,18 @@ export function creatinineGuptaCoef(creatinina) {
  * @param {string} q
  * @returns {VpoProcedure[]}
  */
-export function searchProcedures(q) {
+export function searchProcedures(q, searchTextFn) {
   var n = normSearch(q).trim();
   if (!n) return PROCEDURES.slice();
-  return PROCEDURES.filter((p) => normSearch(p.labelEn).includes(n));
+  var textOf =
+    typeof searchTextFn === 'function'
+      ? searchTextFn
+      : function (p) {
+          return p.labelEn;
+        };
+  return PROCEDURES.filter(function (p) {
+    return normSearch(textOf(p)).includes(n);
+  });
 }
 
 /** Sugerir AHA clínico desde ASA. @param {string} asaKey */

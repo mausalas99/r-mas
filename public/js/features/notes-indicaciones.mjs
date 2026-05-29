@@ -6,6 +6,16 @@ import {
   saveState,
 } from "../app-state.mjs";
 import { setAsyncButtonLoading } from "../ui-motion.mjs";
+import {
+  applyNotaFormatScaffoldIfEmpty,
+  applyIndicacionesFormatScaffoldIfEmpty,
+} from "../profile-templates.mjs";
+import {
+  getFormatsEditMode,
+  buildNoteDefaultsEditorHtml,
+  buildIndicaDefaultsEditorHtml,
+  loadDraftFromSettings,
+} from "../profile-formats-editor.mjs";
 
 let rt = {
   getActiveId() { return null; },
@@ -59,13 +69,21 @@ export function applyProfileToNoteIfEmpty(note) {
 
 // ── Formulario Nota ───────────────────────────────────────────────────
 function renderNoteForm() {
+  if (getFormatsEditMode() === "nota") {
+    var st = rt.getSettings() || {};
+    loadDraftFromSettings(st);
+    document.getElementById("note-form").innerHTML = buildNoteDefaultsEditorHtml(st);
+    return;
+  }
   var patient = patients.find(function (p) {
     return String(p.id) === String(aid());
   });
   if (!patient) return;
   if (aid()) {
     if (!notes[aid()]) notes[aid()] = {};
-    if (applyProfileToNoteIfEmpty(notes[aid()])) saveState();
+    var changed = applyProfileToNoteIfEmpty(notes[aid()]);
+    if (applyNotaFormatScaffoldIfEmpty(notes[aid()], rt.getSettings() || {})) changed = true;
+    if (changed) saveState();
   }
   var note = notes[aid()] || {};
   document.getElementById('note-form').innerHTML = (
@@ -76,9 +94,9 @@ function renderNoteForm() {
 
     '<div class="card"><div class="card-header"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Resumen de Interrogatorio, Exploración Física y Estado Mental</div><div class="card-body"><div class="field-group"><textarea rows="5" placeholder="Ingresa el resumen de interrogatorio, exploración física y estado mental..." oninput="updateNote(\'interrogatorio\',this.value)">' + esc(note.interrogatorio) + '</textarea></div></div></div>' +
 
-    '<div class="card"><div class="card-header card-header--tone-green card-header-row"><span style="display:flex;align-items:center;gap:8px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Evolución y Actualización del Cuadro Clínico</span><button type="button" id="btn-soap-template" class="card-header-ghost-btn" onclick="openSOAPModal()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>Plantilla SOAP</button></div><div class="card-body"><div class="field-group"><textarea rows="7" placeholder="N: [Neurológico]&#10;V: [Ventilatorio]&#10;HD: [Hemodinámico]&#10;HI: [Infeccioso]&#10;NM: [Nutricional/Metabólico]" oninput="updateNote(\'evolucion\',this.value)">' + esc(note.evolucion) + '</textarea></div></div></div>' +
+    '<div class="card"><div class="card-header card-header--tone-green card-header-row"><span style="display:flex;align-items:center;gap:8px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Evolución y Actualización del Cuadro Clínico</span><button type="button" id="btn-soap-template" class="card-header-ghost-btn" onclick="openSOAPModal()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>Plantilla SOAP</button></div><div class="card-body"><div class="field-group"><textarea rows="7" placeholder="Estructura N / V / HD / HI / NM. Usa Plantilla SOAP o edita los formatos en Mi Perfil." oninput="updateNote(\'evolucion\',this.value)">' + esc(note.evolucion) + '</textarea></div></div></div>' +
 
-    '<div class="card"><div class="card-header card-header--tone-indigo"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>Resultados de Estudios Auxiliares</div><div class="card-body"><div class="field-group"><textarea rows="9" placeholder="Una línea por renglón del documento:&#10;FECHA (ej. 09.04.26)&#10;QS Glu Cr BUN..." oninput="updateNote(\'estudios\',this.value)">' + esc(note.estudios) + '</textarea></div></div></div>' +
+    '<div class="card"><div class="card-header card-header--tone-indigo"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>Resultados de Estudios Auxiliares</div><div class="card-body"><div class="field-group"><textarea rows="9" placeholder="FECHA (DD/MM/AA)&#10;QS&#10;BH&#10;EGO&#10;(una línea por renglón; sin valores de ejemplo)" oninput="updateNote(\'estudios\',this.value)">' + esc(note.estudios) + '</textarea></div></div></div>' +
 
     '<div class="card"><div class="card-header card-header--tone-rose"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>Diagnóstico(s)</div><div class="card-body">' +
     '<div class="list-rows" id="dx-list">' +
@@ -157,18 +175,26 @@ function generateWord() {
 
 // ── Indicaciones ─────────────────────────────────────────────────────
 function renderIndicaForm() {
+  if (getFormatsEditMode() === "indica") {
+    var st = rt.getSettings() || {};
+    loadDraftFromSettings(st);
+    document.getElementById("indica-form").innerHTML = buildIndicaDefaultsEditorHtml(st);
+    return;
+  }
   var patient = patients.find(function(p){ return p.id===aid(); }); if (!patient) return;
   if (!indicaciones[aid()]) {
     var today = new Date();
     indicaciones[aid()] = { fecha:String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0')+'/'+today.getFullYear(), hora:String(today.getHours()).padStart(2,'0')+':'+String(today.getMinutes()).padStart(2,'0'), medicos:'',dieta:'',cuidados:'',estudios:'',medicamentos:'',interconsultas:'',otros:[] };
+    applyIndicacionesFormatScaffoldIfEmpty(indicaciones[aid()], rt.getSettings() || {});
+    saveState();
   }
   var ind = indicaciones[aid()];
   var SECTIONS = [
-    {key:'dieta',label:'Dieta',placeholder:'DIETA NORMAL DIABÉTICA ALTA EN FIBRA...'},
-    {key:'cuidados',label:'Cuidados',placeholder:'COLOCAR SONDA FOLEY.\nCUANTIFICACIÓN ESTRICTA DE INGRESOS Y EGRESOS...'},
-    {key:'estudios',label:'Estudios',placeholder:'BH, QS, EGO...'},
-    {key:'medicamentos',label:'Medicamentos',placeholder:'PARACETAMOL 1G VO CADA 8 HORAS PRN...'},
-    {key:'interconsultas',label:'Interconsultas',placeholder:'CONTINUAR INDICACIONES DE INFECTOLOGÍA...'},
+    {key:'dieta',label:'Dieta',placeholder:'Escriba la dieta (una indicación por línea si aplica)…'},
+    {key:'cuidados',label:'Cuidados',placeholder:'Signos vitales, balance, dispositivos, etc.…'},
+    {key:'estudios',label:'Estudios',placeholder:'BH, QS, EGO, imágenes…'},
+    {key:'medicamentos',label:'Medicamentos',placeholder:'Fármaco, dosis, vía y horario…'},
+    {key:'interconsultas',label:'Interconsultas',placeholder:'Servicio y motivo de interconsulta…'},
   ];
   document.getElementById('indica-form').innerHTML = (
     '<div class="card"><div class="card-header"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Datos del Paciente</div><div class="card-body"><div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:10px;align-items:end;">' +

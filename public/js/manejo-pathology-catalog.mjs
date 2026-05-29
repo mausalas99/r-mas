@@ -1,4 +1,4 @@
-/** Catálogo de patologías — wiki clínica por rama (machotes UCI/MI). */
+/** Catálogo de patologías — wiki clínica por rama (machotes UCI / sala). */
 
 export const MANEJO_PATHOLOGY_BRANCHES = [
   { id: 'cardio', label: 'Cardiovascular', hint: 'EAP, TEP, crisis hipertensiva' },

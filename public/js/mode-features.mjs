@@ -1,5 +1,8 @@
 // Modo de trabajo del usuario y migración de settings v3.0.
 
+/** Ejemplo genérico en placeholders de UI (no asumir un servicio hospitalario concreto). */
+export const UI_EXAMPLE_SERVICIO = 'CIRUGÍA GENERAL';
+
 export function isModeSala(settings) {
   if (!settings) return true;
   return (settings.appMode || 'sala') === 'sala';

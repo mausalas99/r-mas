@@ -44,7 +44,7 @@ import { manejoWindowHandlers } from './features/manejo.mjs';
 import { recetaHuWindowHandlers } from './features/receta-hu.mjs';
 import { windowHandlers as paseBoardWindowHandlers, syncMainAppTabA11y, renderInnerTabs, initTabBarMotion } from './features/pase-board.mjs';
 import { medicationsWindowHandlers } from './features/medications.mjs';
-import { profileWindowHandlers } from './features/profile.mjs';
+import { profileWindowHandlers, hydrateProfileSettings } from './features/profile.mjs';
 
 const allWindowHandlers = Object.assign(
   {},
@@ -111,7 +111,7 @@ document.addEventListener('visibilitychange', function () {
 var activeId = null;
 var activeInner = 'todo';
 var activeAppTab = 'lab';
-var settings = storage.getSettings();
+var settings = hydrateProfileSettings(storage.getSettings());
 
 attachProfileSettingsGetter(function () {
   return settings;

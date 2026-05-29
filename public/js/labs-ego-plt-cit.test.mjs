@@ -5,7 +5,7 @@ import { procesarLabs, parseEGO_, parsePlaquetasCitrato_, parseFrotisSangre_ } f
 const EGO_ROGELIO = `
 Expediente:\t1936787-7\tSolicitud:\t2605050872
 Nombre:\tROGELIO GONZALEZ ESQUIVEL\tFecha Registro:\tMay 5 2026 8:29PM
-Sexo:\tMASCULINO\tUbicación:\tMEDICINA INTERNA 2
+Sexo:\tMASCULINO\tUbicación:\tSERVICIO CLÍNICO 2
 Edad:\t81\tMedico:\tA QUIEN CORRESPONDA
 
 URIANALISIS

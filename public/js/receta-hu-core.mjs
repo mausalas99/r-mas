@@ -3,7 +3,6 @@
 export const DEFAULT_RECETA_HU_CONSULT_SERVICES = [
   'Nefrología',
   'Oncología',
-  'Medicina Interna',
   'Cardiología',
   'Endocrinología',
   'Gastroenterología',

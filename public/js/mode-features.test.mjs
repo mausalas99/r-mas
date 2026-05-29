@@ -17,7 +17,7 @@ test('isModeSala default a true (sala) cuando appMode falta', () => {
 });
 
 test('getDefaultServicio devuelve string trimeado', () => {
-  assert.equal(getDefaultServicio({ defaultServicio: '  MEDICINA INTERNA  ' }), 'MEDICINA INTERNA');
+  assert.equal(getDefaultServicio({ defaultServicio: '  CIRUGÍA GENERAL  ' }), 'CIRUGÍA GENERAL');
 });
 
 test('getDefaultServicio devuelve "" cuando no existe', () => {

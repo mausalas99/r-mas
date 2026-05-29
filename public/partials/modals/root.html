@@ -45,7 +45,7 @@
         </div>
       </div>
       <div class="field-group" id="m-area-group"><label>Área / Departamento *</label><input id="m-area" type="text" placeholder="ej. CIRUGÍA AB" style="text-transform:uppercase;"></div>
-      <div class="field-group" id="m-servicio-group"><label id="m-servicio-label">Servicio *</label><input id="m-servicio" type="text" placeholder="ej. MEDICINA INTERNA" style="text-transform:uppercase;"></div>
+      <div class="field-group" id="m-servicio-group"><label id="m-servicio-label">Servicio *</label><input id="m-servicio" type="text" placeholder="ej. CIRUGÍA GENERAL" style="text-transform:uppercase;"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div class="field-group"><label>Cuarto *</label><input id="m-cuarto" type="text" placeholder="440"></div>
         <div class="field-group"><label>Cama *</label><input id="m-cama" type="text" placeholder="05"></div>
@@ -104,22 +104,61 @@
 
 <!-- Templates modal -->
 <div class="templates-modal-backdrop" id="templates-modal" style="display:none;" aria-hidden="true">
-  <div class="templates-modal" role="dialog" aria-modal="true" aria-labelledby="templates-modal-title">
-    <h3 id="templates-modal-title">Plantillas de indicaciones por defecto</h3>
-    <div>
-      <label>Dieta</label>
-      <textarea id="tmpl-dieta" rows="3" placeholder="DIETA NORMAL DIABÉTICA…"></textarea>
+  <div class="templates-modal templates-modal--wide" role="dialog" aria-modal="true" aria-labelledby="templates-modal-title">
+    <div class="templates-modal-header">
+      <h3 id="templates-modal-title">Formatos clínicos en blanco</h3>
+      <p class="templates-modal-lead">Edita a la izquierda; a la derecha ves cómo se verán las secciones en el expediente (Nota e Indicaciones).</p>
     </div>
-    <div>
-      <label>Cuidados</label>
-      <textarea id="tmpl-cuidados" rows="3" placeholder="CSV c/8h, glucometrías c/6h…"></textarea>
-    </div>
-    <div>
-      <label>Medicamentos</label>
-      <textarea id="tmpl-meds" rows="3" placeholder="(vacío por defecto)"></textarea>
+    <div class="templates-modal-layout">
+      <div class="templates-modal-editor">
+        <div class="templates-modal-group">
+          <h4 class="templates-modal-group-title">Nota de evolución</h4>
+          <div class="templates-modal-field">
+            <label for="tmpl-nota-evolucion">Evolución (N / V / HD / HI / NM)</label>
+            <textarea id="tmpl-nota-evolucion" rows="6" placeholder="N: [Neurológico]&#10;V: [Ventilatorio]…"></textarea>
+          </div>
+          <div class="templates-modal-field">
+            <label for="tmpl-nota-estudios">Estudios auxiliares</label>
+            <textarea id="tmpl-nota-estudios" rows="6" placeholder="FECHA (DD/MM/AA)&#10;QS&#10;BH…"></textarea>
+          </div>
+        </div>
+        <div class="templates-modal-group">
+          <h4 class="templates-modal-group-title">Indicaciones</h4>
+          <div class="templates-modal-field">
+            <label for="tmpl-dieta">Dieta</label>
+            <textarea id="tmpl-dieta" rows="3" placeholder="(vacío o esquema propio)"></textarea>
+          </div>
+          <div class="templates-modal-field">
+            <label for="tmpl-cuidados">Cuidados</label>
+            <textarea id="tmpl-cuidados" rows="3" placeholder="(vacío o esquema propio)"></textarea>
+          </div>
+          <div class="templates-modal-field">
+            <label for="tmpl-meds">Medicamentos</label>
+            <textarea id="tmpl-meds" rows="3" placeholder="(vacío o esquema propio)"></textarea>
+          </div>
+          <div class="templates-modal-field">
+            <label for="tmpl-ind-estudios">Estudios</label>
+            <textarea id="tmpl-ind-estudios" rows="3" placeholder="(vacío o esquema propio)"></textarea>
+          </div>
+          <div class="templates-modal-field">
+            <label for="tmpl-ind-inter">Interconsultas</label>
+            <textarea id="tmpl-ind-inter" rows="3" placeholder="(vacío o esquema propio)"></textarea>
+          </div>
+        </div>
+      </div>
+      <aside class="templates-modal-preview-pane" aria-label="Vista previa en el expediente">
+        <p class="templates-preview-pane-title">Vista previa · como en la app</p>
+        <div class="templates-preview-scroll">
+          <p class="templates-preview-section-label">Nota · Clínico</p>
+          <div id="templates-preview-nota"></div>
+          <p class="templates-preview-section-label">Indicaciones</p>
+          <div id="templates-preview-indica"></div>
+        </div>
+      </aside>
     </div>
     <div class="templates-modal-actions">
-      <button class="btn-save" onclick="saveTemplates()">Guardar plantillas</button>
+      <button type="button" class="btn-edit-templates" onclick="closeTemplatesModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveTemplates()">Guardar formatos</button>
     </div>
   </div>
 </div>
@@ -139,7 +178,7 @@
       <div class="soap-section soap-section-s" style="flex-shrink:0;">
         <div class="soap-section-header">S — Subjetivo</div>
         <div class="soap-section-body">
-          <textarea id="soap-s" rows="2" placeholder="Paciente refiere mejoría del dolor, tolera vía oral…"></textarea>
+          <textarea id="soap-s" rows="2" placeholder="Refiere / niega…"></textarea>
         </div>
       </div>
       <!-- N: Neurológico -->
@@ -150,20 +189,20 @@
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">FOUR Score</div>
               <div style="display:flex;align-items:center;gap:6px;">
-                <input type="number" id="soap-four" placeholder="16" style="width:64px;text-align:center;">
+                <input type="number" id="soap-four" placeholder="—" style="width:64px;text-align:center;">
                 <span style="font-size:12px;color:var(--text-muted);white-space:nowrap;">/16 pts</span>
               </div>
             </div>
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Esferas</div>
               <div style="display:flex;align-items:center;gap:6px;">
-                <input type="number" id="soap-esferas" placeholder="3" style="width:64px;text-align:center;">
+                <input type="number" id="soap-esferas" placeholder="—" style="width:64px;text-align:center;">
                 <span style="font-size:12px;color:var(--text-muted);">esf.</span>
               </div>
             </div>
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Analgesia</div>
-              <input type="text" id="soap-analgesia" placeholder="Paracetamol 1g IV c/8h">
+              <input type="text" id="soap-analgesia" placeholder="Fármaco dosis vía frecuencia">
             </div>
           </div>
         </div>
@@ -175,11 +214,11 @@
           <div style="display:grid;grid-template-columns:100px 100px 1fr;gap:10px;">
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">FR (rpm)</div>
-              <input type="number" id="soap-fr" placeholder="18" style="text-align:center;">
+              <input type="number" id="soap-fr" placeholder="—" style="text-align:center;">
             </div>
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">SatO2 (%)</div>
-              <input type="number" id="soap-sat" placeholder="97" style="text-align:center;">
+              <input type="number" id="soap-sat" placeholder="—" style="text-align:center;">
             </div>
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Soporte O2</div>
@@ -200,25 +239,25 @@
           <div style="display:grid;grid-template-columns:100px 100px 100px;gap:10px;">
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">TAS (mmHg)</div>
-              <input type="number" id="soap-tas" placeholder="120" style="text-align:center;">
+              <input type="number" id="soap-tas" placeholder="—" style="text-align:center;">
             </div>
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">TAD (mmHg)</div>
-              <input type="number" id="soap-tad" placeholder="80" style="text-align:center;">
+              <input type="number" id="soap-tad" placeholder="—" style="text-align:center;">
             </div>
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">FC (lpm)</div>
-              <input type="number" id="soap-fc" placeholder="76" style="text-align:center;">
+              <input type="number" id="soap-fc" placeholder="—" style="text-align:center;">
             </div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Antihipertensivos</div>
-              <input type="text" id="soap-antihta" placeholder="Ninguno">
+              <input type="text" id="soap-antihta" placeholder="Ninguno o detalle">
             </div>
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Vasopresores</div>
-              <input type="text" id="soap-vasop" placeholder="Ninguno">
+              <input type="text" id="soap-vasop" placeholder="Ninguno o detalle">
             </div>
           </div>
         </div>
@@ -230,11 +269,11 @@
           <div style="display:grid;grid-template-columns:140px 1fr;gap:10px;">
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Temperatura (°C)</div>
-              <input type="number" id="soap-temp" placeholder="36.6" step="0.1" style="text-align:center;">
+              <input type="number" id="soap-temp" placeholder="—" step="0.1" style="text-align:center;">
             </div>
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Antibióticos</div>
-              <input type="text" id="soap-abx" placeholder="Ninguno  |  Med dosis vía c/Xh día X de X">
+              <input type="text" id="soap-abx" placeholder="Ninguno o fármaco dosis vía">
             </div>
           </div>
         </div>
@@ -246,29 +285,29 @@
           <div style="display:grid;grid-template-columns:1fr 80px 80px 80px;gap:10px;">
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Dieta</div>
-              <input type="text" id="soap-dieta" placeholder="Blanda hipograsa">
+              <input type="text" id="soap-dieta" placeholder="Tipo de dieta">
             </div>
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Kcal/kg</div>
-              <input type="number" id="soap-kcalkg" placeholder="25" style="text-align:center;">
+              <input type="number" id="soap-kcalkg" placeholder="—" style="text-align:center;">
             </div>
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Total Kcal</div>
-              <input type="number" id="soap-kcal" placeholder="1500" style="text-align:center;">
+              <input type="number" id="soap-kcal" placeholder="—" style="text-align:center;">
             </div>
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Peso (kg)</div>
-              <input type="number" id="soap-peso" placeholder="60" style="text-align:center;">
+              <input type="number" id="soap-peso" placeholder="—" style="text-align:center;">
             </div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Ingresos (cc)</div>
-              <input type="number" id="soap-ing" placeholder="1200" oninput="updateSOAPBalance()" style="text-align:center;">
+              <input type="number" id="soap-ing" placeholder="—" oninput="updateSOAPBalance()" style="text-align:center;">
             </div>
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Egresos (cc)</div>
-              <input type="number" id="soap-egr" placeholder="950" oninput="updateSOAPBalance()" style="text-align:center;">
+              <input type="number" id="soap-egr" placeholder="—" oninput="updateSOAPBalance()" style="text-align:center;">
             </div>
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Balance (cc)</div>

@@ -44,6 +44,7 @@
 <link rel="stylesheet" href="styles/lab.css">
 <link rel="stylesheet" href="styles/expediente.css">
 <link rel="stylesheet" href="styles/estado-actual.css">
+<link rel="stylesheet" href="styles/vpo.css">
 <link rel="stylesheet" href="styles/manejo.css">
 <link rel="stylesheet" href="styles/manejo-guia.css">
 <link rel="stylesheet" href="styles/receta-hu.css">
@@ -1021,87 +1022,74 @@
 </div>
 
 <div class="modal-backdrop" id="profile-modal" aria-hidden="true">
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title" style="width:560px;">
-    <h3 id="profile-modal-title" class="profile-modal-title" style="margin:0 0 14px 0;display:flex;align-items:center;gap:8px;">
+  <div class="modal profile-modal" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
+    <h3 id="profile-modal-title" class="profile-modal-title">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       Mi Perfil
     </h3>
-    <div class="profile-body" id="profile-body" style="display:flex;flex-direction:column;gap:12px;">
-      <div>
-        <div class="profile-field-label">Médico Tratante</div>
-        <input class="profile-input" id="profile-doctor" type="text" placeholder="Dr. Nombre Apellido">
-      </div>
-      <div>
-        <div class="profile-field-label">Cédula profesional</div>
-        <input class="profile-input" id="profile-cedula" type="text" placeholder="12345678" inputmode="numeric" autocomplete="off">
-        <p style="font-size:11px;color:var(--text-muted);margin:4px 0 0 0;line-height:1.3;">Se usa en la receta médica HU (000-061-R-06-12).</p>
-      </div>
-      <div>
-        <div class="profile-field-label">Profesor / Responsable</div>
-        <input class="profile-input" id="profile-profesor" type="text" placeholder="Dr. Nombre Apellido">
-      </div>
-      <div>
-        <div class="profile-field-label">Grado / Servicio</div>
-        <input class="profile-input" id="profile-grado" type="text" placeholder="R3MI · Medicina Interna">
-      </div>
-      <hr class="profile-divider">
-      <div class="profile-defaults-title">Modo de trabajo</div>
-      <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;">
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-          <input type="radio" name="app-mode" value="sala" id="app-mode-sala" onchange="onAppModeChange()">
-          <span>Sala (default)</span>
-        </label>
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-          <input type="radio" name="app-mode" value="interconsulta" id="app-mode-inter" onchange="onAppModeChange()">
-          <span>Interconsulta</span>
-        </label>
-        <p style="font-size:11px;color:var(--text-muted);margin:2px 0 8px 0;line-height:1.3;">Sala oculta Nota e Indicaciones; expone Estado Actual y Listado de problemas.</p>
-      </div>
-      <div>
-        <div class="profile-field-label settings-acc-label-spaced--sm">Servicio (Sala)</div>
-        <input class="profile-input" id="settings-default-servicio" type="text" placeholder="MEDICINA INTERNA" style="text-transform:uppercase;" onblur="onDefaultServicioBlur()">
-        <p style="font-size:11px;color:var(--text-muted);margin:4px 0 0 0;line-height:1.3;">Sin abreviaturas. Pre-llena Servicio al agregar pacientes en Sala.</p>
-        <p id="default-servicio-warning" style="display:none;color:#b45309;font-size:11px;margin:4px 0 0 0;line-height:1.3;">¿Estás seguro? Recomendamos servicio sin abreviaturas (p.ej. MEDICINA INTERNA en lugar de MI).</p>
-      </div>
-      <hr class="profile-divider">
-      <div class="profile-defaults-title">Médicos del Listado de Problemas</div>
-      <p style="font-size:11px;color:var(--text-muted);margin:0 0 4px 0;line-height:1.3;">Pre-llenan los campos del listado. Puedes editarlos por paciente desde la pestaña Listado.</p>
-      <div>
-        <div class="profile-field-label">Profesor</div>
-        <input class="profile-input" id="settings-medico-profesor" type="text" onblur="onMedicoTemplateBlur()">
-      </div>
-      <div>
-        <div class="profile-field-label">R4</div>
-        <input class="profile-input" id="settings-medico-r4" type="text" onblur="onMedicoTemplateBlur()">
-      </div>
-      <div>
-        <div class="profile-field-label">R2</div>
-        <input class="profile-input" id="settings-medico-r2" type="text" onblur="onMedicoTemplateBlur()">
-      </div>
-      <div>
-        <div class="profile-field-label">R1 (1)</div>
-        <input class="profile-input" id="settings-medico-r1a" type="text" onblur="onMedicoTemplateBlur()">
-      </div>
-      <div>
-        <div class="profile-field-label">R1 (2)</div>
-        <input class="profile-input" id="settings-medico-r1b" type="text" onblur="onMedicoTemplateBlur()">
-      </div>
-      <hr class="profile-divider">
-      <div class="profile-defaults-title">Indicaciones por defecto</div>
-      <div class="profile-default-preview">
-        <div class="preview-label">Dieta</div>
-        <span id="profile-preview-dieta-txt">(vacío)</span>
-      </div>
-      <div class="profile-default-preview">
-        <div class="preview-label">Cuidados</div>
-        <span id="profile-preview-cuidados-txt">(vacío)</span>
-      </div>
-      <div class="profile-default-preview">
-        <div class="preview-label">Medicamentos</div>
-        <span id="profile-preview-meds-txt">(vacío)</span>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;">
-        <button type="button" class="btn-edit-templates" onclick="openTemplatesModal()">Editar plantillas…</button>
+    <p class="profile-modal-lead">Tu identificación y los formatos en blanco que R+ usa al abrir notas e indicaciones nuevas. No reemplaza datos ya escritos en pacientes existentes.</p>
+    <div class="profile-body" id="profile-body">
+      <section class="profile-block">
+        <h4 class="profile-block-title">Identificación</h4>
+        <p class="profile-hint">Aparece en notas, indicaciones y documentos Word. Solo afecta campos vacíos al crear o abrir un paciente.</p>
+        <div class="profile-field">
+          <label class="profile-field-label" for="profile-doctor">Médico tratante</label>
+          <input class="profile-input" id="profile-doctor" type="text" placeholder="Dr. Nombre Apellido">
+        </div>
+        <div class="profile-field">
+          <label class="profile-field-label" for="profile-cedula">Cédula profesional</label>
+          <input class="profile-input" id="profile-cedula" type="text" placeholder="Número de cédula" inputmode="numeric" autocomplete="off">
+          <p class="profile-hint">Receta médica HU (formato 000-061-R-06-12).</p>
+        </div>
+        <div class="profile-field">
+          <label class="profile-field-label" for="profile-profesor">Profesor / responsable</label>
+          <input class="profile-input" id="profile-profesor" type="text" placeholder="Dr. Nombre Apellido">
+        </div>
+        <div class="profile-field">
+          <label class="profile-field-label" for="profile-grado">Grado / servicio</label>
+          <input class="profile-input" id="profile-grado" type="text" placeholder="R3 · Tu servicio">
+        </div>
+      </section>
+
+      <section class="profile-block">
+        <h4 class="profile-block-title">Modo de trabajo</h4>
+        <p class="profile-hint">Define qué pestañas del expediente ves por defecto (Sala vs Interconsulta).</p>
+        <div class="profile-radio-group">
+          <label class="profile-radio"><input type="radio" name="app-mode" value="sala" id="app-mode-sala" onchange="onAppModeChange()"><span>Sala</span></label>
+          <label class="profile-radio"><input type="radio" name="app-mode" value="interconsulta" id="app-mode-inter" onchange="onAppModeChange()"><span>Interconsulta</span></label>
+        </div>
+        <p class="profile-hint">Sala: Estado actual y listado de problemas. Interconsulta: nota de evolución e indicaciones.</p>
+        <div class="profile-field">
+          <label class="profile-field-label" for="settings-default-servicio">Servicio predeterminado (Sala)</label>
+          <input class="profile-input" id="settings-default-servicio" type="text" placeholder="CIRUGÍA GENERAL" style="text-transform:uppercase;" onblur="onDefaultServicioBlur()">
+          <p class="profile-hint">Nombre completo del servicio (sin abreviaturas de 1–3 letras). Pre-llena el campo Servicio al agregar pacientes en modo Sala.</p>
+          <p id="default-servicio-warning" class="profile-hint profile-hint--warn" style="display:none;">Recomendamos el nombre completo del servicio (sin abreviaturas de 1–3 letras).</p>
+        </div>
+      </section>
+
+      <section class="profile-block">
+        <h4 class="profile-block-title">Listado de problemas</h4>
+        <p class="profile-hint">Nombres que se copian al bloque «Médicos (firma)» del listado. Puedes cambiarlos por paciente en Salida → Listado.</p>
+        <div class="profile-grid-2">
+          <div class="profile-field"><label class="profile-field-label" for="settings-medico-profesor">Profesor</label><input class="profile-input" id="settings-medico-profesor" type="text" onblur="onMedicoTemplateBlur()"></div>
+          <div class="profile-field"><label class="profile-field-label" for="settings-medico-r4">R4</label><input class="profile-input" id="settings-medico-r4" type="text" onblur="onMedicoTemplateBlur()"></div>
+          <div class="profile-field"><label class="profile-field-label" for="settings-medico-r2">R2</label><input class="profile-input" id="settings-medico-r2" type="text" onblur="onMedicoTemplateBlur()"></div>
+          <div class="profile-field"><label class="profile-field-label" for="settings-medico-r1a">R1 (1)</label><input class="profile-input" id="settings-medico-r1a" type="text" onblur="onMedicoTemplateBlur()"></div>
+          <div class="profile-field"><label class="profile-field-label" for="settings-medico-r1b">R1 (2)</label><input class="profile-input" id="settings-medico-r1b" type="text" onblur="onMedicoTemplateBlur()"></div>
+        </div>
+      </section>
+
+      <section class="profile-block profile-block--formats">
+        <h4 class="profile-block-title">Formatos clínicos (plantillas en blanco)</h4>
+        <p class="profile-hint">Esquemas sin datos del paciente. Se editan en las pestañas <strong>Nota</strong> e <strong>Indicaciones</strong> del expediente (misma vista que al atender). Se aplican solo en secciones vacías.</p>
+        <div class="profile-actions profile-actions--formats">
+          <button type="button" class="btn-edit-templates" onclick="openNoteFormatsFromProfile()">Editar formatos de nota →</button>
+          <button type="button" class="btn-edit-templates" onclick="openIndicaFormatsFromProfile()">Editar formatos de indicaciones →</button>
+          <button type="button" class="btn-edit-templates" onclick="resetProfileTemplates()">Restablecer formatos en blanco</button>
+        </div>
+      </section>
+
+      <div class="profile-actions profile-actions--footer">
         <button type="button" class="btn-save-profile" onclick="saveSettings()">Guardar perfil</button>
         <button type="button" class="btn-edit-templates" onclick="resetAndStartOnboarding()">Ver tutorial</button>
       </div>
@@ -1156,7 +1144,7 @@
         </div>
       </div>
       <div class="field-group" id="m-area-group"><label>Área / Departamento *</label><input id="m-area" type="text" placeholder="ej. CIRUGÍA AB" style="text-transform:uppercase;"></div>
-      <div class="field-group" id="m-servicio-group"><label id="m-servicio-label">Servicio *</label><input id="m-servicio" type="text" placeholder="ej. MEDICINA INTERNA" style="text-transform:uppercase;"></div>
+      <div class="field-group" id="m-servicio-group"><label id="m-servicio-label">Servicio *</label><input id="m-servicio" type="text" placeholder="ej. CIRUGÍA GENERAL" style="text-transform:uppercase;"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div class="field-group"><label>Cuarto *</label><input id="m-cuarto" type="text" placeholder="440"></div>
         <div class="field-group"><label>Cama *</label><input id="m-cama" type="text" placeholder="05"></div>
@@ -1215,22 +1203,61 @@
 
 <!-- Templates modal -->
 <div class="templates-modal-backdrop" id="templates-modal" style="display:none;" aria-hidden="true">
-  <div class="templates-modal" role="dialog" aria-modal="true" aria-labelledby="templates-modal-title">
-    <h3 id="templates-modal-title">Plantillas de indicaciones por defecto</h3>
-    <div>
-      <label>Dieta</label>
-      <textarea id="tmpl-dieta" rows="3" placeholder="DIETA NORMAL DIABÉTICA…"></textarea>
+  <div class="templates-modal templates-modal--wide" role="dialog" aria-modal="true" aria-labelledby="templates-modal-title">
+    <div class="templates-modal-header">
+      <h3 id="templates-modal-title">Formatos clínicos en blanco</h3>
+      <p class="templates-modal-lead">Edita a la izquierda; a la derecha ves cómo se verán las secciones en el expediente (Nota e Indicaciones).</p>
     </div>
-    <div>
-      <label>Cuidados</label>
-      <textarea id="tmpl-cuidados" rows="3" placeholder="CSV c/8h, glucometrías c/6h…"></textarea>
-    </div>
-    <div>
-      <label>Medicamentos</label>
-      <textarea id="tmpl-meds" rows="3" placeholder="(vacío por defecto)"></textarea>
+    <div class="templates-modal-layout">
+      <div class="templates-modal-editor">
+        <div class="templates-modal-group">
+          <h4 class="templates-modal-group-title">Nota de evolución</h4>
+          <div class="templates-modal-field">
+            <label for="tmpl-nota-evolucion">Evolución (N / V / HD / HI / NM)</label>
+            <textarea id="tmpl-nota-evolucion" rows="6" placeholder="N: [Neurológico]&#10;V: [Ventilatorio]…"></textarea>
+          </div>
+          <div class="templates-modal-field">
+            <label for="tmpl-nota-estudios">Estudios auxiliares</label>
+            <textarea id="tmpl-nota-estudios" rows="6" placeholder="FECHA (DD/MM/AA)&#10;QS&#10;BH…"></textarea>
+          </div>
+        </div>
+        <div class="templates-modal-group">
+          <h4 class="templates-modal-group-title">Indicaciones</h4>
+          <div class="templates-modal-field">
+            <label for="tmpl-dieta">Dieta</label>
+            <textarea id="tmpl-dieta" rows="3" placeholder="(vacío o esquema propio)"></textarea>
+          </div>
+          <div class="templates-modal-field">
+            <label for="tmpl-cuidados">Cuidados</label>
+            <textarea id="tmpl-cuidados" rows="3" placeholder="(vacío o esquema propio)"></textarea>
+          </div>
+          <div class="templates-modal-field">
+            <label for="tmpl-meds">Medicamentos</label>
+            <textarea id="tmpl-meds" rows="3" placeholder="(vacío o esquema propio)"></textarea>
+          </div>
+          <div class="templates-modal-field">
+            <label for="tmpl-ind-estudios">Estudios</label>
+            <textarea id="tmpl-ind-estudios" rows="3" placeholder="(vacío o esquema propio)"></textarea>
+          </div>
+          <div class="templates-modal-field">
+            <label for="tmpl-ind-inter">Interconsultas</label>
+            <textarea id="tmpl-ind-inter" rows="3" placeholder="(vacío o esquema propio)"></textarea>
+          </div>
+        </div>
+      </div>
+      <aside class="templates-modal-preview-pane" aria-label="Vista previa en el expediente">
+        <p class="templates-preview-pane-title">Vista previa · como en la app</p>
+        <div class="templates-preview-scroll">
+          <p class="templates-preview-section-label">Nota · Clínico</p>
+          <div id="templates-preview-nota"></div>
+          <p class="templates-preview-section-label">Indicaciones</p>
+          <div id="templates-preview-indica"></div>
+        </div>
+      </aside>
     </div>
     <div class="templates-modal-actions">
-      <button class="btn-save" onclick="saveTemplates()">Guardar plantillas</button>
+      <button type="button" class="btn-edit-templates" onclick="closeTemplatesModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveTemplates()">Guardar formatos</button>
     </div>
   </div>
 </div>
@@ -1250,7 +1277,7 @@
       <div class="soap-section soap-section-s" style="flex-shrink:0;">
         <div class="soap-section-header">S — Subjetivo</div>
         <div class="soap-section-body">
-          <textarea id="soap-s" rows="2" placeholder="Paciente refiere mejoría del dolor, tolera vía oral…"></textarea>
+          <textarea id="soap-s" rows="2" placeholder="Refiere / niega…"></textarea>
         </div>
       </div>
       <!-- N: Neurológico -->
@@ -1261,20 +1288,20 @@
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">FOUR Score</div>
               <div style="display:flex;align-items:center;gap:6px;">
-                <input type="number" id="soap-four" placeholder="16" style="width:64px;text-align:center;">
+                <input type="number" id="soap-four" placeholder="—" style="width:64px;text-align:center;">
                 <span style="font-size:12px;color:var(--text-muted);white-space:nowrap;">/16 pts</span>
               </div>
             </div>
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Esferas</div>
               <div style="display:flex;align-items:center;gap:6px;">
-                <input type="number" id="soap-esferas" placeholder="3" style="width:64px;text-align:center;">
+                <input type="number" id="soap-esferas" placeholder="—" style="width:64px;text-align:center;">
                 <span style="font-size:12px;color:var(--text-muted);">esf.</span>
               </div>
             </div>
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Analgesia</div>
-              <input type="text" id="soap-analgesia" placeholder="Paracetamol 1g IV c/8h">
+              <input type="text" id="soap-analgesia" placeholder="Fármaco dosis vía frecuencia">
             </div>
           </div>
         </div>
@@ -1286,11 +1313,11 @@
           <div style="display:grid;grid-template-columns:100px 100px 1fr;gap:10px;">
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">FR (rpm)</div>
-              <input type="number" id="soap-fr" placeholder="18" style="text-align:center;">
+              <input type="number" id="soap-fr" placeholder="—" style="text-align:center;">
             </div>
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">SatO2 (%)</div>
-              <input type="number" id="soap-sat" placeholder="97" style="text-align:center;">
+              <input type="number" id="soap-sat" placeholder="—" style="text-align:center;">
             </div>
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Soporte O2</div>
@@ -1311,25 +1338,25 @@
           <div style="display:grid;grid-template-columns:100px 100px 100px;gap:10px;">
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">TAS (mmHg)</div>
-              <input type="number" id="soap-tas" placeholder="120" style="text-align:center;">
+              <input type="number" id="soap-tas" placeholder="—" style="text-align:center;">
             </div>
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">TAD (mmHg)</div>
-              <input type="number" id="soap-tad" placeholder="80" style="text-align:center;">
+              <input type="number" id="soap-tad" placeholder="—" style="text-align:center;">
             </div>
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">FC (lpm)</div>
-              <input type="number" id="soap-fc" placeholder="76" style="text-align:center;">
+              <input type="number" id="soap-fc" placeholder="—" style="text-align:center;">
             </div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Antihipertensivos</div>
-              <input type="text" id="soap-antihta" placeholder="Ninguno">
+              <input type="text" id="soap-antihta" placeholder="Ninguno o detalle">
             </div>
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Vasopresores</div>
-              <input type="text" id="soap-vasop" placeholder="Ninguno">
+              <input type="text" id="soap-vasop" placeholder="Ninguno o detalle">
             </div>
           </div>
         </div>
@@ -1341,11 +1368,11 @@
           <div style="display:grid;grid-template-columns:140px 1fr;gap:10px;">
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Temperatura (°C)</div>
-              <input type="number" id="soap-temp" placeholder="36.6" step="0.1" style="text-align:center;">
+              <input type="number" id="soap-temp" placeholder="—" step="0.1" style="text-align:center;">
             </div>
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Antibióticos</div>
-              <input type="text" id="soap-abx" placeholder="Ninguno  |  Med dosis vía c/Xh día X de X">
+              <input type="text" id="soap-abx" placeholder="Ninguno o fármaco dosis vía">
             </div>
           </div>
         </div>
@@ -1357,29 +1384,29 @@
           <div style="display:grid;grid-template-columns:1fr 80px 80px 80px;gap:10px;">
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Dieta</div>
-              <input type="text" id="soap-dieta" placeholder="Blanda hipograsa">
+              <input type="text" id="soap-dieta" placeholder="Tipo de dieta">
             </div>
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Kcal/kg</div>
-              <input type="number" id="soap-kcalkg" placeholder="25" style="text-align:center;">
+              <input type="number" id="soap-kcalkg" placeholder="—" style="text-align:center;">
             </div>
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Total Kcal</div>
-              <input type="number" id="soap-kcal" placeholder="1500" style="text-align:center;">
+              <input type="number" id="soap-kcal" placeholder="—" style="text-align:center;">
             </div>
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Peso (kg)</div>
-              <input type="number" id="soap-peso" placeholder="60" style="text-align:center;">
+              <input type="number" id="soap-peso" placeholder="—" style="text-align:center;">
             </div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Ingresos (cc)</div>
-              <input type="number" id="soap-ing" placeholder="1200" oninput="updateSOAPBalance()" style="text-align:center;">
+              <input type="number" id="soap-ing" placeholder="—" oninput="updateSOAPBalance()" style="text-align:center;">
             </div>
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Egresos (cc)</div>
-              <input type="number" id="soap-egr" placeholder="950" oninput="updateSOAPBalance()" style="text-align:center;">
+              <input type="number" id="soap-egr" placeholder="—" oninput="updateSOAPBalance()" style="text-align:center;">
             </div>
             <div>
               <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Balance (cc)</div>

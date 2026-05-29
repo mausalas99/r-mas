@@ -11,7 +11,7 @@ import {
 const MUESTRA_PERITONEAL = `
 Expediente:	2211202-9	Solicitud:	2605020732
 Nombre:	LUIS FERNANDO PEREZ TAPIA	Fecha Registro:	May 2 2026 5:11PM
-Sexo:	MASCULINO	Ubicación:	MEDICINA INTERNA 2
+Sexo:	MASCULINO	Ubicación:	SERVICIO CLÍNICO 2
 Edad:	59	Medico:	A QUIEN CORRESPONDA
  
 

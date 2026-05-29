@@ -5,7 +5,7 @@ import { parseFisicoquimicoHeces_, procesarLabs } from './labs.js';
 const MUESTRA_HECES = `
 Expediente:	2213511-4	Solicitud:	2605040998
 Nombre:	CASTILLO JUAREZ BENITO	Fecha Registro:	04/05/2026 03:06:21 p. m.
-Sexo:	MASCULINO	Ubicación:	MEDICINA INTERNA 1
+Sexo:	MASCULINO	Ubicación:	SERVICIO CLÍNICO 1
 Edad:	58	Medico:	A QUIEN CORRESPONDA
 
 PARASITOLOGIA

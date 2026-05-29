@@ -20,7 +20,11 @@ import {
   RELEASE_NOTES_DEV_FORCE_SHOW,
 } from "./settings-help.mjs";
 import { notes, saveState } from "../app-state.mjs";
-import { renderNoteForm, applyProfileToNoteIfEmpty } from "./notes-indicaciones.mjs";
+import {
+  renderNoteForm,
+  renderIndicaForm,
+  applyProfileToNoteIfEmpty,
+} from "./notes-indicaciones.mjs";
 import { renderEstadoActualButton } from "./soap-estado.mjs";
 import { renderRoundOverviewPanels } from "./patients.mjs";
 import { isModeSala } from "../mode-features.mjs";
@@ -31,8 +35,26 @@ import {
   closeClinicoUnlockModal,
   confirmClinicoUnlock,
 } from "../clinico-access.mjs";
-import { switchInnerTab, renderInnerTabs, getActiveInnerTab } from "./pase-board.mjs";
+import {
+  switchInnerTab,
+  renderInnerTabs,
+  getActiveInnerTab,
+  switchAppTab,
+} from "./pase-board.mjs";
 import { renderPatientDataPane } from "./expediente.mjs";
+import {
+  ensureProfileTemplateDefaults,
+  resetProfileTemplatesToBlank,
+} from "../profile-templates.mjs";
+import {
+  setFormatsEditMode,
+  clearFormatsEditMode,
+  getFormatsEditMode,
+  loadDraftFromSettings,
+  applyDraftToSettings,
+  updateDefaultFormatField,
+  resetDraftToBlank,
+} from "../profile-formats-editor.mjs";
 
 /** @type {{
  *   showToast(msg: string, type?: string): void,
@@ -84,6 +106,8 @@ function _buildLoadSettingsSnapshot() {
       di: st.defaultDieta || "",
       cu: st.defaultCuidados || "",
       me: st.defaultMedicamentos || "",
+      ne: st.defaultNotaEvolucion || "",
+      ns: st.defaultNotaEstudios || "",
       od: st.outputDir || "",
       qf: normalizeQuickOutputFormat(st.quickOutputFormat),
     });
@@ -142,15 +166,6 @@ export function loadSettings() {
       lbl.textContent = "Mi Perfil";
     }
   }
-  var dEl = document.getElementById("profile-preview-dieta-txt");
-  var cEl = document.getElementById("profile-preview-cuidados-txt");
-  var mEl = document.getElementById("profile-preview-meds-txt");
-  function preview(val) {
-    return val ? val.slice(0, 40) + (val.length > 40 ? "…" : "") : "(vacío)";
-  }
-  if (dEl) dEl.textContent = preview(st.defaultDieta);
-  if (cEl) cEl.textContent = preview(st.defaultCuidados);
-  if (mEl) mEl.textContent = preview(st.defaultMedicamentos);
   var dirEl = document.getElementById("settings-output-dir");
   if (dirEl) {
     if (st.outputDir) {
@@ -331,27 +346,119 @@ export function openProfileFromHeader(ev) {
   openProfileModal();
 }
 
-export function openTemplatesModal() {
+function ensureInterconsultaModeForFormats() {
   var st = settingsRef();
-  document.getElementById("tmpl-dieta").value = st.defaultDieta || "";
-  document.getElementById("tmpl-cuidados").value = st.defaultCuidados || "";
-  document.getElementById("tmpl-meds").value = st.defaultMedicamentos || "";
-  document.getElementById("templates-modal").style.display = "flex";
+  if (!isModeSala(st)) return;
+  st.appMode = "interconsulta";
+  localStorage.setItem("rpc-settings", JSON.stringify(st));
+  var modeSalaEl = document.getElementById("app-mode-sala");
+  var modeInterEl = document.getElementById("app-mode-inter");
+  if (modeInterEl) modeInterEl.checked = true;
+  if (modeSalaEl) modeSalaEl.checked = false;
+  renderInnerTabs();
+  syncHeaderAppModeChip();
+  rt.syncWorkContextChrome();
+}
+
+function syncDraftFromFormatEditorDom() {
+  var map = [
+    ["fmt-default-nota-evolucion", "notaEvolucion"],
+    ["fmt-default-nota-estudios", "notaEstudios"],
+    ["fmt-default-ind-dieta", "dieta"],
+    ["fmt-default-ind-cuidados", "cuidados"],
+    ["fmt-default-ind-medicamentos", "medicamentos"],
+    ["fmt-default-ind-estudios", "estudios"],
+    ["fmt-default-ind-interconsultas", "interconsultas"],
+  ];
+  map.forEach(function (pair) {
+    var el = document.getElementById(pair[0]);
+    if (el) updateDefaultFormatField(pair[1], el.value);
+  });
+}
+
+function scrollFormatsEditorIntoView() {
+  requestAnimationFrame(function () {
+    var root =
+      getFormatsEditMode() === "indica"
+        ? document.getElementById("indica-form")
+        : document.getElementById("note-form");
+    if (root) root.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+}
+
+export function openNoteFormatsFromProfile() {
+  closeProfileModal();
+  var st = settingsRef();
+  ensureProfileTemplateDefaults(st);
+  ensureInterconsultaModeForFormats();
+  loadDraftFromSettings(st);
+  setFormatsEditMode("nota");
+  switchAppTab("nota");
+  switchInnerTab("notas");
+  renderNoteForm();
+  scrollFormatsEditorIntoView();
+}
+
+export function openIndicaFormatsFromProfile() {
+  closeProfileModal();
+  var st = settingsRef();
+  ensureProfileTemplateDefaults(st);
+  ensureInterconsultaModeForFormats();
+  loadDraftFromSettings(st);
+  setFormatsEditMode("indica");
+  switchAppTab("nota");
+  switchInnerTab("indica");
+  renderIndicaForm();
+  scrollFormatsEditorIntoView();
+}
+
+/** @deprecated — redirige a la pestaña Nota */
+export function openTemplatesModal() {
+  openNoteFormatsFromProfile();
 }
 
 export function closeTemplatesModal() {
-  document.getElementById("templates-modal").style.display = "none";
+  var m = document.getElementById("templates-modal");
+  if (m) m.style.display = "none";
 }
 
 export function saveTemplates() {
+  saveDefaultFormatsFromEditor();
+}
+
+export function saveDefaultFormatsFromEditor() {
+  syncDraftFromFormatEditorDom();
   var st = settingsRef();
-  st.defaultDieta = document.getElementById("tmpl-dieta").value.trim();
-  st.defaultCuidados = document.getElementById("tmpl-cuidados").value.trim();
-  st.defaultMedicamentos = document.getElementById("tmpl-meds").value.trim();
+  applyDraftToSettings(st);
   localStorage.setItem("rpc-settings", JSON.stringify(st));
-  closeTemplatesModal();
   loadSettings();
-  rt.showToast("Plantillas guardadas ✓", "success");
+  rt.showToast("Formatos guardados ✓", "success");
+}
+
+export function exitFormatsEditor() {
+  var was = getFormatsEditMode();
+  clearFormatsEditMode();
+  if (was === "nota") renderNoteForm();
+  else if (was === "indica") renderIndicaForm();
+}
+
+export function resetProfileTemplates() {
+  var st = settingsRef();
+  resetProfileTemplatesToBlank(st);
+  resetDraftToBlank();
+  localStorage.setItem("rpc-settings", JSON.stringify(st));
+  loadSettings();
+  var mode = getFormatsEditMode();
+  if (mode === "nota") renderNoteForm();
+  else if (mode === "indica") renderIndicaForm();
+  rt.showToast("Formatos restablecidos (plantillas en blanco)", "success");
+}
+
+/** @param {Record<string, unknown>} st */
+export function hydrateProfileSettings(st) {
+  if (!st || typeof st !== "object") return st;
+  ensureProfileTemplateDefaults(st);
+  return st;
 }
 
 export function saveQuickOutputFormat(format) {
@@ -449,6 +556,12 @@ export const profileWindowHandlers = {
   closeClinicoUnlockModal,
   confirmClinicoUnlock,
   openTemplatesModal,
+  openNoteFormatsFromProfile,
+  openIndicaFormatsFromProfile,
+  saveDefaultFormatsFromEditor,
+  exitFormatsEditor,
+  updateDefaultFormatField,
+  resetProfileTemplates,
   saveSettings,
   closeTemplatesModal,
   saveTemplates,

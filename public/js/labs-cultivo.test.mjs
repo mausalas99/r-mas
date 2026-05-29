@@ -346,7 +346,7 @@ test('formatCultivoCondensedForCopy: fecha, cabecera y ATB', () => {
 test('micobacterias: baciloscopia y cultivo con muestra en OBSERVACIONES', () => {
   const raw = `Expediente:\t2007285-3\tSolicitud:\t2605250577
 Nombre:\tVELAZQUEZ GARCIA MIGUEL ANGEL\tFecha Registro:\t25/05/2026 09:37:01 a. m.
-Sexo:\tMASCULINO\tUbicación:\tMEDICINA INTERNA 2
+Sexo:\tMASCULINO\tUbicación:\tSERVICIO CLÍNICO 2
 Edad:\t53\tMedico:\tA QUIEN CORRESPONDA
 
 MYCOBACTERIAS

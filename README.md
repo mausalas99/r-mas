@@ -27,9 +27,17 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [6.3.6](https://github.com/mausalas99/r-mas/releases/tag/v6.3.6) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.4.0](https://github.com/mausalas99/r-mas/releases/tag/v6.4.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+## R+ 6.4.0 (Valoración preoperatoria · formatos en expediente)
+
+- **VPO** — Pestaña **Valoración preoperatoria** en Clínico (Interconsulta) o Salida (Sala): calculadora ASA / RCRI / Gupta / ARISCAT / Caprini, procedimiento Gupta con búsqueda, EKG y Rx editables, fármacos perioperatorios desde la receta SOME y copiar bloques para nota externa.
+- **Formatos clínicos** — Plantillas en blanco editables en las pestañas **Nota** e **Indicaciones** (desde Mi Perfil); botón **Guardar** al final; solo rellenan secciones vacías en pacientes nuevos.
+- **Mi Perfil** — Bloques más claros; restablecer formatos sin tocar notas ya escritas.
+
+Notas: `docs/RELEASE_NOTES_6.4.0.txt`.
 
 ## R+ 6.3.6 (Cultivos multipaciente SOME · sala en vivo resiliente)
 
@@ -412,8 +420,9 @@ Notas extendidas en el repo: docs/RELEASE_NOTES_2.0.0.txt (texto plano).
 - **Estado Actual (Sala)** — Monitoreo estructurado: medición, snapshot, balance hídrico, historial, tendencias y texto copiable; integración con medicamentos y LiveSync por sala.
 - **Manejo clínico** — Expediente → Clínico → **Manejo**: **Electrolitos** (alteraciones con SOME), **Infusiones** (infusiones/sedación con calculadoras), **ATB** (catálogo con sugerencias según cultivos) y **CAD/EHH** (checklist ADA con lectura de laboratorio).
 - **Medicamentos** — Receta hospitalaria (TSV), copia desde sistemas tipo SOME, volcado a nota / SOAP y copia al portapapeles.
-- **Nota de Evolución** — Formulario estructurado que genera un archivo `.docx` listo para imprimir, con membrete y formato clínico. **Plantilla SOAP** integrada (Interconsulta).
-- **Indicaciones médicas** — Generación de hoja de indicaciones en `.docx` con secciones configurables (Interconsulta).
+- **Nota de Evolución** — Formulario estructurado que genera un archivo `.docx` listo para imprimir, con membrete y formato clínico. **Plantilla SOAP** integrada (Interconsulta). Formatos en blanco editables desde Mi Perfil (pestaña Nota).
+- **Indicaciones médicas** — Generación de hoja de indicaciones en `.docx` con secciones configurables (Interconsulta). Formatos en blanco editables desde Mi Perfil (pestaña Indicaciones).
+- **Valoración preoperatoria (VPO)** — Calculadora de riesgo, plantillas EKG/Rx, fármacos perioperatorios y texto copiable; **Interconsulta** en Clínico, **Sala** en Salida.
 - **Receta médica HU** — PDF oficial 000-061-R-06-12 desde **Salida** (Interconsulta).
 - **Listado de problemas** — Generación desde **Salida** (Sala).
 - **Salida configurable** — Exportación clínica rápida del paciente actual en `.docx`, `.html` o `.txt` desde Nota/Indicaciones.
@@ -446,6 +455,10 @@ npm run build:ui
 
 # Ejecutar en modo desarrollo (prestart regenera el bundle si hace falta)
 npm start
+
+# Publicar release: bump (si falta), completar docs/RELEASE_NOTES_X.Y.Z.txt + README + highlights en settings-help.mjs, luego:
+npm run build:ui
+npm run release:publish
 
 # Compilar para Mac (arm64 + x64). Con certificado de firma en el llavero, electron-builder firma automáticamente.
 npm run build:mac

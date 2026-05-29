@@ -51,7 +51,7 @@ test('formatProximasCitasForPdf une líneas para el PDF', () => {
 
 test('buildRecetaHuGeneratePayload incluye consultas múltiples en campos PDF', () => {
   const body = buildRecetaHuGeneratePayload({
-    patient: { nombre: 'Pérez', registro: '123', servicio: 'MI' },
+    patient: { nombre: 'Pérez', registro: '123', servicio: 'CIRUGÍA GENERAL' },
     draft: {
       proximasCitas: [
         { plazo: '2 semanas', servicio: 'Nefrología', texto: '', fecha: '' },
@@ -76,7 +76,7 @@ test('buildProximaCitaText arma frase de consulta', () => {
 
 test('buildRecetaHuGeneratePayload filtra filas vacías', () => {
   const body = buildRecetaHuGeneratePayload({
-    patient: { nombre: 'Pérez', registro: '123', servicio: 'MI' },
+    patient: { nombre: 'Pérez', registro: '123', servicio: 'CIRUGÍA GENERAL' },
     draft: {
       meds: [
         { medicamento: 'A', presentacion: '', dosis: '' },
