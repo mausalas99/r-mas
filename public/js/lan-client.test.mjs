@@ -44,6 +44,57 @@ describe('LanClient live channel lifecycle', () => {
   });
 });
 
+describe('LanClient live payload dispatch', () => {
+  it('dispatches lan-conflict for livesync:conflict', () => {
+    const client = new LanClient();
+    const received = [];
+    client.addEventListener('lan-conflict', (ev) => received.push(ev.detail));
+    client.addEventListener('lan-live', () => {
+      assert.fail('must not emit lan-live for conflict');
+    });
+    const payload = {
+      type: 'livesync:conflict',
+      roomId: 'r1',
+      entityType: 'todo',
+      entityId: 't1',
+      conflictingKeys: ['text'],
+    };
+    client._dispatchLivePayload(payload);
+    assert.strictEqual(received.length, 1);
+    assert.deepStrictEqual(received[0], payload);
+  });
+
+  it('dispatches lan-applied for livesync:applied', () => {
+    const client = new LanClient();
+    const received = [];
+    client.addEventListener('lan-applied', (ev) => received.push(ev.detail));
+    client.addEventListener('lan-live', () => {
+      assert.fail('must not emit lan-live for applied');
+    });
+    const payload = {
+      type: 'livesync:applied',
+      roomId: 'r1',
+      entityType: 'todo',
+      entityId: 't1',
+      version: 2,
+      data: { id: 't1', text: 'ok' },
+    };
+    client._dispatchLivePayload(payload);
+    assert.strictEqual(received.length, 1);
+    assert.deepStrictEqual(received[0], payload);
+  });
+
+  it('dispatches lan-live for other live messages', () => {
+    const client = new LanClient();
+    const received = [];
+    client.addEventListener('lan-live', (ev) => received.push(ev.detail));
+    const payload = { type: 'livesync:hello', roomId: 'r1', clientId: 'c1' };
+    client._dispatchLivePayload(payload);
+    assert.strictEqual(received.length, 1);
+    assert.deepStrictEqual(received[0], payload);
+  });
+});
+
 describe('LanClient fetch auth', () => {
   it('fetch sends Authorization Bearer from teamCode config', async () => {
     const calls = [];

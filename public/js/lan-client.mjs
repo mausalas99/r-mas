@@ -173,8 +173,21 @@ export class LanClient extends EventTarget {
       if (kind === 'sync') {
         this.dispatchEvent(new CustomEvent('lan-patch', { detail: data }));
       } else {
-        this.dispatchEvent(new CustomEvent('lan-live', { detail: data }));
+        this._dispatchLivePayload(data);
       }
     };
+  }
+
+  _dispatchLivePayload(data) {
+    if (!data) return;
+    if (data.type === 'livesync:conflict') {
+      this.dispatchEvent(new CustomEvent('lan-conflict', { detail: data }));
+      return;
+    }
+    if (data.type === 'livesync:applied') {
+      this.dispatchEvent(new CustomEvent('lan-applied', { detail: data }));
+      return;
+    }
+    this.dispatchEvent(new CustomEvent('lan-live', { detail: data }));
   }
 }

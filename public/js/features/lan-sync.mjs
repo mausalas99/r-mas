@@ -36,6 +36,9 @@ import { mergeCensoPatientFields } from "../patient-diagnosticos.mjs";
 import { filterTodosRespectingDismissals } from "../manejo-todo-dismiss.mjs";
 import { copyToClipboardSafe } from "./soap-estado.mjs";
 import { buildLanJoinUrls, parseLanInviteInput } from "../lan-join-link.mjs";
+import { createMutationBuilder, wrapLiveSyncPatch } from "../versioned-mutation.mjs";
+import { saveDraftConflict, deleteDraftConflict } from "../draft-conflict-store.mjs";
+import { openClinicalConflictViewer } from "./clinical-conflict-viewer.mjs";
 import {
   rememberPrimaryHostUrl,
   getPrimaryHostUrl,
@@ -124,6 +127,7 @@ var _liveSyncOutboxFlushTimer = null;
 var _surrogateFailoverTimer = null;
 var _lanPanelRenderGen = 0;
 var _lanPanelRenderChain = Promise.resolve();
+var LIVE_SYNC_ENTITIES_LS = 'rpc-lan-live-entities';
 var LAN_HOST_CODE_HINT_SEEN_KEY = 'rpc-lan-host-code-hint-seen';
 var LAN_MIGRATION_NOTICE_KEY = 'rplus.lan.migrationNoticeShown';
 var LAN_KNOWN_ROOMS_LS = 'rpc-lan-known-rooms';
@@ -728,6 +732,172 @@ function wireLanPanelDelegation() {
     }
   });
 }
+function readLiveSyncEntityMap() {
+  try {
+    var raw = localStorage.getItem(LIVE_SYNC_ENTITIES_LS);
+    var parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch (_e) {
+    return {};
+  }
+}
+
+function liveSyncEntityStoreKey(entityType, entityId, patientId) {
+  if (entityType === 'todo') return 'todo:' + String(patientId || '') + ':' + String(entityId || '');
+  if (entityType === 'agenda') return 'agenda:' + String(entityId || '');
+  if (entityType === 'patient') return 'patient:' + String(entityId || '');
+  return String(entityType || '') + ':' + String(entityId || '');
+}
+
+function getLiveSyncEntityBase(entityType, entityId, patientId) {
+  var map = readLiveSyncEntityMap();
+  return map[liveSyncEntityStoreKey(entityType, entityId, patientId)] || null;
+}
+
+function rememberLiveSyncEntity(entityType, entityId, patientId, version, data) {
+  var map = readLiveSyncEntityMap();
+  var row = Object.assign({}, data || {}, { version: Number(version || 1) });
+  map[liveSyncEntityStoreKey(entityType, entityId, patientId)] = row;
+  try {
+    localStorage.setItem(LIVE_SYNC_ENTITIES_LS, JSON.stringify(map));
+  } catch (_e) {}
+}
+
+function buildLiveSyncMutationFromDesired(entityType, entityId, desired, extra) {
+  extra = extra || {};
+  var patientId = extra.patientId;
+  var cached = getLiveSyncEntityBase(entityType, entityId, patientId);
+  var base = cached
+    ? Object.assign({}, cached)
+    : { id: entityId, version: Number(desired && desired.version != null ? desired.version : 0) };
+  if (entityType === 'todo' && patientId && !base.patientId) base.patientId = patientId;
+  var builder = createMutationBuilder(entityType, entityId).captureBase(base);
+  var hasChange = false;
+  Object.keys(desired || {}).forEach(function (key) {
+    if (key === 'version') return;
+    if (desired[key] !== base[key]) {
+      builder.set(key, desired[key]);
+      hasChange = true;
+    }
+  });
+  if (!hasChange && desired) {
+    Object.keys(desired).forEach(function (key) {
+      if (key === 'version') return;
+      builder.set(key, desired[key]);
+    });
+  }
+  return builder.build(extra);
+}
+
+function sendLiveSyncMutation(mutation) {
+  if (!activeLiveSyncRoomId || !lanClient.liveConnected || !mutation) return;
+  lanClient.sendLive(wrapLiveSyncPatch(activeLiveSyncRoomId, getLanClientId(), mutation));
+}
+
+async function applyConflictUseServer(payload) {
+  var server = payload && payload.serverSnapshot;
+  if (!server || !server.data) return;
+  applyLiveSyncApplied({
+    roomId: payload.roomId || activeLiveSyncRoomId,
+    entityType: payload.entityType,
+    entityId: payload.entityId,
+    patientId: payload.patientId,
+    version: server.version,
+    data: server.data,
+  });
+  if (payload.draftId) {
+    try {
+      await deleteDraftConflict(payload.draftId);
+    } catch (_e) {}
+  }
+}
+
+async function handleSyncConflict(payload) {
+  var draftId = await saveDraftConflict({
+    transport: payload.transport,
+    entityType: payload.entityType,
+    entityId: payload.entityId,
+    roomId: payload.roomId || null,
+    patientId: payload.patientId || null,
+    localSnapshot: payload.localSnapshot,
+    serverSnapshot: payload.serverSnapshot,
+    conflictingKeys: payload.conflictingKeys,
+  });
+  openClinicalConflictViewer({
+    draftId: draftId,
+    conflictingKeys: payload.conflictingKeys,
+    localData: payload.localSnapshot && payload.localSnapshot.data,
+    serverData: payload.serverSnapshot && payload.serverSnapshot.data,
+    onUseServer: function () {
+      void applyConflictUseServer(Object.assign({}, payload, { draftId: draftId }));
+    },
+    onEditDraft: function () {},
+    onClose: function () {},
+  });
+}
+
+function wsConflictDetailToPayload(detail) {
+  return {
+    transport: 'ws',
+    entityType: detail.entityType,
+    entityId: detail.entityId,
+    roomId: detail.roomId,
+    patientId: detail.patientId,
+    conflictingKeys: detail.conflictingKeys || [],
+    localSnapshot: {
+      expectedVersion: detail.client && detail.client.version != null ? detail.client.version : detail.expectedVersion,
+      data: detail.client && detail.client.data,
+    },
+    serverSnapshot: {
+      version: detail.server && detail.server.version,
+      data: detail.server && detail.server.data,
+    },
+  };
+}
+
+export async function lanPushPatientVersioned(patientId, mutation) {
+  var pid = String(patientId || '').trim();
+  if (!pid || !mutation) return { ok: false, error: 'invalid_args' };
+  var resp = await lanFetchAuthed('/api/lan/v1/patients/' + encodeURIComponent(pid), {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(mutation),
+  });
+  if (resp.status === 409) {
+    var body = {};
+    try {
+      body = await resp.json();
+    } catch (_eJson) {}
+    await handleSyncConflict({
+      transport: 'http',
+      entityType: body.entityType || 'patient',
+      entityId: body.entityId || pid,
+      roomId: null,
+      patientId: pid,
+      conflictingKeys: body.conflictingKeys || [],
+      localSnapshot: {
+        expectedVersion: mutation.expectedVersion,
+        changedKeys: mutation.changedKeys,
+        baseData: mutation.baseData,
+        data: mutation.data,
+      },
+      serverSnapshot: { version: body.serverVersion, data: body.serverData },
+    });
+    return { ok: false, conflict: true, body: body };
+  }
+  if (!resp.ok) {
+    return { ok: false, status: resp.status };
+  }
+  var out = {};
+  try {
+    out = await resp.json();
+  } catch (_eOut) {}
+  if (out && out.version != null && out.data) {
+    rememberLiveSyncEntity('patient', pid, null, out.version, out.data);
+  }
+  return { ok: true, body: out };
+}
+
 function getLanClientId() {
   try {
     var id = localStorage.getItem('rpc-lan-client-id');
@@ -1426,71 +1596,139 @@ function syncLiveSyncStatusChrome() {
   }
 }
 function emitLiveSyncAgendaUpsert(eventObj) {
-  if (!activeLiveSyncRoomId || !lanClient.liveConnected || !eventObj) return;
-  lanClient.sendLive({
-    type: 'livesync:patch',
+  if (!eventObj || !eventObj.id) return;
+  var mutation = buildLiveSyncMutationFromDesired('agenda', eventObj.id, eventObj, {
     roomId: activeLiveSyncRoomId,
-    clientId: getLanClientId(),
-    entity: 'agenda',
     op: 'upsert',
-    id: eventObj.id,
-    body: eventObj,
-    updatedAt: eventObj.updatedAt,
   });
+  sendLiveSyncMutation(mutation);
 }
 function emitLiveSyncAgendaDelete(id, updatedAt) {
-  if (!activeLiveSyncRoomId || !lanClient.liveConnected) return;
-  lanClient.sendLive({
-    type: 'livesync:patch',
-    roomId: activeLiveSyncRoomId,
-    clientId: getLanClientId(),
-    entity: 'agenda',
-    op: 'delete',
-    id: id,
-    updatedAt: updatedAt,
-  });
+  var eid = String(id || '').trim();
+  if (!eid) return;
+  var base = getLiveSyncEntityBase('agenda', eid, null) || { id: eid, version: 0, updatedAt: updatedAt };
+  var mutation = createMutationBuilder('agenda', eid)
+    .captureBase(base)
+    .build({ roomId: activeLiveSyncRoomId, op: 'delete' });
+  sendLiveSyncMutation(mutation);
 }
 function emitLiveSyncTodoUpsert(patientId, todo) {
-  if (!activeLiveSyncRoomId || !lanClient.liveConnected || !todo) return;
+  if (!todo) return;
   if (String(patientId || '').indexOf('demo-') === 0) return;
-  lanClient.sendLive({
-    type: 'livesync:patch',
+  var mutation = buildLiveSyncMutationFromDesired('todo', todo.id, todo, {
     roomId: activeLiveSyncRoomId,
-    clientId: getLanClientId(),
-    entity: 'todo',
-    op: 'upsert',
-    id: todo.id,
     patientId: patientId,
-    body: todo,
-    updatedAt: todo.updatedAt,
+    op: 'upsert',
   });
+  sendLiveSyncMutation(mutation);
 }
 function emitLiveSyncTodoDelete(patientId, id, updatedAt) {
-  if (!activeLiveSyncRoomId || !lanClient.liveConnected) return;
-  lanClient.sendLive({
-    type: 'livesync:patch',
-    roomId: activeLiveSyncRoomId,
-    clientId: getLanClientId(),
-    entity: 'todo',
-    op: 'delete',
-    id: id,
-    patientId: patientId,
+  var eid = String(id || '').trim();
+  if (!eid) return;
+  var base = getLiveSyncEntityBase('todo', eid, patientId) || {
+    id: eid,
+    version: 0,
     updatedAt: updatedAt,
-  });
+    patientId: patientId,
+  };
+  var mutation = createMutationBuilder('todo', eid)
+    .captureBase(base)
+    .build({ roomId: activeLiveSyncRoomId, patientId: patientId, op: 'delete' });
+  sendLiveSyncMutation(mutation);
 }
 function emitLiveSyncPatientDelete(patient) {
-  if (!activeLiveSyncRoomId || !lanClient.liveConnected || !patient) return;
+  if (!patient) return;
   if (String(patient.id || '').indexOf('demo-') === 0) return;
-  lanClient.sendLive({
-    type: 'livesync:patch',
-    roomId: activeLiveSyncRoomId,
-    clientId: getLanClientId(),
-    entity: 'patient',
-    op: 'delete',
-    id: patient.id,
-    registro: patient.registro || '',
-    updatedAt: new Date().toISOString(),
-  });
+  var mutation = buildLiveSyncMutationFromDesired(
+    'patient',
+    patient.id,
+    { id: patient.id, registro: patient.registro || '' },
+    { roomId: activeLiveSyncRoomId, op: 'delete' }
+  );
+  sendLiveSyncMutation(mutation);
+}
+
+function applyLiveSyncApplied(msg) {
+  if (!msg || isPitchPatientIsolationActive()) return;
+  if (msg.roomId && activeLiveSyncRoomId && msg.roomId !== activeLiveSyncRoomId) return;
+  var entityType = msg.entityType;
+  var entityId = String(msg.entityId || '').trim();
+  var patientId = msg.patientId;
+  var version = Number(msg.version || 1);
+  var entityData = msg.data || {};
+  if (!entityType || !entityId) return;
+
+  rememberLiveSyncEntity(entityType, entityId, patientId, version, entityData);
+
+  if (entityType === 'agenda') {
+    var agenda = storage.getScheduledProcedures();
+    if (entityData._deleted) {
+      agenda = agenda.filter(function (ev) {
+        return ev && ev.id !== entityId;
+      });
+    } else {
+      var agendaFound = false;
+      agenda = agenda.map(function (ev) {
+        if (ev && ev.id === entityId) {
+          agendaFound = true;
+          return Object.assign({}, ev, entityData, { id: entityId, version: version });
+        }
+        return ev;
+      });
+      if (!agendaFound) {
+        agenda.push(Object.assign({}, entityData, { id: entityId, version: version }));
+      }
+    }
+    storage.saveScheduledProcedures(agenda);
+    if (runtime.getActiveAppTab() === 'agenda' || runtime.isMobileWeb()) {
+      runtime.renderProcedureAgendaPanel();
+    }
+  } else if (entityType === 'todo' && patientId) {
+    var pid = String(patientId);
+    if (pid.indexOf('demo-') !== 0) {
+      var todos = storage.getTodos(pid);
+      if (entityData._deleted) {
+        todos = todos.filter(function (t) {
+          return t && t.id !== entityId;
+        });
+      } else {
+        var todoFound = false;
+        todos = todos.map(function (t) {
+          if (t && t.id === entityId) {
+            todoFound = true;
+            return Object.assign({}, t, entityData, { id: entityId, version: version });
+          }
+          return t;
+        });
+        if (!todoFound) {
+          todos.push(Object.assign({}, entityData, { id: entityId, version: version }));
+        }
+      }
+      storage.saveTodos(pid, filterTodosRespectingDismissals(pid, todos));
+    }
+    runtime.refreshAllTodoUIs();
+  } else if (entityType === 'patient') {
+    var row = patients.find(function (p) {
+      return p && p.id === entityId;
+    });
+    if (row && !entityData._deleted) {
+      Object.assign(row, entityData, { version: version });
+      saveState({ immediate: true });
+      runtime.renderPatientList();
+      if (runtime.getActiveId() === entityId) {
+        try {
+          runtime.renderNoteForm();
+        } catch (_eNote) {}
+        try {
+          runtime.renderLabHistoryPanel();
+        } catch (_eLab) {}
+      }
+    }
+  }
+
+  if (msg.autoMerged) {
+    runtime.showToast('Cambios fusionados automáticamente con el servidor.', 'success');
+  }
 }
 function onLiveSyncWireMessage(data) {
   if (!data || !isLiveSyncEnvelope(data)) return;
@@ -1546,12 +1784,9 @@ function onLiveSyncWireMessage(data) {
     applyLiveSyncMerged(mergedBundle);
     return;
   }
-  if (data.type === 'livesync:patch') {
-    var mergedPatch = mergeLiveSyncBundles([
-      { agenda: storage.getScheduledProcedures(), todos: collectTodosMapForLiveSync() },
-      data,
-    ]);
-    applyLiveSyncMerged(mergedPatch);
+  if (data.type === 'livesync:applied') {
+    applyLiveSyncApplied(data);
+    return;
   }
 }
 async function reconcileLiveSyncRoom(roomId) {
@@ -1625,6 +1860,13 @@ function leaveLiveSyncRoom(opts) {
 }
 lanClient.addEventListener('lan-live', function (ev) {
   onLiveSyncWireMessage(ev.detail);
+});
+lanClient.addEventListener('lan-applied', function (ev) {
+  applyLiveSyncApplied(ev.detail);
+});
+lanClient.addEventListener('lan-conflict', function (ev) {
+  if (!ev.detail) return;
+  void handleSyncConflict(wsConflictDetailToPayload(ev.detail));
 });
 lanClient.addEventListener('lan-status', function (ev) {
   if (!ev.detail || ev.detail.connected) return;
