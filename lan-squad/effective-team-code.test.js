@@ -4,98 +4,159 @@ const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
 const { test } = require('node:test');
+const { hashTeamCode } = require('./team-code.js');
 const {
-  readEffectiveLanTeamCode,
-  ensureLanTeamCodeFile,
-  migratePlugAndPlayTeamCode,
-  DEFAULT_LAN_TEAM_CODE,
+  bootstrapLanTeamCode,
+  rehashLanHostState,
+  isWeakLanToken,
+  generateSecureLanToken,
 } = require('./effective-team-code.js');
 
-test('readEffectiveLanTeamCode usa default sin archivo ni env forzado', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rplus-lan-code-'));
-  const prev = process.env.R_PLUS_LAN_TEAM_CODE;
-  delete process.env.R_PLUS_LAN_TEAM_CODE;
-  try {
-    const r = readEffectiveLanTeamCode({ userDataPath: dir });
-    assert.strictEqual(r.source, 'default');
-    assert.strictEqual(r.code, DEFAULT_LAN_TEAM_CODE);
-  } finally {
-    if (prev !== undefined) process.env.R_PLUS_LAN_TEAM_CODE = prev;
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
+test('isWeakLanToken flags 1234 and 32-hex legacy', () => {
+  assert.strictEqual(isWeakLanToken('1234'), true);
+  assert.strictEqual(isWeakLanToken('a'.repeat(32)), true);
+  assert.strictEqual(isWeakLanToken('x'.repeat(64)), false);
+  assert.strictEqual(isWeakLanToken(''), true);
+  assert.strictEqual(isWeakLanToken('short'), true);
 });
 
-test('readEffectiveLanTeamCode lee primera línea de lan-team-code.txt', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rplus-lan-code-'));
-  fs.writeFileSync(path.join(dir, 'lan-team-code.txt'), 'mi-codigo-secreto\n', 'utf8');
-  const r = readEffectiveLanTeamCode({ userDataPath: dir });
-  assert.strictEqual(r.source, 'file');
-  assert.strictEqual(r.code, 'mi-codigo-secreto');
-  fs.rmSync(dir, { recursive: true, force: true });
+test('generateSecureLanToken returns 64 hex chars', () => {
+  const token = generateSecureLanToken();
+  assert.strictEqual(token.length, 64);
+  assert.ok(/^[a-f0-9]{64}$/i.test(token));
+  assert.strictEqual(isWeakLanToken(token), false);
 });
 
-test('ensureLanTeamCodeFile escribe 1234 en instalación nueva', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rplus-lan-ensure-'));
-  const prev = process.env.R_PLUS_LAN_TEAM_CODE;
-  delete process.env.R_PLUS_LAN_TEAM_CODE;
-  try {
-    const out = ensureLanTeamCodeFile({ userDataPath: dir });
-    assert.strictEqual(out.created, true);
-    assert.strictEqual(out.source, 'default-file');
-    assert.strictEqual(out.code, DEFAULT_LAN_TEAM_CODE);
-    const r = readEffectiveLanTeamCode({ userDataPath: dir });
-    assert.strictEqual(r.source, 'file');
-    assert.strictEqual(r.code, DEFAULT_LAN_TEAM_CODE);
-  } finally {
-    if (prev !== undefined) process.env.R_PLUS_LAN_TEAM_CODE = prev;
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
-});
-
-test('migratePlugAndPlayTeamCode reemplaza token legacy por 1234 y borra host-state', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rplus-lan-migrate-'));
-  const legacy = 'a'.repeat(32);
-  fs.writeFileSync(path.join(dir, 'lan-team-code.txt'), legacy + '\n', 'utf8');
+test('bootstrapLanTeamCode rotates 1234 and rehashes host state without data loss', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rplus-bootstrap-'));
+  const hostPath = path.join(dir, 'lan-squad-host-state.json');
+  const plainWeak = '1234';
+  fs.writeFileSync(path.join(dir, 'lan-team-code.txt'), plainWeak + '\n', 'utf8');
   fs.writeFileSync(
-    path.join(dir, 'lan-squad-host-state.json'),
-    JSON.stringify({ version: 1, teamCodeHash: 'x', patients: [], rooms: [] }),
+    hostPath,
+    JSON.stringify({
+      version: 1,
+      teamCodeHash: hashTeamCode(plainWeak),
+      patients: [{ id: 'p1', nombre: 'Ana', version: 1 }],
+      rooms: [{ id: 'r1', displayName: 'UCI' }],
+      roomSyncBundles: {},
+    }),
     'utf8'
   );
-  const out = migratePlugAndPlayTeamCode({ userDataPath: dir });
-  assert.strictEqual(out.migrated, true);
-  assert.strictEqual(out.from, legacy);
-  assert.strictEqual(out.to, DEFAULT_LAN_TEAM_CODE);
-  assert.strictEqual(readEffectiveLanTeamCode({ userDataPath: dir }).code, DEFAULT_LAN_TEAM_CODE);
-  assert.strictEqual(fs.existsSync(path.join(dir, 'lan-squad-host-state.json')), false);
+  delete process.env.R_PLUS_LAN_TEAM_CODE;
+  const boot = bootstrapLanTeamCode({ userDataPath: dir, hostStatePath: hostPath });
+  assert.strictEqual(boot.requiresMigrationNotice, true);
+  assert.strictEqual(boot.token.length, 64);
+  assert.notStrictEqual(boot.token, '1234');
+  const st = JSON.parse(fs.readFileSync(hostPath, 'utf8'));
+  assert.strictEqual(st.patients.length, 1);
+  assert.strictEqual(st.patients[0].nombre, 'Ana');
+  assert.strictEqual(st.rooms.length, 1);
+  assert.strictEqual(st.rooms[0].displayName, 'UCI');
+  assert.deepStrictEqual(st.roomSyncBundles, {});
+  assert.strictEqual(st.teamCodeHash, hashTeamCode(boot.token));
+  const fileToken = fs.readFileSync(path.join(dir, 'lan-team-code.txt'), 'utf8').trim();
+  assert.strictEqual(fileToken, boot.token);
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
-test('ensureLanTeamCodeFile escribe 1234 si ya existe host-state legacy', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rplus-lan-legacy-'));
-  const prev = process.env.R_PLUS_LAN_TEAM_CODE;
+test('bootstrapLanTeamCode rotates legacy 32-hex and rehashes host state', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rplus-bootstrap-legacy-'));
+  const hostPath = path.join(dir, 'lan-squad-host-state.json');
+  const plainWeak = 'a'.repeat(32);
+  fs.writeFileSync(path.join(dir, 'lan-team-code.txt'), plainWeak + '\n', 'utf8');
+  fs.writeFileSync(
+    hostPath,
+    JSON.stringify({
+      version: 1,
+      teamCodeHash: hashTeamCode(plainWeak),
+      patients: [{ id: 'p2', nombre: 'Luis', version: 1 }],
+      rooms: [],
+      roomSyncBundles: { r1: { v: 1 } },
+    }),
+    'utf8'
+  );
   delete process.env.R_PLUS_LAN_TEAM_CODE;
+  const boot = bootstrapLanTeamCode({ userDataPath: dir, hostStatePath: hostPath });
+  assert.strictEqual(boot.requiresMigrationNotice, true);
+  assert.strictEqual(boot.token.length, 64);
+  const st = JSON.parse(fs.readFileSync(hostPath, 'utf8'));
+  assert.strictEqual(st.patients.length, 1);
+  assert.deepStrictEqual(st.roomSyncBundles, { r1: { v: 1 } });
+  assert.strictEqual(st.teamCodeHash, hashTeamCode(boot.token));
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('bootstrapLanTeamCode creates secure token on fresh install', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rplus-bootstrap-new-'));
+  const hostPath = path.join(dir, 'lan-squad-host-state.json');
+  delete process.env.R_PLUS_LAN_TEAM_CODE;
+  const boot = bootstrapLanTeamCode({ userDataPath: dir, hostStatePath: hostPath });
+  assert.strictEqual(boot.source, 'created');
+  assert.strictEqual(boot.requiresMigrationNotice, false);
+  assert.strictEqual(boot.token.length, 64);
+  assert.strictEqual(isWeakLanToken(boot.token), false);
+  assert.ok(fs.existsSync(path.join(dir, 'lan-team-code.txt')));
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('bootstrapLanTeamCode keeps strong existing file token', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rplus-bootstrap-strong-'));
+  const strong = 'x'.repeat(64);
+  fs.writeFileSync(path.join(dir, 'lan-team-code.txt'), strong + '\n', 'utf8');
+  delete process.env.R_PLUS_LAN_TEAM_CODE;
+  const boot = bootstrapLanTeamCode({ userDataPath: dir, hostStatePath: path.join(dir, 'host.json') });
+  assert.strictEqual(boot.source, 'file');
+  assert.strictEqual(boot.token, strong);
+  assert.strictEqual(boot.requiresMigrationNotice, false);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('bootstrapLanTeamCode rejects weak env token', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rplus-bootstrap-env-'));
+  const prev = process.env.R_PLUS_LAN_TEAM_CODE;
+  process.env.R_PLUS_LAN_TEAM_CODE = '1234';
   try {
-    fs.writeFileSync(
-      path.join(dir, 'lan-squad-host-state.json'),
-      JSON.stringify({ version: 1, teamCodeHash: 'x', patients: [], rooms: [] }),
-      'utf8'
+    assert.throws(
+      () => bootstrapLanTeamCode({ userDataPath: dir, hostStatePath: path.join(dir, 'host.json') }),
+      (e) => e.code === 'LAN_WEAK_ENV_TOKEN'
     );
-    const out = ensureLanTeamCodeFile({ userDataPath: dir });
-    assert.strictEqual(out.created, true);
-    assert.strictEqual(out.source, 'default-file');
-    assert.strictEqual(out.code, DEFAULT_LAN_TEAM_CODE);
-    assert.strictEqual(readEffectiveLanTeamCode({ userDataPath: dir }).code, DEFAULT_LAN_TEAM_CODE);
   } finally {
     if (prev !== undefined) process.env.R_PLUS_LAN_TEAM_CODE = prev;
+    else delete process.env.R_PLUS_LAN_TEAM_CODE;
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
 
-test('ensureLanTeamCodeFile no sobrescribe archivo existente', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rplus-lan-noop-'));
-  fs.writeFileSync(path.join(dir, 'lan-team-code.txt'), 'ya-fijo\n', 'utf8');
-  const out = ensureLanTeamCodeFile({ userDataPath: dir });
-  assert.strictEqual(out.created, false);
-  assert.strictEqual(readEffectiveLanTeamCode({ userDataPath: dir }).code, 'ya-fijo');
+test('rehashLanHostState updates hash and preserves clinical data', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rplus-rehash-'));
+  const hostPath = path.join(dir, 'lan-squad-host-state.json');
+  const oldToken = '1234';
+  const newToken = generateSecureLanToken();
+  fs.writeFileSync(
+    hostPath,
+    JSON.stringify({
+      version: 1,
+      teamCodeHash: hashTeamCode(oldToken),
+      patients: [{ id: 'p1', nombre: 'Ana', version: 1 }],
+      rooms: [{ id: 'r1', displayName: 'UCI' }],
+      roomSyncBundles: { r1: { sync: true } },
+    }),
+    'utf8'
+  );
+  const out = rehashLanHostState(hostPath, newToken);
+  assert.strictEqual(out.updated, true);
+  const st = JSON.parse(fs.readFileSync(hostPath, 'utf8'));
+  assert.strictEqual(st.teamCodeHash, hashTeamCode(newToken));
+  assert.strictEqual(st.patients.length, 1);
+  assert.strictEqual(st.rooms.length, 1);
+  assert.deepStrictEqual(st.roomSyncBundles, { r1: { sync: true } });
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('rehashLanHostState returns updated false when file missing', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rplus-rehash-miss-'));
+  const out = rehashLanHostState(path.join(dir, 'missing.json'), generateSecureLanToken());
+  assert.strictEqual(out.updated, false);
   fs.rmSync(dir, { recursive: true, force: true });
 });

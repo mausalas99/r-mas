@@ -1,107 +1,92 @@
 'use strict';
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
+const { hashTeamCode } = require('./team-code.js');
 
-const DEFAULT_LAN_TEAM_CODE = '1234';
-/** Tokens opacos generados en versiones anteriores (32 hex). */
+const WEAK_EXACT = new Set(['1234']);
 const LEGACY_RANDOM_TEAM_CODE_RE = /^[a-f0-9]{32}$/i;
+const MIN_TOKEN_LEN = 32;
 
-function teamCodePathFor(userDataPath) {
-  return path.join(String(userDataPath || ''), 'lan-team-code.txt');
+function generateSecureLanToken() {
+  return crypto.randomBytes(32).toString('hex');
 }
 
-function hostStatePathFor(userDataPath) {
-  return path.join(String(userDataPath || ''), 'lan-squad-host-state.json');
+function isWeakLanToken(token) {
+  const t = String(token || '').trim();
+  if (!t || t.length < MIN_TOKEN_LEN) return true;
+  if (WEAK_EXACT.has(t)) return true;
+  if (LEGACY_RANDOM_TEAM_CODE_RE.test(t)) return true;
+  return false;
 }
 
-/**
- * Instalaciones antiguas guardaron un token aleatorio opaco; la UI y los enlaces usan 1234.
- * Reescribe a 1234 y borra host-state para evitar HTTP 500 / 401 sin intervención manual.
- * @param {{ userDataPath: string }} opts
- * @returns {{ migrated: boolean, from?: string, to?: string, reason?: string }}
- */
-function migratePlugAndPlayTeamCode(opts) {
-  const userDataPath = opts && opts.userDataPath ? String(opts.userDataPath) : '';
-  if (!userDataPath) return { migrated: false };
-
-  const filePath = teamCodePathFor(userDataPath);
-  try {
-    if (!fs.existsSync(filePath)) return { migrated: false };
-    const firstLine = fs.readFileSync(filePath, 'utf8').split(/\r?\n/, 1)[0].trim();
-    if (!LEGACY_RANDOM_TEAM_CODE_RE.test(firstLine)) return { migrated: false };
-    fs.writeFileSync(filePath, DEFAULT_LAN_TEAM_CODE + '\n', 'utf8');
-    const hostPath = hostStatePathFor(userDataPath);
-    try {
-      if (fs.existsSync(hostPath)) fs.unlinkSync(hostPath);
-    } catch (_e) {
-      /* host-state opcional */
-    }
-    return { migrated: true, from: firstLine, to: DEFAULT_LAN_TEAM_CODE, reason: 'legacy-random' };
-  } catch (_e) {
-    return { migrated: false };
-  }
+function atomicWriteTeamCode(filePath, token) {
+  const dir = path.dirname(filePath);
+  fs.mkdirSync(dir, { recursive: true });
+  const tmp = `${filePath}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, token + '\n', 'utf8');
+  fs.renameSync(tmp, filePath);
 }
 
-/**
- * Persiste lan-team-code.txt si aún no existe.
- * - Archivo existente o R_PLUS_LAN_TEAM_CODE: no escribe.
- * - Instalación nueva: 1234 (mismo valor que los enlaces de invitación).
- * @param {{ userDataPath: string }} opts
- * @returns {{ created: boolean, code?: string, source?: string }}
- */
-function ensureLanTeamCodeFile(opts) {
-  const userDataPath = opts && opts.userDataPath ? String(opts.userDataPath) : '';
-  if (!userDataPath) return { created: false };
+function rehashLanHostState(hostStatePath, plainToken) {
+  if (!hostStatePath || !fs.existsSync(hostStatePath)) return { updated: false };
+  const raw = fs.readFileSync(hostStatePath, 'utf8');
+  const state = JSON.parse(raw);
+  state.teamCodeHash = hashTeamCode(plainToken);
+  const dir = path.dirname(hostStatePath);
+  fs.mkdirSync(dir, { recursive: true });
+  const tmp = `${hostStatePath}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify(state), 'utf8');
+  fs.renameSync(tmp, hostStatePath);
+  return { updated: true };
+}
 
-  const filePath = teamCodePathFor(userDataPath);
-  try {
-    if (fs.existsSync(filePath)) return { created: false };
-  } catch (_e) {
-    return { created: false };
-  }
+function bootstrapLanTeamCode({ userDataPath, hostStatePath }) {
+  const filePath = path.join(userDataPath, 'lan-team-code.txt');
+  let token = '';
+  let source = 'file';
+  let requiresMigrationNotice = false;
+  let rotated = false;
 
   if (process.env.R_PLUS_LAN_TEAM_CODE) {
-    return { created: false };
-  }
-
-  try {
-    fs.mkdirSync(userDataPath, { recursive: true });
-    fs.writeFileSync(filePath, DEFAULT_LAN_TEAM_CODE + '\n', 'utf8');
-    return { created: true, code: DEFAULT_LAN_TEAM_CODE, source: 'default-file' };
-  } catch (_e) {
-    return { created: false };
-  }
-}
-
-/**
- * Misma regla que server.js al arrancar: archivo lan-team-code.txt (primera línea no vacía)
- * gana sobre R_PLUS_LAN_TEAM_CODE y el default (1234).
- * @param {{ userDataPath: string }} opts
- * @returns {{ code: string, source: 'file'|'env'|'default' }}
- */
-function readEffectiveLanTeamCode(opts) {
-  const userDataPath = opts && opts.userDataPath ? String(opts.userDataPath) : '';
-  try {
-    if (userDataPath) {
-      const filePath = teamCodePathFor(userDataPath);
-      if (fs.existsSync(filePath)) {
-        const firstLine = fs.readFileSync(filePath, 'utf8').split(/\r?\n/, 1)[0].trim();
-        if (firstLine) return { code: firstLine, source: 'file' };
-      }
+    token = String(process.env.R_PLUS_LAN_TEAM_CODE).trim();
+    if (isWeakLanToken(token)) {
+      const err = new Error(
+        'R_PLUS_LAN_TEAM_CODE is too weak (min 32 chars, not 1234/legacy 32-hex). Refusing to start.'
+      );
+      err.code = 'LAN_WEAK_ENV_TOKEN';
+      throw err;
     }
-  } catch (_e) {
-    /* keep env/default */
+    source = 'env';
+  } else if (fs.existsSync(filePath)) {
+    token = fs.readFileSync(filePath, 'utf8').split(/\r?\n/, 1)[0].trim();
+    if (isWeakLanToken(token)) {
+      token = generateSecureLanToken();
+      atomicWriteTeamCode(filePath, token);
+      requiresMigrationNotice = true;
+      rotated = true;
+    }
+  } else {
+    token = generateSecureLanToken();
+    atomicWriteTeamCode(filePath, token);
+    source = 'created';
   }
-  if (process.env.R_PLUS_LAN_TEAM_CODE) {
-    return { code: String(process.env.R_PLUS_LAN_TEAM_CODE), source: 'env' };
+
+  if (!token) {
+    const err = new Error('Could not establish secure LAN team token');
+    err.code = 'LAN_NO_TOKEN';
+    throw err;
   }
-  return { code: DEFAULT_LAN_TEAM_CODE, source: 'default' };
+
+  if (rotated) rehashLanHostState(hostStatePath, token);
+
+  return { token, source, requiresMigrationNotice };
 }
 
 module.exports = {
-  readEffectiveLanTeamCode,
-  ensureLanTeamCodeFile,
-  migratePlugAndPlayTeamCode,
-  DEFAULT_LAN_TEAM_CODE,
+  bootstrapLanTeamCode,
+  rehashLanHostState,
+  isWeakLanToken,
+  generateSecureLanToken,
   LEGACY_RANDOM_TEAM_CODE_RE,
 };
