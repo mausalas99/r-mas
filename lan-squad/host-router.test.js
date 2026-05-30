@@ -8,9 +8,17 @@ const fs = require('node:fs');
 const { test } = require('node:test');
 const { createHostStore } = require('./host-store.js');
 const { createLanRouter } = require('./host-router.js');
+const { createConflictResolver } = require('./conflict-resolver.js');
 
 function bearerHeaders(token) {
   return { Authorization: `Bearer ${token}` };
+}
+
+function mountLanRouter(store, broadcast = () => {}) {
+  const resolver = createConflictResolver({ store });
+  const app = express();
+  app.use('/api/lan/v1', createLanRouter({ store, broadcast, resolver }));
+  return app;
 }
 
 test('LAN /ping requiere Authorization Bearer válido', async () => {
@@ -18,8 +26,7 @@ test('LAN /ping requiere Authorization Bearer válido', async () => {
   const statePath = path.join(dir, 'state.json');
   const code = 'test-team-' + Date.now() + '-'.repeat(20);
   const store = createHostStore({ filePath: statePath, teamCodePlain: code });
-  const app = express();
-  app.use('/api/lan/v1', createLanRouter({ store, broadcast: () => {} }));
+  const app = mountLanRouter(store);
   const server = http.createServer(app);
   await new Promise((resolve, reject) => {
     server.listen(0, '127.0.0.1', (err) => (err ? reject(err) : resolve()));
@@ -48,8 +55,7 @@ test('LAN GET /rooms con código válido', async () => {
   const code = 'test-team-' + Date.now() + '-'.repeat(20);
   const store = createHostStore({ filePath: statePath, teamCodePlain: code });
   store.createRoom('Sala prueba');
-  const app = express();
-  app.use('/api/lan/v1', createLanRouter({ store, broadcast: () => {} }));
+  const app = mountLanRouter(store);
   const server = http.createServer(app);
   await new Promise((resolve, reject) => {
     server.listen(0, '127.0.0.1', (err) => (err ? reject(err) : resolve()));
@@ -63,6 +69,78 @@ test('LAN GET /rooms con código válido', async () => {
     assert.ok(Array.isArray(body.rooms));
     assert.strictEqual(body.rooms.length, 1);
     assert.strictEqual(body.rooms[0].displayName, 'Sala prueba');
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('PUT /patients/:id auto-merge returns 200 with autoMerged', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-put-merge-'));
+  const statePath = path.join(dir, 'state.json');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({ filePath: statePath, teamCodePlain: code });
+  store.upsertPatient({ id: 'p1', nombre: 'Ana' }, null);
+  store.upsertPatient({ id: 'p1', nombre: 'Ana', cuarto: '201' }, 1);
+  const app = mountLanRouter(store);
+  const server = http.createServer(app);
+  await new Promise((resolve, reject) => {
+    server.listen(0, '127.0.0.1', (err) => (err ? reject(err) : resolve()));
+  });
+  try {
+    const { port } = server.address();
+    const url = `http://127.0.0.1:${port}/api/lan/v1/patients/p1`;
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: { ...bearerHeaders(code), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        expectedVersion: 1,
+        baseData: { id: 'p1', nombre: 'Ana', cuarto: '101' },
+        changedKeys: ['cama'],
+        data: { id: 'p1', nombre: 'Ana', cuarto: '101', cama: 'B' },
+      }),
+    });
+    assert.strictEqual(res.status, 200);
+    const body = await res.json();
+    assert.strictEqual(body.autoMerged, true);
+    assert.strictEqual(body.data.cuarto, '201');
+    assert.strictEqual(body.data.cama, 'B');
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('PUT /patients/:id overlap returns 409 conflict body', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-put-conf-'));
+  const statePath = path.join(dir, 'state.json');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({ filePath: statePath, teamCodePlain: code });
+  store.upsertPatient({ id: 'p1', nombre: 'Ana', cuarto: '101' }, null);
+  store.upsertPatient({ id: 'p1', nombre: 'Ana', cuarto: '201' }, 1);
+  const app = mountLanRouter(store);
+  const server = http.createServer(app);
+  await new Promise((resolve, reject) => {
+    server.listen(0, '127.0.0.1', (err) => (err ? reject(err) : resolve()));
+  });
+  try {
+    const { port } = server.address();
+    const url = `http://127.0.0.1:${port}/api/lan/v1/patients/p1`;
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: { ...bearerHeaders(code), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        expectedVersion: 1,
+        baseData: { id: 'p1', nombre: 'Ana', cuarto: '101' },
+        changedKeys: ['cuarto'],
+        data: { id: 'p1', nombre: 'Ana', cuarto: '102' },
+      }),
+    });
+    assert.strictEqual(res.status, 409);
+    const body = await res.json();
+    assert.strictEqual(body.error, 'conflict');
+    assert.ok(body.conflictingKeys.includes('cuarto'));
+    assert.strictEqual(body.serverData.cuarto, '201');
   } finally {
     await new Promise((resolve) => server.close(resolve));
     fs.rmSync(dir, { recursive: true, force: true });

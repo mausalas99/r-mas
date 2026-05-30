@@ -4,7 +4,7 @@ const { verifyTeamCode } = require('./team-code.js');
 
 const AUTH_TIMEOUT_MS = 3000;
 
-function attachWsHub(httpServer, { getState, pathName = '/api/lan/v1/ws' }) {
+function attachWsHub(httpServer, { getState, resolver, pathName = '/api/lan/v1/ws' }) {
   const wss = new WebSocketServer({ noServer: true });
   const rooms = new Map();
 
@@ -114,6 +114,48 @@ function attachWsHub(httpServer, { getState, pathName = '/api/lan/v1/ws' }) {
       } catch (_e) {
         return;
       }
+
+      if (msg.clientId && !ws.__clientId) ws.__clientId = msg.clientId;
+
+      if (msg.type === 'livesync:patch' && msg.mutation && resolver) {
+        try {
+          const out = resolver.applyMutation({
+            ...msg.mutation,
+            clientId: msg.clientId,
+            roomId: msg.roomId,
+          });
+          broadcast(channel, {
+            type: 'livesync:applied',
+            roomId: msg.roomId,
+            entityType: out.entityType,
+            entityId: out.entityId,
+            version: out.version,
+            data: out.data,
+            autoMerged: out.autoMerged,
+            patientId: msg.mutation.patientId,
+          });
+        } catch (e) {
+          if (e.code === 'CONFLICT') {
+            ws.send(
+              JSON.stringify({
+                type: 'livesync:conflict',
+                roomId: msg.roomId,
+                entityType: msg.mutation.entityType,
+                entityId: msg.mutation.entityId,
+                patientId: msg.mutation.patientId,
+                conflictingKeys: e.conflictingKeys,
+                server: { version: e.serverVersion, data: e.serverData },
+                client: { version: e.expectedVersion, data: e.clientData },
+                expectedVersion: e.expectedVersion,
+              })
+            );
+            return;
+          }
+          ws.close();
+        }
+        return;
+      }
+
       if (channel.startsWith('live:')) {
         broadcast(channel, msg);
       }

@@ -9,6 +9,7 @@ const { renderCensusPdf } = require('./generate-censo.js');
 const { createHostStore } = require('./lan-squad/host-store.js');
 const { createLanRouter } = require('./lan-squad/host-router.js');
 const { attachWsHub } = require('./lan-squad/ws-hub.js');
+const { createConflictResolver } = require('./lan-squad/conflict-resolver.js');
 const { bootstrapLanTeamCode } = require('./lan-squad/effective-team-code.js');
 const { createTicketStore } = require('./lan-squad/ticket-store.js');
 const { createAuthRouter } = require('./lan-squad/auth-router.js');
@@ -366,7 +367,11 @@ const authRouter = createAuthRouter({
 });
 
 const httpServer = http.createServer(appExpress);
-const { broadcast } = attachWsHub(httpServer, { getState: () => lanStore.getState() });
+const lanResolver = createConflictResolver({ store: lanStore });
+const { broadcast } = attachWsHub(httpServer, {
+  getState: () => lanStore.getState(),
+  resolver: lanResolver,
+});
 
 appExpress.use('/api/lan/v1', (req, res, next) => {
   if (req.method === 'POST' && req.path === '/auth/exchange') {
@@ -378,7 +383,7 @@ appExpress.use('/api/lan/v1', (req, res, next) => {
   next();
 });
 appExpress.use('/api/lan/v1', authRouter);
-appExpress.use('/api/lan/v1', createLanRouter({ store: lanStore, broadcast }));
+appExpress.use('/api/lan/v1', createLanRouter({ store: lanStore, broadcast, resolver: lanResolver }));
 
 appExpress.use((err, req, res, _next) => {
   console.error('[express]', redactForLog({

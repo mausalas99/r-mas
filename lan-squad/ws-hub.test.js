@@ -7,11 +7,43 @@ const os = require('node:os');
 const fs = require('node:fs');
 const WebSocket = require('ws');
 const { createHostStore } = require('./host-store.js');
+const { createConflictResolver } = require('./conflict-resolver.js');
 const { attachWsHub, AUTH_TIMEOUT_MS } = require('./ws-hub.js');
 
 function listen(httpServer) {
   return new Promise((resolve, reject) => {
     httpServer.listen(0, '127.0.0.1', (err) => (err ? reject(err) : resolve()));
+  });
+}
+
+async function connectAuthedLiveWs(port, token, channel = 'live:test-room') {
+  const ws = new WebSocket(`ws://127.0.0.1:${port}/api/lan/v1/ws?channel=${encodeURIComponent(channel)}`);
+  await new Promise((resolve, reject) => {
+    ws.on('open', resolve);
+    ws.on('error', reject);
+  });
+  ws.send(JSON.stringify({ type: 'auth', token }));
+  await new Promise((r) => setTimeout(r, 50));
+  return ws;
+}
+
+function waitForMessage(ws, predicate, timeoutMs = 2000) {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error('timeout waiting for message')), timeoutMs);
+    const onMessage = (raw) => {
+      let msg;
+      try {
+        msg = JSON.parse(String(raw));
+      } catch (_e) {
+        return;
+      }
+      if (predicate(msg)) {
+        clearTimeout(t);
+        ws.off('message', onMessage);
+        resolve(msg);
+      }
+    };
+    ws.on('message', onMessage);
   });
 }
 
@@ -71,6 +103,102 @@ test('WebSocket joins channel after valid auth frame', async () => {
     assert.strictEqual(got.type, 'ping');
     assert.strictEqual(got.n, 1);
     ws.close();
+  } finally {
+    await new Promise((resolve) => httpServer.close(resolve));
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('livesync:patch overlap unicasts conflict to sender only', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-ws-conflict-'));
+  const filePath = path.join(dir, 'state.json');
+  const token = 'd'.repeat(64);
+  const store = createHostStore({ filePath, teamCodePlain: token });
+  store.upsertPatient({ id: 'p1', nombre: 'Ana', cuarto: '101' }, null);
+  store.upsertPatient({ id: 'p1', nombre: 'Ana', cuarto: '201' }, 1);
+  const resolver = createConflictResolver({ store });
+  const httpServer = http.createServer();
+  attachWsHub(httpServer, { getState: () => store.getState(), resolver });
+  await listen(httpServer);
+  const { port } = httpServer.address();
+  const channel = 'live:conflict-room';
+  try {
+    const wsA = await connectAuthedLiveWs(port, token, channel);
+    const wsB = await connectAuthedLiveWs(port, token, channel);
+    const bMessages = [];
+    wsB.on('message', (raw) => bMessages.push(JSON.parse(String(raw))));
+
+    const conflictPromise = waitForMessage(wsA, (m) => m.type === 'livesync:conflict');
+    wsA.send(
+      JSON.stringify({
+        type: 'livesync:patch',
+        roomId: null,
+        clientId: 'client-a',
+        mutation: {
+          entityType: 'patient',
+          entityId: 'p1',
+          expectedVersion: 1,
+          baseData: { id: 'p1', nombre: 'Ana', cuarto: '101' },
+          changedKeys: ['cuarto'],
+          data: { id: 'p1', nombre: 'Ana', cuarto: '102' },
+        },
+      })
+    );
+    const conflict = await conflictPromise;
+    assert.strictEqual(conflict.type, 'livesync:conflict');
+    assert.ok(conflict.conflictingKeys.includes('cuarto'));
+    await new Promise((r) => setTimeout(r, 150));
+    assert.strictEqual(bMessages.length, 0);
+    wsA.close();
+    wsB.close();
+  } finally {
+    await new Promise((resolve) => httpServer.close(resolve));
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('livesync:patch disjoint merge broadcasts livesync:applied', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-ws-applied-'));
+  const filePath = path.join(dir, 'state.json');
+  const token = 'e'.repeat(64);
+  const store = createHostStore({ filePath, teamCodePlain: token });
+  store.upsertPatient({ id: 'p1', nombre: 'Ana' }, null);
+  store.upsertPatient({ id: 'p1', nombre: 'Ana', cuarto: '201' }, 1);
+  const resolver = createConflictResolver({ store });
+  const httpServer = http.createServer();
+  attachWsHub(httpServer, { getState: () => store.getState(), resolver });
+  await listen(httpServer);
+  const { port } = httpServer.address();
+  const channel = 'live:applied-room';
+  try {
+    const wsA = await connectAuthedLiveWs(port, token, channel);
+    const wsB = await connectAuthedLiveWs(port, token, channel);
+    const appliedA = waitForMessage(wsA, (m) => m.type === 'livesync:applied');
+    const appliedB = waitForMessage(wsB, (m) => m.type === 'livesync:applied');
+    wsA.send(
+      JSON.stringify({
+        type: 'livesync:patch',
+        roomId: null,
+        clientId: 'client-a',
+        mutation: {
+          entityType: 'patient',
+          entityId: 'p1',
+          expectedVersion: 1,
+          baseData: { id: 'p1', nombre: 'Ana', cuarto: '101' },
+          changedKeys: ['cama'],
+          data: { id: 'p1', nombre: 'Ana', cuarto: '101', cama: 'B' },
+        },
+      })
+    );
+    const [msgA, msgB] = await Promise.all([appliedA, appliedB]);
+    assert.strictEqual(msgA.type, 'livesync:applied');
+    assert.strictEqual(msgB.type, 'livesync:applied');
+    assert.strictEqual(msgA.autoMerged, true);
+    assert.strictEqual(msgB.autoMerged, true);
+    assert.strictEqual(msgA.data.cuarto, '201');
+    assert.strictEqual(msgA.data.cama, 'B');
+    wsA.close();
+    wsB.close();
   } finally {
     await new Promise((resolve) => httpServer.close(resolve));
     fs.rmSync(dir, { recursive: true, force: true });

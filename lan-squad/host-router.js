@@ -2,7 +2,7 @@
 const express = require('express');
 const { createBearerAuthMiddleware } = require('./bearer-auth.js');
 
-function createLanRouter({ store, broadcast }) {
+function createLanRouter({ store, broadcast, resolver }) {
   const r = express.Router();
   const getState = () => store.getState();
 
@@ -18,15 +18,34 @@ function createLanRouter({ store, broadcast }) {
 
   r.put('/patients/:id', express.json({ limit: '2mb' }), (req, res) => {
     try {
-      const expected = req.body && req.body.expectedVersion != null ? Number(req.body.expectedVersion) : null;
-      const body = { ...req.body };
-      delete body.expectedVersion;
-      body.id = req.params.id;
-      const out = store.upsertPatient(body, expected);
+      const mutation = {
+        entityType: 'patient',
+        entityId: req.params.id,
+        expectedVersion: Number(req.body.expectedVersion ?? 0),
+        changedKeys: req.body.changedKeys || [],
+        baseData: req.body.baseData,
+        data: { ...req.body.data, id: req.params.id },
+        op: req.body.op,
+      };
+      if (!mutation.changedKeys.length && mutation.expectedVersion > 0) {
+        return res.status(400).json({ error: 'changedKeys_required' });
+      }
+      const out = resolver.applyMutation(mutation);
       broadcast('sync', { type: 'patients-updated' });
-      res.json({ patient: out });
+      res.json(out);
     } catch (e) {
-      if (e.code === 'CONFLICT') return res.status(409).json({ error: 'conflict', patient: e.serverPatient });
+      if (e.code === 'CONFLICT') {
+        return res.status(409).json({
+          error: 'conflict',
+          entityType: 'patient',
+          entityId: req.params.id,
+          expectedVersion: e.expectedVersion,
+          serverVersion: e.serverVersion,
+          serverData: e.serverData,
+          clientData: e.clientData,
+          conflictingKeys: e.conflictingKeys,
+        });
+      }
       res.status(400).json({ error: e.message });
     }
   });
