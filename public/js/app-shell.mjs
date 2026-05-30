@@ -4,6 +4,7 @@
 import { storage } from './storage.js';
 import { isModeSala } from './mode-features.mjs';
 import { ensurePatientAccesos, syncLegacyAccesoFields } from './patient-accesos.mjs';
+import { dateInputValueToAccesoFecha } from './patient-date-fields.mjs';
 import { isRpcDatePopoverOpen, closeRpcDatePopover } from './rpc-date-picker.mjs';
 import { parseLanJoinQuery } from './lan-join-link.mjs';
 import { isMobileWeb, blockIfMobileDocExport, mobileDocExportToast } from './mobile-web.mjs';
@@ -731,6 +732,9 @@ function updatePatient(field, value) {
       : value;
   if (String(p[field] || '') === String(next || '')) return;
   p[field] = next;
+  if (field === 'fiuxFecha' || field === 'fimiFecha') {
+    next = dateInputValueToAccesoFecha(value) || String(value || '').trim();
+  }
   if (field === 'viaAcceso' || field === 'accesoFecha') {
     ensurePatientAccesos(p);
     var accRow =

@@ -184,6 +184,9 @@ function pickPatientFields(older, newer) {
     'peso',
     'talla',
     'viaAcceso',
+    'accesoFecha',
+    'fiuxFecha',
+    'fimiFecha',
     'registro',
     'fromLab',
   ];

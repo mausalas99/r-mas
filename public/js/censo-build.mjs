@@ -1,6 +1,8 @@
 import { sortLabHistoryChronological } from './tend-core.mjs';
 import { formatCensoMedsFromReceta } from './censo-meds-format.mjs';
 import { formatLabsForCensoCompact } from './censo-labs-format.mjs';
+import { formatAccesoFechaDisplay } from './patient-date-fields.mjs';
+import { resolveCensoFimiLabel } from './censo-header-format.mjs';
 import {
   ensurePatientDiagnosticos,
   diagnosticosTextForCenso,
@@ -157,20 +159,103 @@ function formatPendientesCell(todos) {
     .join('\n');
 }
 
-/** Cuarto y cama en líneas separadas para columna vertical del PDF. */
-export function formatCamaCellForCenso(patient) {
-  var cuarto = String(patient.cuarto || '').trim();
-  var cama = String(patient.cama || '').trim();
+/** Quita ceros a la izquierda; cama 0 no existe (vacío). */
+export function normalizeCensoCamaNumber(cama) {
+  var s = String(cama ?? '').trim();
+  if (!s) return '';
+  if (/^\d+$/.test(s)) {
+    var n = parseInt(s, 10);
+    if (!n) return '';
+    return String(n);
+  }
+  return s;
+}
+
+/**
+ * @param {string} text
+ * @returns {{ cuarto: string, cama: string }}
+ */
+export function parseCamaCellForCenso(text) {
+  var raw = String(text || '').trim();
+  if (!raw || raw === '—') return { cuarto: '', cama: '' };
+  var lines = raw
+    .replace(/\r/g, '')
+    .split('\n')
+    .map(function (l) {
+      return l.trim();
+    })
+    .filter(Boolean);
+  if (lines.length >= 2) {
+    return { cuarto: lines[0], cama: normalizeCensoCamaNumber(lines[1]) };
+  }
+  var one = lines[0] || '';
+  var dash = one.indexOf('-');
+  if (dash >= 0) {
+    return {
+      cuarto: one.slice(0, dash).trim(),
+      cama: normalizeCensoCamaNumber(one.slice(dash + 1)),
+    };
+  }
+  var slash = one.split(/\//).map(function (l) {
+    return l.trim();
+  });
+  if (slash.length >= 2) {
+    return { cuarto: slash[0], cama: normalizeCensoCamaNumber(slash[1]) };
+  }
+  return { cuarto: one, cama: '' };
+}
+
+/**
+ * Etiqueta única para columna Cama (211-1 o solo cuarto).
+ * @param {{ cuarto?: string, cama?: string }} parts
+ */
+export function formatCamaCellLabel(parts) {
+  var cuarto = String(parts.cuarto || '').trim();
+  var cama = String(parts.cama || '').trim();
   if (!cuarto && !cama) return '—';
-  if (cuarto && cama) return cuarto + '\n' + cama;
+  if (cuarto && cama) return cuarto + '-' + cama;
   return cuarto || cama;
 }
 
-/** Registro y edad en líneas separadas (sin sexo) para PDF / vista previa. */
-export function formatPacienteMetaForCenso(patient) {
+export function formatCamaCellForCenso(patient) {
+  var cuarto = String(patient.cuarto || '').trim();
+  var cama = normalizeCensoCamaNumber(patient.cama);
+  return formatCamaCellLabel({ cuarto: cuarto, cama: cama });
+}
+
+/** Iniciales del nombre del paciente para columna Paciente del censo (no aplica al equipo). */
+export function abbreviatePatientNameToInitials(name) {
+  var s = String(name || '').trim();
+  if (!s || s === '—') return '—';
+  var parts = [];
+  s.split(/\s+/)
+    .map(function (w) {
+      return w.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g, '');
+    })
+    .filter(Boolean)
+    .forEach(function (word) {
+      parts.push(word.charAt(0).toUpperCase());
+    });
+  if (!parts.length) return '—';
+  return parts.join('.') + '.';
+}
+
+/**
+ * Registro, edad, FIUX y FIMI (sin sexo) para PDF / vista previa.
+ * @param {Record<string, unknown>} patient
+ * @param {Record<string, unknown>} [settings]
+ */
+export function formatPacienteMetaForCenso(patient, settings) {
   var lines = [];
   if (patient.registro) lines.push(String(patient.registro).trim());
   if (patient.edad) lines.push(String(patient.edad).trim() + ' años');
+  var fiux = formatAccesoFechaDisplay(patient.fiuxFecha);
+  if (fiux) lines.push('FIUX: ' + fiux);
+  var fimi = formatAccesoFechaDisplay(patient.fimiFecha);
+  if (fimi) {
+    var fimiLabel = resolveCensoFimiLabel(settings || {});
+    lines.push(fimiLabel + ': ' + fimi);
+  }
   return lines.join('\n');
 }
 
@@ -226,8 +311,8 @@ export function buildCensusPayload(opts) {
     return {
       num: String(idx + 1),
       cama: cama,
-      pacienteNombre: String(patient.nombre || '').trim() || '—',
-      pacienteMeta: formatPacienteMetaForCenso(patient),
+      pacienteNombre: abbreviatePatientNameToInitials(patient.nombre),
+      pacienteMeta: formatPacienteMetaForCenso(patient, settings),
       sections: sections,
       dx: flat.dx,
       meds: flat.meds,

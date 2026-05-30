@@ -41,7 +41,7 @@ function isCultivoBlockStartLine(s) {
   return false;
 }
 
-function splitResLabsByTipo(rows) {
+export function splitResLabsByTipo(rows) {
   var labs = [];
   var cultivo = [];
   var inCultivo = false;

@@ -28,6 +28,24 @@ test('formatLabsForCensoCompact solo última fecha', () => {
   ]);
   assert.ok(lines.length >= 2);
   assert.equal(lines[0], '29/05/2026');
-  assert.match(lines[1], /5\.8/);
+  assert.match(lines.join('\n'), /5\.8/);
   assert.doesNotMatch(lines.join('\n'), /28\/05/);
+});
+
+test('formatLabsForCensoCompact incluye resLabs completos del día', () => {
+  var lines = formatLabsForCensoCompact([
+    {
+      fecha: '29/05/2026',
+      resLabs: [
+        'BH\nHb 5.8* g/dL\nHto 18* %',
+        'QS\nGlu 145 mg/dL\nCr 1.2 mg/dL',
+      ],
+      parsedBySection: { BH: { Hb: '5.8*' } },
+    },
+  ]);
+  assert.equal(lines[0], '29/05/2026');
+  assert.ok(lines.some((l) => l.includes('Hb 5.8')));
+  assert.ok(lines.some((l) => l.includes('Glu 145')));
+  assert.ok(lines.some((l) => l.includes('Cr 1.2')));
+  assert.ok(lines.some((l) => l === 'BH' || l.startsWith('BH ')));
 });

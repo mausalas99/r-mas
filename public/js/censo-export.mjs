@@ -97,7 +97,7 @@ function ensureCensoModal() {
     '<h3 id="censo-export-title" class="modal-title">Exportar censo (PDF)</h3>' +
     '<p class="profile-hint" id="censo-export-fecha-label"></p>' +
     '<p class="profile-hint" id="censo-export-mes-label"></p>' +
-    '<p class="profile-hint">Diagnósticos: máx. 3 primeros · 6 pacientes por hoja en el PDF.</p>' +
+    '<p class="profile-hint">Diagnósticos: máx. 3 primeros · filas según contenido (labs largos → más altura).</p>' +
     '<label class="profile-radio" style="display:flex;gap:8px;margin:12px 0;">' +
     '<input type="checkbox" id="censo-export-archived"> Incluir pacientes archivados</label>' +
     '<div class="modal-actions">' +
@@ -256,4 +256,6 @@ function wireCensoModalOnce() {
   });
 }
 
-wireCensoModalOnce();
+if (typeof document !== 'undefined') {
+  wireCensoModalOnce();
+}

@@ -4,6 +4,7 @@ import {
   formatCensoSalaTitleLine,
   formatCensoEquipoLine,
   normalizeCensoUbicacionValue,
+  resolveCensoFimiLabel,
   CENSO_UBICACION_TORRE,
 } from './censo-header-format.mjs';
 
@@ -17,6 +18,11 @@ test('formatCensoSalaTitleLine Torre HU sin sala', () => {
 
 test('normalizeCensoUbicacionValue migra censoTorre antiguo', () => {
   assert.equal(normalizeCensoUbicacionValue({ censoTorre: 'Torre HU' }), CENSO_UBICACION_TORRE);
+});
+
+test('resolveCensoFimiLabel personalizable', () => {
+  assert.equal(resolveCensoFimiLabel({}), 'FIMI');
+  assert.equal(resolveCensoFimiLabel({ censoFimiLabel: '  CIRUGÍA  ' }), 'CIRUGÍA');
 });
 
 test('formatCensoEquipoLine solo nombres', () => {

@@ -645,6 +645,27 @@
       ],
       "format": "esm"
     },
+    "public/js/censo-header-format.mjs": {
+      "bytes": 2867,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/patient-data-ingreso-ui.mjs": {
+      "bytes": 1327,
+      "imports": [
+        {
+          "path": "public/js/patient-date-fields.mjs",
+          "kind": "import-statement",
+          "original": "./patient-date-fields.mjs"
+        },
+        {
+          "path": "public/js/censo-header-format.mjs",
+          "kind": "import-statement",
+          "original": "./censo-header-format.mjs"
+        }
+      ],
+      "format": "esm"
+    },
     "public/js/censo-meds-format.mjs": {
       "bytes": 1036,
       "imports": [],
@@ -687,7 +708,7 @@
       "format": "esm"
     },
     "public/js/features/expediente.mjs": {
-      "bytes": 47300,
+      "bytes": 47443,
       "imports": [
         {
           "path": "public/js/app-state.mjs",
@@ -703,6 +724,11 @@
           "path": "public/js/patient-data-accesos-ui.mjs",
           "kind": "import-statement",
           "original": "../patient-data-accesos-ui.mjs"
+        },
+        {
+          "path": "public/js/patient-data-ingreso-ui.mjs",
+          "kind": "import-statement",
+          "original": "../patient-data-ingreso-ui.mjs"
         },
         {
           "path": "public/js/rpc-date-picker.mjs",
@@ -804,19 +830,8 @@
       "imports": [],
       "format": "esm"
     },
-    "public/js/censo-labs-format.mjs": {
-      "bytes": 3944,
-      "imports": [
-        {
-          "path": "public/js/tend-core.mjs",
-          "kind": "import-statement",
-          "original": "./tend-core.mjs"
-        }
-      ],
-      "format": "esm"
-    },
     "public/js/censo-cultivo-format.mjs": {
-      "bytes": 10242,
+      "bytes": 10249,
       "imports": [
         {
           "path": "public/js/tend-core.mjs",
@@ -831,13 +846,29 @@
       ],
       "format": "esm"
     },
-    "public/js/censo-header-format.mjs": {
-      "bytes": 2593,
-      "imports": [],
+    "public/js/censo-labs-format.mjs": {
+      "bytes": 5202,
+      "imports": [
+        {
+          "path": "public/js/tend-core.mjs",
+          "kind": "import-statement",
+          "original": "./tend-core.mjs"
+        },
+        {
+          "path": "public/js/censo-cultivo-format.mjs",
+          "kind": "import-statement",
+          "original": "./censo-cultivo-format.mjs"
+        },
+        {
+          "path": "public/js/labs.js",
+          "kind": "import-statement",
+          "original": "./labs.js"
+        }
+      ],
       "format": "esm"
     },
     "public/js/censo-build.mjs": {
-      "bytes": 7593,
+      "bytes": 10091,
       "imports": [
         {
           "path": "public/js/tend-core.mjs",
@@ -853,6 +884,16 @@
           "path": "public/js/censo-labs-format.mjs",
           "kind": "import-statement",
           "original": "./censo-labs-format.mjs"
+        },
+        {
+          "path": "public/js/patient-date-fields.mjs",
+          "kind": "import-statement",
+          "original": "./patient-date-fields.mjs"
+        },
+        {
+          "path": "public/js/censo-header-format.mjs",
+          "kind": "import-statement",
+          "original": "./censo-header-format.mjs"
         },
         {
           "path": "public/js/patient-diagnosticos.mjs",
@@ -878,12 +919,18 @@
       "format": "esm"
     },
     "public/js/censo-preview-html.mjs": {
-      "bytes": 7752,
-      "imports": [],
+      "bytes": 8555,
+      "imports": [
+        {
+          "path": "public/js/censo-build.mjs",
+          "kind": "import-statement",
+          "original": "./censo-build.mjs"
+        }
+      ],
       "format": "esm"
     },
     "public/js/censo-export.mjs": {
-      "bytes": 8225,
+      "bytes": 8247,
       "imports": [
         {
           "path": "public/js/mode-features.mjs",
@@ -939,7 +986,7 @@
       "format": "esm"
     },
     "public/js/lan-patient-merge.mjs": {
-      "bytes": 11436,
+      "bytes": 11489,
       "imports": [
         {
           "path": "public/js/live-sync-room.mjs",
@@ -1189,7 +1236,7 @@
       "format": "esm"
     },
     "public/js/features/profile.mjs": {
-      "bytes": 19762,
+      "bytes": 20011,
       "imports": [
         {
           "path": "public/js/features/chrome.mjs",
@@ -3014,7 +3061,7 @@
       "format": "esm"
     },
     "public/js/app-shell.mjs": {
-      "bytes": 33283,
+      "bytes": 33493,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -3030,6 +3077,11 @@
           "path": "public/js/patient-accesos.mjs",
           "kind": "import-statement",
           "original": "./patient-accesos.mjs"
+        },
+        {
+          "path": "public/js/patient-date-fields.mjs",
+          "kind": "import-statement",
+          "original": "./patient-date-fields.mjs"
         },
         {
           "path": "public/js/rpc-date-picker.mjs",
@@ -3620,7 +3672,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 3323007
+      "bytes": 3333384
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -3724,7 +3776,7 @@
           "bytesInOutput": 4133
         },
         "public/js/patient-date-fields.mjs": {
-          "bytesInOutput": 600
+          "bytesInOutput": 744
         },
         "public/js/patient-accesos.mjs": {
           "bytesInOutput": 2498
@@ -3771,6 +3823,12 @@
         "public/js/patient-data-accesos-ui.mjs": {
           "bytesInOutput": 4036
         },
+        "public/js/censo-header-format.mjs": {
+          "bytesInOutput": 1993
+        },
+        "public/js/patient-data-ingreso-ui.mjs": {
+          "bytesInOutput": 894
+        },
         "public/js/censo-meds-format.mjs": {
           "bytesInOutput": 864
         },
@@ -3784,7 +3842,7 @@
           "bytesInOutput": 736
         },
         "public/js/features/expediente.mjs": {
-          "bytesInOutput": 42679
+          "bytesInOutput": 42744
         },
         "public/js/tend-prefs.mjs": {
           "bytesInOutput": 6068
@@ -3798,23 +3856,20 @@
         "public/js/tour-targets.mjs": {
           "bytesInOutput": 4823
         },
-        "public/js/censo-labs-format.mjs": {
-          "bytesInOutput": 1993
-        },
         "public/js/censo-cultivo-format.mjs": {
           "bytesInOutput": 9554
         },
-        "public/js/censo-header-format.mjs": {
-          "bytesInOutput": 1823
+        "public/js/censo-labs-format.mjs": {
+          "bytesInOutput": 2760
         },
         "public/js/censo-build.mjs": {
-          "bytesInOutput": 5959
+          "bytesInOutput": 7863
         },
         "public/js/censo-preview-html.mjs": {
-          "bytesInOutput": 6375
+          "bytesInOutput": 7053
         },
         "public/js/censo-export.mjs": {
-          "bytesInOutput": 7493
+          "bytesInOutput": 7522
         },
         "public/js/lan-client.mjs": {
           "bytesInOutput": 4176
@@ -3826,7 +3881,7 @@
           "bytesInOutput": 3803
         },
         "public/js/lan-patient-merge.mjs": {
-          "bytesInOutput": 10122
+          "bytesInOutput": 10175
         },
         "public/js/live-sync-membership.mjs": {
           "bytesInOutput": 1248
@@ -3850,7 +3905,7 @@
           "bytesInOutput": 4074
         },
         "public/js/features/lan-sync.mjs": {
-          "bytesInOutput": 83586
+          "bytesInOutput": 83591
         },
         "public/js/update-helpers.mjs": {
           "bytesInOutput": 635
@@ -3868,7 +3923,7 @@
           "bytesInOutput": 13198
         },
         "public/js/features/profile.mjs": {
-          "bytesInOutput": 17099
+          "bytesInOutput": 17348
         },
         "public/js/mobile-web.mjs": {
           "bytesInOutput": 545
@@ -4087,7 +4142,7 @@
           "bytesInOutput": 16114
         },
         "public/js/app-shell.mjs": {
-          "bytesInOutput": 29006
+          "bytesInOutput": 29143
         },
         "public/js/features/estado-actual-parse-variants.mjs": {
           "bytesInOutput": 982
@@ -4108,7 +4163,7 @@
           "bytesInOutput": 4502
         }
       },
-      "bytes": 1823803
+      "bytes": 1828940
     }
   }
 }

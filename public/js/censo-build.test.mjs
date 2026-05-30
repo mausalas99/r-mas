@@ -8,11 +8,32 @@ import {
   buildCensusPayload,
   formatPacienteMetaForCenso,
   formatCamaCellForCenso,
+  abbreviatePatientNameToInitials,
 } from './censo-build.mjs';
 
-test('formatCamaCellForCenso cuarto y cama en líneas', () => {
-  assert.equal(formatCamaCellForCenso({ cuarto: '201', cama: '0' }), '201\n0');
+test('formatCamaCellForCenso cuarto solo si cama 0 o vacía', () => {
+  assert.equal(formatCamaCellForCenso({ cuarto: '201', cama: '0' }), '201');
+  assert.equal(formatCamaCellForCenso({ cuarto: '211', cama: '01' }), '211-1');
+  assert.equal(formatCamaCellForCenso({ cuarto: '433', cama: '07' }), '433-7');
   assert.equal(formatCamaCellForCenso({ cuarto: '305', cama: '' }), '305');
+});
+
+test('abbreviatePatientNameToInitials por palabra', () => {
+  assert.equal(abbreviatePatientNameToInitials('GARCIA LOPEZ JUAN CARLOS'), 'G.L.J.C.');
+  assert.equal(abbreviatePatientNameToInitials('MARIA'), 'M.');
+  assert.equal(abbreviatePatientNameToInitials(''), '—');
+});
+
+test('buildCensusPayload abrevia nombre del paciente', () => {
+  var payload = buildCensusPayload({
+    settings: {},
+    patients: [{ id: '1', nombre: 'PEREZ SOTO ANA', archived: false }],
+    includeArchived: false,
+    labHistoryByPatient: { 1: [] },
+    medRecetaByPatient: {},
+    todosByPatient: { 1: [] },
+  });
+  assert.equal(payload.rows[0].pacienteNombre, 'P.S.A.');
 });
 
 test('formatPacienteMetaForCenso líneas sin sexo', () => {
@@ -20,6 +41,23 @@ test('formatPacienteMetaForCenso líneas sin sexo', () => {
     formatPacienteMetaForCenso({ registro: '123', edad: '54', sexo: 'M' }),
     '123\n54 años'
   );
+});
+
+test('formatPacienteMetaForCenso FIUX y FIMI debajo de edad', () => {
+  var meta = formatPacienteMetaForCenso(
+    {
+      registro: '998',
+      edad: '60',
+      fiuxFecha: '2026-05-20',
+      fimiFecha: '2026-05-22',
+    },
+    { censoFimiLabel: 'MI' }
+  );
+  var lines = meta.split('\n');
+  assert.equal(lines[0], '998');
+  assert.equal(lines[1], '60 años');
+  assert.equal(lines[2], 'FIUX: 20/05/2026');
+  assert.equal(lines[3], 'MI: 22/05/2026');
 });
 
 test('sortPatientsForCensus ordena por cuarto', () => {
@@ -132,4 +170,29 @@ test('buildCensusPayload fallback meds desde receta', () => {
   });
   var medSec = (payload.rows[0].sections || []).find((s) => s.label === 'ATB / Medicamentos');
   assert.match(medSec.lines.join(' '), /VANCOMICINA/i);
+});
+
+test('buildCensusPayload labs con resultados completos del último set', () => {
+  var payload = buildCensusPayload({
+    settings: {},
+    patients: [{ id: '1', nombre: 'T', archived: false, diagnosticosList: ['X'] }],
+    includeArchived: false,
+    labHistoryByPatient: {
+      1: [
+        {
+          fecha: '29/05/2026',
+          resLabs: ['BH\nHb 5.8* g/dL\nHto 18* %', 'QS\nGlu 145 mg/dL'],
+        },
+      ],
+    },
+    medRecetaByPatient: {},
+    todosByPatient: { 1: [] },
+  });
+  var labSec = (payload.rows[0].sections || []).find((s) => s.label === 'Laboratorios');
+  assert.ok(labSec);
+  var joined = labSec.lines.join('\n');
+  assert.match(joined, /29\/05\/2026/);
+  assert.match(joined, /Hb 5\.8/);
+  assert.match(joined, /Glu 145/);
+  assert.match(payload.rows[0].labs, /Hto 18/);
 });

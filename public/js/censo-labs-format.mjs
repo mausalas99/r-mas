@@ -1,4 +1,6 @@
 import { sortLabHistoryChronological } from './tend-core.mjs';
+import { splitResLabsByTipo } from './censo-cultivo-format.mjs';
+import { formatBhExtrasDisplayLine } from './labs.js';
 
 var PANEL_ORDER = ['BH', 'QS', 'ELECTROLITOS', 'PFHs', 'GASES', 'COAG', 'ORINA', 'OTRO'];
 
@@ -21,7 +23,7 @@ function formatLabPair(key, val) {
 function linesFromParsedSection(section, keys) {
   if (!section || typeof section !== 'object') return [];
   var parts = [];
-  (keys || Object.keys(section).slice(0, 8)).forEach(function (k) {
+  (keys || Object.keys(section)).forEach(function (k) {
     var line = formatLabPair(k, section[k]);
     if (line) parts.push(line);
   });
@@ -88,8 +90,42 @@ export function formatLabsForCenso(sets, maxDates) {
   return out;
 }
 
+function pushLabTextLines(lines, text) {
+  String(text || '')
+    .split(/\r?\n/)
+    .forEach(function (subline) {
+      var cleaned = subline.replace(/\t/g, ' ').replace(/  +/g, ' ').trim();
+      if (cleaned) lines.push(cleaned);
+    });
+}
+
+function linesFromParsedBySectionFull(pb) {
+  var blockLines = [];
+  var seen = Object.create(null);
+  PANEL_ORDER.forEach(function (panelName) {
+    seen[panelName] = true;
+    var sec = pb[panelName] || pb[panelName.toLowerCase()];
+    if (!sec && panelName === 'OTRO') return;
+    var panelLines = linesFromParsedSection(sec, null);
+    if (panelLines.length) {
+      blockLines.push(panelName + ': ' + panelLines.join('  '));
+    }
+  });
+  Object.keys(pb).forEach(function (panelName) {
+    if (seen[panelName] || seen[panelName.toLowerCase()]) return;
+    var sec = pb[panelName];
+    if (!sec || typeof sec !== 'object' || Array.isArray(sec)) return;
+    var panelLines = linesFromParsedSection(sec, null);
+    if (panelLines.length) {
+      blockLines.push(panelName + ': ' + panelLines.join('  '));
+    }
+  });
+  return blockLines;
+}
+
 /**
- * Una sola fecha (la más reciente), paneles en líneas cortas para PDF compacto.
+ * Laboratorios del día más reciente: texto completo (sin resumen ni truncado).
+ * Cultivos van en su columna; se omiten bloques puramente de cultivo.
  * @param {unknown[]} sets
  * @returns {string[]}
  */
@@ -100,34 +136,35 @@ export function formatLabsForCensoCompact(sets) {
   var set = sorted[0];
   var fecha =
     set.fecha && set.fecha !== 'Anterior' ? String(set.fecha).trim() : '';
-  var pb = set.parsedBySection || set.parsed || null;
-  var panels = [];
-
-  if (pb && typeof pb === 'object' && !Array.isArray(pb)) {
-    PANEL_ORDER.forEach(function (panelName) {
-      var sec = pb[panelName] || pb[panelName.toLowerCase()];
-      if (!sec && panelName === 'OTRO') return;
-      var keys = PANEL_KEYS[panelName];
-      var bits = linesFromParsedSection(sec, keys);
-      if (bits.length) panels.push(panelName + ' ' + bits.join(' '));
-    });
-  }
-
-  if (!panels.length) {
-    var raw = (set.resLabs || [])
-      .map(function (c) {
-        return String(c || '').replace(/\s+/g, ' ').trim();
-      })
-      .filter(Boolean)
-      .join(' ');
-    if (raw) panels.push(raw.length > 220 ? raw.slice(0, 218) + '…' : raw);
-  }
-
-  if (!panels.length) return [];
   var lines = [];
   if (fecha) lines.push(fecha);
-  panels.forEach(function (panel) {
-    lines.push(panel);
+
+  var sp = splitResLabsByTipo(set.resLabs || []);
+  var hasLabChunks = sp.labs.some(function (r) {
+    return String(r || '').trim();
   });
+
+  if (hasLabChunks) {
+    var bhExtDone = false;
+    sp.labs.forEach(function (chunk) {
+      pushLabTextLines(lines, chunk);
+      if (!bhExtDone && set.bhExtras && typeof set.bhExtras === 'object') {
+        var ext = formatBhExtrasDisplayLine(set.bhExtras, set.sourceText);
+        if (ext) {
+          pushLabTextLines(lines, ext);
+          bhExtDone = true;
+        }
+      }
+    });
+  } else {
+    var pb = set.parsedBySection || set.parsed || null;
+    if (pb && typeof pb === 'object' && !Array.isArray(pb)) {
+      linesFromParsedBySectionFull(pb).forEach(function (ln) {
+        lines.push(ln);
+      });
+    }
+  }
+
+  if (!lines.length || (fecha && lines.length === 1)) return [];
   return lines;
 }

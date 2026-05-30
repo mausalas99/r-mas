@@ -148,6 +148,7 @@ export function loadSettings() {
   var r1bEl = document.getElementById("profile-r1b");
   var maestroEl = document.getElementById("profile-maestro");
   var censoSalaEl = document.getElementById("profile-censo-sala");
+  var censoFimiLabelEl = document.getElementById("profile-censo-fimi-label");
   var proEl = document.getElementById("profile-profesor");
   var grEl = document.getElementById("profile-grado");
   if (docEl) docEl.value = st.doctorName || "";
@@ -163,6 +164,7 @@ export function loadSettings() {
     if (/^torre/i.test(ubic) && ubic !== "torre") ubic = "torre";
     censoSalaEl.value = ubic;
   }
+  if (censoFimiLabelEl) censoFimiLabelEl.value = st.censoFimiLabel || "";
   if (grEl) grEl.value = st.grado || "";
   var modeSala = document.getElementById("app-mode-sala");
   var modeInter = document.getElementById("app-mode-inter");
@@ -281,6 +283,7 @@ export function saveSettings() {
   st.residenteR1 = st.residenteR1a;
   st.censoSala = (document.getElementById("profile-censo-sala")?.value || "").trim();
   st.censoTorre = st.censoSala === "torre" ? "Torre HU" : "";
+  st.censoFimiLabel = (document.getElementById("profile-censo-fimi-label")?.value || "").trim();
   st.profesorName = (document.getElementById("profile-maestro")?.value || document.getElementById("profile-profesor")?.value || "").trim();
   st.grado = (document.getElementById("profile-grado").value || "").trim();
   st.quickOutputFormat = normalizeQuickOutputFormat(st.quickOutputFormat);

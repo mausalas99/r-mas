@@ -4,6 +4,12 @@
 
 export const CENSO_UBICACION_TORRE = 'torre';
 export const CENSO_TORRE_HU_LABEL = 'Torre HU';
+export const DEFAULT_CENSO_FIMI_LABEL = 'FIMI';
+
+/** Etiqueta configurable para ingreso al servicio (antes «medicina interna» fijo). */
+export function resolveCensoFimiLabel(settings) {
+  return String(settings?.censoFimiLabel || '').trim() || DEFAULT_CENSO_FIMI_LABEL;
+}
 
 /** @param {Record<string, unknown>} settings */
 function medTpl(settings) {

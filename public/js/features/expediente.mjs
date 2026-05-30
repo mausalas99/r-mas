@@ -7,6 +7,7 @@ import {
 } from "../app-state.mjs";
 import { isModeSala } from "../mode-features.mjs";
 import { buildPatientAccesosSectionHtml, patientDataAccesosWindowHandlers } from "../patient-data-accesos-ui.mjs";
+import { buildPatientIngresoFechasHtml } from "../patient-data-ingreso-ui.mjs";
 import { refreshRpcDateFields } from "../rpc-date-picker.mjs";
 import {
   buildPatientCensoDatosSectionsHtml,
@@ -1147,6 +1148,7 @@ function buildPatientDemographicsFieldsHtml(patient) {
     '<div class="field-group"><label>Registro</label><input type="text" value="' + esc(patient.registro) + '" oninput="updatePatient(\'registro\',this.value)"></div>' +
     '<div class="field-group"><label>Edad</label><input type="text" value="' + esc(patient.edad) + '" oninput="updatePatient(\'edad\',this.value)"></div>' +
     '<div class="field-group"><label>Sexo</label><select onchange="updatePatient(\'sexo\',this.value)"><option value="M"' + (patient.sexo==='M'?' selected':'') + '>M</option><option value="F"' + (patient.sexo==='F'?' selected':'') + '>F</option></select></div></div>' +
+    buildPatientIngresoFechasHtml(patient, rt.getSettings()) +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
     '<div class="field-group"><label>Peso (kg)</label><input type="text" inputmode="decimal" value="' + esc(patient.peso || '') + '" placeholder="60" oninput="updatePatient(\'peso\',this.value)"></div>' +
     '<div class="field-group"><label>Talla (m)</label><input type="text" inputmode="decimal" value="' + esc(patient.talla || '') + '" placeholder="1.60" oninput="updatePatient(\'talla\',this.value)"></div></div>' +

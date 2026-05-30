@@ -1,3 +1,5 @@
+import { parseCamaCellForCenso, formatCamaCellLabel } from './censo-build.mjs';
+
 /**
  * Vista previa HTML del censo (tabla compacta, alineada al PDF).
  * @param {{ header?: Record<string, string>, rows?: Array<Record<string, unknown>> }} payload
@@ -34,6 +36,12 @@ export function renderCensoPreviewHtml(payload) {
       .join('<br>');
   }
 
+  function camaCellHtml(camaText) {
+    var label = formatCamaCellLabel(parseCamaCellForCenso(camaText));
+    if (label === '—') return '—';
+    return '<span class="censo-cama-vline">' + esc(label) + '</span>';
+  }
+
   function cell(row, key, fallbackLabel) {
     var v = row[key];
     if (v) return esc(v).replace(/\n/g, '<br>');
@@ -54,13 +62,14 @@ export function renderCensoPreviewHtml(payload) {
         '<tr class="' +
         (idx % 2 ? 'alt' : '') +
         '">' +
-        '<td>' +
+        '<td class="censo-center censo-bold censo-num">' +
+        '<span class="censo-num-val">' +
         esc(row.num) +
+        '</span></td>' +
+        '<td class="censo-center censo-bold censo-cama">' +
+        camaCellHtml(row.cama) +
         '</td>' +
-        '<td class="censo-cama-v">' +
-        esc(row.cama).replace(/\n/g, '<br>') +
-        '</td>' +
-        '<td class="censo-center">' +
+        '<td class="censo-center censo-paciente">' +
         pacienteCell(row) +
         '</td>' +
         '<td class="censo-center censo-bold">' +
@@ -69,7 +78,7 @@ export function renderCensoPreviewHtml(payload) {
         '<td class="censo-center">' +
         cell(row, 'meds', 'ATB / Medicamentos') +
         '</td>' +
-        '<td>' +
+        '<td class="censo-labs">' +
         cell(row, 'labs', 'Laboratorios') +
         '</td>' +
         '<td>' +
@@ -99,14 +108,18 @@ export function renderCensoPreviewHtml(payload) {
     '.mes{text-align:center;font-weight:700;color:#1e4d72;font-size:12px;margin:-22px 0 8px}' +
     'table{width:100%;max-width:100%;border-collapse:collapse;table-layout:fixed}' +
     'th,td{border:1px solid #d0d4dc;padding:3px 4px;vertical-align:middle;word-wrap:break-word}' +
+    'td.censo-labs{vertical-align:top;white-space:pre-wrap;line-height:1.25;font-size:10px}' +
+    'td.censo-paciente{vertical-align:middle;text-align:center;line-height:1.2;font-size:10px}' +
     'th{background:#eef1f5;font-size:9px;text-transform:uppercase;color:#1e4d72}' +
     'tr.alt td{background:#f8f9fb}' +
     '.meta{color:#5c6370;font-weight:400}' +
     '.censo-center{text-align:center;vertical-align:middle}' +
     '.censo-bold{font-weight:700}' +
-    '.censo-cama-v{width:2.5%;text-align:center;vertical-align:middle;font-weight:700;writing-mode:vertical-rl;text-orientation:mixed;white-space:nowrap;padding:4px 2px}' +
-    'th.censo-cama-v,th.censo-center{text-align:center}' +
-    'col.num{width:3%}col.cama{width:2.5%}col.pac{width:10%}col.dx{width:14%}col.med{width:11%}col.lab{width:18%}col.acc{width:6%}col.cult{width:12%}col.pend{width:11%}' +
+    'td.censo-num,td.censo-cama{padding:4px 2px;text-align:center;vertical-align:middle}' +
+    'td.censo-num .censo-num-val,td.censo-cama .censo-cama-vline{display:block;margin:0 auto}' +
+    '.censo-cama-vline{font-weight:700;writing-mode:vertical-rl;text-orientation:mixed;line-height:1;white-space:nowrap}' +
+    'th.censo-center{text-align:center;vertical-align:middle}' +
+    'col.num{width:3%}col.cama{width:2.5%}col.pac{width:6%}col.dx{width:13%}col.med{width:8%}col.lab{width:33%}col.acc{width:5%}col.cult{width:11%}col.pend{width:18%}' +
     '</style></head><body>' +
     '<h1>' +
     esc(titleLine) +
@@ -118,7 +131,7 @@ export function renderCensoPreviewHtml(payload) {
     (header.fecha ? esc(header.fecha) : '') +
     '</div>' +
     '<table><colgroup><col class="num"><col class="cama"><col class="pac"><col class="dx"><col class="med"><col class="lab"><col class="acc"><col class="cult"><col class="pend"></colgroup>' +
-    '<thead><tr><th>#</th><th class="censo-cama-v">Cama</th><th class="censo-center">Paciente</th><th class="censo-center censo-bold">Dx</th><th class="censo-center">ATB/Meds</th><th>Labs</th><th>Accesos</th><th>Cultivos</th><th>Pend.</th></tr></thead>' +
+    '<thead><tr><th class="censo-center">#</th><th class="censo-center censo-bold">Cama</th><th class="censo-center">Paciente</th><th class="censo-center censo-bold">Dx</th><th class="censo-center">ATB/Meds</th><th>Labs</th><th>Accesos</th><th>Cultivos</th><th>Pend.</th></tr></thead>' +
     '<tbody>' +
     body +
     '</tbody></table></body></html>'
