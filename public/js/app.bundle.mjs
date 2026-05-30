@@ -15052,7 +15052,7 @@ function createTendGroupModal(deps) {
   function ensureGasoExtendedDialog() {
     var bd = document.getElementById("tend-gaso-ext-backdrop");
     if (bd) return bd;
-    var escHtml6 = deps.esc || function(t2) {
+    var escHtml7 = deps.esc || function(t2) {
       return String(t2 == null ? "" : t2);
     };
     bd = document.createElement("div");
@@ -15060,7 +15060,7 @@ function createTendGroupModal(deps) {
     bd.className = "tend-gaso-ext-backdrop";
     bd.setAttribute("aria-hidden", "true");
     bd.style.display = "none";
-    bd.innerHTML = '<div id="tend-gaso-ext-dialog" class="tend-gaso-ext-dialog" role="dialog" aria-modal="true" aria-labelledby="tend-gaso-ext-title"><div class="tend-gaso-ext-header"><div class="tend-gaso-ext-header-text"><h2 id="tend-gaso-ext-title">' + escHtml6("Gasometr\xEDa extendida") + '</h2><p class="tend-gaso-ext-subtitle">' + escHtml6("\xDAltimo estudio \xB7 interpretaci\xF3n \xE1cido-base") + '</p></div><div class="tend-gaso-ext-header-actions"><div class="tend-gaso-fio2-chip" role="group" aria-label="Fracci\xF3n inspirada de ox\xEDgeno"><span class="tend-gaso-fio2-chip-label">FiO\u2082</span><input type="number" class="tend-gaso-fio2-input" step="0.01" min="0.08" max="100" inputmode="decimal" aria-label="FiO\u2082 (0.21 o 21)" title="Fracci\xF3n 0.21 o porcentaje 21" /><span class="tend-gaso-fio2-chip-hint">0.21 \xB7 21%</span></div></div></div><div class="tend-gaso-extended-inner"></div></div>';
+    bd.innerHTML = '<div id="tend-gaso-ext-dialog" class="tend-gaso-ext-dialog" role="dialog" aria-modal="true" aria-labelledby="tend-gaso-ext-title"><div class="tend-gaso-ext-header"><div class="tend-gaso-ext-header-text"><h2 id="tend-gaso-ext-title">' + escHtml7("Gasometr\xEDa extendida") + '</h2><p class="tend-gaso-ext-subtitle">' + escHtml7("\xDAltimo estudio \xB7 interpretaci\xF3n \xE1cido-base") + '</p></div><div class="tend-gaso-ext-header-actions"><div class="tend-gaso-fio2-chip" role="group" aria-label="Fracci\xF3n inspirada de ox\xEDgeno"><span class="tend-gaso-fio2-chip-label">FiO\u2082</span><input type="number" class="tend-gaso-fio2-input" step="0.01" min="0.08" max="100" inputmode="decimal" aria-label="FiO\u2082 (0.21 o 21)" title="Fracci\xF3n 0.21 o porcentaje 21" /><span class="tend-gaso-fio2-chip-hint">0.21 \xB7 21%</span></div></div></div><div class="tend-gaso-extended-inner"></div></div>';
     bd.addEventListener("click", function(ev) {
       if (ev.target === bd) closeGasoExtended();
     });
@@ -15081,13 +15081,13 @@ function createTendGroupModal(deps) {
     return Math.min(Math.max(n, 0.08), 1);
   }
   function refillGasoExtendedSlot(slot, latest) {
-    var escHtml6 = deps.esc || function(t2) {
+    var escHtml7 = deps.esc || function(t2) {
       return String(t2 == null ? "" : t2);
     };
     if (!slot) return;
     slot.innerHTML = "";
     if (!latest || !latest.parsedBySection) {
-      slot.innerHTML = '<p class="tend-empty" style="font-size:13px;color:var(--text-muted);">' + escHtml6("Sin valores recientes disponibles para gasometr\xEDa.") + "</p>";
+      slot.innerHTML = '<p class="tend-empty" style="font-size:13px;color:var(--text-muted);">' + escHtml7("Sin valores recientes disponibles para gasometr\xEDa.") + "</p>";
       return;
     }
     var na = serieNumFromLabSet(latest, "QS", "Na") ?? serieNumFromLabSet(latest, "ESC", "Na") ?? serieNumFromLabSet(latest, "GASES", "Na");
@@ -15281,7 +15281,7 @@ function createTendGroupModal(deps) {
         slot.appendChild(hs);
       }
     } catch (e) {
-      slot.innerHTML = '<p class="tend-empty" style="font-size:13px;color:var(--error);">' + escHtml6("No se pudo calcular la gasometr\xEDa extendida.") + "</p>";
+      slot.innerHTML = '<p class="tend-empty" style="font-size:13px;color:var(--error);">' + escHtml7("No se pudo calcular la gasometr\xEDa extendida.") + "</p>";
       console.error("evaluateGasoExtended", e);
     }
   }
@@ -16947,9 +16947,21 @@ var LanClient = class extends EventTarget {
       if (kind === "sync") {
         this.dispatchEvent(new CustomEvent("lan-patch", { detail: data }));
       } else {
-        this.dispatchEvent(new CustomEvent("lan-live", { detail: data }));
+        this._dispatchLivePayload(data);
       }
     };
+  }
+  _dispatchLivePayload(data) {
+    if (!data) return;
+    if (data.type === "livesync:conflict") {
+      this.dispatchEvent(new CustomEvent("lan-conflict", { detail: data }));
+      return;
+    }
+    if (data.type === "livesync:applied") {
+      this.dispatchEvent(new CustomEvent("lan-applied", { detail: data }));
+      return;
+    }
+    this.dispatchEvent(new CustomEvent("lan-live", { detail: data }));
   }
 };
 
@@ -17976,6 +17988,236 @@ function parseLanInviteInput(raw) {
   return emptyInviteParse();
 }
 
+// public/js/versioned-mutation.mjs
+function createMutationBuilder(entityType, entityId) {
+  let base = null;
+  const working = {};
+  const changedKeys = /* @__PURE__ */ new Set();
+  return {
+    captureBase(snapshot) {
+      base = structuredClone(snapshot);
+      Object.assign(working, structuredClone(snapshot));
+      return this;
+    },
+    set(key, value) {
+      changedKeys.add(key);
+      working[key] = value;
+      return this;
+    },
+    build(extra = {}) {
+      return {
+        entityType,
+        entityId,
+        expectedVersion: Number(base?.version ?? 0),
+        baseData: base,
+        changedKeys: [...changedKeys],
+        data: { ...working },
+        ...extra
+      };
+    }
+  };
+}
+function wrapLiveSyncPatch(roomId, clientId, mutation) {
+  return { type: "livesync:patch", roomId, clientId, mutation };
+}
+
+// public/js/draft-conflict-store.mjs
+var DB_NAME = "rplus-clinical";
+var STORE = "draft-conflicts";
+var DB_VERSION = 1;
+function memoryStore() {
+  return __test._memory;
+}
+function openDraftDb() {
+  const idb = globalThis.indexedDB;
+  if (!idb) {
+    return Promise.reject(new Error("indexedDB_unavailable"));
+  }
+  return new Promise((resolve, reject) => {
+    const req = idb.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(STORE)) {
+        const os = db.createObjectStore(STORE, { keyPath: "id" });
+        os.createIndex("savedAt", "savedAt");
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbPut(row) {
+  const db = await openDraftDb();
+  await new Promise((res, rej) => {
+    const tx = db.transaction(STORE, "readwrite");
+    tx.objectStore(STORE).put(row);
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error);
+  });
+  db.close();
+}
+async function idbGetAll() {
+  const db = await openDraftDb();
+  const rows = await new Promise((res, rej) => {
+    const tx = db.transaction(STORE, "readonly");
+    const req = tx.objectStore(STORE).getAll();
+    req.onsuccess = () => res(req.result || []);
+    req.onerror = () => rej(req.error);
+    tx.onerror = () => rej(tx.error);
+  });
+  db.close();
+  return rows;
+}
+async function idbGet(id) {
+  const db = await openDraftDb();
+  const row = await new Promise((res, rej) => {
+    const tx = db.transaction(STORE, "readonly");
+    const req = tx.objectStore(STORE).get(id);
+    req.onsuccess = () => res(req.result ?? null);
+    req.onerror = () => rej(req.error);
+    tx.onerror = () => rej(tx.error);
+  });
+  db.close();
+  return row;
+}
+async function idbDelete(id) {
+  const db = await openDraftDb();
+  await new Promise((res, rej) => {
+    const tx = db.transaction(STORE, "readwrite");
+    tx.objectStore(STORE).delete(id);
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error);
+  });
+  db.close();
+}
+function sortBySavedAtDesc(rows) {
+  return rows.sort((a, b) => String(b.savedAt).localeCompare(String(a.savedAt)));
+}
+async function saveDraftConflict(record) {
+  const id = globalThis.crypto.randomUUID();
+  const row = { ...record, id, savedAt: (/* @__PURE__ */ new Date()).toISOString() };
+  const mem = memoryStore();
+  if (mem) {
+    mem.set(id, row);
+    return id;
+  }
+  await idbPut(row);
+  return id;
+}
+async function listDraftConflicts() {
+  const mem = memoryStore();
+  if (mem) {
+    return sortBySavedAtDesc([...mem.values()]);
+  }
+  return sortBySavedAtDesc(await idbGetAll());
+}
+async function getDraftConflict(id) {
+  if (!id) return null;
+  const mem = memoryStore();
+  if (mem) {
+    return mem.get(id) ?? null;
+  }
+  return idbGet(id);
+}
+async function deleteDraftConflict(id) {
+  if (!id) return;
+  const mem = memoryStore();
+  if (mem) {
+    mem.delete(id);
+    return;
+  }
+  await idbDelete(id);
+}
+var __test = {
+  _memory: null,
+  useMemoryBackend(enabled = true) {
+    __test._memory = enabled ? /* @__PURE__ */ new Map() : null;
+  },
+  resetMemory() {
+    __test._memory?.clear();
+  }
+};
+
+// public/js/features/clinical-conflict-viewer.mjs
+var BACKDROP_ID = "clinical-conflict-backdrop";
+function escHtml3(s) {
+  return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function formatConflictValue(value) {
+  if (value === null || value === void 0) return "\u2014";
+  if (typeof value === "object") {
+    try {
+      return JSON.stringify(value);
+    } catch (_e) {
+      return String(value);
+    }
+  }
+  return String(value);
+}
+function collectDiffKeys(localData, serverData) {
+  const keys = /* @__PURE__ */ new Set([
+    ...Object.keys(localData || {}),
+    ...Object.keys(serverData || {})
+  ]);
+  keys.delete("_deleted");
+  return [...keys].sort((a, b) => a.localeCompare(b));
+}
+function buildConflictDiffHtml({ conflictingKeys, localData, serverData }) {
+  const conflictSet = new Set(conflictingKeys || []);
+  const keys = collectDiffKeys(localData, serverData);
+  const rows = keys.map((key) => {
+    const rowClass = conflictSet.has(key) ? "conflict-field" : "";
+    const localVal = formatConflictValue(localData?.[key]);
+    const serverVal = formatConflictValue(serverData?.[key]);
+    return "<tr" + (rowClass ? ' class="' + rowClass + '"' : "") + '><th scope="row">' + escHtml3(key) + "</th><td>" + escHtml3(localVal) + "</td><td>" + escHtml3(serverVal) + "</td></tr>";
+  }).join("");
+  return '<table class="clinical-conflict-diff" style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr><th scope="col" style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text-muted);font-weight:600;">Campo</th><th scope="col" style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text-muted);font-weight:600;">Tu cambio</th><th scope="col" style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text-muted);font-weight:600;">Servidor</th></tr></thead><tbody>' + rows + "</tbody></table>";
+}
+function closeClinicalConflictViewer() {
+  if (typeof document === "undefined") return;
+  const prev = document.getElementById(BACKDROP_ID);
+  if (prev) prev.remove();
+}
+function openClinicalConflictViewer(opts) {
+  if (typeof document === "undefined") return;
+  const {
+    draftId,
+    conflictingKeys,
+    localData,
+    serverData,
+    onUseServer,
+    onEditDraft,
+    onClose
+  } = opts || {};
+  closeClinicalConflictViewer();
+  const diffHtml = buildConflictDiffHtml({ conflictingKeys, localData, serverData });
+  const backdrop = document.createElement("div");
+  backdrop.className = "lab-conflict-backdrop";
+  backdrop.id = BACKDROP_ID;
+  if (draftId) backdrop.dataset.draftId = String(draftId);
+  backdrop.innerHTML = '<div class="lab-conflict-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-conflict-title" style="max-width:560px;max-height:90vh;"><h3 id="clinical-conflict-title">Conflicto de sincronizaci\xF3n</h3><p>Los cambios locales chocan con la versi\xF3n del servidor en los campos resaltados. Elige c\xF3mo continuar.</p><style>.clinical-conflict-diff .conflict-field th,.clinical-conflict-diff .conflict-field td{background:rgba(220,38,38,0.08);font-weight:600;}</style><div style="overflow:auto;max-height:50vh;margin:0 -4px;padding:0 4px;">' + diffHtml + '</div><div class="lab-conflict-actions"><button type="button" class="btn-conflict-primary" id="clinical-conflict-use-server">Usar servidor</button><button type="button" class="btn-conflict-secondary" id="clinical-conflict-edit-draft">Editar mi borrador</button><button type="button" class="btn-conflict-cancel" id="clinical-conflict-close">Cerrar</button></div></div>';
+  document.body.appendChild(backdrop);
+  const dismiss = (cb) => {
+    closeClinicalConflictViewer();
+    if (typeof cb === "function") cb();
+  };
+  const useServer = backdrop.querySelector("#clinical-conflict-use-server");
+  const editDraft = backdrop.querySelector("#clinical-conflict-edit-draft");
+  const closeBtn = backdrop.querySelector("#clinical-conflict-close");
+  if (useServer) {
+    useServer.addEventListener("click", () => dismiss(onUseServer));
+  }
+  if (editDraft) {
+    editDraft.addEventListener("click", () => dismiss(onEditDraft));
+  }
+  if (closeBtn) {
+    closeBtn.addEventListener("click", () => dismiss(onClose));
+  }
+  backdrop.addEventListener("click", (ev) => {
+    if (ev.target === backdrop) dismiss(onClose);
+  });
+}
+
 // public/js/lan-surrogate-host.mjs
 var PEERS_KEY = "rpc-lan-live-peers";
 var SURROGATE_KEY = "rpc-lan-surrogate-host";
@@ -18122,8 +18364,6 @@ function isSurrogateHostActive() {
 }
 
 // public/js/features/lan-sync.mjs
-var DEFAULT_LAN_TEAM_CODE = "1234";
-var LEGACY_RANDOM_LAN_TEAM_CODE_RE = /^[a-f0-9]{32}$/i;
 var runtime2 = {
   showToast() {
   },
@@ -18189,8 +18429,11 @@ var _liveSyncOutboxFlushTimer = null;
 var _surrogateFailoverTimer = null;
 var _lanPanelRenderGen = 0;
 var _lanPanelRenderChain = Promise.resolve();
+var LIVE_SYNC_ENTITIES_LS = "rpc-lan-live-entities";
 var LAN_HOST_CODE_HINT_SEEN_KEY = "rpc-lan-host-code-hint-seen";
+var LAN_MIGRATION_NOTICE_KEY = "rplus.lan.migrationNoticeShown";
 var LAN_KNOWN_ROOMS_LS = "rpc-lan-known-rooms";
+var _lastLanPairing = null;
 function readLanKnownRooms() {
   try {
     var raw = localStorage.getItem(LAN_KNOWN_ROOMS_LS);
@@ -18249,18 +18492,16 @@ function isLanSessionConfiguredForRest() {
     return false;
   }
 }
-function normalizeStoredLanTeamCode(code) {
-  var t2 = String(code || "").trim();
-  if (!t2 || LEGACY_RANDOM_LAN_TEAM_CODE_RE.test(t2)) return DEFAULT_LAN_TEAM_CODE;
-  return t2;
+function trimStoredLanBearer(code) {
+  return String(code || "").trim();
 }
 function persistLanClientConfig(hostUrl, teamCode) {
   var url = String(hostUrl || "").trim().replace(/\/+$/, "");
-  var code = normalizeStoredLanTeamCode(teamCode);
+  var code = trimStoredLanBearer(teamCode);
   if (!url || !code) return false;
   var prev = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
   var prevUrl = String(prev.hostUrl || "").trim().replace(/\/+$/, "");
-  var prevCode = normalizeStoredLanTeamCode(prev.teamCode);
+  var prevCode = trimStoredLanBearer(prev.teamCode);
   var changed = prevUrl !== url || prevCode !== code;
   storage.saveLanConfig({ hostUrl: url, teamCode: code });
   lanClient.configure({ hostUrl: url, teamCode: code });
@@ -18290,11 +18531,170 @@ async function lanFetchAuthed(path, opts) {
   if (resp.status !== 401) return resp;
   if (window.electronAPI && typeof window.electronAPI.getLanEffectiveTeamCode === "function") {
     await syncLanSavedTeamCodeWithEffectiveHostCode();
-  } else {
-    var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
-    persistLanClientConfig(cfg.hostUrl, DEFAULT_LAN_TEAM_CODE);
   }
   return lanClient.fetch(path, opts);
+}
+async function resolveHostBearerToken() {
+  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
+  var fromCfg = trimStoredLanBearer(cfg.teamCode);
+  if (fromCfg.length >= 32) return fromCfg;
+  if (window.electronAPI && typeof window.electronAPI.getLanEffectiveTeamCode === "function") {
+    try {
+      var info = await window.electronAPI.getLanEffectiveTeamCode();
+      if (info && info.ok && info.code) return String(info.code).trim();
+    } catch (_e) {
+    }
+  }
+  return "";
+}
+async function mintLanPairingTicket() {
+  await ensureLanClientTeamCodeAligned();
+  var bearer = await resolveHostBearerToken();
+  if (!bearer) {
+    var err = new Error("no_host_bearer");
+    err.code = "no_host_bearer";
+    throw err;
+  }
+  var resp = await lanFetchAuthed("/api/lan/v1/auth/tickets", { method: "POST" });
+  if (!resp.ok) {
+    var errHttp = new Error("ticket_mint_failed");
+    errHttp.status = resp.status;
+    throw errHttp;
+  }
+  var body = await resp.json();
+  _lastLanPairing = {
+    ticketId: String(body.ticketId || ""),
+    pin: String(body.pin || ""),
+    joinUrl: String(body.joinUrl || ""),
+    expiresAt: body.expiresAt
+  };
+  return _lastLanPairing;
+}
+function showLanMigrationNoticeModal() {
+  if (typeof document === "undefined") return;
+  if (document.getElementById("lan-migration-notice-backdrop")) return;
+  var backdrop = document.createElement("div");
+  backdrop.id = "lan-migration-notice-backdrop";
+  backdrop.className = "modal-backdrop open";
+  backdrop.style.zIndex = "10050";
+  backdrop.innerHTML = '<div class="lab-conflict-modal" style="max-width:420px;"><h3>Seguridad de red del equipo</h3><p>El c\xF3digo LAN d\xE9bil (<code>1234</code> u otro antiguo) se sustituy\xF3 por un token seguro en esta Mac anfitriona. Tus pacientes y salas LAN se conservaron.</p><p style="font-size:12px;color:var(--text-muted);">Quienes se unan deben usar un <strong>enlace o PIN nuevo</strong> que generes aqu\xED (\u21C4). Los enlaces viejos con <code>?code=</code> ya no funcionan.</p><div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;"><button type="button" id="lan-migration-notice-ok" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Entendido</button></div></div>';
+  document.body.appendChild(backdrop);
+  var ok = backdrop.querySelector("#lan-migration-notice-ok");
+  if (ok) {
+    ok.onclick = function() {
+      backdrop.remove();
+    };
+  }
+  backdrop.addEventListener("click", function(ev) {
+    if (ev.target === backdrop) backdrop.remove();
+  });
+}
+async function maybeShowLanMigrationNotice() {
+  if (typeof sessionStorage === "undefined") return;
+  try {
+    if (sessionStorage.getItem(LAN_MIGRATION_NOTICE_KEY)) return;
+  } catch (_e) {
+  }
+  if (!isLanSessionConfiguredForRest()) return;
+  var resp;
+  try {
+    resp = await lanFetchAuthed("/api/lan/v1/host-status");
+  } catch (_eNet) {
+    return;
+  }
+  if (!resp || !resp.ok) return;
+  var data;
+  try {
+    data = await resp.json();
+  } catch (_eJson) {
+    return;
+  }
+  if (!data || !data.requiresMigrationNotice) return;
+  try {
+    sessionStorage.setItem(LAN_MIGRATION_NOTICE_KEY, "1");
+  } catch (_eSet) {
+  }
+  showLanMigrationNoticeModal();
+}
+function updateLanPairingDisplay(root) {
+  if (!root) return;
+  var box = root.querySelector("#lan-pairing-display");
+  if (!box) return;
+  if (!_lastLanPairing || !_lastLanPairing.ticketId) {
+    box.hidden = true;
+    box.textContent = "";
+    return;
+  }
+  box.hidden = false;
+  var p = _lastLanPairing;
+  var joinLine = p.joinUrl ? '<div><strong>Enlace:</strong> <code style="word-break:break-all;">' + esc10(p.joinUrl) + "</code></div>" : "";
+  box.innerHTML = '<p style="margin:0 0 6px;font-size:12px;color:var(--text-muted);">Comparte el PIN o el enlace (v\xE1lido unos minutos, un solo uso):</p><div><strong>PIN:</strong> <code>' + esc10(p.pin) + "</code></div><div><strong>Ticket:</strong> <code>" + esc10(p.ticketId) + "</code></div>" + joinLine;
+}
+async function mintLanPairingFromUi() {
+  try {
+    await mintLanPairingTicket();
+    var root = document.getElementById("lan-connection-panel-root");
+    updateLanPairingDisplay(root);
+    runtime2.showToast("Enlace y PIN generados. Comp\xE1rtelos con el equipo.", "success");
+  } catch (e) {
+    if (e && e.code === "no_host_bearer") {
+      runtime2.showToast(
+        "No hay token seguro del servidor en esta Mac. Reinicia R+ como anfitri\xF3n o revisa lan-team-code.txt.",
+        "error"
+      );
+      return;
+    }
+    if (e && e.status === 401) {
+      runtime2.showToast("No autorizado para generar invitaci\xF3n. Revisa el token del anfitri\xF3n.", "error");
+      return;
+    }
+    runtime2.showToast("No se pudo generar enlace / PIN. Intenta de nuevo.", "error");
+  }
+}
+async function persistGuestBearerFromExchange(data) {
+  if (!data || !data.persist || data.storageTarget !== "userData") return;
+  if (!window.electronAPI || typeof window.electronAPI.lanGuestWriteBearer !== "function") return;
+  var token = trimStoredLanBearer(data.token);
+  if (!token) return;
+  try {
+    await window.electronAPI.lanGuestWriteBearer({ token });
+  } catch (_e) {
+  }
+}
+async function exchangeLanJoinFromInvite(hostUrl, ticketId, roomId) {
+  var base = String(hostUrl || "").trim().replace(/\/+$/, "");
+  var tid = String(ticketId || "").trim();
+  if (!base || !tid) {
+    runtime2.showToast("Falta la direcci\xF3n del servidor o el ticket de invitaci\xF3n.", "error");
+    return;
+  }
+  var res;
+  try {
+    res = await fetch(base + "/api/lan/v1/auth/exchange", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ticket: tid })
+    });
+  } catch (_e) {
+    runtime2.showToast("Error de red al unirse. Revisa Wi\u2011Fi y que R+ siga abierto en el anfitri\xF3n.", "error");
+    return;
+  }
+  if (!res.ok) {
+    runtime2.showToast(
+      "Este enlace o PIN ya no es v\xE1lido. Pide al anfitri\xF3n un nuevo enlace o PIN.",
+      "error"
+    );
+    return;
+  }
+  var data;
+  try {
+    data = await res.json();
+  } catch (_eJson) {
+    runtime2.showToast("Respuesta inv\xE1lida del servidor.", "error");
+    return;
+  }
+  await persistGuestBearerFromExchange(data);
+  configureLanFromMobileJoin(String(data.hostUrl || base), data.token, roomId);
 }
 async function syncLanSavedTeamCodeWithEffectiveHostCode() {
   if (!window.electronAPI || typeof window.electronAPI.getLanEffectiveTeamCode !== "function") {
@@ -18353,7 +18753,9 @@ async function ensureLanElectronHostReady() {
   }
   var autoUrl = await resolveLanHostUrlAuto();
   if (!autoUrl) return false;
-  persistLanClientConfig(autoUrl, cfg.teamCode || DEFAULT_LAN_TEAM_CODE);
+  var bearer = await resolveHostBearerToken();
+  if (!bearer) return false;
+  persistLanClientConfig(autoUrl, bearer);
   try {
     lanClient.connectSyncChannel();
   } catch (_e) {
@@ -18367,18 +18769,14 @@ async function initLanHostPlugAndPlay() {
 async function resolveLanTeamCodeForShare() {
   var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
   var uiRole = typeof storage.getLanUiRole === "function" ? storage.getLanUiRole() : "client";
-  if (uiRole === "host" && window.electronAPI && typeof window.electronAPI.getLanEffectiveTeamCode === "function") {
-    try {
-      var info = await window.electronAPI.getLanEffectiveTeamCode();
-      if (info && info.ok && info.code) return String(info.code);
-    } catch (_e) {
-    }
+  if (uiRole === "host") {
+    var hostBearer = await resolveHostBearerToken();
+    if (hostBearer) return hostBearer;
   }
   var teamInput = document.getElementById("lan-input-team-code");
   var fromInput = teamInput && teamInput.value != null ? String(teamInput.value).trim() : "";
   if (fromInput) return fromInput;
-  if (cfg.teamCode) return normalizeStoredLanTeamCode(cfg.teamCode);
-  return DEFAULT_LAN_TEAM_CODE;
+  return trimStoredLanBearer(cfg.teamCode);
 }
 function appendLanKnownSessionsSection(root) {
   if (!root) return;
@@ -18575,10 +18973,229 @@ function wireLanPanelDelegation() {
       joinLanFromInviteUi();
     } else if (action === "host-activate") {
       saveLanSettingsFromUi({ copyInviteAfter: true });
+    } else if (action === "mint-pairing") {
+      void mintLanPairingFromUi();
     } else if (action === "create-room") {
       createLanRoomFromUi();
     }
   });
+}
+function readLiveSyncEntityMap() {
+  try {
+    var raw = localStorage.getItem(LIVE_SYNC_ENTITIES_LS);
+    var parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (_e) {
+    return {};
+  }
+}
+function liveSyncEntityStoreKey(entityType, entityId, patientId) {
+  if (entityType === "todo") return "todo:" + String(patientId || "") + ":" + String(entityId || "");
+  if (entityType === "agenda") return "agenda:" + String(entityId || "");
+  if (entityType === "patient") return "patient:" + String(entityId || "");
+  return String(entityType || "") + ":" + String(entityId || "");
+}
+function getLiveSyncEntityBase(entityType, entityId, patientId) {
+  var map = readLiveSyncEntityMap();
+  return map[liveSyncEntityStoreKey(entityType, entityId, patientId)] || null;
+}
+function rememberLiveSyncEntity(entityType, entityId, patientId, version, data) {
+  var map = readLiveSyncEntityMap();
+  var row = Object.assign({}, data || {}, { version: Number(version || 1) });
+  map[liveSyncEntityStoreKey(entityType, entityId, patientId)] = row;
+  try {
+    localStorage.setItem(LIVE_SYNC_ENTITIES_LS, JSON.stringify(map));
+  } catch (_e) {
+  }
+}
+function buildLiveSyncMutationFromDesired(entityType, entityId, desired, extra) {
+  extra = extra || {};
+  var patientId = extra.patientId;
+  var cached = getLiveSyncEntityBase(entityType, entityId, patientId);
+  var base = cached ? Object.assign({}, cached) : { id: entityId, version: Number(desired && desired.version != null ? desired.version : 0) };
+  if (entityType === "todo" && patientId && !base.patientId) base.patientId = patientId;
+  var builder = createMutationBuilder(entityType, entityId).captureBase(base);
+  var hasChange = false;
+  Object.keys(desired || {}).forEach(function(key) {
+    if (key === "version") return;
+    if (desired[key] !== base[key]) {
+      builder.set(key, desired[key]);
+      hasChange = true;
+    }
+  });
+  if (!hasChange && desired) {
+    Object.keys(desired).forEach(function(key) {
+      if (key === "version") return;
+      builder.set(key, desired[key]);
+    });
+  }
+  return builder.build(extra);
+}
+function sendLiveSyncMutation(mutation) {
+  if (!activeLiveSyncRoomId || !lanClient.liveConnected || !mutation) return;
+  lanClient.sendLive(wrapLiveSyncPatch(activeLiveSyncRoomId, getLanClientId(), mutation));
+}
+async function applyConflictUseServer(payload) {
+  var server = payload && payload.serverSnapshot;
+  if (!server || !server.data) return;
+  applyLiveSyncApplied({
+    roomId: payload.roomId || activeLiveSyncRoomId,
+    entityType: payload.entityType,
+    entityId: payload.entityId,
+    patientId: payload.patientId,
+    version: server.version,
+    data: server.data
+  });
+  if (payload.draftId) {
+    try {
+      await deleteDraftConflict(payload.draftId);
+    } catch (_e) {
+    }
+  }
+}
+function formatConflictDraftLabel(draft2) {
+  var type = draft2 && draft2.entityType ? String(draft2.entityType) : "entidad";
+  var id = draft2 && draft2.entityId ? String(draft2.entityId) : "";
+  var keys = draft2 && Array.isArray(draft2.conflictingKeys) && draft2.conflictingKeys.length ? " \xB7 " + draft2.conflictingKeys.slice(0, 3).join(", ") : "";
+  var when = "";
+  try {
+    when = new Date(draft2.savedAt).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" });
+  } catch (_eWhen) {
+  }
+  return type + (id ? " " + id : "") + keys + (when ? " \u2014 " + when : "");
+}
+function draftRecordToConflictPayload(draft2) {
+  return {
+    transport: draft2.transport,
+    entityType: draft2.entityType,
+    entityId: draft2.entityId,
+    roomId: draft2.roomId,
+    patientId: draft2.patientId,
+    conflictingKeys: draft2.conflictingKeys || [],
+    localSnapshot: draft2.localSnapshot,
+    serverSnapshot: draft2.serverSnapshot
+  };
+}
+async function reopenConflictDraftFromStore(draftId) {
+  var draft2 = await getDraftConflict(draftId);
+  if (!draft2) {
+    runtime2.showToast("No se encontr\xF3 el borrador de conflicto", "error");
+    void renderLanPanel();
+    return;
+  }
+  var payload = draftRecordToConflictPayload(draft2);
+  openClinicalConflictViewer({
+    draftId: draft2.id,
+    conflictingKeys: payload.conflictingKeys,
+    localData: payload.localSnapshot && payload.localSnapshot.data,
+    serverData: payload.serverSnapshot && payload.serverSnapshot.data,
+    onUseServer: function() {
+      void applyConflictUseServer(Object.assign({}, payload, { draftId: draft2.id })).then(function() {
+        void renderLanPanel();
+      });
+    },
+    onEditDraft: function() {
+    },
+    onClose: function() {
+    }
+  });
+}
+async function appendLanConflictDraftsSection(root) {
+  if (!root) return;
+  var drafts = [];
+  try {
+    drafts = await listDraftConflicts();
+  } catch (_eList) {
+    drafts = [];
+  }
+  var prev = root.querySelector("#lan-conflict-drafts-card");
+  if (prev) prev.remove();
+  var card = document.createElement("div");
+  card.id = "lan-conflict-drafts-card";
+  card.className = "lan-connect-card";
+  var title = document.createElement("div");
+  title.className = "lan-connect-card-title";
+  title.textContent = "Borradores de conflicto (" + drafts.length + ")";
+  card.appendChild(title);
+  if (!drafts.length) {
+    var empty = document.createElement("p");
+    empty.className = "lan-connect-card-hint";
+    empty.textContent = "No hay borradores guardados. Si cierras el visor tras un conflicto de sincronizaci\xF3n, vuelve aqu\xED para retomarlo.";
+    card.appendChild(empty);
+  } else {
+    var hint = document.createElement("p");
+    hint.className = "lan-connect-card-hint";
+    hint.textContent = "Toca un borrador para volver a abrir el comparador y resolver el conflicto.";
+    card.appendChild(hint);
+    var list = document.createElement("ul");
+    list.style.listStyle = "none";
+    list.style.padding = "0";
+    list.style.margin = "8px 0 0";
+    drafts.forEach(function(draft2) {
+      if (!draft2 || !draft2.id) return;
+      var li = document.createElement("li");
+      li.style.marginBottom = "6px";
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn-lan-secondary";
+      btn.style.width = "100%";
+      btn.style.textAlign = "left";
+      btn.textContent = formatConflictDraftLabel(draft2);
+      btn.addEventListener("click", function() {
+        void reopenConflictDraftFromStore(draft2.id);
+      });
+      li.appendChild(btn);
+      list.appendChild(li);
+    });
+    card.appendChild(list);
+  }
+  root.appendChild(card);
+}
+async function handleSyncConflict(payload) {
+  var draftId = await saveDraftConflict({
+    transport: payload.transport,
+    entityType: payload.entityType,
+    entityId: payload.entityId,
+    roomId: payload.roomId || null,
+    patientId: payload.patientId || null,
+    localSnapshot: payload.localSnapshot,
+    serverSnapshot: payload.serverSnapshot,
+    conflictingKeys: payload.conflictingKeys
+  });
+  openClinicalConflictViewer({
+    draftId,
+    conflictingKeys: payload.conflictingKeys,
+    localData: payload.localSnapshot && payload.localSnapshot.data,
+    serverData: payload.serverSnapshot && payload.serverSnapshot.data,
+    onUseServer: function() {
+      void applyConflictUseServer(Object.assign({}, payload, { draftId })).then(function() {
+        void renderLanPanel();
+      });
+    },
+    onEditDraft: function() {
+    },
+    onClose: function() {
+    }
+  });
+  void renderLanPanel();
+}
+function wsConflictDetailToPayload(detail) {
+  return {
+    transport: "ws",
+    entityType: detail.entityType,
+    entityId: detail.entityId,
+    roomId: detail.roomId,
+    patientId: detail.patientId,
+    conflictingKeys: detail.conflictingKeys || [],
+    localSnapshot: {
+      expectedVersion: detail.client && detail.client.version != null ? detail.client.version : detail.expectedVersion,
+      data: detail.client && detail.client.data
+    },
+    serverSnapshot: {
+      version: detail.server && detail.server.version,
+      data: detail.server && detail.server.data
+    }
+  };
 }
 function getLanClientId() {
   try {
@@ -18593,7 +19210,7 @@ function getLanClientId() {
 }
 function getLanTeamCodeFromConfig() {
   var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
-  return normalizeStoredLanTeamCode(cfg.teamCode);
+  return trimStoredLanBearer(cfg.teamCode);
 }
 async function resolveSelfLanAdvertiseHostUrl() {
   if (!isLanElectronDesktop() || isLanRemoteJoinMode()) return "";
@@ -18625,7 +19242,7 @@ async function enrichLiveSyncHelloPayload(payload) {
 function applyLanHostUrlSwitch(hostUrl, teamCode, opts) {
   opts = opts || {};
   var url = String(hostUrl || "").trim().replace(/\/+$/, "");
-  var code = normalizeStoredLanTeamCode(teamCode);
+  var code = trimStoredLanBearer(teamCode);
   if (!url) return false;
   if (!opts.skipRememberPrimary && isLanRemoteJoinMode()) rememberPrimaryHostUrl(url);
   persistLanClientConfig(url, code);
@@ -19255,71 +19872,133 @@ function syncLiveSyncStatusChrome() {
   }
 }
 function emitLiveSyncAgendaUpsert(eventObj) {
-  if (!activeLiveSyncRoomId || !lanClient.liveConnected || !eventObj) return;
-  lanClient.sendLive({
-    type: "livesync:patch",
+  if (!eventObj || !eventObj.id) return;
+  var mutation = buildLiveSyncMutationFromDesired("agenda", eventObj.id, eventObj, {
     roomId: activeLiveSyncRoomId,
-    clientId: getLanClientId(),
-    entity: "agenda",
-    op: "upsert",
-    id: eventObj.id,
-    body: eventObj,
-    updatedAt: eventObj.updatedAt
+    op: "upsert"
   });
+  sendLiveSyncMutation(mutation);
 }
 function emitLiveSyncAgendaDelete(id, updatedAt) {
-  if (!activeLiveSyncRoomId || !lanClient.liveConnected) return;
-  lanClient.sendLive({
-    type: "livesync:patch",
-    roomId: activeLiveSyncRoomId,
-    clientId: getLanClientId(),
-    entity: "agenda",
-    op: "delete",
-    id,
-    updatedAt
-  });
+  var eid = String(id || "").trim();
+  if (!eid) return;
+  var base = getLiveSyncEntityBase("agenda", eid, null) || { id: eid, version: 0, updatedAt };
+  var mutation = createMutationBuilder("agenda", eid).captureBase(base).build({ roomId: activeLiveSyncRoomId, op: "delete" });
+  sendLiveSyncMutation(mutation);
 }
 function emitLiveSyncTodoUpsert(patientId, todo) {
-  if (!activeLiveSyncRoomId || !lanClient.liveConnected || !todo) return;
+  if (!todo) return;
   if (String(patientId || "").indexOf("demo-") === 0) return;
-  lanClient.sendLive({
-    type: "livesync:patch",
+  var mutation = buildLiveSyncMutationFromDesired("todo", todo.id, todo, {
     roomId: activeLiveSyncRoomId,
-    clientId: getLanClientId(),
-    entity: "todo",
-    op: "upsert",
-    id: todo.id,
     patientId,
-    body: todo,
-    updatedAt: todo.updatedAt
+    op: "upsert"
   });
+  sendLiveSyncMutation(mutation);
 }
 function emitLiveSyncTodoDelete(patientId, id, updatedAt) {
-  if (!activeLiveSyncRoomId || !lanClient.liveConnected) return;
-  lanClient.sendLive({
-    type: "livesync:patch",
-    roomId: activeLiveSyncRoomId,
-    clientId: getLanClientId(),
-    entity: "todo",
-    op: "delete",
-    id,
-    patientId,
-    updatedAt
-  });
+  var eid = String(id || "").trim();
+  if (!eid) return;
+  var base = getLiveSyncEntityBase("todo", eid, patientId) || {
+    id: eid,
+    version: 0,
+    updatedAt,
+    patientId
+  };
+  var mutation = createMutationBuilder("todo", eid).captureBase(base).build({ roomId: activeLiveSyncRoomId, patientId, op: "delete" });
+  sendLiveSyncMutation(mutation);
 }
 function emitLiveSyncPatientDelete(patient) {
-  if (!activeLiveSyncRoomId || !lanClient.liveConnected || !patient) return;
+  if (!patient) return;
   if (String(patient.id || "").indexOf("demo-") === 0) return;
-  lanClient.sendLive({
-    type: "livesync:patch",
-    roomId: activeLiveSyncRoomId,
-    clientId: getLanClientId(),
-    entity: "patient",
-    op: "delete",
-    id: patient.id,
-    registro: patient.registro || "",
-    updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-  });
+  var mutation = buildLiveSyncMutationFromDesired(
+    "patient",
+    patient.id,
+    { id: patient.id, registro: patient.registro || "" },
+    { roomId: activeLiveSyncRoomId, op: "delete" }
+  );
+  sendLiveSyncMutation(mutation);
+}
+function applyLiveSyncApplied(msg) {
+  if (!msg || isPitchPatientIsolationActive()) return;
+  if (msg.roomId && activeLiveSyncRoomId && msg.roomId !== activeLiveSyncRoomId) return;
+  var entityType = msg.entityType;
+  var entityId = String(msg.entityId || "").trim();
+  var patientId = msg.patientId;
+  var version = Number(msg.version || 1);
+  var entityData = msg.data || {};
+  if (!entityType || !entityId) return;
+  rememberLiveSyncEntity(entityType, entityId, patientId, version, entityData);
+  if (entityType === "agenda") {
+    var agenda = storage.getScheduledProcedures();
+    if (entityData._deleted) {
+      agenda = agenda.filter(function(ev) {
+        return ev && ev.id !== entityId;
+      });
+    } else {
+      var agendaFound = false;
+      agenda = agenda.map(function(ev) {
+        if (ev && ev.id === entityId) {
+          agendaFound = true;
+          return Object.assign({}, ev, entityData, { id: entityId, version });
+        }
+        return ev;
+      });
+      if (!agendaFound) {
+        agenda.push(Object.assign({}, entityData, { id: entityId, version }));
+      }
+    }
+    storage.saveScheduledProcedures(agenda);
+    if (runtime2.getActiveAppTab() === "agenda" || runtime2.isMobileWeb()) {
+      runtime2.renderProcedureAgendaPanel();
+    }
+  } else if (entityType === "todo" && patientId) {
+    var pid = String(patientId);
+    if (pid.indexOf("demo-") !== 0) {
+      var todos = storage.getTodos(pid);
+      if (entityData._deleted) {
+        todos = todos.filter(function(t2) {
+          return t2 && t2.id !== entityId;
+        });
+      } else {
+        var todoFound = false;
+        todos = todos.map(function(t2) {
+          if (t2 && t2.id === entityId) {
+            todoFound = true;
+            return Object.assign({}, t2, entityData, { id: entityId, version });
+          }
+          return t2;
+        });
+        if (!todoFound) {
+          todos.push(Object.assign({}, entityData, { id: entityId, version }));
+        }
+      }
+      storage.saveTodos(pid, filterTodosRespectingDismissals(pid, todos));
+    }
+    runtime2.refreshAllTodoUIs();
+  } else if (entityType === "patient") {
+    var row = patients.find(function(p) {
+      return p && p.id === entityId;
+    });
+    if (row && !entityData._deleted) {
+      Object.assign(row, entityData, { version });
+      saveState({ immediate: true });
+      runtime2.renderPatientList();
+      if (runtime2.getActiveId() === entityId) {
+        try {
+          runtime2.renderNoteForm();
+        } catch (_eNote) {
+        }
+        try {
+          runtime2.renderLabHistoryPanel();
+        } catch (_eLab) {
+        }
+      }
+    }
+  }
+  if (msg.autoMerged) {
+    runtime2.showToast("Cambios fusionados autom\xE1ticamente con el servidor.", "success");
+  }
 }
 function onLiveSyncWireMessage(data) {
   if (!data || !isLiveSyncEnvelope(data)) return;
@@ -19371,12 +20050,9 @@ function onLiveSyncWireMessage(data) {
     applyLiveSyncMerged(mergedBundle);
     return;
   }
-  if (data.type === "livesync:patch") {
-    var mergedPatch = mergeLiveSyncBundles([
-      { agenda: storage.getScheduledProcedures(), todos: collectTodosMapForLiveSync() },
-      data
-    ]);
-    applyLiveSyncMerged(mergedPatch);
+  if (data.type === "livesync:applied") {
+    applyLiveSyncApplied(data);
+    return;
   }
 }
 async function reconcileLiveSyncRoom(roomId) {
@@ -19453,6 +20129,13 @@ function leaveLiveSyncRoom(opts) {
 lanClient.addEventListener("lan-live", function(ev) {
   onLiveSyncWireMessage(ev.detail);
 });
+lanClient.addEventListener("lan-applied", function(ev) {
+  applyLiveSyncApplied(ev.detail);
+});
+lanClient.addEventListener("lan-conflict", function(ev) {
+  if (!ev.detail) return;
+  void handleSyncConflict(wsConflictDetailToPayload(ev.detail));
+});
 lanClient.addEventListener("lan-status", function(ev) {
   if (!ev.detail || ev.detail.connected) return;
   if (activeLiveSyncRoomId && getRoomMembership()) scheduleSurrogateFailoverCheck();
@@ -19511,7 +20194,7 @@ function appendLanJoinOtherMacSection(root) {
   inputInvite.id = "lan-input-invite-link";
   inputInvite.rows = 2;
   inputInvite.autocomplete = "off";
-  inputInvite.placeholder = "http://\u2026/join?code=\u2026 o \u2026/mobile/?code=\u2026";
+  inputInvite.placeholder = "http://\u2026/join/req_\u2026 o PIN del anfitri\xF3n";
   inner.appendChild(inputInvite);
   var row = document.createElement("div");
   row.className = "lan-connect-actions-row";
@@ -19612,7 +20295,7 @@ async function renderLanPanelOnce() {
       inputInvite.id = "lan-input-invite-link";
       inputInvite.rows = 3;
       inputInvite.autocomplete = "off";
-      inputInvite.placeholder = "Pega aqu\xED el enlace (http://\u2026/join?\u2026 o \u2026/mobile/?\u2026)";
+      inputInvite.placeholder = "Pega aqu\xED el enlace (http://\u2026/join/req_\u2026)";
       fieldInvite.appendChild(labelInvite);
       fieldInvite.appendChild(inputInvite);
       card.appendChild(fieldInvite);
@@ -19648,6 +20331,8 @@ async function renderLanPanelOnce() {
       card.appendChild(postHint);
     }
     root.appendChild(card);
+    await appendLanConflictDraftsSection(root);
+    if (lanPanelRenderStale(gen)) return;
     appendLanDisconnectBannerPref(root);
     if (desktopHost && !String(cfg.hostUrl || "").trim()) {
       resolveLanHostUrlForShare().then(function(u) {
@@ -19720,13 +20405,37 @@ async function renderLanPanelOnce() {
     leaveLiveRow.appendChild(btnLeaveLive);
     statusCard.appendChild(leaveLiveRow);
   }
+  if (desktopHost) {
+    var pairingHint = document.createElement("p");
+    pairingHint.className = "lan-connect-card-hint";
+    pairingHint.textContent = "Genera un enlace y PIN de un solo uso para que otras R+ o el iPad se unan sin exponer el token permanente del servidor.";
+    statusCard.appendChild(pairingHint);
+    var rowMint = document.createElement("div");
+    rowMint.className = "lan-connect-actions-row";
+    var btnMint = document.createElement("button");
+    btnMint.type = "button";
+    btnMint.className = "btn-lan-primary";
+    btnMint.style.flex = "1";
+    btnMint.textContent = "Generar enlace / PIN";
+    btnMint.setAttribute("data-lan-action", "mint-pairing");
+    rowMint.appendChild(btnMint);
+    statusCard.appendChild(rowMint);
+    var pairingDisplay = document.createElement("div");
+    pairingDisplay.id = "lan-pairing-display";
+    pairingDisplay.className = "lan-connect-card-hint";
+    pairingDisplay.hidden = true;
+    pairingDisplay.style.marginTop = "8px";
+    pairingDisplay.style.lineHeight = "1.5";
+    statusCard.appendChild(pairingDisplay);
+    updateLanPairingDisplay(statusCard);
+  }
   var rowInvite = document.createElement("div");
   rowInvite.className = "lan-connect-actions-row";
   var btnCopyStored = document.createElement("button");
   btnCopyStored.type = "button";
   btnCopyStored.className = "btn-lan-secondary";
   btnCopyStored.style.flex = "1";
-  btnCopyStored.textContent = "Copiar invitaci\xF3n para enviar";
+  btnCopyStored.textContent = "Copiar enlace de invitaci\xF3n";
   btnCopyStored.onclick = function() {
     void copyLanInviteLinkFromUi().catch(function(err) {
       console.error("copyLanInviteLinkFromUi", err);
@@ -19749,6 +20458,7 @@ async function renderLanPanelOnce() {
   rowInvite.appendChild(btnCopyMobile);
   statusCard.appendChild(rowInvite);
   root.appendChild(statusCard);
+  void maybeShowLanMigrationNotice();
   var roomsCard = document.createElement("div");
   roomsCard.className = "lan-connect-card lan-rooms-panel";
   var roomsTitle = document.createElement("div");
@@ -19792,7 +20502,7 @@ async function renderLanPanelOnce() {
     var errHttp = document.createElement("p");
     errHttp.className = "lan-connect-card-hint";
     if (roomsFetch.httpStatus === 401) {
-      errHttp.innerHTML = "El <strong>c\xF3digo del equipo</strong> que guardaste en esta R+ no coincide con el que usa el proceso servidor (archivo <code>lan-team-code.txt</code>, variable <code>R_PLUS_LAN_TEAM_CODE</code> o el valor por defecto <code>" + esc10(DEFAULT_LAN_TEAM_CODE) + "</code>). Deben ser <strong>exactamente el mismo texto</strong> en ambos sitios. Tras cambiar el archivo, reinicia R+.";
+      errHttp.innerHTML = "El <strong>token Bearer</strong> que guardaste en esta R+ no coincide con el del proceso servidor (<code>lan-team-code.txt</code> o <code>R_PLUS_LAN_TEAM_CODE</code>). En el anfitri\xF3n deben ser el mismo valor; tras cambiar el archivo, reinicia R+. Si te uniste con un enlace viejo (<code>?code=</code>), pide un enlace o PIN nuevo.";
     } else {
       var rawBody = String(roomsFetch.errorDetail || "");
       var detail = "";
@@ -19855,6 +20565,8 @@ async function renderLanPanelOnce() {
   }
   if (lanPanelRenderStale(gen)) return;
   root.appendChild(roomsCard);
+  await appendLanConflictDraftsSection(root);
+  if (lanPanelRenderStale(gen)) return;
   appendLanDisconnectBannerPref(root);
   purgeDuplicateLanRoomsPanels(root);
   patchLanPanelJoinButtons();
@@ -19880,7 +20592,11 @@ async function saveLanHostTeamCodeFromUi() {
     return;
   }
   if (res && res.ok) {
-    var plainTrim = String(plain || "").trim() || DEFAULT_LAN_TEAM_CODE;
+    var plainTrim = String(plain || "").trim();
+    if (!plainTrim) {
+      runtime2.showToast("Escribe un token de al menos 32 caracteres.", "error");
+      return;
+    }
     var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
     var hostUrl = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
     if (hostUrl && plainTrim) {
@@ -19925,27 +20641,51 @@ async function resetLanSquadHostStateFromUi() {
     runtime2.showToast(res && res.error ? res.error : "No se pudo borrar el archivo.", "error");
   }
 }
+async function ensureLanPairingForShare() {
+  var hostUrl = await resolveLanHostUrlForShare();
+  if (!hostUrl) {
+    var errUrl = new Error("no_host_url");
+    errUrl.code = "no_host_url";
+    throw errUrl;
+  }
+  if (!_lastLanPairing || !_lastLanPairing.ticketId) {
+    await mintLanPairingTicket();
+  }
+  if (!_lastLanPairing || !_lastLanPairing.ticketId) {
+    var errTicket = new Error("no_ticket");
+    errTicket.code = "no_ticket";
+    throw errTicket;
+  }
+  return { hostUrl, pairing: _lastLanPairing };
+}
 async function copyMobileLanLinkFromUi(opts) {
   opts = opts || {};
   var silent = !!opts.silent;
-  var hostUrl = await resolveLanHostUrlForShare();
-  var teamCode = String(await resolveLanTeamCodeForShare()).trim();
-  if (!hostUrl || !teamCode) {
+  var share;
+  try {
+    share = await ensureLanPairingForShare();
+  } catch (e) {
     if (!silent) {
-      runtime2.showToast(
-        !hostUrl ? "Falta la direcci\xF3n del servidor (o no pudimos detectar la IP en esta computadora)." : "Falta el c\xF3digo del equipo.",
-        "error"
-      );
+      if (e && e.code === "no_host_url") {
+        runtime2.showToast(
+          "Falta la direcci\xF3n del servidor (o no pudimos detectar la IP en esta computadora).",
+          "error"
+        );
+      } else {
+        runtime2.showToast("Genera primero un enlace / PIN o revisa el token del anfitri\xF3n.", "error");
+      }
     }
     return false;
   }
-  var roomId = String(activeLiveSyncRoomId || "").trim();
-  var urls = buildLanJoinUrls(hostUrl, teamCode, roomId);
-  var copied = await copyToClipboardSafe(urls.mobileUrl);
+  var urls = buildLanJoinUrls(share.hostUrl, share.pairing.ticketId);
+  var link = share.pairing.joinUrl || urls.mobileUrl;
+  var copied = await copyToClipboardSafe(link);
   if (copied) {
+    var root = document.getElementById("lan-connection-panel-root");
+    updateLanPairingDisplay(root);
     if (!silent) {
       runtime2.showToast(
-        roomId ? "Enlace m\xF3vil copiado (incluye sala). \xC1brelo en Safari en la misma Wi\u2011Fi." : "Enlace m\xF3vil copiado. En el iPad elige la misma sala LiveSync que el equipo.",
+        "Enlace m\xF3vil copiado. \xC1brelo en Safari en la misma Wi\u2011Fi; luego elige la sala LiveSync.",
         "success"
       );
     }
@@ -19957,26 +20697,31 @@ async function copyMobileLanLinkFromUi(opts) {
 async function copyLanInviteLinkFromUi(opts) {
   opts = opts || {};
   var silent = !!opts.silent;
-  var hostUrl = await resolveLanHostUrlForShare();
-  var teamCode = String(await resolveLanTeamCodeForShare()).trim();
-  if (!hostUrl || !teamCode) {
+  var share;
+  try {
+    share = await ensureLanPairingForShare();
+  } catch (e) {
     if (!silent) {
-      runtime2.showToast(
-        !hostUrl ? "Falta la direcci\xF3n del servidor (o no pudimos detectar la IP en esta computadora)." : "Falta el c\xF3digo del equipo.",
-        "error"
-      );
+      if (e && e.code === "no_host_url") {
+        runtime2.showToast(
+          "Falta la direcci\xF3n del servidor (o no pudimos detectar la IP en esta computadora).",
+          "error"
+        );
+      } else {
+        runtime2.showToast("Genera primero un enlace / PIN o revisa el token del anfitri\xF3n.", "error");
+      }
     }
     return false;
   }
-  var roomId = String(activeLiveSyncRoomId || "").trim();
-  var urls = buildLanJoinUrls(hostUrl, teamCode, roomId);
-  var copied = await copyToClipboardSafe(urls.joinUrl);
+  var urls = buildLanJoinUrls(share.hostUrl, share.pairing.ticketId);
+  var link = share.pairing.joinUrl || urls.joinUrl;
+  var copied = await copyToClipboardSafe(link);
   if (copied) {
+    var root = document.getElementById("lan-connection-panel-root");
+    updateLanPairingDisplay(root);
     if (!silent) {
-      runtime2.showToast(
-        roomId ? "Enlace de invitaci\xF3n copiado (incluye sala). Comp\xE1rtelo por WhatsApp, correo o una nota." : "Enlace de invitaci\xF3n copiado. Comp\xE1rtelo por WhatsApp, correo o una nota.",
-        "success"
-      );
+      var pinHint = share.pairing.pin ? " PIN: " + share.pairing.pin + "." : "";
+      runtime2.showToast("Enlace de invitaci\xF3n copiado." + pinHint, "success");
     }
     return true;
   }
@@ -19991,17 +20736,34 @@ function joinLanFromInviteUi() {
     return;
   }
   var parsed = parseLanInviteInput(raw);
-  var hostUrl = String(parsed.hostUrl || "").trim().replace(/\/+$/, "");
-  var teamCode = String(parsed.teamCode || "").trim();
-  var roomId = String(parsed.roomId || "").trim();
-  if (!hostUrl || !teamCode) {
+  if (parsed.legacyInvite) {
     runtime2.showToast(
-      "No reconocimos un enlace v\xE1lido. Pide al anfitri\xF3n que te reenv\xEDe el enlace (\u2026/join?code=\u2026 o \u2026/mobile/?code=\u2026).",
+      "Este enlace ya no es v\xE1lido. Pide al anfitri\xF3n un nuevo enlace o PIN.",
       "error"
     );
     return;
   }
-  configureLanFromMobileJoin(hostUrl, teamCode, roomId);
+  var ticketId = String(parsed.ticketId || "").trim();
+  if (ticketId) {
+    var hostUrl = String(parsed.hostUrl || "").trim().replace(/\/+$/, "");
+    if (!hostUrl) {
+      var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
+      hostUrl = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
+    }
+    if (!hostUrl) {
+      runtime2.showToast(
+        "Pega el enlace completo (http://\u2026/join/req_\u2026) con la direcci\xF3n del anfitri\xF3n.",
+        "error"
+      );
+      return;
+    }
+    void exchangeLanJoinFromInvite(hostUrl, ticketId, parsed.roomId);
+    return;
+  }
+  runtime2.showToast(
+    "No reconocimos un enlace v\xE1lido. Pide al anfitri\xF3n un enlace /join/req_\u2026 o el PIN actual.",
+    "error"
+  );
 }
 async function saveLanSettingsFromUi(opts) {
   opts = opts || {};
@@ -20013,10 +20775,15 @@ async function saveLanSettingsFromUi(opts) {
     if (autoHost) hostInput.value = autoHost;
   }
   var hostUrl = String(hostInput && hostInput.value ? hostInput.value : "").trim().replace(/\/+$/, "");
-  var teamCode = String(await resolveLanTeamCodeForShare()).trim();
+  var teamCode = "";
+  if (uiRole === "host") {
+    teamCode = String(await resolveHostBearerToken()).trim();
+  } else {
+    teamCode = String(await resolveLanTeamCodeForShare()).trim();
+  }
   if (!hostUrl || !teamCode) {
     runtime2.showToast(
-      !hostUrl ? uiRole === "host" ? "No pudimos detectar la IP. Escribe la direcci\xF3n http://\u2026 que ver\xE1n las otras R+." : "Escribe la direcci\xF3n del servidor que te dio el anfitri\xF3n." : uiRole === "host" ? "Escribe el c\xF3digo del equipo (por defecto " + DEFAULT_LAN_TEAM_CODE + ")." : "Escribe el c\xF3digo que te dio quien abri\xF3 la sala.",
+      !hostUrl ? uiRole === "host" ? "No pudimos detectar la IP. Escribe la direcci\xF3n http://\u2026 que ver\xE1n las otras R+." : "Escribe la direcci\xF3n del servidor que te dio el anfitri\xF3n." : uiRole === "host" ? "No hay token seguro del servidor en esta Mac. Reinicia R+ como anfitri\xF3n." : "\xDAnete con el enlace o PIN que te dio quien abri\xF3 la sala.",
       "error"
     );
     return;
@@ -20042,9 +20809,10 @@ async function saveLanSettingsFromUi(opts) {
     copiedOk = await copyLanInviteLinkFromUi({ silent: true });
   }
   if (pingOk) {
+    void maybeShowLanMigrationNotice();
     if (copyInviteAfter) {
       runtime2.showToast(
-        copiedOk ? "Anfitri\xF3n listo. La invitaci\xF3n ya est\xE1 en el portapapeles; comp\xE1rtela por WhatsApp o correo." : "Anfitri\xF3n listo, pero no se pudo copiar solo. Pulsa \xABCopiar invitaci\xF3n otra vez\xBB.",
+        copiedOk ? "Anfitri\xF3n listo. La invitaci\xF3n ya est\xE1 en el portapapeles; comp\xE1rtela por WhatsApp o correo." : "Anfitri\xF3n listo, pero no se pudo copiar solo. Pulsa \xABGenerar enlace / PIN\xBB o \xABCopiar enlace de invitaci\xF3n\xBB.",
         copiedOk ? "success" : "error"
       );
     } else {
@@ -20225,15 +20993,8 @@ function syncSettingsLanHostDiskSection() {
 async function syncLanHostTeamCodeSettingsInput() {
   var input = document.getElementById("settings-lan-host-team-code-input");
   if (!input) return;
-  var code = DEFAULT_LAN_TEAM_CODE;
-  if (window.electronAPI && typeof window.electronAPI.getLanEffectiveTeamCode === "function") {
-    try {
-      var info = await window.electronAPI.getLanEffectiveTeamCode();
-      if (info && info.ok && info.code) code = String(info.code);
-    } catch (_e) {
-    }
-  }
-  if (!String(input.value || "").trim()) input.value = code;
+  var code = await resolveHostBearerToken();
+  if (!String(input.value || "").trim() && code) input.value = code;
 }
 function closeConnectionDropdown() {
   var dd = document.getElementById("connection-dropdown");
@@ -20293,6 +21054,7 @@ function configureLanFromMobileJoin(hostUrl, teamCode, roomId) {
       }, 400);
       return;
     }
+    void maybeShowLanMigrationNotice();
     var rid = String(roomId || "").trim();
     if (rid) {
       joinLanRoom(rid, "");
@@ -23406,7 +24168,7 @@ function registerSesionIngresoTrendsSendRuntime(partial) {
   if (!partial || typeof partial !== "object") return;
   Object.assign(rt12, partial);
 }
-function escHtml3(s) {
+function escHtml4(s) {
   return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function getSelectedIds2(root) {
@@ -23451,8 +24213,8 @@ function openSesionIngresoTrendsSendModal() {
       ${panels.map(
     (item) => `
         <label class="sesion-ingreso-send-item">
-          <input type="checkbox" data-panel-id="${escHtml3(item.id)}" ${selected.includes(item.id) ? "checked" : ""} />
-          <span>${escHtml3(item.sectionLabel)} \u2014 ${escHtml3(item.title)}</span>
+          <input type="checkbox" data-panel-id="${escHtml4(item.id)}" ${selected.includes(item.id) ? "checked" : ""} />
+          <span>${escHtml4(item.sectionLabel)} \u2014 ${escHtml4(item.title)}</span>
           <small>${item.seriesCount} serie(s)</small>
         </label>`
   ).join("")}
@@ -39458,11 +40220,11 @@ function displayBalance(n) {
   if (typeof n !== "number" || !Number.isFinite(n)) return "\u2014";
   return formatBalanceLive(n);
 }
-function escHtml4(s) {
+function escHtml5(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function escAttr(s) {
-  return escHtml4(s).replace(/'/g, "&#39;");
+  return escHtml5(s).replace(/'/g, "&#39;");
 }
 function hasPendingMedProposals(pendienteReceta) {
   return MED_FIELD_KEYS.some(function(k) {
@@ -39492,15 +40254,15 @@ function renderEstadoClinicoSection(monitoreo, activeId2, patient) {
     var badge = pendingVal ? '<span class="ea-pendiente-badge">Propuesta receta</span>' : monitoreo.confirmado && monitoreo.confirmado[key] ? '<span class="ea-confirmed-badge">Confirmado</span>' : "";
     var selectOpts = '<option value="">\u2014 Seleccionar de receta \u2014</option>' + options.map(function(opt) {
       var sel = opt === currentVal ? " selected" : "";
-      return '<option value="' + escAttr(opt) + '"' + sel + ">" + escHtml4(opt) + "</option>";
+      return '<option value="' + escAttr(opt) + '"' + sel + ">" + escHtml5(opt) + "</option>";
     }).join("");
-    return '<div class="ea-clinico-med-field" data-ea-med-key="' + key + '"><div class="ea-clinico-med-head"><span class="ea-label">' + MED_FIELD_LABELS[key] + "</span>" + badge + '</div><select class="ea-input" data-ea-med-select="' + key + '">' + selectOpts + '</select><input type="text" class="ea-input" data-ea-med-input="' + key + '" value="' + escAttr(currentVal) + '" placeholder="Texto manual">' + (pendingVal ? '<div class="ea-pendiente-preview" title="Propuesta pendiente">' + escHtml4(pendingVal) + `</div><div class="ea-clinico-med-actions"><button type="button" class="ea-btn ea-btn--primary" onclick="confirmEaMedField('` + key + `')">Confirmar</button><button type="button" class="ea-btn ea-btn--ghost" onclick="discardEaMedProposal('` + key + `')">Descartar</button></div>` : "") + "</div>";
+    return '<div class="ea-clinico-med-field" data-ea-med-key="' + key + '"><div class="ea-clinico-med-head"><span class="ea-label">' + MED_FIELD_LABELS[key] + "</span>" + badge + '</div><select class="ea-input" data-ea-med-select="' + key + '">' + selectOpts + '</select><input type="text" class="ea-input" data-ea-med-input="' + key + '" value="' + escAttr(currentVal) + '" placeholder="Texto manual">' + (pendingVal ? '<div class="ea-pendiente-preview" title="Propuesta pendiente">' + escHtml5(pendingVal) + `</div><div class="ea-clinico-med-actions"><button type="button" class="ea-btn ea-btn--primary" onclick="confirmEaMedField('` + key + `')">Confirmar</button><button type="button" class="ea-btn ea-btn--ghost" onclick="discardEaMedProposal('` + key + `')">Descartar</button></div>` : "") + "</div>";
   }).join("");
   var soporteOpts = SOPORTE_OPTIONS.map(function(opt) {
     var sel = ec.soporte === opt ? " selected" : "";
-    return '<option value="' + escAttr(opt) + '"' + sel + ">" + escHtml4(opt) + "</option>";
+    return '<option value="' + escAttr(opt) + '"' + sel + ">" + escHtml5(opt) + "</option>";
   }).join("");
-  return '<details class="ea-estado-clinico ea-card"' + (anyPending ? " open" : "") + '><summary>Estado cl\xEDnico general</summary><div class="ea-clinico-body"><div class="ea-clinico-grid"><label class="ea-field"><span class="ea-label">FOUR (/16)</span><input type="number" class="ea-input" data-ea-ec="four" min="0" max="16" step="1" value="' + escAttr(ec.four) + '"></label><label class="ea-field"><span class="ea-label">Esferas</span><input type="number" class="ea-input" data-ea-ec="esferas" min="0" step="1" value="' + escAttr(ec.esferas) + '"></label><label class="ea-field ea-field--full"><span class="ea-label">Soporte respiratorio</span><select class="ea-input" data-ea-ec="soporte">' + soporteOpts + '</select></label><label class="ea-field"><span class="ea-label">Dieta</span><input type="text" class="ea-input" data-ea-ec="dieta" value="' + escAttr(ec.dieta) + '"></label><label class="ea-field"><span class="ea-label">Kcal/kg</span><input type="number" class="ea-input" data-ea-ec="kcalKg" step="any" value="' + escAttr(ec.kcalKg) + '"></label><label class="ea-field"><span class="ea-label">Kcal total</span><input type="number" class="ea-input" data-ea-ec="kcal" step="any" min="0" value="' + escAttr(ec.kcal) + '" placeholder="Total"></label></div><p class="ea-diet-weight-hint">' + escHtml4(dietWeightHint) + '</p><div class="ea-clinico-med-grid">' + medFieldsHtml + "</div>" + (anyPending ? '<div class="ea-clinico-actions"><button type="button" class="ea-btn ea-btn--primary" onclick="confirmAllEaMedProposals()">Confirmar todas las propuestas</button></div>' : "") + "</div></details>";
+  return '<details class="ea-estado-clinico ea-card"' + (anyPending ? " open" : "") + '><summary>Estado cl\xEDnico general</summary><div class="ea-clinico-body"><div class="ea-clinico-grid"><label class="ea-field"><span class="ea-label">FOUR (/16)</span><input type="number" class="ea-input" data-ea-ec="four" min="0" max="16" step="1" value="' + escAttr(ec.four) + '"></label><label class="ea-field"><span class="ea-label">Esferas</span><input type="number" class="ea-input" data-ea-ec="esferas" min="0" step="1" value="' + escAttr(ec.esferas) + '"></label><label class="ea-field ea-field--full"><span class="ea-label">Soporte respiratorio</span><select class="ea-input" data-ea-ec="soporte">' + soporteOpts + '</select></label><label class="ea-field"><span class="ea-label">Dieta</span><input type="text" class="ea-input" data-ea-ec="dieta" value="' + escAttr(ec.dieta) + '"></label><label class="ea-field"><span class="ea-label">Kcal/kg</span><input type="number" class="ea-input" data-ea-ec="kcalKg" step="any" value="' + escAttr(ec.kcalKg) + '"></label><label class="ea-field"><span class="ea-label">Kcal total</span><input type="number" class="ea-input" data-ea-ec="kcal" step="any" min="0" value="' + escAttr(ec.kcal) + '" placeholder="Total"></label></div><p class="ea-diet-weight-hint">' + escHtml5(dietWeightHint) + '</p><div class="ea-clinico-med-grid">' + medFieldsHtml + "</div>" + (anyPending ? '<div class="ea-clinico-actions"><button type="button" class="ea-btn ea-btn--primary" onclick="confirmAllEaMedProposals()">Confirmar todas las propuestas</button></div>' : "") + "</div></details>";
 }
 function syncEstadoActualTextarea(monitoreo, patient) {
   var texto = generateEstadoActualText(monitoreo, patient);
@@ -39880,12 +40642,12 @@ function syncIoBalanceFromForm(form) {
 function formatSnapshotEgresos(io) {
   io = io || {};
   if (Array.isArray(io.egrParts) && io.egrParts.length) {
-    return escHtml4(io.egrParts.map(formatEgresoPartForText).join(" \xB7 "));
+    return escHtml5(io.egrParts.map(formatEgresoPartForText).join(" \xB7 "));
   }
   var egr = io.egr;
   if (egr == null || egr === "") return "\u2014";
-  if (isIoNumericValue2(egr)) return escHtml4(String(egr) + " CC (DIURESIS)");
-  return escHtml4(toEaSalidaText(egr));
+  if (isIoNumericValue2(egr)) return escHtml5(String(egr) + " CC (DIURESIS)");
+  return escHtml5(toEaSalidaText(egr));
 }
 function renderSnapshotSection(snapshot, balTurno, balGlobal) {
   var vitalsHtml = VITAL_KEYS2.map(function(key) {
@@ -39901,7 +40663,7 @@ function renderSnapshotSection(snapshot, balTurno, balGlobal) {
     var series = vitalSeriesFromMedicion(fakeMed)[key] || [];
     var display = series.length > 0 ? series.map(function(rd) {
       var bit = displayValue(rd.value);
-      if (rd.time) bit += " @ " + escHtml4(rd.time);
+      if (rd.time) bit += " @ " + escHtml5(rd.time);
       return bit;
     }).join(" \xB7 ") : displayValue(val2);
     return '<div class="' + cls + '"><span class="ea-snapshot-label">' + VITAL_LABELS2[key] + '</span><span class="ea-snapshot-value">' + display + '</span><span class="ea-snapshot-unit">' + (VITAL_UNITS[key] || "") + "</span>" + meta + "</div>";
@@ -39919,7 +40681,7 @@ function renderSnapshotSection(snapshot, balTurno, balGlobal) {
       return '<span class="ea-snapshot-glu-chip">' + displayValue(g3.value) + " MG/DL" + t2 + "</span>";
     }).join("");
   }
-  return '<section class="ea-section ea-card ea-snapshot-strip ea-snapshot-strip--primary" id="ea-snapshot"><div class="ea-snapshot-strip-head"><div class="ea-snapshot-strip-head-text"><h3 class="ea-section-title">Snapshot actual</h3><p class="ea-muted ea-snapshot-hint">Resumen del monitoreo \xB7 las tendencias est\xE1n debajo</p></div><div class="ea-snapshot-actions"><button type="button" class="ea-btn ea-btn--primary" onclick="openEstadoActualRegistroModal()">Registro manual</button><button type="button" class="ea-btn ea-btn--ghost" onclick="openEstadoActualPasteModal()">Pegar monitoreo</button></div></div><div class="ea-snapshot-strip-body"><div class="ea-snapshot-zone"><h4 class="ea-snapshot-zone-title">Signos vitales</h4><div class="ea-snapshot-vitals">' + vitalsHtml + '</div></div><div class="ea-snapshot-zone"><h4 class="ea-snapshot-zone-title">Glucometr\xEDas</h4><div class="ea-snapshot-glu">' + gluHtml + '</div></div><div class="ea-snapshot-zone"><h4 class="ea-snapshot-zone-title">Balance h\xEDdrico</h4><div class="ea-snapshot-io"><div><span class="ea-snapshot-label">Ingresos</span><span class="ea-snapshot-io-val">' + displayValue(snapshot.io.ing) + ' CC</span></div><div class="ea-snapshot-io-egr"><span class="ea-snapshot-label">Egresos</span><span class="ea-snapshot-io-val">' + formatSnapshotEgresos(snapshot.io) + "</span></div>" + (snapshot.io.evac != null && snapshot.io.evac !== "" ? '<div><span class="ea-snapshot-label">Evacuaciones</span><span class="ea-snapshot-io-val">' + escHtml4(formatEvacForText(snapshot.io.evac)) + "</span></div>" : "") + '<div><span class="ea-snapshot-label">Turno</span><span class="ea-snapshot-io-val">' + displayBalance(balTurno) + '</span></div><div><span class="ea-snapshot-label">Global</span><span class="ea-snapshot-io-val">' + displayBalance(balGlobal) + "</span></div></div></div></div></section>";
+  return '<section class="ea-section ea-card ea-snapshot-strip ea-snapshot-strip--primary" id="ea-snapshot"><div class="ea-snapshot-strip-head"><div class="ea-snapshot-strip-head-text"><h3 class="ea-section-title">Snapshot actual</h3><p class="ea-muted ea-snapshot-hint">Resumen del monitoreo \xB7 las tendencias est\xE1n debajo</p></div><div class="ea-snapshot-actions"><button type="button" class="ea-btn ea-btn--primary" onclick="openEstadoActualRegistroModal()">Registro manual</button><button type="button" class="ea-btn ea-btn--ghost" onclick="openEstadoActualPasteModal()">Pegar monitoreo</button></div></div><div class="ea-snapshot-strip-body"><div class="ea-snapshot-zone"><h4 class="ea-snapshot-zone-title">Signos vitales</h4><div class="ea-snapshot-vitals">' + vitalsHtml + '</div></div><div class="ea-snapshot-zone"><h4 class="ea-snapshot-zone-title">Glucometr\xEDas</h4><div class="ea-snapshot-glu">' + gluHtml + '</div></div><div class="ea-snapshot-zone"><h4 class="ea-snapshot-zone-title">Balance h\xEDdrico</h4><div class="ea-snapshot-io"><div><span class="ea-snapshot-label">Ingresos</span><span class="ea-snapshot-io-val">' + displayValue(snapshot.io.ing) + ' CC</span></div><div class="ea-snapshot-io-egr"><span class="ea-snapshot-label">Egresos</span><span class="ea-snapshot-io-val">' + formatSnapshotEgresos(snapshot.io) + "</span></div>" + (snapshot.io.evac != null && snapshot.io.evac !== "" ? '<div><span class="ea-snapshot-label">Evacuaciones</span><span class="ea-snapshot-io-val">' + escHtml5(formatEvacForText(snapshot.io.evac)) + "</span></div>" : "") + '<div><span class="ea-snapshot-label">Turno</span><span class="ea-snapshot-io-val">' + displayBalance(balTurno) + '</span></div><div><span class="ea-snapshot-label">Global</span><span class="ea-snapshot-io-val">' + displayBalance(balGlobal) + "</span></div></div></div></div></section>";
 }
 function renderHistorialSection(historial) {
   var sorted = historial.slice().sort(function(a, b) {
@@ -46227,7 +46989,7 @@ function updatePatient(field, value) {
     if (shellCtx.getActiveAppTab() === "agenda") renderProcedureAgendaPanel();
   }
 }
-function escHtml5(value) {
+function escHtml6(value) {
   return String(value == null ? "" : value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 function toLines(value) {
@@ -46327,7 +47089,7 @@ function buildClinicalHtmlExport(bundle) {
     var lines = toLines(values);
     if (!lines.length) return "<p><em>Sin contenido</em></p>";
     return "<ul>" + lines.map(function(line) {
-      return "<li>" + escHtml5(line) + "</li>";
+      return "<li>" + escHtml6(line) + "</li>";
     }).join("") + "</ul>";
   }
   function renderOtherSections() {
@@ -46336,12 +47098,12 @@ function buildClinicalHtmlExport(bundle) {
     return otros.filter(function(item) {
       return item && typeof item === "object";
     }).map(function(item) {
-      return "<article><h4>" + escHtml5(item.titulo || "Seccion sin titulo") + "</h4>" + renderList(item.contenido || "") + "</article>";
+      return "<article><h4>" + escHtml6(item.titulo || "Seccion sin titulo") + "</h4>" + renderList(item.contenido || "") + "</article>";
     }).join("");
   }
-  var noteHtml = "<section><h2>Nota de evolucion</h2><p><strong>Fecha/Hora:</strong> " + escHtml5(note.fecha || "") + " " + escHtml5(note.hora || "") + "</p><h3>Diagnosticos</h3>" + renderList(note.diagnosticos || []) + "<h3>Interrogatorio</h3>" + renderList(note.interrogatorio) + "<h3>Exploracion fisica</h3>" + renderList(note.exploracion) + "<h3>Estudios</h3>" + renderList(note.estudios) + "<h3>Analisis</h3>" + renderList(note.analisis) + "<h3>Plan</h3>" + renderList(note.plan) + "<h3>Signos vitales</h3><p>TA " + escHtml5(note.ta || "-") + " | FR " + escHtml5(note.fr || "-") + " | FC " + escHtml5(note.fc || "-") + " | TEMP " + escHtml5(note.temp || "-") + " | PESO " + escHtml5(note.peso || "-") + "</p><h3>Tratamiento e indicaciones medicas</h3>" + renderList(note.tratamiento || []) + "</section>";
-  var indicaHtml = "<section><h2>Indicaciones</h2><p><strong>Fecha/Hora:</strong> " + escHtml5(ind.fecha || "") + " " + escHtml5(ind.hora || "") + "</p><h3>Medicos</h3>" + renderList(ind.medicos) + "<h3>Dieta</h3>" + renderList(ind.dieta) + "<h3>Cuidados</h3>" + renderList(ind.cuidados) + "<h3>Estudios</h3>" + renderList(ind.estudios) + "<h3>Medicamentos</h3>" + renderList(ind.medicamentos) + "<h3>Interconsultas</h3>" + renderList(ind.interconsultas) + "<h3>Otros</h3>" + renderOtherSections() + "</section>";
-  return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:;"><title>R+ salida clinica</title><style>body{font-family:Arial,sans-serif;line-height:1.45;margin:24px;color:#111}h1,h2{margin-bottom:8px}section{margin:20px 0;padding-top:8px;border-top:1px solid #ddd}h3{margin:14px 0 6px}ul{margin:0 0 8px 20px}p{margin:0 0 8px}</style></head><body><h1>R+ - Salida clinica</h1><p><strong>Paciente:</strong> ` + escHtml5(patient.nombre || "") + " | <strong>Registro:</strong> " + escHtml5(patient.registro || "") + "</p><p><strong>Servicio:</strong> " + escHtml5(patient.servicio || "") + " | <strong>Cuarto/Cama:</strong> " + escHtml5(patient.cuarto || "") + "/" + escHtml5(patient.cama || "") + "</p>" + (mode !== "indica" ? noteHtml : "") + (mode !== "note" ? indicaHtml : "") + "</body></html>";
+  var noteHtml = "<section><h2>Nota de evolucion</h2><p><strong>Fecha/Hora:</strong> " + escHtml6(note.fecha || "") + " " + escHtml6(note.hora || "") + "</p><h3>Diagnosticos</h3>" + renderList(note.diagnosticos || []) + "<h3>Interrogatorio</h3>" + renderList(note.interrogatorio) + "<h3>Exploracion fisica</h3>" + renderList(note.exploracion) + "<h3>Estudios</h3>" + renderList(note.estudios) + "<h3>Analisis</h3>" + renderList(note.analisis) + "<h3>Plan</h3>" + renderList(note.plan) + "<h3>Signos vitales</h3><p>TA " + escHtml6(note.ta || "-") + " | FR " + escHtml6(note.fr || "-") + " | FC " + escHtml6(note.fc || "-") + " | TEMP " + escHtml6(note.temp || "-") + " | PESO " + escHtml6(note.peso || "-") + "</p><h3>Tratamiento e indicaciones medicas</h3>" + renderList(note.tratamiento || []) + "</section>";
+  var indicaHtml = "<section><h2>Indicaciones</h2><p><strong>Fecha/Hora:</strong> " + escHtml6(ind.fecha || "") + " " + escHtml6(ind.hora || "") + "</p><h3>Medicos</h3>" + renderList(ind.medicos) + "<h3>Dieta</h3>" + renderList(ind.dieta) + "<h3>Cuidados</h3>" + renderList(ind.cuidados) + "<h3>Estudios</h3>" + renderList(ind.estudios) + "<h3>Medicamentos</h3>" + renderList(ind.medicamentos) + "<h3>Interconsultas</h3>" + renderList(ind.interconsultas) + "<h3>Otros</h3>" + renderOtherSections() + "</section>";
+  return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:;"><title>R+ salida clinica</title><style>body{font-family:Arial,sans-serif;line-height:1.45;margin:24px;color:#111}h1,h2{margin-bottom:8px}section{margin:20px 0;padding-top:8px;border-top:1px solid #ddd}h3{margin:14px 0 6px}ul{margin:0 0 8px 20px}p{margin:0 0 8px}</style></head><body><h1>R+ - Salida clinica</h1><p><strong>Paciente:</strong> ` + escHtml6(patient.nombre || "") + " | <strong>Registro:</strong> " + escHtml6(patient.registro || "") + "</p><p><strong>Servicio:</strong> " + escHtml6(patient.servicio || "") + " | <strong>Cuarto/Cama:</strong> " + escHtml6(patient.cuarto || "") + "/" + escHtml6(patient.cama || "") + "</p>" + (mode !== "indica" ? noteHtml : "") + (mode !== "note" ? indicaHtml : "") + "</body></html>";
 }
 function exportCurrentPatientAsText() {
   var bundle = getCurrentPatientClinicalData();

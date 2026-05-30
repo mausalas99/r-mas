@@ -37,7 +37,12 @@ import { filterTodosRespectingDismissals } from "../manejo-todo-dismiss.mjs";
 import { copyToClipboardSafe } from "./soap-estado.mjs";
 import { buildLanJoinUrls, parseLanInviteInput } from "../lan-join-link.mjs";
 import { createMutationBuilder, wrapLiveSyncPatch } from "../versioned-mutation.mjs";
-import { saveDraftConflict, deleteDraftConflict } from "../draft-conflict-store.mjs";
+import {
+  saveDraftConflict,
+  deleteDraftConflict,
+  listDraftConflicts,
+  getDraftConflict,
+} from "../draft-conflict-store.mjs";
 import { openClinicalConflictViewer } from "./clinical-conflict-viewer.mjs";
 import {
   rememberPrimaryHostUrl,
@@ -812,6 +817,112 @@ async function applyConflictUseServer(payload) {
   }
 }
 
+function formatConflictDraftLabel(draft) {
+  var type = draft && draft.entityType ? String(draft.entityType) : 'entidad';
+  var id = draft && draft.entityId ? String(draft.entityId) : '';
+  var keys =
+    draft && Array.isArray(draft.conflictingKeys) && draft.conflictingKeys.length
+      ? ' · ' + draft.conflictingKeys.slice(0, 3).join(', ')
+      : '';
+  var when = '';
+  try {
+    when = new Date(draft.savedAt).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' });
+  } catch (_eWhen) {}
+  return type + (id ? ' ' + id : '') + keys + (when ? ' — ' + when : '');
+}
+
+function draftRecordToConflictPayload(draft) {
+  return {
+    transport: draft.transport,
+    entityType: draft.entityType,
+    entityId: draft.entityId,
+    roomId: draft.roomId,
+    patientId: draft.patientId,
+    conflictingKeys: draft.conflictingKeys || [],
+    localSnapshot: draft.localSnapshot,
+    serverSnapshot: draft.serverSnapshot,
+  };
+}
+
+async function reopenConflictDraftFromStore(draftId) {
+  var draft = await getDraftConflict(draftId);
+  if (!draft) {
+    runtime.showToast('No se encontró el borrador de conflicto', 'error');
+    void renderLanPanel();
+    return;
+  }
+  var payload = draftRecordToConflictPayload(draft);
+  openClinicalConflictViewer({
+    draftId: draft.id,
+    conflictingKeys: payload.conflictingKeys,
+    localData: payload.localSnapshot && payload.localSnapshot.data,
+    serverData: payload.serverSnapshot && payload.serverSnapshot.data,
+    onUseServer: function () {
+      void applyConflictUseServer(Object.assign({}, payload, { draftId: draft.id })).then(function () {
+        void renderLanPanel();
+      });
+    },
+    onEditDraft: function () {},
+    onClose: function () {},
+  });
+}
+
+async function appendLanConflictDraftsSection(root) {
+  if (!root) return;
+  var drafts = [];
+  try {
+    drafts = await listDraftConflicts();
+  } catch (_eList) {
+    drafts = [];
+  }
+  var prev = root.querySelector('#lan-conflict-drafts-card');
+  if (prev) prev.remove();
+
+  var card = document.createElement('div');
+  card.id = 'lan-conflict-drafts-card';
+  card.className = 'lan-connect-card';
+
+  var title = document.createElement('div');
+  title.className = 'lan-connect-card-title';
+  title.textContent = 'Borradores de conflicto (' + drafts.length + ')';
+  card.appendChild(title);
+
+  if (!drafts.length) {
+    var empty = document.createElement('p');
+    empty.className = 'lan-connect-card-hint';
+    empty.textContent =
+      'No hay borradores guardados. Si cierras el visor tras un conflicto de sincronización, vuelve aquí para retomarlo.';
+    card.appendChild(empty);
+  } else {
+    var hint = document.createElement('p');
+    hint.className = 'lan-connect-card-hint';
+    hint.textContent = 'Toca un borrador para volver a abrir el comparador y resolver el conflicto.';
+    card.appendChild(hint);
+    var list = document.createElement('ul');
+    list.style.listStyle = 'none';
+    list.style.padding = '0';
+    list.style.margin = '8px 0 0';
+    drafts.forEach(function (draft) {
+      if (!draft || !draft.id) return;
+      var li = document.createElement('li');
+      li.style.marginBottom = '6px';
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn-lan-secondary';
+      btn.style.width = '100%';
+      btn.style.textAlign = 'left';
+      btn.textContent = formatConflictDraftLabel(draft);
+      btn.addEventListener('click', function () {
+        void reopenConflictDraftFromStore(draft.id);
+      });
+      li.appendChild(btn);
+      list.appendChild(li);
+    });
+    card.appendChild(list);
+  }
+  root.appendChild(card);
+}
+
 async function handleSyncConflict(payload) {
   var draftId = await saveDraftConflict({
     transport: payload.transport,
@@ -829,11 +940,14 @@ async function handleSyncConflict(payload) {
     localData: payload.localSnapshot && payload.localSnapshot.data,
     serverData: payload.serverSnapshot && payload.serverSnapshot.data,
     onUseServer: function () {
-      void applyConflictUseServer(Object.assign({}, payload, { draftId: draftId }));
+      void applyConflictUseServer(Object.assign({}, payload, { draftId: draftId })).then(function () {
+        void renderLanPanel();
+      });
     },
     onEditDraft: function () {},
     onClose: function () {},
   });
+  void renderLanPanel();
 }
 
 function wsConflictDetailToPayload(detail) {
@@ -2085,6 +2199,8 @@ async function renderLanPanelOnce() {
     }
 
     root.appendChild(card);
+    await appendLanConflictDraftsSection(root);
+    if (lanPanelRenderStale(gen)) return;
     appendLanDisconnectBannerPref(root);
     if (desktopHost && !String(cfg.hostUrl || '').trim()) {
       resolveLanHostUrlForShare().then(function (u) {
@@ -2342,6 +2458,8 @@ async function renderLanPanelOnce() {
   }
   if (lanPanelRenderStale(gen)) return;
   root.appendChild(roomsCard);
+  await appendLanConflictDraftsSection(root);
+  if (lanPanelRenderStale(gen)) return;
   appendLanDisconnectBannerPref(root);
   purgeDuplicateLanRoomsPanels(root);
   patchLanPanelJoinButtons();

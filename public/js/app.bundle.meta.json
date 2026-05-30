@@ -982,7 +982,7 @@
       "format": "esm"
     },
     "public/js/lan-client.mjs": {
-      "bytes": 4592,
+      "bytes": 4970,
       "imports": [],
       "format": "esm"
     },
@@ -1068,13 +1068,28 @@
       "imports": [],
       "format": "esm"
     },
+    "public/js/versioned-mutation.mjs": {
+      "bytes": 799,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/draft-conflict-store.mjs": {
+      "bytes": 3251,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/features/clinical-conflict-viewer.mjs": {
+      "bytes": 5111,
+      "imports": [],
+      "format": "esm"
+    },
     "public/js/lan-surrogate-host.mjs": {
       "bytes": 4422,
       "imports": [],
       "format": "esm"
     },
     "public/js/features/lan-sync.mjs": {
-      "bytes": 86881,
+      "bytes": 107841,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -1145,6 +1160,21 @@
           "path": "public/js/lan-join-link.mjs",
           "kind": "import-statement",
           "original": "../lan-join-link.mjs"
+        },
+        {
+          "path": "public/js/versioned-mutation.mjs",
+          "kind": "import-statement",
+          "original": "../versioned-mutation.mjs"
+        },
+        {
+          "path": "public/js/draft-conflict-store.mjs",
+          "kind": "import-statement",
+          "original": "../draft-conflict-store.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-conflict-viewer.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-conflict-viewer.mjs"
         },
         {
           "path": "public/js/lan-surrogate-host.mjs",
@@ -3689,7 +3719,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 3344649
+      "bytes": 3394026
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -3892,7 +3922,7 @@
           "bytesInOutput": 7565
         },
         "public/js/lan-client.mjs": {
-          "bytesInOutput": 4480
+          "bytesInOutput": 4857
         },
         "public/js/live-sync-room.mjs": {
           "bytesInOutput": 5725
@@ -3921,11 +3951,20 @@
         "public/js/lan-join-link.mjs": {
           "bytesInOutput": 2512
         },
+        "public/js/versioned-mutation.mjs": {
+          "bytesInOutput": 797
+        },
+        "public/js/draft-conflict-store.mjs": {
+          "bytesInOutput": 3128
+        },
+        "public/js/features/clinical-conflict-viewer.mjs": {
+          "bytesInOutput": 4360
+        },
         "public/js/lan-surrogate-host.mjs": {
           "bytesInOutput": 4082
         },
         "public/js/features/lan-sync.mjs": {
-          "bytesInOutput": 83591
+          "bytesInOutput": 102789
         },
         "public/js/update-helpers.mjs": {
           "bytesInOutput": 635
@@ -4183,7 +4222,7 @@
           "bytesInOutput": 4502
         }
       },
-      "bytes": 1834748
+      "bytes": 1862736
     }
   }
 }
