@@ -112,6 +112,25 @@ describe('host-store', () => {
     assert.strictEqual(store.getRoomSyncBundle(r.id).agenda[0].procedure, 'NEW');
   });
 
+  it('getEntity / setEntity round-trip for room todo', () => {
+    const store = createHostStore({ filePath, teamCodePlain: 'test' });
+    const room = store.createRoom('UCI');
+    store.setEntity({
+      roomId: room.id,
+      entityType: 'todo',
+      entityId: 'td1',
+      patientId: 'p1',
+      version: 1,
+      data: { id: 'td1', text: 'Labs', completed: false, updatedAt: '2026-05-30T10:00:00.000Z' },
+    });
+    const got = store.getEntity({ roomId: room.id, entityType: 'todo', entityId: 'td1', patientId: 'p1' });
+    assert.strictEqual(got.version, 1);
+    assert.strictEqual(got.data.text, 'Labs');
+    const bundle = store.getRoomSyncBundle(room.id);
+    assert.ok(Array.isArray(bundle.todos.p1));
+    assert.strictEqual(bundle.todos.p1[0].text, 'Labs');
+  });
+
   it('putRoomSyncBundle persiste manejo', () => {
     const store = createHostStore({ filePath, teamCodePlain: 'b' });
     const r = store.createRoom('Sala');

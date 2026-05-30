@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { hashTeamCode } = require('./team-code.js');
+const { agendaEntityKey, todoEntityKey } = require('./entity-keys.js');
 
 function nowIso() {
   return new Date().toISOString();
@@ -65,6 +66,12 @@ function createHostStore({ filePath, teamCodePlain }) {
     s.rooms = Array.isArray(s.rooms) ? s.rooms : [];
     s.roomSyncBundles =
       s.roomSyncBundles && typeof s.roomSyncBundles === 'object' ? s.roomSyncBundles : {};
+    for (const rid of Object.keys(s.roomSyncBundles)) {
+      const b = s.roomSyncBundles[rid];
+      if (b && typeof b === 'object' && (!b.entities || typeof b.entities !== 'object')) {
+        b.entities = {};
+      }
+    }
     delete s.calendarEvents;
     return s;
   }
@@ -166,6 +173,12 @@ function createHostStore({ filePath, teamCodePlain }) {
     const next = {
       updatedAt: at,
       uploadedByClientId: String(incoming.uploadedByClientId || ''),
+      entities:
+        incoming.entities && typeof incoming.entities === 'object'
+          ? incoming.entities
+          : cur && cur.entities && typeof cur.entities === 'object'
+            ? cur.entities
+            : {},
       agenda: Array.isArray(incoming.agenda) ? incoming.agenda : [],
       todos: incoming.todos && typeof incoming.todos === 'object' ? incoming.todos : {},
       entries: Array.isArray(incoming.entries) ? incoming.entries : [],
@@ -181,6 +194,119 @@ function createHostStore({ filePath, teamCodePlain }) {
     return next;
   }
 
+  function ensureRoomBundle(state, roomId) {
+    const rid = String(roomId || '');
+    if (!rid) throw new Error('room id required');
+    if (!state.roomSyncBundles) state.roomSyncBundles = {};
+    let b = state.roomSyncBundles[rid];
+    if (!b || typeof b !== 'object') {
+      b = {
+        updatedAt: nowIso(),
+        uploadedByClientId: '',
+        entities: {},
+        agenda: [],
+        todos: {},
+        entries: [],
+        manejo: null,
+      };
+      state.roomSyncBundles[rid] = b;
+    }
+    if (!b.entities || typeof b.entities !== 'object') b.entities = {};
+    return b;
+  }
+
+  function getEntity({ entityType, entityId, roomId, patientId }) {
+    const type = String(entityType || '');
+    const id = String(entityId || '');
+    if (type === 'patient') {
+      const state = load();
+      const row = state.patients.find((p) => p.id === id);
+      if (!row) return null;
+      return { version: Number(row.version || 1), data: row };
+    }
+    if (type === 'agenda' || type === 'todo') {
+      const bundle = getRoomSyncBundle(roomId);
+      if (!bundle || !bundle.entities) return null;
+      const key = type === 'agenda' ? agendaEntityKey(id) : todoEntityKey(patientId, id);
+      const rec = bundle.entities[key];
+      if (!rec || rec.deleted) return null;
+      return { version: Number(rec.version || 1), data: rec.data };
+    }
+    return null;
+  }
+
+  function materializeRoomViews(roomId) {
+    const state = load();
+    const bundle = ensureRoomBundle(state, roomId);
+    const entities = bundle.entities || {};
+    const agenda = [];
+    const todos = {};
+    for (const [key, rec] of Object.entries(entities)) {
+      if (!rec || rec.deleted) continue;
+      if (key.startsWith('agenda:')) {
+        if (rec.data && typeof rec.data === 'object') agenda.push(rec.data);
+        continue;
+      }
+      if (key.startsWith('todo:')) {
+        const parsed = key.slice(5).split(':');
+        const pid = parsed[0];
+        if (!pid || !rec.data || typeof rec.data !== 'object') continue;
+        if (!todos[pid]) todos[pid] = [];
+        todos[pid].push(rec.data);
+      }
+    }
+    agenda.sort((a, b) => String(a.updatedAt || '').localeCompare(String(b.updatedAt || '')));
+    for (const pid of Object.keys(todos)) {
+      todos[pid].sort((a, b) => String(a.updatedAt || '').localeCompare(String(b.updatedAt || '')));
+    }
+    bundle.agenda = agenda;
+    bundle.todos = todos;
+    bundle.updatedAt = nowIso();
+    save(state);
+    return bundle;
+  }
+
+  function setEntity({ roomId, entityType, entityId, patientId, version, data, deleted }) {
+    const type = String(entityType || '');
+    const id = String(entityId || '');
+    const state = load();
+    const t = nowIso();
+
+    if (type === 'patient') {
+      const idx = state.patients.findIndex((p) => p.id === id);
+      const nextData = data && typeof data === 'object' ? { ...data, id } : { id };
+      const nextVersion = Number(version || 1);
+      if (idx === -1) {
+        const row = { ...nextData, version: nextVersion, updatedAt: t };
+        state.patients.push(row);
+        save(state);
+        return row;
+      }
+      const row = { ...state.patients[idx], ...nextData, version: nextVersion, updatedAt: t };
+      if (deleted) row._deleted = true;
+      state.patients[idx] = row;
+      save(state);
+      return row;
+    }
+
+    if (type === 'agenda' || type === 'todo') {
+      const bundle = ensureRoomBundle(state, roomId);
+      const key =
+        type === 'agenda' ? agendaEntityKey(id) : todoEntityKey(patientId, id);
+      bundle.entities[key] = {
+        version: Number(version || 1),
+        data: data && typeof data === 'object' ? data : {},
+        updatedAt: t,
+        deleted: !!deleted,
+      };
+      save(state);
+      materializeRoomViews(roomId);
+      return bundle.entities[key];
+    }
+
+    throw new Error('unsupported entity type');
+  }
+
   return {
     getState,
     upsertPatient,
@@ -190,6 +316,9 @@ function createHostStore({ filePath, teamCodePlain }) {
     deleteRoom,
     getRoomSyncBundle,
     putRoomSyncBundle,
+    getEntity,
+    setEntity,
+    materializeRoomViews,
   };
 }
 
