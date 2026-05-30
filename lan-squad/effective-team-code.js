@@ -83,10 +83,24 @@ function bootstrapLanTeamCode({ userDataPath, hostStatePath }) {
   return { token, source, requiresMigrationNotice };
 }
 
+/** Read token from disk only (IPC); never returns weak or default fallbacks. */
+function readLanTeamCodeFile({ userDataPath }) {
+  const filePath = path.join(String(userDataPath || ''), 'lan-team-code.txt');
+  try {
+    if (!fs.existsSync(filePath)) return { ok: false, error: 'no_token_file' };
+    const code = fs.readFileSync(filePath, 'utf8').split(/\r?\n/, 1)[0].trim();
+    if (!code || isWeakLanToken(code)) return { ok: false, error: 'weak_or_missing_token' };
+    return { ok: true, code, source: 'file' };
+  } catch (e) {
+    return { ok: false, error: e && e.message ? e.message : 'read_failed' };
+  }
+}
+
 module.exports = {
   bootstrapLanTeamCode,
   rehashLanHostState,
   isWeakLanToken,
   generateSecureLanToken,
+  readLanTeamCodeFile,
   LEGACY_RANDOM_TEAM_CODE_RE,
 };

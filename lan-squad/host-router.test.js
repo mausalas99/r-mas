@@ -9,10 +9,14 @@ const { test } = require('node:test');
 const { createHostStore } = require('./host-store.js');
 const { createLanRouter } = require('./host-router.js');
 
-test('LAN /ping requiere X-Lan-Team-Code válido', async () => {
+function bearerHeaders(token) {
+  return { Authorization: `Bearer ${token}` };
+}
+
+test('LAN /ping requiere Authorization Bearer válido', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-ping-'));
   const statePath = path.join(dir, 'state.json');
-  const code = 'test-team-' + Date.now();
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
   const store = createHostStore({ filePath: statePath, teamCodePlain: code });
   const app = express();
   app.use('/api/lan/v1', createLanRouter({ store, broadcast: () => {} }));
@@ -25,7 +29,9 @@ test('LAN /ping requiere X-Lan-Team-Code válido', async () => {
     const base = `http://127.0.0.1:${port}/api/lan/v1/ping`;
     const bad = await fetch(base);
     assert.strictEqual(bad.status, 401);
-    const ok = await fetch(base, { headers: { 'X-Lan-Team-Code': code } });
+    const withQuery = await fetch(`${base}?code=${encodeURIComponent(code)}`);
+    assert.strictEqual(withQuery.status, 401);
+    const ok = await fetch(base, { headers: bearerHeaders(code) });
     assert.strictEqual(ok.status, 200);
     const body = await ok.json();
     assert.strictEqual(body.ok, true);
@@ -39,7 +45,7 @@ test('LAN /ping requiere X-Lan-Team-Code válido', async () => {
 test('LAN GET /rooms con código válido', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-rooms-'));
   const statePath = path.join(dir, 'state.json');
-  const code = 'test-team-' + Date.now();
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
   const store = createHostStore({ filePath: statePath, teamCodePlain: code });
   store.createRoom('Sala prueba');
   const app = express();
@@ -51,7 +57,7 @@ test('LAN GET /rooms con código válido', async () => {
   try {
     const { port } = server.address();
     const base = `http://127.0.0.1:${port}/api/lan/v1/rooms`;
-    const res = await fetch(base, { headers: { 'X-Lan-Team-Code': code } });
+    const res = await fetch(base, { headers: bearerHeaders(code) });
     assert.strictEqual(res.status, 200);
     const body = await res.json();
     assert.ok(Array.isArray(body.rooms));

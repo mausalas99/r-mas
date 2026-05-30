@@ -2,6 +2,8 @@
 const { WebSocketServer } = require('ws');
 const { verifyTeamCode } = require('./team-code.js');
 
+const AUTH_TIMEOUT_MS = 3000;
+
 function attachWsHub(httpServer, { getState, pathName = '/api/lan/v1/ws' }) {
   const wss = new WebSocketServer({ noServer: true });
   const rooms = new Map();
@@ -34,33 +36,78 @@ function attachWsHub(httpServer, { getState, pathName = '/api/lan/v1/ws' }) {
     }
   }
 
+  function terminateUnauthenticated(ws) {
+    try {
+      clearTimeout(ws.__authTimer);
+    } catch (_e) {
+      /* ignore */
+    }
+    try {
+      ws.terminate();
+    } catch (_inner) {
+      /* ignore */
+    }
+  }
+
   httpServer.on('upgrade', (req, socket, head) => {
     try {
       const u = new URL(req.url || '', 'http://localhost');
       if (u.pathname !== pathName) return;
-      const code = u.searchParams.get('code') || '';
-      const st = getState();
-      if (!verifyTeamCode(code, st.teamCodeHash)) {
-        socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+      if (u.searchParams.get('code') || u.searchParams.get('token')) {
+        socket.write('HTTP/1.1 400 Bad Request\r\n\r\n');
         socket.destroy();
         return;
       }
+      const channel = u.searchParams.get('channel') || 'sync';
       wss.handleUpgrade(req, socket, head, (ws) => {
+        ws.__authenticated = false;
+        ws.__channel = channel;
+        ws.__authTimer = setTimeout(() => terminateUnauthenticated(ws), AUTH_TIMEOUT_MS);
         wss.emit('connection', ws, req);
       });
     } catch (_e) {
       try {
         socket.destroy();
-      } catch (_inner) { /* ignore */ }
+      } catch (_inner) {
+        /* ignore */
+      }
     }
   });
 
   wss.on('connection', (ws, req) => {
-    const u = new URL(req.url || '', 'http://localhost');
-    const channel = u.searchParams.get('channel') || 'sync';
-    joinRoom(ws, channel);
+    const channel = ws.__channel || 'sync';
 
     ws.on('message', (raw) => {
+      if (!ws.__authenticated) {
+        let msg;
+        try {
+          msg = JSON.parse(String(raw));
+        } catch (_e) {
+          terminateUnauthenticated(ws);
+          return;
+        }
+        if (!msg || msg.type !== 'auth' || !msg.token) {
+          terminateUnauthenticated(ws);
+          return;
+        }
+        let st;
+        try {
+          st = getState();
+        } catch (_e) {
+          terminateUnauthenticated(ws);
+          return;
+        }
+        if (!verifyTeamCode(msg.token, st.teamCodeHash)) {
+          terminateUnauthenticated(ws);
+          return;
+        }
+        clearTimeout(ws.__authTimer);
+        ws.__authTimer = null;
+        ws.__authenticated = true;
+        joinRoom(ws, channel);
+        return;
+      }
+
       let msg;
       try {
         msg = JSON.parse(String(raw));
@@ -78,4 +125,4 @@ function attachWsHub(httpServer, { getState, pathName = '/api/lan/v1/ws' }) {
   return { broadcast };
 }
 
-module.exports = { attachWsHub };
+module.exports = { attachWsHub, AUTH_TIMEOUT_MS };

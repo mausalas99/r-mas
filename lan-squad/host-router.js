@@ -1,29 +1,12 @@
 'use strict';
 const express = require('express');
-const { verifyTeamCode } = require('./team-code.js');
-
-function teamCodeMiddleware(getState) {
-  return (req, res, next) => {
-    const code = req.get('x-lan-team-code') || req.query.code || '';
-    let st;
-    try {
-      st = getState();
-    } catch (e) {
-      const msg = (e && e.message) || 'host store error';
-      return res.status(500).json({ error: msg });
-    }
-    if (!verifyTeamCode(code, st.teamCodeHash)) {
-      return res.status(401).json({ error: 'invalid team code' });
-    }
-    next();
-  };
-}
+const { createBearerAuthMiddleware } = require('./bearer-auth.js');
 
 function createLanRouter({ store, broadcast }) {
   const r = express.Router();
   const getState = () => store.getState();
 
-  r.use(teamCodeMiddleware(getState));
+  r.use(createBearerAuthMiddleware(getState));
 
   r.get('/ping', (_req, res) => {
     res.json({ ok: true, lan: true });
@@ -89,4 +72,4 @@ function createLanRouter({ store, broadcast }) {
   return r;
 }
 
-module.exports = { createLanRouter, teamCodeMiddleware };
+module.exports = { createLanRouter };

@@ -313,9 +313,8 @@ ipcMain.handle('lan-reset-squad-host-state', () => {
 
 ipcMain.handle('lan-get-effective-team-code', () => {
   try {
-    const { readEffectiveLanTeamCode } = require('./lan-squad/effective-team-code.js');
-    const out = readEffectiveLanTeamCode({ userDataPath: app.getPath('userData') });
-    return { ok: true, code: out.code, source: out.source };
+    const { readLanTeamCodeFile } = require('./lan-squad/effective-team-code.js');
+    return readLanTeamCodeFile({ userDataPath: app.getPath('userData') });
   } catch (e) {
     return { ok: false, error: e && e.message ? e.message : String(e) };
   }

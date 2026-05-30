@@ -9,9 +9,44 @@ const { renderCensusPdf } = require('./generate-censo.js');
 const { createHostStore } = require('./lan-squad/host-store.js');
 const { createLanRouter } = require('./lan-squad/host-router.js');
 const { attachWsHub } = require('./lan-squad/ws-hub.js');
+const { bootstrapLanTeamCode } = require('./lan-squad/effective-team-code.js');
+const { createTicketStore } = require('./lan-squad/ticket-store.js');
+const { createAuthRouter } = require('./lan-squad/auth-router.js');
+const { redactUrlSecrets, redactForLog } = require('./lan-squad/redact-secrets.js');
+const rateLimit = require('express-rate-limit');
 
 const appExpress = express();
 appExpress.use(express.json({ limit: '2mb' }));
+
+const rateLimitHandler = (_req, res) => {
+  res.status(429).json({ error: 'rate_limit_exceeded' });
+};
+
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: rateLimitHandler,
+});
+
+const generateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 8,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: rateLimitHandler,
+});
+
+appExpress.use(globalLimiter);
+
+appExpress.use((req, _res, next) => {
+  req.__safeForLog = {
+    method: req.method,
+    path: redactUrlSecrets(req.originalUrl || req.url || ''),
+  };
+  next();
+});
 
 const LAN_HTTP_PORT = 3738;
 
@@ -34,7 +69,7 @@ appExpress.use((req, res, next) => {
         res.setHeader('Access-Control-Allow-Origin', rawOrigin);
         res.setHeader('Vary', 'Origin');
         res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,POST,PATCH,DELETE,OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Lan-Team-Code');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
       }
     } catch (_e) {
       // Ignore malformed Origin headers and continue normal handling.
@@ -44,9 +79,15 @@ appExpress.use((req, res, next) => {
   next();
 });
 
-appExpress.get('/join', (req, res) => {
-  const qs = new URLSearchParams(req.query).toString();
-  res.redirect(302, '/mobile/' + (qs ? `?${qs}` : ''));
+appExpress.get('/join', (_req, res) => {
+  res.redirect(302, '/mobile/');
+});
+
+appExpress.get('/join/:ticketId', (req, res) => {
+  if (!/^req_[a-f0-9]{12}$/i.test(String(req.params.ticketId || ''))) {
+    return res.status(404).send('Invalid join link');
+  }
+  res.sendFile(path.join(__dirname, 'public', 'mobile', 'join.html'));
 });
 appExpress.get('/health', (_req, res) => {
   try {
@@ -148,7 +189,7 @@ function runPython(script, payload) {
   });
 }
 
-appExpress.post('/generate', async (req, res) => {
+appExpress.post('/generate', generateLimiter, async (req, res) => {
   const { patient, note, outputDir } = req.body;
   if (!patient || !note) return res.status(400).json({ error: 'Missing patient or note' });
   const dest = (outputDir || '').trim() || DOWNLOADS;
@@ -162,11 +203,11 @@ appExpress.post('/generate', async (req, res) => {
     fs.writeFileSync(path.join(dest, fileName), buf);
     res.json({ ok: true, fileName });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: 'No se pudo generar el documento. Intenta de nuevo.' });
   }
 });
 
-appExpress.post('/generate-indicaciones', async (req, res) => {
+appExpress.post('/generate-indicaciones', generateLimiter, async (req, res) => {
   const { patient, indicaciones, outputDir } = req.body;
   if (!patient || !indicaciones) return res.status(400).json({ error: 'Missing patient or indicaciones' });
   const dest = (outputDir || '').trim() || DOWNLOADS;
@@ -180,11 +221,11 @@ appExpress.post('/generate-indicaciones', async (req, res) => {
     fs.writeFileSync(path.join(dest, fileName), buf);
     res.json({ ok: true, fileName });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: 'No se pudo generar el documento. Intenta de nuevo.' });
   }
 });
 
-appExpress.post('/generate-listado', async (req, res) => {
+appExpress.post('/generate-listado', generateLimiter, async (req, res) => {
   const { patient, listado, medicos, outputDir } = req.body;
   if (!patient || !listado) return res.status(400).json({ error: 'Missing patient or listado' });
   const dest = (outputDir || '').trim() || DOWNLOADS;
@@ -204,11 +245,11 @@ appExpress.post('/generate-listado', async (req, res) => {
     fs.writeFileSync(path.join(dest, fileName), buf);
     res.json({ ok: true, fileName });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: 'No se pudo generar el documento. Intenta de nuevo.' });
   }
 });
 
-appExpress.post('/generate-censo', async (req, res) => {
+appExpress.post('/generate-censo', generateLimiter, async (req, res) => {
   const { header, rows, outputDir, servicio } = req.body;
   if (!Array.isArray(rows) || !rows.length) {
     return res.status(400).json({ error: 'No hay pacientes para el censo.' });
@@ -234,11 +275,11 @@ appExpress.post('/generate-censo', async (req, res) => {
     fs.writeFileSync(path.join(dest, fileName), buf);
     res.json({ ok: true, fileName });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: 'No se pudo generar el documento. Intenta de nuevo.' });
   }
 });
 
-appExpress.post('/generate-receta-hu', async (req, res) => {
+appExpress.post('/generate-receta-hu', generateLimiter, async (req, res) => {
   const { patient, receta, doctorName, cedulaProfesional, outputDir } = req.body;
   if (!patient) return res.status(400).json({ error: 'Missing patient' });
   const dest = (outputDir || '').trim() || DOWNLOADS;
@@ -257,7 +298,7 @@ appExpress.post('/generate-receta-hu', async (req, res) => {
     fs.writeFileSync(path.join(dest, fileName), buf);
     res.json({ ok: true, fileName });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: 'No se pudo generar el documento. Intenta de nuevo.' });
   }
 });
 
@@ -285,15 +326,68 @@ function portInUseProcessHint(port) {
 }
 const userData = process.env.R_PLUS_USER_DATA || require('node:os').tmpdir();
 const lanStatePath = path.join(userData, 'lan-squad-host-state.json');
-const { readEffectiveLanTeamCode, ensureLanTeamCodeFile, migratePlugAndPlayTeamCode } = require('./lan-squad/effective-team-code.js');
-migratePlugAndPlayTeamCode({ userDataPath: userData });
-ensureLanTeamCodeFile({ userDataPath: userData });
-const { code: LAN_TEAM_CODE } = readEffectiveLanTeamCode({ userDataPath: userData });
-// Existing host state is bound to one team code and throws on mismatches.
+
+let lanBoot;
+try {
+  lanBoot = bootstrapLanTeamCode({ userDataPath: userData, hostStatePath: lanStatePath });
+} catch (e) {
+  console.error('[lan]', redactForLog({ message: e && e.message, code: e && e.code }));
+  process.exit(1);
+}
+
+appExpress.locals.lanRequiresMigrationNotice = lanBoot.requiresMigrationNotice;
+const LAN_TEAM_CODE = lanBoot.token;
+
 const lanStore = createHostStore({ filePath: lanStatePath, teamCodePlain: LAN_TEAM_CODE });
+const ticketStore = createTicketStore({ getHostToken: () => LAN_TEAM_CODE });
+const getLanHostUrl = () => `http://localhost:${PORT}`;
+
+const authExchangeLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: rateLimitHandler,
+});
+
+const authTicketLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: rateLimitHandler,
+});
+
+const authRouter = createAuthRouter({
+  ticketStore,
+  getHostToken: () => LAN_TEAM_CODE,
+  getHostUrl: getLanHostUrl,
+  getRequiresMigrationNotice: () => Boolean(appExpress.locals.lanRequiresMigrationNotice),
+});
+
 const httpServer = http.createServer(appExpress);
 const { broadcast } = attachWsHub(httpServer, { getState: () => lanStore.getState() });
+
+appExpress.use('/api/lan/v1', (req, res, next) => {
+  if (req.method === 'POST' && req.path === '/auth/exchange') {
+    return authExchangeLimiter(req, res, next);
+  }
+  if (req.method === 'POST' && req.path === '/auth/tickets') {
+    return authTicketLimiter(req, res, next);
+  }
+  next();
+});
+appExpress.use('/api/lan/v1', authRouter);
 appExpress.use('/api/lan/v1', createLanRouter({ store: lanStore, broadcast }));
+
+appExpress.use((err, req, res, _next) => {
+  console.error('[express]', redactForLog({
+    message: err && err.message,
+    code: err && err.code,
+    ...(req.__safeForLog || {}),
+  }));
+  if (!res.headersSent) res.status(500).json({ error: 'internal_error' });
+});
 
 const server = httpServer.listen(PORT, () => {
   console.log(`R+ → http://localhost:${PORT}`);
