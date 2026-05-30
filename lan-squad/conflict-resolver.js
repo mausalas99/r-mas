@@ -1,0 +1,114 @@
+'use strict';
+
+class ConflictError extends Error {
+  constructor(details) {
+    super('conflict');
+    this.code = 'CONFLICT';
+    Object.assign(this, details);
+  }
+}
+
+function keysChanged(serverData, baseData) {
+  const keys = new Set([...Object.keys(serverData || {}), ...Object.keys(baseData || {})]);
+  const changed = [];
+  for (const k of keys) {
+    if (serverData[k] !== baseData[k]) changed.push(k);
+  }
+  return changed;
+}
+
+function pick(obj, keys) {
+  const out = {};
+  for (const k of keys) if (Object.prototype.hasOwnProperty.call(obj, k)) out[k] = obj[k];
+  return out;
+}
+
+function createConflictResolver({ store }) {
+  function applyMutation(mutation) {
+    const entityType = mutation.entityType;
+    const entityId = mutation.entityId;
+    const expectedVersion = Number(mutation.expectedVersion || 0);
+    const changedKeys = Array.isArray(mutation.changedKeys) ? mutation.changedKeys : [];
+    const baseData = mutation.baseData;
+    const data = mutation.data || {};
+    const roomId = mutation.roomId;
+    const patientId = mutation.patientId;
+
+    let server = store.getEntity({ entityType, entityId, roomId, patientId });
+
+    if (!server) {
+      if (expectedVersion > 0) {
+        throw new ConflictError({ conflictingKeys: ['*'], serverData: null, clientData: data });
+      }
+      const version = 1;
+      store.setEntity({
+        roomId,
+        entityType,
+        entityId,
+        patientId,
+        version,
+        data,
+        deleted: mutation.op === 'delete',
+      });
+      if (roomId) store.materializeRoomViews(roomId);
+      return { ok: true, entityType, entityId, version, data, autoMerged: false };
+    }
+
+    if (expectedVersion === server.version) {
+      const version = server.version + 1;
+      const nextData =
+        mutation.op === 'delete' ? { ...server.data, _deleted: true } : { ...server.data, ...data };
+      store.setEntity({
+        roomId,
+        entityType,
+        entityId,
+        patientId,
+        version,
+        data: nextData,
+        deleted: mutation.op === 'delete',
+      });
+      if (roomId) store.materializeRoomViews(roomId);
+      return { ok: true, entityType, entityId, version, data: nextData, autoMerged: false };
+    }
+
+    if (!baseData || !changedKeys.length) {
+      throw new ConflictError({
+        conflictingKeys: changedKeys.length ? changedKeys : ['*'],
+        serverData: server.data,
+        clientData: data,
+        serverVersion: server.version,
+        expectedVersion,
+      });
+    }
+
+    const serverChangedKeys = keysChanged(server.data, baseData);
+    const overlap = serverChangedKeys.filter((k) => changedKeys.includes(k));
+    if (overlap.length === 0) {
+      const merged = { ...server.data, ...pick(data, changedKeys) };
+      const version = server.version + 1;
+      store.setEntity({
+        roomId,
+        entityType,
+        entityId,
+        patientId,
+        version,
+        data: merged,
+        deleted: false,
+      });
+      if (roomId) store.materializeRoomViews(roomId);
+      return { ok: true, entityType, entityId, version, data: merged, autoMerged: true };
+    }
+
+    throw new ConflictError({
+      conflictingKeys: overlap,
+      serverData: server.data,
+      clientData: data,
+      serverVersion: server.version,
+      expectedVersion,
+    });
+  }
+
+  return { applyMutation, ConflictError };
+}
+
+module.exports = { createConflictResolver, ConflictError };
