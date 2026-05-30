@@ -25,6 +25,12 @@ import {
   setMedRecetaByPatient,
 } from '../app-state.mjs';
 import { mergePatientMonitoreoFromImported } from './estado-actual-data.mjs';
+import { mergeCensoPatientFields } from '../patient-diagnosticos.mjs';
+import {
+  resolvePatientImportPayloads,
+  describePatientImportRejection,
+  parsePatientImportJsonText,
+} from '../patient-export-format.mjs';
 import {
   renderPatientList,
   selectPatient,
@@ -1000,6 +1006,8 @@ function applyImportEntry(entry, action, existing) {
     existing.servicio = entry.patient.servicio || existing.servicio;
     existing.cuarto = entry.patient.cuarto || existing.cuarto;
     existing.cama = entry.patient.cama || existing.cama;
+    if (entry.patient.viaAcceso) existing.viaAcceso = entry.patient.viaAcceso;
+    mergeCensoPatientFields(existing, entry.patient);
     existing.registro = entry.patient.registro || existing.registro;
     notes[existing.id] = entry.note || {};
     indicaciones[existing.id] = entry.indicaciones || {};
@@ -1023,6 +1031,7 @@ function applyImportEntry(entry, action, existing) {
     fromLab: !!entry.patient.fromLab,
   };
   mergePatientMonitoreoFromImported(newPatient, entry.patient);
+  mergeCensoPatientFields(newPatient, entry.patient);
   patients.unshift(newPatient);
   notes[newId] = entry.note || {};
   indicaciones[newId] = entry.indicaciones || {};
@@ -1188,6 +1197,91 @@ function triggerImportActivePatientBackup() {
   if (input) input.click();
 }
 
+function patientExportPayloadToEntry(payload) {
+  return {
+    patient: payload.patient,
+    note: payload.note || {},
+    indicaciones: payload.indicaciones || {},
+    labHistory: Array.isArray(payload.labHistory) ? payload.labHistory : [],
+    medReceta: payload.medReceta || null,
+  };
+}
+
+function applySinglePatientExportPayload(payload) {
+  var imported = payload.patient || {};
+  var registro = String(imported.registro || '').trim();
+  var existsByRegistro = findPatientByRegistro(registro);
+  var entry = patientExportPayloadToEntry(payload);
+
+  if (existsByRegistro) {
+    applyImportEntry(entry, 'overwrite', existsByRegistro);
+    rt.setActiveId(existsByRegistro.id);
+    return registro;
+  }
+
+  var newId = applyImportEntry(entry, 'duplicate', null);
+  rt.setActiveId(newId);
+  return registro;
+}
+
+function importPatientExportPayloads(payloads, sourceLabel) {
+  if (!payloads || !payloads.length) {
+    rt.showToast('No hay pacientes para importar.', 'error');
+    return false;
+  }
+
+  if (payloads.length > 1) {
+        var names = payloads
+          .map(function (p) {
+            return (p.patient && p.patient.nombre) || 'Sin nombre';
+          })
+          .join(', ');
+        if (
+          !confirm(
+            'Se importarán ' +
+              payloads.length +
+              ' pacientes: ' +
+              names +
+              '. Si ya existen por registro, se preguntará qué hacer con cada uno. ¿Continuar?'
+          )
+        ) {
+          return false;
+        }
+        if (typeof pushUndoSnapshot === 'function') {
+          rt.pushUndoSnapshot('Importar pacientes demo (' + payloads.length + ')');
+        }
+        var entries = payloads.map(patientExportPayloadToEntry);
+        var res = importEntriesWithConflicts(entries, 'backup-patient-import');
+        if (res.cancelled) {
+          rt.showToast('Importación cancelada', 'error');
+          return false;
+        }
+        rt.showToast(
+          'Pacientes importados: ' + (res.imported + res.overwritten + res.duplicated),
+          'success'
+        );
+        if (rt.getActiveId()) selectPatient(rt.getActiveId());
+        return true;
+      }
+
+  var payload = payloads[0];
+  var imported = payload.patient || {};
+  var registro = String(imported.registro || '').trim();
+  var existsByRegistro = findPatientByRegistro(registro);
+  var msg = existsByRegistro
+    ? ('Ya existe un paciente con el registro ' + registro + '. Esto sobrescribirá su nota, indicaciones y labs. ¿Continuar?')
+    : ('Se importará el paciente "' + (imported.nombre || 'Sin nombre') + '". ¿Continuar?');
+  if (!confirm(msg)) return false;
+
+  applySinglePatientExportPayload(payload);
+  saveState();
+  renderPatientList();
+  if (rt.getActiveId()) selectPatient(rt.getActiveId());
+  addAuditEntry('backup-patient-import', 'ok', 1, (sourceLabel || '') + registro);
+  rt.showToast('Paciente importado correctamente.', 'success');
+  return true;
+}
+
 function onPatientBackupFileChosen(ev) {
   var f = ev.target.files && ev.target.files[0];
   ev.target.value = '';
@@ -1195,70 +1289,54 @@ function onPatientBackupFileChosen(ev) {
   var reader = new FileReader();
   reader.onload = function() {
     try {
-      var payload = JSON.parse(reader.result);
-      if (!payload || payload.format !== 'r-plus-patient-export' || payload.version !== 1 || !payload.patient) {
-        rt.showToast('El archivo no es una exportación válida de paciente.', 'error');
+      var result = parsePatientImportJsonText(reader.result);
+      var parsed = result.parsed;
+      var payloads = result.payloads;
+      if (!payloads.length) {
+        rt.showToast(
+          'El archivo no es una exportación válida de paciente. ' + describePatientImportRejection(parsed),
+          'error'
+        );
         return;
       }
-      var imported = payload.patient || {};
-      var registro = String(imported.registro || '').trim();
-      var existsByRegistro = findPatientByRegistro(registro);
-      var msg = existsByRegistro
-        ? ('Ya existe un paciente con el registro ' + registro + '. Esto sobrescribirá su nota, indicaciones y labs. ¿Continuar?')
-        : ('Se importará el paciente "' + (imported.nombre || 'Sin nombre') + '". ¿Continuar?');
-      if (!confirm(msg)) return;
-
-      if (existsByRegistro) {
-        var targetId = existsByRegistro.id;
-        existsByRegistro.nombre = imported.nombre || existsByRegistro.nombre;
-        existsByRegistro.edad = imported.edad || existsByRegistro.edad;
-        existsByRegistro.sexo = imported.sexo || existsByRegistro.sexo;
-        existsByRegistro.area = imported.area || existsByRegistro.area;
-        existsByRegistro.servicio = imported.servicio || existsByRegistro.servicio;
-        existsByRegistro.cuarto = imported.cuarto || existsByRegistro.cuarto;
-        existsByRegistro.cama = imported.cama || existsByRegistro.cama;
-        existsByRegistro.registro = imported.registro || existsByRegistro.registro;
-        notes[targetId] = payload.note || notes[targetId] || {};
-        indicaciones[targetId] = payload.indicaciones || indicaciones[targetId] || {};
-        labHistory[targetId] = Array.isArray(payload.labHistory) ? payload.labHistory : [];
-        if (payload.medReceta) medRecetaByPatient[targetId] = payload.medReceta;
-        else delete medRecetaByPatient[targetId];
-        mergePatientMonitoreoFromImported(existsByRegistro, imported);
-        rt.setActiveId(targetId);
-      } else {
-        var newId = generatePatientId();
-        var newPatient = {
-          id: newId,
-          nombre: ensureUniquePatientName(imported.nombre || 'PACIENTE SIN NOMBRE'),
-          area: imported.area || '',
-          servicio: imported.servicio || '',
-          cuarto: imported.cuarto || '',
-          cama: imported.cama || '',
-          edad: imported.edad || '',
-          sexo: imported.sexo || 'F',
-          registro: imported.registro || '',
-          fromLab: !!imported.fromLab,
-        };
-        mergePatientMonitoreoFromImported(newPatient, imported);
-        patients.unshift(newPatient);
-        notes[newId] = payload.note || {};
-        indicaciones[newId] = payload.indicaciones || {};
-        labHistory[newId] = Array.isArray(payload.labHistory) ? payload.labHistory : [];
-        if (payload.medReceta) medRecetaByPatient[newId] = payload.medReceta;
-        rt.setActiveId(newId);
-      }
-
-      saveState();
-      renderPatientList();
-      if (rt.getActiveId()) selectPatient(rt.getActiveId());
-      addAuditEntry('backup-patient-import', 'ok', 1, registro || '');
-      rt.showToast('Paciente importado correctamente.', 'success');
+      importPatientExportPayloads(payloads, f.name + ':');
     } catch (_err) {
       rt.showToast('No se pudo leer la exportación de paciente.', 'error');
       addAuditEntry('backup-patient-import', 'error', 0, 'read-error');
     }
   };
   reader.readAsText(f);
+}
+
+async function importBundledDemoPatients() {
+  var files = ['demo-perez.json'];
+  var payloads = [];
+  for (var i = 0; i < files.length; i += 1) {
+    var name = files[i];
+    try {
+      var res = await fetch('demo-patients/' + name, { cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      var result = parsePatientImportJsonText(await res.text());
+      payloads = payloads.concat(result.payloads);
+    } catch (_fetchErr) {
+      rt.showToast(
+        'No se encontró ' +
+          name +
+          ' en la app. Regenera con npm run export:demo-patients y npm run build:ui.',
+        'error'
+      );
+      return;
+    }
+  }
+  if (!payloads.length) {
+    rt.showToast('Los JSON demo no tienen formato de importación válido.', 'error');
+    return;
+  }
+  importPatientExportPayloads(payloads, 'bundled:');
+}
+
+function importBundledDemoPerez() {
+  importBundledDemoPatients();
 }
 
 function onBackupFileChosen(ev) {
@@ -2002,6 +2080,7 @@ export const platformWindowHandlers = {
   triggerImportActivePatientBackup,
   triggerImportBackup,
   onPatientBackupFileChosen,
+  importBundledDemoPerez,
   onBackupFileChosen,
   restorePreimportBackupPrompt,
   syncPreimportBackupUi,
@@ -2066,6 +2145,7 @@ export {
   triggerImportBackup,
   triggerImportActivePatientBackup,
   onPatientBackupFileChosen,
+  importBundledDemoPerez,
   onBackupFileChosen,
   bytesToBase64,
   base64ToBytes,

@@ -32,6 +32,7 @@ import {
   applyManejoRoomDataToLocal,
 } from "../manejo-room-data.mjs";
 import { mergePatientMonitoreoFromImported } from "./estado-actual-data.mjs";
+import { mergeCensoPatientFields } from "../patient-diagnosticos.mjs";
 import { filterTodosRespectingDismissals } from "../manejo-todo-dismiss.mjs";
 import { copyToClipboardSafe } from "./soap-estado.mjs";
 import { buildLanJoinUrls, parseLanInviteInput } from "../lan-join-link.mjs";
@@ -849,6 +850,7 @@ function applyLanPatientEntries(entries) {
       existing.peso = entry.patient.peso || existing.peso;
       existing.talla = entry.patient.talla || existing.talla;
       existing.viaAcceso = entry.patient.viaAcceso || existing.viaAcceso;
+      mergeCensoPatientFields(existing, entry.patient);
       existing.registro = entry.patient.registro || existing.registro;
       if (entry.patient.fromLab) existing.fromLab = true;
       notes[existing.id] = entry.note || {};
@@ -887,6 +889,7 @@ function applyLanPatientEntries(entries) {
           fromLab: !!entry.patient.fromLab,
         };
         mergePatientMonitoreoFromImported(newPat, entry.patient);
+        mergeCensoPatientFields(newPat, entry.patient);
         patients.unshift(newPat);
         notes[remoteId] = entry.note || {};
         indicaciones[remoteId] = entry.indicaciones || {};

@@ -102,6 +102,7 @@ import {
   syncTeamSyncHeaderButton,
   closeSettingsDropdown,
 } from './features/settings-help.mjs';
+import { registerCensoRuntime, syncCensoExportButtonVisibility } from './censo-export.mjs';
 import {
   registerPlatformRuntime,
   addAuditEntry,
@@ -500,6 +501,20 @@ registerSettingsHelpRuntime({
   renderListadoForm: renderListadoForm,
 });
 
+registerCensoRuntime({
+  getSettings: function () {
+    return rt.getSettings();
+  },
+  showToast: showToast,
+  requestDocumentJson: requestDocumentJson,
+  handleDocumentGenerateResponse: handleDocumentGenerateResponse,
+  incrementPendingJobs: incrementPendingJobs,
+  decrementPendingJobs: decrementPendingJobs,
+  syncOfflineButtonStates: syncOfflineButtonStates,
+  guardMobileDocExport: guardMobileDocExport,
+  isRpcOffline: isRpcOffline,
+});
+
 registerExpedienteRuntime({
   getActiveId: function () {
     return rt.getActiveId();
@@ -722,4 +737,5 @@ export function runInitialFeatureBoot() {
   syncLabHistoryCollapseUI();
   wireEstadoActualPasteModal();
   wireEaModalDismiss();
+  syncCensoExportButtonVisibility();
 }

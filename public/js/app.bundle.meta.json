@@ -215,12 +215,12 @@
       "format": "esm"
     },
     "public/js/tour-pitch-demo-todos.mjs": {
-      "bytes": 2661,
+      "bytes": 2040,
       "imports": [],
       "format": "esm"
     },
     "public/js/tour-pitch-demo-seed.mjs": {
-      "bytes": 18413,
+      "bytes": 19292,
       "imports": [
         {
           "path": "public/js/labs.js",
@@ -251,6 +251,11 @@
           "path": "public/js/features/estado-actual-data.mjs",
           "kind": "import-statement",
           "original": "./features/estado-actual-data.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-registro-defaults.mjs",
+          "kind": "import-statement",
+          "original": "./features/estado-actual-registro-defaults.mjs"
         },
         {
           "path": "public/js/receta-hu-core.mjs",
@@ -286,7 +291,7 @@
       "format": "esm"
     },
     "public/js/features/soap-estado.mjs": {
-      "bytes": 11808,
+      "bytes": 11050,
       "imports": [
         {
           "path": "public/js/app-state.mjs",
@@ -343,8 +348,45 @@
       ],
       "format": "esm"
     },
+    "public/js/vpo-dx-inference.mjs": {
+      "bytes": 5115,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/patient-date-fields.mjs": {
+      "bytes": 987,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/patient-accesos.mjs": {
+      "bytes": 2962,
+      "imports": [
+        {
+          "path": "public/js/patient-date-fields.mjs",
+          "kind": "import-statement",
+          "original": "./patient-date-fields.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/patient-diagnosticos.mjs": {
+      "bytes": 3783,
+      "imports": [
+        {
+          "path": "public/js/vpo-dx-inference.mjs",
+          "kind": "import-statement",
+          "original": "./vpo-dx-inference.mjs"
+        },
+        {
+          "path": "public/js/patient-accesos.mjs",
+          "kind": "import-statement",
+          "original": "./patient-accesos.mjs"
+        }
+      ],
+      "format": "esm"
+    },
     "public/js/features/notes-indicaciones.mjs": {
-      "bytes": 24636,
+      "bytes": 24903,
       "imports": [
         {
           "path": "public/js/app-state.mjs",
@@ -365,6 +407,11 @@
           "path": "public/js/profile-formats-editor.mjs",
           "kind": "import-statement",
           "original": "../profile-formats-editor.mjs"
+        },
+        {
+          "path": "public/js/patient-diagnosticos.mjs",
+          "kind": "import-statement",
+          "original": "../patient-diagnosticos.mjs"
         }
       ],
       "format": "esm"
@@ -561,6 +608,74 @@
       ],
       "format": "esm"
     },
+    "public/js/rpc-date-picker.mjs": {
+      "bytes": 11873,
+      "imports": [
+        {
+          "path": "public/js/patient-date-fields.mjs",
+          "kind": "import-statement",
+          "original": "./patient-date-fields.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/patient-data-accesos-ui.mjs": {
+      "bytes": 4780,
+      "imports": [
+        {
+          "path": "public/js/patient-date-fields.mjs",
+          "kind": "import-statement",
+          "original": "./patient-date-fields.mjs"
+        },
+        {
+          "path": "public/js/rpc-date-picker.mjs",
+          "kind": "import-statement",
+          "original": "./rpc-date-picker.mjs"
+        },
+        {
+          "path": "public/js/patient-accesos.mjs",
+          "kind": "import-statement",
+          "original": "./patient-accesos.mjs"
+        },
+        {
+          "path": "public/js/app-state.mjs",
+          "kind": "import-statement",
+          "original": "./app-state.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/censo-meds-format.mjs": {
+      "bytes": 1036,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/patient-data-censo-ui.mjs": {
+      "bytes": 5558,
+      "imports": [
+        {
+          "path": "public/js/vpo-dx-inference.mjs",
+          "kind": "import-statement",
+          "original": "./vpo-dx-inference.mjs"
+        },
+        {
+          "path": "public/js/patient-diagnosticos.mjs",
+          "kind": "import-statement",
+          "original": "./patient-diagnosticos.mjs"
+        },
+        {
+          "path": "public/js/censo-meds-format.mjs",
+          "kind": "import-statement",
+          "original": "./censo-meds-format.mjs"
+        },
+        {
+          "path": "public/js/app-state.mjs",
+          "kind": "import-statement",
+          "original": "./app-state.mjs"
+        }
+      ],
+      "format": "esm"
+    },
     "public/js/listado-problemas-ai-prompt.mjs": {
       "bytes": 3638,
       "imports": [],
@@ -572,12 +687,32 @@
       "format": "esm"
     },
     "public/js/features/expediente.mjs": {
-      "bytes": 46772,
+      "bytes": 47300,
       "imports": [
         {
           "path": "public/js/app-state.mjs",
           "kind": "import-statement",
           "original": "../app-state.mjs"
+        },
+        {
+          "path": "public/js/mode-features.mjs",
+          "kind": "import-statement",
+          "original": "../mode-features.mjs"
+        },
+        {
+          "path": "public/js/patient-data-accesos-ui.mjs",
+          "kind": "import-statement",
+          "original": "../patient-data-accesos-ui.mjs"
+        },
+        {
+          "path": "public/js/rpc-date-picker.mjs",
+          "kind": "import-statement",
+          "original": "../rpc-date-picker.mjs"
+        },
+        {
+          "path": "public/js/patient-data-censo-ui.mjs",
+          "kind": "import-statement",
+          "original": "../patient-data-censo-ui.mjs"
         },
         {
           "path": "public/js/listado-problemas-core.mjs",
@@ -618,11 +753,6 @@
           "path": "public/js/labs.js",
           "kind": "import-statement",
           "original": "../labs.js"
-        },
-        {
-          "path": "public/js/mode-features.mjs",
-          "kind": "import-statement",
-          "original": "../mode-features.mjs"
         }
       ],
       "format": "esm"
@@ -672,6 +802,125 @@
     "public/js/tour-targets.mjs": {
       "bytes": 5815,
       "imports": [],
+      "format": "esm"
+    },
+    "public/js/censo-labs-format.mjs": {
+      "bytes": 3944,
+      "imports": [
+        {
+          "path": "public/js/tend-core.mjs",
+          "kind": "import-statement",
+          "original": "./tend-core.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/censo-cultivo-format.mjs": {
+      "bytes": 10242,
+      "imports": [
+        {
+          "path": "public/js/tend-core.mjs",
+          "kind": "import-statement",
+          "original": "./tend-core.mjs"
+        },
+        {
+          "path": "public/js/labs.js",
+          "kind": "import-statement",
+          "original": "./labs.js"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/censo-header-format.mjs": {
+      "bytes": 2593,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/censo-build.mjs": {
+      "bytes": 7593,
+      "imports": [
+        {
+          "path": "public/js/tend-core.mjs",
+          "kind": "import-statement",
+          "original": "./tend-core.mjs"
+        },
+        {
+          "path": "public/js/censo-meds-format.mjs",
+          "kind": "import-statement",
+          "original": "./censo-meds-format.mjs"
+        },
+        {
+          "path": "public/js/censo-labs-format.mjs",
+          "kind": "import-statement",
+          "original": "./censo-labs-format.mjs"
+        },
+        {
+          "path": "public/js/patient-diagnosticos.mjs",
+          "kind": "import-statement",
+          "original": "./patient-diagnosticos.mjs"
+        },
+        {
+          "path": "public/js/censo-cultivo-format.mjs",
+          "kind": "import-statement",
+          "original": "./censo-cultivo-format.mjs"
+        },
+        {
+          "path": "public/js/patient-accesos.mjs",
+          "kind": "import-statement",
+          "original": "./patient-accesos.mjs"
+        },
+        {
+          "path": "public/js/censo-header-format.mjs",
+          "kind": "import-statement",
+          "original": "./censo-header-format.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/censo-preview-html.mjs": {
+      "bytes": 7752,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/censo-export.mjs": {
+      "bytes": 8225,
+      "imports": [
+        {
+          "path": "public/js/mode-features.mjs",
+          "kind": "import-statement",
+          "original": "./mode-features.mjs"
+        },
+        {
+          "path": "public/js/app-state.mjs",
+          "kind": "import-statement",
+          "original": "./app-state.mjs"
+        },
+        {
+          "path": "public/js/storage.js",
+          "kind": "import-statement",
+          "original": "./storage.js"
+        },
+        {
+          "path": "public/js/censo-build.mjs",
+          "kind": "import-statement",
+          "original": "./censo-build.mjs"
+        },
+        {
+          "path": "public/js/censo-preview-html.mjs",
+          "kind": "import-statement",
+          "original": "./censo-preview-html.mjs"
+        },
+        {
+          "path": "public/js/patient-diagnosticos.mjs",
+          "kind": "import-statement",
+          "original": "./patient-diagnosticos.mjs"
+        },
+        {
+          "path": "public/js/ui-motion.mjs",
+          "kind": "import-statement",
+          "original": "./ui-motion.mjs"
+        }
+      ],
       "format": "esm"
     },
     "public/js/lan-client.mjs": {
@@ -767,7 +1016,7 @@
       "format": "esm"
     },
     "public/js/features/lan-sync.mjs": {
-      "bytes": 86698,
+      "bytes": 86881,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -820,6 +1069,11 @@
           "original": "./estado-actual-data.mjs"
         },
         {
+          "path": "public/js/patient-diagnosticos.mjs",
+          "kind": "import-statement",
+          "original": "../patient-diagnosticos.mjs"
+        },
+        {
           "path": "public/js/manejo-todo-dismiss.mjs",
           "kind": "import-statement",
           "original": "../manejo-todo-dismiss.mjs"
@@ -852,8 +1106,13 @@
       "imports": [],
       "format": "esm"
     },
+    "public/js/patient-export-format.mjs": {
+      "bytes": 4759,
+      "imports": [],
+      "format": "esm"
+    },
     "public/js/features/platform.mjs": {
-      "bytes": 75156,
+      "bytes": 76774,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -891,6 +1150,16 @@
           "original": "./estado-actual-data.mjs"
         },
         {
+          "path": "public/js/patient-diagnosticos.mjs",
+          "kind": "import-statement",
+          "original": "../patient-diagnosticos.mjs"
+        },
+        {
+          "path": "public/js/patient-export-format.mjs",
+          "kind": "import-statement",
+          "original": "../patient-export-format.mjs"
+        },
+        {
           "path": "public/js/features/patients.mjs",
           "kind": "import-statement",
           "original": "./patients.mjs"
@@ -904,7 +1173,7 @@
       "format": "esm"
     },
     "public/js/expediente-tabs.mjs": {
-      "bytes": 14089,
+      "bytes": 14503,
       "imports": [
         {
           "path": "public/js/mode-features.mjs",
@@ -920,7 +1189,7 @@
       "format": "esm"
     },
     "public/js/features/profile.mjs": {
-      "bytes": 18140,
+      "bytes": 19762,
       "imports": [
         {
           "path": "public/js/features/chrome.mjs",
@@ -966,6 +1235,11 @@
           "path": "public/js/mode-features.mjs",
           "kind": "import-statement",
           "original": "../mode-features.mjs"
+        },
+        {
+          "path": "public/js/censo-export.mjs",
+          "kind": "import-statement",
+          "original": "../censo-export.mjs"
         },
         {
           "path": "public/js/expediente-tabs.mjs",
@@ -1043,7 +1317,7 @@
       "format": "esm"
     },
     "public/js/features/settings-help.mjs": {
-      "bytes": 99562,
+      "bytes": 99650,
       "imports": [
         {
           "path": "public/js/tour-targets.mjs",
@@ -1059,6 +1333,11 @@
           "path": "public/js/presentation-mode.mjs",
           "kind": "import-statement",
           "original": "../presentation-mode.mjs"
+        },
+        {
+          "path": "public/js/censo-export.mjs",
+          "kind": "import-statement",
+          "original": "../censo-export.mjs"
         },
         {
           "path": "public/js/features/profile.mjs",
@@ -2033,11 +2312,6 @@
       "imports": [],
       "format": "esm"
     },
-    "public/js/vpo-dx-inference.mjs": {
-      "bytes": 5115,
-      "imports": [],
-      "format": "esm"
-    },
     "public/js/vpo-data.mjs": {
       "bytes": 11365,
       "imports": [
@@ -2075,7 +2349,7 @@
       "format": "esm"
     },
     "public/js/features/vpo-panel.mjs": {
-      "bytes": 25699,
+      "bytes": 26938,
       "imports": [
         {
           "path": "public/js/app-state.mjs",
@@ -2106,6 +2380,11 @@
           "path": "public/js/vpo-dx-inference.mjs",
           "kind": "import-statement",
           "original": "../vpo-dx-inference.mjs"
+        },
+        {
+          "path": "public/js/patient-diagnosticos.mjs",
+          "kind": "import-statement",
+          "original": "../patient-diagnosticos.mjs"
         },
         {
           "path": "public/js/vpo-periop-meds.mjs",
@@ -2174,7 +2453,7 @@
       "format": "esm"
     },
     "public/js/features/estado-actual-panel.mjs": {
-      "bytes": 69085,
+      "bytes": 69104,
       "imports": [
         {
           "path": "public/js/app-state.mjs",
@@ -2266,7 +2545,7 @@
       "format": "esm"
     },
     "public/js/features/pase-board.mjs": {
-      "bytes": 41460,
+      "bytes": 41526,
       "imports": [
         {
           "path": "public/js/labs.js",
@@ -2617,7 +2896,7 @@
       "format": "esm"
     },
     "public/js/presentation-mode.mjs": {
-      "bytes": 4860,
+      "bytes": 4899,
       "imports": [
         {
           "path": "public/js/tour-pitch-demo-seed.mjs",
@@ -2673,7 +2952,7 @@
       "format": "esm"
     },
     "public/js/features/agenda.mjs": {
-      "bytes": 15112,
+      "bytes": 15352,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -2699,6 +2978,11 @@
           "path": "public/js/features/lan-sync.mjs",
           "kind": "import-statement",
           "original": "./lan-sync.mjs"
+        },
+        {
+          "path": "public/js/rpc-date-picker.mjs",
+          "kind": "import-statement",
+          "original": "../rpc-date-picker.mjs"
         }
       ],
       "format": "esm"
@@ -2730,7 +3014,7 @@
       "format": "esm"
     },
     "public/js/app-shell.mjs": {
-      "bytes": 32548,
+      "bytes": 33283,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -2741,6 +3025,16 @@
           "path": "public/js/mode-features.mjs",
           "kind": "import-statement",
           "original": "./mode-features.mjs"
+        },
+        {
+          "path": "public/js/patient-accesos.mjs",
+          "kind": "import-statement",
+          "original": "./patient-accesos.mjs"
+        },
+        {
+          "path": "public/js/rpc-date-picker.mjs",
+          "kind": "import-statement",
+          "original": "./rpc-date-picker.mjs"
         },
         {
           "path": "public/js/lan-join-link.mjs",
@@ -2924,7 +3218,7 @@
       "format": "esm"
     },
     "public/js/app-runtimes.mjs": {
-      "bytes": 20742,
+      "bytes": 21316,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -3052,6 +3346,11 @@
           "original": "./features/settings-help.mjs"
         },
         {
+          "path": "public/js/censo-export.mjs",
+          "kind": "import-statement",
+          "original": "./censo-export.mjs"
+        },
+        {
           "path": "public/js/features/platform.mjs",
           "kind": "import-statement",
           "original": "./features/platform.mjs"
@@ -3160,7 +3459,7 @@
       "format": "esm"
     },
     "public/js/app.js": {
-      "bytes": 7310,
+      "bytes": 7423,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -3176,6 +3475,11 @@
           "path": "public/js/presentation-mode.mjs",
           "kind": "import-statement",
           "original": "./presentation-mode.mjs"
+        },
+        {
+          "path": "public/js/censo-export.mjs",
+          "kind": "import-statement",
+          "original": "./censo-export.mjs"
         },
         {
           "path": "public/js/app-runtimes.mjs",
@@ -3301,6 +3605,11 @@
           "path": "public/js/features/profile.mjs",
           "kind": "import-statement",
           "original": "./features/profile.mjs"
+        },
+        {
+          "path": "public/js/rpc-date-picker.mjs",
+          "kind": "import-statement",
+          "original": "./rpc-date-picker.mjs"
         }
       ],
       "format": "esm"
@@ -3311,7 +3620,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 3188110
+      "bytes": 3323007
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -3385,10 +3694,10 @@
           "bytesInOutput": 2845
         },
         "public/js/tour-pitch-demo-todos.mjs": {
-          "bytesInOutput": 2535
+          "bytesInOutput": 1899
         },
         "public/js/tour-pitch-demo-seed.mjs": {
-          "bytesInOutput": 15967
+          "bytesInOutput": 16474
         },
         "public/js/mode-features.mjs": {
           "bytesInOutput": 530
@@ -3397,7 +3706,7 @@
           "bytesInOutput": 12542
         },
         "public/js/features/soap-estado.mjs": {
-          "bytesInOutput": 10865
+          "bytesInOutput": 10103
         },
         "public/js/features/estado-actual-meds.mjs": {
           "bytesInOutput": 3603
@@ -3411,8 +3720,20 @@
         "public/js/profile-formats-editor.mjs": {
           "bytesInOutput": 4772
         },
+        "public/js/vpo-dx-inference.mjs": {
+          "bytesInOutput": 4133
+        },
+        "public/js/patient-date-fields.mjs": {
+          "bytesInOutput": 600
+        },
+        "public/js/patient-accesos.mjs": {
+          "bytesInOutput": 2498
+        },
+        "public/js/patient-diagnosticos.mjs": {
+          "bytesInOutput": 2834
+        },
         "public/js/features/notes-indicaciones.mjs": {
-          "bytesInOutput": 22690
+          "bytesInOutput": 22884
         },
         "public/js/tend-export.mjs": {
           "bytesInOutput": 13748
@@ -3444,6 +3765,18 @@
         "public/js/features/lab-panel.mjs": {
           "bytesInOutput": 57821
         },
+        "public/js/rpc-date-picker.mjs": {
+          "bytesInOutput": 11166
+        },
+        "public/js/patient-data-accesos-ui.mjs": {
+          "bytesInOutput": 4036
+        },
+        "public/js/censo-meds-format.mjs": {
+          "bytesInOutput": 864
+        },
+        "public/js/patient-data-censo-ui.mjs": {
+          "bytesInOutput": 4798
+        },
         "public/js/listado-problemas-ai-prompt.mjs": {
           "bytesInOutput": 3689
         },
@@ -3451,7 +3784,7 @@
           "bytesInOutput": 736
         },
         "public/js/features/expediente.mjs": {
-          "bytesInOutput": 42530
+          "bytesInOutput": 42679
         },
         "public/js/tend-prefs.mjs": {
           "bytesInOutput": 6068
@@ -3464,6 +3797,24 @@
         },
         "public/js/tour-targets.mjs": {
           "bytesInOutput": 4823
+        },
+        "public/js/censo-labs-format.mjs": {
+          "bytesInOutput": 1993
+        },
+        "public/js/censo-cultivo-format.mjs": {
+          "bytesInOutput": 9554
+        },
+        "public/js/censo-header-format.mjs": {
+          "bytesInOutput": 1823
+        },
+        "public/js/censo-build.mjs": {
+          "bytesInOutput": 5959
+        },
+        "public/js/censo-preview-html.mjs": {
+          "bytesInOutput": 6375
+        },
+        "public/js/censo-export.mjs": {
+          "bytesInOutput": 7493
         },
         "public/js/lan-client.mjs": {
           "bytesInOutput": 4176
@@ -3499,22 +3850,25 @@
           "bytesInOutput": 4074
         },
         "public/js/features/lan-sync.mjs": {
-          "bytesInOutput": 83472
+          "bytesInOutput": 83586
         },
         "public/js/update-helpers.mjs": {
           "bytesInOutput": 635
         },
+        "public/js/patient-export-format.mjs": {
+          "bytesInOutput": 4275
+        },
         "public/js/features/platform.mjs": {
-          "bytesInOutput": 66666
+          "bytesInOutput": 67849
         },
         "public/js/clinico-access.mjs": {
           "bytesInOutput": 2262
         },
         "public/js/expediente-tabs.mjs": {
-          "bytesInOutput": 12876
+          "bytesInOutput": 13198
         },
         "public/js/features/profile.mjs": {
-          "bytesInOutput": 15529
+          "bytesInOutput": 17099
         },
         "public/js/mobile-web.mjs": {
           "bytesInOutput": 545
@@ -3526,10 +3880,10 @@
           "bytesInOutput": 4407
         },
         "public/js/features/settings-help.mjs": {
-          "bytesInOutput": 93147
+          "bytesInOutput": 93175
         },
         "public/js/features/tendencias.mjs": {
-          "bytesInOutput": 66705
+          "bytesInOutput": 66717
         },
         "public/js/todos-priority.mjs": {
           "bytesInOutput": 524
@@ -3646,7 +4000,7 @@
           "bytesInOutput": 6754
         },
         "public/js/features/manejo.mjs": {
-          "bytesInOutput": 10760
+          "bytesInOutput": 10762
         },
         "public/js/vpo-lookups.mjs": {
           "bytesInOutput": 5362
@@ -3657,11 +4011,8 @@
         "public/js/vpo-display.mjs": {
           "bytesInOutput": 1740
         },
-        "public/js/vpo-dx-inference.mjs": {
-          "bytesInOutput": 4133
-        },
         "public/js/vpo-data.mjs": {
-          "bytesInOutput": 9055
+          "bytesInOutput": 9063
         },
         "public/js/vpo-periop-meds.mjs": {
           "bytesInOutput": 3009
@@ -3670,7 +4021,7 @@
           "bytesInOutput": 2227
         },
         "public/js/features/vpo-panel.mjs": {
-          "bytesInOutput": 22657
+          "bytesInOutput": 23790
         },
         "public/js/features/vpo.mjs": {
           "bytesInOutput": 368
@@ -3685,13 +4036,13 @@
           "bytesInOutput": 19952
         },
         "public/js/features/estado-actual-panel.mjs": {
-          "bytesInOutput": 59737
+          "bytesInOutput": 59756
         },
         "public/js/features/receta-hu.mjs": {
-          "bytesInOutput": 24413
+          "bytesInOutput": 24416
         },
         "public/js/features/pase-board.mjs": {
-          "bytesInOutput": 36713
+          "bytesInOutput": 36748
         },
         "public/js/features/medications.mjs": {
           "bytesInOutput": 15648
@@ -3706,7 +4057,7 @@
           "bytesInOutput": 11867
         },
         "public/js/lab-history-set.mjs": {
-          "bytesInOutput": 17055
+          "bytesInOutput": 17056
         },
         "public/js/patient-delete-sync.mjs": {
           "bytesInOutput": 1055
@@ -3715,7 +4066,7 @@
           "bytesInOutput": 44343
         },
         "public/js/presentation-mode.mjs": {
-          "bytesInOutput": 3984
+          "bytesInOutput": 4048
         },
         "public/js/quick-output.mjs": {
           "bytesInOutput": 881
@@ -3730,13 +4081,13 @@
           "bytesInOutput": 2224
         },
         "public/js/features/agenda.mjs": {
-          "bytesInOutput": 14203
+          "bytesInOutput": 14378
         },
         "public/js/features/productivity.mjs": {
           "bytesInOutput": 16114
         },
         "public/js/app-shell.mjs": {
-          "bytesInOutput": 28541
+          "bytesInOutput": 29006
         },
         "public/js/features/estado-actual-parse-variants.mjs": {
           "bytesInOutput": 982
@@ -3751,13 +4102,13 @@
           "bytesInOutput": 2619
         },
         "public/js/app-runtimes.mjs": {
-          "bytesInOutput": 12118
+          "bytesInOutput": 12522
         },
         "public/js/app.js": {
-          "bytesInOutput": 4477
+          "bytesInOutput": 4502
         }
       },
-      "bytes": 1754006
+      "bytes": 1823803
     }
   }
 }

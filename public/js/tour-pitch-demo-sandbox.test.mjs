@@ -87,7 +87,7 @@ test('seedPitchDemo guarda respaldo en sessionStorage y resolvePitchPersistPatie
   const state = makeState();
   markPitchTourSessionActive(true);
   seedPitchDemo(state);
-  assert.equal(patients.length, 2);
+  assert.equal(patients.length, 1);
   assert.equal(patients[0].id, 'demo-pitch');
 
   const raw = sessionStorage.getItem(PITCH_SANDBOX_SS_KEY);

@@ -372,6 +372,7 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
   padding: 10px 12px;
   list-style: none;
   user-select: none;
+  flex-shrink: 0;
 }
 
 .exp-datos-collapse-summary::-webkit-details-marker {
@@ -388,6 +389,35 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
 
 .exp-datos-collapse[open] .exp-datos-collapse-summary::before {
   transform: rotate(90deg);
+}
+
+/* Datos abiertos: ocultar Pendientes; scroll en #itab-content-paciente (details+flex no acotan). */
+.exp-datos-collapse[open] ~ .exp-pendientes-mount {
+  display: none;
+}
+
+#itab-content-paciente.exp-composite-pane.exp-paciente-datos-open {
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+#itab-content-paciente.exp-composite-pane.exp-paciente-datos-open .exp-datos-collapse[open] {
+  display: block;
+  overflow: visible;
+}
+
+#itab-content-paciente.exp-composite-pane.exp-paciente-datos-open .exp-datos-mount {
+  overflow: visible;
+  flex: none;
+  min-height: auto;
+}
+
+#itab-content-paciente.exp-composite-pane.exp-paciente-datos-open .exp-datos-mount > .exp-segment-panel,
+#itab-content-paciente.exp-composite-pane.exp-paciente-datos-open .exp-datos-mount > .exp-segment-panel.active {
+  overflow: visible;
+  flex: 0 0 auto;
+  min-height: auto;
 }
 
 .exp-datos-mount,
@@ -411,6 +441,35 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
 
 .exp-datos-mount {
   padding: 0 12px 12px;
+}
+
+.exp-datos-fields {
+  display: flex;
+  flex-direction: column;
+  gap: calc(10px * var(--density-space, 1));
+}
+
+.patient-accesos-block {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8px * var(--density-space, 1));
+}
+
+.patient-accesos-list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(8px * var(--density-space, 1));
+}
+
+.patient-acceso-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(120px, 150px) 32px;
+  gap: calc(8px * var(--density-space, 1));
+  align-items: end;
+}
+
+.patient-acceso-row .field-group label {
+  display: none;
 }
 
 .exp-pendientes-mount {

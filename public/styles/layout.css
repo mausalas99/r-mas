@@ -72,12 +72,25 @@ html.electron-macos-inset-bar #sesion-ingreso-trends-send-backdrop.modal-backdro
   box-sizing: border-box;
 }
 header h1 { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
-/* Centrado respecto al ancho del header (no respecto al hueco entre R+ y botones). */
-#today-date {
+/* Fecha centrada + meta Estado Actual apilados (evita solaparse con botones derecha). */
+.header-center {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  max-width: min(440px, calc(100vw - 140px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  max-width: min(420px, calc(100vw - 300px));
+  min-width: 0;
+  pointer-events: none;
+  text-align: center;
+}
+#today-date {
+  position: static;
+  transform: none;
+  max-width: 100%;
   text-align: center;
   font-size: 11px;
   font-weight: 500;
@@ -87,7 +100,15 @@ header h1 { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  pointer-events: none;
+}
+.header-center .estado-actual-meta {
+  max-width: 100%;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.header-center .estado-actual-meta:empty {
+  display: none;
 }
 #app-brand { cursor: pointer; border-radius: var(--radius-md); padding: 2px 6px; margin-left: -6px; flex-shrink: 0; }
 #app-brand:hover { background: rgba(15, 23, 42, 0.05); }
@@ -270,26 +291,6 @@ html:not(.ui-density-normal) #main-area {
   border-color: color-mix(in oklab, var(--action) 40%, var(--border));
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
 }
-.estado-actual-context-wrap {
-  display: none;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-  flex-wrap: nowrap;
-}
-.header-work-cluster .estado-actual-meta {
-  max-width: min(140px, 18vw);
-}
-.header-work-cluster .btn-estado-actual-compact {
-  padding: 7px 12px;
-  font-size: 12px;
-  gap: 6px;
-  min-height: 36px;
-}
-.header-work-cluster .btn-estado-actual-compact svg {
-  width: 13px;
-  height: 13px;
-}
 .header-work-cluster .header-app-mode-chip {
   padding: 6px 12px;
   font-size: 11px;
@@ -304,36 +305,97 @@ html:not(.ui-density-normal) #main-area {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
-.btn-estado-actual-compact {
-  display: inline-flex;
+.btn-export-censo-header {
+  display: none;
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
-  background: #065f46;
+  background: color-mix(in oklab, #4f46e5 92%, #1e1b4b);
   color: #fff;
   border: none;
   border-radius: var(--radius-pill);
-  padding: 7px 14px;
+  padding: 7px 12px;
   font-size: 12px;
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
-  transition: filter 0.15s ease, box-shadow 0.15s ease, outline-color 0.15s ease;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+  min-height: 36px;
+  transition: filter 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.1);
 }
-.btn-estado-actual-compact:hover {
-  filter: brightness(1.07);
+.btn-export-censo-header:hover {
+  filter: brightness(1.06);
 }
-.btn-estado-actual-compact--pending {
-  box-shadow: 0 0 0 1px rgba(5, 150, 105, 0.45), 0 1px 2px rgba(15, 23, 42, 0.06);
+.btn-export-censo-header svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
 }
-html.dark .btn-estado-actual-compact {
-  background: color-mix(in oklab, #059669 78%, var(--surface));
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+html.dark .btn-export-censo-header {
+  background: color-mix(in oklab, #6366f1 88%, #312e81);
 }
-html.dark .btn-estado-actual-compact--pending {
-  box-shadow: 0 0 0 1px rgba(110, 231, 183, 0.35), 0 1px 3px rgba(0, 0, 0, 0.3);
+.sidebar-censo-export-wrap {
+  display: none;
+  padding: 0 10px 8px;
 }
+.btn-export-censo-sidebar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid color-mix(in oklab, #4f46e5 35%, var(--border));
+  background: color-mix(in oklab, #4f46e5 10%, var(--surface));
+  color: color-mix(in oklab, #4f46e5 85%, var(--text));
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.btn-export-censo-sidebar:hover {
+  background: color-mix(in oklab, #4f46e5 16%, var(--surface));
+  border-color: color-mix(in oklab, #4f46e5 50%, var(--border));
+}
+.btn-export-censo-sidebar svg {
+  flex-shrink: 0;
+}
+
+.censo-preview-backdrop {
+  z-index: 120;
+}
+.censo-preview-modal {
+  width: min(96vw, 1100px);
+  max-width: 1100px;
+  max-height: min(92vh, 820px);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 18px 14px;
+}
+.censo-preview-modal-head {
+  flex-shrink: 0;
+}
+.censo-preview-modal .modal-title {
+  margin-bottom: 4px;
+}
+.censo-preview-hint {
+  margin: 0 0 10px;
+}
+.censo-preview-frame {
+  flex: 1 1 auto;
+  min-height: 360px;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: #fff;
+}
+.censo-preview-modal .modal-actions {
+  flex-shrink: 0;
+  margin-top: 12px;
+}
+
 .header-app-mode-chip.mode-sala {
   border-color: color-mix(in oklab, #059669 28%, var(--border));
 }

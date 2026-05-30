@@ -11,6 +11,7 @@ import {
   stopPresentationMode,
   registerPresentationRuntime,
 } from '../presentation-mode.mjs';
+import { exportCensoPdfFromHelp } from '../censo-export.mjs';
 import { applyAppModeSwitchEffects } from './profile.mjs';
 import { DEMO_TOUR_LAB_PASTE, DEMO_GARCIA_LAB_REPORT, DEMO_SOME_LAB_REPORT, OLDER_DEMO_SOME_LAB_REPORT } from '../tour-demo-some-lab.mjs';
 import { LAB_BULK_PATIENT_SEPARATOR } from '../lab-bulk-paste.mjs';
@@ -2264,6 +2265,7 @@ export const settingsHelpWindowHandlers = {
   startMiniTour,
   startHelpTourMain,
   togglePresentationModeFromHelp,
+  exportCensoPdfFromHelp,
   guidedTourIntroChooseSala,
   guidedTourIntroChooseInterconsulta,
   guidedTourIntroSkip,

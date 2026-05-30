@@ -16,6 +16,7 @@ import {
   buildIndicaDefaultsEditorHtml,
   loadDraftFromSettings,
 } from "../profile-formats-editor.mjs";
+import { preloadNoteDxFromPatient } from "../patient-diagnosticos.mjs";
 
 let rt = {
   getActiveId() { return null; },
@@ -86,6 +87,13 @@ function renderNoteForm() {
     if (changed) saveState();
   }
   var note = notes[aid()] || {};
+  var pid = aid();
+  if (pid) {
+    var pat = patients.find(function (p) {
+      return String(p.id) === String(pid);
+    });
+    if (pat && preloadNoteDxFromPatient(note, pat)) saveState();
+  }
   document.getElementById('note-form').innerHTML = (
     '<div class="card"><div class="card-header card-header--tone-slate"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Fecha y Hora</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">' +
     '<div class="field-group"><label>Fecha</label><input type="text" value="' + esc(note.fecha) + '" oninput="updateNote(\'fecha\',this.value)" placeholder="DD/MM/AAAA"></div>' +

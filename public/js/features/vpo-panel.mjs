@@ -25,6 +25,10 @@ import {
   ensureDiagnosticosList,
 } from '../vpo-data.mjs';
 import { formatDiagnosticosCopy, applyDiagnosticosInference } from '../vpo-dx-inference.mjs';
+import {
+  ensurePatientDiagnosticos,
+  pushDiagnosticosToPatient,
+} from '../patient-diagnosticos.mjs';
 import { suggestPeriopMed } from '../vpo-periop-meds.mjs';
 import {
   buildVpoFullCopyText,
@@ -256,6 +260,23 @@ function wireForm(mount, state, patientId) {
     rt.showToast('Diagnósticos importados; factores de riesgo actualizados', 'success');
   });
 
+  mount.querySelector('[data-vpo-action="push-dx-datos"]')?.addEventListener('click', function () {
+    var patient = patients.find(function (p) {
+      return p.id === patientId;
+    });
+    if (!patient) return;
+    var list = (state.diagnosticosList || []).filter(function (d) {
+      return String(d).trim();
+    });
+    if (!list.length) {
+      rt.showToast('Sin diagnósticos en VPO para enviar', 'error');
+      return;
+    }
+    pushDiagnosticosToPatient(patient, list);
+    saveState();
+    rt.showToast('Diagnósticos guardados en Datos del paciente', 'success');
+  });
+
   mount.querySelector('[data-vpo-action="tomar-meds"]')?.addEventListener('click', function () {
     var block = medRecetaByPatient[patientId];
     if (!block || !block.items || !block.items.length) {
@@ -452,6 +473,7 @@ function renderDiagnosticosSection(state) {
   return (
     '<div class="vpo-toolbar">' +
     '<button type="button" class="btn-med-secondary" data-vpo-action="tomar-dx">Tomar de la nota</button>' +
+    '<button type="button" class="btn-med-secondary" data-vpo-action="push-dx-datos">Enviar a Datos del paciente</button>' +
     '<button type="button" class="btn-add-row" data-vpo-action="dx-add-row">+ Agregar diagnóstico</button>' +
     '</div>' +
     '<div class="vpo-dx-list">' +
@@ -610,6 +632,18 @@ export function renderVpoPanel(mount, patientId) {
   }
   ensureDuracionKey(state);
   ensureDiagnosticosList(state);
+  if (patient && !state.diagnosticosTouched) {
+    var vpoDxEmpty = !(state.diagnosticosList || []).some(function (d) {
+      return String(d).trim();
+    });
+    if (vpoDxEmpty) {
+      ensurePatientDiagnosticos(patient);
+      var fromPat = (patient.diagnosticosList || []).filter(function (d) {
+        return String(d).trim();
+      });
+      if (fromPat.length) setDiagnosticosList(state, fromPat.concat(['']));
+    }
+  }
   syncAhaFields(state);
   autofillVitalsFromMonitoreoIfEmpty(state, patient || null);
   mount._vpoPatientId = patientId;

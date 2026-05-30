@@ -6,19 +6,23 @@ import { extractParsedValues } from './features/diagrams-parse.mjs';
 import {
   DEMO_SOME_LAB_REPORT,
   OLDER_DEMO_SOME_LAB_REPORT,
-  DEMO_GARCIA_LAB_REPORT,
   DEMO_TOUR_LAB_PASTE,
 } from './tour-demo-some-lab.mjs';
 import { PITCH_CULTIVO_LAB_SPECS } from './tour-pitch-cultivos-some.mjs';
 import { buildTourDemoListadoProblemas } from './tour-demo-listado-problemas.mjs';
 import { medicionHasCoreData } from './features/estado-actual-data.mjs';
+import {
+  collectGlucometriasForRegistroWindow,
+  getGlucometriaRegistroWindow,
+} from './features/estado-actual-registro-defaults.mjs';
 import { normalizeRecetaHuDraft } from './receta-hu-core.mjs';
 import { storage } from './storage.js';
 import { bumpLabHistoryRevision } from './lab-history-cache.mjs';
 import { seedPitchDemoTodos, clearPitchDemoTodos } from './tour-pitch-demo-todos.mjs';
 
 export const PITCH_DEMO_PATIENT_ID = 'demo-pitch';
-export const PITCH_DEMO_PATIENT_ID_2 = 'demo-pitch-2';
+/** Solo limpieza si quedó de versiones anteriores. */
+const PITCH_DEMO_PATIENT_ID_LEGACY = 'demo-pitch-2';
 
 const PITCH_SANDBOX_SS_KEY = 'rpc-pitch-tour-sandbox-v1';
 export const PITCH_TOUR_ACTIVE_SS_KEY = 'rpc-pitch-tour-active';
@@ -126,14 +130,14 @@ export function isPitchPatientIsolationActive() {
 }
 
 export function isPitchDemoPatientId(patientId) {
-  return patientId === PITCH_DEMO_PATIENT_ID || patientId === PITCH_DEMO_PATIENT_ID_2;
+  return patientId === PITCH_DEMO_PATIENT_ID || patientId === PITCH_DEMO_PATIENT_ID_LEGACY;
 }
 
 /** @param {Array<{ id?: string }>} list */
 export function filterPatientsForPitchTour(list) {
   if (!pitchPatientIsolation) return list;
   return (list || []).filter(function (p) {
-    return p && isPitchDemoPatientId(p.id);
+    return p && p.id === PITCH_DEMO_PATIENT_ID;
   });
 }
 
@@ -158,9 +162,7 @@ export function buildPitchMonitoreoHistorial(ref) {
   /** @type {Array<object>} */
   const historial = [];
 
-  function atDayOffset(dayOff, hour, minute, payload) {
-    const d = new Date(now.getTime() - dayOff * dayMs);
-    d.setHours(hour, minute, 0, 0);
+  function pushEntry(d, payload) {
     historial.push({
       id: 'pitch-ea-' + historial.length,
       recordedAt: d.toISOString(),
@@ -170,48 +172,116 @@ export function buildPitchMonitoreoHistorial(ref) {
     });
   }
 
-  // Hoy: 3 mediciones
-  atDayOffset(0, 7, 30, {
+  function atDayOffset(dayOff, hour, minute, payload) {
+    const d = new Date(now.getTime() - dayOff * dayMs);
+    d.setHours(hour, minute, 0, 0);
+    pushEntry(d, payload);
+  }
+
+  // Glucometrías en la ventana de Estado Actual (ayer 08:00 → hoy 00:00)
+  const win = getGlucometriaRegistroWindow(now);
+  /** @type {Array<{ hoursFromStart: number, minute: number, payload: object }>} */
+  const gluTurns = [
+    {
+      hoursFromStart: 1,
+      minute: 5,
+      payload: {
+        vitals: { tas: 126, tad: 76, fc: 90, fr: 19, temp: 36.9, sat: 95 },
+        glucometrias: [
+          { value: 138, time: '09:05' },
+          { value: 142, time: '09:12' },
+        ],
+        io: { ing: 200, egr: 140 },
+      },
+    },
+    {
+      hoursFromStart: 4,
+      minute: 10,
+      payload: {
+        vitals: { tas: 120, tad: 70, fc: 86, fr: 18, temp: 36.7, sat: 96 },
+        glucometrias: [{ value: 152, time: '12:10' }],
+        io: { ing: 240, egr: 170 },
+      },
+    },
+    {
+      hoursFromStart: 8,
+      minute: 15,
+      payload: {
+        vitals: { tas: 118, tad: 72, fc: 84, fr: 18, temp: 36.6, sat: 96 },
+        glucometrias: [
+          { value: 176, time: '16:15' },
+          { value: 168, time: '16:22' },
+        ],
+        io: { ing: 300, egr: 220 },
+      },
+    },
+    {
+      hoursFromStart: 12,
+      minute: 20,
+      payload: {
+        vitals: { tas: 116, tad: 74, fc: 84, fr: 17, temp: 36.5, sat: 97 },
+        glucometrias: [{ value: 188, time: '20:20' }],
+        io: { ing: 120, egr: 100 },
+      },
+    },
+    {
+      hoursFromStart: 15,
+      minute: 45,
+      payload: {
+        vitals: { tas: 124, tad: 76, fc: 90, fr: 19, temp: 37.0, sat: 95 },
+        glucometrias: [
+          { value: 198, time: '23:45' },
+          { value: 192, time: '23:52' },
+        ],
+        io: { ing: 150, egr: 130 },
+      },
+    },
+  ];
+  for (let i = 0; i < gluTurns.length; i++) {
+    const turn = gluTurns[i];
+    const d = new Date(win.start.getTime() + turn.hoursFromStart * 60 * 60 * 1000);
+    d.setMinutes(turn.minute, 0, 0);
+    if (d.getTime() > win.end.getTime()) continue;
+    pushEntry(d, turn.payload);
+  }
+  pushEntry(new Date(win.end.getTime()), {
     vitals: { tas: 118, tad: 72, fc: 88, fr: 18, temp: 36.8, sat: 96 },
-    glucometrias: [{ value: 142, time: '07:35' }],
-    io: { ing: 450, egr: 320 },
+    glucometrias: [{ value: 155, time: '00:00' }],
+    io: { ing: 180, egr: 120 },
   });
-  atDayOffset(0, 13, 0, {
-    vitals: { tas: 112, tad: 68, fc: 82, fr: 17, temp: 36.6, sat: 97 },
-    glucometrias: [{ value: 168, time: '13:10' }, { value: 155, time: '18:20' }],
-    io: { ing: 600, egr: 410 },
+
+  // Signos vitales e I/O en los últimos 3 días (gráficas de tendencia)
+  atDayOffset(0, 10, 0, {
+    vitals: { tas: 118, tad: 72, fc: 88, fr: 18, temp: 36.8, sat: 96 },
+    io: { ing: 220, egr: 150 },
   });
-  atDayOffset(0, 21, 15, {
-    vitals: { tas: 124, tad: 76, fc: 90, fr: 19, temp: 37.1, sat: 95 },
-    glucometrias: [{ value: 198, time: '21:20' }],
-    io: { ing: 200, egr: 180 },
+  atDayOffset(0, 18, 0, {
+    vitals: { tas: 120, tad: 70, fc: 84, fr: 17, temp: 36.6, sat: 97 },
+    io: { ing: 200, egr: 160 },
   });
-  // Ayer: 3 mediciones
-  atDayOffset(1, 8, 0, {
+  atDayOffset(1, 6, 30, {
     vitals: { tas: 128, tad: 78, fc: 92, fr: 20, temp: 37.0, sat: 94 },
-    glucometrias: [{ value: 176, time: '08:15' }],
-    io: { ing: 500, egr: 380 },
+    io: { ing: 200, egr: 140 },
   });
   atDayOffset(1, 14, 30, {
     vitals: { tas: 120, tad: 70, fc: 86, fr: 18, temp: 36.7, sat: 96 },
-    glucometrias: [{ value: 132, time: '14:45' }],
-    io: { ing: 550, egr: 420 },
+    io: { ing: 300, egr: 220 },
   });
-  atDayOffset(1, 22, 0, {
-    vitals: { tas: 116, tad: 74, fc: 84, fr: 17, temp: 36.5, sat: 97 },
-    glucometrias: [{ value: 188, time: '22:10' }],
-    io: { ing: 180, egr: 150 },
-  });
-  // Anteayer: 2 mediciones
-  atDayOffset(2, 9, 45, {
+  atDayOffset(2, 7, 0, {
     vitals: { tas: 132, tad: 80, fc: 94, fr: 21, temp: 37.2, sat: 93 },
-    glucometrias: [{ value: 210, time: '09:50' }],
-    io: { ing: 480, egr: 360 },
+    io: { ing: 190, egr: 130 },
   });
-  atDayOffset(2, 16, 20, {
+  atDayOffset(2, 11, 0, {
+    vitals: { tas: 130, tad: 78, fc: 92, fr: 20, temp: 37.0, sat: 94 },
+    io: { ing: 210, egr: 150 },
+  });
+  atDayOffset(2, 15, 0, {
     vitals: { tas: 126, tad: 76, fc: 88, fr: 19, temp: 36.9, sat: 95 },
-    glucometrias: [{ value: 165, time: '16:30' }],
-    io: { ing: 520, egr: 400 },
+    io: { ing: 250, egr: 180 },
+  });
+  atDayOffset(2, 19, 0, {
+    vitals: { tas: 128, tad: 78, fc: 90, fr: 20, temp: 37.0, sat: 94 },
+    io: { ing: 160, egr: 120 },
   });
 
   return {
@@ -246,7 +316,9 @@ export function buildPitchMonitoreoHistorial(ref) {
     },
     historial,
     textoGuardado: {
-      text: 'Paciente en monitoreo estructurado; tendencia de glucometrías en ascenso nocturna.',
+      text:
+        'Glucometrías seriadas c/6h: 128–198 mg/dL en 48 h (ver gráfica y tabla en Estado Actual). ' +
+        'Balance hídrico estricto; correlacionar con QS.',
       savedAt: now.toISOString(),
     },
   };
@@ -316,20 +388,6 @@ export function seedPitchDemo(state) {
     monitoreo: buildPitchMonitoreoHistorial(today),
   };
 
-  const demoPatient2 = {
-    id: PITCH_DEMO_PATIENT_ID_2,
-    nombre: 'DEMO GARCÍA',
-    registro: '0007755-3',
-    edad: '54 años',
-    sexo: 'F',
-    area: 'SERVICIO DEMO',
-    servicio: 'SERVICIO DEMO',
-    cuarto: '102',
-    cama: '2',
-    fromLab: false,
-    isDemo: true,
-  };
-
   notes[PITCH_DEMO_PATIENT_ID] = {
     fecha,
     hora,
@@ -367,52 +425,11 @@ export function seedPitchDemo(state) {
     otros: [],
   };
 
-  notes[PITCH_DEMO_PATIENT_ID_2] = {
-    fecha,
-    hora,
-    interrogatorio: '',
-    evolucion: '',
-    estudios: '',
-    diagnosticos: ['DM2 descompensada'],
-    tratamiento: [''],
-    ta: '',
-    fr: '',
-    fc: '',
-    temp: '',
-    peso: '',
-    medico: '',
-    profesor: '',
-  };
-
-  indicaciones[PITCH_DEMO_PATIENT_ID_2] = {
-    fecha,
-    hora,
-    medicos: '',
-    dieta: '',
-    cuidados: '',
-    estudios: '',
-    medicamentos: '',
-    interconsultas: '',
-    otros: [],
-  };
-
   try {
     labHistory[PITCH_DEMO_PATIENT_ID] = buildPitchLabHistoryEntries();
     bumpLabHistoryRevision(PITCH_DEMO_PATIENT_ID);
-    const garciaLabs = procesarLabs(DEMO_GARCIA_LAB_REPORT).resLabs;
-    labHistory[PITCH_DEMO_PATIENT_ID_2] = [
-      {
-        id: 'pitch-lab-garcia-1',
-        fecha: '11/04/2026',
-        hora: '',
-        resLabs: garciaLabs,
-        parsed: extractParsedValues(garciaLabs),
-      },
-    ];
-    bumpLabHistoryRevision(PITCH_DEMO_PATIENT_ID_2);
   } catch (_e) {
     delete labHistory[PITCH_DEMO_PATIENT_ID];
-    delete labHistory[PITCH_DEMO_PATIENT_ID_2];
   }
 
   listadoProblemas[PITCH_DEMO_PATIENT_ID] = buildTourDemoListadoProblemas(fecha, hora);
@@ -494,7 +511,7 @@ export function seedPitchDemo(state) {
 
   capturePitchSandbox(patients);
   setPitchPatientIsolation(true);
-  setPatients([demoPatient, demoPatient2]);
+  setPatients([demoPatient]);
 
   seedPitchDemoTodos();
 
@@ -540,7 +557,7 @@ export function clearPitchDemo(state) {
       return (
         p &&
         p.id !== PITCH_DEMO_PATIENT_ID &&
-        p.id !== PITCH_DEMO_PATIENT_ID_2 &&
+        p.id !== PITCH_DEMO_PATIENT_ID_LEGACY &&
         !p.isDemo
       );
     });
@@ -564,11 +581,11 @@ export function clearPitchDemo(state) {
   clearPitchSandboxBackup();
   markPitchTourSessionActive(false);
   delete notes[PITCH_DEMO_PATIENT_ID];
-  delete notes[PITCH_DEMO_PATIENT_ID_2];
+  delete notes[PITCH_DEMO_PATIENT_ID_LEGACY];
   delete indicaciones[PITCH_DEMO_PATIENT_ID];
-  delete indicaciones[PITCH_DEMO_PATIENT_ID_2];
+  delete indicaciones[PITCH_DEMO_PATIENT_ID_LEGACY];
   delete labHistory[PITCH_DEMO_PATIENT_ID];
-  delete labHistory[PITCH_DEMO_PATIENT_ID_2];
+  delete labHistory[PITCH_DEMO_PATIENT_ID_LEGACY];
   delete listadoProblemas[PITCH_DEMO_PATIENT_ID];
   delete medRecetaByPatient[PITCH_DEMO_PATIENT_ID];
   if (medNotaSelectionByPatient[PITCH_DEMO_PATIENT_ID]) {
@@ -583,7 +600,7 @@ export function clearPitchDemo(state) {
 
   clearPitchDemoTodos();
 
-  if (getActiveId() === PITCH_DEMO_PATIENT_ID || getActiveId() === PITCH_DEMO_PATIENT_ID_2) {
+  if (getActiveId() === PITCH_DEMO_PATIENT_ID || getActiveId() === PITCH_DEMO_PATIENT_ID_LEGACY) {
     setActiveId(patients.length ? patients[0].id : null);
   }
   saveState();

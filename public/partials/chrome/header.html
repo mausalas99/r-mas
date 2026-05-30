@@ -1,6 +1,9 @@
 <header>
   <h1 id="app-brand" role="button" tabindex="0" title="Abrir Mi Perfil" aria-label="R+, abrir Mi Perfil" onclick="openProfileFromHeader(event)" onkeydown="if(event.key==='Enter'||event.key===' '){openProfileFromHeader(event);}">R+</h1>
-  <span id="today-date"></span>
+  <div class="header-center" aria-live="polite">
+    <span id="today-date"></span>
+    <span id="estado-actual-meta" class="estado-actual-meta"></span>
+  </div>
   <div class="header-right">
     <div class="header-work-cluster" aria-label="Contexto de trabajo">
       <nav id="header-pase-breadcrumb" class="header-pase-breadcrumb" style="display:none;" aria-label="Navegación desde Pase">
@@ -9,13 +12,10 @@
         <span id="header-pase-breadcrumb-section" class="header-pase-breadcrumb-section"></span>
       </nav>
       <button type="button" id="btn-header-return-pase" class="header-return-pase-btn" style="display:none;" onclick="returnToPaseBoardFromDetail()" title="Volver al resumen Pase" aria-label="Volver al resumen Pase">← Pase</button>
-      <div id="estado-actual-context-wrap" class="estado-actual-context-wrap" aria-live="polite">
-        <span id="estado-actual-meta" class="estado-actual-meta"></span>
-        <button type="button" id="btn-estado-actual" class="btn-estado-actual-compact" onclick="openEstadoActualModal()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
-          Estado Actual
-        </button>
-      </div>
+      <button type="button" id="btn-export-censo-header" class="btn-export-censo-header" style="display:none;" onclick="exportCensoPdfFromHelp()" title="PDF de guardia con todos los pacientes activos">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/></svg>
+        Censo PDF
+      </button>
       <button type="button" id="header-pase-mode-chip" class="header-pase-mode-chip" style="display:none;" onclick="exitPaseModeFromHeader()" title="Salir a vista Normal (pestañas completas)" aria-label="Salir del modo Pase">Modo Pase</button>
       <button type="button" id="header-app-mode-chip" class="header-app-mode-chip mode-sala" onclick="toggleHeaderWorkMode()" title="">
         Modo: Sala
@@ -98,6 +98,8 @@
             <option value="html">HTML descargable</option>
             <option value="txt">Texto plano (.txt)</option>
           </select>
+          <button type="button" class="btn-edit-templates settings-acc-label-spaced" id="btn-export-censo-settings" style="display:none;" onclick="closeSettingsDropdown(); exportCensoPdfFromHelp();">Exportar censo de guardia (PDF)…</button>
+          <p class="settings-acc-hint settings-acc-hint--md" id="btn-export-censo-settings-hint" style="display:none;">Tabla landscape con todos los pacientes activos (diagnósticos en Datos del paciente).</p>
         </div>
       </details>
 
@@ -299,9 +301,14 @@
            aria-live="polite" aria-label="Contenido del artículo"></div>
     </div>
     <div class="help-tour-section">
+      <span class="help-tour-label">Sala</span>
+      <button type="button" class="help-tour-btn" id="btn-export-censo" style="display:none;" onclick="exportCensoPdfFromHelp()">Exportar censo (PDF)</button>
+    </div>
+    <div class="help-tour-section">
       <span class="help-tour-label">Tours</span>
       <button type="button" class="help-tour-btn" onclick="startHelpTourMain()"><svg class="btn-inline-help-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8"/><path d="M8 11h6"/></svg> Tutorial guiado (Sala o Interconsulta)</button>
-      <button type="button" class="help-tour-btn" id="btn-start-presentation" onclick="togglePresentationModeFromHelp()">Modo presentación (DEMO PÉREZ / GARCÍA)</button>
+      <button type="button" class="help-tour-btn" id="btn-start-presentation" onclick="togglePresentationModeFromHelp()">Modo presentación (DEMO PÉREZ)</button>
+      <button type="button" class="help-tour-btn" onclick="importBundledDemoPerez()">Importar DEMO PÉREZ (JSON incluido)</button>
       <button type="button" class="help-tour-btn" onclick="startMiniTour('lab')"><svg class="btn-inline-help-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg> Laboratorio (breve)</button>
       <button type="button" class="help-tour-btn" onclick="startMiniTour('ajustes')"><svg class="btn-inline-help-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Ajustes (breve)</button>
     </div>

@@ -1471,7 +1471,7 @@ export function buildRegistroFormMarkup() {
     '<p class="ea-registro-hint ea-muted">Cierre de turno: <strong>00:00 de hoy</strong>. Signos e I/O del snapshot; glucometrías desde ayer 08:00.</p>' +
     '<label class="ea-field ea-field--datetime">' +
     '<span class="ea-label">Fecha y hora del registro</span>' +
-    '<input type="datetime-local" class="ea-input" id="ea-recorded-at" value="' +
+    '<input type="datetime-local" class="ea-input rpc-datetime-input" id="ea-recorded-at" value="' +
     toDatetimeLocalValue(getDefaultRegistroRecordedAt()) +
     '">' +
     '</label>' +

@@ -206,24 +206,17 @@ export async function estadoActualSaveAndCopy() {
 }
 
 export function renderEstadoActualBar() {
-  var wrap = document.getElementById("estado-actual-context-wrap");
   var meta = document.getElementById("estado-actual-meta");
-  var btn = document.getElementById("btn-estado-actual");
-  if (!wrap || !meta || !btn) return;
+  if (!meta) return;
   var sala = isModeSala(rt.getSettings());
   var activeId = rt.getActiveId();
   if (!sala || !activeId) {
-    wrap.style.display = "none";
     meta.textContent = "";
-    btn.classList.remove("btn-estado-actual-compact--pending");
-    btn.removeAttribute("aria-label");
     return;
   }
-  wrap.style.display = "flex";
   var patient = patients.find(function (p) {
     return p.id === activeId;
   });
-  var saved = false;
   if (patient) {
     migratePatientMonitoreo(patient);
   }
@@ -242,21 +235,10 @@ export function renderEstadoActualBar() {
         ":" +
         String(d.getMinutes()).padStart(2, "0");
       meta.textContent = "Guardado " + label;
-      btn.title = "Abrir Estado Actual · " + meta.textContent;
-      btn.removeAttribute("aria-label");
-      btn.classList.remove("btn-estado-actual-compact--pending");
-      saved = true;
+      return;
     }
   }
-  if (!saved) {
-    meta.textContent = "";
-    btn.title = "";
-    btn.setAttribute(
-      "aria-label",
-      "Estado Actual: abrir plantilla (SOAP sin Subjetivo). Aún sin guardar para este paciente."
-    );
-    btn.classList.add("btn-estado-actual-compact--pending");
-  }
+  meta.textContent = "";
 }
 
 export function updateSOAPBalance() {

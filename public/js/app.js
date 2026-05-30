@@ -1,6 +1,7 @@
 import { storage } from './storage.js';
 import { initAppState, patients, setSaveStateHooks, flushSaveState } from './app-state.mjs';
 import { recoverPresentationPatientsOnBoot } from './presentation-mode.mjs';
+import './censo-export.mjs';
 import {
   registerAppRuntimeContext,
   registerAllFeatureRuntimes,
@@ -45,6 +46,7 @@ import { recetaHuWindowHandlers } from './features/receta-hu.mjs';
 import { windowHandlers as paseBoardWindowHandlers, syncMainAppTabA11y, renderInnerTabs, initTabBarMotion } from './features/pase-board.mjs';
 import { medicationsWindowHandlers } from './features/medications.mjs';
 import { profileWindowHandlers, hydrateProfileSettings } from './features/profile.mjs';
+import { initRpcDatePicker } from './rpc-date-picker.mjs';
 
 const allWindowHandlers = Object.assign(
   {},
@@ -196,6 +198,7 @@ function runDomBoot() {
     }
     scheduleDeferredShellInits();
     scheduleDeferredUiInits();
+    initRpcDatePicker();
     _rpcDeferInit(initSidebarAutoHide);
     _rpcDeferInit(initPatientModalEnterSave);
     syncProfileSectionVisibility();

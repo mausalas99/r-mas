@@ -10,8 +10,8 @@ import {
   filterPatientsForPitchTour,
   setPitchPatientIsolation,
   PITCH_DEMO_PATIENT_ID,
-  PITCH_DEMO_PATIENT_ID_2,
 } from './tour-pitch-demo-seed.mjs';
+import { collectGlucometriasForRegistroWindow } from './features/estado-actual-registro-defaults.mjs';
 import { PITCH_CULTIVO_PERITONEAL_SOME } from './tour-pitch-cultivos-some.mjs';
 
 test('PITCH_CULTIVO_PERITONEAL_SOME: antibiograma con S y R en sourceText', () => {
@@ -44,11 +44,11 @@ test('filterPatientsForPitchTour oculta pacientes reales durante el pitch', () =
   const mixed = [
     { id: PITCH_DEMO_PATIENT_ID, nombre: 'DEMO PÉREZ' },
     { id: 'real-1', nombre: 'REAL UNO' },
-    { id: PITCH_DEMO_PATIENT_ID_2, nombre: 'DEMO GARCÍA' },
+    { id: 'demo-pitch-2', nombre: 'LEGACY GARCÍA' },
   ];
   const visible = filterPatientsForPitchTour(mixed);
-  assert.equal(visible.length, 2);
-  assert.ok(visible.every((p) => String(p.id).startsWith('demo-pitch')));
+  assert.equal(visible.length, 1);
+  assert.equal(visible[0].id, PITCH_DEMO_PATIENT_ID);
   setPitchPatientIsolation(false);
   assert.equal(filterPatientsForPitchTour(mixed).length, 3);
 });
@@ -67,4 +67,11 @@ test('buildPitchMonitoreoHistorial: 3 días locales y 8+ mediciones con datos', 
   assert.ok(hist.length >= 8);
   assert.equal(countDistinctLocalDaysInHistorial(hist), 3);
   assert.ok(countHistorialWithCoreData(hist) >= 8);
+});
+
+test('buildPitchMonitoreoHistorial: glucometrías en ventana ayer 08:00–hoy 00:00 (gráfica)', () => {
+  const now = new Date('2026-05-29T12:00:00');
+  const mon = buildPitchMonitoreoHistorial(now);
+  const glus = collectGlucometriasForRegistroWindow(mon.historial, now);
+  assert.ok(glus.length >= 2, 'expected glucometrías plotables in registro window');
 });

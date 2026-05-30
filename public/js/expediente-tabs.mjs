@@ -192,10 +192,19 @@ export function isDatosCollapseOpen() {
   return !!(el && el.open);
 }
 
+/** Scroll del formulario en el panel Paciente (details no acota bien con flex). */
+export function syncPacienteDatosLayoutMode() {
+  var pane = document.getElementById('itab-content-paciente');
+  var el = document.getElementById('exp-datos-collapse');
+  if (!pane) return;
+  pane.classList.toggle('exp-paciente-datos-open', !!(el && el.open));
+}
+
 export function setDatosCollapseOpen(open, persist) {
   var el = document.getElementById('exp-datos-collapse');
   if (!el) return;
   el.open = !!open;
+  syncPacienteDatosLayoutMode();
   if (persist !== false) {
     try {
       localStorage.setItem(DATOS_COLLAPSE_LS, open ? '1' : '0');
@@ -213,6 +222,7 @@ export function restoreDatosCollapsePreference() {
   } catch (_e) {
     el.open = false;
   }
+  syncPacienteDatosLayoutMode();
 }
 
 export function wireDatosCollapsePersistence() {

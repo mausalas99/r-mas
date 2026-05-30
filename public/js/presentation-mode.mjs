@@ -1,5 +1,5 @@
 /**
- * Modo presentación: solo pacientes demo (DEMO PÉREZ / GARCÍA), sin tour ni dock.
+ * Modo presentación: solo DEMO PÉREZ, sin tour ni dock.
  */
 import {
   seedPitchDemo,
@@ -73,7 +73,11 @@ function syncPresentationBodyClass() {
 }
 
 export function startPresentationMode() {
-  if (presentationActive) return;
+  if (presentationActive) {
+    seedPitchDemo(getDemoState());
+    invalidateCultivosTableCache();
+    return;
+  }
   setPersistPatientsResolver(resolvePitchPersistPatients);
   markPitchTourSessionActive(true);
   seedPitchDemo(getDemoState());
@@ -84,7 +88,7 @@ export function startPresentationMode() {
   var es = document.getElementById('empty-state');
   if (pv) pv.style.display = '';
   if (es) es.style.display = 'none';
-  rt.showToast('Modo presentación: DEMO PÉREZ y DEMO GARCÍA', 'info');
+  rt.showToast('Modo presentación: DEMO PÉREZ', 'info');
 }
 
 export function stopPresentationMode() {

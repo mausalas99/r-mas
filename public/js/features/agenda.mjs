@@ -13,6 +13,7 @@ import {
 import { patients } from "../app-state.mjs";
 import { getProcedureAgendaRowPx, isPaseMode } from "./chrome.mjs";
 import { emitLiveSyncAgendaUpsert, emitLiveSyncAgendaDelete } from "./lan-sync.mjs";
+import { mountRpcDatetimeInput } from "../rpc-date-picker.mjs";
 
 let rt = {
   getActiveId() {
@@ -347,6 +348,12 @@ export function openProcedureAgendaModal(editEventId) {
     document.getElementById("pa-start").value = paIsoToDatetimeLocalValue(now.toISOString());
     document.getElementById("pa-material").checked = false;
     document.getElementById("pa-anesthesia").checked = false;
+  }
+
+  var paStart = document.getElementById("pa-start");
+  if (paStart) {
+    mountRpcDatetimeInput(paStart);
+    paStart.dispatchEvent(new CustomEvent("rpc-datetime-sync"));
   }
 
   bd.classList.add("open");

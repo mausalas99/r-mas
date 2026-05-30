@@ -28,6 +28,7 @@ import {
 import { renderEstadoActualButton } from "./soap-estado.mjs";
 import { renderRoundOverviewPanels } from "./patients.mjs";
 import { isModeSala } from "../mode-features.mjs";
+import { syncCensoExportButtonVisibility } from "../censo-export.mjs";
 import { isManejoSectionHidden, migrateGranularInner } from "../expediente-tabs.mjs";
 import {
   isClinicoUnlocked,
@@ -102,6 +103,12 @@ function _buildLoadSettingsSnapshot() {
       d: st.doctorName || "",
       c: st.cedulaProfesional || "",
       p: st.profesorName || "",
+      r2: st.residenteR2 || "",
+      r1: st.residenteR1 || "",
+      r1a: st.residenteR1a || "",
+      r1b: st.residenteR1b || "",
+      cs: st.censoSala || "",
+      ct: st.censoTorre || "",
       g: st.grado || "",
       di: st.defaultDieta || "",
       cu: st.defaultCuidados || "",
@@ -136,11 +143,26 @@ export function loadSettings() {
   var st = settingsRef();
   var docEl = document.getElementById("profile-doctor");
   var cedEl = document.getElementById("profile-cedula");
+  var r2El = document.getElementById("profile-r2");
+  var r1aEl = document.getElementById("profile-r1a");
+  var r1bEl = document.getElementById("profile-r1b");
+  var maestroEl = document.getElementById("profile-maestro");
+  var censoSalaEl = document.getElementById("profile-censo-sala");
   var proEl = document.getElementById("profile-profesor");
   var grEl = document.getElementById("profile-grado");
   if (docEl) docEl.value = st.doctorName || "";
   if (cedEl) cedEl.value = st.cedulaProfesional || "";
   if (proEl) proEl.value = st.profesorName || "";
+  if (r2El) r2El.value = st.residenteR2 || "";
+  if (r1aEl) r1aEl.value = st.residenteR1a || st.residenteR1 || "";
+  if (r1bEl) r1bEl.value = st.residenteR1b || "";
+  if (maestroEl) maestroEl.value = st.profesorName || "";
+  if (censoSalaEl) {
+    var ubic = st.censoSala || "";
+    if (!ubic && st.censoTorre) ubic = "torre";
+    if (/^torre/i.test(ubic) && ubic !== "torre") ubic = "torre";
+    censoSalaEl.value = ubic;
+  }
   if (grEl) grEl.value = st.grado || "";
   var modeSala = document.getElementById("app-mode-sala");
   var modeInter = document.getElementById("app-mode-inter");
@@ -244,6 +266,7 @@ export function loadSettings() {
   syncIdleLockSelectUi();
   syncPreimportBackupUi();
   if (typeof syncSettingsLanHostDiskSection === "function") syncSettingsLanHostDiskSection();
+  syncCensoExportButtonVisibility();
   rt.syncWorkContextChrome();
 }
 
@@ -252,6 +275,13 @@ export function saveSettings() {
   st.doctorName = (document.getElementById("profile-doctor").value || "").trim();
   st.cedulaProfesional = (document.getElementById("profile-cedula").value || "").trim();
   st.profesorName = (document.getElementById("profile-profesor").value || "").trim();
+  st.residenteR2 = (document.getElementById("profile-r2")?.value || "").trim();
+  st.residenteR1a = (document.getElementById("profile-r1a")?.value || "").trim();
+  st.residenteR1b = (document.getElementById("profile-r1b")?.value || "").trim();
+  st.residenteR1 = st.residenteR1a;
+  st.censoSala = (document.getElementById("profile-censo-sala")?.value || "").trim();
+  st.censoTorre = st.censoSala === "torre" ? "Torre HU" : "";
+  st.profesorName = (document.getElementById("profile-maestro")?.value || document.getElementById("profile-profesor")?.value || "").trim();
   st.grado = (document.getElementById("profile-grado").value || "").trim();
   st.quickOutputFormat = normalizeQuickOutputFormat(st.quickOutputFormat);
   localStorage.setItem("rpc-settings", JSON.stringify(st));
@@ -284,6 +314,7 @@ export function applyAppModeSwitchEffects() {
   else if (!nowSala && current === "listado") switchInnerTab("recetaHu");
   renderInnerTabs();
   renderEstadoActualButton();
+  syncCensoExportButtonVisibility();
   if (rt.getActiveId()) {
     if (!nowSala) renderNoteForm();
     if (getActiveInnerTab() === "datos" || getActiveInnerTab() === "todo") renderPatientDataPane();

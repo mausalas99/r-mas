@@ -48,6 +48,7 @@ import {
   resetExpedientePaneLayoutCache,
   syncConsolidatedPaneVisibility,
   syncConsolidatedSegmentBars,
+  syncPacienteDatosLayoutMode,
   useConsolidatedExpedienteTabs,
 } from "../expediente-tabs.mjs";
 import { getLabHistoryRevision } from "../lab-history-cache.mjs";
@@ -908,6 +909,7 @@ function wireExpedienteDatosCollapseRender() {
   if (!el || el._expDatosRenderWired) return;
   el._expDatosRenderWired = true;
   el.addEventListener("toggle", function () {
+    syncPacienteDatosLayoutMode();
     if (el.open) renderPatientDataPane();
   });
 }

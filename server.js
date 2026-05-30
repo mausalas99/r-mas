@@ -5,6 +5,7 @@ const fs      = require('fs');
 const os      = require('os');
 const { spawn, execSync } = require('child_process');
 const { fillRecetaHuPdf } = require('./generate-receta-hu.js');
+const { renderCensusPdf } = require('./generate-censo.js');
 const { createHostStore } = require('./lan-squad/host-store.js');
 const { createLanRouter } = require('./lan-squad/host-router.js');
 const { attachWsHub } = require('./lan-squad/ws-hub.js');
@@ -200,6 +201,36 @@ appExpress.post('/generate-listado', async (req, res) => {
       String(now.getSeconds()).padStart(2, '0'),
     ].join('-');
     const fileName = `Listado_Problemas_${safeName(patient.nombre)}_${safeName(listado.fecha||'')}_${stamp}.docx`;
+    fs.writeFileSync(path.join(dest, fileName), buf);
+    res.json({ ok: true, fileName });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+appExpress.post('/generate-censo', async (req, res) => {
+  const { header, rows, outputDir, servicio } = req.body;
+  if (!Array.isArray(rows) || !rows.length) {
+    return res.status(400).json({ error: 'No hay pacientes para el censo.' });
+  }
+  const dest = (outputDir || '').trim() || DOWNLOADS;
+  if (!fs.existsSync(dest)) {
+    return res.status(400).json({ error: 'La carpeta seleccionada ya no existe. Cambia la ruta en Mi Perfil.' });
+  }
+  try {
+    fs.accessSync(dest, fs.constants.W_OK);
+  } catch (_) {
+    return res.status(400).json({ error: 'No se puede escribir en la carpeta seleccionada.' });
+  }
+  try {
+    const buf = await renderCensusPdf({ header: header || {}, rows });
+    const now = new Date();
+    const stamp = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0'),
+    ].join('-');
+    const fileName = `Censo_${safeName(servicio || (header && header.servicio) || 'guardia')}_${stamp}.pdf`;
     fs.writeFileSync(path.join(dest, fileName), buf);
     res.json({ ok: true, fileName });
   } catch (e) {
