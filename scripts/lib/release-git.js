@@ -1,0 +1,122 @@
+/**
+ * Git helpers for release.js (stage paths, commit, preflight).
+ */
+
+const fs = require('fs');
+const path = require('path');
+
+/** Paths relativos al root; directorios con barra final. Se omiten los que no existan. */
+const RELEASE_STAGE_PATHS = [
+  'package.json',
+  'package-lock.json',
+  'README.md',
+  'docs/',
+  'main.js',
+  'preload.js',
+  'public/index.html',
+  'public/index.src.html',
+  'public/js/',
+  'public/partials/',
+  'public/styles/',
+  'lan-squad/',
+  'generate-censo.js',
+  'generate-censo.layout.test.js',
+  'generate-censo.test.js',
+  'generate_note.py',
+  'generate_listado.py',
+  'generate_indicaciones.py',
+  'server.js',
+  'server-python.js',
+  '.github/workflows/ci.yml',
+  'scripts/lizard-ccn-report.mjs',
+  'scripts/release.js',
+  'scripts/lib/release-git.js',
+  'scripts/lib/release-progress.js',
+];
+
+function releasePathExists(root, rel) {
+  const full = path.join(root, rel.replace(/\/$/, ''));
+  return fs.existsSync(full);
+}
+
+function existingReleaseStagePaths(root) {
+  return RELEASE_STAGE_PATHS.filter((rel) => releasePathExists(root, rel));
+}
+
+function stageReleasePaths(execSync, root) {
+  const paths = existingReleaseStagePaths(root);
+  if (!paths.length) return;
+  const r = require('child_process').spawnSync('git', ['add', '--', ...paths], {
+    cwd: root,
+    stdio: 'inherit',
+  });
+  if (r.status !== 0) process.exit(r.status || 1);
+}
+
+function gitStatusPorcelain(execSync, root) {
+  return execSync('git status --porcelain', { cwd: root, encoding: 'utf8' });
+}
+
+function hasStagedOrUnstagedReleaseChanges(statusText) {
+  return String(statusText || '').trim().length > 0;
+}
+
+function assertReleaseNotesExist(fsMod, pathMod, root, version) {
+  const file = pathMod.join(root, 'docs', `RELEASE_NOTES_${version}.txt`);
+  if (!fsMod.existsSync(file)) {
+    throw new Error(
+      `Falta ${pathMod.relative(root, file)}. Ejecuta: npm run release:bump -- ${version}`
+    );
+  }
+  return file;
+}
+
+function tagExists(execSync, root, version) {
+  try {
+    execSync(`git rev-parse v${version}`, { cwd: root, stdio: 'pipe' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function ghReleaseExists(spawnSync, repo, version) {
+  const r = spawnSync('gh', ['release', 'view', `v${version}`, '--repo', repo], {
+    encoding: 'utf8',
+    stdio: 'pipe',
+  });
+  return r.status === 0;
+}
+
+/**
+ * @param {{ fs: typeof import('fs'), path: typeof import('path'), execSync: Function, spawnSync: Function, root: string, repo: string, version: string, allowExistingGh?: boolean }} ctx
+ */
+function assertPublishPreflight(ctx) {
+  const { fs: fsMod, path: pathMod, execSync, spawnSync, root, repo, version, allowExistingGh } = ctx;
+  assertReleaseNotesExist(fsMod, pathMod, root, version);
+
+  if (tagExists(execSync, root, version)) {
+    throw new Error(
+      `El tag v${version} ya existe en git. Usa npm run release:bump -- patch (u otra versión) o borra el tag local/remoto antes de publicar de nuevo.`
+    );
+  }
+
+  if (!allowExistingGh && ghReleaseExists(spawnSync, repo, version)) {
+    throw new Error(
+      `GitHub release v${version} ya existe en ${repo}. ` +
+        `Sube artefactos con «gh release upload v${version} …» o elimina el release en GitHub, o usa --allow-existing-gh.`
+    );
+  }
+}
+
+module.exports = {
+  RELEASE_STAGE_PATHS,
+  existingReleaseStagePaths,
+  stageReleasePaths,
+  gitStatusPorcelain,
+  hasStagedOrUnstagedReleaseChanges,
+  assertReleaseNotesExist,
+  tagExists,
+  ghReleaseExists,
+  assertPublishPreflight,
+};

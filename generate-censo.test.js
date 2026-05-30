@@ -16,7 +16,7 @@ test('renderCensusPdf devuelve buffer PDF con fichas', async () => {
     rows: [
       {
         num: '1',
-        cama: '201/0',
+        cama: '201',
         pacienteNombre: 'PACIENTE PRUEBA',
         pacienteMeta: '123\n54 años',
         dx: 'DM2 + ERC estadio 5',
@@ -25,11 +25,10 @@ test('renderCensusPdf devuelve buffer PDF con fichas', async () => {
         accesos: 'CVC',
         cultivos: '07/05/2026\nUROCULTIVO: E. COLI\nATB S: CIPRO',
         pendientes: 'Transfusión HB',
-        cama: '201\n0',
       },
       {
         num: '2',
-        cama: '211/01',
+        cama: '211-1',
         pacienteNombre: 'OTRO PACIENTE',
         dx: 'Neumonía',
         meds: '—',

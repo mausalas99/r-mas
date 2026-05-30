@@ -27,9 +27,18 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [6.4.0](https://github.com/mausalas99/r-mas/releases/tag/v6.4.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.4.1](https://github.com/mausalas99/r-mas/releases/tag/v6.4.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+
+## R+ 6.4.1 (Mantenimiento · publicación y tests)
+
+- **Publicación** — `release:publish` valida versión/tag/release antes de construir; commit opcional de notas pendientes; `--allow-existing-gh` para subir instaladores sin recrear el release.
+- **Tests** — Corrección menor en censo PDF para que `npm test` pase en Node al publicar.
+- **Producto** — Misma funcionalidad que **6.4.0** (VPO, formatos en expediente, censo, etc.).
+
+Notas: `docs/RELEASE_NOTES_6.4.1.txt`.
 
 ## R+ 6.4.0 (Valoración preoperatoria · formatos en expediente)
 

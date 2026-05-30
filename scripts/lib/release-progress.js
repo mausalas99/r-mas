@@ -5,6 +5,10 @@
 
 function buildPublishSteps(opts) {
   const steps = [];
+  steps.push({ id: 'preflight', label: 'Comprobar versión y tag', weight: 1 });
+  if (!opts.skipPreCommit) {
+    steps.push({ id: 'pre-commit', label: 'Commit cambios pendientes', weight: 3 });
+  }
   if (!opts.skipTests) {
     steps.push({ id: 'tests', label: 'Tests', weight: 8 });
   }

@@ -12,9 +12,13 @@
  *   npm run release:publish -- --skip-build
  *
  * Parte 1 (bump): versión, RELEASE_NOTES, README, stub in-app highlights.
- * Parte 2 (publish): test → commit → push → build mac+win → tag → gh release.
+ *   npm run release:bump -- 6.4.1 --commit   → opcional: commit del bump
  *
- * Tras bump, edita docs/RELEASE_NOTES_X.Y.Z.txt, README y RELEASE_NOTES_HIGHLIGHTS en app.js.
+ * Parte 2 (publish): preflight → commit pendiente → tests → commit → push → build → tag → gh release.
+ *   npm run release:publish -- --yes
+ *   npm run release:publish -- --skip-pre-commit   (no commit automático antes de tests)
+ *
+ * Tras bump, edita docs/RELEASE_NOTES_X.Y.Z.txt, README y RELEASE_NOTES_HIGHLIGHTS.
  */
 
 const fs = require('fs');
@@ -24,6 +28,13 @@ const readline = require('readline');
 const { buildPublishSteps, createReleaseProgress } = require('./lib/release-progress');
 const { applyBuildLogLine, resetBuildLogState } = require('./lib/release-build-log');
 const { prepareMacSigning } = require('./lib/mac-signing-prep');
+const {
+  stageReleasePaths,
+  gitStatusPorcelain,
+  hasStagedOrUnstagedReleaseChanges,
+  assertPublishPreflight,
+  ghReleaseExists,
+} = require('./lib/release-git');
 
 const ROOT = path.join(__dirname, '..');
 const REPO = 'mausalas99/r-mas';
@@ -252,6 +263,16 @@ async function cmdBump(argv) {
   updateReadme(version, title);
   updateHighlightsStub(version);
 
+  if (hasFlag(argv, '--commit')) {
+    stageReleasePaths(execSync, ROOT);
+    const status = gitStatusPorcelain(execSync, ROOT);
+    if (hasStagedOrUnstagedReleaseChanges(status)) {
+      gitCommit(`chore(release): bump ${version}`);
+    } else {
+      console.log('Nada que commitear tras el bump (árbol limpio en paths de release).');
+    }
+  }
+
   console.log(`
 ── Parte 1 lista: ${version} ──
 Edita antes de publish:
@@ -260,7 +281,7 @@ Edita antes de publish:
   • public/js/features/settings-help.mjs (RELEASE_NOTES_HIGHLIGHTS['${version}'])
 
 Luego:
-  npm run release:publish
+  npm run release:publish -- --yes
 `);
 }
 
@@ -442,6 +463,8 @@ async function cmdPublish(argv) {
   const winOnly = hasFlag(argv, '--win-only');
   const noManifestCommit = hasFlag(argv, '--no-manifest-commit');
   const skipCommit = hasFlag(argv, '--skip-commit');
+  const skipPreCommit = hasFlag(argv, '--skip-pre-commit');
+  const allowExistingGh = hasFlag(argv, '--allow-existing-gh');
   const progressJson = hasFlag(argv, '--progress-json');
 
   if (macOnly && winOnly) {
@@ -453,6 +476,22 @@ async function cmdPublish(argv) {
   const notesFile = path.join(ROOT, 'docs', `RELEASE_NOTES_${version}.txt`);
   if (!fs.existsSync(notesFile)) {
     console.error(`Falta ${path.relative(ROOT, notesFile)}. Ejecuta primero: npm run release:bump -- ${version}`);
+    process.exit(1);
+  }
+
+  try {
+    assertPublishPreflight({
+      fs,
+      path,
+      execSync,
+      spawnSync,
+      root: ROOT,
+      repo: REPO,
+      version,
+      allowExistingGh,
+    });
+  } catch (err) {
+    console.error(err.message || err);
     process.exit(1);
   }
 
@@ -497,6 +536,7 @@ async function cmdPublish(argv) {
     buildPublishSteps({
       skipTests,
       skipCommit,
+      skipPreCommit,
       skipPush,
       skipBuild,
       macOnly,
@@ -510,16 +550,36 @@ async function cmdPublish(argv) {
   const tag = `v${version}`;
 
   try {
+    progress.start('preflight');
+    const line = `Versión ${version} · tag ${tag} libre · notas en ${path.relative(ROOT, notesFile)}`;
+    if (progressJson) progress.emitLog({ stream: 'meta', line });
+    else console.log(line);
+    progress.complete('preflight');
+
+    if (!skipPreCommit) {
+      progress.start('pre-commit');
+      stageReleasePaths(execSync, ROOT);
+      const pending = gitStatusPorcelain(execSync, ROOT);
+      if (hasStagedOrUnstagedReleaseChanges(pending)) {
+        gitCommit(`chore(release): prepare ${version}`);
+      } else {
+        const msg = 'Sin cambios pendientes en paths de release (pre-commit omitido).';
+        if (progressJson) progress.emitLog({ stream: 'meta', line: msg });
+        else console.log(msg);
+      }
+      progress.complete('pre-commit');
+    } else {
+      progress.skip('pre-commit');
+    }
+
     if (!skipTests) await runPublishCmd(progress, 'tests', 'npm test');
     else progress.skip('tests');
 
     if (!skipCommit) {
       progress.start('git-commit');
-      run(
-        'git add package.json package-lock.json README.md docs/ main.js preload.js public/index.html public/index.src.html public/js/ public/partials/ public/styles/ lan-squad/'
-      );
-      const status = execSync('git status --porcelain', { cwd: ROOT, encoding: 'utf8' });
-      if (status.trim()) {
+      stageReleasePaths(execSync, ROOT);
+      const status = gitStatusPorcelain(execSync, ROOT);
+      if (hasStagedOrUnstagedReleaseChanges(status)) {
         gitCommit(commitMessage(version));
       } else {
         const line = 'Nada que commitear (working tree limpio para paths de release).';
@@ -573,18 +633,21 @@ async function cmdPublish(argv) {
     if (!skipGh) {
       progress.start('gh-release');
       const assets = distFiles(version, { macOnly, winOnly }).map((f) => path.relative(ROOT, f));
-      const ghArgs = [
-        'release',
-        'create',
-        tag,
-        '--repo',
-        REPO,
-        '--title',
-        `R+ ${version}`,
-        '--notes-file',
-        `docs/RELEASE_NOTES_${version}.txt`,
-        ...assets,
-      ];
+      const uploadOnly = allowExistingGh || ghReleaseExists(spawnSync, REPO, version);
+      const ghArgs = uploadOnly
+        ? ['release', 'upload', tag, '--repo', REPO, ...assets, '--clobber']
+        : [
+            'release',
+            'create',
+            tag,
+            '--repo',
+            REPO,
+            '--title',
+            `R+ ${version}`,
+            '--notes-file',
+            `docs/RELEASE_NOTES_${version}.txt`,
+            ...assets,
+          ];
       progress.logCommand(`gh ${ghArgs.join(' ')}`);
       const created = spawnSync('gh', ghArgs, {
         cwd: ROOT,
@@ -646,9 +709,10 @@ function main() {
     console.log(`Uso:
   node scripts/release.js bump [VERSION|patch|minor|major] [--title "estable — …"]
   node scripts/release.js publish [--yes] [--progress-json] [--mac-only|--win-only] [--skip-build] [--skip-push] [--no-gh]
+    [--skip-pre-commit] [--allow-existing-gh]
 
 npm:
-  npm run release:bump -- 3.4.3
+  npm run release:bump -- 6.4.1 --commit
   npm run release:publish -- --yes
 `);
     process.exit(sub ? 0 : 1);

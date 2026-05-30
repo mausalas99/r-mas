@@ -1339,6 +1339,22 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '6.4.1': [
+    {
+      title: 'Misma base que 6.4.0',
+      body:
+        'VPO, formatos en Nota/Indicaciones, censo PDF y el resto de <strong>6.4.0</strong> sin pantallas nuevas; versión de mantenimiento.',
+    },
+    {
+      title: 'Publicación más segura',
+      body:
+        '<code>release:publish</code> comprueba tag y release en GitHub antes del build para evitar repetir <strong>6.4.0</strong> por error.',
+    },
+    {
+      title: 'Tests al publicar',
+      body: 'Corrección en censo PDF para que la batería de tests pase en Node durante el release.',
+    },
+  ],
   '6.4.0': [
     {
       title: 'Valoración preoperatoria (VPO)',

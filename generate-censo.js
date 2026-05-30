@@ -5,6 +5,7 @@
  */
 
 import { PDFDocument, StandardFonts, rgb, degrees } from 'pdf-lib';
+import { parseCamaCellForCenso, formatCamaCellLabel } from './public/js/censo-build.mjs';
 
 const PAGE_W = 1008;
 const PAGE_H = 612;
@@ -18,8 +19,6 @@ const FONT_HEAD = 8.5;
 const FONT_TITLE = 10;
 const LINE_H = 8.2;
 const ROW_PAD = 2;
-/** Mínimo de filas de pacientes por hoja (altura uniforme). */
-const ROWS_PER_PAGE = 6;
 
 const COLORS = {
   ink: rgb(0.12, 0.14, 0.18),
@@ -35,19 +34,21 @@ const COLORS = {
 const COL_WEIGHTS = [
   { key: 'num', title: '#', weight: 8 },
   { key: 'cama', title: 'Cama', weight: 18 },
-  { key: 'paciente', title: 'Paciente', weight: 86 },
-  { key: 'dx', title: 'Dx', weight: 72 },
-  { key: 'meds', title: 'ATB / Meds', weight: 72 },
-  { key: 'labs', title: 'Labs', weight: 180 },
-  { key: 'accesos', title: 'Accesos', weight: 36 },
-  { key: 'cultivos', title: 'Cultivos', weight: 72 },
-  { key: 'pend', title: 'Pend.', weight: 150 },
+  { key: 'paciente', title: 'Paciente', weight: 44 },
+  { key: 'dx', title: 'Dx', weight: 68 },
+  { key: 'meds', title: 'ATB / Meds', weight: 56 },
+  { key: 'labs', title: 'Labs', weight: 276 },
+  { key: 'accesos', title: 'Accesos', weight: 32 },
+  { key: 'cultivos', title: 'Cultivos', weight: 68 },
+  { key: 'pend', title: 'Pend.', weight: 130 },
 ];
 
-/** Centrado en cuerpo de tabla. */
-const CENTER_COLS = { paciente: true, dx: true, meds: true };
-/** Solo diagnósticos en negrita. */
-const BOLD_COLS = { dx: true };
+/** Centrado horizontal en cuerpo de tabla. */
+const CENTER_COLS = { num: true, cama: true, paciente: true, dx: true, meds: true };
+/** Alineado arriba (labs multilínea en filas altas). */
+const TOP_ALIGN_COLS = { labs: true };
+/** Diagnósticos y cama en negrita. */
+const BOLD_COLS = { dx: true, cama: true };
 
 /**
  * pdf-lib StandardFonts (WinAnsi) no admiten \\n ni controles en drawText.
@@ -141,7 +142,7 @@ function wrapText(font, text, maxWidth, fontSize) {
  * @param {import('pdf-lib').PDFFont} font
  * @param {string} text
  * @param {number} maxWidth
- * @param {number} maxLines
+ * @param {number} [maxLines] — sin límite si es ≤ 0
  * @returns {string[]}
  */
 function wrapCell(font, text, maxWidth, maxLines) {
@@ -160,7 +161,7 @@ function wrapCell(font, text, maxWidth, maxLines) {
     });
   });
   if (!lines.length) return ['—'];
-  if (lines.length > maxLines) {
+  if (maxLines > 0 && lines.length > maxLines) {
     var cut = lines.slice(0, maxLines);
     var last = cut[maxLines - 1];
     cut[maxLines - 1] =
@@ -262,6 +263,46 @@ function cellLines(font, fontBold, text, innerW, rowH, colKey) {
 }
 
 /**
+ * Líneas envueltas sin truncar (para medir altura de fila).
+ * @param {import('pdf-lib').PDFFont} font
+ * @param {import('pdf-lib').PDFFont} fontBold
+ * @param {string} text
+ * @param {number} innerW
+ * @param {string} colKey
+ */
+function cellLinesUnbounded(font, fontBold, text, innerW, colKey) {
+  var measureFont = BOLD_COLS[colKey] ? fontBold : font;
+  return wrapCell(measureFont, text, innerW, 0);
+}
+
+/**
+ * @param {number} lineCount
+ * @returns {number}
+ */
+function rowHeightForLineCount(lineCount) {
+  return ROW_PAD * 2 + Math.max(1, lineCount) * LINE_H;
+}
+
+/**
+ * @param {import('pdf-lib').PDFFont} font
+ * @param {import('pdf-lib').PDFFont} fontBold
+ * @param {CensoRow} row
+ * @param {{ cols: { key: string, w: number }[] }} layout
+ * @returns {number}
+ */
+function measureRowLineCount(font, fontBold, row, layout) {
+  var cells = rowCells(row);
+  var maxLines = 1;
+  layout.cols.forEach(function (col) {
+    if (col.key === 'cama') return;
+    var innerW = col.w - 6;
+    var count = cellLinesUnbounded(font, fontBold, cells[col.key] || '', innerW, col.key).length;
+    if (count > maxLines) maxLines = count;
+  });
+  return maxLines;
+}
+
+/**
  * @param {import('pdf-lib').PDFPage} page
  * @param {number} yTop
  * @param {import('pdf-lib').PDFFont} font
@@ -316,11 +357,10 @@ function drawTextVerticalInBox(page, text, boxX, boxY, boxW, boxH, f, maxSize, c
   var thick = f.heightAtSize(size);
   var bboxW = thick;
   var bboxH = along;
-  var x = boxX + Math.max(pad, (boxW - bboxW) / 2);
-  var y =
-    valign === 'top'
-      ? boxY + boxH - pad - bboxH
-      : boxY + Math.max(pad, (boxH - bboxH) / 2);
+  var cx = boxX + boxW / 2;
+  var cy = boxY + boxH / 2;
+  var x = cx - bboxW / 2;
+  var y = valign === 'top' ? boxY + boxH - pad - bboxH : cy - bboxH / 2;
   safeDrawText(page, s, {
     x: x,
     y: y,
@@ -335,16 +375,6 @@ function drawTextVerticalInBox(page, text, boxX, boxY, boxW, boxH, f, maxSize, c
  * @param {string} text
  * @returns {string[]}
  */
-function parseCamaCellLines(text) {
-  return String(text || '')
-    .replace(/\r/g, '')
-    .split(/\n|\/+/)
-    .map(function (l) {
-      return l.trim();
-    })
-    .filter(Boolean);
-}
-
 function drawTableHeader(page, yTop, font, fontBold, layout) {
   var x = MARGIN;
   var cols = layout.cols;
@@ -362,11 +392,7 @@ function drawTableHeader(page, yTop, font, fontBold, layout) {
   cols.forEach(function (col) {
     var title = col.title;
     var headY = headTop + 2;
-    if (col.key === 'cama') {
-      drawTextVerticalInBox(page, title, tx, headTop, col.w, TABLE_HEAD_H, fontBold, FONT_HEAD, COLORS.accent, {
-        minSize: 6.5,
-      });
-    } else if (CENTER_COLS[col.key]) {
+    if (CENTER_COLS[col.key]) {
       var tw = fontBold.widthOfTextAtSize(title, FONT_HEAD);
       safeDrawText(page, title, {
         x: tx + (col.w - tw) / 2,
@@ -410,7 +436,8 @@ function drawTableHeader(page, yTop, font, fontBold, layout) {
  */
 function drawCellText(page, lines, tx, colW, innerW, yTop, rowH, font, fontBold, colKey) {
   var centered = !!CENTER_COLS[colKey];
-  var vCenter = centered;
+  var topAlign = !!TOP_ALIGN_COLS[colKey];
+  var vCenter = centered && !topAlign;
   var useBold = !!BOLD_COLS[colKey] || colKey === 'num';
   var cellFont = useBold ? fontBold : font;
   var minY = yTop - rowH + ROW_PAD;
@@ -426,9 +453,9 @@ function drawCellText(page, lines, tx, colW, innerW, yTop, rowH, font, fontBold,
   });
   var blockH = toDraw.length * LINE_H;
   var innerH = rowH - ROW_PAD * 2;
-  var y = vCenter
-    ? yTop - ROW_PAD - (innerH - blockH) / 2 - FONT
-    : yTop - ROW_PAD - FONT;
+  var y = topAlign || !vCenter
+    ? yTop - ROW_PAD - FONT
+    : yTop - ROW_PAD - (innerH - blockH) / 2 - FONT;
   toDraw.forEach(function (item) {
     if (y < minY) return;
     var x = centered ? tx + (colW - item.textW) / 2 : tx + 2;
@@ -444,6 +471,7 @@ function drawCellText(page, lines, tx, colW, innerW, yTop, rowH, font, fontBold,
 }
 
 /**
+ * Cuarto y cama en vertical, bloque centrado en la celda.
  * @param {import('pdf-lib').PDFPage} page
  * @param {string} text
  * @param {number} tx
@@ -452,35 +480,14 @@ function drawCellText(page, lines, tx, colW, innerW, yTop, rowH, font, fontBold,
  * @param {number} rowH
  * @param {import('pdf-lib').PDFFont} fontBold
  */
-function drawCamaVertical(page, text, tx, colW, yBottom, rowH, fontBold) {
-  var lines = parseCamaCellLines(text);
+function drawCamaCell(page, text, tx, colW, yBottom, rowH, fontBold) {
+  var label = formatCamaCellLabel(parseCamaCellForCenso(text));
   var pad = 4;
-  var gap = 3;
   var innerH = rowH - pad * 2;
-  if (!lines.length) {
-    drawTextVerticalInBox(page, '—', tx, yBottom + pad, colW, innerH, fontBold, FONT, COLORS.accent, {
-      minSize: 7,
-      valign: 'top',
-    });
-    return;
-  }
-  if (lines.length === 1) {
-    drawTextVerticalInBox(page, lines[0], tx, yBottom + pad, colW, innerH, fontBold, FONT, COLORS.accent, {
-      minSize: 7.5,
-      valign: 'top',
-      allowTruncate: true,
-    });
-    return;
-  }
-  var bandH = (innerH - gap * (lines.length - 1)) / lines.length;
-  var yTopCell = yBottom + rowH - pad;
-  lines.forEach(function (line, i) {
-    var bandBottom = yTopCell - (i + 1) * bandH - i * gap;
-    drawTextVerticalInBox(page, line, tx, bandBottom, colW, bandH, fontBold, FONT, COLORS.accent, {
-      minSize: 7,
-      valign: 'top',
-      allowTruncate: true,
-    });
+  drawTextVerticalInBox(page, label, tx, yBottom + pad, colW, innerH, fontBold, FONT, COLORS.accent, {
+    minSize: 7,
+    valign: 'center',
+    allowTruncate: true,
   });
 }
 
@@ -503,7 +510,7 @@ function drawTableRow(page, row, yTop, rowH, font, fontBold, zebra, layout) {
   var tx = x;
   cols.forEach(function (col) {
     if (col.key === 'cama') {
-      drawCamaVertical(page, cells.cama, tx, col.w, yBottom, rowH, fontBold);
+      drawCamaCell(page, cells.cama, tx, col.w, yBottom, rowH, fontBold);
       tx += col.w;
       return;
     }
@@ -620,23 +627,47 @@ function pageTableMetrics() {
 }
 
 /**
- * Hasta 6 pacientes por hoja; la altura de fila reparte TODO el espacio vertical de esa hoja.
+ * Agrupa filas en páginas: altura por contenido (labs largos → fila más alta).
  * @param {CensoRow[]} rows
+ * @param {import('pdf-lib').PDFFont} font
+ * @param {import('pdf-lib').PDFFont} fontBold
+ * @param {{ cols: { key: string, w: number }[] }} layout
  */
-function layoutRows(rows) {
+function layoutRows(rows, font, fontBold, layout) {
   var metrics = pageTableMetrics();
-  /** Altura fija por fila (como 6 por hoja): evita que 1 paciente en pág. 2 estire toda la columna Pend. */
-  var nominalRowH = metrics.availH / ROWS_PER_PAGE;
+  var availH = metrics.availH;
+  var minRowH = rowHeightForLineCount(1);
   var pages = [];
-  for (var i = 0; i < rows.length; i += ROWS_PER_PAGE) {
-    var chunk = rows.slice(i, i + ROWS_PER_PAGE);
-    pages.push({
-      rows: chunk,
-      heights: chunk.map(function () {
-        return nominalRowH;
-      }),
-      metrics: metrics,
-    });
+  var current = null;
+
+  function flush() {
+    if (current && current.rows.length) pages.push(current);
+    current = null;
+  }
+
+  (rows || []).forEach(function (row) {
+    var lineCount = measureRowLineCount(font, fontBold, row, layout);
+    var rowH = rowHeightForLineCount(lineCount);
+
+    if (!current) {
+      current = { rows: [], heights: [], metrics: metrics };
+    } else {
+      var used = current.heights.reduce(function (s, h) {
+        return s + h;
+      }, 0);
+      if (used + rowH > availH) {
+        flush();
+        current = { rows: [], heights: [], metrics: metrics };
+      }
+    }
+
+    current.rows.push(row);
+    current.heights.push(Math.max(minRowH, rowH));
+  });
+
+  flush();
+  if (!pages.length) {
+    pages.push({ rows: [], heights: [], metrics: metrics });
   }
   return pages;
 }
@@ -651,8 +682,8 @@ export async function renderCensusPdf(payload) {
   var font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   var fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   var rows = data.rows || [];
-  var layouts = layoutRows(rows);
   var tbl = tableLayout();
+  var layouts = layoutRows(rows, font, fontBold, tbl);
 
   layouts.forEach(function (layout, pageIdx) {
     var page = pdfDoc.addPage([PAGE_W, PAGE_H]);
@@ -680,3 +711,5 @@ export async function renderCensusPdf(payload) {
 
   return pdfDoc.save();
 }
+
+export { layoutRows, measureRowLineCount, rowHeightForLineCount, pageTableMetrics };
