@@ -63,10 +63,6 @@ import {
   saveState,
 } from "../app-state.mjs";
 
-export const DEFAULT_LAN_TEAM_CODE = "1234";
-/** Tokens opacos de versiones anteriores; el servidor ya usa 1234 por defecto. */
-var LEGACY_RANDOM_LAN_TEAM_CODE_RE = /^[a-f0-9]{32}$/i;
-
 let runtime = {
   showToast() {},
   renderPatientList() {},
@@ -129,7 +125,9 @@ var _surrogateFailoverTimer = null;
 var _lanPanelRenderGen = 0;
 var _lanPanelRenderChain = Promise.resolve();
 var LAN_HOST_CODE_HINT_SEEN_KEY = 'rpc-lan-host-code-hint-seen';
+var LAN_MIGRATION_NOTICE_KEY = 'rplus.lan.migrationNoticeShown';
 var LAN_KNOWN_ROOMS_LS = 'rpc-lan-known-rooms';
+var _lastLanPairing = null;
 function readLanKnownRooms() {
   try {
     var raw = localStorage.getItem(LAN_KNOWN_ROOMS_LS);
@@ -183,19 +181,17 @@ function isLanSessionConfiguredForRest() {
   }
 }
 
-function normalizeStoredLanTeamCode(code) {
-  var t = String(code || '').trim();
-  if (!t || LEGACY_RANDOM_LAN_TEAM_CODE_RE.test(t)) return DEFAULT_LAN_TEAM_CODE;
-  return t;
+function trimStoredLanBearer(code) {
+  return String(code || '').trim();
 }
 
 function persistLanClientConfig(hostUrl, teamCode) {
   var url = String(hostUrl || '').trim().replace(/\/+$/, '');
-  var code = normalizeStoredLanTeamCode(teamCode);
+  var code = trimStoredLanBearer(teamCode);
   if (!url || !code) return false;
   var prev = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
   var prevUrl = String(prev.hostUrl || '').trim().replace(/\/+$/, '');
-  var prevCode = normalizeStoredLanTeamCode(prev.teamCode);
+  var prevCode = trimStoredLanBearer(prev.teamCode);
   var changed = prevUrl !== url || prevCode !== code;
   storage.saveLanConfig({ hostUrl: url, teamCode: code });
   lanClient.configure({ hostUrl: url, teamCode: code });
@@ -209,7 +205,7 @@ function persistLanClientConfig(hostUrl, teamCode) {
   return changed;
 }
 
-/** Alinea rpc-lan-config / LanClient antes de REST (p. ej. migrar token legacy → 1234). */
+/** Alinea rpc-lan-config / LanClient con el Bearer del anfitrión (archivo / IPC). */
 async function ensureLanClientTeamCodeAligned() {
   var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
   var hostUrl = String(cfg.hostUrl || '').trim().replace(/\/+$/, '');
@@ -231,11 +227,194 @@ async function lanFetchAuthed(path, opts) {
   if (resp.status !== 401) return resp;
   if (window.electronAPI && typeof window.electronAPI.getLanEffectiveTeamCode === 'function') {
     await syncLanSavedTeamCodeWithEffectiveHostCode();
-  } else {
-    var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
-    persistLanClientConfig(cfg.hostUrl, DEFAULT_LAN_TEAM_CODE);
   }
   return lanClient.fetch(path, opts);
+}
+
+/** Bearer del anfitrión: config guardada o lan-team-code.txt vía IPC. */
+async function resolveHostBearerToken() {
+  var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
+  var fromCfg = trimStoredLanBearer(cfg.teamCode);
+  if (fromCfg.length >= 32) return fromCfg;
+  if (window.electronAPI && typeof window.electronAPI.getLanEffectiveTeamCode === 'function') {
+    try {
+      var info = await window.electronAPI.getLanEffectiveTeamCode();
+      if (info && info.ok && info.code) return String(info.code).trim();
+    } catch (_e) {}
+  }
+  return '';
+}
+
+async function mintLanPairingTicket() {
+  await ensureLanClientTeamCodeAligned();
+  var bearer = await resolveHostBearerToken();
+  if (!bearer) {
+    var err = new Error('no_host_bearer');
+    err.code = 'no_host_bearer';
+    throw err;
+  }
+  var resp = await lanFetchAuthed('/api/lan/v1/auth/tickets', { method: 'POST' });
+  if (!resp.ok) {
+    var errHttp = new Error('ticket_mint_failed');
+    errHttp.status = resp.status;
+    throw errHttp;
+  }
+  var body = await resp.json();
+  _lastLanPairing = {
+    ticketId: String(body.ticketId || ''),
+    pin: String(body.pin || ''),
+    joinUrl: String(body.joinUrl || ''),
+    expiresAt: body.expiresAt,
+  };
+  return _lastLanPairing;
+}
+
+function showLanMigrationNoticeModal() {
+  if (typeof document === 'undefined') return;
+  if (document.getElementById('lan-migration-notice-backdrop')) return;
+  var backdrop = document.createElement('div');
+  backdrop.id = 'lan-migration-notice-backdrop';
+  backdrop.className = 'modal-backdrop open';
+  backdrop.style.zIndex = '10050';
+  backdrop.innerHTML =
+    '<div class="lab-conflict-modal" style="max-width:420px;">' +
+    '<h3>Seguridad de red del equipo</h3>' +
+    '<p>El código LAN débil (<code>1234</code> u otro antiguo) se sustituyó por un token seguro en esta Mac anfitriona. Tus pacientes y salas LAN se conservaron.</p>' +
+    '<p style="font-size:12px;color:var(--text-muted);">Quienes se unan deben usar un <strong>enlace o PIN nuevo</strong> que generes aquí (⇄). Los enlaces viejos con <code>?code=</code> ya no funcionan.</p>' +
+    '<div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;">' +
+    '<button type="button" id="lan-migration-notice-ok" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Entendido</button>' +
+    '</div></div>';
+  document.body.appendChild(backdrop);
+  var ok = backdrop.querySelector('#lan-migration-notice-ok');
+  if (ok) {
+    ok.onclick = function () {
+      backdrop.remove();
+    };
+  }
+  backdrop.addEventListener('click', function (ev) {
+    if (ev.target === backdrop) backdrop.remove();
+  });
+}
+
+async function maybeShowLanMigrationNotice() {
+  if (typeof sessionStorage === 'undefined') return;
+  try {
+    if (sessionStorage.getItem(LAN_MIGRATION_NOTICE_KEY)) return;
+  } catch (_e) {}
+  if (!isLanSessionConfiguredForRest()) return;
+  var resp;
+  try {
+    resp = await lanFetchAuthed('/api/lan/v1/host-status');
+  } catch (_eNet) {
+    return;
+  }
+  if (!resp || !resp.ok) return;
+  var data;
+  try {
+    data = await resp.json();
+  } catch (_eJson) {
+    return;
+  }
+  if (!data || !data.requiresMigrationNotice) return;
+  try {
+    sessionStorage.setItem(LAN_MIGRATION_NOTICE_KEY, '1');
+  } catch (_eSet) {}
+  showLanMigrationNoticeModal();
+}
+
+function updateLanPairingDisplay(root) {
+  if (!root) return;
+  var box = root.querySelector('#lan-pairing-display');
+  if (!box) return;
+  if (!_lastLanPairing || !_lastLanPairing.ticketId) {
+    box.hidden = true;
+    box.textContent = '';
+    return;
+  }
+  box.hidden = false;
+  var p = _lastLanPairing;
+  var joinLine = p.joinUrl
+    ? '<div><strong>Enlace:</strong> <code style="word-break:break-all;">' + esc(p.joinUrl) + '</code></div>'
+    : '';
+  box.innerHTML =
+    '<p style="margin:0 0 6px;font-size:12px;color:var(--text-muted);">Comparte el PIN o el enlace (válido unos minutos, un solo uso):</p>' +
+    '<div><strong>PIN:</strong> <code>' +
+    esc(p.pin) +
+    '</code></div>' +
+    '<div><strong>Ticket:</strong> <code>' +
+    esc(p.ticketId) +
+    '</code></div>' +
+    joinLine;
+}
+
+async function mintLanPairingFromUi() {
+  try {
+    await mintLanPairingTicket();
+    var root = document.getElementById('lan-connection-panel-root');
+    updateLanPairingDisplay(root);
+    runtime.showToast('Enlace y PIN generados. Compártelos con el equipo.', 'success');
+  } catch (e) {
+    if (e && e.code === 'no_host_bearer') {
+      runtime.showToast(
+        'No hay token seguro del servidor en esta Mac. Reinicia R+ como anfitrión o revisa lan-team-code.txt.',
+        'error'
+      );
+      return;
+    }
+    if (e && e.status === 401) {
+      runtime.showToast('No autorizado para generar invitación. Revisa el token del anfitrión.', 'error');
+      return;
+    }
+    runtime.showToast('No se pudo generar enlace / PIN. Intenta de nuevo.', 'error');
+  }
+}
+
+async function persistGuestBearerFromExchange(data) {
+  if (!data || !data.persist || data.storageTarget !== 'userData') return;
+  if (!window.electronAPI || typeof window.electronAPI.lanGuestWriteBearer !== 'function') return;
+  var token = trimStoredLanBearer(data.token);
+  if (!token) return;
+  try {
+    await window.electronAPI.lanGuestWriteBearer({ token: token });
+  } catch (_e) {}
+}
+
+async function exchangeLanJoinFromInvite(hostUrl, ticketId, roomId) {
+  var base = String(hostUrl || '')
+    .trim()
+    .replace(/\/+$/, '');
+  var tid = String(ticketId || '').trim();
+  if (!base || !tid) {
+    runtime.showToast('Falta la dirección del servidor o el ticket de invitación.', 'error');
+    return;
+  }
+  var res;
+  try {
+    res = await fetch(base + '/api/lan/v1/auth/exchange', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ticket: tid }),
+    });
+  } catch (_e) {
+    runtime.showToast('Error de red al unirse. Revisa Wi‑Fi y que R+ siga abierto en el anfitrión.', 'error');
+    return;
+  }
+  if (!res.ok) {
+    runtime.showToast(
+      'Este enlace o PIN ya no es válido. Pide al anfitrión un nuevo enlace o PIN.',
+      'error'
+    );
+    return;
+  }
+  var data;
+  try {
+    data = await res.json();
+  } catch (_eJson) {
+    runtime.showToast('Respuesta inválida del servidor.', 'error');
+    return;
+  }
+  await persistGuestBearerFromExchange(data);
+  configureLanFromMobileJoin(String(data.hostUrl || base), data.token, roomId);
 }
 
 /** En anfitrión Electron: alinea rpc-lan-config con el código efectivo del servidor. */
@@ -312,7 +491,9 @@ async function ensureLanElectronHostReady() {
   }
   var autoUrl = await resolveLanHostUrlAuto();
   if (!autoUrl) return false;
-  persistLanClientConfig(autoUrl, cfg.teamCode || DEFAULT_LAN_TEAM_CODE);
+  var bearer = await resolveHostBearerToken();
+  if (!bearer) return false;
+  persistLanClientConfig(autoUrl, bearer);
   try {
     lanClient.connectSyncChannel();
   } catch (_e) {}
@@ -327,17 +508,14 @@ async function initLanHostPlugAndPlay() {
 async function resolveLanTeamCodeForShare() {
   var cfg = typeof storage.getLanConfig === 'function' ? (storage.getLanConfig() || {}) : {};
   var uiRole = typeof storage.getLanUiRole === 'function' ? storage.getLanUiRole() : 'client';
-  if (uiRole === 'host' && window.electronAPI && typeof window.electronAPI.getLanEffectiveTeamCode === 'function') {
-    try {
-      var info = await window.electronAPI.getLanEffectiveTeamCode();
-      if (info && info.ok && info.code) return String(info.code);
-    } catch (_e) {}
+  if (uiRole === 'host') {
+    var hostBearer = await resolveHostBearerToken();
+    if (hostBearer) return hostBearer;
   }
   var teamInput = document.getElementById('lan-input-team-code');
   var fromInput = teamInput && teamInput.value != null ? String(teamInput.value).trim() : '';
   if (fromInput) return fromInput;
-  if (cfg.teamCode) return normalizeStoredLanTeamCode(cfg.teamCode);
-  return DEFAULT_LAN_TEAM_CODE;
+  return trimStoredLanBearer(cfg.teamCode);
 }
 function appendLanKnownSessionsSection(root) {
   if (!root) return;
@@ -543,6 +721,8 @@ function wireLanPanelDelegation() {
       joinLanFromInviteUi();
     } else if (action === 'host-activate') {
       saveLanSettingsFromUi({ copyInviteAfter: true });
+    } else if (action === 'mint-pairing') {
+      void mintLanPairingFromUi();
     } else if (action === 'create-room') {
       createLanRoomFromUi();
     }
@@ -562,7 +742,7 @@ function getLanClientId() {
 
 function getLanTeamCodeFromConfig() {
   var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
-  return normalizeStoredLanTeamCode(cfg.teamCode);
+  return trimStoredLanBearer(cfg.teamCode);
 }
 
 async function resolveSelfLanAdvertiseHostUrl() {
@@ -602,7 +782,7 @@ function applyLanHostUrlSwitch(hostUrl, teamCode, opts) {
   var url = String(hostUrl || '')
     .trim()
     .replace(/\/+$/, '');
-  var code = normalizeStoredLanTeamCode(teamCode);
+  var code = trimStoredLanBearer(teamCode);
   if (!url) return false;
   if (!opts.skipRememberPrimary && isLanRemoteJoinMode()) rememberPrimaryHostUrl(url);
   persistLanClientConfig(url, code);
@@ -1508,7 +1688,7 @@ function appendLanJoinOtherMacSection(root) {
   inputInvite.id = 'lan-input-invite-link';
   inputInvite.rows = 2;
   inputInvite.autocomplete = 'off';
-  inputInvite.placeholder = 'http://…/join?code=… o …/mobile/?code=…';
+  inputInvite.placeholder = 'http://…/join/req_… o PIN del anfitrión';
   inner.appendChild(inputInvite);
   var row = document.createElement('div');
   row.className = 'lan-connect-actions-row';
@@ -1623,7 +1803,7 @@ async function renderLanPanelOnce() {
       inputInvite.id = 'lan-input-invite-link';
       inputInvite.rows = 3;
       inputInvite.autocomplete = 'off';
-      inputInvite.placeholder = 'Pega aquí el enlace (http://…/join?… o …/mobile/?…)';
+      inputInvite.placeholder = 'Pega aquí el enlace (http://…/join/req_…)';
       fieldInvite.appendChild(labelInvite);
       fieldInvite.appendChild(inputInvite);
       card.appendChild(fieldInvite);
@@ -1739,13 +1919,38 @@ async function renderLanPanelOnce() {
     leaveLiveRow.appendChild(btnLeaveLive);
     statusCard.appendChild(leaveLiveRow);
   }
+  if (desktopHost) {
+    var pairingHint = document.createElement('p');
+    pairingHint.className = 'lan-connect-card-hint';
+    pairingHint.textContent =
+      'Genera un enlace y PIN de un solo uso para que otras R+ o el iPad se unan sin exponer el token permanente del servidor.';
+    statusCard.appendChild(pairingHint);
+    var rowMint = document.createElement('div');
+    rowMint.className = 'lan-connect-actions-row';
+    var btnMint = document.createElement('button');
+    btnMint.type = 'button';
+    btnMint.className = 'btn-lan-primary';
+    btnMint.style.flex = '1';
+    btnMint.textContent = 'Generar enlace / PIN';
+    btnMint.setAttribute('data-lan-action', 'mint-pairing');
+    rowMint.appendChild(btnMint);
+    statusCard.appendChild(rowMint);
+    var pairingDisplay = document.createElement('div');
+    pairingDisplay.id = 'lan-pairing-display';
+    pairingDisplay.className = 'lan-connect-card-hint';
+    pairingDisplay.hidden = true;
+    pairingDisplay.style.marginTop = '8px';
+    pairingDisplay.style.lineHeight = '1.5';
+    statusCard.appendChild(pairingDisplay);
+    updateLanPairingDisplay(statusCard);
+  }
   var rowInvite = document.createElement('div');
   rowInvite.className = 'lan-connect-actions-row';
   var btnCopyStored = document.createElement('button');
   btnCopyStored.type = 'button';
   btnCopyStored.className = 'btn-lan-secondary';
   btnCopyStored.style.flex = '1';
-  btnCopyStored.textContent = 'Copiar invitación para enviar';
+  btnCopyStored.textContent = 'Copiar enlace de invitación';
   btnCopyStored.onclick = function () {
     void copyLanInviteLinkFromUi().catch(function (err) {
       console.error('copyLanInviteLinkFromUi', err);
@@ -1768,6 +1973,7 @@ async function renderLanPanelOnce() {
   rowInvite.appendChild(btnCopyMobile);
   statusCard.appendChild(rowInvite);
   root.appendChild(statusCard);
+  void maybeShowLanMigrationNotice();
 
   var roomsCard = document.createElement('div');
   roomsCard.className = 'lan-connect-card lan-rooms-panel';
@@ -1819,9 +2025,7 @@ async function renderLanPanelOnce() {
     errHttp.className = 'lan-connect-card-hint';
     if (roomsFetch.httpStatus === 401) {
       errHttp.innerHTML =
-        'El <strong>código del equipo</strong> que guardaste en esta R+ no coincide con el que usa el proceso servidor (archivo <code>lan-team-code.txt</code>, variable <code>R_PLUS_LAN_TEAM_CODE</code> o el valor por defecto <code>' +
-        esc(DEFAULT_LAN_TEAM_CODE) +
-        '</code>). Deben ser <strong>exactamente el mismo texto</strong> en ambos sitios. Tras cambiar el archivo, reinicia R+.';
+        'El <strong>token Bearer</strong> que guardaste en esta R+ no coincide con el del proceso servidor (<code>lan-team-code.txt</code> o <code>R_PLUS_LAN_TEAM_CODE</code>). En el anfitrión deben ser el mismo valor; tras cambiar el archivo, reinicia R+. Si te uniste con un enlace viejo (<code>?code=</code>), pide un enlace o PIN nuevo.';
     } else {
       var rawBody = String(roomsFetch.errorDetail || '');
       var detail = '';
@@ -1923,7 +2127,11 @@ async function saveLanHostTeamCodeFromUi() {
     return;
   }
   if (res && res.ok) {
-    var plainTrim = String(plain || '').trim() || DEFAULT_LAN_TEAM_CODE;
+    var plainTrim = String(plain || '').trim();
+    if (!plainTrim) {
+      runtime.showToast('Escribe un token de al menos 32 caracteres.', 'error');
+      return;
+    }
     var cfg = typeof storage.getLanConfig === 'function' ? (storage.getLanConfig() || {}) : {};
     var hostUrl = String(cfg.hostUrl || '').trim().replace(/\/+$/, '');
     if (hostUrl && plainTrim) {
@@ -1973,31 +2181,52 @@ async function resetLanSquadHostStateFromUi() {
   }
 }
 
+async function ensureLanPairingForShare() {
+  var hostUrl = await resolveLanHostUrlForShare();
+  if (!hostUrl) {
+    var errUrl = new Error('no_host_url');
+    errUrl.code = 'no_host_url';
+    throw errUrl;
+  }
+  if (!_lastLanPairing || !_lastLanPairing.ticketId) {
+    await mintLanPairingTicket();
+  }
+  if (!_lastLanPairing || !_lastLanPairing.ticketId) {
+    var errTicket = new Error('no_ticket');
+    errTicket.code = 'no_ticket';
+    throw errTicket;
+  }
+  return { hostUrl: hostUrl, pairing: _lastLanPairing };
+}
+
 async function copyMobileLanLinkFromUi(opts) {
   opts = opts || {};
   var silent = !!opts.silent;
-  var hostUrl = await resolveLanHostUrlForShare();
-  var teamCode = String(await resolveLanTeamCodeForShare()).trim();
-  if (!hostUrl || !teamCode) {
+  var share;
+  try {
+    share = await ensureLanPairingForShare();
+  } catch (e) {
     if (!silent) {
-      runtime.showToast(
-        !hostUrl
-          ? 'Falta la dirección del servidor (o no pudimos detectar la IP en esta computadora).'
-          : 'Falta el código del equipo.',
-        'error'
-      );
+      if (e && e.code === 'no_host_url') {
+        runtime.showToast(
+          'Falta la dirección del servidor (o no pudimos detectar la IP en esta computadora).',
+          'error'
+        );
+      } else {
+        runtime.showToast('Genera primero un enlace / PIN o revisa el token del anfitrión.', 'error');
+      }
     }
     return false;
   }
-  var roomId = String(activeLiveSyncRoomId || '').trim();
-  var urls = buildLanJoinUrls(hostUrl, teamCode, roomId);
-  var copied = await copyToClipboardSafe(urls.mobileUrl);
+  var urls = buildLanJoinUrls(share.hostUrl, share.pairing.ticketId);
+  var link = share.pairing.joinUrl || urls.mobileUrl;
+  var copied = await copyToClipboardSafe(link);
   if (copied) {
+    var root = document.getElementById('lan-connection-panel-root');
+    updateLanPairingDisplay(root);
     if (!silent) {
       runtime.showToast(
-        roomId
-          ? 'Enlace móvil copiado (incluye sala). Ábrelo en Safari en la misma Wi‑Fi.'
-          : 'Enlace móvil copiado. En el iPad elige la misma sala LiveSync que el equipo.',
+        'Enlace móvil copiado. Ábrelo en Safari en la misma Wi‑Fi; luego elige la sala LiveSync.',
         'success'
       );
     }
@@ -2010,30 +2239,31 @@ async function copyMobileLanLinkFromUi(opts) {
 async function copyLanInviteLinkFromUi(opts) {
   opts = opts || {};
   var silent = !!opts.silent;
-  var hostUrl = await resolveLanHostUrlForShare();
-  var teamCode = String(await resolveLanTeamCodeForShare()).trim();
-  if (!hostUrl || !teamCode) {
+  var share;
+  try {
+    share = await ensureLanPairingForShare();
+  } catch (e) {
     if (!silent) {
-      runtime.showToast(
-        !hostUrl
-          ? 'Falta la dirección del servidor (o no pudimos detectar la IP en esta computadora).'
-          : 'Falta el código del equipo.',
-        'error'
-      );
+      if (e && e.code === 'no_host_url') {
+        runtime.showToast(
+          'Falta la dirección del servidor (o no pudimos detectar la IP en esta computadora).',
+          'error'
+        );
+      } else {
+        runtime.showToast('Genera primero un enlace / PIN o revisa el token del anfitrión.', 'error');
+      }
     }
     return false;
   }
-  var roomId = String(activeLiveSyncRoomId || '').trim();
-  var urls = buildLanJoinUrls(hostUrl, teamCode, roomId);
-  var copied = await copyToClipboardSafe(urls.joinUrl);
+  var urls = buildLanJoinUrls(share.hostUrl, share.pairing.ticketId);
+  var link = share.pairing.joinUrl || urls.joinUrl;
+  var copied = await copyToClipboardSafe(link);
   if (copied) {
+    var root = document.getElementById('lan-connection-panel-root');
+    updateLanPairingDisplay(root);
     if (!silent) {
-      runtime.showToast(
-        roomId
-          ? 'Enlace de invitación copiado (incluye sala). Compártelo por WhatsApp, correo o una nota.'
-          : 'Enlace de invitación copiado. Compártelo por WhatsApp, correo o una nota.',
-        'success'
-      );
+      var pinHint = share.pairing.pin ? ' PIN: ' + share.pairing.pin + '.' : '';
+      runtime.showToast('Enlace de invitación copiado.' + pinHint, 'success');
     }
     return true;
   }
@@ -2049,17 +2279,38 @@ function joinLanFromInviteUi() {
     return;
   }
   var parsed = parseLanInviteInput(raw);
-  var hostUrl = String(parsed.hostUrl || '').trim().replace(/\/+$/, '');
-  var teamCode = String(parsed.teamCode || '').trim();
-  var roomId = String(parsed.roomId || '').trim();
-  if (!hostUrl || !teamCode) {
+  if (parsed.legacyInvite) {
     runtime.showToast(
-      'No reconocimos un enlace válido. Pide al anfitrión que te reenvíe el enlace (…/join?code=… o …/mobile/?code=…).',
+      'Este enlace ya no es válido. Pide al anfitrión un nuevo enlace o PIN.',
       'error'
     );
     return;
   }
-  configureLanFromMobileJoin(hostUrl, teamCode, roomId);
+  var ticketId = String(parsed.ticketId || '').trim();
+  if (ticketId) {
+    var hostUrl = String(parsed.hostUrl || '')
+      .trim()
+      .replace(/\/+$/, '');
+    if (!hostUrl) {
+      var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
+      hostUrl = String(cfg.hostUrl || '')
+        .trim()
+        .replace(/\/+$/, '');
+    }
+    if (!hostUrl) {
+      runtime.showToast(
+        'Pega el enlace completo (http://…/join/req_…) con la dirección del anfitrión.',
+        'error'
+      );
+      return;
+    }
+    void exchangeLanJoinFromInvite(hostUrl, ticketId, parsed.roomId);
+    return;
+  }
+  runtime.showToast(
+    'No reconocimos un enlace válido. Pide al anfitrión un enlace /join/req_… o el PIN actual.',
+    'error'
+  );
 }
 
 async function saveLanSettingsFromUi(opts) {
@@ -2074,7 +2325,12 @@ async function saveLanSettingsFromUi(opts) {
   var hostUrl = String(hostInput && hostInput.value ? hostInput.value : '')
     .trim()
     .replace(/\/+$/, '');
-  var teamCode = String(await resolveLanTeamCodeForShare()).trim();
+  var teamCode = '';
+  if (uiRole === 'host') {
+    teamCode = String(await resolveHostBearerToken()).trim();
+  } else {
+    teamCode = String(await resolveLanTeamCodeForShare()).trim();
+  }
   if (!hostUrl || !teamCode) {
     runtime.showToast(
       !hostUrl
@@ -2082,8 +2338,8 @@ async function saveLanSettingsFromUi(opts) {
           ? 'No pudimos detectar la IP. Escribe la dirección http://… que verán las otras R+.'
           : 'Escribe la dirección del servidor que te dio el anfitrión.'
         : uiRole === 'host'
-          ? 'Escribe el código del equipo (por defecto ' + DEFAULT_LAN_TEAM_CODE + ').'
-          : 'Escribe el código que te dio quien abrió la sala.',
+          ? 'No hay token seguro del servidor en esta Mac. Reinicia R+ como anfitrión.'
+          : 'Únete con el enlace o PIN que te dio quien abrió la sala.',
       'error'
     );
     return;
@@ -2107,11 +2363,12 @@ async function saveLanSettingsFromUi(opts) {
     copiedOk = await copyLanInviteLinkFromUi({ silent: true });
   }
   if (pingOk) {
+    void maybeShowLanMigrationNotice();
     if (copyInviteAfter) {
       runtime.showToast(
         copiedOk
           ? 'Anfitrión listo. La invitación ya está en el portapapeles; compártela por WhatsApp o correo.'
-          : 'Anfitrión listo, pero no se pudo copiar solo. Pulsa «Copiar invitación otra vez».',
+          : 'Anfitrión listo, pero no se pudo copiar solo. Pulsa «Generar enlace / PIN» o «Copiar enlace de invitación».',
         copiedOk ? 'success' : 'error'
       );
     } else {
@@ -2300,14 +2557,8 @@ export function syncSettingsLanHostDiskSection() {
 async function syncLanHostTeamCodeSettingsInput() {
   var input = document.getElementById('settings-lan-host-team-code-input');
   if (!input) return;
-  var code = DEFAULT_LAN_TEAM_CODE;
-  if (window.electronAPI && typeof window.electronAPI.getLanEffectiveTeamCode === 'function') {
-    try {
-      var info = await window.electronAPI.getLanEffectiveTeamCode();
-      if (info && info.ok && info.code) code = String(info.code);
-    } catch (_e) {}
-  }
-  if (!String(input.value || '').trim()) input.value = code;
+  var code = await resolveHostBearerToken();
+  if (!String(input.value || '').trim() && code) input.value = code;
 }
 function closeConnectionDropdown() {
   var dd = document.getElementById('connection-dropdown');
@@ -2372,6 +2623,7 @@ function configureLanFromMobileJoin(hostUrl, teamCode, roomId) {
         }, 400);
         return;
       }
+      void maybeShowLanMigrationNotice();
       var rid = String(roomId || '').trim();
       if (rid) {
         joinLanRoom(rid, '');
