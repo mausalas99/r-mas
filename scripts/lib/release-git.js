@@ -57,8 +57,15 @@ function gitStatusPorcelain(execSync, root) {
   return execSync('git status --porcelain', { cwd: root, encoding: 'utf8' });
 }
 
-function hasStagedOrUnstagedReleaseChanges(statusText) {
-  return String(statusText || '').trim().length > 0;
+/** true si hay entradas en el índice (tras git add de paths de release). */
+function hasStagedChanges(statusText) {
+  return String(statusText || '')
+    .split('\n')
+    .some((line) => {
+      if (!line.trim()) return false;
+      const staged = line[0];
+      return staged !== ' ' && staged !== '?';
+    });
 }
 
 function assertReleaseNotesExist(fsMod, pathMod, root, version) {
@@ -114,7 +121,7 @@ module.exports = {
   existingReleaseStagePaths,
   stageReleasePaths,
   gitStatusPorcelain,
-  hasStagedOrUnstagedReleaseChanges,
+  hasStagedChanges,
   assertReleaseNotesExist,
   tagExists,
   ghReleaseExists,

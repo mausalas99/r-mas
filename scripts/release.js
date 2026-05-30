@@ -31,7 +31,7 @@ const { prepareMacSigning } = require('./lib/mac-signing-prep');
 const {
   stageReleasePaths,
   gitStatusPorcelain,
-  hasStagedOrUnstagedReleaseChanges,
+  hasStagedChanges,
   assertPublishPreflight,
   ghReleaseExists,
 } = require('./lib/release-git');
@@ -266,7 +266,7 @@ async function cmdBump(argv) {
   if (hasFlag(argv, '--commit')) {
     stageReleasePaths(execSync, ROOT);
     const status = gitStatusPorcelain(execSync, ROOT);
-    if (hasStagedOrUnstagedReleaseChanges(status)) {
+    if (hasStagedChanges(status)) {
       gitCommit(`chore(release): bump ${version}`);
     } else {
       console.log('Nada que commitear tras el bump (árbol limpio en paths de release).');
@@ -560,10 +560,11 @@ async function cmdPublish(argv) {
       progress.start('pre-commit');
       stageReleasePaths(execSync, ROOT);
       const pending = gitStatusPorcelain(execSync, ROOT);
-      if (hasStagedOrUnstagedReleaseChanges(pending)) {
+      if (hasStagedChanges(pending)) {
         gitCommit(`chore(release): prepare ${version}`);
       } else {
-        const msg = 'Sin cambios pendientes en paths de release (pre-commit omitido).';
+        const msg =
+          'Sin cambios en paths de release para commitear (p. ej. dist/ o plugins sucios se ignoran aquí).';
         if (progressJson) progress.emitLog({ stream: 'meta', line: msg });
         else console.log(msg);
       }
@@ -579,7 +580,7 @@ async function cmdPublish(argv) {
       progress.start('git-commit');
       stageReleasePaths(execSync, ROOT);
       const status = gitStatusPorcelain(execSync, ROOT);
-      if (hasStagedOrUnstagedReleaseChanges(status)) {
+      if (hasStagedChanges(status)) {
         gitCommit(commitMessage(version));
       } else {
         const line = 'Nada que commitear (working tree limpio para paths de release).';
