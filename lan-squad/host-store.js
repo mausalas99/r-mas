@@ -55,9 +55,11 @@ function createHostStore({ filePath, teamCodePlain }) {
       return defaultState(teamCodeHash);
     }
     if (s.teamCodeHash !== teamCodeHash) {
-      const fresh = defaultState(teamCodeHash);
-      atomicWriteJson(filePath, fresh);
-      return fresh;
+      const err = new Error(
+        'LAN host state teamCodeHash does not match lan-team-code.txt. Run bootstrap or rehashLanHostState.'
+      );
+      err.code = 'LAN_HOST_STATE_HASH_MISMATCH';
+      throw err;
     }
     s.patients = Array.isArray(s.patients) ? s.patients : [];
     s.rooms = Array.isArray(s.rooms) ? s.rooms : [];

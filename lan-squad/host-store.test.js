@@ -58,9 +58,32 @@ describe('host-store', () => {
     storeA.createRoom('Sala previa');
     assert.strictEqual(storeA.listRooms().length, 1);
     const storeB = createHostStore({ filePath, teamCodePlain: 'new-code' });
-    const st = storeB.getState();
-    assert.strictEqual(st.rooms.length, 0);
-    assert.strictEqual(st.teamCodeHash, hashTeamCode('new-code'));
+    assert.throws(() => storeB.getState(), (e) => e.code === 'LAN_HOST_STATE_HASH_MISMATCH');
+    const preserved = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    assert.strictEqual(preserved.rooms.length, 1);
+    assert.strictEqual(preserved.teamCodeHash, hashTeamCode('old-code'));
+  });
+
+  it('load throws LAN_HOST_STATE_HASH_MISMATCH instead of wiping patients', () => {
+    const { hashTeamCode } = require('./team-code.js');
+    fs.writeFileSync(
+      filePath,
+      JSON.stringify({
+        version: 1,
+        teamCodeHash: hashTeamCode('old-code'),
+        patients: [{ id: 'p1', nombre: 'X', version: 1 }],
+        rooms: [],
+        roomSyncBundles: {},
+      }),
+      'utf8'
+    );
+    const store = createHostStore({
+      filePath,
+      teamCodePlain: 'new-code-64-hexxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    });
+    assert.throws(() => store.getState(), (e) => e.code === 'LAN_HOST_STATE_HASH_MISMATCH');
+    const preserved = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    assert.strictEqual(preserved.patients.length, 1);
   });
 
   it('putRoomSyncBundle LWW por updatedAt del envelope', () => {
