@@ -1,0 +1,177 @@
+'use strict';
+
+const assert = require('node:assert');
+const http = require('node:http');
+const express = require('express');
+const path = require('node:path');
+const os = require('node:os');
+const fs = require('node:fs');
+const { test } = require('node:test');
+const { createHostStore } = require('./host-store.js');
+const { createTicketStore } = require('./ticket-store.js');
+const { createAuthRouter } = require('./auth-router.js');
+
+function createTestApp({ hostToken, hostUrl, requiresMigrationNotice = false }) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-auth-'));
+  const statePath = path.join(dir, 'state.json');
+  const store = createHostStore({ filePath: statePath, teamCodePlain: hostToken });
+  const ticketStore = createTicketStore({ getHostToken: () => hostToken });
+  const app = express();
+  app.use(
+    '/api/lan/v1',
+    createAuthRouter({
+      ticketStore,
+      getHostToken: () => hostToken,
+      getHostUrl: () => hostUrl,
+      getRequiresMigrationNotice: () => requiresMigrationNotice,
+    })
+  );
+  return { app, dir, store, ticketStore };
+}
+
+async function listen(app) {
+  const server = http.createServer(app);
+  await new Promise((resolve, reject) => {
+    server.listen(0, '127.0.0.1', (err) => (err ? reject(err) : resolve()));
+  });
+  const { port } = server.address();
+  return { server, base: `http://127.0.0.1:${port}/api/lan/v1` };
+}
+
+test('POST /auth/exchange returns bearer and burns ticket', async () => {
+  const hostToken = 'a'.repeat(64);
+  const hostUrl = 'http://192.168.1.5:3738';
+  const { app, dir } = createTestApp({ hostToken, hostUrl });
+  const { server, base } = await listen(app);
+  try {
+    const mintRes = await fetch(`${base}/auth/tickets`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${hostToken}` },
+    });
+    assert.strictEqual(mintRes.status, 200);
+    const mintBody = await mintRes.json();
+    assert.ok(mintBody.ticketId.startsWith('req_'));
+    assert.ok(/^\d{6}$/.test(mintBody.pin));
+    assert.strictEqual(mintBody.joinUrl, `${hostUrl}/join/${mintBody.ticketId}`);
+
+    const ex = await fetch(`${base}/auth/exchange`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ticket: mintBody.ticketId }),
+    });
+    assert.strictEqual(ex.status, 200);
+    const body = await ex.json();
+    assert.strictEqual(body.token, hostToken);
+    assert.strictEqual(body.hostUrl, hostUrl);
+    assert.strictEqual(body.persist, true);
+    assert.strictEqual(body.storageTarget, 'userData');
+
+    const again = await fetch(`${base}/auth/exchange`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ticket: mintBody.ticketId }),
+    });
+    assert.strictEqual(again.status, 401);
+    const againBody = await again.json();
+    assert.strictEqual(againBody.error, 'invalid_ticket');
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('POST /auth/tickets requires Bearer', async () => {
+  const hostToken = 'b'.repeat(64);
+  const { app, dir } = createTestApp({ hostToken, hostUrl: 'http://127.0.0.1:3738' });
+  const { server, base } = await listen(app);
+  try {
+    const bad = await fetch(`${base}/auth/tickets`, { method: 'POST' });
+    assert.strictEqual(bad.status, 401);
+
+    const ok = await fetch(`${base}/auth/tickets`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${hostToken}` },
+    });
+    assert.strictEqual(ok.status, 200);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('POST /auth/exchange by pin', async () => {
+  const hostToken = 'c'.repeat(64);
+  const { app, dir } = createTestApp({ hostToken, hostUrl: 'http://10.0.0.1:3738' });
+  const { server, base } = await listen(app);
+  try {
+    const mintRes = await fetch(`${base}/auth/tickets`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${hostToken}` },
+    });
+    const { pin } = await mintRes.json();
+
+    const ex = await fetch(`${base}/auth/exchange`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin }),
+    });
+    assert.strictEqual(ex.status, 200);
+    const body = await ex.json();
+    assert.strictEqual(body.token, hostToken);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('POST /auth/exchange rejects ambiguous or missing credentials', async () => {
+  const hostToken = 'd'.repeat(64);
+  const { app, dir } = createTestApp({ hostToken, hostUrl: 'http://127.0.0.1:3738' });
+  const { server, base } = await listen(app);
+  try {
+    const ambiguous = await fetch(`${base}/auth/exchange`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ticket: 'req_abc', pin: '123456' }),
+    });
+    assert.strictEqual(ambiguous.status, 400);
+    assert.strictEqual((await ambiguous.json()).error, 'ambiguous_credentials');
+
+    const missing = await fetch(`${base}/auth/exchange`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    assert.strictEqual(missing.status, 400);
+    assert.strictEqual((await missing.json()).error, 'missing_credentials');
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('GET /host-status returns migration flag with Bearer', async () => {
+  const hostToken = 'e'.repeat(64);
+  const { app, dir } = createTestApp({
+    hostToken,
+    hostUrl: 'http://127.0.0.1:3738',
+    requiresMigrationNotice: true,
+  });
+  const { server, base } = await listen(app);
+  try {
+    const bad = await fetch(`${base}/host-status`);
+    assert.strictEqual(bad.status, 401);
+
+    const ok = await fetch(`${base}/host-status`, {
+      headers: { Authorization: `Bearer ${hostToken}` },
+    });
+    assert.strictEqual(ok.status, 200);
+    const body = await ok.json();
+    assert.strictEqual(body.ok, true);
+    assert.strictEqual(body.requiresMigrationNotice, true);
+    assert.strictEqual(body.lan, true);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
