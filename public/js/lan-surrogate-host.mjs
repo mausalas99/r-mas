@@ -108,7 +108,7 @@ export async function pingLanHostUrl(hostUrl, teamCode) {
   try {
     const r = await fetch(`${url}/api/lan/v1/ping`, {
       method: 'GET',
-      headers: { 'X-Lan-Team-Code': code },
+      headers: { Authorization: `Bearer ${code}` },
     });
     return !!(r && r.ok);
   } catch (_e) {

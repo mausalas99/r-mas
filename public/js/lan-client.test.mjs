@@ -43,3 +43,54 @@ describe('LanClient live channel lifecycle', () => {
     assert.strictEqual(client.isLiveChannelBusy('sala-e'), false);
   });
 });
+
+describe('LanClient fetch auth', () => {
+  it('fetch sends Authorization Bearer from teamCode config', async () => {
+    const calls = [];
+    const origFetch = globalThis.fetch;
+    globalThis.fetch = async (url, opts) => {
+      calls.push({ url, opts });
+      return { ok: true };
+    };
+    try {
+      const client = new LanClient();
+      client.configure({ hostUrl: 'http://10.0.0.1:3738', teamCode: 'a'.repeat(64) });
+      await client.fetch('/api/lan/v1/ping');
+      assert.strictEqual(calls.length, 1);
+      assert.strictEqual(calls[0].url, 'http://10.0.0.1:3738/api/lan/v1/ping');
+      assert.strictEqual(calls[0].opts.headers.Authorization, `Bearer ${'a'.repeat(64)}`);
+      assert.ok(!('X-Lan-Team-Code' in (calls[0].opts.headers || {})));
+    } finally {
+      globalThis.fetch = origFetch;
+    }
+  });
+
+  it('fetch uses rplus.lan.bearer when teamCode empty', async () => {
+    const calls = [];
+    const store = {
+      getItem(k) {
+        return this._[k] ?? null;
+      },
+      setItem(k, v) {
+        this._[k] = v;
+      },
+      _: { 'rplus.lan.bearer': 'b'.repeat(64) },
+    };
+    const origFetch = globalThis.fetch;
+    const origLs = globalThis.localStorage;
+    globalThis.fetch = async (url, opts) => {
+      calls.push({ opts });
+      return { ok: true };
+    };
+    globalThis.localStorage = store;
+    try {
+      const client = new LanClient();
+      client.configure({ hostUrl: 'http://10.0.0.2:3738', teamCode: '' });
+      await client.fetch('/api/lan/v1/ping');
+      assert.strictEqual(calls[0].opts.headers.Authorization, `Bearer ${'b'.repeat(64)}`);
+    } finally {
+      globalThis.fetch = origFetch;
+      globalThis.localStorage = origLs;
+    }
+  });
+});

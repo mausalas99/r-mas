@@ -51,12 +51,22 @@ export class LanClient extends EventTarget {
     return String(c.hostUrl).replace(/\/$/, '');
   }
 
+  _bearerToken() {
+    const fromCfg = this._cfg ? String(this._cfg.teamCode ?? '').trim() : '';
+    if (fromCfg) return fromCfg;
+    try {
+      return String(localStorage.getItem('rplus.lan.bearer') || '').trim();
+    } catch (_e) {
+      return '';
+    }
+  }
+
   async fetch(path, opts = {}) {
     const url = `${this.baseUrl()}${path}`;
-    const team = this._cfg ? String(this._cfg.teamCode ?? '') : '';
+    const token = this._bearerToken();
     const headers = {
       ...(opts.headers || {}),
-      'X-Lan-Team-Code': team,
+      Authorization: `Bearer ${token}`,
     };
     return fetch(url, { ...opts, headers });
   }
@@ -120,13 +130,18 @@ export class LanClient extends EventTarget {
       }
     }
     const base = this.baseUrl().replace(/^http/, 'ws');
-    const code = encodeURIComponent(this._cfg.teamCode || '');
-    const u = `${base}/api/lan/v1/ws?code=${code}&channel=${encodeURIComponent(channel)}`;
+    const u = `${base}/api/lan/v1/ws?channel=${encodeURIComponent(channel)}`;
     const ws = new WebSocket(u);
     this[prop] = ws;
+    const token = this._bearerToken();
 
     ws.onopen = () => {
       if (this[prop] !== ws) return;
+      try {
+        ws.send(JSON.stringify({ type: 'auth', token }));
+      } catch (_e) {
+        /* ignore */
+      }
       if (kind === 'sync') {
         this._syncConnected = true;
         this.dispatchEvent(new CustomEvent('lan-status', { detail: { connected: true, channel: 'sync' } }));
