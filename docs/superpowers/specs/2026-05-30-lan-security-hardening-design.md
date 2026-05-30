@@ -27,6 +27,7 @@ This design closes those gaps while preserving **zero clinical data loss** on mi
 - [ ] WebSocket clients authenticate via first-frame JSON within 3 seconds before joining broadcast rooms.
 - [ ] Tiered `express-rate-limit` on global, `/generate*`, and auth endpoints.
 - [ ] Host UI can show a one-time “Security upgrade” notice when auto-rotation occurred.
+- [ ] Logs and error responses never contain Bearer tokens, pairing PINs, or ticket IDs (redaction enforced in middleware and error handlers).
 
 ## Non-goals (v1)
 
@@ -85,6 +86,8 @@ flowchart TB
 | `public/js/lan-join-link.mjs` | Ticket URLs only |
 | `public/js/features/lan-sync.mjs` | Migration modal; host mint UI; legacy `?code=` re-pair prompt |
 | `main.js` | IPC `lan-guest-write-bearer` for Electron guest persistence |
+| `lan-squad/redact-secrets.js` | Shared redaction for logs, errors, and debug dumps |
+| `server.js` | Request-scoped redaction middleware + terminal error handler |
 
 ---
 
@@ -413,6 +416,74 @@ Run `npm run bundle:renderer` after `public/js` changes so `app.bundle.mjs` stay
 
 ---
 
+## Section 7: Logging policy and secret redaction
+
+Security tokens often leak through **generic 500 handlers**, `console.error(err)` on failed requests, and middleware that dumps `req.headers` or `req.body` when something throws mid-flight. This is a **required** part of the LAN hardening implementation—not optional hardening.
+
+### Module: `lan-squad/redact-secrets.js`
+
+Pure helpers (unit-tested):
+
+| Function | Behavior |
+|----------|----------|
+| `redactBearerHeader(value)` | Replace `Bearer <token>` with `Bearer [REDACTED]`; leave scheme visible for debugging |
+| `redactAuthorizationHeaders(headers)` | Clone headers object; redact `authorization` / `Authorization` |
+| `redactAuthBody(body)` | If object: set `pin`, `ticket`, `token`, `code` to `[REDACTED]` (shallow clone) |
+| `redactUrlSecrets(url)` | Strip `code=`, `token=` query pairs from URL strings used in logs |
+| `redactForLog(value)` | Deep-safe stringify helper: walks plain objects/arrays, redacts known keys and Bearer patterns in strings |
+
+**Never** log full `req` objects. If request context is needed, log only: `method`, `path` (query redacted), `status`, opaque `requestId`.
+
+### Express middleware (early in `server.js`, before routes)
+
+`requestRedactionMiddleware`:
+
+- Attach `req.__safeForLog = { method, path: redactUrlSecrets(req.originalUrl), ip }` for optional debug use.
+- Do **not** replace `req.headers` / `req.body` in place (handlers need real credentials); redact only at log/write boundaries.
+
+### Terminal error handler (last middleware)
+
+```js
+appExpress.use((err, req, res, _next) => {
+  const safe = {
+    message: err && err.message,
+    code: err && err.code,
+    path: redactUrlSecrets(req.originalUrl),
+    method: req.method,
+  };
+  console.error('[express]', safe); // never err.req, never raw req.headers
+  res.status(500).json({ error: 'internal_error' }); // never e.message if it might echo user input with secrets
+});
+```
+
+**Rules for 500 JSON bodies:**
+
+- Do **not** return raw `err.message` to clients on LAN auth or `/auth/*` routes if the handler touched `Authorization`, `pin`, or `ticket`.
+- Prefer stable codes: `internal_error`, `invalid_ticket`, etc.
+- Route-level `catch` blocks that today do `res.status(500).json({ error: e.message })` on `/generate*` must use a **sanitized** message (generic Spanish/English hospital-safe text) or a redacted string via `redactForLog`.
+
+### WebSocket / ws-hub
+
+- On auth failure or quarantine timeout: log `channel` and `reason` only—**never** the first-frame `token` field.
+- If logging raw frames for debug, gate behind `R_PLUS_LAN_DEBUG=1` and run payload through `redactAuthBody`.
+
+### WS first-frame auth failures
+
+Invalid auth JSON may contain the token in memory; do not include `msg` in `console.error` without `redactAuthBody(msg)`.
+
+### Tests (`lan-squad/redact-secrets.test.js`)
+
+- Bearer header redaction
+- Body `{ pin: '123456', ticket: 'req_abc' }` → redacted
+- URL `?code=secret&room=x` → `code=[REDACTED]`
+- Nested object with `authorization` key
+
+### Implementation plan requirement
+
+The writing-plans task list **must** include an explicit task: install redaction module, wire middleware + error handler, audit all `console.error` / `res.status(500).json({ error: e.message })` in `server.js`, `host-router.js`, `auth-router.js`, and `ws-hub.js`.
+
+---
+
 ## Security properties summary
 
 | Threat | Mitigation |
@@ -424,6 +495,7 @@ Run `npm run bundle:renderer` after `public/js` changes so `app.bundle.mjs` stay
 | Stolen join link reuse | Single-use ticket burn |
 | Rotation data loss | `rehashLanHostState` + no store auto-wipe |
 | LAN DoS | Tiered rate limits |
+| Token leak via 500 / stack traces | Section 7 redaction middleware + sanitized error handler |
 
 ---
 
@@ -432,9 +504,7 @@ Run `npm run bundle:renderer` after `public/js` changes so `app.bundle.mjs` stay
 1. Exact `localStorage` keys and migration from old `saveLanConfig` shape.
 2. Whether host displays QR encoding `joinUrl` (recommended; use existing UI patterns).
 3. `GET /join/:ticketId` static route ordering vs `express.static`.
-4. Logging policy: never log Bearer, PIN, or ticket body.
-
-5. Deprecate exported `readEffectiveLanTeamCode` weak fallbacks in renderer-facing IPC; host reads token only via bootstrap or explicit file read without `'1234'` default.
+4. Deprecate exported `readEffectiveLanTeamCode` weak fallbacks in renderer-facing IPC; host reads token only via bootstrap or explicit file read without `'1234'` default.
 
 ---
 
