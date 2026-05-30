@@ -65,6 +65,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getLanEffectiveTeamCode: function() {
     return ipcRenderer.invoke('lan-get-effective-team-code');
   },
+  lanGuestWriteBearer: function(payload) {
+    return ipcRenderer.invoke('lan-guest-write-bearer', payload);
+  },
   writeClipboardText: function(text) {
     return ipcRenderer.invoke('clipboard-write-text', text);
   },

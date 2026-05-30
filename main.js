@@ -320,6 +320,19 @@ ipcMain.handle('lan-get-effective-team-code', () => {
   }
 });
 
+/** Persist guest Bearer from auth/exchange into userData for auto-reconnect (Electron guest only). */
+ipcMain.handle('lan-guest-write-bearer', (_e, payload) => {
+  const token = String(payload?.token || '').trim();
+  if (!token || token.length < 32) return { ok: false, error: 'invalid_token' };
+  try {
+    const filePath = path.join(app.getPath('userData'), 'lan-team-code.txt');
+    fs.writeFileSync(filePath, token + '\n', 'utf8');
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e && e.message ? e.message : String(e) };
+  }
+});
+
 /** URL sugerida http://<IPv4-LAN>:3738 para que otras R+ en la misma red se conecten al host. */
 function pickLanCandidateBaseUrl() {
   const port = 3738;
