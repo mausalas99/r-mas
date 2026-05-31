@@ -1,17 +1,17 @@
 version: 6.5.0
 files:
   - url: R+-6.5.0-arm64.zip
-    sha512: syGlbz0w7drbjs1BnRKZ0JXBrgGvADq9q9N20Sua1R4BWhl6cPATvKlQk1Jujzc5ef1xOgQv3SnpPxHEFDS3sg==
-    size: 117925583
+    sha512: 7M/zTipvIcnt0EuKyLuqtATKvtu3iRy2mj6a+Zpv1GC1fU7/NCSZzshHH2BVwBAXlNrO6nEssMkVlmFx1zZwXA==
+    size: 117925542
   - url: R+-6.5.0-arm64.dmg
-    sha512: O7/4V955yYL21ug8LEqPCEzUoXOnMh2teYy7TDpCXs7aWdlQYgsWWZorgCkBNN55susgT8+9byP9Rc/N6P5L/A==
-    size: 122790452
+    sha512: z/6TbUadFZJUZAqmvnPNjqFU8Aw5rseOH9nZAd9MorruLnl8MejZiH1DYB8AjaSCb95tcQtH4iaL0pLu66xHUA==
+    size: 122786541
   - url: R+-6.5.0-x64.zip
-    sha512: t4VgTY3FYfbb/zBs664d+hQhwXkeCyxThu1/iYWF77OLcBPIlv6dVKT6xDgszgaEdbw2RypAksLXWxPwvGxkhA==
-    size: 126169703
+    sha512: l7s19ZnhnyGws/uib8URPbdda5nCaB/6ny/6p82PTQisyMrVvrv8U6diYIuEGBfDW+zt8EFnnh4AqOklumxEhQ==
+    size: 126169635
   - url: R+-6.5.0-x64.dmg
-    sha512: pshiThivxYX6+/j2mNYN5+PjkPS5/X06NZDjtoIRph2vdKxpihXGvYbdiyLxsiVSzR14FD+VhsSdVg/BYAKedg==
-    size: 131072412
+    sha512: J4gfCvsuPlfJHVlVtGvlo6H0j5JXD4ERYZpWXp2JpWeS8BG3e/grHhfDVavCrG+FVEm4phym5oxJrYpy8YoRbg==
+    size: 131075607
 path: R+-6.5.0-arm64.zip
-sha512: syGlbz0w7drbjs1BnRKZ0JXBrgGvADq9q9N20Sua1R4BWhl6cPATvKlQk1Jujzc5ef1xOgQv3SnpPxHEFDS3sg==
-releaseDate: '2026-05-31T19:49:37.000Z'
+sha512: 7M/zTipvIcnt0EuKyLuqtATKvtu3iRy2mj6a+Zpv1GC1fU7/NCSZzshHH2BVwBAXlNrO6nEssMkVlmFx1zZwXA==
+releaseDate: '2026-05-31T20:01:56.000Z'
