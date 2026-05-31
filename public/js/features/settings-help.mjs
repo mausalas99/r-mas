@@ -27,6 +27,8 @@ import { applyAppModeSwitchEffects } from './profile.mjs';
 import { DEMO_TOUR_LAB_PASTE, DEMO_GARCIA_LAB_REPORT, DEMO_SOME_LAB_REPORT, OLDER_DEMO_SOME_LAB_REPORT } from '../tour-demo-some-lab.mjs';
 import { LAB_BULK_PATIENT_SEPARATOR } from '../lab-bulk-paste.mjs';
 import { buildTourDemoListadoProblemas } from '../tour-demo-listado-problemas.mjs';
+import { buildTourMonitoreoHistorial } from '../tour-demo-monitoreo.mjs';
+import { renderEstadoActualPanel } from './estado-actual-panel.mjs';
 import { isMobileWeb } from '../mobile-web.mjs';
 import { isModeSala } from '../mode-features.mjs';
 import { getUiDensity, setUiDensity, isPaseMode } from './chrome.mjs';
@@ -431,6 +433,18 @@ function seedDemoTrendHistory() {
   }
 }
 
+function seedDemoMonitoreoOnActivePatient() {
+  if (!guidedTourActive || guidedTourBranch === 'interconsulta') return;
+  var id = rt.getActiveId();
+  if (id !== DEMO_PATIENT_ID) return;
+  var p = patients.find(function (x) {
+    return x && x.id === DEMO_PATIENT_ID;
+  });
+  if (!p) return;
+  p.monitoreo = buildTourMonitoreoHistorial(new Date());
+  saveState();
+}
+
 function seedDemoListadoProblemas() {
   if (!guidedTourActive || rt.getActiveId() !== DEMO_PATIENT_ID) return;
   var today = new Date();
@@ -550,6 +564,9 @@ function applyTourTargetForStep(id) {
   if (id === 'listado_problemas') {
     seedDemoListadoProblemas();
   }
+  if (id === 'estado_actual') {
+    seedDemoMonitoreoOnActivePatient();
+  }
   if (t.appTab) rt.switchAppTab(t.appTab);
   if (t.innerTab) {
     rt.switchInnerTab(t.innerTab);
@@ -570,6 +587,16 @@ function applyTourTargetForStep(id) {
     if (typeof closeConnectionDropdown === 'function') closeConnectionDropdown();
   }
   if (id === 'sala_med') rt.renderMedRecetaPanel();
+  if (id === 'estado_actual' && guidedTourBranch !== 'interconsulta') {
+    setTimeout(function () {
+      if (!guidedTourActive || tourStepId !== 'estado_actual') return;
+      try {
+        renderEstadoActualPanel();
+      } catch (err) {
+        console.error('renderEstadoActualPanel tour:', err && err.message);
+      }
+    }, 160);
+  }
 
   if (id === 'sala_casiopea_lab') {
     closeLabSomeTablesModal();
@@ -775,8 +802,9 @@ function renderTourStep() {
       break;
     case 'estado_actual':
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">En <strong>Expediente → Clínico → Estado actual</strong> (<strong>Sala</strong>): signos vitales estructurados, <strong>glucometría</strong>, balance hídrico <strong>I/O</strong>, <strong>tendencias</strong> rápidas y confirmación contra la <strong>receta hospitalaria</strong>. Genera párrafo para la nota, <strong>Copiar</strong> o <strong>Guardar y copiar</strong>.</p>' +
-        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">El botón verde del encabezado abre la <strong>plantilla sin subjetivo</strong>. Cambia al segmento resaltado o pulsa <strong>Siguiente</strong>.</p>';
+        '<p style="margin:0;line-height:1.5;">En <strong>Clínico → Estado actual</strong> ves el monitoreo como en sala: <strong>snapshot</strong> (últimos SV, glu, balance), <strong>gráficas</strong> y texto para la nota. El demo trae datos de <strong>hoy</strong> (tres turnos de enfermería).</p>' +
+        '<p style="margin:10px 0 0;line-height:1.5;"><strong>Cómo lo reporta enfermería:</strong> en la hoja anotan por turno (TM ~08 h, TV ~16 h, TN ~24 h) T°, FC, FR, T/A y <strong>DEXT</strong> (glucometría), más <strong>ingresos</strong> (vía oral, IV, medicamentos) y <strong>egresos</strong> (diuresis). En R+: <strong>Registro manual</strong> = una toma por horario; <strong>Pegar monitoreo</strong> si traes texto de la hoja.</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Revisa el snapshot y las tendencias del demo. <strong>Siguiente</strong> para Eventualidades.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'listado_problemas':
@@ -1009,7 +1037,8 @@ function startOnboarding(branch, opts) {
     id: DEMO_PATIENT_ID, nombre: 'DEMO PÉREZ', registro: '0008421-7',
     edad: '67 años', sexo: 'M', area: 'SERVICIO DEMO',
     servicio: 'SERVICIO DEMO', cuarto: '101', cama: '1',
-    fromLab: false, isDemo: true
+    fromLab: false, isDemo: true,
+    monitoreo: buildTourMonitoreoHistorial(today),
   };
   var demoPatient2 = {
     id: DEMO_PATIENT_ID_2, nombre: 'DEMO GARCÍA', registro: '0007755-3',

@@ -50,7 +50,7 @@ Versión centrada en **ingreso en Sala**: formulario institucional de **Historia
 
 ### Onboarding (Aprender R+)
 
-- **Tutorial reorganizado** — Recorrido lab-first con hub **Aprender R+**, pausa/reanudación por capítulos y módulo Neo opcional. Clínico en orden **Historia → Estado actual → Eventualidades**; pasos nuevos **VPO**, **Receta HU** y **Agenda** (22 pasos Sala).
+- **Tutorial reorganizado** — Recorrido lab-first con hub **Aprender R+**, pausa/reanudación por capítulos y módulo Neo opcional. Clínico en orden **Historia → Estado actual → Eventualidades**; pasos **VPO**, **Receta HU** y **Agenda** (22 pasos). Demo **Estado actual** con monitoreo de hoy (turnos enfermería) y gráficas.
 
 ## Regresión
 
