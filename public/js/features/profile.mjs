@@ -13,6 +13,7 @@ import {
   syncHardwareAccelerationUI,
   syncIdleLockSelectUi,
   syncPreimportBackupUi,
+  syncDbSecuritySectionUi,
 } from "./platform.mjs";
 import { syncApprovedOutputDir } from "../document-export-client.mjs";
 import {
@@ -294,6 +295,7 @@ export function loadSettings() {
   syncHideListadoProblemasAiPromptUI();
   ensureClinicoTabConsistency();
   syncIdleLockSelectUi();
+  syncDbSecuritySectionUi();
   syncPreimportBackupUi();
   if (typeof syncSettingsLanHostDiskSection === "function") syncSettingsLanHostDiskSection();
   syncCensoExportButtonVisibility();

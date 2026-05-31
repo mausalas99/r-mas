@@ -1,5 +1,6 @@
 import { storage } from './storage.js';
 import { isDbMode } from './db-storage-bridge.mjs';
+import { waitForDbUnlock, dbUnlockWindowHandlers } from './features/db-unlock.mjs';
 import { bootHydrateFromDb, initAppState, patients, setSaveStateHooks, flushSaveState } from './app-state.mjs';
 import { recoverPresentationPatientsOnBoot } from './presentation-mode.mjs';
 import './censo-export.mjs';
@@ -55,6 +56,7 @@ import { initRpcDatePicker } from './rpc-date-picker.mjs';
 
 const allWindowHandlers = Object.assign(
   {},
+  dbUnlockWindowHandlers,
   chromeWindowHandlers,
   lanWindowHandlers,
   patientsWindowHandlers,
@@ -88,6 +90,10 @@ try {
 
 const appStateReady = (async function loadClinicalStateOnBoot() {
   if (isDbMode()) {
+    const unlockResult = await waitForDbUnlock();
+    if (!unlockResult || !unlockResult.unlocked) {
+      throw new Error('DB_LOCKED');
+    }
     await bootHydrateFromDb();
   } else {
     initAppState();

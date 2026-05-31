@@ -1,23 +1,49 @@
 {
   "inputs": {
     "public/js/storage-quota.mjs": {
-      "bytes": 2533,
+      "bytes": 2626,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/db-storage-bridge.mjs": {
+      "bytes": 3713,
       "imports": [],
       "format": "esm"
     },
     "public/js/storage.js": {
-      "bytes": 23059,
+      "bytes": 27143,
       "imports": [
         {
           "path": "public/js/storage-quota.mjs",
           "kind": "import-statement",
           "original": "./storage-quota.mjs"
+        },
+        {
+          "path": "public/js/db-storage-bridge.mjs",
+          "kind": "import-statement",
+          "original": "./db-storage-bridge.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/features/db-unlock.mjs": {
+      "bytes": 6415,
+      "imports": [
+        {
+          "path": "public/js/db-storage-bridge.mjs",
+          "kind": "import-statement",
+          "original": "../db-storage-bridge.mjs"
         }
       ],
       "format": "esm"
     },
     "public/js/med-receta-core.mjs": {
       "bytes": 22540,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/med-pharm-some-catalog.mjs": {
+      "bytes": 6432,
       "imports": [],
       "format": "esm"
     },
@@ -132,7 +158,7 @@
       "format": "esm"
     },
     "public/js/app-state.mjs": {
-      "bytes": 5651,
+      "bytes": 6362,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -143,6 +169,11 @@
           "path": "public/js/med-receta-core.mjs",
           "kind": "import-statement",
           "original": "./med-receta-core.mjs"
+        },
+        {
+          "path": "public/js/med-pharm-some-catalog.mjs",
+          "kind": "import-statement",
+          "original": "./med-pharm-some-catalog.mjs"
         },
         {
           "path": "public/js/lab-history-repair.mjs",
@@ -168,7 +199,7 @@
       "format": "esm"
     },
     "public/js/labs.js": {
-      "bytes": 119947,
+      "bytes": 120098,
       "imports": [
         {
           "path": "public/js/clinical-product-policy.mjs",
@@ -880,7 +911,7 @@
       "format": "esm"
     },
     "public/js/features/lan-sync.mjs": {
-      "bytes": 119056,
+      "bytes": 119435,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -1760,12 +1791,22 @@
       "format": "esm"
     },
     "public/js/features/platform.mjs": {
-      "bytes": 76789,
+      "bytes": 83700,
       "imports": [
         {
           "path": "public/js/storage.js",
           "kind": "import-statement",
           "original": "../storage.js"
+        },
+        {
+          "path": "public/js/db-storage-bridge.mjs",
+          "kind": "import-statement",
+          "original": "../db-storage-bridge.mjs"
+        },
+        {
+          "path": "public/js/features/db-unlock.mjs",
+          "kind": "import-statement",
+          "original": "./db-unlock.mjs"
         },
         {
           "path": "public/js/update-helpers.mjs",
@@ -1781,6 +1822,11 @@
           "path": "public/js/med-receta-core.mjs",
           "kind": "import-statement",
           "original": "../med-receta-core.mjs"
+        },
+        {
+          "path": "public/js/med-pharm-some-catalog.mjs",
+          "kind": "import-statement",
+          "original": "../med-pharm-some-catalog.mjs"
         },
         {
           "path": "public/js/features/settings-help.mjs",
@@ -1848,7 +1894,7 @@
       "format": "esm"
     },
     "public/js/features/profile.mjs": {
-      "bytes": 22759,
+      "bytes": 22815,
       "imports": [
         {
           "path": "public/js/features/chrome.mjs",
@@ -2711,7 +2757,7 @@
       "format": "esm"
     },
     "public/js/ui-tab-motion.mjs": {
-      "bytes": 7122,
+      "bytes": 7597,
       "imports": [
         {
           "path": "public/js/ui-motion.mjs",
@@ -3587,8 +3633,45 @@
       ],
       "format": "esm"
     },
+    "public/js/med-pharm-profile-core.mjs": {
+      "bytes": 10672,
+      "imports": [
+        {
+          "path": "public/js/med-pharm-some-catalog.mjs",
+          "kind": "import-statement",
+          "original": "./med-pharm-some-catalog.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/features/med-pharm-profile-panel.mjs": {
+      "bytes": 27309,
+      "imports": [
+        {
+          "path": "public/js/app-state.mjs",
+          "kind": "import-statement",
+          "original": "../app-state.mjs"
+        },
+        {
+          "path": "public/js/med-pharm-some-catalog.mjs",
+          "kind": "import-statement",
+          "original": "../med-pharm-some-catalog.mjs"
+        },
+        {
+          "path": "public/js/med-pharm-profile-core.mjs",
+          "kind": "import-statement",
+          "original": "../med-pharm-profile-core.mjs"
+        },
+        {
+          "path": "public/js/ui-tab-motion.mjs",
+          "kind": "import-statement",
+          "original": "../ui-tab-motion.mjs"
+        }
+      ],
+      "format": "esm"
+    },
     "public/js/features/medications.mjs": {
-      "bytes": 17549,
+      "bytes": 18197,
       "imports": [
         {
           "path": "public/js/med-receta-core.mjs",
@@ -3639,6 +3722,11 @@
           "path": "public/js/features/pase-board.mjs",
           "kind": "import-statement",
           "original": "./pase-board.mjs"
+        },
+        {
+          "path": "public/js/features/med-pharm-profile-panel.mjs",
+          "kind": "import-statement",
+          "original": "./med-pharm-profile-panel.mjs"
         }
       ],
       "format": "esm"
@@ -3946,7 +4034,7 @@
       "format": "esm"
     },
     "public/js/app-shell.mjs": {
-      "bytes": 33625,
+      "bytes": 33631,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -4112,7 +4200,7 @@
       "format": "esm"
     },
     "public/js/app-runtimes.mjs": {
-      "bytes": 22797,
+      "bytes": 23021,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -4373,12 +4461,22 @@
       "format": "esm"
     },
     "public/js/app.js": {
-      "bytes": 7769,
+      "bytes": 8772,
       "imports": [
         {
           "path": "public/js/storage.js",
           "kind": "import-statement",
           "original": "./storage.js"
+        },
+        {
+          "path": "public/js/db-storage-bridge.mjs",
+          "kind": "import-statement",
+          "original": "./db-storage-bridge.mjs"
+        },
+        {
+          "path": "public/js/features/db-unlock.mjs",
+          "kind": "import-statement",
+          "original": "./features/db-unlock.mjs"
         },
         {
           "path": "public/js/app-state.mjs",
@@ -4534,7 +4632,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 3882835
+      "bytes": 3996818
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -4542,13 +4640,22 @@
       "entryPoint": "public/js/app.js",
       "inputs": {
         "public/js/storage-quota.mjs": {
-          "bytesInOutput": 1824
+          "bytesInOutput": 1872
+        },
+        "public/js/db-storage-bridge.mjs": {
+          "bytesInOutput": 1684
         },
         "public/js/storage.js": {
-          "bytesInOutput": 21566
+          "bytesInOutput": 25144
+        },
+        "public/js/features/db-unlock.mjs": {
+          "bytesInOutput": 5891
         },
         "public/js/med-receta-core.mjs": {
           "bytesInOutput": 20487
+        },
+        "public/js/med-pharm-some-catalog.mjs": {
+          "bytesInOutput": 5733
         },
         "public/js/lab-history-repair.mjs": {
           "bytesInOutput": 892
@@ -4584,13 +4691,13 @@
           "bytesInOutput": 5396
         },
         "public/js/app-state.mjs": {
-          "bytesInOutput": 4525
+          "bytesInOutput": 4987
         },
         "public/js/clinical-product-policy.mjs": {
           "bytesInOutput": 859
         },
         "public/js/labs.js": {
-          "bytesInOutput": 112038
+          "bytesInOutput": 112101
         },
         "public/js/features/diagrams-parse.mjs": {
           "bytesInOutput": 3028
@@ -4692,7 +4799,7 @@
           "bytesInOutput": 58323
         },
         "public/js/rpc-date-picker.mjs": {
-          "bytesInOutput": 11166
+          "bytesInOutput": 11171
         },
         "public/js/patient-data-accesos-ui.mjs": {
           "bytesInOutput": 4036
@@ -4761,7 +4868,7 @@
           "bytesInOutput": 4082
         },
         "public/js/features/lan-sync.mjs": {
-          "bytesInOutput": 114791
+          "bytesInOutput": 115146
         },
         "public/js/update-helpers.mjs": {
           "bytesInOutput": 635
@@ -4863,7 +4970,7 @@
           "bytesInOutput": 4275
         },
         "public/js/features/platform.mjs": {
-          "bytesInOutput": 67947
+          "bytesInOutput": 74325
         },
         "public/js/clinico-access.mjs": {
           "bytesInOutput": 2344
@@ -4872,7 +4979,7 @@
           "bytesInOutput": 14018
         },
         "public/js/features/profile.mjs": {
-          "bytesInOutput": 19865
+          "bytesInOutput": 19894
         },
         "public/js/features/expediente.mjs": {
           "bytesInOutput": 43971
@@ -4947,7 +5054,7 @@
           "bytesInOutput": 3041
         },
         "public/js/features/manejo-guia-context.mjs": {
-          "bytesInOutput": 852
+          "bytesInOutput": 856
         },
         "public/js/features/manejo-electrolitos.mjs": {
           "bytesInOutput": 14463
@@ -4989,7 +5096,7 @@
           "bytesInOutput": 2969
         },
         "public/js/ui-tab-motion.mjs": {
-          "bytesInOutput": 6751
+          "bytesInOutput": 7217
         },
         "public/js/features/manejo.mjs": {
           "bytesInOutput": 10762
@@ -5097,7 +5204,7 @@
           "bytesInOutput": 9386
         },
         "public/js/vpo-periop-meds.mjs": {
-          "bytesInOutput": 3009
+          "bytesInOutput": 3011
         },
         "public/js/vpo-text.mjs": {
           "bytesInOutput": 3510
@@ -5112,10 +5219,16 @@
           "bytesInOutput": 24416
         },
         "public/js/features/pase-board.mjs": {
-          "bytesInOutput": 37951
+          "bytesInOutput": 37956
+        },
+        "public/js/med-pharm-profile-core.mjs": {
+          "bytesInOutput": 10295
+        },
+        "public/js/features/med-pharm-profile-panel.mjs": {
+          "bytesInOutput": 25709
         },
         "public/js/features/medications.mjs": {
-          "bytesInOutput": 15648
+          "bytesInOutput": 16017
         },
         "public/js/patient-validation.mjs": {
           "bytesInOutput": 983
@@ -5154,16 +5267,16 @@
           "bytesInOutput": 16114
         },
         "public/js/app-shell.mjs": {
-          "bytesInOutput": 29205
+          "bytesInOutput": 29211
         },
         "public/js/app-runtimes.mjs": {
-          "bytesInOutput": 13409
+          "bytesInOutput": 13605
         },
         "public/js/app.js": {
-          "bytesInOutput": 4817
+          "bytesInOutput": 5622
         }
       },
-      "bytes": 2129901
+      "bytes": 2192190
     }
   }
 }

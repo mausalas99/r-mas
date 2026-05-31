@@ -378,6 +378,29 @@
   </div>
 </div>
 
+<div id="rpc-db-unlock-overlay" role="dialog" aria-modal="true" aria-labelledby="rpc-db-unlock-title" aria-hidden="true">
+  <div class="rpc-db-unlock-panel">
+    <h2 id="rpc-db-unlock-title">Desbloquear base de datos</h2>
+    <p id="rpc-db-unlock-hint">Ingresa la contraseña maestra de la base de datos clínica en este equipo.</p>
+    <p id="rpc-db-unlock-rate-limited" class="rpc-db-unlock-rate-limited" role="alert" style="display:none;">Demasiados intentos fallidos. Espera unos minutos antes de volver a intentar.</p>
+    <label class="profile-field-label" for="rpc-db-unlock-pass">Contraseña maestra</label>
+    <input id="rpc-db-unlock-pass" type="password" autocomplete="new-password" placeholder="Contraseña" aria-required="true">
+    <div id="rpc-db-unlock-confirm-wrap">
+      <label class="profile-field-label" for="rpc-db-unlock-confirm">Confirmar contraseña</label>
+      <input id="rpc-db-unlock-confirm" type="password" autocomplete="new-password" placeholder="Repite la contraseña" aria-required="true">
+    </div>
+    <label class="rpc-db-unlock-remember" for="rpc-db-unlock-remember">
+      <input type="checkbox" id="rpc-db-unlock-remember">
+      <span>Recordar en este dispositivo</span>
+    </label>
+    <p class="settings-acc-hint settings-acc-hint--tight">Si activas recordar, la clave se guarda cifrada con el llavero del sistema (safeStorage). No compartas este equipo sin bloqueo de sesión.</p>
+    <div class="rpc-db-unlock-error" id="rpc-db-unlock-error" role="alert"></div>
+    <div class="rpc-db-unlock-actions">
+      <button type="button" class="btn-unlock" id="rpc-db-unlock-submit" onclick="submitDbUnlockPassphrase()">Desbloquear</button>
+    </div>
+  </div>
+</div>
+
 <div id="rpc-idle-lock-overlay" role="dialog" aria-modal="true" aria-labelledby="rpc-idle-lock-title" aria-hidden="true">
   <div class="rpc-idle-lock-panel">
     <h2 id="rpc-idle-lock-title">R+ está bloqueado</h2>

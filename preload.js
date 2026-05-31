@@ -104,6 +104,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbAuditVerify: function(opts) {
     return ipcRenderer.invoke('db:audit-verify', opts);
   },
+  dbAuditExport: function(opts) {
+    return ipcRenderer.invoke('db:audit-export', opts);
+  },
   dbBackupExportJson: function() {
     return ipcRenderer.invoke('db:backup-export-json');
   },

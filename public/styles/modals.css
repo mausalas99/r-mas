@@ -607,6 +607,54 @@ html.dark .release-notes-modal { background: var(--surface); color: var(--text);
   animation: confetti-fall 2.5s ease-in forwards;
   pointer-events: none; z-index: 99999;
 }
+/* ── Desbloqueo SQLCipher ──────────────────────────────────── */
+#rpc-db-unlock-overlay {
+  display: none; position: fixed; inset: 0; z-index: 350000;
+  background: rgba(15,23,42,0.92);
+  align-items: center; justify-content: center; padding: 24px;
+}
+html.dark #rpc-db-unlock-overlay { background: rgba(0,0,0,0.88); }
+body.rpc-db-unlock-active { overflow: hidden; }
+.rpc-db-unlock-panel {
+  background: var(--surface); color: var(--text);
+  border-radius: 16px; max-width: 420px; width: 100%;
+  padding: 26px 24px 22px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4);
+  border: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.rpc-db-unlock-panel h2 { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; margin: 0; }
+.rpc-db-unlock-panel p { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin: 0; }
+.rpc-db-unlock-rate-limited {
+  font-size: 12px; color: var(--error);
+  background: rgba(220,38,38,0.08); padding: 8px 10px; border-radius: 6px;
+}
+.rpc-db-unlock-panel input[type="password"] {
+  border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px;
+  font-size: 15px; font-family: inherit; color: var(--text);
+  background: var(--bg); width: 100%; box-sizing: border-box;
+}
+.rpc-db-unlock-panel input:focus {
+  outline: none; border-color: var(--action);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.18);
+}
+.rpc-db-unlock-remember {
+  display: flex; align-items: flex-start; gap: 8px;
+  font-size: 13px; color: var(--text); cursor: pointer; margin-top: 4px;
+}
+.rpc-db-unlock-remember input { flex-shrink: 0; margin-top: 2px; }
+.rpc-db-unlock-error {
+  display: none; font-size: 12px; color: var(--error);
+  background: rgba(220,38,38,0.08); padding: 6px 10px; border-radius: 6px;
+}
+.rpc-db-unlock-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+.rpc-db-unlock-actions .btn-unlock {
+  background: var(--action); color: white; border: none;
+  border-radius: 8px; padding: 9px 18px; font-size: 14px;
+  font-weight: 700; font-family: inherit; cursor: pointer;
+}
+.rpc-db-unlock-actions .btn-unlock:hover { background: var(--action-hover); }
+.rpc-db-unlock-actions .btn-unlock:disabled { opacity: 0.55; cursor: not-allowed; }
+
 /* ── Bloqueo por inactividad ───────────────────────────────── */
 #rpc-idle-lock-overlay {
   display: none; position: fixed; inset: 0; z-index: 300000;

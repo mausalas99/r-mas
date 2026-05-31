@@ -11,7 +11,7 @@ function estimateJsonBytes(value) {
 }
 function estimateRpcPersistBytes(data) {
   var d = data || {};
-  return estimateJsonBytes(d.patients) + estimateJsonBytes(d.notes) + estimateJsonBytes(d.indicaciones) + estimateJsonBytes(d.labHistory) + estimateJsonBytes(d.medRecetaByPatient) + estimateJsonBytes(d.listadoProblemas) + estimateJsonBytes(d.recetaHuByPatient) + estimateJsonBytes(d.vpoByPatient);
+  return estimateJsonBytes(d.patients) + estimateJsonBytes(d.notes) + estimateJsonBytes(d.indicaciones) + estimateJsonBytes(d.labHistory) + estimateJsonBytes(d.medRecetaByPatient) + estimateJsonBytes(d.medPharmProfileByPatient) + estimateJsonBytes(d.listadoProblemas) + estimateJsonBytes(d.recetaHuByPatient) + estimateJsonBytes(d.vpoByPatient);
 }
 async function readStorageQuotaEstimate() {
   try {
@@ -42,7 +42,58 @@ function isQuotaExceededError(err) {
   return err.name === "QuotaExceededError" || err.code === 22 || err.code === 1014 || /quota/i.test(String(err.message || ""));
 }
 
+// public/js/db-storage-bridge.mjs
+var APP_FIELD_TO_BLOB = {
+  patients: "patients",
+  notes: "notes",
+  indicaciones: "indicaciones",
+  labHistory: "labHistory",
+  medRecetaByPatient: "medRecetaByPatient",
+  listadoProblemas: "listadoProblemas",
+  recetaHuByPatient: "recetaHuByPatient",
+  vpoByPatient: "vpoByPatient",
+  medPharmProfileByPatient: "medPharmProfileByPatient",
+  medCatalog: "medCatalog",
+  todos: "todos",
+  scheduledProcedures: "scheduledProcedures",
+  lanRoomSnapshots: "lanRoomSnapshots",
+  lanHostPatientMap: "lanHostPatientMap"
+};
+function isDbMode() {
+  return !!(typeof window !== "undefined" && window.electronAPI && typeof window.electronAPI.dbClinicalLoadAll === "function");
+}
+async function hydrateStorageCache() {
+  const res = await window.electronAPI.dbClinicalLoadAll();
+  if (!res || res.ok === false) {
+    const err = new Error(res?.code || res?.error || "DB_LOAD_FAILED");
+    err.code = res?.code || "DB_LOAD_FAILED";
+    throw err;
+  }
+  return res.blobs && typeof res.blobs === "object" ? res.blobs : {};
+}
+function appStateFieldsToBlobs(fields) {
+  const blobs = {};
+  if (!fields || typeof fields !== "object") return blobs;
+  for (const [field, blobKey] of Object.entries(APP_FIELD_TO_BLOB)) {
+    if (fields[field] === void 0) continue;
+    blobs[blobKey] = JSON.stringify(fields[field]);
+  }
+  return blobs;
+}
+async function persistSaveAll(fields, auditMeta) {
+  const blobs = appStateFieldsToBlobs(fields);
+  const payload = {
+    blobs,
+    auditMeta: auditMeta && typeof auditMeta === "object" ? auditMeta : {}
+  };
+  if (!payload.auditMeta.eventType) {
+    payload.auditMeta.eventType = "clinical.save_all";
+  }
+  return window.electronAPI.dbClinicalSaveAll(payload);
+}
+
 // public/js/storage.js
+var _blobCache = null;
 var _cachedQuotaEstimate = null;
 var _quotaEstimateTs = 0;
 var QUOTA_CACHE_MS = 15e3;
@@ -80,6 +131,35 @@ function safeParseArray(raw) {
 function safeParseObject(raw) {
   var parsed = safeParse(raw, {});
   return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+}
+function blobCacheRaw(blobKey) {
+  if (!_blobCache) return void 0;
+  var raw = _blobCache[blobKey];
+  if (raw == null) return null;
+  return typeof raw === "string" ? raw : JSON.stringify(raw);
+}
+function readClinicalBlob(blobKey, lsKey, parseFromRaw) {
+  if (_blobCache) {
+    return parseFromRaw(blobCacheRaw(blobKey));
+  }
+  return parseFromRaw(localStorage.getItem(lsKey));
+}
+async function ensureStorageHydrated() {
+  if (!isDbMode()) return;
+  if (_blobCache) return;
+  if (typeof window !== "undefined" && window.electronAPI && typeof window.electronAPI.dbStatus === "function") {
+    try {
+      var st = await window.electronAPI.dbStatus();
+      if (st && st.state === "locked") return;
+    } catch (_e) {
+      return;
+    }
+  }
+  try {
+    _blobCache = await hydrateStorageCache();
+  } catch (_e) {
+    _blobCache = null;
+  }
 }
 function isMeaningfulLabHistorySet(set) {
   if (!set || typeof set !== "object") return false;
@@ -193,7 +273,7 @@ var storage = {
    * @returns {Array} Array of patient objects
    */
   getPatients() {
-    return safeParseArray(localStorage.getItem("rpc-patients"));
+    return readClinicalBlob("patients", "rpc-patients", safeParseArray);
   },
   /**
    * Save patients to localStorage (filters out demo patients)
@@ -208,7 +288,7 @@ var storage = {
    * @returns {Object} Object mapping patient IDs to note text
    */
   getNotes() {
-    return safeParseObject(localStorage.getItem("rpc-notes"));
+    return readClinicalBlob("notes", "rpc-notes", safeParseObject);
   },
   /**
    * Save notes to localStorage (filters out demo patient notes)
@@ -226,7 +306,7 @@ var storage = {
    * @returns {Object} Object mapping patient IDs to indicaciones text
    */
   getIndicaciones() {
-    return safeParseObject(localStorage.getItem("rpc-indicaciones"));
+    return readClinicalBlob("indicaciones", "rpc-indicaciones", safeParseObject);
   },
   /**
    * Save indicaciones to localStorage (filters out demo patient indicaciones)
@@ -244,7 +324,7 @@ var storage = {
    * @returns {Object} Object mapping patient IDs to listado objects
    */
   getListadoProblemas() {
-    return safeParseObject(localStorage.getItem("rpc-listado-problemas"));
+    return readClinicalBlob("listadoProblemas", "rpc-listado-problemas", safeParseObject);
   },
   /**
    * Save listado de problemas (v3.0) to localStorage (filters out demo)
@@ -262,7 +342,7 @@ var storage = {
    * @returns {Object} Object mapping patient IDs to arrays of lab entries
    */
   getLabHistory() {
-    var raw = safeParseObject(localStorage.getItem("rpc-labHistory"));
+    var raw = readClinicalBlob("labHistory", "rpc-labHistory", safeParseObject);
     var out = {};
     Object.keys(raw).forEach(function(k) {
       out[k] = normalizeLabHistoryPatientSets(raw[k]);
@@ -283,7 +363,7 @@ var storage = {
     localStorage.setItem("rpc-labHistory", JSON.stringify(lhPersist));
   },
   getMedRecetaByPatient() {
-    return safeParseObject(localStorage.getItem("rpc-medRecetaByPatient"));
+    return readClinicalBlob("medRecetaByPatient", "rpc-medRecetaByPatient", safeParseObject);
   },
   saveMedRecetaByPatient(medRecetaByPatient2) {
     const persist = {};
@@ -292,8 +372,20 @@ var storage = {
     });
     localStorage.setItem("rpc-medRecetaByPatient", JSON.stringify(persist));
   },
+  getMedPharmProfileByPatient() {
+    return readClinicalBlob("medPharmProfileByPatient", "rpc-medPharmProfileByPatient", safeParseObject);
+  },
+  saveMedPharmProfileByPatient(medPharmProfileByPatient2) {
+    const persist = {};
+    Object.keys(medPharmProfileByPatient2 || {}).forEach((k) => {
+      if (medPharmProfileByPatient2[k] && !k.startsWith("demo-")) {
+        persist[k] = medPharmProfileByPatient2[k];
+      }
+    });
+    localStorage.setItem("rpc-medPharmProfileByPatient", JSON.stringify(persist));
+  },
   getVpoByPatient() {
-    return safeParseObject(localStorage.getItem("rpc-vpoByPatient"));
+    return readClinicalBlob("vpoByPatient", "rpc-vpoByPatient", safeParseObject);
   },
   saveVpoByPatient(vpoByPatient2) {
     const persist = {};
@@ -303,7 +395,7 @@ var storage = {
     localStorage.setItem("rpc-vpoByPatient", JSON.stringify(persist));
   },
   getRecetaHuByPatient() {
-    return safeParseObject(localStorage.getItem("rpc-recetaHuByPatient"));
+    return readClinicalBlob("recetaHuByPatient", "rpc-recetaHuByPatient", safeParseObject);
   },
   saveRecetaHuByPatient(recetaHuByPatient2) {
     const persist = {};
@@ -318,7 +410,7 @@ var storage = {
    * @returns {Array<{id:string,text:string,completed:boolean,priority:'alta'|'media'|'baja',createdAt:string,updatedAt:string}>}
    */
   getTodos(patientId) {
-    const map = safeParseObject(localStorage.getItem("rpc-todos"));
+    const map = readClinicalBlob("todos", "rpc-todos", safeParseObject);
     const raw = Array.isArray(map[patientId]) ? map[patientId] : [];
     return raw.map(function(t2) {
       var rawP = t2 && t2.priority;
@@ -361,7 +453,7 @@ var storage = {
     localStorage.setItem("rpc-todos", JSON.stringify(map));
   },
   getLanRoomSnapshots() {
-    return safeParseObject(localStorage.getItem("rpc-lan-room-snapshots"));
+    return readClinicalBlob("lanRoomSnapshots", "rpc-lan-room-snapshots", safeParseObject);
   },
   getLanRoomSnapshot(roomId) {
     const all = this.getLanRoomSnapshots();
@@ -376,12 +468,16 @@ var storage = {
     localStorage.setItem("rpc-lan-room-snapshots", JSON.stringify(all));
   },
   /**
-   * Catálogo personalizado de medicamentos (acentos + tokens SOAP por categoría).
-   * @returns {{ v: number, accents: Object, soapTokens: { vasop: string[], abx: string[], analgesia: string[], antihta: string[] } }}
+   * Catálogo personalizado de medicamentos (acentos + tokens SOAP + categorías SOME perfil).
+   * @returns {{ v: number, accents: Object, soapTokens: Object, somePharm: { tokens: Object } }}
    */
   getMedCatalog() {
-    const o = safeParseObject(localStorage.getItem("rpc-medCatalog"));
+    const o = readClinicalBlob("medCatalog", "rpc-medCatalog", function(raw) {
+      return safeParseObject(raw);
+    });
     const st = o.soapTokens && typeof o.soapTokens === "object" ? o.soapTokens : {};
+    const sp = o.somePharm && typeof o.somePharm === "object" ? o.somePharm : {};
+    const spt = sp.tokens && typeof sp.tokens === "object" ? sp.tokens : {};
     return {
       v: typeof o.v === "number" ? o.v : 1,
       accents: o.accents && typeof o.accents === "object" ? o.accents : {},
@@ -390,7 +486,8 @@ var storage = {
         abx: Array.isArray(st.abx) ? st.abx : [],
         analgesia: Array.isArray(st.analgesia) ? st.analgesia : [],
         antihta: Array.isArray(st.antihta) ? st.antihta : []
-      }
+      },
+      somePharm: { tokens: spt }
     };
   },
   /**
@@ -399,6 +496,8 @@ var storage = {
   saveMedCatalog(catalog) {
     const c = catalog && typeof catalog === "object" ? catalog : {};
     const st = c.soapTokens && typeof c.soapTokens === "object" ? c.soapTokens : {};
+    const sp = c.somePharm && typeof c.somePharm === "object" ? c.somePharm : {};
+    const spt = sp.tokens && typeof sp.tokens === "object" ? sp.tokens : {};
     const payload = {
       v: 1,
       accents: c.accents && typeof c.accents === "object" ? c.accents : {},
@@ -407,7 +506,8 @@ var storage = {
         abx: Array.isArray(st.abx) ? st.abx : [],
         analgesia: Array.isArray(st.analgesia) ? st.analgesia : [],
         antihta: Array.isArray(st.antihta) ? st.antihta : []
-      }
+      },
+      somePharm: { tokens: spt }
     };
     localStorage.setItem("rpc-medCatalog", JSON.stringify(payload));
   },
@@ -416,7 +516,7 @@ var storage = {
    * @returns {Array<Object>}
    */
   getScheduledProcedures() {
-    const raw = safeParseArray(localStorage.getItem("rpc-scheduled-procedures"));
+    const raw = readClinicalBlob("scheduledProcedures", "rpc-scheduled-procedures", safeParseArray);
     const out = [];
     const seen = /* @__PURE__ */ new Set();
     for (let i = 0; i < raw.length; i += 1) {
@@ -513,7 +613,7 @@ var storage = {
     localStorage.setItem("rpc-lan-config", JSON.stringify(cfg));
   },
   getHostPatientMap() {
-    return safeParseObject(localStorage.getItem("rpc-lan-host-patient-map"));
+    return readClinicalBlob("lanHostPatientMap", "rpc-lan-host-patient-map", safeParseObject);
   },
   saveHostPatientMap(map) {
     localStorage.setItem("rpc-lan-host-patient-map", JSON.stringify(map || {}));
@@ -558,7 +658,7 @@ var storage = {
   /**
    * @returns {Promise<{ ok: boolean, code?: string, level?: string }>}
    */
-  async saveAll(patients2, notes2, indicaciones2, labHistory2, medRecetaByPatient2, listadoProblemas2, recetaHuByPatient2, vpoByPatient2) {
+  async saveAll(patients2, notes2, indicaciones2, labHistory2, medRecetaByPatient2, listadoProblemas2, recetaHuByPatient2, vpoByPatient2, medPharmProfileByPatient2) {
     var payload = {
       patients: patients2,
       notes: notes2,
@@ -567,7 +667,8 @@ var storage = {
       medRecetaByPatient: medRecetaByPatient2 || {},
       listadoProblemas: listadoProblemas2 !== void 0 ? listadoProblemas2 || {} : void 0,
       recetaHuByPatient: recetaHuByPatient2 !== void 0 ? recetaHuByPatient2 || {} : void 0,
-      vpoByPatient: vpoByPatient2 !== void 0 ? vpoByPatient2 || {} : void 0
+      vpoByPatient: vpoByPatient2 !== void 0 ? vpoByPatient2 || {} : void 0,
+      medPharmProfileByPatient: medPharmProfileByPatient2 !== void 0 ? medPharmProfileByPatient2 || {} : void 0
     };
     var pending2 = estimateRpcPersistBytes(payload);
     var quotaInfo = await getCachedQuotaEstimate();
@@ -593,6 +694,12 @@ var storage = {
     Object.keys(medRecetaByPatient2 || {}).forEach(function(k) {
       if (!k.startsWith("demo-")) medPersist[k] = medRecetaByPatient2[k];
     });
+    var medPharmPersist = {};
+    if (medPharmProfileByPatient2 !== void 0) {
+      Object.keys(medPharmProfileByPatient2 || {}).forEach(function(k) {
+        if (!k.startsWith("demo-")) medPharmPersist[k] = medPharmProfileByPatient2[k];
+      });
+    }
     var listPersist = {};
     if (listadoProblemas2 !== void 0) {
       Object.keys(listadoProblemas2 || {}).forEach(function(k) {
@@ -614,6 +721,36 @@ var storage = {
     var filteredPatients = patients2.filter(function(p) {
       return !p.isDemo;
     });
+    if (isDbMode()) {
+      var dbFields = {
+        patients: filteredPatients,
+        notes: notesPersist,
+        indicaciones: indPersist,
+        labHistory: lhPersist,
+        medRecetaByPatient: medPersist
+      };
+      if (medPharmProfileByPatient2 !== void 0) {
+        dbFields.medPharmProfileByPatient = medPharmPersist;
+      }
+      if (listadoProblemas2 !== void 0) {
+        dbFields.listadoProblemas = listPersist;
+      }
+      if (recetaHuByPatient2 !== void 0) {
+        dbFields.recetaHuByPatient = recetaPersist;
+      }
+      if (vpoByPatient2 !== void 0) {
+        dbFields.vpoByPatient = vpoPersist;
+      }
+      var dbRes = await persistSaveAll(dbFields, {
+        meta: { source: "storage.saveAll", level }
+      });
+      if (!dbRes || dbRes.ok === false) {
+        return { ok: false, code: dbRes && dbRes.code ? dbRes.code : "DB_ERROR", level: "block" };
+      }
+      var writtenBlobs = appStateFieldsToBlobs(dbFields);
+      _blobCache = Object.assign({}, _blobCache || {}, writtenBlobs);
+      return { ok: true, level: level === "warn" ? "warn" : "ok" };
+    }
     var writes = [
       ["rpc-patients", JSON.stringify(filteredPatients)],
       ["rpc-notes", JSON.stringify(notesPersist)],
@@ -621,6 +758,9 @@ var storage = {
       ["rpc-labHistory", JSON.stringify(lhPersist)],
       ["rpc-medRecetaByPatient", JSON.stringify(medPersist)]
     ];
+    if (medPharmProfileByPatient2 !== void 0) {
+      writes.push(["rpc-medPharmProfileByPatient", JSON.stringify(medPharmPersist)]);
+    }
     if (listadoProblemas2 !== void 0) {
       writes.push(["rpc-listado-problemas", JSON.stringify(listPersist)]);
     }
@@ -637,6 +777,166 @@ var storage = {
     }
     return { ok: true, level: level === "warn" ? "warn" : "ok" };
   }
+};
+
+// public/js/features/db-unlock.mjs
+var unlockWaitResolve = null;
+function api() {
+  return typeof window !== "undefined" ? window.electronAPI : null;
+}
+function needsPassphraseConfirm(status) {
+  if (!status || typeof status !== "object") return true;
+  if (status.migrationPending) return true;
+  if (status.dbFileExists === false) return true;
+  return false;
+}
+function unlockErrorMessage(res) {
+  var code = res && res.code;
+  if (code === "AUTH_RATE_LIMITED") {
+    return "Demasiados intentos fallidos. Espera unos minutos e int\xE9ntalo de nuevo.";
+  }
+  if (code === "DB_UNLOCK_METADATA_MISSING") {
+    return "Faltan metadatos de cifrado en el perfil local. Contacta soporte o restaura un respaldo.";
+  }
+  if (code === "DB_UNLOCK_FAILED") {
+    return "Contrase\xF1a incorrecta. Verifica may\xFAsculas, espacios y vuelve a intentar.";
+  }
+  return res && (res.error || res.message) || "No se pudo desbloquear la base de datos.";
+}
+function setOverlayVisible(visible) {
+  var overlay = document.getElementById("rpc-db-unlock-overlay");
+  if (!overlay) return;
+  overlay.style.display = visible ? "flex" : "none";
+  overlay.setAttribute("aria-hidden", visible ? "false" : "true");
+  if (visible) {
+    document.body.classList.add("rpc-db-unlock-active");
+    var pass = document.getElementById("rpc-db-unlock-pass");
+    if (pass) {
+      pass.value = "";
+      pass.focus();
+    }
+  } else {
+    document.body.classList.remove("rpc-db-unlock-active");
+  }
+}
+function setUnlockError(msg) {
+  var err = document.getElementById("rpc-db-unlock-error");
+  if (!err) return;
+  if (msg) {
+    err.textContent = msg;
+    err.style.display = "block";
+  } else {
+    err.textContent = "";
+    err.style.display = "none";
+  }
+}
+function configureUnlockForm(status) {
+  var needsConfirm = needsPassphraseConfirm(status);
+  var confirmWrap = document.getElementById("rpc-db-unlock-confirm-wrap");
+  var confirmInput = document.getElementById("rpc-db-unlock-confirm");
+  if (confirmWrap) confirmWrap.style.display = needsConfirm ? "" : "none";
+  if (confirmInput) confirmInput.value = "";
+  var title = document.getElementById("rpc-db-unlock-title");
+  var hint = document.getElementById("rpc-db-unlock-hint");
+  if (title) {
+    title.textContent = needsConfirm ? "Protege tus datos cl\xEDnicos" : "Desbloquear base de datos";
+  }
+  if (hint) {
+    if (status && status.migrationPending) {
+      hint.textContent = "Hay datos locales por migrar a la base cifrada. Elige una contrase\xF1a maestra (m\xEDnimo 8 caracteres) y conf\xEDrmala.";
+    } else if (needsConfirm) {
+      hint.textContent = "Primera vez: crea una contrase\xF1a maestra para cifrar pacientes, notas y labs en este equipo (m\xEDnimo 8 caracteres).";
+    } else {
+      hint.textContent = "Ingresa la contrase\xF1a maestra de la base de datos cl\xEDnica en este equipo.";
+    }
+  }
+  var rate = document.getElementById("rpc-db-unlock-rate-limited");
+  if (rate) rate.style.display = status && status.rateLimited ? "block" : "none";
+  var submit = document.getElementById("rpc-db-unlock-submit");
+  if (submit) submit.disabled = !!(status && status.rateLimited);
+}
+async function waitForDbUnlock() {
+  if (!isDbMode()) return { unlocked: true };
+  var electron = api();
+  if (!electron || typeof electron.dbStatus !== "function") {
+    return { unlocked: true };
+  }
+  var status;
+  try {
+    status = await electron.dbStatus();
+  } catch (_e) {
+    return { unlocked: false };
+  }
+  if (!status || status.state === "unlocked") {
+    return { unlocked: true, status: status || {} };
+  }
+  return new Promise(function(resolve) {
+    unlockWaitResolve = resolve;
+    configureUnlockForm(status);
+    setUnlockError(status.rateLimited ? unlockErrorMessage({ code: "AUTH_RATE_LIMITED" }) : "");
+    setOverlayVisible(true);
+  });
+}
+async function submitDbUnlockPassphrase() {
+  var electron = api();
+  if (!electron || typeof electron.dbUnlock !== "function") return;
+  var passEl = document.getElementById("rpc-db-unlock-pass");
+  var confirmEl = document.getElementById("rpc-db-unlock-confirm");
+  var rememberEl = document.getElementById("rpc-db-unlock-remember");
+  var passphrase = passEl ? String(passEl.value || "") : "";
+  var remember = !!(rememberEl && rememberEl.checked);
+  var status = { migrationPending: false, dbFileExists: true };
+  try {
+    status = await electron.dbStatus();
+  } catch (_e) {
+  }
+  if (needsPassphraseConfirm(status)) {
+    var confirm2 = confirmEl ? String(confirmEl.value || "") : "";
+    if (passphrase.length < 8) {
+      setUnlockError("La contrase\xF1a debe tener al menos 8 caracteres.");
+      return;
+    }
+    if (passphrase !== confirm2) {
+      setUnlockError("La confirmaci\xF3n no coincide con la contrase\xF1a.");
+      return;
+    }
+  } else if (!passphrase) {
+    setUnlockError("Ingresa la contrase\xF1a maestra.");
+    return;
+  }
+  setUnlockError("");
+  var submitBtn = document.getElementById("rpc-db-unlock-submit");
+  if (submitBtn) submitBtn.disabled = true;
+  try {
+    var res = await electron.dbUnlock({ passphrase, remember });
+    if (!res || res.ok === false) {
+      setUnlockError(unlockErrorMessage(res || {}));
+      if (submitBtn) submitBtn.disabled = !!(status && status.rateLimited);
+      try {
+        var st2 = await electron.dbStatus();
+        configureUnlockForm(st2);
+      } catch (_e2) {
+      }
+      return;
+    }
+    setOverlayVisible(false);
+    if (unlockWaitResolve) {
+      var done = unlockWaitResolve;
+      unlockWaitResolve = null;
+      done({ unlocked: true, status: res });
+    }
+  } catch (err) {
+    setUnlockError(err && err.message || "Error al desbloquear.");
+    if (submitBtn) submitBtn.disabled = false;
+  }
+}
+function syncDbSecuritySectionUi() {
+  var section = document.getElementById("settings-accordion-db-security");
+  if (!section) return;
+  section.style.display = isDbMode() ? "" : "none";
+}
+var dbUnlockWindowHandlers = {
+  submitDbUnlockPassphrase
 };
 
 // public/js/med-receta-core.mjs
@@ -1120,6 +1420,177 @@ function classifyMedicationSoapCategory(nombreRaw) {
     return "otros";
   }
   return "otros";
+}
+
+// public/js/med-pharm-some-catalog.mjs
+var MAX_TOKENS_PER_CAT = 400;
+var MAX_TOKEN_LEN = 64;
+var SOME_PHARM_FILTER_ORDER = [
+  "AGONISTA ALFA/BETA",
+  "ANALG\xC9SICO",
+  "ANALG\xC9SICO ANTIPIR\xC9TICO/ANTIINFLAMATORIC",
+  "ANEST\xC9SICO",
+  "ANTIARR\xCDTMICO",
+  "ANTIASM\xC1TICO",
+  "ANTIBI\xD3TICO",
+  "ANTICOAGULANTE",
+  "ANTICONVULSIVO",
+  "ANTIDIAB\xC9TICO",
+  "ANTIINFLAMATORIO ESTEROIDEO",
+  "ANTILIP\xC9MICO",
+  "ANTIULCEROSO",
+  "BRONCODILATADOR",
+  "CORTICOSTEROIDE",
+  "DIUR\xC9TICO",
+  "LAXANTE",
+  "RELAJANTE MUSCULAR PERIF\xC9RICO",
+  "SEDANTE",
+  "SUEROS",
+  "SUPLEMENTO",
+  "SUPLEMENTO ELECTROL\xCDTICO",
+  "OTROS"
+];
+var BUILTIN_TOKENS = {
+  "AGONISTA ALFA/BETA": [
+    "NORADRENALINA",
+    "NOREPINEFRINA",
+    "EPINEFRINA",
+    "DOPAMINA",
+    "DOBUTAMINA",
+    "VASOPRESINA",
+    "FENILEFRINA",
+    "FENILEFRIN"
+  ],
+  "ANALG\xC9SICO": ["METAMIZOL", "MORFINA", "TRAMADOL", "FENTANILO", "REMIFENTANILO"],
+  "ANALG\xC9SICO ANTIPIR\xC9TICO/ANTIINFLAMATORIC": ["PARACETAMOL", "KETOROLAC", "IBUPROFENO", "DICLOFENACO"],
+  ANEST\u00C9SICO: ["PROPOFOL", "KETAMINA", "LIDOCAINA", "BUPIVACAINA"],
+  ANTIARR\u00CDTMICO: ["AMIODARONA", "LIDOCAINA", "METOPROLOL"],
+  ANTIASM\u00C1TICO: ["SALBUTAMOL", "IPRATROPIO", "TIOTROPIO", "MONTELUKAST"],
+  "ANTIBI\xD3TICO": [
+    "ERTAPENEM",
+    "CEFALOTINA",
+    "CEFTRIAX",
+    "CEFEPIME",
+    "MEROPENEM",
+    "VANCOMICINA",
+    "PIPERACILINA",
+    "TAZOBACTAM",
+    "METRONIDAZOL",
+    "LINEZOLID",
+    "AZITROMICINA",
+    "LEVOFLOX",
+    "CIPROFLOX",
+    "AMIKACINA",
+    "GENTAMICINA",
+    "AMPICILINA",
+    "FLUCONAZOL"
+  ],
+  ANTICOAGULANTE: ["ENOXAPARINA", "HEPARINA", "APIXABAN", "RIVAROXABAN", "WARFARINA"],
+  ANTICONVULSIVO: ["LEVETIRACETAM", "FENITOINA", "VALPROATO", "CARBAMAZEPINA"],
+  "ANTIDIAB\xC9TICO": ["INSULINA", "METFORMINA", "GLARGINA"],
+  "ANTIINFLAMATORIO ESTEROIDEO": ["METILPREDNISOLONA", "HIDROCORTISONA"],
+  "ANTILIP\xC9MICO": ["ATORVASTATINA", "ROSUVASTATINA", "SINVASTATINA"],
+  ANTIULCEROSO: ["OMEPRAZOL", "PANTOPRAZOL", "ESOMEPRAZOL", "RANITIDINA"],
+  BRONCODILATADOR: ["SALBUTAMOL", "IPRATROPIO", "TIOTROPIO", "TERBUTALINA"],
+  CORTICOSTEROIDE: ["BUDESONIDA", "DEXAMETASONA", "HIDROCORTISONA", "METILPREDNISOLONA"],
+  DIUR\u00C9TICO: ["FUROSEMIDA", "ESPIRONOLACTONA", "MANITOL", "TORASEMIDA"],
+  LAXANTE: ["LACTULOSA", "POLIETILENGLICOL", "BISACODILO", "SENOSIDO"],
+  "RELAJANTE MUSCULAR PERIF\xC9RICO": ["CISATRACURIO", "ROCURONIO", "VECURONIO", "PANCURONIO"],
+  SEDANTE: ["DEXMEDETOMIDINA", "PROPOFOL", "MIDAZOLAM"],
+  SUEROS: [
+    "CLORURO DE SODIO",
+    "SOLUCION SALINA",
+    "DEXTROSA",
+    "LACTATO",
+    "RINGER",
+    "CLORURO DE POTASIO",
+    "SULFATO DE MAGNESIO",
+    "SOLUCION GLUCOSADA"
+  ],
+  SUPLEMENTO: ["MULTIVITAMINICO", "VITAMINA", "ZINC", "HIERRO"],
+  "SUPLEMENTO ELECTROL\xCDTICO": ["POTASIO", "MAGNESIO", "FOSFORO", "CALCIO GLUCONATO"]
+};
+var _overlayTokens = null;
+function normName(nombreRaw) {
+  return String(nombreRaw || "").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ");
+}
+function escapeRegExp2(s) {
+  return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+function sanitizeTokenList2(arr) {
+  if (!Array.isArray(arr)) return [];
+  const out = [];
+  const seen = /* @__PURE__ */ Object.create(null);
+  for (let i = 0; i < arr.length && out.length < MAX_TOKENS_PER_CAT; i += 1) {
+    let t2 = String(arr[i] || "").trim();
+    if (t2.length > MAX_TOKEN_LEN) t2 = t2.slice(0, MAX_TOKEN_LEN);
+    if (!t2) continue;
+    const k = t2.toUpperCase();
+    if (seen[k]) continue;
+    seen[k] = 1;
+    out.push(t2);
+  }
+  return out;
+}
+function sanitizeSomePharmCatalog(raw) {
+  const tokens = /* @__PURE__ */ Object.create(null);
+  if (!raw || typeof raw !== "object") return { tokens };
+  const src = raw.tokens && typeof raw.tokens === "object" ? raw.tokens : raw;
+  SOME_PHARM_FILTER_ORDER.forEach(function(cat) {
+    if (cat === "OTROS") return;
+    if (Array.isArray(src[cat])) tokens[cat] = sanitizeTokenList2(src[cat]);
+  });
+  return { tokens };
+}
+function tokensForCategory(cat) {
+  const custom = _overlayTokens && _overlayTokens[cat];
+  if (custom && custom.length) return custom;
+  return BUILTIN_TOKENS[cat] || [];
+}
+function tokensMatch(nNorm, tokens) {
+  if (!tokens.length) return false;
+  const parts = [];
+  for (let i = 0; i < tokens.length; i += 1) {
+    const x = normName(tokens[i]);
+    if (x) parts.push(escapeRegExp2(x));
+  }
+  if (!parts.length) return false;
+  return new RegExp("\\b(" + parts.join("|") + ")\\b").test(nNorm);
+}
+function applySomePharmCatalogOverlay(catalogFromStorage) {
+  const block = catalogFromStorage && catalogFromStorage.somePharm ? catalogFromStorage.somePharm : catalogFromStorage;
+  _overlayTokens = sanitizeSomePharmCatalog(block).tokens;
+}
+function listSomePharmFilterLabels() {
+  return ["TODOS"].concat(SOME_PHARM_FILTER_ORDER);
+}
+function isSomePharmCategoryLabel(cat) {
+  return SOME_PHARM_FILTER_ORDER.indexOf(String(cat || "")) >= 0;
+}
+function classifySomePharmCategory(nombreRaw) {
+  const n = normName(nombreRaw);
+  if (!n) return "OTROS";
+  for (let i = 0; i < SOME_PHARM_FILTER_ORDER.length; i += 1) {
+    const cat = SOME_PHARM_FILTER_ORDER[i];
+    if (cat === "OTROS") break;
+    if (tokensMatch(n, tokensForCategory(cat))) return cat;
+  }
+  return "OTROS";
+}
+function rowSomePharmCategory(row) {
+  if (!row) return "OTROS";
+  if (row.catOverride) return String(row.catOverride);
+  if (row.cat) return String(row.cat);
+  return classifySomePharmCategory(row.med);
+}
+function assignSomePharmCategory(row) {
+  if (!row) return row;
+  const next = Object.assign({}, row);
+  if (!next.catOverride) next.cat = classifySomePharmCategory(next.med);
+  return next;
+}
+function assignSomePharmCategories(rows) {
+  return (rows || []).map(assignSomePharmCategory);
 }
 
 // public/js/lab-history-repair.mjs
@@ -3302,6 +3773,7 @@ var notes = {};
 var indicaciones = {};
 var labHistory = {};
 var medRecetaByPatient = {};
+var medPharmProfileByPatient = {};
 var recetaHuByPatient = {};
 var listadoProblemas = {};
 var vpoByPatient = {};
@@ -3345,6 +3817,9 @@ function setLabHistory(next) {
 function setMedRecetaByPatient(next) {
   medRecetaByPatient = next;
 }
+function setMedPharmProfileByPatient(next) {
+  medPharmProfileByPatient = next;
+}
 function setRecetaHuByPatient(next) {
   recetaHuByPatient = next;
 }
@@ -3368,6 +3843,7 @@ function replaceAppStateFromBackupData(data) {
   setIndicaciones(clonePlainRecord(data.indicaciones));
   setLabHistory(clonePlainRecord(data.labHistory));
   setMedRecetaByPatient(clonePlainRecord(data.medRecetaByPatient));
+  setMedPharmProfileByPatient(clonePlainRecord(data.medPharmProfileByPatient));
   listadoProblemas = clonePlainRecord(data.listadoProblemas);
   vpoByPatient = clonePlainRecord(data.vpoByPatient);
   medNotaSelectionByPatient = {};
@@ -3380,16 +3856,23 @@ function setSaveStateHooks({ before, after, onSaveResult } = {}) {
 function repairLabHistoryInMemory() {
   return repairLabHistoryMapInPlace(labHistory);
 }
+async function bootHydrateFromDb() {
+  await ensureStorageHydrated();
+  initAppState();
+}
 function initAppState() {
   setPatients(storage.getPatients());
   setNotes(storage.getNotes());
   setIndicaciones(storage.getIndicaciones());
   setLabHistory(storage.getLabHistory());
   setMedRecetaByPatient(storage.getMedRecetaByPatient());
+  setMedPharmProfileByPatient(storage.getMedPharmProfileByPatient());
   setRecetaHuByPatient(storage.getRecetaHuByPatient());
   listadoProblemas = storage.getListadoProblemas();
   vpoByPatient = storage.getVpoByPatient();
-  applyMedCatalogOverlay(storage.getMedCatalog());
+  var medCatalog = storage.getMedCatalog();
+  applyMedCatalogOverlay(medCatalog);
+  applySomePharmCatalogOverlay(medCatalog);
   medNotaSelectionByPatient = {};
   var monitoreoMigrated = false;
   for (var pi = 0; pi < patients.length; pi += 1) {
@@ -3414,7 +3897,8 @@ function runSaveNow() {
     medRecetaByPatient,
     listadoProblemas,
     recetaHuByPatient,
-    vpoByPatient
+    vpoByPatient,
+    medPharmProfileByPatient
   );
   _saveInFlight = promise;
   return promise.then(function(result) {
@@ -4428,10 +4912,10 @@ function rebuildGasesFromResults_(rows) {
     values[k] = valueFromSectionLine_(base, k);
   });
   var qs = pickBestSectionLine_(rows, "QS");
-  var esc29 = pickBestSectionLine_(rows, "ESC");
+  var esc30 = pickBestSectionLine_(rows, "ESC");
   var pfhs = pickBestSectionLine_(rows, "PFHS");
-  var na = valueFromSectionLine_(qs, "Na") || valueFromSectionLine_(esc29, "Na") || values.Na;
-  var cl = valueFromSectionLine_(qs, "Cl") || valueFromSectionLine_(esc29, "Cl");
+  var na = valueFromSectionLine_(qs, "Na") || valueFromSectionLine_(esc30, "Na") || values.Na;
+  var cl = valueFromSectionLine_(qs, "Cl") || valueFromSectionLine_(esc30, "Cl");
   var alb = valueFromSectionLine_(pfhs, "Alb");
   var bica = values.Bica;
   orderedKeys.forEach(function(k) {
@@ -5541,18 +6025,17 @@ function compactarLineasAntibiograma(sensCrudas, abreviarFn) {
   if (line.length <= 220) return line;
   return "ATB " + parts.join("\n");
 }
-function formatCultivoCondensedForCopy(chunkText, studyDateLine) {
+function formatCultivoCondensedForCopy(chunkText, _studyDateLine) {
   var lines = [];
-  var dateLine = String(studyDateLine || "").trim();
-  if (dateLine && dateLine !== "\u2014") lines.push(dateLine);
   var chunkLines = String(chunkText || "").trim().split(/\n/).map(function(l) {
     return l.trim();
   }).filter(Boolean);
-  if (chunkLines[0]) lines.push(chunkLines[0]);
+  if (!chunkLines.length) return lines.join("\n");
+  var head = chunkLines[0].replace(/\s*·\s*Preliminar\b/gi, "").replace(/\s*·\s*$/g, "").replace(/\s{2,}/g, " ").trim();
+  if (head) lines.push(head);
   for (var i = 1; i < chunkLines.length; i++) {
-    if (/^ATB\b/i.test(chunkLines[i])) {
+    if (/^ATB\b/i.test(chunkLines[i]) || /^Cuenta:/i.test(chunkLines[i])) {
       lines.push(chunkLines[i]);
-      break;
     }
   }
   return lines.join("\n");
@@ -6085,8 +6568,8 @@ function procesarLabs(textoBruto) {
       sexo: sexoRaw
     });
     if (qs) resLabs.push(qs);
-    var esc29 = parseESC_(textoQS);
-    if (esc29) resLabs.push(esc29);
+    var esc30 = parseESC_(textoQS);
+    if (esc30) resLabs.push(esc30);
     var pfh = parsePFH_(textoParaBh);
     if (pfh) resLabs.push(pfh);
     var pltCit = parsePlaquetasCitrato_(textoBruto, tNorm);
@@ -12935,15 +13418,15 @@ function renderCalendarBody(year, month, selectedIso) {
 function openRpcDatePicker(anchor, opts) {
   var options = opts || {};
   var selected = parseIso(options.value) || /* @__PURE__ */ new Date();
-  var viewYear = selected.getFullYear();
+  var viewYear2 = selected.getFullYear();
   var viewMonth = selected.getMonth();
   var selectedIso = options.value ? String(options.value).trim() : "";
   var pop = ensurePopover();
   closePopover();
   function paint() {
-    pop.innerHTML = '<div class="rpc-date-popover__head"><button type="button" class="rpc-date-popover__nav" data-nav="-1" aria-label="Mes anterior">\u2039</button><span class="rpc-date-popover__title">' + esc5(MONTHS_ES[viewMonth] + " " + viewYear) + '</span><button type="button" class="rpc-date-popover__nav" data-nav="1" aria-label="Mes siguiente">\u203A</button></div><div class="rpc-date-popover__weekdays">' + WEEKDAYS_ES.map(function(w) {
+    pop.innerHTML = '<div class="rpc-date-popover__head"><button type="button" class="rpc-date-popover__nav" data-nav="-1" aria-label="Mes anterior">\u2039</button><span class="rpc-date-popover__title">' + esc5(MONTHS_ES[viewMonth] + " " + viewYear2) + '</span><button type="button" class="rpc-date-popover__nav" data-nav="1" aria-label="Mes siguiente">\u203A</button></div><div class="rpc-date-popover__weekdays">' + WEEKDAYS_ES.map(function(w) {
       return "<span>" + w + "</span>";
-    }).join("") + '</div><div class="rpc-date-popover__grid">' + renderCalendarBody(viewYear, viewMonth, selectedIso) + '</div><div class="rpc-date-popover__foot"><button type="button" class="rpc-date-popover__foot-btn" data-action="clear">Borrar</button><button type="button" class="rpc-date-popover__foot-btn rpc-date-popover__foot-btn--primary" data-action="today">Hoy</button></div>';
+    }).join("") + '</div><div class="rpc-date-popover__grid">' + renderCalendarBody(viewYear2, viewMonth, selectedIso) + '</div><div class="rpc-date-popover__foot"><button type="button" class="rpc-date-popover__foot-btn" data-action="clear">Borrar</button><button type="button" class="rpc-date-popover__foot-btn rpc-date-popover__foot-btn--primary" data-action="today">Hoy</button></div>';
     pop.querySelectorAll("[data-nav]").forEach(function(btn) {
       btn.addEventListener("click", function(e) {
         e.preventDefault();
@@ -12951,10 +13434,10 @@ function openRpcDatePicker(anchor, opts) {
         viewMonth += delta;
         if (viewMonth < 0) {
           viewMonth = 11;
-          viewYear -= 1;
+          viewYear2 -= 1;
         } else if (viewMonth > 11) {
           viewMonth = 0;
-          viewYear += 1;
+          viewYear2 += 1;
         }
         paint();
       });
@@ -16765,6 +17248,8 @@ function applyLanPatientEntries(entries) {
       labHistory[existing.id] = Array.isArray(entry2.labHistory) ? entry2.labHistory : [];
       if (entry2.medReceta) medRecetaByPatient[existing.id] = entry2.medReceta;
       else delete medRecetaByPatient[existing.id];
+      if (entry2.medPharmProfile) medPharmProfileByPatient[existing.id] = entry2.medPharmProfile;
+      else delete medPharmProfileByPatient[existing.id];
       if (entry2.vpo) vpoByPatient[existing.id] = entry2.vpo;
       else delete vpoByPatient[existing.id];
       if (entry2.listadoProblemas) listadoProblemas[existing.id] = entry2.listadoProblemas;
@@ -16803,6 +17288,7 @@ function applyLanPatientEntries(entries) {
         indicaciones[remoteId] = entry2.indicaciones || {};
         labHistory[remoteId] = Array.isArray(entry2.labHistory) ? entry2.labHistory : [];
         if (entry2.medReceta) medRecetaByPatient[remoteId] = entry2.medReceta;
+        if (entry2.medPharmProfile) medPharmProfileByPatient[remoteId] = entry2.medPharmProfile;
         if (entry2.vpo) vpoByPatient[remoteId] = entry2.vpo;
         newId = remoteId;
       } else {
@@ -16844,6 +17330,7 @@ function removePatientLocally(patientId) {
   delete indicaciones[pid];
   if (labHistory && labHistory[pid]) delete labHistory[pid];
   if (medRecetaByPatient && medRecetaByPatient[pid]) delete medRecetaByPatient[pid];
+  if (medPharmProfileByPatient && medPharmProfileByPatient[pid]) delete medPharmProfileByPatient[pid];
   if (typeof vpoByPatient !== "undefined" && vpoByPatient && vpoByPatient[pid]) delete vpoByPatient[pid];
   if (recetaHuByPatient && recetaHuByPatient[pid]) delete recetaHuByPatient[pid];
   if (medNotaSelectionByPatient && medNotaSelectionByPatient[pid]) delete medNotaSelectionByPatient[pid];
@@ -19428,7 +19915,7 @@ function renderCensoPreviewHtml(payload) {
   var rows = payload.rows || [];
   var titleLine = header.titleLine || "Censo de Sala";
   var equipoLine = header.equipoLine || "";
-  function esc29(s) {
+  function esc30(s) {
     return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
   function pacienteCell(row) {
@@ -19439,31 +19926,31 @@ function renderCensoPreviewHtml(payload) {
       lines.push(l);
     });
     return lines.map(function(l) {
-      return '<span class="meta">' + esc29(l) + "</span>";
+      return '<span class="meta">' + esc30(l) + "</span>";
     }).join("<br>");
   }
   function camaCellHtml(camaText) {
     var label = formatCamaCellLabel(parseCamaCellForCenso(camaText));
     if (label === "\u2014") return "\u2014";
-    return '<span class="censo-cama-vline">' + esc29(label) + "</span>";
+    return '<span class="censo-cama-vline">' + esc30(label) + "</span>";
   }
   function cell(row, key, fallbackLabel) {
     var v = row[key];
-    if (v) return esc29(v).replace(/\n/g, "<br>");
+    if (v) return esc30(v).replace(/\n/g, "<br>");
     var sec = (row.sections || []).find(function(s) {
       return s.label === fallbackLabel;
     });
-    return sec ? esc29(sec.lines.join("\n")).replace(/\n/g, "<br>") : "\u2014";
+    return sec ? esc30(sec.lines.join("\n")).replace(/\n/g, "<br>") : "\u2014";
   }
   var body = rows.map(function(row, idx) {
     var pend = cell(row, "pendientes", "Pendientes");
     if (row.signos) {
-      var sig = esc29(row.signos).replace(/\n/g, "<br>");
+      var sig = esc30(row.signos).replace(/\n/g, "<br>");
       pend = sig + (pend !== "\u2014" ? "<br>" + pend : "");
     }
-    return '<tr class="' + (idx % 2 ? "alt" : "") + '"><td class="censo-center censo-bold censo-num"><span class="censo-num-val">' + esc29(row.num) + '</span></td><td class="censo-center censo-bold censo-cama">' + camaCellHtml(row.cama) + '</td><td class="censo-center censo-paciente">' + pacienteCell(row) + '</td><td class="censo-center censo-bold">' + cell(row, "dx", "Diagn\xF3sticos") + '</td><td class="censo-center">' + cell(row, "meds", "ATB / Medicamentos") + '</td><td class="censo-labs">' + cell(row, "labs", "Laboratorios") + "</td><td>" + cell(row, "accesos", "Accesos") + "</td><td>" + cell(row, "cultivos", "Cultivos") + "</td><td>" + pend + "</td></tr>";
+    return '<tr class="' + (idx % 2 ? "alt" : "") + '"><td class="censo-center censo-bold censo-num"><span class="censo-num-val">' + esc30(row.num) + '</span></td><td class="censo-center censo-bold censo-cama">' + camaCellHtml(row.cama) + '</td><td class="censo-center censo-paciente">' + pacienteCell(row) + '</td><td class="censo-center censo-bold">' + cell(row, "dx", "Diagn\xF3sticos") + '</td><td class="censo-center">' + cell(row, "meds", "ATB / Medicamentos") + '</td><td class="censo-labs">' + cell(row, "labs", "Laboratorios") + "</td><td>" + cell(row, "accesos", "Accesos") + "</td><td>" + cell(row, "cultivos", "Cultivos") + "</td><td>" + pend + "</td></tr>";
   }).join("");
-  return '<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Censo ' + esc29(header.fecha) + "</title><style>@page{size:legal landscape;margin:10mm}body{font-family:system-ui,sans-serif;font-size:11px;line-height:1.4;color:#1a1d24;margin:0;padding:12px 14px}h1{margin:0 0 2px;font-size:16px}.sub{color:#5c6370;font-size:8px;margin-bottom:8px}.mes{text-align:center;font-weight:700;color:#1e4d72;font-size:12px;margin:-22px 0 8px}table{width:100%;max-width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #d0d4dc;padding:3px 4px;vertical-align:middle;word-wrap:break-word}td.censo-labs{vertical-align:top;white-space:pre-wrap;line-height:1.25;font-size:10px}td.censo-paciente{vertical-align:middle;text-align:center;line-height:1.2;font-size:10px}th{background:#eef1f5;font-size:9px;text-transform:uppercase;color:#1e4d72}tr.alt td{background:#f8f9fb}.meta{color:#5c6370;font-weight:400}.censo-center{text-align:center;vertical-align:middle}.censo-bold{font-weight:700}td.censo-num,td.censo-cama{padding:4px 2px;text-align:center;vertical-align:middle}td.censo-num .censo-num-val,td.censo-cama .censo-cama-vline{display:block;margin:0 auto}.censo-cama-vline{font-weight:700;writing-mode:vertical-rl;text-orientation:mixed;line-height:1;white-space:nowrap}th.censo-center{text-align:center;vertical-align:middle}col.num{width:3%}col.cama{width:2.5%}col.pac{width:6%}col.dx{width:13%}col.med{width:8%}col.lab{width:33%}col.acc{width:5%}col.cult{width:11%}col.pend{width:18%}</style></head><body><h1>" + esc29(titleLine) + "</h1>" + (header.mes ? '<div class="mes">' + esc29(header.mes) + "</div>" : "") + '<div class="sub">' + (equipoLine ? esc29(equipoLine) : "") + (equipoLine && header.fecha ? " \xB7 " : "") + (header.fecha ? esc29(header.fecha) : "") + '</div><table><colgroup><col class="num"><col class="cama"><col class="pac"><col class="dx"><col class="med"><col class="lab"><col class="acc"><col class="cult"><col class="pend"></colgroup><thead><tr><th class="censo-center">#</th><th class="censo-center censo-bold">Cama</th><th class="censo-center">Paciente</th><th class="censo-center censo-bold">Dx</th><th class="censo-center">ATB/Meds</th><th>Labs</th><th>Accesos</th><th>Cultivos</th><th>Pend.</th></tr></thead><tbody>' + body + "</tbody></table></body></html>";
+  return '<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Censo ' + esc30(header.fecha) + "</title><style>@page{size:legal landscape;margin:10mm}body{font-family:system-ui,sans-serif;font-size:11px;line-height:1.4;color:#1a1d24;margin:0;padding:12px 14px}h1{margin:0 0 2px;font-size:16px}.sub{color:#5c6370;font-size:8px;margin-bottom:8px}.mes{text-align:center;font-weight:700;color:#1e4d72;font-size:12px;margin:-22px 0 8px}table{width:100%;max-width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #d0d4dc;padding:3px 4px;vertical-align:middle;word-wrap:break-word}td.censo-labs{vertical-align:top;white-space:pre-wrap;line-height:1.25;font-size:10px}td.censo-paciente{vertical-align:middle;text-align:center;line-height:1.2;font-size:10px}th{background:#eef1f5;font-size:9px;text-transform:uppercase;color:#1e4d72}tr.alt td{background:#f8f9fb}.meta{color:#5c6370;font-weight:400}.censo-center{text-align:center;vertical-align:middle}.censo-bold{font-weight:700}td.censo-num,td.censo-cama{padding:4px 2px;text-align:center;vertical-align:middle}td.censo-num .censo-num-val,td.censo-cama .censo-cama-vline{display:block;margin:0 auto}.censo-cama-vline{font-weight:700;writing-mode:vertical-rl;text-orientation:mixed;line-height:1;white-space:nowrap}th.censo-center{text-align:center;vertical-align:middle}col.num{width:3%}col.cama{width:2.5%}col.pac{width:6%}col.dx{width:13%}col.med{width:8%}col.lab{width:33%}col.acc{width:5%}col.cult{width:11%}col.pend{width:18%}</style></head><body><h1>" + esc30(titleLine) + "</h1>" + (header.mes ? '<div class="mes">' + esc30(header.mes) + "</div>" : "") + '<div class="sub">' + (equipoLine ? esc30(equipoLine) : "") + (equipoLine && header.fecha ? " \xB7 " : "") + (header.fecha ? esc30(header.fecha) : "") + '</div><table><colgroup><col class="num"><col class="cama"><col class="pac"><col class="dx"><col class="med"><col class="lab"><col class="acc"><col class="cult"><col class="pend"></colgroup><thead><tr><th class="censo-center">#</th><th class="censo-center censo-bold">Cama</th><th class="censo-center">Paciente</th><th class="censo-center censo-bold">Dx</th><th class="censo-center">ATB/Meds</th><th>Labs</th><th>Accesos</th><th>Cultivos</th><th>Pend.</th></tr></thead><tbody>' + body + "</tbody></table></body></html>";
 }
 function ensureCensoPreviewModal() {
   var existing = document.getElementById("censo-preview-backdrop");
@@ -23799,14 +24286,14 @@ function createTendGroupModal(deps) {
       bar.className = "tend-group-table-hidden-bar tend-group-panels-hidden-bar";
       panelEl.insertBefore(bar, panelEl.firstChild);
     }
-    var esc29 = deps.esc;
+    var esc30 = deps.esc;
     if (!hiddenFams.length) {
       bar.style.display = "none";
       bar.innerHTML = "";
       return;
     }
     var chips = hiddenFams.map(function(fam) {
-      return '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-panel="' + esc29(fam) + '">' + esc29(resolvePanelTitle(state.patientId, sectionKey, fam)) + ' <span aria-hidden="true">\xD7</span></button>';
+      return '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-panel="' + esc30(fam) + '">' + esc30(resolvePanelTitle(state.patientId, sectionKey, fam)) + ' <span aria-hidden="true">\xD7</span></button>';
     });
     bar.style.display = "";
     bar.innerHTML = '<span class="tend-group-hidden-label">Paneles ocultos:</span>' + chips.join("") + '<button type="button" class="tend-toolbar-btn tend-group-show-all-btn tend-group-panels-show-all">Mostrar todo</button>';
@@ -23883,7 +24370,7 @@ function createTendGroupModal(deps) {
       bar.className = "tend-group-table-hidden-bar";
       wrap.insertBefore(bar, wrap.firstChild);
     }
-    var esc29 = deps.esc;
+    var esc30 = deps.esc;
     var chips = [];
     hidden.cols.forEach(function(ck) {
       var label = ck;
@@ -23894,14 +24381,14 @@ function createTendGroupModal(deps) {
         }
       }
       chips.push(
-        '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-col="' + esc29(ck) + '">' + esc29(label) + ' <span aria-hidden="true">\xD7</span></button>'
+        '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-col="' + esc30(ck) + '">' + esc30(label) + ' <span aria-hidden="true">\xD7</span></button>'
       );
     });
     hidden.rows.forEach(function(fk) {
       var sp = state.specsByField[fk];
       var lab = sp ? legendLabelForSpec(sectionKey, sp) : fk;
       chips.push(
-        '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-row="' + esc29(fk) + '">' + esc29(lab) + ' <span aria-hidden="true">\xD7</span></button>'
+        '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-row="' + esc30(fk) + '">' + esc30(lab) + ' <span aria-hidden="true">\xD7</span></button>'
       );
     });
     if (!chips.length) {
@@ -24027,7 +24514,7 @@ function createTendGroupModal(deps) {
       }
     );
     state.tableModel = buildTableExportModel(sectionKey, raw, hidden);
-    var esc29 = deps.esc;
+    var esc30 = deps.esc;
     var html = ['<div class="cultivos-table-wrap"><table id="tend-group-table" class="cultivos-table tend-group-table">'];
     html.push("<thead><tr><th>Analito</th>");
     raw.columns.forEach(function(set) {
@@ -24035,7 +24522,7 @@ function createTendGroupModal(deps) {
       var colHidden = hidden.cols.indexOf(ck) >= 0;
       var colLabel = columnHeader(set, raw.columns);
       html.push(
-        '<th class="' + (colHidden ? "is-hidden" : "") + '"><label class="tend-group-col-toggle"><input type="checkbox" data-col-key="' + esc29(ck) + '"' + (colHidden ? " checked" : "") + ' aria-label="Ocultar columna"> ' + esc29(colLabel) + "</label></th>"
+        '<th class="' + (colHidden ? "is-hidden" : "") + '"><label class="tend-group-col-toggle"><input type="checkbox" data-col-key="' + esc30(ck) + '"' + (colHidden ? " checked" : "") + ' aria-label="Ocultar columna"> ' + esc30(colLabel) + "</label></th>"
       );
     });
     html.push("</tr></thead><tbody>");
@@ -24046,7 +24533,7 @@ function createTendGroupModal(deps) {
       var rowDisp = spRow ? formatTendSeriesLabel(spRow.cardTitle || row.fieldKey, row.fieldKey, rowUnit) : formatTendSeriesLabel(row.label, row.fieldKey, row.unit || rowUnit);
       var rowLabel = rowDisp.unit && rowDisp.unit !== "%" ? rowDisp.name + " (" + rowDisp.unit + ")" : rowDisp.name;
       html.push(
-        '<tr data-field="' + esc29(row.fieldKey) + '" class="' + (rowHidden ? " tend-group-row--data-hidden" : "") + '"><td><label class="tend-group-row-toggle"><input type="checkbox" data-field-key="' + esc29(row.fieldKey) + '"' + (rowHidden ? " checked" : "") + ' aria-label="Ocultar valores de fila (la fila sigue visible)"> ' + esc29(rowLabel) + "</label></td>"
+        '<tr data-field="' + esc30(row.fieldKey) + '" class="' + (rowHidden ? " tend-group-row--data-hidden" : "") + '"><td><label class="tend-group-row-toggle"><input type="checkbox" data-field-key="' + esc30(row.fieldKey) + '"' + (rowHidden ? " checked" : "") + ' aria-label="Ocultar valores de fila (la fila sigue visible)"> ' + esc30(rowLabel) + "</label></td>"
       );
       raw.columns.forEach(function(set, ci) {
         var ck = colKeyForSet(set);
@@ -24054,7 +24541,7 @@ function createTendGroupModal(deps) {
         var val2 = row.values[ci];
         var ab = isAbnormal(set, sectionKey, row.fieldKey, val2, state.historyDesc);
         html.push(
-          '<td class="' + (colHidden ? "is-hidden" : "") + (ab ? " tend-abnormal" : "") + '">' + esc29(formatCellValue(val2, ab)) + "</td>"
+          '<td class="' + (colHidden ? "is-hidden" : "") + (ab ? " tend-abnormal" : "") + '">' + esc30(formatCellValue(val2, ab)) + "</td>"
         );
       });
       html.push("</tr>");
@@ -29952,7 +30439,39 @@ function safeExportSlug(str) {
   var s = (str || "paciente").replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9]+/g, "_").replace(/^_|_$/g, "");
   return (s || "paciente").slice(0, 48);
 }
+var _dbAuditCache = null;
+function forensicEventVisible(eventType) {
+  var t2 = String(eventType || "");
+  return /^(clinical|auth|system|lan)\./.test(t2);
+}
+function mapForensicAuditRow(row) {
+  return {
+    timestamp: row.timestamp,
+    action: row.event_type,
+    result: "ok",
+    count: 0,
+    detail: row.client_id || "",
+    forensicId: row.id,
+    payloadHash: row.payload_hash,
+    currentHash: row.current_hash
+  };
+}
+async function fetchDbAuditLog(limit) {
+  if (!isDbMode() || !window.electronAPI || typeof window.electronAPI.dbAuditExport !== "function") {
+    return null;
+  }
+  try {
+    var res = await window.electronAPI.dbAuditExport({ limit: limit || 200 });
+    if (!res || res.ok === false) return [];
+    return (res.entries || []).filter(function(row) {
+      return forensicEventVisible(row.event_type);
+    }).map(mapForensicAuditRow);
+  } catch (_e) {
+    return [];
+  }
+}
 function getAuditLog() {
+  if (isDbMode() && _dbAuditCache) return _dbAuditCache;
   try {
     var raw = JSON.parse(localStorage.getItem(AUDIT_LOG_KEY) || "[]");
     return Array.isArray(raw) ? raw : [];
@@ -29972,15 +30491,117 @@ function addAuditEntry(action, result, count, detail) {
   if (list.length > 200) list = list.slice(0, 200);
   localStorage.setItem(AUDIT_LOG_KEY, JSON.stringify(list));
 }
-function exportAuditLog() {
-  var log = getAuditLog();
-  downloadJsonPayload({
-    format: "r-plus-audit-log",
-    version: 1,
-    exportedAt: (/* @__PURE__ */ new Date()).toISOString(),
-    entries: log
-  }, "R-plus-bitacora-" + formatDateSlug(/* @__PURE__ */ new Date()) + ".json");
+async function exportAuditLog() {
+  var log;
+  if (isDbMode() && window.electronAPI && typeof window.electronAPI.dbAuditExport === "function") {
+    log = await fetchDbAuditLog(5e3);
+  } else {
+    log = getAuditLog();
+  }
+  downloadJsonPayload(
+    {
+      format: isDbMode() ? "r-plus-forensic-audit" : "r-plus-audit-log",
+      version: isDbMode() ? 2 : 1,
+      exportedAt: (/* @__PURE__ */ new Date()).toISOString(),
+      entries: log
+    },
+    "R-plus-bitacora-" + formatDateSlug(/* @__PURE__ */ new Date()) + ".json"
+  );
   rt16.showToast("Bit\xE1cora exportada", "success");
+}
+async function lockClinicalDatabaseNow() {
+  if (!isDbMode() || !window.electronAPI || typeof window.electronAPI.dbLock !== "function") {
+    rt16.showToast("Solo disponible con la base de datos cifrada en la app de escritorio.", "error");
+    return;
+  }
+  if (!window.confirm(
+    "\xBFBloquear la base de datos ahora? No podr\xE1s ver ni editar datos cl\xEDnicos hasta volver a desbloquear con tu contrase\xF1a maestra."
+  )) {
+    return;
+  }
+  try {
+    var res = await window.electronAPI.dbLock();
+    if (!res || res.ok === false) {
+      rt16.showToast(res && res.error || "No se pudo bloquear la base de datos", "error");
+      return;
+    }
+    rt16.showToast("Base de datos bloqueada", "success");
+    location.reload();
+  } catch (_e) {
+    rt16.showToast("No se pudo bloquear la base de datos", "error");
+  }
+}
+async function verifyForensicAuditChain() {
+  if (!isDbMode() || !window.electronAPI || typeof window.electronAPI.dbAuditVerify !== "function") {
+    rt16.showToast("La verificaci\xF3n forense solo est\xE1 en la app de escritorio con base cifrada.", "error");
+    return;
+  }
+  rt16.showToast("Verificando cadena de integridad\u2026", "info");
+  try {
+    var res = await window.electronAPI.dbAuditVerify({ mode: "full" });
+    if (!res || res.ok === false) {
+      rt16.showToast(res && res.error || "No se pudo verificar la bit\xE1cora", "error");
+      return;
+    }
+    if (res.valid) {
+      rt16.showToast("Bit\xE1cora forense \xEDntegra (verificaci\xF3n completa).", "success");
+    } else {
+      rt16.showToast(
+        "Cadena comprometida: revisa el registro #" + (res.brokenAtId != null ? res.brokenAtId : "?"),
+        "error"
+      );
+    }
+  } catch (_e) {
+    rt16.showToast("No se pudo verificar la bit\xE1cora", "error");
+  }
+}
+async function exportClinicalDbBackupJson() {
+  if (!isDbMode() || !window.electronAPI || typeof window.electronAPI.dbBackupExportJson !== "function") {
+    rt16.showToast("Exportaci\xF3n solo disponible con base cifrada en escritorio.", "error");
+    return;
+  }
+  if (!window.confirm(
+    "El respaldo JSON incluye informaci\xF3n cl\xEDnica identificable en texto plano. \xBFContinuar y guardar en un lugar seguro?"
+  )) {
+    return;
+  }
+  try {
+    var res = await window.electronAPI.dbBackupExportJson();
+    if (!res || res.ok === false) {
+      rt16.showToast(res && res.error || "No se pudo exportar el respaldo", "error");
+      return;
+    }
+    var envelope = res.envelope || res;
+    downloadJsonPayload(
+      envelope,
+      "R-plus-respaldo-sqlcipher-" + formatDateSlug(/* @__PURE__ */ new Date()) + ".json"
+    );
+    rt16.showToast("Respaldo JSON exportado", "success");
+  } catch (_e) {
+    rt16.showToast("No se pudo exportar el respaldo", "error");
+  }
+}
+async function exportClinicalDbBackupDb() {
+  if (!isDbMode() || !window.electronAPI || typeof window.electronAPI.dbBackupExportDb !== "function") {
+    rt16.showToast("Exportaci\xF3n solo disponible con base cifrada en escritorio.", "error");
+    return;
+  }
+  if (!window.confirm(
+    "Se copiar\xE1 el archivo .db cifrado. Prot\xE9gelo como datos cl\xEDnicos sensibles. \xBFContinuar?"
+  )) {
+    return;
+  }
+  try {
+    var res = await window.electronAPI.dbBackupExportDb();
+    if (res && res.canceled) return;
+    if (!res || res.ok === false) {
+      rt16.showToast(res && res.error || "No se pudo exportar la copia .db", "error");
+      return;
+    }
+    rt16.showToast("Copia .db guardada" + (res.path ? ": " + res.path : ""), "success");
+  } catch (_e) {
+    rt16.showToast("No se pudo exportar la copia .db", "error");
+  }
 }
 var MED_CATALOG_MERGE_CAP = 400;
 function mergeMedCatalogStored(incoming) {
@@ -30006,6 +30627,16 @@ function mergeMedCatalogStored(incoming) {
   }
   var st = cur.soapTokens || {};
   var si = incoming.soapTokens && typeof incoming.soapTokens === "object" ? incoming.soapTokens : {};
+  function mergeSomePharm(curSp, incSp) {
+    var out = /* @__PURE__ */ Object.create(null);
+    var cTok = curSp && curSp.tokens ? curSp.tokens : {};
+    var iTok = incSp && incSp.tokens ? incSp.tokens : {};
+    var keys = Object.keys(cTok).concat(Object.keys(iTok));
+    keys.forEach(function(cat) {
+      out[cat] = mergeArr(cTok[cat], iTok[cat]);
+    });
+    return { tokens: out };
+  }
   return {
     v: 1,
     accents,
@@ -30014,7 +30645,8 @@ function mergeMedCatalogStored(incoming) {
       abx: mergeArr(st.abx, si.abx),
       analgesia: mergeArr(st.analgesia, si.analgesia),
       antihta: mergeArr(st.antihta, si.antihta)
-    }
+    },
+    somePharm: mergeSomePharm(cur.somePharm, incoming.somePharm)
   };
 }
 function exportMedCatalogBundle() {
@@ -30025,7 +30657,8 @@ function exportMedCatalogBundle() {
       version: 1,
       exportedAt: (/* @__PURE__ */ new Date()).toISOString(),
       accents: data.accents || {},
-      soapTokens: data.soapTokens || { vasop: [], abx: [], analgesia: [], antihta: [] }
+      soapTokens: data.soapTokens || { vasop: [], abx: [], analgesia: [], antihta: [] },
+      somePharm: data.somePharm || { tokens: {} }
     },
     "R-plus-catalogo-medicamentos-" + formatDateSlug(/* @__PURE__ */ new Date()) + ".json"
   );
@@ -30050,16 +30683,23 @@ function onMedCatalogFileChosen(ev) {
       var soapTokens = payload.soapTokens;
       var hasAcc = accents && typeof accents === "object";
       var hasSoap = soapTokens && typeof soapTokens === "object";
-      if (!hasAcc && !hasSoap) {
-        rt16.showToast("El archivo no es un cat\xE1logo v\xE1lido (faltan accents o soapTokens).", "error");
+      var somePharm = payload.somePharm;
+      var hasSome = somePharm && typeof somePharm === "object";
+      if (!hasAcc && !hasSoap && !hasSome) {
+        rt16.showToast(
+          "El archivo no es un cat\xE1logo v\xE1lido (faltan accents, soapTokens o somePharm).",
+          "error"
+        );
         return;
       }
       var merged = mergeMedCatalogStored({
         accents: hasAcc ? accents : {},
-        soapTokens: hasSoap ? soapTokens : {}
+        soapTokens: hasSoap ? soapTokens : {},
+        somePharm: hasSome ? somePharm : {}
       });
       storage.saveMedCatalog(merged);
       applyMedCatalogOverlay(merged);
+      applySomePharmCatalogOverlay(merged);
       var nAcc = Object.keys(merged.accents || {}).length;
       var nTok = (merged.soapTokens.vasop || []).length + (merged.soapTokens.abx || []).length + (merged.soapTokens.analgesia || []).length + (merged.soapTokens.antihta || []).length;
       addAuditEntry("med-catalog-import", "ok", nTok, "accents:" + nAcc);
@@ -30285,6 +30925,10 @@ function buildBackupDataFromMemory() {
   Object.keys(medRecetaByPatient || {}).forEach(function(k) {
     if (!String(k).startsWith("demo-")) medPersist[k] = medRecetaByPatient[k];
   });
+  var medPharmPersist = {};
+  Object.keys(medPharmProfileByPatient || {}).forEach(function(k) {
+    if (!String(k).startsWith("demo-")) medPharmPersist[k] = medPharmProfileByPatient[k];
+  });
   var listPersist = {};
   Object.keys(listadoProblemas || {}).forEach(function(k) {
     if (listadoProblemas[k] && !String(k).startsWith("demo-")) listPersist[k] = listadoProblemas[k];
@@ -30299,6 +30943,7 @@ function buildBackupDataFromMemory() {
     indicaciones: indPersist,
     labHistory: lhPersist,
     medRecetaByPatient: medPersist,
+    medPharmProfileByPatient: medPharmPersist,
     listadoProblemas: listPersist,
     scheduledProcedures: storage.getScheduledProcedures(),
     settings: settings2,
@@ -30377,6 +31022,8 @@ function applyImportEntry(entry2, action, existing) {
     labHistory[existing.id] = Array.isArray(entry2.labHistory) ? entry2.labHistory : [];
     if (entry2.medReceta) medRecetaByPatient[existing.id] = entry2.medReceta;
     else delete medRecetaByPatient[existing.id];
+    if (entry2.medPharmProfile) medPharmProfileByPatient[existing.id] = entry2.medPharmProfile;
+    else delete medPharmProfileByPatient[existing.id];
     mergePatientMonitoreoFromImported(existing, entry2.patient);
     return existing.id;
   }
@@ -30400,6 +31047,7 @@ function applyImportEntry(entry2, action, existing) {
   indicaciones[newId] = entry2.indicaciones || {};
   labHistory[newId] = Array.isArray(entry2.labHistory) ? entry2.labHistory : [];
   if (entry2.medReceta) medRecetaByPatient[newId] = entry2.medReceta;
+  if (entry2.medPharmProfile) medPharmProfileByPatient[newId] = entry2.medPharmProfile;
   return newId;
 }
 function importEntriesWithConflicts(entries, actionLabel) {
@@ -30409,6 +31057,7 @@ function importEntriesWithConflicts(entries, actionLabel) {
   var indicacionesBefore = JSON.parse(JSON.stringify(indicaciones));
   var labHistoryBefore = JSON.parse(JSON.stringify(labHistory));
   var medRecetaBefore = JSON.parse(JSON.stringify(medRecetaByPatient));
+  var medPharmBefore = JSON.parse(JSON.stringify(medPharmProfileByPatient));
   for (var i = 0; i < entries.length; i += 1) {
     var entry2 = entries[i];
     if (!entry2 || !entry2.patient) continue;
@@ -30434,6 +31083,7 @@ function importEntriesWithConflicts(entries, actionLabel) {
     setIndicaciones(indicacionesBefore);
     setLabHistory(labHistoryBefore);
     setMedRecetaByPatient(medRecetaBefore);
+    setMedPharmProfileByPatient(medPharmBefore);
   } else {
     saveState();
     renderPatientList();
@@ -30485,7 +31135,8 @@ function exportActivePatientBackup() {
     note: notes[aid7] || null,
     indicaciones: indicaciones[aid7] || null,
     labHistory: labHistory[aid7] || [],
-    medReceta: medRecetaByPatient[aid7] || null
+    medReceta: medRecetaByPatient[aid7] || null,
+    medPharmProfile: medPharmProfileByPatient[aid7] || null
   };
   downloadJsonPayload(payload, "R-plus-paciente-" + safeExportSlug(patient.nombre) + "-" + formatDateSlug(/* @__PURE__ */ new Date()) + ".json");
   addAuditEntry("backup-patient-export", "ok", 1, String(patient.registro || ""));
@@ -30563,7 +31214,8 @@ function patientExportPayloadToEntry(payload) {
     note: payload.note || {},
     indicaciones: payload.indicaciones || {},
     labHistory: Array.isArray(payload.labHistory) ? payload.labHistory : [],
-    medReceta: payload.medReceta || null
+    medReceta: payload.medReceta || null,
+    medPharmProfile: payload.medPharmProfile || null
   };
 }
 function applySinglePatientExportPayload(payload) {
@@ -30925,26 +31577,26 @@ function syncHardwareAccelerationUI() {
   var acc = document.getElementById("settings-accordion-performance");
   var cb = document.getElementById("settings-hardware-acceleration");
   if (!acc || !cb) return;
-  var api = window.electronAPI;
-  if (!api || typeof api.getPerformancePrefs !== "function") {
+  var api2 = window.electronAPI;
+  if (!api2 || typeof api2.getPerformancePrefs !== "function") {
     acc.style.display = "none";
     return;
   }
   acc.style.display = "";
-  api.getPerformancePrefs().then(function(prefs) {
+  api2.getPerformancePrefs().then(function(prefs) {
     cb.checked = !!(prefs && prefs.hardwareAcceleration);
   }).catch(function() {
     cb.checked = false;
   });
 }
 function onHardwareAccelerationChange(enabled) {
-  var api = window.electronAPI;
-  if (!api || typeof api.setHardwareAcceleration !== "function") {
+  var api2 = window.electronAPI;
+  if (!api2 || typeof api2.setHardwareAcceleration !== "function") {
     rt16.showToast("Solo disponible en la aplicaci\xF3n de escritorio.", "error");
     syncHardwareAccelerationUI();
     return;
   }
-  api.setHardwareAcceleration(!!enabled).then(function() {
+  api2.setHardwareAcceleration(!!enabled).then(function() {
     rt16.showToast("Reinicia R+ para aplicar la aceleraci\xF3n por hardware.", "info");
   }).catch(function() {
     rt16.showToast("No se pudo guardar la preferencia.", "error");
@@ -31245,6 +31897,10 @@ if (typeof window !== "undefined" && window.electronAPI) {
   });
 }
 var platformWindowHandlers = {
+  lockClinicalDatabaseNow,
+  verifyForensicAuditChain,
+  exportClinicalDbBackupJson,
+  exportClinicalDbBackupDb,
   openUserDataFolderFromSettings,
   onHardwareAccelerationChange,
   onIdleLockSelectChange,
@@ -31930,6 +32586,7 @@ function loadSettings() {
   syncHideListadoProblemasAiPromptUI();
   ensureClinicoTabConsistency();
   syncIdleLockSelectUi();
+  syncDbSecuritySectionUi();
   syncPreimportBackupUi();
   if (typeof syncSettingsLanHostDiskSection === "function") syncSettingsLanHostDiskSection();
   syncCensoExportButtonVisibility();
@@ -39065,8 +39722,8 @@ function ensureManejoSubtabMigrated() {
 
 // public/js/features/manejo-guia-context.mjs
 var MANEJO_SUBTAB_KEY = "manejoSubtab";
-function createManejoGuiaContext(api) {
-  return api && typeof api === "object" ? api : {};
+function createManejoGuiaContext(api2) {
+  return api2 && typeof api2 === "object" ? api2 : {};
 }
 function openManejoPathology(pathologyId, deps) {
   deps = deps || {};
@@ -39200,7 +39857,7 @@ function renderManejoElectrolitos(panelEl, pid, patient, ui) {
     panelEl.appendChild(off);
     return;
   }
-  var esc29 = ui.esc || function(s) {
+  var esc30 = ui.esc || function(s) {
     return String(s || "");
   };
   var buildKvBlock2 = ui.buildKvBlock;
@@ -39306,7 +39963,7 @@ function renderManejoElectrolitos(panelEl, pid, patient, ui) {
   }
   var meta = document.createElement("p");
   meta.className = "manejo-meta";
-  meta.innerHTML = "Laboratorio m\xE1s reciente: <strong>" + esc29(String(latest.fecha || labFechaNorm || "\u2014")) + "</strong>" + (latest.hora ? " \xB7 <span>" + esc29(String(latest.hora).slice(0, 8)) + "</span>" : "");
+  meta.innerHTML = "Laboratorio m\xE1s reciente: <strong>" + esc30(String(latest.fecha || labFechaNorm || "\u2014")) + "</strong>" + (latest.hora ? " \xB7 <span>" + esc30(String(latest.hora).slice(0, 8)) + "</span>" : "");
   root.appendChild(meta);
   if (evalOut.crossAlerts && evalOut.crossAlerts.length) {
     var xc = document.createElement("aside");
@@ -43005,9 +43662,18 @@ function innerTabButtonId(tab, opts) {
   if (tab === "recetaHu") return "itab-receta-hu";
   return "itab-" + tab;
 }
+function getExpedienteInnerTabBar() {
+  return document.querySelector(".patient-expediente-classic > .inner-tab-bar");
+}
+function syncMedSubviewTabIndicator() {
+  var bar = document.getElementById("med-subview-tabs-bar");
+  if (!bar) return;
+  var active = bar.querySelector(".inner-tab.active");
+  syncTabBarIndicator(bar, active);
+}
 function syncInnerTabIndicator(tab, opts) {
   opts = opts || {};
-  var bar = document.querySelector(".inner-tab-bar");
+  var bar = getExpedienteInnerTabBar();
   var btnId = opts.consolidated && opts.settings ? consolidatedInnerTabButtonId(tab, opts.settings) : innerTabButtonId(tab, opts);
   var btn = document.getElementById(btnId);
   syncTabBarIndicator(bar, btn);
@@ -43062,9 +43728,14 @@ function syncExpedienteSegmentIndicators(settings2, granularTab) {
   }
 }
 function scheduleIndicatorSync() {
-  syncAppTabIndicator(getActiveAppTabFromDom());
+  var appTab = getActiveAppTabFromDom();
+  syncAppTabIndicator(appTab);
+  if (appTab === "med") {
+    syncMedSubviewTabIndicator();
+    return;
+  }
   if (isConsolidatedExpedienteTabsVisible()) {
-    var bar = document.querySelector(".inner-tab-bar");
+    var bar = getExpedienteInnerTabBar();
     var conTabs = document.querySelectorAll(".exp-consolidated-tab");
     for (var i = 0; i < conTabs.length; i++) {
       if (conTabs[i].classList.contains("active")) {
@@ -43109,7 +43780,8 @@ function initTabBarMotion() {
     return;
   }
   ensureTabBarIndicator(document.getElementById("app-main-tablist"));
-  ensureTabBarIndicator(document.querySelector(".inner-tab-bar"));
+  ensureTabBarIndicator(getExpedienteInnerTabBar());
+  ensureTabBarIndicator(document.getElementById("med-subview-tabs-bar"));
   document.querySelectorAll(".exp-segment-bar, .manejo-subtabs, .rpc-subtab-bar").forEach(function(bar) {
     ensureTabBarIndicator(bar);
   });
@@ -47647,11 +48319,11 @@ var PERIOP_RULES = [
   { keywords: ["CLONIDINA"], sugerencia: "CONTINUAR", notaBreve: "No suspender (HTA rebote)" },
   { keywords: ["TAMSULOSINA", "DOXAZOSINA", "PRAZOSINA"], sugerencia: "CONTINUAR \u2014 informar si cirug\xEDa oft\xE1lmica", notaBreve: "Alfa-bloqueador" }
 ];
-function normName(s) {
+function normName2(s) {
   return String(s || "").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 function suggestPeriopMed(nombreRaw) {
-  var n = normName(nombreRaw);
+  var n = normName2(nombreRaw);
   for (var i = 0; i < PERIOP_RULES.length; i += 1) {
     var rule = PERIOP_RULES[i];
     for (var k = 0; k < rule.keywords.length; k += 1) {
@@ -49202,8 +49874,8 @@ function renderPaseBoard() {
   }
   parts.push("</div></section>");
   var flatRows = extractCultivoTableRowsFromHistory(pid);
-  var displayRows = filterCultivoRowsSignificantFlip2(flatRows);
-  displayRows = displayRows.slice().sort(function(a, b) {
+  var displayRows2 = filterCultivoRowsSignificantFlip2(flatRows);
+  displayRows2 = displayRows2.slice().sort(function(a, b) {
     var da = a.sortKeyMs != null ? a.sortKeyMs : a.sortMs || 0;
     var db = b.sortKeyMs != null ? b.sortKeyMs : b.sortMs || 0;
     if (db !== da) return db - da;
@@ -49215,12 +49887,12 @@ function renderPaseBoard() {
     `<button type="button" class="pase-section-title" onclick="openPaseSectionInNormal('cultivos')">Cultivos</button>`
   );
   parts.push('</div><div class="pase-card-grid">');
-  if (!displayRows.length) {
+  if (!displayRows2.length) {
     parts.push(
       '<div class="pase-mini-card pase-mini-card--dim">Sin cultivos relevantes para la ronda (positivos o negativos con cambio de signo en la misma muestra).</div>'
     );
   } else {
-    displayRows.slice(0, 10).forEach(function(r) {
+    displayRows2.slice(0, 10).forEach(function(r) {
       var fd = r.fechaMuestra && r.fechaMuestra !== "\u2014" ? r.fechaMuestra : r.studyDate || "\u2014";
       var atbBlock = paseCultivoAtbBlockHtml(pid, r);
       parts.push(
@@ -49788,8 +50460,1027 @@ var windowHandlers11 = {
   initTabBarMotion
 };
 
-// public/js/features/medications.mjs
+// public/js/med-pharm-profile-core.mjs
+function trimStr2(s) {
+  return String(s || "").trim();
+}
+function normKeyPart(s) {
+  return trimStr2(s).replace(/\s+/g, " ").toUpperCase();
+}
+function normDosisForRowKey(dosis) {
+  return normKeyPart(
+    String(dosis || "").replace(/\*?\s*DIA\s*#\s*\d+\s*\*?/gi, "").replace(/\/{2,}/g, " ")
+  );
+}
+function buildMedPharmRowKey(fields) {
+  const med = fields.med != null ? fields.med : fields.nombreRaw;
+  const dosis = fields.dosis != null ? fields.dosis : fields.dosisRaw;
+  const freq = fields.freq != null ? fields.freq : fields.frecuenciaRaw;
+  const via = fields.via != null ? fields.via : fields.viaRaw;
+  return [normKeyPart(med), normDosisForRowKey(dosis), normKeyPart(freq), normKeyPart(via)].join("|");
+}
+function monthKeyFromParts(year, monthIndex) {
+  return String(year) + "-" + String(monthIndex + 1).padStart(2, "0");
+}
+function splitMonthAt(daysInMonth) {
+  return Math.ceil(daysInMonth / 2);
+}
+function dayValueInMap(days, d) {
+  if (!days) return 0;
+  const v = days[d];
+  if (v > 0) return v;
+  return days[String(d)] || 0;
+}
+function adherenceStats(days, notAdmin) {
+  const indicated = [];
+  const missed = [];
+  const dmap = days || {};
+  const na = notAdmin || {};
+  const keys = Object.keys(dmap);
+  for (let i = 0; i < keys.length; i += 1) {
+    const d = Number(keys[i]);
+    if (!(dayValueInMap(dmap, d) > 0)) continue;
+    indicated.push(d);
+    if (na[d] || na[String(d)]) missed.push(d);
+  }
+  indicated.sort(function(a, b) {
+    return a - b;
+  });
+  missed.sort(function(a, b) {
+    return a - b;
+  });
+  return {
+    indicated: indicated.length,
+    effective: indicated.length - missed.length,
+    missed: missed.length,
+    missedDays: missed
+  };
+}
+function isMedPharmRowHidden(row) {
+  return !!(row && row.hidden);
+}
+function toggleNotAdmin(days, notAdmin, dayNum) {
+  if (!(dayValueInMap(days, dayNum) > 0)) return notAdmin || {};
+  const next = Object.assign({}, notAdmin || {});
+  if (next[dayNum] || next[String(dayNum)]) {
+    delete next[dayNum];
+    delete next[String(dayNum)];
+  } else {
+    next[dayNum] = true;
+  }
+  return next;
+}
+function formatFreqShort(raw) {
+  const t2 = trimStr2(raw).toUpperCase();
+  if (!t2) return "\u2014";
+  if (t2 === "ONCE" || t2 === "PRN") return t2;
+  const m = t2.match(/^Q?(\d+)\s*H$/);
+  if (m) return m[1] + "H";
+  if (t2.indexOf("Q") === 0) return t2.slice(1);
+  return t2;
+}
+function formatViaShort(raw) {
+  const v = trimStr2(raw).replace(/^VIA\s+/i, "");
+  return v || "\u2014";
+}
+function isDayHeaderToken(cell) {
+  const t2 = trimStr2(cell);
+  if (!/^\d{1,2}$/.test(t2)) return false;
+  const n = parseInt(t2, 10);
+  return n >= 1 && n <= 31;
+}
+function findDayHeaderInfo(cols) {
+  let start = -1;
+  let count = 0;
+  for (let i = 0; i < cols.length; i += 1) {
+    if (!isDayHeaderToken(cols[i])) continue;
+    if (start < 0) start = i;
+    count += 1;
+  }
+  if (count < 5) return null;
+  return { dayStartCol: start };
+}
+function parseDayCell(raw) {
+  const t2 = trimStr2(raw);
+  if (!t2 || t2 === "-" || t2 === "0") return 0;
+  const n = parseInt(t2, 10);
+  if (n === 2) return 2;
+  if (n >= 1) return 1;
+  return 0;
+}
+function rowMetaFromCols(cols, dayStartCol) {
+  const meta = [];
+  for (let i = 0; i < dayStartCol; i += 1) {
+    const p = trimStr2(cols[i]);
+    if (p) meta.push(p);
+  }
+  if (meta.length < 4) return null;
+  const via = meta[meta.length - 1];
+  const freq = meta[meta.length - 2];
+  const dosis = meta[meta.length - 3];
+  const med = meta.slice(0, meta.length - 3).join(" ");
+  if (!med) return null;
+  return { med, dosis, freq, via };
+}
+function parseDaysFromCols(cols, dayStartCol, daysInMonth) {
+  const days = {};
+  for (let d = 1; d <= daysInMonth; d += 1) {
+    const v = parseDayCell(cols[dayStartCol + d - 1]);
+    if (v > 0) days[d] = v;
+  }
+  return days;
+}
+function parseRowLine(cols, dayStartCol, daysInMonth) {
+  let start = dayStartCol;
+  let meta = rowMetaFromCols(cols, start);
+  if (!meta && cols.length > start + daysInMonth) {
+    start = cols.length - daysInMonth;
+    meta = rowMetaFromCols(cols, start);
+  }
+  if (!meta) return null;
+  const days = parseDaysFromCols(cols, start, daysInMonth);
+  if (!Object.keys(days).length) return null;
+  return { meta, days };
+}
+function looksLikeSomePharmMonthPaste(text) {
+  const lines = String(text || "").split(/\r?\n/).map(trimStr2).filter(Boolean);
+  if (lines.length < 2) return false;
+  for (let i = 0; i < lines.length; i += 1) {
+    if (findDayHeaderInfo(lines[i].split("	"))) return true;
+  }
+  return false;
+}
+function parseSomePharmMonthPaste(text, opts) {
+  const year = opts.year;
+  const monthIndex = opts.monthIndex;
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  const monthKey = monthKeyFromParts(year, monthIndex);
+  const lines = String(text || "").split(/\r?\n/).map(trimStr2).filter(Boolean);
+  let headerIdx = -1;
+  let dayStartCol = -1;
+  for (let i = 0; i < lines.length; i += 1) {
+    const info = findDayHeaderInfo(lines[i].split("	"));
+    if (!info) continue;
+    headerIdx = i;
+    dayStartCol = info.dayStartCol;
+    break;
+  }
+  if (headerIdx < 0) {
+    return { rows: [], skipped: lines.length, daysInMonth, monthKey, year, monthIndex };
+  }
+  const rows = [];
+  let skipped = 0;
+  for (let i = 0; i < lines.length; i += 1) {
+    if (i === headerIdx) continue;
+    const parsedRow = parseRowLine(lines[i].split("	"), dayStartCol, daysInMonth);
+    if (!parsedRow) {
+      skipped += 1;
+      continue;
+    }
+    rows.push(
+      assignSomePharmCategory({
+        rowKey: buildMedPharmRowKey(parsedRow.meta),
+        med: parsedRow.meta.med,
+        dosis: parsedRow.meta.dosis,
+        freq: parsedRow.meta.freq,
+        via: parsedRow.meta.via,
+        cat: "",
+        days: parsedRow.days,
+        notAdmin: {}
+      })
+    );
+  }
+  return { rows, skipped, daysInMonth, monthKey, year, monthIndex };
+}
+function parseRecetaDateToDay(fechaDMY, year, monthIndex) {
+  const m = trimStr2(fechaDMY).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return { ok: false, day: 0 };
+  const day = parseInt(m[1], 10);
+  const mon = parseInt(m[2], 10) - 1;
+  const y = parseInt(m[3], 10);
+  if (y !== year || mon !== monthIndex) return { ok: false, day: 0 };
+  const dim = new Date(year, monthIndex + 1, 0).getDate();
+  if (day < 1 || day > dim) return { ok: false, day: 0 };
+  return { ok: true, day };
+}
+function emptyMonth(year, monthIndex) {
+  return {
+    monthKey: monthKeyFromParts(year, monthIndex),
+    year,
+    monthIndex,
+    daysInMonth: new Date(year, monthIndex + 1, 0).getDate(),
+    rows: []
+  };
+}
+function findRowByKey(rows, key) {
+  for (let i = 0; i < rows.length; i += 1) {
+    if (rows[i].rowKey === key) return rows[i];
+  }
+  return null;
+}
+function lastIndicatedDay(days, maxDay) {
+  let last = 0;
+  for (let d = 1; d <= maxDay; d += 1) {
+    if (dayValueInMap(days, d) > 0) last = d;
+  }
+  return last;
+}
+function fillGapDays(days, fromDay, toDay) {
+  for (let d = fromDay; d < toDay; d += 1) {
+    if (dayValueInMap(days, d) > 0) continue;
+    days[d] = 1;
+  }
+}
+function mergeRecetaIntoMonth(month, recetaItems, fechaActualizacion) {
+  const parsed = parseRecetaDateToDay(fechaActualizacion, month.year, month.monthIndex);
+  if (!parsed.ok) return month;
+  const target = parsed.day;
+  const rows = (month.rows || []).slice();
+  const items = recetaItems || [];
+  for (let i = 0; i < items.length; i += 1) {
+    const it = items[i];
+    if (it.suspendido) continue;
+    const fields = {
+      med: trimStr2(it.nombreRaw),
+      dosis: trimStr2(it.dosisRaw),
+      freq: trimStr2(it.frecuenciaRaw),
+      via: trimStr2(it.viaRaw)
+    };
+    const key = buildMedPharmRowKey(fields);
+    let row = findRowByKey(rows, key);
+    if (!row) {
+      row = assignSomePharmCategory(
+        Object.assign({}, fields, { rowKey: key, cat: "", days: {}, notAdmin: {} })
+      );
+      rows.push(row);
+    }
+    const last = lastIndicatedDay(row.days, month.daysInMonth);
+    if (last > 0 && target > last + 1) fillGapDays(row.days, last + 1, target);
+    if (!(dayValueInMap(row.days, target) > 0)) row.days[target] = 1;
+  }
+  return Object.assign({}, month, {
+    rows,
+    lastRecetaMergeDate: fechaActualizacion
+  });
+}
+function mergeNotAdminFromPrevious(newRow, oldNotAdmin) {
+  const notAdmin = {};
+  const na = oldNotAdmin || {};
+  const keys = Object.keys(newRow.days || {});
+  for (let i = 0; i < keys.length; i += 1) {
+    const d = parseInt(keys[i], 10);
+    if (na[d] || na[String(d)]) notAdmin[d] = true;
+  }
+  return Object.assign({}, newRow, { notAdmin });
+}
+function applySomePasteToProfile(profile, parsed) {
+  const base = profile && profile.months ? profile : { months: {} };
+  const prev = base.months[parsed.monthKey];
+  const prevNa = /* @__PURE__ */ Object.create(null);
+  if (prev && prev.rows) {
+    prev.rows.forEach(function(r) {
+      prevNa[r.rowKey] = r.notAdmin || {};
+    });
+  }
+  const prevRows = prev && prev.rows ? prev.rows : [];
+  const prevByKey = /* @__PURE__ */ Object.create(null);
+  prevRows.forEach(function(r) {
+    prevByKey[r.rowKey] = r;
+  });
+  const rows = parsed.rows.map(function(r) {
+    const row = mergeNotAdminFromPrevious(r, prevNa[r.rowKey]);
+    const old = prevByKey[r.rowKey];
+    if (!old) return assignSomePharmCategory(row);
+    const patch = {};
+    if (old.catOverride) {
+      patch.catOverride = old.catOverride;
+      patch.cat = old.catOverride;
+    }
+    if (old.hidden) patch.hidden = true;
+    return assignSomePharmCategory(Object.assign({}, row, patch));
+  });
+  const months = Object.assign({}, base.months);
+  months[parsed.monthKey] = {
+    monthKey: parsed.monthKey,
+    year: parsed.year,
+    monthIndex: parsed.monthIndex,
+    daysInMonth: parsed.daysInMonth,
+    lastSomePasteAt: (/* @__PURE__ */ new Date()).toISOString(),
+    rows
+  };
+  return { months };
+}
+function getMonthFromProfile(profile, year, monthIndex) {
+  if (!profile || !profile.months) return null;
+  return profile.months[monthKeyFromParts(year, monthIndex)] || null;
+}
+function ensureMonthOnProfile(profile, year, monthIndex) {
+  const base = profile && profile.months ? profile : { months: {} };
+  const key = monthKeyFromParts(year, monthIndex);
+  if (base.months[key]) return base;
+  const months = Object.assign({}, base.months);
+  months[key] = emptyMonth(year, monthIndex);
+  return { months };
+}
+
+// public/js/features/med-pharm-profile-panel.mjs
+var MONTH_NAMES = [
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre"
+];
 var rt30 = {
+  getActiveId() {
+    return null;
+  },
+  showToast() {
+  },
+  refreshMedPanel() {
+  }
+};
+var medSubview = "receta";
+var viewYear = (/* @__PURE__ */ new Date()).getFullYear();
+var viewMonthIndex = (/* @__PURE__ */ new Date()).getMonth();
+var listFilter = "TODOS";
+var showHiddenMedRows = false;
+var openRowKey = null;
+var uiWired = false;
+var dismissWired2 = false;
+var lastPharmPanelPatientId = null;
+function registerMedPharmProfileRuntime(partial) {
+  if (partial && typeof partial === "object") Object.assign(rt30, partial);
+}
+function getMedSubview() {
+  return medSubview;
+}
+function setMedSubview(mode) {
+  if (mode !== "receta" && mode !== "perfil") return;
+  medSubview = mode;
+  syncSubviewVisibility();
+  rt30.refreshMedPanel();
+}
+function syncSubviewVisibility() {
+  var receta = document.getElementById("med-subview-receta");
+  var perfil = document.getElementById("med-subview-perfil");
+  if (receta) receta.style.display = medSubview === "receta" ? "" : "none";
+  if (perfil) perfil.style.display = medSubview === "perfil" ? "" : "none";
+  var recetaTab = document.getElementById("med-itab-receta");
+  var perfilTab = document.getElementById("med-itab-perfil");
+  if (recetaTab) {
+    var onReceta = medSubview === "receta";
+    recetaTab.classList.toggle("active", onReceta);
+    recetaTab.setAttribute("aria-selected", onReceta ? "true" : "false");
+  }
+  if (perfilTab) {
+    var onPerfil = medSubview === "perfil";
+    perfilTab.classList.toggle("active", onPerfil);
+    perfilTab.setAttribute("aria-selected", onPerfil ? "true" : "false");
+  }
+  var bar = document.getElementById("med-subview-tabs-bar");
+  var activeTab = medSubview === "perfil" ? perfilTab : recetaTab;
+  syncTabBarIndicator(bar, activeTab);
+}
+function initMedPharmSubviewUi() {
+  wireUiOnce();
+  syncSubviewVisibility();
+}
+function esc25(s) {
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function monthLabel(year, monthIndex) {
+  return MONTH_NAMES[monthIndex] + " " + year;
+}
+function todayParts() {
+  var t2 = /* @__PURE__ */ new Date();
+  return { year: t2.getFullYear(), monthIndex: t2.getMonth(), day: t2.getDate() };
+}
+function isToday(year, monthIndex, day) {
+  var t2 = todayParts();
+  return t2.year === year && t2.monthIndex === monthIndex && t2.day === day;
+}
+function getProfile(pid) {
+  return medPharmProfileByPatient[pid] || null;
+}
+function getViewMonth(pid) {
+  var profile = getProfile(pid);
+  if (!profile) return null;
+  return getMonthFromProfile(profile, viewYear, viewMonthIndex);
+}
+function needsSomePharmReclassify(row) {
+  if (!row || row.catOverride) return false;
+  var c = String(row.cat || "").toUpperCase();
+  if (!c) return true;
+  if (!isSomePharmCategoryLabel(c)) return true;
+  var legacy = ["ABX", "ANALGESIA", "VASOP", "ANTIHTA"];
+  return legacy.indexOf(c) >= 0;
+}
+function reclassifyMonthIfLegacy(pid, month) {
+  if (!month || !month.rows) return month;
+  var changed = false;
+  month.rows.forEach(function(row) {
+    if (!needsSomePharmReclassify(row)) return;
+    var next = assignSomePharmCategory(row);
+    row.cat = next.cat;
+    changed = true;
+  });
+  if (changed) saveState();
+  return month;
+}
+function adherenceHtml(stats) {
+  if (!stats.indicated) return '<span class="adh-ok">\u2014</span>';
+  if (!stats.missed) {
+    return '<span class="adh-ok" title="Todos los d\xEDas indicados se asumen administrados">' + esc25(String(stats.effective)) + " d efectivos</span>";
+  }
+  var daysList = stats.missedDays.map(function(d) {
+    return String(d).padStart(2, "0");
+  }).join(", ");
+  return '<span class="adh-miss" title="No administrado: d\xEDas ' + esc25(daysList) + '">' + esc25(String(stats.effective)) + " efect. \xB7 <strong>" + esc25(String(stats.missed)) + " no</strong></span>";
+}
+function buildMedCellInner(row, stats) {
+  return '<div class="med-cell-name">' + esc25(row.med) + '</div><div class="med-cell-adh">' + adherenceHtml(stats) + "</div>";
+}
+function rowsMatchingCategoryFilter(month) {
+  if (!month || !month.rows) return [];
+  if (listFilter === "TODOS") return month.rows;
+  return month.rows.filter(function(r) {
+    return rowSomePharmCategory(r) === listFilter;
+  });
+}
+function countHiddenInCategoryFilter(month) {
+  return rowsMatchingCategoryFilter(month).filter(isMedPharmRowHidden).length;
+}
+function displayRows(month) {
+  var rows = rowsMatchingCategoryFilter(month);
+  if (showHiddenMedRows) return rows;
+  return rows.filter(function(r) {
+    return !isMedPharmRowHidden(r);
+  });
+}
+function setMedPharmRowHidden(pid, rowKey, hidden) {
+  var month = getViewMonth(pid);
+  if (!month) return;
+  var row = month.rows.find(function(r) {
+    return r.rowKey === rowKey;
+  });
+  if (!row) return;
+  if (hidden) row.hidden = true;
+  else delete row.hidden;
+  saveState();
+  renderMedPharmProfilePanel();
+  var fullEl = document.getElementById("med-pharm-modal-full");
+  if (fullEl && fullEl.classList.contains("open")) openMedPharmFullModal();
+}
+function renderFilterSelect(filtro) {
+  if (!filtro) return;
+  var labels = listSomePharmFilterLabels();
+  var html = labels.map(function(lab) {
+    var sel = lab === listFilter ? " selected" : "";
+    return '<option value="' + esc25(lab) + '"' + sel + ">" + esc25(lab) + "</option>";
+  }).join("");
+  if (filtro.innerHTML !== html) filtro.innerHTML = html;
+  filtro.value = listFilter;
+}
+function padDayCells(tr, count, target, tag, padClass) {
+  while (count < target) {
+    var cell = document.createElement(tag);
+    cell.className = padClass;
+    if (tag === "th") cell.innerHTML = "&nbsp;";
+    tr.appendChild(cell);
+    count += 1;
+  }
+}
+function appendDayHeader(tr, from, to, year, monthIndex) {
+  for (var d = from; d <= to; d += 1) {
+    var th = document.createElement("th");
+    th.className = "day-hdr" + (isToday(year, monthIndex, d) ? " today-col" : "");
+    th.textContent = String(d).padStart(2, "0");
+    tr.appendChild(th);
+  }
+}
+function appendDayCell(tr, row, d, year, monthIndex) {
+  var td = document.createElement("td");
+  td.className = "day-pad" + (isToday(year, monthIndex, d) ? " today-col" : "");
+  var v = dayValueInMap(row.days, d);
+  if (!(v > 0)) {
+    tr.appendChild(td);
+    return;
+  }
+  td.classList.add("indicated");
+  if (row.notAdmin && (row.notAdmin[d] || row.notAdmin[String(d)])) {
+    td.classList.add("not-admin");
+  }
+  if (v > 1) {
+    var span = document.createElement("span");
+    span.className = "x2";
+    span.textContent = "\xD72";
+    td.appendChild(span);
+  }
+  td.dataset.rowKey = row.rowKey;
+  td.dataset.day = String(d);
+  td.title = "D\xEDa " + d + " \u2014 clic para marcar no administrado";
+  tr.appendChild(td);
+}
+function mountSomeGrid(month, rows, container) {
+  if (!container) return;
+  container.innerHTML = "";
+  var wrap = document.createElement("div");
+  wrap.className = "med-pharm-grid-scope some-grid-wrap";
+  wrap.appendChild(buildSomeGridTable(month, rows));
+  container.appendChild(wrap);
+}
+function buildSomeGridTable(month, rows) {
+  var total = month.daysInMonth;
+  var splitAt = splitMonthAt(total);
+  var table = document.createElement("table");
+  table.className = "some-grid-unified";
+  var cg = document.createElement("colgroup");
+  ["col-med", "col-dosis", "col-freq", "col-via"].forEach(function(cls) {
+    var col = document.createElement("col");
+    col.className = cls;
+    cg.appendChild(col);
+  });
+  for (var ci = 0; ci < splitAt; ci += 1) {
+    var dayCol = document.createElement("col");
+    dayCol.className = "col-day";
+    cg.appendChild(dayCol);
+  }
+  table.appendChild(cg);
+  var thead = document.createElement("thead");
+  var hdr1 = document.createElement("tr");
+  hdr1.className = "hdr-row-1";
+  ["Medicamento", "Dosis", "Freq", "V\xEDa"].forEach(function(label, i) {
+    var th = document.createElement("th");
+    th.className = "col-meta-hdr col-" + ["med", "dosis", "freq", "via"][i];
+    th.rowSpan = 2;
+    th.textContent = label;
+    hdr1.appendChild(th);
+  });
+  appendDayHeader(hdr1, 1, Math.min(splitAt, total), month.year, month.monthIndex);
+  padDayCells(hdr1, hdr1.querySelectorAll("th.day-hdr").length, splitAt, "th", "day-hdr day-hdr-empty");
+  thead.appendChild(hdr1);
+  var hdr2 = document.createElement("tr");
+  hdr2.className = "hdr-row-2";
+  if (total > splitAt) {
+    appendDayHeader(hdr2, splitAt + 1, total, month.year, month.monthIndex);
+  }
+  padDayCells(hdr2, hdr2.querySelectorAll("th.day-hdr").length, splitAt, "th", "day-hdr day-hdr-empty");
+  thead.appendChild(hdr2);
+  table.appendChild(thead);
+  var tbody = document.createElement("tbody");
+  rows.forEach(function(row) {
+    var stats = adherenceStats(row.days, row.notAdmin);
+    var missCls = stats.missed > 0 ? " has-misses" : "";
+    var tr1 = document.createElement("tr");
+    tr1.className = "day-band" + missCls;
+    var medTd = document.createElement("td");
+    medTd.rowSpan = 2;
+    medTd.className = "col-med";
+    medTd.innerHTML = buildMedCellInner(row, stats);
+    tr1.appendChild(medTd);
+    var dosisTd = document.createElement("td");
+    dosisTd.rowSpan = 2;
+    dosisTd.className = "col-dosis";
+    dosisTd.textContent = row.dosis || "";
+    tr1.appendChild(dosisTd);
+    var freqTd = document.createElement("td");
+    freqTd.rowSpan = 2;
+    freqTd.className = "col-freq";
+    freqTd.textContent = formatFreqShort(row.freq);
+    tr1.appendChild(freqTd);
+    var viaTd = document.createElement("td");
+    viaTd.rowSpan = 2;
+    viaTd.className = "col-via";
+    viaTd.textContent = formatViaShort(row.via);
+    tr1.appendChild(viaTd);
+    appendDayCell(tr1, row, 1, month.year, month.monthIndex);
+    for (var d = 2; d <= Math.min(splitAt, total); d += 1) {
+      appendDayCell(tr1, row, d, month.year, month.monthIndex);
+    }
+    padDayCells(tr1, tr1.querySelectorAll("td.day-pad").length, splitAt, "td", "day-pad day-pad-empty");
+    tbody.appendChild(tr1);
+    var tr2 = document.createElement("tr");
+    tr2.className = "day-band" + missCls;
+    if (total > splitAt) {
+      appendDayCell(tr2, row, splitAt + 1, month.year, month.monthIndex);
+      for (var d2 = splitAt + 2; d2 <= total; d2 += 1) {
+        appendDayCell(tr2, row, d2, month.year, month.monthIndex);
+      }
+    }
+    padDayCells(tr2, tr2.querySelectorAll("td.day-pad").length, splitAt, "td", "day-pad day-pad-empty");
+    tbody.appendChild(tr2);
+  });
+  table.appendChild(tbody);
+  return table;
+}
+var MED_PHARM_MODAL_IDS = ["med-pharm-paste-modal", "med-pharm-modal-one", "med-pharm-modal-full"];
+function closeModals() {
+  MED_PHARM_MODAL_IDS.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.classList.remove("open");
+      el.setAttribute("hidden", "");
+      el.setAttribute("aria-hidden", "true");
+    }
+  });
+  document.body.classList.remove("rpc-med-pharm-modal-open");
+  openRowKey = null;
+}
+function openMedPharmModal(id) {
+  closeModals();
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.removeAttribute("hidden");
+  el.setAttribute("aria-hidden", "false");
+  el.classList.add("open");
+  document.body.classList.add("rpc-med-pharm-modal-open");
+}
+function closeMedPharmModals() {
+  closeModals();
+}
+function wireMedPharmModalDismiss() {
+  if (dismissWired2) return;
+  dismissWired2 = true;
+  document.addEventListener(
+    "keydown",
+    function(ev) {
+      if (ev.key !== "Escape") return;
+      var open = false;
+      MED_PHARM_MODAL_IDS.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el && el.classList.contains("open")) open = true;
+      });
+      if (!open) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      closeModals();
+    },
+    true
+  );
+  MED_PHARM_MODAL_IDS.forEach(function(id) {
+    var bd = document.getElementById(id);
+    if (!bd) return;
+    bd.addEventListener("click", function(ev) {
+      if (!bd.classList.contains("open")) return;
+      if (ev.target === bd) closeModals();
+    });
+  });
+}
+function onActivePatientChangedForPharm(pid) {
+  if (pid === lastPharmPanelPatientId) return;
+  lastPharmPanelPatientId = pid;
+  closeModals();
+}
+function openMedPharmPasteModal() {
+  var pid = rt30.getActiveId();
+  if (!pid) {
+    rt30.showToast("Selecciona un paciente primero", "error");
+    return;
+  }
+  var ta = document.getElementById("med-pharm-paste");
+  openMedPharmModal("med-pharm-paste-modal");
+  if (ta) {
+    requestAnimationFrame(function() {
+      ta.focus();
+    });
+  }
+}
+function onGridDayClick(rowKey, day) {
+  var pid = rt30.getActiveId();
+  if (!pid) return;
+  var month = getViewMonth(pid);
+  if (!month) return;
+  var row = month.rows.find(function(r) {
+    return r.rowKey === rowKey;
+  });
+  if (!row) return;
+  row.notAdmin = toggleNotAdmin(row.days, row.notAdmin, day);
+  saveState();
+  renderMedPharmProfilePanel();
+  var fullEl = document.getElementById("med-pharm-modal-full");
+  if (fullEl && fullEl.classList.contains("open")) {
+    openMedPharmFullModal();
+    return;
+  }
+  if (openRowKey === rowKey) openMedPharmRowModal(rowKey);
+}
+function wireUiOnce() {
+  wireMedPharmModalDismiss();
+  if (uiWired) return;
+  uiWired = true;
+  var pasteOpen = document.getElementById("med-pharm-paste-open-btn");
+  if (pasteOpen) pasteOpen.addEventListener("click", openMedPharmPasteModal);
+  var imp = document.getElementById("med-pharm-import-btn");
+  if (imp) imp.addEventListener("click", importMedPharmMonthPaste);
+  var full = document.getElementById("med-pharm-full-btn");
+  if (full) full.addEventListener("click", openMedPharmFullModal);
+  var prev = document.getElementById("med-pharm-month-prev");
+  var next = document.getElementById("med-pharm-month-next");
+  if (prev) {
+    prev.addEventListener("click", function() {
+      shiftViewMonth(-1);
+    });
+  }
+  if (next) {
+    next.addEventListener("click", function() {
+      shiftViewMonth(1);
+    });
+  }
+  var filtro = document.getElementById("med-pharm-filtro");
+  if (filtro) {
+    filtro.addEventListener("change", function() {
+      listFilter = filtro.value;
+      renderMedPharmProfilePanel();
+    });
+  }
+  var showHidden = document.getElementById("med-pharm-show-hidden");
+  if (showHidden) {
+    showHidden.addEventListener("change", function() {
+      showHiddenMedRows = !!showHidden.checked;
+      renderMedPharmProfilePanel();
+    });
+  }
+  document.addEventListener("click", function(e) {
+    if (e.target.closest("[data-med-pharm-close]")) return;
+    var hideBtn = e.target.closest("[data-med-pharm-hide]");
+    if (hideBtn && hideBtn.dataset.medPharmHide) {
+      var pidHide = rt30.getActiveId();
+      if (pidHide) setMedPharmRowHidden(pidHide, hideBtn.dataset.medPharmHide, true);
+      return;
+    }
+    var unhideBtn = e.target.closest("[data-med-pharm-unhide]");
+    if (unhideBtn && unhideBtn.dataset.medPharmUnhide) {
+      var pidShow = rt30.getActiveId();
+      if (pidShow) setMedPharmRowHidden(pidShow, unhideBtn.dataset.medPharmUnhide, false);
+      return;
+    }
+    var dayCell = e.target.closest("td.day-pad.indicated");
+    if (dayCell && dayCell.dataset.rowKey) {
+      onGridDayClick(dayCell.dataset.rowKey, parseInt(dayCell.dataset.day, 10));
+    }
+  });
+}
+function shiftViewMonth(delta) {
+  viewMonthIndex += delta;
+  if (viewMonthIndex < 0) {
+    viewMonthIndex = 11;
+    viewYear -= 1;
+  }
+  if (viewMonthIndex > 11) {
+    viewMonthIndex = 0;
+    viewYear += 1;
+  }
+  renderMedPharmProfilePanel();
+}
+function renderMedPharmProfilePanel() {
+  initMedPharmSubviewUi();
+  if (medSubview !== "perfil") return;
+  var pid = rt30.getActiveId();
+  onActivePatientChangedForPharm(pid);
+  var hint = document.getElementById("med-pharm-hint");
+  var list = document.getElementById("med-pharm-list");
+  var label = document.getElementById("med-pharm-month-label");
+  if (!list) return;
+  if (!pid) {
+    if (hint) {
+      hint.style.display = "block";
+      hint.textContent = "Selecciona un paciente para ver el perfil farmacoterap\xE9utico.";
+    }
+    list.innerHTML = "";
+    return;
+  }
+  if (hint) hint.style.display = "none";
+  if (label) label.textContent = monthLabel(viewYear, viewMonthIndex);
+  var lastPasteEl = document.getElementById("med-pharm-last-paste");
+  var month = reclassifyMonthIfLegacy(pid, getViewMonth(pid));
+  if (lastPasteEl) {
+    var pasted = month && month.lastSomePasteAt;
+    if (pasted) {
+      var d = new Date(pasted);
+      lastPasteEl.textContent = "\xDAltimo pegado: " + String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0") + "/" + d.getFullYear();
+      lastPasteEl.hidden = false;
+    } else {
+      lastPasteEl.hidden = true;
+    }
+  }
+  var rows = displayRows(month);
+  var hiddenCount = countHiddenInCategoryFilter(month);
+  var filtro = document.getElementById("med-pharm-filtro");
+  renderFilterSelect(filtro);
+  updateMedPharmHiddenToolbar(hiddenCount);
+  var card = document.querySelector(".med-pharm-profile-card");
+  var listHead = document.querySelector(".med-pharm-list-head");
+  if (!month || !month.rows.length) {
+    if (card) card.classList.remove("med-pharm-has-grid");
+    if (listHead) listHead.style.display = "";
+    list.className = "med-pharm-list-body";
+    list.innerHTML = '<div class="med-pharm-empty"><p class="med-pharm-empty-title">Sin datos para ' + esc25(monthLabel(viewYear, viewMonthIndex)) + '</p><p class="med-pharm-empty-lead">Importa la matriz SOME del hospital o procesa <strong>Receta</strong> en la pesta\xF1a Receta actual.</p><button type="button" class="btn-generate" data-med-pharm-open-paste>Importar mes SOME</button></div>';
+    list.querySelector("[data-med-pharm-open-paste]").addEventListener("click", openMedPharmPasteModal);
+    return;
+  }
+  if (!rows.length) {
+    if (card) card.classList.remove("med-pharm-has-grid");
+    if (listHead) listHead.style.display = hiddenCount > 0 && showHiddenMedRows ? "" : "none";
+    list.className = "med-pharm-list-body";
+    list.innerHTML = '<div class="med-pharm-empty med-pharm-empty--filter"><p class="med-pharm-empty-title">Ning\xFAn medicamento visible</p><p class="med-pharm-empty-lead">' + (hiddenCount > 0 ? "Hay " + hiddenCount + " oculto(s) con este filtro. Activa <strong>Mostrar ocultos</strong> para verlos o restaurarlos." : "Prueba otro filtro de categor\xEDa.") + "</p></div>";
+    return;
+  }
+  if (card) card.classList.remove("med-pharm-has-grid");
+  if (listHead) listHead.style.display = "";
+  list.className = "med-pharm-list-body";
+  renderMedPharmSummaryList(list, rows);
+}
+function updateMedPharmHiddenToolbar(hiddenCount) {
+  var wrap = document.getElementById("med-pharm-show-hidden-wrap");
+  var cb = document.getElementById("med-pharm-show-hidden");
+  var countEl = document.getElementById("med-pharm-hidden-count");
+  if (countEl) countEl.textContent = String(hiddenCount);
+  if (wrap) wrap.hidden = hiddenCount < 1;
+  if (cb) {
+    cb.checked = showHiddenMedRows;
+    cb.disabled = hiddenCount < 1;
+  }
+}
+function renderMedPharmSummaryList(listEl, rows) {
+  listEl.innerHTML = "";
+  rows.forEach(function(row) {
+    var stats = adherenceStats(row.days, row.notAdmin);
+    var missCls = stats.missed > 0 ? " has-misses" : "";
+    var isHidden = isMedPharmRowHidden(row);
+    var wrap = document.createElement("div");
+    wrap.className = "med-pharm-row" + (isHidden ? " med-pharm-row--hidden" : "");
+    var summary = document.createElement("div");
+    summary.className = "med-pharm-row-summary" + missCls;
+    var main = document.createElement("div");
+    main.className = "med-pharm-main";
+    var text = document.createElement("div");
+    text.className = "med-pharm-text";
+    var nameEl = document.createElement("div");
+    nameEl.className = "med-pharm-name";
+    nameEl.textContent = row.med || "";
+    text.appendChild(nameEl);
+    var adhEl = document.createElement("div");
+    adhEl.className = "med-cell-adh";
+    adhEl.innerHTML = adherenceHtml(stats);
+    text.appendChild(adhEl);
+    var dosisEl = document.createElement("div");
+    dosisEl.className = "med-pharm-dosis-line";
+    dosisEl.textContent = row.dosis || "";
+    text.appendChild(dosisEl);
+    var catEl = document.createElement("span");
+    catEl.className = "med-pharm-cat-badge";
+    catEl.textContent = rowSomePharmCategory(row);
+    text.appendChild(catEl);
+    main.appendChild(text);
+    var actions = document.createElement("div");
+    actions.className = "med-pharm-row-actions";
+    var btnDays = document.createElement("button");
+    btnDays.type = "button";
+    btnDays.className = "med-pharm-btn-dias";
+    btnDays.textContent = "D\xEDas";
+    btnDays.addEventListener("click", function(e) {
+      e.stopPropagation();
+      openMedPharmRowModal(row.rowKey);
+    });
+    actions.appendChild(btnDays);
+    var btnVis = document.createElement("button");
+    btnVis.type = "button";
+    btnVis.className = "med-pharm-btn-visibility";
+    if (isHidden) {
+      btnVis.textContent = "Mostrar";
+      btnVis.title = "Volver a mostrar en la lista y calendario";
+      btnVis.dataset.medPharmUnhide = row.rowKey;
+    } else {
+      btnVis.textContent = "Ocultar";
+      btnVis.title = "Ocultar de la vista (se conserva en el mes importado)";
+      btnVis.dataset.medPharmHide = row.rowKey;
+    }
+    actions.appendChild(btnVis);
+    main.appendChild(actions);
+    summary.appendChild(main);
+    var freqEl = document.createElement("span");
+    freqEl.className = "med-pharm-freq-cell";
+    freqEl.textContent = formatFreqShort(row.freq);
+    summary.appendChild(freqEl);
+    var viaEl = document.createElement("span");
+    viaEl.className = "med-pharm-via-cell";
+    viaEl.textContent = formatViaShort(row.via);
+    summary.appendChild(viaEl);
+    wrap.appendChild(summary);
+    listEl.appendChild(wrap);
+  });
+}
+function openMedPharmRowModal(rowKey) {
+  var pid = rt30.getActiveId();
+  var month = pid ? getViewMonth(pid) : null;
+  if (!month) return;
+  var row = month.rows.find(function(r) {
+    return r.rowKey === rowKey;
+  });
+  if (!row) return;
+  openRowKey = rowKey;
+  var backdrop = document.getElementById("med-pharm-modal-one");
+  var body = document.getElementById("med-pharm-modal-one-body");
+  var title = document.getElementById("med-pharm-modal-one-title");
+  if (!backdrop || !body) return;
+  if (title) title.textContent = row.med;
+  mountSomeGrid(month, [row], body);
+  openMedPharmModal("med-pharm-modal-one");
+}
+function openMedPharmFullModal() {
+  var pid = rt30.getActiveId();
+  var month = pid ? getViewMonth(pid) : null;
+  if (!month) {
+    rt30.showToast("No hay datos del mes para mostrar", "error");
+    return;
+  }
+  var rows = displayRows(month);
+  if (!rows.length) {
+    var hiddenN = countHiddenInCategoryFilter(month);
+    rt30.showToast(
+      hiddenN > 0 ? "Solo hay medicamentos ocultos. Activa \xABMostrar ocultos\xBB para ver el calendario." : "No hay medicamentos en el filtro actual",
+      "error"
+    );
+    return;
+  }
+  var backdrop = document.getElementById("med-pharm-modal-full");
+  var body = document.getElementById("med-pharm-modal-full-body");
+  var title = document.getElementById("med-pharm-modal-full-title");
+  if (!backdrop || !body) return;
+  if (title) {
+    var filtLabel = listFilter === "TODOS" ? "Todos los medicamentos" : "Filtro: " + listFilter;
+    title.textContent = "Calendario farmacoterap\xE9utico \u2014 " + monthLabel(viewYear, viewMonthIndex);
+    title.title = filtLabel + " \xB7 " + rows.length + " filas \xB7 formato matriz SOME";
+  }
+  mountSomeGrid(month, rows, body);
+  openMedPharmModal("med-pharm-modal-full");
+}
+function importMedPharmMonthPaste() {
+  var pid = rt30.getActiveId();
+  if (!pid) {
+    rt30.showToast("Selecciona un paciente primero", "error");
+    return;
+  }
+  var ta = document.getElementById("med-pharm-paste");
+  var raw = ta ? ta.value : "";
+  if (!looksLikeSomePharmMonthPaste(raw)) {
+    rt30.showToast("No parece un pegado SOME mensual (cabecera con d\xEDas 01, 02\u2026)", "error");
+    return;
+  }
+  var parsed = parseSomePharmMonthPaste(raw, { year: viewYear, monthIndex: viewMonthIndex });
+  if (!parsed.rows.length) {
+    rt30.showToast("No se encontraron filas de medicamento en el pegado", "error");
+    return;
+  }
+  var profile = getProfile(pid) || { months: {} };
+  medPharmProfileByPatient[pid] = applySomePasteToProfile(profile, parsed);
+  saveState();
+  if (ta) ta.value = "";
+  closeModals();
+  renderMedPharmProfilePanel();
+  var msg = "Mes importado (" + parsed.rows.length + " medicamentos)";
+  if (parsed.skipped > 0) msg += ". Omitidas " + parsed.skipped + " l\xEDneas.";
+  rt30.showToast(msg, "success");
+}
+function onRecetaMergedToProfile(patientId, recetaBlock) {
+  if (!patientId || !recetaBlock || !recetaBlock.items || !recetaBlock.items.length) return;
+  var fecha = recetaBlock.fechaActualizacion;
+  if (!fecha) return;
+  var parts = fecha.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!parts) return;
+  var year = parseInt(parts[3], 10);
+  var monthIndex = parseInt(parts[2], 10) - 1;
+  var profile = getProfile(patientId) || { months: {} };
+  var withMonth = ensureMonthOnProfile(profile, year, monthIndex);
+  var key = monthKeyFromParts(year, monthIndex);
+  var month = withMonth.months[key];
+  month = mergeRecetaIntoMonth(month, recetaBlock.items, fecha);
+  month.rows = assignSomePharmCategories(month.rows);
+  withMonth.months[key] = month;
+  medPharmProfileByPatient[patientId] = withMonth;
+  saveState();
+  if (medSubview === "perfil" && viewYear === year && viewMonthIndex === monthIndex) {
+    renderMedPharmProfilePanel();
+  }
+}
+var medPharmProfileWindowHandlers = {
+  setMedSubview,
+  importMedPharmMonthPaste,
+  openMedPharmPasteModal,
+  openMedPharmFullModal,
+  closeMedPharmModals
+};
+
+// public/js/features/medications.mjs
+var rt31 = {
   getActiveId() {
     return null;
   },
@@ -49800,7 +51491,7 @@ var rt30 = {
   }
 };
 function registerMedicationsRuntime(partial) {
-  if (partial && typeof partial === "object") Object.assign(rt30, partial);
+  if (partial && typeof partial === "object") Object.assign(rt31, partial);
 }
 var medOutputTab = "full";
 function isDemoPatientId3(patientId) {
@@ -49830,21 +51521,31 @@ function restoreMedInputForPatient(patientId) {
   var block = patientId ? medRecetaByPatient[patientId] : null;
   ta.value = block && block.pasteRaw ? block.pasteRaw : "";
 }
-function esc25(s) {
+function esc26(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function getMedNotaSelMap(patientId) {
   if (!medNotaSelectionByPatient[patientId]) medNotaSelectionByPatient[patientId] = {};
   return medNotaSelectionByPatient[patientId];
 }
+var lastMedPanelPatientId = null;
 function renderMedRecetaPanel() {
+  initMedPharmSubviewUi();
+  var activeId2 = rt31.getActiveId();
+  if (activeId2 !== lastMedPanelPatientId) {
+    lastMedPanelPatientId = activeId2;
+    closeMedPharmModals();
+  }
+  if (getMedSubview() === "perfil") {
+    renderMedPharmProfilePanel();
+    return;
+  }
   var hintEl = document.getElementById("med-hint");
   var fechaEl = document.getElementById("med-fecha-actualizacion");
   var listEl = document.getElementById("med-items-list");
   var outPre = document.getElementById("med-output");
   var outCard = document.getElementById("med-output-section");
   if (!hintEl || !listEl || !outPre) return;
-  var activeId2 = rt30.getActiveId();
   if (!activeId2) {
     hintEl.style.display = "block";
     hintEl.textContent = "Selecciona un paciente en la columna izquierda para procesar su receta.";
@@ -49876,10 +51577,10 @@ function renderMedRecetaPanel() {
   }
   var rows = block.items.map(function(it) {
     var sid = String(it.id || "");
-    var label = esc25((it.nombreRaw || "").slice(0, 120));
+    var label = esc26((it.nombreRaw || "").slice(0, 120));
     var chk = it.suspendido ? " checked" : "";
     var paraNota = isMedNotaSelected(activeId2, sid) ? " checked" : "";
-    var diaCell = it.diaTratamiento != null ? '<span class="med-receta-dia">D\xEDa ' + esc25(String(it.diaTratamiento)) + "</span>" : "";
+    var diaCell = it.diaTratamiento != null ? '<span class="med-receta-dia">D\xEDa ' + esc26(String(it.diaTratamiento)) + "</span>" : "";
     return '<div class="med-receta-row"><div class="med-receta-checkcell"><input type="checkbox"' + chk + ` title="Excluir del texto de egreso" onchange="toggleMedRecetaSuspendido('` + safeAttrJsString(sid) + `', this.checked)"/></div><div class="med-receta-checkcell"><input type="checkbox"` + paraNota + ` title="Incluir en Tratamiento y campos SOAP (Analgesia / ABX / AntiHTA)" onchange="toggleMedRecetaParaNota('` + safeAttrJsString(sid) + `', this.checked)"/></div><div class="med-receta-name">` + label + "</div>" + diaCell + "</div>";
   });
   listEl.innerHTML = '<div class="med-receta-wrap"><div class="med-receta-head"><span>Excl.</span><span>SOAP</span><span>Medicamento</span><span>D\xEDa</span></div>' + rows.join("") + "</div>";
@@ -49907,7 +51608,7 @@ function isMedNotaSelected(patientId, itemId) {
   return !!getMedNotaSelMap(patientId)[itemId];
 }
 function toggleMedRecetaSuspendido(itemId, suspended) {
-  var activeId2 = rt30.getActiveId();
+  var activeId2 = rt31.getActiveId();
   if (!activeId2 || !medRecetaByPatient[activeId2] || !medRecetaByPatient[activeId2].items) return;
   var it = medRecetaByPatient[activeId2].items.find(function(x) {
     return String(x.id) === String(itemId);
@@ -49918,7 +51619,7 @@ function toggleMedRecetaSuspendido(itemId, suspended) {
   renderMedRecetaPanel();
 }
 function toggleMedRecetaParaNota(itemId, selected) {
-  var activeId2 = rt30.getActiveId();
+  var activeId2 = rt31.getActiveId();
   if (!activeId2) return;
   var m = getMedNotaSelMap(activeId2);
   if (selected) m[itemId] = true;
@@ -49926,20 +51627,20 @@ function toggleMedRecetaParaNota(itemId, selected) {
   renderMedRecetaPanel();
 }
 function limpiarSeleccionMedNota() {
-  var activeId2 = rt30.getActiveId();
+  var activeId2 = rt31.getActiveId();
   if (activeId2) medNotaSelectionByPatient[activeId2] = {};
   renderMedRecetaPanel();
-  rt30.showToast("Selecci\xF3n limpiada", "success");
+  rt31.showToast("Selecci\xF3n limpiada", "success");
 }
 function mediAnadirATratamiento() {
-  var activeId2 = rt30.getActiveId();
+  var activeId2 = rt31.getActiveId();
   if (!activeId2) {
-    rt30.showToast("Selecciona un paciente", "error");
+    rt31.showToast("Selecciona un paciente", "error");
     return;
   }
   var block = medRecetaByPatient[activeId2];
   if (!block || !block.items || !block.items.length) {
-    rt30.showToast("No hay medicamentos en la receta", "error");
+    rt31.showToast("No hay medicamentos en la receta", "error");
     return;
   }
   var sel = getMedNotaSelMap(activeId2);
@@ -49949,7 +51650,7 @@ function mediAnadirATratamiento() {
     return formatMedicationEgresoLine(it);
   });
   if (!lines.length) {
-    rt30.showToast("Marca \xABSOAP\xBB en al menos un medicamento activo", "error");
+    rt31.showToast("Marca \xABSOAP\xBB en al menos un medicamento activo", "error");
     return;
   }
   if (!notes[activeId2]) notes[activeId2] = {};
@@ -49967,12 +51668,12 @@ function mediAnadirATratamiento() {
   saveState();
   openPaseSectionInNormal("expediente");
   renderNoteForm();
-  rt30.showToast(lines.length + " l\xEDnea(s) a\xF1adidas a Tratamiento", "success");
+  rt31.showToast(lines.length + " l\xEDnea(s) a\xF1adidas a Tratamiento", "success");
 }
 function mediLlevarASOAP() {
-  var activeId2 = rt30.getActiveId();
+  var activeId2 = rt31.getActiveId();
   if (!activeId2) {
-    rt30.showToast("Selecciona un paciente", "error");
+    rt31.showToast("Selecciona un paciente", "error");
     return;
   }
   var block = medRecetaByPatient[activeId2];
@@ -49981,7 +51682,7 @@ function mediLlevarASOAP() {
     return sel[it.id] && !it.suspendido;
   });
   if (!hasReceta) {
-    rt30.showToast("Marca \xABSOAP\xBB en al menos un medicamento de la receta", "error");
+    rt31.showToast("Marca \xABSOAP\xBB en al menos un medicamento de la receta", "error");
     return;
   }
   var buckets = bucketsFromRecetaItems(block ? block.items : [], sel, classifyMedicationSoapCategory);
@@ -49989,24 +51690,24 @@ function mediLlevarASOAP() {
     return buckets[k] && String(buckets[k]).trim();
   });
   if (!hasBuckets) {
-    rt30.showToast("No qued\xF3 nada que volcar", "error");
+    rt31.showToast("No qued\xF3 nada que volcar", "error");
     return;
   }
-  if (isModeSala(rt30.getSettings())) {
+  if (isModeSala(rt31.getSettings())) {
     var patient = patients.find(function(p) {
       return p.id === activeId2;
     });
     if (!patient) {
-      rt30.showToast("Paciente no encontrado", "error");
+      rt31.showToast("Paciente no encontrado", "error");
       return;
     }
     ensureMonitoreo(patient);
     applyRecetaProposal(patient.monitoreo, buckets);
     saveState();
-    if (typeof rt30.navigateToEstadoActualPanel === "function") {
-      rt30.navigateToEstadoActualPanel();
+    if (typeof rt31.navigateToEstadoActualPanel === "function") {
+      rt31.navigateToEstadoActualPanel();
     }
-    rt30.showToast("Propuesta en Estado Actual \u2014 confirma en Estado cl\xEDnico general", "success");
+    rt31.showToast("Propuesta en Estado Actual \u2014 confirma en Estado cl\xEDnico general", "success");
     renderMedRecetaPanel();
     return;
   }
@@ -50021,13 +51722,13 @@ function mediLlevarASOAP() {
   renderNoteForm();
   openSOAPModalDirect();
   var toastMsg = "Campos SOAP actualizados \xB7 completa e Insertar en evoluci\xF3n";
-  rt30.showToast(toastMsg, "success");
+  rt31.showToast(toastMsg, "success");
   renderMedRecetaPanel();
 }
 function procesarRecetaMed() {
-  var activeId2 = rt30.getActiveId();
+  var activeId2 = rt31.getActiveId();
   if (!activeId2) {
-    rt30.showToast("Selecciona un paciente primero", "error");
+    rt31.showToast("Selecciona un paciente primero", "error");
     return;
   }
   var ta = document.getElementById("med-input");
@@ -50035,12 +51736,12 @@ function procesarRecetaMed() {
   var parsed = parseMedicationPaste(raw || "");
   if (!parsed.items.length) {
     if (!looksLikeSomeMedicationPaste(raw || "")) {
-      rt30.showToast(
+      rt31.showToast(
         "No parece el bloque de SOME. En expediente, copia desde la columna Fecha y hora hasta el final de medicamentos (con tabuladores) y p\xE9galo aqu\xED.",
         "error"
       );
     } else {
-      rt30.showToast("No se encontraron filas MEDICAMENTOS v\xE1lidas en el pegado", "error");
+      rt31.showToast("No se encontraron filas MEDICAMENTOS v\xE1lidas en el pegado", "error");
     }
     return;
   }
@@ -50054,43 +51755,44 @@ function procesarRecetaMed() {
   };
   medNotaSelectionByPatient[activeId2] = {};
   saveState();
+  onRecetaMergedToProfile(activeId2, medRecetaByPatient[activeId2]);
   renderMedRecetaPanel();
   var msg = "Receta actualizada (" + parsed.items.length + " medicamentos)";
   if (parsed.skipped > 0) msg += ". Omitidas " + parsed.skipped + " l\xEDneas.";
-  rt30.showToast(msg, "success");
+  rt31.showToast(msg, "success");
 }
 function limpiarRecetaInput() {
   var ta = document.getElementById("med-input");
   if (ta) ta.value = "";
 }
 function incrementMedDiaTratamiento() {
-  var activeId2 = rt30.getActiveId();
+  var activeId2 = rt31.getActiveId();
   if (!activeId2) {
-    rt30.showToast("Selecciona un paciente primero", "error");
+    rt31.showToast("Selecciona un paciente primero", "error");
     return;
   }
   var block = medRecetaByPatient[activeId2];
   if (!block || !block.items || !block.items.length) {
-    rt30.showToast("No hay medicamentos procesados", "error");
+    rt31.showToast("No hay medicamentos procesados", "error");
     return;
   }
   var res = incrementMedItemsDiaTratamiento(block.items);
   if (!res.count) {
-    rt30.showToast("Ning\xFAn medicamento con DIA# activo", "error");
+    rt31.showToast("Ning\xFAn medicamento con DIA# activo", "error");
     return;
   }
   block.items = res.items;
   saveState();
   renderMedRecetaPanel();
-  rt30.showToast(
+  rt31.showToast(
     res.count === 1 ? "D\xEDa de tratamiento +1 (1 medicamento)" : "D\xEDa de tratamiento +1 (" + res.count + " medicamentos)",
     "success"
   );
 }
 function copiarMedicamentosAlPortapapeles() {
-  var activeId2 = rt30.getActiveId();
+  var activeId2 = rt31.getActiveId();
   if (!activeId2 || !medRecetaByPatient[activeId2]) {
-    rt30.showToast("No hay medicamentos procesados", "error");
+    rt31.showToast("No hay medicamentos procesados", "error");
     return;
   }
   var items = medRecetaByPatient[activeId2].items || [];
@@ -50100,15 +51802,15 @@ function copiarMedicamentosAlPortapapeles() {
     text = simple;
   }
   if (!text.trim()) {
-    rt30.showToast("No hay medicamentos activos para copiar", "error");
+    rt31.showToast("No hay medicamentos activos para copiar", "error");
     return;
   }
   navigator.clipboard.writeText(text).then(
     function() {
-      rt30.showToast("Medicamentos copiados al portapapeles \u2713", "success");
+      rt31.showToast("Medicamentos copiados al portapapeles \u2713", "success");
     },
     function() {
-      rt30.showToast("Error al copiar al portapapeles", "error");
+      rt31.showToast("Error al copiar al portapapeles", "error");
     }
   );
 }
@@ -50127,7 +51829,7 @@ function renderMedNotaFooter() {
   var foot = document.getElementById("med-nota-footer");
   if (!foot) return;
   foot.style.display = "block";
-  var activeId2 = rt30.getActiveId();
+  var activeId2 = rt31.getActiveId();
   var block = activeId2 ? medRecetaByPatient[activeId2] : null;
   var sel = activeId2 ? getMedNotaSelMap(activeId2) : {};
   var soapItems = block && block.items ? block.items.filter(function(it) {
@@ -50142,15 +51844,15 @@ function renderMedNotaFooter() {
   function chipsFor(arr) {
     return arr.map(function(it) {
       var frag = medInstructionFragmentForSoap2(it);
-      return '<span class="med-soap-preview-chip" title="' + esc25((it.nombreRaw || "").slice(0, 220)) + '">' + esc25(frag) + "</span>";
+      return '<span class="med-soap-preview-chip" title="' + esc26((it.nombreRaw || "").slice(0, 220)) + '">' + esc26(frag) + "</span>";
     }).join("");
   }
   function section(cat, title) {
     if (!groups[cat].length) return "";
-    return '<div class="med-soap-preview-sec med-soap-preview-sec--' + cat + '"><div class="med-soap-preview-sec-title">' + esc25(title) + '</div><div class="med-soap-preview-chips">' + chipsFor(groups[cat]) + "</div></div>";
+    return '<div class="med-soap-preview-sec med-soap-preview-sec--' + cat + '"><div class="med-soap-preview-sec-title">' + esc26(title) + '</div><div class="med-soap-preview-chips">' + chipsFor(groups[cat]) + "</div></div>";
   }
   var previewHtml = soapItems.length ? '<div class="med-soap-preview">' + section("analgesia", "Analg\xE9sicos / antiem\xE9ticos") + section("antihta", "AntiHTA / diur\xE9ticos") + section("abx", "Antibi\xF3ticos / antif\xFAngicos") + section("vasop", "Vasopresores / inotr\xF3picos") + section("otros", "Otros (se copian en Antibi\xF3ticos \u2014 revisar)") + "</div>" : '<p class="med-soap-preview-empty">Marc\xE1 <strong>SOAP</strong> en el listado para ver aqu\xED c\xF3mo se repartir\xE1n en la plantilla.</p>';
-  var soapBtnLabel = isModeSala(rt30.getSettings()) ? "Enviar a Estado Actual" : "Abrir plantilla SOAP";
+  var soapBtnLabel = isModeSala(rt31.getSettings()) ? "Enviar a Estado Actual" : "Abrir plantilla SOAP";
   foot.innerHTML = '<div class="med-nota-toolbar"><p class="med-nota-hint">Solo los medicamentos con <strong>SOAP</strong> activo aparecen abajo, clasificados seg\xFAn el nombre del f\xE1rmaco en la receta.</p>' + previewHtml + '<div class="med-nota-actions"><button type="button" class="btn-generate" onclick="mediAnadirATratamiento()">A\xF1adir a Tratamiento</button><button type="button" class="btn-med-secondary" onclick="mediLlevarASOAP()">' + soapBtnLabel + '</button><button type="button" class="btn-med-secondary" onclick="limpiarSeleccionMedNota()">Limpiar</button></div></div>';
 }
 function hideMedNotaFooter() {
@@ -50170,7 +51872,8 @@ var medicationsWindowHandlers = {
   limpiarSeleccionMedNota,
   mediAnadirATratamiento,
   mediLlevarASOAP,
-  incrementMedDiaTratamiento
+  incrementMedDiaTratamiento,
+  ...medPharmProfileWindowHandlers
 };
 
 // public/js/patient-validation.mjs
@@ -50929,7 +52632,7 @@ function flushOne(patientId) {
 function patientsVisibleInSidebar() {
   return filterPatientsForPitchTour(patients);
 }
-var rt31 = {
+var rt32 = {
   getActiveId() {
     return null;
   },
@@ -51025,9 +52728,9 @@ var rt31 = {
 };
 function registerPatientsRuntime(partial) {
   if (!partial || typeof partial !== "object") return;
-  Object.assign(rt31, partial);
+  Object.assign(rt32, partial);
 }
-function esc26(s) {
+function esc27(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 var patientSearchFilter = "";
@@ -51160,7 +52863,7 @@ function togglePatientArchived(ev, id) {
   renderPatientList();
   if (isLanSessionConfiguredForRest()) {
     lanSyncPatientArchivedFlag(p).catch(function() {
-      rt31.showToast("No se pudo sincronizar archivo con el host LAN.", "error");
+      rt32.showToast("No se pudo sincronizar archivo con el host LAN.", "error");
     });
   }
 }
@@ -51326,17 +53029,17 @@ function buildRondaRecentLabsBlockHtml(patientId) {
     parts.push('<div class="ronda-labs-meta">');
     var rawFe = newest.fecha === "Anterior" ? "" : normalizeFechaForRonda(newest.fecha) || String(newest.fecha || "").trim() || "";
     if (newest.id === "migrated-anterior") {
-      parts.push('<span class="ronda-labs-date">' + esc26(rawFe ? "Anterior \xB7 " + rawFe : "Anterior") + "</span>");
+      parts.push('<span class="ronda-labs-date">' + esc27(rawFe ? "Anterior \xB7 " + rawFe : "Anterior") + "</span>");
     } else {
-      parts.push('<span class="ronda-labs-date">' + esc26(rawFe || "\u2014") + "</span>");
+      parts.push('<span class="ronda-labs-date">' + esc27(rawFe || "\u2014") + "</span>");
     }
     if (newest.hora && String(newest.hora).trim()) {
-      parts.push("<span>" + esc26(String(newest.hora).trim().slice(0, 8)) + "</span>");
+      parts.push("<span>" + esc27(String(newest.hora).trim().slice(0, 8)) + "</span>");
     }
-    var tipo = rt31.primaryTipoForLabSet(newest.resLabs);
+    var tipo = rt32.primaryTipoForLabSet(newest.resLabs);
     if (tipo && tipo !== "labs") {
       parts.push(
-        "<span>" + esc26(tipo === "mixed" ? "Mixto" : tipo === "cultivo" ? "Cultivo" : tipo) + "</span>"
+        "<span>" + esc27(tipo === "mixed" ? "Mixto" : tipo === "cultivo" ? "Cultivo" : tipo) + "</span>"
       );
     }
     parts.push("</div>");
@@ -51345,7 +53048,7 @@ function buildRondaRecentLabsBlockHtml(patientId) {
       newest.resLabs.forEach(function(L) {
         var line = String(L || "").trim();
         if (!line) return;
-        parts.push("<li>" + esc26(line) + "</li>");
+        parts.push("<li>" + esc27(line) + "</li>");
       });
       parts.push("</ul>");
       return parts.join("");
@@ -51361,7 +53064,7 @@ function buildRondaRecentLabsBlockHtml(patientId) {
     lines.forEach(function(L) {
       if (skip[L.toLowerCase()]) return;
       if (/^fecha|^----/i.test(L)) return;
-      body.push("<li>" + esc26(L) + "</li>");
+      body.push("<li>" + esc27(L) + "</li>");
     });
     if (body.length) {
       return '<p class="ronda-labs-fallback-label">Desde nota \xB7 estudios auxiliares</p><ul class="ronda-labs-lines">' + body.join("") + "</ul>";
@@ -51370,8 +53073,8 @@ function buildRondaRecentLabsBlockHtml(patientId) {
   return '<p class="ronda-panel-empty">Sin laboratorios recientes. Puedes cargar o enviar resultados desde la pesta\xF1a Laboratorio.</p>';
 }
 function normalizeFechaForRonda(fecha) {
-  if (typeof rt31.normalizeFechaLabHistory === "function") {
-    return rt31.normalizeFechaLabHistory(fecha);
+  if (typeof rt32.normalizeFechaLabHistory === "function") {
+    return rt32.normalizeFechaLabHistory(fecha);
   }
   return String(fecha || "").trim();
 }
@@ -51391,26 +53094,26 @@ function syncRoundExpedienteLayout() {
     if (rm) {
       while (rm.firstChild) rm.removeChild(rm.firstChild);
     }
-    rt31.syncWorkContextChrome();
+    rt32.syncWorkContextChrome();
     return;
   }
-  var showOverview = !!rt31.getActiveId() && rt31.getActiveAppTab() === "nota" && _roundOverviewMode;
+  var showOverview = !!rt32.getActiveId() && rt32.getActiveAppTab() === "nota" && _roundOverviewMode;
   overview.style.display = showOverview ? "flex" : "none";
   classic.style.display = showOverview ? "none" : "flex";
-  rt31.syncWorkContextChrome();
+  rt32.syncWorkContextChrome();
   if (fullbar) {
-    var showBar = !!(rt31.getActiveId() && rt31.getActiveAppTab() === "nota" && !showOverview);
+    var showBar = !!(rt32.getActiveId() && rt32.getActiveAppTab() === "nota" && !showOverview);
     fullbar.classList.toggle("is-visible", showBar);
     fullbar.setAttribute("aria-hidden", showBar ? "false" : "true");
   }
   if (showOverview) renderRoundOverviewPanels();
-  rt31.syncWorkContextChrome();
+  rt32.syncWorkContextChrome();
 }
 function renderRoundOverviewPanels() {
-  if (!isPaseMode() || !_roundOverviewMode || rt31.getActiveAppTab() !== "nota" || !rt31.getActiveId()) return;
+  if (!isPaseMode() || !_roundOverviewMode || rt32.getActiveAppTab() !== "nota" || !rt32.getActiveId()) return;
   var titleEl = document.getElementById("patient-ronda-patient-label");
   var metaEl = document.getElementById("patient-ronda-patient-meta");
-  var aid7 = rt31.getActiveId();
+  var aid7 = rt32.getActiveId();
   var p = patients.find(function(x) {
     return String(x.id) === String(aid7);
   });
@@ -51423,8 +53126,8 @@ function renderRoundOverviewPanels() {
   }
   var labsBody = document.getElementById("patient-ronda-labs-body");
   if (labsBody) labsBody.innerHTML = buildRondaRecentLabsBlockHtml(aid7);
-  rt31.refreshAllTodoUIs();
-  var gala = isModeSala(rt31.getSettings());
+  rt32.refreshAllTodoUIs();
+  var gala = isModeSala(rt32.getSettings());
   var qDatos = document.getElementById("ronda-quick-datos");
   if (qDatos) qDatos.style.display = gala ? "" : "none";
   var qList = document.getElementById("ronda-quick-listado");
@@ -51443,19 +53146,19 @@ function returnToRoundOverview() {
 function openFullExpedienteFromRound(tab) {
   if (!isPaseMode()) return;
   var tname = tab;
-  var sala = isModeSala(rt31.getSettings());
+  var sala = isModeSala(rt32.getSettings());
   if (sala) {
     if (tname === "notas" || tname === "indica") tname = "tend";
     if (!tname) tname = "tend";
   } else {
     if (!tname) tname = "notas";
   }
-  rt31.switchInnerTab(tname);
+  rt32.switchInnerTab(tname);
 }
 function advanceRondaPatient(delta) {
   if (!isPaseMode()) return;
   if (!_lastRondaNavIds.length) return;
-  var cur = rt31.getActiveId() != null ? String(rt31.getActiveId()) : "";
+  var cur = rt32.getActiveId() != null ? String(rt32.getActiveId()) : "";
   var idx = _lastRondaNavIds.indexOf(cur);
   if (idx < 0) {
     selectPatient(_lastRondaNavIds[delta > 0 ? 0 : _lastRondaNavIds.length - 1]);
@@ -51467,17 +53170,17 @@ function advanceRondaPatient(delta) {
   selectPatient(_lastRondaNavIds[next]);
 }
 function scrollActiveRondaCardIntoView() {
-  if (!rt31.getActiveId()) return;
+  if (!rt32.getActiveId()) return;
   var list = document.getElementById("patient-list");
   if (!list) return;
   var cards = list.querySelectorAll(".patient-card[data-patient-id]");
-  var want = String(rt31.getActiveId());
+  var want = String(rt32.getActiveId());
   for (var i = 0; i < cards.length; i++) {
     if (cards[i].getAttribute("data-patient-id") === want) {
       try {
         cards[i].scrollIntoView({
           block: "nearest",
-          behavior: rt31.rpcPrefersReducedMotion() ? "auto" : "smooth"
+          behavior: rt32.rpcPrefersReducedMotion() ? "auto" : "smooth"
         });
       } catch (_e) {
         cards[i].scrollIntoView(true);
@@ -51494,8 +53197,8 @@ function renderPatientRoundRowHtml(p) {
   var archTitle = archOn ? "Restaurar del archivo" : "Archivar paciente";
   var archiveIcon = archOn ? "\u21A9" : '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"></rect><path d="M5 8h14v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8z"></path><path d="M10 12h4"></path></svg>';
   var seenTitle = typeof t === "function" ? t("roundMode.seenTitle") : "Visto en ronda";
-  var aid7 = rt31.getActiveId();
-  return '<div class="patient-card patient-card--roundrow ' + (p.id === aid7 ? "active" : "") + (seen ? " patient-card--roundrow-seen" : "") + '" data-patient-id="' + p.id + '" role="button" tabindex="0"><div class="patient-card-toolbar"><div class="patient-card-toolbar-left"><button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon btn-archive-clean" title="' + archTitle + '" aria-label="' + archTitle + `" onclick="togglePatientArchived(event,'` + p.id + `')">` + archiveIcon + '</button><button type="button" class="patient-toolbar-chip btn-pinned-text" title="' + pinTitle + '" aria-label="' + pinTitle + `" onclick="togglePatientPinned(event,'` + p.id + `')">Pinned</button></div><button type="button" class="btn-delete-card" onclick="deletePatient(event,'` + p.id + `')" aria-label="Eliminar">\xD7</button></div><div class="roundrow-main"><div class="roundrow-text"><div class="p-name">` + esc26(p.nombre || "Sin nombre") + '</div><div class="p-meta"><span>Cto. ' + esc26(p.cuarto || "-") + "</span><span>Cama " + esc26(p.cama || "-") + "</span><span>" + esc26(p.servicio || "-") + '</span></div></div><button type="button" class="btn-round-seen" title="' + esc26(seenTitle) + '" aria-label="' + esc26(seenTitle) + '" aria-pressed="' + (seen ? "true" : "false") + `" onclick="togglePatientRoundSeen(event,'` + p.id + `')">` + (seen ? "\u2713" : "\u25CB") + "</button></div></div>";
+  var aid7 = rt32.getActiveId();
+  return '<div class="patient-card patient-card--roundrow ' + (p.id === aid7 ? "active" : "") + (seen ? " patient-card--roundrow-seen" : "") + '" data-patient-id="' + p.id + '" role="button" tabindex="0"><div class="patient-card-toolbar"><div class="patient-card-toolbar-left"><button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon btn-archive-clean" title="' + archTitle + '" aria-label="' + archTitle + `" onclick="togglePatientArchived(event,'` + p.id + `')">` + archiveIcon + '</button><button type="button" class="patient-toolbar-chip btn-pinned-text" title="' + pinTitle + '" aria-label="' + pinTitle + `" onclick="togglePatientPinned(event,'` + p.id + `')">Pinned</button></div><button type="button" class="btn-delete-card" onclick="deletePatient(event,'` + p.id + `')" aria-label="Eliminar">\xD7</button></div><div class="roundrow-main"><div class="roundrow-text"><div class="p-name">` + esc27(p.nombre || "Sin nombre") + '</div><div class="p-meta"><span>Cto. ' + esc27(p.cuarto || "-") + "</span><span>Cama " + esc27(p.cama || "-") + "</span><span>" + esc27(p.servicio || "-") + '</span></div></div><button type="button" class="btn-round-seen" title="' + esc27(seenTitle) + '" aria-label="' + esc27(seenTitle) + '" aria-pressed="' + (seen ? "true" : "false") + `" onclick="togglePatientRoundSeen(event,'` + p.id + `')">` + (seen ? "\u2713" : "\u25CB") + "</button></div></div>";
 }
 function renderPatientCardHtml(p) {
   var pinOn = !!p.pinned;
@@ -51503,8 +53206,8 @@ function renderPatientCardHtml(p) {
   var pinTitle = pinOn ? "Quitar de Pinned" : "Mover a Pinned";
   var archTitle = archOn ? "Restaurar del archivo" : "Archivar paciente";
   var archiveIcon = archOn ? "\u21A9" : '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"></rect><path d="M5 8h14v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8z"></path><path d="M10 12h4"></path></svg>';
-  var aid7 = rt31.getActiveId();
-  return '<div class="patient-card ' + (p.id === aid7 ? "active" : "") + '" data-patient-id="' + p.id + '" role="button" tabindex="0"><div class="patient-card-toolbar"><div class="patient-card-toolbar-left"><button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon btn-archive-clean" title="' + archTitle + '" aria-label="' + archTitle + `" onclick="togglePatientArchived(event,'` + p.id + `')">` + archiveIcon + '</button><button type="button" class="patient-toolbar-chip btn-pinned-text" title="' + pinTitle + '" aria-label="' + pinTitle + `" onclick="togglePatientPinned(event,'` + p.id + `')">Pinned</button></div><button type="button" class="btn-delete-card" onclick="deletePatient(event,'` + p.id + `')" aria-label="Eliminar">\xD7</button></div><div class="p-name">` + esc26(p.nombre || "Sin nombre") + '</div><div class="p-meta"><span>Cto. ' + esc26(p.cuarto || "-") + "</span><span>Cama " + esc26(p.cama || "-") + "</span><span>" + esc26(p.servicio || "-") + "</span></div></div>";
+  var aid7 = rt32.getActiveId();
+  return '<div class="patient-card ' + (p.id === aid7 ? "active" : "") + '" data-patient-id="' + p.id + '" role="button" tabindex="0"><div class="patient-card-toolbar"><div class="patient-card-toolbar-left"><button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon btn-archive-clean" title="' + archTitle + '" aria-label="' + archTitle + `" onclick="togglePatientArchived(event,'` + p.id + `')">` + archiveIcon + '</button><button type="button" class="patient-toolbar-chip btn-pinned-text" title="' + pinTitle + '" aria-label="' + pinTitle + `" onclick="togglePatientPinned(event,'` + p.id + `')">Pinned</button></div><button type="button" class="btn-delete-card" onclick="deletePatient(event,'` + p.id + `')" aria-label="Eliminar">\xD7</button></div><div class="p-name">` + esc27(p.nombre || "Sin nombre") + '</div><div class="p-meta"><span>Cto. ' + esc27(p.cuarto || "-") + "</span><span>Cama " + esc27(p.cama || "-") + "</span><span>" + esc27(p.servicio || "-") + "</span></div></div>";
 }
 var _patientListRenderQueued = false;
 function patchPatientListActiveHighlight(nextId) {
@@ -51540,14 +53243,14 @@ function renderPatientListNow() {
   if (!visiblePatients.length) {
     list.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">Sin pacientes a\xFAn</div>';
     _lastRondaNavIds = [];
-    if (rt31.getActiveAppTab() === "agenda") rt31.renderProcedureAgendaPanel();
+    if (rt32.getActiveAppTab() === "agenda") rt32.renderProcedureAgendaPanel();
     return;
   }
   var filtered = visiblePatients.filter(patientMatchesSearch);
   if (!filtered.length) {
     list.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">Ning\xFAn paciente coincide con la b\xFAsqueda</div>';
     _lastRondaNavIds = [];
-    if (rt31.getActiveAppTab() === "agenda") rt31.renderProcedureAgendaPanel();
+    if (rt32.getActiveAppTab() === "agenda") rt32.renderProcedureAgendaPanel();
     return;
   }
   var pinned = filtered.filter(function(p) {
@@ -51601,7 +53304,7 @@ function renderPatientListNow() {
   _lastRondaNavIds = rondaNav;
   list.innerHTML = parts.join("");
   mountPatientListSortables();
-  if (rt31.getActiveAppTab() === "agenda") rt31.renderProcedureAgendaPanel();
+  if (rt32.getActiveAppTab() === "agenda") rt32.renderProcedureAgendaPanel();
 }
 function selectPatient(id) {
   if (id == null || id === "") return;
@@ -51612,9 +53315,9 @@ function selectPatient(id) {
   }
 }
 function selectPatientCore(id) {
-  var prevId = rt31.getActiveId();
-  var wasOnLab = rt31.getActiveAppTab() === "lab";
-  var appTab = rt31.getActiveAppTab();
+  var prevId = rt32.getActiveId();
+  var wasOnLab = rt32.getActiveAppTab() === "lab";
+  var appTab = rt32.getActiveAppTab();
   var patientChanged = prevId != null && String(prevId) !== String(id);
   if (patientChanged) {
     flushRecetaHuDraftIfMountedFor(prevId);
@@ -51622,8 +53325,8 @@ function selectPatientCore(id) {
     stashVpoForPatient(prevId);
     flushSaveState();
   }
-  rt31.setActiveId(id);
-  if (patientChanged) rt31.invalidateInnerTabRenderCache();
+  rt32.setActiveId(id);
+  if (patientChanged) rt32.invalidateInnerTabRenderCache();
   if (!patientChanged || !patchPatientListActiveHighlight(id)) {
     renderPatientList();
   }
@@ -51631,29 +53334,29 @@ function selectPatientCore(id) {
   var patientView = document.getElementById("patient-view");
   if (emptyState) emptyState.style.display = "none";
   if (patientView) patientView.style.display = "flex";
-  rt31.renderEstadoActualButton();
-  var settings2 = rt31.getSettings();
-  var inner = rt31.getActiveInner();
+  rt32.renderEstadoActualButton();
+  var settings2 = rt32.getSettings();
+  var inner = rt32.getActiveInner();
   if (patientChanged) {
     var migrated = migrateGranularInner(inner || "todo", settings2);
     if (migrated !== inner) {
       inner = migrated;
-      rt31.setActiveInner(migrated);
+      rt32.setActiveInner(migrated);
     }
   } else {
     if (isModeSala(settings2) && (inner === "notas" || inner === "indica" || !inner)) {
       if (getUiDensity() === "normal") {
-        rt31.setActiveInner("todo");
-        rt31.syncInnerTabVisualOnly();
+        rt32.setActiveInner("todo");
+        rt32.syncInnerTabVisualOnly();
       } else {
-        rt31.switchInnerTab("todo");
+        rt32.switchInnerTab("todo");
       }
     } else if (!isModeSala(settings2) && inner === "listado") {
       if (getUiDensity() === "normal") {
-        rt31.setActiveInner("todo");
-        rt31.syncInnerTabVisualOnly();
+        rt32.setActiveInner("todo");
+        rt32.syncInnerTabVisualOnly();
       } else {
-        rt31.switchInnerTab("todo");
+        rt32.switchInnerTab("todo");
       }
     }
     if (!isPaseMode() && getUiDensity() === "normal") {
@@ -51661,10 +53364,10 @@ function selectPatientCore(id) {
         return p && String(p.id) === String(id);
       });
       if (pmanejo && pmanejo.manejoPending && pmanejo.manejoPending.labSetId && !isManejoSectionHidden(settings2)) {
-        rt31.switchInnerTab("manejo");
+        rt32.switchInnerTab("manejo");
       }
     }
-    if (isPaseMode() && rt31.getActiveAppTab() === "nota") {
+    if (isPaseMode() && rt32.getActiveAppTab() === "nota") {
       if (inner === "todo" || !inner) {
         _roundOverviewMode = true;
       } else {
@@ -51672,19 +53375,19 @@ function selectPatientCore(id) {
       }
     }
   }
-  rt31.syncInnerTabVisualOnly();
-  rt31.refreshExpedienteAfterPatientSelect({ patientChanged });
-  if (appTab === "lab") rt31.renderLabHistoryPanel();
-  if (appTab === "med") rt31.renderMedRecetaPanel();
+  rt32.syncInnerTabVisualOnly();
+  rt32.refreshExpedienteAfterPatientSelect({ patientChanged });
+  if (appTab === "lab") rt32.renderLabHistoryPanel();
+  if (appTab === "med") rt32.renderMedRecetaPanel();
   if (wasOnLab && patientChanged) {
-    rt31.limpiarReporte();
-    rt31.setLabHistoryPanelCollapsed(false);
-    rt31.syncLabHistoryCollapseUI();
-    rt31.renderLabHistoryPanel();
+    rt32.limpiarReporte();
+    rt32.setLabHistoryPanelCollapsed(false);
+    rt32.syncLabHistoryCollapseUI();
+    rt32.renderLabHistoryPanel();
     if (isPaseMode()) {
-      rt31.syncWorkContextChrome();
+      rt32.syncWorkContextChrome();
     } else {
-      rt31.switchAppTab("lab");
+      rt32.switchAppTab("lab");
       var labHistCard = document.getElementById("lab-history-card");
       if (labHistCard) {
         window.setTimeout(function() {
@@ -51697,12 +53400,12 @@ function selectPatientCore(id) {
       }
     }
   } else {
-    rt31.syncWorkContextChrome();
+    rt32.syncWorkContextChrome();
   }
   syncRoundExpedienteLayout();
-  rt31.refreshTendenciasOrCultivosPanel();
-  if (isPaseMode()) rt31.renderPaseBoard();
-  if (rt31.getActiveId()) {
+  rt32.refreshTendenciasOrCultivosPanel();
+  if (isPaseMode()) rt32.renderPaseBoard();
+  if (rt32.getActiveId()) {
     requestAnimationFrame(function() {
       scrollActiveRondaCardIntoView();
     });
@@ -51731,7 +53434,7 @@ function deletePatient(e, id) {
     if (!confirm("\xBFEliminar este paciente y sus notas?")) return;
   }
   var label = target ? "Eliminar " + (target.nombre || "paciente") : "Eliminar paciente";
-  if (typeof rt31.pushUndoSnapshot === "function") rt31.pushUndoSnapshot(label);
+  if (typeof rt32.pushUndoSnapshot === "function") rt32.pushUndoSnapshot(label);
   if (!removePatientLocally(id)) return;
   var snap = target || { id, registro: "" };
   if (getActiveLiveSyncRoomId()) {
@@ -51743,20 +53446,20 @@ function deletePatient(e, id) {
     emitLiveSyncPatientDelete(snap);
   }
   saveState({ immediate: true });
-  rt31.addAuditEntry("patient-delete", "ok", 1, target ? target.registro || target.nombre || "" : "");
+  rt32.addAuditEntry("patient-delete", "ok", 1, target ? target.registro || target.nombre || "" : "");
   renderPatientList();
-  if (rt31.getActiveId()) selectPatient(rt31.getActiveId());
+  if (rt32.getActiveId()) selectPatient(rt32.getActiveId());
   else {
     var pv = document.getElementById("patient-view");
     var es = document.getElementById("empty-state");
     if (pv) pv.style.display = "none";
     if (es) es.style.display = "flex";
-    rt31.syncWorkContextChrome();
+    rt32.syncWorkContextChrome();
   }
 }
 function _prefillServicioForSala() {
   var srv = document.getElementById("m-servicio");
-  if (srv && isModeSala(rt31.getSettings()) && !srv.value) srv.value = getDefaultServicio(rt31.getSettings());
+  if (srv && isModeSala(rt32.getSettings()) && !srv.value) srv.value = getDefaultServicio(rt32.getSettings());
 }
 function _lastAdmissionLocationFromPatients() {
   for (var i = patients.length - 1; i >= 0; i--) {
@@ -51771,14 +53474,14 @@ function _lastAdmissionLocationFromPatients() {
 function _resolveAdmissionLocationDefaults(registro) {
   var tour = getTourDemoAdmitDefaults(registro);
   if (tour && tour.cuarto && tour.cama) return tour;
-  var st = rt31.getSettings();
+  var st = rt32.getSettings();
   var cuarto = getDefaultCuarto(st);
   var cama = getDefaultCama(st);
   if (cuarto && cama) return { cuarto, cama };
   return _lastAdmissionLocationFromPatients();
 }
 function _prefillCuartoCamaForSala(registro) {
-  if (!isModeSala(rt31.getSettings())) return;
+  if (!isModeSala(rt32.getSettings())) return;
   var loc = _resolveAdmissionLocationDefaults(registro);
   var cuartoEl = document.getElementById("m-cuarto");
   var camaEl = document.getElementById("m-cama");
@@ -51786,8 +53489,8 @@ function _prefillCuartoCamaForSala(registro) {
   if (camaEl && !String(camaEl.value || "").trim() && loc.cama) camaEl.value = loc.cama;
 }
 function _rememberAdmissionLocation(cuarto, cama) {
-  if (!isModeSala(rt31.getSettings())) return;
-  var st = rt31.getSettings();
+  if (!isModeSala(rt32.getSettings())) return;
+  var st = rt32.getSettings();
   if (!st) return;
   st.defaultCuarto = cuarto;
   st.defaultCama = cama;
@@ -51820,7 +53523,7 @@ function _focusPatientAdmissionField(isFromLab) {
   }
 }
 function _syncPatientModalModeFields() {
-  var sala = isModeSala(rt31.getSettings());
+  var sala = isModeSala(rt32.getSettings());
   var areaGroup = document.getElementById("m-area-group");
   var servicioLabel = document.getElementById("m-servicio-label");
   var servicioInput = document.getElementById("m-servicio");
@@ -51881,7 +53584,7 @@ function openAddModalFromLabPatientData(p, opts) {
   }, 120);
 }
 function openAddModalFromLab() {
-  var lab = rt31.getActiveLab && rt31.getActiveLab();
+  var lab = rt32.getActiveLab && rt32.getActiveLab();
   if (!lab) {
     openAddModal();
     return;
@@ -51916,10 +53619,10 @@ function findDuplicatePatient(nombre, registro) {
 }
 function showDuplicateWarning(existing, onConfirm) {
   var fecha = notes[existing.id] ? notes[existing.id].fecha : "";
-  var body = "<strong>" + esc26(existing.nombre) + "</strong>";
-  body += "<br>Cto. " + esc26(existing.cuarto || "\u2014") + " Cama " + esc26(existing.cama || "\u2014");
-  if (existing.registro) body += "<br>Registro: " + esc26(existing.registro);
-  if (fecha) body += "<br>Ingreso: " + esc26(fecha);
+  var body = "<strong>" + esc27(existing.nombre) + "</strong>";
+  body += "<br>Cto. " + esc27(existing.cuarto || "\u2014") + " Cama " + esc27(existing.cama || "\u2014");
+  if (existing.registro) body += "<br>Registro: " + esc27(existing.registro);
+  if (fecha) body += "<br>Ingreso: " + esc27(fecha);
   var backdrop = document.createElement("div");
   backdrop.className = "lab-conflict-backdrop";
   backdrop.id = "dup-confirm-backdrop";
@@ -51948,39 +53651,39 @@ function savePatient() {
   }
   var v = validatePatientForSave({ nombre, registro, edadNum, edadUnit });
   if (!v.ok) {
-    rt31.showToast(v.error, "error");
+    rt32.showToast(v.error, "error");
     shakePatientFieldsForError(v.error, isFromLab);
     return;
   }
   if (!edadNum) {
-    rt31.showToast("Ingresa la edad", "error");
+    rt32.showToast("Ingresa la edad", "error");
     shakePatientFieldsForError("Ingresa la edad", isFromLab);
     return;
   }
   var ageInt = parseInt(edadNum, 10);
   if (isNaN(ageInt) || ageInt < 0 || ageInt > 120) {
-    rt31.showToast("Edad inv\xE1lida", "error");
+    rt32.showToast("Edad inv\xE1lida", "error");
     shakePatientFieldsForError("Edad inv\xE1lida", isFromLab);
     return;
   }
   var edad = String(ageInt) + (edadUnit && edadUnit !== "a\xF1os" ? " " + edadUnit : "");
-  var salaMode = isModeSala(rt31.getSettings());
+  var salaMode = isModeSala(rt32.getSettings());
   var servicio = (document.getElementById("m-servicio").value || "").trim().toUpperCase();
   var area = salaMode ? servicio : (document.getElementById("m-area").value || "").trim().toUpperCase();
   var cuarto = (document.getElementById("m-cuarto").value || "").trim();
   var cama = (document.getElementById("m-cama").value || "").trim();
   if (!servicio) {
-    rt31.showToast(salaMode ? "Ingresa \xC1rea / Servicio" : "Ingresa servicio", "error");
+    rt32.showToast(salaMode ? "Ingresa \xC1rea / Servicio" : "Ingresa servicio", "error");
     shakePatientFieldsForError(salaMode ? "Ingresa \xC1rea / Servicio" : "Ingresa servicio", isFromLab);
     return;
   }
   if (!salaMode && !area) {
-    rt31.showToast("Ingresa \xE1rea / departamento", "error");
+    rt32.showToast("Ingresa \xE1rea / departamento", "error");
     shakePatientFieldsForError("Ingresa \xE1rea / departamento", isFromLab);
     return;
   }
   if (!cuarto || !cama) {
-    rt31.showToast("Ingresa cuarto y cama", "error");
+    rt32.showToast("Ingresa cuarto y cama", "error");
     shakePatientFieldsForError("Ingresa cuarto y cama", isFromLab);
     return;
   }
@@ -52077,8 +53780,8 @@ function commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cam
     interconsultas: "",
     otros: []
   };
-  rt31.applyDefaultsToNewPatient(patient.id);
-  rt31.applyDefaultsToNewIndicaciones(patient.id);
+  rt32.applyDefaultsToNewPatient(patient.id);
+  rt32.applyDefaultsToNewIndicaciones(patient.id);
   patients.push(patient);
   saveState();
   var onSaved = pendingAddPatientSavedCallback;
@@ -52087,9 +53790,9 @@ function commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cam
   var pendingLab = null;
   var stayOnLabForTour = isFromLab && shouldTourStayOnLabAfterLabCommit();
   if (isFromLab && !stayOnLabForTour) {
-    pendingLab = rt31.consumeActiveLab ? rt31.consumeActiveLab() : null;
-    if (rt31.clearLabOutputUi) rt31.clearLabOutputUi();
-    rt31.switchAppTab("nota");
+    pendingLab = rt32.consumeActiveLab ? rt32.consumeActiveLab() : null;
+    if (rt32.clearLabOutputUi) rt32.clearLabOutputUi();
+    rt32.switchAppTab("nota");
   } else if (isFromLab && stayOnLabForTour) {
     pendingLab = null;
   }
@@ -52100,7 +53803,7 @@ function commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cam
     if (perez) activeId2 = perez.id;
   }
   selectPatient(activeId2);
-  rt31.showToast("Paciente agregado", "success");
+  rt32.showToast("Paciente agregado", "success");
   if (adoptResult.afterCommit) {
     try {
       adoptResult.afterCommit(patient);
@@ -52116,9 +53819,9 @@ function commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cam
     }
   }
   if (pendingLab) {
-    rt31.restoreActiveLab(pendingLab);
-    rt31.enviarLabsANota();
-    rt31.consumeActiveLab();
+    rt32.restoreActiveLab(pendingLab);
+    rt32.enviarLabsANota();
+    rt32.consumeActiveLab();
   }
 }
 function generatePatientId() {
@@ -52212,7 +53915,7 @@ var windowHandlers12 = {
 
 // public/js/presentation-mode.mjs
 var presentationActive = false;
-var rt32 = {
+var rt33 = {
   getActiveId() {
     return null;
   },
@@ -52223,7 +53926,7 @@ var rt32 = {
 };
 function registerPresentationRuntime(partial) {
   if (!partial || typeof partial !== "object") return;
-  Object.assign(rt32, partial);
+  Object.assign(rt33, partial);
 }
 function isPresentationModeActive() {
   return presentationActive;
@@ -52243,10 +53946,10 @@ function getDemoState() {
     renderPatientList,
     selectPatient,
     getActiveId: function() {
-      return rt32.getActiveId();
+      return rt33.getActiveId();
     },
     setActiveId: function(id) {
-      rt32.setActiveId(id);
+      rt33.setActiveId(id);
     }
   };
 }
@@ -52269,7 +53972,7 @@ function startPresentationMode() {
   var es = document.getElementById("empty-state");
   if (pv) pv.style.display = "";
   if (es) es.style.display = "none";
-  rt32.showToast("Modo presentaci\xF3n: DEMO P\xC9REZ", "info");
+  rt33.showToast("Modo presentaci\xF3n: DEMO P\xC9REZ", "info");
 }
 function stopPresentationMode() {
   if (!presentationActive) return;
@@ -52282,13 +53985,13 @@ function stopPresentationMode() {
   limpiarReporte();
   var pv = document.getElementById("patient-view");
   var es = document.getElementById("empty-state");
-  if (!rt32.getActiveId()) {
+  if (!rt33.getActiveId()) {
     if (pv) pv.style.display = "none";
     if (es) es.style.display = "flex";
   } else {
-    selectPatient(rt32.getActiveId());
+    selectPatient(rt33.getActiveId());
   }
-  rt32.showToast("Modo presentaci\xF3n terminado", "info");
+  rt33.showToast("Modo presentaci\xF3n terminado", "info");
 }
 function togglePresentationMode() {
   if (presentationActive) stopPresentationMode();
@@ -52313,7 +54016,7 @@ function recoverPresentationPatientsOnBoot() {
   presentationActive = false;
   syncPresentationBodyClass();
   renderPatientList();
-  if (rt32.getActiveId()) selectPatient(rt32.getActiveId());
+  if (rt33.getActiveId()) selectPatient(rt33.getActiveId());
   else if (patients.length) selectPatient(patients[0].id);
   return true;
 }
@@ -52519,7 +54222,7 @@ function assignLanesByInterval(items) {
 }
 
 // public/js/features/agenda.mjs
-var rt33 = {
+var rt34 = {
   getActiveId() {
     return null;
   },
@@ -52530,10 +54233,10 @@ var rt33 = {
 };
 function registerProcedureAgendaRuntime(partial) {
   if (!partial || typeof partial !== "object") return;
-  Object.assign(rt33, partial);
+  Object.assign(rt34, partial);
 }
 var procedureAgendaWeekOffset = 0;
-function esc27(s) {
+function esc28(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function agendaEligiblePatients() {
@@ -52623,7 +54326,7 @@ function renderProcedureAgendaPanel() {
     );
     wd = wd.charAt(0).toUpperCase() + wd.slice(1);
     dm = dm.charAt(0).toUpperCase() + dm.slice(1);
-    hc.innerHTML = "<span>" + esc27(wd) + "</span><strong>" + esc27(dm) + "</strong>";
+    hc.innerHTML = "<span>" + esc28(wd) + "</span><strong>" + esc28(dm) + "</strong>";
     head.appendChild(hc);
   }
   board.appendChild(head);
@@ -52716,7 +54419,7 @@ function renderProcedureAgendaPanel() {
       );
       blk.setAttribute("aria-label", "Editar procedimiento para " + cell.patientLabel);
       if (!(ev.materialApproved && ev.anesthesiaScheduled)) blk.classList.add("rpc-proc-flag");
-      blk.innerHTML = '<div class="rpc-proc-name">' + esc27(String(ev.procedure || "")) + '</div><div class="rpc-proc-sub">' + esc27(String(startClock + " \xB7 " + (ev.location || ""))) + '</div><div class="rpc-proc-pat">' + esc27(String(cell.patientLabel)) + "</div>";
+      blk.innerHTML = '<div class="rpc-proc-name">' + esc28(String(ev.procedure || "")) + '</div><div class="rpc-proc-sub">' + esc28(String(startClock + " \xB7 " + (ev.location || ""))) + '</div><div class="rpc-proc-pat">' + esc28(String(cell.patientLabel)) + "</div>";
       blk.addEventListener("click", function(e) {
         e.preventDefault();
         openProcedureAgendaModal(ev.id);
@@ -52728,7 +54431,7 @@ function renderProcedureAgendaPanel() {
   board.appendChild(bodyRow);
   mount.innerHTML = "";
   mount.appendChild(board);
-  if (isPaseMode()) rt33.renderPaseBoard();
+  if (isPaseMode()) rt34.renderPaseBoard();
 }
 function openProcedureAgendaModal(editEventId) {
   var bd = document.getElementById("procedure-agenda-modal");
@@ -52771,7 +54474,7 @@ function openProcedureAgendaModal(editEventId) {
       document.getElementById("pa-anesthesia").checked = !!found.anesthesiaScheduled;
     }
   } else {
-    var aid7 = rt33.getActiveId();
+    var aid7 = rt34.getActiveId();
     if (sel && elig.length && aid7 && elig.some(function(p) {
       return p.id === aid7;
     })) {
@@ -52803,7 +54506,7 @@ function saveProcedureAgendaFromModal() {
   function showPaErr(msg) {
     errEl.style.display = "block";
     errEl.textContent = msg;
-    rt33.showToast(msg, "error");
+    rt34.showToast(msg, "error");
   }
   if (errEl) {
     errEl.style.display = "none";
@@ -52867,7 +54570,7 @@ function saveProcedureAgendaFromModal() {
   storage.saveScheduledProcedures(next);
   emitLiveSyncAgendaUpsert(eventObj);
   closeProcedureAgendaModal();
-  rt33.showToast("Procedimiento guardado", "success");
+  rt34.showToast("Procedimiento guardado", "success");
   renderProcedureAgendaPanel();
 }
 function deleteProcedureAgendaFromModal() {
@@ -52884,7 +54587,7 @@ function deleteProcedureAgendaFromModal() {
   storage.saveScheduledProcedures(arr);
   emitLiveSyncAgendaDelete(editId, delAt);
   closeProcedureAgendaModal();
-  rt33.showToast("Eliminado de la agenda", "success");
+  rt34.showToast("Eliminado de la agenda", "success");
   renderProcedureAgendaPanel();
 }
 var windowHandlers13 = {
@@ -52896,7 +54599,7 @@ var windowHandlers13 = {
 };
 
 // public/js/features/productivity.mjs
-var rt34 = {
+var rt35 = {
   getActiveId() {
     return null;
   },
@@ -52933,9 +54636,9 @@ var rt34 = {
 };
 function registerProductivityRuntime(partial) {
   if (!partial || typeof partial !== "object") return;
-  Object.assign(rt34, partial);
+  Object.assign(rt35, partial);
 }
-function esc28(s) {
+function esc29(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 var UNDO_STACK_KEY = "rpc-undo-stack";
@@ -52953,7 +54656,7 @@ function buildUndoSnapshotPayload(label) {
     label: label || "operaci\xF3n",
     at: (/* @__PURE__ */ new Date()).toISOString(),
     theme: localStorage.getItem("theme") || "light",
-    activeId: rt34.getActiveId(),
+    activeId: rt35.getActiveId(),
     data: {
       patients: cloneForUndo(patients) || [],
       notes: cloneForUndo(notes) || {},
@@ -52961,7 +54664,7 @@ function buildUndoSnapshotPayload(label) {
       labHistory: cloneForUndo(labHistory) || {},
       medRecetaByPatient: cloneForUndo(medRecetaByPatient) || [],
       scheduledProcedures: cloneForUndo(storage.getScheduledProcedures()) || [],
-      settings: cloneForUndo(rt34.getSettings()) || {},
+      settings: cloneForUndo(rt35.getSettings()) || {},
       medCatalog: cloneForUndo(storage.getMedCatalog()) || storage.getMedCatalog()
     }
   };
@@ -52986,7 +54689,7 @@ function pushUndoSnapshot2(label) {
   stack.unshift(snap);
   saveUndoStack(stack);
   refreshUndoButtonState();
-  rt34.addAuditEntry("undo-snapshot", "ok", 0, snap.label);
+  rt35.addAuditEntry("undo-snapshot", "ok", 0, snap.label);
 }
 function refreshUndoButtonState() {
   var btn = document.getElementById("btn-undo-op");
@@ -53002,7 +54705,7 @@ function refreshUndoButtonState() {
 async function undoLastOperation() {
   var stack = getUndoStack();
   if (!stack.length) {
-    rt34.showToast("No hay operaciones para deshacer.", "error");
+    rt35.showToast("No hay operaciones para deshacer.", "error");
     return;
   }
   var snap = stack[0];
@@ -53023,7 +54726,7 @@ async function undoLastOperation() {
   }
   if (snap.theme === "dark" || snap.theme === "light") localStorage.setItem("theme", snap.theme);
   await saveState({ immediate: true });
-  rt34.addAuditEntry("undo-restore", "ok", 0, snap.label || "");
+  rt35.addAuditEntry("undo-restore", "ok", 0, snap.label || "");
   location.reload();
 }
 function applyFocusModeFromStorage() {
@@ -53037,9 +54740,9 @@ function toggleFocusMode() {
   localStorage.setItem(FOCUS_MODE_KEY, on ? "1" : "0");
   var btn = document.getElementById("btn-toggle-focus-mode");
   if (btn) btn.textContent = on ? "Desactivar modo enfoque" : "Activar modo enfoque";
-  if (on) rt34.closeSettingsDropdown();
-  rt34.showToast(on ? "Modo enfoque activado \xB7 F6 para salir" : "Modo enfoque desactivado", "success");
-  rt34.addAuditEntry("focus-mode", "ok", 0, on ? "on" : "off");
+  if (on) rt35.closeSettingsDropdown();
+  rt35.showToast(on ? "Modo enfoque activado \xB7 F6 para salir" : "Modo enfoque desactivado", "success");
+  rt35.addAuditEntry("focus-mode", "ok", 0, on ? "on" : "off");
 }
 var _unifiedSearchCurrent = [];
 function openUnifiedSearch() {
@@ -53072,13 +54775,13 @@ function snippetAround(text, q, maxLen) {
   if (end < src.length) out = out + " \u2026";
   return out;
 }
-function escapeRegExp2(s) {
+function escapeRegExp3(s) {
   return String(s || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 function highlightSnippet(snippet, q) {
-  var safe = esc28(snippet);
+  var safe = esc29(snippet);
   if (!q) return safe;
-  var qEsc = escapeRegExp2(q);
+  var qEsc = escapeRegExp3(q);
   try {
     return safe.replace(new RegExp(qEsc, "ig"), function(m) {
       return "<mark>" + m + "</mark>";
@@ -53168,25 +54871,25 @@ function updateUnifiedSearchResults() {
     return;
   }
   box.innerHTML = out.map(function(r, idx) {
-    return '<div class="unified-search-result" onclick="selectUnifiedSearchResult(' + idx + ')"><div class="usr-title"><span>' + esc28(r.title) + '</span><span class="usr-tag">' + esc28(r.tag) + '</span></div><div class="usr-meta">' + esc28(r.meta) + "</div>" + (r.snippet ? '<div class="usr-snippet">' + highlightSnippet(r.snippet, q) + "</div>" : "") + "</div>";
+    return '<div class="unified-search-result" onclick="selectUnifiedSearchResult(' + idx + ')"><div class="usr-title"><span>' + esc29(r.title) + '</span><span class="usr-tag">' + esc29(r.tag) + '</span></div><div class="usr-meta">' + esc29(r.meta) + "</div>" + (r.snippet ? '<div class="usr-snippet">' + highlightSnippet(r.snippet, q) + "</div>" : "") + "</div>";
   }).join("");
 }
 function selectUnifiedSearchResult(idx) {
   var r = _unifiedSearchCurrent[idx];
   if (!r) return;
-  rt34.selectPatient(r.id);
-  rt34.switchAppTab(r.tab);
-  if (r.inner) rt34.switchInnerTab(r.inner);
+  rt35.selectPatient(r.id);
+  rt35.switchAppTab(r.tab);
+  if (r.inner) rt35.switchInnerTab(r.inner);
   closeUnifiedSearch();
 }
 var _extraTemplateEditing = null;
 function ensureExtraTemplatesArray() {
-  var settings2 = rt34.getSettings();
+  var settings2 = rt35.getSettings();
   if (!Array.isArray(settings2.extraTemplates)) settings2.extraTemplates = [];
   return settings2.extraTemplates;
 }
 function persistSettings() {
-  localStorage.setItem("rpc-settings", JSON.stringify(rt34.getSettings()));
+  localStorage.setItem("rpc-settings", JSON.stringify(rt35.getSettings()));
 }
 function openExtraTemplatesManager() {
   var m = document.getElementById("extra-templates-modal");
@@ -53210,8 +54913,8 @@ function renderExtraTemplatesList() {
     return;
   }
   list.innerHTML = arr.map(function(tmpl) {
-    var id = esc28(tmpl.id || "");
-    return '<div class="extra-tmpl-row"><span class="etr-label" title="' + esc28(tmpl.label || "") + '">' + esc28(tmpl.label || "(sin nombre)") + `</span><div class="etr-actions"><button type="button" onclick="editExtraTemplate('` + id + `')">Editar</button><button type="button" class="etr-del" onclick="deleteExtraTemplate('` + id + `')">Eliminar</button></div></div>`;
+    var id = esc29(tmpl.id || "");
+    return '<div class="extra-tmpl-row"><span class="etr-label" title="' + esc29(tmpl.label || "") + '">' + esc29(tmpl.label || "(sin nombre)") + `</span><div class="etr-actions"><button type="button" onclick="editExtraTemplate('` + id + `')">Editar</button><button type="button" class="etr-del" onclick="deleteExtraTemplate('` + id + `')">Eliminar</button></div></div>`;
   }).join("");
 }
 function startNewExtraTemplate() {
@@ -53252,7 +54955,7 @@ function cancelExtraTemplateEdit() {
 function saveExtraTemplateFromEditor() {
   var label = (document.getElementById("extra-tmpl-label").value || "").trim();
   if (!label) {
-    rt34.showToast("Ingresa un nombre para la plantilla", "error");
+    rt35.showToast("Ingresa un nombre para la plantilla", "error");
     return;
   }
   var dieta = (document.getElementById("extra-tmpl-dieta").value || "").trim();
@@ -53279,11 +54982,11 @@ function saveExtraTemplateFromEditor() {
     });
   }
   persistSettings();
-  rt34.addAuditEntry("extra-template-save", "ok", arr.length, label);
-  rt34.showToast("Plantilla guardada", "success");
+  rt35.addAuditEntry("extra-template-save", "ok", arr.length, label);
+  rt35.showToast("Plantilla guardada", "success");
   renderExtraTemplatesList();
   cancelExtraTemplateEdit();
-  if (rt34.getActiveId()) rt34.renderIndicaForm();
+  if (rt35.getActiveId()) rt35.renderIndicaForm();
 }
 function deleteExtraTemplate(id) {
   var arr = ensureExtraTemplatesArray();
@@ -53292,12 +54995,12 @@ function deleteExtraTemplate(id) {
   });
   if (!tmpl) return;
   if (!confirm('\xBFEliminar la plantilla "' + (tmpl.label || "") + '"?')) return;
-  var settings2 = rt34.getSettings();
+  var settings2 = rt35.getSettings();
   settings2.extraTemplates = arr.filter(function(t2) {
     return t2.id !== id;
   });
   persistSettings();
-  rt34.addAuditEntry(
+  rt35.addAuditEntry(
     "extra-template-delete",
     "ok",
     settings2.extraTemplates.length,
@@ -53305,7 +55008,7 @@ function deleteExtraTemplate(id) {
   );
   renderExtraTemplatesList();
   cancelExtraTemplateEdit();
-  if (rt34.getActiveId()) rt34.renderIndicaForm();
+  if (rt35.getActiveId()) rt35.renderIndicaForm();
 }
 function isTypingContext(target) {
   if (!target) return false;
@@ -53326,7 +55029,7 @@ function initProductivityKeyboardShortcuts() {
         var roundKey = (e.key || "").toLowerCase();
         if (roundKey === "j" || roundKey === "k") {
           e.preventDefault();
-          rt34.advanceRondaPatient(roundKey === "j" ? 1 : -1);
+          rt35.advanceRondaPatient(roundKey === "j" ? 1 : -1);
           return;
         }
       }
@@ -53342,16 +55045,16 @@ function initProductivityKeyboardShortcuts() {
       else openUnifiedSearch();
     } else if (k === "n") {
       e.preventDefault();
-      rt34.openAddModal();
+      rt35.openAddModal();
     } else if (k === "s") {
       e.preventDefault();
-      if (!rt34.getActiveId()) {
-        rt34.showToast("Selecciona un paciente primero", "error");
+      if (!rt35.getActiveId()) {
+        rt35.showToast("Selecciona un paciente primero", "error");
         return;
       }
-      rt34.saveState();
-      rt34.addAuditEntry("quick-save", "ok", 1, String(rt34.getActiveId()));
-      rt34.showToast("Estado guardado \u2713", "success");
+      rt35.saveState();
+      rt35.addAuditEntry("quick-save", "ok", 1, String(rt35.getActiveId()));
+      rt35.showToast("Estado guardado \u2713", "success");
     }
   });
   applyFocusModeFromStorage();
@@ -53395,11 +55098,11 @@ function syncActivePatientContextBar() {
 }
 function syncMedPatientGate() {
   var empty = document.getElementById("med-empty-guided");
-  var work = document.getElementById("med-work-area");
-  if (!empty || !work) return;
+  var shell = document.getElementById("med-active-shell");
+  if (!empty || !shell) return;
   var showEmpty = shellCtx.getActiveAppTab() === "med" && !shellCtx.getActiveId();
   empty.style.display = showEmpty ? "flex" : "none";
-  work.style.display = showEmpty ? "none" : "flex";
+  shell.style.display = showEmpty ? "none" : "flex";
 }
 function setMedTabAttention(on) {
   var tab = document.getElementById("apptab-med");
@@ -54190,7 +55893,7 @@ function scheduleDeferredUiInits() {
 }
 
 // public/js/app-runtimes.mjs
-var rt35 = {
+var rt36 = {
   getActiveId() {
     return null;
   },
@@ -54217,44 +55920,53 @@ function wasV3MigratedThisBoot() {
   return v3MigratedThisBoot;
 }
 function registerAppRuntimeContext(partial) {
-  if (partial && typeof partial === "object") Object.assign(rt35, partial);
+  if (partial && typeof partial === "object") Object.assign(rt36, partial);
 }
 function registerAllFeatureRuntimes() {
   registerMedicationsRuntime({
     getActiveId: function() {
-      return rt35.getActiveId();
+      return rt36.getActiveId();
     },
     showToast,
     getSettings: function() {
-      return rt35.getSettings();
+      return rt36.getSettings();
     },
     navigateToEstadoActualPanel
+  });
+  registerMedPharmProfileRuntime({
+    getActiveId: function() {
+      return rt36.getActiveId();
+    },
+    showToast,
+    refreshMedPanel: function() {
+      renderMedRecetaPanel();
+    }
   });
   registerProfileRuntime({
     showToast,
     getActiveId: function() {
-      return rt35.getActiveId();
+      return rt36.getActiveId();
     },
     syncWorkContextChrome
   });
   registerPaseBoardRuntime({
     getActiveAppTab: function() {
-      return rt35.getActiveAppTab();
+      return rt36.getActiveAppTab();
     },
     setActiveAppTab: function(v) {
-      rt35.setActiveAppTab(v);
+      rt36.setActiveAppTab(v);
     },
     getActiveInner: function() {
-      return rt35.getActiveInner();
+      return rt36.getActiveInner();
     },
     setActiveInner: function(v) {
-      rt35.setActiveInner(v);
+      rt36.setActiveInner(v);
     },
     getActiveId: function() {
-      return rt35.getActiveId();
+      return rt36.getActiveId();
     },
     getSettings: function() {
-      return rt35.getSettings();
+      return rt36.getSettings();
     },
     renderMedRecetaPanel,
     renderLabHistoryPanel,
@@ -54272,13 +55984,13 @@ function registerAllFeatureRuntimes() {
     scrollActiveRondaCardIntoView,
     renderProcedureAgendaPanel,
     getActiveAppTab: function() {
-      return rt35.getActiveAppTab();
+      return rt36.getActiveAppTab();
     },
     getActiveInner: function() {
-      return rt35.getActiveInner();
+      return rt36.getActiveInner();
     },
     getActiveId: function() {
-      return rt35.getActiveId();
+      return rt36.getActiveId();
     },
     setRoundOverviewMode,
     renderPaseBoard,
@@ -54286,22 +55998,22 @@ function registerAllFeatureRuntimes() {
   });
   registerPatientsRuntime({
     getActiveId: function() {
-      return rt35.getActiveId();
+      return rt36.getActiveId();
     },
     setActiveId: function(id) {
-      rt35.setActiveId(id);
+      rt36.setActiveId(id);
     },
     getActiveAppTab: function() {
-      return rt35.getActiveAppTab();
+      return rt36.getActiveAppTab();
     },
     getActiveInner: function() {
-      return rt35.getActiveInner();
+      return rt36.getActiveInner();
     },
     setActiveInner: function(v) {
-      rt35.setActiveInner(v);
+      rt36.setActiveInner(v);
     },
     getSettings: function() {
-      return rt35.getSettings();
+      return rt36.getSettings();
     },
     getActiveLab: function() {
       return getActiveLab();
@@ -54352,11 +56064,11 @@ function registerAllFeatureRuntimes() {
     primaryTipoForLabSet,
     normalizeFechaLabHistory
   });
-  v3MigratedThisBoot = migrateToV3(rt35.getSettings());
-  if (v3MigratedThisBoot) storage.saveSettings(rt35.getSettings());
+  v3MigratedThisBoot = migrateToV3(rt36.getSettings());
+  if (v3MigratedThisBoot) storage.saveSettings(rt36.getSettings());
   registerLabHistoryMaintRuntime({
     getActiveId: function() {
-      return rt35.getActiveId();
+      return rt36.getActiveId();
     },
     renderLabHistoryPanel,
     refreshTendenciasOrCultivosPanel
@@ -54365,13 +56077,13 @@ function registerAllFeatureRuntimes() {
   registerLanSaveHooks({ scheduleLabHistoryPostSaveMaintenance });
   registerPlatformRuntime({
     getActiveId: function() {
-      return rt35.getActiveId();
+      return rt36.getActiveId();
     },
     setActiveId: function(id) {
-      rt35.setActiveId(id);
+      rt36.setActiveId(id);
     },
     getSettings: function() {
-      return rt35.getSettings();
+      return rt36.getSettings();
     },
     showToast,
     syncTeamSyncHeaderButton: syncTeamSyncHeaderButton2,
@@ -54379,7 +56091,7 @@ function registerAllFeatureRuntimes() {
   });
   registerTendenciasRuntime({
     getActiveId: function() {
-      return rt35.getActiveId();
+      return rt36.getActiveId();
     },
     ensureParsedLabHistory,
     ensureParsedLabHistoryCached,
@@ -54390,17 +56102,17 @@ function registerAllFeatureRuntimes() {
   });
   registerTodosRuntime({
     getActiveId: function() {
-      return rt35.getActiveId();
+      return rt36.getActiveId();
     },
     getActiveAppTab: function() {
-      return rt35.getActiveAppTab();
+      return rt36.getActiveAppTab();
     },
     getRoundOverviewMode,
     renderPaseBoard
   });
   registerManejoRuntime({
     getActiveId: function() {
-      return rt35.getActiveId();
+      return rt36.getActiveId();
     },
     ensureParsedLabHistory,
     ensureParsedLabHistoryCached,
@@ -54411,23 +56123,23 @@ function registerAllFeatureRuntimes() {
   });
   registerVpoRuntime({
     getActiveId: function() {
-      return rt35.getActiveId();
+      return rt36.getActiveId();
     },
     showToast,
     switchAppTab
   });
   registerRecetaHuRuntime({
     getActiveId: function() {
-      return rt35.getActiveId();
+      return rt36.getActiveId();
     },
     getActiveAppTab: function() {
-      return rt35.getActiveAppTab();
+      return rt36.getActiveAppTab();
     },
     getActiveInner: function() {
-      return rt35.getActiveInner();
+      return rt36.getActiveInner();
     },
     getSettings: function() {
-      return rt35.getSettings();
+      return rt36.getSettings();
     },
     switchAppTab,
     switchInnerTab,
@@ -54442,16 +56154,16 @@ function registerAllFeatureRuntimes() {
   });
   registerSettingsHelpRuntime({
     getSettings: function() {
-      return rt35.getSettings();
+      return rt36.getSettings();
     },
     getActiveInner: function() {
-      return rt35.getActiveInner();
+      return rt36.getActiveInner();
     },
     getActiveId: function() {
-      return rt35.getActiveId();
+      return rt36.getActiveId();
     },
     setActiveId: function(id) {
-      rt35.setActiveId(id);
+      rt36.setActiveId(id);
     },
     switchInnerTab,
     renderInnerTabs,
@@ -54472,7 +56184,7 @@ function registerAllFeatureRuntimes() {
   });
   registerCensoRuntime({
     getSettings: function() {
-      return rt35.getSettings();
+      return rt36.getSettings();
     },
     showToast,
     requestDocumentJson,
@@ -54485,10 +56197,10 @@ function registerAllFeatureRuntimes() {
   });
   registerHistoriaClinicaRuntime({
     getActiveId: function() {
-      return rt35.getActiveId();
+      return rt36.getActiveId();
     },
     getSettings: function() {
-      return rt35.getSettings();
+      return rt36.getSettings();
     },
     showToast,
     copyToClipboardSafe,
@@ -54496,22 +56208,22 @@ function registerAllFeatureRuntimes() {
   });
   registerEventualidadesRuntime({
     getActiveId: function() {
-      return rt35.getActiveId();
+      return rt36.getActiveId();
     },
     showToast
   });
   registerExpedienteRuntime({
     getActiveId: function() {
-      return rt35.getActiveId();
+      return rt36.getActiveId();
     },
     getActiveAppTab: function() {
-      return rt35.getActiveAppTab();
+      return rt36.getActiveAppTab();
     },
     getActiveInner: function() {
-      return rt35.getActiveInner();
+      return rt36.getActiveInner();
     },
     getSettings: function() {
-      return rt35.getSettings();
+      return rt36.getSettings();
     },
     showToast,
     renderTendencias,
@@ -54531,10 +56243,10 @@ function registerAllFeatureRuntimes() {
   });
   registerNotesIndicacionesRuntime({
     getActiveId: function() {
-      return rt35.getActiveId();
+      return rt36.getActiveId();
     },
     getSettings: function() {
-      return rt35.getSettings();
+      return rt36.getSettings();
     },
     showToast,
     renderRoundOverviewPanels,
@@ -54551,28 +56263,28 @@ function registerAllFeatureRuntimes() {
   });
   registerProcedureAgendaRuntime({
     getActiveId: function() {
-      return rt35.getActiveId();
+      return rt36.getActiveId();
     },
     showToast,
     renderPaseBoard
   });
   registerSoapEstadoRuntime({
     getActiveId: function() {
-      return rt35.getActiveId();
+      return rt36.getActiveId();
     },
     showToast,
     getSettings: function() {
-      return rt35.getSettings();
+      return rt36.getSettings();
     },
     navigateToEstadoActualPanel
   });
   registerEstadoActualPanelRuntime({
     getActiveId: function() {
-      return rt35.getActiveId();
+      return rt36.getActiveId();
     },
     showToast,
     getSettings: function() {
-      return rt35.getSettings();
+      return rt36.getSettings();
     },
     switchConsolidatedTab,
     copyToClipboardSafe,
@@ -54611,7 +56323,7 @@ function registerAllFeatureRuntimes() {
     ensureForm: ensureEaRegistroModalForm,
     syncGluMode: syncEaRegistroGluMode,
     resetForm: function() {
-      var activeId2 = rt35.getActiveId();
+      var activeId2 = rt36.getActiveId();
       var patient = activeId2 && patients.find(function(p) {
         return p.id === activeId2;
       });
@@ -54622,10 +56334,10 @@ function registerAllFeatureRuntimes() {
     showToast,
     copyToClipboardSafe,
     getActiveId: function() {
-      return rt35.getActiveId();
+      return rt36.getActiveId();
     },
     setActiveId: function(id) {
-      rt35.setActiveId(id);
+      rt36.setActiveId(id);
     },
     selectPatient,
     renderRoundOverviewPanels,
@@ -54674,10 +56386,10 @@ function registerAllFeatureRuntimes() {
   });
   registerProductivityRuntime({
     getActiveId: function() {
-      return rt35.getActiveId();
+      return rt36.getActiveId();
     },
     getSettings: function() {
-      return rt35.getSettings();
+      return rt36.getSettings();
     },
     selectPatient,
     switchAppTab,
@@ -54696,13 +56408,13 @@ function registerAllFeatureRuntimes() {
     renderNoteForm,
     renderLabHistoryPanel,
     getActiveId: function() {
-      return rt35.getActiveId();
+      return rt36.getActiveId();
     },
     setActiveId: function(id) {
-      rt35.setActiveId(id);
+      rt36.setActiveId(id);
     },
     getActiveAppTab: function() {
-      return rt35.getActiveAppTab();
+      return rt36.getActiveAppTab();
     },
     selectPatient,
     isMobileWeb,
@@ -54728,6 +56440,7 @@ function runInitialFeatureBoot() {
 // public/js/app.js
 var allWindowHandlers = Object.assign(
   {},
+  dbUnlockWindowHandlers,
   windowHandlers,
   windowHandlers6,
   windowHandlers12,
@@ -54757,7 +56470,17 @@ try {
 } catch (assignErr) {
   console.error("[R+] No se pudieron registrar handlers en window:", assignErr);
 }
-initAppState();
+var appStateReady = (async function loadClinicalStateOnBoot() {
+  if (isDbMode()) {
+    const unlockResult = await waitForDbUnlock();
+    if (!unlockResult || !unlockResult.unlocked) {
+      throw new Error("DB_LOCKED");
+    }
+    await bootHydrateFromDb();
+  } else {
+    initAppState();
+  }
+})();
 setSaveStateHooks({
   onSaveResult(result) {
     if (!result || result.ok) {
@@ -54827,13 +56550,31 @@ registerAppRuntimeContext({
     return settings;
   }
 });
-try {
-  registerAllFeatureRuntimes();
-  runInitialFeatureBoot();
-} catch (bootErr) {
-  console.error("[R+] Error registrando runtimes de features:", bootErr);
-}
+appStateReady.then(function() {
+  try {
+    registerAllFeatureRuntimes();
+    runInitialFeatureBoot();
+  } catch (bootErr) {
+    console.error("[R+] Error registrando runtimes de features:", bootErr);
+  }
+}).catch(function(stateErr) {
+  console.error("[R+] Error cargando estado cl\xEDnico:", stateErr);
+  try {
+    initAppState();
+    registerAllFeatureRuntimes();
+    runInitialFeatureBoot();
+  } catch (bootErr) {
+    console.error("[R+] Error registrando runtimes de features:", bootErr);
+  }
+});
 function runDomBoot() {
+  appStateReady.then(function() {
+    runDomBootAfterState();
+  }).catch(function() {
+    runDomBootAfterState();
+  });
+}
+function runDomBootAfterState() {
   try {
     if (recoverPresentationPatientsOnBoot()) {
       showToast("Se restaur\xF3 tu lista de pacientes tras el modo presentaci\xF3n.", "info");

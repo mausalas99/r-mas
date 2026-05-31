@@ -1,8 +1,11 @@
 /** Pending jobs, RPC offline/health, idle lock, privacy wipe, backups/sync JSON, auto-updater UI. */
 import { storage } from '../storage.js';
+import { isDbMode } from '../db-storage-bridge.mjs';
+import { syncDbSecuritySectionUi } from './db-unlock.mjs';
 import { formatProgressLine } from '../update-helpers.mjs';
 import { setAsyncButtonLoading } from '../ui-motion.mjs';
 import { applyMedCatalogOverlay } from '../med-receta-core.mjs';
+import { applySomePharmCatalogOverlay } from '../med-pharm-some-catalog.mjs';
 import {
   GUIDED_TOUR_LS_KEY,
   closeSettingsDropdown,
@@ -15,8 +18,10 @@ import {
   indicaciones,
   labHistory,
   medRecetaByPatient,
+  medPharmProfileByPatient,
   listadoProblemas,
   replaceAppStateFromBackupData,
+  setMedPharmProfileByPatient,
   saveState,
   setPatients,
   setNotes,
@@ -546,13 +551,58 @@ function safeExportSlug(str) {
 }
 
 // ── Respaldo local (exportar / importar JSON) ─────────────────────
+var _dbAuditCache = null;
+
+function forensicEventVisible(eventType) {
+  var t = String(eventType || '');
+  return /^(clinical|auth|system|lan)\./.test(t);
+}
+
+function mapForensicAuditRow(row) {
+  return {
+    timestamp: row.timestamp,
+    action: row.event_type,
+    result: 'ok',
+    count: 0,
+    detail: row.client_id || '',
+    forensicId: row.id,
+    payloadHash: row.payload_hash,
+    currentHash: row.current_hash,
+  };
+}
+
+async function fetchDbAuditLog(limit) {
+  if (!isDbMode() || !window.electronAPI || typeof window.electronAPI.dbAuditExport !== 'function') {
+    return null;
+  }
+  try {
+    var res = await window.electronAPI.dbAuditExport({ limit: limit || 200 });
+    if (!res || res.ok === false) return [];
+    return (res.entries || []).filter(function (row) {
+      return forensicEventVisible(row.event_type);
+    }).map(mapForensicAuditRow);
+  } catch (_e) {
+    return [];
+  }
+}
+
 function getAuditLog() {
+  if (isDbMode() && _dbAuditCache) return _dbAuditCache;
   try {
     var raw = JSON.parse(localStorage.getItem(AUDIT_LOG_KEY) || '[]');
     return Array.isArray(raw) ? raw : [];
   } catch (_err) {
     return [];
   }
+}
+
+async function refreshDbAuditCache() {
+  if (!isDbMode()) {
+    _dbAuditCache = null;
+    return getAuditLog();
+  }
+  _dbAuditCache = await fetchDbAuditLog(200);
+  return _dbAuditCache;
 }
 
 function addAuditEntry(action, result, count, detail) {
@@ -568,15 +618,127 @@ function addAuditEntry(action, result, count, detail) {
   localStorage.setItem(AUDIT_LOG_KEY, JSON.stringify(list));
 }
 
-function exportAuditLog() {
-  var log = getAuditLog();
-  downloadJsonPayload({
-    format: 'r-plus-audit-log',
-    version: 1,
-    exportedAt: new Date().toISOString(),
-    entries: log
-  }, 'R-plus-bitacora-' + formatDateSlug(new Date()) + '.json');
+async function exportAuditLog() {
+  var log;
+  if (isDbMode() && window.electronAPI && typeof window.electronAPI.dbAuditExport === 'function') {
+    log = await fetchDbAuditLog(5000);
+  } else {
+    log = getAuditLog();
+  }
+  downloadJsonPayload(
+    {
+      format: isDbMode() ? 'r-plus-forensic-audit' : 'r-plus-audit-log',
+      version: isDbMode() ? 2 : 1,
+      exportedAt: new Date().toISOString(),
+      entries: log,
+    },
+    'R-plus-bitacora-' + formatDateSlug(new Date()) + '.json'
+  );
   rt.showToast('Bitácora exportada', 'success');
+}
+
+async function lockClinicalDatabaseNow() {
+  if (!isDbMode() || !window.electronAPI || typeof window.electronAPI.dbLock !== 'function') {
+    rt.showToast('Solo disponible con la base de datos cifrada en la app de escritorio.', 'error');
+    return;
+  }
+  if (
+    !window.confirm(
+      '¿Bloquear la base de datos ahora? No podrás ver ni editar datos clínicos hasta volver a desbloquear con tu contraseña maestra.'
+    )
+  ) {
+    return;
+  }
+  try {
+    var res = await window.electronAPI.dbLock();
+    if (!res || res.ok === false) {
+      rt.showToast((res && res.error) || 'No se pudo bloquear la base de datos', 'error');
+      return;
+    }
+    rt.showToast('Base de datos bloqueada', 'success');
+    location.reload();
+  } catch (_e) {
+    rt.showToast('No se pudo bloquear la base de datos', 'error');
+  }
+}
+
+async function verifyForensicAuditChain() {
+  if (!isDbMode() || !window.electronAPI || typeof window.electronAPI.dbAuditVerify !== 'function') {
+    rt.showToast('La verificación forense solo está en la app de escritorio con base cifrada.', 'error');
+    return;
+  }
+  rt.showToast('Verificando cadena de integridad…', 'info');
+  try {
+    var res = await window.electronAPI.dbAuditVerify({ mode: 'full' });
+    if (!res || res.ok === false) {
+      rt.showToast((res && res.error) || 'No se pudo verificar la bitácora', 'error');
+      return;
+    }
+    if (res.valid) {
+      rt.showToast('Bitácora forense íntegra (verificación completa).', 'success');
+    } else {
+      rt.showToast(
+        'Cadena comprometida: revisa el registro #' + (res.brokenAtId != null ? res.brokenAtId : '?'),
+        'error'
+      );
+    }
+  } catch (_e) {
+    rt.showToast('No se pudo verificar la bitácora', 'error');
+  }
+}
+
+async function exportClinicalDbBackupJson() {
+  if (!isDbMode() || !window.electronAPI || typeof window.electronAPI.dbBackupExportJson !== 'function') {
+    rt.showToast('Exportación solo disponible con base cifrada en escritorio.', 'error');
+    return;
+  }
+  if (
+    !window.confirm(
+      'El respaldo JSON incluye información clínica identificable en texto plano. ¿Continuar y guardar en un lugar seguro?'
+    )
+  ) {
+    return;
+  }
+  try {
+    var res = await window.electronAPI.dbBackupExportJson();
+    if (!res || res.ok === false) {
+      rt.showToast((res && res.error) || 'No se pudo exportar el respaldo', 'error');
+      return;
+    }
+    var envelope = res.envelope || res;
+    downloadJsonPayload(
+      envelope,
+      'R-plus-respaldo-sqlcipher-' + formatDateSlug(new Date()) + '.json'
+    );
+    rt.showToast('Respaldo JSON exportado', 'success');
+  } catch (_e) {
+    rt.showToast('No se pudo exportar el respaldo', 'error');
+  }
+}
+
+async function exportClinicalDbBackupDb() {
+  if (!isDbMode() || !window.electronAPI || typeof window.electronAPI.dbBackupExportDb !== 'function') {
+    rt.showToast('Exportación solo disponible con base cifrada en escritorio.', 'error');
+    return;
+  }
+  if (
+    !window.confirm(
+      'Se copiará el archivo .db cifrado. Protégelo como datos clínicos sensibles. ¿Continuar?'
+    )
+  ) {
+    return;
+  }
+  try {
+    var res = await window.electronAPI.dbBackupExportDb();
+    if (res && res.canceled) return;
+    if (!res || res.ok === false) {
+      rt.showToast((res && res.error) || 'No se pudo exportar la copia .db', 'error');
+      return;
+    }
+    rt.showToast('Copia .db guardada' + (res.path ? ': ' + res.path : ''), 'success');
+  } catch (_e) {
+    rt.showToast('No se pudo exportar la copia .db', 'error');
+  }
 }
 
 var MED_CATALOG_MERGE_CAP = 400;
@@ -604,6 +766,16 @@ function mergeMedCatalogStored(incoming) {
   }
   var st = cur.soapTokens || {};
   var si = incoming.soapTokens && typeof incoming.soapTokens === 'object' ? incoming.soapTokens : {};
+  function mergeSomePharm(curSp, incSp) {
+    var out = Object.create(null);
+    var cTok = curSp && curSp.tokens ? curSp.tokens : {};
+    var iTok = incSp && incSp.tokens ? incSp.tokens : {};
+    var keys = Object.keys(cTok).concat(Object.keys(iTok));
+    keys.forEach(function (cat) {
+      out[cat] = mergeArr(cTok[cat], iTok[cat]);
+    });
+    return { tokens: out };
+  }
   return {
     v: 1,
     accents: accents,
@@ -613,6 +785,7 @@ function mergeMedCatalogStored(incoming) {
       analgesia: mergeArr(st.analgesia, si.analgesia),
       antihta: mergeArr(st.antihta, si.antihta),
     },
+    somePharm: mergeSomePharm(cur.somePharm, incoming.somePharm),
   };
 }
 
@@ -625,6 +798,7 @@ function exportMedCatalogBundle() {
       exportedAt: new Date().toISOString(),
       accents: data.accents || {},
       soapTokens: data.soapTokens || { vasop: [], abx: [], analgesia: [], antihta: [] },
+      somePharm: data.somePharm || { tokens: {} },
     },
     'R-plus-catalogo-medicamentos-' + formatDateSlug(new Date()) + '.json'
   );
@@ -651,16 +825,23 @@ function onMedCatalogFileChosen(ev) {
       var soapTokens = payload.soapTokens;
       var hasAcc = accents && typeof accents === 'object';
       var hasSoap = soapTokens && typeof soapTokens === 'object';
-      if (!hasAcc && !hasSoap) {
-        rt.showToast('El archivo no es un catálogo válido (faltan accents o soapTokens).', 'error');
+      var somePharm = payload.somePharm;
+      var hasSome = somePharm && typeof somePharm === 'object';
+      if (!hasAcc && !hasSoap && !hasSome) {
+        rt.showToast(
+          'El archivo no es un catálogo válido (faltan accents, soapTokens o somePharm).',
+          'error'
+        );
         return;
       }
       var merged = mergeMedCatalogStored({
         accents: hasAcc ? accents : {},
         soapTokens: hasSoap ? soapTokens : {},
+        somePharm: hasSome ? somePharm : {},
       });
       storage.saveMedCatalog(merged);
       applyMedCatalogOverlay(merged);
+      applySomePharmCatalogOverlay(merged);
       var nAcc = Object.keys(merged.accents || {}).length;
       var nTok =
         (merged.soapTokens.vasop || []).length +
@@ -916,6 +1097,10 @@ function buildBackupDataFromMemory() {
   Object.keys(medRecetaByPatient || {}).forEach(function (k) {
     if (!String(k).startsWith('demo-')) medPersist[k] = medRecetaByPatient[k];
   });
+  var medPharmPersist = {};
+  Object.keys(medPharmProfileByPatient || {}).forEach(function (k) {
+    if (!String(k).startsWith('demo-')) medPharmPersist[k] = medPharmProfileByPatient[k];
+  });
   var listPersist = {};
   Object.keys(listadoProblemas || {}).forEach(function (k) {
     if (listadoProblemas[k] && !String(k).startsWith('demo-')) listPersist[k] = listadoProblemas[k];
@@ -930,6 +1115,7 @@ function buildBackupDataFromMemory() {
     indicaciones: indPersist,
     labHistory: lhPersist,
     medRecetaByPatient: medPersist,
+    medPharmProfileByPatient: medPharmPersist,
     listadoProblemas: listPersist,
     scheduledProcedures: storage.getScheduledProcedures(),
     settings: settings,
@@ -1014,6 +1200,8 @@ function applyImportEntry(entry, action, existing) {
     labHistory[existing.id] = Array.isArray(entry.labHistory) ? entry.labHistory : [];
     if (entry.medReceta) medRecetaByPatient[existing.id] = entry.medReceta;
     else delete medRecetaByPatient[existing.id];
+    if (entry.medPharmProfile) medPharmProfileByPatient[existing.id] = entry.medPharmProfile;
+    else delete medPharmProfileByPatient[existing.id];
     mergePatientMonitoreoFromImported(existing, entry.patient);
     return existing.id;
   }
@@ -1037,6 +1225,7 @@ function applyImportEntry(entry, action, existing) {
   indicaciones[newId] = entry.indicaciones || {};
   labHistory[newId] = Array.isArray(entry.labHistory) ? entry.labHistory : [];
   if (entry.medReceta) medRecetaByPatient[newId] = entry.medReceta;
+  if (entry.medPharmProfile) medPharmProfileByPatient[newId] = entry.medPharmProfile;
   return newId;
 }
 
@@ -1047,6 +1236,7 @@ function importEntriesWithConflicts(entries, actionLabel) {
   var indicacionesBefore = JSON.parse(JSON.stringify(indicaciones));
   var labHistoryBefore = JSON.parse(JSON.stringify(labHistory));
   var medRecetaBefore = JSON.parse(JSON.stringify(medRecetaByPatient));
+  var medPharmBefore = JSON.parse(JSON.stringify(medPharmProfileByPatient));
   for (var i = 0; i < entries.length; i += 1) {
     var entry = entries[i];
     if (!entry || !entry.patient) continue;
@@ -1072,6 +1262,7 @@ function importEntriesWithConflicts(entries, actionLabel) {
     setIndicaciones(indicacionesBefore);
     setLabHistory(labHistoryBefore);
     setMedRecetaByPatient(medRecetaBefore);
+    setMedPharmProfileByPatient(medPharmBefore);
   } else {
     saveState();
     renderPatientList();
@@ -1120,6 +1311,7 @@ function exportActivePatientBackup() {
     indicaciones: indicaciones[aid] || null,
     labHistory: labHistory[aid] || [],
     medReceta: medRecetaByPatient[aid] || null,
+    medPharmProfile: medPharmProfileByPatient[aid] || null,
   };
   downloadJsonPayload(payload, 'R-plus-paciente-' + safeExportSlug(patient.nombre) + '-' + formatDateSlug(new Date()) + '.json');
   addAuditEntry('backup-patient-export', 'ok', 1, String(patient.registro || ''));
@@ -1204,6 +1396,7 @@ function patientExportPayloadToEntry(payload) {
     indicaciones: payload.indicaciones || {},
     labHistory: Array.isArray(payload.labHistory) ? payload.labHistory : [],
     medReceta: payload.medReceta || null,
+    medPharmProfile: payload.medPharmProfile || null,
   };
 }
 
@@ -2051,6 +2244,10 @@ if (typeof window !== 'undefined' && window.electronAPI) {
 }
 
 export const platformWindowHandlers = {
+  lockClinicalDatabaseNow,
+  verifyForensicAuditChain,
+  exportClinicalDbBackupJson,
+  exportClinicalDbBackupDb,
   openUserDataFolderFromSettings,
   onHardwareAccelerationChange,
   onIdleLockSelectChange,
@@ -2090,6 +2287,12 @@ export const platformWindowHandlers = {
 
 export {
   getAuditLog,
+  refreshDbAuditCache,
+  syncDbSecuritySectionUi,
+  lockClinicalDatabaseNow,
+  verifyForensicAuditChain,
+  exportClinicalDbBackupJson,
+  exportClinicalDbBackupDb,
   addAuditEntry,
   incrementPendingJobs,
   decrementPendingJobs,

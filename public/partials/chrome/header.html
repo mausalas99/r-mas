@@ -172,7 +172,7 @@
           <p class="settings-acc-hint settings-acc-hint--tight">El deshacer usa una copia en memoria del momento previo. Si algo salió mal, usa <strong>Restaurar esa copia</strong> (si existe) o un archivo <strong>R-plus-auto-respaldo-</strong> / <strong>R-plus-respaldo-</strong> desde Descargas.</p>
           <hr class="profile-divider settings-acc-divider">
           <div class="profile-defaults-title">Catálogo medicamentos (SOAP)</div>
-          <p class="settings-acc-hint">Personaliza <strong>acentos</strong> y <strong>palabras clave</strong> por categoría para la plantilla SOAP. Sin datos de pacientes.</p>
+          <p class="settings-acc-hint">Personaliza <strong>acentos</strong> y <strong>palabras clave</strong> para SOAP (<code>soapTokens</code>) y el perfil farmacoterapéutico (<code>somePharm.tokens</code>: ANTIBIÓTICO, SEDANTE, etc.). Sin datos de pacientes. Si no importas nada, R+ usa reglas integradas.</p>
           <button type="button" class="btn-edit-templates" onclick="exportMedCatalogBundle()">Exportar catálogo…</button>
           <button type="button" class="btn-edit-templates" onclick="triggerImportMedCatalog()">Importar catálogo…</button>
           <hr class="profile-divider settings-acc-divider">
@@ -222,6 +222,18 @@
           <div class="profile-defaults-title">Modo enfoque</div>
           <p class="settings-acc-hint">Oculta barra lateral y ajustes. Atajo: F6.</p>
           <button type="button" class="btn-edit-templates" id="btn-toggle-focus-mode" onclick="toggleFocusMode()">Activar modo enfoque</button>
+        </div>
+      </details>
+
+      <details class="settings-accordion" id="settings-accordion-db-security" style="display:none;">
+        <summary>Base de datos cifrada</summary>
+        <div class="settings-acc-body settings-acc-btn-stack">
+          <p class="settings-acc-hint">Datos clínicos en SQLCipher en el perfil local de Electron. Bloquea cuando dejes el equipo desatendido.</p>
+          <button type="button" class="btn-edit-templates" onclick="lockClinicalDatabaseNow()">Bloquear base de datos ahora…</button>
+          <button type="button" class="btn-edit-templates" onclick="verifyForensicAuditChain()">Verificar bitácora forense</button>
+          <p class="settings-acc-hint settings-acc-hint--tight" id="settings-db-backup-warn">Los respaldos JSON contienen información clínica en texto plano. Guárdalos solo en medios autorizados y cifrados.</p>
+          <button type="button" class="btn-edit-templates" onclick="exportClinicalDbBackupJson()">Exportar respaldo JSON (base cifrada)…</button>
+          <button type="button" class="btn-edit-templates" onclick="exportClinicalDbBackupDb()">Exportar copia .db cifrada…</button>
         </div>
       </details>
 
