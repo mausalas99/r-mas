@@ -5,7 +5,7 @@ Fecha: 2026-05-31
 
 ## Resumen
 
-Versión centrada en **ingreso en Sala**: formulario institucional de **Historia Clínica** con lectura narrativa compilada, registro de **Eventualidades**, y expediente **Clínico** reorganizado (Historia → Estado actual → Eventualidades → Manejo). Los **.docx** de Nota, Indicaciones y Listado se generan en **Node** (sin subprocess Python). La **sala en vivo** usa versiones y fusión por entidad; las **calculadoras de Manejo** incorporan límites y validación clínica más estrictos.
+Versión centrada en **ingreso en Sala**: formulario institucional de **Historia Clínica** con lectura narrativa compilada, registro de **Eventualidades**, y expediente **Clínico** reorganizado (Historia → Estado actual → Eventualidades → Manejo). Los **.docx** de Nota, Indicaciones y Listado se generan en **Node** (sin subprocess Python). La **sala en vivo** usa versiones y fusión por entidad.
 
 ## Nuevo / mejorado
 
@@ -15,7 +15,6 @@ Versión centrada en **ingreso en Sala**: formulario institucional de **Historia
 - **Formulario en 3 pasos** — Identificación y motivo; antecedentes (APP con catálogo, AHF por familiar, APNP con tabaquismo/alcohol/toxicomanías, bloque de género y reproducción); padecimiento actual, datos negados e **IPAS** por sistemas con opción **Negado / Ninguno**.
 - **Vista Lectura** — Compila una historia coherente por secciones; **Copiar texto** al portapapeles con formato clínico.
 - **Laboratorio de ingreso** — Ancla creatinina/eTFG y estudios recientes desde el historial del paciente (ventana configurable en ajustes de HC).
-- **Seguridad APP** — Escaneo de alergias/contraindicaciones antes de guardar; confirmación explícita cuando aplica.
 - **Sala en vivo** — La historia se sincroniza por paciente con el anfitrión LAN (misma sala ⇄).
 
 ### Eventualidades (modo Sala)
@@ -42,11 +41,6 @@ Versión centrada en **ingreso en Sala**: formulario institucional de **Historia
 - **Cola de escritura** — Persistencia serializada en el anfitrión con caché en memoria.
 - **Conflictos** — HTTP 409 con panel de diferencias clínicas y borrador local hasta resolver.
 - **Historia Clínica en host** — PUT en cola con validación de esquema anidado.
-
-### Manejo — calculadoras más seguras
-
-- **Electrolitos** — Plan de KCl estándar por bolsas; alertas ante dosis fuera de rango.
-- **Infusiones / ATB / otros** — Techos de dosis (p. ej. vancomicina carga/mantenimiento); entradas inválidas no producen órdenes silenciosas.
 
 ### Onboarding (Aprender R+)
 

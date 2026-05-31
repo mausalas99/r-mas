@@ -1951,11 +1951,6 @@ var RELEASE_NOTES_HIGHLIGHTS = {
       body:
         'Fusión por <strong>versión</strong> de entidad, cola de escritura en el anfitrión y panel de <strong>conflictos</strong> con borrador local hasta resolver.',
     },
-    {
-      title: 'Manejo más seguro',
-      body:
-        'Calculadoras con <strong>techos de dosis</strong> y plan de KCl por bolsas; entradas inválidas no generan órdenes silenciosas.',
-    },
   ],
   '6.4.2': [
     {

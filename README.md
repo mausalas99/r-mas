@@ -33,12 +33,11 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ## R+ 6.5.0 (Historia Clínica · expediente Sala · documentos nativos)
 
-- **Historia Clínica (Sala)** — Formulario institucional en 3 pasos (APP, AHF, APNP, IPAS, género/reproducción); vista **Lectura** con narrativa compilada y copia al portapapeles; ancla de labs de ingreso; avisos de seguridad en APP; sync en sala en vivo.
+- **Historia Clínica (Sala)** — Formulario institucional en 3 pasos (APP, AHF, APNP, IPAS, género/reproducción); vista **Lectura** con narrativa compilada y copia al portapapeles; ancla de labs de ingreso; sync en sala en vivo.
 - **Eventualidades** — Bitácora clínica por día en **Clínico → Eventualidades** (Sala).
 - **Expediente Sala** — **Clínico** con segmentos **Historia Clínica → Estado actual → Eventualidades → Manejo** (Estado actual ya no es pestaña superior).
 - **Word nativo** — Nota, Indicaciones y Listado se generan en Node (JSZip); el instalador no depende de Python para esos `.docx`.
 - **Sala en vivo** — Fusión por versión de entidad, cola de escritura en el anfitrión y resolución de conflictos con borrador local.
-- **Manejo** — Calculadoras con techos de dosis y plan de KCl más seguro.
 
 Notas: `docs/RELEASE_NOTES_6.5.0.txt`.
 

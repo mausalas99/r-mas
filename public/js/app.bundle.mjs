@@ -28391,10 +28391,6 @@ var RELEASE_NOTES_HIGHLIGHTS = {
     {
       title: "Sala en vivo m\xE1s robusta",
       body: "Fusi\xF3n por <strong>versi\xF3n</strong> de entidad, cola de escritura en el anfitri\xF3n y panel de <strong>conflictos</strong> con borrador local hasta resolver."
-    },
-    {
-      title: "Manejo m\xE1s seguro",
-      body: "Calculadoras con <strong>techos de dosis</strong> y plan de KCl por bolsas; entradas inv\xE1lidas no generan \xF3rdenes silenciosas."
     }
   ],
   "6.4.2": [
