@@ -1,0 +1,248 @@
+[
+  {
+    "id": "beta-lactam-allergy",
+    "severity": "high",
+    "title": "Beta-lactámicos con alergia documentada",
+    "message": "Antibiótico beta-lactámico con historia de alergia/hipersensibilidad/anafilaxia a penicilina o beta-lactámicos.",
+    "reference": "AAAAI / EAACI — evitar beta-lactámicos en reacción tipo I documentada",
+    "scope": "text",
+    "clauses": [
+      { "anyOf": ["penicilina", "amoxicilina", "ampicilina", "piperacilina", "tazobactam", "ceftriaxona", "cefotaxima", "cefalexina", "meropenem", "imipenem", "ertapenem", "beta-lactamico", "beta lactamico"] },
+      { "anyOf": ["alergia", "hipersensibilidad", "anafilaxia", "urticaria", "angioedema", "reaccion alergica", "rash"] }
+    ]
+  },
+  {
+    "id": "metformina-egfr-lt30",
+    "severity": "high",
+    "title": "Contraindicación: Metformina en IRC",
+    "message": "Metformina con TFGe < 30 mL/min/1.73m² — riesgo de acidosis láctica (MALA).",
+    "reference": "KDIGO 2024 / FDA — contraindicación absoluta TFGe < 30",
+    "scope": "cross_field",
+    "clauses": [{ "anyOf": ["metformina", "dabex", "glifor", "glucophage"] }],
+    "requires": ["renal"],
+    "predicate": "renal.egfr != null && renal.egfr < 30"
+  },
+  {
+    "id": "metformina-erc-dialisis-text",
+    "severity": "high",
+    "title": "Metformina en ERC avanzada o diálisis",
+    "message": "Metformina con enfermedad renal avanzada, diálisis o lesión renal aguda documentada en antecedentes.",
+    "reference": "KDIGO 2024",
+    "scope": "text",
+    "clauses": [
+      { "anyOf": ["metformina", "dabex", "glifor"] },
+      { "anyOf": ["dialisis", "hemodialisis", "erc estadio 5", "estadio 5", "lesion renal aguda", "aki", "insuficiencia renal avanzada", "falla renal"] }
+    ]
+  },
+  {
+    "id": "anticoag-active-bleeding",
+    "severity": "high",
+    "title": "Anticoagulante con sangrado activo",
+    "message": "Anticoagulante oral con sangrado activo o alto riesgo hemorrágico documentado.",
+    "reference": "ACCP / ESC — contraindicación en sangrado clínicamente significativo",
+    "scope": "text",
+    "clauses": [
+      { "anyOf": ["warfarina", "apixaban", "rivaroxaban", "dabigatran", "edoxaban", "doac", "anticoagulante oral"] },
+      { "anyOf": ["sangrado activo", "hemorragia digestiva", "melena", "hematoquecia", "hematemesis", "hemorragia intracraneal", "hematoma subdural", "sangrado gastrointestinal", "ulcera sangrante", "hemorragia activa", "politraumatismo"] }
+    ]
+  },
+  {
+    "id": "ace-arb-pregnancy",
+    "severity": "high",
+    "title": "IECA/ARA-II en embarazo",
+    "message": "IECA o ARA-II con embarazo confirmado o sospecha — fetopatía.",
+    "reference": "ACOG / ACC-AHA 2025",
+    "scope": "text",
+    "clauses": [
+      { "anyOf": ["enalapril", "lisinopril", "ramipril", "captopril", "losartan", "valsartan", "telmisartan", "irbesartan", "perindopril", "candesartan", "ieca", "ara-ii", "ara ii", "inhibidor de la enzima convertidora"] },
+      { "anyOf": ["embarazo", "embarazada", "gestacion", "gestante", "trimestre", "beta-hcg positiva", "beta hcg positiva", "semanas de gestacion"] }
+    ]
+  },
+  {
+    "id": "nsaid-severe-ckd",
+    "severity": "high",
+    "title": "AINE en IRC severa",
+    "message": "AINE con insuficiencia renal severa o TFGe < 30 en contexto clínico.",
+    "reference": "KDIGO 2024 / ACC-AHA 2025",
+    "scope": "cross_field",
+    "clauses": [{ "anyOf": ["ibuprofeno", "naproxeno", "diclofenaco", "ketorolaco", "indometacina", "celecoxib", "aine", "antiinflamatorio no esteroideo", "antiinflamatorio"] }],
+    "requires": ["renal"],
+    "predicate": "renal.egfr != null && renal.egfr < 30"
+  },
+  {
+    "id": "nsaid-active-ulcer",
+    "severity": "high",
+    "title": "AINE con úlcera o sangrado GI",
+    "message": "AINE con úlcera péptica activa o sangrado gastrointestinal previo.",
+    "reference": "KDIGO / ACC-AHA",
+    "scope": "text",
+    "clauses": [
+      { "anyOf": ["ibuprofeno", "naproxeno", "diclofenaco", "ketorolaco", "aine", "antiinflamatorio"] },
+      { "anyOf": ["ulcera peptica", "ulcera gastrica", "ulcera duodenal", "sangrado gastrointestinal", "melena", "hemorragia digestiva", "gastritis erosiva"] }
+    ]
+  },
+  {
+    "id": "statin-active-liver-disease",
+    "severity": "high",
+    "title": "Estatina en hepatopatía activa",
+    "message": "Estatina con enfermedad hepática activa o transaminasas muy elevadas.",
+    "reference": "AHA Statin Safety 2019",
+    "scope": "text",
+    "clauses": [
+      { "anyOf": ["atorvastatina", "simvastatina", "rosuvastatina", "pravastatina", "lovastatina", "estatina"] },
+      { "anyOf": ["hepatitis activa", "enfermedad hepatica activa", "cirrosis descompensada", "insuficiencia hepatica", "alt > 3", "ast > 3", "transaminasas elevadas"] }
+    ]
+  },
+  {
+    "id": "k-sparing-hyperkalemia",
+    "severity": "high",
+    "title": "Ahorrador de potasio con hiperkalemia",
+    "message": "Espironolactona/eplerenona/amilorida con hiperkalemia o K+ elevado.",
+    "reference": "ACC/AHA 2025 Hypertension",
+    "scope": "text",
+    "clauses": [
+      { "anyOf": ["espironolactona", "eplerenona", "amilorida", "triamterene", "ahorrador de potasio"] },
+      { "anyOf": ["hiperkalemia", "potasio > 5", "k+ > 5", "potasio elevado"] }
+    ]
+  },
+  {
+    "id": "digoxin-renal-failure",
+    "severity": "high",
+    "title": "Digoxina en insuficiencia renal",
+    "message": "Digoxina con insuficiencia renal o TFGe < 30 — riesgo de toxicidad digitálica.",
+    "reference": "FDA digoxin label",
+    "scope": "cross_field",
+    "clauses": [{ "anyOf": ["digoxina"] }],
+    "requires": ["renal"],
+    "predicate": "renal.egfr != null && renal.egfr < 30"
+  },
+  {
+    "id": "sulfa-allergy",
+    "severity": "high",
+    "title": "Sulfonamida con alergia a sulfa",
+    "message": "Sulfonamida con alergia documentada a sulfa.",
+    "reference": "IDSA",
+    "scope": "text",
+    "clauses": [
+      { "anyOf": ["sulfametoxazol", "trimetoprima", "bactrim", "sulfadiazina", "sulfasalazina", "sulfonamida"] },
+      { "anyOf": ["alergia a sulfa", "alergia sulfa", "hipersensibilidad a sulfonamidas", "stevens-johnson", "reaccion previa con sulfa"] }
+    ]
+  },
+  {
+    "id": "aminoglycoside-renal",
+    "severity": "high",
+    "title": "Aminoglucósido en insuficiencia renal",
+    "message": "Gentamicina/tobramicina/amikacina con insuficiencia renal o AKI.",
+    "reference": "KDIGO 2024",
+    "scope": "cross_field",
+    "clauses": [{ "anyOf": ["gentamicina", "tobramicina", "amikacina", "aminoglucosido"] }],
+    "requires": ["renal"],
+    "predicate": "renal.egfr != null && renal.egfr < 60"
+  },
+  {
+    "id": "theophylline-arrhythmia",
+    "severity": "moderate",
+    "title": "Teofilina con arritmia",
+    "message": "Teofilina con arritmia o cardiopatía isquémica documentada.",
+    "reference": "GOLD",
+    "scope": "text",
+    "clauses": [
+      { "anyOf": ["teofilina", "aminofilina"] },
+      { "anyOf": ["fibrilacion auricular", "taquicardia ventricular", "arritmia", "flutter auricular", "cardiopatia isquemica", "infarto previo"] }
+    ]
+  },
+  {
+    "id": "nitrofurantoin-renal",
+    "severity": "high",
+    "title": "Nitrofurantoína en IRC severa",
+    "message": "Nitrofurantoína con TFGe < 30 o ERC avanzada.",
+    "reference": "FDA / IDSA UTI",
+    "scope": "cross_field",
+    "clauses": [{ "anyOf": ["nitrofurantoina", "nitrofuranton"] }],
+    "requires": ["renal"],
+    "predicate": "renal.egfr != null && renal.egfr < 30"
+  },
+  {
+    "id": "nonselective-beta-blocker-asthma",
+    "severity": "high",
+    "title": "Beta-bloqueador no selectivo en asma/EPOC",
+    "message": "Propranolol/nadolol con asma o EPOC severo.",
+    "reference": "GINA",
+    "scope": "text",
+    "clauses": [
+      { "anyOf": ["propranolol", "nadolol", "beta-bloqueador no selectivo"] },
+      { "anyOf": ["asma", "asma bronquial", "epoc severo", "broncoespasmo", "crisis asmatica", "hiperreactividad bronquial"] }
+    ]
+  },
+  {
+    "id": "methotrexate-renal-hepatic",
+    "severity": "high",
+    "title": "Metotrexato en IRC o hepatopatía",
+    "message": "Metotrexato con insuficiencia renal, hepatopatía o citopenias.",
+    "reference": "ACR",
+    "scope": "text",
+    "clauses": [
+      { "anyOf": ["metotrexato"] },
+      { "anyOf": ["insuficiencia renal", "falla renal", "cirrosis", "hepatitis activa", "pancitopenia", "leucopenia", "trombocitopenia", "creatinina elevada"] }
+    ]
+  },
+  {
+    "id": "fluoroquinolone-qt",
+    "severity": "high",
+    "title": "Fluoroquinolona con QT prolongado",
+    "message": "Fluoroquinolona con QT prolongado o síndrome de QT largo.",
+    "reference": "FDA / ACC-AHA arrhythmias",
+    "scope": "text",
+    "clauses": [
+      { "anyOf": ["ciprofloxacino", "levofloxacino", "moxifloxacino", "fluoroquinolona"] },
+      { "anyOf": ["qt prolongado", "qtc > 500", "sindrome de qt largo", "torsades de pointes", "arritmia ventricular"] }
+    ]
+  },
+  {
+    "id": "lithium-renal",
+    "severity": "high",
+    "title": "Litio en insuficiencia renal",
+    "message": "Litio con insuficiencia renal o deshidratación.",
+    "reference": "FDA lithium label",
+    "scope": "cross_field",
+    "clauses": [{ "anyOf": ["litio", "carbonato de litio"] }],
+    "requires": ["renal"],
+    "predicate": "renal.egfr != null && renal.egfr < 60"
+  },
+  {
+    "id": "anticholinergic-dementia",
+    "severity": "moderate",
+    "title": "Anticolinérgico en demencia/delirium",
+    "message": "Fármaco anticolinérgico con demencia o delirium.",
+    "reference": "AGS Beers Criteria",
+    "scope": "text",
+    "clauses": [
+      { "anyOf": ["difenhidramina", "oxibutinina", "hioscina", "escopolamina", "anticolinergico"] },
+      { "anyOf": ["demencia", "alzheimer", "deterioro cognitivo", "delirium", "estado confusional", "confusion aguda"] }
+    ]
+  },
+  {
+    "id": "benzodiazepine-resp-failure",
+    "severity": "high",
+    "title": "Benzodiazepina en insuficiencia respiratoria",
+    "message": "Benzodiazepina con EPOC severo, apnea del sueño o hipercapnia.",
+    "reference": "GOLD / AASM",
+    "scope": "text",
+    "clauses": [
+      { "anyOf": ["diazepam", "lorazepam", "midazolam", "alprazolam", "benzodiazepina"] },
+      { "anyOf": ["insuficiencia respiratoria", "falla respiratoria", "epoc severo", "apnea del sueno", "hipercapnia", "retencion de co2", "acidosis respiratoria"] }
+    ]
+  },
+  {
+    "id": "bactrim-hyperkalemia-ace",
+    "severity": "high",
+    "title": "TMP-SMX con hiperkalemia o IECA/ARA-II",
+    "message": "Trimetoprima-sulfametoxazol con hiperkalemia, IECA/ARA-II o ahorrador de potasio.",
+    "reference": "ACC/AHA 2025",
+    "scope": "text",
+    "clauses": [
+      { "anyOf": ["trimetoprima", "sulfametoxazol", "bactrim", "tmp-smx"] },
+      { "anyOf": ["hiperkalemia", "potasio > 5", "ieca", "ara-ii", "losartan", "enalapril", "espironolactona", "insuficiencia renal"] }
+    ]
+  }
+]

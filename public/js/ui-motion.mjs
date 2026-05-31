@@ -76,6 +76,14 @@ function collectButtonLabelText(btn) {
   return parts.join(' ');
 }
 
+function captureButtonLabel(btn, label) {
+  var text = label.textContent.replace(/\s+/g, ' ').trim();
+  if (text) return text;
+  text = collectButtonLabelText(btn);
+  if (text) return text;
+  return String(btn.getAttribute('aria-label') || btn.title || '').trim();
+}
+
 function ensureButtonLabel(btn) {
   var existing = btn.querySelector(':scope > .btn-label');
   if (existing) return existing;
@@ -96,26 +104,44 @@ function ensureButtonLabel(btn) {
   return label;
 }
 
-function swapLabelText(label, nextText) {
-  if (!label || label.textContent.trim() === nextText) return;
-  if (prefersReducedMotion()) {
+function resetLabelMotion(label) {
+  if (!label) return;
+  if (label._uiMotionSwapHandler) {
+    label.removeEventListener('transitionend', label._uiMotionSwapHandler);
+    label._uiMotionSwapHandler = null;
+  }
+  label.classList.remove('ui-text-leaving', 'ui-text-entering');
+}
+
+function swapLabelText(label, nextText, options) {
+  options = options || {};
+  if (!label) return;
+  nextText = String(nextText || '');
+  resetLabelMotion(label);
+  if (!options.force && label.textContent.replace(/\s+/g, ' ').trim() === nextText) return;
+  if (prefersReducedMotion() || options.instant) {
     label.textContent = nextText;
     return;
   }
-  label.classList.remove('ui-text-entering');
   label.classList.add('ui-text-leaving');
+  var swapId = (label._uiMotionSwapId || 0) + 1;
+  label._uiMotionSwapId = swapId;
   function onDone(ev) {
     if (ev.propertyName !== 'opacity') return;
+    if (label._uiMotionSwapId !== swapId) return;
     label.removeEventListener('transitionend', onDone);
+    label._uiMotionSwapHandler = null;
     label.textContent = nextText;
     label.classList.remove('ui-text-leaving');
     label.classList.add('ui-text-entering');
     requestAnimationFrame(function () {
       requestAnimationFrame(function () {
+        if (label._uiMotionSwapId !== swapId) return;
         label.classList.remove('ui-text-entering');
       });
     });
   }
+  label._uiMotionSwapHandler = onDone;
   label.addEventListener('transitionend', onDone);
 }
 
@@ -126,7 +152,7 @@ export function setAsyncButtonLoading(btn, loading, opts) {
   var label = ensureButtonLabel(btn);
   if (loading) {
     if (!btn.dataset.uiMotionDefaultLabel) {
-      btn.dataset.uiMotionDefaultLabel = label.textContent.trim();
+      btn.dataset.uiMotionDefaultLabel = captureButtonLabel(btn, label);
     }
     btn.classList.add('loading');
     btn.disabled = true;
@@ -138,7 +164,7 @@ export function setAsyncButtonLoading(btn, loading, opts) {
     btn.disabled = false;
     btn.removeAttribute('aria-disabled');
   }
-  var restore = btn.dataset.uiMotionDefaultLabel || label.textContent.trim();
-  swapLabelText(label, restore);
+  var restore = btn.dataset.uiMotionDefaultLabel || captureButtonLabel(btn, label);
+  swapLabelText(label, restore, { instant: true, force: true });
   delete btn.dataset.uiMotionDefaultLabel;
 }

@@ -22,6 +22,6 @@ describe('patient switch preserves expediente tab', () => {
 
   it('only migrates invalid tabs for the current mode', () => {
     assert.equal(innerAfterPatientSwitch('estadoActual', INTER), 'todo');
-    assert.equal(innerAfterPatientSwitch('notas', SALA), 'manejo');
+    assert.equal(innerAfterPatientSwitch('notas', SALA), 'historia');
   });
 });

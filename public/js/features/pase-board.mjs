@@ -22,6 +22,14 @@ import { inferFechaLabSetFromId, renderTendencias } from "./tendencias.mjs";
 import { renderTodoForm, todoCompareForSort, toggleTodo } from "./todos.mjs";
 import { renderNoteForm, renderIndicaForm } from "./notes-indicaciones.mjs";
 import { invalidateManejoShell, renderManejo } from "./manejo.mjs";
+import {
+  renderHistoriaClinicaPanel,
+  invalidateHistoriaClinicaPanel,
+} from "./historia-clinica-panel.mjs";
+import {
+  renderEventualidadesPanel,
+  invalidateEventualidadesPanel,
+} from "./eventualidades-panel.mjs";
 import { renderVpo } from "./vpo.mjs";
 import { invalidateEaPanelCache, renderEstadoActualPanel } from "./estado-actual-panel.mjs";
 import { renderRecetaHu } from "./receta-hu.mjs";
@@ -36,6 +44,7 @@ import {
   syncAppTabIndicator,
   syncInnerTabIndicator,
   syncExpedienteSegmentIndicators,
+  syncAllSubTabIndicators,
 } from "../ui-tab-motion.mjs";
 import {
   applyExpedientePaneLayout,
@@ -51,6 +60,7 @@ import {
   syncPacienteDatosLayoutMode,
   useConsolidatedExpedienteTabs,
 } from "../expediente-tabs.mjs";
+import { isManejoTabGloballyHidden } from "../clinical-product-policy.mjs";
 import { getLabHistoryRevision } from "../lab-history-cache.mjs";
 import { cancelDeferredIdleWork, scheduleAfterPaint, scheduleIdle } from "../deferred-work.mjs";
 
@@ -84,7 +94,13 @@ function estadoActualCacheSuffix(patientId) {
 
 function innerTabRenderCacheKey(tab) {
   var pid = String(rt.getActiveId() || "");
-  var key = String(tab || "") + "|" + pid;
+  var settings = rt.getSettings();
+  var key =
+    String(tab || "") +
+    "|" +
+    pid +
+    "|M" +
+    (settings && settings.appMode ? settings.appMode : "sala");
   if (tab === "tend" || tab === "cult") {
     key += "|L" + getLabHistoryRevision(pid);
   }
@@ -611,6 +627,9 @@ export function renderPaseBoard() {
           (r.negativo ? " pase-mini-card--dim" : "") +
           '"><div class="pase-cult-org">' +
           esc(String(r.organismo || "—")) +
+          (r.cuenta
+            ? '<div class="pase-cult-cuenta">' + esc(String(r.cuenta)) + "</div>"
+            : "") +
           "</div>" +
           atbBlock +
           '<div class="pase-sub">' +
@@ -720,7 +739,7 @@ export function openPaseSectionInNormal(which) {
     switchAppTab("med");
   } else if (w === "manejo") {
     switchAppTab("nota");
-    switchInnerTab("manejo");
+    switchInnerTab(isManejoTabGloballyHidden() ? (isModeSala(rt.getSettings()) ? "historia" : "notas") : "manejo");
   } else if (w === "recetahu" || w === "receta-hu" || w === "receta_hu") {
     switchAppTab("nota");
     switchInnerTab("recetaHu");
@@ -983,6 +1002,17 @@ function renderGranularInnerTab(tab, opts) {
     markInnerTabRendered(tab);
     return;
   }
+  if (tab === 'historia') {
+    renderHeavyInnerTab(tab, function (done) {
+      renderHistoriaClinicaPanel({ onReady: done });
+    }, opts);
+    return;
+  }
+  if (tab === 'eventualidades') {
+    renderEventualidadesPanel(document.getElementById('exp-pane-eventualidades'));
+    markInnerTabRendered(tab);
+    return;
+  }
   if (tab === 'datos' || tab === 'todo') renderPatientDataPane();
   if (tab === 'cult') renderCultivosTable();
   if (tab === 'listado') renderListadoForm();
@@ -995,6 +1025,24 @@ export function invalidatePaseBoardCache() {
   _paseBoardCacheKey = "";
 }
 
+/** Tras cambiar Sala ↔ Interconsulta: remonta pestañas del expediente y repinta contenido. */
+export function refreshExpedienteForAppModeChange() {
+  cancelExpedienteWarm();
+  cancelDeferredIdleWork();
+  invalidatePaseBoardCache();
+  invalidateEaPanelCache();
+  invalidateManejoShell();
+  invalidateHistoriaClinicaPanel();
+  invalidateEventualidadesPanel();
+  invalidateInnerTabRenderCache();
+  var settings = rt.getSettings();
+  var tab = migrateGranularInner(rt.getActiveInner() || "todo", settings);
+  if (tab !== rt.getActiveInner()) rt.setActiveInner(tab);
+  resetExpedientePaneLayoutCache();
+  renderInnerTabs();
+  syncInnerTabVisualOnly();
+}
+
 /** Tras cambiar de paciente: repinta solo la pestaña interna activa (sin reset de layout). */
 export function refreshExpedienteAfterPatientSelect(opts) {
   opts = opts || {};
@@ -1003,6 +1051,7 @@ export function refreshExpedienteAfterPatientSelect(opts) {
   invalidatePaseBoardCache();
   invalidateEaPanelCache();
   invalidateManejoShell();
+  invalidateHistoriaClinicaPanel();
   var settings = rt.getSettings();
   var tab = migrateGranularInner(rt.getActiveInner() || "todo", settings);
   if (opts.patientChanged || !isInnerTabContentFresh(tab, settings)) {
@@ -1014,7 +1063,7 @@ export function refreshExpedienteAfterPatientSelect(opts) {
 export function switchConsolidatedTab(compositeTab) {
   var settings = rt.getSettings();
   if (compositeTab === "clinico" && !isClinicoCompositeVisible(settings)) {
-    compositeTab = isModeSala(settings) ? "estadoActual" : "paciente";
+    compositeTab = "paciente";
   }
   var current = migrateGranularInner(rt.getActiveInner() || "todo", settings);
   var currentComposite = consolidatedInnerTabButtonId(current, settings).replace(/^itab-/, "");
@@ -1047,7 +1096,9 @@ export function switchInnerTab(tab, opts) {
     listado: 1,
     todo: 1,
     manejo: 1,
+    historia: 1,
     estadoActual: 1,
+    eventualidades: 1,
     recetaHu: 1,
   };
   if (expedienteTabs[tab] && isPaseMode() && getUiDensity() !== "normal") {
@@ -1139,7 +1190,6 @@ export function renderInnerTabs() {
     setOrder("itab-paciente", order++);
     if (showClinico) setOrder("itab-clinico", order++);
     if (sala) {
-      setOrder("itab-estadoActual", order++);
       setOrder("itab-resultados", order++);
       setOrder("itab-salida", order++);
     } else {
@@ -1160,7 +1210,7 @@ export function renderInnerTabs() {
     show("itab-cult", true);
     show("itab-listado", true);
     show("itab-todo", true);
-    show("itab-manejo", true);
+    show("itab-manejo", !isManejoTabGloballyHidden());
     show("itab-receta-hu", false);
     setOrder("itab-datos", 1);
     setOrder("itab-todo", 2);
@@ -1179,7 +1229,7 @@ export function renderInnerTabs() {
     show("itab-cult", true);
     show("itab-listado", false);
     show("itab-todo", true);
-    show("itab-manejo", true);
+    show("itab-manejo", !isManejoTabGloballyHidden());
     show("itab-receta-hu", true);
     setOrder("itab-datos", 1);
     setOrder("itab-todo", 2);

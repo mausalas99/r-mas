@@ -191,6 +191,52 @@ test('buildSomeGroupExportModel — citoquímico sin columna de referencia', () 
   assert.equal(model.rows[0].cells.length, 1);
 });
 
+test('parseSomeReportTables — cultivos: CUENTA con COMENTARIO vacío y polimicrobiano', () => {
+  const raw = `Expediente:\t0768636-4\tSolicitud:\t2605291063
+BACTERIOLOGIA
+Estudio\t\tResultado\tUnidades\tValor de Referencia
+ASPIRADO TRAQUEAL
+PRODUCTO\t
+*
+TINCION DE GRAM\t
+*
+ESTADO DE CULTIVO\t
+*
+REPORTE PRELIMINAR
+*
+MICROORGANISMO\t
+*
+Acinetobacter baumannii
+COMENTARIO:\t
+*
+CUENTA\t
+*
+3,200 UFC/mL
+*
+MICROORGANISMO\t
+*
+Proteus mirabilis
+COMENTARIO:\t
+*
+CUENTA\t
+*
+50,000 UFC/mL
+*`;
+  const parsed = parseSomeReportTables(raw);
+  const bact = parsed.departments.find((d) => d.key === 'BACTERIOLOGIA');
+  assert.ok(bact);
+  const aspirado = bact.groups.find((g) => g.title === 'ASPIRADO TRAQUEAL');
+  assert.ok(aspirado);
+  const cuentaRows = aspirado.rows.filter((r) => /^CUENTA/i.test(r.estudio));
+  assert.equal(cuentaRows.length, 2);
+  assert.equal(cuentaRows[0].resultado, '3,200 UFC/mL');
+  assert.equal(cuentaRows[1].resultado, '50,000 UFC/mL');
+  const micro = aspirado.rows.filter((r) => /^MICROORGANISMO/i.test(r.estudio));
+  assert.equal(micro.length, 2);
+  assert.equal(micro[0].resultado, 'Acinetobacter baumannii');
+  assert.equal(micro[1].resultado, 'Proteus mirabilis');
+});
+
 test('renderSomeReportTablesHtml — genera tablas por departamento', () => {
   const parsed = parseSomeReportTables(MUESTRA_LUNA);
   const html = renderSomeReportTablesHtml(parsed);

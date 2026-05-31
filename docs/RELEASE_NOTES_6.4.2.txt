@@ -5,12 +5,12 @@ Fecha: 2026-05-30
 
 ## Resumen
 
-TODO: resumen en una o dos frases.
+Corrección de empaquetado del módulo de **censo PDF** en el instalador de escritorio y un arreglo menor de **arranque** en builds recientes. Sin pantallas nuevas respecto a **6.4.1** / **6.4.0**.
 
 ## Nuevo / mejorado
 
-- **TODO:** punto 1
-- **TODO:** punto 2
+- **Censo PDF** — El export de censo vuelve a incluirse correctamente en el build de Mac/Windows.
+- **Arranque** — Corrección que impedía abrir la app en algunos instaladores.
 
 ## Instalación
 

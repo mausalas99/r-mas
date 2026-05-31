@@ -8,9 +8,18 @@ import {
   formatCultivoCondensedForCopy,
   isParsedCultivoHeaderLine,
   extractSensCrudasForGermFromSource,
+  parseCuentaFromCultivoChunkLines,
 } from './labs.js';
 
 const norm = (t) => t.replace(/\s+/g, ' ');
+
+test('parseCuentaFromCultivoChunkLines extrae UFC del bloque condensado', () => {
+  const cuenta = parseCuentaFromCultivoChunkLines([
+    'ATB R: CAZ',
+    'Cuenta: 3,200 UFC/ML',
+  ]);
+  assert.equal(cuenta, '3,200 UFC/ML');
+});
 
 test('urocultivo: tipo y germen (sin muestra útil tras PRODUCTO)', () => {
   const raw = `

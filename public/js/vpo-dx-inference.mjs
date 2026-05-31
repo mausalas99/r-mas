@@ -1,3 +1,5 @@
+import { isVpoDxInferenceHidden } from './clinical-product-policy.mjs';
+
 /** Parseo de diagnósticos e inferencia de factores de riesgo (RCRI, Caprini, ARISCAT, ASA). */
 
 /**
@@ -147,6 +149,7 @@ export function inferRiskFromDiagnosticos(diagnosticosList) {
  * @param {object} state
  */
 export function applyDiagnosticosInference(state) {
+  if (isVpoDxInferenceHidden()) return;
   var list = (state.diagnosticosList || []).filter(function (d) {
     return String(d || '').trim();
   });

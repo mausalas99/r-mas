@@ -27,10 +27,27 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [6.4.2](https://github.com/mausalas99/r-mas/releases/tag/v6.4.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.5.0](https://github.com/mausalas99/r-mas/releases/tag/v6.5.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+## R+ 6.5.0 (Historia Clínica · expediente Sala · documentos nativos)
+
+- **Historia Clínica (Sala)** — Formulario institucional en 3 pasos (APP, AHF, APNP, IPAS, género/reproducción); vista **Lectura** con narrativa compilada y copia al portapapeles; ancla de labs de ingreso; avisos de seguridad en APP; sync en sala en vivo.
+- **Eventualidades** — Bitácora clínica por día en **Clínico → Eventualidades** (Sala).
+- **Expediente Sala** — **Clínico** con segmentos **Historia Clínica → Estado actual → Eventualidades → Manejo** (Estado actual ya no es pestaña superior).
+- **Word nativo** — Nota, Indicaciones y Listado se generan en Node (JSZip); el instalador no depende de Python para esos `.docx`.
+- **Sala en vivo** — Fusión por versión de entidad, cola de escritura en el anfitrión y resolución de conflictos con borrador local.
+- **Manejo** — Calculadoras con techos de dosis y plan de KCl más seguro.
+
+Notas: `docs/RELEASE_NOTES_6.5.0.txt`.
+
+## R+ 6.4.2 (Corrección arranque · censo PDF en instalador)
+
+- **Censo PDF** — El módulo de exportación de censo vuelve a empaquetarse correctamente en el instalador de escritorio.
+- **Arranque** — Corrección menor que impedía abrir la app en algunos builds recientes.
+
+Notas: `docs/RELEASE_NOTES_6.4.2.txt`.
 
 ## R+ 6.4.1 (Mantenimiento · publicación y tests)
 
@@ -272,11 +289,6 @@ Notas: `docs/RELEASE_NOTES_3.2.1.txt`.
 ---
 
 
-## R+ 6.4.2 (Corrección arranque · censo PDF en instalador)
-
-- **TODO:** completar bullets en README.
-
-Notas: `docs/RELEASE_NOTES_6.4.2.txt`.
 ## R+ 3.2.0 (laboratorio, pacientes Sortable, pase, estable)
 
 - **Laboratorio** — Limpiar entrada tras procesar con resultados; gasometría extendida con etiqueta e interruptor alineados al comportamiento esperado.
@@ -431,8 +443,10 @@ Notas extendidas en el repo: docs/RELEASE_NOTES_2.0.0.txt (texto plano).
 ## Funcionalidades
 
 - **Laboratoriazo** — Interpreta resultados de laboratorio y genera diagramas visuales: Biometría Hemática, Coagulación, Diagrama de Gamble, Química Sanguínea, Gasometría y más. Historial por paciente y **tendencias** con mini-gráficas.
-- **Expediente** — En vista Normal: **Paciente**, **Clínico**, **Resultados** y **Salida** (en **Sala** también **Estado actual** entre Clínico y Resultados). En **Modo Pase** el tablero de ronda sigue igual; al abrir un bloque entras al expediente con la misma organización de pestañas.
-- **Estado Actual (Sala)** — Monitoreo estructurado: medición, snapshot, balance hídrico, historial, tendencias y texto copiable; integración con medicamentos y LiveSync por sala.
+- **Expediente** — En vista Normal: **Paciente**, **Clínico**, **Resultados** y **Salida**. En **Sala**, **Clínico** incluye **Historia Clínica**, **Estado actual**, **Eventualidades** y **Manejo**; en **Interconsulta**, Nota, Indicaciones, VPO y Manejo. En **Modo Pase** el tablero de ronda sigue igual; al abrir un bloque entras al expediente con la misma organización de pestañas.
+- **Historia Clínica (Sala)** — Ingreso institucional en 3 pasos, catálogos APP/AHF/IPAS, vista **Lectura** con texto compilado, ancla de laboratorios y sincronización en sala en vivo.
+- **Eventualidades (Sala)** — Registro cronológico de hechos clínicos por día dentro de **Clínico**.
+- **Estado Actual (Sala)** — Monitoreo estructurado en **Clínico → Estado actual**: medición, snapshot, balance hídrico, historial, tendencias y texto copiable; integración con medicamentos y LiveSync por sala.
 - **Manejo clínico** — Expediente → Clínico → **Manejo**: **Electrolitos** (alteraciones con SOME), **Infusiones** (infusiones/sedación con calculadoras), **ATB** (catálogo con sugerencias según cultivos) y **CAD/EHH** (checklist ADA con lectura de laboratorio).
 - **Medicamentos** — Receta hospitalaria (TSV), copia desde sistemas tipo SOME, volcado a nota / SOAP y copia al portapapeles.
 - **Nota de Evolución** — Formulario estructurado que genera un archivo `.docx` listo para imprimir, con membrete y formato clínico. **Plantilla SOAP** integrada (Interconsulta). Formatos en blanco editables desde Mi Perfil (pestaña Nota).
@@ -451,7 +465,7 @@ Notas extendidas en el repo: docs/RELEASE_NOTES_2.0.0.txt (texto plano).
 ## Requisitos
 
 - **Instalación desde el instalador oficial** (`.dmg` / `.exe`; instrucciones arriba en **Instalación**): no necesitas instalar Python; la app incluye un runtime empaquetado para generar los `.docx`.
-- **Desarrollo desde el código fuente** (`npm start` / compilar tú mismo): hace falta **Python 3** en el PATH para la generación de documentos (o el runtime en `python-runtime/` tras `npm run prebuild:mac` / build).
+- **Desarrollo desde el código fuente** (`npm start` / compilar tú mismo): la generación de **Nota**, **Indicaciones** y **Listado** usa el servidor Node (`lib/doc-generators/`). Python 3 solo hace falta si mantienes scripts legacy fuera del flujo principal (o el runtime en `python-runtime/` en builds antiguos).
   - Mac: `brew install python3` (en Apple Silicon, Homebrew nativo vive en `/opt/homebrew`). Ejecuta **Terminal** y la app **sin** “Abrir con Rosetta”. Si macOS avisa de *Support Ending for Intel-based Apps* al usar Python, casi siempre es un `python3` x86_64 (p. ej. antiguo `/usr/local` bajo Rosetta): instala o prioriza el Python de `/opt/homebrew/bin/python3`, o deja que el build use el runtime empaquetado en `python-runtime/mac-arm64`.
   - Windows: [python.org](https://www.python.org/downloads/) — marcar "Add to PATH".
 
@@ -471,7 +485,7 @@ npm run build:ui
 # Ejecutar en modo desarrollo (prestart regenera el bundle si hace falta)
 npm start
 
-# Publicar release: bump (si falta), completar docs/RELEASE_NOTES_X.Y.Z.txt + README + highlights en settings-help.mjs, luego:
+# Publicar release: bump (si falta), completar docs/RELEASE_NOTES_X.Y.Z.txt + README + highlights y onboarding en settings-help.mjs / tour-targets.mjs, luego:
 npm run build:ui
 npm run release:publish
 

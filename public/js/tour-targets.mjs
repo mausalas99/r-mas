@@ -16,7 +16,7 @@ const ACTION_STEPS = new Set([
   'lab_parse',
   'ic_nota',
   'ic_indica',
-  'estado_actual',
+  'estado_actual_registro',
   'servicio_default',
 ]);
 
@@ -90,7 +90,37 @@ const TARGETS = {
   estado_actual: {
     appTab: 'nota',
     innerTab: 'estadoActual',
-    selector: '#exp-segment-estadoActual, #itab-content-estadoActual',
+    selector: '#ea-snapshot, #ea-charts-mount, #ea-historial',
+    focus: false,
+    spotlightClass: 'tour-spotlight-action',
+  },
+  estado_actual_registro: {
+    appTab: 'nota',
+    innerTab: 'estadoActual',
+    selector:
+      '#ea-registro-backdrop.open .ea-vitals-grid, #ea-registro-backdrop.open .ea-glu-section, #ea-registro-backdrop.open .ea-io-grid',
+    focus: false,
+    spotlightClass: 'tour-spotlight-action',
+    openEaRegistro: true,
+  },
+  estado_actual_snapshot: {
+    appTab: 'nota',
+    innerTab: 'estadoActual',
+    selector: '#ea-snapshot',
+    focus: false,
+    spotlightClass: 'tour-spotlight-action',
+  },
+  estado_actual_charts: {
+    appTab: 'nota',
+    innerTab: 'estadoActual',
+    selector: '#ea-charts-mount, .ea-charts-section',
+    focus: false,
+    spotlightClass: 'tour-spotlight-action',
+  },
+  estado_actual_historial: {
+    appTab: 'nota',
+    innerTab: 'estadoActual',
+    selector: '#ea-historial, #ea-texto, .ea-texto-head',
     focus: false,
     spotlightClass: 'tour-spotlight-action',
   },
@@ -98,7 +128,7 @@ const TARGETS = {
   listado_problemas: {
     appTab: 'nota',
     innerTab: 'listado',
-    selector: '#btn-gen-listado, #itab-salida',
+    selector: '#listado-form, #exp-segment-listado, #btn-gen-listado',
     focus: false,
     spotlightClass: 'tour-spotlight-action',
   },

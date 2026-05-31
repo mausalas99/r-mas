@@ -3,6 +3,8 @@
  * Ver docs/superpowers/specs/2026-05-25-manejo-electrolitos-gasometria-design.md
  */
 
+import { ClinicalSafetyError, planStandardKClBags } from './clinical-safety.mjs';
+
 /** @typedef {{ medication: string, route: string, doseValue: number|string, doseUnit: string, dilution: string, frequency: string, infusionRateMlHr: number|null|string, comments: string, requiresDilution?: boolean }} SomeOrderLike */
 
 /** @typedef {{ electrolyte: string, direction: 'hypo'|'hyper', value: number|null, unit: string, interpretation: string, severity: string, formula: string, formulaResult: string|null, suggestedDose: string, route: string, monitoring: string, alerts: string[], clinicalNotes: string[], someOrders: SomeOrderLike[], ruleId: string }} ElectrolyteRow */
@@ -85,14 +87,6 @@ function pickAlb(pb, parsedFlat) {
     pickSection(pb, 'QS', 'Alb', parsedFlat) ??
     pickSection(pb, 'BH', 'Alb', parsedFlat)
   );
-}
-
-function standardBagVolumeMl(minMl) {
-  var std = [100, 250, 500, 1000];
-  for (var i = 0; i < std.length; i += 1) {
-    if (std[i] >= minMl) return std[i];
-  }
-  return 1000;
 }
 
 export function toSomeUpper(s) {
@@ -251,36 +245,52 @@ function phosHypoSeverity(pMgDl) {
   return null;
 }
 
+/** @param {number} bagMeq @param {number} bagVol @param {number} maxConc @param {number} bagIndex @param {number} bagCount */
+function kHypoDilutionText(bagMeq, bagVol, maxConc, bagIndex, bagCount) {
+  var suffix =
+    bagCount > 1 ? ' (BOLSA ' + bagIndex + '/' + bagCount + ')' : '';
+  return (
+    bagVol +
+    ' ML SOL SALINA AL 0.9% (' +
+    Math.round(bagMeq * 10) / 10 +
+    ' MEQ / ' +
+    bagVol +
+    ' ML; CONC. ≤' +
+    maxConc +
+    ' MEQ/L)' +
+    suffix
+  );
+}
+
+/** @param {{ volMl: number, meq: number }} bag @param {number} idx @param {number} count */
+function kOrderFromBag(bag, idx, count, maxConc, routeLabel, mEqPerHrRaw, totalMeq) {
+  return {
+    medication: MED_KCL,
+    route: routeLabel,
+    doseValue: Math.round(bag.meq * 10) / 10,
+    doseUnit: 'MEQ',
+    dilution: kHypoDilutionText(bag.meq, bag.volMl, maxConc, idx + 1, count),
+    infusionRateMlHr: Math.round((mEqPerHrRaw / totalMeq) * bag.volMl),
+    requiresDilution: true,
+  };
+}
+
 /**
  * @returns {{ orders: SomeOrderLike[], volMl: number, mEqPerHr: number }}
  */
 function buildKHypoOrders(mEqChosen, limits, etaLow, routeLabel) {
   var maxConc = limits.maxConcMeqPerL;
-  var minVol = (mEqChosen / maxConc) * 1000;
-  var volMl = standardBagVolumeMl(minVol);
+  var plan = planStandardKClBags(mEqChosen, maxConc);
+  var bags = plan.bags;
 
   var mEqPerHrRaw = etaLow ? Math.min(limits.maxMeqPerHr, 10) : limits.maxMeqPerHr;
   if (etaLow && mEqPerHrRaw > 10) mEqPerHrRaw = 10;
 
-  /** @type SomeOrderLike[] */
-  var orders = [];
+  var volMl = 0;
+  for (var v = 0; v < bags.length; v += 1) volMl += bags[v].volMl;
 
-  orders.push({
-    medication: MED_KCL,
-    route: routeLabel,
-    doseValue: mEqChosen,
-    doseUnit: 'MEQ',
-    dilution:
-      volMl +
-      ' ML SOL SALINA AL 0.9% (' +
-      mEqChosen +
-      ' MEQ / ' +
-      volMl +
-      ' ML; CONC. ≤' +
-      maxConc +
-      ' MEQ/L)',
-    infusionRateMlHr: Math.round((mEqPerHrRaw / mEqChosen) * volMl),
-    requiresDilution: true,
+  var orders = bags.map(function (bag, idx) {
+    return kOrderFromBag(bag, idx, bags.length, maxConc, routeLabel, mEqPerHrRaw, mEqChosen);
   });
 
   return { orders: orders, volMl: volMl, mEqPerHr: mEqPerHrRaw };
@@ -433,7 +443,18 @@ export function evaluateElectrolyteManejo(ctx) {
 
     var mEqUse = Math.max(10, Math.min(mEqBase, etaLow ? 20 : 40));
 
-    var kPack = buildKHypoOrders(mEqUse, limits, etaLow, routeIv);
+    /** @type {{ orders: SomeOrderLike[], volMl: number, mEqPerHr: number }} */
+    var kPack;
+    try {
+      kPack = buildKHypoOrders(mEqUse, limits, etaLow, routeIv);
+    } catch (planErr) {
+      if (planErr instanceof ClinicalSafetyError) {
+        kHypoAlerts.push('Reposición K+ no calculada: ' + planErr.message);
+        kPack = { orders: [], volMl: 0, mEqPerHr: 0 };
+      } else {
+        throw planErr;
+      }
+    }
     var someKs = kPack.orders;
     var kOrder = someKs[0];
 
@@ -446,10 +467,12 @@ export function evaluateElectrolyteManejo(ctx) {
       severity: ks,
       formula: defEq != null ? '(4−K)×peso×0.4' : '',
       formulaResult: defStr,
-      suggestedDose: formatSuggestedDoseFromOrder(kOrder, {
-        accessLabel: accessRouteLabel(patient.viaAcceso),
-        meqPerHr: kPack.mEqPerHr,
-      }),
+      suggestedDose: kOrder
+        ? formatSuggestedDoseFromOrder(kOrder, {
+            accessLabel: accessRouteLabel(patient.viaAcceso),
+            meqPerHr: kPack.mEqPerHr,
+          })
+        : '',
       route: routeIv,
       monitoring: 'Ionograma y ECG si procede; repetir K en 4–6 h.',
       alerts: kHypoAlerts.concat(),

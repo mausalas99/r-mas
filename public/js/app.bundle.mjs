@@ -3472,9 +3472,6 @@ function isVpoRiskCalculationDisabled() {
 function isVpoPeriopMedGuidanceHidden() {
   return isClinicalDecisionGuidanceHidden();
 }
-function isVpoScalesGuidanceHidden() {
-  return isClinicalDecisionGuidanceHidden();
-}
 function isVpoDxInferenceHidden() {
   return isClinicalDecisionGuidanceHidden();
 }
@@ -5612,6 +5609,18 @@ function extractCuentaKassFromLineas(sliceLines) {
   }
   var mC = fragBeforeAb.match(/([<>]=?\s?\d+(\.\d+)?\s*[A-Z%\/]*)/i);
   if (mC) return mC[1].trim().toUpperCase();
+  var mColonias = fragBeforeAb.match(/(\d[\d,]*\s+COLONIAS?)/i);
+  if (mColonias) return mColonias[1].replace(/\s+/g, " ").trim().toUpperCase();
+  for (var li = 0; li < sliceLines.length; li++) {
+    var Lc = sliceLines[li].replace(/\r/g, "").replace(/\*+$/g, "").trim();
+    if (!/^CUENTA/i.test(Lc)) continue;
+    for (var lk = li + 1; lk < Math.min(li + 6, sliceLines.length); lk++) {
+      var cand = sliceLines[lk].replace(/\r/g, "").replace(/\*/g, "").trim();
+      if (!cand || cand === "*") continue;
+      if (/^MICROORGANISMO|^ANTIBIOGRAMA|^COMENTARIO/i.test(cand)) break;
+      return cand.replace(/\s+/g, " ").replace(/\s*\/\s*/g, "/").trim().toUpperCase();
+    }
+  }
   return "";
 }
 function parseSensCrudasAntibiogramaSlice(lineasAb) {
@@ -5627,6 +5636,16 @@ function parseSensCrudasAntibiogramaSlice(lineasAb) {
     if (parsed && parsed.interp) sensCrudas.push({ med: nL.toUpperCase(), mic: parsed.mic, interp: parsed.interp });
   }
   return sensCrudas;
+}
+function parseCuentaFromCultivoChunkLines(lines) {
+  if (!lines || !lines.length) return "";
+  for (var i = 0; i < lines.length; i++) {
+    var m = String(lines[i] == null ? "" : lines[i]).replace(/\*+$/g, "").trim().match(/^Cuenta:\s*(.+)$/i);
+    if (m) {
+      return m[1].replace(/\s+/g, " ").replace(/\s*\/\s*/g, "/").trim();
+    }
+  }
+  return "";
 }
 function classifyAtbInterp(itRaw) {
   var u = String(itRaw || "").trim().toUpperCase().replace(/\s+/g, " ");
@@ -6170,32 +6189,32 @@ function g(secs, sec, key) {
 }
 function extractParsedValues(resLabs) {
   var secs = parsearSecciones(resLabs);
-  function num3(sec, key) {
+  function num4(sec, key) {
     var v = g(secs, sec, key);
     return v ? parseFloat(v.val) : null;
   }
   return {
-    Hb: num3("BH", "Hb"),
-    Hto: num3("BH", "Hto"),
-    Leu: num3("BH", "Leu"),
-    Plt: num3("BH", "Plt"),
-    Glu: num3("QS", "Glu"),
-    Cr: num3("QS", "Cr"),
-    eTFG: num3("QS", "eTFG"),
-    BUN: num3("QS", "BUN"),
-    PCR: num3("QS", "PCR"),
-    AU: num3("QS", "AU"),
-    TGL: num3("QS", "TGL"),
-    COL: num3("QS", "COL"),
-    Na: num3("ESC", "Na"),
-    K: num3("ESC", "K"),
-    Cl: num3("ESC", "Cl"),
-    HCO3: num3("ESC", "HCO3"),
-    Ca: num3("ESC", "Ca"),
-    AST: num3("PFHs", "AST"),
-    ALT: num3("PFHs", "ALT"),
-    FA: num3("PFHs", "FA"),
-    BT: num3("PFHs", "BT")
+    Hb: num4("BH", "Hb"),
+    Hto: num4("BH", "Hto"),
+    Leu: num4("BH", "Leu"),
+    Plt: num4("BH", "Plt"),
+    Glu: num4("QS", "Glu"),
+    Cr: num4("QS", "Cr"),
+    eTFG: num4("QS", "eTFG"),
+    BUN: num4("QS", "BUN"),
+    PCR: num4("QS", "PCR"),
+    AU: num4("QS", "AU"),
+    TGL: num4("QS", "TGL"),
+    COL: num4("QS", "COL"),
+    Na: num4("ESC", "Na"),
+    K: num4("ESC", "K"),
+    Cl: num4("ESC", "Cl"),
+    HCO3: num4("ESC", "HCO3"),
+    Ca: num4("ESC", "Ca"),
+    AST: num4("PFHs", "AST"),
+    ALT: num4("PFHs", "ALT"),
+    FA: num4("PFHs", "FA"),
+    BT: num4("PFHs", "BT")
   };
 }
 function buildParsedBySectionFromResLabs(resLabs, bhExtras) {
@@ -6247,11 +6266,11 @@ var PITCH_HEADER = "Expediente:	0008421-7	Solicitud:	2605000001\nNombre:	DEMO P\
 function hdr(fecha, solicitud) {
   return "Expediente:	0008421-7	Solicitud:	" + solicitud + "\nNombre:	DEMO P\xC9REZ JUAN	Fecha Registro:	" + fecha + "\nSexo:	MASCULINO	Ubicaci\xF3n:	SERVICIO DEMO\nEdad:	67	Medico:	SERVICIO DEMO\n";
 }
-var PITCH_CULTIVO_PERITONEAL_SOME = hdr("07/05/2026 02:04:18 p. m.", "2605071010") + "\nBACTERIOLOGIA\nLIQUIDO PERITONEAL\nPRODUCTO\n*\nEN FRASCO DE HEMOCULTIVO ANAEROBIO\nMICROORGANISMO\n*\nPseudomonas aeruginosa\nANTIBIOGRAMA\n*\nCEFTAZIDIMA\n>16	R\nCIPROFLOXACINA\n<=1	S\nCEFEPIMA\n>16	R\nIMIPENEM\n2	S\nLEVOFLOXACINA\n<=2	S\nMEROPENEM\n<=1	S\nPIP/TAZO\n>64	R\nTOBRAMICINA\n<=4	S\n";
+var PITCH_CULTIVO_PERITONEAL_SOME = hdr("07/05/2026 02:04:18 p. m.", "2605071010") + "\nBACTERIOLOGIA\nLIQUIDO PERITONEAL\nPRODUCTO\n*\nEN FRASCO DE HEMOCULTIVO ANAEROBIO\nMICROORGANISMO\n*\nPseudomonas aeruginosa\nCUENTA\n*\n120,000 UFC/mL\nANTIBIOGRAMA\n*\nCEFTAZIDIMA\n>16	R\nCIPROFLOXACINA\n<=1	S\nCEFEPIMA\n>16	R\nIMIPENEM\n2	S\nLEVOFLOXACINA\n<=2	S\nMEROPENEM\n<=1	S\nPIP/TAZO\n>64	R\nTOBRAMICINA\n<=4	S\n";
 var PITCH_CULTIVO_URO_SOME = hdr("05/05/2026 06:16:18 p. m.", "2605050805") + "\nBACTERIOLOGIA\nUROCULTIVO POR SONDA\nPRODUCTO\n*\nMICROORGANISMO\n*\nPseudomonas aeruginosa\nCOMENTARIO:\n*\nSE DETECTO CARBAPENEMASA. (METODO DE INACTIVACION DE DISCO)\nCUENTA DE KASS\n*\n50,000 UFC/mL\nANTIBIOGRAMA\n*\nAMIKACINA\n>32	R\nAZTREONAM\n>16	R\nCEFTAZIDIMA\n>16	R\nCIPROFLOXACINA\n>2	R\nCEFEPIMA\n>16	R\nCEFTAZIDIMA/AVIBACTAM\n>16	R\nIMIPENEM\n>4	R\nLEVOFLOXACINA\n>4	R\nMEROPENEM\n>8	R\nPIP/TAZO\n<=16	S\nTOBRAMICINA\n>8	R\n";
 var PITCH_CULTIVO_ASPIRADO_1805_SOME = hdr("18/05/2026 04:58:48 p. m.", "2605181061") + "\nBACTERIOLOGIA\nASPIRADO TRAQUEAL\nPRODUCTO\n*\nTINCION DE GRAM\n*\nABUNDANTES COCOBACILOS GRAM NEGATIVO\nMICROORGANISMO\n*\nEscherichia coli\nCOMENTARIO:\n*\nAISLAMIENTO PRODUCTOR DE BETALACTAMASAS (BLEE)\nCUENTA\n*\n50,000 UFC/mL\nANTIBIOGRAMA\n*\nAMP/SULBACTAM\n>16/8	R\nAMIKACINA\n<=16	S\nAMPICILINA\n>16	R\nAZTREONAM\n>16	ESBL\nCEFTRIAXONA\n>32	ESBL\nCEFTAZIDIMA\n>16	ESBL\nCEFOTAXIMA\n>16	ESBL\nCEFOXITINA\n16	I\nCIPROFLOXACINA\n>2	R\nCEFEPIMA\n>16	R\nCEFTAZIDIMA/AVIBACTAM\n16	R\nERTAPENEM\n<=0.5	S\nGENTAMICINA\n>8	R\nIMIPENEM\n<=1	S\nLEVOFLOXACINA\n>4	R\nMEROPENEM\n<=1	S\nPIP/TAZO\n>64	R\nTRIMET/SULFA\n>2/38	R\nTETRACICLINA\n>8	R\nTOBRAMICINA\n>8	R\nMICROORGANISMO\n*\nAcinetobacter baumannii complex\nCUENTA\n*\n80,000 UFC/mL\nANTIBIOGRAMA\n*\nCOLISTINA\n<=2	I\nAMP/SULBACTAM\n>16/8	R\nAMIKACINA\n>32	R\nCEFTRIAXONA\n>32	R\nCEFTAZIDIMA\n>16	R\nCIPROFLOXACINA\n>2	R\nCEFEPIMA\n16	I\nGENTAMICINA\n>8	R\nIMIPENEM\n>4	R\nMEROPENEM\n>8	R\nTRIMET/SULFA\n>2/38	R\nTOBRAMICINA\n>8	R\n";
 var PITCH_CULTIVO_ASPIRADO_2804_SOME = hdr("28/04/2026 01:45:42 p. m.", "2604280886") + "\nBACTERIOLOGIA\nASPIRADO TRAQUEAL\nPRODUCTO\n*\nMICROORGANISMO\n*\nEscherichia coli\nCOMENTARIO:\n*\nAISLAMIENTO PRODUCTOR DE BETALACTAMASAS (BLEE)\nCUENTA\n*\n100,000 UFC/mL\nANTIBIOGRAMA\n*\nAMP/SULBACTAM\n>16/8	R\nAMIKACINA\n<=16	S\nAMPICILINA\n>16	R\nCEFTRIAXONA\n>32	ESBL\nCEFOTAXIMA\n>16	ESBL\nCEFOXITINA\n<=8	S\nCIPROFLOXACINA\n>2	R\nCEFEPIMA\n>16	R\nCEFTAZIDIMA/AVIBACTAM\n<=8	S\nERTAPENEM\n<=0.5	S\nGENTAMICINA\n>8	R\nIMIPENEM\n<=1	S\nLEVOFLOXACINA\n>4	R\nMEROPENEM\n<=1	S\nPIP/TAZO\n64	I\nTRIMET/SULFA\n>2/38	R\nTETRACICLINA\n>8	R\nTOBRAMICINA\n>8	R\nMICROORGANISMO\n*\nStaphylococcus aureus\nCUENTA\n*\n20,000 UFC/mL\nANTIBIOGRAMA\n*\nCLINDAMICINA\n0.5	S\nSCREENING DE CEFOXITINA\n<=4	NEG\nERITROMICINA\n>4	R\nINDUCCION CLINDAMICINA\n<=4/0.5	NEG\nLINEZOLID\n<=2	S\nOXACILINA\n1	S\nPENICILINA\n>8	BLAC\nRIFAMPICINA\n<=1	S\nTRIMET/SULFA\n<=0.5/9.5	S\nTETRACICLINA\n>8	R\nVANCOMICINA\n1	S\nMICROORGANISMO\n*\nProteus mirabilis\nCOMENTARIO:\n*\nAISLAMIENTO PRODUCTOR DE BETALACTAMASAS (BLEE)\nCUENTA\n*\n100 UFC/mL\nANTIBIOGRAMA\n*\nAMP/SULBACTAM\n>16/8	R\nAMIKACINA\n<=16	S\nAMPICILINA\n>16	R\nCEFTRIAXONA\n>32	R\nCEFOTAXIMA\n>16	ESBL\nCEFOXITINA\n<=8	S\nCIPROFLOXACINA\n>2	R\nCEFEPIMA\n>16	R\nCEFTAZIDIMA/AVIBACTAM\n<=8	S\nERTAPENEM\n<=0.5	S\nGENTAMICINA\n<=4	S\nLEVOFLOXACINA\n>4	R\nMEROPENEM\n<=1	S\nPIP/TAZO\n<=16	S\nTRIMET/SULFA\n>2/38	R\nTETRACICLINA\n>8	R\nTOBRAMICINA\n>8	R\n";
-var PITCH_CULTIVO_HEMO_SOME = PITCH_HEADER + "\nBACTERIOLOGIA\nHEMOCULTIVO\nPRODUCTO\n*\nPERIFERICO IZQUIERDO\nMICROORGANISMO\n*\nPseudomonas aeruginosa\nCOMENTARIO:\n*\nAISLAMIENTO PRODUCTOR DE BETALACTAMASAS (BLEE)\nANTIBIOGRAMA\n*\nCEFTAZIDIMA\n>16	R\nCEFEPIMA\n16	I\nCIPROFLOXACINA\n<=1	S\nMEROPENEM\n<=1	S\nPIP/TAZO\n64	S\n";
+var PITCH_CULTIVO_HEMO_SOME = PITCH_HEADER + "\nBACTERIOLOGIA\nHEMOCULTIVO\nPRODUCTO\n*\nPERIFERICO IZQUIERDO\nMICROORGANISMO\n*\nPseudomonas aeruginosa\nCOMENTARIO:\n*\nAISLAMIENTO PRODUCTOR DE BETALACTAMASAS (BLEE)\nCUENTA\n*\n2 colonias\nANTIBIOGRAMA\n*\nCEFTAZIDIMA\n>16	R\nCEFEPIMA\n16	I\nCIPROFLOXACINA\n<=1	S\nMEROPENEM\n<=1	S\nPIP/TAZO\n64	S\n";
 var PITCH_CULTIVO_LAB_SPECS = [
   { id: "pitch-lab-cult-at-1805", fecha: "18/05/2026", report: PITCH_CULTIVO_ASPIRADO_1805_SOME },
   { id: "pitch-lab-cult-peritonitis", fecha: "07/05/2026", report: PITCH_CULTIVO_PERITONEAL_SOME },
@@ -7112,10 +7131,20 @@ function getDefaultServicio(settings2) {
   if (!settings2) return "";
   return String(settings2.defaultServicio || "").trim();
 }
+function getDefaultCuarto(settings2) {
+  if (!settings2) return "";
+  return String(settings2.defaultCuarto || "").trim();
+}
+function getDefaultCama(settings2) {
+  if (!settings2) return "";
+  return String(settings2.defaultCama || "").trim();
+}
 function migrateToV3(settings2) {
   if (!settings2 || settings2._v3MigrationDone) return false;
   if (settings2.appMode == null) settings2.appMode = "sala";
   if (settings2.defaultServicio == null) settings2.defaultServicio = "";
+  if (settings2.defaultCuarto == null) settings2.defaultCuarto = "";
+  if (settings2.defaultCama == null) settings2.defaultCama = "";
   settings2._v3MigrationDone = true;
   return true;
 }
@@ -7667,7 +7696,7 @@ function buildSOAPText() {
   function val2(v) {
     return v ? v.toUpperCase() : "___";
   }
-  function num3(v) {
+  function num4(v) {
     return v !== "" ? v : "___";
   }
   var soporteMap = {
@@ -7690,19 +7719,19 @@ function buildSOAPText() {
     lines.push("");
   }
   lines.push(
-    "N: FOUR " + num3(g3("soap-four")) + "/16 PUNTOS, SIN DATOS DE FOCALIZACI\xD3N, ORIENTADO EN " + num3(g3("soap-esferas")) + " ESFERAS, ALERTA || ANALGESIA CON " + val2(g3("soap-analgesia"))
+    "N: FOUR " + num4(g3("soap-four")) + "/16 PUNTOS, SIN DATOS DE FOCALIZACI\xD3N, ORIENTADO EN " + num4(g3("soap-esferas")) + " ESFERAS, ALERTA || ANALGESIA CON " + val2(g3("soap-analgesia"))
   );
   lines.push(
-    "V: FR " + num3(g3("soap-fr")) + " RPM, SATO2 " + num3(g3("soap-sat")) + "% " + soporte + " | SIN DATOS DE DIFICULTAD RESPIRATORIA || CAMPOS PULMONARES BIEN VENTILADOS"
+    "V: FR " + num4(g3("soap-fr")) + " RPM, SATO2 " + num4(g3("soap-sat")) + "% " + soporte + " | SIN DATOS DE DIFICULTAD RESPIRATORIA || CAMPOS PULMONARES BIEN VENTILADOS"
   );
   lines.push(
-    "HD: ESTABLE, TA " + num3(g3("soap-tas")) + "/" + num3(g3("soap-tad")) + " MMHG, FC " + num3(g3("soap-fc")) + " LPM || ANTIHIPERTENSIVOS: " + val2(g3("soap-antihta") || "NINGUNO") + " || VASOPRESORES: " + val2(g3("soap-vasop") || "NINGUNO")
+    "HD: ESTABLE, TA " + num4(g3("soap-tas")) + "/" + num4(g3("soap-tad")) + " MMHG, FC " + num4(g3("soap-fc")) + " LPM || ANTIHIPERTENSIVOS: " + val2(g3("soap-antihta") || "NINGUNO") + " || VASOPRESORES: " + val2(g3("soap-vasop") || "NINGUNO")
   );
   lines.push(
-    "HI: AFEBRIL, TEMPERATURA " + num3(g3("soap-temp")) + " \xB0C || ANTIBI\xD3TICOS: " + val2(g3("soap-abx") || "NINGUNO")
+    "HI: AFEBRIL, TEMPERATURA " + num4(g3("soap-temp")) + " \xB0C || ANTIBI\xD3TICOS: " + val2(g3("soap-abx") || "NINGUNO")
   );
   lines.push(
-    "NM: DIETA " + val2(g3("soap-dieta")) + " CALCULADA A " + num3(g3("soap-kcalkg")) + " KCAL/KG (" + num3(g3("soap-kcal")) + " KCAL) PARA PESO DE " + num3(g3("soap-peso")) + " KG || INGRESOS " + num3(ing) + " CC, EGRESOS " + num3(egr) + " CC, BALANCE " + balance + " CC || GLUCOMETR\xCDAS CAPILARES (" + num3(g3("soap-glu1")) + ", " + num3(g3("soap-glu2")) + ", " + num3(g3("soap-glu3")) + " MG/DL)"
+    "NM: DIETA " + val2(g3("soap-dieta")) + " CALCULADA A " + num4(g3("soap-kcalkg")) + " KCAL/KG (" + num4(g3("soap-kcal")) + " KCAL) PARA PESO DE " + num4(g3("soap-peso")) + " KG || INGRESOS " + num4(ing) + " CC, EGRESOS " + num4(egr) + " CC, BALANCE " + balance + " CC || GLUCOMETR\xCDAS CAPILARES (" + num4(g3("soap-glu1")) + ", " + num4(g3("soap-glu2")) + ", " + num4(g3("soap-glu3")) + " MG/DL)"
   );
   return lines.join("\n");
 }
@@ -9411,6 +9440,22 @@ function skipSectionDividerBlock(lines, startIdx) {
   }
   return i;
 }
+function isCultureGroupTitle(title) {
+  var t2 = cleanEstudio(title);
+  if (!t2) return false;
+  return isCultureSampleTitle(t2, ["PRODUCTO"]);
+}
+function pruneSomeCultureRows(rows) {
+  return (rows || []).filter(function(r) {
+    if (!r || !r.estudio || isSectionDividerRow(r)) return false;
+    var res = String(r.resultado || "").trim();
+    if (/^MICROORGANISMO|^CUENTA|^COMENTARIO/i.test(r.estudio)) {
+      return !!res && res !== ":" && res !== "\u2014";
+    }
+    if (!res || res === ":" || res === "\u2014") return false;
+    return true;
+  });
+}
 function pruneSomeRows(rows) {
   var out = [];
   (rows || []).forEach(function(r) {
@@ -9581,6 +9626,94 @@ function parseUnitsRef(line) {
   }
   return { unidades: t2, ref: "" };
 }
+var CULTURE_FIELD_RE = /^(PRODUCTO|TINCION|CALIDAD|ESTADO(\s+DE)?\s+CULTIVO|REPORTE\s+PRELIMINAR|MICROORGANISMO|COMENTARIO:?|CUENTA(\s+DE\s+KASS)?|ANTIBIOGRAMA|IDENTIFICACION)/i;
+function isCultureFieldLine(line) {
+  var n = cleanEstudio(line);
+  return !!(n && CULTURE_FIELD_RE.test(n));
+}
+function isCultureSampleTitle(line, nextLines) {
+  var name = cleanEstudio(line);
+  if (!name || isFlagToken(name) || isDepartmentLine(name) || isTableHeaderLine(name)) return false;
+  if (isCultureFieldLine(name)) return false;
+  if (isCitoGroupTitle(name) || /^FIBRAS\s+VEGETALES$/i.test(name)) return false;
+  if (/^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]/.test(name)) return false;
+  if (/^(ASPIRADO|UROCULTIVO|HEMOCULTIVO|FUNGICULTIVO|CATETER|LIQUIDO|SECRECION|ABSCESO|BRONCOALVEOLAR|CULTIVO)\b/i.test(
+    name
+  )) {
+    return true;
+  }
+  if (name !== name.toUpperCase()) return false;
+  for (var i = 0; i < Math.min(nextLines.length, 8); i++) {
+    var n = cleanEstudio(nextLines[i]);
+    if (!n || isFlagToken(n)) continue;
+    if (/^PRODUCTO|^TINCION|^CALIDAD|^ESTADO(\s+DE)?\s+CULTIVO/i.test(n)) return true;
+    if (n.toUpperCase() === name.toUpperCase()) continue;
+    break;
+  }
+  return false;
+}
+function cultureBlockEndIdx(lines, startIdx) {
+  for (var k = startIdx + 1; k < lines.length; k++) {
+    var t2 = cleanEstudio(lines[k]);
+    if (!t2 || isFlagToken(t2)) continue;
+    if (isDepartmentLine(t2) || isTableHeaderLine(t2)) return k;
+    if (k > startIdx + 1 && isCultureSampleTitle(t2, lines.slice(k + 1))) return k;
+  }
+  return lines.length;
+}
+function readCultureSomeRowAt(lines, startIdx, endIdx) {
+  var estudio = cleanEstudio(lines[startIdx]);
+  if (!estudio || !isCultureFieldLine(estudio)) return null;
+  var j = startIdx + 1;
+  var flag = "*";
+  var parts = [];
+  while (j < endIdx) {
+    var t2 = cleanEstudio(lines[j]);
+    j++;
+    if (!t2) continue;
+    if (isCultureFieldLine(t2) || isCultureSampleTitle(t2, lines.slice(j))) {
+      j--;
+      break;
+    }
+    if (isDepartmentLine(t2) || isTableHeaderLine(t2)) {
+      j--;
+      break;
+    }
+    if (!parts.length && isFlagToken(t2)) {
+      var peek = cleanEstudio(lines[j] || "");
+      if (peek && (isCultureFieldLine(peek) || isCultureSampleTitle(peek, lines.slice(j + 1)))) {
+        break;
+      }
+      flag = t2;
+      continue;
+    }
+    if (t2.toUpperCase() === estudio.toUpperCase()) continue;
+    parts.push(t2);
+    if (/^MICROORGANISMO$/i.test(estudio) || /^CUENTA/i.test(estudio)) break;
+    if (/^PRODUCTO$|^TINCION|^CALIDAD|^ESTADO|^REPORTE\s+PRELIMINAR/i.test(estudio) && parts.length >= 1) {
+      break;
+    }
+  }
+  var row = finalizeRow(estudio, flag, parts);
+  if (!row) return null;
+  return { row, nextIdx: j };
+}
+function parseBacteriologiaCultureGroup(lines, startIdx) {
+  var title = cleanEstudio(lines[startIdx]);
+  var endIdx = cultureBlockEndIdx(lines, startIdx);
+  var rows = [];
+  var i = startIdx + 1;
+  while (i < endIdx) {
+    var parsed = readCultureSomeRowAt(lines, i, endIdx);
+    if (!parsed) {
+      i++;
+      continue;
+    }
+    rows.push(parsed.row);
+    i = parsed.nextIdx;
+  }
+  return { title, rows, nextIdx: endIdx };
+}
 function finalizeRow(estudio, flag, valueParts) {
   var est = cleanEstudio(estudio);
   if (!est) return null;
@@ -9635,6 +9768,10 @@ function readRowAt(lines, startIdx, currentGroupTitle) {
       break;
     }
     if (!parts.length && isFlagToken(t2)) {
+      var peekAfterFlag = cleanEstudio(lines[j] || "");
+      if (/^COMENTARIO/i.test(estudio) && peekAfterFlag && /^(CUENTA|MICROORGANISMO|ANTIBIOGRAMA)\b/i.test(peekAfterFlag)) {
+        break;
+      }
       flag = t2;
       continue;
     }
@@ -9718,6 +9855,15 @@ function parseSomeReportTables(textoBruto) {
     }
     if (isTableHeaderLine(trimmed)) continue;
     if (!currentDept) continue;
+    if (normalizeDeptKey(currentDept.key) === "BACTERIOLOGIA" && isCultureSampleTitle(trimmed, lines.slice(i + 1))) {
+      var cultBlock = parseBacteriologiaCultureGroup(lines, i);
+      ensureGroup(cultBlock.title);
+      cultBlock.rows.forEach(function(r) {
+        currentGroup.rows.push(r);
+      });
+      i = cultBlock.nextIdx - 1;
+      continue;
+    }
     if (isSectionDividerRow({ estudio: trimmed, resultado: "", unidades: "", ref: "" })) {
       continue;
     }
@@ -9882,7 +10028,7 @@ function normalizeSomeGroup(group) {
     rows = extracted.rows;
     fluidSource = fluidSource || extracted.fluid || "";
   }
-  group.rows = pruneSomeRows(rows);
+  group.rows = isCultureGroupTitle(group.title) ? pruneSomeCultureRows(rows) : pruneSomeRows(rows);
   group.fluidSource = fluidSource;
   group.tableVariant = isCito ? "cito" : "standard";
   group._someNormalized = true;
@@ -11156,6 +11302,9 @@ function handlePreviewBodyClick(event) {
   rt5.openAddModalFromLabPatient(labPatient, {
     onSaved: function() {
       refreshModalPreview();
+      if (typeof rt5.tourOnBulkPreviewPatientSaved === "function") {
+        rt5.tourOnBulkPreviewPatientSaved();
+      }
     }
   });
 }
@@ -11231,6 +11380,8 @@ var rt6 = {
   onboardingAdvanceAfterParse() {
   },
   onboardingAdvanceAfterSend() {
+  },
+  tourAfterBulkLabParse() {
   },
   findPatientByRegistro() {
     return null;
@@ -12535,6 +12686,9 @@ function finalizeBulkLabPaste(text, blocks, totalOkReports) {
   } else if (processable.length === 1 && storeSummary.storedSets) {
   }
   clearLabInputAfterSuccessfulParse();
+  if (typeof rt6.tourAfterBulkLabParse === "function") {
+    rt6.tourAfterBulkLabParse(blocks);
+  }
 }
 function procesarReporte() {
   var text = document.getElementById("lab-input").value.trim();
@@ -14759,38 +14913,207 @@ var __test = {
 
 // public/js/features/clinical-conflict-viewer.mjs
 var BACKDROP_ID = "clinical-conflict-backdrop";
+var INTERNAL_DIFF_KEYS = /* @__PURE__ */ new Set([
+  "id",
+  "patientId",
+  "updatedAt",
+  "version",
+  "expectedVersion",
+  "_deleted",
+  "entityType",
+  "entityId",
+  "roomId",
+  "clientId",
+  "audit"
+]);
+var ENTITY_LABELS = {
+  historiaClinica: "Historia cl\xEDnica",
+  patient: "Datos del paciente",
+  todo: "Pendiente",
+  agenda: "Evento de agenda",
+  roomBundle: "Sala (agenda y pendientes)"
+};
+var FIELD_LABELS = {
+  identificacion: "Identificaci\xF3n",
+  motivoConsulta: "Motivo de consulta",
+  apnp: "APNP",
+  app: "APP",
+  ahf: "AHF",
+  genero: "G\xE9nero",
+  sexual: "Salud sexual",
+  padecimientoActual: "Padecimiento actual",
+  datosNegados: "Datos negados",
+  ipas: "IPAS",
+  signosVitalesIngreso: "Signos vitales de ingreso",
+  labsAtAdmission: "Labs de ingreso",
+  labAnchor: "Ancla de laboratorio",
+  meta: "Metadatos",
+  labLookbackHours: "Ventana de labs (h)",
+  eventualidades: "Eventualidades",
+  nombre: "Nombre",
+  cuarto: "Cuarto",
+  cama: "Cama",
+  sexo: "Sexo",
+  edad: "Edad",
+  agenda: "Agenda",
+  todos: "Pendientes",
+  text: "Descripci\xF3n",
+  completed: "Completado",
+  priority: "Prioridad",
+  createdAt: "Fecha de creaci\xF3n",
+  updatedAt: "\xDAltima actualizaci\xF3n",
+  _deleted: "Eliminado",
+  entries: "Entradas",
+  manejo: "Manejo"
+};
 function escHtml3(s) {
   return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
+function valuesEqual(a, b) {
+  if (a === b) return true;
+  if (a == null && b == null) return true;
+  if (typeof a === "object" || typeof b === "object") {
+    try {
+      return JSON.stringify(a) === JSON.stringify(b);
+    } catch (_e) {
+      return false;
+    }
+  }
+  return false;
+}
 function formatConflictValue(value) {
   if (value === null || value === void 0) return "\u2014";
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}T/.test(value)) {
+    try {
+      return new Date(value).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" });
+    } catch (_e) {
+      return value;
+    }
+  }
   if (typeof value === "object") {
     try {
-      return JSON.stringify(value);
-    } catch (_e) {
+      const raw = JSON.stringify(value, null, 0);
+      if (raw.length > 240) return raw.slice(0, 237) + "\u2026";
+      return raw;
+    } catch (_e2) {
       return String(value);
     }
   }
   return String(value);
 }
-function collectDiffKeys(localData, serverData) {
-  const keys = /* @__PURE__ */ new Set([
-    ...Object.keys(localData || {}),
-    ...Object.keys(serverData || {})
-  ]);
+function formatFieldLabel(key) {
+  const k = String(key || "").trim();
+  if (!k) return "";
+  if (FIELD_LABELS[k]) return FIELD_LABELS[k];
+  return k.replace(/([A-Z])/g, " $1").replace(/_/g, " ").trim().replace(/^\w/, (c) => c.toUpperCase());
+}
+function isInternalNoiseKey(key, localData, serverData) {
+  if (!INTERNAL_DIFF_KEYS.has(key)) return false;
+  const serverVal = serverData?.[key];
+  if (serverVal === void 0 || serverVal === null) return true;
+  return valuesEqual(localData?.[key], serverVal);
+}
+function keysThatDiffer(localData, serverData) {
+  const keys = /* @__PURE__ */ new Set([...Object.keys(localData || {}), ...Object.keys(serverData || {})]);
   keys.delete("_deleted");
-  return [...keys].sort((a, b) => a.localeCompare(b));
+  return [...keys].filter((key) => !isInternalNoiseKey(key, localData, serverData)).filter((key) => !valuesEqual(localData?.[key], serverData?.[key])).sort((a, b) => a.localeCompare(b));
+}
+function pickDiffKeys(conflictingKeys, localData, serverData) {
+  const raw = Array.isArray(conflictingKeys) ? conflictingKeys.filter(Boolean) : [];
+  const onlyStar = raw.length === 1 && raw[0] === "*";
+  if (raw.length && !onlyStar) {
+    return raw.filter((key) => !isInternalNoiseKey(key, localData, serverData)).sort((a, b) => a.localeCompare(b));
+  }
+  return keysThatDiffer(localData, serverData).filter((key) => {
+    if (!INTERNAL_DIFF_KEYS.has(key)) return true;
+    return !valuesEqual(localData?.[key], serverData?.[key]);
+  });
+}
+function buildConflictModalTitle(context) {
+  const ctx = context || {};
+  if (ctx.entityType === "todo") return "Pendiente en la sala";
+  if (ctx.entityType === "historiaClinica") return "Historia cl\xEDnica en la sala";
+  if (ctx.entityType === "patient") return "Paciente en la sala";
+  return "Cambio en la sala";
+}
+function buildConflictActionCopy(context) {
+  const ctx = context || {};
+  if (ctx.intent === "todo-delete") {
+    return {
+      primaryTitle: "No eliminar \u2014 conservar sala",
+      primaryHint: "El pendiente sigue en la sala para todos. En tu pantalla volver\xE1 a aparecer si ya lo hab\xEDas quitado.",
+      secondaryTitle: "S\xED eliminar \u2014 reenviar borrado",
+      secondaryHint: "Intenta de nuevo el borrado con la versi\xF3n actual de la sala. \xDAsalo si est\xE1s seguro de que debe desaparecer.",
+      tagline: "Conflicto al eliminar un pendiente en la sala."
+    };
+  }
+  if (ctx.intent === "todo-complete") {
+    return {
+      primaryTitle: "Marcar como en la sala",
+      primaryHint: "Aplica el estado completado que ya tiene el host (si aplica).",
+      secondaryTitle: "Dejar como lo tengo",
+      secondaryHint: "Cierra sin cambiar; revisa el pendiente en tu lista.",
+      tagline: "El pendiente ya estaba completado o se marc\xF3 en otro equipo."
+    };
+  }
+  if (ctx.entityType === "todo") {
+    return {
+      primaryTitle: "Usar lo que tiene la sala",
+      primaryHint: "Aplica el texto y estado del pendiente tal como est\xE1 guardado en el host.",
+      secondaryTitle: "Mantener mi cambio local",
+      secondaryHint: "Cierra el comparador sin sobrescribir; revisa el texto en pantalla.",
+      tagline: "El mismo pendiente cambi\xF3 en otro equipo."
+    };
+  }
+  return {
+    primaryTitle: "Usar versi\xF3n del servidor",
+    primaryHint: "Descarta este intento de guardado y carga lo que ya guard\xF3 la sala o el host. Se elimina el borrador guardado.",
+    secondaryTitle: "Seguir con mi borrador",
+    secondaryHint: "Cierra el comparador y mant\xE9n tus cambios en pantalla. El borrador queda en Ajustes \u2192 LAN.",
+    tagline: "Elige qu\xE9 copia conservar antes de seguir editando."
+  };
+}
+function buildConflictContextHtml(context) {
+  const ctx = context || {};
+  const entityLabel = ENTITY_LABELS[ctx.entityType] || formatFieldLabel(ctx.entityType) || "Registro cl\xEDnico";
+  const patientName = ctx.patientDisplayName ? String(ctx.patientDisplayName) : "";
+  const patientRef = patientName ? "Paciente: " + escHtml3(patientName) : ctx.patientId ? "Paciente (id interno)" : "";
+  let lead = entityLabel;
+  if (ctx.entityType === "todo" && ctx.itemPreview) {
+    lead = "Pendiente: \xAB" + escHtml3(ctx.itemPreview) + "\xBB";
+  }
+  let cause = "Otro guardado lleg\xF3 antes que el tuyo y ambos tocaron los mismos campos.";
+  if (ctx.intent === "todo-delete") {
+    cause = "Quisiste eliminar este pendiente, pero la sala tiene una versi\xF3n distinta (otro equipo lo edit\xF3 o tu copia local estaba desactualizada).";
+  } else if (ctx.transport === "ws") {
+    cause = "La sala LAN recibi\xF3 un cambio en vivo (otro equipo conectado) mientras t\xFA editabas o guardabas.";
+  } else if (ctx.transport === "http") {
+    cause = "El host de la sala ya ten\xEDa una versi\xF3n m\xE1s reciente cuando intentaste guardar por red.";
+  }
+  const localV = ctx.localVersion != null && ctx.localVersion !== "" ? Number(ctx.localVersion) : null;
+  const serverV = ctx.serverVersion != null && ctx.serverVersion !== "" ? Number(ctx.serverVersion) : null;
+  let versionHtml = "";
+  if (localV != null || serverV != null) {
+    const localBadge = localV != null && Number.isFinite(localV) ? '<span class="clinical-conflict-version-pill clinical-conflict-version-pill--local">Tu base: v' + escHtml3(localV) + "</span>" : "";
+    const serverBadge = serverV != null && Number.isFinite(serverV) ? '<span class="clinical-conflict-version-pill clinical-conflict-version-pill--server">Sala: v' + escHtml3(serverV) + "</span>" : "";
+    versionHtml = '<div class="clinical-conflict-versions">' + localBadge + serverBadge + (localV != null && serverV != null && localV !== serverV ? '<span class="clinical-conflict-version-note">El n\xFAmero de versi\xF3n confirma que no partiste del mismo estado.</span>' : "") + "</div>";
+  }
+  return '<div class="clinical-conflict-context"><p class="clinical-conflict-context-lead"><strong>' + lead + "</strong></p>" + (patientRef ? '<p class="clinical-conflict-context-patient">' + patientRef + "</p>" : "") + '<p class="clinical-conflict-context-body">' + escHtml3(cause) + "</p>" + versionHtml + "</div>";
 }
 function buildConflictDiffHtml({ conflictingKeys, localData, serverData }) {
   const conflictSet = new Set(conflictingKeys || []);
-  const keys = collectDiffKeys(localData, serverData);
+  const keys = pickDiffKeys(conflictingKeys, localData, serverData);
+  if (!keys.length) {
+    return '<p class="clinical-conflict-diff-empty">No hay detalle campo por campo para este conflicto (suele pasar al eliminar o por desfase de versi\xF3n). Lee las dos opciones de abajo: una conserva lo de la sala, la otra reintenta tu acci\xF3n.</p>';
+  }
   const rows = keys.map((key) => {
-    const rowClass = conflictSet.has(key) ? "conflict-field" : "";
+    const rowClass = conflictSet.has(key) || conflictSet.has("*") ? "conflict-field" : "";
     const localVal = formatConflictValue(localData?.[key]);
     const serverVal = formatConflictValue(serverData?.[key]);
-    return "<tr" + (rowClass ? ' class="' + rowClass + '"' : "") + '><th scope="row">' + escHtml3(key) + "</th><td>" + escHtml3(localVal) + "</td><td>" + escHtml3(serverVal) + "</td></tr>";
+    const serverMissing = serverData?.[key] === void 0 || serverData?.[key] === null;
+    return "<tr" + (rowClass ? ' class="' + rowClass + '"' : "") + '><th scope="row">' + escHtml3(formatFieldLabel(key)) + '<span class="clinical-conflict-key-muted">' + escHtml3(key) + '</span></th><td class="clinical-conflict-val--local">' + escHtml3(localVal) + '</td><td class="clinical-conflict-val--server' + (serverMissing ? " clinical-conflict-val--missing" : "") + '">' + escHtml3(serverVal) + "</td></tr>";
   }).join("");
-  return '<table class="clinical-conflict-diff" style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr><th scope="col" style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text-muted);font-weight:600;">Campo</th><th scope="col" style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text-muted);font-weight:600;">Tu cambio</th><th scope="col" style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text-muted);font-weight:600;">Servidor</th></tr></thead><tbody>' + rows + "</tbody></table>";
+  return '<table class="clinical-conflict-diff"><thead><tr><th scope="col">Campo</th><th scope="col">Tu intento de guardado</th><th scope="col">En la sala ahora</th></tr></thead><tbody>' + rows + "</tbody></table>";
 }
 function closeClinicalConflictViewer() {
   if (typeof document === "undefined") return;
@@ -14804,17 +15127,21 @@ function openClinicalConflictViewer(opts) {
     conflictingKeys,
     localData,
     serverData,
+    context,
     onUseServer,
     onEditDraft,
     onClose
   } = opts || {};
   closeClinicalConflictViewer();
+  const contextHtml = buildConflictContextHtml(context);
+  const actions = buildConflictActionCopy(context);
+  const modalTitle = buildConflictModalTitle(context);
   const diffHtml = buildConflictDiffHtml({ conflictingKeys, localData, serverData });
   const backdrop = document.createElement("div");
-  backdrop.className = "lab-conflict-backdrop";
+  backdrop.className = "lab-conflict-backdrop clinical-conflict-backdrop";
   backdrop.id = BACKDROP_ID;
   if (draftId) backdrop.dataset.draftId = String(draftId);
-  backdrop.innerHTML = '<div class="lab-conflict-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-conflict-title" style="max-width:560px;max-height:90vh;"><h3 id="clinical-conflict-title">Conflicto de sincronizaci\xF3n</h3><p>Los cambios locales chocan con la versi\xF3n del servidor en los campos resaltados. Elige c\xF3mo continuar.</p><style>.clinical-conflict-diff .conflict-field th,.clinical-conflict-diff .conflict-field td{background:rgba(220,38,38,0.08);font-weight:600;}</style><div style="overflow:auto;max-height:50vh;margin:0 -4px;padding:0 4px;">' + diffHtml + '</div><div class="lab-conflict-actions"><button type="button" class="btn-conflict-primary" id="clinical-conflict-use-server">Usar servidor</button><button type="button" class="btn-conflict-secondary" id="clinical-conflict-edit-draft">Editar mi borrador</button><button type="button" class="btn-conflict-cancel" id="clinical-conflict-close">Cerrar</button></div></div>';
+  backdrop.innerHTML = '<div class="lab-conflict-modal clinical-conflict-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-conflict-title"><header class="clinical-conflict-header clinical-conflict-header--plain"><div class="clinical-conflict-header-text"><h3 id="clinical-conflict-title">' + escHtml3(modalTitle) + '</h3><p class="clinical-conflict-tagline">' + escHtml3(actions.tagline) + "</p></div></header>" + contextHtml + '<p class="clinical-conflict-diff-intro">Detalle del choque (si aplica):</p><div class="clinical-conflict-diff-wrap">' + diffHtml + '</div><div class="lab-conflict-actions clinical-conflict-actions"><button type="button" class="btn-conflict-primary" id="clinical-conflict-use-server">' + escHtml3(actions.primaryTitle) + '<span class="btn-conflict-hint">' + escHtml3(actions.primaryHint) + '</span></button><button type="button" class="btn-conflict-secondary" id="clinical-conflict-edit-draft">' + escHtml3(actions.secondaryTitle) + '<span class="btn-conflict-hint">' + escHtml3(actions.secondaryHint) + '</span></button><button type="button" class="btn-conflict-cancel" id="clinical-conflict-close">Cerrar sin decidir</button></div></div>';
   document.body.appendChild(backdrop);
   const dismiss = (cb) => {
     closeClinicalConflictViewer();
@@ -15700,6 +16027,29 @@ function rememberLiveSyncEntity(entityType, entityId, patientId, version, data) 
   } catch (_e) {
   }
 }
+function stampTodosWithEntityVersions(todosMap, entityVersions) {
+  var versions = entityVersions && typeof entityVersions === "object" ? entityVersions : {};
+  var out = {};
+  Object.keys(todosMap || {}).forEach(function(pid) {
+    out[pid] = (todosMap[pid] || []).map(function(t2) {
+      if (!t2 || !t2.id) return t2;
+      var key = todoEntityKey(pid, t2.id);
+      if (versions[key] == null) return t2;
+      return Object.assign({}, t2, { version: Number(versions[key]) });
+    });
+  });
+  return out;
+}
+function rememberTodosFromMap(todosMap) {
+  Object.keys(todosMap || {}).forEach(function(pid) {
+    (todosMap[pid] || []).forEach(function(t2) {
+      if (!t2 || !t2.id) return;
+      var ver = Number(t2.version || 0);
+      if (!ver) return;
+      rememberLiveSyncEntity("todo", t2.id, pid, ver, t2);
+    });
+  });
+}
 function buildLiveSyncMutationFromDesired(entityType, entityId, desired, extra) {
   extra = extra || {};
   var patientId = extra.patientId;
@@ -15768,6 +16118,84 @@ function draftRecordToConflictPayload(draft2) {
     serverSnapshot: draft2.serverSnapshot
   };
 }
+function mergeConflictSnapshotData(snap) {
+  if (!snap) return {};
+  var base = snap.baseData && typeof snap.baseData === "object" ? snap.baseData : {};
+  var patch = snap.data && typeof snap.data === "object" ? snap.data : {};
+  return Object.assign({}, base, patch);
+}
+function conflictDataForViewer(payload) {
+  var local = mergeConflictSnapshotData(payload && payload.localSnapshot);
+  var server = payload && payload.serverSnapshot && payload.serverSnapshot.data ? Object.assign({}, payload.serverSnapshot.data) : {};
+  if (payload && payload.entityType === "todo" && (!server.text || server.completed == null)) {
+    var cached = getLiveSyncEntityBase("todo", payload.entityId, payload.patientId);
+    if (cached) server = Object.assign({}, cached, server);
+  }
+  return { localData: local, serverData: server };
+}
+function shouldAutoResolveTodoConflict(payload) {
+  if (!payload || payload.entityType !== "todo") return false;
+  if (payload.localSnapshot && payload.localSnapshot.op === "delete") return true;
+  var local = mergeConflictSnapshotData(payload.localSnapshot);
+  var server = payload.serverSnapshot && payload.serverSnapshot.data;
+  return !!(local.completed || server && server.completed);
+}
+function tryAutoResolveTodoConflict(payload) {
+  var server = payload.serverSnapshot;
+  if (!server || server.version == null || !payload.patientId) return false;
+  var local = mergeConflictSnapshotData(payload.localSnapshot);
+  var merged = Object.assign({}, server.data || {}, local, {
+    id: payload.entityId,
+    version: server.version
+  });
+  if (payload.localSnapshot && payload.localSnapshot.op === "delete") {
+    emitLiveSyncTodoDelete(payload.patientId, merged);
+    return true;
+  }
+  if (local.completed) {
+    merged.completed = true;
+    emitLiveSyncTodoUpsert(payload.patientId, merged);
+    return true;
+  }
+  return false;
+}
+function conflictViewerContext(payload) {
+  var local = payload && payload.localSnapshot;
+  var server = payload && payload.serverSnapshot;
+  var localData = mergeConflictSnapshotData(local);
+  var serverData = server && server.data;
+  var ctx = {
+    entityType: payload && payload.entityType,
+    entityId: payload && payload.entityId,
+    patientId: payload && payload.patientId,
+    transport: payload && payload.transport,
+    localVersion: local && local.expectedVersion != null ? local.expectedVersion : local && local.version,
+    serverVersion: server && server.version,
+    localOp: local && local.op
+  };
+  if (payload && payload.patientId) {
+    var row = patients.find(function(p) {
+      return p && String(p.id) === String(payload.patientId);
+    });
+    if (row && row.nombre) ctx.patientDisplayName = String(row.nombre);
+  }
+  if (payload && payload.entityType === "todo") {
+    var preview = localData && String(localData.text || "").trim() || serverData && String(serverData.text || "").trim() || "";
+    if (preview) ctx.itemPreview = preview;
+    if (local && local.op === "delete") ctx.intent = "todo-delete";
+    else if (localData.completed) ctx.intent = "todo-complete";
+  }
+  return ctx;
+}
+function conflictEditDraftHandler(payload) {
+  if (payload && payload.entityType === "todo" && payload.localSnapshot && payload.localSnapshot.op === "delete" && payload.serverSnapshot && payload.patientId) {
+    var todo = Object.assign({}, payload.serverSnapshot.data || {}, {
+      id: payload.entityId,
+      version: payload.serverSnapshot.version
+    });
+    emitLiveSyncTodoDelete(payload.patientId, todo);
+  }
+}
 async function reopenConflictDraftFromStore(draftId) {
   var draft2 = await getDraftConflict(draftId);
   if (!draft2) {
@@ -15776,17 +16204,20 @@ async function reopenConflictDraftFromStore(draftId) {
     return;
   }
   var payload = draftRecordToConflictPayload(draft2);
+  var viewerData = conflictDataForViewer(payload);
   openClinicalConflictViewer({
     draftId: draft2.id,
     conflictingKeys: payload.conflictingKeys,
-    localData: payload.localSnapshot && payload.localSnapshot.data,
-    serverData: payload.serverSnapshot && payload.serverSnapshot.data,
+    localData: viewerData.localData,
+    serverData: viewerData.serverData,
+    context: conflictViewerContext(payload),
     onUseServer: function() {
       void applyConflictUseServer(Object.assign({}, payload, { draftId: draft2.id })).then(function() {
         void renderLanPanel();
       });
     },
     onEditDraft: function() {
+      conflictEditDraftHandler(payload);
     },
     onClose: function() {
     }
@@ -15844,6 +16275,10 @@ async function appendLanConflictDraftsSection(root) {
   root.appendChild(card);
 }
 async function handleSyncConflict(payload) {
+  if (shouldAutoResolveTodoConflict(payload) && tryAutoResolveTodoConflict(payload)) {
+    runtime2.showToast("Pendiente alineado con la sala", "info");
+    return;
+  }
   var draftId = await saveDraftConflict({
     transport: payload.transport,
     entityType: payload.entityType,
@@ -15854,17 +16289,20 @@ async function handleSyncConflict(payload) {
     serverSnapshot: payload.serverSnapshot,
     conflictingKeys: payload.conflictingKeys
   });
+  var viewerData = conflictDataForViewer(payload);
   openClinicalConflictViewer({
     draftId,
     conflictingKeys: payload.conflictingKeys,
-    localData: payload.localSnapshot && payload.localSnapshot.data,
-    serverData: payload.serverSnapshot && payload.serverSnapshot.data,
+    localData: viewerData.localData,
+    serverData: viewerData.serverData,
+    context: conflictViewerContext(payload),
     onUseServer: function() {
       void applyConflictUseServer(Object.assign({}, payload, { draftId })).then(function() {
         void renderLanPanel();
       });
     },
     onEditDraft: function() {
+      conflictEditDraftHandler(payload);
     },
     onClose: function() {
     }
@@ -15881,7 +16319,9 @@ function wsConflictDetailToPayload(detail) {
     conflictingKeys: detail.conflictingKeys || [],
     localSnapshot: {
       expectedVersion: detail.client && detail.client.version != null ? detail.client.version : detail.expectedVersion,
-      data: detail.client && detail.client.data
+      data: detail.client && detail.client.data,
+      baseData: getLiveSyncEntityBase(detail.entityType, detail.entityId, detail.patientId) || void 0,
+      op: detail.client && detail.client.op
     },
     serverSnapshot: {
       version: detail.server && detail.server.version,
@@ -15929,7 +16369,8 @@ async function lanPushPatientVersioned(patientId, mutation) {
         expectedVersion: mutation.expectedVersion,
         changedKeys: mutation.changedKeys,
         baseData: mutation.baseData,
-        data: mutation.data
+        data: mutation.data,
+        op: mutation.op
       },
       serverSnapshot: { version: body.serverVersion, data: body.serverData }
     });
@@ -15976,7 +16417,8 @@ async function lanPushHistoriaClinica(patientId, mutation) {
         expectedVersion: mutation.expectedVersion,
         changedKeys: mutation.changedKeys,
         baseData: mutation.baseData,
-        data: mutation.data
+        data: mutation.data,
+        op: mutation.op
       },
       serverSnapshot: { version: body.serverVersion, data: body.serverData }
     });
@@ -16455,6 +16897,11 @@ function applyLiveSyncMerged(merged) {
   var patientRemoved = applyLiveSyncPatientDeletes(merged.patientDeletes || [], idMap);
   storage.saveScheduledProcedures(remapAgendaPatientIds(merged.agenda || [], idMap));
   var todosMap = remapTodosPatientIds(merged.todos || {}, idMap);
+  if (activeLiveSyncRoomId) {
+    var entityVersions = getHostBundleBases(activeLiveSyncRoomId).entityVersions;
+    todosMap = stampTodosWithEntityVersions(todosMap, entityVersions);
+    rememberTodosFromMap(todosMap);
+  }
   var saveTodoPids = /* @__PURE__ */ Object.create(null);
   Object.keys(todosMap).forEach(function(pid) {
     saveTodoPids[pid] = true;
@@ -16549,6 +16996,11 @@ function pushRoomSyncBundleToHost(roomId, envelope) {
             conflictingKeys: conflictKeys.length ? conflictKeys : ["*"],
             localData: envelope,
             serverData: body && body.bundle ? body.bundle : {},
+            context: {
+              entityType: "roomBundle",
+              roomId: rid,
+              transport: "http"
+            },
             onUseServer: function() {
               if (body && body.bundle) {
                 setHostBundleBases(rid, body.bundle);
@@ -16768,15 +17220,16 @@ function emitLiveSyncTodoUpsert(patientId, todo) {
   });
   sendLiveSyncMutation(mutation);
 }
-function emitLiveSyncTodoDelete(patientId, id, updatedAt) {
-  var eid = String(id || "").trim();
+function emitLiveSyncTodoDelete(patientId, todoRef, updatedAt) {
+  var todo = todoRef && typeof todoRef === "object" ? todoRef : null;
+  var eid = todo ? String(todo.id || "").trim() : String(todoRef || "").trim();
   if (!eid) return;
-  var base = getLiveSyncEntityBase("todo", eid, patientId) || {
-    id: eid,
-    version: 0,
-    updatedAt,
-    patientId
-  };
+  var cached = getLiveSyncEntityBase("todo", eid, patientId);
+  var base = cached ? Object.assign({}, cached) : Object.assign({}, todo || { id: eid, updatedAt }, { id: eid, patientId });
+  if (todo && todo.version != null && (cached == null || cached.version == null)) {
+    base.version = Number(todo.version);
+  }
+  if (base.version == null) base.version = Number(todo && todo.version != null ? todo.version : 0);
   var mutation = createMutationBuilder("todo", eid).captureBase(base).build({ roomId: activeLiveSyncRoomId, patientId, op: "delete" });
   sendLiveSyncMutation(mutation);
 }
@@ -17998,7 +18451,7 @@ function formatProgressLine(p) {
 }
 
 // public/js/onboarding-curriculum.mjs
-var CURRICULUM_VERSION = 2;
+var CURRICULUM_VERSION = 7;
 var SALA_CHAPTERS = [
   {
     id: "ch-patient-lab",
@@ -18007,7 +18460,6 @@ var SALA_CHAPTERS = [
       "map_sidebar",
       "map_tabs",
       "map_lab_teaser",
-      "lab_bulk_separator",
       "lab_parse",
       "lab_view",
       "servicio_default"
@@ -18020,13 +18472,12 @@ var SALA_CHAPTERS = [
       "sala_expediente_tabs",
       "historia_clinica",
       "estado_actual",
+      "estado_actual_registro",
+      "estado_actual_snapshot",
+      "estado_actual_charts",
+      "estado_actual_historial",
       "eventualidades"
     ]
-  },
-  {
-    id: "ch-clinical-tools",
-    title: "Manejo cl\xEDnico",
-    stepIds: ["sala_manejo"]
   },
   {
     id: "ch-results",
@@ -18057,7 +18508,6 @@ var IC_CHAPTERS = [
       "map_sidebar",
       "map_tabs",
       "map_lab_teaser",
-      "lab_bulk_separator",
       "lab_parse",
       "lab_view"
     ]
@@ -18067,7 +18517,6 @@ var IC_CHAPTERS = [
     title: "Expediente y cl\xEDnico",
     stepIds: [
       "ic_expediente_tabs",
-      "sala_manejo",
       "sala_tend",
       "sala_tend_chart",
       "sala_soap",
@@ -18152,7 +18601,7 @@ var ACTION_STEPS = /* @__PURE__ */ new Set([
   "lab_parse",
   "ic_nota",
   "ic_indica",
-  "estado_actual",
+  "estado_actual_registro",
   "servicio_default"
 ]);
 var TARGETS = {
@@ -18252,7 +18701,36 @@ var TARGETS = {
   estado_actual: {
     appTab: "nota",
     innerTab: "estadoActual",
-    selector: "#exp-segment-estadoActual, #itab-content-estadoActual",
+    selector: "#ea-snapshot, #ea-charts-mount, #ea-historial",
+    focus: false,
+    spotlightClass: "tour-spotlight-action"
+  },
+  estado_actual_registro: {
+    appTab: "nota",
+    innerTab: "estadoActual",
+    selector: "#ea-registro-backdrop.open .ea-vitals-grid, #ea-registro-backdrop.open .ea-glu-section, #ea-registro-backdrop.open .ea-io-grid",
+    focus: false,
+    spotlightClass: "tour-spotlight-action",
+    openEaRegistro: true
+  },
+  estado_actual_snapshot: {
+    appTab: "nota",
+    innerTab: "estadoActual",
+    selector: "#ea-snapshot",
+    focus: false,
+    spotlightClass: "tour-spotlight-action"
+  },
+  estado_actual_charts: {
+    appTab: "nota",
+    innerTab: "estadoActual",
+    selector: "#ea-charts-mount, .ea-charts-section",
+    focus: false,
+    spotlightClass: "tour-spotlight-action"
+  },
+  estado_actual_historial: {
+    appTab: "nota",
+    innerTab: "estadoActual",
+    selector: "#ea-historial, #ea-texto, .ea-texto-head",
     focus: false,
     spotlightClass: "tour-spotlight-action"
   },
@@ -18260,7 +18738,7 @@ var TARGETS = {
   listado_problemas: {
     appTab: "nota",
     innerTab: "listado",
-    selector: "#btn-gen-listado, #itab-salida",
+    selector: "#listado-form, #exp-segment-listado, #btn-gen-listado",
     focus: false,
     spotlightClass: "tour-spotlight-action"
   },
@@ -18485,6 +18963,8 @@ function parseCultureBlockFromLineArray(lines, set, seq) {
   if (negativo && !organismo) organismo = "Negativo";
   else if (negativo && /^NEGATIVO$/i.test(organismo)) organismo = "Negativo";
   else if (!organismo) organismo = "\u2014";
+  var bodyLines = lines.slice(1);
+  var cuenta = parseCuentaFromCultivoChunkLines(bodyLines);
   var sortKeyMs = sortMs;
   if (fechaMuestra) {
     var fmNorm = normalizeFechaLabHistory(fechaMuestra) || fechaMuestra;
@@ -18496,6 +18976,7 @@ function parseCultureBlockFromLineArray(lines, set, seq) {
       fechaMuestra: fechaMuestra || "\u2014",
       sitio: sitio || "\u2014",
       organismo,
+      cuenta: cuenta || "",
       negativo,
       sortMs,
       sortKeyMs,
@@ -19354,6 +19835,734 @@ function buildTourMonitoreoHistorial(ref) {
     }
   };
 }
+function getTourRegistroFormSample() {
+  return {
+    ok: true,
+    vitals: { tas: 130, tad: 80, fc: 94, fr: 22, temp: 37, sat: 96 },
+    alteredAt: {},
+    glucometrias: [{ value: 144, time: "08:00" }],
+    io: { ing: 200, egr: 100, evac: "NO" }
+  };
+}
+
+// public/js/tour-demo-dates.mjs
+var SOME_MONTHS_EN = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec"
+];
+var FECHA_REGISTRO_RE = /Fecha Registro:\t[^\n]+/;
+function addTourDays(d, days) {
+  const out = new Date(d.getTime());
+  out.setDate(out.getDate() + days);
+  return out;
+}
+function formatTourFechaSlash(d) {
+  return String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0") + "/" + d.getFullYear();
+}
+function formatTourHora(d) {
+  return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+}
+function formatTourIsoDate(d) {
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function formatSomeFechaRegistroEn(d, hour24, minute) {
+  const h = hour24 % 12 || 12;
+  const ampm = hour24 < 12 ? "AM" : "PM";
+  const minStr = String(minute).padStart(2, "0");
+  return SOME_MONTHS_EN[d.getMonth()] + " " + d.getDate() + " " + d.getFullYear() + " " + h + ":" + minStr + ampm;
+}
+function patchSomeLabFechaRegistro(report, date, opts) {
+  const hour = opts && opts.hour != null ? opts.hour : 9;
+  const minute = opts && opts.minute != null ? opts.minute : 0;
+  const line = "Fecha Registro:	" + formatSomeFechaRegistroEn(date, hour, minute);
+  return String(report || "").replace(FECHA_REGISTRO_RE, line);
+}
+function buildTourDemoDates(ref) {
+  const now = ref instanceof Date ? ref : /* @__PURE__ */ new Date();
+  const fiuxDate = addTourDays(now, -2);
+  const fimiDate = addTourDays(now, -1);
+  const labOlderDate = addTourDays(now, -8);
+  const labNewerDate = addTourDays(now, -1);
+  const demoSomeLabReport = patchSomeLabFechaRegistro(DEMO_SOME_LAB_REPORT, labNewerDate, {
+    hour: 9,
+    minute: 42
+  });
+  const olderDemoSomeLabReport = patchSomeLabFechaRegistro(OLDER_DEMO_SOME_LAB_REPORT, labOlderDate, {
+    hour: 7,
+    minute: 18
+  });
+  const demoGarciaLabReport = patchSomeLabFechaRegistro(DEMO_GARCIA_LAB_REPORT, now, {
+    hour: 11,
+    minute: 5
+  });
+  return {
+    fecha: formatTourFechaSlash(now),
+    hora: formatTourHora(now),
+    fiuxFecha: formatTourIsoDate(fiuxDate),
+    fimiFecha: formatTourIsoDate(fimiDate),
+    labFechaOlder: formatTourFechaSlash(labOlderDate),
+    labFechaNewer: formatTourFechaSlash(labNewerDate),
+    demoSomeLabReport,
+    olderDemoSomeLabReport,
+    demoGarciaLabReport,
+    demoTourLabPaste: demoSomeLabReport + "\n\n" + olderDemoSomeLabReport
+  };
+}
+function buildTourDemoLabPasteBoth(ref) {
+  const bundle = buildTourDemoDates(ref);
+  return bundle.demoTourLabPaste + "\n" + LAB_BULK_PATIENT_SEPARATOR + "\n" + bundle.demoGarciaLabReport;
+}
+
+// public/js/tour-demo-patient.mjs
+var DEMO_PATIENT_ID = "demo-onboarding";
+var DEMO_PATIENT_ID_2 = "demo-onboarding-2";
+var DEMO_REGISTRO = "0008421-7";
+var DEMO_REGISTRO_2 = "0007755-3";
+var REGISTRO_TO_DEMO_ID = {
+  [DEMO_REGISTRO]: DEMO_PATIENT_ID,
+  [DEMO_REGISTRO_2]: DEMO_PATIENT_ID_2
+};
+var hooks = {};
+function registerTourDemoPatientHooks(partial) {
+  if (!partial || typeof partial !== "object") return;
+  Object.assign(hooks, partial);
+}
+function getDemoPatientIdForRegistro(registro) {
+  return REGISTRO_TO_DEMO_ID[String(registro || "").trim()] || null;
+}
+function getTourDemoAdmitDefaults(registro) {
+  if (!hooks.isTourActive || !hooks.isTourActive()) return null;
+  var r = String(registro || "").trim();
+  if (r === DEMO_REGISTRO) return { cuarto: "214", cama: "2" };
+  if (r === DEMO_REGISTRO_2) return { cuarto: "214", cama: "4" };
+  return null;
+}
+function isTourDemoPatientId(id, patientsList) {
+  if (!id) return false;
+  if (id === DEMO_PATIENT_ID || id === DEMO_PATIENT_ID_2) return true;
+  if (!patientsList) return false;
+  var p = patientsList.find(function(x) {
+    return x && x.id === id;
+  });
+  return !!(p && p.isDemo);
+}
+function shouldTourStayOnLabAfterLabCommit() {
+  return !!(hooks.isTourActive && hooks.isTourActive() && hooks.getTourStep && hooks.getTourStep() === "lab_parse");
+}
+function findTourDemoPatientByRegistro(patientsList, registro) {
+  var r = String(registro || "").trim();
+  if (!r || !patientsList) return null;
+  return patientsList.find(function(p) {
+    return p && String(p.registro || "").trim() === r;
+  }) || null;
+}
+function tourDemoPatientsBothInCensus(patientsList) {
+  return !!(findTourDemoPatientByRegistro(patientsList, DEMO_REGISTRO) && findTourDemoPatientByRegistro(patientsList, DEMO_REGISTRO_2));
+}
+function hasLabHistory(hist) {
+  return !!(hist && (Array.isArray(hist) ? hist.length : Object.keys(hist).length));
+}
+function shouldSelectTourPrimaryAfterLabCommit(committedPatientId, patientsList) {
+  if (!hooks.isTourActive || !hooks.isTourActive()) return false;
+  if (committedPatientId === DEMO_PATIENT_ID) return false;
+  if (committedPatientId !== DEMO_PATIENT_ID_2) return false;
+  return !!findTourDemoPatientByRegistro(patientsList, DEMO_REGISTRO);
+}
+function tourDemoLabCompleteForTour(patientsList, labHistoryMap) {
+  var p1 = findTourDemoPatientByRegistro(patientsList, DEMO_REGISTRO);
+  var p2 = findTourDemoPatientByRegistro(patientsList, DEMO_REGISTRO_2);
+  if (!p1 || !p2) return false;
+  return hasLabHistory(labHistoryMap && labHistoryMap[p1.id]) && hasLabHistory(labHistoryMap && labHistoryMap[p2.id]);
+}
+function adoptTourPatientOnCommit(patient, registro) {
+  if (!hooks.isTourActive || !hooks.isTourActive()) {
+    return { patient };
+  }
+  var demoId = getDemoPatientIdForRegistro(registro);
+  if (!demoId) {
+    return { patient };
+  }
+  patient.id = demoId;
+  patient.isDemo = true;
+  var stayOnLab = shouldTourStayOnLabAfterLabCommit();
+  return {
+    patient,
+    afterCommit: function() {
+      if (hooks.applyBundle) hooks.applyBundle(demoId, registro);
+      if (hooks.scheduleLabPatientRegistration) hooks.scheduleLabPatientRegistration();
+      if (stayOnLab) {
+        if (hooks.switchAppTab) hooks.switchAppTab("lab");
+        if (hooks.showToast) {
+          hooks.showToast(
+            "Paciente registrado. Registra al otro paciente demo si falta y pulsa Procesar otra vez.",
+            "info"
+          );
+        }
+      }
+    }
+  };
+}
+
+// public/js/tour-demo-todos.mjs
+var TODOS_LS_KEY2 = "rpc-todos";
+function readTodosMap2() {
+  try {
+    const raw = localStorage.getItem(TODOS_LS_KEY2);
+    return raw ? JSON.parse(raw) : {};
+  } catch (_e) {
+    return {};
+  }
+}
+function writeTodosMap2(map) {
+  try {
+    localStorage.setItem(TODOS_LS_KEY2, JSON.stringify(map || {}));
+  } catch (_e) {
+  }
+}
+function todoEntry2(id, text, priority, completed) {
+  const now = (/* @__PURE__ */ new Date()).toISOString();
+  return {
+    id,
+    text,
+    priority,
+    completed: !!completed,
+    createdAt: now,
+    updatedAt: now
+  };
+}
+function buildTourDemoTodosForPatient(patientId) {
+  if (patientId !== DEMO_PATIENT_ID) return [];
+  return [
+    todoEntry2("tour-todo-bh", "BH y QS de control ma\xF1ana (IRC / anemia)", "alta", false),
+    todoEntry2(
+      "tour-todo-glu",
+      "Repetir glucometr\xEDa si >180 mg/dL en pr\xF3ximo turno",
+      "media",
+      false
+    ),
+    todoEntry2(
+      "tour-todo-atb",
+      "Ajustar ATB seg\xFAn antibiograma cuando est\xE9 disponible",
+      "alta",
+      false
+    ),
+    todoEntry2(
+      "tour-todo-infecto",
+      "Interconsulta Infectolog\xEDa \u2014 documentar en nota",
+      "media",
+      false
+    ),
+    todoEntry2("tour-todo-io", "Balance h\xEDdrico estricto \u2014 registrar I/O en turno", "baja", false),
+    todoEntry2("tour-todo-eco", "Valorar ecograf\xEDa abdominal seg\xFAn evoluci\xF3n", "media", false)
+  ];
+}
+function seedTourDemoTodos(patientId) {
+  const pid = patientId || DEMO_PATIENT_ID;
+  const todos = buildTourDemoTodosForPatient(pid);
+  if (!todos.length) return;
+  const map = readTodosMap2();
+  map[pid] = todos;
+  writeTodosMap2(map);
+}
+function clearTourDemoTodos() {
+  const map = readTodosMap2();
+  let changed = false;
+  if (map[DEMO_PATIENT_ID]) {
+    delete map[DEMO_PATIENT_ID];
+    changed = true;
+  }
+  if (changed) writeTodosMap2(map);
+}
+
+// lib/historia-clinica/clinical-text.mjs
+var SLUG_STRING_KEYS = /* @__PURE__ */ new Set([
+  "id",
+  "substanceId",
+  "conditionId",
+  "relativeId",
+  "linkedFrom",
+  "stage"
+]);
+var SKIP_STRING_KEYS = /* @__PURE__ */ new Set([
+  "patientId",
+  "createdAt",
+  "updatedAt",
+  "capturedAt",
+  "setId",
+  "source",
+  "clientId",
+  "fecha",
+  "hora"
+]);
+function toClinicalHistoryText(value) {
+  if (value == null) return "";
+  return String(value).toUpperCase();
+}
+var PRESERVE_LITERAL = /* @__PURE__ */ new Set([
+  "negado",
+  "activo",
+  "exfumador",
+  "dia",
+  "daily",
+  "semana",
+  "weekly",
+  "fin",
+  "weekend",
+  "mes",
+  "monthly",
+  "si",
+  "no"
+]);
+function shouldPreserveString(key, value, parentKey) {
+  if (typeof value !== "string") return true;
+  if (!value.trim()) return true;
+  if (SKIP_STRING_KEYS.has(key)) return true;
+  if (key === "conditions" || key === "checks" || parentKey === "conditions" || parentKey === "checks") {
+    return true;
+  }
+  if (SLUG_STRING_KEYS.has(key) && /^[a-z][a-z0-9_]*$/i.test(value)) return true;
+  if (key === "status" || key === "frequencyKind" || key === "portadorVih") {
+    if (PRESERVE_LITERAL.has(value.trim().toLowerCase())) return true;
+  }
+  return false;
+}
+function applyClinicalHistoryUppercase(value, key, parentKey) {
+  if (value == null) return value;
+  if (typeof value === "string") {
+    if (shouldPreserveString(key || "", value, parentKey)) return value;
+    return toClinicalHistoryText(value);
+  }
+  if (typeof value === "number" || typeof value === "boolean") return value;
+  if (Array.isArray(value)) {
+    return value.map(function(item) {
+      return applyClinicalHistoryUppercase(item, key, parentKey);
+    });
+  }
+  if (typeof value === "object") {
+    Object.keys(value).forEach(function(k) {
+      value[k] = applyClinicalHistoryUppercase(value[k], k, key);
+    });
+    return value;
+  }
+  return value;
+}
+function shouldUppercaseHcInput(el) {
+  if (!el || !(el instanceof HTMLElement)) return false;
+  if (el.dataset && el.dataset.hcNoUppercase != null) return false;
+  const tag = el.tagName;
+  if (tag === "SELECT") return false;
+  if (tag === "TEXTAREA") return true;
+  if (tag !== "INPUT") return false;
+  const type = (el.getAttribute("type") || "text").toLowerCase();
+  return type === "text" || type === "" || type === "search";
+}
+function applyUppercaseToHcInput(el) {
+  if (!shouldUppercaseHcInput(el)) return;
+  const next = toClinicalHistoryText(el.value);
+  if (el.value === next) return;
+  const start = el.selectionStart;
+  const end = el.selectionEnd;
+  el.value = next;
+  if (start != null && end != null) {
+    try {
+      el.setSelectionRange(start, end);
+    } catch (_) {
+    }
+  }
+}
+
+// public/js/features/eventualidades-panel.mjs
+var _editingEntryId = null;
+var _dayOpenPrefs = /* @__PURE__ */ new Map();
+function normalizeEventualidadText(text) {
+  return toClinicalHistoryText(text).trim();
+}
+var rt8 = {
+  getActiveId() {
+    return null;
+  },
+  showToast(_msg, _type) {
+  }
+};
+function registerEventualidadesRuntime(partial) {
+  if (partial && typeof partial === "object") Object.assign(rt8, partial);
+}
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+function toEventualidadDateValue(when) {
+  const d = when == null ? /* @__PURE__ */ new Date() : when instanceof Date ? when : new Date(when);
+  if (!Number.isFinite(d.getTime())) return "";
+  return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+}
+function eventualidadDateToIso(dateIso) {
+  const raw = String(dateIso || "").trim();
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
+  if (!m) return eventualidadDateToIso(toEventualidadDateValue(/* @__PURE__ */ new Date()));
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  const day = Number(m[3]);
+  const dt = new Date(y, mo - 1, day, 12, 0, 0, 0);
+  return Number.isFinite(dt.getTime()) ? dt.toISOString() : (/* @__PURE__ */ new Date()).toISOString();
+}
+function appendEventualidad(store, text, clientId, atIso) {
+  const t2 = normalizeEventualidadText(text);
+  if (!t2) return store || { entries: [] };
+  const at = atIso && String(atIso).trim() ? String(atIso).trim() : eventualidadDateToIso(toEventualidadDateValue(/* @__PURE__ */ new Date()));
+  const entry2 = {
+    id: "ev_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    at,
+    text: t2,
+    clientId: clientId || void 0
+  };
+  const entries = Array.isArray(store && store.entries) ? store.entries.slice() : [];
+  entries.push(entry2);
+  return { entries };
+}
+function updateEventualidad(store, entryId, patch) {
+  const id = String(entryId || "").trim();
+  if (!id) return store || { entries: [] };
+  const entries = Array.isArray(store && store.entries) ? store.entries.slice() : [];
+  const idx = entries.findIndex(function(e) {
+    return e && String(e.id) === id;
+  });
+  if (idx === -1) return { entries };
+  const cur = entries[idx];
+  const text = patch && patch.text != null ? normalizeEventualidadText(patch.text) : normalizeEventualidadText(cur.text);
+  if (!text) return { entries };
+  const at = patch && patch.at != null && String(patch.at).trim() ? String(patch.at).trim() : cur.at;
+  entries[idx] = Object.assign({}, cur, { text, at });
+  return { entries };
+}
+function findEventualidadEntry(store, entryId) {
+  const id = String(entryId || "").trim();
+  if (!id) return null;
+  return (Array.isArray(store && store.entries) ? store.entries : []).find(function(e) {
+    return e && String(e.id) === id;
+  }) || null;
+}
+function removeEventualidad(store, entryId) {
+  const id = String(entryId || "").trim();
+  if (!id) return store || { entries: [] };
+  const entries = (Array.isArray(store && store.entries) ? store.entries : []).filter(function(e) {
+    return e && String(e.id) !== id;
+  });
+  return { entries };
+}
+function dayKeyFromIso(iso) {
+  if (!iso) return "unknown";
+  try {
+    const d = new Date(iso);
+    if (!Number.isFinite(d.getTime())) return "unknown";
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return y + "-" + m + "-" + day;
+  } catch (_e) {
+    return "unknown";
+  }
+}
+function formatDayLabel(dayKey, now) {
+  if (dayKey === "unknown") return "Sin fecha";
+  const parts = String(dayKey).split("-").map(Number);
+  if (parts.length !== 3 || parts.some(function(n) {
+    return !Number.isFinite(n);
+  })) {
+    return String(dayKey);
+  }
+  const date = new Date(parts[0], parts[1] - 1, parts[2]);
+  if (!Number.isFinite(date.getTime())) return String(dayKey);
+  const ref = now instanceof Date && Number.isFinite(now.getTime()) ? now : /* @__PURE__ */ new Date();
+  const todayKey = dayKeyFromIso(ref.toISOString());
+  const yesterday = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate() - 1);
+  const yesterdayKey = dayKeyFromIso(yesterday.toISOString());
+  if (dayKey === todayKey) return "Hoy";
+  if (dayKey === yesterdayKey) return "Ayer";
+  return date.toLocaleDateString("es-MX", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  });
+}
+function formatDaySubLabel(dayKey, now) {
+  if (dayKey === "unknown") return "";
+  const parts = String(dayKey).split("-").map(Number);
+  if (parts.length !== 3 || parts.some(function(n) {
+    return !Number.isFinite(n);
+  })) {
+    return "";
+  }
+  const date = new Date(parts[0], parts[1] - 1, parts[2]);
+  if (!Number.isFinite(date.getTime())) return "";
+  const ref = now instanceof Date && Number.isFinite(now.getTime()) ? now : /* @__PURE__ */ new Date();
+  const todayKey = dayKeyFromIso(ref.toISOString());
+  const yesterday = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate() - 1);
+  const yesterdayKey = dayKeyFromIso(yesterday.toISOString());
+  if (dayKey !== todayKey && dayKey !== yesterdayKey) return "";
+  return date.toLocaleDateString("es-MX", {
+    weekday: "long",
+    day: "numeric",
+    month: "short"
+  });
+}
+function groupEntriesByDay(entries, now) {
+  const map = /* @__PURE__ */ new Map();
+  (entries || []).forEach(function(e) {
+    const key = dayKeyFromIso(e && e.at);
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(e);
+  });
+  return [...map.entries()].sort(function(a, b) {
+    return String(b[0]).localeCompare(String(a[0]));
+  }).map(function(pair) {
+    const day = pair[0];
+    const dayEntries = pair[1].slice().sort(function(a, b) {
+      const byAt = String(b.at || "").localeCompare(String(a.at || ""));
+      if (byAt !== 0) return byAt;
+      return String(b.id || "").localeCompare(String(a.id || ""));
+    });
+    return {
+      day,
+      label: formatDayLabel(day, now),
+      isToday: day === dayKeyFromIso((now || /* @__PURE__ */ new Date()).toISOString()),
+      entries: dayEntries
+    };
+  });
+}
+function esc10(s) {
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function daySectionIsOpen(dayGroup, editingId) {
+  if (_dayOpenPrefs.has(dayGroup.day)) return _dayOpenPrefs.get(dayGroup.day);
+  if (dayGroup.isToday) return true;
+  if (editingId && dayGroup.entries.some(function(e) {
+    return e && String(e.id) === String(editingId);
+  })) {
+    return true;
+  }
+  return false;
+}
+function renderEntryCard(entry2, editingId) {
+  const isEditing = editingId && String(entry2.id) === String(editingId);
+  return '<article class="ev-card' + (isEditing ? " ev-card--editing" : "") + '" data-entry-id="' + esc10(entry2.id) + '"><p class="ev-card__text">' + esc10(normalizeEventualidadText(entry2.text)) + '</p><footer class="ev-card__foot"><div class="ev-card__actions"><button type="button" class="ev-card__edit" data-ev-edit="' + esc10(entry2.id) + '" aria-label="Editar eventualidad">Editar</button><button type="button" class="ev-card__delete" data-ev-delete="' + esc10(entry2.id) + '" aria-label="Eliminar eventualidad">Eliminar</button></div></footer></article>';
+}
+function renderDaySection(dayGroup, editingId, now) {
+  const n = dayGroup.entries.length;
+  const countLabel = n === 1 ? "1 registro" : n + " registros";
+  const subLabel = formatDaySubLabel(dayGroup.day, now);
+  const todayClass = dayGroup.isToday ? " ev-day--today" : "";
+  const isOpen = daySectionIsOpen(dayGroup, editingId);
+  return '<details class="ev-day' + todayClass + '"' + (isOpen ? " open" : "") + ' data-day="' + esc10(dayGroup.day) + '"><summary class="ev-day__summary"><span class="ev-day__chevron" aria-hidden="true"></span><div class="ev-day__titles"><span class="ev-day__pill">' + esc10(dayGroup.label) + "</span>" + (subLabel ? '<span class="ev-day__date">' + esc10(subLabel) + "</span>" : "") + '</div><span class="ev-day__count">' + esc10(countLabel) + '</span></summary><div class="ev-day__panel">' + dayGroup.entries.map(function(e) {
+    return renderEntryCard(e, editingId);
+  }).join("") + "</div></details>";
+}
+function wireEventualidadesUppercase(input) {
+  if (!input || input.dataset.evUpperWired === "1") return;
+  input.dataset.evUpperWired = "1";
+  input.style.textTransform = "uppercase";
+  input.addEventListener("input", function() {
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    const upper = toClinicalHistoryText(input.value);
+    if (upper !== input.value) {
+      input.value = upper;
+      if (start != null && end != null) {
+        input.setSelectionRange(start, end);
+      }
+    }
+  });
+}
+function renderComposeBlock(editingEntry) {
+  const isEdit = !!editingEntry;
+  const atValue = isEdit ? toEventualidadDateValue(editingEntry.at) : toEventualidadDateValue(/* @__PURE__ */ new Date());
+  const textValue = isEdit ? String(editingEntry.text || "") : "";
+  return '<footer class="ev-compose"><div class="ev-compose__card' + (isEdit ? " ev-compose__card--edit" : "") + '"><div class="ev-compose__top"><label class="ev-compose__label" for="eventualidades-input">' + (isEdit ? "Editar eventualidad" : "Nueva eventualidad") + '</label><div class="ev-compose__date-slot"><input type="date" id="eventualidades-at" class="rpc-date-input" value="' + esc10(atValue) + '" title="Fecha de la eventualidad" aria-label="Fecha de la eventualidad"></div></div><textarea id="eventualidades-input" class="ev-compose__input" rows="2" placeholder="Describe lo ocurrido\u2026">' + esc10(textValue) + '</textarea><div class="ev-compose__actions"><span class="ev-compose__hint">' + (isEdit ? "Puedes cambiar la fecha y el texto" : "Elige una fecha anterior si aplica") + '</span><div class="ev-compose__btns">' + (isEdit ? '<button type="button" class="btn-secondary ev-compose__cancel" id="eventualidades-cancel">Cancelar</button>' : "") + '<button type="button" class="btn-generate ev-compose__submit" id="eventualidades-add">' + (isEdit ? "Guardar" : "Agregar") + "</button></div></div></div></footer>";
+}
+function activePatient3() {
+  const id = rt8.getActiveId();
+  if (!id) return null;
+  return patients.find(function(p) {
+    return String(p.id) === String(id);
+  });
+}
+function ensureEventualidades(patient) {
+  if (!patient.eventualidades || typeof patient.eventualidades !== "object") {
+    patient.eventualidades = { entries: [] };
+  }
+  if (!Array.isArray(patient.eventualidades.entries)) {
+    patient.eventualidades.entries = [];
+  }
+  return patient.eventualidades;
+}
+function hostPatientMutationBase(patient, hostRow) {
+  if (hostRow) return hostRow;
+  return Object.assign({}, patient, { version: 0 });
+}
+async function persistEventualidades(patient, store) {
+  if (!isLanSessionConfiguredForRest()) {
+    patient.eventualidades = store;
+    saveState();
+    return { ok: true };
+  }
+  const hostRow = await lanFetchHostPatientRow(patient.id);
+  const mutation = createMutationBuilder("patient", patient.id).captureBase(hostPatientMutationBase(patient, hostRow)).set("eventualidades", store).build();
+  const out = await lanPushPatientVersioned(patient.id, mutation);
+  if (!out.ok) {
+    if (!out.conflict) {
+      const msg = out.status === 401 || out.status === 403 ? "No se pudo autenticar con el host LAN. Revisa el c\xF3digo de equipo." : "No se pudo guardar la eventualidad en el host LAN.";
+      rt8.showToast(msg, "error");
+    }
+    return out;
+  }
+  if (out.data) Object.assign(patient, out.data);
+  else patient.eventualidades = store;
+  saveState();
+  return out;
+}
+function renderEventualidadesPanel(mountEl) {
+  if (!mountEl) return;
+  const patient = activePatient3();
+  if (!patient) {
+    mountEl.innerHTML = '<p class="tend-empty">Selecciona un paciente.</p>';
+    return;
+  }
+  const store = ensureEventualidades(patient);
+  const editingEntry = _editingEntryId ? findEventualidadEntry(store, _editingEntryId) : null;
+  if (_editingEntryId && !editingEntry) _editingEntryId = null;
+  const byDay = groupEntriesByDay(store.entries);
+  const hasEntries = byDay.length > 0;
+  mountEl.innerHTML = '<div class="ev-panel"><header class="ev-panel__head"><p class="ev-panel__hint">Bit\xE1cora cronol\xF3gica de la hospitalizaci\xF3n, agrupada por d\xEDa.</p></header><div class="ev-timeline' + (hasEntries ? "" : " ev-timeline--empty") + '" role="feed" aria-label="Eventualidades por d\xEDa">' + (hasEntries ? '<div class="ev-timeline__days">' + byDay.map(function(day) {
+    return renderDaySection(day, _editingEntryId, /* @__PURE__ */ new Date());
+  }).join("") + "</div>" : '<p class="ev-empty">A\xFAn no hay eventualidades. Registra abajo lo ocurrido (puedes elegir fechas anteriores).</p>') + "</div>" + renderComposeBlock(editingEntry) + "</div>";
+  refreshRpcDateFields(mountEl);
+  wireEventualidadesUppercase(mountEl.querySelector("#eventualidades-input"));
+  mountEl.querySelectorAll(".ev-day").forEach(function(dayEl) {
+    dayEl.addEventListener("toggle", function() {
+      const key = dayEl.getAttribute("data-day");
+      if (key) _dayOpenPrefs.set(key, dayEl.open);
+    });
+  });
+  const addBtn = mountEl.querySelector("#eventualidades-add");
+  const input = mountEl.querySelector("#eventualidades-input");
+  const atInput = mountEl.querySelector("#eventualidades-at");
+  const cancelBtn = mountEl.querySelector("#eventualidades-cancel");
+  const timeline = mountEl.querySelector(".ev-timeline");
+  if (!addBtn || !input || !atInput) return;
+  function readAtIso() {
+    return eventualidadDateToIso(atInput.value);
+  }
+  async function submitEntry() {
+    const text = input.value;
+    const atIso = readAtIso();
+    let next;
+    if (_editingEntryId) {
+      next = updateEventualidad(store, _editingEntryId, { text, at: atIso });
+    } else {
+      next = appendEventualidad(store, text, "", atIso);
+    }
+    const out = await persistEventualidades(patient, next);
+    if (out && out.ok) {
+      const wasEdit = !!_editingEntryId;
+      _editingEntryId = null;
+      rt8.showToast(wasEdit ? "Eventualidad actualizada." : "Eventualidad guardada.", "success");
+      renderEventualidadesPanel(mountEl);
+    }
+  }
+  addBtn.onclick = function() {
+    void submitEntry();
+  };
+  if (cancelBtn) {
+    cancelBtn.onclick = function() {
+      _editingEntryId = null;
+      renderEventualidadesPanel(mountEl);
+    };
+  }
+  if (timeline) {
+    timeline.addEventListener("click", function(ev) {
+      const delBtn = ev.target.closest("[data-ev-delete]");
+      if (delBtn) {
+        const delId = delBtn.getAttribute("data-ev-delete");
+        if (!delId) return;
+        const row = findEventualidadEntry(store, delId);
+        const preview = row ? String(row.text || "").trim().slice(0, 80) : "";
+        const msg = preview ? "\xBFEliminar esta eventualidad?\n\n\u201C" + preview + (preview.length >= 80 ? "\u2026" : "") + "\u201D" : "\xBFEliminar esta eventualidad?";
+        if (!confirm(msg)) return;
+        void (async function() {
+          const next = removeEventualidad(store, delId);
+          if (_editingEntryId === delId) _editingEntryId = null;
+          const out = await persistEventualidades(patient, next);
+          if (out && out.ok) {
+            rt8.showToast("Eventualidad eliminada.", "success");
+            renderEventualidadesPanel(mountEl);
+          }
+        })();
+        return;
+      }
+      const btn = ev.target.closest("[data-ev-edit]");
+      if (!btn) return;
+      const id = btn.getAttribute("data-ev-edit");
+      if (!id) return;
+      _editingEntryId = id;
+      renderEventualidadesPanel(mountEl);
+      const compose = mountEl.querySelector(".ev-compose");
+      if (compose && compose.scrollIntoView) {
+        compose.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+    });
+  }
+  input.addEventListener("keydown", function(ev) {
+    if (ev.key === "Enter" && (ev.metaKey || ev.ctrlKey)) {
+      ev.preventDefault();
+      void submitEntry();
+    }
+    if (ev.key === "Escape" && _editingEntryId) {
+      ev.preventDefault();
+      _editingEntryId = null;
+      renderEventualidadesPanel(mountEl);
+    }
+  });
+}
+function invalidateEventualidadesPanel() {
+  _editingEntryId = null;
+  _dayOpenPrefs.clear();
+}
+
+// public/js/tour-demo-eventualidades.mjs
+function buildTourDemoEventualidades(ref) {
+  const now = ref instanceof Date ? ref : /* @__PURE__ */ new Date();
+  const days = [
+    {
+      offset: -2,
+      text: "Ingreso por cuadro abdominal. Refiere molestia leve y n\xE1usea ocasional. Se inici\xF3 sueroterapia, monitorizaci\xF3n y BH/QS de ingreso (anemia, funci\xF3n renal estable). Se document\xF3 en nota de ingreso."
+    },
+    {
+      offset: -1,
+      text: "Evoluci\xF3n subjetiva favorable: mejor tolerancia oral l\xEDquida, sin dolor en reposo. Se ajust\xF3 esquema ATB emp\xEDrico y se tomaron cultivos. Diuresis conservada en turno. Familia informada."
+    },
+    {
+      offset: 0,
+      text: "Hoy refiere menos n\xE1usea y buen descanso. Se registraron SV y glucometr\xEDa en turno; pendiente antibiograma e interconsulta de Infectolog\xEDa. Se reforz\xF3 educaci\xF3n sobre signos de alarma."
+    }
+  ];
+  let store = { entries: [] };
+  days.forEach(function(row, idx) {
+    const d = addTourDays(now, row.offset);
+    const atIso = eventualidadDateToIso(formatTourIsoDate(d));
+    store = appendEventualidad(store, row.text, "tour-ev-" + idx, atIso);
+  });
+  return store;
+}
 
 // public/js/features/estado-actual-ranges.mjs
 var RANGES = {
@@ -19476,14 +20685,14 @@ var VITAL_FAMILIES = [
   { id: "metab", title: "Metab\xF3lico", keys: ["temp"] }
 ];
 var FAMILY_COLORS = ["#2563eb", "#dc2626", "#059669", "#7c3aed", "#b45309", "#0891b2"];
-function pad2(n) {
+function pad22(n) {
   return String(n).padStart(2, "0");
 }
 function formatChartLabel(iso) {
   if (!iso) return "";
   var d = new Date(iso);
   if (isNaN(d.getTime())) return "";
-  return pad2(d.getDate()) + "/" + pad2(d.getMonth() + 1) + " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+  return pad22(d.getDate()) + "/" + pad22(d.getMonth() + 1) + " " + pad22(d.getHours()) + ":" + pad22(d.getMinutes());
 }
 function hasIoPair(io) {
   if (!io || typeof io !== "object") return false;
@@ -20138,11 +21347,13 @@ var MED_FIELD_LABELS = {
   antihta: "AntiHTA / diur\xE9ticos",
   vasop: "Vasopresores"
 };
-var rt8 = {
+var rt9 = {
   getActiveId() {
     return null;
   },
   showToast() {
+  },
+  onMedicionRegistered() {
   },
   getSettings() {
     return {};
@@ -20155,21 +21366,21 @@ var rt8 = {
 };
 function registerEstadoActualPanelRuntime(partial) {
   if (!partial || typeof partial !== "object") return;
-  Object.assign(rt8, partial);
+  Object.assign(rt9, partial);
 }
-function pad22(n) {
+function pad23(n) {
   return String(n).padStart(2, "0");
 }
 function formatEaSavedLabel(savedAt) {
   if (!savedAt) return "";
   var d = new Date(savedAt);
   if (isNaN(d.getTime())) return "";
-  return "Guardado " + pad22(d.getDate()) + "/" + pad22(d.getMonth() + 1) + " " + pad22(d.getHours()) + ":" + pad22(d.getMinutes());
+  return "Guardado " + pad23(d.getDate()) + "/" + pad23(d.getMonth() + 1) + " " + pad23(d.getHours()) + ":" + pad23(d.getMinutes());
 }
 function toDatetimeLocalValue(when) {
   var d = when == null ? /* @__PURE__ */ new Date() : when instanceof Date ? when : new Date(when);
   if (isNaN(d.getTime())) return "";
-  return d.getFullYear() + "-" + pad22(d.getMonth() + 1) + "-" + pad22(d.getDate()) + "T" + pad22(d.getHours()) + ":" + pad22(d.getMinutes());
+  return d.getFullYear() + "-" + pad23(d.getMonth() + 1) + "-" + pad23(d.getDate()) + "T" + pad23(d.getHours()) + ":" + pad23(d.getMinutes());
 }
 function datetimeLocalToIso(localValue) {
   if (!localValue || !String(localValue).trim()) return (/* @__PURE__ */ new Date()).toISOString();
@@ -20179,7 +21390,7 @@ function datetimeLocalToIso(localValue) {
 function isoToHHmm(iso) {
   var d = new Date(iso);
   if (isNaN(d.getTime())) return "";
-  return pad22(d.getHours()) + ":" + pad22(d.getMinutes());
+  return pad23(d.getHours()) + ":" + pad23(d.getMinutes());
 }
 function parseNumOrNull(raw) {
   if (raw == null || String(raw).trim() === "") return null;
@@ -20246,7 +21457,7 @@ function persistEstadoClinicoAndRefresh(monitoreo, toastMsg, patient) {
   saveState();
   syncEstadoActualTextarea(monitoreo, patient);
   renderEstadoActualPanel({ syncHeavy: true, dataOnly: true, refreshClinico: true });
-  if (toastMsg) rt8.showToast(toastMsg, "success");
+  if (toastMsg) rt9.showToast(toastMsg, "success");
 }
 function persistEstadoClinicoLight(monitoreo, patient) {
   saveState();
@@ -20328,7 +21539,7 @@ function wireEstadoClinicoInteractions(mount, patient) {
   });
 }
 function findActivePatient() {
-  var activeId2 = rt8.getActiveId();
+  var activeId2 = rt9.getActiveId();
   if (!activeId2) return null;
   return patients.find(function(p) {
     return p.id === activeId2;
@@ -20666,7 +21877,7 @@ function renderHistorialSection(historial) {
   }
   var rows = recent.map(function(row) {
     var d = new Date(row.recordedAt || "");
-    var when = isNaN(d.getTime()) ? "\u2014" : pad22(d.getDate()) + "/" + pad22(d.getMonth() + 1) + " " + pad22(d.getHours()) + ":" + pad22(d.getMinutes());
+    var when = isNaN(d.getTime()) ? "\u2014" : pad23(d.getDate()) + "/" + pad23(d.getMonth() + 1) + " " + pad23(d.getHours()) + ":" + pad23(d.getMinutes());
     var parts = [];
     var rowSeries = vitalSeriesFromMedicion(row);
     VITAL_KEYS2.forEach(function(vk) {
@@ -20813,13 +22024,13 @@ function expandVitalNextLayer(form, vitalKey, historial) {
   if (!stack) return;
   var count = getVitalStackLayerCount(stack);
   if (count >= MAX_VITAL_LAYERS_IN_FORM) {
-    rt8.showToast("M\xE1ximo " + MAX_VITAL_LAYERS_IN_FORM + " lecturas por signo en este registro", "error");
+    rt9.showToast("M\xE1ximo " + MAX_VITAL_LAYERS_IN_FORM + " lecturas por signo en este registro", "error");
     return;
   }
   var hist = historial || [];
   var inWindow = countVitalReadingsInRegistroWindow(hist, vitalKey);
   if (inWindow + count >= MAX_VITAL_READINGS_PER_DAY) {
-    rt8.showToast(
+    rt9.showToast(
       "M\xE1ximo " + MAX_VITAL_READINGS_PER_DAY + " lecturas de " + (VITAL_LABELS2[vitalKey] || vitalKey) + " en el turno",
       "error"
     );
@@ -20830,7 +22041,7 @@ function expandVitalNextLayer(form, vitalKey, historial) {
     '[data-ea-vital="' + vitalKey + '"][data-ea-layer-idx="' + active + '"]'
   );
   if (!activeInput || !("value" in activeInput) || !String(activeInput.value).trim()) {
-    rt8.showToast("Captura el valor actual antes de agregar otra lectura", "error");
+    rt9.showToast("Captura el valor actual antes de agregar otra lectura", "error");
     return;
   }
   setVitalStackLayerCount(stack, count + 1);
@@ -21057,7 +22268,7 @@ function patchEaPanelDynamicSections(mount, patient, monitoreo, patchOpts) {
   if (patchOpts.refreshClinico) {
     var clinicoDet = mount.querySelector(".ea-estado-clinico");
     if (clinicoDet) {
-      clinicoDet.outerHTML = renderEstadoClinicoSection(monitoreo, rt8.getActiveId(), patient);
+      clinicoDet.outerHTML = renderEstadoClinicoSection(monitoreo, rt9.getActiveId(), patient);
       wireEstadoClinicoInteractions(mount, patient);
     }
   }
@@ -21114,7 +22325,7 @@ function renderEstadoActualPanel(opts) {
   var balTurno = balanceTurno(monitoreo);
   var balGlobal = balanceGlobalHistorico(monitoreo);
   var savedLabel = formatEaSavedLabel(monitoreo.textoGuardado && monitoreo.textoGuardado.savedAt);
-  var activeId2 = rt8.getActiveId();
+  var activeId2 = rt9.getActiveId();
   var shellKey = buildEaShellKey(activeId2, monitoreo);
   var dataKey = buildEaDataKey(monitoreo);
   if (mount.querySelector(".estado-actual-panel") && _eaPanelCache.shellKey === shellKey && (opts.dataOnly || _eaPanelCache.dataKey !== dataKey)) {
@@ -21144,7 +22355,7 @@ function renderEstadoActualPanel(opts) {
   finishEaChartsAndReady(mount, monitoreo, patient, onReady, !!opts.syncHeavy);
 }
 function navigateToEstadoActualPanel() {
-  rt8.switchConsolidatedTab("estadoActual");
+  rt9.switchConsolidatedTab("estadoActual");
 }
 function parseFormMedicion() {
   var form = document.getElementById("ea-form");
@@ -21232,18 +22443,18 @@ function parseFormMedicion() {
 function registrarEstadoActualMedicion() {
   var patient = findActivePatient();
   if (!patient) {
-    rt8.showToast("Selecciona un paciente primero", "error");
+    rt9.showToast("Selecciona un paciente primero", "error");
     return;
   }
   ensureMonitoreo(patient);
   var medicion = parseFormMedicion();
   if (!medicion) {
-    rt8.showToast("Formulario no disponible", "error");
+    rt9.showToast("Formulario no disponible", "error");
     return;
   }
   var result = appendMedicion(patient.monitoreo, medicion);
   if (!result.ok) {
-    rt8.showToast("Agrega al menos un signo vital, glucometr\xEDa o I/O", "error");
+    rt9.showToast("Agrega al menos un signo vital, glucometr\xEDa o I/O", "error");
     return;
   }
   syncDietKcalFromWeight(
@@ -21254,10 +22465,11 @@ function registrarEstadoActualMedicion() {
     })
   );
   saveState();
-  if (rt8.invalidateInnerTabRenderCache) rt8.invalidateInnerTabRenderCache("estadoActual");
+  if (rt9.invalidateInnerTabRenderCache) rt9.invalidateInnerTabRenderCache("estadoActual");
   if (typeof window.closeEstadoActualRegistroModal === "function") window.closeEstadoActualRegistroModal();
   renderEstadoActualPanel({ syncHeavy: true, dataOnly: true });
-  rt8.showToast("Medici\xF3n registrada \u2713", "success");
+  rt9.showToast("Medici\xF3n registrada \u2713", "success");
+  if (typeof rt9.onMedicionRegistered === "function") rt9.onMedicionRegistered();
 }
 function ensureEaRegistroModalForm() {
   var body = document.getElementById("ea-registro-modal-body");
@@ -21274,18 +22486,18 @@ function eliminarEstadoActualMedicion(id) {
   removeMedicion(patient.monitoreo, id);
   saveState();
   renderEstadoActualPanel({ syncHeavy: true });
-  rt8.showToast("Medici\xF3n eliminada", "success");
+  rt9.showToast("Medici\xF3n eliminada", "success");
 }
 async function estadoActualCopiar() {
-  if (!rt8.getActiveId()) return;
+  if (!rt9.getActiveId()) return;
   var ta = document.getElementById("ea-texto");
   var text = ta && "value" in ta ? String(ta.value) : "";
   if (!text.trim()) {
-    rt8.showToast("No hay texto para copiar", "error");
+    rt9.showToast("No hay texto para copiar", "error");
     return;
   }
-  var ok = await rt8.copyToClipboardSafe(text);
-  rt8.showToast(ok ? "Estado Actual copiado al portapapeles \u2713" : "No se pudo copiar", ok ? "success" : "error");
+  var ok = await rt9.copyToClipboardSafe(text);
+  rt9.showToast(ok ? "Estado Actual copiado al portapapeles \u2713" : "No se pudo copiar", ok ? "success" : "error");
 }
 async function estadoActualGuardarCopiar() {
   var patient = findActivePatient();
@@ -21294,7 +22506,7 @@ async function estadoActualGuardarCopiar() {
   var ta = document.getElementById("ea-texto");
   var text = ta && "value" in ta ? String(ta.value) : "";
   if (!text.trim()) {
-    rt8.showToast("No hay texto para guardar", "error");
+    rt9.showToast("No hay texto para guardar", "error");
     return;
   }
   patient.monitoreo.textoGuardado = {
@@ -21305,8 +22517,8 @@ async function estadoActualGuardarCopiar() {
   renderEstadoActualBar();
   var meta = document.getElementById("ea-meta-guardado");
   if (meta) meta.textContent = formatEaSavedLabel(patient.monitoreo.textoGuardado.savedAt);
-  var ok = await rt8.copyToClipboardSafe(text);
-  rt8.showToast(
+  var ok = await rt9.copyToClipboardSafe(text);
+  rt9.showToast(
     ok ? "Estado Actual guardado y copiado \u2713" : "Guardado, pero no se pudo copiar",
     ok ? "success" : "error"
   );
@@ -21316,7 +22528,7 @@ function regenerarEstadoActualTexto() {
   if (!patient) return;
   ensureMonitoreo(patient);
   syncEstadoActualTextarea(patient.monitoreo, patient);
-  rt8.showToast("Texto regenerado desde datos actuales", "success");
+  rt9.showToast("Texto regenerado desde datos actuales", "success");
 }
 function confirmEaMedField(key) {
   var patient = findActivePatient();
@@ -21354,6 +22566,533 @@ var windowHandlers7 = {
   confirmAllEaMedProposals,
   toggleEaEstadoClinico,
   applyEstadoActualParsedToForm
+};
+
+// public/js/features/estado-actual-parse-variants.mjs
+var SOPORTE_FROM_TAIL = [
+  [/VM\s+NO\s+INVASIVA|VMNI|VNI/i, "VM no invasiva"],
+  [/ALTO\s+FLUJO|OAF\b/i, "Alto flujo"],
+  [/PUNTILLAS?\s+NASALES?|C[Nn]?\s*AF/i, "Puntillas nasales"],
+  [/AIRE\s+AMBIENTE|\bAA\b/i, "Aire ambiente"]
+];
+function soporteFromSatTail(tail) {
+  var s = String(tail || "").trim();
+  if (!s) return null;
+  var u = s.toUpperCase();
+  for (var i = 0; i < SOPORTE_FROM_TAIL.length; i++) {
+    if (SOPORTE_FROM_TAIL[i][0].test(u)) return SOPORTE_FROM_TAIL[i][1];
+  }
+  return null;
+}
+function parseSatLineVariants(line) {
+  var m = line.match(
+    /^(?:SATURACI(?:O|Ó)N(?:\s+O2)?|SAT(?:O2)?|SPO2)\s*:?\s*([\d.,]+)\s*%?\s*(.*)$/i
+  );
+  if (!m) return null;
+  var n = Number(String(m[1]).replace(/,/g, ""));
+  if (!Number.isFinite(n)) return null;
+  return { value: n, soporteHint: soporteFromSatTail(m[2]) };
+}
+function stripVitalUnitSuffix(raw) {
+  return String(raw || "").replace(/\s*(?:LPM|RPM|X\/MIN|\/MIN|MMHG|MM\s*HG|MG\/DL|CC|ML)\s*$/i, "").trim();
+}
+
+// public/js/features/estado-actual-parser.mjs
+function parseNumberToken(raw) {
+  if (raw == null) return null;
+  var s = String(raw).trim().replace(/\s/g, "").replace(/,/g, "");
+  if (!s) return null;
+  var n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+function parseGlucometriaToken(token) {
+  var s = String(token || "").trim();
+  if (!s) return null;
+  var m = s.match(/^([\d.,]+)(?:\s*(?:@|\s)\s*(\d{1,2}:\d{2}))?$/i);
+  if (!m) {
+    m = s.match(/^([\d.,]+)\s*\(\s*(\d{1,2}:\d{2})\s*\)$/i);
+  }
+  if (!m) return null;
+  var value = parseNumberToken(m[1]);
+  if (value == null) return null;
+  var out = { value };
+  if (m[2]) {
+    var parts = m[2].split(":");
+    out.time = pad24(parts[0]) + ":" + pad24(parts[1]);
+  }
+  return out;
+}
+function pad24(n) {
+  return String(n).padStart(2, "0");
+}
+function splitGlucoseList(rest) {
+  var s = String(rest || "").replace(/\s*MG\s*\/?\s*DL\s*$/i, "").trim();
+  if (!s) return [];
+  var tokens = [];
+  var buf = "";
+  var depth = 0;
+  for (var i = 0; i < s.length; i++) {
+    var ch = s[i];
+    if (ch === "(") {
+      depth++;
+      buf += ch;
+      continue;
+    }
+    if (ch === ")") {
+      depth = Math.max(0, depth - 1);
+      buf += ch;
+      continue;
+    }
+    if (ch === "," && depth === 0) {
+      if (buf.trim()) tokens.push(buf.trim());
+      buf = "";
+      continue;
+    }
+    buf += ch;
+  }
+  if (buf.trim()) tokens.push(buf.trim());
+  return tokens;
+}
+function parseTempLine(line) {
+  var m = line.match(
+    /^(?:T[°º]?\s*:?|TEMP(?:ERATURA)?\s*:?)\s*([\d.,]+)\s*(?:°\s*C|°C)?(?:\s*(?:@|\s|-|a\s+las?\s+)?\s*(\d{1,2}:\d{2}))?/i
+  );
+  if (!m) return null;
+  var temp = parseNumberToken(m[1]);
+  if (temp == null) return null;
+  var out = { temp };
+  if (m[2]) {
+    var p = m[2].split(":");
+    out.time = pad24(p[0]) + ":" + pad24(p[1]);
+  }
+  return out;
+}
+function parseLine(line, result) {
+  var trimmed = String(line || "").trim();
+  if (!trimmed) return;
+  var temp = parseTempLine(trimmed);
+  if (temp) {
+    result.vitals.temp = temp.temp;
+    if (temp.time) result.alteredAt.temp = temp.time;
+    result.recognized.push("temp");
+    return;
+  }
+  var fc = trimmed.match(/^(?:FC|F\.?\s*C\.?)\s*:?\s*([\d.,]+)/i);
+  if (fc) {
+    result.vitals.fc = parseNumberToken(stripVitalUnitSuffix(fc[1]));
+    result.recognized.push("fc");
+    return;
+  }
+  var fr = trimmed.match(/^(?:FR|F\.?\s*R\.?)\s*:?\s*([\d.,]+)/i);
+  if (fr) {
+    result.vitals.fr = parseNumberToken(stripVitalUnitSuffix(fr[1]));
+    result.recognized.push("fr");
+    return;
+  }
+  var sat = parseSatLineVariants(trimmed);
+  if (sat != null) {
+    result.vitals.sat = sat.value;
+    if (sat.soporteHint) result.soporteHint = sat.soporteHint;
+    result.recognized.push("sat");
+    return;
+  }
+  var ta = trimmed.match(/^(?:TA|T\.?\s*A\.?)\s*:?\s*([\d.,]+)\s*\/\s*([\d.,]+)/i);
+  if (ta) {
+    result.vitals.tas = parseNumberToken(ta[1]);
+    result.vitals.tad = parseNumberToken(ta[2]);
+    result.recognized.push("ta");
+    return;
+  }
+  var dxt = trimmed.match(/^(?:DXT|DESTROX(?:IAS)?|GLUCOMETR(?:ÍA|IA)?(?:S)?)\s*:?\s*(.+)$/i);
+  if (dxt) {
+    var tokens = splitGlucoseList(dxt[1]);
+    for (var i = 0; i < tokens.length; i++) {
+      var g3 = parseGlucometriaToken(tokens[i]);
+      if (g3) result.glucometrias.push(g3);
+    }
+    if (tokens.length && !result.glucometrias.length) {
+      result.warnings.push("No se pudieron leer valores DXT en: " + dxt[1]);
+    } else {
+      result.recognized.push("dxt");
+    }
+    return;
+  }
+  var ing = trimmed.match(/^(?:I|ING(?:RESOS)?)\s*:?\s*(.+)$/i);
+  if (ing) {
+    result.io.ing = parseIoIngresoField(ing[1]);
+    result.recognized.push("ing");
+    return;
+  }
+  var evac = trimmed.match(/^(?:EVAC|EVACUAC(?:IONES)?)\s*:?\s*(.+)$/i);
+  if (evac) {
+    result.io.evac = parseIoEvacField(evac[1]);
+    result.recognized.push("evac");
+    return;
+  }
+  var egr = trimmed.match(/^(?:E(?!VAC)|EGR(?:ESOS)?)\s*:?\s*(.+)$/i);
+  if (egr) {
+    var egrBody = String(egr[1]).trim();
+    if (/^(?:NC|NO\s+CUANTIFICADA)$/i.test(egrBody)) {
+      result.io.egrParts = [{ kind: "diuresis", label: "DIURESIS", value: "NC" }];
+    } else {
+      result.io.egrParts = parseIoEgresoLine(egrBody);
+    }
+    result.io.egr = diuresisValueFromParts(result.io.egrParts);
+    result.recognized.push("egr");
+    return;
+  }
+  var bal = trimmed.match(/^(?:B|BAL(?:ANCE)?)\s*:?\s*(.+)$/i);
+  if (bal) {
+    result.recognized.push("balance-ignored");
+    return;
+  }
+  result.warnings.push("L\xEDnea no reconocida: " + trimmed);
+}
+function scanInlinePatterns(text, result) {
+  if (result.recognized.indexOf("temp") < 0) {
+    var t2 = text.match(/(?:T[°º]?\s*:?|TEMP(?:ERATURA)?\s*:?)\s*([\d.,]+)/i);
+    if (t2) {
+      result.vitals.temp = parseNumberToken(t2[1]);
+      result.recognized.push("temp");
+    }
+  }
+  if (result.recognized.indexOf("fc") < 0) {
+    var fc = text.match(/\bFC\s*:?\s*([\d.,]+)/i);
+    if (fc) {
+      result.vitals.fc = parseNumberToken(fc[1]);
+      result.recognized.push("fc");
+    }
+  }
+  if (result.recognized.indexOf("fr") < 0) {
+    var fr = text.match(/\bFR\s*:?\s*([\d.,]+)/i);
+    if (fr) {
+      result.vitals.fr = parseNumberToken(fr[1]);
+      result.recognized.push("fr");
+    }
+  }
+  if (result.recognized.indexOf("sat") < 0) {
+    var satM = text.match(
+      /^(?:SATURACI(?:O|Ó)N(?:\s+O2)?|SAT(?:O2)?|SPO2)\s*:?\s*([\d.,]+)\s*%?\s*(.*)$/im
+    );
+    if (satM) {
+      var satInline = parseSatLineVariants(satM[0]);
+      if (satInline) {
+        result.vitals.sat = satInline.value;
+        if (satInline.soporteHint) result.soporteHint = satInline.soporteHint;
+        result.recognized.push("sat");
+      }
+    }
+  }
+  if (result.recognized.indexOf("ta") < 0) {
+    var ta = text.match(/\bTA\s*:?\s*([\d.,]+)\s*\/\s*([\d.,]+)/i);
+    if (ta) {
+      result.vitals.tas = parseNumberToken(ta[1]);
+      result.vitals.tad = parseNumberToken(ta[2]);
+      result.recognized.push("ta");
+    }
+  }
+  if (result.recognized.indexOf("dxt") < 0) {
+    var dxt = text.match(/\b(?:DXT|DESTROX(?:IAS)?)\s*:?\s*([^|\n]+?)(?:\s*(?:\||$)|\s+I\s*:|\s+E\s*:)/i);
+    if (!dxt) dxt = text.match(/\b(?:DXT|DESTROX(?:IAS)?)\s*:?\s*(.+)$/im);
+    if (dxt) {
+      var tokens = splitGlucoseList(dxt[1]);
+      for (var i = 0; i < tokens.length; i++) {
+        var g3 = parseGlucometriaToken(tokens[i]);
+        if (g3) result.glucometrias.push(g3);
+      }
+      if (result.glucometrias.length) result.recognized.push("dxt");
+    }
+  }
+  if (result.recognized.indexOf("ing") < 0) {
+    var ing = text.match(/\bI\s*:?\s*([\d.,]+)/i);
+    if (ing) {
+      result.io.ing = parseIoIngresoField(ing[1]);
+      result.recognized.push("ing");
+    }
+  }
+  if (result.recognized.indexOf("egr") < 0) {
+    var egr = text.match(/\bE\s*:?\s*(.+?)(?:\s*$)/im);
+    if (egr) {
+      result.io.egrParts = parseIoEgresoLine(egr[1]);
+      result.io.egr = diuresisValueFromParts(result.io.egrParts);
+      result.recognized.push("egr");
+    }
+  }
+  if (result.recognized.indexOf("evac") < 0) {
+    var evac = text.match(/\bEVAC(?:UAC(?:IONES)?)?\s*:?\s*(.+?)(?:\s*$)/im);
+    if (evac) {
+      result.io.evac = parseIoEvacField(evac[1]);
+      result.recognized.push("evac");
+    }
+  }
+}
+function parseEstadoActualPaste(raw) {
+  var text = String(raw == null ? "" : raw).trim();
+  var vitals = {
+    tas: null,
+    tad: null,
+    fc: null,
+    fr: null,
+    temp: null,
+    sat: null
+  };
+  var alteredAt = {};
+  var glucometrias = [];
+  var io = { ing: null, egr: null, egrParts: [], evac: null };
+  var recognized = [];
+  var warnings = [];
+  if (!text) {
+    return {
+      ok: false,
+      error: "Pega el texto de monitoreo",
+      vitals,
+      alteredAt,
+      glucometrias,
+      io,
+      recognized,
+      warnings
+    };
+  }
+  var result = {
+    ok: true,
+    vitals,
+    alteredAt,
+    glucometrias,
+    io,
+    recognized,
+    warnings,
+    soporteHint: null
+  };
+  var lines = text.split(/\r?\n/).map(function(l) {
+    return l.trim();
+  });
+  var nonEmpty = lines.filter(Boolean);
+  if (!nonEmpty.length) nonEmpty = [text];
+  for (var i = 0; i < nonEmpty.length; i++) {
+    parseLine(nonEmpty[i], result);
+  }
+  if (!result.recognized.length) {
+    scanInlinePatterns(text, result);
+  }
+  var hasData = result.recognized.length > 0 || Object.keys(result.vitals).some(function(k) {
+    return result.vitals[k] != null;
+  }) || result.glucometrias.length > 0 || result.io.ing != null || result.io.egr != null || result.io.egrParts && result.io.egrParts.length > 0 || result.io.evac != null;
+  if (!hasData) {
+    result.ok = false;
+    result.error = "No se reconoci\xF3 ning\xFAn campo (T\xB0, FC, TA, DXT, I, E\u2026)";
+  }
+  return result;
+}
+function formatEstadoActualParsePreview(parsed) {
+  if (!parsed || !parsed.ok) {
+    return toEaSalidaText(parsed && parsed.error ? parsed.error : "Sin datos");
+  }
+  var parts = [];
+  if (parsed.vitals.temp != null) {
+    parts.push("TEMP " + parsed.vitals.temp + " \xB0C" + (parsed.alteredAt.temp ? " @ " + parsed.alteredAt.temp : ""));
+  }
+  if (parsed.vitals.fc != null) parts.push("FC " + parsed.vitals.fc + " LPM");
+  if (parsed.vitals.fr != null) parts.push("FR " + parsed.vitals.fr + " RPM");
+  if (parsed.vitals.sat != null) {
+    var satLine = "SATURACION " + parsed.vitals.sat + "%";
+    if (parsed.soporteHint) satLine += " " + toEaSalidaText(parsed.soporteHint);
+    parts.push(satLine);
+  }
+  if (parsed.vitals.tas != null || parsed.vitals.tad != null) {
+    parts.push("TA " + (parsed.vitals.tas ?? "\u2014") + "/" + (parsed.vitals.tad ?? "\u2014") + " MMHG");
+  }
+  if (parsed.glucometrias.length) {
+    parts.push(
+      "DXT " + parsed.glucometrias.map(function(g3) {
+        return String(g3.value) + (g3.time ? "@" + g3.time : "");
+      }).join(", ") + " MG/DL"
+    );
+  }
+  if (parsed.io.ing != null) parts.push("I " + parsed.io.ing + " CC");
+  if (parsed.io.egrParts && parsed.io.egrParts.length) {
+    parts.push("E " + serializeEgrPartsToFormText(parsed.io.egrParts));
+  } else if (parsed.io.egr != null) {
+    parts.push("E " + toEaSalidaText(parsed.io.egr));
+  }
+  if (parsed.io.evac != null) parts.push("EVAC " + toEaSalidaText(parsed.io.evac));
+  if (parsed.recognized.indexOf("balance-ignored") >= 0) {
+    parts.push("B (CALCULADO AL APLICAR)");
+  }
+  if (parsed.warnings.length) {
+    parts.push("AVISOS: " + parsed.warnings.join("; "));
+  }
+  return toEaSalidaText(parts.length ? parts.join(" \xB7 ") : "Sin campos detectados");
+}
+
+// public/js/features/estado-actual-paste-modal.mjs
+var rt10 = {
+  showToast() {
+  },
+  applyParsed() {
+  }
+};
+var SAMPLE_TEXT = "T\xB0: 38.7 \xB0C\nFC: 113 LPM\nFR: 19 RPM\nTA: 140/60 MMHG\nDXT: 198, 174, 101, 252 MG/DL\nSAT: 97% AL AIRE AMBIENTE\nI: 2,815 CC\nE: NO CUANTIFICADA\nB: NC\nEVAC: NO REPORTADAS";
+function registerEstadoActualPasteModalRuntime(partial) {
+  if (partial && typeof partial === "object") Object.assign(rt10, partial);
+}
+function getTextarea() {
+  return (
+    /** @type {HTMLTextAreaElement | null} */
+    document.getElementById("ea-paste-input")
+  );
+}
+function getPreviewEl() {
+  return document.getElementById("ea-paste-preview");
+}
+function refreshPreview() {
+  var ta = getTextarea();
+  var preview = getPreviewEl();
+  if (!preview) return;
+  var parsed = parseEstadoActualPaste(ta ? ta.value : "");
+  preview.textContent = formatEstadoActualParsePreview(parsed);
+  preview.classList.toggle("ea-paste-preview--error", !parsed.ok);
+}
+function ensureRegistroModalOpen() {
+  var reg = document.getElementById("ea-registro-backdrop");
+  if (reg && reg.classList.contains("open")) return;
+  if (typeof window.openEstadoActualRegistroModal === "function") {
+    window.openEstadoActualRegistroModal();
+  }
+}
+function openEstadoActualPasteModal(opts) {
+  opts = opts || {};
+  if (!opts.skipRegistro) ensureRegistroModalOpen();
+  var backdrop = document.getElementById("ea-paste-backdrop");
+  var ta = getTextarea();
+  if (!backdrop || !ta) {
+    rt10.showToast("Pegar monitoreo no disponible", "error");
+    return;
+  }
+  ta.value = opts.prefillSample ? SAMPLE_TEXT : "";
+  refreshPreview();
+  backdrop.classList.add("open");
+  backdrop.setAttribute("aria-hidden", "false");
+  ta.focus();
+}
+function closeEstadoActualPasteModal() {
+  var backdrop = document.getElementById("ea-paste-backdrop");
+  if (!backdrop) return;
+  backdrop.classList.remove("open");
+  backdrop.setAttribute("aria-hidden", "true");
+}
+function confirmEstadoActualPaste() {
+  var ta = getTextarea();
+  var parsed = parseEstadoActualPaste(ta ? ta.value : "");
+  if (!parsed.ok) {
+    rt10.showToast(parsed.error || "No se pudo interpretar el texto", "error");
+    return;
+  }
+  closeEstadoActualPasteModal();
+  if (typeof rt10.applyParsed === "function") {
+    rt10.applyParsed(parsed, { fromNestedPaste: true });
+    rt10.showToast("Datos aplicados \u2014 revisa y registra", "success");
+  }
+}
+function wireEstadoActualPasteModal() {
+  var ta = getTextarea();
+  if (ta && !ta.dataset.eaPasteWired) {
+    ta.dataset.eaPasteWired = "1";
+    ta.addEventListener("input", refreshPreview);
+    ta.placeholder = SAMPLE_TEXT;
+  }
+}
+var windowHandlers8 = {
+  openEstadoActualPasteModal,
+  closeEstadoActualPasteModal,
+  confirmEstadoActualPaste
+};
+
+// public/js/features/estado-actual-registro-modal.mjs
+var rt11 = {
+  ensureForm() {
+  },
+  resetForm() {
+  },
+  showToast() {
+  }
+};
+var dismissWired = false;
+function registerEstadoActualRegistroModalRuntime(partial) {
+  if (partial && typeof partial === "object") Object.assign(rt11, partial);
+}
+function getBackdrop() {
+  return document.getElementById("ea-registro-backdrop");
+}
+function getPasteBackdrop() {
+  return document.getElementById("ea-paste-backdrop");
+}
+function handleEaModalEscape(ev) {
+  if (ev.key !== "Escape" && ev.key !== "Esc") return;
+  var pasteBd = getPasteBackdrop();
+  if (pasteBd && pasteBd.classList.contains("open")) {
+    closeEstadoActualPasteModal();
+    ev.preventDefault();
+    ev.stopPropagation();
+    return;
+  }
+  var reg = getBackdrop();
+  if (reg && reg.classList.contains("open")) {
+    closeEstadoActualRegistroModal();
+    ev.preventDefault();
+    ev.stopPropagation();
+  }
+}
+function wireEaModalDismiss() {
+  if (dismissWired) return;
+  dismissWired = true;
+  document.addEventListener("keydown", handleEaModalEscape, true);
+  var reg = getBackdrop();
+  var pasteBd = getPasteBackdrop();
+  if (reg) {
+    reg.addEventListener("click", function(ev) {
+      if (!reg.classList.contains("open")) return;
+      if (ev.target !== reg) return;
+      closeEstadoActualRegistroModal();
+    });
+  }
+  if (pasteBd) {
+    pasteBd.addEventListener("click", function(ev) {
+      if (!pasteBd.classList.contains("open")) return;
+      var panel = pasteBd.querySelector(".ea-paste-modal");
+      if (panel && panel.contains(
+        /** @type {Node} */
+        ev.target
+      )) return;
+      closeEstadoActualPasteModal();
+    });
+  }
+}
+function openEstadoActualRegistroModal(opts) {
+  var backdrop = getBackdrop();
+  if (!backdrop) {
+    rt11.showToast("Formulario de registro no disponible", "error");
+    return;
+  }
+  rt11.ensureForm();
+  if (!opts || !opts.preserveForm) rt11.resetForm();
+  else if (typeof rt11.syncGluMode === "function") rt11.syncGluMode();
+  backdrop.classList.add("open");
+  backdrop.setAttribute("aria-hidden", "false");
+  document.documentElement.classList.add("ea-registro-modal-open");
+  var first = backdrop.querySelector('[data-ea-vital="tas"], [data-ea-vital="temp"]');
+  if (first && "focus" in first) first.focus();
+}
+function closeEstadoActualRegistroModal() {
+  closeEstadoActualPasteModal();
+  var backdrop = getBackdrop();
+  if (!backdrop) return;
+  backdrop.classList.remove("open");
+  backdrop.setAttribute("aria-hidden", "true");
+  document.documentElement.classList.remove("ea-registro-modal-open");
+}
+var windowHandlers9 = {
+  openEstadoActualRegistroModal,
+  closeEstadoActualRegistroModal
 };
 
 // public/js/mobile-web.mjs
@@ -22476,12 +24215,12 @@ function createTendGroupModal(deps) {
       sub.appendChild(val2);
       return sub;
     }
-    function stepCard(num3, title, bodyEl) {
+    function stepCard(num4, title, bodyEl) {
       var art = document.createElement("article");
       art.className = "tend-gaso-step";
       var numEl = document.createElement("span");
       numEl.className = "tend-gaso-step-num";
-      numEl.textContent = String(num3);
+      numEl.textContent = String(num4);
       var body = document.createElement("div");
       body.className = "tend-gaso-step-body";
       var h = document.createElement("h5");
@@ -23060,7 +24799,7 @@ function createTendGroupModal(deps) {
 
 // public/js/sesion-ingreso-trends-export.mjs
 var MIN_POINTS = 2;
-var rt9 = {
+var rt12 = {
   buildCatalog() {
     return [];
   },
@@ -23076,7 +24815,7 @@ var rt9 = {
 };
 function registerSesionIngresoTrendsRuntime(partial) {
   if (!partial || typeof partial !== "object") return;
-  Object.assign(rt9, partial);
+  Object.assign(rt12, partial);
 }
 function panelTitle(familyKey) {
   return DEFAULT_PANEL_LABELS[familyKey] || familyKey;
@@ -23089,13 +24828,13 @@ function specHasTrendPoints(historyDesc, sectionKey, fieldKey) {
   return dedupeTrendSetsForSeries(raw, sectionKey, fieldKey).length >= MIN_POINTS;
 }
 function seriesLabel(sectionKey, spec) {
-  const unit = rt9.unitForField(spec.fieldKey);
+  const unit = rt12.unitForField(spec.fieldKey);
   return formatTendSeriesLabel(spec.cardTitle || spec.fieldKey, spec.fieldKey, unit).name;
 }
 function buildPanelChart(sectionKey, family, histAsc, histDesc, catalog, patientId) {
   const specs = catalog.filter((spec) => {
     if (spec.sectionKey !== sectionKey) return false;
-    const unit = rt9.unitForField(spec.fieldKey);
+    const unit = rt12.unitForField(spec.fieldKey);
     return classifyTendPanelFamily(sectionKey, spec.fieldKey, unit) === family;
   });
   const items = specs.map((spec, index) => ({ spec, index })).filter(({ spec }) => specHasTrendPoints(histDesc, sectionKey, spec.fieldKey));
@@ -23122,7 +24861,7 @@ function buildPanelChart(sectionKey, family, histAsc, histDesc, catalog, patient
       label: seriesLabel(sectionKey, spec),
       color: readSeriesColor(sectionKey, fk) || defaultSeriesColor(index),
       visible,
-      unit: rt9.unitForField(fk) || "",
+      unit: rt12.unitForField(fk) || "",
       values
     };
   }).filter(Boolean);
@@ -23139,13 +24878,13 @@ function buildPanelChart(sectionKey, family, histAsc, histDesc, catalog, patient
 function listSelectablePanels(history, patientId) {
   const histAsc = sortLabHistoryChronological(history || []);
   const histDesc = histAsc.slice().reverse();
-  const catalog = rt9.buildCatalog(histAsc);
+  const catalog = rt12.buildCatalog(histAsc);
   const panels = [];
   const seenFamilies = /* @__PURE__ */ new Set();
   for (const spec of catalog) {
     const sectionKey = spec.sectionKey;
     if (!tendEligibleSectionKey(sectionKey)) continue;
-    const unit = rt9.unitForField(spec.fieldKey);
+    const unit = rt12.unitForField(spec.fieldKey);
     const family = classifyTendPanelFamily(sectionKey, spec.fieldKey, unit);
     const id = panelId(sectionKey, family);
     if (seenFamilies.has(id)) continue;
@@ -23155,7 +24894,7 @@ function listSelectablePanels(history, patientId) {
     panels.push({
       id,
       sectionKey,
-      sectionLabel: rt9.sectionLabel(sectionKey),
+      sectionLabel: rt12.sectionLabel(sectionKey),
       title: chart.title,
       seriesCount: chart.series.length
     });
@@ -23166,17 +24905,17 @@ function defaultSelectedPanelIds(panels) {
   return panels.map((p) => p.id);
 }
 function buildLabTrendsPayload(history, patientLabel, { panelIds = null, patientId = "" } = {}) {
-  const pid = patientId || rt9.getPatientId();
+  const pid = patientId || rt12.getPatientId();
   const histAsc = sortLabHistoryChronological(history || []);
   const histDesc = histAsc.slice().reverse();
-  const catalog = rt9.buildCatalog(histAsc);
+  const catalog = rt12.buildCatalog(histAsc);
   const idSet = panelIds ? new Set(panelIds) : null;
   const sectionMap = /* @__PURE__ */ new Map();
   const seenPanels = /* @__PURE__ */ new Set();
   for (const spec of catalog) {
     const sectionKey = spec.sectionKey;
     if (!tendEligibleSectionKey(sectionKey)) continue;
-    const unit = rt9.unitForField(spec.fieldKey);
+    const unit = rt12.unitForField(spec.fieldKey);
     const family = classifyTendPanelFamily(sectionKey, spec.fieldKey, unit);
     const id = panelId(sectionKey, family);
     if (idSet && !idSet.has(id)) continue;
@@ -23187,7 +24926,7 @@ function buildLabTrendsPayload(history, patientLabel, { panelIds = null, patient
     if (!sectionMap.has(sectionKey)) {
       sectionMap.set(sectionKey, {
         sectionKey,
-        sectionLabel: rt9.sectionLabel(sectionKey),
+        sectionLabel: rt12.sectionLabel(sectionKey),
         groups: []
       });
     }
@@ -23204,7 +24943,7 @@ function buildLabTrendsPayload(history, patientLabel, { panelIds = null, patient
 }
 
 // public/js/features/sesion-ingreso-trends-send-modal.mjs
-var rt10 = {
+var rt13 = {
   showToast() {
   },
   getHistory() {
@@ -23221,7 +24960,7 @@ var rt10 = {
 };
 function registerSesionIngresoTrendsSendRuntime(partial) {
   if (!partial || typeof partial !== "object") return;
-  Object.assign(rt10, partial);
+  Object.assign(rt13, partial);
 }
 function escHtml5(s) {
   return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -23247,15 +24986,15 @@ function updateSendCount2(root) {
   }
 }
 function openSesionIngresoTrendsSendModal() {
-  const history = rt10.getHistory();
+  const history = rt13.getHistory();
   if (!history?.length) {
-    rt10.showToast("No hay historial de laboratorios para tendencias", "warn");
+    rt13.showToast("No hay historial de laboratorios para tendencias", "warn");
     return;
   }
-  const patientId = rt10.getPatientId();
+  const patientId = rt13.getPatientId();
   const panels = listSelectablePanels(history, patientId);
   if (!panels.length) {
-    rt10.showToast("Se requieren al menos 2 tomas por panel para generar gr\xE1ficas", "warn");
+    rt13.showToast("Se requieren al menos 2 tomas por panel para generar gr\xE1ficas", "warn");
     return;
   }
   const backdrop = document.getElementById("sesion-ingreso-trends-send-backdrop");
@@ -23288,19 +25027,19 @@ function openSesionIngresoTrendsSendModal() {
     const ids = getSelectedIds2(body);
     if (!ids.length) return;
     if (isCasiopeaTourSendBlocked("trends")) {
-      rt10.showToast("En el tutorial no se env\xEDa a Neo; fuera del tour aqu\xED se abre la app.", "info");
+      rt13.showToast("En el tutorial no se env\xEDa a Neo; fuera del tour aqu\xED se abre la app.", "info");
       closeSesionIngresoTrendsSendModal();
       return;
     }
-    const payload = buildLabTrendsPayload(history, rt10.getPatientLabel(), {
+    const payload = buildLabTrendsPayload(history, rt13.getPatientLabel(), {
       panelIds: ids,
       patientId
     });
     if (!payload.trends?.length) {
-      rt10.showToast("No hay gr\xE1ficas para los paneles seleccionados", "warn");
+      rt13.showToast("No hay gr\xE1ficas para los paneles seleccionados", "warn");
       return;
     }
-    rt10.sendPayload(payload);
+    rt13.sendPayload(payload);
     closeSesionIngresoTrendsSendModal();
   });
   body.addEventListener("change", (event) => {
@@ -23319,7 +25058,7 @@ function closeSesionIngresoTrendsSendModal() {
 }
 
 // public/js/features/tendencias.mjs
-var rt11 = {
+var rt14 = {
   getActiveId() {
     return null;
   },
@@ -23341,7 +25080,7 @@ var rt11 = {
   }
 };
 function registerTendenciasRuntime(partial) {
-  if (partial && typeof partial === "object") Object.assign(rt11, partial);
+  if (partial && typeof partial === "object") Object.assign(rt14, partial);
   initTendGroupModal();
   ensureTendHiddenModalDelegation();
   ensureTendenciasClickDelegation();
@@ -23357,7 +25096,7 @@ function registerTendenciasRuntime(partial) {
   });
   registerSesionIngresoTrendsSendRuntime({
     showToast: function(msg, kind) {
-      rt11.showToast(msg, kind);
+      rt14.showToast(msg, kind);
     },
     getHistory: function() {
       var pid = aid2();
@@ -23376,19 +25115,19 @@ function registerTendenciasRuntime(partial) {
     sendPayload: function(payload) {
       if (window.electronAPI && window.electronAPI.sendToSesionIngreso) {
         window.electronAPI.sendToSesionIngreso(payload).then(function(ok) {
-          if (ok) rt11.showToast("Tendencias enviadas a Neo", "ok");
-          else rt11.showToast("No se pudo abrir Neo", "warn");
+          if (ok) rt14.showToast("Tendencias enviadas a Neo", "ok");
+          else rt14.showToast("No se pudo abrir Neo", "warn");
         });
         return;
       }
-      rt11.showToast("Integraci\xF3n disponible solo en la app de escritorio", "warn");
+      rt14.showToast("Integraci\xF3n disponible solo en la app de escritorio", "warn");
     }
   });
 }
 function aid2() {
-  return rt11.getActiveId();
+  return rt14.getActiveId();
 }
-function esc10(s) {
+function esc11(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 var _tendCardSortables = [];
@@ -23858,7 +25597,7 @@ function onLabDisplayPrefsChanged() {
   _syncLabPrefSwitchAria(cbBh);
   _syncLabPrefSwitchAria(cbGaso);
   _syncLabPrefSwitchAria(cbQuick);
-  rt11.rerenderParsedLabOutputAfterPrefsChange();
+  rt14.rerenderParsedLabOutputAfterPrefsChange();
 }
 function toTrendAscendingSets(sets) {
   return (sets || []).slice().reverse();
@@ -23954,7 +25693,7 @@ function applyTendSectionExpandedState(sectionEl, sectionKey, expanded) {
     if (!cell || cell.querySelector("canvas")) return;
     cell.innerHTML = '<canvas id="' + trendSparkDomId(sk, fk) + '"></canvas>';
   });
-  var chartAnim = rt11.rpcPrefersReducedMotion() ? false : { duration: 400, easing: "easeOutQuart" };
+  var chartAnim = rt14.rpcPrefersReducedMotion() ? false : { duration: 400, easing: "easeOutQuart" };
   mountSectionSparkCharts(sectionKey, chartAnim);
 }
 function toggleTendSection(ev, sectionKey) {
@@ -24062,10 +25801,10 @@ function tendRefForSeries(history, sectionKey, fieldKey, preferSet) {
   return tendRefOrientative(sectionKey, fieldKey);
 }
 function tendParsedHistoryDesc(patientId) {
-  if (rt11.ensureParsedLabHistoryCached) {
-    return sortLabHistoryChronological(rt11.ensureParsedLabHistoryCached(patientId));
+  if (rt14.ensureParsedLabHistoryCached) {
+    return sortLabHistoryChronological(rt14.ensureParsedLabHistoryCached(patientId));
   }
-  return sortLabHistoryChronological(rt11.ensureParsedLabHistory(patientId));
+  return sortLabHistoryChronological(rt14.ensureParsedLabHistory(patientId));
 }
 function tendCatalogSeriesKey(sectionKey, fieldKey) {
   return trendCatalogSeriesKey(sectionKey, fieldKey);
@@ -24244,9 +25983,9 @@ function buildTendHiddenChipsHtml() {
   for (var i = 0; i < desc.length; i++) {
     var sk = desc[i].sectionKey;
     var fk = desc[i].fieldKey;
-    var label = esc10(tendFindSeriesSpec(sk, fk).cardTitle || fk);
+    var label = esc11(tendFindSeriesSpec(sk, fk).cardTitle || fk);
     chips.push(
-      '<button type="button" class="tend-hidden-chip" data-series-key="' + esc10(tendCatalogSeriesKey(sk, fk)) + '" title="Volver a mostrar ' + label + '" aria-label="Mostrar de nuevo ' + label + '"><span class="tend-hidden-chip-label">' + label + '</span><span class="tend-hidden-chip-eye" aria-hidden="true">' + svg + "</span></button>"
+      '<button type="button" class="tend-hidden-chip" data-series-key="' + esc11(tendCatalogSeriesKey(sk, fk)) + '" title="Volver a mostrar ' + label + '" aria-label="Mostrar de nuevo ' + label + '"><span class="tend-hidden-chip-label">' + label + '</span><span class="tend-hidden-chip-eye" aria-hidden="true">' + svg + "</span></button>"
     );
   }
   return chips.join("");
@@ -24277,7 +26016,7 @@ function buildTendInlineControlsHtml(hiddenCount, opts) {
   var toggleLabel = on ? "Ver todas" : "Solo fuera de rango";
   var ocultosBtn = hiddenCount > 0 ? '<button type="button" class="tend-toolbar-btn tend-ocultos-trigger">Ocultos (' + hiddenCount + ")</button>" : "";
   var gasoBtn = opts.showGasoExtended ? '<button type="button" class="tend-toolbar-btn tend-gaso-ext-trigger" data-tend-action="gaso-extended">Gasometr\xEDa extendida</button>' : "";
-  return '<div class="tend-inline-controls"><button type="button" class="tend-toolbar-toggle' + (on ? " is-active" : "") + '" aria-pressed="' + (on ? "true" : "false") + '" title="' + esc10(hint) + '">' + esc10(toggleLabel) + "</button>" + ocultosBtn + gasoBtn + '<button type="button" class="tend-toolbar-btn" data-tour="casiopea-trends-send" onclick="openSesionIngresoTrendsSendModal()">Enviar a Neo</button></div>';
+  return '<div class="tend-inline-controls"><button type="button" class="tend-toolbar-toggle' + (on ? " is-active" : "") + '" aria-pressed="' + (on ? "true" : "false") + '" title="' + esc11(hint) + '">' + esc11(toggleLabel) + "</button>" + ocultosBtn + gasoBtn + '<button type="button" class="tend-toolbar-btn" data-tour="casiopea-trends-send" onclick="openSesionIngresoTrendsSendModal()">Enviar a Neo</button></div>';
 }
 function historyHasGasoForExtended(historyDesc) {
   var latest = historyDesc && historyDesc[0];
@@ -24325,7 +26064,7 @@ function inferFechaLabSetFromId(set) {
 }
 function tendFinishRangeVbars(container) {
   if (!container) return;
-  var reduced = rt11.rpcPrefersReducedMotion();
+  var reduced = rt14.rpcPrefersReducedMotion();
   var apply = function() {
     var vbars = container.querySelectorAll(".tend-range-vbar");
     for (var i = 0; i < vbars.length; i++) {
@@ -24431,12 +26170,12 @@ function initTendGroupModal() {
     tendRefFromLabSet,
     tendRefForSeries,
     buildColHeader: function(set) {
-      return rt11.buildLabSetDateLine(set);
+      return rt14.buildLabSetDateLine(set);
     },
-    esc: esc10,
+    esc: esc11,
     Chart: typeof Chart !== "undefined" ? Chart : void 0,
     showToast: function(a, b) {
-      rt11.showToast(a, b);
+      rt14.showToast(a, b);
     }
   });
 }
@@ -24446,7 +26185,7 @@ function openTendGroupModal(sectionKey) {
 }
 function openTendGasoExtendedModal() {
   if (isAbgAnalysisHidden()) {
-    rt11.showToast("El an\xE1lisis de gasometr\xEDa no est\xE1 disponible en R+.", "info");
+    rt14.showToast("El an\xE1lisis de gasometr\xEDa no est\xE1 disponible en R+.", "info");
     return;
   }
   initTendGroupModal();
@@ -24883,7 +26622,7 @@ function renderTendenciasBody(container) {
   Object.keys(bySection).forEach(function(sec2) {
     if (sectionsOrdered.indexOf(sec2) === -1) sectionsOrdered.push(sec2);
   });
-  var chartAnim = rt11.rpcPrefersReducedMotion() ? false : { duration: 600, easing: "easeOutQuart" };
+  var chartAnim = rt14.rpcPrefersReducedMotion() ? false : { duration: 600, easing: "easeOutQuart" };
   var renderKey = buildTendRenderKey(
     aid2(),
     getLabHistoryRevision(aid2()),
@@ -24942,15 +26681,15 @@ function renderTendenciasBody(container) {
       var isAb = idxCard ? idxCard.isAbnormal : false;
       var domId = trendSparkDomId(sectionKey, fk);
       var labelParts = tendCardLabelParts(sectionKey, fk);
-      var titleEsc = esc10(labelParts.title);
-      var unitHtml = labelParts.unit ? '<div class="tend-unit">' + esc10(labelParts.unit) + "</div>" : "";
+      var titleEsc = esc11(labelParts.title);
+      var unitHtml = labelParts.unit ? '<div class="tend-unit">' + esc11(labelParts.unit) + "</div>" : "";
       var seriesKey = tendCatalogSeriesKey(sectionKey, fk);
       cardParts.push(
-        '<div class="tend-card" role="button" tabindex="0" data-series-key="' + esc10(seriesKey) + '" data-abnormal="' + (isAb ? "1" : "0") + '"><div class="tend-card-header"><span class="tend-param-name">' + titleEsc + '</span><span class="tend-card-header-end"><button type="button" class="tend-card-hide-btn" title="Ocultar analito" aria-label="Ocultar analito">' + tendEyeHideSvg() + '</button><span class="tend-param-value' + (isAb ? " tend-abnormal" : "") + '">' + (latest != null ? latest : "\u2014") + "</span></span></div>" + unitHtml + '<div class="tend-spark-wrap"><div class="tend-spark-canvas-cell">' + (expanded ? '<canvas id="' + domId + '"></canvas>' : '<div class="tend-spark-placeholder" aria-hidden="true"></div>') + "</div></div></div>"
+        '<div class="tend-card" role="button" tabindex="0" data-series-key="' + esc11(seriesKey) + '" data-abnormal="' + (isAb ? "1" : "0") + '"><div class="tend-card-header"><span class="tend-param-name">' + titleEsc + '</span><span class="tend-card-header-end"><button type="button" class="tend-card-hide-btn" title="Ocultar analito" aria-label="Ocultar analito">' + tendEyeHideSvg() + '</button><span class="tend-param-value' + (isAb ? " tend-abnormal" : "") + '">' + (latest != null ? latest : "\u2014") + "</span></span></div>" + unitHtml + '<div class="tend-spark-wrap"><div class="tend-spark-canvas-cell">' + (expanded ? '<canvas id="' + domId + '"></canvas>' : '<div class="tend-spark-placeholder" aria-hidden="true"></div>') + "</div></div></div>"
       );
     }
     htmlParts.push(
-      '<section class="tend-section" data-section="' + esc10(sectionKey) + '"><div class="tend-section-head"><button type="button" class="tend-section-toggle" aria-expanded="' + (expanded ? "true" : "false") + '"><span class="tend-section-chevron" aria-hidden="true">' + (expanded ? "\u25BC" : "\u25B6") + '</span><span class="tend-section-title">' + esc10(secLabel) + '</span></button><span class="tend-section-toggle-end"><span class="tend-section-count">' + list.length + "</span>" + (list.length > 0 ? '<button type="button" class="tend-section-chart-btn" title="Abrir gr\xE1fica y tabla del estudio" aria-label="Gr\xE1fica del estudio">' + tendSectionChartSvg() + '<span class="tend-section-chart-label">Gr\xE1fica</span></button>' : "") + '</span></div><div class="tend-section-body' + (expanded ? "" : " tend-section-body--collapsed") + '"><div class="tend-grid tend-sort-zone" data-section-key="' + esc10(sectionKey) + '">' + cardParts.join("") + "</div></div></section>"
+      '<section class="tend-section" data-section="' + esc11(sectionKey) + '"><div class="tend-section-head"><button type="button" class="tend-section-toggle" aria-expanded="' + (expanded ? "true" : "false") + '"><span class="tend-section-chevron" aria-hidden="true">' + (expanded ? "\u25BC" : "\u25B6") + '</span><span class="tend-section-title">' + esc11(secLabel) + '</span></button><span class="tend-section-toggle-end"><span class="tend-section-count">' + list.length + "</span>" + (list.length > 0 ? '<button type="button" class="tend-section-chart-btn" title="Abrir gr\xE1fica y tabla del estudio" aria-label="Gr\xE1fica del estudio">' + tendSectionChartSvg() + '<span class="tend-section-chart-label">Gr\xE1fica</span></button>' : "") + '</span></div><div class="tend-section-body' + (expanded ? "" : " tend-section-body--collapsed") + '"><div class="tend-grid tend-sort-zone" data-section-key="' + esc11(sectionKey) + '">' + cardParts.join("") + "</div></div></section>"
     );
   }
   container.innerHTML = htmlParts.join("");
@@ -25055,7 +26794,7 @@ function openTendDetail(sectionKey, fieldKey) {
   backdrop.style.display = "flex";
   var canvas = document.getElementById("tend-detail-canvas");
   if (!canvas || typeof Chart === "undefined") {
-    rt11.showToast("Gr\xE1fica no disponible (Chart.js no carg\xF3). Recarga la app.", "error");
+    rt14.showToast("Gr\xE1fica no disponible (Chart.js no carg\xF3). Recarga la app.", "error");
     backdrop.style.display = "none";
     return;
   }
@@ -25149,11 +26888,11 @@ var tendenciasWindowHandlers = {
 };
 
 // public/js/features/settings-help.mjs
-function esc11(s) {
+function esc12(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 var GUIDED_TOUR_LS_KEY = "rpc-guided-tour-done-for-version";
-var rt12 = {
+var rt15 = {
   getSettings() {
     return (
       /** @type {any} */
@@ -25193,15 +26932,21 @@ var rt12 = {
   renderMedRecetaPanel() {
   },
   renderListadoForm() {
+  },
+  openAddModalFromLabPatient() {
+  },
+  refreshAllTodoUIs() {
+  },
+  refreshExpedienteAfterPatientSelect() {
   }
 };
 function registerSettingsHelpRuntime(partial) {
   if (!partial || typeof partial !== "object") return;
-  Object.assign(rt12, partial);
+  Object.assign(rt15, partial);
   registerPresentationRuntime({
-    getActiveId: rt12.getActiveId,
-    setActiveId: rt12.setActiveId,
-    showToast: rt12.showToast
+    getActiveId: rt15.getActiveId,
+    setActiveId: rt15.setActiveId,
+    showToast: rt15.showToast
   });
 }
 var guidedTourActive2 = false;
@@ -25216,10 +26961,208 @@ function publishTourGuardContext() {
   });
 }
 publishTourGuardContext();
-var DEMO_PATIENT_ID = "demo-onboarding";
-var DEMO_PATIENT_ID_2 = "demo-onboarding-2";
-var DEMO_LAB_REPORT = DEMO_TOUR_LAB_PASTE;
-var LAB_INPUT_DEFAULT_REPORT = "BIOMETR\xCDA HEM\xC1TICA\nHemoglobina: 7.44 g/dL\nHematocrito: 24%\nVCM: 97 fL\nHCM: 30.2 pg\nLeucocitos: 29.1 x10\xB3/\xB5L\nNeutr\xF3filos: 25.8 x10\xB3/\xB5L\nEosin\xF3filos: 0 x10\xB3/\xB5L\nPlaquetas: 163 x10\xB3/\xB5L\n";
+var tourDemoLabSessionProcessed = false;
+function purgeTourDemoPatientsFromState() {
+  setPatients(
+    patients.filter(function(p) {
+      return p.id !== DEMO_PATIENT_ID && p.id !== DEMO_PATIENT_ID_2 && !p.isDemo;
+    })
+  );
+  delete notes[DEMO_PATIENT_ID];
+  delete notes[DEMO_PATIENT_ID_2];
+  delete indicaciones[DEMO_PATIENT_ID];
+  delete indicaciones[DEMO_PATIENT_ID_2];
+  delete labHistory[DEMO_PATIENT_ID];
+  delete labHistory[DEMO_PATIENT_ID_2];
+  delete medRecetaByPatient[DEMO_PATIENT_ID];
+  delete listadoProblemas[DEMO_PATIENT_ID];
+  if (medNotaSelectionByPatient[DEMO_PATIENT_ID]) {
+    delete medNotaSelectionByPatient[DEMO_PATIENT_ID];
+  }
+  clearTourDemoTodos();
+}
+var TOUR_STEPS_USE_DEMO_PEREZ = {
+  servicio_default: true,
+  sala_expediente_tabs: true,
+  historia_clinica: true,
+  estado_actual: true,
+  estado_actual_registro: true,
+  estado_actual_snapshot: true,
+  estado_actual_charts: true,
+  estado_actual_historial: true,
+  eventualidades: true,
+  listado_problemas: true,
+  sala_med: true,
+  sala_tend: true,
+  sala_tend_chart: true,
+  sala_vpo: true,
+  sala_receta_hu: true
+};
+function findTourDemoPerezPatient() {
+  return patients.find(function(x) {
+    return x && x.id === DEMO_PATIENT_ID;
+  }) || findTourDemoPatientByRegistro(patients, DEMO_REGISTRO);
+}
+function seedTourDemoPerezClinicalData() {
+  var p = findTourDemoPerezPatient();
+  if (!p) return false;
+  var pid = p.id;
+  var today = /* @__PURE__ */ new Date();
+  var tourDates = getTourDemoDateBundle(today);
+  var fecha = tourDates.fecha;
+  var hora = tourDates.hora;
+  applyTourDemoIngresoDates(p, tourDates);
+  var hist = p.monitoreo && Array.isArray(p.monitoreo.historial) ? p.monitoreo.historial : [];
+  if (!hist.length) {
+    p.monitoreo = buildTourMonitoreoHistorial(today);
+  }
+  var ev = p.eventualidades && Array.isArray(p.eventualidades.entries) ? p.eventualidades.entries : [];
+  if (!ev.length) {
+    p.eventualidades = buildTourDemoEventualidades(today);
+  }
+  if (!notes[pid] || !String((notes[pid].diagnosticos || [])[0] || "").trim()) {
+    notes[pid] = {
+      fecha,
+      hora,
+      interrogatorio: "",
+      evolucion: "",
+      estudios: "",
+      diagnosticos: ["DM2, IRC estadio 3, HAS"],
+      tratamiento: [""],
+      ta: "",
+      fr: "",
+      fc: "",
+      temp: "",
+      peso: "",
+      medico: "",
+      profesor: ""
+    };
+  }
+  if (!indicaciones[pid]) {
+    indicaciones[pid] = {
+      fecha,
+      hora,
+      medicos: "",
+      dieta: "",
+      cuidados: "",
+      estudios: "",
+      medicamentos: "",
+      interconsultas: "",
+      otros: []
+    };
+  }
+  if (!medRecetaByPatient[pid]) {
+    medRecetaByPatient[pid] = {
+      fechaActualizacion: fecha,
+      items: [
+        {
+          id: "tour-med-1",
+          nombreRaw: "PARACETAMOL 1 G SOL INY (*)",
+          viaRaw: "VIA INTRAVENOSA",
+          dosisRaw: "1 G //",
+          frecuenciaRaw: "CADA 8 HORAS",
+          suspendido: false,
+          diaTratamiento: null
+        },
+        {
+          id: "tour-med-2",
+          nombreRaw: "CEFTRIAXONA 1 G SOL INY (*)",
+          viaRaw: "VIA INTRAVENOSA",
+          dosisRaw: "1 G // *DIA# 2*",
+          frecuenciaRaw: "CADA 24 HORAS",
+          suspendido: false,
+          diaTratamiento: 2
+        }
+      ]
+    };
+    medNotaSelectionByPatient[pid] = { "tour-med-1": true, "tour-med-2": true };
+  }
+  seedTourDemoTodos(DEMO_PATIENT_ID);
+  saveState();
+  if (typeof rt15.refreshAllTodoUIs === "function") rt15.refreshAllTodoUIs();
+  return true;
+}
+function ensureTourPrimaryDemoPatientActive() {
+  if (!guidedTourActive2 || guidedTourBranch === "interconsulta") return false;
+  var p = findTourDemoPerezPatient();
+  if (!p) return false;
+  var changed = rt15.getActiveId() !== p.id;
+  if (changed) {
+    selectPatient(p.id);
+  }
+  seedTourDemoPerezClinicalData();
+  if (changed && typeof rt15.refreshExpedienteAfterPatientSelect === "function") {
+    rt15.refreshExpedienteAfterPatientSelect();
+  }
+  return true;
+}
+function applyTourDemoPatientBundle(patientId, registro) {
+  var reg = String(registro || "").trim();
+  var today = /* @__PURE__ */ new Date();
+  var tourDates = getTourDemoDateBundle(today);
+  var fecha = tourDates.fecha;
+  var hora = tourDates.hora;
+  var p = patients.find(function(x) {
+    return x && x.id === patientId;
+  });
+  if (p) {
+    applyTourDemoIngresoDates(p, tourDates);
+    if (patientId === DEMO_PATIENT_ID) {
+      p.monitoreo = buildTourMonitoreoHistorial(today);
+    }
+  }
+  if (patientId === DEMO_PATIENT_ID) {
+    seedTourDemoPerezClinicalData();
+  } else if (patientId === DEMO_PATIENT_ID_2 || reg === DEMO_REGISTRO_2) {
+    notes[patientId] = {
+      fecha,
+      hora,
+      interrogatorio: "",
+      evolucion: "",
+      estudios: "",
+      diagnosticos: ["DM2 descompensada"],
+      tratamiento: [""],
+      ta: "",
+      fr: "",
+      fc: "",
+      temp: "",
+      peso: "",
+      medico: "",
+      profesor: ""
+    };
+    indicaciones[patientId] = {
+      fecha,
+      hora,
+      medicos: "",
+      dieta: "",
+      cuidados: "",
+      estudios: "",
+      medicamentos: "",
+      interconsultas: "",
+      otros: []
+    };
+  }
+  saveState();
+}
+function getTourDemoDateBundle(ref) {
+  return buildTourDemoDates(ref || /* @__PURE__ */ new Date());
+}
+function getDemoTourLabPaste(ref) {
+  return buildTourDemoLabPasteBoth(ref);
+}
+function tourDemoLabPasteHasBoth(text) {
+  var v = String(text || "");
+  return v.indexOf(DEMO_REGISTRO) !== -1 && v.indexOf(DEMO_REGISTRO_2) !== -1 && v.indexOf(LAB_BULK_PATIENT_SEPARATOR) !== -1;
+}
+function ensureTourDemoLabInputBoth() {
+  if (!guidedTourActive2) return false;
+  var li = document.getElementById("lab-input");
+  if (!li) return false;
+  if (!tourDemoLabPasteHasBoth(li.value)) {
+    li.value = getDemoTourLabPaste();
+  }
+  return true;
+}
 function toggleSettingsSection() {
   toggleSettingsDropdown();
 }
@@ -25233,8 +27176,8 @@ function toggleSettingsDropdown() {
   if (bg) bg.classList.toggle("open", !open);
   var trigger = document.getElementById("btn-open-settings");
   if (trigger) trigger.setAttribute("aria-expanded", !open ? "true" : "false");
-  if (!open) rt12.syncPreimportBackupUi();
-  if (!open) rt12.syncSettingsLanHostDiskSection();
+  if (!open) rt15.syncPreimportBackupUi();
+  if (!open) rt15.syncSettingsLanHostDiskSection();
 }
 function closeSettingsDropdown() {
   var dd = document.getElementById("settings-dropdown");
@@ -25385,7 +27328,7 @@ function resetTourUiBeforeResume() {
   clearTourSoapButtonHighlight();
   if (typeof closeSettingsDropdown === "function") closeSettingsDropdown();
   if (typeof closeConnectionDropdown === "function") closeConnectionDropdown();
-  rt12.closeProfileModal();
+  rt15.closeProfileModal();
   closeLabSomeTablesModal();
   closeLabBulkTourHintModal();
   closeSesionIngresoTrendsSendModal();
@@ -25433,16 +27376,6 @@ function onTourDockClick(ev) {
   setTourDockCollapsed(false);
   ev.stopPropagation();
 }
-function openLabBulkTourHintModal() {
-  var backdrop = document.getElementById("lab-bulk-tour-hint-backdrop");
-  var sample = document.getElementById("lab-bulk-tour-hint-sample");
-  if (sample) {
-    sample.textContent = LAB_BULK_PATIENT_SEPARATOR + "\n\n" + DEMO_GARCIA_LAB_REPORT.trim();
-  }
-  if (!backdrop) return;
-  backdrop.classList.add("open");
-  backdrop.setAttribute("aria-hidden", "false");
-}
 function closeLabBulkTourHintModal() {
   var backdrop = document.getElementById("lab-bulk-tour-hint-backdrop");
   if (!backdrop) return;
@@ -25450,51 +27383,39 @@ function closeLabBulkTourHintModal() {
   backdrop.setAttribute("aria-hidden", "true");
 }
 function insertLabTourSecondPatientExample() {
-  var ta = document.getElementById("lab-input");
-  if (!ta) return;
-  if (String(ta.value || "").indexOf("0007755-3") !== -1) {
-    rt12.showToast("El ejemplo de DEMO GARC\xCDA ya est\xE1 en el cuadro", "info");
+  if (ensureTourDemoLabInputBoth()) {
+    rt15.showToast("Ejemplo completo (P\xC9REZ + GARC\xCDA) ya est\xE1 en el cuadro", "info");
     closeLabBulkTourHintModal();
     return;
   }
-  if (!String(ta.value || "").trim()) ta.value = DEMO_LAB_REPORT;
-  ta.value = String(ta.value || "").trimEnd() + "\n" + LAB_BULK_PATIENT_SEPARATOR + "\n" + DEMO_GARCIA_LAB_REPORT;
+  var ta = document.getElementById("lab-input");
+  if (!ta) return;
+  ta.value = getDemoTourLabPaste();
   closeLabBulkTourHintModal();
-  rt12.showToast("Ejemplo de DEMO GARC\xCDA insertado \u2713", "success");
+  rt15.showToast("Ejemplo de laboratorio insertado \u2713", "success");
 }
-function seedDemoTrendHistory() {
-  try {
-    var older = procesarLabs(OLDER_DEMO_SOME_LAB_REPORT).resLabs;
-    var newer = procesarLabs(DEMO_SOME_LAB_REPORT).resLabs;
-    labHistory[DEMO_PATIENT_ID] = [
-      { id: "tour-trend-1", fecha: "05/03/2026", hora: "", resLabs: older, parsed: extractParsedValues(older) },
-      { id: "tour-trend-2", fecha: "11/04/2026", hora: "", resLabs: newer, parsed: extractParsedValues(newer) }
-    ];
-  } catch (e) {
-    delete labHistory[DEMO_PATIENT_ID];
-  }
+function applyTourDemoIngresoDates(patient, bundle) {
+  if (!patient || !bundle) return;
+  patient.fiuxFecha = bundle.fiuxFecha;
+  patient.fimiFecha = bundle.fimiFecha;
 }
 function seedDemoMonitoreoOnActivePatient() {
-  if (!guidedTourActive2 || guidedTourBranch === "interconsulta") return;
-  var id = rt12.getActiveId();
-  if (id !== DEMO_PATIENT_ID) return;
-  var p = patients.find(function(x) {
-    return x && x.id === DEMO_PATIENT_ID;
-  });
-  if (!p) return;
-  p.monitoreo = buildTourMonitoreoHistorial(/* @__PURE__ */ new Date());
-  saveState();
+  ensureTourPrimaryDemoPatientActive();
 }
 function seedDemoListadoProblemas() {
-  if (!guidedTourActive2 || rt12.getActiveId() !== DEMO_PATIENT_ID) return;
+  if (!guidedTourActive2) return;
+  if (!ensureTourPrimaryDemoPatientActive()) return;
+  var perez = findTourDemoPerezPatient();
+  if (!perez) return;
+  var demoId = perez.id;
   var today = /* @__PURE__ */ new Date();
   var fecha = String(today.getDate()).padStart(2, "0") + "/" + String(today.getMonth() + 1).padStart(2, "0") + "/" + today.getFullYear();
   var hora = String(today.getHours()).padStart(2, "0") + ":" + String(today.getMinutes()).padStart(2, "0");
-  listadoProblemas[DEMO_PATIENT_ID] = buildTourDemoListadoProblemas(fecha, hora);
+  listadoProblemas[demoId] = buildTourDemoListadoProblemas(fecha, hora);
   saveState();
 }
 function ensureProfileExpandedForTour() {
-  rt12.openProfileModal();
+  rt15.openProfileModal();
 }
 function ensureSettingsExpandedForTour() {
   var dd = document.getElementById("settings-dropdown");
@@ -25528,8 +27449,40 @@ function getGuidedTourSteps() {
   return getTourSteps(guidedTourBranch === "interconsulta" ? "interconsulta" : "sala");
 }
 function demoLabAlreadyProcessedForTour() {
-  var hist = labHistory && labHistory[DEMO_PATIENT_ID];
-  return !!(hist && (Array.isArray(hist) ? hist.length : Object.keys(hist).length));
+  if (tourDemoLabSessionProcessed) return true;
+  if (!guidedTourActive2) return false;
+  return tourDemoLabCompleteForTour(patients, labHistory);
+}
+function seedDemoEventualidadesOnActivePatient() {
+  ensureTourPrimaryDemoPatientActive();
+}
+function openTourEstadoActualRegistroDemo() {
+  var now = /* @__PURE__ */ new Date();
+  var atShift = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0, 0, 0);
+  openEstadoActualRegistroModal();
+  applyEstadoActualParsedToForm(getTourRegistroFormSample());
+  var recorded = document.getElementById("ea-recorded-at");
+  if (recorded && "value" in recorded) {
+    recorded.value = toDatetimeLocalValue(atShift);
+  }
+}
+function isEstadoActualPostRegistroTourStep(id) {
+  return id === "estado_actual_snapshot" || id === "estado_actual_charts" || id === "estado_actual_historial";
+}
+function prepareEstadoActualPanelForTour(onPanelReady) {
+  ensureTourPrimaryDemoPatientActive();
+  closeEstadoActualRegistroModal();
+  invalidateEaPanelCache();
+  try {
+    renderEstadoActualPanel({
+      onReady: function() {
+        if (typeof onPanelReady === "function") onPanelReady();
+      }
+    });
+  } catch (err) {
+    console.error("prepareEstadoActualPanelForTour:", err && err.message);
+    if (typeof onPanelReady === "function") onPanelReady();
+  }
 }
 function syncTourActionNextButton() {
   var nextBtn = document.getElementById("tour-btn-next");
@@ -25540,7 +27493,7 @@ function syncTourActionNextButton() {
     nextBtn.textContent = "Siguiente";
   }
   if (tourStepId2 === "servicio_default") {
-    var st = rt12.getSettings();
+    var st = rt15.getSettings();
     if (st && String(st.defaultServicio || "").trim()) {
       nextBtn.style.display = "";
       nextBtn.textContent = "Siguiente";
@@ -25560,7 +27513,12 @@ function clearAllTourSpotlights() {
     });
   });
 }
-var TOUR_DOCK_LEFT_STEPS = { ic_nota: 1, ic_indica: 1, estado_actual: 1 };
+var TOUR_DOCK_LEFT_STEPS = {
+  ic_nota: 1,
+  ic_indica: 1,
+  estado_actual_registro: 1,
+  listado_problemas: 1
+};
 function syncTourDockPlacement() {
   var d = document.getElementById("tour-dock");
   if (!d) return;
@@ -25572,69 +27530,12 @@ function syncTourDockPlacement() {
   if (useLeft) d.classList.add("tour-dock-pos-left");
   else d.classList.remove("tour-dock-pos-left");
 }
-function applyTourTargetForStep(id) {
-  if (guidedTourActive2) {
-    setUiDensity("normal");
-  }
-  var t2 = getTourTarget(id, guidedTourBranch === "interconsulta" ? "interconsulta" : "sala");
-  if (!t2) return;
-  if (id === "listado_problemas") {
-    seedDemoListadoProblemas();
-  }
-  if (id === "estado_actual") {
-    seedDemoMonitoreoOnActivePatient();
-  }
-  if (t2.appTab) rt12.switchAppTab(t2.appTab);
-  if (t2.innerTab) {
-    rt12.switchInnerTab(t2.innerTab);
-    if (t2.appTab === "nota") {
-      if (t2.innerTab === "notas") renderNoteForm();
-      else if (t2.innerTab === "indica") renderIndicaForm();
-    }
-  }
-  if (t2.openProfile) ensureProfileExpandedForTour();
-  else rt12.closeProfileModal();
-  if (t2.openConnection) ensureConnectionExpandedForTour();
-  else if (t2.openSettings) ensureSettingsExpandedForTour();
-  else {
-    if (typeof closeSettingsDropdown === "function") closeSettingsDropdown();
-    if (typeof closeConnectionDropdown === "function") closeConnectionDropdown();
-  }
-  if (id === "sala_med") rt12.renderMedRecetaPanel();
-  if (id === "estado_actual" && guidedTourBranch !== "interconsulta") {
-    setTimeout(function() {
-      if (!guidedTourActive2 || tourStepId2 !== "estado_actual") return;
-      try {
-        renderEstadoActualPanel();
-      } catch (err) {
-        console.error("renderEstadoActualPanel tour:", err && err.message);
-      }
-    }, 160);
-  }
-  if (id === "sala_casiopea_lab") {
-    closeLabSomeTablesModal();
-  }
-  if (id === "sala_casiopea_trends") {
-    closeTendGroupModal();
-    closeSesionIngresoTrendsSendModal();
-  }
-  if (id === "sala_med" || id === "listado_problemas") {
-    closeSOAPModal();
-  }
-  if (id === "lab_parse" || id === "map_lab_teaser") {
-    var li = document.getElementById("lab-input");
-    if (!li) return;
-    var v = String(li.value || "").trim();
-    var def = String(LAB_INPUT_DEFAULT_REPORT || "").trim();
-    if (!v || v === def) li.value = DEMO_LAB_REPORT;
-  }
-  if (id === "lab_bulk_separator") {
-    openLabBulkTourHintModal();
-  }
-  clearAllTourSpotlights();
-  if (!t2.selector) return;
+function tourApplySpotlightForStep(id, t2, scrollDelayMs) {
+  if (!t2 || !t2.selector) return;
+  var scrollDelay = scrollDelayMs != null ? scrollDelayMs : 140;
   setTimeout(function() {
     if (!guidedTourActive2 || tourStepId2 !== id) return;
+    if (id === "listado_problemas") rt15.renderListadoForm();
     var el = document.querySelector(t2.selector);
     if (!el) return;
     try {
@@ -25653,7 +27554,93 @@ function applyTourTargetForStep(id) {
         }
       }
     }
-  }, 140);
+  }, scrollDelay);
+}
+function applyTourTargetForStep(id) {
+  if (guidedTourActive2) {
+    setUiDensity("normal");
+  }
+  var t2 = getTourTarget(id, guidedTourBranch === "interconsulta" ? "interconsulta" : "sala");
+  if (!t2) return;
+  if (TOUR_STEPS_USE_DEMO_PEREZ[id]) {
+    ensureTourPrimaryDemoPatientActive();
+  }
+  if (id === "listado_problemas") {
+    seedDemoListadoProblemas();
+  }
+  if (id === "estado_actual" || id === "estado_actual_registro" || isEstadoActualPostRegistroTourStep(id)) {
+    seedDemoMonitoreoOnActivePatient();
+  }
+  if (id === "eventualidades") {
+    seedDemoEventualidadesOnActivePatient();
+  }
+  if (t2.appTab) rt15.switchAppTab(t2.appTab);
+  if (t2.innerTab) {
+    if (id === "listado_problemas") {
+      rt15.switchInnerTab("listado", { forceRender: true });
+      rt15.renderListadoForm();
+    } else {
+      rt15.switchInnerTab(t2.innerTab);
+    }
+    if (t2.appTab === "nota") {
+      if (t2.innerTab === "notas") renderNoteForm();
+      else if (t2.innerTab === "indica") renderIndicaForm();
+    }
+  }
+  if (t2.openProfile) ensureProfileExpandedForTour();
+  else rt15.closeProfileModal();
+  if (t2.openConnection) ensureConnectionExpandedForTour();
+  else if (t2.openSettings) ensureSettingsExpandedForTour();
+  else {
+    if (typeof closeSettingsDropdown === "function") closeSettingsDropdown();
+    if (typeof closeConnectionDropdown === "function") closeConnectionDropdown();
+  }
+  if (id === "sala_med") rt15.renderMedRecetaPanel();
+  if (id === "estado_actual" && guidedTourBranch !== "interconsulta") {
+    setTimeout(function() {
+      if (!guidedTourActive2 || tourStepId2 !== "estado_actual") return;
+      prepareEstadoActualPanelForTour();
+    }, 160);
+  }
+  if (id === "estado_actual_registro" && guidedTourBranch !== "interconsulta") {
+    setTimeout(function() {
+      if (!guidedTourActive2 || tourStepId2 !== "estado_actual_registro") return;
+      prepareEstadoActualPanelForTour(function() {
+        if (!guidedTourActive2 || tourStepId2 !== "estado_actual_registro") return;
+        openTourEstadoActualRegistroDemo();
+      });
+    }, 160);
+  }
+  if (isEstadoActualPostRegistroTourStep(id) && guidedTourBranch !== "interconsulta") {
+    clearAllTourSpotlights();
+    if (!t2.selector) return;
+    var postRegStepId = id;
+    var spotlightDelay = postRegStepId === "estado_actual_charts" ? 520 : 340;
+    setTimeout(function() {
+      if (!guidedTourActive2 || tourStepId2 !== postRegStepId) return;
+      prepareEstadoActualPanelForTour(function() {
+        tourApplySpotlightForStep(postRegStepId, t2, spotlightDelay);
+      });
+    }, 160);
+    return;
+  }
+  if (id === "map_lab_teaser" || id === "lab_parse") {
+    ensureTourDemoLabInputBoth();
+  }
+  if (id === "sala_casiopea_lab") {
+    closeLabSomeTablesModal();
+  }
+  if (id === "sala_casiopea_trends") {
+    closeTendGroupModal();
+    closeSesionIngresoTrendsSendModal();
+  }
+  if (id === "sala_med" || id === "listado_problemas") {
+    closeSOAPModal();
+  }
+  clearAllTourSpotlights();
+  if (!t2.selector) return;
+  var scrollDelay = id === "listado_problemas" ? 280 : 140;
+  tourApplySpotlightForStep(id, t2, scrollDelay);
 }
 function applyTourNavigationForStep(id) {
   applyTourTargetForStep(id);
@@ -25677,23 +27664,19 @@ function renderTourStep() {
   nextBtn.disabled = false;
   switch (tourStepId2) {
     case "map_sidebar":
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">La <strong>columna izquierda</strong> es tu lista de pacientes. <strong>DEMO P\xC9REZ</strong> solo existe para este tour.</p>';
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">La <strong>columna izquierda</strong> es tu censo. En este tour <strong>no hay pacientes precargados</strong>: registrar\xE1s a <strong>DEMO P\xC9REZ</strong> al procesar el laboratorio de ejemplo.</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "map_tabs":
-      bodyEl.innerHTML = getUiDensity() !== "normal" ? '<p style="margin:0;line-height:1.5;">En <strong>Pase</strong> el centro es un <strong>resumen</strong> del paciente (pendientes, laboratorio, cultivos, medicamentos). Pulsa el t\xEDtulo de cada bloque o usa <strong>Ctrl/\u2318 + 1\u20264</strong> para abrir el detalle en vista <strong>Normal</strong>.</p>' : guidedTourBranch === "interconsulta" ? '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong>, <strong>Agenda</strong>. En <strong>Expediente</strong> ver\xE1s las pesta\xF1as internas en el siguiente paso.</p>' : '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong> y <strong>Agenda</strong> (procedimientos del turno). En <strong>Expediente</strong>: <strong>Cl\xEDnico</strong> (Historia \u2192 Estado actual \u2192 Eventualidades \u2192 Manejo), <strong>Resultados</strong> (tendencias) y <strong>Salida</strong> (Listado, <strong>VPO</strong>, <strong>Receta HU</strong>).</p>';
+      bodyEl.innerHTML = getUiDensity() !== "normal" ? '<p style="margin:0;line-height:1.5;">En <strong>Pase</strong> el centro es un <strong>resumen</strong> del paciente (pendientes, laboratorio, cultivos, medicamentos). Pulsa el t\xEDtulo de cada bloque o usa <strong>Ctrl/\u2318 + 1\u20264</strong> para abrir el detalle en vista <strong>Normal</strong>.</p>' : guidedTourBranch === "interconsulta" ? '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong>, <strong>Agenda</strong>. En <strong>Expediente</strong> ver\xE1s las pesta\xF1as internas en el siguiente paso.</p>' : '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong> y <strong>Agenda</strong> (procedimientos del turno). En <strong>Expediente</strong>: <strong>Cl\xEDnico</strong> (Historia \u2192 Estado actual \u2192 Eventualidades), <strong>Resultados</strong> (tendencias) y <strong>Salida</strong> (Listado, <strong>VPO</strong>, <strong>Receta HU</strong>).</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "map_lab_teaser":
-      bodyEl.innerHTML = guidedTourBranch === "interconsulta" ? '<p style="margin:0;line-height:1.5;">Aqu\xED pegas reportes SOME. Ya hay un <strong>ejemplo con dos d\xEDas</strong> de DEMO P\xC9REZ. Pulsa <strong>Siguiente</strong>.</p>' : '<p style="margin:0;line-height:1.5;">Aqu\xED van los laboratorios: el ejemplo trae <strong>dos d\xEDas</strong> de DEMO P\xC9REZ. Despu\xE9s definir\xE1s tu servicio en Mi Perfil.</p>';
-      nextBtn.textContent = "Siguiente";
-      break;
-    case "lab_bulk_separator":
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Lee la ventana: puedes pegar <strong>varios d\xEDas</strong> del mismo paciente seguidos. Entre <strong>pacientes distintos</strong> usa el separador (bot\xF3n gris). Opcional: inserta el ejemplo de <strong>DEMO GARC\xCDA</strong>.</p>';
+      bodyEl.innerHTML = guidedTourBranch === "interconsulta" ? '<p style="margin:0;line-height:1.5;">El cuadro ya trae <strong>DEMO P\xC9REZ</strong> (dos d\xEDas) y <strong>DEMO GARC\xCDA</strong> con el separador <strong>--- PACIENTE ---</strong>. Revisa el texto detr\xE1s y pulsa <strong>Siguiente</strong>.</p>' : '<p style="margin:0;line-height:1.5;">El cuadro ya trae <strong>DEMO P\xC9REZ</strong> (dos d\xEDas) y <strong>DEMO GARC\xCDA</strong>. En el siguiente paso pulsa <strong>Procesar</strong>: ver\xE1s la <strong>vista previa multi-paciente</strong> y podr\xE1s dar de alta a cada uno en el censo.</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "lab_parse":
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Pulsa <strong>Procesar</strong> (morado). R+ interpreta todos los reportes, agrupa por d\xEDa y guarda en el historial de cada paciente.</p>' + (demoLabAlreadyProcessedForTour() ? '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Ya procesaste el ejemplo; puedes continuar.</p>' : "");
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Pulsa <strong>Procesar</strong>: ver\xE1s la tabla con <strong>dos pacientes</strong> (P\xC9REZ y GARC\xCDA). En cada fila sin registrar usa <strong>Agregar paciente</strong>; el modal trae <strong>servicio</strong> y, en el tour, <strong>cuarto y cama</strong> sugeridos (revisa y ajusta si hace falta).</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">No hay <strong>Siguiente</strong> hasta que ambos tengan laboratorio en historial.</p>';
       nextBtn.style.display = "none";
       break;
     case "lab_view":
@@ -25709,19 +27692,15 @@ function renderTourStep() {
       nextBtn.textContent = "Siguiente";
       break;
     case "ic_expediente_tabs":
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">En <strong>Interconsulta</strong>, el expediente se agrupa en cuatro pesta\xF1as: <strong>Paciente</strong> (datos colapsables + pendientes), <strong>Cl\xEDnico</strong> (Nota, Indicaciones, <strong>Manejo</strong>), <strong>Resultados</strong> (Tendencias, Cultivos) y <strong>Salida</strong> (Receta HU en PDF). En el siguiente paso ver\xE1s <strong>Manejo</strong> con Electrolitos, Infusiones, ATB y CAD/EHH.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Receta HU</strong> exporta el PDF oficial 000-061-R-06-12. <strong>Nota</strong> e <strong>Indicaciones</strong> van a Word (.docx).</p>';
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">En <strong>Interconsulta</strong>, el expediente se agrupa en cuatro pesta\xF1as: <strong>Paciente</strong> (datos colapsables + pendientes), <strong>Cl\xEDnico</strong> (Nota, Indicaciones), <strong>Resultados</strong> (Tendencias, Cultivos) y <strong>Salida</strong> (Receta HU en PDF).</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Receta HU</strong> exporta el PDF oficial 000-061-R-06-12. <strong>Nota</strong> e <strong>Indicaciones</strong> van a Word (.docx).</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "sala_expediente_tabs":
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">En <strong>Sala</strong>, el expediente tiene cuatro pesta\xF1as: <strong>Paciente</strong>, <strong>Cl\xEDnico</strong>, <strong>Resultados</strong> y <strong>Salida</strong>.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Cl\xEDnico</strong>: Historia Cl\xEDnica \u2192 <strong>Estado actual</strong> \u2192 Eventualidades \u2192 Manejo. <strong>Salida</strong>: Listado, <strong>VPO</strong> y <strong>Receta HU</strong>. Peso/talla/v\xEDa en <strong>Paciente</strong>.</p>';
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">En <strong>Sala</strong>, el expediente tiene cuatro pesta\xF1as: <strong>Paciente</strong>, <strong>Cl\xEDnico</strong>, <strong>Resultados</strong> y <strong>Salida</strong>.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Cl\xEDnico</strong>: Historia Cl\xEDnica \u2192 <strong>Estado actual</strong> \u2192 Eventualidades. <strong>Resultados</strong>: tendencias. <strong>Salida</strong>: Listado, <strong>VPO</strong> y <strong>Receta HU</strong>. Peso/talla en <strong>Paciente</strong>.</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "historia_clinica":
       bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;"><strong>Expediente \u2192 Cl\xEDnico \u2192 Historia Cl\xEDnica</strong>: ingreso institucional en <strong>3 pasos</strong> (identificaci\xF3n, antecedentes APP/AHF/APNP/IPAS, padecimiento). Cambia a <strong>Lectura</strong> para ver el texto compilado y <strong>Copiar</strong>.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Solo en <strong>Sala</strong>. En sala en vivo (\u21C4) se sincroniza por paciente con el anfitri\xF3n.</p>';
-      nextBtn.textContent = "Siguiente";
-      break;
-    case "eventualidades":
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;"><strong>Cl\xEDnico \u2192 Eventualidades</strong>: bit\xE1cora de hechos cl\xEDnicos por d\xEDa (texto libre con fecha). Va <strong>despu\xE9s</strong> de Estado actual: intercurrencias del turno sin mezclarlas con el monitoreo estructurado.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Pulsa <strong>Siguiente</strong> para <strong>Manejo</strong> cl\xEDnico (Electrolitos, Infusiones, ATB, CAD/EHH).</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "ic_nota":
@@ -25765,7 +27744,30 @@ function renderTourStep() {
       nextBtn.textContent = "Siguiente";
       break;
     case "estado_actual":
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">En <strong>Cl\xEDnico \u2192 Estado actual</strong> ves el monitoreo como en sala: <strong>snapshot</strong> (\xFAltimos SV, glu, balance), <strong>gr\xE1ficas</strong> y texto para la nota. El demo trae datos de <strong>hoy</strong> (tres turnos de enfermer\xEDa).</p><p style="margin:10px 0 0;line-height:1.5;"><strong>C\xF3mo lo reporta enfermer\xEDa:</strong> en la hoja anotan por turno (TM ~08 h, TV ~16 h, TN ~24 h) T\xB0, FC, FR, T/A y <strong>DEXT</strong> (glucometr\xEDa), m\xE1s <strong>ingresos</strong> (v\xEDa oral, IV, medicamentos) y <strong>egresos</strong> (diuresis). En R+: <strong>Registro manual</strong> = una toma por horario; <strong>Pegar monitoreo</strong> si traes texto de la hoja.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Revisa el snapshot y las tendencias del demo. <strong>Siguiente</strong> para Eventualidades.</p>';
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">En <strong>Cl\xEDnico \u2192 Estado actual</strong> el <strong>snapshot</strong> resume el turno (SV, glu, I/O, medicamentos). Abajo, las <strong>gr\xE1ficas</strong> muestran tendencias por familia (hemodin\xE1mico, respiratorio, metab\xF3lico) con puntos alterados resaltados.</p><p style="margin:10px 0 0;line-height:1.5;">El historial de mediciones y el texto compilado para la nota est\xE1n en esta misma pesta\xF1a. El demo trae tomas de <strong>hoy</strong> (TM, TV, TN).</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Pulsa <strong>Siguiente</strong> para practicar un <strong>registro manual</strong>.</p>';
+      nextBtn.textContent = "Siguiente";
+      break;
+    case "estado_actual_registro":
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Modal <strong>Registrar medici\xF3n</strong>: <strong>signos vitales</strong> (varias capas por turno), <strong>glucometr\xEDas</strong> y bomba de insulina, <strong>I/O</strong> y evacuaciones, m\xE1s campos de soporte y dieta.</p><p style="margin:10px 0 0;line-height:1.5;">El ejemplo trae turno matutino precargado. Revisa y pulsa <strong>Registrar</strong>; el tour te guiar\xE1 por el panel actualizado.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Sin <strong>Siguiente</strong> hasta registrar.</p>';
+      nextBtn.style.display = "none";
+      break;
+    case "estado_actual_snapshot":
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Tras registrar, el <strong>snapshot</strong> (arriba) resume el turno actual: signos vitales, glucometr\xEDas, balance h\xEDdrico, medicamentos y alertas.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Compara con lo que acabas de capturar. <strong>Siguiente</strong>: gr\xE1ficas de tendencia.</p>';
+      nextBtn.textContent = "Siguiente";
+      nextBtn.style.display = "";
+      break;
+    case "estado_actual_charts":
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Las <strong>gr\xE1ficas</strong> agrupan series por familia (hemodin\xE1mico, respiratorio, metab\xF3lico, etc.). Los puntos fuera de rango se resaltan para lectura r\xE1pida en guardia.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Despl\xE1zate si hace falta. <strong>Siguiente</strong>: historial y texto para la nota.</p>';
+      nextBtn.textContent = "Siguiente";
+      nextBtn.style.display = "";
+      break;
+    case "estado_actual_historial":
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">El <strong>historial</strong> lista cada medici\xF3n con fecha y turno; abajo, el <strong>texto compilado</strong> se puede copiar a la evoluci\xF3n o exportar.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Siguiente</strong>: <strong>Eventualidades</strong> (l\xEDnea de tiempo del ingreso).</p>';
+      nextBtn.textContent = "Siguiente";
+      nextBtn.style.display = "";
+      break;
+    case "eventualidades":
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;"><strong>Eventualidades</strong> es la l\xEDnea de tiempo del ingreso: evoluci\xF3n subjetiva y procedimientos por d\xEDa. El demo trae <strong>tres d\xEDas</strong> de notas breves.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Puedes editar, agregar o borrar entradas. Pulsa <strong>Siguiente</strong>.</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "listado_problemas":
@@ -25773,7 +27775,7 @@ function renderTourStep() {
       nextBtn.textContent = "Siguiente";
       break;
     case "sala_vpo":
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;"><strong>Expediente \u2192 Salida \u2192 VPO</strong>: valoraci\xF3n preoperatoria con riesgo ASA, paracl\xEDnicos y texto copiable para la nota. Solo en <strong>Sala</strong> (en Salida, junto a Listado y Receta HU).</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Completa o revisa los campos resaltados y pulsa <strong>Siguiente</strong>.</p>';
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;"><strong>Expediente \u2192 Salida \u2192 VPO</strong>: documenta escalas de riesgo (ASA, RCRI, Gupta, ARISCAT, Caprini) con el resultado que obtengas en tu calculadora; EKG/Rx editables y texto copiable. Solo en <strong>Sala</strong>.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Completa o revisa los campos resaltados y pulsa <strong>Siguiente</strong>.</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "sala_receta_hu":
@@ -25799,7 +27801,7 @@ function renderTourStep() {
     default:
       hideTourDock();
   }
-  if (stepRequiresUserAction(tourStepId2) && tourStepId2 !== "servicio_default" && tourStepId2 !== "estado_actual") {
+  if (stepRequiresUserAction(tourStepId2) && tourStepId2 !== "servicio_default") {
     nextBtn.style.display = "none";
   }
   syncTourDockPlacement();
@@ -25832,7 +27834,7 @@ function guidedTourPause() {
   guidedTourActive2 = false;
   publishTourGuardContext();
   hideTourDock();
-  rt12.showToast("Tutorial pausado. Contin\xFAa desde Aprender R+.", "info");
+  rt15.showToast("Tutorial pausado. Contin\xFAa desde Aprender R+.", "info");
   syncLearnHubContinueVisibility();
 }
 function resumeGuidedTourFromProgress() {
@@ -25846,7 +27848,7 @@ function resumeGuidedTourFromProgress() {
 }
 function startNeoCompanionTour(startStepId) {
   if (guidedTourActive2) {
-    rt12.showToast("Finaliza el tutorial actual primero.", "error");
+    rt15.showToast("Finaliza el tutorial actual primero.", "error");
     return;
   }
   guidedTourMode = "neo";
@@ -25867,7 +27869,7 @@ function guidedTourClickNext() {
     return;
   }
   if (tourStepId2 === "servicio_default" && guidedTourMode === "base" && guidedTourBranch !== "interconsulta") {
-    rt12.showToast("Listo: DEMO P\xC9REZ ya tiene laboratorio en R+.", "success");
+    rt15.showToast("Listo: pacientes demo con laboratorio en R+.", "success");
   }
   if (tourStepId2 === "sala_casiopea_lab") {
     closeLabSomeTablesModal();
@@ -25878,7 +27880,7 @@ function guidedTourClickNext() {
   if (tourStepId2 === "lab_bulk_separator") {
     closeLabBulkTourHintModal();
   }
-  if (tourStepId2 === "estado_actual") {
+  if (tourStepId2 === "estado_actual" || tourStepId2 === "estado_actual_registro") {
     closeSOAPModal();
   }
   if (i + 1 >= steps.length) {
@@ -25925,9 +27927,9 @@ function completeGuidedTourWithCelebration() {
   guidedTourMode = "base";
   publishTourGuardContext();
   hideTourDock();
-  rt12.launchConfetti();
+  rt15.launchConfetti();
   destroyDemoAndClose();
-  rt12.showToast("Tutorial completado", "success");
+  rt15.showToast("Tutorial completado", "success");
   syncLearnHubContinueVisibility();
 }
 function skipGuidedTour() {
@@ -25952,7 +27954,7 @@ function startOnboarding(branch, opts) {
   if (opts.resumeStepId) resetTourUiBeforeResume();
   guidedTourBranch = branch === "interconsulta" ? "interconsulta" : "sala";
   setUiDensity("normal");
-  var st = rt12.getSettings();
+  var st = rt15.getSettings();
   var prevMode = st.appMode;
   st.appMode = guidedTourBranch === "interconsulta" ? "interconsulta" : "sala";
   if (st.appMode !== prevMode) {
@@ -25961,124 +27963,10 @@ function startOnboarding(branch, opts) {
     } catch (e) {
     }
     applyAppModeSwitchEffects();
-    rt12.renderEstadoActualBar();
+    rt15.renderEstadoActualBar();
   }
-  var today = /* @__PURE__ */ new Date();
-  var fecha = String(today.getDate()).padStart(2, "0") + "/" + String(today.getMonth() + 1).padStart(2, "0") + "/" + today.getFullYear();
-  var hora = String(today.getHours()).padStart(2, "0") + ":" + String(today.getMinutes()).padStart(2, "0");
-  var demoPatient = {
-    id: DEMO_PATIENT_ID,
-    nombre: "DEMO P\xC9REZ",
-    registro: "0008421-7",
-    edad: "67 a\xF1os",
-    sexo: "M",
-    area: "SERVICIO DEMO",
-    servicio: "SERVICIO DEMO",
-    cuarto: "101",
-    cama: "1",
-    fromLab: false,
-    isDemo: true,
-    monitoreo: buildTourMonitoreoHistorial(today)
-  };
-  var demoPatient2 = {
-    id: DEMO_PATIENT_ID_2,
-    nombre: "DEMO GARC\xCDA",
-    registro: "0007755-3",
-    edad: "54 a\xF1os",
-    sexo: "F",
-    area: "SERVICIO DEMO",
-    servicio: "SERVICIO DEMO",
-    cuarto: "102",
-    cama: "2",
-    fromLab: false,
-    isDemo: true
-  };
-  notes[DEMO_PATIENT_ID] = {
-    fecha,
-    hora,
-    interrogatorio: "",
-    evolucion: "",
-    estudios: "",
-    diagnosticos: ["DM2, IRC estadio 3, HAS"],
-    tratamiento: [""],
-    ta: "",
-    fr: "",
-    fc: "",
-    temp: "",
-    peso: "",
-    medico: "",
-    profesor: ""
-  };
-  indicaciones[DEMO_PATIENT_ID] = {
-    fecha,
-    hora,
-    medicos: "",
-    dieta: "",
-    cuidados: "",
-    estudios: "",
-    medicamentos: "",
-    interconsultas: "",
-    otros: []
-  };
-  notes[DEMO_PATIENT_ID_2] = {
-    fecha,
-    hora,
-    interrogatorio: "",
-    evolucion: "",
-    estudios: "",
-    diagnosticos: ["DM2 descompensada"],
-    tratamiento: [""],
-    ta: "",
-    fr: "",
-    fc: "",
-    temp: "",
-    peso: "",
-    medico: "",
-    profesor: ""
-  };
-  indicaciones[DEMO_PATIENT_ID_2] = {
-    fecha,
-    hora,
-    medicos: "",
-    dieta: "",
-    cuidados: "",
-    estudios: "",
-    medicamentos: "",
-    interconsultas: "",
-    otros: []
-  };
-  seedDemoTrendHistory();
-  delete medRecetaByPatient[DEMO_PATIENT_ID];
-  if (medNotaSelectionByPatient[DEMO_PATIENT_ID]) delete medNotaSelectionByPatient[DEMO_PATIENT_ID];
-  medRecetaByPatient[DEMO_PATIENT_ID] = {
-    fechaActualizacion: fecha,
-    items: [
-      {
-        id: "tour-med-1",
-        nombreRaw: "PARACETAMOL 1 G SOL INY (*)",
-        viaRaw: "VIA INTRAVENOSA",
-        dosisRaw: "1 G //",
-        frecuenciaRaw: "CADA 8 HORAS",
-        suspendido: false,
-        diaTratamiento: null
-      },
-      {
-        id: "tour-med-2",
-        nombreRaw: "CEFTRIAXONA 1 G SOL INY (*)",
-        viaRaw: "VIA INTRAVENOSA",
-        dosisRaw: "1 G // *DIA# 2*",
-        frecuenciaRaw: "CADA 24 HORAS",
-        suspendido: false,
-        diaTratamiento: 2
-      }
-    ]
-  };
-  medNotaSelectionByPatient[DEMO_PATIENT_ID] = { "tour-med-1": true, "tour-med-2": true };
-  setPatients(patients.filter(function(p) {
-    return p.id !== DEMO_PATIENT_ID && p.id !== DEMO_PATIENT_ID_2;
-  }));
-  patients.unshift(demoPatient2);
-  patients.unshift(demoPatient);
+  tourDemoLabSessionProcessed = false;
+  purgeTourDemoPatientsFromState();
   guidedTourActive2 = true;
   var steps = getGuidedTourSteps();
   var resumeId = opts.resumeStepId;
@@ -26088,7 +27976,16 @@ function startOnboarding(branch, opts) {
     tourStepId2 = steps[0] || "map_sidebar";
   }
   renderPatientList();
-  selectPatient(DEMO_PATIENT_ID);
+  if (isTourDemoPatientId(rt15.getActiveId(), patients)) {
+    rt15.setActiveId(patients.length ? patients[0].id : null);
+    if (rt15.getActiveId()) selectPatient(rt15.getActiveId());
+    else {
+      var pv0 = document.getElementById("patient-view");
+      var es0 = document.getElementById("empty-state");
+      if (pv0) pv0.style.display = "none";
+      if (es0) es0.style.display = "flex";
+    }
+  }
   function finishTourStart() {
     applyTourNavigationForStep(tourStepId2);
     showTourDock();
@@ -26102,8 +27999,46 @@ function startOnboarding(branch, opts) {
     finishTourStart();
   }
 }
+function findTourDemoBlockForRegistro(blocks, registro) {
+  var reg = String(registro || "").trim();
+  if (!reg || !blocks) return null;
+  return blocks.find(function(b) {
+    if (!b || b.status !== "no-patient" || !b.okReportCount) return false;
+    return String(b.primaryExpediente || "").trim() === reg;
+  }) || null;
+}
+function scheduleTourDemoPatientRegistrationFromLab() {
+  if (!guidedTourActive2 || tourStepId2 !== "lab_parse") return;
+  if (tourDemoPatientsBothInCensus(patients)) return;
+  var ta = document.getElementById("lab-input");
+  if (!ta || typeof rt15.openAddModalFromLabPatient !== "function") return;
+  var text = String(ta.value || "").trim();
+  if (!text) return;
+  var blocks = buildBulkLabPreview(text, { findPatientByRegistro: rt15.findPatientByRegistro });
+  openNextTourDemoPatientFromBlocks(blocks);
+}
+function openNextTourDemoPatientFromBlocks(blocks) {
+  var regs = [DEMO_REGISTRO, DEMO_REGISTRO_2];
+  for (var i = 0; i < regs.length; i++) {
+    var reg = regs[i];
+    if (findTourDemoPatientByRegistro(patients, reg)) continue;
+    var block = findTourDemoBlockForRegistro(blocks, reg);
+    if (!block) continue;
+    var labPatient = extractLabPatientFromBulkBlock(block);
+    if (!labPatient) continue;
+    rt15.openAddModalFromLabPatient(labPatient, {
+      onSaved: function() {
+        setTimeout(scheduleTourDemoPatientRegistrationFromLab, 220);
+      }
+    });
+    return;
+  }
+}
 function onboardingAdvanceAfterParse() {
   if (!guidedTourActive2 || tourStepId2 !== "lab_parse") return;
+  if (!tourDemoLabCompleteForTour(patients, labHistory)) return;
+  tourDemoLabSessionProcessed = true;
+  ensureTourPrimaryDemoPatientActive();
   clearAllTourSpotlights();
   tourStepId2 = "lab_view";
   publishTourGuardContext();
@@ -26122,58 +28057,44 @@ function onboardingAdvanceAfterSend() {
     renderTourStep();
   }
 }
+function tourAfterBulkLabParse(blocks) {
+  if (!guidedTourActive2 || tourStepId2 !== "lab_parse") return;
+  if (tourDemoPatientsBothInCensus(patients)) return;
+  openNextTourDemoPatientFromBlocks(blocks || []);
+}
+function tourOnBulkPreviewPatientSaved() {
+  scheduleTourDemoPatientRegistrationFromLab();
+}
 function destroyDemoAndClose() {
   clearTourSoapButtonHighlight();
   closeLabBulkTourHintModal();
-  setPatients(patients.filter(function(p) {
-    return p.id !== DEMO_PATIENT_ID && p.id !== DEMO_PATIENT_ID_2;
-  }));
-  delete notes[DEMO_PATIENT_ID];
-  delete notes[DEMO_PATIENT_ID_2];
-  delete indicaciones[DEMO_PATIENT_ID];
-  delete indicaciones[DEMO_PATIENT_ID_2];
-  delete labHistory[DEMO_PATIENT_ID];
-  delete labHistory[DEMO_PATIENT_ID_2];
-  delete medRecetaByPatient[DEMO_PATIENT_ID];
-  delete listadoProblemas[DEMO_PATIENT_ID];
-  if (medNotaSelectionByPatient[DEMO_PATIENT_ID]) delete medNotaSelectionByPatient[DEMO_PATIENT_ID];
+  purgeTourDemoPatientsFromState();
   guidedTourActive2 = false;
   tourStepId2 = null;
   guidedTourBranch = null;
   publishTourGuardContext();
   hideTourDock();
-  if (rt12.getActiveId() === DEMO_PATIENT_ID) {
-    rt12.setActiveId(patients.length ? patients[0].id : null);
+  if (isTourDemoPatientId(rt15.getActiveId(), patients)) {
+    rt15.setActiveId(patients.length ? patients[0].id : null);
   }
   limpiarReporte();
   saveState();
   renderPatientList();
-  if (rt12.getActiveId()) selectPatient(rt12.getActiveId());
+  if (rt15.getActiveId()) selectPatient(rt15.getActiveId());
   else {
     document.getElementById("patient-view").style.display = "none";
     document.getElementById("empty-state").style.display = "flex";
   }
 }
 function resetAndStartOnboarding() {
-  rt12.closeProfileModal();
+  rt15.closeProfileModal();
   closeSettingsDropdown();
   try {
     localStorage.removeItem(GUIDED_TOUR_LS_KEY);
   } catch (_e) {
   }
   try {
-    setPatients(patients.filter(function(p) {
-      return p.id !== DEMO_PATIENT_ID && p.id !== DEMO_PATIENT_ID_2;
-    }));
-    delete notes[DEMO_PATIENT_ID];
-    delete notes[DEMO_PATIENT_ID_2];
-    delete indicaciones[DEMO_PATIENT_ID];
-    delete indicaciones[DEMO_PATIENT_ID_2];
-    delete labHistory[DEMO_PATIENT_ID];
-    delete labHistory[DEMO_PATIENT_ID_2];
-    delete medRecetaByPatient[DEMO_PATIENT_ID];
-    delete listadoProblemas[DEMO_PATIENT_ID];
-    if (medNotaSelectionByPatient[DEMO_PATIENT_ID]) delete medNotaSelectionByPatient[DEMO_PATIENT_ID];
+    purgeTourDemoPatientsFromState();
     guidedTourActive2 = false;
     tourStepId2 = null;
     guidedTourBranch = null;
@@ -26182,11 +28103,11 @@ function resetAndStartOnboarding() {
     hideTourIntroModal();
     limpiarReporte();
     saveState();
-    if (rt12.getActiveId() === DEMO_PATIENT_ID) {
-      rt12.setActiveId(patients.length ? patients[0].id : null);
+    if (isTourDemoPatientId(rt15.getActiveId(), patients)) {
+      rt15.setActiveId(patients.length ? patients[0].id : null);
     }
     renderPatientList();
-    if (rt12.getActiveId()) selectPatient(rt12.getActiveId());
+    if (rt15.getActiveId()) selectPatient(rt15.getActiveId());
     else {
       var pv = document.getElementById("patient-view");
       var es = document.getElementById("empty-state");
@@ -26419,7 +28340,7 @@ function selectHelpArticle(id) {
   helpCurrentArticleId = id;
   var contentEl = document.getElementById("help-article-content");
   if (contentEl) {
-    contentEl.innerHTML = "<h4>" + esc11(article.title) + "</h4>" + article.html;
+    contentEl.innerHTML = "<h4>" + esc12(article.title) + "</h4>" + article.html;
   }
   var list = document.getElementById("help-articles-list");
   if (list) {
@@ -26661,7 +28582,7 @@ var RELEASE_NOTES_HIGHLIGHTS = {
     },
     {
       title: "Tutorial actualizado",
-      body: "El tour precarga dos d\xEDas de DEMO P\xC9REZ y explica el separador multi-paciente con ejemplo DEMO GARC\xCDA."
+      body: "El tour usa dos d\xEDas de laboratorio de DEMO P\xC9REZ (alta en el censo al procesar) y explica el separador multi-paciente con ejemplo DEMO GARC\xCDA."
     }
   ],
   "6.0.0": [
@@ -27174,21 +29095,21 @@ var LAB_MINI_TOUR_STEPS = [
     badge: "Laboratorio \xB7 pegar",
     body: "Est\xE1s en la pesta\xF1a <strong>Laboratorio</strong>. Pega el reporte del laboratorio en el cuadro de texto. R+ reconoce biometr\xEDa, qu\xEDmica, electrolitos, gasometr\xEDa, pruebas hep\xE1ticas y m\xE1s.",
     before: function() {
-      rt12.switchAppTab("lab");
+      rt15.switchAppTab("lab");
     }
   },
   {
     badge: "Laboratorio \xB7 procesar",
     body: "Pulsa <strong>Procesar</strong>: R+ genera diagramas autom\xE1ticos (Gamble, BH, Qu\xEDmica, Coagulaci\xF3n\u2026) y una tabla de resultados con los valores alterados resaltados en rojo.",
     before: function() {
-      rt12.switchAppTab("lab");
+      rt15.switchAppTab("lab");
     }
   },
   {
     badge: "Laboratorio \xB7 copiar",
     body: "Tras procesar, usa el bot\xF3n flotante <strong>Copiar</strong> o el de cada diagrama. Con paciente activo, los resultados quedan en historial y en el expediente.",
     before: function() {
-      rt12.switchAppTab("lab");
+      rt15.switchAppTab("lab");
     },
     dockLeft: true
   },
@@ -27196,21 +29117,21 @@ var LAB_MINI_TOUR_STEPS = [
     badge: "Laboratorio \xB7 tendencias",
     body: "Cada laboratorio procesado con paciente activo se guarda con su fecha. Con dos o m\xE1s labs aparecen mini-gr\xE1ficas en <strong>Expediente \u2192 Tendencias</strong>.",
     before: function() {
-      rt12.switchAppTab("lab");
+      rt15.switchAppTab("lab");
     }
   },
   {
     badge: "Laboratorio \xB7 historial",
     body: "En la tarjeta <strong>Historial de laboratorio</strong>, <strong>Sincronizar</strong> abre el checklist para eliminar duplicados (misma fecha/hora y mismos valores). <strong>Consolidar</strong> fusiona conjuntos del mismo d\xEDa si son homog\xE9neos (solo labs o solo cultivos). As\xED las tendencias y la nota no arrastran repeticiones.",
     before: function() {
-      rt12.switchAppTab("lab");
+      rt15.switchAppTab("lab");
     }
   },
   {
     badge: "Evoluci\xF3n \xB7 SOAP y medicamentos",
     body: "En <strong>Expediente \u2192 Notas</strong> usa la <strong>plantilla SOAP</strong> para p\xE1rrafos estructurados. La pesta\xF1a <strong>Medicamentos</strong> importa la receta del hospital y puede mandar dosis a SOAP o al tratamiento.",
     before: function() {
-      rt12.switchAppTab("nota");
+      rt15.switchAppTab("nota");
     }
   }
 ];
@@ -27220,7 +29141,7 @@ function ensureSettingsDropdownOpen() {
 }
 function startMiniTour(kind) {
   if (guidedTourActive2) {
-    rt12.showToast("Finaliza el tutorial actual antes de iniciar un recorrido breve.", "error");
+    rt15.showToast("Finaliza el tutorial actual antes de iniciar un recorrido breve.", "error");
     return;
   }
   var steps = null;
@@ -27283,7 +29204,7 @@ function endMiniTour() {
 function startHelpTourMain() {
   if (miniTourActive) endMiniTour();
   if (isPresentationModeActive()) {
-    rt12.showToast("Finaliza el modo presentaci\xF3n antes de iniciar el tutorial guiado.", "error");
+    rt15.showToast("Finaliza el modo presentaci\xF3n antes de iniciar el tutorial guiado.", "error");
     return;
   }
   closeQuickHelp();
@@ -27294,12 +29215,12 @@ function startTourModule(chapterId) {
   var stepId = getFirstStepIdForChapter(chapterId, branch);
   if (!stepId) return;
   if (guidedTourActive2) {
-    rt12.showToast("Finaliza o pausa el tutorial actual primero.", "error");
+    rt15.showToast("Finaliza o pausa el tutorial actual primero.", "error");
     return;
   }
   if (miniTourActive) endMiniTour();
   if (isPresentationModeActive()) {
-    rt12.showToast("Finaliza el modo presentaci\xF3n antes de iniciar un m\xF3dulo.", "error");
+    rt15.showToast("Finaliza el modo presentaci\xF3n antes de iniciar un m\xF3dulo.", "error");
     return;
   }
   guidedTourMode = "base";
@@ -27308,12 +29229,12 @@ function startTourModule(chapterId) {
 }
 function startHelpTourInterconsulta() {
   if (guidedTourActive2) {
-    rt12.showToast("Finaliza o pausa el tutorial actual primero.", "error");
+    rt15.showToast("Finaliza o pausa el tutorial actual primero.", "error");
     return;
   }
   if (miniTourActive) endMiniTour();
   if (isPresentationModeActive()) {
-    rt12.showToast("Finaliza el modo presentaci\xF3n antes de iniciar el tutorial.", "error");
+    rt15.showToast("Finaliza el modo presentaci\xF3n antes de iniciar el tutorial.", "error");
     return;
   }
   closeQuickHelp();
@@ -27323,7 +29244,7 @@ function startHelpTourInterconsulta() {
 }
 function togglePresentationModeFromHelp() {
   if (guidedTourActive2) {
-    rt12.showToast("Finaliza el tutorial guiado antes del modo presentaci\xF3n.", "error");
+    rt15.showToast("Finaliza el tutorial guiado antes del modo presentaci\xF3n.", "error");
     return;
   }
   if (miniTourActive) endMiniTour();
@@ -27365,6 +29286,22 @@ var settingsHelpWindowHandlers = {
   closeLabBulkTourHintModal,
   insertLabTourSecondPatientExample
 };
+registerTourDemoPatientHooks({
+  isTourActive: function() {
+    return guidedTourActive2;
+  },
+  getTourStep: function() {
+    return tourStepId2;
+  },
+  applyBundle: applyTourDemoPatientBundle,
+  scheduleLabPatientRegistration: scheduleTourDemoPatientRegistrationFromLab,
+  switchAppTab: function(tab) {
+    rt15.switchAppTab(tab);
+  },
+  showToast: function(msg, type) {
+    rt15.showToast(msg, type);
+  }
+});
 
 // public/js/patient-export-format.mjs
 var PATIENT_EXPORT_FORMAT = "r-plus-patient-export";
@@ -27481,7 +29418,7 @@ function describePatientImportRejection(raw) {
 }
 
 // public/js/features/platform.mjs
-var rt13 = {
+var rt16 = {
   getActiveId() {
     return null;
   },
@@ -27502,7 +29439,7 @@ var rt13 = {
 };
 function registerPlatformRuntime(partial) {
   if (!partial || typeof partial !== "object") return;
-  Object.assign(rt13, partial);
+  Object.assign(rt16, partial);
 }
 var autoBackupSchedulerId = null;
 var AUDIT_LOG_KEY = "rpc-audit-log";
@@ -27524,7 +29461,7 @@ function resetUpdateCheckButtons() {
 }
 function checkForAppUpdates() {
   if (!window.electronAPI || typeof window.electronAPI.checkForUpdates !== "function") {
-    rt13.showToast("Las actualizaciones autom\xE1ticas solo est\xE1n en la app de escritorio.", "error");
+    rt16.showToast("Las actualizaciones autom\xE1ticas solo est\xE1n en la app de escritorio.", "error");
     return;
   }
   if (typeof window.electronAPI.setUpdateChannel === "function") {
@@ -27609,12 +29546,12 @@ function setRpcOffline(offline) {
   syncOfflineButtonStates();
   if (!prev && rpcOffline) {
     try {
-      rt13.showToast("Sin conexi\xF3n con el servidor local. Generaci\xF3n de documentos desactivada.", "error");
+      rt16.showToast("Sin conexi\xF3n con el servidor local. Generaci\xF3n de documentos desactivada.", "error");
     } catch (_e) {
     }
   } else if (prev && !rpcOffline) {
     try {
-      rt13.showToast("Servidor local reconectado.", "success");
+      rt16.showToast("Servidor local reconectado.", "success");
     } catch (_e) {
     }
   }
@@ -27688,13 +29625,13 @@ async function promptForIdleLockPinSetup(reason) {
   var p1 = prompt(label, "");
   if (p1 == null) return { ok: false, cancelled: true };
   if (!isIdleLockPinFormatValid(p1)) {
-    rt13.showToast("PIN inv\xE1lido (solo 4-8 d\xEDgitos).", "error");
+    rt16.showToast("PIN inv\xE1lido (solo 4-8 d\xEDgitos).", "error");
     return { ok: false, cancelled: false };
   }
   var p2 = prompt("Confirma el PIN:", "");
   if (p2 == null) return { ok: false, cancelled: true };
   if (p1 !== p2) {
-    rt13.showToast("Los PIN no coinciden.", "error");
+    rt16.showToast("Los PIN no coinciden.", "error");
     return { ok: false, cancelled: false };
   }
   try {
@@ -27703,7 +29640,7 @@ async function promptForIdleLockPinSetup(reason) {
     addAuditEntry("idle-lock-pin-set", "ok", 0, reason === "change" ? "changed" : "created");
     return { ok: true, cancelled: false };
   } catch (_err) {
-    rt13.showToast("WebCrypto no disponible en este entorno.", "error");
+    rt16.showToast("WebCrypto no disponible en este entorno.", "error");
     addAuditEntry("idle-lock-pin-set", "error", 0, "no-webcrypto");
     return { ok: false, cancelled: false };
   }
@@ -27721,7 +29658,7 @@ async function onIdleLockSelectChange(value) {
     addAuditEntry("idle-lock-disable", "ok", 0, "");
     restartIdleLockTimer();
     syncIdleLockSelectUi();
-    rt13.showToast("Bloqueo por inactividad desactivado.", "success");
+    rt16.showToast("Bloqueo por inactividad desactivado.", "success");
     return;
   }
   if (!getIdleLockPinHash()) {
@@ -27735,7 +29672,7 @@ async function onIdleLockSelectChange(value) {
   addAuditEntry("idle-lock-enable", "ok", parsed, "");
   restartIdleLockTimer();
   syncIdleLockSelectUi();
-  rt13.showToast("Bloqueo activo: " + parsed + " min.", "success");
+  rt16.showToast("Bloqueo activo: " + parsed + " min.", "success");
 }
 async function changeIdleLockPin() {
   var existing = getIdleLockPinHash();
@@ -27743,26 +29680,26 @@ async function changeIdleLockPin() {
     var current = prompt("Ingresa el PIN actual para continuar:", "");
     if (current == null) return;
     if (!isIdleLockPinFormatValid(current)) {
-      rt13.showToast("PIN con formato inv\xE1lido.", "error");
+      rt16.showToast("PIN con formato inv\xE1lido.", "error");
       addAuditEntry("idle-lock-pin-change", "error", 0, "invalid-format");
       return;
     }
     try {
       var hash = await computeSha256Hex(current);
       if (hash !== existing) {
-        rt13.showToast("PIN incorrecto.", "error");
+        rt16.showToast("PIN incorrecto.", "error");
         addAuditEntry("idle-lock-pin-change", "error", 0, "wrong-pin");
         return;
       }
     } catch (_err) {
-      rt13.showToast("WebCrypto no disponible.", "error");
+      rt16.showToast("WebCrypto no disponible.", "error");
       addAuditEntry("idle-lock-pin-change", "error", 0, "no-webcrypto");
       return;
     }
   }
   var setup = await promptForIdleLockPinSetup("change");
   if (setup.ok) {
-    rt13.showToast("PIN actualizado \u2713", "success");
+    rt16.showToast("PIN actualizado \u2713", "success");
     restartIdleLockTimer();
   }
 }
@@ -27971,7 +29908,7 @@ function wipeCacheConfirmed() {
   addAuditEntry("data-wipe-cache", "ok", keys.length, "completed");
   closeWipeDataModal();
   syncIdleLockSelectUi();
-  rt13.showToast("Se eliminaron " + keys.length + " elementos temporales.", "success");
+  rt16.showToast("Se eliminaron " + keys.length + " elementos temporales.", "success");
 }
 function wipeAllConfirmed() {
   var firstOk = confirm("Esto BORRAR\xC1 todos los pacientes, notas, indicaciones, historial de labs, ajustes y PIN de bloqueo de esta computadora. No se puede deshacer. \xBFContinuar?");
@@ -27982,7 +29919,7 @@ function wipeAllConfirmed() {
   var typed = prompt("Escribe BORRAR en may\xFAsculas para confirmar el borrado completo:", "");
   if (String(typed == null ? "" : typed).trim().toUpperCase() !== "BORRAR") {
     addAuditEntry("data-wipe-full", "cancelled", 0, "confirmation-failed");
-    rt13.showToast("Borrado cancelado.", "error");
+    rt16.showToast("Borrado cancelado.", "error");
     return;
   }
   var keys = collectFullWipeKeys();
@@ -28005,14 +29942,14 @@ function wipeAllConfirmed() {
 }
 function openUserDataFolderFromSettings() {
   if (!window.electronAPI || !window.electronAPI.openUserDataFolder) {
-    rt13.showToast("Solo disponible en la aplicaci\xF3n de escritorio.", "error");
+    rt16.showToast("Solo disponible en la aplicaci\xF3n de escritorio.", "error");
     return;
   }
   window.electronAPI.openUserDataFolder().then(function(res) {
-    if (res && res.ok) rt13.showToast("Carpeta abierta", "success");
-    else rt13.showToast(res && res.error || "No se pudo abrir la carpeta", "error");
+    if (res && res.ok) rt16.showToast("Carpeta abierta", "success");
+    else rt16.showToast(res && res.error || "No se pudo abrir la carpeta", "error");
   }).catch(function() {
-    rt13.showToast("No se pudo abrir la carpeta", "error");
+    rt16.showToast("No se pudo abrir la carpeta", "error");
   });
 }
 function safeExportSlug(str) {
@@ -28047,7 +29984,7 @@ function exportAuditLog() {
     exportedAt: (/* @__PURE__ */ new Date()).toISOString(),
     entries: log
   }, "R-plus-bitacora-" + formatDateSlug(/* @__PURE__ */ new Date()) + ".json");
-  rt13.showToast("Bit\xE1cora exportada", "success");
+  rt16.showToast("Bit\xE1cora exportada", "success");
 }
 var MED_CATALOG_MERGE_CAP = 400;
 function mergeMedCatalogStored(incoming) {
@@ -28097,7 +30034,7 @@ function exportMedCatalogBundle() {
     "R-plus-catalogo-medicamentos-" + formatDateSlug(/* @__PURE__ */ new Date()) + ".json"
   );
   addAuditEntry("med-catalog-export", "ok", Object.keys(data.accents || {}).length, "soap-export");
-  rt13.showToast("Cat\xE1logo exportado", "success");
+  rt16.showToast("Cat\xE1logo exportado", "success");
 }
 function triggerImportMedCatalog() {
   var el = document.getElementById("med-catalog-file-input");
@@ -28118,7 +30055,7 @@ function onMedCatalogFileChosen(ev) {
       var hasAcc = accents && typeof accents === "object";
       var hasSoap = soapTokens && typeof soapTokens === "object";
       if (!hasAcc && !hasSoap) {
-        rt13.showToast("El archivo no es un cat\xE1logo v\xE1lido (faltan accents o soapTokens).", "error");
+        rt16.showToast("El archivo no es un cat\xE1logo v\xE1lido (faltan accents o soapTokens).", "error");
         return;
       }
       var merged = mergeMedCatalogStored({
@@ -28130,9 +30067,9 @@ function onMedCatalogFileChosen(ev) {
       var nAcc = Object.keys(merged.accents || {}).length;
       var nTok = (merged.soapTokens.vasop || []).length + (merged.soapTokens.abx || []).length + (merged.soapTokens.analgesia || []).length + (merged.soapTokens.antihta || []).length;
       addAuditEntry("med-catalog-import", "ok", nTok, "accents:" + nAcc);
-      rt13.showToast("Cat\xE1logo importado (fusionado con el tuyo)", "success");
+      rt16.showToast("Cat\xE1logo importado (fusionado con el tuyo)", "success");
     } catch (_err) {
-      rt13.showToast("No se pudo leer el cat\xE1logo", "error");
+      rt16.showToast("No se pudo leer el cat\xE1logo", "error");
     }
   };
   reader.readAsText(f);
@@ -28193,7 +30130,7 @@ async function persistFullBackupPayload(payload) {
 function restorePreimportBackupPrompt() {
   var raw = localStorage.getItem(PREIMPORT_BACKUP_KEY);
   if (!raw) {
-    rt13.showToast(
+    rt16.showToast(
       "No hay copia autom\xE1tica previa a una importaci\xF3n. Revisa Descargas por archivos R-plus-respaldo- o R-plus-auto-respaldo-.",
       "error"
     );
@@ -28204,11 +30141,11 @@ function restorePreimportBackupPrompt() {
   try {
     payload = JSON.parse(raw);
   } catch (_e) {
-    rt13.showToast("La copia autom\xE1tica previa est\xE1 da\xF1ada.", "error");
+    rt16.showToast("La copia autom\xE1tica previa est\xE1 da\xF1ada.", "error");
     return;
   }
   if (!payload || payload.format !== "r-plus-backup" || payload.version !== 1 || !payload.data) {
-    rt13.showToast("Formato de respaldo no v\xE1lido.", "error");
+    rt16.showToast("Formato de respaldo no v\xE1lido.", "error");
     return;
   }
   var n = (payload.data.patients || []).length;
@@ -28217,12 +30154,12 @@ function restorePreimportBackupPrompt() {
   )) {
     return;
   }
-  if (typeof pushUndoSnapshot === "function") rt13.pushUndoSnapshot("Antes de restaurar copia pre-importaci\xF3n");
+  if (typeof pushUndoSnapshot === "function") rt16.pushUndoSnapshot("Antes de restaurar copia pre-importaci\xF3n");
   persistFullBackupPayload(payload).then(function() {
     addAuditEntry("preimport-restore", "ok", n, payload.exportedAt || "");
     location.reload();
   }).catch(function() {
-    rt13.showToast("No se pudo restaurar la copia autom\xE1tica.", "error");
+    rt16.showToast("No se pudo restaurar la copia autom\xE1tica.", "error");
   });
 }
 function formatDateSlug(d) {
@@ -28325,7 +30262,7 @@ async function runAutoBackupNow(isScheduled) {
   cfg.lastRunAt = ts;
   saveAutoBackupSettings(cfg);
   addAuditEntry("backup-auto", "ok", (payload.data.patients || []).length, isScheduled ? "scheduled" : "manual");
-  rt13.showToast("Auto-respaldo generado", "success");
+  rt16.showToast("Auto-respaldo generado", "success");
 }
 function initGoalGFeatures() {
   syncAutoBackupUi();
@@ -28356,7 +30293,7 @@ function buildBackupDataFromMemory() {
   Object.keys(listadoProblemas || {}).forEach(function(k) {
     if (listadoProblemas[k] && !String(k).startsWith("demo-")) listPersist[k] = listadoProblemas[k];
   });
-  var settings2 = rt13.getSettings();
+  var settings2 = rt16.getSettings();
   if (!settings2 || typeof settings2 !== "object" || !Object.keys(settings2).length) {
     settings2 = storage.getSettings();
   }
@@ -28520,22 +30457,22 @@ async function exportDataBackup() {
   downloadJsonPayload(payload, "R-plus-respaldo-" + formatDateSlug(/* @__PURE__ */ new Date()) + ".json");
   addAuditEntry("backup-full-export", "ok", n, "");
   if (n === 0) {
-    rt13.showToast(
+    rt16.showToast(
       "Respaldo descargado sin pacientes. Si esperabas datos, revisa la lista y exporta de nuevo.",
       "error"
     );
   } else {
-    rt13.showToast("Respaldo descargado (" + n + " paciente" + (n === 1 ? "" : "s") + ")", "success");
+    rt16.showToast("Respaldo descargado (" + n + " paciente" + (n === 1 ? "" : "s") + ")", "success");
   }
 }
 function exportActivePatientBackup() {
-  var aid7 = rt13.getActiveId();
+  var aid7 = rt16.getActiveId();
   if (!aid7) {
-    rt13.showToast("Selecciona un paciente en la lista.", "error");
+    rt16.showToast("Selecciona un paciente en la lista.", "error");
     return;
   }
-  if (aid7 === DEMO_PATIENT_ID) {
-    rt13.showToast("El paciente de demostraci\xF3n no se exporta.", "error");
+  if (isTourDemoPatientId(aid7, patients)) {
+    rt16.showToast("El paciente de demostraci\xF3n no se exporta.", "error");
     return;
   }
   var patient = patients.find(function(p) {
@@ -28556,14 +30493,14 @@ function exportActivePatientBackup() {
   };
   downloadJsonPayload(payload, "R-plus-paciente-" + safeExportSlug(patient.nombre) + "-" + formatDateSlug(/* @__PURE__ */ new Date()) + ".json");
   addAuditEntry("backup-patient-export", "ok", 1, String(patient.registro || ""));
-  rt13.showToast("Paciente exportado", "success");
+  rt16.showToast("Paciente exportado", "success");
 }
 function exportRangeBackupPrompt() {
   var raw = prompt("Rango de fechas (dd/mm/yyyy - dd/mm/yyyy):", "");
   if (raw == null) return;
   var range = parseDateRangePrompt(raw);
   if (!range) {
-    rt13.showToast("Rango inv\xE1lido. Usa dd/mm/yyyy - dd/mm/yyyy", "error");
+    rt16.showToast("Rango inv\xE1lido. Usa dd/mm/yyyy - dd/mm/yyyy", "error");
     return;
   }
   var entries = [];
@@ -28572,7 +30509,7 @@ function exportRangeBackupPrompt() {
     if (entry2 && patientInDateRange(entry2, range)) entries.push(entry2);
   });
   if (!entries.length) {
-    rt13.showToast("No hay pacientes en ese rango.", "error");
+    rt16.showToast("No hay pacientes en ese rango.", "error");
     return;
   }
   var payload = {
@@ -28585,7 +30522,7 @@ function exportRangeBackupPrompt() {
   };
   downloadJsonPayload(payload, "R-plus-rango-" + formatDateSlug(/* @__PURE__ */ new Date()) + ".json");
   addAuditEntry("range-export", "ok", entries.length, payload.from + " a " + payload.to);
-  rt13.showToast("Rango exportado", "success");
+  rt16.showToast("Rango exportado", "success");
 }
 function triggerImportRangeBackup() {
   var input = document.getElementById("range-backup-file-input");
@@ -28600,18 +30537,18 @@ function onRangeBackupFileChosen(ev) {
     try {
       var payload = JSON.parse(reader.result);
       if (!payload || payload.format !== "r-plus-range-export" || payload.version !== 1 || !Array.isArray(payload.entries)) {
-        rt13.showToast("Archivo de rango inv\xE1lido.", "error");
+        rt16.showToast("Archivo de rango inv\xE1lido.", "error");
         return;
       }
-      if (typeof pushUndoSnapshot === "function") rt13.pushUndoSnapshot("Importar rango (" + payload.entries.length + ")");
+      if (typeof pushUndoSnapshot === "function") rt16.pushUndoSnapshot("Importar rango (" + payload.entries.length + ")");
       var res = importEntriesWithConflicts(payload.entries, "range-import");
       if (res.cancelled) {
-        rt13.showToast("Importaci\xF3n cancelada", "error");
+        rt16.showToast("Importaci\xF3n cancelada", "error");
       } else {
-        rt13.showToast("Rango importado: " + (res.imported + res.overwritten + res.duplicated), "success");
+        rt16.showToast("Rango importado: " + (res.imported + res.overwritten + res.duplicated), "success");
       }
     } catch (_err) {
-      rt13.showToast("No se pudo leer el archivo de rango.", "error");
+      rt16.showToast("No se pudo leer el archivo de rango.", "error");
       addAuditEntry("range-import", "error", 0, "read-error");
     }
   };
@@ -28640,16 +30577,16 @@ function applySinglePatientExportPayload(payload) {
   var entry2 = patientExportPayloadToEntry(payload);
   if (existsByRegistro) {
     applyImportEntry(entry2, "overwrite", existsByRegistro);
-    rt13.setActiveId(existsByRegistro.id);
+    rt16.setActiveId(existsByRegistro.id);
     return registro;
   }
   var newId = applyImportEntry(entry2, "duplicate", null);
-  rt13.setActiveId(newId);
+  rt16.setActiveId(newId);
   return registro;
 }
 function importPatientExportPayloads(payloads, sourceLabel) {
   if (!payloads || !payloads.length) {
-    rt13.showToast("No hay pacientes para importar.", "error");
+    rt16.showToast("No hay pacientes para importar.", "error");
     return false;
   }
   if (payloads.length > 1) {
@@ -28662,19 +30599,19 @@ function importPatientExportPayloads(payloads, sourceLabel) {
       return false;
     }
     if (typeof pushUndoSnapshot === "function") {
-      rt13.pushUndoSnapshot("Importar pacientes demo (" + payloads.length + ")");
+      rt16.pushUndoSnapshot("Importar pacientes demo (" + payloads.length + ")");
     }
     var entries = payloads.map(patientExportPayloadToEntry);
     var res = importEntriesWithConflicts(entries, "backup-patient-import");
     if (res.cancelled) {
-      rt13.showToast("Importaci\xF3n cancelada", "error");
+      rt16.showToast("Importaci\xF3n cancelada", "error");
       return false;
     }
-    rt13.showToast(
+    rt16.showToast(
       "Pacientes importados: " + (res.imported + res.overwritten + res.duplicated),
       "success"
     );
-    if (rt13.getActiveId()) selectPatient(rt13.getActiveId());
+    if (rt16.getActiveId()) selectPatient(rt16.getActiveId());
     return true;
   }
   var payload = payloads[0];
@@ -28686,9 +30623,9 @@ function importPatientExportPayloads(payloads, sourceLabel) {
   applySinglePatientExportPayload(payload);
   saveState();
   renderPatientList();
-  if (rt13.getActiveId()) selectPatient(rt13.getActiveId());
+  if (rt16.getActiveId()) selectPatient(rt16.getActiveId());
   addAuditEntry("backup-patient-import", "ok", 1, (sourceLabel || "") + registro);
-  rt13.showToast("Paciente importado correctamente.", "success");
+  rt16.showToast("Paciente importado correctamente.", "success");
   return true;
 }
 function onPatientBackupFileChosen(ev) {
@@ -28702,7 +30639,7 @@ function onPatientBackupFileChosen(ev) {
       var parsed = result.parsed;
       var payloads = result.payloads;
       if (!payloads.length) {
-        rt13.showToast(
+        rt16.showToast(
           "El archivo no es una exportaci\xF3n v\xE1lida de paciente. " + describePatientImportRejection(parsed),
           "error"
         );
@@ -28710,7 +30647,7 @@ function onPatientBackupFileChosen(ev) {
       }
       importPatientExportPayloads(payloads, f.name + ":");
     } catch (_err) {
-      rt13.showToast("No se pudo leer la exportaci\xF3n de paciente.", "error");
+      rt16.showToast("No se pudo leer la exportaci\xF3n de paciente.", "error");
       addAuditEntry("backup-patient-import", "error", 0, "read-error");
     }
   };
@@ -28727,7 +30664,7 @@ async function importBundledDemoPatients() {
       var result = parsePatientImportJsonText(await res.text());
       payloads = payloads.concat(result.payloads);
     } catch (_fetchErr) {
-      rt13.showToast(
+      rt16.showToast(
         "No se encontr\xF3 " + name + " en la app. Regenera con npm run export:demo-patients y npm run build:ui.",
         "error"
       );
@@ -28735,7 +30672,7 @@ async function importBundledDemoPatients() {
     }
   }
   if (!payloads.length) {
-    rt13.showToast("Los JSON demo no tienen formato de importaci\xF3n v\xE1lido.", "error");
+    rt16.showToast("Los JSON demo no tienen formato de importaci\xF3n v\xE1lido.", "error");
     return;
   }
   importPatientExportPayloads(payloads, "bundled:");
@@ -28752,7 +30689,7 @@ function onBackupFileChosen(ev) {
     try {
       var payload = JSON.parse(reader.result);
       if (!payload || payload.format !== "r-plus-backup" || payload.version !== 1 || !payload.data) {
-        rt13.showToast("El archivo no es un respaldo v\xE1lido de R+", "error");
+        rt16.showToast("El archivo no es un respaldo v\xE1lido de R+", "error");
         return;
       }
       var n = (payload.data.patients || []).length;
@@ -28763,7 +30700,7 @@ function onBackupFileChosen(ev) {
       if (!confirm(confirmMsg + "\n\n\xBFContinuar?")) {
         return;
       }
-      if (typeof pushUndoSnapshot === "function") rt13.pushUndoSnapshot("Importar respaldo completo");
+      if (typeof pushUndoSnapshot === "function") rt16.pushUndoSnapshot("Importar respaldo completo");
       await saveState({ immediate: true });
       try {
         localStorage.setItem("rpc-preimport-backup", JSON.stringify(buildFullBackupPayload()));
@@ -28771,7 +30708,7 @@ function onBackupFileChosen(ev) {
       }
       await persistFullBackupPayload(payload);
       addAuditEntry("backup-full-import", "ok", n, "");
-      rt13.showToast(
+      rt16.showToast(
         "Respaldo importado (" + n + " paciente" + (n === 1 ? "" : "s") + "). Recargando\u2026",
         "success"
       );
@@ -28779,12 +30716,12 @@ function onBackupFileChosen(ev) {
     } catch (err) {
       var code = err && err.message;
       if (code === "SAVE_FAILED" || code === "QUOTA_EXCEEDED") {
-        rt13.showToast(
+        rt16.showToast(
           "No se pudo guardar el respaldo: almacenamiento local lleno. Libera espacio e intenta de nuevo.",
           "error"
         );
       } else {
-        rt13.showToast("No se pudo leer el respaldo", "error");
+        rt16.showToast("No se pudo leer el respaldo", "error");
       }
       addAuditEntry("backup-full-import", "error", 0, code || "read-error");
     }
@@ -28857,7 +30794,7 @@ function collectSyncEntries() {
 async function exportSyncBundlePrompt() {
   var entries = collectSyncEntries();
   if (!entries.length) {
-    rt13.showToast("No hay datos para sincronizar.", "error");
+    rt16.showToast("No hay datos para sincronizar.", "error");
     return;
   }
   var passphrase = prompt("Passphrase opcional para cifrar (deja vac\xEDo para sin cifrado):", "");
@@ -28871,7 +30808,7 @@ async function exportSyncBundlePrompt() {
     try {
       base.payload = await encryptSyncPayload({ entries }, String(passphrase));
     } catch (_err) {
-      rt13.showToast("No se pudo cifrar: WebCrypto no disponible.", "error");
+      rt16.showToast("No se pudo cifrar: WebCrypto no disponible.", "error");
       addAuditEntry("sync-export", "error", 0, "crypto-unavailable");
       return;
     }
@@ -28880,7 +30817,7 @@ async function exportSyncBundlePrompt() {
   }
   downloadJsonPayload(base, "R-plus-sync-" + formatDateSlug(/* @__PURE__ */ new Date()) + ".json");
   addAuditEntry("sync-export", "ok", entries.length, base.payload.encrypted ? "encrypted" : "plain");
-  rt13.showToast("Paquete sync exportado", "success");
+  rt16.showToast("Paquete sync exportado", "success");
 }
 function triggerImportSyncBundle() {
   var input = document.getElementById("sync-bundle-file-input");
@@ -28895,30 +30832,30 @@ function onSyncBundleFileChosen(ev) {
     try {
       var bundle = JSON.parse(reader.result);
       if (!bundle || bundle.format !== "r-plus-sync-bundle" || bundle.version !== 1 || !bundle.payload) {
-        rt13.showToast("Paquete sync inv\xE1lido.", "error");
+        rt16.showToast("Paquete sync inv\xE1lido.", "error");
         return;
       }
       var data = bundle.payload;
       if (data.encrypted) {
         var passphrase = prompt("Este paquete est\xE1 cifrado. Ingresa la passphrase:", "");
         if (!passphrase) {
-          rt13.showToast("Importaci\xF3n cancelada.", "error");
+          rt16.showToast("Importaci\xF3n cancelada.", "error");
           addAuditEntry("sync-import", "cancelled", 0, "no-passphrase");
           return;
         }
         data = await decryptSyncPayload(data, passphrase);
       }
       if (!data || !Array.isArray(data.entries)) {
-        rt13.showToast("Contenido sync inv\xE1lido.", "error");
+        rt16.showToast("Contenido sync inv\xE1lido.", "error");
         addAuditEntry("sync-import", "error", 0, "invalid-content");
         return;
       }
-      if (typeof pushUndoSnapshot === "function") rt13.pushUndoSnapshot("Importar paquete sync (" + data.entries.length + ")");
+      if (typeof pushUndoSnapshot === "function") rt16.pushUndoSnapshot("Importar paquete sync (" + data.entries.length + ")");
       var res = importEntriesWithConflicts(data.entries, "sync-import");
-      if (res.cancelled) rt13.showToast("Sync cancelado", "error");
-      else rt13.showToast("Sync importado: " + (res.imported + res.overwritten + res.duplicated), "success");
+      if (res.cancelled) rt16.showToast("Sync cancelado", "error");
+      else rt16.showToast("Sync importado: " + (res.imported + res.overwritten + res.duplicated), "success");
     } catch (_err) {
-      rt13.showToast("No se pudo importar el paquete sync.", "error");
+      rt16.showToast("No se pudo importar el paquete sync.", "error");
       addAuditEntry("sync-import", "error", 0, "read-error");
     }
   };
@@ -28930,14 +30867,14 @@ var UPDATE_TELEMETRY_URL = "https://example.invalid/r-plus-update";
 var pendingUpdaterTargetVersion = null;
 var pendingUpdaterIsPrerelease = false;
 function getUpdateChannel() {
-  var s = rt13.getSettings();
+  var s = rt16.getSettings();
   var raw = String(s && s.updateChannel || "estable").toLowerCase();
   return raw === "beta" ? "beta" : "estable";
 }
 function setUpdateChannel(channel) {
   var normalized = String(channel || "").toLowerCase() === "beta" ? "beta" : "estable";
   var previous = getUpdateChannel();
-  var s = rt13.getSettings();
+  var s = rt16.getSettings();
   s.updateChannel = normalized;
   localStorage.setItem("rpc-settings", JSON.stringify(s));
   syncUpdateChannelUI();
@@ -28948,7 +30885,7 @@ function setUpdateChannel(channel) {
     }
   }
   if (previous !== normalized) {
-    rt13.showToast(
+    rt16.showToast(
       normalized === "beta" ? "Canal pre-releases activado: recibir\xE1s borradores de GitHub." : "Canal estable activado.",
       "success"
     );
@@ -28970,19 +30907,19 @@ function syncUpdateChannelUI() {
   var sel = document.getElementById("rpc-update-channel");
   if (sel) sel.value = getUpdateChannel();
   syncUpdateModalChannelPill(pendingUpdaterIsPrerelease);
-  if (typeof syncTeamSyncHeaderButton === "function") rt13.syncTeamSyncHeaderButton();
+  if (typeof syncTeamSyncHeaderButton === "function") rt16.syncTeamSyncHeaderButton();
 }
 function getUpdateTelemetryEnabled() {
-  var s = rt13.getSettings();
+  var s = rt16.getSettings();
   return !!(s && s.updateTelemetryEnabled);
 }
 function setUpdateTelemetryEnabled(enabled) {
   var value = !!enabled;
-  var s = rt13.getSettings();
+  var s = rt16.getSettings();
   s.updateTelemetryEnabled = value;
   localStorage.setItem("rpc-settings", JSON.stringify(s));
   syncUpdateTelemetryUI();
-  rt13.showToast(value ? "Telemetr\xEDa de actualizaci\xF3n activada." : "Telemetr\xEDa desactivada.", "success");
+  rt16.showToast(value ? "Telemetr\xEDa de actualizaci\xF3n activada." : "Telemetr\xEDa desactivada.", "success");
 }
 function syncUpdateTelemetryUI() {
   var cb = document.getElementById("rpc-update-telemetry-toggle");
@@ -29007,14 +30944,14 @@ function syncHardwareAccelerationUI() {
 function onHardwareAccelerationChange(enabled) {
   var api = window.electronAPI;
   if (!api || typeof api.setHardwareAcceleration !== "function") {
-    rt13.showToast("Solo disponible en la aplicaci\xF3n de escritorio.", "error");
+    rt16.showToast("Solo disponible en la aplicaci\xF3n de escritorio.", "error");
     syncHardwareAccelerationUI();
     return;
   }
   api.setHardwareAcceleration(!!enabled).then(function() {
-    rt13.showToast("Reinicia R+ para aplicar la aceleraci\xF3n por hardware.", "info");
+    rt16.showToast("Reinicia R+ para aplicar la aceleraci\xF3n por hardware.", "info");
   }).catch(function() {
-    rt13.showToast("No se pudo guardar la preferencia.", "error");
+    rt16.showToast("No se pudo guardar la preferencia.", "error");
     syncHardwareAccelerationUI();
   });
 }
@@ -29293,7 +31230,7 @@ if (typeof window !== "undefined" && window.electronAPI) {
       pendingUpdaterTargetVersion = null;
       pendingUpdaterIsPrerelease = false;
       syncUpdateModalChannelPill(false);
-      rt13.showToast("R+ est\xE1 actualizado.", "success");
+      rt16.showToast("R+ est\xE1 actualizado.", "success");
     } catch (e) {
       console.error("onUpdateNotAvailable callback error:", e && e.message);
     }
@@ -29784,7 +31721,7 @@ function syncConsolidatedPaneVisibility(granularTab, settings2) {
 }
 
 // public/js/features/profile.mjs
-var rt14 = {
+var rt17 = {
   showToast() {
   },
   syncWorkContextChrome() {
@@ -29794,7 +31731,7 @@ var rt14 = {
   }
 };
 function registerProfileRuntime(partial) {
-  if (partial && typeof partial === "object") Object.assign(rt14, partial);
+  if (partial && typeof partial === "object") Object.assign(rt17, partial);
 }
 var profileGetSettings = function() {
   return (
@@ -29849,7 +31786,7 @@ function persistSettingsToLocalStorage() {
   try {
     localStorage.setItem("rpc-settings", JSON.stringify(settingsRef()));
   } catch (_e) {
-    rt14.showToast(
+    rt17.showToast(
       "No se pudo guardar en el almacenamiento local. El modo puede no persistir al recargar.",
       "error"
     );
@@ -29879,7 +31816,7 @@ function loadSettings() {
     if (typeof syncSettingsLanHostDiskSection === "function") syncSettingsLanHostDiskSection();
     syncAppModeRadioControls();
     syncCensoExportButtonVisibility();
-    rt14.syncWorkContextChrome();
+    rt17.syncWorkContextChrome();
     return;
   }
   var st = settingsRef();
@@ -29952,7 +31889,7 @@ function loadSettings() {
         if (RELEASE_NOTES_DEV_FORCE_SHOW) {
           initReleaseNotesDevPreviewIfEnabled(v);
         } else if (prev && v && prev !== v) {
-          rt14.showToast(
+          rt17.showToast(
             "Actualizado a v" + v + ". Consulta Ajustes o el men\xFA para buscar actualizaciones.",
             "success"
           );
@@ -30000,7 +31937,7 @@ function loadSettings() {
   syncPreimportBackupUi();
   if (typeof syncSettingsLanHostDiskSection === "function") syncSettingsLanHostDiskSection();
   syncCensoExportButtonVisibility();
-  rt14.syncWorkContextChrome();
+  rt17.syncWorkContextChrome();
 }
 function saveSettings() {
   var st = settingsRef();
@@ -30024,8 +31961,8 @@ function saveSettings() {
   });
   if (backfill) saveState();
   loadSettings();
-  if (rt14.getActiveId()) renderNoteForm();
-  rt14.showToast("Perfil guardado \u2713", "success");
+  if (rt17.getActiveId()) renderNoteForm();
+  rt17.showToast("Perfil guardado \u2713", "success");
 }
 function syncHeaderAppModeChip() {
   var chip = document.getElementById("header-app-mode-chip");
@@ -30059,17 +31996,17 @@ function applyAppModeSwitchEffects() {
     renderEstadoActualButton();
     syncCensoExportButtonVisibility();
     syncHeaderAppModeChip();
-    if (rt14.getActiveId()) {
+    if (rt17.getActiveId()) {
       if (!nowSala) renderNoteForm();
       var inner = getActiveInnerTab();
       if (inner === "datos" || inner === "todo") renderPatientDataPane();
     }
-    rt14.syncWorkContextChrome();
+    rt17.syncWorkContextChrome();
     if (isPaseMode()) renderRoundOverviewPanels();
-    rt14.showToast("Modo cambiado a " + (nowSala ? "Sala" : "Interconsulta"), "success");
+    rt17.showToast("Modo cambiado a " + (nowSala ? "Sala" : "Interconsulta"), "success");
   } catch (err) {
     console.error("[R+] applyAppModeSwitchEffects:", err);
-    rt14.showToast("No se pudo actualizar la vista al cambiar de modo.", "error");
+    rt17.showToast("No se pudo actualizar la vista al cambiar de modo.", "error");
   }
 }
 function onAppModeChange() {
@@ -30125,7 +32062,7 @@ function ensureInterconsultaModeForFormats() {
   if (modeSalaEl) modeSalaEl.checked = false;
   renderInnerTabs();
   syncHeaderAppModeChip();
-  rt14.syncWorkContextChrome();
+  rt17.syncWorkContextChrome();
 }
 function syncDraftFromFormatEditorDom() {
   var map = [
@@ -30188,7 +32125,7 @@ function saveDefaultFormatsFromEditor() {
   applyDraftToSettings(st);
   localStorage.setItem("rpc-settings", JSON.stringify(st));
   loadSettings();
-  rt14.showToast("Formatos guardados \u2713", "success");
+  rt17.showToast("Formatos guardados \u2713", "success");
 }
 function exitFormatsEditor() {
   var was = getFormatsEditMode();
@@ -30205,7 +32142,7 @@ function resetProfileTemplates() {
   var mode = getFormatsEditMode();
   if (mode === "nota") renderNoteForm();
   else if (mode === "indica") renderIndicaForm();
-  rt14.showToast("Formatos restablecidos (plantillas en blanco)", "success");
+  rt17.showToast("Formatos restablecidos (plantillas en blanco)", "success");
 }
 function hydrateProfileSettings(st) {
   if (!st || typeof st !== "object") return st;
@@ -30220,7 +32157,7 @@ function saveQuickOutputFormat(format) {
   st.quickOutputFormat = normalizeQuickOutputFormat(format);
   localStorage.setItem("rpc-settings", JSON.stringify(st));
   loadSettings();
-  rt14.showToast("Formato de salida r\xE1pida actualizado", "success");
+  rt17.showToast("Formato de salida r\xE1pida actualizado", "success");
 }
 function isHideManejoSectionEnabled() {
   return isManejoSectionHidden(settingsRef());
@@ -30245,12 +32182,12 @@ function ensureClinicoTabConsistency() {
 function applyHideManejoSectionEffects() {
   ensureClinicoTabConsistency();
   renderInnerTabs();
-  rt14.syncWorkContextChrome();
+  rt17.syncWorkContextChrome();
 }
 function setHideManejoSection(enabled) {
   if (isManejoTabGloballyHidden()) {
     syncHideManejoSectionUI();
-    rt14.showToast("Manejo no est\xE1 disponible en esta versi\xF3n de R+.", "info");
+    rt17.showToast("Manejo no est\xE1 disponible en esta versi\xF3n de R+.", "info");
     return;
   }
   var st = settingsRef();
@@ -30264,7 +32201,7 @@ function setHideManejoSection(enabled) {
       localStorage.setItem("rpc-settings", JSON.stringify(next));
       syncHideManejoSectionUI();
       applyHideManejoSectionEffects();
-      rt14.showToast("Gu\xEDa cl\xEDnica disponible en el expediente.", "success");
+      rt17.showToast("Gu\xEDa cl\xEDnica disponible en el expediente.", "success");
     });
     return;
   }
@@ -30274,7 +32211,7 @@ function setHideManejoSection(enabled) {
   localStorage.setItem("rpc-settings", JSON.stringify(st));
   syncHideManejoSectionUI();
   applyHideManejoSectionEffects();
-  rt14.showToast(
+  rt17.showToast(
     enabled ? "Manejo oculto en Cl\xEDnico (Nota e Indicaciones siguen disponibles)." : "Manejo visible en el expediente.",
     "success"
   );
@@ -30297,7 +32234,7 @@ function setHideListadoProblemasAiPrompt(enabled) {
   persistSettingsToLocalStorage();
   syncHideListadoProblemasAiPromptUI();
   renderListadoForm();
-  rt14.showToast(
+  rt17.showToast(
     enabled ? "Bot\xF3n \xABCopiar prompt IA\xBB oculto en listado de problemas." : "Bot\xF3n \xABCopiar prompt IA\xBB visible en listado de problemas.",
     "success"
   );
@@ -30328,7 +32265,7 @@ var profileWindowHandlers = {
 };
 
 // public/js/features/expediente.mjs
-var rt15 = {
+var rt18 = {
   getActiveId() {
     return null;
   },
@@ -30386,12 +32323,12 @@ var rt15 = {
 };
 function registerExpedienteRuntime(partial) {
   if (!partial || typeof partial !== "object") return;
-  Object.assign(rt15, partial);
+  Object.assign(rt18, partial);
 }
 function aid3() {
-  return rt15.getActiveId();
+  return rt18.getActiveId();
 }
-function esc12(s) {
+function esc13(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 var _listadoSortables = [];
@@ -30443,7 +32380,7 @@ function parseCultureBlockFromLineArray2(lines, set, seq) {
   var rawHeader = String(lines[0] || "");
   var line = rawHeader.replace(/\s+/g, " ").trim();
   var tipoKey = classifyCultureTipoKeyFromHeaderLine2(rawHeader);
-  var studyDate = rt15.buildLabSetDateLine(set) || "\u2014";
+  var studyDate = rt18.buildLabSetDateLine(set) || "\u2014";
   var sortMs = parseFechaLabToMs(set.fecha, set.hora);
   if (typeof sortMs !== "number" || !isFinite(sortMs)) sortMs = 0;
   var colon = line.indexOf(":");
@@ -30461,8 +32398,11 @@ function parseCultureBlockFromLineArray2(lines, set, seq) {
   if (negativo && !organismo) organismo = "Negativo";
   else if (negativo && /^NEGATIVO$/i.test(organismo)) organismo = "Negativo";
   else if (!organismo) organismo = "\u2014";
-  var resistencias = lines.slice(1);
-  var resStr = resistencias.join("\n").trim();
+  var bodyLines = lines.slice(1);
+  var cuenta = parseCuentaFromCultivoChunkLines(bodyLines);
+  var resStr = bodyLines.filter(function(ln) {
+    return !/^Cuenta:/i.test(String(ln || "").trim());
+  }).join("\n").trim();
   var sortKeyMs = sortMs;
   if (fechaMuestra) {
     var fmNorm = normalizeFechaLabHistory(fechaMuestra) || fechaMuestra;
@@ -30475,6 +32415,7 @@ function parseCultureBlockFromLineArray2(lines, set, seq) {
       fechaMuestra: fechaMuestra || "\u2014",
       sitio: sitio || "\u2014",
       organismo,
+      cuenta: cuenta || "",
       resistencias: resStr || (negativo ? "\u2014" : ""),
       negativo,
       sortMs,
@@ -30490,7 +32431,7 @@ function findCultivoChunkInSet2(set, organismoQuery) {
   if (!set || !set.resLabs) return null;
   var q = String(organismoQuery || "").replace(/\s+/g, " ").trim().toUpperCase();
   if (!q || q === "\u2014") return null;
-  var cult = rt15.splitResLabsByTipo(set.resLabs).cultivo;
+  var cult = rt18.splitResLabsByTipo(set.resLabs).cultivo;
   for (var ei = 0; ei < cult.length; ei++) {
     var chunks = String(cult[ei] || "").split(/\n\n+/).map(function(s) {
       return s.trim();
@@ -30512,7 +32453,7 @@ function findCultivoChunkInSet2(set, organismoQuery) {
 function copyCultivoCondensado(setId, organismo) {
   var pid = aid3();
   if (!pid) {
-    rt15.showToast("Selecciona un paciente", "error");
+    rt18.showToast("Selecciona un paciente", "error");
     return;
   }
   var sets = labHistory[pid] || [];
@@ -30520,26 +32461,26 @@ function copyCultivoCondensado(setId, organismo) {
     return String(s.id) === String(setId);
   });
   if (!set) {
-    rt15.showToast("No se encontr\xF3 el env\xEDo en historial", "error");
+    rt18.showToast("No se encontr\xF3 el env\xEDo en historial", "error");
     return;
   }
   var chunk = findCultivoChunkInSet2(set, organismo);
   if (!chunk) {
-    rt15.showToast("No hay resumen de cultivo procesado para copiar", "error");
+    rt18.showToast("No hay resumen de cultivo procesado para copiar", "error");
     return;
   }
-  var t2 = formatCultivoCondensedForCopy(chunk, rt15.buildLabSetDateLine(set) || "");
+  var t2 = formatCultivoCondensedForCopy(chunk, rt18.buildLabSetDateLine(set) || "");
   if (!t2.trim()) {
-    rt15.showToast("No hay texto para copiar", "error");
+    rt18.showToast("No hay texto para copiar", "error");
     return;
   }
   var p = navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(t2) : Promise.reject(new Error("no clipboard"));
   p.then(
     function() {
-      rt15.showToast("Cultivo condensado copiado", "success");
+      rt18.showToast("Cultivo condensado copiado", "success");
     },
     function() {
-      rt15.showToast("No se pudo copiar al portapapeles", "error");
+      rt18.showToast("No se pudo copiar al portapapeles", "error");
     }
   );
 }
@@ -30558,7 +32499,7 @@ function germQueryFromCultivoChunkHead2(headLine) {
   return base || h;
 }
 function isResLabChunkPureCultivo(text) {
-  var sp = rt15.splitResLabsByTipo([text]);
+  var sp = rt18.splitResLabsByTipo([text]);
   if (sp.labs.length) return false;
   return sp.cultivo.some(function(r) {
     return String(r || "").trim();
@@ -30590,6 +32531,13 @@ function buildCultivoOutputHtmlFragments(text, sourceText) {
   });
   return parts.join("");
 }
+function cultivoOrganismoCellHtml(r) {
+  var html = esc13(r.organismo);
+  if (r.cuenta && !r.negativo) {
+    html += '<div class="cultivos-cuenta">' + esc13(r.cuenta) + "</div>";
+  }
+  return html;
+}
 function cultivoAntibiogramCellHtml(r) {
   return buildCultivoAntibiogramCellHtmlForPatient(r, aid3());
 }
@@ -30604,7 +32552,7 @@ function buildCultivoAntibiogramCellHtmlForPatient(r, patientId) {
   if (sens && sens.length) {
     return '<div class="cultivos-atb-wrap"><div class="cultivos-atb-chips" role="list">' + buildAtbRisSummaryHtml(sens) + "</div>" + copyBtn + "</div>";
   }
-  return '<div class="cultivos-atb-wrap"><pre class="cultivos-atb-fallback">' + esc12(r.resistencias || r.risSummary || "\u2014") + "</pre>" + copyBtn + "</div>";
+  return '<div class="cultivos-atb-wrap"><pre class="cultivos-atb-fallback">' + esc13(r.resistencias || r.risSummary || "\u2014") + "</pre>" + copyBtn + "</div>";
 }
 var _atbRisScrollResizeWired = false;
 var _atbRisScrollRootsWired = /* @__PURE__ */ new WeakSet();
@@ -30778,12 +32726,12 @@ function removeAtbRisPanelsFromBody() {
   });
 }
 function extractCultivoTableRowsFromHistory(patientId) {
-  var history = sortLabHistoryChronological(rt15.ensureParsedLabHistory(patientId));
+  var history = sortLabHistoryChronological(rt18.ensureParsedLabHistory(patientId));
   var rows = [];
   var seq = 0;
   history.forEach(function(set) {
     if (!set || !set.resLabs || !set.resLabs.length) return;
-    var cult = rt15.splitResLabsByTipo(set.resLabs).cultivo;
+    var cult = rt18.splitResLabsByTipo(set.resLabs).cultivo;
     cult.forEach(function(chunk) {
       var sections = String(chunk || "").split(/\n\n+/).map(function(s) {
         return s.trim();
@@ -30902,13 +32850,13 @@ function renderCultivosTable() {
   removeAtbRisPanelsFromBody();
   if (!aid3()) {
     container.innerHTML = '<p class="tend-empty">Selecciona un paciente.</p>';
-    if (isPaseMode()) rt15.renderPaseBoard();
+    if (isPaseMode()) rt18.renderPaseBoard();
     return;
   }
   var flatRows = extractCultivoTableRowsFromHistory(aid3());
   if (!flatRows.length) {
     container.innerHTML = '<p class="tend-empty">No hay cultivos en el historial. Aparecen urocultivos, hemocultivos, tinci\xF3n Gram y cultivos de cat\xE9ter enviados desde Laboratorio.</p>';
-    if (isPaseMode()) rt15.renderPaseBoard();
+    if (isPaseMode()) rt18.renderPaseBoard();
     return;
   }
   var groups = groupCultivoRowsByTipoChronologic(flatRows);
@@ -30936,7 +32884,7 @@ function renderCultivosTable() {
       return lab + " \xB7 " + fd + " \xB7 " + (r.sitio.length > 36 ? r.sitio.slice(0, 34) + "\u2026" : r.sitio);
     });
     negStrip = '<div class="cultivos-neg-strip" role="status"><strong>Cultivos negativos</strong> (en la tabla, por tipo y fecha) \xB7 ' + parts.map(function(p) {
-      return "<span>" + esc12(p) + "</span>";
+      return "<span>" + esc13(p) + "</span>";
     }).join(' <span class="cultivos-neg-sep">|</span> ') + "</div>";
   }
   var thead = "<thead><tr><th>Fecha</th><th>Sitio / muestra</th><th>Organismo</th><th>Antibiograma</th></tr></thead>";
@@ -30944,19 +32892,19 @@ function renderCultivosTable() {
   var totalRows = 0;
   groups.forEach(function(g3) {
     rowChunks.push(
-      '<tr class="cultivos-section-row"><td colspan="4">' + esc12(g3.label) + "</td></tr>"
+      '<tr class="cultivos-section-row"><td colspan="4">' + esc13(g3.label) + "</td></tr>"
     );
     g3.rows.forEach(function(r) {
       totalRows += 1;
       rowChunks.push(
-        '<tr class="' + (r.negativo ? "cultivos-row-neg" : "") + '"><td>' + esc12(rowFechaDisplay(r)) + "</td><td>" + esc12(r.sitio) + "</td><td>" + esc12(r.organismo) + '</td><td class="cultivos-cell-atb">' + cultivoAntibiogramCellHtml(r) + "</td></tr>"
+        '<tr class="' + (r.negativo ? "cultivos-row-neg" : "") + '"><td>' + esc13(rowFechaDisplay(r)) + "</td><td>" + esc13(r.sitio) + '</td><td class="cultivos-cell-org">' + cultivoOrganismoCellHtml(r) + '</td><td class="cultivos-cell-atb">' + cultivoAntibiogramCellHtml(r) + "</td></tr>"
       );
     });
   });
   var shellHtml = negStrip + '<p class="cultivos-table-hint">Por categor\xEDa (tipo de estudio), orden cronol\xF3gico de m\xE1s reciente a m\xE1s antiguo.</p><div class="cultivos-table-wrap"><table class="cultivos-table">' + thead + "<tbody></tbody></table></div>";
   var finishTable = function() {
     wireAtbRisHoverPanels(container);
-    if (isPaseMode()) rt15.renderPaseBoard();
+    if (isPaseMode()) rt18.renderPaseBoard();
   };
   if (totalRows > CULTIVOS_CHUNKED_THRESHOLD) {
     renderCultivosTableBodyChunked(container, shellHtml, rowChunks, finishTable);
@@ -30967,16 +32915,16 @@ function renderCultivosTable() {
 }
 var _tendRefreshTimer = null;
 function refreshTendenciasOrCultivosPanel() {
-  if (rt15.getActiveAppTab() !== "nota") return;
+  if (rt18.getActiveAppTab() !== "nota") return;
   if (_tendRefreshTimer) clearTimeout(_tendRefreshTimer);
   _tendRefreshTimer = setTimeout(function() {
     _tendRefreshTimer = null;
-    if (rt15.getActiveInner() === "tend") rt15.renderTendencias();
-    else if (rt15.getActiveInner() === "cult") renderCultivosTable();
+    if (rt18.getActiveInner() === "tend") rt18.renderTendencias();
+    else if (rt18.getActiveInner() === "cult") renderCultivosTable();
   }, TREND_REFRESH_DEBOUNCE_MS);
 }
 function formatPaseCultivoResistenciasHtml(raw) {
-  var t2 = esc12(String(raw || ""));
+  var t2 = esc13(String(raw || ""));
   t2 = t2.replace(/\bR:/g, '<span class="pase-atb-tag pase-atb-tag--r">R:</span>');
   t2 = t2.replace(/\bI:/g, '<span class="pase-atb-tag pase-atb-tag--i">I:</span>');
   t2 = t2.replace(/\bS:/g, '<span class="pase-atb-tag pase-atb-tag--s">S:</span>');
@@ -30998,7 +32946,7 @@ function paseCultivoAtbBlockHtml(patientId, r) {
   return "";
 }
 function getMedicosForListado(lst) {
-  var tpl = (rt15.getSettings() || {}).medicosPlantilla || {};
+  var tpl = (rt18.getSettings() || {}).medicosPlantilla || {};
   var override = lst && lst.medicos || {};
   function pick2(k) {
     return override[k] && override[k].trim() ? override[k] : tpl[k] || "";
@@ -31054,7 +33002,7 @@ function bindListadoTextareaPointerIsolation(root) {
   });
 }
 function _renderListadoRow(seccion, p, idx) {
-  return '<div class="listado-row" data-id="' + esc12(p.id) + '" data-seccion="' + seccion + '"><div class="listado-num listado-drag-handle" title="Arrastra para reordenar" aria-label="Arrastrar para reordenar">' + (idx + 1) + '</div><input type="date" class="rpc-date-input" value="' + esc12(p.fecha || "") + `" oninput="updateProblemaField('` + seccion + "','" + esc12(p.id) + `','fecha',this.value)" aria-label="Fecha del problema"><textarea rows="1" placeholder="Descripci\xF3n del problema" oninput="updateProblemaField('` + seccion + "','" + esc12(p.id) + `','descripcion',this.value); _autoGrowTextarea(this)" aria-label="Descripci\xF3n">` + esc12(p.descripcion || "") + `</textarea><button class="btn-remove-listado" onclick="removeProblemaUI('` + seccion + "','" + esc12(p.id) + `')" aria-label="Quitar problema" title="Quitar">\xD7</button></div>`;
+  return '<div class="listado-row" data-id="' + esc13(p.id) + '" data-seccion="' + seccion + '"><div class="listado-num listado-drag-handle" title="Arrastra para reordenar" aria-label="Arrastrar para reordenar">' + (idx + 1) + '</div><input type="date" class="rpc-date-input" value="' + esc13(p.fecha || "") + `" oninput="updateProblemaField('` + seccion + "','" + esc13(p.id) + `','fecha',this.value)" aria-label="Fecha del problema"><textarea rows="1" placeholder="Descripci\xF3n del problema" oninput="updateProblemaField('` + seccion + "','" + esc13(p.id) + `','descripcion',this.value); _autoGrowTextarea(this)" aria-label="Descripci\xF3n">` + esc13(p.descripcion || "") + `</textarea><button class="btn-remove-listado" onclick="removeProblemaUI('` + seccion + "','" + esc13(p.id) + `')" aria-label="Quitar problema" title="Quitar">\xD7</button></div>`;
 }
 function _renderListadoSeccion(seccion, label, lst) {
   var arr = lst[seccion] || [];
@@ -31096,8 +33044,8 @@ function refreshListadoRowNumbers(seccion) {
   );
   if (!zone) return;
   zone.querySelectorAll(".listado-row").forEach(function(row, idx) {
-    var num3 = row.querySelector(".listado-num");
-    if (num3) num3.textContent = String(idx + 1);
+    var num4 = row.querySelector(".listado-num");
+    if (num4) num4.textContent = String(idx + 1);
   });
 }
 function mountListadoSortables() {
@@ -31154,7 +33102,7 @@ function renderListadoForm() {
     return;
   }
   var lst = ensureListadoForActive();
-  c.innerHTML = '<div class="card"><div class="card-header"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Datos del Paciente</div><div class="card-body"><div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:10px;align-items:end;"><div class="field-group"><label>Nombre</label><input type="text" value="' + esc12(patient.nombre) + '" class="field-readonly" readonly></div><div class="field-group"><label>Registro</label><input type="text" value="' + esc12(patient.registro) + '" class="field-readonly" readonly></div><div class="field-group"><label>Edad/Sexo</label><input type="text" value="' + esc12(patient.edad) + " / " + esc12(patient.sexo) + '" class="field-readonly" readonly></div><div class="field-group"><label>Cuarto</label><input type="text" value="' + esc12(patient.cuarto) + '" class="field-readonly" readonly></div><div class="field-group"><label>Cama</label><input type="text" value="' + esc12(patient.cama) + '" class="field-readonly" readonly></div></div></div></div><div class="card"><div class="card-header card-header--tone-slate"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Fecha y Hora del Listado</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="field-group"><label>Fecha</label><input type="text" value="' + esc12(lst.fecha) + `" placeholder="DD/MM/AAAA" oninput="updateListadoMeta('fecha',this.value)"></div><div class="field-group"><label>Hora</label><input type="text" value="` + esc12(lst.hora) + `" placeholder="HH:MM" oninput="updateListadoMeta('hora',this.value)"></div></div></div></div>` + _renderListadoSeccion("activos", "Activos", lst) + _renderListadoSeccion("inactivos", "Inactivos", lst) + _renderListadoMedicosCard(lst) + '<div class="action-bar"><button type="button" class="btn-med-secondary rpc-doc-export" onclick="quickExportCurrentPatient()" id="btn-quick-export-listado"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida r\xE1pida</button>' + (isHideListadoProblemasAiPromptEnabled() ? "" : '<button type="button" class="btn-med-secondary" onclick="copyListadoProblemasAiPrompt()" title="Copia el prompt para usar en un chat de IA"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copiar prompt IA</button>') + '<button type="button" class="btn-generate rpc-doc-export" onclick="generateListado()" id="btn-gen-listado"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Listado de Problemas (.docx)</button></div>';
+  c.innerHTML = '<div class="card"><div class="card-header"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Datos del Paciente</div><div class="card-body"><div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:10px;align-items:end;"><div class="field-group"><label>Nombre</label><input type="text" value="' + esc13(patient.nombre) + '" class="field-readonly" readonly></div><div class="field-group"><label>Registro</label><input type="text" value="' + esc13(patient.registro) + '" class="field-readonly" readonly></div><div class="field-group"><label>Edad/Sexo</label><input type="text" value="' + esc13(patient.edad) + " / " + esc13(patient.sexo) + '" class="field-readonly" readonly></div><div class="field-group"><label>Cuarto</label><input type="text" value="' + esc13(patient.cuarto) + '" class="field-readonly" readonly></div><div class="field-group"><label>Cama</label><input type="text" value="' + esc13(patient.cama) + '" class="field-readonly" readonly></div></div></div></div><div class="card"><div class="card-header card-header--tone-slate"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Fecha y Hora del Listado</div><div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="field-group"><label>Fecha</label><input type="text" value="' + esc13(lst.fecha) + `" placeholder="DD/MM/AAAA" oninput="updateListadoMeta('fecha',this.value)"></div><div class="field-group"><label>Hora</label><input type="text" value="` + esc13(lst.hora) + `" placeholder="HH:MM" oninput="updateListadoMeta('hora',this.value)"></div></div></div></div>` + _renderListadoSeccion("activos", "Activos", lst) + _renderListadoSeccion("inactivos", "Inactivos", lst) + _renderListadoMedicosCard(lst) + '<div class="action-bar"><button type="button" class="btn-med-secondary rpc-doc-export" onclick="quickExportCurrentPatient()" id="btn-quick-export-listado"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida r\xE1pida</button>' + (isHideListadoProblemasAiPromptEnabled() ? "" : '<button type="button" class="btn-med-secondary" onclick="copyListadoProblemasAiPrompt()" title="Copia el prompt para usar en un chat de IA"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copiar prompt IA</button>') + '<button type="button" class="btn-generate rpc-doc-export" onclick="generateListado()" id="btn-gen-listado"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Listado de Problemas (.docx)</button></div>';
   refreshRpcDateFields(c);
   c.querySelectorAll(".listado-row textarea").forEach(_autoGrowTextarea);
   bindListadoTextareaPointerIsolation(c);
@@ -31198,22 +33146,22 @@ function removeProblemaUI(seccion, id) {
 function _renderListadoMedicosCard(lst) {
   var meds = getMedicosForListado(lst);
   function row(key, label) {
-    return '<div class="field-group"><label>' + label + '</label><input type="text" value="' + esc12(meds[key] || "") + `" oninput="updateListadoMedico('` + key + `', this.value)"></div>`;
+    return '<div class="field-group"><label>' + label + '</label><input type="text" value="' + esc13(meds[key] || "") + `" oninput="updateListadoMedico('` + key + `', this.value)"></div>`;
   }
   return '<div class="card"><div class="card-header card-header--tone-teal-md card-header-row"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>M\xE9dicos (firma)<span class="card-header-subhint">Pre-llena desde Mi Perfil. Edita aqu\xED para este paciente.</span></div><div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' + row("profesor", "Profesor") + row("r4", "R4") + row("r2", "R2") + row("r1a", "R1 (1)") + row("r1b", "R1 (2)") + "</div></div>";
 }
 async function copyListadoProblemasAiPrompt() {
-  var ok = await rt15.copyToClipboardSafe(LISTADO_PROBLEMAS_AI_PROMPT);
-  rt15.showToast(ok ? "Prompt copiado al portapapeles \u2713" : "No se pudo copiar el prompt", ok ? "success" : "error");
+  var ok = await rt18.copyToClipboardSafe(LISTADO_PROBLEMAS_AI_PROMPT);
+  rt18.showToast(ok ? "Prompt copiado al portapapeles \u2713" : "No se pudo copiar el prompt", ok ? "success" : "error");
 }
 function generateListado() {
-  if (rt15.guardMobileDocExport()) return;
-  if (rt15.isRpcOffline()) {
-    rt15.showToast("Sin conexi\xF3n con el servidor local. Reinicia R+ para generar documentos.", "error");
+  if (rt18.guardMobileDocExport()) return;
+  if (rt18.isRpcOffline()) {
+    rt18.showToast("Sin conexi\xF3n con el servidor local. Reinicia R+ para generar documentos.", "error");
     return;
   }
   if (!aid3()) {
-    rt15.showToast("Selecciona un paciente primero", "error");
+    rt18.showToast("Selecciona un paciente primero", "error");
     return;
   }
   var patient = patients.find(function(p) {
@@ -31224,13 +33172,13 @@ function generateListado() {
   if (!lst) return;
   var hasProblems = lst.activos && lst.activos.length || lst.inactivos && lst.inactivos.length;
   if (!hasProblems) {
-    rt15.showToast("Agrega al menos un problema antes de generar.", "error");
+    rt18.showToast("Agrega al menos un problema antes de generar.", "error");
     return;
   }
   var medicos = getMedicosForListado(lst);
   var btn = document.getElementById("btn-gen-listado");
   setAsyncButtonLoading(btn, true, { loadingText: "Generando\u2026" });
-  rt15.incrementPendingJobs();
+  rt18.incrementPendingJobs();
   function buildPayload() {
     return { patient, listado: lst, medicos };
   }
@@ -31240,7 +33188,7 @@ function generateListado() {
   }
   function saveOutputDir(dir) {
     if (!dir) return;
-    var st = rt15.getSettings() || {};
+    var st = rt18.getSettings() || {};
     st.outputDir = dir;
     localStorage.setItem("rpc-settings", JSON.stringify(st));
     syncApprovedOutputDir(dir);
@@ -31253,27 +33201,27 @@ function generateListado() {
     saveOutputDir,
     onSuccess: function(data) {
       var name = data && (data.fileName || data.path) ? data.fileName || String(data.path).split(/[/\\]/).pop() : "listado.docx";
-      rt15.showToast("Listado guardado: " + name, "success");
+      rt18.showToast("Listado guardado: " + name, "success");
     },
     onPrompt: function() {
-      rt15.showToast("Selecciona una carpeta para guardar el documento.", "error");
+      rt18.showToast("Selecciona una carpeta para guardar el documento.", "error");
     },
     onCancel: function() {
-      rt15.showToast("No se guard\xF3 el documento: no se eligi\xF3 carpeta.", "error");
+      rt18.showToast("No se guard\xF3 el documento: no se eligi\xF3 carpeta.", "error");
     },
     onError: function(msg) {
-      rt15.showToast("Error: " + msg, "error");
+      rt18.showToast("Error: " + msg, "error");
     }
   }).catch(function() {
-    rt15.showToast("Error de conexi\xF3n", "error");
+    rt18.showToast("Error de conexi\xF3n", "error");
   }).finally(function() {
     setAsyncButtonLoading(document.getElementById("btn-gen-listado"), false);
-    rt15.decrementPendingJobs();
-    rt15.syncOfflineButtonStates();
+    rt18.decrementPendingJobs();
+    rt18.syncOfflineButtonStates();
   });
 }
 function buildPatientDemographicsFieldsHtml(patient) {
-  return '<div style="display:flex;flex-direction:column;gap:10px;"><div class="field-group"><label>Nombre</label><input type="text" value="' + esc12(patient.nombre) + `" oninput="updatePatient('nombre',this.value)" style="text-transform:uppercase;"></div><div style="display:grid;grid-template-columns:1fr 100px 60px;gap:10px;"><div class="field-group"><label>Registro</label><input type="text" value="` + esc12(patient.registro) + `" oninput="updatePatient('registro',this.value)"></div><div class="field-group"><label>Edad</label><input type="text" value="` + esc12(patient.edad) + `" oninput="updatePatient('edad',this.value)"></div><div class="field-group"><label>Sexo</label><select onchange="updatePatient('sexo',this.value)"><option value="M"` + (patient.sexo === "M" ? " selected" : "") + '>M</option><option value="F"' + (patient.sexo === "F" ? " selected" : "") + ">F</option></select></div></div>" + buildPatientIngresoFechasHtml(patient, rt15.getSettings()) + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><div class="field-group"><label>Peso (kg)</label><input type="text" inputmode="decimal" value="' + esc12(patient.peso || "") + `" placeholder="60" oninput="updatePatient('peso',this.value)"></div><div class="field-group"><label>Talla (m)</label><input type="text" inputmode="decimal" value="` + esc12(patient.talla || "") + `" placeholder="1.60" oninput="updatePatient('talla',this.value)"></div></div>` + buildPatientAccesosSectionHtml(patient) + '<div class="field-group"><label>\xC1rea</label><input type="text" value="' + esc12(patient.area) + `" oninput="updatePatient('area',this.value)" style="text-transform:uppercase;"></div><div class="field-group"><label>Servicio</label><input type="text" value="` + esc12(patient.servicio) + `" oninput="updatePatient('servicio',this.value)" style="text-transform:uppercase;"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><div class="field-group"><label>Cuarto</label><input type="text" value="` + esc12(patient.cuarto) + `" oninput="updatePatient('cuarto',this.value)"></div><div class="field-group"><label>Cama</label><input type="text" value="` + esc12(patient.cama) + `" oninput="updatePatient('cama',this.value)"></div></div>` + (isModeSala(rt15.getSettings()) ? buildPatientCensoDatosSectionsHtml(patient) : "") + "</div>";
+  return '<div style="display:flex;flex-direction:column;gap:10px;"><div class="field-group"><label>Nombre</label><input type="text" value="' + esc13(patient.nombre) + `" oninput="updatePatient('nombre',this.value)" style="text-transform:uppercase;"></div><div style="display:grid;grid-template-columns:1fr 100px 60px;gap:10px;"><div class="field-group"><label>Registro</label><input type="text" value="` + esc13(patient.registro) + `" oninput="updatePatient('registro',this.value)"></div><div class="field-group"><label>Edad</label><input type="text" value="` + esc13(patient.edad) + `" oninput="updatePatient('edad',this.value)"></div><div class="field-group"><label>Sexo</label><select onchange="updatePatient('sexo',this.value)"><option value="M"` + (patient.sexo === "M" ? " selected" : "") + '>M</option><option value="F"' + (patient.sexo === "F" ? " selected" : "") + ">F</option></select></div></div>" + buildPatientIngresoFechasHtml(patient, rt18.getSettings()) + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><div class="field-group"><label>Peso (kg)</label><input type="text" inputmode="decimal" value="' + esc13(patient.peso || "") + `" placeholder="60" oninput="updatePatient('peso',this.value)"></div><div class="field-group"><label>Talla (m)</label><input type="text" inputmode="decimal" value="` + esc13(patient.talla || "") + `" placeholder="1.60" oninput="updatePatient('talla',this.value)"></div></div>` + buildPatientAccesosSectionHtml(patient) + '<div class="field-group"><label>\xC1rea</label><input type="text" value="' + esc13(patient.area) + `" oninput="updatePatient('area',this.value)" style="text-transform:uppercase;"></div><div class="field-group"><label>Servicio</label><input type="text" value="` + esc13(patient.servicio) + `" oninput="updatePatient('servicio',this.value)" style="text-transform:uppercase;"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><div class="field-group"><label>Cuarto</label><input type="text" value="` + esc13(patient.cuarto) + `" oninput="updatePatient('cuarto',this.value)"></div><div class="field-group"><label>Cama</label><input type="text" value="` + esc13(patient.cama) + `" oninput="updatePatient('cama',this.value)"></div></div>` + (isModeSala(rt18.getSettings()) ? buildPatientCensoDatosSectionsHtml(patient) : "") + "</div>";
 }
 function buildPatientDemographicsCardHtml(patient, opts) {
   var fields = buildPatientDemographicsFieldsHtml(patient);
@@ -31301,7 +33249,7 @@ function renderPatientDataPane() {
   wrap.innerHTML = buildPatientDemographicsCardHtml(patient, { embedded });
   refreshRpcDateFields(wrap);
 }
-var windowHandlers8 = Object.assign(
+var windowHandlers10 = Object.assign(
   {
     copyCultivoCondensado,
     updateListadoMeta,
@@ -31335,7 +33283,7 @@ function todoPriorityLabel(priority) {
 }
 
 // public/js/features/todos.mjs
-var rt16 = {
+var rt19 = {
   getActiveId() {
     return null;
   },
@@ -31349,10 +33297,10 @@ var rt16 = {
   }
 };
 function registerTodosRuntime(partial) {
-  if (partial && typeof partial === "object") Object.assign(rt16, partial);
+  if (partial && typeof partial === "object") Object.assign(rt19, partial);
 }
 function aid4() {
-  return rt16.getActiveId();
+  return rt19.getActiveId();
 }
 function pulseTodoPrioChip(chip) {
   if (!chip) return;
@@ -31555,13 +33503,13 @@ function refreshAllTodoUIs() {
   var overview = document.getElementById("patient-ronda-overview");
   var ronda = document.getElementById("patient-ronda-todos-mount");
   if (!ronda) return;
-  var showRonda = isPaseMode() && overview && overview.style.display !== "none" && aid4() && rt16.getActiveAppTab() === "nota" && rt16.getRoundOverviewMode();
+  var showRonda = isPaseMode() && overview && overview.style.display !== "none" && aid4() && rt19.getActiveAppTab() === "nota" && rt19.getRoundOverviewMode();
   if (showRonda) {
     renderTodoFormIn(ronda, "ronda-");
   } else {
     while (ronda.firstChild) ronda.removeChild(ronda.firstChild);
   }
-  if (isPaseMode()) rt16.renderPaseBoard();
+  if (isPaseMode()) rt19.renderPaseBoard();
 }
 function renderTodoForm() {
   refreshAllTodoUIs();
@@ -31647,7 +33595,8 @@ function deleteTodo(id) {
     return t2.id !== id;
   });
   storage.saveTodos(aid4(), todos);
-  emitLiveSyncTodoDelete(aid4(), id, delAt);
+  if (victim) emitLiveSyncTodoDelete(aid4(), victim);
+  else emitLiveSyncTodoDelete(aid4(), { id, updatedAt: delAt });
   refreshAllTodoUIs();
 }
 function setTodoPriority(id, priority, opts) {
@@ -37149,7 +39098,7 @@ function openManejoAtbDrug(drugId, deps) {
 }
 
 // public/js/features/manejo-electrolitos.mjs
-var rt17 = {
+var rt20 = {
   getActiveId() {
     return null;
   },
@@ -37166,7 +39115,7 @@ var rt17 = {
   }
 };
 function registerManejoElectrolitosRuntime(partial) {
-  if (partial && typeof partial === "object") Object.assign(rt17, partial);
+  if (partial && typeof partial === "object") Object.assign(rt20, partial);
 }
 var ION_META = {
   K: { symbol: "K\u207A", name: "Potasio" },
@@ -37192,16 +39141,16 @@ function buildManejoTodoText(row) {
   return valStr ? "Repo " + ionLabel + " " + valStr : "Repo " + ionLabel;
 }
 function addManejoPendiente(row, labFechaNorm) {
-  var pid = rt17.getActiveId();
+  var pid = rt20.getActiveId();
   if (!pid || !row) return;
   var ruleScoped = "manejo:" + String(row.ruleId || "");
   var todos = storage.getTodos(pid);
   if (isManejoTodoDismissed(pid, ruleScoped, labFechaNorm)) {
-    rt17.showToast("Reposici\xF3n bloqueada: no volver\xE1 a aparecer en pendientes.", "info");
+    rt20.showToast("Reposici\xF3n bloqueada: no volver\xE1 a aparecer en pendientes.", "info");
     return;
   }
   if (!shouldAllowManejoTodo(pid, ruleScoped, labFechaNorm, todos)) {
-    rt17.showToast("Ya hay un pendiente abierto para esta fila del mismo d\xEDa de lab.", "");
+    rt20.showToast("Ya hay un pendiente abierto para esta fila del mismo d\xEDa de lab.", "");
     return;
   }
   var nowIso = (/* @__PURE__ */ new Date()).toISOString();
@@ -37217,9 +39166,9 @@ function addManejoPendiente(row, labFechaNorm) {
   };
   todos.push(entry2);
   storage.saveTodos(pid, todos);
-  rt17.emitLiveSyncTodoUpsert(pid, entry2);
-  rt17.refreshAllTodoUIs();
-  rt17.showToast("Pendiente agregado", "success");
+  rt20.emitLiveSyncTodoUpsert(pid, entry2);
+  rt20.refreshAllTodoUIs();
+  rt20.showToast("Pendiente agregado", "success");
 }
 function severityClass(severity) {
   var k = String(severity || "leve").toLowerCase();
@@ -37279,9 +39228,9 @@ function renderManejoElectrolitos(panelEl, pid, patient, ui) {
   }
   if (patient.manejoPending) {
     patient.manejoPending = null;
-    rt17.saveState();
+    rt20.saveState();
   }
-  var hist = rt17.ensureParsedLabHistory(pid);
+  var hist = rt20.ensureParsedLabHistory(pid);
   var ordered = sortLabHistoryChronological(hist);
   var latest = ordered[0];
   if (!latest) {
@@ -38033,12 +39982,12 @@ var MANEJO_PROTOCOLS = [
 ];
 
 // public/js/features/manejo-proto-editor.mjs
-var rt18 = {
+var rt21 = {
   showToast() {
   }
 };
 function registerManejoProtoEditorRuntime(partial) {
-  if (partial && typeof partial === "object") Object.assign(rt18, partial);
+  if (partial && typeof partial === "object") Object.assign(rt21, partial);
 }
 function protocolPatchFromSomeFields(fields, category) {
   var order = buildSomeOrder(fields || {});
@@ -38255,7 +40204,7 @@ function openManejoProtocolEditorModal(opts, deps) {
     restoreBtn.textContent = "Restaurar original";
     restoreBtn.addEventListener("click", function() {
       removeProtocolOverride(entry2.id);
-      rt18.showToast("Plantilla restaurada", "success");
+      rt21.showToast("Plantilla restaurada", "success");
       closeModal2();
       if (typeof opts.onSaved === "function") opts.onSaved();
       else if (typeof renderManejo2 === "function") renderManejo2();
@@ -38297,13 +40246,13 @@ function openManejoProtocolEditorModal(opts, deps) {
     if (mode === "add") {
       addCustomProtocol(patch);
       if (typeof setProtoCategoryFilter2 === "function") setProtoCategoryFilter2("otros");
-      rt18.showToast("Infusi\xF3n guardada en Otros", "success");
+      rt21.showToast("Infusi\xF3n guardada en Otros", "success");
     } else if (isCustom) {
       updateCustomProtocol(entry2.id, patch);
-      rt18.showToast("Infusi\xF3n actualizada", "success");
+      rt21.showToast("Infusi\xF3n actualizada", "success");
     } else {
       saveProtocolOverride(entry2.id, patch);
-      rt18.showToast("Plantilla actualizada", "success");
+      rt21.showToast("Plantilla actualizada", "success");
     }
     closeModal2();
     if (typeof opts.onSaved === "function") opts.onSaved();
@@ -38391,7 +40340,7 @@ function resolveProtocolWithDoseMode(entry2, mode, weightKg) {
 }
 
 // public/js/features/manejo-proto-detail.mjs
-var rt19 = {
+var rt22 = {
   ensureParsedLabHistory() {
     return [];
   },
@@ -38400,7 +40349,7 @@ var rt19 = {
 };
 var protoDetailDeps = {};
 function registerManejoProtoDetailRuntime(partial) {
-  if (partial && typeof partial === "object") Object.assign(rt19, partial);
+  if (partial && typeof partial === "object") Object.assign(rt22, partial);
 }
 function configureManejoProtoDetail(deps) {
   protoDetailDeps = deps && typeof deps === "object" ? deps : {};
@@ -38420,8 +40369,8 @@ function categoryLabelFor(catId) {
 }
 function copyToClipboard(txt) {
   var t2 = String(txt || "");
-  var done = rt19.showToast ? function() {
-    rt19.showToast("Copiado", "success");
+  var done = rt22.showToast ? function() {
+    rt22.showToast("Copiado", "success");
   } : function() {
   };
   try {
@@ -39440,13 +41389,13 @@ function buildInsulinPumpReferencePanel() {
 
 // public/js/features/manejo-cad-ada-ui.mjs
 var cadAdaDeps = {};
-var rt20 = {
+var rt23 = {
   ensureParsedLabHistory() {
     return [];
   }
 };
 function registerManejoCadAdaRuntime(partial) {
-  if (partial && typeof partial === "object") Object.assign(rt20, partial);
+  if (partial && typeof partial === "object") Object.assign(rt23, partial);
 }
 function configureManejoCadAda(deps) {
   cadAdaDeps = deps && typeof deps === "object" ? deps : {};
@@ -39506,13 +41455,13 @@ function buildCadAdaRecommendationButton(opts) {
   if (isCadStepDone(opts.pid, opts.id)) {
     btn.classList.add("manejo-pathology-rec-btn--done");
   }
-  var num3 = document.createElement("span");
-  num3.className = "manejo-pathology-rec-num";
-  num3.textContent = String(opts.index);
+  var num4 = document.createElement("span");
+  num4.className = "manejo-pathology-rec-num";
+  num4.textContent = String(opts.index);
   var title = document.createElement("span");
   title.className = "manejo-pathology-rec-title";
   title.textContent = opts.title;
-  btn.appendChild(num3);
+  btn.appendChild(num4);
   btn.appendChild(title);
   btn.addEventListener("click", function() {
     var content = document.createElement("div");
@@ -39730,7 +41679,7 @@ function buildPathologyCadEhhBlock(entry2, pid, patient) {
     section.appendChild(emp);
     return section;
   }
-  var hist = rt20.ensureParsedLabHistory(pid);
+  var hist = rt23.ensureParsedLabHistory(pid);
   var ordered = sortLabHistoryChronological(hist);
   var latest = ordered[0] || null;
   if (!latest) {
@@ -40060,10 +42009,10 @@ function handleClinicalDrugLink(link, patient, ui) {
 function buildTimelineStep(step, entry2, patient, allProtocols, linkOpts, ui, ctx) {
   var row = document.createElement("div");
   row.className = "manejo-guia-step";
-  var num3 = document.createElement("span");
-  num3.className = "manejo-guia-step-num";
-  num3.textContent = String(step.number);
-  row.appendChild(num3);
+  var num4 = document.createElement("span");
+  num4.className = "manejo-guia-step-num";
+  num4.textContent = String(step.number);
+  row.appendChild(num4);
   var body = document.createElement("div");
   body.className = "manejo-guia-step-body";
   var item = step.item;
@@ -41225,7 +43174,7 @@ function setActiveManejoSubtab(id) {
   } catch (_e2) {
   }
 }
-var rt21 = {
+var rt24 = {
   getActiveId() {
     return null;
   },
@@ -41243,27 +43192,27 @@ var rt21 = {
 };
 function registerManejoRuntime(partial) {
   if (!partial || typeof partial !== "object") return;
-  Object.assign(rt21, partial);
+  Object.assign(rt24, partial);
   registerManejoElectrolitosRuntime(partial);
   registerManejoProtoEditorRuntime(partial);
   registerManejoProtoDetailRuntime(partial);
   registerManejoCadAdaRuntime(partial);
   registerManejoAtbUiRuntime({
     ensureParsedLabHistory: function(pid) {
-      return rt21.ensureParsedLabHistory(pid);
+      return rt24.ensureParsedLabHistory(pid);
     }
   });
 }
 function aid5() {
-  return rt21.getActiveId();
+  return rt24.getActiveId();
 }
-function esc13(s) {
+function esc14(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function copyToClipboard3(txt) {
   var t2 = String(txt || "");
-  var done = rt21.showToast ? function() {
-    rt21.showToast("Copiado", "success");
+  var done = rt24.showToast ? function() {
+    rt24.showToast("Copiado", "success");
   } : function() {
   };
   try {
@@ -41354,7 +43303,7 @@ function buildManejoGuiaContext() {
 function renderActiveManejoSubpanel(panel, subtabId, pid, patient) {
   if (subtabId === "electrolitos") {
     renderManejoElectrolitos(panel, pid, patient, {
-      esc: esc13,
+      esc: esc14,
       buildKvBlock,
       buildSomeOrderArticle: buildSomeOrderArticle2,
       isManejoSomeCopyUiEnabled
@@ -42038,103 +43987,6 @@ var genero_field_specs_default = {
     { id: "hernia_escrotal", label: "Hernia inguinal / escrotal", kind: "detail" }
   ]
 };
-
-// lib/historia-clinica/clinical-text.mjs
-var SLUG_STRING_KEYS = /* @__PURE__ */ new Set([
-  "id",
-  "substanceId",
-  "conditionId",
-  "relativeId",
-  "linkedFrom",
-  "stage"
-]);
-var SKIP_STRING_KEYS = /* @__PURE__ */ new Set([
-  "patientId",
-  "createdAt",
-  "updatedAt",
-  "capturedAt",
-  "setId",
-  "source",
-  "clientId",
-  "fecha",
-  "hora"
-]);
-function toClinicalHistoryText(value) {
-  if (value == null) return "";
-  return String(value).toUpperCase();
-}
-var PRESERVE_LITERAL = /* @__PURE__ */ new Set([
-  "negado",
-  "activo",
-  "exfumador",
-  "dia",
-  "daily",
-  "semana",
-  "weekly",
-  "fin",
-  "weekend",
-  "mes",
-  "monthly",
-  "si",
-  "no"
-]);
-function shouldPreserveString(key, value, parentKey) {
-  if (typeof value !== "string") return true;
-  if (!value.trim()) return true;
-  if (SKIP_STRING_KEYS.has(key)) return true;
-  if (key === "conditions" || key === "checks" || parentKey === "conditions" || parentKey === "checks") {
-    return true;
-  }
-  if (SLUG_STRING_KEYS.has(key) && /^[a-z][a-z0-9_]*$/i.test(value)) return true;
-  if (key === "status" || key === "frequencyKind" || key === "portadorVih") {
-    if (PRESERVE_LITERAL.has(value.trim().toLowerCase())) return true;
-  }
-  return false;
-}
-function applyClinicalHistoryUppercase(value, key, parentKey) {
-  if (value == null) return value;
-  if (typeof value === "string") {
-    if (shouldPreserveString(key || "", value, parentKey)) return value;
-    return toClinicalHistoryText(value);
-  }
-  if (typeof value === "number" || typeof value === "boolean") return value;
-  if (Array.isArray(value)) {
-    return value.map(function(item) {
-      return applyClinicalHistoryUppercase(item, key, parentKey);
-    });
-  }
-  if (typeof value === "object") {
-    Object.keys(value).forEach(function(k) {
-      value[k] = applyClinicalHistoryUppercase(value[k], k, key);
-    });
-    return value;
-  }
-  return value;
-}
-function shouldUppercaseHcInput(el) {
-  if (!el || !(el instanceof HTMLElement)) return false;
-  if (el.dataset && el.dataset.hcNoUppercase != null) return false;
-  const tag = el.tagName;
-  if (tag === "SELECT") return false;
-  if (tag === "TEXTAREA") return true;
-  if (tag !== "INPUT") return false;
-  const type = (el.getAttribute("type") || "text").toLowerCase();
-  return type === "text" || type === "" || type === "search";
-}
-function applyUppercaseToHcInput(el) {
-  if (!shouldUppercaseHcInput(el)) return;
-  const next = toClinicalHistoryText(el.value);
-  if (el.value === next) return;
-  const start = el.selectionStart;
-  const end = el.selectionEnd;
-  el.value = next;
-  if (start != null && end != null) {
-    try {
-      el.setSelectionRange(start, end);
-    } catch (_) {
-    }
-  }
-}
 
 // lib/historia-clinica/medicamento-entry.mjs
 function trim3(s) {
@@ -42940,8 +44792,103 @@ function syncAhfConditionsFromEntries(ahf) {
   return ahf;
 }
 
-// lib/historia-clinica/compile-narrative.mjs
+// lib/historia-clinica/signos-vitales-ingreso.mjs
 function trim9(s) {
+  return String(s || "").trim();
+}
+function num3(v) {
+  if (v == null || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+var SOPORTE_SUFFIX = {
+  "Aire ambiente": "AA",
+  "Puntillas nasales": "LN",
+  "Alto flujo": "AF",
+  "VM no invasiva": "VMNI"
+};
+function signosVitalesSnapshotHasData(snapshot) {
+  if (!snapshot || typeof snapshot !== "object") return false;
+  const v = snapshot.vitals && typeof snapshot.vitals === "object" ? snapshot.vitals : {};
+  const keys = ["tas", "tad", "fc", "fr", "temp", "sat", "tempPeak"];
+  for (let i = 0; i < keys.length; i++) {
+    const k = keys[i];
+    if (v[k] != null && v[k] !== "") return true;
+  }
+  if (Array.isArray(snapshot.glucometrias) && snapshot.glucometrias.length) return true;
+  if (Array.isArray(snapshot.bombaInsulina) && snapshot.bombaInsulina.length) return true;
+  return false;
+}
+function formatSignosVitalesIngresoFromSnapshot(snapshot, estadoClinico) {
+  if (!signosVitalesSnapshotHasData(snapshot)) return "";
+  const v = snapshot && snapshot.vitals && typeof snapshot.vitals === "object" ? snapshot.vitals : {};
+  const alt = snapshot && snapshot.alteredAt && typeof snapshot.alteredAt === "object" ? snapshot.alteredAt : {};
+  const parts = [];
+  const temp = num3(v.temp);
+  if (temp != null) {
+    let line = "TEMP " + temp + " \xB0C";
+    if (alt.temp) line += " @ " + alt.temp;
+    const peak = num3(v.tempPeak);
+    if (peak != null) {
+      line += " (PICO " + peak + " \xB0C";
+      if (alt.tempPeak) line += " @ " + alt.tempPeak;
+      line += ")";
+    }
+    parts.push(line);
+  }
+  const fc = num3(v.fc);
+  if (fc != null) parts.push("FC " + fc + " LPM");
+  const fr = num3(v.fr);
+  if (fr != null) parts.push("FR " + fr + " RPM");
+  const sat = num3(v.sat);
+  if (sat != null) {
+    let satLine = "SAT " + sat + "%";
+    const soporteKey = estadoClinico && estadoClinico.soporte != null ? String(estadoClinico.soporte).trim() : "";
+    const soporteShort = SOPORTE_SUFFIX[soporteKey];
+    if (soporteShort) satLine += " " + soporteShort;
+    parts.push(satLine);
+  }
+  const tas = num3(v.tas);
+  const tad = num3(v.tad);
+  if (tas != null || tad != null) {
+    parts.push("TA " + (tas != null ? tas : "\u2014") + "/" + (tad != null ? tad : "\u2014") + " MMHG");
+  }
+  const glu = Array.isArray(snapshot && snapshot.glucometrias) ? snapshot.glucometrias : [];
+  if (glu.length) {
+    parts.push(
+      "DXT " + glu.map(function(g3) {
+        const val2 = g3 && g3.value != null ? String(g3.value) : "";
+        const time = g3 && g3.time ? String(g3.time) : "";
+        return val2 + (time ? "@" + time : "");
+      }).filter(Boolean).join(", ") + " MG/DL"
+    );
+  }
+  const bomba = Array.isArray(snapshot && snapshot.bombaInsulina) ? snapshot.bombaInsulina : [];
+  if (bomba.length) {
+    parts.push(
+      "BOMBA " + bomba.map(function(b) {
+        if (!b || typeof b !== "object") return "";
+        const val2 = num3(b.value);
+        if (val2 == null) return "";
+        const units = num3(b.units);
+        const time = b.time ? String(b.time) : "";
+        let s = String(val2);
+        if (units != null && units > 0) s += " U/h " + units;
+        if (time) s += "@" + time;
+        return s;
+      }).filter(Boolean).join(", ")
+    );
+  }
+  return parts.join(" \xB7 ").toUpperCase();
+}
+function resolveSignosVitalesIngresoBody(data, ctx) {
+  const fromMon = ctx && trim9(ctx.signosVitalesIngresoFromMonitoreo);
+  if (fromMon) return fromMon;
+  return trim9(data && data.signosVitalesIngreso);
+}
+
+// lib/historia-clinica/compile-narrative.mjs
+function trim10(s) {
   return String(s || "").trim();
 }
 function labelsFromCatalog2(ids, catalog) {
@@ -42951,16 +44898,16 @@ function labelsFromCatalog2(ids, catalog) {
 }
 function formatChecklist(ids, catalog, descripcion, negado) {
   if (negado && (!ids || !ids.length)) {
-    return trim9(descripcion) || HC_INTERROGADO_NEGADO;
+    return trim10(descripcion) || HC_INTERROGADO_NEGADO;
   }
   const parts = labelsFromCatalog2(ids, catalog);
-  const detail = trim9(descripcion);
+  const detail = trim10(descripcion);
   if (parts.length && detail) return parts.join(", ") + ". " + detail;
   if (parts.length) return parts.join(", ");
   return detail;
 }
 function pushSection(out, id, title, body) {
-  const b = trim9(body);
+  const b = trim10(body);
   if (!b) return;
   out.push({ id, title, body: b });
 }
@@ -42977,9 +44924,9 @@ function formatApnp(apnp, ctx) {
     ["Dieta", apnp.dieta]
   ];
   return lines.filter(function(row) {
-    return trim9(row[1]);
+    return trim10(row[1]);
   }).map(function(row) {
-    return row[0] + ": " + trim9(row[1]);
+    return row[0] + ": " + trim10(row[1]);
   }).join("\n");
 }
 function formatIdentificacion(id) {
@@ -42997,20 +44944,20 @@ function formatIdentificacion(id) {
     ["DX", id.dx]
   ];
   return lines.filter(function(row) {
-    return trim9(row[1]);
+    return trim10(row[1]);
   }).map(function(row) {
-    return row[0] + ": " + trim9(row[1]);
+    return row[0] + ": " + trim10(row[1]);
   }).join("\n");
 }
 function formatSexual(s) {
   if (!s || typeof s !== "object") return "";
   const lines = [];
-  if (trim9(s.ivsEdad)) lines.push("Inicio vida sexual: " + trim9(s.ivsEdad));
-  if (trim9(s.preferencias)) lines.push("Preferencias: " + trim9(s.preferencias));
-  if (trim9(s.parejas)) lines.push("Parejas: " + trim9(s.parejas));
+  if (trim10(s.ivsEdad)) lines.push("Inicio vida sexual: " + trim10(s.ivsEdad));
+  if (trim10(s.preferencias)) lines.push("Preferencias: " + trim10(s.preferencias));
+  if (trim10(s.parejas)) lines.push("Parejas: " + trim10(s.parejas));
   if (s.portadorVih) lines.push("Portador VIH: " + s.portadorVih);
-  if (trim9(s.fechaDxVih)) lines.push("Fecha dx VIH: " + trim9(s.fechaDxVih));
-  if (trim9(s.ets)) lines.push("ETS: " + trim9(s.ets));
+  if (trim10(s.fechaDxVih)) lines.push("Fecha dx VIH: " + trim10(s.fechaDxVih));
+  if (trim10(s.ets)) lines.push("ETS: " + trim10(s.ets));
   return lines.join("\n");
 }
 function formatIpas(ipas, catalogs) {
@@ -43062,7 +45009,12 @@ function compileHistoriaClinicaNarrative(data, catalogs, ctx) {
   pushSection(out, "padecimiento", "Padecimiento actual", d.padecimientoActual);
   pushSection(out, "negados", "Datos relevantes negados", d.datosNegados);
   pushSection(out, "ipas", "Interrogatorio por aparatos y sistemas", formatIpas(d.ipas, catalogs));
-  pushSection(out, "vitals", "Signos vitales al ingreso", d.signosVitalesIngreso);
+  pushSection(
+    out,
+    "vitals",
+    "Signos vitales al ingreso",
+    resolveSignosVitalesIngresoBody(d, ctx)
+  );
   const anchor = d.labAnchor;
   if (anchor) {
     let labLine = "Laboratorios al ingreso";
@@ -43072,7 +45024,7 @@ function compileHistoriaClinicaNarrative(data, catalogs, ctx) {
     if (anchor.creatinineMgDl != null) parts.push("Cr " + anchor.creatinineMgDl);
     if (parts.length) labLine += ": " + parts.join(", ");
     if (d.labsAtAdmission && d.labsAtAdmission.qsSummary) {
-      labLine += "\n" + trim9(d.labsAtAdmission.qsSummary).slice(0, 2e3);
+      labLine += "\n" + trim10(d.labsAtAdmission.qsSummary).slice(0, 2e3);
     }
     pushSection(out, "labs", "Laboratorios", labLine);
   }
@@ -43275,25 +45227,41 @@ function renderChecklistBlock(container, spec, value, onChange) {
 }
 
 // public/js/features/historia-clinica-apnp-widgets.mjs
-function esc14(s) {
+function esc15(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function numInput(name, value, label, attrs) {
   attrs = attrs || "";
-  return '<div class="field-group hc-calc-field"><label>' + esc14(label) + '</label><input type="number" min="0" step="1" data-hc-calc="' + esc14(name) + '" value="' + esc14(value != null && value !== "" ? value : "") + '" ' + attrs + "></div>";
+  return '<div class="field-group hc-calc-field"><label>' + esc15(label) + '</label><input type="number" min="0" step="1" data-hc-calc="' + esc15(name) + '" value="' + esc15(value != null && value !== "" ? value : "") + '" ' + attrs + "></div>";
 }
 function alertBanner(result, kind) {
   if (!result || !result.alert) return "";
   const msg = kind === "tobacco" ? result.alert === "high" ? "\xCDndice tab\xE1quico elevado (\u226540 paquetes-a\xF1o). Considerar riesgo pulmonar/cardiovascular aumentado." : "\xCDndice tab\xE1quico moderado-alto (\u226520 paquetes-a\xF1o)." : result.alert === "high" ? "Consumo de alcohol de riesgo alto (\u2265210 g etanol/semana)." : "Consumo de alcohol en rango de riesgo (\u2265140 g/semana).";
-  return '<div class="hc-calc-alert hc-calc-alert--' + esc14(result.alert) + '" role="status">' + esc14(msg) + "</div>";
+  return '<div class="hc-calc-alert hc-calc-alert--' + esc15(result.alert) + '" role="status">' + esc15(msg) + "</div>";
+}
+function statusSelectRow(name, value, options) {
+  const v = value || "negado";
+  return '<div class="hc-calc-status-row"><label class="hc-calc-status-row__label">Estatus</label><select class="hc-calc-status-row__select" data-hc-calc="' + esc15(name) + '">' + options.map(function(pair) {
+    return '<option value="' + esc15(pair[0]) + '"' + (v === pair[0] ? " selected" : "") + ">" + esc15(pair[1]) + "</option>";
+  }).join("") + "</select></div>";
 }
 function statusSelect(name, value) {
-  const v = value || "negado";
-  return '<div class="field-group"><label>Estatus</label><select data-hc-calc="' + esc14(name) + '"><option value="negado"' + (v === "negado" ? " selected" : "") + '>Negado</option><option value="activo"' + (v === "activo" ? " selected" : "") + '>Activo</option><option value="exfumador"' + (v === "exfumador" ? " selected" : "") + ">Exfumador</option></select></div>";
+  return statusSelectRow(name, value, [
+    ["negado", "Negado"],
+    ["activo", "Activo"],
+    ["exfumador", "Exfumador"]
+  ]);
 }
 function alcoholStatusSelect(value) {
-  const v = value || "negado";
-  return '<div class="field-group"><label>Estatus</label><select data-hc-calc="status"><option value="negado"' + (v === "negado" ? " selected" : "") + '>Negado</option><option value="activo"' + (v === "activo" ? " selected" : "") + ">Consumo actual</option></select></div>";
+  return statusSelectRow("status", value, [
+    ["negado", "Negado"],
+    ["activo", "Consumo actual"]
+  ]);
+}
+function shouldShowCalcSummary(summary, showFields) {
+  if (showFields) return true;
+  const s = String(summary || "").trim();
+  return s.length > 0 && s !== "Negado";
 }
 function mountTabaquismoWidget(container, detail, ctx, onChange) {
   if (!container) return;
@@ -43302,7 +45270,7 @@ function mountTabaquismoWidget(container, detail, ctx, onChange) {
     Object.assign({}, detail, { currentAge: ctx && ctx.currentAge })
   );
   const showFields = detail.status && detail.status !== "negado";
-  container.innerHTML = '<div class="hc-calc-card" data-hc-calc-kind="tabaquismo">' + statusSelect("status", detail.status) + (showFields ? '<div class="hc-calc-grid">' + numInput("ageStarted", detail.ageStarted, "Edad de inicio") + numInput("cigarettesPerDay", detail.cigarettesPerDay, "Cigarrillos por d\xEDa") + numInput("yearsSmoked", detail.yearsSmoked, "A\xF1os fumando (si sigue activo)") + (detail.status === "exfumador" ? numInput("ageStopped", detail.ageStopped, "Edad al dejar de fumar") : "") + "</div>" : "") + alertBanner(result, "tobacco") + '<p class="hc-calc-result">' + esc14(result.summary) + "</p></div>";
+  container.innerHTML = '<div class="hc-calc-card" data-hc-calc-kind="tabaquismo">' + statusSelect("status", detail.status) + (showFields ? '<div class="hc-calc-grid">' + numInput("ageStarted", detail.ageStarted, "Edad de inicio") + numInput("cigarettesPerDay", detail.cigarettesPerDay, "Cigarrillos por d\xEDa") + numInput("yearsSmoked", detail.yearsSmoked, "A\xF1os fumando (si sigue activo)") + (detail.status === "exfumador" ? numInput("ageStopped", detail.ageStopped, "Edad al dejar de fumar") : "") + "</div>" : "") + alertBanner(result, "tobacco") + (shouldShowCalcSummary(result.summary, showFields) ? '<p class="hc-calc-result">' + esc15(result.summary) + "</p>" : "") + "</div>";
   function readDetail() {
     const statusEl = container.querySelector('[data-hc-calc="status"]');
     const status = statusEl ? statusEl.value : "negado";
@@ -43339,7 +45307,7 @@ function mountAlcoholismoWidget(container, detail, onChange) {
     detail.frequencyCount != null ? detail.frequencyCount : 1,
     freq === "semana" ? "Veces por semana" : "Cantidad",
     freq === "semana" ? "" : 'style="display:none"'
-  ) + "</div>" : "") + alertBanner(result, "alcohol") + '<p class="hc-calc-result">' + esc14(result.summary) + "</p></div>";
+  ) + "</div>" : "") + alertBanner(result, "alcohol") + (shouldShowCalcSummary(result.summary, showFields) ? '<p class="hc-calc-result">' + esc15(result.summary) + "</p>" : "") + "</div>";
   function readDetail() {
     const statusEl = container.querySelector('[data-hc-calc="status"]');
     const out = { status: statusEl ? statusEl.value : "negado" };
@@ -43367,7 +45335,7 @@ function mountAlcoholismoWidget(container, detail, onChange) {
 }
 
 // public/js/features/historia-clinica-toxicomanias.mjs
-function esc15(s) {
+function esc16(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function catalogOptions() {
@@ -43381,7 +45349,7 @@ function entryForSubstance(entries, substanceId) {
   });
 }
 function entryHtml(entry2, label) {
-  return '<div class="hc-tox-entry" data-tox-entry-id="' + esc15(entry2.id) + '"><div class="hc-tox-entry-title">' + esc15(label) + '</div><div class="hc-tox-entry-fields"><div class="field-group"><label>Frecuencia de uso</label><input type="text" data-tox-field="frequency" value="' + esc15(entry2.frequency || "") + '" placeholder="Diario, semanal, ocasional\u2026"></div><div class="field-group"><label>A\xF1os de uso</label><input type="number" min="0" max="80" step="1" data-tox-field="years" value="' + esc15(entry2.years || "") + '" placeholder="0"></div></div><button type="button" class="btn-remove" data-tox-remove="' + esc15(entry2.id) + '" aria-label="Quitar">\xD7</button></div>';
+  return '<div class="hc-tox-entry" data-tox-entry-id="' + esc16(entry2.id) + '"><div class="hc-tox-entry-title">' + esc16(label) + '</div><div class="hc-tox-entry-fields"><div class="field-group"><label>Frecuencia de uso</label><input type="text" data-tox-field="frequency" value="' + esc16(entry2.frequency || "") + '" placeholder="Diario, semanal, ocasional\u2026"></div><div class="field-group"><label>A\xF1os de uso</label><input type="number" min="0" max="80" step="1" data-tox-field="years" value="' + esc16(entry2.years || "") + '" placeholder="0"></div></div><button type="button" class="btn-remove" data-tox-remove="' + esc16(entry2.id) + '" aria-label="Quitar">\xD7</button></div>';
 }
 function mountToxicomaniasPanel(container, apnp, onChange) {
   if (!container) return;
@@ -43398,7 +45366,7 @@ function mountToxicomaniasPanel(container, apnp, onChange) {
   html += '<div class="hc-checklist-options hc-checklist-options--grid hc-tox-chips">';
   options.forEach(function(opt) {
     const checked = activeIds.has(opt.id) ? " checked" : "";
-    html += '<label class="hc-check-chip"><input type="checkbox" class="hc-check-chip-input" data-tox-substance="' + esc15(opt.id) + '"' + checked + '><span class="hc-check-chip-label">' + esc15(opt.label) + "</span></label>";
+    html += '<label class="hc-check-chip"><input type="checkbox" class="hc-check-chip-input" data-tox-substance="' + esc16(opt.id) + '"' + checked + '><span class="hc-check-chip-label">' + esc16(opt.label) + "</span></label>";
   });
   html += "</div>";
   html += '<div class="hc-tox-entries" id="hc-tox-entries-host">';
@@ -43505,7 +45473,7 @@ var APP_DEDICATED_IDS = /* @__PURE__ */ new Set([
   "traumaticos",
   "alergias"
 ]);
-function trim10(s) {
+function trim11(s) {
   return String(s || "").trim();
 }
 function normalizeAppData(app, defaults) {
@@ -43524,7 +45492,7 @@ function normalizeAppData(app, defaults) {
   if (!Array.isArray(app.traumaticosEntries)) app.traumaticosEntries = [];
   if (!Array.isArray(app.transfusionesEntries)) app.transfusionesEntries = [];
   if (!Array.isArray(app.medicamentosActuales)) {
-    const legacyMed = trim10(app.medicamentosActuales);
+    const legacyMed = trim11(app.medicamentosActuales);
     app.medicamentosActuales = legacyMed ? [
       {
         id: "legacy_med",
@@ -43535,22 +45503,22 @@ function normalizeAppData(app, defaults) {
       }
     ] : [];
   }
-  if (trim10(app.alergias) && !app.alergiaMedicamentos.length) {
-    app.alergiaMedicamentos.push({ id: "legacy_al", medication: trim10(app.alergias) });
+  if (trim11(app.alergias) && !app.alergiaMedicamentos.length) {
+    app.alergiaMedicamentos.push({ id: "legacy_al", medication: trim11(app.alergias) });
     app.alergiasNegado = false;
   }
-  if (trim10(app.traumaticos) && !app.traumaticosEntries.length) {
+  if (trim11(app.traumaticos) && !app.traumaticosEntries.length) {
     app.traumaticosEntries.push({
       id: "legacy_tr",
-      description: trim10(app.traumaticos),
+      description: trim11(app.traumaticos),
       date: null
     });
   }
-  if (trim10(app.transfusiones) && !app.transfusionesEntries.length) {
+  if (trim11(app.transfusiones) && !app.transfusionesEntries.length) {
     app.transfusionesEntries.push({
       id: "legacy_tf",
       units: "",
-      adverseReactions: trim10(app.transfusiones),
+      adverseReactions: trim11(app.transfusiones),
       date: null
     });
   }
@@ -43575,7 +45543,7 @@ function normalizeAppData(app, defaults) {
 }
 
 // public/js/features/historia-clinica-app-panel.mjs
-function esc16(s) {
+function esc17(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function newRowId(prefix) {
@@ -43591,7 +45559,7 @@ function catalogOptions2(map) {
 function flexibleDateHtml(prefix, date) {
   const d = normalizeFlexibleDate(date) || defaultFlexibleDate();
   const p = d.precision || "year";
-  return '<div class="hc-flex-date" data-flex-prefix="' + esc16(prefix) + '"><select class="hc-flex-precision" data-flex="precision" aria-label="Precisi\xF3n de fecha"><option value="year"' + (p === "year" ? " selected" : "") + '>A\xF1o</option><option value="month"' + (p === "month" ? " selected" : "") + '>Mes/A\xF1o</option><option value="day"' + (p === "day" ? " selected" : "") + '>D\xEDa completo</option></select><input type="number" class="hc-flex-year" data-flex="year" min="1900" max="2100" placeholder="A\xF1o" value="' + esc16(d.year) + '"><input type="number" class="hc-flex-month" data-flex="month" min="1" max="12" placeholder="Mes" value="' + esc16(d.month != null ? d.month : "") + '"' + (p === "year" ? " hidden" : "") + '><input type="number" class="hc-flex-day" data-flex="day" min="1" max="31" placeholder="D\xEDa" value="' + esc16(d.day != null ? d.day : "") + '"' + (p !== "day" ? " hidden" : "") + "></div>";
+  return '<div class="hc-flex-date" data-flex-prefix="' + esc17(prefix) + '"><select class="hc-flex-precision" data-flex="precision" aria-label="Precisi\xF3n de fecha"><option value="year"' + (p === "year" ? " selected" : "") + '>A\xF1o</option><option value="month"' + (p === "month" ? " selected" : "") + '>Mes/A\xF1o</option><option value="day"' + (p === "day" ? " selected" : "") + '>D\xEDa completo</option></select><input type="number" class="hc-flex-year" data-flex="year" min="1900" max="2100" placeholder="A\xF1o" value="' + esc17(d.year) + '"><input type="number" class="hc-flex-month" data-flex="month" min="1" max="12" placeholder="Mes" value="' + esc17(d.month != null ? d.month : "") + '"' + (p === "year" ? " hidden" : "") + '><input type="number" class="hc-flex-day" data-flex="day" min="1" max="31" placeholder="D\xEDa" value="' + esc17(d.day != null ? d.day : "") + '"' + (p !== "day" ? " hidden" : "") + "></div>";
 }
 function readFlexibleDate(wrap) {
   if (!wrap) return null;
@@ -43650,18 +45618,18 @@ function allConditionIds(app, catalog) {
   });
 }
 function emptyHint(text) {
-  return '<p class="hc-empty-hint">' + esc16(text) + "</p>";
+  return '<p class="hc-empty-hint">' + esc17(text) + "</p>";
 }
 function conditionCardHtml(row, app) {
   const det = app.conditionDetails && app.conditionDetails[row.id] || {};
   if (row.id === ERC_CONDITION_ID) {
     const erc = normalizeErcDetail(det);
     const stageOpts = CKD_STAGES.map(function(s) {
-      return '<option value="' + esc16(s.id) + '"' + (erc.stage === s.id ? " selected" : "") + ">" + esc16(s.label) + "</option>";
+      return '<option value="' + esc17(s.id) + '"' + (erc.stage === s.id ? " selected" : "") + ">" + esc17(s.label) + "</option>";
     }).join("");
-    return '<details class="card hc-app-cond-card hc-app-cond-card--erc" open data-cond-id="' + esc16(row.id) + '"><summary class="card-header">' + esc16(row.label) + '</summary><div class="card-body"><div class="hc-grid"><div class="field-group"><label>Estadio (KDIGO)</label><select data-erc-field="stage">' + stageOpts + '</select></div><div class="field-group"><label>Fecha de diagn\xF3stico</label>' + flexibleDateHtml("erc-dx", erc.diagnosedAt) + '</div><div class="field-group hc-entry-row-span"><label>Diagn\xF3stico / etiolog\xEDa</label><input type="text" data-erc-field="diagnosis" value="' + esc16(erc.diagnosis) + '" placeholder="Ej. nefropat\xEDa diab\xE9tica, NAE, ri\xF1\xF3n poliqu\xEDstico"></div><div class="field-group hc-entry-row-span"><label>Tratamiento (no farmacol\xF3gico)</label><input type="text" data-erc-field="treatment" value="' + esc16(erc.treatment) + '" placeholder="Dieta, restricci\xF3n h\xEDdrica, di\xE1lisis\u2026"></div></div><div class="hc-erc-meds-block"><p class="profile-hint">Medicamentos del tratamiento \u2014 se agregan autom\xE1ticamente a <strong>Medicamentos actuales</strong>.</p><div id="hc-erc-meds-list" class="hc-app-special-body"></div><button type="button" class="btn-add-row" id="hc-erc-add-med">+ Agregar medicamento</button></div></div></details>';
+    return '<details class="card hc-app-cond-card hc-app-cond-card--erc" open data-cond-id="' + esc17(row.id) + '"><summary class="card-header">' + esc17(row.label) + '</summary><div class="card-body"><div class="hc-grid"><div class="field-group"><label>Estadio (KDIGO)</label><select data-erc-field="stage">' + stageOpts + '</select></div><div class="field-group"><label>Fecha de diagn\xF3stico</label>' + flexibleDateHtml("erc-dx", erc.diagnosedAt) + '</div><div class="field-group hc-entry-row-span"><label>Diagn\xF3stico / etiolog\xEDa</label><input type="text" data-erc-field="diagnosis" value="' + esc17(erc.diagnosis) + '" placeholder="Ej. nefropat\xEDa diab\xE9tica, NAE, ri\xF1\xF3n poliqu\xEDstico"></div><div class="field-group hc-entry-row-span"><label>Tratamiento (no farmacol\xF3gico)</label><input type="text" data-erc-field="treatment" value="' + esc17(erc.treatment) + '" placeholder="Dieta, restricci\xF3n h\xEDdrica, di\xE1lisis\u2026"></div></div><div class="hc-erc-meds-block"><p class="profile-hint">Medicamentos del tratamiento \u2014 se agregan autom\xE1ticamente a <strong>Medicamentos actuales</strong>.</p><div id="hc-erc-meds-list" class="hc-app-special-body"></div><button type="button" class="btn-add-row" id="hc-erc-add-med">+ Agregar medicamento</button></div></div></details>';
   }
-  return '<details class="card hc-app-cond-card" open data-cond-id="' + esc16(row.id) + '"><summary class="card-header">' + esc16(row.label) + (row.custom ? ' <span class="hc-tag">Personalizada</span>' : "") + '</summary><div class="card-body hc-grid"><div class="field-group"><label>Fecha de diagn\xF3stico</label>' + flexibleDateHtml("dx-" + row.id, det.diagnosedAt) + '</div><div class="field-group"><label>Tratamiento</label><input type="text" data-cond-field="treatment" value="' + esc16(det.treatment || "") + '" placeholder="Tratamiento actual o previo"></div></div></details>';
+  return '<details class="card hc-app-cond-card" open data-cond-id="' + esc17(row.id) + '"><summary class="card-header">' + esc17(row.label) + (row.custom ? ' <span class="hc-tag">Personalizada</span>' : "") + '</summary><div class="card-body hc-grid"><div class="field-group"><label>Fecha de diagn\xF3stico</label>' + flexibleDateHtml("dx-" + row.id, det.diagnosedAt) + '</div><div class="field-group"><label>Tratamiento</label><input type="text" data-cond-field="treatment" value="' + esc17(det.treatment || "") + '" placeholder="Tratamiento actual o previo"></div></div></details>';
 }
 function mountHistoriaAppPanel(container, app, catalog, onChange) {
   if (!container) return;
@@ -43678,7 +45646,7 @@ function mountHistoriaAppPanel(container, app, catalog, onChange) {
   html += '<div class="hc-checklist-options hc-checklist-options--grid">';
   options.forEach(function(opt) {
     const checked = selected.has(opt.id) ? " checked" : "";
-    html += '<label class="hc-check-chip"><input type="checkbox" class="hc-check-chip-input" data-app-cond="' + esc16(opt.id) + '"' + checked + '><span class="hc-check-chip-label">' + esc16(opt.label) + "</span></label>";
+    html += '<label class="hc-check-chip"><input type="checkbox" class="hc-check-chip-input" data-app-cond="' + esc17(opt.id) + '"' + checked + '><span class="hc-check-chip-label">' + esc17(opt.label) + "</span></label>";
   });
   html += "</div>";
   html += '<div class="hc-app-custom-row"><div class="field-group hc-app-custom-field"><label>Otra enfermedad</label><input type="text" id="hc-app-custom-label" placeholder="Nombre de la enfermedad"></div><button type="button" class="btn-med-secondary" id="hc-app-add-custom">Agregar</button></div>';
@@ -43703,8 +45671,8 @@ function mountHistoriaAppPanel(container, app, catalog, onChange) {
   html += '<details class="card" open><summary class="card-header">Medicamentos actuales</summary><div class="card-body"><div id="hc-app-medicamentos" class="hc-app-special-body"></div><button type="button" class="btn-add-row" id="hc-app-add-medicamento">+ Agregar medicamento</button></div></details>';
   html += "</section>";
   html += '<section class="hc-app-block">';
-  html += '<div class="field-group"><label>Descripci\xF3n adicional</label><textarea rows="3" data-app-field="descripcionDetallada" placeholder="Otros antecedentes relevantes">' + esc16(app.descripcionDetallada) + "</textarea></div>";
-  html += '<div class="field-group"><label>Inmunizaciones</label><input type="text" data-app-field="inmunizaciones" value="' + esc16(app.inmunizaciones || "") + '" placeholder="Esquema o pendientes"></div>';
+  html += '<div class="field-group"><label>Descripci\xF3n adicional</label><textarea rows="3" data-app-field="descripcionDetallada" placeholder="Otros antecedentes relevantes">' + esc17(app.descripcionDetallada) + "</textarea></div>";
+  html += '<div class="field-group"><label>Inmunizaciones</label><input type="text" data-app-field="inmunizaciones" value="' + esc17(app.inmunizaciones || "") + '" placeholder="Esquema o pendientes"></div>';
   html += "</section></div>";
   container.innerHTML = html;
   function emit() {
@@ -43728,7 +45696,7 @@ function mountHistoriaAppPanel(container, app, catalog, onChange) {
       return;
     }
     host.innerHTML = list.map(function(m, i) {
-      return '<div class="hc-entry-row hc-entry-row--compact" data-erc-med-idx="' + i + '"><div class="field-group"><label>Medicamento</label><input type="text" data-erc-med-field="medication" value="' + esc16(m.medication || "") + '"></div><div class="field-group"><label>V\xEDa</label><input type="text" data-erc-med-field="route" value="' + esc16(m.route || "") + '"></div><div class="field-group"><label>Dosis</label><input type="text" data-erc-med-field="dosage" value="' + esc16(m.dosage || "") + '"></div><div class="field-group"><label>Frecuencia</label><input type="text" data-erc-med-field="frequency" value="' + esc16(m.frequency || "") + '"></div><button type="button" class="btn-remove" data-erc-med-remove="' + i + '" aria-label="Quitar">\xD7</button></div>';
+      return '<div class="hc-entry-row hc-entry-row--compact" data-erc-med-idx="' + i + '"><div class="field-group"><label>Medicamento</label><input type="text" data-erc-med-field="medication" value="' + esc17(m.medication || "") + '"></div><div class="field-group"><label>V\xEDa</label><input type="text" data-erc-med-field="route" value="' + esc17(m.route || "") + '"></div><div class="field-group"><label>Dosis</label><input type="text" data-erc-med-field="dosage" value="' + esc17(m.dosage || "") + '"></div><div class="field-group"><label>Frecuencia</label><input type="text" data-erc-med-field="frequency" value="' + esc17(m.frequency || "") + '"></div><button type="button" class="btn-remove" data-erc-med-remove="' + i + '" aria-label="Quitar">\xD7</button></div>';
     }).join("");
     host.querySelectorAll("[data-erc-med-field]").forEach(function(el) {
       el.addEventListener("input", function() {
@@ -43800,7 +45768,7 @@ function mountHistoriaAppPanel(container, app, catalog, onChange) {
       return;
     }
     host.innerHTML = list.map(function(row, i) {
-      return '<div class="hc-entry-row hc-entry-row--compact" data-alergia-idx="' + i + '"><div class="field-group hc-entry-row-main"><label>Medicamento</label><input type="text" data-al-field="medication" value="' + esc16(row.medication || "") + '" placeholder="ej. Penicilina, AINEs, contraste yodado"></div><button type="button" class="btn-remove" data-alergia-remove="' + i + '" aria-label="Quitar">\xD7</button></div>';
+      return '<div class="hc-entry-row hc-entry-row--compact" data-alergia-idx="' + i + '"><div class="field-group hc-entry-row-main"><label>Medicamento</label><input type="text" data-al-field="medication" value="' + esc17(row.medication || "") + '" placeholder="ej. Penicilina, AINEs, contraste yodado"></div><button type="button" class="btn-remove" data-alergia-remove="' + i + '" aria-label="Quitar">\xD7</button></div>';
     }).join("");
     host.querySelectorAll("[data-al-field]").forEach(function(el) {
       el.addEventListener("input", function() {
@@ -43828,7 +45796,7 @@ function mountHistoriaAppPanel(container, app, catalog, onChange) {
       return;
     }
     host.innerHTML = list.map(function(t2, i) {
-      return '<div class="hc-entry-row" data-trauma-idx="' + i + '"><div class="field-group"><label>Fecha</label>' + flexibleDateHtml("tr-" + i, t2.date) + '</div><div class="field-group hc-entry-row-main"><label>Qu\xE9 ocurri\xF3</label><input type="text" data-tr-field="description" value="' + esc16(t2.description || "") + '" placeholder="ej. Fractura de f\xE9mur por ca\xEDda"></div><button type="button" class="btn-remove" data-trauma-remove="' + i + '" aria-label="Quitar">\xD7</button></div>';
+      return '<div class="hc-entry-row" data-trauma-idx="' + i + '"><div class="field-group"><label>Fecha</label>' + flexibleDateHtml("tr-" + i, t2.date) + '</div><div class="field-group hc-entry-row-main"><label>Qu\xE9 ocurri\xF3</label><input type="text" data-tr-field="description" value="' + esc17(t2.description || "") + '" placeholder="ej. Fractura de f\xE9mur por ca\xEDda"></div><button type="button" class="btn-remove" data-trauma-remove="' + i + '" aria-label="Quitar">\xD7</button></div>';
     }).join("");
     host.querySelectorAll(".hc-flex-date").forEach(wireFlexibleDate);
     host.querySelectorAll("[data-tr-field]").forEach(function(el) {
@@ -43864,7 +45832,7 @@ function mountHistoriaAppPanel(container, app, catalog, onChange) {
       return;
     }
     host.innerHTML = list.map(function(t2, i) {
-      return '<div class="hc-entry-row" data-transfusion-idx="' + i + '"><div class="field-group"><label>Unidades / cantidad</label><input type="text" data-tf-field="units" value="' + esc16(t2.units != null ? t2.units : "") + '" placeholder="ej. 2 paquetes globulares"></div><div class="field-group"><label>Fecha</label>' + flexibleDateHtml("tf-" + i, t2.date) + '</div><div class="field-group hc-entry-row-span"><label>Reacciones adversas</label><input type="text" data-tf-field="adverseReactions" value="' + esc16(t2.adverseReactions || "") + '" placeholder="Ninguna, o describir"></div><button type="button" class="btn-remove" data-transfusion-remove="' + i + '" aria-label="Quitar">\xD7</button></div>';
+      return '<div class="hc-entry-row" data-transfusion-idx="' + i + '"><div class="field-group"><label>Unidades / cantidad</label><input type="text" data-tf-field="units" value="' + esc17(t2.units != null ? t2.units : "") + '" placeholder="ej. 2 paquetes globulares"></div><div class="field-group"><label>Fecha</label>' + flexibleDateHtml("tf-" + i, t2.date) + '</div><div class="field-group hc-entry-row-span"><label>Reacciones adversas</label><input type="text" data-tf-field="adverseReactions" value="' + esc17(t2.adverseReactions || "") + '" placeholder="Ninguna, o describir"></div><button type="button" class="btn-remove" data-transfusion-remove="' + i + '" aria-label="Quitar">\xD7</button></div>';
     }).join("");
     host.querySelectorAll(".hc-flex-date").forEach(wireFlexibleDate);
     host.querySelectorAll("[data-tf-field]").forEach(function(el) {
@@ -43903,7 +45871,7 @@ function mountHistoriaAppPanel(container, app, catalog, onChange) {
       const linked = m.linkedFrom === ERC_CONDITION_ID;
       const ro = linked ? ' readonly tabindex="-1" title="Editar en la tarjeta de enfermedad renal cr\xF3nica"' : "";
       const tag = linked ? ' <span class="hc-tag">ERC</span>' : "";
-      return '<div class="hc-entry-row' + (linked ? " hc-entry-row--linked" : "") + '" data-medicamento-idx="' + i + '"><div class="field-group"><label>Medicamento' + tag + '</label><input type="text" data-med-field="medication" value="' + esc16(m.medication || "") + '" placeholder="Nombre gen\xE9rico o comercial"' + ro + '></div><div class="field-group"><label>V\xEDa de administraci\xF3n</label><input type="text" data-med-field="route" value="' + esc16(m.route || "") + '" placeholder="VO, IV, SC, inhalada\u2026"' + ro + '></div><div class="field-group"><label>Dosis</label><input type="text" data-med-field="dosage" value="' + esc16(m.dosage || "") + '" placeholder="ej. 850 mg"' + ro + '></div><div class="field-group"><label>Frecuencia</label><input type="text" data-med-field="frequency" value="' + esc16(m.frequency || "") + '" placeholder="ej. c/12 h"' + ro + '></div><button type="button" class="btn-remove" data-medicamento-remove="' + i + '" aria-label="Quitar">\xD7</button></div>';
+      return '<div class="hc-entry-row' + (linked ? " hc-entry-row--linked" : "") + '" data-medicamento-idx="' + i + '"><div class="field-group"><label>Medicamento' + tag + '</label><input type="text" data-med-field="medication" value="' + esc17(m.medication || "") + '" placeholder="Nombre gen\xE9rico o comercial"' + ro + '></div><div class="field-group"><label>V\xEDa de administraci\xF3n</label><input type="text" data-med-field="route" value="' + esc17(m.route || "") + '" placeholder="VO, IV, SC, inhalada\u2026"' + ro + '></div><div class="field-group"><label>Dosis</label><input type="text" data-med-field="dosage" value="' + esc17(m.dosage || "") + '" placeholder="ej. 850 mg"' + ro + '></div><div class="field-group"><label>Frecuencia</label><input type="text" data-med-field="frequency" value="' + esc17(m.frequency || "") + '" placeholder="ej. c/12 h"' + ro + '></div><button type="button" class="btn-remove" data-medicamento-remove="' + i + '" aria-label="Quitar">\xD7</button></div>';
     }).join("");
     host.querySelectorAll("[data-med-field]").forEach(function(el) {
       el.addEventListener("input", function() {
@@ -43943,7 +45911,7 @@ function mountHistoriaAppPanel(container, app, catalog, onChange) {
       return;
     }
     host.innerHTML = list.map(function(c, i) {
-      return '<div class="hc-entry-row" data-cirugia-idx="' + i + '"><div class="field-group"><label>Procedimiento</label><input type="text" data-c-field="procedure" value="' + esc16(c.procedure || "") + '"></div><div class="field-group"><label>Fecha</label>' + flexibleDateHtml("cir-" + i, c.date) + '</div><div class="field-group hc-entry-row-span"><label>Complicaciones</label><input type="text" data-c-field="complications" value="' + esc16(c.complications || "") + '"></div><button type="button" class="btn-remove" data-cirugia-remove="' + i + '" aria-label="Quitar">\xD7</button></div>';
+      return '<div class="hc-entry-row" data-cirugia-idx="' + i + '"><div class="field-group"><label>Procedimiento</label><input type="text" data-c-field="procedure" value="' + esc17(c.procedure || "") + '"></div><div class="field-group"><label>Fecha</label>' + flexibleDateHtml("cir-" + i, c.date) + '</div><div class="field-group hc-entry-row-span"><label>Complicaciones</label><input type="text" data-c-field="complications" value="' + esc17(c.complications || "") + '"></div><button type="button" class="btn-remove" data-cirugia-remove="' + i + '" aria-label="Quitar">\xD7</button></div>';
     }).join("");
     wireEntryList(host, app.cirugias, "cirugia", "c-field", function(idx, wrap) {
       app.cirugias[idx].date = readFlexibleDate(wrap);
@@ -43958,7 +45926,7 @@ function mountHistoriaAppPanel(container, app, catalog, onChange) {
       return;
     }
     host.innerHTML = list.map(function(h, i) {
-      return '<div class="hc-entry-row" data-hosp-idx="' + i + '"><div class="field-group"><label>Motivo</label><input type="text" data-h-field="reason" value="' + esc16(h.reason || "") + '"></div><div class="field-group"><label>Fecha</label>' + flexibleDateHtml("hos-" + i, h.date) + '</div><div class="field-group"><label>Duraci\xF3n</label><input type="text" data-h-field="duration" value="' + esc16(h.duration || "") + '" placeholder="ej. 5 d\xEDas"></div><div class="field-group"><label>Complicaciones</label><input type="text" data-h-field="complications" value="' + esc16(h.complications || "") + '"></div><button type="button" class="btn-remove" data-hosp-remove="' + i + '" aria-label="Quitar">\xD7</button></div>';
+      return '<div class="hc-entry-row" data-hosp-idx="' + i + '"><div class="field-group"><label>Motivo</label><input type="text" data-h-field="reason" value="' + esc17(h.reason || "") + '"></div><div class="field-group"><label>Fecha</label>' + flexibleDateHtml("hos-" + i, h.date) + '</div><div class="field-group"><label>Duraci\xF3n</label><input type="text" data-h-field="duration" value="' + esc17(h.duration || "") + '" placeholder="ej. 5 d\xEDas"></div><div class="field-group"><label>Complicaciones</label><input type="text" data-h-field="complications" value="' + esc17(h.complications || "") + '"></div><button type="button" class="btn-remove" data-hosp-remove="' + i + '" aria-label="Quitar">\xD7</button></div>';
     }).join("");
     wireEntryList(host, app.hospitalizaciones, "hosp", "h-field", function(idx, wrap) {
       app.hospitalizaciones[idx].date = readFlexibleDate(wrap);
@@ -44154,7 +46122,7 @@ function mountHistoriaAppPanel(container, app, catalog, onChange) {
 }
 
 // public/js/features/historia-clinica-ahf-panel.mjs
-function esc17(s) {
+function esc18(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function catalogOptions3(map) {
@@ -44189,10 +46157,10 @@ function entriesForCondition(ahf, conditionId) {
   });
 }
 function relativeSelectHtml(entryId, value) {
-  let html = '<select class="hc-ahf-relative" data-entry-id="' + esc17(entryId) + '">';
+  let html = '<select class="hc-ahf-relative" data-entry-id="' + esc18(entryId) + '">';
   html += '<option value="">\u2014 Familiar \u2014</option>';
   AHF_RELATIVES.forEach(function(rel) {
-    html += '<option value="' + esc17(rel.id) + '"' + (value === rel.id ? " selected" : "") + ">" + esc17(rel.label) + "</option>";
+    html += '<option value="' + esc18(rel.id) + '"' + (value === rel.id ? " selected" : "") + ">" + esc18(rel.label) + "</option>";
   });
   return html + "</select>";
 }
@@ -44201,7 +46169,7 @@ function entryRowHtml(entry2) {
   const id = e.id || newEntryId();
   const vital = e.vitalStatus || "desconocido";
   const deadFields = vital === "fallecido";
-  return '<div class="hc-ahf-entry" data-entry-id="' + esc17(id) + '"><div class="field-group"><label>Familiar</label>' + relativeSelectHtml(id, e.relativeId) + '</div><div class="field-group"><label>Diagn\xF3stico</label><input type="text" data-ahf-field="diagnosis" value="' + esc17(e.diagnosis || "") + '"></div><div class="field-group"><label>Tratamiento</label><input type="text" data-ahf-field="treatment" value="' + esc17(e.treatment || "") + '"></div><div class="field-group"><label>Estado</label><select data-ahf-field="vitalStatus"><option value="vivo"' + (vital === "vivo" ? " selected" : "") + '>Vivo/a</option><option value="fallecido"' + (vital === "fallecido" ? " selected" : "") + '>Fallecido/a</option><option value="desconocido"' + (vital === "desconocido" ? " selected" : "") + '>No especificado</option></select></div><div class="hc-ahf-death-fields' + (deadFields ? "" : " hc-ahf-death-fields--hidden") + '"><div class="field-group"><label>Edad al fallecer</label><input type="number" min="0" max="120" data-ahf-field="ageAtDeath" value="' + esc17(e.ageAtDeath != null ? e.ageAtDeath : "") + '"></div><div class="field-group"><label>Causa de muerte</label><input type="text" data-ahf-field="causeOfDeath" value="' + esc17(e.causeOfDeath || "") + '"></div></div><button type="button" class="btn-remove" data-ahf-remove aria-label="Quitar familiar">\xD7</button></div>';
+  return '<div class="hc-ahf-entry" data-entry-id="' + esc18(id) + '"><div class="field-group"><label>Familiar</label>' + relativeSelectHtml(id, e.relativeId) + '</div><div class="field-group"><label>Diagn\xF3stico</label><input type="text" data-ahf-field="diagnosis" value="' + esc18(e.diagnosis || "") + '"></div><div class="field-group"><label>Tratamiento</label><input type="text" data-ahf-field="treatment" value="' + esc18(e.treatment || "") + '"></div><div class="field-group"><label>Estado</label><select data-ahf-field="vitalStatus"><option value="vivo"' + (vital === "vivo" ? " selected" : "") + '>Vivo/a</option><option value="fallecido"' + (vital === "fallecido" ? " selected" : "") + '>Fallecido/a</option><option value="desconocido"' + (vital === "desconocido" ? " selected" : "") + '>No especificado</option></select></div><div class="hc-ahf-death-fields' + (deadFields ? "" : " hc-ahf-death-fields--hidden") + '"><div class="field-group"><label>Edad al fallecer</label><input type="number" min="0" max="120" data-ahf-field="ageAtDeath" value="' + esc18(e.ageAtDeath != null ? e.ageAtDeath : "") + '"></div><div class="field-group"><label>Causa de muerte</label><input type="text" data-ahf-field="causeOfDeath" value="' + esc18(e.causeOfDeath || "") + '"></div></div><button type="button" class="btn-remove" data-ahf-remove aria-label="Quitar familiar">\xD7</button></div>';
 }
 function mountHistoriaAhfPanel(container, ahf, catalog, onChange) {
   if (!container) return;
@@ -44213,7 +46181,7 @@ function mountHistoriaAhfPanel(container, ahf, catalog, onChange) {
   html += '<div class="hc-checklist-options hc-checklist-options--grid">';
   options.forEach(function(opt) {
     const checked = activeIds.has(opt.id) ? " checked" : "";
-    html += '<label class="hc-check-chip"><input type="checkbox" class="hc-check-chip-input" data-ahf-cond="' + esc17(opt.id) + '"' + checked + '><span class="hc-check-chip-label">' + esc17(opt.label) + "</span></label>";
+    html += '<label class="hc-check-chip"><input type="checkbox" class="hc-check-chip-input" data-ahf-cond="' + esc18(opt.id) + '"' + checked + '><span class="hc-check-chip-label">' + esc18(opt.label) + "</span></label>";
   });
   html += "</div>";
   html += '<div class="hc-app-custom-row"><div class="field-group" style="flex:1"><label>Otra enfermedad familiar</label><input type="text" id="hc-ahf-custom-label" placeholder="Nombre de la enfermedad"></div><button type="button" class="btn-med-secondary" id="hc-ahf-add-custom">Agregar</button></div>';
@@ -44222,7 +46190,7 @@ function mountHistoriaAhfPanel(container, ahf, catalog, onChange) {
     html += '<div class="hc-ahf-conditions-detail">';
     positiveIds.forEach(function(cid) {
       const entries = entriesForCondition(ahf, cid);
-      html += '<details class="card hc-ahf-cond-card" open data-cond-id="' + esc17(cid) + '"><summary class="card-header">' + esc17(conditionLabel2(cid, catalog, ahf.customConditions)) + '</summary><div class="card-body hc-ahf-entries" data-cond-id="' + esc17(cid) + '">';
+      html += '<details class="card hc-ahf-cond-card" open data-cond-id="' + esc18(cid) + '"><summary class="card-header">' + esc18(conditionLabel2(cid, catalog, ahf.customConditions)) + '</summary><div class="card-body hc-ahf-entries" data-cond-id="' + esc18(cid) + '">';
       if (entries.length) {
         entries.forEach(function(entry2) {
           html += entryRowHtml(entry2);
@@ -44230,11 +46198,11 @@ function mountHistoriaAhfPanel(container, ahf, catalog, onChange) {
       } else {
         html += '<p class="profile-hint">Agrega al menos un familiar para esta enfermedad.</p>';
       }
-      html += '</div><button type="button" class="btn-add-row" data-ahf-add-relative="' + esc17(cid) + '">+ Agregar familiar</button></details>';
+      html += '</div><button type="button" class="btn-add-row" data-ahf-add-relative="' + esc18(cid) + '">+ Agregar familiar</button></details>';
     });
     html += "</div>";
   }
-  html += '<div class="field-group"><label>Notas adicionales</label><textarea rows="3" data-ahf-field="descripcionDetallada">' + esc17(ahf.descripcionDetallada) + "</textarea></div></div>";
+  html += '<div class="field-group"><label>Notas adicionales</label><textarea rows="3" data-ahf-field="descripcionDetallada">' + esc18(ahf.descripcionDetallada) + "</textarea></div></div>";
   container.innerHTML = html;
   function emit() {
     onChange(ensureAhf(ahf));
@@ -44375,11 +46343,11 @@ function mountHistoriaAhfPanel(container, ahf, catalog, onChange) {
 }
 
 // public/js/features/historia-clinica-medicamento-rows.mjs
-function esc18(s) {
+function esc19(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function emptyHint2(text) {
-  return '<p class="hc-empty-hint">' + esc18(text) + "</p>";
+  return '<p class="hc-empty-hint">' + esc19(text) + "</p>";
 }
 function mountMedicamentoRows(host, opts) {
   if (!host) return;
@@ -44399,11 +46367,11 @@ function mountMedicamentoRows(host, opts) {
       const linked = isReadOnly(m);
       const ro = linked ? ' readonly tabindex="-1" title="No editable en este bloque"' : "";
       const tag = linked ? ' <span class="hc-tag">Vinculado</span>' : "";
-      return '<div class="hc-entry-row' + (linked ? " hc-entry-row--linked" : "") + '" data-medicamento-idx="' + i + '"><div class="field-group"><label>Medicamento' + tag + '</label><input type="text" data-med-field="medication" value="' + esc18(m.medication || "") + '" placeholder="Nombre gen\xE9rico o comercial"' + ro + '></div><div class="field-group"><label>V\xEDa de administraci\xF3n</label><input type="text" data-med-field="route" value="' + esc18(m.route || "") + '" placeholder="VO, IV, SC, inhalada\u2026"' + ro + '></div><div class="field-group"><label>Dosis</label><input type="text" data-med-field="dosage" value="' + esc18(m.dosage || "") + '" placeholder="ej. 850 mg"' + ro + '></div><div class="field-group"><label>Frecuencia</label><input type="text" data-med-field="frequency" value="' + esc18(m.frequency || "") + '" placeholder="ej. c/12 h"' + ro + "></div>" + (canRemove && !linked ? '<button type="button" class="btn-remove" data-medicamento-remove="' + i + '" aria-label="Quitar">\xD7</button>' : "") + "</div>";
+      return '<div class="hc-entry-row' + (linked ? " hc-entry-row--linked" : "") + '" data-medicamento-idx="' + i + '"><div class="field-group"><label>Medicamento' + tag + '</label><input type="text" data-med-field="medication" value="' + esc19(m.medication || "") + '" placeholder="Nombre gen\xE9rico o comercial"' + ro + '></div><div class="field-group"><label>V\xEDa de administraci\xF3n</label><input type="text" data-med-field="route" value="' + esc19(m.route || "") + '" placeholder="VO, IV, SC, inhalada\u2026"' + ro + '></div><div class="field-group"><label>Dosis</label><input type="text" data-med-field="dosage" value="' + esc19(m.dosage || "") + '" placeholder="ej. 850 mg"' + ro + '></div><div class="field-group"><label>Frecuencia</label><input type="text" data-med-field="frequency" value="' + esc19(m.frequency || "") + '" placeholder="ej. c/12 h"' + ro + "></div>" + (canRemove && !linked ? '<button type="button" class="btn-remove" data-medicamento-remove="' + i + '" aria-label="Quitar">\xD7</button>' : "") + "</div>";
     }).join("");
   }
   html += "</div>";
-  html += '<button type="button" class="btn-add-row hc-medicamentos-add">' + esc18(addLabel) + "</button>";
+  html += '<button type="button" class="btn-add-row hc-medicamentos-add">' + esc19(addLabel) + "</button>";
   host.innerHTML = html;
   function emit() {
     const next = [];
@@ -44461,16 +46429,16 @@ function mountMedicamentoRows(host, opts) {
 }
 
 // public/js/features/historia-clinica-genero-panel.mjs
-function esc19(s) {
+function esc20(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function ageBodyHtml(spec, val2) {
   val2 = val2 && typeof val2 === "object" ? val2 : {};
-  return '<input type="number" min="0" max="99" step="1" data-genero-part="edad" data-genero-id="' + esc19(spec.id) + '" value="' + esc19(val2.edad || "") + '" placeholder="Edad en a\xF1os">';
+  return '<input type="number" min="0" max="99" step="1" data-genero-part="edad" data-genero-id="' + esc20(spec.id) + '" value="' + esc20(val2.edad || "") + '" placeholder="Edad en a\xF1os">';
 }
 function fumBodyHtml(spec, val2) {
   val2 = val2 && typeof val2 === "object" ? val2 : {};
-  return '<div class="hc-genero-inline"><div class="field-group hc-genero-inline-field"><label>FUM</label><input type="text" data-genero-part="fum" data-genero-id="' + esc19(spec.id) + '" value="' + esc19(val2.fum || "") + '" placeholder="DD/MM/AA"></div><div class="field-group hc-genero-inline-field"><label>Ciclo</label><input type="text" data-genero-part="ciclo" data-genero-id="' + esc19(spec.id) + '" value="' + esc19(val2.ciclo || "") + '" placeholder="Regular, 28 d\xEDas\u2026"></div></div>';
+  return '<div class="hc-genero-inline"><div class="field-group hc-genero-inline-field"><label>FUM</label><input type="text" data-genero-part="fum" data-genero-id="' + esc20(spec.id) + '" value="' + esc20(val2.fum || "") + '" placeholder="DD/MM/AA"></div><div class="field-group hc-genero-inline-field"><label>Ciclo</label><input type="text" data-genero-part="ciclo" data-genero-id="' + esc20(spec.id) + '" value="' + esc20(val2.ciclo || "") + '" placeholder="Regular, 28 d\xEDas\u2026"></div></div>';
 }
 function gpacBodyHtml(spec, val2) {
   val2 = val2 && typeof val2 === "object" ? val2 : {};
@@ -44483,14 +46451,14 @@ function gpacBodyHtml(spec, val2) {
   let html = '<div class="hc-genero-gpac">';
   cells.forEach(function(pair) {
     const key = pair[0];
-    html += '<div class="field-group hc-genero-gpac-cell"><label>' + esc19(pair[1]) + '</label><input type="number" min="0" max="99" step="1" data-genero-part="' + esc19(key) + '" data-genero-id="' + esc19(spec.id) + '" value="' + esc19(val2[key] || "") + '" placeholder="0"></div>';
+    html += '<div class="field-group hc-genero-gpac-cell"><label>' + esc20(pair[1]) + '</label><input type="number" min="0" max="99" step="1" data-genero-part="' + esc20(key) + '" data-genero-id="' + esc20(spec.id) + '" value="' + esc20(val2[key] || "") + '" placeholder="0"></div>';
   });
-  html += '</div><div class="field-group hc-genero-gpac-notes"><label>Notas adicionales</label><input type="text" data-genero-part="detalle" data-genero-id="' + esc19(spec.id) + '" value="' + esc19(val2.detalle || "") + '" placeholder="Opcional"></div>';
+  html += '</div><div class="field-group hc-genero-gpac-notes"><label>Notas adicionales</label><input type="text" data-genero-part="detalle" data-genero-id="' + esc20(spec.id) + '" value="' + esc20(val2.detalle || "") + '" placeholder="Opcional"></div>';
   return html;
 }
 function detailBodyHtml(spec, val2) {
   val2 = val2 && typeof val2 === "object" ? val2 : {};
-  return '<textarea rows="2" data-genero-part="detalle" data-genero-id="' + esc19(spec.id) + '" placeholder="Describir si aplica\u2026">' + esc19(val2.detalle || "") + "</textarea>";
+  return '<textarea rows="2" data-genero-part="detalle" data-genero-id="' + esc20(spec.id) + '" placeholder="Describir si aplica\u2026">' + esc20(val2.detalle || "") + "</textarea>";
 }
 function bodyHtmlForSpec(spec, val2) {
   switch (spec.kind) {
@@ -44501,7 +46469,7 @@ function bodyHtmlForSpec(spec, val2) {
     case "gpac":
       return gpacBodyHtml(spec, val2);
     case "medications":
-      return '<div class="hc-genero-meds-host" data-genero-meds-id="' + esc19(spec.id) + '"></div>';
+      return '<div class="hc-genero-meds-host" data-genero-meds-id="' + esc20(spec.id) + '"></div>';
     case "detail":
     default:
       return detailBodyHtml(spec, val2);
@@ -44532,7 +46500,7 @@ function mountHistoriaGeneroPanel(container, genero, sexo, onChange) {
   specs.forEach(function(spec) {
     const val2 = genero[spec.id] || {};
     const full = spec.fullWidth ? " hc-genero-field--full" : "";
-    html += '<div class="field-group hc-genero-field' + full + '" data-genero-field="' + esc19(spec.id) + '"><label>' + esc19(spec.label) + "</label>" + bodyHtmlForSpec(spec, val2) + "</div>";
+    html += '<div class="field-group hc-genero-field' + full + '" data-genero-field="' + esc20(spec.id) + '"><label>' + esc20(spec.label) + "</label>" + bodyHtmlForSpec(spec, val2) + "</div>";
   });
   html += "</div>";
   container.innerHTML = html;
@@ -44601,7 +46569,7 @@ var DATA_KEYS = [
   "meta",
   "labLookbackHours"
 ];
-var rt22 = {
+var rt25 = {
   getActiveId() {
     return null;
   },
@@ -44612,10 +46580,12 @@ var rt22 = {
   },
   copyToClipboardSafe(_t) {
     return Promise.resolve(false);
+  },
+  navigateToEstadoActualPanel() {
   }
 };
 function registerHistoriaClinicaRuntime(partial) {
-  if (partial && typeof partial === "object") Object.assign(rt22, partial);
+  if (partial && typeof partial === "object") Object.assign(rt25, partial);
 }
 var _version = 0;
 var _data = null;
@@ -44624,18 +46594,18 @@ var _step = 1;
 var _pendingAck = [];
 var _dirtyKeys = /* @__PURE__ */ new Set();
 var _mountId = "historia-clinica-mount";
-function esc20(s) {
+function esc21(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-function activePatient3() {
-  var id = rt22.getActiveId();
+function activePatient4() {
+  var id = rt25.getActiveId();
   if (!id) return null;
   return patients.find(function(p) {
     return String(p.id) === String(id);
   });
 }
 function lookbackHours() {
-  var s = typeof rt22.getSettings === "function" ? rt22.getSettings() : {};
+  var s = typeof rt25.getSettings === "function" ? rt25.getSettings() : {};
   var hc = s && s.historiaClinica;
   var n = hc && hc.labLookbackHours != null ? Number(hc.labLookbackHours) : DEFAULT_LOOKBACK_H;
   return Number.isFinite(n) && n > 0 ? n : DEFAULT_LOOKBACK_H;
@@ -44744,12 +46714,30 @@ function normalizeApnp(apnp) {
   }
   return apnp;
 }
+function signosVitalesFromMonitoreo(patient) {
+  if (!patient) return "";
+  ensureMonitoreo(patient);
+  var mon = patient.monitoreo;
+  var snap = deriveSnapshot(mon);
+  if (!signosVitalesSnapshotHasData(snap)) return "";
+  var ec = mon && mon.estadoClinico && typeof mon.estadoClinico === "object" ? mon.estadoClinico : null;
+  return formatSignosVitalesIngresoFromSnapshot(snap, ec);
+}
 function compileCtx(patient) {
   var age = patient && patient.edad != null ? Number(patient.edad) : NaN;
   return {
     currentAge: Number.isFinite(age) ? age : void 0,
-    patientSex: patient && patient.sexo === "M" ? "M" : "F"
+    patientSex: patient && patient.sexo === "M" ? "M" : "F",
+    signosVitalesIngresoFromMonitoreo: signosVitalesFromMonitoreo(patient)
   };
+}
+function syncSignosVitalesIngresoFromEstadoActual(patient) {
+  if (!_data || !patient) return;
+  var derived = signosVitalesFromMonitoreo(patient);
+  if (derived) {
+    _data.signosVitalesIngreso = derived;
+    _dirtyKeys.add("signosVitalesIngreso");
+  }
 }
 function trimHc(s) {
   return String(s || "").trim();
@@ -44782,7 +46770,7 @@ function latestLabSet(patientId) {
 }
 function buildLabAnchorFromSet(set) {
   if (!set) return null;
-  var patient = activePatient3();
+  var patient = activePatient4();
   var renalCtx = scanHistoriaClinicaSafety({ patient, latestLabSet: set }).labContext;
   return {
     setId: String(set.id || set.fecha || ""),
@@ -44795,7 +46783,7 @@ function buildLabAnchorFromSet(set) {
 }
 async function fetchHistoria(patientId, roomId) {
   if (!isLanSessionConfiguredForRest() || !roomId) {
-    var p = activePatient3();
+    var p = activePatient4();
     if (p && p.historiaClinica && p.historiaClinica.data) {
       return { version: Number(p.historiaClinica.version || 1), data: p.historiaClinica.data };
     }
@@ -44821,7 +46809,7 @@ function stepComplete(n) {
 function renderSafetyBanner(rules) {
   if (!rules.length) return "";
   return '<div class="hc-safety-banner" role="alert">' + rules.map(function(r) {
-    return "<p><strong>" + esc20(r.title) + ":</strong> " + esc20(r.message) + "</p>";
+    return "<p><strong>" + esc21(r.title) + ":</strong> " + esc21(r.message) + "</p>";
   }).join("") + "</div>";
 }
 function renderStepperHeader() {
@@ -44829,22 +46817,22 @@ function renderStepperHeader() {
   return '<nav class="hc-stepper" aria-label="Pasos historia cl\xEDnica">' + labels.map(function(label, i) {
     var n = i + 1;
     var cls = "hc-step" + (n === _step ? " hc-step--active" : "") + (stepComplete(n) ? " hc-step--done" : "");
-    return '<button type="button" class="' + cls + '" data-hc-step="' + n + '">' + esc20(label) + "</button>";
+    return '<button type="button" class="' + cls + '" data-hc-step="' + n + '">' + esc21(label) + "</button>";
   }).join("") + "</nav>";
 }
 function fieldRow(label, html) {
-  return '<div class="field-group"><label>' + esc20(label) + "</label>" + html + "</div>";
+  return '<div class="field-group"><label>' + esc21(label) + "</label>" + html + "</div>";
 }
 function textInput(path, value, placeholder) {
-  return '<input type="text" data-hc-path="' + esc20(path) + '" value="' + esc20(toClinicalHistoryText(value)) + '" placeholder="' + esc20(placeholder ? toClinicalHistoryText(placeholder) : "") + '">';
+  return '<input type="text" data-hc-path="' + esc21(path) + '" value="' + esc21(toClinicalHistoryText(value)) + '" placeholder="' + esc21(placeholder ? toClinicalHistoryText(placeholder) : "") + '">';
 }
 function textArea(path, value, rows, placeholder) {
-  return '<textarea data-hc-path="' + esc20(path) + '" rows="' + (rows || 4) + '" placeholder="' + esc20(placeholder ? toClinicalHistoryText(placeholder) : "") + '">' + esc20(toClinicalHistoryText(value)) + "</textarea>";
+  return '<textarea data-hc-path="' + esc21(path) + '" rows="' + (rows || 4) + '" placeholder="' + esc21(placeholder ? toClinicalHistoryText(placeholder) : "") + '">' + esc21(toClinicalHistoryText(value)) + "</textarea>";
 }
 function renderLecturaView(root, patient) {
   var sections = compileHistoriaClinicaNarrative(_data, CATALOGS, compileCtx(patient));
   root.innerHTML = '<div class="hc-read-view">' + sections.map(function(s) {
-    return '<section class="card hc-read-section"><h3 class="card-header">' + esc20(s.title) + '</h3><div class="card-body hc-read-body">' + esc20(s.body).replace(/\n/g, "<br>") + "</div></section>";
+    return '<section class="card hc-read-section"><h3 class="card-header">' + esc21(s.title) + '</h3><div class="card-body hc-read-body">' + esc21(s.body).replace(/\n/g, "<br>") + "</div></section>";
   }).join("") + (sections.length ? "" : '<p class="tend-empty">Historia sin contenido.</p>') + "</div>";
 }
 function renderStep1() {
@@ -44864,11 +46852,21 @@ function renderStep2(patient) {
     )
   ) + '<div id="hc-mount-ipas"></div></div>';
 }
-function renderLabsStep() {
+function renderVitalsIngresoBlock(patient) {
+  var derived = signosVitalesFromMonitoreo(patient);
+  var has = !!derived;
+  var legacy = trimHc(_data && _data.signosVitalesIngreso);
+  var display = has ? derived : legacy;
+  return fieldRow(
+    "Signos vitales al ingreso",
+    '<div class="hc-vitals-ingreso' + (has ? "" : " hc-vitals-ingreso--empty") + '">' + (has ? '<p class="hc-vitals-ingreso__text">' + esc21(display) + '</p><p class="profile-hint hc-vitals-ingreso__source">Tomados del registro en <strong>Estado actual</strong>.</p>' : '<p class="profile-hint hc-vitals-ingreso__empty-msg">Registra los signos vitales en la pesta\xF1a <strong>Estado actual</strong> (monitoreo). Aparecer\xE1n aqu\xED al volver a este paso.</p>') + '<button type="button" class="' + (has ? "btn-med-secondary" : "btn-generate") + ' hc-vitals-ingreso__cta" id="hc-go-estado-actual">' + (has ? "Ir a Estado actual" : "Registrar en Estado actual") + "</button></div>"
+  );
+}
+function renderLabsStep(patient) {
   var anchor = _data && _data.labAnchor;
   var labs = _data && _data.labsAtAdmission;
-  var summary = anchor && anchor.egfr != null ? "eTFG " + anchor.egfr + " \xB7 Cr " + (anchor.creatinineMgDl != null ? anchor.creatinineMgDl : "\u2014") + " \xB7 " + esc20(anchor.fecha) : "Sin laboratorios de ingreso anclados";
-  return '<div class="hc-step-body"><h3 class="hc-step-title">Ingreso y laboratorios</h3>' + fieldRow("Signos vitales al ingreso", textArea("signosVitalesIngreso", _data.signosVitalesIngreso, 3)) + '<div class="card"><div class="card-body"><p class="profile-hint">' + esc20(summary) + "</p>" + (labs && labs.qsSummary ? '<pre class="hc-labs-pre">' + esc20(labs.qsSummary) + "</pre>" : "") + '<button type="button" class="btn-med-secondary" id="hc-resync-labs">Re-sincronizar labs</button> <button type="button" class="btn-med-secondary" id="hc-pick-labs">Elegir set de labs</button></div></div></div>';
+  var summary = anchor && anchor.egfr != null ? "eTFG " + anchor.egfr + " \xB7 Cr " + (anchor.creatinineMgDl != null ? anchor.creatinineMgDl : "\u2014") + " \xB7 " + esc21(anchor.fecha) : "Sin laboratorios de ingreso anclados";
+  return '<div class="hc-step-body"><h3 class="hc-step-title">Ingreso y laboratorios</h3>' + renderVitalsIngresoBlock(patient) + '<div class="card"><div class="card-body"><p class="profile-hint">' + esc21(summary) + "</p>" + (labs && labs.qsSummary ? '<pre class="hc-labs-pre">' + esc21(labs.qsSummary) + "</pre>" : "") + '<button type="button" class="btn-med-secondary" id="hc-resync-labs">Re-sincronizar labs</button> <button type="button" class="btn-med-secondary" id="hc-pick-labs">Elegir set de labs</button></div></div></div>';
 }
 function setByPath(path, value) {
   if (!_data || !path) return;
@@ -44960,7 +46958,7 @@ function mountChecklists(root, patient) {
       var wrap = document.createElement("details");
       wrap.className = "card";
       wrap.open = true;
-      wrap.innerHTML = '<summary class="card-header">' + esc20(ipas_systems_default[sid]) + '</summary><div class="card-body"></div>';
+      wrap.innerHTML = '<summary class="card-header">' + esc21(ipas_systems_default[sid]) + '</summary><div class="card-body"></div>';
       ipasHost.appendChild(wrap);
       var body = wrap.querySelector(".card-body");
       renderChecklistBlock(
@@ -44981,7 +46979,7 @@ function mountChecklists(root, patient) {
   }
 }
 function renderPanel(root) {
-  var patient = activePatient3();
+  var patient = activePatient4();
   if (!patient) {
     root.innerHTML = '<p class="tend-empty">Selecciona un paciente.</p>';
     return;
@@ -44994,7 +46992,7 @@ function renderPanel(root) {
     var teaser = compileHistoriaClinicaPlainText(
       compileHistoriaClinicaNarrative(_data, CATALOGS, compileCtx(patient)).slice(0, 3)
     );
-    root.innerHTML = toolbar + renderSafetyBanner(pending2) + '<div class="hc-summary"><pre class="hc-mobile-teaser">' + esc20(teaser.slice(0, 600)) + '</pre><p class="profile-hint">Abre en escritorio para editar la historia completa.</p></div>';
+    root.innerHTML = toolbar + renderSafetyBanner(pending2) + '<div class="hc-summary"><pre class="hc-mobile-teaser">' + esc21(teaser.slice(0, 600)) + '</pre><p class="profile-hint">Abre en escritorio para editar la historia completa.</p></div>';
     wirePanel(root, patient);
     return;
   }
@@ -45006,7 +47004,7 @@ function renderPanel(root) {
     wirePanel(root, patient);
     return;
   }
-  var stepBody = _step === 1 ? renderStep1() : _step === 2 ? renderStep2(patient) : renderLabsStep();
+  var stepBody = _step === 1 ? renderStep1() : _step === 2 ? renderStep2(patient) : renderLabsStep(patient);
   root.innerHTML = toolbar + renderSafetyBanner(pending2) + renderStepperHeader() + stepBody + '<div class="hc-step-footer">' + (_step > 1 ? '<button type="button" class="btn-med-secondary" id="hc-prev">Anterior</button>' : "") + (_step < 3 ? '<button type="button" class="btn-generate" id="hc-next">Siguiente</button>' : '<button type="button" class="btn-generate" id="hc-save">Guardar</button>') + "</div>";
   mountApnpHabits(root, patient);
   mountChecklists(root, patient);
@@ -45028,8 +47026,8 @@ function wirePanel(root, patient) {
       var text = compileHistoriaClinicaPlainText(
         compileHistoriaClinicaNarrative(_data, CATALOGS, compileCtx(patient))
       );
-      var ok = await rt22.copyToClipboardSafe(text);
-      rt22.showToast(ok ? "Historia copiada." : "No se pudo copiar.", ok ? "success" : "error");
+      var ok = await rt25.copyToClipboardSafe(text);
+      rt25.showToast(ok ? "Historia copiada." : "No se pudo copiar.", ok ? "success" : "error");
     };
   }
   var cancelBtn = root.querySelector("#hc-cancel-edit");
@@ -45088,6 +47086,16 @@ function wirePanel(root, patient) {
       openLabPickModal(patient, false);
     };
   }
+  var goEa = root.querySelector("#hc-go-estado-actual");
+  if (goEa) {
+    goEa.onclick = function() {
+      if (typeof rt25.navigateToEstadoActualPanel === "function") {
+        rt25.navigateToEstadoActualPanel();
+      } else {
+        rt25.showToast("Abre la pesta\xF1a Estado actual en Cl\xEDnico.", "info");
+      }
+    };
+  }
 }
 function openLabPickModal(patient, isResync) {
   var sets = labSetsInLookback(patient.id);
@@ -45129,6 +47137,7 @@ function applyLabSet(set, markConfirmed) {
 }
 async function saveHistoria(root, patient, skipAckCheck) {
   if (_data) applyClinicalHistoryUppercase(_data);
+  syncSignosVitalesIngresoFromEstadoActual(patient);
   var safety = scanSafety(patient);
   var pending2 = pendingSafetyAcknowledgements(safety.rules, _pendingAck);
   if (!skipAckCheck && pending2.length) {
@@ -45143,7 +47152,7 @@ async function saveHistoria(root, patient, skipAckCheck) {
   }
   var dirty = Array.from(_dirtyKeys);
   if (!dirty.length && _version > 0) {
-    rt22.showToast("No hay cambios para guardar.", "info");
+    rt25.showToast("No hay cambios para guardar.", "info");
     return;
   }
   if (!_version && !dirty.length) {
@@ -45175,7 +47184,7 @@ async function saveHistoria(root, patient, skipAckCheck) {
       _pendingAck = [];
       _dirtyKeys = /* @__PURE__ */ new Set();
       renderPanel(root);
-      rt22.showToast("Historia cl\xEDnica guardada.", "success");
+      rt25.showToast("Historia cl\xEDnica guardada.", "success");
     }
     return;
   }
@@ -45186,13 +47195,13 @@ async function saveHistoria(root, patient, skipAckCheck) {
   _dirtyKeys = /* @__PURE__ */ new Set();
   saveState();
   renderPanel(root);
-  rt22.showToast("Historia cl\xEDnica guardada.", "success");
+  rt25.showToast("Historia cl\xEDnica guardada.", "success");
 }
 async function renderHistoriaClinicaPanel(opts) {
   opts = opts || {};
   var root = document.getElementById(_mountId);
   if (!root) return;
-  var patient = activePatient3();
+  var patient = activePatient4();
   if (!patient) {
     root.innerHTML = "";
     if (opts.onReady) opts.onReady();
@@ -45228,302 +47237,6 @@ function invalidateHistoriaClinicaPanel() {
   _step = 1;
   _pendingAck = [];
   _dirtyKeys = /* @__PURE__ */ new Set();
-}
-
-// public/js/features/eventualidades-panel.mjs
-var _editingEntryId = null;
-var rt23 = {
-  getActiveId() {
-    return null;
-  },
-  showToast(_msg, _type) {
-  }
-};
-function registerEventualidadesRuntime(partial) {
-  if (partial && typeof partial === "object") Object.assign(rt23, partial);
-}
-function pad23(n) {
-  return String(n).padStart(2, "0");
-}
-function toEventualidadDateValue(when) {
-  const d = when == null ? /* @__PURE__ */ new Date() : when instanceof Date ? when : new Date(when);
-  if (!Number.isFinite(d.getTime())) return "";
-  return d.getFullYear() + "-" + pad23(d.getMonth() + 1) + "-" + pad23(d.getDate());
-}
-function eventualidadDateToIso(dateIso) {
-  const raw = String(dateIso || "").trim();
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
-  if (!m) return eventualidadDateToIso(toEventualidadDateValue(/* @__PURE__ */ new Date()));
-  const y = Number(m[1]);
-  const mo = Number(m[2]);
-  const day = Number(m[3]);
-  const dt = new Date(y, mo - 1, day, 12, 0, 0, 0);
-  return Number.isFinite(dt.getTime()) ? dt.toISOString() : (/* @__PURE__ */ new Date()).toISOString();
-}
-function appendEventualidad(store, text, clientId, atIso) {
-  const t2 = String(text || "").trim();
-  if (!t2) return store || { entries: [] };
-  const at = atIso && String(atIso).trim() ? String(atIso).trim() : eventualidadDateToIso(toEventualidadDateValue(/* @__PURE__ */ new Date()));
-  const entry2 = {
-    id: "ev_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-    at,
-    text: t2,
-    clientId: clientId || void 0
-  };
-  const entries = Array.isArray(store && store.entries) ? store.entries.slice() : [];
-  entries.push(entry2);
-  return { entries };
-}
-function updateEventualidad(store, entryId, patch) {
-  const id = String(entryId || "").trim();
-  if (!id) return store || { entries: [] };
-  const entries = Array.isArray(store && store.entries) ? store.entries.slice() : [];
-  const idx = entries.findIndex(function(e) {
-    return e && String(e.id) === id;
-  });
-  if (idx === -1) return { entries };
-  const cur = entries[idx];
-  const text = patch && patch.text != null ? String(patch.text).trim() : String(cur.text || "").trim();
-  if (!text) return { entries };
-  const at = patch && patch.at != null && String(patch.at).trim() ? String(patch.at).trim() : cur.at;
-  entries[idx] = Object.assign({}, cur, { text, at });
-  return { entries };
-}
-function findEventualidadEntry(store, entryId) {
-  const id = String(entryId || "").trim();
-  if (!id) return null;
-  return (Array.isArray(store && store.entries) ? store.entries : []).find(function(e) {
-    return e && String(e.id) === id;
-  }) || null;
-}
-function removeEventualidad(store, entryId) {
-  const id = String(entryId || "").trim();
-  if (!id) return store || { entries: [] };
-  const entries = (Array.isArray(store && store.entries) ? store.entries : []).filter(function(e) {
-    return e && String(e.id) !== id;
-  });
-  return { entries };
-}
-function dayKeyFromIso(iso) {
-  if (!iso) return "unknown";
-  try {
-    const d = new Date(iso);
-    if (!Number.isFinite(d.getTime())) return "unknown";
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return y + "-" + m + "-" + day;
-  } catch (_e) {
-    return "unknown";
-  }
-}
-function formatDayLabel(dayKey, now) {
-  if (dayKey === "unknown") return "Sin fecha";
-  const parts = String(dayKey).split("-").map(Number);
-  if (parts.length !== 3 || parts.some(function(n) {
-    return !Number.isFinite(n);
-  })) {
-    return String(dayKey);
-  }
-  const date = new Date(parts[0], parts[1] - 1, parts[2]);
-  if (!Number.isFinite(date.getTime())) return String(dayKey);
-  const ref = now instanceof Date && Number.isFinite(now.getTime()) ? now : /* @__PURE__ */ new Date();
-  const todayKey = dayKeyFromIso(ref.toISOString());
-  const yesterday = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate() - 1);
-  const yesterdayKey = dayKeyFromIso(yesterday.toISOString());
-  if (dayKey === todayKey) return "Hoy";
-  if (dayKey === yesterdayKey) return "Ayer";
-  return date.toLocaleDateString("es-MX", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    year: "numeric"
-  });
-}
-function groupEntriesByDay(entries, now) {
-  const map = /* @__PURE__ */ new Map();
-  (entries || []).forEach(function(e) {
-    const key = dayKeyFromIso(e && e.at);
-    if (!map.has(key)) map.set(key, []);
-    map.get(key).push(e);
-  });
-  return [...map.entries()].sort(function(a, b) {
-    return String(b[0]).localeCompare(String(a[0]));
-  }).map(function(pair) {
-    const day = pair[0];
-    const dayEntries = pair[1].slice().sort(function(a, b) {
-      const byAt = String(b.at || "").localeCompare(String(a.at || ""));
-      if (byAt !== 0) return byAt;
-      return String(b.id || "").localeCompare(String(a.id || ""));
-    });
-    return {
-      day,
-      label: formatDayLabel(day, now),
-      isToday: day === dayKeyFromIso((now || /* @__PURE__ */ new Date()).toISOString()),
-      entries: dayEntries
-    };
-  });
-}
-function esc21(s) {
-  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
-function renderEntryCard(entry2, editingId) {
-  const isEditing = editingId && String(entry2.id) === String(editingId);
-  return '<article class="ev-card' + (isEditing ? " ev-card--editing" : "") + '" data-entry-id="' + esc21(entry2.id) + '"><div class="ev-card__body"><div class="ev-card__head"><div class="ev-card__actions"><button type="button" class="ev-card__edit" data-ev-edit="' + esc21(entry2.id) + '" aria-label="Editar eventualidad">Editar</button><button type="button" class="ev-card__delete" data-ev-delete="' + esc21(entry2.id) + '" aria-label="Eliminar eventualidad">Eliminar</button></div></div><p class="ev-card__text">' + esc21(entry2.text) + "</p></div></article>";
-}
-function renderDaySection(dayGroup, editingId) {
-  const n = dayGroup.entries.length;
-  const countLabel = n === 1 ? "1 registro" : n + " registros";
-  const todayClass = dayGroup.isToday ? " ev-day--today" : "";
-  return '<section class="ev-day' + todayClass + '" data-day="' + esc21(dayGroup.day) + '"><div class="ev-day__rail"><span class="ev-day__dot" aria-hidden="true"></span><span class="ev-day__label">' + esc21(dayGroup.label) + '</span><span class="ev-day__count">' + esc21(countLabel) + '</span></div><div class="ev-day__grid">' + dayGroup.entries.map(function(e) {
-    return renderEntryCard(e, editingId);
-  }).join("") + "</div></section>";
-}
-function renderComposeBlock(editingEntry) {
-  const isEdit = !!editingEntry;
-  const atValue = isEdit ? toEventualidadDateValue(editingEntry.at) : toEventualidadDateValue(/* @__PURE__ */ new Date());
-  const textValue = isEdit ? String(editingEntry.text || "") : "";
-  return '<footer class="ev-compose"><div class="ev-compose__card' + (isEdit ? " ev-compose__card--edit" : "") + '"><div class="ev-compose__top"><label class="ev-compose__label" for="eventualidades-input">' + (isEdit ? "Editar eventualidad" : "Nueva eventualidad") + '</label><div class="ev-compose__date-slot"><input type="date" id="eventualidades-at" class="rpc-date-input" value="' + esc21(atValue) + '" title="Fecha de la eventualidad" aria-label="Fecha de la eventualidad"></div></div><textarea id="eventualidades-input" class="ev-compose__input" rows="2" placeholder="Describe lo ocurrido\u2026">' + esc21(textValue) + '</textarea><div class="ev-compose__actions"><span class="ev-compose__hint">' + (isEdit ? "Puedes cambiar la fecha y el texto" : "Elige una fecha anterior si aplica") + '</span><div class="ev-compose__btns">' + (isEdit ? '<button type="button" class="btn-secondary ev-compose__cancel" id="eventualidades-cancel">Cancelar</button>' : "") + '<button type="button" class="btn-generate ev-compose__submit" id="eventualidades-add">' + (isEdit ? "Guardar" : "Agregar") + "</button></div></div></div></footer>";
-}
-function activePatient4() {
-  const id = rt23.getActiveId();
-  if (!id) return null;
-  return patients.find(function(p) {
-    return String(p.id) === String(id);
-  });
-}
-function ensureEventualidades(patient) {
-  if (!patient.eventualidades || typeof patient.eventualidades !== "object") {
-    patient.eventualidades = { entries: [] };
-  }
-  if (!Array.isArray(patient.eventualidades.entries)) {
-    patient.eventualidades.entries = [];
-  }
-  return patient.eventualidades;
-}
-function hostPatientMutationBase(patient, hostRow) {
-  if (hostRow) return hostRow;
-  return Object.assign({}, patient, { version: 0 });
-}
-async function persistEventualidades(patient, store) {
-  if (!isLanSessionConfiguredForRest()) {
-    patient.eventualidades = store;
-    saveState();
-    return { ok: true };
-  }
-  const hostRow = await lanFetchHostPatientRow(patient.id);
-  const mutation = createMutationBuilder("patient", patient.id).captureBase(hostPatientMutationBase(patient, hostRow)).set("eventualidades", store).build();
-  const out = await lanPushPatientVersioned(patient.id, mutation);
-  if (!out.ok) {
-    if (!out.conflict) {
-      const msg = out.status === 401 || out.status === 403 ? "No se pudo autenticar con el host LAN. Revisa el c\xF3digo de equipo." : "No se pudo guardar la eventualidad en el host LAN.";
-      rt23.showToast(msg, "error");
-    }
-    return out;
-  }
-  if (out.data) Object.assign(patient, out.data);
-  else patient.eventualidades = store;
-  saveState();
-  return out;
-}
-function renderEventualidadesPanel(mountEl) {
-  if (!mountEl) return;
-  const patient = activePatient4();
-  if (!patient) {
-    mountEl.innerHTML = '<p class="tend-empty">Selecciona un paciente.</p>';
-    return;
-  }
-  const store = ensureEventualidades(patient);
-  const editingEntry = _editingEntryId ? findEventualidadEntry(store, _editingEntryId) : null;
-  if (_editingEntryId && !editingEntry) _editingEntryId = null;
-  const byDay = groupEntriesByDay(store.entries);
-  const hasEntries = byDay.length > 0;
-  mountEl.innerHTML = '<div class="ev-panel"><header class="ev-panel__head"><p class="ev-panel__hint">L\xEDnea de tiempo de eventualidades durante la hospitalizaci\xF3n, agrupadas por d\xEDa.</p></header><div class="ev-timeline' + (hasEntries ? "" : " ev-timeline--empty") + '" role="feed" aria-label="Eventualidades por d\xEDa">' + (hasEntries ? byDay.map(function(day) {
-    return renderDaySection(day, _editingEntryId);
-  }).join("") : '<p class="ev-empty">A\xFAn no hay eventualidades. Registra abajo lo ocurrido (puedes elegir fechas anteriores).</p>') + "</div>" + renderComposeBlock(editingEntry) + "</div>";
-  refreshRpcDateFields(mountEl);
-  const addBtn = mountEl.querySelector("#eventualidades-add");
-  const input = mountEl.querySelector("#eventualidades-input");
-  const atInput = mountEl.querySelector("#eventualidades-at");
-  const cancelBtn = mountEl.querySelector("#eventualidades-cancel");
-  const timeline = mountEl.querySelector(".ev-timeline");
-  if (!addBtn || !input || !atInput) return;
-  function readAtIso() {
-    return eventualidadDateToIso(atInput.value);
-  }
-  async function submitEntry() {
-    const text = input.value;
-    const atIso = readAtIso();
-    let next;
-    if (_editingEntryId) {
-      next = updateEventualidad(store, _editingEntryId, { text, at: atIso });
-    } else {
-      next = appendEventualidad(store, text, "", atIso);
-    }
-    const out = await persistEventualidades(patient, next);
-    if (out && out.ok) {
-      const wasEdit = !!_editingEntryId;
-      _editingEntryId = null;
-      rt23.showToast(wasEdit ? "Eventualidad actualizada." : "Eventualidad guardada.", "success");
-      renderEventualidadesPanel(mountEl);
-    }
-  }
-  addBtn.onclick = function() {
-    void submitEntry();
-  };
-  if (cancelBtn) {
-    cancelBtn.onclick = function() {
-      _editingEntryId = null;
-      renderEventualidadesPanel(mountEl);
-    };
-  }
-  if (timeline) {
-    timeline.addEventListener("click", function(ev) {
-      const delBtn = ev.target.closest("[data-ev-delete]");
-      if (delBtn) {
-        const delId = delBtn.getAttribute("data-ev-delete");
-        if (!delId) return;
-        const row = findEventualidadEntry(store, delId);
-        const preview = row ? String(row.text || "").trim().slice(0, 80) : "";
-        const msg = preview ? "\xBFEliminar esta eventualidad?\n\n\u201C" + preview + (preview.length >= 80 ? "\u2026" : "") + "\u201D" : "\xBFEliminar esta eventualidad?";
-        if (!confirm(msg)) return;
-        void (async function() {
-          const next = removeEventualidad(store, delId);
-          if (_editingEntryId === delId) _editingEntryId = null;
-          const out = await persistEventualidades(patient, next);
-          if (out && out.ok) {
-            rt23.showToast("Eventualidad eliminada.", "success");
-            renderEventualidadesPanel(mountEl);
-          }
-        })();
-        return;
-      }
-      const btn = ev.target.closest("[data-ev-edit]");
-      if (!btn) return;
-      const id = btn.getAttribute("data-ev-edit");
-      if (!id) return;
-      _editingEntryId = id;
-      renderEventualidadesPanel(mountEl);
-      const compose = mountEl.querySelector(".ev-compose");
-      if (compose && compose.scrollIntoView) {
-        compose.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      }
-    });
-  }
-  input.addEventListener("keydown", function(ev) {
-    if (ev.key === "Enter" && (ev.metaKey || ev.ctrlKey)) {
-      ev.preventDefault();
-      void submitEntry();
-    }
-    if (ev.key === "Escape" && _editingEntryId) {
-      ev.preventDefault();
-      _editingEntryId = null;
-      renderEventualidadesPanel(mountEl);
-    }
-  });
-}
-function invalidateEventualidadesPanel() {
-  _editingEntryId = null;
 }
 
 // public/js/vpo-lookups.mjs
@@ -45706,16 +47419,35 @@ function emptyVpoState() {
     diagnosticosTouched: false,
     asaFromDiagnosticos: false,
     valoracionIntro: "SE REALIZA VALORACI\xD3N PREOPERATORIA. SE OTORGA RIESGO QUIR\xDARGICO:",
+    scaleResults: {
+      asa: "",
+      rcri: "",
+      gupta: "",
+      ariscat: "",
+      caprini: ""
+    },
     farmacos: [],
     fcLpm: "",
     lastLabApplied: null,
     lastFcApplied: ""
   };
 }
+function ensureScaleResults(state) {
+  if (!state) return;
+  var defaults = emptyVpoState().scaleResults;
+  if (!state.scaleResults || typeof state.scaleResults !== "object") {
+    state.scaleResults = Object.assign({}, defaults);
+    return;
+  }
+  Object.keys(defaults).forEach(function(k) {
+    if (state.scaleResults[k] == null) state.scaleResults[k] = "";
+  });
+}
 function ensureVpoState(map, patientId) {
   if (!patientId) return emptyVpoState();
   if (!map[patientId]) map[patientId] = emptyVpoState();
   ensureDiagnosticosList(map[patientId]);
+  ensureScaleResults(map[patientId]);
   return map[patientId];
 }
 function ensureDiagnosticosList(state) {
@@ -45944,20 +47676,22 @@ function suggestPeriopMed(nombreRaw) {
 // public/js/vpo-text.mjs
 var VPO_OFFICIAL_CALCULATOR_DISCLAIMER = "R+ no calcula puntajes ni porcentajes de riesgo preoperatorio. Usa calculadoras m\xE9dicas oficiales validadas (institucional o publicadas) para RCRI (Lee), Gupta MICA, ARISCAT, Caprini y clasificaci\xF3n ASA antes de documentar riesgo en la nota.";
 var VPO_SUGGESTED_SCALES = [
-  { label: "ASA", hint: "Clasificaci\xF3n del estado f\xEDsico (registro arriba)." },
-  { label: "RCRI (\xEDndice de Lee)", hint: "Criterios cardiovasculares en checkboxes." },
-  { label: "Gupta MICA", hint: "Procedimiento y labs; calcular en herramienta validada." },
-  { label: "ARISCAT", hint: "Riesgo pulmonar postoperatorio; usar calculadora ARISCAT." },
-  { label: "Caprini", hint: "Riesgo tromboemb\xF3lico; usar escala Caprini validada." }
+  { key: "asa", label: "ASA", hint: "Clasificaci\xF3n del estado f\xEDsico (I\u2013V)." },
+  { key: "rcri", label: "RCRI (\xEDndice de Lee)", hint: "Puntos y/o clase seg\xFAn calculadora validada." },
+  { key: "gupta", label: "Gupta MICA", hint: "% riesgo de IAM perioperatorio (herramienta validada)." },
+  { key: "ariscat", label: "ARISCAT", hint: "Puntos y categor\xEDa de riesgo pulmonar postoperatorio." },
+  { key: "caprini", label: "Caprini", hint: "Puntos y categor\xEDa de riesgo tromboemb\xF3lico." }
 ];
+function formatVpoScaleResultLines(state) {
+  var sr = state && state.scaleResults || {};
+  return VPO_SUGGESTED_SCALES.map(function(s) {
+    var val2 = String(sr[s.key] || "").trim();
+    if (!val2) return s.label + ": \u2014";
+    return s.label + ": " + val2;
+  });
+}
 function formatVpoDocumentationLines(state) {
-  var lines = [];
-  var ahaC = state.ahaClinico || "";
-  var ahaQ = state.ahaQuirurgico || "";
-  if (ahaC) lines.push("AHA CL\xCDNICO (desde ASA en R+): RIESGO " + String(ahaC).toUpperCase());
-  if (ahaQ) lines.push("AHA QUIR\xDARGICO (desde procedimiento en R+): RIESGO " + String(ahaQ).toUpperCase());
-  lines.push("RCRI / Gupta / ARISCAT / Caprini: calcular en calculadora m\xE9dica oficial (no calculado en R+).");
-  return lines;
+  return formatVpoScaleResultLines(state);
 }
 function renderEkgWithFc(ekgText, fcLpm) {
   var t2 = String(ekgText || "");
@@ -46029,7 +47763,7 @@ function buildFarmacosCopyText(farmacos) {
 }
 
 // public/js/features/vpo-panel.mjs
-var rt24 = {
+var rt26 = {
   getActiveId() {
     return null;
   },
@@ -46040,7 +47774,7 @@ var rt24 = {
 };
 var _saveTimer2 = null;
 function registerVpoPanelRuntime(partial) {
-  if (partial && typeof partial === "object") Object.assign(rt24, partial);
+  if (partial && typeof partial === "object") Object.assign(rt26, partial);
 }
 function esc22(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -46055,11 +47789,11 @@ function scheduleSave() {
 function copyText(label, text) {
   var t2 = String(text || "").trim();
   if (!t2) {
-    rt24.showToast("Nada que copiar en " + label, "error");
+    rt26.showToast("Nada que copiar en " + label, "error");
     return;
   }
   copyToClipboardSafe(t2).then(function(ok) {
-    rt24.showToast(ok ? label + " copiado" : "No se pudo copiar", ok ? "success" : "error");
+    rt26.showToast(ok ? label + " copiado" : "No se pudo copiar", ok ? "success" : "error");
   });
 }
 function renderAhaBadges(state) {
@@ -46068,10 +47802,12 @@ function renderAhaBadges(state) {
   var q = state.ahaQuirurgico || "\u2014";
   return '<div class="vpo-aha-row"><div class="vpo-aha-badge vpo-aha-clinico"><span>AHA cl\xEDnico</span> ' + esc22(c) + '</div><div class="vpo-aha-badge vpo-aha-quirurgico"><span>AHA quir\xFArgico</span> ' + esc22(q) + "</div></div>";
 }
-function renderScalesGuidanceHtml() {
-  return '<div class="vpo-scales-guidance"><p class="overview-hint">' + esc22(VPO_OFFICIAL_CALCULATOR_DISCLAIMER) + '</p><p class="ea-label" style="margin:10px 0 6px;">Escalas sugeridas</p><ul class="vpo-scales-list" style="margin:0;padding-left:1.2em;line-height:1.45;">' + VPO_SUGGESTED_SCALES.map(function(s) {
-    return "<li><strong>" + esc22(s.label) + "</strong> \u2014 " + esc22(s.hint) + "</li>";
-  }).join("") + "</ul></div>";
+function renderRiskScalesOnlyBody(state) {
+  ensureScaleResults(state);
+  var sr = state.scaleResults;
+  return '<p class="overview-hint">' + esc22(VPO_OFFICIAL_CALCULATOR_DISCLAIMER) + '</p><div class="field-group" style="margin-top:10px;"><label class="ea-label">Introducci\xF3n (texto previo a escalas)</label><textarea class="ea-input" data-vpo-field="valoracionIntro" rows="2">' + esc22(state.valoracionIntro) + '</textarea></div><p class="ea-label vpo-scales-grid-title">Resultado por escala (calculadora externa)</p><div class="vpo-scales-results">' + VPO_SUGGESTED_SCALES.map(function(s) {
+    return '<label class="vpo-scale-cell" title="' + esc22(s.hint) + '"><span class="vpo-scale-label">' + esc22(s.label) + '</span><input type="text" class="ea-input" data-vpo-scale="' + esc22(s.key) + '" value="' + esc22(sr[s.key]) + '" placeholder="Resultado\u2026" autocomplete="off"></label>';
+  }).join("") + "</div>";
 }
 function riskCopyOpts() {
   return isVpoRiskCalculationDisabled() ? { noCalculatedRisk: true } : void 0;
@@ -46080,12 +47816,10 @@ function vpoSection(title, tone, open, body) {
   return '<details class="vpo-section ea-card"' + (open ? " open" : "") + '><summary class="card-header card-header--tone-' + tone + '">' + esc22(title) + '</summary><div class="vpo-section-body">' + body + "</div></details>";
 }
 function refreshVpoRiskSection(mount, state) {
+  if (isVpoRiskCalculationDisabled()) return;
   syncAhaFields(state);
   var ahaWrap = mount.querySelector(".vpo-aha-wrap");
   if (ahaWrap) ahaWrap.innerHTML = renderAhaBadges(state);
-  if (!isVpoRiskCalculationDisabled() || isVpoScalesGuidanceHidden()) return;
-  var guidance = mount.querySelector(".vpo-scales-guidance-wrap");
-  if (guidance) guidance.innerHTML = renderScalesGuidanceHtml();
 }
 function periopMedSuggestFn(name) {
   if (isVpoPeriopMedGuidanceHidden()) {
@@ -46099,7 +47833,15 @@ function wireForm(mount, state, patientId) {
   form._vpoWired = true;
   form.addEventListener("input", function(ev) {
     var el = ev.target;
-    if (!el || !el.getAttribute("data-vpo-field")) return;
+    if (!el) return;
+    var scaleKey = el.getAttribute("data-vpo-scale");
+    if (scaleKey) {
+      ensureScaleResults(state);
+      state.scaleResults[scaleKey] = el.value;
+      scheduleSave();
+      return;
+    }
+    if (!el.getAttribute("data-vpo-field")) return;
     var field = el.getAttribute("data-vpo-field");
     if (field.indexOf(".") >= 0) {
       var parts = field.split(".");
@@ -46138,41 +47880,41 @@ function wireForm(mount, state, patientId) {
   mount.querySelector('[data-vpo-action="tomar-lab"]')?.addEventListener("click", function() {
     var vals = getLatestLabValues(labHistory[patientId], patients.find((p) => p.id === patientId));
     if (!vals) {
-      rt24.showToast("Sin laboratorios en Resultados", "error");
+      rt26.showToast("Sin laboratorios en Resultados", "error");
       return;
     }
     applyLabValues(state, vals);
     scheduleSave();
     renderVpoPanel(mount, patientId);
-    rt24.showToast("Valores de laboratorio aplicados", "success");
+    rt26.showToast("Valores de laboratorio aplicados", "success");
   });
   mount.querySelector('[data-vpo-action="tomar-estado"]')?.addEventListener("click", function() {
     var patient = patients.find(function(p) {
       return p.id === patientId;
     });
     if (!applyVitalsFromMonitoreo(state, patient || null)) {
-      rt24.showToast("Sin FC o SpO\u2082 en Estado actual", "error");
+      rt26.showToast("Sin FC o SpO\u2082 en Estado actual", "error");
       return;
     }
     scheduleSave();
     renderVpoPanel(mount, patientId);
-    rt24.showToast("FC y SpO\u2082 tomados de Estado actual", "success");
+    rt26.showToast("FC y SpO\u2082 tomados de Estado actual", "success");
   });
   mount.querySelector('[data-vpo-action="tomar-dx"]')?.addEventListener("click", function() {
     var note = notes[patientId] || {};
     if (state.diagnosticosTouched && (state.diagnosticosList || []).some(function(d) {
       return String(d).trim();
     })) {
-      rt24.showToast("Diagn\xF3sticos ya editados \u2014 no se sobrescriben", "error");
+      rt26.showToast("Diagn\xF3sticos ya editados \u2014 no se sobrescriben", "error");
       return;
     }
     if (!importDiagnosticosFromNota(state, note.diagnosticos || [])) {
-      rt24.showToast("Sin diagn\xF3sticos en la nota", "error");
+      rt26.showToast("Sin diagn\xF3sticos en la nota", "error");
       return;
     }
     scheduleSave();
     renderVpoPanel(mount, patientId);
-    rt24.showToast("Diagn\xF3sticos importados; factores de riesgo actualizados", "success");
+    rt26.showToast("Diagn\xF3sticos importados; factores de riesgo actualizados", "success");
   });
   mount.querySelector('[data-vpo-action="push-dx-datos"]')?.addEventListener("click", function() {
     var patient = patients.find(function(p) {
@@ -46183,26 +47925,26 @@ function wireForm(mount, state, patientId) {
       return String(d).trim();
     });
     if (!list.length) {
-      rt24.showToast("Sin diagn\xF3sticos en VPO para enviar", "error");
+      rt26.showToast("Sin diagn\xF3sticos en VPO para enviar", "error");
       return;
     }
     pushDiagnosticosToPatient(patient, list);
     saveState();
-    rt24.showToast("Diagn\xF3sticos guardados en Datos del paciente", "success");
+    rt26.showToast("Diagn\xF3sticos guardados en Datos del paciente", "success");
   });
   mount.querySelector('[data-vpo-action="tomar-meds"]')?.addEventListener("click", function() {
     var block = medRecetaByPatient[patientId];
     if (!block || !block.items || !block.items.length) {
-      rt24.showToast("Procesa la receta en Medicamentos primero", "error");
+      rt26.showToast("Procesa la receta en Medicamentos primero", "error");
       return;
     }
     mergeFarmacosFromMedReceta(state, block.items, periopMedSuggestFn);
     scheduleSave();
     renderVpoPanel(mount, patientId);
-    rt24.showToast("F\xE1rmacos actualizados desde SOME", "success");
+    rt26.showToast("F\xE1rmacos actualizados desde SOME", "success");
   });
   mount.querySelector('[data-vpo-action="ir-med"]')?.addEventListener("click", function() {
-    rt24.switchAppTab("med");
+    rt26.switchAppTab("med");
   });
   var procSearch = form.querySelector("#vpo-procedure-search");
   var procSelect = form.querySelector("#vpo-procedure-select");
@@ -46351,7 +48093,7 @@ function ensureVpoMountDelegation(mount) {
       ev.preventDefault();
       var ta = mount.querySelector("[data-vpo-dx-paste]");
       if (!importDiagnosticosFromPaste(state, ta ? ta.value : "")) {
-        rt24.showToast("Pega diagn\xF3sticos separados por +", "error");
+        rt26.showToast("Pega diagn\xF3sticos separados por +", "error");
         return;
       }
       if (ta) ta.value = "";
@@ -46360,7 +48102,7 @@ function ensureVpoMountDelegation(mount) {
       refreshFlagsAndSummary(mount, state);
       var asaSel = mount.querySelector("#vpo-asa-select");
       if (asaSel) asaSel.value = state.asaKey || "";
-      rt24.showToast("Diagn\xF3sticos separados; criterios actualizados", "success");
+      rt26.showToast("Diagn\xF3sticos separados; criterios actualizados", "success");
       return;
     }
     if (action === "dx-add-row") {
@@ -46419,6 +48161,7 @@ function ensureVpoMountDelegation(mount) {
   });
 }
 function refreshFlagsAndSummary(mount, state) {
+  if (isVpoRiskCalculationDisabled()) return;
   var flagsWrap = mount.querySelector(".vpo-flags-wrap");
   if (flagsWrap) flagsWrap.innerHTML = renderFlagGroups(state);
   var asaSel = mount.querySelector("#vpo-asa-select");
@@ -46463,17 +48206,13 @@ function renderVpoPanel(mount, patientId) {
   var durOpts = '<option value="">\u2014</option>' + DURACION_OPCIONES.map(function(d) {
     return '<option value="' + esc22(d.key) + '"' + (d.key === state.duracionCirugiaKey ? " selected" : "") + ">" + esc22(d.label) + "</option>";
   }).join("");
-  var riesgoBody = '<div class="vpo-grid"><div class="field-group"><label>Edad</label><input class="ea-input" data-vpo-field="edad" type="text" value="' + esc22(state.edad) + '"></div><div class="field-group"><label>Creatinina</label><input class="ea-input" data-vpo-field="creatinina" type="text" value="' + esc22(state.creatinina) + '"></div><div class="field-group"><label>Hemoglobina</label><input class="ea-input" data-vpo-field="hemoglobina" type="text" value="' + esc22(state.hemoglobina) + '"></div><div class="field-group"><label>SpO\u2082 %</label><input class="ea-input" data-vpo-field="spo2" type="text" value="' + esc22(state.spo2) + '"></div><div class="field-group"><label>Duraci\xF3n estimada</label><select class="ea-input" id="vpo-duracion-select">' + durOpts + '</select></div><div class="field-group"><label>FC (lpm)</label><input class="ea-input" data-vpo-field="fcLpm" type="text" value="' + esc22(state.fcLpm) + '"></div></div><div class="vpo-toolbar"><button type="button" class="btn-med-secondary" data-vpo-action="tomar-lab">Tomar del laboratorio</button><button type="button" class="btn-med-secondary" data-vpo-action="tomar-estado">Tomar de Estado actual</button></div><div class="field-group"><label>ASA</label><select class="ea-input" id="vpo-asa-select" data-vpo-field="asaKey"><option value="">\u2014</option>' + ASA_OPTIONS.map(function(a) {
+  var riesgoBody = isVpoRiskCalculationDisabled() ? renderRiskScalesOnlyBody(state) : '<div class="vpo-grid"><div class="field-group"><label>Edad</label><input class="ea-input" data-vpo-field="edad" type="text" value="' + esc22(state.edad) + '"></div><div class="field-group"><label>Creatinina</label><input class="ea-input" data-vpo-field="creatinina" type="text" value="' + esc22(state.creatinina) + '"></div><div class="field-group"><label>Hemoglobina</label><input class="ea-input" data-vpo-field="hemoglobina" type="text" value="' + esc22(state.hemoglobina) + '"></div><div class="field-group"><label>SpO\u2082 %</label><input class="ea-input" data-vpo-field="spo2" type="text" value="' + esc22(state.spo2) + '"></div><div class="field-group"><label>Duraci\xF3n estimada</label><select class="ea-input" id="vpo-duracion-select">' + durOpts + '</select></div><div class="field-group"><label>FC (lpm)</label><input class="ea-input" data-vpo-field="fcLpm" type="text" value="' + esc22(state.fcLpm) + '"></div></div><div class="vpo-toolbar"><button type="button" class="btn-med-secondary" data-vpo-action="tomar-lab">Tomar del laboratorio</button><button type="button" class="btn-med-secondary" data-vpo-action="tomar-estado">Tomar de Estado actual</button></div><div class="field-group"><label>ASA</label><select class="ea-input" id="vpo-asa-select" data-vpo-field="asaKey"><option value="">\u2014</option>' + ASA_OPTIONS.map(function(a) {
     return '<option value="' + esc22(a.key) + '"' + (a.key === state.asaKey ? " selected" : "") + ">" + esc22(asaOptionLabel(a)) + "</option>";
   }).join("") + '</select></div><div class="field-group"><label>Dependencia funcional</label><select class="ea-input" data-vpo-field="functionalKey">' + FUNCTIONAL_STATUS.map(function(f) {
     return '<option value="' + esc22(f.key) + '"' + (f.key === state.functionalKey ? " selected" : "") + ">" + esc22(functionalLabel(f)) + "</option>";
-  }).join("") + '</select></div><div class="field-group"><label>Buscar procedimiento</label><input class="ea-input" id="vpo-procedure-search" type="search" placeholder="colecistectom\xEDa, tor\xE1cica\u2026"></div><div class="field-group"><label>Procedimiento</label><select class="ea-input" id="vpo-procedure-select">' + procOptions + '</select></div><div class="vpo-aha-wrap">' + renderAhaBadges(state) + '</div><div class="vpo-flags-wrap">' + renderFlagGroups(state) + "</div>" + (!isVpoScalesGuidanceHidden() && isVpoRiskCalculationDisabled() ? '<div class="vpo-scales-guidance-wrap" style="margin-top:12px;">' + renderScalesGuidanceHtml() + "</div>" : "");
-  mount.innerHTML = '<div class="vpo-panel vpo-form rpc-form-stack">' + vpoSection("Riesgo preoperatorio", "amber", true, riesgoBody) + vpoSection(
-    "EKG y Rx t\xF3rax",
-    "indigo",
-    false,
-    '<label class="ea-label">EKG</label><textarea class="ea-input" data-vpo-field="ekgText" rows="5">' + esc22(state.ekgText) + '</textarea><label class="ea-label" style="margin-top:10px;display:block;">Rx t\xF3rax</label><textarea class="ea-input" data-vpo-field="rxText" rows="5">' + esc22(state.rxText) + "</textarea>"
-  ) + vpoSection("Diagn\xF3sticos", "rose", true, renderDiagnosticosSection(state)) + vpoSection(
+  }).join("") + '</select></div><div class="field-group"><label>Buscar procedimiento</label><input class="ea-input" id="vpo-procedure-search" type="search" placeholder="colecistectom\xEDa, tor\xE1cica\u2026"></div><div class="field-group"><label>Procedimiento</label><select class="ea-input" id="vpo-procedure-select">' + procOptions + '</select></div><div class="vpo-aha-wrap">' + renderAhaBadges(state) + '</div><div class="vpo-flags-wrap">' + renderFlagGroups(state) + "</div>";
+  var ekgBody = (isVpoRiskCalculationDisabled() ? '<div class="vpo-grid" style="margin-bottom:10px;"><div class="field-group"><label>FC (lpm) para plantilla EKG</label><input class="ea-input" data-vpo-field="fcLpm" type="text" value="' + esc22(state.fcLpm) + '"></div></div><div class="vpo-toolbar" style="margin-bottom:10px;"><button type="button" class="btn-med-secondary" data-vpo-action="tomar-estado">Tomar FC de Estado actual</button></div>' : "") + '<label class="ea-label">EKG</label><textarea class="ea-input" data-vpo-field="ekgText" rows="5">' + esc22(state.ekgText) + '</textarea><label class="ea-label" style="margin-top:10px;display:block;">Rx t\xF3rax</label><textarea class="ea-input" data-vpo-field="rxText" rows="5">' + esc22(state.rxText) + "</textarea>";
+  mount.innerHTML = '<div class="vpo-panel vpo-form rpc-form-stack">' + vpoSection("Riesgo preoperatorio", "amber", true, riesgoBody) + vpoSection("EKG y Rx t\xF3rax", "indigo", false, ekgBody) + vpoSection("Diagn\xF3sticos", "rose", true, renderDiagnosticosSection(state)) + vpoSection(
     "F\xE1rmacos perioperatorios",
     "teal",
     false,
@@ -46499,25 +48238,25 @@ function stashVpoForPatient(_patientId) {
 }
 
 // public/js/features/vpo.mjs
-var rt25 = {
+var rt27 = {
   getActiveId() {
     return null;
   }
 };
 function registerVpoRuntime(partial) {
   if (partial && typeof partial === "object") {
-    Object.assign(rt25, partial);
+    Object.assign(rt27, partial);
     registerVpoPanelRuntime(partial);
   }
 }
 function renderVpo() {
   var mount = document.getElementById("vpo-container");
   if (!mount) return;
-  renderVpoPanel(mount, rt25.getActiveId());
+  renderVpoPanel(mount, rt27.getActiveId());
 }
 
 // public/js/features/receta-hu.mjs
-var rt26 = {
+var rt28 = {
   getActiveId() {
     return null;
   },
@@ -46556,10 +48295,10 @@ var rt26 = {
   }
 };
 function registerRecetaHuRuntime(partial) {
-  if (partial && typeof partial === "object") Object.assign(rt26, partial);
+  if (partial && typeof partial === "object") Object.assign(rt28, partial);
 }
 function aid6() {
-  return rt26.getActiveId();
+  return rt28.getActiveId();
 }
 function esc23(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -46590,10 +48329,10 @@ function flushRecetaHuDraftIfMountedFor(patientId) {
   persistDraft(patientId, draft2);
 }
 function consultServices() {
-  return normalizeRecetaHuConsultServices(rt26.getSettings().recetaHuConsultServices);
+  return normalizeRecetaHuConsultServices(rt28.getSettings().recetaHuConsultServices);
 }
 function saveConsultServices(list) {
-  var st = rt26.getSettings();
+  var st = rt28.getSettings();
   st.recetaHuConsultServices = normalizeRecetaHuConsultServices(list);
   try {
     localStorage.setItem("rpc-settings", JSON.stringify(st));
@@ -46615,12 +48354,12 @@ function recetaHuPanelVisible() {
 }
 function ensureRecetaHuPanelVisible() {
   if (recetaHuPanelVisible()) return;
-  if (typeof rt26.switchInnerTab === "function") {
-    rt26.switchInnerTab("recetaHu");
+  if (typeof rt28.switchInnerTab === "function") {
+    rt28.switchInnerTab("recetaHu");
     return;
   }
-  if (typeof rt26.getActiveAppTab === "function" && rt26.getActiveAppTab() !== "nota" && typeof rt26.switchAppTab === "function") {
-    rt26.switchAppTab("nota");
+  if (typeof rt28.getActiveAppTab === "function" && rt28.getActiveAppTab() !== "nota" && typeof rt28.switchAppTab === "function") {
+    rt28.switchAppTab("nota");
   }
 }
 function resetExportButtonState() {
@@ -46631,7 +48370,7 @@ function resetExportButtonState() {
   }
   delete btn.dataset.rpcOffline;
   setAsyncButtonLoading(btn, false);
-  if (!(rt26.isRpcOffline && rt26.isRpcOffline())) {
+  if (!(rt28.isRpcOffline && rt28.isRpcOffline())) {
     btn.disabled = false;
     btn.removeAttribute("aria-disabled");
   }
@@ -46830,7 +48569,7 @@ function renderRecetaHu() {
   }
   var patient = activePatient5();
   var draft2 = getDraft(pid);
-  var st = rt26.getSettings();
+  var st = rt28.getSettings();
   ensureRecetaHuShell(root);
   bindRecetaHuEvents(root);
   var meta = root.querySelector("#receta-hu-patient-meta");
@@ -46850,7 +48589,7 @@ function renderRecetaHu() {
     docHint.innerHTML = "M\xE9dico: <strong>" + esc23(st.doctorName || "\u2014") + "</strong> \xB7 C\xE9dula: <strong>" + esc23(st.cedulaProfesional || "\u2014") + '</strong> (<a href="#" data-receta-hu-action="open-profile">Mi Perfil</a>)';
   }
   resetExportButtonState();
-  if (typeof rt26.syncOfflineButtonStates === "function") rt26.syncOfflineButtonStates();
+  if (typeof rt28.syncOfflineButtonStates === "function") rt28.syncOfflineButtonStates();
 }
 function recetaHuCommitMedFromCompose() {
   var pid = aid6();
@@ -46862,7 +48601,7 @@ function recetaHuCommitMedFromCompose() {
   var presentacion = pEl ? String(pEl.value || "").trim() : "";
   var dosis = dEl ? String(dEl.value || "").trim() : "";
   if (!medicamento && !presentacion && !dosis) {
-    rt26.showToast("Escribe al menos un campo del medicamento", "error");
+    rt28.showToast("Escribe al menos un campo del medicamento", "error");
     if (nEl) nEl.focus();
     return;
   }
@@ -46889,7 +48628,7 @@ function recetaHuCommitLabFromCompose() {
   var inp = document.getElementById("receta-hu-compose-lab");
   var name = inp ? String(inp.value || "").trim() : "";
   if (!name) {
-    rt26.showToast("Escribe el nombre del estudio", "error");
+    rt28.showToast("Escribe el nombre del estudio", "error");
     if (inp) inp.focus();
     return;
   }
@@ -46933,7 +48672,7 @@ function recetaHuCommitProximaFromCompose() {
   var fecha = fechaEl ? String(fechaEl.value || "").trim() : "";
   if (!texto && servicio) texto = buildProximaCitaText(plazo || "2 semanas", servicio);
   if (!texto && !fecha) {
-    rt26.showToast("Elige servicio o escribe el texto de la consulta", "error");
+    rt28.showToast("Elige servicio o escribe el texto de la consulta", "error");
     if (sel) sel.focus();
     return;
   }
@@ -46978,7 +48717,7 @@ function recetaHuAddConsultService() {
     sel2.value = trimmed;
     recetaHuOnConsultServicePick();
   }
-  rt26.showToast("Servicio agregado al men\xFA", "success");
+  rt28.showToast("Servicio agregado al men\xFA", "success");
 }
 function exportRecetaHuPdf() {
   try {
@@ -46998,31 +48737,31 @@ function exportRecetaHuPdf() {
         outputDir: outputDir || ""
       };
     };
-    if (rt26.guardMobileDocExport()) return;
+    if (rt28.guardMobileDocExport()) return;
     if (!recetaHuPanelVisible()) {
       ensureRecetaHuPanelVisible();
     }
-    if (rt26.isRpcOffline && rt26.isRpcOffline()) {
-      rt26.showToast("Sin conexi\xF3n con el servidor local. Reinicia R+ para generar documentos.", "error");
+    if (rt28.isRpcOffline && rt28.isRpcOffline()) {
+      rt28.showToast("Sin conexi\xF3n con el servidor local. Reinicia R+ para generar documentos.", "error");
       return;
     }
     var pid = aid6();
     if (!pid) {
-      rt26.showToast("Selecciona un paciente", "error");
+      rt28.showToast("Selecciona un paciente", "error");
       return;
     }
     var patient = activePatient5();
     if (!patient) {
-      rt26.showToast("Paciente no encontrado", "error");
+      rt28.showToast("Paciente no encontrado", "error");
       return;
     }
-    var st = rt26.getSettings();
+    var st = rt28.getSettings();
     if (!String(st.doctorName || "").trim()) {
-      rt26.showToast("Configura el m\xE9dico tratante en Mi Perfil", "error");
+      rt28.showToast("Configura el m\xE9dico tratante en Mi Perfil", "error");
       return;
     }
     if (!String(st.cedulaProfesional || "").trim()) {
-      rt26.showToast("Configura la c\xE9dula profesional en Mi Perfil", "error");
+      rt28.showToast("Configura la c\xE9dula profesional en Mi Perfil", "error");
       return;
     }
     var draft2 = readDraftFromDom();
@@ -47035,39 +48774,39 @@ function exportRecetaHuPdf() {
     });
     var btn = document.getElementById("btn-receta-hu-export");
     setAsyncButtonLoading(btn, true, { loadingText: "Exportando\u2026" });
-    rt26.incrementPendingJobs();
-    rt26.requestDocumentJson("/generate-receta-hu", buildPayload((st.outputDir || "").trim())).then(function(response) {
-      return rt26.handleDocumentGenerateResponse({
+    rt28.incrementPendingJobs();
+    rt28.requestDocumentJson("/generate-receta-hu", buildPayload((st.outputDir || "").trim())).then(function(response) {
+      return rt28.handleDocumentGenerateResponse({
         response,
         url: "/generate-receta-hu",
         buildPayload,
         onSuccess: function(data) {
-          rt26.showToast("Receta HU guardada: " + (data && data.fileName ? data.fileName : "PDF"), "success");
+          rt28.showToast("Receta HU guardada: " + (data && data.fileName ? data.fileName : "PDF"), "success");
         },
         onError: function(message) {
-          rt26.showToast("Error: " + message, "error");
+          rt28.showToast("Error: " + message, "error");
         },
         onPrompt: function() {
-          rt26.showToast("Selecciona una carpeta para guardar el PDF.", "error");
+          rt28.showToast("Selecciona una carpeta para guardar el PDF.", "error");
         },
         onCancel: function() {
-          rt26.showToast("No se guard\xF3 el PDF: no se eligi\xF3 carpeta.", "error");
+          rt28.showToast("No se guard\xF3 el PDF: no se eligi\xF3 carpeta.", "error");
         }
       });
     }).catch(function() {
-      rt26.showToast("Error de conexi\xF3n al generar el PDF", "error");
+      rt28.showToast("Error de conexi\xF3n al generar el PDF", "error");
     }).finally(function() {
       if (btn && !btn.dataset.uiMotionDefaultLabel) {
         btn.dataset.uiMotionDefaultLabel = "Exportar PDF";
       }
       setAsyncButtonLoading(btn, false);
-      rt26.decrementPendingJobs();
-      if (typeof rt26.syncOfflineButtonStates === "function") rt26.syncOfflineButtonStates();
+      rt28.decrementPendingJobs();
+      if (typeof rt28.syncOfflineButtonStates === "function") rt28.syncOfflineButtonStates();
     });
   } catch (err) {
     console.error("[R+] exportRecetaHuPdf:", err && err.message ? err.message : err);
     resetExportButtonState();
-    rt26.showToast("No se pudo exportar la receta HU", "error");
+    rt28.showToast("No se pudo exportar la receta HU", "error");
   }
 }
 var recetaHuWindowHandlers = {
@@ -47105,8 +48844,8 @@ function estadoActualCacheSuffix(patientId) {
   return String(h) + ":" + s;
 }
 function innerTabRenderCacheKey(tab) {
-  var pid = String(rt27.getActiveId() || "");
-  var settings2 = rt27.getSettings();
+  var pid = String(rt29.getActiveId() || "");
+  var settings2 = rt29.getSettings();
   var key = String(tab || "") + "|" + pid + "|M" + (settings2 && settings2.appMode ? settings2.appMode : "sala");
   if (tab === "tend" || tab === "cult") {
     key += "|L" + getLabHistoryRevision(pid);
@@ -47151,16 +48890,16 @@ function buildPaseBoardCacheKey(pid) {
 }
 function warmExpedienteHeavyTabs() {
   if (_expedienteWarmQueued || typeof document === "undefined") return;
-  if (!isModeSala(rt27.getSettings())) return;
-  if (!rt27.getActiveId() || rt27.getActiveAppTab() !== "nota") return;
+  if (!isModeSala(rt29.getSettings())) return;
+  if (!rt29.getActiveId() || rt29.getActiveAppTab() !== "nota") return;
   _expedienteWarmQueued = true;
   var warmGen = _expedienteWarmGen;
   scheduleIdle(function() {
     _expedienteWarmQueued = false;
     if (warmGen !== _expedienteWarmGen) return;
-    if (!rt27.getActiveId() || rt27.getActiveAppTab() !== "nota") return;
-    var settings2 = rt27.getSettings();
-    var active = migrateGranularInner(rt27.getActiveInner() || "todo", settings2);
+    if (!rt29.getActiveId() || rt29.getActiveAppTab() !== "nota") return;
+    var settings2 = rt29.getSettings();
+    var active = migrateGranularInner(rt29.getActiveInner() || "todo", settings2);
     ["estadoActual", "tend"].forEach(function(tab) {
       if (tab === active) return;
       if (isInnerTabContentFresh(tab, settings2)) return;
@@ -47170,7 +48909,7 @@ function warmExpedienteHeavyTabs() {
 }
 function resolvePreloadGranularTab(el) {
   if (!el || !el.id) return null;
-  var settings2 = rt27.getSettings();
+  var settings2 = rt29.getSettings();
   if (el.classList.contains("exp-consolidated-tab")) {
     var composite = el.id.replace(/^itab-/, "");
     return defaultGranularForConsolidatedTab(composite, settings2);
@@ -47217,7 +48956,7 @@ function renderHeavyInnerTab(tab, run, opts) {
   }
   run(markInnerTabRendered.bind(null, tab));
 }
-var rt27 = {
+var rt29 = {
   getActiveAppTab() {
     return "lab";
   },
@@ -47257,7 +48996,7 @@ var rt27 = {
   }
 };
 function registerPaseBoardRuntime(partial) {
-  if (partial && typeof partial === "object") Object.assign(rt27, partial);
+  if (partial && typeof partial === "object") Object.assign(rt29, partial);
 }
 function esc24(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -47331,12 +49070,12 @@ function paseMedPrincipioActivoTitle(nombreRaw) {
 }
 function findPaseLatestLabSend(patientId) {
   if (!patientId) return null;
-  var hist = sortLabHistoryChronological(rt27.ensureParsedLabHistory(patientId));
+  var hist = sortLabHistoryChronological(rt29.ensureParsedLabHistory(patientId));
   for (var i = 0; i < hist.length; i++) {
     var set = hist[i];
-    var tipo = rt27.primaryTipoForLabSet(set.resLabs);
+    var tipo = rt29.primaryTipoForLabSet(set.resLabs);
     if (tipo === "cultivo") continue;
-    var sp = rt27.splitResLabsByTipo(set.resLabs || []);
+    var sp = rt29.splitResLabsByTipo(set.resLabs || []);
     var labChunks = sp.labs.filter(function(x) {
       return String(x || "").trim();
     });
@@ -47375,7 +49114,7 @@ function buildPasePatientHeaderHtml(patient) {
 function renderPaseBoard() {
   var host = document.getElementById("pase-board-scroll");
   if (!host || !isPaseMode()) return;
-  var aid7 = rt27.getActiveId();
+  var aid7 = rt29.getActiveId();
   if (aid7) {
     var cacheKey = buildPaseBoardCacheKey(aid7);
     if (_paseBoardCacheKey === cacheKey && host.querySelector(".pase-patient-header")) {
@@ -47489,7 +49228,7 @@ function renderPaseBoard() {
       var fd = r.fechaMuestra && r.fechaMuestra !== "\u2014" ? r.fechaMuestra : r.studyDate || "\u2014";
       var atbBlock = paseCultivoAtbBlockHtml(pid, r);
       parts.push(
-        '<div class="pase-mini-card pase-cultivo-card' + (r.negativo ? " pase-mini-card--dim" : "") + '"><div class="pase-cult-org">' + esc24(String(r.organismo || "\u2014")) + "</div>" + atbBlock + '<div class="pase-sub">' + esc24(String(r.tipoLabel || "") + " \xB7 " + String(r.sitio || "").slice(0, 72)) + "<br>" + esc24(fd) + "</div></div>"
+        '<div class="pase-mini-card pase-cultivo-card' + (r.negativo ? " pase-mini-card--dim" : "") + '"><div class="pase-cult-org">' + esc24(String(r.organismo || "\u2014")) + (r.cuenta ? '<div class="pase-cult-cuenta">' + esc24(String(r.cuenta)) + "</div>" : "") + "</div>" + atbBlock + '<div class="pase-sub">' + esc24(String(r.tipoLabel || "") + " \xB7 " + String(r.sitio || "").slice(0, 72)) + "<br>" + esc24(fd) + "</div></div>"
       );
     });
   }
@@ -47566,7 +49305,7 @@ function openPaseSectionInNormal(which) {
     switchAppTab("med");
   } else if (w === "manejo") {
     switchAppTab("nota");
-    switchInnerTab(isManejoTabGloballyHidden() ? isModeSala(rt27.getSettings()) ? "historia" : "notas" : "manejo");
+    switchInnerTab(isManejoTabGloballyHidden() ? isModeSala(rt29.getSettings()) ? "historia" : "notas" : "manejo");
   } else if (w === "recetahu" || w === "receta-hu" || w === "receta_hu") {
     switchAppTab("nota");
     switchInnerTab("recetaHu");
@@ -47587,8 +49326,8 @@ function switchAppTab(tab) {
   if (tab === "lan") tab = "lab";
   cancelExpedienteWarm();
   cancelDeferredIdleWork();
-  var prevAppTab = rt27.getActiveAppTab();
-  rt27.setActiveAppTab(tab);
+  var prevAppTab = rt29.getActiveAppTab();
+  rt29.setActiveAppTab(tab);
   if (tab === "nota" && isPaseMode() && prevAppTab !== "nota") {
     setRoundOverviewMode(true);
   }
@@ -47640,16 +49379,16 @@ function switchAppTab(tab) {
       if (tab === "agenda") showAppTabPanel(appcontentAgenda, animatePanels);
       else hideAppTabPanel(appcontentAgenda);
     }
-    if (tab === "lab") rt27.renderLabHistoryPanel();
-    if (tab === "med") rt27.renderMedRecetaPanel();
-    if (tab === "agenda") rt27.renderProcedureAgendaPanel();
-    if (tab === "nota" && rt27.getActiveInner() === "tend") renderTendencias();
+    if (tab === "lab") rt29.renderLabHistoryPanel();
+    if (tab === "med") rt29.renderMedRecetaPanel();
+    if (tab === "agenda") rt29.renderProcedureAgendaPanel();
+    if (tab === "nota" && rt29.getActiveInner() === "tend") renderTendencias();
   }
   syncMainAppTabA11y(tab);
-  if (tab === "med") rt27.setMedTabAttention(false);
+  if (tab === "med") rt29.setMedTabAttention(false);
   syncAppTabIndicator(tab);
-  rt27.syncWorkContextChrome();
-  if (rt27.getActiveAppTab() === "nota") syncRoundExpedienteLayout();
+  rt29.syncWorkContextChrome();
+  if (rt29.getActiveAppTab() === "nota") syncRoundExpedienteLayout();
 }
 function syncMainAppTabA11y(tab) {
   if (tab === "lan") tab = "lab";
@@ -47717,7 +49456,7 @@ if (typeof document !== "undefined") {
       var k = e.key;
       if (k !== "ArrowRight" && k !== "ArrowLeft" && k !== "ArrowDown" && k !== "ArrowUp" && k !== "Home" && k !== "End")
         return;
-      var cur = rt27.getActiveAppTab() === "lan" ? "lab" : rt27.getActiveAppTab();
+      var cur = rt29.getActiveAppTab() === "lan" ? "lab" : rt29.getActiveAppTab();
       var i = order.indexOf(cur);
       if (i < 0) i = 0;
       var next = -1;
@@ -47744,8 +49483,8 @@ function wireExpedienteDatosCollapseRender() {
   });
 }
 function syncInnerTabVisualOnly() {
-  var settings2 = rt27.getSettings();
-  var tab = migrateGranularInner(rt27.getActiveInner() || "todo", settings2);
+  var settings2 = rt29.getSettings();
+  var tab = migrateGranularInner(rt29.getActiveInner() || "todo", settings2);
   var consolidated = useConsolidatedExpedienteTabs(settings2);
   if (consolidated) {
     syncConsolidatedInnerTabButtons(tab, settings2);
@@ -47838,9 +49577,9 @@ function refreshExpedienteForAppModeChange() {
   invalidateHistoriaClinicaPanel();
   invalidateEventualidadesPanel();
   invalidateInnerTabRenderCache();
-  var settings2 = rt27.getSettings();
-  var tab = migrateGranularInner(rt27.getActiveInner() || "todo", settings2);
-  if (tab !== rt27.getActiveInner()) rt27.setActiveInner(tab);
+  var settings2 = rt29.getSettings();
+  var tab = migrateGranularInner(rt29.getActiveInner() || "todo", settings2);
+  if (tab !== rt29.getActiveInner()) rt29.setActiveInner(tab);
   resetExpedientePaneLayoutCache();
   renderInnerTabs();
   syncInnerTabVisualOnly();
@@ -47853,19 +49592,19 @@ function refreshExpedienteAfterPatientSelect(opts) {
   invalidateEaPanelCache();
   invalidateManejoShell();
   invalidateHistoriaClinicaPanel();
-  var settings2 = rt27.getSettings();
-  var tab = migrateGranularInner(rt27.getActiveInner() || "todo", settings2);
+  var settings2 = rt29.getSettings();
+  var tab = migrateGranularInner(rt29.getActiveInner() || "todo", settings2);
   if (opts.patientChanged || !isInnerTabContentFresh(tab, settings2)) {
     renderGranularInnerTab(tab, opts.patientChanged ? { force: true } : void 0);
   }
   warmExpedienteHeavyTabs();
 }
 function switchConsolidatedTab(compositeTab) {
-  var settings2 = rt27.getSettings();
+  var settings2 = rt29.getSettings();
   if (compositeTab === "clinico" && !isClinicoCompositeVisible(settings2)) {
     compositeTab = "paciente";
   }
-  var current = migrateGranularInner(rt27.getActiveInner() || "todo", settings2);
+  var current = migrateGranularInner(rt29.getActiveInner() || "todo", settings2);
   var currentComposite = consolidatedInnerTabButtonId(current, settings2).replace(/^itab-/, "");
   if (currentComposite === compositeTab) {
     syncConsolidatedInnerTabButtons(current, settings2);
@@ -47880,9 +49619,9 @@ function switchInnerTab(tab, opts) {
   opts = opts || {};
   cancelExpedienteWarm();
   cancelDeferredIdleWork();
-  var settings2 = rt27.getSettings();
+  var settings2 = rt29.getSettings();
   tab = migrateGranularInner(tab, settings2);
-  var prevInner = migrateGranularInner(rt27.getActiveInner() || "todo", settings2);
+  var prevInner = migrateGranularInner(rt29.getActiveInner() || "todo", settings2);
   var consolidated = useConsolidatedExpedienteTabs(settings2);
   var prevComposite = expedienteCompositeTab(prevInner, settings2);
   var nextComposite = expedienteCompositeTab(tab, settings2);
@@ -47910,13 +49649,13 @@ function switchInnerTab(tab, opts) {
       return;
     }
   }
-  if (expedienteTabs[tab] && rt27.getActiveAppTab() !== "nota") {
+  if (expedienteTabs[tab] && rt29.getActiveAppTab() !== "nota") {
     switchAppTab("nota");
   }
-  if (isPaseMode() && rt27.getActiveAppTab() === "nota" && !opts.preserveRoundOverview) {
+  if (isPaseMode() && rt29.getActiveAppTab() === "nota" && !opts.preserveRoundOverview) {
     setRoundOverviewMode(false);
   }
-  rt27.setActiveInner(tab);
+  rt29.setActiveInner(tab);
   if (consolidated) {
     syncConsolidatedInnerTabButtons(tab, settings2);
     syncConsolidatedPaneVisibility(tab, settings2);
@@ -47940,7 +49679,7 @@ function switchInnerTab(tab, opts) {
       animateTabPanelEnter(panelEl);
     }
     scheduleAfterPaint(function() {
-      if (migrateGranularInner(rt27.getActiveInner() || "todo", settings2) !== targetTab) return;
+      if (migrateGranularInner(rt29.getActiveInner() || "todo", settings2) !== targetTab) return;
       renderGranularInnerTab(targetTab, forceRender ? { force: true } : void 0);
       if (consolidated) syncExpedienteSegmentIndicators(settings2, targetTab);
     });
@@ -47951,11 +49690,11 @@ function switchInnerTab(tab, opts) {
     warmExpedienteHeavyTabs();
   }
   syncRoundExpedienteLayout();
-  rt27.syncWorkContextChrome();
+  rt29.syncWorkContextChrome();
   syncInnerTabIndicator(tab, consolidated ? { consolidated: true, settings: settings2 } : void 0);
 }
 function renderInnerTabs() {
-  var settings2 = rt27.getSettings();
+  var settings2 = rt29.getSettings();
   var sala = isModeSala(settings2);
   var consolidated = useConsolidatedExpedienteTabs(settings2);
   function show(id, visible) {
@@ -47990,8 +49729,8 @@ function renderInnerTabs() {
       setOrder("itab-salida", order++);
     }
     wireExpedienteDatosCollapseRender();
-    var activeInner2 = migrateGranularInner(rt27.getActiveInner() || "todo", settings2);
-    if (activeInner2 !== rt27.getActiveInner()) rt27.setActiveInner(activeInner2);
+    var activeInner2 = migrateGranularInner(rt29.getActiveInner() || "todo", settings2);
+    if (activeInner2 !== rt29.getActiveInner()) rt29.setActiveInner(activeInner2);
     syncInnerTabVisualOnly();
     invalidateInnerTabRenderCache();
     renderGranularInnerTab(activeInner2, { force: true });
@@ -48035,16 +49774,16 @@ function renderInnerTabs() {
     setOrder("itab-listado", 99);
   }
   renderEstadoActualBar();
-  var active = migrateGranularInner(rt27.getActiveInner() || "todo", settings2);
+  var active = migrateGranularInner(rt29.getActiveInner() || "todo", settings2);
   syncInnerTabIndicator(active, consolidated ? { consolidated: true, settings: settings2 } : void 0);
   syncAllSubTabIndicators();
   initExpedienteTabPreload();
 }
 function getActiveInnerTab() {
-  var v = rt27.getActiveInner();
+  var v = rt29.getActiveInner();
   return v || null;
 }
-var windowHandlers9 = {
+var windowHandlers11 = {
   switchAppTab,
   openPaseSectionInNormal,
   renderPaseBoard,
@@ -48054,7 +49793,7 @@ var windowHandlers9 = {
 };
 
 // public/js/features/medications.mjs
-var rt28 = {
+var rt30 = {
   getActiveId() {
     return null;
   },
@@ -48065,7 +49804,7 @@ var rt28 = {
   }
 };
 function registerMedicationsRuntime(partial) {
-  if (partial && typeof partial === "object") Object.assign(rt28, partial);
+  if (partial && typeof partial === "object") Object.assign(rt30, partial);
 }
 var medOutputTab = "full";
 function isDemoPatientId3(patientId) {
@@ -48109,7 +49848,7 @@ function renderMedRecetaPanel() {
   var outPre = document.getElementById("med-output");
   var outCard = document.getElementById("med-output-section");
   if (!hintEl || !listEl || !outPre) return;
-  var activeId2 = rt28.getActiveId();
+  var activeId2 = rt30.getActiveId();
   if (!activeId2) {
     hintEl.style.display = "block";
     hintEl.textContent = "Selecciona un paciente en la columna izquierda para procesar su receta.";
@@ -48172,7 +49911,7 @@ function isMedNotaSelected(patientId, itemId) {
   return !!getMedNotaSelMap(patientId)[itemId];
 }
 function toggleMedRecetaSuspendido(itemId, suspended) {
-  var activeId2 = rt28.getActiveId();
+  var activeId2 = rt30.getActiveId();
   if (!activeId2 || !medRecetaByPatient[activeId2] || !medRecetaByPatient[activeId2].items) return;
   var it = medRecetaByPatient[activeId2].items.find(function(x) {
     return String(x.id) === String(itemId);
@@ -48183,7 +49922,7 @@ function toggleMedRecetaSuspendido(itemId, suspended) {
   renderMedRecetaPanel();
 }
 function toggleMedRecetaParaNota(itemId, selected) {
-  var activeId2 = rt28.getActiveId();
+  var activeId2 = rt30.getActiveId();
   if (!activeId2) return;
   var m = getMedNotaSelMap(activeId2);
   if (selected) m[itemId] = true;
@@ -48191,20 +49930,20 @@ function toggleMedRecetaParaNota(itemId, selected) {
   renderMedRecetaPanel();
 }
 function limpiarSeleccionMedNota() {
-  var activeId2 = rt28.getActiveId();
+  var activeId2 = rt30.getActiveId();
   if (activeId2) medNotaSelectionByPatient[activeId2] = {};
   renderMedRecetaPanel();
-  rt28.showToast("Selecci\xF3n limpiada", "success");
+  rt30.showToast("Selecci\xF3n limpiada", "success");
 }
 function mediAnadirATratamiento() {
-  var activeId2 = rt28.getActiveId();
+  var activeId2 = rt30.getActiveId();
   if (!activeId2) {
-    rt28.showToast("Selecciona un paciente", "error");
+    rt30.showToast("Selecciona un paciente", "error");
     return;
   }
   var block = medRecetaByPatient[activeId2];
   if (!block || !block.items || !block.items.length) {
-    rt28.showToast("No hay medicamentos en la receta", "error");
+    rt30.showToast("No hay medicamentos en la receta", "error");
     return;
   }
   var sel = getMedNotaSelMap(activeId2);
@@ -48214,7 +49953,7 @@ function mediAnadirATratamiento() {
     return formatMedicationEgresoLine(it);
   });
   if (!lines.length) {
-    rt28.showToast("Marca \xABSOAP\xBB en al menos un medicamento activo", "error");
+    rt30.showToast("Marca \xABSOAP\xBB en al menos un medicamento activo", "error");
     return;
   }
   if (!notes[activeId2]) notes[activeId2] = {};
@@ -48232,12 +49971,12 @@ function mediAnadirATratamiento() {
   saveState();
   openPaseSectionInNormal("expediente");
   renderNoteForm();
-  rt28.showToast(lines.length + " l\xEDnea(s) a\xF1adidas a Tratamiento", "success");
+  rt30.showToast(lines.length + " l\xEDnea(s) a\xF1adidas a Tratamiento", "success");
 }
 function mediLlevarASOAP() {
-  var activeId2 = rt28.getActiveId();
+  var activeId2 = rt30.getActiveId();
   if (!activeId2) {
-    rt28.showToast("Selecciona un paciente", "error");
+    rt30.showToast("Selecciona un paciente", "error");
     return;
   }
   var block = medRecetaByPatient[activeId2];
@@ -48246,7 +49985,7 @@ function mediLlevarASOAP() {
     return sel[it.id] && !it.suspendido;
   });
   if (!hasReceta) {
-    rt28.showToast("Marca \xABSOAP\xBB en al menos un medicamento de la receta", "error");
+    rt30.showToast("Marca \xABSOAP\xBB en al menos un medicamento de la receta", "error");
     return;
   }
   var buckets = bucketsFromRecetaItems(block ? block.items : [], sel, classifyMedicationSoapCategory);
@@ -48254,24 +49993,24 @@ function mediLlevarASOAP() {
     return buckets[k] && String(buckets[k]).trim();
   });
   if (!hasBuckets) {
-    rt28.showToast("No qued\xF3 nada que volcar", "error");
+    rt30.showToast("No qued\xF3 nada que volcar", "error");
     return;
   }
-  if (isModeSala(rt28.getSettings())) {
+  if (isModeSala(rt30.getSettings())) {
     var patient = patients.find(function(p) {
       return p.id === activeId2;
     });
     if (!patient) {
-      rt28.showToast("Paciente no encontrado", "error");
+      rt30.showToast("Paciente no encontrado", "error");
       return;
     }
     ensureMonitoreo(patient);
     applyRecetaProposal(patient.monitoreo, buckets);
     saveState();
-    if (typeof rt28.navigateToEstadoActualPanel === "function") {
-      rt28.navigateToEstadoActualPanel();
+    if (typeof rt30.navigateToEstadoActualPanel === "function") {
+      rt30.navigateToEstadoActualPanel();
     }
-    rt28.showToast("Propuesta en Estado Actual \u2014 confirma en Estado cl\xEDnico general", "success");
+    rt30.showToast("Propuesta en Estado Actual \u2014 confirma en Estado cl\xEDnico general", "success");
     renderMedRecetaPanel();
     return;
   }
@@ -48286,13 +50025,13 @@ function mediLlevarASOAP() {
   renderNoteForm();
   openSOAPModalDirect();
   var toastMsg = "Campos SOAP actualizados \xB7 completa e Insertar en evoluci\xF3n";
-  rt28.showToast(toastMsg, "success");
+  rt30.showToast(toastMsg, "success");
   renderMedRecetaPanel();
 }
 function procesarRecetaMed() {
-  var activeId2 = rt28.getActiveId();
+  var activeId2 = rt30.getActiveId();
   if (!activeId2) {
-    rt28.showToast("Selecciona un paciente primero", "error");
+    rt30.showToast("Selecciona un paciente primero", "error");
     return;
   }
   var ta = document.getElementById("med-input");
@@ -48300,12 +50039,12 @@ function procesarRecetaMed() {
   var parsed = parseMedicationPaste(raw || "");
   if (!parsed.items.length) {
     if (!looksLikeSomeMedicationPaste(raw || "")) {
-      rt28.showToast(
+      rt30.showToast(
         "No parece el bloque de SOME. En expediente, copia desde la columna Fecha y hora hasta el final de medicamentos (con tabuladores) y p\xE9galo aqu\xED.",
         "error"
       );
     } else {
-      rt28.showToast("No se encontraron filas MEDICAMENTOS v\xE1lidas en el pegado", "error");
+      rt30.showToast("No se encontraron filas MEDICAMENTOS v\xE1lidas en el pegado", "error");
     }
     return;
   }
@@ -48322,40 +50061,40 @@ function procesarRecetaMed() {
   renderMedRecetaPanel();
   var msg = "Receta actualizada (" + parsed.items.length + " medicamentos)";
   if (parsed.skipped > 0) msg += ". Omitidas " + parsed.skipped + " l\xEDneas.";
-  rt28.showToast(msg, "success");
+  rt30.showToast(msg, "success");
 }
 function limpiarRecetaInput() {
   var ta = document.getElementById("med-input");
   if (ta) ta.value = "";
 }
 function incrementMedDiaTratamiento() {
-  var activeId2 = rt28.getActiveId();
+  var activeId2 = rt30.getActiveId();
   if (!activeId2) {
-    rt28.showToast("Selecciona un paciente primero", "error");
+    rt30.showToast("Selecciona un paciente primero", "error");
     return;
   }
   var block = medRecetaByPatient[activeId2];
   if (!block || !block.items || !block.items.length) {
-    rt28.showToast("No hay medicamentos procesados", "error");
+    rt30.showToast("No hay medicamentos procesados", "error");
     return;
   }
   var res = incrementMedItemsDiaTratamiento(block.items);
   if (!res.count) {
-    rt28.showToast("Ning\xFAn medicamento con DIA# activo", "error");
+    rt30.showToast("Ning\xFAn medicamento con DIA# activo", "error");
     return;
   }
   block.items = res.items;
   saveState();
   renderMedRecetaPanel();
-  rt28.showToast(
+  rt30.showToast(
     res.count === 1 ? "D\xEDa de tratamiento +1 (1 medicamento)" : "D\xEDa de tratamiento +1 (" + res.count + " medicamentos)",
     "success"
   );
 }
 function copiarMedicamentosAlPortapapeles() {
-  var activeId2 = rt28.getActiveId();
+  var activeId2 = rt30.getActiveId();
   if (!activeId2 || !medRecetaByPatient[activeId2]) {
-    rt28.showToast("No hay medicamentos procesados", "error");
+    rt30.showToast("No hay medicamentos procesados", "error");
     return;
   }
   var items = medRecetaByPatient[activeId2].items || [];
@@ -48365,15 +50104,15 @@ function copiarMedicamentosAlPortapapeles() {
     text = simple;
   }
   if (!text.trim()) {
-    rt28.showToast("No hay medicamentos activos para copiar", "error");
+    rt30.showToast("No hay medicamentos activos para copiar", "error");
     return;
   }
   navigator.clipboard.writeText(text).then(
     function() {
-      rt28.showToast("Medicamentos copiados al portapapeles \u2713", "success");
+      rt30.showToast("Medicamentos copiados al portapapeles \u2713", "success");
     },
     function() {
-      rt28.showToast("Error al copiar al portapapeles", "error");
+      rt30.showToast("Error al copiar al portapapeles", "error");
     }
   );
 }
@@ -48392,7 +50131,7 @@ function renderMedNotaFooter() {
   var foot = document.getElementById("med-nota-footer");
   if (!foot) return;
   foot.style.display = "block";
-  var activeId2 = rt28.getActiveId();
+  var activeId2 = rt30.getActiveId();
   var block = activeId2 ? medRecetaByPatient[activeId2] : null;
   var sel = activeId2 ? getMedNotaSelMap(activeId2) : {};
   var soapItems = block && block.items ? block.items.filter(function(it) {
@@ -48415,7 +50154,7 @@ function renderMedNotaFooter() {
     return '<div class="med-soap-preview-sec med-soap-preview-sec--' + cat + '"><div class="med-soap-preview-sec-title">' + esc25(title) + '</div><div class="med-soap-preview-chips">' + chipsFor(groups[cat]) + "</div></div>";
   }
   var previewHtml = soapItems.length ? '<div class="med-soap-preview">' + section("analgesia", "Analg\xE9sicos / antiem\xE9ticos") + section("antihta", "AntiHTA / diur\xE9ticos") + section("abx", "Antibi\xF3ticos / antif\xFAngicos") + section("vasop", "Vasopresores / inotr\xF3picos") + section("otros", "Otros (se copian en Antibi\xF3ticos \u2014 revisar)") + "</div>" : '<p class="med-soap-preview-empty">Marc\xE1 <strong>SOAP</strong> en el listado para ver aqu\xED c\xF3mo se repartir\xE1n en la plantilla.</p>';
-  var soapBtnLabel = isModeSala(rt28.getSettings()) ? "Enviar a Estado Actual" : "Abrir plantilla SOAP";
+  var soapBtnLabel = isModeSala(rt30.getSettings()) ? "Enviar a Estado Actual" : "Abrir plantilla SOAP";
   foot.innerHTML = '<div class="med-nota-toolbar"><p class="med-nota-hint">Solo los medicamentos con <strong>SOAP</strong> activo aparecen abajo, clasificados seg\xFAn el nombre del f\xE1rmaco en la receta.</p>' + previewHtml + '<div class="med-nota-actions"><button type="button" class="btn-generate" onclick="mediAnadirATratamiento()">A\xF1adir a Tratamiento</button><button type="button" class="btn-med-secondary" onclick="mediLlevarASOAP()">' + soapBtnLabel + '</button><button type="button" class="btn-med-secondary" onclick="limpiarSeleccionMedNota()">Limpiar</button></div></div>';
 }
 function hideMedNotaFooter() {
@@ -49191,11 +50930,10 @@ function flushOne(patientId) {
 }
 
 // public/js/features/patients.mjs
-var DEMO_PATIENT_ID2 = "demo-onboarding";
 function patientsVisibleInSidebar() {
   return filterPatientsForPitchTour(patients);
 }
-var rt29 = {
+var rt31 = {
   getActiveId() {
     return null;
   },
@@ -49291,7 +51029,7 @@ var rt29 = {
 };
 function registerPatientsRuntime(partial) {
   if (!partial || typeof partial !== "object") return;
-  Object.assign(rt29, partial);
+  Object.assign(rt31, partial);
 }
 function esc26(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -49426,7 +51164,7 @@ function togglePatientArchived(ev, id) {
   renderPatientList();
   if (isLanSessionConfiguredForRest()) {
     lanSyncPatientArchivedFlag(p).catch(function() {
-      rt29.showToast("No se pudo sincronizar archivo con el host LAN.", "error");
+      rt31.showToast("No se pudo sincronizar archivo con el host LAN.", "error");
     });
   }
 }
@@ -49599,7 +51337,7 @@ function buildRondaRecentLabsBlockHtml(patientId) {
     if (newest.hora && String(newest.hora).trim()) {
       parts.push("<span>" + esc26(String(newest.hora).trim().slice(0, 8)) + "</span>");
     }
-    var tipo = rt29.primaryTipoForLabSet(newest.resLabs);
+    var tipo = rt31.primaryTipoForLabSet(newest.resLabs);
     if (tipo && tipo !== "labs") {
       parts.push(
         "<span>" + esc26(tipo === "mixed" ? "Mixto" : tipo === "cultivo" ? "Cultivo" : tipo) + "</span>"
@@ -49636,8 +51374,8 @@ function buildRondaRecentLabsBlockHtml(patientId) {
   return '<p class="ronda-panel-empty">Sin laboratorios recientes. Puedes cargar o enviar resultados desde la pesta\xF1a Laboratorio.</p>';
 }
 function normalizeFechaForRonda(fecha) {
-  if (typeof rt29.normalizeFechaLabHistory === "function") {
-    return rt29.normalizeFechaLabHistory(fecha);
+  if (typeof rt31.normalizeFechaLabHistory === "function") {
+    return rt31.normalizeFechaLabHistory(fecha);
   }
   return String(fecha || "").trim();
 }
@@ -49657,26 +51395,26 @@ function syncRoundExpedienteLayout() {
     if (rm) {
       while (rm.firstChild) rm.removeChild(rm.firstChild);
     }
-    rt29.syncWorkContextChrome();
+    rt31.syncWorkContextChrome();
     return;
   }
-  var showOverview = !!rt29.getActiveId() && rt29.getActiveAppTab() === "nota" && _roundOverviewMode;
+  var showOverview = !!rt31.getActiveId() && rt31.getActiveAppTab() === "nota" && _roundOverviewMode;
   overview.style.display = showOverview ? "flex" : "none";
   classic.style.display = showOverview ? "none" : "flex";
-  rt29.syncWorkContextChrome();
+  rt31.syncWorkContextChrome();
   if (fullbar) {
-    var showBar = !!(rt29.getActiveId() && rt29.getActiveAppTab() === "nota" && !showOverview);
+    var showBar = !!(rt31.getActiveId() && rt31.getActiveAppTab() === "nota" && !showOverview);
     fullbar.classList.toggle("is-visible", showBar);
     fullbar.setAttribute("aria-hidden", showBar ? "false" : "true");
   }
   if (showOverview) renderRoundOverviewPanels();
-  rt29.syncWorkContextChrome();
+  rt31.syncWorkContextChrome();
 }
 function renderRoundOverviewPanels() {
-  if (!isPaseMode() || !_roundOverviewMode || rt29.getActiveAppTab() !== "nota" || !rt29.getActiveId()) return;
+  if (!isPaseMode() || !_roundOverviewMode || rt31.getActiveAppTab() !== "nota" || !rt31.getActiveId()) return;
   var titleEl = document.getElementById("patient-ronda-patient-label");
   var metaEl = document.getElementById("patient-ronda-patient-meta");
-  var aid7 = rt29.getActiveId();
+  var aid7 = rt31.getActiveId();
   var p = patients.find(function(x) {
     return String(x.id) === String(aid7);
   });
@@ -49689,8 +51427,8 @@ function renderRoundOverviewPanels() {
   }
   var labsBody = document.getElementById("patient-ronda-labs-body");
   if (labsBody) labsBody.innerHTML = buildRondaRecentLabsBlockHtml(aid7);
-  rt29.refreshAllTodoUIs();
-  var gala = isModeSala(rt29.getSettings());
+  rt31.refreshAllTodoUIs();
+  var gala = isModeSala(rt31.getSettings());
   var qDatos = document.getElementById("ronda-quick-datos");
   if (qDatos) qDatos.style.display = gala ? "" : "none";
   var qList = document.getElementById("ronda-quick-listado");
@@ -49709,19 +51447,19 @@ function returnToRoundOverview() {
 function openFullExpedienteFromRound(tab) {
   if (!isPaseMode()) return;
   var tname = tab;
-  var sala = isModeSala(rt29.getSettings());
+  var sala = isModeSala(rt31.getSettings());
   if (sala) {
     if (tname === "notas" || tname === "indica") tname = "tend";
     if (!tname) tname = "tend";
   } else {
     if (!tname) tname = "notas";
   }
-  rt29.switchInnerTab(tname);
+  rt31.switchInnerTab(tname);
 }
 function advanceRondaPatient(delta) {
   if (!isPaseMode()) return;
   if (!_lastRondaNavIds.length) return;
-  var cur = rt29.getActiveId() != null ? String(rt29.getActiveId()) : "";
+  var cur = rt31.getActiveId() != null ? String(rt31.getActiveId()) : "";
   var idx = _lastRondaNavIds.indexOf(cur);
   if (idx < 0) {
     selectPatient(_lastRondaNavIds[delta > 0 ? 0 : _lastRondaNavIds.length - 1]);
@@ -49733,17 +51471,17 @@ function advanceRondaPatient(delta) {
   selectPatient(_lastRondaNavIds[next]);
 }
 function scrollActiveRondaCardIntoView() {
-  if (!rt29.getActiveId()) return;
+  if (!rt31.getActiveId()) return;
   var list = document.getElementById("patient-list");
   if (!list) return;
   var cards = list.querySelectorAll(".patient-card[data-patient-id]");
-  var want = String(rt29.getActiveId());
+  var want = String(rt31.getActiveId());
   for (var i = 0; i < cards.length; i++) {
     if (cards[i].getAttribute("data-patient-id") === want) {
       try {
         cards[i].scrollIntoView({
           block: "nearest",
-          behavior: rt29.rpcPrefersReducedMotion() ? "auto" : "smooth"
+          behavior: rt31.rpcPrefersReducedMotion() ? "auto" : "smooth"
         });
       } catch (_e) {
         cards[i].scrollIntoView(true);
@@ -49760,7 +51498,7 @@ function renderPatientRoundRowHtml(p) {
   var archTitle = archOn ? "Restaurar del archivo" : "Archivar paciente";
   var archiveIcon = archOn ? "\u21A9" : '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"></rect><path d="M5 8h14v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8z"></path><path d="M10 12h4"></path></svg>';
   var seenTitle = typeof t === "function" ? t("roundMode.seenTitle") : "Visto en ronda";
-  var aid7 = rt29.getActiveId();
+  var aid7 = rt31.getActiveId();
   return '<div class="patient-card patient-card--roundrow ' + (p.id === aid7 ? "active" : "") + (seen ? " patient-card--roundrow-seen" : "") + '" data-patient-id="' + p.id + '" role="button" tabindex="0"><div class="patient-card-toolbar"><div class="patient-card-toolbar-left"><button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon btn-archive-clean" title="' + archTitle + '" aria-label="' + archTitle + `" onclick="togglePatientArchived(event,'` + p.id + `')">` + archiveIcon + '</button><button type="button" class="patient-toolbar-chip btn-pinned-text" title="' + pinTitle + '" aria-label="' + pinTitle + `" onclick="togglePatientPinned(event,'` + p.id + `')">Pinned</button></div><button type="button" class="btn-delete-card" onclick="deletePatient(event,'` + p.id + `')" aria-label="Eliminar">\xD7</button></div><div class="roundrow-main"><div class="roundrow-text"><div class="p-name">` + esc26(p.nombre || "Sin nombre") + '</div><div class="p-meta"><span>Cto. ' + esc26(p.cuarto || "-") + "</span><span>Cama " + esc26(p.cama || "-") + "</span><span>" + esc26(p.servicio || "-") + '</span></div></div><button type="button" class="btn-round-seen" title="' + esc26(seenTitle) + '" aria-label="' + esc26(seenTitle) + '" aria-pressed="' + (seen ? "true" : "false") + `" onclick="togglePatientRoundSeen(event,'` + p.id + `')">` + (seen ? "\u2713" : "\u25CB") + "</button></div></div>";
 }
 function renderPatientCardHtml(p) {
@@ -49769,7 +51507,7 @@ function renderPatientCardHtml(p) {
   var pinTitle = pinOn ? "Quitar de Pinned" : "Mover a Pinned";
   var archTitle = archOn ? "Restaurar del archivo" : "Archivar paciente";
   var archiveIcon = archOn ? "\u21A9" : '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="4" rx="1"></rect><path d="M5 8h14v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8z"></path><path d="M10 12h4"></path></svg>';
-  var aid7 = rt29.getActiveId();
+  var aid7 = rt31.getActiveId();
   return '<div class="patient-card ' + (p.id === aid7 ? "active" : "") + '" data-patient-id="' + p.id + '" role="button" tabindex="0"><div class="patient-card-toolbar"><div class="patient-card-toolbar-left"><button type="button" class="patient-toolbar-chip patient-toolbar-chip--icon btn-archive-clean" title="' + archTitle + '" aria-label="' + archTitle + `" onclick="togglePatientArchived(event,'` + p.id + `')">` + archiveIcon + '</button><button type="button" class="patient-toolbar-chip btn-pinned-text" title="' + pinTitle + '" aria-label="' + pinTitle + `" onclick="togglePatientPinned(event,'` + p.id + `')">Pinned</button></div><button type="button" class="btn-delete-card" onclick="deletePatient(event,'` + p.id + `')" aria-label="Eliminar">\xD7</button></div><div class="p-name">` + esc26(p.nombre || "Sin nombre") + '</div><div class="p-meta"><span>Cto. ' + esc26(p.cuarto || "-") + "</span><span>Cama " + esc26(p.cama || "-") + "</span><span>" + esc26(p.servicio || "-") + "</span></div></div>";
 }
 var _patientListRenderQueued = false;
@@ -49806,14 +51544,14 @@ function renderPatientListNow() {
   if (!visiblePatients.length) {
     list.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">Sin pacientes a\xFAn</div>';
     _lastRondaNavIds = [];
-    if (rt29.getActiveAppTab() === "agenda") rt29.renderProcedureAgendaPanel();
+    if (rt31.getActiveAppTab() === "agenda") rt31.renderProcedureAgendaPanel();
     return;
   }
   var filtered = visiblePatients.filter(patientMatchesSearch);
   if (!filtered.length) {
     list.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">Ning\xFAn paciente coincide con la b\xFAsqueda</div>';
     _lastRondaNavIds = [];
-    if (rt29.getActiveAppTab() === "agenda") rt29.renderProcedureAgendaPanel();
+    if (rt31.getActiveAppTab() === "agenda") rt31.renderProcedureAgendaPanel();
     return;
   }
   var pinned = filtered.filter(function(p) {
@@ -49867,7 +51605,7 @@ function renderPatientListNow() {
   _lastRondaNavIds = rondaNav;
   list.innerHTML = parts.join("");
   mountPatientListSortables();
-  if (rt29.getActiveAppTab() === "agenda") rt29.renderProcedureAgendaPanel();
+  if (rt31.getActiveAppTab() === "agenda") rt31.renderProcedureAgendaPanel();
 }
 function selectPatient(id) {
   if (id == null || id === "") return;
@@ -49878,9 +51616,9 @@ function selectPatient(id) {
   }
 }
 function selectPatientCore(id) {
-  var prevId = rt29.getActiveId();
-  var wasOnLab = rt29.getActiveAppTab() === "lab";
-  var appTab = rt29.getActiveAppTab();
+  var prevId = rt31.getActiveId();
+  var wasOnLab = rt31.getActiveAppTab() === "lab";
+  var appTab = rt31.getActiveAppTab();
   var patientChanged = prevId != null && String(prevId) !== String(id);
   if (patientChanged) {
     flushRecetaHuDraftIfMountedFor(prevId);
@@ -49888,8 +51626,8 @@ function selectPatientCore(id) {
     stashVpoForPatient(prevId);
     flushSaveState();
   }
-  rt29.setActiveId(id);
-  if (patientChanged) rt29.invalidateInnerTabRenderCache();
+  rt31.setActiveId(id);
+  if (patientChanged) rt31.invalidateInnerTabRenderCache();
   if (!patientChanged || !patchPatientListActiveHighlight(id)) {
     renderPatientList();
   }
@@ -49897,29 +51635,29 @@ function selectPatientCore(id) {
   var patientView = document.getElementById("patient-view");
   if (emptyState) emptyState.style.display = "none";
   if (patientView) patientView.style.display = "flex";
-  rt29.renderEstadoActualButton();
-  var settings2 = rt29.getSettings();
-  var inner = rt29.getActiveInner();
+  rt31.renderEstadoActualButton();
+  var settings2 = rt31.getSettings();
+  var inner = rt31.getActiveInner();
   if (patientChanged) {
     var migrated = migrateGranularInner(inner || "todo", settings2);
     if (migrated !== inner) {
       inner = migrated;
-      rt29.setActiveInner(migrated);
+      rt31.setActiveInner(migrated);
     }
   } else {
     if (isModeSala(settings2) && (inner === "notas" || inner === "indica" || !inner)) {
       if (getUiDensity() === "normal") {
-        rt29.setActiveInner("todo");
-        rt29.syncInnerTabVisualOnly();
+        rt31.setActiveInner("todo");
+        rt31.syncInnerTabVisualOnly();
       } else {
-        rt29.switchInnerTab("todo");
+        rt31.switchInnerTab("todo");
       }
     } else if (!isModeSala(settings2) && inner === "listado") {
       if (getUiDensity() === "normal") {
-        rt29.setActiveInner("todo");
-        rt29.syncInnerTabVisualOnly();
+        rt31.setActiveInner("todo");
+        rt31.syncInnerTabVisualOnly();
       } else {
-        rt29.switchInnerTab("todo");
+        rt31.switchInnerTab("todo");
       }
     }
     if (!isPaseMode() && getUiDensity() === "normal") {
@@ -49927,10 +51665,10 @@ function selectPatientCore(id) {
         return p && String(p.id) === String(id);
       });
       if (pmanejo && pmanejo.manejoPending && pmanejo.manejoPending.labSetId && !isManejoSectionHidden(settings2)) {
-        rt29.switchInnerTab("manejo");
+        rt31.switchInnerTab("manejo");
       }
     }
-    if (isPaseMode() && rt29.getActiveAppTab() === "nota") {
+    if (isPaseMode() && rt31.getActiveAppTab() === "nota") {
       if (inner === "todo" || !inner) {
         _roundOverviewMode = true;
       } else {
@@ -49938,19 +51676,19 @@ function selectPatientCore(id) {
       }
     }
   }
-  rt29.syncInnerTabVisualOnly();
-  rt29.refreshExpedienteAfterPatientSelect({ patientChanged });
-  if (appTab === "lab") rt29.renderLabHistoryPanel();
-  if (appTab === "med") rt29.renderMedRecetaPanel();
+  rt31.syncInnerTabVisualOnly();
+  rt31.refreshExpedienteAfterPatientSelect({ patientChanged });
+  if (appTab === "lab") rt31.renderLabHistoryPanel();
+  if (appTab === "med") rt31.renderMedRecetaPanel();
   if (wasOnLab && patientChanged) {
-    rt29.limpiarReporte();
-    rt29.setLabHistoryPanelCollapsed(false);
-    rt29.syncLabHistoryCollapseUI();
-    rt29.renderLabHistoryPanel();
+    rt31.limpiarReporte();
+    rt31.setLabHistoryPanelCollapsed(false);
+    rt31.syncLabHistoryCollapseUI();
+    rt31.renderLabHistoryPanel();
     if (isPaseMode()) {
-      rt29.syncWorkContextChrome();
+      rt31.syncWorkContextChrome();
     } else {
-      rt29.switchAppTab("lab");
+      rt31.switchAppTab("lab");
       var labHistCard = document.getElementById("lab-history-card");
       if (labHistCard) {
         window.setTimeout(function() {
@@ -49963,12 +51701,12 @@ function selectPatientCore(id) {
       }
     }
   } else {
-    rt29.syncWorkContextChrome();
+    rt31.syncWorkContextChrome();
   }
   syncRoundExpedienteLayout();
-  rt29.refreshTendenciasOrCultivosPanel();
-  if (isPaseMode()) rt29.renderPaseBoard();
-  if (rt29.getActiveId()) {
+  rt31.refreshTendenciasOrCultivosPanel();
+  if (isPaseMode()) rt31.renderPaseBoard();
+  if (rt31.getActiveId()) {
     requestAnimationFrame(function() {
       scrollActiveRondaCardIntoView();
     });
@@ -49997,7 +51735,7 @@ function deletePatient(e, id) {
     if (!confirm("\xBFEliminar este paciente y sus notas?")) return;
   }
   var label = target ? "Eliminar " + (target.nombre || "paciente") : "Eliminar paciente";
-  if (typeof rt29.pushUndoSnapshot === "function") rt29.pushUndoSnapshot(label);
+  if (typeof rt31.pushUndoSnapshot === "function") rt31.pushUndoSnapshot(label);
   if (!removePatientLocally(id)) return;
   var snap = target || { id, registro: "" };
   if (getActiveLiveSyncRoomId()) {
@@ -50009,23 +51747,84 @@ function deletePatient(e, id) {
     emitLiveSyncPatientDelete(snap);
   }
   saveState({ immediate: true });
-  rt29.addAuditEntry("patient-delete", "ok", 1, target ? target.registro || target.nombre || "" : "");
+  rt31.addAuditEntry("patient-delete", "ok", 1, target ? target.registro || target.nombre || "" : "");
   renderPatientList();
-  if (rt29.getActiveId()) selectPatient(rt29.getActiveId());
+  if (rt31.getActiveId()) selectPatient(rt31.getActiveId());
   else {
     var pv = document.getElementById("patient-view");
     var es = document.getElementById("empty-state");
     if (pv) pv.style.display = "none";
     if (es) es.style.display = "flex";
-    rt29.syncWorkContextChrome();
+    rt31.syncWorkContextChrome();
   }
 }
 function _prefillServicioForSala() {
   var srv = document.getElementById("m-servicio");
-  if (srv && isModeSala(rt29.getSettings()) && !srv.value) srv.value = getDefaultServicio(rt29.getSettings());
+  if (srv && isModeSala(rt31.getSettings()) && !srv.value) srv.value = getDefaultServicio(rt31.getSettings());
+}
+function _lastAdmissionLocationFromPatients() {
+  for (var i = patients.length - 1; i >= 0; i--) {
+    var p = patients[i];
+    if (!p || p.isDemo) continue;
+    var cuarto = String(p.cuarto || "").trim();
+    var cama = String(p.cama || "").trim();
+    if (cuarto && cama) return { cuarto, cama };
+  }
+  return { cuarto: "", cama: "" };
+}
+function _resolveAdmissionLocationDefaults(registro) {
+  var tour = getTourDemoAdmitDefaults(registro);
+  if (tour && tour.cuarto && tour.cama) return tour;
+  var st = rt31.getSettings();
+  var cuarto = getDefaultCuarto(st);
+  var cama = getDefaultCama(st);
+  if (cuarto && cama) return { cuarto, cama };
+  return _lastAdmissionLocationFromPatients();
+}
+function _prefillCuartoCamaForSala(registro) {
+  if (!isModeSala(rt31.getSettings())) return;
+  var loc = _resolveAdmissionLocationDefaults(registro);
+  var cuartoEl = document.getElementById("m-cuarto");
+  var camaEl = document.getElementById("m-cama");
+  if (cuartoEl && !String(cuartoEl.value || "").trim() && loc.cuarto) cuartoEl.value = loc.cuarto;
+  if (camaEl && !String(camaEl.value || "").trim() && loc.cama) camaEl.value = loc.cama;
+}
+function _rememberAdmissionLocation(cuarto, cama) {
+  if (!isModeSala(rt31.getSettings())) return;
+  var st = rt31.getSettings();
+  if (!st) return;
+  st.defaultCuarto = cuarto;
+  st.defaultCama = cama;
+  try {
+    storage.saveSettings(st);
+  } catch (e) {
+    console.error("_rememberAdmissionLocation:", e && e.message);
+  }
+}
+function _focusPatientAdmissionField(isFromLab) {
+  var fieldIds = isFromLab ? ["m-servicio", "m-cuarto", "m-cama"] : ["m-nombre-manual", "m-registro-manual", "m-servicio", "m-cuarto", "m-cama"];
+  for (var i = 0; i < fieldIds.length; i++) {
+    var el = document.getElementById(fieldIds[i]);
+    if (!el) continue;
+    if (el.closest && el.closest('[style*="display: none"]')) continue;
+    if (!String(el.value || "").trim()) {
+      try {
+        el.focus();
+      } catch (e) {
+      }
+      return;
+    }
+  }
+  var cama = document.getElementById("m-cama");
+  if (cama) {
+    try {
+      cama.focus();
+    } catch (e2) {
+    }
+  }
 }
 function _syncPatientModalModeFields() {
-  var sala = isModeSala(rt29.getSettings());
+  var sala = isModeSala(rt31.getSettings());
   var areaGroup = document.getElementById("m-area-group");
   var servicioLabel = document.getElementById("m-servicio-label");
   var servicioInput = document.getElementById("m-servicio");
@@ -50048,9 +51847,10 @@ function openAddModal() {
   document.getElementById("m-sexo").value = "F";
   _syncPatientModalModeFields();
   _prefillServicioForSala();
+  _prefillCuartoCamaForSala();
   document.getElementById("modal").classList.add("open");
   setTimeout(function() {
-    document.getElementById("m-nombre-manual").focus();
+    _focusPatientAdmissionField(false);
   }, 120);
 }
 var pendingAddPatientSavedCallback = null;
@@ -50078,14 +51878,14 @@ function openAddModalFromLabPatientData(p, opts) {
   });
   _syncPatientModalModeFields();
   _prefillServicioForSala();
+  _prefillCuartoCamaForSala(p.expediente || p.registro || "");
   document.getElementById("modal").classList.add("open");
   setTimeout(function() {
-    var first = document.getElementById("m-edad-num");
-    if (first) first.focus();
+    _focusPatientAdmissionField(true);
   }, 120);
 }
 function openAddModalFromLab() {
-  var lab = rt29.getActiveLab && rt29.getActiveLab();
+  var lab = rt31.getActiveLab && rt31.getActiveLab();
   if (!lab) {
     openAddModal();
     return;
@@ -50152,42 +51952,43 @@ function savePatient() {
   }
   var v = validatePatientForSave({ nombre, registro, edadNum, edadUnit });
   if (!v.ok) {
-    rt29.showToast(v.error, "error");
+    rt31.showToast(v.error, "error");
     shakePatientFieldsForError(v.error, isFromLab);
     return;
   }
   if (!edadNum) {
-    rt29.showToast("Ingresa la edad", "error");
+    rt31.showToast("Ingresa la edad", "error");
     shakePatientFieldsForError("Ingresa la edad", isFromLab);
     return;
   }
   var ageInt = parseInt(edadNum, 10);
   if (isNaN(ageInt) || ageInt < 0 || ageInt > 120) {
-    rt29.showToast("Edad inv\xE1lida", "error");
+    rt31.showToast("Edad inv\xE1lida", "error");
     shakePatientFieldsForError("Edad inv\xE1lida", isFromLab);
     return;
   }
   var edad = String(ageInt) + (edadUnit && edadUnit !== "a\xF1os" ? " " + edadUnit : "");
-  var salaMode = isModeSala(rt29.getSettings());
+  var salaMode = isModeSala(rt31.getSettings());
   var servicio = (document.getElementById("m-servicio").value || "").trim().toUpperCase();
   var area = salaMode ? servicio : (document.getElementById("m-area").value || "").trim().toUpperCase();
   var cuarto = (document.getElementById("m-cuarto").value || "").trim();
   var cama = (document.getElementById("m-cama").value || "").trim();
   if (!servicio) {
-    rt29.showToast(salaMode ? "Ingresa \xC1rea / Servicio" : "Ingresa servicio", "error");
+    rt31.showToast(salaMode ? "Ingresa \xC1rea / Servicio" : "Ingresa servicio", "error");
     shakePatientFieldsForError(salaMode ? "Ingresa \xC1rea / Servicio" : "Ingresa servicio", isFromLab);
     return;
   }
   if (!salaMode && !area) {
-    rt29.showToast("Ingresa \xE1rea / departamento", "error");
+    rt31.showToast("Ingresa \xE1rea / departamento", "error");
     shakePatientFieldsForError("Ingresa \xE1rea / departamento", isFromLab);
     return;
   }
   if (!cuarto || !cama) {
-    rt29.showToast("Ingresa cuarto y cama", "error");
+    rt31.showToast("Ingresa cuarto y cama", "error");
     shakePatientFieldsForError("Ingresa cuarto y cama", isFromLab);
     return;
   }
+  _rememberAdmissionLocation(cuarto, cama);
   var commit = function() {
     var dup = findDuplicatePatient(nombre, registro);
     if (dup) {
@@ -50251,6 +52052,8 @@ function commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cam
     cama,
     fromLab: !!isFromLab
   };
+  var adoptResult = adoptTourPatientOnCommit(patient, registro);
+  patient = adoptResult.patient;
   notes[patient.id] = {
     fecha,
     hora,
@@ -50278,22 +52081,37 @@ function commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cam
     interconsultas: "",
     otros: []
   };
-  rt29.applyDefaultsToNewPatient(patient.id);
-  rt29.applyDefaultsToNewIndicaciones(patient.id);
+  rt31.applyDefaultsToNewPatient(patient.id);
+  rt31.applyDefaultsToNewIndicaciones(patient.id);
   patients.push(patient);
   saveState();
   var onSaved = pendingAddPatientSavedCallback;
   pendingAddPatientSavedCallback = null;
   closeModal();
   var pendingLab = null;
-  if (isFromLab) {
-    pendingLab = rt29.consumeActiveLab ? rt29.consumeActiveLab() : null;
-    if (rt29.clearLabOutputUi) rt29.clearLabOutputUi();
-    rt29.switchAppTab("nota");
+  var stayOnLabForTour = isFromLab && shouldTourStayOnLabAfterLabCommit();
+  if (isFromLab && !stayOnLabForTour) {
+    pendingLab = rt31.consumeActiveLab ? rt31.consumeActiveLab() : null;
+    if (rt31.clearLabOutputUi) rt31.clearLabOutputUi();
+    rt31.switchAppTab("nota");
+  } else if (isFromLab && stayOnLabForTour) {
+    pendingLab = null;
   }
   renderPatientList();
-  selectPatient(patient.id);
-  rt29.showToast("Paciente agregado", "success");
+  var activeId2 = patient.id;
+  if (shouldSelectTourPrimaryAfterLabCommit(patient.id, patients)) {
+    var perez = findTourDemoPatientByRegistro(patients, DEMO_REGISTRO);
+    if (perez) activeId2 = perez.id;
+  }
+  selectPatient(activeId2);
+  rt31.showToast("Paciente agregado", "success");
+  if (adoptResult.afterCommit) {
+    try {
+      adoptResult.afterCommit(patient);
+    } catch (e) {
+      console.error(e);
+    }
+  }
   if (onSaved) {
     try {
       onSaved(patient);
@@ -50302,9 +52120,9 @@ function commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cam
     }
   }
   if (pendingLab) {
-    rt29.restoreActiveLab(pendingLab);
-    rt29.enviarLabsANota();
-    rt29.consumeActiveLab();
+    rt31.restoreActiveLab(pendingLab);
+    rt31.enviarLabsANota();
+    rt31.consumeActiveLab();
   }
 }
 function generatePatientId() {
@@ -50314,7 +52132,7 @@ function buildPatientEntry(patientId) {
   var patient = patients.find(function(p) {
     return p.id === patientId;
   });
-  if (!patient || patient.id === DEMO_PATIENT_ID2) return null;
+  if (!patient || patient.id === DEMO_PATIENT_ID) return null;
   var patientSnap = { ...patient };
   ensureMonitoreo(patientSnap);
   if (patient.monitoreo != null && typeof patient.monitoreo === "object") {
@@ -50376,7 +52194,7 @@ function initPatientModalEnterSave() {
     if (e.key === "Enter" && e.target.tagName !== "TEXTAREA" && e.target.tagName !== "SELECT") savePatient();
   });
 }
-var windowHandlers10 = {
+var windowHandlers12 = {
   onPatientSearchInput,
   focusPatientSearchInput,
   togglePatientPinned,
@@ -50398,7 +52216,7 @@ var windowHandlers10 = {
 
 // public/js/presentation-mode.mjs
 var presentationActive = false;
-var rt30 = {
+var rt32 = {
   getActiveId() {
     return null;
   },
@@ -50409,7 +52227,7 @@ var rt30 = {
 };
 function registerPresentationRuntime(partial) {
   if (!partial || typeof partial !== "object") return;
-  Object.assign(rt30, partial);
+  Object.assign(rt32, partial);
 }
 function isPresentationModeActive() {
   return presentationActive;
@@ -50429,10 +52247,10 @@ function getDemoState() {
     renderPatientList,
     selectPatient,
     getActiveId: function() {
-      return rt30.getActiveId();
+      return rt32.getActiveId();
     },
     setActiveId: function(id) {
-      rt30.setActiveId(id);
+      rt32.setActiveId(id);
     }
   };
 }
@@ -50455,7 +52273,7 @@ function startPresentationMode() {
   var es = document.getElementById("empty-state");
   if (pv) pv.style.display = "";
   if (es) es.style.display = "none";
-  rt30.showToast("Modo presentaci\xF3n: DEMO P\xC9REZ", "info");
+  rt32.showToast("Modo presentaci\xF3n: DEMO P\xC9REZ", "info");
 }
 function stopPresentationMode() {
   if (!presentationActive) return;
@@ -50468,13 +52286,13 @@ function stopPresentationMode() {
   limpiarReporte();
   var pv = document.getElementById("patient-view");
   var es = document.getElementById("empty-state");
-  if (!rt30.getActiveId()) {
+  if (!rt32.getActiveId()) {
     if (pv) pv.style.display = "none";
     if (es) es.style.display = "flex";
   } else {
-    selectPatient(rt30.getActiveId());
+    selectPatient(rt32.getActiveId());
   }
-  rt30.showToast("Modo presentaci\xF3n terminado", "info");
+  rt32.showToast("Modo presentaci\xF3n terminado", "info");
 }
 function togglePresentationMode() {
   if (presentationActive) stopPresentationMode();
@@ -50499,7 +52317,7 @@ function recoverPresentationPatientsOnBoot() {
   presentationActive = false;
   syncPresentationBodyClass();
   renderPatientList();
-  if (rt30.getActiveId()) selectPatient(rt30.getActiveId());
+  if (rt32.getActiveId()) selectPatient(rt32.getActiveId());
   else if (patients.length) selectPatient(patients[0].id);
   return true;
 }
@@ -50705,7 +52523,7 @@ function assignLanesByInterval(items) {
 }
 
 // public/js/features/agenda.mjs
-var rt31 = {
+var rt33 = {
   getActiveId() {
     return null;
   },
@@ -50716,7 +52534,7 @@ var rt31 = {
 };
 function registerProcedureAgendaRuntime(partial) {
   if (!partial || typeof partial !== "object") return;
-  Object.assign(rt31, partial);
+  Object.assign(rt33, partial);
 }
 var procedureAgendaWeekOffset = 0;
 function esc27(s) {
@@ -50914,7 +52732,7 @@ function renderProcedureAgendaPanel() {
   board.appendChild(bodyRow);
   mount.innerHTML = "";
   mount.appendChild(board);
-  if (isPaseMode()) rt31.renderPaseBoard();
+  if (isPaseMode()) rt33.renderPaseBoard();
 }
 function openProcedureAgendaModal(editEventId) {
   var bd = document.getElementById("procedure-agenda-modal");
@@ -50957,7 +52775,7 @@ function openProcedureAgendaModal(editEventId) {
       document.getElementById("pa-anesthesia").checked = !!found.anesthesiaScheduled;
     }
   } else {
-    var aid7 = rt31.getActiveId();
+    var aid7 = rt33.getActiveId();
     if (sel && elig.length && aid7 && elig.some(function(p) {
       return p.id === aid7;
     })) {
@@ -50989,7 +52807,7 @@ function saveProcedureAgendaFromModal() {
   function showPaErr(msg) {
     errEl.style.display = "block";
     errEl.textContent = msg;
-    rt31.showToast(msg, "error");
+    rt33.showToast(msg, "error");
   }
   if (errEl) {
     errEl.style.display = "none";
@@ -51053,7 +52871,7 @@ function saveProcedureAgendaFromModal() {
   storage.saveScheduledProcedures(next);
   emitLiveSyncAgendaUpsert(eventObj);
   closeProcedureAgendaModal();
-  rt31.showToast("Procedimiento guardado", "success");
+  rt33.showToast("Procedimiento guardado", "success");
   renderProcedureAgendaPanel();
 }
 function deleteProcedureAgendaFromModal() {
@@ -51070,10 +52888,10 @@ function deleteProcedureAgendaFromModal() {
   storage.saveScheduledProcedures(arr);
   emitLiveSyncAgendaDelete(editId, delAt);
   closeProcedureAgendaModal();
-  rt31.showToast("Eliminado de la agenda", "success");
+  rt33.showToast("Eliminado de la agenda", "success");
   renderProcedureAgendaPanel();
 }
-var windowHandlers11 = {
+var windowHandlers13 = {
   navigateProcedureAgendaWeek,
   openProcedureAgendaModal,
   closeProcedureAgendaModal,
@@ -51082,7 +52900,7 @@ var windowHandlers11 = {
 };
 
 // public/js/features/productivity.mjs
-var rt32 = {
+var rt34 = {
   getActiveId() {
     return null;
   },
@@ -51119,7 +52937,7 @@ var rt32 = {
 };
 function registerProductivityRuntime(partial) {
   if (!partial || typeof partial !== "object") return;
-  Object.assign(rt32, partial);
+  Object.assign(rt34, partial);
 }
 function esc28(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -51139,7 +52957,7 @@ function buildUndoSnapshotPayload(label) {
     label: label || "operaci\xF3n",
     at: (/* @__PURE__ */ new Date()).toISOString(),
     theme: localStorage.getItem("theme") || "light",
-    activeId: rt32.getActiveId(),
+    activeId: rt34.getActiveId(),
     data: {
       patients: cloneForUndo(patients) || [],
       notes: cloneForUndo(notes) || {},
@@ -51147,7 +52965,7 @@ function buildUndoSnapshotPayload(label) {
       labHistory: cloneForUndo(labHistory) || {},
       medRecetaByPatient: cloneForUndo(medRecetaByPatient) || [],
       scheduledProcedures: cloneForUndo(storage.getScheduledProcedures()) || [],
-      settings: cloneForUndo(rt32.getSettings()) || {},
+      settings: cloneForUndo(rt34.getSettings()) || {},
       medCatalog: cloneForUndo(storage.getMedCatalog()) || storage.getMedCatalog()
     }
   };
@@ -51172,7 +52990,7 @@ function pushUndoSnapshot2(label) {
   stack.unshift(snap);
   saveUndoStack(stack);
   refreshUndoButtonState();
-  rt32.addAuditEntry("undo-snapshot", "ok", 0, snap.label);
+  rt34.addAuditEntry("undo-snapshot", "ok", 0, snap.label);
 }
 function refreshUndoButtonState() {
   var btn = document.getElementById("btn-undo-op");
@@ -51188,7 +53006,7 @@ function refreshUndoButtonState() {
 async function undoLastOperation() {
   var stack = getUndoStack();
   if (!stack.length) {
-    rt32.showToast("No hay operaciones para deshacer.", "error");
+    rt34.showToast("No hay operaciones para deshacer.", "error");
     return;
   }
   var snap = stack[0];
@@ -51209,7 +53027,7 @@ async function undoLastOperation() {
   }
   if (snap.theme === "dark" || snap.theme === "light") localStorage.setItem("theme", snap.theme);
   await saveState({ immediate: true });
-  rt32.addAuditEntry("undo-restore", "ok", 0, snap.label || "");
+  rt34.addAuditEntry("undo-restore", "ok", 0, snap.label || "");
   location.reload();
 }
 function applyFocusModeFromStorage() {
@@ -51223,9 +53041,9 @@ function toggleFocusMode() {
   localStorage.setItem(FOCUS_MODE_KEY, on ? "1" : "0");
   var btn = document.getElementById("btn-toggle-focus-mode");
   if (btn) btn.textContent = on ? "Desactivar modo enfoque" : "Activar modo enfoque";
-  if (on) rt32.closeSettingsDropdown();
-  rt32.showToast(on ? "Modo enfoque activado \xB7 F6 para salir" : "Modo enfoque desactivado", "success");
-  rt32.addAuditEntry("focus-mode", "ok", 0, on ? "on" : "off");
+  if (on) rt34.closeSettingsDropdown();
+  rt34.showToast(on ? "Modo enfoque activado \xB7 F6 para salir" : "Modo enfoque desactivado", "success");
+  rt34.addAuditEntry("focus-mode", "ok", 0, on ? "on" : "off");
 }
 var _unifiedSearchCurrent = [];
 function openUnifiedSearch() {
@@ -51360,19 +53178,19 @@ function updateUnifiedSearchResults() {
 function selectUnifiedSearchResult(idx) {
   var r = _unifiedSearchCurrent[idx];
   if (!r) return;
-  rt32.selectPatient(r.id);
-  rt32.switchAppTab(r.tab);
-  if (r.inner) rt32.switchInnerTab(r.inner);
+  rt34.selectPatient(r.id);
+  rt34.switchAppTab(r.tab);
+  if (r.inner) rt34.switchInnerTab(r.inner);
   closeUnifiedSearch();
 }
 var _extraTemplateEditing = null;
 function ensureExtraTemplatesArray() {
-  var settings2 = rt32.getSettings();
+  var settings2 = rt34.getSettings();
   if (!Array.isArray(settings2.extraTemplates)) settings2.extraTemplates = [];
   return settings2.extraTemplates;
 }
 function persistSettings() {
-  localStorage.setItem("rpc-settings", JSON.stringify(rt32.getSettings()));
+  localStorage.setItem("rpc-settings", JSON.stringify(rt34.getSettings()));
 }
 function openExtraTemplatesManager() {
   var m = document.getElementById("extra-templates-modal");
@@ -51438,7 +53256,7 @@ function cancelExtraTemplateEdit() {
 function saveExtraTemplateFromEditor() {
   var label = (document.getElementById("extra-tmpl-label").value || "").trim();
   if (!label) {
-    rt32.showToast("Ingresa un nombre para la plantilla", "error");
+    rt34.showToast("Ingresa un nombre para la plantilla", "error");
     return;
   }
   var dieta = (document.getElementById("extra-tmpl-dieta").value || "").trim();
@@ -51465,11 +53283,11 @@ function saveExtraTemplateFromEditor() {
     });
   }
   persistSettings();
-  rt32.addAuditEntry("extra-template-save", "ok", arr.length, label);
-  rt32.showToast("Plantilla guardada", "success");
+  rt34.addAuditEntry("extra-template-save", "ok", arr.length, label);
+  rt34.showToast("Plantilla guardada", "success");
   renderExtraTemplatesList();
   cancelExtraTemplateEdit();
-  if (rt32.getActiveId()) rt32.renderIndicaForm();
+  if (rt34.getActiveId()) rt34.renderIndicaForm();
 }
 function deleteExtraTemplate(id) {
   var arr = ensureExtraTemplatesArray();
@@ -51478,12 +53296,12 @@ function deleteExtraTemplate(id) {
   });
   if (!tmpl) return;
   if (!confirm('\xBFEliminar la plantilla "' + (tmpl.label || "") + '"?')) return;
-  var settings2 = rt32.getSettings();
+  var settings2 = rt34.getSettings();
   settings2.extraTemplates = arr.filter(function(t2) {
     return t2.id !== id;
   });
   persistSettings();
-  rt32.addAuditEntry(
+  rt34.addAuditEntry(
     "extra-template-delete",
     "ok",
     settings2.extraTemplates.length,
@@ -51491,7 +53309,7 @@ function deleteExtraTemplate(id) {
   );
   renderExtraTemplatesList();
   cancelExtraTemplateEdit();
-  if (rt32.getActiveId()) rt32.renderIndicaForm();
+  if (rt34.getActiveId()) rt34.renderIndicaForm();
 }
 function isTypingContext(target) {
   if (!target) return false;
@@ -51512,7 +53330,7 @@ function initProductivityKeyboardShortcuts() {
         var roundKey = (e.key || "").toLowerCase();
         if (roundKey === "j" || roundKey === "k") {
           e.preventDefault();
-          rt32.advanceRondaPatient(roundKey === "j" ? 1 : -1);
+          rt34.advanceRondaPatient(roundKey === "j" ? 1 : -1);
           return;
         }
       }
@@ -51528,16 +53346,16 @@ function initProductivityKeyboardShortcuts() {
       else openUnifiedSearch();
     } else if (k === "n") {
       e.preventDefault();
-      rt32.openAddModal();
+      rt34.openAddModal();
     } else if (k === "s") {
       e.preventDefault();
-      if (!rt32.getActiveId()) {
-        rt32.showToast("Selecciona un paciente primero", "error");
+      if (!rt34.getActiveId()) {
+        rt34.showToast("Selecciona un paciente primero", "error");
         return;
       }
-      rt32.saveState();
-      rt32.addAuditEntry("quick-save", "ok", 1, String(rt32.getActiveId()));
-      rt32.showToast("Estado guardado \u2713", "success");
+      rt34.saveState();
+      rt34.addAuditEntry("quick-save", "ok", 1, String(rt34.getActiveId()));
+      rt34.showToast("Estado guardado \u2713", "success");
     }
   });
   applyFocusModeFromStorage();
@@ -52375,533 +54193,6 @@ function scheduleDeferredUiInits() {
   _rpcDeferInit(initProductivityKeyboardShortcuts);
 }
 
-// public/js/features/estado-actual-parse-variants.mjs
-var SOPORTE_FROM_TAIL = [
-  [/VM\s+NO\s+INVASIVA|VMNI|VNI/i, "VM no invasiva"],
-  [/ALTO\s+FLUJO|OAF\b/i, "Alto flujo"],
-  [/PUNTILLAS?\s+NASALES?|C[Nn]?\s*AF/i, "Puntillas nasales"],
-  [/AIRE\s+AMBIENTE|\bAA\b/i, "Aire ambiente"]
-];
-function soporteFromSatTail(tail) {
-  var s = String(tail || "").trim();
-  if (!s) return null;
-  var u = s.toUpperCase();
-  for (var i = 0; i < SOPORTE_FROM_TAIL.length; i++) {
-    if (SOPORTE_FROM_TAIL[i][0].test(u)) return SOPORTE_FROM_TAIL[i][1];
-  }
-  return null;
-}
-function parseSatLineVariants(line) {
-  var m = line.match(
-    /^(?:SATURACI(?:O|Ó)N(?:\s+O2)?|SAT(?:O2)?|SPO2)\s*:?\s*([\d.,]+)\s*%?\s*(.*)$/i
-  );
-  if (!m) return null;
-  var n = Number(String(m[1]).replace(/,/g, ""));
-  if (!Number.isFinite(n)) return null;
-  return { value: n, soporteHint: soporteFromSatTail(m[2]) };
-}
-function stripVitalUnitSuffix(raw) {
-  return String(raw || "").replace(/\s*(?:LPM|RPM|X\/MIN|\/MIN|MMHG|MM\s*HG|MG\/DL|CC|ML)\s*$/i, "").trim();
-}
-
-// public/js/features/estado-actual-parser.mjs
-function parseNumberToken(raw) {
-  if (raw == null) return null;
-  var s = String(raw).trim().replace(/\s/g, "").replace(/,/g, "");
-  if (!s) return null;
-  var n = Number(s);
-  return Number.isFinite(n) ? n : null;
-}
-function parseGlucometriaToken(token) {
-  var s = String(token || "").trim();
-  if (!s) return null;
-  var m = s.match(/^([\d.,]+)(?:\s*(?:@|\s)\s*(\d{1,2}:\d{2}))?$/i);
-  if (!m) {
-    m = s.match(/^([\d.,]+)\s*\(\s*(\d{1,2}:\d{2})\s*\)$/i);
-  }
-  if (!m) return null;
-  var value = parseNumberToken(m[1]);
-  if (value == null) return null;
-  var out = { value };
-  if (m[2]) {
-    var parts = m[2].split(":");
-    out.time = pad24(parts[0]) + ":" + pad24(parts[1]);
-  }
-  return out;
-}
-function pad24(n) {
-  return String(n).padStart(2, "0");
-}
-function splitGlucoseList(rest) {
-  var s = String(rest || "").replace(/\s*MG\s*\/?\s*DL\s*$/i, "").trim();
-  if (!s) return [];
-  var tokens = [];
-  var buf = "";
-  var depth = 0;
-  for (var i = 0; i < s.length; i++) {
-    var ch = s[i];
-    if (ch === "(") {
-      depth++;
-      buf += ch;
-      continue;
-    }
-    if (ch === ")") {
-      depth = Math.max(0, depth - 1);
-      buf += ch;
-      continue;
-    }
-    if (ch === "," && depth === 0) {
-      if (buf.trim()) tokens.push(buf.trim());
-      buf = "";
-      continue;
-    }
-    buf += ch;
-  }
-  if (buf.trim()) tokens.push(buf.trim());
-  return tokens;
-}
-function parseTempLine(line) {
-  var m = line.match(
-    /^(?:T[°º]?\s*:?|TEMP(?:ERATURA)?\s*:?)\s*([\d.,]+)\s*(?:°\s*C|°C)?(?:\s*(?:@|\s|-|a\s+las?\s+)?\s*(\d{1,2}:\d{2}))?/i
-  );
-  if (!m) return null;
-  var temp = parseNumberToken(m[1]);
-  if (temp == null) return null;
-  var out = { temp };
-  if (m[2]) {
-    var p = m[2].split(":");
-    out.time = pad24(p[0]) + ":" + pad24(p[1]);
-  }
-  return out;
-}
-function parseLine(line, result) {
-  var trimmed = String(line || "").trim();
-  if (!trimmed) return;
-  var temp = parseTempLine(trimmed);
-  if (temp) {
-    result.vitals.temp = temp.temp;
-    if (temp.time) result.alteredAt.temp = temp.time;
-    result.recognized.push("temp");
-    return;
-  }
-  var fc = trimmed.match(/^(?:FC|F\.?\s*C\.?)\s*:?\s*([\d.,]+)/i);
-  if (fc) {
-    result.vitals.fc = parseNumberToken(stripVitalUnitSuffix(fc[1]));
-    result.recognized.push("fc");
-    return;
-  }
-  var fr = trimmed.match(/^(?:FR|F\.?\s*R\.?)\s*:?\s*([\d.,]+)/i);
-  if (fr) {
-    result.vitals.fr = parseNumberToken(stripVitalUnitSuffix(fr[1]));
-    result.recognized.push("fr");
-    return;
-  }
-  var sat = parseSatLineVariants(trimmed);
-  if (sat != null) {
-    result.vitals.sat = sat.value;
-    if (sat.soporteHint) result.soporteHint = sat.soporteHint;
-    result.recognized.push("sat");
-    return;
-  }
-  var ta = trimmed.match(/^(?:TA|T\.?\s*A\.?)\s*:?\s*([\d.,]+)\s*\/\s*([\d.,]+)/i);
-  if (ta) {
-    result.vitals.tas = parseNumberToken(ta[1]);
-    result.vitals.tad = parseNumberToken(ta[2]);
-    result.recognized.push("ta");
-    return;
-  }
-  var dxt = trimmed.match(/^(?:DXT|DESTROX(?:IAS)?|GLUCOMETR(?:ÍA|IA)?(?:S)?)\s*:?\s*(.+)$/i);
-  if (dxt) {
-    var tokens = splitGlucoseList(dxt[1]);
-    for (var i = 0; i < tokens.length; i++) {
-      var g3 = parseGlucometriaToken(tokens[i]);
-      if (g3) result.glucometrias.push(g3);
-    }
-    if (tokens.length && !result.glucometrias.length) {
-      result.warnings.push("No se pudieron leer valores DXT en: " + dxt[1]);
-    } else {
-      result.recognized.push("dxt");
-    }
-    return;
-  }
-  var ing = trimmed.match(/^(?:I|ING(?:RESOS)?)\s*:?\s*(.+)$/i);
-  if (ing) {
-    result.io.ing = parseIoIngresoField(ing[1]);
-    result.recognized.push("ing");
-    return;
-  }
-  var evac = trimmed.match(/^(?:EVAC|EVACUAC(?:IONES)?)\s*:?\s*(.+)$/i);
-  if (evac) {
-    result.io.evac = parseIoEvacField(evac[1]);
-    result.recognized.push("evac");
-    return;
-  }
-  var egr = trimmed.match(/^(?:E(?!VAC)|EGR(?:ESOS)?)\s*:?\s*(.+)$/i);
-  if (egr) {
-    var egrBody = String(egr[1]).trim();
-    if (/^(?:NC|NO\s+CUANTIFICADA)$/i.test(egrBody)) {
-      result.io.egrParts = [{ kind: "diuresis", label: "DIURESIS", value: "NC" }];
-    } else {
-      result.io.egrParts = parseIoEgresoLine(egrBody);
-    }
-    result.io.egr = diuresisValueFromParts(result.io.egrParts);
-    result.recognized.push("egr");
-    return;
-  }
-  var bal = trimmed.match(/^(?:B|BAL(?:ANCE)?)\s*:?\s*(.+)$/i);
-  if (bal) {
-    result.recognized.push("balance-ignored");
-    return;
-  }
-  result.warnings.push("L\xEDnea no reconocida: " + trimmed);
-}
-function scanInlinePatterns(text, result) {
-  if (result.recognized.indexOf("temp") < 0) {
-    var t2 = text.match(/(?:T[°º]?\s*:?|TEMP(?:ERATURA)?\s*:?)\s*([\d.,]+)/i);
-    if (t2) {
-      result.vitals.temp = parseNumberToken(t2[1]);
-      result.recognized.push("temp");
-    }
-  }
-  if (result.recognized.indexOf("fc") < 0) {
-    var fc = text.match(/\bFC\s*:?\s*([\d.,]+)/i);
-    if (fc) {
-      result.vitals.fc = parseNumberToken(fc[1]);
-      result.recognized.push("fc");
-    }
-  }
-  if (result.recognized.indexOf("fr") < 0) {
-    var fr = text.match(/\bFR\s*:?\s*([\d.,]+)/i);
-    if (fr) {
-      result.vitals.fr = parseNumberToken(fr[1]);
-      result.recognized.push("fr");
-    }
-  }
-  if (result.recognized.indexOf("sat") < 0) {
-    var satM = text.match(
-      /^(?:SATURACI(?:O|Ó)N(?:\s+O2)?|SAT(?:O2)?|SPO2)\s*:?\s*([\d.,]+)\s*%?\s*(.*)$/im
-    );
-    if (satM) {
-      var satInline = parseSatLineVariants(satM[0]);
-      if (satInline) {
-        result.vitals.sat = satInline.value;
-        if (satInline.soporteHint) result.soporteHint = satInline.soporteHint;
-        result.recognized.push("sat");
-      }
-    }
-  }
-  if (result.recognized.indexOf("ta") < 0) {
-    var ta = text.match(/\bTA\s*:?\s*([\d.,]+)\s*\/\s*([\d.,]+)/i);
-    if (ta) {
-      result.vitals.tas = parseNumberToken(ta[1]);
-      result.vitals.tad = parseNumberToken(ta[2]);
-      result.recognized.push("ta");
-    }
-  }
-  if (result.recognized.indexOf("dxt") < 0) {
-    var dxt = text.match(/\b(?:DXT|DESTROX(?:IAS)?)\s*:?\s*([^|\n]+?)(?:\s*(?:\||$)|\s+I\s*:|\s+E\s*:)/i);
-    if (!dxt) dxt = text.match(/\b(?:DXT|DESTROX(?:IAS)?)\s*:?\s*(.+)$/im);
-    if (dxt) {
-      var tokens = splitGlucoseList(dxt[1]);
-      for (var i = 0; i < tokens.length; i++) {
-        var g3 = parseGlucometriaToken(tokens[i]);
-        if (g3) result.glucometrias.push(g3);
-      }
-      if (result.glucometrias.length) result.recognized.push("dxt");
-    }
-  }
-  if (result.recognized.indexOf("ing") < 0) {
-    var ing = text.match(/\bI\s*:?\s*([\d.,]+)/i);
-    if (ing) {
-      result.io.ing = parseIoIngresoField(ing[1]);
-      result.recognized.push("ing");
-    }
-  }
-  if (result.recognized.indexOf("egr") < 0) {
-    var egr = text.match(/\bE\s*:?\s*(.+?)(?:\s*$)/im);
-    if (egr) {
-      result.io.egrParts = parseIoEgresoLine(egr[1]);
-      result.io.egr = diuresisValueFromParts(result.io.egrParts);
-      result.recognized.push("egr");
-    }
-  }
-  if (result.recognized.indexOf("evac") < 0) {
-    var evac = text.match(/\bEVAC(?:UAC(?:IONES)?)?\s*:?\s*(.+?)(?:\s*$)/im);
-    if (evac) {
-      result.io.evac = parseIoEvacField(evac[1]);
-      result.recognized.push("evac");
-    }
-  }
-}
-function parseEstadoActualPaste(raw) {
-  var text = String(raw == null ? "" : raw).trim();
-  var vitals = {
-    tas: null,
-    tad: null,
-    fc: null,
-    fr: null,
-    temp: null,
-    sat: null
-  };
-  var alteredAt = {};
-  var glucometrias = [];
-  var io = { ing: null, egr: null, egrParts: [], evac: null };
-  var recognized = [];
-  var warnings = [];
-  if (!text) {
-    return {
-      ok: false,
-      error: "Pega el texto de monitoreo",
-      vitals,
-      alteredAt,
-      glucometrias,
-      io,
-      recognized,
-      warnings
-    };
-  }
-  var result = {
-    ok: true,
-    vitals,
-    alteredAt,
-    glucometrias,
-    io,
-    recognized,
-    warnings,
-    soporteHint: null
-  };
-  var lines = text.split(/\r?\n/).map(function(l) {
-    return l.trim();
-  });
-  var nonEmpty = lines.filter(Boolean);
-  if (!nonEmpty.length) nonEmpty = [text];
-  for (var i = 0; i < nonEmpty.length; i++) {
-    parseLine(nonEmpty[i], result);
-  }
-  if (!result.recognized.length) {
-    scanInlinePatterns(text, result);
-  }
-  var hasData = result.recognized.length > 0 || Object.keys(result.vitals).some(function(k) {
-    return result.vitals[k] != null;
-  }) || result.glucometrias.length > 0 || result.io.ing != null || result.io.egr != null || result.io.egrParts && result.io.egrParts.length > 0 || result.io.evac != null;
-  if (!hasData) {
-    result.ok = false;
-    result.error = "No se reconoci\xF3 ning\xFAn campo (T\xB0, FC, TA, DXT, I, E\u2026)";
-  }
-  return result;
-}
-function formatEstadoActualParsePreview(parsed) {
-  if (!parsed || !parsed.ok) {
-    return toEaSalidaText(parsed && parsed.error ? parsed.error : "Sin datos");
-  }
-  var parts = [];
-  if (parsed.vitals.temp != null) {
-    parts.push("TEMP " + parsed.vitals.temp + " \xB0C" + (parsed.alteredAt.temp ? " @ " + parsed.alteredAt.temp : ""));
-  }
-  if (parsed.vitals.fc != null) parts.push("FC " + parsed.vitals.fc + " LPM");
-  if (parsed.vitals.fr != null) parts.push("FR " + parsed.vitals.fr + " RPM");
-  if (parsed.vitals.sat != null) {
-    var satLine = "SATURACION " + parsed.vitals.sat + "%";
-    if (parsed.soporteHint) satLine += " " + toEaSalidaText(parsed.soporteHint);
-    parts.push(satLine);
-  }
-  if (parsed.vitals.tas != null || parsed.vitals.tad != null) {
-    parts.push("TA " + (parsed.vitals.tas ?? "\u2014") + "/" + (parsed.vitals.tad ?? "\u2014") + " MMHG");
-  }
-  if (parsed.glucometrias.length) {
-    parts.push(
-      "DXT " + parsed.glucometrias.map(function(g3) {
-        return String(g3.value) + (g3.time ? "@" + g3.time : "");
-      }).join(", ") + " MG/DL"
-    );
-  }
-  if (parsed.io.ing != null) parts.push("I " + parsed.io.ing + " CC");
-  if (parsed.io.egrParts && parsed.io.egrParts.length) {
-    parts.push("E " + serializeEgrPartsToFormText(parsed.io.egrParts));
-  } else if (parsed.io.egr != null) {
-    parts.push("E " + toEaSalidaText(parsed.io.egr));
-  }
-  if (parsed.io.evac != null) parts.push("EVAC " + toEaSalidaText(parsed.io.evac));
-  if (parsed.recognized.indexOf("balance-ignored") >= 0) {
-    parts.push("B (CALCULADO AL APLICAR)");
-  }
-  if (parsed.warnings.length) {
-    parts.push("AVISOS: " + parsed.warnings.join("; "));
-  }
-  return toEaSalidaText(parts.length ? parts.join(" \xB7 ") : "Sin campos detectados");
-}
-
-// public/js/features/estado-actual-paste-modal.mjs
-var rt33 = {
-  showToast() {
-  },
-  applyParsed() {
-  }
-};
-var SAMPLE_TEXT = "T\xB0: 38.7 \xB0C\nFC: 113 LPM\nFR: 19 RPM\nTA: 140/60 MMHG\nDXT: 198, 174, 101, 252 MG/DL\nSAT: 97% AL AIRE AMBIENTE\nI: 2,815 CC\nE: NO CUANTIFICADA\nB: NC\nEVAC: NO REPORTADAS";
-function registerEstadoActualPasteModalRuntime(partial) {
-  if (partial && typeof partial === "object") Object.assign(rt33, partial);
-}
-function getTextarea() {
-  return (
-    /** @type {HTMLTextAreaElement | null} */
-    document.getElementById("ea-paste-input")
-  );
-}
-function getPreviewEl() {
-  return document.getElementById("ea-paste-preview");
-}
-function refreshPreview() {
-  var ta = getTextarea();
-  var preview = getPreviewEl();
-  if (!preview) return;
-  var parsed = parseEstadoActualPaste(ta ? ta.value : "");
-  preview.textContent = formatEstadoActualParsePreview(parsed);
-  preview.classList.toggle("ea-paste-preview--error", !parsed.ok);
-}
-function ensureRegistroModalOpen() {
-  var reg = document.getElementById("ea-registro-backdrop");
-  if (reg && reg.classList.contains("open")) return;
-  if (typeof window.openEstadoActualRegistroModal === "function") {
-    window.openEstadoActualRegistroModal();
-  }
-}
-function openEstadoActualPasteModal(opts) {
-  opts = opts || {};
-  if (!opts.skipRegistro) ensureRegistroModalOpen();
-  var backdrop = document.getElementById("ea-paste-backdrop");
-  var ta = getTextarea();
-  if (!backdrop || !ta) {
-    rt33.showToast("Pegar monitoreo no disponible", "error");
-    return;
-  }
-  ta.value = opts.prefillSample ? SAMPLE_TEXT : "";
-  refreshPreview();
-  backdrop.classList.add("open");
-  backdrop.setAttribute("aria-hidden", "false");
-  ta.focus();
-}
-function closeEstadoActualPasteModal() {
-  var backdrop = document.getElementById("ea-paste-backdrop");
-  if (!backdrop) return;
-  backdrop.classList.remove("open");
-  backdrop.setAttribute("aria-hidden", "true");
-}
-function confirmEstadoActualPaste() {
-  var ta = getTextarea();
-  var parsed = parseEstadoActualPaste(ta ? ta.value : "");
-  if (!parsed.ok) {
-    rt33.showToast(parsed.error || "No se pudo interpretar el texto", "error");
-    return;
-  }
-  closeEstadoActualPasteModal();
-  if (typeof rt33.applyParsed === "function") {
-    rt33.applyParsed(parsed, { fromNestedPaste: true });
-    rt33.showToast("Datos aplicados \u2014 revisa y registra", "success");
-  }
-}
-function wireEstadoActualPasteModal() {
-  var ta = getTextarea();
-  if (ta && !ta.dataset.eaPasteWired) {
-    ta.dataset.eaPasteWired = "1";
-    ta.addEventListener("input", refreshPreview);
-    ta.placeholder = SAMPLE_TEXT;
-  }
-}
-var windowHandlers12 = {
-  openEstadoActualPasteModal,
-  closeEstadoActualPasteModal,
-  confirmEstadoActualPaste
-};
-
-// public/js/features/estado-actual-registro-modal.mjs
-var rt34 = {
-  ensureForm() {
-  },
-  resetForm() {
-  },
-  showToast() {
-  }
-};
-var dismissWired = false;
-function registerEstadoActualRegistroModalRuntime(partial) {
-  if (partial && typeof partial === "object") Object.assign(rt34, partial);
-}
-function getBackdrop() {
-  return document.getElementById("ea-registro-backdrop");
-}
-function getPasteBackdrop() {
-  return document.getElementById("ea-paste-backdrop");
-}
-function handleEaModalEscape(ev) {
-  if (ev.key !== "Escape" && ev.key !== "Esc") return;
-  var pasteBd = getPasteBackdrop();
-  if (pasteBd && pasteBd.classList.contains("open")) {
-    closeEstadoActualPasteModal();
-    ev.preventDefault();
-    ev.stopPropagation();
-    return;
-  }
-  var reg = getBackdrop();
-  if (reg && reg.classList.contains("open")) {
-    closeEstadoActualRegistroModal();
-    ev.preventDefault();
-    ev.stopPropagation();
-  }
-}
-function wireEaModalDismiss() {
-  if (dismissWired) return;
-  dismissWired = true;
-  document.addEventListener("keydown", handleEaModalEscape, true);
-  var reg = getBackdrop();
-  var pasteBd = getPasteBackdrop();
-  if (reg) {
-    reg.addEventListener("click", function(ev) {
-      if (!reg.classList.contains("open")) return;
-      if (ev.target !== reg) return;
-      closeEstadoActualRegistroModal();
-    });
-  }
-  if (pasteBd) {
-    pasteBd.addEventListener("click", function(ev) {
-      if (!pasteBd.classList.contains("open")) return;
-      var panel = pasteBd.querySelector(".ea-paste-modal");
-      if (panel && panel.contains(
-        /** @type {Node} */
-        ev.target
-      )) return;
-      closeEstadoActualPasteModal();
-    });
-  }
-}
-function openEstadoActualRegistroModal(opts) {
-  var backdrop = getBackdrop();
-  if (!backdrop) {
-    rt34.showToast("Formulario de registro no disponible", "error");
-    return;
-  }
-  rt34.ensureForm();
-  if (!opts || !opts.preserveForm) rt34.resetForm();
-  else if (typeof rt34.syncGluMode === "function") rt34.syncGluMode();
-  backdrop.classList.add("open");
-  backdrop.setAttribute("aria-hidden", "false");
-  document.documentElement.classList.add("ea-registro-modal-open");
-  var first = backdrop.querySelector('[data-ea-vital="tas"], [data-ea-vital="temp"]');
-  if (first && "focus" in first) first.focus();
-}
-function closeEstadoActualRegistroModal() {
-  closeEstadoActualPasteModal();
-  var backdrop = getBackdrop();
-  if (!backdrop) return;
-  backdrop.classList.remove("open");
-  backdrop.setAttribute("aria-hidden", "true");
-  document.documentElement.classList.remove("ea-registro-modal-open");
-}
-var windowHandlers13 = {
-  openEstadoActualRegistroModal,
-  closeEstadoActualRegistroModal
-};
-
 // public/js/app-runtimes.mjs
 var rt35 = {
   getActiveId() {
@@ -53178,7 +54469,10 @@ function registerAllFeatureRuntimes() {
     closeProfileModal,
     openProfileModal,
     renderMedRecetaPanel,
-    renderListadoForm
+    renderListadoForm,
+    openAddModalFromLabPatient,
+    refreshAllTodoUIs,
+    refreshExpedienteAfterPatientSelect
   });
   registerCensoRuntime({
     getSettings: function() {
@@ -53201,7 +54495,8 @@ function registerAllFeatureRuntimes() {
       return rt35.getSettings();
     },
     showToast,
-    copyToClipboardSafe
+    copyToClipboardSafe,
+    navigateToEstadoActualPanel
   });
   registerEventualidadesRuntime({
     getActiveId: function() {
@@ -53285,7 +54580,10 @@ function registerAllFeatureRuntimes() {
     },
     switchConsolidatedTab,
     copyToClipboardSafe,
-    invalidateInnerTabRenderCache
+    invalidateInnerTabRenderCache,
+    onMedicionRegistered: function() {
+      guidedTourAdvanceAfter("estado_actual_registro");
+    }
   });
   registerEstadoActualPasteModalRuntime({
     showToast,
@@ -53339,6 +54637,8 @@ function registerAllFeatureRuntimes() {
     renderPaseBoard,
     onboardingAdvanceAfterParse,
     onboardingAdvanceAfterSend,
+    tourAfterBulkLabParse,
+    tourOnBulkPreviewPatientSaved,
     findPatientByRegistro,
     addAuditEntry,
     openPaseSectionInNormal,
@@ -53373,7 +54673,8 @@ function registerAllFeatureRuntimes() {
     rebuildBulkLabPreviewBlocks: function(text) {
       return buildBulkLabPreview(text, { findPatientByRegistro });
     },
-    openAddModalFromLabPatient
+    openAddModalFromLabPatient,
+    tourOnBulkPreviewPatientSaved
   });
   registerProductivityRuntime({
     getActiveId: function() {
@@ -53433,15 +54734,15 @@ var allWindowHandlers = Object.assign(
   {},
   windowHandlers,
   windowHandlers6,
-  windowHandlers10,
+  windowHandlers12,
   windowHandlers5,
   windowHandlers4,
   windowHandlers2,
   windowHandlers7,
-  windowHandlers12,
-  windowHandlers13,
-  windowHandlers11,
   windowHandlers8,
+  windowHandlers9,
+  windowHandlers13,
+  windowHandlers10,
   windowHandlers3,
   productivityWindowHandlers,
   settingsHelpWindowHandlers,
@@ -53450,7 +54751,7 @@ var allWindowHandlers = Object.assign(
   todosWindowHandlers,
   manejoWindowHandlers,
   recetaHuWindowHandlers,
-  windowHandlers9,
+  windowHandlers11,
   medicationsWindowHandlers,
   profileWindowHandlers,
   appShellWindowHandlers

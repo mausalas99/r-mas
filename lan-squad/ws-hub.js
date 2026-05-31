@@ -145,7 +145,11 @@ function attachWsHub(httpServer, { getState, resolver, pathName = '/api/lan/v1/w
                 patientId: msg.mutation.patientId,
                 conflictingKeys: e.conflictingKeys,
                 server: { version: e.serverVersion, data: e.serverData },
-                client: { version: e.expectedVersion, data: e.clientData },
+                client: {
+                  version: e.expectedVersion,
+                  data: e.clientData,
+                  op: msg.mutation.op,
+                },
                 expectedVersion: e.expectedVersion,
               })
             );

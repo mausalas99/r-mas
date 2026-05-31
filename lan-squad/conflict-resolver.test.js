@@ -27,6 +27,46 @@ test('auto-merge disjoint keys on version mismatch', () => {
   assert.strictEqual(out.data.cama, 'B');
 });
 
+test('historiaClinica auto-merge disjoint section keys', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cr-hc-'));
+  const filePath = path.join(dir, 's.json');
+  const store = createHostStore({ filePath, teamCodePlain: 'tok' });
+  const room = store.createRoom('Sala');
+  const resolver = createConflictResolver({ store });
+  store.setEntity({
+    roomId: room.id,
+    entityType: 'historiaClinica',
+    entityId: 'p1',
+    patientId: 'p1',
+    version: 1,
+    data: { patientId: 'p1', ficha: 'A', app: 'B' },
+    deleted: false,
+  });
+  store.setEntity({
+    roomId: room.id,
+    entityType: 'historiaClinica',
+    entityId: 'p1',
+    patientId: 'p1',
+    version: 2,
+    data: { patientId: 'p1', ficha: 'X', app: 'B' },
+    deleted: false,
+  });
+  const out = resolver.applyMutation({
+    entityType: 'historiaClinica',
+    entityId: 'p1',
+    patientId: 'p1',
+    roomId: room.id,
+    expectedVersion: 1,
+    baseData: { patientId: 'p1', ficha: 'A', app: 'B' },
+    changedKeys: ['ahf'],
+    data: { ahf: 'HTA' },
+  });
+  assert.strictEqual(out.autoMerged, true);
+  assert.strictEqual(out.data.ficha, 'X');
+  assert.strictEqual(out.data.ahf, 'HTA');
+  assert.strictEqual(out.data.app, 'B');
+});
+
 test('structural conflict when keys overlap', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cr-conf-'));
   const filePath = path.join(dir, 's.json');

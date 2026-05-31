@@ -1,4 +1,4 @@
-export const CURRICULUM_VERSION = 2;
+export const CURRICULUM_VERSION = 7;
 
 export const SALA_CHAPTERS = [
   {
@@ -8,7 +8,6 @@ export const SALA_CHAPTERS = [
       'map_sidebar',
       'map_tabs',
       'map_lab_teaser',
-      'lab_bulk_separator',
       'lab_parse',
       'lab_view',
       'servicio_default',
@@ -21,13 +20,12 @@ export const SALA_CHAPTERS = [
       'sala_expediente_tabs',
       'historia_clinica',
       'estado_actual',
+      'estado_actual_registro',
+      'estado_actual_snapshot',
+      'estado_actual_charts',
+      'estado_actual_historial',
       'eventualidades',
     ],
-  },
-  {
-    id: 'ch-clinical-tools',
-    title: 'Manejo clínico',
-    stepIds: ['sala_manejo'],
   },
   {
     id: 'ch-results',
@@ -60,7 +58,6 @@ export const IC_CHAPTERS = [
       'map_sidebar',
       'map_tabs',
       'map_lab_teaser',
-      'lab_bulk_separator',
       'lab_parse',
       'lab_view',
     ],
@@ -70,7 +67,6 @@ export const IC_CHAPTERS = [
     title: 'Expediente y clínico',
     stepIds: [
       'ic_expediente_tabs',
-      'sala_manejo',
       'sala_tend',
       'sala_tend_chart',
       'sala_soap',
@@ -100,11 +96,10 @@ export const NEO_COMPANION = {
 export const HUB_MODULES = [
   { id: 'mod-ch1', chapterId: 'ch-patient-lab', label: 'Laboratorio y pacientes', branch: 'sala' },
   { id: 'mod-ch2', chapterId: 'ch-chart', label: 'Expediente · Clínico', branch: 'sala' },
-  { id: 'mod-ch3', chapterId: 'ch-clinical-tools', label: 'Manejo clínico', branch: 'sala' },
-  { id: 'mod-ch4', chapterId: 'ch-results', label: 'Resultados (tendencias)', branch: 'sala' },
-  { id: 'mod-ch5', chapterId: 'ch-salida', label: 'Medicamentos y salida', branch: 'sala' },
-  { id: 'mod-ch6', chapterId: 'ch-agenda', label: 'Agenda del turno', branch: 'sala' },
-  { id: 'mod-ch7', chapterId: 'ch-team', label: 'Equipo (LiveSync + móvil)', branch: 'sala' },
+  { id: 'mod-ch3', chapterId: 'ch-results', label: 'Resultados (tendencias)', branch: 'sala' },
+  { id: 'mod-ch4', chapterId: 'ch-salida', label: 'Medicamentos y salida', branch: 'sala' },
+  { id: 'mod-ch5', chapterId: 'ch-agenda', label: 'Agenda del turno', branch: 'sala' },
+  { id: 'mod-ch6', chapterId: 'ch-team', label: 'Equipo (LiveSync + móvil)', branch: 'sala' },
   { id: 'neo-lab', companion: 'neo', label: 'Neo · Laboratorio', startStepId: 'sala_casiopea_lab', branch: 'sala' },
   { id: 'neo-trends', companion: 'neo', label: 'Neo · Tendencias', startStepId: 'sala_casiopea_trends', branch: 'sala' },
 ];

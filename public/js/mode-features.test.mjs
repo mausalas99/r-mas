@@ -1,6 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { isModeSala, getDefaultServicio, migrateToV3 } from './mode-features.mjs';
+import {
+  isModeSala,
+  getDefaultServicio,
+  getDefaultCuarto,
+  getDefaultCama,
+  migrateToV3,
+} from './mode-features.mjs';
 
 test('isModeSala devuelve true cuando settings.appMode === "sala"', () => {
   assert.equal(isModeSala({ appMode: 'sala' }), true);
@@ -25,12 +31,20 @@ test('getDefaultServicio devuelve "" cuando no existe', () => {
   assert.equal(getDefaultServicio(null), '');
 });
 
+test('getDefaultCuarto y getDefaultCama devuelven string trimeado', () => {
+  assert.equal(getDefaultCuarto({ defaultCuarto: ' 214 ' }), '214');
+  assert.equal(getDefaultCama({ defaultCama: ' 4 ' }), '4');
+  assert.equal(getDefaultCuarto({}), '');
+});
+
 test('migrateToV3 setea appMode=sala cuando falta y retorna true', () => {
   const settings = {};
   const migrated = migrateToV3(settings);
   assert.equal(migrated, true);
   assert.equal(settings.appMode, 'sala');
   assert.equal(settings.defaultServicio, '');
+  assert.equal(settings.defaultCuarto, '');
+  assert.equal(settings.defaultCama, '');
   assert.equal(settings._v3MigrationDone, true);
 });
 

@@ -16,8 +16,14 @@ import { stashVpoForPatient } from './vpo.mjs';
 import { flushRecetaHuDraftIfMountedFor } from './receta-hu.mjs';
 import { validatePatientForSave, buildExpedienteAdvice } from '../patient-validation.mjs';
 import { shakePatientFieldsForError } from '../ui-motion.mjs';
-import { isModeSala, getDefaultServicio } from '../mode-features.mjs';
-import { migrateGranularInner } from '../expediente-tabs.mjs';
+import {
+  isModeSala,
+  getDefaultServicio,
+  getDefaultCuarto,
+  getDefaultCama,
+} from '../mode-features.mjs';
+import { getTourDemoAdmitDefaults } from '../tour-demo-patient.mjs';
+import { isManejoSectionHidden, migrateGranularInner } from '../expediente-tabs.mjs';
 import { sortLabHistoryChronological } from '../tend-core.mjs';
 import { ensureParsedLabHistoryCached } from '../lab-history-set.mjs';
 import { t, getUiDensity, isPaseMode } from './chrome.mjs';
@@ -26,12 +32,21 @@ import {
   removePatientLocally,
   getActiveLiveSyncRoomId,
   scheduleLiveSyncPush,
+  lanSyncPatientArchivedFlag,
+  isLanSessionConfiguredForRest,
 } from './lan-sync.mjs';
 import { stagePatientDelete } from '../patient-delete-sync.mjs';
 import { ensureMonitoreo } from './estado-actual-data.mjs';
 import { filterPatientsForPitchTour } from '../tour-pitch-demo-seed.mjs';
 
-const DEMO_PATIENT_ID = 'demo-onboarding';
+import {
+  adoptTourPatientOnCommit,
+  DEMO_PATIENT_ID,
+  DEMO_REGISTRO,
+  findTourDemoPatientByRegistro,
+  shouldSelectTourPrimaryAfterLabCommit,
+  shouldTourStayOnLabAfterLabCommit,
+} from '../tour-demo-patient.mjs';
 
 function patientsVisibleInSidebar() {
   return filterPatientsForPitchTour(patients);
@@ -272,6 +287,11 @@ export function togglePatientArchived(ev, id) {
   if (!p.archived) setArchivedSectionCollapsed(false);
   saveState();
   renderPatientList();
+  if (isLanSessionConfiguredForRest()) {
+    lanSyncPatientArchivedFlag(p).catch(function () {
+      rt.showToast('No se pudo sincronizar archivo con el host LAN.', 'error');
+    });
+  }
 }
 
 function readSidebarAutoHide() {
@@ -946,7 +966,12 @@ function selectPatientCore(id) {
       var pmanejo = patients.find(function (p) {
         return p && String(p.id) === String(id);
       });
-      if (pmanejo && pmanejo.manejoPending && pmanejo.manejoPending.labSetId) {
+      if (
+        pmanejo &&
+        pmanejo.manejoPending &&
+        pmanejo.manejoPending.labSetId &&
+        !isManejoSectionHidden(settings)
+      ) {
         rt.switchInnerTab('manejo');
       }
     }
@@ -1050,6 +1075,72 @@ function _prefillServicioForSala() {
   if (srv && isModeSala(rt.getSettings()) && !srv.value) srv.value = getDefaultServicio(rt.getSettings());
 }
 
+function _lastAdmissionLocationFromPatients() {
+  for (var i = patients.length - 1; i >= 0; i--) {
+    var p = patients[i];
+    if (!p || p.isDemo) continue;
+    var cuarto = String(p.cuarto || '').trim();
+    var cama = String(p.cama || '').trim();
+    if (cuarto && cama) return { cuarto: cuarto, cama: cama };
+  }
+  return { cuarto: '', cama: '' };
+}
+
+function _resolveAdmissionLocationDefaults(registro) {
+  var tour = getTourDemoAdmitDefaults(registro);
+  if (tour && tour.cuarto && tour.cama) return tour;
+  var st = rt.getSettings();
+  var cuarto = getDefaultCuarto(st);
+  var cama = getDefaultCama(st);
+  if (cuarto && cama) return { cuarto: cuarto, cama: cama };
+  return _lastAdmissionLocationFromPatients();
+}
+
+function _prefillCuartoCamaForSala(registro) {
+  if (!isModeSala(rt.getSettings())) return;
+  var loc = _resolveAdmissionLocationDefaults(registro);
+  var cuartoEl = document.getElementById('m-cuarto');
+  var camaEl = document.getElementById('m-cama');
+  if (cuartoEl && !String(cuartoEl.value || '').trim() && loc.cuarto) cuartoEl.value = loc.cuarto;
+  if (camaEl && !String(camaEl.value || '').trim() && loc.cama) camaEl.value = loc.cama;
+}
+
+function _rememberAdmissionLocation(cuarto, cama) {
+  if (!isModeSala(rt.getSettings())) return;
+  var st = rt.getSettings();
+  if (!st) return;
+  st.defaultCuarto = cuarto;
+  st.defaultCama = cama;
+  try {
+    storage.saveSettings(st);
+  } catch (e) {
+    console.error('_rememberAdmissionLocation:', e && e.message);
+  }
+}
+
+function _focusPatientAdmissionField(isFromLab) {
+  var fieldIds = isFromLab
+    ? ['m-servicio', 'm-cuarto', 'm-cama']
+    : ['m-nombre-manual', 'm-registro-manual', 'm-servicio', 'm-cuarto', 'm-cama'];
+  for (var i = 0; i < fieldIds.length; i++) {
+    var el = document.getElementById(fieldIds[i]);
+    if (!el) continue;
+    if (el.closest && el.closest('[style*="display: none"]')) continue;
+    if (!String(el.value || '').trim()) {
+      try {
+        el.focus();
+      } catch (e) {}
+      return;
+    }
+  }
+  var cama = document.getElementById('m-cama');
+  if (cama) {
+    try {
+      cama.focus();
+    } catch (e2) {}
+  }
+}
+
 function _syncPatientModalModeFields() {
   var sala = isModeSala(rt.getSettings());
   var areaGroup = document.getElementById('m-area-group');
@@ -1075,19 +1166,22 @@ export function openAddModal() {
   document.getElementById('m-sexo').value = 'F';
   _syncPatientModalModeFields();
   _prefillServicioForSala();
+  _prefillCuartoCamaForSala();
   document.getElementById('modal').classList.add('open');
   setTimeout(function () {
-    document.getElementById('m-nombre-manual').focus();
+    _focusPatientAdmissionField(false);
   }, 120);
 }
 
-export function openAddModalFromLab() {
-  var lab = rt.getActiveLab && rt.getActiveLab();
-  if (!lab) {
+var pendingAddPatientSavedCallback = null;
+
+function openAddModalFromLabPatientData(p, opts) {
+  if (!p) {
     openAddModal();
     return;
   }
-  var p = lab.patient;
+  pendingAddPatientSavedCallback =
+    opts && typeof opts.onSaved === 'function' ? opts.onSaved : null;
   document.getElementById('modal-title').textContent = 'Agregar Paciente del Lab';
   document.getElementById('modal-prefilled').style.display = 'block';
   document.getElementById('modal-manual-full').style.display = 'none';
@@ -1106,14 +1200,29 @@ export function openAddModalFromLab() {
   });
   _syncPatientModalModeFields();
   _prefillServicioForSala();
+  _prefillCuartoCamaForSala(p.expediente || p.registro || '');
   document.getElementById('modal').classList.add('open');
   setTimeout(function () {
-    var first = document.getElementById('m-edad-num');
-    if (first) first.focus();
+    _focusPatientAdmissionField(true);
   }, 120);
 }
 
+export function openAddModalFromLab() {
+  var lab = rt.getActiveLab && rt.getActiveLab();
+  if (!lab) {
+    openAddModal();
+    return;
+  }
+  openAddModalFromLabPatientData(lab.patient);
+}
+
+/** Alta desde datos SOME explícitos (p. ej. fila de vista previa masiva). */
+export function openAddModalFromLabPatient(patient, opts) {
+  openAddModalFromLabPatientData(patient, opts);
+}
+
 export function closeModal() {
+  pendingAddPatientSavedCallback = null;
   document.getElementById('modal').classList.remove('open');
 }
 
@@ -1226,6 +1335,7 @@ export function savePatient() {
     shakePatientFieldsForError('Ingresa cuarto y cama', isFromLab);
     return;
   }
+  _rememberAdmissionLocation(cuarto, cama);
 
   var commit = function () {
     var dup = findDuplicatePatient(nombre, registro);
@@ -1319,6 +1429,8 @@ function commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cam
     cama: cama,
     fromLab: !!isFromLab,
   };
+  var adoptResult = adoptTourPatientOnCommit(patient, registro);
+  patient = adoptResult.patient;
   notes[patient.id] = {
     fecha: fecha,
     hora: hora,
@@ -1350,16 +1462,40 @@ function commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cam
   rt.applyDefaultsToNewIndicaciones(patient.id);
   patients.push(patient);
   saveState();
+  var onSaved = pendingAddPatientSavedCallback;
+  pendingAddPatientSavedCallback = null;
   closeModal();
   var pendingLab = null;
-  if (isFromLab) {
+  var stayOnLabForTour = isFromLab && shouldTourStayOnLabAfterLabCommit();
+  if (isFromLab && !stayOnLabForTour) {
     pendingLab = rt.consumeActiveLab ? rt.consumeActiveLab() : null;
     if (rt.clearLabOutputUi) rt.clearLabOutputUi();
     rt.switchAppTab('nota');
+  } else if (isFromLab && stayOnLabForTour) {
+    pendingLab = null;
   }
   renderPatientList();
-  selectPatient(patient.id);
+  var activeId = patient.id;
+  if (shouldSelectTourPrimaryAfterLabCommit(patient.id, patients)) {
+    var perez = findTourDemoPatientByRegistro(patients, DEMO_REGISTRO);
+    if (perez) activeId = perez.id;
+  }
+  selectPatient(activeId);
   rt.showToast('Paciente agregado', 'success');
+  if (adoptResult.afterCommit) {
+    try {
+      adoptResult.afterCommit(patient);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  if (onSaved) {
+    try {
+      onSaved(patient);
+    } catch (e) {
+      console.error(e);
+    }
+  }
   if (pendingLab) {
     rt.restoreActiveLab(pendingLab);
     rt.enviarLabsANota();

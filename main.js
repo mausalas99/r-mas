@@ -278,6 +278,46 @@ ipcMain.handle('open-user-data-folder', async () => {
   return { ok: !err, path: p, error: err || null };
 });
 
+let approvedOutputDir = null;
+
+function defaultDownloadsDir() {
+  return app.getPath('downloads');
+}
+
+async function validateOutputDir(dir) {
+  const target = dir && String(dir).trim() ? path.resolve(String(dir).trim()) : defaultDownloadsDir();
+  await fs.promises.access(target, fs.constants.W_OK);
+  return target;
+}
+
+ipcMain.handle('set-approved-output-dir', async (_e, dir) => {
+  try {
+    approvedOutputDir = await validateOutputDir(dir);
+    return { ok: true, path: approvedOutputDir };
+  } catch (e) {
+    approvedOutputDir = null;
+    return { ok: false, error: e && e.message ? e.message : String(e) };
+  }
+});
+
+ipcMain.handle('save-exported-document', async (_e, { fileName, buffer }) => {
+  const dir = approvedOutputDir || defaultDownloadsDir();
+  const safe = path.basename(String(fileName || ''));
+  if (!safe || safe !== fileName) {
+    throw new Error('Nombre de archivo inválido');
+  }
+  await fs.promises.mkdir(dir, { recursive: true });
+  const fullPath = path.join(dir, safe);
+  const resolvedDir = await fs.promises.realpath(dir);
+  await fs.promises.writeFile(fullPath, Buffer.from(buffer));
+  const resolvedFile = await fs.promises.realpath(fullPath);
+  if (!resolvedFile.startsWith(resolvedDir + path.sep) && resolvedFile !== resolvedDir) {
+    await fs.promises.unlink(fullPath).catch(() => {});
+    throw new Error('Ruta de exportación no permitida');
+  }
+  return { success: true, path: resolvedFile };
+});
+
 ipcMain.handle('select-output-dir', async () => {
   if (!mainWindow || mainWindow.isDestroyed()) return undefined;
   const result = await dialog.showOpenDialog(mainWindow, {
@@ -285,7 +325,13 @@ ipcMain.handle('select-output-dir', async () => {
     properties: ['openDirectory', 'createDirectory'],
   });
   if (result.canceled || !result.filePaths.length) return undefined;
-  return result.filePaths[0];
+  const chosen = result.filePaths[0];
+  try {
+    approvedOutputDir = await validateOutputDir(chosen);
+  } catch (_e) {
+    /* renderer may call set-approved-output-dir after save */
+  }
+  return chosen;
 });
 
 ipcMain.handle('lan-host-write-team-code', (_e, plain) => {

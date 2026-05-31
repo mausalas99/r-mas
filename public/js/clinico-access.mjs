@@ -2,6 +2,8 @@
  * Acceso a la guía clínica (Manejo): oculta por defecto hasta desbloqueo explícito.
  */
 
+import { isClinicoUnlockDisabled } from './clinical-product-policy.mjs';
+
 export const CLINICO_UNLOCK_PHRASE = 'entiendo, usare mi criterio clincio';
 
 /** @param {unknown} text */
@@ -45,6 +47,7 @@ export function isClinicoAccessHidden(settings) {
 var _unlockSuccessCb = null;
 
 export function openClinicoUnlockModal(onSuccess) {
+  if (isClinicoUnlockDisabled()) return;
   var backdrop = document.getElementById('clinico-unlock-backdrop');
   var input = document.getElementById('clinico-unlock-input');
   var err = document.getElementById('clinico-unlock-error');
@@ -74,6 +77,7 @@ export function closeClinicoUnlockModal() {
 }
 
 export function confirmClinicoUnlock() {
+  if (isClinicoUnlockDisabled()) return;
   var input = document.getElementById('clinico-unlock-input');
   var err = document.getElementById('clinico-unlock-error');
   if (!input) return;

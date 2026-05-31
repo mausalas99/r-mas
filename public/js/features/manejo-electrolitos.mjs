@@ -11,6 +11,7 @@ import {
   isManejoTodoDismissed,
   shouldAllowManejoTodo,
 } from '../manejo-todo-dismiss.mjs';
+import { areElectrolyteReplacementSuggestionsHidden } from '../clinical-product-policy.mjs';
 
 /** @type {{
  *   getActiveId(): string|null,
@@ -141,6 +142,14 @@ function routeChipLabel(route) {
  */
 export function renderManejoElectrolitos(panelEl, pid, patient, ui) {
   ui = ui || {};
+  if (areElectrolyteReplacementSuggestionsHidden()) {
+    var off = document.createElement('p');
+    off.className = 'manejo-empty overview-hint';
+    off.textContent =
+      'Las sugerencias de reposición electrolítica no están disponibles en R+. Valora alteraciones con protocolo institucional y calculadoras o tablas validadas.';
+    panelEl.appendChild(off);
+    return;
+  }
   var esc = ui.esc || function (s) { return String(s || ''); };
   var buildKvBlock = ui.buildKvBlock;
   var buildSomeOrderArticle = ui.buildSomeOrderArticle;

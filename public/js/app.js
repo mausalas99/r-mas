@@ -45,7 +45,11 @@ import { manejoWindowHandlers } from './features/manejo.mjs';
 import { recetaHuWindowHandlers } from './features/receta-hu.mjs';
 import { windowHandlers as paseBoardWindowHandlers, syncMainAppTabA11y, renderInnerTabs, initTabBarMotion } from './features/pase-board.mjs';
 import { medicationsWindowHandlers } from './features/medications.mjs';
-import { profileWindowHandlers, hydrateProfileSettings } from './features/profile.mjs';
+import {
+  profileWindowHandlers,
+  hydrateProfileSettings,
+  toggleHeaderWorkMode,
+} from './features/profile.mjs';
 import { initRpcDatePicker } from './rpc-date-picker.mjs';
 
 const allWindowHandlers = Object.assign(
@@ -202,9 +206,20 @@ function runDomBoot() {
     _rpcDeferInit(initSidebarAutoHide);
     _rpcDeferInit(initPatientModalEnterSave);
     syncProfileSectionVisibility();
+    wireHeaderAppModeChip();
   } catch (domErr) {
     console.error('[R+] Error en arranque de UI:', domErr);
   }
+}
+
+function wireHeaderAppModeChip() {
+  var chip = document.getElementById('header-app-mode-chip');
+  if (!chip || chip._rpcModeChipWired) return;
+  chip._rpcModeChipWired = true;
+  chip.addEventListener('click', function (ev) {
+    ev.preventDefault();
+    toggleHeaderWorkMode();
+  });
 }
 
 if (document.readyState === 'loading') {

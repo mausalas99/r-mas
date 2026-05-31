@@ -7,7 +7,9 @@ import {
   duracionKeyToHours,
   syncAhaFields,
   emptyVpoState,
+  ensureScaleResults,
 } from './vpo-data.mjs';
+import { isClinicalDecisionGuidanceHidden } from './clinical-product-policy.mjs';
 
 test('getVitalsFromMonitoreo usa turno más reciente y retrocede si falta', () => {
   var v = getVitalsFromMonitoreo({
@@ -27,13 +29,22 @@ test('duracion key mapea horas ARISCAT', () => {
   assert.equal(duracionKeyToHours('2to3'), 2.5);
 });
 
-test('syncAhaFields desde ASA y procedimiento', () => {
+test('syncAhaFields desde ASA y procedimiento cuando guía clínica activa', () => {
+  if (isClinicalDecisionGuidanceHidden()) return;
   var s = emptyVpoState();
   s.asaKey = 'asa-iii';
   s.procedureId = 'gupta-cardiac';
   syncAhaFields(s);
   assert.equal(s.ahaClinico, 'Intermedio');
   assert.equal(s.ahaQuirurgico, 'Alto');
+});
+
+test('ensureScaleResults inicializa claves de escalas', () => {
+  var s = emptyVpoState();
+  delete s.scaleResults;
+  ensureScaleResults(s);
+  assert.equal(s.scaleResults.asa, '');
+  assert.equal(s.scaleResults.caprini, '');
 });
 
 test('mergeFarmacosFromMedReceta no duplica por sourceMedId', () => {

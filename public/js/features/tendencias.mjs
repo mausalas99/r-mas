@@ -36,6 +36,7 @@ import {
   openSesionIngresoTrendsSendModal,
   registerSesionIngresoTrendsSendRuntime,
 } from './sesion-ingreso-trends-send-modal.mjs';
+import { isAbgAnalysisHidden } from '../clinical-product-policy.mjs';
 
 /** @type {{ getActiveId(): string|null, ensureParsedLabHistory(pid: string): any[], ensureParsedLabHistoryCached?(pid: string): any[], rerenderParsedLabOutputAfterPrefsChange(): void, rpcPrefersReducedMotion(): boolean, showToast(msg: string, type?: string): void, buildLabSetDateLine(set: any): string }} */
 var rt = {
@@ -380,14 +381,27 @@ function getLabOutputPrefs() {
   try {
     var raw = localStorage.getItem(LAB_OUTPUT_PREFS_KEY);
     var o = raw ? JSON.parse(raw) : {};
-    return {
+    var prefs = {
       showBhExtendedLine: !!o.showBhExtendedLine,
       hideGasoAdvInterp: !!o.hideGasoAdvInterp,
       quickLabOutput: !!o.quickLabOutput,
     };
+    if (isAbgAnalysisHidden()) prefs.hideGasoAdvInterp = true;
+    return prefs;
   } catch (_e) {
-    return { showBhExtendedLine: false, hideGasoAdvInterp: false, quickLabOutput: false };
+    return {
+      showBhExtendedLine: false,
+      hideGasoAdvInterp: isAbgAnalysisHidden(),
+      quickLabOutput: false,
+    };
   }
+}
+
+function syncAbgLabPrefRowVisibility() {
+  var row =
+    document.getElementById('lab-pref-gaso-extended')?.closest('label') ||
+    document.getElementById('lab-pref-gaso-extended-lbl')?.closest('.lab-pref-row');
+  if (row) row.style.display = isAbgAnalysisHidden() ? 'none' : '';
 }
 
 function setLabOutputPrefs(partial) {
@@ -424,6 +438,7 @@ function _syncLabPrefSwitchAria(el) {
 function openLabDisplayPrefsModal() {
   var backdrop = document.getElementById('lab-display-prefs-backdrop');
   if (!backdrop) return;
+  syncAbgLabPrefRowVisibility();
   var p = getLabOutputPrefs();
   var cbBh = document.getElementById('lab-pref-bh-extended');
   var cbGaso = document.getElementById('lab-pref-gaso-extended');
@@ -457,7 +472,7 @@ function onLabDisplayPrefsChanged() {
   var cbQuick = document.getElementById('lab-pref-quick-output');
   setLabOutputPrefs({
     showBhExtendedLine: cbBh ? cbBh.checked : false,
-    hideGasoAdvInterp: cbGaso ? !cbGaso.checked : false,
+    hideGasoAdvInterp: isAbgAnalysisHidden() ? true : cbGaso ? !cbGaso.checked : false,
     quickLabOutput: cbQuick ? cbQuick.checked : false,
   });
   _syncLabPrefSwitchAria(cbBh);
@@ -1241,6 +1256,10 @@ function openTendGroupModal(sectionKey) {
 }
 
 function openTendGasoExtendedModal() {
+  if (isAbgAnalysisHidden()) {
+    rt.showToast('El análisis de gasometría no está disponible en R+.', 'info');
+    return;
+  }
   initTendGroupModal();
   tendGroupModal.openGasoExtended();
 }
@@ -1609,6 +1628,7 @@ function mountTendCardSortables() {
 function renderTendencias(opts) {
   opts = opts || {};
   var onReady = typeof opts.onReady === 'function' ? opts.onReady : null;
+  syncAbgLabPrefRowVisibility();
   var container = document.getElementById('tendencias-container');
   if (!container) {
     if (onReady) onReady();
@@ -1699,7 +1719,9 @@ function renderTendenciasBody(container) {
   _tendRenderState.seriesAvail = seriesAvail;
 
   var hiddenChipN = tendHiddenChipDescriptors().length;
-  var toolbarOpts = { showGasoExtended: historyHasGasoForExtended(historyDesc) };
+  var toolbarOpts = {
+    showGasoExtended: !isAbgAnalysisHidden() && historyHasGasoForExtended(historyDesc),
+  };
   var toolbarHtml = buildTendInlineControlsHtml(hiddenChipN, toolbarOpts);
 
   if (!seriesAvail.length) {

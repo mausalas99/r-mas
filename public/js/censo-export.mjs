@@ -68,6 +68,13 @@ function censoExportTriggerButtons() {
   }).filter(Boolean);
 }
 
+/** Loading state only on the modal confirm control (export always runs from the dialog). */
+function censoExportLoadingButtons() {
+  ensureCensoModal();
+  var confirm = document.getElementById('censo-export-confirm');
+  return confirm ? [confirm] : [];
+}
+
 function buildTodosMap() {
   var map = Object.create(null);
   patients.forEach(function (p) {
@@ -162,7 +169,7 @@ export function exportCensoPdf(includeArchived) {
   }
   var st = rt.getSettings() || {};
   var outputDir = String(st.outputDir || '').trim();
-  var exportBtns = censoExportTriggerButtons();
+  var exportBtns = censoExportLoadingButtons();
   exportBtns.forEach(function (btn) {
     setAsyncButtonLoading(btn, true, { loadingText: 'Exportando…' });
   });

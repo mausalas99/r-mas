@@ -9,12 +9,19 @@ import {
 
 test('getSalaTourSteps orden overhaul: lab primero, clinico HC EA Eventualidades, salida VPO receta agenda', () => {
   const steps = getSalaTourSteps();
-  assert.equal(steps.length, 22);
+  assert.equal(steps.length, 24);
+  assert.ok(!steps.includes('lab_bulk_separator'));
+  assert.ok(!steps.includes('sala_manejo'));
   assert.equal(steps.indexOf('servicio_default'), steps.indexOf('lab_view') + 1);
   assert.equal(steps.indexOf('estado_actual'), steps.indexOf('historia_clinica') + 1);
-  assert.equal(steps.indexOf('eventualidades'), steps.indexOf('estado_actual') + 1);
+  assert.equal(steps.indexOf('estado_actual_registro'), steps.indexOf('estado_actual') + 1);
+  assert.equal(steps.indexOf('estado_actual_snapshot'), steps.indexOf('estado_actual_registro') + 1);
+  assert.equal(steps.indexOf('estado_actual_charts'), steps.indexOf('estado_actual_snapshot') + 1);
+  assert.equal(steps.indexOf('estado_actual_historial'), steps.indexOf('estado_actual_charts') + 1);
+  assert.equal(steps.indexOf('eventualidades'), steps.indexOf('estado_actual_historial') + 1);
   assert.ok(!steps.includes('sala_casiopea_lab'));
   assert.ok(!steps.includes('sala_casiopea_trends'));
+  assert.ok(steps.includes('listado_problemas'));
   assert.ok(steps.includes('sala_vpo'));
   assert.ok(steps.includes('sala_receta_hu'));
   assert.ok(steps.includes('sala_agenda'));
@@ -53,8 +60,17 @@ test('getTourTarget para estado_actual apunta al segmento Estado actual (Sala)',
   const t = getTourTarget('estado_actual', 'sala');
   assert.equal(t.appTab, 'nota');
   assert.equal(t.innerTab, 'estadoActual');
-  assert.match(t.selector, /exp-segment-estadoActual/);
+  assert.match(t.selector, /ea-snapshot|ea-charts-mount/);
   assert.equal(t.spotlightClass, 'tour-spotlight-action');
+});
+
+test('getTourTarget para pasos post-registro de estado actual', () => {
+  const snap = getTourTarget('estado_actual_snapshot', 'sala');
+  assert.match(snap.selector, /ea-snapshot/);
+  const charts = getTourTarget('estado_actual_charts', 'sala');
+  assert.match(charts.selector, /ea-charts-mount/);
+  const hist = getTourTarget('estado_actual_historial', 'sala');
+  assert.match(hist.selector, /ea-historial|ea-texto/);
 });
 
 test('getTourTarget para historia_clinica y eventualidades en Clínico (Sala)', () => {
@@ -81,7 +97,7 @@ test('getTourTarget para listado_problemas abre listado y resalta Generar', () =
   const t = getTourTarget('listado_problemas', 'sala');
   assert.equal(t.appTab, 'nota');
   assert.equal(t.innerTab, 'listado');
-  assert.equal(t.selector, '#btn-gen-listado, #itab-salida');
+  assert.equal(t.selector, '#listado-form, #exp-segment-listado, #btn-gen-listado');
   assert.equal(t.spotlightClass, 'tour-spotlight-action');
   assert.equal(stepRequiresUserAction('listado_problemas'), false);
 });
@@ -131,16 +147,16 @@ test('getTourTarget para sala_casiopea_trends apunta al botón Enviar Neo', () =
   assert.equal(stepRequiresUserAction('sala_casiopea_trends'), false);
 });
 
-test('getInterconsultaTourSteps orden curriculum: 19 pasos, lab antes de expediente', () => {
+test('getInterconsultaTourSteps orden curriculum: 17 pasos, lab antes de expediente', () => {
   const steps = getInterconsultaTourSteps();
-  assert.equal(steps.length, 19);
-  assert.equal(steps.indexOf('lab_parse'), 4);
+  assert.equal(steps.length, 17);
+  assert.equal(steps.indexOf('lab_parse'), 3);
   assert.ok(!steps.includes('sala_casiopea_lab'));
   assert.ok(!steps.includes('sala_casiopea_trends'));
+  assert.ok(!steps.includes('sala_manejo'));
   assert.ok(steps.includes('ic_expediente_tabs'));
   assert.equal(steps.indexOf('ic_expediente_tabs'), steps.indexOf('lab_view') + 1);
-  assert.ok(steps.includes('sala_manejo'), 'Interconsulta debe presentar Manejo clínico');
-  assert.equal(steps.indexOf('sala_manejo'), steps.indexOf('ic_expediente_tabs') + 1);
+  assert.equal(steps.indexOf('sala_tend'), steps.indexOf('ic_expediente_tabs') + 1);
 });
 
 test('getTourTarget for sala_expediente_tabs apunta a barra de pestañas', () => {

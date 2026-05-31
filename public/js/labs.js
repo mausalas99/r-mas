@@ -1,5 +1,7 @@
 // labs.js — lab parsing and rendering helpers (no app state)
 
+import { isAbgAnalysisHidden } from './clinical-product-policy.mjs';
+
 // ════════════════════════════════════════════════════════════════════
 // LAB PARSER — ported from ~/Laboratoriazo App/index.html
 // ════════════════════════════════════════════════════════════════════
@@ -830,6 +832,7 @@ function toNum_(v) {
 }
 
 export function buildGasoInterpretacion_(bloqueGaso, textoFuera) {
+  if (isAbgAnalysisHidden()) return '';
   if (!bloqueGaso) return '';
   var bloqueX = gasoBlockForExtract_(bloqueGaso);
   var phData   = extraerConRango(['PH '], bloqueX);
@@ -1032,10 +1035,13 @@ function rebuildGasesFromResults_(rows) {
   var ddv = computeDeltaDeltaValue_(agv, bica || '---');
   if (ddv != null) out.push('Delta-Delta', formatNumericToken_(ddv));
 
-  var phV = toNum_(values.pH);
-  var pco2V = toNum_(values.pCO2);
-  var hco3V = toNum_(values.Bica);
-  var interp = buildGasoInterpretacionFromValues_(phV, pco2V, hco3V, agv, ddv);
+  var interp = '';
+  if (!isAbgAnalysisHidden()) {
+    var phV = toNum_(values.pH);
+    var pco2V = toNum_(values.pCO2);
+    var hco3V = toNum_(values.Bica);
+    interp = buildGasoInterpretacionFromValues_(phV, pco2V, hco3V, agv, ddv);
+  }
   return { gasesLine: out[0] + '\t' + out.slice(1).join(' '), interpLine: interp };
 }
 
@@ -2122,6 +2128,18 @@ function extractCuentaKassFromLineas(sliceLines) {
   }
   var mC = fragBeforeAb.match(/([<>]=?\s?\d+(\.\d+)?\s*[A-Z%\/]*)/i);
   if (mC) return mC[1].trim().toUpperCase();
+  var mColonias = fragBeforeAb.match(/(\d[\d,]*\s+COLONIAS?)/i);
+  if (mColonias) return mColonias[1].replace(/\s+/g, ' ').trim().toUpperCase();
+  for (var li = 0; li < sliceLines.length; li++) {
+    var Lc = sliceLines[li].replace(/\r/g, '').replace(/\*+$/g, '').trim();
+    if (!/^CUENTA/i.test(Lc)) continue;
+    for (var lk = li + 1; lk < Math.min(li + 6, sliceLines.length); lk++) {
+      var cand = sliceLines[lk].replace(/\r/g, '').replace(/\*/g, '').trim();
+      if (!cand || cand === '*') continue;
+      if (/^MICROORGANISMO|^ANTIBIOGRAMA|^COMENTARIO/i.test(cand)) break;
+      return cand.replace(/\s+/g, ' ').replace(/\s*\/\s*/g, '/').trim().toUpperCase();
+    }
+  }
   return '';
 }
 
@@ -2138,6 +2156,24 @@ export function parseSensCrudasAntibiogramaSlice(lineasAb) {
     if (parsed && parsed.interp) sensCrudas.push({ med: nL.toUpperCase(), mic: parsed.mic, interp: parsed.interp });
   }
   return sensCrudas;
+}
+
+/** Línea «Cuenta: …» en un bloque condensado de cultivo (tras la cabecera sitio/fecha:germen). */
+export function parseCuentaFromCultivoChunkLines(lines) {
+  if (!lines || !lines.length) return '';
+  for (var i = 0; i < lines.length; i++) {
+    var m = String(lines[i] == null ? '' : lines[i])
+      .replace(/\*+$/g, '')
+      .trim()
+      .match(/^Cuenta:\s*(.+)$/i);
+    if (m) {
+      return m[1]
+        .replace(/\s+/g, ' ')
+        .replace(/\s*\/\s*/g, '/')
+        .trim();
+    }
+  }
+  return '';
 }
 
 export function formatSensCrudasBlockForCopy(sensCrudas) {
@@ -2735,7 +2771,8 @@ export function procesarLabs(textoBruto) {
     if (pltCit) resLabs.push(pltCit);
   }
   var gaso=parseGaso_(bloqueGaso, textoQS);if(gaso)resLabs.push(gaso);
-  var gasoInterp = buildGasoInterpretacion_(bloqueGaso, textoQS); if (gasoInterp) resLabs.push(gasoInterp);
+  var gasoInterp = isAbgAnalysisHidden() ? '' : buildGasoInterpretacion_(bloqueGaso, textoQS);
+  if (gasoInterp) resLabs.push(gasoInterp);
   var pie=parsePIE_(tNorm);      if(pie)resLabs.push(pie);
   var lcr=parsearLCR(textoBruto);if(lcr)resLabs.push(lcr);
   var liq=parsearCitoquimicoLiquidos(textoBruto);if(liq)resLabs.push(liq);

@@ -26,6 +26,7 @@ const {
   buildBulkLabPreview,
   mergeBulkParseResults,
   shouldShowBulkLabPreview,
+  extractLabPatientFromBulkBlock,
 } = await import('./lab-bulk-paste.mjs');
 const { procesarLabs } = await import('./labs.js');
 const { DEMO_SOME_LAB_REPORT, OLDER_DEMO_SOME_LAB_REPORT } = await import('./tour-demo-some-lab.mjs');
@@ -105,6 +106,18 @@ describe('lab-bulk-paste', () => {
     assert.equal(preview[0].okReportCount, 2);
     assert.equal(preview[0].setsAfterMerge, 2);
     assert.ok(preview[0].days.length >= 2);
+  });
+
+  it('extractLabPatientFromBulkBlock toma datos del primer reporte válido', () => {
+    var preview = buildBulkLabPreview(DEMO_SOME_LAB_REPORT, {
+      findPatientByRegistro: function () {
+        return null;
+      },
+    });
+    var patient = extractLabPatientFromBulkBlock(preview[0]);
+    assert.ok(patient);
+    assert.match(String(patient.name || ''), /PÉREZ|PEREZ/i);
+    assert.equal(patient.expediente, '0008421-7');
   });
 
   it('shouldShowBulkLabPreview abre modal con varios reportes o avisos', () => {

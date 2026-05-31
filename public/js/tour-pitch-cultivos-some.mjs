@@ -31,6 +31,8 @@ export const PITCH_CULTIVO_PERITONEAL_SOME =
   'EN FRASCO DE HEMOCULTIVO ANAEROBIO\n' +
   'MICROORGANISMO\n*\n' +
   'Pseudomonas aeruginosa\n' +
+  'CUENTA\n*\n' +
+  '120,000 UFC/mL\n' +
   'ANTIBIOGRAMA\n*\n' +
   'CEFTAZIDIMA\n>16\tR\n' +
   'CIPROFLOXACINA\n<=1\tS\n' +
@@ -202,6 +204,8 @@ export const PITCH_CULTIVO_HEMO_SOME =
   'Pseudomonas aeruginosa\n' +
   'COMENTARIO:\n*\n' +
   'AISLAMIENTO PRODUCTOR DE BETALACTAMASAS (BLEE)\n' +
+  'CUENTA\n*\n' +
+  '2 colonias\n' +
   'ANTIBIOGRAMA\n*\n' +
   'CEFTAZIDIMA\n>16\tR\n' +
   'CEFEPIMA\n16\tI\n' +

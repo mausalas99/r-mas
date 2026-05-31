@@ -351,7 +351,8 @@ export function deleteTodo(id) {
     return t.id !== id;
   });
   storage.saveTodos(aid(), todos);
-  emitLiveSyncTodoDelete(aid(), id, delAt);
+  if (victim) emitLiveSyncTodoDelete(aid(), victim);
+  else emitLiveSyncTodoDelete(aid(), { id: id, updatedAt: delAt });
   refreshAllTodoUIs();
 }
 

@@ -41,6 +41,10 @@ import {
   registerLabPanelRuntime,
 } from './features/lab-panel.mjs';
 import {
+  registerLabBulkPreviewModalRuntime,
+} from './features/lab-bulk-preview-modal.mjs';
+import { buildBulkLabPreview } from './lab-bulk-paste.mjs';
+import {
   registerTendenciasRuntime,
 } from './features/tendencias.mjs';
 import {
@@ -89,6 +93,10 @@ import {
   registerExpedienteRuntime,
 } from './features/expediente.mjs';
 import {
+  registerHistoriaClinicaRuntime,
+} from './features/historia-clinica-panel.mjs';
+import { registerEventualidadesRuntime } from './features/eventualidades-panel.mjs';
+import {
   extractParsedValues,
   buildParsedBySectionFromResLabs,
   renderDiagramas,
@@ -130,6 +138,7 @@ import {
   scrollActiveRondaCardIntoView,
   renderRoundOverviewPanels,
   openAddModal,
+  openAddModalFromLabPatient,
   findPatientByRegistro,
   ensureUniquePatientName,
   buildPatientEntry,
@@ -216,8 +225,11 @@ import {
 import {
   guidedTourAdvanceAfterNotaGenerated,
   guidedTourAdvanceAfterIndicaGenerated,
+  guidedTourAdvanceAfter,
   onboardingAdvanceAfterParse,
   onboardingAdvanceAfterSend,
+  tourAfterBulkLabParse,
+  tourOnBulkPreviewPatientSaved,
 } from './features/settings-help.mjs';
 import {
   advanceRondaPatient,
@@ -499,6 +511,9 @@ registerSettingsHelpRuntime({
   openProfileModal: openProfileModal,
   renderMedRecetaPanel: renderMedRecetaPanel,
   renderListadoForm: renderListadoForm,
+  openAddModalFromLabPatient: openAddModalFromLabPatient,
+  refreshAllTodoUIs: refreshAllTodoUIs,
+  refreshExpedienteAfterPatientSelect: refreshExpedienteAfterPatientSelect,
 });
 
 registerCensoRuntime({
@@ -513,6 +528,25 @@ registerCensoRuntime({
   syncOfflineButtonStates: syncOfflineButtonStates,
   guardMobileDocExport: guardMobileDocExport,
   isRpcOffline: isRpcOffline,
+});
+
+registerHistoriaClinicaRuntime({
+  getActiveId: function () {
+    return rt.getActiveId();
+  },
+  getSettings: function () {
+    return rt.getSettings();
+  },
+  showToast: showToast,
+  copyToClipboardSafe: copyToClipboardSafe,
+  navigateToEstadoActualPanel: navigateToEstadoActualPanel,
+});
+
+registerEventualidadesRuntime({
+  getActiveId: function () {
+    return rt.getActiveId();
+  },
+  showToast: showToast,
 });
 
 registerExpedienteRuntime({
@@ -596,6 +630,9 @@ registerEstadoActualPanelRuntime({
   switchConsolidatedTab: switchConsolidatedTab,
   copyToClipboardSafe: copyToClipboardSafe,
   invalidateInnerTabRenderCache: invalidateInnerTabRenderCache,
+  onMedicionRegistered: function () {
+    guidedTourAdvanceAfter('estado_actual_registro');
+  },
 });
 
 registerEstadoActualPasteModalRuntime({
@@ -654,6 +691,8 @@ registerLabPanelRuntime({
   renderPaseBoard: renderPaseBoard,
   onboardingAdvanceAfterParse: onboardingAdvanceAfterParse,
   onboardingAdvanceAfterSend: onboardingAdvanceAfterSend,
+  tourAfterBulkLabParse: tourAfterBulkLabParse,
+  tourOnBulkPreviewPatientSaved: tourOnBulkPreviewPatientSaved,
   findPatientByRegistro: findPatientByRegistro,
   addAuditEntry: addAuditEntry,
   openPaseSectionInNormal: openPaseSectionInNormal,
@@ -682,6 +721,15 @@ registerLabPanelRuntime({
   buildCultivoOutputHtmlFragments: buildCultivoOutputHtmlFragments,
   buildLabSetDateLine: buildLabSetDateLine,
   refreshManejoPanel: renderManejo,
+});
+
+registerLabBulkPreviewModalRuntime({
+  showToast,
+  rebuildBulkLabPreviewBlocks: function (text) {
+    return buildBulkLabPreview(text, { findPatientByRegistro });
+  },
+  openAddModalFromLabPatient,
+  tourOnBulkPreviewPatientSaved,
 });
 
 registerProductivityRuntime({

@@ -6,7 +6,7 @@ import { applyMedCatalogOverlay } from '../med-receta-core.mjs';
 import {
   GUIDED_TOUR_LS_KEY,
   closeSettingsDropdown,
-  DEMO_PATIENT_ID,
+  isTourDemoPatientId,
   formatCuratedReleaseNotesPlain,
 } from './settings-help.mjs';
 import {
@@ -1103,7 +1103,7 @@ function exportActivePatientBackup() {
     rt.showToast('Selecciona un paciente en la lista.', 'error');
     return;
   }
-  if (aid === DEMO_PATIENT_ID) {
+  if (isTourDemoPatientId(aid, patients)) {
     rt.showToast('El paciente de demostración no se exporta.', 'error');
     return;
   }

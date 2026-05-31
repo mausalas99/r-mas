@@ -3,9 +3,14 @@ const http    = require('node:http');
 const path    = require('path');
 const fs      = require('fs');
 const os      = require('os');
-const { spawn, execSync } = require('child_process');
+const { execSync } = require('child_process');
 const { fillRecetaHuPdf } = require('./generate-receta-hu.js');
 const { renderCensusPdf } = require('./generate-censo.js');
+const { generateNoteBuffer } = require('./lib/doc-generators/note.js');
+const { generateIndicacionesBuffer } = require('./lib/doc-generators/indicaciones.js');
+const { generateListadoBuffer } = require('./lib/doc-generators/listado.js');
+const { sendDocxBuffer } = require('./lib/doc-export-http.js');
+const { logDocExport } = require('./lib/doc-export-audit.js');
 const { createHostStore } = require('./lan-squad/host-store.js');
 const { createLanRouter } = require('./lan-squad/host-router.js');
 const { attachWsHub } = require('./lan-squad/ws-hub.js');
@@ -102,68 +107,6 @@ appExpress.use(express.static(path.join(__dirname, 'public')));
 
 const DOWNLOADS = path.join(os.homedir(), 'Downloads');
 
-function resolvePython() {
-  if (process.platform === 'win32') {
-    // En Windows, extraResources se coloca en process.resourcesPath (fuera del ASAR)
-    // Intentar múltiples ubicaciones:
-    // 1. process.resourcesPath (instalado)
-    // 2. __dirname (dev)
-    // 3. path.dirname(process.execPath) + '/resources' (instalado alternativo)
-    const bases = [
-      process.resourcesPath,
-      __dirname,
-      path.join(path.dirname(process.execPath || ''), 'resources')
-    ].filter(Boolean);
-    console.log('[resolvePython] Windows - process.execPath:', process.execPath);
-    console.log('[resolvePython] Windows - process.resourcesPath:', process.resourcesPath);
-    console.log('[resolvePython] Windows - __dirname:', __dirname);
-    console.log('[resolvePython] Windows - buscando en:', bases);
-    for (const base of bases) {
-      const bundled = path.join(base, 'python-runtime', 'win-x64', 'python.exe');
-      console.log('[resolvePython] Intentando:', bundled);
-      try {
-        if (fs.statSync(bundled).isFile()) {
-          console.log('[resolvePython] ✓ Encontrado:', bundled);
-          return bundled;
-        }
-      } catch (err) {
-        console.log('[resolvePython] ✗ No encontrado:', bundled, '(', err.code, ')');
-      }
-    }
-    console.log('[resolvePython] ⚠️ Python embebido no encontrado en ninguna ubicación');
-    console.log('[resolvePython] ⚠️ Usando fallback "python" (requiere Python en PATH del sistema)');
-    return 'python';
-  }
-  if (process.platform === 'darwin') {
-    const arch = process.arch === 'arm64' ? 'mac-arm64' : 'mac-x64';
-    for (const base of [process.resourcesPath, __dirname].filter(Boolean)) {
-      const binDir = path.join(base, 'python-runtime', arch, 'bin');
-      for (const name of ['python3', 'python3.12', 'python3.13']) {
-        const bundled = path.join(binDir, name);
-        try { if (fs.statSync(bundled).isFile()) return bundled; } catch { /* not found */ }
-      }
-    }
-  }
-  // Sin runtime embebido: en Apple Silicon, /usr/local suele ser Homebrew x86_64 (Rosetta)
-  // y dispara el aviso de macOS; preferir /opt/homebrew (arm64).
-  const systemPaths =
-    process.platform === 'darwin' && process.arch === 'arm64'
-      ? [
-          '/opt/homebrew/bin/python3',
-          '/usr/bin/python3',
-          '/usr/local/bin/python3',
-        ]
-      : [
-          '/usr/local/bin/python3',
-          '/opt/homebrew/bin/python3',
-          '/usr/bin/python3',
-        ];
-  return systemPaths.find(p => {
-    try { return fs.statSync(p).isFile(); } catch { return false; }
-  }) || 'python3';
-}
-const PYTHON = resolvePython();
-
 function safeName(str) {
   return (str || '').replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9]/g, '_');
 }
@@ -172,81 +115,60 @@ const SCRIPTS_DIR = __dirname.includes('app.asar')
   ? __dirname.replace('app.asar', 'app.asar.unpacked')
   : __dirname;
 
-function runPython(script, payload) {
-  return new Promise((resolve, reject) => {
-    const py = spawn(PYTHON, [path.join(SCRIPTS_DIR, script)]);
-    const chunks = [];
-    let err = '';
-    py.on('error', reject);
-    py.stdout.on('data', c => chunks.push(c));
-    py.stderr.on('data', c => { err += c.toString(); });
-    py.on('close', code => {
-      if (code !== 0) reject(new Error(err || `Error Python (code ${code})`));
-      else resolve(Buffer.concat(chunks));
-    });
-    py.stdin.on('error', () => {}); // suppress EPIPE; process error/close handles it
-    py.stdin.write(payload);
-    py.stdin.end();
-  });
-}
-
 appExpress.post('/generate', generateLimiter, async (req, res) => {
-  const { patient, note, outputDir } = req.body;
+  const { patient, note } = req.body;
   if (!patient || !note) return res.status(400).json({ error: 'Missing patient or note' });
-  const dest = (outputDir || '').trim() || DOWNLOADS;
-  if (!fs.existsSync(dest)) return res.status(400).json({ error: 'La carpeta seleccionada ya no existe. Cambia la ruta en Mi Perfil.' });
-  try { fs.accessSync(dest, fs.constants.W_OK); } catch (_) {
-    return res.status(400).json({ error: 'No se puede escribir en la carpeta seleccionada.' });
-  }
   try {
-    const buf = await runPython('generate_note.py', JSON.stringify({ patient, note }));
-    const fileName = `Nota_Evolucion_${safeName(patient.nombre)}_${safeName(note.fecha||'')}.docx`;
-    fs.writeFileSync(path.join(dest, fileName), buf);
-    res.json({ ok: true, fileName });
+    const buf = await generateNoteBuffer({ patient, note });
+    const fileName = `Nota_Evolucion_${safeName(patient.nombre)}_${safeName(note.fecha || '')}.docx`;
+    sendDocxBuffer(res, { buf, fileName, type: 'nota', patient });
   } catch (e) {
-    res.status(500).json({ error: 'No se pudo generar el documento. Intenta de nuevo.' });
+    logDocExport({ type: 'nota', patient, status: 500, error: e && e.message });
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'No se pudo generar el documento. Intenta de nuevo.' });
+    }
   }
 });
 
 appExpress.post('/generate-indicaciones', generateLimiter, async (req, res) => {
-  const { patient, indicaciones, outputDir } = req.body;
-  if (!patient || !indicaciones) return res.status(400).json({ error: 'Missing patient or indicaciones' });
-  const dest = (outputDir || '').trim() || DOWNLOADS;
-  if (!fs.existsSync(dest)) return res.status(400).json({ error: 'La carpeta seleccionada ya no existe. Cambia la ruta en Mi Perfil.' });
-  try { fs.accessSync(dest, fs.constants.W_OK); } catch (_) {
-    return res.status(400).json({ error: 'No se puede escribir en la carpeta seleccionada.' });
+  const { patient, indicaciones } = req.body;
+  if (!patient || !indicaciones) {
+    return res.status(400).json({ error: 'Missing patient or indicaciones' });
   }
   try {
-    const buf = await runPython('generate_indicaciones.py', JSON.stringify({ patient, indicaciones }));
-    const fileName = `Indicaciones_${safeName(patient.nombre)}_${safeName(indicaciones.fecha||'')}.docx`;
-    fs.writeFileSync(path.join(dest, fileName), buf);
-    res.json({ ok: true, fileName });
+    const buf = await generateIndicacionesBuffer({ patient, indicaciones });
+    const fileName = `Indicaciones_${safeName(patient.nombre)}_${safeName(indicaciones.fecha || '')}.docx`;
+    sendDocxBuffer(res, { buf, fileName, type: 'indicaciones', patient });
   } catch (e) {
-    res.status(500).json({ error: 'No se pudo generar el documento. Intenta de nuevo.' });
+    logDocExport({ type: 'indicaciones', patient, status: 500, error: e && e.message });
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'No se pudo generar el documento. Intenta de nuevo.' });
+    }
   }
 });
 
 appExpress.post('/generate-listado', generateLimiter, async (req, res) => {
-  const { patient, listado, medicos, outputDir } = req.body;
+  const { patient, listado, medicos } = req.body;
   if (!patient || !listado) return res.status(400).json({ error: 'Missing patient or listado' });
-  const dest = (outputDir || '').trim() || DOWNLOADS;
-  if (!fs.existsSync(dest)) return res.status(400).json({ error: 'La carpeta seleccionada ya no existe. Cambia la ruta en Mi Perfil.' });
-  try { fs.accessSync(dest, fs.constants.W_OK); } catch (_) {
-    return res.status(400).json({ error: 'No se puede escribir en la carpeta seleccionada.' });
-  }
   try {
-    const buf = await runPython('generate_listado.py', JSON.stringify({ patient, listado, medicos: medicos || {} }));
+    const buf = await generateListadoBuffer({
+      patient,
+      listado,
+      medicos: medicos || {},
+    });
     const now = new Date();
     const stamp = [
       String(now.getHours()).padStart(2, '0'),
       String(now.getMinutes()).padStart(2, '0'),
       String(now.getSeconds()).padStart(2, '0'),
     ].join('-');
-    const fileName = `Listado_Problemas_${safeName(patient.nombre)}_${safeName(listado.fecha||'')}_${stamp}.docx`;
-    fs.writeFileSync(path.join(dest, fileName), buf);
-    res.json({ ok: true, fileName });
+    const fileName = `Listado_Problemas_${safeName(patient.nombre)}_${safeName(listado.fecha || '')}_${stamp}.docx`;
+    sendDocxBuffer(res, { buf, fileName, type: 'listado', patient });
   } catch (e) {
-    res.status(500).json({ error: 'No se pudo generar el documento. Intenta de nuevo.' });
+    logDocExport({ type: 'listado', patient, status: 500, error: e && e.message });
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'No se pudo generar el documento. Intenta de nuevo.' });
+    }
   }
 });
 

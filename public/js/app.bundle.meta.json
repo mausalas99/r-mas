@@ -163,12 +163,12 @@
       "format": "esm"
     },
     "public/js/clinical-product-policy.mjs": {
-      "bytes": 1407,
+      "bytes": 1464,
       "imports": [],
       "format": "esm"
     },
     "public/js/labs.js": {
-      "bytes": 118751,
+      "bytes": 119947,
       "imports": [
         {
           "path": "public/js/clinical-product-policy.mjs",
@@ -200,7 +200,7 @@
       "format": "esm"
     },
     "public/js/tour-pitch-cultivos-some.mjs": {
-      "bytes": 6775,
+      "bytes": 6853,
       "imports": [],
       "format": "esm"
     },
@@ -303,7 +303,7 @@
       "format": "esm"
     },
     "public/js/mode-features.mjs": {
-      "bytes": 900,
+      "bytes": 1286,
       "imports": [],
       "format": "esm"
     },
@@ -471,7 +471,7 @@
       "format": "esm"
     },
     "public/js/labs-some-table.mjs": {
-      "bytes": 34619,
+      "bytes": 39115,
       "imports": [
         {
           "path": "public/js/tend-export.mjs",
@@ -561,7 +561,7 @@
       "format": "esm"
     },
     "public/js/features/lab-bulk-preview-modal.mjs": {
-      "bytes": 9331,
+      "bytes": 9451,
       "imports": [
         {
           "path": "public/js/lab-bulk-paste.mjs",
@@ -572,7 +572,7 @@
       "format": "esm"
     },
     "public/js/features/lab-panel.mjs": {
-      "bytes": 64205,
+      "bytes": 64333,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -859,7 +859,7 @@
       "format": "esm"
     },
     "public/js/features/clinical-conflict-viewer.mjs": {
-      "bytes": 5111,
+      "bytes": 14248,
       "imports": [],
       "format": "esm"
     },
@@ -880,7 +880,7 @@
       "format": "esm"
     },
     "public/js/features/lan-sync.mjs": {
-      "bytes": 113314,
+      "bytes": 119056,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -991,12 +991,12 @@
       "format": "esm"
     },
     "public/js/onboarding-curriculum.mjs": {
-      "bytes": 4475,
+      "bytes": 4765,
       "imports": [],
       "format": "esm"
     },
     "public/js/tour-targets.mjs": {
-      "bytes": 5717,
+      "bytes": 7233,
       "imports": [
         {
           "path": "public/js/onboarding-curriculum.mjs",
@@ -1018,7 +1018,7 @@
       "format": "esm"
     },
     "public/js/censo-cultivo-format.mjs": {
-      "bytes": 10249,
+      "bytes": 10413,
       "imports": [
         {
           "path": "public/js/tend-core.mjs",
@@ -1153,6 +1153,262 @@
           "path": "public/js/ui-motion.mjs",
           "kind": "import-statement",
           "original": "./ui-motion.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/tour-demo-monitoreo.mjs": {
+      "bytes": 4661,
+      "imports": [
+        {
+          "path": "public/js/features/estado-actual-data.mjs",
+          "kind": "import-statement",
+          "original": "./features/estado-actual-data.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-registro-defaults.mjs",
+          "kind": "import-statement",
+          "original": "./features/estado-actual-registro-defaults.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/tour-demo-dates.mjs": {
+      "bytes": 3667,
+      "imports": [
+        {
+          "path": "public/js/tour-demo-some-lab.mjs",
+          "kind": "import-statement",
+          "original": "./tour-demo-some-lab.mjs"
+        },
+        {
+          "path": "public/js/lab-bulk-paste.mjs",
+          "kind": "import-statement",
+          "original": "./lab-bulk-paste.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/tour-demo-patient.mjs": {
+      "bytes": 5397,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/tour-demo-todos.mjs": {
+      "bytes": 2052,
+      "imports": [
+        {
+          "path": "public/js/tour-demo-patient.mjs",
+          "kind": "import-statement",
+          "original": "./tour-demo-patient.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "lib/historia-clinica/clinical-text.mjs": {
+      "bytes": 3240,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/features/eventualidades-panel.mjs": {
+      "bytes": 17904,
+      "imports": [
+        {
+          "path": "public/js/app-state.mjs",
+          "kind": "import-statement",
+          "original": "../app-state.mjs"
+        },
+        {
+          "path": "public/js/versioned-mutation.mjs",
+          "kind": "import-statement",
+          "original": "../versioned-mutation.mjs"
+        },
+        {
+          "path": "public/js/rpc-date-picker.mjs",
+          "kind": "import-statement",
+          "original": "../rpc-date-picker.mjs"
+        },
+        {
+          "path": "public/js/features/lan-sync.mjs",
+          "kind": "import-statement",
+          "original": "./lan-sync.mjs"
+        },
+        {
+          "path": "lib/historia-clinica/clinical-text.mjs",
+          "kind": "import-statement",
+          "original": "../../../lib/historia-clinica/clinical-text.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/tour-demo-eventualidades.mjs": {
+      "bytes": 1485,
+      "imports": [
+        {
+          "path": "public/js/tour-demo-dates.mjs",
+          "kind": "import-statement",
+          "original": "./tour-demo-dates.mjs"
+        },
+        {
+          "path": "public/js/features/eventualidades-panel.mjs",
+          "kind": "import-statement",
+          "original": "./features/eventualidades-panel.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/features/estado-actual-ranges.mjs": {
+      "bytes": 670,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/features/estado-actual-text.mjs": {
+      "bytes": 5556,
+      "imports": [
+        {
+          "path": "public/js/features/estado-actual-data.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-data.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-io.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-io.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/features/estado-actual-charts.mjs": {
+      "bytes": 23161,
+      "imports": [
+        {
+          "path": "public/js/features/estado-actual-ranges.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-ranges.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-registro-defaults.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-registro-defaults.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/features/estado-actual-panel.mjs": {
+      "bytes": 69213,
+      "imports": [
+        {
+          "path": "public/js/app-state.mjs",
+          "kind": "import-statement",
+          "original": "../app-state.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-data.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-data.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-io.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-io.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-ranges.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-ranges.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-text.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-text.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-meds.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-meds.mjs"
+        },
+        {
+          "path": "public/js/med-receta-core.mjs",
+          "kind": "import-statement",
+          "original": "../med-receta-core.mjs"
+        },
+        {
+          "path": "public/js/features/soap-estado.mjs",
+          "kind": "import-statement",
+          "original": "./soap-estado.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-charts.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-charts.mjs"
+        },
+        {
+          "path": "public/js/deferred-work.mjs",
+          "kind": "import-statement",
+          "original": "../deferred-work.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-registro-defaults.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-registro-defaults.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-vital-extras.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-vital-extras.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-vital-series.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-vital-series.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/features/estado-actual-parse-variants.mjs": {
+      "bytes": 1507,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/features/estado-actual-parser.mjs": {
+      "bytes": 13016,
+      "imports": [
+        {
+          "path": "public/js/features/estado-actual-io.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-io.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-parse-variants.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-parse-variants.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-io.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-io.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/features/estado-actual-paste-modal.mjs": {
+      "bytes": 3270,
+      "imports": [
+        {
+          "path": "public/js/features/estado-actual-parser.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-parser.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/features/estado-actual-registro-modal.mjs": {
+      "bytes": 2925,
+      "imports": [
+        {
+          "path": "public/js/features/estado-actual-paste-modal.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-paste-modal.mjs"
         }
       ],
       "format": "esm"
@@ -1318,7 +1574,7 @@
       "format": "esm"
     },
     "public/js/features/settings-help.mjs": {
-      "bytes": 110465,
+      "bytes": 124590,
       "imports": [
         {
           "path": "public/js/tour-targets.mjs",
@@ -1356,11 +1612,6 @@
           "original": "./profile.mjs"
         },
         {
-          "path": "public/js/tour-demo-some-lab.mjs",
-          "kind": "import-statement",
-          "original": "../tour-demo-some-lab.mjs"
-        },
-        {
           "path": "public/js/lab-bulk-paste.mjs",
           "kind": "import-statement",
           "original": "../lab-bulk-paste.mjs"
@@ -1369,6 +1620,46 @@
           "path": "public/js/tour-demo-listado-problemas.mjs",
           "kind": "import-statement",
           "original": "../tour-demo-listado-problemas.mjs"
+        },
+        {
+          "path": "public/js/tour-demo-monitoreo.mjs",
+          "kind": "import-statement",
+          "original": "../tour-demo-monitoreo.mjs"
+        },
+        {
+          "path": "public/js/tour-demo-dates.mjs",
+          "kind": "import-statement",
+          "original": "../tour-demo-dates.mjs"
+        },
+        {
+          "path": "public/js/tour-demo-todos.mjs",
+          "kind": "import-statement",
+          "original": "../tour-demo-todos.mjs"
+        },
+        {
+          "path": "public/js/tour-demo-eventualidades.mjs",
+          "kind": "import-statement",
+          "original": "../tour-demo-eventualidades.mjs"
+        },
+        {
+          "path": "public/js/lab-bulk-paste.mjs",
+          "kind": "import-statement",
+          "original": "../lab-bulk-paste.mjs"
+        },
+        {
+          "path": "public/js/tour-demo-patient.mjs",
+          "kind": "import-statement",
+          "original": "../tour-demo-patient.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-panel.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-panel.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-registro-modal.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-registro-modal.mjs"
         },
         {
           "path": "public/js/mobile-web.mjs",
@@ -1469,7 +1760,7 @@
       "format": "esm"
     },
     "public/js/features/platform.mjs": {
-      "bytes": 76774,
+      "bytes": 76789,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -1653,7 +1944,7 @@
       "format": "esm"
     },
     "public/js/features/expediente.mjs": {
-      "bytes": 48376,
+      "bytes": 48832,
       "imports": [
         {
           "path": "public/js/app-state.mjs",
@@ -1744,7 +2035,7 @@
       "format": "esm"
     },
     "public/js/features/todos.mjs": {
-      "bytes": 12896,
+      "bytes": 12973,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -2578,11 +2869,6 @@
         "type": "json"
       }
     },
-    "lib/historia-clinica/clinical-text.mjs": {
-      "bytes": 3240,
-      "imports": [],
-      "format": "esm"
-    },
     "lib/historia-clinica/medicamento-entry.mjs": {
       "bytes": 1864,
       "imports": [
@@ -2687,8 +2973,13 @@
       ],
       "format": "esm"
     },
+    "lib/historia-clinica/signos-vitales-ingreso.mjs": {
+      "bytes": 4646,
+      "imports": [],
+      "format": "esm"
+    },
     "lib/historia-clinica/compile-narrative.mjs": {
-      "bytes": 6017,
+      "bytes": 6134,
       "imports": [
         {
           "path": "lib/historia-clinica/defaults.mjs",
@@ -2719,6 +3010,11 @@
           "path": "lib/historia-clinica/compile-ahf.mjs",
           "kind": "import-statement",
           "original": "./compile-ahf.mjs"
+        },
+        {
+          "path": "lib/historia-clinica/signos-vitales-ingreso.mjs",
+          "kind": "import-statement",
+          "original": "./signos-vitales-ingreso.mjs"
         }
       ],
       "format": "esm"
@@ -2769,7 +3065,7 @@
       "format": "esm"
     },
     "public/js/features/historia-clinica-apnp-widgets.mjs": {
-      "bytes": 7111,
+      "bytes": 7492,
       "imports": [
         {
           "path": "lib/historia-clinica/apnp-calculators.mjs",
@@ -2882,7 +3178,7 @@
       "format": "esm"
     },
     "public/js/features/historia-clinica-panel.mjs": {
-      "bytes": 30421,
+      "bytes": 32784,
       "imports": [
         {
           "path": "public/js/app-state.mjs",
@@ -3007,32 +3303,16 @@
           "path": "lib/historia-clinica/clinical-text.mjs",
           "kind": "import-statement",
           "original": "../../../lib/historia-clinica/clinical-text.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/features/eventualidades-panel.mjs": {
-      "bytes": 15140,
-      "imports": [
-        {
-          "path": "public/js/app-state.mjs",
-          "kind": "import-statement",
-          "original": "../app-state.mjs"
         },
         {
-          "path": "public/js/versioned-mutation.mjs",
+          "path": "lib/historia-clinica/signos-vitales-ingreso.mjs",
           "kind": "import-statement",
-          "original": "../versioned-mutation.mjs"
+          "original": "../../../lib/historia-clinica/signos-vitales-ingreso.mjs"
         },
         {
-          "path": "public/js/rpc-date-picker.mjs",
+          "path": "public/js/features/estado-actual-data.mjs",
           "kind": "import-statement",
-          "original": "../rpc-date-picker.mjs"
-        },
-        {
-          "path": "public/js/features/lan-sync.mjs",
-          "kind": "import-statement",
-          "original": "./lan-sync.mjs"
+          "original": "./estado-actual-data.mjs"
         }
       ],
       "format": "esm"
@@ -3048,7 +3328,7 @@
       "format": "esm"
     },
     "public/js/vpo-data.mjs": {
-      "bytes": 11546,
+      "bytes": 12103,
       "imports": [
         {
           "path": "public/js/clinical-product-policy.mjs",
@@ -3084,12 +3364,12 @@
       "format": "esm"
     },
     "public/js/vpo-text.mjs": {
-      "bytes": 4204,
+      "bytes": 4162,
       "imports": [],
       "format": "esm"
     },
     "public/js/features/vpo-panel.mjs": {
-      "bytes": 26612,
+      "bytes": 27760,
       "imports": [
         {
           "path": "public/js/app-state.mjs",
@@ -3155,114 +3435,6 @@
       ],
       "format": "esm"
     },
-    "public/js/features/estado-actual-ranges.mjs": {
-      "bytes": 670,
-      "imports": [],
-      "format": "esm"
-    },
-    "public/js/features/estado-actual-text.mjs": {
-      "bytes": 5556,
-      "imports": [
-        {
-          "path": "public/js/features/estado-actual-data.mjs",
-          "kind": "import-statement",
-          "original": "./estado-actual-data.mjs"
-        },
-        {
-          "path": "public/js/features/estado-actual-io.mjs",
-          "kind": "import-statement",
-          "original": "./estado-actual-io.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/features/estado-actual-charts.mjs": {
-      "bytes": 23161,
-      "imports": [
-        {
-          "path": "public/js/features/estado-actual-ranges.mjs",
-          "kind": "import-statement",
-          "original": "./estado-actual-ranges.mjs"
-        },
-        {
-          "path": "public/js/features/estado-actual-registro-defaults.mjs",
-          "kind": "import-statement",
-          "original": "./estado-actual-registro-defaults.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/features/estado-actual-panel.mjs": {
-      "bytes": 69104,
-      "imports": [
-        {
-          "path": "public/js/app-state.mjs",
-          "kind": "import-statement",
-          "original": "../app-state.mjs"
-        },
-        {
-          "path": "public/js/features/estado-actual-data.mjs",
-          "kind": "import-statement",
-          "original": "./estado-actual-data.mjs"
-        },
-        {
-          "path": "public/js/features/estado-actual-io.mjs",
-          "kind": "import-statement",
-          "original": "./estado-actual-io.mjs"
-        },
-        {
-          "path": "public/js/features/estado-actual-ranges.mjs",
-          "kind": "import-statement",
-          "original": "./estado-actual-ranges.mjs"
-        },
-        {
-          "path": "public/js/features/estado-actual-text.mjs",
-          "kind": "import-statement",
-          "original": "./estado-actual-text.mjs"
-        },
-        {
-          "path": "public/js/features/estado-actual-meds.mjs",
-          "kind": "import-statement",
-          "original": "./estado-actual-meds.mjs"
-        },
-        {
-          "path": "public/js/med-receta-core.mjs",
-          "kind": "import-statement",
-          "original": "../med-receta-core.mjs"
-        },
-        {
-          "path": "public/js/features/soap-estado.mjs",
-          "kind": "import-statement",
-          "original": "./soap-estado.mjs"
-        },
-        {
-          "path": "public/js/features/estado-actual-charts.mjs",
-          "kind": "import-statement",
-          "original": "./estado-actual-charts.mjs"
-        },
-        {
-          "path": "public/js/deferred-work.mjs",
-          "kind": "import-statement",
-          "original": "../deferred-work.mjs"
-        },
-        {
-          "path": "public/js/features/estado-actual-registro-defaults.mjs",
-          "kind": "import-statement",
-          "original": "./estado-actual-registro-defaults.mjs"
-        },
-        {
-          "path": "public/js/features/estado-actual-vital-extras.mjs",
-          "kind": "import-statement",
-          "original": "./estado-actual-vital-extras.mjs"
-        },
-        {
-          "path": "public/js/features/estado-actual-vital-series.mjs",
-          "kind": "import-statement",
-          "original": "./estado-actual-vital-series.mjs"
-        }
-      ],
-      "format": "esm"
-    },
     "public/js/features/receta-hu.mjs": {
       "bytes": 26473,
       "imports": [
@@ -3285,7 +3457,7 @@
       "format": "esm"
     },
     "public/js/features/pase-board.mjs": {
-      "bytes": 43072,
+      "bytes": 43194,
       "imports": [
         {
           "path": "public/js/labs.js",
@@ -3565,7 +3737,7 @@
       "format": "esm"
     },
     "public/js/features/patients.mjs": {
-      "bytes": 48303,
+      "bytes": 51399,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -3608,6 +3780,11 @@
           "original": "../mode-features.mjs"
         },
         {
+          "path": "public/js/tour-demo-patient.mjs",
+          "kind": "import-statement",
+          "original": "../tour-demo-patient.mjs"
+        },
+        {
           "path": "public/js/expediente-tabs.mjs",
           "kind": "import-statement",
           "original": "../expediente-tabs.mjs"
@@ -3646,6 +3823,11 @@
           "path": "public/js/tour-pitch-demo-seed.mjs",
           "kind": "import-statement",
           "original": "../tour-pitch-demo-seed.mjs"
+        },
+        {
+          "path": "public/js/tour-demo-patient.mjs",
+          "kind": "import-statement",
+          "original": "../tour-demo-patient.mjs"
         }
       ],
       "format": "esm"
@@ -3929,56 +4111,8 @@
       ],
       "format": "esm"
     },
-    "public/js/features/estado-actual-parse-variants.mjs": {
-      "bytes": 1507,
-      "imports": [],
-      "format": "esm"
-    },
-    "public/js/features/estado-actual-parser.mjs": {
-      "bytes": 13016,
-      "imports": [
-        {
-          "path": "public/js/features/estado-actual-io.mjs",
-          "kind": "import-statement",
-          "original": "./estado-actual-io.mjs"
-        },
-        {
-          "path": "public/js/features/estado-actual-parse-variants.mjs",
-          "kind": "import-statement",
-          "original": "./estado-actual-parse-variants.mjs"
-        },
-        {
-          "path": "public/js/features/estado-actual-io.mjs",
-          "kind": "import-statement",
-          "original": "./estado-actual-io.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/features/estado-actual-paste-modal.mjs": {
-      "bytes": 3270,
-      "imports": [
-        {
-          "path": "public/js/features/estado-actual-parser.mjs",
-          "kind": "import-statement",
-          "original": "./estado-actual-parser.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/features/estado-actual-registro-modal.mjs": {
-      "bytes": 2925,
-      "imports": [
-        {
-          "path": "public/js/features/estado-actual-paste-modal.mjs",
-          "kind": "import-statement",
-          "original": "./estado-actual-paste-modal.mjs"
-        }
-      ],
-      "format": "esm"
-    },
     "public/js/app-runtimes.mjs": {
-      "bytes": 22237,
+      "bytes": 22797,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -4400,7 +4534,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 3771921
+      "bytes": 3883102
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -4453,10 +4587,10 @@
           "bytesInOutput": 4525
         },
         "public/js/clinical-product-policy.mjs": {
-          "bytesInOutput": 945
+          "bytesInOutput": 859
         },
         "public/js/labs.js": {
-          "bytesInOutput": 111002
+          "bytesInOutput": 112038
         },
         "public/js/features/diagrams-parse.mjs": {
           "bytesInOutput": 3028
@@ -4465,7 +4599,7 @@
           "bytesInOutput": 5326
         },
         "public/js/tour-pitch-cultivos-some.mjs": {
-          "bytesInOutput": 4758
+          "bytesInOutput": 4808
         },
         "public/js/listado-problemas-core.mjs": {
           "bytesInOutput": 1031
@@ -4486,7 +4620,7 @@
           "bytesInOutput": 16474
         },
         "public/js/mode-features.mjs": {
-          "bytesInOutput": 530
+          "bytesInOutput": 910
         },
         "public/js/features/chrome.mjs": {
           "bytesInOutput": 12542
@@ -4531,7 +4665,7 @@
           "bytesInOutput": 13748
         },
         "public/js/labs-some-table.mjs": {
-          "bytesInOutput": 32702
+          "bytesInOutput": 37030
         },
         "public/js/tour-guards.mjs": {
           "bytesInOutput": 411
@@ -4552,10 +4686,10 @@
           "bytesInOutput": 11964
         },
         "public/js/features/lab-bulk-preview-modal.mjs": {
-          "bytesInOutput": 8270
+          "bytesInOutput": 8392
         },
         "public/js/features/lab-panel.mjs": {
-          "bytesInOutput": 58190
+          "bytesInOutput": 58323
         },
         "public/js/rpc-date-picker.mjs": {
           "bytesInOutput": 11166
@@ -4618,7 +4752,7 @@
           "bytesInOutput": 3128
         },
         "public/js/features/clinical-conflict-viewer.mjs": {
-          "bytesInOutput": 4360
+          "bytesInOutput": 12681
         },
         "public/js/host-bundle-bases.mjs": {
           "bytesInOutput": 2607
@@ -4627,22 +4761,22 @@
           "bytesInOutput": 4082
         },
         "public/js/features/lan-sync.mjs": {
-          "bytesInOutput": 109189
+          "bytesInOutput": 114791
         },
         "public/js/update-helpers.mjs": {
           "bytesInOutput": 635
         },
         "public/js/onboarding-curriculum.mjs": {
-          "bytesInOutput": 3556
+          "bytesInOutput": 3739
         },
         "public/js/tour-targets.mjs": {
-          "bytesInOutput": 4541
+          "bytesInOutput": 6044
         },
         "public/js/onboarding-progress.mjs": {
           "bytesInOutput": 985
         },
         "public/js/censo-cultivo-format.mjs": {
-          "bytesInOutput": 9536
+          "bytesInOutput": 9658
         },
         "public/js/censo-labs-format.mjs": {
           "bytesInOutput": 2760
@@ -4655,6 +4789,51 @@
         },
         "public/js/censo-export.mjs": {
           "bytesInOutput": 7576
+        },
+        "public/js/tour-demo-monitoreo.mjs": {
+          "bytesInOutput": 3787
+        },
+        "public/js/tour-demo-dates.mjs": {
+          "bytesInOutput": 2658
+        },
+        "public/js/tour-demo-patient.mjs": {
+          "bytesInOutput": 3417
+        },
+        "public/js/tour-demo-todos.mjs": {
+          "bytesInOutput": 1852
+        },
+        "lib/historia-clinica/clinical-text.mjs": {
+          "bytesInOutput": 2644
+        },
+        "public/js/features/eventualidades-panel.mjs": {
+          "bytesInOutput": 16124
+        },
+        "public/js/tour-demo-eventualidades.mjs": {
+          "bytesInOutput": 1150
+        },
+        "public/js/features/estado-actual-ranges.mjs": {
+          "bytesInOutput": 448
+        },
+        "public/js/features/estado-actual-text.mjs": {
+          "bytesInOutput": 4339
+        },
+        "public/js/features/estado-actual-charts.mjs": {
+          "bytesInOutput": 19957
+        },
+        "public/js/features/estado-actual-panel.mjs": {
+          "bytesInOutput": 59845
+        },
+        "public/js/features/estado-actual-parse-variants.mjs": {
+          "bytesInOutput": 982
+        },
+        "public/js/features/estado-actual-parser.mjs": {
+          "bytesInOutput": 10371
+        },
+        "public/js/features/estado-actual-paste-modal.mjs": {
+          "bytesInOutput": 2685
+        },
+        "public/js/features/estado-actual-registro-modal.mjs": {
+          "bytesInOutput": 2618
         },
         "public/js/mobile-web.mjs": {
           "bytesInOutput": 545
@@ -4669,22 +4848,22 @@
           "bytesInOutput": 50162
         },
         "public/js/sesion-ingreso-trends-export.mjs": {
-          "bytesInOutput": 5120
+          "bytesInOutput": 5132
         },
         "public/js/features/sesion-ingreso-trends-send-modal.mjs": {
-          "bytesInOutput": 4397
+          "bytesInOutput": 4407
         },
         "public/js/features/tendencias.mjs": {
           "bytesInOutput": 67384
         },
         "public/js/features/settings-help.mjs": {
-          "bytesInOutput": 103542
+          "bytesInOutput": 113864
         },
         "public/js/patient-export-format.mjs": {
           "bytesInOutput": 4275
         },
         "public/js/features/platform.mjs": {
-          "bytesInOutput": 67936
+          "bytesInOutput": 67947
         },
         "public/js/clinico-access.mjs": {
           "bytesInOutput": 2344
@@ -4696,13 +4875,13 @@
           "bytesInOutput": 19865
         },
         "public/js/features/expediente.mjs": {
-          "bytesInOutput": 43571
+          "bytesInOutput": 43971
         },
         "public/js/todos-priority.mjs": {
           "bytesInOutput": 524
         },
         "public/js/features/todos.mjs": {
-          "bytesInOutput": 11916
+          "bytesInOutput": 11990
         },
         "public/js/manejo-atb-catalog.mjs": {
           "bytesInOutput": 11898
@@ -4830,9 +5009,6 @@
         "lib/historia-clinica/catalogs/genero-field-specs.json": {
           "bytesInOutput": 1319
         },
-        "lib/historia-clinica/clinical-text.mjs": {
-          "bytesInOutput": 2644
-        },
         "lib/historia-clinica/medicamento-entry.mjs": {
           "bytesInOutput": 1464
         },
@@ -4840,7 +5016,7 @@
           "bytesInOutput": 5935
         },
         "lib/historia-clinica/apnp-calculators.mjs": {
-          "bytesInOutput": 5043
+          "bytesInOutput": 5052
         },
         "lib/historia-clinica/catalogs/toxicomanias-substances.json": {
           "bytesInOutput": 382
@@ -4863,8 +5039,11 @@
         "lib/historia-clinica/compile-ahf.mjs": {
           "bytesInOutput": 2441
         },
+        "lib/historia-clinica/signos-vitales-ingreso.mjs": {
+          "bytesInOutput": 3540
+        },
         "lib/historia-clinica/compile-narrative.mjs": {
-          "bytesInOutput": 5331
+          "bytesInOutput": 5387
         },
         "lib/historia-clinica/migrate-legacy.mjs": {
           "bytesInOutput": 2004
@@ -4882,7 +5061,7 @@
           "bytesInOutput": 3424
         },
         "public/js/features/historia-clinica-apnp-widgets.mjs": {
-          "bytesInOutput": 6018
+          "bytesInOutput": 6300
         },
         "public/js/features/historia-clinica-toxicomanias.mjs": {
           "bytesInOutput": 5494
@@ -4906,10 +5085,7 @@
           "bytesInOutput": 401
         },
         "public/js/features/historia-clinica-panel.mjs": {
-          "bytesInOutput": 27287
-        },
-        "public/js/features/eventualidades-panel.mjs": {
-          "bytesInOutput": 13605
+          "bytesInOutput": 29338
         },
         "public/js/vpo-lookups.mjs": {
           "bytesInOutput": 4994
@@ -4918,37 +5094,25 @@
           "bytesInOutput": 1740
         },
         "public/js/vpo-data.mjs": {
-          "bytesInOutput": 8868
+          "bytesInOutput": 9386
         },
         "public/js/vpo-periop-meds.mjs": {
           "bytesInOutput": 3009
         },
         "public/js/vpo-text.mjs": {
-          "bytesInOutput": 3568
+          "bytesInOutput": 3510
         },
         "public/js/features/vpo-panel.mjs": {
-          "bytesInOutput": 23400
+          "bytesInOutput": 24271
         },
         "public/js/features/vpo.mjs": {
           "bytesInOutput": 368
-        },
-        "public/js/features/estado-actual-ranges.mjs": {
-          "bytesInOutput": 448
-        },
-        "public/js/features/estado-actual-text.mjs": {
-          "bytesInOutput": 4355
-        },
-        "public/js/features/estado-actual-charts.mjs": {
-          "bytesInOutput": 19957
-        },
-        "public/js/features/estado-actual-panel.mjs": {
-          "bytesInOutput": 59756
         },
         "public/js/features/receta-hu.mjs": {
           "bytesInOutput": 24416
         },
         "public/js/features/pase-board.mjs": {
-          "bytesInOutput": 37860
+          "bytesInOutput": 37951
         },
         "public/js/features/medications.mjs": {
           "bytesInOutput": 15648
@@ -4969,7 +5133,7 @@
           "bytesInOutput": 1055
         },
         "public/js/features/patients.mjs": {
-          "bytesInOutput": 45174
+          "bytesInOutput": 47921
         },
         "public/js/presentation-mode.mjs": {
           "bytesInOutput": 4048
@@ -4992,26 +5156,14 @@
         "public/js/app-shell.mjs": {
           "bytesInOutput": 29205
         },
-        "public/js/features/estado-actual-parse-variants.mjs": {
-          "bytesInOutput": 982
-        },
-        "public/js/features/estado-actual-parser.mjs": {
-          "bytesInOutput": 10371
-        },
-        "public/js/features/estado-actual-paste-modal.mjs": {
-          "bytesInOutput": 2686
-        },
-        "public/js/features/estado-actual-registro-modal.mjs": {
-          "bytesInOutput": 2619
-        },
         "public/js/app-runtimes.mjs": {
-          "bytesInOutput": 13081
+          "bytesInOutput": 13409
         },
         "public/js/app.js": {
           "bytesInOutput": 4817
         }
       },
-      "bytes": 2071449
+      "bytes": 2130098
     }
   }
 }

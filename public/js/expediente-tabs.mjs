@@ -3,11 +3,13 @@
  */
 import { isModeSala } from './mode-features.mjs';
 import { isClinicoAccessHidden } from './clinico-access.mjs';
+import { isManejoTabGloballyHidden } from './clinical-product-policy.mjs';
 
 export const GRANULAR_TABS = [
   'datos',
   'notas',
   'indica',
+  'historia',
   'tend',
   'cult',
   'listado',
@@ -17,14 +19,22 @@ export const GRANULAR_TABS = [
   'recetaHu',
 ];
 
-export const CONSOLIDATED_TABS_SALA = ['paciente', 'clinico', 'estadoActual', 'resultados', 'salida'];
+export const CONSOLIDATED_TABS_SALA = ['paciente', 'clinico', 'resultados', 'salida'];
 export const CONSOLIDATED_TABS_INTER = ['paciente', 'clinico', 'resultados', 'salida'];
 
 /** @deprecated alias of CONSOLIDATED_TABS_INTER for backward compatibility */
 export const CONSOLIDATED_TABS = CONSOLIDATED_TABS_INTER;
 
-const CLINICO_GRANULAR_TABS = ['notas', 'indica', 'vpo', 'manejo'];
-export const COMPOSITE_PANE_IDS = ['paciente', 'clinico', 'estadoActual', 'resultados', 'salida'];
+const CLINICO_GRANULAR_TABS = [
+  'notas',
+  'indica',
+  'historia',
+  'estadoActual',
+  'eventualidades',
+  'vpo',
+  'manejo',
+];
+export const COMPOSITE_PANE_IDS = ['paciente', 'clinico', 'resultados', 'salida'];
 
 /** @deprecated use isManejoSectionHidden — hideClinicoTab ahora solo oculta Manejo (compat). */
 export function isClinicoTabHidden(settings) {
@@ -33,12 +43,14 @@ export function isClinicoTabHidden(settings) {
 
 /** Interconsulta: oculta segmento Manejo; mantiene Nota + Indicaciones en Clínico. */
 export function isManejoSectionHidden(settings) {
+  if (isManejoTabGloballyHidden()) return true;
   return isClinicoAccessHidden(settings);
 }
 
 export function isClinicoCompositeVisible(settings) {
   if (!isModeSala(settings)) return true;
-  return !isManejoSectionHidden(settings);
+  // Sala: Clínico always hosts Historia ingreso; Manejo is optional via segment bar.
+  return true;
 }
 
 export function getConsolidatedTabs(settings) {
@@ -51,8 +63,8 @@ export function getConsolidatedTabs(settings) {
   return tabs;
 }
 
-export const CLINICO_SECTIONS_ALL = ['notas', 'indica', 'vpo', 'manejo'];
-export const CLINICO_SECTIONS_SALA = ['manejo'];
+export const CLINICO_SECTIONS_ALL = ['notas', 'indica', 'historia', 'vpo', 'manejo'];
+export const CLINICO_SECTIONS_SALA = ['historia', 'estadoActual', 'eventualidades', 'manejo'];
 export const RESULTADOS_SECTIONS = ['tend', 'cult'];
 export const SALIDA_SECTIONS_SALA = ['listado', 'vpo', 'recetaHu'];
 
@@ -65,6 +77,7 @@ const GRANULAR_PANE_ORDER = [
   'datos',
   'notas',
   'indica',
+  'historia',
   'tend',
   'cult',
   'listado',
@@ -72,6 +85,7 @@ const GRANULAR_PANE_ORDER = [
   'manejo',
   'vpo',
   'estadoActual',
+  'eventualidades',
   'recetaHu',
 ];
 
@@ -84,6 +98,7 @@ function granularToConsolidatedMap(settings) {
     todo: { tab: 'paciente', section: null },
     notas: { tab: 'clinico', section: 'notas' },
     indica: { tab: 'clinico', section: 'indica' },
+    historia: { tab: 'clinico', section: 'historia' },
     manejo: { tab: 'clinico', section: 'manejo' },
     tend: { tab: 'resultados', section: 'tend' },
     cult: { tab: 'resultados', section: 'cult' },
@@ -91,7 +106,10 @@ function granularToConsolidatedMap(settings) {
     listado: { tab: sala ? 'salida' : 'paciente', section: sala ? 'listado' : null },
     vpo: sala ? { tab: 'salida', section: 'vpo' } : { tab: 'clinico', section: 'vpo' },
   };
-  if (sala) map.estadoActual = { tab: 'estadoActual', section: null };
+  if (sala) {
+    map.estadoActual = { tab: 'clinico', section: 'estadoActual' };
+    map.eventualidades = { tab: 'clinico', section: 'eventualidades' };
+  }
   return map;
 }
 
@@ -107,24 +125,32 @@ function paneMountSpec(granularTab, settings) {
     todo: { composite: 'paciente', selector: '.exp-pendientes-mount' },
     notas: { composite: 'clinico', selector: '.exp-segment-body--clinico' },
     indica: { composite: 'clinico', selector: '.exp-segment-body--clinico' },
+    historia: { composite: 'clinico', selector: '.exp-segment-body--clinico' },
     manejo: { composite: 'clinico', selector: '.exp-segment-body--clinico' },
     tend: { composite: 'resultados', selector: '.exp-segment-body--resultados' },
     cult: { composite: 'resultados', selector: '.exp-segment-body--resultados' },
     listado: sala ? { composite: 'salida', selector: '.exp-segment-body--salida' } : { composite: null, selector: null },
     recetaHu: { composite: 'salida', selector: '.exp-segment-body--salida' },
-    estadoActual: { composite: null, selector: null },
+    estadoActual: sala
+      ? { composite: 'clinico', selector: '.exp-segment-body--clinico' }
+      : { composite: null, selector: null },
+    eventualidades: sala
+      ? { composite: 'clinico', selector: '.exp-segment-body--clinico' }
+      : { composite: null, selector: null },
   };
   return map[granularTab] || null;
 }
 
 export function getClinicoSections(settings) {
   if (isModeSala(settings)) {
-    return isManejoSectionHidden(settings) ? [] : CLINICO_SECTIONS_SALA;
+    var salaSections = ['historia', 'estadoActual', 'eventualidades'];
+    if (!isManejoSectionHidden(settings)) salaSections.push('manejo');
+    return salaSections;
   }
   if (isManejoSectionHidden(settings)) {
     return ['notas', 'indica', 'vpo'];
   }
-  return CLINICO_SECTIONS_ALL;
+  return ['notas', 'indica', 'vpo', 'manejo'];
 }
 
 export function getSalidaSections(settings) {
@@ -160,7 +186,7 @@ export function migrateGranularInner(granularTab, settings) {
   }
   var map = granularToConsolidatedMap(settings || {});
   if (map[granularTab]) {
-    if (isModeSala(settings) && (granularTab === 'notas' || granularTab === 'indica')) return 'manejo';
+    if (isModeSala(settings) && (granularTab === 'notas' || granularTab === 'indica')) return 'historia';
     if (!isModeSala(settings) && granularTab === 'listado') return 'todo';
     return granularTab;
   }
@@ -170,11 +196,10 @@ export function migrateGranularInner(granularTab, settings) {
 export function defaultGranularForConsolidatedTab(compositeTab, settings) {
   var sala = isModeSala(settings);
   var clinicoDefault = 'notas';
-  if (sala) clinicoDefault = isManejoSectionHidden(settings) ? 'todo' : 'manejo';
+  if (sala) clinicoDefault = 'historia';
   var defaults = {
     paciente: 'todo',
     clinico: clinicoDefault,
-    estadoActual: 'estadoActual',
     resultados: 'tend',
     salida: sala ? 'listado' : 'recetaHu',
   };
@@ -289,18 +314,24 @@ export function syncConsolidatedSegmentBarVisibility(settings) {
   var hideManejo = isManejoSectionHidden(settings);
   var clinicoBar = document.getElementById('exp-segment-clinico');
   if (clinicoBar) {
-    clinicoBar.style.display = sala || !isClinicoCompositeVisible(settings) ? 'none' : '';
-    ['notas', 'indica', 'vpo', 'manejo'].forEach(function (section) {
-      var btn = clinicoBar.querySelector('[data-exp-segment="' + section + '"]');
-      if (!btn) return;
-      if (section === 'vpo') {
-        btn.style.display = sala ? 'none' : '';
-      } else if (section === 'manejo') {
-        btn.style.display = hideManejo ? 'none' : sala ? 'none' : '';
-      } else {
-        btn.style.display = sala ? 'none' : '';
+    clinicoBar.style.display = !isClinicoCompositeVisible(settings) ? 'none' : '';
+    ['notas', 'indica', 'historia', 'estadoActual', 'eventualidades', 'vpo', 'manejo'].forEach(
+      function (section) {
+        var btn = clinicoBar.querySelector('[data-exp-segment="' + section + '"]');
+        if (!btn) return;
+        if (section === 'historia') {
+          btn.style.display = sala ? '' : 'none';
+        } else if (section === 'estadoActual' || section === 'eventualidades') {
+          btn.style.display = sala ? '' : 'none';
+        } else if (section === 'vpo') {
+          btn.style.display = sala ? 'none' : '';
+        } else if (section === 'manejo') {
+          btn.style.display = hideManejo ? 'none' : sala ? '' : '';
+        } else {
+          btn.style.display = sala ? 'none' : '';
+        }
       }
-    });
+    );
   }
   var salidaBar = document.getElementById('exp-segment-salida');
   if (salidaBar) {
@@ -309,11 +340,14 @@ export function syncConsolidatedSegmentBarVisibility(settings) {
     if (vpoSalidaBtn) vpoSalidaBtn.style.display = sala ? '' : 'none';
   }
   var estadoActualTab = document.getElementById('itab-estadoActual');
-  if (estadoActualTab) estadoActualTab.style.display = sala ? '' : 'none';
+  if (estadoActualTab) estadoActualTab.style.display = 'none';
 }
 
 export function applyExpedientePaneLayout(consolidated, settings) {
   var sala = isModeSala(settings);
+  if (consolidated) {
+    syncConsolidatedSegmentBarVisibility(settings || {});
+  }
   var next = consolidated ? (sala ? 'consolidated-sala' : 'consolidated-inter') : 'granular';
   if (layoutMode === next) return;
   layoutMode = next;

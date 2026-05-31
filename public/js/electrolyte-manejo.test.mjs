@@ -227,3 +227,22 @@ test('evaluateElectrolyteManejo marca hasAlterations con K 2.8', () => {
   });
   assert.equal(r.hasAlterations, true);
 });
+
+test('K hipo grave periférica: dilución no supera 40 mEq/L', () => {
+  var r = evaluateElectrolyteManejo({
+    parsedBySection: { ESC: { K: 2.4, Na: 138 } },
+    patient: { peso: 70, viaAcceso: 'periferica' },
+  });
+  var kRow = r.rows.find(function (row) {
+    return row.electrolyte === 'K' && row.direction === 'hypo';
+  });
+  assert.ok(kRow);
+  kRow.someOrders.forEach(function (order) {
+    var dil = String(order.dilution);
+    var m = dil.match(/(\d+(?:\.\d+)?)\s*MEQ\s*\/\s*(\d+)\s*ML/i);
+    assert.ok(m, 'dilución debe incluir MEQ/ML');
+    var meq = parseFloat(m[1]);
+    var ml = parseFloat(m[2]);
+    assert.ok(meq / (ml / 1000) <= 40.01, 'concentración K+ >40 mEq/L: ' + dil);
+  });
+});

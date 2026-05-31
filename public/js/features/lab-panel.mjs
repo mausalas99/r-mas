@@ -44,6 +44,10 @@ import {
 } from "../tend-core.mjs";
 import { evaluateLabSuggestions, filterNewLabSuggestions } from "../lab-clinical-suggestions.mjs";
 import { evaluateElectrolyteManejo } from "../electrolyte-manejo.mjs";
+import {
+  areElectrolyteReplacementSuggestionsHidden,
+  areLabClinicalSuggestionsHidden,
+} from "../clinical-product-policy.mjs";
 import { shouldClearManejoPendingForDismissals } from "../manejo-todo-dismiss.mjs";
 import { normalizeLabHistoryPatientSets } from "../storage.js";
 import { patients, notes, labHistory, saveState } from "../app-state.mjs";
@@ -62,6 +66,7 @@ let rt = {
   renderPaseBoard() {},
   onboardingAdvanceAfterParse() {},
   onboardingAdvanceAfterSend() {},
+  tourAfterBulkLabParse() {},
   findPatientByRegistro() {
     return null;
   },
@@ -1138,6 +1143,7 @@ function pushLabHistory(patientId, resLabs, fecha, hora, sourceText, bhExtras, r
 
 /** Tras nuevo set en historial: marca manejo electrolitos pendiente si hay alteraciones. */
 function applyManejoPending(patientId, parsed, parsedBySection, labSetId, fecha) {
+  if (areElectrolyteReplacementSuggestionsHidden()) return;
   if (!patientId || !labSetId) return;
   var patient = patients.find(function (p) {
     return p && String(p.id) === String(patientId);
@@ -1348,6 +1354,7 @@ function autoStoreProcessedLabResult(result) {
 }
 
 function applyLabClinicalSuggestions(patientId, resLabs, fecha, bhExtras) {
+  if (areLabClinicalSuggestionsHidden()) return;
   if (!patientId || !resLabs || !resLabs.length) return;
   var fechaNorm = normalizeFechaLabHistory(fecha) || String(fecha || '').trim();
   if (!fechaNorm) return;
@@ -1578,6 +1585,9 @@ function finalizeBulkLabPaste(text, blocks, totalOkReports) {
   }
 
   clearLabInputAfterSuccessfulParse();
+  if (typeof rt.tourAfterBulkLabParse === 'function') {
+    rt.tourAfterBulkLabParse(blocks);
+  }
 }
 
 function procesarReporte() {
@@ -1611,8 +1621,13 @@ function procesarReporte() {
     ) {
       openLabBulkPreviewModal({
         blocks: blocks,
+        sourceText: text,
         onConfirm: function () {
-          finalizeBulkLabPaste(text, blocks, totalOkReports);
+          var freshBlocks = buildBulkLabPreview(text, { findPatientByRegistro: rt.findPatientByRegistro });
+          var freshTotal = freshBlocks.reduce(function (acc, b) {
+            return acc + b.okReportCount;
+          }, 0);
+          finalizeBulkLabPaste(text, freshBlocks, freshTotal);
         },
       });
       return;

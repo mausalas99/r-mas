@@ -14,6 +14,7 @@ import {
   syncIdleLockSelectUi,
   syncPreimportBackupUi,
 } from "./platform.mjs";
+import { syncApprovedOutputDir } from "../document-export-client.mjs";
 import {
   maybeShowReleaseNotesFor,
   initReleaseNotesDevPreviewIfEnabled,
@@ -30,6 +31,7 @@ import { renderRoundOverviewPanels } from "./patients.mjs";
 import { isModeSala } from "../mode-features.mjs";
 import { syncCensoExportButtonVisibility } from "../censo-export.mjs";
 import { isManejoSectionHidden, migrateGranularInner } from "../expediente-tabs.mjs";
+import { isManejoTabGloballyHidden } from "../clinical-product-policy.mjs";
 import {
   isClinicoUnlocked,
   openClinicoUnlockModal,
@@ -38,11 +40,12 @@ import {
 } from "../clinico-access.mjs";
 import {
   switchInnerTab,
+  switchAppTab,
   renderInnerTabs,
   getActiveInnerTab,
-  switchAppTab,
+  refreshExpedienteForAppModeChange,
 } from "./pase-board.mjs";
-import { renderPatientDataPane } from "./expediente.mjs";
+import { renderPatientDataPane, renderListadoForm } from "./expediente.mjs";
 import {
   ensureProfileTemplateDefaults,
   resetProfileTemplatesToBlank,
@@ -117,10 +120,35 @@ function _buildLoadSettingsSnapshot() {
       ns: st.defaultNotaEstudios || "",
       od: st.outputDir || "",
       qf: normalizeQuickOutputFormat(st.quickOutputFormat),
+      am: st.appMode || "sala",
     });
   } catch (_e) {
     return String(Math.random());
   }
+}
+
+function invalidateLoadSettingsSnapshot() {
+  _lastLoadSettingsSnapshot = null;
+}
+
+function persistSettingsToLocalStorage() {
+  try {
+    localStorage.setItem("rpc-settings", JSON.stringify(settingsRef()));
+  } catch (_e) {
+    rt.showToast(
+      "No se pudo guardar en el almacenamiento local. El modo puede no persistir al recargar.",
+      "error"
+    );
+  }
+}
+
+function syncAppModeRadioControls() {
+  var st = settingsRef();
+  var modeSala = document.getElementById("app-mode-sala");
+  var modeInter = document.getElementById("app-mode-inter");
+  if (!modeSala || !modeInter) return;
+  if ((st.appMode || "sala") === "sala") modeSala.checked = true;
+  else modeInter.checked = true;
 }
 
 export function loadSettings() {
@@ -135,8 +163,11 @@ export function loadSettings() {
     syncUpdateChannelUI();
     syncUpdateTelemetryUI();
     syncHideClinicoTabUI();
+    syncHideListadoProblemasAiPromptUI();
     ensureClinicoTabConsistency();
     if (typeof syncSettingsLanHostDiskSection === "function") syncSettingsLanHostDiskSection();
+    syncAppModeRadioControls();
+    syncCensoExportButtonVisibility();
     rt.syncWorkContextChrome();
     return;
   }
@@ -166,12 +197,7 @@ export function loadSettings() {
   }
   if (censoFimiLabelEl) censoFimiLabelEl.value = st.censoFimiLabel || "";
   if (grEl) grEl.value = st.grado || "";
-  var modeSala = document.getElementById("app-mode-sala");
-  var modeInter = document.getElementById("app-mode-inter");
-  if (modeSala && modeInter) {
-    if ((st.appMode || "sala") === "sala") modeSala.checked = true;
-    else modeInter.checked = true;
-  }
+  syncAppModeRadioControls();
   var srvEl = document.getElementById("settings-default-servicio");
   if (srvEl) srvEl.value = st.defaultServicio || "";
   var medTpl = st.medicosPlantilla || {};
@@ -200,6 +226,7 @@ export function loadSettings() {
       dirEl.textContent = "Descargas (predeterminado)";
       dirEl.title = "";
     }
+    syncApprovedOutputDir(st.outputDir || "");
   }
   var quickFormatEl = document.getElementById("settings-quick-output-format");
   if (quickFormatEl)
@@ -264,6 +291,7 @@ export function loadSettings() {
   syncUpdateTelemetryUI();
   syncHardwareAccelerationUI();
   syncHideClinicoTabUI();
+  syncHideListadoProblemasAiPromptUI();
   ensureClinicoTabConsistency();
   syncIdleLockSelectUi();
   syncPreimportBackupUi();
@@ -310,42 +338,60 @@ export function syncHeaderAppModeChip() {
   chip.classList.toggle("mode-inter", !sala);
 }
 
-export function applyAppModeSwitchEffects() {
-  var current = getActiveInnerTab();
-  var nowSala = isModeSala(settingsRef());
-  if (nowSala && (current === "notas" || current === "indica")) switchInnerTab("manejo");
-  else if (!nowSala && current === "listado") switchInnerTab("recetaHu");
-  renderInnerTabs();
-  renderEstadoActualButton();
-  syncCensoExportButtonVisibility();
-  if (rt.getActiveId()) {
-    if (!nowSala) renderNoteForm();
-    if (getActiveInnerTab() === "datos" || getActiveInnerTab() === "todo") renderPatientDataPane();
+function reconcileActiveInnerForAppMode(nowSala) {
+  var settings = settingsRef();
+  var current = getActiveInnerTab() || "todo";
+  var migrated = migrateGranularInner(current, settings);
+  if (migrated !== current) {
+    switchInnerTab(migrated, { forceRender: true });
+    return;
   }
-  rt.syncWorkContextChrome();
-  if (isPaseMode()) renderRoundOverviewPanels();
-  rt.showToast("Modo cambiado a " + (nowSala ? "Sala" : "Interconsulta"), "success");
+  if (nowSala && (current === "notas" || current === "indica")) {
+    switchInnerTab(isManejoTabGloballyHidden() ? "historia" : "manejo", { forceRender: true });
+  } else if (!nowSala && current === "listado") {
+    switchInnerTab("recetaHu", { forceRender: true });
+  }
+}
+
+export function applyAppModeSwitchEffects() {
+  var nowSala = isModeSala(settingsRef());
+  try {
+    reconcileActiveInnerForAppMode(nowSala);
+    syncAppModeRadioControls();
+    refreshExpedienteForAppModeChange();
+    renderEstadoActualButton();
+    syncCensoExportButtonVisibility();
+    syncHeaderAppModeChip();
+    if (rt.getActiveId()) {
+      if (!nowSala) renderNoteForm();
+      var inner = getActiveInnerTab();
+      if (inner === "datos" || inner === "todo") renderPatientDataPane();
+    }
+    rt.syncWorkContextChrome();
+    if (isPaseMode()) renderRoundOverviewPanels();
+    rt.showToast("Modo cambiado a " + (nowSala ? "Sala" : "Interconsulta"), "success");
+  } catch (err) {
+    console.error("[R+] applyAppModeSwitchEffects:", err);
+    rt.showToast("No se pudo actualizar la vista al cambiar de modo.", "error");
+  }
 }
 
 export function onAppModeChange() {
   var sala = document.getElementById("app-mode-sala");
   var st = settingsRef();
   st.appMode = sala && sala.checked ? "sala" : "interconsulta";
-  localStorage.setItem("rpc-settings", JSON.stringify(st));
+  invalidateLoadSettingsSnapshot();
+  persistSettingsToLocalStorage();
   applyAppModeSwitchEffects();
 }
 
 export function toggleHeaderWorkMode() {
   var st = settingsRef();
   st.appMode = isModeSala(st) ? "interconsulta" : "sala";
-  localStorage.setItem("rpc-settings", JSON.stringify(st));
-  var modeSalaEl = document.getElementById("app-mode-sala");
-  var modeInterEl = document.getElementById("app-mode-inter");
-  if (modeSalaEl && modeInterEl) {
-    if (isModeSala(st)) modeSalaEl.checked = true;
-    else modeInterEl.checked = true;
-  }
+  invalidateLoadSettingsSnapshot();
+  syncAppModeRadioControls();
   applyAppModeSwitchEffects();
+  persistSettingsToLocalStorage();
 }
 
 export function openProfileModal() {
@@ -492,6 +538,9 @@ export function resetProfileTemplates() {
 export function hydrateProfileSettings(st) {
   if (!st || typeof st !== "object") return st;
   ensureProfileTemplateDefaults(st);
+  if (st.hideListadoProblemasAiPrompt === undefined) {
+    st.hideListadoProblemasAiPrompt = true;
+  }
   return st;
 }
 
@@ -513,6 +562,10 @@ export function isHideClinicoTabEnabled() {
 }
 
 export function syncHideManejoSectionUI() {
+  var row =
+    document.getElementById("settings-hide-manejo-section")?.closest("label") ||
+    document.getElementById("settings-hide-clinico-tab")?.closest("label");
+  if (row) row.style.display = isManejoTabGloballyHidden() ? "none" : "";
   var cb = document.getElementById("settings-hide-manejo-section");
   if (!cb) cb = document.getElementById("settings-hide-clinico-tab");
   if (cb) cb.checked = isHideManejoSectionEnabled();
@@ -543,6 +596,11 @@ export function applyHideClinicoTabEffects() {
 }
 
 export function setHideManejoSection(enabled) {
+  if (isManejoTabGloballyHidden()) {
+    syncHideManejoSectionUI();
+    rt.showToast("Manejo no está disponible en esta versión de R+.", "info");
+    return;
+  }
   var st = settingsRef();
   if (!enabled && !isClinicoUnlocked(st)) {
     syncHideManejoSectionUI();
@@ -577,6 +635,31 @@ export function setHideClinicoTab(enabled) {
   setHideManejoSection(enabled);
 }
 
+export function isHideListadoProblemasAiPromptEnabled() {
+  var st = settingsRef();
+  if (!st || st.hideListadoProblemasAiPrompt === undefined) return true;
+  return !!st.hideListadoProblemasAiPrompt;
+}
+
+export function syncHideListadoProblemasAiPromptUI() {
+  var cb = document.getElementById("settings-hide-listado-ai-prompt");
+  if (cb) cb.checked = isHideListadoProblemasAiPromptEnabled();
+}
+
+export function setHideListadoProblemasAiPrompt(enabled) {
+  var st = settingsRef();
+  st.hideListadoProblemasAiPrompt = !!enabled;
+  persistSettingsToLocalStorage();
+  syncHideListadoProblemasAiPromptUI();
+  renderListadoForm();
+  rt.showToast(
+    enabled
+      ? "Botón «Copiar prompt IA» oculto en listado de problemas."
+      : "Botón «Copiar prompt IA» visible en listado de problemas.",
+    "success"
+  );
+}
+
 export const profileWindowHandlers = {
   toggleProfileSection,
   openProfileFromHeader,
@@ -587,6 +670,7 @@ export const profileWindowHandlers = {
   saveQuickOutputFormat,
   setHideManejoSection,
   setHideClinicoTab,
+  setHideListadoProblemasAiPrompt,
   closeClinicoUnlockModal,
   confirmClinicoUnlock,
   openTemplatesModal,

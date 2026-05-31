@@ -98,6 +98,7 @@ let rt = {
     return null;
   },
   showToast() {},
+  onMedicionRegistered() {},
   getSettings() {
     return {};
   },
@@ -1898,6 +1899,7 @@ export function registrarEstadoActualMedicion() {
   if (typeof window.closeEstadoActualRegistroModal === 'function') window.closeEstadoActualRegistroModal();
   renderEstadoActualPanel({ syncHeavy: true, dataOnly: true });
   rt.showToast('Medición registrada ✓', 'success');
+  if (typeof rt.onMedicionRegistered === 'function') rt.onMedicionRegistered();
 }
 
 export function ensureEaRegistroModalForm() {

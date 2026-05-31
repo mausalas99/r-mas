@@ -3,7 +3,17 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { hashTeamCode } = require('./team-code.js');
-const { agendaEntityKey, todoEntityKey } = require('./entity-keys.js');
+const { agendaEntityKey, todoEntityKey, historiaClinicaEntityKey } = require('./entity-keys.js');
+const {
+  writeHistoriaClinicaArchive,
+  resolveStorageRoot,
+} = require('../lib/historia-clinica/storage.js');
+const { createWriteQueue } = require('./write-queue.js');
+const { createHostStateCache } = require('./host-state-cache.js');
+const { readJson, writeJsonAtomic } = require('./atomic-json.js');
+const { migrateHostStateIfNeeded } = require('./migrate-host-state.js');
+const { mergeBundlePut } = require('./bundle-merge.js');
+const { appendAudit } = require('./audit-log.js');
 
 function nowIso() {
   return new Date().toISOString();
@@ -21,7 +31,7 @@ function atomicWriteJson(filePath, obj) {
   fs.renameSync(tmp, filePath);
 }
 
-function readState(filePath) {
+function readStateSync(filePath) {
   try {
     const raw = fs.readFileSync(filePath, 'utf8');
     const o = JSON.parse(raw);
@@ -35,7 +45,7 @@ function readState(filePath) {
 
 function defaultState(teamCodeHash) {
   return {
-    version: 1,
+    version: 2,
     teamCodeHash,
     patients: [],
     rooms: [],
@@ -45,15 +55,17 @@ function defaultState(teamCodeHash) {
 
 function createHostStore({ filePath, teamCodePlain }) {
   const teamCodeHash = hashTeamCode(teamCodePlain);
-  if (!fs.existsSync(filePath)) {
-    atomicWriteJson(filePath, defaultState(teamCodeHash));
-  }
+  const cache = createHostStateCache();
+  const queue = createWriteQueue();
+  let initPromise = null;
 
-  function load() {
-    const s = readState(filePath);
+  async function loadFromDisk() {
+    let s = await readJson(filePath);
     if (!s) {
-      atomicWriteJson(filePath, defaultState(teamCodeHash));
-      return defaultState(teamCodeHash);
+      s = defaultState(teamCodeHash);
+      await writeJsonAtomic(filePath, s);
+      cache.replace(s);
+      return s;
     }
     if (s.teamCodeHash !== teamCodeHash) {
       const err = new Error(
@@ -62,6 +74,7 @@ function createHostStore({ filePath, teamCodePlain }) {
       err.code = 'LAN_HOST_STATE_HASH_MISMATCH';
       throw err;
     }
+    s = migrateHostStateIfNeeded(s);
     s.patients = Array.isArray(s.patients) ? s.patients : [];
     s.rooms = Array.isArray(s.rooms) ? s.rooms : [];
     s.roomSyncBundles =
@@ -73,73 +86,178 @@ function createHostStore({ filePath, teamCodePlain }) {
       }
     }
     delete s.calendarEvents;
+    if (Number(s.version) !== 2) {
+      s.version = 2;
+      await writeJsonAtomic(filePath, s);
+    }
+    cache.replace(s);
     return s;
   }
 
-  function save(state) {
-    atomicWriteJson(filePath, state);
+  function ensureLoadedSync() {
+    if (cache.isLoaded()) return cache.get();
+    const s = readStateSync(filePath);
+    if (!s) {
+      const fresh = defaultState(teamCodeHash);
+      atomicWriteJson(filePath, fresh);
+      cache.replace(fresh);
+      return fresh;
+    }
+    if (s.teamCodeHash !== teamCodeHash) {
+      const err = new Error(
+        'LAN host state teamCodeHash does not match lan-team-code.txt. Run bootstrap or rehashLanHostState.'
+      );
+      err.code = 'LAN_HOST_STATE_HASH_MISMATCH';
+      throw err;
+    }
+    const migrated = migrateHostStateIfNeeded(s);
+    migrated.patients = Array.isArray(migrated.patients) ? migrated.patients : [];
+    migrated.rooms = Array.isArray(migrated.rooms) ? migrated.rooms : [];
+    migrated.roomSyncBundles =
+      migrated.roomSyncBundles && typeof migrated.roomSyncBundles === 'object'
+        ? migrated.roomSyncBundles
+        : {};
+    delete migrated.calendarEvents;
+    cache.replace(migrated);
+    if (Number(migrated.version) === 2 && Number(s.version) !== 2) {
+      queue.enqueue(() => writeJsonAtomic(filePath, migrated)).catch(() => {});
+    }
+    return migrated;
+  }
+
+  function ready() {
+    if (!initPromise) initPromise = loadFromDisk().catch((e) => {
+      initPromise = null;
+      throw e;
+    });
+    return initPromise;
+  }
+
+  async function writeCacheSnapshotToDisk(snapshot) {
+    try {
+      await writeJsonAtomic(filePath, snapshot);
+    } catch (_e) {
+      await loadFromDisk();
+    }
+  }
+
+  function persistState() {
+    const snapshot = cache.get();
+    try {
+      atomicWriteJson(filePath, snapshot);
+    } catch (e) {
+      throw e;
+    }
+    return queue.enqueue(() => writeCacheSnapshotToDisk(snapshot));
+  }
+
+  /** Single serialized commit after in-memory mutation + audit (avoids stale queue snapshots). */
+  function commitCacheNow() {
+    const snapshot = cache.get();
+    try {
+      atomicWriteJson(filePath, snapshot);
+    } catch (e) {
+      throw e;
+    }
+    return writeCacheSnapshotToDisk(snapshot);
+  }
+
+  function flush() {
+    return queue.enqueue(async () => {});
   }
 
   function getState() {
-    return load();
+    return ensureLoadedSync();
   }
 
   function upsertPatient(patient, expectedVersion) {
-    const state = load();
+    const state = ensureLoadedSync();
     const idx = state.patients.findIndex((p) => p.id === patient.id);
     const t = nowIso();
     if (idx === -1) {
-      const p = { ...patient, version: 1, updatedAt: t };
+      const p = { ...patient, version: 1, updatedAt: t, audit_log: [] };
+      appendAudit(
+        { at: t, clientId: 'host', action: 'patient.create', detail: { id: p.id } },
+        p.audit_log
+      );
       state.patients.push(p);
-      save(state);
+      persistState();
       return p;
     }
     const cur = state.patients[idx];
-    if (expectedVersion != null && Number(cur.version) !== Number(expectedVersion)) {
+    if (expectedVersion == null) {
+      const err = new Error('expectedVersion required');
+      err.code = 'CONFLICT';
+      err.serverPatient = cur;
+      throw err;
+    }
+    if (Number(cur.version) !== Number(expectedVersion)) {
       const err = new Error('conflict');
       err.code = 'CONFLICT';
       err.serverPatient = cur;
       throw err;
     }
+    if (!Array.isArray(cur.audit_log)) cur.audit_log = [];
     const next = { ...cur, ...patient, version: Number(cur.version || 1) + 1, updatedAt: t };
+    appendAudit(
+      { at: t, clientId: 'host', action: 'patient.update', detail: { id: next.id } },
+      next.audit_log
+    );
     state.patients[idx] = next;
-    save(state);
+    persistState();
     return next;
   }
 
   function listRooms() {
-    return load().rooms.slice();
+    return ensureLoadedSync().rooms.slice();
   }
 
   function createRoom(displayName) {
-    const state = load();
-    const r = { id: newId('room'), displayName: String(displayName || 'Sala'), createdAt: nowIso() };
+    const state = ensureLoadedSync();
+    const t = nowIso();
+    const r = {
+      id: newId('room'),
+      displayName: String(displayName || 'Sala'),
+      createdAt: t,
+      version: 1,
+      audit_log: [],
+    };
+    appendAudit(
+      { at: t, clientId: 'host', action: 'room.create', detail: { id: r.id } },
+      r.audit_log
+    );
     state.rooms.push(r);
-    save(state);
+    persistState();
     return r;
   }
 
   function renameRoom(id, displayName) {
-    const state = load();
+    const state = ensureLoadedSync();
     const r = state.rooms.find((x) => x.id === id);
     if (!r) throw new Error('room not found');
     r.displayName = String(displayName || r.displayName);
-    save(state);
+    r.version = Number(r.version || 1) + 1;
+    if (!Array.isArray(r.audit_log)) r.audit_log = [];
+    appendAudit(
+      { at: nowIso(), clientId: 'host', action: 'room.rename', detail: { id: r.id } },
+      r.audit_log
+    );
+    persistState();
     return r;
   }
 
   function deleteRoom(id) {
-    const state = load();
+    const state = ensureLoadedSync();
     const rid = String(id || '');
     state.rooms = state.rooms.filter((x) => x.id !== rid);
     if (state.roomSyncBundles && state.roomSyncBundles[rid]) {
       delete state.roomSyncBundles[rid];
     }
-    save(state);
+    persistState();
   }
 
   function getRoomSyncBundle(roomId) {
-    const state = load();
+    const state = ensureLoadedSync();
     const rid = String(roomId || '');
     const b = state.roomSyncBundles && state.roomSyncBundles[rid];
     return b && typeof b === 'object' ? b : null;
@@ -154,44 +272,72 @@ function createHostStore({ filePath, teamCodePlain }) {
       id: rid,
       displayName: String(displayName || 'Sala en vivo').trim() || 'Sala en vivo',
       createdAt: nowIso(),
+      version: 1,
+      audit_log: [],
     });
     state.rooms = rooms;
   }
 
   function putRoomSyncBundle(roomId, bundle) {
-    const state = load();
+    const state = ensureLoadedSync();
     const rid = String(roomId || '');
     if (!rid) throw new Error('room id required');
     const incoming = bundle && typeof bundle === 'object' ? bundle : {};
     ensureRoomRecord(state, rid, incoming.roomDisplayName);
-    const at = String(incoming.updatedAt || nowIso());
     if (!state.roomSyncBundles) state.roomSyncBundles = {};
     const cur = state.roomSyncBundles[rid];
-    if (cur && String(cur.updatedAt || '') > at) {
-      return cur;
+
+    const usesLegacyClock =
+      incoming.baseRevision == null &&
+      incoming.baseEntityVersions == null &&
+      incoming.updatedAt != null;
+
+    if (usesLegacyClock && cur && Number(cur.revision || 0) > 0) {
+      const err = new Error('conflict');
+      err.code = 'CONFLICT';
+      err.serverBundle = cur;
+      err.conflicts = [
+        {
+          key: '*',
+          kind: 'bundle',
+          local: { updatedAt: incoming.updatedAt },
+          server: { revision: cur.revision },
+        },
+      ];
+      throw err;
     }
-    const next = {
-      updatedAt: at,
-      uploadedByClientId: String(incoming.uploadedByClientId || ''),
-      entities:
-        incoming.entities && typeof incoming.entities === 'object'
-          ? incoming.entities
-          : cur && cur.entities && typeof cur.entities === 'object'
-            ? cur.entities
-            : {},
-      agenda: Array.isArray(incoming.agenda) ? incoming.agenda : [],
-      todos: incoming.todos && typeof incoming.todos === 'object' ? incoming.todos : {},
-      entries: Array.isArray(incoming.entries) ? incoming.entries : [],
-      manejo:
-        incoming.manejo && typeof incoming.manejo === 'object'
-          ? incoming.manejo
-          : cur && cur.manejo
-            ? cur.manejo
-            : null,
-    };
-    state.roomSyncBundles[rid] = next;
-    save(state);
-    return next;
+
+    const mergeInput = usesLegacyClock
+      ? {
+          baseRevision: Number(cur && cur.revision ? cur.revision : 0),
+          baseEntityVersions:
+            cur && cur.entityVersions && typeof cur.entityVersions === 'object'
+              ? { ...cur.entityVersions }
+              : {},
+          agenda: Array.isArray(incoming.agenda) ? incoming.agenda : [],
+          todos: incoming.todos && typeof incoming.todos === 'object' ? incoming.todos : {},
+          entries: Array.isArray(incoming.entries) ? incoming.entries : [],
+          manejo: incoming.manejo,
+          clientId: incoming.uploadedByClientId || incoming.clientId || '',
+        }
+      : { ...incoming, clientId: incoming.uploadedByClientId || incoming.clientId || '' };
+
+    const result = mergeBundlePut(cur, mergeInput, {
+      clientId: mergeInput.clientId,
+      nowIso,
+    });
+
+    if (!result.ok) {
+      const err = new Error('conflict');
+      err.code = 'CONFLICT';
+      err.serverBundle = result.bundle;
+      err.conflicts = result.conflicts;
+      throw err;
+    }
+
+    state.roomSyncBundles[rid] = result.bundle;
+    persistState();
+    return result.bundle;
   }
 
   function ensureRoomBundle(state, roomId) {
@@ -201,17 +347,21 @@ function createHostStore({ filePath, teamCodePlain }) {
     let b = state.roomSyncBundles[rid];
     if (!b || typeof b !== 'object') {
       b = {
-        updatedAt: nowIso(),
+        revision: 0,
+        entityVersions: {},
+        committedAt: nowIso(),
         uploadedByClientId: '',
         entities: {},
         agenda: [],
         todos: {},
         entries: [],
         manejo: null,
+        audit_log: [],
       };
       state.roomSyncBundles[rid] = b;
     }
     if (!b.entities || typeof b.entities !== 'object') b.entities = {};
+    if (!b.entityVersions || typeof b.entityVersions !== 'object') b.entityVersions = {};
     return b;
   }
 
@@ -219,7 +369,7 @@ function createHostStore({ filePath, teamCodePlain }) {
     const type = String(entityType || '');
     const id = String(entityId || '');
     if (type === 'patient') {
-      const state = load();
+      const state = ensureLoadedSync();
       const row = state.patients.find((p) => p.id === id);
       if (!row) return null;
       return { version: Number(row.version || 1), data: row };
@@ -232,24 +382,34 @@ function createHostStore({ filePath, teamCodePlain }) {
       if (!rec || rec.deleted) return null;
       return { version: Number(rec.version || 1), data: rec.data };
     }
+    if (type === 'historiaClinica') {
+      const bundle = getRoomSyncBundle(roomId);
+      if (!bundle || !bundle.entities) return null;
+      const key = historiaClinicaEntityKey(patientId || id);
+      const rec = bundle.entities[key];
+      if (!rec || rec.deleted) return null;
+      return { version: Number(rec.version || 1), data: rec.data };
+    }
     return null;
   }
 
-  function materializeRoomViews(roomId) {
-    const state = load();
+  function materializeRoomViews(roomId, opts) {
+    const deferPersist = !!(opts && opts.deferPersist);
+    const state = ensureLoadedSync();
     const bundle = ensureRoomBundle(state, roomId);
     const entities = bundle.entities || {};
     const agenda = [];
     const todos = {};
     for (const [key, rec] of Object.entries(entities)) {
       if (!rec || rec.deleted) continue;
-      if (key.startsWith('agenda:')) {
+      if (key.startsWith('a:')) {
         if (rec.data && typeof rec.data === 'object') agenda.push(rec.data);
         continue;
       }
-      if (key.startsWith('todo:')) {
-        const parsed = key.slice(5).split(':');
-        const pid = parsed[0];
+      if (key.startsWith('t:')) {
+        const rest = key.slice(2);
+        const colon = rest.indexOf(':');
+        const pid = colon >= 0 ? rest.slice(0, colon) : rest;
         if (!pid || !rec.data || typeof rec.data !== 'object') continue;
         if (!todos[pid]) todos[pid] = [];
         todos[pid].push(rec.data);
@@ -261,15 +421,16 @@ function createHostStore({ filePath, teamCodePlain }) {
     }
     bundle.agenda = agenda;
     bundle.todos = todos;
-    bundle.updatedAt = nowIso();
-    save(state);
+    bundle.committedAt = nowIso();
+    if (!deferPersist) persistState();
     return bundle;
   }
 
-  function setEntity({ roomId, entityType, entityId, patientId, version, data, deleted }) {
+  function setEntity({ roomId, entityType, entityId, patientId, version, data, deleted }, opts) {
+    const deferPersist = !!(opts && opts.deferPersist);
     const type = String(entityType || '');
     const id = String(entityId || '');
-    const state = load();
+    const state = ensureLoadedSync();
     const t = nowIso();
 
     if (type === 'patient') {
@@ -277,15 +438,15 @@ function createHostStore({ filePath, teamCodePlain }) {
       const nextData = data && typeof data === 'object' ? { ...data, id } : { id };
       const nextVersion = Number(version || 1);
       if (idx === -1) {
-        const row = { ...nextData, version: nextVersion, updatedAt: t };
+        const row = { ...nextData, version: nextVersion, updatedAt: t, audit_log: [] };
         state.patients.push(row);
-        save(state);
+        if (!deferPersist) persistState();
         return row;
       }
       const row = { ...state.patients[idx], ...nextData, version: nextVersion, updatedAt: t };
       if (deleted) row._deleted = true;
       state.patients[idx] = row;
-      save(state);
+      if (!deferPersist) persistState();
       return row;
     }
 
@@ -299,15 +460,117 @@ function createHostStore({ filePath, teamCodePlain }) {
         updatedAt: t,
         deleted: !!deleted,
       };
-      save(state);
-      materializeRoomViews(roomId);
+      bundle.entityVersions[key] = Number(version || 1);
+      bundle.revision = Number(bundle.revision || 0) + 1;
+      if (!deferPersist) persistState();
+      materializeRoomViews(roomId, opts);
+      return bundle.entities[key];
+    }
+
+    if (type === 'historiaClinica') {
+      const bundle = ensureRoomBundle(state, roomId);
+      const key = historiaClinicaEntityKey(patientId || id);
+      const prev = bundle.entities[key];
+      const prevData =
+        prev && prev.data && typeof prev.data === 'object' ? { ...prev.data } : {};
+      const patch = data && typeof data === 'object' ? data : {};
+      const nextData = { ...prevData, ...patch, patientId: String(patientId || id), updatedAt: t };
+      bundle.entities[key] = {
+        version: Number(version || 1),
+        data: nextData,
+        updatedAt: t,
+        deleted: !!deleted,
+      };
+      bundle.entityVersions[key] = Number(version || 1);
+      bundle.revision = Number(bundle.revision || 0) + 1;
+      if (!Array.isArray(bundle.audit_log)) bundle.audit_log = [];
+      if (!deferPersist) persistState();
       return bundle.entities[key];
     }
 
     throw new Error('unsupported entity type');
   }
 
+  function appendRoomBundleAuditInMemory(roomId, entry) {
+    const state = ensureLoadedSync();
+    const bundle = ensureRoomBundle(state, roomId);
+    if (!Array.isArray(bundle.audit_log)) bundle.audit_log = [];
+    appendAudit(entry, bundle.audit_log);
+    return bundle.audit_log;
+  }
+
+  function appendRoomBundleAudit(roomId, entry) {
+    appendRoomBundleAuditInMemory(roomId, entry);
+    persistState();
+    return ensureRoomBundle(ensureLoadedSync(), roomId).audit_log;
+  }
+
+  /**
+   * Apply historia mutation + optional audit in one write-queue transaction.
+   * @param {{ applyMutation: Function }} resolver
+   * @param {object} mutation
+   * @param {object|null} auditEntry
+   */
+  function putHistoriaClinicaQueued(resolver, mutation, auditTemplate) {
+    return queue.enqueue(async () => {
+      ensureLoadedSync();
+      const out = resolver.applyMutation(mutation, { deferPersist: true });
+      if (auditTemplate) {
+        const entry = {
+          at: auditTemplate.at || nowIso(),
+          clientId: auditTemplate.clientId || 'unknown',
+          action: auditTemplate.action || 'historia_clinica.save',
+          detail: {
+            ...(auditTemplate.detail || {}),
+            entityVersion: out.version,
+            autoMerged: !!out.autoMerged,
+          },
+        };
+        appendRoomBundleAuditInMemory(mutation.roomId, entry);
+      }
+      await commitCacheNow();
+      return out;
+    });
+  }
+
+  function archiveHistoriaClinicaForPatient(patientId, { storageRoot } = {}) {
+    const pid = String(patientId || '').trim();
+    if (!pid) return { archived: false, reason: 'no_patient_id' };
+    const state = ensureLoadedSync();
+    let found = false;
+    for (const rid of Object.keys(state.roomSyncBundles || {})) {
+      const bundle = state.roomSyncBundles[rid];
+      if (!bundle || !bundle.entities) continue;
+      const key = historiaClinicaEntityKey(pid);
+      const rec = bundle.entities[key];
+      if (!rec || rec.deleted) continue;
+      writeHistoriaClinicaArchive({
+        storageRoot: storageRoot || resolveStorageRoot(),
+        patientId: pid,
+        payload: {
+          version: rec.version,
+          data: rec.data,
+          roomId: rid,
+        },
+      });
+      delete bundle.entities[key];
+      if (bundle.entityVersions && bundle.entityVersions[key] != null) {
+        delete bundle.entityVersions[key];
+      }
+      bundle.revision = Number(bundle.revision || 0) + 1;
+      found = true;
+    }
+    if (found) persistState();
+    return { archived: found, patientId: pid };
+  }
+
+  if (!fs.existsSync(filePath)) {
+    atomicWriteJson(filePath, defaultState(teamCodeHash));
+  }
+
   return {
+    ready,
+    flush,
     getState,
     upsertPatient,
     listRooms,
@@ -319,6 +582,10 @@ function createHostStore({ filePath, teamCodePlain }) {
     getEntity,
     setEntity,
     materializeRoomViews,
+    archiveHistoriaClinicaForPatient,
+    appendRoomBundleAudit,
+    appendRoomBundleAuditInMemory,
+    putHistoriaClinicaQueued,
   };
 }
 

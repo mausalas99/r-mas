@@ -75,6 +75,38 @@
   border: 1px solid color-mix(in oklab, var(--accent) 28%, var(--border));
 }
 
+.vpo-scales-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+  gap: calc(8px * var(--density-space, 1));
+  margin-top: calc(6px * var(--density-space, 1));
+}
+
+.vpo-scale-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.vpo-scale-label {
+  font-size: calc(11px * var(--density-font, 1));
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--text-muted);
+}
+
+.vpo-scale-cell .ea-input {
+  font-size: calc(12px * var(--density-font, 1));
+  padding: 4px 8px;
+  min-height: 0;
+}
+
+.vpo-scales-grid-title {
+  margin: 10px 0 4px;
+  font-size: calc(12px * var(--density-font, 1));
+}
+
 .vpo-aha-badge span {
   font-weight: 500;
   color: var(--text-muted);

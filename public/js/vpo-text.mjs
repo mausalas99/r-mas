@@ -1,5 +1,38 @@
 /** Bloques de texto copiables para nota externa VPO. */
 
+export const VPO_OFFICIAL_CALCULATOR_DISCLAIMER =
+  'R+ no calcula puntajes ni porcentajes de riesgo preoperatorio. Usa calculadoras médicas oficiales validadas (institucional o publicadas) para RCRI (Lee), Gupta MICA, ARISCAT, Caprini y clasificación ASA antes de documentar riesgo en la nota.';
+
+/** Escalas a documentar manualmente (sin cálculo en R+). */
+export const VPO_SUGGESTED_SCALES = [
+  { key: 'asa', label: 'ASA', hint: 'Clasificación del estado físico (I–V).' },
+  { key: 'rcri', label: 'RCRI (índice de Lee)', hint: 'Puntos y/o clase según calculadora validada.' },
+  { key: 'gupta', label: 'Gupta MICA', hint: '% riesgo de IAM perioperatorio (herramienta validada).' },
+  { key: 'ariscat', label: 'ARISCAT', hint: 'Puntos y categoría de riesgo pulmonar postoperatorio.' },
+  { key: 'caprini', label: 'Caprini', hint: 'Puntos y categoría de riesgo tromboembólico.' },
+];
+
+/**
+ * @param {object} state
+ * @returns {string[]}
+ */
+export function formatVpoScaleResultLines(state) {
+  var sr = (state && state.scaleResults) || {};
+  return VPO_SUGGESTED_SCALES.map(function (s) {
+    var val = String(sr[s.key] || '').trim();
+    if (!val) return s.label + ': —';
+    return s.label + ': ' + val;
+  });
+}
+
+/**
+ * Líneas de valoración sin puntajes calculados en R+.
+ * @param {object} state
+ */
+export function formatVpoDocumentationLines(state) {
+  return formatVpoScaleResultLines(state);
+}
+
 export function renderEkgWithFc(ekgText, fcLpm) {
   var t = String(ekgText || '');
   var fc = String(fcLpm || '').trim();
@@ -8,10 +41,12 @@ export function renderEkgWithFc(ekgText, fcLpm) {
 }
 
 /**
- * @param {object} scores — salida de computeVpoScores
+ * @param {object|null} scores — salida de computeVpoScores
  * @param {object} state
+ * @param {{ noCalculatedRisk?: boolean }} [opts]
  */
-export function formatRiskLines(scores, state) {
+export function formatRiskLines(scores, state, opts) {
+  if (opts && opts.noCalculatedRisk) return formatVpoDocumentationLines(state);
   var lines = [];
   var ahaC = state.ahaClinico || '';
   var ahaQ = state.ahaQuirurgico || (scores.procedure && scores.procedure.ahaQuirurgico) || '';

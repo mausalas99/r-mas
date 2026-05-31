@@ -1,4 +1,4 @@
-/** LiveSync por sala: merge LWW, snapshots y mensajes (sin DOM). */
+/** LiveSync por sala: merge por entityVersion (sin LWW por reloj en la capa de red). */
 
 export const LAN_CLIENT_ID_KEY = 'rpc-lan-client-id';
 export const LAN_ROOM_SNAPSHOTS_KEY = 'rpc-lan-room-snapshots';
@@ -29,42 +29,93 @@ export function isDemoPatientId(patientId) {
   return String(patientId || '').indexOf('demo-') === 0;
 }
 
-/** @param {Array<{ agenda?: object[], todos?: Record<string, object[]> }>} sources */
+function versionFromSource(src, key) {
+  if (!src || !src.entityVersions || src.entityVersions[key] == null) return null;
+  return Number(src.entityVersions[key]);
+}
+
+function shouldAcceptEntry(cur, nextVersion, nextUpdatedAt) {
+  if (!cur) return true;
+  const curVer = cur.entityVersion;
+  if (nextVersion != null && curVer != null) {
+    if (nextVersion > curVer) return true;
+    if (nextVersion < curVer) return false;
+  }
+  return compareIso(nextUpdatedAt, cur.updatedAt) >= 0;
+}
+
+function normalizeLiveSyncPatch(patch) {
+  if (!patch || patch.type !== 'livesync:patch') return null;
+  if (patch.mutation && typeof patch.mutation === 'object') {
+    const m = patch.mutation;
+    const data = m.data && typeof m.data === 'object' ? m.data : {};
+    const deleted = m.op === 'delete' || data._deleted === true;
+    return {
+      type: 'livesync:patch',
+      entity: m.entityType,
+      op: deleted ? 'delete' : 'upsert',
+      id: m.entityId,
+      patientId: m.patientId || data.patientId,
+      registro: data.registro,
+      body: data,
+      entityVersion:
+        m.version != null
+          ? Number(m.version)
+          : m.expectedVersion != null
+            ? Number(m.expectedVersion) + 1
+            : null,
+      updatedAt: String(data.updatedAt || patch.updatedAt || new Date().toISOString()),
+    };
+  }
+  return patch;
+}
+
+/** @param {Array<{ agenda?: object[], todos?: Record<string, object[]>, entityVersions?: Record<string, number> }>} sources */
 export function mergeLiveSyncBundles(sources) {
-  /** @type {Map<string, { kind: 'agenda', item: object, updatedAt: string, deleted: boolean }>} */
+  /** @type {Map<string, { kind: 'agenda', item: object, updatedAt: string, entityVersion: number | null, deleted: boolean }>} */
   const agenda = new Map();
-  /** @type {Map<string, { kind: 'todo', patientId: string, item: object, updatedAt: string, deleted: boolean }>} */
+  /** @type {Map<string, { kind: 'todo', patientId: string, item: object, updatedAt: string, entityVersion: number | null, deleted: boolean }>} */
   const todos = new Map();
-  /** @type {Map<string, { id: string, registro: string, updatedAt: string, deleted: boolean }>} */
+  /** @type {Map<string, { id: string, registro: string, updatedAt: string, entityVersion: number | null, deleted: boolean }>} */
   const patientDeletes = new Map();
   const todoTouchedPatientIds = new Set();
 
-  function upsertAgenda(ev, deleted) {
+  function upsertAgenda(ev, deleted, entityVersion, updatedAt, src) {
     if (!ev || !ev.id || isDemoPatientId(ev.patientId)) return;
     const k = agendaEntityKey(ev.id);
-    const at = String(ev.updatedAt || ev.createdAt || '');
+    const ver =
+      entityVersion != null
+        ? entityVersion
+        : versionFromSource(src, k) ?? (ev.version != null ? Number(ev.version) : null);
+    const at = String(updatedAt || ev.updatedAt || ev.createdAt || '');
     const cur = agenda.get(k);
-    if (!cur || compareIso(at, cur.updatedAt) >= 0) {
+    if (shouldAcceptEntry(cur, ver, at)) {
       agenda.set(k, {
         kind: 'agenda',
         item: deleted ? { id: ev.id } : { ...ev },
         updatedAt: at,
+        entityVersion: ver,
         deleted: !!deleted,
       });
     }
   }
 
-  function upsertTodo(patientId, item, deleted) {
+  function upsertTodo(patientId, item, deleted, entityVersion, updatedAt, src) {
     if (!item || !item.id || isDemoPatientId(patientId)) return;
     const k = todoEntityKey(patientId, item.id);
-    const at = String(item.updatedAt || item.createdAt || '');
+    const ver =
+      entityVersion != null
+        ? entityVersion
+        : versionFromSource(src, k) ?? (item.version != null ? Number(item.version) : null);
+    const at = String(updatedAt || item.updatedAt || item.createdAt || '');
     const cur = todos.get(k);
-    if (!cur || compareIso(at, cur.updatedAt) >= 0) {
+    if (shouldAcceptEntry(cur, ver, at)) {
       todos.set(k, {
         kind: 'todo',
         patientId: String(patientId),
         item: deleted ? { id: item.id } : { ...item },
         updatedAt: at,
+        entityVersion: ver,
         deleted: !!deleted,
       });
     }
@@ -74,55 +125,65 @@ export function mergeLiveSyncBundles(sources) {
     if (!src) return;
     const list = Array.isArray(src.agenda) ? src.agenda : [];
     for (let i = 0; i < list.length; i += 1) {
-      upsertAgenda(list[i], false);
+      upsertAgenda(list[i], false, null, null, src);
     }
     const map = src.todos && typeof src.todos === 'object' ? src.todos : {};
     for (const pid of Object.keys(map)) {
       if (isDemoPatientId(pid)) continue;
       const arr = Array.isArray(map[pid]) ? map[pid] : [];
       for (let j = 0; j < arr.length; j += 1) {
-        upsertTodo(pid, arr[j], false);
+        upsertTodo(pid, arr[j], false, null, null, src);
       }
     }
   }
 
-  function applyPatch(patch) {
-    if (!patch || patch.type !== 'livesync:patch') return;
+  function applyPatch(rawPatch) {
+    const patch = normalizeLiveSyncPatch(rawPatch);
+    if (!patch) return;
     const at = String(patch.updatedAt || '');
+    const patchVer = patch.entityVersion != null ? Number(patch.entityVersion) : null;
     if (patch.entity === 'agenda') {
       const k = agendaEntityKey(patch.id);
       if (patch.op === 'delete') {
         const cur = agenda.get(k);
-        if (!cur || compareIso(at, cur.updatedAt) >= 0) {
+        if (shouldAcceptEntry(cur, patchVer, at)) {
           agenda.set(k, {
             kind: 'agenda',
             item: { id: patch.id },
             updatedAt: at,
+            entityVersion: patchVer,
             deleted: true,
           });
         }
       } else {
-        upsertAgenda({ ...(patch.body || {}), id: patch.id, updatedAt: at }, false);
+        upsertAgenda(
+          { ...(patch.body || {}), id: patch.id, updatedAt: at },
+          false,
+          patchVer,
+          at,
+          null
+        );
       }
       return;
     }
     if (patch.entity === 'todo') {
       const pid = String(patch.patientId || '');
       if (pid) todoTouchedPatientIds.add(pid);
-      const k = todoEntityKey(pid, patch.id);
       if (patch.op === 'delete') {
+        const k = todoEntityKey(pid, patch.id);
         const cur = todos.get(k);
-        if (!cur || compareIso(at, cur.updatedAt) >= 0) {
+        if (shouldAcceptEntry(cur, patchVer, at)) {
           todos.set(k, {
             kind: 'todo',
             patientId: pid,
             item: { id: patch.id },
             updatedAt: at,
+            entityVersion: patchVer,
             deleted: true,
           });
         }
       } else {
-        upsertTodo(pid, { ...(patch.body || {}), id: patch.id, updatedAt: at }, false);
+        upsertTodo(pid, { ...(patch.body || {}), id: patch.id, updatedAt: at }, false, patchVer, at, null);
       }
       return;
     }
@@ -130,11 +191,12 @@ export function mergeLiveSyncBundles(sources) {
       const k = patientEntityKey(patch.id, patch.registro);
       if (patch.op === 'delete') {
         const cur = patientDeletes.get(k);
-        if (!cur || compareIso(at, cur.updatedAt) >= 0) {
+        if (shouldAcceptEntry(cur, patchVer, at)) {
           patientDeletes.set(k, {
             id: String(patch.id || ''),
             registro: String(patch.registro || '').trim(),
             updatedAt: at,
+            entityVersion: patchVer,
             deleted: true,
           });
         }

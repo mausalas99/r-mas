@@ -133,6 +133,24 @@ function skipSectionDividerBlock(lines, startIdx) {
   return i;
 }
 
+function isCultureGroupTitle(title) {
+  var t = cleanEstudio(title);
+  if (!t) return false;
+  return isCultureSampleTitle(t, ['PRODUCTO']);
+}
+
+function pruneSomeCultureRows(rows) {
+  return (rows || []).filter(function (r) {
+    if (!r || !r.estudio || isSectionDividerRow(r)) return false;
+    var res = String(r.resultado || '').trim();
+    if (/^MICROORGANISMO|^CUENTA|^COMENTARIO/i.test(r.estudio)) {
+      return !!res && res !== ':' && res !== '—';
+    }
+    if (!res || res === ':' || res === '—') return false;
+    return true;
+  });
+}
+
 function pruneSomeRows(rows) {
   var out = [];
   (rows || []).forEach(function (r) {
@@ -328,6 +346,110 @@ function parseUnitsRef(line) {
   return { unidades: t, ref: '' };
 }
 
+/** Campos típicos de informes SOME de cultivos (uro/hemo/aspirado, etc.). */
+var CULTURE_FIELD_RE =
+  /^(PRODUCTO|TINCION|CALIDAD|ESTADO(\s+DE)?\s+CULTIVO|REPORTE\s+PRELIMINAR|MICROORGANISMO|COMENTARIO:?|CUENTA(\s+DE\s+KASS)?|ANTIBIOGRAMA|IDENTIFICACION)/i;
+
+function isCultureFieldLine(line) {
+  var n = cleanEstudio(line);
+  return !!(n && CULTURE_FIELD_RE.test(n));
+}
+
+function isCultureSampleTitle(line, nextLines) {
+  var name = cleanEstudio(line);
+  if (!name || isFlagToken(name) || isDepartmentLine(name) || isTableHeaderLine(name)) return false;
+  if (isCultureFieldLine(name)) return false;
+  if (isCitoGroupTitle(name) || /^FIBRAS\s+VEGETALES$/i.test(name)) return false;
+  if (/^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]/.test(name)) return false;
+  if (
+    /^(ASPIRADO|UROCULTIVO|HEMOCULTIVO|FUNGICULTIVO|CATETER|LIQUIDO|SECRECION|ABSCESO|BRONCOALVEOLAR|CULTIVO)\b/i.test(
+      name
+    )
+  ) {
+    return true;
+  }
+  if (name !== name.toUpperCase()) return false;
+  for (var i = 0; i < Math.min(nextLines.length, 8); i++) {
+    var n = cleanEstudio(nextLines[i]);
+    if (!n || isFlagToken(n)) continue;
+    if (/^PRODUCTO|^TINCION|^CALIDAD|^ESTADO(\s+DE)?\s+CULTIVO/i.test(n)) return true;
+    if (n.toUpperCase() === name.toUpperCase()) continue;
+    break;
+  }
+  return false;
+}
+
+function cultureBlockEndIdx(lines, startIdx) {
+  for (var k = startIdx + 1; k < lines.length; k++) {
+    var t = cleanEstudio(lines[k]);
+    if (!t || isFlagToken(t)) continue;
+    if (isDepartmentLine(t) || isTableHeaderLine(t)) return k;
+    if (k > startIdx + 1 && isCultureSampleTitle(t, lines.slice(k + 1))) return k;
+  }
+  return lines.length;
+}
+
+function readCultureSomeRowAt(lines, startIdx, endIdx) {
+  var estudio = cleanEstudio(lines[startIdx]);
+  if (!estudio || !isCultureFieldLine(estudio)) return null;
+
+  var j = startIdx + 1;
+  var flag = '*';
+  var parts = [];
+
+  while (j < endIdx) {
+    var t = cleanEstudio(lines[j]);
+    j++;
+    if (!t) continue;
+    if (isCultureFieldLine(t) || isCultureSampleTitle(t, lines.slice(j))) {
+      j--;
+      break;
+    }
+    if (isDepartmentLine(t) || isTableHeaderLine(t)) {
+      j--;
+      break;
+    }
+    if (!parts.length && isFlagToken(t)) {
+      var peek = cleanEstudio(lines[j] || '');
+      if (peek && (isCultureFieldLine(peek) || isCultureSampleTitle(peek, lines.slice(j + 1)))) {
+        break;
+      }
+      flag = t;
+      continue;
+    }
+    if (t.toUpperCase() === estudio.toUpperCase()) continue;
+    parts.push(t);
+    if (/^MICROORGANISMO$/i.test(estudio) || /^CUENTA/i.test(estudio)) break;
+    if (
+      /^PRODUCTO$|^TINCION|^CALIDAD|^ESTADO|^REPORTE\s+PRELIMINAR/i.test(estudio) &&
+      parts.length >= 1
+    ) {
+      break;
+    }
+  }
+
+  var row = finalizeRow(estudio, flag, parts);
+  if (!row) return null;
+  return { row: row, nextIdx: j };
+}
+
+function parseBacteriologiaCultureGroup(lines, startIdx) {
+  var title = cleanEstudio(lines[startIdx]);
+  var endIdx = cultureBlockEndIdx(lines, startIdx);
+  var rows = [];
+  var i = startIdx + 1;
+  while (i < endIdx) {
+    var parsed = readCultureSomeRowAt(lines, i, endIdx);
+    if (!parsed) {
+      i++;
+      continue;
+    }
+    rows.push(parsed.row);
+    i = parsed.nextIdx;
+  }
+  return { title: title, rows: rows, nextIdx: endIdx };
+}
+
 function finalizeRow(estudio, flag, valueParts) {
   var est = cleanEstudio(estudio);
   if (!est) return null;
@@ -395,6 +517,14 @@ function readRowAt(lines, startIdx, currentGroupTitle) {
       break;
     }
     if (!parts.length && isFlagToken(t)) {
+      var peekAfterFlag = cleanEstudio(lines[j] || '');
+      if (
+        /^COMENTARIO/i.test(estudio) &&
+        peekAfterFlag &&
+        /^(CUENTA|MICROORGANISMO|ANTIBIOGRAMA)\b/i.test(peekAfterFlag)
+      ) {
+        break;
+      }
       flag = t;
       continue;
     }
@@ -498,6 +628,19 @@ export function parseSomeReportTables(textoBruto) {
     if (isTableHeaderLine(trimmed)) continue;
 
     if (!currentDept) continue;
+
+    if (
+      normalizeDeptKey(currentDept.key) === 'BACTERIOLOGIA' &&
+      isCultureSampleTitle(trimmed, lines.slice(i + 1))
+    ) {
+      var cultBlock = parseBacteriologiaCultureGroup(lines, i);
+      ensureGroup(cultBlock.title);
+      cultBlock.rows.forEach(function (r) {
+        currentGroup.rows.push(r);
+      });
+      i = cultBlock.nextIdx - 1;
+      continue;
+    }
 
     if (isSectionDividerRow({ estudio: trimmed, resultado: '', unidades: '', ref: '' })) {
       continue;
@@ -693,7 +836,7 @@ function normalizeSomeGroup(group) {
     rows = extracted.rows;
     fluidSource = fluidSource || extracted.fluid || '';
   }
-  group.rows = pruneSomeRows(rows);
+  group.rows = isCultureGroupTitle(group.title) ? pruneSomeCultureRows(rows) : pruneSomeRows(rows);
   group.fluidSource = fluidSource;
   group.tableVariant = isCito ? 'cito' : 'standard';
   group._someNormalized = true;

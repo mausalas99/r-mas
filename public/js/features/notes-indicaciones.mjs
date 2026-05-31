@@ -17,6 +17,10 @@ import {
   loadDraftFromSettings,
 } from "../profile-formats-editor.mjs";
 import { preloadNoteDxFromPatient } from "../patient-diagnosticos.mjs";
+import {
+  exportWithOutputDirFallback,
+  syncApprovedOutputDir,
+} from "../document-export-client.mjs";
 
 let rt = {
   getActiveId() { return null; },
@@ -155,20 +159,34 @@ function generateWord() {
   var btn = document.getElementById('btn-gen');
   setAsyncButtonLoading(btn, true, { loadingText: 'Generando…' });
   rt.incrementPendingJobs();
-  function buildPayload(outputDir) {
-    return { patient: patient, note: note, outputDir: outputDir || '' };
+  function buildPayload() {
+    return { patient: patient, note: note };
   }
-  rt.requestDocumentJson('/generate', buildPayload((rt.getSettings() || {}).outputDir || ''))
-  .then(function(d){
-    return rt.handleDocumentGenerateResponse({
-      response: d,
-      url: '/generate',
-      buildPayload: buildPayload,
-      onSuccess: function(data) {
-        rt.showToast('Nota guardada: '+data.fileName,'success');
-        rt.guidedTourAdvanceAfterNotaGenerated();
-      },
-    });
+  function selectOutputDir() {
+    if (!window.electronAPI || !window.electronAPI.selectOutputDir) return Promise.resolve(undefined);
+    return window.electronAPI.selectOutputDir();
+  }
+  function saveOutputDir(dir) {
+    if (!dir) return;
+    var st = rt.getSettings() || {};
+    st.outputDir = dir;
+    localStorage.setItem('rpc-settings', JSON.stringify(st));
+    syncApprovedOutputDir(dir);
+  }
+  exportWithOutputDirFallback({
+    url: '/generate',
+    buildPayload: buildPayload,
+    defaultFileName: 'nota.docx',
+    selectOutputDir: selectOutputDir,
+    saveOutputDir: saveOutputDir,
+    onSuccess: function(data) {
+      var name = (data && (data.fileName || data.path)) ? (data.fileName || String(data.path).split(/[/\\]/).pop()) : 'nota.docx';
+      rt.showToast('Nota guardada: ' + name, 'success');
+      rt.guidedTourAdvanceAfterNotaGenerated();
+    },
+    onPrompt: function() { rt.showToast('Selecciona una carpeta para guardar el documento.', 'error'); },
+    onCancel: function() { rt.showToast('No se guardó el documento: no se eligió carpeta.', 'error'); },
+    onError: function(msg) { rt.showToast('Error: ' + msg, 'error'); },
   })
   .catch(function(){
     rt.showToast('Error de conexión','error');
@@ -309,20 +327,34 @@ function generateIndicaciones() {
   var btn = document.getElementById('btn-gen-ind');
   setAsyncButtonLoading(btn, true, { loadingText: 'Generando…' });
   rt.incrementPendingJobs();
-  function buildPayload(outputDir) {
-    return { patient: patient, indicaciones: ind, outputDir: outputDir || '' };
+  function buildPayload() {
+    return { patient: patient, indicaciones: ind };
   }
-  rt.requestDocumentJson('/generate-indicaciones', buildPayload((rt.getSettings() || {}).outputDir || ''))
-  .then(function(d){
-    return rt.handleDocumentGenerateResponse({
-      response: d,
-      url: '/generate-indicaciones',
-      buildPayload: buildPayload,
-      onSuccess: function(data) {
-        rt.showToast('Indicaciones guardadas: '+data.fileName,'success');
-        rt.guidedTourAdvanceAfterIndicaGenerated();
-      },
-    });
+  function selectOutputDir() {
+    if (!window.electronAPI || !window.electronAPI.selectOutputDir) return Promise.resolve(undefined);
+    return window.electronAPI.selectOutputDir();
+  }
+  function saveOutputDir(dir) {
+    if (!dir) return;
+    var st = rt.getSettings() || {};
+    st.outputDir = dir;
+    localStorage.setItem('rpc-settings', JSON.stringify(st));
+    syncApprovedOutputDir(dir);
+  }
+  exportWithOutputDirFallback({
+    url: '/generate-indicaciones',
+    buildPayload: buildPayload,
+    defaultFileName: 'indicaciones.docx',
+    selectOutputDir: selectOutputDir,
+    saveOutputDir: saveOutputDir,
+    onSuccess: function(data) {
+      var name = (data && (data.fileName || data.path)) ? (data.fileName || String(data.path).split(/[/\\]/).pop()) : 'indicaciones.docx';
+      rt.showToast('Indicaciones guardadas: ' + name, 'success');
+      rt.guidedTourAdvanceAfterIndicaGenerated();
+    },
+    onPrompt: function() { rt.showToast('Selecciona una carpeta para guardar el documento.', 'error'); },
+    onCancel: function() { rt.showToast('No se guardó el documento: no se eligió carpeta.', 'error'); },
+    onError: function(msg) { rt.showToast('Error: ' + msg, 'error'); },
   })
   .catch(function(){
     rt.showToast('Error de conexión','error');

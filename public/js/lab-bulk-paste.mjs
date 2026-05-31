@@ -392,6 +392,16 @@ export function shouldShowBulkLabPreview(blocks, totalOkReports, opts) {
   });
 }
 
+/** Datos SOME del paciente para el modal de alta (primer reporte válido del bloque). */
+export function extractLabPatientFromBulkBlock(block) {
+  if (!block || !Array.isArray(block.reports)) return null;
+  var ok = block.reports.find(function (r) {
+    return r.ok && r.result && r.result.patient;
+  });
+  if (!ok || !ok.result.patient) return null;
+  return ok.result.patient;
+}
+
 export function bulkPreviewStatusLabel(status) {
   switch (status) {
     case 'ok':

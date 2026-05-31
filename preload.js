@@ -40,6 +40,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   selectOutputDir: function() {
     return ipcRenderer.invoke('select-output-dir');
   },
+  setApprovedOutputDir: function(dir) {
+    return ipcRenderer.invoke('set-approved-output-dir', dir);
+  },
+  saveExportedDocument: function(opts) {
+    return ipcRenderer.invoke('save-exported-document', opts);
+  },
   setUpdateChannel: function(channel) {
     ipcRenderer.send('set-update-channel', channel);
   },

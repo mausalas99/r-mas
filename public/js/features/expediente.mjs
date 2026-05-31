@@ -21,6 +21,10 @@ import {
 import { LISTADO_PROBLEMAS_AI_PROMPT } from "../listado-problemas-ai-prompt.mjs";
 import { setAsyncButtonLoading } from "../ui-motion.mjs";
 import {
+  exportWithOutputDirFallback,
+  syncApprovedOutputDir,
+} from "../document-export-client.mjs";
+import {
   sortLabHistoryChronological,
   parseFechaLabToMs,
   normalizeFechaLabHistory,
@@ -28,12 +32,14 @@ import {
 import { getLabHistoryRevision, TREND_REFRESH_DEBOUNCE_MS } from "../lab-history-cache.mjs";
 import { scheduleIdle } from "../deferred-work.mjs";
 import { isPaseMode } from "./chrome.mjs";
+import { isHideListadoProblemasAiPromptEnabled } from "./profile.mjs";
 import {
   renderEntry,
   buildAtbRisSummaryHtml,
   extractSensCrudasForGermFromSource,
   formatCultivoCondensedForCopy,
   isParsedCultivoHeaderLine,
+  parseCuentaFromCultivoChunkLines,
 } from "../labs.js";
 
 let rt = {
@@ -161,8 +167,14 @@ function parseCultureBlockFromLineArray(lines, set, seq) {
   else if (negativo && /^NEGATIVO$/i.test(organismo)) organismo = 'Negativo';
   else if (!organismo) organismo = '—';
 
-  var resistencias = lines.slice(1);
-  var resStr = resistencias.join('\n').trim();
+  var bodyLines = lines.slice(1);
+  var cuenta = parseCuentaFromCultivoChunkLines(bodyLines);
+  var resStr = bodyLines
+    .filter(function (ln) {
+      return !/^Cuenta:/i.test(String(ln || '').trim());
+    })
+    .join('\n')
+    .trim();
 
   var sortKeyMs = sortMs;
   if (fechaMuestra) {
@@ -177,6 +189,7 @@ function parseCultureBlockFromLineArray(lines, set, seq) {
       fechaMuestra: fechaMuestra || '—',
       sitio: sitio || '—',
       organismo: organismo,
+      cuenta: cuenta || '',
       resistencias: resStr || (negativo ? '—' : ''),
       negativo: negativo,
       sortMs: sortMs,
@@ -316,6 +329,14 @@ function buildCultivoOutputHtmlFragments(text, sourceText) {
     });
   });
   return parts.join('');
+}
+
+function cultivoOrganismoCellHtml(r) {
+  var html = esc(r.organismo);
+  if (r.cuenta && !r.negativo) {
+    html += '<div class="cultivos-cuenta">' + esc(r.cuenta) + '</div>';
+  }
+  return html;
 }
 
 function cultivoAntibiogramCellHtml(r) {
@@ -756,8 +777,8 @@ function renderCultivosTable() {
           esc(rowFechaDisplay(r)) +
           "</td><td>" +
           esc(r.sitio) +
-          "</td><td>" +
-          esc(r.organismo) +
+          "</td><td class=\"cultivos-cell-org\">" +
+          cultivoOrganismoCellHtml(r) +
           '</td><td class="cultivos-cell-atb">' +
           cultivoAntibiogramCellHtml(r) +
           "</td></tr>"
@@ -1029,7 +1050,11 @@ function renderListadoForm() {
 
     _renderListadoMedicosCard(lst) +
 
-    '<div class="action-bar"><button type="button" class="btn-med-secondary rpc-doc-export" onclick="quickExportCurrentPatient()" id="btn-quick-export-listado"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida rápida</button><button type="button" class="btn-med-secondary" onclick="copyListadoProblemasAiPrompt()" title="Copia el prompt para usar en un chat de IA"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copiar prompt IA</button><button type="button" class="btn-generate rpc-doc-export" onclick="generateListado()" id="btn-gen-listado"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Listado de Problemas (.docx)</button></div>'
+    '<div class="action-bar"><button type="button" class="btn-med-secondary rpc-doc-export" onclick="quickExportCurrentPatient()" id="btn-quick-export-listado"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0l4-4m-4 4l-4-4"/><path d="M5 21h14"/></svg>Salida rápida</button>' +
+    (isHideListadoProblemasAiPromptEnabled()
+      ? ''
+      : '<button type="button" class="btn-med-secondary" onclick="copyListadoProblemasAiPrompt()" title="Copia el prompt para usar en un chat de IA"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copiar prompt IA</button>') +
+    '<button type="button" class="btn-generate rpc-doc-export" onclick="generateListado()" id="btn-gen-listado"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>Generar Listado de Problemas (.docx)</button></div>'
   );
   refreshRpcDateFields(c);
   c.querySelectorAll('.listado-row textarea').forEach(_autoGrowTextarea);
@@ -1112,24 +1137,33 @@ function generateListado() {
   var btn = document.getElementById('btn-gen-listado');
   setAsyncButtonLoading(btn, true, { loadingText: 'Generando…' });
   rt.incrementPendingJobs();
-  function buildPayload(outputDir) {
-    return {
-      patient: patient,
-      listado: lst,
-      medicos: medicos,
-      outputDir: outputDir || '',
-    };
+  function buildPayload() {
+    return { patient: patient, listado: lst, medicos: medicos };
   }
-  rt.requestDocumentJson('/generate-listado', buildPayload((rt.getSettings() || {}).outputDir || ''))
-  .then(function(d){
-    return rt.handleDocumentGenerateResponse({
-      response: d,
-      url: '/generate-listado',
-      buildPayload: buildPayload,
-      onSuccess: function(data) {
-        rt.showToast('Listado guardado: ' + data.fileName, 'success');
-      },
-    });
+  function selectOutputDir() {
+    if (!window.electronAPI || !window.electronAPI.selectOutputDir) return Promise.resolve(undefined);
+    return window.electronAPI.selectOutputDir();
+  }
+  function saveOutputDir(dir) {
+    if (!dir) return;
+    var st = rt.getSettings() || {};
+    st.outputDir = dir;
+    localStorage.setItem('rpc-settings', JSON.stringify(st));
+    syncApprovedOutputDir(dir);
+  }
+  exportWithOutputDirFallback({
+    url: '/generate-listado',
+    buildPayload: buildPayload,
+    defaultFileName: 'listado.docx',
+    selectOutputDir: selectOutputDir,
+    saveOutputDir: saveOutputDir,
+    onSuccess: function(data) {
+      var name = (data && (data.fileName || data.path)) ? (data.fileName || String(data.path).split(/[/\\]/).pop()) : 'listado.docx';
+      rt.showToast('Listado guardado: ' + name, 'success');
+    },
+    onPrompt: function() { rt.showToast('Selecciona una carpeta para guardar el documento.', 'error'); },
+    onCancel: function() { rt.showToast('No se guardó el documento: no se eligió carpeta.', 'error'); },
+    onError: function(msg) { rt.showToast('Error: ' + msg, 'error'); },
   })
   .catch(function(){ rt.showToast('Error de conexión', 'error'); })
   .finally(function(){

@@ -1,3 +1,4 @@
+import { isClinicalDecisionGuidanceHidden } from './clinical-product-policy.mjs';
 import {
   getProcedureById,
   suggestAhaClinicoFromAsa,
@@ -65,6 +66,13 @@ export function emptyVpoState() {
     diagnosticosTouched: false,
     asaFromDiagnosticos: false,
     valoracionIntro: 'SE REALIZA VALORACIÓN PREOPERATORIA. SE OTORGA RIESGO QUIRÚRGICO:',
+    scaleResults: {
+      asa: '',
+      rcri: '',
+      gupta: '',
+      ariscat: '',
+      caprini: '',
+    },
     farmacos: [],
     fcLpm: '',
     lastLabApplied: null,
@@ -73,10 +81,24 @@ export function emptyVpoState() {
 }
 
 /** @param {Record<string, object>} map @param {string} patientId */
+/** @param {object} state */
+export function ensureScaleResults(state) {
+  if (!state) return;
+  var defaults = emptyVpoState().scaleResults;
+  if (!state.scaleResults || typeof state.scaleResults !== 'object') {
+    state.scaleResults = Object.assign({}, defaults);
+    return;
+  }
+  Object.keys(defaults).forEach(function (k) {
+    if (state.scaleResults[k] == null) state.scaleResults[k] = '';
+  });
+}
+
 export function ensureVpoState(map, patientId) {
   if (!patientId) return emptyVpoState();
   if (!map[patientId]) map[patientId] = emptyVpoState();
   ensureDiagnosticosList(map[patientId]);
+  ensureScaleResults(map[patientId]);
   return map[patientId];
 }
 
@@ -116,6 +138,7 @@ export function applyProcedureSelection(state, procedureId) {
   state.procedureId = procedureId || '';
   if (!proc) return;
   state.ahaQuirurgico = proc.ahaQuirurgico;
+  if (isClinicalDecisionGuidanceHidden()) return;
   state.rcri.cirugiaAltoRiesgo = !!proc.rcriHighRisk;
   state.ariscat.incisionKey = proc.ariscatIncisionKey;
 }
@@ -128,7 +151,9 @@ export function applyAsaSuggestion(state, asaKey) {
 
 /** Recalcula AHA clínico (ASA) y quirúrgico (procedimiento). @param {object} state */
 export function syncAhaFields(state) {
-  if (state.asaKey) state.ahaClinico = suggestAhaClinicoFromAsa(state.asaKey);
+  if (!isClinicalDecisionGuidanceHidden() && state.asaKey) {
+    state.ahaClinico = suggestAhaClinicoFromAsa(state.asaKey);
+  }
   var proc = getProcedureById(state.procedureId);
   if (proc) state.ahaQuirurgico = proc.ahaQuirurgico;
 }

@@ -2,7 +2,10 @@
  * Panel VPO — calculadora, plantillas EKG/Rx, fármacos perioperatorios, copiar.
  */
 import { vpoByPatient, notes, labHistory, medRecetaByPatient, patients, saveState } from '../app-state.mjs';
-import { computeVpoScores } from '../vpo-calculator.mjs';
+import {
+  isVpoPeriopMedGuidanceHidden,
+  isVpoRiskCalculationDisabled,
+} from '../clinical-product-policy.mjs';
 import { ASA_OPTIONS, FUNCTIONAL_STATUS, PROCEDURES, searchProcedures } from '../vpo-lookups.mjs';
 import { asaOptionLabel, functionalLabel, procedureLabel, procedureSearchText } from '../vpo-display.mjs';
 import {
@@ -12,7 +15,7 @@ import {
   applyDuracionKey,
   syncAhaFields,
   ensureDuracionKey,
-  effectiveDuracionHoras,
+  ensureScaleResults,
   mergeFarmacosFromMedReceta,
   getLatestLabValues,
   applyLabValues,
@@ -35,6 +38,8 @@ import {
   buildFarmacosCopyText,
   formatRiskLines,
   renderEkgWithFc,
+  VPO_OFFICIAL_CALCULATOR_DISCLAIMER,
+  VPO_SUGGESTED_SCALES,
 } from '../vpo-text.mjs';
 import { copyToClipboardSafe } from './soap-estado.mjs';
 
@@ -80,23 +85,6 @@ function copyText(label, text) {
   });
 }
 
-function buildScores(state) {
-  ensureDuracionKey(state);
-  return computeVpoScores({
-    edad: state.edad,
-    creatinina: state.creatinina,
-    hemoglobina: state.hemoglobina,
-    spo2: state.spo2,
-    duracionCirugiaHoras: effectiveDuracionHoras(state),
-    asaKey: state.asaKey,
-    functionalKey: state.functionalKey,
-    procedureId: state.procedureId,
-    rcri: state.rcri,
-    ariscat: state.ariscat,
-    caprini: state.caprini,
-  });
-}
-
 function renderAhaBadges(state) {
   syncAhaFields(state);
   var c = state.ahaClinico || '—';
@@ -112,37 +100,42 @@ function renderAhaBadges(state) {
   );
 }
 
-function renderSummaryHtml(scores) {
+function renderRiskScalesOnlyBody(state) {
+  ensureScaleResults(state);
+  var sr = state.scaleResults;
   return (
-    '<div class="vpo-summary-lines">' +
-    '<div><strong>ASA</strong> ' +
-    esc(scores.asaClass) +
-    '</div>' +
-    '<div><strong>RCRI (Lee)</strong> ' +
-    scores.rcri.points +
-    ' — ' +
-    esc(scores.rcri.riskLabel) +
-    '</div>' +
-    '<div><strong>Gupta MICA</strong> ' +
-    (scores.gupta.micaPercent * 100).toFixed(2) +
-    '% — ' +
-    esc(scores.gupta.interpretation) +
-    '</div>' +
-    '<div><strong>ARISCAT</strong> ' +
-    scores.ariscat.points +
-    ' — ' +
-    esc(scores.ariscat.riskLabel) +
-    ' ' +
-    esc(scores.ariscat.detailPct) +
-    '</div>' +
-    '<div><strong>Caprini</strong> ' +
-    scores.caprini.points +
-    ' — ' +
-    esc(scores.caprini.riskLabel) +
-    '</div>' +
-    '<p class="overview-hint" style="margin:8px 0 0;">Gupta: aproximación del Excel; validar con juicio clínico.</p>' +
+    '<p class="overview-hint">' +
+    esc(VPO_OFFICIAL_CALCULATOR_DISCLAIMER) +
+    '</p>' +
+    '<div class="field-group" style="margin-top:10px;">' +
+    '<label class="ea-label">Introducción (texto previo a escalas)</label>' +
+    '<textarea class="ea-input" data-vpo-field="valoracionIntro" rows="2">' +
+    esc(state.valoracionIntro) +
+    '</textarea></div>' +
+    '<p class="ea-label vpo-scales-grid-title">Resultado por escala (calculadora externa)</p>' +
+    '<div class="vpo-scales-results">' +
+    VPO_SUGGESTED_SCALES.map(function (s) {
+      return (
+        '<label class="vpo-scale-cell" title="' +
+        esc(s.hint) +
+        '">' +
+        '<span class="vpo-scale-label">' +
+        esc(s.label) +
+        '</span>' +
+        '<input type="text" class="ea-input" data-vpo-scale="' +
+        esc(s.key) +
+        '" value="' +
+        esc(sr[s.key]) +
+        '" placeholder="Resultado…" autocomplete="off">' +
+        '</label>'
+      );
+    }).join('') +
     '</div>'
   );
+}
+
+function riskCopyOpts() {
+  return isVpoRiskCalculationDisabled() ? { noCalculatedRisk: true } : undefined;
 }
 
 /**
@@ -167,12 +160,18 @@ function vpoSection(title, tone, open, body) {
   );
 }
 
-function updateSummaryAndAha(mount, state) {
+function refreshVpoRiskSection(mount, state) {
+  if (isVpoRiskCalculationDisabled()) return;
   syncAhaFields(state);
-  var summary = mount.querySelector('.vpo-summary-wrap');
-  if (summary) summary.innerHTML = renderSummaryHtml(buildScores(state));
   var ahaWrap = mount.querySelector('.vpo-aha-wrap');
   if (ahaWrap) ahaWrap.innerHTML = renderAhaBadges(state);
+}
+
+function periopMedSuggestFn(name) {
+  if (isVpoPeriopMedGuidanceHidden()) {
+    return { sugerencia: '', notaEditable: '' };
+  }
+  return suggestPeriopMed(name);
 }
 
 function wireForm(mount, state, patientId) {
@@ -182,7 +181,15 @@ function wireForm(mount, state, patientId) {
 
   form.addEventListener('input', function (ev) {
     var el = ev.target;
-    if (!el || !el.getAttribute('data-vpo-field')) return;
+    if (!el) return;
+    var scaleKey = el.getAttribute('data-vpo-scale');
+    if (scaleKey) {
+      ensureScaleResults(state);
+      state.scaleResults[scaleKey] = el.value;
+      scheduleSave();
+      return;
+    }
+    if (!el.getAttribute('data-vpo-field')) return;
     var field = el.getAttribute('data-vpo-field');
     if (field.indexOf('.') >= 0) {
       var parts = field.split('.');
@@ -197,7 +204,7 @@ function wireForm(mount, state, patientId) {
       applyAsaSuggestion(state, state.asaKey);
     }
     scheduleSave();
-    updateSummaryAndAha(mount, state);
+    refreshVpoRiskSection(mount, state);
   });
 
   form.addEventListener('change', function (ev) {
@@ -205,18 +212,18 @@ function wireForm(mount, state, patientId) {
     if (el && el.id === 'vpo-procedure-select') {
       applyProcedureSelection(state, el.value);
       scheduleSave();
-      updateSummaryAndAha(mount, state);
+      refreshVpoRiskSection(mount, state);
     }
     if (el && el.id === 'vpo-asa-select') {
       state.asaFromDiagnosticos = false;
       applyAsaSuggestion(state, el.value);
       scheduleSave();
-      updateSummaryAndAha(mount, state);
+      refreshVpoRiskSection(mount, state);
     }
     if (el && el.id === 'vpo-duracion-select') {
       applyDuracionKey(state, el.value);
       scheduleSave();
-      updateSummaryAndAha(mount, state);
+      refreshVpoRiskSection(mount, state);
     }
   });
 
@@ -283,9 +290,7 @@ function wireForm(mount, state, patientId) {
       rt.showToast('Procesa la receta en Medicamentos primero', 'error');
       return;
     }
-    mergeFarmacosFromMedReceta(state, block.items, function (name) {
-      return suggestPeriopMed(name);
-    });
+    mergeFarmacosFromMedReceta(state, block.items, periopMedSuggestFn);
     scheduleSave();
     renderVpoPanel(mount, patientId);
     rt.showToast('Fármacos actualizados desde SOME', 'success');
@@ -310,18 +315,17 @@ function wireForm(mount, state, patientId) {
 
   ['copy-ekg', 'copy-rx', 'copy-risk', 'copy-farm', 'copy-full'].forEach(function (action) {
     mount.querySelector('[data-vpo-action="' + action + '"]')?.addEventListener('click', function () {
-      var scores = buildScores(state);
       if (action === 'copy-ekg') {
         copyText('EKG', 'ELECTROCARDIOGRAMA:\n\n' + renderEkgWithFc(state.ekgText, state.fcLpm));
       } else if (action === 'copy-rx') {
         copyText('Rx tórax', 'RADIOGRAFÍA DE TÓRAX:\n\n' + state.rxText);
       } else if (action === 'copy-risk') {
-        var lines = formatRiskLines(scores, state);
+        var lines = formatRiskLines(null, state, riskCopyOpts());
         copyText('Riesgos', state.valoracionIntro + '\n' + lines.join('\n'));
       } else if (action === 'copy-farm') {
         copyText('Fármacos', buildFarmacosCopyText(state.farmacos));
       } else if (action === 'copy-full') {
-        var riskBlock = state.valoracionIntro + '\n' + formatRiskLines(scores, state).join('\n');
+        var riskBlock = state.valoracionIntro + '\n' + formatRiskLines(null, state, riskCopyOpts()).join('\n');
         copyText(
           'Valoración completa',
           buildVpoFullCopyText({
@@ -429,7 +433,7 @@ function renderFlagGroups(state) {
         '</div></div>'
       );
     }).join('') +
-    '<p class="overview-hint" style="margin:4px 0 0;">Los diagnósticos marcan automáticamente los criterios compatibles; puedes ajustarlos manualmente.</p>' +
+    '<p class="overview-hint" style="margin:4px 0 0;">Los diagnósticos marcan criterios compatibles para documentación; los puntajes de riesgo se calculan fuera de R+.</p>' +
     '</div>'
   );
 }
@@ -541,7 +545,7 @@ function ensureVpoMountDelegation(mount) {
       refreshFlagsAndSummary(mount, state);
       var asaSel = mount.querySelector('#vpo-asa-select');
       if (asaSel) asaSel.value = state.asaKey || '';
-      rt.showToast('Diagnósticos separados; riesgo actualizado', 'success');
+      rt.showToast('Diagnósticos separados; criterios actualizados', 'success');
       return;
     }
 
@@ -605,11 +609,12 @@ function ensureVpoMountDelegation(mount) {
 }
 
 function refreshFlagsAndSummary(mount, state) {
+  if (isVpoRiskCalculationDisabled()) return;
   var flagsWrap = mount.querySelector('.vpo-flags-wrap');
   if (flagsWrap) flagsWrap.innerHTML = renderFlagGroups(state);
   var asaSel = mount.querySelector('#vpo-asa-select');
   if (asaSel) asaSel.value = state.asaKey || '';
-  updateSummaryAndAha(mount, state);
+  refreshVpoRiskSection(mount, state);
 }
 
 /**
@@ -648,7 +653,6 @@ export function renderVpoPanel(mount, patientId) {
   autofillVitalsFromMonitoreoIfEmpty(state, patient || null);
   mount._vpoPatientId = patientId;
 
-  var scores = buildScores(state);
   var procOptions = PROCEDURES.map(function (p) {
     var sel = p.id === state.procedureId ? ' selected' : '';
     return '<option value="' + esc(p.id) + '"' + sel + '>' + esc(procedureLabel(p)) + '</option>';
@@ -667,91 +671,96 @@ export function renderVpoPanel(mount, patientId) {
       );
     }).join('');
 
-  var riesgoBody =
-    '<div class="vpo-grid">' +
-    '<div class="field-group"><label>Edad</label><input class="ea-input" data-vpo-field="edad" type="text" value="' +
-    esc(state.edad) +
-    '"></div>' +
-    '<div class="field-group"><label>Creatinina</label><input class="ea-input" data-vpo-field="creatinina" type="text" value="' +
-    esc(state.creatinina) +
-    '"></div>' +
-    '<div class="field-group"><label>Hemoglobina</label><input class="ea-input" data-vpo-field="hemoglobina" type="text" value="' +
-    esc(state.hemoglobina) +
-    '"></div>' +
-    '<div class="field-group"><label>SpO₂ %</label><input class="ea-input" data-vpo-field="spo2" type="text" value="' +
-    esc(state.spo2) +
-    '"></div>' +
-    '<div class="field-group"><label>Duración estimada</label><select class="ea-input" id="vpo-duracion-select">' +
-    durOpts +
-    '</select></div>' +
-    '<div class="field-group"><label>FC (lpm)</label><input class="ea-input" data-vpo-field="fcLpm" type="text" value="' +
-    esc(state.fcLpm) +
-    '"></div></div>' +
-    '<div class="vpo-toolbar">' +
-    '<button type="button" class="btn-med-secondary" data-vpo-action="tomar-lab">Tomar del laboratorio</button>' +
-    '<button type="button" class="btn-med-secondary" data-vpo-action="tomar-estado">Tomar de Estado actual</button>' +
-    '</div>' +
-    '<div class="field-group"><label>ASA</label><select class="ea-input" id="vpo-asa-select" data-vpo-field="asaKey">' +
-    '<option value="">—</option>' +
-    ASA_OPTIONS.map(function (a) {
-      return (
-        '<option value="' +
-        esc(a.key) +
-        '"' +
-        (a.key === state.asaKey ? ' selected' : '') +
-        '>' +
-        esc(asaOptionLabel(a)) +
-        '</option>'
-      );
-    }).join('') +
-    '</select></div>' +
-    '<div class="field-group"><label>Dependencia funcional</label><select class="ea-input" data-vpo-field="functionalKey">' +
-    FUNCTIONAL_STATUS.map(function (f) {
-      return (
-        '<option value="' +
-        esc(f.key) +
-        '"' +
-        (f.key === state.functionalKey ? ' selected' : '') +
-        '>' +
-        esc(functionalLabel(f)) +
-        '</option>'
-      );
-    }).join('') +
-    '</select></div>' +
-    '<div class="field-group"><label>Buscar procedimiento</label><input class="ea-input" id="vpo-procedure-search" type="search" placeholder="colecistectomía, torácica…"></div>' +
-    '<div class="field-group"><label>Procedimiento (Gupta)</label><select class="ea-input" id="vpo-procedure-select">' +
-    procOptions +
-    '</select></div>' +
-    '<div class="vpo-aha-wrap">' +
-    renderAhaBadges(state) +
-    '</div>' +
-    '<div class="vpo-flags-wrap">' +
-    renderFlagGroups(state) +
-    '</div>' +
-    '<div class="vpo-summary-wrap" style="margin-top:12px;">' +
-    renderSummaryHtml(scores) +
-    '</div>';
+  var riesgoBody = isVpoRiskCalculationDisabled()
+    ? renderRiskScalesOnlyBody(state)
+    : '<div class="vpo-grid">' +
+      '<div class="field-group"><label>Edad</label><input class="ea-input" data-vpo-field="edad" type="text" value="' +
+      esc(state.edad) +
+      '"></div>' +
+      '<div class="field-group"><label>Creatinina</label><input class="ea-input" data-vpo-field="creatinina" type="text" value="' +
+      esc(state.creatinina) +
+      '"></div>' +
+      '<div class="field-group"><label>Hemoglobina</label><input class="ea-input" data-vpo-field="hemoglobina" type="text" value="' +
+      esc(state.hemoglobina) +
+      '"></div>' +
+      '<div class="field-group"><label>SpO₂ %</label><input class="ea-input" data-vpo-field="spo2" type="text" value="' +
+      esc(state.spo2) +
+      '"></div>' +
+      '<div class="field-group"><label>Duración estimada</label><select class="ea-input" id="vpo-duracion-select">' +
+      durOpts +
+      '</select></div>' +
+      '<div class="field-group"><label>FC (lpm)</label><input class="ea-input" data-vpo-field="fcLpm" type="text" value="' +
+      esc(state.fcLpm) +
+      '"></div></div>' +
+      '<div class="vpo-toolbar">' +
+      '<button type="button" class="btn-med-secondary" data-vpo-action="tomar-lab">Tomar del laboratorio</button>' +
+      '<button type="button" class="btn-med-secondary" data-vpo-action="tomar-estado">Tomar de Estado actual</button>' +
+      '</div>' +
+      '<div class="field-group"><label>ASA</label><select class="ea-input" id="vpo-asa-select" data-vpo-field="asaKey">' +
+      '<option value="">—</option>' +
+      ASA_OPTIONS.map(function (a) {
+        return (
+          '<option value="' +
+          esc(a.key) +
+          '"' +
+          (a.key === state.asaKey ? ' selected' : '') +
+          '>' +
+          esc(asaOptionLabel(a)) +
+          '</option>'
+        );
+      }).join('') +
+      '</select></div>' +
+      '<div class="field-group"><label>Dependencia funcional</label><select class="ea-input" data-vpo-field="functionalKey">' +
+      FUNCTIONAL_STATUS.map(function (f) {
+        return (
+          '<option value="' +
+          esc(f.key) +
+          '"' +
+          (f.key === state.functionalKey ? ' selected' : '') +
+          '>' +
+          esc(functionalLabel(f)) +
+          '</option>'
+        );
+      }).join('') +
+      '</select></div>' +
+      '<div class="field-group"><label>Buscar procedimiento</label><input class="ea-input" id="vpo-procedure-search" type="search" placeholder="colecistectomía, torácica…"></div>' +
+      '<div class="field-group"><label>Procedimiento</label><select class="ea-input" id="vpo-procedure-select">' +
+      procOptions +
+      '</select></div>' +
+      '<div class="vpo-aha-wrap">' +
+      renderAhaBadges(state) +
+      '</div>' +
+      '<div class="vpo-flags-wrap">' +
+      renderFlagGroups(state) +
+      '</div>';
+
+  var ekgBody =
+    (isVpoRiskCalculationDisabled()
+      ? '<div class="vpo-grid" style="margin-bottom:10px;">' +
+        '<div class="field-group"><label>FC (lpm) para plantilla EKG</label><input class="ea-input" data-vpo-field="fcLpm" type="text" value="' +
+        esc(state.fcLpm) +
+        '"></div></div>' +
+        '<div class="vpo-toolbar" style="margin-bottom:10px;">' +
+        '<button type="button" class="btn-med-secondary" data-vpo-action="tomar-estado">Tomar FC de Estado actual</button>' +
+        '</div>'
+      : '') +
+    '<label class="ea-label">EKG</label><textarea class="ea-input" data-vpo-field="ekgText" rows="5">' +
+    esc(state.ekgText) +
+    '</textarea>' +
+    '<label class="ea-label" style="margin-top:10px;display:block;">Rx tórax</label><textarea class="ea-input" data-vpo-field="rxText" rows="5">' +
+    esc(state.rxText) +
+    '</textarea>';
 
   mount.innerHTML =
     '<div class="vpo-panel vpo-form rpc-form-stack">' +
     vpoSection('Riesgo preoperatorio', 'amber', true, riesgoBody) +
-    vpoSection(
-      'EKG y Rx tórax',
-      'indigo',
-      false,
-      '<label class="ea-label">EKG</label><textarea class="ea-input" data-vpo-field="ekgText" rows="5">' +
-        esc(state.ekgText) +
-        '</textarea>' +
-        '<label class="ea-label" style="margin-top:10px;display:block;">Rx tórax</label><textarea class="ea-input" data-vpo-field="rxText" rows="5">' +
-        esc(state.rxText) +
-        '</textarea>'
-    ) +
+    vpoSection('EKG y Rx tórax', 'indigo', false, ekgBody) +
     vpoSection('Diagnósticos', 'rose', true, renderDiagnosticosSection(state)) +
     vpoSection(
       'Fármacos perioperatorios',
       'teal',
       false,
-      '<p class="overview-hint">Orientativo. Fuente: receta SOME en Medicamentos.</p>' +
+      '<p class="overview-hint">Fuente: receta SOME en Medicamentos.</p>' +
         '<div class="vpo-toolbar">' +
         '<button type="button" class="btn-med-secondary" data-vpo-action="tomar-meds">Tomar de Medicamentos (SOME)</button> ' +
         '<button type="button" class="btn-med-secondary" data-vpo-action="ir-med">Ir a Medicamentos</button></div>' +

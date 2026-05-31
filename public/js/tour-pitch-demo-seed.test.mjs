@@ -12,7 +12,11 @@ import {
   PITCH_DEMO_PATIENT_ID,
 } from './tour-pitch-demo-seed.mjs';
 import { collectGlucometriasForRegistroWindow } from './features/estado-actual-registro-defaults.mjs';
-import { PITCH_CULTIVO_PERITONEAL_SOME } from './tour-pitch-cultivos-some.mjs';
+import {
+  PITCH_CULTIVO_LAB_SPECS,
+  PITCH_CULTIVO_PERITONEAL_SOME,
+} from './tour-pitch-cultivos-some.mjs';
+import { isParsedCultivoHeaderLine, parseCuentaFromCultivoChunkLines } from './labs.js';
 
 test('PITCH_CULTIVO_PERITONEAL_SOME: antibiograma con S y R en sourceText', () => {
   assert.match(PITCH_CULTIVO_PERITONEAL_SOME, /CEFTAZIDIMA\n>16\tR/);
@@ -26,6 +30,29 @@ test('getPitchCultivoParseText incluye aspirado traqueal multipaciente', () => {
   assert.match(text, /ASPIRADO TRAQUEAL/i);
   assert.match(text, /Escherichia coli/i);
   assert.match(text, /Acinetobacter baumannii/i);
+});
+
+test('PITCH_CULTIVO_LAB_SPECS: bloques condensados incluyen línea Cuenta UFC', () => {
+  const cuentas = [];
+  PITCH_CULTIVO_LAB_SPECS.forEach(function (spec) {
+    const { resLabs } = procesarLabs(spec.report);
+    resLabs.forEach(function (chunk) {
+      String(chunk || '')
+        .split(/\n\n+/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .forEach(function (sec) {
+          const lines = sec.split(/\r?\n/).map((l) => l.replace(/\*+$/g, '').trim()).filter(Boolean);
+          if (!lines.length || !isParsedCultivoHeaderLine(lines[0])) return;
+          const cuenta = parseCuentaFromCultivoChunkLines(lines.slice(1));
+          if (cuenta) cuentas.push(cuenta);
+        });
+    });
+  });
+  assert.ok(cuentas.length >= 6, 'expected cuenta on multipatient culture blocks');
+  assert.ok(cuentas.some((c) => /50,000 UFC/i.test(c)));
+  assert.ok(cuentas.some((c) => /120,000 UFC/i.test(c)));
+  assert.ok(cuentas.some((c) => /2 colonias/i.test(c)));
 });
 
 test('buildPitchLabHistoryEntries: cultivos con sourceText y múltiples fechas', () => {

@@ -10,6 +10,7 @@ import { parseLanJoinQuery } from './lan-join-link.mjs';
 import { isMobileWeb, blockIfMobileDocExport, mobileDocExportToast } from './mobile-web.mjs';
 import { resolveQuickOutputAction } from './quick-output.mjs';
 import { handleOutputDirFallback } from './output-dir-fallback.mjs';
+import { syncApprovedOutputDir } from './document-export-client.mjs';
 import {
   createModalDismissRegistry,
   isRpcOverlayVisible,
@@ -162,6 +163,7 @@ function chooseOutputDir() {
     if (!dir) return;
     shellCtx.getSettings().outputDir = dir;
     localStorage.setItem('rpc-settings', JSON.stringify(shellCtx.getSettings()));
+    syncApprovedOutputDir(dir);
     loadSettings();
     showToast('Carpeta actualizada ✓', 'success');
   });
@@ -171,6 +173,7 @@ function saveOutputDirSelection(dir) {
   if (!dir) return;
   shellCtx.getSettings().outputDir = dir;
   localStorage.setItem('rpc-settings', JSON.stringify(shellCtx.getSettings()));
+  syncApprovedOutputDir(dir);
   loadSettings();
 }
 

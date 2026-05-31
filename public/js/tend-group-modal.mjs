@@ -34,6 +34,7 @@ import {
 } from './tend-prefs.mjs';
 import { buildTableTsv, copyTableModelAsPng, copyTableText } from './tend-export.mjs';
 import { evaluateGasoExtended } from './gaso-extended.mjs';
+import { isAbgAnalysisHidden } from './clinical-product-policy.mjs';
 
 const GENERIC_FAMILY_ORDER = ['gases', 'percent-diff', 'percent-rbc', 'absolute'];
 
@@ -989,6 +990,10 @@ export function createTendGroupModal(deps) {
   }
 
   function openGasoExtended() {
+    if (isAbgAnalysisHidden()) {
+      if (deps.showToast) deps.showToast('El análisis de gasometría no está disponible en R+.', 'info');
+      return;
+    }
     var patientId = deps.getActiveId();
     if (!patientId) return;
 

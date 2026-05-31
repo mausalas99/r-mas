@@ -1540,6 +1540,37 @@ html.dark .lab-output-fecha { color: #93c5fd; border-bottom-color: rgba(148, 163
 .lab-bulk-preview-status--warn { color: #b45309; }
 .lab-bulk-preview-status--err { color: #dc2626; }
 .lab-bulk-preview-status--muted { color: var(--text-muted); }
+.lab-bulk-preview-status-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.lab-bulk-preview-add-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  line-height: 1.2;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--action);
+  color: #fff;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: filter 0.15s, transform 0.1s;
+}
+.lab-bulk-preview-add-pill:hover {
+  filter: brightness(1.06);
+}
+.lab-bulk-preview-add-pill:active {
+  transform: scale(0.98);
+}
+html.lab-bulk-preview-modal-open #modal.modal-backdrop.open {
+  z-index: 110;
+}
 .lab-bulk-preview-detail-row td {
   padding-top: 0;
   border-bottom-width: 2px;

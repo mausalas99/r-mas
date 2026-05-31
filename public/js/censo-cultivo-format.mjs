@@ -7,7 +7,11 @@ import {
   normalizeFechaLabHistory,
   normalizeHoraLabHistory,
 } from './tend-core.mjs';
-import { formatCultivoCondensedForCopy, isParsedCultivoHeaderLine } from './labs.js';
+import {
+  formatCultivoCondensedForCopy,
+  isParsedCultivoHeaderLine,
+  parseCuentaFromCultivoChunkLines,
+} from './labs.js';
 
 function buildLabSetDateLine(set) {
   if (!set) return '';
@@ -137,6 +141,9 @@ function parseCultureBlockFromLineArray(lines, set, seq) {
   else if (negativo && /^NEGATIVO$/i.test(organismo)) organismo = 'Negativo';
   else if (!organismo) organismo = '—';
 
+  var bodyLines = lines.slice(1);
+  var cuenta = parseCuentaFromCultivoChunkLines(bodyLines);
+
   var sortKeyMs = sortMs;
   if (fechaMuestra) {
     var fmNorm = normalizeFechaLabHistory(fechaMuestra) || fechaMuestra;
@@ -149,6 +156,7 @@ function parseCultureBlockFromLineArray(lines, set, seq) {
       fechaMuestra: fechaMuestra || '—',
       sitio: sitio || '—',
       organismo: organismo,
+      cuenta: cuenta || '',
       negativo: negativo,
       sortMs: sortMs,
       sortKeyMs: sortKeyMs,

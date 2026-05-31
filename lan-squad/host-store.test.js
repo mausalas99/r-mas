@@ -52,7 +52,7 @@ describe('host-store', () => {
     assert.strictEqual(list[0].id, r.id);
   });
 
-  it('reinicializa host-state si cambió el código del equipo', () => {
+  it('no borra host-state si cambió el código del equipo (hash mismatch)', () => {
     const { hashTeamCode } = require('./team-code.js');
     const storeA = createHostStore({ filePath, teamCodePlain: 'old-code' });
     storeA.createRoom('Sala previa');
@@ -86,30 +86,49 @@ describe('host-store', () => {
     assert.strictEqual(preserved.patients.length, 1);
   });
 
-  it('putRoomSyncBundle LWW por updatedAt del envelope', () => {
+  it('putRoomSyncBundle rejects stale entity version with CONFLICT', () => {
     const store = createHostStore({ filePath, teamCodePlain: 'b' });
     const r = store.createRoom('Sala sync');
     store.putRoomSyncBundle(r.id, {
-      updatedAt: '2026-05-16T08:00:00.000Z',
+      baseRevision: 0,
+      baseEntityVersions: {},
+      agenda: [{ id: 'e1', patientId: 'p1', procedure: 'A', location: 'X' }],
+      todos: {},
       uploadedByClientId: 'a',
-      agenda: [{ id: 'e1', patientId: 'p1', procedure: 'A', location: 'X', updatedAt: '2026-05-16T08:00:00.000Z' }],
-      todos: {},
     });
+    const cur = store.getRoomSyncBundle(r.id);
+    assert.throws(
+      () =>
+        store.putRoomSyncBundle(r.id, {
+          baseRevision: cur.revision,
+          baseEntityVersions: { 'a:e1': 0 },
+          agenda: [{ id: 'e1', patientId: 'p1', procedure: 'STALE', location: 'Y' }],
+          todos: {},
+          uploadedByClientId: 'b',
+        }),
+      (e) => e.code === 'CONFLICT'
+    );
+    assert.strictEqual(store.getRoomSyncBundle(r.id).agenda[0].procedure, 'A');
+  });
+
+  it('putRoomSyncBundle merges disjoint todo keys', () => {
+    const store = createHostStore({ filePath, teamCodePlain: 'b' });
+    const r = store.createRoom('Sala');
     store.putRoomSyncBundle(r.id, {
-      updatedAt: '2026-05-16T07:00:00.000Z',
-      uploadedByClientId: 'b',
-      agenda: [{ id: 'e1', patientId: 'p1', procedure: 'OLD', location: 'Y', updatedAt: '2026-05-16T07:00:00.000Z' }],
-      todos: {},
+      baseRevision: 0,
+      baseEntityVersions: {},
+      agenda: [],
+      todos: { p1: [{ id: 't1', text: 'one' }] },
+    });
+    const cur = store.getRoomSyncBundle(r.id);
+    store.putRoomSyncBundle(r.id, {
+      baseRevision: cur.revision,
+      baseEntityVersions: {},
+      agenda: [],
+      todos: { p1: [{ id: 't2', text: 'two' }] },
     });
     const got = store.getRoomSyncBundle(r.id);
-    assert.strictEqual(got.agenda[0].procedure, 'A');
-    store.putRoomSyncBundle(r.id, {
-      updatedAt: '2026-05-16T09:00:00.000Z',
-      uploadedByClientId: 'c',
-      agenda: [{ id: 'e1', patientId: 'p1', procedure: 'NEW', location: 'Z', updatedAt: '2026-05-16T09:00:00.000Z' }],
-      todos: {},
-    });
-    assert.strictEqual(store.getRoomSyncBundle(r.id).agenda[0].procedure, 'NEW');
+    assert.strictEqual(got.todos.p1.length, 2);
   });
 
   it('getEntity / setEntity round-trip for room todo', () => {
@@ -131,12 +150,45 @@ describe('host-store', () => {
     assert.strictEqual(bundle.todos.p1[0].text, 'Labs');
   });
 
+  it('historiaClinica entity get/set and archive', () => {
+    const store = createHostStore({ filePath, teamCodePlain: 'hc' });
+    const r = store.createRoom('Sala');
+    store.setEntity({
+      roomId: r.id,
+      entityType: 'historiaClinica',
+      entityId: 'p1',
+      patientId: 'p1',
+      version: 1,
+      data: { patientId: 'p1', ficha: 'A', app: 'B' },
+      deleted: false,
+    });
+    const got = store.getEntity({
+      entityType: 'historiaClinica',
+      entityId: 'p1',
+      patientId: 'p1',
+      roomId: r.id,
+    });
+    assert.strictEqual(got.version, 1);
+    assert.strictEqual(got.data.ficha, 'A');
+    const archDir = path.join(dir, 'archive', 'p1');
+    const out = store.archiveHistoriaClinicaForPatient('p1', { storageRoot: dir });
+    assert.strictEqual(out.archived, true);
+    assert.ok(fs.existsSync(path.join(archDir, 'historia-clinica.json')));
+    const missing = store.getEntity({
+      entityType: 'historiaClinica',
+      entityId: 'p1',
+      patientId: 'p1',
+      roomId: r.id,
+    });
+    assert.strictEqual(missing, null);
+  });
+
   it('putRoomSyncBundle persiste manejo', () => {
     const store = createHostStore({ filePath, teamCodePlain: 'b' });
     const r = store.createRoom('Sala');
     store.putRoomSyncBundle(r.id, {
-      updatedAt: '2026-05-26T10:00:00.000Z',
-      uploadedByClientId: 'c1',
+      baseRevision: 0,
+      baseEntityVersions: {},
       agenda: [],
       todos: {},
       entries: [],

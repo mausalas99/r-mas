@@ -31,3 +31,19 @@ export function createMutationBuilder(entityType, entityId) {
 export function wrapLiveSyncPatch(roomId, clientId, mutation) {
   return { type: 'livesync:patch', roomId, clientId, mutation };
 }
+
+/**
+ * @param {object} mutation from createMutationBuilder().build()
+ * @param {{ sections?: string[], safety?: object[] }} audit
+ * @param {string} roomId
+ * @param {string} [clientId]
+ */
+export function attachHistoriaClinicaAudit(mutation, audit, roomId, clientId) {
+  return {
+    ...mutation,
+    roomId,
+    patientId: mutation.entityId,
+    clientId: clientId || '',
+    audit: audit || { sections: mutation.changedKeys || [], safety: [] },
+  };
+}

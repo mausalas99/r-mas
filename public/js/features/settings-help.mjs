@@ -24,11 +24,38 @@ import {
 } from '../presentation-mode.mjs';
 import { exportCensoPdfFromHelp } from '../censo-export.mjs';
 import { applyAppModeSwitchEffects } from './profile.mjs';
-import { DEMO_TOUR_LAB_PASTE, DEMO_GARCIA_LAB_REPORT, DEMO_SOME_LAB_REPORT, OLDER_DEMO_SOME_LAB_REPORT } from '../tour-demo-some-lab.mjs';
 import { LAB_BULK_PATIENT_SEPARATOR } from '../lab-bulk-paste.mjs';
 import { buildTourDemoListadoProblemas } from '../tour-demo-listado-problemas.mjs';
-import { buildTourMonitoreoHistorial } from '../tour-demo-monitoreo.mjs';
-import { renderEstadoActualPanel } from './estado-actual-panel.mjs';
+import {
+  buildTourMonitoreoHistorial,
+  getTourRegistroFormSample,
+} from '../tour-demo-monitoreo.mjs';
+import { buildTourDemoDates, buildTourDemoLabPasteBoth } from '../tour-demo-dates.mjs';
+import { seedTourDemoTodos, clearTourDemoTodos } from '../tour-demo-todos.mjs';
+import { buildTourDemoEventualidades } from '../tour-demo-eventualidades.mjs';
+import { buildBulkLabPreview, extractLabPatientFromBulkBlock } from '../lab-bulk-paste.mjs';
+import {
+  DEMO_PATIENT_ID,
+  DEMO_PATIENT_ID_2,
+  DEMO_REGISTRO,
+  DEMO_REGISTRO_2,
+  findTourDemoPatientByRegistro,
+  isTourDemoPatientId,
+  registerTourDemoPatientHooks,
+  resolveTourDemoPatientId,
+  tourDemoLabCompleteForTour,
+  tourDemoPatientsBothInCensus,
+} from '../tour-demo-patient.mjs';
+import {
+  renderEstadoActualPanel,
+  applyEstadoActualParsedToForm,
+  toDatetimeLocalValue,
+  invalidateEaPanelCache,
+} from './estado-actual-panel.mjs';
+import {
+  closeEstadoActualRegistroModal,
+  openEstadoActualRegistroModal,
+} from './estado-actual-registro-modal.mjs';
 import { isMobileWeb } from '../mobile-web.mjs';
 import { isModeSala } from '../mode-features.mjs';
 import { getUiDensity, setUiDensity, isPaseMode } from './chrome.mjs';
@@ -95,6 +122,9 @@ let rt = {
   openProfileModal() {},
   renderMedRecetaPanel() {},
   renderListadoForm() {},
+  openAddModalFromLabPatient() {},
+  refreshAllTodoUIs() {},
+  refreshExpedienteAfterPatientSelect() {},
 };
 
 export function registerSettingsHelpRuntime(partial) {
@@ -128,9 +158,237 @@ function publishTourGuardContext() {
 
 publishTourGuardContext();
 
-var DEMO_PATIENT_ID = 'demo-onboarding';
-var DEMO_PATIENT_ID_2 = 'demo-onboarding-2';
-var DEMO_LAB_REPORT = DEMO_TOUR_LAB_PASTE;
+/** true tras Procesar en lab_parse durante este arranque del tour */
+var tourDemoLabSessionProcessed = false;
+
+function getTourDemoPatientId() {
+  return resolveTourDemoPatientId(patients);
+}
+
+function purgeTourDemoPatientsFromState() {
+  setPatients(
+    patients.filter(function (p) {
+      return (
+        p.id !== DEMO_PATIENT_ID &&
+        p.id !== DEMO_PATIENT_ID_2 &&
+        !p.isDemo
+      );
+    })
+  );
+  delete notes[DEMO_PATIENT_ID];
+  delete notes[DEMO_PATIENT_ID_2];
+  delete indicaciones[DEMO_PATIENT_ID];
+  delete indicaciones[DEMO_PATIENT_ID_2];
+  delete labHistory[DEMO_PATIENT_ID];
+  delete labHistory[DEMO_PATIENT_ID_2];
+  delete medRecetaByPatient[DEMO_PATIENT_ID];
+  delete listadoProblemas[DEMO_PATIENT_ID];
+  if (medNotaSelectionByPatient[DEMO_PATIENT_ID]) {
+    delete medNotaSelectionByPatient[DEMO_PATIENT_ID];
+  }
+  clearTourDemoTodos();
+}
+
+var TOUR_STEPS_USE_DEMO_PEREZ = {
+  servicio_default: true,
+  sala_expediente_tabs: true,
+  historia_clinica: true,
+  estado_actual: true,
+  estado_actual_registro: true,
+  estado_actual_snapshot: true,
+  estado_actual_charts: true,
+  estado_actual_historial: true,
+  eventualidades: true,
+  listado_problemas: true,
+  sala_med: true,
+  sala_tend: true,
+  sala_tend_chart: true,
+  sala_vpo: true,
+  sala_receta_hu: true,
+};
+
+function findTourDemoPerezPatient() {
+  return (
+    patients.find(function (x) {
+      return x && x.id === DEMO_PATIENT_ID;
+    }) ||
+    findTourDemoPatientByRegistro(patients, DEMO_REGISTRO)
+  );
+}
+
+/** Monitoreo, eventualidades, pendientes y notas demo para DEMO PÉREZ (idempotente). */
+function seedTourDemoPerezClinicalData() {
+  var p = findTourDemoPerezPatient();
+  if (!p) return false;
+  var pid = p.id;
+  var today = new Date();
+  var tourDates = getTourDemoDateBundle(today);
+  var fecha = tourDates.fecha;
+  var hora = tourDates.hora;
+  applyTourDemoIngresoDates(p, tourDates);
+  var hist = p.monitoreo && Array.isArray(p.monitoreo.historial) ? p.monitoreo.historial : [];
+  if (!hist.length) {
+    p.monitoreo = buildTourMonitoreoHistorial(today);
+  }
+  var ev =
+    p.eventualidades && Array.isArray(p.eventualidades.entries) ? p.eventualidades.entries : [];
+  if (!ev.length) {
+    p.eventualidades = buildTourDemoEventualidades(today);
+  }
+  if (!notes[pid] || !String((notes[pid].diagnosticos || [])[0] || '').trim()) {
+    notes[pid] = {
+      fecha: fecha,
+      hora: hora,
+      interrogatorio: '',
+      evolucion: '',
+      estudios: '',
+      diagnosticos: ['DM2, IRC estadio 3, HAS'],
+      tratamiento: [''],
+      ta: '',
+      fr: '',
+      fc: '',
+      temp: '',
+      peso: '',
+      medico: '',
+      profesor: '',
+    };
+  }
+  if (!indicaciones[pid]) {
+    indicaciones[pid] = {
+      fecha: fecha,
+      hora: hora,
+      medicos: '',
+      dieta: '',
+      cuidados: '',
+      estudios: '',
+      medicamentos: '',
+      interconsultas: '',
+      otros: [],
+    };
+  }
+  if (!medRecetaByPatient[pid]) {
+    medRecetaByPatient[pid] = {
+      fechaActualizacion: fecha,
+      items: [
+        {
+          id: 'tour-med-1',
+          nombreRaw: 'PARACETAMOL 1 G SOL INY (*)',
+          viaRaw: 'VIA INTRAVENOSA',
+          dosisRaw: '1 G //',
+          frecuenciaRaw: 'CADA 8 HORAS',
+          suspendido: false,
+          diaTratamiento: null,
+        },
+        {
+          id: 'tour-med-2',
+          nombreRaw: 'CEFTRIAXONA 1 G SOL INY (*)',
+          viaRaw: 'VIA INTRAVENOSA',
+          dosisRaw: '1 G // *DIA# 2*',
+          frecuenciaRaw: 'CADA 24 HORAS',
+          suspendido: false,
+          diaTratamiento: 2,
+        },
+      ],
+    };
+    medNotaSelectionByPatient[pid] = { 'tour-med-1': true, 'tour-med-2': true };
+  }
+  seedTourDemoTodos(DEMO_PATIENT_ID);
+  saveState();
+  if (typeof rt.refreshAllTodoUIs === 'function') rt.refreshAllTodoUIs();
+  return true;
+}
+
+function ensureTourPrimaryDemoPatientActive() {
+  if (!guidedTourActive || guidedTourBranch === 'interconsulta') return false;
+  var p = findTourDemoPerezPatient();
+  if (!p) return false;
+  var changed = rt.getActiveId() !== p.id;
+  if (changed) {
+    selectPatient(p.id);
+  }
+  seedTourDemoPerezClinicalData();
+  if (changed && typeof rt.refreshExpedienteAfterPatientSelect === 'function') {
+    rt.refreshExpedienteAfterPatientSelect();
+  }
+  return true;
+}
+
+function applyTourDemoPatientBundle(patientId, registro) {
+  var reg = String(registro || '').trim();
+  var today = new Date();
+  var tourDates = getTourDemoDateBundle(today);
+  var fecha = tourDates.fecha;
+  var hora = tourDates.hora;
+  var p = patients.find(function (x) {
+    return x && x.id === patientId;
+  });
+  if (p) {
+    applyTourDemoIngresoDates(p, tourDates);
+    if (patientId === DEMO_PATIENT_ID) {
+      p.monitoreo = buildTourMonitoreoHistorial(today);
+    }
+  }
+  if (patientId === DEMO_PATIENT_ID) {
+    seedTourDemoPerezClinicalData();
+  } else if (patientId === DEMO_PATIENT_ID_2 || reg === DEMO_REGISTRO_2) {
+    notes[patientId] = {
+      fecha: fecha,
+      hora: hora,
+      interrogatorio: '',
+      evolucion: '',
+      estudios: '',
+      diagnosticos: ['DM2 descompensada'],
+      tratamiento: [''],
+      ta: '',
+      fr: '',
+      fc: '',
+      temp: '',
+      peso: '',
+      medico: '',
+      profesor: '',
+    };
+    indicaciones[patientId] = {
+      fecha: fecha,
+      hora: hora,
+      medicos: '',
+      dieta: '',
+      cuidados: '',
+      estudios: '',
+      medicamentos: '',
+      interconsultas: '',
+      otros: [],
+    };
+  }
+  saveState();
+}
+
+function getTourDemoDateBundle(ref) {
+  return buildTourDemoDates(ref || new Date());
+}
+
+function getDemoTourLabPaste(ref) {
+  return buildTourDemoLabPasteBoth(ref);
+}
+
+function tourDemoLabPasteHasBoth(text) {
+  var v = String(text || '');
+  return (
+    v.indexOf(DEMO_REGISTRO) !== -1 &&
+    v.indexOf(DEMO_REGISTRO_2) !== -1 &&
+    v.indexOf(LAB_BULK_PATIENT_SEPARATOR) !== -1
+  );
+}
+
+/** Rellena el cuadro de lab con Pérez (2 días) + separador + García durante el tour. */
+function ensureTourDemoLabInputBoth() {
+  if (!guidedTourActive) return false;
+  var li = document.getElementById('lab-input');
+  if (!li) return false;
+  if (!tourDemoLabPasteHasBoth(li.value)) {
+    li.value = getDemoTourLabPaste();
+  }
+  return true;
+}
 
 /** Plantilla BH de referencia (p. ej. tour guiado). El cuadro de laboratorio no se rellena solo al iniciar. */
 var LAB_INPUT_DEFAULT_REPORT =
@@ -389,10 +647,33 @@ function onTourDockClick(ev) {
 }
 
 function openLabBulkTourHintModal() {
+  ensureTourDemoLabInputBoth();
   var backdrop = document.getElementById('lab-bulk-tour-hint-backdrop');
   var sample = document.getElementById('lab-bulk-tour-hint-sample');
+  var leads = backdrop ? backdrop.querySelectorAll('.lab-bulk-tour-hint-lead') : [];
+  var insertBtn = backdrop
+    ? backdrop.querySelector('button[onclick*="insertLabTourSecondPatientExample"]')
+    : null;
   if (sample) {
-    sample.textContent = LAB_BULK_PATIENT_SEPARATOR + '\n\n' + DEMO_GARCIA_LAB_REPORT.trim();
+    sample.textContent =
+      LAB_BULK_PATIENT_SEPARATOR +
+      '\n\n' +
+      getTourDemoDateBundle().demoGarciaLabReport.trim();
+  }
+  if (leads[0]) {
+    leads[0].innerHTML =
+      'En el cuadro <strong>ya están cargados</strong> dos días de <strong>DEMO PÉREZ</strong> y, tras el separador, el reporte de <strong>DEMO GARCÍA</strong>. R+ los distingue por paciente y por fecha al procesar.';
+  }
+  if (leads[1]) {
+    leads[1].textContent =
+      'En el siguiente paso pulsa Procesar: verás la tabla multi-paciente. Si pegas más reportes, usa el separador (botón gris) entre pacientes distintos.';
+  }
+  if (insertBtn) {
+    insertBtn.style.display = tourDemoLabPasteHasBoth(
+      document.getElementById('lab-input') && document.getElementById('lab-input').value
+    )
+      ? 'none'
+      : '';
   }
   if (!backdrop) return;
   backdrop.classList.add('open');
@@ -407,46 +688,60 @@ function closeLabBulkTourHintModal() {
 }
 
 function insertLabTourSecondPatientExample() {
-  var ta = document.getElementById('lab-input');
-  if (!ta) return;
-  if (String(ta.value || '').indexOf('0007755-3') !== -1) {
-    rt.showToast('El ejemplo de DEMO GARCÍA ya está en el cuadro', 'info');
+  if (ensureTourDemoLabInputBoth()) {
+    rt.showToast('Ejemplo completo (PÉREZ + GARCÍA) ya está en el cuadro', 'info');
     closeLabBulkTourHintModal();
     return;
   }
-  if (!String(ta.value || '').trim()) ta.value = DEMO_LAB_REPORT;
-  ta.value = String(ta.value || '').trimEnd() + '\n' + LAB_BULK_PATIENT_SEPARATOR + '\n' + DEMO_GARCIA_LAB_REPORT;
+  var ta = document.getElementById('lab-input');
+  if (!ta) return;
+  ta.value = getDemoTourLabPaste();
   closeLabBulkTourHintModal();
-  rt.showToast('Ejemplo de DEMO GARCÍA insertado ✓', 'success');
+  rt.showToast('Ejemplo de laboratorio insertado ✓', 'success');
 }
 
-function seedDemoTrendHistory() {
+function seedDemoTrendHistory(ref) {
   try {
-    var older = procesarLabs(OLDER_DEMO_SOME_LAB_REPORT).resLabs;
-    var newer = procesarLabs(DEMO_SOME_LAB_REPORT).resLabs;
+    var bundle = getTourDemoDateBundle(ref);
+    var older = procesarLabs(bundle.olderDemoSomeLabReport).resLabs;
+    var newer = procesarLabs(bundle.demoSomeLabReport).resLabs;
     labHistory[DEMO_PATIENT_ID] = [
-      { id: 'tour-trend-1', fecha: '05/03/2026', hora: '', resLabs: older, parsed: extractParsedValues(older) },
-      { id: 'tour-trend-2', fecha: '11/04/2026', hora: '', resLabs: newer, parsed: extractParsedValues(newer) }
+      {
+        id: 'tour-trend-1',
+        fecha: bundle.labFechaOlder,
+        hora: '',
+        resLabs: older,
+        parsed: extractParsedValues(older),
+      },
+      {
+        id: 'tour-trend-2',
+        fecha: bundle.labFechaNewer,
+        hora: '',
+        resLabs: newer,
+        parsed: extractParsedValues(newer),
+      },
     ];
   } catch (e) {
     delete labHistory[DEMO_PATIENT_ID];
   }
 }
 
+function applyTourDemoIngresoDates(patient, bundle) {
+  if (!patient || !bundle) return;
+  patient.fiuxFecha = bundle.fiuxFecha;
+  patient.fimiFecha = bundle.fimiFecha;
+}
+
 function seedDemoMonitoreoOnActivePatient() {
-  if (!guidedTourActive || guidedTourBranch === 'interconsulta') return;
-  var id = rt.getActiveId();
-  if (id !== DEMO_PATIENT_ID) return;
-  var p = patients.find(function (x) {
-    return x && x.id === DEMO_PATIENT_ID;
-  });
-  if (!p) return;
-  p.monitoreo = buildTourMonitoreoHistorial(new Date());
-  saveState();
+  ensureTourPrimaryDemoPatientActive();
 }
 
 function seedDemoListadoProblemas() {
-  if (!guidedTourActive || rt.getActiveId() !== DEMO_PATIENT_ID) return;
+  if (!guidedTourActive) return;
+  if (!ensureTourPrimaryDemoPatientActive()) return;
+  var perez = findTourDemoPerezPatient();
+  if (!perez) return;
+  var demoId = perez.id;
   var today = new Date();
   var fecha =
     String(today.getDate()).padStart(2, '0') + '/'
@@ -455,7 +750,7 @@ function seedDemoListadoProblemas() {
   var hora =
     String(today.getHours()).padStart(2, '0') + ':'
     + String(today.getMinutes()).padStart(2, '0');
-  listadoProblemas[DEMO_PATIENT_ID] = buildTourDemoListadoProblemas(fecha, hora);
+  listadoProblemas[demoId] = buildTourDemoListadoProblemas(fecha, hora);
   saveState();
 }
 
@@ -501,8 +796,48 @@ function getGuidedTourSteps() {
 }
 
 function demoLabAlreadyProcessedForTour() {
-  var hist = labHistory && labHistory[DEMO_PATIENT_ID];
-  return !!(hist && (Array.isArray(hist) ? hist.length : Object.keys(hist).length));
+  if (tourDemoLabSessionProcessed) return true;
+  if (!guidedTourActive) return false;
+  return tourDemoLabCompleteForTour(patients, labHistory);
+}
+
+function seedDemoEventualidadesOnActivePatient() {
+  ensureTourPrimaryDemoPatientActive();
+}
+
+function openTourEstadoActualRegistroDemo() {
+  var now = new Date();
+  var atShift = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0, 0, 0);
+  openEstadoActualRegistroModal();
+  applyEstadoActualParsedToForm(getTourRegistroFormSample());
+  var recorded = document.getElementById('ea-recorded-at');
+  if (recorded && 'value' in recorded) {
+    recorded.value = toDatetimeLocalValue(atShift);
+  }
+}
+
+function isEstadoActualPostRegistroTourStep(id) {
+  return (
+    id === 'estado_actual_snapshot' ||
+    id === 'estado_actual_charts' ||
+    id === 'estado_actual_historial'
+  );
+}
+
+function prepareEstadoActualPanelForTour(onPanelReady) {
+  ensureTourPrimaryDemoPatientActive();
+  closeEstadoActualRegistroModal();
+  invalidateEaPanelCache();
+  try {
+    renderEstadoActualPanel({
+      onReady: function () {
+        if (typeof onPanelReady === 'function') onPanelReady();
+      },
+    });
+  } catch (err) {
+    console.error('prepareEstadoActualPanelForTour:', err && err.message);
+    if (typeof onPanelReady === 'function') onPanelReady();
+  }
 }
 
 function syncTourActionNextButton() {
@@ -537,7 +872,12 @@ function clearAllTourSpotlights() {
 }
 
 // Pasos donde el botón resaltado suele estar arriba a la derecha: dock abajo-derecha lo tapa.
-var TOUR_DOCK_LEFT_STEPS = { ic_nota: 1, ic_indica: 1, estado_actual: 1 };
+var TOUR_DOCK_LEFT_STEPS = {
+  ic_nota: 1,
+  ic_indica: 1,
+  estado_actual_registro: 1,
+  listado_problemas: 1,
+};
 
 function syncTourDockPlacement() {
   var d = document.getElementById('tour-dock');
@@ -551,6 +891,23 @@ function syncTourDockPlacement() {
   else d.classList.remove('tour-dock-pos-left');
 }
 
+function tourApplySpotlightForStep(id, t, scrollDelayMs) {
+  if (!t || !t.selector) return;
+  var scrollDelay = scrollDelayMs != null ? scrollDelayMs : 140;
+  setTimeout(function () {
+    if (!guidedTourActive || tourStepId !== id) return;
+    if (id === 'listado_problemas') rt.renderListadoForm();
+    var el = document.querySelector(t.selector);
+    if (!el) return;
+    try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+    var spotlightCls = t.spotlightClass || (stepRequiresUserAction(id) ? 'tour-spotlight-soap' : null);
+    if (spotlightCls) el.classList.add(spotlightCls);
+    if (t.focus && typeof el.focus === 'function') {
+      try { el.focus({ preventScroll: true }); } catch (e2) { try { el.focus(); } catch (e3) {} }
+    }
+  }, scrollDelay);
+}
+
 // Lleva al usuario al elemento del paso actual: cambia tab/tab interno,
 // abre Mi Perfil/Ajustes si aplica, hace scroll y aplica spotlight para
 // que la zona de avance sea inequívoca.
@@ -561,15 +918,31 @@ function applyTourTargetForStep(id) {
   var t = getTourTarget(id, guidedTourBranch === 'interconsulta' ? 'interconsulta' : 'sala');
   if (!t) return;
 
+  if (TOUR_STEPS_USE_DEMO_PEREZ[id]) {
+    ensureTourPrimaryDemoPatientActive();
+  }
+
   if (id === 'listado_problemas') {
     seedDemoListadoProblemas();
   }
-  if (id === 'estado_actual') {
+  if (
+    id === 'estado_actual' ||
+    id === 'estado_actual_registro' ||
+    isEstadoActualPostRegistroTourStep(id)
+  ) {
     seedDemoMonitoreoOnActivePatient();
+  }
+  if (id === 'eventualidades') {
+    seedDemoEventualidadesOnActivePatient();
   }
   if (t.appTab) rt.switchAppTab(t.appTab);
   if (t.innerTab) {
-    rt.switchInnerTab(t.innerTab);
+    if (id === 'listado_problemas') {
+      rt.switchInnerTab('listado', { forceRender: true });
+      rt.renderListadoForm();
+    } else {
+      rt.switchInnerTab(t.innerTab);
+    }
     if (t.appTab === 'nota') {
       if (t.innerTab === 'notas') renderNoteForm();
       else if (t.innerTab === 'indica') renderIndicaForm();
@@ -590,12 +963,33 @@ function applyTourTargetForStep(id) {
   if (id === 'estado_actual' && guidedTourBranch !== 'interconsulta') {
     setTimeout(function () {
       if (!guidedTourActive || tourStepId !== 'estado_actual') return;
-      try {
-        renderEstadoActualPanel();
-      } catch (err) {
-        console.error('renderEstadoActualPanel tour:', err && err.message);
-      }
+      prepareEstadoActualPanelForTour();
     }, 160);
+  }
+  if (id === 'estado_actual_registro' && guidedTourBranch !== 'interconsulta') {
+    setTimeout(function () {
+      if (!guidedTourActive || tourStepId !== 'estado_actual_registro') return;
+      prepareEstadoActualPanelForTour(function () {
+        if (!guidedTourActive || tourStepId !== 'estado_actual_registro') return;
+        openTourEstadoActualRegistroDemo();
+      });
+    }, 160);
+  }
+  if (isEstadoActualPostRegistroTourStep(id) && guidedTourBranch !== 'interconsulta') {
+    clearAllTourSpotlights();
+    if (!t.selector) return;
+    var postRegStepId = id;
+    var spotlightDelay = postRegStepId === 'estado_actual_charts' ? 520 : 340;
+    setTimeout(function () {
+      if (!guidedTourActive || tourStepId !== postRegStepId) return;
+      prepareEstadoActualPanelForTour(function () {
+        tourApplySpotlightForStep(postRegStepId, t, spotlightDelay);
+      });
+    }, 160);
+    return;
+  }
+  if (id === 'map_lab_teaser' || id === 'lab_parse') {
+    ensureTourDemoLabInputBoth();
   }
 
   if (id === 'sala_casiopea_lab') {
@@ -609,32 +1003,10 @@ function applyTourTargetForStep(id) {
     closeSOAPModal();
   }
 
-  // Pre-pega el reporte demo cuando el siguiente click esperado es
-  // "Procesar"; sin texto el botón no hace nada y bloquearía el tour.
-  if (id === 'lab_parse' || id === 'map_lab_teaser') {
-    var li = document.getElementById('lab-input');
-    if (!li) return;
-    var v = String(li.value || '').trim();
-    var def = String(LAB_INPUT_DEFAULT_REPORT || '').trim();
-    if (!v || v === def) li.value = DEMO_LAB_REPORT;
-  }
-  if (id === 'lab_bulk_separator') {
-    openLabBulkTourHintModal();
-  }
-
   clearAllTourSpotlights();
   if (!t.selector) return;
-  setTimeout(function () {
-    if (!guidedTourActive || tourStepId !== id) return;
-    var el = document.querySelector(t.selector);
-    if (!el) return;
-    try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
-    var spotlightCls = t.spotlightClass || (stepRequiresUserAction(id) ? 'tour-spotlight-soap' : null);
-    if (spotlightCls) el.classList.add(spotlightCls);
-    if (t.focus && typeof el.focus === 'function') {
-      try { el.focus({ preventScroll: true }); } catch (e2) { try { el.focus(); } catch (e3) {} }
-    }
-  }, 140);
+  var scrollDelay = id === 'listado_problemas' ? 280 : 140;
+  tourApplySpotlightForStep(id, t, scrollDelay);
 }
 
 // Compatibilidad hacia atrás (otras partes pueden invocar este nombre).
@@ -665,7 +1037,7 @@ function renderTourStep() {
   switch (tourStepId) {
     case 'map_sidebar':
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">La <strong>columna izquierda</strong> es tu lista de pacientes. <strong>DEMO PÉREZ</strong> solo existe para este tour.</p>';
+        '<p style="margin:0;line-height:1.5;">La <strong>columna izquierda</strong> es tu censo. En este tour <strong>no hay pacientes precargados</strong>: registrarás a <strong>DEMO PÉREZ</strong> al procesar el laboratorio de ejemplo.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'map_tabs':
@@ -674,27 +1046,20 @@ function renderTourStep() {
           ? '<p style="margin:0;line-height:1.5;">En <strong>Pase</strong> el centro es un <strong>resumen</strong> del paciente (pendientes, laboratorio, cultivos, medicamentos). Pulsa el título de cada bloque o usa <strong>Ctrl/⌘ + 1…4</strong> para abrir el detalle en vista <strong>Normal</strong>.</p>'
           : guidedTourBranch === 'interconsulta'
             ? '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong>, <strong>Agenda</strong>. En <strong>Expediente</strong> verás las pestañas internas en el siguiente paso.</p>'
-            : '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong> y <strong>Agenda</strong> (procedimientos del turno). En <strong>Expediente</strong>: <strong>Clínico</strong> (Historia → Estado actual → Eventualidades → Manejo), <strong>Resultados</strong> (tendencias) y <strong>Salida</strong> (Listado, <strong>VPO</strong>, <strong>Receta HU</strong>).</p>';
+            : '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong> y <strong>Agenda</strong> (procedimientos del turno). En <strong>Expediente</strong>: <strong>Clínico</strong> (Historia → Estado actual → Eventualidades), <strong>Resultados</strong> (tendencias) y <strong>Salida</strong> (Listado, <strong>VPO</strong>, <strong>Receta HU</strong>).</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'map_lab_teaser':
       bodyEl.innerHTML =
         guidedTourBranch === 'interconsulta'
-          ? '<p style="margin:0;line-height:1.5;">Aquí pegas reportes SOME. Ya hay un <strong>ejemplo con dos días</strong> de DEMO PÉREZ. Pulsa <strong>Siguiente</strong>.</p>'
-          : '<p style="margin:0;line-height:1.5;">Aquí van los laboratorios: el ejemplo trae <strong>dos días</strong> de DEMO PÉREZ. Después definirás tu servicio en Mi Perfil.</p>';
-      nextBtn.textContent = 'Siguiente';
-      break;
-    case 'lab_bulk_separator':
-      bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">Lee la ventana: puedes pegar <strong>varios días</strong> del mismo paciente seguidos. Entre <strong>pacientes distintos</strong> usa el separador (botón gris). Opcional: inserta el ejemplo de <strong>DEMO GARCÍA</strong>.</p>';
+          ? '<p style="margin:0;line-height:1.5;">El cuadro ya trae <strong>DEMO PÉREZ</strong> (dos días) y <strong>DEMO GARCÍA</strong> con el separador <strong>--- PACIENTE ---</strong>. Revisa el texto detrás y pulsa <strong>Siguiente</strong>.</p>'
+          : '<p style="margin:0;line-height:1.5;">El cuadro ya trae <strong>DEMO PÉREZ</strong> (dos días) y <strong>DEMO GARCÍA</strong>. En el siguiente paso pulsa <strong>Procesar</strong>: verás la <strong>vista previa multi-paciente</strong> y podrás dar de alta a cada uno en el censo.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'lab_parse':
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">Pulsa <strong>Procesar</strong> (morado). R+ interpreta todos los reportes, agrupa por día y guarda en el historial de cada paciente.</p>' +
-        (demoLabAlreadyProcessedForTour()
-          ? '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Ya procesaste el ejemplo; puedes continuar.</p>'
-          : '');
+        '<p style="margin:0;line-height:1.5;">Pulsa <strong>Procesar</strong>: verás la tabla con <strong>dos pacientes</strong> (PÉREZ y GARCÍA). En cada fila sin registrar usa <strong>Agregar paciente</strong>; el modal trae <strong>servicio</strong> y, en el tour, <strong>cuarto y cama</strong> sugeridos (revisa y ajusta si hace falta).</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">No hay <strong>Siguiente</strong> hasta que ambos tengan laboratorio en historial.</p>';
       nextBtn.style.display = 'none';
       break;
     case 'lab_view':
@@ -721,26 +1086,20 @@ function renderTourStep() {
       break;
     case 'ic_expediente_tabs':
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">En <strong>Interconsulta</strong>, el expediente se agrupa en cuatro pestañas: <strong>Paciente</strong> (datos colapsables + pendientes), <strong>Clínico</strong> (Nota, Indicaciones, <strong>Manejo</strong>), <strong>Resultados</strong> (Tendencias, Cultivos) y <strong>Salida</strong> (Receta HU en PDF). En el siguiente paso verás <strong>Manejo</strong> con Electrolitos, Infusiones, ATB y CAD/EHH.</p>' +
+        '<p style="margin:0;line-height:1.5;">En <strong>Interconsulta</strong>, el expediente se agrupa en cuatro pestañas: <strong>Paciente</strong> (datos colapsables + pendientes), <strong>Clínico</strong> (Nota, Indicaciones), <strong>Resultados</strong> (Tendencias, Cultivos) y <strong>Salida</strong> (Receta HU en PDF).</p>' +
         '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Receta HU</strong> exporta el PDF oficial 000-061-R-06-12. <strong>Nota</strong> e <strong>Indicaciones</strong> van a Word (.docx).</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'sala_expediente_tabs':
       bodyEl.innerHTML =
         '<p style="margin:0;line-height:1.5;">En <strong>Sala</strong>, el expediente tiene cuatro pestañas: <strong>Paciente</strong>, <strong>Clínico</strong>, <strong>Resultados</strong> y <strong>Salida</strong>.</p>' +
-        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Clínico</strong>: Historia Clínica → <strong>Estado actual</strong> → Eventualidades → Manejo. <strong>Salida</strong>: Listado, <strong>VPO</strong> y <strong>Receta HU</strong>. Peso/talla/vía en <strong>Paciente</strong>.</p>';
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Clínico</strong>: Historia Clínica → <strong>Estado actual</strong> → Eventualidades. <strong>Resultados</strong>: tendencias. <strong>Salida</strong>: Listado, <strong>VPO</strong> y <strong>Receta HU</strong>. Peso/talla en <strong>Paciente</strong>.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'historia_clinica':
       bodyEl.innerHTML =
         '<p style="margin:0;line-height:1.5;"><strong>Expediente → Clínico → Historia Clínica</strong>: ingreso institucional en <strong>3 pasos</strong> (identificación, antecedentes APP/AHF/APNP/IPAS, padecimiento). Cambia a <strong>Lectura</strong> para ver el texto compilado y <strong>Copiar</strong>.</p>' +
         '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Solo en <strong>Sala</strong>. En sala en vivo (⇄) se sincroniza por paciente con el anfitrión.</p>';
-      nextBtn.textContent = 'Siguiente';
-      break;
-    case 'eventualidades':
-      bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;"><strong>Clínico → Eventualidades</strong>: bitácora de hechos clínicos por día (texto libre con fecha). Va <strong>después</strong> de Estado actual: intercurrencias del turno sin mezclarlas con el monitoreo estructurado.</p>' +
-        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Pulsa <strong>Siguiente</strong> para <strong>Manejo</strong> clínico (Electrolitos, Infusiones, ATB, CAD/EHH).</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'ic_nota':
@@ -802,9 +1161,43 @@ function renderTourStep() {
       break;
     case 'estado_actual':
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">En <strong>Clínico → Estado actual</strong> ves el monitoreo como en sala: <strong>snapshot</strong> (últimos SV, glu, balance), <strong>gráficas</strong> y texto para la nota. El demo trae datos de <strong>hoy</strong> (tres turnos de enfermería).</p>' +
-        '<p style="margin:10px 0 0;line-height:1.5;"><strong>Cómo lo reporta enfermería:</strong> en la hoja anotan por turno (TM ~08 h, TV ~16 h, TN ~24 h) T°, FC, FR, T/A y <strong>DEXT</strong> (glucometría), más <strong>ingresos</strong> (vía oral, IV, medicamentos) y <strong>egresos</strong> (diuresis). En R+: <strong>Registro manual</strong> = una toma por horario; <strong>Pegar monitoreo</strong> si traes texto de la hoja.</p>' +
-        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Revisa el snapshot y las tendencias del demo. <strong>Siguiente</strong> para Eventualidades.</p>';
+        '<p style="margin:0;line-height:1.5;">En <strong>Clínico → Estado actual</strong> el <strong>snapshot</strong> resume el turno (SV, glu, I/O, medicamentos). Abajo, las <strong>gráficas</strong> muestran tendencias por familia (hemodinámico, respiratorio, metabólico) con puntos alterados resaltados.</p>' +
+        '<p style="margin:10px 0 0;line-height:1.5;">El historial de mediciones y el texto compilado para la nota están en esta misma pestaña. El demo trae tomas de <strong>hoy</strong> (TM, TV, TN).</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Pulsa <strong>Siguiente</strong> para practicar un <strong>registro manual</strong>.</p>';
+      nextBtn.textContent = 'Siguiente';
+      break;
+    case 'estado_actual_registro':
+      bodyEl.innerHTML =
+        '<p style="margin:0;line-height:1.5;">Modal <strong>Registrar medición</strong>: <strong>signos vitales</strong> (varias capas por turno), <strong>glucometrías</strong> y bomba de insulina, <strong>I/O</strong> y evacuaciones, más campos de soporte y dieta.</p>' +
+        '<p style="margin:10px 0 0;line-height:1.5;">El ejemplo trae turno matutino precargado. Revisa y pulsa <strong>Registrar</strong>; el tour te guiará por el panel actualizado.</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Sin <strong>Siguiente</strong> hasta registrar.</p>';
+      nextBtn.style.display = 'none';
+      break;
+    case 'estado_actual_snapshot':
+      bodyEl.innerHTML =
+        '<p style="margin:0;line-height:1.5;">Tras registrar, el <strong>snapshot</strong> (arriba) resume el turno actual: signos vitales, glucometrías, balance hídrico, medicamentos y alertas.</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Compara con lo que acabas de capturar. <strong>Siguiente</strong>: gráficas de tendencia.</p>';
+      nextBtn.textContent = 'Siguiente';
+      nextBtn.style.display = '';
+      break;
+    case 'estado_actual_charts':
+      bodyEl.innerHTML =
+        '<p style="margin:0;line-height:1.5;">Las <strong>gráficas</strong> agrupan series por familia (hemodinámico, respiratorio, metabólico, etc.). Los puntos fuera de rango se resaltan para lectura rápida en guardia.</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Desplázate si hace falta. <strong>Siguiente</strong>: historial y texto para la nota.</p>';
+      nextBtn.textContent = 'Siguiente';
+      nextBtn.style.display = '';
+      break;
+    case 'estado_actual_historial':
+      bodyEl.innerHTML =
+        '<p style="margin:0;line-height:1.5;">El <strong>historial</strong> lista cada medición con fecha y turno; abajo, el <strong>texto compilado</strong> se puede copiar a la evolución o exportar.</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Siguiente</strong>: <strong>Eventualidades</strong> (línea de tiempo del ingreso).</p>';
+      nextBtn.textContent = 'Siguiente';
+      nextBtn.style.display = '';
+      break;
+    case 'eventualidades':
+      bodyEl.innerHTML =
+        '<p style="margin:0;line-height:1.5;"><strong>Eventualidades</strong> es la línea de tiempo del ingreso: evolución subjetiva y procedimientos por día. El demo trae <strong>tres días</strong> de notas breves.</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Puedes editar, agregar o borrar entradas. Pulsa <strong>Siguiente</strong>.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'listado_problemas':
@@ -815,7 +1208,7 @@ function renderTourStep() {
       break;
     case 'sala_vpo':
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;"><strong>Expediente → Salida → VPO</strong>: valoración preoperatoria con riesgo ASA, paraclínicos y texto copiable para la nota. Solo en <strong>Sala</strong> (en Salida, junto a Listado y Receta HU).</p>' +
+        '<p style="margin:0;line-height:1.5;"><strong>Expediente → Salida → VPO</strong>: documenta escalas de riesgo (ASA, RCRI, Gupta, ARISCAT, Caprini) con el resultado que obtengas en tu calculadora; EKG/Rx editables y texto copiable. Solo en <strong>Sala</strong>.</p>' +
         '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Completa o revisa los campos resaltados y pulsa <strong>Siguiente</strong>.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
@@ -856,9 +1249,7 @@ function renderTourStep() {
   }
   // Si el paso requiere acción del usuario en un botón concreto,
   // ocultamos "Siguiente" para que el avance venga del propio botón.
-  if (stepRequiresUserAction(tourStepId)
-      && tourStepId !== 'servicio_default'
-      && tourStepId !== 'estado_actual') {
+  if (stepRequiresUserAction(tourStepId) && tourStepId !== 'servicio_default') {
     nextBtn.style.display = 'none';
   }
   syncTourDockPlacement();
@@ -928,7 +1319,7 @@ function guidedTourClickNext() {
     return;
   }
   if (tourStepId === 'servicio_default' && guidedTourMode === 'base' && guidedTourBranch !== 'interconsulta') {
-    rt.showToast('Listo: DEMO PÉREZ ya tiene laboratorio en R+.', 'success');
+    rt.showToast('Listo: pacientes demo con laboratorio en R+.', 'success');
   }
   if (tourStepId === 'sala_casiopea_lab') {
     closeLabSomeTablesModal();
@@ -939,7 +1330,7 @@ function guidedTourClickNext() {
   if (tourStepId === 'lab_bulk_separator') {
     closeLabBulkTourHintModal();
   }
-  if (tourStepId === 'estado_actual') {
+  if (tourStepId === 'estado_actual' || tourStepId === 'estado_actual_registro') {
     closeSOAPModal();
   }
   if (i + 1 >= steps.length) {
@@ -1030,70 +1421,8 @@ function startOnboarding(branch, opts) {
     applyAppModeSwitchEffects();
     rt.renderEstadoActualBar();
   }
-  var today = new Date();
-  var fecha = String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0')+'/'+today.getFullYear();
-  var hora  = String(today.getHours()).padStart(2,'0')+':'+String(today.getMinutes()).padStart(2,'0');
-  var demoPatient = {
-    id: DEMO_PATIENT_ID, nombre: 'DEMO PÉREZ', registro: '0008421-7',
-    edad: '67 años', sexo: 'M', area: 'SERVICIO DEMO',
-    servicio: 'SERVICIO DEMO', cuarto: '101', cama: '1',
-    fromLab: false, isDemo: true,
-    monitoreo: buildTourMonitoreoHistorial(today),
-  };
-  var demoPatient2 = {
-    id: DEMO_PATIENT_ID_2, nombre: 'DEMO GARCÍA', registro: '0007755-3',
-    edad: '54 años', sexo: 'F', area: 'SERVICIO DEMO',
-    servicio: 'SERVICIO DEMO', cuarto: '102', cama: '2',
-    fromLab: false, isDemo: true
-  };
-  notes[DEMO_PATIENT_ID] = {
-    fecha:fecha, hora:hora, interrogatorio:'', evolucion:'', estudios:'',
-    diagnosticos:['DM2, IRC estadio 3, HAS'], tratamiento:[''],
-    ta:'', fr:'', fc:'', temp:'', peso:'', medico:'', profesor:''
-  };
-  indicaciones[DEMO_PATIENT_ID] = {
-    fecha:fecha, hora:hora, medicos:'', dieta:'', cuidados:'',
-    estudios:'', medicamentos:'', interconsultas:'', otros:[]
-  };
-  notes[DEMO_PATIENT_ID_2] = {
-    fecha: fecha, hora: hora, interrogatorio: '', evolucion: '', estudios: '',
-    diagnosticos: ['DM2 descompensada'], tratamiento: [''],
-    ta: '', fr: '', fc: '', temp: '', peso: '', medico: '', profesor: ''
-  };
-  indicaciones[DEMO_PATIENT_ID_2] = {
-    fecha: fecha, hora: hora, medicos: '', dieta: '', cuidados: '',
-    estudios: '', medicamentos: '', interconsultas: '', otros: []
-  };
-  seedDemoTrendHistory();
-  delete medRecetaByPatient[DEMO_PATIENT_ID];
-  if (medNotaSelectionByPatient[DEMO_PATIENT_ID]) delete medNotaSelectionByPatient[DEMO_PATIENT_ID];
-  medRecetaByPatient[DEMO_PATIENT_ID] = {
-    fechaActualizacion: fecha,
-    items: [
-      {
-        id: 'tour-med-1',
-        nombreRaw: 'PARACETAMOL 1 G SOL INY (*)',
-        viaRaw: 'VIA INTRAVENOSA',
-        dosisRaw: '1 G //',
-        frecuenciaRaw: 'CADA 8 HORAS',
-        suspendido: false,
-        diaTratamiento: null,
-      },
-      {
-        id: 'tour-med-2',
-        nombreRaw: 'CEFTRIAXONA 1 G SOL INY (*)',
-        viaRaw: 'VIA INTRAVENOSA',
-        dosisRaw: '1 G // *DIA# 2*',
-        frecuenciaRaw: 'CADA 24 HORAS',
-        suspendido: false,
-        diaTratamiento: 2,
-      },
-    ],
-  };
-  medNotaSelectionByPatient[DEMO_PATIENT_ID] = { 'tour-med-1': true, 'tour-med-2': true };
-  setPatients(patients.filter(function(p){ return p.id !== DEMO_PATIENT_ID && p.id !== DEMO_PATIENT_ID_2; }));
-  patients.unshift(demoPatient2);
-  patients.unshift(demoPatient);
+  tourDemoLabSessionProcessed = false;
+  purgeTourDemoPatientsFromState();
   guidedTourActive = true;
   var steps = getGuidedTourSteps();
   var resumeId = opts.resumeStepId;
@@ -1103,7 +1432,16 @@ function startOnboarding(branch, opts) {
     tourStepId = steps[0] || 'map_sidebar';
   }
   renderPatientList();
-  selectPatient(DEMO_PATIENT_ID);
+  if (isTourDemoPatientId(rt.getActiveId(), patients)) {
+    rt.setActiveId(patients.length ? patients[0].id : null);
+    if (rt.getActiveId()) selectPatient(rt.getActiveId());
+    else {
+      var pv0 = document.getElementById('patient-view');
+      var es0 = document.getElementById('empty-state');
+      if (pv0) pv0.style.display = 'none';
+      if (es0) es0.style.display = 'flex';
+    }
+  }
   function finishTourStart() {
     applyTourNavigationForStep(tourStepId);
     showTourDock();
@@ -1118,8 +1456,51 @@ function startOnboarding(branch, opts) {
   }
 }
 
+function findTourDemoBlockForRegistro(blocks, registro) {
+  var reg = String(registro || '').trim();
+  if (!reg || !blocks) return null;
+  return (
+    blocks.find(function (b) {
+      if (!b || b.status !== 'no-patient' || !b.okReportCount) return false;
+      return String(b.primaryExpediente || '').trim() === reg;
+    }) || null
+  );
+}
+
+function scheduleTourDemoPatientRegistrationFromLab() {
+  if (!guidedTourActive || tourStepId !== 'lab_parse') return;
+  if (tourDemoPatientsBothInCensus(patients)) return;
+  var ta = document.getElementById('lab-input');
+  if (!ta || typeof rt.openAddModalFromLabPatient !== 'function') return;
+  var text = String(ta.value || '').trim();
+  if (!text) return;
+  var blocks = buildBulkLabPreview(text, { findPatientByRegistro: rt.findPatientByRegistro });
+  openNextTourDemoPatientFromBlocks(blocks);
+}
+
+function openNextTourDemoPatientFromBlocks(blocks) {
+  var regs = [DEMO_REGISTRO, DEMO_REGISTRO_2];
+  for (var i = 0; i < regs.length; i++) {
+    var reg = regs[i];
+    if (findTourDemoPatientByRegistro(patients, reg)) continue;
+    var block = findTourDemoBlockForRegistro(blocks, reg);
+    if (!block) continue;
+    var labPatient = extractLabPatientFromBulkBlock(block);
+    if (!labPatient) continue;
+    rt.openAddModalFromLabPatient(labPatient, {
+      onSaved: function () {
+        setTimeout(scheduleTourDemoPatientRegistrationFromLab, 220);
+      },
+    });
+    return;
+  }
+}
+
 function onboardingAdvanceAfterParse() {
   if (!guidedTourActive || tourStepId !== 'lab_parse') return;
+  if (!tourDemoLabCompleteForTour(patients, labHistory)) return;
+  tourDemoLabSessionProcessed = true;
+  ensureTourPrimaryDemoPatientActive();
   clearAllTourSpotlights();
   tourStepId = 'lab_view';
   publishTourGuardContext();
@@ -1140,25 +1521,26 @@ function onboardingAdvanceAfterSend() {
   }
 }
 
+export function tourAfterBulkLabParse(blocks) {
+  if (!guidedTourActive || tourStepId !== 'lab_parse') return;
+  if (tourDemoPatientsBothInCensus(patients)) return;
+  openNextTourDemoPatientFromBlocks(blocks || []);
+}
+
+export function tourOnBulkPreviewPatientSaved() {
+  scheduleTourDemoPatientRegistrationFromLab();
+}
+
 function destroyDemoAndClose() {
   clearTourSoapButtonHighlight();
   closeLabBulkTourHintModal();
-  setPatients(patients.filter(function(p){ return p.id !== DEMO_PATIENT_ID && p.id !== DEMO_PATIENT_ID_2; }));
-  delete notes[DEMO_PATIENT_ID];
-  delete notes[DEMO_PATIENT_ID_2];
-  delete indicaciones[DEMO_PATIENT_ID];
-  delete indicaciones[DEMO_PATIENT_ID_2];
-  delete labHistory[DEMO_PATIENT_ID];
-  delete labHistory[DEMO_PATIENT_ID_2];
-  delete medRecetaByPatient[DEMO_PATIENT_ID];
-  delete listadoProblemas[DEMO_PATIENT_ID];
-  if (medNotaSelectionByPatient[DEMO_PATIENT_ID]) delete medNotaSelectionByPatient[DEMO_PATIENT_ID];
+  purgeTourDemoPatientsFromState();
   guidedTourActive = false;
   tourStepId = null;
   guidedTourBranch = null;
   publishTourGuardContext();
   hideTourDock();
-  if (rt.getActiveId() === DEMO_PATIENT_ID) {
+  if (isTourDemoPatientId(rt.getActiveId(), patients)) {
     rt.setActiveId(patients.length ? patients[0].id : null);
   }
   limpiarReporte();
@@ -1177,18 +1559,7 @@ function resetAndStartOnboarding() {
     localStorage.removeItem(GUIDED_TOUR_LS_KEY);
   } catch (_e) {}
   try {
-    setPatients(patients.filter(function (p) {
-      return p.id !== DEMO_PATIENT_ID && p.id !== DEMO_PATIENT_ID_2;
-    }));
-    delete notes[DEMO_PATIENT_ID];
-    delete notes[DEMO_PATIENT_ID_2];
-    delete indicaciones[DEMO_PATIENT_ID];
-    delete indicaciones[DEMO_PATIENT_ID_2];
-    delete labHistory[DEMO_PATIENT_ID];
-    delete labHistory[DEMO_PATIENT_ID_2];
-    delete medRecetaByPatient[DEMO_PATIENT_ID];
-    delete listadoProblemas[DEMO_PATIENT_ID];
-    if (medNotaSelectionByPatient[DEMO_PATIENT_ID]) delete medNotaSelectionByPatient[DEMO_PATIENT_ID];
+    purgeTourDemoPatientsFromState();
     guidedTourActive = false;
     tourStepId = null;
     guidedTourBranch = null;
@@ -1197,7 +1568,7 @@ function resetAndStartOnboarding() {
     hideTourIntroModal();
     limpiarReporte();
     saveState();
-    if (rt.getActiveId() === DEMO_PATIENT_ID) {
+    if (isTourDemoPatientId(rt.getActiveId(), patients)) {
       rt.setActiveId(patients.length ? patients[0].id : null);
     }
     renderPatientList();
@@ -1807,7 +2178,7 @@ var RELEASE_NOTES_HIGHLIGHTS = {
     {
       title: 'Tutorial actualizado',
       body:
-        'El tour precarga dos días de DEMO PÉREZ y explica el separador multi-paciente con ejemplo DEMO GARCÍA.',
+        'El tour usa dos días de laboratorio de DEMO PÉREZ (alta en el censo al procesar) y explica el separador multi-paciente con ejemplo DEMO GARCÍA.',
     },
   ],
   '6.0.0': [
@@ -2545,6 +2916,7 @@ function togglePresentationModeFromHelp() {
 
 export {
   DEMO_PATIENT_ID,
+  isTourDemoPatientId,
   maybeShowReleaseNotesFor,
   resolveAppVersionForTour,
   markGuidedTourVersionDone,
@@ -2591,3 +2963,20 @@ export const settingsHelpWindowHandlers = {
   closeLabBulkTourHintModal,
   insertLabTourSecondPatientExample,
 };
+
+registerTourDemoPatientHooks({
+  isTourActive: function () {
+    return guidedTourActive;
+  },
+  getTourStep: function () {
+    return tourStepId;
+  },
+  applyBundle: applyTourDemoPatientBundle,
+  scheduleLabPatientRegistration: scheduleTourDemoPatientRegistrationFromLab,
+  switchAppTab: function (tab) {
+    rt.switchAppTab(tab);
+  },
+  showToast: function (msg, type) {
+    rt.showToast(msg, type);
+  },
+});

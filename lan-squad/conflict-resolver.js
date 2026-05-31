@@ -24,7 +24,9 @@ function pick(obj, keys) {
 }
 
 function createConflictResolver({ store }) {
-  function applyMutation(mutation) {
+  function applyMutation(mutation, opts) {
+    const deferPersist = !!(opts && opts.deferPersist);
+    const setOpts = deferPersist ? { deferPersist: true } : undefined;
     const entityType = mutation.entityType;
     const entityId = mutation.entityId;
     const expectedVersion = Number(mutation.expectedVersion || 0);
@@ -41,16 +43,19 @@ function createConflictResolver({ store }) {
         throw new ConflictError({ conflictingKeys: ['*'], serverData: null, clientData: data });
       }
       const version = 1;
-      store.setEntity({
-        roomId,
-        entityType,
-        entityId,
-        patientId,
-        version,
-        data,
-        deleted: mutation.op === 'delete',
-      });
-      if (roomId) store.materializeRoomViews(roomId);
+      store.setEntity(
+        {
+          roomId,
+          entityType,
+          entityId,
+          patientId,
+          version,
+          data,
+          deleted: mutation.op === 'delete',
+        },
+        setOpts
+      );
+      if (roomId) store.materializeRoomViews(roomId, setOpts);
       return { ok: true, entityType, entityId, version, data, autoMerged: false };
     }
 
@@ -58,20 +63,32 @@ function createConflictResolver({ store }) {
       const version = server.version + 1;
       const nextData =
         mutation.op === 'delete' ? { ...server.data, _deleted: true } : { ...server.data, ...data };
-      store.setEntity({
-        roomId,
-        entityType,
-        entityId,
-        patientId,
-        version,
-        data: nextData,
-        deleted: mutation.op === 'delete',
-      });
-      if (roomId) store.materializeRoomViews(roomId);
+      store.setEntity(
+        {
+          roomId,
+          entityType,
+          entityId,
+          patientId,
+          version,
+          data: nextData,
+          deleted: mutation.op === 'delete',
+        },
+        setOpts
+      );
+      if (roomId) store.materializeRoomViews(roomId, setOpts);
       return { ok: true, entityType, entityId, version, data: nextData, autoMerged: false };
     }
 
     if (!baseData || !changedKeys.length) {
+      if (mutation.op === 'delete') {
+        throw new ConflictError({
+          conflictingKeys: ['_deleted'],
+          serverData: server.data,
+          clientData: { ...(server.data || {}), _deleted: true },
+          serverVersion: server.version,
+          expectedVersion,
+        });
+      }
       throw new ConflictError({
         conflictingKeys: changedKeys.length ? changedKeys : ['*'],
         serverData: server.data,
@@ -86,23 +103,26 @@ function createConflictResolver({ store }) {
     if (overlap.length === 0) {
       const merged = { ...server.data, ...pick(data, changedKeys) };
       const version = server.version + 1;
-      store.setEntity({
-        roomId,
-        entityType,
-        entityId,
-        patientId,
-        version,
-        data: merged,
-        deleted: false,
-      });
-      if (roomId) store.materializeRoomViews(roomId);
+      store.setEntity(
+        {
+          roomId,
+          entityType,
+          entityId,
+          patientId,
+          version,
+          data: merged,
+          deleted: false,
+        },
+        setOpts
+      );
+      if (roomId) store.materializeRoomViews(roomId, setOpts);
       return { ok: true, entityType, entityId, version, data: merged, autoMerged: true };
     }
 
     throw new ConflictError({
       conflictingKeys: overlap,
       serverData: server.data,
-      clientData: data,
+      clientData: { ...(server.data || {}), ...(data || {}) },
       serverVersion: server.version,
       expectedVersion,
     });

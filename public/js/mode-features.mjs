@@ -13,6 +13,16 @@ export function getDefaultServicio(settings) {
   return String(settings.defaultServicio || '').trim();
 }
 
+export function getDefaultCuarto(settings) {
+  if (!settings) return '';
+  return String(settings.defaultCuarto || '').trim();
+}
+
+export function getDefaultCama(settings) {
+  if (!settings) return '';
+  return String(settings.defaultCama || '').trim();
+}
+
 /**
  * Migración suave a 3.0.0. Idempotente.
  * Muta el settings recibido y retorna true si aplicó la migración, false si ya estaba migrado.
@@ -21,6 +31,8 @@ export function migrateToV3(settings) {
   if (!settings || settings._v3MigrationDone) return false;
   if (settings.appMode == null) settings.appMode = 'sala';
   if (settings.defaultServicio == null) settings.defaultServicio = '';
+  if (settings.defaultCuarto == null) settings.defaultCuarto = '';
+  if (settings.defaultCama == null) settings.defaultCama = '';
   settings._v3MigrationDone = true;
   return true;
 }

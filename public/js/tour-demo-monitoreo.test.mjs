@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   buildTourMonitoreoHistorial,
   countTourHistorialWithCoreData,
+  getTourRegistroFormSample,
 } from './tour-demo-monitoreo.mjs';
 
 test('buildTourMonitoreoHistorial uses today for shift entries', () => {
@@ -22,6 +23,13 @@ test('buildTourMonitoreoHistorial uses today for shift entries', () => {
   assert.ok(eight);
   assert.equal(eight.glucometrias[0].value, 144);
   assert.equal(eight.vitals.temp, 37);
+});
+
+test('getTourRegistroFormSample has TM vitals and glu', () => {
+  const s = getTourRegistroFormSample();
+  assert.equal(s.ok, true);
+  assert.equal(s.vitals.tas, 130);
+  assert.equal(s.glucometrias[0].value, 144);
 });
 
 test('historial has core data for snapshot and charts', () => {
