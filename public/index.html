@@ -44,6 +44,8 @@
 <link rel="stylesheet" href="styles/lab.css">
 <link rel="stylesheet" href="styles/expediente.css">
 <link rel="stylesheet" href="styles/estado-actual.css">
+<link rel="stylesheet" href="styles/eventualidades.css">
+<link rel="stylesheet" href="styles/historia-clinica.css">
 <link rel="stylesheet" href="styles/vpo.css">
 <link rel="stylesheet" href="styles/manejo.css">
 <link rel="stylesheet" href="styles/manejo-guia.css">
@@ -252,7 +254,7 @@
         Censo PDF
       </button>
       <button type="button" id="header-pase-mode-chip" class="header-pase-mode-chip" style="display:none;" onclick="exitPaseModeFromHeader()" title="Salir a vista Normal (pestañas completas)" aria-label="Salir del modo Pase">Modo Pase</button>
-      <button type="button" id="header-app-mode-chip" class="header-app-mode-chip mode-sala" onclick="toggleHeaderWorkMode()" title="">
+      <button type="button" id="header-app-mode-chip" class="header-app-mode-chip mode-sala" title="">
         Modo: Sala
       </button>
     </div>
@@ -333,6 +335,13 @@
             <option value="html">HTML descargable</option>
             <option value="txt">Texto plano (.txt)</option>
           </select>
+          <label for="settings-hide-listado-ai-prompt" class="settings-acc-label-spaced" style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text);cursor:pointer;margin-bottom:0;">
+            <input type="checkbox" id="settings-hide-listado-ai-prompt" onchange="setHideListadoProblemasAiPrompt(this.checked)" style="flex-shrink:0;margin-top:2px;">
+            <span>
+              <strong>Ocultar «Copiar prompt IA»</strong>
+              <span class="settings-acc-hint settings-acc-hint--tight" style="display:block;margin-top:4px;">Quita el botón del listado de problemas en el expediente.</span>
+            </span>
+          </label>
           <button type="button" class="btn-edit-templates settings-acc-label-spaced" id="btn-export-censo-settings" style="display:none;" onclick="closeSettingsDropdown(); exportCensoPdfFromHelp();">Exportar censo de guardia (PDF)…</button>
           <p class="settings-acc-hint settings-acc-hint--md" id="btn-export-censo-settings-hint" style="display:none;">Tabla landscape con todos los pacientes activos (diagnósticos en Datos del paciente).</p>
         </div>
@@ -564,7 +573,7 @@
 <div id="onboarding-intro-backdrop" aria-hidden="true">
   <div class="onboarding-intro-modal" role="dialog" aria-modal="true" aria-labelledby="intro-modal-title">
     <h2 id="intro-modal-title">Bienvenido a R+</h2>
-    <p class="intro-lead">Recorrido corto con <strong>DEMO PÉREZ</strong> (no se guarda). Incluye el <strong>Modo Pase</strong> (resumen de ronda), el flujo de Sala o Interconsulta y, al final, cómo sincronizar con el equipo (<strong>⇄ LiveSync</strong>) y usar <strong>R+ Móvil</strong> en iPad (Safari, misma Wi‑Fi). El panel inferior guía la interfaz paso a paso.</p>
+    <p class="intro-lead">Recorrido corto con <strong>DEMO PÉREZ</strong> (no se guarda). Incluye el <strong>Modo Pase</strong> (resumen de ronda), el flujo de Sala o Interconsulta y, al final, cómo sincronizar con el equipo (<strong>⇄ LiveSync</strong>) y usar <strong>R+ Móvil</strong> en iPad (Safari, misma Wi‑Fi). En <strong>Sala</strong> verás también <strong>Historia Clínica</strong>, <strong>Eventualidades</strong> y el expediente <strong>Clínico</strong> reorganizado. El panel inferior guía la interfaz paso a paso.</p>
     <div class="intro-skip-above-paths">
       <button type="button" class="btn-intro-skip" id="intro-btn-skip" onclick="guidedTourIntroSkip()">Omitir tutorial</button>
     </div>
@@ -572,7 +581,7 @@
       <article class="intro-option-card">
         <span class="intro-option-kicker">Hospitalización</span>
         <h3 class="intro-option-h">Sala</h3>
-        <p class="intro-option-lead">Laboratorio, expediente en <strong>4 pestañas</strong> (<strong>Paciente</strong>, <strong>Clínico</strong> con <strong>Manejo</strong>: Electrolitos, Infusiones, ATB, CAD/EHH, <strong>Resultados</strong>, <strong>Salida</strong> con Listado), medicamentos y al cerrar: sync en equipo + móvil.</p>
+        <p class="intro-option-lead">Laboratorio y expediente en <strong>4 pestañas</strong>. <strong>Clínico</strong>: <strong>Historia Clínica</strong> (ingreso en 3 pasos), <strong>Estado actual</strong>, <strong>Eventualidades</strong> y <strong>Manejo</strong> (Electrolitos, Infusiones, ATB, CAD/EHH). <strong>Resultados</strong>, <strong>Salida</strong> (Listado). Medicamentos y, al cerrar: sync en equipo + móvil.</p>
         <button type="button" class="btn-intro-pick" onclick="guidedTourIntroChooseSala()">Empezar · Sala</button>
       </article>
       <article class="intro-option-card intro-option-card-accent">
@@ -595,6 +604,8 @@
     </div>
     <div id="tour-dock-body"></div>
     <div class="tour-dock-foot">
+      <button type="button" class="btn-tour-prev" id="tour-btn-prev" onclick="guidedTourClickPrev()" disabled>Anterior</button>
+      <button type="button" class="btn-tour-pause" id="tour-btn-pause" onclick="guidedTourPause()">Pausar y salir</button>
       <button type="button" class="btn-tour-skip" onclick="skipGuidedTour()">Omitir tutorial</button>
       <button type="button" class="btn-tour-next" id="tour-btn-next" onclick="guidedTourClickNext()">Siguiente</button>
     </div>
@@ -932,10 +943,6 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
             Clínico
           </button>
-          <button type="button" class="inner-tab exp-consolidated-tab" id="itab-estadoActual" onclick="switchConsolidatedTab('estadoActual')" style="display:none;" aria-label="Estado actual">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-            Estado actual
-          </button>
           <button type="button" class="inner-tab exp-consolidated-tab" id="itab-resultados" onclick="switchConsolidatedTab('resultados')" style="display:none;" aria-label="Resultados">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2v6.5L4.5 20a1 1 0 001 1h13a1 1 0 001-1L14 8.5V2"/><path d="M8 2h8"/></svg>
             Resultados
@@ -993,13 +1000,19 @@
             <div class="exp-segment-bar rpc-subtab-bar" id="exp-segment-clinico" role="tablist" aria-label="Secciones clínicas">
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-notas" role="tab" data-exp-segment="notas" aria-selected="false" aria-controls="itab-content-notas" onclick="switchInnerTab('notas')">Nota de evolución</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-indica" role="tab" data-exp-segment="indica" aria-selected="false" aria-controls="itab-content-indica" onclick="switchInnerTab('indica')">Indicaciones</button>
+              <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-historia" role="tab" data-exp-segment="historia" aria-selected="false" aria-controls="itab-content-historia" onclick="switchInnerTab('historia')">Historia Clínica</button>
+              <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-estadoActual" role="tab" data-exp-segment="estadoActual" aria-selected="false" aria-controls="itab-content-estadoActual" onclick="switchInnerTab('estadoActual')">Estado actual</button>
+              <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-eventualidades" role="tab" data-exp-segment="eventualidades" aria-selected="false" aria-controls="itab-content-eventualidades" onclick="switchInnerTab('eventualidades')">Eventualidades</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-vpo" role="tab" data-exp-segment="vpo" aria-selected="false" aria-controls="itab-content-vpo" onclick="switchInnerTab('vpo')">VPO</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-manejo" role="tab" data-exp-segment="manejo" aria-selected="false" aria-controls="itab-content-manejo" onclick="switchInnerTab('manejo')">Manejo</button>
             </div>
             <div class="exp-segment-body exp-segment-body--clinico"></div>
           </div>
-          <div id="itab-content-estadoActual" class="tab-content exp-composite-pane">
+          <div id="itab-content-estadoActual" class="tab-content">
             <div id="exp-pane-estado-actual"></div>
+          </div>
+          <div id="itab-content-eventualidades" class="tab-content">
+            <div id="exp-pane-eventualidades" class="rpc-form-stack"></div>
           </div>
           <div id="itab-content-resultados" class="tab-content exp-composite-pane">
             <div class="exp-segment-bar rpc-subtab-bar" id="exp-segment-resultados" role="tablist" aria-label="Resultados de laboratorio">
@@ -1018,6 +1031,7 @@
           </div>
           <div id="itab-content-datos" class="tab-content"><div id="patient-data-form" class="rpc-form-stack"></div></div>
           <div id="itab-content-notas" class="tab-content"><div id="note-form" class="rpc-form-stack"></div></div>
+          <div id="itab-content-historia" class="tab-content"><div id="historia-clinica-mount" class="rpc-form-stack"></div></div>
           <div id="itab-content-indica" class="tab-content"><div id="indica-form" class="rpc-form-stack"></div></div>
           <div id="itab-content-tend" class="tab-content"><div id="tendencias-container"></div></div>
           <div id="itab-content-cult" class="tab-content"><div id="cultivos-table-container"></div></div>

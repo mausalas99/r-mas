@@ -17,7 +17,7 @@
         Censo PDF
       </button>
       <button type="button" id="header-pase-mode-chip" class="header-pase-mode-chip" style="display:none;" onclick="exitPaseModeFromHeader()" title="Salir a vista Normal (pestañas completas)" aria-label="Salir del modo Pase">Modo Pase</button>
-      <button type="button" id="header-app-mode-chip" class="header-app-mode-chip mode-sala" onclick="toggleHeaderWorkMode()" title="">
+      <button type="button" id="header-app-mode-chip" class="header-app-mode-chip mode-sala" title="">
         Modo: Sala
       </button>
     </div>
@@ -98,6 +98,13 @@
             <option value="html">HTML descargable</option>
             <option value="txt">Texto plano (.txt)</option>
           </select>
+          <label for="settings-hide-listado-ai-prompt" class="settings-acc-label-spaced" style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text);cursor:pointer;margin-bottom:0;">
+            <input type="checkbox" id="settings-hide-listado-ai-prompt" onchange="setHideListadoProblemasAiPrompt(this.checked)" style="flex-shrink:0;margin-top:2px;">
+            <span>
+              <strong>Ocultar «Copiar prompt IA»</strong>
+              <span class="settings-acc-hint settings-acc-hint--tight" style="display:block;margin-top:4px;">Quita el botón del listado de problemas en el expediente.</span>
+            </span>
+          </label>
           <button type="button" class="btn-edit-templates settings-acc-label-spaced" id="btn-export-censo-settings" style="display:none;" onclick="closeSettingsDropdown(); exportCensoPdfFromHelp();">Exportar censo de guardia (PDF)…</button>
           <p class="settings-acc-hint settings-acc-hint--md" id="btn-export-censo-settings-hint" style="display:none;">Tabla landscape con todos los pacientes activos (diagnósticos en Datos del paciente).</p>
         </div>
@@ -329,7 +336,7 @@
 <div id="onboarding-intro-backdrop" aria-hidden="true">
   <div class="onboarding-intro-modal" role="dialog" aria-modal="true" aria-labelledby="intro-modal-title">
     <h2 id="intro-modal-title">Bienvenido a R+</h2>
-    <p class="intro-lead">Recorrido corto con <strong>DEMO PÉREZ</strong> (no se guarda). Incluye el <strong>Modo Pase</strong> (resumen de ronda), el flujo de Sala o Interconsulta y, al final, cómo sincronizar con el equipo (<strong>⇄ LiveSync</strong>) y usar <strong>R+ Móvil</strong> en iPad (Safari, misma Wi‑Fi). El panel inferior guía la interfaz paso a paso.</p>
+    <p class="intro-lead">Recorrido corto con <strong>DEMO PÉREZ</strong> (no se guarda). Incluye el <strong>Modo Pase</strong> (resumen de ronda), el flujo de Sala o Interconsulta y, al final, cómo sincronizar con el equipo (<strong>⇄ LiveSync</strong>) y usar <strong>R+ Móvil</strong> en iPad (Safari, misma Wi‑Fi). En <strong>Sala</strong> verás también <strong>Historia Clínica</strong>, <strong>Eventualidades</strong> y el expediente <strong>Clínico</strong> reorganizado. El panel inferior guía la interfaz paso a paso.</p>
     <div class="intro-skip-above-paths">
       <button type="button" class="btn-intro-skip" id="intro-btn-skip" onclick="guidedTourIntroSkip()">Omitir tutorial</button>
     </div>
@@ -337,7 +344,7 @@
       <article class="intro-option-card">
         <span class="intro-option-kicker">Hospitalización</span>
         <h3 class="intro-option-h">Sala</h3>
-        <p class="intro-option-lead">Laboratorio, expediente en <strong>4 pestañas</strong> (<strong>Paciente</strong>, <strong>Clínico</strong> con <strong>Manejo</strong>: Electrolitos, Infusiones, ATB, CAD/EHH, <strong>Resultados</strong>, <strong>Salida</strong> con Listado), medicamentos y al cerrar: sync en equipo + móvil.</p>
+        <p class="intro-option-lead">Laboratorio y expediente en <strong>4 pestañas</strong>. <strong>Clínico</strong>: <strong>Historia Clínica</strong> (ingreso en 3 pasos), <strong>Estado actual</strong>, <strong>Eventualidades</strong> y <strong>Manejo</strong> (Electrolitos, Infusiones, ATB, CAD/EHH). <strong>Resultados</strong>, <strong>Salida</strong> (Listado). Medicamentos y, al cerrar: sync en equipo + móvil.</p>
         <button type="button" class="btn-intro-pick" onclick="guidedTourIntroChooseSala()">Empezar · Sala</button>
       </article>
       <article class="intro-option-card intro-option-card-accent">
@@ -360,6 +367,8 @@
     </div>
     <div id="tour-dock-body"></div>
     <div class="tour-dock-foot">
+      <button type="button" class="btn-tour-prev" id="tour-btn-prev" onclick="guidedTourClickPrev()" disabled>Anterior</button>
+      <button type="button" class="btn-tour-pause" id="tour-btn-pause" onclick="guidedTourPause()">Pausar y salir</button>
       <button type="button" class="btn-tour-skip" onclick="skipGuidedTour()">Omitir tutorial</button>
       <button type="button" class="btn-tour-next" id="tour-btn-next" onclick="guidedTourClickNext()">Siguiente</button>
     </div>

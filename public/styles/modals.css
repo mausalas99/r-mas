@@ -357,7 +357,20 @@ html.dark .tour-spotlight-soap { outline-color: #38bdf8 !important; }
   outline: 2px solid var(--action) !important; outline-offset: 3px !important;
   animation: tour-action-pulse 1.85s ease-in-out infinite;
 }
-.tour-dock-foot { display: flex; justify-content: flex-end; align-items: center; gap: 10px; flex-wrap: wrap; }
+.tour-dock-foot {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.tour-dock-foot .btn-tour-prev,
+.tour-dock-foot .btn-tour-pause {
+  background: transparent; color: var(--text-muted); border: 1px solid var(--border);
+  border-radius: 8px; padding: 7px 12px; font-size: 12px; font-weight: 600;
+  font-family: inherit; cursor: pointer;
+}
+.tour-dock-foot .btn-tour-prev:hover:not(:disabled),
+.tour-dock-foot .btn-tour-pause:hover { color: var(--text); border-color: var(--action); }
+.tour-dock-foot .btn-tour-prev:disabled { opacity: 0.4; cursor: not-allowed; }
+.tour-dock-foot .btn-tour-skip,
+.tour-dock-foot .btn-tour-next { margin-left: auto; }
 .btn-tour-next {
   background: #2563eb; color: white; border: none; border-radius: 8px;
   padding: 8px 16px; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer;

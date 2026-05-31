@@ -4,6 +4,16 @@ import {
   getTourTarget,
   stepRequiresUserAction,
 } from '../tour-targets.mjs';
+import {
+  getChapterProgressLabel,
+  getChapterForStep,
+  getNeoCompanionSteps,
+} from '../onboarding-curriculum.mjs';
+import {
+  loadTourProgress,
+  saveTourProgress,
+  clearTourProgress,
+} from '../onboarding-progress.mjs';
 import { syncGuidedTourContext } from '../tour-guards.mjs';
 import {
   isPresentationModeActive,
@@ -100,8 +110,11 @@ var TEND_ABNORMAL_ONLY_LS = 'rpc-tend-abnormal-only';
 var guidedTourActive = false;
 /** @type {'sala'|'interconsulta'|null} */
 var guidedTourBranch = null;
+/** @type {'base'|'neo'} */
+var guidedTourMode = 'base';
 /** @type {string|null} paso actual del tour guiado (null = inactivo) */
 var tourStepId = null;
+var persistTourProgressTimer = null;
 
 function publishTourGuardContext() {
   syncGuidedTourContext({
@@ -278,12 +291,53 @@ function guidedTourIntroSkip() {
 
 function guidedTourIntroChooseSala() {
   hideTourIntroModal();
+  guidedTourMode = 'base';
   startOnboarding('sala');
 }
 
 function guidedTourIntroChooseInterconsulta() {
   hideTourIntroModal();
+  guidedTourMode = 'base';
   startOnboarding('interconsulta');
+}
+
+function syncLearnHubContinueVisibility() {
+  var btn = document.getElementById('btn-learn-continue');
+  if (!btn) return;
+  var p = loadTourProgress();
+  btn.style.display = p && !guidedTourActive ? '' : 'none';
+}
+
+function persistTourProgressDebounced() {
+  if (!guidedTourActive || !tourStepId) return;
+  if (persistTourProgressTimer) clearTimeout(persistTourProgressTimer);
+  persistTourProgressTimer = setTimeout(function () {
+    persistTourProgressTimer = null;
+    var branch = guidedTourBranch === 'interconsulta' ? 'interconsulta' : 'sala';
+    var ch = getChapterForStep(tourStepId, branch);
+    saveTourProgress({
+      branch: branch,
+      stepId: tourStepId,
+      chapterId: ch.id,
+      mode: guidedTourMode,
+    });
+    syncLearnHubContinueVisibility();
+  }, 300);
+}
+
+function resetTourUiBeforeResume() {
+  clearAllTourSpotlights();
+  clearTourSoapButtonHighlight();
+  if (typeof closeSettingsDropdown === 'function') closeSettingsDropdown();
+  if (typeof closeConnectionDropdown === 'function') closeConnectionDropdown();
+  rt.closeProfileModal();
+  closeLabSomeTablesModal();
+  closeLabBulkTourHintModal();
+  closeSesionIngresoTrendsSendModal();
+  closeTendGroupModal();
+  closeSOAPModal();
+  hideTourIntroModal();
+  closeQuickHelp();
 }
 
 function showTourDock() {
@@ -326,7 +380,7 @@ function onTourDockClick(ev) {
   var d = document.getElementById('tour-dock');
   if (!d || !d.classList.contains('tour-dock-collapsed')) return;
   var t = ev && ev.target;
-  if (t && t.closest && t.closest('.btn-tour-skip, .btn-tour-collapse, .btn-tour-next')) return;
+  if (t && t.closest && t.closest('.btn-tour-skip, .btn-tour-collapse, .btn-tour-next, .btn-tour-prev, .btn-tour-pause')) return;
   setTourDockCollapsed(false);
   ev.stopPropagation();
 }
@@ -427,7 +481,30 @@ function syncTourSoapButtonHighlight() {
 }
 
 function getGuidedTourSteps() {
+  if (guidedTourMode === 'neo') return getNeoCompanionSteps();
   return getTourSteps(guidedTourBranch === 'interconsulta' ? 'interconsulta' : 'sala');
+}
+
+function demoLabAlreadyProcessedForTour() {
+  var hist = labHistory && labHistory[DEMO_PATIENT_ID];
+  return !!(hist && (Array.isArray(hist) ? hist.length : Object.keys(hist).length));
+}
+
+function syncTourActionNextButton() {
+  var nextBtn = document.getElementById('tour-btn-next');
+  if (!nextBtn || !guidedTourActive) return;
+  if (tourStepId === 'lab_parse' && demoLabAlreadyProcessedForTour()) {
+    nextBtn.style.display = '';
+    nextBtn.disabled = false;
+    nextBtn.textContent = 'Siguiente';
+  }
+  if (tourStepId === 'servicio_default') {
+    var st = rt.getSettings();
+    if (st && String(st.defaultServicio || '').trim()) {
+      nextBtn.style.display = '';
+      nextBtn.textContent = 'Siguiente';
+    }
+  }
 }
 
 function guidedTourStepIndex() {
@@ -540,35 +617,39 @@ function renderTourStep() {
   var badge = document.getElementById('tour-step-badge');
   var bodyEl = document.getElementById('tour-dock-body');
   var nextBtn = document.getElementById('tour-btn-next');
+  var prevBtn = document.getElementById('tour-btn-prev');
   var steps = getGuidedTourSteps();
   var total = steps.length;
   var idx = guidedTourStepIndex() + 1;
   var branchLabel = guidedTourBranch === 'interconsulta' ? 'Interconsulta' : 'Sala';
-  function setBadge(sub) {
-    badge.textContent = 'Paso ' + idx + ' de ' + total + ' · ' + branchLabel + (sub ? ' · ' + sub : '');
-  }
+  var tourBranch = guidedTourBranch === 'interconsulta' ? 'interconsulta' : 'sala';
+  var prog = getChapterProgressLabel(tourStepId, tourBranch);
+  var sub = prog.isCompanion
+    ? 'Extensión · Neo · Paso ' + prog.stepInChapter + ' de ' + prog.chapterSteps
+    : 'Cap. ' + prog.chapterIndex + '/' + prog.chapterCount + ' · ' + prog.chapterTitle
+      + ' · Paso ' + prog.stepInChapter + '/' + prog.chapterSteps;
+  badge.textContent = 'Paso ' + idx + ' de ' + total + ' · ' + branchLabel + (sub ? ' · ' + sub : '');
+  var neoOptionalLine =
+    '<p style="margin:0 0 8px;font-size:13px;color:var(--text-muted);">R+ funciona sin Neo; módulo opcional.</p>';
   nextBtn.style.display = '';
   nextBtn.disabled = false;
 
   switch (tourStepId) {
     case 'map_sidebar':
-      setBadge('pacientes');
       bodyEl.innerHTML =
         '<p style="margin:0;line-height:1.5;">La <strong>columna izquierda</strong> es tu lista de pacientes. <strong>DEMO PÉREZ</strong> solo existe para este tour.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'map_tabs':
-      setBadge('pestañas');
       bodyEl.innerHTML =
         getUiDensity() !== 'normal'
           ? '<p style="margin:0;line-height:1.5;">En <strong>Pase</strong> el centro es un <strong>resumen</strong> del paciente (pendientes, laboratorio, cultivos, medicamentos). Pulsa el título de cada bloque o usa <strong>Ctrl/⌘ + 1…4</strong> para abrir el detalle en vista <strong>Normal</strong>.</p>'
           : guidedTourBranch === 'interconsulta'
             ? '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong>, <strong>Agenda</strong>. En <strong>Expediente</strong> verás las pestañas internas en el siguiente paso.</p>'
-            : '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong>, <strong>Agenda</strong>. En <strong>Expediente (Sala)</strong>: cuatro pestañas — <strong>Paciente</strong>, <strong>Clínico</strong> (<strong>Manejo</strong>), <strong>Resultados</strong> y <strong>Salida</strong> (Listado). El tour mostrará las sub-pestañas de Manejo más adelante.</p>';
+            : '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong>, <strong>Agenda</strong>. En <strong>Expediente (Sala)</strong>: <strong>Paciente</strong>, <strong>Clínico</strong> (Historia Clínica, Estado actual, Eventualidades, Manejo), <strong>Resultados</strong> y <strong>Salida</strong> (Listado).</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'map_lab_teaser':
-      setBadge('laboratorio · texto');
       bodyEl.innerHTML =
         guidedTourBranch === 'interconsulta'
           ? '<p style="margin:0;line-height:1.5;">Aquí pegas reportes SOME. Ya hay un <strong>ejemplo con dos días</strong> de DEMO PÉREZ. Pulsa <strong>Siguiente</strong>.</p>'
@@ -576,69 +657,75 @@ function renderTourStep() {
       nextBtn.textContent = 'Siguiente';
       break;
     case 'lab_bulk_separator':
-      setBadge('laboratorio · separador');
       bodyEl.innerHTML =
         '<p style="margin:0;line-height:1.5;">Lee la ventana: puedes pegar <strong>varios días</strong> del mismo paciente seguidos. Entre <strong>pacientes distintos</strong> usa el separador (botón gris). Opcional: inserta el ejemplo de <strong>DEMO GARCÍA</strong>.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'lab_parse':
-      setBadge('laboratorio · procesar');
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">Pulsa <strong>Procesar</strong> (morado). R+ interpreta todos los reportes, agrupa por día y guarda en el historial de cada paciente.</p>';
+        '<p style="margin:0;line-height:1.5;">Pulsa <strong>Procesar</strong> (morado). R+ interpreta todos los reportes, agrupa por día y guarda en el historial de cada paciente.</p>' +
+        (demoLabAlreadyProcessedForTour()
+          ? '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Ya procesaste el ejemplo; puedes continuar.</p>'
+          : '');
       nextBtn.style.display = 'none';
       break;
     case 'lab_view':
-      setBadge('laboratorio · revisar');
       bodyEl.innerHTML =
         '<p style="margin:0;line-height:1.5;">Revisa diagramas y tabla de resultados. En el historial: <strong>Sincronizar</strong> quita duplicados; <strong>Consolidar</strong> junta envíos del mismo día (mismo tipo de dato).</p>' +
         '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Pulsa <strong>Siguiente</strong> para continuar el tour.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'sala_casiopea_lab':
-      setBadge('Neo · laboratorio');
       bodyEl.innerHTML =
+        neoOptionalLine +
         '<p style="margin:0;line-height:1.5;">Abre <strong>Tablas SOME</strong> (botón resaltado). Dentro verás <strong>Enviar a Neo</strong>: desde ahí mandas estudios al paso <strong>Paraclínicos</strong> en la app Neo (instalada aparte en este equipo).</p>' +
         '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">En el tutorial el envío no abre Neo; fuera del tour sí. Pulsa <strong>Siguiente</strong> cuando hayas visto el botón.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'sala_manejo':
-      setBadge('Manejo clínico');
       bodyEl.innerHTML =
         (guidedTourBranch === 'interconsulta'
           ? '<p style="margin:0;line-height:1.5;">En <strong>Expediente → Clínico → Manejo</strong> (pestaña resaltada) hay cuatro sub-pestañas: <strong>Electrolitos</strong>, <strong>Infusiones</strong>, <strong>ATB</strong> y <strong>CAD/EHH</strong>.</p>'
-          : '<p style="margin:0;line-height:1.5;">En <strong>Sala</strong>, <strong>Expediente → Clínico</strong> abre <strong>Manejo</strong> directamente, con las mismas cuatro sub-pestañas: <strong>Electrolitos</strong>, <strong>Infusiones</strong>, <strong>ATB</strong> y <strong>CAD/EHH</strong>.</p>') +
+          : '<p style="margin:0;line-height:1.5;">En <strong>Sala</strong>, <strong>Expediente → Clínico → Manejo</strong> (segmento resaltado) con las cuatro sub-pestañas: <strong>Electrolitos</strong>, <strong>Infusiones</strong>, <strong>ATB</strong> y <strong>CAD/EHH</strong>.</p>') +
         '<p style="margin:10px 0 0;line-height:1.5;">Tras procesar laboratorios, <strong>Electrolitos</strong> sugiere correcciones con dosis, dilución y vía; <strong>Infusiones</strong> y <strong>ATB</strong> ofrecen catálogos con texto <strong>SOME</strong> copiable; <strong>CAD/EHH</strong> lee BH/QS/gasometría para el checklist ADA.</p>' +
         '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Peso, talla y vía se toman del bloque colapsable <strong>Datos del paciente</strong> en la pestaña <strong>Paciente</strong>.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'ic_expediente_tabs':
-      setBadge('expediente · pestañas');
       bodyEl.innerHTML =
         '<p style="margin:0;line-height:1.5;">En <strong>Interconsulta</strong>, el expediente se agrupa en cuatro pestañas: <strong>Paciente</strong> (datos colapsables + pendientes), <strong>Clínico</strong> (Nota, Indicaciones, <strong>Manejo</strong>), <strong>Resultados</strong> (Tendencias, Cultivos) y <strong>Salida</strong> (Receta HU en PDF). En el siguiente paso verás <strong>Manejo</strong> con Electrolitos, Infusiones, ATB y CAD/EHH.</p>' +
         '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Receta HU</strong> exporta el PDF oficial 000-061-R-06-12. <strong>Nota</strong> e <strong>Indicaciones</strong> van a Word (.docx).</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'sala_expediente_tabs':
-      setBadge('expediente · pestañas');
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">En <strong>Sala</strong>, el expediente también usa cuatro pestañas: <strong>Paciente</strong> (datos colapsables + pendientes), <strong>Clínico</strong> (<strong>Manejo</strong>: Electrolitos, Infusiones, ATB, CAD/EHH), <strong>Resultados</strong> (Tendencias, Cultivos) y <strong>Salida</strong> (Listado de problemas).</p>' +
-        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Los datos del paciente (peso, talla, vía) viven en el bloque colapsable de <strong>Paciente</strong>.</p>';
+        '<p style="margin:0;line-height:1.5;">En <strong>Sala</strong>, el expediente usa cuatro pestañas: <strong>Paciente</strong> (datos colapsables + pendientes), <strong>Clínico</strong> (segmentos en la barra inferior), <strong>Resultados</strong> (Tendencias, Cultivos) y <strong>Salida</strong> (Listado de problemas).</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Peso, talla y vía están en <strong>Paciente</strong>. Los segmentos de <strong>Clínico</strong> se recorren en los siguientes pasos.</p>';
+      nextBtn.textContent = 'Siguiente';
+      break;
+    case 'historia_clinica':
+      bodyEl.innerHTML =
+        '<p style="margin:0;line-height:1.5;"><strong>Expediente → Clínico → Historia Clínica</strong>: ingreso institucional en <strong>3 pasos</strong> (identificación, antecedentes APP/AHF/APNP/IPAS, padecimiento). Cambia a <strong>Lectura</strong> para ver el texto compilado y <strong>Copiar</strong>.</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Solo en <strong>Sala</strong>. En sala en vivo (⇄) se sincroniza por paciente con el anfitrión.</p>';
+      nextBtn.textContent = 'Siguiente';
+      break;
+    case 'eventualidades':
+      bodyEl.innerHTML =
+        '<p style="margin:0;line-height:1.5;"><strong>Clínico → Eventualidades</strong>: bitácora de hechos clínicos por día (texto libre con fecha). Útil para intercurrencias del turno sin mezclarlas con el monitoreo estructurado.</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Pulsa <strong>Siguiente</strong> para continuar con laboratorio Neo y <strong>Manejo</strong>.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'ic_nota':
-      setBadge('énfasis · Nota .docx');
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">Genera la <strong>Nota (.docx)</strong> desde el botón correspondiente. Si el servidor local falla, puedes <strong>Omitir</strong> el tutorial.</p>';
+        '<p style="margin:0;line-height:1.5;">Genera la <strong>Nota (.docx)</strong> desde el botón correspondiente (motor nativo en Node; no requiere Python). Si el servidor local falla, puedes <strong>Omitir</strong> el tutorial.</p>';
       nextBtn.style.display = 'none';
       break;
     case 'ic_indica':
-      setBadge('énfasis · Indicaciones .docx');
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">Aquí exportas las <strong>Indicaciones (.docx)</strong> para entrega o impresión.</p>';
+        '<p style="margin:0;line-height:1.5;">Exporta las <strong>Indicaciones (.docx)</strong> para entrega o impresión (mismo generador nativo que la Nota).</p>';
       nextBtn.style.display = 'none';
       break;
     case 'ic_exports':
-      setBadge('exportación');
       bodyEl.innerHTML =
         '<p style="margin:0;line-height:1.5;">En <strong>Ajustes (⚙)</strong>: carpeta de documentos, formato de <strong>salida rápida</strong>, respaldos y sync. En <strong>Laboratorio → duplicados</strong> puedes revisar todos los pacientes.</p>' +
         (window.electronAPI && typeof window.electronAPI.getAppVersion === 'function'
@@ -647,80 +734,69 @@ function renderTourStep() {
       nextBtn.textContent = 'Siguiente';
       break;
     case 'sala_tend':
-      setBadge('tendencias');
       bodyEl.innerHTML =
         '<p style="margin:0;line-height:1.5;">En <strong>Expediente → Tendencias</strong> ves mini-gráficas cuando hay varios laboratorios en el tiempo.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'sala_tend_chart':
-      setBadge('tendencias · gráfica');
       bodyEl.innerHTML =
         '<p style="margin:0;line-height:1.5;">Pulsa <strong>Gráfica</strong> en un estudio (p. ej. biometría) para ver tendencias agrupadas y una tabla copiable.</p>' +
         '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Cierra con clic fuera de la ventana o <strong>Esc</strong>. Es opcional en el demo: <strong>Siguiente</strong> para continuar.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'sala_casiopea_trends':
-      setBadge('Neo · tendencias');
       bodyEl.innerHTML =
+        neoOptionalLine +
         '<p style="margin:0;line-height:1.5;">Con varios laboratorios en el tiempo, <strong>Enviar a Neo</strong> (barra de Tendencias) manda gráficas agrupadas al mismo flujo de paraclínicos.</p>' +
         '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Puedes abrir el modal para ver la selección; confirmar no envía datos durante el tutorial. <strong>Siguiente</strong> para continuar.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'sala_soap':
-      setBadge('plantilla SOAP');
       bodyEl.innerHTML =
         '<p style="margin:0 0 8px;line-height:1.5;"><strong>Expediente → Nota</strong>: en la tarjeta verde de evolución, el botón <strong>Plantilla SOAP</strong> está arriba a la derecha del encabezado verde (lleva resaltado).</p>' +
         '<p style="margin:0;font-size:13px;color:var(--text-muted);">Ábrelo e inserta en evolución cuando quieras.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'sala_med':
-      setBadge('medicamentos');
       bodyEl.innerHTML =
         '<p style="margin:0;line-height:1.5;">Pega el bloque TSV del hospital y pulsa <strong>Receta</strong>. Marca filas para <strong>SOAP</strong> o <strong>Tratamiento</strong>; el demo ya trae dos fármacos de ejemplo.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'profile':
-      setBadge('perfil');
       bodyEl.innerHTML =
         '<p style="margin:0;line-height:1.5;"><strong>Mi Perfil</strong> (nombre arriba): médico, plantillas y valores por defecto. <strong>Ajustes</strong>: carpeta, tema, respaldos y ayuda. <strong>Siguiente</strong>: sincronización en equipo (⇄) y versión móvil.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'servicio_default':
-      setBadge('servicio · Sala');
       bodyEl.innerHTML =
         '<p style="margin:0;line-height:1.5;">Escribe tu <strong>Servicio (Sala)</strong> en Mi Perfil (nombre completo, sin abreviaturas) y sal del campo para guardar. Luego <strong>Siguiente</strong>.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'estado_actual':
-      setBadge('Estado Actual');
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">En <strong>Expediente → Estado Actual</strong> (<strong>Sala</strong>): signos vitales estructurados, <strong>glucometría</strong>, balance hídrico <strong>I/O</strong>, <strong>tendencias</strong> rápidas y confirmación contra la <strong>receta hospitalaria</strong>. Genera párrafo para la nota, <strong>Copiar</strong> o <strong>Guardar y copiar</strong>.</p>' +
-        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">El botón verde del encabezado sigue abriendo la <strong>plantilla sin subjetivo</strong>. Cambia a la pestaña resaltada o pulsa <strong>Siguiente</strong>.</p>';
+        '<p style="margin:0;line-height:1.5;">En <strong>Expediente → Clínico → Estado actual</strong> (<strong>Sala</strong>): signos vitales estructurados, <strong>glucometría</strong>, balance hídrico <strong>I/O</strong>, <strong>tendencias</strong> rápidas y confirmación contra la <strong>receta hospitalaria</strong>. Genera párrafo para la nota, <strong>Copiar</strong> o <strong>Guardar y copiar</strong>.</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">El botón verde del encabezado abre la <strong>plantilla sin subjetivo</strong>. Cambia al segmento resaltado o pulsa <strong>Siguiente</strong>.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'listado_problemas':
-      setBadge('Listado');
       bodyEl.innerHTML =
         '<p style="margin:0;line-height:1.5;">Exporta el <strong>listado de problemas</strong> (activos e inactivos) a Word. Cada problema va con título y subítems <strong>A) CLÍNICA</strong>, <strong>B) EXPLORACIÓN</strong>, <strong>C) PARACLÍNICA</strong>, etc.</p>' +
         '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">El tour carga un ejemplo en ese formato (p. ej. peritonitis con incisos A–C). Pulsa <strong>Generar Listado</strong> (resaltado) o edita el texto y luego <strong>Siguiente</strong>.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'livesync_desktop':
-      setBadge('LiveSync · escritorio');
       bodyEl.innerHTML =
         '<p style="margin:0;line-height:1.5;">El icono <strong>⇄</strong> (junto a Ajustes) abre la sala en vivo: en escritorio se activa la red del turno y luego <strong>creas una sala</strong> o <strong>te unes</strong> a una existente. En iPad o otra Mac pegas el enlace de invitación. Ahí se sincronizan pacientes, laboratorios, agenda y pendientes entre las R+ del equipo.</p>' +
         '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Los respaldos JSON manuales siguen en Ajustes → Respaldos, sync y recuperación.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'livesync_mobile':
-      setBadge('LiveSync · iPad / móvil');
       bodyEl.innerHTML =
         '<p style="margin:0;line-height:1.5;">En ⇄ usa <strong>Copiar enlace móvil</strong>. En iPad o teléfono (misma Wi‑Fi) abre ese enlace en Safari: verás <strong>la misma interfaz R+</strong> (pacientes, laboratorio, expediente, medicamentos, agenda), sin botones de Word.</p>' +
         '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">El Mac anfitrión debe tener R+ abierto. En móvil elige la <strong>misma sala LiveSync</strong> que el equipo de escritorio.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'wrap':
-      setBadge('listo');
       bodyEl.innerHTML =
         '<p style="margin:0;line-height:1.5;">Listo. Repite el tutorial desde <strong>Mi Perfil</strong> o <strong>Ajustes</strong>. Para el equipo en vivo usa <strong>⇄</strong> y, si hace falta, el enlace móvil.</p>' +
         '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Modo Pase</strong> (resumen de ronda): prueba el atajo <strong>' +
@@ -740,6 +816,58 @@ function renderTourStep() {
   }
   syncTourDockPlacement();
   syncTourSoapButtonHighlight();
+  syncTourActionNextButton();
+  if (prevBtn) prevBtn.disabled = guidedTourStepIndex() <= 0;
+}
+
+function guidedTourClickPrev() {
+  if (!guidedTourActive || miniTourActive) return;
+  var steps = getGuidedTourSteps();
+  var i = steps.indexOf(tourStepId);
+  if (i <= 0) return;
+  clearAllTourSpotlights();
+  tourStepId = steps[i - 1];
+  publishTourGuardContext();
+  applyTourTargetForStep(tourStepId);
+  renderTourStep();
+  persistTourProgressDebounced();
+}
+
+function guidedTourPause() {
+  if (!guidedTourActive) return;
+  var branch = guidedTourBranch === 'interconsulta' ? 'interconsulta' : 'sala';
+  var ch = getChapterForStep(tourStepId, branch);
+  saveTourProgress({
+    branch: branch,
+    stepId: tourStepId,
+    chapterId: ch.id,
+    mode: guidedTourMode,
+  });
+  guidedTourActive = false;
+  publishTourGuardContext();
+  hideTourDock();
+  rt.showToast('Tutorial pausado. Continúa desde Aprender R+.', 'info');
+  syncLearnHubContinueVisibility();
+}
+
+export function resumeGuidedTourFromProgress() {
+  var p = loadTourProgress();
+  if (!p) return false;
+  guidedTourBranch = p.branch === 'interconsulta' ? 'interconsulta' : 'sala';
+  guidedTourMode = p.mode === 'neo' ? 'neo' : 'base';
+  resetTourUiBeforeResume();
+  startOnboarding(guidedTourBranch, { resumeStepId: p.stepId, skipIntro: true });
+  return true;
+}
+
+export function startNeoCompanionTour(startStepId) {
+  if (guidedTourActive) {
+    rt.showToast('Finaliza el tutorial actual primero.', 'error');
+    return;
+  }
+  guidedTourMode = 'neo';
+  guidedTourBranch = 'sala';
+  startOnboarding('sala', { resumeStepId: startStepId || 'sala_casiopea_lab', skipIntro: true });
 }
 
 function guidedTourClickNext() {
@@ -751,6 +879,9 @@ function guidedTourClickNext() {
   if (tourStepId === 'wrap') {
     completeGuidedTourWithCelebration();
     return;
+  }
+  if (tourStepId === 'servicio_default' && guidedTourMode === 'base' && guidedTourBranch !== 'interconsulta') {
+    rt.showToast('Listo: DEMO PÉREZ ya tiene laboratorio en R+.', 'success');
   }
   if (tourStepId === 'sala_casiopea_lab') {
     closeLabSomeTablesModal();
@@ -764,11 +895,16 @@ function guidedTourClickNext() {
   if (tourStepId === 'estado_actual') {
     closeSOAPModal();
   }
+  if (i + 1 >= steps.length) {
+    if (guidedTourMode === 'neo') completeGuidedTourWithCelebration();
+    return;
+  }
   clearAllTourSpotlights();
   tourStepId = steps[i + 1];
   publishTourGuardContext();
   applyTourTargetForStep(tourStepId);
   renderTourStep();
+  persistTourProgressDebounced();
 }
 
 // Avance automático cuando el usuario ejecuta una acción real
@@ -788,6 +924,8 @@ export function guidedTourAdvanceAfter(actionStep) {
   applyTourTargetForStep(tourStepId);
   renderTourStep();
   publishTourGuardContext();
+  persistTourProgressDebounced();
+  if (actionStep === 'lab_parse') syncTourActionNextButton();
 }
 function guidedTourAdvanceAfterNotaGenerated() {
   guidedTourAdvanceAfter('ic_nota');
@@ -798,30 +936,38 @@ function guidedTourAdvanceAfterIndicaGenerated() {
 
 function completeGuidedTourWithCelebration() {
   clearTourSoapButtonHighlight();
+  clearTourProgress();
   markGuidedTourVersionDone();
   guidedTourActive = false;
   tourStepId = null;
   guidedTourBranch = null;
+  guidedTourMode = 'base';
   publishTourGuardContext();
   hideTourDock();
   rt.launchConfetti();
   destroyDemoAndClose();
   rt.showToast('Tutorial completado', 'success');
+  syncLearnHubContinueVisibility();
 }
 
 function skipGuidedTour() {
   if (miniTourActive) { endMiniTour(); return; }
   clearTourSoapButtonHighlight();
+  clearTourProgress();
   markGuidedTourVersionDone();
   guidedTourActive = false;
   tourStepId = null;
   guidedTourBranch = null;
+  guidedTourMode = 'base';
   publishTourGuardContext();
   hideTourDock();
   destroyDemoAndClose();
+  syncLearnHubContinueVisibility();
 }
 
-function startOnboarding(branch) {
+function startOnboarding(branch, opts) {
+  opts = opts || {};
+  if (opts.resumeStepId) resetTourUiBeforeResume();
   guidedTourBranch = branch === 'interconsulta' ? 'interconsulta' : 'sala';
   setUiDensity('normal');
   // Alinear el modo de la app con la rama del tutorial. Si el usuario
@@ -834,20 +980,8 @@ function startOnboarding(branch) {
   st.appMode = guidedTourBranch === 'interconsulta' ? 'interconsulta' : 'sala';
   if (st.appMode !== prevMode) {
     try { localStorage.setItem('rpc-settings', JSON.stringify(st)); } catch (e) {}
-    var sala = isModeSala(st);
-    var inner = rt.getActiveInner();
-    if (sala && (inner === 'notas' || inner === 'indica')) {
-      rt.switchInnerTab('todo');
-    } else if (!sala && inner === 'listado') {
-      rt.switchInnerTab('todo');
-    }
-    rt.renderInnerTabs();
-    rt.renderEstadoActualButton();
+    applyAppModeSwitchEffects();
     rt.renderEstadoActualBar();
-    var modeRadioSala = document.getElementById('app-mode-sala');
-    var modeRadioInter = document.getElementById('app-mode-inter');
-    if (modeRadioSala) modeRadioSala.checked = sala;
-    if (modeRadioInter) modeRadioInter.checked = !sala;
   }
   var today = new Date();
   var fecha = String(today.getDate()).padStart(2,'0')+'/'+String(today.getMonth()+1).padStart(2,'0')+'/'+today.getFullYear();
@@ -913,13 +1047,27 @@ function startOnboarding(branch) {
   patients.unshift(demoPatient2);
   patients.unshift(demoPatient);
   guidedTourActive = true;
-  tourStepId = 'map_sidebar';
+  var steps = getGuidedTourSteps();
+  var resumeId = opts.resumeStepId;
+  if (resumeId && steps.indexOf(resumeId) >= 0) {
+    tourStepId = resumeId;
+  } else {
+    tourStepId = steps[0] || 'map_sidebar';
+  }
   renderPatientList();
   selectPatient(DEMO_PATIENT_ID);
-  applyTourNavigationForStep('map_sidebar');
-  showTourDock();
-  renderTourStep();
-  publishTourGuardContext();
+  function finishTourStart() {
+    applyTourNavigationForStep(tourStepId);
+    showTourDock();
+    renderTourStep();
+    publishTourGuardContext();
+    if (opts.resumeStepId) persistTourProgressDebounced();
+  }
+  if (opts.resumeStepId) {
+    setTimeout(finishTourStart, 0);
+  } else {
+    finishTourStart();
+  }
 }
 
 function onboardingAdvanceAfterParse() {
@@ -929,6 +1077,8 @@ function onboardingAdvanceAfterParse() {
   publishTourGuardContext();
   applyTourTargetForStep(tourStepId);
   renderTourStep();
+  persistTourProgressDebounced();
+  syncTourActionNextButton();
 }
 
 function onboardingAdvanceAfterSend() {
@@ -1071,17 +1221,38 @@ var HELP_ARTICLES = [
       '<ul>' +
       '<li>La <strong>plantilla SOAP</strong> (modal) concentra subjetivo/objetivo breve, GCS, analgesia, antibióticos, antiHTA, vasopresores, temperatura, dieta, balance hídrico y glucometrías. <strong>Insertar en evolución</strong> pega el párrafo en el cuadro de texto.</li>' +
       '<li>Desde <strong>Medicamentos</strong> puedes marcar fármacos para SOAP y abrir el modal ya relleno en analgesia / ABX / antiHTA / vasopresores.</li>' +
-      '<li><strong>Generar Nota (.docx)</strong> crea el documento con membrete; la carpeta de salida está en <strong>Ajustes</strong>.</li>' +
+      '<li><strong>Generar Nota (.docx)</strong> crea el documento con membrete (generador nativo en Node); la carpeta de salida está en <strong>Ajustes</strong>.</li>' +
       '<li><strong>Salida rápida</strong> exporta el paciente activo en docx, html o txt según el formato elegido.</li>' +
       '<li>Los datos se guardan por paciente en este equipo.</li>' +
       '</ul>'
   },
   {
-    id: 'estado-actual',
-    title: 'Estado Actual y monitoreo (Sala)',
-    keywords: 'estado actual monitoreo vitales glu glucometria insulina balance hidrico entradas salidas io tendencias medicamentos confirmacion sala',
+    id: 'historia-clinica',
+    title: 'Historia Clínica (Sala)',
+    keywords: 'historia clinica ingreso app ahf apnp ipas lectura narrativa antecedentes padecimiento sala',
     html:
-      '<p>En modo <strong>Sala</strong>, la pestaña <strong>Estado Actual</strong> del expediente concentra el <strong>monitoreo</strong> del turno antes de pasar todo a la nota.</p>' +
+      '<p>En modo <strong>Sala</strong>, <strong>Expediente → Clínico → Historia Clínica</strong> captura el ingreso con formato institucional.</p>' +
+      '<ul>' +
+      '<li><strong>Captura</strong> — Tres pasos: identificación y motivo; antecedentes (APP con catálogo, AHF por familiar, APNP, género/reproducción); padecimiento, datos negados e IPAS por sistemas.</li>' +
+      '<li><strong>Lectura</strong> — Vista que compila secciones en prosa; <strong>Copiar texto</strong> al portapapeles.</li>' +
+      '<li><strong>Labs de ingreso</strong> — Ancla creatinina, eTFG y estudios recientes desde el historial del paciente.</li>' +
+      '<li><strong>Sala en vivo</strong> — Se sincroniza por paciente cuando el equipo usa ⇄.</li>' +
+      '</ul>'
+  },
+  {
+    id: 'eventualidades',
+    title: 'Eventualidades (Sala)',
+    keywords: 'eventualidades bitacora intercurrencia dia clinico sala registro',
+    html:
+      '<p><strong>Expediente → Clínico → Eventualidades</strong> guarda hechos clínicos del turno con fecha y texto libre (orden cronológico).</p>' +
+      '<p style="font-size:13px;color:var(--text-muted);margin:0;">Complementa <strong>Estado actual</strong> (monitoreo estructurado) y <strong>Historia Clínica</strong> (ingreso). No sustituye la nota de evolución en Interconsulta.</p>'
+  },
+  {
+    id: 'estado-actual',
+    title: 'Estado actual y monitoreo (Sala)',
+    keywords: 'estado actual monitoreo vitales glu glucometria insulina balance hidrico entradas salidas io tendencias medicamentos confirmacion sala clinico segmento',
+    html:
+      '<p>En modo <strong>Sala</strong>, <strong>Expediente → Clínico → Estado actual</strong> concentra el <strong>monitoreo</strong> del turno antes de pasar todo a la nota.</p>' +
       '<ul>' +
       '<li><strong>Signos vitales</strong> estructurados con resaltado si salen del rango esperado.</li>' +
       '<li><strong>Glucometrías / insulina</strong>: registro y lectura rápida en el mismo panel.</li>' +
@@ -1339,14 +1510,42 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
-  '6.4.2': [
+  '6.5.0': [
     {
-      title: 'TODO',
-      body: 'Completar antes de publicar.',
+      title: 'Historia Clínica (Sala)',
+      body:
+        'Formulario institucional en <strong>3 pasos</strong> con catálogos APP, AHF e IPAS; vista <strong>Lectura</strong> con narrativa compilada; ancla de labs de ingreso y sync en <strong>⇄</strong>.',
     },
     {
-      title: 'TODO',
-      body: 'Completar antes de publicar.',
+      title: 'Eventualidades y Clínico reorganizado',
+      body:
+        'En <strong>Sala</strong>, <strong>Clínico</strong> agrupa <strong>Historia Clínica → Estado actual → Eventualidades → Manejo</strong>. Bitácora clínica por día en <strong>Eventualidades</strong>.',
+    },
+    {
+      title: 'Word sin Python',
+      body:
+        '<strong>Nota</strong>, <strong>Indicaciones</strong> y <strong>Listado</strong> se generan en Node; el instalador ya no depende de Python para esos <code>.docx</code>.',
+    },
+    {
+      title: 'Sala en vivo más robusta',
+      body:
+        'Fusión por <strong>versión</strong> de entidad, cola de escritura en el anfitrión y panel de <strong>conflictos</strong> con borrador local hasta resolver.',
+    },
+    {
+      title: 'Manejo más seguro',
+      body:
+        'Calculadoras con <strong>techos de dosis</strong> y plan de KCl por bolsas; entradas inválidas no generan órdenes silenciosas.',
+    },
+  ],
+  '6.4.2': [
+    {
+      title: 'Censo PDF en instalador',
+      body:
+        'La exportación de <strong>censo PDF</strong> vuelve a incluirse correctamente en el build de escritorio.',
+    },
+    {
+      title: 'Arranque',
+      body: 'Corrección menor que impedía abrir la app en algunos instaladores recientes.',
     },
   ],
   '6.4.1': [
@@ -2299,6 +2498,10 @@ export const settingsHelpWindowHandlers = {
   toggleTourDockCollapsed,
   onTourDockClick,
   guidedTourClickNext,
+  guidedTourClickPrev,
+  guidedTourPause,
+  resumeGuidedTourFromProgress,
+  startNeoCompanionTour,
   resetAndStartOnboarding,
   closeLabBulkTourHintModal,
   insertLabTourSecondPatientExample,
