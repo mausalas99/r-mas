@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, shell, dialog, ipcMain, clipboard } = require('electron');
+const { app, BrowserWindow, Menu, shell, dialog, ipcMain, clipboard, safeStorage } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -477,6 +477,38 @@ app.whenReady().then(async () => {
   try {
     process.env.R_PLUS_USER_DATA = app.getPath('userData');
     applyUpdateChannel(readUpdateChannelFromDisk());
+
+    const { loadNativeDatabase } = await import('./lib/db/native-load.mjs');
+    try {
+      loadNativeDatabase();
+    } catch (nativeErr) {
+      const detail =
+        nativeErr && nativeErr.message
+          ? nativeErr.message
+          : 'No se pudo cargar el módulo nativo de base de datos (SQLCipher).';
+      dialog.showErrorBox('R+ no pudo iniciar', detail);
+      app.quit();
+      return;
+    }
+
+    const { createDbManager } = await import('./lib/db/db-manager.mjs');
+    const dbManager = createDbManager({
+      userDataPath: app.getPath('userData'),
+      safeStorage,
+      getClientId: () => 'desktop-host',
+    });
+    globalThis.__rplusDbManager = dbManager;
+
+    const { registerDbIpcHandlers } = await import('./lib/db/ipc-handlers.mjs');
+    registerDbIpcHandlers({
+      ipcMain,
+      dbManager,
+      app,
+      dialog,
+      safeStorage,
+      getClientId: () => 'desktop-host',
+    });
+
     server = await require('./server');
   } catch (e) {
     const detail = e && e.message ? e.message : String(e);

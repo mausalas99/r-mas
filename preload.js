@@ -86,4 +86,28 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setHardwareAcceleration: function(enabled) {
     return ipcRenderer.invoke('set-hardware-acceleration', !!enabled);
   },
+  dbStatus: function() {
+    return ipcRenderer.invoke('db:status');
+  },
+  dbUnlock: function(opts) {
+    return ipcRenderer.invoke('db:unlock', opts);
+  },
+  dbLock: function() {
+    return ipcRenderer.invoke('db:lock');
+  },
+  dbClinicalLoadAll: function() {
+    return ipcRenderer.invoke('db:clinical-load-all');
+  },
+  dbClinicalSaveAll: function(payload) {
+    return ipcRenderer.invoke('db:clinical-save-all', payload);
+  },
+  dbAuditVerify: function(opts) {
+    return ipcRenderer.invoke('db:audit-verify', opts);
+  },
+  dbBackupExportJson: function() {
+    return ipcRenderer.invoke('db:backup-export-json');
+  },
+  dbBackupExportDb: function() {
+    return ipcRenderer.invoke('db:backup-export-db');
+  },
 });
