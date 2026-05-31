@@ -241,20 +241,31 @@
   </div>
 </div>
 
-<div id="med-pharm-modal-one" class="modal-backdrop med-pharm-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="med-pharm-modal-one-title" hidden>
-  <div class="med-pharm-modal" onclick="event.stopPropagation()">
-    <div class="card-header card-header-row">
-      <h2 id="med-pharm-modal-one-title" style="margin:0;font-size:14px;font-weight:700;flex:1;"></h2>
-      <button type="button" class="btn-med-secondary" onclick="closeMedPharmModals()" aria-label="Cerrar">×</button>
+<div id="med-pharm-modal-one" class="modal-backdrop med-pharm-modal-backdrop med-pharm-modal--one" role="dialog" aria-modal="true" aria-labelledby="med-pharm-modal-one-title" hidden>
+  <div class="med-pharm-modal med-pharm-dialog-one" onclick="event.stopPropagation()">
+    <div class="card-header card-header-row med-pharm-full-header">
+      <div class="med-pharm-full-header-text">
+        <h2 id="med-pharm-modal-one-title"></h2>
+        <p id="med-pharm-modal-one-sub" class="med-pharm-full-header-sub"></p>
+      </div>
+      <button type="button" class="btn-med-secondary" onclick="closeMedPharmModals()">Cerrar</button>
     </div>
     <div class="modal-body-scroll" id="med-pharm-modal-one-body"></div>
+    <div class="med-pharm-modal-legend med-pharm-legend">
+      <span><i class="med-pharm-swatch med-pharm-swatch-ind"></i> Indicado (administrado por defecto)</span>
+      <span><i class="med-pharm-swatch med-pharm-swatch-na"></i> No administrado (clic en celda)</span>
+      <span><i class="med-pharm-swatch med-pharm-swatch-today"></i> Hoy</span>
+    </div>
   </div>
 </div>
 
 <div id="med-pharm-modal-full" class="modal-backdrop med-pharm-modal-backdrop full" role="dialog" aria-modal="true" aria-labelledby="med-pharm-modal-full-title" hidden>
   <div class="med-pharm-modal full" onclick="event.stopPropagation()">
     <div class="card-header card-header-row med-pharm-full-header">
-      <h2 id="med-pharm-modal-full-title" style="margin:0;font-size:14px;font-weight:700;flex:1;"></h2>
+      <div class="med-pharm-full-header-text">
+        <h2 id="med-pharm-modal-full-title"></h2>
+        <p id="med-pharm-modal-full-sub" class="med-pharm-full-header-sub" hidden></p>
+      </div>
       <button type="button" class="btn-med-secondary" onclick="closeMedPharmModals()">Cerrar</button>
     </div>
     <div class="modal-body-scroll" id="med-pharm-modal-full-body"></div>
@@ -512,6 +523,7 @@
         <summary>Base de datos cifrada</summary>
         <div class="settings-acc-body settings-acc-btn-stack">
           <p class="settings-acc-hint">Datos clínicos en SQLCipher en el perfil local de Electron. Bloquea cuando dejes el equipo desatendido.</p>
+          <button type="button" class="btn-edit-templates" onclick="openChangeMasterPasswordModal()">Cambiar contraseña maestra…</button>
           <button type="button" class="btn-edit-templates" onclick="lockClinicalDatabaseNow()">Bloquear base de datos ahora…</button>
           <button type="button" class="btn-edit-templates" onclick="verifyForensicAuditChain()">Verificar bitácora forense</button>
           <p class="settings-acc-hint settings-acc-hint--tight" id="settings-db-backup-warn">Los respaldos JSON contienen información clínica en texto plano. Guárdalos solo en medios autorizados y cifrados.</p>
@@ -1667,16 +1679,53 @@
   </div>
 </div>
 
+<div id="rpc-db-change-pass-overlay" role="dialog" aria-modal="true" aria-labelledby="rpc-db-change-pass-title" aria-hidden="true">
+  <div class="rpc-db-unlock-panel">
+    <h2 id="rpc-db-change-pass-title">Cambiar contraseña maestra</h2>
+    <p class="settings-acc-hint">La base debe estar desbloqueada. Tras el cambio, usa la contraseña nueva en este equipo.</p>
+    <label class="profile-field-label" for="rpc-db-change-pass-current">Contraseña actual</label>
+    <div class="rpc-db-unlock-secret-wrap">
+      <input id="rpc-db-change-pass-current" type="password" autocomplete="current-password" placeholder="Contraseña actual" aria-required="true">
+      <button type="button" class="rpc-db-unlock-secret-toggle" data-db-unlock-secret-toggle aria-controls="rpc-db-change-pass-current" aria-label="Mostrar contraseña" aria-pressed="false">Mostrar</button>
+    </div>
+    <label class="profile-field-label" for="rpc-db-change-pass-new">Contraseña nueva</label>
+    <div class="rpc-db-unlock-secret-wrap">
+      <input id="rpc-db-change-pass-new" type="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres" aria-required="true">
+      <button type="button" class="rpc-db-unlock-secret-toggle" data-db-unlock-secret-toggle aria-controls="rpc-db-change-pass-new" aria-label="Mostrar contraseña" aria-pressed="false">Mostrar</button>
+    </div>
+    <label class="profile-field-label" for="rpc-db-change-pass-confirm">Confirmar contraseña nueva</label>
+    <div class="rpc-db-unlock-secret-wrap">
+      <input id="rpc-db-change-pass-confirm" type="password" autocomplete="new-password" placeholder="Repite la contraseña nueva" aria-required="true">
+      <button type="button" class="rpc-db-unlock-secret-toggle" data-db-unlock-secret-toggle aria-controls="rpc-db-change-pass-confirm" aria-label="Mostrar contraseña" aria-pressed="false">Mostrar</button>
+    </div>
+    <label class="rpc-db-unlock-remember" for="rpc-db-change-pass-remember">
+      <input type="checkbox" id="rpc-db-change-pass-remember">
+      <span>Recordar en este dispositivo</span>
+    </label>
+    <div class="rpc-db-unlock-error" id="rpc-db-change-pass-error" role="alert"></div>
+    <div class="rpc-db-unlock-actions">
+      <button type="button" class="btn-cancel" onclick="closeChangeMasterPasswordModal()">Cancelar</button>
+      <button type="button" class="btn-unlock" id="rpc-db-change-pass-submit" onclick="submitChangeMasterPassword()">Guardar contraseña</button>
+    </div>
+  </div>
+</div>
+
 <div id="rpc-db-unlock-overlay" role="dialog" aria-modal="true" aria-labelledby="rpc-db-unlock-title" aria-hidden="true">
   <div class="rpc-db-unlock-panel">
     <h2 id="rpc-db-unlock-title">Desbloquear base de datos</h2>
     <p id="rpc-db-unlock-hint">Ingresa la contraseña maestra de la base de datos clínica en este equipo.</p>
     <p id="rpc-db-unlock-rate-limited" class="rpc-db-unlock-rate-limited" role="alert" style="display:none;">Demasiados intentos fallidos. Espera unos minutos antes de volver a intentar.</p>
     <label class="profile-field-label" for="rpc-db-unlock-pass">Contraseña maestra</label>
-    <input id="rpc-db-unlock-pass" type="password" autocomplete="new-password" placeholder="Contraseña" aria-required="true">
+    <div class="rpc-db-unlock-secret-wrap">
+      <input id="rpc-db-unlock-pass" type="password" autocomplete="new-password" placeholder="Contraseña" aria-required="true">
+      <button type="button" class="rpc-db-unlock-secret-toggle" data-db-unlock-secret-toggle aria-controls="rpc-db-unlock-pass" aria-label="Mostrar contraseña" aria-pressed="false">Mostrar</button>
+    </div>
     <div id="rpc-db-unlock-confirm-wrap">
       <label class="profile-field-label" for="rpc-db-unlock-confirm">Confirmar contraseña</label>
-      <input id="rpc-db-unlock-confirm" type="password" autocomplete="new-password" placeholder="Repite la contraseña" aria-required="true">
+      <div class="rpc-db-unlock-secret-wrap">
+        <input id="rpc-db-unlock-confirm" type="password" autocomplete="new-password" placeholder="Repite la contraseña" aria-required="true">
+        <button type="button" class="rpc-db-unlock-secret-toggle" data-db-unlock-secret-toggle aria-controls="rpc-db-unlock-confirm" aria-label="Mostrar contraseña" aria-pressed="false">Mostrar</button>
+      </div>
     </div>
     <label class="rpc-db-unlock-remember" for="rpc-db-unlock-remember">
       <input type="checkbox" id="rpc-db-unlock-remember">

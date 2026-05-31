@@ -157,6 +157,62 @@
   </div>
 </div>
 
+<div id="med-pharm-paste-modal" class="modal-backdrop med-pharm-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="med-pharm-paste-title" hidden>
+  <div class="med-pharm-modal med-pharm-paste-dialog" role="document" onclick="event.stopPropagation()">
+    <div class="card-header card-header-row">
+      <h2 id="med-pharm-paste-title" style="margin:0;font-size:14px;font-weight:700;flex:1;">Pegar mes SOME</h2>
+      <button type="button" class="btn-med-secondary" onclick="closeMedPharmModals()" aria-label="Cerrar">×</button>
+    </div>
+    <div class="med-pharm-paste-body">
+      <p class="med-pharm-paste-hint">Pega la matriz mensual del hospital: columnas separadas por <strong>tabulador</strong>, cabecera con días <code>01</code>–<code>31</code>.</p>
+      <label class="med-pharm-paste-field" for="med-pharm-paste">
+        <span class="med-pharm-paste-field-label">Matriz SOME</span>
+        <textarea id="med-pharm-paste" class="med-pharm-paste-input" rows="12" spellcheck="false" placeholder="Pega aquí el bloque copiado del sistema SOME…" aria-label="Matriz mensual SOME"></textarea>
+      </label>
+    </div>
+    <div class="med-pharm-paste-actions">
+      <button type="button" class="btn-med-secondary btn-med-secondary--muted" onclick="closeMedPharmModals()">Cancelar</button>
+      <button type="button" class="btn-generate" id="med-pharm-import-btn">Importar mes</button>
+    </div>
+  </div>
+</div>
+
+<div id="med-pharm-modal-one" class="modal-backdrop med-pharm-modal-backdrop med-pharm-modal--one" role="dialog" aria-modal="true" aria-labelledby="med-pharm-modal-one-title" hidden>
+  <div class="med-pharm-modal med-pharm-dialog-one" onclick="event.stopPropagation()">
+    <div class="card-header card-header-row med-pharm-full-header">
+      <div class="med-pharm-full-header-text">
+        <h2 id="med-pharm-modal-one-title"></h2>
+        <p id="med-pharm-modal-one-sub" class="med-pharm-full-header-sub"></p>
+      </div>
+      <button type="button" class="btn-med-secondary" onclick="closeMedPharmModals()">Cerrar</button>
+    </div>
+    <div class="modal-body-scroll" id="med-pharm-modal-one-body"></div>
+    <div class="med-pharm-modal-legend med-pharm-legend">
+      <span><i class="med-pharm-swatch med-pharm-swatch-ind"></i> Indicado (administrado por defecto)</span>
+      <span><i class="med-pharm-swatch med-pharm-swatch-na"></i> No administrado (clic en celda)</span>
+      <span><i class="med-pharm-swatch med-pharm-swatch-today"></i> Hoy</span>
+    </div>
+  </div>
+</div>
+
+<div id="med-pharm-modal-full" class="modal-backdrop med-pharm-modal-backdrop full" role="dialog" aria-modal="true" aria-labelledby="med-pharm-modal-full-title" hidden>
+  <div class="med-pharm-modal full" onclick="event.stopPropagation()">
+    <div class="card-header card-header-row med-pharm-full-header">
+      <div class="med-pharm-full-header-text">
+        <h2 id="med-pharm-modal-full-title"></h2>
+        <p id="med-pharm-modal-full-sub" class="med-pharm-full-header-sub" hidden></p>
+      </div>
+      <button type="button" class="btn-med-secondary" onclick="closeMedPharmModals()">Cerrar</button>
+    </div>
+    <div class="modal-body-scroll" id="med-pharm-modal-full-body"></div>
+    <div class="med-pharm-modal-legend med-pharm-legend">
+      <span><i class="med-pharm-swatch med-pharm-swatch-ind"></i> Indicado (administrado por defecto)</span>
+      <span><i class="med-pharm-swatch med-pharm-swatch-na"></i> No administrado (clic en celda)</span>
+      <span><i class="med-pharm-swatch med-pharm-swatch-today"></i> Hoy</span>
+    </div>
+  </div>
+</div>
+
 <div id="clinico-unlock-backdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal clinico-unlock-modal" role="dialog" aria-modal="true" aria-labelledby="clinico-unlock-title" onclick="event.stopPropagation()">
     <h3 id="clinico-unlock-title">Guía clínica de orientación</h3>

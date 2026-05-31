@@ -1930,6 +1930,28 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '6.5.1': [
+    {
+      title: 'Perfil farmacoterapéutico',
+      body:
+        'En <strong>Medicamentos → Perfil histórico</strong>: calendario mensual SOME, marcas <strong>no administrado</strong>, adherencia por fila y merge desde <strong>Receta</strong>.',
+    },
+    {
+      title: 'Datos clínicos cifrados',
+      body:
+        'En escritorio, pacientes y expediente viven en una base <strong>SQLCipher</strong> con contraseña maestra; migración automática la primera vez que desbloqueas.',
+    },
+    {
+      title: 'Auditoría y respaldos',
+      body:
+        '<strong>Verificar cadena</strong> de integridad en Ajustes; export/import del almacén cifrado desde <strong>Respaldos, sync y recuperación</strong>.',
+    },
+    {
+      title: 'Sala en vivo',
+      body:
+        'El perfil se sincroniza en <strong>⇄</strong>; <strong>borradores de conflicto</strong> en el panel LAN hasta resolver cambios simultáneos.',
+    },
+  ],
   '6.5.0': [
     {
       title: 'Historia Clínica (Sala)',

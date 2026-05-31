@@ -1,7 +1,10 @@
 /** Pending jobs, RPC offline/health, idle lock, privacy wipe, backups/sync JSON, auto-updater UI. */
 import { storage } from '../storage.js';
 import { isDbMode } from '../db-storage-bridge.mjs';
-import { syncDbSecuritySectionUi } from './db-unlock.mjs';
+import {
+  syncDbSecuritySectionUi,
+  openChangeMasterPasswordModal,
+} from './db-unlock.mjs';
 import { formatProgressLine } from '../update-helpers.mjs';
 import { setAsyncButtonLoading } from '../ui-motion.mjs';
 import { applyMedCatalogOverlay } from '../med-receta-core.mjs';
@@ -635,6 +638,14 @@ async function exportAuditLog() {
     'R-plus-bitacora-' + formatDateSlug(new Date()) + '.json'
   );
   rt.showToast('Bitácora exportada', 'success');
+}
+
+function openChangeMasterPasswordFromSettings() {
+  if (!isDbMode() || !window.electronAPI || typeof window.electronAPI.dbChangePassphrase !== 'function') {
+    rt.showToast('Solo disponible con la base de datos cifrada en la app de escritorio.', 'error');
+    return;
+  }
+  openChangeMasterPasswordModal();
 }
 
 async function lockClinicalDatabaseNow() {
@@ -2244,6 +2255,7 @@ if (typeof window !== 'undefined' && window.electronAPI) {
 }
 
 export const platformWindowHandlers = {
+  openChangeMasterPasswordModal: openChangeMasterPasswordFromSettings,
   lockClinicalDatabaseNow,
   verifyForensicAuditChain,
   exportClinicalDbBackupJson,

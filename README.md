@@ -27,9 +27,18 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [6.5.0](https://github.com/mausalas99/r-mas/releases/tag/v6.5.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.5.1](https://github.com/mausalas99/r-mas/releases/tag/v6.5.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
+
+## R+ 6.5.1 (Perfil farmacoterapéutico · almacén cifrado · sala en vivo)
+
+- **Perfil histórico (Medicamentos)** — Calendario mensual SOME: pegado de mes, adherencia (no administrado por celda), lista + modal pantalla completa; merge desde **Receta**; filtros por categoría SOME.
+- **Almacén cifrado (escritorio)** — Datos clínicos en SQLCipher con contraseña maestra, migración automática desde `localStorage`, bloqueo manual y respaldo JSON del almacén desde Ajustes.
+- **Auditoría forense** — Cadena de integridad SHA-256 verificable desde Ajustes.
+- **Sala en vivo** — Sync del perfil farmacoterapéutico; borradores de conflicto LAN y resolución mejorada del paquete de sala.
+
+Notas: `docs/RELEASE_NOTES_6.5.1.txt`.
 
 ## R+ 6.5.0 (Historia Clínica · expediente Sala · documentos nativos)
 

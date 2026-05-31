@@ -845,7 +845,8 @@ async function runMigrationProbe(electron) {
 function migrationUiPending(status, probe) {
   return !!(status && status.migrationPending) || !!(probe && probe.needed);
 }
-function unlockErrorMessage(res) {
+function unlockErrorMessage(res, opts) {
+  opts = opts || {};
   var code = res && res.code;
   if (code === "AUTH_RATE_LIMITED") {
     return "Demasiados intentos fallidos. Espera unos minutos e int\xE9ntalo de nuevo.";
@@ -853,10 +854,60 @@ function unlockErrorMessage(res) {
   if (code === "DB_UNLOCK_METADATA_MISSING") {
     return "Faltan metadatos de cifrado en el perfil local. Contacta soporte o restaura un respaldo.";
   }
+  if (code === "DB_SETUP_RESET_FAILED") {
+    return "No se pudo reiniciar la base cifrada anterior (archivo en uso). Cierra R+ por completo y vuelve a abrir.";
+  }
+  if (code === "DB_SETUP_FAILED" || opts.setup && code === "DB_UNLOCK_FAILED") {
+    var setupDetail = res && (res.cause || res.error);
+    return setupDetail ? "No se pudo crear la base cifrada: " + setupDetail : "No se pudo crear la base cifrada. Cierra R+, vuelve a abrir e intenta de nuevo.";
+  }
   if (code === "DB_UNLOCK_FAILED") {
     return "Contrase\xF1a incorrecta. Verifica may\xFAsculas, espacios y vuelve a intentar.";
   }
-  return res && (res.error || res.message) || "No se pudo desbloquear la base de datos.";
+  if (code === "DB_NATIVE_ABI_MISMATCH") {
+    return "El m\xF3dulo nativo de base de datos no est\xE1 compilado para esta versi\xF3n de R+. Ejecuta npm run rebuild:db-native y reinicia.";
+  }
+  var detail = res && (res.cause || res.error || res.message);
+  if (detail && /NODE_MODULE_VERSION|was compiled against a different/i.test(String(detail))) {
+    return "El m\xF3dulo SQLCipher no coincide con esta versi\xF3n de Electron. En la carpeta del proyecto ejecuta: npm run rebuild:db-native \u2014 luego cierra R+ por completo y vuelve a abrirlo.";
+  }
+  return detail || "No se pudo desbloquear la base de datos.";
+}
+function toggleDbUnlockSecretField(toggleBtn) {
+  if (!toggleBtn) return;
+  var controlId = toggleBtn.getAttribute("aria-controls");
+  var input = controlId ? document.getElementById(controlId) : null;
+  if (!input) return;
+  var show = input.type === "password";
+  input.type = show ? "text" : "password";
+  toggleBtn.setAttribute("aria-pressed", show ? "true" : "false");
+  toggleBtn.textContent = show ? "Ocultar" : "Mostrar";
+  toggleBtn.setAttribute("aria-label", show ? "Ocultar contrase\xF1a" : "Mostrar contrase\xF1a");
+}
+function wireDbUnlockSecretToggles() {
+  if (typeof document === "undefined") return;
+  var toggles = document.querySelectorAll("[data-db-unlock-secret-toggle]");
+  for (var i = 0; i < toggles.length; i += 1) {
+    var btn = toggles[i];
+    if (btn.dataset.dbUnlockSecretWired === "1") continue;
+    btn.dataset.dbUnlockSecretWired = "1";
+    btn.addEventListener("click", function(ev) {
+      toggleDbUnlockSecretField(ev.currentTarget);
+    });
+  }
+}
+function resetDbUnlockSecretFields() {
+  var ids = ["rpc-db-unlock-pass", "rpc-db-unlock-confirm"];
+  for (var i = 0; i < ids.length; i += 1) {
+    var input = document.getElementById(ids[i]);
+    if (input) input.type = "password";
+  }
+  var toggles = document.querySelectorAll("[data-db-unlock-secret-toggle]");
+  for (var j = 0; j < toggles.length; j += 1) {
+    toggles[j].setAttribute("aria-pressed", "false");
+    toggles[j].textContent = "Mostrar";
+    toggles[j].setAttribute("aria-label", "Mostrar contrase\xF1a");
+  }
 }
 function setOverlayVisible(visible) {
   var overlay = document.getElementById("rpc-db-unlock-overlay");
@@ -865,6 +916,8 @@ function setOverlayVisible(visible) {
   overlay.setAttribute("aria-hidden", visible ? "false" : "true");
   if (visible) {
     document.body.classList.add("rpc-db-unlock-active");
+    resetDbUnlockSecretFields();
+    wireDbUnlockSecretToggles();
     var pass = document.getElementById("rpc-db-unlock-pass");
     if (pass) {
       pass.value = "";
@@ -908,7 +961,11 @@ function configureUnlockForm(status, probe) {
   var rate = document.getElementById("rpc-db-unlock-rate-limited");
   if (rate) rate.style.display = status && status.rateLimited ? "block" : "none";
   var submit = document.getElementById("rpc-db-unlock-submit");
-  if (submit) submit.disabled = !!(status && status.rateLimited);
+  if (submit) {
+    submit.disabled = !!(status && status.rateLimited);
+    submit.textContent = needsConfirm ? "Crear contrase\xF1a y continuar" : "Desbloquear";
+  }
+  wireDbUnlockSecretToggles();
 }
 async function waitForDbUnlock() {
   if (!isDbMode()) return { unlocked: true };
@@ -951,10 +1008,15 @@ async function submitDbUnlockPassphrase() {
     probe = await runMigrationProbe(electron);
     lastMigrationProbe = probe;
   }
-  if (needsPassphraseConfirm(status, probe)) {
+  var isSetup = needsPassphraseConfirm(status, probe);
+  if (isSetup) {
     var confirm2 = confirmEl ? String(confirmEl.value || "") : "";
     if (passphrase.length < 8) {
       setUnlockError("La contrase\xF1a debe tener al menos 8 caracteres.");
+      return;
+    }
+    if (!confirm2) {
+      setUnlockError("Confirma la contrase\xF1a en el segundo campo.");
       return;
     }
     if (passphrase !== confirm2) {
@@ -969,13 +1031,13 @@ async function submitDbUnlockPassphrase() {
   var submitBtn = document.getElementById("rpc-db-unlock-submit");
   if (submitBtn) submitBtn.disabled = true;
   try {
-    var unlockPayload = { passphrase, remember };
+    var unlockPayload = { passphrase, remember, setup: isSetup };
     if (probe && probe.needed) {
       unlockPayload.lsSnapshot = collectClinicalLsSnapshot();
     }
     var res = await electron.dbUnlock(unlockPayload);
     if (!res || res.ok === false) {
-      setUnlockError(unlockErrorMessage(res || {}));
+      setUnlockError(unlockErrorMessage(res || {}, { setup: isSetup }));
       if (submitBtn) submitBtn.disabled = !!(status && status.rateLimited);
       try {
         var st2 = await electron.dbStatus();
@@ -986,6 +1048,16 @@ async function submitDbUnlockPassphrase() {
     }
     if (res.clearKeys && res.clearKeys.length) {
       clearMigratedLocalStorageKeys(res.clearKeys);
+    }
+    if (res.migrationWarning) {
+      var warnMsg = "La base cifrada se cre\xF3, pero la migraci\xF3n de datos locales fall\xF3: " + res.migrationWarning;
+      if (typeof window !== "undefined" && typeof window.showToast === "function") {
+        window.showToast(warnMsg, "error");
+      } else {
+        setUnlockError(warnMsg);
+        if (submitBtn) submitBtn.disabled = false;
+        return;
+      }
     }
     lastMigrationProbe = { needed: false, hasHostJson: false };
     setOverlayVisible(false);
@@ -1004,8 +1076,121 @@ function syncDbSecuritySectionUi() {
   if (!section) return;
   section.style.display = isDbMode() ? "" : "none";
 }
+function setChangePassError(msg) {
+  var err = document.getElementById("rpc-db-change-pass-error");
+  if (!err) return;
+  if (msg) {
+    err.textContent = msg;
+    err.style.display = "block";
+  } else {
+    err.textContent = "";
+    err.style.display = "none";
+  }
+}
+function changePassphraseErrorMessage(res) {
+  var code = res && res.code;
+  if (code === "DB_PASSPHRASE_MISMATCH") {
+    return "La contrase\xF1a actual no es correcta.";
+  }
+  if (code === "DB_PASSPHRASE_TOO_SHORT") {
+    return "La contrase\xF1a nueva debe tener al menos 8 caracteres.";
+  }
+  if (code === "DB_PASSPHRASE_INVALID") {
+    return "Completa la contrase\xF1a actual y la nueva.";
+  }
+  if (code === "DB_LOCKED") {
+    return "La base est\xE1 bloqueada. Desbloqu\xE9ala antes de cambiar la contrase\xF1a.";
+  }
+  return res && (res.cause || res.error || res.message) || "No se pudo cambiar la contrase\xF1a.";
+}
+function openChangeMasterPasswordModal() {
+  if (!isDbMode()) return;
+  var electron = api();
+  if (!electron || typeof electron.dbChangePassphrase !== "function") return;
+  var overlay = document.getElementById("rpc-db-change-pass-overlay");
+  if (!overlay) return;
+  var ids = ["rpc-db-change-pass-current", "rpc-db-change-pass-new", "rpc-db-change-pass-confirm"];
+  for (var i = 0; i < ids.length; i += 1) {
+    var el = document.getElementById(ids[i]);
+    if (el) el.value = "";
+  }
+  var remember = document.getElementById("rpc-db-change-pass-remember");
+  if (remember) remember.checked = false;
+  setChangePassError("");
+  var submitBtn = document.getElementById("rpc-db-change-pass-submit");
+  if (submitBtn) submitBtn.disabled = false;
+  overlay.style.display = "flex";
+  overlay.setAttribute("aria-hidden", "false");
+  wireDbUnlockSecretToggles();
+  var first = document.getElementById("rpc-db-change-pass-current");
+  if (first) first.focus();
+}
+function closeChangeMasterPasswordModal() {
+  var overlay = document.getElementById("rpc-db-change-pass-overlay");
+  if (!overlay) return;
+  overlay.style.display = "none";
+  overlay.setAttribute("aria-hidden", "true");
+  setChangePassError("");
+}
+async function submitChangeMasterPassword() {
+  var electron = api();
+  if (!electron || typeof electron.dbChangePassphrase !== "function") return;
+  var currentEl = document.getElementById("rpc-db-change-pass-current");
+  var newEl = document.getElementById("rpc-db-change-pass-new");
+  var confirmEl = document.getElementById("rpc-db-change-pass-confirm");
+  var rememberEl = document.getElementById("rpc-db-change-pass-remember");
+  var current = currentEl ? String(currentEl.value || "") : "";
+  var next = newEl ? String(newEl.value || "") : "";
+  var confirm2 = confirmEl ? String(confirmEl.value || "") : "";
+  var remember = !!(rememberEl && rememberEl.checked);
+  if (!current) {
+    setChangePassError("Ingresa tu contrase\xF1a actual.");
+    return;
+  }
+  if (next.length < 8) {
+    setChangePassError("La contrase\xF1a nueva debe tener al menos 8 caracteres.");
+    return;
+  }
+  if (!confirm2) {
+    setChangePassError("Confirma la contrase\xF1a nueva.");
+    return;
+  }
+  if (next !== confirm2) {
+    setChangePassError("La confirmaci\xF3n no coincide con la contrase\xF1a nueva.");
+    return;
+  }
+  if (current === next) {
+    setChangePassError("La contrase\xF1a nueva debe ser distinta de la actual.");
+    return;
+  }
+  setChangePassError("");
+  var submitBtn = document.getElementById("rpc-db-change-pass-submit");
+  if (submitBtn) submitBtn.disabled = true;
+  try {
+    var res = await electron.dbChangePassphrase({
+      currentPassphrase: current,
+      newPassphrase: next,
+      remember
+    });
+    if (!res || res.ok === false) {
+      setChangePassError(changePassphraseErrorMessage(res || {}));
+      if (submitBtn) submitBtn.disabled = false;
+      return;
+    }
+    closeChangeMasterPasswordModal();
+    if (typeof window !== "undefined" && typeof window.showToast === "function") {
+      window.showToast("Contrase\xF1a maestra actualizada", "success");
+    }
+  } catch (err) {
+    setChangePassError(err && err.message || "No se pudo cambiar la contrase\xF1a.");
+    if (submitBtn) submitBtn.disabled = false;
+  }
+}
 var dbUnlockWindowHandlers = {
-  submitDbUnlockPassphrase
+  submitDbUnlockPassphrase,
+  openChangeMasterPasswordModal,
+  closeChangeMasterPasswordModal,
+  submitChangeMasterPassword
 };
 
 // public/js/med-receta-core.mjs
@@ -29014,6 +29199,24 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
   }
 ];
 var RELEASE_NOTES_HIGHLIGHTS = {
+  "6.5.1": [
+    {
+      title: "Perfil farmacoterap\xE9utico",
+      body: "En <strong>Medicamentos \u2192 Perfil hist\xF3rico</strong>: calendario mensual SOME, marcas <strong>no administrado</strong>, adherencia por fila y merge desde <strong>Receta</strong>."
+    },
+    {
+      title: "Datos cl\xEDnicos cifrados",
+      body: "En escritorio, pacientes y expediente viven en una base <strong>SQLCipher</strong> con contrase\xF1a maestra; migraci\xF3n autom\xE1tica la primera vez que desbloqueas."
+    },
+    {
+      title: "Auditor\xEDa y respaldos",
+      body: "<strong>Verificar cadena</strong> de integridad en Ajustes; export/import del almac\xE9n cifrado desde <strong>Respaldos, sync y recuperaci\xF3n</strong>."
+    },
+    {
+      title: "Sala en vivo",
+      body: "El perfil se sincroniza en <strong>\u21C4</strong>; <strong>borradores de conflicto</strong> en el panel LAN hasta resolver cambios simult\xE1neos."
+    }
+  ],
   "6.5.0": [
     {
       title: "Historia Cl\xEDnica (Sala)",
@@ -30661,6 +30864,13 @@ async function exportAuditLog() {
   );
   rt16.showToast("Bit\xE1cora exportada", "success");
 }
+function openChangeMasterPasswordFromSettings() {
+  if (!isDbMode() || !window.electronAPI || typeof window.electronAPI.dbChangePassphrase !== "function") {
+    rt16.showToast("Solo disponible con la base de datos cifrada en la app de escritorio.", "error");
+    return;
+  }
+  openChangeMasterPasswordModal();
+}
 async function lockClinicalDatabaseNow() {
   if (!isDbMode() || !window.electronAPI || typeof window.electronAPI.dbLock !== "function") {
     rt16.showToast("Solo disponible con la base de datos cifrada en la app de escritorio.", "error");
@@ -32049,6 +32259,7 @@ if (typeof window !== "undefined" && window.electronAPI) {
   });
 }
 var platformWindowHandlers = {
+  openChangeMasterPasswordModal: openChangeMasterPasswordFromSettings,
   lockClinicalDatabaseNow,
   verifyForensicAuditChain,
   exportClinicalDbBackupJson,
@@ -50685,7 +50896,8 @@ function toggleNotAdmin(days, notAdmin, dayNum) {
 function formatFreqShort(raw) {
   const t2 = trimStr2(raw).toUpperCase();
   if (!t2) return "\u2014";
-  if (t2 === "ONCE" || t2 === "PRN") return t2;
+  if (t2 === "ONCE" || t2 === "UNICA" || t2 === "\xDANICA") return "UNICA";
+  if (t2 === "PRN") return t2;
   const m = t2.match(/^Q?(\d+)\s*H$/);
   if (m) return m[1] + "H";
   if (t2.indexOf("Q") === 0) return t2.slice(1);
@@ -51047,18 +51259,173 @@ function reclassifyMonthIfLegacy(pid, month) {
   if (changed) saveState();
   return month;
 }
-function adherenceHtml(stats) {
-  if (!stats.indicated) return '<span class="adh-ok">\u2014</span>';
-  if (!stats.missed) {
-    return '<span class="adh-ok" title="Todos los d\xEDas indicados se asumen administrados">' + esc25(String(stats.effective)) + " d efectivos</span>";
-  }
-  var daysList = stats.missedDays.map(function(d) {
+function formatAdhDayList(days) {
+  if (!days.length) return "\u2014";
+  return days.map(function(d) {
     return String(d).padStart(2, "0");
   }).join(", ");
-  return '<span class="adh-miss" title="No administrado: d\xEDas ' + esc25(daysList) + '">' + esc25(String(stats.effective)) + " efect. \xB7 <strong>" + esc25(String(stats.missed)) + " no</strong></span>";
 }
-function buildMedCellInner(row, stats) {
-  return '<div class="med-cell-name">' + esc25(row.med) + '</div><div class="med-cell-adh">' + adherenceHtml(stats) + "</div>";
+function adherenceDayDetail(row, daysInMonth) {
+  var indicated = [];
+  var missed = [];
+  var limit = daysInMonth || 31;
+  for (var d = 1; d <= limit; d += 1) {
+    if (!(dayValueInMap(row.days, d) > 0)) continue;
+    indicated.push(d);
+    if (row.notAdmin && (row.notAdmin[d] || row.notAdmin[String(d)])) missed.push(d);
+  }
+  var administered = indicated.filter(function(x) {
+    return missed.indexOf(x) < 0;
+  });
+  return { indicated, missed, administered };
+}
+function buildAdhPanelHtml(row, daysInMonth) {
+  var detail = adherenceDayDetail(row, daysInMonth);
+  var monthTitle = monthLabel(viewYear, viewMonthIndex);
+  return '<p class="med-pharm-adh-panel-head">' + esc25(monthTitle) + '</p><div class="med-pharm-adh-panel-section"><span class="med-pharm-adh-panel-label med-pharm-adh-panel-label--ok">Administrados (por defecto)</span><p class="med-pharm-adh-panel-days">' + esc25(formatAdhDayList(detail.administered)) + '</p></div><div class="med-pharm-adh-panel-section"><span class="med-pharm-adh-panel-label med-pharm-adh-panel-label--miss">No administrados</span><p class="med-pharm-adh-panel-days">' + esc25(formatAdhDayList(detail.missed)) + '</p></div><p class="med-pharm-adh-panel-foot">' + esc25(String(detail.administered.length)) + " administrados \xB7 " + esc25(String(detail.missed.length)) + " no \xB7 " + esc25(String(detail.indicated.length)) + " indicados</p>";
+}
+function buildAdhTriggerHtml(row, stats, daysInMonth) {
+  if (!stats.indicated) {
+    return '<span class="med-pharm-adh-trigger med-pharm-adh-trigger--empty">\u2014</span>';
+  }
+  var label = stats.missed > 0 ? stats.effective + " efect. \xB7 " + stats.missed + " no" : stats.effective + " d efectivos";
+  return '<span class="med-pharm-adh-wrap"><button type="button" class="med-pharm-adh-trigger' + (stats.missed > 0 ? " med-pharm-adh-trigger--miss" : "") + '" data-row-key="' + esc25(row.rowKey) + '" aria-haspopup="dialog">' + esc25(label) + '</button><div class="med-pharm-adh-panel" role="dialog" aria-hidden="true">' + buildAdhPanelHtml(row, daysInMonth) + "</div></span>";
+}
+function buildMedCellInner(row, stats, daysInMonth) {
+  return '<div class="med-cell-name">' + esc25(row.med) + '</div><div class="med-cell-adh">' + buildAdhTriggerHtml(row, stats, daysInMonth) + "</div>";
+}
+var _medPharmAdhHoverWired = false;
+var _medPharmAdhHideDelayMs = 140;
+function medPharmAdhPanelForWrap(wrap) {
+  return wrap.querySelector(".med-pharm-adh-panel") || wrap._medPharmAdhPanelEl || null;
+}
+function hideMedPharmAdhPanel(panel) {
+  if (!panel) return;
+  if (panel._medPharmAdhHideTid) {
+    clearTimeout(panel._medPharmAdhHideTid);
+    panel._medPharmAdhHideTid = null;
+  }
+  panel.classList.remove("is-open");
+  panel.setAttribute("aria-hidden", "true");
+  panel.style.left = "";
+  panel.style.top = "";
+  panel.style.visibility = "";
+  var wrap = panel._medPharmAdhOwnerWrap;
+  if (wrap) wrap._medPharmAdhPanelEl = null;
+  panel._medPharmAdhOwnerWrap = null;
+  if (wrap && wrap.isConnected) {
+    wrap.appendChild(panel);
+  } else if (panel.parentNode === document.body) {
+    panel.remove();
+  }
+}
+function scheduleHideMedPharmAdhPanel(panel) {
+  if (!panel) return;
+  if (panel._medPharmAdhHideTid) clearTimeout(panel._medPharmAdhHideTid);
+  panel._medPharmAdhHideTid = setTimeout(function() {
+    panel._medPharmAdhHideTid = null;
+    hideMedPharmAdhPanel(panel);
+  }, _medPharmAdhHideDelayMs);
+}
+function positionMedPharmAdhPanel(wrap) {
+  var panel = medPharmAdhPanelForWrap(wrap);
+  var trigger = wrap.querySelector(".med-pharm-adh-trigger");
+  if (!panel || !trigger) return;
+  document.querySelectorAll(".med-pharm-adh-panel.is-open").forEach(function(p) {
+    var w = p._medPharmAdhOwnerWrap;
+    if (w !== wrap) hideMedPharmAdhPanel(p);
+  });
+  if (panel._medPharmAdhHideTid) {
+    clearTimeout(panel._medPharmAdhHideTid);
+    panel._medPharmAdhHideTid = null;
+  }
+  panel._medPharmAdhOwnerWrap = wrap;
+  wrap._medPharmAdhPanelEl = panel;
+  if (panel.parentNode !== document.body) document.body.appendChild(panel);
+  panel.classList.add("is-open");
+  panel.setAttribute("aria-hidden", "false");
+  panel.style.visibility = "hidden";
+  panel.style.left = "-9999px";
+  panel.style.top = "0";
+  void panel.offsetWidth;
+  var anchor = trigger.getBoundingClientRect();
+  var pr = panel.getBoundingClientRect();
+  var margin = 8;
+  var gap = 4;
+  var top = anchor.bottom + gap;
+  var left = anchor.left;
+  if (top + pr.height > window.innerHeight - margin) {
+    top = Math.max(margin, anchor.top - pr.height - gap);
+  }
+  if (left + pr.width > window.innerWidth - margin) {
+    left = Math.max(margin, window.innerWidth - pr.width - margin);
+  }
+  if (left < margin) left = margin;
+  panel.style.left = Math.round(left) + "px";
+  panel.style.top = Math.round(top) + "px";
+  panel.style.visibility = "";
+}
+function wireMedPharmAdhHoverPanels(rootEl) {
+  if (!rootEl) return;
+  rootEl.querySelectorAll(".med-pharm-adh-panel").forEach(function(panel) {
+    if (panel._medPharmAdhPanelHoverListeners) return;
+    panel._medPharmAdhPanelHoverListeners = true;
+    panel.addEventListener("mouseenter", function() {
+      if (panel._medPharmAdhHideTid) {
+        clearTimeout(panel._medPharmAdhHideTid);
+        panel._medPharmAdhHideTid = null;
+      }
+    });
+    panel.addEventListener("mouseleave", function(ev) {
+      var w = panel._medPharmAdhOwnerWrap || panel.closest(".med-pharm-adh-wrap");
+      var toEl = ev.relatedTarget;
+      if (toEl && w && (w.contains(toEl) || panel.contains(toEl))) return;
+      scheduleHideMedPharmAdhPanel(panel);
+    });
+  });
+}
+function wireMedPharmAdhHoverOnce() {
+  if (_medPharmAdhHoverWired) return;
+  _medPharmAdhHoverWired = true;
+  function wrapFromTarget(t2) {
+    if (!t2 || !t2.closest) return null;
+    return t2.closest(".med-pharm-adh-wrap");
+  }
+  document.addEventListener("mouseover", function(ev) {
+    var wrap = wrapFromTarget(ev.target);
+    if (!wrap) return;
+    positionMedPharmAdhPanel(wrap);
+  });
+  document.addEventListener("mouseout", function(ev) {
+    var wrap = wrapFromTarget(ev.target);
+    if (!wrap) return;
+    var panel = medPharmAdhPanelForWrap(wrap);
+    if (!panel) return;
+    var toEl = ev.relatedTarget;
+    if (toEl && (wrap.contains(toEl) || panel.contains(toEl))) return;
+    scheduleHideMedPharmAdhPanel(panel);
+  });
+  document.addEventListener("focusin", function(ev) {
+    var wrap = wrapFromTarget(ev.target);
+    if (!wrap) return;
+    positionMedPharmAdhPanel(wrap);
+  });
+  document.addEventListener("focusout", function(ev) {
+    var wrap = wrapFromTarget(ev.target);
+    if (!wrap) return;
+    var panel = medPharmAdhPanelForWrap(wrap);
+    if (!panel) return;
+    var rel = ev.relatedTarget;
+    if (rel && (wrap.contains(rel) || panel.contains(rel))) return;
+    hideMedPharmAdhPanel(panel);
+  });
+  window.addEventListener(
+    "scroll",
+    function() {
+      document.querySelectorAll(".med-pharm-adh-panel.is-open").forEach(hideMedPharmAdhPanel);
+    },
+    true
+  );
 }
 function rowsMatchingCategoryFilter(month) {
   if (!month || !month.rows) return [];
@@ -51141,13 +51508,56 @@ function appendDayCell(tr, row, d, year, monthIndex) {
   td.title = "D\xEDa " + d + " \u2014 clic para marcar no administrado";
   tr.appendChild(td);
 }
+function wireGridDayClicks(root) {
+  if (!root || root._medPharmDayClickWired) return;
+  root._medPharmDayClickWired = true;
+  root.addEventListener("click", function(e) {
+    var dayCell = e.target.closest("td.day-pad.indicated[data-row-key]");
+    if (!dayCell || !root.contains(dayCell)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onGridDayClick(dayCell.dataset.rowKey, parseInt(dayCell.dataset.day, 10));
+  });
+}
+function refreshOpenMedPharmGrids() {
+  var pid = rt30.getActiveId();
+  if (!pid) return;
+  var month = getViewMonth(pid);
+  if (!month) return;
+  var fullEl = document.getElementById("med-pharm-modal-full");
+  if (fullEl && fullEl.classList.contains("open")) {
+    var fullBody = document.getElementById("med-pharm-modal-full-body");
+    mountSomeGrid(month, displayRows(month), fullBody);
+  }
+  var oneEl = document.getElementById("med-pharm-modal-one");
+  if (oneEl && oneEl.classList.contains("open") && openRowKey) {
+    var row = month.rows.find(function(r) {
+      return r.rowKey === openRowKey;
+    });
+    if (row) {
+      var oneBody = document.getElementById("med-pharm-modal-one-body");
+      var sub = document.getElementById("med-pharm-modal-one-sub");
+      mountSomeGrid(month, [row], oneBody);
+      if (sub) {
+        var stats = adherenceStats(row.days, row.notAdmin);
+        var parts = [monthLabel(viewYear, viewMonthIndex)];
+        if (row.dosis) parts.push(row.dosis);
+        parts.push(formatFreqShort(row.freq) + " \xB7 " + formatViaShort(row.via));
+        parts.push(stats.effective + " d efectivos");
+        sub.textContent = parts.join(" \xB7 ");
+      }
+    }
+  }
+}
 function mountSomeGrid(month, rows, container) {
   if (!container) return;
   container.innerHTML = "";
   var wrap = document.createElement("div");
-  wrap.className = "med-pharm-grid-scope some-grid-wrap";
+  wrap.className = "med-pharm-grid-scope some-grid-wrap med-pharm-scroll";
   wrap.appendChild(buildSomeGridTable(month, rows));
   container.appendChild(wrap);
+  wireGridDayClicks(wrap);
+  wireMedPharmAdhHoverPanels(wrap);
 }
 function buildSomeGridTable(month, rows) {
   var total = month.daysInMonth;
@@ -51188,15 +51598,17 @@ function buildSomeGridTable(month, rows) {
   thead.appendChild(hdr2);
   table.appendChild(thead);
   var tbody = document.createElement("tbody");
-  rows.forEach(function(row) {
+  rows.forEach(function(row, rowIndex) {
     var stats = adherenceStats(row.days, row.notAdmin);
     var missCls = stats.missed > 0 ? " has-misses" : "";
+    var blockStartCls = rowIndex > 0 ? " med-row-block-start" : "";
+    var blockToneCls = rowIndex % 2 === 1 ? " med-block-b" : " med-block-a";
     var tr1 = document.createElement("tr");
-    tr1.className = "day-band" + missCls;
+    tr1.className = "day-band" + missCls + blockStartCls + blockToneCls;
     var medTd = document.createElement("td");
     medTd.rowSpan = 2;
     medTd.className = "col-med";
-    medTd.innerHTML = buildMedCellInner(row, stats);
+    medTd.innerHTML = buildMedCellInner(row, stats, total);
     tr1.appendChild(medTd);
     var dosisTd = document.createElement("td");
     dosisTd.rowSpan = 2;
@@ -51220,7 +51632,7 @@ function buildSomeGridTable(month, rows) {
     padDayCells(tr1, tr1.querySelectorAll("td.day-pad").length, splitAt, "td", "day-pad day-pad-empty");
     tbody.appendChild(tr1);
     var tr2 = document.createElement("tr");
-    tr2.className = "day-band" + missCls;
+    tr2.className = "day-band med-row-block-end" + missCls + blockToneCls;
     if (total > splitAt) {
       appendDayCell(tr2, row, splitAt + 1, month.year, month.monthIndex);
       for (var d2 = splitAt + 2; d2 <= total; d2 += 1) {
@@ -51316,16 +51728,12 @@ function onGridDayClick(rowKey, day) {
   if (!row) return;
   row.notAdmin = toggleNotAdmin(row.days, row.notAdmin, day);
   saveState();
+  refreshOpenMedPharmGrids();
   renderMedPharmProfilePanel();
-  var fullEl = document.getElementById("med-pharm-modal-full");
-  if (fullEl && fullEl.classList.contains("open")) {
-    openMedPharmFullModal();
-    return;
-  }
-  if (openRowKey === rowKey) openMedPharmRowModal(rowKey);
 }
 function wireUiOnce() {
   wireMedPharmModalDismiss();
+  wireMedPharmAdhHoverOnce();
   if (uiWired) return;
   uiWired = true;
   var pasteOpen = document.getElementById("med-pharm-paste-open-btn");
@@ -51373,10 +51781,6 @@ function wireUiOnce() {
       var pidShow = rt30.getActiveId();
       if (pidShow) setMedPharmRowHidden(pidShow, unhideBtn.dataset.medPharmUnhide, false);
       return;
-    }
-    var dayCell = e.target.closest("td.day-pad.indicated");
-    if (dayCell && dayCell.dataset.rowKey) {
-      onGridDayClick(dayCell.dataset.rowKey, parseInt(dayCell.dataset.day, 10));
     }
   });
 }
@@ -51448,7 +51852,7 @@ function renderMedPharmProfilePanel() {
   if (card) card.classList.remove("med-pharm-has-grid");
   if (listHead) listHead.style.display = "";
   list.className = "med-pharm-list-body";
-  renderMedPharmSummaryList(list, rows);
+  renderMedPharmSummaryList(list, rows, month);
 }
 function updateMedPharmHiddenToolbar(hiddenCount) {
   var wrap = document.getElementById("med-pharm-show-hidden-wrap");
@@ -51461,7 +51865,8 @@ function updateMedPharmHiddenToolbar(hiddenCount) {
     cb.disabled = hiddenCount < 1;
   }
 }
-function renderMedPharmSummaryList(listEl, rows) {
+function renderMedPharmSummaryList(listEl, rows, month) {
+  var daysInMonth = month && month.daysInMonth ? month.daysInMonth : new Date(viewYear, viewMonthIndex + 1, 0).getDate();
   listEl.innerHTML = "";
   rows.forEach(function(row) {
     var stats = adherenceStats(row.days, row.notAdmin);
@@ -51481,7 +51886,7 @@ function renderMedPharmSummaryList(listEl, rows) {
     text.appendChild(nameEl);
     var adhEl = document.createElement("div");
     adhEl.className = "med-cell-adh";
-    adhEl.innerHTML = adherenceHtml(stats);
+    adhEl.innerHTML = buildAdhTriggerHtml(row, stats, daysInMonth);
     text.appendChild(adhEl);
     var dosisEl = document.createElement("div");
     dosisEl.className = "med-pharm-dosis-line";
@@ -51529,6 +51934,7 @@ function renderMedPharmSummaryList(listEl, rows) {
     wrap.appendChild(summary);
     listEl.appendChild(wrap);
   });
+  wireMedPharmAdhHoverPanels(listEl);
 }
 function openMedPharmRowModal(rowKey) {
   var pid = rt30.getActiveId();
@@ -51538,14 +51944,22 @@ function openMedPharmRowModal(rowKey) {
     return r.rowKey === rowKey;
   });
   if (!row) return;
-  openRowKey = rowKey;
-  var backdrop = document.getElementById("med-pharm-modal-one");
   var body = document.getElementById("med-pharm-modal-one-body");
   var title = document.getElementById("med-pharm-modal-one-title");
-  if (!backdrop || !body) return;
-  if (title) title.textContent = row.med;
+  var sub = document.getElementById("med-pharm-modal-one-sub");
+  if (!body) return;
+  if (title) title.textContent = row.med || "Medicamento";
+  if (sub) {
+    var stats = adherenceStats(row.days, row.notAdmin);
+    var parts = [monthLabel(viewYear, viewMonthIndex)];
+    if (row.dosis) parts.push(row.dosis);
+    parts.push(formatFreqShort(row.freq) + " \xB7 " + formatViaShort(row.via));
+    parts.push(stats.effective + " d efectivos");
+    sub.textContent = parts.join(" \xB7 ");
+  }
   mountSomeGrid(month, [row], body);
   openMedPharmModal("med-pharm-modal-one");
+  openRowKey = rowKey;
 }
 function openMedPharmFullModal() {
   var pid = rt30.getActiveId();
@@ -51563,17 +51977,20 @@ function openMedPharmFullModal() {
     );
     return;
   }
-  var backdrop = document.getElementById("med-pharm-modal-full");
   var body = document.getElementById("med-pharm-modal-full-body");
   var title = document.getElementById("med-pharm-modal-full-title");
-  if (!backdrop || !body) return;
+  var sub = document.getElementById("med-pharm-modal-full-sub");
+  if (!body) return;
   if (title) {
-    var filtLabel = listFilter === "TODOS" ? "Todos los medicamentos" : "Filtro: " + listFilter;
     title.textContent = "Calendario farmacoterap\xE9utico \u2014 " + monthLabel(viewYear, viewMonthIndex);
-    title.title = filtLabel + " \xB7 " + rows.length + " filas \xB7 formato matriz SOME";
   }
-  mountSomeGrid(month, rows, body);
+  if (sub) {
+    var filtLabel = listFilter === "TODOS" ? "Todos los medicamentos" : "Filtro: " + listFilter;
+    sub.textContent = filtLabel + " \xB7 " + rows.length + " filas \xB7 formato matriz SOME";
+    sub.hidden = false;
+  }
   openMedPharmModal("med-pharm-modal-full");
+  mountSomeGrid(month, rows, body);
 }
 function importMedPharmMonthPaste() {
   var pid = rt30.getActiveId();

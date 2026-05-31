@@ -417,7 +417,8 @@ html.rpc-mobile-web #main-area {
   border-radius: 0;
 }
 html.rpc-mobile-web #appcontent-lab > .main-work-scroll,
-html.rpc-mobile-web #appcontent-med > #med-work-area.main-work-scroll,
+html.rpc-mobile-web #appcontent-med > .med-active-shell,
+html.rpc-mobile-web #appcontent-med > .med-active-shell > #med-work-area.main-work-scroll,
 html.rpc-mobile-web #appcontent-agenda > .rpc-proc-agenda-root,
 html.rpc-mobile-web:not(.ui-density-normal) .pase-board-scroll,
 html.rpc-mobile-web .patient-expediente-classic .tab-content {

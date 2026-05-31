@@ -17,8 +17,8 @@ test('formatCultivosForCenso usa texto de copiar informe', () => {
     },
   ];
   var out = formatCultivosForCenso(history);
-  assert.match(out, /07\/05\/2026/);
-  assert.match(out, /PSEUDOMONAS AERUGINOSA/);
+  assert.match(out, /LIQUIDO PERITONEAL 07\/05: PSEUDOMONAS AERUGINOSA/);
+  assert.doesNotMatch(out, /07\/05\/2026/);
   assert.match(out, /^ATB R:/m);
-  assert.doesNotMatch(out, /Cuenta:/);
+  assert.match(out, /Cuenta: \+100 UFC/);
 });

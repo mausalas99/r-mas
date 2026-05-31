@@ -55,6 +55,7 @@ import {
 } from './features/pase-board.mjs';
 import {
   registerMedicationsRuntime,
+  registerMedPharmProfileRuntime,
 } from './features/medications.mjs';
 import {
   registerProfileRuntime,
@@ -269,6 +270,15 @@ export function registerAllFeatureRuntimes() {
     return rt.getSettings();
   },
   navigateToEstadoActualPanel: navigateToEstadoActualPanel,
+});
+registerMedPharmProfileRuntime({
+  getActiveId: function () {
+    return rt.getActiveId();
+  },
+  showToast: showToast,
+  refreshMedPanel: function () {
+    renderMedRecetaPanel();
+  },
 });
 registerProfileRuntime({
   showToast: showToast,

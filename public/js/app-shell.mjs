@@ -131,11 +131,11 @@ function syncActivePatientContextBar() {
 
 function syncMedPatientGate() {
   var empty = document.getElementById('med-empty-guided');
-  var work = document.getElementById('med-work-area');
-  if (!empty || !work) return;
+  var shell = document.getElementById('med-active-shell');
+  if (!empty || !shell) return;
   var showEmpty = shellCtx.getActiveAppTab() === 'med' && !shellCtx.getActiveId();
   empty.style.display = showEmpty ? 'flex' : 'none';
-  work.style.display = showEmpty ? 'none' : 'flex';
+  shell.style.display = showEmpty ? 'none' : 'flex';
 }
 
 function setMedTabAttention(on) {

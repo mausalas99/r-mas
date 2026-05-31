@@ -68,6 +68,7 @@ import {
   indicaciones,
   labHistory,
   medRecetaByPatient,
+  medPharmProfileByPatient,
   vpoByPatient,
   recetaHuByPatient,
   listadoProblemas,
@@ -830,26 +831,79 @@ function sendLiveSyncMutation(mutation) {
   lanClient.sendLive(wrapLiveSyncPatch(activeLiveSyncRoomId, getLanClientId(), mutation));
 }
 
+function isRoomBundleConflictDraft(draft) {
+  return !!(draft && (draft.scope || draft.localBundle || draft.entityType === 'roomBundle'));
+}
+
+async function clearConflictDraft(draftId) {
+  if (!draftId) return;
+  try {
+    await deleteDraftConflict(draftId);
+  } catch (_e) {}
+  void renderLanPanel();
+}
+
+async function discardDraftsForConflictEntity(payload) {
+  if (!payload || !payload.entityType || !payload.entityId) return;
+  var drafts = [];
+  try {
+    drafts = await listDraftConflicts();
+  } catch (_eList) {
+    return;
+  }
+  var roomId = payload.roomId || null;
+  for (var i = 0; i < drafts.length; i += 1) {
+    var d = drafts[i];
+    if (!d || !d.id || isRoomBundleConflictDraft(d)) continue;
+    if (d.entityType !== payload.entityType || String(d.entityId) !== String(payload.entityId)) continue;
+    if (roomId != null && d.roomId != null && String(d.roomId) !== String(roomId)) continue;
+    try {
+      await deleteDraftConflict(d.id);
+    } catch (_eDel) {}
+  }
+}
+
+async function applyRoomBundleServerChoice(draft) {
+  var bundle = draft && draft.serverBundle;
+  var rid = draft && draft.roomId;
+  if (rid && bundle) {
+    setHostBundleBases(rid, bundle);
+    applyLiveSyncMerged(
+      mergeLiveSyncFullBundles([
+        {
+          agenda: bundle.agenda || [],
+          todos: bundle.todos || {},
+          entries: bundle.entries || [],
+          manejo: bundle.manejo,
+        },
+      ])
+    );
+  }
+  await clearConflictDraft(draft && draft.id);
+}
+
 async function applyConflictUseServer(payload) {
   var server = payload && payload.serverSnapshot;
-  if (!server || !server.data) return;
-  applyLiveSyncApplied({
-    roomId: payload.roomId || activeLiveSyncRoomId,
-    entityType: payload.entityType,
-    entityId: payload.entityId,
-    patientId: payload.patientId,
-    version: server.version,
-    data: server.data,
-  });
+  if (server && server.data) {
+    applyLiveSyncApplied({
+      roomId: payload.roomId || activeLiveSyncRoomId,
+      entityType: payload.entityType,
+      entityId: payload.entityId,
+      patientId: payload.patientId,
+      version: server.version,
+      data: server.data,
+    });
+  }
   if (payload.draftId) {
-    try {
-      await deleteDraftConflict(payload.draftId);
-    } catch (_e) {}
+    await clearConflictDraft(payload.draftId);
   }
 }
 
 function formatConflictDraftLabel(draft) {
-  var type = draft && draft.entityType ? String(draft.entityType) : 'entidad';
+  var type = 'entidad';
+  if (draft && draft.entityType === 'roomBundle') type = 'sala';
+  else if (draft && draft.entityType) type = String(draft.entityType);
+  else if (isRoomBundleConflictDraft(draft)) type = 'sala';
   var id = draft && draft.entityId ? String(draft.entityId) : '';
   var keys =
     draft && Array.isArray(draft.conflictingKeys) && draft.conflictingKeys.length
@@ -956,6 +1010,7 @@ function conflictViewerContext(payload) {
 }
 
 function conflictEditDraftHandler(payload) {
+  var resolved = false;
   if (
     payload &&
     payload.entityType === 'todo' &&
@@ -969,6 +1024,10 @@ function conflictEditDraftHandler(payload) {
       version: payload.serverSnapshot.version,
     });
     emitLiveSyncTodoDelete(payload.patientId, todo);
+    resolved = true;
+  }
+  if (resolved && payload.draftId) {
+    void clearConflictDraft(payload.draftId);
   }
 }
 
@@ -977,6 +1036,25 @@ async function reopenConflictDraftFromStore(draftId) {
   if (!draft) {
     runtime.showToast('No se encontró el borrador de conflicto', 'error');
     void renderLanPanel();
+    return;
+  }
+  if (isRoomBundleConflictDraft(draft)) {
+    openClinicalConflictViewer({
+      draftId: draft.id,
+      conflictingKeys: draft.conflictingKeys || ['*'],
+      localData: draft.localBundle || {},
+      serverData: draft.serverBundle || {},
+      context: {
+        entityType: 'roomBundle',
+        roomId: draft.roomId,
+        transport: draft.transport || 'http',
+      },
+      onUseServer: function () {
+        void applyRoomBundleServerChoice(draft);
+      },
+      onEditDraft: function () {},
+      onClose: function () {},
+    });
     return;
   }
   var payload = draftRecordToConflictPayload(draft);
@@ -988,12 +1066,10 @@ async function reopenConflictDraftFromStore(draftId) {
     serverData: viewerData.serverData,
     context: conflictViewerContext(payload),
     onUseServer: function () {
-      void applyConflictUseServer(Object.assign({}, payload, { draftId: draft.id })).then(function () {
-        void renderLanPanel();
-      });
+      void applyConflictUseServer(Object.assign({}, payload, { draftId: draft.id }));
     },
     onEditDraft: function () {
-      conflictEditDraftHandler(payload);
+      conflictEditDraftHandler(Object.assign({}, payload, { draftId: draft.id }));
     },
     onClose: function () {},
   });
@@ -1057,6 +1133,8 @@ async function appendLanConflictDraftsSection(root) {
 
 async function handleSyncConflict(payload) {
   if (shouldAutoResolveTodoConflict(payload) && tryAutoResolveTodoConflict(payload)) {
+    await discardDraftsForConflictEntity(payload);
+    void renderLanPanel();
     runtime.showToast('Pendiente alineado con la sala', 'info');
     return;
   }
@@ -1078,12 +1156,10 @@ async function handleSyncConflict(payload) {
     serverData: viewerData.serverData,
     context: conflictViewerContext(payload),
     onUseServer: function () {
-      void applyConflictUseServer(Object.assign({}, payload, { draftId: draftId })).then(function () {
-        void renderLanPanel();
-      });
+      void applyConflictUseServer(Object.assign({}, payload, { draftId: draftId }));
     },
     onEditDraft: function () {
-      conflictEditDraftHandler(payload);
+      conflictEditDraftHandler(Object.assign({}, payload, { draftId: draftId }));
     },
     onClose: function () {},
   });
@@ -1573,6 +1649,8 @@ function applyLanPatientEntries(entries) {
       labHistory[existing.id] = Array.isArray(entry.labHistory) ? entry.labHistory : [];
       if (entry.medReceta) medRecetaByPatient[existing.id] = entry.medReceta;
       else delete medRecetaByPatient[existing.id];
+      if (entry.medPharmProfile) medPharmProfileByPatient[existing.id] = entry.medPharmProfile;
+      else delete medPharmProfileByPatient[existing.id];
       if (entry.vpo) vpoByPatient[existing.id] = entry.vpo;
       else delete vpoByPatient[existing.id];
       if (entry.listadoProblemas) listadoProblemas[existing.id] = entry.listadoProblemas;
@@ -1613,6 +1691,7 @@ function applyLanPatientEntries(entries) {
         indicaciones[remoteId] = entry.indicaciones || {};
         labHistory[remoteId] = Array.isArray(entry.labHistory) ? entry.labHistory : [];
         if (entry.medReceta) medRecetaByPatient[remoteId] = entry.medReceta;
+        if (entry.medPharmProfile) medPharmProfileByPatient[remoteId] = entry.medPharmProfile;
         if (entry.vpo) vpoByPatient[remoteId] = entry.vpo;
         newId = remoteId;
       } else {
@@ -1653,6 +1732,7 @@ export function removePatientLocally(patientId) {
   delete indicaciones[pid];
   if (labHistory && labHistory[pid]) delete labHistory[pid];
   if (medRecetaByPatient && medRecetaByPatient[pid]) delete medRecetaByPatient[pid];
+  if (medPharmProfileByPatient && medPharmProfileByPatient[pid]) delete medPharmProfileByPatient[pid];
   if (typeof vpoByPatient !== 'undefined' && vpoByPatient && vpoByPatient[pid]) delete vpoByPatient[pid];
   if (recetaHuByPatient && recetaHuByPatient[pid]) delete recetaHuByPatient[pid];
   if (medNotaSelectionByPatient && medNotaSelectionByPatient[pid]) delete medNotaSelectionByPatient[pid];
@@ -1793,16 +1873,25 @@ function pushRoomSyncBundleToHost(roomId, envelope) {
           var conflictKeys = conflicts.map(function (c) {
             return c && c.key ? String(c.key) : '';
           }).filter(Boolean);
+          var bundleConflictKeys = conflictKeys.length ? conflictKeys : ['*'];
           return saveDraftConflict({
             scope: 'room:' + rid,
+            entityType: 'roomBundle',
+            transport: 'http',
             roomId: rid,
             localBundle: envelope,
             serverBundle: body && body.bundle ? body.bundle : null,
             conflicts: conflicts,
+            conflictingKeys: bundleConflictKeys,
           }).then(function (draftId) {
+            var roomDraft = {
+              id: draftId,
+              roomId: rid,
+              serverBundle: body && body.bundle ? body.bundle : null,
+            };
             openClinicalConflictViewer({
               draftId: draftId,
-              conflictingKeys: conflictKeys.length ? conflictKeys : ['*'],
+              conflictingKeys: bundleConflictKeys,
               localData: envelope,
               serverData: body && body.bundle ? body.bundle : {},
               context: {
@@ -1811,14 +1900,12 @@ function pushRoomSyncBundleToHost(roomId, envelope) {
                 transport: 'http',
               },
               onUseServer: function () {
-                if (body && body.bundle) {
-                  setHostBundleBases(rid, body.bundle);
-                  applyLiveSyncMerged(
-                    mergeLiveSyncFullBundles([{ agenda: body.bundle.agenda || [], todos: body.bundle.todos || {}, entries: body.bundle.entries || [], manejo: body.bundle.manejo }])
-                  );
-                }
+                void applyRoomBundleServerChoice(roomDraft);
               },
+              onEditDraft: function () {},
+              onClose: function () {},
             });
+            void renderLanPanel();
             return false;
           });
         });

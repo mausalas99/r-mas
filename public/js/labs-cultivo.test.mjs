@@ -339,7 +339,7 @@ test('extractMicSortKey: primer valor numérico del CMI', () => {
   assert.ok(Number.isNaN(extractMicSortKey('')));
 });
 
-test('formatCultivoCondensedForCopy: fecha, cabecera y ATB', () => {
+test('formatCultivoCondensedForCopy: cabecera con dd/mm, ATB y cuenta', () => {
   const chunk = [
     'LIQUIDO PERITONEAL 07/05: PSEUDOMONAS AERUGINOSA',
     'ATB R: CAZ | I: FEP | S: CIPRO, IMI, LVX, MERO, PIP/TAZO, TOBRA',
@@ -348,7 +348,16 @@ test('formatCultivoCondensedForCopy: fecha, cabecera y ATB', () => {
   const out = formatCultivoCondensedForCopy(chunk, '07/05/2026');
   assert.equal(
     out,
-    '07/05/2026\nLIQUIDO PERITONEAL 07/05: PSEUDOMONAS AERUGINOSA\nATB R: CAZ | I: FEP | S: CIPRO, IMI, LVX, MERO, PIP/TAZO, TOBRA'
+    'LIQUIDO PERITONEAL 07/05: PSEUDOMONAS AERUGINOSA\nATB R: CAZ | I: FEP | S: CIPRO, IMI, LVX, MERO, PIP/TAZO, TOBRA\nCuenta: +100 UFC'
+  );
+});
+
+test('formatCultivoCondensedForCopy: sin Preliminar ni fecha/hora del envío', () => {
+  const chunk = 'ASPIRADO TRAQUEAL 29/05: PROTEUS MIRABILIS · Preliminar\nCuenta: +100,000 UFC/ML';
+  const out = formatCultivoCondensedForCopy(chunk, '29/05/2026 17:11');
+  assert.equal(
+    out,
+    'ASPIRADO TRAQUEAL 29/05: PROTEUS MIRABILIS\nCuenta: +100,000 UFC/ML'
   );
 });
 

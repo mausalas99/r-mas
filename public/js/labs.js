@@ -2044,12 +2044,11 @@ function compactarLineasAntibiograma(sensCrudas, abreviarFn) {
 }
 
 /**
- * Texto para portapapeles: fecha del estudio, cabecera del cultivo y línea ATB condensada.
+ * Texto para portapapeles: cabecera del cultivo (fecha dd/mm en la línea), ATB y cuenta.
+ * No antepone la fecha/hora del envío; sin marca «Preliminar».
  */
-export function formatCultivoCondensedForCopy(chunkText, studyDateLine) {
+export function formatCultivoCondensedForCopy(chunkText, _studyDateLine) {
   var lines = [];
-  var dateLine = String(studyDateLine || '').trim();
-  if (dateLine && dateLine !== '—') lines.push(dateLine);
   var chunkLines = String(chunkText || '')
     .trim()
     .split(/\n/)
@@ -2057,11 +2056,16 @@ export function formatCultivoCondensedForCopy(chunkText, studyDateLine) {
       return l.trim();
     })
     .filter(Boolean);
-  if (chunkLines[0]) lines.push(chunkLines[0]);
+  if (!chunkLines.length) return lines.join('\n');
+  var head = chunkLines[0]
+    .replace(/\s*·\s*Preliminar\b/gi, '')
+    .replace(/\s*·\s*$/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+  if (head) lines.push(head);
   for (var i = 1; i < chunkLines.length; i++) {
-    if (/^ATB\b/i.test(chunkLines[i])) {
+    if (/^ATB\b/i.test(chunkLines[i]) || /^Cuenta:/i.test(chunkLines[i])) {
       lines.push(chunkLines[i]);
-      break;
     }
   }
   return lines.join('\n');

@@ -60,9 +60,20 @@ export function innerTabButtonId(tab, opts) {
   return 'itab-' + tab;
 }
 
+function getExpedienteInnerTabBar() {
+  return document.querySelector('.patient-expediente-classic > .inner-tab-bar');
+}
+
+export function syncMedSubviewTabIndicator() {
+  var bar = document.getElementById('med-subview-tabs-bar');
+  if (!bar) return;
+  var active = bar.querySelector('.inner-tab.active');
+  syncTabBarIndicator(bar, active);
+}
+
 export function syncInnerTabIndicator(tab, opts) {
   opts = opts || {};
-  var bar = document.querySelector('.inner-tab-bar');
+  var bar = getExpedienteInnerTabBar();
   var btnId =
     opts.consolidated && opts.settings
       ? consolidatedInnerTabButtonId(tab, opts.settings)
@@ -132,9 +143,14 @@ export function syncExpedienteSegmentIndicators(settings, granularTab) {
 }
 
 function scheduleIndicatorSync() {
-  syncAppTabIndicator(getActiveAppTabFromDom());
+  var appTab = getActiveAppTabFromDom();
+  syncAppTabIndicator(appTab);
+  if (appTab === 'med') {
+    syncMedSubviewTabIndicator();
+    return;
+  }
   if (isConsolidatedExpedienteTabsVisible()) {
-    var bar = document.querySelector('.inner-tab-bar');
+    var bar = getExpedienteInnerTabBar();
     var conTabs = document.querySelectorAll('.exp-consolidated-tab');
     for (var i = 0; i < conTabs.length; i++) {
       if (conTabs[i].classList.contains('active')) {
@@ -183,7 +199,8 @@ export function initTabBarMotion() {
     return;
   }
   ensureTabBarIndicator(document.getElementById('app-main-tablist'));
-  ensureTabBarIndicator(document.querySelector('.inner-tab-bar'));
+  ensureTabBarIndicator(getExpedienteInnerTabBar());
+  ensureTabBarIndicator(document.getElementById('med-subview-tabs-bar'));
   document.querySelectorAll('.exp-segment-bar, .manejo-subtabs, .rpc-subtab-bar').forEach(function (bar) {
     ensureTabBarIndicator(bar);
   });

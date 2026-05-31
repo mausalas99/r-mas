@@ -116,4 +116,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbBackupExportDb: function() {
     return ipcRenderer.invoke('db:backup-export-db');
   },
+  dbChangePassphrase: function(opts) {
+    return ipcRenderer.invoke('db:change-passphrase', opts);
+  },
 });

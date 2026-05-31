@@ -20,6 +20,15 @@ import { applyRecetaProposal, bucketsFromRecetaItems } from "./estado-actual-med
 import { renderNoteForm } from "./notes-indicaciones.mjs";
 import { safeAttrJsString } from "./lab-panel.mjs";
 import { openPaseSectionInNormal, renderPaseBoard } from "./pase-board.mjs";
+import {
+  getMedSubview,
+  registerMedPharmProfileRuntime,
+  initMedPharmSubviewUi,
+  renderMedPharmProfilePanel,
+  closeMedPharmModals,
+  onRecetaMergedToProfile,
+  medPharmProfileWindowHandlers,
+} from "./med-pharm-profile-panel.mjs";
 
 /** @type {{
  *   getActiveId(): string|null,
@@ -87,14 +96,25 @@ function getMedNotaSelMap(patientId) {
   return medNotaSelectionByPatient[patientId];
 }
 
+var lastMedPanelPatientId = null;
+
 export function renderMedRecetaPanel() {
+  initMedPharmSubviewUi();
+  var activeId = rt.getActiveId();
+  if (activeId !== lastMedPanelPatientId) {
+    lastMedPanelPatientId = activeId;
+    closeMedPharmModals();
+  }
+  if (getMedSubview() === "perfil") {
+    renderMedPharmProfilePanel();
+    return;
+  }
   var hintEl = document.getElementById("med-hint");
   var fechaEl = document.getElementById("med-fecha-actualizacion");
   var listEl = document.getElementById("med-items-list");
   var outPre = document.getElementById("med-output");
   var outCard = document.getElementById("med-output-section");
   if (!hintEl || !listEl || !outPre) return;
-  var activeId = rt.getActiveId();
   if (!activeId) {
     hintEl.style.display = "block";
     hintEl.textContent = "Selecciona un paciente en la columna izquierda para procesar su receta.";
@@ -368,6 +388,7 @@ export function procesarRecetaMed() {
   };
   medNotaSelectionByPatient[activeId] = {};
   saveState();
+  onRecetaMergedToProfile(activeId, medRecetaByPatient[activeId]);
   renderMedRecetaPanel();
   var msg = "Receta actualizada (" + parsed.items.length + " medicamentos)";
   if (parsed.skipped > 0) msg += ". Omitidas " + parsed.skipped + " líneas.";
@@ -544,4 +565,7 @@ export const medicationsWindowHandlers = {
   mediAnadirATratamiento,
   mediLlevarASOAP,
   incrementMedDiaTratamiento,
+  ...medPharmProfileWindowHandlers,
 };
+
+export { registerMedPharmProfileRuntime };

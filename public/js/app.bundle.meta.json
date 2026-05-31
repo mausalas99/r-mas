@@ -27,7 +27,7 @@
       "format": "esm"
     },
     "public/js/features/db-unlock.mjs": {
-      "bytes": 8421,
+      "bytes": 16107,
       "imports": [
         {
           "path": "public/js/db-storage-bridge.mjs",
@@ -1605,7 +1605,7 @@
       "format": "esm"
     },
     "public/js/features/settings-help.mjs": {
-      "bytes": 124390,
+      "bytes": 125342,
       "imports": [
         {
           "path": "public/js/tour-targets.mjs",
@@ -1791,7 +1791,7 @@
       "format": "esm"
     },
     "public/js/features/platform.mjs": {
-      "bytes": 83700,
+      "bytes": 84118,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -3634,7 +3634,7 @@
       "format": "esm"
     },
     "public/js/med-pharm-profile-core.mjs": {
-      "bytes": 10672,
+      "bytes": 10727,
       "imports": [
         {
           "path": "public/js/med-pharm-some-catalog.mjs",
@@ -3645,7 +3645,7 @@
       "format": "esm"
     },
     "public/js/features/med-pharm-profile-panel.mjs": {
-      "bytes": 27309,
+      "bytes": 36042,
       "imports": [
         {
           "path": "public/js/app-state.mjs",
@@ -4632,7 +4632,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 4005142
+      "bytes": 4033611
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -4649,7 +4649,7 @@
           "bytesInOutput": 25144
         },
         "public/js/features/db-unlock.mjs": {
-          "bytesInOutput": 7768
+          "bytesInOutput": 15336
         },
         "public/js/med-receta-core.mjs": {
           "bytesInOutput": 20487
@@ -4964,13 +4964,13 @@
           "bytesInOutput": 67384
         },
         "public/js/features/settings-help.mjs": {
-          "bytesInOutput": 113667
+          "bytesInOutput": 114608
         },
         "public/js/patient-export-format.mjs": {
           "bytesInOutput": 4275
         },
         "public/js/features/platform.mjs": {
-          "bytesInOutput": 74325
+          "bytesInOutput": 74708
         },
         "public/js/clinico-access.mjs": {
           "bytesInOutput": 2344
@@ -5222,10 +5222,10 @@
           "bytesInOutput": 37956
         },
         "public/js/med-pharm-profile-core.mjs": {
-          "bytesInOutput": 10295
+          "bytesInOutput": 10354
         },
         "public/js/features/med-pharm-profile-panel.mjs": {
-          "bytesInOutput": 25709
+          "bytesInOutput": 34238
         },
         "public/js/features/medications.mjs": {
           "bytesInOutput": 16017
@@ -5276,7 +5276,7 @@
           "bytesInOutput": 5622
         }
       },
-      "bytes": 2196952
+      "bytes": 2214432
     }
   }
 }

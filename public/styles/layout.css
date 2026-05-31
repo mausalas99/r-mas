@@ -64,12 +64,17 @@ html.electron-macos-inset-bar .tend-group-backdrop:not([style*="display: none"])
 /* Modales grandes: quedar bajo la franja de semáforos / drag nativo */
 html.electron-macos-inset-bar #lab-some-tables-backdrop.modal-backdrop.open,
 html.electron-macos-inset-bar #sesion-ingreso-send-backdrop.modal-backdrop.open,
-html.electron-macos-inset-bar #sesion-ingreso-trends-send-backdrop.modal-backdrop.open {
+html.electron-macos-inset-bar #sesion-ingreso-trends-send-backdrop.modal-backdrop.open,
+html.electron-macos-inset-bar #med-pharm-modal-full.med-pharm-modal-backdrop.open {
   padding-top: max(
     var(--electron-macos-chrome-top),
     calc(12px * var(--density-space))
   );
   box-sizing: border-box;
+}
+
+html.electron-macos-inset-bar .med-pharm-modal.full .med-pharm-full-header {
+  padding-left: var(--titlebar-traffic-gap);
 }
 header h1 { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; }
 /* Fecha centrada + meta Estado Actual apilados (evita solaparse con botones derecha). */
@@ -160,13 +165,25 @@ html:not(.ui-density-normal) #main-area {
   min-height: 0;
 }
 #appcontent-lab > .main-work-scroll,
-#appcontent-med > #med-work-area.main-work-scroll {
+#appcontent-med > .med-active-shell {
   flex: 1;
   margin-top: var(--shell-frame-inset);
+  min-height: 0;
+}
+#appcontent-med > .med-active-shell > #med-work-area.main-work-scroll {
   overflow-y: auto;
+  margin-top: 0;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  border-top: none;
+}
+#appcontent-med > .med-active-shell > #med-subview-tabs-bar {
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  border: 1px solid color-mix(in oklab, var(--border) 42%, transparent);
+  border-bottom: none;
+  box-shadow: var(--shadow-sm);
 }
 #appcontent-lab > .main-work-scroll,
-#appcontent-med > #med-work-area.main-work-scroll,
+#appcontent-med > .med-active-shell > #med-work-area.main-work-scroll,
 #appcontent-agenda > .rpc-proc-agenda-root,
 .patient-expediente-classic .tab-content {
   border-radius: var(--radius-lg);

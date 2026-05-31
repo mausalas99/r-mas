@@ -229,6 +229,7 @@
         <summary>Base de datos cifrada</summary>
         <div class="settings-acc-body settings-acc-btn-stack">
           <p class="settings-acc-hint">Datos clínicos en SQLCipher en el perfil local de Electron. Bloquea cuando dejes el equipo desatendido.</p>
+          <button type="button" class="btn-edit-templates" onclick="openChangeMasterPasswordModal()">Cambiar contraseña maestra…</button>
           <button type="button" class="btn-edit-templates" onclick="lockClinicalDatabaseNow()">Bloquear base de datos ahora…</button>
           <button type="button" class="btn-edit-templates" onclick="verifyForensicAuditChain()">Verificar bitácora forense</button>
           <p class="settings-acc-hint settings-acc-hint--tight" id="settings-db-backup-warn">Los respaldos JSON contienen información clínica en texto plano. Guárdalos solo en medios autorizados y cifrados.</p>
