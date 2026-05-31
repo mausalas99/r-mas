@@ -203,4 +203,46 @@ describe('host-store', () => {
     const got = store.getRoomSyncBundle(r.id);
     assert.strictEqual(got.manejo.customProtocols[0].id, 'p1');
   });
+
+  it('round-trips host state through SQLCipher when dbManager is unlocked', async () => {
+    const { createUnlockedDbManager } = await import('../lib/db/test-open-db.mjs');
+    const { readHostState } = await import('../lib/db/lan-host-persistence.mjs');
+    const dbDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-host-db-'));
+    const mgr = await createUnlockedDbManager(dbDir, () => 'lan-host-db-test');
+    try {
+      const store = createHostStore({
+        filePath,
+        teamCodePlain: 'db-roundtrip',
+        dbManager: mgr,
+        getClientId: () => 'lan-host-db-test',
+      });
+      await store.ready();
+      const room = store.createRoom('Sala DB');
+      await store.flush();
+      const row = readHostState(mgr.getDb());
+      assert.ok(row);
+      assert.strictEqual(row.rooms.length, 1);
+      assert.strictEqual(row.rooms[0].displayName, 'Sala DB');
+      const audit = mgr
+        .getDb()
+        .prepare(
+          `SELECT event_type, client_id FROM forensic_audit_chain
+           WHERE event_type = 'lan.host.commit' ORDER BY id DESC LIMIT 1`
+        )
+        .get();
+      assert.ok(audit);
+      assert.strictEqual(audit.client_id, 'lan-host-db-test');
+      mgr.lock();
+      const lockedStore = createHostStore({
+        filePath,
+        teamCodePlain: 'db-roundtrip',
+        dbManager: mgr,
+      });
+      assert.throws(() => lockedStore.getState(), (e) => e.code === 'DB_LOCKED');
+      assert.strictEqual(room.id, row.rooms[0].id);
+    } finally {
+      mgr.lock();
+      fs.rmSync(dbDir, { recursive: true, force: true });
+    }
+  });
 });

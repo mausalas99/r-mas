@@ -2,7 +2,11 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const { createRequire } = require('node:module');
 const { hashTeamCode } = require('./team-code.js');
+const { readHostState, writeHostState } = createRequire(__filename)(
+  '../lib/db/lan-host-persistence.mjs'
+);
 const { agendaEntityKey, todoEntityKey, historiaClinicaEntityKey } = require('./entity-keys.js');
 const {
   writeHistoriaClinicaArchive,
@@ -53,42 +57,92 @@ function defaultState(teamCodeHash) {
   };
 }
 
-function createHostStore({ filePath, teamCodePlain }) {
+function assertDbUnlocked(dbManager) {
+  if (!dbManager.isUnlocked()) {
+    const err = new Error('Database locked');
+    err.code = 'DB_LOCKED';
+    throw err;
+  }
+}
+
+function normalizeLoadedState(s) {
+  let state = migrateHostStateIfNeeded(s);
+  state.patients = Array.isArray(state.patients) ? state.patients : [];
+  state.rooms = Array.isArray(state.rooms) ? state.rooms : [];
+  state.roomSyncBundles =
+    state.roomSyncBundles && typeof state.roomSyncBundles === 'object'
+      ? state.roomSyncBundles
+      : {};
+  for (const rid of Object.keys(state.roomSyncBundles)) {
+    const b = state.roomSyncBundles[rid];
+    if (b && typeof b === 'object' && (!b.entities || typeof b.entities !== 'object')) {
+      b.entities = {};
+    }
+  }
+  delete state.calendarEvents;
+  return state;
+}
+
+function assertTeamCodeHash(s, teamCodeHash) {
+  if (s.teamCodeHash !== teamCodeHash) {
+    const err = new Error(
+      'LAN host state teamCodeHash does not match lan-team-code.txt. Run bootstrap or rehashLanHostState.'
+    );
+    err.code = 'LAN_HOST_STATE_HASH_MISMATCH';
+    throw err;
+  }
+}
+
+function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientId = () => 'host' }) {
   const teamCodeHash = hashTeamCode(teamCodePlain);
   const cache = createHostStateCache();
   const queue = createWriteQueue();
   let initPromise = null;
+  const useDb = () => dbManager != null;
+
+  async function persistCacheToDb() {
+    assertDbUnlocked(dbManager);
+    const snapshot = cache.get();
+    await dbManager.withTransaction((db, { audit }) => {
+      writeHostState(db, snapshot);
+      audit(getClientId(), 'lan.host.commit', {
+        action: 'host.commit',
+        byteLength: JSON.stringify(snapshot).length,
+      });
+    });
+  }
+
+  async function persistSnapshot(snapshot) {
+    if (useDb()) {
+      cache.replace(snapshot);
+      await persistCacheToDb();
+      return;
+    }
+    await writeJsonAtomic(filePath, snapshot);
+  }
 
   async function loadFromDisk() {
-    let s = await readJson(filePath);
+    let s;
+    if (useDb()) {
+      assertDbUnlocked(dbManager);
+      s = await dbManager.withTransaction((db) => readHostState(db));
+    } else {
+      s = await readJson(filePath);
+    }
     if (!s) {
       s = defaultState(teamCodeHash);
-      await writeJsonAtomic(filePath, s);
+      await persistSnapshot(s);
       cache.replace(s);
       return s;
     }
-    if (s.teamCodeHash !== teamCodeHash) {
-      const err = new Error(
-        'LAN host state teamCodeHash does not match lan-team-code.txt. Run bootstrap or rehashLanHostState.'
-      );
-      err.code = 'LAN_HOST_STATE_HASH_MISMATCH';
-      throw err;
-    }
-    s = migrateHostStateIfNeeded(s);
-    s.patients = Array.isArray(s.patients) ? s.patients : [];
-    s.rooms = Array.isArray(s.rooms) ? s.rooms : [];
-    s.roomSyncBundles =
-      s.roomSyncBundles && typeof s.roomSyncBundles === 'object' ? s.roomSyncBundles : {};
-    for (const rid of Object.keys(s.roomSyncBundles)) {
-      const b = s.roomSyncBundles[rid];
-      if (b && typeof b === 'object' && (!b.entities || typeof b.entities !== 'object')) {
-        b.entities = {};
-      }
-    }
-    delete s.calendarEvents;
+    assertTeamCodeHash(s, teamCodeHash);
+    const prevVersion = Number(s.version);
+    s = normalizeLoadedState(s);
     if (Number(s.version) !== 2) {
       s.version = 2;
-      await writeJsonAtomic(filePath, s);
+      await persistSnapshot(s);
+    } else if (prevVersion !== 2 && useDb()) {
+      await persistSnapshot(s);
     }
     cache.replace(s);
     return s;
@@ -96,31 +150,34 @@ function createHostStore({ filePath, teamCodePlain }) {
 
   function ensureLoadedSync() {
     if (cache.isLoaded()) return cache.get();
-    const s = readStateSync(filePath);
+    let s;
+    if (useDb()) {
+      assertDbUnlocked(dbManager);
+      s = readHostState(dbManager.getDb());
+    } else {
+      s = readStateSync(filePath);
+    }
     if (!s) {
       const fresh = defaultState(teamCodeHash);
+      if (useDb()) {
+        cache.replace(fresh);
+        queue.enqueue(() => persistCacheToDb()).catch(() => {});
+        return fresh;
+      }
       atomicWriteJson(filePath, fresh);
       cache.replace(fresh);
       return fresh;
     }
-    if (s.teamCodeHash !== teamCodeHash) {
-      const err = new Error(
-        'LAN host state teamCodeHash does not match lan-team-code.txt. Run bootstrap or rehashLanHostState.'
-      );
-      err.code = 'LAN_HOST_STATE_HASH_MISMATCH';
-      throw err;
-    }
-    const migrated = migrateHostStateIfNeeded(s);
-    migrated.patients = Array.isArray(migrated.patients) ? migrated.patients : [];
-    migrated.rooms = Array.isArray(migrated.rooms) ? migrated.rooms : [];
-    migrated.roomSyncBundles =
-      migrated.roomSyncBundles && typeof migrated.roomSyncBundles === 'object'
-        ? migrated.roomSyncBundles
-        : {};
-    delete migrated.calendarEvents;
+    assertTeamCodeHash(s, teamCodeHash);
+    const prevVersion = Number(s.version);
+    const migrated = normalizeLoadedState(s);
     cache.replace(migrated);
-    if (Number(migrated.version) === 2 && Number(s.version) !== 2) {
-      queue.enqueue(() => writeJsonAtomic(filePath, migrated)).catch(() => {});
+    if (Number(migrated.version) === 2 && prevVersion !== 2) {
+      if (useDb()) {
+        queue.enqueue(() => persistCacheToDb()).catch(() => {});
+      } else {
+        queue.enqueue(() => writeJsonAtomic(filePath, migrated)).catch(() => {});
+      }
     }
     return migrated;
   }
@@ -142,6 +199,9 @@ function createHostStore({ filePath, teamCodePlain }) {
   }
 
   function persistState() {
+    if (useDb()) {
+      return queue.enqueue(() => persistCacheToDb());
+    }
     const snapshot = cache.get();
     try {
       atomicWriteJson(filePath, snapshot);
@@ -153,6 +213,9 @@ function createHostStore({ filePath, teamCodePlain }) {
 
   /** Single serialized commit after in-memory mutation + audit (avoids stale queue snapshots). */
   function commitCacheNow() {
+    if (useDb()) {
+      return persistCacheToDb();
+    }
     const snapshot = cache.get();
     try {
       atomicWriteJson(filePath, snapshot);
@@ -564,7 +627,7 @@ function createHostStore({ filePath, teamCodePlain }) {
     return { archived: found, patientId: pid };
   }
 
-  if (!fs.existsSync(filePath)) {
+  if (!useDb() && !fs.existsSync(filePath)) {
     atomicWriteJson(filePath, defaultState(teamCodeHash));
   }
 

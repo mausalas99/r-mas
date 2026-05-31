@@ -261,7 +261,15 @@ try {
 appExpress.locals.lanRequiresMigrationNotice = lanBoot.requiresMigrationNotice;
 const LAN_TEAM_CODE = lanBoot.token;
 
-const lanStore = createHostStore({ filePath: lanStatePath, teamCodePlain: LAN_TEAM_CODE });
+const lanDbManager =
+  typeof globalThis !== 'undefined' && globalThis.__rplusDbManager
+    ? globalThis.__rplusDbManager
+    : null;
+const lanStore = createHostStore({
+  filePath: lanStatePath,
+  teamCodePlain: LAN_TEAM_CODE,
+  dbManager: lanDbManager,
+});
 const ticketStore = createTicketStore({ getHostToken: () => LAN_TEAM_CODE });
 const getLanHostUrl = () => `http://localhost:${PORT}`;
 
