@@ -265,6 +265,9 @@ const lanDbManager =
   typeof globalThis !== 'undefined' && globalThis.__rplusDbManager
     ? globalThis.__rplusDbManager
     : null;
+if (lanBoot.rotated && lanDbManager && typeof lanDbManager.schedulePendingAudit === 'function') {
+  lanDbManager.schedulePendingAudit('lan.token.rotate', { reason: 'weak_token_rotation' });
+}
 const lanStore = createHostStore({
   filePath: lanStatePath,
   teamCodePlain: LAN_TEAM_CODE,

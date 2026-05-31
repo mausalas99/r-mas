@@ -5,6 +5,19 @@ const { hashTeamCode } = require('./team-code.js');
 const { createBearerAuthMiddleware } = require('./bearer-auth.js');
 const { redactAuthBody } = require('./redact-secrets.js');
 
+function auditLanSecurity(eventType, meta = {}) {
+  const dbManager =
+    typeof globalThis !== 'undefined' && globalThis.__rplusDbManager
+      ? globalThis.__rplusDbManager
+      : null;
+  if (!dbManager || !dbManager.isUnlocked()) return;
+  dbManager
+    .withTransaction((_db, { audit }) => {
+      audit('desktop-host', eventType, meta);
+    })
+    .catch(() => {});
+}
+
 function createAuthRouter({
   ticketStore,
   getHostToken,
@@ -13,11 +26,14 @@ function createAuthRouter({
 }) {
   const r = express.Router();
   const getState = () => ({ teamCodeHash: hashTeamCode(getHostToken()) });
-  const bearerAuth = createBearerAuthMiddleware(getState);
+  const bearerAuth = createBearerAuthMiddleware(getState, {
+    onAuthFail: () => auditLanSecurity('lan.auth.fail', { reason: 'invalid_token' }),
+  });
 
   r.post('/auth/tickets', bearerAuth, (_req, res) => {
     try {
       const { ticketId, pin, expiresAt } = ticketStore.mint();
+      auditLanSecurity('lan.ticket.mint', {});
       const hostUrl = String(getHostUrl() || '').replace(/\/+$/, '');
       res.json({
         ticketId,
@@ -37,9 +53,11 @@ function createAuthRouter({
     const hasPin = body.pin != null && String(body.pin).trim() !== '';
 
     if (hasTicket && hasPin) {
+      auditLanSecurity('lan.auth.fail', { reason: 'ambiguous_credentials' });
       return res.status(400).json({ error: 'ambiguous_credentials' });
     }
     if (!hasTicket && !hasPin) {
+      auditLanSecurity('lan.auth.fail', { reason: 'missing_credentials' });
       return res.status(400).json({ error: 'missing_credentials' });
     }
 
@@ -50,9 +68,11 @@ function createAuthRouter({
       });
 
       if (!result || !result.token) {
+        auditLanSecurity('lan.auth.fail', { reason: 'invalid_ticket' });
         return res.status(401).json({ error: 'invalid_ticket' });
       }
 
+      auditLanSecurity('lan.ticket.exchange', {});
       res.json({
         token: result.token,
         hostUrl: String(getHostUrl() || '').replace(/\/+$/, ''),
@@ -76,4 +96,4 @@ function createAuthRouter({
   return r;
 }
 
-module.exports = { createAuthRouter };
+module.exports = { createAuthRouter, auditLanSecurity };

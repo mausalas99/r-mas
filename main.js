@@ -293,6 +293,12 @@ async function validateOutputDir(dir) {
 ipcMain.handle('set-approved-output-dir', async (_e, dir) => {
   try {
     approvedOutputDir = await validateOutputDir(dir);
+    const dbManager = globalThis.__rplusDbManager;
+    if (dbManager && dbManager.isUnlocked()) {
+      await dbManager.auditOnly('system.output_dir.register', {
+        basename: path.basename(approvedOutputDir),
+      });
+    }
     return { ok: true, path: approvedOutputDir };
   } catch (e) {
     approvedOutputDir = null;

@@ -150,6 +150,85 @@ test('POST /auth/exchange rejects ambiguous or missing credentials', async () =>
   }
 });
 
+test('auth routes emit forensic audit events when dbManager is unlocked', async () => {
+  const { createUnlockedDbManager } = await import('../lib/db/test-open-db.mjs');
+  const dbDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-auth-audit-'));
+  const hostToken = 'f'.repeat(64);
+  const hostUrl = 'http://127.0.0.1:3738';
+  const auditEvents = [];
+  const mgr = await createUnlockedDbManager(dbDir, () => 'lan-auth-audit');
+  const prevDbManager = globalThis.__rplusDbManager;
+  globalThis.__rplusDbManager = {
+    isUnlocked: () => true,
+    withTransaction(fn) {
+      return mgr.withTransaction((db, helpers) => {
+        const wrapped = {
+          audit(clientId, eventType, meta) {
+            auditEvents.push({ clientId, eventType, meta });
+            helpers.audit(clientId, eventType, meta);
+          },
+        };
+        return fn(db, wrapped);
+      });
+    },
+  };
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-auth-audit-app-'));
+  const statePath = path.join(dir, 'state.json');
+  createHostStore({ filePath: statePath, teamCodePlain: hostToken });
+  const ticketStore = createTicketStore({ getHostToken: () => hostToken });
+  const app = express();
+  app.use(
+    '/api/lan/v1',
+    createAuthRouter({
+      ticketStore,
+      getHostToken: () => hostToken,
+      getHostUrl: () => hostUrl,
+      getRequiresMigrationNotice: () => false,
+    })
+  );
+  const { server, base } = await listen(app);
+  try {
+    const mintRes = await fetch(`${base}/auth/tickets`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${hostToken}` },
+    });
+    assert.strictEqual(mintRes.status, 200);
+    const mintBody = await mintRes.json();
+
+    const ex = await fetch(`${base}/auth/exchange`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ticket: mintBody.ticketId }),
+    });
+    assert.strictEqual(ex.status, 200);
+
+    const badBearer = await fetch(`${base}/auth/tickets`, { method: 'POST' });
+    assert.strictEqual(badBearer.status, 401);
+
+    const badExchange = await fetch(`${base}/auth/exchange`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ticket: mintBody.ticketId }),
+    });
+    assert.strictEqual(badExchange.status, 401);
+
+    assert.ok(auditEvents.some((e) => e.eventType === 'lan.ticket.mint'));
+    assert.ok(auditEvents.some((e) => e.eventType === 'lan.ticket.exchange'));
+    assert.ok(
+      auditEvents.some((e) => e.eventType === 'lan.auth.fail' && e.meta.reason === 'invalid_token')
+    );
+    assert.ok(
+      auditEvents.some((e) => e.eventType === 'lan.auth.fail' && e.meta.reason === 'invalid_ticket')
+    );
+  } finally {
+    globalThis.__rplusDbManager = prevDbManager;
+    mgr.lock();
+    await new Promise((resolve) => server.close(resolve));
+    fs.rmSync(dir, { recursive: true, force: true });
+    fs.rmSync(dbDir, { recursive: true, force: true });
+  }
+});
+
 test('GET /host-status returns migration flag with Bearer', async () => {
   const hostToken = 'e'.repeat(64);
   const { app, dir } = createTestApp({

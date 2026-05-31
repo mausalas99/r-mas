@@ -7,7 +7,7 @@ function getBearerToken(req) {
   return m ? m[1] : '';
 }
 
-function createBearerAuthMiddleware(getState) {
+function createBearerAuthMiddleware(getState, { onAuthFail } = {}) {
   return (req, res, next) => {
     const token = getBearerToken(req);
     let st;
@@ -17,6 +17,7 @@ function createBearerAuthMiddleware(getState) {
       return res.status(500).json({ error: 'host_store_error' });
     }
     if (!verifyTeamCode(token, st.teamCodeHash)) {
+      if (typeof onAuthFail === 'function') onAuthFail();
       return res.status(401).json({ error: 'invalid_token' });
     }
     next();
