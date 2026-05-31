@@ -280,7 +280,7 @@
       <div class="settings-help-cta">
         <button type="button" class="btn-settings-help-primary" onclick="closeSettingsDropdown(); openQuickHelp();" data-i18n="settings.quickHelp">Centro de ayuda · atajos y tours</button>
         <button type="button" class="btn-settings-help-secondary" onclick="closeSettingsDropdown(); resetAndStartOnboarding();"><svg class="btn-inline-help-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8"/><path d="M8 11h6"/></svg> Tutorial completo · elegir Sala o Interconsulta</button>
-        <p class="settings-help-cta-hint overview-hint">Guías, atajos, tutorial Sala / Interconsulta y tours breves (Laboratorio, Ajustes).</p>
+        <p class="settings-help-cta-hint overview-hint">Guías, atajos y <strong>Aprender R+</strong> en el centro de ayuda (tutorial, módulos y Neo).</p>
       </div>
 
       <details class="settings-accordion" open>
@@ -544,17 +544,28 @@
       <div id="help-article-content" class="help-article-content" role="region"
            aria-live="polite" aria-label="Contenido del artículo"></div>
     </div>
-    <div class="help-tour-section">
-      <span class="help-tour-label">Sala</span>
-      <button type="button" class="help-tour-btn" id="btn-export-censo" style="display:none;" onclick="exportCensoPdfFromHelp()">Exportar censo (PDF)</button>
-    </div>
-    <div class="help-tour-section">
-      <span class="help-tour-label">Tours</span>
-      <button type="button" class="help-tour-btn" onclick="startHelpTourMain()"><svg class="btn-inline-help-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8"/><path d="M8 11h6"/></svg> Tutorial guiado (Sala o Interconsulta)</button>
-      <button type="button" class="help-tour-btn" id="btn-start-presentation" onclick="togglePresentationModeFromHelp()">Modo presentación (DEMO PÉREZ)</button>
-      <button type="button" class="help-tour-btn" onclick="importBundledDemoPerez()">Importar DEMO PÉREZ (JSON incluido)</button>
-      <button type="button" class="help-tour-btn" onclick="startMiniTour('lab')"><svg class="btn-inline-help-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg> Laboratorio (breve)</button>
-      <button type="button" class="help-tour-btn" onclick="startMiniTour('ajustes')"><svg class="btn-inline-help-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Ajustes (breve)</button>
+    <div class="help-learn-hub" id="help-learn-hub">
+      <h4 class="help-learn-title">Aprender R+</h4>
+      <button type="button" class="help-tour-btn help-learn-continue" id="btn-learn-continue" style="display:none;" onclick="resumeGuidedTourFromProgress()">Continuar tutorial</button>
+      <button type="button" class="help-tour-btn" onclick="resetAndStartOnboarding()">Reiniciar tutorial · Sala</button>
+      <button type="button" class="help-tour-btn" onclick="startHelpTourInterconsulta()">Tutorial · Interconsulta</button>
+      <p class="help-learn-sub">Módulos</p>
+      <button type="button" class="help-tour-btn" onclick="startTourModule('ch-patient-lab')">Laboratorio y pacientes</button>
+      <button type="button" class="help-tour-btn" onclick="startTourModule('ch-chart')">Expediente</button>
+      <button type="button" class="help-tour-btn" onclick="startTourModule('ch-clinical-tools')">Clínico avanzado</button>
+      <button type="button" class="help-tour-btn" onclick="startTourModule('ch-round')">Ronda y salida</button>
+      <button type="button" class="help-tour-btn" onclick="startTourModule('ch-team')">Equipo</button>
+      <p class="help-learn-sub">Extensiones</p>
+      <button type="button" class="help-tour-btn" onclick="startNeoCompanionTour('sala_casiopea_lab')">Neo · Laboratorio</button>
+      <button type="button" class="help-tour-btn" onclick="startNeoCompanionTour('sala_casiopea_trends')">Neo · Tendencias</button>
+      <details class="help-learn-advanced">
+        <summary>Avanzado</summary>
+        <div class="help-learn-advanced-body">
+          <button type="button" class="help-tour-btn" id="btn-export-censo" style="display:none;" onclick="exportCensoPdfFromHelp()">Exportar censo (PDF)</button>
+          <button type="button" class="help-tour-btn" id="btn-start-presentation" onclick="togglePresentationModeFromHelp()">Modo presentación (DEMO PÉREZ)</button>
+          <button type="button" class="help-tour-btn" onclick="importBundledDemoPerez()">Importar DEMO PÉREZ (JSON incluido)</button>
+        </div>
+      </details>
     </div>
   </div>
 </div>

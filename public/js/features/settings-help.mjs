@@ -7,6 +7,7 @@ import {
 import {
   getChapterProgressLabel,
   getChapterForStep,
+  getFirstStepIdForChapter,
   getNeoCompanionSteps,
 } from '../onboarding-curriculum.mjs';
 import {
@@ -1369,6 +1370,7 @@ function openQuickHelp(preselectId) {
   } else {
     selectHelpArticle(helpCurrentArticleId);
   }
+  syncLearnHubContinueVisibility();
   setTimeout(function(){ if (input) input.focus(); }, 40);
 }
 
@@ -2448,6 +2450,40 @@ function startHelpTourMain() {
   resetAndStartOnboarding();
 }
 
+function startTourModule(chapterId) {
+  var branch = String(chapterId || '').indexOf('ch-ic') === 0 ? 'interconsulta' : 'sala';
+  var stepId = getFirstStepIdForChapter(chapterId, branch);
+  if (!stepId) return;
+  if (guidedTourActive) {
+    rt.showToast('Finaliza o pausa el tutorial actual primero.', 'error');
+    return;
+  }
+  if (miniTourActive) endMiniTour();
+  if (isPresentationModeActive()) {
+    rt.showToast('Finaliza el modo presentación antes de iniciar un módulo.', 'error');
+    return;
+  }
+  guidedTourMode = 'base';
+  resetTourUiBeforeResume();
+  startOnboarding(branch, { resumeStepId: stepId, skipIntro: true });
+}
+
+function startHelpTourInterconsulta() {
+  if (guidedTourActive) {
+    rt.showToast('Finaliza o pausa el tutorial actual primero.', 'error');
+    return;
+  }
+  if (miniTourActive) endMiniTour();
+  if (isPresentationModeActive()) {
+    rt.showToast('Finaliza el modo presentación antes de iniciar el tutorial.', 'error');
+    return;
+  }
+  closeQuickHelp();
+  hideTourIntroModal();
+  guidedTourMode = 'base';
+  startOnboarding('interconsulta', { skipIntro: true });
+}
+
 function togglePresentationModeFromHelp() {
   if (guidedTourActive) {
     rt.showToast('Finaliza el tutorial guiado antes del modo presentación.', 'error');
@@ -2501,6 +2537,8 @@ export const settingsHelpWindowHandlers = {
   guidedTourClickPrev,
   guidedTourPause,
   resumeGuidedTourFromProgress,
+  startTourModule,
+  startHelpTourInterconsulta,
   startNeoCompanionTour,
   resetAndStartOnboarding,
   closeLabBulkTourHintModal,

@@ -1318,7 +1318,7 @@
       "format": "esm"
     },
     "public/js/features/settings-help.mjs": {
-      "bytes": 109248,
+      "bytes": 110465,
       "imports": [
         {
           "path": "public/js/tour-targets.mjs",
@@ -4400,7 +4400,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 3769832
+      "bytes": 3771921
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -4633,7 +4633,7 @@
           "bytesInOutput": 635
         },
         "public/js/onboarding-curriculum.mjs": {
-          "bytesInOutput": 3370
+          "bytesInOutput": 3556
         },
         "public/js/tour-targets.mjs": {
           "bytesInOutput": 4541
@@ -4678,7 +4678,7 @@
           "bytesInOutput": 67384
         },
         "public/js/features/settings-help.mjs": {
-          "bytesInOutput": 102339
+          "bytesInOutput": 103542
         },
         "public/js/patient-export-format.mjs": {
           "bytesInOutput": 4275
@@ -5011,7 +5011,7 @@
           "bytesInOutput": 4817
         }
       },
-      "bytes": 2070060
+      "bytes": 2071449
     }
   }
 }

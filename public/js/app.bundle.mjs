@@ -18122,6 +18122,10 @@ function getChapterProgressLabel(stepId, branch) {
     isCompanion: false
   };
 }
+function getFirstStepIdForChapter(chapterId, branch) {
+  const ch = chaptersForBranch(branch).find((c) => c.id === chapterId);
+  return ch && ch.stepIds.length ? ch.stepIds[0] : null;
+}
 function isValidStepForBranch(stepId, branch, mode) {
   if (mode === "neo") return NEO_COMPANION.stepIds.includes(stepId);
   const steps = branch === "interconsulta" ? getInterconsultaTourSteps() : getSalaTourSteps();
@@ -24119,6 +24123,7 @@ function openQuickHelp(preselectId) {
   } else {
     selectHelpArticle(helpCurrentArticleId);
   }
+  syncLearnHubContinueVisibility();
   setTimeout(function() {
     if (input) input.focus();
   }, 40);
@@ -25103,6 +25108,38 @@ function startHelpTourMain() {
   closeQuickHelp();
   resetAndStartOnboarding();
 }
+function startTourModule(chapterId) {
+  var branch = String(chapterId || "").indexOf("ch-ic") === 0 ? "interconsulta" : "sala";
+  var stepId = getFirstStepIdForChapter(chapterId, branch);
+  if (!stepId) return;
+  if (guidedTourActive2) {
+    rt11.showToast("Finaliza o pausa el tutorial actual primero.", "error");
+    return;
+  }
+  if (miniTourActive) endMiniTour();
+  if (isPresentationModeActive()) {
+    rt11.showToast("Finaliza el modo presentaci\xF3n antes de iniciar un m\xF3dulo.", "error");
+    return;
+  }
+  guidedTourMode = "base";
+  resetTourUiBeforeResume();
+  startOnboarding(branch, { resumeStepId: stepId, skipIntro: true });
+}
+function startHelpTourInterconsulta() {
+  if (guidedTourActive2) {
+    rt11.showToast("Finaliza o pausa el tutorial actual primero.", "error");
+    return;
+  }
+  if (miniTourActive) endMiniTour();
+  if (isPresentationModeActive()) {
+    rt11.showToast("Finaliza el modo presentaci\xF3n antes de iniciar el tutorial.", "error");
+    return;
+  }
+  closeQuickHelp();
+  hideTourIntroModal();
+  guidedTourMode = "base";
+  startOnboarding("interconsulta", { skipIntro: true });
+}
 function togglePresentationModeFromHelp() {
   if (guidedTourActive2) {
     rt11.showToast("Finaliza el tutorial guiado antes del modo presentaci\xF3n.", "error");
@@ -25140,6 +25177,8 @@ var settingsHelpWindowHandlers = {
   guidedTourClickPrev,
   guidedTourPause,
   resumeGuidedTourFromProgress,
+  startTourModule,
+  startHelpTourInterconsulta,
   startNeoCompanionTour,
   resetAndStartOnboarding,
   closeLabBulkTourHintModal,
