@@ -82,4 +82,26 @@ describe('app-state', () => {
     assert.ok(calls >= 1);
     storage.saveAll = orig;
   });
+
+  it('bootHydrateFromDb loads patients from hydrated blob cache', async () => {
+    const { clearBlobCacheForTests } = await import('./storage.js');
+    clearBlobCacheForTests();
+    globalThis.window = {
+      localStorage: mockStorage,
+      electronAPI: {
+        dbStatus: async () => ({ ok: true, state: 'unlocked' }),
+        dbClinicalLoadAll: async () => ({
+          ok: true,
+          blobs: { patients: JSON.stringify([{ id: 'boot1', nombre: 'Boot' }]) },
+        }),
+        dbClinicalSaveAll: async () => ({ ok: true }),
+      },
+    };
+    appState.setPatients([]);
+    await appState.bootHydrateFromDb();
+    assert.strictEqual(appState.patients.length, 1);
+    assert.strictEqual(appState.patients[0].id, 'boot1');
+    clearBlobCacheForTests();
+    globalThis.window = { localStorage: mockStorage };
+  });
 });

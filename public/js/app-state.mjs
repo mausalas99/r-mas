@@ -1,5 +1,6 @@
-import { storage, normalizeLabHistoryPatientSets } from './storage.js';
+import { storage, normalizeLabHistoryPatientSets, ensureStorageHydrated } from './storage.js';
 import { applyMedCatalogOverlay } from './med-receta-core.mjs';
+import { applySomePharmCatalogOverlay } from './med-pharm-some-catalog.mjs';
 import { repairLabHistoryMapInPlace } from './lab-history-repair.mjs';
 import { migratePatientMonitoreo } from './features/estado-actual-data.mjs';
 import { syncManejoTodoDismissalsOnBoot } from './manejo-todo-dismiss.mjs';
@@ -9,6 +10,7 @@ export let notes = {};
 export let indicaciones = {};
 export let labHistory = {};
 export let medRecetaByPatient = {};
+export let medPharmProfileByPatient = {};
 export let recetaHuByPatient = {};
 export let listadoProblemas = {};
 export let vpoByPatient = {};
@@ -65,6 +67,10 @@ export function setMedRecetaByPatient(next) {
   medRecetaByPatient = next;
 }
 
+export function setMedPharmProfileByPatient(next) {
+  medPharmProfileByPatient = next;
+}
+
 export function setVpoByPatient(next) {
   vpoByPatient = next;
 }
@@ -95,6 +101,7 @@ export function replaceAppStateFromBackupData(data) {
   setIndicaciones(clonePlainRecord(data.indicaciones));
   setLabHistory(clonePlainRecord(data.labHistory));
   setMedRecetaByPatient(clonePlainRecord(data.medRecetaByPatient));
+  setMedPharmProfileByPatient(clonePlainRecord(data.medPharmProfileByPatient));
   listadoProblemas = clonePlainRecord(data.listadoProblemas);
   vpoByPatient = clonePlainRecord(data.vpoByPatient);
   medNotaSelectionByPatient = {};
@@ -110,16 +117,28 @@ export function repairLabHistoryInMemory() {
   return repairLabHistoryMapInPlace(labHistory);
 }
 
+/**
+ * Hydrate SQLCipher blobs (when unlocked) then load module exports from storage getters.
+ * @returns {Promise<void>}
+ */
+export async function bootHydrateFromDb() {
+  await ensureStorageHydrated();
+  initAppState();
+}
+
 export function initAppState() {
   setPatients(storage.getPatients());
   setNotes(storage.getNotes());
   setIndicaciones(storage.getIndicaciones());
   setLabHistory(storage.getLabHistory());
   setMedRecetaByPatient(storage.getMedRecetaByPatient());
+  setMedPharmProfileByPatient(storage.getMedPharmProfileByPatient());
   setRecetaHuByPatient(storage.getRecetaHuByPatient());
   listadoProblemas = storage.getListadoProblemas();
   vpoByPatient = storage.getVpoByPatient();
-  applyMedCatalogOverlay(storage.getMedCatalog());
+  var medCatalog = storage.getMedCatalog();
+  applyMedCatalogOverlay(medCatalog);
+  applySomePharmCatalogOverlay(medCatalog);
   medNotaSelectionByPatient = {};
   var monitoreoMigrated = false;
   for (var pi = 0; pi < patients.length; pi += 1) {
@@ -146,7 +165,8 @@ function runSaveNow() {
     medRecetaByPatient,
     listadoProblemas,
     recetaHuByPatient,
-    vpoByPatient
+    vpoByPatient,
+    medPharmProfileByPatient
   );
   _saveInFlight = promise;
   return promise

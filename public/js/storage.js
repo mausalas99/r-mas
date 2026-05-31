@@ -7,6 +7,15 @@ import {
   assessStoragePressure,
   isQuotaExceededError,
 } from './storage-quota.mjs';
+import {
+  isDbMode,
+  hydrateStorageCache,
+  persistSaveAll,
+  appStateFieldsToBlobs,
+} from './db-storage-bridge.mjs';
+
+/** @type {Record<string, string> | null} blob_key → JSON string when SQLCipher desktop mode */
+let _blobCache = null;
 
 let _cachedQuotaEstimate = null;
 let _quotaEstimateTs = 0;
@@ -50,6 +59,51 @@ function safeParseArray(raw) {
 function safeParseObject(raw) {
   var parsed = safeParse(raw, {});
   return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+}
+
+function blobCacheRaw(blobKey) {
+  if (!_blobCache) return undefined;
+  var raw = _blobCache[blobKey];
+  if (raw == null) return null;
+  return typeof raw === 'string' ? raw : JSON.stringify(raw);
+}
+
+function readClinicalBlob(blobKey, lsKey, parseFromRaw) {
+  if (_blobCache) {
+    return parseFromRaw(blobCacheRaw(blobKey));
+  }
+  return parseFromRaw(localStorage.getItem(lsKey));
+}
+
+/**
+ * Load clinical blobs from SQLCipher once (no-op if locked, not db mode, or already hydrated).
+ * @returns {Promise<void>}
+ */
+export async function ensureStorageHydrated() {
+  if (!isDbMode()) return;
+  if (_blobCache) return;
+  if (
+    typeof window !== 'undefined' &&
+    window.electronAPI &&
+    typeof window.electronAPI.dbStatus === 'function'
+  ) {
+    try {
+      var st = await window.electronAPI.dbStatus();
+      if (st && st.state === 'locked') return;
+    } catch (_e) {
+      return;
+    }
+  }
+  try {
+    _blobCache = await hydrateStorageCache();
+  } catch (_e) {
+    _blobCache = null;
+  }
+}
+
+/** @internal tests */
+export function clearBlobCacheForTests() {
+  _blobCache = null;
 }
 
 export function isMeaningfulLabHistorySet(set) {
@@ -167,7 +221,7 @@ export const storage = {
    * @returns {Array} Array of patient objects
    */
   getPatients() {
-    return safeParseArray(localStorage.getItem('rpc-patients'));
+    return readClinicalBlob('patients', 'rpc-patients', safeParseArray);
   },
 
   /**
@@ -184,7 +238,7 @@ export const storage = {
    * @returns {Object} Object mapping patient IDs to note text
    */
   getNotes() {
-    return safeParseObject(localStorage.getItem('rpc-notes'));
+    return readClinicalBlob('notes', 'rpc-notes', safeParseObject);
   },
 
   /**
@@ -204,7 +258,7 @@ export const storage = {
    * @returns {Object} Object mapping patient IDs to indicaciones text
    */
   getIndicaciones() {
-    return safeParseObject(localStorage.getItem('rpc-indicaciones'));
+    return readClinicalBlob('indicaciones', 'rpc-indicaciones', safeParseObject);
   },
 
   /**
@@ -224,7 +278,7 @@ export const storage = {
    * @returns {Object} Object mapping patient IDs to listado objects
    */
   getListadoProblemas() {
-    return safeParseObject(localStorage.getItem('rpc-listado-problemas'));
+    return readClinicalBlob('listadoProblemas', 'rpc-listado-problemas', safeParseObject);
   },
 
   /**
@@ -244,7 +298,7 @@ export const storage = {
    * @returns {Object} Object mapping patient IDs to arrays of lab entries
    */
   getLabHistory() {
-    var raw = safeParseObject(localStorage.getItem('rpc-labHistory'));
+    var raw = readClinicalBlob('labHistory', 'rpc-labHistory', safeParseObject);
     var out = {};
     Object.keys(raw).forEach(function (k) {
       out[k] = normalizeLabHistoryPatientSets(raw[k]);
@@ -267,7 +321,7 @@ export const storage = {
   },
 
   getMedRecetaByPatient() {
-    return safeParseObject(localStorage.getItem('rpc-medRecetaByPatient'));
+    return readClinicalBlob('medRecetaByPatient', 'rpc-medRecetaByPatient', safeParseObject);
   },
 
   saveMedRecetaByPatient(medRecetaByPatient) {
@@ -278,8 +332,22 @@ export const storage = {
     localStorage.setItem('rpc-medRecetaByPatient', JSON.stringify(persist));
   },
 
+  getMedPharmProfileByPatient() {
+    return readClinicalBlob('medPharmProfileByPatient', 'rpc-medPharmProfileByPatient', safeParseObject);
+  },
+
+  saveMedPharmProfileByPatient(medPharmProfileByPatient) {
+    const persist = {};
+    Object.keys(medPharmProfileByPatient || {}).forEach((k) => {
+      if (medPharmProfileByPatient[k] && !k.startsWith('demo-')) {
+        persist[k] = medPharmProfileByPatient[k];
+      }
+    });
+    localStorage.setItem('rpc-medPharmProfileByPatient', JSON.stringify(persist));
+  },
+
   getVpoByPatient() {
-    return safeParseObject(localStorage.getItem('rpc-vpoByPatient'));
+    return readClinicalBlob('vpoByPatient', 'rpc-vpoByPatient', safeParseObject);
   },
 
   saveVpoByPatient(vpoByPatient) {
@@ -291,7 +359,7 @@ export const storage = {
   },
 
   getRecetaHuByPatient() {
-    return safeParseObject(localStorage.getItem('rpc-recetaHuByPatient'));
+    return readClinicalBlob('recetaHuByPatient', 'rpc-recetaHuByPatient', safeParseObject);
   },
 
   saveRecetaHuByPatient(recetaHuByPatient) {
@@ -308,7 +376,7 @@ export const storage = {
    * @returns {Array<{id:string,text:string,completed:boolean,priority:'alta'|'media'|'baja',createdAt:string,updatedAt:string}>}
    */
   getTodos(patientId) {
-    const map = safeParseObject(localStorage.getItem('rpc-todos'));
+    const map = readClinicalBlob('todos', 'rpc-todos', safeParseObject);
     const raw = Array.isArray(map[patientId]) ? map[patientId] : [];
     return raw.map(function (t) {
       var rawP = t && t.priority;
@@ -356,7 +424,7 @@ export const storage = {
   },
 
   getLanRoomSnapshots() {
-    return safeParseObject(localStorage.getItem('rpc-lan-room-snapshots'));
+    return readClinicalBlob('lanRoomSnapshots', 'rpc-lan-room-snapshots', safeParseObject);
   },
 
   getLanRoomSnapshot(roomId) {
@@ -374,12 +442,16 @@ export const storage = {
   },
 
   /**
-   * Catálogo personalizado de medicamentos (acentos + tokens SOAP por categoría).
-   * @returns {{ v: number, accents: Object, soapTokens: { vasop: string[], abx: string[], analgesia: string[], antihta: string[] } }}
+   * Catálogo personalizado de medicamentos (acentos + tokens SOAP + categorías SOME perfil).
+   * @returns {{ v: number, accents: Object, soapTokens: Object, somePharm: { tokens: Object } }}
    */
   getMedCatalog() {
-    const o = safeParseObject(localStorage.getItem('rpc-medCatalog'));
+    const o = readClinicalBlob('medCatalog', 'rpc-medCatalog', function (raw) {
+      return safeParseObject(raw);
+    });
     const st = o.soapTokens && typeof o.soapTokens === 'object' ? o.soapTokens : {};
+    const sp = o.somePharm && typeof o.somePharm === 'object' ? o.somePharm : {};
+    const spt = sp.tokens && typeof sp.tokens === 'object' ? sp.tokens : {};
     return {
       v: typeof o.v === 'number' ? o.v : 1,
       accents: o.accents && typeof o.accents === 'object' ? o.accents : {},
@@ -389,6 +461,7 @@ export const storage = {
         analgesia: Array.isArray(st.analgesia) ? st.analgesia : [],
         antihta: Array.isArray(st.antihta) ? st.antihta : [],
       },
+      somePharm: { tokens: spt },
     };
   },
 
@@ -398,6 +471,8 @@ export const storage = {
   saveMedCatalog(catalog) {
     const c = catalog && typeof catalog === 'object' ? catalog : {};
     const st = c.soapTokens && typeof c.soapTokens === 'object' ? c.soapTokens : {};
+    const sp = c.somePharm && typeof c.somePharm === 'object' ? c.somePharm : {};
+    const spt = sp.tokens && typeof sp.tokens === 'object' ? sp.tokens : {};
     const payload = {
       v: 1,
       accents: c.accents && typeof c.accents === 'object' ? c.accents : {},
@@ -407,6 +482,7 @@ export const storage = {
         analgesia: Array.isArray(st.analgesia) ? st.analgesia : [],
         antihta: Array.isArray(st.antihta) ? st.antihta : [],
       },
+      somePharm: { tokens: spt },
     };
     localStorage.setItem('rpc-medCatalog', JSON.stringify(payload));
   },
@@ -416,7 +492,7 @@ export const storage = {
    * @returns {Array<Object>}
    */
   getScheduledProcedures() {
-    const raw = safeParseArray(localStorage.getItem('rpc-scheduled-procedures'));
+    const raw = readClinicalBlob('scheduledProcedures', 'rpc-scheduled-procedures', safeParseArray);
     const out = [];
     const seen = new Set();
     for (let i = 0; i < raw.length; i += 1) {
@@ -530,7 +606,7 @@ export const storage = {
   },
 
   getHostPatientMap() {
-    return safeParseObject(localStorage.getItem('rpc-lan-host-patient-map'));
+    return readClinicalBlob('lanHostPatientMap', 'rpc-lan-host-patient-map', safeParseObject);
   },
 
   saveHostPatientMap(map) {
@@ -592,7 +668,8 @@ export const storage = {
     medRecetaByPatient,
     listadoProblemas,
     recetaHuByPatient,
-    vpoByPatient
+    vpoByPatient,
+    medPharmProfileByPatient
   ) {
     var payload = {
       patients: patients,
@@ -603,6 +680,8 @@ export const storage = {
       listadoProblemas: listadoProblemas !== undefined ? listadoProblemas || {} : undefined,
       recetaHuByPatient: recetaHuByPatient !== undefined ? recetaHuByPatient || {} : undefined,
       vpoByPatient: vpoByPatient !== undefined ? vpoByPatient || {} : undefined,
+      medPharmProfileByPatient:
+        medPharmProfileByPatient !== undefined ? medPharmProfileByPatient || {} : undefined,
     };
     var pending = estimateRpcPersistBytes(payload);
     var quotaInfo = await getCachedQuotaEstimate();
@@ -629,6 +708,12 @@ export const storage = {
     Object.keys(medRecetaByPatient || {}).forEach(function (k) {
       if (!k.startsWith('demo-')) medPersist[k] = medRecetaByPatient[k];
     });
+    var medPharmPersist = {};
+    if (medPharmProfileByPatient !== undefined) {
+      Object.keys(medPharmProfileByPatient || {}).forEach(function (k) {
+        if (!k.startsWith('demo-')) medPharmPersist[k] = medPharmProfileByPatient[k];
+      });
+    }
     var listPersist = {};
     if (listadoProblemas !== undefined) {
       Object.keys(listadoProblemas || {}).forEach(function (k) {
@@ -652,6 +737,37 @@ export const storage = {
       return !p.isDemo;
     });
 
+    if (isDbMode()) {
+      var dbFields = {
+        patients: filteredPatients,
+        notes: notesPersist,
+        indicaciones: indPersist,
+        labHistory: lhPersist,
+        medRecetaByPatient: medPersist,
+      };
+      if (medPharmProfileByPatient !== undefined) {
+        dbFields.medPharmProfileByPatient = medPharmPersist;
+      }
+      if (listadoProblemas !== undefined) {
+        dbFields.listadoProblemas = listPersist;
+      }
+      if (recetaHuByPatient !== undefined) {
+        dbFields.recetaHuByPatient = recetaPersist;
+      }
+      if (vpoByPatient !== undefined) {
+        dbFields.vpoByPatient = vpoPersist;
+      }
+      var dbRes = await persistSaveAll(dbFields, {
+        meta: { source: 'storage.saveAll', level: level },
+      });
+      if (!dbRes || dbRes.ok === false) {
+        return { ok: false, code: dbRes && dbRes.code ? dbRes.code : 'DB_ERROR', level: 'block' };
+      }
+      var writtenBlobs = appStateFieldsToBlobs(dbFields);
+      _blobCache = Object.assign({}, _blobCache || {}, writtenBlobs);
+      return { ok: true, level: level === 'warn' ? 'warn' : 'ok' };
+    }
+
     var writes = [
       ['rpc-patients', JSON.stringify(filteredPatients)],
       ['rpc-notes', JSON.stringify(notesPersist)],
@@ -659,6 +775,9 @@ export const storage = {
       ['rpc-labHistory', JSON.stringify(lhPersist)],
       ['rpc-medRecetaByPatient', JSON.stringify(medPersist)],
     ];
+    if (medPharmProfileByPatient !== undefined) {
+      writes.push(['rpc-medPharmProfileByPatient', JSON.stringify(medPharmPersist)]);
+    }
     if (listadoProblemas !== undefined) {
       writes.push(['rpc-listado-problemas', JSON.stringify(listPersist)]);
     }

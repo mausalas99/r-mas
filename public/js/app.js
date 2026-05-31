@@ -1,5 +1,6 @@
 import { storage } from './storage.js';
-import { initAppState, patients, setSaveStateHooks, flushSaveState } from './app-state.mjs';
+import { isDbMode } from './db-storage-bridge.mjs';
+import { bootHydrateFromDb, initAppState, patients, setSaveStateHooks, flushSaveState } from './app-state.mjs';
 import { recoverPresentationPatientsOnBoot } from './presentation-mode.mjs';
 import './censo-export.mjs';
 import {
@@ -85,7 +86,13 @@ try {
   console.error('[R+] No se pudieron registrar handlers en window:', assignErr);
 }
 
-initAppState();
+const appStateReady = (async function loadClinicalStateOnBoot() {
+  if (isDbMode()) {
+    await bootHydrateFromDb();
+  } else {
+    initAppState();
+  }
+})();
 
 setSaveStateHooks({
   onSaveResult(result) {
@@ -162,14 +169,35 @@ registerAppRuntimeContext({
   },
 });
 
-try {
-  registerAllFeatureRuntimes();
-  runInitialFeatureBoot();
-} catch (bootErr) {
-  console.error('[R+] Error registrando runtimes de features:', bootErr);
-}
+appStateReady
+  .then(function () {
+    try {
+      registerAllFeatureRuntimes();
+      runInitialFeatureBoot();
+    } catch (bootErr) {
+      console.error('[R+] Error registrando runtimes de features:', bootErr);
+    }
+  })
+  .catch(function (stateErr) {
+    console.error('[R+] Error cargando estado clínico:', stateErr);
+    try {
+      initAppState();
+      registerAllFeatureRuntimes();
+      runInitialFeatureBoot();
+    } catch (bootErr) {
+      console.error('[R+] Error registrando runtimes de features:', bootErr);
+    }
+  });
 
 function runDomBoot() {
+  appStateReady.then(function () {
+    runDomBootAfterState();
+  }).catch(function () {
+    runDomBootAfterState();
+  });
+}
+
+function runDomBootAfterState() {
   try {
     if (recoverPresentationPatientsOnBoot()) {
       showToast('Se restauró tu lista de pacientes tras el modo presentación.', 'info');

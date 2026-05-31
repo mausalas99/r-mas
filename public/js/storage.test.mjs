@@ -1,4 +1,4 @@
-import { describe, it, beforeEach } from 'node:test';
+import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 
 // storage.js reads localStorage lazily inside its methods, so reasignar
@@ -13,7 +13,12 @@ const mock = {
 global.localStorage = mock;
 global.window = { localStorage: mock };
 
-const { storage, normalizeLabHistoryPatientSets } = await import('./storage.js');
+const {
+  storage,
+  normalizeLabHistoryPatientSets,
+  clearBlobCacheForTests,
+  ensureStorageHydrated,
+} = await import('./storage.js');
 
 describe('storage todos', () => {
   beforeEach(() => {
@@ -214,5 +219,75 @@ describe('getLabHistory', () => {
     assert.equal(lh.p1.length, 1);
     assert.ok(Array.isArray(lh.p2));
     assert.equal(lh.p2.length, 1);
+  });
+});
+
+describe('storage SQLCipher db mode', () => {
+  /** @type {Record<string, string>} */
+  let ipcBlobs;
+  /** @type {object | null} */
+  let lastSavePayload;
+
+  beforeEach(() => {
+    for (const k of Object.keys(store)) delete store[k];
+    ipcBlobs = {
+      patients: JSON.stringify([{ id: 'db1', nombre: 'SQL' }]),
+      notes: JSON.stringify({ db1: { estudios: 'ok' } }),
+    };
+    lastSavePayload = null;
+    clearBlobCacheForTests();
+    global.window = {
+      localStorage: mock,
+      electronAPI: {
+        dbStatus: async () => ({ ok: true, state: 'unlocked' }),
+        dbClinicalLoadAll: async () => ({ ok: true, blobs: { ...ipcBlobs } }),
+        dbClinicalSaveAll: async (payload) => {
+          lastSavePayload = payload;
+          if (payload.blobs) {
+            Object.assign(ipcBlobs, payload.blobs);
+          }
+          return { ok: true };
+        },
+      },
+    };
+  });
+
+  afterEach(() => {
+    clearBlobCacheForTests();
+    global.window = { localStorage: mock };
+  });
+
+  it('ensureStorageHydrated loads getters from IPC blobs', async () => {
+    await ensureStorageHydrated();
+    assert.deepStrictEqual(storage.getPatients(), [{ id: 'db1', nombre: 'SQL' }]);
+    assert.deepStrictEqual(storage.getNotes(), { db1: { estudios: 'ok' } });
+    assert.strictEqual(store['rpc-patients'], undefined);
+  });
+
+  it('skips hydrate when database is locked', async () => {
+    global.window.electronAPI.dbStatus = async () => ({ ok: true, state: 'locked' });
+    store['rpc-patients'] = JSON.stringify([{ id: 'ls1' }]);
+    await ensureStorageHydrated();
+    assert.deepStrictEqual(storage.getPatients(), [{ id: 'ls1' }]);
+  });
+
+  it('saveAll persists via dbClinicalSaveAll instead of localStorage', async () => {
+    await ensureStorageHydrated();
+    const result = await storage.saveAll(
+      [{ id: 'p-save', nombre: 'Persist' }],
+      { 'p-save': { estudios: 'n' } },
+      {},
+      {},
+      {}
+    );
+    assert.strictEqual(result.ok, true);
+    assert.ok(lastSavePayload);
+    assert.strictEqual(lastSavePayload.auditMeta.eventType, 'clinical.save_all');
+    assert.strictEqual(
+      JSON.parse(lastSavePayload.blobs.patients)[0].id,
+      'p-save'
+    );
+    assert.strictEqual(store['rpc-patients'], undefined);
+    assert.deepStrictEqual(storage.getPatients(), [{ id: 'p-save', nombre: 'Persist' }]);
   });
 });
