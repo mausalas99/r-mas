@@ -7,35 +7,14 @@ import {
   stepRequiresUserAction,
 } from './tour-targets.mjs';
 
-test('getSalaTourSteps incluye pasos clave de v3.0', () => {
+test('getSalaTourSteps orden overhaul: lab primero, servicio tras lab_view, sin Neo', () => {
   const steps = getSalaTourSteps();
-  assert.ok(steps.includes('map_sidebar'), 'orientación guiada por zonas');
-  assert.ok(steps.includes('map_lab_teaser'));
-  assert.ok(!steps.includes('map'), 'paso único map reemplazado por subtareas');
-  assert.ok(steps.includes('servicio_default'), 'debe pedir servicio default al inicio');
-  assert.ok(steps.includes('lab_bulk_separator'));
-  assert.ok(steps.includes('lab_parse'));
-  assert.ok(!steps.includes('lab_send'), 'envío a nota ya no es paso del tour');
-  assert.ok(steps.includes('estado_actual'), 'debe presentar Estado Actual');
-  assert.ok(steps.includes('listado_problemas'), 'debe presentar Listado de Problemas');
-  assert.ok(steps.includes('livesync_desktop'), 'debe explicar LiveSync en escritorio');
-  assert.ok(steps.includes('livesync_mobile'), 'debe explicar R+ Móvil');
-  assert.ok(!steps.includes('sala_soap'), 'Sala no debe mostrar el paso heredado de Nota de evolución');
-  assert.ok(!steps.includes('pase_enter'), 'Modo Pase ya no es paso obligatorio del tour');
-  assert.ok(!steps.includes('pase_board'));
-  assert.equal(steps[steps.length - 1], 'wrap');
-  assert.equal(steps[steps.length - 3], 'livesync_desktop');
-  assert.ok(steps.includes('sala_tend_chart'), 'debe presentar Gráfica del estudio');
-  assert.equal(steps.indexOf('sala_tend_chart'), steps.indexOf('sala_tend') + 1);
-  assert.ok(steps.includes('sala_casiopea_lab'), 'debe explicar envío lab a Neo');
-  assert.ok(steps.includes('sala_casiopea_trends'), 'debe explicar envío tendencias a Neo');
-  assert.equal(steps.indexOf('sala_casiopea_lab'), steps.indexOf('lab_view') + 2);
-  assert.equal(steps.indexOf('sala_manejo'), steps.indexOf('sala_casiopea_lab') + 1);
-  assert.equal(steps.indexOf('sala_casiopea_trends'), steps.indexOf('sala_tend_chart') + 1);
-  assert.ok(steps.includes('sala_expediente_tabs'));
-  assert.equal(steps.indexOf('sala_expediente_tabs'), steps.indexOf('lab_view') + 1);
   assert.equal(steps.length, 19);
-  assert.equal(steps[1], 'map_tabs');
+  assert.equal(steps.indexOf('servicio_default'), steps.indexOf('lab_view') + 1);
+  assert.equal(steps.indexOf('sala_expediente_tabs'), steps.indexOf('servicio_default') + 1);
+  assert.ok(!steps.includes('sala_casiopea_lab'));
+  assert.ok(!steps.includes('sala_casiopea_trends'));
+  assert.equal(steps[steps.length - 1], 'wrap');
 });
 
 test('getInterconsultaTourSteps no incluye pasos de Modo Pase', () => {
@@ -66,12 +45,21 @@ test('getTourTarget devuelve selector para lab_parse en Laboratorio', () => {
   assert.equal(stepRequiresUserAction('lab_parse'), true);
 });
 
-test('getTourTarget para estado_actual apunta a la pestaña Estado Actual (Sala)', () => {
+test('getTourTarget para estado_actual apunta al segmento Estado actual (Sala)', () => {
   const t = getTourTarget('estado_actual', 'sala');
   assert.equal(t.appTab, 'nota');
   assert.equal(t.innerTab, 'estadoActual');
-  assert.equal(t.selector, '#itab-estadoActual');
+  assert.match(t.selector, /exp-segment-estadoActual/);
   assert.equal(t.spotlightClass, 'tour-spotlight-action');
+});
+
+test('getTourTarget para historia_clinica y eventualidades en Clínico (Sala)', () => {
+  const hc = getTourTarget('historia_clinica', 'sala');
+  assert.equal(hc.innerTab, 'historia');
+  assert.match(hc.selector, /exp-segment-historia/);
+  const ev = getTourTarget('eventualidades', 'sala');
+  assert.equal(ev.innerTab, 'eventualidades');
+  assert.match(ev.selector, /exp-segment-eventualidades/);
 });
 
 test('getTourTarget para listado_problemas abre listado y resalta Generar', () => {
@@ -128,15 +116,16 @@ test('getTourTarget para sala_casiopea_trends apunta al botón Enviar Neo', () =
   assert.equal(stepRequiresUserAction('sala_casiopea_trends'), false);
 });
 
-test('getInterconsultaTourSteps no incluye pasos Neo', () => {
+test('getInterconsultaTourSteps orden curriculum: 19 pasos, lab antes de expediente', () => {
   const steps = getInterconsultaTourSteps();
+  assert.equal(steps.length, 19);
+  assert.equal(steps.indexOf('lab_parse'), 4);
   assert.ok(!steps.includes('sala_casiopea_lab'));
   assert.ok(!steps.includes('sala_casiopea_trends'));
   assert.ok(steps.includes('ic_expediente_tabs'));
   assert.equal(steps.indexOf('ic_expediente_tabs'), steps.indexOf('lab_view') + 1);
   assert.ok(steps.includes('sala_manejo'), 'Interconsulta debe presentar Manejo clínico');
   assert.equal(steps.indexOf('sala_manejo'), steps.indexOf('ic_expediente_tabs') + 1);
-  assert.equal(steps.length, 19);
 });
 
 test('getTourTarget for sala_expediente_tabs apunta a barra de pestañas', () => {

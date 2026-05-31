@@ -2,49 +2,13 @@
 // Pura: no toca DOM. La capa de UI usa estos descriptores para hacer
 // scroll/foco/spotlight y decidir si esperar acción del usuario.
 
-const SALA_STEPS = [
-  'map_sidebar',
-  'map_tabs',
-  'map_lab_teaser',
-  'servicio_default',
-  'lab_bulk_separator',
-  'lab_parse',
-  'lab_view',
-  'sala_expediente_tabs',
-  'sala_casiopea_lab',
-  'sala_manejo',
-  'sala_tend',
-  'sala_tend_chart',
-  'sala_casiopea_trends',
-  'estado_actual',
-  'sala_med',
-  'listado_problemas',
-  'livesync_desktop',
-  'livesync_mobile',
-  'wrap',
-];
+import {
+  getSalaTourSteps as curriculumSalaSteps,
+  getInterconsultaTourSteps as curriculumIcSteps,
+  getNeoCompanionSteps,
+} from './onboarding-curriculum.mjs';
 
-const INTERCONSULTA_STEPS = [
-  'map_sidebar',
-  'map_tabs',
-  'map_lab_teaser',
-  'lab_bulk_separator',
-  'lab_parse',
-  'lab_view',
-  'ic_expediente_tabs',
-  'sala_manejo',
-  'sala_tend',
-  'sala_tend_chart',
-  'sala_soap',
-  'sala_med',
-  'ic_nota',
-  'ic_indica',
-  'ic_exports',
-  'profile',
-  'livesync_desktop',
-  'livesync_mobile',
-  'wrap',
-];
+export { getNeoCompanionSteps };
 
 // Pasos cuyo avance depende de que el usuario presione un botón real
 // (no se muestra "Siguiente" en el dock).
@@ -97,6 +61,20 @@ const TARGETS = {
     focus: false,
     spotlightClass: 'tour-spotlight-action',
   },
+  historia_clinica: {
+    appTab: 'nota',
+    innerTab: 'historia',
+    selector: '#exp-segment-historia, #historia-clinica-mount',
+    focus: false,
+    spotlightClass: 'tour-spotlight-action',
+  },
+  eventualidades: {
+    appTab: 'nota',
+    innerTab: 'eventualidades',
+    selector: '#exp-segment-eventualidades, #itab-content-eventualidades',
+    focus: false,
+    spotlightClass: 'tour-spotlight-action',
+  },
   sala_tend:         { appTab: 'nota', innerTab: 'tend',    selector: '#tendencias-container', focus: false },
   sala_tend_chart:   { appTab: 'nota', innerTab: 'tend',    selector: '#tendencias-container .tend-section-chart-btn',
                        focus: false, spotlightClass: 'tour-spotlight-action' },
@@ -112,7 +90,7 @@ const TARGETS = {
   estado_actual: {
     appTab: 'nota',
     innerTab: 'estadoActual',
-    selector: '#itab-estadoActual',
+    selector: '#exp-segment-estadoActual, #itab-content-estadoActual',
     focus: false,
     spotlightClass: 'tour-spotlight-action',
   },
@@ -139,11 +117,11 @@ const TARGETS = {
 };
 
 export function getSalaTourSteps() {
-  return SALA_STEPS.slice();
+  return curriculumSalaSteps();
 }
 
 export function getInterconsultaTourSteps() {
-  return INTERCONSULTA_STEPS.slice();
+  return curriculumIcSteps();
 }
 
 export function getTourSteps(branch) {
