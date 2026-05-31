@@ -32,6 +32,7 @@ const RELEASE_STAGE_PATHS = [
   'scripts/release.js',
   'scripts/lib/release-git.js',
   'scripts/lib/release-progress.js',
+  'scripts/lib/electron-pack-files.js',
 ];
 
 function releasePathExists(root, rel) {

@@ -487,7 +487,10 @@ npm start
 
 # Publicar release: bump (si falta), completar docs/RELEASE_NOTES_X.Y.Z.txt + README + highlights y onboarding en settings-help.mjs / tour-targets.mjs, luego:
 npm run build:ui
-npm run release:publish
+npm run release:publish   # sincroniza build.files (lan-squad, lib/**/*.js) antes de tests y build
+
+# Solo revisar/actualizar empaquetado electron-builder:
+npm run release:sync-pack
 
 # Compilar para Mac (arm64 + x64). Con certificado de firma en el llavero, electron-builder firma automáticamente.
 npm run build:mac

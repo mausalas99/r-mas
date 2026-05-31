@@ -14,7 +14,7 @@
  * Parte 1 (bump): versión, RELEASE_NOTES, README, stub in-app highlights.
  *   npm run release:bump -- 6.4.1 --commit   → opcional: commit del bump
  *
- * Parte 2 (publish): preflight → commit pendiente → tests → commit → push → build → tag → gh release.
+ * Parte 2 (publish): preflight → sync build.files → commit pendiente → tests → commit → push → build → tag → gh release.
  *   npm run release:publish -- --yes
  *   npm run release:publish -- --skip-pre-commit   (no commit automático antes de tests)
  *
@@ -35,6 +35,7 @@ const {
   assertPublishPreflight,
   ghReleaseExists,
 } = require('./lib/release-git');
+const { ensureElectronPackFiles } = require('./lib/electron-pack-files');
 
 const ROOT = path.join(__dirname, '..');
 const REPO = 'mausalas99/r-mas';
@@ -262,6 +263,11 @@ async function cmdBump(argv) {
   writeReleaseNotes(version, title);
   updateReadme(version, title);
   updateHighlightsStub(version);
+
+  const packSync = ensureElectronPackFiles(ROOT, { write: true });
+  if (packSync.changed) {
+    console.log('Actualizado package.json → build.files (lista canónica electron-pack-files).');
+  }
 
   if (hasFlag(argv, '--commit')) {
     stageReleasePaths(execSync, ROOT);
@@ -555,6 +561,15 @@ async function cmdPublish(argv) {
     if (progressJson) progress.emitLog({ stream: 'meta', line });
     else console.log(line);
     progress.complete('preflight');
+
+    progress.start('pack-files');
+    const packSync = ensureElectronPackFiles(ROOT, { write: true });
+    const packLine = packSync.changed
+      ? `build.files actualizado (+${packSync.missing.length} / -${packSync.extra.length})`
+      : 'build.files ya coincide con server.js + lan-squad';
+    if (progressJson) progress.emitLog({ stream: 'meta', line: packLine });
+    else console.log(packLine);
+    progress.complete('pack-files');
 
     if (!skipPreCommit) {
       progress.start('pre-commit');

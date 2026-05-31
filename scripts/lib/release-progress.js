@@ -6,6 +6,7 @@
 function buildPublishSteps(opts) {
   const steps = [];
   steps.push({ id: 'preflight', label: 'Comprobar versión y tag', weight: 1 });
+  steps.push({ id: 'pack-files', label: 'Sincronizar build.files (electron-builder)', weight: 1 });
   if (!opts.skipPreCommit) {
     steps.push({ id: 'pre-commit', label: 'Commit cambios pendientes', weight: 3 });
   }
