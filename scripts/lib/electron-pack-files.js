@@ -16,6 +16,7 @@ const PACK_FILES_BASELINE = [
   'server.js',
   'lan-squad/**/*',
   'lib/**/*.js',
+  'lib/**/*.mjs',
   'generate-receta-hu.js',
   'generate-censo.js',
   'template.docx',
