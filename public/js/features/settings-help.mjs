@@ -647,7 +647,7 @@ function renderTourStep() {
           ? '<p style="margin:0;line-height:1.5;">En <strong>Pase</strong> el centro es un <strong>resumen</strong> del paciente (pendientes, laboratorio, cultivos, medicamentos). Pulsa el título de cada bloque o usa <strong>Ctrl/⌘ + 1…4</strong> para abrir el detalle en vista <strong>Normal</strong>.</p>'
           : guidedTourBranch === 'interconsulta'
             ? '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong>, <strong>Agenda</strong>. En <strong>Expediente</strong> verás las pestañas internas en el siguiente paso.</p>'
-            : '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong>, <strong>Agenda</strong>. En <strong>Expediente (Sala)</strong>: <strong>Paciente</strong>, <strong>Clínico</strong> (Historia Clínica, Estado actual, Eventualidades, Manejo), <strong>Resultados</strong> y <strong>Salida</strong> (Listado).</p>';
+            : '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong> y <strong>Agenda</strong> (procedimientos del turno). En <strong>Expediente</strong>: <strong>Clínico</strong> (Historia → Estado actual → Eventualidades → Manejo), <strong>Resultados</strong> (tendencias) y <strong>Salida</strong> (Listado, <strong>VPO</strong>, <strong>Receta HU</strong>).</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'map_lab_teaser':
@@ -700,8 +700,8 @@ function renderTourStep() {
       break;
     case 'sala_expediente_tabs':
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">En <strong>Sala</strong>, el expediente usa cuatro pestañas: <strong>Paciente</strong> (datos colapsables + pendientes), <strong>Clínico</strong> (segmentos en la barra inferior), <strong>Resultados</strong> (Tendencias, Cultivos) y <strong>Salida</strong> (Listado de problemas).</p>' +
-        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Peso, talla y vía están en <strong>Paciente</strong>. Los segmentos de <strong>Clínico</strong> se recorren en los siguientes pasos.</p>';
+        '<p style="margin:0;line-height:1.5;">En <strong>Sala</strong>, el expediente tiene cuatro pestañas: <strong>Paciente</strong>, <strong>Clínico</strong>, <strong>Resultados</strong> y <strong>Salida</strong>.</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Clínico</strong>: Historia Clínica → <strong>Estado actual</strong> → Eventualidades → Manejo. <strong>Salida</strong>: Listado, <strong>VPO</strong> y <strong>Receta HU</strong>. Peso/talla/vía en <strong>Paciente</strong>.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'historia_clinica':
@@ -712,8 +712,8 @@ function renderTourStep() {
       break;
     case 'eventualidades':
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;"><strong>Clínico → Eventualidades</strong>: bitácora de hechos clínicos por día (texto libre con fecha). Útil para intercurrencias del turno sin mezclarlas con el monitoreo estructurado.</p>' +
-        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Pulsa <strong>Siguiente</strong> para continuar con laboratorio Neo y <strong>Manejo</strong>.</p>';
+        '<p style="margin:0;line-height:1.5;"><strong>Clínico → Eventualidades</strong>: bitácora de hechos clínicos por día (texto libre con fecha). Va <strong>después</strong> de Estado actual: intercurrencias del turno sin mezclarlas con el monitoreo estructurado.</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Pulsa <strong>Siguiente</strong> para <strong>Manejo</strong> clínico (Electrolitos, Infusiones, ATB, CAD/EHH).</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'ic_nota':
@@ -781,8 +781,26 @@ function renderTourStep() {
       break;
     case 'listado_problemas':
       bodyEl.innerHTML =
-        '<p style="margin:0;line-height:1.5;">Exporta el <strong>listado de problemas</strong> (activos e inactivos) a Word. Cada problema va con título y subítems <strong>A) CLÍNICA</strong>, <strong>B) EXPLORACIÓN</strong>, <strong>C) PARACLÍNICA</strong>, etc.</p>' +
-        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">El tour carga un ejemplo en ese formato (p. ej. peritonitis con incisos A–C). Pulsa <strong>Generar Listado</strong> (resaltado) o edita el texto y luego <strong>Siguiente</strong>.</p>';
+        '<p style="margin:0;line-height:1.5;"><strong>Expediente → Salida → Listado</strong>: exporta problemas activos e inactivos a Word (título + incisos <strong>A) CLÍNICA</strong>, <strong>B) EXPLORACIÓN</strong>, etc.).</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">El demo trae un ejemplo. Pulsa <strong>Generar Listado</strong> (resaltado) o <strong>Siguiente</strong>.</p>';
+      nextBtn.textContent = 'Siguiente';
+      break;
+    case 'sala_vpo':
+      bodyEl.innerHTML =
+        '<p style="margin:0;line-height:1.5;"><strong>Expediente → Salida → VPO</strong>: valoración preoperatoria con riesgo ASA, paraclínicos y texto copiable para la nota. Solo en <strong>Sala</strong> (en Salida, junto a Listado y Receta HU).</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Completa o revisa los campos resaltados y pulsa <strong>Siguiente</strong>.</p>';
+      nextBtn.textContent = 'Siguiente';
+      break;
+    case 'sala_receta_hu':
+      bodyEl.innerHTML =
+        '<p style="margin:0;line-height:1.5;"><strong>Expediente → Salida → Receta HU</strong>: receta médica en formato oficial <strong>000-061-R-06-12</strong> (PDF). Medicamentos, estudios y cuidados; botón <strong>Exportar PDF</strong> cuando esté listo.</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">En el tutorial no hace falta exportar; <strong>Siguiente</strong> para la <strong>Agenda</strong>.</p>';
+      nextBtn.textContent = 'Siguiente';
+      break;
+    case 'sala_agenda':
+      bodyEl.innerHTML =
+        '<p style="margin:0;line-height:1.5;">La pestaña <strong>Agenda</strong> (arriba) concentra <strong>procedimientos programados</strong> del servicio: cirugías, estudios y pendientes del turno, enlazados al paciente cuando aplica.</p>' +
+        '<p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Con <strong>⇄ LiveSync</strong> la agenda se comparte en la sala. <strong>Siguiente</strong>: sincronización en equipo.</p>';
       nextBtn.textContent = 'Siguiente';
       break;
     case 'livesync_desktop':

@@ -17998,7 +17998,7 @@ function formatProgressLine(p) {
 }
 
 // public/js/onboarding-curriculum.mjs
-var CURRICULUM_VERSION = 1;
+var CURRICULUM_VERSION = 2;
 var SALA_CHAPTERS = [
   {
     id: "ch-patient-lab",
@@ -18015,18 +18015,33 @@ var SALA_CHAPTERS = [
   },
   {
     id: "ch-chart",
-    title: "Expediente",
-    stepIds: ["sala_expediente_tabs", "historia_clinica", "eventualidades"]
+    title: "Expediente \xB7 Cl\xEDnico",
+    stepIds: [
+      "sala_expediente_tabs",
+      "historia_clinica",
+      "estado_actual",
+      "eventualidades"
+    ]
   },
   {
     id: "ch-clinical-tools",
-    title: "Cl\xEDnico avanzado",
-    stepIds: ["sala_manejo", "sala_tend", "sala_tend_chart"]
+    title: "Manejo cl\xEDnico",
+    stepIds: ["sala_manejo"]
   },
   {
-    id: "ch-round",
-    title: "Ronda y salida",
-    stepIds: ["estado_actual", "sala_med", "listado_problemas"]
+    id: "ch-results",
+    title: "Resultados",
+    stepIds: ["sala_tend", "sala_tend_chart"]
+  },
+  {
+    id: "ch-salida",
+    title: "Medicamentos y salida",
+    stepIds: ["sala_med", "listado_problemas", "sala_vpo", "sala_receta_hu"]
+  },
+  {
+    id: "ch-agenda",
+    title: "Agenda",
+    stepIds: ["sala_agenda"]
   },
   {
     id: "ch-team",
@@ -18246,6 +18261,26 @@ var TARGETS = {
     appTab: "nota",
     innerTab: "listado",
     selector: "#btn-gen-listado, #itab-salida",
+    focus: false,
+    spotlightClass: "tour-spotlight-action"
+  },
+  sala_vpo: {
+    appTab: "nota",
+    innerTab: "vpo",
+    selector: "#exp-segment-vpo-salida, #vpo-container, .vpo-panel",
+    focus: false,
+    spotlightClass: "tour-spotlight-action"
+  },
+  sala_receta_hu: {
+    appTab: "nota",
+    innerTab: "recetaHu",
+    selector: "#exp-segment-recetaHu, #receta-hu-container, #btn-receta-hu-export",
+    focus: false,
+    spotlightClass: "tour-spotlight-action"
+  },
+  sala_agenda: {
+    appTab: "agenda",
+    selector: "#apptab-agenda, #appcontent-agenda .rpc-proc-agenda-root",
     focus: false,
     spotlightClass: "tour-spotlight-action"
   },
@@ -23513,7 +23548,7 @@ function renderTourStep() {
       nextBtn.textContent = "Siguiente";
       break;
     case "map_tabs":
-      bodyEl.innerHTML = getUiDensity() !== "normal" ? '<p style="margin:0;line-height:1.5;">En <strong>Pase</strong> el centro es un <strong>resumen</strong> del paciente (pendientes, laboratorio, cultivos, medicamentos). Pulsa el t\xEDtulo de cada bloque o usa <strong>Ctrl/\u2318 + 1\u20264</strong> para abrir el detalle en vista <strong>Normal</strong>.</p>' : guidedTourBranch === "interconsulta" ? '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong>, <strong>Agenda</strong>. En <strong>Expediente</strong> ver\xE1s las pesta\xF1as internas en el siguiente paso.</p>' : '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong>, <strong>Agenda</strong>. En <strong>Expediente (Sala)</strong>: <strong>Paciente</strong>, <strong>Cl\xEDnico</strong> (Historia Cl\xEDnica, Estado actual, Eventualidades, Manejo), <strong>Resultados</strong> y <strong>Salida</strong> (Listado).</p>';
+      bodyEl.innerHTML = getUiDensity() !== "normal" ? '<p style="margin:0;line-height:1.5;">En <strong>Pase</strong> el centro es un <strong>resumen</strong> del paciente (pendientes, laboratorio, cultivos, medicamentos). Pulsa el t\xEDtulo de cada bloque o usa <strong>Ctrl/\u2318 + 1\u20264</strong> para abrir el detalle en vista <strong>Normal</strong>.</p>' : guidedTourBranch === "interconsulta" ? '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong>, <strong>Agenda</strong>. En <strong>Expediente</strong> ver\xE1s las pesta\xF1as internas en el siguiente paso.</p>' : '<p style="margin:0;line-height:1.5;">Arriba: <strong>Laboratorio</strong>, <strong>Expediente</strong>, <strong>Medicamentos</strong> y <strong>Agenda</strong> (procedimientos del turno). En <strong>Expediente</strong>: <strong>Cl\xEDnico</strong> (Historia \u2192 Estado actual \u2192 Eventualidades \u2192 Manejo), <strong>Resultados</strong> (tendencias) y <strong>Salida</strong> (Listado, <strong>VPO</strong>, <strong>Receta HU</strong>).</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "map_lab_teaser":
@@ -23545,7 +23580,7 @@ function renderTourStep() {
       nextBtn.textContent = "Siguiente";
       break;
     case "sala_expediente_tabs":
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">En <strong>Sala</strong>, el expediente usa cuatro pesta\xF1as: <strong>Paciente</strong> (datos colapsables + pendientes), <strong>Cl\xEDnico</strong> (segmentos en la barra inferior), <strong>Resultados</strong> (Tendencias, Cultivos) y <strong>Salida</strong> (Listado de problemas).</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Peso, talla y v\xEDa est\xE1n en <strong>Paciente</strong>. Los segmentos de <strong>Cl\xEDnico</strong> se recorren en los siguientes pasos.</p>';
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">En <strong>Sala</strong>, el expediente tiene cuatro pesta\xF1as: <strong>Paciente</strong>, <strong>Cl\xEDnico</strong>, <strong>Resultados</strong> y <strong>Salida</strong>.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);"><strong>Cl\xEDnico</strong>: Historia Cl\xEDnica \u2192 <strong>Estado actual</strong> \u2192 Eventualidades \u2192 Manejo. <strong>Salida</strong>: Listado, <strong>VPO</strong> y <strong>Receta HU</strong>. Peso/talla/v\xEDa en <strong>Paciente</strong>.</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "historia_clinica":
@@ -23553,7 +23588,7 @@ function renderTourStep() {
       nextBtn.textContent = "Siguiente";
       break;
     case "eventualidades":
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;"><strong>Cl\xEDnico \u2192 Eventualidades</strong>: bit\xE1cora de hechos cl\xEDnicos por d\xEDa (texto libre con fecha). \xDAtil para intercurrencias del turno sin mezclarlas con el monitoreo estructurado.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Pulsa <strong>Siguiente</strong> para continuar con laboratorio Neo y <strong>Manejo</strong>.</p>';
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;"><strong>Cl\xEDnico \u2192 Eventualidades</strong>: bit\xE1cora de hechos cl\xEDnicos por d\xEDa (texto libre con fecha). Va <strong>despu\xE9s</strong> de Estado actual: intercurrencias del turno sin mezclarlas con el monitoreo estructurado.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Pulsa <strong>Siguiente</strong> para <strong>Manejo</strong> cl\xEDnico (Electrolitos, Infusiones, ATB, CAD/EHH).</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "ic_nota":
@@ -23601,7 +23636,19 @@ function renderTourStep() {
       nextBtn.textContent = "Siguiente";
       break;
     case "listado_problemas":
-      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">Exporta el <strong>listado de problemas</strong> (activos e inactivos) a Word. Cada problema va con t\xEDtulo y sub\xEDtems <strong>A) CL\xCDNICA</strong>, <strong>B) EXPLORACI\xD3N</strong>, <strong>C) PARACL\xCDNICA</strong>, etc.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">El tour carga un ejemplo en ese formato (p. ej. peritonitis con incisos A\u2013C). Pulsa <strong>Generar Listado</strong> (resaltado) o edita el texto y luego <strong>Siguiente</strong>.</p>';
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;"><strong>Expediente \u2192 Salida \u2192 Listado</strong>: exporta problemas activos e inactivos a Word (t\xEDtulo + incisos <strong>A) CL\xCDNICA</strong>, <strong>B) EXPLORACI\xD3N</strong>, etc.).</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">El demo trae un ejemplo. Pulsa <strong>Generar Listado</strong> (resaltado) o <strong>Siguiente</strong>.</p>';
+      nextBtn.textContent = "Siguiente";
+      break;
+    case "sala_vpo":
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;"><strong>Expediente \u2192 Salida \u2192 VPO</strong>: valoraci\xF3n preoperatoria con riesgo ASA, paracl\xEDnicos y texto copiable para la nota. Solo en <strong>Sala</strong> (en Salida, junto a Listado y Receta HU).</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Completa o revisa los campos resaltados y pulsa <strong>Siguiente</strong>.</p>';
+      nextBtn.textContent = "Siguiente";
+      break;
+    case "sala_receta_hu":
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;"><strong>Expediente \u2192 Salida \u2192 Receta HU</strong>: receta m\xE9dica en formato oficial <strong>000-061-R-06-12</strong> (PDF). Medicamentos, estudios y cuidados; bot\xF3n <strong>Exportar PDF</strong> cuando est\xE9 listo.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">En el tutorial no hace falta exportar; <strong>Siguiente</strong> para la <strong>Agenda</strong>.</p>';
+      nextBtn.textContent = "Siguiente";
+      break;
+    case "sala_agenda":
+      bodyEl.innerHTML = '<p style="margin:0;line-height:1.5;">La pesta\xF1a <strong>Agenda</strong> (arriba) concentra <strong>procedimientos programados</strong> del servicio: cirug\xEDas, estudios y pendientes del turno, enlazados al paciente cuando aplica.</p><p style="margin:10px 0 0;font-size:13px;color:var(--text-muted);">Con <strong>\u21C4 LiveSync</strong> la agenda se comparte en la sala. <strong>Siguiente</strong>: sincronizaci\xF3n en equipo.</p>';
       nextBtn.textContent = "Siguiente";
       break;
     case "livesync_desktop":

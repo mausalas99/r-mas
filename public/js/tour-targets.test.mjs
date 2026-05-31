@@ -7,13 +7,17 @@ import {
   stepRequiresUserAction,
 } from './tour-targets.mjs';
 
-test('getSalaTourSteps orden overhaul: lab primero, servicio tras lab_view, sin Neo', () => {
+test('getSalaTourSteps orden overhaul: lab primero, clinico HC EA Eventualidades, salida VPO receta agenda', () => {
   const steps = getSalaTourSteps();
-  assert.equal(steps.length, 19);
+  assert.equal(steps.length, 22);
   assert.equal(steps.indexOf('servicio_default'), steps.indexOf('lab_view') + 1);
-  assert.equal(steps.indexOf('sala_expediente_tabs'), steps.indexOf('servicio_default') + 1);
+  assert.equal(steps.indexOf('estado_actual'), steps.indexOf('historia_clinica') + 1);
+  assert.equal(steps.indexOf('eventualidades'), steps.indexOf('estado_actual') + 1);
   assert.ok(!steps.includes('sala_casiopea_lab'));
   assert.ok(!steps.includes('sala_casiopea_trends'));
+  assert.ok(steps.includes('sala_vpo'));
+  assert.ok(steps.includes('sala_receta_hu'));
+  assert.ok(steps.includes('sala_agenda'));
   assert.equal(steps[steps.length - 1], 'wrap');
 });
 
@@ -60,6 +64,17 @@ test('getTourTarget para historia_clinica y eventualidades en Clínico (Sala)', 
   const ev = getTourTarget('eventualidades', 'sala');
   assert.equal(ev.innerTab, 'eventualidades');
   assert.match(ev.selector, /exp-segment-eventualidades/);
+});
+
+test('getTourTarget para sala_vpo, sala_receta_hu y sala_agenda', () => {
+  const vpo = getTourTarget('sala_vpo', 'sala');
+  assert.equal(vpo.innerTab, 'vpo');
+  assert.match(vpo.selector, /vpo/);
+  const rec = getTourTarget('sala_receta_hu', 'sala');
+  assert.equal(rec.innerTab, 'recetaHu');
+  const ag = getTourTarget('sala_agenda', 'sala');
+  assert.equal(ag.appTab, 'agenda');
+  assert.match(ag.selector, /agenda/);
 });
 
 test('getTourTarget para listado_problemas abre listado y resalta Generar', () => {
