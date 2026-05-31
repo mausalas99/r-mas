@@ -27,6 +27,22 @@ const PACK_FILES_BASELINE = [
   'build/icon.ico',
 ];
 
+/** Native addons: must ship in the app bundle and stay outside asar (.node load). */
+const NATIVE_MODULE_PACK_PATTERNS = [
+  'node_modules/better-sqlite3-multiple-ciphers/**/*',
+];
+
+const ASAR_UNPACK_BASELINE = [
+  'lib/doc-generators/**/*',
+  'generate-receta-hu.js',
+  'generate-censo.js',
+  'template.docx',
+  'template_indicaciones.docx',
+  'template_listado.docx',
+  'templates/receta-hu-000-061-R-06-12.pdf',
+  ...NATIVE_MODULE_PACK_PATTERNS,
+];
+
 /** @param {string} rel */
 function filePatternCovers(rel, patterns) {
   const normalized = rel.replace(/\\/g, '/');
@@ -121,7 +137,18 @@ function canonicalBuildFiles(root) {
     }
   }
 
+  for (const pattern of NATIVE_MODULE_PACK_PATTERNS) {
+    if (!patterns.includes(pattern)) patterns.push(pattern);
+  }
+
   return patterns;
+}
+
+/**
+ * @returns {string[]}
+ */
+function canonicalAsarUnpack() {
+  return [...ASAR_UNPACK_BASELINE];
 }
 
 /**
@@ -131,31 +158,68 @@ function canonicalBuildFiles(root) {
 function ensureElectronPackFiles(root, opts = {}) {
   const pkgPath = path.join(root, 'package.json');
   const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-  const next = canonicalBuildFiles(root);
-  const current = pkg.build?.files || [];
+  const nextFiles = canonicalBuildFiles(root);
+  const nextAsarUnpack = canonicalAsarUnpack();
+  const currentFiles = pkg.build?.files || [];
+  const currentAsarUnpack = pkg.build?.asarUnpack || [];
 
-  const missing = next.filter((p) => !current.includes(p));
-  const extra = current.filter((p) => !next.includes(p));
-  const changed = missing.length > 0 || extra.length > 0 || current.length !== next.length;
+  const filesMissing = nextFiles.filter((p) => !currentFiles.includes(p));
+  const filesExtra = currentFiles.filter((p) => !nextFiles.includes(p));
+  const filesChanged =
+    filesMissing.length > 0 || filesExtra.length > 0 || currentFiles.length !== nextFiles.length;
+
+  const asarMissing = nextAsarUnpack.filter((p) => !currentAsarUnpack.includes(p));
+  const asarExtra = currentAsarUnpack.filter((p) => !nextAsarUnpack.includes(p));
+  const asarChanged =
+    asarMissing.length > 0 || asarExtra.length > 0 || currentAsarUnpack.length !== nextAsarUnpack.length;
+
+  const changed = filesChanged || asarChanged;
 
   if (!changed) {
-    return { changed: false, files: next, missing: [], extra: [] };
+    return {
+      changed: false,
+      files: nextFiles,
+      asarUnpack: nextAsarUnpack,
+      missing: [],
+      extra: [],
+      asarMissing: [],
+      asarExtra: [],
+    };
   }
 
   if (!opts.write) {
     const lines = [];
-    if (missing.length) lines.push(`Patrones a añadir:\n${missing.map((p) => `  + ${p}`).join('\n')}`);
-    if (extra.length) lines.push(`Patrones obsoletos:\n${extra.map((p) => `  - ${p}`).join('\n')}`);
+    if (filesMissing.length) {
+      lines.push(`build.files — añadir:\n${filesMissing.map((p) => `  + ${p}`).join('\n')}`);
+    }
+    if (filesExtra.length) {
+      lines.push(`build.files — obsoletos:\n${filesExtra.map((p) => `  - ${p}`).join('\n')}`);
+    }
+    if (asarMissing.length) {
+      lines.push(`build.asarUnpack — añadir:\n${asarMissing.map((p) => `  + ${p}`).join('\n')}`);
+    }
+    if (asarExtra.length) {
+      lines.push(`build.asarUnpack — obsoletos:\n${asarExtra.map((p) => `  - ${p}`).join('\n')}`);
+    }
     throw new Error(
-      `package.json → build.files no coincide con la lista canónica del release.\n${lines.join('\n')}\n` +
+      `package.json → build no coincide con la lista canónica del release.\n${lines.join('\n')}\n` +
         'Ejecuta: node scripts/lib/electron-pack-files.js --write'
     );
   }
 
   pkg.build = pkg.build || {};
-  pkg.build.files = next;
+  pkg.build.files = nextFiles;
+  pkg.build.asarUnpack = nextAsarUnpack;
   fs.writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`, 'utf8');
-  return { changed: true, files: next, missing, extra };
+  return {
+    changed: true,
+    files: nextFiles,
+    asarUnpack: nextAsarUnpack,
+    missing: filesMissing,
+    extra: filesExtra,
+    asarMissing,
+    asarExtra,
+  };
 }
 
 /**
@@ -174,13 +238,42 @@ function assertRuntimeCoveredByPatterns(root) {
   return { patterns, runtime };
 }
 
+/**
+ * @param {string} root
+ */
+function assertNativeModulesPacked(root) {
+  const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+  const files = pkg.build?.files || [];
+  const asarUnpack = pkg.build?.asarUnpack || [];
+  const problems = [];
+
+  for (const pattern of NATIVE_MODULE_PACK_PATTERNS) {
+    if (!files.includes(pattern)) {
+      problems.push(`build.files falta patrón nativo: ${pattern}`);
+    }
+    if (!asarUnpack.includes(pattern)) {
+      problems.push(`build.asarUnpack falta patrón nativo: ${pattern}`);
+    }
+  }
+
+  if (problems.length) {
+    throw new Error(problems.join('\n'));
+  }
+
+  return { files, asarUnpack };
+}
+
 module.exports = {
   PACK_FILES_BASELINE,
+  NATIVE_MODULE_PACK_PATTERNS,
+  ASAR_UNPACK_BASELINE,
   filePatternCovers,
   collectRuntimeRequires,
   canonicalBuildFiles,
+  canonicalAsarUnpack,
   ensureElectronPackFiles,
   assertRuntimeCoveredByPatterns,
+  assertNativeModulesPacked,
 };
 
 if (require.main === module) {
@@ -190,20 +283,27 @@ if (require.main === module) {
     if (write) {
       const result = ensureElectronPackFiles(root, { write: true });
       if (result.changed) {
-        console.log('Actualizado package.json → build.files');
+        console.log('Actualizado package.json → build.files / build.asarUnpack');
         if (result.missing.length) {
-          console.log('Añadidos:', result.missing.join(', '));
+          console.log('build.files añadidos:', result.missing.join(', '));
         }
         if (result.extra.length) {
-          console.log('Quitados:', result.extra.join(', '));
+          console.log('build.files quitados:', result.extra.join(', '));
+        }
+        if (result.asarMissing.length) {
+          console.log('build.asarUnpack añadidos:', result.asarMissing.join(', '));
+        }
+        if (result.asarExtra.length) {
+          console.log('build.asarUnpack quitados:', result.asarExtra.join(', '));
         }
       } else {
-        console.log('build.files ya estaba al día.');
+        console.log('build.files y build.asarUnpack ya estaban al día.');
       }
     } else {
       ensureElectronPackFiles(root, { write: false });
       assertRuntimeCoveredByPatterns(root);
-      console.log('build.files cubre el grafo de server.js.');
+      assertNativeModulesPacked(root);
+      console.log('build.files cubre el grafo de server.js y módulos nativos.');
     }
   } catch (err) {
     console.error(err.message || err);
