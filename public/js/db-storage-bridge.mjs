@@ -4,6 +4,24 @@
  */
 
 /** @type {Record<string, string>} app-state / saveAll field → clinical_blob.blob_key */
+/** Keep in sync with lib/db/clinical-blob-keys.mjs LS_KEY_TO_BLOB */
+export const CLINICAL_LS_KEYS = [
+  'rpc-patients',
+  'rpc-notes',
+  'rpc-indicaciones',
+  'rpc-labHistory',
+  'rpc-medRecetaByPatient',
+  'rpc-listado-problemas',
+  'rpc-recetaHuByPatient',
+  'rpc-vpoByPatient',
+  'rpc-medPharmProfileByPatient',
+  'rpc-medCatalog',
+  'rpc-todos',
+  'rpc-scheduled-procedures',
+  'rpc-lan-room-snapshots',
+  'rpc-lan-host-patient-map',
+];
+
 export const APP_FIELD_TO_BLOB = {
   patients: 'patients',
   notes: 'notes',

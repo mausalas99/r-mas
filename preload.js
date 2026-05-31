@@ -89,6 +89,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbStatus: function() {
     return ipcRenderer.invoke('db:status');
   },
+  dbMigrationProbe: function(opts) {
+    return ipcRenderer.invoke('db:migration-probe', opts);
+  },
   dbUnlock: function(opts) {
     return ipcRenderer.invoke('db:unlock', opts);
   },

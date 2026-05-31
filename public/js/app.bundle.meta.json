@@ -6,7 +6,7 @@
       "format": "esm"
     },
     "public/js/db-storage-bridge.mjs": {
-      "bytes": 3713,
+      "bytes": 4157,
       "imports": [],
       "format": "esm"
     },
@@ -27,7 +27,7 @@
       "format": "esm"
     },
     "public/js/features/db-unlock.mjs": {
-      "bytes": 6415,
+      "bytes": 8421,
       "imports": [
         {
           "path": "public/js/db-storage-bridge.mjs",
@@ -911,7 +911,7 @@
       "format": "esm"
     },
     "public/js/features/lan-sync.mjs": {
-      "bytes": 119435,
+      "bytes": 121925,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -4632,7 +4632,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 3996818
+      "bytes": 4005142
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -4643,13 +4643,13 @@
           "bytesInOutput": 1872
         },
         "public/js/db-storage-bridge.mjs": {
-          "bytesInOutput": 1684
+          "bytesInOutput": 2047
         },
         "public/js/storage.js": {
           "bytesInOutput": 25144
         },
         "public/js/features/db-unlock.mjs": {
-          "bytesInOutput": 5891
+          "bytesInOutput": 7768
         },
         "public/js/med-receta-core.mjs": {
           "bytesInOutput": 20487
@@ -4868,7 +4868,7 @@
           "bytesInOutput": 4082
         },
         "public/js/features/lan-sync.mjs": {
-          "bytesInOutput": 115146
+          "bytesInOutput": 117668
         },
         "public/js/update-helpers.mjs": {
           "bytesInOutput": 635
@@ -5276,7 +5276,7 @@
           "bytesInOutput": 5622
         }
       },
-      "bytes": 2192190
+      "bytes": 2196952
     }
   }
 }

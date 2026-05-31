@@ -43,6 +43,22 @@ function isQuotaExceededError(err) {
 }
 
 // public/js/db-storage-bridge.mjs
+var CLINICAL_LS_KEYS = [
+  "rpc-patients",
+  "rpc-notes",
+  "rpc-indicaciones",
+  "rpc-labHistory",
+  "rpc-medRecetaByPatient",
+  "rpc-listado-problemas",
+  "rpc-recetaHuByPatient",
+  "rpc-vpoByPatient",
+  "rpc-medPharmProfileByPatient",
+  "rpc-medCatalog",
+  "rpc-todos",
+  "rpc-scheduled-procedures",
+  "rpc-lan-room-snapshots",
+  "rpc-lan-host-patient-map"
+];
 var APP_FIELD_TO_BLOB = {
   patients: "patients",
   notes: "notes",
@@ -781,14 +797,53 @@ var storage = {
 
 // public/js/features/db-unlock.mjs
 var unlockWaitResolve = null;
+var lastMigrationProbe = null;
 function api() {
   return typeof window !== "undefined" ? window.electronAPI : null;
 }
-function needsPassphraseConfirm(status) {
+function needsPassphraseConfirm(status, probe) {
   if (!status || typeof status !== "object") return true;
   if (status.migrationPending) return true;
+  if (probe && probe.needed) return true;
   if (status.dbFileExists === false) return true;
   return false;
+}
+function collectClinicalLsSnapshot() {
+  var snapshot = {};
+  if (typeof localStorage === "undefined") return snapshot;
+  for (var i = 0; i < CLINICAL_LS_KEYS.length; i++) {
+    var key = CLINICAL_LS_KEYS[i];
+    if (!Object.prototype.hasOwnProperty.call(localStorage, key)) continue;
+    var raw = localStorage.getItem(key);
+    if (raw != null) snapshot[key] = raw;
+  }
+  return snapshot;
+}
+function clearMigratedLocalStorageKeys(keys) {
+  if (!keys || !keys.length || typeof localStorage === "undefined") return;
+  for (var i = 0; i < keys.length; i++) {
+    try {
+      localStorage.removeItem(keys[i]);
+    } catch (_e) {
+    }
+  }
+}
+async function runMigrationProbe(electron) {
+  if (!electron || typeof electron.dbMigrationProbe !== "function") {
+    return { needed: false, hasHostJson: false };
+  }
+  var lsSnapshot = collectClinicalLsSnapshot();
+  try {
+    var res = await electron.dbMigrationProbe({ lsSnapshot });
+    if (res && res.ok !== false) {
+      return { needed: !!res.needed, hasHostJson: !!res.hasHostJson };
+    }
+  } catch (_e) {
+  }
+  return { needed: false, hasHostJson: false };
+}
+function migrationUiPending(status, probe) {
+  return !!(status && status.migrationPending) || !!(probe && probe.needed);
 }
 function unlockErrorMessage(res) {
   var code = res && res.code;
@@ -830,8 +885,8 @@ function setUnlockError(msg) {
     err.style.display = "none";
   }
 }
-function configureUnlockForm(status) {
-  var needsConfirm = needsPassphraseConfirm(status);
+function configureUnlockForm(status, probe) {
+  var needsConfirm = needsPassphraseConfirm(status, probe);
   var confirmWrap = document.getElementById("rpc-db-unlock-confirm-wrap");
   var confirmInput = document.getElementById("rpc-db-unlock-confirm");
   if (confirmWrap) confirmWrap.style.display = needsConfirm ? "" : "none";
@@ -842,7 +897,7 @@ function configureUnlockForm(status) {
     title.textContent = needsConfirm ? "Protege tus datos cl\xEDnicos" : "Desbloquear base de datos";
   }
   if (hint) {
-    if (status && status.migrationPending) {
+    if (migrationUiPending(status, probe)) {
       hint.textContent = "Hay datos locales por migrar a la base cifrada. Elige una contrase\xF1a maestra (m\xEDnimo 8 caracteres) y conf\xEDrmala.";
     } else if (needsConfirm) {
       hint.textContent = "Primera vez: crea una contrase\xF1a maestra para cifrar pacientes, notas y labs en este equipo (m\xEDnimo 8 caracteres).";
@@ -870,9 +925,10 @@ async function waitForDbUnlock() {
   if (!status || status.state === "unlocked") {
     return { unlocked: true, status: status || {} };
   }
+  lastMigrationProbe = await runMigrationProbe(electron);
   return new Promise(function(resolve) {
     unlockWaitResolve = resolve;
-    configureUnlockForm(status);
+    configureUnlockForm(status, lastMigrationProbe);
     setUnlockError(status.rateLimited ? unlockErrorMessage({ code: "AUTH_RATE_LIMITED" }) : "");
     setOverlayVisible(true);
   });
@@ -890,7 +946,12 @@ async function submitDbUnlockPassphrase() {
     status = await electron.dbStatus();
   } catch (_e) {
   }
-  if (needsPassphraseConfirm(status)) {
+  var probe = lastMigrationProbe;
+  if (!probe) {
+    probe = await runMigrationProbe(electron);
+    lastMigrationProbe = probe;
+  }
+  if (needsPassphraseConfirm(status, probe)) {
     var confirm2 = confirmEl ? String(confirmEl.value || "") : "";
     if (passphrase.length < 8) {
       setUnlockError("La contrase\xF1a debe tener al menos 8 caracteres.");
@@ -908,17 +969,25 @@ async function submitDbUnlockPassphrase() {
   var submitBtn = document.getElementById("rpc-db-unlock-submit");
   if (submitBtn) submitBtn.disabled = true;
   try {
-    var res = await electron.dbUnlock({ passphrase, remember });
+    var unlockPayload = { passphrase, remember };
+    if (probe && probe.needed) {
+      unlockPayload.lsSnapshot = collectClinicalLsSnapshot();
+    }
+    var res = await electron.dbUnlock(unlockPayload);
     if (!res || res.ok === false) {
       setUnlockError(unlockErrorMessage(res || {}));
       if (submitBtn) submitBtn.disabled = !!(status && status.rateLimited);
       try {
         var st2 = await electron.dbStatus();
-        configureUnlockForm(st2);
+        configureUnlockForm(st2, lastMigrationProbe);
       } catch (_e2) {
       }
       return;
     }
+    if (res.clearKeys && res.clearKeys.length) {
+      clearMigratedLocalStorageKeys(res.clearKeys);
+    }
+    lastMigrationProbe = { needed: false, hasHostJson: false };
     setOverlayVisible(false);
     if (unlockWaitResolve) {
       var done = unlockWaitResolve;
@@ -16560,26 +16629,76 @@ function sendLiveSyncMutation(mutation) {
   if (!activeLiveSyncRoomId || !lanClient.liveConnected || !mutation) return;
   lanClient.sendLive(wrapLiveSyncPatch(activeLiveSyncRoomId, getLanClientId(), mutation));
 }
-async function applyConflictUseServer(payload) {
-  var server = payload && payload.serverSnapshot;
-  if (!server || !server.data) return;
-  applyLiveSyncApplied({
-    roomId: payload.roomId || activeLiveSyncRoomId,
-    entityType: payload.entityType,
-    entityId: payload.entityId,
-    patientId: payload.patientId,
-    version: server.version,
-    data: server.data
-  });
-  if (payload.draftId) {
+function isRoomBundleConflictDraft(draft2) {
+  return !!(draft2 && (draft2.scope || draft2.localBundle || draft2.entityType === "roomBundle"));
+}
+async function clearConflictDraft(draftId) {
+  if (!draftId) return;
+  try {
+    await deleteDraftConflict(draftId);
+  } catch (_e) {
+  }
+  void renderLanPanel();
+}
+async function discardDraftsForConflictEntity(payload) {
+  if (!payload || !payload.entityType || !payload.entityId) return;
+  var drafts = [];
+  try {
+    drafts = await listDraftConflicts();
+  } catch (_eList) {
+    return;
+  }
+  var roomId = payload.roomId || null;
+  for (var i = 0; i < drafts.length; i += 1) {
+    var d = drafts[i];
+    if (!d || !d.id || isRoomBundleConflictDraft(d)) continue;
+    if (d.entityType !== payload.entityType || String(d.entityId) !== String(payload.entityId)) continue;
+    if (roomId != null && d.roomId != null && String(d.roomId) !== String(roomId)) continue;
     try {
-      await deleteDraftConflict(payload.draftId);
-    } catch (_e) {
+      await deleteDraftConflict(d.id);
+    } catch (_eDel) {
     }
   }
 }
+async function applyRoomBundleServerChoice(draft2) {
+  var bundle = draft2 && draft2.serverBundle;
+  var rid = draft2 && draft2.roomId;
+  if (rid && bundle) {
+    setHostBundleBases(rid, bundle);
+    applyLiveSyncMerged(
+      mergeLiveSyncFullBundles([
+        {
+          agenda: bundle.agenda || [],
+          todos: bundle.todos || {},
+          entries: bundle.entries || [],
+          manejo: bundle.manejo
+        }
+      ])
+    );
+  }
+  await clearConflictDraft(draft2 && draft2.id);
+}
+async function applyConflictUseServer(payload) {
+  var server = payload && payload.serverSnapshot;
+  if (server && server.data) {
+    applyLiveSyncApplied({
+      roomId: payload.roomId || activeLiveSyncRoomId,
+      entityType: payload.entityType,
+      entityId: payload.entityId,
+      patientId: payload.patientId,
+      version: server.version,
+      data: server.data
+    });
+  }
+  if (payload.draftId) {
+    await clearConflictDraft(payload.draftId);
+  }
+}
 function formatConflictDraftLabel(draft2) {
-  var type = draft2 && draft2.entityType ? String(draft2.entityType) : "entidad";
+  var type = "entidad";
+  if (draft2 && draft2.entityType === "roomBundle") type = "sala";
+  else if (draft2 && draft2.entityType) type = String(draft2.entityType);
+  else if (isRoomBundleConflictDraft(draft2)) type = "sala";
   var id = draft2 && draft2.entityId ? String(draft2.entityId) : "";
   var keys = draft2 && Array.isArray(draft2.conflictingKeys) && draft2.conflictingKeys.length ? " \xB7 " + draft2.conflictingKeys.slice(0, 3).join(", ") : "";
   var when = "";
@@ -16671,12 +16790,17 @@ function conflictViewerContext(payload) {
   return ctx;
 }
 function conflictEditDraftHandler(payload) {
+  var resolved = false;
   if (payload && payload.entityType === "todo" && payload.localSnapshot && payload.localSnapshot.op === "delete" && payload.serverSnapshot && payload.patientId) {
     var todo = Object.assign({}, payload.serverSnapshot.data || {}, {
       id: payload.entityId,
       version: payload.serverSnapshot.version
     });
     emitLiveSyncTodoDelete(payload.patientId, todo);
+    resolved = true;
+  }
+  if (resolved && payload.draftId) {
+    void clearConflictDraft(payload.draftId);
   }
 }
 async function reopenConflictDraftFromStore(draftId) {
@@ -16684,6 +16808,27 @@ async function reopenConflictDraftFromStore(draftId) {
   if (!draft2) {
     runtime2.showToast("No se encontr\xF3 el borrador de conflicto", "error");
     void renderLanPanel();
+    return;
+  }
+  if (isRoomBundleConflictDraft(draft2)) {
+    openClinicalConflictViewer({
+      draftId: draft2.id,
+      conflictingKeys: draft2.conflictingKeys || ["*"],
+      localData: draft2.localBundle || {},
+      serverData: draft2.serverBundle || {},
+      context: {
+        entityType: "roomBundle",
+        roomId: draft2.roomId,
+        transport: draft2.transport || "http"
+      },
+      onUseServer: function() {
+        void applyRoomBundleServerChoice(draft2);
+      },
+      onEditDraft: function() {
+      },
+      onClose: function() {
+      }
+    });
     return;
   }
   var payload = draftRecordToConflictPayload(draft2);
@@ -16695,12 +16840,10 @@ async function reopenConflictDraftFromStore(draftId) {
     serverData: viewerData.serverData,
     context: conflictViewerContext(payload),
     onUseServer: function() {
-      void applyConflictUseServer(Object.assign({}, payload, { draftId: draft2.id })).then(function() {
-        void renderLanPanel();
-      });
+      void applyConflictUseServer(Object.assign({}, payload, { draftId: draft2.id }));
     },
     onEditDraft: function() {
-      conflictEditDraftHandler(payload);
+      conflictEditDraftHandler(Object.assign({}, payload, { draftId: draft2.id }));
     },
     onClose: function() {
     }
@@ -16759,6 +16902,8 @@ async function appendLanConflictDraftsSection(root) {
 }
 async function handleSyncConflict(payload) {
   if (shouldAutoResolveTodoConflict(payload) && tryAutoResolveTodoConflict(payload)) {
+    await discardDraftsForConflictEntity(payload);
+    void renderLanPanel();
     runtime2.showToast("Pendiente alineado con la sala", "info");
     return;
   }
@@ -16780,12 +16925,10 @@ async function handleSyncConflict(payload) {
     serverData: viewerData.serverData,
     context: conflictViewerContext(payload),
     onUseServer: function() {
-      void applyConflictUseServer(Object.assign({}, payload, { draftId })).then(function() {
-        void renderLanPanel();
-      });
+      void applyConflictUseServer(Object.assign({}, payload, { draftId }));
     },
     onEditDraft: function() {
-      conflictEditDraftHandler(payload);
+      conflictEditDraftHandler(Object.assign({}, payload, { draftId }));
     },
     onClose: function() {
     }
@@ -17471,16 +17614,25 @@ function pushRoomSyncBundleToHost(roomId, envelope) {
         var conflictKeys = conflicts.map(function(c) {
           return c && c.key ? String(c.key) : "";
         }).filter(Boolean);
+        var bundleConflictKeys = conflictKeys.length ? conflictKeys : ["*"];
         return saveDraftConflict({
           scope: "room:" + rid,
+          entityType: "roomBundle",
+          transport: "http",
           roomId: rid,
           localBundle: envelope,
           serverBundle: body && body.bundle ? body.bundle : null,
-          conflicts
+          conflicts,
+          conflictingKeys: bundleConflictKeys
         }).then(function(draftId) {
+          var roomDraft = {
+            id: draftId,
+            roomId: rid,
+            serverBundle: body && body.bundle ? body.bundle : null
+          };
           openClinicalConflictViewer({
             draftId,
-            conflictingKeys: conflictKeys.length ? conflictKeys : ["*"],
+            conflictingKeys: bundleConflictKeys,
             localData: envelope,
             serverData: body && body.bundle ? body.bundle : {},
             context: {
@@ -17489,14 +17641,14 @@ function pushRoomSyncBundleToHost(roomId, envelope) {
               transport: "http"
             },
             onUseServer: function() {
-              if (body && body.bundle) {
-                setHostBundleBases(rid, body.bundle);
-                applyLiveSyncMerged(
-                  mergeLiveSyncFullBundles([{ agenda: body.bundle.agenda || [], todos: body.bundle.todos || {}, entries: body.bundle.entries || [], manejo: body.bundle.manejo }])
-                );
-              }
+              void applyRoomBundleServerChoice(roomDraft);
+            },
+            onEditDraft: function() {
+            },
+            onClose: function() {
             }
           });
+          void renderLanPanel();
           return false;
         });
       });

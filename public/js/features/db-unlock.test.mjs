@@ -7,6 +7,13 @@ describe('db-unlock', () => {
     assert.equal(needsPassphraseConfirm({ migrationPending: true, dbFileExists: true }), true);
   });
 
+  it('requires confirm when migration probe reports needed', () => {
+    assert.equal(
+      needsPassphraseConfirm({ migrationPending: false, dbFileExists: true }, { needed: true }),
+      true
+    );
+  });
+
   it('requires confirm when db file does not exist', () => {
     assert.equal(needsPassphraseConfirm({ migrationPending: false, dbFileExists: false }), true);
   });

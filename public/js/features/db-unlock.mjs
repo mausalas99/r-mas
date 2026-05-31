@@ -1,18 +1,61 @@
 /** SQLCipher unlock overlay (Electron db mode only). */
-import { isDbMode } from '../db-storage-bridge.mjs';
+import { CLINICAL_LS_KEYS, isDbMode } from '../db-storage-bridge.mjs';
 
 /** @type {((result: { unlocked: boolean, status?: object }) => void) | null} */
 let unlockWaitResolve = null;
+
+/** @type {{ needed: boolean, hasHostJson?: boolean } | null} */
+let lastMigrationProbe = null;
 
 function api() {
   return typeof window !== 'undefined' ? window.electronAPI : null;
 }
 
-export function needsPassphraseConfirm(status) {
+export function needsPassphraseConfirm(status, probe) {
   if (!status || typeof status !== 'object') return true;
   if (status.migrationPending) return true;
+  if (probe && probe.needed) return true;
   if (status.dbFileExists === false) return true;
   return false;
+}
+
+export function collectClinicalLsSnapshot() {
+  var snapshot = {};
+  if (typeof localStorage === 'undefined') return snapshot;
+  for (var i = 0; i < CLINICAL_LS_KEYS.length; i++) {
+    var key = CLINICAL_LS_KEYS[i];
+    if (!Object.prototype.hasOwnProperty.call(localStorage, key)) continue;
+    var raw = localStorage.getItem(key);
+    if (raw != null) snapshot[key] = raw;
+  }
+  return snapshot;
+}
+
+function clearMigratedLocalStorageKeys(keys) {
+  if (!keys || !keys.length || typeof localStorage === 'undefined') return;
+  for (var i = 0; i < keys.length; i++) {
+    try {
+      localStorage.removeItem(keys[i]);
+    } catch (_e) {}
+  }
+}
+
+async function runMigrationProbe(electron) {
+  if (!electron || typeof electron.dbMigrationProbe !== 'function') {
+    return { needed: false, hasHostJson: false };
+  }
+  var lsSnapshot = collectClinicalLsSnapshot();
+  try {
+    var res = await electron.dbMigrationProbe({ lsSnapshot: lsSnapshot });
+    if (res && res.ok !== false) {
+      return { needed: !!res.needed, hasHostJson: !!res.hasHostJson };
+    }
+  } catch (_e) {}
+  return { needed: false, hasHostJson: false };
+}
+
+function migrationUiPending(status, probe) {
+  return !!(status && status.migrationPending) || !!(probe && probe.needed);
 }
 
 function unlockErrorMessage(res) {
@@ -58,8 +101,8 @@ function setUnlockError(msg) {
   }
 }
 
-function configureUnlockForm(status) {
-  var needsConfirm = needsPassphraseConfirm(status);
+function configureUnlockForm(status, probe) {
+  var needsConfirm = needsPassphraseConfirm(status, probe);
   var confirmWrap = document.getElementById('rpc-db-unlock-confirm-wrap');
   var confirmInput = document.getElementById('rpc-db-unlock-confirm');
   if (confirmWrap) confirmWrap.style.display = needsConfirm ? '' : 'none';
@@ -73,7 +116,7 @@ function configureUnlockForm(status) {
       : 'Desbloquear base de datos';
   }
   if (hint) {
-    if (status && status.migrationPending) {
+    if (migrationUiPending(status, probe)) {
       hint.textContent =
         'Hay datos locales por migrar a la base cifrada. Elige una contraseña maestra (mínimo 8 caracteres) y confírmala.';
     } else if (needsConfirm) {
@@ -110,9 +153,10 @@ export async function waitForDbUnlock() {
   if (!status || status.state === 'unlocked') {
     return { unlocked: true, status: status || {} };
   }
+  lastMigrationProbe = await runMigrationProbe(electron);
   return new Promise(function (resolve) {
     unlockWaitResolve = resolve;
-    configureUnlockForm(status);
+    configureUnlockForm(status, lastMigrationProbe);
     setUnlockError(status.rateLimited ? unlockErrorMessage({ code: 'AUTH_RATE_LIMITED' }) : '');
     setOverlayVisible(true);
   });
@@ -133,7 +177,13 @@ export async function submitDbUnlockPassphrase() {
     status = await electron.dbStatus();
   } catch (_e) {}
 
-  if (needsPassphraseConfirm(status)) {
+  var probe = lastMigrationProbe;
+  if (!probe) {
+    probe = await runMigrationProbe(electron);
+    lastMigrationProbe = probe;
+  }
+
+  if (needsPassphraseConfirm(status, probe)) {
     var confirm = confirmEl ? String(confirmEl.value || '') : '';
     if (passphrase.length < 8) {
       setUnlockError('La contraseña debe tener al menos 8 caracteres.');
@@ -153,16 +203,24 @@ export async function submitDbUnlockPassphrase() {
   if (submitBtn) submitBtn.disabled = true;
 
   try {
-    var res = await electron.dbUnlock({ passphrase: passphrase, remember: remember });
+    var unlockPayload = { passphrase: passphrase, remember: remember };
+    if (probe && probe.needed) {
+      unlockPayload.lsSnapshot = collectClinicalLsSnapshot();
+    }
+    var res = await electron.dbUnlock(unlockPayload);
     if (!res || res.ok === false) {
       setUnlockError(unlockErrorMessage(res || {}));
       if (submitBtn) submitBtn.disabled = !!(status && status.rateLimited);
       try {
         var st2 = await electron.dbStatus();
-        configureUnlockForm(st2);
+        configureUnlockForm(st2, lastMigrationProbe);
       } catch (_e2) {}
       return;
     }
+    if (res.clearKeys && res.clearKeys.length) {
+      clearMigratedLocalStorageKeys(res.clearKeys);
+    }
+    lastMigrationProbe = { needed: false, hasHostJson: false };
     setOverlayVisible(false);
     if (unlockWaitResolve) {
       var done = unlockWaitResolve;
@@ -184,6 +242,7 @@ export function syncDbSecuritySectionUi() {
 /** @internal tests */
 export function __resetDbUnlockWaitForTests() {
   unlockWaitResolve = null;
+  lastMigrationProbe = null;
   setOverlayVisible(false);
 }
 
