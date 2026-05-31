@@ -1,5 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { settingsHelpWindowHandlers } from './settings-help.mjs';
+
+const ONBOARDING_WINDOW_HANDLERS = [
+  'guidedTourClickPrev',
+  'guidedTourPause',
+  'resumeGuidedTourFromProgress',
+  'startTourModule',
+  'startHelpTourInterconsulta',
+  'startNeoCompanionTour',
+];
+
+test('settingsHelpWindowHandlers expone handlers de onboarding en window', () => {
+  for (const name of ONBOARDING_WINDOW_HANDLERS) {
+    assert.equal(typeof settingsHelpWindowHandlers[name], 'function', `${name} debe ser función`);
+  }
+});
 
 /** Misma lógica que settings-help.mjs (no exportada). */
 function esc(s) {
