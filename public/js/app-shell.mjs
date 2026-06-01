@@ -7,6 +7,7 @@ import { ensurePatientAccesos, syncLegacyAccesoFields } from './patient-accesos.
 import { dateInputValueToAccesoFecha } from './patient-date-fields.mjs';
 import { isRpcDatePopoverOpen, closeRpcDatePopover } from './rpc-date-picker.mjs';
 import { parseLanJoinQuery } from './lan-join-link.mjs';
+import { renderGuardiaCensusGrid, syncGuardiaCensusPanelVisibility } from './clinical-access-runtime.mjs';
 import { isMobileWeb, blockIfMobileDocExport, mobileDocExportToast } from './mobile-web.mjs';
 import { resolveQuickOutputAction } from './quick-output.mjs';
 import { handleOutputDirFallback } from './output-dir-fallback.mjs';
@@ -19,9 +20,13 @@ import {
 import {
   getUiDensity,
   isPaseMode,
+  isGuardiaMode,
   setUiDensity,
   syncPaseReturnHeaderBtn,
+  toggleGuardiaMode,
 } from './features/chrome.mjs';
+import { renderGuardiaBoard, syncGuardiaModeButtonVisibility } from './features/guardia-board.mjs';
+import { openEntregaModal } from './features/clinical-entrega.mjs';
 import {
   configureLanFromMobileJoin,
   closeConnectionDropdown,
@@ -148,6 +153,10 @@ function syncWorkContextChrome() {
   syncHeaderAppModeChip();
   syncMedPatientGate();
   syncPaseReturnHeaderBtn();
+  syncGuardiaModeButtonVisibility();
+  syncGuardiaCensusPanelVisibility(shellCtx.getSettings());
+  renderGuardiaCensusGrid(shellCtx.getSettings());
+  if (isGuardiaMode()) renderGuardiaBoard(shellCtx.getSettings());
 }
 
 
@@ -696,7 +705,12 @@ document.addEventListener('keydown', function(e) {
     if (key === 'p' && !e.altKey) {
       e.preventDefault();
       if (e.shiftKey) toggleProfileSection();
+      else if (isGuardiaMode()) setUiDensity('normal');
       else setUiDensity(getUiDensity() === 'normal' ? 'pase' : 'normal');
+    }
+    if (key === 'g' && e.shiftKey && !e.altKey) {
+      e.preventDefault();
+      toggleGuardiaMode();
     }
     if (e.key === ',' && !e.shiftKey && !e.altKey) {
       var tag = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : '';
@@ -990,6 +1004,13 @@ export const appShellWindowHandlers = {
   quickExportCurrentPatient,
 };
 
+/** Expose clinical handoff entry points on window.appShell. */
+export function installClinicalAppShell() {
+  if (typeof window === 'undefined') return;
+  window.appShell = window.appShell || {};
+  window.appShell.openEntregaModal = openEntregaModal;
+}
+
 function _rpcDeferInit(fn) {
   if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
     window.requestIdleCallback(
@@ -1014,6 +1035,7 @@ function _rpcDeferInit(fn) {
 }
 
 export function scheduleDeferredShellInits() {
+  _rpcDeferInit(installClinicalAppShell);
   _rpcDeferInit(initGoalGFeatures);
   _rpcDeferInit(initGuidedTourGate);
   _rpcDeferInit(initMobileWebBoot);

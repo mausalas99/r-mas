@@ -756,7 +756,7 @@
       "format": "esm"
     },
     "public/js/features/unified-patient-grid-board.mjs": {
-      "bytes": 5308,
+      "bytes": 6028,
       "imports": [],
       "format": "esm"
     },
@@ -782,8 +782,24 @@
       ],
       "format": "esm"
     },
+    "public/js/features/clinical-entrega.mjs": {
+      "bytes": 12614,
+      "imports": [
+        {
+          "path": "public/js/clinical-access-runtime.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-access-runtime.mjs"
+        },
+        {
+          "path": "public/js/clinico-access.mjs",
+          "kind": "import-statement",
+          "original": "../clinico-access.mjs"
+        }
+      ],
+      "format": "esm"
+    },
     "public/js/features/guardia-board.mjs": {
-      "bytes": 5737,
+      "bytes": 7798,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -829,6 +845,16 @@
           "path": "public/js/features/clinical-teams.mjs",
           "kind": "import-statement",
           "original": "./clinical-teams.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-entrega.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-entrega.mjs"
+        },
+        {
+          "path": "public/js/clinical-access-runtime.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-access-runtime.mjs"
         }
       ],
       "format": "esm"
@@ -4183,7 +4209,7 @@
       "format": "esm"
     },
     "public/js/app-shell.mjs": {
-      "bytes": 34256,
+      "bytes": 34620,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -4254,6 +4280,11 @@
           "path": "public/js/features/guardia-board.mjs",
           "kind": "import-statement",
           "original": "./features/guardia-board.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-entrega.mjs",
+          "kind": "import-statement",
+          "original": "./features/clinical-entrega.mjs"
         },
         {
           "path": "public/js/features/lan-sync.mjs",
@@ -4822,7 +4853,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 4147434
+      "bytes": 4174409
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -4989,7 +5020,7 @@
           "bytesInOutput": 58323
         },
         "public/js/clinico-access.mjs": {
-          "bytesInOutput": 11233
+          "bytesInOutput": 11960
         },
         "public/js/features/crypto-signer.mjs": {
           "bytesInOutput": 480
@@ -4998,10 +5029,10 @@
           "bytesInOutput": 3010
         },
         "public/js/clinical-access-runtime.mjs": {
-          "bytesInOutput": 8421
+          "bytesInOutput": 9063
         },
         "public/js/features/unified-patient-grid-board.mjs": {
-          "bytesInOutput": 5071
+          "bytesInOutput": 5709
         },
         "public/js/features/clinical-rotation.mjs": {
           "bytesInOutput": 8548
@@ -5009,8 +5040,11 @@
         "public/js/features/clinical-teams.mjs": {
           "bytesInOutput": 11341
         },
+        "public/js/features/clinical-entrega.mjs": {
+          "bytesInOutput": 11454
+        },
         "public/js/features/guardia-board.mjs": {
-          "bytesInOutput": 4277
+          "bytesInOutput": 6139
         },
         "public/js/rpc-date-picker.mjs": {
           "bytesInOutput": 11171
@@ -5478,7 +5512,7 @@
           "bytesInOutput": 16114
         },
         "public/js/app-shell.mjs": {
-          "bytesInOutput": 29591
+          "bytesInOutput": 29815
         },
         "public/js/app-runtimes.mjs": {
           "bytesInOutput": 13702
@@ -5490,7 +5524,7 @@
           "bytesInOutput": 6324
         }
       },
-      "bytes": 2275517
+      "bytes": 2291108
     }
   }
 }

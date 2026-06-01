@@ -15,9 +15,55 @@ import { diagnosticosTextForCenso } from '../patient-diagnosticos.mjs';
 import { UnifiedPatientGridBoard } from './unified-patient-grid-board.mjs';
 import { syncGuardiaIncomingStrip } from './clinical-rotation.mjs';
 import { wireClinicalTeamsControls } from './clinical-teams.mjs';
+import {
+  loadGuardiaGridViewContext,
+  openEntregaModal,
+  saveGuardiaGridMode,
+} from './clinical-entrega.mjs';
+import { refreshGuardiaCensusFromDb } from '../clinical-access-runtime.mjs';
 
 /** @type {UnifiedPatientGridBoard|null} */
 let gridBoard = null;
+let gridModeControlsWired = false;
+let appShellInstalled = false;
+
+function installGuardiaAppShell() {
+  if (appShellInstalled || typeof window === 'undefined') return;
+  appShellInstalled = true;
+  window.appShell = window.appShell || {};
+  window.appShell.openEntregaModal = openEntregaModal;
+}
+
+function wireGuardiaGridModeToggle(settings) {
+  if (gridModeControlsWired) return;
+  gridModeControlsWired = true;
+
+  const censoBtn = document.getElementById('guardia-grid-mode-censo');
+  const entregaBtn = document.getElementById('guardia-grid-mode-entrega');
+  if (!censoBtn || !entregaBtn) return;
+
+  const syncButtons = (mode) => {
+    const isEntrega = mode === 'entrega';
+    censoBtn.classList.toggle('is-active', !isEntrega);
+    entregaBtn.classList.toggle('is-active', isEntrega);
+    censoBtn.setAttribute('aria-pressed', String(!isEntrega));
+    entregaBtn.setAttribute('aria-pressed', String(isEntrega));
+  };
+
+  const applyMode = (mode) => {
+    saveGuardiaGridMode(mode);
+    syncButtons(mode);
+    if (gridBoard) {
+      gridBoard.setViewContext(mode === 'entrega' ? 'HANDOFF' : 'GUARDIA');
+    }
+    renderGuardiaBoard(settings);
+  };
+
+  syncButtons(loadGuardiaGridViewContext() === 'HANDOFF' ? 'entrega' : 'censo');
+
+  censoBtn.addEventListener('click', () => applyMode('censo'));
+  entregaBtn.addEventListener('click', () => applyMode('entrega'));
+}
 
 /** @param {string} pid */
 function pendingTodoCount(pid) {
@@ -113,6 +159,7 @@ function renderGuardiaSummaryTiles(summary) {
  */
 export function renderGuardiaBoard(settings) {
   if (!isGuardiaMode()) return;
+  installGuardiaAppShell();
   const root = document.getElementById('appcontent-guardia');
   if (!root || root.getAttribute('aria-hidden') === 'true') return;
 
@@ -124,7 +171,10 @@ export function renderGuardiaBoard(settings) {
     .filter((p) => p && p.id && !p.isDemo && !p.archived)
     .map((p) => enrichPatientForGuardiaCard(p, guardiasMap));
 
-  if (guardiasMap.size > 0) {
+  const gridViewContext = loadGuardiaGridViewContext();
+  wireGuardiaGridModeToggle(settings);
+
+  if (guardiasMap.size > 0 && gridViewContext === 'GUARDIA') {
     censusPatients = censusPatients.filter((p) => guardiasMap.has(p.id));
   }
 
@@ -134,7 +184,23 @@ export function renderGuardiaBoard(settings) {
   void syncGuardiaIncomingStrip(settings);
   wireClinicalTeamsControls();
 
-  if (!gridBoard) gridBoard = new UnifiedPatientGridBoard('guardia-census-grid', 'GUARDIA');
+  if (!gridBoard) {
+    gridBoard = new UnifiedPatientGridBoard('guardia-census-grid', gridViewContext);
+  } else {
+    gridBoard.setViewContext(gridViewContext);
+  }
+
+  gridBoard.onChipClick = (patientId) => {
+    const guardia = guardiasMap.get(patientId);
+    openEntregaModal({
+      patientId,
+      guardiaId: guardia?.guardia_id,
+      onConfirm: () => {
+        void refreshGuardiaCensusFromDb(settings);
+      },
+    });
+  };
+
   const rank = clinicalSessionContext.user?.rank || resolveClinicalRank(settings);
   gridBoard.drawCensusGrid(censusPatients, guardiasMap, rank);
 }

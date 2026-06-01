@@ -207,6 +207,36 @@ html.ui-density-guardia #header-app-mode-chip {
   align-items: center;
 }
 
+.guardia-grid-mode-toggle {
+  display: inline-flex;
+  margin-left: auto;
+  border: 1px solid #3d3558;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #1a1728;
+}
+
+.guardia-grid-mode-btn {
+  border: none;
+  background: transparent;
+  color: #a8a3b8;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.guardia-grid-mode-btn.is-active {
+  background: #3d3558;
+  color: #f4f2fa;
+}
+
+.guardia-grid-mode-btn:focus-visible {
+  outline: 2px solid #7c6cf0;
+  outline-offset: -2px;
+}
+
 .guardia-incoming-strip {
   margin: 0 0 1rem;
 }

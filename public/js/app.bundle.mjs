@@ -13763,6 +13763,22 @@ function hasSalaGuardiaDeclaredForLetter(salaGuardiaToday, teams, salaLetter) {
   );
   return salaTeams.some((t2) => declared.has(String(t2.team_id || "")));
 }
+function computeSalaAbcdefDeficitWrite(salaGuardiaToday, teams, userId, weekday) {
+  const uid = String(userId || "");
+  if (!uid) return false;
+  const hasDeficitLetter = SALA_LETTERS.some(
+    (letter) => !hasSalaGuardiaDeclaredForLetter(salaGuardiaToday, teams, letter)
+  );
+  if (!hasDeficitLetter) return false;
+  return (teams || []).some((team) => {
+    if (!normalizeServiceKey(team.service).includes("sala")) return false;
+    if (Number(team.on_call_day_index) !== weekday) return false;
+    if (!(team.members || []).some((m) => String(m.user_id) === uid)) return false;
+    return (salaGuardiaToday || []).some(
+      (g3) => String(g3.team_id) === String(team.team_id) && String(g3.user_id) === uid
+    );
+  });
+}
 function canR2SalaAbcdefDeficitWrite(userId, patient, joinedTeams, salaGuardiaToday, teams, weekday) {
   if (!normalizeServiceKey(patient?.service).includes("sala") && !extractSalaLetter(patient?.service || "")) {
     return false;
@@ -14090,6 +14106,18 @@ function syncGuardiaCensusPanelVisibility(_settings) {
   const legacyPanel = document.getElementById("guardia-census-panel");
   if (legacyPanel) legacyPanel.hidden = true;
 }
+async function refreshGuardiaCensusFromDb(settings2) {
+  if (!isDbMode() || !clinicalSessionContext.user) return;
+  const api3 = electronApi();
+  if (!api3 || typeof api3.dbGuardiaCensus !== "function") return;
+  const res = await api3.dbGuardiaCensus({ userId: clinicalSessionContext.user.user_id });
+  if (!res || res.ok === false) return;
+  clinicalSessionContext.guardias = Array.isArray(res.guardias) ? res.guardias : [];
+  clinicalSessionContext.guardiasMap = buildGuardiasMap(clinicalSessionContext.guardias);
+  await fetchClinicalTeamsFromDb();
+  await fetchClinicalScopeContextFromDb();
+  await renderGuardiaCensusGrid(settings2);
+}
 async function renderGuardiaCensusGrid(settings2) {
   if (isGuardiaMode()) renderGuardiaBoard(settings2);
 }
@@ -14245,6 +14273,28 @@ var UnifiedPatientGridBoard = class {
   constructor(domGridContainerId, appViewContext = "GUARDIA") {
     this.container = typeof document !== "undefined" ? document.getElementById(domGridContainerId) : null;
     this.context = appViewContext;
+    this.onChipClick = null;
+  }
+  /**
+   * @param {'GUARDIA'|'HANDOFF'} appViewContext
+   */
+  setViewContext(appViewContext) {
+    this.context = appViewContext === "HANDOFF" ? "HANDOFF" : "GUARDIA";
+  }
+  /**
+   * @param {string} patientId
+   */
+  handleChipClick(patientId) {
+    const id = String(patientId || "");
+    if (!id) return;
+    if (this.context === "HANDOFF") {
+      if (typeof this.onChipClick === "function") {
+        this.onChipClick(id);
+      }
+      return;
+    }
+    const selectFn = (typeof window !== "undefined" && typeof window.selectPatient === "function" ? window.selectPatient : null) || (typeof globalThis.selectPatient === "function" ? globalThis.selectPatient : null);
+    if (selectFn) selectFn(id);
   }
   /**
    * @param {Array<{ id: string, bed_label?: string, name?: string, service?: string, sub_area?: string, negativa_maniobras_firmada?: number, dxText?: string, pendingCount?: number, labsSnippet?: string, isCritical?: boolean, guardiaMeta?: object }>} patients
@@ -14326,9 +14376,7 @@ var UnifiedPatientGridBoard = class {
         <span class="patient-chip-labs">${labs}</span>
       </div>`;
     card.addEventListener("click", () => {
-      if (typeof window !== "undefined" && typeof window.selectPatient === "function") {
-        window.selectPatient(p.id);
-      }
+      this.handleChipClick(p.id);
     });
     return card;
   }
@@ -14820,8 +14868,329 @@ function wireClinicalTeamsControls() {
   });
 }
 
+// public/js/features/clinical-entrega.mjs
+var GUARDIA_GRID_MODE_KEY = "guardia.gridMode";
+function normalizeUsers(users) {
+  return (users || []).map((u) => ({
+    user_id: String(u.user_id || u.userId || ""),
+    username: String(u.username || ""),
+    rank: String(u.rank || "")
+  })).filter((u) => u.user_id);
+}
+function uniqueByUserId(list) {
+  const seen = /* @__PURE__ */ new Set();
+  return list.filter((u) => {
+    if (seen.has(u.user_id)) return false;
+    seen.add(u.user_id);
+    return true;
+  });
+}
+function listEntregaTargets(rank, teams, users, salaDeficit, opts = {}) {
+  const currentUserId2 = String(opts.currentUserId || "");
+  const weekday = opts.weekday ?? (/* @__PURE__ */ new Date()).getDay();
+  const all = normalizeUsers(users);
+  const teamList = Array.isArray(teams) ? teams : [];
+  const rankNorm = String(rank || "R1");
+  const joinedTeams = currentUserId2 ? getJoinedTeams(teamList, currentUserId2) : [];
+  if (rankNorm === "R3") {
+    const suggestedIds = /* @__PURE__ */ new Set();
+    teamList.forEach((team) => {
+      if (Number(team.on_call_day_index) !== weekday) return;
+      (team.members || []).forEach((m) => {
+        if (m?.user_id) suggestedIds.add(String(m.user_id));
+      });
+    });
+    const targets = all.filter((u) => suggestedIds.has(u.user_id));
+    return {
+      flow: "r3_suggest",
+      targets: targets.length ? uniqueByUserId(targets) : all
+    };
+  }
+  if (rankNorm === "R2") {
+    const services = new Set(
+      joinedTeams.map((t2) => String(t2.service || "").toLowerCase()).filter(Boolean)
+    );
+    const r2Peers = all.filter((u) => {
+      if (u.rank !== "R2") return false;
+      return teamList.some((team) => {
+        const svc = String(team.service || "").toLowerCase();
+        if (!services.has(svc)) return false;
+        return (team.members || []).some((m) => String(m.user_id) === u.user_id);
+      });
+    });
+    const r4s = all.filter((u) => u.rank === "R4");
+    let deficitR2 = [];
+    if (salaDeficit) {
+      deficitR2 = all.filter((u) => {
+        if (u.rank !== "R2") return false;
+        return teamList.some((team) => {
+          if (!String(team.service || "").toLowerCase().includes("sala")) return false;
+          if (Number(team.on_call_day_index) !== weekday) return false;
+          const onGuardia = team.guardia_today && String(team.guardia_today.user_id) === u.user_id;
+          if (!onGuardia) return false;
+          return (team.members || []).some((m) => String(m.user_id) === u.user_id);
+        });
+      });
+    }
+    const targets = uniqueByUserId([...r2Peers, ...r4s, ...deficitR2]);
+    return { flow: "r2", targets: targets.length ? targets : all };
+  }
+  if (rankNorm === "R1") {
+    const joinedIds = new Set(joinedTeams.map((t2) => String(t2.team_id)));
+    const fractions = new Set(
+      joinedTeams.map((t2) => String(t2.sub_area_fraction || "").trim()).filter(Boolean)
+    );
+    const targets = all.filter((u) => {
+      if (u.rank !== "R1") return false;
+      return teamList.some((team) => {
+        const member = (team.members || []).some((m) => String(m.user_id) === u.user_id);
+        if (!member) return false;
+        if (joinedIds.has(String(team.team_id))) return true;
+        const frac = String(team.sub_area_fraction || "").trim();
+        return frac && fractions.has(frac);
+      });
+    });
+    return { flow: "r1", targets: targets.length ? uniqueByUserId(targets) : all };
+  }
+  return { flow: "generic", targets: all };
+}
+function dbApi3() {
+  if (typeof window === "undefined") return null;
+  return window.rplusDb || window.electronAPI || null;
+}
+function toast3(msg, type = "info") {
+  if (typeof window !== "undefined" && typeof window.showToast === "function") {
+    window.showToast(msg, type);
+  }
+}
+function entregaModalEl() {
+  return document.getElementById("entrega-modal-backdrop");
+}
+function resolveDefaultSourceTeamId() {
+  const userId = String(clinicalSessionContext.user?.user_id || "");
+  const teams = clinicalSessionContext.teams || [];
+  const joined = getJoinedTeams(teams, userId);
+  if (joined[0]?.team_id) return String(joined[0].team_id);
+  if (teams[0]?.team_id) return String(teams[0].team_id);
+  return "";
+}
+async function submitEntregaAssignment(payload) {
+  const api3 = dbApi3();
+  if (!api3 || typeof api3.dbGuardiaUpsert !== "function") {
+    throw new Error("Base cl\xEDnica no disponible");
+  }
+  const patientId = String(payload.patientId || "");
+  const deltaData = {
+    coveringUserId: payload.coveringUserId,
+    sourceTeamId: payload.sourceTeamId,
+    isCritical: !!payload.isCritical,
+    pendientesJson: payload.pendientesJson || "[]",
+    vitalsFrequency: payload.vitalsFrequency || "None"
+  };
+  await signOutgoingLiveSyncMutation(
+    { patientId, entityId: patientId, data: deltaData, op: "entrega.assign" },
+    "entrega.assign"
+  );
+  const res = await api3.dbGuardiaUpsert({
+    patientId,
+    coveringUserId: payload.coveringUserId,
+    sourceTeamId: payload.sourceTeamId,
+    guardiaId: payload.guardiaId,
+    isCritical: payload.isCritical ? 1 : 0,
+    pendientesJson: payload.pendientesJson || "[]",
+    vitalsFrequency: payload.vitalsFrequency || "None"
+  });
+  if (!res || res.ok === false) {
+    throw new Error(res?.error || "No se guard\xF3 la entrega");
+  }
+  return res.guardia;
+}
+var entregaFormWired = false;
+function wireEntregaFormOnce() {
+  if (entregaFormWired) return;
+  entregaFormWired = true;
+  const form = document.getElementById("entrega-form");
+  const cancelBtn = document.getElementById("btn-entrega-cancel");
+  const bd = entregaModalEl();
+  if (cancelBtn) cancelBtn.addEventListener("click", () => closeEntregaModal());
+  if (bd) {
+    bd.addEventListener("click", (ev) => {
+      if (ev.target === bd) closeEntregaModal();
+    });
+  }
+  if (!form) return;
+  form.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const patientId = String(form.dataset.patientId || "");
+    const guardiaId = form.dataset.guardiaId ? String(form.dataset.guardiaId) : void 0;
+    const coveringUserId = String(
+      document.getElementById("entrega-covering-user")?.value || ""
+    );
+    const sourceTeamId = String(document.getElementById("entrega-source-team")?.value || "") || resolveDefaultSourceTeamId();
+    const pendientes = String(document.getElementById("entrega-pendientes")?.value || "").trim();
+    const isCritical = !!document.getElementById("entrega-critical")?.checked;
+    const vitalsFrequency = String(
+      document.getElementById("entrega-vitals-frequency")?.value || "None"
+    );
+    if (!patientId || !coveringUserId || !sourceTeamId) {
+      toast3("Selecciona usuario cubridor y equipo de origen.", "error");
+      return;
+    }
+    const pendientesJson = JSON.stringify(
+      pendientes ? pendientes.split("\n").map((l) => l.trim()).filter(Boolean) : []
+    );
+    try {
+      await submitEntregaAssignment({
+        patientId,
+        guardiaId,
+        coveringUserId,
+        sourceTeamId,
+        isCritical,
+        pendientesJson,
+        vitalsFrequency
+      });
+      toast3("Entrega registrada.", "success");
+      const onConfirm = form._entregaOnConfirm;
+      closeEntregaModal();
+      await refreshGuardiaCensusFromDb(null);
+      if (typeof onConfirm === "function") onConfirm();
+    } catch (err) {
+      toast3(err?.message || "Error al registrar entrega", "error");
+    }
+  });
+}
+function openEntregaModal(opts) {
+  wireEntregaFormOnce();
+  const bd = entregaModalEl();
+  const form = document.getElementById("entrega-form");
+  if (!bd || !form) return;
+  const patientId = String(opts?.patientId || "");
+  const guardiaId = opts?.guardiaId ? String(opts.guardiaId) : "";
+  const existing = guardiaId ? clinicalSessionContext.guardias.find((g3) => String(g3.guardia_id) === guardiaId) : clinicalSessionContext.guardiasMap.get(patientId);
+  form.dataset.patientId = patientId;
+  if (guardiaId) form.dataset.guardiaId = guardiaId;
+  else delete form.dataset.guardiaId;
+  form._entregaOnConfirm = typeof opts?.onConfirm === "function" ? opts.onConfirm : null;
+  const ctx = clinicalSessionContext.scopeContext || {};
+  const teams = clinicalSessionContext.teams || ctx.teams || [];
+  const users = Array.isArray(ctx.users) ? ctx.users : [];
+  const salaGuardiaToday = Array.isArray(ctx.salaGuardiaToday) ? ctx.salaGuardiaToday : [];
+  const userId = String(clinicalSessionContext.user?.user_id || "");
+  const rank = String(clinicalSessionContext.user?.rank || "R1");
+  const weekday = (/* @__PURE__ */ new Date()).getDay();
+  const salaDeficit = computeSalaAbcdefDeficitWrite(
+    salaGuardiaToday,
+    teams,
+    userId,
+    weekday
+  );
+  const { targets, flow } = listEntregaTargets(rank, teams, users, salaDeficit, {
+    currentUserId: userId,
+    weekday
+  });
+  const select = document.getElementById("entrega-covering-user");
+  const teamSelect = document.getElementById("entrega-source-team");
+  const hint = document.getElementById("entrega-flow-hint");
+  if (select) {
+    select.innerHTML = targets.map(
+      (u) => `<option value="${u.user_id}">${u.username} (${u.rank})</option>`
+    ).join("");
+    const preferred = existing?.covering_user_id ? String(existing.covering_user_id) : targets[0]?.user_id || "";
+    if (preferred) select.value = preferred;
+  }
+  if (teamSelect) {
+    const joined = getJoinedTeams(teams, userId);
+    const teamOptions = (joined.length ? joined : teams).filter((t2) => t2?.team_id);
+    teamSelect.innerHTML = teamOptions.map((t2) => `<option value="${t2.team_id}">${t2.name} \xB7 ${t2.service}</option>`).join("");
+    const src = existing?.source_team_id || resolveDefaultSourceTeamId();
+    if (src) teamSelect.value = src;
+  }
+  if (hint) {
+    const flowLabels = {
+      r1: "R1: mismos equipo o fracci\xF3n de sub-\xE1rea.",
+      r2: "R2: mismo servicio, R4, o cubridores Sala en d\xE9ficit.",
+      r3_suggest: "R3: sugeridos por d\xEDa de guardia del equipo (confirma).",
+      generic: "Cualquier usuario registrado."
+    };
+    hint.textContent = flowLabels[flow] || flowLabels.generic;
+  }
+  const pendientesEl = document.getElementById("entrega-pendientes");
+  const criticalEl = document.getElementById("entrega-critical");
+  const vitalsEl = document.getElementById("entrega-vitals-frequency");
+  if (pendientesEl) {
+    try {
+      const arr = JSON.parse(String(existing?.pendientes_json || "[]"));
+      pendientesEl.value = Array.isArray(arr) ? arr.join("\n") : "";
+    } catch {
+      pendientesEl.value = "";
+    }
+  }
+  if (criticalEl) criticalEl.checked = !!existing?.is_critical;
+  if (vitalsEl) vitalsEl.value = String(existing?.vitals_frequency || "None");
+  const title = document.getElementById("entrega-modal-title");
+  if (title) title.textContent = guardiaId ? "Actualizar entrega" : "Nueva entrega";
+  bd.classList.add("open");
+  bd.setAttribute("aria-hidden", "false");
+  select?.focus();
+}
+function closeEntregaModal() {
+  const bd = entregaModalEl();
+  if (!bd) return;
+  bd.classList.remove("open");
+  bd.setAttribute("aria-hidden", "true");
+  const form = document.getElementById("entrega-form");
+  if (form) form._entregaOnConfirm = null;
+}
+function loadGuardiaGridViewContext() {
+  try {
+    const mode = String(localStorage.getItem(GUARDIA_GRID_MODE_KEY) || "censo").toLowerCase();
+    return mode === "entrega" ? "HANDOFF" : "GUARDIA";
+  } catch {
+    return "GUARDIA";
+  }
+}
+function saveGuardiaGridMode(mode) {
+  try {
+    localStorage.setItem(GUARDIA_GRID_MODE_KEY, mode === "entrega" ? "entrega" : "censo");
+  } catch {
+  }
+}
+
 // public/js/features/guardia-board.mjs
 var gridBoard = null;
+var gridModeControlsWired = false;
+var appShellInstalled = false;
+function installGuardiaAppShell() {
+  if (appShellInstalled || typeof window === "undefined") return;
+  appShellInstalled = true;
+  window.appShell = window.appShell || {};
+  window.appShell.openEntregaModal = openEntregaModal;
+}
+function wireGuardiaGridModeToggle(settings2) {
+  if (gridModeControlsWired) return;
+  gridModeControlsWired = true;
+  const censoBtn = document.getElementById("guardia-grid-mode-censo");
+  const entregaBtn = document.getElementById("guardia-grid-mode-entrega");
+  if (!censoBtn || !entregaBtn) return;
+  const syncButtons = (mode) => {
+    const isEntrega = mode === "entrega";
+    censoBtn.classList.toggle("is-active", !isEntrega);
+    entregaBtn.classList.toggle("is-active", isEntrega);
+    censoBtn.setAttribute("aria-pressed", String(!isEntrega));
+    entregaBtn.setAttribute("aria-pressed", String(isEntrega));
+  };
+  const applyMode = (mode) => {
+    saveGuardiaGridMode(mode);
+    syncButtons(mode);
+    if (gridBoard) {
+      gridBoard.setViewContext(mode === "entrega" ? "HANDOFF" : "GUARDIA");
+    }
+    renderGuardiaBoard(settings2);
+  };
+  syncButtons(loadGuardiaGridViewContext() === "HANDOFF" ? "entrega" : "censo");
+  censoBtn.addEventListener("click", () => applyMode("censo"));
+  entregaBtn.addEventListener("click", () => applyMode("entrega"));
+}
 function pendingTodoCount(pid) {
   return storage.getTodos(pid).filter((t2) => !t2.completed).length;
 }
@@ -14893,18 +15262,35 @@ function renderGuardiaSummaryTiles(summary) {
 }
 function renderGuardiaBoard(settings2) {
   if (!isGuardiaMode()) return;
+  installGuardiaAppShell();
   const root = document.getElementById("appcontent-guardia");
   if (!root || root.getAttribute("aria-hidden") === "true") return;
   const guardiasMap = clinicalSessionContext.guardiasMap.size ? clinicalSessionContext.guardiasMap : buildGuardiasMap(clinicalSessionContext.guardias);
   let censusPatients = patients.filter((p) => p && p.id && !p.isDemo && !p.archived).map((p) => enrichPatientForGuardiaCard(p, guardiasMap));
-  if (guardiasMap.size > 0) {
+  const gridViewContext = loadGuardiaGridViewContext();
+  wireGuardiaGridModeToggle(settings2);
+  if (guardiasMap.size > 0 && gridViewContext === "GUARDIA") {
     censusPatients = censusPatients.filter((p) => guardiasMap.has(p.id));
   }
   const summary = computeGuardiaSummary(censusPatients, guardiasMap);
   renderGuardiaSummaryTiles(summary);
   void syncGuardiaIncomingStrip(settings2);
   wireClinicalTeamsControls();
-  if (!gridBoard) gridBoard = new UnifiedPatientGridBoard("guardia-census-grid", "GUARDIA");
+  if (!gridBoard) {
+    gridBoard = new UnifiedPatientGridBoard("guardia-census-grid", gridViewContext);
+  } else {
+    gridBoard.setViewContext(gridViewContext);
+  }
+  gridBoard.onChipClick = (patientId) => {
+    const guardia = guardiasMap.get(patientId);
+    openEntregaModal({
+      patientId,
+      guardiaId: guardia?.guardia_id,
+      onConfirm: () => {
+        void refreshGuardiaCensusFromDb(settings2);
+      }
+    });
+  };
   const rank = clinicalSessionContext.user?.rank || resolveClinicalRank(settings2);
   gridBoard.drawCensusGrid(censusPatients, guardiasMap, rank);
 }
@@ -57825,6 +58211,11 @@ var appShellWindowHandlers = {
   updatePatient,
   quickExportCurrentPatient
 };
+function installClinicalAppShell() {
+  if (typeof window === "undefined") return;
+  window.appShell = window.appShell || {};
+  window.appShell.openEntregaModal = openEntregaModal;
+}
 function _rpcDeferInit(fn) {
   if (typeof window !== "undefined" && typeof window.requestIdleCallback === "function") {
     window.requestIdleCallback(
@@ -57848,6 +58239,7 @@ function _rpcDeferInit(fn) {
   }
 }
 function scheduleDeferredShellInits() {
+  _rpcDeferInit(installClinicalAppShell);
   _rpcDeferInit(initGoalGFeatures);
   _rpcDeferInit(initGuidedTourGate);
   _rpcDeferInit(initMobileWebBoot);
