@@ -1930,6 +1930,16 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '6.5.2': [
+    {
+      title: 'TODO',
+      body: 'Completar antes de publicar.',
+    },
+    {
+      title: 'TODO',
+      body: 'Completar antes de publicar.',
+    },
+  ],
   '6.5.1': [
     {
       title: 'Perfil farmacoterapéutico',

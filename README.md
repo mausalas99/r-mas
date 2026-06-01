@@ -27,10 +27,16 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [6.5.1](https://github.com/mausalas99/r-mas/releases/tag/v6.5.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.5.2](https://github.com/mausalas99/r-mas/releases/tag/v6.5.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 6.5.2 (Recuperación de contraseña maestra (r+123))
+
+- **TODO:** completar bullets en README.
+
+Notas: `docs/RELEASE_NOTES_6.5.2.txt`.
 ## R+ 6.5.1 (Perfil farmacoterapéutico · almacén cifrado · sala en vivo)
 
 - **Perfil histórico (Medicamentos)** — Calendario mensual SOME: pegado de mes, adherencia (no administrado por celda), lista + modal pantalla completa; merge desde **Receta**; filtros por categoría SOME.

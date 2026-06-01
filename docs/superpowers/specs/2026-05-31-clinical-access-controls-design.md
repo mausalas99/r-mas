@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS active_guardias (
     source_team_id TEXT NOT NULL,
     is_critical INTEGER DEFAULT 0 CHECK(is_critical IN (0, 1)),
     pendientes_json TEXT,                       -- Serialized text string mapping transient task lists
-    vitals_interval_hours INTEGER DEFAULT 4,
+    vitals_frequency TEXT DEFAULT 'None' CHECK(vitals_frequency IN ('1h', '2h', '4h', 'Shift_Once', 'None')),
     last_vitals_check DATETIME DEFAULT CURRENT_TIMESTAMP,
     assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     status TEXT DEFAULT 'Active' CHECK(status IN ('Active', 'Resolved')),
@@ -141,55 +141,30 @@ Access decisions are made dynamically at runtime by evaluating current database 
 ```javascript
 /**
  * Evaluates view and write clearance metrics directly inside the runtime instance.
- * Automatically accommodates residency hierarchy adjustments and rotation deficits.
+ * FOR V1 RELEASE: Intentionally permissive to allow any registered user to 
+ * read/write local patient profile logs while capturing comprehensive audit 
+ * metadata for forensic ledger trails. Strict role-based access (Admin, R4, 
+ * R2 deficit rules, etc.) will be implemented in V2.
  */
 export function evaluateClinicalScope(currentUser, targetPatient, activeGuardia = null) {
-    // 1. Root System Administrator Bypass
-    if (currentUser.rank === 'Admin') {
-        return { readable: true, writable: true, reasoning: 'System Administrative Privilege' };
-    }
+    // V1 RELEASE PERMISSIVE MODE: Any registered user can read/write for 
+    // local patient profile logs to ensure clinical workflow continuity.
+    // Strict permission engine deferred to V2 per residency hierarchy rules.
+    // Metadata captured below supports forensic audit trails in SHA-256 chain.
+    const auditContext = {
+        userId: currentUser?.user_id,
+        rank: currentUser?.rank,
+        patientId: targetPatient?.id,
+        service: targetPatient?.service,
+        timestamp: new Date().toISOString()
+    };
 
-    // 2. R4 Senior Scope Override: Whole census access over assigned macro-domains
-    if (currentUser.rank === 'R4') {
-        if (targetPatient.service === 'Sala' || targetPatient.service === 'Interconsultas') {
-            return { readable: true, writable: true, reasoning: 'Global Ward Census Supervisory Override' };
-        }
-    }
-
-    // 3. Interconsult Closed Archive Isolation Pipeline
-    if (targetPatient.service === 'Interconsultas') {
-        if (targetPatient.interconsult_type === 'Ephemeral_VPO' && targetPatient.interconsult_status === 'Resolved') {
-            return { readable: true, writable: false, reasoning: 'Ephemeral VPO Closed Archive: Reference Read-Only Mode' };
-        }
-    }
-
-    // 4. Sala R2 Exclusive Deficit Exception Override
-    // Activated dynamically if a Sala R2 holds an active handover entry within the active_guardias table
-    if (currentUser.rank === 'R2' && targetPatient.service === 'Sala') {
-        const holdsActiveSalaGuardia = currentUser.active_guardias && 
-            currentUser.active_guardias.some(g => g.service === 'Sala' && g.status === 'Active');
-
-        if (holdsActiveSalaGuardia) {
-            return { readable: true, writable: true, reasoning: 'Sala R2 Rotation Deficit: Global Ward Write Access Granted' };
-        }
-    }
-
-    // 5. Active Guardias Tracking Target Assignment
-    if (activeGuardia && activeGuardia.status === 'Active') {
-        if (activeGuardia.covering_user_id === currentUser.user_id && activeGuardia.patient_id === targetPatient.id) {
-            return { readable: true, writable: true, reasoning: 'Designated Active On-Call Coverage Assignment' };
-        }
-    }
-
-    // 6. Default Primary Assigned Care Team Match
-    const assignedToTeam = currentUser.registered_team_ids.includes(targetPatient.team_id);
-    if (assignedToTeam) {
-        return { readable: true, writable: true, reasoning: 'Primary Care Team Structural Domain Membership' };
-    }
-
-    // 7. LAN Drop Bounds / External Snapshot Fallback Strategy
-    // Locks downstream write capabilities if off-network, preserving a clean read-only snapshot.
-    return { readable: true, writable: false, reasoning: 'Off-Duty Contextual Read-Only Data Snapshot' };
+    return { 
+        readable: true, 
+        writable: true, 
+        reasoning: 'V1 Release: Global peer-to-peer write access enabled (permissive mode)',
+        audit: auditContext
+    };
 }
 ```
 
@@ -269,6 +244,7 @@ A unified grid interface shared between Handoff View and Guardia Mode Dashboard,
 }
 
 .vitals-countdown-badge.nominal  { background-color: #102a18; color: #34c759; }
+.vitals-countdown-badge.nominal-gray  { background-color: #1a1a1a; color: #666666; }
 .vitals-countdown-badge.warning  { background-color: #2e220f; color: #ff9500; animation: warningFlash 1.5s infinite; }
 .vitals-countdown-badge.breached { background-color: #301314; color: #ff3b30; font-weight: 800; }
 
@@ -448,7 +424,8 @@ export class ClientSessionInactivityLocker {
 
 /**
  * Background Vitals Verification Loop Engine.
- * Runs background evaluations over local files to enforce the 4-hour monitoring criteria.
+ * Runs background evaluations over local files to enforce custom clinician-directed
+ * monitoring intervals (1h, 2h, 4h, Shift_Once).
  */
 export class BackgroundVitalsMonitorLoop {
     constructor(sqliteLocalDbWrapperInstance, currentActiveUserId) {
@@ -463,7 +440,7 @@ export class BackgroundVitalsMonitorLoop {
 
     async scanActiveGuardiasIntervals() {
         const sqlQuery = `
-            SELECT guardia_id, patient_id, last_vitals_check 
+            SELECT guardia_id, patient_id, last_vitals_check, vitals_frequency 
             FROM active_guardias 
             WHERE covering_user_id = ? AND status = 'Active'
         `;
@@ -472,21 +449,27 @@ export class BackgroundVitalsMonitorLoop {
             const operationalRows = await this.db.all(sqlQuery, [this.userId]);
 
             operationalRows.forEach(row => {
-                const targetBreachTimeMs = new Date(row.last_vitals_check).getTime() + (4 * 60 * 60 * 1000);
+                let intervalMs = 4 * 60 * 60 * 1000; // Default to 4h
+                if (row.vitals_frequency === '1h') intervalMs = 1 * 60 * 60 * 1000;
+                else if (row.vitals_frequency === '2h') intervalMs = 2 * 60 * 60 * 1000;
+                else if (row.vitals_frequency === 'Shift_Once') intervalMs = 8 * 60 * 60 * 1000;
+                else if (row.vitals_frequency === 'None') return; // Skip patients with no monitoring directive
+
+                const targetBreachTimeMs = new Date(row.last_vitals_check).getTime() + intervalMs;
                 const remainingDurationMs = targetBreachTimeMs - Date.now();
 
                 if (remainingDurationMs <= 0) {
                     this.dispatchNativeDesktopNotification(
                         row.patient_id, 
                         "CRITICAL: Control de Vitales Vencido", 
-                        "Límite de 4 horas superado. Registre signos vitales de inmediato."
+                        `Límite de ${row.vitals_frequency} superado. Registre signos vitales de inmediato.`
                     );
                 } else if (remainingDurationMs <= 15 * 60 * 1000) {
-                    // Trigger dynamic warning UI changes exactly 15 minutes before expiration window closes (at 3h 45m mark)
+                    // Trigger dynamic warning UI changes exactly 15 minutes before expiration window closes
                     this.dispatchNativeDesktopNotification(
                         row.patient_id, 
                         "Alerta: Control Próximo", 
-                        "La ventana para el chequeo de signos vitales cierra en menos de 15 minutos."
+                        `La ventana para el chequeo de signos vitales cierra en menos de 15 minutos.`
                     );
                 }
             });

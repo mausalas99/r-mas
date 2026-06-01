@@ -196,6 +196,7 @@ import {
   renderInnerTabs,
   syncInnerTabVisualOnly,
 } from './features/pase-board.mjs';
+import { renderGuardiaBoard } from './features/guardia-board.mjs';
 import {
   renderMedRecetaPanel,
 } from './features/medications.mjs';
@@ -327,6 +328,9 @@ registerChromeRuntime({
   getActiveId: function () { return rt.getActiveId(); },
   setRoundOverviewMode: setRoundOverviewMode,
   renderPaseBoard: renderPaseBoard,
+  renderGuardiaBoard: function () {
+    return renderGuardiaBoard(rt.getSettings());
+  },
   syncLabOutputChrome: syncLabOutputChrome,
 });
 

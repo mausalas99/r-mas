@@ -195,6 +195,7 @@ export function toggleHighContrast() {
 
 export function getUiDensity() {
   const raw = localStorage.getItem(UI_DENSITY_LS);
+  if (raw === 'guardia') return 'guardia';
   if (raw === 'pase' || raw === 'compact') return 'pase';
   if (raw === 'normal' || raw === 'comfortable') return 'normal';
   return 'normal';
@@ -202,6 +203,10 @@ export function getUiDensity() {
 
 export function isPaseMode() {
   return getUiDensity() === 'pase';
+}
+
+export function isGuardiaMode() {
+  return getUiDensity() === 'guardia';
 }
 
 export function markOpenedDetailFromPaseBoard() {
@@ -239,7 +244,28 @@ function paseSectionLabelFromContext() {
 export function syncPaseModeHeaderChip() {
   var chip = document.getElementById('header-pase-mode-chip');
   if (!chip) return;
-  chip.style.display = getUiDensity() === 'pase' ? 'inline-flex' : 'none';
+  chip.style.display = isPaseMode() ? 'inline-flex' : 'none';
+}
+
+export function syncGuardiaModeHeaderChip() {
+  var chip = document.getElementById('header-guardia-mode-chip');
+  if (!chip) return;
+  chip.style.display = 'inline-flex';
+  chip.classList.toggle('header-guardia-mode-chip--active', isGuardiaMode());
+  chip.setAttribute('aria-pressed', isGuardiaMode() ? 'true' : 'false');
+}
+
+export function toggleGuardiaMode() {
+  if (isGuardiaMode()) {
+    setUiDensity('normal');
+    return;
+  }
+  clearPaseDetailEscape();
+  setUiDensity('guardia');
+}
+
+export function exitGuardiaModeFromHeader() {
+  if (isGuardiaMode()) setUiDensity('normal');
 }
 
 export function exitPaseModeFromHeader() {
@@ -269,10 +295,12 @@ export function returnToPaseBoardFromDetail() {
 }
 
 export function applyUiDensity() {
-  document.documentElement.classList.toggle('ui-density-normal', getUiDensity() === 'normal');
+  const density = getUiDensity();
+  document.documentElement.classList.toggle('ui-density-normal', density === 'normal');
+  document.documentElement.classList.toggle('ui-density-guardia', density === 'guardia');
   const rondaHint = document.getElementById('sidebar-ronda-hint');
   if (rondaHint) {
-    rondaHint.setAttribute('aria-hidden', getUiDensity() === 'pase' ? 'false' : 'true');
+    rondaHint.setAttribute('aria-hidden', density !== 'normal' ? 'false' : 'true');
   }
   if (isPaseMode()) runtime.setRoundOverviewMode(true);
   var paseRoot = document.getElementById('appcontent-pase');
@@ -283,13 +311,22 @@ export function applyUiDensity() {
     paseRoot.style.minHeight = '0';
     paseRoot.style.overflow = 'hidden';
     paseRoot.setAttribute('aria-hidden', 'false');
-  } else if (!isPaseMode() && paseRoot) {
+  } else if (paseRoot) {
     paseRoot.style.display = 'none';
     paseRoot.setAttribute('aria-hidden', 'true');
+  }
+  var guardiaRoot = document.getElementById('appcontent-guardia');
+  if (guardiaRoot && !isGuardiaMode()) {
+    guardiaRoot.style.display = 'none';
+    guardiaRoot.setAttribute('aria-hidden', 'true');
   }
   runtime.switchAppTab(runtime.getActiveAppTab());
   syncPaseReturnHeaderBtn();
   syncPaseModeHeaderChip();
+  syncGuardiaModeHeaderChip();
+  if (typeof runtime.renderGuardiaBoard === 'function' && isGuardiaMode()) {
+    runtime.renderGuardiaBoard();
+  }
   if (typeof runtime.syncLabOutputChrome === 'function') runtime.syncLabOutputChrome();
 }
 
@@ -308,9 +345,9 @@ export function syncUiDensityButtons() {
 }
 
 export function setUiDensity(mode) {
-  let m = mode === 'pase' || mode === 'compact' ? 'pase' : 'normal';
+  let m = mode === 'guardia' ? 'guardia' : mode === 'pase' || mode === 'compact' ? 'pase' : 'normal';
   if (mode === 'comfortable') m = 'normal';
-  if (m === 'pase') clearPaseDetailEscape();
+  if (m === 'pase' || m === 'guardia') clearPaseDetailEscape();
   localStorage.setItem(UI_DENSITY_LS, m);
   applyUiDensity();
   syncUiDensityButtons();
@@ -319,6 +356,9 @@ export function setUiDensity(mode) {
     requestAnimationFrame(() => runtime.scrollActiveRondaCardIntoView());
   }
   if (runtime.getActiveAppTab() === 'agenda') runtime.renderProcedureAgendaPanel();
+  if (isGuardiaMode() && typeof runtime.renderGuardiaBoard === 'function') {
+    runtime.renderGuardiaBoard();
+  }
 }
 
 export function getProcedureAgendaRowPx() {
@@ -349,5 +389,7 @@ export const windowHandlers = {
   toggleHighContrast,
   returnToPaseBoardFromDetail,
   exitPaseModeFromHeader,
+  toggleGuardiaMode,
+  exitGuardiaModeFromHeader,
   t,
 };

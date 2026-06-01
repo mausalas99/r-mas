@@ -53,6 +53,15 @@ import {
   toggleHeaderWorkMode,
 } from './features/profile.mjs';
 import { initRpcDatePicker } from './rpc-date-picker.mjs';
+import {
+  initClinicalAccessRuntime,
+  resumeClinicalSession,
+} from './clinical-access-runtime.mjs';
+import {
+  promptClinicalRegistrationIfNeeded,
+  windowHandlers as clinicalRegistrationWindowHandlers,
+} from './features/clinical-registration.mjs';
+import { syncGuardiaModeButtonVisibility } from './features/guardia-board.mjs';
 
 const allWindowHandlers = Object.assign(
   {},
@@ -79,7 +88,13 @@ const allWindowHandlers = Object.assign(
   paseBoardWindowHandlers,
   medicationsWindowHandlers,
   profileWindowHandlers,
-  appShellWindowHandlers
+  clinicalRegistrationWindowHandlers,
+  appShellWindowHandlers,
+  {
+    resumeClinicalSession: function () {
+      return resumeClinicalSession(settings, getClinicalClientId());
+    },
+  }
 );
 
 try {
@@ -195,6 +210,14 @@ appStateReady
     }
   });
 
+function getClinicalClientId() {
+  try {
+    var raw = localStorage.getItem('rpc-lan-client-id');
+    if (raw) return raw;
+  } catch (_e) {}
+  return 'desktop-host';
+}
+
 function runDomBoot() {
   appStateReady.then(function () {
     runDomBootAfterState();
@@ -241,6 +264,19 @@ function runDomBootAfterState() {
     _rpcDeferInit(initPatientModalEnterSave);
     syncProfileSectionVisibility();
     wireHeaderAppModeChip();
+    if (isDbMode()) {
+      promptClinicalRegistrationIfNeeded(settings)
+        .then(function () {
+          loadSettings();
+          return initClinicalAccessRuntime(settings, getClinicalClientId());
+        })
+        .then(function () {
+          syncGuardiaModeButtonVisibility();
+        })
+        .catch(function (err) {
+          console.warn('[R+] Clinical access runtime init:', err && err.message);
+        });
+    }
   } catch (domErr) {
     console.error('[R+] Error en arranque de UI:', domErr);
   }

@@ -450,7 +450,7 @@ html.sidebar-auto-hide.sidebar-reveal .app-tabs-row {
   border-top-left-radius: var(--radius-md);
 }
 .app-tabs-row .app-tabs { flex: 1; padding: 0; box-shadow: none; background: transparent; min-width: 0; }
-/* Pase: resumen en una sola columna; vista normal = pestañas completas (Laboratorio, Expediente, …) */
+/* Guardia + Pase: hide main tabs, full-height board */
 html:not(.ui-density-normal) .app-tabs-row {
   display: none;
 }

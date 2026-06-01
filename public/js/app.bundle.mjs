@@ -798,6 +798,7 @@ var storage = {
 // public/js/features/db-unlock.mjs
 var unlockWaitResolve = null;
 var lastMigrationProbe = null;
+var lastNeedsConfirm = true;
 function api() {
   return typeof window !== "undefined" ? window.electronAPI : null;
 }
@@ -865,9 +866,12 @@ function unlockErrorMessage(res, opts) {
   if (code === "DB_UNLOCK_FAILED") {
     var cause = res && (res.cause || res.error || "");
     if (/file is not a database|not a database/i.test(String(cause))) {
-      return "Contrase\xF1a incorrecta. Verifica may\xFAsculas, espacios y vuelve a intentar. (No es la contrase\xF1a de Mi Perfil ni el PIN de bloqueo.)";
+      return "C\xF3digo de recuperaci\xF3n incorrecto.";
     }
-    return "Contrase\xF1a incorrecta. Verifica may\xFAsculas, espacios y vuelve a intentar. (No es la contrase\xF1a de Mi Perfil ni el PIN de bloqueo.)";
+    return "C\xF3digo de recuperaci\xF3n incorrecto.";
+  }
+  if (code === "DB_RECOVERY_NOT_CONFIGURED") {
+    return "La recuperaci\xF3n no est\xE1 disponible para esta base de datos.";
   }
   if (code === "DB_NATIVE_ABI_MISMATCH") {
     return "El m\xF3dulo SQLCipher no coincide con esta sesi\xF3n de R+ (suele pasar despu\xE9s de npm test). En la carpeta del proyecto ejecuta: npm run rebuild:db-native \u2014 cierra R+ por completo (Cmd+Q) y vuelve a abrir con npm start.";
@@ -917,6 +921,15 @@ function resetDbUnlockSecretFields() {
     toggles[j].textContent = "Mostrar";
     toggles[j].setAttribute("aria-label", "Mostrar contrase\xF1a");
   }
+  resetDbUnlockRecoveryMode();
+}
+function resetDbUnlockRecoveryMode() {
+  var recoveryWrap = document.getElementById("rpc-db-unlock-recovery-wrap");
+  var submitBtn = document.getElementById("rpc-db-unlock-submit");
+  if (recoveryWrap) recoveryWrap.style.display = "none";
+  if (submitBtn) submitBtn.setAttribute("onclick", "submitDbUnlockPassphrase()");
+  var recCode = document.getElementById("rpc-db-unlock-recovery-code");
+  if (recCode) recCode.value = "";
 }
 function setOverlayVisible(visible) {
   var overlay = document.getElementById("rpc-db-unlock-overlay");
@@ -949,6 +962,7 @@ function setUnlockError(msg) {
 }
 function configureUnlockForm(status, probe) {
   var needsConfirm = needsPassphraseConfirm(status, probe);
+  lastNeedsConfirm = needsConfirm;
   var confirmWrap = document.getElementById("rpc-db-unlock-confirm-wrap");
   var confirmInput = document.getElementById("rpc-db-unlock-confirm");
   if (confirmWrap) confirmWrap.style.display = needsConfirm ? "" : "none";
@@ -983,6 +997,8 @@ function configureUnlockForm(status, probe) {
     submit.disabled = !!(status && status.rateLimited) || nativeBlocked;
     submit.textContent = needsConfirm ? "Crear contrase\xF1a y continuar" : "Desbloquear";
   }
+  var recoveryToggle = document.getElementById("rpc-db-unlock-recovery-toggle");
+  if (recoveryToggle) recoveryToggle.style.display = needsConfirm ? "none" : "";
   wireDbUnlockSecretToggles();
   return nativeBlocked;
 }
@@ -1014,6 +1030,83 @@ async function waitForDbUnlock() {
     }
     setOverlayVisible(true);
   });
+}
+function toggleRecoveryMode() {
+  var recoveryWrap = document.getElementById("rpc-db-unlock-recovery-wrap");
+  var toggleBtn = document.getElementById("rpc-db-unlock-recovery-toggle");
+  var passEl = document.getElementById("rpc-db-unlock-pass");
+  var confirmWrap = document.getElementById("rpc-db-unlock-confirm-wrap");
+  var rememberLabel = document.querySelector(".rpc-db-unlock-remember");
+  var rememberHint = document.querySelector(".settings-acc-hint--tight");
+  var submitBtn = document.getElementById("rpc-db-unlock-submit");
+  var isRecovery = recoveryWrap && recoveryWrap.style.display !== "none";
+  if (isRecovery) {
+    if (recoveryWrap) recoveryWrap.style.display = "none";
+    if (toggleBtn) toggleBtn.style.display = "";
+    if (passEl) {
+      passEl.style.display = "";
+      passEl.parentElement.style.display = "";
+    }
+    if (confirmWrap) confirmWrap.style.display = lastNeedsConfirm ? "" : "none";
+    if (rememberLabel) rememberLabel.style.display = lastNeedsConfirm ? "" : "";
+    if (rememberHint) rememberHint.style.display = lastNeedsConfirm ? "" : "";
+    if (submitBtn) {
+      submitBtn.textContent = lastNeedsConfirm ? "Crear contrase\xF1a y continuar" : "Desbloquear";
+      submitBtn.setAttribute("onclick", "submitDbUnlockPassphrase()");
+    }
+  } else {
+    if (recoveryWrap) recoveryWrap.style.display = "";
+    if (toggleBtn) toggleBtn.style.display = "none";
+    if (passEl) {
+      passEl.style.display = "none";
+      passEl.parentElement.style.display = "none";
+    }
+    if (confirmWrap) confirmWrap.style.display = "none";
+    if (rememberLabel) rememberLabel.style.display = "none";
+    if (rememberHint) rememberHint.style.display = "none";
+    if (submitBtn) {
+      submitBtn.textContent = "Recuperar acceso";
+      submitBtn.setAttribute("onclick", "submitRecoveryCode()");
+    }
+    var recCode = document.getElementById("rpc-db-unlock-recovery-code");
+    if (recCode) recCode.focus();
+  }
+  setUnlockError("");
+}
+async function submitRecoveryCode() {
+  var electron = api();
+  if (!electron || typeof electron.dbUnlockRecovery !== "function") return;
+  var codeEl = document.getElementById("rpc-db-unlock-recovery-code");
+  var code = codeEl ? String(codeEl.value || "").trim() : "";
+  if (!code) {
+    setUnlockError("Ingresa el c\xF3digo de recuperaci\xF3n.");
+    return;
+  }
+  setUnlockError("");
+  var submitBtn = document.getElementById("rpc-db-unlock-submit");
+  if (submitBtn) submitBtn.disabled = true;
+  try {
+    var res = await electron.dbUnlockRecovery({ code });
+    if (!res || res.ok === false) {
+      setUnlockError(unlockErrorMessage(res || {}, {}));
+      if (submitBtn) submitBtn.disabled = false;
+      try {
+        var st2 = await electron.dbStatus();
+        configureUnlockForm(st2, lastMigrationProbe);
+      } catch (_e2) {
+      }
+      return;
+    }
+    setOverlayVisible(false);
+    if (unlockWaitResolve) {
+      var done = unlockWaitResolve;
+      unlockWaitResolve = null;
+      done({ unlocked: true, status: res });
+    }
+  } catch (err) {
+    setUnlockError(err && err.message || "Error al recuperar.");
+    if (submitBtn) submitBtn.disabled = false;
+  }
 }
 async function submitDbUnlockPassphrase() {
   var electron = api();
@@ -1213,6 +1306,8 @@ async function submitChangeMasterPassword() {
 }
 var dbUnlockWindowHandlers = {
   submitDbUnlockPassphrase,
+  submitRecoveryCode,
+  toggleRecoveryMode,
   openChangeMasterPasswordModal,
   closeChangeMasterPasswordModal,
   submitChangeMasterPassword

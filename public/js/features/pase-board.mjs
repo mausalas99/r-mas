@@ -6,7 +6,14 @@ import { storage } from "../storage.js";
 import { sortLabHistoryChronological, normalizeFechaLabHistory } from "../tend-core.mjs";
 import { dosisBeforeSlash } from "../med-receta-core.mjs";
 import { patients, medRecetaByPatient } from "../app-state.mjs";
-import { isPaseMode, getUiDensity, setUiDensity, markOpenedDetailFromPaseBoard } from "./chrome.mjs";
+import {
+  isPaseMode,
+  isGuardiaMode,
+  getUiDensity,
+  setUiDensity,
+  markOpenedDetailFromPaseBoard,
+} from "./chrome.mjs";
+import { renderGuardiaBoard } from "./guardia-board.mjs";
 import { isModeSala } from "../mode-features.mjs";
 import {
   extractCultivoTableRowsFromHistory,
@@ -777,6 +784,7 @@ export function switchAppTab(tab) {
   var appcontentMed = document.getElementById("appcontent-med");
   var appcontentNota = document.getElementById("appcontent-nota");
   var appcontentAgenda = document.getElementById("appcontent-agenda");
+  var guardia = isGuardiaMode();
   var unified = isPaseMode();
 
   if (apptabLab) apptabLab.classList.toggle("active", tab === "lab");
@@ -784,11 +792,29 @@ export function switchAppTab(tab) {
   if (apptabMed) apptabMed.classList.toggle("active", tab === "med");
   if (apptabAgenda) apptabAgenda.classList.toggle("active", tab === "agenda");
 
-  if (unified) {
-    var paseRoot = document.getElementById("appcontent-pase");
-    [appcontentLab, appcontentMed, appcontentNota, appcontentAgenda].forEach(function (p) {
+  var paseRoot = document.getElementById("appcontent-pase");
+  var guardiaRoot = document.getElementById("appcontent-guardia");
+  var standardPanels = [appcontentLab, appcontentMed, appcontentNota, appcontentAgenda];
+
+  if (guardia) {
+    standardPanels.forEach(function (p) {
       hideAppTabPanel(p);
     });
+    if (paseRoot) hideAppTabPanel(paseRoot);
+    if (guardiaRoot) {
+      showAppTabPanel(guardiaRoot, false);
+      guardiaRoot.style.display = "flex";
+      guardiaRoot.style.flexDirection = "column";
+      guardiaRoot.style.flex = "1";
+      guardiaRoot.style.minHeight = "0";
+      guardiaRoot.style.overflow = "hidden";
+    }
+    renderGuardiaBoard(rt.getSettings());
+  } else if (unified) {
+    standardPanels.forEach(function (p) {
+      hideAppTabPanel(p);
+    });
+    if (guardiaRoot) hideAppTabPanel(guardiaRoot);
     if (paseRoot) {
       var animatePase = prevAppTab !== tab || paseRoot.style.display === "none";
       showAppTabPanel(paseRoot, animatePase);
@@ -796,9 +822,8 @@ export function switchAppTab(tab) {
     }
     renderPaseBoard();
   } else {
-    if (document.getElementById("appcontent-pase")) {
-      hideAppTabPanel(document.getElementById("appcontent-pase"));
-    }
+    if (paseRoot) hideAppTabPanel(paseRoot);
+    if (guardiaRoot) hideAppTabPanel(guardiaRoot);
     var animatePanels = prevAppTab !== tab;
     if (appcontentLab) {
       if (tab === "lab") showAppTabPanel(appcontentLab, animatePanels);
@@ -840,6 +865,32 @@ export function syncMainAppTabA11y(tab) {
     ["agenda", "apptab-agenda", "appcontent-agenda", "appTab.agenda"],
   ];
   var list = document.getElementById("app-main-tablist");
+  if (isGuardiaMode()) {
+    if (list) list.setAttribute("aria-hidden", "true");
+    rows.forEach(function (r) {
+      var b = document.getElementById(r[1]);
+      var p = document.getElementById(r[2]);
+      if (b) {
+        b.setAttribute("aria-hidden", "true");
+        b.setAttribute("tabindex", "-1");
+      }
+      if (p) {
+        p.setAttribute("role", "tabpanel");
+        p.removeAttribute("aria-label");
+        p.setAttribute("aria-labelledby", r[1]);
+        p.setAttribute("aria-hidden", "true");
+      }
+    });
+    var paseRootG = document.getElementById("appcontent-pase");
+    if (paseRootG) paseRootG.setAttribute("aria-hidden", "true");
+    var guardiaRoot = document.getElementById("appcontent-guardia");
+    if (guardiaRoot) {
+      guardiaRoot.setAttribute("role", "region");
+      guardiaRoot.setAttribute("aria-label", "Modo Guardia — censo de pacientes");
+      guardiaRoot.setAttribute("aria-hidden", "false");
+    }
+    return;
+  }
   if (isPaseMode()) {
     if (list) list.setAttribute("aria-hidden", "true");
     rows.forEach(function (r) {
@@ -862,6 +913,8 @@ export function syncMainAppTabA11y(tab) {
       paseRoot.setAttribute("aria-label", "Vista Pase — resumen del paciente");
       paseRoot.setAttribute("aria-hidden", "false");
     }
+    var guardiaRootPase = document.getElementById("appcontent-guardia");
+    if (guardiaRootPase) guardiaRootPase.setAttribute("aria-hidden", "true");
     return;
   }
   var paseRoot2 = document.getElementById("appcontent-pase");
@@ -869,6 +922,12 @@ export function syncMainAppTabA11y(tab) {
     paseRoot2.removeAttribute("role");
     paseRoot2.removeAttribute("aria-label");
     paseRoot2.setAttribute("aria-hidden", "true");
+  }
+  var guardiaRoot2 = document.getElementById("appcontent-guardia");
+  if (guardiaRoot2) {
+    guardiaRoot2.removeAttribute("role");
+    guardiaRoot2.removeAttribute("aria-label");
+    guardiaRoot2.setAttribute("aria-hidden", "true");
   }
   if (list) list.removeAttribute("aria-hidden");
   rows.forEach(function (r) {

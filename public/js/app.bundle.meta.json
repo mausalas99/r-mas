@@ -27,7 +27,7 @@
       "format": "esm"
     },
     "public/js/features/db-unlock.mjs": {
-      "bytes": 17788,
+      "bytes": 21570,
       "imports": [
         {
           "path": "public/js/db-storage-bridge.mjs",
@@ -694,7 +694,7 @@
       "format": "esm"
     },
     "public/js/clinico-access.mjs": {
-      "bytes": 14724,
+      "bytes": 15828,
       "imports": [
         {
           "path": "public/js/clinical-product-policy.mjs",
@@ -1011,7 +1011,7 @@
       "format": "esm"
     },
     "public/js/features/clinical-teams.mjs": {
-      "bytes": 11987,
+      "bytes": 14356,
       "imports": [
         {
           "path": "public/js/clinical-access-runtime.mjs",
@@ -1022,12 +1022,17 @@
           "path": "public/js/features/lan-sync.mjs",
           "kind": "import-statement",
           "original": "./lan-sync.mjs"
+        },
+        {
+          "path": "public/js/clinico-access.mjs",
+          "kind": "import-statement",
+          "original": "../clinico-access.mjs"
         }
       ],
       "format": "esm"
     },
     "public/js/features/clinical-entrega.mjs": {
-      "bytes": 12699,
+      "bytes": 12655,
       "imports": [
         {
           "path": "public/js/clinical-access-runtime.mjs",
@@ -4873,7 +4878,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 4183192
+      "bytes": 4195143
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -4890,7 +4895,7 @@
           "bytesInOutput": 25144
         },
         "public/js/features/db-unlock.mjs": {
-          "bytesInOutput": 16892
+          "bytesInOutput": 20705
         },
         "public/js/med-receta-core.mjs": {
           "bytesInOutput": 20487
@@ -5040,7 +5045,7 @@
           "bytesInOutput": 58323
         },
         "public/js/clinico-access.mjs": {
-          "bytesInOutput": 11960
+          "bytesInOutput": 12995
         },
         "public/js/features/crypto-signer.mjs": {
           "bytesInOutput": 480
@@ -5109,10 +5114,10 @@
           "bytesInOutput": 119120
         },
         "public/js/features/clinical-teams.mjs": {
-          "bytesInOutput": 11367
+          "bytesInOutput": 13703
         },
         "public/js/features/clinical-entrega.mjs": {
-          "bytesInOutput": 11484
+          "bytesInOutput": 11420
         },
         "public/js/features/guardia-board.mjs": {
           "bytesInOutput": 6139
@@ -5547,7 +5552,7 @@
           "bytesInOutput": 6324
         }
       },
-      "bytes": 2295465
+      "bytes": 2302585
     }
   }
 }
