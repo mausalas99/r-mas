@@ -2577,6 +2577,15 @@ function lanHostUrl() {
   return lanClient.baseUrl() || '';
 }
 
+function getClinicalUserUserId() {
+  try {
+    var user = typeof clinicalSessionContext !== 'undefined' ? clinicalSessionContext.user : null;
+    return user ? String(user.user_id || '') : '';
+  } catch (_e) {
+    return '';
+  }
+}
+
 async function renderLanPanelOnce() {
   var gen = ++_lanPanelRenderGen;
   var root = document.getElementById('lan-connection-panel-root');
@@ -2620,7 +2629,7 @@ async function renderLanPanelOnce() {
       ? '<span class="lan-hub-status-dot lan-hub-status-dot--online"></span> Conectado a la red del hospital'
       : '<span class="lan-hub-status-dot lan-hub-status-dot--offline"></span> Sin red \u2014 buscando\u2026') +
     '</div>';
-  if (!connected) {
+  if (!connected && isLanElectronDesktop()) {
     var becomeHostBtn = document.createElement('button');
     becomeHostBtn.type = 'button';
     becomeHostBtn.className = 'btn-lan-primary';
@@ -2628,7 +2637,8 @@ async function renderLanPanelOnce() {
     becomeHostBtn.style.width = '100%';
     becomeHostBtn.textContent = 'Convertirse en host';
     becomeHostBtn.onclick = function () {
-      void ensureLanElectronHostReady().then(function () {
+      void ensureLanElectronHostReady().then(function (activated) {
+        if (!activated) return;
         renderLanPanel();
         runtime.showToast('Esta Mac ahora es el servidor del turno.', 'success');
       });
@@ -2705,12 +2715,83 @@ async function renderLanPanelOnce() {
 }
 
 function buildR1Section(root) {
+  var card = document.createElement('div');
+  card.className = 'lan-connect-card lan-hub-team-card';
+  card.innerHTML = '<div class="lan-connect-card-title">Mi equipo</div>';
+
+  var userId = String(getClinicalUserUserId());
+  var teams = clinicalSessionContext.teams || [];
+  var myTeam = teams.find(function (t) {
+    return (t.members || []).some(function (m) {
+      return String(m.user_id) === userId;
+    });
+  });
+
+  if (myTeam) {
+    var teamName = document.createElement('p');
+    teamName.className = 'lan-hub-team-name';
+    teamName.textContent = 'Mi equipo: ' + (myTeam.name || 'Sin nombre');
+    card.appendChild(teamName);
+  } else {
+    var noTeam = document.createElement('p');
+    noTeam.className = 'lan-connect-card-hint';
+    noTeam.innerHTML = 'Sin equipo — <button type="button" class="lan-hub-link-btn" id="lan-hub-join-team">Unirse a un equipo</button>';
+    card.appendChild(noTeam);
+  }
+
+  root.appendChild(card);
+
+  var modoCard = document.createElement('div');
+  modoCard.className = 'lan-connect-card lan-hub-modo-card';
+  var modoLabel = document.createElement('label');
+  modoLabel.className = 'lan-hub-modo-label';
+  modoLabel.setAttribute('for', 'lan-hub-guardia-toggle');
+  var modoCheck = document.createElement('input');
+  modoCheck.type = 'checkbox';
+  modoCheck.id = 'lan-hub-guardia-toggle';
+  modoCheck.className = 'lan-hub-guardia-check';
+  modoCheck.checked = !!clinicalSessionContext.guardiaMode;
+  modoCheck.onchange = function () {
+    clinicalSessionContext.guardiaMode = modoCheck.checked;
+    if (typeof renderGuardiaBoard === 'function') {
+      var s = {};
+      try { s = JSON.parse(localStorage.getItem('rpc-settings') || '{}'); } catch (_e) {}
+      renderGuardiaBoard(s);
+    }
+  };
+  modoLabel.appendChild(modoCheck);
+  modoLabel.appendChild(document.createTextNode(' Modo Guardia'));
+  modoCard.appendChild(modoLabel);
+  root.appendChild(modoCard);
+
+  if (isLanElectronDesktop() && isLanHostActive()) {
+    var mobileCard = document.createElement('div');
+    mobileCard.className = 'lan-connect-card lan-hub-mobile-card';
+    mobileCard.innerHTML = '<div class="lan-connect-card-title">Enlace móvil</div>';
+    var mobileBtn = document.createElement('button');
+    mobileBtn.type = 'button';
+    mobileBtn.className = 'btn-lan-primary';
+    mobileBtn.style.width = '100%';
+    mobileBtn.textContent = 'Copiar enlace para iPad';
+    mobileBtn.onclick = function () {
+      void generateMobilePairingLink().then(function (url) {
+        if (url) {
+          copyToClipboardSafe(url);
+          runtime.showToast('Enlace móvil copiado. Pégalo en Safari en el iPad.', 'success');
+        }
+      });
+    };
+    mobileCard.appendChild(mobileBtn);
+    root.appendChild(mobileCard);
+  }
 }
 
 function buildR2Section(root) {
+  // Task 7 fills this in
 }
 
 function buildR4Section(root) {
+  // Task 8 fills this in
 }
 
 async function resolveLanHostUrlForShare() {
