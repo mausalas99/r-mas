@@ -38,7 +38,7 @@ import { filterTodosRespectingDismissals } from "../manejo-todo-dismiss.mjs";
 import { copyToClipboardSafe } from "./soap-estado.mjs";
 import { buildLanJoinUrls, parseLanInviteInput } from "../lan-join-link.mjs";
 import { createMutationBuilder, wrapLiveSyncPatch } from "../versioned-mutation.mjs";
-import { guardAndSignLiveSyncMutation } from "../clinical-access-runtime.mjs";
+import { guardAndSignLiveSyncMutation, clinicalSessionContext } from "../clinical-access-runtime.mjs";
 import {
   saveDraftConflict,
   deleteDraftConflict,
