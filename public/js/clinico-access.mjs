@@ -334,7 +334,6 @@ export function evaluateClinicalScope(currentUser, targetPatient, activeGuardia 
         ? ctx.now
         : new Date(String(ctx.now))
       : new Date();
-  const weekday = now.getDay();
   const userId = String(currentUser?.user_id || '');
   const rank = String(currentUser?.rank || '');
   const patientId = String(targetPatient?.id || '');
@@ -420,7 +419,7 @@ export function evaluateClinicalScope(currentUser, targetPatient, activeGuardia 
     if (
       joinedTeams.some(
         (team) =>
-          Number(team.on_call_day_index) === weekday &&
+          isOnCallToday(team, 'R3', now) &&
           normalizeServiceKey(team.service) === normalizeServiceKey(targetPatient?.service)
       )
     ) {
