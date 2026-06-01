@@ -12,11 +12,12 @@ import {
   ClientSessionInactivityLocker,
 } from './features/session-manager.mjs';
 
-/** @type {{ user: object|null, guardias: object[], guardiasMap: Map<string, object>, decryptedPrivateKeyPem: string|null, lastBlockHashByPatient: Map<string, string> }} */
+/** @type {{ user: object|null, guardias: object[], guardiasMap: Map<string, object>, teams: object[], decryptedPrivateKeyPem: string|null, lastBlockHashByPatient: Map<string, string> }} */
 export const clinicalSessionContext = {
   user: null,
   guardias: [],
   guardiasMap: new Map(),
+  teams: [],
   decryptedPrivateKeyPem: null,
   lastBlockHashByPatient: new Map(),
 };
@@ -88,6 +89,7 @@ export async function bootstrapClinicalAccess(settings, clientId) {
   clinicalSessionContext.decryptedPrivateKeyPem = res.user.privateKeyPem || null;
   clinicalSessionContext.guardias = Array.isArray(res.guardias) ? res.guardias : [];
   clinicalSessionContext.guardiasMap = buildGuardiasMap(clinicalSessionContext.guardias);
+  await fetchClinicalTeamsFromDb();
   return true;
 }
 
@@ -134,6 +136,7 @@ export function stopClinicalAccessRuntime() {
   clinicalSessionContext.user = null;
   clinicalSessionContext.guardias = [];
   clinicalSessionContext.guardiasMap = new Map();
+  clinicalSessionContext.teams = [];
   clinicalSessionContext.decryptedPrivateKeyPem = null;
 }
 
@@ -156,6 +159,7 @@ export async function refreshGuardiaCensusFromDb(settings) {
   if (!res || res.ok === false) return;
   clinicalSessionContext.guardias = Array.isArray(res.guardias) ? res.guardias : [];
   clinicalSessionContext.guardiasMap = buildGuardiasMap(clinicalSessionContext.guardias);
+  await fetchClinicalTeamsFromDb();
   await renderGuardiaCensusGrid(settings);
 }
 
@@ -242,6 +246,23 @@ export async function guardAndSignLiveSyncMutation(mutation, envelope) {
 
 export function getClinicalUser() {
   return clinicalSessionContext.user;
+}
+
+/** @returns {Promise<object[]>} */
+export async function fetchClinicalTeamsFromDb() {
+  const api = electronApi();
+  if (!api || typeof api.dbClinicalTeamsList !== 'function') {
+    clinicalSessionContext.teams = [];
+    return [];
+  }
+  const res = await api.dbClinicalTeamsList();
+  if (!res || res.ok === false) {
+    clinicalSessionContext.teams = [];
+    return [];
+  }
+  const teams = Array.isArray(res.teams) ? res.teams : [];
+  clinicalSessionContext.teams = teams;
+  return teams;
 }
 
 /** @returns {Promise<object|null>} */

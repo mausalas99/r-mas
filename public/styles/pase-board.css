@@ -510,3 +510,105 @@ html.ui-density-guardia #header-app-mode-chip {
   font-size: 0.8125rem;
   margin: 0.5rem 0 0;
 }
+
+.clinical-teams-modal {
+  width: min(92vw, 560px);
+  max-height: min(88vh, 720px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.clinical-teams-panel-body {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.clinical-teams-lead {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.clinical-teams-section-title {
+  margin: 0 0 0.65rem;
+  font-size: 0.95rem;
+}
+
+.clinical-teams-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.clinical-teams-card {
+  border: 1px solid var(--border, #2a2640);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: var(--surface-card, #151321);
+}
+
+.clinical-teams-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.clinical-teams-card-title {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.clinical-teams-card-meta {
+  margin: 4px 0 0;
+  font-size: 0.78rem;
+  color: var(--text-muted, #8e8a9f);
+}
+
+.clinical-teams-guardia-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.clinical-teams-member-list {
+  margin: 0 0 10px;
+  padding-left: 1.1rem;
+  font-size: 0.85rem;
+}
+
+.clinical-teams-member-rank {
+  color: var(--text-muted, #8e8a9f);
+  font-size: 0.78rem;
+}
+
+.clinical-teams-add-member-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.clinical-teams-add-member-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.clinical-teams-empty {
+  font-size: 0.85rem;
+  color: var(--text-muted, #8e8a9f);
+  margin: 0;
+}
+
+.clinical-teams-create-form .field-group {
+  margin-bottom: 10px;
+}

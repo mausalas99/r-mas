@@ -14,6 +14,7 @@ import {
 import { diagnosticosTextForCenso } from '../patient-diagnosticos.mjs';
 import { UnifiedPatientGridBoard } from './unified-patient-grid-board.mjs';
 import { syncGuardiaIncomingStrip } from './clinical-rotation.mjs';
+import { wireClinicalTeamsControls } from './clinical-teams.mjs';
 
 /** @type {UnifiedPatientGridBoard|null} */
 let gridBoard = null;
@@ -131,6 +132,7 @@ export function renderGuardiaBoard(settings) {
   renderGuardiaSummaryTiles(summary);
 
   void syncGuardiaIncomingStrip(settings);
+  wireClinicalTeamsControls();
 
   if (!gridBoard) gridBoard = new UnifiedPatientGridBoard('guardia-census-grid', 'GUARDIA');
   const rank = clinicalSessionContext.user?.rank || resolveClinicalRank(settings);

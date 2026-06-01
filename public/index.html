@@ -40,6 +40,7 @@
 </script>
 <link rel="stylesheet" href="styles/base.css">
 <link rel="stylesheet" href="styles/layout.css">
+<link rel="stylesheet" href="styles/pase-board.css">
 <link rel="stylesheet" href="styles/sidebar.css">
 <link rel="stylesheet" href="styles/lab.css">
 <link rel="stylesheet" href="styles/expediente.css">
@@ -310,6 +311,7 @@
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/></svg>
         Censo PDF
       </button>
+      <button type="button" id="header-guardia-mode-chip" class="header-guardia-mode-chip" style="display:none;" onclick="toggleGuardiaMode()" title="Vista censo de guardia — matriz de pacientes con vitales y pendientes" aria-label="Modo Guardia" aria-pressed="false">🌙 Modo Guardia</button>
       <button type="button" id="header-pase-mode-chip" class="header-pase-mode-chip" style="display:none;" onclick="exitPaseModeFromHeader()" title="Salir a vista Normal (pestañas completas)" aria-label="Salir del modo Pase">Modo Pase</button>
       <button type="button" id="header-app-mode-chip" class="header-app-mode-chip mode-sala" title="">
         Modo: Sala
@@ -737,6 +739,7 @@
       <span id="lan-connection-banner-text" class="lan-connection-banner-text">Sin conexión al host LAN. LiveSync (salas y relay) puede estar limitado hasta reconectar.</span>
       <button type="button" class="lan-connection-banner-dismiss" onclick="dismissLanDisconnectBanner()" aria-label="Ocultar aviso de desconexión LAN" title="Ocultar aviso">×</button>
     </div>
+    <section id="guardia-census-panel" class="guardia-census-panel" aria-label="Censo de guardia" hidden></section>
     <div class="app-tabs-row">
       <div class="app-tabs" id="app-main-tablist" role="tablist" aria-label="Secciones principales">
       <button type="button" class="app-tab active" role="tab" id="apptab-lab" aria-selected="true" aria-controls="appcontent-lab" tabindex="0" onclick="switchAppTab('lab')" data-i18n-aria-label="appTab.lab" data-i18n-title="appTab.lab">
@@ -762,6 +765,19 @@
 
     <div id="appcontent-pase" class="appcontent-pase" style="display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden;" aria-hidden="true">
       <div id="pase-board-scroll" class="pase-board-scroll"></div>
+    </div>
+
+    <div id="appcontent-guardia" class="appcontent-guardia" style="display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden;" aria-hidden="true">
+      <div id="guardia-board-scroll" class="guardia-board-scroll">
+        <div class="guardia-rotation-toolbar" aria-label="Rotación de guardia">
+          <button type="button" id="btn-guardia-mi-rotacion" class="btn-med-secondary">Mi rotación</button>
+          <button type="button" id="btn-guardia-rotation-config" class="btn-med-secondary btn-med-secondary--muted">Configuración rotación</button>
+          <button type="button" id="btn-guardia-nueva-rotacion" class="btn-med-secondary">Nueva rotación</button>
+        </div>
+        <div id="guardia-incoming-strip" class="guardia-incoming-strip" hidden aria-label="Pacientes entrantes (preview)"></div>
+        <div id="guardia-summary" class="guardia-summary" aria-label="Resumen de guardia"></div>
+        <div id="guardia-census-grid" class="patient-chips-grid"></div>
+      </div>
     </div>
 
     <div id="appcontent-lab" role="tabpanel" aria-labelledby="apptab-lab" aria-hidden="false" class="lab-panel-root">
@@ -1717,7 +1733,7 @@
     <p id="rpc-db-unlock-rate-limited" class="rpc-db-unlock-rate-limited" role="alert" style="display:none;">Demasiados intentos fallidos. Espera unos minutos antes de volver a intentar.</p>
     <label class="profile-field-label" for="rpc-db-unlock-pass">Contraseña maestra</label>
     <div class="rpc-db-unlock-secret-wrap">
-      <input id="rpc-db-unlock-pass" type="password" autocomplete="new-password" placeholder="Contraseña" aria-required="true">
+      <input id="rpc-db-unlock-pass" type="password" autocomplete="current-password" placeholder="Contraseña maestra" aria-required="true">
       <button type="button" class="rpc-db-unlock-secret-toggle" data-db-unlock-secret-toggle aria-controls="rpc-db-unlock-pass" aria-label="Mostrar contraseña" aria-pressed="false">Mostrar</button>
     </div>
     <div id="rpc-db-unlock-confirm-wrap">
@@ -1748,6 +1764,80 @@
     <div class="rpc-idle-lock-actions">
       <button type="button" class="btn-unlock" onclick="submitIdleLockPin()">Desbloquear</button>
     </div>
+  </div>
+</div>
+
+<div id="guardia-rotation-config-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal guardia-rotation-config-modal" role="dialog" aria-modal="true" aria-labelledby="guardia-rotation-config-title" onclick="event.stopPropagation()">
+    <h3 id="guardia-rotation-config-title">Configuración rotación</h3>
+    <p class="clinical-registration-lead">Define el calendario del ciclo (R4 o Admin). La ventana Incoming abre <code>preview_days</code> antes de la vigencia.</p>
+    <form id="guardia-rotation-config-form">
+      <div class="field-group">
+        <label for="rotation-config-month-end">Fin de mes (referencia)</label>
+        <input id="rotation-config-month-end" type="datetime-local" class="profile-input" required>
+      </div>
+      <div class="field-group">
+        <label for="rotation-config-effective">Vigencia (effective_at)</label>
+        <input id="rotation-config-effective" type="datetime-local" class="profile-input" required>
+      </div>
+      <div class="field-group">
+        <label for="rotation-config-preview-days">Días de preview</label>
+        <input id="rotation-config-preview-days" type="number" class="profile-input" min="0" max="14" value="2" required>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" id="btn-rotation-config-cancel">Cancelar</button>
+        <button type="submit" class="btn-save">Guardar ciclo</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="clinical-teams-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal clinical-teams-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-teams-title" onclick="event.stopPropagation()">
+    <h3 id="clinical-teams-title">Mi rotación</h3>
+    <div id="clinical-teams-panel-body" class="clinical-teams-panel-body"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn-cancel" id="btn-clinical-teams-close">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div id="clinical-registration-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal clinical-registration-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-registration-title" onclick="event.stopPropagation()">
+    <h3 id="clinical-registration-title">Registro de guardia</h3>
+    <p class="clinical-registration-lead">Identifícate para el censo de guardia, firmado clínico y acceso al Modo Guardia. Es independiente del modo Sala / Interconsulta y de la contraseña de Mi Perfil.</p>
+    <form id="clinical-registration-form">
+      <div class="field-group">
+        <label for="clinical-reg-name">Nombre en guardia *</label>
+        <input id="clinical-reg-name" type="text" class="profile-input" placeholder="Dr. Pérez / R2 García" autocomplete="name" required>
+      </div>
+      <div class="field-group">
+        <label for="clinical-reg-rank">Rango</label>
+        <select id="clinical-reg-rank" class="profile-input">
+          <option value="R1">R1</option>
+          <option value="R2">R2</option>
+          <option value="R3">R3</option>
+          <option value="R4">R4</option>
+          <option value="Admin">Admin</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label for="clinical-reg-service">Servicio en guardia (opcional)</label>
+        <input id="clinical-reg-service" type="text" class="profile-input" placeholder="CIRUGÍA GENERAL" style="text-transform:uppercase;">
+      </div>
+      <p id="clinical-reg-error" class="clinical-registration-error" hidden></p>
+      <div class="modal-actions">
+        <button type="submit" class="btn-save">Continuar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="rpc-clinical-session-lock" role="dialog" aria-modal="true" aria-labelledby="rpc-clinical-session-lock-title" aria-hidden="true">
+  <div class="clinical-session-lock-panel">
+    <h2 id="rpc-clinical-session-lock-title">Sesión clínica bloqueada</h2>
+    <p>Por inactividad se eliminó la clave de firma de la memoria. Vuelve a activar la sesión para continuar con cambios firmados.</p>
+    <button type="button" class="btn-unlock" onclick="resumeClinicalSession()">Reactivar sesión clínica</button>
   </div>
 </div>
 
