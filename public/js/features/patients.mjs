@@ -1523,6 +1523,25 @@ function commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cam
   rt.applyDefaultsToNewPatient(patient.id);
   rt.applyDefaultsToNewIndicaciones(patient.id);
   patients.push(patient);
+
+  (function () {
+    try {
+      var _api = typeof window !== 'undefined' ? (window.rplusDb || window.electronAPI) : null;
+      var _user = typeof clinicalSessionContext !== 'undefined' ? clinicalSessionContext.user : null;
+      if (_api && _user && _user.user_id && typeof _api.dbClinicalFindUserTeam === 'function') {
+        void _api.dbClinicalFindUserTeam({ userId: String(_user.user_id) }).then(function (teamRes) {
+          if (teamRes && teamRes.ok && teamRes.teamId) {
+            return _api.dbClinicalAssignPatientToTeam({
+              patientId: patient.id,
+              teamId: teamRes.teamId,
+              effectiveAt: new Date().toISOString(),
+            });
+          }
+        }).catch(function () {});
+      }
+    } catch (_e) {}
+  })();
+
   saveState();
   var onSaved = pendingAddPatientSavedCallback;
   pendingAddPatientSavedCallback = null;
