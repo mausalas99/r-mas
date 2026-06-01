@@ -27,7 +27,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [6.5.2](https://github.com/mausalas99/r-mas/releases/tag/v6.5.2) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [5.6.3](https://github.com/mausalas99/r-mas/releases/tag/v5.6.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -316,6 +316,12 @@ Notas: `docs/RELEASE_NOTES_3.2.0.txt`.
 
 ---
 
+
+## R+ 5.6.3 (estable — release 5.6.3)
+
+- **TODO:** completar bullets en README.
+
+Notas: `docs/RELEASE_NOTES_5.6.3.txt`.
 ## R+ 3.0.2 (laboratorio, listado docx, tutorial, Python Mac)
 
 - **Gasometría** — Delta-delta e interpretación; reproceso desde historial y dedupe al consolidar.

@@ -936,6 +936,7 @@ export async function renderHistoriaClinicaPanel(opts) {
       _data = normalizeData(patient.historiaClinica.data, patient.id, patient);
     }
   } catch (_e) {
+    console.error('renderHistoriaClinicaPanel failed', _e);
     root.innerHTML = '<p class="tend-empty">No se pudo cargar la historia clínica.</p>';
     if (opts.onReady) opts.onReady();
     return;

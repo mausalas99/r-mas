@@ -1,7 +1,7 @@
 # Sala-Based LAN Rooms Design
 
 **Date:** 2026-06-01  
-**Context:** The LAN dropdown currently shows arbitrary user-created rooms ("Salas en vivo" card). This should be replaced with a fixed set of 3 Sala rooms (Sala 1, Sala 2, Sala E) that are always available. Users sync within their assigned Sala; admins can join any.
+**Context:** The LAN dropdown currently shows arbitrary user-created rooms ("Salas en vivo" card). This should be replaced with a fixed set of 3 Sala rooms (Sala 1, Sala 2, Sala E) that are always available. R1-R3 users sync within their assigned Sala; R4 and Admin can join any.
 
 ## Current State
 
@@ -30,8 +30,8 @@ Room IDs use these string constants — no UUIDs, no server-side room CRUD.
 
 ### Access Control
 
-- **Regular users (R1-R4):** see only their assigned Sala room (from `clinicalSala` in localStorage `rpc-settings`). A single join/leave button for that room.
-- **Admin users:** see all 3 Sala rooms. Can join any of them freely.
+- **R1, R2, R3 users:** see only their assigned Sala room (from `clinicalSala` in localStorage `rpc-settings`). A single join/leave button for that room.
+- **R4 and Admin users:** see all 3 Sala rooms. Can join any of them freely.
 
 ### UI Changes
 
@@ -43,8 +43,8 @@ Room IDs use these string constants — no UUIDs, no server-side room CRUD.
 
 - Title: "Salas de guardia"
 - Hint: explains that each Sala is a live sync channel
-- **Regular user view:** single line showing their Sala name + "Unirse"/"En sala" button
-- **Admin user view:** 3 lines, one per Sala, each with a "Unirse"/"En sala" button
+- **R1-R3 user view:** single line showing their Sala name + "Unirse"/"En sala" button
+- **R4 & Admin user view:** 3 lines, one per Sala, each with a "Unirse"/"En sala" button
 - No create input, no delete button
 - No server fetch needed — rooms are local constants
 
@@ -52,7 +52,7 @@ Room IDs use these string constants — no UUIDs, no server-side room CRUD.
 
 - Read `s.clinicalRank` and `s.clinicalSala` from `JSON.parse(localStorage.getItem('rpc-settings'))`
 - Map sala values to room IDs: `Sala 1` → `sala-1`, `Sala 2` → `sala-2`, `Sala E` → `sala-e`
-- Admin check: `s.clinicalRank === 'Admin'`
+- Elevated check for all-Sala access: `s.clinicalRank === 'Admin' || s.clinicalRank === 'R4'`
 - If no sala is assigned, show a hint to complete clinical registration
 
 ### Join Mechanism
@@ -73,6 +73,6 @@ No changes to LAN server (`lan-squad/`), IPC handlers, DB layer, or CSS.
 ### Edge Cases
 
 1. **User has no Sala assigned:** Show a hint instructing them to complete clinical registration. Sala room list is empty.
-2. **User Sala doesn't match any of the 3:** Fall back to showing all 3 Salas (treat like admin for safety) or show a hint.
-3. **Admin with no Sala assigned:** Show all 3 Salas (already handled).
+2. **User Sala doesn't match any of the 3:** Fall back to showing all 3 Salas for safety, or show a hint.
+3. **R4/Admin with no Sala assigned:** Show all 3 Salas.
 4. **LAN host not connected:** The Sala rooms card only renders in PATH B (when `lanClient.baseUrl()` exists). The unconnected PATH A is unchanged.

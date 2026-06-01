@@ -1,0 +1,22 @@
+R+ 5.6.3 (estable — release 5.6.3)
+======================================
+
+Fecha: 2026-06-01
+
+## Resumen
+
+TODO: resumen en una o dos frases.
+
+## Nuevo / mejorado
+
+- **TODO:** punto 1
+- **TODO:** punto 2
+
+## Instalación
+
+Descarga desde: https://github.com/mausalas99/r-mas/releases/tag/v5.6.3
+
+- Mac: `R+-5.6.3-arm64.dmg`, `R+-5.6.3-x64.dmg` (y zip para auto-update).
+- Windows: `R+-5.6.3-x64.exe`.
+
+Tras el build local: `npm run build:mac` / `npm run build:win` (incluye write-release-yml.js).
