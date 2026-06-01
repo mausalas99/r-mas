@@ -631,6 +631,9 @@ if (typeof document !== 'undefined') {
   initLanClientFromStorage();
   wireLanPanelDelegation();
 }
+if (typeof document !== 'undefined' && isLanElectronDesktop()) {
+  startLanAutoDiscovery();
+}
 
 var LAN_DISCONNECT_BANNER_MSG =
   'Sin conexión al host LAN. LiveSync (salas y relay) puede estar limitado hasta reconectar.';
@@ -2450,6 +2453,7 @@ lanClient.addEventListener('lan-live-status', function (ev) {
 });
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', function () {
+    stopLanAutoDiscovery();
     if (activeLiveSyncRoomId) saveLocalRoomSnapshot(activeLiveSyncRoomId);
   });
 }
@@ -3076,6 +3080,74 @@ async function resolveLanHostUrlForShare() {
   var fromInput = el && String(el.value || '').trim();
   if (fromInput) return fromInput.replace(/\/+$/, '');
   return resolveLanHostUrlAuto();
+}
+
+var _lanScanTimer = null;
+var LAN_SCAN_INTERVAL_MS = 5000;
+
+function startLanAutoDiscovery() {
+  if (_lanScanTimer) return;
+  _lanScanTimer = setInterval(function () {
+    void scanLanHosts();
+  }, LAN_SCAN_INTERVAL_MS);
+  void scanLanHosts();
+}
+
+function stopLanAutoDiscovery() {
+  if (_lanScanTimer) {
+    clearInterval(_lanScanTimer);
+    _lanScanTimer = null;
+  }
+}
+
+async function scanLanHosts() {
+  if (!isLanElectronDesktop()) return;
+  if (isLanRemoteJoinMode()) return;
+
+  var teamCode = getLanTeamCodeFromConfig();
+  if (!teamCode) return;
+
+  try {
+    var clientId = typeof getLanClientId === 'function' ? getLanClientId() : '';
+    var peers = typeof listLivePeerHostUrls === 'function' ? listLivePeerHostUrls(clientId) : [];
+    var currentRank = getClinicalRank();
+
+    for (var i = 0; i < peers.length; i += 1) {
+      var peerUrl = peers[i];
+      if (!peerUrl) continue;
+      var alive = typeof pingLanHostUrl === 'function' ?
+        await pingLanHostUrl(peerUrl, teamCode) : false;
+      if (!alive) continue;
+
+      try {
+        var resp = await fetch(peerUrl + '/api/lan/v1/host-rank', {
+          headers: { 'Authorization': 'Bearer ' + teamCode },
+          signal: AbortSignal.timeout(3000),
+        });
+        if (resp.ok) {
+          var data = await resp.json();
+          var peerRank = String(data.rank || '').trim();
+          if (shouldSupersede(peerRank, currentRank)) {
+            if (isLanElectronDesktop() && typeof applyLanHostUrlSwitch === 'function') {
+              applyLanHostUrlSwitch(peerUrl, teamCode, { skipRememberPrimary: true });
+              runtime.showToast('Un host de mayor rango (' + peerRank + ') está activo. Conectando como cliente.', 'info');
+              renderLanPanel();
+              return;
+            }
+          }
+        }
+      } catch (_peerErr) {
+        // peer not reachable, skip
+      }
+    }
+  } catch (_scanErr) {
+    // scan errors are non-fatal
+  }
+}
+
+function shouldSupersede(peerRank, myRank) {
+  var priority = { Admin: 5, R4: 4, R3: 3, R2: 2, R1: 1 };
+  return (priority[peerRank] || 0) > (priority[myRank] || 0);
 }
 
 async function saveLanHostTeamCodeFromUi() {
