@@ -13723,7 +13723,6 @@ var windowHandlers5 = {
 
 // public/js/clinico-access.mjs
 var CLINICO_UNLOCK_PHRASE = "entiendo, usare mi criterio clincio";
-var R3_EXTENDED_SERVICES = /* @__PURE__ */ new Set(["torre hu", "eme", "ux"]);
 function normalizeClinicoUnlockPhrase(text) {
   return String(text || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ");
 }
@@ -13847,38 +13846,23 @@ function salaLetterForTeamOrArea(teamOrPatient) {
   if (fromName) return fromName;
   return extractSalaLetter(teamOrPatient?.sub_area || teamOrPatient?.service || "");
 }
-function isR4MacroPatient(patient) {
-  if (!patient) return false;
-  const svc = normalizeServiceKey(patient.service);
-  const sub = normalizeServiceKey(patient.sub_area);
-  if (svc.includes("sala") || sub.includes("sala")) return true;
-  if (svc.includes("interconsult") || sub.includes("interconsult")) return true;
-  const ic = String(patient.interconsult_type || "None");
-  return ic !== "None";
-}
-function patientMatchesTeam(patient, team) {
-  if (!patient || !team) return false;
-  const patientSvc = normalizeServiceKey(patient.service);
-  const teamSvc = normalizeServiceKey(team.service);
-  if (patientSvc !== teamSvc && !(patientSvc.includes("sala") && teamSvc.includes("sala"))) {
-    if (teamSvc.includes("sala") && (patientSvc.includes("sala") || extractSalaLetter(patient.service))) {
-    } else if (patientSvc !== teamSvc) {
-      return false;
-    }
-  }
-  const frac = String(team.sub_area_fraction || "").trim();
-  if (!frac) return true;
-  const letter = frac.toUpperCase();
-  const patientLetter = salaLetterForTeamOrArea(patient);
-  if (patientLetter && patientLetter === letter) return true;
-  const hay = `${patient.service || ""} ${patient.sub_area || ""}`;
-  return hay.toUpperCase().includes(letter);
-}
 function getJoinedTeams(teams, userId) {
   const uid = String(userId || "");
   if (!uid) return [];
   return (teams || []).filter(
     (team) => (team.members || []).some((m) => String(m.user_id) === uid)
+  );
+}
+function patientAssignedToTeam(patientId, assignments, joinedTeamIds) {
+  const pid = String(patientId || "");
+  return (assignments || []).some(
+    (a) => String(a.patient_id) === pid && joinedTeamIds.has(String(a.team_id))
+  );
+}
+function patientCoveredByGuardia(patientId, userId, guardias) {
+  const uid = String(userId || "");
+  return (guardias || []).some(
+    (g3) => String(g3.patient_id) === String(patientId) && String(g3.covering_user_id) === uid
   );
 }
 function isActiveGuardiaCoveringUser(userId, activeGuardia) {
@@ -13915,56 +13899,47 @@ function computeSalaAbcdefDeficitWrite(salaGuardiaToday, teams, userId, now) {
     );
   });
 }
-function canR2SalaAbcdefDeficitWrite(userId, patient, joinedTeams, salaGuardiaToday, teams, now) {
-  if (!normalizeServiceKey(patient?.service).includes("sala") && !extractSalaLetter(patient?.service || "")) {
-    return false;
-  }
-  const patientLetter = salaLetterForTeamOrArea(patient);
-  if (!patientLetter) return false;
-  if (hasSalaGuardiaDeclaredForLetter(salaGuardiaToday, teams, patientLetter)) return false;
-  const uid = String(userId || "");
-  return joinedTeams.some((team) => {
-    if (!normalizeServiceKey(team.service).includes("sala")) return false;
-    if (!isOnCallToday(team, "R2", now)) return false;
-    const declared = (salaGuardiaToday || []).find(
-      (g3) => String(g3.team_id) === String(team.team_id) && String(g3.user_id) === uid
-    );
-    return !!declared;
-  });
+function salaOnCallR2(teams, now) {
+  const d = now instanceof Date ? now : new Date(String(now));
+  const r2Teams = (teams || []).filter((t2) => isOnCallToday(t2, "R2", d));
+  return r2Teams.flatMap(
+    (t2) => (t2.members || []).filter((m) => m.rank === "R2").map((m) => ({ team_id: t2.team_id, user_id: m.user_id }))
+  );
 }
 function evaluateClinicalScope(currentUser, targetPatient, activeGuardia = null, context = null) {
   const ctx = context && typeof context === "object" ? context : {};
   const teams = Array.isArray(ctx.teams) ? ctx.teams : [];
   const assignments = Array.isArray(ctx.assignments) ? ctx.assignments : [];
-  const salaGuardiaToday = Array.isArray(ctx.salaGuardiaToday) ? ctx.salaGuardiaToday : [];
+  const guardias = Array.isArray(ctx.guardias) ? ctx.guardias : [];
   const cycle = ctx.cycle ?? null;
+  const guardiaMode = !!ctx.guardiaMode;
   const now = ctx.now != null ? ctx.now instanceof Date ? ctx.now : new Date(String(ctx.now)) : /* @__PURE__ */ new Date();
   const userId = String(currentUser?.user_id || "");
   const rank = String(currentUser?.rank || "");
   const patientId = String(targetPatient?.id || "");
-  const auditContext = {
-    userId: currentUser?.user_id,
-    rank: currentUser?.rank,
-    patientId: targetPatient?.id,
-    service: targetPatient?.service,
-    timestamp: now.toISOString()
-  };
+  const userSala = String(currentUser?.sala || "");
   const deny = (reasoning, extra = {}) => ({
     readable: false,
     writable: false,
     reasoning,
-    audit: auditContext,
+    audit: { userId: currentUser?.user_id, rank: currentUser?.rank, patientId: targetPatient?.id, timestamp: now.toISOString() },
     ...extra
   });
   const allow = (reasoning, readable = true, writable = true, extra = {}) => ({
     readable,
     writable,
     reasoning,
-    audit: auditContext,
+    audit: { userId: currentUser?.user_id, rank: currentUser?.rank, patientId: targetPatient?.id, timestamp: now.toISOString() },
     ...extra
   });
   if (!currentUser?.user_id || !targetPatient?.id) {
     return deny("Usuario o paciente no identificado");
+  }
+  if (rank === "Admin") {
+    return allow("Admin: acceso completo");
+  }
+  if (isActiveGuardiaCoveringUser(userId, activeGuardia)) {
+    return allow("Guardia activa: cobertura asignada");
   }
   if (isIncomingPreviewWindow(cycle, now)) {
     const incoming = assignments.find((a) => String(a.patient_id) === patientId);
@@ -13981,61 +13956,38 @@ function evaluateClinicalScope(currentUser, targetPatient, activeGuardia = null,
       }
     }
   }
-  if (rank === "Admin") {
-    return allow("Admin: acceso completo");
-  }
-  if (isActiveGuardiaCoveringUser(userId, activeGuardia)) {
-    return allow("Guardia activa: cobertura asignada");
-  }
   const joinedTeams = getJoinedTeams(teams, userId);
-  if (rank === "R4") {
-    if (isR4MacroPatient(targetPatient)) {
-      return allow("R4: censo macro Sala / Interconsultas");
-    }
-    if (joinedTeams.some((team) => patientMatchesTeam(targetPatient, team))) {
-      return allow("R4: paciente del equipo");
-    }
-    return deny("R4: fuera de macro-dominio y sin equipo");
-  }
-  if (rank === "R3") {
-    const readable = joinedTeams.some((team) => patientMatchesTeam(targetPatient, team)) || joinedTeams.some((team) => R3_EXTENDED_SERVICES.has(normalizeServiceKey(team.service))) || R3_EXTENDED_SERVICES.has(normalizeServiceKey(targetPatient?.service));
-    if (!readable) {
-      return deny("R3: sin lectura en este servicio");
-    }
-    if (joinedTeams.some((team) => patientMatchesTeam(targetPatient, team))) {
-      return allow("R3: paciente del equipo");
-    }
-    if (joinedTeams.some(
-      (team) => isOnCallToday(team, "R3", now) && normalizeServiceKey(team.service) === normalizeServiceKey(targetPatient?.service)
-    )) {
-      return allow("R3: cobertura cruzada por d\xEDa de guardia", true, true);
-    }
-    return allow("R3: lectura en servicio extendido", true, false);
-  }
-  if (rank === "R2") {
-    if (canR2SalaAbcdefDeficitWrite(userId, targetPatient, joinedTeams, salaGuardiaToday, teams, now)) {
-      return allow("R2: d\xE9ficit Sala ABCDEF \u2014 cobertura temporal");
-    }
-    if (joinedTeams.some((team) => patientMatchesTeam(targetPatient, team))) {
-      return allow("R2: paciente del equipo");
-    }
-    const svc = normalizeServiceKey(targetPatient?.service);
-    if (["eme", "area a", "\xE1rea a"].some((k) => svc.includes(k.replace("\xE1", "a")))) {
-      if (joinedTeams.some((t2) => normalizeServiceKey(t2.service) === svc)) {
-        return allow("R2: servicio con guardia de equipo");
+  const joinedTeamIds = new Set(joinedTeams.map((t2) => String(t2.team_id)));
+  if (guardiaMode) {
+    if (rank === "R1") {
+      const patientSala = targetPatient?.sala || "";
+      if (patientSala && patientSala === userSala) {
+        return allow("Modo Guardia R1: visibilidad de Sala completa", true, false);
       }
+      return deny("Modo Guardia R1: fuera de mi Sala");
     }
-    return deny("R2: sin equipo ni d\xE9ficit Sala");
-  }
-  if (rank === "R1") {
-    if (joinedTeams.some(
-      (team) => team.sub_area_fraction && patientMatchesTeam(targetPatient, team)
-    )) {
-      return allow("R1: fracci\xF3n de sub\xE1rea del equipo");
+    if (rank === "R2") {
+      if (patientCoveredByGuardia(patientId, userId, guardias)) {
+        return allow("Modo Guardia R2: paciente entregado", true, false);
+      }
+      return deny("Modo Guardia R2: sin entrega recibida");
     }
-    return deny("R1: sin fracci\xF3n asignada para este paciente");
+    if (rank === "R4") {
+      const svc = normalizeServiceKey(targetPatient?.service);
+      if (svc.includes("sala") || svc.includes("torre")) {
+        return allow("Modo Guardia R4: cobertura Sala + Torre", true, false);
+      }
+      return deny("Modo Guardia R4: fuera de dominio");
+    }
+    return deny("Modo Guardia: rango sin cobertura");
   }
-  return deny("Rango cl\xEDnico sin permisos configurados");
+  if (patientAssignedToTeam(patientId, assignments, joinedTeamIds)) {
+    return allow("Paciente del equipo");
+  }
+  if (patientCoveredByGuardia(patientId, userId, guardias)) {
+    return allow("Paciente entregado (handoff)");
+  }
+  return deny("Fuera de alcance \u2014 sin equipo ni handoff");
 }
 
 // public/js/features/crypto-signer.mjs
@@ -14159,6 +14111,7 @@ var clinicalSessionContext = {
   guardiasMap: /* @__PURE__ */ new Map(),
   teams: [],
   scopeContext: null,
+  guardiaMode: false,
   decryptedPrivateKeyPem: null,
   lastBlockHashByPatient: /* @__PURE__ */ new Map()
 };
@@ -19889,17 +19842,22 @@ function renderCreateTeamForm() {
     <section class="clinical-teams-section">
       <h4 class="clinical-teams-section-title">Crear equipo</h4>
       <form id="clinical-team-create-form" class="clinical-teams-create-form">
+        <div class="field-group" id="clinical-team-sala-group" style="display:none">
+          <label for="clinical-team-create-sala">Sala</label>
+          <select id="clinical-team-create-sala" class="profile-input">
+            <option value="">\u2014 Seleccionar Sala \u2014</option>
+            <option value="Sala 1">Sala 1</option>
+            <option value="Sala 2">Sala 2</option>
+            <option value="Sala E">Sala E</option>
+          </select>
+        </div>
         <div class="field-group">
-          <label for="clinical-team-create-name">Nombre</label>
-          <input id="clinical-team-create-name" type="text" class="profile-input" placeholder="Sala A \xB7 Equipo noche" required>
+          <label for="clinical-team-create-name">Nombre del equipo (residente l\xEDder)</label>
+          <input id="clinical-team-create-name" type="text" class="profile-input" placeholder="Dr. Guti\xE9rrez" required>
         </div>
         <div class="field-group">
           <label for="clinical-team-create-service">Servicio</label>
           <select id="clinical-team-create-service" class="profile-input" required>${serviceOptions}</select>
-        </div>
-        <div class="field-group">
-          <label for="clinical-team-create-fraction">Fracci\xF3n de sub-\xE1rea (opcional)</label>
-          <input id="clinical-team-create-fraction" type="text" class="profile-input" placeholder="A1, A2\u2026" maxlength="16">
         </div>
         <div class="field-group">
           <label for="clinical-team-create-day">Posici\xF3n en ciclo</label>
@@ -20025,6 +19983,11 @@ function wireClinicalTeamsPanelInteractions() {
       daySelect.innerHTML = cfg.letters.map(
         (letter, idx) => `<option value="${escapeAttr2(letter)}">${escapeHtml2(letter)}</option>`
       ).join("");
+      const salaGroup = document.getElementById("clinical-team-sala-group");
+      if (salaGroup) {
+        const isSala = serviceSelect.value.toLowerCase().includes("sala");
+        salaGroup.style.display = isSala ? "" : "none";
+      }
     });
   }
   document.querySelectorAll(".clinical-teams-guardia-check").forEach((input) => {
@@ -20047,9 +20010,7 @@ async function handleCreateTeamSubmit(ev) {
   }
   const name = String(document.getElementById("clinical-team-create-name")?.value || "").trim();
   const service = String(document.getElementById("clinical-team-create-service")?.value || "").trim();
-  const subAreaFraction = String(
-    document.getElementById("clinical-team-create-fraction")?.value || ""
-  ).trim();
+  const sala = String(document.getElementById("clinical-team-create-sala")?.value || "").trim();
   const cycleLetter = String(document.getElementById("clinical-team-create-day")?.value || "A").trim();
   const userId = currentUserId();
   if (!name || !service) {
@@ -20061,6 +20022,8 @@ async function handleCreateTeamSubmit(ev) {
     service,
     subAreaFraction: cycleLetter,
     onCallDayIndex: 0,
+    sala: sala || void 0,
+    teamLeaderName: name,
     createdBy: userId
   });
   if (!res || res.ok === false) {
@@ -20185,33 +20148,12 @@ function listEntregaTargets(rank, teams, users, salaDeficit, opts = {}) {
     };
   }
   if (rankNorm === "R2") {
-    const services = new Set(
-      joinedTeams.map((t2) => String(t2.service || "").toLowerCase()).filter(Boolean)
-    );
-    const r2Peers = all.filter((u) => {
-      if (u.rank !== "R2") return false;
-      return teamList.some((team) => {
-        const svc = String(team.service || "").toLowerCase();
-        if (!services.has(svc)) return false;
-        return (team.members || []).some((m) => String(m.user_id) === u.user_id);
-      });
-    });
+    const r2GuardiaOnCall = salaOnCallR2(teamList, now);
+    const r2GuardiaIds = new Set(r2GuardiaOnCall.map((r) => r.user_id));
+    const r2GuardiaUsers = all.filter((u) => r2GuardiaIds.has(u.user_id));
     const r4s = all.filter((u) => u.rank === "R4");
-    let deficitR2 = [];
-    if (salaDeficit) {
-      deficitR2 = all.filter((u) => {
-        if (u.rank !== "R2") return false;
-        return teamList.some((team) => {
-          if (!String(team.service || "").toLowerCase().includes("sala")) return false;
-          if (!isOnCallToday(team, "R2", now)) return false;
-          const onGuardia = team.guardia_today && String(team.guardia_today.user_id) === u.user_id;
-          if (!onGuardia) return false;
-          return (team.members || []).some((m) => String(m.user_id) === u.user_id);
-        });
-      });
-    }
-    const targets = uniqueByUserId([...r2Peers, ...r4s, ...deficitR2]);
-    return { flow: "r2", targets: targets.length ? targets : all };
+    const targets = uniqueByUserId([...r2GuardiaUsers, ...r4s]);
+    return { flow: "r2_handoff", targets: targets.length ? targets : all };
   }
   if (rankNorm === "R1") {
     const joinedIds = new Set(joinedTeams.map((t2) => String(t2.team_id)));
@@ -20386,6 +20328,7 @@ function openEntregaModal(opts) {
     const flowLabels = {
       r1: "R1: mismos equipo o fracci\xF3n de sub-\xE1rea.",
       r2: "R2: mismo servicio, R4, o cubridores Sala en d\xE9ficit.",
+      r2_handoff: "R2: selecciona R4 de Sala y R2 de guardia (dos entregas separadas).",
       r3_suggest: "R3: sugeridos por d\xEDa de guardia del equipo (confirma).",
       generic: "Cualquier usuario registrado."
     };
@@ -20504,12 +20447,7 @@ function computeGuardiaSummary(censusPatients, guardiasMap) {
     if (p.isCritical || guardiasMap.get(p.id)?.is_critical) critical += 1;
     pending2 += p.pendingCount || 0;
   });
-  const now = /* @__PURE__ */ new Date();
-  const nextHour = new Date(now);
-  nextHour.setMinutes(0, 0, 0);
-  nextHour.setHours(nextHour.getHours() + 1);
-  const nextHandoff = nextHour.getHours().toString().padStart(2, "0") + ":" + nextHour.getMinutes().toString().padStart(2, "0");
-  return { critical, pending: pending2, nextHandoff };
+  return { critical, pending: pending2 };
 }
 function renderGuardiaSummaryTiles(summary) {
   const host = document.getElementById("guardia-summary");
@@ -20528,14 +20466,24 @@ function renderGuardiaSummaryTiles(summary) {
         <div class="guardia-summary-value">${summary.pending}</div>
       </div>
       <span class="guardia-summary-icon" aria-hidden="true">\u{1F4CB}</span>
-    </div>
-    <div class="guardia-summary-tile">
-      <div>
-        <div class="guardia-summary-label">Siguiente entrega</div>
-        <div class="guardia-summary-value guardia-summary-value--muted">${summary.nextHandoff}</div>
-      </div>
-      <span class="guardia-summary-icon" aria-hidden="true">\u23F3</span>
     </div>`;
+}
+function wireGuardiaModeToggle(settings2) {
+  const btn = document.getElementById("btn-guardia-mode-toggle");
+  if (!btn || btn._rpcGuardiaModeWired) return;
+  btn._rpcGuardiaModeWired = true;
+  const syncUI = (active) => {
+    btn.setAttribute("aria-pressed", String(active));
+    btn.classList.toggle("is-active", active);
+    const label = btn.querySelector(".guardia-mode-label");
+    if (label) label.textContent = active ? "Modo Guardia" : "Modo Normal";
+  };
+  syncUI(clinicalSessionContext.guardiaMode);
+  btn.addEventListener("click", () => {
+    clinicalSessionContext.guardiaMode = !clinicalSessionContext.guardiaMode;
+    syncUI(clinicalSessionContext.guardiaMode);
+    renderGuardiaBoard(settings2);
+  });
 }
 function renderGuardiaBoard(settings2) {
   if (!isGuardiaMode()) return;
@@ -20546,8 +20494,29 @@ function renderGuardiaBoard(settings2) {
   let censusPatients = patients.filter((p) => p && p.id && !p.isDemo && !p.archived).map((p) => enrichPatientForGuardiaCard(p, guardiasMap));
   const gridViewContext = loadGuardiaGridViewContext();
   wireGuardiaGridModeToggle(settings2);
+  wireGuardiaModeToggle(settings2);
+  clinicalSessionContext.scopeContext = {
+    teams: clinicalSessionContext.teams || [],
+    guardias: clinicalSessionContext.guardias || [],
+    assignments: clinicalSessionContext.assignments || [],
+    salaGuardiaToday: clinicalSessionContext.salaGuardiaToday || [],
+    guardiaMode: clinicalSessionContext.guardiaMode,
+    now: /* @__PURE__ */ new Date()
+  };
   if (guardiasMap.size > 0 && gridViewContext === "GUARDIA") {
     censusPatients = censusPatients.filter((p) => guardiasMap.has(p.id));
+  }
+  if (!clinicalSessionContext.guardiaMode && gridViewContext === "GUARDIA") {
+    clinicalSessionContext.scopeContext = clinicalSessionContext.scopeContext || {};
+    censusPatients = censusPatients.filter((p) => {
+      const scope = evaluateClinicalScope(
+        clinicalSessionContext.user,
+        { id: p.id, service: p.service, sala: p.sala },
+        clinicalSessionContext.guardiasMap.get(p.id) || null,
+        clinicalSessionContext.scopeContext
+      );
+      return scope.readable;
+    });
   }
   const summary = computeGuardiaSummary(censusPatients, guardiasMap);
   renderGuardiaSummaryTiles(summary);
@@ -59110,12 +59079,12 @@ function wireRegistrationFormOnce() {
   const form = document.getElementById("clinical-registration-form");
   if (!form || form._rpcClinicalRegWired) return;
   form._rpcClinicalRegWired = true;
-  form.addEventListener("submit", (ev) => {
+  form.addEventListener("submit", async (ev) => {
     ev.preventDefault();
     const errEl = document.getElementById("clinical-reg-error");
     const name = String(document.getElementById("clinical-reg-name")?.value || "").trim();
     const rank = String(document.getElementById("clinical-reg-rank")?.value || "R1");
-    const service = String(document.getElementById("clinical-reg-service")?.value || "").trim();
+    const sala = String(document.getElementById("clinical-reg-sala")?.value || "").trim();
     if (!name) {
       if (errEl) {
         errEl.textContent = "Escribe tu nombre o identificador de guardia.";
@@ -59131,10 +59100,22 @@ function wireRegistrationFormOnce() {
     settings2.clinicalRegistered = true;
     settings2.clinicalDisplayName = name;
     settings2.clinicalRank = RANKS.includes(rank) ? rank : "R1";
-    if (service) settings2.clinicalService = service.toUpperCase();
+    if (sala) settings2.clinicalSala = sala;
     try {
       localStorage.setItem("rpc-settings", JSON.stringify(settings2));
     } catch (_e) {
+    }
+    const api3 = typeof window !== "undefined" ? window.rplusDb || window.electronAPI : null;
+    if (api3 && typeof api3.dbClinicalProfileUpsert === "function") {
+      try {
+        await api3.dbClinicalProfileUpsert({
+          userId: settings2.clientId || "",
+          clinicalName: name,
+          rank: settings2.clinicalRank,
+          sala: sala || null
+        });
+      } catch (_e) {
+      }
     }
     closeClinicalRegistrationModal();
     if (pendingResolve) {
@@ -59150,10 +59131,10 @@ function promptClinicalRegistrationIfNeeded(settings2) {
   try {
     const nameInput = document.getElementById("clinical-reg-name");
     const rankSelect = document.getElementById("clinical-reg-rank");
-    const serviceInput = document.getElementById("clinical-reg-service");
+    const salaSelect = document.getElementById("clinical-reg-sala");
     if (nameInput && settings2.clinicalDisplayName) nameInput.value = String(settings2.clinicalDisplayName);
     if (rankSelect && settings2.clinicalRank) rankSelect.value = String(settings2.clinicalRank);
-    if (serviceInput && settings2.clinicalService) serviceInput.value = String(settings2.clinicalService);
+    if (salaSelect && settings2.clinicalSala) salaSelect.value = String(settings2.clinicalSala);
     const errEl = document.getElementById("clinical-reg-error");
     if (errEl) errEl.hidden = true;
   } catch (_e) {
