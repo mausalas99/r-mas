@@ -359,6 +359,62 @@ export function teamGuardiaOverride(team) {
  * @param {object[]} teams
  * @param {Date} now
  */
+/** @param {{ sala?: string, servicio?: string, service?: string, area?: string, sub_area?: string }} patient */
+export function resolvePatientSala(patient) {
+  const explicit = String(patient?.sala || '').trim();
+  if (explicit) return explicit;
+  const letter = extractSalaLetter(
+    patient?.servicio || patient?.service || patient?.area || patient?.sub_area || ''
+  );
+  if (letter === '1') return 'Sala 1';
+  if (letter === '2') return 'Sala 2';
+  if (letter === 'E') return 'Sala E';
+  return '';
+}
+
+/** @param {object} patient @param {string} userSala */
+export function patientInUserSala(patient, userSala) {
+  const ps = resolvePatientSala(patient);
+  return ps !== '' && ps === String(userSala || '').trim();
+}
+
+/** @param {object} patient @param {object[]} joinedTeams */
+export function patientMatchesAnyJoinedTeam(patient, joinedTeams) {
+  const mapped = {
+    id: patient?.id,
+    service: String(patient?.service || patient?.servicio || ''),
+    sub_area: String(patient?.sub_area || patient?.area || ''),
+    interconsult_type: patient?.interconsult_type,
+    sala: patient?.sala,
+  };
+  return (joinedTeams || []).some((team) => patientMatchesTeam(mapped, team));
+}
+
+/** @param {object} user @param {object} patient @param {object[]} joinedTeams */
+export function r3ExtendedStructuralAccess(user, patient, joinedTeams) {
+  const uid = String(user?.user_id || '');
+  return (joinedTeams || []).some((team) => {
+    const svc = normalizeServiceKey(team?.service);
+    const isExtended = [...R3_EXTENDED_SERVICES].some((s) => svc.includes(s));
+    if (!isExtended) return false;
+    if (!(team.members || []).some((m) => String(m.user_id) === uid)) return false;
+    return patientMatchesTeam(
+      {
+        id: patient?.id,
+        service: String(patient?.service || patient?.servicio || ''),
+        sub_area: String(patient?.sub_area || patient?.area || ''),
+      },
+      team
+    );
+  });
+}
+
+/** @param {object} user @param {object} patient @param {object|null} activeGuardia @param {object|null} context */
+export function isPatientReadableInClinicalScope(user, patient, activeGuardia = null, context = null) {
+  const scope = evaluateClinicalScope(user, patient, activeGuardia, context);
+  return scope.readable === true;
+}
+
 export function canR2SalaAbcdefDeficitWrite(userId, patient, joinedTeams, salaGuardiaToday, teams, now) {
   if (!normalizeServiceKey(patient?.service).includes('sala') && !extractSalaLetter(patient?.service || '')) {
     return false;
@@ -488,13 +544,44 @@ export function evaluateClinicalScope(currentUser, targetPatient, activeGuardia 
     return deny('Modo Guardia: rango sin cobertura');
   }
 
+  if (rank === 'R4') {
+    return allow('R4: acceso global');
+  }
+
+  if (rank === 'R1') {
+    if (patientInUserSala(targetPatient, userSala)) {
+      return allow('R1: paciente en mi sala');
+    }
+    return deny('R1: fuera de mi sala');
+  }
+
+  if (rank === 'R2') {
+    if (patientCoveredByGuardia(patientId, userId, guardias)) {
+      return allow('R2: paciente entregado');
+    }
+    if (patientMatchesAnyJoinedTeam(targetPatient, joinedTeams)) {
+      return allow('R2: paciente de mi equipo');
+    }
+    return deny('R2: sin equipo ni entrega');
+  }
+
+  if (rank === 'R3') {
+    if (patientMatchesAnyJoinedTeam(targetPatient, joinedTeams)) {
+      return allow('R3: paciente de mi equipo');
+    }
+    if (r3ExtendedStructuralAccess(currentUser, targetPatient, joinedTeams)) {
+      return allow('R3: servicio extendido');
+    }
+    return deny('R3: fuera de alcance');
+  }
+
   if (patientAssignedToTeam(patientId, assignments, joinedTeamIds)) {
-    return allow('Paciente del equipo');
+    return allow('Paciente del equipo (asignación)');
   }
 
   if (patientCoveredByGuardia(patientId, userId, guardias)) {
     return allow('Paciente entregado (handoff)');
   }
 
-  return deny('Fuera de alcance — sin equipo ni handoff');
+  return deny('Fuera de alcance');
 }

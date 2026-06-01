@@ -23,3 +23,13 @@ export function canConfigureRotation(user) {
   if (rank === 'R4') return true;
   return hasProgramAdminPrivileges(user);
 }
+
+/**
+ * Cross-sala team browse and global patient census (R4, Admin, program admin).
+ * @param {{ rank?: string, is_program_admin?: number|boolean }|null|undefined} user
+ */
+export function hasElevatedTeamPrivileges(user) {
+  if (!user) return false;
+  if (hasProgramAdminPrivileges(user)) return true;
+  return effectiveClinicalRank(user) === 'R4';
+}

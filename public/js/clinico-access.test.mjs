@@ -83,26 +83,35 @@ test('patientCoveredByGuardia returns true for matching patient and user', () =>
   assert.equal(patientCoveredByGuardia('p1', 'u2', guardias), false);
 });
 
-test('normal mode: patient assigned to team is visible', () => {
+test('normal mode: R1 sees patient in same sala', () => {
   const scope = evaluateClinicalScope(
-    { user_id: 'r1', rank: 'R1' },
-    { id: 'p1' },
+    { user_id: 'r1', rank: 'R1', sala: 'Sala 1' },
+    { id: 'p1', service: 'Sala', sub_area: 'Sala B', sala: 'Sala 1' },
     null,
     {
-      teams: [{ team_id: 't1', members: [{ user_id: 'r1' }] }],
-      assignments: [{ patient_id: 'p1', team_id: 't1' }],
+      teams: [
+        {
+          team_id: 't-other',
+          service: 'Sala',
+          sub_area_fraction: 'A',
+          sala: 'Sala 1',
+          members: [{ user_id: 'other' }],
+        },
+      ],
+      assignments: [],
       guardias: [],
       now: '2026-06-01T12:00:00Z',
     }
   );
   assert.equal(scope.readable, true);
   assert.equal(scope.writable, true);
+  assert.match(scope.reasoning, /sala/i);
 });
 
-test('normal mode: patient not assigned is denied', () => {
+test('normal mode: R1 denied patient outside sala', () => {
   const scope = evaluateClinicalScope(
-    { user_id: 'r1', rank: 'R1' },
-    { id: 'p2' },
+    { user_id: 'r1', rank: 'R1', sala: 'Sala 1' },
+    { id: 'p2', service: 'Sala', sala: 'Sala 2' },
     null,
     {
       teams: [{ team_id: 't1', members: [{ user_id: 'r1' }] }],
@@ -114,15 +123,15 @@ test('normal mode: patient not assigned is denied', () => {
   assert.equal(scope.readable, false);
 });
 
-test('handoff: patient covered by guardia is visible', () => {
+test('handoff: patient covered by guardia is visible for R2', () => {
   const scope = evaluateClinicalScope(
-    { user_id: 'r1x', rank: 'R1' },
-    { id: 'p1' },
+    { user_id: 'r2x', rank: 'R2', sala: 'Sala 1' },
+    { id: 'p1', service: 'Sala', sala: 'Sala 2' },
     null,
     {
       teams: [],
       assignments: [],
-      guardias: [{ patient_id: 'p1', covering_user_id: 'r1x' }],
+      guardias: [{ patient_id: 'p1', covering_user_id: 'r2x' }],
       now: '2026-06-01T12:00:00Z',
     }
   );
@@ -411,4 +420,66 @@ test('teamGuardiaOverride returns null when no guardia_today', () => {
 test('teamGuardiaOverride returns user_id from guardia_today', () => {
   const team = { guardia_today: { user_id: 'r1' } };
   assert.equal(teamGuardiaOverride(team), 'r1');
+});
+
+const SALA1 = 'Sala 1';
+const v3Ctx = {
+  teams: [],
+  guardias: [],
+  cycle: null,
+  assignments: [],
+  salaGuardiaToday: [],
+  guardiaMode: false,
+  now: '2026-06-01T12:00:00Z',
+};
+
+test('V3 R4: full access without program admin', () => {
+  const scope = evaluateClinicalScope(
+    { user_id: 'r4', rank: 'R4', sala: SALA1, is_program_admin: 0 },
+    { id: 'p1', service: 'Torre HU' },
+    null,
+    v3Ctx
+  );
+  assert.equal(scope.readable, true);
+  assert.equal(scope.writable, true);
+});
+
+test('V3 R2: structural team match', () => {
+  const scope = evaluateClinicalScope(
+    { user_id: 'r2', rank: 'R2', sala: SALA1 },
+    { id: 'p1', service: 'Sala', sub_area: 'Sala A' },
+    null,
+    {
+      ...v3Ctx,
+      teams: [
+        {
+          team_id: 't1',
+          service: 'Sala',
+          sub_area_fraction: 'A',
+          members: [{ user_id: 'r2', rank: 'R2' }],
+        },
+      ],
+    }
+  );
+  assert.equal(scope.writable, true);
+});
+
+test('V3 R3: extended service structural', () => {
+  const scope = evaluateClinicalScope(
+    { user_id: 'r3', rank: 'R3' },
+    { id: 'p1', service: 'Torre HU', sub_area: 'A' },
+    null,
+    {
+      ...v3Ctx,
+      teams: [
+        {
+          team_id: 't-torre',
+          service: 'Torre HU',
+          sub_area_fraction: 'A',
+          members: [{ user_id: 'r3', rank: 'R3' }],
+        },
+      ],
+    }
+  );
+  assert.equal(scope.writable, true);
 });
