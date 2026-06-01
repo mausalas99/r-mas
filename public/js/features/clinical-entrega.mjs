@@ -6,7 +6,7 @@ import {
   refreshGuardiaCensusFromDb,
   signOutgoingLiveSyncMutation,
 } from '../clinical-access-runtime.mjs';
-import { computeSalaAbcdefDeficitWrite, getJoinedTeams } from '../clinico-access.mjs';
+import { computeSalaAbcdefDeficitWrite, getJoinedTeams, isOnCallToday } from '../clinico-access.mjs';
 import { scheduleLiveSyncPush } from './lan-sync.mjs';
 
 export const GUARDIA_GRID_MODE_KEY = 'guardia.gridMode';
@@ -37,11 +37,11 @@ function uniqueByUserId(list) {
  * @param {object[]} teams
  * @param {object[]} users
  * @param {boolean} salaDeficit
- * @param {{ currentUserId?: string, weekday?: number }} [opts]
+ * @param {{ currentUserId?: string, now?: string|Date }} [opts]
  */
 export function listEntregaTargets(rank, teams, users, salaDeficit, opts = {}) {
   const currentUserId = String(opts.currentUserId || '');
-  const weekday = opts.weekday ?? new Date().getDay();
+  const now = opts.now ? new Date(String(opts.now)) : new Date();
   const all = normalizeUsers(users);
   const teamList = Array.isArray(teams) ? teams : [];
   const rankNorm = String(rank || 'R1');
@@ -51,7 +51,7 @@ export function listEntregaTargets(rank, teams, users, salaDeficit, opts = {}) {
   if (rankNorm === 'R3') {
     const suggestedIds = new Set();
     teamList.forEach((team) => {
-      if (Number(team.on_call_day_index) !== weekday) return;
+      if (!isOnCallToday(team, 'R3', now)) return;
       (team.members || []).forEach((m) => {
         if (m?.user_id) suggestedIds.add(String(m.user_id));
       });
@@ -82,7 +82,7 @@ export function listEntregaTargets(rank, teams, users, salaDeficit, opts = {}) {
         if (u.rank !== 'R2') return false;
         return teamList.some((team) => {
           if (!String(team.service || '').toLowerCase().includes('sala')) return false;
-          if (Number(team.on_call_day_index) !== weekday) return false;
+          if (!isOnCallToday(team, 'R2', now)) return false;
           const onGuardia =
             team.guardia_today && String(team.guardia_today.user_id) === u.user_id;
           if (!onGuardia) return false;
@@ -295,7 +295,6 @@ export function openEntregaModal(opts) {
 
   const { targets, flow } = listEntregaTargets(rank, teams, users, salaDeficit, {
     currentUserId: userId,
-    weekday: new Date().getDay(),
   });
 
   const select = document.getElementById('entrega-covering-user');

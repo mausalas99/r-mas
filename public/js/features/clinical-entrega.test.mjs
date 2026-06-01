@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { listEntregaTargets } from './clinical-entrega.mjs';
+import { isOnCallToday } from '../clinico-access.mjs';
 
 const users = [
   { user_id: 'r1a', username: 'r1a', rank: 'R1' },
@@ -43,7 +44,7 @@ describe('listEntregaTargets', () => {
       {
         team_id: 's1',
         service: 'Sala',
-        on_call_day_index: 1,
+        sub_area_fraction: 'A',
         members: [
           { user_id: 'r2a', rank: 'R2' },
           { user_id: 'r2b', rank: 'R2' },
@@ -52,12 +53,12 @@ describe('listEntregaTargets', () => {
       {
         team_id: 'e1',
         service: 'Eme',
+        sub_area_fraction: 'A',
         members: [{ user_id: 'r3x', rank: 'R3' }],
       },
     ];
     const { targets, flow } = listEntregaTargets('R2', teams, users, false, {
       currentUserId: 'r2a',
-      weekday: 1,
     });
     assert.equal(flow, 'r2');
     const ids = new Set(targets.map((u) => u.user_id));
@@ -67,11 +68,12 @@ describe('listEntregaTargets', () => {
   });
 
   it('R2 with sala deficit includes on-call Sala R2', () => {
+    const now = '2026-06-01T12:00:00Z'; // day 1 -> position 0 = A
     const teams = [
       {
         team_id: 's1',
         service: 'Sala',
-        on_call_day_index: 3,
+        sub_area_fraction: 'A',
         guardia_today: { user_id: 'r2b' },
         members: [
           { user_id: 'r2a', rank: 'R2' },
@@ -81,18 +83,19 @@ describe('listEntregaTargets', () => {
     ];
     const { targets } = listEntregaTargets('R2', teams, users, true, {
       currentUserId: 'r2a',
-      weekday: 3,
+      now,
     });
     const ids = new Set(targets.map((u) => u.user_id));
     assert.ok(ids.has('r2b'));
   });
 
-  it('R3 suggests members on teams matching weekday', () => {
+  it('R3 suggests members on teams matching today', () => {
+    const now = '2026-06-01T12:00:00Z'; // day 1 -> position 0 = A
     const teams = [
       {
         team_id: 't1',
         service: 'Torre HU',
-        on_call_day_index: 2,
+        sub_area_fraction: 'A',
         members: [
           { user_id: 'r3x', rank: 'R3' },
           { user_id: 'r2a', rank: 'R2' },
@@ -101,13 +104,13 @@ describe('listEntregaTargets', () => {
       {
         team_id: 't2',
         service: 'Eme',
-        on_call_day_index: 5,
+        sub_area_fraction: 'B',
         members: [{ user_id: 'r2b', rank: 'R2' }],
       },
     ];
     const { flow, targets } = listEntregaTargets('R3', teams, users, false, {
       currentUserId: 'r3x',
-      weekday: 2,
+      now,
     });
     assert.equal(flow, 'r3_suggest');
     const ids = targets.map((u) => u.user_id);
