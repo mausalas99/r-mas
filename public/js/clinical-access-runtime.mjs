@@ -12,12 +12,13 @@ import {
   ClientSessionInactivityLocker,
 } from './features/session-manager.mjs';
 
-/** @type {{ user: object|null, guardias: object[], guardiasMap: Map<string, object>, teams: object[], decryptedPrivateKeyPem: string|null, lastBlockHashByPatient: Map<string, string> }} */
+/** @type {{ user: object|null, guardias: object[], guardiasMap: Map<string, object>, teams: object[], scopeContext: object|null, decryptedPrivateKeyPem: string|null, lastBlockHashByPatient: Map<string, string> }} */
 export const clinicalSessionContext = {
   user: null,
   guardias: [],
   guardiasMap: new Map(),
   teams: [],
+  scopeContext: null,
   decryptedPrivateKeyPem: null,
   lastBlockHashByPatient: new Map(),
 };
@@ -90,6 +91,7 @@ export async function bootstrapClinicalAccess(settings, clientId) {
   clinicalSessionContext.guardias = Array.isArray(res.guardias) ? res.guardias : [];
   clinicalSessionContext.guardiasMap = buildGuardiasMap(clinicalSessionContext.guardias);
   await fetchClinicalTeamsFromDb();
+  await fetchClinicalScopeContextFromDb();
   return true;
 }
 
@@ -137,6 +139,7 @@ export function stopClinicalAccessRuntime() {
   clinicalSessionContext.guardias = [];
   clinicalSessionContext.guardiasMap = new Map();
   clinicalSessionContext.teams = [];
+  clinicalSessionContext.scopeContext = null;
   clinicalSessionContext.decryptedPrivateKeyPem = null;
 }
 
@@ -160,6 +163,7 @@ export async function refreshGuardiaCensusFromDb(settings) {
   clinicalSessionContext.guardias = Array.isArray(res.guardias) ? res.guardias : [];
   clinicalSessionContext.guardiasMap = buildGuardiasMap(clinicalSessionContext.guardias);
   await fetchClinicalTeamsFromDb();
+  await fetchClinicalScopeContextFromDb();
   await renderGuardiaCensusGrid(settings);
 }
 
@@ -179,7 +183,12 @@ export function assertClinicalWriteAllowed(patientId, settings) {
     patients.find((p) => String(p.id) === String(patientId)) ||
     (patientId ? { id: patientId } : null);
   const guardia = patientId ? clinicalSessionContext.guardiasMap.get(String(patientId)) : null;
-  const scope = evaluateClinicalScope(clinicalSessionContext.user, patient, guardia);
+  const scope = evaluateClinicalScope(
+    clinicalSessionContext.user,
+    patient,
+    guardia,
+    getClinicalScopeContextForEvaluate()
+  );
   if (!scope.writable) {
     const err = new Error(scope.reasoning || 'Clinical write denied');
     err.code = 'CLINICAL_ACCESS_DENIED';
@@ -246,6 +255,51 @@ export async function guardAndSignLiveSyncMutation(mutation, envelope) {
 
 export function getClinicalUser() {
   return clinicalSessionContext.user;
+}
+
+/** @returns {object} */
+export function getClinicalScopeContextForEvaluate() {
+  const cached = clinicalSessionContext.scopeContext;
+  if (cached && typeof cached === 'object') {
+    return {
+      teams: Array.isArray(cached.teams) ? cached.teams : clinicalSessionContext.teams,
+      guardias: Array.isArray(cached.guardias)
+        ? cached.guardias
+        : clinicalSessionContext.guardias,
+      cycle: cached.cycle ?? null,
+      assignments: Array.isArray(cached.assignments) ? cached.assignments : [],
+      salaGuardiaToday: Array.isArray(cached.salaGuardiaToday) ? cached.salaGuardiaToday : [],
+      now: cached.now || new Date().toISOString(),
+    };
+  }
+  return {
+    teams: clinicalSessionContext.teams,
+    guardias: clinicalSessionContext.guardias,
+    cycle: null,
+    assignments: [],
+    salaGuardiaToday: [],
+    now: new Date().toISOString(),
+  };
+}
+
+/** @returns {Promise<object|null>} */
+export async function fetchClinicalScopeContextFromDb() {
+  const api = electronApi();
+  const userId = clinicalSessionContext.user?.user_id;
+  if (!api || typeof api.dbClinicalScopeContext !== 'function' || !userId) {
+    clinicalSessionContext.scopeContext = null;
+    return null;
+  }
+  const res = await api.dbClinicalScopeContext({ userId });
+  if (!res || res.ok === false) {
+    clinicalSessionContext.scopeContext = null;
+    return null;
+  }
+  clinicalSessionContext.scopeContext = res.context ?? null;
+  if (Array.isArray(res.context?.teams)) {
+    clinicalSessionContext.teams = res.context.teams;
+  }
+  return clinicalSessionContext.scopeContext;
 }
 
 /** @returns {Promise<object[]>} */

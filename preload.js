@@ -122,6 +122,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbClinicalAccessBootstrap: function(opts) {
     return ipcRenderer.invoke('db:clinical-access-bootstrap', opts);
   },
+  dbClinicalScopeContext: function(opts) {
+    return ipcRenderer.invoke('db:clinical-scope-context', opts);
+  },
   dbGuardiaCensus: function(opts) {
     return ipcRenderer.invoke('db:guardia-census', opts);
   },

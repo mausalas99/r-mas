@@ -13616,6 +13616,8 @@ var windowHandlers5 = {
 
 // public/js/clinico-access.mjs
 var CLINICO_UNLOCK_PHRASE = "entiendo, usare mi criterio clincio";
+var SALA_LETTERS = ["A", "B", "C", "D", "E", "F"];
+var R3_EXTENDED_SERVICES = /* @__PURE__ */ new Set(["torre hu", "eme", "ux"]);
 function normalizeClinicoUnlockPhrase(text) {
   return String(text || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ");
 }
@@ -13680,21 +13682,209 @@ function confirmClinicoUnlock() {
   closeClinicoUnlockModal();
   if (cb) cb();
 }
-function evaluateClinicalScope(currentUser, targetPatient, activeGuardia = null) {
-  void activeGuardia;
+function normalizeServiceKey(value) {
+  return String(value || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ");
+}
+function toMillis(value, fallbackIso) {
+  if (value instanceof Date) return value.getTime();
+  if (value != null && value !== "") return new Date(String(value)).getTime();
+  if (fallbackIso) return new Date(String(fallbackIso)).getTime();
+  return NaN;
+}
+function isIncomingPreviewWindow(cycle, now) {
+  if (!cycle?.preview_start_at || !cycle?.effective_at) return false;
+  const t2 = toMillis(now);
+  const start = toMillis(cycle.preview_start_at);
+  const end = toMillis(cycle.effective_at);
+  if (!Number.isFinite(t2) || !Number.isFinite(start) || !Number.isFinite(end)) return false;
+  return t2 >= start && t2 < end;
+}
+function extractSalaLetter(serviceOrArea) {
+  const raw = String(serviceOrArea || "").trim();
+  const match = raw.match(/Sala\s*([A-F])/i);
+  if (match) return match[1].toUpperCase();
+  const lone = raw.match(/^([A-F])$/i);
+  return lone ? lone[1].toUpperCase() : "";
+}
+function salaLetterForTeamOrArea(teamOrPatient) {
+  const frac = String(teamOrPatient?.sub_area_fraction || "").trim();
+  if (frac && SALA_LETTERS.includes(frac.toUpperCase())) return frac.toUpperCase();
+  const fromName = extractSalaLetter(teamOrPatient?.name || "");
+  if (fromName) return fromName;
+  return extractSalaLetter(teamOrPatient?.sub_area || teamOrPatient?.service || "");
+}
+function isR4MacroPatient(patient) {
+  if (!patient) return false;
+  const svc = normalizeServiceKey(patient.service);
+  const sub = normalizeServiceKey(patient.sub_area);
+  if (svc.includes("sala") || sub.includes("sala")) return true;
+  if (svc.includes("interconsult") || sub.includes("interconsult")) return true;
+  const ic = String(patient.interconsult_type || "None");
+  return ic !== "None";
+}
+function patientMatchesTeam(patient, team) {
+  if (!patient || !team) return false;
+  const patientSvc = normalizeServiceKey(patient.service);
+  const teamSvc = normalizeServiceKey(team.service);
+  if (patientSvc !== teamSvc && !(patientSvc.includes("sala") && teamSvc.includes("sala"))) {
+    if (teamSvc.includes("sala") && (patientSvc.includes("sala") || extractSalaLetter(patient.service))) {
+    } else if (patientSvc !== teamSvc) {
+      return false;
+    }
+  }
+  const frac = String(team.sub_area_fraction || "").trim();
+  if (!frac) return true;
+  const letter = frac.toUpperCase();
+  const patientLetter = salaLetterForTeamOrArea(patient);
+  if (patientLetter && patientLetter === letter) return true;
+  const hay = `${patient.service || ""} ${patient.sub_area || ""}`;
+  return hay.toUpperCase().includes(letter);
+}
+function getJoinedTeams(teams, userId) {
+  const uid = String(userId || "");
+  if (!uid) return [];
+  return (teams || []).filter(
+    (team) => (team.members || []).some((m) => String(m.user_id) === uid)
+  );
+}
+function isActiveGuardiaCoveringUser(userId, activeGuardia) {
+  if (!activeGuardia || !userId) return false;
+  return String(activeGuardia.covering_user_id || "") === String(userId);
+}
+function hasSalaGuardiaDeclaredForLetter(salaGuardiaToday, teams, salaLetter) {
+  const letter = String(salaLetter || "").toUpperCase();
+  if (!letter) return false;
+  const salaTeams = (teams || []).filter(
+    (t2) => normalizeServiceKey(t2.service).includes("sala") && salaLetterForTeamOrArea(t2) === letter
+  );
+  if (!salaTeams.length) return false;
+  const declared = new Set(
+    (salaGuardiaToday || []).map((row) => String(row.team_id || ""))
+  );
+  return salaTeams.some((t2) => declared.has(String(t2.team_id || "")));
+}
+function canR2SalaAbcdefDeficitWrite(userId, patient, joinedTeams, salaGuardiaToday, teams, weekday) {
+  if (!normalizeServiceKey(patient?.service).includes("sala") && !extractSalaLetter(patient?.service || "")) {
+    return false;
+  }
+  const patientLetter = salaLetterForTeamOrArea(patient);
+  if (!patientLetter) return false;
+  if (hasSalaGuardiaDeclaredForLetter(salaGuardiaToday, teams, patientLetter)) return false;
+  const uid = String(userId || "");
+  return joinedTeams.some((team) => {
+    if (!normalizeServiceKey(team.service).includes("sala")) return false;
+    if (Number(team.on_call_day_index) !== weekday) return false;
+    const declared = (salaGuardiaToday || []).find(
+      (g3) => String(g3.team_id) === String(team.team_id) && String(g3.user_id) === uid
+    );
+    return !!declared;
+  });
+}
+function evaluateClinicalScope(currentUser, targetPatient, activeGuardia = null, context = null) {
+  const ctx = context && typeof context === "object" ? context : {};
+  const teams = Array.isArray(ctx.teams) ? ctx.teams : [];
+  const assignments = Array.isArray(ctx.assignments) ? ctx.assignments : [];
+  const salaGuardiaToday = Array.isArray(ctx.salaGuardiaToday) ? ctx.salaGuardiaToday : [];
+  const cycle = ctx.cycle ?? null;
+  const now = ctx.now != null ? ctx.now instanceof Date ? ctx.now : new Date(String(ctx.now)) : /* @__PURE__ */ new Date();
+  const weekday = now.getDay();
+  const userId = String(currentUser?.user_id || "");
+  const rank = String(currentUser?.rank || "");
+  const patientId = String(targetPatient?.id || "");
   const auditContext = {
     userId: currentUser?.user_id,
     rank: currentUser?.rank,
     patientId: targetPatient?.id,
     service: targetPatient?.service,
-    timestamp: (/* @__PURE__ */ new Date()).toISOString()
+    timestamp: now.toISOString()
   };
-  return {
-    readable: true,
-    writable: true,
-    reasoning: "V1 Release: Global peer-to-peer write access enabled",
-    audit: auditContext
-  };
+  const deny = (reasoning, extra = {}) => ({
+    readable: false,
+    writable: false,
+    reasoning,
+    audit: auditContext,
+    ...extra
+  });
+  const allow = (reasoning, readable = true, writable = true, extra = {}) => ({
+    readable,
+    writable,
+    reasoning,
+    audit: auditContext,
+    ...extra
+  });
+  if (!currentUser?.user_id || !targetPatient?.id) {
+    return deny("Usuario o paciente no identificado");
+  }
+  if (isIncomingPreviewWindow(cycle, now)) {
+    const incoming = assignments.find((a) => String(a.patient_id) === patientId);
+    if (incoming) {
+      const effectiveMs = toMillis(incoming.effective_at);
+      const nowMs = toMillis(now);
+      if (Number.isFinite(effectiveMs) && Number.isFinite(nowMs) && nowMs < effectiveMs) {
+        return allow(
+          "Vista previa Incoming: lectura permitida hasta vigencia",
+          true,
+          false,
+          { incomingPreview: true }
+        );
+      }
+    }
+  }
+  if (rank === "Admin") {
+    return allow("Admin: acceso completo");
+  }
+  if (isActiveGuardiaCoveringUser(userId, activeGuardia)) {
+    return allow("Guardia activa: cobertura asignada");
+  }
+  const joinedTeams = getJoinedTeams(teams, userId);
+  if (rank === "R4") {
+    if (isR4MacroPatient(targetPatient)) {
+      return allow("R4: censo macro Sala / Interconsultas");
+    }
+    if (joinedTeams.some((team) => patientMatchesTeam(targetPatient, team))) {
+      return allow("R4: paciente del equipo");
+    }
+    return deny("R4: fuera de macro-dominio y sin equipo");
+  }
+  if (rank === "R3") {
+    const readable = joinedTeams.some((team) => patientMatchesTeam(targetPatient, team)) || joinedTeams.some((team) => R3_EXTENDED_SERVICES.has(normalizeServiceKey(team.service))) || R3_EXTENDED_SERVICES.has(normalizeServiceKey(targetPatient?.service));
+    if (!readable) {
+      return deny("R3: sin lectura en este servicio");
+    }
+    if (joinedTeams.some((team) => patientMatchesTeam(targetPatient, team))) {
+      return allow("R3: paciente del equipo");
+    }
+    if (joinedTeams.some(
+      (team) => Number(team.on_call_day_index) === weekday && normalizeServiceKey(team.service) === normalizeServiceKey(targetPatient?.service)
+    )) {
+      return allow("R3: cobertura cruzada por d\xEDa de guardia", true, true);
+    }
+    return allow("R3: lectura en servicio extendido", true, false);
+  }
+  if (rank === "R2") {
+    if (canR2SalaAbcdefDeficitWrite(userId, targetPatient, joinedTeams, salaGuardiaToday, teams, weekday)) {
+      return allow("R2: d\xE9ficit Sala ABCDEF \u2014 cobertura temporal");
+    }
+    if (joinedTeams.some((team) => patientMatchesTeam(targetPatient, team))) {
+      return allow("R2: paciente del equipo");
+    }
+    const svc = normalizeServiceKey(targetPatient?.service);
+    if (["eme", "area a", "\xE1rea a"].some((k) => svc.includes(k.replace("\xE1", "a")))) {
+      if (joinedTeams.some((t2) => normalizeServiceKey(t2.service) === svc)) {
+        return allow("R2: servicio con guardia de equipo");
+      }
+    }
+    return deny("R2: sin equipo ni d\xE9ficit Sala");
+  }
+  if (rank === "R1") {
+    if (joinedTeams.some(
+      (team) => team.sub_area_fraction && patientMatchesTeam(targetPatient, team)
+    )) {
+      return allow("R1: fracci\xF3n de sub\xE1rea del equipo");
+    }
+    return deny("R1: sin fracci\xF3n asignada para este paciente");
+  }
+  return deny("Rango cl\xEDnico sin permisos configurados");
 }
 
 // public/js/features/crypto-signer.mjs
@@ -13817,6 +14007,7 @@ var clinicalSessionContext = {
   guardias: [],
   guardiasMap: /* @__PURE__ */ new Map(),
   teams: [],
+  scopeContext: null,
   decryptedPrivateKeyPem: null,
   lastBlockHashByPatient: /* @__PURE__ */ new Map()
 };
@@ -13869,6 +14060,7 @@ async function bootstrapClinicalAccess(settings2, clientId) {
   clinicalSessionContext.guardias = Array.isArray(res.guardias) ? res.guardias : [];
   clinicalSessionContext.guardiasMap = buildGuardiasMap(clinicalSessionContext.guardias);
   await fetchClinicalTeamsFromDb();
+  await fetchClinicalScopeContextFromDb();
   return true;
 }
 async function initClinicalAccessRuntime(settings2, clientId) {
@@ -13904,7 +14096,12 @@ async function renderGuardiaCensusGrid(settings2) {
 function assertClinicalWriteAllowed(patientId, settings2) {
   const patient = patients.find((p) => String(p.id) === String(patientId)) || (patientId ? { id: patientId } : null);
   const guardia = patientId ? clinicalSessionContext.guardiasMap.get(String(patientId)) : null;
-  const scope = evaluateClinicalScope(clinicalSessionContext.user, patient, guardia);
+  const scope = evaluateClinicalScope(
+    clinicalSessionContext.user,
+    patient,
+    guardia,
+    getClinicalScopeContextForEvaluate()
+  );
   if (!scope.writable) {
     const err = new Error(scope.reasoning || "Clinical write denied");
     err.code = "CLINICAL_ACCESS_DENIED";
@@ -13939,6 +14136,45 @@ async function guardAndSignLiveSyncMutation(mutation, envelope) {
     envelope.clinicalLedger = signed;
   }
   return signed;
+}
+function getClinicalScopeContextForEvaluate() {
+  const cached = clinicalSessionContext.scopeContext;
+  if (cached && typeof cached === "object") {
+    return {
+      teams: Array.isArray(cached.teams) ? cached.teams : clinicalSessionContext.teams,
+      guardias: Array.isArray(cached.guardias) ? cached.guardias : clinicalSessionContext.guardias,
+      cycle: cached.cycle ?? null,
+      assignments: Array.isArray(cached.assignments) ? cached.assignments : [],
+      salaGuardiaToday: Array.isArray(cached.salaGuardiaToday) ? cached.salaGuardiaToday : [],
+      now: cached.now || (/* @__PURE__ */ new Date()).toISOString()
+    };
+  }
+  return {
+    teams: clinicalSessionContext.teams,
+    guardias: clinicalSessionContext.guardias,
+    cycle: null,
+    assignments: [],
+    salaGuardiaToday: [],
+    now: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+async function fetchClinicalScopeContextFromDb() {
+  const api3 = electronApi();
+  const userId = clinicalSessionContext.user?.user_id;
+  if (!api3 || typeof api3.dbClinicalScopeContext !== "function" || !userId) {
+    clinicalSessionContext.scopeContext = null;
+    return null;
+  }
+  const res = await api3.dbClinicalScopeContext({ userId });
+  if (!res || res.ok === false) {
+    clinicalSessionContext.scopeContext = null;
+    return null;
+  }
+  clinicalSessionContext.scopeContext = res.context ?? null;
+  if (Array.isArray(res.context?.teams)) {
+    clinicalSessionContext.teams = res.context.teams;
+  }
+  return clinicalSessionContext.scopeContext;
 }
 async function fetchClinicalTeamsFromDb() {
   const api3 = electronApi();
@@ -14100,23 +14336,23 @@ var UnifiedPatientGridBoard = class {
 
 // public/js/features/clinical-rotation.mjs
 var ROTATION_ADMIN_RANKS = /* @__PURE__ */ new Set(["R4", "Admin"]);
-function toMillis(value) {
+function toMillis2(value) {
   if (value == null) return NaN;
   if (value instanceof Date) return value.getTime();
   return new Date(String(value)).getTime();
 }
-function isIncomingPreviewWindow(cycle, nowDate) {
+function isIncomingPreviewWindow2(cycle, nowDate) {
   if (!cycle?.preview_start_at || !cycle?.effective_at) return false;
-  const now = toMillis(nowDate);
-  const start = toMillis(cycle.preview_start_at);
-  const end = toMillis(cycle.effective_at);
+  const now = toMillis2(nowDate);
+  const start = toMillis2(cycle.preview_start_at);
+  const end = toMillis2(cycle.effective_at);
   if (!Number.isFinite(now) || !Number.isFinite(start) || !Number.isFinite(end)) return false;
   return now >= start && now < end;
 }
 function isChartLockedForPatient(assignment, nowDate) {
   if (!assignment?.effective_at) return false;
-  const now = toMillis(nowDate);
-  const effective = toMillis(assignment.effective_at);
+  const now = toMillis2(nowDate);
+  const effective = toMillis2(assignment.effective_at);
   if (!Number.isFinite(now) || !Number.isFinite(effective)) return false;
   return now < effective;
 }
@@ -14300,7 +14536,7 @@ async function syncGuardiaIncomingStrip(settings2) {
   const host = document.getElementById("guardia-incoming-strip");
   if (!host) return;
   const cycle = await fetchActiveRotationCycleFromDb();
-  if (!cycle || !isIncomingPreviewWindow(cycle, /* @__PURE__ */ new Date())) {
+  if (!cycle || !isIncomingPreviewWindow2(cycle, /* @__PURE__ */ new Date())) {
     host.hidden = true;
     host.innerHTML = "";
     return;
@@ -54987,9 +55223,49 @@ function renderPatientListNow() {
   syncGuardiaCensusPanelVisibility(rt32.getSettings());
   renderGuardiaCensusGrid(rt32.getSettings());
 }
+function formatIncomingEffectiveLabel(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return String(iso || "");
+  return d.toLocaleString("es-MX", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+function blockIncomingPreviewChartOpen(id) {
+  if (!clinicalSessionContext.user) return false;
+  const patient = patients.find((p) => p && String(p.id) === String(id));
+  const mapped = patient ? {
+    id: String(patient.id),
+    service: String(patient.servicio || patient.area || ""),
+    sub_area: String(patient.area || ""),
+    interconsult_type: patient.interconsult_type
+  } : { id: String(id) };
+  const guardia = clinicalSessionContext.guardiasMap.get(String(id)) || null;
+  const scope = evaluateClinicalScope(
+    clinicalSessionContext.user,
+    mapped,
+    guardia,
+    getClinicalScopeContextForEvaluate()
+  );
+  if (!scope.writable && scope.incomingPreview) {
+    const assignment = (getClinicalScopeContextForEvaluate().assignments || []).find(
+      (a) => String(a.patient_id) === String(id)
+    );
+    const when = formatIncomingEffectiveLabel(
+      String(assignment?.effective_at || "")
+    );
+    rt32.showToast(`Disponible el ${when}`, "info");
+    return true;
+  }
+  return false;
+}
 function selectPatient(id) {
   if (id == null || id === "") return;
   try {
+    if (blockIncomingPreviewChartOpen(id)) return;
     selectPatientCore(id);
   } catch (err) {
     console.error("[R+] selectPatient:", err && err.message ? err.message : err);

@@ -22,6 +22,13 @@ import {
   getDefaultCuarto,
   getDefaultCama,
 } from '../mode-features.mjs';
+import {
+  renderGuardiaCensusGrid,
+  syncGuardiaCensusPanelVisibility,
+  clinicalSessionContext,
+  getClinicalScopeContextForEvaluate,
+} from '../clinical-access-runtime.mjs';
+import { evaluateClinicalScope } from '../clinico-access.mjs';
 import { getTourDemoAdmitDefaults } from '../tour-demo-patient.mjs';
 import { isManejoSectionHidden, migrateGranularInner } from '../expediente-tabs.mjs';
 import { sortLabHistoryChronological } from '../tend-core.mjs';
@@ -831,6 +838,8 @@ function renderPatientListNow() {
       '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">Sin pacientes aún</div>';
     _lastRondaNavIds = [];
     if (rt.getActiveAppTab() === 'agenda') rt.renderProcedureAgendaPanel();
+    syncGuardiaCensusPanelVisibility(rt.getSettings());
+    renderGuardiaCensusGrid(rt.getSettings());
     return;
   }
   var filtered = visiblePatients.filter(patientMatchesSearch);
@@ -839,6 +848,8 @@ function renderPatientListNow() {
       '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">Ningún paciente coincide con la búsqueda</div>';
     _lastRondaNavIds = [];
     if (rt.getActiveAppTab() === 'agenda') rt.renderProcedureAgendaPanel();
+    syncGuardiaCensusPanelVisibility(rt.getSettings());
+    renderGuardiaCensusGrid(rt.getSettings());
     return;
   }
   var pinned = filtered.filter(function (p) {
@@ -906,11 +917,62 @@ function renderPatientListNow() {
   list.innerHTML = parts.join('');
   mountPatientListSortables();
   if (rt.getActiveAppTab() === 'agenda') rt.renderProcedureAgendaPanel();
+  syncGuardiaCensusPanelVisibility(rt.getSettings());
+  renderGuardiaCensusGrid(rt.getSettings());
+}
+
+/** @param {string} iso */
+function formatIncomingEffectiveLabel(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return String(iso || '');
+  return d.toLocaleString('es-MX', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+/**
+ * @param {string|number} id
+ * @returns {boolean} true when chart open should be blocked
+ */
+function blockIncomingPreviewChartOpen(id) {
+  if (!clinicalSessionContext.user) return false;
+  const patient = patients.find((p) => p && String(p.id) === String(id));
+  const mapped = patient
+    ? {
+        id: String(patient.id),
+        service: String(patient.servicio || patient.area || ''),
+        sub_area: String(patient.area || ''),
+        interconsult_type: patient.interconsult_type,
+      }
+    : { id: String(id) };
+  const guardia = clinicalSessionContext.guardiasMap.get(String(id)) || null;
+  const scope = evaluateClinicalScope(
+    clinicalSessionContext.user,
+    mapped,
+    guardia,
+    getClinicalScopeContextForEvaluate()
+  );
+  if (!scope.writable && scope.incomingPreview) {
+    const assignment = (getClinicalScopeContextForEvaluate().assignments || []).find(
+      (a) => String(a.patient_id) === String(id)
+    );
+    const when = formatIncomingEffectiveLabel(
+      String(assignment?.effective_at || '')
+    );
+    rt.showToast(`Disponible el ${when}`, 'info');
+    return true;
+  }
+  return false;
 }
 
 export function selectPatient(id) {
   if (id == null || id === '') return;
   try {
+    if (blockIncomingPreviewChartOpen(id)) return;
     selectPatientCore(id);
   } catch (err) {
     console.error('[R+] selectPatient:', err && err.message ? err.message : err);

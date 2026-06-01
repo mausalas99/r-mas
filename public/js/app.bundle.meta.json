@@ -694,7 +694,7 @@
       "format": "esm"
     },
     "public/js/clinico-access.mjs": {
-      "bytes": 3797,
+      "bytes": 14724,
       "imports": [
         {
           "path": "public/js/clinical-product-policy.mjs",
@@ -715,7 +715,7 @@
       "format": "esm"
     },
     "public/js/clinical-access-runtime.mjs": {
-      "bytes": 10196,
+      "bytes": 12011,
       "imports": [
         {
           "path": "public/js/db-storage-bridge.mjs",
@@ -3964,7 +3964,7 @@
       "format": "esm"
     },
     "public/js/features/patients.mjs": {
-      "bytes": 51812,
+      "bytes": 53438,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -4010,6 +4010,11 @@
           "path": "public/js/clinical-access-runtime.mjs",
           "kind": "import-statement",
           "original": "../clinical-access-runtime.mjs"
+        },
+        {
+          "path": "public/js/clinico-access.mjs",
+          "kind": "import-statement",
+          "original": "../clinico-access.mjs"
         },
         {
           "path": "public/js/tour-demo-patient.mjs",
@@ -4817,7 +4822,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 4124481
+      "bytes": 4147434
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -4984,7 +4989,7 @@
           "bytesInOutput": 58323
         },
         "public/js/clinico-access.mjs": {
-          "bytesInOutput": 2824
+          "bytesInOutput": 11233
         },
         "public/js/features/crypto-signer.mjs": {
           "bytesInOutput": 480
@@ -4993,13 +4998,13 @@
           "bytesInOutput": 3010
         },
         "public/js/clinical-access-runtime.mjs": {
-          "bytesInOutput": 6780
+          "bytesInOutput": 8421
         },
         "public/js/features/unified-patient-grid-board.mjs": {
           "bytesInOutput": 5071
         },
         "public/js/features/clinical-rotation.mjs": {
-          "bytesInOutput": 8540
+          "bytesInOutput": 8548
         },
         "public/js/features/clinical-teams.mjs": {
           "bytesInOutput": 11341
@@ -5452,7 +5457,7 @@
           "bytesInOutput": 1055
         },
         "public/js/features/patients.mjs": {
-          "bytesInOutput": 48238
+          "bytesInOutput": 49577
         },
         "public/js/presentation-mode.mjs": {
           "bytesInOutput": 4048
@@ -5485,7 +5490,7 @@
           "bytesInOutput": 6324
         }
       },
-      "bytes": 2264120
+      "bytes": 2275517
     }
   }
 }
