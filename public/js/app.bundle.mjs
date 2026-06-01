@@ -8857,8 +8857,8 @@ function evaluateClinicalScope(currentUser, targetPatient, activeGuardia = null,
   if (!currentUser?.user_id || !targetPatient?.id) {
     return deny("Usuario o paciente no identificado");
   }
-  if (rank === "Admin") {
-    return allow("Admin: acceso completo");
+  if (currentUser.is_program_admin === 1 || currentUser.is_program_admin === true || rank === "Admin") {
+    return allow("Privilegios admin: acceso completo");
   }
   if (isActiveGuardiaCoveringUser(userId, activeGuardia)) {
     return allow("Guardia activa: cobertura asignada");
@@ -9092,8 +9092,22 @@ async function bootstrapClinicalAccess(settings2, clientId) {
     user_id: res.user.userId,
     username: res.user.username,
     rank: res.user.rank,
+    is_program_admin: res.user.isProgramAdmin ? 1 : 0,
     public_key: res.user.publicKeyPem
   };
+  if (api3 && typeof api3.dbClinicalProfileGet === "function") {
+    try {
+      const profileRes = await api3.dbClinicalProfileGet({ userId: res.user.userId });
+      const profile = profileRes?.profile;
+      if (profile) {
+        clinicalSessionContext.user.rank = profile.rank ?? clinicalSessionContext.user.rank;
+        clinicalSessionContext.user.sala = profile.sala ?? null;
+        clinicalSessionContext.user.clinical_name = profile.clinical_name ?? null;
+        clinicalSessionContext.user.is_program_admin = profile.is_program_admin === 1 ? 1 : 0;
+      }
+    } catch (_e) {
+    }
+  }
   clinicalSessionContext.decryptedPrivateKeyPem = res.user.privateKeyPem || null;
   clinicalSessionContext.guardias = Array.isArray(res.guardias) ? res.guardias : [];
   clinicalSessionContext.guardiasMap = buildGuardiasMap(clinicalSessionContext.guardias);
@@ -9491,6 +9505,30 @@ var init_unified_patient_grid_board = __esm({
   }
 });
 
+// public/js/clinical-privileges.mjs
+function hasProgramAdminPrivileges(user) {
+  if (!user) return false;
+  if (user.is_program_admin === 1 || user.is_program_admin === true) return true;
+  return String(user.rank || "") === "Admin";
+}
+function effectiveClinicalRank(user) {
+  const rank = String(user?.rank || "R1");
+  if (CLINICAL_RANKS.has(rank)) return rank;
+  if (rank === "Admin") return "R1";
+  return "R1";
+}
+function canConfigureRotation(user) {
+  const rank = effectiveClinicalRank(user);
+  if (rank === "R4") return true;
+  return hasProgramAdminPrivileges(user);
+}
+var CLINICAL_RANKS;
+var init_clinical_privileges = __esm({
+  "public/js/clinical-privileges.mjs"() {
+    CLINICAL_RANKS = /* @__PURE__ */ new Set(["R1", "R2", "R3", "R4"]);
+  }
+});
+
 // public/js/features/clinical-rotation.mjs
 function toMillis2(value) {
   if (value == null) return NaN;
@@ -9532,11 +9570,8 @@ function dbApi() {
   if (typeof window === "undefined") return null;
   return window.rplusDb || window.electronAPI || null;
 }
-function currentRank() {
-  return String(clinicalSessionContext.user?.rank || "R1");
-}
-function canConfigureRotation() {
-  return ROTATION_ADMIN_RANKS.has(currentRank());
+function canConfigureRotation2() {
+  return canConfigureRotation(clinicalSessionContext.user);
 }
 function assignmentChipLabel(row) {
   const bed = String(row.bed_label || "").trim() || "\u2014";
@@ -9594,7 +9629,7 @@ function rotationModalEl() {
   return document.getElementById("guardia-rotation-config-backdrop");
 }
 function openRotationConfigModal() {
-  if (!canConfigureRotation()) {
+  if (!canConfigureRotation2()) {
     toast("Solo R4 o Admin pueden configurar la rotaci\xF3n.", "error");
     return;
   }
@@ -9617,7 +9652,7 @@ function wireRotationConfigFormOnce() {
   form._rpcRotationConfigWired = true;
   form.addEventListener("submit", async (ev) => {
     ev.preventDefault();
-    if (!canConfigureRotation()) {
+    if (!canConfigureRotation2()) {
       toast("Solo R4 o Admin pueden configurar la rotaci\xF3n.", "error");
       return;
     }
@@ -9671,7 +9706,7 @@ async function confirmNuevaRotacion() {
 function syncRotationConfigButton() {
   const configBtn = document.getElementById("btn-guardia-rotation-config");
   if (!configBtn) return;
-  const allowed = canConfigureRotation();
+  const allowed = canConfigureRotation2();
   configBtn.disabled = !allowed;
   configBtn.title = allowed ? "" : "Solo R4 o Admin pueden configurar la rotaci\xF3n.";
   configBtn.classList.toggle("btn-med-secondary--muted", !allowed);
@@ -9712,11 +9747,11 @@ async function syncGuardiaIncomingStrip(settings2) {
     }
   });
 }
-var ROTATION_ADMIN_RANKS, rotationControlsWired;
+var rotationControlsWired;
 var init_clinical_rotation = __esm({
   "public/js/features/clinical-rotation.mjs"() {
     init_clinical_access_runtime();
-    ROTATION_ADMIN_RANKS = /* @__PURE__ */ new Set(["R4", "Admin"]);
+    init_clinical_privileges();
     rotationControlsWired = false;
   }
 });
@@ -14111,7 +14146,7 @@ async function scanLanHosts() {
   try {
     var clientId = typeof getLanClientId === "function" ? getLanClientId() : "";
     var peers = typeof listLivePeerHostUrls === "function" ? listLivePeerHostUrls(clientId) : [];
-    var currentRank2 = getClinicalRank();
+    var currentRank = getClinicalRank();
     for (var i = 0; i < peers.length; i += 1) {
       var peerUrl = peers[i];
       if (!peerUrl) continue;
@@ -14125,7 +14160,7 @@ async function scanLanHosts() {
         if (resp.ok) {
           var data = await resp.json();
           var peerRank = String(data.rank || "").trim();
-          if (shouldSupersede(peerRank, currentRank2)) {
+          if (shouldSupersede(peerRank, currentRank)) {
             if (isLanElectronDesktop() && typeof applyLanHostUrlSwitch === "function") {
               applyLanHostUrlSwitch(peerUrl, teamCode, { skipRememberPrimary: true });
               runtime2.showToast("Un host de mayor rango (" + peerRank + ") est\xE1 activo. Conectando como cliente.", "info");
@@ -15168,7 +15203,7 @@ function renderCreateTeamForm() {
   const serviceOptions = CLINICAL_TEAM_SERVICES.map(
     (svc) => `<option value="${escapeAttr3(svc)}">${escapeHtml3(svc)}</option>`
   ).join("");
-  const rank = clinicalSessionContext.user?.rank || "R1";
+  const rank = effectiveClinicalRank(clinicalSessionContext.user);
   const defaultCycle = getCycleConfig(CLINICAL_TEAM_SERVICES[0], rank);
   const letterOptions = defaultCycle.letters.map(
     (letter, idx) => `<option value="${escapeAttr3(letter)}">${escapeHtml3(letter)}</option>`
@@ -15177,7 +15212,7 @@ function renderCreateTeamForm() {
     <section class="clinical-teams-section">
       <h4 class="clinical-teams-section-title">Crear equipo</h4>
       <form id="clinical-team-create-form" class="clinical-teams-create-form">
-        <div class="field-group" id="clinical-team-sala-group" style="display:none">
+        <div class="field-group" id="clinical-team-sala-group">
           <label for="clinical-team-create-sala">Sala</label>
           <select id="clinical-team-create-sala" class="profile-input">
             <option value="">\u2014 Seleccionar Sala \u2014</option>
@@ -15253,7 +15288,8 @@ async function renderClinicalTeamsPanel() {
   const joined = filterJoinedTeams2(clinicalSessionContext.teams, userId);
   const joinedHtml = joined.length ? joined.map((team) => renderJoinedTeamCard(team, userId)).join("") : '<p class="clinical-teams-empty">A\xFAn no perteneces a ning\xFAn equipo.</p>';
   const user = clinicalSessionContext.user || {};
-  const rank = user.rank || "R1";
+  const rank = effectiveClinicalRank(user);
+  const programAdmin = hasProgramAdminPrivileges(user);
   const sala = String(user.sala || "").trim();
   const username = escapeHtml3(user.username || "");
   const clinicalName = escapeHtml3(user.clinical_name || "");
@@ -15278,12 +15314,20 @@ async function renderClinicalTeamsPanel() {
           <input id="clinical-profile-name" type="text" class="profile-input" value="${clinicalName}" required>
         </div>
         <div class="field-group">
-          <label for="clinical-profile-rank">Rango</label>
+          <label for="clinical-profile-rank">Rango cl\xEDnico</label>
           <select id="clinical-profile-rank" class="profile-input">
-            ${["R1", "R2", "R3", "R4", "Admin"].map(
+            ${["R1", "R2", "R3", "R4"].map(
     (r) => `<option value="${r}" ${r === rank ? "selected" : ""}>${r}</option>`
   ).join("")}
           </select>
+          <p class="clinical-registration-lead" style="margin:0.35rem 0 0;">Usado en equipos, entregas y alcance de guardia.</p>
+        </div>
+        <div class="field-group">
+          <label class="clinical-teams-guardia-label">
+            <input type="checkbox" id="clinical-profile-admin" ${programAdmin ? "checked" : ""}>
+            <span>Privilegios de administraci\xF3n</span>
+          </label>
+          <p class="clinical-registration-lead" style="margin:0.35rem 0 0;">Configuraci\xF3n de rotaci\xF3n y acceso amplio (lead dev / R4 de programa).</p>
         </div>
         <div class="field-group">
           <label for="clinical-profile-sala">Sala</label>
@@ -15344,10 +15388,13 @@ async function handleProfileFormSubmit(ev) {
   const rank = String(document.getElementById("clinical-profile-rank")?.value || "R1");
   const sala = String(document.getElementById("clinical-profile-sala")?.value || "");
   const clinicalName = String(document.getElementById("clinical-profile-name")?.value || "").trim();
-  const ok = await persistProfileFromPanel({ rank, sala, clinicalName });
+  const isProgramAdmin = !!document.getElementById("clinical-profile-admin")?.checked;
+  const ok = await persistProfileFromPanel({ rank, sala, clinicalName, isProgramAdmin });
   if (!ok) return;
   toast3("Perfil guardado.", "success");
+  syncRotationConfigButton();
   document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
+  await fetchClinicalTeamsFromDb();
   await renderClinicalTeamsPanel();
 }
 function wireJoinButtons() {
@@ -15373,7 +15420,7 @@ function wireJoinButtons() {
     });
   });
 }
-async function persistProfileFromPanel({ rank, sala, clinicalName }) {
+async function persistProfileFromPanel({ rank, sala, clinicalName, isProgramAdmin }) {
   const userId = currentUserId();
   const api3 = dbApi4();
   if (!userId || !api3 || typeof api3.dbClinicalProfileUpsert !== "function") {
@@ -15383,8 +15430,9 @@ async function persistProfileFromPanel({ rank, sala, clinicalName }) {
   const res = await api3.dbClinicalProfileUpsert({
     userId,
     clinicalName: clinicalName || clinicalSessionContext.user?.clinical_name || "",
-    rank: rank || clinicalSessionContext.user?.rank || "R1",
-    sala: sala ?? clinicalSessionContext.user?.sala ?? null
+    rank: rank || effectiveClinicalRank(clinicalSessionContext.user),
+    sala: sala ?? clinicalSessionContext.user?.sala ?? null,
+    isProgramAdmin
   });
   if (!res || res.ok === false) {
     toast3(res?.error || "No se guard\xF3 el perfil.", "error");
@@ -15398,6 +15446,7 @@ async function persistProfileFromPanel({ rank, sala, clinicalName }) {
   if (rank) settings2.clinicalRank = rank;
   if (sala != null) settings2.clinicalSala = sala;
   if (clinicalName) settings2.clinicalDisplayName = clinicalName;
+  if (isProgramAdmin !== void 0) settings2.clinicalProgramAdmin = !!isProgramAdmin;
   try {
     localStorage.setItem("rpc-settings", JSON.stringify(settings2));
   } catch (_e) {
@@ -15407,47 +15456,34 @@ async function persistProfileFromPanel({ rank, sala, clinicalName }) {
     if (sala != null) clinicalSessionContext.user.sala = sala;
     if (clinicalName) clinicalSessionContext.user.clinical_name = clinicalName;
     if (res.profile?.username) clinicalSessionContext.user.username = res.profile.username;
+    if (isProgramAdmin !== void 0) {
+      clinicalSessionContext.user.is_program_admin = isProgramAdmin ? 1 : 0;
+    } else if (res.profile?.is_program_admin != null) {
+      clinicalSessionContext.user.is_program_admin = res.profile.is_program_admin === 1 ? 1 : 0;
+    }
   }
   return true;
 }
 function wireClinicalTeamsPanelInteractions() {
-  const profileForm = document.getElementById("clinical-profile-form");
-  if (profileForm && !profileForm._rpcProfileWired) {
-    profileForm._rpcProfileWired = true;
-    profileForm.addEventListener("submit", (ev) => void handleProfileFormSubmit(ev));
-  }
-  const createForm = document.getElementById("clinical-team-create-form");
-  if (createForm && !createForm._rpcTeamsCreateWired) {
-    createForm._rpcTeamsCreateWired = true;
-    createForm.addEventListener("submit", (ev) => void handleCreateTeamSubmit(ev));
-  }
+  syncSalaFieldVisibility();
   const serviceSelect = document.getElementById("clinical-team-create-service");
   if (serviceSelect && !serviceSelect._rpcServiceWired) {
     serviceSelect._rpcServiceWired = true;
     serviceSelect.addEventListener("change", () => {
       const daySelect = document.getElementById("clinical-team-create-day");
       if (!daySelect) return;
-      const rank = clinicalSessionContext.user?.rank || "R1";
+      const rank = effectiveClinicalRank(clinicalSessionContext.user);
       const cfg = getCycleConfig(serviceSelect.value, rank);
       daySelect.innerHTML = cfg.letters.map(
-        (letter, idx) => `<option value="${escapeAttr3(letter)}">${escapeHtml3(letter)}</option>`
+        (letter) => `<option value="${escapeAttr3(letter)}">${escapeHtml3(letter)}</option>`
       ).join("");
-      const salaGroup = document.getElementById("clinical-team-sala-group");
-      if (salaGroup) {
-        const isSala = serviceSelect.value.toLowerCase().includes("sala");
-        salaGroup.style.display = isSala ? "" : "none";
-      }
+      syncSalaFieldVisibility();
     });
   }
   document.querySelectorAll(".clinical-teams-guardia-check").forEach((input) => {
     if (!(input instanceof HTMLInputElement) || input._rpcGuardiaWired) return;
     input._rpcGuardiaWired = true;
     input.addEventListener("change", () => void handleGuardiaCheck(input));
-  });
-  document.querySelectorAll(".clinical-teams-add-member-form").forEach((form) => {
-    if (!(form instanceof HTMLFormElement) || form._rpcAddMemberWired) return;
-    form._rpcAddMemberWired = true;
-    form.addEventListener("submit", (ev) => void handleAddMemberSubmit(ev, form));
   });
 }
 async function handleCreateTeamSubmit(ev) {
@@ -15459,11 +15495,18 @@ async function handleCreateTeamSubmit(ev) {
   }
   const name = String(document.getElementById("clinical-team-create-name")?.value || "").trim();
   const service = String(document.getElementById("clinical-team-create-service")?.value || "").trim();
-  const sala = String(document.getElementById("clinical-team-create-sala")?.value || "").trim();
+  let sala = String(document.getElementById("clinical-team-create-sala")?.value || "").trim();
   const cycleLetter = String(document.getElementById("clinical-team-create-day")?.value || "A").trim();
   const userId = currentUserId();
   if (!name || !service) {
     toast3("Indica nombre y servicio.", "error");
+    return;
+  }
+  if (service.toLowerCase().includes("sala") && !sala) {
+    sala = String(clinicalSessionContext.user?.sala || "").trim();
+  }
+  if (service.toLowerCase().includes("sala") && !sala) {
+    toast3("Selecciona la Sala para el equipo.", "error");
     return;
   }
   const res = await api3.dbClinicalTeamsCreate({
@@ -15542,16 +15585,40 @@ async function handleAddMemberSubmit(ev, form) {
   document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
   await renderClinicalTeamsPanel();
 }
+function syncSalaFieldVisibility() {
+  const serviceSelect = document.getElementById("clinical-team-create-service");
+  const salaGroup = document.getElementById("clinical-team-sala-group");
+  if (!serviceSelect || !salaGroup) return;
+  const isSala = String(serviceSelect.value || "").toLowerCase().includes("sala");
+  salaGroup.style.display = isSala ? "" : "none";
+}
 function wireClinicalTeamsControls() {
   if (teamsControlsWired) return;
   teamsControlsWired = true;
   const openBtn = document.getElementById("btn-guardia-mi-rotacion");
-  if (openBtn) openBtn.addEventListener("click", () => openClinicalTeamsPanel());
+  if (openBtn) openBtn.addEventListener("click", () => void openClinicalTeamsPanel());
   const bd = teamsModalEl();
   if (bd) {
     bd.addEventListener("click", (ev) => {
       if (ev.target === bd) closeClinicalTeamsPanel();
     });
+    if (!bd._rpcTeamsSubmitDelegated) {
+      bd._rpcTeamsSubmitDelegated = true;
+      bd.addEventListener("submit", (ev) => {
+        const form = ev.target;
+        if (!(form instanceof HTMLFormElement)) return;
+        if (form.id === "clinical-profile-form") {
+          ev.preventDefault();
+          void handleProfileFormSubmit(ev);
+        } else if (form.id === "clinical-team-create-form") {
+          ev.preventDefault();
+          void handleCreateTeamSubmit(ev);
+        } else if (form.classList.contains("clinical-teams-add-member-form")) {
+          ev.preventDefault();
+          void handleAddMemberSubmit(ev, form);
+        }
+      });
+    }
   }
   const closeBtn = document.getElementById("btn-clinical-teams-close");
   if (closeBtn) closeBtn.addEventListener("click", () => closeClinicalTeamsPanel());
@@ -15565,6 +15632,8 @@ var init_clinical_teams = __esm({
     init_clinical_access_runtime();
     init_lan_sync();
     init_clinico_access();
+    init_clinical_privileges();
+    init_clinical_rotation();
     CLINICAL_TEAM_SERVICES = [
       "Sala",
       "Interconsulta",
@@ -15770,7 +15839,7 @@ function openEntregaModal(opts) {
   const users = Array.isArray(ctx.users) ? ctx.users : [];
   const salaGuardiaToday = Array.isArray(ctx.salaGuardiaToday) ? ctx.salaGuardiaToday : [];
   const userId = String(clinicalSessionContext.user?.user_id || "");
-  const rank = String(clinicalSessionContext.user?.rank || "R1");
+  const rank = effectiveClinicalRank(clinicalSessionContext.user);
   const salaDeficit = computeSalaAbcdefDeficitWrite(
     salaGuardiaToday,
     teams,
@@ -15853,6 +15922,7 @@ var init_clinical_entrega = __esm({
   "public/js/features/clinical-entrega.mjs"() {
     init_clinical_access_runtime();
     init_clinico_access();
+    init_clinical_privileges();
     init_lan_sync();
     GUARDIA_GRID_MODE_KEY = "guardia.gridMode";
     entregaFormWired = false;

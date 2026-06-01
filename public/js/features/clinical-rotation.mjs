@@ -7,7 +7,7 @@ import {
   fetchIncomingAssignmentsFromDb,
 } from '../clinical-access-runtime.mjs';
 
-const ROTATION_ADMIN_RANKS = new Set(['R4', 'Admin']);
+import { canConfigureRotation as userCanConfigureRotation } from '../clinical-privileges.mjs';
 
 /** @param {string|Date|undefined} value */
 function toMillis(value) {
@@ -65,12 +65,8 @@ function dbApi() {
   return window.rplusDb || window.electronAPI || null;
 }
 
-function currentRank() {
-  return String(clinicalSessionContext.user?.rank || 'R1');
-}
-
 function canConfigureRotation() {
-  return ROTATION_ADMIN_RANKS.has(currentRank());
+  return userCanConfigureRotation(clinicalSessionContext.user);
 }
 
 /** @param {Record<string, unknown>} row */

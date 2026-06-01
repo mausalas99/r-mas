@@ -430,8 +430,12 @@ export function evaluateClinicalScope(currentUser, targetPatient, activeGuardia 
     return deny('Usuario o paciente no identificado');
   }
 
-  if (rank === 'Admin') {
-    return allow('Admin: acceso completo');
+  if (
+    currentUser.is_program_admin === 1 ||
+    currentUser.is_program_admin === true ||
+    rank === 'Admin'
+  ) {
+    return allow('Privilegios admin: acceso completo');
   }
 
   if (isActiveGuardiaCoveringUser(userId, activeGuardia)) {

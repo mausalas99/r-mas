@@ -7,6 +7,11 @@ import {
 } from '../clinical-access-runtime.mjs';
 import { scheduleLiveSyncPush } from './lan-sync.mjs';
 import { getCycleConfig } from '../clinico-access.mjs';
+import {
+  effectiveClinicalRank,
+  hasProgramAdminPrivileges,
+} from '../clinical-privileges.mjs';
+import { syncRotationConfigButton } from './clinical-rotation.mjs';
 
 export const CLINICAL_TEAM_SERVICES = [
   'Sala',
@@ -84,7 +89,7 @@ export function renderCreateTeamForm() {
   const serviceOptions = CLINICAL_TEAM_SERVICES.map(
     (svc) => `<option value="${escapeAttr(svc)}">${escapeHtml(svc)}</option>`
   ).join('');
-  const rank = clinicalSessionContext.user?.rank || 'R1';
+  const rank = effectiveClinicalRank(clinicalSessionContext.user);
   const defaultCycle = getCycleConfig(CLINICAL_TEAM_SERVICES[0], rank);
   const letterOptions = defaultCycle.letters.map(
     (letter, idx) => `<option value="${escapeAttr(letter)}">${escapeHtml(letter)}</option>`
@@ -94,7 +99,7 @@ export function renderCreateTeamForm() {
     <section class="clinical-teams-section">
       <h4 class="clinical-teams-section-title">Crear equipo</h4>
       <form id="clinical-team-create-form" class="clinical-teams-create-form">
-        <div class="field-group" id="clinical-team-sala-group" style="display:none">
+        <div class="field-group" id="clinical-team-sala-group">
           <label for="clinical-team-create-sala">Sala</label>
           <select id="clinical-team-create-sala" class="profile-input">
             <option value="">— Seleccionar Sala —</option>
@@ -197,7 +202,8 @@ export async function renderClinicalTeamsPanel() {
     : '<p class="clinical-teams-empty">Aún no perteneces a ningún equipo.</p>';
 
   const user = clinicalSessionContext.user || {};
-  const rank = user.rank || 'R1';
+  const rank = effectiveClinicalRank(user);
+  const programAdmin = hasProgramAdminPrivileges(user);
   const sala = String(user.sala || '').trim();
   const username = escapeHtml(user.username || '');
   const clinicalName = escapeHtml(user.clinical_name || '');
@@ -226,15 +232,23 @@ export async function renderClinicalTeamsPanel() {
           <input id="clinical-profile-name" type="text" class="profile-input" value="${clinicalName}" required>
         </div>
         <div class="field-group">
-          <label for="clinical-profile-rank">Rango</label>
+          <label for="clinical-profile-rank">Rango clínico</label>
           <select id="clinical-profile-rank" class="profile-input">
-            ${['R1', 'R2', 'R3', 'R4', 'Admin']
+            ${['R1', 'R2', 'R3', 'R4']
               .map(
                 (r) =>
                   `<option value="${r}" ${r === rank ? 'selected' : ''}>${r}</option>`
               )
               .join('')}
           </select>
+          <p class="clinical-registration-lead" style="margin:0.35rem 0 0;">Usado en equipos, entregas y alcance de guardia.</p>
+        </div>
+        <div class="field-group">
+          <label class="clinical-teams-guardia-label">
+            <input type="checkbox" id="clinical-profile-admin" ${programAdmin ? 'checked' : ''}>
+            <span>Privilegios de administración</span>
+          </label>
+          <p class="clinical-registration-lead" style="margin:0.35rem 0 0;">Configuración de rotación y acceso amplio (lead dev / R4 de programa).</p>
         </div>
         <div class="field-group">
           <label for="clinical-profile-sala">Sala</label>
@@ -307,10 +321,13 @@ async function handleProfileFormSubmit(ev) {
   const rank = String(document.getElementById('clinical-profile-rank')?.value || 'R1');
   const sala = String(document.getElementById('clinical-profile-sala')?.value || '');
   const clinicalName = String(document.getElementById('clinical-profile-name')?.value || '').trim();
-  const ok = await persistProfileFromPanel({ rank, sala, clinicalName });
+  const isProgramAdmin = !!document.getElementById('clinical-profile-admin')?.checked;
+  const ok = await persistProfileFromPanel({ rank, sala, clinicalName, isProgramAdmin });
   if (!ok) return;
   toast('Perfil guardado.', 'success');
+  syncRotationConfigButton();
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
+  await fetchClinicalTeamsFromDb();
   await renderClinicalTeamsPanel();
 }
 
@@ -338,7 +355,7 @@ function wireJoinButtons() {
   });
 }
 
-async function persistProfileFromPanel({ rank, sala, clinicalName }) {
+async function persistProfileFromPanel({ rank, sala, clinicalName, isProgramAdmin }) {
   const userId = currentUserId();
   const api = dbApi();
   if (!userId || !api || typeof api.dbClinicalProfileUpsert !== 'function') {
@@ -348,8 +365,9 @@ async function persistProfileFromPanel({ rank, sala, clinicalName }) {
   const res = await api.dbClinicalProfileUpsert({
     userId,
     clinicalName: clinicalName || clinicalSessionContext.user?.clinical_name || '',
-    rank: rank || clinicalSessionContext.user?.rank || 'R1',
+    rank: rank || effectiveClinicalRank(clinicalSessionContext.user),
     sala: sala ?? clinicalSessionContext.user?.sala ?? null,
+    isProgramAdmin,
   });
   if (!res || res.ok === false) {
     toast(res?.error || 'No se guardó el perfil.', 'error');
@@ -362,6 +380,7 @@ async function persistProfileFromPanel({ rank, sala, clinicalName }) {
   if (rank) settings.clinicalRank = rank;
   if (sala != null) settings.clinicalSala = sala;
   if (clinicalName) settings.clinicalDisplayName = clinicalName;
+  if (isProgramAdmin !== undefined) settings.clinicalProgramAdmin = !!isProgramAdmin;
   try {
     localStorage.setItem('rpc-settings', JSON.stringify(settings));
   } catch (_e) {}
@@ -370,22 +389,17 @@ async function persistProfileFromPanel({ rank, sala, clinicalName }) {
     if (sala != null) clinicalSessionContext.user.sala = sala;
     if (clinicalName) clinicalSessionContext.user.clinical_name = clinicalName;
     if (res.profile?.username) clinicalSessionContext.user.username = res.profile.username;
+    if (isProgramAdmin !== undefined) {
+      clinicalSessionContext.user.is_program_admin = isProgramAdmin ? 1 : 0;
+    } else if (res.profile?.is_program_admin != null) {
+      clinicalSessionContext.user.is_program_admin = res.profile.is_program_admin === 1 ? 1 : 0;
+    }
   }
   return true;
 }
 
 export function wireClinicalTeamsPanelInteractions() {
-  const profileForm = document.getElementById('clinical-profile-form');
-  if (profileForm && !profileForm._rpcProfileWired) {
-    profileForm._rpcProfileWired = true;
-    profileForm.addEventListener('submit', (ev) => void handleProfileFormSubmit(ev));
-  }
-
-  const createForm = document.getElementById('clinical-team-create-form');
-  if (createForm && !createForm._rpcTeamsCreateWired) {
-    createForm._rpcTeamsCreateWired = true;
-    createForm.addEventListener('submit', (ev) => void handleCreateTeamSubmit(ev));
-  }
+  syncSalaFieldVisibility();
 
   const serviceSelect = document.getElementById('clinical-team-create-service');
   if (serviceSelect && !serviceSelect._rpcServiceWired) {
@@ -393,16 +407,12 @@ export function wireClinicalTeamsPanelInteractions() {
     serviceSelect.addEventListener('change', () => {
       const daySelect = document.getElementById('clinical-team-create-day');
       if (!daySelect) return;
-      const rank = clinicalSessionContext.user?.rank || 'R1';
+      const rank = effectiveClinicalRank(clinicalSessionContext.user);
       const cfg = getCycleConfig(serviceSelect.value, rank);
       daySelect.innerHTML = cfg.letters.map(
-        (letter, idx) => `<option value="${escapeAttr(letter)}">${escapeHtml(letter)}</option>`
+        (letter) => `<option value="${escapeAttr(letter)}">${escapeHtml(letter)}</option>`
       ).join('');
-      const salaGroup = document.getElementById('clinical-team-sala-group');
-      if (salaGroup) {
-        const isSala = serviceSelect.value.toLowerCase().includes('sala');
-        salaGroup.style.display = isSala ? '' : 'none';
-      }
+      syncSalaFieldVisibility();
     });
   }
 
@@ -412,11 +422,6 @@ export function wireClinicalTeamsPanelInteractions() {
     input.addEventListener('change', () => void handleGuardiaCheck(input));
   });
 
-  document.querySelectorAll('.clinical-teams-add-member-form').forEach((form) => {
-    if (!(form instanceof HTMLFormElement) || form._rpcAddMemberWired) return;
-    form._rpcAddMemberWired = true;
-    form.addEventListener('submit', (ev) => void handleAddMemberSubmit(ev, form));
-  });
 }
 
 /** @param {Event} ev */
@@ -430,12 +435,20 @@ async function handleCreateTeamSubmit(ev) {
 
   const name = String(document.getElementById('clinical-team-create-name')?.value || '').trim();
   const service = String(document.getElementById('clinical-team-create-service')?.value || '').trim();
-  const sala = String(document.getElementById('clinical-team-create-sala')?.value || '').trim();
+  let sala = String(document.getElementById('clinical-team-create-sala')?.value || '').trim();
   const cycleLetter = String(document.getElementById('clinical-team-create-day')?.value || 'A').trim();
   const userId = currentUserId();
 
   if (!name || !service) {
     toast('Indica nombre y servicio.', 'error');
+    return;
+  }
+
+  if (service.toLowerCase().includes('sala') && !sala) {
+    sala = String(clinicalSessionContext.user?.sala || '').trim();
+  }
+  if (service.toLowerCase().includes('sala') && !sala) {
+    toast('Selecciona la Sala para el equipo.', 'error');
     return;
   }
 
@@ -539,18 +552,43 @@ async function handleAddMemberSubmit(ev, form) {
 
 let teamsControlsWired = false;
 
+function syncSalaFieldVisibility() {
+  const serviceSelect = document.getElementById('clinical-team-create-service');
+  const salaGroup = document.getElementById('clinical-team-sala-group');
+  if (!serviceSelect || !salaGroup) return;
+  const isSala = String(serviceSelect.value || '').toLowerCase().includes('sala');
+  salaGroup.style.display = isSala ? '' : 'none';
+}
+
 export function wireClinicalTeamsControls() {
   if (teamsControlsWired) return;
   teamsControlsWired = true;
 
   const openBtn = document.getElementById('btn-guardia-mi-rotacion');
-  if (openBtn) openBtn.addEventListener('click', () => openClinicalTeamsPanel());
+  if (openBtn) openBtn.addEventListener('click', () => void openClinicalTeamsPanel());
 
   const bd = teamsModalEl();
   if (bd) {
     bd.addEventListener('click', (ev) => {
       if (ev.target === bd) closeClinicalTeamsPanel();
     });
+    if (!bd._rpcTeamsSubmitDelegated) {
+      bd._rpcTeamsSubmitDelegated = true;
+      bd.addEventListener('submit', (ev) => {
+        const form = ev.target;
+        if (!(form instanceof HTMLFormElement)) return;
+        if (form.id === 'clinical-profile-form') {
+          ev.preventDefault();
+          void handleProfileFormSubmit(ev);
+        } else if (form.id === 'clinical-team-create-form') {
+          ev.preventDefault();
+          void handleCreateTeamSubmit(ev);
+        } else if (form.classList.contains('clinical-teams-add-member-form')) {
+          ev.preventDefault();
+          void handleAddMemberSubmit(ev, form);
+        }
+      });
+    }
   }
 
   const closeBtn = document.getElementById('btn-clinical-teams-close');

@@ -88,8 +88,22 @@ export async function bootstrapClinicalAccess(settings, clientId) {
     user_id: res.user.userId,
     username: res.user.username,
     rank: res.user.rank,
+    is_program_admin: res.user.isProgramAdmin ? 1 : 0,
     public_key: res.user.publicKeyPem,
   };
+  if (api && typeof api.dbClinicalProfileGet === 'function') {
+    try {
+      const profileRes = await api.dbClinicalProfileGet({ userId: res.user.userId });
+      const profile = profileRes?.profile;
+      if (profile) {
+        clinicalSessionContext.user.rank = profile.rank ?? clinicalSessionContext.user.rank;
+        clinicalSessionContext.user.sala = profile.sala ?? null;
+        clinicalSessionContext.user.clinical_name = profile.clinical_name ?? null;
+        clinicalSessionContext.user.is_program_admin =
+          profile.is_program_admin === 1 ? 1 : 0;
+      }
+    } catch (_e) {}
+  }
   clinicalSessionContext.decryptedPrivateKeyPem = res.user.privateKeyPem || null;
   clinicalSessionContext.guardias = Array.isArray(res.guardias) ? res.guardias : [];
   clinicalSessionContext.guardiasMap = buildGuardiasMap(clinicalSessionContext.guardias);

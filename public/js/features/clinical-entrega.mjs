@@ -7,6 +7,7 @@ import {
   signOutgoingLiveSyncMutation,
 } from '../clinical-access-runtime.mjs';
 import { computeSalaAbcdefDeficitWrite, getJoinedTeams, isOnCallToday, salaOnCallR2 } from '../clinico-access.mjs';
+import { effectiveClinicalRank } from '../clinical-privileges.mjs';
 import { scheduleLiveSyncPush } from './lan-sync.mjs';
 
 export const GUARDIA_GRID_MODE_KEY = 'guardia.gridMode';
@@ -274,7 +275,7 @@ export function openEntregaModal(opts) {
   const users = Array.isArray(ctx.users) ? ctx.users : [];
   const salaGuardiaToday = Array.isArray(ctx.salaGuardiaToday) ? ctx.salaGuardiaToday : [];
   const userId = String(clinicalSessionContext.user?.user_id || '');
-  const rank = String(clinicalSessionContext.user?.rank || 'R1');
+  const rank = effectiveClinicalRank(clinicalSessionContext.user);
   const salaDeficit = computeSalaAbcdefDeficitWrite(
     salaGuardiaToday,
     teams,
