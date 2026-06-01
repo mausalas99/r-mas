@@ -1,5 +1,5 @@
 /**
- * First-run clinical identity registration (rank + display name) after DB unlock.
+ * First-run clinical identity registration (rank + display name + sala) after DB unlock.
  */
 import { isDbMode } from '../db-storage-bridge.mjs';
 
@@ -38,12 +38,12 @@ function wireRegistrationFormOnce() {
   const form = document.getElementById('clinical-registration-form');
   if (!form || form._rpcClinicalRegWired) return;
   form._rpcClinicalRegWired = true;
-  form.addEventListener('submit', (ev) => {
+  form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
     const errEl = document.getElementById('clinical-reg-error');
     const name = String(document.getElementById('clinical-reg-name')?.value || '').trim();
     const rank = String(document.getElementById('clinical-reg-rank')?.value || 'R1');
-    const service = String(document.getElementById('clinical-reg-service')?.value || '').trim();
+    const sala = String(document.getElementById('clinical-reg-sala')?.value || '').trim();
     if (!name) {
       if (errEl) {
         errEl.textContent = 'Escribe tu nombre o identificador de guardia.';
@@ -58,10 +58,26 @@ function wireRegistrationFormOnce() {
     settings.clinicalRegistered = true;
     settings.clinicalDisplayName = name;
     settings.clinicalRank = RANKS.includes(rank) ? rank : 'R1';
-    if (service) settings.clinicalService = service.toUpperCase();
+    if (sala) settings.clinicalSala = sala;
     try {
       localStorage.setItem('rpc-settings', JSON.stringify(settings));
     } catch (_e) {}
+
+    // Persist to DB
+    const api = typeof window !== 'undefined' ? (window.rplusDb || window.electronAPI) : null;
+    if (api && typeof api.dbClinicalProfileUpsert === 'function') {
+      try {
+        await api.dbClinicalProfileUpsert({
+          userId: settings.clientId || '',
+          clinicalName: name,
+          rank: settings.clinicalRank,
+          sala: sala || null,
+        });
+      } catch (_e) {
+        // non-fatal — profile saved to localStorage
+      }
+    }
+
     closeClinicalRegistrationModal();
     if (pendingResolve) {
       const done = pendingResolve;
@@ -81,10 +97,10 @@ export function promptClinicalRegistrationIfNeeded(settings) {
   try {
     const nameInput = document.getElementById('clinical-reg-name');
     const rankSelect = document.getElementById('clinical-reg-rank');
-    const serviceInput = document.getElementById('clinical-reg-service');
+    const salaSelect = document.getElementById('clinical-reg-sala');
     if (nameInput && settings.clinicalDisplayName) nameInput.value = String(settings.clinicalDisplayName);
     if (rankSelect && settings.clinicalRank) rankSelect.value = String(settings.clinicalRank);
-    if (serviceInput && settings.clinicalService) serviceInput.value = String(settings.clinicalService);
+    if (salaSelect && settings.clinicalSala) salaSelect.value = String(settings.clinicalSala);
     const errEl = document.getElementById('clinical-reg-error');
     if (errEl) errEl.hidden = true;
   } catch (_e) {}

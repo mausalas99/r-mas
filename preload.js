@@ -176,4 +176,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbVerifyClinicalChange: function(opts) {
     return ipcRenderer.invoke('db:verify-clinical-change', opts);
   },
+  dbClinicalProfileUpsert: function(opts) {
+    return ipcRenderer.invoke('db:clinical-profile-upsert', opts);
+  },
+  dbClinicalProfileGet: function(opts) {
+    return ipcRenderer.invoke('db:clinical-profile-get', opts);
+  },
 });
