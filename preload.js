@@ -128,6 +128,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbGuardiaCensus: function(opts) {
     return ipcRenderer.invoke('db:guardia-census', opts);
   },
+  dbGuardiaUpsert: function(opts) {
+    return ipcRenderer.invoke('db:guardia-upsert', opts);
+  },
   dbRotationCycleGet: function() {
     return ipcRenderer.invoke('db:rotation-cycle-get');
   },
