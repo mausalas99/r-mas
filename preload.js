@@ -137,6 +137,24 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbRotationIncomingAssignments: function() {
     return ipcRenderer.invoke('db:rotation-incoming-assignments');
   },
+  dbClinicalTeamsList: function() {
+    return ipcRenderer.invoke('db:clinical-teams-list');
+  },
+  dbClinicalTeamsCreate: function(opts) {
+    return ipcRenderer.invoke('db:clinical-teams-create', opts);
+  },
+  dbClinicalTeamsMemberAdd: function(opts) {
+    return ipcRenderer.invoke('db:clinical-teams-member-add', opts);
+  },
+  dbClinicalTeamsMemberRemove: function(opts) {
+    return ipcRenderer.invoke('db:clinical-teams-member-remove', opts);
+  },
+  dbClinicalTeamsGuardiaSet: function(opts) {
+    return ipcRenderer.invoke('db:clinical-teams-guardia-set', opts);
+  },
+  dbClinicalTeamsGuardiaGet: function(opts) {
+    return ipcRenderer.invoke('db:clinical-teams-guardia-get', opts);
+  },
   dbSignClinicalChange: function(opts) {
     return ipcRenderer.invoke('db:sign-clinical-change', opts);
   },
