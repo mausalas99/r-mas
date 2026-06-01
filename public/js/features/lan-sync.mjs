@@ -2546,26 +2546,96 @@ function renderLanPanel() {
   return _lanPanelRenderChain;
 }
 
+function getClinicalSettings() {
+  try {
+    return JSON.parse(localStorage.getItem('rpc-settings') || '{}');
+  } catch (_e) {
+    return {};
+  }
+}
+
+function getClinicalRank() {
+  var s = getClinicalSettings();
+  return String(s.clinicalRank || '').trim();
+}
+
+function getUserSala() {
+  var s = getClinicalSettings();
+  return String(s.clinicalSala || '').trim();
+}
+
+function isClinicalRegistered() {
+  var s = getClinicalSettings();
+  return s.clinicalRegistered === true;
+}
+
+function isLanHostActive() {
+  return !!lanClient.connected;
+}
+
+function lanHostUrl() {
+  return lanClient.baseUrl() || '';
+}
+
 async function renderLanPanelOnce() {
   var gen = ++_lanPanelRenderGen;
   var root = document.getElementById('lan-connection-panel-root');
   if (!root) return;
 
   await ensureLanElectronHostReady();
-
-  await ensureLanClientTeamCodeAligned();
   if (lanPanelRenderStale(gen)) return;
 
   root.innerHTML = '';
 
-  var s = {};
-  try {
-    s = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
-  } catch (_se) {}
+  var registered = isClinicalRegistered();
+  var userSala = getUserSala();
+  var rank = getClinicalRank();
 
-  var rank = String(s.clinicalRank || '').trim();
-  var userSala = String(s.clinicalSala || '').trim();
+  if (!registered) {
+    var unregCard = document.createElement('div');
+    unregCard.className = 'lan-connect-card';
+    unregCard.innerHTML =
+      '<p class="lan-connect-card-hint">Completa el <strong>Registro de guardia</strong> para acceder a la red del hospital.</p>';
+    root.appendChild(unregCard);
+    return;
+  }
+
+  if (!userSala && rank !== 'Admin' && rank !== 'R4') {
+    var noSalaCard = document.createElement('div');
+    noSalaCard.className = 'lan-connect-card';
+    noSalaCard.innerHTML =
+      '<p class="lan-connect-card-hint">No tienes una Sala asignada. Contacta a un R4 o Admin.</p>';
+    root.appendChild(noSalaCard);
+    return;
+  }
+
   var isElevated = rank === 'Admin' || rank === 'R4';
+
+  var statusCard = document.createElement('div');
+  statusCard.className = 'lan-connect-card lan-hub-status-card';
+  var connected = isLanHostActive();
+  statusCard.innerHTML =
+    '<div class="lan-hub-status-line">' +
+    (connected
+      ? '<span class="lan-hub-status-dot lan-hub-status-dot--online"></span> Conectado a la red del hospital'
+      : '<span class="lan-hub-status-dot lan-hub-status-dot--offline"></span> Sin red \u2014 buscando\u2026') +
+    '</div>';
+  if (!connected) {
+    var becomeHostBtn = document.createElement('button');
+    becomeHostBtn.type = 'button';
+    becomeHostBtn.className = 'btn-lan-primary';
+    becomeHostBtn.style.marginTop = '8px';
+    becomeHostBtn.style.width = '100%';
+    becomeHostBtn.textContent = 'Convertirse en host';
+    becomeHostBtn.onclick = function () {
+      void ensureLanElectronHostReady().then(function () {
+        renderLanPanel();
+        runtime.showToast('Esta Mac ahora es el servidor del turno.', 'success');
+      });
+    };
+    statusCard.appendChild(becomeHostBtn);
+  }
+  root.appendChild(statusCard);
 
   var salaDefs = [
     { id: 'sala-1', label: 'Sala 1', key: 'Sala 1' },
@@ -2580,32 +2650,16 @@ async function renderLanPanelOnce() {
     visibleSalaDefs = salaDefs.filter(function (d) {
       return d.key === userSala;
     });
-    if (!visibleSalaDefs.length) {
-      visibleSalaDefs = salaDefs;
-    }
+    if (!visibleSalaDefs.length) visibleSalaDefs = salaDefs;
   } else {
     visibleSalaDefs = [];
   }
 
   var roomsCard = document.createElement('div');
   roomsCard.className = 'lan-connect-card lan-rooms-panel';
-  var roomsTitle = document.createElement('div');
-  roomsTitle.className = 'lan-connect-card-title';
-  roomsTitle.textContent = 'Salas de guardia';
-  roomsCard.appendChild(roomsTitle);
+  roomsCard.innerHTML = '<div class="lan-connect-card-title">Salas de guardia</div>';
 
-  if (!userSala && !isElevated) {
-    var noSalaHint = document.createElement('p');
-    noSalaHint.className = 'lan-connect-card-hint';
-    noSalaHint.innerHTML =
-      'Completa el <strong>Registro de guardia</strong> para asignarte una Sala y poder conectarte en vivo.';
-    roomsCard.appendChild(noSalaHint);
-  } else if (!visibleSalaDefs.length) {
-    var emptyHint = document.createElement('p');
-    emptyHint.className = 'lan-connect-card-hint';
-    emptyHint.textContent = 'No tienes una Sala asignada. Contacta a un R4 o Admin.';
-    roomsCard.appendChild(emptyHint);
-  } else {
+  if (visibleSalaDefs.length) {
     var list = document.createElement('ul');
     list.style.listStyle = 'none';
     list.style.padding = '0';
@@ -2639,8 +2693,24 @@ async function renderLanPanelOnce() {
     });
     roomsCard.appendChild(list);
   }
-
   root.appendChild(roomsCard);
+
+  if (rank === 'R1') {
+    buildR1Section(root);
+  } else if (rank === 'R2') {
+    buildR2Section(root);
+  } else if (isElevated) {
+    buildR4Section(root);
+  }
+}
+
+function buildR1Section(root) {
+}
+
+function buildR2Section(root) {
+}
+
+function buildR4Section(root) {
 }
 
 async function resolveLanHostUrlForShare() {
