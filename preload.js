@@ -95,6 +95,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbUnlock: function(opts) {
     return ipcRenderer.invoke('db:unlock', opts);
   },
+  dbUnlockRecovery: function(opts) {
+    return ipcRenderer.invoke('db:unlock-recovery', opts);
+  },
   dbLock: function() {
     return ipcRenderer.invoke('db:lock');
   },

@@ -1752,6 +1752,16 @@
       <span>Recordar en este dispositivo</span>
     </label>
     <p class="settings-acc-hint settings-acc-hint--tight">Si activas recordar, la clave se guarda cifrada con el llavero del sistema (safeStorage). No compartas este equipo sin bloqueo de sesión.</p>
+    <p class="rpc-db-unlock-recovery-link" style="margin-top:0.5rem;">
+      <button type="button" id="rpc-db-unlock-recovery-toggle" class="rpc-text-link" onclick="toggleRecoveryMode()">¿Olvidaste tu contraseña?</button>
+    </p>
+    <div id="rpc-db-unlock-recovery-wrap" style="display:none;">
+      <label class="profile-field-label" for="rpc-db-unlock-recovery-code">Código de recuperación</label>
+      <input id="rpc-db-unlock-recovery-code" type="text" autocomplete="off" placeholder="Código de recuperación" aria-required="true">
+      <p class="rpc-db-unlock-recovery-back-link" style="margin-top:0.4rem;">
+        <button type="button" class="rpc-text-link" onclick="toggleRecoveryMode()">Volver a contraseña</button>
+      </p>
+    </div>
     <div class="rpc-db-unlock-error" id="rpc-db-unlock-error" role="alert"></div>
     <div class="rpc-db-unlock-actions">
       <button type="button" class="btn-unlock" id="rpc-db-unlock-submit" onclick="submitDbUnlockPassphrase()">Desbloquear</button>
