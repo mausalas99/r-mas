@@ -18899,13 +18899,6 @@ function appendLanBackToLocalHostSection(root) {
 function lanPanelRenderStale(gen) {
   return gen !== _lanPanelRenderGen;
 }
-function purgeDuplicateLanRoomsPanels(root) {
-  if (!root) return;
-  var panels = root.querySelectorAll(".lan-rooms-panel");
-  for (var i = 0; i < panels.length - 1; i += 1) {
-    panels[i].remove();
-  }
-}
 function renderLanPanel() {
   _lanPanelRenderChain = _lanPanelRenderChain.catch(function() {
   }).then(function() {
@@ -19107,76 +19100,54 @@ async function renderLanPanelOnce() {
   statusCard.appendChild(rowInvite);
   root.appendChild(statusCard);
   void maybeShowLanMigrationNotice();
+  var s = {};
+  try {
+    s = JSON.parse(localStorage.getItem("rpc-settings") || "{}");
+  } catch (_se) {
+  }
+  var rank = String(s.clinicalRank || "").trim();
+  var userSala = String(s.clinicalSala || "").trim();
+  var isElevated = rank === "Admin" || rank === "R4";
+  var salaDefs = [
+    { id: "sala-1", label: "Sala 1", key: "Sala 1" },
+    { id: "sala-2", label: "Sala 2", key: "Sala 2" },
+    { id: "sala-e", label: "Sala E", key: "Sala E" }
+  ];
+  var visibleSalaDefs;
+  if (isElevated) {
+    visibleSalaDefs = salaDefs;
+  } else if (userSala) {
+    visibleSalaDefs = salaDefs.filter(function(d) {
+      return d.key === userSala;
+    });
+    if (!visibleSalaDefs.length) {
+      visibleSalaDefs = salaDefs;
+    }
+  } else {
+    visibleSalaDefs = [];
+  }
   var roomsCard = document.createElement("div");
   roomsCard.className = "lan-connect-card lan-rooms-panel";
   var roomsTitle = document.createElement("div");
   roomsTitle.className = "lan-connect-card-title";
-  roomsTitle.textContent = "Salas en vivo";
+  roomsTitle.textContent = "Salas de guardia";
   roomsCard.appendChild(roomsTitle);
-  var roomsHint = document.createElement("p");
-  roomsHint.className = "lan-connect-card-hint";
-  roomsHint.textContent = "Cada sala es un canal para que varias R+ compartan se\xF1al en tiempo real. Si no ves salas, pide a un compa\xF1ero que cree una o cr\xE9ala t\xFA.";
-  roomsCard.appendChild(roomsHint);
-  var createRow = document.createElement("div");
-  createRow.style.display = "flex";
-  createRow.style.flexWrap = "wrap";
-  createRow.style.gap = "8px";
-  createRow.style.alignItems = "center";
-  createRow.style.marginBottom = "4px";
-  var newRoomInput = document.createElement("input");
-  newRoomInput.id = "lan-input-room-name";
-  newRoomInput.className = "profile-input";
-  newRoomInput.type = "text";
-  newRoomInput.placeholder = "Nombre de la nueva sala";
-  newRoomInput.style.flex = "1";
-  newRoomInput.style.minWidth = "160px";
-  var createBtn = document.createElement("button");
-  createBtn.type = "button";
-  createBtn.className = "btn-lan-primary";
-  createBtn.textContent = "Crear sala";
-  createBtn.disabled = !isLanSessionConfiguredForRest();
-  createBtn.setAttribute("data-lan-action", "create-room");
-  createRow.appendChild(newRoomInput);
-  createRow.appendChild(createBtn);
-  roomsCard.appendChild(createRow);
-  if (roomsFetch.networkError) {
-    runtime2.showToast("No se pudo consultar salas LAN", "error");
-    var errNet = document.createElement("p");
-    errNet.className = "lan-connect-card-hint";
-    errNet.textContent = "No se pudo consultar la lista de salas. Revisa el Wi\u2011Fi o la direcci\xF3n del servidor.";
-    roomsCard.appendChild(errNet);
-  } else if (!roomsFetch.ok) {
-    runtime2.showToast("Error al cargar salas LAN", "error");
-    var errHttp = document.createElement("p");
-    errHttp.className = "lan-connect-card-hint";
-    if (roomsFetch.httpStatus === 401) {
-      errHttp.innerHTML = "El <strong>token Bearer</strong> que guardaste en esta R+ no coincide con el del proceso servidor (<code>lan-team-code.txt</code> o <code>R_PLUS_LAN_TEAM_CODE</code>). En el anfitri\xF3n deben ser el mismo valor; tras cambiar el archivo, reinicia R+. Si te uniste con un enlace viejo (<code>?code=</code>), pide un enlace o PIN nuevo.";
-    } else {
-      var rawBody = String(roomsFetch.errorDetail || "");
-      var detail = "";
-      try {
-        var jo = JSON.parse(rawBody);
-        if (jo && jo.error) detail = String(jo.error);
-      } catch (_e3) {
-        if (rawBody) detail = rawBody.replace(/\s+/g, " ").trim().slice(0, 200);
-      }
-      var hint500 = detail && /team code mismatch|host file/i.test(detail) ? " El archivo <code>lan-squad-host-state.json</code> se cre\xF3 con <strong>otro</strong> c\xF3digo: o vuelves al c\xF3digo anterior, o (solo si puedes perder salas/pacientes LAN de prueba en ese archivo) cierra R+, borra ese JSON en datos de la app y vuelve a abrir para regenerarlo con el c\xF3digo actual." : "";
-      errHttp.innerHTML = "<strong>HTTP " + esc5(String(roomsFetch.httpStatus)) + "</strong>" + (detail ? ": " + esc5(detail) : ".") + (hint500 ? hint500 : " Comprueba la URL del anfitri\xF3n y que R+ siga abierto en esa m\xE1quina.");
-    }
-    roomsCard.appendChild(errHttp);
-  } else if (!roomsFetch.rooms.length) {
-    var empty = document.createElement("p");
-    empty.className = "lan-connect-card-hint";
-    empty.textContent = "Todav\xEDa no hay salas. Crea una arriba o espera a que alguien del equipo la cree.";
-    roomsCard.appendChild(empty);
+  if (!userSala && !isElevated) {
+    var noSalaHint = document.createElement("p");
+    noSalaHint.className = "lan-connect-card-hint";
+    noSalaHint.innerHTML = "Completa el <strong>Registro de guardia</strong> para asignarte una Sala y poder conectarte en vivo.";
+    roomsCard.appendChild(noSalaHint);
+  } else if (!visibleSalaDefs.length) {
+    var emptyHint3 = document.createElement("p");
+    emptyHint3.className = "lan-connect-card-hint";
+    emptyHint3.textContent = "No tienes una Sala asignada. Contacta a un R4 o Admin.";
+    roomsCard.appendChild(emptyHint3);
   } else {
     var list = document.createElement("ul");
     list.style.listStyle = "none";
     list.style.padding = "0";
     list.style.margin = "0";
-    roomsFetch.rooms.forEach(function(room) {
-      var id = room && room.id ? String(room.id) : "";
-      if (!id) return;
+    visibleSalaDefs.forEach(function(d) {
       var li = document.createElement("li");
       li.style.display = "flex";
       li.style.gap = "8px";
@@ -19185,39 +19156,24 @@ async function renderLanPanelOnce() {
       var name = document.createElement("span");
       name.style.flex = "1";
       name.style.fontSize = "13px";
-      var disp = String(room.displayName || room.name || id);
-      name.textContent = disp;
+      name.textContent = d.label;
       var joinBtn = document.createElement("button");
       joinBtn.type = "button";
       joinBtn.className = "btn-lan-secondary";
       joinBtn.style.flex = "0 0 auto";
-      var inRoom = activeLiveSyncRoomId === id;
+      var inRoom = activeLiveSyncRoomId === d.id;
       joinBtn.textContent = inRoom ? "En sala" : "Unirse";
       joinBtn.disabled = inRoom;
       joinBtn.setAttribute("data-lan-action", "join-room");
-      joinBtn.setAttribute("data-room-id", id);
-      joinBtn.setAttribute("data-room-label", disp);
-      var delBtn = document.createElement("button");
-      delBtn.type = "button";
-      delBtn.className = "btn-lan-danger";
-      delBtn.textContent = "Eliminar";
-      delBtn.disabled = !lanClient.connected;
-      delBtn.setAttribute("data-lan-action", "delete-room");
-      delBtn.setAttribute("data-room-id", id);
+      joinBtn.setAttribute("data-room-id", d.id);
+      joinBtn.setAttribute("data-room-label", d.label);
       li.appendChild(name);
       li.appendChild(joinBtn);
-      li.appendChild(delBtn);
       list.appendChild(li);
     });
     roomsCard.appendChild(list);
   }
-  if (lanPanelRenderStale(gen)) return;
   root.appendChild(roomsCard);
-  await appendLanConflictDraftsSection(root);
-  if (lanPanelRenderStale(gen)) return;
-  appendLanDisconnectBannerPref(root);
-  purgeDuplicateLanRoomsPanels(root);
-  patchLanPanelJoinButtons();
 }
 async function resolveLanHostUrlForShare() {
   var el = document.getElementById("lan-input-host-url");
