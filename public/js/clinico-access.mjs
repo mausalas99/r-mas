@@ -179,7 +179,9 @@ export function extractSalaLetter(serviceOrArea) {
 /** @param {{ service?: string, sub_area?: string, sub_area_fraction?: string, name?: string }} teamOrPatient */
 export function salaLetterForTeamOrArea(teamOrPatient) {
   const frac = String(teamOrPatient?.sub_area_fraction || '').trim();
-  if (frac && SALA_LETTERS.includes(frac.toUpperCase())) return frac.toUpperCase();
+  // Strip numeric sub-index for R1 (e.g., "A1" -> "A")
+  const bare = frac.replace(/[0-9]+$/, '').toUpperCase();
+  if (bare && /^[A-F]$/.test(bare)) return bare;
   const fromName = extractSalaLetter(teamOrPatient?.name || '');
   if (fromName) return fromName;
   return extractSalaLetter(teamOrPatient?.sub_area || teamOrPatient?.service || '');

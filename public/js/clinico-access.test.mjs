@@ -11,6 +11,7 @@ import {
   getCycleConfig,
   letterIndexForTeam,
   isOnCallToday,
+  salaLetterForTeamOrArea,
 } from './clinico-access.mjs';
 
 test('matchesClinicoUnlockPhrase accepts exact phrase', () => {
@@ -239,6 +240,16 @@ test('isOnCallToday handles R1 A2 on day 5', () => {
   const team = { service: 'Sala', sub_area_fraction: 'A2' };
   const now = new Date('2026-06-05T12:00:00Z');
   assert.equal(isOnCallToday(team, 'R1', now), true);
+});
+
+test('salaLetterForTeamOrArea extracts A from A1', () => {
+  const result = salaLetterForTeamOrArea({ sub_area_fraction: 'A1', service: 'Sala' });
+  assert.equal(result, 'A');
+});
+
+test('salaLetterForTeamOrArea extracts B from B2', () => {
+  const result = salaLetterForTeamOrArea({ sub_area_fraction: 'B2', service: 'Sala' });
+  assert.equal(result, 'B');
 });
 
 test('isOnCallToday handles ABCD on day 1 = A', () => {
