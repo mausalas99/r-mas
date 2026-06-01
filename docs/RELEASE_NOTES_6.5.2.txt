@@ -5,12 +5,15 @@ Fecha: 2026-06-01
 
 ## Resumen
 
-TODO: resumen en una o dos frases.
+Parche que añade un **mecanismo de recuperación de contraseña maestra** mediante código de respaldo (`r+123`). En cada desbloqueo exitoso se configura automáticamente un respaldo cifrado de la llave, permitiendo recuperar el acceso si se olvida la contraseña.
 
 ## Nuevo / mejorado
 
-- **TODO:** punto 1
-- **TODO:** punto 2
+- **Recuperación de acceso** — Link "¿Olvidaste tu contraseña?" en la pantalla de desbloqueo. Ingresa el código `r+123` para recuperar el acceso a la base clínica.
+- **Auto-configuración** — El mecanismo se configura automáticamente en el primer desbloqueo exitoso; no requiere intervención del usuario.
+- **Seguridad** — La llave de recuperación se envuelve con AES-256-GCM usando una clave derivada de `r+123` con Argon2id. Se guarda en el archivo meta y en la base de datos.
+- **Auditoría** — El desbloqueo por recuperación registra el evento `auth.recovery.unlock` en la cadena forense.
+- **Límite de intentos** — La recuperación comparte el mismo límite de 5 intentos por 15 minutos que el desbloqueo normal.
 
 ## Instalación
 

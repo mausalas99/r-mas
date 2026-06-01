@@ -34,7 +34,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ## R+ 6.5.2 (Recuperación de contraseña maestra (r+123))
 
-- **TODO:** completar bullets en README.
+- **Recuperación de contraseña maestra** — Link "¿Olvidaste tu contraseña?" en la pantalla de desbloqueo; código de respaldo `r+123` para recuperar acceso a la base clínica. Configuración automática en cada desbloqueo exitoso (AES-256-GCM + Argon2id).
 
 Notas: `docs/RELEASE_NOTES_6.5.2.txt`.
 ## R+ 6.5.1 (Perfil farmacoterapéutico · almacén cifrado · sala en vivo)

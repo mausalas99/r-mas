@@ -31213,6 +31213,16 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
   }
 ];
 var RELEASE_NOTES_HIGHLIGHTS = {
+  "6.5.2": [
+    {
+      title: "Recuperaci\xF3n de contrase\xF1a",
+      body: "Si olvidas tu contrase\xF1a maestra, haz clic en <strong>\xBFOlvidaste tu contrase\xF1a?</strong> en la pantalla de desbloqueo e ingresa el c\xF3digo de respaldo <code>r+123</code> para recuperar el acceso."
+    },
+    {
+      title: "Llave de respaldo autom\xE1tica",
+      body: "Cada vez que desbloqueas la base, se guarda autom\xE1ticamente una copia cifrada (AES-256-GCM) de tu llave; no requiere configuraci\xF3n manual."
+    }
+  ],
   "6.5.1": [
     {
       title: "Perfil farmacoterap\xE9utico",

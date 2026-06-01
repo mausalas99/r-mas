@@ -1932,12 +1932,14 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 var RELEASE_NOTES_HIGHLIGHTS = {
   '6.5.2': [
     {
-      title: 'TODO',
-      body: 'Completar antes de publicar.',
+      title: 'Recuperación de contraseña',
+      body:
+        'Si olvidas tu contraseña maestra, haz clic en <strong>¿Olvidaste tu contraseña?</strong> en la pantalla de desbloqueo e ingresa el código de respaldo <code>r+123</code> para recuperar el acceso.',
     },
     {
-      title: 'TODO',
-      body: 'Completar antes de publicar.',
+      title: 'Llave de respaldo automática',
+      body:
+        'Cada vez que desbloqueas la base, se guarda automáticamente una copia cifrada (AES-256-GCM) de tu llave; no requiere configuración manual.',
     },
   ],
   '6.5.1': [
