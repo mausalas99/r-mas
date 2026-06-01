@@ -12,6 +12,9 @@ import {
   letterIndexForTeam,
   isOnCallToday,
   salaLetterForTeamOrArea,
+  salaOnCallR1,
+  salaOnCallR2,
+  teamGuardiaOverride,
 } from './clinico-access.mjs';
 
 test('matchesClinicoUnlockPhrase accepts exact phrase', () => {
@@ -264,4 +267,72 @@ test('isOnCallToday handles ABCD on day 1 = A', () => {
   const team = { service: 'Eme', sub_area_fraction: 'A' };
   const now = new Date('2026-06-01T12:00:00Z');
   assert.equal(isOnCallToday(team, 'R2', now), true);
+});
+
+test('salaOnCallR1 returns R1 on call for Sala 1 on day 1', () => {
+  const now = new Date('2026-06-01T12:00:00Z'); // day 1 → position 0 = A1
+  const teams = [
+    { team_id: 't-a1', sala: 'Sala 1', service: 'Sala', sub_area_fraction: 'A1', members: [
+      { user_id: 'r1-a1', rank: 'R1' }
+    ]},
+    { team_id: 't-b1', sala: 'Sala 1', service: 'Sala', sub_area_fraction: 'B1', members: [
+      { user_id: 'r1-b1', rank: 'R1' }
+    ]},
+    { team_id: 't-s2', sala: 'Sala 2', service: 'Sala', sub_area_fraction: 'A1', members: [
+      { user_id: 'r1-s2', rank: 'R1' }
+    ]},
+  ];
+  const result = salaOnCallR1(teams, 'Sala 1', now);
+  assert.equal(result.length, 1);
+  assert.equal(result[0].team_id, 't-a1');
+  assert.equal(result[0].user_id, 'r1-a1');
+});
+
+test('salaOnCallR1 empty when no team is on-call for that Sala', () => {
+  const now = new Date('2026-06-02T12:00:00Z'); // day 2 → position 1 = B1
+  const teams = [
+    { team_id: 't-a', sala: 'Sala 1', service: 'Sala', sub_area_fraction: 'A1', members: [
+      { user_id: 'r1-a1', rank: 'R1' }
+    ]},
+  ];
+  const result = salaOnCallR1(teams, 'Sala 1', now);
+  assert.equal(result.length, 0);
+});
+
+test('salaOnCallR2 returns R2s with matching cycle letter today', () => {
+  const now = new Date('2026-06-01T12:00:00Z'); // day 1 → position 0 = A
+  const teams = [
+    { team_id: 't-a', sala: 'Sala 1', service: 'Sala', sub_area_fraction: 'A', members: [
+      { user_id: 'r2-a', rank: 'R2' }
+    ]},
+    { team_id: 't-b', sala: 'Sala 1', service: 'Sala', sub_area_fraction: 'B', members: [
+      { user_id: 'r2-b', rank: 'R2' }
+    ]},
+  ];
+  const result = salaOnCallR2(teams, now);
+  const ids = result.map((r) => r.user_id);
+  assert.ok(ids.includes('r2-a'));
+  assert.equal(ids.includes('r2-b'), false);
+});
+
+test('salaOnCallR2 returns exactly 2 R2s on day 2 = B', () => {
+  const now = new Date('2026-06-02T12:00:00Z'); // day 2 → position 1 = B
+  const teams = ['A','B','C','D','E','F','A','B','C','D','E','F'].map((letter, i) => ({
+    team_id: `t-${letter}-${i}`,
+    sala: `Sala ${Math.floor(i/4) + 1}`,
+    service: 'Sala',
+    sub_area_fraction: letter,
+    members: [{ user_id: `r2-${letter}-${i}`, rank: 'R2' }],
+  }));
+  const result = salaOnCallR2(teams, now);
+  assert.equal(result.length, 2);
+});
+
+test('teamGuardiaOverride returns null when no guardia_today', () => {
+  assert.equal(teamGuardiaOverride({}), null);
+});
+
+test('teamGuardiaOverride returns user_id from guardia_today', () => {
+  const team = { guardia_today: { user_id: 'r1' } };
+  assert.equal(teamGuardiaOverride(team), 'r1');
 });

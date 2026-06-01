@@ -282,6 +282,50 @@ export function computeSalaAbcdefDeficitWrite(salaGuardiaToday, teams, userId, n
 }
 
 /**
+ * Returns the R1(s) on call for a given Sala today.
+ * @param {object[]} teams — all teams (each with sala, sub_area_fraction, members)
+ * @param {string} sala — "Sala 1" | "Sala 2" | "Sala E"
+ * @param {Date|string} now
+ * @returns {{ team_id: string, user_id: string }[]} — on-call R1s
+ */
+export function salaOnCallR1(teams, sala, now) {
+  const d = now instanceof Date ? now : new Date(String(now));
+  return (teams || [])
+    .filter((t) => t.sala === sala)
+    .filter((t) => isOnCallToday(t, 'R1', d))
+    .flatMap((t) =>
+      (t.members || [])
+        .filter((m) => m.rank === 'R1')
+        .map((m) => ({ team_id: t.team_id, user_id: m.user_id }))
+    );
+}
+
+/**
+ * Returns the R2(s) on call across all Salas today.
+ * @param {object[]} teams
+ * @param {Date|string} now
+ * @returns {{ team_id: string, user_id: string }[]}
+ */
+export function salaOnCallR2(teams, now) {
+  const d = now instanceof Date ? now : new Date(String(now));
+  const r2Teams = (teams || []).filter((t) => isOnCallToday(t, 'R2', d));
+  return r2Teams.flatMap((t) =>
+    (t.members || [])
+      .filter((m) => m.rank === 'R2')
+      .map((m) => ({ team_id: t.team_id, user_id: m.user_id }))
+  );
+}
+
+/**
+ * Returns the actual on-call user for a team, respecting guardia overrides.
+ * @param {object} team — with guardia_today field { user_id: string }
+ * @returns {string|null} — user_id of the declared guardia, or null
+ */
+export function teamGuardiaOverride(team) {
+  return team?.guardia_today?.user_id || null;
+}
+
+/**
  * @param {string} userId
  * @param {{ id?: string, service?: string, sub_area?: string }} patient
  * @param {object[]} joinedTeams
