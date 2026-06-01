@@ -7,6 +7,8 @@ let unlockWaitResolve = null;
 /** @type {{ needed: boolean, hasHostJson?: boolean } | null} */
 let lastMigrationProbe = null;
 
+let lastNeedsConfirm = true;
+
 function api() {
   return typeof window !== 'undefined' ? window.electronAPI : null;
 }
@@ -155,19 +157,9 @@ function resetDbUnlockSecretFields() {
 
 function resetDbUnlockRecoveryMode() {
   var recoveryWrap = document.getElementById('rpc-db-unlock-recovery-wrap');
-  var toggleBtn = document.getElementById('rpc-db-unlock-recovery-toggle');
-  var passEl = document.getElementById('rpc-db-unlock-pass');
-  var confirmWrap = document.getElementById('rpc-db-unlock-confirm-wrap');
-  var rememberLabel = document.querySelector('.rpc-db-unlock-remember');
-  var rememberHint = document.querySelector('.settings-acc-hint--tight');
   var submitBtn = document.getElementById('rpc-db-unlock-submit');
   if (recoveryWrap) recoveryWrap.style.display = 'none';
-  if (toggleBtn) toggleBtn.style.display = '';
-  if (passEl) { passEl.style.display = ''; passEl.parentElement.style.display = ''; }
-  if (confirmWrap) confirmWrap.style.display = '';
-  if (rememberLabel) rememberLabel.style.display = '';
-  if (rememberHint) rememberHint.style.display = '';
-  if (submitBtn) { submitBtn.textContent = 'Desbloquear'; submitBtn.setAttribute('onclick', 'submitDbUnlockPassphrase()'); }
+  if (submitBtn) submitBtn.setAttribute('onclick', 'submitDbUnlockPassphrase()');
   var recCode = document.getElementById('rpc-db-unlock-recovery-code');
   if (recCode) recCode.value = '';
 }
@@ -205,6 +197,7 @@ function setUnlockError(msg) {
 
 function configureUnlockForm(status, probe) {
   var needsConfirm = needsPassphraseConfirm(status, probe);
+  lastNeedsConfirm = needsConfirm;
   var confirmWrap = document.getElementById('rpc-db-unlock-confirm-wrap');
   var confirmInput = document.getElementById('rpc-db-unlock-confirm');
   if (confirmWrap) confirmWrap.style.display = needsConfirm ? '' : 'none';
@@ -300,10 +293,13 @@ export function toggleRecoveryMode() {
     if (recoveryWrap) recoveryWrap.style.display = 'none';
     if (toggleBtn) toggleBtn.style.display = '';
     if (passEl) { passEl.style.display = ''; passEl.parentElement.style.display = ''; }
-    if (confirmWrap) confirmWrap.style.display = '';
-    if (rememberLabel) rememberLabel.style.display = '';
-    if (rememberHint) rememberHint.style.display = '';
-    if (submitBtn) { submitBtn.textContent = 'Desbloquear'; submitBtn.setAttribute('onclick', 'submitDbUnlockPassphrase()'); }
+    if (confirmWrap) confirmWrap.style.display = lastNeedsConfirm ? '' : 'none';
+    if (rememberLabel) rememberLabel.style.display = lastNeedsConfirm ? '' : '';
+    if (rememberHint) rememberHint.style.display = lastNeedsConfirm ? '' : '';
+    if (submitBtn) {
+      submitBtn.textContent = lastNeedsConfirm ? 'Crear contraseña y continuar' : 'Desbloquear';
+      submitBtn.setAttribute('onclick', 'submitDbUnlockPassphrase()');
+    }
   } else {
     if (recoveryWrap) recoveryWrap.style.display = '';
     if (toggleBtn) toggleBtn.style.display = 'none';
