@@ -13,8 +13,10 @@ function api() {
 
 export function needsPassphraseConfirm(status, probe) {
   if (!status || typeof status !== 'object') return true;
-  if (status.migrationPending) return true;
-  if (probe && probe.needed) return true;
+  // Existing encrypted database → unlock only, never re-run setup (would wipe data).
+  if (status.dbFileExists && status.hasKdfSalt) return false;
+  if (status.migrationPending && !status.dbFileExists) return true;
+  if (probe && probe.needed && !status.dbFileExists) return true;
   if (status.dbFileExists === false) return true;
   return false;
 }
@@ -79,10 +81,25 @@ function unlockErrorMessage(res, opts) {
       : 'No se pudo crear la base cifrada. Cierra R+, vuelve a abrir e intenta de nuevo.';
   }
   if (code === 'DB_UNLOCK_FAILED') {
-    return 'Contraseña incorrecta. Verifica mayúsculas, espacios y vuelve a intentar.';
+    var cause = res && (res.cause || res.error || '');
+    if (/file is not a database|not a database/i.test(String(cause))) {
+      return 'Contraseña incorrecta. Verifica mayúsculas, espacios y vuelve a intentar. (No es la contraseña de Mi Perfil ni el PIN de bloqueo.)';
+    }
+    return 'Contraseña incorrecta. Verifica mayúsculas, espacios y vuelve a intentar. (No es la contraseña de Mi Perfil ni el PIN de bloqueo.)';
   }
   if (code === 'DB_NATIVE_ABI_MISMATCH') {
-    return 'El módulo nativo de base de datos no está compilado para esta versión de R+. Ejecuta npm run rebuild:db-native y reinicia.';
+    return (
+      'El módulo SQLCipher no coincide con esta sesión de R+ (suele pasar después de npm test). ' +
+      'En la carpeta del proyecto ejecuta: npm run rebuild:db-native — cierra R+ por completo (Cmd+Q) y vuelve a abrir con npm start.'
+    );
+  }
+  if (code === 'DB_SCHEMA_MIGRATION_FAILED') {
+    var migDetail = res && (res.cause || res.error || '');
+    return (
+      'No se pudo actualizar el esquema de la base cifrada' +
+      (migDetail ? ': ' + migDetail : '.') +
+      ' Si el problema continúa, exporta un respaldo .db y contacta soporte.'
+    );
   }
   var detail = res && (res.cause || res.error || res.message);
   if (detail && /NODE_MODULE_VERSION|was compiled against a different/i.test(String(detail))) {
@@ -183,21 +200,32 @@ function configureUnlockForm(status, probe) {
         'Hay datos locales por migrar a la base cifrada. Elige una contraseña maestra (mínimo 8 caracteres) y confírmala.';
     } else if (needsConfirm) {
       hint.textContent =
-        'Primera vez: crea una contraseña maestra para cifrar pacientes, notas y labs en este equipo (mínimo 8 caracteres).';
+        'Primera vez: crea una contraseña maestra para cifrar pacientes, notas y labs en este equipo (mínimo 8 caracteres). No es la contraseña de Mi Perfil.';
     } else {
       hint.textContent =
-        'Ingresa la contraseña maestra de la base de datos clínica en este equipo.';
+        'Ingresa la contraseña maestra que elegiste al activar la base cifrada. No es la contraseña de Mi Perfil ni el PIN de bloqueo por inactividad.';
     }
+  }
+
+  var passInput = document.getElementById('rpc-db-unlock-pass');
+  var confirmInput = document.getElementById('rpc-db-unlock-confirm');
+  if (passInput) {
+    passInput.autocomplete = needsConfirm ? 'new-password' : 'current-password';
+  }
+  if (confirmInput) {
+    confirmInput.autocomplete = 'new-password';
   }
 
   var rate = document.getElementById('rpc-db-unlock-rate-limited');
   if (rate) rate.style.display = status && status.rateLimited ? 'block' : 'none';
   var submit = document.getElementById('rpc-db-unlock-submit');
+  var nativeBlocked = !!(status && status.nativeReady === false);
   if (submit) {
-    submit.disabled = !!(status && status.rateLimited);
+    submit.disabled = !!(status && status.rateLimited) || nativeBlocked;
     submit.textContent = needsConfirm ? 'Crear contraseña y continuar' : 'Desbloquear';
   }
   wireDbUnlockSecretToggles();
+  return nativeBlocked;
 }
 
 /**
@@ -222,8 +250,14 @@ export async function waitForDbUnlock() {
   lastMigrationProbe = await runMigrationProbe(electron);
   return new Promise(function (resolve) {
     unlockWaitResolve = resolve;
-    configureUnlockForm(status, lastMigrationProbe);
-    setUnlockError(status.rateLimited ? unlockErrorMessage({ code: 'AUTH_RATE_LIMITED' }) : '');
+    var nativeBlocked = configureUnlockForm(status, lastMigrationProbe);
+    if (nativeBlocked) {
+      setUnlockError(unlockErrorMessage({ code: 'DB_NATIVE_ABI_MISMATCH' }));
+    } else if (status.rateLimited) {
+      setUnlockError(unlockErrorMessage({ code: 'AUTH_RATE_LIMITED' }));
+    } else {
+      setUnlockError('');
+    }
     setOverlayVisible(true);
   });
 }

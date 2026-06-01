@@ -14047,7 +14047,9 @@ function mapPatientForGuardiaGrid(p) {
     name: String(p.nombre || ""),
     service: String(p.servicio || p.area || ""),
     sub_area: String(p.area || ""),
-    negativa_maniobras_firmada: Number(p.negativa_maniobras_firmada || 0)
+    negativa_maniobras_firmada: Number(p.negativa_maniobras_firmada || 0),
+    interconsult_type: String(p.interconsult_type || "None"),
+    interconsult_status: String(p.interconsult_status || "Pending")
   };
 }
 function buildGuardiasMap(guardias) {
@@ -14265,6 +14267,12 @@ function calcVitalsBanner(last, freq) {
   const m = mins % 60;
   return { str: `\u23F1\uFE0F Toca en: ${h}h ${m}m`, cls: "nominal" };
 }
+var R4_FOLLOWUP_PIN_LABEL = "Interconsultas \u2014 Seguimiento";
+function filterR4FollowUpPinPatients(patients2) {
+  return patients2.filter(
+    (p) => p.interconsult_type === "Follow-up" && p.interconsult_status !== "Resolved"
+  );
+}
 var UnifiedPatientGridBoard = class {
   /**
    * @param {string} domGridContainerId
@@ -14306,10 +14314,16 @@ var UnifiedPatientGridBoard = class {
     this.container.innerHTML = "";
     this.container.classList.add("patient-chips-grid");
     if (userRank === "R4") {
+      const followUpPatients = filterR4FollowUpPinPatients(patients2);
+      const followUpIds = new Set(followUpPatients.map((p) => p.id));
+      if (followUpPatients.length > 0) {
+        this.appendDivider(R4_FOLLOWUP_PIN_LABEL);
+        this.renderBatch(followUpPatients, guardiasMap);
+      }
       const sectors = ["Sala A", "Sala B", "Eme", "Torre HU"];
       sectors.forEach((sector) => {
         const sectorPatients = patients2.filter(
-          (p) => p.service === sector || p.sub_area === sector
+          (p) => !followUpIds.has(p.id) && (p.service === sector || p.sub_area === sector)
         );
         if (sectorPatients.length > 0) {
           this.appendDivider(sector);
@@ -14595,1401 +14609,6 @@ async function syncGuardiaIncomingStrip(settings2) {
       toast(`Disponible el ${formatEffectiveLabel(String(row.effective_at || ""))}`, "info");
     }
   });
-}
-
-// public/js/features/clinical-teams.mjs
-var CLINICAL_TEAM_SERVICES = [
-  "Sala",
-  "Interconsulta",
-  "Eme",
-  "Torre HU",
-  "UX",
-  "\xC1rea A"
-];
-var ON_CALL_DAY_LABELS = [
-  "Domingo (0)",
-  "Lunes (1)",
-  "Martes (2)",
-  "Mi\xE9rcoles (3)",
-  "Jueves (4)",
-  "Viernes (5)",
-  "S\xE1bado (6)"
-];
-function dbApi2() {
-  if (typeof window === "undefined") return null;
-  return window.rplusDb || window.electronAPI || null;
-}
-function toast2(msg, type = "info") {
-  if (typeof window !== "undefined" && typeof window.showToast === "function") {
-    window.showToast(msg, type);
-  }
-}
-function escapeHtml2(s) {
-  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-function escapeAttr2(s) {
-  return escapeHtml2(s).replace(/"/g, "&quot;");
-}
-function currentUserId() {
-  return String(clinicalSessionContext.user?.user_id || "");
-}
-function filterJoinedTeams(teams, userId) {
-  const uid = String(userId || "");
-  if (!uid) return [];
-  return (teams || []).filter(
-    (team) => (team.members || []).some((m) => String(m.user_id) === uid)
-  );
-}
-function teamsModalEl() {
-  return document.getElementById("clinical-teams-backdrop");
-}
-function openClinicalTeamsPanel() {
-  const bd = teamsModalEl();
-  if (!bd) return;
-  bd.classList.add("open");
-  bd.setAttribute("aria-hidden", "false");
-  void renderClinicalTeamsPanel();
-  const nameInput = document.getElementById("clinical-team-create-name");
-  if (nameInput) nameInput.focus();
-}
-function closeClinicalTeamsPanel() {
-  const bd = teamsModalEl();
-  if (!bd) return;
-  bd.classList.remove("open");
-  bd.setAttribute("aria-hidden", "true");
-}
-function renderCreateTeamForm() {
-  const serviceOptions = CLINICAL_TEAM_SERVICES.map(
-    (svc) => `<option value="${escapeAttr2(svc)}">${escapeHtml2(svc)}</option>`
-  ).join("");
-  const dayOptions = ON_CALL_DAY_LABELS.map(
-    (label, idx) => `<option value="${idx}">${escapeHtml2(label)}</option>`
-  ).join("");
-  return `
-    <section class="clinical-teams-section">
-      <h4 class="clinical-teams-section-title">Crear equipo</h4>
-      <form id="clinical-team-create-form" class="clinical-teams-create-form">
-        <div class="field-group">
-          <label for="clinical-team-create-name">Nombre</label>
-          <input id="clinical-team-create-name" type="text" class="profile-input" placeholder="Sala A \xB7 Equipo noche" required>
-        </div>
-        <div class="field-group">
-          <label for="clinical-team-create-service">Servicio</label>
-          <select id="clinical-team-create-service" class="profile-input" required>${serviceOptions}</select>
-        </div>
-        <div class="field-group">
-          <label for="clinical-team-create-fraction">Fracci\xF3n de sub-\xE1rea (opcional)</label>
-          <input id="clinical-team-create-fraction" type="text" class="profile-input" placeholder="A1, A2\u2026" maxlength="16">
-        </div>
-        <div class="field-group">
-          <label for="clinical-team-create-day">D\xEDa de guardia (0\u20136)</label>
-          <select id="clinical-team-create-day" class="profile-input" required>${dayOptions}</select>
-        </div>
-        <div class="modal-actions">
-          <button type="submit" class="btn-save">Crear equipo</button>
-        </div>
-      </form>
-    </section>`;
-}
-function renderJoinedTeamCard(team, userId) {
-  const teamId = String(team.team_id || "");
-  const guardia = team.guardia_today || null;
-  const isGuardia = guardia && String(guardia.user_id) === userId;
-  const members = Array.isArray(team.members) ? team.members : [];
-  const memberList = members.length ? members.map(
-    (m) => `<li><span class="clinical-teams-member-name">${escapeHtml2(m.username || m.user_id)}</span> <span class="clinical-teams-member-rank">${escapeHtml2(m.rank || "")}</span></li>`
-  ).join("") : '<li class="clinical-teams-empty">Sin miembros</li>';
-  const meta = [
-    escapeHtml2(team.service || ""),
-    team.sub_area_fraction ? escapeHtml2(team.sub_area_fraction) : null,
-    `d\xEDa ${Number(team.on_call_day_index ?? 0)}`
-  ].filter(Boolean).join(" \xB7 ");
-  const guardiaLabel = guardia && !isGuardia ? ` (declarado: ${escapeHtml2(members.find((m) => String(m.user_id) === String(guardia.user_id))?.username || guardia.user_id)})` : "";
-  return `
-    <article class="clinical-teams-card" data-team-id="${escapeAttr2(teamId)}">
-      <header class="clinical-teams-card-head">
-        <div>
-          <h5 class="clinical-teams-card-title">${escapeHtml2(team.name || "Equipo")}</h5>
-          <p class="clinical-teams-card-meta">${meta}</p>
-        </div>
-        <label class="clinical-teams-guardia-label">
-          <input type="checkbox" class="clinical-teams-guardia-check" data-team-id="${escapeAttr2(teamId)}" ${isGuardia ? "checked" : ""}>
-          <span>Guardia${guardiaLabel}</span>
-        </label>
-      </header>
-      <ul class="clinical-teams-member-list">${memberList}</ul>
-      <form class="clinical-teams-add-member-form" data-team-id="${escapeAttr2(teamId)}">
-        <input type="text" class="profile-input clinical-teams-add-member-input" placeholder="Usuario LAN / username" required aria-label="Agregar miembro por username">
-        <button type="submit" class="btn-med-secondary">Agregar</button>
-      </form>
-    </article>`;
-}
-async function renderClinicalTeamsPanel() {
-  const host = document.getElementById("clinical-teams-panel-body");
-  if (!host) return;
-  const userId = currentUserId();
-  if (!userId) {
-    host.innerHTML = '<p class="clinical-teams-lead">Activa la sesi\xF3n cl\xEDnica para gestionar equipos.</p>';
-    return;
-  }
-  await fetchClinicalTeamsFromDb();
-  const joined = filterJoinedTeams(clinicalSessionContext.teams, userId);
-  const joinedHtml = joined.length ? joined.map((team) => renderJoinedTeamCard(team, userId)).join("") : '<p class="clinical-teams-empty">A\xFAn no perteneces a ning\xFAn equipo. Crea uno abajo.</p>';
-  host.innerHTML = `
-    <p class="clinical-teams-lead">Administra tus equipos de rotaci\xF3n y declara <strong>Guardia</strong> (on-call hoy) por equipo. Distinto del bloque Equipo del perfil (solo PDF).</p>
-    <section class="clinical-teams-section">
-      <h4 class="clinical-teams-section-title">Mis equipos</h4>
-      <div class="clinical-teams-list">${joinedHtml}</div>
-    </section>
-    ${renderCreateTeamForm()}`;
-  wireClinicalTeamsPanelInteractions();
-}
-function wireClinicalTeamsPanelInteractions() {
-  const createForm = document.getElementById("clinical-team-create-form");
-  if (createForm && !createForm._rpcTeamsCreateWired) {
-    createForm._rpcTeamsCreateWired = true;
-    createForm.addEventListener("submit", (ev) => void handleCreateTeamSubmit(ev));
-  }
-  document.querySelectorAll(".clinical-teams-guardia-check").forEach((input) => {
-    if (!(input instanceof HTMLInputElement) || input._rpcGuardiaWired) return;
-    input._rpcGuardiaWired = true;
-    input.addEventListener("change", () => void handleGuardiaCheck(input));
-  });
-  document.querySelectorAll(".clinical-teams-add-member-form").forEach((form) => {
-    if (!(form instanceof HTMLFormElement) || form._rpcAddMemberWired) return;
-    form._rpcAddMemberWired = true;
-    form.addEventListener("submit", (ev) => void handleAddMemberSubmit(ev, form));
-  });
-}
-async function handleCreateTeamSubmit(ev) {
-  ev.preventDefault();
-  const api3 = dbApi2();
-  if (!api3 || typeof api3.dbClinicalTeamsCreate !== "function") {
-    toast2("Base de datos no disponible.", "error");
-    return;
-  }
-  const name = String(document.getElementById("clinical-team-create-name")?.value || "").trim();
-  const service = String(document.getElementById("clinical-team-create-service")?.value || "").trim();
-  const subAreaFraction = String(
-    document.getElementById("clinical-team-create-fraction")?.value || ""
-  ).trim();
-  const onCallDayIndex = Number(document.getElementById("clinical-team-create-day")?.value ?? 0);
-  const userId = currentUserId();
-  if (!name || !service) {
-    toast2("Indica nombre y servicio.", "error");
-    return;
-  }
-  const res = await api3.dbClinicalTeamsCreate({
-    name,
-    service,
-    subAreaFraction: subAreaFraction || void 0,
-    onCallDayIndex,
-    createdBy: userId
-  });
-  if (!res || res.ok === false) {
-    toast2(res?.error || "No se cre\xF3 el equipo.", "error");
-    return;
-  }
-  const teamId = String(res.team?.team_id || "");
-  if (teamId && typeof api3.dbClinicalTeamsMemberAdd === "function") {
-    const addRes = await api3.dbClinicalTeamsMemberAdd({ teamId, userId });
-    if (!addRes || addRes.ok === false) {
-      toast2(addRes?.error || "Equipo creado pero no se pudo unir autom\xE1ticamente.", "error");
-    }
-  }
-  toast2("Equipo creado.", "success");
-  document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
-  await renderClinicalTeamsPanel();
-}
-async function handleGuardiaCheck(input) {
-  if (!input.checked) {
-    input.checked = true;
-    toast2("Para retirar Guardia, otro miembro debe declararse on-call.", "info");
-    return;
-  }
-  const teamId = String(input.dataset.teamId || "");
-  const userId = currentUserId();
-  const api3 = dbApi2();
-  if (!teamId || !userId || !api3 || typeof api3.dbClinicalTeamsGuardiaSet !== "function") {
-    input.checked = false;
-    toast2("No se pudo declarar Guardia.", "error");
-    return;
-  }
-  const res = await api3.dbClinicalTeamsGuardiaSet({ teamId, userId });
-  if (!res || res.ok === false) {
-    input.checked = false;
-    toast2(res?.error || "No se guard\xF3 Guardia.", "error");
-    return;
-  }
-  toast2("Guardia declarada para hoy.", "success");
-  document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
-  await renderClinicalTeamsPanel();
-}
-async function handleAddMemberSubmit(ev, form) {
-  ev.preventDefault();
-  const teamId = String(form.dataset.teamId || "");
-  const usernameInput = form.querySelector(".clinical-teams-add-member-input");
-  const username = usernameInput instanceof HTMLInputElement ? String(usernameInput.value || "").trim() : "";
-  if (!teamId || !username) {
-    toast2("Escribe el username del residente.", "error");
-    return;
-  }
-  const api3 = dbApi2();
-  if (!api3 || typeof api3.dbClinicalTeamsMemberAdd !== "function") {
-    toast2("Base de datos no disponible.", "error");
-    return;
-  }
-  const res = await api3.dbClinicalTeamsMemberAdd({ teamId, username });
-  if (!res || res.ok === false) {
-    toast2(res?.error || "No se agreg\xF3 el miembro.", "error");
-    return;
-  }
-  toast2("Miembro agregado.", "success");
-  if (usernameInput instanceof HTMLInputElement) usernameInput.value = "";
-  document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
-  await renderClinicalTeamsPanel();
-}
-var teamsControlsWired = false;
-function wireClinicalTeamsControls() {
-  if (teamsControlsWired) return;
-  teamsControlsWired = true;
-  const openBtn = document.getElementById("btn-guardia-mi-rotacion");
-  if (openBtn) openBtn.addEventListener("click", () => openClinicalTeamsPanel());
-  const bd = teamsModalEl();
-  if (bd) {
-    bd.addEventListener("click", (ev) => {
-      if (ev.target === bd) closeClinicalTeamsPanel();
-    });
-  }
-  const closeBtn = document.getElementById("btn-clinical-teams-close");
-  if (closeBtn) closeBtn.addEventListener("click", () => closeClinicalTeamsPanel());
-  document.addEventListener("rpc-clinical-teams-changed", () => {
-    void fetchClinicalTeamsFromDb();
-  });
-}
-
-// public/js/features/clinical-entrega.mjs
-var GUARDIA_GRID_MODE_KEY = "guardia.gridMode";
-function normalizeUsers(users) {
-  return (users || []).map((u) => ({
-    user_id: String(u.user_id || u.userId || ""),
-    username: String(u.username || ""),
-    rank: String(u.rank || "")
-  })).filter((u) => u.user_id);
-}
-function uniqueByUserId(list) {
-  const seen = /* @__PURE__ */ new Set();
-  return list.filter((u) => {
-    if (seen.has(u.user_id)) return false;
-    seen.add(u.user_id);
-    return true;
-  });
-}
-function listEntregaTargets(rank, teams, users, salaDeficit, opts = {}) {
-  const currentUserId2 = String(opts.currentUserId || "");
-  const weekday = opts.weekday ?? (/* @__PURE__ */ new Date()).getDay();
-  const all = normalizeUsers(users);
-  const teamList = Array.isArray(teams) ? teams : [];
-  const rankNorm = String(rank || "R1");
-  const joinedTeams = currentUserId2 ? getJoinedTeams(teamList, currentUserId2) : [];
-  if (rankNorm === "R3") {
-    const suggestedIds = /* @__PURE__ */ new Set();
-    teamList.forEach((team) => {
-      if (Number(team.on_call_day_index) !== weekday) return;
-      (team.members || []).forEach((m) => {
-        if (m?.user_id) suggestedIds.add(String(m.user_id));
-      });
-    });
-    const targets = all.filter((u) => suggestedIds.has(u.user_id));
-    return {
-      flow: "r3_suggest",
-      targets: targets.length ? uniqueByUserId(targets) : all
-    };
-  }
-  if (rankNorm === "R2") {
-    const services = new Set(
-      joinedTeams.map((t2) => String(t2.service || "").toLowerCase()).filter(Boolean)
-    );
-    const r2Peers = all.filter((u) => {
-      if (u.rank !== "R2") return false;
-      return teamList.some((team) => {
-        const svc = String(team.service || "").toLowerCase();
-        if (!services.has(svc)) return false;
-        return (team.members || []).some((m) => String(m.user_id) === u.user_id);
-      });
-    });
-    const r4s = all.filter((u) => u.rank === "R4");
-    let deficitR2 = [];
-    if (salaDeficit) {
-      deficitR2 = all.filter((u) => {
-        if (u.rank !== "R2") return false;
-        return teamList.some((team) => {
-          if (!String(team.service || "").toLowerCase().includes("sala")) return false;
-          if (Number(team.on_call_day_index) !== weekday) return false;
-          const onGuardia = team.guardia_today && String(team.guardia_today.user_id) === u.user_id;
-          if (!onGuardia) return false;
-          return (team.members || []).some((m) => String(m.user_id) === u.user_id);
-        });
-      });
-    }
-    const targets = uniqueByUserId([...r2Peers, ...r4s, ...deficitR2]);
-    return { flow: "r2", targets: targets.length ? targets : all };
-  }
-  if (rankNorm === "R1") {
-    const joinedIds = new Set(joinedTeams.map((t2) => String(t2.team_id)));
-    const fractions = new Set(
-      joinedTeams.map((t2) => String(t2.sub_area_fraction || "").trim()).filter(Boolean)
-    );
-    const targets = all.filter((u) => {
-      if (u.rank !== "R1") return false;
-      return teamList.some((team) => {
-        const member = (team.members || []).some((m) => String(m.user_id) === u.user_id);
-        if (!member) return false;
-        if (joinedIds.has(String(team.team_id))) return true;
-        const frac = String(team.sub_area_fraction || "").trim();
-        return frac && fractions.has(frac);
-      });
-    });
-    return { flow: "r1", targets: targets.length ? uniqueByUserId(targets) : all };
-  }
-  return { flow: "generic", targets: all };
-}
-function dbApi3() {
-  if (typeof window === "undefined") return null;
-  return window.rplusDb || window.electronAPI || null;
-}
-function toast3(msg, type = "info") {
-  if (typeof window !== "undefined" && typeof window.showToast === "function") {
-    window.showToast(msg, type);
-  }
-}
-function entregaModalEl() {
-  return document.getElementById("entrega-modal-backdrop");
-}
-function resolveDefaultSourceTeamId() {
-  const userId = String(clinicalSessionContext.user?.user_id || "");
-  const teams = clinicalSessionContext.teams || [];
-  const joined = getJoinedTeams(teams, userId);
-  if (joined[0]?.team_id) return String(joined[0].team_id);
-  if (teams[0]?.team_id) return String(teams[0].team_id);
-  return "";
-}
-async function submitEntregaAssignment(payload) {
-  const api3 = dbApi3();
-  if (!api3 || typeof api3.dbGuardiaUpsert !== "function") {
-    throw new Error("Base cl\xEDnica no disponible");
-  }
-  const patientId = String(payload.patientId || "");
-  const deltaData = {
-    coveringUserId: payload.coveringUserId,
-    sourceTeamId: payload.sourceTeamId,
-    isCritical: !!payload.isCritical,
-    pendientesJson: payload.pendientesJson || "[]",
-    vitalsFrequency: payload.vitalsFrequency || "None"
-  };
-  await signOutgoingLiveSyncMutation(
-    { patientId, entityId: patientId, data: deltaData, op: "entrega.assign" },
-    "entrega.assign"
-  );
-  const res = await api3.dbGuardiaUpsert({
-    patientId,
-    coveringUserId: payload.coveringUserId,
-    sourceTeamId: payload.sourceTeamId,
-    guardiaId: payload.guardiaId,
-    isCritical: payload.isCritical ? 1 : 0,
-    pendientesJson: payload.pendientesJson || "[]",
-    vitalsFrequency: payload.vitalsFrequency || "None"
-  });
-  if (!res || res.ok === false) {
-    throw new Error(res?.error || "No se guard\xF3 la entrega");
-  }
-  return res.guardia;
-}
-var entregaFormWired = false;
-function wireEntregaFormOnce() {
-  if (entregaFormWired) return;
-  entregaFormWired = true;
-  const form = document.getElementById("entrega-form");
-  const cancelBtn = document.getElementById("btn-entrega-cancel");
-  const bd = entregaModalEl();
-  if (cancelBtn) cancelBtn.addEventListener("click", () => closeEntregaModal());
-  if (bd) {
-    bd.addEventListener("click", (ev) => {
-      if (ev.target === bd) closeEntregaModal();
-    });
-  }
-  if (!form) return;
-  form.addEventListener("submit", async (ev) => {
-    ev.preventDefault();
-    const patientId = String(form.dataset.patientId || "");
-    const guardiaId = form.dataset.guardiaId ? String(form.dataset.guardiaId) : void 0;
-    const coveringUserId = String(
-      document.getElementById("entrega-covering-user")?.value || ""
-    );
-    const sourceTeamId = String(document.getElementById("entrega-source-team")?.value || "") || resolveDefaultSourceTeamId();
-    const pendientes = String(document.getElementById("entrega-pendientes")?.value || "").trim();
-    const isCritical = !!document.getElementById("entrega-critical")?.checked;
-    const vitalsFrequency = String(
-      document.getElementById("entrega-vitals-frequency")?.value || "None"
-    );
-    if (!patientId || !coveringUserId || !sourceTeamId) {
-      toast3("Selecciona usuario cubridor y equipo de origen.", "error");
-      return;
-    }
-    const pendientesJson = JSON.stringify(
-      pendientes ? pendientes.split("\n").map((l) => l.trim()).filter(Boolean) : []
-    );
-    try {
-      await submitEntregaAssignment({
-        patientId,
-        guardiaId,
-        coveringUserId,
-        sourceTeamId,
-        isCritical,
-        pendientesJson,
-        vitalsFrequency
-      });
-      toast3("Entrega registrada.", "success");
-      const onConfirm = form._entregaOnConfirm;
-      closeEntregaModal();
-      await refreshGuardiaCensusFromDb(null);
-      if (typeof onConfirm === "function") onConfirm();
-    } catch (err) {
-      toast3(err?.message || "Error al registrar entrega", "error");
-    }
-  });
-}
-function openEntregaModal(opts) {
-  wireEntregaFormOnce();
-  const bd = entregaModalEl();
-  const form = document.getElementById("entrega-form");
-  if (!bd || !form) return;
-  const patientId = String(opts?.patientId || "");
-  const guardiaId = opts?.guardiaId ? String(opts.guardiaId) : "";
-  const existing = guardiaId ? clinicalSessionContext.guardias.find((g3) => String(g3.guardia_id) === guardiaId) : clinicalSessionContext.guardiasMap.get(patientId);
-  form.dataset.patientId = patientId;
-  if (guardiaId) form.dataset.guardiaId = guardiaId;
-  else delete form.dataset.guardiaId;
-  form._entregaOnConfirm = typeof opts?.onConfirm === "function" ? opts.onConfirm : null;
-  const ctx = clinicalSessionContext.scopeContext || {};
-  const teams = clinicalSessionContext.teams || ctx.teams || [];
-  const users = Array.isArray(ctx.users) ? ctx.users : [];
-  const salaGuardiaToday = Array.isArray(ctx.salaGuardiaToday) ? ctx.salaGuardiaToday : [];
-  const userId = String(clinicalSessionContext.user?.user_id || "");
-  const rank = String(clinicalSessionContext.user?.rank || "R1");
-  const weekday = (/* @__PURE__ */ new Date()).getDay();
-  const salaDeficit = computeSalaAbcdefDeficitWrite(
-    salaGuardiaToday,
-    teams,
-    userId,
-    weekday
-  );
-  const { targets, flow } = listEntregaTargets(rank, teams, users, salaDeficit, {
-    currentUserId: userId,
-    weekday
-  });
-  const select = document.getElementById("entrega-covering-user");
-  const teamSelect = document.getElementById("entrega-source-team");
-  const hint = document.getElementById("entrega-flow-hint");
-  if (select) {
-    select.innerHTML = targets.map(
-      (u) => `<option value="${u.user_id}">${u.username} (${u.rank})</option>`
-    ).join("");
-    const preferred = existing?.covering_user_id ? String(existing.covering_user_id) : targets[0]?.user_id || "";
-    if (preferred) select.value = preferred;
-  }
-  if (teamSelect) {
-    const joined = getJoinedTeams(teams, userId);
-    const teamOptions = (joined.length ? joined : teams).filter((t2) => t2?.team_id);
-    teamSelect.innerHTML = teamOptions.map((t2) => `<option value="${t2.team_id}">${t2.name} \xB7 ${t2.service}</option>`).join("");
-    const src = existing?.source_team_id || resolveDefaultSourceTeamId();
-    if (src) teamSelect.value = src;
-  }
-  if (hint) {
-    const flowLabels = {
-      r1: "R1: mismos equipo o fracci\xF3n de sub-\xE1rea.",
-      r2: "R2: mismo servicio, R4, o cubridores Sala en d\xE9ficit.",
-      r3_suggest: "R3: sugeridos por d\xEDa de guardia del equipo (confirma).",
-      generic: "Cualquier usuario registrado."
-    };
-    hint.textContent = flowLabels[flow] || flowLabels.generic;
-  }
-  const pendientesEl = document.getElementById("entrega-pendientes");
-  const criticalEl = document.getElementById("entrega-critical");
-  const vitalsEl = document.getElementById("entrega-vitals-frequency");
-  if (pendientesEl) {
-    try {
-      const arr = JSON.parse(String(existing?.pendientes_json || "[]"));
-      pendientesEl.value = Array.isArray(arr) ? arr.join("\n") : "";
-    } catch {
-      pendientesEl.value = "";
-    }
-  }
-  if (criticalEl) criticalEl.checked = !!existing?.is_critical;
-  if (vitalsEl) vitalsEl.value = String(existing?.vitals_frequency || "None");
-  const title = document.getElementById("entrega-modal-title");
-  if (title) title.textContent = guardiaId ? "Actualizar entrega" : "Nueva entrega";
-  bd.classList.add("open");
-  bd.setAttribute("aria-hidden", "false");
-  select?.focus();
-}
-function closeEntregaModal() {
-  const bd = entregaModalEl();
-  if (!bd) return;
-  bd.classList.remove("open");
-  bd.setAttribute("aria-hidden", "true");
-  const form = document.getElementById("entrega-form");
-  if (form) form._entregaOnConfirm = null;
-}
-function loadGuardiaGridViewContext() {
-  try {
-    const mode = String(localStorage.getItem(GUARDIA_GRID_MODE_KEY) || "censo").toLowerCase();
-    return mode === "entrega" ? "HANDOFF" : "GUARDIA";
-  } catch {
-    return "GUARDIA";
-  }
-}
-function saveGuardiaGridMode(mode) {
-  try {
-    localStorage.setItem(GUARDIA_GRID_MODE_KEY, mode === "entrega" ? "entrega" : "censo");
-  } catch {
-  }
-}
-
-// public/js/features/guardia-board.mjs
-var gridBoard = null;
-var gridModeControlsWired = false;
-var appShellInstalled = false;
-function installGuardiaAppShell() {
-  if (appShellInstalled || typeof window === "undefined") return;
-  appShellInstalled = true;
-  window.appShell = window.appShell || {};
-  window.appShell.openEntregaModal = openEntregaModal;
-}
-function wireGuardiaGridModeToggle(settings2) {
-  if (gridModeControlsWired) return;
-  gridModeControlsWired = true;
-  const censoBtn = document.getElementById("guardia-grid-mode-censo");
-  const entregaBtn = document.getElementById("guardia-grid-mode-entrega");
-  if (!censoBtn || !entregaBtn) return;
-  const syncButtons = (mode) => {
-    const isEntrega = mode === "entrega";
-    censoBtn.classList.toggle("is-active", !isEntrega);
-    entregaBtn.classList.toggle("is-active", isEntrega);
-    censoBtn.setAttribute("aria-pressed", String(!isEntrega));
-    entregaBtn.setAttribute("aria-pressed", String(isEntrega));
-  };
-  const applyMode = (mode) => {
-    saveGuardiaGridMode(mode);
-    syncButtons(mode);
-    if (gridBoard) {
-      gridBoard.setViewContext(mode === "entrega" ? "HANDOFF" : "GUARDIA");
-    }
-    renderGuardiaBoard(settings2);
-  };
-  syncButtons(loadGuardiaGridViewContext() === "HANDOFF" ? "entrega" : "censo");
-  censoBtn.addEventListener("click", () => applyMode("censo"));
-  entregaBtn.addEventListener("click", () => applyMode("entrega"));
-}
-function pendingTodoCount(pid) {
-  return storage.getTodos(pid).filter((t2) => !t2.completed).length;
-}
-function labsSnippetForPatient(pid) {
-  const history = storage.getLabHistory();
-  const rows = Array.isArray(history[pid]) ? history[pid] : [];
-  if (!rows.length) return "\u2014";
-  const last = rows[rows.length - 1];
-  const text = String(last?.text || last?.raw || "").replace(/\s+/g, " ").trim();
-  if (!text) return "\u2014";
-  const line = text.split("\n").find((l) => /★|crit|alter|↑|↓/i.test(l)) || text.split("\n")[0] || text;
-  return line.slice(0, 48);
-}
-function enrichPatientForGuardiaCard(p, guardiasMap) {
-  const base = mapPatientForGuardiaGrid(p);
-  const g3 = guardiasMap.get(base.id);
-  const dxList = Array.isArray(p.diagnosticosList) ? p.diagnosticosList : [];
-  const dxText = diagnosticosTextForCenso(dxList, { max: 2 }) || String(p.diagnosticosText || p.motivo || "").trim() || "Sin diagn\xF3stico registrado";
-  const openTodos = pendingTodoCount(base.id);
-  const isCritical = !!(g3?.is_critical || openTodos > 0 && storage.getTodos(base.id).some((t2) => !t2.completed && t2.priority === "alta"));
-  return {
-    ...base,
-    dxText: dxText.toUpperCase(),
-    pendingCount: openTodos,
-    labsSnippet: labsSnippetForPatient(base.id),
-    isCritical,
-    guardiaMeta: g3
-  };
-}
-function computeGuardiaSummary(censusPatients, guardiasMap) {
-  let critical = 0;
-  let pending2 = 0;
-  censusPatients.forEach((p) => {
-    if (p.isCritical || guardiasMap.get(p.id)?.is_critical) critical += 1;
-    pending2 += p.pendingCount || 0;
-  });
-  const now = /* @__PURE__ */ new Date();
-  const nextHour = new Date(now);
-  nextHour.setMinutes(0, 0, 0);
-  nextHour.setHours(nextHour.getHours() + 1);
-  const nextHandoff = nextHour.getHours().toString().padStart(2, "0") + ":" + nextHour.getMinutes().toString().padStart(2, "0");
-  return { critical, pending: pending2, nextHandoff };
-}
-function renderGuardiaSummaryTiles(summary) {
-  const host = document.getElementById("guardia-summary");
-  if (!host) return;
-  host.innerHTML = `
-    <div class="guardia-summary-tile guardia-summary-tile--critical">
-      <div>
-        <div class="guardia-summary-label">Pacientes cr\xEDticos</div>
-        <div class="guardia-summary-value guardia-summary-value--critical">${summary.critical}</div>
-      </div>
-      <span class="guardia-summary-icon" aria-hidden="true">\u26A0\uFE0F</span>
-    </div>
-    <div class="guardia-summary-tile">
-      <div>
-        <div class="guardia-summary-label">Pendientes totales</div>
-        <div class="guardia-summary-value">${summary.pending}</div>
-      </div>
-      <span class="guardia-summary-icon" aria-hidden="true">\u{1F4CB}</span>
-    </div>
-    <div class="guardia-summary-tile">
-      <div>
-        <div class="guardia-summary-label">Siguiente entrega</div>
-        <div class="guardia-summary-value guardia-summary-value--muted">${summary.nextHandoff}</div>
-      </div>
-      <span class="guardia-summary-icon" aria-hidden="true">\u23F3</span>
-    </div>`;
-}
-function renderGuardiaBoard(settings2) {
-  if (!isGuardiaMode()) return;
-  installGuardiaAppShell();
-  const root = document.getElementById("appcontent-guardia");
-  if (!root || root.getAttribute("aria-hidden") === "true") return;
-  const guardiasMap = clinicalSessionContext.guardiasMap.size ? clinicalSessionContext.guardiasMap : buildGuardiasMap(clinicalSessionContext.guardias);
-  let censusPatients = patients.filter((p) => p && p.id && !p.isDemo && !p.archived).map((p) => enrichPatientForGuardiaCard(p, guardiasMap));
-  const gridViewContext = loadGuardiaGridViewContext();
-  wireGuardiaGridModeToggle(settings2);
-  if (guardiasMap.size > 0 && gridViewContext === "GUARDIA") {
-    censusPatients = censusPatients.filter((p) => guardiasMap.has(p.id));
-  }
-  const summary = computeGuardiaSummary(censusPatients, guardiasMap);
-  renderGuardiaSummaryTiles(summary);
-  void syncGuardiaIncomingStrip(settings2);
-  wireClinicalTeamsControls();
-  if (!gridBoard) {
-    gridBoard = new UnifiedPatientGridBoard("guardia-census-grid", gridViewContext);
-  } else {
-    gridBoard.setViewContext(gridViewContext);
-  }
-  gridBoard.onChipClick = (patientId) => {
-    const guardia = guardiasMap.get(patientId);
-    openEntregaModal({
-      patientId,
-      guardiaId: guardia?.guardia_id,
-      onConfirm: () => {
-        void refreshGuardiaCensusFromDb(settings2);
-      }
-    });
-  };
-  const rank = clinicalSessionContext.user?.rank || resolveClinicalRank(settings2);
-  gridBoard.drawCensusGrid(censusPatients, guardiasMap, rank);
-}
-function syncGuardiaModeButtonVisibility() {
-  const show = isDbMode();
-  const btn = document.getElementById("header-guardia-mode-chip");
-  if (btn) btn.style.display = show ? "inline-flex" : "none";
-}
-
-// public/js/rpc-date-picker.mjs
-var MONTHS_ES = [
-  "Enero",
-  "Febrero",
-  "Marzo",
-  "Abril",
-  "Mayo",
-  "Junio",
-  "Julio",
-  "Agosto",
-  "Septiembre",
-  "Octubre",
-  "Noviembre",
-  "Diciembre"
-];
-var WEEKDAYS_ES = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sa", "Do"];
-var CALENDAR_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
-var popoverEl = null;
-var activeClose = null;
-function esc5(s) {
-  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
-function formatIsoDateDisplay(iso) {
-  return formatAccesoFechaDisplay(iso);
-}
-function parseIso(iso) {
-  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || "").trim());
-  if (!m) return null;
-  var y = Number(m[1]);
-  var mo = Number(m[2]) - 1;
-  var d = Number(m[3]);
-  var dt = new Date(y, mo, d);
-  if (dt.getFullYear() !== y || dt.getMonth() !== mo || dt.getDate() !== d) return null;
-  return dt;
-}
-function isoFromDate(dt) {
-  return dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0") + "-" + String(dt.getDate()).padStart(2, "0");
-}
-function todayIso() {
-  return isoFromDate(/* @__PURE__ */ new Date());
-}
-function ensurePopover() {
-  if (popoverEl) return popoverEl;
-  popoverEl = document.createElement("div");
-  popoverEl.id = "rpc-date-popover";
-  popoverEl.className = "rpc-date-popover";
-  popoverEl.setAttribute("role", "dialog");
-  popoverEl.setAttribute("aria-modal", "false");
-  popoverEl.hidden = true;
-  document.body.appendChild(popoverEl);
-  return popoverEl;
-}
-function closePopover() {
-  if (!popoverEl || popoverEl.hidden) return;
-  popoverEl.hidden = true;
-  popoverEl.innerHTML = "";
-  popoverEl.removeAttribute("data-open");
-  if (activeClose) {
-    activeClose();
-    activeClose = null;
-  }
-}
-function isRpcDatePopoverOpen() {
-  return !!(popoverEl && !popoverEl.hidden);
-}
-function closeRpcDatePopover() {
-  closePopover();
-}
-function positionPopover(anchor) {
-  if (!popoverEl || !anchor) return;
-  var rect = anchor.getBoundingClientRect();
-  var gap = 6;
-  var top = rect.bottom + gap;
-  var left = rect.left;
-  popoverEl.style.top = top + "px";
-  popoverEl.style.left = left + "px";
-  requestAnimationFrame(function() {
-    if (!popoverEl || popoverEl.hidden) return;
-    var pr = popoverEl.getBoundingClientRect();
-    var maxLeft = window.innerWidth - pr.width - 8;
-    var maxTop = window.innerHeight - pr.height - 8;
-    left = Math.min(Math.max(8, left), Math.max(8, maxLeft));
-    if (top > maxTop) top = Math.max(8, rect.top - pr.height - gap);
-    top = Math.min(Math.max(8, top), Math.max(8, maxTop));
-    popoverEl.style.top = top + "px";
-    popoverEl.style.left = left + "px";
-  });
-}
-function renderCalendarBody(year, month, selectedIso) {
-  var first = new Date(year, month, 1);
-  var startPad = (first.getDay() + 6) % 7;
-  var days = new Date(year, month + 1, 0).getDate();
-  var today = todayIso();
-  var cells = "";
-  for (var i = 0; i < startPad; i++) {
-    cells += '<span class="rpc-date-popover__day rpc-date-popover__day--pad" aria-hidden="true"></span>';
-  }
-  for (var day = 1; day <= days; day++) {
-    var iso = isoFromDate(new Date(year, month, day));
-    var cls = "rpc-date-popover__day";
-    if (iso === selectedIso) cls += " is-selected";
-    if (iso === today) cls += " is-today";
-    cells += '<button type="button" class="' + cls + '" data-iso="' + esc5(iso) + '">' + day + "</button>";
-  }
-  return cells;
-}
-function openRpcDatePicker(anchor, opts) {
-  var options = opts || {};
-  var selected = parseIso(options.value) || /* @__PURE__ */ new Date();
-  var viewYear2 = selected.getFullYear();
-  var viewMonth = selected.getMonth();
-  var selectedIso = options.value ? String(options.value).trim() : "";
-  var pop = ensurePopover();
-  closePopover();
-  function paint() {
-    pop.innerHTML = '<div class="rpc-date-popover__head"><button type="button" class="rpc-date-popover__nav" data-nav="-1" aria-label="Mes anterior">\u2039</button><span class="rpc-date-popover__title">' + esc5(MONTHS_ES[viewMonth] + " " + viewYear2) + '</span><button type="button" class="rpc-date-popover__nav" data-nav="1" aria-label="Mes siguiente">\u203A</button></div><div class="rpc-date-popover__weekdays">' + WEEKDAYS_ES.map(function(w) {
-      return "<span>" + w + "</span>";
-    }).join("") + '</div><div class="rpc-date-popover__grid">' + renderCalendarBody(viewYear2, viewMonth, selectedIso) + '</div><div class="rpc-date-popover__foot"><button type="button" class="rpc-date-popover__foot-btn" data-action="clear">Borrar</button><button type="button" class="rpc-date-popover__foot-btn rpc-date-popover__foot-btn--primary" data-action="today">Hoy</button></div>';
-    pop.querySelectorAll("[data-nav]").forEach(function(btn) {
-      btn.addEventListener("click", function(e) {
-        e.preventDefault();
-        var delta = Number(btn.getAttribute("data-nav"));
-        viewMonth += delta;
-        if (viewMonth < 0) {
-          viewMonth = 11;
-          viewYear2 -= 1;
-        } else if (viewMonth > 11) {
-          viewMonth = 0;
-          viewYear2 += 1;
-        }
-        paint();
-      });
-    });
-    pop.querySelectorAll(".rpc-date-popover__day[data-iso]").forEach(function(dayBtn) {
-      dayBtn.addEventListener("click", function(e) {
-        e.preventDefault();
-        var iso = dayBtn.getAttribute("data-iso") || "";
-        if (options.onSelect) options.onSelect(iso);
-        closePopover();
-      });
-    });
-    var clearBtn = pop.querySelector('[data-action="clear"]');
-    if (clearBtn) {
-      clearBtn.addEventListener("click", function(e) {
-        e.preventDefault();
-        if (options.onSelect) options.onSelect("");
-        closePopover();
-      });
-    }
-    var todayBtn = pop.querySelector('[data-action="today"]');
-    if (todayBtn) {
-      todayBtn.addEventListener("click", function(e) {
-        e.preventDefault();
-        var iso = todayIso();
-        if (options.onSelect) options.onSelect(iso);
-        closePopover();
-      });
-    }
-  }
-  paint();
-  pop.hidden = false;
-  pop.setAttribute("data-open", "1");
-  positionPopover(anchor);
-  activeClose = function() {
-    if (anchor && anchor.setAttribute) anchor.setAttribute("aria-expanded", "false");
-  };
-  if (anchor && anchor.setAttribute) anchor.setAttribute("aria-expanded", "true");
-}
-function mountRpcDateInput(input) {
-  if (!input || input.dataset.rpcDateMounted === "1") return;
-  input.dataset.rpcDateMounted = "1";
-  var wrap = document.createElement("div");
-  wrap.className = "rpc-date-field";
-  input.parentNode.insertBefore(wrap, input);
-  wrap.appendChild(input);
-  input.type = "hidden";
-  input.classList.add("rpc-date-field__value");
-  var btn = document.createElement("button");
-  btn.type = "button";
-  btn.className = "rpc-date-field__trigger profile-input";
-  btn.setAttribute("aria-haspopup", "dialog");
-  btn.setAttribute("aria-expanded", "false");
-  var label = document.createElement("span");
-  label.className = "rpc-date-field__label";
-  var icon = document.createElement("span");
-  icon.className = "rpc-date-field__icon";
-  icon.innerHTML = CALENDAR_SVG;
-  btn.appendChild(label);
-  btn.appendChild(icon);
-  wrap.insertBefore(btn, input);
-  function syncLabel() {
-    var iso = String(input.value || "").trim();
-    label.textContent = iso ? formatIsoDateDisplay(iso) : "Elegir fecha";
-    btn.classList.toggle("is-placeholder", !iso);
-  }
-  syncLabel();
-  input.addEventListener("rpc-date-refresh", syncLabel);
-  btn.addEventListener("click", function(e) {
-    e.preventDefault();
-    openRpcDatePicker(btn, {
-      value: input.value,
-      onSelect: function(iso) {
-        input.value = iso;
-        syncLabel();
-        input.dispatchEvent(new Event("input", { bubbles: true }));
-        input.dispatchEvent(new Event("change", { bubbles: true }));
-      }
-    });
-  });
-}
-function mountRpcDatetimeInput(input) {
-  if (!input || input.dataset.rpcDatetimeMounted === "1") return;
-  input.dataset.rpcDatetimeMounted = "1";
-  var wrap = document.createElement("div");
-  wrap.className = "rpc-datetime-field";
-  input.parentNode.insertBefore(wrap, input);
-  wrap.appendChild(input);
-  input.classList.add("rpc-datetime-field__native");
-  input.tabIndex = -1;
-  input.setAttribute("aria-hidden", "true");
-  var dateWrap = document.createElement("div");
-  dateWrap.className = "rpc-datetime-field__date";
-  wrap.insertBefore(dateWrap, input);
-  var dateHidden = document.createElement("input");
-  dateHidden.type = "hidden";
-  dateHidden.className = "rpc-date-field__value";
-  dateWrap.appendChild(dateHidden);
-  var timeInput = document.createElement("input");
-  timeInput.type = "time";
-  timeInput.className = "rpc-datetime-field__time profile-input";
-  timeInput.setAttribute("aria-label", "Hora");
-  wrap.appendChild(timeInput);
-  function syncLabelFromHidden() {
-    dateHidden.dispatchEvent(new Event("rpc-date-refresh"));
-  }
-  function syncFromNative() {
-    var raw = String(input.value || "");
-    var parts = raw.split("T");
-    dateHidden.value = parts[0] || "";
-    timeInput.value = (parts[1] || "").slice(0, 5);
-    syncLabelFromHidden();
-  }
-  function syncToNative() {
-    var d = String(dateHidden.value || "").trim();
-    var t2 = String(timeInput.value || "").trim() || "09:00";
-    if (!d) {
-      input.value = "";
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-      input.dispatchEvent(new Event("change", { bubbles: true }));
-      return;
-    }
-    input.value = d + "T" + t2;
-    input.dispatchEvent(new Event("input", { bubbles: true }));
-    input.dispatchEvent(new Event("change", { bubbles: true }));
-  }
-  syncFromNative();
-  mountRpcDateInput(dateHidden);
-  dateHidden.addEventListener("input", syncToNative);
-  timeInput.addEventListener("input", syncToNative);
-  input.addEventListener("rpc-datetime-sync", syncFromNative);
-}
-function refreshRpcDateFields(root) {
-  var scope = root && root.querySelectorAll ? root : document;
-  scope.querySelectorAll('input.rpc-date-input[type="date"]').forEach(function(el) {
-    mountRpcDateInput(el);
-  });
-  scope.querySelectorAll('input.rpc-datetime-input[type="datetime-local"]').forEach(function(el) {
-    mountRpcDatetimeInput(el);
-  });
-}
-var refreshTimer = 0;
-function scheduleRefresh() {
-  if (refreshTimer) return;
-  refreshTimer = window.setTimeout(function() {
-    refreshTimer = 0;
-    refreshRpcDateFields(document);
-  }, 0);
-}
-function initRpcDatePicker() {
-  ensurePopover();
-  refreshRpcDateFields(document);
-  document.addEventListener(
-    "click",
-    function(e) {
-      if (!popoverEl || popoverEl.hidden) return;
-      var t2 = e.target;
-      if (!(t2 instanceof Element)) return;
-      if (popoverEl.contains(t2) || t2.closest(".rpc-date-field__trigger")) return;
-      closePopover();
-    },
-    true
-  );
-  window.addEventListener("resize", function() {
-    if (popoverEl && !popoverEl.hidden) closePopover();
-  });
-  var obs = new MutationObserver(scheduleRefresh);
-  obs.observe(document.body, { childList: true, subtree: true });
-}
-
-// public/js/patient-data-accesos-ui.mjs
-function esc6(s) {
-  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
-function activePatient(patientId) {
-  return patients.find(function(p) {
-    return String(p.id) === String(patientId);
-  });
-}
-function accesoRows(patient) {
-  ensurePatientAccesos(patient);
-  var list = (patient.accesosList || []).slice();
-  return list.length ? list : [{ via: "", fecha: "" }];
-}
-function viaSelectHtml(index, via) {
-  var v = String(via || "");
-  return '<select class="ea-input patient-acceso-via" onchange="onPatientAccesoVia(' + index + ',this.value)" aria-label="V\xEDa de acceso"><option value=""' + (!v ? " selected" : "") + '>\u2014 V\xEDa \u2014</option><option value="periferica"' + (v === "periferica" ? " selected" : "") + '>EV perif\xE9rica</option><option value="cvc"' + (v === "cvc" ? " selected" : "") + '>CVC / cat\xE9ter central</option><option value="picc"' + (v === "picc" ? " selected" : "") + ">PICC</option></select>";
-}
-function renderAccesosListHtml(patient) {
-  var rows = accesoRows(patient);
-  return rows.map(function(row, i) {
-    var canRemove = rows.length > 1;
-    return '<div class="patient-acceso-row list-row"><div class="field-group" style="margin:0;">' + viaSelectHtml(i, row.via) + '</div><div class="field-group" style="margin:0;"><input type="date" class="rpc-date-input patient-acceso-fecha" value="' + esc6(accesoFechaToDateInputValue(row.fecha)) + '" oninput="onPatientAccesoFecha(' + i + ',this.value)" aria-label="Fecha acceso"></div><button type="button" class="btn-remove" onclick="removePatientAccesoRow(' + i + ')"' + (canRemove ? "" : ' style="visibility:hidden"') + ' aria-label="Quitar acceso">\xD7</button></div>';
-  }).join("");
-}
-function buildPatientAccesosSectionHtml(patient) {
-  ensurePatientAccesos(patient);
-  return '<div class="patient-accesos-block"><div class="vpo-toolbar" style="margin-top:2px;"><span class="ea-label" style="flex:1;">Accesos</span><button type="button" class="btn-add-row" onclick="addPatientAccesoRow()">+ Agregar acceso</button></div><div class="patient-accesos-list" id="patient-accesos-list">' + renderAccesosListHtml(patient) + "</div></div>";
-}
-function refreshAccesosListDom(patientId) {
-  var patient = activePatient(patientId);
-  var listEl = document.getElementById("patient-accesos-list");
-  if (!patient || !listEl) return;
-  listEl.innerHTML = renderAccesosListHtml(patient);
-  refreshRpcDateFields(listEl);
-}
-function currentPatientId() {
-  var wrap = document.getElementById("patient-data-form");
-  return wrap && wrap.dataset.patientId ? wrap.dataset.patientId : null;
-}
-function touchAccesos(patient, mutator) {
-  if (!patient) return;
-  ensurePatientAccesos(patient);
-  mutator(patient);
-  syncLegacyAccesoFields(patient);
-  saveState();
-}
-function onPatientAccesoVia(index, value) {
-  var pid = currentPatientId();
-  var patient = activePatient(pid);
-  if (!patient) return;
-  touchAccesos(patient, function(p) {
-    p.accesosList[index].via = String(value || "").trim();
-  });
-}
-function onPatientAccesoFecha(index, value) {
-  var pid = currentPatientId();
-  var patient = activePatient(pid);
-  if (!patient) return;
-  touchAccesos(patient, function(p) {
-    p.accesosList[index].fecha = String(value || "").trim();
-  });
-}
-function addPatientAccesoRow() {
-  var pid = currentPatientId();
-  var patient = activePatient(pid);
-  if (!patient) return;
-  touchAccesos(patient, function(p) {
-    p.accesosList.push({ via: "", fecha: "" });
-  });
-  refreshAccesosListDom(pid);
-}
-function removePatientAccesoRow(index) {
-  var pid = currentPatientId();
-  var patient = activePatient(pid);
-  if (!patient || !Array.isArray(patient.accesosList)) return;
-  if (patient.accesosList.length <= 1) return;
-  touchAccesos(patient, function(p) {
-    p.accesosList.splice(index, 1);
-    ensurePatientAccesos(p);
-  });
-  refreshAccesosListDom(pid);
-}
-var patientDataAccesosWindowHandlers = {
-  onPatientAccesoVia,
-  onPatientAccesoFecha,
-  addPatientAccesoRow,
-  removePatientAccesoRow
-};
-
-// public/js/censo-header-format.mjs
-var CENSO_UBICACION_TORRE = "torre";
-var CENSO_TORRE_HU_LABEL = "Torre HU";
-var DEFAULT_CENSO_FIMI_LABEL = "FIMI";
-function resolveCensoFimiLabel(settings2) {
-  return String(settings2?.censoFimiLabel || "").trim() || DEFAULT_CENSO_FIMI_LABEL;
-}
-function medTpl(settings2) {
-  var tpl = settings2 && settings2.medicosPlantilla;
-  return tpl && typeof tpl === "object" ? (
-    /** @type {Record<string, string>} */
-    tpl
-  ) : {};
-}
-function pick(v) {
-  return String(v || "").trim();
-}
-function normalizeCensoUbicacionValue(settings2) {
-  var st = settings2 || {};
-  var sala = pick(st.censoSala);
-  if (sala) {
-    if (/^torre/i.test(sala) || sala === CENSO_UBICACION_TORRE) return CENSO_UBICACION_TORRE;
-    return sala;
-  }
-  if (pick(st.censoTorre)) return CENSO_UBICACION_TORRE;
-  return "";
-}
-function formatCensoSalaTitleLine(settings2) {
-  var ubic = normalizeCensoUbicacionValue(settings2);
-  if (ubic === CENSO_UBICACION_TORRE) return "Censo de " + CENSO_TORRE_HU_LABEL;
-  if (ubic) return "Censo de Sala " + ubic;
-  return "Censo de Sala";
-}
-function resolveCensoEquipoMembers(settings2) {
-  var st = settings2 || {};
-  var tpl = medTpl(st);
-  var legacyR1 = pick(st.residenteR1);
-  return {
-    r2: pick(st.residenteR2) || pick(tpl.r2),
-    r1a: pick(st.residenteR1a) || pick(tpl.r1a) || legacyR1,
-    r1b: pick(st.residenteR1b) || pick(tpl.r1b),
-    maestro: pick(st.profesorName) || pick(tpl.profesor)
-  };
-}
-function formatCensoEquipoLine(settings2) {
-  var m = resolveCensoEquipoMembers(settings2);
-  return [m.r2, m.r1a, m.r1b, m.maestro].filter(Boolean).join(" \xB7 ");
-}
-function buildCensoDocumentHeader(settings2) {
-  var ubic = normalizeCensoUbicacionValue(settings2);
-  var isTorre = ubic === CENSO_UBICACION_TORRE;
-  return {
-    titleLine: formatCensoSalaTitleLine(settings2),
-    equipoLine: formatCensoEquipoLine(settings2),
-    ubicacion: isTorre ? CENSO_TORRE_HU_LABEL : ubic,
-    sala: isTorre ? "" : ubic,
-    torre: isTorre ? CENSO_TORRE_HU_LABEL : ""
-  };
-}
-
-// public/js/patient-data-ingreso-ui.mjs
-function esc7(s) {
-  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
-function buildPatientIngresoFechasHtml(patient, settings2) {
-  var fimiLabel = resolveCensoFimiLabel(settings2 || {});
-  return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><div class="field-group"><label>FIUX (urgencias)</label><input type="date" class="rpc-date-input" value="' + esc7(accesoFechaToDateInputValue(patient.fiuxFecha)) + `" oninput="updatePatient('fiuxFecha',this.value)" aria-label="FIUX ingreso urgencias"></div><div class="field-group"><label>` + esc7(fimiLabel) + ' (servicio)</label><input type="date" class="rpc-date-input" value="' + esc7(accesoFechaToDateInputValue(patient.fimiFecha)) + `" oninput="updatePatient('fimiFecha',this.value)" aria-label="` + esc7(fimiLabel) + ' ingreso servicio"></div></div>';
-}
-
-// public/js/censo-meds-format.mjs
-function medTitle(nombreRaw) {
-  var s = String(nombreRaw || "").trim();
-  if (!s) return "";
-  s = s.replace(/\s*\([^)]*\)\s*$/, "").trim();
-  var chunk = (s.split(/\s+(?=\d)/)[0] || "").trim();
-  return (chunk || s).slice(0, 80).toUpperCase();
-}
-function formatDia(diaTratamiento) {
-  if (diaTratamiento == null || diaTratamiento === "") return "";
-  var n = Number(diaTratamiento);
-  if (!Number.isFinite(n) || n < 0) return "";
-  return "D\xEDa " + String(Math.floor(n));
-}
-function formatCensoMedsFromReceta(block) {
-  if (!block || !Array.isArray(block.items)) return "";
-  var lines = [];
-  block.items.forEach(function(it) {
-    if (!it || it.suspendido) return;
-    var name = medTitle(it.nombreRaw);
-    if (!name) return;
-    var dia = formatDia(it.diaTratamiento);
-    lines.push(dia ? name + " \xB7 " + dia : name);
-  });
-  return lines.join("\n");
-}
-
-// public/js/patient-data-censo-ui.mjs
-function esc8(s) {
-  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
-function activePatient2(patientId) {
-  return patients.find(function(p) {
-    return String(p.id) === String(patientId);
-  });
-}
-function dxRows(patient) {
-  var list = (patient.diagnosticosList || []).slice();
-  return list.length ? list : [""];
-}
-function renderDxListHtml(patient) {
-  var rows = dxRows(patient);
-  return rows.map(function(dx, i) {
-    var canRemove = rows.length > 1;
-    return '<div class="vpo-dx-row list-row"><input type="text" class="ea-input" value="' + esc8(dx) + '" placeholder="Diagn\xF3stico ' + (i + 1) + '" oninput="onPatientDxInput(' + i + ', this.value)" style="text-transform:uppercase;"><button type="button" class="btn-remove" onclick="removePatientDxRow(' + i + ')"' + (canRemove ? "" : ' style="visibility:hidden"') + ' aria-label="Eliminar">\xD7</button></div>';
-  }).join("");
-}
-function buildPatientCensoDatosSectionsHtml(patient) {
-  migratePatientDiagnosticosFromVpo(patient, vpoByPatient[patient.id]);
-  ensurePatientDiagnosticos(patient);
-  return '<div class="card" style="margin-top:10px;"><div class="card-header">Diagn\xF3sticos (censo)</div><div class="card-body"><div class="vpo-toolbar"><button type="button" class="btn-add-row" onclick="addPatientDxRow()">+ Agregar diagn\xF3stico</button></div><div class="vpo-dx-list" id="patient-dx-list">' + renderDxListHtml(patient) + '</div><div class="vpo-dx-paste" style="margin-top:8px;"><span class="ea-label">Pegar con \xAB + \xBB entre diagn\xF3sticos</span><textarea class="ea-input" id="patient-dx-paste" rows="2" placeholder="DX1 + DX2\u2026"></textarea><button type="button" class="btn-med-secondary" onclick="splitPatientDxPaste()">Separar por +</button></div></div></div><div class="card" style="margin-top:10px;"><div class="card-header">Censo \u2014 ATB / Medicamentos</div><div class="card-body"><div class="vpo-toolbar"><button type="button" class="btn-med-secondary" onclick="censoTomarDeMedicamentos()">Tomar de Medicamentos</button></div><textarea class="ea-input" id="patient-censo-meds" rows="6" placeholder="Texto para columna ATB/Meds del PDF\u2026" oninput="updatePatientCensoMeds(this.value)">' + esc8(patient.censoMedsText || "") + "</textarea></div></div>";
-}
-function refreshDxListDom(patientId) {
-  var patient = activePatient2(patientId);
-  var listEl = document.getElementById("patient-dx-list");
-  if (!patient || !listEl) return;
-  listEl.innerHTML = renderDxListHtml(patient);
-}
-function currentPatientId2() {
-  var wrap = document.getElementById("patient-data-form");
-  return wrap && wrap.dataset.patientId ? wrap.dataset.patientId : null;
-}
-function onPatientDxInput(index, value) {
-  var pid = currentPatientId2();
-  var patient = activePatient2(pid);
-  if (!patient) return;
-  if (!Array.isArray(patient.diagnosticosList)) patient.diagnosticosList = [""];
-  patient.diagnosticosList[index] = String(value || "").toUpperCase();
-  ensurePatientDiagnosticos(patient);
-  saveState();
-}
-function addPatientDxRow() {
-  var pid = currentPatientId2();
-  var patient = activePatient2(pid);
-  if (!patient) return;
-  if (!Array.isArray(patient.diagnosticosList)) patient.diagnosticosList = [""];
-  patient.diagnosticosList.push("");
-  saveState();
-  refreshDxListDom(pid);
-}
-function removePatientDxRow(index) {
-  var pid = currentPatientId2();
-  var patient = activePatient2(pid);
-  if (!patient || !Array.isArray(patient.diagnosticosList)) return;
-  if (patient.diagnosticosList.length <= 1) return;
-  patient.diagnosticosList.splice(index, 1);
-  applyPatientDiagnosticosList(patient, patient.diagnosticosList);
-  saveState();
-  refreshDxListDom(pid);
-}
-function splitPatientDxPaste() {
-  var pid = currentPatientId2();
-  var patient = activePatient2(pid);
-  var ta = document.getElementById("patient-dx-paste");
-  if (!patient || !ta) return;
-  var parsed = parseDiagnosticosText(ta.value);
-  if (!parsed.length) return;
-  applyPatientDiagnosticosList(patient, parsed.concat([""]));
-  saveState();
-  refreshDxListDom(pid);
-}
-function updatePatientCensoMeds(value) {
-  var pid = currentPatientId2();
-  var patient = activePatient2(pid);
-  if (!patient) return;
-  patient.censoMedsText = String(value || "");
-  saveState();
-}
-function censoTomarDeMedicamentos() {
-  var pid = currentPatientId2();
-  var patient = activePatient2(pid);
-  if (!patient) return;
-  var text = formatCensoMedsFromReceta(medRecetaByPatient[pid]);
-  patient.censoMedsText = text;
-  var ta = document.getElementById("patient-censo-meds");
-  if (ta) ta.value = text;
-  saveState();
-}
-var patientDataCensoWindowHandlers = {
-  onPatientDxInput,
-  addPatientDxRow,
-  removePatientDxRow,
-  splitPatientDxPaste,
-  updatePatientCensoMeds,
-  censoTomarDeMedicamentos
-};
-
-// public/js/listado-problemas-ai-prompt.mjs
-var LISTADO_PROBLEMAS_AI_PROMPT = `prompt:
-LISTADO DE PROBLEMAS
-CON BASE EN TODOS LOS DATOS CL\xCDNICOS PROPORCIONADOS, GENERA UN LISTADO DE
-PROBLEMAS DIVIDIDO EN ACTIVOS E INACTIVOS. S\xC9 CONCISO. EL OUTPUT COMPLETO
-NO DEBE EXCEDER DOS HOJAS.
-
---- PROBLEMAS ACTIVOS ---
-(INCLUYE: DIAGN\xD3STICO PRINCIPAL, ENFERMEDADES DE BASE, COMPLICACIONES ACTIVAS,
-CONDICIONES EN CURSO)
-
-PROBLEMA X: [NOMBRE] \u2192 [ESCALA/CLASIFICACI\xD3N/ESTADIO SI APLICA]
-A) CL\xCDNICA: [S\xCDNTOMAS RELEVANTES]
-B) EXPLORACI\xD3N F\xCDSICA: [HALLAZGOS PERTINENTES]
-C) PARACL\xCDNICA: [SOLO RESULTADOS ALTERADOS CON VALOR E INTERPRETACI\xD3N]
-D) IMAGEN: [HALLAZGO RELEVANTE]
-
---- PROBLEMAS INACTIVOS ---
-(INCLUYE: ANTECEDENTES RESUELTOS, TABAQUISMO/ALCOHOLISMO SUSPENDIDO,
-CIRUG\xCDAS PREVIAS, ENFERMEDADES YA RESUELTAS)
-
-PROBLEMA X: [NOMBRE]
-A) [DESCRIPCI\xD3N BREVE DEL ANTECEDENTE]
-
-REGLAS DE FORMATO:
-
-SI UN INCISO NO APLICA O NO HAY DATOS, OMITIRLO COMPLETAMENTE.
-EJEMPLO: SI NO HAY IMAGEN, NO PONER D). SI NO HAY PARACL\xCDNICA ALTERADA,
-NO PONER C).
-SOLO RESULTADOS ALTERADOS EN PARACL\xCDNICA, NUNCA VALORES NORMALES.
-EL PROBLEMA 1 ACTIVO SIEMPRE ES EL DIAGN\xD3STICO PRINCIPAL.
-SI HAY GASOMETR\xCDA: CALCULAR ANI\xD3N GAP, WINTERS Y ESTADO DE COMPENSACI\xD3N
-DENTRO DEL INCISO C) DEL PROBLEMA CORRESPONDIENTE.
-AL FINAL INDICAR "DIAGN\xD3STICOS A CONFIRMAR:" SI ALGUNO ES DUDOSO.
-SIN TRATAMIENTO, SIN MANEJO, SIN TEXTO INNECESARIO.
-TODO EN MAY\xDASCULAS.
-REGLAS DE AGRUPACI\xD3N:
-
-NO SEPARAR LO QUE ES PARTE DEL MISMO PROCESO CL\xCDNICO. SI UN HALLAZGO ES
-CONSECUENCIA DIRECTA Y ESPERABLE DEL PROBLEMA PRINCIPAL, VA DENTRO DE ESE
-PROBLEMA EN EL INCISO CORRESPONDIENTE, NO COMO PROBLEMA APARTE.
-EJEMPLO: NEUMON\xCDA CON HIPOXEMIA \u2192 LA HIPOXEMIA VA DENTRO DE LA NEUMON\xCDA.
-SOLO SEPARAR COMO PROBLEMA DISTINTO SI TIENE ENTIDAD PROPIA, MANEJO
-INDEPENDIENTE O ETIOLOG\xCDA DIFERENTE.
-INTENTAR LIGAR CADA PROBLEMA AL PRINCIPAL. SI NO SE PUEDE, LISTARLO COMO
-PROBLEMA SEPARADO SIN ETIQUETA ADICIONAL.
-REGLAS DE ETIOLOG\xCDA:
-
-CORRELACIONAR SIEMPRE LA ETIOLOG\xCDA CON EL PERFIL DEL PACIENTE: EDAD, SEXO,
-ANTECEDENTES Y CONTEXTO CL\xCDNICO.
-SI LA ETIOLOG\xCDA NO ENCAJA CON EL PERFIL, NO ASIGNARLA. MARCARLA COMO
-"ETIOLOG\xCDA A DETERMINAR" Y LISTAR ALTERNATIVAS DIAGN\xD3STICAS PERTINENTES.
-EJEMPLO: BLOQUEO AV TERCER GRADO EN PACIENTE DE 45 A\xD1OS \u2192 NO ASUMIR
-DEGENERATIVO. CONSIDERAR: LYME, SARCOIDOSIS, MIOCARDITIS, ISQUEMIA,
-F\xC1RMACOS, CHAGAS.
-ESTA REGLA APLICA TAMBI\xC9N EN PLANES INICIALES.
-PLANES INICIALES
-REDACTAR UN P\xC1RRAFO ESTRUCTURADO POR CADA UNO DE LOS SIGUIENTES EJES, TODO EN
-MAY\xDASCULAS, SIN INVENTAR DATOS, BAS\xC1NDOSE \xDANICAMENTE EN LO MENCIONADO EN EL
-INTERROGATORIO Y EXPEDIENTE. CADA EJE DEBE SER CONSISTENTE CON LOS PROBLEMAS
-ACTIVOS E INACTIVOS YA IDENTIFICADOS EN EL LISTADO DE PROBLEMAS, SIN
-CONTRADICCIONES NI REPETICIONES INNECESARIAS:
-
-EXPLICAR LA CAUSA DE BASE DE LA ENFERMEDAD
-PRINCIPAL Y EL MECANISMO FISIOPATOL\xD3GICO QUE LLEV\xD3 AL CUADRO ACTUAL,
-REFERENCIANDO LOS PROBLEMAS ACTIVOS CORRESPONDIENTES.
-
-DESCRIBIR LOS ELEMENTOS CL\xCDNICOS, BIOQU\xCDMICOS, RADIOL\xD3GICOS
-Y/O PATOL\xD3GICOS QUE SUSTENTAN EL DIAGN\xD3STICO PRINCIPAL Y LOS DIAGN\xD3STICOS
-ASOCIADOS, SIENDO CONSISTENTE CON LA CLASIFICACI\xD3N Y ESTADIO YA ESTABLECIDOS
-EN EL LISTADO DE PROBLEMAS.
-
-DETALLAR EL TRATAMIENTO INSTAURADO EN EL SERVICIO, INCLUYENDO PROCEDIMIENTOS REALIZADOS, ESQUEMAS FARMACOL\xD3GICOS Y RESPUESTA CL\xCDNICA DOCUMENTADA.
-
-ESTABLECER EL PRON\xD3STICO PARA LA FUNCI\xD3N DEL \xD3RGANO O SISTEMA AFECTADO PRINCIPAL Y EL PRON\xD3STICO VITAL, VINCUL\xC1NDOLO A LAS CONDICIONES CL\xCDNICAS ACTUALES, COMPLICACIONES POTENCIALES Y PROBLEMAS ACTIVOS IDENTIFICADOS.`;
-
-// public/js/deferred-work.mjs
-var idleGeneration = 0;
-function cancelDeferredIdleWork() {
-  idleGeneration += 1;
-  return idleGeneration;
-}
-function scheduleAfterPaint(fn) {
-  if (typeof fn !== "function") return;
-  if (typeof requestAnimationFrame === "function") {
-    requestAnimationFrame(function() {
-      requestAnimationFrame(fn);
-    });
-    return;
-  }
-  setTimeout(fn, 0);
-}
-function scheduleIdle(fn, timeoutMs) {
-  if (typeof fn !== "function") return;
-  const gen = idleGeneration;
-  const timeout = timeoutMs == null ? 150 : timeoutMs;
-  const run = function() {
-    if (gen !== idleGeneration) return;
-    fn();
-  };
-  if (typeof requestIdleCallback === "function") {
-    requestIdleCallback(run, { timeout });
-    return;
-  }
-  setTimeout(run, 0);
 }
 
 // public/js/lan-client.mjs
@@ -17688,6 +16307,7 @@ function collectKeysFromEnvelope(envelope) {
     }
   }
   if (envelope.manejo && typeof envelope.manejo === "object") keys.add("manejo");
+  if (envelope.clinicalOps && typeof envelope.clinicalOps === "object") keys.add("clinicalOps");
   return keys;
 }
 function buildBaseEntityVersionsForEnvelope(envelope, serverEntityVersions) {
@@ -17707,8 +16327,55 @@ function hostBundlePutBodyFromEnvelope(roomId, envelope) {
     agenda: envelope.agenda || [],
     todos: envelope.todos || {},
     entries: envelope.entries || [],
-    manejo: envelope.manejo != null ? envelope.manejo : null
+    manejo: envelope.manejo != null ? envelope.manejo : null,
+    clinicalOps: envelope.clinicalOps != null ? envelope.clinicalOps : null
   };
+}
+
+// public/js/clinical-ops-lan.mjs
+var cachedSnapshot = null;
+function dbApi2() {
+  return typeof window !== "undefined" ? window.electronAPI : null;
+}
+function isClinicalOpsLanAvailable() {
+  const api3 = dbApi2();
+  return !!(api3 && typeof api3.dbClinicalOpsExport === "function" && typeof api3.dbClinicalOpsMerge === "function");
+}
+async function refreshClinicalOpsSnapshotCache() {
+  cachedSnapshot = await collectClinicalOpsForLanSync();
+  return cachedSnapshot;
+}
+function getCachedClinicalOpsSnapshot() {
+  return cachedSnapshot;
+}
+async function collectClinicalOpsForLanSync() {
+  const api3 = dbApi2();
+  if (!api3 || typeof api3.dbClinicalOpsExport !== "function") return null;
+  const res = await api3.dbClinicalOpsExport();
+  if (!res || res.ok === false) return null;
+  return res.snapshot && typeof res.snapshot === "object" ? res.snapshot : null;
+}
+async function applyClinicalOpsLanSnapshot(snapshot) {
+  if (!snapshot || typeof snapshot !== "object") return false;
+  const api3 = dbApi2();
+  if (!api3 || typeof api3.dbClinicalOpsMerge !== "function") return false;
+  const res = await api3.dbClinicalOpsMerge({ snapshot });
+  return !!(res && res.ok !== false);
+}
+function mergeClinicalOpsFromSources(sources) {
+  let winner = null;
+  for (const src of sources || []) {
+    const snap = src && src.clinicalOps;
+    if (!snap || typeof snap !== "object") continue;
+    if (!winner) {
+      winner = snap;
+      continue;
+    }
+    const a = String(snap.exportedAt || "");
+    const b = String(winner.exportedAt || "");
+    if (a > b) winner = snap;
+  }
+  return winner;
 }
 
 // public/js/lan-surrogate-host.mjs
@@ -17907,7 +16574,7 @@ function registerLanRuntime(partial) {
   Object.assign(runtime2, partial);
   void initLanHostPlugAndPlay();
 }
-function esc9(s) {
+function esc5(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 var lanClient = new LanClient();
@@ -18120,8 +16787,8 @@ function updateLanPairingDisplay(root) {
   }
   box.hidden = false;
   var p = _lastLanPairing;
-  var joinLine = p.joinUrl ? '<div><strong>Enlace:</strong> <code style="word-break:break-all;">' + esc9(p.joinUrl) + "</code></div>" : "";
-  box.innerHTML = '<p style="margin:0 0 6px;font-size:12px;color:var(--text-muted);">Comparte el PIN o el enlace (v\xE1lido unos minutos, un solo uso):</p><div><strong>PIN:</strong> <code>' + esc9(p.pin) + "</code></div><div><strong>Ticket:</strong> <code>" + esc9(p.ticketId) + "</code></div>" + joinLine;
+  var joinLine = p.joinUrl ? '<div><strong>Enlace:</strong> <code style="word-break:break-all;">' + esc5(p.joinUrl) + "</code></div>" : "";
+  box.innerHTML = '<p style="margin:0 0 6px;font-size:12px;color:var(--text-muted);">Comparte el PIN o el enlace (v\xE1lido unos minutos, un solo uso):</p><div><strong>PIN:</strong> <code>' + esc5(p.pin) + "</code></div><div><strong>Ticket:</strong> <code>" + esc5(p.ticketId) + "</code></div>" + joinLine;
 }
 async function mintLanPairingFromUi() {
   try {
@@ -18600,7 +17267,8 @@ async function applyRoomBundleServerChoice(draft2) {
           agenda: bundle.agenda || [],
           todos: bundle.todos || {},
           entries: bundle.entries || [],
-          manejo: bundle.manejo
+          manejo: bundle.manejo,
+          clinicalOps: bundle.clinicalOps
         }
       ])
     );
@@ -19264,6 +17932,7 @@ function mergeLiveSyncFullBundles(sources) {
   entries = filterEntriesByPatientDeletes(entries, base.patientDeletes || []);
   base.entries = attachTodosMapToPatientEntries(entries, base.todos);
   base.manejo = mergeManejoFromSources(sources);
+  base.clinicalOps = mergeClinicalOpsFromSources(sources);
   return base;
 }
 function touchPatientLanUpdatedAt(patientId) {
@@ -19501,6 +18170,14 @@ function applyLiveSyncMerged(merged) {
   if (merged.manejo) {
     applyManejoRoomDataToLocal(merged.manejo);
   }
+  if (merged.clinicalOps && isClinicalOpsLanAvailable()) {
+    void applyClinicalOpsLanSnapshot(merged.clinicalOps).then(function(ok) {
+      if (ok) {
+        void refreshClinicalOpsSnapshotCache();
+        document.dispatchEvent(new CustomEvent("rpc-clinical-ops-synced"));
+      }
+    });
+  }
 }
 function liveSyncBundleHasPayload(bundle) {
   if (!bundle) return false;
@@ -19517,6 +18194,12 @@ function liveSyncBundleHasPayload(bundle) {
     if (Array.isArray(manejo.customProtocols) && manejo.customProtocols.length > 0) return true;
     if (manejo.overrides && Object.keys(manejo.overrides).length > 0) return true;
     if (Array.isArray(manejo.favorites) && manejo.favorites.length > 0) return true;
+  }
+  var clinicalOps = bundle.clinicalOps;
+  if (clinicalOps && typeof clinicalOps === "object") {
+    if (Array.isArray(clinicalOps.rotation_cycles) && clinicalOps.rotation_cycles.length > 0 || Array.isArray(clinicalOps.patient_team_assignment) && clinicalOps.patient_team_assignment.length > 0 || Array.isArray(clinicalOps.team_guardia_today) && clinicalOps.team_guardia_today.length > 0 || Array.isArray(clinicalOps.active_guardias) && clinicalOps.active_guardias.length > 0) {
+      return true;
+    }
   }
   return false;
 }
@@ -19702,7 +18385,8 @@ function saveLocalRoomSnapshot(roomId) {
     agenda: snap.agenda,
     todos: snap.todos,
     entries,
-    manejo: collectManejoRoomPayload()
+    manejo: collectManejoRoomPayload(),
+    clinicalOps: getCachedClinicalOpsSnapshot()
   });
 }
 function buildLiveSyncBundleEnvelope(roomId) {
@@ -19719,7 +18403,8 @@ function buildLiveSyncBundleEnvelope(roomId) {
     agenda: snap.agenda,
     todos: snap.todos,
     entries,
-    manejo: collectManejoRoomPayload()
+    manejo: collectManejoRoomPayload(),
+    clinicalOps: getCachedClinicalOpsSnapshot()
   };
 }
 function scheduleLiveSyncPush() {
@@ -19730,19 +18415,24 @@ function scheduleLiveSyncPush() {
     _liveSyncPushTimer = null;
     var roomId = activeLiveSyncRoomId;
     if (!roomId) return;
-    var bundle = buildLiveSyncBundleEnvelope(roomId);
-    if (lanClient.liveConnected) {
-      try {
-        lanClient.sendLive(bundle);
-      } catch (_e) {
+    void (async function() {
+      if (isClinicalOpsLanAvailable()) {
+        await refreshClinicalOpsSnapshotCache();
       }
-    }
-    saveLocalRoomSnapshot(roomId);
-    if (isLanSessionConfiguredForRest()) {
-      pushRoomSyncBundleToHost(roomId, bundle).then(function(ok) {
-        if (!ok) enqueueOutbox(roomId, { kind: "bundle", payload: bundle });
-      });
-    }
+      var bundle = buildLiveSyncBundleEnvelope(roomId);
+      if (lanClient.liveConnected) {
+        try {
+          lanClient.sendLive(bundle);
+        } catch (_e) {
+        }
+      }
+      saveLocalRoomSnapshot(roomId);
+      if (isLanSessionConfiguredForRest()) {
+        pushRoomSyncBundleToHost(roomId, bundle).then(function(ok) {
+          if (!ok) enqueueOutbox(roomId, { kind: "bundle", payload: bundle });
+        });
+      }
+    })();
   }, LIVE_SYNC_PUSH_DEBOUNCE_MS);
 }
 function syncLiveSyncStatusChrome() {
@@ -20278,7 +18968,7 @@ async function renderLanPanelOnce() {
   var topRow = document.createElement("p");
   topRow.className = "lan-connect-card-hint";
   topRow.style.marginBottom = "10px";
-  topRow.innerHTML = "<strong>Direcci\xF3n:</strong> " + esc9(lanClient.baseUrl());
+  topRow.innerHTML = "<strong>Direcci\xF3n:</strong> " + esc5(lanClient.baseUrl());
   statusCard.appendChild(topRow);
   var liveStatus = document.createElement("p");
   liveStatus.id = "lan-livesync-status";
@@ -20409,7 +19099,7 @@ async function renderLanPanelOnce() {
         if (rawBody) detail = rawBody.replace(/\s+/g, " ").trim().slice(0, 200);
       }
       var hint500 = detail && /team code mismatch|host file/i.test(detail) ? " El archivo <code>lan-squad-host-state.json</code> se cre\xF3 con <strong>otro</strong> c\xF3digo: o vuelves al c\xF3digo anterior, o (solo si puedes perder salas/pacientes LAN de prueba en ese archivo) cierra R+, borra ese JSON en datos de la app y vuelve a abrir para regenerarlo con el c\xF3digo actual." : "";
-      errHttp.innerHTML = "<strong>HTTP " + esc9(String(roomsFetch.httpStatus)) + "</strong>" + (detail ? ": " + esc9(detail) : ".") + (hint500 ? hint500 : " Comprueba la URL del anfitri\xF3n y que R+ siga abierto en esa m\xE1quina.");
+      errHttp.innerHTML = "<strong>HTTP " + esc5(String(roomsFetch.httpStatus)) + "</strong>" + (detail ? ": " + esc5(detail) : ".") + (hint500 ? hint500 : " Comprueba la URL del anfitri\xF3n y que R+ siga abierto en esa m\xE1quina.");
     }
     roomsCard.appendChild(errHttp);
   } else if (!roomsFetch.rooms.length) {
@@ -20998,6 +19688,1403 @@ var windowHandlers6 = {
   deleteLanRoom,
   copyLanInviteLinkFromUi
 };
+
+// public/js/features/clinical-teams.mjs
+var CLINICAL_TEAM_SERVICES = [
+  "Sala",
+  "Interconsulta",
+  "Eme",
+  "Torre HU",
+  "UX",
+  "\xC1rea A"
+];
+var ON_CALL_DAY_LABELS = [
+  "Domingo (0)",
+  "Lunes (1)",
+  "Martes (2)",
+  "Mi\xE9rcoles (3)",
+  "Jueves (4)",
+  "Viernes (5)",
+  "S\xE1bado (6)"
+];
+function dbApi3() {
+  if (typeof window === "undefined") return null;
+  return window.rplusDb || window.electronAPI || null;
+}
+function toast2(msg, type = "info") {
+  if (typeof window !== "undefined" && typeof window.showToast === "function") {
+    window.showToast(msg, type);
+  }
+}
+function escapeHtml2(s) {
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function escapeAttr2(s) {
+  return escapeHtml2(s).replace(/"/g, "&quot;");
+}
+function currentUserId() {
+  return String(clinicalSessionContext.user?.user_id || "");
+}
+function filterJoinedTeams(teams, userId) {
+  const uid = String(userId || "");
+  if (!uid) return [];
+  return (teams || []).filter(
+    (team) => (team.members || []).some((m) => String(m.user_id) === uid)
+  );
+}
+function teamsModalEl() {
+  return document.getElementById("clinical-teams-backdrop");
+}
+function openClinicalTeamsPanel() {
+  const bd = teamsModalEl();
+  if (!bd) return;
+  bd.classList.add("open");
+  bd.setAttribute("aria-hidden", "false");
+  void renderClinicalTeamsPanel();
+  const nameInput = document.getElementById("clinical-team-create-name");
+  if (nameInput) nameInput.focus();
+}
+function closeClinicalTeamsPanel() {
+  const bd = teamsModalEl();
+  if (!bd) return;
+  bd.classList.remove("open");
+  bd.setAttribute("aria-hidden", "true");
+}
+function renderCreateTeamForm() {
+  const serviceOptions = CLINICAL_TEAM_SERVICES.map(
+    (svc) => `<option value="${escapeAttr2(svc)}">${escapeHtml2(svc)}</option>`
+  ).join("");
+  const dayOptions = ON_CALL_DAY_LABELS.map(
+    (label, idx) => `<option value="${idx}">${escapeHtml2(label)}</option>`
+  ).join("");
+  return `
+    <section class="clinical-teams-section">
+      <h4 class="clinical-teams-section-title">Crear equipo</h4>
+      <form id="clinical-team-create-form" class="clinical-teams-create-form">
+        <div class="field-group">
+          <label for="clinical-team-create-name">Nombre</label>
+          <input id="clinical-team-create-name" type="text" class="profile-input" placeholder="Sala A \xB7 Equipo noche" required>
+        </div>
+        <div class="field-group">
+          <label for="clinical-team-create-service">Servicio</label>
+          <select id="clinical-team-create-service" class="profile-input" required>${serviceOptions}</select>
+        </div>
+        <div class="field-group">
+          <label for="clinical-team-create-fraction">Fracci\xF3n de sub-\xE1rea (opcional)</label>
+          <input id="clinical-team-create-fraction" type="text" class="profile-input" placeholder="A1, A2\u2026" maxlength="16">
+        </div>
+        <div class="field-group">
+          <label for="clinical-team-create-day">D\xEDa de guardia (0\u20136)</label>
+          <select id="clinical-team-create-day" class="profile-input" required>${dayOptions}</select>
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="btn-save">Crear equipo</button>
+        </div>
+      </form>
+    </section>`;
+}
+function renderJoinedTeamCard(team, userId) {
+  const teamId = String(team.team_id || "");
+  const guardia = team.guardia_today || null;
+  const isGuardia = guardia && String(guardia.user_id) === userId;
+  const members = Array.isArray(team.members) ? team.members : [];
+  const memberList = members.length ? members.map(
+    (m) => `<li><span class="clinical-teams-member-name">${escapeHtml2(m.username || m.user_id)}</span> <span class="clinical-teams-member-rank">${escapeHtml2(m.rank || "")}</span></li>`
+  ).join("") : '<li class="clinical-teams-empty">Sin miembros</li>';
+  const meta = [
+    escapeHtml2(team.service || ""),
+    team.sub_area_fraction ? escapeHtml2(team.sub_area_fraction) : null,
+    `d\xEDa ${Number(team.on_call_day_index ?? 0)}`
+  ].filter(Boolean).join(" \xB7 ");
+  const guardiaLabel = guardia && !isGuardia ? ` (declarado: ${escapeHtml2(members.find((m) => String(m.user_id) === String(guardia.user_id))?.username || guardia.user_id)})` : "";
+  return `
+    <article class="clinical-teams-card" data-team-id="${escapeAttr2(teamId)}">
+      <header class="clinical-teams-card-head">
+        <div>
+          <h5 class="clinical-teams-card-title">${escapeHtml2(team.name || "Equipo")}</h5>
+          <p class="clinical-teams-card-meta">${meta}</p>
+        </div>
+        <label class="clinical-teams-guardia-label">
+          <input type="checkbox" class="clinical-teams-guardia-check" data-team-id="${escapeAttr2(teamId)}" ${isGuardia ? "checked" : ""}>
+          <span>Guardia${guardiaLabel}</span>
+        </label>
+      </header>
+      <ul class="clinical-teams-member-list">${memberList}</ul>
+      <form class="clinical-teams-add-member-form" data-team-id="${escapeAttr2(teamId)}">
+        <input type="text" class="profile-input clinical-teams-add-member-input" placeholder="Usuario LAN / username" required aria-label="Agregar miembro por username">
+        <button type="submit" class="btn-med-secondary">Agregar</button>
+      </form>
+    </article>`;
+}
+async function renderClinicalTeamsPanel() {
+  const host = document.getElementById("clinical-teams-panel-body");
+  if (!host) return;
+  const userId = currentUserId();
+  if (!userId) {
+    host.innerHTML = '<p class="clinical-teams-lead">Activa la sesi\xF3n cl\xEDnica para gestionar equipos.</p>';
+    return;
+  }
+  await fetchClinicalTeamsFromDb();
+  const joined = filterJoinedTeams(clinicalSessionContext.teams, userId);
+  const joinedHtml = joined.length ? joined.map((team) => renderJoinedTeamCard(team, userId)).join("") : '<p class="clinical-teams-empty">A\xFAn no perteneces a ning\xFAn equipo. Crea uno abajo.</p>';
+  host.innerHTML = `
+    <p class="clinical-teams-lead">Administra tus equipos de rotaci\xF3n y declara <strong>Guardia</strong> (on-call hoy) por equipo. Distinto del bloque Equipo del perfil (solo PDF).</p>
+    <section class="clinical-teams-section">
+      <h4 class="clinical-teams-section-title">Mis equipos</h4>
+      <div class="clinical-teams-list">${joinedHtml}</div>
+    </section>
+    ${renderCreateTeamForm()}`;
+  wireClinicalTeamsPanelInteractions();
+}
+function wireClinicalTeamsPanelInteractions() {
+  const createForm = document.getElementById("clinical-team-create-form");
+  if (createForm && !createForm._rpcTeamsCreateWired) {
+    createForm._rpcTeamsCreateWired = true;
+    createForm.addEventListener("submit", (ev) => void handleCreateTeamSubmit(ev));
+  }
+  document.querySelectorAll(".clinical-teams-guardia-check").forEach((input) => {
+    if (!(input instanceof HTMLInputElement) || input._rpcGuardiaWired) return;
+    input._rpcGuardiaWired = true;
+    input.addEventListener("change", () => void handleGuardiaCheck(input));
+  });
+  document.querySelectorAll(".clinical-teams-add-member-form").forEach((form) => {
+    if (!(form instanceof HTMLFormElement) || form._rpcAddMemberWired) return;
+    form._rpcAddMemberWired = true;
+    form.addEventListener("submit", (ev) => void handleAddMemberSubmit(ev, form));
+  });
+}
+async function handleCreateTeamSubmit(ev) {
+  ev.preventDefault();
+  const api3 = dbApi3();
+  if (!api3 || typeof api3.dbClinicalTeamsCreate !== "function") {
+    toast2("Base de datos no disponible.", "error");
+    return;
+  }
+  const name = String(document.getElementById("clinical-team-create-name")?.value || "").trim();
+  const service = String(document.getElementById("clinical-team-create-service")?.value || "").trim();
+  const subAreaFraction = String(
+    document.getElementById("clinical-team-create-fraction")?.value || ""
+  ).trim();
+  const onCallDayIndex = Number(document.getElementById("clinical-team-create-day")?.value ?? 0);
+  const userId = currentUserId();
+  if (!name || !service) {
+    toast2("Indica nombre y servicio.", "error");
+    return;
+  }
+  const res = await api3.dbClinicalTeamsCreate({
+    name,
+    service,
+    subAreaFraction: subAreaFraction || void 0,
+    onCallDayIndex,
+    createdBy: userId
+  });
+  if (!res || res.ok === false) {
+    toast2(res?.error || "No se cre\xF3 el equipo.", "error");
+    return;
+  }
+  const teamId = String(res.team?.team_id || "");
+  if (teamId && typeof api3.dbClinicalTeamsMemberAdd === "function") {
+    const addRes = await api3.dbClinicalTeamsMemberAdd({ teamId, userId });
+    if (!addRes || addRes.ok === false) {
+      toast2(addRes?.error || "Equipo creado pero no se pudo unir autom\xE1ticamente.", "error");
+    }
+  }
+  toast2("Equipo creado.", "success");
+  document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
+  await renderClinicalTeamsPanel();
+}
+async function handleGuardiaCheck(input) {
+  if (!input.checked) {
+    input.checked = true;
+    toast2("Para retirar Guardia, otro miembro debe declararse on-call.", "info");
+    return;
+  }
+  const teamId = String(input.dataset.teamId || "");
+  const userId = currentUserId();
+  const api3 = dbApi3();
+  if (!teamId || !userId || !api3 || typeof api3.dbClinicalTeamsGuardiaSet !== "function") {
+    input.checked = false;
+    toast2("No se pudo declarar Guardia.", "error");
+    return;
+  }
+  const res = await api3.dbClinicalTeamsGuardiaSet({ teamId, userId });
+  if (!res || res.ok === false) {
+    input.checked = false;
+    toast2(res?.error || "No se guard\xF3 Guardia.", "error");
+    return;
+  }
+  toast2("Guardia declarada para hoy.", "success");
+  document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
+  scheduleLiveSyncPush();
+  await renderClinicalTeamsPanel();
+}
+async function handleAddMemberSubmit(ev, form) {
+  ev.preventDefault();
+  const teamId = String(form.dataset.teamId || "");
+  const usernameInput = form.querySelector(".clinical-teams-add-member-input");
+  const username = usernameInput instanceof HTMLInputElement ? String(usernameInput.value || "").trim() : "";
+  if (!teamId || !username) {
+    toast2("Escribe el username del residente.", "error");
+    return;
+  }
+  const api3 = dbApi3();
+  if (!api3 || typeof api3.dbClinicalTeamsMemberAdd !== "function") {
+    toast2("Base de datos no disponible.", "error");
+    return;
+  }
+  const res = await api3.dbClinicalTeamsMemberAdd({ teamId, username });
+  if (!res || res.ok === false) {
+    toast2(res?.error || "No se agreg\xF3 el miembro.", "error");
+    return;
+  }
+  toast2("Miembro agregado.", "success");
+  if (usernameInput instanceof HTMLInputElement) usernameInput.value = "";
+  document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
+  await renderClinicalTeamsPanel();
+}
+var teamsControlsWired = false;
+function wireClinicalTeamsControls() {
+  if (teamsControlsWired) return;
+  teamsControlsWired = true;
+  const openBtn = document.getElementById("btn-guardia-mi-rotacion");
+  if (openBtn) openBtn.addEventListener("click", () => openClinicalTeamsPanel());
+  const bd = teamsModalEl();
+  if (bd) {
+    bd.addEventListener("click", (ev) => {
+      if (ev.target === bd) closeClinicalTeamsPanel();
+    });
+  }
+  const closeBtn = document.getElementById("btn-clinical-teams-close");
+  if (closeBtn) closeBtn.addEventListener("click", () => closeClinicalTeamsPanel());
+  document.addEventListener("rpc-clinical-teams-changed", () => {
+    void fetchClinicalTeamsFromDb();
+  });
+}
+
+// public/js/features/clinical-entrega.mjs
+var GUARDIA_GRID_MODE_KEY = "guardia.gridMode";
+function normalizeUsers(users) {
+  return (users || []).map((u) => ({
+    user_id: String(u.user_id || u.userId || ""),
+    username: String(u.username || ""),
+    rank: String(u.rank || "")
+  })).filter((u) => u.user_id);
+}
+function uniqueByUserId(list) {
+  const seen = /* @__PURE__ */ new Set();
+  return list.filter((u) => {
+    if (seen.has(u.user_id)) return false;
+    seen.add(u.user_id);
+    return true;
+  });
+}
+function listEntregaTargets(rank, teams, users, salaDeficit, opts = {}) {
+  const currentUserId2 = String(opts.currentUserId || "");
+  const weekday = opts.weekday ?? (/* @__PURE__ */ new Date()).getDay();
+  const all = normalizeUsers(users);
+  const teamList = Array.isArray(teams) ? teams : [];
+  const rankNorm = String(rank || "R1");
+  const joinedTeams = currentUserId2 ? getJoinedTeams(teamList, currentUserId2) : [];
+  if (rankNorm === "R3") {
+    const suggestedIds = /* @__PURE__ */ new Set();
+    teamList.forEach((team) => {
+      if (Number(team.on_call_day_index) !== weekday) return;
+      (team.members || []).forEach((m) => {
+        if (m?.user_id) suggestedIds.add(String(m.user_id));
+      });
+    });
+    const targets = all.filter((u) => suggestedIds.has(u.user_id));
+    return {
+      flow: "r3_suggest",
+      targets: targets.length ? uniqueByUserId(targets) : all
+    };
+  }
+  if (rankNorm === "R2") {
+    const services = new Set(
+      joinedTeams.map((t2) => String(t2.service || "").toLowerCase()).filter(Boolean)
+    );
+    const r2Peers = all.filter((u) => {
+      if (u.rank !== "R2") return false;
+      return teamList.some((team) => {
+        const svc = String(team.service || "").toLowerCase();
+        if (!services.has(svc)) return false;
+        return (team.members || []).some((m) => String(m.user_id) === u.user_id);
+      });
+    });
+    const r4s = all.filter((u) => u.rank === "R4");
+    let deficitR2 = [];
+    if (salaDeficit) {
+      deficitR2 = all.filter((u) => {
+        if (u.rank !== "R2") return false;
+        return teamList.some((team) => {
+          if (!String(team.service || "").toLowerCase().includes("sala")) return false;
+          if (Number(team.on_call_day_index) !== weekday) return false;
+          const onGuardia = team.guardia_today && String(team.guardia_today.user_id) === u.user_id;
+          if (!onGuardia) return false;
+          return (team.members || []).some((m) => String(m.user_id) === u.user_id);
+        });
+      });
+    }
+    const targets = uniqueByUserId([...r2Peers, ...r4s, ...deficitR2]);
+    return { flow: "r2", targets: targets.length ? targets : all };
+  }
+  if (rankNorm === "R1") {
+    const joinedIds = new Set(joinedTeams.map((t2) => String(t2.team_id)));
+    const fractions = new Set(
+      joinedTeams.map((t2) => String(t2.sub_area_fraction || "").trim()).filter(Boolean)
+    );
+    const targets = all.filter((u) => {
+      if (u.rank !== "R1") return false;
+      return teamList.some((team) => {
+        const member = (team.members || []).some((m) => String(m.user_id) === u.user_id);
+        if (!member) return false;
+        if (joinedIds.has(String(team.team_id))) return true;
+        const frac = String(team.sub_area_fraction || "").trim();
+        return frac && fractions.has(frac);
+      });
+    });
+    return { flow: "r1", targets: targets.length ? uniqueByUserId(targets) : all };
+  }
+  return { flow: "generic", targets: all };
+}
+function dbApi4() {
+  if (typeof window === "undefined") return null;
+  return window.rplusDb || window.electronAPI || null;
+}
+function toast3(msg, type = "info") {
+  if (typeof window !== "undefined" && typeof window.showToast === "function") {
+    window.showToast(msg, type);
+  }
+}
+function entregaModalEl() {
+  return document.getElementById("entrega-modal-backdrop");
+}
+function resolveDefaultSourceTeamId() {
+  const userId = String(clinicalSessionContext.user?.user_id || "");
+  const teams = clinicalSessionContext.teams || [];
+  const joined = getJoinedTeams(teams, userId);
+  if (joined[0]?.team_id) return String(joined[0].team_id);
+  if (teams[0]?.team_id) return String(teams[0].team_id);
+  return "";
+}
+async function submitEntregaAssignment(payload) {
+  const api3 = dbApi4();
+  if (!api3 || typeof api3.dbGuardiaUpsert !== "function") {
+    throw new Error("Base cl\xEDnica no disponible");
+  }
+  const patientId = String(payload.patientId || "");
+  const deltaData = {
+    coveringUserId: payload.coveringUserId,
+    sourceTeamId: payload.sourceTeamId,
+    isCritical: !!payload.isCritical,
+    pendientesJson: payload.pendientesJson || "[]",
+    vitalsFrequency: payload.vitalsFrequency || "None"
+  };
+  await signOutgoingLiveSyncMutation(
+    { patientId, entityId: patientId, data: deltaData, op: "entrega.assign" },
+    "entrega.assign"
+  );
+  const res = await api3.dbGuardiaUpsert({
+    patientId,
+    coveringUserId: payload.coveringUserId,
+    sourceTeamId: payload.sourceTeamId,
+    guardiaId: payload.guardiaId,
+    isCritical: payload.isCritical ? 1 : 0,
+    pendientesJson: payload.pendientesJson || "[]",
+    vitalsFrequency: payload.vitalsFrequency || "None"
+  });
+  if (!res || res.ok === false) {
+    throw new Error(res?.error || "No se guard\xF3 la entrega");
+  }
+  return res.guardia;
+}
+var entregaFormWired = false;
+function wireEntregaFormOnce() {
+  if (entregaFormWired) return;
+  entregaFormWired = true;
+  const form = document.getElementById("entrega-form");
+  const cancelBtn = document.getElementById("btn-entrega-cancel");
+  const bd = entregaModalEl();
+  if (cancelBtn) cancelBtn.addEventListener("click", () => closeEntregaModal());
+  if (bd) {
+    bd.addEventListener("click", (ev) => {
+      if (ev.target === bd) closeEntregaModal();
+    });
+  }
+  if (!form) return;
+  form.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const patientId = String(form.dataset.patientId || "");
+    const guardiaId = form.dataset.guardiaId ? String(form.dataset.guardiaId) : void 0;
+    const coveringUserId = String(
+      document.getElementById("entrega-covering-user")?.value || ""
+    );
+    const sourceTeamId = String(document.getElementById("entrega-source-team")?.value || "") || resolveDefaultSourceTeamId();
+    const pendientes = String(document.getElementById("entrega-pendientes")?.value || "").trim();
+    const isCritical = !!document.getElementById("entrega-critical")?.checked;
+    const vitalsFrequency = String(
+      document.getElementById("entrega-vitals-frequency")?.value || "None"
+    );
+    if (!patientId || !coveringUserId || !sourceTeamId) {
+      toast3("Selecciona usuario cubridor y equipo de origen.", "error");
+      return;
+    }
+    const pendientesJson = JSON.stringify(
+      pendientes ? pendientes.split("\n").map((l) => l.trim()).filter(Boolean) : []
+    );
+    try {
+      await submitEntregaAssignment({
+        patientId,
+        guardiaId,
+        coveringUserId,
+        sourceTeamId,
+        isCritical,
+        pendientesJson,
+        vitalsFrequency
+      });
+      toast3("Entrega registrada.", "success");
+      const onConfirm = form._entregaOnConfirm;
+      closeEntregaModal();
+      await refreshGuardiaCensusFromDb(null);
+      scheduleLiveSyncPush();
+      if (typeof onConfirm === "function") onConfirm();
+    } catch (err) {
+      toast3(err?.message || "Error al registrar entrega", "error");
+    }
+  });
+}
+function openEntregaModal(opts) {
+  wireEntregaFormOnce();
+  const bd = entregaModalEl();
+  const form = document.getElementById("entrega-form");
+  if (!bd || !form) return;
+  const patientId = String(opts?.patientId || "");
+  const guardiaId = opts?.guardiaId ? String(opts.guardiaId) : "";
+  const existing = guardiaId ? clinicalSessionContext.guardias.find((g3) => String(g3.guardia_id) === guardiaId) : clinicalSessionContext.guardiasMap.get(patientId);
+  form.dataset.patientId = patientId;
+  if (guardiaId) form.dataset.guardiaId = guardiaId;
+  else delete form.dataset.guardiaId;
+  form._entregaOnConfirm = typeof opts?.onConfirm === "function" ? opts.onConfirm : null;
+  const ctx = clinicalSessionContext.scopeContext || {};
+  const teams = clinicalSessionContext.teams || ctx.teams || [];
+  const users = Array.isArray(ctx.users) ? ctx.users : [];
+  const salaGuardiaToday = Array.isArray(ctx.salaGuardiaToday) ? ctx.salaGuardiaToday : [];
+  const userId = String(clinicalSessionContext.user?.user_id || "");
+  const rank = String(clinicalSessionContext.user?.rank || "R1");
+  const weekday = (/* @__PURE__ */ new Date()).getDay();
+  const salaDeficit = computeSalaAbcdefDeficitWrite(
+    salaGuardiaToday,
+    teams,
+    userId,
+    weekday
+  );
+  const { targets, flow } = listEntregaTargets(rank, teams, users, salaDeficit, {
+    currentUserId: userId,
+    weekday
+  });
+  const select = document.getElementById("entrega-covering-user");
+  const teamSelect = document.getElementById("entrega-source-team");
+  const hint = document.getElementById("entrega-flow-hint");
+  if (select) {
+    select.innerHTML = targets.map(
+      (u) => `<option value="${u.user_id}">${u.username} (${u.rank})</option>`
+    ).join("");
+    const preferred = existing?.covering_user_id ? String(existing.covering_user_id) : targets[0]?.user_id || "";
+    if (preferred) select.value = preferred;
+  }
+  if (teamSelect) {
+    const joined = getJoinedTeams(teams, userId);
+    const teamOptions = (joined.length ? joined : teams).filter((t2) => t2?.team_id);
+    teamSelect.innerHTML = teamOptions.map((t2) => `<option value="${t2.team_id}">${t2.name} \xB7 ${t2.service}</option>`).join("");
+    const src = existing?.source_team_id || resolveDefaultSourceTeamId();
+    if (src) teamSelect.value = src;
+  }
+  if (hint) {
+    const flowLabels = {
+      r1: "R1: mismos equipo o fracci\xF3n de sub-\xE1rea.",
+      r2: "R2: mismo servicio, R4, o cubridores Sala en d\xE9ficit.",
+      r3_suggest: "R3: sugeridos por d\xEDa de guardia del equipo (confirma).",
+      generic: "Cualquier usuario registrado."
+    };
+    hint.textContent = flowLabels[flow] || flowLabels.generic;
+  }
+  const pendientesEl = document.getElementById("entrega-pendientes");
+  const criticalEl = document.getElementById("entrega-critical");
+  const vitalsEl = document.getElementById("entrega-vitals-frequency");
+  if (pendientesEl) {
+    try {
+      const arr = JSON.parse(String(existing?.pendientes_json || "[]"));
+      pendientesEl.value = Array.isArray(arr) ? arr.join("\n") : "";
+    } catch {
+      pendientesEl.value = "";
+    }
+  }
+  if (criticalEl) criticalEl.checked = !!existing?.is_critical;
+  if (vitalsEl) vitalsEl.value = String(existing?.vitals_frequency || "None");
+  const title = document.getElementById("entrega-modal-title");
+  if (title) title.textContent = guardiaId ? "Actualizar entrega" : "Nueva entrega";
+  bd.classList.add("open");
+  bd.setAttribute("aria-hidden", "false");
+  select?.focus();
+}
+function closeEntregaModal() {
+  const bd = entregaModalEl();
+  if (!bd) return;
+  bd.classList.remove("open");
+  bd.setAttribute("aria-hidden", "true");
+  const form = document.getElementById("entrega-form");
+  if (form) form._entregaOnConfirm = null;
+}
+function loadGuardiaGridViewContext() {
+  try {
+    const mode = String(localStorage.getItem(GUARDIA_GRID_MODE_KEY) || "censo").toLowerCase();
+    return mode === "entrega" ? "HANDOFF" : "GUARDIA";
+  } catch {
+    return "GUARDIA";
+  }
+}
+function saveGuardiaGridMode(mode) {
+  try {
+    localStorage.setItem(GUARDIA_GRID_MODE_KEY, mode === "entrega" ? "entrega" : "censo");
+  } catch {
+  }
+}
+
+// public/js/features/guardia-board.mjs
+var gridBoard = null;
+var gridModeControlsWired = false;
+var appShellInstalled = false;
+function installGuardiaAppShell() {
+  if (appShellInstalled || typeof window === "undefined") return;
+  appShellInstalled = true;
+  window.appShell = window.appShell || {};
+  window.appShell.openEntregaModal = openEntregaModal;
+}
+function wireGuardiaGridModeToggle(settings2) {
+  if (gridModeControlsWired) return;
+  gridModeControlsWired = true;
+  const censoBtn = document.getElementById("guardia-grid-mode-censo");
+  const entregaBtn = document.getElementById("guardia-grid-mode-entrega");
+  if (!censoBtn || !entregaBtn) return;
+  const syncButtons = (mode) => {
+    const isEntrega = mode === "entrega";
+    censoBtn.classList.toggle("is-active", !isEntrega);
+    entregaBtn.classList.toggle("is-active", isEntrega);
+    censoBtn.setAttribute("aria-pressed", String(!isEntrega));
+    entregaBtn.setAttribute("aria-pressed", String(isEntrega));
+  };
+  const applyMode = (mode) => {
+    saveGuardiaGridMode(mode);
+    syncButtons(mode);
+    if (gridBoard) {
+      gridBoard.setViewContext(mode === "entrega" ? "HANDOFF" : "GUARDIA");
+    }
+    renderGuardiaBoard(settings2);
+  };
+  syncButtons(loadGuardiaGridViewContext() === "HANDOFF" ? "entrega" : "censo");
+  censoBtn.addEventListener("click", () => applyMode("censo"));
+  entregaBtn.addEventListener("click", () => applyMode("entrega"));
+}
+function pendingTodoCount(pid) {
+  return storage.getTodos(pid).filter((t2) => !t2.completed).length;
+}
+function labsSnippetForPatient(pid) {
+  const history = storage.getLabHistory();
+  const rows = Array.isArray(history[pid]) ? history[pid] : [];
+  if (!rows.length) return "\u2014";
+  const last = rows[rows.length - 1];
+  const text = String(last?.text || last?.raw || "").replace(/\s+/g, " ").trim();
+  if (!text) return "\u2014";
+  const line = text.split("\n").find((l) => /★|crit|alter|↑|↓/i.test(l)) || text.split("\n")[0] || text;
+  return line.slice(0, 48);
+}
+function enrichPatientForGuardiaCard(p, guardiasMap) {
+  const base = mapPatientForGuardiaGrid(p);
+  const g3 = guardiasMap.get(base.id);
+  const dxList = Array.isArray(p.diagnosticosList) ? p.diagnosticosList : [];
+  const dxText = diagnosticosTextForCenso(dxList, { max: 2 }) || String(p.diagnosticosText || p.motivo || "").trim() || "Sin diagn\xF3stico registrado";
+  const openTodos = pendingTodoCount(base.id);
+  const isCritical = !!(g3?.is_critical || openTodos > 0 && storage.getTodos(base.id).some((t2) => !t2.completed && t2.priority === "alta"));
+  return {
+    ...base,
+    dxText: dxText.toUpperCase(),
+    pendingCount: openTodos,
+    labsSnippet: labsSnippetForPatient(base.id),
+    isCritical,
+    guardiaMeta: g3
+  };
+}
+function computeGuardiaSummary(censusPatients, guardiasMap) {
+  let critical = 0;
+  let pending2 = 0;
+  censusPatients.forEach((p) => {
+    if (p.isCritical || guardiasMap.get(p.id)?.is_critical) critical += 1;
+    pending2 += p.pendingCount || 0;
+  });
+  const now = /* @__PURE__ */ new Date();
+  const nextHour = new Date(now);
+  nextHour.setMinutes(0, 0, 0);
+  nextHour.setHours(nextHour.getHours() + 1);
+  const nextHandoff = nextHour.getHours().toString().padStart(2, "0") + ":" + nextHour.getMinutes().toString().padStart(2, "0");
+  return { critical, pending: pending2, nextHandoff };
+}
+function renderGuardiaSummaryTiles(summary) {
+  const host = document.getElementById("guardia-summary");
+  if (!host) return;
+  host.innerHTML = `
+    <div class="guardia-summary-tile guardia-summary-tile--critical">
+      <div>
+        <div class="guardia-summary-label">Pacientes cr\xEDticos</div>
+        <div class="guardia-summary-value guardia-summary-value--critical">${summary.critical}</div>
+      </div>
+      <span class="guardia-summary-icon" aria-hidden="true">\u26A0\uFE0F</span>
+    </div>
+    <div class="guardia-summary-tile">
+      <div>
+        <div class="guardia-summary-label">Pendientes totales</div>
+        <div class="guardia-summary-value">${summary.pending}</div>
+      </div>
+      <span class="guardia-summary-icon" aria-hidden="true">\u{1F4CB}</span>
+    </div>
+    <div class="guardia-summary-tile">
+      <div>
+        <div class="guardia-summary-label">Siguiente entrega</div>
+        <div class="guardia-summary-value guardia-summary-value--muted">${summary.nextHandoff}</div>
+      </div>
+      <span class="guardia-summary-icon" aria-hidden="true">\u23F3</span>
+    </div>`;
+}
+function renderGuardiaBoard(settings2) {
+  if (!isGuardiaMode()) return;
+  installGuardiaAppShell();
+  const root = document.getElementById("appcontent-guardia");
+  if (!root || root.getAttribute("aria-hidden") === "true") return;
+  const guardiasMap = clinicalSessionContext.guardiasMap.size ? clinicalSessionContext.guardiasMap : buildGuardiasMap(clinicalSessionContext.guardias);
+  let censusPatients = patients.filter((p) => p && p.id && !p.isDemo && !p.archived).map((p) => enrichPatientForGuardiaCard(p, guardiasMap));
+  const gridViewContext = loadGuardiaGridViewContext();
+  wireGuardiaGridModeToggle(settings2);
+  if (guardiasMap.size > 0 && gridViewContext === "GUARDIA") {
+    censusPatients = censusPatients.filter((p) => guardiasMap.has(p.id));
+  }
+  const summary = computeGuardiaSummary(censusPatients, guardiasMap);
+  renderGuardiaSummaryTiles(summary);
+  void syncGuardiaIncomingStrip(settings2);
+  wireClinicalTeamsControls();
+  if (!gridBoard) {
+    gridBoard = new UnifiedPatientGridBoard("guardia-census-grid", gridViewContext);
+  } else {
+    gridBoard.setViewContext(gridViewContext);
+  }
+  gridBoard.onChipClick = (patientId) => {
+    const guardia = guardiasMap.get(patientId);
+    openEntregaModal({
+      patientId,
+      guardiaId: guardia?.guardia_id,
+      onConfirm: () => {
+        void refreshGuardiaCensusFromDb(settings2);
+      }
+    });
+  };
+  const rank = clinicalSessionContext.user?.rank || resolveClinicalRank(settings2);
+  gridBoard.drawCensusGrid(censusPatients, guardiasMap, rank);
+}
+function syncGuardiaModeButtonVisibility() {
+  const show = isDbMode();
+  const btn = document.getElementById("header-guardia-mode-chip");
+  if (btn) btn.style.display = show ? "inline-flex" : "none";
+}
+
+// public/js/rpc-date-picker.mjs
+var MONTHS_ES = [
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre"
+];
+var WEEKDAYS_ES = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sa", "Do"];
+var CALENDAR_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+var popoverEl = null;
+var activeClose = null;
+function esc6(s) {
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function formatIsoDateDisplay(iso) {
+  return formatAccesoFechaDisplay(iso);
+}
+function parseIso(iso) {
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || "").trim());
+  if (!m) return null;
+  var y = Number(m[1]);
+  var mo = Number(m[2]) - 1;
+  var d = Number(m[3]);
+  var dt = new Date(y, mo, d);
+  if (dt.getFullYear() !== y || dt.getMonth() !== mo || dt.getDate() !== d) return null;
+  return dt;
+}
+function isoFromDate(dt) {
+  return dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0") + "-" + String(dt.getDate()).padStart(2, "0");
+}
+function todayIso() {
+  return isoFromDate(/* @__PURE__ */ new Date());
+}
+function ensurePopover() {
+  if (popoverEl) return popoverEl;
+  popoverEl = document.createElement("div");
+  popoverEl.id = "rpc-date-popover";
+  popoverEl.className = "rpc-date-popover";
+  popoverEl.setAttribute("role", "dialog");
+  popoverEl.setAttribute("aria-modal", "false");
+  popoverEl.hidden = true;
+  document.body.appendChild(popoverEl);
+  return popoverEl;
+}
+function closePopover() {
+  if (!popoverEl || popoverEl.hidden) return;
+  popoverEl.hidden = true;
+  popoverEl.innerHTML = "";
+  popoverEl.removeAttribute("data-open");
+  if (activeClose) {
+    activeClose();
+    activeClose = null;
+  }
+}
+function isRpcDatePopoverOpen() {
+  return !!(popoverEl && !popoverEl.hidden);
+}
+function closeRpcDatePopover() {
+  closePopover();
+}
+function positionPopover(anchor) {
+  if (!popoverEl || !anchor) return;
+  var rect = anchor.getBoundingClientRect();
+  var gap = 6;
+  var top = rect.bottom + gap;
+  var left = rect.left;
+  popoverEl.style.top = top + "px";
+  popoverEl.style.left = left + "px";
+  requestAnimationFrame(function() {
+    if (!popoverEl || popoverEl.hidden) return;
+    var pr = popoverEl.getBoundingClientRect();
+    var maxLeft = window.innerWidth - pr.width - 8;
+    var maxTop = window.innerHeight - pr.height - 8;
+    left = Math.min(Math.max(8, left), Math.max(8, maxLeft));
+    if (top > maxTop) top = Math.max(8, rect.top - pr.height - gap);
+    top = Math.min(Math.max(8, top), Math.max(8, maxTop));
+    popoverEl.style.top = top + "px";
+    popoverEl.style.left = left + "px";
+  });
+}
+function renderCalendarBody(year, month, selectedIso) {
+  var first = new Date(year, month, 1);
+  var startPad = (first.getDay() + 6) % 7;
+  var days = new Date(year, month + 1, 0).getDate();
+  var today = todayIso();
+  var cells = "";
+  for (var i = 0; i < startPad; i++) {
+    cells += '<span class="rpc-date-popover__day rpc-date-popover__day--pad" aria-hidden="true"></span>';
+  }
+  for (var day = 1; day <= days; day++) {
+    var iso = isoFromDate(new Date(year, month, day));
+    var cls = "rpc-date-popover__day";
+    if (iso === selectedIso) cls += " is-selected";
+    if (iso === today) cls += " is-today";
+    cells += '<button type="button" class="' + cls + '" data-iso="' + esc6(iso) + '">' + day + "</button>";
+  }
+  return cells;
+}
+function openRpcDatePicker(anchor, opts) {
+  var options = opts || {};
+  var selected = parseIso(options.value) || /* @__PURE__ */ new Date();
+  var viewYear2 = selected.getFullYear();
+  var viewMonth = selected.getMonth();
+  var selectedIso = options.value ? String(options.value).trim() : "";
+  var pop = ensurePopover();
+  closePopover();
+  function paint() {
+    pop.innerHTML = '<div class="rpc-date-popover__head"><button type="button" class="rpc-date-popover__nav" data-nav="-1" aria-label="Mes anterior">\u2039</button><span class="rpc-date-popover__title">' + esc6(MONTHS_ES[viewMonth] + " " + viewYear2) + '</span><button type="button" class="rpc-date-popover__nav" data-nav="1" aria-label="Mes siguiente">\u203A</button></div><div class="rpc-date-popover__weekdays">' + WEEKDAYS_ES.map(function(w) {
+      return "<span>" + w + "</span>";
+    }).join("") + '</div><div class="rpc-date-popover__grid">' + renderCalendarBody(viewYear2, viewMonth, selectedIso) + '</div><div class="rpc-date-popover__foot"><button type="button" class="rpc-date-popover__foot-btn" data-action="clear">Borrar</button><button type="button" class="rpc-date-popover__foot-btn rpc-date-popover__foot-btn--primary" data-action="today">Hoy</button></div>';
+    pop.querySelectorAll("[data-nav]").forEach(function(btn) {
+      btn.addEventListener("click", function(e) {
+        e.preventDefault();
+        var delta = Number(btn.getAttribute("data-nav"));
+        viewMonth += delta;
+        if (viewMonth < 0) {
+          viewMonth = 11;
+          viewYear2 -= 1;
+        } else if (viewMonth > 11) {
+          viewMonth = 0;
+          viewYear2 += 1;
+        }
+        paint();
+      });
+    });
+    pop.querySelectorAll(".rpc-date-popover__day[data-iso]").forEach(function(dayBtn) {
+      dayBtn.addEventListener("click", function(e) {
+        e.preventDefault();
+        var iso = dayBtn.getAttribute("data-iso") || "";
+        if (options.onSelect) options.onSelect(iso);
+        closePopover();
+      });
+    });
+    var clearBtn = pop.querySelector('[data-action="clear"]');
+    if (clearBtn) {
+      clearBtn.addEventListener("click", function(e) {
+        e.preventDefault();
+        if (options.onSelect) options.onSelect("");
+        closePopover();
+      });
+    }
+    var todayBtn = pop.querySelector('[data-action="today"]');
+    if (todayBtn) {
+      todayBtn.addEventListener("click", function(e) {
+        e.preventDefault();
+        var iso = todayIso();
+        if (options.onSelect) options.onSelect(iso);
+        closePopover();
+      });
+    }
+  }
+  paint();
+  pop.hidden = false;
+  pop.setAttribute("data-open", "1");
+  positionPopover(anchor);
+  activeClose = function() {
+    if (anchor && anchor.setAttribute) anchor.setAttribute("aria-expanded", "false");
+  };
+  if (anchor && anchor.setAttribute) anchor.setAttribute("aria-expanded", "true");
+}
+function mountRpcDateInput(input) {
+  if (!input || input.dataset.rpcDateMounted === "1") return;
+  input.dataset.rpcDateMounted = "1";
+  var wrap = document.createElement("div");
+  wrap.className = "rpc-date-field";
+  input.parentNode.insertBefore(wrap, input);
+  wrap.appendChild(input);
+  input.type = "hidden";
+  input.classList.add("rpc-date-field__value");
+  var btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "rpc-date-field__trigger profile-input";
+  btn.setAttribute("aria-haspopup", "dialog");
+  btn.setAttribute("aria-expanded", "false");
+  var label = document.createElement("span");
+  label.className = "rpc-date-field__label";
+  var icon = document.createElement("span");
+  icon.className = "rpc-date-field__icon";
+  icon.innerHTML = CALENDAR_SVG;
+  btn.appendChild(label);
+  btn.appendChild(icon);
+  wrap.insertBefore(btn, input);
+  function syncLabel() {
+    var iso = String(input.value || "").trim();
+    label.textContent = iso ? formatIsoDateDisplay(iso) : "Elegir fecha";
+    btn.classList.toggle("is-placeholder", !iso);
+  }
+  syncLabel();
+  input.addEventListener("rpc-date-refresh", syncLabel);
+  btn.addEventListener("click", function(e) {
+    e.preventDefault();
+    openRpcDatePicker(btn, {
+      value: input.value,
+      onSelect: function(iso) {
+        input.value = iso;
+        syncLabel();
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    });
+  });
+}
+function mountRpcDatetimeInput(input) {
+  if (!input || input.dataset.rpcDatetimeMounted === "1") return;
+  input.dataset.rpcDatetimeMounted = "1";
+  var wrap = document.createElement("div");
+  wrap.className = "rpc-datetime-field";
+  input.parentNode.insertBefore(wrap, input);
+  wrap.appendChild(input);
+  input.classList.add("rpc-datetime-field__native");
+  input.tabIndex = -1;
+  input.setAttribute("aria-hidden", "true");
+  var dateWrap = document.createElement("div");
+  dateWrap.className = "rpc-datetime-field__date";
+  wrap.insertBefore(dateWrap, input);
+  var dateHidden = document.createElement("input");
+  dateHidden.type = "hidden";
+  dateHidden.className = "rpc-date-field__value";
+  dateWrap.appendChild(dateHidden);
+  var timeInput = document.createElement("input");
+  timeInput.type = "time";
+  timeInput.className = "rpc-datetime-field__time profile-input";
+  timeInput.setAttribute("aria-label", "Hora");
+  wrap.appendChild(timeInput);
+  function syncLabelFromHidden() {
+    dateHidden.dispatchEvent(new Event("rpc-date-refresh"));
+  }
+  function syncFromNative() {
+    var raw = String(input.value || "");
+    var parts = raw.split("T");
+    dateHidden.value = parts[0] || "";
+    timeInput.value = (parts[1] || "").slice(0, 5);
+    syncLabelFromHidden();
+  }
+  function syncToNative() {
+    var d = String(dateHidden.value || "").trim();
+    var t2 = String(timeInput.value || "").trim() || "09:00";
+    if (!d) {
+      input.value = "";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      return;
+    }
+    input.value = d + "T" + t2;
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+  syncFromNative();
+  mountRpcDateInput(dateHidden);
+  dateHidden.addEventListener("input", syncToNative);
+  timeInput.addEventListener("input", syncToNative);
+  input.addEventListener("rpc-datetime-sync", syncFromNative);
+}
+function refreshRpcDateFields(root) {
+  var scope = root && root.querySelectorAll ? root : document;
+  scope.querySelectorAll('input.rpc-date-input[type="date"]').forEach(function(el) {
+    mountRpcDateInput(el);
+  });
+  scope.querySelectorAll('input.rpc-datetime-input[type="datetime-local"]').forEach(function(el) {
+    mountRpcDatetimeInput(el);
+  });
+}
+var refreshTimer = 0;
+function scheduleRefresh() {
+  if (refreshTimer) return;
+  refreshTimer = window.setTimeout(function() {
+    refreshTimer = 0;
+    refreshRpcDateFields(document);
+  }, 0);
+}
+function initRpcDatePicker() {
+  ensurePopover();
+  refreshRpcDateFields(document);
+  document.addEventListener(
+    "click",
+    function(e) {
+      if (!popoverEl || popoverEl.hidden) return;
+      var t2 = e.target;
+      if (!(t2 instanceof Element)) return;
+      if (popoverEl.contains(t2) || t2.closest(".rpc-date-field__trigger")) return;
+      closePopover();
+    },
+    true
+  );
+  window.addEventListener("resize", function() {
+    if (popoverEl && !popoverEl.hidden) closePopover();
+  });
+  var obs = new MutationObserver(scheduleRefresh);
+  obs.observe(document.body, { childList: true, subtree: true });
+}
+
+// public/js/patient-data-accesos-ui.mjs
+function esc7(s) {
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function activePatient(patientId) {
+  return patients.find(function(p) {
+    return String(p.id) === String(patientId);
+  });
+}
+function accesoRows(patient) {
+  ensurePatientAccesos(patient);
+  var list = (patient.accesosList || []).slice();
+  return list.length ? list : [{ via: "", fecha: "" }];
+}
+function viaSelectHtml(index, via) {
+  var v = String(via || "");
+  return '<select class="ea-input patient-acceso-via" onchange="onPatientAccesoVia(' + index + ',this.value)" aria-label="V\xEDa de acceso"><option value=""' + (!v ? " selected" : "") + '>\u2014 V\xEDa \u2014</option><option value="periferica"' + (v === "periferica" ? " selected" : "") + '>EV perif\xE9rica</option><option value="cvc"' + (v === "cvc" ? " selected" : "") + '>CVC / cat\xE9ter central</option><option value="picc"' + (v === "picc" ? " selected" : "") + ">PICC</option></select>";
+}
+function renderAccesosListHtml(patient) {
+  var rows = accesoRows(patient);
+  return rows.map(function(row, i) {
+    var canRemove = rows.length > 1;
+    return '<div class="patient-acceso-row list-row"><div class="field-group" style="margin:0;">' + viaSelectHtml(i, row.via) + '</div><div class="field-group" style="margin:0;"><input type="date" class="rpc-date-input patient-acceso-fecha" value="' + esc7(accesoFechaToDateInputValue(row.fecha)) + '" oninput="onPatientAccesoFecha(' + i + ',this.value)" aria-label="Fecha acceso"></div><button type="button" class="btn-remove" onclick="removePatientAccesoRow(' + i + ')"' + (canRemove ? "" : ' style="visibility:hidden"') + ' aria-label="Quitar acceso">\xD7</button></div>';
+  }).join("");
+}
+function buildPatientAccesosSectionHtml(patient) {
+  ensurePatientAccesos(patient);
+  return '<div class="patient-accesos-block"><div class="vpo-toolbar" style="margin-top:2px;"><span class="ea-label" style="flex:1;">Accesos</span><button type="button" class="btn-add-row" onclick="addPatientAccesoRow()">+ Agregar acceso</button></div><div class="patient-accesos-list" id="patient-accesos-list">' + renderAccesosListHtml(patient) + "</div></div>";
+}
+function refreshAccesosListDom(patientId) {
+  var patient = activePatient(patientId);
+  var listEl = document.getElementById("patient-accesos-list");
+  if (!patient || !listEl) return;
+  listEl.innerHTML = renderAccesosListHtml(patient);
+  refreshRpcDateFields(listEl);
+}
+function currentPatientId() {
+  var wrap = document.getElementById("patient-data-form");
+  return wrap && wrap.dataset.patientId ? wrap.dataset.patientId : null;
+}
+function touchAccesos(patient, mutator) {
+  if (!patient) return;
+  ensurePatientAccesos(patient);
+  mutator(patient);
+  syncLegacyAccesoFields(patient);
+  saveState();
+}
+function onPatientAccesoVia(index, value) {
+  var pid = currentPatientId();
+  var patient = activePatient(pid);
+  if (!patient) return;
+  touchAccesos(patient, function(p) {
+    p.accesosList[index].via = String(value || "").trim();
+  });
+}
+function onPatientAccesoFecha(index, value) {
+  var pid = currentPatientId();
+  var patient = activePatient(pid);
+  if (!patient) return;
+  touchAccesos(patient, function(p) {
+    p.accesosList[index].fecha = String(value || "").trim();
+  });
+}
+function addPatientAccesoRow() {
+  var pid = currentPatientId();
+  var patient = activePatient(pid);
+  if (!patient) return;
+  touchAccesos(patient, function(p) {
+    p.accesosList.push({ via: "", fecha: "" });
+  });
+  refreshAccesosListDom(pid);
+}
+function removePatientAccesoRow(index) {
+  var pid = currentPatientId();
+  var patient = activePatient(pid);
+  if (!patient || !Array.isArray(patient.accesosList)) return;
+  if (patient.accesosList.length <= 1) return;
+  touchAccesos(patient, function(p) {
+    p.accesosList.splice(index, 1);
+    ensurePatientAccesos(p);
+  });
+  refreshAccesosListDom(pid);
+}
+var patientDataAccesosWindowHandlers = {
+  onPatientAccesoVia,
+  onPatientAccesoFecha,
+  addPatientAccesoRow,
+  removePatientAccesoRow
+};
+
+// public/js/censo-header-format.mjs
+var CENSO_UBICACION_TORRE = "torre";
+var CENSO_TORRE_HU_LABEL = "Torre HU";
+var DEFAULT_CENSO_FIMI_LABEL = "FIMI";
+function resolveCensoFimiLabel(settings2) {
+  return String(settings2?.censoFimiLabel || "").trim() || DEFAULT_CENSO_FIMI_LABEL;
+}
+function medTpl(settings2) {
+  var tpl = settings2 && settings2.medicosPlantilla;
+  return tpl && typeof tpl === "object" ? (
+    /** @type {Record<string, string>} */
+    tpl
+  ) : {};
+}
+function pick(v) {
+  return String(v || "").trim();
+}
+function normalizeCensoUbicacionValue(settings2) {
+  var st = settings2 || {};
+  var sala = pick(st.censoSala);
+  if (sala) {
+    if (/^torre/i.test(sala) || sala === CENSO_UBICACION_TORRE) return CENSO_UBICACION_TORRE;
+    return sala;
+  }
+  if (pick(st.censoTorre)) return CENSO_UBICACION_TORRE;
+  return "";
+}
+function formatCensoSalaTitleLine(settings2) {
+  var ubic = normalizeCensoUbicacionValue(settings2);
+  if (ubic === CENSO_UBICACION_TORRE) return "Censo de " + CENSO_TORRE_HU_LABEL;
+  if (ubic) return "Censo de Sala " + ubic;
+  return "Censo de Sala";
+}
+function resolveCensoEquipoMembers(settings2) {
+  var st = settings2 || {};
+  var tpl = medTpl(st);
+  var legacyR1 = pick(st.residenteR1);
+  return {
+    r2: pick(st.residenteR2) || pick(tpl.r2),
+    r1a: pick(st.residenteR1a) || pick(tpl.r1a) || legacyR1,
+    r1b: pick(st.residenteR1b) || pick(tpl.r1b),
+    maestro: pick(st.profesorName) || pick(tpl.profesor)
+  };
+}
+function formatCensoEquipoLine(settings2) {
+  var m = resolveCensoEquipoMembers(settings2);
+  return [m.r2, m.r1a, m.r1b, m.maestro].filter(Boolean).join(" \xB7 ");
+}
+function buildCensoDocumentHeader(settings2) {
+  var ubic = normalizeCensoUbicacionValue(settings2);
+  var isTorre = ubic === CENSO_UBICACION_TORRE;
+  return {
+    titleLine: formatCensoSalaTitleLine(settings2),
+    equipoLine: formatCensoEquipoLine(settings2),
+    ubicacion: isTorre ? CENSO_TORRE_HU_LABEL : ubic,
+    sala: isTorre ? "" : ubic,
+    torre: isTorre ? CENSO_TORRE_HU_LABEL : ""
+  };
+}
+
+// public/js/patient-data-ingreso-ui.mjs
+function esc8(s) {
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function buildPatientIngresoFechasHtml(patient, settings2) {
+  var fimiLabel = resolveCensoFimiLabel(settings2 || {});
+  return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><div class="field-group"><label>FIUX (urgencias)</label><input type="date" class="rpc-date-input" value="' + esc8(accesoFechaToDateInputValue(patient.fiuxFecha)) + `" oninput="updatePatient('fiuxFecha',this.value)" aria-label="FIUX ingreso urgencias"></div><div class="field-group"><label>` + esc8(fimiLabel) + ' (servicio)</label><input type="date" class="rpc-date-input" value="' + esc8(accesoFechaToDateInputValue(patient.fimiFecha)) + `" oninput="updatePatient('fimiFecha',this.value)" aria-label="` + esc8(fimiLabel) + ' ingreso servicio"></div></div>';
+}
+
+// public/js/censo-meds-format.mjs
+function medTitle(nombreRaw) {
+  var s = String(nombreRaw || "").trim();
+  if (!s) return "";
+  s = s.replace(/\s*\([^)]*\)\s*$/, "").trim();
+  var chunk = (s.split(/\s+(?=\d)/)[0] || "").trim();
+  return (chunk || s).slice(0, 80).toUpperCase();
+}
+function formatDia(diaTratamiento) {
+  if (diaTratamiento == null || diaTratamiento === "") return "";
+  var n = Number(diaTratamiento);
+  if (!Number.isFinite(n) || n < 0) return "";
+  return "D\xEDa " + String(Math.floor(n));
+}
+function formatCensoMedsFromReceta(block) {
+  if (!block || !Array.isArray(block.items)) return "";
+  var lines = [];
+  block.items.forEach(function(it) {
+    if (!it || it.suspendido) return;
+    var name = medTitle(it.nombreRaw);
+    if (!name) return;
+    var dia = formatDia(it.diaTratamiento);
+    lines.push(dia ? name + " \xB7 " + dia : name);
+  });
+  return lines.join("\n");
+}
+
+// public/js/patient-data-censo-ui.mjs
+function esc9(s) {
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function activePatient2(patientId) {
+  return patients.find(function(p) {
+    return String(p.id) === String(patientId);
+  });
+}
+function dxRows(patient) {
+  var list = (patient.diagnosticosList || []).slice();
+  return list.length ? list : [""];
+}
+function renderDxListHtml(patient) {
+  var rows = dxRows(patient);
+  return rows.map(function(dx, i) {
+    var canRemove = rows.length > 1;
+    return '<div class="vpo-dx-row list-row"><input type="text" class="ea-input" value="' + esc9(dx) + '" placeholder="Diagn\xF3stico ' + (i + 1) + '" oninput="onPatientDxInput(' + i + ', this.value)" style="text-transform:uppercase;"><button type="button" class="btn-remove" onclick="removePatientDxRow(' + i + ')"' + (canRemove ? "" : ' style="visibility:hidden"') + ' aria-label="Eliminar">\xD7</button></div>';
+  }).join("");
+}
+function buildPatientCensoDatosSectionsHtml(patient) {
+  migratePatientDiagnosticosFromVpo(patient, vpoByPatient[patient.id]);
+  ensurePatientDiagnosticos(patient);
+  return '<div class="card" style="margin-top:10px;"><div class="card-header">Diagn\xF3sticos (censo)</div><div class="card-body"><div class="vpo-toolbar"><button type="button" class="btn-add-row" onclick="addPatientDxRow()">+ Agregar diagn\xF3stico</button></div><div class="vpo-dx-list" id="patient-dx-list">' + renderDxListHtml(patient) + '</div><div class="vpo-dx-paste" style="margin-top:8px;"><span class="ea-label">Pegar con \xAB + \xBB entre diagn\xF3sticos</span><textarea class="ea-input" id="patient-dx-paste" rows="2" placeholder="DX1 + DX2\u2026"></textarea><button type="button" class="btn-med-secondary" onclick="splitPatientDxPaste()">Separar por +</button></div></div></div><div class="card" style="margin-top:10px;"><div class="card-header">Censo \u2014 ATB / Medicamentos</div><div class="card-body"><div class="vpo-toolbar"><button type="button" class="btn-med-secondary" onclick="censoTomarDeMedicamentos()">Tomar de Medicamentos</button></div><textarea class="ea-input" id="patient-censo-meds" rows="6" placeholder="Texto para columna ATB/Meds del PDF\u2026" oninput="updatePatientCensoMeds(this.value)">' + esc9(patient.censoMedsText || "") + "</textarea></div></div>";
+}
+function refreshDxListDom(patientId) {
+  var patient = activePatient2(patientId);
+  var listEl = document.getElementById("patient-dx-list");
+  if (!patient || !listEl) return;
+  listEl.innerHTML = renderDxListHtml(patient);
+}
+function currentPatientId2() {
+  var wrap = document.getElementById("patient-data-form");
+  return wrap && wrap.dataset.patientId ? wrap.dataset.patientId : null;
+}
+function onPatientDxInput(index, value) {
+  var pid = currentPatientId2();
+  var patient = activePatient2(pid);
+  if (!patient) return;
+  if (!Array.isArray(patient.diagnosticosList)) patient.diagnosticosList = [""];
+  patient.diagnosticosList[index] = String(value || "").toUpperCase();
+  ensurePatientDiagnosticos(patient);
+  saveState();
+}
+function addPatientDxRow() {
+  var pid = currentPatientId2();
+  var patient = activePatient2(pid);
+  if (!patient) return;
+  if (!Array.isArray(patient.diagnosticosList)) patient.diagnosticosList = [""];
+  patient.diagnosticosList.push("");
+  saveState();
+  refreshDxListDom(pid);
+}
+function removePatientDxRow(index) {
+  var pid = currentPatientId2();
+  var patient = activePatient2(pid);
+  if (!patient || !Array.isArray(patient.diagnosticosList)) return;
+  if (patient.diagnosticosList.length <= 1) return;
+  patient.diagnosticosList.splice(index, 1);
+  applyPatientDiagnosticosList(patient, patient.diagnosticosList);
+  saveState();
+  refreshDxListDom(pid);
+}
+function splitPatientDxPaste() {
+  var pid = currentPatientId2();
+  var patient = activePatient2(pid);
+  var ta = document.getElementById("patient-dx-paste");
+  if (!patient || !ta) return;
+  var parsed = parseDiagnosticosText(ta.value);
+  if (!parsed.length) return;
+  applyPatientDiagnosticosList(patient, parsed.concat([""]));
+  saveState();
+  refreshDxListDom(pid);
+}
+function updatePatientCensoMeds(value) {
+  var pid = currentPatientId2();
+  var patient = activePatient2(pid);
+  if (!patient) return;
+  patient.censoMedsText = String(value || "");
+  saveState();
+}
+function censoTomarDeMedicamentos() {
+  var pid = currentPatientId2();
+  var patient = activePatient2(pid);
+  if (!patient) return;
+  var text = formatCensoMedsFromReceta(medRecetaByPatient[pid]);
+  patient.censoMedsText = text;
+  var ta = document.getElementById("patient-censo-meds");
+  if (ta) ta.value = text;
+  saveState();
+}
+var patientDataCensoWindowHandlers = {
+  onPatientDxInput,
+  addPatientDxRow,
+  removePatientDxRow,
+  splitPatientDxPaste,
+  updatePatientCensoMeds,
+  censoTomarDeMedicamentos
+};
+
+// public/js/listado-problemas-ai-prompt.mjs
+var LISTADO_PROBLEMAS_AI_PROMPT = `prompt:
+LISTADO DE PROBLEMAS
+CON BASE EN TODOS LOS DATOS CL\xCDNICOS PROPORCIONADOS, GENERA UN LISTADO DE
+PROBLEMAS DIVIDIDO EN ACTIVOS E INACTIVOS. S\xC9 CONCISO. EL OUTPUT COMPLETO
+NO DEBE EXCEDER DOS HOJAS.
+
+--- PROBLEMAS ACTIVOS ---
+(INCLUYE: DIAGN\xD3STICO PRINCIPAL, ENFERMEDADES DE BASE, COMPLICACIONES ACTIVAS,
+CONDICIONES EN CURSO)
+
+PROBLEMA X: [NOMBRE] \u2192 [ESCALA/CLASIFICACI\xD3N/ESTADIO SI APLICA]
+A) CL\xCDNICA: [S\xCDNTOMAS RELEVANTES]
+B) EXPLORACI\xD3N F\xCDSICA: [HALLAZGOS PERTINENTES]
+C) PARACL\xCDNICA: [SOLO RESULTADOS ALTERADOS CON VALOR E INTERPRETACI\xD3N]
+D) IMAGEN: [HALLAZGO RELEVANTE]
+
+--- PROBLEMAS INACTIVOS ---
+(INCLUYE: ANTECEDENTES RESUELTOS, TABAQUISMO/ALCOHOLISMO SUSPENDIDO,
+CIRUG\xCDAS PREVIAS, ENFERMEDADES YA RESUELTAS)
+
+PROBLEMA X: [NOMBRE]
+A) [DESCRIPCI\xD3N BREVE DEL ANTECEDENTE]
+
+REGLAS DE FORMATO:
+
+SI UN INCISO NO APLICA O NO HAY DATOS, OMITIRLO COMPLETAMENTE.
+EJEMPLO: SI NO HAY IMAGEN, NO PONER D). SI NO HAY PARACL\xCDNICA ALTERADA,
+NO PONER C).
+SOLO RESULTADOS ALTERADOS EN PARACL\xCDNICA, NUNCA VALORES NORMALES.
+EL PROBLEMA 1 ACTIVO SIEMPRE ES EL DIAGN\xD3STICO PRINCIPAL.
+SI HAY GASOMETR\xCDA: CALCULAR ANI\xD3N GAP, WINTERS Y ESTADO DE COMPENSACI\xD3N
+DENTRO DEL INCISO C) DEL PROBLEMA CORRESPONDIENTE.
+AL FINAL INDICAR "DIAGN\xD3STICOS A CONFIRMAR:" SI ALGUNO ES DUDOSO.
+SIN TRATAMIENTO, SIN MANEJO, SIN TEXTO INNECESARIO.
+TODO EN MAY\xDASCULAS.
+REGLAS DE AGRUPACI\xD3N:
+
+NO SEPARAR LO QUE ES PARTE DEL MISMO PROCESO CL\xCDNICO. SI UN HALLAZGO ES
+CONSECUENCIA DIRECTA Y ESPERABLE DEL PROBLEMA PRINCIPAL, VA DENTRO DE ESE
+PROBLEMA EN EL INCISO CORRESPONDIENTE, NO COMO PROBLEMA APARTE.
+EJEMPLO: NEUMON\xCDA CON HIPOXEMIA \u2192 LA HIPOXEMIA VA DENTRO DE LA NEUMON\xCDA.
+SOLO SEPARAR COMO PROBLEMA DISTINTO SI TIENE ENTIDAD PROPIA, MANEJO
+INDEPENDIENTE O ETIOLOG\xCDA DIFERENTE.
+INTENTAR LIGAR CADA PROBLEMA AL PRINCIPAL. SI NO SE PUEDE, LISTARLO COMO
+PROBLEMA SEPARADO SIN ETIQUETA ADICIONAL.
+REGLAS DE ETIOLOG\xCDA:
+
+CORRELACIONAR SIEMPRE LA ETIOLOG\xCDA CON EL PERFIL DEL PACIENTE: EDAD, SEXO,
+ANTECEDENTES Y CONTEXTO CL\xCDNICO.
+SI LA ETIOLOG\xCDA NO ENCAJA CON EL PERFIL, NO ASIGNARLA. MARCARLA COMO
+"ETIOLOG\xCDA A DETERMINAR" Y LISTAR ALTERNATIVAS DIAGN\xD3STICAS PERTINENTES.
+EJEMPLO: BLOQUEO AV TERCER GRADO EN PACIENTE DE 45 A\xD1OS \u2192 NO ASUMIR
+DEGENERATIVO. CONSIDERAR: LYME, SARCOIDOSIS, MIOCARDITIS, ISQUEMIA,
+F\xC1RMACOS, CHAGAS.
+ESTA REGLA APLICA TAMBI\xC9N EN PLANES INICIALES.
+PLANES INICIALES
+REDACTAR UN P\xC1RRAFO ESTRUCTURADO POR CADA UNO DE LOS SIGUIENTES EJES, TODO EN
+MAY\xDASCULAS, SIN INVENTAR DATOS, BAS\xC1NDOSE \xDANICAMENTE EN LO MENCIONADO EN EL
+INTERROGATORIO Y EXPEDIENTE. CADA EJE DEBE SER CONSISTENTE CON LOS PROBLEMAS
+ACTIVOS E INACTIVOS YA IDENTIFICADOS EN EL LISTADO DE PROBLEMAS, SIN
+CONTRADICCIONES NI REPETICIONES INNECESARIAS:
+
+EXPLICAR LA CAUSA DE BASE DE LA ENFERMEDAD
+PRINCIPAL Y EL MECANISMO FISIOPATOL\xD3GICO QUE LLEV\xD3 AL CUADRO ACTUAL,
+REFERENCIANDO LOS PROBLEMAS ACTIVOS CORRESPONDIENTES.
+
+DESCRIBIR LOS ELEMENTOS CL\xCDNICOS, BIOQU\xCDMICOS, RADIOL\xD3GICOS
+Y/O PATOL\xD3GICOS QUE SUSTENTAN EL DIAGN\xD3STICO PRINCIPAL Y LOS DIAGN\xD3STICOS
+ASOCIADOS, SIENDO CONSISTENTE CON LA CLASIFICACI\xD3N Y ESTADIO YA ESTABLECIDOS
+EN EL LISTADO DE PROBLEMAS.
+
+DETALLAR EL TRATAMIENTO INSTAURADO EN EL SERVICIO, INCLUYENDO PROCEDIMIENTOS REALIZADOS, ESQUEMAS FARMACOL\xD3GICOS Y RESPUESTA CL\xCDNICA DOCUMENTADA.
+
+ESTABLECER EL PRON\xD3STICO PARA LA FUNCI\xD3N DEL \xD3RGANO O SISTEMA AFECTADO PRINCIPAL Y EL PRON\xD3STICO VITAL, VINCUL\xC1NDOLO A LAS CONDICIONES CL\xCDNICAS ACTUALES, COMPLICACIONES POTENCIALES Y PROBLEMAS ACTIVOS IDENTIFICADOS.`;
+
+// public/js/deferred-work.mjs
+var idleGeneration = 0;
+function cancelDeferredIdleWork() {
+  idleGeneration += 1;
+  return idleGeneration;
+}
+function scheduleAfterPaint(fn) {
+  if (typeof fn !== "function") return;
+  if (typeof requestAnimationFrame === "function") {
+    requestAnimationFrame(function() {
+      requestAnimationFrame(fn);
+    });
+    return;
+  }
+  setTimeout(fn, 0);
+}
+function scheduleIdle(fn, timeoutMs) {
+  if (typeof fn !== "function") return;
+  const gen = idleGeneration;
+  const timeout = timeoutMs == null ? 150 : timeoutMs;
+  const run = function() {
+    if (gen !== idleGeneration) return;
+    fn();
+  };
+  if (typeof requestIdleCallback === "function") {
+    requestIdleCallback(run, { timeout });
+    return;
+  }
+  setTimeout(run, 0);
+}
 
 // public/js/update-helpers.mjs
 function formatBytes(bytes) {
