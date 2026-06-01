@@ -6,7 +6,6 @@ import { isClinicoUnlockDisabled } from './clinical-product-policy.mjs';
 
 export const CLINICO_UNLOCK_PHRASE = 'entiendo, usare mi criterio clincio';
 
-const SALA_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 const R3_EXTENDED_SERVICES = new Set(['torre hu', 'eme', 'ux']);
 
 /** @param {unknown} text */
