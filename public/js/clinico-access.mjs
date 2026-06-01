@@ -115,6 +115,37 @@ function normalizeServiceKey(value) {
     .replace(/\s+/g, ' ');
 }
 
+const CYCLE_CONFIGS = {
+  sala_r2: { letters: ['A','B','C','D','E','F'], length: 6 },
+  sala_r1: { letters: ['A1','B1','C1','D1','A2','B2','C2','D2'], length: 8 },
+  default: { letters: ['A','B','C','D'], length: 4 },
+};
+
+export function getCycleConfig(service, rank) {
+  const svc = normalizeServiceKey(service);
+  if (svc.includes('sala')) {
+    if (rank === 'R2') return CYCLE_CONFIGS.sala_r2;
+    if (rank === 'R1') return CYCLE_CONFIGS.sala_r1;
+  }
+  return CYCLE_CONFIGS.default;
+}
+
+export function letterIndexForTeam(team, rank) {
+  const frac = String(team?.sub_area_fraction || '').trim().toUpperCase();
+  if (!frac) return -1;
+  const cfg = getCycleConfig(team?.service, rank);
+  return cfg.letters.indexOf(frac);
+}
+
+export function isOnCallToday(team, rank, now) {
+  const idx = letterIndexForTeam(team, rank);
+  if (idx === -1) return false;
+  const cfg = getCycleConfig(team?.service, rank);
+  const d = now instanceof Date ? now : new Date(String(now));
+  const dayOfMonth = d.getDate();
+  return (dayOfMonth - 1) % cfg.length === idx;
+}
+
 /** @param {Date|string|undefined} value @param {string|undefined} [fallbackIso] */
 function toMillis(value, fallbackIso) {
   if (value instanceof Date) return value.getTime();
