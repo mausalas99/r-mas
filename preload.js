@@ -149,6 +149,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbClinicalTeamsList: function() {
     return ipcRenderer.invoke('db:clinical-teams-list');
   },
+  dbClinicalTeamsListBySala: function(opts) {
+    return ipcRenderer.invoke('db:clinical-teams-list-by-sala', opts);
+  },
+  dbClinicalTeamsJoin: function(opts) {
+    return ipcRenderer.invoke('db:clinical-teams-join', opts);
+  },
   dbClinicalTeamsCreate: function(opts) {
     return ipcRenderer.invoke('db:clinical-teams-create', opts);
   },

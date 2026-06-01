@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { filterJoinedTeams, CLINICAL_TEAM_SERVICES, ON_CALL_DAY_LABELS } from './clinical-teams.mjs';
+import { filterJoinedTeams, CLINICAL_TEAM_SERVICES } from './clinical-teams.mjs';
 
 describe('clinical-teams', () => {
   it('filterJoinedTeams returns teams where user is a member', () => {
@@ -29,8 +29,7 @@ describe('clinical-teams', () => {
     );
   });
 
-  it('exports service enum and weekday labels', () => {
+  it('exports service enum', () => {
     assert.ok(CLINICAL_TEAM_SERVICES.includes('Sala'));
-    assert.equal(ON_CALL_DAY_LABELS.length, 7);
   });
 });

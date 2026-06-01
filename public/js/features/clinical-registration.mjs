@@ -1,8 +1,9 @@
 /**
- * First-run clinical identity registration (rank + display name + sala) after DB unlock.
+ * First-run clinical identity registration (username, rank, display name, sala) after DB unlock.
  */
 import { persistLanClientConfig } from './lan-sync.mjs';
 import { isDbMode } from '../db-storage-bridge.mjs';
+import { isValidUsernameFormat, normalizeUsername } from '../clinical-username.mjs';
 
 const RANKS = ['R1', 'R2', 'R3', 'R4', 'Admin'];
 
@@ -15,21 +16,29 @@ export function needsClinicalRegistration(settings) {
 /** @type {((ok: boolean) => void)|null} */
 let pendingResolve = null;
 
+function dbApi() {
+  if (typeof window === 'undefined') return null;
+  return window.rplusDb || window.electronAPI || null;
+}
+
 /**
  * Pre-fill registration form from URL query params (mobile pairing link).
  */
 export function prefillRegistrationFromUrlParams() {
   if (typeof window === 'undefined') return;
-  var params = new URLSearchParams(window.location.search);
-  var name = params.get('name') || '';
-  var rank = params.get('rank') || '';
-  var sala = params.get('sala') || '';
-  if (!name && !rank && !sala) return;
+  const params = new URLSearchParams(window.location.search);
+  const user = params.get('user') || '';
+  const name = params.get('name') || '';
+  const rank = params.get('rank') || '';
+  const sala = params.get('sala') || '';
+  if (!user && !name && !rank && !sala) return;
 
-  var nameInput = document.getElementById('clinical-reg-name');
-  var rankSelect = document.getElementById('clinical-reg-rank');
-  var salaInput = document.getElementById('clinical-reg-sala');
+  const usernameInput = document.getElementById('clinical-reg-username');
+  const nameInput = document.getElementById('clinical-reg-name');
+  const rankSelect = document.getElementById('clinical-reg-rank');
+  const salaInput = document.getElementById('clinical-reg-sala');
 
+  if (usernameInput && user) usernameInput.value = user;
   if (nameInput && name) nameInput.value = name;
   if (rankSelect && rank) rankSelect.value = rank;
   if (salaInput && sala) salaInput.value = sala;
@@ -44,8 +53,8 @@ export function openClinicalRegistrationModal() {
   if (!bd) return;
   bd.classList.add('open');
   bd.setAttribute('aria-hidden', 'false');
-  const nameInput = document.getElementById('clinical-reg-name');
-  if (nameInput) nameInput.focus();
+  const usernameInput = document.getElementById('clinical-reg-username');
+  if (usernameInput) usernameInput.focus();
 }
 
 export function closeClinicalRegistrationModal() {
@@ -62,47 +71,92 @@ function wireRegistrationFormOnce() {
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
     const errEl = document.getElementById('clinical-reg-error');
+    const usernameRaw = String(document.getElementById('clinical-reg-username')?.value || '').trim();
+    const username = normalizeUsername(usernameRaw);
     const name = String(document.getElementById('clinical-reg-name')?.value || '').trim();
     const rank = String(document.getElementById('clinical-reg-rank')?.value || 'R1');
     const sala = String(document.getElementById('clinical-reg-sala')?.value || '').trim();
-    if (!name) {
+
+    if (!isValidUsernameFormat(username)) {
       if (errEl) {
-        errEl.textContent = 'Escribe tu nombre o identificador de guardia.';
+        errEl.textContent =
+          'Usuario inválido. Usa 3–32 caracteres en minúsculas: letras, números y _.';
         errEl.hidden = false;
       }
       return;
     }
+    if (!name) {
+      if (errEl) {
+        errEl.textContent = 'Escribe tu nombre en guardia.';
+        errEl.hidden = false;
+      }
+      return;
+    }
+
     let settings = {};
     try {
       settings = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
     } catch (_e) {}
+    const clientId = String(settings.clientId || '').trim();
+    if (!clientId) {
+      if (errEl) {
+        errEl.textContent = 'No se encontró el identificador del dispositivo. Reinicia R+.';
+        errEl.hidden = false;
+      }
+      return;
+    }
+
     settings.clinicalRegistered = true;
     settings.clinicalDisplayName = name;
+    settings.clinicalUsername = username;
     settings.clinicalRank = RANKS.includes(rank) ? rank : 'R1';
     if (sala) settings.clinicalSala = sala;
     try {
       localStorage.setItem('rpc-settings', JSON.stringify(settings));
     } catch (_e) {}
 
-    // Persist to DB
-    const api = typeof window !== 'undefined' ? (window.rplusDb || window.electronAPI) : null;
-    if (api && typeof api.dbClinicalProfileUpsert === 'function') {
+    const api = dbApi();
+    if (api && typeof api.dbClinicalAccessBootstrap === 'function') {
       try {
-        await api.dbClinicalProfileUpsert({
-          userId: settings.clientId || '',
-          clinicalName: name,
+        const boot = await api.dbClinicalAccessBootstrap({
+          clientId,
           rank: settings.clinicalRank,
-          sala: sala || null,
         });
-      } catch (_e) {
-        // non-fatal — profile saved to localStorage
+        const userId = String(boot?.user?.userId || '');
+        if (!userId || boot?.ok === false) {
+          throw new Error(boot?.error || 'No se pudo iniciar la sesión clínica.');
+        }
+        if (typeof api.dbClinicalUsernameClaim === 'function') {
+          const claimRes = await api.dbClinicalUsernameClaim({ userId, username });
+          if (!claimRes?.ok) {
+            throw new Error(claimRes?.error || 'No se pudo registrar el usuario LAN.');
+          }
+        }
+        if (typeof api.dbClinicalProfileUpsert === 'function') {
+          const profileRes = await api.dbClinicalProfileUpsert({
+            userId,
+            clinicalName: name,
+            rank: settings.clinicalRank,
+            sala: sala || null,
+          });
+          if (!profileRes?.ok) {
+            throw new Error(profileRes?.error || 'No se guardó el perfil clínico.');
+          }
+        }
+      } catch (err) {
+        if (errEl) {
+          errEl.textContent = err?.message || 'Error al guardar el registro.';
+          errEl.hidden = false;
+        }
+        return;
       }
     }
 
+    if (errEl) errEl.hidden = true;
     closeClinicalRegistrationModal();
-    var params = new URLSearchParams(window.location.search);
-    var host = params.get('host') || '';
-    var code = params.get('code') || '';
+    const params = new URLSearchParams(window.location.search);
+    const host = params.get('host') || '';
+    const code = params.get('code') || '';
     if (host && code) {
       try {
         persistLanClientConfig(host, code);
@@ -125,9 +179,13 @@ export function promptClinicalRegistrationIfNeeded(settings) {
   wireRegistrationFormOnce();
   prefillRegistrationFromUrlParams();
   try {
+    const usernameInput = document.getElementById('clinical-reg-username');
     const nameInput = document.getElementById('clinical-reg-name');
     const rankSelect = document.getElementById('clinical-reg-rank');
     const salaSelect = document.getElementById('clinical-reg-sala');
+    if (usernameInput && settings.clinicalUsername) {
+      usernameInput.value = String(settings.clinicalUsername);
+    }
     if (nameInput && settings.clinicalDisplayName) nameInput.value = String(settings.clinicalDisplayName);
     if (rankSelect && settings.clinicalRank) rankSelect.value = String(settings.clinicalRank);
     if (salaSelect && settings.clinicalSala) salaSelect.value = String(settings.clinicalSala);

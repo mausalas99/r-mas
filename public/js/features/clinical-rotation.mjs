@@ -230,10 +230,22 @@ export async function confirmNuevaRotacion() {
 
 let rotationControlsWired = false;
 
+export function syncRotationConfigButton() {
+  const configBtn = document.getElementById('btn-guardia-rotation-config');
+  if (!configBtn) return;
+  const allowed = canConfigureRotation();
+  configBtn.disabled = !allowed;
+  configBtn.title = allowed
+    ? ''
+    : 'Solo R4 o Admin pueden configurar la rotación.';
+  configBtn.classList.toggle('btn-med-secondary--muted', !allowed);
+}
+
 export function wireGuardiaRotationControls() {
   if (rotationControlsWired) return;
   rotationControlsWired = true;
   wireRotationConfigFormOnce();
+  syncRotationConfigButton();
 
   const configBtn = document.getElementById('btn-guardia-rotation-config');
   if (configBtn) configBtn.addEventListener('click', () => openRotationConfigModal());

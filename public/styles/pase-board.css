@@ -639,6 +639,51 @@ html.ui-density-guardia #header-app-mode-chip {
   margin: 0;
 }
 
+.clinical-onboarding-progress {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 0.8rem;
+  color: var(--text-muted, #8e8a9f);
+}
+
+.clinical-onboarding-progress span {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border, #2a2640);
+}
+
+.clinical-onboarding-progress span.is-active {
+  background: var(--accent, #6c5ce7);
+  color: #fff;
+  border-color: transparent;
+}
+
+.clinical-teams-legacy-banner {
+  background: rgba(255, 159, 10, 0.12);
+  border: 1px solid rgba(255, 159, 10, 0.35);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  margin: 0 0 10px;
+}
+
+.clinical-teams-handle-display {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.clinical-teams-joined-badge,
+.clinical-teams-join-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted, #8e8a9f);
+  white-space: nowrap;
+}
+
 .clinical-teams-create-form .field-group {
   margin-bottom: 10px;
 }

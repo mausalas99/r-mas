@@ -12,9 +12,10 @@ import {
   resolveClinicalRank,
 } from '../clinical-access-runtime.mjs';
 import { evaluateClinicalScope } from '../clinico-access.mjs';
+import { syncGuardiaModeUI, toggleGuardiaMode } from '../guardia-mode-sync.mjs';
 import { diagnosticosTextForCenso } from '../patient-diagnosticos.mjs';
 import { UnifiedPatientGridBoard } from './unified-patient-grid-board.mjs';
-import { syncGuardiaIncomingStrip } from './clinical-rotation.mjs';
+import { syncGuardiaIncomingStrip, syncRotationConfigButton } from './clinical-rotation.mjs';
 import { wireClinicalTeamsControls } from './clinical-teams.mjs';
 import {
   loadGuardiaGridViewContext,
@@ -147,19 +148,13 @@ function wireGuardiaModeToggle(settings) {
   if (!btn || btn._rpcGuardiaModeWired) return;
   btn._rpcGuardiaModeWired = true;
 
-  const syncUI = (active) => {
-    btn.setAttribute('aria-pressed', String(active));
-    btn.classList.toggle('is-active', active);
-    const label = btn.querySelector('.guardia-mode-label');
-    if (label) label.textContent = active ? 'Modo Guardia' : 'Modo Normal';
-  };
-
-  syncUI(clinicalSessionContext.guardiaMode);
+  syncGuardiaModeUI();
 
   btn.addEventListener('click', () => {
-    clinicalSessionContext.guardiaMode = !clinicalSessionContext.guardiaMode;
-    syncUI(clinicalSessionContext.guardiaMode);
-    renderGuardiaBoard(settings);
+    toggleGuardiaMode({
+      settings,
+      renderGuardiaBoard,
+    });
   });
 }
 
@@ -183,6 +178,7 @@ export function renderGuardiaBoard(settings) {
   const gridViewContext = loadGuardiaGridViewContext();
   wireGuardiaGridModeToggle(settings);
   wireGuardiaModeToggle(settings);
+  syncRotationConfigButton();
 
   clinicalSessionContext.scopeContext = {
     teams: clinicalSessionContext.teams || [],

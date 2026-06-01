@@ -311,7 +311,7 @@
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/></svg>
         Censo PDF
       </button>
-      <button type="button" id="header-guardia-mode-chip" class="header-guardia-mode-chip" style="display:none;" onclick="toggleGuardiaMode()" title="Vista censo de guardia — matriz de pacientes con vitales y pendientes" aria-label="Modo Guardia" aria-pressed="false">🌙 Modo Guardia</button>
+      <button type="button" id="header-guardia-mode-chip" class="header-guardia-mode-chip" style="display:none;" onclick="toggleGuardiaMode()" title="Abrir vista guardia — matriz de pacientes con vitales y pendientes" aria-label="Vista guardia" aria-pressed="false"><span class="header-guardia-mode-label">🌙 Vista guardia</span></button>
       <button type="button" id="header-pase-mode-chip" class="header-pase-mode-chip" style="display:none;" onclick="exitPaseModeFromHeader()" title="Salir a vista Normal (pestañas completas)" aria-label="Salir del modo Pase">Modo Pase</button>
       <button type="button" id="header-app-mode-chip" class="header-app-mode-chip mode-sala" title="">
         Modo: Sala
@@ -1739,6 +1739,7 @@
 <div id="rpc-db-unlock-overlay" role="dialog" aria-modal="true" aria-labelledby="rpc-db-unlock-title" aria-hidden="true">
   <div class="rpc-db-unlock-panel">
     <h2 id="rpc-db-unlock-title">Desbloquear base de datos</h2>
+    <div id="rpc-db-unlock-form-main">
     <p id="rpc-db-unlock-hint">Ingresa la contraseña maestra de la base de datos clínica en este equipo.</p>
     <p id="rpc-db-unlock-rate-limited" class="rpc-db-unlock-rate-limited" role="alert" style="display:none;">Demasiados intentos fallidos. Espera unos minutos antes de volver a intentar.</p>
     <label class="profile-field-label" for="rpc-db-unlock-pass">Contraseña maestra</label>
@@ -1771,6 +1772,15 @@
     <div class="rpc-db-unlock-error" id="rpc-db-unlock-error" role="alert"></div>
     <div class="rpc-db-unlock-actions">
       <button type="button" class="btn-unlock" id="rpc-db-unlock-submit" onclick="submitDbUnlockPassphrase()">Desbloquear</button>
+    </div>
+    </div>
+    <div id="rpc-db-unlock-recovery-reveal" class="rpc-db-unlock-recovery-reveal" style="display:none;" role="status">
+      <h3 class="rpc-db-unlock-recovery-reveal-title">Guarda tu código de recuperación</h3>
+      <p class="settings-acc-hint settings-acc-hint--tight">Este código es único de esta instalación. Guárdalo en un lugar seguro; lo necesitarás si olvidas la contraseña maestra.</p>
+      <p class="rpc-db-unlock-recovery-reveal-code" id="rpc-db-unlock-recovery-reveal-code"></p>
+      <div class="rpc-db-unlock-actions">
+        <button type="button" class="btn-unlock" onclick="dismissRecoveryCodeReveal()">Ya lo guardé, continuar</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1868,6 +1878,11 @@
     <h3 id="clinical-registration-title">Registro de guardia</h3>
     <p class="clinical-registration-lead">Identifícate para el censo de guardia, firmado clínico y acceso al Modo Guardia. Es independiente del modo Sala / Interconsulta y de la contraseña de Mi Perfil.</p>
     <form id="clinical-registration-form">
+      <div class="field-group">
+        <label for="clinical-reg-username">Usuario LAN *</label>
+        <input id="clinical-reg-username" type="text" class="profile-input" placeholder="mgarcia" autocomplete="username" required pattern="[a-z][a-z0-9_]{2,31}">
+        <p class="clinical-registration-lead" style="margin:0.35rem 0 0;">Minúsculas, 3–32 caracteres (a-z, 0-9, _). Lo usan tus compañeros para equipos y entregas.</p>
+      </div>
       <div class="field-group">
         <label for="clinical-reg-name">Nombre en guardia *</label>
         <input id="clinical-reg-name" type="text" class="profile-input" placeholder="Dr. Pérez / R2 García" autocomplete="name" required>

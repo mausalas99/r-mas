@@ -18,8 +18,17 @@ function normalizeUsers(users) {
       user_id: String(u.user_id || u.userId || ''),
       username: String(u.username || ''),
       rank: String(u.rank || ''),
+      clinical_name: String(u.clinical_name || ''),
     }))
     .filter((u) => u.user_id);
+}
+
+/** @param {{ username?: string, clinical_name?: string, rank?: string, user_id?: string }} u */
+function userOptionLabel(u) {
+  const handle = String(u.username || u.user_id || '');
+  const name = String(u.clinical_name || '').trim();
+  const rank = String(u.rank || '');
+  return name ? `${handle} · ${name} (${rank})` : `${handle} (${rank})`;
 }
 
 /** @param {object[]} list */
@@ -284,8 +293,7 @@ export function openEntregaModal(opts) {
   if (select) {
     select.innerHTML = targets
       .map(
-        (u) =>
-          `<option value="${u.user_id}">${u.username} (${u.rank})</option>`
+        (u) => `<option value="${u.user_id}">${userOptionLabel(u)}</option>`
       )
       .join('');
     const preferred = existing?.covering_user_id
