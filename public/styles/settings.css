@@ -762,3 +762,90 @@ select.profile-input.profile-select {
   .templates-preview-scroll { max-height: min(36vh, 300px); }
   .profile-modal--wide { width: min(100vw - 16px, 720px); }
 }
+
+/* ===== Guardia LAN Hub ===== */
+.lan-hub-status-card {
+  padding: 10px 14px !important;
+  margin-bottom: 10px;
+}
+
+.lan-hub-status-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.lan-hub-status-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.lan-hub-status-dot--online {
+  background: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+.lan-hub-status-dot--offline {
+  background: #9ca3af;
+  box-shadow: 0 0 0 2px rgba(156, 163, 175, 0.15);
+}
+
+.lan-hub-team-card,
+.lan-hub-modo-card,
+.lan-hub-mobile-card,
+.lan-hub-census-card,
+.lan-hub-rotation-card,
+.lan-hub-team-create-card,
+.lan-hub-entrega-card {
+  margin-bottom: 10px;
+}
+
+.lan-hub-team-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 8px;
+}
+
+.lan-hub-link-btn {
+  background: none;
+  border: none;
+  color: var(--action);
+  font-size: inherit;
+  font-family: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+
+.lan-hub-link-btn:hover {
+  color: var(--action-hover);
+}
+
+.lan-hub-modo-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.lan-hub-guardia-check {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--action);
+}
+
+.lan-connect-other-mac,
+.lan-connect-back-to-local,
+.lan-disconnect-banner-pref {
+  display: none !important;
+}
