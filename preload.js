@@ -164,6 +164,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbClinicalTeamsGuardiaGet: function(opts) {
     return ipcRenderer.invoke('db:clinical-teams-guardia-get', opts);
   },
+  dbClinicalTeamsPromoteLeader: function(opts) {
+    return ipcRenderer.invoke('db:clinical-teams-promote-leader', opts);
+  },
+  dbClinicalTeamGetById: function(opts) {
+    return ipcRenderer.invoke('db:clinical-team-get-by-id', opts);
+  },
+  dbClinicalFindUserTeam: function(opts) {
+    return ipcRenderer.invoke('db:clinical-find-user-team', opts);
+  },
+  dbClinicalAssignPatientToTeam: function(opts) {
+    return ipcRenderer.invoke('db:clinical-assign-patient-to-team', opts);
+  },
   dbClinicalOpsExport: function() {
     return ipcRenderer.invoke('db:clinical-ops-export');
   },
