@@ -1,6 +1,11 @@
 import { describe, it, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
-import { calcVitalsBanner, UnifiedPatientGridBoard } from './unified-patient-grid-board.mjs';
+import {
+  calcVitalsBanner,
+  filterR4FollowUpPinPatients,
+  R4_FOLLOWUP_PIN_LABEL,
+  UnifiedPatientGridBoard,
+} from './unified-patient-grid-board.mjs';
 
 describe('calcVitalsBanner', () => {
   it('returns Rutina for None frequency', () => {
@@ -56,6 +61,47 @@ describe('UnifiedPatientGridBoard', () => {
     const chips = host.querySelectorAll('.patient-chip-card');
     assert.equal(chips.length, 2);
     assert.equal(chips[0].getAttribute('data-patient-id'), 'p2');
+  });
+
+  it('filterR4FollowUpPinPatients keeps active Follow-up rows only', () => {
+    const rows = filterR4FollowUpPinPatients([
+      { id: 'a', interconsult_type: 'Follow-up', interconsult_status: 'Active' },
+      { id: 'b', interconsult_type: 'Follow-up', interconsult_status: 'Resolved' },
+      { id: 'c', interconsult_type: 'None', interconsult_status: 'Pending' },
+      { id: 'd', interconsult_type: 'Follow-up', interconsult_status: 'Pending' },
+    ]);
+    assert.deepEqual(
+      rows.map((r) => r.id),
+      ['a', 'd']
+    );
+  });
+
+  it('renders R4 Follow-up pin divider before sector dividers', () => {
+    if (typeof document === 'undefined') return;
+    const board = new UnifiedPatientGridBoard('test-guardia-grid');
+    board.drawCensusGrid(
+      [
+        {
+          id: 'fu1',
+          name: 'Follow',
+          interconsult_type: 'Follow-up',
+          interconsult_status: 'Active',
+          service: 'Sala A',
+        },
+        { id: 'p1', name: 'A', service: 'Sala A' },
+        { id: 'p2', name: 'B', service: 'Eme' },
+      ],
+      new Map(),
+      'R4'
+    );
+    const dividers = host.querySelectorAll('.r4-section-divider');
+    assert.equal(dividers.length, 3);
+    assert.equal(dividers[0].textContent, R4_FOLLOWUP_PIN_LABEL);
+    assert.equal(dividers[1].textContent, 'Sala A');
+    assert.equal(dividers[2].textContent, 'Eme');
+    const chips = host.querySelectorAll('.patient-chip-card');
+    assert.equal(chips.length, 3);
+    assert.equal(chips[0].getAttribute('data-patient-id'), 'fu1');
   });
 
   it('renders R4 sector dividers', () => {

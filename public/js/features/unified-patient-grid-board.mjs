@@ -23,6 +23,15 @@ export function calcVitalsBanner(last, freq) {
   return { str: `⏱️ Toca en: ${h}h ${m}m`, cls: 'nominal' };
 }
 
+export const R4_FOLLOWUP_PIN_LABEL = 'Interconsultas — Seguimiento';
+
+/** @param {Array<{ interconsult_type?: string, interconsult_status?: string }>} patients */
+export function filterR4FollowUpPinPatients(patients) {
+  return patients.filter(
+    (p) => p.interconsult_type === 'Follow-up' && p.interconsult_status !== 'Resolved'
+  );
+}
+
 export class UnifiedPatientGridBoard {
   /**
    * @param {string} domGridContainerId
@@ -73,10 +82,19 @@ export class UnifiedPatientGridBoard {
     this.container.classList.add('patient-chips-grid');
 
     if (userRank === 'R4') {
+      const followUpPatients = filterR4FollowUpPinPatients(patients);
+      const followUpIds = new Set(followUpPatients.map((p) => p.id));
+      if (followUpPatients.length > 0) {
+        this.appendDivider(R4_FOLLOWUP_PIN_LABEL);
+        this.renderBatch(followUpPatients, guardiasMap);
+      }
+
       const sectors = ['Sala A', 'Sala B', 'Eme', 'Torre HU'];
       sectors.forEach((sector) => {
         const sectorPatients = patients.filter(
-          (p) => p.service === sector || p.sub_area === sector
+          (p) =>
+            !followUpIds.has(p.id) &&
+            (p.service === sector || p.sub_area === sector)
         );
         if (sectorPatients.length > 0) {
           this.appendDivider(sector);

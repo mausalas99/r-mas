@@ -54,6 +54,8 @@ export function mapPatientForGuardiaGrid(p) {
     service: String(p.servicio || p.area || ''),
     sub_area: String(p.area || ''),
     negativa_maniobras_firmada: Number(p.negativa_maniobras_firmada || 0),
+    interconsult_type: String(p.interconsult_type || 'None'),
+    interconsult_status: String(p.interconsult_status || 'Pending'),
   };
 }
 
