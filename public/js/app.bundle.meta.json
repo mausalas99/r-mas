@@ -694,7 +694,7 @@
       "format": "esm"
     },
     "public/js/clinico-access.mjs": {
-      "bytes": 17357,
+      "bytes": 20581,
       "imports": [
         {
           "path": "public/js/clinical-product-policy.mjs",
@@ -714,8 +714,18 @@
       "imports": [],
       "format": "esm"
     },
+    "public/js/clinical-settings.mjs": {
+      "bytes": 1365,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/clinical-username.mjs": {
+      "bytes": 580,
+      "imports": [],
+      "format": "esm"
+    },
     "public/js/clinical-access-runtime.mjs": {
-      "bytes": 12164,
+      "bytes": 17000,
       "imports": [
         {
           "path": "public/js/db-storage-bridge.mjs",
@@ -751,6 +761,16 @@
           "path": "public/js/features/session-manager.mjs",
           "kind": "import-statement",
           "original": "./features/session-manager.mjs"
+        },
+        {
+          "path": "public/js/clinical-settings.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-settings.mjs"
+        },
+        {
+          "path": "public/js/clinical-username.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-username.mjs"
         }
       ],
       "format": "esm"
@@ -771,13 +791,151 @@
       "imports": [],
       "format": "esm"
     },
+    "public/js/clinical-privileges.mjs": {
+      "bytes": 1300,
+      "imports": [],
+      "format": "esm"
+    },
     "public/js/features/clinical-rotation.mjs": {
-      "bytes": 9765,
+      "bytes": 9731,
       "imports": [
         {
           "path": "public/js/clinical-access-runtime.mjs",
           "kind": "import-statement",
           "original": "../clinical-access-runtime.mjs"
+        },
+        {
+          "path": "public/js/clinical-privileges.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-privileges.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/features/clinical-panel-host.mjs": {
+      "bytes": 2198,
+      "imports": [
+        {
+          "path": "public/js/db-storage-bridge.mjs",
+          "kind": "import-statement",
+          "original": "../db-storage-bridge.mjs"
+        },
+        {
+          "path": "public/js/clinical-access-runtime.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-access-runtime.mjs"
+        },
+        {
+          "path": "public/js/clinical-settings.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-settings.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/features/clinical-onboarding.mjs": {
+      "bytes": 16951,
+      "imports": [
+        {
+          "path": "public/js/clinical-access-runtime.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-access-runtime.mjs"
+        },
+        {
+          "path": "public/js/clinical-settings.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-settings.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-panel-host.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-panel-host.mjs"
+        },
+        {
+          "path": "public/js/clinical-username.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-username.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-teams.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-teams.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-teams.mjs",
+          "kind": "dynamic-import",
+          "original": "./clinical-teams.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-teams.mjs",
+          "kind": "dynamic-import",
+          "original": "./clinical-teams.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-teams.mjs",
+          "kind": "dynamic-import",
+          "original": "./clinical-teams.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-teams.mjs",
+          "kind": "dynamic-import",
+          "original": "./clinical-teams.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/features/clinical-teams.mjs": {
+      "bytes": 30205,
+      "imports": [
+        {
+          "path": "public/js/clinical-access-runtime.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-access-runtime.mjs"
+        },
+        {
+          "path": "public/js/clinico-access.mjs",
+          "kind": "import-statement",
+          "original": "../clinico-access.mjs"
+        },
+        {
+          "path": "public/js/clinical-privileges.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-privileges.mjs"
+        },
+        {
+          "path": "public/js/clinical-username.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-username.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-rotation.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-rotation.mjs"
+        },
+        {
+          "path": "public/js/clinical-settings.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-settings.mjs"
+        },
+        {
+          "path": "public/js/clinical-access-runtime.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-access-runtime.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-panel-host.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-panel-host.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-onboarding.mjs",
+          "kind": "dynamic-import",
+          "original": "./clinical-onboarding.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-onboarding.mjs",
+          "kind": "dynamic-import",
+          "original": "./clinical-onboarding.mjs"
         }
       ],
       "format": "esm"
@@ -1057,85 +1215,8 @@
       ],
       "format": "esm"
     },
-    "public/js/clinical-username.mjs": {
-      "bytes": 580,
-      "imports": [],
-      "format": "esm"
-    },
-    "public/js/features/clinical-onboarding.mjs": {
-      "bytes": 12149,
-      "imports": [
-        {
-          "path": "public/js/clinical-access-runtime.mjs",
-          "kind": "import-statement",
-          "original": "../clinical-access-runtime.mjs"
-        },
-        {
-          "path": "public/js/clinical-username.mjs",
-          "kind": "import-statement",
-          "original": "../clinical-username.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-teams.mjs",
-          "kind": "dynamic-import",
-          "original": "./clinical-teams.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-teams.mjs",
-          "kind": "dynamic-import",
-          "original": "./clinical-teams.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-teams.mjs",
-          "kind": "dynamic-import",
-          "original": "./clinical-teams.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-teams.mjs",
-          "kind": "dynamic-import",
-          "original": "./clinical-teams.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/features/clinical-teams.mjs": {
-      "bytes": 21257,
-      "imports": [
-        {
-          "path": "public/js/clinical-access-runtime.mjs",
-          "kind": "import-statement",
-          "original": "../clinical-access-runtime.mjs"
-        },
-        {
-          "path": "public/js/features/lan-sync.mjs",
-          "kind": "import-statement",
-          "original": "./lan-sync.mjs"
-        },
-        {
-          "path": "public/js/clinico-access.mjs",
-          "kind": "import-statement",
-          "original": "../clinico-access.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-onboarding.mjs",
-          "kind": "dynamic-import",
-          "original": "./clinical-onboarding.mjs"
-        },
-        {
-          "path": "public/js/clinical-username.mjs",
-          "kind": "dynamic-import",
-          "original": "../clinical-username.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-onboarding.mjs",
-          "kind": "dynamic-import",
-          "original": "./clinical-onboarding.mjs"
-        }
-      ],
-      "format": "esm"
-    },
     "public/js/features/clinical-entrega.mjs": {
-      "bytes": 12323,
+      "bytes": 12392,
       "imports": [
         {
           "path": "public/js/clinical-access-runtime.mjs",
@@ -1146,6 +1227,11 @@
           "path": "public/js/clinico-access.mjs",
           "kind": "import-statement",
           "original": "../clinico-access.mjs"
+        },
+        {
+          "path": "public/js/clinical-privileges.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-privileges.mjs"
         },
         {
           "path": "public/js/features/lan-sync.mjs",
@@ -4794,7 +4880,7 @@
       "format": "esm"
     },
     "public/js/features/clinical-registration.mjs": {
-      "bytes": 7469,
+      "bytes": 8320,
       "imports": [
         {
           "path": "public/js/features/lan-sync.mjs",
@@ -4810,6 +4896,11 @@
           "path": "public/js/clinical-username.mjs",
           "kind": "import-statement",
           "original": "../clinical-username.mjs"
+        },
+        {
+          "path": "public/js/clinical-settings.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-settings.mjs"
         }
       ],
       "format": "esm"
@@ -5001,7 +5092,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 4251374
+      "bytes": 4294644
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -5114,7 +5205,7 @@
           "bytesInOutput": 3010
         },
         "public/js/clinico-access.mjs": {
-          "bytesInOutput": 11033
+          "bytesInOutput": 14482
         },
         "public/js/features/crypto-signer.mjs": {
           "bytesInOutput": 566
@@ -5122,8 +5213,14 @@
         "public/js/features/session-manager.mjs": {
           "bytesInOutput": 3533
         },
+        "public/js/clinical-settings.mjs": {
+          "bytesInOutput": 1083
+        },
+        "public/js/clinical-username.mjs": {
+          "bytesInOutput": 544
+        },
         "public/js/clinical-access-runtime.mjs": {
-          "bytesInOutput": 9582
+          "bytesInOutput": 13973
         },
         "public/js/guardia-mode-sync.mjs": {
           "bytesInOutput": 1506
@@ -5131,8 +5228,20 @@
         "public/js/features/unified-patient-grid-board.mjs": {
           "bytesInOutput": 6863
         },
+        "public/js/clinical-privileges.mjs": {
+          "bytesInOutput": 893
+        },
         "public/js/features/clinical-rotation.mjs": {
-          "bytesInOutput": 9130
+          "bytesInOutput": 8998
+        },
+        "public/js/features/clinical-panel-host.mjs": {
+          "bytesInOutput": 1847
+        },
+        "public/js/features/clinical-onboarding.mjs": {
+          "bytesInOutput": 17036
+        },
+        "public/js/features/clinical-teams.mjs": {
+          "bytesInOutput": 29621
         },
         "public/js/lan-client.mjs": {
           "bytesInOutput": 5591
@@ -5189,19 +5298,10 @@
           "bytesInOutput": 4230
         },
         "public/js/features/lan-sync.mjs": {
-          "bytesInOutput": 110731
-        },
-        "public/js/clinical-username.mjs": {
-          "bytesInOutput": 779
-        },
-        "public/js/features/clinical-onboarding.mjs": {
-          "bytesInOutput": 12445
-        },
-        "public/js/features/clinical-teams.mjs": {
-          "bytesInOutput": 21440
+          "bytesInOutput": 110729
         },
         "public/js/features/clinical-entrega.mjs": {
-          "bytesInOutput": 11215
+          "bytesInOutput": 11248
         },
         "public/js/features/guardia-board.mjs": {
           "bytesInOutput": 7333
@@ -5687,10 +5787,10 @@
           "bytesInOutput": 16192
         },
         "public/js/features/clinical-registration.mjs": {
-          "bytesInOutput": 6960
+          "bytesInOutput": 7755
         }
       },
-      "bytes": 2349576
+      "bytes": 2374591
     }
   }
 }
