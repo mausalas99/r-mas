@@ -19,6 +19,7 @@ export const clinicalSessionContext = {
   guardiasMap: new Map(),
   teams: [],
   scopeContext: null,
+  guardiaMode: false,
   decryptedPrivateKeyPem: null,
   lastBlockHashByPatient: new Map(),
 };

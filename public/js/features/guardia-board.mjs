@@ -11,6 +11,7 @@ import {
   mapPatientForGuardiaGrid,
   resolveClinicalRank,
 } from '../clinical-access-runtime.mjs';
+import { evaluateClinicalScope } from '../clinico-access.mjs';
 import { diagnosticosTextForCenso } from '../patient-diagnosticos.mjs';
 import { UnifiedPatientGridBoard } from './unified-patient-grid-board.mjs';
 import { syncGuardiaIncomingStrip } from './clinical-rotation.mjs';
@@ -117,16 +118,10 @@ export function computeGuardiaSummary(censusPatients, guardiasMap) {
     if (p.isCritical || guardiasMap.get(p.id)?.is_critical) critical += 1;
     pending += p.pendingCount || 0;
   });
-  const now = new Date();
-  const nextHour = new Date(now);
-  nextHour.setMinutes(0, 0, 0);
-  nextHour.setHours(nextHour.getHours() + 1);
-  const nextHandoff =
-    nextHour.getHours().toString().padStart(2, '0') + ':' + nextHour.getMinutes().toString().padStart(2, '0');
-  return { critical, pending, nextHandoff };
+  return { critical, pending };
 }
 
-/** @param {{ critical: number, pending: number, nextHandoff: string }} summary */
+/** @param {{ critical: number, pending: number }} summary */
 function renderGuardiaSummaryTiles(summary) {
   const host = document.getElementById('guardia-summary');
   if (!host) return;
@@ -144,14 +139,28 @@ function renderGuardiaSummaryTiles(summary) {
         <div class="guardia-summary-value">${summary.pending}</div>
       </div>
       <span class="guardia-summary-icon" aria-hidden="true">📋</span>
-    </div>
-    <div class="guardia-summary-tile">
-      <div>
-        <div class="guardia-summary-label">Siguiente entrega</div>
-        <div class="guardia-summary-value guardia-summary-value--muted">${summary.nextHandoff}</div>
-      </div>
-      <span class="guardia-summary-icon" aria-hidden="true">⏳</span>
     </div>`;
+}
+
+function wireGuardiaModeToggle(settings) {
+  const btn = document.getElementById('btn-guardia-mode-toggle');
+  if (!btn || btn._rpcGuardiaModeWired) return;
+  btn._rpcGuardiaModeWired = true;
+
+  const syncUI = (active) => {
+    btn.setAttribute('aria-pressed', String(active));
+    btn.classList.toggle('is-active', active);
+    const label = btn.querySelector('.guardia-mode-label');
+    if (label) label.textContent = active ? 'Modo Guardia' : 'Modo Normal';
+  };
+
+  syncUI(clinicalSessionContext.guardiaMode);
+
+  btn.addEventListener('click', () => {
+    clinicalSessionContext.guardiaMode = !clinicalSessionContext.guardiaMode;
+    syncUI(clinicalSessionContext.guardiaMode);
+    renderGuardiaBoard(settings);
+  });
 }
 
 /**
@@ -173,9 +182,32 @@ export function renderGuardiaBoard(settings) {
 
   const gridViewContext = loadGuardiaGridViewContext();
   wireGuardiaGridModeToggle(settings);
+  wireGuardiaModeToggle(settings);
+
+  clinicalSessionContext.scopeContext = {
+    teams: clinicalSessionContext.teams || [],
+    guardias: clinicalSessionContext.guardias || [],
+    assignments: clinicalSessionContext.assignments || [],
+    salaGuardiaToday: clinicalSessionContext.salaGuardiaToday || [],
+    guardiaMode: clinicalSessionContext.guardiaMode,
+    now: new Date(),
+  };
 
   if (guardiasMap.size > 0 && gridViewContext === 'GUARDIA') {
     censusPatients = censusPatients.filter((p) => guardiasMap.has(p.id));
+  }
+
+  if (!clinicalSessionContext.guardiaMode && gridViewContext === 'GUARDIA') {
+    clinicalSessionContext.scopeContext = clinicalSessionContext.scopeContext || {};
+    censusPatients = censusPatients.filter((p) => {
+      const scope = evaluateClinicalScope(
+        clinicalSessionContext.user,
+        { id: p.id, service: p.service, sala: p.sala },
+        clinicalSessionContext.guardiasMap.get(p.id) || null,
+        clinicalSessionContext.scopeContext
+      );
+      return scope.readable;
+    });
   }
 
   const summary = computeGuardiaSummary(censusPatients, guardiasMap);
