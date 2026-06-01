@@ -6,6 +6,7 @@ import {
   fetchClinicalTeamsFromDb,
 } from '../clinical-access-runtime.mjs';
 import { scheduleLiveSyncPush } from './lan-sync.mjs';
+import { getCycleConfig } from '../clinico-access.mjs';
 
 export const CLINICAL_TEAM_SERVICES = [
   'Sala',
@@ -14,16 +15,6 @@ export const CLINICAL_TEAM_SERVICES = [
   'Torre HU',
   'UX',
   'Área A',
-];
-
-export const ON_CALL_DAY_LABELS = [
-  'Domingo (0)',
-  'Lunes (1)',
-  'Martes (2)',
-  'Miércoles (3)',
-  'Jueves (4)',
-  'Viernes (5)',
-  'Sábado (6)',
 ];
 
 function dbApi() {
@@ -86,8 +77,10 @@ function renderCreateTeamForm() {
   const serviceOptions = CLINICAL_TEAM_SERVICES.map(
     (svc) => `<option value="${escapeAttr(svc)}">${escapeHtml(svc)}</option>`
   ).join('');
-  const dayOptions = ON_CALL_DAY_LABELS.map(
-    (label, idx) => `<option value="${idx}">${escapeHtml(label)}</option>`
+  const rank = clinicalSessionContext.user?.rank || 'R1';
+  const defaultCycle = getCycleConfig(CLINICAL_TEAM_SERVICES[0], rank);
+  const letterOptions = defaultCycle.letters.map(
+    (letter, idx) => `<option value="${escapeAttr(letter)}">${escapeHtml(letter)}</option>`
   ).join('');
 
   return `
@@ -107,8 +100,8 @@ function renderCreateTeamForm() {
           <input id="clinical-team-create-fraction" type="text" class="profile-input" placeholder="A1, A2…" maxlength="16">
         </div>
         <div class="field-group">
-          <label for="clinical-team-create-day">Día de guardia (0–6)</label>
-          <select id="clinical-team-create-day" class="profile-input" required>${dayOptions}</select>
+          <label for="clinical-team-create-day">Posición en ciclo</label>
+          <select id="clinical-team-create-day" class="profile-input" required>${letterOptions}</select>
         </div>
         <div class="modal-actions">
           <button type="submit" class="btn-save">Crear equipo</button>
@@ -247,6 +240,20 @@ function wireClinicalTeamsPanelInteractions() {
     createForm.addEventListener('submit', (ev) => void handleCreateTeamSubmit(ev));
   }
 
+  const serviceSelect = document.getElementById('clinical-team-create-service');
+  if (serviceSelect && !serviceSelect._rpcServiceWired) {
+    serviceSelect._rpcServiceWired = true;
+    serviceSelect.addEventListener('change', () => {
+      const daySelect = document.getElementById('clinical-team-create-day');
+      if (!daySelect) return;
+      const rank = clinicalSessionContext.user?.rank || 'R1';
+      const cfg = getCycleConfig(serviceSelect.value, rank);
+      daySelect.innerHTML = cfg.letters.map(
+        (letter, idx) => `<option value="${escapeAttr(letter)}">${escapeHtml(letter)}</option>`
+      ).join('');
+    });
+  }
+
   document.querySelectorAll('.clinical-teams-guardia-check').forEach((input) => {
     if (!(input instanceof HTMLInputElement) || input._rpcGuardiaWired) return;
     input._rpcGuardiaWired = true;
@@ -274,7 +281,7 @@ async function handleCreateTeamSubmit(ev) {
   const subAreaFraction = String(
     document.getElementById('clinical-team-create-fraction')?.value || ''
   ).trim();
-  const onCallDayIndex = Number(document.getElementById('clinical-team-create-day')?.value ?? 0);
+  const cycleLetter = String(document.getElementById('clinical-team-create-day')?.value || 'A').trim();
   const userId = currentUserId();
 
   if (!name || !service) {
@@ -285,8 +292,8 @@ async function handleCreateTeamSubmit(ev) {
   const res = await api.dbClinicalTeamsCreate({
     name,
     service,
-    subAreaFraction: subAreaFraction || undefined,
-    onCallDayIndex,
+    subAreaFraction: cycleLetter,
+    onCallDayIndex: 0,
     createdBy: userId,
   });
 
