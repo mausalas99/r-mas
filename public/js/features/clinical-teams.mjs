@@ -87,17 +87,22 @@ function renderCreateTeamForm() {
     <section class="clinical-teams-section">
       <h4 class="clinical-teams-section-title">Crear equipo</h4>
       <form id="clinical-team-create-form" class="clinical-teams-create-form">
+        <div class="field-group" id="clinical-team-sala-group" style="display:none">
+          <label for="clinical-team-create-sala">Sala</label>
+          <select id="clinical-team-create-sala" class="profile-input">
+            <option value="">— Seleccionar Sala —</option>
+            <option value="Sala 1">Sala 1</option>
+            <option value="Sala 2">Sala 2</option>
+            <option value="Sala E">Sala E</option>
+          </select>
+        </div>
         <div class="field-group">
-          <label for="clinical-team-create-name">Nombre</label>
-          <input id="clinical-team-create-name" type="text" class="profile-input" placeholder="Sala A · Equipo noche" required>
+          <label for="clinical-team-create-name">Nombre del equipo (residente líder)</label>
+          <input id="clinical-team-create-name" type="text" class="profile-input" placeholder="Dr. Gutiérrez" required>
         </div>
         <div class="field-group">
           <label for="clinical-team-create-service">Servicio</label>
           <select id="clinical-team-create-service" class="profile-input" required>${serviceOptions}</select>
-        </div>
-        <div class="field-group">
-          <label for="clinical-team-create-fraction">Fracción de sub-área (opcional)</label>
-          <input id="clinical-team-create-fraction" type="text" class="profile-input" placeholder="A1, A2…" maxlength="16">
         </div>
         <div class="field-group">
           <label for="clinical-team-create-day">Posición en ciclo</label>
@@ -251,6 +256,11 @@ function wireClinicalTeamsPanelInteractions() {
       daySelect.innerHTML = cfg.letters.map(
         (letter, idx) => `<option value="${escapeAttr(letter)}">${escapeHtml(letter)}</option>`
       ).join('');
+      const salaGroup = document.getElementById('clinical-team-sala-group');
+      if (salaGroup) {
+        const isSala = serviceSelect.value.toLowerCase().includes('sala');
+        salaGroup.style.display = isSala ? '' : 'none';
+      }
     });
   }
 
@@ -278,9 +288,7 @@ async function handleCreateTeamSubmit(ev) {
 
   const name = String(document.getElementById('clinical-team-create-name')?.value || '').trim();
   const service = String(document.getElementById('clinical-team-create-service')?.value || '').trim();
-  const subAreaFraction = String(
-    document.getElementById('clinical-team-create-fraction')?.value || ''
-  ).trim();
+  const sala = String(document.getElementById('clinical-team-create-sala')?.value || '').trim();
   const cycleLetter = String(document.getElementById('clinical-team-create-day')?.value || 'A').trim();
   const userId = currentUserId();
 
@@ -294,6 +302,8 @@ async function handleCreateTeamSubmit(ev) {
     service,
     subAreaFraction: cycleLetter,
     onCallDayIndex: 0,
+    sala: sala || undefined,
+    teamLeaderName: name,
     createdBy: userId,
   });
 
