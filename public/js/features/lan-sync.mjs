@@ -2787,7 +2787,47 @@ function buildR1Section(root) {
 }
 
 function buildR2Section(root) {
-  // Task 7 fills this in
+  buildR1Section(root);
+
+  var userId = String(getClinicalUserUserId());
+  var teams = clinicalSessionContext.teams || [];
+  var myTeam = teams.find(function (t) {
+    return (t.members || []).some(function (m) {
+      return String(m.user_id) === userId;
+    });
+  });
+
+  if (!myTeam) return;
+
+  var entregaCard = document.createElement('div');
+  entregaCard.className = 'lan-connect-card lan-hub-entrega-card';
+  entregaCard.innerHTML = '<div class="lan-connect-card-title">Solicitar entrega</div>';
+
+  var guardiasForTeam = (clinicalSessionContext.guardias || []).filter(function (g) {
+    return g && String(g.source_team_id) === String(myTeam.team_id);
+  });
+
+  if (!guardiasForTeam.length) {
+    var emptyHint = document.createElement('p');
+    emptyHint.className = 'lan-connect-card-hint';
+    emptyHint.textContent = 'No hay pacientes entregados por tu equipo.';
+    entregaCard.appendChild(emptyHint);
+  } else {
+    var entregaList = document.createElement('ul');
+    entregaList.style.listStyle = 'none';
+    entregaList.style.padding = '0';
+    entregaList.style.margin = '0';
+    guardiasForTeam.forEach(function (g) {
+      var li = document.createElement('li');
+      li.style.marginBottom = '6px';
+      li.style.fontSize = '12px';
+      li.textContent = 'Paciente ' + String(g.patient_id || '').slice(0, 8) + '\u2026' + ' \u2014 ' + (g.covering_user_id || '');
+      entregaList.appendChild(li);
+    });
+    entregaCard.appendChild(entregaList);
+  }
+
+  root.appendChild(entregaCard);
 }
 
 function buildR4Section(root) {
