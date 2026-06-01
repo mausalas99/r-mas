@@ -209,7 +209,7 @@ function trimStoredLanBearer(code) {
   return String(code || '').trim();
 }
 
-function persistLanClientConfig(hostUrl, teamCode) {
+export function persistLanClientConfig(hostUrl, teamCode) {
   var url = String(hostUrl || '').trim().replace(/\/+$/, '');
   var code = trimStoredLanBearer(teamCode);
   if (!url || !code) return false;
@@ -3050,6 +3050,25 @@ async function refreshClinicalSessionTeams() {
   if (res && res.ok && Array.isArray(res.context?.teams)) {
     clinicalSessionContext.teams = res.context.teams;
   }
+}
+
+async function generateMobilePairingLink() {
+  var hostUrl = lanClient.baseUrl();
+  if (!hostUrl) return '';
+  var teamCode = getLanTeamCodeFromConfig();
+  if (!teamCode) return '';
+
+  var s = {};
+  try { s = JSON.parse(localStorage.getItem('rpc-settings') || '{}'); } catch (_e) {}
+  var params = new URLSearchParams();
+  params.set('host', hostUrl.replace(/\/+$/, ''));
+  params.set('code', teamCode);
+
+  if (s.clinicalDisplayName) params.set('name', s.clinicalDisplayName);
+  if (s.clinicalRank) params.set('rank', s.clinicalRank);
+  if (s.clinicalSala) params.set('sala', s.clinicalSala);
+
+  return hostUrl + '/?' + params.toString();
 }
 
 async function resolveLanHostUrlForShare() {

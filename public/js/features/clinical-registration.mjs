@@ -1,6 +1,7 @@
 /**
  * First-run clinical identity registration (rank + display name + sala) after DB unlock.
  */
+import { persistLanClientConfig } from './lan-sync.mjs';
 import { isDbMode } from '../db-storage-bridge.mjs';
 
 const RANKS = ['R1', 'R2', 'R3', 'R4', 'Admin'];
@@ -13,6 +14,26 @@ export function needsClinicalRegistration(settings) {
 
 /** @type {((ok: boolean) => void)|null} */
 let pendingResolve = null;
+
+/**
+ * Pre-fill registration form from URL query params (mobile pairing link).
+ */
+export function prefillRegistrationFromUrlParams() {
+  if (typeof window === 'undefined') return;
+  var params = new URLSearchParams(window.location.search);
+  var name = params.get('name') || '';
+  var rank = params.get('rank') || '';
+  var sala = params.get('sala') || '';
+  if (!name && !rank && !sala) return;
+
+  var nameInput = document.getElementById('clinical-reg-name');
+  var rankSelect = document.getElementById('clinical-reg-rank');
+  var salaInput = document.getElementById('clinical-reg-sala');
+
+  if (nameInput && name) nameInput.value = name;
+  if (rankSelect && rank) rankSelect.value = rank;
+  if (salaInput && sala) salaInput.value = sala;
+}
 
 function backdropEl() {
   return document.getElementById('clinical-registration-backdrop');
@@ -79,6 +100,14 @@ function wireRegistrationFormOnce() {
     }
 
     closeClinicalRegistrationModal();
+    var params = new URLSearchParams(window.location.search);
+    var host = params.get('host') || '';
+    var code = params.get('code') || '';
+    if (host && code) {
+      try {
+        persistLanClientConfig(host, code);
+      } catch (_e) {}
+    }
     if (pendingResolve) {
       const done = pendingResolve;
       pendingResolve = null;
@@ -94,6 +123,7 @@ function wireRegistrationFormOnce() {
 export function promptClinicalRegistrationIfNeeded(settings) {
   if (!needsClinicalRegistration(settings)) return Promise.resolve(false);
   wireRegistrationFormOnce();
+  prefillRegistrationFromUrlParams();
   try {
     const nameInput = document.getElementById('clinical-reg-name');
     const rankSelect = document.getElementById('clinical-reg-rank');
