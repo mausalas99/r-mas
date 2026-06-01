@@ -326,7 +326,7 @@
         <div class="connection-dropdown-head-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg></div>
         <div>
           <div class="connection-dropdown-head-title">Conexión guardia</div>
-          <p class="connection-dropdown-head-sub">Misma Wi‑Fi del hospital. Crea una sala o únete a una; comparte el enlace con el equipo. Para respaldos entre turnos usa <strong>Ajustes → Respaldos, sync y recuperación</strong>.</p>
+          <p class="connection-dropdown-head-sub">Red local del hospital. Conéctate a la sala de guardia y administra tu equipo.</p>
         </div>
       </div>
       <div id="lan-connection-panel-root" class="lan-connection-panel-root"></div>
@@ -780,6 +780,12 @@
         </div>
         <div id="guardia-incoming-strip" class="guardia-incoming-strip" hidden aria-label="Pacientes entrantes (preview)"></div>
         <div id="guardia-summary" class="guardia-summary" aria-label="Resumen de guardia"></div>
+        <div class="guardia-mode-toggle-row">
+          <button type="button" id="btn-guardia-mode-toggle" class="btn-guardia-mode" aria-pressed="false">
+            <span class="guardia-mode-label">Modo Normal</span>
+            <span class="guardia-mode-switch"></span>
+          </button>
+        </div>
         <div id="guardia-census-grid" class="patient-chips-grid"></div>
       </div>
     </div>
@@ -1877,8 +1883,13 @@
         </select>
       </div>
       <div class="field-group">
-        <label for="clinical-reg-service">Servicio en guardia (opcional)</label>
-        <input id="clinical-reg-service" type="text" class="profile-input" placeholder="CIRUGÍA GENERAL" style="text-transform:uppercase;">
+        <label for="clinical-reg-sala">Sala</label>
+        <select id="clinical-reg-sala" class="profile-input">
+          <option value="">— Sin sala —</option>
+          <option value="Sala 1">Sala 1</option>
+          <option value="Sala 2">Sala 2</option>
+          <option value="Sala E">Sala E</option>
+        </select>
       </div>
       <p id="clinical-reg-error" class="clinical-registration-error" hidden></p>
       <div class="modal-actions">
