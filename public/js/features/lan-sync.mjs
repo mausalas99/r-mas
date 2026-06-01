@@ -39,7 +39,6 @@ import { copyToClipboardSafe } from "./soap-estado.mjs";
 import { buildLanJoinUrls, parseLanInviteInput } from "../lan-join-link.mjs";
 import { createMutationBuilder, wrapLiveSyncPatch } from "../versioned-mutation.mjs";
 import { guardAndSignLiveSyncMutation, clinicalSessionContext } from "../clinical-access-runtime.mjs";
-import { openClinicalTeamsPanel } from "./clinical-teams.mjs";
 import {
   saveDraftConflict,
   deleteDraftConflict,
@@ -2852,10 +2851,15 @@ function buildR2Section(root) {
   root.appendChild(entregaCard);
 }
 
-function openR4TeamCreationModal() {
-  if (typeof openClinicalTeamsPanel === 'function') {
-    openClinicalTeamsPanel();
-  } else {
+async function openR4TeamCreationModal() {
+  try {
+    var mod = await import('./clinical-teams.mjs');
+    if (typeof mod.openClinicalTeamsPanel === 'function') {
+      mod.openClinicalTeamsPanel();
+    } else {
+      runtime.showToast('Panel de equipos no disponible.', 'error');
+    }
+  } catch (_e) {
     runtime.showToast('Panel de equipos no disponible.', 'error');
   }
 }
