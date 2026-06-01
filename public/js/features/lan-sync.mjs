@@ -2962,8 +2962,12 @@ function buildR4Section(root) {
 
 function buildAvailableTeamsSection(root, userSala) {
   var teams = clinicalSessionContext.teams || [];
+  var userId = getClinicalUserUserId();
+  var alreadyInIds = teams.filter(function (t) {
+    return (t.members || []).some(function (m) { return String(m.user_id) === userId; });
+  }).map(function (t) { return String(t.team_id); });
   var available = teams.filter(function (t) {
-    return String(t.sala || '') === userSala && !t.archived_at;
+    return String(t.sala || '') === userSala && !t.archived_at && alreadyInIds.indexOf(String(t.team_id)) === -1;
   });
 
   if (!available.length) {
@@ -3026,7 +3030,10 @@ async function joinClinicalTeam(teamId) {
 
   var rank = getClinicalRank();
   if (rank === 'R2' && api && typeof api.dbClinicalTeamsPromoteLeader === 'function') {
-    await api.dbClinicalTeamsPromoteLeader({ teamId: teamId, userId: userId });
+    var promoteRes = await api.dbClinicalTeamsPromoteLeader({ teamId: teamId, userId: userId });
+    if (!promoteRes || promoteRes.ok === false) {
+      runtime.showToast('Unido al equipo pero no se pudo asignar como líder.', 'warn');
+    }
   }
 
   runtime.showToast('Unido al equipo.', 'success');
