@@ -2830,8 +2830,117 @@ function buildR2Section(root) {
   root.appendChild(entregaCard);
 }
 
+function openR4TeamCreationModal() {
+  if (typeof openClinicalTeamsPanel === 'function') {
+    openClinicalTeamsPanel();
+  } else {
+    runtime.showToast('Panel de equipos no disponible.', 'error');
+  }
+}
+
+async function handleFinalizarRotacion() {
+  var api = typeof window !== 'undefined' ? (window.rplusDb || window.electronAPI) : null;
+  if (!api || typeof api.dbRotationNueva !== 'function') {
+    runtime.showToast('Operación no disponible.', 'error');
+    return;
+  }
+  var user = typeof clinicalSessionContext !== 'undefined' ? clinicalSessionContext.user : null;
+  var userId = user ? String(user.user_id || '') : '';
+  var res = await api.dbRotationNueva({ userId: userId });
+  if (res && res.ok) {
+    runtime.showToast('Rotación finalizada. Crea nuevos equipos para el siguiente mes.', 'success');
+    document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
+    renderLanPanel();
+  } else {
+    runtime.showToast(res && res.error || 'No se pudo finalizar la rotación.', 'error');
+  }
+}
+
 function buildR4Section(root) {
-  // Task 8 fills this in
+  var teamCard = document.createElement('div');
+  teamCard.className = 'lan-connect-card lan-hub-team-create-card';
+  teamCard.innerHTML = '<div class="lan-connect-card-title">Crear equipos del mes</div>';
+
+  var btnCreate = document.createElement('button');
+  btnCreate.type = 'button';
+  btnCreate.className = 'btn-lan-primary';
+  btnCreate.style.width = '100%';
+  btnCreate.textContent = 'Crear equipos del mes';
+  btnCreate.onclick = function () {
+    openR4TeamCreationModal();
+  };
+  teamCard.appendChild(btnCreate);
+  root.appendChild(teamCard);
+
+  var censusCard = document.createElement('div');
+  censusCard.className = 'lan-connect-card lan-hub-census-card';
+  censusCard.innerHTML = '<div class="lan-connect-card-title">Vista censo</div>';
+
+  var allGuardias = clinicalSessionContext.guardias || [];
+  var teams = clinicalSessionContext.teams || [];
+
+  var salas = ['Sala 1', 'Sala 2', 'Sala E'];
+  salas.forEach(function (salaName) {
+    var salaTeams = teams.filter(function (t) {
+      return String(t.sala || '') === salaName;
+    });
+    var salaGuardias = allGuardias.filter(function (g) {
+      return salaTeams.some(function (t) {
+        return String(t.team_id) === String(g.source_team_id);
+      });
+    });
+
+    var row = document.createElement('p');
+    row.className = 'lan-connect-card-hint';
+    row.style.marginBottom = '4px';
+    row.textContent = salaName + ': ' + salaTeams.length + ' equipos, ' + salaGuardias.length + ' en guardia';
+    censusCard.appendChild(row);
+  });
+
+  if (!allGuardias.length) {
+    var emptyCensus = document.createElement('p');
+    emptyCensus.className = 'lan-connect-card-hint';
+    emptyCensus.textContent = 'No hay guardias activas.';
+    censusCard.appendChild(emptyCensus);
+  }
+
+  root.appendChild(censusCard);
+
+  if (isLanElectronDesktop() && isLanHostActive()) {
+    var mobileCard = document.createElement('div');
+    mobileCard.className = 'lan-connect-card lan-hub-mobile-card';
+    mobileCard.innerHTML = '<div class="lan-connect-card-title">Enlace móvil</div>';
+    var mobileBtn = document.createElement('button');
+    mobileBtn.type = 'button';
+    mobileBtn.className = 'btn-lan-primary';
+    mobileBtn.style.width = '100%';
+    mobileBtn.textContent = 'Copiar enlace para iPad';
+    mobileBtn.onclick = function () {
+      void generateMobilePairingLink().then(function (url) {
+        if (url) {
+          copyToClipboardSafe(url);
+          runtime.showToast('Enlace móvil copiado. Pégalo en Safari en el iPad.', 'success');
+        }
+      });
+    };
+    mobileCard.appendChild(mobileBtn);
+    root.appendChild(mobileCard);
+  }
+
+  var rotCard = document.createElement('div');
+  rotCard.className = 'lan-connect-card lan-hub-rotation-card';
+  rotCard.innerHTML = '<div class="lan-connect-card-title">Rotación</div>';
+  var btnFinalizar = document.createElement('button');
+  btnFinalizar.type = 'button';
+  btnFinalizar.className = 'btn-lan-secondary';
+  btnFinalizar.style.width = '100%';
+  btnFinalizar.style.color = 'var(--danger)';
+  btnFinalizar.textContent = 'Finalizar rotación (archivar equipos)';
+  btnFinalizar.onclick = function () {
+    void handleFinalizarRotacion();
+  };
+  rotCard.appendChild(btnFinalizar);
+  root.appendChild(rotCard);
 }
 
 async function resolveLanHostUrlForShare() {
