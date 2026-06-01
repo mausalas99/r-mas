@@ -6,8 +6,9 @@ import {
   isClinicoUnlocked,
   isClinicoAccessHidden,
   evaluateClinicalScope,
-  canR2SalaAbcdefDeficitWrite,
   computeSalaAbcdefDeficitWrite,
+  patientAssignedToTeam,
+  patientCoveredByGuardia,
   getCycleConfig,
   letterIndexForTeam,
   isOnCallToday,
@@ -48,10 +49,11 @@ const emptyContext = {
   cycle: null,
   assignments: [],
   salaGuardiaToday: [],
+  guardiaMode: false,
   now: '2026-05-31T12:00:00Z',
 };
 
-test('evaluateClinicalScope default deny without team or macro match', () => {
+test('evaluateClinicalScope default deny without team or handoff', () => {
   const scope = evaluateClinicalScope(
     { user_id: 'r2', rank: 'R2' },
     { id: 'p1', service: 'Torre HU' },
@@ -62,16 +64,141 @@ test('evaluateClinicalScope default deny without team or macro match', () => {
   assert.equal(scope.writable, false);
 });
 
-test('R4 can write Sala patient without team membership', () => {
+test('patientAssignedToTeam returns true when patient is in assignments', () => {
+  const assignments = [
+    { patient_id: 'p1', team_id: 't1' },
+    { patient_id: 'p2', team_id: 't2' },
+  ];
+  const joinedTeamIds = new Set(['t1']);
+  assert.equal(patientAssignedToTeam('p1', assignments, joinedTeamIds), true);
+  assert.equal(patientAssignedToTeam('p2', assignments, joinedTeamIds), false);
+});
+
+test('patientCoveredByGuardia returns true for matching patient and user', () => {
+  const guardias = [
+    { patient_id: 'p1', covering_user_id: 'u1' },
+    { patient_id: 'p2', covering_user_id: 'u2' },
+  ];
+  assert.equal(patientCoveredByGuardia('p1', 'u1', guardias), true);
+  assert.equal(patientCoveredByGuardia('p1', 'u2', guardias), false);
+});
+
+test('normal mode: patient assigned to team is visible', () => {
   const scope = evaluateClinicalScope(
-    { user_id: 'r4', rank: 'R4' },
-    { id: 'p1', service: 'Sala A' },
+    { user_id: 'r1', rank: 'R1' },
+    { id: 'p1' },
     null,
-    emptyContext
+    {
+      teams: [{ team_id: 't1', members: [{ user_id: 'r1' }] }],
+      assignments: [{ patient_id: 'p1', team_id: 't1' }],
+      guardias: [],
+      now: '2026-06-01T12:00:00Z',
+    }
   );
   assert.equal(scope.readable, true);
   assert.equal(scope.writable, true);
-  assert.match(scope.reasoning, /macro/i);
+});
+
+test('normal mode: patient not assigned is denied', () => {
+  const scope = evaluateClinicalScope(
+    { user_id: 'r1', rank: 'R1' },
+    { id: 'p2' },
+    null,
+    {
+      teams: [{ team_id: 't1', members: [{ user_id: 'r1' }] }],
+      assignments: [{ patient_id: 'p1', team_id: 't1' }],
+      guardias: [],
+      now: '2026-06-01T12:00:00Z',
+    }
+  );
+  assert.equal(scope.readable, false);
+});
+
+test('handoff: patient covered by guardia is visible', () => {
+  const scope = evaluateClinicalScope(
+    { user_id: 'r1x', rank: 'R1' },
+    { id: 'p1' },
+    null,
+    {
+      teams: [],
+      assignments: [],
+      guardias: [{ patient_id: 'p1', covering_user_id: 'r1x' }],
+      now: '2026-06-01T12:00:00Z',
+    }
+  );
+  assert.equal(scope.readable, true);
+  assert.equal(scope.writable, true);
+});
+
+test('guardia mode R1: sees all in same Sala', () => {
+  const scope = evaluateClinicalScope(
+    { user_id: 'r1', rank: 'R1', sala: 'Sala 1' },
+    { id: 'p1', sala: 'Sala 1' },
+    null,
+    {
+      teams: [],
+      assignments: [],
+      guardias: [],
+      guardiaMode: true,
+      now: '2026-06-01T12:00:00Z',
+    }
+  );
+  assert.equal(scope.readable, true);
+  assert.equal(scope.writable, false);
+});
+
+test('guardia mode R1: denied for different Sala', () => {
+  const scope = evaluateClinicalScope(
+    { user_id: 'r1', rank: 'R1', sala: 'Sala 1' },
+    { id: 'p1', sala: 'Sala 2' },
+    null,
+    {
+      teams: [],
+      assignments: [],
+      guardias: [],
+      guardiaMode: true,
+      now: '2026-06-01T12:00:00Z',
+    }
+  );
+  assert.equal(scope.readable, false);
+});
+
+test('guardia mode R2: sees handed-off patients', () => {
+  const scope = evaluateClinicalScope(
+    { user_id: 'r2', rank: 'R2' },
+    { id: 'p1' },
+    null,
+    {
+      teams: [],
+      assignments: [],
+      guardias: [{ patient_id: 'p1', covering_user_id: 'r2' }],
+      guardiaMode: true,
+      now: '2026-06-01T12:00:00Z',
+    }
+  );
+  assert.equal(scope.readable, true);
+  assert.equal(scope.writable, false);
+});
+
+test('guardia mode R4: sees Sala and Torre', () => {
+  const scope = evaluateClinicalScope(
+    { user_id: 'r4', rank: 'R4' },
+    { id: 'p1', service: 'Sala' },
+    null,
+    { teams: [], assignments: [], guardias: [], guardiaMode: true, now: '2026-06-01T12:00:00Z' }
+  );
+  assert.equal(scope.readable, true);
+  assert.equal(scope.writable, false);
+});
+
+test('active guardia covering user has full access', () => {
+  const scope = evaluateClinicalScope(
+    { user_id: 'r1', rank: 'R1' },
+    { id: 'p1' },
+    { covering_user_id: 'r1' },
+    { teams: [], assignments: [], guardias: [], now: '2026-06-01T12:00:00Z' }
+  );
+  assert.equal(scope.writable, true);
 });
 
 test('incoming assignment is readable but not writable before effective_at', () => {
@@ -91,57 +218,6 @@ test('incoming assignment is readable but not writable before effective_at', () 
   assert.equal(scope.readable, true);
   assert.equal(scope.writable, false);
   assert.equal(scope.incomingPreview, true);
-});
-
-test('Sala ABCDEF deficit grants R2 write when user is on-call today', () => {
-  const now = new Date('2026-06-01T12:00:00Z'); // day 1 → position 0 → letter A
-  const teams = [
-    {
-      team_id: 'team-a',
-      service: 'Sala',
-      sub_area_fraction: 'A',
-      members: [{ user_id: 'u2' }],
-    },
-    {
-      team_id: 'team-b',
-      service: 'Sala',
-      sub_area_fraction: 'B',
-      members: [{ user_id: 'r2-other' }],
-    },
-  ];
-  // u2 declared guardia for team-a (letter A, matches day 1)
-  // team-b (letter B) has no guardia → deficit for letter B
-  const salaGuardiaToday = [{ team_id: 'team-a', user_id: 'u2' }];
-  const context = {
-    teams,
-    guardias: [],
-    cycle: null,
-    assignments: [],
-    salaGuardiaToday,
-    now: now.toISOString(),
-  };
-
-  // Patient Sala B with no guardia → deficit write
-  assert.equal(
-    evaluateClinicalScope(
-      { user_id: 'u2', rank: 'R2' },
-      { id: 'p1', service: 'Sala B' },
-      null,
-      context
-    ).writable,
-    true
-  );
-
-  // Patient Sala A (has guardia for A) → no deficit, but u2 is on team-a → equipo write
-  assert.equal(
-    evaluateClinicalScope(
-      { user_id: 'u2', rank: 'R2' },
-      { id: 'p2', service: 'Sala A' },
-      null,
-      context
-    ).writable,
-    true
-  );
 });
 
 test('computeSalaAbcdefDeficitWrite is false when every Sala letter has Guardia', () => {

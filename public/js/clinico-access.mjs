@@ -232,6 +232,32 @@ export function getJoinedTeams(teams, userId) {
   );
 }
 
+/**
+ * Checks if a patient is assigned to any of the user's teams.
+ * @param {string} patientId
+ * @param {object[]} assignments — from patient_team_assignment
+ * @param {Set<string>} joinedTeamIds
+ */
+export function patientAssignedToTeam(patientId, assignments, joinedTeamIds) {
+  const pid = String(patientId || '');
+  return (assignments || []).some(
+    (a) => String(a.patient_id) === pid && joinedTeamIds.has(String(a.team_id))
+  );
+}
+
+/**
+ * Checks if the patient was handed off to this user via active_guardias.
+ * @param {string} patientId
+ * @param {string} userId
+ * @param {object[]} guardias
+ */
+export function patientCoveredByGuardia(patientId, userId, guardias) {
+  const uid = String(userId || '');
+  return (guardias || []).some(
+    (g) => String(g.patient_id) === String(patientId) && String(g.covering_user_id) === uid
+  );
+}
+
 /** @param {string} userId @param {{ covering_user_id?: string }}|null|undefined activeGuardia */
 export function isActiveGuardiaCoveringUser(userId, activeGuardia) {
   if (!activeGuardia || !userId) return false;
@@ -353,8 +379,8 @@ export function canR2SalaAbcdefDeficitWrite(userId, patient, joinedTeams, salaGu
 }
 
 /**
- * @param {{ user_id?: string, rank?: string }|null|undefined} currentUser
- * @param {{ id?: string, service?: string, sub_area?: string, interconsult_type?: string }|null|undefined} targetPatient
+ * @param {{ user_id?: string, rank?: string, sala?: string }|null|undefined} currentUser
+ * @param {{ id?: string, service?: string, sub_area?: string, interconsult_type?: string, sala?: string }|null|undefined} targetPatient
  * @param {{ covering_user_id?: string, source_team_id?: string }|null|undefined} activeGuardia
  * @param {{
  *   teams?: object[],
@@ -362,6 +388,7 @@ export function canR2SalaAbcdefDeficitWrite(userId, patient, joinedTeams, salaGu
  *   cycle?: object|null,
  *   assignments?: object[],
  *   salaGuardiaToday?: object[],
+ *   guardiaMode?: boolean,
  *   now?: string|Date,
  * }|null|undefined} [context]
  */
@@ -369,8 +396,9 @@ export function evaluateClinicalScope(currentUser, targetPatient, activeGuardia 
   const ctx = context && typeof context === 'object' ? context : {};
   const teams = Array.isArray(ctx.teams) ? ctx.teams : [];
   const assignments = Array.isArray(ctx.assignments) ? ctx.assignments : [];
-  const salaGuardiaToday = Array.isArray(ctx.salaGuardiaToday) ? ctx.salaGuardiaToday : [];
+  const guardias = Array.isArray(ctx.guardias) ? ctx.guardias : [];
   const cycle = ctx.cycle ?? null;
+  const guardiaMode = !!ctx.guardiaMode;
   const now =
     ctx.now != null
       ? ctx.now instanceof Date
@@ -380,20 +408,13 @@ export function evaluateClinicalScope(currentUser, targetPatient, activeGuardia 
   const userId = String(currentUser?.user_id || '');
   const rank = String(currentUser?.rank || '');
   const patientId = String(targetPatient?.id || '');
-
-  const auditContext = {
-    userId: currentUser?.user_id,
-    rank: currentUser?.rank,
-    patientId: targetPatient?.id,
-    service: targetPatient?.service,
-    timestamp: now.toISOString(),
-  };
+  const userSala = String(currentUser?.sala || '');
 
   const deny = (reasoning, extra = {}) => ({
     readable: false,
     writable: false,
     reasoning,
-    audit: auditContext,
+    audit: { userId: currentUser?.user_id, rank: currentUser?.rank, patientId: targetPatient?.id, timestamp: now.toISOString() },
     ...extra,
   });
 
@@ -401,12 +422,20 @@ export function evaluateClinicalScope(currentUser, targetPatient, activeGuardia 
     readable,
     writable,
     reasoning,
-    audit: auditContext,
+    audit: { userId: currentUser?.user_id, rank: currentUser?.rank, patientId: targetPatient?.id, timestamp: now.toISOString() },
     ...extra,
   });
 
   if (!currentUser?.user_id || !targetPatient?.id) {
     return deny('Usuario o paciente no identificado');
+  }
+
+  if (rank === 'Admin') {
+    return allow('Admin: acceso completo');
+  }
+
+  if (isActiveGuardiaCoveringUser(userId, activeGuardia)) {
+    return allow('Guardia activa: cobertura asignada');
   }
 
   if (isIncomingPreviewWindow(cycle, now)) {
@@ -425,79 +454,43 @@ export function evaluateClinicalScope(currentUser, targetPatient, activeGuardia 
     }
   }
 
-  if (rank === 'Admin') {
-    return allow('Admin: acceso completo');
-  }
-
-  if (isActiveGuardiaCoveringUser(userId, activeGuardia)) {
-    return allow('Guardia activa: cobertura asignada');
-  }
-
   const joinedTeams = getJoinedTeams(teams, userId);
+  const joinedTeamIds = new Set(joinedTeams.map((t) => String(t.team_id)));
 
-  if (rank === 'R4') {
-    if (isR4MacroPatient(targetPatient)) {
-      return allow('R4: censo macro Sala / Interconsultas');
-    }
-    if (joinedTeams.some((team) => patientMatchesTeam(targetPatient, team))) {
-      return allow('R4: paciente del equipo');
-    }
-    return deny('R4: fuera de macro-dominio y sin equipo');
-  }
-
-  if (rank === 'R3') {
-    const readable =
-      joinedTeams.some((team) => patientMatchesTeam(targetPatient, team)) ||
-      joinedTeams.some((team) => R3_EXTENDED_SERVICES.has(normalizeServiceKey(team.service))) ||
-      R3_EXTENDED_SERVICES.has(normalizeServiceKey(targetPatient?.service));
-
-    if (!readable) {
-      return deny('R3: sin lectura en este servicio');
-    }
-
-    if (joinedTeams.some((team) => patientMatchesTeam(targetPatient, team))) {
-      return allow('R3: paciente del equipo');
-    }
-
-    if (
-      joinedTeams.some(
-        (team) =>
-          isOnCallToday(team, 'R3', now) &&
-          normalizeServiceKey(team.service) === normalizeServiceKey(targetPatient?.service)
-      )
-    ) {
-      return allow('R3: cobertura cruzada por día de guardia', true, true);
-    }
-
-    return allow('R3: lectura en servicio extendido', true, false);
-  }
-
-  if (rank === 'R2') {
-    if (canR2SalaAbcdefDeficitWrite(userId, targetPatient, joinedTeams, salaGuardiaToday, teams, now)) {
-      return allow('R2: déficit Sala ABCDEF — cobertura temporal');
-    }
-    if (joinedTeams.some((team) => patientMatchesTeam(targetPatient, team))) {
-      return allow('R2: paciente del equipo');
-    }
-    const svc = normalizeServiceKey(targetPatient?.service);
-    if (['eme', 'area a', 'área a'].some((k) => svc.includes(k.replace('á', 'a')))) {
-      if (joinedTeams.some((t) => normalizeServiceKey(t.service) === svc)) {
-        return allow('R2: servicio con guardia de equipo');
+  if (guardiaMode) {
+    if (rank === 'R1') {
+      const patientSala = targetPatient?.sala || '';
+      if (patientSala && patientSala === userSala) {
+        return allow('Modo Guardia R1: visibilidad de Sala completa', true, false);
       }
+      return deny('Modo Guardia R1: fuera de mi Sala');
     }
-    return deny('R2: sin equipo ni déficit Sala');
+
+    if (rank === 'R2') {
+      if (patientCoveredByGuardia(patientId, userId, guardias)) {
+        return allow('Modo Guardia R2: paciente entregado', true, false);
+      }
+      return deny('Modo Guardia R2: sin entrega recibida');
+    }
+
+    if (rank === 'R4') {
+      const svc = normalizeServiceKey(targetPatient?.service);
+      if (svc.includes('sala') || svc.includes('torre')) {
+        return allow('Modo Guardia R4: cobertura Sala + Torre', true, false);
+      }
+      return deny('Modo Guardia R4: fuera de dominio');
+    }
+
+    return deny('Modo Guardia: rango sin cobertura');
   }
 
-  if (rank === 'R1') {
-    if (
-      joinedTeams.some(
-        (team) => team.sub_area_fraction && patientMatchesTeam(targetPatient, team)
-      )
-    ) {
-      return allow('R1: fracción de subárea del equipo');
-    }
-    return deny('R1: sin fracción asignada para este paciente');
+  if (patientAssignedToTeam(patientId, assignments, joinedTeamIds)) {
+    return allow('Paciente del equipo');
   }
 
-  return deny('Rango clínico sin permisos configurados');
+  if (patientCoveredByGuardia(patientId, userId, guardias)) {
+    return allow('Paciente entregado (handoff)');
+  }
+
+  return deny('Fuera de alcance — sin equipo ni handoff');
 }
