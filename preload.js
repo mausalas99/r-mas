@@ -119,4 +119,25 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbChangePassphrase: function(opts) {
     return ipcRenderer.invoke('db:change-passphrase', opts);
   },
+  dbClinicalAccessBootstrap: function(opts) {
+    return ipcRenderer.invoke('db:clinical-access-bootstrap', opts);
+  },
+  dbGuardiaCensus: function(opts) {
+    return ipcRenderer.invoke('db:guardia-census', opts);
+  },
+  dbRotationCycleGet: function() {
+    return ipcRenderer.invoke('db:rotation-cycle-get');
+  },
+  dbRotationCycleUpsert: function(opts) {
+    return ipcRenderer.invoke('db:rotation-cycle-upsert', opts);
+  },
+  dbRotationNueva: function(opts) {
+    return ipcRenderer.invoke('db:rotation-nueva', opts);
+  },
+  dbSignClinicalChange: function(opts) {
+    return ipcRenderer.invoke('db:sign-clinical-change', opts);
+  },
+  dbVerifyClinicalChange: function(opts) {
+    return ipcRenderer.invoke('db:verify-clinical-change', opts);
+  },
 });
