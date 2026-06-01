@@ -39,6 +39,9 @@ import { copyToClipboardSafe } from "./soap-estado.mjs";
 import { buildLanJoinUrls, parseLanInviteInput } from "../lan-join-link.mjs";
 import { createMutationBuilder, wrapLiveSyncPatch } from "../versioned-mutation.mjs";
 import { guardAndSignLiveSyncMutation, clinicalSessionContext } from "../clinical-access-runtime.mjs";
+import { hasElevatedTeamPrivileges } from "../clinical-privileges.mjs";
+import { appendLanHubGuardiaModeCard } from "./lan-hub-guardia-mode.mjs";
+import { appendLanHubStatusCard, appendLanHubRoomsCard } from "./lan-hub-panel-shell.mjs";
 import {
   saveDraftConflict,
   deleteDraftConflict,
@@ -2613,7 +2616,7 @@ async function renderLanPanelOnce() {
     return;
   }
 
-  if (!userSala && rank !== 'Admin' && rank !== 'R4') {
+  if (!userSala && !hasElevatedTeamPrivileges(clinicalSessionContext.user)) {
     var noSalaCard = document.createElement('div');
     noSalaCard.className = 'lan-connect-card';
     noSalaCard.innerHTML =
@@ -2622,34 +2625,20 @@ async function renderLanPanelOnce() {
     return;
   }
 
-  var isElevated = rank === 'Admin' || rank === 'R4';
+  var isElevated = hasElevatedTeamPrivileges(clinicalSessionContext.user);
 
-  var statusCard = document.createElement('div');
-  statusCard.className = 'lan-connect-card lan-hub-status-card';
   var connected = isLanHostActive();
-  statusCard.innerHTML =
-    '<div class="lan-hub-status-line">' +
-    (connected
-      ? '<span class="lan-hub-status-dot lan-hub-status-dot--online"></span> Conectado a la red del hospital'
-      : '<span class="lan-hub-status-dot lan-hub-status-dot--offline"></span> Sin red \u2014 buscando\u2026') +
-    '</div>';
-  if (!connected && isLanElectronDesktop()) {
-    var becomeHostBtn = document.createElement('button');
-    becomeHostBtn.type = 'button';
-    becomeHostBtn.className = 'btn-lan-primary';
-    becomeHostBtn.style.marginTop = '8px';
-    becomeHostBtn.style.width = '100%';
-    becomeHostBtn.textContent = 'Convertirse en host';
-    becomeHostBtn.onclick = function () {
+  appendLanHubStatusCard(root, {
+    connected: connected,
+    isElectronDesktop: isLanElectronDesktop(),
+    onBecomeHost: function () {
       void ensureLanElectronHostReady().then(function (activated) {
         if (!activated) return;
         renderLanPanel();
         runtime.showToast('Esta Mac ahora es el servidor del turno.', 'success');
       });
-    };
-    statusCard.appendChild(becomeHostBtn);
-  }
-  root.appendChild(statusCard);
+    },
+  });
 
   var salaDefs = [
     { id: 'sala-1', label: 'Sala 1', key: 'Sala 1' },
@@ -2669,45 +2658,10 @@ async function renderLanPanelOnce() {
     visibleSalaDefs = [];
   }
 
-  var roomsCard = document.createElement('div');
-  roomsCard.className = 'lan-connect-card lan-rooms-panel';
-  roomsCard.innerHTML = '<div class="lan-connect-card-title">Salas de guardia</div>';
-
-  if (visibleSalaDefs.length) {
-    var list = document.createElement('ul');
-    list.style.listStyle = 'none';
-    list.style.padding = '0';
-    list.style.margin = '0';
-    visibleSalaDefs.forEach(function (d) {
-      var li = document.createElement('li');
-      li.style.display = 'flex';
-      li.style.gap = '8px';
-      li.style.alignItems = 'center';
-      li.style.marginBottom = '8px';
-
-      var name = document.createElement('span');
-      name.style.flex = '1';
-      name.style.fontSize = '13px';
-      name.textContent = d.label;
-
-      var joinBtn = document.createElement('button');
-      joinBtn.type = 'button';
-      joinBtn.className = 'btn-lan-secondary';
-      joinBtn.style.flex = '0 0 auto';
-      var inRoom = activeLiveSyncRoomId === d.id;
-      joinBtn.textContent = inRoom ? 'En sala' : 'Unirse';
-      joinBtn.disabled = inRoom;
-      joinBtn.setAttribute('data-lan-action', 'join-room');
-      joinBtn.setAttribute('data-room-id', d.id);
-      joinBtn.setAttribute('data-room-label', d.label);
-
-      li.appendChild(name);
-      li.appendChild(joinBtn);
-      list.appendChild(li);
-    });
-    roomsCard.appendChild(list);
-  }
-  root.appendChild(roomsCard);
+  appendLanHubRoomsCard(root, {
+    visibleSalaDefs: visibleSalaDefs,
+    activeRoomId: activeLiveSyncRoomId,
+  });
 
   if (rank === 'R1') {
     buildR1Section(root);
@@ -2762,28 +2716,7 @@ function buildR1Section(root) {
     };
   }
 
-  var modoCard = document.createElement('div');
-  modoCard.className = 'lan-connect-card lan-hub-modo-card';
-  var modoLabel = document.createElement('label');
-  modoLabel.className = 'lan-hub-modo-label';
-  modoLabel.setAttribute('for', 'lan-hub-guardia-toggle');
-  var modoCheck = document.createElement('input');
-  modoCheck.type = 'checkbox';
-  modoCheck.id = 'lan-hub-guardia-toggle';
-  modoCheck.className = 'lan-hub-guardia-check';
-  modoCheck.checked = !!clinicalSessionContext.guardiaMode;
-  modoCheck.onchange = function () {
-    clinicalSessionContext.guardiaMode = modoCheck.checked;
-    if (typeof renderGuardiaBoard === 'function') {
-      var s = {};
-      try { s = JSON.parse(localStorage.getItem('rpc-settings') || '{}'); } catch (_e) {}
-      renderGuardiaBoard(s);
-    }
-  };
-  modoLabel.appendChild(modoCheck);
-  modoLabel.appendChild(document.createTextNode(' Modo Guardia'));
-  modoCard.appendChild(modoLabel);
-  root.appendChild(modoCard);
+  appendLanHubGuardiaModeCard(root);
 
   if (isLanElectronDesktop() && isLanHostActive()) {
     var mobileCard = document.createElement('div');
@@ -2900,35 +2833,44 @@ function buildR4Section(root) {
 
   var censusCard = document.createElement('div');
   censusCard.className = 'lan-connect-card lan-hub-census-card';
-  censusCard.innerHTML = '<div class="lan-connect-card-title">Vista censo</div>';
+  censusCard.innerHTML = '<div class="lan-connect-card-title">Censo global</div>';
 
-  var allGuardias = clinicalSessionContext.guardias || [];
   var teams = clinicalSessionContext.teams || [];
-
+  var allPatients = patients || [];
   var salas = ['Sala 1', 'Sala 2', 'Sala E'];
+
   salas.forEach(function (salaName) {
     var salaTeams = teams.filter(function (t) {
       return String(t.sala || '') === salaName;
     });
-    var salaGuardias = allGuardias.filter(function (g) {
-      return salaTeams.some(function (t) {
-        return String(t.team_id) === String(g.source_team_id);
-      });
-    });
+    var salaPatientCount = allPatients.filter(function (p) {
+      return p && String(p.sala || '') === salaName;
+    }).length;
 
     var row = document.createElement('p');
     row.className = 'lan-connect-card-hint';
     row.style.marginBottom = '4px';
-    row.textContent = salaName + ': ' + salaTeams.length + ' equipos, ' + salaGuardias.length + ' en guardia';
+    row.textContent =
+      salaName + ': ' + salaTeams.length + ' equipos · ' + salaPatientCount + ' pacientes';
     censusCard.appendChild(row);
   });
 
-  if (!allGuardias.length) {
-    var emptyCensus = document.createElement('p');
-    emptyCensus.className = 'lan-connect-card-hint';
-    emptyCensus.textContent = 'No hay guardias activas.';
-    censusCard.appendChild(emptyCensus);
-  }
+  var viewBtn = document.createElement('button');
+  viewBtn.type = 'button';
+  viewBtn.className = 'btn-lan-secondary';
+  viewBtn.style.width = '100%';
+  viewBtn.style.marginTop = '8px';
+  viewBtn.textContent = 'Ver censo en lista de pacientes';
+  viewBtn.onclick = function () {
+    try {
+      localStorage.setItem('clinical.browseSala', '__all__');
+      localStorage.setItem('clinical.censusFilterSala', '__all__');
+    } catch (_e) {}
+    document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
+    if (typeof runtime.renderPatientList === 'function') runtime.renderPatientList();
+    runtime.showToast('Censo global — usa los filtros en la lista de pacientes.', 'info');
+  };
+  censusCard.appendChild(viewBtn);
 
   root.appendChild(censusCard);
 

@@ -1085,7 +1085,7 @@
       "format": "esm"
     },
     "public/js/features/lan-sync.mjs": {
-      "bytes": 127177,
+      "bytes": 127720,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -1166,6 +1166,11 @@
           "path": "public/js/clinical-access-runtime.mjs",
           "kind": "import-statement",
           "original": "../clinical-access-runtime.mjs"
+        },
+        {
+          "path": "public/js/clinical-privileges.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-privileges.mjs"
         },
         {
           "path": "public/js/features/lan-hub-guardia-mode.mjs",
@@ -4125,6 +4130,22 @@
       "imports": [],
       "format": "esm"
     },
+    "public/js/features/patients-clinical-filter.mjs": {
+      "bytes": 1915,
+      "imports": [
+        {
+          "path": "public/js/clinico-access.mjs",
+          "kind": "import-statement",
+          "original": "../clinico-access.mjs"
+        },
+        {
+          "path": "public/js/clinical-privileges.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-privileges.mjs"
+        }
+      ],
+      "format": "esm"
+    },
     "public/js/features/diagrams-render.mjs": {
       "bytes": 13702,
       "imports": [
@@ -4214,7 +4235,7 @@
       "format": "esm"
     },
     "public/js/features/patients.mjs": {
-      "bytes": 54203,
+      "bytes": 58726,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -4265,6 +4286,16 @@
           "path": "public/js/clinico-access.mjs",
           "kind": "import-statement",
           "original": "../clinico-access.mjs"
+        },
+        {
+          "path": "public/js/clinical-privileges.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-privileges.mjs"
+        },
+        {
+          "path": "public/js/features/patients-clinical-filter.mjs",
+          "kind": "import-statement",
+          "original": "./patients-clinical-filter.mjs"
         },
         {
           "path": "public/js/tour-demo-patient.mjs",
@@ -5092,7 +5123,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 4294644
+      "bytes": 4305497
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -5205,7 +5236,7 @@
           "bytesInOutput": 3010
         },
         "public/js/clinico-access.mjs": {
-          "bytesInOutput": 14482
+          "bytesInOutput": 14693
         },
         "public/js/features/crypto-signer.mjs": {
           "bytesInOutput": 566
@@ -5298,7 +5329,7 @@
           "bytesInOutput": 4230
         },
         "public/js/features/lan-sync.mjs": {
-          "bytesInOutput": 110729
+          "bytesInOutput": 111235
         },
         "public/js/features/clinical-entrega.mjs": {
           "bytesInOutput": 11248
@@ -5316,7 +5347,7 @@
           "bytesInOutput": 4113
         },
         "public/js/features/patients.mjs": {
-          "bytesInOutput": 50583
+          "bytesInOutput": 54656
         },
         "public/js/features/medications.mjs": {
           "bytesInOutput": 16143
@@ -5753,6 +5784,9 @@
         "public/js/patient-validation.mjs": {
           "bytesInOutput": 983
         },
+        "public/js/features/patients-clinical-filter.mjs": {
+          "bytesInOutput": 1363
+        },
         "public/js/lab-history-set.mjs": {
           "bytesInOutput": 17163
         },
@@ -5790,7 +5824,7 @@
           "bytesInOutput": 7755
         }
       },
-      "bytes": 2374591
+      "bytes": 2380832
     }
   }
 }

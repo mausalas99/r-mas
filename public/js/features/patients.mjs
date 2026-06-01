@@ -28,7 +28,13 @@ import {
   clinicalSessionContext,
   getClinicalScopeContextForEvaluate,
 } from '../clinical-access-runtime.mjs';
-import { evaluateClinicalScope } from '../clinico-access.mjs';
+import { evaluateClinicalScope, patientMatchesTeam } from '../clinico-access.mjs';
+import { hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
+import {
+  applyElevatedPatientFilters,
+  filterPatientsForClinicalSidebar,
+  patientForScopeEvaluate,
+} from './patients-clinical-filter.mjs';
 import { getTourDemoAdmitDefaults } from '../tour-demo-patient.mjs';
 import { isManejoSectionHidden, migrateGranularInner } from '../expediente-tabs.mjs';
 import { sortLabHistoryChronological } from '../tend-core.mjs';
@@ -55,8 +61,124 @@ import {
   shouldTourStayOnLabAfterLabCommit,
 } from '../tour-demo-patient.mjs';
 
+/** @type {{ sala: string, teamId: string, service: string }} */
+var elevatedPatientFilters = { sala: '__all__', teamId: '', service: '' };
+
+function tagPatientsForTeamFilter(list) {
+  const teams = clinicalSessionContext.teams || [];
+  for (const p of list) {
+    if (!p) continue;
+    const mapped = patientForScopeEvaluate(p);
+    let teamId = '';
+    for (const team of teams) {
+      if (patientMatchesTeam(mapped, team)) {
+        teamId = String(team.team_id || '');
+        break;
+      }
+    }
+    p._filterTeamId = teamId;
+  }
+  return list;
+}
+
 function patientsVisibleInSidebar() {
-  return filterPatientsForPitchTour(patients);
+  const base = filterPatientsForPitchTour(patients);
+  const user = clinicalSessionContext.user;
+  if (!user?.user_id) return base;
+  const ctx = getClinicalScopeContextForEvaluate();
+  let visible = filterPatientsForClinicalSidebar(
+    base,
+    user,
+    ctx,
+    clinicalSessionContext.guardiasMap
+  );
+  if (!hasElevatedTeamPrivileges(user)) return visible;
+  tagPatientsForTeamFilter(visible);
+  return applyElevatedPatientFilters(visible, elevatedPatientFilters);
+}
+
+function syncClinicalCensusFiltersBar() {
+  const user = clinicalSessionContext.user;
+  const elevated = user && hasElevatedTeamPrivileges(user);
+  const searchWrap = document.querySelector('.patient-search-wrap');
+  let bar = document.getElementById('clinical-census-filters');
+  if (!elevated) {
+    if (bar) bar.remove();
+    return;
+  }
+  if (!searchWrap) return;
+  try {
+    const storedSala = localStorage.getItem('clinical.censusFilterSala');
+    if (storedSala) {
+      elevatedPatientFilters.sala = storedSala;
+      localStorage.removeItem('clinical.censusFilterSala');
+    }
+  } catch (_e) {}
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'clinical-census-filters';
+    bar.className = 'clinical-census-filters';
+    bar.innerHTML =
+      '<label class="clinical-census-filter"><span>Sala</span>' +
+      '<select id="clinical-filter-sala" class="profile-input">' +
+      '<option value="__all__">Todas</option>' +
+      '<option value="Sala 1">Sala 1</option>' +
+      '<option value="Sala 2">Sala 2</option>' +
+      '<option value="Sala E">Sala E</option>' +
+      '</select></label>' +
+      '<label class="clinical-census-filter"><span>Equipo</span>' +
+      '<select id="clinical-filter-team" class="profile-input">' +
+      '<option value="">Todos</option>' +
+      '</select></label>' +
+      '<label class="clinical-census-filter"><span>Servicio</span>' +
+      '<input type="search" id="clinical-filter-service" class="profile-input" placeholder="Filtrar…" autocomplete="off">' +
+      '</label>';
+    searchWrap.insertAdjacentElement('afterend', bar);
+    const salaSel = bar.querySelector('#clinical-filter-sala');
+    const teamSel = bar.querySelector('#clinical-filter-team');
+    const serviceInp = bar.querySelector('#clinical-filter-service');
+    if (salaSel) {
+      salaSel.addEventListener('change', () => {
+        elevatedPatientFilters.sala = String(salaSel.value || '__all__');
+        renderPatientList();
+      });
+    }
+    if (teamSel) {
+      teamSel.addEventListener('change', () => {
+        elevatedPatientFilters.teamId = String(teamSel.value || '');
+        renderPatientList();
+      });
+    }
+    if (serviceInp) {
+      serviceInp.addEventListener('input', () => {
+        elevatedPatientFilters.service = String(serviceInp.value || '').trim();
+        renderPatientList();
+      });
+    }
+  }
+  const salaSel = document.getElementById('clinical-filter-sala');
+  const teamSel = document.getElementById('clinical-filter-team');
+  const serviceInp = document.getElementById('clinical-filter-service');
+  if (salaSel && salaSel.value !== elevatedPatientFilters.sala) {
+    salaSel.value = elevatedPatientFilters.sala;
+  }
+  if (teamSel) {
+    const teams = clinicalSessionContext.teams || [];
+    const prev = elevatedPatientFilters.teamId;
+    teamSel.innerHTML =
+      '<option value="">Todos</option>' +
+      teams
+        .map((t) => {
+          const id = String(t.team_id || '');
+          const label = String(t.name || id).slice(0, 40);
+          return `<option value="${id}">${label}</option>`;
+        })
+        .join('');
+    teamSel.value = prev;
+  }
+  if (serviceInp && serviceInp.value !== elevatedPatientFilters.service) {
+    serviceInp.value = elevatedPatientFilters.service;
+  }
 }
 
 let rt = {
@@ -826,6 +948,7 @@ export function renderPatientList() {
 function renderPatientListNow() {
   ensurePatientUiState();
   ensurePatientListClickDelegation();
+  syncClinicalCensusFiltersBar();
   var list = document.getElementById('patient-list');
   if (!list) return;
   destroyPatientListSortables();

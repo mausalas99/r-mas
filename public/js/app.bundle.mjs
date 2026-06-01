@@ -8888,6 +8888,10 @@ function r3ExtendedStructuralAccess(user, patient, joinedTeams) {
     );
   });
 }
+function isPatientReadableInClinicalScope(user, patient, activeGuardia = null, context = null) {
+  const scope = evaluateClinicalScope(user, patient, activeGuardia, context);
+  return scope.readable === true;
+}
 function evaluateClinicalScope(currentUser, targetPatient, activeGuardia = null, context = null) {
   const ctx = context && typeof context === "object" ? context : {};
   const teams = Array.isArray(ctx.teams) ? ctx.teams : [];
@@ -15157,14 +15161,14 @@ async function renderLanPanelOnce() {
     root.appendChild(unregCard);
     return;
   }
-  if (!userSala && rank !== "Admin" && rank !== "R4") {
+  if (!userSala && !hasElevatedTeamPrivileges(clinicalSessionContext.user)) {
     var noSalaCard = document.createElement("div");
     noSalaCard.className = "lan-connect-card";
     noSalaCard.innerHTML = '<p class="lan-connect-card-hint">No tienes una Sala asignada. Contacta a un R4 o Admin.</p>';
     root.appendChild(noSalaCard);
     return;
   }
-  var isElevated = rank === "Admin" || rank === "R4";
+  var isElevated = hasElevatedTeamPrivileges(clinicalSessionContext.user);
   var connected = isLanHostActive();
   appendLanHubStatusCard(root, {
     connected,
@@ -15349,31 +15353,40 @@ function buildR4Section(root) {
   root.appendChild(teamCard);
   var censusCard = document.createElement("div");
   censusCard.className = "lan-connect-card lan-hub-census-card";
-  censusCard.innerHTML = '<div class="lan-connect-card-title">Vista censo</div>';
-  var allGuardias = clinicalSessionContext.guardias || [];
+  censusCard.innerHTML = '<div class="lan-connect-card-title">Censo global</div>';
   var teams = clinicalSessionContext.teams || [];
+  var allPatients = patients || [];
   var salas = ["Sala 1", "Sala 2", "Sala E"];
   salas.forEach(function(salaName) {
     var salaTeams = teams.filter(function(t2) {
       return String(t2.sala || "") === salaName;
     });
-    var salaGuardias = allGuardias.filter(function(g3) {
-      return salaTeams.some(function(t2) {
-        return String(t2.team_id) === String(g3.source_team_id);
-      });
-    });
+    var salaPatientCount = allPatients.filter(function(p) {
+      return p && String(p.sala || "") === salaName;
+    }).length;
     var row = document.createElement("p");
     row.className = "lan-connect-card-hint";
     row.style.marginBottom = "4px";
-    row.textContent = salaName + ": " + salaTeams.length + " equipos, " + salaGuardias.length + " en guardia";
+    row.textContent = salaName + ": " + salaTeams.length + " equipos \xB7 " + salaPatientCount + " pacientes";
     censusCard.appendChild(row);
   });
-  if (!allGuardias.length) {
-    var emptyCensus = document.createElement("p");
-    emptyCensus.className = "lan-connect-card-hint";
-    emptyCensus.textContent = "No hay guardias activas.";
-    censusCard.appendChild(emptyCensus);
-  }
+  var viewBtn = document.createElement("button");
+  viewBtn.type = "button";
+  viewBtn.className = "btn-lan-secondary";
+  viewBtn.style.width = "100%";
+  viewBtn.style.marginTop = "8px";
+  viewBtn.textContent = "Ver censo en lista de pacientes";
+  viewBtn.onclick = function() {
+    try {
+      localStorage.setItem("clinical.browseSala", "__all__");
+      localStorage.setItem("clinical.censusFilterSala", "__all__");
+    } catch (_e) {
+    }
+    document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
+    if (typeof runtime2.renderPatientList === "function") runtime2.renderPatientList();
+    runtime2.showToast("Censo global \u2014 usa los filtros en la lista de pacientes.", "info");
+  };
+  censusCard.appendChild(viewBtn);
   root.appendChild(censusCard);
   if (isLanElectronDesktop() && isLanHostActive()) {
     var mobileCard = document.createElement("div");
@@ -16064,6 +16077,7 @@ var init_lan_sync = __esm({
     init_lan_join_link();
     init_versioned_mutation();
     init_clinical_access_runtime();
+    init_clinical_privileges();
     init_lan_hub_guardia_mode();
     init_lan_hub_panel_shell();
     init_draft_conflict_store();
@@ -56187,6 +56201,47 @@ function buildExpedienteAdvice() {
 init_mode_features();
 init_clinical_access_runtime();
 init_clinico_access();
+init_clinical_privileges();
+
+// public/js/features/patients-clinical-filter.mjs
+init_clinico_access();
+init_clinical_privileges();
+function patientForScopeEvaluate(p) {
+  return {
+    id: String(p?.id || ""),
+    service: String(p?.servicio || p?.service || ""),
+    sub_area: String(p?.area || p?.sub_area || ""),
+    sala: p?.sala,
+    interconsult_type: p?.interconsult_type
+  };
+}
+function filterPatientsForClinicalSidebar(patients2, user, scopeContext, guardiasMap) {
+  if (!user?.user_id) return patients2 || [];
+  if (hasElevatedTeamPrivileges(user)) return patients2 || [];
+  return (patients2 || []).filter((p) => {
+    if (!p) return false;
+    const mapped = patientForScopeEvaluate(p);
+    const activeGuardia = guardiasMap && typeof guardiasMap.get === "function" ? guardiasMap.get(String(p.id)) || null : null;
+    return isPatientReadableInClinicalScope(user, mapped, activeGuardia, scopeContext);
+  });
+}
+function applyElevatedPatientFilters(patients2, filters) {
+  let list = patients2 || [];
+  const sala = filters?.sala;
+  if (sala && sala !== "__all__") {
+    list = list.filter((p) => String(p.sala || "") === sala);
+  }
+  if (filters?.teamId) {
+    list = list.filter((p) => String(p._filterTeamId || "") === String(filters.teamId));
+  }
+  if (filters?.service) {
+    const q = String(filters.service).toLowerCase();
+    list = list.filter((p) => String(p.servicio || "").toLowerCase().includes(q));
+  }
+  return list;
+}
+
+// public/js/features/patients.mjs
 init_tend_core();
 
 // public/js/lab-history-set.mjs
@@ -56937,8 +56992,103 @@ function flushOne(patientId) {
 // public/js/features/patients.mjs
 init_estado_actual_data();
 init_tour_pitch_demo_seed();
+var elevatedPatientFilters = { sala: "__all__", teamId: "", service: "" };
+function tagPatientsForTeamFilter(list) {
+  const teams = clinicalSessionContext.teams || [];
+  for (const p of list) {
+    if (!p) continue;
+    const mapped = patientForScopeEvaluate(p);
+    let teamId = "";
+    for (const team of teams) {
+      if (patientMatchesTeam(mapped, team)) {
+        teamId = String(team.team_id || "");
+        break;
+      }
+    }
+    p._filterTeamId = teamId;
+  }
+  return list;
+}
 function patientsVisibleInSidebar() {
-  return filterPatientsForPitchTour(patients);
+  const base = filterPatientsForPitchTour(patients);
+  const user = clinicalSessionContext.user;
+  if (!user?.user_id) return base;
+  const ctx = getClinicalScopeContextForEvaluate();
+  let visible = filterPatientsForClinicalSidebar(
+    base,
+    user,
+    ctx,
+    clinicalSessionContext.guardiasMap
+  );
+  if (!hasElevatedTeamPrivileges(user)) return visible;
+  tagPatientsForTeamFilter(visible);
+  return applyElevatedPatientFilters(visible, elevatedPatientFilters);
+}
+function syncClinicalCensusFiltersBar() {
+  const user = clinicalSessionContext.user;
+  const elevated = user && hasElevatedTeamPrivileges(user);
+  const searchWrap = document.querySelector(".patient-search-wrap");
+  let bar = document.getElementById("clinical-census-filters");
+  if (!elevated) {
+    if (bar) bar.remove();
+    return;
+  }
+  if (!searchWrap) return;
+  try {
+    const storedSala = localStorage.getItem("clinical.censusFilterSala");
+    if (storedSala) {
+      elevatedPatientFilters.sala = storedSala;
+      localStorage.removeItem("clinical.censusFilterSala");
+    }
+  } catch (_e) {
+  }
+  if (!bar) {
+    bar = document.createElement("div");
+    bar.id = "clinical-census-filters";
+    bar.className = "clinical-census-filters";
+    bar.innerHTML = '<label class="clinical-census-filter"><span>Sala</span><select id="clinical-filter-sala" class="profile-input"><option value="__all__">Todas</option><option value="Sala 1">Sala 1</option><option value="Sala 2">Sala 2</option><option value="Sala E">Sala E</option></select></label><label class="clinical-census-filter"><span>Equipo</span><select id="clinical-filter-team" class="profile-input"><option value="">Todos</option></select></label><label class="clinical-census-filter"><span>Servicio</span><input type="search" id="clinical-filter-service" class="profile-input" placeholder="Filtrar\u2026" autocomplete="off"></label>';
+    searchWrap.insertAdjacentElement("afterend", bar);
+    const salaSel2 = bar.querySelector("#clinical-filter-sala");
+    const teamSel2 = bar.querySelector("#clinical-filter-team");
+    const serviceInp2 = bar.querySelector("#clinical-filter-service");
+    if (salaSel2) {
+      salaSel2.addEventListener("change", () => {
+        elevatedPatientFilters.sala = String(salaSel2.value || "__all__");
+        renderPatientList();
+      });
+    }
+    if (teamSel2) {
+      teamSel2.addEventListener("change", () => {
+        elevatedPatientFilters.teamId = String(teamSel2.value || "");
+        renderPatientList();
+      });
+    }
+    if (serviceInp2) {
+      serviceInp2.addEventListener("input", () => {
+        elevatedPatientFilters.service = String(serviceInp2.value || "").trim();
+        renderPatientList();
+      });
+    }
+  }
+  const salaSel = document.getElementById("clinical-filter-sala");
+  const teamSel = document.getElementById("clinical-filter-team");
+  const serviceInp = document.getElementById("clinical-filter-service");
+  if (salaSel && salaSel.value !== elevatedPatientFilters.sala) {
+    salaSel.value = elevatedPatientFilters.sala;
+  }
+  if (teamSel) {
+    const teams = clinicalSessionContext.teams || [];
+    const prev = elevatedPatientFilters.teamId;
+    teamSel.innerHTML = '<option value="">Todos</option>' + teams.map((t2) => {
+      const id = String(t2.team_id || "");
+      const label = String(t2.name || id).slice(0, 40);
+      return `<option value="${id}">${label}</option>`;
+    }).join("");
+    teamSel.value = prev;
+  }
+  if (serviceInp && serviceInp.value !== elevatedPatientFilters.service) {
+    serviceInp.value = elevatedPatientFilters.service;
+  }
 }
 var rt32 = {
   getActiveId() {
@@ -57542,6 +57692,7 @@ function renderPatientList() {
 function renderPatientListNow() {
   ensurePatientUiState();
   ensurePatientListClickDelegation();
+  syncClinicalCensusFiltersBar();
   var list = document.getElementById("patient-list");
   if (!list) return;
   destroyPatientListSortables();

@@ -1,5 +1,7 @@
 # Clinical Identity, Guardia UX & Team Onboarding Design
 
+> **Amended 2026-06-01:** Guardia hoy on teams and R4 browse rules superseded by [lan-teams-decoupled-design.md](./2026-06-01-lan-teams-decoupled-design.md).
+
 **Date:** 2026-06-01  
 **Status:** Approved (brainstorming)  
 **Component:** Human identity (LAN username), Modo Guardia shell clarity, Mi rotación wizard + sala team directory  

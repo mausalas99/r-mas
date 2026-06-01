@@ -552,7 +552,7 @@ html.ui-density-guardia #header-app-mode-chip {
 .clinical-teams-panel-body {
   overflow-y: auto;
   flex: 1;
-  min-height: 0;
+  min-height: 8rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -686,4 +686,25 @@ html.ui-density-guardia #header-app-mode-chip {
 
 .clinical-teams-create-form .field-group {
   margin-bottom: 10px;
+}
+
+.clinical-census-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.clinical-census-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.72rem;
+  color: var(--text-muted, #8e8a9f);
+}
+
+.clinical-census-filter .profile-input {
+  font-size: 0.8rem;
+  padding: 4px 8px;
 }
