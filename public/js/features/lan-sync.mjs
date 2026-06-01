@@ -747,8 +747,6 @@ function wireLanPanelDelegation() {
       saveLanSettingsFromUi({ copyInviteAfter: true });
     } else if (action === 'mint-pairing') {
       void mintLanPairingFromUi();
-    } else if (action === 'create-room') {
-      createLanRoomFromUi();
     }
   });
 }
@@ -2664,29 +2662,6 @@ async function renderLanPanelOnce() {
   }
 
   await ensureLanClientTeamCodeAligned();
-  var roomsFetch = { ok: false, rooms: [], httpStatus: 0, errorDetail: '', networkError: false };
-  try {
-    var respRooms = await lanFetchAuthed('/api/lan/v1/rooms');
-    if (lanPanelRenderStale(gen)) return;
-    if (!respRooms.ok) {
-      roomsFetch.httpStatus = respRooms.status;
-      try {
-        roomsFetch.errorDetail = await respRooms.text();
-      } catch (_eTxt) {}
-    } else {
-      var payloadRooms;
-      try {
-        payloadRooms = await respRooms.json();
-      } catch (_eJson) {
-        payloadRooms = {};
-      }
-      roomsFetch.ok = true;
-      roomsFetch.rooms = Array.isArray(payloadRooms && payloadRooms.rooms) ? payloadRooms.rooms : [];
-    }
-  } catch (_eNet) {
-    if (lanPanelRenderStale(gen)) return;
-    roomsFetch.networkError = true;
-  }
   if (lanPanelRenderStale(gen)) return;
 
   root.innerHTML = '';
