@@ -2715,6 +2715,7 @@ async function renderLanPanelOnce() {
 }
 
 function buildR1Section(root) {
+  var userSala = getUserSala();
   var card = document.createElement('div');
   card.className = 'lan-connect-card lan-hub-team-card';
   card.innerHTML = '<div class="lan-connect-card-title">Mi equipo</div>';
@@ -2740,6 +2741,22 @@ function buildR1Section(root) {
   }
 
   root.appendChild(card);
+  var joinTeamBtn = card.querySelector('#lan-hub-join-team');
+  if (joinTeamBtn) {
+    joinTeamBtn.onclick = function () {
+      var availCard = document.getElementById('lan-hub-available-teams');
+      if (availCard) {
+        availCard.remove();
+        return;
+      }
+      var avail = document.createElement('div');
+      avail.id = 'lan-hub-available-teams';
+      avail.className = 'lan-connect-card';
+      avail.innerHTML = '<div class="lan-connect-card-title">Equipos disponibles</div>';
+      buildAvailableTeamsSection(avail, userSala);
+      card.parentNode.insertBefore(avail, card.nextSibling);
+    };
+  }
 
   var modoCard = document.createElement('div');
   modoCard.className = 'lan-connect-card lan-hub-modo-card';
@@ -2941,6 +2958,91 @@ function buildR4Section(root) {
   };
   rotCard.appendChild(btnFinalizar);
   root.appendChild(rotCard);
+}
+
+function buildAvailableTeamsSection(root, userSala) {
+  var teams = clinicalSessionContext.teams || [];
+  var available = teams.filter(function (t) {
+    return String(t.sala || '') === userSala && !t.archived_at;
+  });
+
+  if (!available.length) {
+    var empty = document.createElement('p');
+    empty.className = 'lan-connect-card-hint';
+    empty.textContent = 'No hay equipos disponibles en tu Sala.';
+    root.appendChild(empty);
+    return;
+  }
+
+  var list = document.createElement('ul');
+  list.style.listStyle = 'none';
+  list.style.padding = '0';
+  list.style.margin = '0';
+  available.forEach(function (t) {
+    var li = document.createElement('li');
+    li.style.display = 'flex';
+    li.style.gap = '8px';
+    li.style.alignItems = 'center';
+    li.style.marginBottom = '6px';
+
+    var info = document.createElement('span');
+    info.style.flex = '1';
+    info.style.fontSize = '12px';
+    info.textContent = (t.name || 'Equipo') + ' · ' + (t.service || '') + ' · día ' + (t.on_call_day_index || 0);
+
+    var joinBtn = document.createElement('button');
+    joinBtn.type = 'button';
+    joinBtn.className = 'btn-lan-secondary';
+    joinBtn.style.flex = '0 0 auto';
+    joinBtn.textContent = 'Unirse';
+    joinBtn.onclick = function () {
+      void joinClinicalTeam(String(t.team_id));
+    };
+
+    li.appendChild(info);
+    li.appendChild(joinBtn);
+    list.appendChild(li);
+  });
+  root.appendChild(list);
+}
+
+async function joinClinicalTeam(teamId) {
+  var api = typeof window !== 'undefined' ? (window.rplusDb || window.electronAPI) : null;
+  if (!api || typeof api.dbClinicalTeamsMemberAdd !== 'function') {
+    runtime.showToast('Base de datos no disponible.', 'error');
+    return;
+  }
+  var userId = getClinicalUserUserId();
+  if (!userId) {
+    runtime.showToast('No hay sesión clínica activa.', 'error');
+    return;
+  }
+
+  var addRes = await api.dbClinicalTeamsMemberAdd({ teamId: teamId, userId: userId });
+  if (!addRes || addRes.ok === false) {
+    runtime.showToast(addRes?.error || 'No se pudo unir al equipo.', 'error');
+    return;
+  }
+
+  var rank = getClinicalRank();
+  if (rank === 'R2' && api && typeof api.dbClinicalTeamsPromoteLeader === 'function') {
+    await api.dbClinicalTeamsPromoteLeader({ teamId: teamId, userId: userId });
+  }
+
+  runtime.showToast('Unido al equipo.', 'success');
+  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
+  await refreshClinicalSessionTeams();
+  renderLanPanel();
+}
+
+async function refreshClinicalSessionTeams() {
+  var api = typeof window !== 'undefined' ? (window.rplusDb || window.electronAPI) : null;
+  if (!api || typeof api.dbClinicalScopeContext !== 'function') return;
+  var userId = getClinicalUserUserId();
+  var res = await api.dbClinicalScopeContext({ userId: userId });
+  if (res && res.ok && Array.isArray(res.context?.teams)) {
+    clinicalSessionContext.teams = res.context.teams;
+  }
 }
 
 async function resolveLanHostUrlForShare() {
