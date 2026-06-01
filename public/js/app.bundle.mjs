@@ -870,7 +870,11 @@ function unlockErrorMessage(res, opts) {
     return "Contrase\xF1a incorrecta. Verifica may\xFAsculas, espacios y vuelve a intentar. (No es la contrase\xF1a de Mi Perfil ni el PIN de bloqueo.)";
   }
   if (code === "DB_NATIVE_ABI_MISMATCH") {
-    return "El m\xF3dulo nativo de base de datos no est\xE1 compilado para esta versi\xF3n de R+. Ejecuta npm run rebuild:db-native y reinicia.";
+    return "El m\xF3dulo SQLCipher no coincide con esta sesi\xF3n de R+ (suele pasar despu\xE9s de npm test). En la carpeta del proyecto ejecuta: npm run rebuild:db-native \u2014 cierra R+ por completo (Cmd+Q) y vuelve a abrir con npm start.";
+  }
+  if (code === "DB_SCHEMA_MIGRATION_FAILED") {
+    var migDetail = res && (res.cause || res.error || "");
+    return "No se pudo actualizar el esquema de la base cifrada" + (migDetail ? ": " + migDetail : ".") + " Si el problema contin\xFAa, exporta un respaldo .db y contacta soporte.";
   }
   var detail = res && (res.cause || res.error || res.message);
   if (detail && /NODE_MODULE_VERSION|was compiled against a different/i.test(String(detail))) {
@@ -974,11 +978,13 @@ function configureUnlockForm(status, probe) {
   var rate = document.getElementById("rpc-db-unlock-rate-limited");
   if (rate) rate.style.display = status && status.rateLimited ? "block" : "none";
   var submit = document.getElementById("rpc-db-unlock-submit");
+  var nativeBlocked = !!(status && status.nativeReady === false);
   if (submit) {
-    submit.disabled = !!(status && status.rateLimited);
+    submit.disabled = !!(status && status.rateLimited) || nativeBlocked;
     submit.textContent = needsConfirm ? "Crear contrase\xF1a y continuar" : "Desbloquear";
   }
   wireDbUnlockSecretToggles();
+  return nativeBlocked;
 }
 async function waitForDbUnlock() {
   if (!isDbMode()) return { unlocked: true };
@@ -998,8 +1004,14 @@ async function waitForDbUnlock() {
   lastMigrationProbe = await runMigrationProbe(electron);
   return new Promise(function(resolve) {
     unlockWaitResolve = resolve;
-    configureUnlockForm(status, lastMigrationProbe);
-    setUnlockError(status.rateLimited ? unlockErrorMessage({ code: "AUTH_RATE_LIMITED" }) : "");
+    var nativeBlocked = configureUnlockForm(status, lastMigrationProbe);
+    if (nativeBlocked) {
+      setUnlockError(unlockErrorMessage({ code: "DB_NATIVE_ABI_MISMATCH" }));
+    } else if (status.rateLimited) {
+      setUnlockError(unlockErrorMessage({ code: "AUTH_RATE_LIMITED" }));
+    } else {
+      setUnlockError("");
+    }
     setOverlayVisible(true);
   });
 }

@@ -27,7 +27,7 @@
       "format": "esm"
     },
     "public/js/features/db-unlock.mjs": {
-      "bytes": 17064,
+      "bytes": 17788,
       "imports": [
         {
           "path": "public/js/db-storage-bridge.mjs",
@@ -4873,7 +4873,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 4182142
+      "bytes": 4183192
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -4890,7 +4890,7 @@
           "bytesInOutput": 25144
         },
         "public/js/features/db-unlock.mjs": {
-          "bytesInOutput": 16214
+          "bytesInOutput": 16892
         },
         "public/js/med-receta-core.mjs": {
           "bytesInOutput": 20487
@@ -5547,7 +5547,7 @@
           "bytesInOutput": 6324
         }
       },
-      "bytes": 2294787
+      "bytes": 2295465
     }
   }
 }
