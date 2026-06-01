@@ -1941,6 +1941,11 @@ var RELEASE_NOTES_HIGHLIGHTS = {
       body:
         'Cada vez que desbloqueas la base, se guarda automáticamente una copia cifrada (AES-256-GCM) de tu llave; no requiere configuración manual.',
     },
+    {
+      title: 'Modo Guardia (prototipo)',
+      body:
+        'El <strong>Modo Guardia</strong> está en desarrollo y <strong>aún no funciona</strong> para uso clínico real. Es un prototipo funcional. No lo uses para decisiones clínicas.',
+    },
   ],
   '6.5.1': [
     {

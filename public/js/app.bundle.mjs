@@ -31221,6 +31221,10 @@ var RELEASE_NOTES_HIGHLIGHTS = {
     {
       title: "Llave de respaldo autom\xE1tica",
       body: "Cada vez que desbloqueas la base, se guarda autom\xE1ticamente una copia cifrada (AES-256-GCM) de tu llave; no requiere configuraci\xF3n manual."
+    },
+    {
+      title: "Modo Guardia (prototipo)",
+      body: "El <strong>Modo Guardia</strong> est\xE1 en desarrollo y <strong>a\xFAn no funciona</strong> para uso cl\xEDnico real. Es un prototipo funcional. No lo uses para decisiones cl\xEDnicas."
     }
   ],
   "6.5.1": [

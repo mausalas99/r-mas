@@ -7,6 +7,10 @@ Fecha: 2026-06-01
 
 Parche que añade un **mecanismo de recuperación de contraseña maestra** mediante código de respaldo (`r+123`). En cada desbloqueo exitoso se configura automáticamente un respaldo cifrado de la llave, permitiendo recuperar el acceso si se olvida la contraseña.
 
+## ⚠️ Aviso: Modo Guardia (prototipo)
+
+El **Modo Guardia** incluido en esta versión es un **prototipo funcional en desarrollo** y **aún no está listo para uso clínico**. Las funcionalidades de registro de guardia, asignación de equipos y firma criptográfica están en fase experimental. No uses el Modo Guardia para decisiones clínicas reales hasta que se anuncie su disponibilidad oficial.
+
 ## Nuevo / mejorado
 
 - **Recuperación de acceso** — Link "¿Olvidaste tu contraseña?" en la pantalla de desbloqueo. Ingresa el código `r+123` para recuperar el acceso a la base clínica.
