@@ -167,6 +167,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbClinicalTeamsGuardiaSet: function(opts) {
     return ipcRenderer.invoke('db:clinical-teams-guardia-set', opts);
   },
+  dbClinicalTeamsGuardiaClear: function(opts) {
+    return ipcRenderer.invoke('db:clinical-teams-guardia-clear', opts);
+  },
   dbClinicalTeamsGuardiaGet: function(opts) {
     return ipcRenderer.invoke('db:clinical-teams-guardia-get', opts);
   },

@@ -15142,6 +15142,7 @@ var init_clinical_onboarding = __esm({
 // public/js/features/clinical-teams.mjs
 var clinical_teams_exports = {};
 __export(clinical_teams_exports, {
+  CLINICAL_SALAS: () => CLINICAL_SALAS,
   CLINICAL_TEAM_SERVICES: () => CLINICAL_TEAM_SERVICES,
   closeClinicalTeamsPanel: () => closeClinicalTeamsPanel,
   filterJoinedTeams: () => filterJoinedTeams2,
@@ -15216,9 +15217,7 @@ function renderCreateTeamForm() {
           <label for="clinical-team-create-sala">Sala</label>
           <select id="clinical-team-create-sala" class="profile-input">
             <option value="">\u2014 Seleccionar Sala \u2014</option>
-            <option value="Sala 1">Sala 1</option>
-            <option value="Sala 2">Sala 2</option>
-            <option value="Sala E">Sala E</option>
+            ${CLINICAL_SALAS.map((s) => `<option value="${escapeAttr3(s)}">${escapeHtml3(s)}</option>`).join("")}
           </select>
         </div>
         <div class="field-group">
@@ -15247,7 +15246,7 @@ function renderJoinedTeamCard(team, userId) {
   const memberList = members.length ? members.map((m) => {
     const handle = escapeHtml3(m.username || m.user_id);
     const name = String(m.clinical_name || "").trim();
-    const rank = escapeHtml3(m.rank || "");
+    const rank = escapeHtml3(effectiveClinicalRank({ rank: m.rank }));
     const label = name ? `${handle} \xB7 ${escapeHtml3(name)} <span class="clinical-teams-member-rank">(${rank})</span>` : `${handle} <span class="clinical-teams-member-rank">${rank}</span>`;
     return `<li><span class="clinical-teams-member-name">${label}</span></li>`;
   }).join("") : '<li class="clinical-teams-empty">Sin miembros</li>';
@@ -15264,8 +15263,8 @@ function renderJoinedTeamCard(team, userId) {
           <h5 class="clinical-teams-card-title">${escapeHtml3(team.name || "Equipo")}</h5>
           <p class="clinical-teams-card-meta">${meta}</p>
         </div>
-        <label class="clinical-teams-guardia-label">
-          <input type="checkbox" class="clinical-teams-guardia-check" data-team-id="${escapeAttr3(teamId)}" ${isGuardia ? "checked" : ""}>
+        <label class="clinical-teams-guardia-label" title="${isGuardia ? "Desmarcar solo si eres admin de programa o otro residente toma la guardia" : ""}">
+          <input type="checkbox" class="clinical-teams-guardia-check" data-team-id="${escapeAttr3(teamId)}" data-is-guardia="${isGuardia ? "1" : "0"}" ${isGuardia ? "checked" : ""}>
           <span>Guardia hoy${guardiaLabel}</span>
         </label>
       </header>
@@ -15330,47 +15329,27 @@ async function renderClinicalTeamsPanel() {
           <p class="clinical-registration-lead" style="margin:0.35rem 0 0;">Configuraci\xF3n de rotaci\xF3n y acceso amplio (lead dev / R4 de programa).</p>
         </div>
         <div class="field-group">
-          <label for="clinical-profile-sala">Sala</label>
+          <label for="clinical-profile-sala">${programAdmin ? "Mi sala (rango cl\xEDnico)" : "Sala"}</label>
           <select id="clinical-profile-sala" class="profile-input" required>
             <option value="">\u2014 Seleccionar \u2014</option>
-            <option value="Sala 1" ${sala === "Sala 1" ? "selected" : ""}>Sala 1</option>
-            <option value="Sala 2" ${sala === "Sala 2" ? "selected" : ""}>Sala 2</option>
-            <option value="Sala E" ${sala === "Sala E" ? "selected" : ""}>Sala E</option>
+            ${CLINICAL_SALAS.map(
+    (s) => `<option value="${escapeAttr3(s)}" ${sala === s ? "selected" : ""}>${escapeHtml3(s)}</option>`
+  ).join("")}
           </select>
+          ${programAdmin ? '<p class="clinical-registration-lead" style="margin:0.35rem 0 0;">Tu equipo R1 y entregas usan esta sala. Abajo puedes explorar otras.</p>' : ""}
         </div>
         <div class="modal-actions">
           <button type="submit" class="btn-save">Guardar perfil</button>
         </div>
       </form>
     </section>`;
-  let directorySection = "";
-  if (sala) {
-    const api3 = dbApi4();
-    let directory = [];
-    if (api3 && typeof api3.dbClinicalTeamsListBySala === "function") {
-      const res = await api3.dbClinicalTeamsListBySala({ sala, forUserId: userId });
-      if (res?.ok && Array.isArray(res.teams)) directory = res.teams;
-    }
-    const otherTeams = directory.filter((t2) => !t2.isMember);
-    if (otherTeams.length) {
-      const cards = otherTeams.map((team) => {
-        const teamId = String(team.team_id || "");
-        const members = (team.members || []).map((m) => {
-          const handle = escapeHtml3(m.username || m.user_id);
-          const name = String(m.clinical_name || "").trim();
-          const r = escapeHtml3(m.rank || "");
-          return `<li>${handle}${name ? ` \xB7 ${escapeHtml3(name)}` : ""} <span class="clinical-teams-member-rank">(${r})</span></li>`;
-        }).join("");
-        const joinBtn = team.joinEligible ? `<button type="button" class="btn-med-secondary clinical-teams-join-btn" data-team-id="${escapeAttr3(teamId)}">Unirme</button>` : team.joinReason ? `<span class="clinical-teams-join-hint">${escapeHtml3(team.joinReason)}</span>` : "";
-        return `<article class="clinical-teams-card"><header class="clinical-teams-card-head"><div><h5 class="clinical-teams-card-title">${escapeHtml3(team.name || "")}</h5></div>${joinBtn}</header><ul class="clinical-teams-member-list">${members}</ul></article>`;
-      }).join("");
-      directorySection = `
-        <section class="clinical-teams-section">
-          <h4 class="clinical-teams-section-title">Otros equipos en ${escapeHtml3(sala)}</h4>
-          <div class="clinical-teams-list">${cards}</div>
-        </section>`;
-    }
-  }
+  const browseSala = resolveBrowseSala(programAdmin, sala);
+  const directorySection = await renderDirectorySectionHtml({
+    userId,
+    programAdmin,
+    browseSala,
+    homeSala: sala
+  });
   host.innerHTML = `
     <p class="clinical-teams-lead">Administra equipos y declara <strong>Guardia hoy</strong> por equipo.</p>
     ${profileSection}
@@ -15382,6 +15361,89 @@ async function renderClinicalTeamsPanel() {
     ${renderCreateTeamForm()}`;
   wireClinicalTeamsPanelInteractions();
   wireJoinButtons();
+  wireBrowseSalaControl(programAdmin);
+}
+function resolveBrowseSala(programAdmin, homeSala) {
+  if (!programAdmin) return homeSala;
+  try {
+    const stored = localStorage.getItem(BROWSE_SALA_LS);
+    if (stored === "__all__") return "__all__";
+    if (stored && CLINICAL_SALAS.includes(stored)) return stored;
+  } catch (_e) {
+  }
+  return homeSala || CLINICAL_SALAS[0];
+}
+async function renderDirectorySectionHtml(opts) {
+  const { userId, programAdmin, browseSala, homeSala } = opts;
+  const api3 = dbApi4();
+  if (!api3 || typeof api3.dbClinicalTeamsListBySala !== "function") return "";
+  const listOpts = programAdmin && browseSala === "__all__" ? { sala: "", forUserId: userId, allSalas: true } : { sala: browseSala || homeSala, forUserId: userId };
+  const res = await api3.dbClinicalTeamsListBySala(listOpts);
+  let directory = res?.ok && Array.isArray(res.teams) ? res.teams : [];
+  if (!programAdmin) {
+    directory = directory.filter((t2) => !t2.isMember);
+  }
+  if (!directory.length) {
+    const label = browseSala === "__all__" ? "ninguna sala" : escapeHtml3(String(browseSala || homeSala));
+    return `<section class="clinical-teams-section"><p class="clinical-teams-empty">No hay equipos en ${label}.</p></section>`;
+  }
+  const browseControl = programAdmin ? `<div class="field-group">
+        <label for="clinical-browse-sala">Explorar equipos en</label>
+        <select id="clinical-browse-sala" class="profile-input">
+          ${CLINICAL_SALAS.map(
+    (s) => `<option value="${escapeAttr3(s)}" ${browseSala === s ? "selected" : ""}>${escapeHtml3(s)}</option>`
+  ).join("")}
+          <option value="__all__" ${browseSala === "__all__" ? "selected" : ""}>Todas las salas</option>
+        </select>
+      </div>` : "";
+  const cards = directory.map((team) => {
+    const teamId = String(team.team_id || "");
+    const salaTag = team.sala ? `<span class="clinical-teams-card-meta">${escapeHtml3(team.sala)}</span>` : "";
+    const members = (team.members || []).map((m) => {
+      const handle = escapeHtml3(m.username || m.user_id);
+      const name = String(m.clinical_name || "").trim();
+      const r = escapeHtml3(effectiveClinicalRank({ rank: m.rank }));
+      return `<li>${handle}${name ? ` \xB7 ${escapeHtml3(name)}` : ""} <span class="clinical-teams-member-rank">(${r})</span></li>`;
+    }).join("");
+    let action = "";
+    if (team.isMember) {
+      action = '<span class="clinical-teams-joined-badge">Tu equipo</span>';
+    } else if (team.joinEligible) {
+      action = `<button type="button" class="btn-med-secondary clinical-teams-join-btn" data-team-id="${escapeAttr3(teamId)}">Unirme</button>`;
+    } else if (team.joinReason) {
+      action = `<span class="clinical-teams-join-hint">${escapeHtml3(team.joinReason)}</span>`;
+    }
+    return `<article class="clinical-teams-card">
+        <header class="clinical-teams-card-head">
+          <div>
+            <h5 class="clinical-teams-card-title">${escapeHtml3(team.name || "")}</h5>
+            ${salaTag}
+          </div>
+          ${action}
+        </header>
+        <ul class="clinical-teams-member-list">${members || '<li class="clinical-teams-empty">Sin miembros</li>'}</ul>
+      </article>`;
+  }).join("");
+  const title = browseSala === "__all__" ? "Equipos (todas las salas)" : programAdmin ? `Equipos en ${escapeHtml3(browseSala)}` : `Otros equipos en ${escapeHtml3(browseSala || homeSala)}`;
+  return `
+    <section class="clinical-teams-section">
+      <h4 class="clinical-teams-section-title">${title}</h4>
+      ${browseControl}
+      <div class="clinical-teams-list">${cards}</div>
+    </section>`;
+}
+function wireBrowseSalaControl(programAdmin) {
+  if (!programAdmin) return;
+  const select = document.getElementById("clinical-browse-sala");
+  if (!select || select._rpcBrowseWired) return;
+  select._rpcBrowseWired = true;
+  select.addEventListener("change", () => {
+    try {
+      localStorage.setItem(BROWSE_SALA_LS, String(select.value || ""));
+    } catch (_e) {
+    }
+    void renderClinicalTeamsPanel();
+  });
 }
 async function handleProfileFormSubmit(ev) {
   ev.preventDefault();
@@ -15537,14 +15599,45 @@ async function handleCreateTeamSubmit(ev) {
   else await renderClinicalTeamsPanel();
 }
 async function handleGuardiaCheck(input) {
-  if (!input.checked) {
-    input.checked = true;
-    toast3("Para retirar Guardia, otro miembro debe declararse on-call.", "info");
-    return;
-  }
   const teamId = String(input.dataset.teamId || "");
   const userId = currentUserId();
   const api3 = dbApi4();
+  const wasGuardia = input.dataset.isGuardia === "1";
+  if (!input.checked) {
+    if (!wasGuardia) return;
+    const isAdmin = hasProgramAdminPrivileges(clinicalSessionContext.user);
+    if (!isAdmin) {
+      input.checked = true;
+      toast3(
+        "Para retirar Guardia, otro miembro del equipo debe declararse on-call hoy.",
+        "info"
+      );
+      return;
+    }
+    const ok = window.confirm(
+      "\xBFRetirar tu Guardia de este equipo hoy? Los dem\xE1s ver\xE1n el puesto vac\xEDo hasta que alguien m\xE1s se declare."
+    );
+    if (!ok) {
+      input.checked = true;
+      return;
+    }
+    if (!api3 || typeof api3.dbClinicalTeamsGuardiaClear !== "function") {
+      input.checked = true;
+      toast3("No se pudo retirar Guardia.", "error");
+      return;
+    }
+    const clearRes = await api3.dbClinicalTeamsGuardiaClear({ teamId });
+    if (!clearRes || clearRes.ok === false) {
+      input.checked = true;
+      toast3(clearRes?.error || "No se pudo retirar Guardia.", "error");
+      return;
+    }
+    toast3("Guardia retirada.", "success");
+    document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
+    scheduleLiveSyncPush();
+    await renderClinicalTeamsPanel();
+    return;
+  }
   if (!teamId || !userId || !api3 || typeof api3.dbClinicalTeamsGuardiaSet !== "function") {
     input.checked = false;
     toast3("No se pudo declarar Guardia.", "error");
@@ -15626,7 +15719,7 @@ function wireClinicalTeamsControls() {
     void fetchClinicalTeamsFromDb();
   });
 }
-var CLINICAL_TEAM_SERVICES, teamsControlsWired;
+var CLINICAL_TEAM_SERVICES, CLINICAL_SALAS, BROWSE_SALA_LS, teamsControlsWired;
 var init_clinical_teams = __esm({
   "public/js/features/clinical-teams.mjs"() {
     init_clinical_access_runtime();
@@ -15642,6 +15735,8 @@ var init_clinical_teams = __esm({
       "UX",
       "\xC1rea A"
     ];
+    CLINICAL_SALAS = ["Sala 1", "Sala 2", "Sala E"];
+    BROWSE_SALA_LS = "clinical.browseSala";
     teamsControlsWired = false;
   }
 });
