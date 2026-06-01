@@ -1639,3 +1639,19 @@ html.dark .tend-gaso-tip {
   margin-top: 4px;
 }
 
+/* ── Clinical teams rank ──────────────────────────────── */
+.clinical-teams-rank-section {
+  border-bottom: 1px solid var(--border, #ddd);
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+.clinical-teams-rank-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.clinical-teams-rank-badge {
+  font-size: 14px;
+  color: var(--text, #333);
+}
+

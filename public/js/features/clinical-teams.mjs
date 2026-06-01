@@ -186,8 +186,19 @@ export async function renderClinicalTeamsPanel() {
     ? joined.map((team) => renderJoinedTeamCard(team, userId)).join('')
     : '<p class="clinical-teams-empty">Aún no perteneces a ningún equipo. Crea uno abajo.</p>';
 
+  const rank = clinicalSessionContext.user?.rank || 'R1';
+  const rankSection = `
+    <section class="clinical-teams-section clinical-teams-rank-section">
+      <h4 class="clinical-teams-section-title">Mi perfil</h4>
+      <div class="clinical-teams-rank-row">
+        <span class="clinical-teams-rank-badge">Rango: <strong>${escapeHtml(rank)}</strong></span>
+        <button type="button" class="btn-med-secondary" id="btn-change-rank">Cambiar rango</button>
+      </div>
+    </section>`;
+
   host.innerHTML = `
     <p class="clinical-teams-lead">Administra tus equipos de rotación y declara <strong>Guardia</strong> (on-call hoy) por equipo. Distinto del bloque Equipo del perfil (solo PDF).</p>
+    ${rankSection}
     <section class="clinical-teams-section">
       <h4 class="clinical-teams-section-title">Mis equipos</h4>
       <div class="clinical-teams-list">${joinedHtml}</div>
@@ -197,7 +208,39 @@ export async function renderClinicalTeamsPanel() {
   wireClinicalTeamsPanelInteractions();
 }
 
+async function handleChangeRank() {
+  const RANKS = ['R1', 'R2', 'R3', 'R4', 'Admin'];
+  const current = clinicalSessionContext.user?.rank || 'R1';
+  const rankStr = prompt(`Rango actual: ${current}\n\nEscribe el nuevo rango (${RANKS.join(', ')}):`, current);
+  if (!rankStr) return;
+  const rank = rankStr.trim().toUpperCase();
+  if (!RANKS.includes(rank)) {
+    toast(`Rango inválido. Debe ser: ${RANKS.join(', ')}`, 'error');
+    return;
+  }
+  let settings = {};
+  try {
+    settings = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
+  } catch (_e) {}
+  settings.clinicalRank = rank;
+  try {
+    localStorage.setItem('rpc-settings', JSON.stringify(settings));
+  } catch (_e) {}
+  if (clinicalSessionContext.user) {
+    clinicalSessionContext.user.rank = rank;
+  }
+  toast(`Rango cambiado a ${rank}`, 'success');
+  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
+  await renderClinicalTeamsPanel();
+}
+
 function wireClinicalTeamsPanelInteractions() {
+  const changeRankBtn = document.getElementById('btn-change-rank');
+  if (changeRankBtn && !changeRankBtn._rpcRankWired) {
+    changeRankBtn._rpcRankWired = true;
+    changeRankBtn.addEventListener('click', () => void handleChangeRank());
+  }
+
   const createForm = document.getElementById('clinical-team-create-form');
   if (createForm && !createForm._rpcTeamsCreateWired) {
     createForm._rpcTeamsCreateWired = true;
