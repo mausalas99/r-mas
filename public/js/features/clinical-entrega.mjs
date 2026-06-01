@@ -286,17 +286,16 @@ export function openEntregaModal(opts) {
   const salaGuardiaToday = Array.isArray(ctx.salaGuardiaToday) ? ctx.salaGuardiaToday : [];
   const userId = String(clinicalSessionContext.user?.user_id || '');
   const rank = String(clinicalSessionContext.user?.rank || 'R1');
-  const weekday = new Date().getDay();
   const salaDeficit = computeSalaAbcdefDeficitWrite(
     salaGuardiaToday,
     teams,
     userId,
-    weekday
+    new Date()
   );
 
   const { targets, flow } = listEntregaTargets(rank, teams, users, salaDeficit, {
     currentUserId: userId,
-    weekday,
+    weekday: new Date().getDay(),
   });
 
   const select = document.getElementById('entrega-covering-user');

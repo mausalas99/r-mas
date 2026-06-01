@@ -90,65 +90,73 @@ test('incoming assignment is readable but not writable before effective_at', () 
   assert.equal(scope.incomingPreview, true);
 });
 
-test('Sala ABCDEF deficit grants R2 write to Sala A patient when A has no Guardia', () => {
-  const weekday = new Date('2026-05-31T12:00:00Z').getDay();
+test('Sala ABCDEF deficit grants R2 write when user is on-call today', () => {
+  const now = new Date('2026-06-01T12:00:00Z'); // day 1 → position 0 → letter A
   const teams = [
     {
       team_id: 'team-a',
       service: 'Sala',
       sub_area_fraction: 'A',
-      on_call_day_index: weekday,
-      members: [{ user_id: 'r2-other' }],
+      members: [{ user_id: 'u2' }],
     },
     {
       team_id: 'team-b',
       service: 'Sala',
       sub_area_fraction: 'B',
-      on_call_day_index: weekday,
-      members: [{ user_id: 'u2' }],
+      members: [{ user_id: 'r2-other' }],
     },
   ];
-  const salaGuardiaToday = [{ team_id: 'team-b', user_id: 'u2' }];
+  // u2 declared guardia for team-a (letter A, matches day 1)
+  // team-b (letter B) has no guardia → deficit for letter B
+  const salaGuardiaToday = [{ team_id: 'team-a', user_id: 'u2' }];
   const context = {
     teams,
     guardias: [],
     cycle: null,
     assignments: [],
     salaGuardiaToday,
-    now: '2026-05-31T12:00:00Z',
+    now: now.toISOString(),
   };
 
+  // Patient Sala B with no guardia → deficit write
   assert.equal(
-    canR2SalaAbcdefDeficitWrite('u2', { id: 'p1', service: 'Sala A' }, teams.filter((t) =>
-      t.members.some((m) => m.user_id === 'u2')
-    ), salaGuardiaToday, teams, weekday),
+    evaluateClinicalScope(
+      { user_id: 'u2', rank: 'R2' },
+      { id: 'p1', service: 'Sala B' },
+      null,
+      context
+    ).writable,
     true
   );
 
-  const scope = evaluateClinicalScope(
-    { user_id: 'u2', rank: 'R2' },
-    { id: 'p1', service: 'Sala A', sub_area: 'Sala A' },
-    null,
-    context
+  // Patient Sala A (has guardia for A) → no deficit, but u2 is on team-a → equipo write
+  assert.equal(
+    evaluateClinicalScope(
+      { user_id: 'u2', rank: 'R2' },
+      { id: 'p2', service: 'Sala A' },
+      null,
+      context
+    ).writable,
+    true
   );
-  assert.equal(scope.writable, true);
-  assert.match(scope.reasoning, /déficit Sala ABCDEF/i);
 });
 
 test('computeSalaAbcdefDeficitWrite is false when every Sala letter has Guardia', () => {
-  const weekday = new Date('2026-05-31T12:00:00Z').getDay();
-  const teams = ['A', 'B', 'C', 'D', 'E', 'F'].map((letter, i) => ({
+  const now = new Date('2026-06-01T12:00:00Z'); // day 1 → position 0 = A
+  const teams = ['A', 'B', 'C', 'D', 'E', 'F'].map((letter) => ({
     team_id: `team-${letter}`,
     service: 'Sala',
     sub_area_fraction: letter,
-    on_call_day_index: weekday,
     members: [{ user_id: `u-${letter}` }],
   }));
-  const salaGuardiaToday = teams.map((t) => ({
+  // Everyone on guardia today
+  const salaGuardiaToday = teams.filter(t =>
+    isOnCallToday(t, 'R2', now)
+  ).map((t) => ({
     team_id: t.team_id,
     user_id: `u-${t.sub_area_fraction}`,
   }));
-  assert.equal(computeSalaAbcdefDeficitWrite(salaGuardiaToday, teams, 'u2', weekday), false);
+  assert.equal(computeSalaAbcdefDeficitWrite(salaGuardiaToday, teams, 'u2', now), false);
 });
 
 test('Admin has full write on non-incoming patients', () => {

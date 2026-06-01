@@ -261,18 +261,20 @@ export function hasSalaGuardiaDeclaredForLetter(salaGuardiaToday, teams, salaLet
  * @param {Array<{ team_id?: string, user_id?: string }>} salaGuardiaToday
  * @param {object[]} teams
  * @param {string} userId
- * @param {number} weekday
+ * @param {Date|string|number} now
  */
-export function computeSalaAbcdefDeficitWrite(salaGuardiaToday, teams, userId, weekday) {
+export function computeSalaAbcdefDeficitWrite(salaGuardiaToday, teams, userId, now) {
   const uid = String(userId || '');
   if (!uid) return false;
-  const hasDeficitLetter = SALA_LETTERS.some(
+  const d = now instanceof Date ? now : new Date(String(now));
+  const r2Cfg = CYCLE_CONFIGS.sala_r2;
+  const hasDeficitLetter = r2Cfg.letters.some(
     (letter) => !hasSalaGuardiaDeclaredForLetter(salaGuardiaToday, teams, letter)
   );
   if (!hasDeficitLetter) return false;
   return (teams || []).some((team) => {
     if (!normalizeServiceKey(team.service).includes('sala')) return false;
-    if (Number(team.on_call_day_index) !== weekday) return false;
+    if (!isOnCallToday(team, 'R2', d)) return false;
     if (!(team.members || []).some((m) => String(m.user_id) === uid)) return false;
     return (salaGuardiaToday || []).some(
       (g) => String(g.team_id) === String(team.team_id) && String(g.user_id) === uid
