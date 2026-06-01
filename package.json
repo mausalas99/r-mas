@@ -20,7 +20,7 @@
     "build:mac:unsigned": "npm run prebuild:mac && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac",
     "build:mac:arm64-only": "npm run prebuild:mac && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac --arm64",
     "prebuild:mac": "npm run build:ui && node scripts/bundle-renderer.mjs --prod",
-    "prebuild:win": "npm run build:ui && node scripts/bundle-renderer.mjs --prod",
+    "prebuild:win": "node scripts/fetch-argon2-win.mjs && npm run build:ui && node scripts/bundle-renderer.mjs --prod",
     "build:win": "npm run prebuild:win && electron-builder --win",
     "release:write-yml": "node scripts/write-release-yml.js",
     "release:write-yml:mac": "node scripts/write-release-yml.js --mac-only",
@@ -85,7 +85,7 @@
       ]
     },
     "win": {
-      "icon": "icon.ico",
+      "icon": "build/icon.ico",
       "artifactName": "${productName}-${version}-${arch}.${ext}",
       "target": [
         {
@@ -122,7 +122,8 @@
       "public/**/*",
       "build/AppIcon.icns",
       "build/icon.ico",
-      "node_modules/better-sqlite3-multiple-ciphers/**/*"
+      "node_modules/better-sqlite3-multiple-ciphers/**/*",
+      "node_modules/@node-rs/argon2*/**/*.node"
     ],
     "asarUnpack": [
       "lib/doc-generators/**/*",
@@ -132,7 +133,8 @@
       "template_indicaciones.docx",
       "template_listado.docx",
       "templates/receta-hu-000-061-R-06-12.pdf",
-      "node_modules/better-sqlite3-multiple-ciphers/**/*"
+      "node_modules/better-sqlite3-multiple-ciphers/**/*",
+      "node_modules/@node-rs/argon2*/**/*.node"
     ]
   },
   "allowScripts": {
