@@ -288,9 +288,9 @@ export function computeSalaAbcdefDeficitWrite(salaGuardiaToday, teams, userId, n
  * @param {object[]} joinedTeams
  * @param {Array<{ team_id?: string, user_id?: string }>} salaGuardiaToday
  * @param {object[]} teams
- * @param {number} weekday
+ * @param {Date} now
  */
-export function canR2SalaAbcdefDeficitWrite(userId, patient, joinedTeams, salaGuardiaToday, teams, weekday) {
+export function canR2SalaAbcdefDeficitWrite(userId, patient, joinedTeams, salaGuardiaToday, teams, now) {
   if (!normalizeServiceKey(patient?.service).includes('sala') && !extractSalaLetter(patient?.service || '')) {
     return false;
   }
@@ -301,7 +301,7 @@ export function canR2SalaAbcdefDeficitWrite(userId, patient, joinedTeams, salaGu
   const uid = String(userId || '');
   return joinedTeams.some((team) => {
     if (!normalizeServiceKey(team.service).includes('sala')) return false;
-    if (Number(team.on_call_day_index) !== weekday) return false;
+    if (!isOnCallToday(team, 'R2', now)) return false;
     const declared = (salaGuardiaToday || []).find(
       (g) => String(g.team_id) === String(team.team_id) && String(g.user_id) === uid
     );
@@ -431,7 +431,7 @@ export function evaluateClinicalScope(currentUser, targetPatient, activeGuardia 
   }
 
   if (rank === 'R2') {
-    if (canR2SalaAbcdefDeficitWrite(userId, targetPatient, joinedTeams, salaGuardiaToday, teams, weekday)) {
+    if (canR2SalaAbcdefDeficitWrite(userId, targetPatient, joinedTeams, salaGuardiaToday, teams, now)) {
       return allow('R2: déficit Sala ABCDEF — cobertura temporal');
     }
     if (joinedTeams.some((team) => patientMatchesTeam(targetPatient, team))) {
