@@ -1,17 +1,17 @@
-version: 6.5.1
+version: 6.5.2
 files:
-  - url: R+-6.5.1-arm64.zip
-    sha512: Ow2ks5YrbaDNmZX/zwt3gb0caAmhwnRL7xB3CyTtU7fN12vB4ROTb2WUNNQzd8n6QNRrhd+eQq1EsOzQ5QF4fA==
-    size: 126847535
-  - url: R+-6.5.1-arm64.dmg
-    sha512: 3ggFVUcT5hVld6WN97BhHUKD0dmojMjD9Yk46eKyZHXgVpC8J0LnlOa/REyodetaY12rB2AcUEnTZsBDuzAm8g==
-    size: 132099725
-  - url: R+-6.5.1-x64.zip
-    sha512: O6X14+rIwfS87zgE0HnAGYV2zOVSBJeISE6/i1kdp2y7wOB+zXY5WxMoY6b86ntitH0420GjJck42w+LzzfufA==
-    size: 135221578
-  - url: R+-6.5.1-x64.dmg
-    sha512: IBRLbb5czX9P33HVH6zXB5jXd5JEYTFzYLnp956SeakjHSaB9FcsqkMjZmeNTz/U+nd0JHlytNZzWf0NPptvzQ==
-    size: 140536585
-path: R+-6.5.1-arm64.zip
-sha512: Ow2ks5YrbaDNmZX/zwt3gb0caAmhwnRL7xB3CyTtU7fN12vB4ROTb2WUNNQzd8n6QNRrhd+eQq1EsOzQ5QF4fA==
-releaseDate: '2026-05-31T22:39:10.000Z'
+  - url: R+-6.5.2-arm64.zip
+    sha512: YFBv1GqewGEIP+p95pymDqys7yKcPYDKmXoJTxmcH0Z7N2SXh6iMCBT9xt8rhiYCemq+E7+7a9ooLGR6Qp9Z6Q==
+    size: 126948876
+  - url: R+-6.5.2-arm64.dmg
+    sha512: iTMeieVLyrl0TxzaqweF1iJZnZExydU12Ft1FDmGoZPHx0NsaiD3js5zbnqDlN2ig/nhb+LRAKJBAqoEq2Adhw==
+    size: 132198484
+  - url: R+-6.5.2-x64.zip
+    sha512: I+J5Si/B/ImvTmkzR5ubdxhmat3hIvqpV30AiwcIIYFTONzwfUvPxvn9eCwfVffpx1kXd7Aa4g+IVQ3mt1VL7g==
+    size: 135322914
+  - url: R+-6.5.2-x64.dmg
+    sha512: ZuxLsQNWWIzWBXhydgGgWpE+Ml/BwnFQPsoT0k0+NJjRbu4ztPpQl1ax7JPzsWq3xH3M32owhkfnGbqGLqT1BQ==
+    size: 140647449
+path: R+-6.5.2-arm64.zip
+sha512: YFBv1GqewGEIP+p95pymDqys7yKcPYDKmXoJTxmcH0Z7N2SXh6iMCBT9xt8rhiYCemq+E7+7a9ooLGR6Qp9Z6Q==
+releaseDate: '2026-06-01T06:22:57.000Z'
