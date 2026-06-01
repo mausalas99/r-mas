@@ -1,0 +1,156 @@
+/**
+ * Modo Guardia — full census dashboard (separate from Pase, Sala, Interconsulta).
+ */
+import { storage } from '../storage.js';
+import { patients } from '../app-state.mjs';
+import { isDbMode } from '../db-storage-bridge.mjs';
+import { isGuardiaMode } from './chrome.mjs';
+import {
+  buildGuardiasMap,
+  clinicalSessionContext,
+  mapPatientForGuardiaGrid,
+  resolveClinicalRank,
+} from '../clinical-access-runtime.mjs';
+import { diagnosticosTextForCenso } from '../patient-diagnosticos.mjs';
+import { UnifiedPatientGridBoard } from './unified-patient-grid-board.mjs';
+import { syncGuardiaIncomingStrip } from './clinical-rotation.mjs';
+
+/** @type {UnifiedPatientGridBoard|null} */
+let gridBoard = null;
+
+/** @param {string} pid */
+function pendingTodoCount(pid) {
+  return storage.getTodos(pid).filter((t) => !t.completed).length;
+}
+
+/** @param {string} pid */
+function labsSnippetForPatient(pid) {
+  const history = storage.getLabHistory();
+  const rows = Array.isArray(history[pid]) ? history[pid] : [];
+  if (!rows.length) return '—';
+  const last = rows[rows.length - 1];
+  const text = String(last?.text || last?.raw || '').replace(/\s+/g, ' ').trim();
+  if (!text) return '—';
+  const line = text.split('\n').find((l) => /★|crit|alter|↑|↓/i.test(l)) || text.split('\n')[0] || text;
+  return line.slice(0, 48);
+}
+
+/**
+ * @param {Record<string, unknown>} p
+ * @param {Map<string, object>} guardiasMap
+ */
+function enrichPatientForGuardiaCard(p, guardiasMap) {
+  const base = mapPatientForGuardiaGrid(p);
+  const g = guardiasMap.get(base.id);
+  const dxList = Array.isArray(p.diagnosticosList) ? p.diagnosticosList : [];
+  const dxText =
+    diagnosticosTextForCenso(dxList, { max: 2 }) ||
+    String(p.diagnosticosText || p.motivo || '').trim() ||
+    'Sin diagnóstico registrado';
+  const openTodos = pendingTodoCount(base.id);
+  const isCritical = !!(g?.is_critical || openTodos > 0 && storage.getTodos(base.id).some((t) => !t.completed && t.priority === 'alta'));
+  return {
+    ...base,
+    dxText: dxText.toUpperCase(),
+    pendingCount: openTodos,
+    labsSnippet: labsSnippetForPatient(base.id),
+    isCritical,
+    guardiaMeta: g,
+  };
+}
+
+/**
+ * @param {Array<ReturnType<typeof enrichPatientForGuardiaCard>>} censusPatients
+ * @param {Map<string, object>} guardiasMap
+ */
+export function computeGuardiaSummary(censusPatients, guardiasMap) {
+  let critical = 0;
+  let pending = 0;
+  censusPatients.forEach((p) => {
+    if (p.isCritical || guardiasMap.get(p.id)?.is_critical) critical += 1;
+    pending += p.pendingCount || 0;
+  });
+  const now = new Date();
+  const nextHour = new Date(now);
+  nextHour.setMinutes(0, 0, 0);
+  nextHour.setHours(nextHour.getHours() + 1);
+  const nextHandoff =
+    nextHour.getHours().toString().padStart(2, '0') + ':' + nextHour.getMinutes().toString().padStart(2, '0');
+  return { critical, pending, nextHandoff };
+}
+
+/** @param {{ critical: number, pending: number, nextHandoff: string }} summary */
+function renderGuardiaSummaryTiles(summary) {
+  const host = document.getElementById('guardia-summary');
+  if (!host) return;
+  host.innerHTML = `
+    <div class="guardia-summary-tile guardia-summary-tile--critical">
+      <div>
+        <div class="guardia-summary-label">Pacientes críticos</div>
+        <div class="guardia-summary-value guardia-summary-value--critical">${summary.critical}</div>
+      </div>
+      <span class="guardia-summary-icon" aria-hidden="true">⚠️</span>
+    </div>
+    <div class="guardia-summary-tile">
+      <div>
+        <div class="guardia-summary-label">Pendientes totales</div>
+        <div class="guardia-summary-value">${summary.pending}</div>
+      </div>
+      <span class="guardia-summary-icon" aria-hidden="true">📋</span>
+    </div>
+    <div class="guardia-summary-tile">
+      <div>
+        <div class="guardia-summary-label">Siguiente entrega</div>
+        <div class="guardia-summary-value guardia-summary-value--muted">${summary.nextHandoff}</div>
+      </div>
+      <span class="guardia-summary-icon" aria-hidden="true">⏳</span>
+    </div>`;
+}
+
+/**
+ * @param {Record<string, unknown>|null|undefined} settings
+ */
+export function renderGuardiaBoard(settings) {
+  if (!isGuardiaMode()) return;
+  const root = document.getElementById('appcontent-guardia');
+  if (!root || root.getAttribute('aria-hidden') === 'true') return;
+
+  const guardiasMap = clinicalSessionContext.guardiasMap.size
+    ? clinicalSessionContext.guardiasMap
+    : buildGuardiasMap(clinicalSessionContext.guardias);
+
+  let censusPatients = patients
+    .filter((p) => p && p.id && !p.isDemo && !p.archived)
+    .map((p) => enrichPatientForGuardiaCard(p, guardiasMap));
+
+  if (guardiasMap.size > 0) {
+    censusPatients = censusPatients.filter((p) => guardiasMap.has(p.id));
+  }
+
+  const summary = computeGuardiaSummary(censusPatients, guardiasMap);
+  renderGuardiaSummaryTiles(summary);
+
+  void syncGuardiaIncomingStrip(settings);
+
+  if (!gridBoard) gridBoard = new UnifiedPatientGridBoard('guardia-census-grid', 'GUARDIA');
+  const rank = clinicalSessionContext.user?.rank || resolveClinicalRank(settings);
+  gridBoard.drawCensusGrid(censusPatients, guardiasMap, rank);
+}
+
+/**
+ * @param {Record<string, unknown>|null|undefined} settings
+ */
+export function syncGuardiaBoardFromRuntime(settings) {
+  if (!isDbMode() || !isGuardiaMode()) return;
+  renderGuardiaBoard(settings);
+}
+
+export function isGuardiaBoardAvailable() {
+  return isDbMode();
+}
+
+export function syncGuardiaModeButtonVisibility() {
+  const show = isDbMode();
+  const btn = document.getElementById('header-guardia-mode-chip');
+  if (btn) btn.style.display = show ? 'inline-flex' : 'none';
+}

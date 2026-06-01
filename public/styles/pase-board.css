@@ -1,0 +1,512 @@
+/* Guardia census grid — high-density patient chips with R4 ward partitioning */
+.patient-chips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.r4-section-divider {
+  grid-column: 1 / -1;
+  border-bottom: 2px solid #1c192e;
+  color: #8e8ea0;
+  font-weight: 800;
+  padding: 1rem 0 0.5rem 0;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+}
+
+.dnr-badge {
+  background: #ffffff;
+  color: #ff3b30;
+  font-weight: 900;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  border: 1px solid #ff3b30;
+  margin-right: 5px;
+}
+
+.priority-critical {
+  animation: criticalPulseHighlight 2.5s infinite;
+}
+
+@keyframes criticalPulseHighlight {
+  0%,
+  100% {
+    box-shadow: 0 0 4px rgba(255, 59, 48, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(255, 59, 48, 0.5);
+  }
+}
+
+.vitals-banner.breached {
+  color: #ff3b30;
+  font-weight: 700;
+}
+
+.vitals-banner.warning {
+  color: #ff9500;
+}
+
+.vitals-banner.nominal-gray {
+  color: #8e8ea0;
+}
+
+.guardia-census-panel {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border-neutral, #1c192e);
+  background: var(--surface-raised, #0f0d18);
+  max-height: min(42vh, 420px);
+  overflow: auto;
+}
+
+.guardia-census-panel[hidden] {
+  display: none !important;
+}
+
+.guardia-census-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 1rem 0.25rem;
+}
+
+.guardia-census-panel-head h2 {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8e8ea0;
+  margin: 0;
+}
+
+.patient-chip-card {
+  background: var(--surface-card, #151321);
+  border: 1px solid var(--border-neutral, #1c192e);
+  border-radius: 12px;
+  padding: 0.75rem;
+  cursor: pointer;
+}
+
+.patient-chip-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+#rpc-clinical-session-lock {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+#rpc-clinical-session-lock.active-lock-view-overlay {
+  display: flex;
+}
+
+.clinical-session-lock-panel {
+  background: var(--surface-card, #151321);
+  border: 1px solid var(--border-neutral, #1c192e);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  max-width: 360px;
+  text-align: center;
+}
+
+.clinical-session-lock-panel p {
+  color: var(--text-muted, #8e8ea0);
+  font-size: 0.875rem;
+  margin: 0.5rem 0 1rem;
+}
+
+/* —— Modo Guardia (full dashboard) —— */
+.header-guardia-mode-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid #292442;
+  background: #1f1b32;
+  color: var(--text-main, #f1f1f1);
+}
+
+.header-guardia-mode-chip--active,
+.header-guardia-mode-chip:hover {
+  background: #7961f6;
+  border-color: #7961f6;
+  color: #fff;
+}
+
+html.ui-density-guardia aside.patient-sidebar,
+html.ui-density-guardia #sidebar-hover-strip {
+  display: none !important;
+}
+
+html.ui-density-guardia .app {
+  gap: 0;
+}
+
+html.ui-density-guardia .main-col {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+}
+
+html.ui-density-guardia #main-area {
+  border-top-left-radius: var(--radius-lg);
+}
+
+html.ui-density-guardia #main-area > :not(#appcontent-guardia) {
+  display: none !important;
+}
+
+html.ui-density-guardia .appcontent-guardia {
+  flex: 1;
+  min-height: 0;
+  display: flex !important;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+html.ui-density-guardia .guardia-board-scroll {
+  flex: 1;
+  min-height: 0;
+}
+
+html.ui-density-guardia #lan-connection-banner {
+  display: none !important;
+}
+
+html.ui-density-guardia #header-app-mode-chip {
+  display: none !important;
+}
+
+.guardia-board-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1rem 1.125rem 1.5rem;
+}
+
+.guardia-rotation-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 0.75rem;
+  align-items: center;
+}
+
+.guardia-incoming-strip {
+  margin: 0 0 1rem;
+}
+
+.guardia-incoming-strip[hidden] {
+  display: none !important;
+}
+
+.guardia-incoming-details {
+  background: var(--surface-card, #151321);
+  border: 1px solid #2a2640;
+  border-radius: 12px;
+  padding: 10px 14px 12px;
+}
+
+.guardia-incoming-summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text, #e8e6f0);
+  list-style: none;
+}
+
+.guardia-incoming-summary::-webkit-details-marker {
+  display: none;
+}
+
+.guardia-incoming-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.4rem;
+  padding: 0 6px;
+  margin-left: 6px;
+  border-radius: 999px;
+  background: #3d3558;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.guardia-incoming-hint {
+  margin: 6px 0 10px;
+  font-size: 0.8rem;
+  color: #8e8a9f;
+  line-height: 1.4;
+}
+
+.guardia-incoming-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.guardia-incoming-chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px dashed #5c5478;
+  background: #1a1728;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  max-width: 220px;
+}
+
+.guardia-incoming-chip:hover {
+  border-color: #8b7fb8;
+  background: #221e34;
+}
+
+.guardia-incoming-chip-bed {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.guardia-incoming-chip-dx {
+  font-size: 0.75rem;
+  color: #8e8a9f;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  line-height: 1.2;
+}
+
+.guardia-summary {
+  display: flex;
+  gap: 15px;
+  margin: 0 0 1rem;
+  flex-wrap: wrap;
+}
+
+.guardia-summary-tile {
+  background: var(--surface-card, #151321);
+  border-radius: 12px;
+  padding: 12px 20px;
+  flex: 1;
+  min-width: 180px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #1c192e;
+}
+
+.guardia-summary-tile--critical {
+  border-left: 4px solid #ff3b30;
+}
+
+.guardia-summary-label {
+  color: #8e8a9f;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.guardia-summary-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  line-height: 1.1;
+  margin-top: 4px;
+}
+
+.guardia-summary-value--critical {
+  color: #ff3b30;
+}
+
+.guardia-summary-value--muted {
+  color: #8e8a9f;
+}
+
+.guardia-summary-icon {
+  font-size: 1.5rem;
+}
+
+.patient-chips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 15px;
+}
+
+.patient-chip-card {
+  background: var(--surface-card, #151321);
+  border: 1px solid #1c192e;
+  border-radius: 12px;
+  padding: 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.patient-chip-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+.patient-chip-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.patient-chip-location {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.85rem;
+  background: #1f1b32;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid #2c2747;
+  flex-shrink: 0;
+}
+
+.patient-chip-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.priority-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot-alta {
+  background: #ff3b30;
+}
+
+.dot-media {
+  background: #ff9500;
+}
+
+.patient-chip-dx {
+  font-size: 0.8rem;
+  color: #8e8a9f;
+  margin: 0;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.2em;
+}
+
+.vitals-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  width: fit-content;
+}
+
+.vitals-banner.nominal {
+  background: #102a18;
+  color: #34c759;
+}
+
+.vitals-banner.breached {
+  background: #301314;
+  color: #ff3b30;
+  font-weight: 900;
+}
+
+.vitals-banner.warning {
+  background: #2e220f;
+  color: #ff9500;
+  animation: guardia-vitals-blink 1.5s infinite;
+}
+
+.vitals-banner.nominal-gray {
+  background: #1f1b32;
+  color: #8e8a9f;
+}
+
+@keyframes guardia-vitals-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.patient-chip-footer {
+  border-top: 1px solid #1c192e;
+  padding-top: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+}
+
+.patient-chip-tasks {
+  color: #8e8a9f;
+  background: #1f1b32;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.patient-chip-labs {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.7rem;
+  color: #ff453a;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 55%;
+}
+
+.clinical-registration-modal {
+  max-width: 420px;
+}
+
+.clinical-registration-lead {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin: 0 0 1rem;
+}
+
+.clinical-registration-error {
+  color: var(--error, #ff3b30);
+  font-size: 0.8125rem;
+  margin: 0.5rem 0 0;
+}

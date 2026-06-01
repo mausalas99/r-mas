@@ -134,6 +134,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbRotationNueva: function(opts) {
     return ipcRenderer.invoke('db:rotation-nueva', opts);
   },
+  dbRotationIncomingAssignments: function() {
+    return ipcRenderer.invoke('db:rotation-incoming-assignments');
+  },
   dbSignClinicalChange: function(opts) {
     return ipcRenderer.invoke('db:sign-clinical-change', opts);
   },

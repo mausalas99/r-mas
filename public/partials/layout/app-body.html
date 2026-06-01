@@ -40,6 +40,7 @@
       <span id="lan-connection-banner-text" class="lan-connection-banner-text">Sin conexión al host LAN. LiveSync (salas y relay) puede estar limitado hasta reconectar.</span>
       <button type="button" class="lan-connection-banner-dismiss" onclick="dismissLanDisconnectBanner()" aria-label="Ocultar aviso de desconexión LAN" title="Ocultar aviso">×</button>
     </div>
+    <section id="guardia-census-panel" class="guardia-census-panel" aria-label="Censo de guardia" hidden></section>
     <div class="app-tabs-row">
       <div class="app-tabs" id="app-main-tablist" role="tablist" aria-label="Secciones principales">
       <button type="button" class="app-tab active" role="tab" id="apptab-lab" aria-selected="true" aria-controls="appcontent-lab" tabindex="0" onclick="switchAppTab('lab')" data-i18n-aria-label="appTab.lab" data-i18n-title="appTab.lab">
@@ -65,6 +66,18 @@
 
     <div id="appcontent-pase" class="appcontent-pase" style="display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden;" aria-hidden="true">
       <div id="pase-board-scroll" class="pase-board-scroll"></div>
+    </div>
+
+    <div id="appcontent-guardia" class="appcontent-guardia" style="display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden;" aria-hidden="true">
+      <div id="guardia-board-scroll" class="guardia-board-scroll">
+        <div class="guardia-rotation-toolbar" aria-label="Rotación de guardia">
+          <button type="button" id="btn-guardia-rotation-config" class="btn-med-secondary btn-med-secondary--muted">Configuración rotación</button>
+          <button type="button" id="btn-guardia-nueva-rotacion" class="btn-med-secondary">Nueva rotación</button>
+        </div>
+        <div id="guardia-incoming-strip" class="guardia-incoming-strip" hidden aria-label="Pacientes entrantes (preview)"></div>
+        <div id="guardia-summary" class="guardia-summary" aria-label="Resumen de guardia"></div>
+        <div id="guardia-census-grid" class="patient-chips-grid"></div>
+      </div>
     </div>
 
     <div id="appcontent-lab" role="tabpanel" aria-labelledby="apptab-lab" aria-hidden="false" class="lab-panel-root">
