@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { listEntregaTargets } from './clinical-entrega.mjs';
-import { isOnCallToday } from '../clinico-access.mjs';
+import { isOnCallToday, getCycleConfig, salaOnCallR2 } from '../clinico-access.mjs';
 
 const users = [
   { user_id: 'r1a', username: 'r1a', rank: 'R1' },
@@ -39,53 +39,35 @@ describe('listEntregaTargets', () => {
     assert.deepEqual(ids, ['r1a', 'r1b']);
   });
 
-  it('R2 targets same service peers and R4', () => {
-    const teams = [
-      {
-        team_id: 's1',
-        service: 'Sala',
-        sub_area_fraction: 'A',
-        members: [
-          { user_id: 'r2a', rank: 'R2' },
-          { user_id: 'r2b', rank: 'R2' },
-        ],
-      },
-      {
-        team_id: 'e1',
-        service: 'Eme',
-        sub_area_fraction: 'A',
-        members: [{ user_id: 'r3x', rank: 'R3' }],
-      },
-    ];
-    const { targets, flow } = listEntregaTargets('R2', teams, users, false, {
-      currentUserId: 'r2a',
-    });
-    assert.equal(flow, 'r2');
-    const ids = new Set(targets.map((u) => u.user_id));
-    assert.ok(ids.has('r2b'));
-    assert.ok(ids.has('r4x'));
-    assert.equal(ids.has('r3x'), false);
-  });
-
-  it('R2 with sala deficit includes on-call Sala R2', () => {
+  it('R2 handoff targets R2 guardia on-call and R4s', () => {
     const now = '2026-06-01T12:00:00Z'; // day 1 -> position 0 = A
     const teams = [
       {
         team_id: 's1',
         service: 'Sala',
         sub_area_fraction: 'A',
-        guardia_today: { user_id: 'r2b' },
+        sala: 'Sala 1',
         members: [
           { user_id: 'r2a', rank: 'R2' },
           { user_id: 'r2b', rank: 'R2' },
         ],
       },
+      {
+        team_id: 's2',
+        service: 'Sala',
+        sub_area_fraction: 'B',
+        sala: 'Sala 2',
+        members: [{ user_id: 'r3x', rank: 'R3' }],
+      },
     ];
-    const { targets } = listEntregaTargets('R2', teams, users, true, {
+    const { targets, flow } = listEntregaTargets('R2', teams, users, false, {
       currentUserId: 'r2a',
       now,
     });
+    assert.equal(flow, 'r2_handoff');
     const ids = new Set(targets.map((u) => u.user_id));
+    assert.ok(ids.has('r4x'));
+    assert.ok(ids.has('r2a'));
     assert.ok(ids.has('r2b'));
   });
 

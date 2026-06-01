@@ -6,7 +6,7 @@ import {
   refreshGuardiaCensusFromDb,
   signOutgoingLiveSyncMutation,
 } from '../clinical-access-runtime.mjs';
-import { computeSalaAbcdefDeficitWrite, getJoinedTeams, isOnCallToday } from '../clinico-access.mjs';
+import { computeSalaAbcdefDeficitWrite, getJoinedTeams, isOnCallToday, salaOnCallR2 } from '../clinico-access.mjs';
 import { scheduleLiveSyncPush } from './lan-sync.mjs';
 
 export const GUARDIA_GRID_MODE_KEY = 'guardia.gridMode';
@@ -64,34 +64,14 @@ export function listEntregaTargets(rank, teams, users, salaDeficit, opts = {}) {
   }
 
   if (rankNorm === 'R2') {
-    const services = new Set(
-      joinedTeams.map((t) => String(t.service || '').toLowerCase()).filter(Boolean)
-    );
-    const r2Peers = all.filter((u) => {
-      if (u.rank !== 'R2') return false;
-      return teamList.some((team) => {
-        const svc = String(team.service || '').toLowerCase();
-        if (!services.has(svc)) return false;
-        return (team.members || []).some((m) => String(m.user_id) === u.user_id);
-      });
-    });
+    const r2GuardiaOnCall = salaOnCallR2(teamList, now);
+    const r2GuardiaIds = new Set(r2GuardiaOnCall.map((r) => r.user_id));
+
+    const r2GuardiaUsers = all.filter((u) => r2GuardiaIds.has(u.user_id));
     const r4s = all.filter((u) => u.rank === 'R4');
-    let deficitR2 = [];
-    if (salaDeficit) {
-      deficitR2 = all.filter((u) => {
-        if (u.rank !== 'R2') return false;
-        return teamList.some((team) => {
-          if (!String(team.service || '').toLowerCase().includes('sala')) return false;
-          if (!isOnCallToday(team, 'R2', now)) return false;
-          const onGuardia =
-            team.guardia_today && String(team.guardia_today.user_id) === u.user_id;
-          if (!onGuardia) return false;
-          return (team.members || []).some((m) => String(m.user_id) === u.user_id);
-        });
-      });
-    }
-    const targets = uniqueByUserId([...r2Peers, ...r4s, ...deficitR2]);
-    return { flow: 'r2', targets: targets.length ? targets : all };
+
+    const targets = uniqueByUserId([...r2GuardiaUsers, ...r4s]);
+    return { flow: 'r2_handoff', targets: targets.length ? targets : all };
   }
 
   if (rankNorm === 'R1') {
@@ -328,6 +308,7 @@ export function openEntregaModal(opts) {
     const flowLabels = {
       r1: 'R1: mismos equipo o fracción de sub-área.',
       r2: 'R2: mismo servicio, R4, o cubridores Sala en déficit.',
+      r2_handoff: 'R2: selecciona R4 de Sala y R2 de guardia (dos entregas separadas).',
       r3_suggest: 'R3: sugeridos por día de guardia del equipo (confirma).',
       generic: 'Cualquier usuario registrado.',
     };
