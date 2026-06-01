@@ -27,17 +27,18 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [5.6.3](https://github.com/mausalas99/r-mas/releases/tag/v5.6.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.5.3](https://github.com/mausalas99/r-mas/releases/tag/v6.5.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
 
-## R+ 6.5.2 (Recuperación de contraseña maestra (r+123))
+## R+ 6.5.3 (Guardia LAN Hub · Recuperación de contraseña (r+123))
 
 - **Recuperación de contraseña maestra** — Link "¿Olvidaste tu contraseña?" en la pantalla de desbloqueo; código de respaldo `r+123` para recuperar acceso a la base clínica. Configuración automática en cada desbloqueo exitoso (AES-256-GCM + Argon2id).
+- **Guardia LAN Hub** — Panel "Conexión guardia" con auto-descubrimiento de hosts por rango (Admin>R4>R3>R2>R1), salas de guardia, equipos clínicos, Modo Guardia, asignación automática de pacientes, vista censo y enlace móvil para iPad. R1/R2 se unen a equipos; R4/Admin crea equipos del mes y finaliza rotaciones.
 - **Modo Guardia (prototipo)** — En desarrollo, aún no listo para uso clínico. Prototipo funcional incluido para pruebas internas.
 
-Notas: `docs/RELEASE_NOTES_6.5.2.txt`.
+Notas: `docs/RELEASE_NOTES_6.5.3.txt`.
 ## R+ 6.5.1 (Perfil farmacoterapéutico · almacén cifrado · sala en vivo)
 
 - **Perfil histórico (Medicamentos)** — Calendario mensual SOME: pegado de mes, adherencia (no administrado por celda), lista + modal pantalla completa; merge desde **Receta**; filtros por categoría SOME.
