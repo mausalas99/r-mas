@@ -13628,7 +13628,6 @@ var windowHandlers5 = {
 
 // public/js/clinico-access.mjs
 var CLINICO_UNLOCK_PHRASE = "entiendo, usare mi criterio clincio";
-var SALA_LETTERS = ["A", "B", "C", "D", "E", "F"];
 var R3_EXTENDED_SERVICES = /* @__PURE__ */ new Set(["torre hu", "eme", "ux"]);
 function normalizeClinicoUnlockPhrase(text) {
   return String(text || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ");
@@ -13697,6 +13696,33 @@ function confirmClinicoUnlock() {
 function normalizeServiceKey(value) {
   return String(value || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ");
 }
+var CYCLE_CONFIGS = {
+  sala_r2: { letters: ["A", "B", "C", "D", "E", "F"], length: 6 },
+  sala_r1: { letters: ["A1", "B1", "C1", "D1", "A2", "B2", "C2", "D2"], length: 8 },
+  default: { letters: ["A", "B", "C", "D"], length: 4 }
+};
+function getCycleConfig(service, rank) {
+  const svc = normalizeServiceKey(service);
+  if (svc.includes("sala")) {
+    if (rank === "R2") return CYCLE_CONFIGS.sala_r2;
+    if (rank === "R1") return CYCLE_CONFIGS.sala_r1;
+  }
+  return CYCLE_CONFIGS.default;
+}
+function letterIndexForTeam(team, rank) {
+  const frac = String(team?.sub_area_fraction || "").trim().toUpperCase();
+  if (!frac) return -1;
+  const cfg = getCycleConfig(team?.service, rank);
+  return cfg.letters.indexOf(frac);
+}
+function isOnCallToday(team, rank, now) {
+  const idx = letterIndexForTeam(team, rank);
+  if (idx === -1) return false;
+  const cfg = getCycleConfig(team?.service, rank);
+  const d = now instanceof Date ? now : new Date(String(now));
+  const dayOfMonth = d.getDate();
+  return (dayOfMonth - 1) % cfg.length === idx;
+}
 function toMillis(value, fallbackIso) {
   if (value instanceof Date) return value.getTime();
   if (value != null && value !== "") return new Date(String(value)).getTime();
@@ -13720,7 +13746,8 @@ function extractSalaLetter(serviceOrArea) {
 }
 function salaLetterForTeamOrArea(teamOrPatient) {
   const frac = String(teamOrPatient?.sub_area_fraction || "").trim();
-  if (frac && SALA_LETTERS.includes(frac.toUpperCase())) return frac.toUpperCase();
+  const bare = frac.replace(/[0-9]+$/, "").toUpperCase();
+  if (bare && /^[A-F]$/.test(bare)) return bare;
   const fromName = extractSalaLetter(teamOrPatient?.name || "");
   if (fromName) return fromName;
   return extractSalaLetter(teamOrPatient?.sub_area || teamOrPatient?.service || "");
@@ -13775,23 +13802,25 @@ function hasSalaGuardiaDeclaredForLetter(salaGuardiaToday, teams, salaLetter) {
   );
   return salaTeams.some((t2) => declared.has(String(t2.team_id || "")));
 }
-function computeSalaAbcdefDeficitWrite(salaGuardiaToday, teams, userId, weekday) {
+function computeSalaAbcdefDeficitWrite(salaGuardiaToday, teams, userId, now) {
   const uid = String(userId || "");
   if (!uid) return false;
-  const hasDeficitLetter = SALA_LETTERS.some(
+  const d = now instanceof Date ? now : new Date(String(now));
+  const r2Cfg = CYCLE_CONFIGS.sala_r2;
+  const hasDeficitLetter = r2Cfg.letters.some(
     (letter) => !hasSalaGuardiaDeclaredForLetter(salaGuardiaToday, teams, letter)
   );
   if (!hasDeficitLetter) return false;
   return (teams || []).some((team) => {
     if (!normalizeServiceKey(team.service).includes("sala")) return false;
-    if (Number(team.on_call_day_index) !== weekday) return false;
+    if (!isOnCallToday(team, "R2", d)) return false;
     if (!(team.members || []).some((m) => String(m.user_id) === uid)) return false;
     return (salaGuardiaToday || []).some(
       (g3) => String(g3.team_id) === String(team.team_id) && String(g3.user_id) === uid
     );
   });
 }
-function canR2SalaAbcdefDeficitWrite(userId, patient, joinedTeams, salaGuardiaToday, teams, weekday) {
+function canR2SalaAbcdefDeficitWrite(userId, patient, joinedTeams, salaGuardiaToday, teams, now) {
   if (!normalizeServiceKey(patient?.service).includes("sala") && !extractSalaLetter(patient?.service || "")) {
     return false;
   }
@@ -13801,7 +13830,7 @@ function canR2SalaAbcdefDeficitWrite(userId, patient, joinedTeams, salaGuardiaTo
   const uid = String(userId || "");
   return joinedTeams.some((team) => {
     if (!normalizeServiceKey(team.service).includes("sala")) return false;
-    if (Number(team.on_call_day_index) !== weekday) return false;
+    if (!isOnCallToday(team, "R2", now)) return false;
     const declared = (salaGuardiaToday || []).find(
       (g3) => String(g3.team_id) === String(team.team_id) && String(g3.user_id) === uid
     );
@@ -13815,7 +13844,6 @@ function evaluateClinicalScope(currentUser, targetPatient, activeGuardia = null,
   const salaGuardiaToday = Array.isArray(ctx.salaGuardiaToday) ? ctx.salaGuardiaToday : [];
   const cycle = ctx.cycle ?? null;
   const now = ctx.now != null ? ctx.now instanceof Date ? ctx.now : new Date(String(ctx.now)) : /* @__PURE__ */ new Date();
-  const weekday = now.getDay();
   const userId = String(currentUser?.user_id || "");
   const rank = String(currentUser?.rank || "");
   const patientId = String(targetPatient?.id || "");
@@ -13883,14 +13911,14 @@ function evaluateClinicalScope(currentUser, targetPatient, activeGuardia = null,
       return allow("R3: paciente del equipo");
     }
     if (joinedTeams.some(
-      (team) => Number(team.on_call_day_index) === weekday && normalizeServiceKey(team.service) === normalizeServiceKey(targetPatient?.service)
+      (team) => isOnCallToday(team, "R3", now) && normalizeServiceKey(team.service) === normalizeServiceKey(targetPatient?.service)
     )) {
       return allow("R3: cobertura cruzada por d\xEDa de guardia", true, true);
     }
     return allow("R3: lectura en servicio extendido", true, false);
   }
   if (rank === "R2") {
-    if (canR2SalaAbcdefDeficitWrite(userId, targetPatient, joinedTeams, salaGuardiaToday, teams, weekday)) {
+    if (canR2SalaAbcdefDeficitWrite(userId, targetPatient, joinedTeams, salaGuardiaToday, teams, now)) {
       return allow("R2: d\xE9ficit Sala ABCDEF \u2014 cobertura temporal");
     }
     if (joinedTeams.some((team) => patientMatchesTeam(targetPatient, team))) {
@@ -19710,15 +19738,6 @@ var CLINICAL_TEAM_SERVICES = [
   "UX",
   "\xC1rea A"
 ];
-var ON_CALL_DAY_LABELS = [
-  "Domingo (0)",
-  "Lunes (1)",
-  "Martes (2)",
-  "Mi\xE9rcoles (3)",
-  "Jueves (4)",
-  "Viernes (5)",
-  "S\xE1bado (6)"
-];
 function dbApi3() {
   if (typeof window === "undefined") return null;
   return window.rplusDb || window.electronAPI || null;
@@ -19766,8 +19785,10 @@ function renderCreateTeamForm() {
   const serviceOptions = CLINICAL_TEAM_SERVICES.map(
     (svc) => `<option value="${escapeAttr2(svc)}">${escapeHtml2(svc)}</option>`
   ).join("");
-  const dayOptions = ON_CALL_DAY_LABELS.map(
-    (label, idx) => `<option value="${idx}">${escapeHtml2(label)}</option>`
+  const rank = clinicalSessionContext.user?.rank || "R1";
+  const defaultCycle = getCycleConfig(CLINICAL_TEAM_SERVICES[0], rank);
+  const letterOptions = defaultCycle.letters.map(
+    (letter, idx) => `<option value="${escapeAttr2(letter)}">${escapeHtml2(letter)}</option>`
   ).join("");
   return `
     <section class="clinical-teams-section">
@@ -19786,8 +19807,8 @@ function renderCreateTeamForm() {
           <input id="clinical-team-create-fraction" type="text" class="profile-input" placeholder="A1, A2\u2026" maxlength="16">
         </div>
         <div class="field-group">
-          <label for="clinical-team-create-day">D\xEDa de guardia (0\u20136)</label>
-          <select id="clinical-team-create-day" class="profile-input" required>${dayOptions}</select>
+          <label for="clinical-team-create-day">Posici\xF3n en ciclo</label>
+          <select id="clinical-team-create-day" class="profile-input" required>${letterOptions}</select>
         </div>
         <div class="modal-actions">
           <button type="submit" class="btn-save">Crear equipo</button>
@@ -19839,8 +19860,18 @@ async function renderClinicalTeamsPanel() {
   await fetchClinicalTeamsFromDb();
   const joined = filterJoinedTeams(clinicalSessionContext.teams, userId);
   const joinedHtml = joined.length ? joined.map((team) => renderJoinedTeamCard(team, userId)).join("") : '<p class="clinical-teams-empty">A\xFAn no perteneces a ning\xFAn equipo. Crea uno abajo.</p>';
+  const rank = clinicalSessionContext.user?.rank || "R1";
+  const rankSection = `
+    <section class="clinical-teams-section clinical-teams-rank-section">
+      <h4 class="clinical-teams-section-title">Mi perfil</h4>
+      <div class="clinical-teams-rank-row">
+        <span class="clinical-teams-rank-badge">Rango: <strong>${escapeHtml2(rank)}</strong></span>
+        <button type="button" class="btn-med-secondary" id="btn-change-rank">Cambiar rango</button>
+      </div>
+    </section>`;
   host.innerHTML = `
     <p class="clinical-teams-lead">Administra tus equipos de rotaci\xF3n y declara <strong>Guardia</strong> (on-call hoy) por equipo. Distinto del bloque Equipo del perfil (solo PDF).</p>
+    ${rankSection}
     <section class="clinical-teams-section">
       <h4 class="clinical-teams-section-title">Mis equipos</h4>
       <div class="clinical-teams-list">${joinedHtml}</div>
@@ -19848,11 +19879,58 @@ async function renderClinicalTeamsPanel() {
     ${renderCreateTeamForm()}`;
   wireClinicalTeamsPanelInteractions();
 }
+async function handleChangeRank() {
+  const RANKS2 = ["R1", "R2", "R3", "R4", "Admin"];
+  const current = clinicalSessionContext.user?.rank || "R1";
+  const rankStr = prompt(`Rango actual: ${current}
+
+Escribe el nuevo rango (${RANKS2.join(", ")}):`, current);
+  if (!rankStr) return;
+  const rank = rankStr.trim().toUpperCase();
+  if (!RANKS2.includes(rank)) {
+    toast2(`Rango inv\xE1lido. Debe ser: ${RANKS2.join(", ")}`, "error");
+    return;
+  }
+  let settings2 = {};
+  try {
+    settings2 = JSON.parse(localStorage.getItem("rpc-settings") || "{}");
+  } catch (_e) {
+  }
+  settings2.clinicalRank = rank;
+  try {
+    localStorage.setItem("rpc-settings", JSON.stringify(settings2));
+  } catch (_e) {
+  }
+  if (clinicalSessionContext.user) {
+    clinicalSessionContext.user.rank = rank;
+  }
+  toast2(`Rango cambiado a ${rank}`, "success");
+  document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
+  await renderClinicalTeamsPanel();
+}
 function wireClinicalTeamsPanelInteractions() {
+  const changeRankBtn = document.getElementById("btn-change-rank");
+  if (changeRankBtn && !changeRankBtn._rpcRankWired) {
+    changeRankBtn._rpcRankWired = true;
+    changeRankBtn.addEventListener("click", () => void handleChangeRank());
+  }
   const createForm = document.getElementById("clinical-team-create-form");
   if (createForm && !createForm._rpcTeamsCreateWired) {
     createForm._rpcTeamsCreateWired = true;
     createForm.addEventListener("submit", (ev) => void handleCreateTeamSubmit(ev));
+  }
+  const serviceSelect = document.getElementById("clinical-team-create-service");
+  if (serviceSelect && !serviceSelect._rpcServiceWired) {
+    serviceSelect._rpcServiceWired = true;
+    serviceSelect.addEventListener("change", () => {
+      const daySelect = document.getElementById("clinical-team-create-day");
+      if (!daySelect) return;
+      const rank = clinicalSessionContext.user?.rank || "R1";
+      const cfg = getCycleConfig(serviceSelect.value, rank);
+      daySelect.innerHTML = cfg.letters.map(
+        (letter, idx) => `<option value="${escapeAttr2(letter)}">${escapeHtml2(letter)}</option>`
+      ).join("");
+    });
   }
   document.querySelectorAll(".clinical-teams-guardia-check").forEach((input) => {
     if (!(input instanceof HTMLInputElement) || input._rpcGuardiaWired) return;
@@ -19877,7 +19955,7 @@ async function handleCreateTeamSubmit(ev) {
   const subAreaFraction = String(
     document.getElementById("clinical-team-create-fraction")?.value || ""
   ).trim();
-  const onCallDayIndex = Number(document.getElementById("clinical-team-create-day")?.value ?? 0);
+  const cycleLetter = String(document.getElementById("clinical-team-create-day")?.value || "A").trim();
   const userId = currentUserId();
   if (!name || !service) {
     toast2("Indica nombre y servicio.", "error");
@@ -19886,8 +19964,8 @@ async function handleCreateTeamSubmit(ev) {
   const res = await api3.dbClinicalTeamsCreate({
     name,
     service,
-    subAreaFraction: subAreaFraction || void 0,
-    onCallDayIndex,
+    subAreaFraction: cycleLetter,
+    onCallDayIndex: 0,
     createdBy: userId
   });
   if (!res || res.ok === false) {
@@ -19992,7 +20070,7 @@ function uniqueByUserId(list) {
 }
 function listEntregaTargets(rank, teams, users, salaDeficit, opts = {}) {
   const currentUserId2 = String(opts.currentUserId || "");
-  const weekday = opts.weekday ?? (/* @__PURE__ */ new Date()).getDay();
+  const now = opts.now ? new Date(String(opts.now)) : /* @__PURE__ */ new Date();
   const all = normalizeUsers(users);
   const teamList = Array.isArray(teams) ? teams : [];
   const rankNorm = String(rank || "R1");
@@ -20000,7 +20078,7 @@ function listEntregaTargets(rank, teams, users, salaDeficit, opts = {}) {
   if (rankNorm === "R3") {
     const suggestedIds = /* @__PURE__ */ new Set();
     teamList.forEach((team) => {
-      if (Number(team.on_call_day_index) !== weekday) return;
+      if (!isOnCallToday(team, "R3", now)) return;
       (team.members || []).forEach((m) => {
         if (m?.user_id) suggestedIds.add(String(m.user_id));
       });
@@ -20030,7 +20108,7 @@ function listEntregaTargets(rank, teams, users, salaDeficit, opts = {}) {
         if (u.rank !== "R2") return false;
         return teamList.some((team) => {
           if (!String(team.service || "").toLowerCase().includes("sala")) return false;
-          if (Number(team.on_call_day_index) !== weekday) return false;
+          if (!isOnCallToday(team, "R2", now)) return false;
           const onGuardia = team.guardia_today && String(team.guardia_today.user_id) === u.user_id;
           if (!onGuardia) return false;
           return (team.members || []).some((m) => String(m.user_id) === u.user_id);
@@ -20183,16 +20261,14 @@ function openEntregaModal(opts) {
   const salaGuardiaToday = Array.isArray(ctx.salaGuardiaToday) ? ctx.salaGuardiaToday : [];
   const userId = String(clinicalSessionContext.user?.user_id || "");
   const rank = String(clinicalSessionContext.user?.rank || "R1");
-  const weekday = (/* @__PURE__ */ new Date()).getDay();
   const salaDeficit = computeSalaAbcdefDeficitWrite(
     salaGuardiaToday,
     teams,
     userId,
-    weekday
+    /* @__PURE__ */ new Date()
   );
   const { targets, flow } = listEntregaTargets(rank, teams, users, salaDeficit, {
-    currentUserId: userId,
-    weekday
+    currentUserId: userId
   });
   const select = document.getElementById("entrega-covering-user");
   const teamSelect = document.getElementById("entrega-source-team");
