@@ -5,6 +5,7 @@ import {
   clinicalSessionContext,
   fetchClinicalTeamsFromDb,
 } from '../clinical-access-runtime.mjs';
+import { scheduleLiveSyncPush } from './lan-sync.mjs';
 
 export const CLINICAL_TEAM_SERVICES = [
   'Sala',
@@ -290,6 +291,7 @@ async function handleGuardiaCheck(input) {
 
   toast('Guardia declarada para hoy.', 'success');
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
+  scheduleLiveSyncPush();
   await renderClinicalTeamsPanel();
 }
 

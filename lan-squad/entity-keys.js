@@ -27,6 +27,7 @@ function collectKeysFromBundlePayload(payload) {
     }
   }
   if (payload.manejo && typeof payload.manejo === 'object') keys.add('manejo');
+  if (payload.clinicalOps && typeof payload.clinicalOps === 'object') keys.add('clinicalOps');
   return keys;
 }
 

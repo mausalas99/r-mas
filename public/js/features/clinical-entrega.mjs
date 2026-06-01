@@ -7,6 +7,7 @@ import {
   signOutgoingLiveSyncMutation,
 } from '../clinical-access-runtime.mjs';
 import { computeSalaAbcdefDeficitWrite, getJoinedTeams } from '../clinico-access.mjs';
+import { scheduleLiveSyncPush } from './lan-sync.mjs';
 
 export const GUARDIA_GRID_MODE_KEY = 'guardia.gridMode';
 
@@ -250,6 +251,7 @@ function wireEntregaFormOnce() {
       const onConfirm = form._entregaOnConfirm;
       closeEntregaModal();
       await refreshGuardiaCensusFromDb(null);
+      scheduleLiveSyncPush();
       if (typeof onConfirm === 'function') onConfirm();
     } catch (err) {
       toast(err?.message || 'Error al registrar entrega', 'error');

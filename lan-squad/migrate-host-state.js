@@ -21,6 +21,8 @@ function migrateBundleV1ToV2(bundle) {
     todos: bundle.todos && typeof bundle.todos === 'object' ? bundle.todos : {},
     entries: Array.isArray(bundle.entries) ? bundle.entries : [],
     manejo: bundle.manejo && typeof bundle.manejo === 'object' ? bundle.manejo : null,
+    clinicalOps:
+      bundle.clinicalOps && typeof bundle.clinicalOps === 'object' ? bundle.clinicalOps : null,
     uploadedByClientId: String(bundle.uploadedByClientId || ''),
     committedAt,
     audit_log: Array.isArray(bundle.audit_log) ? bundle.audit_log : [],

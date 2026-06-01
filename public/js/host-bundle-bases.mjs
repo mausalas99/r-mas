@@ -62,6 +62,7 @@ function collectKeysFromEnvelope(envelope) {
     }
   }
   if (envelope.manejo && typeof envelope.manejo === 'object') keys.add('manejo');
+  if (envelope.clinicalOps && typeof envelope.clinicalOps === 'object') keys.add('clinicalOps');
   return keys;
 }
 
@@ -86,5 +87,6 @@ export function hostBundlePutBodyFromEnvelope(roomId, envelope) {
     todos: envelope.todos || {},
     entries: envelope.entries || [],
     manejo: envelope.manejo != null ? envelope.manejo : null,
+    clinicalOps: envelope.clinicalOps != null ? envelope.clinicalOps : null,
   };
 }

@@ -10,6 +10,7 @@ function emptyBundle(nowIso) {
     todos: {},
     entries: [],
     manejo: null,
+    clinicalOps: null,
     uploadedByClientId: '',
     committedAt: nowIso,
     audit_log: [],
@@ -100,7 +101,7 @@ function mergeBundlePut(serverBundle, incoming, opts) {
     if (baseVer == null || Number(baseVer) !== Number(serverVer)) {
       conflicts.push({
         key,
-        kind: key.startsWith('a:') ? 'agenda' : key.startsWith('t:') ? 'todo' : key === 'manejo' ? 'manejo' : 'entity',
+        kind: key.startsWith('a:') ? 'agenda' : key.startsWith('t:') ? 'todo' : key === 'manejo' ? 'manejo' : key === 'clinicalOps' ? 'clinicalOps' : 'entity',
         patientId: key.startsWith('t:') ? key.split(':')[1] : undefined,
         localBaseVersion: baseVer == null ? 0 : Number(baseVer),
         serverVersion: Number(serverVer),
@@ -149,6 +150,22 @@ function mergeBundlePut(serverBundle, incoming, opts) {
           : bundle.manejo;
   }
 
+  if ('clinicalOps' in base) {
+    const incomingOps =
+      base.clinicalOps && typeof base.clinicalOps === 'object' ? base.clinicalOps : null;
+    const serverOps =
+      bundle.clinicalOps && typeof bundle.clinicalOps === 'object' ? bundle.clinicalOps : null;
+    if (!incomingOps) {
+      bundle.clinicalOps = base.clinicalOps === null ? null : bundle.clinicalOps;
+    } else if (!serverOps) {
+      bundle.clinicalOps = incomingOps;
+    } else {
+      const a = String(incomingOps.exportedAt || '');
+      const b = String(serverOps.exportedAt || '');
+      bundle.clinicalOps = a >= b ? incomingOps : serverOps;
+    }
+  }
+
   const nextEntityVersions = { ...serverEntityVersions };
   for (const key of payloadKeys) {
     nextEntityVersions[key] = Number(nextEntityVersions[key] || 0) + 1;
@@ -173,6 +190,7 @@ function mergeBundlePut(serverBundle, incoming, opts) {
 
 function extractPayloadForKey(payload, key) {
   if (key === 'manejo') return payload.manejo || null;
+  if (key === 'clinicalOps') return payload.clinicalOps || null;
   if (key.startsWith('a:')) {
     const id = key.slice(2);
     const list = Array.isArray(payload.agenda) ? payload.agenda : [];

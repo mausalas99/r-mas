@@ -38,6 +38,7 @@ import { filterTodosRespectingDismissals } from "../manejo-todo-dismiss.mjs";
 import { copyToClipboardSafe } from "./soap-estado.mjs";
 import { buildLanJoinUrls, parseLanInviteInput } from "../lan-join-link.mjs";
 import { createMutationBuilder, wrapLiveSyncPatch } from "../versioned-mutation.mjs";
+import { guardAndSignLiveSyncMutation } from "../clinical-access-runtime.mjs";
 import {
   saveDraftConflict,
   deleteDraftConflict,
@@ -50,6 +51,13 @@ import {
   getHostBundleBases,
   setHostBundleBases,
 } from "../host-bundle-bases.mjs";
+import {
+  applyClinicalOpsLanSnapshot,
+  getCachedClinicalOpsSnapshot,
+  isClinicalOpsLanAvailable,
+  mergeClinicalOpsFromSources,
+  refreshClinicalOpsSnapshotCache,
+} from "../clinical-ops-lan.mjs";
 import {
   rememberPrimaryHostUrl,
   getPrimaryHostUrl,
@@ -828,7 +836,16 @@ function buildLiveSyncMutationFromDesired(entityType, entityId, desired, extra) 
 
 function sendLiveSyncMutation(mutation) {
   if (!activeLiveSyncRoomId || !lanClient.liveConnected || !mutation) return;
-  lanClient.sendLive(wrapLiveSyncPatch(activeLiveSyncRoomId, getLanClientId(), mutation));
+  var envelope = wrapLiveSyncPatch(activeLiveSyncRoomId, getLanClientId(), mutation);
+  void guardAndSignLiveSyncMutation(mutation, envelope)
+    .then(function () {
+      lanClient.sendLive(envelope);
+    })
+    .catch(function (err) {
+      if (err && err.code === 'CLINICAL_ACCESS_DENIED') {
+        runtime.showToast(String(err.message || 'Acceso clínico denegado'), 'error');
+      }
+    });
 }
 
 function isRoomBundleConflictDraft(draft) {
@@ -875,6 +892,7 @@ async function applyRoomBundleServerChoice(draft) {
           todos: bundle.todos || {},
           entries: bundle.entries || [],
           manejo: bundle.manejo,
+          clinicalOps: bundle.clinicalOps,
         },
       ])
     );
@@ -1584,12 +1602,28 @@ function collectPatientEntriesForLanSync() {
   return out;
 }
 
+/*
+ * V2 clinical ops LAN merge (rotation_cycles, patient_team_assignment,
+ * team_guardia_today, teams, active_guardias) — LiveSync room names unchanged.
+ *
+ * - team_guardia_today: last-write per team_id by declared_at
+ * - teams metadata: last-write per team_id (created_at tie-break)
+ * - patient_team_assignment, team_membership: union — never silent delete
+ * - active_guardias: last-write per patient by assigned_at
+ * - rotation.nueva: signed audit event; peers apply archive + guardia clear when
+ *   incoming rotationNuevaAt is newer than local (see lib/db/clinical-ops-sync.mjs)
+ *
+ * Host sync-bundle and WS livesync:bundle carry `clinicalOps` snapshot; renderer
+ * applies via db:clinical-ops-merge. db:clinical-save-all also accepts clinicalOps blob.
+ */
+
 function mergeLiveSyncFullBundles(sources) {
   var base = mergeLiveSyncBundles(sources);
   var entries = mergeLanPatientEntrySources(sources);
   entries = filterEntriesByPatientDeletes(entries, base.patientDeletes || []);
   base.entries = attachTodosMapToPatientEntries(entries, base.todos);
   base.manejo = mergeManejoFromSources(sources);
+  base.clinicalOps = mergeClinicalOpsFromSources(sources);
   return base;
 }
 
@@ -1829,6 +1863,14 @@ function applyLiveSyncMerged(merged) {
   if (merged.manejo) {
     applyManejoRoomDataToLocal(merged.manejo);
   }
+  if (merged.clinicalOps && isClinicalOpsLanAvailable()) {
+    void applyClinicalOpsLanSnapshot(merged.clinicalOps).then(function (ok) {
+      if (ok) {
+        void refreshClinicalOpsSnapshotCache();
+        document.dispatchEvent(new CustomEvent('rpc-clinical-ops-synced'));
+      }
+    });
+  }
 }
 function liveSyncBundleHasPayload(bundle) {
   if (!bundle) return false;
@@ -1845,6 +1887,18 @@ function liveSyncBundleHasPayload(bundle) {
     if (Array.isArray(manejo.customProtocols) && manejo.customProtocols.length > 0) return true;
     if (manejo.overrides && Object.keys(manejo.overrides).length > 0) return true;
     if (Array.isArray(manejo.favorites) && manejo.favorites.length > 0) return true;
+  }
+  var clinicalOps = bundle.clinicalOps;
+  if (clinicalOps && typeof clinicalOps === 'object') {
+    if (
+      (Array.isArray(clinicalOps.rotation_cycles) && clinicalOps.rotation_cycles.length > 0) ||
+      (Array.isArray(clinicalOps.patient_team_assignment) &&
+        clinicalOps.patient_team_assignment.length > 0) ||
+      (Array.isArray(clinicalOps.team_guardia_today) && clinicalOps.team_guardia_today.length > 0) ||
+      (Array.isArray(clinicalOps.active_guardias) && clinicalOps.active_guardias.length > 0)
+    ) {
+      return true;
+    }
   }
   return false;
 }
@@ -2033,6 +2087,7 @@ function saveLocalRoomSnapshot(roomId) {
     todos: snap.todos,
     entries: entries,
     manejo: collectManejoRoomPayload(),
+    clinicalOps: getCachedClinicalOpsSnapshot(),
   });
 }
 function buildLiveSyncBundleEnvelope(roomId) {
@@ -2050,6 +2105,7 @@ function buildLiveSyncBundleEnvelope(roomId) {
     todos: snap.todos,
     entries: entries,
     manejo: collectManejoRoomPayload(),
+    clinicalOps: getCachedClinicalOpsSnapshot(),
   };
 }
 function scheduleLiveSyncPush() {
@@ -2060,18 +2116,23 @@ function scheduleLiveSyncPush() {
     _liveSyncPushTimer = null;
     var roomId = activeLiveSyncRoomId;
     if (!roomId) return;
-    var bundle = buildLiveSyncBundleEnvelope(roomId);
-    if (lanClient.liveConnected) {
-      try {
-        lanClient.sendLive(bundle);
-      } catch (_e) {}
-    }
-    saveLocalRoomSnapshot(roomId);
-    if (isLanSessionConfiguredForRest()) {
-      pushRoomSyncBundleToHost(roomId, bundle).then(function (ok) {
-        if (!ok) enqueueOutbox(roomId, { kind: 'bundle', payload: bundle });
-      });
-    }
+    void (async function () {
+      if (isClinicalOpsLanAvailable()) {
+        await refreshClinicalOpsSnapshotCache();
+      }
+      var bundle = buildLiveSyncBundleEnvelope(roomId);
+      if (lanClient.liveConnected) {
+        try {
+          lanClient.sendLive(bundle);
+        } catch (_e) {}
+      }
+      saveLocalRoomSnapshot(roomId);
+      if (isLanSessionConfiguredForRest()) {
+        pushRoomSyncBundleToHost(roomId, bundle).then(function (ok) {
+          if (!ok) enqueueOutbox(roomId, { kind: 'bundle', payload: bundle });
+        });
+      }
+    })();
   }, LIVE_SYNC_PUSH_DEBOUNCE_MS);
 }
 

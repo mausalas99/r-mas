@@ -161,6 +161,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbClinicalTeamsGuardiaGet: function(opts) {
     return ipcRenderer.invoke('db:clinical-teams-guardia-get', opts);
   },
+  dbClinicalOpsExport: function() {
+    return ipcRenderer.invoke('db:clinical-ops-export');
+  },
+  dbClinicalOpsMerge: function(opts) {
+    return ipcRenderer.invoke('db:clinical-ops-merge', opts);
+  },
   dbSignClinicalChange: function(opts) {
     return ipcRenderer.invoke('db:sign-clinical-change', opts);
   },
