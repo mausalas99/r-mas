@@ -21,21 +21,24 @@ El **Modo Guardia** sigue siendo un **prototipo en desarrollo** y **no está lis
 
 ### Identidad clínica (usuario LAN)
 
-- **Registro y onboarding** — Flujo para elegir **usuario LAN**, nombre en guardia, rango y sala; enlace móvil con parámetros prellenados.
+- **Onboarding en pantalla principal** — Tras abrir la base, el asistente (usuario LAN → equipos en tu sala → unirte o crear) aparece en el **área central**, sin depender del Modo Guardia.
+- **Mi rotación visible** — Acceso destacado en la **barra lateral** (debajo de Mi Perfil) y bloque prioritario en **Mi Perfil**; abre el panel de equipos o retoma la configuración pendiente.
 - **Reclamar usuario** — IPC `dbClinicalUsernameClaim` y actualización de perfil sin duplicar filas en la base.
 - **Validación de usuario** — Formato `3–32` caracteres en minúsculas (letras, números, `_`).
+- **Enlace móvil** — Parámetros `?user=&name=&rank=&sala=` prellenan el paso 1 del onboarding.
 - **R1 vs administrador de programa** — El rango clínico **R1** queda separado del rol **Admin** de programa (`is_program_admin`).
 
 ### Equipos LAN (desacoplados de “Guardia hoy”)
 
 - **Equipos persistentes** — Crear y unirse a equipos por sala/ciclo sin declarar “Guardia hoy” en el equipo.
 - **Pacientes por coincidencia estructural** — El acceso al censo del equipo usa `patientMatchesTeam`, no el calendario de guardia del día.
-- **Mi rotación** — Vista de rotación independiente del panel “Guardia hoy” (este último queda apartado del flujo de equipos).
+- **Mi rotación** — Gestión de equipos en modal; el onboarding inicial ya no vive solo dentro de Guardia.
 - **Privilegios elevados** — **R4** y **Admin** ven censo global y directorio de equipos en todas las salas; R4/Admin pueden finalizar rotación y gestionar equipos del mes.
 
 ### Censo y barra lateral
 
 - **Filtros por alcance** — La lista de pacientes respeta el alcance clínico V3 (sala, equipo, handoffs R2, macros R3).
+- **Filtros censo (solo R4/Admin)** — Sala, Equipo y Servicio en la barra lateral **solo** para R4, Admin y admin de programa; **colapsables** para ganar espacio (R1–R3 no ven ese bloque).
 - **Censo global en el hub LAN** — Panel de conexión guardia con vista de censo ampliada para rangos elevados.
 
 ### Administración clínica

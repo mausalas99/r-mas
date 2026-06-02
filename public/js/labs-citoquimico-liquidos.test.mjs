@@ -4,6 +4,13 @@ import {
   parsearCitoquimicoLiquidos,
   procesarLabs,
   evaluarCriteriosLight_,
+  evaluarGasa_,
+  evaluarAscitisNoPortal_,
+  buildAscitisLabAlerts_,
+  formatAscitisInterpretacionLine_,
+  isAscitisInterpretacionResLabChunk,
+  computeGasaValue_,
+  esLiquidoAscitico_,
   normalizarProteinasFluidoGdl_,
   esLiquidoPleural_,
 } from './labs.js';
@@ -87,6 +94,8 @@ test('parsearCitoquimicoLiquidos — líquido peritoneal (química + citología)
   assert.match(out, /Eri.*ESCASOS/);
   assert.match(out, /Gram.*NEGATIVO/);
   assert.match(out, /Obs.*PERITONEAL/);
+  assert.ok(!/Light/.test(out), 'peritoneal no usa criterios de Light');
+  assert.ok(!/portal HTN|quilosa|citología/i.test(out), 'sin interpretación en línea Liq');
 });
 
 const MUESTRA_PLEURAL = `
@@ -197,7 +206,7 @@ test('evaluarCriteriosLight — trasudado si los 3 criterios son negativos', () 
 });
 
 test('esLiquidoPleural detecta comentario y tipo', () => {
-  assert.equal(esLiquidoPleural_('', 'LIQUIDO PLEURAL', ''), true);
+  assert.equal(esLiquidoPleural_('LIQUIDO PLEURAL', '', ''), true);
   assert.equal(esLiquidoPleural_('LIQUIDO PERITONEAL', '', ''), false);
 });
 
@@ -207,4 +216,179 @@ test('procesarLabs no mezcla glucosa del líquido con QS', () => {
   const liq = resLabs.find((l) => l.startsWith('Liq:\t'));
   assert.ok(liq, 'debe incluir bloque Liq');
   if (qs) assert.ok(!qs.includes('949'), 'QS no debe tomar Glu 949 del ascitis');
+});
+
+const MUESTRA_WENDY_ASCITIS = `
+Expediente:	1128709-8	Solicitud:	2605111079
+Nombre:	WENDY BERENICE ORTIZ RODRIGUEZ	Fecha Registro:	May 11 2026 6:24PM
+Sexo:	FEMENINO	Ubicación:	MEDICINA INTERNA 1
+Edad:	73	Medico:	A QUIEN CORRESPONDA
+
+QUIMICA CLINICA
+ALBUMINA
+Estudio		Resultado	Unidades	Valor de Referencia
+ALBUMINA
+B
+3.4
+g/dL	3.2 - 5.5
+
+QUIMICA CLINICA
+CITOQUIMICO DE LIQUIDOS CORPORALES
+Estudio		Resultado	Unidades	Valor de Referencia
+EXAMEN QUIMICO
+*
+:
+DENSIDAD
+*
+1.015
+PH
+*
+7.5
+GLUCOSA
+*
+1.0
+mg/dL
+PROTEINAS
+*
+4100
+mg/dL
+LDH
+*
+9475
+IU/L
+CITOQUIMICO DE
+*
+LIQUIDO PERITONEAL
+ALBUMINA
+Estudio		Resultado	Unidades	Valor de Referencia
+ALBUMINA
+B
+2.1
+g/dL	3.2 - 5.5
+COLESTEROL
+Estudio		Resultado	Unidades	Valor de Referencia
+COLESTEROL
+B
+29
+mg/dL	130 - 200
+TRIGLICERIDOS
+Estudio		Resultado	Unidades	Valor de Referencia
+TRIGLICERIDOS
+B
+20
+mg/dL	35 - 150
+
+BACTERIOLOGIA
+FIBRAS VEGETALES
+Estudio		Resultado	Unidades	Valor de Referencia
+FIBRAS VEGETALES
+*
+NEGATIVO
+TIPO DE MUESTRA
+*
+LIQUIDO PERITONEAL
+CITOQUIMICO DE LIQUIDOS CORPORALES
+Estudio		Resultado	Unidades	Valor de Referencia
+ASPECTO
+*
+QUILOSO TURBIO
+RECUENTO
+A
+9,200
+LEUCOCITOS/MM3	0.00 - 5.00
+POLIMORFONUCLEARES
+*
+96
+%
+LINFOCITOS
+*
+4
+%
+ERITROCITOS
+*
+ESCASOS
+/mm3
+GRAM
+*
+ABUNDANTES POLIMORFONUCLEARES
+COMENTARIO
+*
+LIQUIDO PERITONEAL
+`;
+
+test('computeGasaValue_ — Alb sérica − Alb ascítica', () => {
+  assert.equal(computeGasaValue_(3.4, 2.1), 1.3);
+  assert.equal(computeGasaValue_(2.1, 1.5), 0.6);
+});
+
+test('evaluarGasa_ — portal HTN vs no portal', () => {
+  assert.match(evaluarGasa_(3.4, 2.1), /GASA 1\.3 \(≥1\.1 portal HTN\)/);
+  assert.match(evaluarGasa_(2.1, 1.5), /GASA 0\.6 \(<1\.1 no portal HTN\)/);
+  assert.equal(evaluarGasa_(null, 2.1), '');
+});
+
+test('esLiquidoAscitico detecta peritoneal y ascitis', () => {
+  assert.equal(esLiquidoAscitico_('LIQUIDO PERITONEAL', '', ''), true);
+  assert.equal(esLiquidoAscitico_('LIQUIDO DE ASCITIS', '', ''), true);
+  assert.equal(esLiquidoAscitico_('LIQUIDO PLEURAL', '', ''), false);
+});
+
+test('parsearCitoquimicoLiquidos — GASA numérico sin interpretación en Liq', () => {
+  const out = parsearCitoquimicoLiquidos(MUESTRA_WENDY_ASCITIS);
+  assert.match(out, /Alb.*2\.1/);
+  assert.match(out, /TGL.*20/);
+  assert.match(out, /\bGASA 1\.3\b/);
+  assert.ok(!/portal HTN|quilosa/i.test(out));
+});
+
+test('buildAscitisLabAlerts — interpretación aparte de resultados', () => {
+  const alerts = buildAscitisLabAlerts_(MUESTRA_WENDY_ASCITIS);
+  assert.match(alerts.join(' '), /GASA 1\.3 ≥1\.1 — probable hipertensión portal/);
+  const interp = formatAscitisInterpretacionLine_(alerts);
+  assert.ok(isAscitisInterpretacionResLabChunk(interp));
+});
+
+const MUESTRA_WENDY_NO_PORTAL = MUESTRA_WENDY_ASCITIS.replace('3.4', '2.5');
+
+test('GASA<1.1 — alerta amilasa y citología, no en línea Liq', () => {
+  const out = parsearCitoquimicoLiquidos(MUESTRA_WENDY_NO_PORTAL);
+  assert.match(out, /\bGASA 0\.4\b/);
+  assert.ok(!/amilasa|citología|portal/i.test(out));
+  const alerts = buildAscitisLabAlerts_(MUESTRA_WENDY_NO_PORTAL);
+  assert.match(alerts.join(' '), /GASA 0\.4 <1\.1 — ascitis no portal/);
+  assert.match(alerts.join(' '), /amilasa y citología/i);
+});
+
+const MUESTRA_WENDY_SIN_TGL_AMIL = MUESTRA_WENDY_ASCITIS
+  .replace('3.4', '2.5')
+  .replace(/TRIGLICERIDOS[\s\S]*?35 - 150\n\n/, '');
+
+test('GASA<1.1 sin TGL ni amilasa — sugerir ambos', () => {
+  const alerts = buildAscitisLabAlerts_(MUESTRA_WENDY_SIN_TGL_AMIL);
+  assert.match(alerts.join(' '), /triglicéridos y amilasa/i);
+});
+
+test('procesarLabs — interpretación ascitis en resLabs pero filtrable al copiar', () => {
+  const { resLabs } = procesarLabs(MUESTRA_WENDY_ASCITIS);
+  const liq = resLabs.find((l) => l.startsWith('Liq:\t'));
+  const interp = resLabs.find((l) => isAscitisInterpretacionResLabChunk(l));
+  assert.match(liq, /\bGASA 1\.3\b/);
+  assert.ok(!/portal HTN/.test(liq));
+  assert.ok(interp);
+  assert.match(interp, /hipertensión portal/);
+});
+
+test('evaluarAscitisNoPortal — ramas del algoritmo', () => {
+  assert.match(evaluarAscitisNoPortal_(0.8, null, null, null, null), /triglicéridos y amilasa/i);
+  assert.match(evaluarAscitisNoPortal_(0.8, 4, 250, null, null), /quilosa/i);
+  assert.match(evaluarAscitisNoPortal_(0.8, 2, 100, null, null), /nefrótico/i);
+  assert.match(evaluarAscitisNoPortal_(0.8, 4, 100, 1500, null), /pancreática/i);
+  assert.match(evaluarAscitisNoPortal_(0.8, 4, 100, 80, 'positive'), /Carcinomatosis/i);
+  assert.match(evaluarAscitisNoPortal_(0.8, 4, 100, 80, 'negative'), /tuberculosa/i);
+  assert.equal(evaluarAscitisNoPortal_(1.3, 4, 100, 80, 'positive'), '');
+});
+
+test('parsearCitoquimicoLiquidos — sin albúmina sérica no muestra GASA', () => {
+  const out = parsearCitoquimicoLiquidos(MUESTRA_PERITONEAL);
+  assert.ok(!/GASA/.test(out));
 });

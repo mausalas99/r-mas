@@ -893,6 +893,7 @@ function dedupeSingletonSections_(rows) {
   var singleton = {
     BH: 1, QS: 1, ESC: 1, PFHS: 1, GASES: 1, PIE: 1, 'LCR:': 1, 'LIQ:': 1,
     HECES: 1, FROTIS: 1, EGO: 1, PROT12H: 1, PROT24H: 1, 'INTERPRETACIÓN GASOMETRÍA:': 1,
+    'INTERPRETACIÓN ASCITIS:': 1,
   };
   var list = (rows || []).filter(function (r) { return normalizeLabLine_(labRowText_(r)) !== ''; });
   var best = Object.create(null);
@@ -1189,6 +1190,119 @@ export function esLiquidoPleural_(fluid, com, bloque) {
   return /\bPLEURAL\b/.test(s) || /\bL[IÍ]QUIDO\s+PLEURAL\b/.test(s);
 }
 
+export function esLiquidoAscitico_(fluid, com, bloque) {
+  if (esLiquidoPleural_(fluid, com, bloque)) return false;
+  var s = ((fluid || '') + ' ' + (com || '') + ' ' + (bloque || '')).toUpperCase();
+  return (
+    /\bASCIT/i.test(s) ||
+    /\bPERITONEAL\b/.test(s) ||
+    /\bL[IÍ]QUIDO\s+PERITONEAL\b/.test(s)
+  );
+}
+
+/** GASA = Alb sérica − Alb del líquido ascítico (g/dL). */
+export function computeGasaValue_(serumAlbGdl, asciticAlbGdl) {
+  if (serumAlbGdl == null || asciticAlbGdl == null) return null;
+  return Math.round((serumAlbGdl - asciticAlbGdl) * 100) / 100;
+}
+
+/** ≥1.1 g/dL sugiere hipertensión portal; <1.1 otras causas de ascitis. */
+export function evaluarGasa_(serumAlbGdl, asciticAlbGdl) {
+  var gasa = computeGasaValue_(serumAlbGdl, asciticAlbGdl);
+  if (gasa == null) return '';
+  var gasaStr = String(gasa);
+  if (gasa >= 1.1) return 'GASA ' + gasaStr + ' (≥1.1 portal HTN)';
+  return 'GASA ' + gasaStr + ' (<1.1 no portal HTN)';
+}
+
+export const ASCITIS_INTERPRETACION_HEADER = 'INTERPRETACIÓN ASCITIS:';
+
+export function isAscitisInterpretacionResLabChunk(text) {
+  var head = String(text || '').split('\n')[0].trim();
+  return new RegExp('^' + ASCITIS_INTERPRETACION_HEADER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i').test(head);
+}
+
+export function formatAscitisInterpretacionLine_(alerts) {
+  var list = (alerts || []).filter(Boolean);
+  if (!list.length) return '';
+  return ASCITIS_INTERPRETACION_HEADER + '\t' + list.join(' · ');
+}
+
+function extraerAlbuminaSueroParaGasa_(textoBruto, bloqueCito) {
+  var t = textoBruto || '';
+  if (bloqueCito) t = t.replace(bloqueCito, ' ');
+  var albData = extraerConRangoSuero(['ALBUMINA'], t);
+  return toNum_(albData.valor);
+}
+
+/** Citología de líquido ascítico/peritoneal en el mismo reporte (POSITIVO/NEGATIVO). */
+function extraerCitologiaAscitica_(textoBruto) {
+  var t = String(textoBruto || '').toUpperCase();
+  var idx = t.search(/\bCITOLOG/i);
+  if (idx === -1) return null;
+  var chunk = t.substring(idx, idx + 1200);
+  if (!/\b(ASCIT|PERITONEAL|LIQUIDO\s+ASCIT)\b/.test(chunk)) return null;
+  if (/\b(POSITIVO|MALIGN|ADENOCARCINOMA|CARCINOMA|CARCINOMATOSIS|METÁSTASIS|METASTASIS)\b/.test(chunk)) {
+    return 'positive';
+  }
+  if (/\bNEGATIVO\b/.test(chunk)) return 'negative';
+  return null;
+}
+
+/**
+ * Causa probable de ascitis con GASA <1.1 g/dL (algoritmo secuencial: TGL→Prot→Amilasa→Citología).
+ * Solo aplica cuando GASA <1.1; con GASA ≥1.1 no devuelve texto.
+ */
+export function evaluarAscitisNoPortal_(gasa, protGdl, tglMgdl, amilUl, citologia) {
+  if (gasa == null || gasa >= 1.1) return '';
+
+  if (tglMgdl == null) {
+    if (amilUl == null) return 'Solicitar triglicéridos y amilasa en líquido ascítico';
+    return 'Solicitar triglicéridos en líquido ascítico';
+  }
+  if (tglMgdl > 200) return 'Ascitis quilosa (TGL>200)';
+
+  if (protGdl == null) return 'Evaluar proteínas totales en líquido ascítico';
+  if (protGdl < 2.5) return 'Síndrome nefrótico? (Prot<2.5; proteinuria 24h)';
+
+  if (amilUl == null) {
+    if (citologia === 'positive') return 'Carcinomatosis peritoneal? (citología +)';
+    if (citologia === 'negative') return 'Peritonitis tuberculosa? (citología −; BAAR, ADA, biopsia)';
+    return 'Solicitar amilasa y citología en líquido ascítico';
+  }
+  if (amilUl > 1000) return 'Ascitis pancreática/perforación? (Amil>1000)';
+
+  if (citologia == null) return 'Solicitar citología de líquido ascítico';
+  if (citologia === 'positive') return 'Carcinomatosis peritoneal? (citología +)';
+  return 'Peritonitis tuberculosa? (citología −; BAAR, ADA, biopsia)';
+}
+
+/** Alertas clínicas de ascitis (no van a resultados copiables). */
+export function buildAscitisLabAlerts_(textoBruto) {
+  var parsed = parseCitoquimicoLiquidosParsed_(textoBruto);
+  if (!parsed || !parsed.esAscitico) return [];
+  var alerts = [];
+  if (parsed.alb && parsed.serumAlb == null) {
+    alerts.push('Incluir albúmina sérica del mismo día para calcular GASA');
+    return alerts;
+  }
+  if (parsed.gasaVal == null) return alerts;
+  if (parsed.gasaVal >= 1.1) {
+    alerts.push('GASA ' + parsed.gasaVal + ' ≥1.1 — probable hipertensión portal');
+    return alerts;
+  }
+  alerts.push('GASA ' + parsed.gasaVal + ' <1.1 — ascitis no portal');
+  var dx = evaluarAscitisNoPortal_(
+    parsed.gasaVal,
+    parsed.protGdl,
+    parsed.tgl,
+    parsed.amil,
+    parsed.citologia
+  );
+  if (dx) alerts.push(dx);
+  return alerts;
+}
+
 /**
  * Criterios de Light: exudado si ≥1 de Prot/ProtS>0.5, LDH/LDHS>0.6, LDHpleural>2/3 ULN LDH sérica.
  * TRASUDADO solo si los tres criterios aplicables fueron evaluados y ninguno es positivo.
@@ -1278,12 +1392,12 @@ function buildLightPleural_(bloque, pleuralProtRaw, pleuralLdhRaw, textoBruto) {
  * Citoquímico de líquidos corporales (ascitis, pleural, peritoneal, etc.).
  * No confundir con LCR (parsearLCR).
  */
-export function parsearCitoquimicoLiquidos(textoBruto) {
+function parseCitoquimicoLiquidosParsed_(textoBruto) {
   var bloque = bloqueCitoquimicoLiquidosFull(textoBruto);
-  if (!bloque) return '';
+  if (!bloque) return { line: '', esAscitico: false };
   var lineas = bloque.split(/\r?\n/).map(function(l) { return l.trim(); });
-  var fluid = '', dens = '', pH = '', glu = '', prot = '', ldh = '', alb = '', aspecto = '', leu = '',
-    rec = '', pmn = '', linf = '', eri = '', gram = '', com = '';
+  var fluid = '', dens = '', pH = '', glu = '', prot = '', ldh = '', alb = '', tgl = '', amil = '',
+    aspecto = '', leu = '', rec = '', pmn = '', linf = '', eri = '', gram = '', com = '';
   function nextMeaningful(i0, maxJ) {
     for (var j = i0 + 1; j < Math.min(i0 + maxJ, lineas.length); j++) {
       var txt = lineas[j].replace(/\*/g, '').trim();
@@ -1346,6 +1460,22 @@ export function parsearCitoquimicoLiquidos(textoBruto) {
         if (m) { alb = m[1]; break; }
       }
     }
+    if (linUp.indexOf('TRIGLICER') === 0) {
+      for (var j = i + 1; j < Math.min(i + 8, lineas.length); j++) {
+        var c = lineas[j].replace(/\*/g, '').trim();
+        if (/^[A-Z]$/i.test(c)) continue;
+        var m = c.match(/(\d+(\.\d+)?)/);
+        if (m) { tgl = m[1]; break; }
+      }
+    }
+    if (linUp.indexOf('AMILASA') === 0) {
+      for (var j = i + 1; j < Math.min(i + 8, lineas.length); j++) {
+        var c = lineas[j].replace(/\*/g, '').trim();
+        if (/^[A-Z]$/i.test(c)) continue;
+        var m = c.match(/(\d+(\.\d+)?)/);
+        if (m) { amil = m[1]; break; }
+      }
+    }
     if (linUp.indexOf('ASPECTO') === 0) {
       var a = nextMeaningful(i, 5);
       if (a && !/^:$/.test(a)) aspecto = a.toUpperCase();
@@ -1397,10 +1527,21 @@ export function parsearCitoquimicoLiquidos(textoBruto) {
   if (!fluid && com && /\bPLEURAL\b/i.test(com)) fluid = com;
   if (!fluid && esLiquidoPleural_(fluid, com, bloque)) fluid = 'LIQUIDO PLEURAL';
 
-  if (!fluid && !dens && !pH && !glu && !prot && !ldh && !alb && !aspecto && !leu && !rec && !pmn && !linf && !eri && !gram && !com) return '';
+  if (!fluid && !dens && !pH && !glu && !prot && !ldh && !alb && !tgl && !amil && !aspecto && !leu && !rec && !pmn && !linf && !eri && !gram && !com) {
+    return { line: '', esAscitico: false };
+  }
 
   var esPleural = esLiquidoPleural_(fluid, com, bloque);
+  var esAscitico = esLiquidoAscitico_(fluid, com, bloque);
   var lightTxt = esPleural ? buildLightPleural_(bloque, prot, ldh, textoBruto) : '';
+  var gasaVal = null;
+  var serumAlb = null;
+  var asciticAlb = null;
+  if (esAscitico && alb) {
+    asciticAlb = toNum_(alb);
+    serumAlb = extraerAlbuminaSueroParaGasa_(textoBruto, bloque);
+    gasaVal = computeGasaValue_(serumAlb, asciticAlb);
+  }
 
   var p = ['Liq:'];
   if (fluid) p.push('Tipo', fluid);
@@ -1409,6 +1550,8 @@ export function parsearCitoquimicoLiquidos(textoBruto) {
   if (glu) p.push('Glu', glu);
   if (prot) p.push('Prot', fmtProteinaFluido_(prot));
   if (alb) p.push('Alb', alb);
+  if (tgl) p.push('TGL', tgl);
+  if (amil) p.push('Amil', amil);
   if (ldh) p.push('LDH', ldh);
   if (aspecto) p.push('Asp', aspecto);
   if (rec) p.push('Rec', rec);
@@ -1418,8 +1561,23 @@ export function parsearCitoquimicoLiquidos(textoBruto) {
   if (eri) p.push('Eri', eri);
   if (gram) p.push('Gram', gram);
   if (com && com !== fluid) p.push('Obs', com);
+  if (gasaVal != null) p.push('GASA', String(gasaVal));
   if (lightTxt) p.push(lightTxt);
-  return p[0] + '\t' + p.slice(1).join(' ');
+  return {
+    line: p[0] + '\t' + p.slice(1).join(' '),
+    esAscitico: esAscitico,
+    alb: asciticAlb,
+    serumAlb: serumAlb,
+    gasaVal: gasaVal,
+    protGdl: normalizarProteinasFluidoGdl_(prot),
+    tgl: toNum_(tgl),
+    amil: toNum_(amil),
+    citologia: extraerCitologiaAscitica_(textoBruto),
+  };
+}
+
+export function parsearCitoquimicoLiquidos(textoBruto) {
+  return parseCitoquimicoLiquidosParsed_(textoBruto).line;
 }
 
 export function parseFisicoquimicoHeces_(textoBruto) {
@@ -2780,6 +2938,8 @@ export function procesarLabs(textoBruto) {
   var pie=parsePIE_(tNorm);      if(pie)resLabs.push(pie);
   var lcr=parsearLCR(textoBruto);if(lcr)resLabs.push(lcr);
   var liq=parsearCitoquimicoLiquidos(textoBruto);if(liq)resLabs.push(liq);
+  var ascitisInterp=formatAscitisInterpretacionLine_(buildAscitisLabAlerts_(textoBruto));
+  if(ascitisInterp)resLabs.push(ascitisInterp);
   var hec=parseFisicoquimicoHeces_(textoBruto);if(hec)resLabs.push(hec);
   var fro=parseFrotisSangre_(textoBruto);
   if (fro) fro.split('\n').forEach(function (line) { if (line) resLabs.push(line); });

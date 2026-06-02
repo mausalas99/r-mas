@@ -124,11 +124,11 @@ export async function openClinicalTeamsPanel() {
   }
 
   try {
-    const { needsClinicalOnboarding, renderOnboardingPanel } = await import(
-      './clinical-onboarding.mjs'
-    );
+    const { needsClinicalOnboarding } = await import('./clinical-onboarding.mjs');
     if (needsClinicalOnboarding()) {
-      await renderOnboardingPanel();
+      closeClinicalTeamsPanel();
+      const { openMiRotacion } = await import('./clinical-rotation-entry.mjs');
+      await openMiRotacion();
       return;
     }
     await renderClinicalTeamsPanel();
@@ -731,11 +731,11 @@ async function handleCreateTeamSubmit(ev) {
   toast('Equipo creado.', 'success');
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
   await fetchClinicalTeamsFromDb();
-  const { needsClinicalOnboarding, renderOnboardingPanel } = await import(
-    './clinical-onboarding.mjs'
-  );
-  if (needsClinicalOnboarding()) await renderOnboardingPanel();
-  else await renderClinicalTeamsPanel();
+  const { needsClinicalOnboarding } = await import('./clinical-onboarding.mjs');
+  if (needsClinicalOnboarding()) {
+    const mainMod = await import('./clinical-onboarding-main.mjs');
+    await mainMod.refreshMainClinicalOnboardingIfNeeded();
+  } else await renderClinicalTeamsPanel();
 }
 
 /**
@@ -786,6 +786,11 @@ function syncSalaFieldVisibility() {
 export function wireClinicalTeamsControls() {
   if (teamsControlsWired) return;
   teamsControlsWired = true;
+
+  import('./clinical-rotation-entry.mjs').then((mod) => {
+    mod.wireClinicalRotationEntryControls();
+    mod.syncClinicalRotationEntryChrome();
+  });
 
   const openBtn = document.getElementById('btn-guardia-mi-rotacion');
   if (openBtn) openBtn.addEventListener('click', () => void openClinicalTeamsPanel());

@@ -19,6 +19,16 @@
         <svg id="profile-toggle-arrow" class="profile-toggle-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
       </button>
     </div>
+    <div class="clinical-rotation-section" id="clinical-rotation-section" hidden>
+      <button type="button" class="btn-sidebar-mi-rotacion" id="btn-sidebar-mi-rotacion" title="Usuario LAN, equipos de sala y entregas">
+        <span class="btn-sidebar-mi-rotacion-icon" aria-hidden="true">↻</span>
+        <span class="btn-sidebar-mi-rotacion-text">
+          <span class="btn-sidebar-mi-rotacion-title">Mi rotación</span>
+          <span class="btn-sidebar-mi-rotacion-meta" id="clinical-rotation-entry-primary">Configura tu rotación</span>
+          <span class="btn-sidebar-mi-rotacion-hint" id="clinical-rotation-entry-sub">Usuario LAN y equipo de sala</span>
+        </span>
+      </button>
+    </div>
     <div class="patient-search-wrap">
       <input type="search" class="patient-search-input" id="patient-search" placeholder="Buscar por nombre, registro, cuarto…" autocomplete="off" oninput="onPatientSearchInput(this.value)">
     </div>
@@ -518,6 +528,12 @@
     </h3>
     <p class="profile-modal-lead">Tu identificación y los formatos en blanco que R+ usa al abrir notas e indicaciones nuevas. No reemplaza datos ya escritos en pacientes existentes.</p>
     <div class="profile-body" id="profile-body">
+      <section class="profile-block profile-block--clinical-rotation" id="profile-clinical-rotation-block" hidden>
+        <h4 class="profile-block-title">Mi rotación</h4>
+        <p class="profile-hint">Identidad clínica en guardia: usuario LAN, sala, equipo y entregas. Independiente del nombre en notas de abajo.</p>
+        <button type="button" class="btn-save btn-profile-mi-rotacion" id="btn-profile-mi-rotacion">Abrir Mi rotación</button>
+        <p class="profile-clinical-rotation-status" id="profile-clinical-rotation-status"></p>
+      </section>
       <section class="profile-block">
         <h4 class="profile-block-title">Identificación</h4>
         <p class="profile-hint">Aparece en notas, indicaciones y documentos Word. Solo afecta campos vacíos al crear o abrir un paciente.</p>

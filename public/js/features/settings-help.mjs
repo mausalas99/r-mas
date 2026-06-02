@@ -1937,9 +1937,9 @@ var RELEASE_NOTES_HIGHLIGHTS = {
         'R+ ya <strong>no pide contraseña maestra</strong> al abrir. El almacén clínico se abre solo en este equipo. Si antes quedaste atascado en la pantalla de desbloqueo, actualiza a esta versión.',
     },
     {
-      title: 'Usuario LAN',
+      title: 'Configura tu rotación',
       body:
-        'Al primer uso en red verás el registro con <strong>usuario LAN</strong>, nombre en guardia, rango y sala. El enlace móvil del anfitrión puede prellenar esos datos.',
+        'Al abrir la base verás el asistente en el <strong>centro de la pantalla</strong>: usuario LAN, equipos de tu sala y unirte o crear equipo. También en la barra lateral y en <strong>Mi Perfil</strong> → <strong>Mi rotación</strong>.',
     },
     {
       title: 'Equipos sin “Guardia hoy”',
@@ -1947,9 +1947,9 @@ var RELEASE_NOTES_HIGHLIGHTS = {
         'Los <strong>equipos</strong> son unidades persistentes de sala/ciclo: créalos o únete sin marcar guardia del día en el equipo. Los pacientes se asocian por <strong>coincidencia estructural</strong>.',
     },
     {
-      title: 'R4 / Admin: censo global',
+      title: 'R4 / Admin: filtros censo',
       body:
-        '<strong>R4</strong> y <strong>Admin</strong> ven pacientes y equipos en <strong>todas las salas</strong>. La barra lateral filtra según tu alcance clínico.',
+        '<strong>R4</strong> y <strong>Admin</strong> ven filtros <strong>Sala / Equipo / Servicio</strong> en la barra lateral (colapsables). <strong>R1–R3</strong> no ven ese bloque; su lista sigue el alcance clínico.',
     },
   ],
   '5.6.3': [

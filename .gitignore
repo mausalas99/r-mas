@@ -3,6 +3,11 @@ dist/
 *.log
 python-runtime/
 .worktrees/
+.opencode/
+.repowise/
+.release-console.json
+scripts/debug-clinical-unlock-electron.cjs
+scripts/debug-clinical-unlock.mjs
 
 .DS_Store
 .superpowers/

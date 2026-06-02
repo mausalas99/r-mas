@@ -696,6 +696,163 @@ html.ui-density-guardia #header-app-mode-chip {
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+.clinical-census-filters-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted, #8e8a9f);
+  font-size: 0.72rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.clinical-census-filters-toggle:focus-visible {
+  outline: 2px solid var(--accent, #6b9fff);
+  outline-offset: 2px;
+}
+
+.clinical-census-filters-chevron::before {
+  content: '▾';
+}
+
+.clinical-census-filters.is-collapsed .clinical-census-filters-chevron::before {
+  content: '▸';
+}
+
+.clinical-census-filters-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.clinical-census-filters-body[hidden] {
+  display: none;
+}
+
+html.clinical-onboarding-active #appcontent-lab,
+html.clinical-onboarding-active #appcontent-med,
+html.clinical-onboarding-active #appcontent-nota,
+html.clinical-onboarding-active #appcontent-agenda,
+html.clinical-onboarding-active #appcontent-pase,
+html.clinical-onboarding-active #appcontent-guardia {
+  pointer-events: none;
+  opacity: 0.35;
+}
+
+.clinical-onboarding-main {
+  position: relative;
+  z-index: 2;
+  padding: 24px 20px 32px;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.clinical-onboarding-card {
+  background: var(--card, #1a1d24);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  border-radius: 12px;
+  padding: 20px 18px;
+}
+
+.clinical-onboarding-title {
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+/* Mi rotación — sidebar + Mi Perfil entry */
+.clinical-rotation-section {
+  flex-shrink: 0;
+  padding: 0 10px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.btn-sidebar-mi-rotacion {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in oklab, var(--accent, #6b9fff) 55%, transparent);
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--accent, #6b9fff) 12%, var(--card, #1a1d24));
+  color: var(--text, #e8e6ed);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.btn-sidebar-mi-rotacion:hover {
+  border-color: var(--accent, #6b9fff);
+  background: color-mix(in oklab, var(--accent, #6b9fff) 18%, var(--card, #1a1d24));
+}
+
+.btn-sidebar-mi-rotacion.is-pending {
+  border-color: color-mix(in oklab, #f59e0b 70%, transparent);
+  background: color-mix(in oklab, #f59e0b 14%, var(--card, #1a1d24));
+}
+
+.btn-sidebar-mi-rotacion-icon {
+  font-size: 1.15rem;
+  line-height: 1.2;
+  opacity: 0.9;
+}
+
+.btn-sidebar-mi-rotacion-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.btn-sidebar-mi-rotacion-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.btn-sidebar-mi-rotacion-meta {
+  font-size: 0.72rem;
+  color: var(--text-muted, #8e8a9f);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn-sidebar-mi-rotacion-hint {
+  font-size: 0.68rem;
+  color: var(--text-muted, #8e8a9f);
+  line-height: 1.3;
+}
+
+.profile-block--clinical-rotation {
+  border: 1px solid color-mix(in oklab, var(--accent, #6b9fff) 45%, var(--border, rgba(255, 255, 255, 0.08)));
+  border-radius: 10px;
+  padding: 14px 14px 12px;
+  background: color-mix(in oklab, var(--accent, #6b9fff) 8%, transparent);
+}
+
+.profile-block--clinical-rotation.is-pending {
+  border-color: color-mix(in oklab, #f59e0b 55%, transparent);
+  background: color-mix(in oklab, #f59e0b 10%, transparent);
+}
+
+.btn-profile-mi-rotacion {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.profile-clinical-rotation-status {
+  margin: 10px 0 0;
+  font-size: 0.78rem;
+  color: var(--text-muted, #8e8a9f);
+  line-height: 1.4;
+}
+
 .clinical-census-filter {
   display: flex;
   flex-direction: column;

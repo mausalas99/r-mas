@@ -51,6 +51,7 @@ import {
   ensureProfileTemplateDefaults,
   resetProfileTemplatesToBlank,
 } from "../profile-templates.mjs";
+import { syncClinicalRotationEntryChrome } from "./clinical-rotation-entry.mjs";
 import {
   setFormatsEditMode,
   clearFormatsEditMode,
@@ -169,6 +170,7 @@ export function loadSettings() {
     if (typeof syncSettingsLanHostDiskSection === "function") syncSettingsLanHostDiskSection();
     syncAppModeRadioControls();
     syncCensoExportButtonVisibility();
+    syncClinicalRotationEntryChrome();
     rt.syncWorkContextChrome();
     return;
   }
@@ -299,6 +301,7 @@ export function loadSettings() {
   syncPreimportBackupUi();
   if (typeof syncSettingsLanHostDiskSection === "function") syncSettingsLanHostDiskSection();
   syncCensoExportButtonVisibility();
+  syncClinicalRotationEntryChrome();
   rt.syncWorkContextChrome();
 }
 

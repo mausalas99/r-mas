@@ -35,9 +35,10 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 ## R+ 6.5.4 (Identidad LAN · equipos persistentes · arranque sin contraseña)
 
 - **Arranque sin contraseña maestra** — La base clínica se abre al iniciar R+ en este equipo; ya no se exige crear ni recordar contraseña de desbloqueo (el cifrado con contraseña queda para más adelante).
-- **Usuario LAN y onboarding** — Registro de identidad clínica (usuario, nombre en guardia, rango, sala), reclamo de usuario y enlace móvil con datos prellenados.
-- **Equipos persistentes** — Equipos de sala/ciclo desacoplados de “Guardia hoy”; pacientes por coincidencia estructural; **Mi rotación** separado del panel de guardia del día.
-- **Alcance V3** — R4/Admin con censo global y directorio en todas las salas; filtros de barra lateral por alcance; hub LAN con censo ampliado.
+- **Onboarding en pantalla principal** — Usuario LAN, directorio de equipos y alta/unión al arrancar (sin pasar por Guardia).
+- **Mi rotación** — Botón destacado en la barra lateral y en **Mi Perfil**; panel de equipos cuando ya completaste el onboarding.
+- **Equipos persistentes** — Equipos de sala/ciclo desacoplados de “Guardia hoy”; pacientes por coincidencia estructural.
+- **Alcance V3** — R4/Admin con censo global; filtros Sala/Equipo/Servicio **solo** para R4/Admin (colapsables); hub LAN con censo ampliado.
 - **Admin de programa** — Rol Admin separado del rango R1; limpieza de “Guardia hoy” y gestión de equipos del mes.
 
 Notas: `docs/RELEASE_NOTES_6.5.4.txt`.

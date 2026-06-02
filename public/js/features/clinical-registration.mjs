@@ -34,15 +34,19 @@ export function prefillRegistrationFromUrlParams() {
   const sala = params.get('sala') || '';
   if (!user && !name && !rank && !sala) return;
 
-  const usernameInput = document.getElementById('clinical-reg-username');
-  const nameInput = document.getElementById('clinical-reg-name');
-  const rankSelect = document.getElementById('clinical-reg-rank');
-  const salaInput = document.getElementById('clinical-reg-sala');
-
-  if (usernameInput && user) usernameInput.value = user;
-  if (nameInput && name) nameInput.value = name;
-  if (rankSelect && rank) rankSelect.value = rank;
-  if (salaInput && sala) salaInput.value = sala;
+  const pairs = [
+    ['clinical-reg-username', 'onboard-username', user],
+    ['clinical-reg-name', 'onboard-clinical-name', name],
+    ['clinical-reg-rank', 'onboard-rank', rank],
+    ['clinical-reg-sala', 'onboard-sala', sala],
+  ];
+  for (const [regId, onboardId, value] of pairs) {
+    if (!value) continue;
+    const regEl = document.getElementById(regId);
+    const onboardEl = document.getElementById(onboardId);
+    if (regEl) regEl.value = value;
+    if (onboardEl) onboardEl.value = value;
+  }
 }
 
 function backdropEl() {
@@ -197,26 +201,9 @@ function wireRegistrationFormOnce() {
  */
 export function promptClinicalRegistrationIfNeeded(settings) {
   if (!needsClinicalRegistration(settings)) return Promise.resolve(false);
-  wireRegistrationFormOnce();
-  prefillRegistrationFromUrlParams();
-  try {
-    const usernameInput = document.getElementById('clinical-reg-username');
-    const nameInput = document.getElementById('clinical-reg-name');
-    const rankSelect = document.getElementById('clinical-reg-rank');
-    const salaSelect = document.getElementById('clinical-reg-sala');
-    if (usernameInput && settings.clinicalUsername) {
-      usernameInput.value = String(settings.clinicalUsername);
-    }
-    if (nameInput && settings.clinicalDisplayName) nameInput.value = String(settings.clinicalDisplayName);
-    if (rankSelect && settings.clinicalRank) rankSelect.value = String(settings.clinicalRank);
-    if (salaSelect && settings.clinicalSala) salaSelect.value = String(settings.clinicalSala);
-    const errEl = document.getElementById('clinical-reg-error');
-    if (errEl) errEl.hidden = true;
-  } catch (_e) {}
-  openClinicalRegistrationModal();
-  return new Promise((resolve) => {
-    pendingResolve = resolve;
-  });
+  return import('./clinical-onboarding-main.mjs').then((mod) =>
+    mod.showMainClinicalOnboarding().then(() => true)
+  );
 }
 
 export const windowHandlers = {

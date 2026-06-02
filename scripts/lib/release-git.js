@@ -22,9 +22,14 @@ const RELEASE_STAGE_PATHS = [
   'generate-censo.js',
   'generate-censo.layout.test.js',
   'generate-censo.test.js',
+  'lib/db/',
   'lib/doc-generators/',
   'lib/doc-export-audit.js',
   'lib/doc-export-http.js',
+  'lib/server-http-security.js',
+  'lib/server-http-security.test.js',
+  'lib/output-dir-policy.js',
+  'lib/output-dir-policy.test.js',
   'server.js',
   'server-python.js',
   '.github/workflows/ci.yml',
@@ -103,9 +108,9 @@ function assertPublishPreflight(ctx) {
   const { fs: fsMod, path: pathMod, execSync, spawnSync, root, repo, version, allowExistingGh } = ctx;
   assertReleaseNotesExist(fsMod, pathMod, root, version);
 
-  if (tagExists(execSync, root, version)) {
+  if (tagExists(execSync, root, version) && !allowExistingGh) {
     throw new Error(
-      `El tag v${version} ya existe en git. Usa npm run release:bump -- patch (u otra versión) o borra el tag local/remoto antes de publicar de nuevo.`
+      `El tag v${version} ya existe en git. Republicar en el mismo tag: npm run release:publish -- --yes --allow-existing-gh`
     );
   }
 

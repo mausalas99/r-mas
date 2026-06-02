@@ -243,7 +243,8 @@ async function handleUsernameStepSubmit(ev) {
   if (errEl) errEl.hidden = true;
   await refreshClinicalUserProfile();
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
-  await renderOnboardingPanel();
+  const { refreshMainClinicalOnboardingIfNeeded } = await import('./clinical-onboarding-main.mjs');
+  await refreshMainClinicalOnboardingIfNeeded();
 }
 
 async function handleJoinTeam(teamId) {
@@ -261,12 +262,8 @@ async function handleJoinTeam(teamId) {
   toast('Te uniste al equipo.', 'success');
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
   await fetchClinicalTeamsFromDb();
-  if (!needsClinicalOnboarding()) {
-    const { renderClinicalTeamsPanel } = await import('./clinical-teams.mjs');
-    await renderClinicalTeamsPanel();
-    return;
-  }
-  await renderOnboardingPanel();
+  const { refreshMainClinicalOnboardingIfNeeded } = await import('./clinical-onboarding-main.mjs');
+  await refreshMainClinicalOnboardingIfNeeded();
 }
 
 async function handleResumeIdentityClick() {
@@ -304,11 +301,17 @@ async function handleResumeIdentityClick() {
     toast('Cuenta recuperada.', 'success');
     await refreshClinicalUserProfile();
     if (!needsUsernameClaim()) {
-      await renderOnboardingPanel();
+      const { refreshMainClinicalOnboardingIfNeeded } = await import(
+        './clinical-onboarding-main.mjs'
+      );
+      await refreshMainClinicalOnboardingIfNeeded();
       return;
     }
     toast('Completa tu perfil y pulsa Continuar.', 'info');
-    await renderOnboardingPanel();
+    const { refreshMainClinicalOnboardingIfNeeded } = await import(
+      './clinical-onboarding-main.mjs'
+    );
+    await refreshMainClinicalOnboardingIfNeeded();
   } finally {
     if (resumeBtn instanceof HTMLButtonElement) {
       resumeBtn.disabled = false;
@@ -348,7 +351,7 @@ export async function renderOnboardingPanel() {
   });
 }
 
-async function renderOnboardingPanelInto(host) {
+export async function renderOnboardingPanelInto(host) {
   const userId = String(clinicalSessionContext.user?.user_id || '');
   if (!userId) {
     host.innerHTML =
@@ -371,8 +374,12 @@ async function renderOnboardingPanelInto(host) {
   }
 
   if (!needsUsernameClaim() && !needsTeamOnboarding()) {
-    const { renderClinicalTeamsPanel } = await import('./clinical-teams.mjs');
-    await renderClinicalTeamsPanel();
+    const { hideMainClinicalOnboarding } = await import('./clinical-onboarding-main.mjs');
+    hideMainClinicalOnboarding();
+    if (host.closest('#clinical-teams-panel-body')) {
+      const { renderClinicalTeamsPanel } = await import('./clinical-teams.mjs');
+      await renderClinicalTeamsPanel();
+    }
     return;
   }
 
@@ -386,6 +393,7 @@ async function renderOnboardingPanelInto(host) {
       settings.clinicalSala || clinicalSessionContext.user?.sala || ''
     );
     host.innerHTML = `
+      <h3 class="clinical-onboarding-title">Configura tu rotación</h3>
       <div class="clinical-onboarding-progress" aria-hidden="true"><span class="is-active">1</span><span>2</span></div>
       <h4 class="clinical-teams-section-title">Paso 1 — Tu usuario</h4>
       <p class="clinical-teams-lead">Elige tu usuario LAN. Tus compañeros lo usarán para equipos y entregas.</p>
@@ -455,6 +463,7 @@ async function renderOnboardingPanelInto(host) {
     const createFormHtml = teamsMod.renderCreateTeamForm();
 
     host.innerHTML = `
+      <h3 class="clinical-onboarding-title">Configura tu rotación</h3>
       <div class="clinical-onboarding-progress" aria-hidden="true"><span>1</span><span class="is-active">2</span></div>
       <h4 class="clinical-teams-section-title">Paso 2 — Tu equipo</h4>
       <p class="clinical-teams-lead">Equipos en <strong>${escapeHtml(sala)}</strong>. Únete a uno o crea el tuyo.</p>
@@ -469,5 +478,5 @@ async function renderOnboardingPanelInto(host) {
   }
 
   host.innerHTML =
-    '<p class="clinical-teams-lead">Perfil listo. Cierra y vuelve a abrir Mi rotación.</p>';
+    '<p class="clinical-teams-lead">Listo. Usa <strong>Mi rotación</strong> para gestionar tu equipo.</p>';
 }

@@ -57,10 +57,12 @@ import {
   initClinicalAccessRuntime,
   resumeClinicalSession,
 } from './clinical-access-runtime.mjs';
+import { windowHandlers as clinicalRegistrationWindowHandlers } from './features/clinical-registration.mjs';
 import {
-  promptClinicalRegistrationIfNeeded,
-  windowHandlers as clinicalRegistrationWindowHandlers,
-} from './features/clinical-registration.mjs';
+  windowHandlers as clinicalRotationEntryHandlers,
+  wireClinicalRotationEntryControls,
+  syncClinicalRotationEntryChrome,
+} from './features/clinical-rotation-entry.mjs';
 import { syncGuardiaModeButtonVisibility } from './features/guardia-board.mjs';
 
 const allWindowHandlers = Object.assign(
@@ -89,6 +91,7 @@ const allWindowHandlers = Object.assign(
   medicationsWindowHandlers,
   profileWindowHandlers,
   clinicalRegistrationWindowHandlers,
+  clinicalRotationEntryHandlers,
   appShellWindowHandlers,
   {
     resumeClinicalSession: function () {
@@ -265,12 +268,17 @@ function runDomBootAfterState() {
     syncProfileSectionVisibility();
     wireHeaderAppModeChip();
     if (isDbMode()) {
-      promptClinicalRegistrationIfNeeded(settings)
+      initClinicalAccessRuntime(settings, getClinicalClientId())
         .then(function () {
           loadSettings();
-          return initClinicalAccessRuntime(settings, getClinicalClientId());
+          return import('./features/clinical-onboarding-main.mjs');
+        })
+        .then(function (mod) {
+          return mod.showMainClinicalOnboarding();
         })
         .then(function () {
+          wireClinicalRotationEntryControls();
+          syncClinicalRotationEntryChrome();
           syncGuardiaModeButtonVisibility();
         })
         .catch(function (err) {

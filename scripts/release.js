@@ -34,6 +34,7 @@ const {
   hasStagedChanges,
   assertPublishPreflight,
   ghReleaseExists,
+  tagExists,
 } = require('./lib/release-git');
 const { ensureElectronPackFiles } = require('./lib/electron-pack-files');
 
@@ -629,19 +630,32 @@ async function cmdPublish(argv) {
 
     progress.start('git-tag');
     let tagCreated = false;
-    try {
-      execSync(`git rev-parse ${tag}`, { cwd: ROOT, stdio: 'pipe' });
+    let tagForcePush = false;
+    const tagMsg = commitMessage(version);
+    const tagAlreadyExists = tagExists(execSync, ROOT, version);
+    if (tagAlreadyExists && allowExistingGh) {
+      const line = `Tag ${tag} ya existe — se mueve a HEAD (--allow-existing-gh).`;
+      if (progressJson) progress.emitLog({ stream: 'meta', line });
+      else console.log(line);
+      execSync(`git tag -f -a ${tag} -m ${JSON.stringify(tagMsg)}`, {
+        cwd: ROOT,
+        stdio: 'inherit',
+      });
+      tagCreated = true;
+      tagForcePush = true;
+    } else if (!tagAlreadyExists) {
+      gitTag(tag, tagMsg);
+      tagCreated = true;
+    } else {
       const line = `Tag ${tag} ya existe — no se recrea.`;
       if (progressJson) progress.emitLog({ stream: 'meta', line });
       else console.log(line);
-    } catch {
-      gitTag(tag, commitMessage(version));
-      tagCreated = true;
     }
     progress.complete('git-tag');
 
     if (!skipPush && tagCreated) {
-      await runPublishCmd(progress, 'git-push-tag', `git push origin ${tag}`);
+      const pushTagCmd = tagForcePush ? `git push origin ${tag} --force` : `git push origin ${tag}`;
+      await runPublishCmd(progress, 'git-push-tag', pushTagCmd);
     } else if (!skipPush) {
       progress.skip('git-push-tag');
     }
@@ -730,6 +744,7 @@ function main() {
 npm:
   npm run release:bump -- 6.4.1 --commit
   npm run release:publish -- --yes
+  npm run release:republish   # mismo tag/release en GitHub (sube artefactos con --clobber)
 `);
     process.exit(sub ? 0 : 1);
   }
