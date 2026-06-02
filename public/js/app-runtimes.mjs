@@ -82,6 +82,10 @@ import {
   wireEstadoActualPasteModal,
 } from './features/estado-actual-paste-modal.mjs';
 import {
+  registerDriveImportRuntime,
+  wireDriveImportModal,
+} from './features/drive-import-modal.mjs';
+import {
   registerEstadoActualRegistroModalRuntime,
   openEstadoActualRegistroModal,
   wireEaModalDismiss,
@@ -651,6 +655,26 @@ registerEstadoActualPanelRuntime({
   },
 });
 
+registerDriveImportRuntime({
+  getActiveId: function () {
+    return rt.getActiveId();
+  },
+  getActivePatient: function () {
+    var id = rt.getActiveId();
+    if (!id) return null;
+    return (
+      patients.find(function (p) {
+        return String(p.id) === String(id);
+      }) || null
+    );
+  },
+  showToast: showToast,
+  pushUndoSnapshot: pushUndoSnapshot,
+  switchInnerTab: switchInnerTab,
+  switchAppTab: switchAppTab,
+  addAuditEntry: addAuditEntry,
+});
+
 registerEstadoActualPasteModalRuntime({
   showToast: showToast,
   applyParsed: function (parsed, opts) {
@@ -802,6 +826,7 @@ export function runInitialFeatureBoot() {
   initChromeAppearance();
   syncLabHistoryCollapseUI();
   wireEstadoActualPasteModal();
+  wireDriveImportModal();
   wireEaModalDismiss();
   syncCensoExportButtonVisibility();
 }

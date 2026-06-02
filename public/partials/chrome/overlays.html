@@ -131,6 +131,35 @@
   </div>
 </div>
 
+<div id="drive-import-backdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal drive-import-modal" role="dialog" aria-modal="true" aria-labelledby="drive-import-title" onclick="event.stopPropagation()">
+    <header class="drive-import-head">
+      <h3 id="drive-import-title">Importar desde Drive</h3>
+      <p class="drive-import-hint">Pega el documento copiado desde Google Docs. Revisa el perfil detectado antes de aplicar.</p>
+    </header>
+    <div class="drive-import-body">
+      <textarea id="drive-import-input" class="drive-import-input" rows="14" spellcheck="false" aria-label="Texto del documento de Drive"></textarea>
+      <aside class="drive-import-side">
+        <label class="drive-import-label">Formato
+          <select id="drive-import-profile" class="drive-import-select"></select>
+        </label>
+        <fieldset id="drive-import-mode-fieldset" class="drive-import-modes">
+          <legend>Modo de aplicación</legend>
+          <label class="drive-import-radio"><input type="radio" name="drive-import-mode" value="fill" checked /> Completar vacíos en HC</label>
+          <label class="drive-import-radio"><input type="radio" name="drive-import-mode" value="replace" /> Reemplazar HC importable</label>
+          <label class="drive-import-radio"><input type="radio" name="drive-import-mode" value="eventos" /> Solo eventualidades</label>
+        </fieldset>
+        <pre id="drive-import-preview" class="drive-import-preview" aria-live="polite"></pre>
+        <p id="drive-import-warning" class="drive-import-warning" hidden></p>
+      </aside>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn-med-secondary btn-med-secondary--muted" onclick="closeDriveImportModal()">Cancelar</button>
+      <button type="button" class="btn-generate" id="drive-import-confirm" onclick="confirmDriveImport()" disabled>Aplicar</button>
+    </div>
+  </div>
+</div>
+
 <div id="lab-bulk-preview-backdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal lab-bulk-preview-modal" role="dialog" aria-modal="true" aria-labelledby="lab-bulk-preview-title" onclick="event.stopPropagation()">
     <h3 id="lab-bulk-preview-title">Vista previa — laboratorios</h3>

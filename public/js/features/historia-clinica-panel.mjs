@@ -21,6 +21,7 @@ import {
   HC_INTERROGADO_NEGADO,
 } from '../../../lib/historia-clinica/defaults.mjs';
 import { migrateLegacyHistoriaData } from '../../../lib/historia-clinica/migrate-legacy.mjs';
+import { mergeHcPatch } from '../../../lib/drive-import/merge-hc-patch.mjs';
 import appConditions from '../../../lib/historia-clinica/catalogs/app-conditions.json' with { type: 'json' };
 import ahfConditions from '../../../lib/historia-clinica/catalogs/ahf-conditions.json' with { type: 'json' };
 import ipasSystems from '../../../lib/historia-clinica/catalogs/ipas-systems.json' with { type: 'json' };
@@ -954,4 +955,53 @@ export function invalidateHistoriaClinicaPanel() {
   _step = 1;
   _pendingAck = [];
   _dirtyKeys = new Set();
+}
+
+/**
+ * @param {object} patient
+ * @param {Record<string, unknown>} patch
+ * @param {'fill' | 'replace' | 'eventos'} mode
+ * @returns {Promise<{ ok: boolean }>}
+ */
+export async function applyDriveImportHcPatch(patient, patch, mode) {
+  if (!patient || mode === 'eventos') return { ok: true };
+  var data = normalizeData(patient.historiaClinica && patient.historiaClinica.data, patient.id, patient);
+  var version = patient.historiaClinica ? Number(patient.historiaClinica.version || 0) : 0;
+  var mergeMode = mode === 'replace' ? 'replace' : 'fill';
+  var merged = mergeHcPatch(data, patch || {}, mergeMode);
+  applyClinicalHistoryUppercase(merged);
+
+  var roomId = getActiveLiveSyncRoomId() || '';
+  var dirty = Object.keys(patch || {}).filter(function (k) {
+    return !String(k).startsWith('_');
+  });
+
+  if (isLanSessionConfiguredForRest() && roomId && dirty.length) {
+    var builder = createMutationBuilder('historiaClinica', patient.id).captureBase({
+      version: version,
+      data: data,
+    });
+    dirty.forEach(function (k) {
+      if (merged[k] !== undefined) builder.set(k, merged[k]);
+    });
+    var mutation = builder.build({
+      roomId: roomId,
+      patientId: patient.id,
+      clientId: localStorage.getItem('rpc-lan-client-id') || 'local',
+      audit: { sections: dirty, source: 'drive-import' },
+    });
+    var out = await lanPushHistoriaClinica(patient.id, mutation);
+    if (out && out.conflict) return { ok: false };
+    if (out && out.ok) {
+      patient.historiaClinica = { version: out.version, data: migrateLegacyHistoriaData(out.data, CATALOGS) };
+      saveState();
+      invalidateHistoriaClinicaPanel();
+      return { ok: true };
+    }
+  }
+
+  patient.historiaClinica = { version: version + 1, data: merged };
+  saveState();
+  invalidateHistoriaClinicaPanel();
+  return { ok: true };
 }

@@ -208,14 +208,14 @@ function ensureLabSetId(set, index, used) {
     return;
   }
   var base = raw || "set-" + String(index);
-  var id = base;
+  var id5 = base;
   var n = 2;
-  while (used.indexOf(id) !== -1) {
-    id = base + "-" + n;
+  while (used.indexOf(id5) !== -1) {
+    id5 = base + "-" + n;
     n += 1;
   }
-  set.id = id;
-  used.push(id);
+  set.id = id5;
+  used.push(id5);
 }
 function normalizeLabHistoryPatientSets(value) {
   var list = [];
@@ -271,11 +271,11 @@ function coerceBool(v, defaultVal) {
 }
 function normalizeScheduledProcedureStored(raw) {
   if (!raw || typeof raw !== "object") return null;
-  const id = String(raw.id != null ? raw.id : "").trim();
+  const id5 = String(raw.id != null ? raw.id : "").trim();
   const patientId = String(raw.patientId != null ? raw.patientId : "").trim();
   const procedure = String(raw.procedure != null ? raw.procedure : "").trim();
   const location2 = String(raw.location != null ? raw.location : "").trim();
-  if (!id || !patientId || !procedure || !location2) return null;
+  if (!id5 || !patientId || !procedure || !location2) return null;
   if (patientId.indexOf("demo-") === 0) return null;
   const start = String(raw.start != null ? raw.start : "").trim();
   if (!start) return null;
@@ -288,7 +288,7 @@ function normalizeScheduledProcedureStored(raw) {
   let updatedAt = String(raw.updatedAt != null ? raw.updatedAt : "").trim();
   if (!updatedAt || !Number.isFinite(Date.parse(updatedAt))) updatedAt = createdAt;
   return {
-    id,
+    id: id5,
     patientId,
     procedure,
     location: location2,
@@ -1495,10 +1495,10 @@ function patientLabHistoryNeedsRepair(raw) {
     var set = raw[i];
     if (!isMeaningfulLabHistorySet(set)) return true;
     if (!set || typeof set !== "object") return true;
-    var id = set.id != null ? String(set.id).trim() : "";
-    if (!id) return true;
-    if (usedIds.indexOf(id) !== -1) return true;
-    usedIds.push(id);
+    var id5 = set.id != null ? String(set.id).trim() : "";
+    if (!id5) return true;
+    if (usedIds.indexOf(id5) !== -1) return true;
+    usedIds.push(id5);
   }
   return false;
 }
@@ -1648,8 +1648,8 @@ function classifyEgresoSegment(seg) {
     else if (/\bDER\b|DERECHA/i.test(u)) side = "DERECHA";
     var nRest = s.replace(/^NEFRO(?:STOM(?:ÍA|IA))?/i, "").trim();
     nRest = nRest.replace(/\b(IZQ|IZQUIERDA|DER|DERECHA)\b/gi, "").trim();
-    var label = side ? "NEFROSTOM\xCDA " + side : "NEFROSTOM\xCDA";
-    return { kind: "nephro", label, value: parseSegmentValue(nRest || s) };
+    var label5 = side ? "NEFROSTOM\xCDA " + side : "NEFROSTOM\xCDA";
+    return { kind: "nephro", label: label5, value: parseSegmentValue(nRest || s) };
   }
   var n = parseIoNumber(s);
   if (n != null) return { kind: "diuresis", label: "DIURESIS", value: n };
@@ -2444,12 +2444,12 @@ function appendMedicion(patientOrMonitoreo, medicion) {
   ));
   return { ok: true };
 }
-function removeMedicion(patientOrMonitoreo, id) {
+function removeMedicion(patientOrMonitoreo, id5) {
   var mon = resolveMonitoreoContainer(patientOrMonitoreo);
   if (!mon || !Array.isArray(mon.historial)) return;
   mon.historial = mon.historial.filter(function(row) {
     return row && typeof row === "object" && /** @type {any} */
-    row.id !== id;
+    row.id !== id5;
   });
 }
 function mergeMonitoreo(localIn, remoteIn) {
@@ -4077,16 +4077,16 @@ function bhExtraDisplayLabel(key) {
 function bhTrendDisplayTitle(fieldKey) {
   return BH_TREND_TITLES[fieldKey] || bhExtraDisplayLabel(fieldKey) || fieldKey;
 }
-function bhFieldKeyFromOutputLabel(label) {
-  return BH_OUTPUT_LABEL_TO_FIELD[label] || label;
+function bhFieldKeyFromOutputLabel(label5) {
+  return BH_OUTPUT_LABEL_TO_FIELD[label5] || label5;
 }
 function parseBhTokenPairs_(text, into) {
   if (!text) return;
   var tokens = String(text).trim().split(/\s+/);
   var i = 0;
   while (i < tokens.length) {
-    var label = tokens[i];
-    if (!label || label === "-") {
+    var label5 = tokens[i];
+    if (!label5 || label5 === "-") {
       i++;
       continue;
     }
@@ -4097,7 +4097,7 @@ function parseBhTokenPairs_(text, into) {
     }
     var m = next.match(/^(-?\d+(?:[.,]\d+)?)(?:%)?(\*)?$/);
     if (m) {
-      var fk = bhFieldKeyFromOutputLabel(label);
+      var fk = bhFieldKeyFromOutputLabel(label5);
       var val2 = m[1].replace(",", ".");
       into[fk] = { val: val2, ab: next.indexOf("*") >= 0 };
       i += 2;
@@ -4126,7 +4126,7 @@ function parseBhTrendValuesFromResLab(entry2) {
   return out;
 }
 function formatBhDiffPctDisplay_(key, rawVal, tNorm) {
-  var label = bhExtraDisplayLabel(key);
+  var label5 = bhExtraDisplayLabel(key);
   var val2 = String(rawVal);
   var labels = BH_DIFF_RANGE_LABELS[key];
   if (labels && tNorm) {
@@ -4135,8 +4135,8 @@ function formatBhDiffPctDisplay_(key, rawVal, tNorm) {
       val2 = fmt(marcarSegunRango(d.valor, d.min, d.max));
     }
   }
-  if (val2.endsWith("*")) return label + " " + val2.slice(0, -1) + "%*";
-  return label + " " + val2 + "%";
+  if (val2.endsWith("*")) return label5 + " " + val2.slice(0, -1) + "%*";
+  return label5 + " " + val2 + "%";
 }
 function formatBhExtrasDisplayParts(bhExtras, sourceText) {
   if (!bhExtras || typeof bhExtras !== "object") return [];
@@ -4578,10 +4578,10 @@ function labSectionKey_(line) {
 function lineRichnessScore_(line) {
   var s = normalizeLabLine_(line);
   if (!s) return 0;
-  var score = s.length;
-  score += (s.match(/\b(?:AG|DELTA-DELTA|ICA|LACTATO|BICA|PCO2|PO2)\b/gi) || []).length * 8;
-  score += (s.match(/\d/g) || []).length;
-  return score;
+  var score5 = s.length;
+  score5 += (s.match(/\b(?:AG|DELTA-DELTA|ICA|LACTATO|BICA|PCO2|PO2)\b/gi) || []).length * 8;
+  score5 += (s.match(/\d/g) || []).length;
+  return score5;
 }
 function normalizeGasometryInterpretationLine_(line) {
   var s = String(line == null ? "" : line);
@@ -6546,9 +6546,9 @@ function renderEntry(text) {
   return text.split("\n").map(function(line, li) {
     var tabIdx = line.indexOf("	");
     if (tabIdx >= 0) {
-      var label = line.substring(0, tabIdx);
+      var label5 = line.substring(0, tabIdx);
       var rest = line.substring(tabIdx + 1);
-      var lh = li === 0 ? '<span class="section-lbl">' + escTxt(label) + "</span>" : escTxt(label);
+      var lh = li === 0 ? '<span class="section-lbl">' + escTxt(label5) + "</span>" : escTxt(label5);
       var rh = rest.split(" ").map(function(tok) {
         if (!tok) return tok;
         if (tok === "-") return '<span class="text-gray-500">-</span>';
@@ -6912,10 +6912,10 @@ function addProblema(listado, seccion, datos) {
     [seccion]: (listado[seccion] || []).concat([item])
   });
 }
-function removeProblema(listado, seccion, id) {
+function removeProblema(listado, seccion, id5) {
   ensureSeccion(seccion);
   const arr = listado[seccion] || [];
-  const filtered = arr.filter((p) => p.id !== id);
+  const filtered = arr.filter((p) => p.id !== id5);
   if (filtered.length === arr.length) return listado;
   return Object.assign({}, listado, { [seccion]: filtered });
 }
@@ -7189,10 +7189,10 @@ function writeTodosMap(map) {
   } catch (_e) {
   }
 }
-function todoEntry(id, text, priority, completed) {
+function todoEntry(id5, text, priority, completed) {
   const now = (/* @__PURE__ */ new Date()).toISOString();
   return {
-    id,
+    id: id5,
     text,
     priority,
     completed: !!completed,
@@ -7235,9 +7235,9 @@ function seedPitchDemoTodos() {
 function clearPitchDemoTodos() {
   const map = readTodosMap();
   let changed = false;
-  for (const id of [PITCH_DEMO_PATIENT_ID, "demo-pitch-2"]) {
-    if (map[id]) {
-      delete map[id];
+  for (const id5 of [PITCH_DEMO_PATIENT_ID, "demo-pitch-2"]) {
+    if (map[id5]) {
+      delete map[id5];
       changed = true;
     }
   }
@@ -7960,11 +7960,8 @@ function syncGuardiaModeHeaderChip() {
   chip.style.display = "inline-flex";
   chip.classList.toggle("header-guardia-mode-chip--active", isGuardiaMode());
   chip.setAttribute("aria-pressed", isGuardiaMode() ? "true" : "false");
-  var label = chip.querySelector(".header-guardia-mode-label");
-  if (label) label.textContent = "Vista guardia";
-  else if (!chip.textContent.includes("Vista guardia")) {
-    chip.textContent = chip.textContent.replace(/Modo Guardia/i, "Vista guardia");
-  }
+  var label5 = chip.querySelector(".header-guardia-mode-label");
+  if (label5) label5.textContent = "Vista guardia";
 }
 function toggleGuardiaMode() {
   if (isGuardiaMode()) {
@@ -8261,8 +8258,8 @@ function closeSOAPModal() {
     "soap-glu1",
     "soap-glu2",
     "soap-glu3"
-  ].forEach(function(id) {
-    var el = document.getElementById(id);
+  ].forEach(function(id5) {
+    var el = document.getElementById(id5);
     if (el) el.value = "";
   });
   var sel = document.getElementById("soap-soporte");
@@ -8360,8 +8357,8 @@ function renderEstadoActualBar() {
   if (tg && tg.savedAt) {
     var d = new Date(tg.savedAt);
     if (!isNaN(d.getTime())) {
-      var label = String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0") + "/" + d.getFullYear() + " \xB7 " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
-      meta.textContent = "Guardado " + label;
+      var label5 = String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0") + "/" + d.getFullYear() + " \xB7 " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+      meta.textContent = "Guardado " + label5;
       return;
     }
   }
@@ -8379,8 +8376,8 @@ function updateSOAPBalance() {
   }
 }
 function buildSOAPText() {
-  function g3(id) {
-    var el = document.getElementById(id);
+  function g3(id5) {
+    var el = document.getElementById(id5);
     return el ? el.value.trim() : "";
   }
   function val2(v) {
@@ -9687,8 +9684,8 @@ function syncGuardiaModeUI(opts = {}) {
     if (boardBtn) {
       boardBtn.setAttribute("aria-pressed", String(active));
       boardBtn.classList.toggle("is-active", active);
-      const label = boardBtn.querySelector(".guardia-mode-label");
-      if (label) label.textContent = active ? "Solo mis entregas" : "Censo completo";
+      const label5 = boardBtn.querySelector(".guardia-mode-label");
+      if (label5) label5.textContent = active ? "Solo mis entregas" : "Censo completo";
     }
   }
   if (opts.rerenderBoard) {
@@ -9728,14 +9725,14 @@ function calcVitalsBanner(last, freq) {
   if (freq === "Shift_Once") ms = 8 * 36e5;
   const due = new Date(last || Date.now()).getTime() + ms;
   const diff = due - Date.now();
-  if (diff <= 0) return { str: "\u26A0\uFE0F SIGNOS VENCIDOS", cls: "breached" };
+  if (diff <= 0) return { str: "Signos vencidos", cls: "breached" };
   const mins = Math.floor(diff / 6e4);
   if (mins <= 15) {
-    return { str: `\u23F3 Toca en: ${mins} min`, cls: "warning" };
+    return { str: `Toca en: ${mins} min`, cls: "warning" };
   }
   const h = Math.floor(mins / 60);
   const m = mins % 60;
-  return { str: `\u23F1\uFE0F Toca en: ${h}h ${m}m`, cls: "nominal" };
+  return { str: `Toca en: ${h}h ${m}m`, cls: "nominal" };
 }
 function filterR4FollowUpPinPatients(patients2) {
   return patients2.filter(
@@ -9766,16 +9763,16 @@ var init_unified_patient_grid_board = __esm({
        * @param {string} patientId
        */
       handleChipClick(patientId) {
-        const id = String(patientId || "");
-        if (!id) return;
+        const id5 = String(patientId || "");
+        if (!id5) return;
         if (this.context === "HANDOFF") {
           if (typeof this.onChipClick === "function") {
-            this.onChipClick(id);
+            this.onChipClick(id5);
           }
           return;
         }
         const selectFn = (typeof window !== "undefined" && typeof window.selectPatient === "function" ? window.selectPatient : null) || (typeof globalThis.selectPatient === "function" ? globalThis.selectPatient : null);
-        if (selectFn) selectFn(id);
+        if (selectFn) selectFn(id5);
       }
       /**
        * @param {Array<{ id: string, bed_label?: string, name?: string, service?: string, sub_area?: string, negativa_maniobras_firmada?: number, dxText?: string, pendingCount?: number, labsSnippet?: string, isCritical?: boolean, guardiaMeta?: object }>} patients
@@ -9822,11 +9819,11 @@ var init_unified_patient_grid_board = __esm({
         });
       }
       /** @param {string} label */
-      appendDivider(label) {
+      appendDivider(label5) {
         if (!this.container) return;
         const div = document.createElement("div");
         div.className = "r4-section-divider";
-        div.textContent = label;
+        div.textContent = label5;
         this.container.appendChild(div);
       }
       /**
@@ -9960,11 +9957,11 @@ function renderIncomingStrip(assignments, opts = {}) {
   }
   const now = /* @__PURE__ */ new Date();
   const chips = rows.map((row) => {
-    const id = String(row.patient_id || row.id || "");
+    const id5 = String(row.patient_id || row.id || "");
     const { bed, dx } = assignmentChipLabel(row);
     const locked = isChartLockedForPatient(row, now);
     const effectiveLabel = formatEffectiveLabel(String(row.effective_at || ""));
-    return `<button type="button" class="guardia-incoming-chip" data-patient-id="${escapeAttr(id)}" data-effective-at="${escapeAttr(String(row.effective_at || ""))}" aria-label="Paciente entrante ${escapeAttr(bed)}, ${escapeAttr(dx)}${locked ? ", bloqueado hasta vigencia" : ""}">
+    return `<button type="button" class="guardia-incoming-chip" data-patient-id="${escapeAttr(id5)}" data-effective-at="${escapeAttr(String(row.effective_at || ""))}" aria-label="Paciente entrante ${escapeAttr(bed)}, ${escapeAttr(dx)}${locked ? ", bloqueado hasta vigencia" : ""}">
         <span class="guardia-incoming-chip-bed">${escapeHtml(bed)}</span>
         <span class="guardia-incoming-chip-dx">${escapeHtml(dx)}</span>
       </button>`;
@@ -10056,7 +10053,7 @@ function wireRotationConfigFormOnce() {
 }
 async function confirmNuevaRotacion() {
   const ok = window.confirm(
-    "\xBFIniciar nueva rotaci\xF3n? Se archivan equipos activos y se limpia el censo de guardia. Los residentes deber\xE1n volver a crear equipos."
+    "\xBFIniciar nueva rotaci\xF3n?\n\n\u2022 Se archivan todos los equipos activos\n\u2022 Se limpian las guardias del d\xEDa\n\u2022 Los residentes deben volver a crear equipos\n\nEsta acci\xF3n no se puede deshacer."
   );
   if (!ok) return { ok: false, cancelled: true };
   const api3 = dbApi();
@@ -10089,8 +10086,6 @@ function wireGuardiaRotationControls() {
   syncRotationConfigButton();
   const configBtn = document.getElementById("btn-guardia-rotation-config");
   if (configBtn) configBtn.addEventListener("click", () => openRotationConfigModal());
-  const nuevaBtn = document.getElementById("btn-guardia-nueva-rotacion");
-  if (nuevaBtn) nuevaBtn.addEventListener("click", () => void confirmNuevaRotacion());
   const bd = rotationModalEl();
   if (bd) {
     bd.addEventListener("click", (ev) => {
@@ -10099,6 +10094,12 @@ function wireGuardiaRotationControls() {
   }
   const cancelBtn = document.getElementById("btn-rotation-config-cancel");
   if (cancelBtn) cancelBtn.addEventListener("click", () => closeRotationConfigModal());
+}
+function wireNuevaRotacionControl(root = document) {
+  const btn = root.querySelector("#btn-nueva-rotacion");
+  if (!btn || btn._rpcNuevaRotacionWired) return;
+  btn._rpcNuevaRotacionWired = true;
+  btn.addEventListener("click", () => void confirmNuevaRotacion());
 }
 async function syncGuardiaIncomingStrip(settings2) {
   void settings2;
@@ -10253,10 +10254,10 @@ var init_lan_client = __esm({
         this._openChannelWs("sync", "_syncWs", "sync");
       }
       connectLiveChannel(roomId) {
-        const id = String(roomId || "").trim();
-        if (!id) return;
-        this._liveRoomId = id;
-        const ch = `live:${encodeURIComponent(id)}`;
+        const id5 = String(roomId || "").trim();
+        if (!id5) return;
+        this._liveRoomId = id5;
+        const ch = `live:${encodeURIComponent(id5)}`;
         this._openChannelWs(ch, "_liveWs", "live");
       }
       disconnectLiveChannel() {
@@ -10366,16 +10367,16 @@ function compareIso(a, b) {
   if (x < y) return -1;
   return 0;
 }
-function agendaEntityKey(id) {
-  return "a:" + String(id || "");
+function agendaEntityKey(id5) {
+  return "a:" + String(id5 || "");
 }
-function todoEntityKey(patientId, id) {
-  return "t:" + String(patientId || "") + ":" + String(id || "");
+function todoEntityKey(patientId, id5) {
+  return "t:" + String(patientId || "") + ":" + String(id5 || "");
 }
-function patientEntityKey(id, registro) {
+function patientEntityKey(id5, registro) {
   const reg = String(registro || "").trim();
   if (reg) return "reg:" + reg;
-  return "id:" + String(id || "");
+  return "id:" + String(id5 || "");
 }
 function isDemoPatientId(patientId) {
   return String(patientId || "").indexOf("demo-") === 0;
@@ -10669,8 +10670,8 @@ function attachTodosMapToPatientEntries(entries, todosMap) {
   if (!Array.isArray(entries)) return [];
   const byRemoteId = /* @__PURE__ */ new Map();
   for (const entry2 of entries) {
-    const id = entry2?.patient?.id;
-    if (id) byRemoteId.set(String(id), entry2);
+    const id5 = entry2?.patient?.id;
+    if (id5) byRemoteId.set(String(id5), entry2);
   }
   for (const remotePid of Object.keys(todosMap || {})) {
     const list = todosMap[remotePid];
@@ -10807,10 +10808,10 @@ function mergeLabHistorySets(a, b) {
   }
   for (const s of b || []) {
     if (!s || !s.id) continue;
-    const id = String(s.id);
-    const cur = map.get(id);
+    const id5 = String(s.id);
+    const cur = map.get(id5);
     if (!cur || compareIso(labSetTimestamp(s), labSetTimestamp(cur)) >= 0) {
-      map.set(id, { ...s });
+      map.set(id5, { ...s });
     }
   }
   return Array.from(map.values());
@@ -10820,11 +10821,11 @@ function mergeProblemaLists(aList, bList) {
   for (const arr of [aList, bList]) {
     for (const p of arr || []) {
       if (!p || !p.id) continue;
-      const id = String(p.id);
-      const cur = map.get(id);
+      const id5 = String(p.id);
+      const cur = map.get(id5);
       const at = String(p.updatedAt || p.fecha || "");
       const curAt = cur ? String(cur.updatedAt || cur.fecha || "") : "";
-      if (!cur || compareIso(at, curAt) >= 0) map.set(id, { ...p });
+      if (!cur || compareIso(at, curAt) >= 0) map.set(id5, { ...p });
     }
   }
   return Array.from(map.values());
@@ -11003,16 +11004,16 @@ function getRoomMembership() {
     return null;
   }
 }
-function setRoomMembership({ roomId, label }) {
-  const id = String(roomId || "").trim();
-  if (!id) return;
+function setRoomMembership({ roomId, label: label5 }) {
+  const id5 = String(roomId || "").trim();
+  if (!id5) return;
   const payload = {
-    roomId: id,
-    label: String(label || id).trim(),
+    roomId: id5,
+    label: String(label5 || id5).trim(),
     joinedAt: (/* @__PURE__ */ new Date()).toISOString()
   };
   localStorage.setItem(MEMBERSHIP_KEY, JSON.stringify(payload));
-  localStorage.setItem(LAST_ROOM_KEY, id);
+  localStorage.setItem(LAST_ROOM_KEY, id5);
 }
 function clearRoomMembership() {
   try {
@@ -11024,9 +11025,9 @@ function clearRoomMembership() {
 function migrateLastRoomToMembership() {
   if (getRoomMembership()) return;
   try {
-    const id = String(localStorage.getItem(LAST_ROOM_KEY) || "").trim();
-    if (!id) return;
-    setRoomMembership({ roomId: id, label: id });
+    const id5 = String(localStorage.getItem(LAST_ROOM_KEY) || "").trim();
+    if (!id5) return;
+    setRoomMembership({ roomId: id5, label: id5 });
   } catch (_e) {
   }
 }
@@ -11115,9 +11116,9 @@ function saveCustomProtocols(entries) {
 }
 function addCustomProtocol(entry2) {
   var list = loadCustomProtocols();
-  var id = "custom-" + Date.now();
+  var id5 = "custom-" + Date.now();
   list.push({
-    id,
+    id: id5,
     category: entry2.category || "otros",
     title: entry2.title || "Protocolo personalizado",
     indicationText: entry2.indicationText || "",
@@ -11128,21 +11129,21 @@ function addCustomProtocol(entry2) {
     isCustom: true
   });
   saveCustomProtocols(list);
-  return id;
+  return id5;
 }
-function updateCustomProtocol(id, patch) {
+function updateCustomProtocol(id5, patch) {
   var list = loadCustomProtocols();
   var idx = list.findIndex(function(p) {
-    return p.id === id;
+    return p.id === id5;
   });
   if (idx < 0) return false;
-  list[idx] = Object.assign({}, list[idx], patch, { id, isCustom: true });
+  list[idx] = Object.assign({}, list[idx], patch, { id: id5, isCustom: true });
   saveCustomProtocols(list);
   return true;
 }
-function deleteCustomProtocol(id) {
+function deleteCustomProtocol(id5) {
   var list = loadCustomProtocols().filter(function(p) {
-    return p.id !== id;
+    return p.id !== id5;
   });
   saveCustomProtocols(list);
 }
@@ -11165,19 +11166,19 @@ function loadProtocolOverrides() {
   var cached = getProtocolOverridesMap();
   return Object.assign({}, cached);
 }
-function saveProtocolOverride(id, patch) {
-  if (!id) return;
+function saveProtocolOverride(id5, patch) {
+  if (!id5) return;
   var all = getProtocolOverridesMap();
-  all[id] = Object.assign({}, all[id] || {}, patch, { id });
+  all[id5] = Object.assign({}, all[id5] || {}, patch, { id: id5 });
   try {
     localStorage.setItem(OVERRIDES_KEY, JSON.stringify(all));
   } catch (_e6) {
   }
 }
-function removeProtocolOverride(id) {
-  if (!id) return;
+function removeProtocolOverride(id5) {
+  if (!id5) return;
   var all = getProtocolOverridesMap();
-  delete all[id];
+  delete all[id5];
   try {
     localStorage.setItem(OVERRIDES_KEY, JSON.stringify(all));
   } catch (_e7) {
@@ -11189,8 +11190,8 @@ function applyEntryOverrides(entry2) {
   if (!o) return entry2;
   return Object.assign({}, entry2, o);
 }
-function hasProtocolOverride(id) {
-  return !!getProtocolOverridesMap()[id];
+function hasProtocolOverride(id5) {
+  return !!getProtocolOverridesMap()[id5];
 }
 var STORAGE_KEY, OVERRIDES_KEY, overridesCache, customProtocolsCache;
 var init_manejo_custom_protocols = __esm({
@@ -11233,19 +11234,19 @@ function saveProtoFavorites(ids) {
   } catch (_e3) {
   }
 }
-function isProtoFavorite(id) {
-  if (!id) return false;
-  return getFavoritesSet().has(id);
+function isProtoFavorite(id5) {
+  if (!id5) return false;
+  return getFavoritesSet().has(id5);
 }
-function toggleProtoFavorite(id) {
-  if (!id) return false;
+function toggleProtoFavorite(id5) {
+  if (!id5) return false;
   var set = getFavoritesSet();
-  if (set.has(id)) {
-    set.delete(id);
+  if (set.has(id5)) {
+    set.delete(id5);
     saveProtoFavorites(Array.from(set));
     return false;
   }
-  var list = [id].concat(Array.from(set));
+  var list = [id5].concat(Array.from(set));
   saveProtoFavorites(list);
   return true;
 }
@@ -11293,10 +11294,10 @@ function mergeProtocolLists(aList, bList) {
   for (const arr of [aList, bList]) {
     for (const p of arr || []) {
       if (!p || !p.id) continue;
-      const id = String(p.id);
-      const cur = map.get(id);
+      const id5 = String(p.id);
+      const cur = map.get(id5);
       if (!cur || compareIso(protocolUpdatedAt(p), protocolUpdatedAt(cur)) >= 0) {
-        map.set(id, { ...p });
+        map.set(id5, { ...p });
       }
     }
   }
@@ -11326,8 +11327,8 @@ function mergeIdLists(aList, bList) {
   const seen = /* @__PURE__ */ new Set();
   const out = [];
   for (const arr of [aList, bList]) {
-    for (const id of arr || []) {
-      const s = String(id || "").trim();
+    for (const id5 of arr || []) {
+      const s = String(id5 || "").trim();
       if (!s || seen.has(s)) continue;
       seen.add(s);
       out.push(s);
@@ -11403,10 +11404,10 @@ var init_manejo_room_data = __esm({
 // public/js/lan-join-link.mjs
 function buildLanJoinUrls(hostUrl, ticketId) {
   const base = String(hostUrl || "").trim().replace(/\/+$/, "");
-  const id = encodeURIComponent(String(ticketId || "").trim());
+  const id5 = encodeURIComponent(String(ticketId || "").trim());
   return {
-    joinUrl: `${base}/join/${id}`,
-    mobileUrl: `${base}/join/${id}`
+    joinUrl: `${base}/join/${id5}`,
+    mobileUrl: `${base}/join/${id5}`
   };
 }
 function parseLanJoinQuery(search, origin) {
@@ -11650,11 +11651,11 @@ async function idbGetAll() {
   db.close();
   return rows;
 }
-async function idbDelete(id) {
+async function idbDelete(id5) {
   const db = await openDraftDb();
   await new Promise((res, rej) => {
     const tx = db.transaction(STORE, "readwrite");
-    tx.objectStore(STORE).delete(id);
+    tx.objectStore(STORE).delete(id5);
     tx.oncomplete = () => res();
     tx.onerror = () => rej(tx.error);
   });
@@ -11664,15 +11665,15 @@ function sortBySavedAtDesc(rows) {
   return rows.sort((a, b) => String(b.savedAt).localeCompare(String(a.savedAt)));
 }
 async function saveDraftConflict(record) {
-  const id = globalThis.crypto.randomUUID();
-  const row = { ...record, id, savedAt: (/* @__PURE__ */ new Date()).toISOString() };
+  const id5 = globalThis.crypto.randomUUID();
+  const row = { ...record, id: id5, savedAt: (/* @__PURE__ */ new Date()).toISOString() };
   const mem = memoryStore();
   if (mem) {
-    mem.set(id, row);
-    return id;
+    mem.set(id5, row);
+    return id5;
   }
   await idbPut(row);
-  return id;
+  return id5;
 }
 async function listDraftConflicts() {
   const mem = memoryStore();
@@ -11681,14 +11682,14 @@ async function listDraftConflicts() {
   }
   return sortBySavedAtDesc(await idbGetAll());
 }
-async function deleteDraftConflict(id) {
-  if (!id) return;
+async function deleteDraftConflict(id5) {
+  if (!id5) return;
   const mem = memoryStore();
   if (mem) {
-    mem.delete(id);
+    mem.delete(id5);
     return;
   }
-  await idbDelete(id);
+  await idbDelete(id5);
 }
 var DB_NAME, STORE, DB_VERSION, __test;
 var init_draft_conflict_store = __esm({
@@ -12134,10 +12135,10 @@ function pruneLivePeers(nowMs) {
   const now = nowMs != null ? nowMs : Date.now();
   const map = readPeersRaw();
   let changed = false;
-  Object.keys(map).forEach((id) => {
-    const row = map[id];
+  Object.keys(map).forEach((id5) => {
+    const row = map[id5];
     if (!row || now - Number(row.seenAt || 0) > PEER_TTL_MS) {
-      delete map[id];
+      delete map[id5];
       changed = true;
     }
   });
@@ -12145,15 +12146,15 @@ function pruneLivePeers(nowMs) {
   return map;
 }
 function recordLivePeer(clientId, meta) {
-  const id = String(clientId || "").trim();
+  const id5 = String(clientId || "").trim();
   const hostUrl = String(meta && meta.hostUrl ? meta.hostUrl : "").trim().replace(/\/+$/, "");
-  if (!id || !hostUrl) return;
+  if (!id5 || !hostUrl) return;
   const map = pruneLivePeers();
-  map[id] = {
+  map[id5] = {
     hostUrl,
     canHost: !!(meta && meta.canHost),
     seenAt: Date.now(),
-    clientId: id
+    clientId: id5
   };
   writePeersRaw(map);
 }
@@ -12162,9 +12163,9 @@ function listLivePeerHostUrls(excludeClientId) {
   const map = pruneLivePeers();
   const urls = [];
   const seen = /* @__PURE__ */ new Set();
-  Object.keys(map).forEach((id) => {
-    if (id === skip) return;
-    const row = map[id];
+  Object.keys(map).forEach((id5) => {
+    if (id5 === skip) return;
+    const row = map[id5];
     if (!row || !row.canHost || !row.hostUrl) return;
     if (seen.has(row.hostUrl)) return;
     seen.add(row.hostUrl);
@@ -12275,25 +12276,25 @@ function writeLanKnownRooms(arr) {
   }
 }
 function forgetLanRoomSession(roomId) {
-  var id = String(roomId || "").trim();
-  if (!id) return;
+  var id5 = String(roomId || "").trim();
+  if (!id5) return;
   writeLanKnownRooms(readLanKnownRooms().filter(function(r) {
-    return r.id !== id;
+    return r.id !== id5;
   }));
   try {
-    if (String(localStorage.getItem("rpc-lan-last-room") || "").trim() === id) {
+    if (String(localStorage.getItem("rpc-lan-last-room") || "").trim() === id5) {
       localStorage.removeItem("rpc-lan-last-room");
     }
   } catch (_e) {
   }
 }
 function rememberLanRoomJoined(roomId, displayName) {
-  var id = String(roomId || "").trim();
-  if (!id) return;
-  var label = String(displayName || "").trim() || id.slice(0, 14);
-  var next = [{ id, label, joinedAt: Date.now() }];
+  var id5 = String(roomId || "").trim();
+  if (!id5) return;
+  var label5 = String(displayName || "").trim() || id5.slice(0, 14);
+  var next = [{ id: id5, label: label5, joinedAt: Date.now() }];
   readLanKnownRooms().forEach(function(r) {
-    if (r.id !== id) next.push(r);
+    if (r.id !== id5) next.push(r);
   });
   writeLanKnownRooms(next);
 }
@@ -13116,8 +13117,8 @@ async function lanFetchHistoriaClinica(patientId, roomId) {
 }
 function getLanClientId() {
   try {
-    var id = localStorage.getItem("rpc-lan-client-id");
-    if (id && String(id).trim()) return String(id).trim();
+    var id5 = localStorage.getItem("rpc-lan-client-id");
+    if (id5 && String(id5).trim()) return String(id5).trim();
     var gen = "lc_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 10);
     localStorage.setItem("rpc-lan-client-id", gen);
     return gen;
@@ -13863,13 +13864,13 @@ function syncLiveSyncStatusChrome() {
     return;
   }
   el.style.display = "block";
-  var label = activeLiveSyncRoomLabel || activeLiveSyncRoomId;
+  var label5 = activeLiveSyncRoomLabel || activeLiveSyncRoomId;
   if (lanClient.liveConnected) {
-    el.textContent = "Sala: " + label + " \xB7 sincronizando pacientes, labs, agenda y pendientes";
+    el.textContent = "Sala: " + label5 + " \xB7 sincronizando pacientes, labs, agenda y pendientes";
   } else if (getRoomMembership() && getRoomMembership().roomId === activeLiveSyncRoomId) {
-    el.textContent = "Sala: " + label + " \xB7 reconectando\u2026";
+    el.textContent = "Sala: " + label5 + " \xB7 reconectando\u2026";
   } else {
-    el.textContent = "Sala: " + label + " \xB7 solo local (sin sync en vivo)";
+    el.textContent = "Sala: " + label5 + " \xB7 solo local (sin sync en vivo)";
   }
 }
 function emitLiveSyncAgendaUpsert(eventObj) {
@@ -13880,8 +13881,8 @@ function emitLiveSyncAgendaUpsert(eventObj) {
   });
   sendLiveSyncMutation(mutation);
 }
-function emitLiveSyncAgendaDelete(id, updatedAt) {
-  var eid = String(id || "").trim();
+function emitLiveSyncAgendaDelete(id5, updatedAt) {
+  var eid = String(id5 || "").trim();
   if (!eid) return;
   var base = getLiveSyncEntityBase("agenda", eid, null) || { id: eid, version: 0, updatedAt };
   var mutation = createMutationBuilder("agenda", eid).captureBase(base).build({ roomId: activeLiveSyncRoomId, op: "delete" });
@@ -14836,8 +14837,8 @@ async function saveLanSettingsFromUi(opts) {
   renderLanPanel();
 }
 function joinLanRoom(roomId, displayName) {
-  var id = String(roomId || "").trim();
-  if (!id) {
+  var id5 = String(roomId || "").trim();
+  if (!id5) {
     runtime2.showToast("No se pudo identificar la sala. Vuelve a abrir \u21C4 e int\xE9ntalo.", "error");
     return;
   }
@@ -14858,18 +14859,18 @@ function joinLanRoom(roomId, displayName) {
     runtime2.showToast("Falta la direcci\xF3n del servidor LAN. Config\xFArala en \u21C4 antes de unirte.", "error");
     return;
   }
-  if (activeLiveSyncRoomId === id && String(lanClient.liveRoomId || "") === id && lanClient.liveConnected) {
-    syncLiveSyncAfterRoomJoin(id);
+  if (activeLiveSyncRoomId === id5 && String(lanClient.liveRoomId || "") === id5 && lanClient.liveConnected) {
+    syncLiveSyncAfterRoomJoin(id5);
     syncLiveSyncStatusChrome();
     patchLanPanelJoinButtons();
     runtime2.showToast("Ya est\xE1s en esta sala", "success");
     return;
   }
-  if (activeLiveSyncRoomId && activeLiveSyncRoomId !== id) {
+  if (activeLiveSyncRoomId && activeLiveSyncRoomId !== id5) {
     leaveLiveSyncRoom({ silentLeave: false });
   }
-  activeLiveSyncRoomId = id;
-  activeLiveSyncRoomLabel = displayName != null ? String(displayName) : id;
+  activeLiveSyncRoomId = id5;
+  activeLiveSyncRoomLabel = displayName != null ? String(displayName) : id5;
   try {
     if (!lanClient.connected) {
       try {
@@ -14877,9 +14878,9 @@ function joinLanRoom(roomId, displayName) {
       } catch (_sync) {
       }
     }
-    lanClient.connectLiveChannel(id);
-    setRoomMembership({ roomId: id, label: activeLiveSyncRoomLabel });
-    rememberLanRoomJoined(id, activeLiveSyncRoomLabel);
+    lanClient.connectLiveChannel(id5);
+    setRoomMembership({ roomId: id5, label: activeLiveSyncRoomLabel });
+    rememberLanRoomJoined(id5, activeLiveSyncRoomLabel);
     scheduleLiveSyncOutboxFlush();
     startLiveSyncReconnectLoop();
   } catch (_e) {
@@ -14891,7 +14892,7 @@ function joinLanRoom(roomId, displayName) {
   runtime2.showToast("Sala: sincronizando expediente, agenda y pendientes", "success");
   syncLiveSyncStatusChrome();
   patchLanPanelJoinButtons();
-  syncLiveSyncAfterRoomJoin(id);
+  syncLiveSyncAfterRoomJoin(id5);
 }
 async function createLanRoomFromUi() {
   if (!isLanSessionConfiguredForRest()) {
@@ -14937,14 +14938,14 @@ async function deleteLanRoom(roomId) {
     return;
   }
   await ensureLanClientTeamCodeAligned();
-  var id = String(roomId || "").trim();
-  if (!id) return;
-  if (activeLiveSyncRoomId === id) {
+  var id5 = String(roomId || "").trim();
+  if (!id5) return;
+  if (activeLiveSyncRoomId === id5) {
     leaveLiveSyncRoom({ silentLeave: true });
   }
   var resp;
   try {
-    resp = await lanFetchAuthed("/api/lan/v1/rooms/" + encodeURIComponent(id), { method: "DELETE" });
+    resp = await lanFetchAuthed("/api/lan/v1/rooms/" + encodeURIComponent(id5), { method: "DELETE" });
   } catch (_e) {
     runtime2.showToast("No se pudo eliminar la sala", "error");
     return;
@@ -15819,6 +15820,24 @@ var init_clinical_onboarding = __esm({
   }
 });
 
+// public/js/features/clinical-context-bar.mjs
+function clinicalContextBarEl() {
+  return document.getElementById("clinical-context-bar");
+}
+function syncClinicalContextBarVisibility() {
+  const bar = clinicalContextBarEl();
+  if (!bar) return;
+  const rotation = document.getElementById("clinical-rotation-section");
+  const filtersMount = document.getElementById("clinical-census-filters-mount");
+  const hasRotation = rotation && !rotation.hidden;
+  const hasFilters = filtersMount && !filtersMount.hidden && !!document.getElementById("clinical-census-filters");
+  bar.hidden = !(hasRotation || hasFilters);
+}
+var init_clinical_context_bar = __esm({
+  "public/js/features/clinical-context-bar.mjs"() {
+  }
+});
+
 // public/js/features/clinical-rotation-entry.mjs
 var clinical_rotation_entry_exports = {};
 __export(clinical_rotation_entry_exports, {
@@ -15847,8 +15866,7 @@ function buildEntryStatus() {
     return {
       primary: "Configura tu rotaci\xF3n",
       sub: "Usuario LAN, sala y equipo \u2014 obligatorio para guardia",
-      pending: true,
-      ctaLabel: "Continuar configuraci\xF3n"
+      pending: true
     };
   }
   const user = clinicalSessionContext.user;
@@ -15856,8 +15874,7 @@ function buildEntryStatus() {
     return {
       primary: "Mi rotaci\xF3n",
       sub: "Desbloquea la base de datos para continuar",
-      pending: true,
-      ctaLabel: "Abrir Mi rotaci\xF3n"
+      pending: true
     };
   }
   const handle = normalizeUsername(user.username || "");
@@ -15873,45 +15890,39 @@ function buildEntryStatus() {
   let sub = name || "Equipos, entregas y perfil cl\xEDnico";
   if (teams.length === 1) sub = `Equipo: ${String(teams[0].name || "\u2014")}`;
   else if (teams.length > 1) sub = `${teams.length} equipos`;
-  return { primary, sub, pending: false, ctaLabel: "Abrir Mi rotaci\xF3n" };
+  return { primary, sub, pending: false };
 }
 function syncClinicalRotationEntryChrome() {
-  const sidebarSection = document.getElementById("clinical-rotation-section");
-  const profileBlock = document.getElementById("profile-clinical-rotation-block");
+  const rotationSection = document.getElementById("clinical-rotation-section");
   const show = isDbMode();
-  if (sidebarSection) sidebarSection.hidden = !show;
-  if (profileBlock) profileBlock.hidden = !show;
-  if (!show) return;
-  const status = buildEntryStatus();
-  const sidebarBtn = document.getElementById("btn-sidebar-mi-rotacion");
-  const sidebarPrimary = document.getElementById("clinical-rotation-entry-primary");
-  const sidebarSub = document.getElementById("clinical-rotation-entry-sub");
-  if (sidebarBtn) {
-    sidebarBtn.classList.toggle("is-pending", status.pending);
-    sidebarBtn.setAttribute(
-      "title",
-      status.pending ? "Completa usuario y equipo" : "Usuario LAN, equipos y entregas"
-    );
+  if (rotationSection) rotationSection.hidden = !show;
+  if (!show) {
+    syncClinicalContextBarVisibility();
+    return;
   }
-  if (sidebarPrimary) sidebarPrimary.textContent = status.primary;
-  if (sidebarSub) sidebarSub.textContent = status.sub;
-  const profileCta = document.getElementById("btn-profile-mi-rotacion");
-  const profileStatus = document.getElementById("profile-clinical-rotation-status");
-  if (profileCta) profileCta.textContent = status.ctaLabel;
-  if (profileStatus) profileStatus.textContent = `${status.primary} \u2014 ${status.sub}`;
-  if (profileBlock) profileBlock.classList.toggle("is-pending", status.pending);
+  const status = buildEntryStatus();
+  const entryBtn = document.getElementById("btn-sidebar-mi-rotacion");
+  const entryPrimary = document.getElementById("clinical-rotation-entry-primary");
+  const entrySub = document.getElementById("clinical-rotation-entry-sub");
+  if (entryBtn) {
+    entryBtn.classList.toggle("is-pending", status.pending);
+    const base = status.pending ? "Completa usuario y equipo" : "Usuario LAN, equipos y entregas";
+    entryBtn.setAttribute("title", `${base} \u2014 ${status.primary}: ${status.sub}`);
+  }
+  if (entryPrimary) entryPrimary.textContent = status.primary;
+  if (entrySub) entrySub.textContent = status.sub;
+  syncClinicalContextBarVisibility();
 }
 function wireClinicalRotationEntryControls() {
   if (entryControlsWired) return;
   entryControlsWired = true;
-  const bind = (id) => {
-    const el = document.getElementById(id);
+  const bind = (id5) => {
+    const el = document.getElementById(id5);
     if (!el || el._rpcMiRotacionWired) return;
     el._rpcMiRotacionWired = true;
     el.addEventListener("click", () => void openMiRotacion());
   };
   bind("btn-sidebar-mi-rotacion");
-  bind("btn-profile-mi-rotacion");
   if (typeof document !== "undefined") {
     document.addEventListener("rpc-clinical-teams-changed", () => {
       syncClinicalRotationEntryChrome();
@@ -15926,6 +15937,7 @@ var init_clinical_rotation_entry = __esm({
     init_clinical_username();
     init_clinical_teams();
     init_clinical_onboarding();
+    init_clinical_context_bar();
     entryControlsWired = false;
     windowHandlers8 = {
       openMiRotacion
@@ -16295,8 +16307,16 @@ async function renderClinicalTeamsPanelInto(host) {
       </div>
       ${profileSection}
       ${renderCreateTeamForm()}
+      <details class="clinical-teams-advanced-rotation">
+        <summary class="clinical-teams-advanced-rotation-summary">Zona avanzada \xB7 rotaci\xF3n del programa</summary>
+        <div class="clinical-teams-advanced-rotation-body">
+          <p class="clinical-teams-advanced-rotation-hint">Solo al cerrar un ciclo de rotaci\xF3n en el hospital. Archiva equipos, memberships y guardias del d\xEDa; los residentes deben volver a crear equipos.</p>
+          <button type="button" id="btn-nueva-rotacion" class="btn-med-secondary clinical-teams-nueva-rotacion-btn">Iniciar nueva rotaci\xF3n\u2026</button>
+        </div>
+      </details>
     </section>`;
   wireClinicalTeamsPanelInteractions();
+  wireNuevaRotacionControl(host);
   wireJoinButtons();
   wireBrowseSalaControl(elevated);
 }
@@ -16319,8 +16339,8 @@ async function renderDirectorySectionHtml(opts) {
   let directory = res?.ok && Array.isArray(res.teams) ? res.teams : [];
   directory = directory.filter((t2) => !t2.isMember);
   if (!directory.length) {
-    const label = browseSala === "__all__" ? "ninguna sala" : escapeHtml5(String(browseSala || homeSala));
-    const emptyMsg = elevated ? `No hay otros equipos en ${label}. Los tuyos aparecen arriba.` : `No hay otros equipos disponibles en ${label}.`;
+    const label5 = browseSala === "__all__" ? "ninguna sala" : escapeHtml5(String(browseSala || homeSala));
+    const emptyMsg = elevated ? `No hay otros equipos en ${label5}. Los tuyos aparecen arriba.` : `No hay otros equipos disponibles en ${label5}.`;
     return `<section class="clinical-teams-section clinical-teams-section--directory">
       <div class="clinical-teams-section-intro">
         <h4 class="clinical-teams-section-title">${elevated ? "Explorar sala" : `Otros equipos \xB7 ${escapeHtml5(browseSala || homeSala)}`}</h4>
@@ -17076,20 +17096,22 @@ function computeGuardiaSummary(censusPatients, guardiasMap) {
 function renderGuardiaSummaryTiles(summary) {
   const host = document.getElementById("guardia-summary");
   if (!host) return;
+  const alertIcon = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>';
+  const listIcon = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>';
   host.innerHTML = `
     <div class="guardia-summary-tile guardia-summary-tile--critical">
       <div>
         <div class="guardia-summary-label">Pacientes cr\xEDticos</div>
         <div class="guardia-summary-value guardia-summary-value--critical">${summary.critical}</div>
       </div>
-      <span class="guardia-summary-icon" aria-hidden="true">\u26A0\uFE0F</span>
+      <span class="guardia-summary-icon">${alertIcon}</span>
     </div>
     <div class="guardia-summary-tile">
       <div>
         <div class="guardia-summary-label">Pendientes totales</div>
         <div class="guardia-summary-value">${summary.pending}</div>
       </div>
-      <span class="guardia-summary-icon" aria-hidden="true">\u{1F4CB}</span>
+      <span class="guardia-summary-icon">${listIcon}</span>
     </div>`;
 }
 function wireGuardiaModeToggle(settings2) {
@@ -17929,15 +17951,15 @@ function resolvePatientFieldIds(errorMessage, isFromLab) {
     ids.push("m-cuarto", "m-cama");
   }
   var seen = /* @__PURE__ */ new Set();
-  return ids.filter(function(id) {
-    if (seen.has(id)) return false;
-    seen.add(id);
+  return ids.filter(function(id5) {
+    if (seen.has(id5)) return false;
+    seen.add(id5);
     return true;
   });
 }
 function shakePatientFieldsForError(errorMessage, isFromLab) {
-  resolvePatientFieldIds(errorMessage, isFromLab).forEach(function(id) {
-    shakeField(document.getElementById(id));
+  resolvePatientFieldIds(errorMessage, isFromLab).forEach(function(id5) {
+    shakeField(document.getElementById(id5));
   });
 }
 function collectButtonLabelText(btn) {
@@ -17950,8 +17972,8 @@ function collectButtonLabelText(btn) {
   });
   return parts.join(" ");
 }
-function captureButtonLabel(btn, label) {
-  var text = label.textContent.replace(/\s+/g, " ").trim();
+function captureButtonLabel(btn, label5) {
+  var text = label5.textContent.replace(/\s+/g, " ").trim();
   if (text) return text;
   text = collectButtonLabelText(btn);
   if (text) return text;
@@ -17960,73 +17982,73 @@ function captureButtonLabel(btn, label) {
 function ensureButtonLabel(btn) {
   var existing = btn.querySelector(":scope > .btn-label");
   if (existing) return existing;
-  var label = document.createElement("span");
-  label.className = "btn-label";
+  var label5 = document.createElement("span");
+  label5.className = "btn-label";
   var moved = false;
   Array.from(btn.childNodes).forEach(function(n) {
     if (n.nodeType === Node.TEXT_NODE && n.textContent.trim()) {
-      label.appendChild(n);
+      label5.appendChild(n);
       moved = true;
     }
   });
   if (!moved) {
     var text = collectButtonLabelText(btn);
-    if (text) label.textContent = text;
+    if (text) label5.textContent = text;
   }
-  btn.appendChild(label);
-  return label;
+  btn.appendChild(label5);
+  return label5;
 }
-function resetLabelMotion(label) {
-  if (!label) return;
-  if (label._uiMotionSwapHandler) {
-    label.removeEventListener("transitionend", label._uiMotionSwapHandler);
-    label._uiMotionSwapHandler = null;
+function resetLabelMotion(label5) {
+  if (!label5) return;
+  if (label5._uiMotionSwapHandler) {
+    label5.removeEventListener("transitionend", label5._uiMotionSwapHandler);
+    label5._uiMotionSwapHandler = null;
   }
-  label.classList.remove("ui-text-leaving", "ui-text-entering");
+  label5.classList.remove("ui-text-leaving", "ui-text-entering");
 }
-function swapLabelText(label, nextText, options) {
+function swapLabelText(label5, nextText, options) {
   options = options || {};
-  if (!label) return;
+  if (!label5) return;
   nextText = String(nextText || "");
-  resetLabelMotion(label);
-  if (!options.force && label.textContent.replace(/\s+/g, " ").trim() === nextText) return;
+  resetLabelMotion(label5);
+  if (!options.force && label5.textContent.replace(/\s+/g, " ").trim() === nextText) return;
   if (prefersReducedMotion() || options.instant) {
-    label.textContent = nextText;
+    label5.textContent = nextText;
     return;
   }
-  label.classList.add("ui-text-leaving");
-  var swapId = (label._uiMotionSwapId || 0) + 1;
-  label._uiMotionSwapId = swapId;
+  label5.classList.add("ui-text-leaving");
+  var swapId = (label5._uiMotionSwapId || 0) + 1;
+  label5._uiMotionSwapId = swapId;
   function onDone(ev) {
     if (ev.propertyName !== "opacity") return;
-    if (label._uiMotionSwapId !== swapId) return;
-    label.removeEventListener("transitionend", onDone);
-    label._uiMotionSwapHandler = null;
-    label.textContent = nextText;
-    label.classList.remove("ui-text-leaving");
-    label.classList.add("ui-text-entering");
+    if (label5._uiMotionSwapId !== swapId) return;
+    label5.removeEventListener("transitionend", onDone);
+    label5._uiMotionSwapHandler = null;
+    label5.textContent = nextText;
+    label5.classList.remove("ui-text-leaving");
+    label5.classList.add("ui-text-entering");
     requestAnimationFrame(function() {
       requestAnimationFrame(function() {
-        if (label._uiMotionSwapId !== swapId) return;
-        label.classList.remove("ui-text-entering");
+        if (label5._uiMotionSwapId !== swapId) return;
+        label5.classList.remove("ui-text-entering");
       });
     });
   }
-  label._uiMotionSwapHandler = onDone;
-  label.addEventListener("transitionend", onDone);
+  label5._uiMotionSwapHandler = onDone;
+  label5.addEventListener("transitionend", onDone);
 }
 function setAsyncButtonLoading(btn, loading, opts) {
   if (!btn) return;
   opts = opts || {};
   var loadingText = opts.loadingText || "Procesando\u2026";
-  var label = ensureButtonLabel(btn);
+  var label5 = ensureButtonLabel(btn);
   if (loading) {
     if (!btn.dataset.uiMotionDefaultLabel) {
-      btn.dataset.uiMotionDefaultLabel = captureButtonLabel(btn, label);
+      btn.dataset.uiMotionDefaultLabel = captureButtonLabel(btn, label5);
     }
     btn.classList.add("loading");
     btn.disabled = true;
-    swapLabelText(label, loadingText);
+    swapLabelText(label5, loadingText);
     return;
   }
   btn.classList.remove("loading");
@@ -18034,8 +18056,8 @@ function setAsyncButtonLoading(btn, loading, opts) {
     btn.disabled = false;
     btn.removeAttribute("aria-disabled");
   }
-  var restore = btn.dataset.uiMotionDefaultLabel || captureButtonLabel(btn, label);
-  swapLabelText(label, restore, { instant: true, force: true });
+  var restore = btn.dataset.uiMotionDefaultLabel || captureButtonLabel(btn, label5);
+  swapLabelText(label5, restore, { instant: true, force: true });
   delete btn.dataset.uiMotionDefaultLabel;
 }
 
@@ -19159,7 +19181,7 @@ function isSectionDividerEstudio(name) {
   return /^(FISICO|QUIMICO|SEDIMENTO|MICROSCOPICO)$/.test(u);
 }
 function skipSectionDividerBlock(lines, startIdx) {
-  var label = cleanEstudio(lines[startIdx] || "");
+  var label5 = cleanEstudio(lines[startIdx] || "");
   var i = startIdx + 1;
   while (i < lines.length) {
     var p = cleanEstudio(lines[i]);
@@ -19170,7 +19192,7 @@ function skipSectionDividerBlock(lines, startIdx) {
       break;
     }
     if (isFlagToken(p)) continue;
-    if (p.toUpperCase() === label.toUpperCase()) continue;
+    if (p.toUpperCase() === label5.toUpperCase()) continue;
     if (p === ":" || /^AUSENTE$/i.test(p)) continue;
     break;
   }
@@ -19918,8 +19940,8 @@ function renderSomeTableGroupHtml(group, opts) {
   return html;
 }
 function renderSomeDeptExportActions(deptLabel, deptIndex) {
-  var label = escHtml(deptLabel);
-  return '<span class="lab-some-dept-summary-actions" onclick="event.stopPropagation()"><button type="button" class="lab-some-export-btn lab-some-dept-export-btn" data-export="tsv" data-dept-index="' + deptIndex + '" data-label="' + label + '" title="Copiar secci\xF3n como texto">TSV</button><button type="button" class="lab-some-export-btn lab-some-dept-export-btn" data-export="png" data-dept-index="' + deptIndex + '" data-label="' + label + '" title="Copiar secci\xF3n como imagen">PNG</button></span>';
+  var label5 = escHtml(deptLabel);
+  return '<span class="lab-some-dept-summary-actions" onclick="event.stopPropagation()"><button type="button" class="lab-some-export-btn lab-some-dept-export-btn" data-export="tsv" data-dept-index="' + deptIndex + '" data-label="' + label5 + '" title="Copiar secci\xF3n como texto">TSV</button><button type="button" class="lab-some-export-btn lab-some-dept-export-btn" data-export="png" data-dept-index="' + deptIndex + '" data-label="' + label5 + '" title="Copiar secci\xF3n como imagen">PNG</button></span>';
 }
 function buildSomeDeptTsv(dept, title) {
   var tsv = buildTableTsv(buildSomeDeptExportModel(dept, title));
@@ -20005,12 +20027,12 @@ function exportSomeDeptCopy(dept, format, title, onDone) {
     done(false);
     return;
   }
-  var label = title || dept.label || "Tabla";
+  var label5 = title || dept.label || "Tabla";
   if (format === "png") {
-    copyTableModelAsPng(buildSomeDeptExportModel(dept, label), label, done);
+    copyTableModelAsPng(buildSomeDeptExportModel(dept, label5), label5, done);
     return;
   }
-  copyTableText(buildSomeDeptTsv(dept, label), done);
+  copyTableText(buildSomeDeptTsv(dept, label5), done);
 }
 function resolveSomeExportLookup(lookup) {
   if (typeof lookup === "function") {
@@ -20041,11 +20063,11 @@ function wireSomeTableExportButtons(container, onToast, lookup) {
     btn.dataset.someWired = "1";
     btn.addEventListener("click", function() {
       var format = btn.getAttribute("data-export");
-      var label = btn.getAttribute("data-label") || "";
+      var label5 = btn.getAttribute("data-label") || "";
       if (btn.classList.contains("lab-some-dept-export-btn") && resolved.getDept) {
         var deptIndex = parseInt(btn.getAttribute("data-dept-index") || "", 10);
         var dept = resolved.getDept(deptIndex);
-        exportSomeDeptCopy(dept, format, label || dept && dept.label || "", function(ok) {
+        exportSomeDeptCopy(dept, format, label5 || dept && dept.label || "", function(ok) {
           if (typeof onToast === "function") {
             onToast(
               ok ? "Secci\xF3n copiada \u2713" : "No se pudo copiar la secci\xF3n",
@@ -20061,7 +20083,7 @@ function wireSomeTableExportButtons(container, onToast, lookup) {
       if (!Number.isFinite(indices.deptIndex) || !Number.isFinite(indices.groupIndex)) return;
       var group = resolved.getGroup(indices.deptIndex, indices.groupIndex);
       if (!group) return;
-      exportSomeGroupCopy(group, format, label, function(ok) {
+      exportSomeGroupCopy(group, format, label5, function(ok) {
         if (typeof onToast === "function") {
           onToast(
             ok ? "Tabla copiada \u2713" : "No se pudo copiar la tabla",
@@ -20650,11 +20672,11 @@ function labRowSectionKey(row) {
 }
 function labRowRichnessScore(row) {
   var s = String(row || "");
-  var score = s.length;
-  score += (s.match(/\b(?:AG|DELTA-DELTA|ICA|LACTATO|BICA|PCO2|PO2)\b/gi) || []).length * 8;
-  score += (s.match(/\d/g) || []).length;
-  if (/INTERPRETACI[ÓO]N\s+GASOMETR[IÍ]A/i.test(s)) score += 20;
-  return score;
+  var score5 = s.length;
+  score5 += (s.match(/\b(?:AG|DELTA-DELTA|ICA|LACTATO|BICA|PCO2|PO2)\b/gi) || []).length * 8;
+  score5 += (s.match(/\d/g) || []).length;
+  if (/INTERPRETACI[ÓO]N\s+GASOMETR[IÍ]A/i.test(s)) score5 += 20;
+  return score5;
 }
 function dedupeConsolidatedLabRows(rows, tipo) {
   var normalized = [];
@@ -20964,8 +20986,8 @@ function renderReportIssues(block) {
   if (!bad.length) return "";
   return '<ul class="lab-bulk-preview-issues">' + bad.map(function(r, idx) {
     var msg = r.error || "No se pudo parsear el reporte";
-    var label = r.expediente ? "Exp. " + r.expediente : "Reporte " + (idx + 1);
-    return "<li><strong>" + esc3(label) + ":</strong> " + esc3(msg) + "</li>";
+    var label5 = r.expediente ? "Exp. " + r.expediente : "Reporte " + (idx + 1);
+    return "<li><strong>" + esc3(label5) + ":</strong> " + esc3(msg) + "</li>";
   }).join("") + "</ul>";
 }
 function renderStatusCell(block, idx) {
@@ -21401,11 +21423,11 @@ function labRowSectionKey2(row) {
 function labRowRichnessScore2(row) {
   var s = normalizeLabLine(String(row == null ? "" : row));
   if (!s) return 0;
-  var score = s.length;
-  score += (s.match(/\b(?:AG|DELTA-DELTA|ICA|LACTATO|BICA|PCO2|PO2)\b/gi) || []).length * 8;
-  score += (s.match(/\d/g) || []).length;
-  if (/INTERPRETACI[ÓO]N\s+GASOMETR[IÍ]A/i.test(s)) score += 20;
-  return score;
+  var score5 = s.length;
+  score5 += (s.match(/\b(?:AG|DELTA-DELTA|ICA|LACTATO|BICA|PCO2|PO2)\b/gi) || []).length * 8;
+  score5 += (s.match(/\d/g) || []).length;
+  if (/INTERPRETACI[ÓO]N\s+GASOMETR[IÍ]A/i.test(s)) score5 += 20;
+  return score5;
 }
 function dedupeConsolidatedRowsBySection(rows, tipo) {
   var normalized = [];
@@ -21645,13 +21667,13 @@ function buildLabDedupeChecklistSections(patientId) {
   var rows = [];
   var exactRemoveIds = /* @__PURE__ */ new Set();
   findExactDuplicateLabGroups(sets).forEach(function(g3) {
-    g3.removeIds.forEach(function(id) {
-      exactRemoveIds.add(id);
-      var s = byId[id];
+    g3.removeIds.forEach(function(id5) {
+      exactRemoveIds.add(id5);
+      var s = byId[id5];
       if (!s) return;
       rows.push({
         patientId,
-        id,
+        id: id5,
         kind: "exact",
         checked: true,
         summary: labDedupeSummaryLine(s)
@@ -22797,17 +22819,17 @@ function mountRpcDateInput(input) {
   btn.className = "rpc-date-field__trigger profile-input";
   btn.setAttribute("aria-haspopup", "dialog");
   btn.setAttribute("aria-expanded", "false");
-  var label = document.createElement("span");
-  label.className = "rpc-date-field__label";
+  var label5 = document.createElement("span");
+  label5.className = "rpc-date-field__label";
   var icon = document.createElement("span");
   icon.className = "rpc-date-field__icon";
   icon.innerHTML = CALENDAR_SVG;
-  btn.appendChild(label);
+  btn.appendChild(label5);
   btn.appendChild(icon);
   wrap.insertBefore(btn, input);
   function syncLabel() {
     var iso = String(input.value || "").trim();
-    label.textContent = iso ? formatIsoDateDisplay(iso) : "Elegir fecha";
+    label5.textContent = iso ? formatIsoDateDisplay(iso) : "Elegir fecha";
     btn.classList.toggle("is-placeholder", !iso);
   }
   syncLabel();
@@ -24187,9 +24209,9 @@ function buildPatientSections(patient, ctx) {
   return sections;
 }
 function flattenRowForCompactPdf(patient, sections) {
-  var pick2 = function(label) {
+  var pick2 = function(label5) {
     var sec = sections.find(function(s) {
-      return s.label === label;
+      return s.label === label5;
     });
     return sec ? sec.lines.join("\n") : "";
   };
@@ -24369,9 +24391,9 @@ function renderCensoPreviewHtml(payload) {
     }).join("<br>");
   }
   function camaCellHtml(camaText) {
-    var label = formatCamaCellLabel(parseCamaCellForCenso(camaText));
-    if (label === "\u2014") return "\u2014";
-    return '<span class="censo-cama-vline">' + esc30(label) + "</span>";
+    var label5 = formatCamaCellLabel(parseCamaCellForCenso(camaText));
+    if (label5 === "\u2014") return "\u2014";
+    return '<span class="censo-cama-vline">' + esc30(label5) + "</span>";
   }
   function cell(row, key, fallbackLabel) {
     var v = row[key];
@@ -24478,14 +24500,14 @@ var CENSO_EXPORT_BUTTON_IDS = [
 ];
 function syncCensoExportButtonVisibility() {
   var show = isModeSala(rt7.getSettings());
-  CENSO_EXPORT_BUTTON_IDS.forEach(function(id) {
-    var btn = document.getElementById(id);
+  CENSO_EXPORT_BUTTON_IDS.forEach(function(id5) {
+    var btn = document.getElementById(id5);
     if (!btn) return;
     if (!show) {
       btn.style.display = "none";
       return;
     }
-    btn.style.display = id === "btn-export-censo-header" ? "inline-flex" : "";
+    btn.style.display = id5 === "btn-export-censo-header" ? "inline-flex" : "";
   });
   var wrap = document.getElementById("sidebar-censo-export-wrap");
   if (wrap) wrap.style.display = show ? "" : "none";
@@ -24880,12 +24902,12 @@ function getTourDemoAdmitDefaults(registro) {
   if (r === DEMO_REGISTRO_2) return { cuarto: "214", cama: "4" };
   return null;
 }
-function isTourDemoPatientId(id, patientsList) {
-  if (!id) return false;
-  if (id === DEMO_PATIENT_ID || id === DEMO_PATIENT_ID_2) return true;
+function isTourDemoPatientId(id5, patientsList) {
+  if (!id5) return false;
+  if (id5 === DEMO_PATIENT_ID || id5 === DEMO_PATIENT_ID_2) return true;
   if (!patientsList) return false;
   var p = patientsList.find(function(x) {
-    return x && x.id === id;
+    return x && x.id === id5;
   });
   return !!(p && p.isDemo);
 }
@@ -24962,10 +24984,10 @@ function writeTodosMap2(map) {
   } catch (_e) {
   }
 }
-function todoEntry2(id, text, priority, completed) {
+function todoEntry2(id5, text, priority, completed) {
   const now = (/* @__PURE__ */ new Date()).toISOString();
   return {
-    id,
+    id: id5,
     text,
     priority,
     completed: !!completed,
@@ -25119,6 +25141,31 @@ function applyUppercaseToHcInput(el) {
   }
 }
 
+// lib/drive-import/merge-eventualidades.mjs
+function dedupeEventualidadKey(entry2) {
+  const day = String(entry2.at || "").slice(0, 10);
+  const prefix = toClinicalHistoryText(entry2.text).trim().slice(0, 160);
+  return day + "|" + prefix;
+}
+function filterNewEventualidades(existing, incoming) {
+  const keys = /* @__PURE__ */ new Set();
+  for (const e of existing || []) {
+    keys.add(dedupeEventualidadKey(e));
+  }
+  const toAdd = [];
+  let skipped = 0;
+  for (const e of incoming || []) {
+    const key = dedupeEventualidadKey(e);
+    if (keys.has(key)) {
+      skipped += 1;
+      continue;
+    }
+    keys.add(key);
+    toAdd.push({ at: String(e.at), text: String(e.text) });
+  }
+  return { toAdd, skipped };
+}
+
 // public/js/features/eventualidades-panel.mjs
 var _editingEntryId = null;
 var _dayOpenPrefs = /* @__PURE__ */ new Map();
@@ -25168,11 +25215,11 @@ function appendEventualidad(store, text, clientId, atIso) {
   return { entries };
 }
 function updateEventualidad(store, entryId, patch) {
-  const id = String(entryId || "").trim();
-  if (!id) return store || { entries: [] };
+  const id5 = String(entryId || "").trim();
+  if (!id5) return store || { entries: [] };
   const entries = Array.isArray(store && store.entries) ? store.entries.slice() : [];
   const idx = entries.findIndex(function(e) {
-    return e && String(e.id) === id;
+    return e && String(e.id) === id5;
   });
   if (idx === -1) return { entries };
   const cur = entries[idx];
@@ -25183,17 +25230,17 @@ function updateEventualidad(store, entryId, patch) {
   return { entries };
 }
 function findEventualidadEntry(store, entryId) {
-  const id = String(entryId || "").trim();
-  if (!id) return null;
+  const id5 = String(entryId || "").trim();
+  if (!id5) return null;
   return (Array.isArray(store && store.entries) ? store.entries : []).find(function(e) {
-    return e && String(e.id) === id;
+    return e && String(e.id) === id5;
   }) || null;
 }
 function removeEventualidad(store, entryId) {
-  const id = String(entryId || "").trim();
-  if (!id) return store || { entries: [] };
+  const id5 = String(entryId || "").trim();
+  if (!id5) return store || { entries: [] };
   const entries = (Array.isArray(store && store.entries) ? store.entries : []).filter(function(e) {
-    return e && String(e.id) !== id;
+    return e && String(e.id) !== id5;
   });
   return { entries };
 }
@@ -25328,10 +25375,10 @@ function renderComposeBlock(editingEntry) {
   return '<footer class="ev-compose"><div class="ev-compose__card' + (isEdit ? " ev-compose__card--edit" : "") + '"><div class="ev-compose__top"><label class="ev-compose__label" for="eventualidades-input">' + (isEdit ? "Editar eventualidad" : "Nueva eventualidad") + '</label><div class="ev-compose__date-slot"><input type="date" id="eventualidades-at" class="rpc-date-input" value="' + esc10(atValue) + '" title="Fecha de la eventualidad" aria-label="Fecha de la eventualidad"></div></div><textarea id="eventualidades-input" class="ev-compose__input" rows="2" placeholder="Describe lo ocurrido\u2026">' + esc10(textValue) + '</textarea><div class="ev-compose__actions"><span class="ev-compose__hint">' + (isEdit ? "Puedes cambiar la fecha y el texto" : "Elige una fecha anterior si aplica") + '</span><div class="ev-compose__btns">' + (isEdit ? '<button type="button" class="btn-secondary ev-compose__cancel" id="eventualidades-cancel">Cancelar</button>' : "") + '<button type="button" class="btn-generate ev-compose__submit" id="eventualidades-add">' + (isEdit ? "Guardar" : "Agregar") + "</button></div></div></div></footer>";
 }
 function activePatient3() {
-  const id = rt8.getActiveId();
-  if (!id) return null;
+  const id5 = rt8.getActiveId();
+  if (!id5) return null;
   return patients.find(function(p) {
-    return String(p.id) === String(id);
+    return String(p.id) === String(id5);
   });
 }
 function ensureEventualidades(patient) {
@@ -25449,9 +25496,9 @@ function renderEventualidadesPanel(mountEl) {
       }
       const btn = ev.target.closest("[data-ev-edit]");
       if (!btn) return;
-      const id = btn.getAttribute("data-ev-edit");
-      if (!id) return;
-      _editingEntryId = id;
+      const id5 = btn.getAttribute("data-ev-edit");
+      if (!id5) return;
+      _editingEntryId = id5;
       renderEventualidadesPanel(mountEl);
       const compose = mountEl.querySelector(".ev-compose");
       if (compose && compose.scrollIntoView) {
@@ -25474,6 +25521,17 @@ function renderEventualidadesPanel(mountEl) {
 function invalidateEventualidadesPanel() {
   _editingEntryId = null;
   _dayOpenPrefs.clear();
+}
+async function applyDriveImportEventualidades(patient, incoming) {
+  if (!patient) return { ok: false, added: 0, skipped: 0 };
+  const store = ensureEventualidades(patient);
+  const { toAdd, skipped } = filterNewEventualidades(store.entries, incoming || []);
+  for (let i = 0; i < toAdd.length; i += 1) {
+    appendEventualidad(store, toAdd[i].text, "", toAdd[i].at);
+  }
+  if (!toAdd.length) return { ok: true, added: 0, skipped };
+  const out = await persistEventualidades(patient, store);
+  return { ok: !!(out && out.ok), added: toAdd.length, skipped };
 }
 
 // public/js/tour-demo-eventualidades.mjs
@@ -26882,20 +26940,20 @@ function vitalLayerBoxKey(baseKey, layerIdx) {
 }
 function buildVitalChipHtml(baseKey, labelOverride, opts) {
   opts = opts || {};
-  var label = labelOverride || VITAL_LABELS2[baseKey] || baseKey;
+  var label5 = labelOverride || VITAL_LABELS2[baseKey] || baseKey;
   var layerIdx = opts.layerIdx != null ? opts.layerIdx : 0;
   var boxKey = vitalLayerBoxKey(baseKey, layerIdx);
   var unit = VITAL_UNITS[baseKey] || "";
-  var labelHtml = '<div class="vital-label"><span class="ea-vital-name">' + label + '</span><span class="ea-vital-unit">' + unit + "</span></div>";
-  return '<div class="vital-box ea-vital-box ea-vital-chip" data-ea-vital-box="' + boxKey + '">' + labelHtml + '<div class="ea-vital-value-wrap"><input type="number" class="ea-vital-input" data-ea-vital="' + baseKey + '" data-ea-layer-idx="' + layerIdx + '" step="any" inputmode="decimal" placeholder="\u2014" aria-label="' + label + '"></div><div class="ea-altered-slot ea-altered-slot--hidden" data-ea-altered-wrap="' + boxKey + '" hidden><span class="ea-altered-label">Alterado</span><input type="time" class="ea-altered-time-input" data-ea-altered="' + boxKey + '" aria-label="Hora ' + label + ' alterado"></div></div>';
+  var labelHtml = '<div class="vital-label"><span class="ea-vital-name">' + label5 + '</span><span class="ea-vital-unit">' + unit + "</span></div>";
+  return '<div class="vital-box ea-vital-box ea-vital-chip" data-ea-vital-box="' + boxKey + '">' + labelHtml + '<div class="ea-vital-value-wrap"><input type="number" class="ea-vital-input" data-ea-vital="' + baseKey + '" data-ea-layer-idx="' + layerIdx + '" step="any" inputmode="decimal" placeholder="\u2014" aria-label="' + label5 + '"></div><div class="ea-altered-slot ea-altered-slot--hidden" data-ea-altered-wrap="' + boxKey + '" hidden><span class="ea-altered-label">Alterado</span><input type="time" class="ea-altered-time-input" data-ea-altered="' + boxKey + '" aria-label="Hora ' + label5 + ' alterado"></div></div>';
 }
 function buildVitalStackHtml(vitalKey) {
-  var label = VITAL_LABELS2[vitalKey] || vitalKey;
+  var label5 = VITAL_LABELS2[vitalKey] || vitalKey;
   var slots = "";
   for (var li = 0; li < MAX_VITAL_LAYERS_IN_FORM; li++) {
-    slots += '<div class="ea-vital-slot" data-ea-layer="' + li + '"' + (li > 0 ? " hidden" : "") + ">" + buildVitalChipHtml(vitalKey, label, { layerIdx: li }) + "</div>";
+    slots += '<div class="ea-vital-slot" data-ea-layer="' + li + '"' + (li > 0 ? " hidden" : "") + ">" + buildVitalChipHtml(vitalKey, label5, { layerIdx: li }) + "</div>";
   }
-  return '<div class="ea-vital-stack" data-ea-vital-stack="' + vitalKey + '" data-ea-layer-count="1">' + slots + '<button type="button" class="ea-vital-add-btn ea-temp-add-btn" data-ea-vital-add="' + vitalKey + '" hidden title="Otra lectura de ' + label + " (m\xE1x. " + MAX_VITAL_READINGS_PER_DAY + '/d\xEDa)">+1</button><div class="ea-vital-prev-badge" data-ea-vital-prev-view hidden><span class="ea-vital-prev-summary" data-ea-vital-prev-summary></span></div></div>';
+  return '<div class="ea-vital-stack" data-ea-vital-stack="' + vitalKey + '" data-ea-layer-count="1">' + slots + '<button type="button" class="ea-vital-add-btn ea-temp-add-btn" data-ea-vital-add="' + vitalKey + '" hidden title="Otra lectura de ' + label5 + " (m\xE1x. " + MAX_VITAL_READINGS_PER_DAY + '/d\xEDa)">+1</button><div class="ea-vital-prev-badge" data-ea-vital-prev-view hidden><span class="ea-vital-prev-summary" data-ea-vital-prev-summary></span></div></div>';
 }
 function getVitalStackLayerCount(stack) {
   return Math.min(
@@ -27432,11 +27490,11 @@ function ensureEaRegistroModalForm() {
   }
   wireEaRegistroForm();
 }
-function eliminarEstadoActualMedicion(id) {
+function eliminarEstadoActualMedicion(id5) {
   var patient = findActivePatient();
-  if (!patient || !id) return;
+  if (!patient || !id5) return;
   ensureMonitoreo(patient);
-  removeMedicion(patient.monitoreo, id);
+  removeMedicion(patient.monitoreo, id5);
   saveState();
   renderEstadoActualPanel({ syncHeavy: true });
   rt9.showToast("Medici\xF3n eliminada", "success");
@@ -28857,15 +28915,15 @@ function createTendGroupModal(deps) {
     var esc30 = deps.esc;
     var chips = [];
     hidden.cols.forEach(function(ck) {
-      var label = ck;
+      var label5 = ck;
       for (var i = 0; i < raw.columns.length; i++) {
         if (colKeyForSet(raw.columns[i]) === ck) {
-          label = columnHeader(raw.columns[i], raw.columns);
+          label5 = columnHeader(raw.columns[i], raw.columns);
           break;
         }
       }
       chips.push(
-        '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-col="' + esc30(ck) + '">' + esc30(label) + ' <span aria-hidden="true">\xD7</span></button>'
+        '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-col="' + esc30(ck) + '">' + esc30(label5) + ' <span aria-hidden="true">\xD7</span></button>'
       );
     });
     hidden.rows.forEach(function(fk) {
@@ -29160,12 +29218,12 @@ function createTendGroupModal(deps) {
       var t2 = tMap[String(type || "").toLowerCase()] || "";
       return t2 ? d + " \xB7 " + t2 : d;
     }
-    function metricChip(label, value, tone) {
+    function metricChip(label5, value, tone) {
       var chip = document.createElement("span");
       chip.className = "tend-gaso-chip" + (tone ? " tend-gaso-chip--" + tone : "");
       var lbl = document.createElement("span");
       lbl.className = "tend-gaso-chip-label";
-      lbl.textContent = label;
+      lbl.textContent = label5;
       var val2 = document.createElement("strong");
       val2.className = "tend-gaso-chip-val";
       val2.textContent = value;
@@ -29173,12 +29231,12 @@ function createTendGroupModal(deps) {
       chip.appendChild(val2);
       return chip;
     }
-    function subMetric(label, value) {
+    function subMetric(label5, value) {
       var sub = document.createElement("div");
       sub.className = "tend-gaso-sub";
       var lbl = document.createElement("span");
       lbl.className = "tend-gaso-sub-label";
-      lbl.textContent = label;
+      lbl.textContent = label5;
       var val2 = document.createElement("span");
       val2.className = "tend-gaso-sub-val";
       val2.textContent = value;
@@ -29526,14 +29584,14 @@ function createTendGroupModal(deps) {
       var datasets = [];
       items.forEach(function(item) {
         var fk = item.spec.fieldKey;
-        var label = legendLabelForSpec(sectionKey, item.spec);
+        var label5 = legendLabelForSpec(sectionKey, item.spec);
         var color = seriesColor(sectionKey, fk, item.index);
         var data = axisMeta.points.map(function(p) {
           var v = getSetTrendValueForSeries(p.set, sectionKey, fk);
           return v != null && isFinite(v) ? v : null;
         });
         datasets.push({
-          label,
+          label: label5,
           data,
           borderColor: color,
           backgroundColor: hexToRgba(color, 0.12),
@@ -29548,7 +29606,7 @@ function createTendGroupModal(deps) {
         });
         var legItem = document.createElement("label");
         legItem.className = "tend-group-legend-item";
-        legItem.innerHTML = '<input type="checkbox" class="tend-group-legend-check" data-field="' + fk + '"' + (isLegendFieldVisible(fk) ? " checked" : "") + '> <input type="color" class="tend-group-legend-color" data-field="' + fk + '" value="' + color + '"> <span>' + label + "</span>";
+        legItem.innerHTML = '<input type="checkbox" class="tend-group-legend-check" data-field="' + fk + '"' + (isLegendFieldVisible(fk) ? " checked" : "") + '> <input type="color" class="tend-group-legend-color" data-field="' + fk + '" value="' + color + '"> <span>' + label5 + "</span>";
         legend.appendChild(legItem);
       });
       block.appendChild(legend);
@@ -29864,13 +29922,13 @@ function listSelectablePanels(history, patientId) {
     if (!tendEligibleSectionKey(sectionKey)) continue;
     const unit = rt12.unitForField(spec.fieldKey);
     const family = classifyTendPanelFamily(sectionKey, spec.fieldKey, unit);
-    const id = panelId(sectionKey, family);
-    if (seenFamilies.has(id)) continue;
-    seenFamilies.add(id);
+    const id5 = panelId(sectionKey, family);
+    if (seenFamilies.has(id5)) continue;
+    seenFamilies.add(id5);
     const chart = buildPanelChart(sectionKey, family, histAsc, histDesc, catalog, patientId);
     if (!chart) continue;
     panels.push({
-      id,
+      id: id5,
       sectionKey,
       sectionLabel: rt12.sectionLabel(sectionKey),
       title: chart.title,
@@ -29895,10 +29953,10 @@ function buildLabTrendsPayload(history, patientLabel, { panelIds = null, patient
     if (!tendEligibleSectionKey(sectionKey)) continue;
     const unit = rt12.unitForField(spec.fieldKey);
     const family = classifyTendPanelFamily(sectionKey, spec.fieldKey, unit);
-    const id = panelId(sectionKey, family);
-    if (idSet && !idSet.has(id)) continue;
-    if (seenPanels.has(id)) continue;
-    seenPanels.add(id);
+    const id5 = panelId(sectionKey, family);
+    if (idSet && !idSet.has(id5)) continue;
+    if (seenPanels.has(id5)) continue;
+    seenPanels.add(id5);
     const chart = buildPanelChart(sectionKey, family, histAsc, histDesc, catalog, pid);
     if (!chart) continue;
     if (!sectionMap.has(sectionKey)) {
@@ -30969,9 +31027,9 @@ function buildTendHiddenChipsHtml() {
   for (var i = 0; i < desc.length; i++) {
     var sk = desc[i].sectionKey;
     var fk = desc[i].fieldKey;
-    var label = esc11(tendFindSeriesSpec(sk, fk).cardTitle || fk);
+    var label5 = esc11(tendFindSeriesSpec(sk, fk).cardTitle || fk);
     chips.push(
-      '<button type="button" class="tend-hidden-chip" data-series-key="' + esc11(tendCatalogSeriesKey(sk, fk)) + '" title="Volver a mostrar ' + label + '" aria-label="Mostrar de nuevo ' + label + '"><span class="tend-hidden-chip-label">' + label + '</span><span class="tend-hidden-chip-eye" aria-hidden="true">' + svg + "</span></button>"
+      '<button type="button" class="tend-hidden-chip" data-series-key="' + esc11(tendCatalogSeriesKey(sk, fk)) + '" title="Volver a mostrar ' + label5 + '" aria-label="Mostrar de nuevo ' + label5 + '"><span class="tend-hidden-chip-label">' + label5 + '</span><span class="tend-hidden-chip-eye" aria-hidden="true">' + svg + "</span></button>"
     );
   }
   return chips.join("");
@@ -31042,10 +31100,10 @@ function formatDMYDate(d) {
 }
 function inferFechaLabSetFromId(set) {
   if (!set || set.fecha === "Anterior") return "";
-  var id = String(set.id || "");
-  if (!/^\d{10,}$/.test(id)) return "";
-  var ms = parseInt(id, 10);
-  if (id.length === 10) ms *= 1e3;
+  var id5 = String(set.id || "");
+  if (!/^\d{10,}$/.test(id5)) return "";
+  var ms = parseInt(id5, 10);
+  if (id5.length === 10) ms *= 1e3;
   return formatDMYDate(new Date(ms));
 }
 function tendFinishRangeVbars(container) {
@@ -32156,26 +32214,45 @@ function ensureTourDemoLabInputBoth() {
 function toggleSettingsSection() {
   toggleSettingsDropdown();
 }
+function syncSettingsDropdownA11y(open) {
+  var dd = document.getElementById("settings-dropdown");
+  var bg = document.getElementById("settings-dropdown-backdrop");
+  if (!dd) return;
+  dd.setAttribute("aria-hidden", open ? "false" : "true");
+  if (bg) bg.setAttribute("aria-hidden", open ? "false" : "true");
+  var trigger = document.getElementById("btn-open-settings");
+  if (trigger) trigger.setAttribute("aria-expanded", open ? "true" : "false");
+}
+function focusSettingsDropdownEntry() {
+  var dd = document.getElementById("settings-dropdown");
+  if (!dd) return;
+  var target = dd.querySelector(".btn-settings-help-primary") || dd.querySelector("button, summary, [href], input, select, textarea");
+  if (target && typeof target.focus === "function") target.focus();
+}
 function toggleSettingsDropdown() {
   closeConnectionDropdown();
   var dd = document.getElementById("settings-dropdown");
   var bg = document.getElementById("settings-dropdown-backdrop");
   if (!dd) return;
   var open = dd.classList.contains("open");
-  dd.classList.toggle("open", !open);
-  if (bg) bg.classList.toggle("open", !open);
-  var trigger = document.getElementById("btn-open-settings");
-  if (trigger) trigger.setAttribute("aria-expanded", !open ? "true" : "false");
-  if (!open) rt15.syncPreimportBackupUi();
-  if (!open) rt15.syncSettingsLanHostDiskSection();
+  var nextOpen = !open;
+  dd.classList.toggle("open", nextOpen);
+  if (bg) bg.classList.toggle("open", nextOpen);
+  syncSettingsDropdownA11y(nextOpen);
+  if (nextOpen) {
+    rt15.syncPreimportBackupUi();
+    rt15.syncSettingsLanHostDiskSection();
+    focusSettingsDropdownEntry();
+  }
 }
 function closeSettingsDropdown() {
   var dd = document.getElementById("settings-dropdown");
   var bg = document.getElementById("settings-dropdown-backdrop");
+  var trigger = document.getElementById("btn-open-settings");
   if (dd) dd.classList.remove("open");
   if (bg) bg.classList.remove("open");
-  var trigger = document.getElementById("btn-open-settings");
-  if (trigger) trigger.setAttribute("aria-expanded", "false");
+  syncSettingsDropdownA11y(false);
+  if (trigger && typeof trigger.focus === "function") trigger.focus();
 }
 function expandSettingsAccordionBackupSync() {
   var det = document.getElementById("settings-accordion-backup-sync");
@@ -32456,8 +32533,8 @@ function openTourEstadoActualRegistroDemo() {
     recorded.value = toDatetimeLocalValue(atShift);
   }
 }
-function isEstadoActualPostRegistroTourStep(id) {
-  return id === "estado_actual_snapshot" || id === "estado_actual_charts" || id === "estado_actual_historial";
+function isEstadoActualPostRegistroTourStep(id5) {
+  return id5 === "estado_actual_snapshot" || id5 === "estado_actual_charts" || id5 === "estado_actual_historial";
 }
 function prepareEstadoActualPanelForTour(onPanelReady) {
   ensureTourPrimaryDemoPatientActive();
@@ -32520,19 +32597,19 @@ function syncTourDockPlacement() {
   if (useLeft) d.classList.add("tour-dock-pos-left");
   else d.classList.remove("tour-dock-pos-left");
 }
-function tourApplySpotlightForStep(id, t2, scrollDelayMs) {
+function tourApplySpotlightForStep(id5, t2, scrollDelayMs) {
   if (!t2 || !t2.selector) return;
   var scrollDelay = scrollDelayMs != null ? scrollDelayMs : 140;
   setTimeout(function() {
-    if (!guidedTourActive2 || tourStepId2 !== id) return;
-    if (id === "listado_problemas") rt15.renderListadoForm();
+    if (!guidedTourActive2 || tourStepId2 !== id5) return;
+    if (id5 === "listado_problemas") rt15.renderListadoForm();
     var el = document.querySelector(t2.selector);
     if (!el) return;
     try {
       el.scrollIntoView({ behavior: "smooth", block: "center" });
     } catch (e) {
     }
-    var spotlightCls = t2.spotlightClass || (stepRequiresUserAction(id) ? "tour-spotlight-soap" : null);
+    var spotlightCls = t2.spotlightClass || (stepRequiresUserAction(id5) ? "tour-spotlight-soap" : null);
     if (spotlightCls) el.classList.add(spotlightCls);
     if (t2.focus && typeof el.focus === "function") {
       try {
@@ -32546,27 +32623,27 @@ function tourApplySpotlightForStep(id, t2, scrollDelayMs) {
     }
   }, scrollDelay);
 }
-function applyTourTargetForStep(id) {
+function applyTourTargetForStep(id5) {
   if (guidedTourActive2) {
     setUiDensity("normal");
   }
-  var t2 = getTourTarget(id, guidedTourBranch === "interconsulta" ? "interconsulta" : "sala");
+  var t2 = getTourTarget(id5, guidedTourBranch === "interconsulta" ? "interconsulta" : "sala");
   if (!t2) return;
-  if (TOUR_STEPS_USE_DEMO_PEREZ[id]) {
+  if (TOUR_STEPS_USE_DEMO_PEREZ[id5]) {
     ensureTourPrimaryDemoPatientActive();
   }
-  if (id === "listado_problemas") {
+  if (id5 === "listado_problemas") {
     seedDemoListadoProblemas();
   }
-  if (id === "estado_actual" || id === "estado_actual_registro" || isEstadoActualPostRegistroTourStep(id)) {
+  if (id5 === "estado_actual" || id5 === "estado_actual_registro" || isEstadoActualPostRegistroTourStep(id5)) {
     seedDemoMonitoreoOnActivePatient();
   }
-  if (id === "eventualidades") {
+  if (id5 === "eventualidades") {
     seedDemoEventualidadesOnActivePatient();
   }
   if (t2.appTab) rt15.switchAppTab(t2.appTab);
   if (t2.innerTab) {
-    if (id === "listado_problemas") {
+    if (id5 === "listado_problemas") {
       rt15.switchInnerTab("listado", { forceRender: true });
       rt15.renderListadoForm();
     } else {
@@ -32585,14 +32662,14 @@ function applyTourTargetForStep(id) {
     if (typeof closeSettingsDropdown === "function") closeSettingsDropdown();
     if (typeof closeConnectionDropdown === "function") closeConnectionDropdown();
   }
-  if (id === "sala_med") rt15.renderMedRecetaPanel();
-  if (id === "estado_actual" && guidedTourBranch !== "interconsulta") {
+  if (id5 === "sala_med") rt15.renderMedRecetaPanel();
+  if (id5 === "estado_actual" && guidedTourBranch !== "interconsulta") {
     setTimeout(function() {
       if (!guidedTourActive2 || tourStepId2 !== "estado_actual") return;
       prepareEstadoActualPanelForTour();
     }, 160);
   }
-  if (id === "estado_actual_registro" && guidedTourBranch !== "interconsulta") {
+  if (id5 === "estado_actual_registro" && guidedTourBranch !== "interconsulta") {
     setTimeout(function() {
       if (!guidedTourActive2 || tourStepId2 !== "estado_actual_registro") return;
       prepareEstadoActualPanelForTour(function() {
@@ -32601,10 +32678,10 @@ function applyTourTargetForStep(id) {
       });
     }, 160);
   }
-  if (isEstadoActualPostRegistroTourStep(id) && guidedTourBranch !== "interconsulta") {
+  if (isEstadoActualPostRegistroTourStep(id5) && guidedTourBranch !== "interconsulta") {
     clearAllTourSpotlights();
     if (!t2.selector) return;
-    var postRegStepId = id;
+    var postRegStepId = id5;
     var spotlightDelay = postRegStepId === "estado_actual_charts" ? 520 : 340;
     setTimeout(function() {
       if (!guidedTourActive2 || tourStepId2 !== postRegStepId) return;
@@ -32614,26 +32691,26 @@ function applyTourTargetForStep(id) {
     }, 160);
     return;
   }
-  if (id === "map_lab_teaser" || id === "lab_parse") {
+  if (id5 === "map_lab_teaser" || id5 === "lab_parse") {
     ensureTourDemoLabInputBoth();
   }
-  if (id === "sala_casiopea_lab") {
+  if (id5 === "sala_casiopea_lab") {
     closeLabSomeTablesModal();
   }
-  if (id === "sala_casiopea_trends") {
+  if (id5 === "sala_casiopea_trends") {
     closeTendGroupModal();
     closeSesionIngresoTrendsSendModal();
   }
-  if (id === "sala_med" || id === "listado_problemas") {
+  if (id5 === "sala_med" || id5 === "listado_problemas") {
     closeSOAPModal();
   }
   clearAllTourSpotlights();
   if (!t2.selector) return;
-  var scrollDelay = id === "listado_problemas" ? 280 : 140;
-  tourApplySpotlightForStep(id, t2, scrollDelay);
+  var scrollDelay = id5 === "listado_problemas" ? 280 : 140;
+  tourApplySpotlightForStep(id5, t2, scrollDelay);
 }
-function applyTourNavigationForStep(id) {
-  applyTourTargetForStep(id);
+function applyTourNavigationForStep(id5) {
+  applyTourTargetForStep(id5);
 }
 function renderTourStep() {
   if (!guidedTourActive2) return;
@@ -33322,12 +33399,12 @@ function renderHelpArticles(query) {
     selectHelpArticle(filtered[0].id);
   }
 }
-function selectHelpArticle(id) {
+function selectHelpArticle(id5) {
   var article = HELP_ARTICLES.find(function(a) {
-    return a.id === id;
+    return a.id === id5;
   });
   if (!article) return;
-  helpCurrentArticleId = id;
+  helpCurrentArticleId = id5;
   var contentEl = document.getElementById("help-article-content");
   if (contentEl) {
     contentEl.innerHTML = "<h4>" + esc12(article.title) + "</h4>" + article.html;
@@ -33335,7 +33412,7 @@ function selectHelpArticle(id) {
   var list = document.getElementById("help-articles-list");
   if (list) {
     Array.prototype.forEach.call(list.querySelectorAll(".help-article-item"), function(btn) {
-      if (btn.getAttribute("data-article-id") === id) btn.classList.add("active");
+      if (btn.getAttribute("data-article-id") === id5) btn.classList.add("active");
       else btn.classList.remove("active");
     });
   }
@@ -34506,8 +34583,8 @@ var idleLockDebounceId = null;
 var idleLockIsActive = false;
 var idleLockEnabledMinutes = 0;
 function resetUpdateCheckButtons() {
-  ["settings-check-updates-btn", "min-version-check-btn"].forEach(function(id) {
-    setAsyncButtonLoading(document.getElementById(id), false);
+  ["settings-check-updates-btn", "min-version-check-btn"].forEach(function(id5) {
+    setAsyncButtonLoading(document.getElementById(id5), false);
   });
 }
 function checkForAppUpdates() {
@@ -34563,8 +34640,8 @@ function decrementPendingJobs() {
 var rpcOffline = false;
 function syncOfflineButtonStates() {
   try {
-    ["btn-gen", "btn-gen-ind"].forEach(function(id) {
-      var b = document.getElementById(id);
+    ["btn-gen", "btn-gen-ind"].forEach(function(id5) {
+      var b = document.getElementById(id5);
       if (!b) return;
       if (rpcOffline) {
         b.disabled = true;
@@ -34672,8 +34749,8 @@ async function computeSha256Hex(text) {
   return hex;
 }
 async function promptForIdleLockPinSetup(reason) {
-  var label = reason === "change" ? "Ingresa un nuevo PIN de 4 a 8 d\xEDgitos para el bloqueo:" : "Elige un PIN de 4 a 8 d\xEDgitos para el bloqueo por inactividad:";
-  var p1 = prompt(label, "");
+  var label5 = reason === "change" ? "Ingresa un nuevo PIN de 4 a 8 d\xEDgitos para el bloqueo:" : "Elige un PIN de 4 a 8 d\xEDgitos para el bloqueo por inactividad:";
+  var p1 = prompt(label5, "");
   if (p1 == null) return { ok: false, cancelled: true };
   if (!isIdleLockPinFormatValid(p1)) {
     rt16.showToast("PIN inv\xE1lido (solo 4-8 d\xEDgitos).", "error");
@@ -35563,11 +35640,11 @@ function patientInDateRange(entry2, range) {
   var max = range.to.getTime();
   return nMs !== null && nMs >= min && nMs <= max || iMs !== null && iMs >= min && iMs <= max;
 }
-function askConflictAction(label) {
+function askConflictAction(label5) {
   if (typeof window !== "undefined" && window.__rpcPreferImportOverwrite === true) {
     return "overwrite";
   }
-  var answer = prompt('Conflicto detectado para "' + label + '". Escribe: O = sobrescribir, D = duplicar, C = cancelar.', "O");
+  var answer = prompt('Conflicto detectado para "' + label5 + '". Escribe: O = sobrescribir, D = duplicar, C = cancelar.', "O");
   var v = String(answer || "").trim().toUpperCase();
   if (v === "O") return "overwrite";
   if (v === "D") return "duplicate";
@@ -36270,7 +36347,7 @@ function renderUpdateError(msg) {
   var box = document.getElementById("update-modal-error");
   var state = document.getElementById("update-modal-state");
   var wrap = document.getElementById("update-modal-progress-wrap");
-  var label = document.getElementById("update-modal-progress-label");
+  var label5 = document.getElementById("update-modal-progress-label");
   var pill = document.getElementById("update-modal-version-pill");
   var notes2 = document.getElementById("update-modal-notes");
   if (box) {
@@ -36279,7 +36356,7 @@ function renderUpdateError(msg) {
   }
   if (state) state.textContent = "";
   if (wrap) wrap.style.display = "none";
-  if (label) label.textContent = "";
+  if (label5) label5.textContent = "";
   if (pill) pill.style.display = "none";
   if (notes2) notes2.textContent = "";
   var title = document.getElementById("update-modal-title");
@@ -36334,8 +36411,8 @@ if (typeof window !== "undefined" && window.electronAPI) {
       if (state) state.textContent = "Conectando\u2026 La descarga comenzar\xE1 en breve.";
       var fill = document.getElementById("update-modal-progress-fill");
       if (fill) fill.style.width = "0%";
-      var label = document.getElementById("update-modal-progress-label");
-      if (label) label.textContent = "";
+      var label5 = document.getElementById("update-modal-progress-label");
+      if (label5) label5.textContent = "";
       var actions = document.getElementById("update-modal-actions-primary");
       if (actions) {
         actions.innerHTML = "";
@@ -36380,16 +36457,16 @@ if (typeof window !== "undefined" && window.electronAPI) {
       if (state) state.textContent = "Descargando\u2026";
       var fill = document.getElementById("update-modal-progress-fill");
       if (fill) fill.style.width = pct + "%";
-      var label = document.getElementById("update-modal-progress-label");
-      if (label) {
+      var label5 = document.getElementById("update-modal-progress-label");
+      if (label5) {
         if (transferred != null && total != null) {
-          label.textContent = formatProgressLine({
+          label5.textContent = formatProgressLine({
             transferred,
             total,
             bytesPerSecond: bps
           });
         } else {
-          label.textContent = "Progreso: " + pct + "%";
+          label5.textContent = "Progreso: " + pct + "%";
         }
       }
       showUpdateModal();
@@ -36413,8 +36490,8 @@ if (typeof window !== "undefined" && window.electronAPI) {
       }
       var fill = document.getElementById("update-modal-progress-fill");
       if (fill) fill.style.width = "100%";
-      var label = document.getElementById("update-modal-progress-label");
-      if (label) label.textContent = "Descarga completa.";
+      var label5 = document.getElementById("update-modal-progress-label");
+      if (label5) label5.textContent = "Descarga completa.";
       var actions = document.getElementById("update-modal-actions-primary");
       if (actions) {
         actions.innerHTML = "";
@@ -36829,6 +36906,10 @@ function syncConsolidatedSegmentBars(granularTab, settings2) {
   syncBar(document.getElementById("exp-segment-clinico"), sections, "clinico");
   syncBar(document.getElementById("exp-segment-resultados"), RESULTADOS_SECTIONS, "resultados");
   syncBar(document.getElementById("exp-segment-salida"), getSalidaSections(settings2), "salida");
+  var driveBtn = document.getElementById("btn-drive-import");
+  if (driveBtn) {
+    driveBtn.style.display = isModeSala(settings2) ? "" : "none";
+  }
 }
 function getConsolidatedCompositeState(granularTab, settings2) {
   var target = resolveConsolidatedTarget(granularTab, settings2);
@@ -36885,6 +36966,7 @@ function syncConsolidatedPaneVisibility(granularTab, settings2) {
 init_clinical_product_policy();
 init_clinico_access();
 init_clinical_rotation_entry();
+init_db_storage_bridge();
 var rt17 = {
   showToast() {
   },
@@ -36981,6 +37063,7 @@ function loadSettings() {
     syncAppModeRadioControls();
     syncCensoExportButtonVisibility();
     syncClinicalRotationEntryChrome();
+    syncProfileModalLayout();
     rt17.syncWorkContextChrome();
     return;
   }
@@ -37019,15 +37102,22 @@ function loadSettings() {
     if (el) el.value = medTpl2[k] || "";
   });
   var lbl = document.getElementById("profile-toggle-label");
+  var profileTitle = "Mi Perfil";
   if (lbl) {
     if (st.doctorName || st.grado) {
       var parts = [];
       if (st.doctorName) parts.push(st.doctorName);
       if (st.grado) parts.push(st.grado);
-      lbl.textContent = parts.join(" \xB7 ");
+      profileTitle = parts.join(" \xB7 ");
+      lbl.textContent = profileTitle;
     } else {
-      lbl.textContent = "Mi Perfil";
+      lbl.textContent = profileTitle;
     }
+  }
+  var profileBtn = document.getElementById("profile-toggle-btn");
+  if (profileBtn) {
+    profileBtn.setAttribute("title", profileTitle);
+    profileBtn.setAttribute("aria-label", profileTitle);
   }
   var dirEl = document.getElementById("settings-output-dir");
   if (dirEl) {
@@ -37104,7 +37194,18 @@ function loadSettings() {
   if (typeof syncSettingsLanHostDiskSection === "function") syncSettingsLanHostDiskSection();
   syncCensoExportButtonVisibility();
   syncClinicalRotationEntryChrome();
+  syncProfileModalLayout();
   rt17.syncWorkContextChrome();
+}
+function syncProfileModalLayout() {
+  var st = settingsRef();
+  var sala = isModeSala(st);
+  var salida = document.getElementById("profile-salida-section");
+  var bridge = document.getElementById("profile-clinical-bridge");
+  var servicioWrap = document.getElementById("profile-default-servicio-wrap");
+  if (salida) salida.hidden = !sala;
+  if (bridge) bridge.hidden = !isDbMode();
+  if (servicioWrap) servicioWrap.hidden = !sala;
 }
 function saveSettings() {
   var st = settingsRef();
@@ -37181,6 +37282,7 @@ function onAppModeChange() {
   var st = settingsRef();
   st.appMode = sala && sala.checked ? "sala" : "interconsulta";
   invalidateLoadSettingsSnapshot();
+  syncProfileModalLayout();
   persistSettingsToLocalStorage();
   applyAppModeSwitchEffects();
 }
@@ -37196,9 +37298,10 @@ function openProfileModal() {
   var modal = document.getElementById("profile-modal");
   if (!modal) return;
   loadSettings();
+  syncProfileModalLayout();
   modal.classList.add("open");
   setTimeout(function() {
-    var first = document.getElementById("profile-doctor");
+    var first = document.getElementById("app-mode-sala") || document.getElementById("profile-doctor");
     if (first) first.focus();
   }, 80);
 }
@@ -38172,12 +38275,12 @@ function bindListadoTextareaPointerIsolation(root) {
 function _renderListadoRow(seccion, p, idx) {
   return '<div class="listado-row" data-id="' + esc13(p.id) + '" data-seccion="' + seccion + '"><div class="listado-num listado-drag-handle" title="Arrastra para reordenar" aria-label="Arrastrar para reordenar">' + (idx + 1) + '</div><input type="date" class="rpc-date-input" value="' + esc13(p.fecha || "") + `" oninput="updateProblemaField('` + seccion + "','" + esc13(p.id) + `','fecha',this.value)" aria-label="Fecha del problema"><textarea rows="1" placeholder="Descripci\xF3n del problema" oninput="updateProblemaField('` + seccion + "','" + esc13(p.id) + `','descripcion',this.value); _autoGrowTextarea(this)" aria-label="Descripci\xF3n">` + esc13(p.descripcion || "") + `</textarea><button class="btn-remove-listado" onclick="removeProblemaUI('` + seccion + "','" + esc13(p.id) + `')" aria-label="Quitar problema" title="Quitar">\xD7</button></div>`;
 }
-function _renderListadoSeccion(seccion, label, lst) {
+function _renderListadoSeccion(seccion, label5, lst) {
   var arr = lst[seccion] || [];
   var rows = arr.length ? arr.map(function(p, i) {
     return _renderListadoRow(seccion, p, i);
-  }).join("") : '<div class="listado-empty">Sin problemas ' + label.toLowerCase() + ".</div>";
-  return '<div class="listado-section"><div class="listado-section-header ' + seccion + '"><span>' + label + " (" + arr.length + ')</span></div><div class="listado-section-body listado-sort-zone" data-seccion-rows="' + seccion + '">' + rows + `</div><div class="listado-section-body" style="padding-top:0;"><button class="listado-add-row" onclick="addProblemaUI('` + seccion + `')">+ Agregar problema ` + label.toLowerCase() + "</button></div></div>";
+  }).join("") : '<div class="listado-empty">Sin problemas ' + label5.toLowerCase() + ".</div>";
+  return '<div class="listado-section"><div class="listado-section-header ' + seccion + '"><span>' + label5 + " (" + arr.length + ')</span></div><div class="listado-section-body listado-sort-zone" data-seccion-rows="' + seccion + '">' + rows + `</div><div class="listado-section-body" style="padding-top:0;"><button class="listado-add-row" onclick="addProblemaUI('` + seccion + `')">+ Agregar problema ` + label5.toLowerCase() + "</button></div></div>";
 }
 function destroyListadoSortables() {
   _listadoSortables.forEach(function(s) {
@@ -38200,8 +38303,8 @@ function syncListadoOrderFromDom(seccion) {
   for (var i = 0; i < arr.length; i++) byId[arr[i].id] = arr[i];
   var newArr = [];
   zone.querySelectorAll(".listado-row[data-id]").forEach(function(row) {
-    var id = row.getAttribute("data-id");
-    if (id && byId[id]) newArr.push(byId[id]);
+    var id5 = row.getAttribute("data-id");
+    if (id5 && byId[id5]) newArr.push(byId[id5]);
   });
   if (!newArr.length || newArr.length !== arr.length) return;
   listadoProblemas[aid3()] = Object.assign({}, lst, { [seccion]: newArr });
@@ -38282,12 +38385,12 @@ function updateListadoMeta(field, value) {
   lst[field] = value;
   saveState();
 }
-function updateProblemaField(seccion, id, field, value) {
+function updateProblemaField(seccion, id5, field, value) {
   var lst = ensureListadoForActive();
   if (!lst) return;
   var arr = lst[seccion] || [];
   var p = arr.find(function(x) {
-    return x.id === id;
+    return x.id === id5;
   });
   if (!p) return;
   p[field] = value;
@@ -38304,17 +38407,17 @@ function addProblemaUI(seccion) {
     if (rows.length) rows[rows.length - 1].focus();
   }, 0);
 }
-function removeProblemaUI(seccion, id) {
+function removeProblemaUI(seccion, id5) {
   var lst = ensureListadoForActive();
   if (!lst) return;
-  listadoProblemas[aid3()] = removeProblema(lst, seccion, id);
+  listadoProblemas[aid3()] = removeProblema(lst, seccion, id5);
   saveState();
   renderListadoForm();
 }
 function _renderListadoMedicosCard(lst) {
   var meds = getMedicosForListado(lst);
-  function row(key, label) {
-    return '<div class="field-group"><label>' + label + '</label><input type="text" value="' + esc13(meds[key] || "") + `" oninput="updateListadoMedico('` + key + `', this.value)"></div>`;
+  function row(key, label5) {
+    return '<div class="field-group"><label>' + label5 + '</label><input type="text" value="' + esc13(meds[key] || "") + `" oninput="updateListadoMedico('` + key + `', this.value)"></div>`;
   }
   return '<div class="card"><div class="card-header card-header--tone-teal-md card-header-row"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>M\xE9dicos (firma)<span class="card-header-subhint">Pre-llena desde Mi Perfil. Edita aqu\xED para este paciente.</span></div><div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' + row("profesor", "Profesor") + row("r4", "R4") + row("r2", "R2") + row("r1a", "R1 (1)") + row("r1b", "R1 (2)") + "</div></div>";
 }
@@ -38495,8 +38598,8 @@ function applyTodoPrioChip(chip, prio, pulse) {
   chip.classList.remove("prio-alta", "prio-media", "prio-baja");
   chip.classList.add("prio-" + valid);
   chip.dataset.priority = valid;
-  var label = chip.querySelector(".todo-prio-label");
-  if (label) label.textContent = todoPriorityLabel(valid);
+  var label5 = chip.querySelector(".todo-prio-label");
+  if (label5) label5.textContent = todoPriorityLabel(valid);
   chip.setAttribute("aria-label", "Prioridad " + todoPriorityLabel(valid) + ". Clic para cambiar.");
   chip.title = "Clic: cambiar prioridad (" + todoPriorityLabel(valid) + ")";
   if (pulse) pulseTodoPrioChip(chip);
@@ -38509,10 +38612,10 @@ function createTodoPrioChip(prio, onCycle) {
   var dot = document.createElement("span");
   dot.className = "todo-prio-dot";
   dot.setAttribute("aria-hidden", "true");
-  var label = document.createElement("span");
-  label.className = "todo-prio-label";
+  var label5 = document.createElement("span");
+  label5.className = "todo-prio-label";
   chip.appendChild(dot);
-  chip.appendChild(label);
+  chip.appendChild(label5);
   applyTodoPrioChip(chip, prio, false);
   chip.addEventListener("click", function() {
     var next = nextTodoPriority(chip.dataset.priority || "media");
@@ -38743,11 +38846,11 @@ function addTodo(idPrefix, priorityOverride) {
   input.value = "";
   refreshAllTodoUIs();
 }
-function toggleTodo(id) {
+function toggleTodo(id5) {
   if (!aid4()) return;
   var todos = storage.getTodos(aid4());
   var found = todos.find(function(t2) {
-    return t2.id === id;
+    return t2.id === id5;
   });
   if (!found) return;
   found.completed = !found.completed;
@@ -38757,29 +38860,29 @@ function toggleTodo(id) {
   emitLiveSyncTodoUpsert(aid4(), found);
   refreshAllTodoUIs();
 }
-function deleteTodo(id) {
+function deleteTodo(id5) {
   if (!aid4()) return;
   var delAt = (/* @__PURE__ */ new Date()).toISOString();
   var todos = storage.getTodos(aid4());
   var victim = todos.find(function(t2) {
-    return t2.id === id;
+    return t2.id === id5;
   });
   if (victim) dismissManejoTodoFromTodo(aid4(), victim);
   todos = todos.filter(function(t2) {
-    return t2.id !== id;
+    return t2.id !== id5;
   });
   storage.saveTodos(aid4(), todos);
   if (victim) emitLiveSyncTodoDelete(aid4(), victim);
-  else emitLiveSyncTodoDelete(aid4(), { id, updatedAt: delAt });
+  else emitLiveSyncTodoDelete(aid4(), { id: id5, updatedAt: delAt });
   refreshAllTodoUIs();
 }
-function setTodoPriority(id, priority, opts) {
+function setTodoPriority(id5, priority, opts) {
   if (!aid4()) return;
   opts = opts || {};
   var valid = normalizeTodoPriority(priority);
   var todos = storage.getTodos(aid4());
   var found = todos.find(function(t2) {
-    return t2.id === id;
+    return t2.id === id5;
   });
   if (!found) return;
   found.priority = valid;
@@ -38792,13 +38895,13 @@ function setTodoPriority(id, priority, opts) {
   }
   refreshAllTodoUIs();
 }
-function updateTodoText(id, text) {
+function updateTodoText(id5, text) {
   if (!aid4()) return;
   var trimmed = String(text || "").trim();
   if (!trimmed) return;
   var todos = storage.getTodos(aid4());
   var found = todos.find(function(t2) {
-    return t2.id === id;
+    return t2.id === id5;
   });
   if (!found || String(found.text || "") === trimmed) return;
   found.text = trimmed;
@@ -40734,13 +40837,13 @@ var MANEJO_SOME_COPY_UI = false;
 function isManejoSomeCopyUiEnabled() {
   return MANEJO_SOME_COPY_UI;
 }
-function buildKvBlock(label, value, opts) {
+function buildKvBlock(label5, value, opts) {
   opts = opts || {};
   var kv = document.createElement("div");
   kv.className = "manejo-kv" + (opts.wide ? " manejo-kv--wide" : "");
   var lbl = document.createElement("span");
   lbl.className = "manejo-kv-label";
-  lbl.textContent = label;
+  lbl.textContent = label5;
   var val2 = document.createElement("div");
   val2.className = "manejo-kv-val" + (opts.mono ? " manejo-kv-val--mono" : "");
   val2.textContent = value || "\u2014";
@@ -40790,7 +40893,7 @@ function buildIndicationChips(items, familyId, opts) {
     return row;
   }
   tokens.forEach(function(text, idx) {
-    var label = formatIndicationChipLabel(text);
+    var label5 = formatIndicationChipLabel(text);
     var norm = normalizeAtbHintToken(text);
     var isActive = opts.activeHint && opts.activeHint.token === norm && (!opts.activeHint.familyId || opts.activeHint.familyId === familyId);
     var toneClass = opts.sectionChips ? "" : " manejo-indication-chip--tone-" + idx % 3;
@@ -40799,7 +40902,7 @@ function buildIndicationChips(items, familyId, opts) {
       var btn = document.createElement("button");
       btn.type = "button";
       btn.className = "manejo-indication-chip manejo-indication-chip--clickable" + toneClass + activeClass;
-      btn.textContent = label;
+      btn.textContent = label5;
       btn.setAttribute("aria-pressed", isActive ? "true" : "false");
       btn.addEventListener("click", function() {
         opts.onHintClick(text, familyId);
@@ -40808,7 +40911,7 @@ function buildIndicationChips(items, familyId, opts) {
     } else {
       var chip = document.createElement("span");
       chip.className = "manejo-indication-chip" + toneClass + activeClass;
-      chip.textContent = label;
+      chip.textContent = label5;
       row.appendChild(chip);
     }
   });
@@ -40816,14 +40919,14 @@ function buildIndicationChips(items, familyId, opts) {
 }
 function createManejoSomeUi(deps) {
   var attachCopy3 = deps.attachCopy;
-  function buildSomeField(label, text, copyText2, fieldOpts) {
+  function buildSomeField(label5, text, copyText2, fieldOpts) {
     var allowCopy = fieldOpts && fieldOpts.forceCopy ? true : isManejoSomeCopyUiEnabled();
     if (!allowCopy) copyText2 = null;
     var field = document.createElement("div");
-    field.className = "manejo-some-field" + (label === "Medicamento" || label === "Estudio" || label === "Recomendaci\xF3n" || label === "Criterios" || label === "Indicaci\xF3n" ? " manejo-some-field--wide" : "");
+    field.className = "manejo-some-field" + (label5 === "Medicamento" || label5 === "Estudio" || label5 === "Recomendaci\xF3n" || label5 === "Criterios" || label5 === "Indicaci\xF3n" ? " manejo-some-field--wide" : "");
     var lbl = document.createElement("span");
     lbl.className = "manejo-some-field-label";
-    lbl.textContent = label;
+    lbl.textContent = label5;
     field.appendChild(lbl);
     var row = document.createElement("div");
     row.className = "manejo-some-field-row";
@@ -40874,12 +40977,12 @@ function createManejoSomeUi(deps) {
     var grid = document.createElement("div");
     grid.className = "manejo-some-grid";
     var adaKind = blockOpts.adaDisplayKind || "treatment";
-    function appendField(label, getVal) {
+    function appendField(label5, getVal) {
       var val2 = getVal(order);
       if (val2 == null || val2 === "") return;
       grid.appendChild(
         buildSomeField(
-          label,
+          label5,
           toSomeUpper(val2),
           function() {
             return toSomeUpper(getVal(resolveOrder()) || "");
@@ -41042,17 +41145,17 @@ function getAtbSelectedId() {
     return "";
   }
 }
-function setAtbSelectedId(id) {
+function setAtbSelectedId(id5) {
   try {
-    if (id) sessionStorage.setItem(ATB_SELECTED_KEY, id);
+    if (id5) sessionStorage.setItem(ATB_SELECTED_KEY, id5);
     else sessionStorage.removeItem(ATB_SELECTED_KEY);
   } catch (_e2) {
   }
 }
-function findAtbDrugById(id) {
-  if (!id) return null;
+function findAtbDrugById(id5) {
+  if (!id5) return null;
   return MANEJO_ATB_DRUGS.find(function(d) {
-    return d.id === id;
+    return d.id === id5;
   }) || null;
 }
 function atbStatusLabel(classification, drug) {
@@ -41164,23 +41267,23 @@ function getAtbFamilyFilter() {
   }
   return "all";
 }
-function setAtbFamilyFilter(id) {
+function setAtbFamilyFilter(id5) {
   try {
-    sessionStorage.setItem(ATB_FAMILY_KEY, id || "all");
+    sessionStorage.setItem(ATB_FAMILY_KEY, id5 || "all");
   } catch (_e2) {
   }
 }
 function defaultAtbRerender() {
   if (typeof readingPanelDeps.renderManejo === "function") readingPanelDeps.renderManejo();
 }
-function applyAtbFamilyFilter(id, rerenderFn) {
+function applyAtbFamilyFilter(id5, rerenderFn) {
   clearAtbHintFilter();
-  setAtbFamilyFilter(id);
-  if (id !== "all") {
+  setAtbFamilyFilter(id5);
+  if (id5 !== "all") {
     var sid = getAtbSelectedId();
     if (sid) {
       var drug = findAtbDrugById(sid);
-      if (drug && drug.family !== id) setAtbSelectedId("");
+      if (drug && drug.family !== id5) setAtbSelectedId("");
     }
   }
   if (typeof rerenderFn === "function") rerenderFn();
@@ -42506,10 +42609,10 @@ function pathologyBranchLabelFor(branchId) {
   });
   return hit ? hit.label : branchId;
 }
-function findPathologyById(id) {
-  if (!id) return null;
+function findPathologyById(id5) {
+  if (!id5) return null;
   return MANEJO_PATHOLOGIES.find(function(p) {
-    return p.id === id;
+    return p.id === id5;
   }) || null;
 }
 function pathologyMatchesSearch(entry2, q) {
@@ -43347,21 +43450,21 @@ function normalizeAdminView(view) {
   var via = "";
   var noteParts = trim(view.note) ? [trim(view.note)] : [];
   (view.rows || []).forEach(function(row) {
-    var label = trim(row.label).toLowerCase();
+    var label5 = trim(row.label).toLowerCase();
     var value = humanizeAdminValue(row.value);
     if (row.lines && row.lines.length) {
       row.lines.forEach(function(line) {
         var lineText = humanizeAdminValue(line.text);
         if (!lineText) return;
-        if (label === "dosis") doseParts.push(lineText);
+        if (label5 === "dosis") doseParts.push(lineText);
         else appendNotePart(noteParts, line.tag && line.tag !== "Detalle" ? line.tag + ": " + lineText : lineText);
       });
       return;
     }
     if (!value) return;
-    if (label === "dosis") doseParts.push(value);
-    else if (label === "diluci\xF3n" || label === "dilucion") doseParts.push(value);
-    else if (label === "v\xEDa" || label === "via") via = value;
+    if (label5 === "dosis") doseParts.push(value);
+    else if (label5 === "diluci\xF3n" || label5 === "dilucion") doseParts.push(value);
+    else if (label5 === "v\xEDa" || label5 === "via") via = value;
     else appendNotePart(noteParts, value);
   });
   var rows = [];
@@ -43423,8 +43526,8 @@ function rowsFromSomeBlock(text) {
       drug = humanizeDrugName(val2);
       return;
     }
-    var label = SOME_LABELS[key] || humanizeAdminValue(key);
-    rows.push({ label, value: val2 });
+    var label5 = SOME_LABELS[key] || humanizeAdminValue(key);
+    rows.push({ label: label5, value: val2 });
   });
   return { drug, rows };
 }
@@ -43595,7 +43698,7 @@ function resolveClinicalTextAdminView(text, opts) {
   }
   return view;
 }
-function appendAdminRow(grid, label, value, lines) {
+function appendAdminRow(grid, label5, value, lines) {
   value = trim(value);
   lines = lines || null;
   if ((!value || value === "\u2014") && !(lines && lines.length)) return;
@@ -43604,7 +43707,7 @@ function appendAdminRow(grid, label, value, lines) {
   if (lines && lines.length) row.className += " manejo-proto-admin-row--stacked";
   var lbl = document.createElement("span");
   lbl.className = "manejo-proto-admin-label";
-  lbl.textContent = label;
+  lbl.textContent = label5;
   var val2 = document.createElement("div");
   val2.className = "manejo-proto-admin-val";
   if (lines && lines.length) {
@@ -43835,23 +43938,23 @@ function expandClinicalCriteria(text, sectionTitle) {
   });
   return out;
 }
-function resolveLinkForLabel(label, opts) {
-  if (!opts || !opts.linkDrugs || !label) return null;
+function resolveLinkForLabel(label5, opts) {
+  if (!opts || !opts.linkDrugs || !label5) return null;
   if (typeof opts.resolveDrugLink === "function") {
-    return opts.resolveDrugLink(label);
+    return opts.resolveDrugLink(label5);
   }
   if (opts.allProtocols) {
-    return resolveClinicalDrugLink(label, opts.allProtocols);
+    return resolveClinicalDrugLink(label5, opts.allProtocols);
   }
   return null;
 }
-function appendDrugLabel(parent, label, opts) {
-  var link = resolveLinkForLabel(label, opts);
+function appendDrugLabel(parent, label5, opts) {
+  var link = resolveLinkForLabel(label5, opts);
   if (link && typeof opts.onDrugLink === "function") {
     var btn = document.createElement("button");
     btn.type = "button";
     btn.className = "manejo-clinical-drug-link";
-    btn.textContent = label;
+    btn.textContent = label5;
     btn.addEventListener("click", function(e) {
       e.stopPropagation();
       opts.onDrugLink(link);
@@ -43860,7 +43963,7 @@ function appendDrugLabel(parent, label, opts) {
     return;
   }
   var span = document.createElement("span");
-  span.textContent = label;
+  span.textContent = label5;
   parent.appendChild(span);
 }
 function buildDefinitionBoxes(lines, opts) {
@@ -43983,19 +44086,19 @@ function recommendationCardTitle(item, sectionTitle, opts) {
   }
   return clinicalTextPreview(item.text, 72, sectionTitle);
 }
-function buildClinicalKvBlock(label, value, opts) {
+function buildClinicalKvBlock(label5, value, opts) {
   opts = opts || {};
   var kv = document.createElement("div");
   kv.className = "manejo-kv" + (opts.wide ? " manejo-kv--wide" : "");
   var lbl = document.createElement("span");
   lbl.className = "manejo-kv-label";
-  lbl.textContent = label;
+  lbl.textContent = label5;
   var val2 = document.createElement("div");
   val2.className = "manejo-kv-val";
   val2.appendChild(
     buildClinicalTextElement(value, {
       compact: opts.compact !== false,
-      sectionTitle: label,
+      sectionTitle: label5,
       linkDrugs: opts.linkDrugs,
       allProtocols: opts.allProtocols,
       resolveDrugLink: opts.resolveDrugLink,
@@ -44021,22 +44124,22 @@ function getPathologyBranchFilter() {
   }
   return "all";
 }
-function setPathologyBranchFilter(id) {
+function setPathologyBranchFilter(id5) {
   try {
-    sessionStorage.setItem(BRANCH_FILTER_KEY, id || "all");
+    sessionStorage.setItem(BRANCH_FILTER_KEY, id5 || "all");
   } catch (_e2) {
   }
 }
-function setPathologySelectedId(id) {
+function setPathologySelectedId(id5) {
   try {
-    if (id) sessionStorage.setItem(SELECTED_KEY, id);
+    if (id5) sessionStorage.setItem(SELECTED_KEY, id5);
     else sessionStorage.removeItem(SELECTED_KEY);
   } catch (_e4) {
   }
 }
-function branchFilterLabel(id) {
-  if (id === "all") return "Todas las ramas";
-  return pathologyBranchLabelFor(id);
+function branchFilterLabel(id5) {
+  if (id5 === "all") return "Todas las ramas";
+  return pathologyBranchLabelFor(id5);
 }
 function buildPathologyBranchMenu(activeBranch, onSelect) {
   var selectedBranch = activeBranch;
@@ -44084,23 +44187,23 @@ function buildPathologyBranchMenu(activeBranch, onSelect) {
       }
     }
   }
-  function makeOption(id, label) {
+  function makeOption(id5, label5) {
     var btn = document.createElement("button");
     btn.type = "button";
     btn.className = "manejo-pathology-branch-option";
-    if (id !== "all") btn.className += " " + pathologyBranchCssClass(id);
-    if (activeBranch === id) btn.className += " manejo-pathology-branch-option--active";
+    if (id5 !== "all") btn.className += " " + pathologyBranchCssClass(id5);
+    if (activeBranch === id5) btn.className += " manejo-pathology-branch-option--active";
     btn.setAttribute("role", "option");
-    btn.setAttribute("data-branch-id", id);
-    btn.setAttribute("aria-selected", activeBranch === id ? "true" : "false");
+    btn.setAttribute("data-branch-id", id5);
+    btn.setAttribute("aria-selected", activeBranch === id5 ? "true" : "false");
     var dot = document.createElement("span");
-    dot.className = "manejo-pathology-branch-option-dot" + (id === "all" ? " manejo-pathology-branch-option-dot--all" : "");
+    dot.className = "manejo-pathology-branch-option-dot" + (id5 === "all" ? " manejo-pathology-branch-option-dot--all" : "");
     btn.appendChild(dot);
     var txt = document.createElement("span");
     txt.className = "manejo-pathology-branch-option-label";
-    txt.textContent = label;
+    txt.textContent = label5;
     btn.appendChild(txt);
-    if (activeBranch === id) {
+    if (activeBranch === id5) {
       var check = document.createElement("span");
       check.className = "manejo-pathology-branch-option-check";
       check.textContent = "\u2713";
@@ -44108,7 +44211,7 @@ function buildPathologyBranchMenu(activeBranch, onSelect) {
     }
     btn.addEventListener("click", function() {
       setOpen(false);
-      if (id !== selectedBranch && typeof onSelect === "function") onSelect(id);
+      if (id5 !== selectedBranch && typeof onSelect === "function") onSelect(id5);
     });
     panel.appendChild(btn);
   }
@@ -44135,15 +44238,15 @@ function buildPathologyBranchMenu(activeBranch, onSelect) {
   });
   wrap.appendChild(trigger);
   wrap.appendChild(panel);
-  wrap.syncBranch = function(id) {
-    selectedBranch = id;
+  wrap.syncBranch = function(id5) {
+    selectedBranch = id5;
     wrap.className = "manejo-pathology-branch-menu";
-    if (id !== "all") wrap.className += " " + pathologyBranchCssClass(id);
-    triggerText.textContent = branchFilterLabel(id);
-    triggerDot.hidden = id === "all";
+    if (id5 !== "all") wrap.className += " " + pathologyBranchCssClass(id5);
+    triggerText.textContent = branchFilterLabel(id5);
+    triggerDot.hidden = id5 === "all";
     panel.querySelectorAll(".manejo-pathology-branch-option").forEach(function(btn) {
       var optId = btn.getAttribute("data-branch-id");
-      var isActive = optId === id;
+      var isActive = optId === id5;
       btn.classList.toggle("manejo-pathology-branch-option--active", isActive);
       btn.setAttribute("aria-selected", isActive ? "true" : "false");
       var check = btn.querySelector(".manejo-pathology-branch-option-check");
@@ -44216,14 +44319,14 @@ function setGuiaView(view) {
 function getGuiaEntityId() {
   return read(KEYS.entityId) || "";
 }
-function setGuiaEntityId(id) {
-  write(KEYS.entityId, id || "");
+function setGuiaEntityId(id5) {
+  write(KEYS.entityId, id5 || "");
 }
 function getGuiaFromPathologyId() {
   return read(KEYS.fromPathologyId) || "";
 }
-function setGuiaFromPathologyId(id) {
-  write(KEYS.fromPathologyId, id || "");
+function setGuiaFromPathologyId(id5) {
+  write(KEYS.fromPathologyId, id5 || "");
 }
 function navigateGuia(patch) {
   patch = patch || {};
@@ -45441,8 +45544,8 @@ function openManejoProtocolEditorModal(opts, deps) {
       },
       category
     );
-    patch.linkedPathologyIds = Object.keys(pathChecks).filter(function(id) {
-      return pathChecks[id].checked;
+    patch.linkedPathologyIds = Object.keys(pathChecks).filter(function(id5) {
+      return pathChecks[id5].checked;
     });
     if (mode === "add") {
       addCustomProtocol(patch);
@@ -45641,10 +45744,10 @@ function buildProtocolCopyText(entry2, calcResult, doseMode, weightKg) {
 function buildManejoDoseUnitSwitch(entry2, patient, onChange) {
   var wrap = document.createElement("div");
   wrap.className = "manejo-dose-unit-switch";
-  var label = document.createElement("span");
-  label.className = "manejo-dose-unit-switch-label";
-  label.textContent = "Indicar dosis como:";
-  wrap.appendChild(label);
+  var label5 = document.createElement("span");
+  label5.className = "manejo-dose-unit-switch-label";
+  label5.textContent = "Indicar dosis como:";
+  wrap.appendChild(label5);
   var seg = document.createElement("div");
   seg.className = "manejo-dose-unit-switch-seg";
   seg.setAttribute("role", "group");
@@ -45859,10 +45962,10 @@ function getAllManejoProtocols() {
     })
   );
 }
-function findProtocolEntryById(id, allProtocols) {
-  if (!id) return null;
+function findProtocolEntryById(id5, allProtocols) {
+  if (!id5) return null;
   return (allProtocols || getAllManejoProtocols()).find(function(p) {
-    return p.id === id;
+    return p.id === id5;
   }) || null;
 }
 function buildStanfordDetailPanel(entry2) {
@@ -46078,11 +46181,11 @@ function buildProtocolDetailPanel(entry2, patient, panelOpts) {
     wrap.appendChild(
       buildKvBlock(
         "Categor\xEDa de uso",
-        entry2.useCategories.map(function(id) {
+        entry2.useCategories.map(function(id5) {
           var hit = MANEJO_PROTOCOL_USE_CATEGORIES.find(function(c) {
-            return c.id === id;
+            return c.id === id5;
           });
-          return hit ? hit.label : id;
+          return hit ? hit.label : id5;
         }).join(" \xB7 "),
         { wide: true }
       )
@@ -46178,9 +46281,9 @@ function getProtoCategoryFilter() {
   }
   return "all";
 }
-function setProtoCategoryFilter(id) {
+function setProtoCategoryFilter(id5) {
   try {
-    sessionStorage.setItem(PROTO_FILTER_KEY, id || "all");
+    sessionStorage.setItem(PROTO_FILTER_KEY, id5 || "all");
   } catch (_e) {
   }
 }
@@ -46202,13 +46305,13 @@ function filterProtocolEntries(entries, opts) {
   var q = opts.query || "";
   var extra = opts.extra || getProtoExtraFilters();
   var favSet = {};
-  loadProtoFavorites().forEach(function(id) {
-    favSet[id] = true;
+  loadProtoFavorites().forEach(function(id5) {
+    favSet[id5] = true;
   });
   var recentOrder = loadProtoRecentIds();
   var recentRank = {};
-  recentOrder.forEach(function(id, i) {
-    recentRank[id] = i;
+  recentOrder.forEach(function(id5, i) {
+    recentRank[id5] = i;
   });
   var out = entries.filter(function(entry2) {
     if (extra.calcOnly && !entry2.calculatorId) return false;
@@ -46255,22 +46358,22 @@ function buildManejoProtoSegmentGroup(ariaLabel) {
   seg.setAttribute("aria-label", ariaLabel);
   return seg;
 }
-function buildManejoProtoSegmentChip(label, isActive, onClick, opts) {
+function buildManejoProtoSegmentChip(label5, isActive, onClick, opts) {
   opts = opts || {};
   var btn = document.createElement("button");
   btn.type = "button";
   btn.className = "manejo-proto-chip manejo-proto-chip--segment" + (opts.extraClass ? " " + opts.extraClass : "") + (isActive ? " manejo-proto-chip--active" : "");
-  btn.textContent = label;
+  btn.textContent = label5;
   if (opts.title) btn.title = opts.title;
   btn.setAttribute("aria-pressed", isActive ? "true" : "false");
   btn.addEventListener("click", onClick);
   return btn;
 }
-function buildManejoProtoToggleChip(label, isActive, onClick) {
+function buildManejoProtoToggleChip(label5, isActive, onClick) {
   var btn = document.createElement("button");
   btn.type = "button";
   btn.className = "manejo-proto-toggle" + (isActive ? " manejo-proto-toggle--active" : "");
-  btn.textContent = label;
+  btn.textContent = label5;
   btn.setAttribute("aria-pressed", isActive ? "true" : "false");
   btn.addEventListener("click", onClick);
   return btn;
@@ -46279,9 +46382,9 @@ function buildManejoProtoFilterMenu(opts) {
   opts = opts || {};
   var activeId2 = opts.activeId == null ? "all" : opts.activeId;
   var selectedId = activeId2;
-  function labelFor(id) {
+  function labelFor(id5) {
     var hit = (opts.options || []).find(function(o) {
-      return o.id === id;
+      return o.id === id5;
     });
     if (hit) return hit.label;
     return opts.defaultOptionLabel || "Todos";
@@ -46398,20 +46501,20 @@ function buildManejoProtoFilterMenu(opts) {
   menu.appendChild(trigger);
   menu.appendChild(panel);
   wrap.appendChild(menu);
-  wrap.syncActive = function(id, accentClass) {
-    selectedId = id;
-    triggerText.textContent = labelFor(id);
-    triggerDot.hidden = id === "all";
+  wrap.syncActive = function(id5, accentClass) {
+    selectedId = id5;
+    triggerText.textContent = labelFor(id5);
+    triggerDot.hidden = id5 === "all";
     wrap.className = "manejo-proto-filter";
     if (opts.wrapClass) wrap.className += " " + opts.wrapClass;
     menu.className = "manejo-proto-filter-menu";
-    if (id !== "all" && accentClass) {
+    if (id5 !== "all" && accentClass) {
       wrap.className += " " + accentClass;
       menu.className += " " + accentClass;
     }
     panel.querySelectorAll(".manejo-proto-filter-option").forEach(function(btn) {
       var optId = btn.getAttribute("data-filter-id");
-      var isActive = optId === id;
+      var isActive = optId === id5;
       btn.classList.toggle("manejo-proto-filter-option--active", isActive);
       btn.setAttribute("aria-selected", isActive ? "true" : "false");
       var check = btn.querySelector(".manejo-proto-filter-option-check");
@@ -46465,10 +46568,10 @@ function buildInsulinPumpReferenceTable(algorithmIndex, glucoseMgDl) {
   table.className = "manejo-pump-ref-table";
   var thead = document.createElement("thead");
   var headRow = document.createElement("tr");
-  ["Glucosa (mg/dL)", "U/h"].forEach(function(label) {
+  ["Glucosa (mg/dL)", "U/h"].forEach(function(label5) {
     var th = document.createElement("th");
     th.scope = "col";
-    th.textContent = label;
+    th.textContent = label5;
     headRow.appendChild(th);
   });
   thead.appendChild(headRow);
@@ -46837,10 +46940,10 @@ function buildAdaPotassiumSection(kGuide, opts) {
   table.className = "manejo-cad-k-table";
   var headRow = document.createElement("div");
   headRow.className = "manejo-cad-k-row manejo-cad-k-row--head";
-  ["Rango K\u207A", "Recomendaci\xF3n ADA"].forEach(function(label) {
+  ["Rango K\u207A", "Recomendaci\xF3n ADA"].forEach(function(label5) {
     var cell = document.createElement("span");
     cell.className = "manejo-cad-k-cell manejo-cad-k-cell--range";
-    cell.textContent = label;
+    cell.textContent = label5;
     headRow.appendChild(cell);
   });
   table.appendChild(headRow);
@@ -46866,9 +46969,9 @@ var CAD_FOOTER_IDS = ["cad-resolution", "cad-transition"];
 var EHH_FLUIDS_INSULIN_IDS = ["ehh-fluids", "ehh-insulin"];
 var EHH_FOOTER_IDS = ["ehh-precipitant"];
 function filterChecklistByIds(checklist, ids) {
-  return (ids || []).map(function(id) {
+  return (ids || []).map(function(id5) {
     return (checklist || []).find(function(item) {
-      return item.id === id;
+      return item.id === id5;
     });
   }).filter(Boolean);
 }
@@ -47371,8 +47474,8 @@ function buildRecommendationStep(item, sectionTitle, linkOpts) {
 }
 function appendLinkedInfusions(wrap, entry2, allProtocols, patient, ui, ctx) {
   var embeddedProtoIds = {};
-  protocolIdsInPathologySections(entry2).forEach(function(id) {
-    embeddedProtoIds[id] = true;
+  protocolIdsInPathologySections(entry2).forEach(function(id5) {
+    embeddedProtoIds[id5] = true;
   });
   var linked = protocolsLinkedToPathology(allProtocols, entry2.id).filter(function(proto) {
     return !embeddedProtoIds[proto.id];
@@ -47521,8 +47624,8 @@ function renderGuiaInfusionIndex(host, ctx) {
           };
         }).filter(Boolean)
       ),
-      onSelect: function(id) {
-        ui.setProtoCategoryFilter(id);
+      onSelect: function(id5) {
+        ui.setProtoCategoryFilter(id5);
         ctx.rerender();
       }
     })
@@ -47548,8 +47651,8 @@ function renderGuiaInfusionIndex(host, ctx) {
           };
         }).filter(Boolean)
       ),
-      onSelect: function(id) {
-        ui.setProtoExtraFilters({ useCategory: id });
+      onSelect: function(id5) {
+        ui.setProtoExtraFilters({ useCategory: id5 });
         ctx.rerender();
       }
     })
@@ -47884,8 +47987,8 @@ function renderGuiaAtbIndex(host, ctx) {
           };
         }).filter(Boolean)
       ),
-      onSelect: function(id) {
-        ui.applyAtbFamilyFilter(id, ctx.rerender);
+      onSelect: function(id5) {
+        ui.applyAtbFamilyFilter(id5, ctx.rerender);
       }
     })
   );
@@ -48390,15 +48493,15 @@ function getActiveManejoSubtab() {
   }
   return "electrolitos";
 }
-function setActiveManejoSubtab(id) {
+function setActiveManejoSubtab(id5) {
   try {
-    var legacyMode = migrateLegacyManejoSubtab(id);
+    var legacyMode = migrateLegacyManejoSubtab(id5);
     if (legacyMode) {
       sessionStorage.setItem(MANEJO_SUBTAB_KEY2, "guia");
       navigateGuia({ mode: legacyMode, view: "indice" });
       return;
     }
-    sessionStorage.setItem(MANEJO_SUBTAB_KEY2, id);
+    sessionStorage.setItem(MANEJO_SUBTAB_KEY2, id5);
   } catch (_e2) {
   }
 }
@@ -48549,8 +48652,8 @@ function syncManejoSubtabChrome(activeId2) {
   var nav = document.querySelector("#manejo-container .manejo-subtabs");
   if (!nav) return;
   nav.querySelectorAll(".manejo-subtab").forEach(function(btn) {
-    var id = btn.getAttribute("data-subtab");
-    var on = id === activeId2;
+    var id5 = btn.getAttribute("data-subtab");
+    var on = id5 === activeId2;
     btn.classList.toggle("manejo-subtab--active", on);
     btn.classList.toggle("active", on);
     btn.setAttribute("aria-selected", on ? "true" : "false");
@@ -49065,9 +49168,9 @@ function buildAppTextForSafety(data, catalogs) {
   if (app.descripcionDetallada) parts.push(String(app.descripcionDetallada));
   var conditions = Array.isArray(app.conditions) ? app.conditions : [];
   for (var i = 0; i < conditions.length; i++) {
-    var id = conditions[i];
-    var label = appConditions[id] || id;
-    if (label) parts.push(String(label));
+    var id5 = conditions[i];
+    var label5 = appConditions[id5] || id5;
+    if (label5) parts.push(String(label5));
   }
   return parts.join("\n");
 }
@@ -49139,8 +49242,8 @@ init_lan_sync();
 var HC_INTERROGADO_NEGADO = "Interrogado y negado";
 function defaultIpasBlocks(ipasSystems = {}) {
   const ipas = {};
-  for (const id of Object.keys(ipasSystems)) {
-    ipas[id] = { checks: [], descripcion: HC_INTERROGADO_NEGADO, negado: true };
+  for (const id5 of Object.keys(ipasSystems)) {
+    ipas[id5] = { checks: [], descripcion: HC_INTERROGADO_NEGADO, negado: true };
   }
   return ipas;
 }
@@ -49659,9 +49762,9 @@ function formatToxicomaniasEntries(entries) {
   entries = entries || [];
   if (!entries.length) return "Negado";
   return entries.map(function(e) {
-    const label = substanceLabel(e);
-    if (!label) return "";
-    const parts = [label];
+    const label5 = substanceLabel(e);
+    if (!label5) return "";
+    const parts = [label5];
     if (trim5(e.frequency)) parts.push("frecuencia: " + trim5(e.frequency));
     if (trim5(e.years)) parts.push(trim5(e.years) + " a\xF1os de uso");
     return parts.join("; ");
@@ -49820,10 +49923,10 @@ function trim7(s) {
 function labelsFromCatalog(ids, catalog, customConditions) {
   const custom = Array.isArray(customConditions) ? customConditions : [];
   const customMap = Object.fromEntries(custom.map((c) => [c.id, c.label]));
-  return (ids || []).map(function(id) {
-    if (catalog && catalog[id]) return catalog[id];
-    if (customMap[id]) return customMap[id];
-    return id;
+  return (ids || []).map(function(id5) {
+    if (catalog && catalog[id5]) return catalog[id5];
+    if (customMap[id5]) return customMap[id5];
+    return id5;
   }).filter(Boolean);
 }
 function formatAppSection(app, catalog) {
@@ -49837,12 +49940,12 @@ function formatAppSection(app, catalog) {
   });
   if (ids.length) {
     const details = app.conditionDetails || {};
-    ids.forEach(function(id) {
-      let line = labelsFromCatalog([id], catalog, custom)[0] || id;
-      const d = details[id];
+    ids.forEach(function(id5) {
+      let line = labelsFromCatalog([id5], catalog, custom)[0] || id5;
+      const d = details[id5];
       if (d && typeof d === "object") {
         let suffix = "";
-        if (id === ERC_CONDITION_ID) {
+        if (id5 === ERC_CONDITION_ID) {
           suffix = formatErcConditionSuffix(d, formatFlexibleDate);
         } else {
           const parts = [];
@@ -49959,8 +50062,8 @@ var AHF_RELATIVES = [
   { id: "hija", label: "Hija", group: "hijos" }
 ];
 var RELATIVE_LABELS = Object.fromEntries(AHF_RELATIVES.map((r) => [r.id, r.label]));
-function ahfRelativeLabel(id) {
-  return RELATIVE_LABELS[id] || id;
+function ahfRelativeLabel(id5) {
+  return RELATIVE_LABELS[id5] || id5;
 }
 
 // lib/historia-clinica/compile-ahf.mjs
@@ -50129,8 +50232,8 @@ function trim10(s) {
   return String(s || "").trim();
 }
 function labelsFromCatalog2(ids, catalog) {
-  return (ids || []).map(function(id) {
-    return catalog && catalog[id] ? catalog[id] : id;
+  return (ids || []).map(function(id5) {
+    return catalog && catalog[id5] ? catalog[id5] : id5;
   }).filter(Boolean);
 }
 function formatChecklist(ids, catalog, descripcion, negado) {
@@ -50143,10 +50246,10 @@ function formatChecklist(ids, catalog, descripcion, negado) {
   if (parts.length) return parts.join(", ");
   return detail;
 }
-function pushSection(out, id, title, body) {
+function pushSection(out, id5, title, body) {
   const b = trim10(body);
   if (!b) return;
-  out.push({ id, title, body: b });
+  out.push({ id: id5, title, body: b });
 }
 function formatApnp(apnp, ctx) {
   if (!apnp || typeof apnp !== "object") return "";
@@ -50166,19 +50269,19 @@ function formatApnp(apnp, ctx) {
     return row[0] + ": " + trim10(row[1]);
   }).join("\n");
 }
-function formatIdentificacion(id) {
-  if (!id || typeof id !== "object") return "";
+function formatIdentificacion(id5) {
+  if (!id5 || typeof id5 !== "object") return "";
   const lines = [
-    ["Informante", id.informante],
-    ["Lugar de nacimiento", id.lugarNacimiento],
-    ["Ocupaci\xF3n actual", id.ocupacionActual],
-    ["Ocupaci\xF3n anterior", id.ocupacionAnterior],
-    ["Escolaridad", id.escolaridad],
-    ["Estado civil", id.estadoCivil],
-    ["Religi\xF3n", id.religion],
-    ["Cama", id.cama],
-    ["Registro", id.registro],
-    ["DX", id.dx]
+    ["Informante", id5.informante],
+    ["Lugar de nacimiento", id5.lugarNacimiento],
+    ["Ocupaci\xF3n actual", id5.ocupacionActual],
+    ["Ocupaci\xF3n anterior", id5.ocupacionAnterior],
+    ["Escolaridad", id5.escolaridad],
+    ["Estado civil", id5.estadoCivil],
+    ["Religi\xF3n", id5.religion],
+    ["Cama", id5.cama],
+    ["Registro", id5.registro],
+    ["DX", id5.dx]
   ];
   return lines.filter(function(row) {
     return trim10(row[1]);
@@ -50328,6 +50431,59 @@ function migrateLegacyHistoriaData(legacy) {
   return out;
 }
 
+// lib/drive-import/merge-hc-patch.mjs
+function isEmptyString(v) {
+  return v == null || typeof v === "string" && !String(v).trim();
+}
+function isPlainObject(v) {
+  return v != null && typeof v === "object" && !Array.isArray(v);
+}
+function mergeObjectFill(tgt, src) {
+  const out = Object.assign({}, tgt);
+  for (const [k, v] of Object.entries(src)) {
+    if (v === void 0) continue;
+    if (isPlainObject(v)) {
+      const base = isPlainObject(out[k]) ? (
+        /** @type {Record<string, unknown>} */
+        out[k]
+      ) : {};
+      out[k] = mergeObjectFill(
+        base,
+        /** @type {Record<string, unknown>} */
+        v
+      );
+    } else if (Array.isArray(v)) {
+      if (!Array.isArray(out[k]) || !out[k].length) out[k] = v.slice();
+    } else if (isEmptyString(out[k])) {
+      out[k] = v;
+    }
+  }
+  return out;
+}
+function mergeObjectReplace(tgt, src) {
+  const out = Object.assign({}, tgt);
+  for (const [k, v] of Object.entries(src)) {
+    if (v === void 0) continue;
+    if (isPlainObject(v) && isPlainObject(out[k])) {
+      out[k] = mergeObjectReplace(
+        /** @type {Record<string, unknown>} */
+        out[k],
+        /** @type {Record<string, unknown>} */
+        v
+      );
+    } else {
+      out[k] = v;
+    }
+  }
+  return out;
+}
+function mergeHcPatch(existing, patch, mode) {
+  const base = Object.assign({}, existing || {});
+  const p = patch || {};
+  if (mode === "replace") return mergeObjectReplace(base, p);
+  return mergeObjectFill(base, p);
+}
+
 // lib/historia-clinica/catalogs/app-conditions.json
 var app_conditions_default = {
   parotiditis: "Parotiditis",
@@ -50436,8 +50592,8 @@ function renderChecklistBlock(container, spec, value, onChange) {
   function emit() {
     const nextIds = [];
     container.querySelectorAll(".hc-check-chip-input:checked").forEach(function(c) {
-      const id = c.getAttribute("data-opt-id");
-      if (id) nextIds.push(id);
+      const id5 = c.getAttribute("data-opt-id");
+      if (id5) nextIds.push(id5);
     });
     const detailEl = container.querySelector(".hc-checklist-detail");
     const detailText = detailEl ? toClinicalHistoryText(detailEl.value) : "";
@@ -50467,9 +50623,9 @@ function renderChecklistBlock(container, spec, value, onChange) {
 function esc15(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-function numInput(name, value, label, attrs) {
+function numInput(name, value, label5, attrs) {
   attrs = attrs || "";
-  return '<div class="field-group hc-calc-field"><label>' + esc15(label) + '</label><input type="number" min="0" step="1" data-hc-calc="' + esc15(name) + '" value="' + esc15(value != null && value !== "" ? value : "") + '" ' + attrs + "></div>";
+  return '<div class="field-group hc-calc-field"><label>' + esc15(label5) + '</label><input type="number" min="0" step="1" data-hc-calc="' + esc15(name) + '" value="' + esc15(value != null && value !== "" ? value : "") + '" ' + attrs + "></div>";
 }
 function alertBanner(result, kind) {
   if (!result || !result.alert) return "";
@@ -50576,8 +50732,8 @@ function esc16(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function catalogOptions() {
-  return Object.keys(TOXICOMANIAS_SUBSTANCES).map(function(id) {
-    return { id, label: TOXICOMANIAS_SUBSTANCES[id] };
+  return Object.keys(TOXICOMANIAS_SUBSTANCES).map(function(id5) {
+    return { id: id5, label: TOXICOMANIAS_SUBSTANCES[id5] };
   });
 }
 function entryForSubstance(entries, substanceId) {
@@ -50585,8 +50741,8 @@ function entryForSubstance(entries, substanceId) {
     return e.substanceId === substanceId;
   });
 }
-function entryHtml(entry2, label) {
-  return '<div class="hc-tox-entry" data-tox-entry-id="' + esc16(entry2.id) + '"><div class="hc-tox-entry-title">' + esc16(label) + '</div><div class="hc-tox-entry-fields"><div class="field-group"><label>Frecuencia de uso</label><input type="text" data-tox-field="frequency" value="' + esc16(entry2.frequency || "") + '" placeholder="Diario, semanal, ocasional\u2026"></div><div class="field-group"><label>A\xF1os de uso</label><input type="number" min="0" max="80" step="1" data-tox-field="years" value="' + esc16(entry2.years || "") + '" placeholder="0"></div></div><button type="button" class="btn-remove" data-tox-remove="' + esc16(entry2.id) + '" aria-label="Quitar">\xD7</button></div>';
+function entryHtml(entry2, label5) {
+  return '<div class="hc-tox-entry" data-tox-entry-id="' + esc16(entry2.id) + '"><div class="hc-tox-entry-title">' + esc16(label5) + '</div><div class="hc-tox-entry-fields"><div class="field-group"><label>Frecuencia de uso</label><input type="text" data-tox-field="frequency" value="' + esc16(entry2.frequency || "") + '" placeholder="Diario, semanal, ocasional\u2026"></div><div class="field-group"><label>A\xF1os de uso</label><input type="number" min="0" max="80" step="1" data-tox-field="years" value="' + esc16(entry2.years || "") + '" placeholder="0"></div></div><button type="button" class="btn-remove" data-tox-remove="' + esc16(entry2.id) + '" aria-label="Quitar">\xD7</button></div>';
 }
 function mountToxicomaniasPanel(container, apnp, onChange) {
   if (!container) return;
@@ -50608,8 +50764,8 @@ function mountToxicomaniasPanel(container, apnp, onChange) {
   html += "</div>";
   html += '<div class="hc-tox-entries" id="hc-tox-entries-host">';
   entries.forEach(function(entry2) {
-    const label = entry2.substanceId ? TOXICOMANIAS_SUBSTANCES[entry2.substanceId] : entry2.customLabel;
-    if (label) html += entryHtml(entry2, label);
+    const label5 = entry2.substanceId ? TOXICOMANIAS_SUBSTANCES[entry2.substanceId] : entry2.customLabel;
+    if (label5) html += entryHtml(entry2, label5);
   });
   html += "</div>";
   html += '<div class="hc-app-custom-row hc-tox-custom-row"><div class="field-group hc-app-custom-field"><label>Otra sustancia</label><input type="text" id="hc-tox-custom-label" placeholder="Nombre de la sustancia"></div><button type="button" class="btn-med-secondary" id="hc-tox-add-custom">Agregar</button></div></div>';
@@ -50622,8 +50778,8 @@ function mountToxicomaniasPanel(container, apnp, onChange) {
     const host = container.querySelector("#hc-tox-entries-host");
     if (!host) return;
     host.innerHTML = entries.map(function(entry2) {
-      const label = entry2.substanceId ? TOXICOMANIAS_SUBSTANCES[entry2.substanceId] : entry2.customLabel;
-      return label ? entryHtml(entry2, label) : "";
+      const label5 = entry2.substanceId ? TOXICOMANIAS_SUBSTANCES[entry2.substanceId] : entry2.customLabel;
+      return label5 ? entryHtml(entry2, label5) : "";
     }).join("");
     wireEntries();
   }
@@ -50631,9 +50787,9 @@ function mountToxicomaniasPanel(container, apnp, onChange) {
     container.querySelectorAll("[data-tox-field]").forEach(function(el) {
       el.oninput = function() {
         const row = el.closest("[data-tox-entry-id]");
-        const id = row.getAttribute("data-tox-entry-id");
+        const id5 = row.getAttribute("data-tox-entry-id");
         const entry2 = entries.find(function(e) {
-          return e.id === id;
+          return e.id === id5;
         });
         if (!entry2) return;
         entry2[el.getAttribute("data-tox-field")] = el.value;
@@ -50642,12 +50798,12 @@ function mountToxicomaniasPanel(container, apnp, onChange) {
     });
     container.querySelectorAll("[data-tox-remove]").forEach(function(btn) {
       btn.onclick = function() {
-        const id = btn.getAttribute("data-tox-remove");
+        const id5 = btn.getAttribute("data-tox-remove");
         const removed = entries.find(function(e) {
-          return e.id === id;
+          return e.id === id5;
         });
         entries = entries.filter(function(e) {
-          return e.id !== id;
+          return e.id !== id5;
         });
         if (removed && removed.substanceId) {
           const chip = container.querySelector(
@@ -50686,12 +50842,12 @@ function mountToxicomaniasPanel(container, apnp, onChange) {
   if (addCustom) {
     addCustom.onclick = function() {
       const input = container.querySelector("#hc-tox-custom-label");
-      const label = String(input && input.value || "").trim();
-      if (!label) return;
+      const label5 = String(input && input.value || "").trim();
+      if (!label5) return;
       entries.push({
         id: newToxicomaniaEntryId(),
         substanceId: "",
-        customLabel: label,
+        customLabel: label5,
         frequency: "",
         years: ""
       });
@@ -50722,8 +50878,8 @@ function normalizeAppData(app, defaults) {
   if (!Array.isArray(app.cirugias)) app.cirugias = [];
   if (!Array.isArray(app.hospitalizaciones)) app.hospitalizaciones = [];
   if (!Array.isArray(app.conditions)) app.conditions = [];
-  app.conditions = app.conditions.filter(function(id) {
-    return id && !APP_DEDICATED_IDS.has(id);
+  app.conditions = app.conditions.filter(function(id5) {
+    return id5 && !APP_DEDICATED_IDS.has(id5);
   });
   if (!Array.isArray(app.alergiaMedicamentos)) app.alergiaMedicamentos = [];
   if (!Array.isArray(app.traumaticosEntries)) app.traumaticosEntries = [];
@@ -50768,8 +50924,8 @@ function normalizeAppData(app, defaults) {
   if (app.alergiasNegado !== false && !app.alergiaMedicamentos.length) {
     app.alergiasNegado = app.alergiasNegado === true;
   }
-  Object.keys(app.conditionDetails).forEach(function(id) {
-    if (APP_DEDICATED_IDS.has(id)) delete app.conditionDetails[id];
+  Object.keys(app.conditionDetails).forEach(function(id5) {
+    if (APP_DEDICATED_IDS.has(id5)) delete app.conditionDetails[id5];
   });
   if ((app.conditions || []).indexOf(ERC_CONDITION_ID) >= 0) {
     app.conditionDetails[ERC_CONDITION_ID] = normalizeErcDetail(
@@ -50787,10 +50943,10 @@ function newRowId(prefix) {
   return prefix + "_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 6);
 }
 function catalogOptions2(map) {
-  return Object.keys(map || {}).filter(function(id) {
-    return !APP_DEDICATED_IDS.has(id);
-  }).map(function(id) {
-    return { id, label: map[id] };
+  return Object.keys(map || {}).filter(function(id5) {
+    return !APP_DEDICATED_IDS.has(id5);
+  }).map(function(id5) {
+    return { id: id5, label: map[id5] };
   });
 }
 function flexibleDateHtml(prefix, date) {
@@ -50842,15 +50998,15 @@ function allConditionIds(app, catalog) {
   (app.customConditions || []).forEach(function(c) {
     if (c && c.id && ids.indexOf(c.id) < 0) ids.push(c.id);
   });
-  return ids.filter(function(id) {
-    return !APP_DEDICATED_IDS.has(id);
-  }).map(function(id) {
+  return ids.filter(function(id5) {
+    return !APP_DEDICATED_IDS.has(id5);
+  }).map(function(id5) {
     return {
-      id,
-      label: catalog && catalog[id] || ((app.customConditions || []).find(function(c) {
-        return c && c.id === id;
-      }) || {}).label || id,
-      custom: !(catalog && catalog[id])
+      id: id5,
+      label: catalog && catalog[id5] || ((app.customConditions || []).find(function(c) {
+        return c && c.id === id5;
+      }) || {}).label || id5,
+      custom: !(catalog && catalog[id5])
     };
   });
 }
@@ -51223,20 +51379,20 @@ function mountHistoriaAppPanel(container, app, catalog, onChange) {
   }
   container.querySelectorAll(".hc-check-chip-input").forEach(function(el) {
     el.addEventListener("change", function() {
-      const id = el.getAttribute("data-app-cond");
+      const id5 = el.getAttribute("data-app-cond");
       const set = new Set(app.conditions || []);
       if (el.checked) {
-        set.add(id);
-        if (id === ERC_CONDITION_ID) {
+        set.add(id5);
+        if (id5 === ERC_CONDITION_ID) {
           app.conditionDetails = app.conditionDetails || {};
           app.conditionDetails[ERC_CONDITION_ID] = normalizeErcDetail(
             app.conditionDetails[ERC_CONDITION_ID]
           );
         }
       } else {
-        set.delete(id);
-        if (id === ERC_CONDITION_ID) purgeErcMedicationsFromApp(app);
-        else if (app.conditionDetails && app.conditionDetails[id]) delete app.conditionDetails[id];
+        set.delete(id5);
+        if (id5 === ERC_CONDITION_ID) purgeErcMedicationsFromApp(app);
+        else if (app.conditionDetails && app.conditionDetails[id5]) delete app.conditionDetails[id5];
       }
       app.conditions = Array.from(set);
       mountHistoriaAppPanel(container, app, catalog, onChange);
@@ -51247,23 +51403,23 @@ function mountHistoriaAppPanel(container, app, catalog, onChange) {
   if (addCustom) {
     addCustom.onclick = function() {
       const input = container.querySelector("#hc-app-custom-label");
-      const label = input && input.value ? input.value.trim() : "";
-      if (!label) return;
-      const id = newRowId("custom");
-      app.customConditions.push({ id, label });
-      app.conditions.push(id);
-      app.conditionDetails[id] = { treatment: "" };
+      const label5 = input && input.value ? input.value.trim() : "";
+      if (!label5) return;
+      const id5 = newRowId("custom");
+      app.customConditions.push({ id: id5, label: label5 });
+      app.conditions.push(id5);
+      app.conditionDetails[id5] = { treatment: "" };
       if (input) input.value = "";
       mountHistoriaAppPanel(container, app, catalog, onChange);
       emit();
     };
   }
   container.querySelectorAll(".hc-app-cond-card:not(.hc-app-cond-card--erc)").forEach(function(card) {
-    const id = card.getAttribute("data-cond-id");
+    const id5 = card.getAttribute("data-cond-id");
     card.querySelectorAll("[data-cond-field]").forEach(function(el) {
       el.addEventListener("input", function() {
-        app.conditionDetails[id] = app.conditionDetails[id] || {};
-        app.conditionDetails[id][el.getAttribute("data-cond-field")] = el.value;
+        app.conditionDetails[id5] = app.conditionDetails[id5] || {};
+        app.conditionDetails[id5][el.getAttribute("data-cond-field")] = el.value;
         emit();
       });
     });
@@ -51271,8 +51427,8 @@ function mountHistoriaAppPanel(container, app, catalog, onChange) {
     if (flex) {
       flex.querySelectorAll("input,select").forEach(function(el) {
         el.addEventListener("change", function() {
-          app.conditionDetails[id] = app.conditionDetails[id] || {};
-          app.conditionDetails[id].diagnosedAt = readFlexibleDate(flex);
+          app.conditionDetails[id5] = app.conditionDetails[id5] || {};
+          app.conditionDetails[id5].diagnosedAt = readFlexibleDate(flex);
           emit();
         });
       });
@@ -51363,8 +51519,8 @@ function esc18(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function catalogOptions3(map) {
-  return Object.keys(map || {}).map(function(id) {
-    return { id, label: map[id] };
+  return Object.keys(map || {}).map(function(id5) {
+    return { id: id5, label: map[id5] };
   });
 }
 function defaultAhf() {
@@ -51381,12 +51537,12 @@ function ensureAhf(ahf) {
 function newEntryId() {
   return "ahf_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7);
 }
-function conditionLabel2(id, catalog, customConditions) {
-  if (catalog && catalog[id]) return catalog[id];
+function conditionLabel2(id5, catalog, customConditions) {
+  if (catalog && catalog[id5]) return catalog[id5];
   const c = (customConditions || []).find(function(row) {
-    return row && row.id === id;
+    return row && row.id === id5;
   });
-  return c && c.label || id;
+  return c && c.label || id5;
 }
 function entriesForCondition(ahf, conditionId) {
   return (ahf.entries || []).filter(function(e) {
@@ -51403,10 +51559,10 @@ function relativeSelectHtml(entryId, value) {
 }
 function entryRowHtml(entry2) {
   const e = entry2 || {};
-  const id = e.id || newEntryId();
+  const id5 = e.id || newEntryId();
   const vital = e.vitalStatus || "desconocido";
   const deadFields = vital === "fallecido";
-  return '<div class="hc-ahf-entry" data-entry-id="' + esc18(id) + '"><div class="field-group"><label>Familiar</label>' + relativeSelectHtml(id, e.relativeId) + '</div><div class="field-group"><label>Diagn\xF3stico</label><input type="text" data-ahf-field="diagnosis" value="' + esc18(e.diagnosis || "") + '"></div><div class="field-group"><label>Tratamiento</label><input type="text" data-ahf-field="treatment" value="' + esc18(e.treatment || "") + '"></div><div class="field-group"><label>Estado</label><select data-ahf-field="vitalStatus"><option value="vivo"' + (vital === "vivo" ? " selected" : "") + '>Vivo/a</option><option value="fallecido"' + (vital === "fallecido" ? " selected" : "") + '>Fallecido/a</option><option value="desconocido"' + (vital === "desconocido" ? " selected" : "") + '>No especificado</option></select></div><div class="hc-ahf-death-fields' + (deadFields ? "" : " hc-ahf-death-fields--hidden") + '"><div class="field-group"><label>Edad al fallecer</label><input type="number" min="0" max="120" data-ahf-field="ageAtDeath" value="' + esc18(e.ageAtDeath != null ? e.ageAtDeath : "") + '"></div><div class="field-group"><label>Causa de muerte</label><input type="text" data-ahf-field="causeOfDeath" value="' + esc18(e.causeOfDeath || "") + '"></div></div><button type="button" class="btn-remove" data-ahf-remove aria-label="Quitar familiar">\xD7</button></div>';
+  return '<div class="hc-ahf-entry" data-entry-id="' + esc18(id5) + '"><div class="field-group"><label>Familiar</label>' + relativeSelectHtml(id5, e.relativeId) + '</div><div class="field-group"><label>Diagn\xF3stico</label><input type="text" data-ahf-field="diagnosis" value="' + esc18(e.diagnosis || "") + '"></div><div class="field-group"><label>Tratamiento</label><input type="text" data-ahf-field="treatment" value="' + esc18(e.treatment || "") + '"></div><div class="field-group"><label>Estado</label><select data-ahf-field="vitalStatus"><option value="vivo"' + (vital === "vivo" ? " selected" : "") + '>Vivo/a</option><option value="fallecido"' + (vital === "fallecido" ? " selected" : "") + '>Fallecido/a</option><option value="desconocido"' + (vital === "desconocido" ? " selected" : "") + '>No especificado</option></select></div><div class="hc-ahf-death-fields' + (deadFields ? "" : " hc-ahf-death-fields--hidden") + '"><div class="field-group"><label>Edad al fallecer</label><input type="number" min="0" max="120" data-ahf-field="ageAtDeath" value="' + esc18(e.ageAtDeath != null ? e.ageAtDeath : "") + '"></div><div class="field-group"><label>Causa de muerte</label><input type="text" data-ahf-field="causeOfDeath" value="' + esc18(e.causeOfDeath || "") + '"></div></div><button type="button" class="btn-remove" data-ahf-remove aria-label="Quitar familiar">\xD7</button></div>';
 }
 function mountHistoriaAhfPanel(container, ahf, catalog, onChange) {
   if (!container) return;
@@ -51444,9 +51600,9 @@ function mountHistoriaAhfPanel(container, ahf, catalog, onChange) {
   function emit() {
     onChange(ensureAhf(ahf));
   }
-  function findEntry(id) {
+  function findEntry(id5) {
     return (ahf.entries || []).find(function(e) {
-      return e && e.id === id;
+      return e && e.id === id5;
     });
   }
   container.querySelectorAll(".hc-check-chip-input[data-ahf-cond]").forEach(function(el) {
@@ -51468,8 +51624,8 @@ function mountHistoriaAhfPanel(container, ahf, catalog, onChange) {
           });
         }
       } else {
-        ahf.conditions = (ahf.conditions || []).filter(function(id) {
-          return id !== cid;
+        ahf.conditions = (ahf.conditions || []).filter(function(id5) {
+          return id5 !== cid;
         });
         ahf.entries = (ahf.entries || []).filter(function(e) {
           return e.conditionId !== cid;
@@ -51483,16 +51639,16 @@ function mountHistoriaAhfPanel(container, ahf, catalog, onChange) {
   if (addCustom) {
     addCustom.onclick = function() {
       const input = container.querySelector("#hc-ahf-custom-label");
-      const label = input && input.value ? input.value.trim() : "";
-      if (!label) return;
-      const id = "custom_" + Date.now().toString(36);
+      const label5 = input && input.value ? input.value.trim() : "";
+      if (!label5) return;
+      const id5 = "custom_" + Date.now().toString(36);
       ahf.customConditions = ahf.customConditions || [];
-      ahf.customConditions.push({ id, label });
-      ahf.conditions = (ahf.conditions || []).concat([id]);
+      ahf.customConditions.push({ id: id5, label: label5 });
+      ahf.conditions = (ahf.conditions || []).concat([id5]);
       ahf.entries = ahf.entries || [];
       ahf.entries.push({
         id: newEntryId(),
-        conditionId: id,
+        conditionId: id5,
         relativeId: "",
         diagnosis: "",
         treatment: "",
@@ -51561,8 +51717,8 @@ function mountHistoriaAhfPanel(container, ahf, catalog, onChange) {
           return e.id !== entryId;
         });
         if (!entriesForCondition(ahf, entry2.conditionId).length) {
-          ahf.conditions = (ahf.conditions || []).filter(function(id) {
-            return id !== entry2.conditionId;
+          ahf.conditions = (ahf.conditions || []).filter(function(id5) {
+            return id5 !== entry2.conditionId;
           });
         }
         mountHistoriaAhfPanel(container, ahf, catalog, onChange);
@@ -51714,9 +51870,9 @@ function bodyHtmlForSpec(spec, val2) {
 }
 function readFieldFromDom(spec, row) {
   if (!row || spec.kind === "medications") return {};
-  const id = spec.id;
+  const id5 = spec.id;
   const out = {};
-  row.querySelectorAll('[data-genero-part][data-genero-id="' + id + '"]').forEach(function(el) {
+  row.querySelectorAll('[data-genero-part][data-genero-id="' + id5 + '"]').forEach(function(el) {
     const part = el.getAttribute("data-genero-part");
     if (part) out[part] = el.value;
   });
@@ -51836,10 +51992,10 @@ function esc21(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function activePatient4() {
-  var id = rt25.getActiveId();
-  if (!id) return null;
+  var id5 = rt25.getActiveId();
+  if (!id5) return null;
   return patients.find(function(p) {
-    return String(p.id) === String(id);
+    return String(p.id) === String(id5);
   });
 }
 function lookbackHours() {
@@ -51851,18 +52007,18 @@ function lookbackHours() {
 function prefillFromPatient(data, patient) {
   if (!data || !patient) return data;
   data.genero = normalizeGeneroBlock(data.genero, patient.sexo);
-  var id = data.identificacion || {};
-  if (!id.informante && patient.nombre) id.informante = String(patient.nombre);
-  if (!id.registro && patient.registro) id.registro = String(patient.registro);
-  if (!id.cama && patient.cama) id.cama = String(patient.cama);
-  if (!id.dx && patient.diagnosticosText) id.dx = String(patient.diagnosticosText);
-  if (!id.dx && Array.isArray(patient.diagnosticosList) && patient.diagnosticosList[0]) {
-    id.dx = String(patient.diagnosticosList[0]);
+  var id5 = data.identificacion || {};
+  if (!id5.informante && patient.nombre) id5.informante = String(patient.nombre);
+  if (!id5.registro && patient.registro) id5.registro = String(patient.registro);
+  if (!id5.cama && patient.cama) id5.cama = String(patient.cama);
+  if (!id5.dx && patient.diagnosticosText) id5.dx = String(patient.diagnosticosText);
+  if (!id5.dx && Array.isArray(patient.diagnosticosList) && patient.diagnosticosList[0]) {
+    id5.dx = String(patient.diagnosticosList[0]);
   }
   if (patient.edad != null && patient.edad !== "") {
-    id.edad = String(patient.edad);
+    id5.edad = String(patient.edad);
   }
-  data.identificacion = id;
+  data.identificacion = id5;
   return data;
 }
 function normalizeData(raw, patientId, patient) {
@@ -52052,14 +52208,14 @@ function renderSafetyBanner(rules) {
 }
 function renderStepperHeader() {
   var labels = ["Antecedentes", "Padecimiento e IPAS", "Ingreso y labs"];
-  return '<nav class="hc-stepper" aria-label="Pasos historia cl\xEDnica">' + labels.map(function(label, i) {
+  return '<nav class="hc-stepper" aria-label="Pasos historia cl\xEDnica">' + labels.map(function(label5, i) {
     var n = i + 1;
     var cls = "hc-step" + (n === _step ? " hc-step--active" : "") + (stepComplete(n) ? " hc-step--done" : "");
-    return '<button type="button" class="' + cls + '" data-hc-step="' + n + '">' + esc21(label) + "</button>";
+    return '<button type="button" class="' + cls + '" data-hc-step="' + n + '">' + esc21(label5) + "</button>";
   }).join("") + "</nav>";
 }
-function fieldRow(label, html) {
-  return '<div class="field-group"><label>' + esc21(label) + "</label>" + html + "</div>";
+function fieldRow(label5, html) {
+  return '<div class="field-group"><label>' + esc21(label5) + "</label>" + html + "</div>";
 }
 function textInput(path, value, placeholder) {
   return '<input type="text" data-hc-path="' + esc21(path) + '" value="' + esc21(toClinicalHistoryText(value)) + '" placeholder="' + esc21(placeholder ? toClinicalHistoryText(placeholder) : "") + '">';
@@ -52074,9 +52230,9 @@ function renderLecturaView(root, patient) {
   }).join("") + (sections.length ? "" : '<p class="tend-empty">Historia sin contenido.</p>') + "</div>";
 }
 function renderStep1() {
-  var id = _data && _data.identificacion || {};
+  var id5 = _data && _data.identificacion || {};
   var apnp = _data && _data.apnp || {};
-  return '<div class="hc-step-body"><h3 class="hc-step-title">Identificaci\xF3n y antecedentes</h3>' + fieldRow("Motivo de consulta", textArea("motivoConsulta", _data.motivoConsulta, 2)) + '<details class="card" open><summary class="card-header">Identificaci\xF3n</summary><div class="card-body hc-grid">' + fieldRow("Informante", textInput("identificacion.informante", id.informante)) + fieldRow("Lugar de nacimiento", textInput("identificacion.lugarNacimiento", id.lugarNacimiento)) + fieldRow("Ocupaci\xF3n actual", textInput("identificacion.ocupacionActual", id.ocupacionActual)) + fieldRow("Ocupaci\xF3n anterior", textInput("identificacion.ocupacionAnterior", id.ocupacionAnterior)) + fieldRow("Escolaridad", textInput("identificacion.escolaridad", id.escolaridad)) + fieldRow("Estado civil", textInput("identificacion.estadoCivil", id.estadoCivil)) + fieldRow("Religi\xF3n", textInput("identificacion.religion", id.religion)) + '</div></details><details class="card" open><summary class="card-header">APNP</summary><div class="card-body"><div class="hc-apnp-habits"><div class="card hc-calc-wrap"><div class="card-header card-header--tone-slate">Tabaquismo</div><div class="card-body" id="hc-mount-tabaquismo"></div></div><div class="card hc-calc-wrap"><div class="card-header card-header--tone-slate">Alcoholismo</div><div class="card-body" id="hc-mount-alcoholismo"></div></div></div><div class="card hc-apnp-toxicomanias" style="margin-top:12px"><div class="card-header card-header--tone-slate">Toxicoman\xEDas</div><div class="card-body" id="hc-mount-toxicomanias"></div></div><div class="hc-grid" style="margin-top:12px">' + fieldRow("Tatuajes", textInput("apnp.tatuajes", apnp.tatuajes)) + fieldRow("Deportes/pasatiempos/mascotas", textInput("apnp.deportesPasatiemposMascotas", apnp.deportesPasatiemposMascotas)) + fieldRow("Dieta", textInput("apnp.dieta", apnp.dieta)) + '</div></details><details class="card" open><summary class="card-header">APP</summary><div class="card-body" id="hc-mount-app"></div></details><details class="card" open><summary class="card-header">AHF</summary><div class="card-body" id="hc-mount-ahf"></div></details></div>';
+  return '<div class="hc-step-body"><h3 class="hc-step-title">Identificaci\xF3n y antecedentes</h3>' + fieldRow("Motivo de consulta", textArea("motivoConsulta", _data.motivoConsulta, 2)) + '<details class="card" open><summary class="card-header">Identificaci\xF3n</summary><div class="card-body hc-grid">' + fieldRow("Informante", textInput("identificacion.informante", id5.informante)) + fieldRow("Lugar de nacimiento", textInput("identificacion.lugarNacimiento", id5.lugarNacimiento)) + fieldRow("Ocupaci\xF3n actual", textInput("identificacion.ocupacionActual", id5.ocupacionActual)) + fieldRow("Ocupaci\xF3n anterior", textInput("identificacion.ocupacionAnterior", id5.ocupacionAnterior)) + fieldRow("Escolaridad", textInput("identificacion.escolaridad", id5.escolaridad)) + fieldRow("Estado civil", textInput("identificacion.estadoCivil", id5.estadoCivil)) + fieldRow("Religi\xF3n", textInput("identificacion.religion", id5.religion)) + '</div></details><details class="card" open><summary class="card-header">APNP</summary><div class="card-body"><div class="hc-apnp-habits"><div class="card hc-calc-wrap"><div class="card-header card-header--tone-slate">Tabaquismo</div><div class="card-body" id="hc-mount-tabaquismo"></div></div><div class="card hc-calc-wrap"><div class="card-header card-header--tone-slate">Alcoholismo</div><div class="card-body" id="hc-mount-alcoholismo"></div></div></div><div class="card hc-apnp-toxicomanias" style="margin-top:12px"><div class="card-header card-header--tone-slate">Toxicoman\xEDas</div><div class="card-body" id="hc-mount-toxicomanias"></div></div><div class="hc-grid" style="margin-top:12px">' + fieldRow("Tatuajes", textInput("apnp.tatuajes", apnp.tatuajes)) + fieldRow("Deportes/pasatiempos/mascotas", textInput("apnp.deportesPasatiemposMascotas", apnp.deportesPasatiemposMascotas)) + fieldRow("Dieta", textInput("apnp.dieta", apnp.dieta)) + '</div></details><details class="card" open><summary class="card-header">APP</summary><div class="card-body" id="hc-mount-app"></div></details><details class="card" open><summary class="card-header">AHF</summary><div class="card-body" id="hc-mount-ahf"></div></details></div>';
 }
 function renderStep2(patient) {
   var sexual = _data && _data.sexual || {};
@@ -52348,10 +52504,10 @@ function openLabPickModal(patient, isResync) {
     );
     if (!ok) return;
   }
-  var label = sets.map(function(s, i) {
+  var label5 = sets.map(function(s, i) {
     return i + 1 + ": " + (s.fecha || "") + " " + (s.hora || "");
   }).join("\n");
-  var choice = prompt("Elige n\xFAmero de set:\n" + label, "1");
+  var choice = prompt("Elige n\xFAmero de set:\n" + label5, "1");
   var idx = parseInt(choice, 10) - 1;
   if (!Number.isFinite(idx) || idx < 0 || idx >= sets.length) return;
   applyLabSet(sets[idx], !isResync && needConfirm);
@@ -52477,6 +52633,45 @@ function invalidateHistoriaClinicaPanel() {
   _pendingAck = [];
   _dirtyKeys = /* @__PURE__ */ new Set();
 }
+async function applyDriveImportHcPatch(patient, patch, mode) {
+  if (!patient || mode === "eventos") return { ok: true };
+  var data = normalizeData(patient.historiaClinica && patient.historiaClinica.data, patient.id, patient);
+  var version = patient.historiaClinica ? Number(patient.historiaClinica.version || 0) : 0;
+  var mergeMode = mode === "replace" ? "replace" : "fill";
+  var merged = mergeHcPatch(data, patch || {}, mergeMode);
+  applyClinicalHistoryUppercase(merged);
+  var roomId = getActiveLiveSyncRoomId() || "";
+  var dirty = Object.keys(patch || {}).filter(function(k) {
+    return !String(k).startsWith("_");
+  });
+  if (isLanSessionConfiguredForRest() && roomId && dirty.length) {
+    var builder = createMutationBuilder("historiaClinica", patient.id).captureBase({
+      version,
+      data
+    });
+    dirty.forEach(function(k) {
+      if (merged[k] !== void 0) builder.set(k, merged[k]);
+    });
+    var mutation = builder.build({
+      roomId,
+      patientId: patient.id,
+      clientId: localStorage.getItem("rpc-lan-client-id") || "local",
+      audit: { sections: dirty, source: "drive-import" }
+    });
+    var out = await lanPushHistoriaClinica(patient.id, mutation);
+    if (out && out.conflict) return { ok: false };
+    if (out && out.ok) {
+      patient.historiaClinica = { version: out.version, data: migrateLegacyHistoriaData(out.data, CATALOGS) };
+      saveState();
+      invalidateHistoriaClinicaPanel();
+      return { ok: true };
+    }
+  }
+  patient.historiaClinica = { version: version + 1, data: merged };
+  saveState();
+  invalidateHistoriaClinicaPanel();
+  return { ok: true };
+}
 
 // public/js/features/vpo-panel.mjs
 init_app_state();
@@ -52535,8 +52730,8 @@ var PROCEDURES = [
 function normSearch(s) {
   return String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
-function getProcedureById(id) {
-  return PROCEDURES.find((p) => p.id === id) || null;
+function getProcedureById(id5) {
+  return PROCEDURES.find((p) => p.id === id5) || null;
 }
 function getAsaByKey(key) {
   return ASA_OPTIONS.find((a) => a.key === key) || null;
@@ -53037,14 +53232,14 @@ function scheduleSave() {
     saveState();
   }, 400);
 }
-function copyText(label, text) {
+function copyText(label5, text) {
   var t2 = String(text || "").trim();
   if (!t2) {
-    rt26.showToast("Nada que copiar en " + label, "error");
+    rt26.showToast("Nada que copiar en " + label5, "error");
     return;
   }
   copyToClipboardSafe(t2).then(function(ok) {
-    rt26.showToast(ok ? label + " copiado" : "No se pudo copiar", ok ? "success" : "error");
+    rt26.showToast(ok ? label5 + " copiado" : "No se pudo copiar", ok ? "success" : "error");
   });
 }
 function renderAhaBadges(state) {
@@ -53278,9 +53473,9 @@ function isFlagChecked(state, fieldPath) {
   var parts = fieldPath.split(".");
   return !!(state[parts[0]] && state[parts[0]][parts[1]]);
 }
-function renderFlagChip(state, fieldPath, label) {
+function renderFlagChip(state, fieldPath, label5) {
   var checked = isFlagChecked(state, fieldPath);
-  return '<label class="vpo-chip"><input type="checkbox" data-vpo-field="' + esc22(fieldPath) + '"' + (checked ? " checked" : "") + "><span>" + esc22(label) + "</span></label>";
+  return '<label class="vpo-chip"><input type="checkbox" data-vpo-field="' + esc22(fieldPath) + '"' + (checked ? " checked" : "") + "><span>" + esc22(label5) + "</span></label>";
 }
 function renderFlagGroups(state) {
   return '<div class="vpo-flag-groups">' + FLAG_GROUPS.map(function(group) {
@@ -54287,8 +54482,8 @@ function abbreviatePaseMedDosisCore(core) {
   var n = parseInt(m[1], 10);
   if (!Number.isFinite(n) || n < 1e6) return t2;
   var mil = n / 1e6;
-  var label = mil % 1 === 0 ? String(mil) : String(Math.round(mil * 10) / 10).replace(".", ",");
-  return label + "M " + m[2].toUpperCase();
+  var label5 = mil % 1 === 0 ? String(mil) : String(Math.round(mil * 10) / 10).replace(".", ",");
+  return label5 + "M " + m[2].toUpperCase();
 }
 function splitPaseMedDosisForDisplay(dosisClean) {
   var s = String(dosisClean || "").trim();
@@ -54811,8 +55006,8 @@ function syncInnerTabVisualOnly() {
 function syncConsolidatedInnerTabButtons(granularTab, settings2) {
   var composite = consolidatedInnerTabButtonId(granularTab, settings2).replace(/^itab-/, "");
   document.querySelectorAll(".exp-consolidated-tab").forEach(function(btn) {
-    var id = btn.id || "";
-    var name = id.replace(/^itab-/, "");
+    var id5 = btn.id || "";
+    var name = id5.replace(/^itab-/, "");
     btn.classList.toggle("active", name === composite);
   });
 }
@@ -55004,12 +55199,12 @@ function renderInnerTabs() {
   var settings2 = rt29.getSettings();
   var sala = isModeSala(settings2);
   var consolidated = useConsolidatedExpedienteTabs(settings2);
-  function show(id, visible) {
-    var el = document.getElementById(id);
+  function show(id5, visible) {
+    var el = document.getElementById(id5);
     if (el) el.style.display = visible ? "" : "none";
   }
-  function setOrder(id, order2) {
-    var el = document.getElementById(id);
+  function setOrder(id5, order2) {
+    var el = document.getElementById(id5);
     if (el) el.style.order = String(order2);
   }
   resetExpedientePaneLayoutCache();
@@ -55569,8 +55764,8 @@ function buildAdhTriggerHtml(row, stats, daysInMonth) {
   if (!stats.indicated) {
     return '<span class="med-pharm-adh-trigger med-pharm-adh-trigger--empty">\u2014</span>';
   }
-  var label = stats.missed > 0 ? stats.effective + " efect. \xB7 " + stats.missed + " no" : stats.effective + " d efectivos";
-  return '<span class="med-pharm-adh-wrap"><button type="button" class="med-pharm-adh-trigger' + (stats.missed > 0 ? " med-pharm-adh-trigger--miss" : "") + '" data-row-key="' + esc25(row.rowKey) + '" aria-haspopup="dialog">' + esc25(label) + '</button><div class="med-pharm-adh-panel" role="dialog" aria-hidden="true">' + buildAdhPanelHtml(row, daysInMonth) + "</div></span>";
+  var label5 = stats.missed > 0 ? stats.effective + " efect. \xB7 " + stats.missed + " no" : stats.effective + " d efectivos";
+  return '<span class="med-pharm-adh-wrap"><button type="button" class="med-pharm-adh-trigger' + (stats.missed > 0 ? " med-pharm-adh-trigger--miss" : "") + '" data-row-key="' + esc25(row.rowKey) + '" aria-haspopup="dialog">' + esc25(label5) + '</button><div class="med-pharm-adh-panel" role="dialog" aria-hidden="true">' + buildAdhPanelHtml(row, daysInMonth) + "</div></span>";
 }
 function buildMedCellInner(row, stats, daysInMonth) {
   return '<div class="med-cell-name">' + esc25(row.med) + '</div><div class="med-cell-adh">' + buildAdhTriggerHtml(row, stats, daysInMonth) + "</div>";
@@ -55860,11 +56055,11 @@ function buildSomeGridTable(month, rows) {
   var thead = document.createElement("thead");
   var hdr1 = document.createElement("tr");
   hdr1.className = "hdr-row-1";
-  ["Medicamento", "Dosis", "Freq", "V\xEDa"].forEach(function(label, i) {
+  ["Medicamento", "Dosis", "Freq", "V\xEDa"].forEach(function(label5, i) {
     var th = document.createElement("th");
     th.className = "col-meta-hdr col-" + ["med", "dosis", "freq", "via"][i];
     th.rowSpan = 2;
-    th.textContent = label;
+    th.textContent = label5;
     hdr1.appendChild(th);
   });
   appendDayHeader(hdr1, 1, Math.min(splitAt, total), month.year, month.monthIndex);
@@ -55928,8 +56123,8 @@ function buildSomeGridTable(month, rows) {
 }
 var MED_PHARM_MODAL_IDS = ["med-pharm-paste-modal", "med-pharm-modal-one", "med-pharm-modal-full"];
 function closeModals() {
-  MED_PHARM_MODAL_IDS.forEach(function(id) {
-    var el = document.getElementById(id);
+  MED_PHARM_MODAL_IDS.forEach(function(id5) {
+    var el = document.getElementById(id5);
     if (el) {
       el.classList.remove("open");
       el.setAttribute("hidden", "");
@@ -55939,9 +56134,9 @@ function closeModals() {
   document.body.classList.remove("rpc-med-pharm-modal-open");
   openRowKey = null;
 }
-function openMedPharmModal(id) {
+function openMedPharmModal(id5) {
   closeModals();
-  var el = document.getElementById(id);
+  var el = document.getElementById(id5);
   if (!el) return;
   el.removeAttribute("hidden");
   el.setAttribute("aria-hidden", "false");
@@ -55959,8 +56154,8 @@ function wireMedPharmModalDismiss() {
     function(ev) {
       if (ev.key !== "Escape") return;
       var open = false;
-      MED_PHARM_MODAL_IDS.forEach(function(id) {
-        var el = document.getElementById(id);
+      MED_PHARM_MODAL_IDS.forEach(function(id5) {
+        var el = document.getElementById(id5);
         if (el && el.classList.contains("open")) open = true;
       });
       if (!open) return;
@@ -55970,8 +56165,8 @@ function wireMedPharmModalDismiss() {
     },
     true
   );
-  MED_PHARM_MODAL_IDS.forEach(function(id) {
-    var bd = document.getElementById(id);
+  MED_PHARM_MODAL_IDS.forEach(function(id5) {
+    var bd = document.getElementById(id5);
     if (!bd) return;
     bd.addEventListener("click", function(ev) {
       if (!bd.classList.contains("open")) return;
@@ -56084,7 +56279,7 @@ function renderMedPharmProfilePanel() {
   onActivePatientChangedForPharm(pid);
   var hint = document.getElementById("med-pharm-hint");
   var list = document.getElementById("med-pharm-list");
-  var label = document.getElementById("med-pharm-month-label");
+  var label5 = document.getElementById("med-pharm-month-label");
   if (!list) return;
   if (!pid) {
     if (hint) {
@@ -56095,7 +56290,7 @@ function renderMedPharmProfilePanel() {
     return;
   }
   if (hint) hint.style.display = "none";
-  if (label) label.textContent = monthLabel(viewYear, viewMonthIndex);
+  if (label5) label5.textContent = monthLabel(viewYear, viewMonthIndex);
   var lastPasteEl = document.getElementById("med-pharm-last-paste");
   var month = reclassifyMonthIfLegacy(pid, getViewMonth(pid));
   if (lastPasteEl) {
@@ -56427,11 +56622,11 @@ function renderMedRecetaPanel() {
   }
   var rows = block.items.map(function(it) {
     var sid = String(it.id || "");
-    var label = esc26((it.nombreRaw || "").slice(0, 120));
+    var label5 = esc26((it.nombreRaw || "").slice(0, 120));
     var chk = it.suspendido ? " checked" : "";
     var paraNota = isMedNotaSelected(activeId2, sid) ? " checked" : "";
     var diaCell = it.diaTratamiento != null ? '<span class="med-receta-dia">D\xEDa ' + esc26(String(it.diaTratamiento)) + "</span>" : "";
-    return '<div class="med-receta-row"><div class="med-receta-checkcell"><input type="checkbox"' + chk + ` title="Excluir del texto de egreso" onchange="toggleMedRecetaSuspendido('` + safeAttrJsString(sid) + `', this.checked)"/></div><div class="med-receta-checkcell"><input type="checkbox"` + paraNota + ` title="Incluir en Tratamiento y campos SOAP (Analgesia / ABX / AntiHTA)" onchange="toggleMedRecetaParaNota('` + safeAttrJsString(sid) + `', this.checked)"/></div><div class="med-receta-name">` + label + "</div>" + diaCell + "</div>";
+    return '<div class="med-receta-row"><div class="med-receta-checkcell"><input type="checkbox"' + chk + ` title="Excluir del texto de egreso" onchange="toggleMedRecetaSuspendido('` + safeAttrJsString(sid) + `', this.checked)"/></div><div class="med-receta-checkcell"><input type="checkbox"` + paraNota + ` title="Incluir en Tratamiento y campos SOAP (Analgesia / ABX / AntiHTA)" onchange="toggleMedRecetaParaNota('` + safeAttrJsString(sid) + `', this.checked)"/></div><div class="med-receta-name">` + label5 + "</div>" + diaCell + "</div>";
   });
   listEl.innerHTML = '<div class="med-receta-wrap"><div class="med-receta-head"><span>Excl.</span><span>SOAP</span><span>Medicamento</span><span>D\xEDa</span></div>' + rows.join("") + "</div>";
   renderMedNotaFooter();
@@ -56812,6 +57007,7 @@ function writeCensusFiltersCollapsed(collapsed, storage2 = globalThis.localStora
 }
 
 // public/js/features/patients.mjs
+init_clinical_context_bar();
 init_tend_core();
 
 // public/js/lab-history-set.mjs
@@ -57597,13 +57793,18 @@ function patientsVisibleInSidebar() {
 function syncClinicalCensusFiltersBar() {
   const user = clinicalSessionContext.user;
   const elevated = user && hasElevatedTeamPrivileges(user);
-  const searchWrap = document.querySelector(".patient-search-wrap");
+  const filtersMount = document.getElementById("clinical-census-filters-mount");
   let bar = document.getElementById("clinical-census-filters");
   if (!elevated) {
     if (bar) bar.remove();
+    if (filtersMount) {
+      filtersMount.hidden = true;
+      filtersMount.setAttribute("aria-hidden", "true");
+    }
+    syncClinicalContextBarVisibility();
     return;
   }
-  if (!searchWrap) return;
+  if (!filtersMount) return;
   try {
     const storedSala = localStorage.getItem("clinical.censusFilterSala");
     if (storedSala) {
@@ -57615,9 +57816,11 @@ function syncClinicalCensusFiltersBar() {
   if (!bar) {
     bar = document.createElement("div");
     bar.id = "clinical-census-filters";
-    bar.className = "clinical-census-filters";
+    bar.className = "clinical-census-filters clinical-census-filters--toolbar";
     bar.innerHTML = '<button type="button" id="btn-clinical-census-filters-toggle" class="clinical-census-filters-toggle" aria-expanded="true" aria-controls="clinical-census-filters-body"><span class="clinical-census-filters-toggle-label">Filtros censo</span><span class="clinical-census-filters-chevron" aria-hidden="true"></span></button><div id="clinical-census-filters-body" class="clinical-census-filters-body"><label class="clinical-census-filter"><span>Sala</span><select id="clinical-filter-sala" class="profile-input"><option value="__all__">Todas</option><option value="Sala 1">Sala 1</option><option value="Sala 2">Sala 2</option><option value="Sala E">Sala E</option></select></label><label class="clinical-census-filter"><span>Equipo</span><select id="clinical-filter-team" class="profile-input"><option value="">Todos</option></select></label><label class="clinical-census-filter"><span>Servicio</span><input type="search" id="clinical-filter-service" class="profile-input" placeholder="Filtrar\u2026" autocomplete="off"></label></div>';
-    searchWrap.insertAdjacentElement("afterend", bar);
+    filtersMount.appendChild(bar);
+    filtersMount.hidden = false;
+    filtersMount.setAttribute("aria-hidden", "false");
     const applyCensusFiltersCollapsedUi = (collapsed) => {
       const toggleBtn2 = document.getElementById("btn-clinical-census-filters-toggle");
       const body = document.getElementById("clinical-census-filters-body");
@@ -57668,15 +57871,16 @@ function syncClinicalCensusFiltersBar() {
     const teams = clinicalSessionContext.teams || [];
     const prev = elevatedPatientFilters.teamId;
     teamSel.innerHTML = '<option value="">Todos</option>' + teams.map((t2) => {
-      const id = String(t2.team_id || "");
-      const label = String(t2.name || id).slice(0, 40);
-      return `<option value="${id}">${label}</option>`;
+      const id5 = String(t2.team_id || "");
+      const label5 = String(t2.name || id5).slice(0, 40);
+      return `<option value="${id5}">${label5}</option>`;
     }).join("");
     teamSel.value = prev;
   }
   if (serviceInp && serviceInp.value !== elevatedPatientFilters.service) {
     serviceInp.value = elevatedPatientFilters.service;
   }
+  syncClinicalContextBarVisibility();
 }
 var rt32 = {
   getActiveId() {
@@ -57856,13 +58060,13 @@ function movePatientBefore(targetId, beforeId) {
   if (from < to) to -= 1;
   patients.splice(to, 0, moved);
 }
-function movePatientByOffset(ev, id, dir) {
+function movePatientByOffset(ev, id5, dir) {
   if (ev) {
     ev.preventDefault();
     ev.stopPropagation();
   }
   var p = patients.find(function(x) {
-    return x.id === id;
+    return x.id === id5;
   });
   if (!p) return;
   var sec = patientSectionKey(p);
@@ -57871,21 +58075,21 @@ function movePatientByOffset(ev, id, dir) {
   }).map(function(x) {
     return x.id;
   });
-  var idx = ids.indexOf(id);
+  var idx = ids.indexOf(id5);
   if (idx < 0) return;
   var next = idx + dir;
   if (next < 0 || next >= ids.length) return;
-  movePatientBefore(id, ids[next]);
+  movePatientBefore(id5, ids[next]);
   saveState();
   renderPatientList();
 }
-function togglePatientPinned(ev, id) {
+function togglePatientPinned(ev, id5) {
   if (ev) {
     ev.preventDefault();
     ev.stopPropagation();
   }
   var p = patients.find(function(x) {
-    return x.id === id;
+    return x.id === id5;
   });
   if (!p) return;
   p.pinned = !p.pinned;
@@ -57893,13 +58097,13 @@ function togglePatientPinned(ev, id) {
   saveState();
   renderPatientList();
 }
-function togglePatientArchived(ev, id) {
+function togglePatientArchived(ev, id5) {
   if (ev) {
     ev.preventDefault();
     ev.stopPropagation();
   }
   var p = patients.find(function(x) {
-    return x.id === id;
+    return x.id === id5;
   });
   if (!p) return;
   p.archived = !p.archived;
@@ -58057,10 +58261,10 @@ function togglePatientRoundSeen(ev, patientId) {
     ev.preventDefault();
   }
   var s = getRoundSeenSet();
-  var id = String(patientId);
-  var idx = s.ids.indexOf(id);
+  var id5 = String(patientId);
+  var idx = s.ids.indexOf(id5);
   if (idx >= 0) s.ids.splice(idx, 1);
-  else s.ids.push(id);
+  else s.ids.push(id5);
   persistRoundSeenSet(s);
   renderPatientList();
 }
@@ -58370,16 +58574,16 @@ function formatIncomingEffectiveLabel(iso) {
     minute: "2-digit"
   });
 }
-function blockIncomingPreviewChartOpen(id) {
+function blockIncomingPreviewChartOpen(id5) {
   if (!clinicalSessionContext.user) return false;
-  const patient = patients.find((p) => p && String(p.id) === String(id));
+  const patient = patients.find((p) => p && String(p.id) === String(id5));
   const mapped = patient ? {
     id: String(patient.id),
     service: String(patient.servicio || patient.area || ""),
     sub_area: String(patient.area || ""),
     interconsult_type: patient.interconsult_type
-  } : { id: String(id) };
-  const guardia = clinicalSessionContext.guardiasMap.get(String(id)) || null;
+  } : { id: String(id5) };
+  const guardia = clinicalSessionContext.guardiasMap.get(String(id5)) || null;
   const scope = evaluateClinicalScope(
     clinicalSessionContext.user,
     mapped,
@@ -58388,7 +58592,7 @@ function blockIncomingPreviewChartOpen(id) {
   );
   if (!scope.writable && scope.incomingPreview) {
     const assignment = (getClinicalScopeContextForEvaluate().assignments || []).find(
-      (a) => String(a.patient_id) === String(id)
+      (a) => String(a.patient_id) === String(id5)
     );
     const when = formatIncomingEffectiveLabel(
       String(assignment?.effective_at || "")
@@ -58398,29 +58602,29 @@ function blockIncomingPreviewChartOpen(id) {
   }
   return false;
 }
-function selectPatient(id) {
-  if (id == null || id === "") return;
+function selectPatient(id5) {
+  if (id5 == null || id5 === "") return;
   try {
-    if (blockIncomingPreviewChartOpen(id)) return;
-    selectPatientCore(id);
+    if (blockIncomingPreviewChartOpen(id5)) return;
+    selectPatientCore(id5);
   } catch (err) {
     console.error("[R+] selectPatient:", err && err.message ? err.message : err);
   }
 }
-function selectPatientCore(id) {
+function selectPatientCore(id5) {
   var prevId = rt32.getActiveId();
   var wasOnLab = rt32.getActiveAppTab() === "lab";
   var appTab = rt32.getActiveAppTab();
-  var patientChanged = prevId != null && String(prevId) !== String(id);
+  var patientChanged = prevId != null && String(prevId) !== String(id5);
   if (patientChanged) {
     flushRecetaHuDraftIfMountedFor(prevId);
     stashMedInputForPatient(prevId);
     stashVpoForPatient(prevId);
     flushSaveState();
   }
-  rt32.setActiveId(id);
+  rt32.setActiveId(id5);
   if (patientChanged) rt32.invalidateInnerTabRenderCache();
-  if (!patientChanged || !patchPatientListActiveHighlight(id)) {
+  if (!patientChanged || !patchPatientListActiveHighlight(id5)) {
     renderPatientList();
   }
   var emptyState = document.getElementById("empty-state");
@@ -58454,7 +58658,7 @@ function selectPatientCore(id) {
     }
     if (!isPaseMode() && getUiDensity() === "normal") {
       var pmanejo = patients.find(function(p) {
-        return p && String(p.id) === String(id);
+        return p && String(p.id) === String(id5);
       });
       if (pmanejo && pmanejo.manejoPending && pmanejo.manejoPending.labSetId && !isManejoSectionHidden(settings2)) {
         rt32.switchInnerTab("manejo");
@@ -58518,20 +58722,20 @@ function ensurePatientListClickDelegation() {
     if (pid) selectPatient(pid);
   });
 }
-function deletePatient(e, id) {
+function deletePatient(e, id5) {
   e.stopPropagation();
   var target = patients.find(function(p) {
-    return p.id === id;
+    return p.id === id5;
   });
   if (!target || !target.archived) {
     if (!confirm("\xBFEliminar este paciente y sus notas?")) return;
   }
-  var label = target ? "Eliminar " + (target.nombre || "paciente") : "Eliminar paciente";
-  if (typeof rt32.pushUndoSnapshot === "function") rt32.pushUndoSnapshot(label);
-  if (!removePatientLocally(id)) return;
-  var snap = target || { id, registro: "" };
+  var label5 = target ? "Eliminar " + (target.nombre || "paciente") : "Eliminar paciente";
+  if (typeof rt32.pushUndoSnapshot === "function") rt32.pushUndoSnapshot(label5);
+  if (!removePatientLocally(id5)) return;
+  var snap = target || { id: id5, registro: "" };
   if (getActiveLiveSyncRoomId()) {
-    stagePatientDelete(id, snap, function(p) {
+    stagePatientDelete(id5, snap, function(p) {
       emitLiveSyncPatientDelete(p);
       scheduleLiveSyncPush();
     });
@@ -58692,8 +58896,8 @@ function closeModal() {
   document.getElementById("modal").classList.remove("open");
 }
 function confirmCloseAddPatientModal() {
-  var hasData = ["m-area", "m-servicio", "m-cuarto", "m-cama"].some(function(id) {
-    var el = document.getElementById(id);
+  var hasData = ["m-area", "m-servicio", "m-cuarto", "m-cama"].some(function(id5) {
+    var el = document.getElementById(id5);
     return el && el.value.trim();
   });
   if (hasData && !confirm("\xBFCerrar sin guardar?")) return false;
@@ -59060,8 +59264,8 @@ function getDemoState() {
     getActiveId: function() {
       return rt33.getActiveId();
     },
-    setActiveId: function(id) {
-      rt33.setActiveId(id);
+    setActiveId: function(id5) {
+      rt33.setActiveId(id5);
     }
   };
 }
@@ -59795,9 +59999,9 @@ function cloneForUndo(value) {
     return null;
   }
 }
-function buildUndoSnapshotPayload(label) {
+function buildUndoSnapshotPayload(label5) {
   return {
-    label: label || "operaci\xF3n",
+    label: label5 || "operaci\xF3n",
     at: (/* @__PURE__ */ new Date()).toISOString(),
     theme: localStorage.getItem("theme") || "light",
     activeId: rt35.getActiveId(),
@@ -59827,8 +60031,8 @@ function saveUndoStack(stack) {
   } catch (_e) {
   }
 }
-function pushUndoSnapshot2(label) {
-  var snap = buildUndoSnapshotPayload(label);
+function pushUndoSnapshot2(label5) {
+  var snap = buildUndoSnapshotPayload(label5);
   var stack = getUndoStack();
   stack.unshift(snap);
   saveUndoStack(stack);
@@ -60057,8 +60261,8 @@ function renderExtraTemplatesList() {
     return;
   }
   list.innerHTML = arr.map(function(tmpl) {
-    var id = esc29(tmpl.id || "");
-    return '<div class="extra-tmpl-row"><span class="etr-label" title="' + esc29(tmpl.label || "") + '">' + esc29(tmpl.label || "(sin nombre)") + `</span><div class="etr-actions"><button type="button" onclick="editExtraTemplate('` + id + `')">Editar</button><button type="button" class="etr-del" onclick="deleteExtraTemplate('` + id + `')">Eliminar</button></div></div>`;
+    var id5 = esc29(tmpl.id || "");
+    return '<div class="extra-tmpl-row"><span class="etr-label" title="' + esc29(tmpl.label || "") + '">' + esc29(tmpl.label || "(sin nombre)") + `</span><div class="etr-actions"><button type="button" onclick="editExtraTemplate('` + id5 + `')">Editar</button><button type="button" class="etr-del" onclick="deleteExtraTemplate('` + id5 + `')">Eliminar</button></div></div>`;
   }).join("");
 }
 function startNewExtraTemplate() {
@@ -60077,13 +60281,13 @@ function startNewExtraTemplate() {
     if (elLabel) elLabel.focus();
   }, 30);
 }
-function editExtraTemplate(id) {
+function editExtraTemplate(id5) {
   var arr = ensureExtraTemplatesArray();
   var tmpl = arr.find(function(t2) {
-    return t2.id === id;
+    return t2.id === id5;
   });
   if (!tmpl) return;
-  _extraTemplateEditing = id;
+  _extraTemplateEditing = id5;
   var ed = document.getElementById("extra-template-editor");
   if (ed) ed.style.display = "flex";
   document.getElementById("extra-tmpl-label").value = tmpl.label || "";
@@ -60097,8 +60301,8 @@ function cancelExtraTemplateEdit() {
   if (ed) ed.style.display = "none";
 }
 function saveExtraTemplateFromEditor() {
-  var label = (document.getElementById("extra-tmpl-label").value || "").trim();
-  if (!label) {
+  var label5 = (document.getElementById("extra-tmpl-label").value || "").trim();
+  if (!label5) {
     rt35.showToast("Ingresa un nombre para la plantilla", "error");
     return;
   }
@@ -60111,7 +60315,7 @@ function saveExtraTemplateFromEditor() {
       return t2.id === _extraTemplateEditing;
     });
     if (tmpl) {
-      tmpl.label = label;
+      tmpl.label = label5;
       tmpl.dieta = dieta;
       tmpl.cuidados = cuidados;
       tmpl.medicamentos = meds;
@@ -60119,29 +60323,29 @@ function saveExtraTemplateFromEditor() {
   } else {
     arr.push({
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-      label,
+      label: label5,
       dieta,
       cuidados,
       medicamentos: meds
     });
   }
   persistSettings();
-  rt35.addAuditEntry("extra-template-save", "ok", arr.length, label);
+  rt35.addAuditEntry("extra-template-save", "ok", arr.length, label5);
   rt35.showToast("Plantilla guardada", "success");
   renderExtraTemplatesList();
   cancelExtraTemplateEdit();
   if (rt35.getActiveId()) rt35.renderIndicaForm();
 }
-function deleteExtraTemplate(id) {
+function deleteExtraTemplate(id5) {
   var arr = ensureExtraTemplatesArray();
   var tmpl = arr.find(function(t2) {
-    return t2.id === id;
+    return t2.id === id5;
   });
   if (!tmpl) return;
   if (!confirm('\xBFEliminar la plantilla "' + (tmpl.label || "") + '"?')) return;
   var settings2 = rt35.getSettings();
   settings2.extraTemplates = arr.filter(function(t2) {
-    return t2.id !== id;
+    return t2.id !== id5;
   });
   persistSettings();
   rt35.addAuditEntry(
@@ -60432,8 +60636,8 @@ function initModalDismiss() {
     "exp-advice-backdrop",
     "tend-gaso-ext-backdrop"
   ];
-  function el(id) {
-    return document.getElementById(id);
+  function el(id5) {
+    return document.getElementById(id5);
   }
   modalDismiss.register({
     isOpen: function() {
@@ -60686,16 +60890,16 @@ function initModalDismiss() {
   });
   modalDismiss.register({
     isOpen: function() {
-      return dynamicBackdropIds.some(function(id) {
-        var node = el(id);
+      return dynamicBackdropIds.some(function(id5) {
+        var node = el(id5);
         return isRpcOverlayVisible(node);
       });
     },
     close: function() {
       var top = null;
       var bestZ = -1;
-      dynamicBackdropIds.forEach(function(id) {
-        var node = el(id);
+      dynamicBackdropIds.forEach(function(id5) {
+        var node = el(id5);
         var z = getOverlayZIndex(node);
         if (z > bestZ) {
           bestZ = z;
@@ -60714,8 +60918,8 @@ function initModalDismiss() {
     backdropEl: function() {
       var best = null;
       var bestZ = -1;
-      dynamicBackdropIds.forEach(function(id) {
-        var node = el(id);
+      dynamicBackdropIds.forEach(function(id5) {
+        var node = el(id5);
         var z = getOverlayZIndex(node);
         if (z > bestZ) {
           bestZ = z;
@@ -60866,8 +61070,8 @@ function buildClinicalTextExport(bundle) {
     });
     if (!toLines(note.diagnosticos || []).length) blocks.push("(sin contenido)");
   }
-  function pushBlock(label, value) {
-    blocks.push(label + ":");
+  function pushBlock(label5, value) {
+    blocks.push(label5 + ":");
     var lines = toLines(value);
     if (!lines.length) blocks.push("(sin contenido)");
     lines.forEach(function(l) {
@@ -61056,12 +61260,901 @@ function scheduleDeferredUiInits() {
 init_chrome();
 init_lan_sync();
 init_soap_estado();
+
+// lib/drive-import/normalize.mjs
+function normalizeDrivePaste(text) {
+  return String(text == null ? "" : text).replace(/\uFEFF/g, "").replace(/\r\n/g, "\n").replace(/\r/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+// lib/drive-import/segment.mjs
+var DATE_ONLY_RE = /^(\d{1,2})[\/.\-](\d{1,2})(?:[\/.\-](\d{2,4}))?\s*$/;
+var MONITOREO_RE = /^(N|V|HD|HI|NM)\s*:/i;
+var SECTION_MARKERS = [
+  { key: "eventualidades", re: /^EVENTUALIDADES(\s+EN ESTE INTERNAMIENTO)?\s*$/i },
+  { key: "estadoActual", re: /^ESTADO ACTUAL\b/i, exclusive: true },
+  { key: "historiaClinica", re: /^HISTORIA\s+CL[IÍ]NICA\s*$/i },
+  { key: "ficha", re: /^FICHA\s+DE\s+IDENTIFICACI[ÓO]N\s*$/i },
+  { key: "interrogatorio", re: /^INTERROGATORIO\s*$/i },
+  { key: "dx", re: /^DX\s*:?\s*$/i },
+  { key: "motivoConsulta", re: /^MOTIVO\s+DE\s+CONSULTA\s*:?\s*$/i },
+  { key: "signosVitales", re: /^SIGNOS\s+VITALES(\s+DE\s+TRIAGE)?\s*:?\s*$/i },
+  { key: "fechaIngreso", re: /^FECHA\s+DE\s+INGRESO\b/i },
+  { key: "ahf", re: /^ANTECEDENTES\s+HEREDOFAMILIARES\s*$/i },
+  { key: "apnp", re: /^ANTECEDENTES\s+PERSONALES(\s+NO\s+PATOL[ÓO]GICOS)?\s*$/i },
+  { key: "app", re: /^ANTECEDENTES\s+PERSONALES\s+PATOL[ÓO]GICOS\s*$/i },
+  { key: "ecd", re: /^ENFERMEDADES\s+CR[ÓO]NICO-?DEGENERATIVAS\s*$/i },
+  { key: "medicamentos", re: /^MEDICAMENTOS(\s+ACTUALES|\s+HABITUALES)?\s*$/i },
+  { key: "peea", re: /^(PADECIMIENTO\s+ACTUAL\s*\/\s*PEEA|PEEA)\s*$/i },
+  { key: "pendientes", re: /^PENDIENTES\s*$/i }
+];
+var INLINE_SECTIONS = [
+  { key: "motivoConsulta", re: /^MOTIVO\s+DE\s+CONSULTA\s*:\s*(.+)$/i },
+  { key: "signosVitales", re: /^SIGNOS\s+VITALES(?:\s+DE\s+TRIAGE)?\s*:\s*(.+)$/i }
+];
+function matchInlineSection(line) {
+  const t2 = line.trim();
+  for (const m of INLINE_SECTIONS) {
+    const hit = m.re.exec(t2);
+    if (hit) return { key: m.key, body: hit[1].trim() };
+  }
+  return null;
+}
+function matchSectionHeader(line) {
+  const t2 = line.trim();
+  if (!t2) return null;
+  for (const m of SECTION_MARKERS) {
+    if (m.re.test(t2)) return { key: m.key, exclusive: m.exclusive };
+  }
+  return null;
+}
+function splitDocumentSections(rawText) {
+  const text = normalizeDrivePaste(rawText);
+  const lines = text.split("\n");
+  const sections = {};
+  const eventualidadesBlocks = [];
+  const warnings = [];
+  const headerLines = [];
+  let currentKey = "_preamble";
+  let currentLines = [];
+  let inEstadoActual = false;
+  let inEventualidades = false;
+  let evBuffer = [];
+  function flushSection() {
+    const body = currentLines.join("\n").trim();
+    if (currentKey === "_preamble") {
+      if (body) headerLines.push(...body.split("\n"));
+    } else if (currentKey === "eventualidades") {
+      if (body) evBuffer.push(body);
+    } else if (!inEstadoActual && body) {
+      sections[currentKey] = sections[currentKey] ? sections[currentKey] + "\n\n" + body : body;
+    }
+    currentLines = [];
+  }
+  function flushEventualidadesBlock() {
+    const joined = evBuffer.filter(Boolean).join("\n\n").trim();
+    if (joined) eventualidadesBlocks.push(joined);
+    evBuffer = [];
+  }
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (inEstadoActual && DATE_ONLY_RE.test(trimmed) && !MONITOREO_RE.test(trimmed)) {
+      inEstadoActual = false;
+      inEventualidades = true;
+      currentKey = "eventualidades";
+      currentLines = [line];
+      continue;
+    }
+    const inline = matchInlineSection(line);
+    if (inline) {
+      flushSection();
+      if (inEstadoActual) inEstadoActual = false;
+      if (inEventualidades) {
+        flushEventualidadesBlock();
+        inEventualidades = false;
+      }
+      sections[inline.key] = inline.body;
+      currentKey = "_inline";
+      currentLines = [];
+      continue;
+    }
+    const hit = matchSectionHeader(line);
+    if (hit) {
+      flushSection();
+      if (hit.key === "estadoActual") {
+        inEstadoActual = true;
+        inEventualidades = false;
+        currentKey = "estadoActual";
+        warnings.push("ESTADO ACTUAL detectado: no se importar\xE1 en v1.");
+        continue;
+      }
+      if (inEstadoActual && hit.key !== "estadoActual") {
+        inEstadoActual = false;
+      }
+      if (hit.key === "eventualidades") {
+        if (inEventualidades) flushEventualidadesBlock();
+        inEventualidades = true;
+        inEstadoActual = false;
+        currentKey = "eventualidades";
+        continue;
+      }
+      if (inEventualidades && hit.key !== "eventualidades") {
+        flushEventualidadesBlock();
+        inEventualidades = false;
+      }
+      currentKey = hit.key;
+      continue;
+    }
+    if (inEstadoActual) continue;
+    currentLines.push(line);
+  }
+  flushSection();
+  if (inEventualidades) flushEventualidadesBlock();
+  return { headerLines, sections, eventualidadesBlocks, warnings };
+}
+
+// lib/drive-import/parse-header.mjs
+var PIPE_RE = /^(\d+-\d+)\s*\|\s*(.+?)\s*\|\s*(\d+)\s*AÑOS\s*\|\s*([\d-]+)\s*\|\s*(.+)$/i;
+var FICHA_KV_RE = /^([A-ZÁÉÍÓÚÑ\s]+)\s*:\s*(.+)$/i;
+function parsePipeHeader(firstLines) {
+  const lines = Array.isArray(firstLines) ? firstLines : String(firstLines || "").split("\n");
+  for (const raw of lines.slice(0, 8)) {
+    const line = String(raw || "").trim();
+    if (!line) continue;
+    const m = PIPE_RE.exec(line);
+    if (m) {
+      return {
+        cama: m[1].trim(),
+        nombre: m[2].trim(),
+        edad: m[3].trim(),
+        registro: m[4].trim(),
+        resumenDx: m[5].trim()
+      };
+    }
+  }
+  return null;
+}
+function parseFichaIdentificacion(block) {
+  const identificacion = {};
+  let sexo = "";
+  const lines = String(block || "").split("\n");
+  const keyMap = {
+    NOMBRE: "nombre",
+    EDAD: "edad",
+    SEXO: "sexo",
+    ORIGEN: "lugarNacimiento",
+    RESIDENCIA: "residencia",
+    OCUPACI\u00D3N: "ocupacionActual",
+    OCUPACION: "ocupacionActual",
+    ESCOLARIDAD: "escolaridad",
+    "ESTADO CIVIL": "estadoCivil",
+    RELIGI\u00D3N: "religion",
+    RELIGION: "religion",
+    RESPONSABLE: "informante"
+  };
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    const m = FICHA_KV_RE.exec(line);
+    if (!m) continue;
+    const label5 = m[1].trim().toUpperCase();
+    const value = m[2].trim();
+    const field = keyMap[label5];
+    if (field) {
+      identificacion[field] = value;
+      if (field === "sexo") {
+        if (/FEMENIN/i.test(value)) sexo = "F";
+        else if (/MASCULIN/i.test(value)) sexo = "M";
+      }
+    }
+  }
+  if (identificacion.nombre && !identificacion.informante) {
+    identificacion.informante = identificacion.nombre;
+  }
+  return { identificacion, sexo };
+}
+function mergeHeader(pipe, ficha) {
+  const id5 = ficha.identificacion || {};
+  const edadMatch = /(\d+)/.exec(String(id5.edad || ""));
+  return {
+    cama: pipe?.cama || "",
+    nombre: id5.nombre || pipe?.nombre || "",
+    edad: edadMatch ? edadMatch[1] : pipe?.edad || "",
+    registro: pipe?.registro || "",
+    resumenDx: pipe?.resumenDx || "",
+    sexo: ficha.sexo || "",
+    identificacion: Object.assign({}, id5)
+  };
+}
+
+// lib/drive-import/profiles/drive-ficha-hc-v1.mjs
+var drive_ficha_hc_v1_exports = {};
+__export(drive_ficha_hc_v1_exports, {
+  id: () => id,
+  label: () => label,
+  mapHc: () => mapHc,
+  score: () => score
+});
+
+// lib/drive-import/hc-field-parsers.mjs
+var KV_RE = /^([A-ZÁÉÍÓÚÑ0-9\s]+)\s*[:;]\s*(.+)$/i;
+function parseKeyValueBlock(block) {
+  const out = {};
+  const keyMap = {
+    ORIGEN: "lugarNacimiento",
+    RESIDENCIA: "residencia",
+    "ESTADO CIVIL": "estadoCivil",
+    RELIGI\u00D3N: "religion",
+    RELIGION: "religion",
+    ESCOLARIDAD: "escolaridad",
+    OCUPACI\u00D3N: "ocupacionActual",
+    OCUPACION: "ocupacionActual"
+  };
+  for (const raw of String(block || "").split("\n")) {
+    const line = raw.trim();
+    if (!line) continue;
+    const m = KV_RE.exec(line);
+    if (!m) continue;
+    const label5 = m[1].trim().toUpperCase();
+    const value = m[2].trim();
+    const field = keyMap[label5] || label5.toLowerCase().replace(/\s+/g, "_");
+    out[field] = value;
+  }
+  return out;
+}
+function parseApnpLines(block) {
+  const apnp = {};
+  const map = {
+    TABAQUISMO: "tabaquismo",
+    ETILISMO: "alcoholismo",
+    TOXICOMAN\u00CDAS: "toxicomanias",
+    TOXICOMANIAS: "toxicomanias",
+    "TATUAJES/PERFORACIONES": "tatuajes",
+    TATUAJES: "tatuajes",
+    ZOONOSIS: "deportesPasatiemposMascotas",
+    COMBE: "dieta",
+    BIOMASA: "dieta",
+    "VIAJES RECIENTES": "dieta",
+    HERBOLARIA: "dieta"
+  };
+  for (const raw of String(block || "").split("\n")) {
+    const line = raw.trim();
+    if (!line) continue;
+    const m = KV_RE.exec(line);
+    if (!m) continue;
+    const label5 = m[1].trim().toUpperCase();
+    const field = map[label5];
+    if (field) apnp[field] = m[2].trim();
+  }
+  return apnp;
+}
+function buildAppFromSections(sections) {
+  const parts = [
+    sections.ecd,
+    sections.medicamentos,
+    sections.quirurgicos,
+    sections.internamientos,
+    sections.app
+  ].filter(Boolean);
+  const descripcionDetallada = parts.join("\n\n").trim();
+  const alergiasMatch = /ALERGIAS\s*:\s*(.+)/i.exec(descripcionDetallada);
+  const inmunMatch = /INMUNIZACIONES\s*:\s*(.+)/i.exec(descripcionDetallada);
+  return {
+    conditions: [],
+    customConditions: [],
+    conditionDetails: {},
+    cirugias: [],
+    hospitalizaciones: [],
+    alergiasNegado: alergiasMatch ? /NEGAD/i.test(alergiasMatch[1]) : false,
+    alergiaMedicamentos: [],
+    traumaticosEntries: [],
+    transfusionesEntries: [],
+    descripcionDetallada,
+    medicamentosActuales: sections.medicamentos ? sections.medicamentos.split("\n").filter((l) => l.trim()) : [],
+    inmunizaciones: inmunMatch ? inmunMatch[1].trim() : ""
+  };
+}
+
+// lib/drive-import/profiles/drive-ficha-hc-v1.mjs
+var id = "drive-ficha-hc-v1";
+var label = "Guardia \u2014 ficha + APNP/APPP";
+function score(sections, header) {
+  let s = 0;
+  if (header) s += 20;
+  if (sections.ficha) s += 45;
+  if (sections.app) s += 25;
+  if (sections.apnp) s += 15;
+  if (sections.peea) s += 15;
+  if (sections.historiaClinica && !sections.ficha) s -= 15;
+  return s;
+}
+function mapHc(doc) {
+  const sections = doc.sections || {};
+  const ficha = parseFichaIdentificacion(sections.ficha || "");
+  const apnp = parseApnpLines(sections.apnp || "");
+  const app = buildAppFromSections(sections);
+  const peeaParts = [sections.peea, sections.pendientes].filter(Boolean);
+  const padecimientoActual = peeaParts.join("\n\n").trim();
+  return {
+    identificacion: ficha.identificacion,
+    motivoConsulta: (sections.motivoConsulta || "").trim(),
+    signosVitalesIngreso: (sections.signosVitales || "").trim(),
+    apnp,
+    ahf: {
+      conditions: [],
+      customConditions: [],
+      entries: [],
+      descripcionDetallada: (sections.ahf || "").trim()
+    },
+    app,
+    padecimientoActual,
+    _sexo: ficha.sexo
+  };
+}
+
+// lib/drive-import/profiles/drive-pipe-hc-v1.mjs
+var drive_pipe_hc_v1_exports = {};
+__export(drive_pipe_hc_v1_exports, {
+  id: () => id2,
+  label: () => label2,
+  mapHc: () => mapHc2,
+  score: () => score2
+});
+var id2 = "drive-pipe-hc-v1";
+var label2 = "Guardia \u2014 encabezado | y HC cl\xE1sica";
+function score2(sections, header) {
+  let s = 0;
+  if (header) s += 30;
+  if (sections.historiaClinica) s += 25;
+  if (sections.peea) s += 20;
+  if (sections.motivoConsulta) s += 10;
+  if (sections.ficha) s -= 50;
+  if (sections.app) s -= 20;
+  return s;
+}
+function mapHc2(doc) {
+  const sections = doc.sections || {};
+  const identificacion = parseKeyValueBlock(sections.historiaClinica || "");
+  const apnp = parseApnpLines(sections.apnp || "");
+  const ahfText = (sections.ahf || "").trim();
+  const app = buildAppFromSections(sections);
+  if (sections.ecd && !app.descripcionDetallada.includes(sections.ecd)) {
+    app.descripcionDetallada = [sections.ecd, app.descripcionDetallada].filter(Boolean).join("\n\n");
+  }
+  return {
+    identificacion,
+    motivoConsulta: (sections.motivoConsulta || "").trim(),
+    signosVitalesIngreso: (sections.signosVitales || "").trim(),
+    apnp,
+    ahf: {
+      conditions: [],
+      customConditions: [],
+      entries: [],
+      descripcionDetallada: ahfText
+    },
+    app,
+    padecimientoActual: (sections.peea || "").trim()
+  };
+}
+
+// lib/drive-import/profiles/drive-eventos-only-v1.mjs
+var drive_eventos_only_v1_exports = {};
+__export(drive_eventos_only_v1_exports, {
+  id: () => id3,
+  label: () => label3,
+  mapHc: () => mapHc3,
+  score: () => score3
+});
+var id3 = "drive-eventos-only-v1";
+var label3 = "Solo eventualidades";
+function score3(sections, header) {
+  const hcKeys = ["ficha", "historiaClinica", "peea", "app", "apnp", "ahf", "motivoConsulta"];
+  const hasHc = hcKeys.some((k) => sections[k] && String(sections[k]).trim());
+  if (hasHc) return 0;
+  let s = 10;
+  if (!header) s += 15;
+  return s;
+}
+function mapHc3() {
+  return {};
+}
+
+// lib/drive-import/profiles/drive-fragment-v1.mjs
+var drive_fragment_v1_exports = {};
+__export(drive_fragment_v1_exports, {
+  id: () => id4,
+  label: () => label4,
+  mapHc: () => mapHc4,
+  score: () => score4
+});
+var id4 = "drive-fragment-v1";
+var label4 = "Fragmento (revisar)";
+function score4() {
+  return 1;
+}
+function mapHc4() {
+  return {};
+}
+
+// lib/drive-import/registry.mjs
+var PROFILES = [drive_ficha_hc_v1_exports, drive_pipe_hc_v1_exports, drive_eventos_only_v1_exports, drive_fragment_v1_exports];
+var SPECIFICITY = {
+  "drive-ficha-hc-v1": 4,
+  "drive-pipe-hc-v1": 3,
+  "drive-eventos-only-v1": 2,
+  "drive-fragment-v1": 1
+};
+function detectProfile(sections, header) {
+  const scored = PROFILES.map((p) => ({
+    id: p.id,
+    label: p.label,
+    score: p.score(sections, header)
+  })).sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return (SPECIFICITY[b.id] || 0) - (SPECIFICITY[a.id] || 0);
+  });
+  const top = scored[0];
+  const profileId = top && top.score >= 40 ? top.id : "drive-fragment-v1";
+  return { profileId, scored };
+}
+function getProfile2(profileId) {
+  return PROFILES.find((p) => p.id === profileId) || drive_fragment_v1_exports;
+}
+function listProfiles() {
+  return PROFILES.map((p) => ({ id: p.id, label: p.label }));
+}
+
+// lib/drive-import/eventualidad-dates.mjs
+function parseDateLine(line) {
+  const t2 = String(line || "").trim();
+  let m = /^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})$/.exec(t2);
+  if (m) {
+    let y = Number(m[3]);
+    if (y < 100) y += 2e3;
+    return { day: Number(m[1]), month: Number(m[2]), year: y };
+  }
+  m = /^(\d{1,2})[\/.\-](\d{1,2})$/.exec(t2);
+  if (m) return { day: Number(m[1]), month: Number(m[2]) };
+  return null;
+}
+function resolveYear(partial, hints) {
+  if (partial.year != null && Number.isFinite(partial.year)) return partial.year;
+  if (hints.referenceYear != null) return hints.referenceYear;
+  const now = /* @__PURE__ */ new Date();
+  let y = hints.documentYear != null ? hints.documentYear : now.getFullYear();
+  if (partial.month > now.getMonth() + 1) y -= 1;
+  return y;
+}
+function toNoonIso(parts) {
+  const dt = new Date(parts.year, parts.month - 1, parts.day, 12, 0, 0, 0);
+  return Number.isFinite(dt.getTime()) ? dt.toISOString() : (/* @__PURE__ */ new Date()).toISOString();
+}
+function inferDocumentYearFromText(text) {
+  const m = /(?:FIUX|FECHA\s+DE\s+INGRESO)[^\d]*(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})/i.exec(text);
+  if (m) return Number(m[3]);
+  const years = [];
+  const re = /\b(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})\b/g;
+  let hit;
+  while ((hit = re.exec(text)) !== null) {
+    years.push(Number(hit[3]));
+  }
+  return years.length ? Math.max(...years) : void 0;
+}
+
+// lib/drive-import/map-to-eventualidades.mjs
+var DATE_ONLY_RE2 = /^(\d{1,2})[\/.\-](\d{1,2})(?:[\/.\-](\d{2,4}))?\s*$/;
+var MONITOREO_RE2 = /^(N|V|HD|HI|NM)\s*:/i;
+function mapSectionsToEventualidades(input) {
+  const blocks = input.eventualidadesBlocks || [];
+  const hints = {
+    referenceYear: input.referenceYear,
+    documentYear: input.documentYear
+  };
+  const entries = [];
+  const warnings = [];
+  for (const block of blocks) {
+    let flush = function() {
+      const text = buf.map((l) => l.trim()).filter(Boolean).join("\n").trim();
+      if (curDate && text) entries.push({ at: curDate, text });
+      buf = [];
+    };
+    const lines = String(block || "").split("\n");
+    let curDate = null;
+    let buf = [];
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (!line) continue;
+      if (MONITOREO_RE2.test(line)) continue;
+      if (DATE_ONLY_RE2.test(line)) {
+        const d = parseDateLine(line);
+        if (d) {
+          flush();
+          const year = resolveYear(d, hints);
+          curDate = toNoonIso({ day: d.day, month: d.month, year });
+          continue;
+        }
+      }
+      buf.push(line);
+    }
+    flush();
+  }
+  return { entries, warnings };
+}
+
+// lib/drive-import/parse-drive-document.mjs
+function formatDriveImportPreview(parsed) {
+  const lines = [];
+  lines.push("Perfil: " + parsed.profileLabel + " (" + parsed.profileId + ")");
+  if (parsed.header?.nombre) {
+    lines.push(
+      "Paciente: " + parsed.header.nombre + (parsed.header.registro ? " \xB7 Reg " + parsed.header.registro : "") + (parsed.header.cama ? " \xB7 Cama " + parsed.header.cama : "")
+    );
+  }
+  const hcKeys = Object.keys(parsed.hcPatch || {}).filter((k) => !String(k).startsWith("_"));
+  lines.push("HC: " + (hcKeys.length ? hcKeys.join(", ") : "sin cambios detectados"));
+  lines.push(
+    "Eventualidades: " + parsed.eventualidades.entries.length + " detectadas" + (parsed.eventualidades.skippedEstimate ? " \xB7 ~" + parsed.eventualidades.skippedEstimate + " posibles duplicados" : "")
+  );
+  if (parsed.warnings.length) {
+    lines.push("");
+    lines.push("Advertencias:");
+    parsed.warnings.forEach((w) => lines.push("\u2022 " + w));
+  }
+  return lines.join("\n");
+}
+function parseDriveDocument(rawText, profileIdOverride, opts) {
+  opts = opts || {};
+  const split = splitDocumentSections(rawText);
+  const pipe = parsePipeHeader(split.headerLines);
+  const ficha = parseFichaIdentificacion(split.sections.ficha || "");
+  const header = mergeHeader(pipe, ficha);
+  const detected = detectProfile(split.sections, pipe);
+  const profileId = profileIdOverride || detected.profileId;
+  const profile = getProfile2(profileId);
+  const doc = { sections: split.sections, headerLines: split.headerLines };
+  let hcPatch = profile.mapHc(doc) || {};
+  const sexo = hcPatch._sexo;
+  if (sexo) delete hcPatch._sexo;
+  if (sexo && !header.sexo) header.sexo = sexo;
+  const documentYear = inferDocumentYearFromText(rawText);
+  let evBlocks = split.eventualidadesBlocks;
+  if (profileId === "drive-eventos-only-v1" && !evBlocks.length) {
+    evBlocks = [String(rawText || "").trim()];
+  }
+  const { entries, warnings: evWarn } = mapSectionsToEventualidades({
+    eventualidadesBlocks: evBlocks,
+    referenceYear: documentYear,
+    documentYear
+  });
+  const { skipped } = filterNewEventualidades(opts.existingEventualidades || [], entries);
+  const warnings = split.warnings.slice();
+  if (profileId === "drive-fragment-v1") {
+    warnings.push("No se reconoci\xF3 un formato con confianza; revisa el perfil manualmente.");
+  }
+  if (!split.eventualidadesBlocks.length) {
+    warnings.push("No se encontr\xF3 secci\xF3n EVENTUALIDADES.");
+  }
+  warnings.push(...evWarn);
+  const result = {
+    profileId,
+    profileLabel: profile.label,
+    detected,
+    header,
+    hcPatch,
+    eventualidades: {
+      entries,
+      skippedEstimate: skipped
+    },
+    warnings
+  };
+  result.previewText = formatDriveImportPreview(result);
+  return result;
+}
+
+// public/js/features/drive-import-apply.mjs
+init_app_state();
+async function applyDriveImport(parsed, options) {
+  const mode = options.mode || "fill";
+  let patient = options.activePatient;
+  if (options.createNew) {
+    const h = parsed.header || {};
+    const id5 = generatePatientId();
+    patient = {
+      id: id5,
+      nombre: ensureUniquePatientName(h.nombre || "PACIENTE SIN NOMBRE"),
+      edad: h.edad || "",
+      sexo: h.sexo === "F" ? "F" : "M",
+      cama: h.cama || "",
+      registro: h.registro || "",
+      area: "",
+      servicio: "",
+      cuarto: "",
+      fromLab: false
+    };
+    applyDefaultsToNewPatient(patient);
+    patients.unshift(patient);
+    selectPatient(id5);
+  }
+  if (!patient) {
+    return { ok: false, error: "no-patient" };
+  }
+  let hcOk = true;
+  if (mode !== "eventos") {
+    const hcRes = await applyDriveImportHcPatch(patient, parsed.hcPatch || {}, mode);
+    hcOk = hcRes.ok;
+    if (!hcOk) return { ok: false, error: "hc-conflict" };
+  }
+  const evRes = await applyDriveImportEventualidades(patient, parsed.eventualidades.entries || []);
+  invalidateEventualidadesPanel();
+  await saveState();
+  const hcKeys = Object.keys(parsed.hcPatch || {}).filter(function(k) {
+    return !String(k).startsWith("_");
+  });
+  const navigateTo = mode === "eventos" || !hcKeys.length ? "eventualidades" : "historia";
+  return {
+    ok: true,
+    navigateTo,
+    evAdded: evRes.added,
+    evSkipped: evRes.skipped,
+    patientId: patient.id
+  };
+}
+
+// public/js/features/drive-import-modal.mjs
+var rt36 = {
+  getActiveId() {
+    return null;
+  },
+  getActivePatient() {
+    return null;
+  },
+  showToast(_msg, _type) {
+  },
+  pushUndoSnapshot(_label) {
+  },
+  switchInnerTab(_tab) {
+  },
+  switchAppTab(_tab) {
+  },
+  addAuditEntry(_action, _result, _count, _detail) {
+  }
+};
+var _debounceId = null;
+var _profilesPopulated = false;
+function registerDriveImportRuntime(partial) {
+  if (partial && typeof partial === "object") Object.assign(rt36, partial);
+}
+function getBackdrop2() {
+  return document.getElementById("drive-import-backdrop");
+}
+function getTextarea2() {
+  return (
+    /** @type {HTMLTextAreaElement | null} */
+    document.getElementById("drive-import-input")
+  );
+}
+function getProfileSelect() {
+  return (
+    /** @type {HTMLSelectElement | null} */
+    document.getElementById("drive-import-profile")
+  );
+}
+function getPreviewEl2() {
+  return document.getElementById("drive-import-preview");
+}
+function getWarningEl() {
+  return document.getElementById("drive-import-warning");
+}
+function getApplyMode() {
+  const checked = document.querySelector('input[name="drive-import-mode"]:checked');
+  const v = checked ? String(checked.value) : "fill";
+  if (v === "replace" || v === "eventos") return v;
+  return "fill";
+}
+function populateProfileSelect(selectedId) {
+  const sel = getProfileSelect();
+  if (!sel) return;
+  if (!_profilesPopulated) {
+    sel.innerHTML = "";
+    listProfiles().forEach(function(p) {
+      const opt = document.createElement("option");
+      opt.value = p.id;
+      opt.textContent = p.label;
+      sel.appendChild(opt);
+    });
+    _profilesPopulated = true;
+  }
+  if (selectedId) sel.value = selectedId;
+}
+function getParsed() {
+  const ta = getTextarea2();
+  const sel = getProfileSelect();
+  const patient = rt36.getActivePatient();
+  const existing = patient && patient.eventualidades && Array.isArray(patient.eventualidades.entries) ? patient.eventualidades.entries : [];
+  return parseDriveDocument(ta ? ta.value : "", sel ? sel.value : void 0, {
+    existingEventualidades: existing
+  });
+}
+function refreshPreview2() {
+  const preview = getPreviewEl2();
+  const warn = getWarningEl();
+  const confirmBtn = document.getElementById("drive-import-confirm");
+  if (!preview) return;
+  const ta = getTextarea2();
+  if (!ta || !String(ta.value || "").trim()) {
+    preview.textContent = "Pega el documento de Drive para ver la vista previa.";
+    if (warn) warn.hidden = true;
+    if (confirmBtn) confirmBtn.disabled = true;
+    return;
+  }
+  let parsed;
+  try {
+    parsed = getParsed();
+  } catch (err) {
+    preview.textContent = "Error al analizar: " + (err && err.message ? err.message : String(err));
+    if (confirmBtn) confirmBtn.disabled = true;
+    return;
+  }
+  populateProfileSelect(parsed.profileId);
+  preview.textContent = parsed.previewText || "";
+  const patient = rt36.getActivePatient();
+  if (warn && patient && parsed.header && parsed.header.registro) {
+    const mismatch = String(parsed.header.registro).trim() && String(patient.registro || "").trim() && String(parsed.header.registro).trim() !== String(patient.registro).trim();
+    warn.hidden = !mismatch;
+    warn.textContent = mismatch ? "El registro del documento (" + parsed.header.registro + ") no coincide con el paciente activo (" + patient.registro + ")." : "";
+  } else if (warn) {
+    warn.hidden = true;
+  }
+  const hasHc = Object.keys(parsed.hcPatch || {}).some(function(k) {
+    return !String(k).startsWith("_");
+  });
+  const hasEv = (parsed.eventualidades.entries || []).length > 0;
+  if (confirmBtn) confirmBtn.disabled = !hasHc && !hasEv;
+}
+function syncConfirmLabel() {
+  const btn = document.getElementById("drive-import-confirm");
+  const modeFs = document.getElementById("drive-import-mode-fieldset");
+  const patient = rt36.getActivePatient();
+  if (modeFs) modeFs.style.display = patient ? "" : "none";
+  if (!btn) return;
+  btn.textContent = patient ? "Aplicar a " + (patient.nombre || "paciente") : "Crear paciente e importar";
+}
+function openDriveImportModal() {
+  const bd = getBackdrop2();
+  if (!bd) {
+    rt36.showToast("Importaci\xF3n desde Drive no disponible", "error");
+    return;
+  }
+  const ta = getTextarea2();
+  if (ta) ta.value = "";
+  _profilesPopulated = false;
+  populateProfileSelect("drive-pipe-hc-v1");
+  syncConfirmLabel();
+  refreshPreview2();
+  bd.classList.add("open");
+  bd.setAttribute("aria-hidden", "false");
+  if (ta) ta.focus();
+}
+function closeDriveImportModal() {
+  const bd = getBackdrop2();
+  if (!bd) return;
+  bd.classList.remove("open");
+  bd.setAttribute("aria-hidden", "true");
+}
+async function confirmDriveImport() {
+  const ta = getTextarea2();
+  if (!ta || !String(ta.value || "").trim()) {
+    rt36.showToast("Pega el contenido del documento", "error");
+    return;
+  }
+  let parsed;
+  try {
+    parsed = getParsed();
+  } catch (err) {
+    rt36.showToast("No se pudo analizar el texto", "error");
+    return;
+  }
+  const mode = getApplyMode();
+  const patient = rt36.getActivePatient();
+  const createNew = !patient;
+  if (patient && parsed.header && parsed.header.registro && patient.registro && String(parsed.header.registro).trim() !== String(patient.registro).trim()) {
+    if (!confirm(
+      "El registro del documento (" + parsed.header.registro + ") no coincide con " + patient.registro + ". \xBFContinuar de todos modos?"
+    )) {
+      return;
+    }
+  }
+  if (mode === "replace") {
+    if (!confirm("Se sobrescribir\xE1n las secciones de Historia cl\xEDnica presentes en el documento. \xBFContinuar?")) {
+      return;
+    }
+  }
+  if (createNew && (!parsed.header || !parsed.header.nombre)) {
+    if (!confirm("No se detect\xF3 nombre en el encabezado. \xBFCrear paciente igualmente?")) {
+      return;
+    }
+  }
+  if (typeof rt36.pushUndoSnapshot === "function") {
+    rt36.pushUndoSnapshot("Importar desde Drive");
+  }
+  const result = await applyDriveImport(parsed, {
+    mode,
+    activePatient: patient,
+    createNew
+  });
+  if (!result.ok) {
+    if (result.error === "hc-conflict") {
+      rt36.showToast("Conflicto al guardar Historia cl\xEDnica en LAN. Recarga e intenta de nuevo.", "error");
+    } else {
+      rt36.showToast("No se pudo aplicar la importaci\xF3n", "error");
+    }
+    return;
+  }
+  if (typeof rt36.addAuditEntry === "function") {
+    rt36.addAuditEntry(
+      "drive-import",
+      "ok",
+      result.evAdded || 0,
+      JSON.stringify({
+        profileId: parsed.profileId,
+        mode,
+        skipped: result.evSkipped,
+        createNew
+      })
+    );
+  }
+  closeDriveImportModal();
+  const parts = [];
+  if (mode !== "eventos") parts.push("HC actualizada");
+  parts.push(
+    (result.evAdded || 0) + " eventualidad" + (result.evAdded === 1 ? "" : "es") + " nueva" + (result.evAdded === 1 ? "" : "s")
+  );
+  if (result.evSkipped) {
+    parts.push(result.evSkipped + " duplicada" + (result.evSkipped === 1 ? "" : "s") + " omitida" + (result.evSkipped === 1 ? "" : "s"));
+  }
+  rt36.showToast(parts.join(" \xB7 "), "success");
+  if (typeof rt36.switchAppTab === "function") rt36.switchAppTab("clinico");
+  if (typeof rt36.switchInnerTab === "function") rt36.switchInnerTab(result.navigateTo || "historia");
+}
+function wireDriveImportModal() {
+  const ta = getTextarea2();
+  const sel = getProfileSelect();
+  const bd = getBackdrop2();
+  if (ta && !ta.dataset.driveImportWired) {
+    ta.dataset.driveImportWired = "1";
+    ta.addEventListener("input", function() {
+      if (_debounceId) clearTimeout(_debounceId);
+      _debounceId = setTimeout(refreshPreview2, 200);
+    });
+  }
+  if (sel && !sel.dataset.driveImportWired) {
+    sel.dataset.driveImportWired = "1";
+    sel.addEventListener("change", refreshPreview2);
+  }
+  document.querySelectorAll('input[name="drive-import-mode"]').forEach(function(el) {
+    if (el.dataset.driveImportWired) return;
+    el.dataset.driveImportWired = "1";
+    el.addEventListener("change", syncConfirmLabel);
+  });
+  if (bd && !bd.dataset.driveImportWired) {
+    bd.dataset.driveImportWired = "1";
+    bd.addEventListener("click", function(e) {
+      if (e.target === bd) closeDriveImportModal();
+    });
+  }
+}
+var windowHandlers16 = {
+  openDriveImportModal,
+  closeDriveImportModal,
+  confirmDriveImport
+};
+
+// public/js/app-runtimes.mjs
 init_estado_actual_registro_defaults();
 init_guardia_board();
 init_soap_estado();
 init_lan_sync();
 init_chrome();
-var rt36 = {
+var rt37 = {
   getActiveId() {
     return null;
   },
@@ -61088,22 +62181,22 @@ function wasV3MigratedThisBoot() {
   return v3MigratedThisBoot;
 }
 function registerAppRuntimeContext(partial) {
-  if (partial && typeof partial === "object") Object.assign(rt36, partial);
+  if (partial && typeof partial === "object") Object.assign(rt37, partial);
 }
 function registerAllFeatureRuntimes() {
   registerMedicationsRuntime({
     getActiveId: function() {
-      return rt36.getActiveId();
+      return rt37.getActiveId();
     },
     showToast,
     getSettings: function() {
-      return rt36.getSettings();
+      return rt37.getSettings();
     },
     navigateToEstadoActualPanel
   });
   registerMedPharmProfileRuntime({
     getActiveId: function() {
-      return rt36.getActiveId();
+      return rt37.getActiveId();
     },
     showToast,
     refreshMedPanel: function() {
@@ -61113,28 +62206,28 @@ function registerAllFeatureRuntimes() {
   registerProfileRuntime({
     showToast,
     getActiveId: function() {
-      return rt36.getActiveId();
+      return rt37.getActiveId();
     },
     syncWorkContextChrome
   });
   registerPaseBoardRuntime({
     getActiveAppTab: function() {
-      return rt36.getActiveAppTab();
+      return rt37.getActiveAppTab();
     },
     setActiveAppTab: function(v) {
-      rt36.setActiveAppTab(v);
+      rt37.setActiveAppTab(v);
     },
     getActiveInner: function() {
-      return rt36.getActiveInner();
+      return rt37.getActiveInner();
     },
     setActiveInner: function(v) {
-      rt36.setActiveInner(v);
+      rt37.setActiveInner(v);
     },
     getActiveId: function() {
-      return rt36.getActiveId();
+      return rt37.getActiveId();
     },
     getSettings: function() {
-      return rt36.getSettings();
+      return rt37.getSettings();
     },
     renderMedRecetaPanel,
     renderLabHistoryPanel,
@@ -61152,39 +62245,39 @@ function registerAllFeatureRuntimes() {
     scrollActiveRondaCardIntoView,
     renderProcedureAgendaPanel,
     getActiveAppTab: function() {
-      return rt36.getActiveAppTab();
+      return rt37.getActiveAppTab();
     },
     getActiveInner: function() {
-      return rt36.getActiveInner();
+      return rt37.getActiveInner();
     },
     getActiveId: function() {
-      return rt36.getActiveId();
+      return rt37.getActiveId();
     },
     setRoundOverviewMode,
     renderPaseBoard,
     renderGuardiaBoard: function() {
-      return renderGuardiaBoard(rt36.getSettings());
+      return renderGuardiaBoard(rt37.getSettings());
     },
     syncLabOutputChrome
   });
   registerPatientsRuntime({
     getActiveId: function() {
-      return rt36.getActiveId();
+      return rt37.getActiveId();
     },
-    setActiveId: function(id) {
-      rt36.setActiveId(id);
+    setActiveId: function(id5) {
+      rt37.setActiveId(id5);
     },
     getActiveAppTab: function() {
-      return rt36.getActiveAppTab();
+      return rt37.getActiveAppTab();
     },
     getActiveInner: function() {
-      return rt36.getActiveInner();
+      return rt37.getActiveInner();
     },
     setActiveInner: function(v) {
-      rt36.setActiveInner(v);
+      rt37.setActiveInner(v);
     },
     getSettings: function() {
-      return rt36.getSettings();
+      return rt37.getSettings();
     },
     getActiveLab: function() {
       return getActiveLab();
@@ -61235,11 +62328,11 @@ function registerAllFeatureRuntimes() {
     primaryTipoForLabSet,
     normalizeFechaLabHistory
   });
-  v3MigratedThisBoot = migrateToV3(rt36.getSettings());
-  if (v3MigratedThisBoot) storage.saveSettings(rt36.getSettings());
+  v3MigratedThisBoot = migrateToV3(rt37.getSettings());
+  if (v3MigratedThisBoot) storage.saveSettings(rt37.getSettings());
   registerLabHistoryMaintRuntime({
     getActiveId: function() {
-      return rt36.getActiveId();
+      return rt37.getActiveId();
     },
     renderLabHistoryPanel,
     refreshTendenciasOrCultivosPanel
@@ -61248,13 +62341,13 @@ function registerAllFeatureRuntimes() {
   registerLanSaveHooks({ scheduleLabHistoryPostSaveMaintenance });
   registerPlatformRuntime({
     getActiveId: function() {
-      return rt36.getActiveId();
+      return rt37.getActiveId();
     },
-    setActiveId: function(id) {
-      rt36.setActiveId(id);
+    setActiveId: function(id5) {
+      rt37.setActiveId(id5);
     },
     getSettings: function() {
-      return rt36.getSettings();
+      return rt37.getSettings();
     },
     showToast,
     syncTeamSyncHeaderButton: syncTeamSyncHeaderButton2,
@@ -61262,7 +62355,7 @@ function registerAllFeatureRuntimes() {
   });
   registerTendenciasRuntime({
     getActiveId: function() {
-      return rt36.getActiveId();
+      return rt37.getActiveId();
     },
     ensureParsedLabHistory,
     ensureParsedLabHistoryCached,
@@ -61273,17 +62366,17 @@ function registerAllFeatureRuntimes() {
   });
   registerTodosRuntime({
     getActiveId: function() {
-      return rt36.getActiveId();
+      return rt37.getActiveId();
     },
     getActiveAppTab: function() {
-      return rt36.getActiveAppTab();
+      return rt37.getActiveAppTab();
     },
     getRoundOverviewMode,
     renderPaseBoard
   });
   registerManejoRuntime({
     getActiveId: function() {
-      return rt36.getActiveId();
+      return rt37.getActiveId();
     },
     ensureParsedLabHistory,
     ensureParsedLabHistoryCached,
@@ -61294,23 +62387,23 @@ function registerAllFeatureRuntimes() {
   });
   registerVpoRuntime({
     getActiveId: function() {
-      return rt36.getActiveId();
+      return rt37.getActiveId();
     },
     showToast,
     switchAppTab
   });
   registerRecetaHuRuntime({
     getActiveId: function() {
-      return rt36.getActiveId();
+      return rt37.getActiveId();
     },
     getActiveAppTab: function() {
-      return rt36.getActiveAppTab();
+      return rt37.getActiveAppTab();
     },
     getActiveInner: function() {
-      return rt36.getActiveInner();
+      return rt37.getActiveInner();
     },
     getSettings: function() {
-      return rt36.getSettings();
+      return rt37.getSettings();
     },
     switchAppTab,
     switchInnerTab,
@@ -61325,16 +62418,16 @@ function registerAllFeatureRuntimes() {
   });
   registerSettingsHelpRuntime({
     getSettings: function() {
-      return rt36.getSettings();
+      return rt37.getSettings();
     },
     getActiveInner: function() {
-      return rt36.getActiveInner();
+      return rt37.getActiveInner();
     },
     getActiveId: function() {
-      return rt36.getActiveId();
+      return rt37.getActiveId();
     },
-    setActiveId: function(id) {
-      rt36.setActiveId(id);
+    setActiveId: function(id5) {
+      rt37.setActiveId(id5);
     },
     switchInnerTab,
     renderInnerTabs,
@@ -61355,7 +62448,7 @@ function registerAllFeatureRuntimes() {
   });
   registerCensoRuntime({
     getSettings: function() {
-      return rt36.getSettings();
+      return rt37.getSettings();
     },
     showToast,
     requestDocumentJson,
@@ -61368,10 +62461,10 @@ function registerAllFeatureRuntimes() {
   });
   registerHistoriaClinicaRuntime({
     getActiveId: function() {
-      return rt36.getActiveId();
+      return rt37.getActiveId();
     },
     getSettings: function() {
-      return rt36.getSettings();
+      return rt37.getSettings();
     },
     showToast,
     copyToClipboardSafe,
@@ -61379,22 +62472,22 @@ function registerAllFeatureRuntimes() {
   });
   registerEventualidadesRuntime({
     getActiveId: function() {
-      return rt36.getActiveId();
+      return rt37.getActiveId();
     },
     showToast
   });
   registerExpedienteRuntime({
     getActiveId: function() {
-      return rt36.getActiveId();
+      return rt37.getActiveId();
     },
     getActiveAppTab: function() {
-      return rt36.getActiveAppTab();
+      return rt37.getActiveAppTab();
     },
     getActiveInner: function() {
-      return rt36.getActiveInner();
+      return rt37.getActiveInner();
     },
     getSettings: function() {
-      return rt36.getSettings();
+      return rt37.getSettings();
     },
     showToast,
     renderTendencias,
@@ -61414,10 +62507,10 @@ function registerAllFeatureRuntimes() {
   });
   registerNotesIndicacionesRuntime({
     getActiveId: function() {
-      return rt36.getActiveId();
+      return rt37.getActiveId();
     },
     getSettings: function() {
-      return rt36.getSettings();
+      return rt37.getSettings();
     },
     showToast,
     renderRoundOverviewPanels,
@@ -61434,28 +62527,28 @@ function registerAllFeatureRuntimes() {
   });
   registerProcedureAgendaRuntime({
     getActiveId: function() {
-      return rt36.getActiveId();
+      return rt37.getActiveId();
     },
     showToast,
     renderPaseBoard
   });
   registerSoapEstadoRuntime({
     getActiveId: function() {
-      return rt36.getActiveId();
+      return rt37.getActiveId();
     },
     showToast,
     getSettings: function() {
-      return rt36.getSettings();
+      return rt37.getSettings();
     },
     navigateToEstadoActualPanel
   });
   registerEstadoActualPanelRuntime({
     getActiveId: function() {
-      return rt36.getActiveId();
+      return rt37.getActiveId();
     },
     showToast,
     getSettings: function() {
-      return rt36.getSettings();
+      return rt37.getSettings();
     },
     switchConsolidatedTab,
     copyToClipboardSafe,
@@ -61463,6 +62556,23 @@ function registerAllFeatureRuntimes() {
     onMedicionRegistered: function() {
       guidedTourAdvanceAfter("estado_actual_registro");
     }
+  });
+  registerDriveImportRuntime({
+    getActiveId: function() {
+      return rt37.getActiveId();
+    },
+    getActivePatient: function() {
+      var id5 = rt37.getActiveId();
+      if (!id5) return null;
+      return patients.find(function(p) {
+        return String(p.id) === String(id5);
+      }) || null;
+    },
+    showToast,
+    pushUndoSnapshot: pushUndoSnapshot2,
+    switchInnerTab,
+    switchAppTab,
+    addAuditEntry
   });
   registerEstadoActualPasteModalRuntime({
     showToast,
@@ -61494,7 +62604,7 @@ function registerAllFeatureRuntimes() {
     ensureForm: ensureEaRegistroModalForm,
     syncGluMode: syncEaRegistroGluMode,
     resetForm: function() {
-      var activeId2 = rt36.getActiveId();
+      var activeId2 = rt37.getActiveId();
       var patient = activeId2 && patients.find(function(p) {
         return p.id === activeId2;
       });
@@ -61505,10 +62615,10 @@ function registerAllFeatureRuntimes() {
     showToast,
     copyToClipboardSafe,
     getActiveId: function() {
-      return rt36.getActiveId();
+      return rt37.getActiveId();
     },
-    setActiveId: function(id) {
-      rt36.setActiveId(id);
+    setActiveId: function(id5) {
+      rt37.setActiveId(id5);
     },
     selectPatient,
     renderRoundOverviewPanels,
@@ -61559,10 +62669,10 @@ function registerAllFeatureRuntimes() {
   });
   registerProductivityRuntime({
     getActiveId: function() {
-      return rt36.getActiveId();
+      return rt37.getActiveId();
     },
     getSettings: function() {
-      return rt36.getSettings();
+      return rt37.getSettings();
     },
     selectPatient,
     switchAppTab,
@@ -61581,13 +62691,13 @@ function registerAllFeatureRuntimes() {
     renderNoteForm,
     renderLabHistoryPanel,
     getActiveId: function() {
-      return rt36.getActiveId();
+      return rt37.getActiveId();
     },
-    setActiveId: function(id) {
-      rt36.setActiveId(id);
+    setActiveId: function(id5) {
+      rt37.setActiveId(id5);
     },
     getActiveAppTab: function() {
-      return rt36.getActiveAppTab();
+      return rt37.getActiveAppTab();
     },
     selectPatient,
     isMobileWeb,
@@ -61606,6 +62716,7 @@ function runInitialFeatureBoot() {
   initChromeAppearance();
   syncLabHistoryCollapseUI();
   wireEstadoActualPasteModal();
+  wireDriveImportModal();
   wireEaModalDismiss();
   syncCensoExportButtonVisibility();
 }
@@ -61630,6 +62741,7 @@ var allWindowHandlers = Object.assign(
   windowHandlers2,
   windowHandlers9,
   windowHandlers10,
+  windowHandlers16,
   windowHandlers11,
   windowHandlers15,
   windowHandlers12,
@@ -61719,8 +62831,8 @@ registerAppRuntimeContext({
   getActiveId: function() {
     return activeId;
   },
-  setActiveId: function(id) {
-    activeId = id;
+  setActiveId: function(id5) {
+    activeId = id5;
   },
   getActiveAppTab: function() {
     return activeAppTab;

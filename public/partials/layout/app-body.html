@@ -10,26 +10,8 @@
       </div>
       <button class="btn-add" onclick="openAddModal()">+ Agregar</button>
     </div>
-    <div class="profile-section" id="profile-section">
-      <button class="profile-toggle" onclick="openProfileModal()" id="profile-toggle-btn" title="Abrir Mi Perfil">
-        <div class="profile-toggle-left">
-          <svg class="profile-toggle-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          <span id="profile-toggle-label">Mi Perfil</span>
-        </div>
-        <svg id="profile-toggle-arrow" class="profile-toggle-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
-      </button>
-    </div>
-    <div class="clinical-rotation-section" id="clinical-rotation-section" hidden>
-      <button type="button" class="btn-sidebar-mi-rotacion" id="btn-sidebar-mi-rotacion" title="Usuario LAN, equipos de sala y entregas">
-        <span class="btn-sidebar-mi-rotacion-icon" aria-hidden="true">↻</span>
-        <span class="btn-sidebar-mi-rotacion-text">
-          <span class="btn-sidebar-mi-rotacion-title">Mi rotación</span>
-          <span class="btn-sidebar-mi-rotacion-meta" id="clinical-rotation-entry-primary">Configura tu rotación</span>
-          <span class="btn-sidebar-mi-rotacion-hint" id="clinical-rotation-entry-sub">Usuario LAN y equipo de sala</span>
-        </span>
-      </button>
-    </div>
     <div class="patient-search-wrap">
+      <label class="visually-hidden" for="patient-search">Buscar paciente</label>
       <input type="search" class="patient-search-input" id="patient-search" placeholder="Buscar por nombre, registro, cuarto…" autocomplete="off" oninput="onPatientSearchInput(this.value)">
     </div>
     <div class="sidebar-censo-export-wrap" id="sidebar-censo-export-wrap" style="display:none;">
@@ -51,6 +33,17 @@
       <button type="button" class="lan-connection-banner-dismiss" onclick="dismissLanDisconnectBanner()" aria-label="Ocultar aviso de desconexión LAN" title="Ocultar aviso">×</button>
     </div>
     <section id="guardia-census-panel" class="guardia-census-panel" aria-label="Censo de guardia" hidden></section>
+    <div class="clinical-context-bar" id="clinical-context-bar" hidden>
+      <div class="clinical-rotation-section" id="clinical-rotation-section" hidden>
+        <button type="button" class="app-bar-mi-rotacion" id="btn-sidebar-mi-rotacion" title="Usuario LAN, equipos de sala y entregas">
+          <span class="app-bar-mi-rotacion-icon" aria-hidden="true">↻</span>
+          <span class="app-bar-mi-rotacion-label">Mi rotación</span>
+          <span class="app-bar-mi-rotacion-meta" id="clinical-rotation-entry-primary">Configura tu rotación</span>
+          <span class="visually-hidden" id="clinical-rotation-entry-sub">Usuario LAN y equipo de sala</span>
+        </button>
+      </div>
+      <div id="clinical-census-filters-mount" class="clinical-census-filters-mount" hidden aria-hidden="true"></div>
+    </div>
     <div class="app-tabs-row">
       <div class="app-tabs" id="app-main-tablist" role="tablist" aria-label="Secciones principales">
       <button type="button" class="app-tab active" role="tab" id="apptab-lab" aria-selected="true" aria-controls="appcontent-lab" tabindex="0" onclick="switchAppTab('lab')" data-i18n-aria-label="appTab.lab" data-i18n-title="appTab.lab">
@@ -83,7 +76,6 @@
         <div class="guardia-rotation-toolbar" aria-label="Rotación de guardia">
           <button type="button" id="btn-guardia-mi-rotacion" class="btn-med-secondary">Mi rotación</button>
           <button type="button" id="btn-guardia-rotation-config" class="btn-med-secondary btn-med-secondary--muted">Configuración rotación</button>
-          <button type="button" id="btn-guardia-nueva-rotacion" class="btn-med-secondary">Nueva rotación</button>
           <div class="guardia-grid-mode-toggle" role="group" aria-label="Vista del censo">
             <button type="button" id="guardia-grid-mode-censo" class="guardia-grid-mode-btn is-active" data-mode="censo" aria-pressed="true">Censo</button>
             <button type="button" id="guardia-grid-mode-entrega" class="guardia-grid-mode-btn" data-mode="entrega" aria-pressed="false">Entrega</button>
@@ -476,6 +468,7 @@
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-eventualidades" role="tab" data-exp-segment="eventualidades" aria-selected="false" aria-controls="itab-content-eventualidades" onclick="switchInnerTab('eventualidades')">Eventualidades</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-vpo" role="tab" data-exp-segment="vpo" aria-selected="false" aria-controls="itab-content-vpo" onclick="switchInnerTab('vpo')">VPO</button>
               <button type="button" class="exp-segment-btn rpc-subtab" id="exp-segment-manejo" role="tab" data-exp-segment="manejo" aria-selected="false" aria-controls="itab-content-manejo" onclick="switchInnerTab('manejo')">Manejo</button>
+              <button type="button" class="btn-med-secondary drive-import-trigger" id="btn-drive-import" onclick="openDriveImportModal()" style="display:none;" aria-label="Importar desde Drive">Importar desde Drive</button>
             </div>
             <div class="exp-segment-body exp-segment-body--clinico"></div>
           </div>
@@ -521,106 +514,113 @@
 </div>
 
 <div class="modal-backdrop" id="profile-modal" aria-hidden="true">
-  <div class="modal profile-modal" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
+  <div class="modal profile-modal profile-modal--wide" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
     <h3 id="profile-modal-title" class="profile-modal-title">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       Mi Perfil
     </h3>
-    <p class="profile-modal-lead">Tu identificación y los formatos en blanco que R+ usa al abrir notas e indicaciones nuevas. No reemplaza datos ya escritos en pacientes existentes.</p>
+    <p class="profile-modal-lead">Configura cómo usas R+ y cómo se firman notas y documentos. Los cambios en plantillas solo aplican en campos vacíos al abrir un paciente.</p>
     <div class="profile-body" id="profile-body">
-      <section class="profile-block profile-block--clinical-rotation" id="profile-clinical-rotation-block" hidden>
-        <h4 class="profile-block-title">Mi rotación</h4>
-        <p class="profile-hint">Identidad clínica en guardia: usuario LAN, sala, equipo y entregas. Independiente del nombre en notas de abajo.</p>
-        <button type="button" class="btn-save btn-profile-mi-rotacion" id="btn-profile-mi-rotacion">Abrir Mi rotación</button>
-        <p class="profile-clinical-rotation-status" id="profile-clinical-rotation-status"></p>
-      </section>
-      <section class="profile-block">
-        <h4 class="profile-block-title">Identificación</h4>
-        <p class="profile-hint">Aparece en notas, indicaciones y documentos Word. Solo afecta campos vacíos al crear o abrir un paciente.</p>
-        <div class="profile-field">
-          <label class="profile-field-label" for="profile-doctor">Médico tratante</label>
-          <input class="profile-input" id="profile-doctor" type="text" placeholder="Dr. Nombre Apellido">
-        </div>
-        <div class="profile-field">
-          <label class="profile-field-label" for="profile-cedula">Cédula profesional</label>
-          <input class="profile-input" id="profile-cedula" type="text" placeholder="Número de cédula" inputmode="numeric" autocomplete="off">
-          <p class="profile-hint">Receta médica HU (formato 000-061-R-06-12).</p>
-        </div>
-        <div class="profile-field">
-          <label class="profile-field-label" for="profile-profesor">Profesor / responsable</label>
-          <input class="profile-input" id="profile-profesor" type="text" placeholder="Dr. Nombre Apellido">
-        </div>
-        <div class="profile-field">
-          <label class="profile-field-label" for="profile-grado">Grado / servicio</label>
-          <input class="profile-input" id="profile-grado" type="text" placeholder="R3 · Tu servicio">
-        </div>
+      <section class="profile-block profile-block--span-full profile-block--bridge" id="profile-clinical-bridge" hidden>
+        <h4 class="profile-block-title">Guardia y equipos</h4>
+        <p class="profile-hint">Usuario LAN, sala clínica, equipo y entregas. Es independiente del nombre que aparece en notas y Word abajo.</p>
+        <button type="button" class="btn-edit-templates profile-bridge-btn" onclick="void openMiRotacion()">Abrir Mi rotación →</button>
       </section>
 
-      <section class="profile-block">
+      <section class="profile-block profile-block--mode">
         <h4 class="profile-block-title">Modo de trabajo</h4>
-        <p class="profile-hint">Define qué pestañas del expediente ves por defecto (Sala vs Interconsulta).</p>
+        <p class="profile-hint">Define qué pestañas del expediente ves (hospitalización vs consulta).</p>
         <div class="profile-radio-group">
           <label class="profile-radio"><input type="radio" name="app-mode" value="sala" id="app-mode-sala" onchange="onAppModeChange()"><span>Sala</span></label>
           <label class="profile-radio"><input type="radio" name="app-mode" value="interconsulta" id="app-mode-inter" onchange="onAppModeChange()"><span>Interconsulta</span></label>
         </div>
-        <p class="profile-hint">Sala: Estado actual y listado de problemas. Interconsulta: nota de evolución e indicaciones.</p>
-        <div class="profile-field">
-          <label class="profile-field-label" for="settings-default-servicio">Servicio predeterminado (Sala)</label>
+        <p class="profile-hint profile-hint--compact">Sala: Estado actual y listado. Interconsulta: nota e indicaciones.</p>
+        <div class="profile-field profile-field--servicio" id="profile-default-servicio-wrap">
+          <label class="profile-field-label" for="settings-default-servicio">Servicio predeterminado</label>
           <input class="profile-input" id="settings-default-servicio" type="text" placeholder="CIRUGÍA GENERAL" style="text-transform:uppercase;" onblur="onDefaultServicioBlur()">
-          <p class="profile-hint">Nombre completo del servicio (sin abreviaturas de 1–3 letras). Pre-llena el campo Servicio al agregar pacientes en modo Sala.</p>
-          <p id="default-servicio-warning" class="profile-hint profile-hint--warn" style="display:none;">Recomendamos el nombre completo del servicio (sin abreviaturas de 1–3 letras).</p>
+          <p class="profile-hint">Pre-llena el campo Servicio al agregar pacientes en modo Sala.</p>
+          <p id="default-servicio-warning" class="profile-hint profile-hint--warn" style="display:none;">Usa el nombre completo del servicio (evita abreviaturas de 1–3 letras).</p>
         </div>
       </section>
 
-      <section class="profile-block">
-        <h4 class="profile-block-title">Censo de guardia (PDF)</h4>
-        <p class="profile-hint">Encabezado del PDF: ubicación y equipo de la guardia.</p>
-        <div class="profile-field">
-          <label class="profile-field-label" for="profile-censo-sala">Sala / ubicación</label>
-          <select class="profile-input profile-select" id="profile-censo-sala">
-            <option value="">—</option>
-            <option value="1">Sala 1</option>
-            <option value="2">Sala 2</option>
-            <option value="E">Sala E</option>
-            <option value="torre">Torre HU</option>
-          </select>
-        </div>
-        <div class="profile-field">
-          <label class="profile-field-label" for="profile-censo-fimi-label">Etiqueta FIMI (ingreso servicio)</label>
-          <input class="profile-input" id="profile-censo-fimi-label" type="text" placeholder="FIMI" maxlength="24">
-          <p class="profile-hint">En Datos del paciente y en el censo PDF debajo de la edad. FIUX (urgencias) es fijo.</p>
-        </div>
-        <p class="profile-hint profile-hint--spaced">Equipo (aparece debajo del título en el censo).</p>
-        <div class="profile-grid-2">
+      <section class="profile-block profile-block--ident">
+        <h4 class="profile-block-title">Firma en notas y Word</h4>
+        <p class="profile-hint">Texto que R+ inserta en notas, indicaciones y documentos al exportar.</p>
+        <div class="profile-grid-2 profile-grid-2--ident">
           <div class="profile-field">
-            <label class="profile-field-label" for="profile-r2">R2</label>
-            <input class="profile-input" id="profile-r2" type="text" placeholder="Nombre del R2">
+            <label class="profile-field-label" for="profile-doctor">Médico tratante</label>
+            <input class="profile-input" id="profile-doctor" type="text" placeholder="Dr. Nombre Apellido">
           </div>
           <div class="profile-field">
-            <label class="profile-field-label" for="profile-r1a">R1 (1)</label>
-            <input class="profile-input" id="profile-r1a" type="text" placeholder="Nombre R1">
+            <label class="profile-field-label" for="profile-cedula">Cédula profesional</label>
+            <input class="profile-input" id="profile-cedula" type="text" placeholder="Número de cédula" inputmode="numeric" autocomplete="off">
+            <p class="profile-hint profile-hint--field">Receta médica HU (000-061-R-06-12).</p>
           </div>
           <div class="profile-field">
-            <label class="profile-field-label" for="profile-r1b">R1 (2)</label>
-            <input class="profile-input" id="profile-r1b" type="text" placeholder="Nombre R1">
+            <label class="profile-field-label" for="profile-profesor">Profesor en nota</label>
+            <input class="profile-input" id="profile-profesor" type="text" placeholder="Dr. Nombre Apellido">
           </div>
           <div class="profile-field">
-            <label class="profile-field-label" for="profile-maestro">Maestro</label>
-            <input class="profile-input" id="profile-maestro" type="text" placeholder="Dr. Nombre Apellido">
+            <label class="profile-field-label" for="profile-grado">Grado / servicio en nota</label>
+            <input class="profile-input" id="profile-grado" type="text" placeholder="R3 · Medicina Interna">
           </div>
         </div>
-        <p class="profile-hint">Si dejas un campo vacío, R+ puede tomar los nombres del bloque «Médicos (firma)» del listado.</p>
       </section>
 
-      <section class="profile-block">
-        <h4 class="profile-block-title">Listado de problemas</h4>
-        <p class="profile-hint">Nombres que se copian al bloque «Médicos (firma)» del listado. Puedes cambiarlos por paciente en Salida → Listado.</p>
-        <div class="profile-grid-2">
-          <div class="profile-field"><label class="profile-field-label" for="settings-medico-profesor">Profesor</label><input class="profile-input" id="settings-medico-profesor" type="text" onblur="onMedicoTemplateBlur()"></div>
-          <div class="profile-field"><label class="profile-field-label" for="settings-medico-r4">R4</label><input class="profile-input" id="settings-medico-r4" type="text" onblur="onMedicoTemplateBlur()"></div>
-          <div class="profile-field"><label class="profile-field-label" for="settings-medico-r2">R2</label><input class="profile-input" id="settings-medico-r2" type="text" onblur="onMedicoTemplateBlur()"></div>
-          <div class="profile-field"><label class="profile-field-label" for="settings-medico-r1a">R1 (1)</label><input class="profile-input" id="settings-medico-r1a" type="text" onblur="onMedicoTemplateBlur()"></div>
-          <div class="profile-field"><label class="profile-field-label" for="settings-medico-r1b">R1 (2)</label><input class="profile-input" id="settings-medico-r1b" type="text" onblur="onMedicoTemplateBlur()"></div>
+      <section class="profile-block profile-block--span-full profile-block--salida" id="profile-salida-section">
+        <h4 class="profile-block-title">Salida clínica (modo Sala)</h4>
+        <p class="profile-hint">Ajustes para el censo PDF y el listado de problemas. No afectan Interconsulta.</p>
+        <div class="profile-salida-grid">
+          <div class="profile-subblock">
+            <h5 class="profile-subblock-title">Censo PDF — encabezado</h5>
+            <p class="profile-hint">Ubicación y nombres bajo el título del PDF de guardia.</p>
+            <div class="profile-field">
+              <label class="profile-field-label" for="profile-censo-sala">Sala / ubicación</label>
+              <select class="profile-input profile-select" id="profile-censo-sala">
+                <option value="">—</option>
+                <option value="1">Sala 1</option>
+                <option value="2">Sala 2</option>
+                <option value="E">Sala E</option>
+                <option value="torre">Torre HU</option>
+              </select>
+            </div>
+            <div class="profile-field">
+              <label class="profile-field-label" for="profile-censo-fimi-label">Etiqueta FIMI</label>
+              <input class="profile-input" id="profile-censo-fimi-label" type="text" placeholder="FIMI" maxlength="24">
+              <p class="profile-hint profile-hint--field">En datos del paciente y censo PDF. FIUX es fijo.</p>
+            </div>
+            <p class="profile-hint profile-hint--spaced">Equipo en el PDF</p>
+            <div class="profile-grid-2">
+              <div class="profile-field">
+                <label class="profile-field-label" for="profile-r2">R2 (censo)</label>
+                <input class="profile-input" id="profile-r2" type="text" placeholder="Nombre del R2">
+              </div>
+              <div class="profile-field">
+                <label class="profile-field-label" for="profile-r1a">R1 (1) censo</label>
+                <input class="profile-input" id="profile-r1a" type="text" placeholder="Nombre R1">
+              </div>
+              <div class="profile-field">
+                <label class="profile-field-label" for="profile-r1b">R1 (2) censo</label>
+                <input class="profile-input" id="profile-r1b" type="text" placeholder="Nombre R1">
+              </div>
+              <div class="profile-field">
+                <label class="profile-field-label" for="profile-maestro">Maestro (censo)</label>
+                <input class="profile-input" id="profile-maestro" type="text" placeholder="Dr. Nombre Apellido">
+              </div>
+            </div>
+            <p class="profile-hint profile-hint--field">Vacío → R+ puede usar las firmas del listado abajo.</p>
+          </div>
+          <div class="profile-subblock">
+            <h5 class="profile-subblock-title">Listado — bloque «Médicos (firma)»</h5>
+            <p class="profile-hint">Plantilla al generar el listado. Por paciente puedes cambiarla en Salida → Listado.</p>
+            <div class="profile-grid-2">
+              <div class="profile-field"><label class="profile-field-label" for="settings-medico-profesor">Profesor (listado)</label><input class="profile-input" id="settings-medico-profesor" type="text" onblur="onMedicoTemplateBlur()"></div>
+              <div class="profile-field"><label class="profile-field-label" for="settings-medico-r4">R4 (listado)</label><input class="profile-input" id="settings-medico-r4" type="text" onblur="onMedicoTemplateBlur()"></div>
+              <div class="profile-field"><label class="profile-field-label" for="settings-medico-r2">R2 (listado)</label><input class="profile-input" id="settings-medico-r2" type="text" onblur="onMedicoTemplateBlur()"></div>
+              <div class="profile-field"><label class="profile-field-label" for="settings-medico-r1a">R1 (1) listado</label><input class="profile-input" id="settings-medico-r1a" type="text" onblur="onMedicoTemplateBlur()"></div>
+              <div class="profile-field"><label class="profile-field-label" for="settings-medico-r1b">R1 (2) listado</label><input class="profile-input" id="settings-medico-r1b" type="text" onblur="onMedicoTemplateBlur()"></div>
+            </div>
+          </div>
         </div>
       </section>
 

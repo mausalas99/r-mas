@@ -384,6 +384,11 @@ export function syncConsolidatedSegmentBars(granularTab, settings) {
   syncBar(document.getElementById('exp-segment-clinico'), sections, 'clinico');
   syncBar(document.getElementById('exp-segment-resultados'), RESULTADOS_SECTIONS, 'resultados');
   syncBar(document.getElementById('exp-segment-salida'), getSalidaSections(settings), 'salida');
+
+  var driveBtn = document.getElementById('btn-drive-import');
+  if (driveBtn) {
+    driveBtn.style.display = isModeSala(settings) ? '' : 'none';
+  }
 }
 
 export function getConsolidatedCompositeState(granularTab, settings) {

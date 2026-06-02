@@ -7,6 +7,7 @@ import {
   lanFetchHostPatientRow,
 } from './lan-sync.mjs';
 import { toClinicalHistoryText } from '../../../lib/historia-clinica/clinical-text.mjs';
+import { filterNewEventualidades } from '../../../lib/drive-import/merge-eventualidades.mjs';
 
 let _editingEntryId = null;
 /** @type {Map<string, boolean>} */
@@ -537,5 +538,22 @@ export function renderEventualidadesPanel(mountEl) {
 export function invalidateEventualidadesPanel() {
   _editingEntryId = null;
   _dayOpenPrefs.clear();
+}
+
+/**
+ * @param {object} patient
+ * @param {Array<{ at: string, text: string }>} incoming
+ * @returns {Promise<{ ok: boolean, added: number, skipped: number }>}
+ */
+export async function applyDriveImportEventualidades(patient, incoming) {
+  if (!patient) return { ok: false, added: 0, skipped: 0 };
+  const store = ensureEventualidades(patient);
+  const { toAdd, skipped } = filterNewEventualidades(store.entries, incoming || []);
+  for (let i = 0; i < toAdd.length; i += 1) {
+    appendEventualidad(store, toAdd[i].text, '', toAdd[i].at);
+  }
+  if (!toAdd.length) return { ok: true, added: 0, skipped };
+  const out = await persistEventualidades(patient, store);
+  return { ok: !!(out && out.ok), added: toAdd.length, skipped };
 }
 
