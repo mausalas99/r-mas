@@ -663,7 +663,7 @@ async function cmdPublish(argv) {
     if (!skipGh) {
       progress.start('gh-release');
       const assets = distFiles(version, { macOnly, winOnly }).map((f) => path.relative(ROOT, f));
-      const uploadOnly = allowExistingGh || ghReleaseExists(spawnSync, REPO, version);
+      const uploadOnly = ghReleaseExists(spawnSync, REPO, version);
       const ghArgs = uploadOnly
         ? ['release', 'upload', tag, '--repo', REPO, ...assets, '--clobber']
         : [
