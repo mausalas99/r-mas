@@ -63,6 +63,7 @@ import {
   wireClinicalRotationEntryControls,
   syncClinicalRotationEntryChrome,
 } from './features/clinical-rotation-entry.mjs';
+import { wireClinicalTeamsControls } from './features/clinical-teams.mjs';
 import { syncGuardiaModeButtonVisibility } from './features/guardia-board.mjs';
 
 const allWindowHandlers = Object.assign(
@@ -278,6 +279,7 @@ function runDomBootAfterState() {
         })
         .then(function () {
           wireClinicalRotationEntryControls();
+          wireClinicalTeamsControls();
           syncClinicalRotationEntryChrome();
           syncGuardiaModeButtonVisibility();
         })

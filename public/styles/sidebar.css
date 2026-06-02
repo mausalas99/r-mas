@@ -124,14 +124,14 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
   -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
-  gap: calc(8px * var(--density-space));
+  gap: calc(10px * var(--density-space));
   padding: calc(10px * var(--density-space)) calc(12px * var(--density-space)) calc(16px * var(--density-space));
 }
 /** Contenedor Sortable por sección (pinned / activos / archivados): mismo hueco vertical que antes entre tarjetas. */
 .patient-sort-zone {
   display: flex;
   flex-direction: column;
-  gap: calc(8px * var(--density-space));
+  gap: calc(10px * var(--density-space));
 }
 .patient-sort-zone .sortable-chosen:not(.sortable-ghost):not(.sortable-drag) {
   box-shadow: 0 4px 18px rgba(79, 86, 255, 0.12);
@@ -143,7 +143,7 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
   background: color-mix(in oklab, var(--surface) 88%, var(--bg));
 }
 .patient-card {
-  padding: calc(9px * var(--density-space)) calc(12px * var(--density-space)) calc(7px * var(--density-space));
+  padding: calc(10px * var(--density-space)) calc(12px * var(--density-space)) calc(9px * var(--density-space));
   cursor: grab;
   position: relative;
   border-radius: var(--radius-md);

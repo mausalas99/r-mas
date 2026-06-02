@@ -28,7 +28,7 @@ export function getClinicalTeamsPanelHost() {
 export function setClinicalTeamsPanelLoading() {
   const host = getClinicalTeamsPanelHost();
   if (host) {
-    host.innerHTML = '<p class="clinical-teams-lead">Cargando…</p>';
+    host.innerHTML = '<p class="clinical-teams-lead clinical-teams-loading">Cargando…</p>';
   }
 }
 

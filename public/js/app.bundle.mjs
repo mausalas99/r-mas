@@ -10142,7 +10142,7 @@ function getClinicalTeamsPanelHost() {
 function setClinicalTeamsPanelLoading() {
   const host = getClinicalTeamsPanelHost();
   if (host) {
-    host.innerHTML = '<p class="clinical-teams-lead">Cargando\u2026</p>';
+    host.innerHTML = '<p class="clinical-teams-lead clinical-teams-loading">Cargando\u2026</p>';
   }
 }
 function setClinicalTeamsPanelError(message) {
@@ -15305,120 +15305,6 @@ var init_clinical_registration = __esm({
   }
 });
 
-// public/js/features/clinical-rotation-entry.mjs
-var clinical_rotation_entry_exports = {};
-__export(clinical_rotation_entry_exports, {
-  openMiRotacion: () => openMiRotacion,
-  syncClinicalRotationEntryChrome: () => syncClinicalRotationEntryChrome,
-  windowHandlers: () => windowHandlers8,
-  wireClinicalRotationEntryControls: () => wireClinicalRotationEntryControls
-});
-async function openMiRotacion() {
-  if (!isDbMode()) {
-    if (typeof window.showToast === "function") {
-      window.showToast("Mi rotaci\xF3n requiere la base de datos cl\xEDnica.", "info");
-    }
-    return;
-  }
-  if (needsClinicalOnboarding()) {
-    const mainMod = await Promise.resolve().then(() => (init_clinical_onboarding_main(), clinical_onboarding_main_exports));
-    if (!mainMod.focusMainClinicalOnboarding()) await mainMod.showMainClinicalOnboarding();
-    return;
-  }
-  const { openClinicalTeamsPanel: openClinicalTeamsPanel2 } = await Promise.resolve().then(() => (init_clinical_teams(), clinical_teams_exports));
-  await openClinicalTeamsPanel2();
-}
-function buildEntryStatus() {
-  if (needsClinicalOnboarding()) {
-    return {
-      primary: "Configura tu rotaci\xF3n",
-      sub: "Usuario LAN, sala y equipo \u2014 obligatorio para guardia",
-      pending: true,
-      ctaLabel: "Continuar configuraci\xF3n"
-    };
-  }
-  const user = clinicalSessionContext.user;
-  if (!user?.user_id) {
-    return {
-      primary: "Mi rotaci\xF3n",
-      sub: "Desbloquea la base de datos para continuar",
-      pending: true,
-      ctaLabel: "Abrir Mi rotaci\xF3n"
-    };
-  }
-  const handle = normalizeUsername(user.username || "");
-  const rank = String(user.rank || "").trim();
-  const sala = String(user.sala || "").trim();
-  const name = String(user.clinical_name || "").trim();
-  const teams = filterJoinedTeams(clinicalSessionContext.teams || [], user);
-  const parts = [];
-  if (handle) parts.push(`@${handle}`);
-  if (rank) parts.push(rank);
-  if (sala) parts.push(sala);
-  const primary = parts.length ? parts.join(" \xB7 ") : "Mi rotaci\xF3n";
-  let sub = name || "Equipos, entregas y perfil cl\xEDnico";
-  if (teams.length === 1) sub = `Equipo: ${String(teams[0].name || "\u2014")}`;
-  else if (teams.length > 1) sub = `${teams.length} equipos`;
-  return { primary, sub, pending: false, ctaLabel: "Abrir Mi rotaci\xF3n" };
-}
-function syncClinicalRotationEntryChrome() {
-  const sidebarSection = document.getElementById("clinical-rotation-section");
-  const profileBlock = document.getElementById("profile-clinical-rotation-block");
-  const show = isDbMode();
-  if (sidebarSection) sidebarSection.hidden = !show;
-  if (profileBlock) profileBlock.hidden = !show;
-  if (!show) return;
-  const status = buildEntryStatus();
-  const sidebarBtn = document.getElementById("btn-sidebar-mi-rotacion");
-  const sidebarPrimary = document.getElementById("clinical-rotation-entry-primary");
-  const sidebarSub = document.getElementById("clinical-rotation-entry-sub");
-  if (sidebarBtn) {
-    sidebarBtn.classList.toggle("is-pending", status.pending);
-    sidebarBtn.setAttribute(
-      "title",
-      status.pending ? "Completa usuario y equipo" : "Usuario LAN, equipos y entregas"
-    );
-  }
-  if (sidebarPrimary) sidebarPrimary.textContent = status.primary;
-  if (sidebarSub) sidebarSub.textContent = status.sub;
-  const profileCta = document.getElementById("btn-profile-mi-rotacion");
-  const profileStatus = document.getElementById("profile-clinical-rotation-status");
-  if (profileCta) profileCta.textContent = status.ctaLabel;
-  if (profileStatus) profileStatus.textContent = `${status.primary} \u2014 ${status.sub}`;
-  if (profileBlock) profileBlock.classList.toggle("is-pending", status.pending);
-}
-function wireClinicalRotationEntryControls() {
-  if (entryControlsWired) return;
-  entryControlsWired = true;
-  const bind = (id) => {
-    const el = document.getElementById(id);
-    if (!el || el._rpcMiRotacionWired) return;
-    el._rpcMiRotacionWired = true;
-    el.addEventListener("click", () => void openMiRotacion());
-  };
-  bind("btn-sidebar-mi-rotacion");
-  bind("btn-profile-mi-rotacion");
-  if (typeof document !== "undefined") {
-    document.addEventListener("rpc-clinical-teams-changed", () => {
-      syncClinicalRotationEntryChrome();
-    });
-  }
-}
-var entryControlsWired, windowHandlers8;
-var init_clinical_rotation_entry = __esm({
-  "public/js/features/clinical-rotation-entry.mjs"() {
-    init_db_storage_bridge();
-    init_clinical_access_runtime();
-    init_clinical_username();
-    init_clinical_teams();
-    init_clinical_onboarding();
-    entryControlsWired = false;
-    windowHandlers8 = {
-      openMiRotacion
-    };
-  }
-});
-
 // public/js/features/clinical-onboarding-main.mjs
 var clinical_onboarding_main_exports = {};
 __export(clinical_onboarding_main_exports, {
@@ -15933,6 +15819,120 @@ var init_clinical_onboarding = __esm({
   }
 });
 
+// public/js/features/clinical-rotation-entry.mjs
+var clinical_rotation_entry_exports = {};
+__export(clinical_rotation_entry_exports, {
+  openMiRotacion: () => openMiRotacion,
+  syncClinicalRotationEntryChrome: () => syncClinicalRotationEntryChrome,
+  windowHandlers: () => windowHandlers8,
+  wireClinicalRotationEntryControls: () => wireClinicalRotationEntryControls
+});
+async function openMiRotacion() {
+  if (!isDbMode()) {
+    if (typeof window.showToast === "function") {
+      window.showToast("Mi rotaci\xF3n requiere la base de datos cl\xEDnica.", "info");
+    }
+    return;
+  }
+  if (needsClinicalOnboarding()) {
+    const mainMod = await Promise.resolve().then(() => (init_clinical_onboarding_main(), clinical_onboarding_main_exports));
+    if (!mainMod.focusMainClinicalOnboarding()) await mainMod.showMainClinicalOnboarding();
+    return;
+  }
+  const { openClinicalTeamsPanel: openClinicalTeamsPanel2 } = await Promise.resolve().then(() => (init_clinical_teams(), clinical_teams_exports));
+  await openClinicalTeamsPanel2();
+}
+function buildEntryStatus() {
+  if (needsClinicalOnboarding()) {
+    return {
+      primary: "Configura tu rotaci\xF3n",
+      sub: "Usuario LAN, sala y equipo \u2014 obligatorio para guardia",
+      pending: true,
+      ctaLabel: "Continuar configuraci\xF3n"
+    };
+  }
+  const user = clinicalSessionContext.user;
+  if (!user?.user_id) {
+    return {
+      primary: "Mi rotaci\xF3n",
+      sub: "Desbloquea la base de datos para continuar",
+      pending: true,
+      ctaLabel: "Abrir Mi rotaci\xF3n"
+    };
+  }
+  const handle = normalizeUsername(user.username || "");
+  const rank = String(user.rank || "").trim();
+  const sala = String(user.sala || "").trim();
+  const name = String(user.clinical_name || "").trim();
+  const teams = filterJoinedTeams(clinicalSessionContext.teams || [], user);
+  const parts = [];
+  if (handle) parts.push(`@${handle}`);
+  if (rank) parts.push(rank);
+  if (sala) parts.push(sala);
+  const primary = parts.length ? parts.join(" \xB7 ") : "Mi rotaci\xF3n";
+  let sub = name || "Equipos, entregas y perfil cl\xEDnico";
+  if (teams.length === 1) sub = `Equipo: ${String(teams[0].name || "\u2014")}`;
+  else if (teams.length > 1) sub = `${teams.length} equipos`;
+  return { primary, sub, pending: false, ctaLabel: "Abrir Mi rotaci\xF3n" };
+}
+function syncClinicalRotationEntryChrome() {
+  const sidebarSection = document.getElementById("clinical-rotation-section");
+  const profileBlock = document.getElementById("profile-clinical-rotation-block");
+  const show = isDbMode();
+  if (sidebarSection) sidebarSection.hidden = !show;
+  if (profileBlock) profileBlock.hidden = !show;
+  if (!show) return;
+  const status = buildEntryStatus();
+  const sidebarBtn = document.getElementById("btn-sidebar-mi-rotacion");
+  const sidebarPrimary = document.getElementById("clinical-rotation-entry-primary");
+  const sidebarSub = document.getElementById("clinical-rotation-entry-sub");
+  if (sidebarBtn) {
+    sidebarBtn.classList.toggle("is-pending", status.pending);
+    sidebarBtn.setAttribute(
+      "title",
+      status.pending ? "Completa usuario y equipo" : "Usuario LAN, equipos y entregas"
+    );
+  }
+  if (sidebarPrimary) sidebarPrimary.textContent = status.primary;
+  if (sidebarSub) sidebarSub.textContent = status.sub;
+  const profileCta = document.getElementById("btn-profile-mi-rotacion");
+  const profileStatus = document.getElementById("profile-clinical-rotation-status");
+  if (profileCta) profileCta.textContent = status.ctaLabel;
+  if (profileStatus) profileStatus.textContent = `${status.primary} \u2014 ${status.sub}`;
+  if (profileBlock) profileBlock.classList.toggle("is-pending", status.pending);
+}
+function wireClinicalRotationEntryControls() {
+  if (entryControlsWired) return;
+  entryControlsWired = true;
+  const bind = (id) => {
+    const el = document.getElementById(id);
+    if (!el || el._rpcMiRotacionWired) return;
+    el._rpcMiRotacionWired = true;
+    el.addEventListener("click", () => void openMiRotacion());
+  };
+  bind("btn-sidebar-mi-rotacion");
+  bind("btn-profile-mi-rotacion");
+  if (typeof document !== "undefined") {
+    document.addEventListener("rpc-clinical-teams-changed", () => {
+      syncClinicalRotationEntryChrome();
+    });
+  }
+}
+var entryControlsWired, windowHandlers8;
+var init_clinical_rotation_entry = __esm({
+  "public/js/features/clinical-rotation-entry.mjs"() {
+    init_db_storage_bridge();
+    init_clinical_access_runtime();
+    init_clinical_username();
+    init_clinical_teams();
+    init_clinical_onboarding();
+    entryControlsWired = false;
+    windowHandlers8 = {
+      openMiRotacion
+    };
+  }
+});
+
 // public/js/features/clinical-teams.mjs
 var clinical_teams_exports = {};
 __export(clinical_teams_exports, {
@@ -15945,6 +15945,7 @@ __export(clinical_teams_exports, {
   renderClinicalTeamsPanel: () => renderClinicalTeamsPanel,
   renderCreateTeamForm: () => renderCreateTeamForm,
   wireClinicalTeamsControls: () => wireClinicalTeamsControls,
+  wireClinicalTeamsModalChrome: () => wireClinicalTeamsModalChrome,
   wireClinicalTeamsPanelInteractions: () => wireClinicalTeamsPanelInteractions
 });
 function dbApi4() {
@@ -15961,6 +15962,9 @@ function escapeHtml5(s) {
 }
 function escapeAttr3(s) {
   return escapeHtml5(s).replace(/"/g, "&quot;");
+}
+function hintHtml(text) {
+  return `<p class="clinical-teams-hint">${escapeHtml5(text)}</p>`;
 }
 function currentUserId() {
   return String(clinicalSessionContext.user?.user_id || "");
@@ -15996,12 +16000,23 @@ function isUserTeamMember(team, user) {
 function teamsModalEl() {
   return document.getElementById("clinical-teams-backdrop");
 }
+function isClinicalTeamsPanelOpen() {
+  const bd = teamsModalEl();
+  return !!(bd && bd.classList.contains("open"));
+}
+async function refreshTeamsUiAfterChange() {
+  await fetchClinicalTeamsFromDb();
+  Promise.resolve().then(() => (init_clinical_rotation_entry(), clinical_rotation_entry_exports)).then((m) => m.syncClinicalRotationEntryChrome());
+  if (isClinicalTeamsPanelOpen()) {
+    await renderClinicalTeamsPanel({ silent: true });
+  }
+}
 async function openClinicalTeamsPanel() {
+  wireClinicalTeamsModalChrome();
   const bd = teamsModalEl();
   if (!bd) return;
   bd.classList.add("open");
   bd.setAttribute("aria-hidden", "false");
-  setClinicalTeamsPanelLoading();
   const sessionOk = await ensureClinicalPanelSession();
   if (!sessionOk) {
     setClinicalTeamsPanelError(
@@ -16043,66 +16058,124 @@ function renderCreateTeamForm() {
     (letter, idx) => `<option value="${escapeAttr3(letter)}">${escapeHtml5(letter)}</option>`
   ).join("");
   return `
-    <section class="clinical-teams-section">
-      <h4 class="clinical-teams-section-title">Crear equipo</h4>
-      <form id="clinical-team-create-form" class="clinical-teams-create-form">
-        <div class="field-group" id="clinical-team-sala-group">
-          <label for="clinical-team-create-sala">Sala</label>
-          <select id="clinical-team-create-sala" class="profile-input">
-            <option value="">\u2014 Seleccionar Sala \u2014</option>
-            ${CLINICAL_SALAS.map((s) => `<option value="${escapeAttr3(s)}">${escapeHtml5(s)}</option>`).join("")}
-          </select>
-        </div>
-        <div class="field-group">
-          <label for="clinical-team-create-name">Nombre del equipo (residente l\xEDder)</label>
-          <input id="clinical-team-create-name" type="text" class="profile-input" placeholder="Dr. Guti\xE9rrez" required>
-        </div>
-        <div class="field-group">
-          <label for="clinical-team-create-service">Servicio</label>
-          <select id="clinical-team-create-service" class="profile-input" required>${serviceOptions}</select>
-        </div>
-        <div class="field-group">
-          <label for="clinical-team-create-day">Posici\xF3n en ciclo</label>
-          <select id="clinical-team-create-day" class="profile-input" required>${letterOptions}</select>
-        </div>
-        <div class="modal-actions">
-          <button type="submit" class="btn-save">Crear equipo</button>
-        </div>
-      </form>
-    </section>`;
+    <details class="clinical-teams-details">
+      <summary>Crear nuevo equipo</summary>
+      <div class="clinical-teams-details-body">
+        <form id="clinical-team-create-form" class="clinical-teams-create-form">
+          <div class="field-group" id="clinical-team-sala-group">
+            <label for="clinical-team-create-sala">Sala</label>
+            <select id="clinical-team-create-sala" class="profile-input">
+              <option value="">\u2014 Seleccionar sala \u2014</option>
+              ${CLINICAL_SALAS.map((s) => `<option value="${escapeAttr3(s)}">${escapeHtml5(s)}</option>`).join("")}
+            </select>
+          </div>
+          <div class="field-group">
+            <label for="clinical-team-create-name">Nombre del equipo (residente l\xEDder)</label>
+            <input id="clinical-team-create-name" type="text" class="profile-input" placeholder="Dr. Guti\xE9rrez" required>
+          </div>
+          <div class="field-group">
+            <label for="clinical-team-create-service">Servicio</label>
+            <select id="clinical-team-create-service" class="profile-input" required>${serviceOptions}</select>
+          </div>
+          <div class="field-group">
+            <label for="clinical-team-create-day">Posici\xF3n en ciclo</label>
+            <select id="clinical-team-create-day" class="profile-input" required>${letterOptions}</select>
+          </div>
+          <div class="modal-actions" style="margin-top: 8px;">
+            <button type="submit" class="btn-save">Crear equipo</button>
+          </div>
+        </form>
+      </div>
+    </details>`;
+}
+function renderTeamMetaLine(team) {
+  const parts = [];
+  const sala = String(team.sala || "").trim();
+  const service = String(team.service || "").trim();
+  const cycle = team.sub_area_fraction ? String(team.sub_area_fraction).trim() : "";
+  if (sala) parts.push(sala);
+  if (service && service.toLowerCase() !== "sala") parts.push(service);
+  if (cycle) parts.push(`Ciclo ${cycle}`);
+  if (!parts.length) return "";
+  return `<p class="clinical-teams-card-meta">${parts.map((p) => escapeHtml5(p)).join(" \xB7 ")}</p>`;
+}
+function renderMemberRow(m) {
+  const handle = escapeHtml5(m.username || m.user_id);
+  const name = String(m.clinical_name || "").trim();
+  const rank = escapeHtml5(effectiveClinicalRank({ rank: m.rank }));
+  const displayName = name ? escapeHtml5(name) : handle;
+  const meta = name ? `@${handle} \xB7 ${rank}` : rank;
+  return `<li class="clinical-teams-member-row">
+    <span class="clinical-teams-member-row-name">${displayName}</span>
+    <span class="clinical-teams-member-row-meta">${meta}</span>
+  </li>`;
+}
+function renderMembersBlock(members, { compact = false } = {}) {
+  const list = Array.isArray(members) ? members : [];
+  const count = list.length;
+  const rows = count ? list.map((m) => renderMemberRow(m)).join("") : '<li class="clinical-teams-empty clinical-teams-empty--inline">Sin integrantes</li>';
+  const heading = count === 1 ? "Integrantes (1)" : `Integrantes (${count})`;
+  return `
+    <div class="clinical-teams-card-members${compact ? " clinical-teams-card-members--compact" : ""}">
+      <h6 class="clinical-teams-members-heading">${heading}</h6>
+      <ul class="clinical-teams-member-rows">${rows}</ul>
+    </div>`;
 }
 function renderJoinedTeamCard(team) {
   const teamId = String(team.team_id || "");
   const members = Array.isArray(team.members) ? team.members : [];
-  const memberList = members.length ? members.map((m) => {
-    const handle = escapeHtml5(m.username || m.user_id);
-    const name = String(m.clinical_name || "").trim();
-    const rank = escapeHtml5(effectiveClinicalRank({ rank: m.rank }));
-    const label = name ? `${handle} \xB7 ${escapeHtml5(name)} <span class="clinical-teams-member-rank">(${rank})</span>` : `${handle} <span class="clinical-teams-member-rank">${rank}</span>`;
-    return `<li><span class="clinical-teams-member-name">${label}</span></li>`;
-  }).join("") : '<li class="clinical-teams-empty">Sin miembros</li>';
-  const meta = [
-    escapeHtml5(team.service || ""),
-    team.sub_area_fraction ? escapeHtml5(team.sub_area_fraction) : null,
-    team.sala ? escapeHtml5(team.sala) : null,
-    `d\xEDa ${Number(team.on_call_day_index ?? 0)}`
-  ].filter(Boolean).join(" \xB7 ");
   return `
-    <article class="clinical-teams-card" data-team-id="${escapeAttr3(teamId)}">
-      <header class="clinical-teams-card-head">
-        <div>
-          <h5 class="clinical-teams-card-title">${escapeHtml5(team.name || "Equipo")}</h5>
-          <p class="clinical-teams-card-meta">${meta}</p>
-        </div>
-      </header>
-      <ul class="clinical-teams-member-list">${memberList}</ul>
-      <form class="clinical-teams-add-member-form" data-team-id="${escapeAttr3(teamId)}">
-        <input type="text" class="profile-input clinical-teams-add-member-input" placeholder="Usuario LAN / username" required aria-label="Agregar miembro por username">
-        <button type="submit" class="btn-med-secondary">Agregar</button>
-      </form>
+    <article class="clinical-teams-card clinical-teams-card--mine" data-team-id="${escapeAttr3(teamId)}">
+      <div class="clinical-teams-card-top">
+        <p class="clinical-teams-card-eyebrow">Residente l\xEDder</p>
+        <h5 class="clinical-teams-card-title">${escapeHtml5(team.name || "Equipo")}</h5>
+        ${renderTeamMetaLine(team)}
+      </div>
+      ${renderMembersBlock(members)}
+      <div class="clinical-teams-invite-box">
+        <form class="clinical-teams-add-member-form" data-team-id="${escapeAttr3(teamId)}">
+          <label class="clinical-teams-add-member-label" for="clinical-add-member-${escapeAttr3(teamId)}">Agregar integrante</label>
+          <div class="clinical-teams-invite-row">
+            <input id="clinical-add-member-${escapeAttr3(teamId)}" type="text" class="profile-input clinical-teams-add-member-input" placeholder="Usuario LAN" required aria-describedby="clinical-add-hint-${escapeAttr3(teamId)}">
+            <button type="submit" class="btn-save clinical-teams-btn-add">Agregar</button>
+          </div>
+          <p class="clinical-teams-invite-hint" id="clinical-add-hint-${escapeAttr3(teamId)}">Ejemplo: mgarcia</p>
+        </form>
+      </div>
     </article>`;
 }
-async function renderClinicalTeamsPanel() {
+function renderDirectoryTeamCard(team, opts = {}) {
+  const teamId = String(team.team_id || "");
+  const members = Array.isArray(team.members) ? team.members : [];
+  const action = opts.actionHtml || "";
+  return `
+    <article class="clinical-teams-card clinical-teams-card--directory">
+      <div class="clinical-teams-card-top clinical-teams-card-top--directory">
+        <div class="clinical-teams-card-top-text">
+          <p class="clinical-teams-card-eyebrow">Equipo en sala</p>
+          <h5 class="clinical-teams-card-title">${escapeHtml5(team.name || "")}</h5>
+          ${renderTeamMetaLine(team)}
+        </div>
+        ${action ? `<div class="clinical-teams-card-actions">${action}</div>` : ""}
+      </div>
+      ${renderMembersBlock(members, { compact: true })}
+    </article>`;
+}
+async function renderClinicalTeamsPanel(opts = {}) {
+  const silent = !!opts.silent;
+  if (silent) {
+    const host = getClinicalTeamsPanelHost();
+    if (!host) return;
+    try {
+      await renderClinicalTeamsPanelInto(host);
+    } catch (err) {
+      console.error("[Mi rotaci\xF3n]", err);
+      setClinicalTeamsPanelError(
+        err instanceof Error ? err.message : "Error al cargar Mi rotaci\xF3n."
+      );
+    }
+    return;
+  }
   await safeRenderClinicalTeamsPanel(async (host) => {
     await renderClinicalTeamsPanelInto(host);
   });
@@ -16133,7 +16206,7 @@ async function renderClinicalTeamsPanelInto(host) {
   await fetchClinicalTeamsFromDb();
   await tryReconcileTeamMemberships();
   const joined = filterJoinedTeams(clinicalSessionContext.teams, clinicalSessionContext.user);
-  const joinedHtml = joined.length ? joined.map((team) => renderJoinedTeamCard(team)).join("") : '<p class="clinical-teams-empty">A\xFAn no perteneces a ning\xFAn equipo.</p>';
+  const joinedHtml = joined.length ? joined.map((team) => renderJoinedTeamCard(team)).join("") : '<p class="clinical-teams-empty clinical-teams-empty--section">A\xFAn no perteneces a ning\xFAn equipo. Explora la sala abajo o crea uno nuevo.</p>';
   const user = clinicalSessionContext.user || {};
   const rank = effectiveClinicalRank(user);
   const programAdmin = hasProgramAdminPrivileges(user);
@@ -16152,8 +16225,8 @@ async function renderClinicalTeamsPanelInto(host) {
   const clinicalName = escapeHtml5(user.clinical_name || "");
   const legacyBanner = legacyUsername ? '<p class="clinical-teams-legacy-banner">Registra tu usuario LAN (obligatorio). Sin esto no apareces en equipos ni entregas.</p>' : "";
   const profileSection = `
-    <section class="clinical-teams-section clinical-teams-rank-section">
-      <h4 class="clinical-teams-section-title">Mi perfil</h4>
+    <div class="clinical-teams-profile-panel clinical-teams-rank-section">
+      <h5 class="clinical-teams-subsection-title">Mi perfil y rango</h5>
       ${legacyBanner}
       <form id="clinical-profile-form" class="clinical-teams-create-form">
         <div class="field-group">
@@ -16162,7 +16235,7 @@ async function renderClinicalTeamsPanelInto(host) {
             value="${escapeAttr3(usernameForInput)}"
             placeholder="mgarcia" autocomplete="username"
             pattern="[a-z][a-z0-9_]{2,31}" required>
-          <p class="clinical-registration-lead" style="margin:0.35rem 0 0;">Min\xFAsculas, 3\u201332 caracteres (a-z, 0-9, _). Lo usan tus compa\xF1eros para agregarte a equipos.</p>
+          ${hintHtml("Min\xFAsculas, 3\u201332 caracteres. Tus compa\xF1eros lo usan para agregarte a equipos.")}
         </div>
         <div class="field-group">
           <label for="clinical-profile-name">Nombre en guardia</label>
@@ -16175,14 +16248,14 @@ async function renderClinicalTeamsPanelInto(host) {
     (r) => `<option value="${r}" ${r === rank ? "selected" : ""}>${r}</option>`
   ).join("")}
           </select>
-          <p class="clinical-registration-lead" style="margin:0.35rem 0 0;">Usado en equipos, entregas y alcance cl\xEDnico.</p>
+          ${hintHtml("Equipos, entregas y alcance cl\xEDnico.")}
         </div>
         <div class="field-group">
           <label class="clinical-teams-guardia-label">
             <input type="checkbox" id="clinical-profile-admin" ${programAdmin ? "checked" : ""}>
             <span>Privilegios de administraci\xF3n</span>
           </label>
-          <p class="clinical-registration-lead" style="margin:0.35rem 0 0;">Configuraci\xF3n de rotaci\xF3n y acceso amplio (lead dev / R4 de programa).</p>
+          ${hintHtml("Rotaci\xF3n del programa y acceso amplio.")}
         </div>
         <div class="field-group">
           <label for="clinical-profile-sala">${programAdmin ? "Mi sala (rango cl\xEDnico)" : "Sala"}</label>
@@ -16192,13 +16265,13 @@ async function renderClinicalTeamsPanelInto(host) {
     (s) => `<option value="${escapeAttr3(s)}" ${sala === s ? "selected" : ""}>${escapeHtml5(s)}</option>`
   ).join("")}
           </select>
-          ${programAdmin ? '<p class="clinical-registration-lead" style="margin:0.35rem 0 0;">Tu equipo R1 y entregas usan esta sala. Abajo puedes explorar otras.</p>' : ""}
+          ${programAdmin ? hintHtml("Tu equipo y entregas usan esta sala; abajo puedes explorar otras.") : ""}
         </div>
-        <div class="modal-actions">
+        <div class="modal-actions clinical-teams-profile-save">
           <button type="submit" class="btn-save">Guardar perfil</button>
         </div>
       </form>
-    </section>`;
+    </div>`;
   const browseSala = resolveBrowseSala(elevated, sala);
   const directorySection = await renderDirectorySectionHtml({
     userId,
@@ -16207,14 +16280,22 @@ async function renderClinicalTeamsPanelInto(host) {
     homeSala: sala
   });
   host.innerHTML = `
-    <p class="clinical-teams-lead">Administra tus equipos y membres\xEDa en la sala.</p>
-    ${profileSection}
-    <section class="clinical-teams-section">
-      <h4 class="clinical-teams-section-title">Mis equipos</h4>
+    <section class="clinical-teams-section clinical-teams-section--joined">
+      <div class="clinical-teams-section-intro">
+        <h4 class="clinical-teams-section-title">Mis equipos</h4>
+        <p class="clinical-teams-section-desc">Equipos donde ya eres integrante.</p>
+      </div>
       <div class="clinical-teams-list">${joinedHtml}</div>
     </section>
     ${directorySection}
-    ${renderCreateTeamForm()}`;
+    <section class="clinical-teams-section clinical-teams-section--more">
+      <div class="clinical-teams-section-intro">
+        <h4 class="clinical-teams-section-title">Configuraci\xF3n</h4>
+        <p class="clinical-teams-section-desc">Perfil cl\xEDnico y equipos nuevos.</p>
+      </div>
+      ${profileSection}
+      ${renderCreateTeamForm()}
+    </section>`;
   wireClinicalTeamsPanelInteractions();
   wireJoinButtons();
   wireBrowseSalaControl(elevated);
@@ -16236,55 +16317,49 @@ async function renderDirectorySectionHtml(opts) {
   const listOpts = elevated && browseSala === "__all__" ? { sala: "", forUserId: userId, allSalas: true } : { sala: browseSala || homeSala, forUserId: userId };
   const res = await api3.dbClinicalTeamsListBySala(listOpts);
   let directory = res?.ok && Array.isArray(res.teams) ? res.teams : [];
-  if (!elevated) {
-    directory = directory.filter((t2) => !t2.isMember);
-  }
+  directory = directory.filter((t2) => !t2.isMember);
   if (!directory.length) {
     const label = browseSala === "__all__" ? "ninguna sala" : escapeHtml5(String(browseSala || homeSala));
-    return `<section class="clinical-teams-section"><p class="clinical-teams-empty">No hay equipos en ${label}.</p></section>`;
+    const emptyMsg = elevated ? `No hay otros equipos en ${label}. Los tuyos aparecen arriba.` : `No hay otros equipos disponibles en ${label}.`;
+    return `<section class="clinical-teams-section clinical-teams-section--directory">
+      <div class="clinical-teams-section-intro">
+        <h4 class="clinical-teams-section-title">${elevated ? "Explorar sala" : `Otros equipos \xB7 ${escapeHtml5(browseSala || homeSala)}`}</h4>
+        <p class="clinical-teams-section-desc">Equipos de la sala a los que puedes unirte.</p>
+      </div>
+      <p class="clinical-teams-empty">${emptyMsg}</p>
+    </section>`;
   }
-  const browseControl = elevated ? `<div class="field-group">
-        <label for="clinical-browse-sala">Explorar equipos en</label>
-        <select id="clinical-browse-sala" class="profile-input">
+  const browseControl = elevated ? `<label class="clinical-teams-browse-label" for="clinical-browse-sala">Sala</label>
+        <select id="clinical-browse-sala" class="profile-input clinical-teams-browse-select" aria-label="Explorar equipos por sala">
           ${CLINICAL_SALAS.map(
     (s) => `<option value="${escapeAttr3(s)}" ${browseSala === s ? "selected" : ""}>${escapeHtml5(s)}</option>`
   ).join("")}
           <option value="__all__" ${browseSala === "__all__" ? "selected" : ""}>Todas las salas</option>
-        </select>
-      </div>` : "";
+        </select>` : "";
   const cards = directory.map((team) => {
     const teamId = String(team.team_id || "");
-    const salaTag = team.sala ? `<span class="clinical-teams-card-meta">${escapeHtml5(team.sala)}</span>` : "";
-    const members = (team.members || []).map((m) => {
-      const handle = escapeHtml5(m.username || m.user_id);
-      const name = String(m.clinical_name || "").trim();
-      const r = escapeHtml5(effectiveClinicalRank({ rank: m.rank }));
-      return `<li>${handle}${name ? ` \xB7 ${escapeHtml5(name)}` : ""} <span class="clinical-teams-member-rank">(${r})</span></li>`;
-    }).join("");
     let action = "";
-    if (team.isMember) {
-      action = '<span class="clinical-teams-joined-badge">Tu equipo</span>';
-    } else if (team.joinEligible) {
+    if (team.joinEligible) {
       action = `<button type="button" class="btn-med-secondary clinical-teams-join-btn" data-team-id="${escapeAttr3(teamId)}">Unirme</button>`;
     } else if (team.joinReason) {
       action = `<span class="clinical-teams-join-hint">${escapeHtml5(team.joinReason)}</span>`;
     }
-    return `<article class="clinical-teams-card">
-        <header class="clinical-teams-card-head">
-          <div>
-            <h5 class="clinical-teams-card-title">${escapeHtml5(team.name || "")}</h5>
-            ${salaTag}
-          </div>
-          ${action}
-        </header>
-        <ul class="clinical-teams-member-list">${members || '<li class="clinical-teams-empty">Sin miembros</li>'}</ul>
-      </article>`;
+    return renderDirectoryTeamCard(team, { actionHtml: action });
   }).join("");
-  const title = browseSala === "__all__" ? "Equipos (todas las salas)" : elevated ? `Equipos en ${escapeHtml5(browseSala)}` : `Otros equipos en ${escapeHtml5(browseSala || homeSala)}`;
+  const sectionTitle = elevated ? browseSala === "__all__" ? "Explorar \xB7 todas las salas" : `Explorar \xB7 ${escapeHtml5(browseSala)}` : `Otros equipos \xB7 ${escapeHtml5(browseSala || homeSala)}`;
+  const headRow = browseControl ? `<div class="clinical-teams-section-head-row">
+        <div class="clinical-teams-section-intro">
+          <h4 class="clinical-teams-section-title">${sectionTitle}</h4>
+          <p class="clinical-teams-section-desc">Equipos de la sala a los que puedes unirte.</p>
+        </div>
+        ${browseControl}
+      </div>` : `<div class="clinical-teams-section-intro">
+        <h4 class="clinical-teams-section-title">${sectionTitle}</h4>
+        <p class="clinical-teams-section-desc">Equipos de la sala a los que puedes unirte.</p>
+      </div>`;
   return `
-    <section class="clinical-teams-section">
-      <h4 class="clinical-teams-section-title">${title}</h4>
-      ${browseControl}
+    <section class="clinical-teams-section clinical-teams-section--directory">
+      ${headRow}
       <div class="clinical-teams-list">${cards}</div>
     </section>`;
 }
@@ -16298,7 +16373,7 @@ function wireBrowseSalaControl(elevated) {
       localStorage.setItem(BROWSE_SALA_LS, String(select.value || ""));
     } catch (_e) {
     }
-    void renderClinicalTeamsPanel();
+    void renderClinicalTeamsPanel({ silent: true });
   });
 }
 async function handleProfileFormSubmit(ev) {
@@ -16379,13 +16454,10 @@ async function handleProfileFormSubmit(ev) {
   const ok = await persistProfileFromPanel({ rank, sala, clinicalName, isProgramAdmin, username });
   if (!ok) return;
   await refreshClinicalUserProfile();
-  await fetchClinicalTeamsFromDb();
   const msg = isProgramAdmin ? "Perfil guardado. Privilegios de administraci\xF3n activos." : "Perfil guardado.";
   toast3(msg, "success");
   syncRotationConfigButton();
   document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
-  await fetchClinicalTeamsFromDb();
-  await renderClinicalTeamsPanel();
 }
 function clientIdFromSettings() {
   try {
@@ -16413,7 +16485,6 @@ function wireJoinButtons() {
       }
       toast3("Te uniste al equipo.", "success");
       document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
-      await renderClinicalTeamsPanel();
     });
   });
 }
@@ -16526,13 +16597,12 @@ async function handleCreateTeamSubmit(ev) {
     }
   }
   toast3("Equipo creado.", "success");
-  document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
-  await fetchClinicalTeamsFromDb();
   const { needsClinicalOnboarding: needsClinicalOnboarding2 } = await Promise.resolve().then(() => (init_clinical_onboarding(), clinical_onboarding_exports));
   if (needsClinicalOnboarding2()) {
     const mainMod = await Promise.resolve().then(() => (init_clinical_onboarding_main(), clinical_onboarding_main_exports));
     await mainMod.refreshMainClinicalOnboardingIfNeeded();
-  } else await renderClinicalTeamsPanel();
+  }
+  document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
 }
 async function handleAddMemberSubmit(ev, form) {
   ev.preventDefault();
@@ -16556,29 +16626,16 @@ async function handleAddMemberSubmit(ev, form) {
   toast3("Miembro agregado.", "success");
   if (usernameInput instanceof HTMLInputElement) usernameInput.value = "";
   document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
-  await renderClinicalTeamsPanel();
 }
-function syncSalaFieldVisibility() {
-  const serviceSelect = document.getElementById("clinical-team-create-service");
-  const salaGroup = document.getElementById("clinical-team-sala-group");
-  if (!serviceSelect || !salaGroup) return;
-  const isSala = String(serviceSelect.value || "").toLowerCase().includes("sala");
-  salaGroup.style.display = isSala ? "" : "none";
-}
-function wireClinicalTeamsControls() {
-  if (teamsControlsWired) return;
-  teamsControlsWired = true;
-  Promise.resolve().then(() => (init_clinical_rotation_entry(), clinical_rotation_entry_exports)).then((mod) => {
-    mod.wireClinicalRotationEntryControls();
-    mod.syncClinicalRotationEntryChrome();
-  });
-  const openBtn = document.getElementById("btn-guardia-mi-rotacion");
-  if (openBtn) openBtn.addEventListener("click", () => void openClinicalTeamsPanel());
+function wireClinicalTeamsModalChrome() {
   const bd = teamsModalEl();
   if (bd) {
-    bd.addEventListener("click", (ev) => {
-      if (ev.target === bd) closeClinicalTeamsPanel();
-    });
+    if (!bd._rpcTeamsBackdropClick) {
+      bd._rpcTeamsBackdropClick = true;
+      bd.addEventListener("click", (ev) => {
+        if (ev.target === bd) closeClinicalTeamsPanel();
+      });
+    }
     if (!bd._rpcTeamsSubmitDelegated) {
       bd._rpcTeamsSubmitDelegated = true;
       bd.addEventListener("submit", (ev) => {
@@ -16598,10 +16655,45 @@ function wireClinicalTeamsControls() {
     }
   }
   const closeBtn = document.getElementById("btn-clinical-teams-close");
-  if (closeBtn) closeBtn.addEventListener("click", () => closeClinicalTeamsPanel());
-  document.addEventListener("rpc-clinical-teams-changed", () => {
-    void fetchClinicalTeamsFromDb();
+  if (closeBtn && !closeBtn._rpcCloseWired) {
+    closeBtn._rpcCloseWired = true;
+    closeBtn.addEventListener("click", () => closeClinicalTeamsPanel());
+  }
+  if (!document._rpcClinicalTeamsEscapeWired) {
+    document._rpcClinicalTeamsEscapeWired = true;
+    document.addEventListener("keydown", (ev) => {
+      if (ev.key !== "Escape") return;
+      const bd2 = teamsModalEl();
+      if (bd2?.classList.contains("open")) closeClinicalTeamsPanel();
+    });
+  }
+}
+function syncSalaFieldVisibility() {
+  const serviceSelect = document.getElementById("clinical-team-create-service");
+  const salaGroup = document.getElementById("clinical-team-sala-group");
+  if (!serviceSelect || !salaGroup) return;
+  const isSala = String(serviceSelect.value || "").toLowerCase().includes("sala");
+  salaGroup.style.display = isSala ? "" : "none";
+}
+function wireClinicalTeamsControls() {
+  wireClinicalTeamsModalChrome();
+  if (teamsControlsWired) return;
+  teamsControlsWired = true;
+  Promise.resolve().then(() => (init_clinical_rotation_entry(), clinical_rotation_entry_exports)).then((mod) => {
+    mod.wireClinicalRotationEntryControls();
+    mod.syncClinicalRotationEntryChrome();
   });
+  const openBtn = document.getElementById("btn-guardia-mi-rotacion");
+  if (openBtn && !openBtn._rpcTeamsOpenWired) {
+    openBtn._rpcTeamsOpenWired = true;
+    openBtn.addEventListener("click", () => void openClinicalTeamsPanel());
+  }
+  if (!document._rpcClinicalTeamsChangedWired) {
+    document._rpcClinicalTeamsChangedWired = true;
+    document.addEventListener("rpc-clinical-teams-changed", () => {
+      void refreshTeamsUiAfterChange();
+    });
+  }
 }
 var CLINICAL_TEAM_SERVICES, CLINICAL_SALAS, BROWSE_SALA_LS, teamsControlsWired;
 var init_clinical_teams = __esm({
@@ -61525,6 +61617,7 @@ init_soap_estado();
 init_clinical_access_runtime();
 init_clinical_registration();
 init_clinical_rotation_entry();
+init_clinical_teams();
 init_guardia_board();
 var allWindowHandlers = Object.assign(
   {},
@@ -61724,6 +61817,7 @@ function runDomBootAfterState() {
         return mod.showMainClinicalOnboarding();
       }).then(function() {
         wireClinicalRotationEntryControls();
+        wireClinicalTeamsControls();
         syncClinicalRotationEntryChrome();
         syncGuardiaModeButtonVisibility();
       }).catch(function(err) {
