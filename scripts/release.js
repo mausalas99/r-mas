@@ -615,7 +615,7 @@ async function cmdPublish(argv) {
       await runPublishCmd(
         progress,
         'verify-natives',
-        'node scripts/verify-release-natives.mjs'
+        'npm run rebuild:db-native && node scripts/verify-release-natives.mjs'
       );
       if (!winOnly) await runPublishCmd(progress, 'build-mac', buildMacPublishCmd());
       if (!macOnly) await runPublishCmd(progress, 'build-win', buildWinPublishCmd());
