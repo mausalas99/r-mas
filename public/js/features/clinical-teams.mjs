@@ -419,16 +419,19 @@ function renderJoinedTeamCard(team) {
           <p class="clinical-teams-invite-hint">Incluye el código e instrucciones para <strong>Mi rotación</strong> en la app R+ del Mac (no Safari).</p>
         </div>
         <form class="clinical-teams-add-member-form" data-team-id="${escapeAttr(teamId)}" data-team-service="${escapeAttr(team.service || '')}">
-          <label class="clinical-teams-add-member-label" for="clinical-add-member-${escapeAttr(teamId)}">Agregar integrante</label>
-          <div class="clinical-teams-invite-row">
-            <input id="clinical-add-member-${escapeAttr(teamId)}" type="text" class="profile-input clinical-teams-add-member-input" placeholder="Usuario LAN (sin @)" required aria-describedby="clinical-add-hint-${escapeAttr(teamId)}">
+          <p class="clinical-teams-add-member-label">Agregar integrante</p>
+          <div class="clinical-teams-add-member-fields">
+            <div class="field-group clinical-teams-add-member-user">
+              <label for="clinical-add-member-${escapeAttr(teamId)}">Usuario LAN</label>
+              <input id="clinical-add-member-${escapeAttr(teamId)}" type="text" class="profile-input clinical-teams-add-member-input" placeholder="sin @" required aria-describedby="clinical-add-hint-${escapeAttr(teamId)}">
+            </div>
+            <div class="field-group clinical-teams-add-cycle-group">
+              <label for="clinical-add-cycle-${escapeAttr(teamId)}">Ciclo del integrante</label>
+              ${renderAddMemberCycleSelect(team)}
+            </div>
             <button type="submit" class="btn-save clinical-teams-btn-add">Agregar</button>
           </div>
-          <div class="field-group clinical-teams-add-cycle-group">
-            <label for="clinical-add-cycle-${escapeAttr(teamId)}">Ciclo del integrante</label>
-            ${renderAddMemberCycleSelect(team)}
-          </div>
-          <p class="clinical-teams-invite-hint" id="clinical-add-hint-${escapeAttr(teamId)}">Ejemplo: <code>draleslie</code> — debe existir en Mi rotación. Cada R1/R2 lleva su propio ciclo (D1, D2, A–F).</p>
+          <p class="clinical-teams-invite-hint" id="clinical-add-hint-${escapeAttr(teamId)}">Debe existir en Mi rotación (usuario LAN, sin @). Cada R1/R2 lleva su propio ciclo (D1, D2, A–F).</p>
         </form>
       </div>
     </article>`;

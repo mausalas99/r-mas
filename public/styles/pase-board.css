@@ -1215,42 +1215,52 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
   background: color-mix(in oklab, var(--bg) 40%, var(--surface));
 }
 
-@media (min-width: 720px) {
-  .clinical-teams-invite-box .clinical-teams-add-member-form {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    column-gap: 16px;
-    row-gap: 10px;
-    align-items: end;
-  }
-
-  .clinical-teams-invite-box .clinical-teams-add-member-label,
-  .clinical-teams-invite-box .clinical-teams-invite-hint:last-child {
-    grid-column: 1 / -1;
-  }
-
-  .clinical-teams-invite-box .clinical-teams-invite-row {
-    grid-column: 1;
-    margin: 0;
-  }
-
-  .clinical-teams-invite-box .clinical-teams-add-cycle-group {
-    grid-column: 2;
-    margin-top: 0;
-  }
-}
-
 .clinical-teams-add-member-form {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .clinical-teams-add-member-label {
+  margin: 0;
   font-size: 0.8125rem;
   font-weight: 600;
   color: var(--text);
+}
+
+.clinical-teams-add-member-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.clinical-teams-add-member-fields .field-group {
   margin: 0;
+}
+
+.clinical-teams-add-member-fields .clinical-teams-add-cycle-group select {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.clinical-teams-add-member-fields .clinical-teams-btn-add {
+  width: 100%;
+  min-height: 40px;
+}
+
+@media (min-width: 640px) {
+  .clinical-teams-add-member-fields {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto;
+    gap: 10px 12px;
+    align-items: end;
+  }
+
+  .clinical-teams-add-member-fields .clinical-teams-btn-add {
+    width: auto;
+    min-width: 6.5rem;
+    align-self: end;
+  }
 }
 
 .clinical-teams-invite-hint {
