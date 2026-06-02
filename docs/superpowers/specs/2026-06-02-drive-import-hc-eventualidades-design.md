@@ -3,7 +3,8 @@
 > **For implementation:** After this spec is approved in review, use **superpowers:writing-plans** to produce the task-by-task implementation plan. Do not start coding from this document alone.
 
 **Date:** 2026-06-02  
-**Status:** Approved in brainstorming (2026-06-02) — pending file review before implementation plan  
+**Status:** Approved (2026-06-02)  
+**Implementation plan:** `docs/superpowers/plans/2026-06-02-drive-import-hc-eventualidades.md`  
 **Related specs:**
 - `docs/superpowers/specs/2026-05-31-historia-clinica-institutional-format-design.md`
 - `docs/superpowers/specs/2026-05-30-static-clinical-history-design.md`
