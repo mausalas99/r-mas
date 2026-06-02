@@ -4,21 +4,18 @@
 import {
   clinicalSessionContext,
   fetchClinicalTeamsFromDb,
+  refreshClinicalUserProfile,
+  resumeClinicalIdentityByUsername,
 } from '../clinical-access-runtime.mjs';
+import { persistClinicalUserBinding, readRpcSettings } from '../clinical-settings.mjs';
+import { safeRenderClinicalTeamsPanel } from './clinical-panel-host.mjs';
 import {
   isLegacyMachineUsername,
   isValidUsernameFormat,
   normalizeUsername,
 } from '../clinical-username.mjs';
 
-/** @param {object[]} teams @param {string} userId */
-function filterJoinedTeams(teams, userId) {
-  const uid = String(userId || '');
-  if (!uid) return [];
-  return (teams || []).filter((team) =>
-    (team.members || []).some((m) => String(m.user_id) === uid)
-  );
-}
+import { filterJoinedTeams } from './clinical-teams.mjs';
 
 function dbApi() {
   if (typeof window === 'undefined') return null;
@@ -43,14 +40,21 @@ function getClientId() {
 export function needsUsernameClaim() {
   const user = clinicalSessionContext.user;
   if (!user?.user_id) return true;
-  return isLegacyMachineUsername(user.username, getClientId());
+  if (isLegacyMachineUsername(user.username, getClientId())) return true;
+  try {
+    const settings = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
+    const cached = String(settings.clinicalUsername || '').trim();
+    if (cached && !isValidUsernameFormat(normalizeUsername(cached))) return true;
+    if (cached && isLegacyMachineUsername(user.username, getClientId())) return true;
+  } catch (_e) {}
+  const handle = normalizeUsername(user.username || '');
+  return !isValidUsernameFormat(handle);
 }
 
 export function needsTeamOnboarding() {
-  const userId = String(clinicalSessionContext.user?.user_id || '');
-  if (!userId) return true;
+  if (!clinicalSessionContext.user?.user_id) return true;
   const teams = clinicalSessionContext.teams || [];
-  return filterJoinedTeams(teams, userId).length === 0;
+  return filterJoinedTeams(teams, clinicalSessionContext.user).length === 0;
 }
 
 export function needsClinicalOnboarding() {
@@ -125,7 +129,9 @@ async function handleUsernameStepSubmit(ev) {
     String(document.getElementById('onboard-username')?.value || '')
   );
   const name = String(document.getElementById('onboard-clinical-name')?.value || '').trim();
-  const rank = String(document.getElementById('onboard-rank')?.value || 'R1');
+  let rank = String(document.getElementById('onboard-rank')?.value || 'R1');
+  const isProgramAdmin = rank === 'Admin';
+  if (isProgramAdmin) rank = 'R1';
   const sala = String(document.getElementById('onboard-sala')?.value || '').trim();
   const errEl = document.getElementById('onboard-error');
 
@@ -144,33 +150,70 @@ async function handleUsernameStepSubmit(ev) {
     return;
   }
 
-  const userId = String(clinicalSessionContext.user?.user_id || '');
+  let settings = readRpcSettings();
+  let sessionUserId = String(clinicalSessionContext.user?.user_id || '');
   const api = dbApi();
-  if (!userId || !api) {
+  if (!sessionUserId || !api) {
     toast('Sesión clínica no disponible.', 'error');
     return;
   }
 
-  if (typeof api.dbClinicalUsernameClaim === 'function') {
-    const claimRes = await api.dbClinicalUsernameClaim({ userId, username });
+  const currentHandle = normalizeUsername(clinicalSessionContext.user?.username || '');
+  const needsClaim = currentHandle !== username;
+
+  if (needsClaim && typeof api.dbClinicalUsernameClaim === 'function') {
+    const claimRes = await api.dbClinicalUsernameClaim({ userId: sessionUserId, username });
     if (!claimRes?.ok) {
-      if (errEl) {
-        errEl.textContent = claimRes?.error || 'No se pudo registrar el usuario.';
-        errEl.hidden = false;
+      const errMsg = String(claimRes?.error || '');
+      if (/ya está en uso/i.test(errMsg)) {
+        const cached = normalizeUsername(String(settings.clinicalUsername || ''));
+        const autoResume = cached === username;
+        const resume =
+          autoResume ||
+          window.confirm(
+            `El usuario @${username} ya está registrado en esta base de datos.\n\n¿Recuperar tu cuenta en este dispositivo?`
+          );
+        if (resume) {
+          const resumeRes = await resumeClinicalIdentityByUsername(
+            username,
+            settings,
+            getClientId()
+          );
+          if (!resumeRes.ok) {
+            if (errEl) {
+              errEl.textContent = resumeRes.error || errMsg;
+              errEl.hidden = false;
+            }
+            return;
+          }
+          sessionUserId = String(clinicalSessionContext.user?.user_id || '');
+          settings = readRpcSettings();
+        } else {
+          if (errEl) {
+            errEl.textContent = errMsg;
+            errEl.hidden = false;
+          }
+          return;
+        }
+      } else {
+        if (errEl) {
+          errEl.textContent = errMsg || 'No se pudo registrar el usuario.';
+          errEl.hidden = false;
+        }
+        return;
       }
-      return;
-    }
-    if (clinicalSessionContext.user) {
+    } else if (clinicalSessionContext.user) {
       clinicalSessionContext.user.username = username;
     }
   }
 
   if (typeof api.dbClinicalProfileUpsert === 'function') {
     const profileRes = await api.dbClinicalProfileUpsert({
-      userId,
+      userId: sessionUserId,
       clinicalName: name,
       rank,
       sala: sala || null,
+      isProgramAdmin,
     });
     if (!profileRes?.ok) {
       if (errEl) {
@@ -183,23 +226,22 @@ async function handleUsernameStepSubmit(ev) {
       clinicalSessionContext.user.rank = rank;
       clinicalSessionContext.user.clinical_name = name;
       clinicalSessionContext.user.sala = sala || null;
+      clinicalSessionContext.user.is_program_admin = isProgramAdmin ? 1 : 0;
     }
   }
 
-  let settings = {};
-  try {
-    settings = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
-  } catch (_e) {}
-  settings.clinicalRegistered = true;
-  settings.clinicalUsername = username;
-  settings.clinicalDisplayName = name;
-  settings.clinicalRank = rank;
-  if (sala) settings.clinicalSala = sala;
-  try {
-    localStorage.setItem('rpc-settings', JSON.stringify(settings));
-  } catch (_e) {}
+  persistClinicalUserBinding({
+    userId: sessionUserId,
+    username,
+    displayName: name,
+    rank,
+    sala: sala || '',
+    registered: true,
+    isProgramAdmin,
+  });
 
   if (errEl) errEl.hidden = true;
+  await refreshClinicalUserProfile();
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
   await renderOnboardingPanel();
 }
@@ -227,11 +269,65 @@ async function handleJoinTeam(teamId) {
   await renderOnboardingPanel();
 }
 
+async function handleResumeIdentityClick() {
+  const username = normalizeUsername(
+    String(document.getElementById('onboard-username')?.value || '')
+  );
+  const errEl = document.getElementById('onboard-error');
+  const resumeBtn = document.getElementById('clinical-onboard-resume-btn');
+  if (!isValidUsernameFormat(username)) {
+    if (errEl) {
+      errEl.textContent = 'Escribe tu usuario LAN para recuperarlo.';
+      errEl.hidden = false;
+    }
+    return;
+  }
+  if (resumeBtn instanceof HTMLButtonElement) {
+    resumeBtn.disabled = true;
+    resumeBtn.textContent = 'Recuperando…';
+  }
+  const settings = readRpcSettings();
+  try {
+    const resumeRes = await resumeClinicalIdentityByUsername(
+      username,
+      settings,
+      getClientId()
+    );
+    if (!resumeRes.ok) {
+      if (errEl) {
+        errEl.textContent = resumeRes.error || 'No se pudo recuperar la cuenta.';
+        errEl.hidden = false;
+      }
+      return;
+    }
+    if (errEl) errEl.hidden = true;
+    toast('Cuenta recuperada.', 'success');
+    await refreshClinicalUserProfile();
+    if (!needsUsernameClaim()) {
+      await renderOnboardingPanel();
+      return;
+    }
+    toast('Completa tu perfil y pulsa Continuar.', 'info');
+    await renderOnboardingPanel();
+  } finally {
+    if (resumeBtn instanceof HTMLButtonElement) {
+      resumeBtn.disabled = false;
+      resumeBtn.textContent = 'Recuperar mi usuario';
+    }
+  }
+}
+
 async function wireOnboardingInteractions() {
   const form = document.getElementById('clinical-onboard-username-form');
   if (form && !form._rpcOnboardWired) {
     form._rpcOnboardWired = true;
     form.addEventListener('submit', (ev) => void handleUsernameStepSubmit(ev));
+  }
+
+  const resumeBtn = document.getElementById('clinical-onboard-resume-btn');
+  if (resumeBtn && !resumeBtn._rpcResumeWired) {
+    resumeBtn._rpcResumeWired = true;
+    resumeBtn.addEventListener('click', () => void handleResumeIdentityClick());
   }
 
   document.querySelectorAll('.clinical-teams-join-btn').forEach((btn) => {
@@ -247,9 +343,12 @@ async function wireOnboardingInteractions() {
 }
 
 export async function renderOnboardingPanel() {
-  const host = document.getElementById('clinical-teams-panel-body');
-  if (!host) return;
+  await safeRenderClinicalTeamsPanel(async (host) => {
+    await renderOnboardingPanelInto(host);
+  });
+}
 
+async function renderOnboardingPanelInto(host) {
   const userId = String(clinicalSessionContext.user?.user_id || '');
   if (!userId) {
     host.innerHTML =
@@ -259,8 +358,33 @@ export async function renderOnboardingPanel() {
 
   await fetchClinicalTeamsFromDb();
 
+  let settings = readRpcSettings();
+  const cachedUsername = normalizeUsername(String(settings.clinicalUsername || ''));
+  if (needsUsernameClaim() && cachedUsername && isValidUsernameFormat(cachedUsername)) {
+    try {
+      await resumeClinicalIdentityByUsername(cachedUsername, settings, getClientId());
+      await refreshClinicalUserProfile();
+      settings = readRpcSettings();
+    } catch (_e) {
+      /* fall through to manual step 1 */
+    }
+  }
+
+  if (!needsUsernameClaim() && !needsTeamOnboarding()) {
+    const { renderClinicalTeamsPanel } = await import('./clinical-teams.mjs');
+    await renderClinicalTeamsPanel();
+    return;
+  }
+
   if (needsUsernameClaim()) {
-    const rank = clinicalSessionContext.user?.rank || 'R1';
+    const rank =
+      String(settings.clinicalRank || clinicalSessionContext.user?.rank || 'R1');
+    const prefilledName = String(
+      settings.clinicalDisplayName || clinicalSessionContext.user?.clinical_name || ''
+    );
+    const prefilledSala = String(
+      settings.clinicalSala || clinicalSessionContext.user?.sala || ''
+    );
     host.innerHTML = `
       <div class="clinical-onboarding-progress" aria-hidden="true"><span class="is-active">1</span><span>2</span></div>
       <h4 class="clinical-teams-section-title">Paso 1 — Tu usuario</h4>
@@ -268,11 +392,13 @@ export async function renderOnboardingPanel() {
       <form id="clinical-onboard-username-form" class="clinical-teams-create-form">
         <div class="field-group">
           <label for="onboard-username">Usuario LAN *</label>
-          <input id="onboard-username" type="text" class="profile-input" placeholder="mgarcia" required>
+          <input id="onboard-username" type="text" class="profile-input" placeholder="mgarcia"
+            value="${escapeAttr(cachedUsername || '')}" required>
         </div>
         <div class="field-group">
           <label for="onboard-clinical-name">Nombre en guardia *</label>
-          <input id="onboard-clinical-name" type="text" class="profile-input" placeholder="Dr. Pérez" required>
+          <input id="onboard-clinical-name" type="text" class="profile-input" placeholder="Dr. Pérez"
+            value="${escapeAttr(prefilledName)}" required>
         </div>
         <div class="field-group">
           <label for="onboard-rank">Rango</label>
@@ -288,14 +414,15 @@ export async function renderOnboardingPanel() {
           <label for="onboard-sala">Sala *</label>
           <select id="onboard-sala" class="profile-input" required>
             <option value="">— Seleccionar —</option>
-            <option value="Sala 1">Sala 1</option>
-            <option value="Sala 2">Sala 2</option>
-            <option value="Sala E">Sala E</option>
+            <option value="Sala 1" ${prefilledSala === 'Sala 1' ? 'selected' : ''}>Sala 1</option>
+            <option value="Sala 2" ${prefilledSala === 'Sala 2' ? 'selected' : ''}>Sala 2</option>
+            <option value="Sala E" ${prefilledSala === 'Sala E' ? 'selected' : ''}>Sala E</option>
           </select>
         </div>
         <p id="onboard-error" class="clinical-registration-error" hidden></p>
         <div class="modal-actions">
           <button type="submit" class="btn-save">Continuar</button>
+          <button type="button" id="clinical-onboard-resume-btn" class="btn-med-secondary">Recuperar mi usuario</button>
         </div>
       </form>`;
     await wireOnboardingInteractions();
@@ -341,6 +468,6 @@ export async function renderOnboardingPanel() {
     return;
   }
 
-  const { renderClinicalTeamsPanel } = await import('./clinical-teams.mjs');
-  await renderClinicalTeamsPanel();
+  host.innerHTML =
+    '<p class="clinical-teams-lead">Perfil listo. Cierra y vuelve a abrir Mi rotación.</p>';
 }

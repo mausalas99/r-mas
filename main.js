@@ -2,6 +2,7 @@ const { app, BrowserWindow, Menu, shell, dialog, ipcMain, clipboard, safeStorage
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { writeApprovedOutputDir } = require('./lib/output-dir-policy.js');
 const { autoUpdater } = require('electron-updater');
 
 // Reducir uso de GPU — elimina proceso GPU en idle (~50-100 MB RAM)
@@ -293,6 +294,7 @@ async function validateOutputDir(dir) {
 ipcMain.handle('set-approved-output-dir', async (_e, dir) => {
   try {
     approvedOutputDir = await validateOutputDir(dir);
+    writeApprovedOutputDir(app.getPath('userData'), approvedOutputDir);
     const dbManager = globalThis.__rplusDbManager;
     if (dbManager && dbManager.isUnlocked()) {
       await dbManager.auditOnly('system.output_dir.register', {
@@ -334,6 +336,7 @@ ipcMain.handle('select-output-dir', async () => {
   const chosen = result.filePaths[0];
   try {
     approvedOutputDir = await validateOutputDir(chosen);
+    writeApprovedOutputDir(app.getPath('userData'), approvedOutputDir);
   } catch (_e) {
     /* renderer may call set-approved-output-dir after save */
   }

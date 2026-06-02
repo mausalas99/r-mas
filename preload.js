@@ -95,6 +95,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbUnlock: function(opts) {
     return ipcRenderer.invoke('db:unlock', opts);
   },
+  dbAutoUnlock: function(opts) {
+    return ipcRenderer.invoke('db:auto-unlock', opts);
+  },
   dbUnlockRecovery: function(opts) {
     return ipcRenderer.invoke('db:unlock-recovery', opts);
   },
@@ -202,6 +205,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   dbClinicalUsernameClaim: function(opts) {
     return ipcRenderer.invoke('db:clinical-username-claim', opts);
+  },
+  dbClinicalIdentityResume: function(opts) {
+    return ipcRenderer.invoke('db:clinical-identity-resume', opts);
+  },
+  dbClinicalMembershipMigrate: function(opts) {
+    return ipcRenderer.invoke('db:clinical-membership-migrate', opts);
   },
   dbClinicalProfileGet: function(opts) {
     return ipcRenderer.invoke('db:clinical-profile-get', opts);

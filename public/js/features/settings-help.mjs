@@ -1930,6 +1930,28 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '6.5.4': [
+    {
+      title: 'Arranque sin contraseña',
+      body:
+        'R+ ya <strong>no pide contraseña maestra</strong> al abrir. El almacén clínico se abre solo en este equipo. Si antes quedaste atascado en la pantalla de desbloqueo, actualiza a esta versión.',
+    },
+    {
+      title: 'Usuario LAN',
+      body:
+        'Al primer uso en red verás el registro con <strong>usuario LAN</strong>, nombre en guardia, rango y sala. El enlace móvil del anfitrión puede prellenar esos datos.',
+    },
+    {
+      title: 'Equipos sin “Guardia hoy”',
+      body:
+        'Los <strong>equipos</strong> son unidades persistentes de sala/ciclo: créalos o únete sin marcar guardia del día en el equipo. Los pacientes se asocian por <strong>coincidencia estructural</strong>.',
+    },
+    {
+      title: 'R4 / Admin: censo global',
+      body:
+        '<strong>R4</strong> y <strong>Admin</strong> ven pacientes y equipos en <strong>todas las salas</strong>. La barra lateral filtra según tu alcance clínico.',
+    },
+  ],
   '5.6.3': [
     {
       title: 'TODO',
@@ -1944,7 +1966,7 @@ var RELEASE_NOTES_HIGHLIGHTS = {
     {
       title: 'Recuperación de contraseña',
       body:
-        'Si olvidas tu contraseña maestra, haz clic en <strong>¿Olvidaste tu contraseña?</strong> en la pantalla de desbloqueo e ingresa el código de respaldo <code>r+123</code> para recuperar el acceso.',
+        'Si olvidas tu contraseña maestra, haz clic en <strong>¿Olvidaste tu contraseña?</strong> en la pantalla de desbloqueo e ingresa el <strong>código de recuperación</strong> que R+ te mostró al configurar la base (es único de esta instalación).',
     },
     {
       title: 'Llave de respaldo automática',

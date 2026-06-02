@@ -9,6 +9,9 @@ let lastMigrationProbe = null;
 
 let lastNeedsConfirm = true;
 
+/** @type {{ unlocked: boolean, status?: object } | null} */
+let pendingUnlockCompletion = null;
+
 function api() {
   return typeof window !== 'undefined' ? window.electronAPI : null;
 }
@@ -92,6 +95,9 @@ function unlockErrorMessage(res, opts) {
   if (code === 'DB_RECOVERY_NOT_CONFIGURED') {
     return 'La recuperación no está disponible para esta base de datos.';
   }
+  if (code === 'DB_AUTO_UNLOCK_FAILED') {
+    return 'No se pudo abrir la base en este equipo. Usa tu código de recuperación si lo guardaste.';
+  }
   if (code === 'DB_NATIVE_ABI_MISMATCH') {
     return (
       'El módulo SQLCipher no coincide con esta sesión de R+ (suele pasar después de npm test). ' +
@@ -173,13 +179,62 @@ function setOverlayVisible(visible) {
     document.body.classList.add('rpc-db-unlock-active');
     resetDbUnlockSecretFields();
     wireDbUnlockSecretToggles();
-    var pass = document.getElementById('rpc-db-unlock-pass');
-    if (pass) {
-      pass.value = '';
-      pass.focus();
+    var recCode = document.getElementById('rpc-db-unlock-recovery-code');
+    if (recCode) {
+      recCode.value = '';
+      recCode.focus();
     }
   } else {
     document.body.classList.remove('rpc-db-unlock-active');
+  }
+}
+
+function finishUnlockFlow(result) {
+  pendingUnlockCompletion = result;
+  if (result && result.recoveryCodeToShow) {
+    showRecoveryCodeReveal(String(result.recoveryCodeToShow));
+    return;
+  }
+  setOverlayVisible(false);
+  if (unlockWaitResolve) {
+    var done = unlockWaitResolve;
+    unlockWaitResolve = null;
+    done(result);
+  }
+}
+
+export function showRecoveryCodeReveal(code) {
+  var reveal = document.getElementById('rpc-db-unlock-recovery-reveal');
+  var codeEl = document.getElementById('rpc-db-unlock-recovery-reveal-code');
+  var panelMain = document.getElementById('rpc-db-unlock-form-main');
+  if (!reveal || !codeEl) {
+    var fallback = pendingUnlockCompletion || { unlocked: true, status: {} };
+    pendingUnlockCompletion = null;
+    setOverlayVisible(false);
+    if (unlockWaitResolve) {
+      var doneMissing = unlockWaitResolve;
+      unlockWaitResolve = null;
+      doneMissing(fallback);
+    }
+    return;
+  }
+  codeEl.textContent = code;
+  if (panelMain) panelMain.style.display = 'none';
+  reveal.style.display = 'block';
+}
+
+export function dismissRecoveryCodeReveal() {
+  var reveal = document.getElementById('rpc-db-unlock-recovery-reveal');
+  var panelMain = document.getElementById('rpc-db-unlock-form-main');
+  if (reveal) reveal.style.display = 'none';
+  if (panelMain) panelMain.style.display = '';
+  var result = pendingUnlockCompletion || { unlocked: true, status: {} };
+  pendingUnlockCompletion = null;
+  setOverlayVisible(false);
+  if (unlockWaitResolve) {
+    var done = unlockWaitResolve;
+    unlockWaitResolve = null;
+    done(result);
   }
 }
 
@@ -246,8 +301,32 @@ function configureUnlockForm(status, probe) {
   return nativeBlocked;
 }
 
+async function tryAutoUnlockDb(electron) {
+  if (!electron || typeof electron.dbAutoUnlock !== 'function') return null;
+  var lsSnapshot = collectClinicalLsSnapshot();
+  try {
+    return await electron.dbAutoUnlock({ lsSnapshot: lsSnapshot });
+  } catch (_e) {
+    return null;
+  }
+}
+
+function handleUnlockSuccess(res) {
+  if (res && res.clearKeys && res.clearKeys.length) {
+    clearMigratedLocalStorageKeys(res.clearKeys);
+  }
+  if (res && res.migrationWarning) {
+    var warnMsg =
+      'La base cifrada se creó, pero la migración de datos locales falló: ' + res.migrationWarning;
+    if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
+      window.showToast(warnMsg, 'error');
+    }
+  }
+  lastMigrationProbe = { needed: false, hasHostJson: false };
+}
+
 /**
- * Blocks until DB is unlocked (no-op outside db mode).
+ * Opens the clinical DB on startup (no passphrase gate while encryption is deferred).
  * @returns {Promise<{ unlocked: boolean, status?: object }>}
  */
 export async function waitForDbUnlock() {
@@ -265,19 +344,27 @@ export async function waitForDbUnlock() {
   if (!status || status.state === 'unlocked') {
     return { unlocked: true, status: status || {} };
   }
-  lastMigrationProbe = await runMigrationProbe(electron);
-  return new Promise(function (resolve) {
-    unlockWaitResolve = resolve;
-    var nativeBlocked = configureUnlockForm(status, lastMigrationProbe);
-    if (nativeBlocked) {
-      setUnlockError(unlockErrorMessage({ code: 'DB_NATIVE_ABI_MISMATCH' }));
-    } else if (status.rateLimited) {
-      setUnlockError(unlockErrorMessage({ code: 'AUTH_RATE_LIMITED' }));
-    } else {
-      setUnlockError('');
+
+  if (status.nativeReady === false) {
+    if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
+      window.showToast(unlockErrorMessage({ code: 'DB_NATIVE_ABI_MISMATCH' }), 'error');
     }
-    setOverlayVisible(true);
-  });
+    return { unlocked: false, status: status };
+  }
+
+  var autoRes = await tryAutoUnlockDb(electron);
+  if (autoRes && autoRes.ok !== false && autoRes.state === 'unlocked') {
+    handleUnlockSuccess(autoRes);
+    return { unlocked: true, status: autoRes };
+  }
+
+  var errMsg =
+    (autoRes && (autoRes.cause || autoRes.error || autoRes.message)) ||
+    'No se pudo abrir la base de datos clínica.';
+  if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
+    window.showToast(errMsg, 'error');
+  }
+  return { unlocked: false, status: autoRes || status };
 }
 
 export function toggleRecoveryMode() {
@@ -341,12 +428,7 @@ export async function submitRecoveryCode() {
       } catch (_e2) {}
       return;
     }
-    setOverlayVisible(false);
-    if (unlockWaitResolve) {
-      var done = unlockWaitResolve;
-      unlockWaitResolve = null;
-      done({ unlocked: true, status: res });
-    }
+    finishUnlockFlow({ unlocked: true, status: res, recoveryCodeToShow: res.recoveryCodeToShow });
   } catch (err) {
     setUnlockError((err && err.message) || 'Error al recuperar.');
     if (submitBtn) submitBtn.disabled = false;
@@ -429,12 +511,7 @@ export async function submitDbUnlockPassphrase() {
       }
     }
     lastMigrationProbe = { needed: false, hasHostJson: false };
-    setOverlayVisible(false);
-    if (unlockWaitResolve) {
-      var done = unlockWaitResolve;
-      unlockWaitResolve = null;
-      done({ unlocked: true, status: res });
-    }
+    finishUnlockFlow({ unlocked: true, status: res, recoveryCodeToShow: res.recoveryCodeToShow });
   } catch (err) {
     setUnlockError((err && err.message) || 'Error al desbloquear.');
     if (submitBtn) submitBtn.disabled = false;
@@ -444,7 +521,7 @@ export async function submitDbUnlockPassphrase() {
 export function syncDbSecuritySectionUi() {
   var section = document.getElementById('settings-accordion-db-security');
   if (!section) return;
-  section.style.display = isDbMode() ? '' : 'none';
+  section.style.display = 'none';
 }
 
 function setChangePassError(msg) {
@@ -477,29 +554,7 @@ function changePassphraseErrorMessage(res) {
 }
 
 export function openChangeMasterPasswordModal() {
-  if (!isDbMode()) return;
-  var electron = api();
-  if (!electron || typeof electron.dbChangePassphrase !== 'function') return;
-
-  var overlay = document.getElementById('rpc-db-change-pass-overlay');
-  if (!overlay) return;
-
-  var ids = ['rpc-db-change-pass-current', 'rpc-db-change-pass-new', 'rpc-db-change-pass-confirm'];
-  for (var i = 0; i < ids.length; i += 1) {
-    var el = document.getElementById(ids[i]);
-    if (el) el.value = '';
-  }
-  var remember = document.getElementById('rpc-db-change-pass-remember');
-  if (remember) remember.checked = false;
-
-  setChangePassError('');
-  var submitBtn = document.getElementById('rpc-db-change-pass-submit');
-  if (submitBtn) submitBtn.disabled = false;
-  overlay.style.display = 'flex';
-  overlay.setAttribute('aria-hidden', 'false');
-  wireDbUnlockSecretToggles();
-  var first = document.getElementById('rpc-db-change-pass-current');
-  if (first) first.focus();
+  /* Master password removed — DB unlocks automatically on this device. */
 }
 
 export function closeChangeMasterPasswordModal() {
@@ -577,6 +632,7 @@ export function __resetDbUnlockWaitForTests() {
 }
 
 export const dbUnlockWindowHandlers = {
+  dismissRecoveryCodeReveal,
   submitDbUnlockPassphrase,
   submitRecoveryCode,
   toggleRecoveryMode,

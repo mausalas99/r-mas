@@ -11,6 +11,8 @@ import {
   BackgroundVitalsMonitorLoop,
   ClientSessionInactivityLocker,
 } from './features/session-manager.mjs';
+import { persistClinicalUserBinding, readRpcSettings } from './clinical-settings.mjs';
+import { isLegacyMachineUsername, normalizeUsername } from './clinical-username.mjs';
 
 /** @type {{ user: object|null, guardias: object[], guardiasMap: Map<string, object>, teams: object[], scopeContext: object|null, decryptedPrivateKeyPem: string|null, lastBlockHashByPatient: Map<string, string> }} */
 export const clinicalSessionContext = {
@@ -73,17 +75,9 @@ export function buildGuardiasMap(guardias) {
  * @param {Record<string, unknown>|null|undefined} settings
  * @param {string} clientId
  */
-export async function bootstrapClinicalAccess(settings, clientId) {
-  if (!isDbMode()) return false;
+/** @param {object} res Bootstrap IPC payload with `user` and `guardias`. */
+async function applyBootstrapResult(res) {
   const api = electronApi();
-  if (!api || typeof api.dbClinicalAccessBootstrap !== 'function') return false;
-
-  const res = await api.dbClinicalAccessBootstrap({
-    clientId,
-    rank: resolveClinicalRank(settings, clientId),
-  });
-  if (!res || res.ok === false) return false;
-
   clinicalSessionContext.user = {
     user_id: res.user.userId,
     username: res.user.username,
@@ -95,21 +89,130 @@ export async function bootstrapClinicalAccess(settings, clientId) {
     try {
       const profileRes = await api.dbClinicalProfileGet({ userId: res.user.userId });
       const profile = profileRes?.profile;
-      if (profile) {
-        clinicalSessionContext.user.rank = profile.rank ?? clinicalSessionContext.user.rank;
+      if (profile && clinicalSessionContext.user) {
+        const profileRank = String(profile.rank || '');
+        clinicalSessionContext.user.rank =
+          profileRank === 'Admin' ? 'R1' : profileRank || clinicalSessionContext.user.rank;
         clinicalSessionContext.user.sala = profile.sala ?? null;
         clinicalSessionContext.user.clinical_name = profile.clinical_name ?? null;
         clinicalSessionContext.user.is_program_admin =
-          profile.is_program_admin === 1 ? 1 : 0;
+          profile.is_program_admin === 1 || profileRank === 'Admin' ? 1 : 0;
       }
     } catch (_e) {}
   }
   clinicalSessionContext.decryptedPrivateKeyPem = res.user.privateKeyPem || null;
   clinicalSessionContext.guardias = Array.isArray(res.guardias) ? res.guardias : [];
   clinicalSessionContext.guardiasMap = buildGuardiasMap(clinicalSessionContext.guardias);
+  const settings = readRpcSettings();
+  const clientId = String(settings.clientId || '');
+  const patch = {
+    userId: res.user.userId,
+    username: res.user.username,
+  };
+  if (isLegacyMachineUsername(res.user.username, clientId)) {
+    patch.staleDeviceUserId = res.user.userId;
+  }
+  persistClinicalUserBinding(patch);
+  await refreshClinicalUserProfile();
   await fetchClinicalTeamsFromDb();
   await fetchClinicalScopeContextFromDb();
+}
+
+export async function bootstrapClinicalAccess(settings, clientId) {
+  if (!isDbMode()) return false;
+  const api = electronApi();
+  if (!api || typeof api.dbClinicalAccessBootstrap !== 'function') return false;
+
+  const stored = settings || readRpcSettings();
+  const res = await api.dbClinicalAccessBootstrap({
+    clientId,
+    rank: resolveClinicalRank(stored, clientId),
+    preferredUserId: String(stored.clinicalUserId || ''),
+    preferredUsername: String(stored.clinicalUsername || ''),
+  });
+  if (!res || res.ok === false) return false;
+
+  await applyBootstrapResult(res);
   return true;
+}
+
+/**
+ * Reattach this device to an existing LAN username already stored in the DB.
+ * @returns {Promise<{ ok: boolean, error?: string, userId?: string }>}
+ */
+export async function resumeClinicalIdentityByUsername(username, settings, clientId) {
+  void clientId;
+  if (!isDbMode()) return { ok: false, error: 'Base de datos no activa.' };
+  const api = electronApi();
+  const handle = normalizeUsername(username);
+  if (!api) {
+    return { ok: false, error: 'Sesión clínica no disponible.' };
+  }
+
+  if (typeof api.dbClinicalIdentityResume === 'function') {
+    const previousUserId = String(clinicalSessionContext.user?.user_id || '');
+    const staleFromSettings = String(stored.clinicalStaleDeviceUserId || '');
+    const fromUserId =
+      previousUserId && previousUserId !== String(stored.clinicalUserId || '')
+        ? previousUserId
+        : staleFromSettings || previousUserId;
+    const res = await api.dbClinicalIdentityResume({
+      username: handle,
+      fromUserId,
+    });
+    if (!res || res.ok === false) {
+      return { ok: false, error: res?.error || 'No se pudo recuperar la cuenta.' };
+    }
+    await applyBootstrapResult(res);
+    persistClinicalUserBinding({
+      userId: res.user.userId,
+      username: res.user.username,
+    });
+    if (Number(res.membershipMoved) > 0) {
+      await fetchClinicalTeamsFromDb();
+    }
+    return { ok: true, userId: res.user.userId, membershipMoved: res.membershipMoved };
+  }
+
+  if (typeof api.dbClinicalAccessBootstrap !== 'function') {
+    return { ok: false, error: 'Sesión clínica no disponible.' };
+  }
+  const stored = settings || readRpcSettings();
+  const res = await api.dbClinicalAccessBootstrap({
+    clientId: String(stored.clientId || ''),
+    rank: resolveClinicalRank(stored, String(stored.clientId || '')),
+    preferredUsername: handle,
+    preferredUserId: '',
+  });
+  if (!res || res.ok === false) {
+    return { ok: false, error: res?.error || 'No se pudo recuperar la cuenta.' };
+  }
+  if (normalizeUsername(res.user.username) !== handle) {
+    return {
+      ok: false,
+      error: 'No encontramos ese usuario en esta base de datos.',
+    };
+  }
+  await applyBootstrapResult(res);
+  return { ok: true, userId: res.user.userId };
+}
+
+/** Reload username, rank, sala, admin flag from DB into session. */
+export async function refreshClinicalUserProfile() {
+  const api = electronApi();
+  const userId = String(clinicalSessionContext.user?.user_id || '');
+  if (!api || !userId || typeof api.dbClinicalProfileGet !== 'function') return;
+  try {
+    const res = await api.dbClinicalProfileGet({ userId });
+    const profile = res?.profile;
+    if (!profile || !clinicalSessionContext.user) return;
+    clinicalSessionContext.user.username = profile.username ?? clinicalSessionContext.user.username;
+    clinicalSessionContext.user.rank = profile.rank ?? clinicalSessionContext.user.rank;
+    clinicalSessionContext.user.sala = profile.sala ?? null;
+    clinicalSessionContext.user.clinical_name = profile.clinical_name ?? null;
+    clinicalSessionContext.user.is_program_admin =
+      profile.is_program_admin === 1 ? 1 : 0;
+  } catch (_e) {}
 }
 
 /**

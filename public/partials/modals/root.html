@@ -378,78 +378,26 @@
   </div>
 </div>
 
-<div id="rpc-db-change-pass-overlay" role="dialog" aria-modal="true" aria-labelledby="rpc-db-change-pass-title" aria-hidden="true">
-  <div class="rpc-db-unlock-panel">
-    <h2 id="rpc-db-change-pass-title">Cambiar contraseña maestra</h2>
-    <p class="settings-acc-hint">La base debe estar desbloqueada. Tras el cambio, usa la contraseña nueva en este equipo.</p>
-    <label class="profile-field-label" for="rpc-db-change-pass-current">Contraseña actual</label>
-    <div class="rpc-db-unlock-secret-wrap">
-      <input id="rpc-db-change-pass-current" type="password" autocomplete="current-password" placeholder="Contraseña actual" aria-required="true">
-      <button type="button" class="rpc-db-unlock-secret-toggle" data-db-unlock-secret-toggle aria-controls="rpc-db-change-pass-current" aria-label="Mostrar contraseña" aria-pressed="false">Mostrar</button>
-    </div>
-    <label class="profile-field-label" for="rpc-db-change-pass-new">Contraseña nueva</label>
-    <div class="rpc-db-unlock-secret-wrap">
-      <input id="rpc-db-change-pass-new" type="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres" aria-required="true">
-      <button type="button" class="rpc-db-unlock-secret-toggle" data-db-unlock-secret-toggle aria-controls="rpc-db-change-pass-new" aria-label="Mostrar contraseña" aria-pressed="false">Mostrar</button>
-    </div>
-    <label class="profile-field-label" for="rpc-db-change-pass-confirm">Confirmar contraseña nueva</label>
-    <div class="rpc-db-unlock-secret-wrap">
-      <input id="rpc-db-change-pass-confirm" type="password" autocomplete="new-password" placeholder="Repite la contraseña nueva" aria-required="true">
-      <button type="button" class="rpc-db-unlock-secret-toggle" data-db-unlock-secret-toggle aria-controls="rpc-db-change-pass-confirm" aria-label="Mostrar contraseña" aria-pressed="false">Mostrar</button>
-    </div>
-    <label class="rpc-db-unlock-remember" for="rpc-db-change-pass-remember">
-      <input type="checkbox" id="rpc-db-change-pass-remember">
-      <span>Recordar en este dispositivo</span>
-    </label>
-    <div class="rpc-db-unlock-error" id="rpc-db-change-pass-error" role="alert"></div>
-    <div class="rpc-db-unlock-actions">
-      <button type="button" class="btn-cancel" onclick="closeChangeMasterPasswordModal()">Cancelar</button>
-      <button type="button" class="btn-unlock" id="rpc-db-change-pass-submit" onclick="submitChangeMasterPassword()">Guardar contraseña</button>
-    </div>
-  </div>
-</div>
-
 <div id="rpc-db-unlock-overlay" role="dialog" aria-modal="true" aria-labelledby="rpc-db-unlock-title" aria-hidden="true">
   <div class="rpc-db-unlock-panel">
-    <h2 id="rpc-db-unlock-title">Desbloquear base de datos</h2>
+    <h2 id="rpc-db-unlock-title">Recuperar acceso a la base</h2>
     <div id="rpc-db-unlock-form-main">
-    <p id="rpc-db-unlock-hint">Ingresa la contraseña maestra de la base de datos clínica en este equipo.</p>
+    <p id="rpc-db-unlock-hint">Si guardaste un código de recuperación al configurar R+ en este equipo, ingrésalo abajo.</p>
     <p id="rpc-db-unlock-rate-limited" class="rpc-db-unlock-rate-limited" role="alert" style="display:none;">Demasiados intentos fallidos. Espera unos minutos antes de volver a intentar.</p>
-    <label class="profile-field-label" for="rpc-db-unlock-pass">Contraseña maestra</label>
-    <div class="rpc-db-unlock-secret-wrap">
-      <input id="rpc-db-unlock-pass" type="password" autocomplete="current-password" placeholder="Contraseña maestra" aria-required="true">
-      <button type="button" class="rpc-db-unlock-secret-toggle" data-db-unlock-secret-toggle aria-controls="rpc-db-unlock-pass" aria-label="Mostrar contraseña" aria-pressed="false">Mostrar</button>
-    </div>
-    <div id="rpc-db-unlock-confirm-wrap">
-      <label class="profile-field-label" for="rpc-db-unlock-confirm">Confirmar contraseña</label>
-      <div class="rpc-db-unlock-secret-wrap">
-        <input id="rpc-db-unlock-confirm" type="password" autocomplete="new-password" placeholder="Repite la contraseña" aria-required="true">
-        <button type="button" class="rpc-db-unlock-secret-toggle" data-db-unlock-secret-toggle aria-controls="rpc-db-unlock-confirm" aria-label="Mostrar contraseña" aria-pressed="false">Mostrar</button>
-      </div>
-    </div>
-    <label class="rpc-db-unlock-remember" for="rpc-db-unlock-remember">
-      <input type="checkbox" id="rpc-db-unlock-remember">
-      <span>Recordar en este dispositivo</span>
-    </label>
-    <p class="settings-acc-hint settings-acc-hint--tight">Si activas recordar, la clave se guarda cifrada con el llavero del sistema (safeStorage). No compartas este equipo sin bloqueo de sesión.</p>
-    <p class="rpc-db-unlock-recovery-link" style="margin-top:0.5rem;">
-      <button type="button" id="rpc-db-unlock-recovery-toggle" class="rpc-text-link" onclick="toggleRecoveryMode()">¿Olvidaste tu contraseña?</button>
-    </p>
-    <div id="rpc-db-unlock-recovery-wrap" style="display:none;">
+    <div id="rpc-db-unlock-pass-wrap" style="display:none;" aria-hidden="true"></div>
+    <div id="rpc-db-unlock-confirm-wrap" style="display:none;" aria-hidden="true"></div>
+    <div id="rpc-db-unlock-recovery-wrap">
       <label class="profile-field-label" for="rpc-db-unlock-recovery-code">Código de recuperación</label>
       <input id="rpc-db-unlock-recovery-code" type="text" autocomplete="off" placeholder="Código de recuperación" aria-required="true">
-      <p class="rpc-db-unlock-recovery-back-link" style="margin-top:0.4rem;">
-        <button type="button" class="rpc-text-link" onclick="toggleRecoveryMode()">Volver a contraseña</button>
-      </p>
     </div>
     <div class="rpc-db-unlock-error" id="rpc-db-unlock-error" role="alert"></div>
     <div class="rpc-db-unlock-actions">
-      <button type="button" class="btn-unlock" id="rpc-db-unlock-submit" onclick="submitDbUnlockPassphrase()">Desbloquear</button>
+      <button type="button" class="btn-unlock" id="rpc-db-unlock-submit" onclick="submitRecoveryCode()">Recuperar acceso</button>
     </div>
     </div>
     <div id="rpc-db-unlock-recovery-reveal" class="rpc-db-unlock-recovery-reveal" style="display:none;" role="status">
       <h3 class="rpc-db-unlock-recovery-reveal-title">Guarda tu código de recuperación</h3>
-      <p class="settings-acc-hint settings-acc-hint--tight">Este código es único de esta instalación. Guárdalo en un lugar seguro; lo necesitarás si olvidas la contraseña maestra.</p>
+      <p class="settings-acc-hint settings-acc-hint--tight">Este código es único de esta instalación. Guárdalo en un lugar seguro por si cambias de equipo.</p>
       <p class="rpc-db-unlock-recovery-reveal-code" id="rpc-db-unlock-recovery-reveal-code"></p>
       <div class="rpc-db-unlock-actions">
         <button type="button" class="btn-unlock" onclick="dismissRecoveryCodeReveal()">Ya lo guardé, continuar</button>
@@ -549,7 +497,7 @@
 <div id="clinical-registration-backdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal clinical-registration-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-registration-title" onclick="event.stopPropagation()">
     <h3 id="clinical-registration-title">Registro de guardia</h3>
-    <p class="clinical-registration-lead">Identifícate para el censo de guardia, firmado clínico y acceso al Modo Guardia. Es independiente del modo Sala / Interconsulta y de la contraseña de Mi Perfil.</p>
+    <p class="clinical-registration-lead">Identifícate para el censo de guardia, firmado clínico y acceso al Modo Guardia. Es independiente del modo Sala / Interconsulta.</p>
     <form id="clinical-registration-form">
       <div class="field-group">
         <label for="clinical-reg-username">Usuario LAN *</label>

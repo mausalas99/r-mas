@@ -4,6 +4,7 @@
 import { persistLanClientConfig } from './lan-sync.mjs';
 import { isDbMode } from '../db-storage-bridge.mjs';
 import { isValidUsernameFormat, normalizeUsername } from '../clinical-username.mjs';
+import { persistClinicalUserBinding } from '../clinical-settings.mjs';
 
 const RANKS = ['R1', 'R2', 'R3', 'R4', 'Admin'];
 
@@ -106,37 +107,48 @@ function wireRegistrationFormOnce() {
       return;
     }
 
-    settings.clinicalRegistered = true;
-    settings.clinicalDisplayName = name;
-    settings.clinicalUsername = username;
-    settings.clinicalRank = RANKS.includes(rank) ? rank : 'R1';
-    if (sala) settings.clinicalSala = sala;
-    try {
-      localStorage.setItem('rpc-settings', JSON.stringify(settings));
-    } catch (_e) {}
-
+    const safeRank = RANKS.includes(rank) ? rank : 'R1';
+    let savedUserId = String(settings.clinicalUserId || '');
     const api = dbApi();
     if (api && typeof api.dbClinicalAccessBootstrap === 'function') {
       try {
         const boot = await api.dbClinicalAccessBootstrap({
           clientId,
-          rank: settings.clinicalRank,
+          rank: safeRank,
+          preferredUserId: String(settings.clinicalUserId || ''),
+          preferredUsername: username,
         });
-        const userId = String(boot?.user?.userId || '');
+        let userId = String(boot?.user?.userId || '');
         if (!userId || boot?.ok === false) {
           throw new Error(boot?.error || 'No se pudo iniciar la sesión clínica.');
         }
-        if (typeof api.dbClinicalUsernameClaim === 'function') {
+        const bootHandle = normalizeUsername(boot?.user?.username || '');
+        if (bootHandle !== username && typeof api.dbClinicalUsernameClaim === 'function') {
           const claimRes = await api.dbClinicalUsernameClaim({ userId, username });
           if (!claimRes?.ok) {
-            throw new Error(claimRes?.error || 'No se pudo registrar el usuario LAN.');
+            const errMsg = String(claimRes?.error || '');
+            if (/ya está en uso/i.test(errMsg)) {
+              const retry = await api.dbClinicalAccessBootstrap({
+                clientId,
+                rank: safeRank,
+                preferredUsername: username,
+                preferredUserId: String(settings.clinicalUserId || ''),
+              });
+              userId = String(retry?.user?.userId || '');
+              if (!retry?.ok || normalizeUsername(retry?.user?.username || '') !== username) {
+                throw new Error(errMsg);
+              }
+            } else {
+              throw new Error(errMsg || 'No se pudo registrar el usuario LAN.');
+            }
           }
         }
+        savedUserId = userId;
         if (typeof api.dbClinicalProfileUpsert === 'function') {
           const profileRes = await api.dbClinicalProfileUpsert({
             userId,
             clinicalName: name,
-            rank: settings.clinicalRank,
+            rank: safeRank,
             sala: sala || null,
           });
           if (!profileRes?.ok) {
@@ -151,6 +163,15 @@ function wireRegistrationFormOnce() {
         return;
       }
     }
+
+    persistClinicalUserBinding({
+      userId: savedUserId,
+      username,
+      displayName: name,
+      rank: safeRank,
+      sala: sala || '',
+      registered: true,
+    });
 
     if (errEl) errEl.hidden = true;
     closeClinicalRegistrationModal();

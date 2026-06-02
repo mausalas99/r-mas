@@ -3,7 +3,6 @@ import { storage } from '../storage.js';
 import { isDbMode } from '../db-storage-bridge.mjs';
 import {
   syncDbSecuritySectionUi,
-  openChangeMasterPasswordModal,
 } from './db-unlock.mjs';
 import { formatProgressLine } from '../update-helpers.mjs';
 import { setAsyncButtonLoading } from '../ui-motion.mjs';
@@ -640,14 +639,6 @@ async function exportAuditLog() {
   rt.showToast('Bitácora exportada', 'success');
 }
 
-function openChangeMasterPasswordFromSettings() {
-  if (!isDbMode() || !window.electronAPI || typeof window.electronAPI.dbChangePassphrase !== 'function') {
-    rt.showToast('Solo disponible con la base de datos cifrada en la app de escritorio.', 'error');
-    return;
-  }
-  openChangeMasterPasswordModal();
-}
-
 async function lockClinicalDatabaseNow() {
   if (!isDbMode() || !window.electronAPI || typeof window.electronAPI.dbLock !== 'function') {
     rt.showToast('Solo disponible con la base de datos cifrada en la app de escritorio.', 'error');
@@ -655,7 +646,7 @@ async function lockClinicalDatabaseNow() {
   }
   if (
     !window.confirm(
-      '¿Bloquear la base de datos ahora? No podrás ver ni editar datos clínicos hasta volver a desbloquear con tu contraseña maestra.'
+      '¿Bloquear la base de datos ahora? R+ la volverá a abrir automáticamente en este equipo al reiniciar o recargar.'
     )
   ) {
     return;
@@ -2255,7 +2246,6 @@ if (typeof window !== 'undefined' && window.electronAPI) {
 }
 
 export const platformWindowHandlers = {
-  openChangeMasterPasswordModal: openChangeMasterPasswordFromSettings,
   lockClinicalDatabaseNow,
   verifyForensicAuditChain,
   exportClinicalDbBackupJson,

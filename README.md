@@ -27,10 +27,20 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [6.5.3](https://github.com/mausalas99/r-mas/releases/tag/v6.5.3) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.5.4](https://github.com/mausalas99/r-mas/releases/tag/v6.5.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 6.5.4 (Identidad LAN · equipos persistentes · arranque sin contraseña)
+
+- **Arranque sin contraseña maestra** — La base clínica se abre al iniciar R+ en este equipo; ya no se exige crear ni recordar contraseña de desbloqueo (el cifrado con contraseña queda para más adelante).
+- **Usuario LAN y onboarding** — Registro de identidad clínica (usuario, nombre en guardia, rango, sala), reclamo de usuario y enlace móvil con datos prellenados.
+- **Equipos persistentes** — Equipos de sala/ciclo desacoplados de “Guardia hoy”; pacientes por coincidencia estructural; **Mi rotación** separado del panel de guardia del día.
+- **Alcance V3** — R4/Admin con censo global y directorio en todas las salas; filtros de barra lateral por alcance; hub LAN con censo ampliado.
+- **Admin de programa** — Rol Admin separado del rango R1; limpieza de “Guardia hoy” y gestión de equipos del mes.
+
+Notas: `docs/RELEASE_NOTES_6.5.4.txt`.
 
 ## R+ 6.5.3 (Guardia LAN Hub · Recuperación de contraseña (r+123))
 
