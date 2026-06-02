@@ -5,6 +5,10 @@ import {
   syncDbSecuritySectionUi,
 } from './db-unlock.mjs';
 import { formatProgressLine } from '../update-helpers.mjs';
+import {
+  initStableDowngradeSettings,
+  openSettingsDowngradeSection,
+} from '../stable-downgrade-ui.mjs';
 import { setAsyncButtonLoading } from '../ui-motion.mjs';
 import { applyMedCatalogOverlay } from '../med-receta-core.mjs';
 import { applySomePharmCatalogOverlay } from '../med-pharm-some-catalog.mjs';
@@ -80,9 +84,46 @@ var idleLockIsActive = false;
 var idleLockEnabledMinutes = 0;
 
 function resetUpdateCheckButtons() {
-  ['settings-check-updates-btn', 'min-version-check-btn'].forEach(function (id) {
-    setAsyncButtonLoading(document.getElementById(id), false);
+  ['settings-check-updates-btn', 'settings-repair-update-btn', 'min-version-check-btn'].forEach(
+    function (id) {
+      setAsyncButtonLoading(document.getElementById(id), false);
+    }
+  );
+}
+
+/**
+ * Para usuarios en 6.5.4 (instalador sin módulos nativos): fuerza canal Estable y busca 6.5.5+.
+ */
+function checkForRepairUpdate() {
+  if (!window.electronAPI || typeof window.electronAPI.checkForUpdates !== 'function') {
+    rt.showToast('Las actualizaciones automáticas solo están en la app de escritorio.', 'error');
+    return;
+  }
+  pendingRepairUpdateCheck = true;
+  try {
+    if (typeof window.electronAPI.resetUpdateFeed === 'function') {
+      window.electronAPI.resetUpdateFeed();
+    }
+  } catch (_e) {}
+  setUpdateChannel('estable');
+  syncUpdateChannelUI();
+  if (typeof window.electronAPI.setUpdateChannel === 'function') {
+    try {
+      window.electronAPI.setUpdateChannel('estable');
+    } catch (_e) {}
+  }
+  setAsyncButtonLoading(document.getElementById('settings-repair-update-btn'), true, {
+    loadingText: 'Buscando…',
   });
+  rt.showToast(
+    'Buscando actualización de reparación en el canal Estable (p. ej. 6.5.5). No borra tus datos.',
+    'info'
+  );
+  setTimeout(function () {
+    try {
+      window.electronAPI.checkForUpdates();
+    } catch (_e) {}
+  }, 150);
 }
 
 function checkForAppUpdates() {
@@ -1076,6 +1117,7 @@ function initGoalGFeatures() {
   syncAutoBackupUi();
   maybeRunScheduledAutoBackup();
   restartAutoBackupScheduler();
+  initUpdateChannelAndGate();
 }
 
 /** Snapshot for backup export — uses in-memory app state (what is on screen), not stale localStorage. */
@@ -1735,6 +1777,10 @@ var UPDATE_TELEMETRY_URL = 'https://example.invalid/r-plus-update';
 var RELEASES_LATEST_URL = 'https://github.com/mausalas99/r-mas/releases/latest';
 var pendingUpdaterTargetVersion = null;
 var pendingUpdaterIsPrerelease = false;
+var pendingDowngradeVersion = null;
+var pendingRepairUpdateCheck = false;
+/** @type {'upgrade' | 'downgrade'} */
+var updateModalMode = 'upgrade';
 var minVersionGateKeydownBound = false;
 
 function getUpdateChannel() {
@@ -1974,6 +2020,78 @@ function checkMinVersionGate() {
   }).catch(function () {});
 }
 
+var nativeRecoveryModalShown = false;
+
+function showNativeRuntimeRecoveryModal(status) {
+  if (nativeRecoveryModalShown || !status || status.ok) return;
+  nativeRecoveryModalShown = true;
+  var msg =
+    (status.userMessage || status.message || 'R+ no pudo cargar un componente nativo.') +
+    (status.detail ? '\n\n' + status.detail : '');
+  resetUpdateModalPanels();
+  var title = document.getElementById('update-modal-title');
+  if (title && title.firstChild && title.firstChild.nodeType === 3) {
+    title.firstChild.textContent = 'Problema de instalación';
+  }
+  var notes = document.getElementById('update-modal-notes');
+  if (notes) notes.textContent = msg;
+  var state = document.getElementById('update-modal-state');
+  if (state) {
+    state.textContent =
+      'Usa Ajustes → Reinstalar actualización de reparación (6.5.5), restaurar 6.5.0 en GitHub, o el instalador en Releases.';
+  }
+  var wrap = document.getElementById('update-modal-progress-wrap');
+  if (wrap) wrap.style.display = 'none';
+  var pill = document.getElementById('update-modal-version-pill');
+  if (pill) pill.style.display = 'none';
+  var err = document.getElementById('update-modal-error');
+  if (err) err.style.display = 'none';
+  var actions = document.getElementById('update-modal-actions-primary');
+  var sec = document.getElementById('update-modal-actions-secondary');
+  if (actions) {
+    actions.innerHTML = '';
+    var settingsBtn = document.createElement('button');
+    settingsBtn.className = 'btn-primary';
+    settingsBtn.textContent = 'Abrir restaurar versión estable…';
+    settingsBtn.onclick = function () {
+      hideUpdateModal();
+      openSettingsDowngradeSection();
+    };
+    actions.appendChild(settingsBtn);
+    var ghBtn = document.createElement('button');
+    ghBtn.className = 'btn-secondary';
+    ghBtn.textContent = 'Ver releases en GitHub';
+    ghBtn.onclick = function () {
+      if (window.electronAPI && window.electronAPI.openExternal) {
+        window.electronAPI.openExternal('https://github.com/mausalas99/r-mas/releases');
+      }
+    };
+    actions.appendChild(ghBtn);
+  }
+  if (sec) {
+    sec.innerHTML = '';
+    var closeBtn = document.createElement('button');
+    closeBtn.className = 'btn-secondary';
+    closeBtn.textContent = 'Continuar de todos modos';
+    closeBtn.onclick = function () { hideUpdateModal(); };
+    sec.appendChild(closeBtn);
+  }
+  showUpdateModal();
+}
+
+function checkNativeRuntimeOnBoot() {
+  if (!window.electronAPI || typeof window.electronAPI.getNativeRuntimeStatus !== 'function') {
+    return;
+  }
+  window.electronAPI
+    .getNativeRuntimeStatus()
+    .then(function (status) {
+      if (!status || status.ok) return;
+      showNativeRuntimeRecoveryModal(status);
+    })
+    .catch(function () {});
+}
+
 function initUpdateChannelAndGate() {
   migrateUpdateChannelToStableDefault();
   syncUpdateChannelUI();
@@ -1981,8 +2099,59 @@ function initUpdateChannelAndGate() {
   if (window.electronAPI && typeof window.electronAPI.setUpdateChannel === 'function') {
     try { window.electronAPI.setUpdateChannel(getUpdateChannel()); } catch (_e) {}
   }
+  initStableDowngradeSettings({
+    showToast: rt.showToast.bind(rt),
+    confirmDowngrade: confirmDowngrade,
+  });
+  setTimeout(checkNativeRuntimeOnBoot, 800);
   // Min-version gate: pequeño retraso para no estorbar el render inicial.
   setTimeout(function () { checkMinVersionGate(); }, 1200);
+}
+
+function confirmDowngrade(version, entry) {
+  var summary = entry && entry.summary ? entry.summary : '';
+  var ok = window.confirm(
+    'Restaurar R+ a v' + version + '?\n\n' + summary +
+      '\n\nLa app se reiniciará. Tus pacientes y ajustes locales se conservan.'
+  );
+  if (!ok) return;
+  pendingDowngradeVersion = version;
+  updateModalMode = 'downgrade';
+  resetUpdateModalPanels();
+  showUpdateModal();
+  var title = document.getElementById('update-modal-title');
+  if (title && title.firstChild) title.firstChild.textContent = 'Restaurando versión estable';
+  if (window.electronAPI && window.electronAPI.downgradeToStable) {
+    window.electronAPI.downgradeToStable(version);
+  }
+}
+
+function renderDowngradeFallback(payload) {
+  updateModalMode = 'upgrade';
+  pendingDowngradeVersion = null;
+  resetUpdateCheckButtons();
+  renderUpdateError(
+    (payload && payload.message ? payload.message : 'No se pudo descargar la versión.') +
+      ' Puedes abrir el instalador en GitHub.'
+  );
+  var actions = document.getElementById('update-modal-actions-primary');
+  if (actions && payload && (payload.manualUrl || payload.version)) {
+    var openBtn = document.createElement('button');
+    openBtn.className = 'btn-primary';
+    openBtn.textContent = 'Abrir instalador en GitHub';
+    openBtn.onclick = function () {
+      if (window.electronAPI && window.electronAPI.openDowngradeInstaller) {
+        window.electronAPI.openDowngradeInstaller(payload.version);
+      } else if (window.electronAPI && window.electronAPI.openExternal && payload.manualUrl) {
+        window.electronAPI.openExternal(payload.manualUrl);
+      }
+    };
+    actions.innerHTML = '';
+    actions.appendChild(openBtn);
+  }
+  if (window.electronAPI && window.electronAPI.resetUpdateFeed) {
+    window.electronAPI.resetUpdateFeed();
+  }
 }
 
 function getUpdateSnoozeUntil() {
@@ -2017,6 +2186,11 @@ function showUpdateModal() {
 }
 
 export function hideUpdateModal() {
+  if (updateModalMode === 'downgrade' && window.electronAPI && window.electronAPI.resetUpdateFeed) {
+    try { window.electronAPI.resetUpdateFeed(); } catch (_e) {}
+  }
+  updateModalMode = 'upgrade';
+  pendingDowngradeVersion = null;
   var el = document.getElementById('update-modal-backdrop');
   if (!el) return;
   el.style.display = 'none';
@@ -2101,11 +2275,18 @@ if (typeof window !== 'undefined' && window.electronAPI) {
       if (!releaseNotes) releaseNotes = stripHtmlToPlainText(rawNotes);
       pendingUpdaterTargetVersion = version;
       pendingUpdaterIsPrerelease = !!(payload && payload.prerelease);
-      if (isSnoozeActiveForVersion(version)) return;
+      var isDowngrade = updateModalMode === 'downgrade';
+      var isRepair = pendingRepairUpdateCheck;
+      if (isRepair) pendingRepairUpdateCheck = false;
+      if (!isDowngrade && !isRepair && isSnoozeActiveForVersion(version)) return;
       resetUpdateModalPanels();
       var title = document.getElementById('update-modal-title');
       if (title && title.firstChild && title.firstChild.nodeType === 3) {
-        title.firstChild.textContent = 'Nueva versión';
+        title.firstChild.textContent = isDowngrade
+          ? 'Restaurando versión estable'
+          : isRepair
+            ? 'Actualización de reparación'
+            : 'Nueva versión';
       }
       var pill = document.getElementById('update-modal-version-pill');
       if (pill) {
@@ -2124,28 +2305,32 @@ if (typeof window !== 'undefined' && window.electronAPI) {
       var actions = document.getElementById('update-modal-actions-primary');
       if (actions) {
         actions.innerHTML = '';
-        var later = document.createElement('button');
-        later.className = 'btn-secondary';
-        later.textContent = 'Más tarde';
-        later.onclick = function() {
-          markDismissedVersion(version);
-          hideUpdateModal();
-        };
-        actions.appendChild(later);
+        if (!isDowngrade) {
+          var later = document.createElement('button');
+          later.className = 'btn-secondary';
+          later.textContent = 'Más tarde';
+          later.onclick = function() {
+            markDismissedVersion(version);
+            hideUpdateModal();
+          };
+          actions.appendChild(later);
+        }
       }
       var sec = document.getElementById('update-modal-actions-secondary');
       if (sec) {
         sec.innerHTML = '';
-        var link = document.createElement('button');
-        link.type = 'button';
-        link.className = 'btn-link';
-        link.textContent = 'Ver notas en GitHub';
-        link.onclick = function() {
-          if (window.electronAPI && window.electronAPI.openExternal) {
-            window.electronAPI.openExternal('https://github.com/mausalas99/r-mas/releases');
-          }
-        };
-        sec.appendChild(link);
+        if (!isDowngrade) {
+          var link = document.createElement('button');
+          link.type = 'button';
+          link.className = 'btn-link';
+          link.textContent = 'Ver notas en GitHub';
+          link.onclick = function() {
+            if (window.electronAPI && window.electronAPI.openExternal) {
+              window.electronAPI.openExternal('https://github.com/mausalas99/r-mas/releases');
+            }
+          };
+          sec.appendChild(link);
+        }
       }
       showUpdateModal();
     } catch (e) {
@@ -2159,7 +2344,8 @@ if (typeof window !== 'undefined' && window.electronAPI) {
       var transferred = payload && payload.transferred;
       var total = payload && payload.total;
       var bps = payload && payload.bytesPerSecond;
-      if (pendingUpdaterTargetVersion && isSnoozeActiveForVersion(pendingUpdaterTargetVersion)) return;
+      if (pendingUpdaterTargetVersion && updateModalMode !== 'downgrade' &&
+          isSnoozeActiveForVersion(pendingUpdaterTargetVersion)) return;
       resetUpdateModalPanels();
       syncUpdateModalChannelPill(pendingUpdaterIsPrerelease);
       var state = document.getElementById('update-modal-state');
@@ -2187,14 +2373,16 @@ if (typeof window !== 'undefined' && window.electronAPI) {
   window.electronAPI.onUpdateReady(function(payload) {
     try {
       var version = (payload && payload.version) ? payload.version : String(payload || '');
+      var isDowngrade = updateModalMode === 'downgrade';
       try { sendUpdateTelemetry('success', version); } catch (_te) {}
-      if (isSnoozeActiveForVersion(version)) return;
+      if (!isDowngrade && isSnoozeActiveForVersion(version)) return;
       resetUpdateModalPanels();
       syncUpdateModalChannelPill(pendingUpdaterIsPrerelease);
       var state = document.getElementById('update-modal-state');
       if (state) {
-        state.textContent =
-          'Listo para instalar. También se instalará al cerrar la aplicación si eliges esperar.';
+        state.textContent = isDowngrade
+          ? 'Listo para restaurar. R+ se reiniciará en la versión seleccionada.'
+          : 'Listo para instalar. También se instalará al cerrar la aplicación si eliges esperar.';
       }
       var fill = document.getElementById('update-modal-progress-fill');
       if (fill) fill.style.width = '100%';
@@ -2205,14 +2393,20 @@ if (typeof window !== 'undefined' && window.electronAPI) {
         actions.innerHTML = '';
         var go = document.createElement('button');
         go.className = 'btn-primary';
-        go.textContent = 'Instalar y reiniciar';
-        go.onclick = function() { installUpdate(); };
+        go.textContent = isDowngrade ? 'Restaurar y reiniciar' : 'Instalar y reiniciar';
+        go.onclick = function() {
+          updateModalMode = 'upgrade';
+          pendingDowngradeVersion = null;
+          installUpdate();
+        };
         actions.appendChild(go);
-        var later = document.createElement('button');
-        later.className = 'btn-secondary';
-        later.textContent = 'Instalar al cerrar';
-        later.onclick = function() { hideUpdateModal(); };
-        actions.appendChild(later);
+        if (!isDowngrade) {
+          var later = document.createElement('button');
+          later.className = 'btn-secondary';
+          later.textContent = 'Instalar al cerrar';
+          later.onclick = function() { hideUpdateModal(); };
+          actions.appendChild(later);
+        }
       }
       var sec = document.getElementById('update-modal-actions-secondary');
       if (sec) sec.innerHTML = '';
@@ -2225,10 +2419,19 @@ if (typeof window !== 'undefined' && window.electronAPI) {
   window.electronAPI.onUpdateNotAvailable(function() {
     try {
       resetUpdateCheckButtons();
+      var wasRepair = pendingRepairUpdateCheck;
+      pendingRepairUpdateCheck = false;
       pendingUpdaterTargetVersion = null;
       pendingUpdaterIsPrerelease = false;
       syncUpdateModalChannelPill(false);
-      rt.showToast('R+ está actualizado.', 'success');
+      if (wasRepair) {
+        rt.showToast(
+          'No hay actualización de reparación en el servidor aún. Cuando publiquemos 6.5.5, vuelve a intentar o descarga el instalador desde GitHub (Ajustes → Abrir instalador en GitHub).',
+          'error'
+        );
+      } else {
+        rt.showToast('R+ está actualizado.', 'success');
+      }
     } catch (e) {
       console.error('onUpdateNotAvailable callback error:', e && e.message);
     }
@@ -2243,6 +2446,17 @@ if (typeof window !== 'undefined' && window.electronAPI) {
       console.error('onUpdateError callback error:', e && e.message);
     }
   });
+
+  if (window.electronAPI.onDowngradeFailed) {
+    window.electronAPI.onDowngradeFailed(function(payload) {
+      try {
+        resetUpdateCheckButtons();
+        renderDowngradeFallback(payload);
+      } catch (e) {
+        console.error('onDowngradeFailed callback error:', e && e.message);
+      }
+    });
+  }
 }
 
 export const platformWindowHandlers = {
@@ -2260,6 +2474,7 @@ export const platformWindowHandlers = {
   wipeCacheConfirmed,
   wipeAllConfirmed,
   checkForAppUpdates,
+  checkForRepairUpdate,
   setUpdateChannel,
   setUpdateTelemetryEnabled,
   exportDataBackup,
@@ -2373,6 +2588,7 @@ export {
   setUpdateTelemetryEnabled,
   installUpdate,
   checkForAppUpdates,
+  checkForRepairUpdate,
   compareSemver,
   checkMinVersionGate,
   migrateUpdateChannelToStableDefault,

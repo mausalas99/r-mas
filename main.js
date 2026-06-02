@@ -4,6 +4,13 @@ const path = require('path');
 const os = require('os');
 const { writeApprovedOutputDir } = require('./lib/output-dir-policy.js');
 const { autoUpdater } = require('electron-updater');
+const {
+  buildGenericFeedUrl,
+  buildManualInstallerUrl,
+  isValidDowngradeTargetVersion,
+  pickMacArch,
+} = require('./lib/update-downgrade.js');
+const { probeNativeRuntime } = require('./lib/native-runtime-probe.js');
 
 // Reducir uso de GPU — elimina proceso GPU en idle (~50-100 MB RAM)
 // Llamar ANTES de app.whenReady()
@@ -47,6 +54,66 @@ function applyUpdateChannel(channel) {
   autoUpdater.channel = null;
   if (normalized === 'estable') autoUpdater.allowDowngrade = false;
   return normalized;
+}
+
+let downgradeSession = null;
+let defaultUpdaterFeed = null;
+
+function captureDefaultUpdaterFeed() {
+  if (defaultUpdaterFeed) return defaultUpdaterFeed;
+  try {
+    defaultUpdaterFeed = autoUpdater.getFeedURL();
+  } catch (_e) {
+    defaultUpdaterFeed = null;
+  }
+  return defaultUpdaterFeed;
+}
+
+function resetUpdaterFeedToDefault() {
+  downgradeSession = null;
+  autoUpdater.allowDowngrade = false;
+  applyUpdateChannel(readUpdateChannelFromDisk());
+  const feed = captureDefaultUpdaterFeed();
+  if (feed) {
+    try {
+      autoUpdater.setFeedURL(feed);
+    } catch (_e) { /* noop */ }
+  }
+}
+
+function beginDowngradeToVersion(version) {
+  const target = String(version || '').replace(/^v/, '');
+  const current = app.getVersion();
+  if (!isValidDowngradeTargetVersion(target, current)) {
+    throw new Error(`No se puede restaurar v${target} desde v${current}`);
+  }
+  downgradeSession = { version: target };
+  autoUpdater.allowDowngrade = true;
+  autoUpdater.autoDownload = true;
+  autoUpdater.setFeedURL({
+    provider: 'generic',
+    url: buildGenericFeedUrl(target),
+  });
+}
+
+function sendDowngradeFailedFromSession(code, message) {
+  if (!downgradeSession) return;
+  const v = downgradeSession.version;
+  let manualUrl = null;
+  try {
+    manualUrl = buildManualInstallerUrl(
+      v,
+      process.platform,
+      process.platform === 'darwin' ? pickMacArch(process.arch) : 'x64'
+    );
+  } catch (_e) { /* noop */ }
+  safeSendToRenderer('downgrade-failed', {
+    version: v,
+    code,
+    message: message || '',
+    manualUrl,
+  });
+  resetUpdaterFeedToDefault();
 }
 
 let server;
@@ -191,6 +258,13 @@ autoUpdater.on('update-downloaded', (info) => {
 
 autoUpdater.on('update-not-available', () => {
   try {
+    if (downgradeSession) {
+      sendDowngradeFailedFromSession(
+        'not-available',
+        'No se encontró la versión en el servidor de actualizaciones.'
+      );
+      return;
+    }
     safeSendToRenderer('update-not-available');
   } catch (e) {
     console.error('update-not-available handler error:', e && e.message);
@@ -205,6 +279,10 @@ autoUpdater.on('error', (err) => {
     if (process.platform === 'darwin' && /Code signature|did not pass validation/i.test(msg)) {
       msg +=
         ' En macOS, la actualización automática exige la misma firma e identificador de app que la instalación actual; si cambió el build, descarga el DMG desde GitHub e instálalo manualmente.';
+    }
+    if (downgradeSession) {
+      sendDowngradeFailedFromSession('updater-error', msg);
+      return;
     }
     safeSendToRenderer('update-error', msg);
   } catch (e) {
@@ -228,6 +306,35 @@ function scheduleUpdateCheck(delayMs) {
 
 ipcMain.on('check-for-updates', () => {
   scheduleUpdateCheck(80);
+});
+
+ipcMain.on('downgrade-to-stable', (_e, version) => {
+  try {
+    beginDowngradeToVersion(version);
+    scheduleUpdateCheck(80);
+  } catch (err) {
+    safeSendToRenderer('downgrade-failed', {
+      version: String(version || ''),
+      code: 'invalid-target',
+      message: err && err.message ? err.message : String(err),
+      manualUrl: null,
+    });
+  }
+});
+
+ipcMain.on('reset-update-feed', () => {
+  resetUpdaterFeedToDefault();
+});
+
+ipcMain.handle('open-downgrade-installer', async (_e, version) => {
+  const v = String(version || '').replace(/^v/, '');
+  const url = buildManualInstallerUrl(
+    v,
+    process.platform,
+    process.platform === 'darwin' ? pickMacArch(process.arch) : 'x64'
+  );
+  await shell.openExternal(url);
+  return { ok: true, url };
 });
 
 ipcMain.on('relaunch-app', () => {
@@ -270,6 +377,21 @@ ipcMain.handle('sesion-ingreso-send', async (_e, payload) => {
 });
 
 ipcMain.handle('get-app-version', () => app.getVersion());
+
+ipcMain.handle('get-native-runtime-status', () => {
+  const probe = probeNativeRuntime();
+  const detail = (probe.failures || [])
+    .map((f) => (f.module ? `${f.module}: ${f.message || ''}` : f.message || ''))
+    .filter(Boolean)
+    .join('\n');
+  return {
+    ok: probe.ok,
+    userMessage: probe.userMessage,
+    message: probe.userMessage,
+    detail: detail || null,
+    failures: probe.failures || [],
+  };
+});
 
 ipcMain.handle('get-user-data-path', () => app.getPath('userData'));
 
@@ -486,6 +608,7 @@ app.whenReady().then(async () => {
   try {
     process.env.R_PLUS_USER_DATA = app.getPath('userData');
     applyUpdateChannel(readUpdateChannelFromDisk());
+    captureDefaultUpdaterFeed();
 
     const { loadNativeDatabase } = await import('./lib/db/native-load.mjs');
     try {

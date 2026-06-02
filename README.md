@@ -27,7 +27,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [6.5.4](https://github.com/mausalas99/r-mas/releases/tag/v6.5.4) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.5.5](https://github.com/mausalas99/r-mas/releases/tag/v6.5.5) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -347,6 +347,14 @@ Notas: `docs/RELEASE_NOTES_3.0.2.txt`.
 
 ---
 
+
+## R+ 6.5.5 (reparación instalación · módulos nativos)
+
+- **Hotfix 6.5.4** — Misma línea funcional que 6.5.4; corrige empaquetado de **argon2** y **SQLCipher** (Mac x64/arm64, Windows). Para usuarios que ya actualizaron a 6.5.4 con «native binding» o base que no abre.
+- **Reinstalar reparación** — Ajustes → Aplicación → **Reinstalar actualización de reparación (6.5.5)…** (canal Estable; no borra `userData`).
+- **Restaurar versión estable** — Alternativa a **6.5.0** (última en GitHub) desde Ajustes si prefieres volver atrás.
+
+Notas: `docs/RELEASE_NOTES_6.5.5.txt`.
 ## R+ 3.0.1 (parche — procalcitonina y listado de problemas en 8 pt)
 
 - **Procalcitonina (PCT)** — El bloque de Estudios Especiales se procesa y la procalcitonina aparece en QS junto a PCR (`QS  PCT 0.09*`). El extractor ignora los rangos pediátricos por horas y usa el límite de adulto (`ADULTO <0.05 ng/mL`) para marcar valores fuera de rango. También disponible como serie en Tendencias.

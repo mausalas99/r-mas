@@ -98,7 +98,15 @@ function unlockErrorMessage(res, opts) {
   if (code === 'DB_AUTO_UNLOCK_FAILED') {
     return 'No se pudo abrir la base en este equipo. Usa tu código de recuperación si lo guardaste.';
   }
-  if (code === 'DB_NATIVE_ABI_MISMATCH') {
+  if (code === 'DB_NATIVE_ABI_MISMATCH' || code === 'DB_NATIVE_BINDING_FAILED') {
+    if (typeof window !== 'undefined' && window.electronAPI) {
+      var fromStatus = opts && opts.nativeError;
+      if (fromStatus) return String(fromStatus);
+      return (
+        'R+ no pudo cargar SQLCipher o el cifrado (argon2) en esta instalación. ' +
+        'En Ajustes → Aplicación usa «Restaurar versión estable» o «Abrir instalador en GitHub».'
+      );
+    }
     return (
       'El módulo SQLCipher no coincide con esta sesión de R+ (suele pasar después de npm test). ' +
       'En la carpeta del proyecto ejecuta: npm run rebuild:db-native — cierra R+ por completo (Cmd+Q) y vuelve a abrir con npm start.'
@@ -296,7 +304,20 @@ function configureUnlockForm(status, probe) {
     submit.textContent = needsConfirm ? 'Crear contraseña y continuar' : 'Desbloquear';
   }
   var recoveryToggle = document.getElementById('rpc-db-unlock-recovery-toggle');
-  if (recoveryToggle) recoveryToggle.style.display = needsConfirm ? 'none' : '';
+  if (recoveryToggle) recoveryToggle.style.display = needsConfirm || nativeBlocked ? 'none' : '';
+  if (nativeBlocked) {
+    setUnlockError(
+      status.nativeError ||
+        unlockErrorMessage({ code: 'DB_NATIVE_ABI_MISMATCH' }, { nativeError: status.nativeError })
+    );
+    if (title) title.textContent = 'Instalación incompleta';
+    if (hint) {
+      hint.textContent =
+        'Esta copia de R+ no cargó los módulos nativos necesarios. Restaura una versión estable en Ajustes → Aplicación o descarga el instalador desde GitHub.';
+    }
+  } else {
+    setUnlockError('');
+  }
   wireDbUnlockSecretToggles();
   return nativeBlocked;
 }
@@ -346,8 +367,12 @@ export async function waitForDbUnlock() {
   }
 
   if (status.nativeReady === false) {
+    var nativeMsg = unlockErrorMessage(
+      { code: 'DB_NATIVE_ABI_MISMATCH' },
+      { nativeError: status.nativeError }
+    );
     if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
-      window.showToast(unlockErrorMessage({ code: 'DB_NATIVE_ABI_MISMATCH' }), 'error');
+      window.showToast(nativeMsg, 'error');
     }
     return { unlocked: false, status: status };
   }

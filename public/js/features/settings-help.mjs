@@ -1748,13 +1748,16 @@ var HELP_ARTICLES = [
   {
     id: 'actualizacion',
     title: 'Actualizar R+',
-    keywords: 'actualizacion actualizar update instalar reiniciar rollback version',
+    keywords:
+      'actualizacion actualizar update instalar reiniciar rollback version downgrade restaurar estable reparacion 6.5.5 native binding',
     html:
       '<p>R+ busca nuevas versiones al iniciar. Cuando hay una disponible, la app muestra un modal con el progreso de descarga.</p>' +
       '<ul>' +
       '<li>Puedes buscar manualmente desde <strong>Ajustes → Buscar actualizaciones…</strong> o el menú nativo (Mac: R+; Windows: Aplicación).</li>' +
+      '<li><strong>Reinstalar actualización de reparación (6.5.5)</strong>: si quedaste en <strong>6.5.4</strong> con errores nativos, usa este botón (canal Estable). Instala el parche lateral sin borrar datos.</li>' +
+      '<li><strong>Restaurar versión estable</strong>: en Ajustes → Aplicación, elige una versión anterior curada y confirma. R+ intenta instalarla como una actualización; si falla (p. ej. firma en Mac), abre el instalador correcto en GitHub. Tus datos locales no se borran.</li>' +
+      '<li>Si la versión elegida está por debajo del mínimo soportado, R+ bloquea la restauración automática.</li>' +
       '<li>Al detectar una versión nueva instalada, R+ muestra una ventana de <strong>Novedades</strong> con los cambios relevantes.</li>' +
-      '<li>Para volver a una versión anterior, descarga el instalador correspondiente desde la página de Releases.</li>' +
       '</ul>'
   },
   {
@@ -1953,6 +1956,18 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '6.5.5': [
+    {
+      title: 'Reparación para 6.5.4',
+      body:
+        'Si tras actualizar a <strong>6.5.4</strong> ves «native binding» o la base no abre, usa <strong>Ajustes → Reinstalar actualización de reparación (6.5.5)</strong> en canal <strong>Estable</strong>. Tus datos locales se conservan.',
+    },
+    {
+      title: 'Instalador corregido',
+      body:
+        'Esta versión repite las novedades de 6.5.4 (identidad LAN, equipos, arranque sin contraseña) con el empaquetado nativo completo en Mac Intel y Apple Silicon.',
+    },
+  ],
   '6.5.4': [
     {
       title: 'Arranque sin contraseña',

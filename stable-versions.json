@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "updatedAt": "2026-06-03",
+  "entries": [
+    {
+      "version": "6.5.0",
+      "label": "6.5.0",
+      "publishedAt": "2026-05-31",
+      "summary": "Última 6.5.x publicada en GitHub (Historia Clínica · expediente Sala).",
+      "recommended": true
+    },
+    {
+      "version": "6.4.2",
+      "label": "6.4.2",
+      "publishedAt": "2026-05-30",
+      "summary": "Estable anterior si necesitas volver más atrás."
+    }
+  ]
+}

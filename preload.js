@@ -28,8 +28,23 @@ contextBridge.exposeInMainWorld('electronAPI', {
   checkForUpdates: function() {
     ipcRenderer.send('check-for-updates');
   },
+  downgradeToStable: function(version) {
+    ipcRenderer.send('downgrade-to-stable', version);
+  },
+  resetUpdateFeed: function() {
+    ipcRenderer.send('reset-update-feed');
+  },
+  onDowngradeFailed: function(cb) {
+    ipcRenderer.on('downgrade-failed', function(_e, payload) { cb(payload); });
+  },
+  openDowngradeInstaller: function(version) {
+    return ipcRenderer.invoke('open-downgrade-installer', version);
+  },
   getAppVersion: function() {
     return ipcRenderer.invoke('get-app-version');
+  },
+  getNativeRuntimeStatus: function() {
+    return ipcRenderer.invoke('get-native-runtime-status');
   },
   getUserDataPath: function() {
     return ipcRenderer.invoke('get-user-data-path');

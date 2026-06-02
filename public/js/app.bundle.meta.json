@@ -27,7 +27,7 @@
       "format": "esm"
     },
     "public/js/features/db-unlock.mjs": {
-      "bytes": 23555,
+      "bytes": 24572,
       "imports": [
         {
           "path": "public/js/db-storage-bridge.mjs",
@@ -1544,6 +1544,22 @@
       "imports": [],
       "format": "esm"
     },
+    "lib/update-downgrade.mjs": {
+      "bytes": 2018,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/stable-downgrade-ui.mjs": {
+      "bytes": 10124,
+      "imports": [
+        {
+          "path": "lib/update-downgrade.mjs",
+          "kind": "import-statement",
+          "original": "../../lib/update-downgrade.mjs"
+        }
+      ],
+      "format": "esm"
+    },
     "public/js/onboarding-curriculum.mjs": {
       "bytes": 4765,
       "imports": [],
@@ -2144,7 +2160,7 @@
       "format": "esm"
     },
     "public/js/features/settings-help.mjs": {
-      "bytes": 128311,
+      "bytes": 129447,
       "imports": [
         {
           "path": "public/js/tour-targets.mjs",
@@ -2330,7 +2346,7 @@
       "format": "esm"
     },
     "public/js/features/platform.mjs": {
-      "bytes": 83687,
+      "bytes": 91677,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -2351,6 +2367,11 @@
           "path": "public/js/update-helpers.mjs",
           "kind": "import-statement",
           "original": "../update-helpers.mjs"
+        },
+        {
+          "path": "public/js/stable-downgrade-ui.mjs",
+          "kind": "import-statement",
+          "original": "../stable-downgrade-ui.mjs"
         },
         {
           "path": "public/js/ui-motion.mjs",
@@ -5592,7 +5613,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 4494001
+      "bytes": 4531997
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -5822,7 +5843,7 @@
           "bytesInOutput": 7383
         },
         "public/js/features/db-unlock.mjs": {
-          "bytesInOutput": 22504
+          "bytesInOutput": 23504
         },
         "public/js/presentation-mode.mjs": {
           "bytesInOutput": 4113
@@ -5918,10 +5939,16 @@
           "bytesInOutput": 21036
         },
         "public/js/features/platform.mjs": {
-          "bytesInOutput": 74478
+          "bytesInOutput": 86987
         },
         "public/js/update-helpers.mjs": {
           "bytesInOutput": 635
+        },
+        "lib/update-downgrade.mjs": {
+          "bytesInOutput": 1708
+        },
+        "public/js/stable-downgrade-ui.mjs": {
+          "bytesInOutput": 8988
         },
         "public/js/onboarding-curriculum.mjs": {
           "bytesInOutput": 3739
@@ -5948,7 +5975,7 @@
           "bytesInOutput": 7053
         },
         "public/js/features/settings-help.mjs": {
-          "bytesInOutput": 117735
+          "bytesInOutput": 118864
         },
         "public/js/tour-demo-monitoreo.mjs": {
           "bytesInOutput": 3854
@@ -6362,7 +6389,7 @@
           "bytesInOutput": 5847
         }
       },
-      "bytes": 2478525
+      "bytes": 2503926
     }
   }
 }

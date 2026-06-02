@@ -282,6 +282,18 @@
           </label>
           <p class="settings-acc-hint settings-acc-hint--tight">Solo versión, resultado y plataforma. <strong>No</strong> incluye datos clínicos. Desactivado por defecto.</p>
           <button type="button" class="btn-edit-templates" id="settings-check-updates-btn" style="margin-top:8px;" onclick="checkForAppUpdates()" data-i18n="settings.checkUpdates">Buscar actualizaciones…</button>
+          <p class="settings-acc-hint settings-acc-hint--tight">Si instalaste <strong>6.5.4</strong> (u otra retirada de GitHub) y ves «native binding», usa <strong>reparación 6.5.5</strong> o restaura <strong>6.5.0</strong> (la única 6.5.x publicada hoy).</p>
+          <button type="button" class="btn-edit-templates" id="settings-repair-update-btn" style="margin-top:4px;" onclick="checkForRepairUpdate()">Reinstalar actualización de reparación (6.5.5)…</button>
+          <div id="settings-downgrade-section" class="settings-downgrade-section" hidden>
+            <hr class="profile-divider settings-acc-divider">
+            <label for="rpc-stable-downgrade-select" class="profile-field-label settings-acc-label-spaced--xs">Restaurar versión estable</label>
+            <p id="settings-downgrade-hint" class="settings-acc-hint settings-acc-hint--tight">Si la versión actual falla, restaura una estable anterior. Tus datos locales no se borran.</p>
+            <select id="rpc-stable-downgrade-select" class="profile-input settings-acc-select"></select>
+            <div class="settings-acc-row" style="flex-wrap:wrap;margin-top:8px;gap:8px;">
+              <button type="button" class="btn-edit-templates" id="settings-downgrade-stable-btn">Restaurar versión seleccionada…</button>
+              <button type="button" class="btn-edit-templates" id="settings-downgrade-github-btn">Abrir instalador en GitHub…</button>
+            </div>
+          </div>
           <p id="settings-updates-hint" class="settings-acc-hint settings-acc-hint--tight settings-acc-inline-help">También en el menú de la aplicación (Mac: R+, Windows: Aplicación).</p>
         </div>
       </details>

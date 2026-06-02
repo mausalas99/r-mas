@@ -17267,7 +17267,12 @@ function unlockErrorMessage(res, opts) {
   if (code === "DB_AUTO_UNLOCK_FAILED") {
     return "No se pudo abrir la base en este equipo. Usa tu c\xF3digo de recuperaci\xF3n si lo guardaste.";
   }
-  if (code === "DB_NATIVE_ABI_MISMATCH") {
+  if (code === "DB_NATIVE_ABI_MISMATCH" || code === "DB_NATIVE_BINDING_FAILED") {
+    if (typeof window !== "undefined" && window.electronAPI) {
+      var fromStatus = opts && opts.nativeError;
+      if (fromStatus) return String(fromStatus);
+      return "R+ no pudo cargar SQLCipher o el cifrado (argon2) en esta instalaci\xF3n. En Ajustes \u2192 Aplicaci\xF3n usa \xABRestaurar versi\xF3n estable\xBB o \xABAbrir instalador en GitHub\xBB.";
+    }
     return "El m\xF3dulo SQLCipher no coincide con esta sesi\xF3n de R+ (suele pasar despu\xE9s de npm test). En la carpeta del proyecto ejecuta: npm run rebuild:db-native \u2014 cierra R+ por completo (Cmd+Q) y vuelve a abrir con npm start.";
   }
   if (code === "DB_SCHEMA_MIGRATION_FAILED") {
@@ -17438,7 +17443,18 @@ function configureUnlockForm(status, probe) {
     submit.textContent = needsConfirm ? "Crear contrase\xF1a y continuar" : "Desbloquear";
   }
   var recoveryToggle = document.getElementById("rpc-db-unlock-recovery-toggle");
-  if (recoveryToggle) recoveryToggle.style.display = needsConfirm ? "none" : "";
+  if (recoveryToggle) recoveryToggle.style.display = needsConfirm || nativeBlocked ? "none" : "";
+  if (nativeBlocked) {
+    setUnlockError(
+      status.nativeError || unlockErrorMessage({ code: "DB_NATIVE_ABI_MISMATCH" }, { nativeError: status.nativeError })
+    );
+    if (title) title.textContent = "Instalaci\xF3n incompleta";
+    if (hint) {
+      hint.textContent = "Esta copia de R+ no carg\xF3 los m\xF3dulos nativos necesarios. Restaura una versi\xF3n estable en Ajustes \u2192 Aplicaci\xF3n o descarga el instalador desde GitHub.";
+    }
+  } else {
+    setUnlockError("");
+  }
   wireDbUnlockSecretToggles();
   return nativeBlocked;
 }
@@ -17479,8 +17495,12 @@ async function waitForDbUnlock() {
     return { unlocked: true, status: status || {} };
   }
   if (status.nativeReady === false) {
+    var nativeMsg = unlockErrorMessage(
+      { code: "DB_NATIVE_ABI_MISMATCH" },
+      { nativeError: status.nativeError }
+    );
     if (typeof window !== "undefined" && typeof window.showToast === "function") {
-      window.showToast(unlockErrorMessage({ code: "DB_NATIVE_ABI_MISMATCH" }), "error");
+      window.showToast(nativeMsg, "error");
     }
     return { unlocked: false, status };
   }
@@ -23395,6 +23415,296 @@ function formatProgressLine(p) {
   const tot = formatBytes(p.total || 0);
   const sp = formatSpeed(p.bytesPerSecond);
   return `Descargando ${t2} / ${tot} \xB7 ${sp}`;
+}
+
+// lib/update-downgrade.mjs
+var GITHUB_RELEASES_BASE = "https://github.com/mausalas99/r-mas/releases/download";
+var STABLE_VERSIONS_RAW_URL = "https://raw.githubusercontent.com/mausalas99/r-mas/main/stable-versions.json";
+function parseSemverCore(version) {
+  const m = String(version || "").trim().match(/^v?(\d+)\.(\d+)\.(\d+)(?:[-.+].*)?$/);
+  if (!m) return null;
+  return [parseInt(m[1], 10), parseInt(m[2], 10), parseInt(m[3], 10)];
+}
+function compareSemverCore(a, b) {
+  const pa = parseSemverCore(a);
+  const pb = parseSemverCore(b);
+  if (!pa || !pb) return 0;
+  for (let i = 0; i < 3; i++) {
+    if (pa[i] > pb[i]) return 1;
+    if (pa[i] < pb[i]) return -1;
+  }
+  return 0;
+}
+function isValidDowngradeTargetVersion(target, current) {
+  if (!parseSemverCore(target) || !parseSemverCore(current)) return false;
+  return compareSemverCore(target, current) < 0;
+}
+function pickMacArch(arch) {
+  return arch === "arm64" ? "arm64" : "x64";
+}
+function buildManualInstallerUrl(version, platform, arch) {
+  const v = String(version || "").replace(/^v/, "");
+  if (!parseSemverCore(v)) throw new Error(`Versi\xF3n inv\xE1lida: ${version}`);
+  const macArch = pickMacArch(arch);
+  let fileName;
+  if (platform === "darwin") {
+    fileName = `R+-${v}-${macArch}.dmg`;
+  } else if (platform === "win32") {
+    fileName = `R+-${v}-x64.exe`;
+  } else {
+    throw new Error(`Plataforma no soportada: ${platform}`);
+  }
+  return `${GITHUB_RELEASES_BASE}/v${v}/${fileName}`;
+}
+function filterDowngradeCandidates(entries, currentVersion) {
+  const list = Array.isArray(entries) ? entries : [];
+  return list.filter((e) => e && isValidDowngradeTargetVersion(e.version, currentVersion)).sort((a, b) => compareSemverCore(b.version, a.version));
+}
+
+// public/js/stable-downgrade-ui.mjs
+var MIN_VERSION_URL = "https://raw.githubusercontent.com/mausalas99/r-mas/main/min-version.json";
+var RELEASES_PAGE = "https://github.com/mausalas99/r-mas/releases";
+var GITHUB_RELEASES_API = "https://api.github.com/repos/mausalas99/r-mas/releases?per_page=40";
+function filterEntriesWithGitHubReleases(entries, publishedVersions) {
+  const list = Array.isArray(entries) ? entries : [];
+  if (!publishedVersions || !publishedVersions.length) return list;
+  const set = new Set(
+    publishedVersions.map(function(v) {
+      return String(v || "").replace(/^v/, "");
+    })
+  );
+  return list.filter(function(e) {
+    return e && set.has(String(e.version).replace(/^v/, ""));
+  });
+}
+async function fetchGitHubPublishedVersions() {
+  if (typeof fetch !== "function") return null;
+  try {
+    const res = await fetch(GITHUB_RELEASES_API, {
+      cache: "no-store",
+      headers: { Accept: "application/vnd.github+json" }
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!Array.isArray(data)) return null;
+    return data.map(function(r) {
+      return String(r && r.tag_name || "").replace(/^v/, "");
+    }).filter(Boolean);
+  } catch (_e) {
+    return null;
+  }
+}
+var EMBEDDED_STABLE_CATALOG = {
+  schema: 1,
+  entries: [
+    {
+      version: "6.5.0",
+      label: "6.5.0",
+      summary: "\xDAltima 6.5.x en GitHub (Historia Cl\xEDnica \xB7 expediente Sala).",
+      recommended: true
+    },
+    {
+      version: "6.4.2",
+      label: "6.4.2",
+      summary: "Estable anterior si necesitas volver m\xE1s atr\xE1s."
+    }
+  ]
+};
+var downgradeUiWired = false;
+var downgradeDeps = null;
+function pickDefaultDowngradeVersion(candidates) {
+  const list = Array.isArray(candidates) ? candidates : [];
+  const rec = list.find((e) => e.recommended);
+  return rec ? rec.version : list[0] ? list[0].version : "";
+}
+function isBlockedByMinVersion(target, minVersion) {
+  if (!minVersion) return false;
+  return compareSemverCore(target, minVersion) < 0;
+}
+async function getCurrentAppVersion() {
+  if (typeof window !== "undefined" && window.electronAPI && typeof window.electronAPI.getAppVersion === "function") {
+    return window.electronAPI.getAppVersion().catch(function() {
+      return "0.0.0";
+    });
+  }
+  return "0.0.0";
+}
+function resolveDowngradeEntries(raw, current, source) {
+  const entries = filterDowngradeCandidates(raw.entries || [], current);
+  return { entries, source, updatedAt: raw.updatedAt || "" };
+}
+async function applyPublishedReleaseFilter(resolved, publishedVersions) {
+  const filtered = filterEntriesWithGitHubReleases(resolved.entries, publishedVersions);
+  return {
+    entries: filtered.length ? filtered : resolved.entries,
+    source: resolved.source,
+    updatedAt: resolved.updatedAt,
+    filteredByGithub: filtered.length > 0 && filtered.length < resolved.entries.length
+  };
+}
+async function fetchStableVersionsCatalog() {
+  const current = await getCurrentAppVersion();
+  const publishedPromise = fetchGitHubPublishedVersions();
+  if (typeof fetch !== "function") {
+    const embedded = resolveDowngradeEntries(EMBEDDED_STABLE_CATALOG, current, "embedded");
+    const published2 = await publishedPromise;
+    return applyPublishedReleaseFilter(embedded, published2);
+  }
+  let resolved = null;
+  try {
+    const res = await fetch(STABLE_VERSIONS_RAW_URL, { cache: "no-store" });
+    if (!res.ok) throw new Error("catalog HTTP " + res.status);
+    const raw = await res.json();
+    const remote = resolveDowngradeEntries(raw, current, "remote");
+    if (remote.entries.length) resolved = remote;
+  } catch (_e) {
+  }
+  if (!resolved) {
+    resolved = resolveDowngradeEntries(EMBEDDED_STABLE_CATALOG, current, "embedded");
+  }
+  const published = await publishedPromise;
+  return applyPublishedReleaseFilter(resolved, published);
+}
+async function fetchMinVersion() {
+  if (typeof fetch !== "function") return null;
+  try {
+    const res = await fetch(MIN_VERSION_URL, { cache: "no-store" });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data && data.minVersion ? String(data.minVersion) : null;
+  } catch (_e) {
+    return null;
+  }
+}
+function openExternal(url) {
+  if (window.electronAPI && typeof window.electronAPI.openExternal === "function") {
+    window.electronAPI.openExternal(url);
+  } else {
+    try {
+      window.open(url, "_blank");
+    } catch (_e) {
+    }
+  }
+}
+async function openManualInstallerForVersion(version) {
+  if (window.electronAPI && typeof window.electronAPI.openDowngradeInstaller === "function") {
+    await window.electronAPI.openDowngradeInstaller(version);
+    return;
+  }
+  if (window.electronAPI && typeof window.electronAPI.getPlatform === "function") {
+    const platform = await window.electronAPI.getPlatform();
+    const arch = platform === "darwin" && typeof process !== "undefined" ? process.arch : "x64";
+    openExternal(buildManualInstallerUrl(version, platform, arch));
+    return;
+  }
+  openExternal(RELEASES_PAGE);
+}
+function populateDowngradeSelect(select, entries) {
+  select.innerHTML = "";
+  entries.forEach(function(e) {
+    const opt = document.createElement("option");
+    opt.value = e.version;
+    opt.textContent = e.label + (e.summary ? " \u2014 " + e.summary : "");
+    select.appendChild(opt);
+  });
+  select.value = pickDefaultDowngradeVersion(entries);
+}
+async function refreshStableDowngradeSettings(deps) {
+  const section = document.getElementById("settings-downgrade-section");
+  const select = document.getElementById("rpc-stable-downgrade-select");
+  const btn = document.getElementById("settings-downgrade-stable-btn");
+  const githubBtn = document.getElementById("settings-downgrade-github-btn");
+  const hint = document.getElementById("settings-downgrade-hint");
+  if (!section || !select || !btn) return { entries: [], source: "none" };
+  if (typeof window === "undefined" || !window.electronAPI) {
+    section.hidden = true;
+    return { entries: [], source: "none" };
+  }
+  section.hidden = false;
+  btn.disabled = true;
+  if (hint) {
+    hint.textContent = "Cargando versiones estables anteriores\u2026";
+  }
+  const [catalog, minVersion, currentVersion] = await Promise.all([
+    fetchStableVersionsCatalog(),
+    fetchMinVersion(),
+    getCurrentAppVersion()
+  ]);
+  const entries = catalog.entries;
+  const source = catalog.source;
+  if (!entries.length) {
+    if (hint) {
+      hint.textContent = "No hay versiones anteriores a v" + currentVersion + " en el cat\xE1logo. Abre Releases en GitHub para instalar manualmente.";
+    }
+    select.innerHTML = "";
+    btn.disabled = true;
+    if (githubBtn) {
+      githubBtn.disabled = false;
+      githubBtn.onclick = function() {
+        openExternal(RELEASES_PAGE);
+      };
+    }
+    return { entries, source };
+  }
+  populateDowngradeSelect(select, entries);
+  if (hint) {
+    const srcNote = source === "embedded" ? " (lista integrada \u2014 cat\xE1logo en main a\xFAn no publicado)" : "";
+    const ghNote = catalog.filteredByGithub ? " Solo versiones con instalador en GitHub Releases." : "";
+    hint.textContent = "Si esta versi\xF3n falla (p. ej. \xABnative binding\xBB), restaura una publicada en GitHub. Tus datos locales no se borran." + ghNote + srcNote;
+  }
+  btn.disabled = false;
+  btn.onclick = function() {
+    const version = select.value;
+    if (!version) return;
+    if (isBlockedByMinVersion(version, minVersion)) {
+      deps.showToast(
+        "Esa versi\xF3n ya no es compatible con tus datos (m\xEDnimo v" + minVersion + ").",
+        "error"
+      );
+      return;
+    }
+    const entry2 = entries.find(function(e) {
+      return e.version === version;
+    });
+    deps.confirmDowngrade(version, entry2);
+  };
+  if (githubBtn) {
+    githubBtn.disabled = false;
+    githubBtn.onclick = function() {
+      const version = select.value || pickDefaultDowngradeVersion(entries);
+      if (version) openManualInstallerForVersion(version);
+      else openExternal(RELEASES_PAGE);
+    };
+  }
+  return { entries, source };
+}
+function wireSettingsDowngradeAccordion(deps) {
+  if (downgradeUiWired) return;
+  const acc = document.getElementById("settings-accordion-updates");
+  if (!acc) return;
+  downgradeUiWired = true;
+  acc.addEventListener("toggle", function() {
+    if (!acc.open) return;
+    void refreshStableDowngradeSettings(deps);
+  });
+}
+async function initStableDowngradeSettings(deps) {
+  downgradeDeps = deps;
+  wireSettingsDowngradeAccordion(deps);
+  await refreshStableDowngradeSettings(deps);
+}
+function openSettingsDowngradeSection() {
+  const settingsBtn = document.getElementById("settings-btn");
+  if (settingsBtn && typeof settingsBtn.click === "function") settingsBtn.click();
+  const acc = document.getElementById("settings-accordion-updates");
+  if (acc) {
+    acc.open = true;
+    if (downgradeDeps) void refreshStableDowngradeSettings(downgradeDeps);
+  }
+  const section = document.getElementById("settings-downgrade-section");
+  if (section) {
+    section.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
 }
 
 // public/js/features/platform.mjs
@@ -33306,8 +33616,8 @@ var HELP_ARTICLES = [
   {
     id: "actualizacion",
     title: "Actualizar R+",
-    keywords: "actualizacion actualizar update instalar reiniciar rollback version",
-    html: "<p>R+ busca nuevas versiones al iniciar. Cuando hay una disponible, la app muestra un modal con el progreso de descarga.</p><ul><li>Puedes buscar manualmente desde <strong>Ajustes \u2192 Buscar actualizaciones\u2026</strong> o el men\xFA nativo (Mac: R+; Windows: Aplicaci\xF3n).</li><li>Al detectar una versi\xF3n nueva instalada, R+ muestra una ventana de <strong>Novedades</strong> con los cambios relevantes.</li><li>Para volver a una versi\xF3n anterior, descarga el instalador correspondiente desde la p\xE1gina de Releases.</li></ul>"
+    keywords: "actualizacion actualizar update instalar reiniciar rollback version downgrade restaurar estable reparacion 6.5.5 native binding",
+    html: "<p>R+ busca nuevas versiones al iniciar. Cuando hay una disponible, la app muestra un modal con el progreso de descarga.</p><ul><li>Puedes buscar manualmente desde <strong>Ajustes \u2192 Buscar actualizaciones\u2026</strong> o el men\xFA nativo (Mac: R+; Windows: Aplicaci\xF3n).</li><li><strong>Reinstalar actualizaci\xF3n de reparaci\xF3n (6.5.5)</strong>: si quedaste en <strong>6.5.4</strong> con errores nativos, usa este bot\xF3n (canal Estable). Instala el parche lateral sin borrar datos.</li><li><strong>Restaurar versi\xF3n estable</strong>: en Ajustes \u2192 Aplicaci\xF3n, elige una versi\xF3n anterior curada y confirma. R+ intenta instalarla como una actualizaci\xF3n; si falla (p. ej. firma en Mac), abre el instalador correcto en GitHub. Tus datos locales no se borran.</li><li>Si la versi\xF3n elegida est\xE1 por debajo del m\xEDnimo soportado, R+ bloquea la restauraci\xF3n autom\xE1tica.</li><li>Al detectar una versi\xF3n nueva instalada, R+ muestra una ventana de <strong>Novedades</strong> con los cambios relevantes.</li></ul>"
   },
   {
     id: "atajos",
@@ -33493,6 +33803,16 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
   }
 ];
 var RELEASE_NOTES_HIGHLIGHTS = {
+  "6.5.5": [
+    {
+      title: "Reparaci\xF3n para 6.5.4",
+      body: "Si tras actualizar a <strong>6.5.4</strong> ves \xABnative binding\xBB o la base no abre, usa <strong>Ajustes \u2192 Reinstalar actualizaci\xF3n de reparaci\xF3n (6.5.5)</strong> en canal <strong>Estable</strong>. Tus datos locales se conservan."
+    },
+    {
+      title: "Instalador corregido",
+      body: "Esta versi\xF3n repite las novedades de 6.5.4 (identidad LAN, equipos, arranque sin contrase\xF1a) con el empaquetado nativo completo en Mac Intel y Apple Silicon."
+    }
+  ],
   "6.5.4": [
     {
       title: "Arranque sin contrase\xF1a",
@@ -34634,9 +34954,45 @@ var idleLockDebounceId = null;
 var idleLockIsActive = false;
 var idleLockEnabledMinutes = 0;
 function resetUpdateCheckButtons() {
-  ["settings-check-updates-btn", "min-version-check-btn"].forEach(function(id) {
-    setAsyncButtonLoading(document.getElementById(id), false);
+  ["settings-check-updates-btn", "settings-repair-update-btn", "min-version-check-btn"].forEach(
+    function(id) {
+      setAsyncButtonLoading(document.getElementById(id), false);
+    }
+  );
+}
+function checkForRepairUpdate() {
+  if (!window.electronAPI || typeof window.electronAPI.checkForUpdates !== "function") {
+    rt16.showToast("Las actualizaciones autom\xE1ticas solo est\xE1n en la app de escritorio.", "error");
+    return;
+  }
+  pendingRepairUpdateCheck = true;
+  try {
+    if (typeof window.electronAPI.resetUpdateFeed === "function") {
+      window.electronAPI.resetUpdateFeed();
+    }
+  } catch (_e) {
+  }
+  setUpdateChannel("estable");
+  syncUpdateChannelUI();
+  if (typeof window.electronAPI.setUpdateChannel === "function") {
+    try {
+      window.electronAPI.setUpdateChannel("estable");
+    } catch (_e) {
+    }
+  }
+  setAsyncButtonLoading(document.getElementById("settings-repair-update-btn"), true, {
+    loadingText: "Buscando\u2026"
   });
+  rt16.showToast(
+    "Buscando actualizaci\xF3n de reparaci\xF3n en el canal Estable (p. ej. 6.5.5). No borra tus datos.",
+    "info"
+  );
+  setTimeout(function() {
+    try {
+      window.electronAPI.checkForUpdates();
+    } catch (_e) {
+    }
+  }, 150);
 }
 function checkForAppUpdates() {
   if (!window.electronAPI || typeof window.electronAPI.checkForUpdates !== "function") {
@@ -35600,6 +35956,7 @@ function initGoalGFeatures() {
   syncAutoBackupUi();
   maybeRunScheduledAutoBackup();
   restartAutoBackupScheduler();
+  initUpdateChannelAndGate();
 }
 function buildBackupDataFromMemory() {
   var filteredPatients = patients.filter(function(p) {
@@ -36207,9 +36564,15 @@ function onSyncBundleFileChosen(ev) {
 }
 var UPDATE_SNOOZE_KEY = "rplus-update-snooze-until";
 var UPDATE_DISMISS_VER_KEY = "rplus-update-dismiss-version";
+var MIN_VERSION_URL2 = "https://raw.githubusercontent.com/mausalas99/r-mas/main/min-version.json";
 var UPDATE_TELEMETRY_URL = "https://example.invalid/r-plus-update";
+var RELEASES_LATEST_URL = "https://github.com/mausalas99/r-mas/releases/latest";
 var pendingUpdaterTargetVersion = null;
 var pendingUpdaterIsPrerelease = false;
+var pendingDowngradeVersion = null;
+var pendingRepairUpdateCheck = false;
+var updateModalMode = "upgrade";
+var minVersionGateKeydownBound = false;
 function getUpdateChannel() {
   var s = rt16.getSettings();
   var raw = String(s && s.updateChannel || "estable").toLowerCase();
@@ -36252,6 +36615,29 @@ function syncUpdateChannelUI() {
   if (sel) sel.value = getUpdateChannel();
   syncUpdateModalChannelPill(pendingUpdaterIsPrerelease);
   if (typeof syncTeamSyncHeaderButton === "function") rt16.syncTeamSyncHeaderButton();
+}
+function migrateUpdateChannelToStableDefault() {
+  var key = "rpc-update-channel-stable-default-v321";
+  if (localStorage.getItem(key)) return;
+  localStorage.setItem(key, "1");
+  if (getUpdateChannel() !== "beta") return;
+  var s = rt16.getSettings();
+  s.updateChannel = "estable";
+  localStorage.setItem("rpc-settings", JSON.stringify(s));
+  if (window.electronAPI && typeof window.electronAPI.setUpdateChannel === "function") {
+    try {
+      window.electronAPI.setUpdateChannel("estable");
+    } catch (_e) {
+    }
+    if (typeof window.electronAPI.checkForUpdates === "function") {
+      setTimeout(function() {
+        try {
+          window.electronAPI.checkForUpdates();
+        } catch (_e) {
+        }
+      }, 300);
+    }
+  }
 }
 function getUpdateTelemetryEnabled() {
   var s = rt16.getSettings();
@@ -36334,6 +36720,229 @@ function sendUpdateTelemetry(result, versionHint) {
   }).catch(function() {
   });
 }
+function compareSemver(a, b) {
+  function parse(v) {
+    var m = String(v == null ? "" : v).trim().match(/^v?(\d+)\.(\d+)\.(\d+)(?:[-.+].*)?$/);
+    if (!m) return null;
+    return [parseInt(m[1], 10), parseInt(m[2], 10), parseInt(m[3], 10)];
+  }
+  var pa = parse(a);
+  var pb = parse(b);
+  if (!pa || !pb) return 0;
+  for (var i = 0; i < 3; i++) {
+    if (pa[i] > pb[i]) return 1;
+    if (pa[i] < pb[i]) return -1;
+  }
+  return 0;
+}
+function showMinVersionBlockingModal(current, minVersion, message) {
+  var bd = document.getElementById("min-version-backdrop");
+  if (!bd) return;
+  var meta = document.getElementById("min-version-meta");
+  var msg = document.getElementById("min-version-message");
+  if (msg && message) msg.textContent = String(message);
+  if (meta) {
+    meta.textContent = "Versi\xF3n actual: v" + current + " \xB7 M\xEDnima soportada: v" + minVersion;
+  }
+  var checkBtn = document.getElementById("min-version-check-btn");
+  var relBtn = document.getElementById("min-version-releases-btn");
+  if (checkBtn) {
+    checkBtn.onclick = function() {
+      if (window.electronAPI && typeof window.electronAPI.checkForUpdates === "function") {
+        setAsyncButtonLoading(checkBtn, true, { loadingText: "Buscando\u2026" });
+        try {
+          window.electronAPI.checkForUpdates();
+        } catch (_e) {
+        }
+      } else if (window.electronAPI && typeof window.electronAPI.openExternal === "function") {
+        window.electronAPI.openExternal(RELEASES_LATEST_URL);
+      }
+    };
+  }
+  if (relBtn) {
+    relBtn.onclick = function() {
+      if (window.electronAPI && typeof window.electronAPI.openExternal === "function") {
+        window.electronAPI.openExternal(RELEASES_LATEST_URL);
+      } else {
+        try {
+          window.open(RELEASES_LATEST_URL, "_blank");
+        } catch (_e) {
+        }
+      }
+    };
+  }
+  var snoozed = document.getElementById("update-modal-backdrop");
+  if (snoozed) {
+    snoozed.style.display = "none";
+    snoozed.setAttribute("aria-hidden", "true");
+  }
+  bd.classList.add("open");
+  bd.setAttribute("aria-hidden", "false");
+  if (!minVersionGateKeydownBound) {
+    minVersionGateKeydownBound = true;
+    document.addEventListener("keydown", function(e) {
+      var active = document.getElementById("min-version-backdrop");
+      if (!active || !active.classList.contains("open")) return;
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        e.preventDefault();
+      }
+    }, true);
+  }
+}
+function checkMinVersionGate() {
+  if (typeof fetch !== "function") return;
+  var currentVersionPromise = window.electronAPI && typeof window.electronAPI.getAppVersion === "function" ? window.electronAPI.getAppVersion().catch(function() {
+    return null;
+  }) : Promise.resolve(null);
+  var payloadPromise;
+  try {
+    payloadPromise = fetch(MIN_VERSION_URL2, { cache: "no-store" }).then(function(r) {
+      if (!r || !r.ok) throw new Error("bad response");
+      return r.json();
+    }).catch(function() {
+      return null;
+    });
+  } catch (_e) {
+    payloadPromise = Promise.resolve(null);
+  }
+  Promise.all([currentVersionPromise, payloadPromise]).then(function(res) {
+    var currentVersion = res[0];
+    var payload = res[1];
+    if (!currentVersion || !payload || typeof payload !== "object" || !payload.minVersion) return;
+    if (compareSemver(currentVersion, payload.minVersion) < 0) {
+      showMinVersionBlockingModal(currentVersion, payload.minVersion, payload.message);
+    }
+  }).catch(function() {
+  });
+}
+var nativeRecoveryModalShown = false;
+function showNativeRuntimeRecoveryModal(status) {
+  if (nativeRecoveryModalShown || !status || status.ok) return;
+  nativeRecoveryModalShown = true;
+  var msg = (status.userMessage || status.message || "R+ no pudo cargar un componente nativo.") + (status.detail ? "\n\n" + status.detail : "");
+  resetUpdateModalPanels();
+  var title = document.getElementById("update-modal-title");
+  if (title && title.firstChild && title.firstChild.nodeType === 3) {
+    title.firstChild.textContent = "Problema de instalaci\xF3n";
+  }
+  var notes2 = document.getElementById("update-modal-notes");
+  if (notes2) notes2.textContent = msg;
+  var state = document.getElementById("update-modal-state");
+  if (state) {
+    state.textContent = "Usa Ajustes \u2192 Reinstalar actualizaci\xF3n de reparaci\xF3n (6.5.5), restaurar 6.5.0 en GitHub, o el instalador en Releases.";
+  }
+  var wrap = document.getElementById("update-modal-progress-wrap");
+  if (wrap) wrap.style.display = "none";
+  var pill = document.getElementById("update-modal-version-pill");
+  if (pill) pill.style.display = "none";
+  var err = document.getElementById("update-modal-error");
+  if (err) err.style.display = "none";
+  var actions = document.getElementById("update-modal-actions-primary");
+  var sec = document.getElementById("update-modal-actions-secondary");
+  if (actions) {
+    actions.innerHTML = "";
+    var settingsBtn = document.createElement("button");
+    settingsBtn.className = "btn-primary";
+    settingsBtn.textContent = "Abrir restaurar versi\xF3n estable\u2026";
+    settingsBtn.onclick = function() {
+      hideUpdateModal();
+      openSettingsDowngradeSection();
+    };
+    actions.appendChild(settingsBtn);
+    var ghBtn = document.createElement("button");
+    ghBtn.className = "btn-secondary";
+    ghBtn.textContent = "Ver releases en GitHub";
+    ghBtn.onclick = function() {
+      if (window.electronAPI && window.electronAPI.openExternal) {
+        window.electronAPI.openExternal("https://github.com/mausalas99/r-mas/releases");
+      }
+    };
+    actions.appendChild(ghBtn);
+  }
+  if (sec) {
+    sec.innerHTML = "";
+    var closeBtn = document.createElement("button");
+    closeBtn.className = "btn-secondary";
+    closeBtn.textContent = "Continuar de todos modos";
+    closeBtn.onclick = function() {
+      hideUpdateModal();
+    };
+    sec.appendChild(closeBtn);
+  }
+  showUpdateModal();
+}
+function checkNativeRuntimeOnBoot() {
+  if (!window.electronAPI || typeof window.electronAPI.getNativeRuntimeStatus !== "function") {
+    return;
+  }
+  window.electronAPI.getNativeRuntimeStatus().then(function(status) {
+    if (!status || status.ok) return;
+    showNativeRuntimeRecoveryModal(status);
+  }).catch(function() {
+  });
+}
+function initUpdateChannelAndGate() {
+  migrateUpdateChannelToStableDefault();
+  syncUpdateChannelUI();
+  syncUpdateTelemetryUI();
+  if (window.electronAPI && typeof window.electronAPI.setUpdateChannel === "function") {
+    try {
+      window.electronAPI.setUpdateChannel(getUpdateChannel());
+    } catch (_e) {
+    }
+  }
+  initStableDowngradeSettings({
+    showToast: rt16.showToast.bind(rt16),
+    confirmDowngrade
+  });
+  setTimeout(checkNativeRuntimeOnBoot, 800);
+  setTimeout(function() {
+    checkMinVersionGate();
+  }, 1200);
+}
+function confirmDowngrade(version, entry2) {
+  var summary = entry2 && entry2.summary ? entry2.summary : "";
+  var ok = window.confirm(
+    "Restaurar R+ a v" + version + "?\n\n" + summary + "\n\nLa app se reiniciar\xE1. Tus pacientes y ajustes locales se conservan."
+  );
+  if (!ok) return;
+  pendingDowngradeVersion = version;
+  updateModalMode = "downgrade";
+  resetUpdateModalPanels();
+  showUpdateModal();
+  var title = document.getElementById("update-modal-title");
+  if (title && title.firstChild) title.firstChild.textContent = "Restaurando versi\xF3n estable";
+  if (window.electronAPI && window.electronAPI.downgradeToStable) {
+    window.electronAPI.downgradeToStable(version);
+  }
+}
+function renderDowngradeFallback(payload) {
+  updateModalMode = "upgrade";
+  pendingDowngradeVersion = null;
+  resetUpdateCheckButtons();
+  renderUpdateError(
+    (payload && payload.message ? payload.message : "No se pudo descargar la versi\xF3n.") + " Puedes abrir el instalador en GitHub."
+  );
+  var actions = document.getElementById("update-modal-actions-primary");
+  if (actions && payload && (payload.manualUrl || payload.version)) {
+    var openBtn = document.createElement("button");
+    openBtn.className = "btn-primary";
+    openBtn.textContent = "Abrir instalador en GitHub";
+    openBtn.onclick = function() {
+      if (window.electronAPI && window.electronAPI.openDowngradeInstaller) {
+        window.electronAPI.openDowngradeInstaller(payload.version);
+      } else if (window.electronAPI && window.electronAPI.openExternal && payload.manualUrl) {
+        window.electronAPI.openExternal(payload.manualUrl);
+      }
+    };
+    actions.innerHTML = "";
+    actions.appendChild(openBtn);
+  }
+  if (window.electronAPI && window.electronAPI.resetUpdateFeed) {
+    window.electronAPI.resetUpdateFeed();
+  }
+}
 function getUpdateSnoozeUntil() {
   var raw = localStorage.getItem(UPDATE_SNOOZE_KEY);
   var n = raw ? parseInt(raw, 10) : 0;
@@ -36366,6 +36975,14 @@ function showUpdateModal() {
   }, 50);
 }
 function hideUpdateModal() {
+  if (updateModalMode === "downgrade" && window.electronAPI && window.electronAPI.resetUpdateFeed) {
+    try {
+      window.electronAPI.resetUpdateFeed();
+    } catch (_e) {
+    }
+  }
+  updateModalMode = "upgrade";
+  pendingDowngradeVersion = null;
   var el = document.getElementById("update-modal-backdrop");
   if (!el) return;
   el.style.display = "none";
@@ -36444,11 +37061,14 @@ if (typeof window !== "undefined" && window.electronAPI) {
       if (!releaseNotes) releaseNotes = stripHtmlToPlainText(rawNotes);
       pendingUpdaterTargetVersion = version;
       pendingUpdaterIsPrerelease = !!(payload && payload.prerelease);
-      if (isSnoozeActiveForVersion(version)) return;
+      var isDowngrade = updateModalMode === "downgrade";
+      var isRepair = pendingRepairUpdateCheck;
+      if (isRepair) pendingRepairUpdateCheck = false;
+      if (!isDowngrade && !isRepair && isSnoozeActiveForVersion(version)) return;
       resetUpdateModalPanels();
       var title = document.getElementById("update-modal-title");
       if (title && title.firstChild && title.firstChild.nodeType === 3) {
-        title.firstChild.textContent = "Nueva versi\xF3n";
+        title.firstChild.textContent = isDowngrade ? "Restaurando versi\xF3n estable" : isRepair ? "Actualizaci\xF3n de reparaci\xF3n" : "Nueva versi\xF3n";
       }
       var pill = document.getElementById("update-modal-version-pill");
       if (pill) {
@@ -36467,28 +37087,32 @@ if (typeof window !== "undefined" && window.electronAPI) {
       var actions = document.getElementById("update-modal-actions-primary");
       if (actions) {
         actions.innerHTML = "";
-        var later = document.createElement("button");
-        later.className = "btn-secondary";
-        later.textContent = "M\xE1s tarde";
-        later.onclick = function() {
-          markDismissedVersion(version);
-          hideUpdateModal();
-        };
-        actions.appendChild(later);
+        if (!isDowngrade) {
+          var later = document.createElement("button");
+          later.className = "btn-secondary";
+          later.textContent = "M\xE1s tarde";
+          later.onclick = function() {
+            markDismissedVersion(version);
+            hideUpdateModal();
+          };
+          actions.appendChild(later);
+        }
       }
       var sec = document.getElementById("update-modal-actions-secondary");
       if (sec) {
         sec.innerHTML = "";
-        var link = document.createElement("button");
-        link.type = "button";
-        link.className = "btn-link";
-        link.textContent = "Ver notas en GitHub";
-        link.onclick = function() {
-          if (window.electronAPI && window.electronAPI.openExternal) {
-            window.electronAPI.openExternal("https://github.com/mausalas99/r-mas/releases");
-          }
-        };
-        sec.appendChild(link);
+        if (!isDowngrade) {
+          var link = document.createElement("button");
+          link.type = "button";
+          link.className = "btn-link";
+          link.textContent = "Ver notas en GitHub";
+          link.onclick = function() {
+            if (window.electronAPI && window.electronAPI.openExternal) {
+              window.electronAPI.openExternal("https://github.com/mausalas99/r-mas/releases");
+            }
+          };
+          sec.appendChild(link);
+        }
       }
       showUpdateModal();
     } catch (e) {
@@ -36501,7 +37125,7 @@ if (typeof window !== "undefined" && window.electronAPI) {
       var transferred = payload && payload.transferred;
       var total = payload && payload.total;
       var bps = payload && payload.bytesPerSecond;
-      if (pendingUpdaterTargetVersion && isSnoozeActiveForVersion(pendingUpdaterTargetVersion)) return;
+      if (pendingUpdaterTargetVersion && updateModalMode !== "downgrade" && isSnoozeActiveForVersion(pendingUpdaterTargetVersion)) return;
       resetUpdateModalPanels();
       syncUpdateModalChannelPill(pendingUpdaterIsPrerelease);
       var state = document.getElementById("update-modal-state");
@@ -36528,16 +37152,17 @@ if (typeof window !== "undefined" && window.electronAPI) {
   window.electronAPI.onUpdateReady(function(payload) {
     try {
       var version = payload && payload.version ? payload.version : String(payload || "");
+      var isDowngrade = updateModalMode === "downgrade";
       try {
         sendUpdateTelemetry("success", version);
       } catch (_te) {
       }
-      if (isSnoozeActiveForVersion(version)) return;
+      if (!isDowngrade && isSnoozeActiveForVersion(version)) return;
       resetUpdateModalPanels();
       syncUpdateModalChannelPill(pendingUpdaterIsPrerelease);
       var state = document.getElementById("update-modal-state");
       if (state) {
-        state.textContent = "Listo para instalar. Tambi\xE9n se instalar\xE1 al cerrar la aplicaci\xF3n si eliges esperar.";
+        state.textContent = isDowngrade ? "Listo para restaurar. R+ se reiniciar\xE1 en la versi\xF3n seleccionada." : "Listo para instalar. Tambi\xE9n se instalar\xE1 al cerrar la aplicaci\xF3n si eliges esperar.";
       }
       var fill = document.getElementById("update-modal-progress-fill");
       if (fill) fill.style.width = "100%";
@@ -36548,18 +37173,22 @@ if (typeof window !== "undefined" && window.electronAPI) {
         actions.innerHTML = "";
         var go = document.createElement("button");
         go.className = "btn-primary";
-        go.textContent = "Instalar y reiniciar";
+        go.textContent = isDowngrade ? "Restaurar y reiniciar" : "Instalar y reiniciar";
         go.onclick = function() {
+          updateModalMode = "upgrade";
+          pendingDowngradeVersion = null;
           installUpdate();
         };
         actions.appendChild(go);
-        var later = document.createElement("button");
-        later.className = "btn-secondary";
-        later.textContent = "Instalar al cerrar";
-        later.onclick = function() {
-          hideUpdateModal();
-        };
-        actions.appendChild(later);
+        if (!isDowngrade) {
+          var later = document.createElement("button");
+          later.className = "btn-secondary";
+          later.textContent = "Instalar al cerrar";
+          later.onclick = function() {
+            hideUpdateModal();
+          };
+          actions.appendChild(later);
+        }
       }
       var sec = document.getElementById("update-modal-actions-secondary");
       if (sec) sec.innerHTML = "";
@@ -36571,10 +37200,19 @@ if (typeof window !== "undefined" && window.electronAPI) {
   window.electronAPI.onUpdateNotAvailable(function() {
     try {
       resetUpdateCheckButtons();
+      var wasRepair = pendingRepairUpdateCheck;
+      pendingRepairUpdateCheck = false;
       pendingUpdaterTargetVersion = null;
       pendingUpdaterIsPrerelease = false;
       syncUpdateModalChannelPill(false);
-      rt16.showToast("R+ est\xE1 actualizado.", "success");
+      if (wasRepair) {
+        rt16.showToast(
+          "No hay actualizaci\xF3n de reparaci\xF3n en el servidor a\xFAn. Cuando publiquemos 6.5.5, vuelve a intentar o descarga el instalador desde GitHub (Ajustes \u2192 Abrir instalador en GitHub).",
+          "error"
+        );
+      } else {
+        rt16.showToast("R+ est\xE1 actualizado.", "success");
+      }
     } catch (e) {
       console.error("onUpdateNotAvailable callback error:", e && e.message);
     }
@@ -36591,6 +37229,16 @@ if (typeof window !== "undefined" && window.electronAPI) {
       console.error("onUpdateError callback error:", e && e.message);
     }
   });
+  if (window.electronAPI.onDowngradeFailed) {
+    window.electronAPI.onDowngradeFailed(function(payload) {
+      try {
+        resetUpdateCheckButtons();
+        renderDowngradeFallback(payload);
+      } catch (e) {
+        console.error("onDowngradeFailed callback error:", e && e.message);
+      }
+    });
+  }
 }
 var platformWindowHandlers = {
   lockClinicalDatabaseNow,
@@ -36607,6 +37255,7 @@ var platformWindowHandlers = {
   wipeCacheConfirmed,
   wipeAllConfirmed,
   checkForAppUpdates,
+  checkForRepairUpdate,
   setUpdateChannel,
   setUpdateTelemetryEnabled,
   exportDataBackup,

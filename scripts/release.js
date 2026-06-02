@@ -612,13 +612,20 @@ async function cmdPublish(argv) {
     if (!skipPush) await runPublishCmd(progress, 'git-push', 'git push origin main');
 
     if (!skipBuild) {
+      await runPublishCmd(
+        progress,
+        'verify-natives',
+        'node scripts/verify-release-natives.mjs'
+      );
       if (!winOnly) await runPublishCmd(progress, 'build-mac', buildMacPublishCmd());
       if (!macOnly) await runPublishCmd(progress, 'build-win', buildWinPublishCmd());
     } else {
+      progress.skip('verify-natives');
       progress.emitLog({ stream: 'meta', line: '--skip-build: se asume dist/ ya generado.' });
       progress.skip('build-mac');
       progress.skip('build-win');
       progress.skip('verify-dist');
+      progress.skip('verify-natives');
     }
 
     if (!skipBuild) {
@@ -701,6 +708,22 @@ async function cmdPublish(argv) {
         process.exit(created.status || 1);
       }
       progress.complete('gh-release');
+      try {
+        const { upsertStableVersionEntry } = require('../lib/stable-versions-catalog');
+        const catalogPath = path.join(ROOT, 'stable-versions.json');
+        upsertStableVersionEntry(catalogPath, {
+          version,
+          summary: `Release estable ${version}`,
+          recommended: true,
+        });
+        const catalogLine = `stable-versions.json actualizado para v${version}`;
+        if (progressJson) progress.emitLog({ stream: 'meta', line: catalogLine });
+        else console.log('\n→', catalogLine);
+      } catch (catalogErr) {
+        const warn = `No se pudo actualizar stable-versions.json: ${catalogErr && catalogErr.message ? catalogErr.message : catalogErr}`;
+        if (progressJson) progress.emitLog({ stream: 'stderr', line: warn });
+        else console.warn(warn);
+      }
     }
 
     if (!noManifestCommit && !skipPush) {

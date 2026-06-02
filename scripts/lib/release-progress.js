@@ -20,6 +20,11 @@ function buildPublishSteps(opts) {
     steps.push({ id: 'git-push', label: 'Push main', weight: 3 });
   }
   if (!opts.skipBuild) {
+    steps.push({
+      id: 'verify-natives',
+      label: 'Verificar módulos nativos (.node)',
+      weight: 1,
+    });
     if (!opts.winOnly) {
       steps.push({ id: 'build-mac', label: 'Build Mac (arm64 + x64)', weight: 38 });
     }
