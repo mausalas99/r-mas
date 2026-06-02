@@ -98,9 +98,15 @@ Presets embebidos en código (`public/js/service-profiles/` o `lib/service-profi
   },
   "onboarding": {
     "curriculumBranch": "uti"
+  },
+  "crossService": {
+    "publish": [],
+    "subscribe": ["cultivo-updated"]
   }
 }
 ```
+
+Bloque `crossService` detallado en **Fase 5** (Infecto publica `cultivo-updated`; otros servicios suscriben).
 
 ### Presets iniciales — módulos por defecto
 
@@ -284,8 +290,119 @@ Tests: `node --test` para derivación de token, manifiestos, resolución de mód
 | **2 — Manifiestos preset** | Cuatro presets + `resolveServiceModules`; agenda on en todos |
 | **3 — Sandbox** | Preview, toggles, export JSON; variantes rotación/guardia |
 | **4 — Custom overrides** | R4/Admin persiste manifiesto custom en userData |
+| **5 — Notificaciones cross-service** | Canal de eventos clínicos; aviso + import manual de dominios (p. ej. cultivos) |
 
-Fase 1 entrega la separación LAN (prioridad). Fases 2–3 habilitan iteración con cada servicio en la pestaña de configuración.
+Fase 1 entrega la separación LAN (prioridad). Fases 2–3 habilitan iteración con cada servicio en la pestaña de configuración. Fase 5 añade visibilidad **selectiva** entre servicios sin reabrir el sync de guardia.
+
+---
+
+## Fase 5 — Notificaciones cross-service (cultivos)
+
+### Principio
+
+La LAN de guardia por servicio (Fase 1) permanece **aislada**: censo, todos, manejo y bundles LiveSync no cruzan servicios.
+
+Un **canal de eventos clínicos** adicional — mismo Wi‑Fi, sufijo distinto (`clinical-events` derivado del token base) — transporta solo **metadatos livianos**. No reemplaza LiveSync ni mezcla expedientes completos.
+
+**Modelo de producto (bloqueado): opción B — notificación + import manual.** Sin merge automático silencioso en el expediente del suscriptor.
+
+### Flujo (ejemplo: Infecto actualiza cultivos)
+
+1. Infecto guarda cultivos localmente en un paciente (puede ser de MI/UTI/Cirugía en censo de otro servicio).
+2. R+ publica evento `cultivo-updated` al canal de eventos.
+3. Instalaciones suscriptoras (MI, UTI, Cirugía) que tengan el mismo `patientId` en censo reciben **notificación** — no modifican el expediente aún.
+4. Usuario pulsa **Ver** → preview/diff del slice `cultivos` → **Importar** (merge confirmado) o **Descartar**.
+
+```mermaid
+sequenceDiagram
+  participant INF as R+ Infecto
+  participant BUS as Canal clinical-events
+  participant MI as R+ MI
+
+  INF->>INF: Guarda cultivos local
+  INF->>BUS: cultivo-updated metadata
+  BUS->>MI: notificación si patientId en censo
+  Note over MI: Badge — Infecto actualizó cultivos
+  MI->>MI: Usuario pulsa Ver
+  MI->>INF: fetch slice cultivos
+  MI->>MI: Importar confirmado
+```
+
+### Payload del evento (liviano)
+
+Sin datos clínicos completos en el bus — solo lo necesario para la notificación:
+
+```json
+{
+  "type": "cultivo-updated",
+  "patientId": "p-abc",
+  "sourceServiceProfileId": "infecto",
+  "sourceTeamLabel": "Infectología",
+  "at": "2026-06-02T14:30:00Z",
+  "preview": "E. coli — pendiente antibiograma",
+  "sourceHostUrl": "http://192.168.1.20:3738"
+}
+```
+
+El fetch al pulsar **Ver** usa `sourceHostUrl` (Bearer del canal de eventos o ticket de lectura acotada) para traer el slice `cultivos`.
+
+### UX en el servicio suscriptor
+
+| Elemento | Comportamiento |
+|----------|----------------|
+| Badge | Sidebar del paciente o campana de notificaciones del servicio |
+| Copy | “Infectología actualizó cultivos — **Ver**” |
+| Ver | Panel preview/diff; botones **Importar** / **Descartar** |
+| Importar | Merge **solo** del dominio `cultivos` tras confirmación explícita |
+| Sin acción | Expediente local sin cambios |
+
+### Manifiesto — extensión `crossService`
+
+```json
+"crossService": {
+  "publish": ["cultivo-updated"],
+  "subscribe": []
+}
+```
+
+Presets recomendados:
+
+| Perfil | publish | subscribe |
+|--------|---------|-----------|
+| Infectología | `cultivo-updated` | — |
+| MI / UTI / Cirugía | — | `cultivo-updated` |
+
+Tipos adicionales (v2+): `atb-recommendation`, `lab-critical` — misma semántica notify → Ver → Importar.
+
+### Alcance y privacidad
+
+- Notificación **solo** si `patientId` existe en el censo local del suscriptor.
+- Sin paciente en censo → evento ignorado (sin toast global).
+- Si el host publicador no está accesible al pulsar **Ver**, cola local “pendiente de sync” con reintento.
+
+### Canal LAN de eventos
+
+```
+effectiveEventsCode = derive(baseToken, "clinical-events")
+```
+
+Independiente de `BASE:mi`, `BASE:uti`, etc. Todos los servicios del hospital se conectan al mismo canal de eventos; el filtrado es por `subscribe` + `patientId` en censo, no por perfil de guardia.
+
+### Archivos previstos (Fase 5)
+
+| Capa | Cambio |
+|------|--------|
+| `lan-squad/clinical-events-channel.js` | Relay WebSocket / fan-out de eventos livianos |
+| `public/js/clinical-events-client.mjs` | Subscribe, cola de notificaciones, fetch slice |
+| `public/js/features/cultivo-cross-service.mjs` | Publicar al guardar cultivos (Infecto) |
+| `public/js/features/clinical-notifications-panel.mjs` | UI Ver / Importar / Descartar |
+| Manifiesto presets | Bloque `crossService` |
+
+### Fuera de alcance Fase 5 v1
+
+- Auto-merge silencioso al recibir evento
+- Sync de censo, todos o manejo entre servicios
+- Servidor central hospitalario
 
 ---
 
@@ -295,6 +412,7 @@ Fase 1 entrega la separación LAN (prioridad). Fases 2–3 habilitan iteración 
 - Códigos LAN administrados manualmente por IT por servicio (el sufijo es derivado en app)
 - Selector de servicio dentro de Mi rotación
 - Sincronización de manifiestos vía servidor central (solo local + export JSON)
+- Auto-merge cross-service de datos clínicos (Fase 5 usa notificación + import manual)
 
 ---
 
@@ -316,3 +434,4 @@ Fase 1 entrega la separación LAN (prioridad). Fases 2–3 habilitan iteración 
 3. Cambiar preset en sandbox muestra diff de módulos sin desconectar LAN hasta “Aplicar”.
 4. Los cuatro presets tienen **`procedureAgenda: true`** por defecto.
 5. Instalaciones legacy siguen funcionando sin elegir servicio (perfil `legacy`).
+6. Infecto publica `cultivo-updated`; MI con el paciente en censo ve notificación; expediente local **no** cambia hasta **Importar** confirmado.
