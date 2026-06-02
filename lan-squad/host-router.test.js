@@ -21,6 +21,20 @@ function mountLanRouter(store, broadcast = () => {}) {
   return app;
 }
 
+async function listenServer(server) {
+  await new Promise((resolve, reject) => {
+    server.listen(0, '127.0.0.1', (err) => (err ? reject(err) : resolve()));
+  });
+}
+
+async function tearDownLanTest({ server, dir, store }) {
+  await new Promise((resolve) => server.close(resolve));
+  if (store && typeof store.flush === 'function') {
+    await store.flush();
+  }
+  fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 25 });
+}
+
 test('LAN /ping requiere Authorization Bearer válido', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-ping-'));
   const statePath = path.join(dir, 'state.json');
@@ -28,9 +42,7 @@ test('LAN /ping requiere Authorization Bearer válido', async () => {
   const store = createHostStore({ filePath: statePath, teamCodePlain: code });
   const app = mountLanRouter(store);
   const server = http.createServer(app);
-  await new Promise((resolve, reject) => {
-    server.listen(0, '127.0.0.1', (err) => (err ? reject(err) : resolve()));
-  });
+  await listenServer(server);
   try {
     const { port } = server.address();
     const base = `http://127.0.0.1:${port}/api/lan/v1/ping`;
@@ -44,8 +56,7 @@ test('LAN /ping requiere Authorization Bearer válido', async () => {
     assert.strictEqual(body.ok, true);
     assert.strictEqual(body.lan, true);
   } finally {
-    await new Promise((resolve) => server.close(resolve));
-    fs.rmSync(dir, { recursive: true, force: true });
+    await tearDownLanTest({ server, dir, store });
   }
 });
 
@@ -57,9 +68,7 @@ test('LAN GET /rooms con código válido', async () => {
   store.createRoom('Sala prueba');
   const app = mountLanRouter(store);
   const server = http.createServer(app);
-  await new Promise((resolve, reject) => {
-    server.listen(0, '127.0.0.1', (err) => (err ? reject(err) : resolve()));
-  });
+  await listenServer(server);
   try {
     const { port } = server.address();
     const base = `http://127.0.0.1:${port}/api/lan/v1/rooms`;
@@ -70,8 +79,7 @@ test('LAN GET /rooms con código válido', async () => {
     assert.strictEqual(body.rooms.length, 1);
     assert.strictEqual(body.rooms[0].displayName, 'Sala prueba');
   } finally {
-    await new Promise((resolve) => server.close(resolve));
-    fs.rmSync(dir, { recursive: true, force: true });
+    await tearDownLanTest({ server, dir, store });
   }
 });
 
@@ -84,9 +92,7 @@ test('PUT /patients/:id auto-merge returns 200 with autoMerged', async () => {
   store.upsertPatient({ id: 'p1', nombre: 'Ana', cuarto: '201' }, 1);
   const app = mountLanRouter(store);
   const server = http.createServer(app);
-  await new Promise((resolve, reject) => {
-    server.listen(0, '127.0.0.1', (err) => (err ? reject(err) : resolve()));
-  });
+  await listenServer(server);
   try {
     const { port } = server.address();
     const url = `http://127.0.0.1:${port}/api/lan/v1/patients/p1`;
@@ -106,8 +112,7 @@ test('PUT /patients/:id auto-merge returns 200 with autoMerged', async () => {
     assert.strictEqual(body.data.cuarto, '201');
     assert.strictEqual(body.data.cama, 'B');
   } finally {
-    await new Promise((resolve) => server.close(resolve));
-    fs.rmSync(dir, { recursive: true, force: true });
+    await tearDownLanTest({ server, dir, store });
   }
 });
 
@@ -126,9 +131,7 @@ test('PUT /rooms/:id/sync-bundle stale entity version returns 409', async () => 
   const cur = store.getRoomSyncBundle(room.id);
   const app = mountLanRouter(store);
   const server = http.createServer(app);
-  await new Promise((resolve, reject) => {
-    server.listen(0, '127.0.0.1', (err) => (err ? reject(err) : resolve()));
-  });
+  await listenServer(server);
   try {
     const { port } = server.address();
     const url = `http://127.0.0.1:${port}/api/lan/v1/rooms/${encodeURIComponent(room.id)}/sync-bundle`;
@@ -152,8 +155,7 @@ test('PUT /rooms/:id/sync-bundle stale entity version returns 409', async () => 
     assert.ok(body.bundle);
     assert.strictEqual(store.getRoomSyncBundle(room.id).agenda[0].procedure, 'A');
   } finally {
-    await new Promise((resolve) => server.close(resolve));
-    fs.rmSync(dir, { recursive: true, force: true });
+    await tearDownLanTest({ server, dir, store });
   }
 });
 
@@ -165,9 +167,7 @@ test('PUT /patients/:id/historia-clinica creates entity and appends audit', asyn
   const room = store.createRoom('Sala');
   const app = mountLanRouter(store);
   const server = http.createServer(app);
-  await new Promise((resolve, reject) => {
-    server.listen(0, '127.0.0.1', (err) => (err ? reject(err) : resolve()));
-  });
+  await listenServer(server);
   try {
     const { port } = server.address();
     const url = `http://127.0.0.1:${port}/api/lan/v1/patients/p1/historia-clinica`;
@@ -196,8 +196,7 @@ test('PUT /patients/:id/historia-clinica creates entity and appends audit', asyn
     assert.ok(entry);
     assert.strictEqual(entry.detail.safety[0].ruleId, 'metformina-egfr-lt30');
   } finally {
-    await new Promise((resolve) => server.close(resolve));
-    fs.rmSync(dir, { recursive: true, force: true });
+    await tearDownLanTest({ server, dir, store });
   }
 });
 
@@ -209,9 +208,7 @@ test('PUT /patients/:id/historia-clinica accepts nested app shape', async () => 
   const room = store.createRoom('Sala');
   const app = mountLanRouter(store);
   const server = http.createServer(app);
-  await new Promise((resolve, reject) => {
-    server.listen(0, '127.0.0.1', (err) => (err ? reject(err) : resolve()));
-  });
+  await listenServer(server);
   try {
     const { port } = server.address();
     const url = `http://127.0.0.1:${port}/api/lan/v1/patients/p1/historia-clinica`;
@@ -239,8 +236,7 @@ test('PUT /patients/:id/historia-clinica accepts nested app shape', async () => 
     const bundle = store.getRoomSyncBundle(room.id);
     assert.deepEqual(bundle.entities['hc:p1'].data.app, nestedApp);
   } finally {
-    await new Promise((resolve) => server.close(resolve));
-    fs.rmSync(dir, { recursive: true, force: true });
+    await tearDownLanTest({ server, dir, store });
   }
 });
 
@@ -253,9 +249,7 @@ test('PUT /patients/:id overlap returns 409 conflict body', async () => {
   store.upsertPatient({ id: 'p1', nombre: 'Ana', cuarto: '201' }, 1);
   const app = mountLanRouter(store);
   const server = http.createServer(app);
-  await new Promise((resolve, reject) => {
-    server.listen(0, '127.0.0.1', (err) => (err ? reject(err) : resolve()));
-  });
+  await listenServer(server);
   try {
     const { port } = server.address();
     const url = `http://127.0.0.1:${port}/api/lan/v1/patients/p1`;
@@ -275,7 +269,6 @@ test('PUT /patients/:id overlap returns 409 conflict body', async () => {
     assert.ok(body.conflictingKeys.includes('cuarto'));
     assert.strictEqual(body.serverData.cuarto, '201');
   } finally {
-    await new Promise((resolve) => server.close(resolve));
-    fs.rmSync(dir, { recursive: true, force: true });
+    await tearDownLanTest({ server, dir, store });
   }
 });
