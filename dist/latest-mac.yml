@@ -1,17 +1,17 @@
-version: 6.5.4
+version: 6.5.5
 files:
-  - url: R+-6.5.4-arm64.zip
-    sha512: rlBZ9EEAk0RKhaB8ZKX/xwLkU7/zAoQmh6UnStyJMpErNI4YVg0p8vSNUVSjp2nM9ZJVlqQnD9MOrealLdc9Hg==
-    size: 127235558
-  - url: R+-6.5.4-arm64.dmg
-    sha512: K5HOCweDz5hm0D5ilGQ0Q2J4/J7unLZH2CmykLDRHBXUnibtK95Eq20adHUyGrCEub/ipCYWlN8PvresOEkIbQ==
-    size: 132506337
-  - url: R+-6.5.4-x64.zip
-    sha512: sLNlX5/bel+FrbbgK/DFqpagDTiX1IU+NjufAhhx2rs/0IV1RSBCcrTDebyC9UF3rzh7Iz4jZ2L5MC0ozE+IvA==
-    size: 135609623
-  - url: R+-6.5.4-x64.dmg
-    sha512: 3bTIExV7+jPF/hPQe1Qtg0dC7CGAWRFAWRul3YhY19IobqtOIZ/HliU/OLMT5Lcr7WeE7qTzOXw2UwwF4Gm8Bg==
-    size: 140932800
-path: R+-6.5.4-arm64.zip
-sha512: rlBZ9EEAk0RKhaB8ZKX/xwLkU7/zAoQmh6UnStyJMpErNI4YVg0p8vSNUVSjp2nM9ZJVlqQnD9MOrealLdc9Hg==
-releaseDate: '2026-06-02T17:36:31.000Z'
+  - url: R+-6.5.5-arm64.zip
+    sha512: a5vweg0Epwg7ZptM9dejWt2TMYgF8KR/H00XyofY0jYkdPyIT0wLtLcQZVqoYUdZfhP2rpwamiGUlh1466Y/Aw==
+    size: 127866966
+  - url: R+-6.5.5-arm64.dmg
+    sha512: +j2raVlkdTOzaz/jFiIwYkSRD7XjdE+4K1W4Js8U2ZQaXPg/xr0w46vH1GQpol9MTJDd9vLzPEqe/8Jgv3kUpQ==
+    size: 133162229
+  - url: R+-6.5.5-x64.zip
+    sha512: +CaoUaWW9oFYowx3v+6ybRTuJZtqucgQY4JFELWiXWGdI4RPoTez8Yb/6S5+lmBY/oobzNIptV8C4nCk9NwUKg==
+    size: 136241035
+  - url: R+-6.5.5-x64.dmg
+    sha512: AOBpS3MdMXLcii5WQluaqnk8xTh8fil1YD8uM+DAEbbS2DzRtj7c0NLA2GbYyj+yvpUKUpX9ssE6loPx6a9cJQ==
+    size: 141578669
+path: R+-6.5.5-arm64.zip
+sha512: a5vweg0Epwg7ZptM9dejWt2TMYgF8KR/H00XyofY0jYkdPyIT0wLtLcQZVqoYUdZfhP2rpwamiGUlh1466Y/Aw==
+releaseDate: '2026-06-02T20:21:39.000Z'
