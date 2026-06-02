@@ -77,6 +77,20 @@ test('appendEventualidad ignores empty text', () => {
   assert.equal(next.entries.length, 1);
 });
 
+test('drive import loop accumulates eventualidades on store', () => {
+  let store = { entries: [] };
+  const incoming = [
+    { at: '2026-06-02T12:00:00.000Z', text: 'NOTA UNO' },
+    { at: '2026-06-01T12:00:00.000Z', text: 'NOTA DOS' },
+  ];
+  for (let i = 0; i < incoming.length; i += 1) {
+    store = appendEventualidad(store, incoming[i].text, '', incoming[i].at);
+  }
+  assert.equal(store.entries.length, 2);
+  assert.equal(store.entries[0].text, 'NOTA UNO');
+  assert.equal(store.entries[1].text, 'NOTA DOS');
+});
+
 test('sortEntriesDesc newest first', () => {
   const entries = [
     { id: 'a', at: '2026-01-01T00:00:00.000Z', text: 'old' },

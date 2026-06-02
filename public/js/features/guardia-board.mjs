@@ -126,20 +126,24 @@ export function computeGuardiaSummary(censusPatients, guardiasMap) {
 function renderGuardiaSummaryTiles(summary) {
   const host = document.getElementById('guardia-summary');
   if (!host) return;
+  const alertIcon =
+    '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>';
+  const listIcon =
+    '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>';
   host.innerHTML = `
     <div class="guardia-summary-tile guardia-summary-tile--critical">
       <div>
         <div class="guardia-summary-label">Pacientes críticos</div>
         <div class="guardia-summary-value guardia-summary-value--critical">${summary.critical}</div>
       </div>
-      <span class="guardia-summary-icon" aria-hidden="true">⚠️</span>
+      <span class="guardia-summary-icon">${alertIcon}</span>
     </div>
     <div class="guardia-summary-tile">
       <div>
         <div class="guardia-summary-label">Pendientes totales</div>
         <div class="guardia-summary-value">${summary.pending}</div>
       </div>
-      <span class="guardia-summary-icon" aria-hidden="true">📋</span>
+      <span class="guardia-summary-icon">${listIcon}</span>
     </div>`;
 }
 

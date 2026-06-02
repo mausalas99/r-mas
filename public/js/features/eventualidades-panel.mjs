@@ -371,8 +371,8 @@ function hostPatientMutationBase(patient, hostRow) {
 }
 
 async function persistEventualidades(patient, store) {
+  patient.eventualidades = store;
   if (!isLanSessionConfiguredForRest()) {
-    patient.eventualidades = store;
     saveState();
     return { ok: true };
   }
@@ -383,7 +383,12 @@ async function persistEventualidades(patient, store) {
     .build();
   const out = await lanPushPatientVersioned(patient.id, mutation);
   if (!out.ok) {
-    if (!out.conflict) {
+    if (out.conflict) {
+      saveState({ immediate: true });
+      if (out.conflictDeferred) {
+        return { ok: true, conflictDeferred: true };
+      }
+    } else if (!out.conflict) {
       const msg =
         out.status === 401 || out.status === 403
           ? 'No se pudo autenticar con el host LAN. Revisa el código de equipo.'
@@ -545,15 +550,48 @@ export function invalidateEventualidadesPanel() {
  * @param {Array<{ at: string, text: string }>} incoming
  * @returns {Promise<{ ok: boolean, added: number, skipped: number }>}
  */
+const DRIVE_IMPORT_LAN_MS = 8000;
+
+function driveImportLanTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise(function (_, reject) {
+      setTimeout(function () {
+        reject(new Error('lan-timeout'));
+      }, ms);
+    }),
+  ]);
+}
+
 export async function applyDriveImportEventualidades(patient, incoming) {
   if (!patient) return { ok: false, added: 0, skipped: 0 };
-  const store = ensureEventualidades(patient);
+  let store = ensureEventualidades(patient);
   const { toAdd, skipped } = filterNewEventualidades(store.entries, incoming || []);
   for (let i = 0; i < toAdd.length; i += 1) {
-    appendEventualidad(store, toAdd[i].text, '', toAdd[i].at);
+    store = appendEventualidad(store, toAdd[i].text, '', toAdd[i].at);
   }
   if (!toAdd.length) return { ok: true, added: 0, skipped };
-  const out = await persistEventualidades(patient, store);
-  return { ok: !!(out && out.ok), added: toAdd.length, skipped };
+  patient.eventualidades = store;
+  saveState({ immediate: true });
+
+  if (!isLanSessionConfiguredForRest()) {
+    return { ok: true, added: toAdd.length, skipped };
+  }
+
+  const mutation = createMutationBuilder('patient', patient.id)
+    .captureBase(hostPatientMutationBase(patient, null))
+    .set('eventualidades', store)
+    .build();
+  try {
+    const out = await driveImportLanTimeout(lanPushPatientVersioned(patient.id, mutation), DRIVE_IMPORT_LAN_MS);
+    if (out && out.ok) {
+      if (out.data) Object.assign(patient, out.data);
+      saveState();
+      return { ok: true, added: toAdd.length, skipped };
+    }
+  } catch (_e) {
+    /* local copy already saved */
+  }
+  return { ok: true, added: toAdd.length, skipped, lanDeferred: true };
 }
 

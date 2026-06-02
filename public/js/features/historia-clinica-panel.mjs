@@ -306,18 +306,46 @@ function buildLabAnchorFromSet(set) {
   };
 }
 
-async function fetchHistoria(patientId, roomId) {
-  if (!isLanSessionConfiguredForRest() || !roomId) {
-    var p = activePatient();
-    if (p && p.historiaClinica && p.historiaClinica.data) {
-      return { version: Number(p.historiaClinica.version || 1), data: p.historiaClinica.data };
-    }
+function readLocalHistoria(patient) {
+  if (!patient || !patient.historiaClinica || !patient.historiaClinica.data) return null;
+  return {
+    version: Number(patient.historiaClinica.version || 0),
+    data: patient.historiaClinica.data,
+    pendingLanSync: !!patient.historiaClinica.pendingLanSync,
+  };
+}
+
+async function fetchHistoriaRemote(patientId, roomId) {
+  if (!isLanSessionConfiguredForRest() || !roomId) return null;
+  try {
+    var res = await Promise.race([
+      lanFetchHistoriaClinica(patientId, roomId),
+      new Promise(function (_, reject) {
+        setTimeout(function () {
+          reject(new Error('historia_fetch_timeout'));
+        }, 4000);
+      }),
+    ]);
+    if (!res || !res.ok || res.missing) return null;
+    return { version: Number(res.version || 0), data: res.data };
+  } catch (_e) {
     return null;
   }
-  var res = await lanFetchHistoriaClinica(patientId, roomId);
-  if (!res.ok) throw new Error('historia_fetch_failed');
-  if (res.missing) return null;
-  return { version: res.version, data: res.data };
+}
+
+async function fetchHistoria(patientId, roomId) {
+  var local = readLocalHistoria(activePatient());
+  if (!isLanSessionConfiguredForRest() || !roomId) {
+    return local;
+  }
+  if (local && local.pendingLanSync) {
+    return local;
+  }
+  var remote = await fetchHistoriaRemote(patientId, roomId);
+  if (!remote) return local;
+  var localVer = local ? local.version : 0;
+  if (local && localVer > remote.version) return local;
+  return remote;
 }
 
 function stepComplete(n) {
@@ -894,6 +922,8 @@ async function saveHistoria(root, patient, skipAckCheck) {
     if (out && out.ok) {
       _version = out.version;
       _data = migrateLegacyHistoriaData(out.data, CATALOGS);
+      patient.historiaClinica = { version: _version, data: Object.assign({}, _data) };
+      saveState();
       _editMode = false;
       _pendingAck = [];
       _dirtyKeys = new Set();
@@ -923,25 +953,25 @@ export async function renderHistoriaClinicaPanel(opts) {
     if (opts.onReady) opts.onReady();
     return;
   }
+
+  var local = readLocalHistoria(patient);
+  if (local) {
+    _version = local.version || 1;
+    _data = normalizeData(local.data, patient.id, patient);
+  } else {
+    _version = 0;
+    _data = normalizeData(null, patient.id, patient);
+  }
+
   var roomId = getActiveLiveSyncRoomId() || '';
-  try {
-    var remote = await fetchHistoria(patient.id, roomId);
-    if (remote) {
+  if (isLanSessionConfiguredForRest() && roomId && !(local && local.pendingLanSync)) {
+    var remote = await fetchHistoriaRemote(patient.id, roomId);
+    if (remote && (!local || remote.version >= local.version)) {
       _version = remote.version;
       _data = normalizeData(remote.data, patient.id, patient);
-    } else if (!patient.historiaClinica) {
-      _data = normalizeData(null, patient.id, patient);
-      _version = 0;
-    } else {
-      _version = Number(patient.historiaClinica.version || 1);
-      _data = normalizeData(patient.historiaClinica.data, patient.id, patient);
     }
-  } catch (_e) {
-    console.error('renderHistoriaClinicaPanel failed', _e);
-    root.innerHTML = '<p class="tend-empty">No se pudo cargar la historia clínica.</p>';
-    if (opts.onReady) opts.onReady();
-    return;
   }
+
   _editMode = false;
   _step = (_data.meta && _data.meta.lastStep) || 1;
   renderPanel(root);
@@ -963,23 +993,44 @@ export function invalidateHistoriaClinicaPanel() {
  * @param {'fill' | 'replace' | 'eventos'} mode
  * @returns {Promise<{ ok: boolean }>}
  */
-export async function applyDriveImportHcPatch(patient, patch, mode) {
-  if (!patient || mode === 'eventos') return { ok: true };
+var DRIVE_IMPORT_LAN_MS = 8000;
+
+function driveImportLanTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise(function (_, reject) {
+      setTimeout(function () {
+        reject(new Error('lan-timeout'));
+      }, ms);
+    }),
+  ]);
+}
+
+/** Drive import uses local HC as merge base — remote fetch can hang without timeout. */
+async function resolveDriveImportHcBase(patient) {
   var data = normalizeData(patient.historiaClinica && patient.historiaClinica.data, patient.id, patient);
   var version = patient.historiaClinica ? Number(patient.historiaClinica.version || 0) : 0;
-  var mergeMode = mode === 'replace' ? 'replace' : 'fill';
-  var merged = mergeHcPatch(data, patch || {}, mergeMode);
-  applyClinicalHistoryUppercase(merged);
+  return { data: data, version: version };
+}
 
+export async function applyDriveImportHcPatch(patient, patch, mode, opts) {
+  opts = opts || {};
+  if (!patient || mode === 'eventos') return { ok: true };
   var roomId = getActiveLiveSyncRoomId() || '';
+  var mergeMode = opts.fromReview || mode === 'replace' ? 'replace' : 'fill';
   var dirty = Object.keys(patch || {}).filter(function (k) {
     return !String(k).startsWith('_');
   });
 
-  if (isLanSessionConfiguredForRest() && roomId && dirty.length) {
+  async function pushMergedHc(base) {
+    var merged = mergeHcPatch(base.data, patch || {}, mergeMode);
+    applyClinicalHistoryUppercase(merged);
+    if (!isLanSessionConfiguredForRest() || !roomId || !dirty.length) {
+      return { ok: true, merged: merged, version: base.version, localOnly: true };
+    }
     var builder = createMutationBuilder('historiaClinica', patient.id).captureBase({
-      version: version,
-      data: data,
+      version: base.version,
+      data: base.data,
     });
     dirty.forEach(function (k) {
       if (merged[k] !== undefined) builder.set(k, merged[k]);
@@ -990,18 +1041,40 @@ export async function applyDriveImportHcPatch(patient, patch, mode) {
       clientId: localStorage.getItem('rpc-lan-client-id') || 'local',
       audit: { sections: dirty, source: 'drive-import' },
     });
-    var out = await lanPushHistoriaClinica(patient.id, mutation);
-    if (out && out.conflict) return { ok: false };
-    if (out && out.ok) {
-      patient.historiaClinica = { version: out.version, data: migrateLegacyHistoriaData(out.data, CATALOGS) };
-      saveState();
-      invalidateHistoriaClinicaPanel();
-      return { ok: true };
+    var out;
+    try {
+      out = await driveImportLanTimeout(lanPushHistoriaClinica(patient.id, mutation), DRIVE_IMPORT_LAN_MS);
+    } catch (_e) {
+      return { ok: true, merged: merged, version: base.version, localOnly: true, lanDeferred: true };
     }
+    if (out && out.conflict) {
+      return { ok: true, merged: merged, version: base.version, localOnly: true, lanDeferred: true };
+    }
+    if (out && out.ok) {
+      return {
+        ok: true,
+        merged: migrateLegacyHistoriaData(out.data, CATALOGS),
+        version: out.version,
+        localOnly: false,
+      };
+    }
+    return { ok: true, merged: merged, version: base.version, localOnly: true, lanDeferred: true };
   }
 
-  patient.historiaClinica = { version: version + 1, data: merged };
+  var base = await resolveDriveImportHcBase(patient);
+  var result = await pushMergedHc(base);
+  if (!result.ok) return { ok: false };
+
+  patient.historiaClinica = {
+    version: result.localOnly ? Number(result.version || 0) + 1 : result.version,
+    data: result.merged,
+  };
+  if (result.lanDeferred) {
+    patient.historiaClinica.pendingLanSync = true;
+  } else if (patient.historiaClinica.pendingLanSync) {
+    delete patient.historiaClinica.pendingLanSync;
+  }
   saveState();
   invalidateHistoriaClinicaPanel();
-  return { ok: true };
+  return { ok: true, lanDeferred: !!result.lanDeferred };
 }

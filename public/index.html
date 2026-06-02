@@ -197,30 +197,72 @@
 </div>
 
 <div id="drive-import-backdrop" class="modal-backdrop" aria-hidden="true">
-  <div class="modal drive-import-modal" role="dialog" aria-modal="true" aria-labelledby="drive-import-title" onclick="event.stopPropagation()">
+  <div class="modal drive-import-modal" data-drive-step="paste" role="dialog" aria-modal="true" aria-labelledby="drive-import-title" onclick="event.stopPropagation()">
     <header class="drive-import-head">
       <h3 id="drive-import-title">Importar desde Drive</h3>
-      <p class="drive-import-hint">Pega el documento copiado desde Google Docs. Revisa el perfil detectado antes de aplicar.</p>
+      <p id="drive-import-hint" class="drive-import-hint">Pega el documento copiado desde Google Docs. Revisarás cada sección antes de importar.</p>
     </header>
-    <div class="drive-import-body">
-      <textarea id="drive-import-input" class="drive-import-input" rows="14" spellcheck="false" aria-label="Texto del documento de Drive"></textarea>
-      <aside class="drive-import-side">
-        <label class="drive-import-label">Formato
-          <select id="drive-import-profile" class="drive-import-select"></select>
-        </label>
-        <fieldset id="drive-import-mode-fieldset" class="drive-import-modes">
-          <legend>Modo de aplicación</legend>
-          <label class="drive-import-radio"><input type="radio" name="drive-import-mode" value="fill" checked /> Completar vacíos en HC</label>
-          <label class="drive-import-radio"><input type="radio" name="drive-import-mode" value="replace" /> Reemplazar HC importable</label>
-          <label class="drive-import-radio"><input type="radio" name="drive-import-mode" value="eventos" /> Solo eventualidades</label>
-        </fieldset>
-        <pre id="drive-import-preview" class="drive-import-preview" aria-live="polite"></pre>
-        <p id="drive-import-warning" class="drive-import-warning" hidden></p>
-      </aside>
+
+    <div id="drive-import-step-paste" class="drive-import-pane drive-import-pane--paste">
+      <fieldset id="drive-import-mode-fieldset" class="drive-import-modes">
+        <legend class="visually-hidden">Modo de aplicación</legend>
+        <label class="drive-import-radio"><input type="radio" name="drive-import-mode" value="fill" checked /> Completar vacíos</label>
+        <label class="drive-import-radio"><input type="radio" name="drive-import-mode" value="replace" /> Reemplazar HC</label>
+        <label class="drive-import-radio"><input type="radio" name="drive-import-mode" value="eventos" /> Solo eventualidades</label>
+      </fieldset>
+      <p id="drive-import-warning" class="drive-import-warning" hidden></p>
+      <label for="drive-import-input" class="drive-import-dropzone">
+        <span class="drive-import-dropzone-label">Documento de Drive</span>
+        <textarea
+          id="drive-import-input"
+          class="drive-import-input"
+          rows="3"
+          spellcheck="false"
+          placeholder="Ctrl+V o ⌘V para pegar aquí…"
+        ></textarea>
+        <span class="drive-import-dropzone-meta">Análisis local · no se envía a ningún servidor</span>
+      </label>
+      <p id="drive-import-parse-hint" class="drive-import-parse-hint" hidden aria-live="polite"></p>
     </div>
-    <div class="modal-actions">
-      <button type="button" class="btn-med-secondary btn-med-secondary--muted" onclick="closeDriveImportModal()">Cancelar</button>
-      <button type="button" class="btn-generate" id="drive-import-confirm" onclick="confirmDriveImport()" disabled>Aplicar</button>
+
+    <div id="drive-import-step-review" class="drive-import-pane drive-import-pane--review" hidden>
+      <div class="drive-import-doc-bar">
+        <span id="drive-import-doc-summary" class="drive-import-doc-summary"></span>
+        <button type="button" class="drive-import-doc-edit" id="drive-import-back-paste">Cambiar texto</button>
+      </div>
+      <div class="drive-import-review-top">
+        <p id="drive-import-review-progress" class="drive-import-review-progress" aria-live="polite"></p>
+        <div class="drive-import-review-dots" id="drive-import-review-dots" role="tablist" aria-label="Secciones a revisar"></div>
+      </div>
+      <article class="drive-import-review-card">
+        <h4 id="drive-import-review-title" class="drive-import-review-title"></h4>
+        <p id="drive-import-review-hint" class="drive-import-review-hint"></p>
+        <label id="drive-import-review-include-wrap" class="drive-import-review-include">
+          <input type="checkbox" id="drive-import-review-include" checked />
+          <span>Incluir al importar</span>
+        </label>
+        <textarea
+          id="drive-import-review-editor"
+          class="drive-import-review-editor"
+          rows="10"
+          spellcheck="true"
+          aria-labelledby="drive-import-review-title"
+        ></textarea>
+        <div id="drive-import-review-list" class="drive-import-review-list" hidden></div>
+      </article>
+    </div>
+
+    <div class="modal-actions drive-import-actions">
+      <div id="drive-import-actions-paste" class="drive-import-actions-group">
+        <button type="button" class="btn-med-secondary btn-med-secondary--muted" id="drive-import-cancel" onclick="closeDriveImportModal()">Cancelar</button>
+        <button type="button" class="btn-med-secondary" id="drive-import-apply-fast">Importar sin revisar</button>
+        <button type="button" class="btn-generate" id="drive-import-confirm" disabled>Revisar secciones…</button>
+      </div>
+      <div id="drive-import-actions-review" class="drive-import-actions-group" hidden>
+        <button type="button" class="btn-med-secondary btn-med-secondary--muted" id="drive-import-cancel-review" onclick="closeDriveImportModal()">Cancelar</button>
+        <button type="button" class="btn-med-secondary btn-med-secondary--muted" id="drive-import-review-prev">Anterior</button>
+        <button type="button" class="btn-generate" id="drive-import-review-next">Importar lo aprobado</button>
+      </div>
     </div>
   </div>
 </div>

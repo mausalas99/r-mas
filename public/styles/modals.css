@@ -158,7 +158,7 @@ body[data-estado-actual-mode="true"] #soap-modal-backdrop .btn-soap-save-copy { 
 .soap-modal-header {
   background: #065F46; color: white; padding: 11px 18px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: space-between;
-  font-size: 12px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.02em;
 }
 .soap-modal-header-title { display: flex; align-items: center; gap: 8px; }
 .soap-modal-body {
@@ -172,7 +172,7 @@ body[data-estado-actual-mode="true"] #soap-modal-backdrop .btn-soap-save-copy { 
 .soap-section-header {
   background: var(--section-header-bg); border-bottom: 1px solid var(--divider);
   padding: 7px 14px; font-size: 10px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.6px; color: var(--primary);
+  letter-spacing: 0.02em; color: var(--primary);
 }
 .soap-section-body {
   padding: 14px; background: var(--surface);
@@ -314,7 +314,7 @@ html.dark .soap-btn-cancel {
 .intro-option-card-accent { border-color: rgba(37, 99, 235, 0.35); box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.08); }
 html.dark .intro-option-card-accent { border-color: rgba(96, 165, 250, 0.4); }
 .intro-option-kicker {
-  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--action);
+  font-size: 11px; font-weight: 700; letter-spacing: 0.02em; color: var(--action);
 }
 .intro-option-h { margin: 0; font-size: 1.05rem; font-weight: 700; line-height: 1.3; color: var(--text); }
 .intro-option-lead { margin: 0; font-size: 13px; line-height: 1.45; color: var(--text-muted); }
@@ -527,7 +527,7 @@ html.dark .help-center-modal { background: var(--surface); color: var(--text); }
 }
 .help-tour-label {
   font-size: 11px; font-weight: 700; color: var(--text-muted);
-  text-transform: uppercase; letter-spacing: 0.5px; margin-right: 4px;
+  letter-spacing: 0.02em; margin-right: 4px;
 }
 .help-tour-btn {
   background: var(--lab-chip-bg); color: var(--lab-chip-txt);
@@ -548,7 +548,7 @@ html.dark .help-center-modal { background: var(--surface); color: var(--text); }
 }
 .help-learn-sub {
   flex: 1 1 100%; margin: 6px 0 0; font-size: 11px; font-weight: 700;
-  color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;
+  color: var(--text-muted); letter-spacing: 0.02em;
 }
 .help-learn-continue { border-color: var(--action); }
 .help-learn-advanced {
@@ -1305,7 +1305,6 @@ html.dark .tend-gaso-ext-backdrop {
 .tend-gaso-fio2-chip-label {
   font-size: 10px;
   font-weight: 800;
-  text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-muted);
 }
@@ -1415,7 +1414,6 @@ html.dark .tend-gaso-ext-backdrop {
 .tend-gaso-chip-label {
   font-size: 10px;
   font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text-muted);
 }
@@ -1465,7 +1463,6 @@ html.dark .tend-gaso-ext-backdrop {
   margin: 0 0 6px;
   font-size: 11px;
   font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text-muted);
 }
@@ -1559,7 +1556,6 @@ html.dark .tend-gaso-tip {
 .tend-gaso-sub-label {
   font-size: 10px;
   font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: 0.03em;
   color: var(--text-muted);
 }

@@ -17,7 +17,7 @@ describe('calcVitalsBanner', () => {
   it('returns RETRASADO when interval elapsed', () => {
     const past = new Date(Date.now() - 5 * 3600000).toISOString();
     const r = calcVitalsBanner(past, '4h');
-    assert.equal(r.str, '⚠️ SIGNOS VENCIDOS');
+    assert.equal(r.str, 'Signos vencidos');
     assert.equal(r.cls, 'breached');
   });
 

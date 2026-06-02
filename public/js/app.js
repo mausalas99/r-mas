@@ -224,6 +224,27 @@ function getClinicalClientId() {
   return 'desktop-host';
 }
 
+function syncHeaderTodayDate() {
+  var todayEl = document.getElementById('today-date');
+  if (!todayEl) return;
+  var d = new Date();
+  var long = d.toLocaleDateString('es-MX', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+  var compact = d.toLocaleDateString('es-MX', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+  var narrow = typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 920px)').matches;
+  todayEl.textContent = narrow ? compact : long;
+  todayEl.title = long;
+}
+
 function runDomBoot() {
   appStateReady.then(function () {
     runDomBootAfterState();
@@ -238,14 +259,10 @@ function runDomBootAfterState() {
       showToast('Se restauró tu lista de pacientes tras el modo presentación.', 'info');
     }
     initModalDismiss();
-    var todayEl = document.getElementById('today-date');
-    if (todayEl) {
-      todayEl.textContent = new Date().toLocaleDateString('es-MX', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
+    syncHeaderTodayDate();
+    if (!window._rpcHeaderDateResizeWired) {
+      window._rpcHeaderDateResizeWired = true;
+      window.addEventListener('resize', syncHeaderTodayDate);
     }
     renderPatientList();
     if (patients.length > 0) selectPatient(patients[0].id);

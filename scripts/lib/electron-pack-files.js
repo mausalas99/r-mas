@@ -31,6 +31,7 @@ const PACK_FILES_BASELINE = [
 /** Native addons: must ship in the app bundle and stay outside asar (.node load). */
 const NATIVE_MODULE_PACK_PATTERNS = [
   'node_modules/better-sqlite3-multiple-ciphers/**/*',
+  'node_modules/@node-rs/argon2*/**/*.node',
 ];
 
 const ASAR_UNPACK_BASELINE = [

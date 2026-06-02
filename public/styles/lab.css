@@ -43,8 +43,7 @@ html.dark .lab-value-star { color: #f87171; }
   color: var(--text-muted);
   display: block;
   margin-bottom: 0.5rem;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.02em;
 }
 .lab-value {
   font-size: 16px;
@@ -808,8 +807,7 @@ html.lab-some-tables-modal-open .lab-copy-fab {
   flex: 1;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
   color: var(--text);
 }
 .lab-some-dept-summary-actions {
@@ -1347,8 +1345,7 @@ html.dark .lab-output-fecha { color: #93c5fd; border-bottom-color: rgba(148, 163
   color: var(--text);
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
   text-align: center;
   padding: 8px 12px;
   border-bottom: 1px solid var(--divider);
@@ -1453,8 +1450,7 @@ html.dark .lab-output-fecha { color: #93c5fd; border-bottom-color: rgba(148, 163
 .lab-some-compact-sep {
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
   color: var(--text-muted);
   margin: 4px 0 12px;
   padding-top: 4px;
@@ -1488,9 +1484,9 @@ html.dark .lab-out-ascitis-alert {
 .indica-section-body textarea { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 8px 10px; font-size: 13px; font-family: inherit; color: var(--text); background: var(--input-fill); resize: vertical; min-height: 70px; line-height: 1.6; width: 100%; transition: border-color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out); }
 .indica-section-body textarea:focus { outline: none; border-color: var(--action); background: var(--surface); box-shadow: 0 0 0 3px var(--color-focus-ring); }
 .otros-item { border:1px solid var(--border); border-radius:var(--radius-lg); padding:12px; background:var(--bg); display:flex; flex-direction:column; gap:8px; position:relative; }
-.otros-item input { border:1px solid var(--border); border-radius:6px; padding:7px 10px; font-size:13px; font-family:inherit; background:white; font-weight:600; text-transform:uppercase; width:100%; }
+.otros-item input { border:1px solid var(--border); border-radius:6px; padding:7px 10px; font-size:13px; font-family:inherit; background:var(--input-fill); font-weight:600; text-transform:uppercase; width:100%; }
 .otros-item input:focus { outline:none; border-color:var(--action); box-shadow:0 0 0 3px rgba(37,99,235,0.12); }
-.otros-item textarea { border:1px solid var(--border); border-radius:6px; padding:8px 10px; font-size:13px; font-family:inherit; background:white; resize:vertical; min-height:60px; width:100%; }
+.otros-item textarea { border:1px solid var(--border); border-radius:6px; padding:8px 10px; font-size:13px; font-family:inherit; background:var(--input-fill); resize:vertical; min-height:60px; width:100%; }
 .otros-item textarea:focus { outline:none; border-color:var(--action); box-shadow:0 0 0 3px rgba(37,99,235,0.12); }
 .btn-remove-otro { position:absolute; top:8px; right:8px; background:none; border:none; color:var(--text-muted); font-size:18px; cursor:pointer; padding:2px 6px; border-radius:4px; line-height:1; }
 .btn-remove-otro:hover { color:#dc2626; background:#fee2e2; }
@@ -1536,7 +1532,6 @@ html.dark .lab-out-ascitis-alert {
 }
 .lab-bulk-preview-table th {
   font-size: 11px;
-  text-transform: uppercase;
   letter-spacing: 0.03em;
   color: var(--text-muted);
   position: sticky;

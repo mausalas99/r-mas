@@ -17,7 +17,7 @@ import {
   isValidUsernameFormat,
   normalizeUsername,
 } from '../clinical-username.mjs';
-import { syncRotationConfigButton } from './clinical-rotation.mjs';
+import { syncRotationConfigButton, wireNuevaRotacionControl } from './clinical-rotation.mjs';
 import { persistClinicalUserBinding, readRpcSettings } from '../clinical-settings.mjs';
 import { resumeClinicalIdentityByUsername } from '../clinical-access-runtime.mjs';
 import {
@@ -29,11 +29,11 @@ import {
 
 export const CLINICAL_TEAM_SERVICES = [
   'Sala',
-  'Interconsulta',
+  'Interconsultas',
   'Eme',
   'Torre HU',
   'UX',
-  'Área A',
+  'Área A/Pensionistas',
 ];
 
 export const CLINICAL_SALAS = ['Sala 1', 'Sala 2', 'Sala E'];
@@ -355,13 +355,17 @@ async function renderClinicalTeamsPanelInto(host) {
 
   await fetchClinicalTeamsFromDb();
   await tryReconcileTeamMemberships();
-  const joined = filterJoinedTeams(clinicalSessionContext.teams, clinicalSessionContext.user);
+  const user = clinicalSessionContext.user || {};
+  const joined = filterJoinedTeams(clinicalSessionContext.teams, user);
+
+  const savedHandle = normalizeUsername(user.username || '');
+  const handleHint = savedHandle
+    ? `<p class="clinical-teams-lead clinical-teams-handle-hint">Tu usuario LAN: <strong>@${escapeHtml(savedHandle)}</strong> — compártelo para que te agreguen a un equipo.</p>`
+    : '';
 
   const joinedHtml = joined.length
     ? joined.map((team) => renderJoinedTeamCard(team)).join('')
-    : '<p class="clinical-teams-empty clinical-teams-empty--section">Aún no perteneces a ningún equipo. Explora la sala abajo o crea uno nuevo.</p>';
-
-  const user = clinicalSessionContext.user || {};
+    : `<p class="clinical-teams-empty clinical-teams-empty--section">Aún no perteneces a ningún equipo. ${savedHandle ? 'Pide que te agreguen con tu @usuario o ' : ''}explora equipos en tu sala abajo.</p>`;
   const rank = effectiveClinicalRank(user);
   const programAdmin = hasProgramAdminPrivileges(user);
   const elevated = hasElevatedTeamPrivileges(user);
@@ -446,6 +450,7 @@ async function renderClinicalTeamsPanelInto(host) {
   });
 
   host.innerHTML = `
+    ${handleHint}
     <section class="clinical-teams-section clinical-teams-section--joined">
       <div class="clinical-teams-section-intro">
         <h4 class="clinical-teams-section-title">Mis equipos</h4>
@@ -461,9 +466,17 @@ async function renderClinicalTeamsPanelInto(host) {
       </div>
       ${profileSection}
       ${renderCreateTeamForm()}
+      <details class="clinical-teams-advanced-rotation">
+        <summary class="clinical-teams-advanced-rotation-summary">Zona avanzada · rotación del programa</summary>
+        <div class="clinical-teams-advanced-rotation-body">
+          <p class="clinical-teams-advanced-rotation-hint">Solo al cerrar un ciclo de rotación en el hospital. Archiva equipos, memberships y guardias del día; los residentes deben volver a crear equipos.</p>
+          <button type="button" id="btn-nueva-rotacion" class="btn-med-secondary clinical-teams-nueva-rotacion-btn">Iniciar nueva rotación…</button>
+        </div>
+      </details>
     </section>`;
 
   wireClinicalTeamsPanelInteractions();
+  wireNuevaRotacionControl(host);
   wireJoinButtons();
   wireBrowseSalaControl(elevated);
 }
@@ -780,11 +793,11 @@ async function handleCreateTeamSubmit(ev) {
     return;
   }
 
-  if (service.toLowerCase().includes('sala') && !sala) {
+  if (!sala) {
     sala = String(clinicalSessionContext.user?.sala || '').trim();
   }
-  if (service.toLowerCase().includes('sala') && !sala) {
-    toast('Selecciona la Sala para el equipo.', 'error');
+  if (!sala) {
+    toast('Configura tu Sala en el perfil (o selecciónala al crear) para que el equipo aparezca en la sala.', 'error');
     return;
   }
 
@@ -793,7 +806,7 @@ async function handleCreateTeamSubmit(ev) {
     service,
     subAreaFraction: cycleLetter,
     onCallDayIndex: 0,
-    sala: sala || undefined,
+    sala,
     teamLeaderName: name,
     createdBy: userId,
   });
@@ -812,11 +825,6 @@ async function handleCreateTeamSubmit(ev) {
   }
 
   toast('Equipo creado.', 'success');
-  const { needsClinicalOnboarding } = await import('./clinical-onboarding.mjs');
-  if (needsClinicalOnboarding()) {
-    const mainMod = await import('./clinical-onboarding-main.mjs');
-    await mainMod.refreshMainClinicalOnboardingIfNeeded();
-  }
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
 }
 
@@ -843,7 +851,10 @@ async function handleAddMemberSubmit(ev, form) {
     return;
   }
 
-  const res = await api.dbClinicalTeamsMemberAdd({ teamId, username });
+  const res = await api.dbClinicalTeamsMemberAdd({
+    teamId,
+    username: normalizeUsername(username),
+  });
   if (!res || res.ok === false) {
     toast(res?.error || 'No se agregó el miembro.', 'error');
     return;
@@ -902,11 +913,11 @@ export function wireClinicalTeamsModalChrome() {
 }
 
 function syncSalaFieldVisibility() {
-  const serviceSelect = document.getElementById('clinical-team-create-service');
-  const salaGroup = document.getElementById('clinical-team-sala-group');
-  if (!serviceSelect || !salaGroup) return;
-  const isSala = String(serviceSelect.value || '').toLowerCase().includes('sala');
-  salaGroup.style.display = isSala ? '' : 'none';
+  const salaSelect = document.getElementById('clinical-team-create-sala');
+  const userSala = String(clinicalSessionContext.user?.sala || '').trim();
+  if (salaSelect && userSala && !String(salaSelect.value || '').trim()) {
+    salaSelect.value = userSala;
+  }
 }
 
 export function wireClinicalTeamsControls() {

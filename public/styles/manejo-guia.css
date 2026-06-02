@@ -234,7 +234,6 @@
   margin: 14px 0 6px;
   font-size: 12px;
   font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text-muted);
 }
@@ -302,7 +301,6 @@
   border-left: 3px solid var(--pathology-branch-accent, var(--accent, #2563eb));
   font-size: 12px;
   font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: 0.04em;
   line-height: 1.35;
   color: var(--text-muted);
@@ -449,7 +447,6 @@
   margin: 0 0 8px;
   font-size: 13px;
   font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: 0.03em;
 }
 
@@ -551,7 +548,6 @@
   margin: 0 0 8px;
   font-size: 13px;
   font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: 0.03em;
 }
 

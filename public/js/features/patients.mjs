@@ -39,6 +39,7 @@ import {
   readCensusFiltersCollapsed,
   writeCensusFiltersCollapsed,
 } from './clinical-census-filters-ui.mjs';
+import { syncClinicalContextBarVisibility } from './clinical-context-bar.mjs';
 import { getTourDemoAdmitDefaults } from '../tour-demo-patient.mjs';
 import { isManejoSectionHidden, migrateGranularInner } from '../expediente-tabs.mjs';
 import { sortLabHistoryChronological } from '../tend-core.mjs';
@@ -104,13 +105,18 @@ function patientsVisibleInSidebar() {
 function syncClinicalCensusFiltersBar() {
   const user = clinicalSessionContext.user;
   const elevated = user && hasElevatedTeamPrivileges(user);
-  const searchWrap = document.querySelector('.patient-search-wrap');
+  const filtersMount = document.getElementById('clinical-census-filters-mount');
   let bar = document.getElementById('clinical-census-filters');
   if (!elevated) {
     if (bar) bar.remove();
+    if (filtersMount) {
+      filtersMount.hidden = true;
+      filtersMount.setAttribute('aria-hidden', 'true');
+    }
+    syncClinicalContextBarVisibility();
     return;
   }
-  if (!searchWrap) return;
+  if (!filtersMount) return;
   try {
     const storedSala = localStorage.getItem('clinical.censusFilterSala');
     if (storedSala) {
@@ -121,7 +127,7 @@ function syncClinicalCensusFiltersBar() {
   if (!bar) {
     bar = document.createElement('div');
     bar.id = 'clinical-census-filters';
-    bar.className = 'clinical-census-filters';
+    bar.className = 'clinical-census-filters clinical-census-filters--toolbar';
     bar.innerHTML =
       '<button type="button" id="btn-clinical-census-filters-toggle" class="clinical-census-filters-toggle" aria-expanded="true" aria-controls="clinical-census-filters-body">' +
       '<span class="clinical-census-filters-toggle-label">Filtros censo</span>' +
@@ -141,7 +147,9 @@ function syncClinicalCensusFiltersBar() {
       '<label class="clinical-census-filter"><span>Servicio</span>' +
       '<input type="search" id="clinical-filter-service" class="profile-input" placeholder="Filtrar…" autocomplete="off">' +
       '</label></div>';
-    searchWrap.insertAdjacentElement('afterend', bar);
+    filtersMount.appendChild(bar);
+    filtersMount.hidden = false;
+    filtersMount.setAttribute('aria-hidden', 'false');
 
     const applyCensusFiltersCollapsedUi = (collapsed) => {
       const toggleBtn = document.getElementById('btn-clinical-census-filters-toggle');
@@ -209,6 +217,7 @@ function syncClinicalCensusFiltersBar() {
   if (serviceInp && serviceInp.value !== elevatedPatientFilters.service) {
     serviceInp.value = elevatedPatientFilters.service;
   }
+  syncClinicalContextBarVisibility();
 }
 
 let rt = {

@@ -255,9 +255,6 @@ export function syncGuardiaModeHeaderChip() {
   chip.setAttribute('aria-pressed', isGuardiaMode() ? 'true' : 'false');
   var label = chip.querySelector('.header-guardia-mode-label');
   if (label) label.textContent = 'Vista guardia';
-  else if (!chip.textContent.includes('Vista guardia')) {
-    chip.textContent = chip.textContent.replace(/Modo Guardia/i, 'Vista guardia');
-  }
 }
 
 export function toggleGuardiaMode() {

@@ -121,7 +121,6 @@
   margin-bottom: 6px;
   color: var(--text);
   font-size: 12px;
-  text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
@@ -182,11 +181,7 @@
   gap: 12px;
   padding: 12px 14px;
   border-bottom: 1px solid var(--border);
-  background: linear-gradient(
-    180deg,
-    var(--rpc-subtle-alt, rgba(0, 0, 0, 0.04)) 0%,
-    transparent 100%
-  );
+  background: var(--color-section-header-bg);
 }
 
 .manejo-card-ion-wrap {
@@ -233,8 +228,7 @@
 .manejo-severity {
   font-size: 10px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.02em;
   padding: 4px 9px;
   border-radius: 999px;
   border: 1px solid transparent;
@@ -243,8 +237,7 @@
 .manejo-via-chip {
   font-size: 10px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
   padding: 4px 9px;
   border-radius: 999px;
   border: 1px solid rgba(37, 99, 235, 0.35);
@@ -308,8 +301,7 @@
   display: block;
   font-size: 10px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
   color: var(--text-muted);
   margin-bottom: 4px;
 }
@@ -410,8 +402,7 @@
 .manejo-some-order-title {
   font-size: 11px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
   color: var(--text-muted);
 }
 
@@ -441,7 +432,6 @@
 .manejo-some-field-label {
   font-size: 10px;
   font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text-muted);
 }
@@ -505,7 +495,6 @@
 .manejo-dilution-warn {
   font-size: 9px;
   font-weight: 700;
-  text-transform: uppercase;
   padding: 2px 6px;
   border-radius: 4px;
   background: rgba(251, 191, 36, 0.35);
@@ -540,8 +529,7 @@ html.dark .manejo-filter-bar {
   display: block;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
   color: var(--text-muted);
 }
 
@@ -800,8 +788,7 @@ html.dark .manejo-filter-search-input {
   display: block;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
   color: var(--text-muted);
   margin-bottom: 8px;
 }
@@ -967,8 +954,7 @@ html.dark .manejo-filter-search-input {
 .manejo-cad-lab-label {
   font-size: 10px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
   color: var(--text-muted);
 }
 
@@ -1220,8 +1206,7 @@ html.dark .manejo-filter-search-input {
 .manejo-pump-ref-table th {
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
   color: var(--text-muted);
   background: color-mix(in oklab, var(--bg) 40%, transparent);
 }
@@ -1746,7 +1731,6 @@ html.dark .manejo-proto-segment .manejo-proto-chip--active {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.03em;
-  text-transform: uppercase;
   padding: 2px 8px;
   border-radius: 999px;
   color: var(--text-muted);
@@ -1782,7 +1766,6 @@ html.dark .manejo-proto-segment .manejo-proto-chip--active {
   font-size: 11px;
   font-weight: 650;
   letter-spacing: 0.03em;
-  text-transform: uppercase;
   color: var(--text-muted);
 }
 
@@ -1810,7 +1793,6 @@ html.dark .manejo-proto-segment .manejo-proto-chip--active {
   font-size: 10px;
   font-weight: 650;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
   color: var(--text-muted);
 }
 
@@ -2529,11 +2511,7 @@ html.dark .manejo-proto-category--otros {
   gap: 12px;
   padding: 18px 20px 14px;
   border-bottom: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
-  background: linear-gradient(
-    180deg,
-    color-mix(in oklab, var(--action, #2563eb) 7%, var(--surface)) 0%,
-    var(--surface) 100%
-  );
+  background: var(--color-section-header-bg);
 }
 
 .manejo-proto-editor-title {
@@ -2591,8 +2569,7 @@ html.dark .manejo-proto-category--otros {
   margin: 0 0 10px;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
   color: var(--text-muted);
 }
 
@@ -2801,7 +2778,6 @@ html.dark .manejo-proto-category--otros {
 .manejo-cad-action-label {
   font-size: 11px;
   font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text-muted);
   padding-top: 2px;
@@ -2929,8 +2905,7 @@ html.dark .manejo-proto-category--otros {
   margin: 8px 0 4px;
   font-size: 11px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
   color: var(--text-muted);
 }
 
@@ -2950,7 +2925,6 @@ html.dark .manejo-proto-category--otros {
   margin-bottom: 4px;
   font-size: 10px;
   font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--action, #2563eb);
 }
@@ -2976,7 +2950,6 @@ html.dark .manejo-proto-category--otros {
   margin-bottom: 6px;
   font-size: 11px;
   font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text-muted);
 }
@@ -3057,7 +3030,6 @@ html.dark .manejo-proto-category--otros {
 .manejo-cad-k-row--head {
   font-weight: 700;
   font-size: 11px;
-  text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text-muted);
   background: transparent;
@@ -3342,9 +3314,8 @@ html.dark .manejo-atb-family--polymyxin {
   margin: 0;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
   line-height: 1.3;
-  text-transform: uppercase;
   color: var(--atb-family-accent, var(--text-muted));
 }
 
@@ -3840,7 +3811,6 @@ html.dark .manejo-pathology-branch--urgencias {
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
   color: var(--text-muted);
 }
 
@@ -4349,7 +4319,6 @@ html.dark .manejo-pathology-branch-panel {
   font-size: 12px;
   font-weight: 650;
   letter-spacing: 0.02em;
-  text-transform: uppercase;
   color: var(--text-muted);
 }
 
@@ -4482,7 +4451,6 @@ html.dark .manejo-pathology-branch-panel {
 .manejo-pathology-proto-only {
   font-size: 10px;
   font-weight: 700;
-  text-transform: uppercase;
   letter-spacing: 0.04em;
   color: #b45309;
 }
@@ -4657,7 +4625,6 @@ html.dark .manejo-pathology-branch-panel {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.02em;
-  text-transform: uppercase;
   padding: 2px 7px;
   border-radius: 999px;
 }

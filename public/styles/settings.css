@@ -375,8 +375,7 @@ details.settings-accordion:not([open]) > .settings-acc-body {
   margin: calc(10px * var(--density-space)) 0 2px;
   font-size: calc(11px * var(--density-font));
   font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
   color: var(--error);
 }
 .settings-acc-hint--danger {
@@ -491,7 +490,7 @@ select.profile-input.profile-select {
 
 .profile-modal { width: min(580px, calc(100vw - 32px)); max-height: min(90vh, 820px); }
 .profile-modal--wide {
-  width: min(920px, calc(100vw - 24px));
+  width: min(880px, calc(100vw - 28px));
   max-height: min(92vh, 900px);
 }
 .profile-block--formats { padding-bottom: 10px; }
@@ -511,8 +510,7 @@ select.profile-input.profile-select {
   font-size: calc(11px * var(--density-font, 1));
   font-weight: 700;
   color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
 }
 .profile-modal-title {
   margin: 0 0 8px;
@@ -537,6 +535,48 @@ select.profile-input.profile-select {
 }
 .profile-modal--wide .profile-body {
   max-height: min(78vh, 780px);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: calc(14px * var(--density-space, 1));
+  align-items: start;
+}
+.profile-modal--wide .profile-block--span-full,
+.profile-modal--wide .profile-block--formats,
+.profile-modal--wide .profile-actions--footer {
+  grid-column: 1 / -1;
+}
+.profile-modal--wide .profile-block--bridge,
+.profile-modal--wide .profile-block--salida {
+  grid-column: 1 / -1;
+}
+.profile-block--bridge {
+  border-color: color-mix(in oklab, var(--accent, #6b9fff) 35%, var(--border));
+  background: color-mix(in oklab, var(--accent, #6b9fff) 6%, var(--surface));
+}
+.profile-bridge-btn { margin-top: 4px; }
+.profile-hint--compact { margin-bottom: 8px; }
+.profile-salida-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+  margin-top: 4px;
+}
+.profile-subblock {
+  padding: calc(10px * var(--density-space, 1));
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in oklab, var(--border) 75%, transparent);
+  background: color-mix(in oklab, var(--bg) 40%, var(--surface));
+}
+.profile-subblock-title {
+  margin: 0 0 4px;
+  font-size: calc(12px * var(--density-font, 1));
+  font-weight: 700;
+  color: var(--text);
+}
+.profile-modal--wide .profile-radio-group {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 12px 20px;
 }
 .profile-block {
   border: 1px solid color-mix(in oklab, var(--border) 88%, transparent);
@@ -561,7 +601,13 @@ select.profile-input.profile-select {
 .profile-grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 10px 14px;
+}
+.profile-hint--field {
+  margin: 4px 0 0;
+}
+.profile-modal--wide .profile-grid-2--ident {
+  gap: 12px 18px;
 }
 .profile-radio-group {
   display: flex;
@@ -697,8 +743,7 @@ select.profile-input.profile-select {
   padding: 10px 12px;
   font-size: 11px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
   color: var(--text-muted);
   border-bottom: 1px solid var(--divider);
   background: color-mix(in oklab, var(--surface) 88%, var(--bg));
@@ -713,8 +758,7 @@ select.profile-input.profile-select {
   margin: 8px 0 6px;
   font-size: 10px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
   color: var(--text-muted);
 }
 .templates-preview-section-label:first-child { margin-top: 0; }
@@ -728,8 +772,7 @@ select.profile-input.profile-select {
   margin: 0 0 8px;
   font-size: 12px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   color: var(--text-muted);
 }
 .templates-modal-field { margin-bottom: 10px; }
@@ -761,6 +804,13 @@ select.profile-input.profile-select {
   .templates-modal-preview-pane { max-height: min(38vh, 320px); }
   .templates-preview-scroll { max-height: min(36vh, 300px); }
   .profile-modal--wide { width: min(100vw - 16px, 720px); }
+  .profile-modal--wide .profile-body {
+    grid-template-columns: 1fr;
+  }
+  .profile-grid-2,
+  .profile-salida-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ===== Guardia LAN Hub ===== */

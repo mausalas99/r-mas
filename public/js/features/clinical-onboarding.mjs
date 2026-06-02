@@ -1,5 +1,6 @@
 /**
- * Clinical onboarding wizard (username claim → create/join team).
+ * Clinical onboarding — perfil mínimo (usuario LAN, rango, sala).
+ * Equipos: crear/unirse al reabrir Mi rotación, no en el wizard inicial.
  */
 import {
   clinicalSessionContext,
@@ -51,14 +52,24 @@ export function needsUsernameClaim() {
   return !isValidUsernameFormat(handle);
 }
 
+/** Sin equipo asignado (informativo; no bloquea la app). */
 export function needsTeamOnboarding() {
   if (!clinicalSessionContext.user?.user_id) return true;
   const teams = clinicalSessionContext.teams || [];
   return filterJoinedTeams(teams, clinicalSessionContext.user).length === 0;
 }
 
+/** Falta perfil clínico mínimo antes de usar guardia / Mi rotación con datos. */
+export function needsProfileOnboarding() {
+  if (!clinicalSessionContext.user?.user_id) return true;
+  if (needsUsernameClaim()) return true;
+  const sala = String(clinicalSessionContext.user?.sala || '').trim();
+  if (!sala) return true;
+  return false;
+}
+
 export function needsClinicalOnboarding() {
-  return needsUsernameClaim() || needsTeamOnboarding();
+  return needsProfileOnboarding();
 }
 
 function escapeHtml(s) {
@@ -70,57 +81,6 @@ function escapeHtml(s) {
 
 function escapeAttr(s) {
   return escapeHtml(s).replace(/"/g, '&quot;');
-}
-
-function memberLabel(m) {
-  const handle = escapeHtml(m.username || m.user_id);
-  const name = String(m.clinical_name || '').trim();
-  const rank = escapeHtml(m.rank || '');
-  if (name) return `${handle} <span class="clinical-teams-member-rank">· ${escapeHtml(name)} (${rank})</span>`;
-  return `${handle} <span class="clinical-teams-member-rank">${rank}</span>`;
-}
-
-function renderDirectoryCard(team, userId) {
-  const teamId = String(team.team_id || '');
-  const members = Array.isArray(team.members) ? team.members : [];
-  const memberList = members.length
-    ? members.map((m) => `<li>${memberLabel(m)}</li>`).join('')
-    : '<li class="clinical-teams-empty">Sin miembros</li>';
-  const meta = [
-    escapeHtml(team.service || ''),
-    team.sub_area_fraction ? escapeHtml(team.sub_area_fraction) : null,
-  ]
-    .filter(Boolean)
-    .join(' · ');
-
-  let action = '';
-  if (team.isMember) {
-    action = '<span class="clinical-teams-joined-badge">Ya eres miembro</span>';
-  } else if (team.joinEligible) {
-    action = `<button type="button" class="btn-med-secondary clinical-teams-join-btn" data-team-id="${escapeAttr(teamId)}">Unirme</button>`;
-  } else if (team.joinReason) {
-    action = `<span class="clinical-teams-join-hint">${escapeHtml(team.joinReason)}</span>`;
-  }
-
-  return `
-    <article class="clinical-teams-card clinical-teams-card--directory" data-team-id="${escapeAttr(teamId)}">
-      <header class="clinical-teams-card-head">
-        <div>
-          <h5 class="clinical-teams-card-title">${escapeHtml(team.name || 'Equipo')}</h5>
-          <p class="clinical-teams-card-meta">${meta}</p>
-        </div>
-        ${action}
-      </header>
-      <ul class="clinical-teams-member-list">${memberList}</ul>
-    </article>`;
-}
-
-async function loadSalaDirectory(sala, userId) {
-  const api = dbApi();
-  if (!api || typeof api.dbClinicalTeamsListBySala !== 'function') return [];
-  const res = await api.dbClinicalTeamsListBySala({ sala, forUserId: userId });
-  if (!res || res.ok === false) return [];
-  return Array.isArray(res.teams) ? res.teams : [];
 }
 
 async function handleUsernameStepSubmit(ev) {
@@ -243,25 +203,10 @@ async function handleUsernameStepSubmit(ev) {
   if (errEl) errEl.hidden = true;
   await refreshClinicalUserProfile();
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
-  const { refreshMainClinicalOnboardingIfNeeded } = await import('./clinical-onboarding-main.mjs');
-  await refreshMainClinicalOnboardingIfNeeded();
-}
-
-async function handleJoinTeam(teamId) {
-  const userId = String(clinicalSessionContext.user?.user_id || '');
-  const api = dbApi();
-  if (!teamId || !userId || !api || typeof api.dbClinicalTeamsJoin !== 'function') {
-    toast('No se pudo unir al equipo.', 'error');
-    return;
-  }
-  const res = await api.dbClinicalTeamsJoin({ teamId, userId });
-  if (!res || res.ok === false) {
-    toast(res?.error || 'No se pudo unir al equipo.', 'error');
-    return;
-  }
-  toast('Te uniste al equipo.', 'success');
-  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
-  await fetchClinicalTeamsFromDb();
+  toast(
+    'Perfil guardado. Abre Mi rotación cuando quieras buscar equipos o crear el tuyo.',
+    'success'
+  );
   const { refreshMainClinicalOnboardingIfNeeded } = await import('./clinical-onboarding-main.mjs');
   await refreshMainClinicalOnboardingIfNeeded();
 }
@@ -333,16 +278,6 @@ async function wireOnboardingInteractions() {
     resumeBtn.addEventListener('click', () => void handleResumeIdentityClick());
   }
 
-  document.querySelectorAll('.clinical-teams-join-btn').forEach((btn) => {
-    if (!(btn instanceof HTMLButtonElement) || btn._rpcJoinWired) return;
-    btn._rpcJoinWired = true;
-    btn.addEventListener('click', () => {
-      void handleJoinTeam(String(btn.dataset.teamId || ''));
-    });
-  });
-
-  const teamsMod = await import('./clinical-teams.mjs');
-  teamsMod.wireClinicalTeamsPanelInteractions();
 }
 
 export async function renderOnboardingPanel() {
@@ -373,7 +308,7 @@ export async function renderOnboardingPanelInto(host) {
     }
   }
 
-  if (!needsUsernameClaim() && !needsTeamOnboarding()) {
+  if (!needsProfileOnboarding()) {
     const { hideMainClinicalOnboarding } = await import('./clinical-onboarding-main.mjs');
     hideMainClinicalOnboarding();
     if (host.closest('#clinical-teams-panel-body')) {
@@ -383,7 +318,7 @@ export async function renderOnboardingPanelInto(host) {
     return;
   }
 
-  if (needsUsernameClaim()) {
+  {
     const rank =
       String(settings.clinicalRank || clinicalSessionContext.user?.rank || 'R1');
     const prefilledName = String(
@@ -394,10 +329,9 @@ export async function renderOnboardingPanelInto(host) {
     );
     host.innerHTML = `
       <h3 class="clinical-onboarding-title">Configura tu rotación</h3>
-      <div class="clinical-onboarding-progress" aria-hidden="true"><span class="is-active">1</span><span>2</span></div>
-      <h4 class="clinical-teams-section-title">Paso 1 — Tu usuario</h4>
-      <p class="clinical-teams-lead">Elige tu usuario LAN. Tus compañeros lo usarán para equipos y entregas.</p>
-      <form id="clinical-onboard-username-form" class="clinical-teams-create-form">
+      <h4 class="clinical-teams-section-title">Rango y rotación</h4>
+      <p class="clinical-teams-lead">Registra tu usuario LAN, rango y sala. Para <strong>unirte a un equipo</strong> o crear uno, abre <strong>Mi rotación</strong> después (verás equipos de tu sala y tu @usuario guardado).</p>
+      <form id="clinical-onboard-username-form" class="clinical-teams-create-form clinical-onboard-form">
         <div class="field-group">
           <label for="onboard-username">Usuario LAN *</label>
           <input id="onboard-username" type="text" class="profile-input" placeholder="mgarcia"
@@ -429,54 +363,10 @@ export async function renderOnboardingPanelInto(host) {
         </div>
         <p id="onboard-error" class="clinical-registration-error" hidden></p>
         <div class="modal-actions">
-          <button type="submit" class="btn-save">Continuar</button>
+          <button type="submit" class="btn-save">Guardar perfil</button>
           <button type="button" id="clinical-onboard-resume-btn" class="btn-med-secondary">Recuperar mi usuario</button>
         </div>
       </form>`;
     await wireOnboardingInteractions();
-    return;
   }
-
-  if (needsTeamOnboarding()) {
-    const sala =
-      String(clinicalSessionContext.user?.sala || '').trim() ||
-      (() => {
-        try {
-          return String(JSON.parse(localStorage.getItem('rpc-settings') || '{}').clinicalSala || '');
-        } catch (_e) {
-          return '';
-        }
-      })();
-
-    if (!sala) {
-      host.innerHTML =
-        '<p class="clinical-teams-lead">Indica tu Sala en el paso anterior o en Mi perfil.</p>';
-      return;
-    }
-
-    const directory = await loadSalaDirectory(sala, userId);
-    const directoryHtml = directory.length
-      ? directory.map((t) => renderDirectoryCard(t, userId)).join('')
-      : '<p class="clinical-teams-empty">No hay equipos en tu sala todavía. Crea uno abajo.</p>';
-
-    const teamsMod = await import('./clinical-teams.mjs');
-    const createFormHtml = teamsMod.renderCreateTeamForm();
-
-    host.innerHTML = `
-      <h3 class="clinical-onboarding-title">Configura tu rotación</h3>
-      <div class="clinical-onboarding-progress" aria-hidden="true"><span>1</span><span class="is-active">2</span></div>
-      <h4 class="clinical-teams-section-title">Paso 2 — Tu equipo</h4>
-      <p class="clinical-teams-lead">Equipos en <strong>${escapeHtml(sala)}</strong>. Únete a uno o crea el tuyo.</p>
-      <section class="clinical-teams-section">
-        <h5 class="clinical-teams-section-title">Equipos en tu sala</h5>
-        <div class="clinical-teams-list">${directoryHtml}</div>
-      </section>
-      ${createFormHtml}`;
-
-    await wireOnboardingInteractions();
-    return;
-  }
-
-  host.innerHTML =
-    '<p class="clinical-teams-lead">Listo. Usa <strong>Mi rotación</strong> para gestionar tu equipo.</p>';
 }

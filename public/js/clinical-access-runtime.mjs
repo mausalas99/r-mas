@@ -32,7 +32,8 @@ let vitalsLoop = null;
 let sessionLocker = null;
 
 function electronApi() {
-  return typeof window !== 'undefined' ? window.electronAPI : null;
+  if (typeof window === 'undefined') return null;
+  return window.rplusDb || window.electronAPI || null;
 }
 
 /**

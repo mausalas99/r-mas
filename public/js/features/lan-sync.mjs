@@ -89,6 +89,27 @@ import {
   saveState,
 } from "../app-state.mjs";
 
+/** Evita modal de conflicto durante importaciones masivas (p. ej. Drive). */
+let _suppressClinicalConflictViewer = 0;
+
+export function isLanConflictViewerSuppressed() {
+  return _suppressClinicalConflictViewer > 0;
+}
+
+/**
+ * @template T
+ * @param {() => T | Promise<T>} fn
+ * @returns {Promise<T>}
+ */
+export function withSuppressedLanConflictViewer(fn) {
+  _suppressClinicalConflictViewer += 1;
+  return Promise.resolve()
+    .then(fn)
+    .finally(function () {
+      _suppressClinicalConflictViewer -= 1;
+    });
+}
+
 let runtime = {
   showToast() {},
   renderPatientList() {},
@@ -487,12 +508,16 @@ async function resolveLanHostUrlAuto() {
   if (fromCfg) return fromCfg;
   if (!isLanElectronDesktop()) return '';
   try {
-    return String((await window.electronAPI.getLanCandidateBaseUrl()) || '')
+    var fromElectron = String((await window.electronAPI.getLanCandidateBaseUrl()) || '')
       .trim()
       .replace(/\/+$/, '');
-  } catch (_e) {
-    return '';
-  }
+    if (fromElectron) return fromElectron;
+  } catch (_e) {}
+  return 'http://127.0.0.1:3738';
+}
+
+function isLocalLoopbackLanUrl(url) {
+  return /^https?:\/\/(localhost|127\.0\.0\.1):3738\/?$/i.test(String(url || '').trim());
 }
 
 /** Corrige rol «cliente» en escritorio sin URL guardada (UI antigua con pestañas). */
@@ -504,27 +529,67 @@ function migrateLanElectronStaleClientRole() {
 }
 
 /** Escritorio: detecta IP, alinea código y deja lista la URL del servidor embebido. */
-async function ensureLanElectronHostReady() {
+async function ensureLanElectronHostReady(opts) {
+  opts = opts || {};
   migrateLanElectronStaleClientRole();
-  if (!isLanElectronDesktop() || isLanRemoteJoinMode()) return false;
-  await syncLanSavedTeamCodeWithEffectiveHostCode();
-  var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
-  var url = String(cfg.hostUrl || '')
-    .trim()
-    .replace(/\/+$/, '');
-  if (url) {
-    persistLanClientConfig(url, cfg.teamCode);
+  if (!isLanElectronDesktop()) return false;
+  if (opts.forceLocal) {
+    if (typeof storage.saveLanUiRole === 'function') storage.saveLanUiRole('host');
+  } else if (isLanRemoteJoinMode()) {
     return false;
   }
+  await syncLanSavedTeamCodeWithEffectiveHostCode();
+  var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
+  var url = opts.forceLocal
+    ? ''
+    : String(cfg.hostUrl || '')
+        .trim()
+        .replace(/\/+$/, '');
   var autoUrl = await resolveLanHostUrlAuto();
-  if (!autoUrl) return false;
   var bearer = await resolveHostBearerToken();
   if (!bearer) return false;
-  persistLanClientConfig(autoUrl, bearer);
+
+  if (url) {
+    var isLocalUrl = (autoUrl && url === autoUrl) || isLocalLoopbackLanUrl(url);
+    if (!isLocalUrl) {
+      var reachable = await pingLanHostUrl(url, cfg.teamCode || bearer);
+      if (!reachable) url = '';
+    }
+  }
+
+  if (!url) url = autoUrl || 'http://127.0.0.1:3738';
+  persistLanClientConfig(url, bearer);
   try {
     lanClient.connectSyncChannel();
   } catch (_e) {}
   return true;
+}
+
+/** Sin red o host remoto caído: usar el servidor embebido de esta Mac. */
+async function promoteThisMacToLanHost(opts) {
+  opts = opts || {};
+  if (!isLanElectronDesktop()) {
+    runtime.showToast('Solo disponible en la app de escritorio.', 'info');
+    return false;
+  }
+  var wasRemoteClient = isLanRemoteJoinMode();
+  if (typeof storage.saveLanUiRole === 'function') storage.saveLanUiRole('host');
+  storage.saveLanConfig(null);
+  lanClient.disconnect();
+  if (wasRemoteClient) {
+    activeLiveSyncRoomId = '';
+    activeLiveSyncRoomLabel = '';
+    clearRoomMembership();
+  }
+  var ok = await ensureLanElectronHostReady({ forceLocal: true });
+  renderLanPanel();
+  if (ok && !opts.skipToast) {
+    runtime.showToast('Esta Mac ahora es el servidor del turno.', 'success');
+  }
+  if (!ok) {
+    runtime.showToast('No se pudo activar el servidor local. Reinicia R+ e inténtalo de nuevo.', 'error');
+  }
+  return ok;
 }
 
 async function initLanHostPlugAndPlay() {
@@ -1154,6 +1219,9 @@ async function appendLanConflictDraftsSection(root) {
 }
 
 async function handleSyncConflict(payload) {
+  if (isLanConflictViewerSuppressed()) {
+    return;
+  }
   if (shouldAutoResolveTodoConflict(payload) && tryAutoResolveTodoConflict(payload)) {
     await discardDraftsForConflictEntity(payload);
     void renderLanPanel();
@@ -1240,6 +1308,9 @@ export async function lanPushPatientVersioned(patientId, mutation) {
     try {
       body = await resp.json();
     } catch (_eJson) {}
+    if (isLanConflictViewerSuppressed()) {
+      return { ok: false, conflict: true, conflictDeferred: true, body: body };
+    }
     await handleSyncConflict({
       transport: 'http',
       entityType: body.entityType || 'patient',
@@ -1287,6 +1358,9 @@ export async function lanPushHistoriaClinica(patientId, mutation) {
     try {
       body = await resp.json();
     } catch (_eJson) {}
+    if (isLanConflictViewerSuppressed()) {
+      return { ok: false, conflict: true, conflictDeferred: true, body: body };
+    }
     await handleSyncConflict({
       transport: 'http',
       entityType: body.entityType || 'historiaClinica',
@@ -1927,6 +2001,10 @@ function pushRoomSyncBundleToHost(roomId, envelope) {
       if (!resp) return false;
       if (resp.status === 409) {
         return resp.json().then(function (body) {
+          if (isLanConflictViewerSuppressed()) {
+            enqueueOutbox(rid, { kind: 'bundle', payload: envelope });
+            return false;
+          }
           var conflicts = body && Array.isArray(body.conflicts) ? body.conflicts : [];
           var conflictKeys = conflicts.map(function (c) {
             return c && c.key ? String(c.key) : '';
@@ -2463,15 +2541,8 @@ if (typeof window !== 'undefined') {
 
 /** Escritorio unido a otra Mac: volver a usar el servidor de esta computadora. */
 function resetLanToLocalHostFromUi() {
-  if (!isLanElectronDesktop()) return;
-  if (typeof storage.saveLanUiRole === 'function') storage.saveLanUiRole('host');
-  storage.saveLanConfig(null);
-  lanClient.disconnect();
-  activeLiveSyncRoomId = '';
-  activeLiveSyncRoomLabel = '';
-  clearRoomMembership();
-  void ensureLanElectronHostReady().then(function () {
-    renderLanPanel();
+  void promoteThisMacToLanHost({ skipToast: true }).then(function (ok) {
+    if (!ok) return;
     runtime.showToast('Esta Mac vuelve a ser el servidor del turno. Crea o únete a una sala.', 'success');
   });
 }
@@ -2632,11 +2703,7 @@ async function renderLanPanelOnce() {
     connected: connected,
     isElectronDesktop: isLanElectronDesktop(),
     onBecomeHost: function () {
-      void ensureLanElectronHostReady().then(function (activated) {
-        if (!activated) return;
-        renderLanPanel();
-        runtime.showToast('Esta Mac ahora es el servidor del turno.', 'success');
-      });
+      void promoteThisMacToLanHost();
     },
   });
 

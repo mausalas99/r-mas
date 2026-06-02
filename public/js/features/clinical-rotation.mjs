@@ -204,7 +204,11 @@ function wireRotationConfigFormOnce() {
 
 export async function confirmNuevaRotacion() {
   const ok = window.confirm(
-    '¿Iniciar nueva rotación? Se archivan equipos activos y se limpia el censo de guardia. Los residentes deberán volver a crear equipos.'
+    '¿Iniciar nueva rotación?\n\n' +
+      '• Se archivan todos los equipos activos\n' +
+      '• Se limpian las guardias del día\n' +
+      '• Los residentes deben volver a crear equipos\n\n' +
+      'Esta acción no se puede deshacer.'
   );
   if (!ok) return { ok: false, cancelled: true };
 
@@ -246,9 +250,6 @@ export function wireGuardiaRotationControls() {
   const configBtn = document.getElementById('btn-guardia-rotation-config');
   if (configBtn) configBtn.addEventListener('click', () => openRotationConfigModal());
 
-  const nuevaBtn = document.getElementById('btn-guardia-nueva-rotacion');
-  if (nuevaBtn) nuevaBtn.addEventListener('click', () => void confirmNuevaRotacion());
-
   const bd = rotationModalEl();
   if (bd) {
     bd.addEventListener('click', (ev) => {
@@ -257,6 +258,14 @@ export function wireGuardiaRotationControls() {
   }
   const cancelBtn = document.getElementById('btn-rotation-config-cancel');
   if (cancelBtn) cancelBtn.addEventListener('click', () => closeRotationConfigModal());
+}
+
+/** @param {ParentNode} [root] */
+export function wireNuevaRotacionControl(root = document) {
+  const btn = root.querySelector('#btn-nueva-rotacion');
+  if (!btn || btn._rpcNuevaRotacionWired) return;
+  btn._rpcNuevaRotacionWired = true;
+  btn.addEventListener('click', () => void confirmNuevaRotacion());
 }
 
 /**

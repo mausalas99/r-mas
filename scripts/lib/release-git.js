@@ -23,6 +23,7 @@ const RELEASE_STAGE_PATHS = [
   'generate-censo.layout.test.js',
   'generate-censo.test.js',
   'lib/db/',
+  'lib/drive-import/',
   'lib/doc-generators/',
   'lib/doc-export-audit.js',
   'lib/doc-export-http.js',
@@ -38,6 +39,8 @@ const RELEASE_STAGE_PATHS = [
   'scripts/lib/release-git.js',
   'scripts/lib/release-progress.js',
   'scripts/lib/electron-pack-files.js',
+  'scripts/fetch-argon2-darwin-x64.mjs',
+  'scripts/fetch-argon2-win.mjs',
 ];
 
 function releasePathExists(root, rel) {

@@ -13,14 +13,14 @@ export function calcVitalsBanner(last, freq) {
 
   const due = new Date(last || Date.now()).getTime() + ms;
   const diff = due - Date.now();
-  if (diff <= 0) return { str: '⚠️ SIGNOS VENCIDOS', cls: 'breached' };
+  if (diff <= 0) return { str: 'Signos vencidos', cls: 'breached' };
   const mins = Math.floor(diff / 60000);
   if (mins <= 15) {
-    return { str: `⏳ Toca en: ${mins} min`, cls: 'warning' };
+    return { str: `Toca en: ${mins} min`, cls: 'warning' };
   }
   const h = Math.floor(mins / 60);
   const m = mins % 60;
-  return { str: `⏱️ Toca en: ${h}h ${m}m`, cls: 'nominal' };
+  return { str: `Toca en: ${h}h ${m}m`, cls: 'nominal' };
 }
 
 export const R4_FOLLOWUP_PIN_LABEL = 'Interconsultas — Seguimiento';

@@ -407,26 +407,49 @@ function toggleSettingsSection() {
 }
 
 
+function syncSettingsDropdownA11y(open) {
+  var dd = document.getElementById('settings-dropdown');
+  var bg = document.getElementById('settings-dropdown-backdrop');
+  if (!dd) return;
+  dd.setAttribute('aria-hidden', open ? 'false' : 'true');
+  if (bg) bg.setAttribute('aria-hidden', open ? 'false' : 'true');
+  var trigger = document.getElementById('btn-open-settings');
+  if (trigger) trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+function focusSettingsDropdownEntry() {
+  var dd = document.getElementById('settings-dropdown');
+  if (!dd) return;
+  var target =
+    dd.querySelector('.btn-settings-help-primary') ||
+    dd.querySelector('button, summary, [href], input, select, textarea');
+  if (target && typeof target.focus === 'function') target.focus();
+}
+
 function toggleSettingsDropdown() {
   closeConnectionDropdown();
   var dd = document.getElementById('settings-dropdown');
   var bg = document.getElementById('settings-dropdown-backdrop');
   if (!dd) return;
   var open = dd.classList.contains('open');
-  dd.classList.toggle('open', !open);
-  if (bg) bg.classList.toggle('open', !open);
-  var trigger = document.getElementById('btn-open-settings');
-  if (trigger) trigger.setAttribute('aria-expanded', !open ? 'true' : 'false');
-  if (!open) rt.syncPreimportBackupUi();
-  if (!open) rt.syncSettingsLanHostDiskSection();
+  var nextOpen = !open;
+  dd.classList.toggle('open', nextOpen);
+  if (bg) bg.classList.toggle('open', nextOpen);
+  syncSettingsDropdownA11y(nextOpen);
+  if (nextOpen) {
+    rt.syncPreimportBackupUi();
+    rt.syncSettingsLanHostDiskSection();
+    focusSettingsDropdownEntry();
+  }
 }
 export function closeSettingsDropdown() {
   var dd = document.getElementById('settings-dropdown');
   var bg = document.getElementById('settings-dropdown-backdrop');
+  var trigger = document.getElementById('btn-open-settings');
   if (dd) dd.classList.remove('open');
   if (bg) bg.classList.remove('open');
-  var trigger = document.getElementById('btn-open-settings');
-  if (trigger) trigger.setAttribute('aria-expanded', 'false');
+  syncSettingsDropdownA11y(false);
+  if (trigger && typeof trigger.focus === 'function') trigger.focus();
 }
 
 /** Abre el desplegable de Ajustes y la sección «Respaldos, sync y recuperación» (mismos controles que en ⚙). */

@@ -146,7 +146,6 @@ button.rpc-date-field__trigger.profile-input {
   font-weight: 700;
   color: var(--text-muted);
   letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 .rpc-date-popover__grid {

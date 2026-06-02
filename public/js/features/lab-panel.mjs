@@ -1203,6 +1203,62 @@ function isDuplicateInPatientHistory(patientId, payload) {
   });
 }
 
+/**
+ * @param {{ id: string }} patient
+ * @param {Array<{ fecha?: string, hora?: string, resLabs?: string[], sourceText?: string, bhExtras?: object }>} labSets
+ */
+export async function applyDriveImportLabSets(patient, labSets) {
+  if (!patient || !patient.id || !labSets || !labSets.length) {
+    return { added: 0, skipped: 0 };
+  }
+  var patientId = patient.id;
+  var added = 0;
+  var skipped = 0;
+  labSets.forEach(function (set, idx) {
+    var payload = {
+      fecha: set.fecha,
+      hora: set.hora || '',
+      resLabs: set.resLabs || [],
+      sourceText: set.sourceText || '',
+    };
+    if (!payload.resLabs.length) return;
+    if (isDuplicateInPatientHistory(patientId, payload)) {
+      skipped += 1;
+      return;
+    }
+    pushLabHistory(
+      patientId,
+      payload.resLabs,
+      payload.fecha,
+      payload.hora,
+      payload.sourceText,
+      set.bhExtras || {},
+      {},
+      'drive-import-' + idx
+    );
+    added += 1;
+  });
+  if (!added) return { added: 0, skipped: skipped };
+
+  rt.rebuildEstudiosFromLabHistory(patientId);
+  rt.ensureParsedLabHistory(patientId);
+  var hist = labHistory[patientId] || [];
+  var lastSet = hist.length ? hist[hist.length - 1] : null;
+  if (lastSet) {
+    applyManejoPending(
+      patientId,
+      lastSet.parsed,
+      lastSet.parsedBySection,
+      lastSet.id,
+      lastSet.fecha
+    );
+    applyLabClinicalSuggestions(patientId, lastSet.resLabs, lastSet.fecha, lastSet.bhExtras);
+  }
+  renderLabHistoryPanel();
+  rt.refreshTendenciasOrCultivosPanel();
+  return { added: added, skipped: skipped };
+}
+
 function storeBulkLabBlocks(blocks, processable) {
   if (processable.length > 1 && typeof rt.pushUndoSnapshot === 'function') {
     rt.pushUndoSnapshot('Procesar laboratorios (' + processable.length + ' pacientes)');

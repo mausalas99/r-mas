@@ -208,14 +208,14 @@ function ensureLabSetId(set, index, used) {
     return;
   }
   var base = raw || "set-" + String(index);
-  var id5 = base;
+  var id = base;
   var n = 2;
-  while (used.indexOf(id5) !== -1) {
-    id5 = base + "-" + n;
+  while (used.indexOf(id) !== -1) {
+    id = base + "-" + n;
     n += 1;
   }
-  set.id = id5;
-  used.push(id5);
+  set.id = id;
+  used.push(id);
 }
 function normalizeLabHistoryPatientSets(value) {
   var list = [];
@@ -271,11 +271,11 @@ function coerceBool(v, defaultVal) {
 }
 function normalizeScheduledProcedureStored(raw) {
   if (!raw || typeof raw !== "object") return null;
-  const id5 = String(raw.id != null ? raw.id : "").trim();
+  const id = String(raw.id != null ? raw.id : "").trim();
   const patientId = String(raw.patientId != null ? raw.patientId : "").trim();
   const procedure = String(raw.procedure != null ? raw.procedure : "").trim();
   const location2 = String(raw.location != null ? raw.location : "").trim();
-  if (!id5 || !patientId || !procedure || !location2) return null;
+  if (!id || !patientId || !procedure || !location2) return null;
   if (patientId.indexOf("demo-") === 0) return null;
   const start = String(raw.start != null ? raw.start : "").trim();
   if (!start) return null;
@@ -288,7 +288,7 @@ function normalizeScheduledProcedureStored(raw) {
   let updatedAt = String(raw.updatedAt != null ? raw.updatedAt : "").trim();
   if (!updatedAt || !Number.isFinite(Date.parse(updatedAt))) updatedAt = createdAt;
   return {
-    id: id5,
+    id,
     patientId,
     procedure,
     location: location2,
@@ -1495,10 +1495,10 @@ function patientLabHistoryNeedsRepair(raw) {
     var set = raw[i];
     if (!isMeaningfulLabHistorySet(set)) return true;
     if (!set || typeof set !== "object") return true;
-    var id5 = set.id != null ? String(set.id).trim() : "";
-    if (!id5) return true;
-    if (usedIds.indexOf(id5) !== -1) return true;
-    usedIds.push(id5);
+    var id = set.id != null ? String(set.id).trim() : "";
+    if (!id) return true;
+    if (usedIds.indexOf(id) !== -1) return true;
+    usedIds.push(id);
   }
   return false;
 }
@@ -1648,8 +1648,8 @@ function classifyEgresoSegment(seg) {
     else if (/\bDER\b|DERECHA/i.test(u)) side = "DERECHA";
     var nRest = s.replace(/^NEFRO(?:STOM(?:ÍA|IA))?/i, "").trim();
     nRest = nRest.replace(/\b(IZQ|IZQUIERDA|DER|DERECHA)\b/gi, "").trim();
-    var label5 = side ? "NEFROSTOM\xCDA " + side : "NEFROSTOM\xCDA";
-    return { kind: "nephro", label: label5, value: parseSegmentValue(nRest || s) };
+    var label = side ? "NEFROSTOM\xCDA " + side : "NEFROSTOM\xCDA";
+    return { kind: "nephro", label, value: parseSegmentValue(nRest || s) };
   }
   var n = parseIoNumber(s);
   if (n != null) return { kind: "diuresis", label: "DIURESIS", value: n };
@@ -2444,12 +2444,12 @@ function appendMedicion(patientOrMonitoreo, medicion) {
   ));
   return { ok: true };
 }
-function removeMedicion(patientOrMonitoreo, id5) {
+function removeMedicion(patientOrMonitoreo, id) {
   var mon = resolveMonitoreoContainer(patientOrMonitoreo);
   if (!mon || !Array.isArray(mon.historial)) return;
   mon.historial = mon.historial.filter(function(row) {
     return row && typeof row === "object" && /** @type {any} */
-    row.id !== id5;
+    row.id !== id;
   });
 }
 function mergeMonitoreo(localIn, remoteIn) {
@@ -4077,16 +4077,16 @@ function bhExtraDisplayLabel(key) {
 function bhTrendDisplayTitle(fieldKey) {
   return BH_TREND_TITLES[fieldKey] || bhExtraDisplayLabel(fieldKey) || fieldKey;
 }
-function bhFieldKeyFromOutputLabel(label5) {
-  return BH_OUTPUT_LABEL_TO_FIELD[label5] || label5;
+function bhFieldKeyFromOutputLabel(label) {
+  return BH_OUTPUT_LABEL_TO_FIELD[label] || label;
 }
 function parseBhTokenPairs_(text, into) {
   if (!text) return;
   var tokens = String(text).trim().split(/\s+/);
   var i = 0;
   while (i < tokens.length) {
-    var label5 = tokens[i];
-    if (!label5 || label5 === "-") {
+    var label = tokens[i];
+    if (!label || label === "-") {
       i++;
       continue;
     }
@@ -4097,7 +4097,7 @@ function parseBhTokenPairs_(text, into) {
     }
     var m = next.match(/^(-?\d+(?:[.,]\d+)?)(?:%)?(\*)?$/);
     if (m) {
-      var fk = bhFieldKeyFromOutputLabel(label5);
+      var fk = bhFieldKeyFromOutputLabel(label);
       var val2 = m[1].replace(",", ".");
       into[fk] = { val: val2, ab: next.indexOf("*") >= 0 };
       i += 2;
@@ -4126,7 +4126,7 @@ function parseBhTrendValuesFromResLab(entry2) {
   return out;
 }
 function formatBhDiffPctDisplay_(key, rawVal, tNorm) {
-  var label5 = bhExtraDisplayLabel(key);
+  var label = bhExtraDisplayLabel(key);
   var val2 = String(rawVal);
   var labels = BH_DIFF_RANGE_LABELS[key];
   if (labels && tNorm) {
@@ -4135,8 +4135,8 @@ function formatBhDiffPctDisplay_(key, rawVal, tNorm) {
       val2 = fmt(marcarSegunRango(d.valor, d.min, d.max));
     }
   }
-  if (val2.endsWith("*")) return label5 + " " + val2.slice(0, -1) + "%*";
-  return label5 + " " + val2 + "%";
+  if (val2.endsWith("*")) return label + " " + val2.slice(0, -1) + "%*";
+  return label + " " + val2 + "%";
 }
 function formatBhExtrasDisplayParts(bhExtras, sourceText) {
   if (!bhExtras || typeof bhExtras !== "object") return [];
@@ -4578,10 +4578,10 @@ function labSectionKey_(line) {
 function lineRichnessScore_(line) {
   var s = normalizeLabLine_(line);
   if (!s) return 0;
-  var score5 = s.length;
-  score5 += (s.match(/\b(?:AG|DELTA-DELTA|ICA|LACTATO|BICA|PCO2|PO2)\b/gi) || []).length * 8;
-  score5 += (s.match(/\d/g) || []).length;
-  return score5;
+  var score = s.length;
+  score += (s.match(/\b(?:AG|DELTA-DELTA|ICA|LACTATO|BICA|PCO2|PO2)\b/gi) || []).length * 8;
+  score += (s.match(/\d/g) || []).length;
+  return score;
 }
 function normalizeGasometryInterpretationLine_(line) {
   var s = String(line == null ? "" : line);
@@ -6546,9 +6546,9 @@ function renderEntry(text) {
   return text.split("\n").map(function(line, li) {
     var tabIdx = line.indexOf("	");
     if (tabIdx >= 0) {
-      var label5 = line.substring(0, tabIdx);
+      var label = line.substring(0, tabIdx);
       var rest = line.substring(tabIdx + 1);
-      var lh = li === 0 ? '<span class="section-lbl">' + escTxt(label5) + "</span>" : escTxt(label5);
+      var lh = li === 0 ? '<span class="section-lbl">' + escTxt(label) + "</span>" : escTxt(label);
       var rh = rest.split(" ").map(function(tok) {
         if (!tok) return tok;
         if (tok === "-") return '<span class="text-gray-500">-</span>';
@@ -6912,10 +6912,10 @@ function addProblema(listado, seccion, datos) {
     [seccion]: (listado[seccion] || []).concat([item])
   });
 }
-function removeProblema(listado, seccion, id5) {
+function removeProblema(listado, seccion, id) {
   ensureSeccion(seccion);
   const arr = listado[seccion] || [];
-  const filtered = arr.filter((p) => p.id !== id5);
+  const filtered = arr.filter((p) => p.id !== id);
   if (filtered.length === arr.length) return listado;
   return Object.assign({}, listado, { [seccion]: filtered });
 }
@@ -7189,10 +7189,10 @@ function writeTodosMap(map) {
   } catch (_e) {
   }
 }
-function todoEntry(id5, text, priority, completed) {
+function todoEntry(id, text, priority, completed) {
   const now = (/* @__PURE__ */ new Date()).toISOString();
   return {
-    id: id5,
+    id,
     text,
     priority,
     completed: !!completed,
@@ -7235,9 +7235,9 @@ function seedPitchDemoTodos() {
 function clearPitchDemoTodos() {
   const map = readTodosMap();
   let changed = false;
-  for (const id5 of [PITCH_DEMO_PATIENT_ID, "demo-pitch-2"]) {
-    if (map[id5]) {
-      delete map[id5];
+  for (const id of [PITCH_DEMO_PATIENT_ID, "demo-pitch-2"]) {
+    if (map[id]) {
+      delete map[id];
       changed = true;
     }
   }
@@ -7960,8 +7960,8 @@ function syncGuardiaModeHeaderChip() {
   chip.style.display = "inline-flex";
   chip.classList.toggle("header-guardia-mode-chip--active", isGuardiaMode());
   chip.setAttribute("aria-pressed", isGuardiaMode() ? "true" : "false");
-  var label5 = chip.querySelector(".header-guardia-mode-label");
-  if (label5) label5.textContent = "Vista guardia";
+  var label = chip.querySelector(".header-guardia-mode-label");
+  if (label) label.textContent = "Vista guardia";
 }
 function toggleGuardiaMode() {
   if (isGuardiaMode()) {
@@ -8258,8 +8258,8 @@ function closeSOAPModal() {
     "soap-glu1",
     "soap-glu2",
     "soap-glu3"
-  ].forEach(function(id5) {
-    var el = document.getElementById(id5);
+  ].forEach(function(id) {
+    var el = document.getElementById(id);
     if (el) el.value = "";
   });
   var sel = document.getElementById("soap-soporte");
@@ -8357,8 +8357,8 @@ function renderEstadoActualBar() {
   if (tg && tg.savedAt) {
     var d = new Date(tg.savedAt);
     if (!isNaN(d.getTime())) {
-      var label5 = String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0") + "/" + d.getFullYear() + " \xB7 " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
-      meta.textContent = "Guardado " + label5;
+      var label = String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0") + "/" + d.getFullYear() + " \xB7 " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+      meta.textContent = "Guardado " + label;
       return;
     }
   }
@@ -8376,8 +8376,8 @@ function updateSOAPBalance() {
   }
 }
 function buildSOAPText() {
-  function g3(id5) {
-    var el = document.getElementById(id5);
+  function g3(id) {
+    var el = document.getElementById(id);
     return el ? el.value.trim() : "";
   }
   function val2(v) {
@@ -9325,7 +9325,8 @@ var init_clinical_username = __esm({
 
 // public/js/clinical-access-runtime.mjs
 function electronApi() {
-  return typeof window !== "undefined" ? window.electronAPI : null;
+  if (typeof window === "undefined") return null;
+  return window.rplusDb || window.electronAPI || null;
 }
 function resolveClinicalRank(settings2, clientId) {
   void clientId;
@@ -9684,8 +9685,8 @@ function syncGuardiaModeUI(opts = {}) {
     if (boardBtn) {
       boardBtn.setAttribute("aria-pressed", String(active));
       boardBtn.classList.toggle("is-active", active);
-      const label5 = boardBtn.querySelector(".guardia-mode-label");
-      if (label5) label5.textContent = active ? "Solo mis entregas" : "Censo completo";
+      const label = boardBtn.querySelector(".guardia-mode-label");
+      if (label) label.textContent = active ? "Solo mis entregas" : "Censo completo";
     }
   }
   if (opts.rerenderBoard) {
@@ -9763,16 +9764,16 @@ var init_unified_patient_grid_board = __esm({
        * @param {string} patientId
        */
       handleChipClick(patientId) {
-        const id5 = String(patientId || "");
-        if (!id5) return;
+        const id = String(patientId || "");
+        if (!id) return;
         if (this.context === "HANDOFF") {
           if (typeof this.onChipClick === "function") {
-            this.onChipClick(id5);
+            this.onChipClick(id);
           }
           return;
         }
         const selectFn = (typeof window !== "undefined" && typeof window.selectPatient === "function" ? window.selectPatient : null) || (typeof globalThis.selectPatient === "function" ? globalThis.selectPatient : null);
-        if (selectFn) selectFn(id5);
+        if (selectFn) selectFn(id);
       }
       /**
        * @param {Array<{ id: string, bed_label?: string, name?: string, service?: string, sub_area?: string, negativa_maniobras_firmada?: number, dxText?: string, pendingCount?: number, labsSnippet?: string, isCritical?: boolean, guardiaMeta?: object }>} patients
@@ -9819,11 +9820,11 @@ var init_unified_patient_grid_board = __esm({
         });
       }
       /** @param {string} label */
-      appendDivider(label5) {
+      appendDivider(label) {
         if (!this.container) return;
         const div = document.createElement("div");
         div.className = "r4-section-divider";
-        div.textContent = label5;
+        div.textContent = label;
         this.container.appendChild(div);
       }
       /**
@@ -9957,11 +9958,11 @@ function renderIncomingStrip(assignments, opts = {}) {
   }
   const now = /* @__PURE__ */ new Date();
   const chips = rows.map((row) => {
-    const id5 = String(row.patient_id || row.id || "");
+    const id = String(row.patient_id || row.id || "");
     const { bed, dx } = assignmentChipLabel(row);
     const locked = isChartLockedForPatient(row, now);
     const effectiveLabel = formatEffectiveLabel(String(row.effective_at || ""));
-    return `<button type="button" class="guardia-incoming-chip" data-patient-id="${escapeAttr(id5)}" data-effective-at="${escapeAttr(String(row.effective_at || ""))}" aria-label="Paciente entrante ${escapeAttr(bed)}, ${escapeAttr(dx)}${locked ? ", bloqueado hasta vigencia" : ""}">
+    return `<button type="button" class="guardia-incoming-chip" data-patient-id="${escapeAttr(id)}" data-effective-at="${escapeAttr(String(row.effective_at || ""))}" aria-label="Paciente entrante ${escapeAttr(bed)}, ${escapeAttr(dx)}${locked ? ", bloqueado hasta vigencia" : ""}">
         <span class="guardia-incoming-chip-bed">${escapeHtml(bed)}</span>
         <span class="guardia-incoming-chip-dx">${escapeHtml(dx)}</span>
       </button>`;
@@ -10254,10 +10255,10 @@ var init_lan_client = __esm({
         this._openChannelWs("sync", "_syncWs", "sync");
       }
       connectLiveChannel(roomId) {
-        const id5 = String(roomId || "").trim();
-        if (!id5) return;
-        this._liveRoomId = id5;
-        const ch = `live:${encodeURIComponent(id5)}`;
+        const id = String(roomId || "").trim();
+        if (!id) return;
+        this._liveRoomId = id;
+        const ch = `live:${encodeURIComponent(id)}`;
         this._openChannelWs(ch, "_liveWs", "live");
       }
       disconnectLiveChannel() {
@@ -10367,16 +10368,16 @@ function compareIso(a, b) {
   if (x < y) return -1;
   return 0;
 }
-function agendaEntityKey(id5) {
-  return "a:" + String(id5 || "");
+function agendaEntityKey(id) {
+  return "a:" + String(id || "");
 }
-function todoEntityKey(patientId, id5) {
-  return "t:" + String(patientId || "") + ":" + String(id5 || "");
+function todoEntityKey(patientId, id) {
+  return "t:" + String(patientId || "") + ":" + String(id || "");
 }
-function patientEntityKey(id5, registro) {
+function patientEntityKey(id, registro) {
   const reg = String(registro || "").trim();
   if (reg) return "reg:" + reg;
-  return "id:" + String(id5 || "");
+  return "id:" + String(id || "");
 }
 function isDemoPatientId(patientId) {
   return String(patientId || "").indexOf("demo-") === 0;
@@ -10670,8 +10671,8 @@ function attachTodosMapToPatientEntries(entries, todosMap) {
   if (!Array.isArray(entries)) return [];
   const byRemoteId = /* @__PURE__ */ new Map();
   for (const entry2 of entries) {
-    const id5 = entry2?.patient?.id;
-    if (id5) byRemoteId.set(String(id5), entry2);
+    const id = entry2?.patient?.id;
+    if (id) byRemoteId.set(String(id), entry2);
   }
   for (const remotePid of Object.keys(todosMap || {})) {
     const list = todosMap[remotePid];
@@ -10808,10 +10809,10 @@ function mergeLabHistorySets(a, b) {
   }
   for (const s of b || []) {
     if (!s || !s.id) continue;
-    const id5 = String(s.id);
-    const cur = map.get(id5);
+    const id = String(s.id);
+    const cur = map.get(id);
     if (!cur || compareIso(labSetTimestamp(s), labSetTimestamp(cur)) >= 0) {
-      map.set(id5, { ...s });
+      map.set(id, { ...s });
     }
   }
   return Array.from(map.values());
@@ -10821,11 +10822,11 @@ function mergeProblemaLists(aList, bList) {
   for (const arr of [aList, bList]) {
     for (const p of arr || []) {
       if (!p || !p.id) continue;
-      const id5 = String(p.id);
-      const cur = map.get(id5);
+      const id = String(p.id);
+      const cur = map.get(id);
       const at = String(p.updatedAt || p.fecha || "");
       const curAt = cur ? String(cur.updatedAt || cur.fecha || "") : "";
-      if (!cur || compareIso(at, curAt) >= 0) map.set(id5, { ...p });
+      if (!cur || compareIso(at, curAt) >= 0) map.set(id, { ...p });
     }
   }
   return Array.from(map.values());
@@ -11004,16 +11005,16 @@ function getRoomMembership() {
     return null;
   }
 }
-function setRoomMembership({ roomId, label: label5 }) {
-  const id5 = String(roomId || "").trim();
-  if (!id5) return;
+function setRoomMembership({ roomId, label }) {
+  const id = String(roomId || "").trim();
+  if (!id) return;
   const payload = {
-    roomId: id5,
-    label: String(label5 || id5).trim(),
+    roomId: id,
+    label: String(label || id).trim(),
     joinedAt: (/* @__PURE__ */ new Date()).toISOString()
   };
   localStorage.setItem(MEMBERSHIP_KEY, JSON.stringify(payload));
-  localStorage.setItem(LAST_ROOM_KEY, id5);
+  localStorage.setItem(LAST_ROOM_KEY, id);
 }
 function clearRoomMembership() {
   try {
@@ -11025,9 +11026,9 @@ function clearRoomMembership() {
 function migrateLastRoomToMembership() {
   if (getRoomMembership()) return;
   try {
-    const id5 = String(localStorage.getItem(LAST_ROOM_KEY) || "").trim();
-    if (!id5) return;
-    setRoomMembership({ roomId: id5, label: id5 });
+    const id = String(localStorage.getItem(LAST_ROOM_KEY) || "").trim();
+    if (!id) return;
+    setRoomMembership({ roomId: id, label: id });
   } catch (_e) {
   }
 }
@@ -11116,9 +11117,9 @@ function saveCustomProtocols(entries) {
 }
 function addCustomProtocol(entry2) {
   var list = loadCustomProtocols();
-  var id5 = "custom-" + Date.now();
+  var id = "custom-" + Date.now();
   list.push({
-    id: id5,
+    id,
     category: entry2.category || "otros",
     title: entry2.title || "Protocolo personalizado",
     indicationText: entry2.indicationText || "",
@@ -11129,21 +11130,21 @@ function addCustomProtocol(entry2) {
     isCustom: true
   });
   saveCustomProtocols(list);
-  return id5;
+  return id;
 }
-function updateCustomProtocol(id5, patch) {
+function updateCustomProtocol(id, patch) {
   var list = loadCustomProtocols();
   var idx = list.findIndex(function(p) {
-    return p.id === id5;
+    return p.id === id;
   });
   if (idx < 0) return false;
-  list[idx] = Object.assign({}, list[idx], patch, { id: id5, isCustom: true });
+  list[idx] = Object.assign({}, list[idx], patch, { id, isCustom: true });
   saveCustomProtocols(list);
   return true;
 }
-function deleteCustomProtocol(id5) {
+function deleteCustomProtocol(id) {
   var list = loadCustomProtocols().filter(function(p) {
-    return p.id !== id5;
+    return p.id !== id;
   });
   saveCustomProtocols(list);
 }
@@ -11166,19 +11167,19 @@ function loadProtocolOverrides() {
   var cached = getProtocolOverridesMap();
   return Object.assign({}, cached);
 }
-function saveProtocolOverride(id5, patch) {
-  if (!id5) return;
+function saveProtocolOverride(id, patch) {
+  if (!id) return;
   var all = getProtocolOverridesMap();
-  all[id5] = Object.assign({}, all[id5] || {}, patch, { id: id5 });
+  all[id] = Object.assign({}, all[id] || {}, patch, { id });
   try {
     localStorage.setItem(OVERRIDES_KEY, JSON.stringify(all));
   } catch (_e6) {
   }
 }
-function removeProtocolOverride(id5) {
-  if (!id5) return;
+function removeProtocolOverride(id) {
+  if (!id) return;
   var all = getProtocolOverridesMap();
-  delete all[id5];
+  delete all[id];
   try {
     localStorage.setItem(OVERRIDES_KEY, JSON.stringify(all));
   } catch (_e7) {
@@ -11190,8 +11191,8 @@ function applyEntryOverrides(entry2) {
   if (!o) return entry2;
   return Object.assign({}, entry2, o);
 }
-function hasProtocolOverride(id5) {
-  return !!getProtocolOverridesMap()[id5];
+function hasProtocolOverride(id) {
+  return !!getProtocolOverridesMap()[id];
 }
 var STORAGE_KEY, OVERRIDES_KEY, overridesCache, customProtocolsCache;
 var init_manejo_custom_protocols = __esm({
@@ -11234,19 +11235,19 @@ function saveProtoFavorites(ids) {
   } catch (_e3) {
   }
 }
-function isProtoFavorite(id5) {
-  if (!id5) return false;
-  return getFavoritesSet().has(id5);
+function isProtoFavorite(id) {
+  if (!id) return false;
+  return getFavoritesSet().has(id);
 }
-function toggleProtoFavorite(id5) {
-  if (!id5) return false;
+function toggleProtoFavorite(id) {
+  if (!id) return false;
   var set = getFavoritesSet();
-  if (set.has(id5)) {
-    set.delete(id5);
+  if (set.has(id)) {
+    set.delete(id);
     saveProtoFavorites(Array.from(set));
     return false;
   }
-  var list = [id5].concat(Array.from(set));
+  var list = [id].concat(Array.from(set));
   saveProtoFavorites(list);
   return true;
 }
@@ -11294,10 +11295,10 @@ function mergeProtocolLists(aList, bList) {
   for (const arr of [aList, bList]) {
     for (const p of arr || []) {
       if (!p || !p.id) continue;
-      const id5 = String(p.id);
-      const cur = map.get(id5);
+      const id = String(p.id);
+      const cur = map.get(id);
       if (!cur || compareIso(protocolUpdatedAt(p), protocolUpdatedAt(cur)) >= 0) {
-        map.set(id5, { ...p });
+        map.set(id, { ...p });
       }
     }
   }
@@ -11327,8 +11328,8 @@ function mergeIdLists(aList, bList) {
   const seen = /* @__PURE__ */ new Set();
   const out = [];
   for (const arr of [aList, bList]) {
-    for (const id5 of arr || []) {
-      const s = String(id5 || "").trim();
+    for (const id of arr || []) {
+      const s = String(id || "").trim();
       if (!s || seen.has(s)) continue;
       seen.add(s);
       out.push(s);
@@ -11404,10 +11405,10 @@ var init_manejo_room_data = __esm({
 // public/js/lan-join-link.mjs
 function buildLanJoinUrls(hostUrl, ticketId) {
   const base = String(hostUrl || "").trim().replace(/\/+$/, "");
-  const id5 = encodeURIComponent(String(ticketId || "").trim());
+  const id = encodeURIComponent(String(ticketId || "").trim());
   return {
-    joinUrl: `${base}/join/${id5}`,
-    mobileUrl: `${base}/join/${id5}`
+    joinUrl: `${base}/join/${id}`,
+    mobileUrl: `${base}/join/${id}`
   };
 }
 function parseLanJoinQuery(search, origin) {
@@ -11651,11 +11652,11 @@ async function idbGetAll() {
   db.close();
   return rows;
 }
-async function idbDelete(id5) {
+async function idbDelete(id) {
   const db = await openDraftDb();
   await new Promise((res, rej) => {
     const tx = db.transaction(STORE, "readwrite");
-    tx.objectStore(STORE).delete(id5);
+    tx.objectStore(STORE).delete(id);
     tx.oncomplete = () => res();
     tx.onerror = () => rej(tx.error);
   });
@@ -11665,15 +11666,15 @@ function sortBySavedAtDesc(rows) {
   return rows.sort((a, b) => String(b.savedAt).localeCompare(String(a.savedAt)));
 }
 async function saveDraftConflict(record) {
-  const id5 = globalThis.crypto.randomUUID();
-  const row = { ...record, id: id5, savedAt: (/* @__PURE__ */ new Date()).toISOString() };
+  const id = globalThis.crypto.randomUUID();
+  const row = { ...record, id, savedAt: (/* @__PURE__ */ new Date()).toISOString() };
   const mem = memoryStore();
   if (mem) {
-    mem.set(id5, row);
-    return id5;
+    mem.set(id, row);
+    return id;
   }
   await idbPut(row);
-  return id5;
+  return id;
 }
 async function listDraftConflicts() {
   const mem = memoryStore();
@@ -11682,14 +11683,14 @@ async function listDraftConflicts() {
   }
   return sortBySavedAtDesc(await idbGetAll());
 }
-async function deleteDraftConflict(id5) {
-  if (!id5) return;
+async function deleteDraftConflict(id) {
+  if (!id) return;
   const mem = memoryStore();
   if (mem) {
-    mem.delete(id5);
+    mem.delete(id);
     return;
   }
-  await idbDelete(id5);
+  await idbDelete(id);
 }
 var DB_NAME, STORE, DB_VERSION, __test;
 var init_draft_conflict_store = __esm({
@@ -12135,10 +12136,10 @@ function pruneLivePeers(nowMs) {
   const now = nowMs != null ? nowMs : Date.now();
   const map = readPeersRaw();
   let changed = false;
-  Object.keys(map).forEach((id5) => {
-    const row = map[id5];
+  Object.keys(map).forEach((id) => {
+    const row = map[id];
     if (!row || now - Number(row.seenAt || 0) > PEER_TTL_MS) {
-      delete map[id5];
+      delete map[id];
       changed = true;
     }
   });
@@ -12146,15 +12147,15 @@ function pruneLivePeers(nowMs) {
   return map;
 }
 function recordLivePeer(clientId, meta) {
-  const id5 = String(clientId || "").trim();
+  const id = String(clientId || "").trim();
   const hostUrl = String(meta && meta.hostUrl ? meta.hostUrl : "").trim().replace(/\/+$/, "");
-  if (!id5 || !hostUrl) return;
+  if (!id || !hostUrl) return;
   const map = pruneLivePeers();
-  map[id5] = {
+  map[id] = {
     hostUrl,
     canHost: !!(meta && meta.canHost),
     seenAt: Date.now(),
-    clientId: id5
+    clientId: id
   };
   writePeersRaw(map);
 }
@@ -12163,9 +12164,9 @@ function listLivePeerHostUrls(excludeClientId) {
   const map = pruneLivePeers();
   const urls = [];
   const seen = /* @__PURE__ */ new Set();
-  Object.keys(map).forEach((id5) => {
-    if (id5 === skip) return;
-    const row = map[id5];
+  Object.keys(map).forEach((id) => {
+    if (id === skip) return;
+    const row = map[id];
     if (!row || !row.canHost || !row.hostUrl) return;
     if (seen.has(row.hostUrl)) return;
     seen.add(row.hostUrl);
@@ -12250,6 +12251,15 @@ var init_lan_surrogate_host = __esm({
 });
 
 // public/js/features/lan-sync.mjs
+function isLanConflictViewerSuppressed() {
+  return _suppressClinicalConflictViewer > 0;
+}
+function withSuppressedLanConflictViewer(fn) {
+  _suppressClinicalConflictViewer += 1;
+  return Promise.resolve().then(fn).finally(function() {
+    _suppressClinicalConflictViewer -= 1;
+  });
+}
 function registerLanRuntime(partial) {
   if (!partial || typeof partial !== "object") return;
   Object.assign(runtime2, partial);
@@ -12276,25 +12286,25 @@ function writeLanKnownRooms(arr) {
   }
 }
 function forgetLanRoomSession(roomId) {
-  var id5 = String(roomId || "").trim();
-  if (!id5) return;
+  var id = String(roomId || "").trim();
+  if (!id) return;
   writeLanKnownRooms(readLanKnownRooms().filter(function(r) {
-    return r.id !== id5;
+    return r.id !== id;
   }));
   try {
-    if (String(localStorage.getItem("rpc-lan-last-room") || "").trim() === id5) {
+    if (String(localStorage.getItem("rpc-lan-last-room") || "").trim() === id) {
       localStorage.removeItem("rpc-lan-last-room");
     }
   } catch (_e) {
   }
 }
 function rememberLanRoomJoined(roomId, displayName) {
-  var id5 = String(roomId || "").trim();
-  if (!id5) return;
-  var label5 = String(displayName || "").trim() || id5.slice(0, 14);
-  var next = [{ id: id5, label: label5, joinedAt: Date.now() }];
+  var id = String(roomId || "").trim();
+  if (!id) return;
+  var label = String(displayName || "").trim() || id.slice(0, 14);
+  var next = [{ id, label, joinedAt: Date.now() }];
   readLanKnownRooms().forEach(function(r) {
-    if (r.id !== id5) next.push(r);
+    if (r.id !== id) next.push(r);
   });
   writeLanKnownRooms(next);
 }
@@ -12544,10 +12554,14 @@ async function resolveLanHostUrlAuto() {
   if (fromCfg) return fromCfg;
   if (!isLanElectronDesktop()) return "";
   try {
-    return String(await window.electronAPI.getLanCandidateBaseUrl() || "").trim().replace(/\/+$/, "");
+    var fromElectron = String(await window.electronAPI.getLanCandidateBaseUrl() || "").trim().replace(/\/+$/, "");
+    if (fromElectron) return fromElectron;
   } catch (_e) {
-    return "";
   }
+  return "http://127.0.0.1:3738";
+}
+function isLocalLoopbackLanUrl(url) {
+  return /^https?:\/\/(localhost|127\.0\.0\.1):3738\/?$/i.test(String(url || "").trim());
 }
 function migrateLanElectronStaleClientRole() {
   if (!isLanElectronDesktop() || !isLanRemoteJoinMode()) return;
@@ -12555,26 +12569,60 @@ function migrateLanElectronStaleClientRole() {
   if (cfg && String(cfg.hostUrl || "").trim()) return;
   if (typeof storage.saveLanUiRole === "function") storage.saveLanUiRole("host");
 }
-async function ensureLanElectronHostReady() {
+async function ensureLanElectronHostReady(opts) {
+  opts = opts || {};
   migrateLanElectronStaleClientRole();
-  if (!isLanElectronDesktop() || isLanRemoteJoinMode()) return false;
-  await syncLanSavedTeamCodeWithEffectiveHostCode();
-  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
-  var url = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
-  if (url) {
-    persistLanClientConfig(url, cfg.teamCode);
+  if (!isLanElectronDesktop()) return false;
+  if (opts.forceLocal) {
+    if (typeof storage.saveLanUiRole === "function") storage.saveLanUiRole("host");
+  } else if (isLanRemoteJoinMode()) {
     return false;
   }
+  await syncLanSavedTeamCodeWithEffectiveHostCode();
+  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
+  var url = opts.forceLocal ? "" : String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
   var autoUrl = await resolveLanHostUrlAuto();
-  if (!autoUrl) return false;
   var bearer = await resolveHostBearerToken();
   if (!bearer) return false;
-  persistLanClientConfig(autoUrl, bearer);
+  if (url) {
+    var isLocalUrl = autoUrl && url === autoUrl || isLocalLoopbackLanUrl(url);
+    if (!isLocalUrl) {
+      var reachable = await pingLanHostUrl(url, cfg.teamCode || bearer);
+      if (!reachable) url = "";
+    }
+  }
+  if (!url) url = autoUrl || "http://127.0.0.1:3738";
+  persistLanClientConfig(url, bearer);
   try {
     lanClient.connectSyncChannel();
   } catch (_e) {
   }
   return true;
+}
+async function promoteThisMacToLanHost(opts) {
+  opts = opts || {};
+  if (!isLanElectronDesktop()) {
+    runtime2.showToast("Solo disponible en la app de escritorio.", "info");
+    return false;
+  }
+  var wasRemoteClient = isLanRemoteJoinMode();
+  if (typeof storage.saveLanUiRole === "function") storage.saveLanUiRole("host");
+  storage.saveLanConfig(null);
+  lanClient.disconnect();
+  if (wasRemoteClient) {
+    activeLiveSyncRoomId = "";
+    activeLiveSyncRoomLabel = "";
+    clearRoomMembership();
+  }
+  var ok = await ensureLanElectronHostReady({ forceLocal: true });
+  renderLanPanel();
+  if (ok && !opts.skipToast) {
+    runtime2.showToast("Esta Mac ahora es el servidor del turno.", "success");
+  }
+  if (!ok) {
+    runtime2.showToast("No se pudo activar el servidor local. Reinicia R+ e int\xE9ntalo de nuevo.", "error");
+  }
+  return ok;
 }
 async function initLanHostPlugAndPlay() {
   if (!isLanElectronDesktop() || isLanRemoteJoinMode()) return;
@@ -12918,6 +12966,9 @@ function conflictEditDraftHandler(payload) {
   }
 }
 async function handleSyncConflict(payload) {
+  if (isLanConflictViewerSuppressed()) {
+    return;
+  }
   if (shouldAutoResolveTodoConflict(payload) && tryAutoResolveTodoConflict(payload)) {
     await discardDraftsForConflictEntity(payload);
     void renderLanPanel();
@@ -13001,6 +13052,9 @@ async function lanPushPatientVersioned(patientId, mutation) {
       body = await resp.json();
     } catch (_eJson) {
     }
+    if (isLanConflictViewerSuppressed()) {
+      return { ok: false, conflict: true, conflictDeferred: true, body };
+    }
     await handleSyncConflict({
       transport: "http",
       entityType: body.entityType || "patient",
@@ -13048,6 +13102,9 @@ async function lanPushHistoriaClinica(patientId, mutation) {
     try {
       body = await resp.json();
     } catch (_eJson) {
+    }
+    if (isLanConflictViewerSuppressed()) {
+      return { ok: false, conflict: true, conflictDeferred: true, body };
     }
     await handleSyncConflict({
       transport: "http",
@@ -13117,8 +13174,8 @@ async function lanFetchHistoriaClinica(patientId, roomId) {
 }
 function getLanClientId() {
   try {
-    var id5 = localStorage.getItem("rpc-lan-client-id");
-    if (id5 && String(id5).trim()) return String(id5).trim();
+    var id = localStorage.getItem("rpc-lan-client-id");
+    if (id && String(id).trim()) return String(id).trim();
     var gen = "lc_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 10);
     localStorage.setItem("rpc-lan-client-id", gen);
     return gen;
@@ -13642,6 +13699,10 @@ function pushRoomSyncBundleToHost(roomId, envelope) {
     if (!resp) return false;
     if (resp.status === 409) {
       return resp.json().then(function(body) {
+        if (isLanConflictViewerSuppressed()) {
+          enqueueOutbox(rid, { kind: "bundle", payload: envelope });
+          return false;
+        }
         var conflicts = body && Array.isArray(body.conflicts) ? body.conflicts : [];
         var conflictKeys = conflicts.map(function(c) {
           return c && c.key ? String(c.key) : "";
@@ -13864,13 +13925,13 @@ function syncLiveSyncStatusChrome() {
     return;
   }
   el.style.display = "block";
-  var label5 = activeLiveSyncRoomLabel || activeLiveSyncRoomId;
+  var label = activeLiveSyncRoomLabel || activeLiveSyncRoomId;
   if (lanClient.liveConnected) {
-    el.textContent = "Sala: " + label5 + " \xB7 sincronizando pacientes, labs, agenda y pendientes";
+    el.textContent = "Sala: " + label + " \xB7 sincronizando pacientes, labs, agenda y pendientes";
   } else if (getRoomMembership() && getRoomMembership().roomId === activeLiveSyncRoomId) {
-    el.textContent = "Sala: " + label5 + " \xB7 reconectando\u2026";
+    el.textContent = "Sala: " + label + " \xB7 reconectando\u2026";
   } else {
-    el.textContent = "Sala: " + label5 + " \xB7 solo local (sin sync en vivo)";
+    el.textContent = "Sala: " + label + " \xB7 solo local (sin sync en vivo)";
   }
 }
 function emitLiveSyncAgendaUpsert(eventObj) {
@@ -13881,8 +13942,8 @@ function emitLiveSyncAgendaUpsert(eventObj) {
   });
   sendLiveSyncMutation(mutation);
 }
-function emitLiveSyncAgendaDelete(id5, updatedAt) {
-  var eid = String(id5 || "").trim();
+function emitLiveSyncAgendaDelete(id, updatedAt) {
+  var eid = String(id || "").trim();
   if (!eid) return;
   var base = getLiveSyncEntityBase("agenda", eid, null) || { id: eid, version: 0, updatedAt };
   var mutation = createMutationBuilder("agenda", eid).captureBase(base).build({ roomId: activeLiveSyncRoomId, op: "delete" });
@@ -14202,11 +14263,7 @@ async function renderLanPanelOnce() {
     connected,
     isElectronDesktop: isLanElectronDesktop(),
     onBecomeHost: function() {
-      void ensureLanElectronHostReady().then(function(activated) {
-        if (!activated) return;
-        renderLanPanel();
-        runtime2.showToast("Esta Mac ahora es el servidor del turno.", "success");
-      });
+      void promoteThisMacToLanHost();
     }
   });
   var salaDefs = [
@@ -14837,8 +14894,8 @@ async function saveLanSettingsFromUi(opts) {
   renderLanPanel();
 }
 function joinLanRoom(roomId, displayName) {
-  var id5 = String(roomId || "").trim();
-  if (!id5) {
+  var id = String(roomId || "").trim();
+  if (!id) {
     runtime2.showToast("No se pudo identificar la sala. Vuelve a abrir \u21C4 e int\xE9ntalo.", "error");
     return;
   }
@@ -14859,18 +14916,18 @@ function joinLanRoom(roomId, displayName) {
     runtime2.showToast("Falta la direcci\xF3n del servidor LAN. Config\xFArala en \u21C4 antes de unirte.", "error");
     return;
   }
-  if (activeLiveSyncRoomId === id5 && String(lanClient.liveRoomId || "") === id5 && lanClient.liveConnected) {
-    syncLiveSyncAfterRoomJoin(id5);
+  if (activeLiveSyncRoomId === id && String(lanClient.liveRoomId || "") === id && lanClient.liveConnected) {
+    syncLiveSyncAfterRoomJoin(id);
     syncLiveSyncStatusChrome();
     patchLanPanelJoinButtons();
     runtime2.showToast("Ya est\xE1s en esta sala", "success");
     return;
   }
-  if (activeLiveSyncRoomId && activeLiveSyncRoomId !== id5) {
+  if (activeLiveSyncRoomId && activeLiveSyncRoomId !== id) {
     leaveLiveSyncRoom({ silentLeave: false });
   }
-  activeLiveSyncRoomId = id5;
-  activeLiveSyncRoomLabel = displayName != null ? String(displayName) : id5;
+  activeLiveSyncRoomId = id;
+  activeLiveSyncRoomLabel = displayName != null ? String(displayName) : id;
   try {
     if (!lanClient.connected) {
       try {
@@ -14878,9 +14935,9 @@ function joinLanRoom(roomId, displayName) {
       } catch (_sync) {
       }
     }
-    lanClient.connectLiveChannel(id5);
-    setRoomMembership({ roomId: id5, label: activeLiveSyncRoomLabel });
-    rememberLanRoomJoined(id5, activeLiveSyncRoomLabel);
+    lanClient.connectLiveChannel(id);
+    setRoomMembership({ roomId: id, label: activeLiveSyncRoomLabel });
+    rememberLanRoomJoined(id, activeLiveSyncRoomLabel);
     scheduleLiveSyncOutboxFlush();
     startLiveSyncReconnectLoop();
   } catch (_e) {
@@ -14892,7 +14949,7 @@ function joinLanRoom(roomId, displayName) {
   runtime2.showToast("Sala: sincronizando expediente, agenda y pendientes", "success");
   syncLiveSyncStatusChrome();
   patchLanPanelJoinButtons();
-  syncLiveSyncAfterRoomJoin(id5);
+  syncLiveSyncAfterRoomJoin(id);
 }
 async function createLanRoomFromUi() {
   if (!isLanSessionConfiguredForRest()) {
@@ -14938,14 +14995,14 @@ async function deleteLanRoom(roomId) {
     return;
   }
   await ensureLanClientTeamCodeAligned();
-  var id5 = String(roomId || "").trim();
-  if (!id5) return;
-  if (activeLiveSyncRoomId === id5) {
+  var id = String(roomId || "").trim();
+  if (!id) return;
+  if (activeLiveSyncRoomId === id) {
     leaveLiveSyncRoom({ silentLeave: true });
   }
   var resp;
   try {
-    resp = await lanFetchAuthed("/api/lan/v1/rooms/" + encodeURIComponent(id5), { method: "DELETE" });
+    resp = await lanFetchAuthed("/api/lan/v1/rooms/" + encodeURIComponent(id), { method: "DELETE" });
   } catch (_e) {
     runtime2.showToast("No se pudo eliminar la sala", "error");
     return;
@@ -15086,7 +15143,7 @@ function registerLanSaveHooks(deps) {
     }
   });
 }
-var runtime2, lanClient, activeLiveSyncRoomId, activeLiveSyncRoomLabel, _liveSyncPushTimer, LIVE_SYNC_PUSH_DEBOUNCE_MS, LIVE_SYNC_OUTBOX_FLUSH_MS, _liveSyncReconnectTimer, _liveSyncReconnectAttempt, _liveSyncOutboxFlushTimer, _surrogateFailoverTimer, _lanPanelRenderGen, _lanPanelRenderChain, LIVE_SYNC_ENTITIES_LS, LAN_HOST_CODE_HINT_SEEN_KEY, LAN_MIGRATION_NOTICE_KEY, LAN_KNOWN_ROOMS_LS, _lastLanPairing, LAN_DISCONNECT_BANNER_MSG, _lanLastConnected, _lanPanelDelegationWired, _lanScanTimer, LAN_SCAN_INTERVAL_MS, windowHandlers6;
+var _suppressClinicalConflictViewer, runtime2, lanClient, activeLiveSyncRoomId, activeLiveSyncRoomLabel, _liveSyncPushTimer, LIVE_SYNC_PUSH_DEBOUNCE_MS, LIVE_SYNC_OUTBOX_FLUSH_MS, _liveSyncReconnectTimer, _liveSyncReconnectAttempt, _liveSyncOutboxFlushTimer, _surrogateFailoverTimer, _lanPanelRenderGen, _lanPanelRenderChain, LIVE_SYNC_ENTITIES_LS, LAN_HOST_CODE_HINT_SEEN_KEY, LAN_MIGRATION_NOTICE_KEY, LAN_KNOWN_ROOMS_LS, _lastLanPairing, LAN_DISCONNECT_BANNER_MSG, _lanLastConnected, _lanPanelDelegationWired, _lanScanTimer, LAN_SCAN_INTERVAL_MS, windowHandlers6;
 var init_lan_sync = __esm({
   "public/js/features/lan-sync.mjs"() {
     init_storage();
@@ -15114,6 +15171,7 @@ var init_lan_sync = __esm({
     init_clinical_ops_lan();
     init_lan_surrogate_host();
     init_app_state();
+    _suppressClinicalConflictViewer = 0;
     runtime2 = {
       showToast() {
       },
@@ -15400,6 +15458,7 @@ var init_clinical_onboarding_main = __esm({
 var clinical_onboarding_exports = {};
 __export(clinical_onboarding_exports, {
   needsClinicalOnboarding: () => needsClinicalOnboarding,
+  needsProfileOnboarding: () => needsProfileOnboarding,
   needsTeamOnboarding: () => needsTeamOnboarding,
   needsUsernameClaim: () => needsUsernameClaim,
   renderOnboardingPanel: () => renderOnboardingPanel,
@@ -15441,56 +15500,21 @@ function needsTeamOnboarding() {
   const teams = clinicalSessionContext.teams || [];
   return filterJoinedTeams(teams, clinicalSessionContext.user).length === 0;
 }
+function needsProfileOnboarding() {
+  if (!clinicalSessionContext.user?.user_id) return true;
+  if (needsUsernameClaim()) return true;
+  const sala = String(clinicalSessionContext.user?.sala || "").trim();
+  if (!sala) return true;
+  return false;
+}
 function needsClinicalOnboarding() {
-  return needsUsernameClaim() || needsTeamOnboarding();
+  return needsProfileOnboarding();
 }
 function escapeHtml4(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 function escapeAttr2(s) {
   return escapeHtml4(s).replace(/"/g, "&quot;");
-}
-function memberLabel(m) {
-  const handle = escapeHtml4(m.username || m.user_id);
-  const name = String(m.clinical_name || "").trim();
-  const rank = escapeHtml4(m.rank || "");
-  if (name) return `${handle} <span class="clinical-teams-member-rank">\xB7 ${escapeHtml4(name)} (${rank})</span>`;
-  return `${handle} <span class="clinical-teams-member-rank">${rank}</span>`;
-}
-function renderDirectoryCard(team, userId) {
-  const teamId = String(team.team_id || "");
-  const members = Array.isArray(team.members) ? team.members : [];
-  const memberList = members.length ? members.map((m) => `<li>${memberLabel(m)}</li>`).join("") : '<li class="clinical-teams-empty">Sin miembros</li>';
-  const meta = [
-    escapeHtml4(team.service || ""),
-    team.sub_area_fraction ? escapeHtml4(team.sub_area_fraction) : null
-  ].filter(Boolean).join(" \xB7 ");
-  let action = "";
-  if (team.isMember) {
-    action = '<span class="clinical-teams-joined-badge">Ya eres miembro</span>';
-  } else if (team.joinEligible) {
-    action = `<button type="button" class="btn-med-secondary clinical-teams-join-btn" data-team-id="${escapeAttr2(teamId)}">Unirme</button>`;
-  } else if (team.joinReason) {
-    action = `<span class="clinical-teams-join-hint">${escapeHtml4(team.joinReason)}</span>`;
-  }
-  return `
-    <article class="clinical-teams-card clinical-teams-card--directory" data-team-id="${escapeAttr2(teamId)}">
-      <header class="clinical-teams-card-head">
-        <div>
-          <h5 class="clinical-teams-card-title">${escapeHtml4(team.name || "Equipo")}</h5>
-          <p class="clinical-teams-card-meta">${meta}</p>
-        </div>
-        ${action}
-      </header>
-      <ul class="clinical-teams-member-list">${memberList}</ul>
-    </article>`;
-}
-async function loadSalaDirectory(sala, userId) {
-  const api3 = dbApi3();
-  if (!api3 || typeof api3.dbClinicalTeamsListBySala !== "function") return [];
-  const res = await api3.dbClinicalTeamsListBySala({ sala, forUserId: userId });
-  if (!res || res.ok === false) return [];
-  return Array.isArray(res.teams) ? res.teams : [];
 }
 async function handleUsernameStepSubmit(ev) {
   ev.preventDefault();
@@ -15605,24 +15629,10 @@ async function handleUsernameStepSubmit(ev) {
   if (errEl) errEl.hidden = true;
   await refreshClinicalUserProfile();
   document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
-  const { refreshMainClinicalOnboardingIfNeeded: refreshMainClinicalOnboardingIfNeeded2 } = await Promise.resolve().then(() => (init_clinical_onboarding_main(), clinical_onboarding_main_exports));
-  await refreshMainClinicalOnboardingIfNeeded2();
-}
-async function handleJoinTeam(teamId) {
-  const userId = String(clinicalSessionContext.user?.user_id || "");
-  const api3 = dbApi3();
-  if (!teamId || !userId || !api3 || typeof api3.dbClinicalTeamsJoin !== "function") {
-    toast2("No se pudo unir al equipo.", "error");
-    return;
-  }
-  const res = await api3.dbClinicalTeamsJoin({ teamId, userId });
-  if (!res || res.ok === false) {
-    toast2(res?.error || "No se pudo unir al equipo.", "error");
-    return;
-  }
-  toast2("Te uniste al equipo.", "success");
-  document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
-  await fetchClinicalTeamsFromDb();
+  toast2(
+    "Perfil guardado. Abre Mi rotaci\xF3n cuando quieras buscar equipos o crear el tuyo.",
+    "success"
+  );
   const { refreshMainClinicalOnboardingIfNeeded: refreshMainClinicalOnboardingIfNeeded2 } = await Promise.resolve().then(() => (init_clinical_onboarding_main(), clinical_onboarding_main_exports));
   await refreshMainClinicalOnboardingIfNeeded2();
 }
@@ -15686,15 +15696,6 @@ async function wireOnboardingInteractions() {
     resumeBtn._rpcResumeWired = true;
     resumeBtn.addEventListener("click", () => void handleResumeIdentityClick());
   }
-  document.querySelectorAll(".clinical-teams-join-btn").forEach((btn) => {
-    if (!(btn instanceof HTMLButtonElement) || btn._rpcJoinWired) return;
-    btn._rpcJoinWired = true;
-    btn.addEventListener("click", () => {
-      void handleJoinTeam(String(btn.dataset.teamId || ""));
-    });
-  });
-  const teamsMod = await Promise.resolve().then(() => (init_clinical_teams(), clinical_teams_exports));
-  teamsMod.wireClinicalTeamsPanelInteractions();
 }
 async function renderOnboardingPanel() {
   await safeRenderClinicalTeamsPanel(async (host) => {
@@ -15718,7 +15719,7 @@ async function renderOnboardingPanelInto(host) {
     } catch (_e) {
     }
   }
-  if (!needsUsernameClaim() && !needsTeamOnboarding()) {
+  if (!needsProfileOnboarding()) {
     const { hideMainClinicalOnboarding: hideMainClinicalOnboarding2 } = await Promise.resolve().then(() => (init_clinical_onboarding_main(), clinical_onboarding_main_exports));
     hideMainClinicalOnboarding2();
     if (host.closest("#clinical-teams-panel-body")) {
@@ -15727,7 +15728,7 @@ async function renderOnboardingPanelInto(host) {
     }
     return;
   }
-  if (needsUsernameClaim()) {
+  {
     const rank = String(settings2.clinicalRank || clinicalSessionContext.user?.rank || "R1");
     const prefilledName = String(
       settings2.clinicalDisplayName || clinicalSessionContext.user?.clinical_name || ""
@@ -15737,10 +15738,9 @@ async function renderOnboardingPanelInto(host) {
     );
     host.innerHTML = `
       <h3 class="clinical-onboarding-title">Configura tu rotaci\xF3n</h3>
-      <div class="clinical-onboarding-progress" aria-hidden="true"><span class="is-active">1</span><span>2</span></div>
-      <h4 class="clinical-teams-section-title">Paso 1 \u2014 Tu usuario</h4>
-      <p class="clinical-teams-lead">Elige tu usuario LAN. Tus compa\xF1eros lo usar\xE1n para equipos y entregas.</p>
-      <form id="clinical-onboard-username-form" class="clinical-teams-create-form">
+      <h4 class="clinical-teams-section-title">Rango y rotaci\xF3n</h4>
+      <p class="clinical-teams-lead">Registra tu usuario LAN, rango y sala. Para <strong>unirte a un equipo</strong> o crear uno, abre <strong>Mi rotaci\xF3n</strong> despu\xE9s (ver\xE1s equipos de tu sala y tu @usuario guardado).</p>
+      <form id="clinical-onboard-username-form" class="clinical-teams-create-form clinical-onboard-form">
         <div class="field-group">
           <label for="onboard-username">Usuario LAN *</label>
           <input id="onboard-username" type="text" class="profile-input" placeholder="mgarcia"
@@ -15772,43 +15772,12 @@ async function renderOnboardingPanelInto(host) {
         </div>
         <p id="onboard-error" class="clinical-registration-error" hidden></p>
         <div class="modal-actions">
-          <button type="submit" class="btn-save">Continuar</button>
+          <button type="submit" class="btn-save">Guardar perfil</button>
           <button type="button" id="clinical-onboard-resume-btn" class="btn-med-secondary">Recuperar mi usuario</button>
         </div>
       </form>`;
     await wireOnboardingInteractions();
-    return;
   }
-  if (needsTeamOnboarding()) {
-    const sala = String(clinicalSessionContext.user?.sala || "").trim() || (() => {
-      try {
-        return String(JSON.parse(localStorage.getItem("rpc-settings") || "{}").clinicalSala || "");
-      } catch (_e) {
-        return "";
-      }
-    })();
-    if (!sala) {
-      host.innerHTML = '<p class="clinical-teams-lead">Indica tu Sala en el paso anterior o en Mi perfil.</p>';
-      return;
-    }
-    const directory = await loadSalaDirectory(sala, userId);
-    const directoryHtml = directory.length ? directory.map((t2) => renderDirectoryCard(t2, userId)).join("") : '<p class="clinical-teams-empty">No hay equipos en tu sala todav\xEDa. Crea uno abajo.</p>';
-    const teamsMod = await Promise.resolve().then(() => (init_clinical_teams(), clinical_teams_exports));
-    const createFormHtml = teamsMod.renderCreateTeamForm();
-    host.innerHTML = `
-      <h3 class="clinical-onboarding-title">Configura tu rotaci\xF3n</h3>
-      <div class="clinical-onboarding-progress" aria-hidden="true"><span>1</span><span class="is-active">2</span></div>
-      <h4 class="clinical-teams-section-title">Paso 2 \u2014 Tu equipo</h4>
-      <p class="clinical-teams-lead">Equipos en <strong>${escapeHtml4(sala)}</strong>. \xDAnete a uno o crea el tuyo.</p>
-      <section class="clinical-teams-section">
-        <h5 class="clinical-teams-section-title">Equipos en tu sala</h5>
-        <div class="clinical-teams-list">${directoryHtml}</div>
-      </section>
-      ${createFormHtml}`;
-    await wireOnboardingInteractions();
-    return;
-  }
-  host.innerHTML = '<p class="clinical-teams-lead">Listo. Usa <strong>Mi rotaci\xF3n</strong> para gestionar tu equipo.</p>';
 }
 var init_clinical_onboarding = __esm({
   "public/js/features/clinical-onboarding.mjs"() {
@@ -15865,7 +15834,7 @@ function buildEntryStatus() {
   if (needsClinicalOnboarding()) {
     return {
       primary: "Configura tu rotaci\xF3n",
-      sub: "Usuario LAN, sala y equipo \u2014 obligatorio para guardia",
+      sub: "Usuario LAN, rango y sala \u2014 equipos despu\xE9s en Mi rotaci\xF3n",
       pending: true
     };
   }
@@ -15890,6 +15859,7 @@ function buildEntryStatus() {
   let sub = name || "Equipos, entregas y perfil cl\xEDnico";
   if (teams.length === 1) sub = `Equipo: ${String(teams[0].name || "\u2014")}`;
   else if (teams.length > 1) sub = `${teams.length} equipos`;
+  else if (needsTeamOnboarding()) sub = "Sin equipo \u2014 abre para buscar en tu sala o unirte";
   return { primary, sub, pending: false };
 }
 function syncClinicalRotationEntryChrome() {
@@ -15906,7 +15876,7 @@ function syncClinicalRotationEntryChrome() {
   const entrySub = document.getElementById("clinical-rotation-entry-sub");
   if (entryBtn) {
     entryBtn.classList.toggle("is-pending", status.pending);
-    const base = status.pending ? "Completa usuario y equipo" : "Usuario LAN, equipos y entregas";
+    const base = status.pending ? "Completa rango y rotaci\xF3n (sala)" : "Usuario LAN, equipos y entregas";
     entryBtn.setAttribute("title", `${base} \u2014 ${status.primary}: ${status.sub}`);
   }
   if (entryPrimary) entryPrimary.textContent = status.primary;
@@ -15916,8 +15886,8 @@ function syncClinicalRotationEntryChrome() {
 function wireClinicalRotationEntryControls() {
   if (entryControlsWired) return;
   entryControlsWired = true;
-  const bind = (id5) => {
-    const el = document.getElementById(id5);
+  const bind = (id) => {
+    const el = document.getElementById(id);
     if (!el || el._rpcMiRotacionWired) return;
     el._rpcMiRotacionWired = true;
     el.addEventListener("click", () => void openMiRotacion());
@@ -16217,9 +16187,11 @@ async function renderClinicalTeamsPanelInto(host) {
   }
   await fetchClinicalTeamsFromDb();
   await tryReconcileTeamMemberships();
-  const joined = filterJoinedTeams(clinicalSessionContext.teams, clinicalSessionContext.user);
-  const joinedHtml = joined.length ? joined.map((team) => renderJoinedTeamCard(team)).join("") : '<p class="clinical-teams-empty clinical-teams-empty--section">A\xFAn no perteneces a ning\xFAn equipo. Explora la sala abajo o crea uno nuevo.</p>';
   const user = clinicalSessionContext.user || {};
+  const joined = filterJoinedTeams(clinicalSessionContext.teams, user);
+  const savedHandle = normalizeUsername(user.username || "");
+  const handleHint = savedHandle ? `<p class="clinical-teams-lead clinical-teams-handle-hint">Tu usuario LAN: <strong>@${escapeHtml5(savedHandle)}</strong> \u2014 comp\xE1rtelo para que te agreguen a un equipo.</p>` : "";
+  const joinedHtml = joined.length ? joined.map((team) => renderJoinedTeamCard(team)).join("") : `<p class="clinical-teams-empty clinical-teams-empty--section">A\xFAn no perteneces a ning\xFAn equipo. ${savedHandle ? "Pide que te agreguen con tu @usuario o " : ""}explora equipos en tu sala abajo.</p>`;
   const rank = effectiveClinicalRank(user);
   const programAdmin = hasProgramAdminPrivileges(user);
   const elevated = hasElevatedTeamPrivileges(user);
@@ -16292,6 +16264,7 @@ async function renderClinicalTeamsPanelInto(host) {
     homeSala: sala
   });
   host.innerHTML = `
+    ${handleHint}
     <section class="clinical-teams-section clinical-teams-section--joined">
       <div class="clinical-teams-section-intro">
         <h4 class="clinical-teams-section-title">Mis equipos</h4>
@@ -16339,8 +16312,8 @@ async function renderDirectorySectionHtml(opts) {
   let directory = res?.ok && Array.isArray(res.teams) ? res.teams : [];
   directory = directory.filter((t2) => !t2.isMember);
   if (!directory.length) {
-    const label5 = browseSala === "__all__" ? "ninguna sala" : escapeHtml5(String(browseSala || homeSala));
-    const emptyMsg = elevated ? `No hay otros equipos en ${label5}. Los tuyos aparecen arriba.` : `No hay otros equipos disponibles en ${label5}.`;
+    const label = browseSala === "__all__" ? "ninguna sala" : escapeHtml5(String(browseSala || homeSala));
+    const emptyMsg = elevated ? `No hay otros equipos en ${label}. Los tuyos aparecen arriba.` : `No hay otros equipos disponibles en ${label}.`;
     return `<section class="clinical-teams-section clinical-teams-section--directory">
       <div class="clinical-teams-section-intro">
         <h4 class="clinical-teams-section-title">${elevated ? "Explorar sala" : `Otros equipos \xB7 ${escapeHtml5(browseSala || homeSala)}`}</h4>
@@ -16589,11 +16562,11 @@ async function handleCreateTeamSubmit(ev) {
     toast3("Indica nombre y servicio.", "error");
     return;
   }
-  if (service.toLowerCase().includes("sala") && !sala) {
+  if (!sala) {
     sala = String(clinicalSessionContext.user?.sala || "").trim();
   }
-  if (service.toLowerCase().includes("sala") && !sala) {
-    toast3("Selecciona la Sala para el equipo.", "error");
+  if (!sala) {
+    toast3("Configura tu Sala en el perfil (o selecci\xF3nala al crear) para que el equipo aparezca en la sala.", "error");
     return;
   }
   const res = await api3.dbClinicalTeamsCreate({
@@ -16601,7 +16574,7 @@ async function handleCreateTeamSubmit(ev) {
     service,
     subAreaFraction: cycleLetter,
     onCallDayIndex: 0,
-    sala: sala || void 0,
+    sala,
     teamLeaderName: name,
     createdBy: userId
   });
@@ -16617,11 +16590,6 @@ async function handleCreateTeamSubmit(ev) {
     }
   }
   toast3("Equipo creado.", "success");
-  const { needsClinicalOnboarding: needsClinicalOnboarding2 } = await Promise.resolve().then(() => (init_clinical_onboarding(), clinical_onboarding_exports));
-  if (needsClinicalOnboarding2()) {
-    const mainMod = await Promise.resolve().then(() => (init_clinical_onboarding_main(), clinical_onboarding_main_exports));
-    await mainMod.refreshMainClinicalOnboardingIfNeeded();
-  }
   document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
 }
 async function handleAddMemberSubmit(ev, form) {
@@ -16638,7 +16606,10 @@ async function handleAddMemberSubmit(ev, form) {
     toast3("Base de datos no disponible.", "error");
     return;
   }
-  const res = await api3.dbClinicalTeamsMemberAdd({ teamId, username });
+  const res = await api3.dbClinicalTeamsMemberAdd({
+    teamId,
+    username: normalizeUsername(username)
+  });
   if (!res || res.ok === false) {
     toast3(res?.error || "No se agreg\xF3 el miembro.", "error");
     return;
@@ -16689,11 +16660,11 @@ function wireClinicalTeamsModalChrome() {
   }
 }
 function syncSalaFieldVisibility() {
-  const serviceSelect = document.getElementById("clinical-team-create-service");
-  const salaGroup = document.getElementById("clinical-team-sala-group");
-  if (!serviceSelect || !salaGroup) return;
-  const isSala = String(serviceSelect.value || "").toLowerCase().includes("sala");
-  salaGroup.style.display = isSala ? "" : "none";
+  const salaSelect = document.getElementById("clinical-team-create-sala");
+  const userSala = String(clinicalSessionContext.user?.sala || "").trim();
+  if (salaSelect && userSala && !String(salaSelect.value || "").trim()) {
+    salaSelect.value = userSala;
+  }
 }
 function wireClinicalTeamsControls() {
   wireClinicalTeamsModalChrome();
@@ -16728,11 +16699,11 @@ var init_clinical_teams = __esm({
     init_clinical_panel_host();
     CLINICAL_TEAM_SERVICES = [
       "Sala",
-      "Interconsulta",
+      "Interconsultas",
       "Eme",
       "Torre HU",
       "UX",
-      "\xC1rea A"
+      "\xC1rea A/Pensionistas"
     ];
     CLINICAL_SALAS = ["Sala 1", "Sala 2", "Sala E"];
     BROWSE_SALA_LS = "clinical.browseSala";
@@ -17951,15 +17922,15 @@ function resolvePatientFieldIds(errorMessage, isFromLab) {
     ids.push("m-cuarto", "m-cama");
   }
   var seen = /* @__PURE__ */ new Set();
-  return ids.filter(function(id5) {
-    if (seen.has(id5)) return false;
-    seen.add(id5);
+  return ids.filter(function(id) {
+    if (seen.has(id)) return false;
+    seen.add(id);
     return true;
   });
 }
 function shakePatientFieldsForError(errorMessage, isFromLab) {
-  resolvePatientFieldIds(errorMessage, isFromLab).forEach(function(id5) {
-    shakeField(document.getElementById(id5));
+  resolvePatientFieldIds(errorMessage, isFromLab).forEach(function(id) {
+    shakeField(document.getElementById(id));
   });
 }
 function collectButtonLabelText(btn) {
@@ -17972,8 +17943,8 @@ function collectButtonLabelText(btn) {
   });
   return parts.join(" ");
 }
-function captureButtonLabel(btn, label5) {
-  var text = label5.textContent.replace(/\s+/g, " ").trim();
+function captureButtonLabel(btn, label) {
+  var text = label.textContent.replace(/\s+/g, " ").trim();
   if (text) return text;
   text = collectButtonLabelText(btn);
   if (text) return text;
@@ -17982,73 +17953,73 @@ function captureButtonLabel(btn, label5) {
 function ensureButtonLabel(btn) {
   var existing = btn.querySelector(":scope > .btn-label");
   if (existing) return existing;
-  var label5 = document.createElement("span");
-  label5.className = "btn-label";
+  var label = document.createElement("span");
+  label.className = "btn-label";
   var moved = false;
   Array.from(btn.childNodes).forEach(function(n) {
     if (n.nodeType === Node.TEXT_NODE && n.textContent.trim()) {
-      label5.appendChild(n);
+      label.appendChild(n);
       moved = true;
     }
   });
   if (!moved) {
     var text = collectButtonLabelText(btn);
-    if (text) label5.textContent = text;
+    if (text) label.textContent = text;
   }
-  btn.appendChild(label5);
-  return label5;
+  btn.appendChild(label);
+  return label;
 }
-function resetLabelMotion(label5) {
-  if (!label5) return;
-  if (label5._uiMotionSwapHandler) {
-    label5.removeEventListener("transitionend", label5._uiMotionSwapHandler);
-    label5._uiMotionSwapHandler = null;
+function resetLabelMotion(label) {
+  if (!label) return;
+  if (label._uiMotionSwapHandler) {
+    label.removeEventListener("transitionend", label._uiMotionSwapHandler);
+    label._uiMotionSwapHandler = null;
   }
-  label5.classList.remove("ui-text-leaving", "ui-text-entering");
+  label.classList.remove("ui-text-leaving", "ui-text-entering");
 }
-function swapLabelText(label5, nextText, options) {
+function swapLabelText(label, nextText, options) {
   options = options || {};
-  if (!label5) return;
+  if (!label) return;
   nextText = String(nextText || "");
-  resetLabelMotion(label5);
-  if (!options.force && label5.textContent.replace(/\s+/g, " ").trim() === nextText) return;
+  resetLabelMotion(label);
+  if (!options.force && label.textContent.replace(/\s+/g, " ").trim() === nextText) return;
   if (prefersReducedMotion() || options.instant) {
-    label5.textContent = nextText;
+    label.textContent = nextText;
     return;
   }
-  label5.classList.add("ui-text-leaving");
-  var swapId = (label5._uiMotionSwapId || 0) + 1;
-  label5._uiMotionSwapId = swapId;
+  label.classList.add("ui-text-leaving");
+  var swapId = (label._uiMotionSwapId || 0) + 1;
+  label._uiMotionSwapId = swapId;
   function onDone(ev) {
     if (ev.propertyName !== "opacity") return;
-    if (label5._uiMotionSwapId !== swapId) return;
-    label5.removeEventListener("transitionend", onDone);
-    label5._uiMotionSwapHandler = null;
-    label5.textContent = nextText;
-    label5.classList.remove("ui-text-leaving");
-    label5.classList.add("ui-text-entering");
+    if (label._uiMotionSwapId !== swapId) return;
+    label.removeEventListener("transitionend", onDone);
+    label._uiMotionSwapHandler = null;
+    label.textContent = nextText;
+    label.classList.remove("ui-text-leaving");
+    label.classList.add("ui-text-entering");
     requestAnimationFrame(function() {
       requestAnimationFrame(function() {
-        if (label5._uiMotionSwapId !== swapId) return;
-        label5.classList.remove("ui-text-entering");
+        if (label._uiMotionSwapId !== swapId) return;
+        label.classList.remove("ui-text-entering");
       });
     });
   }
-  label5._uiMotionSwapHandler = onDone;
-  label5.addEventListener("transitionend", onDone);
+  label._uiMotionSwapHandler = onDone;
+  label.addEventListener("transitionend", onDone);
 }
 function setAsyncButtonLoading(btn, loading, opts) {
   if (!btn) return;
   opts = opts || {};
   var loadingText = opts.loadingText || "Procesando\u2026";
-  var label5 = ensureButtonLabel(btn);
+  var label = ensureButtonLabel(btn);
   if (loading) {
     if (!btn.dataset.uiMotionDefaultLabel) {
-      btn.dataset.uiMotionDefaultLabel = captureButtonLabel(btn, label5);
+      btn.dataset.uiMotionDefaultLabel = captureButtonLabel(btn, label);
     }
     btn.classList.add("loading");
     btn.disabled = true;
-    swapLabelText(label5, loadingText);
+    swapLabelText(label, loadingText);
     return;
   }
   btn.classList.remove("loading");
@@ -18056,8 +18027,8 @@ function setAsyncButtonLoading(btn, loading, opts) {
     btn.disabled = false;
     btn.removeAttribute("aria-disabled");
   }
-  var restore = btn.dataset.uiMotionDefaultLabel || captureButtonLabel(btn, label5);
-  swapLabelText(label5, restore, { instant: true, force: true });
+  var restore = btn.dataset.uiMotionDefaultLabel || captureButtonLabel(btn, label);
+  swapLabelText(label, restore, { instant: true, force: true });
   delete btn.dataset.uiMotionDefaultLabel;
 }
 
@@ -19181,7 +19152,7 @@ function isSectionDividerEstudio(name) {
   return /^(FISICO|QUIMICO|SEDIMENTO|MICROSCOPICO)$/.test(u);
 }
 function skipSectionDividerBlock(lines, startIdx) {
-  var label5 = cleanEstudio(lines[startIdx] || "");
+  var label = cleanEstudio(lines[startIdx] || "");
   var i = startIdx + 1;
   while (i < lines.length) {
     var p = cleanEstudio(lines[i]);
@@ -19192,7 +19163,7 @@ function skipSectionDividerBlock(lines, startIdx) {
       break;
     }
     if (isFlagToken(p)) continue;
-    if (p.toUpperCase() === label5.toUpperCase()) continue;
+    if (p.toUpperCase() === label.toUpperCase()) continue;
     if (p === ":" || /^AUSENTE$/i.test(p)) continue;
     break;
   }
@@ -19940,8 +19911,8 @@ function renderSomeTableGroupHtml(group, opts) {
   return html;
 }
 function renderSomeDeptExportActions(deptLabel, deptIndex) {
-  var label5 = escHtml(deptLabel);
-  return '<span class="lab-some-dept-summary-actions" onclick="event.stopPropagation()"><button type="button" class="lab-some-export-btn lab-some-dept-export-btn" data-export="tsv" data-dept-index="' + deptIndex + '" data-label="' + label5 + '" title="Copiar secci\xF3n como texto">TSV</button><button type="button" class="lab-some-export-btn lab-some-dept-export-btn" data-export="png" data-dept-index="' + deptIndex + '" data-label="' + label5 + '" title="Copiar secci\xF3n como imagen">PNG</button></span>';
+  var label = escHtml(deptLabel);
+  return '<span class="lab-some-dept-summary-actions" onclick="event.stopPropagation()"><button type="button" class="lab-some-export-btn lab-some-dept-export-btn" data-export="tsv" data-dept-index="' + deptIndex + '" data-label="' + label + '" title="Copiar secci\xF3n como texto">TSV</button><button type="button" class="lab-some-export-btn lab-some-dept-export-btn" data-export="png" data-dept-index="' + deptIndex + '" data-label="' + label + '" title="Copiar secci\xF3n como imagen">PNG</button></span>';
 }
 function buildSomeDeptTsv(dept, title) {
   var tsv = buildTableTsv(buildSomeDeptExportModel(dept, title));
@@ -20027,12 +19998,12 @@ function exportSomeDeptCopy(dept, format, title, onDone) {
     done(false);
     return;
   }
-  var label5 = title || dept.label || "Tabla";
+  var label = title || dept.label || "Tabla";
   if (format === "png") {
-    copyTableModelAsPng(buildSomeDeptExportModel(dept, label5), label5, done);
+    copyTableModelAsPng(buildSomeDeptExportModel(dept, label), label, done);
     return;
   }
-  copyTableText(buildSomeDeptTsv(dept, label5), done);
+  copyTableText(buildSomeDeptTsv(dept, label), done);
 }
 function resolveSomeExportLookup(lookup) {
   if (typeof lookup === "function") {
@@ -20063,11 +20034,11 @@ function wireSomeTableExportButtons(container, onToast, lookup) {
     btn.dataset.someWired = "1";
     btn.addEventListener("click", function() {
       var format = btn.getAttribute("data-export");
-      var label5 = btn.getAttribute("data-label") || "";
+      var label = btn.getAttribute("data-label") || "";
       if (btn.classList.contains("lab-some-dept-export-btn") && resolved.getDept) {
         var deptIndex = parseInt(btn.getAttribute("data-dept-index") || "", 10);
         var dept = resolved.getDept(deptIndex);
-        exportSomeDeptCopy(dept, format, label5 || dept && dept.label || "", function(ok) {
+        exportSomeDeptCopy(dept, format, label || dept && dept.label || "", function(ok) {
           if (typeof onToast === "function") {
             onToast(
               ok ? "Secci\xF3n copiada \u2713" : "No se pudo copiar la secci\xF3n",
@@ -20083,7 +20054,7 @@ function wireSomeTableExportButtons(container, onToast, lookup) {
       if (!Number.isFinite(indices.deptIndex) || !Number.isFinite(indices.groupIndex)) return;
       var group = resolved.getGroup(indices.deptIndex, indices.groupIndex);
       if (!group) return;
-      exportSomeGroupCopy(group, format, label5, function(ok) {
+      exportSomeGroupCopy(group, format, label, function(ok) {
         if (typeof onToast === "function") {
           onToast(
             ok ? "Tabla copiada \u2713" : "No se pudo copiar la tabla",
@@ -20672,11 +20643,11 @@ function labRowSectionKey(row) {
 }
 function labRowRichnessScore(row) {
   var s = String(row || "");
-  var score5 = s.length;
-  score5 += (s.match(/\b(?:AG|DELTA-DELTA|ICA|LACTATO|BICA|PCO2|PO2)\b/gi) || []).length * 8;
-  score5 += (s.match(/\d/g) || []).length;
-  if (/INTERPRETACI[ÓO]N\s+GASOMETR[IÍ]A/i.test(s)) score5 += 20;
-  return score5;
+  var score = s.length;
+  score += (s.match(/\b(?:AG|DELTA-DELTA|ICA|LACTATO|BICA|PCO2|PO2)\b/gi) || []).length * 8;
+  score += (s.match(/\d/g) || []).length;
+  if (/INTERPRETACI[ÓO]N\s+GASOMETR[IÍ]A/i.test(s)) score += 20;
+  return score;
 }
 function dedupeConsolidatedLabRows(rows, tipo) {
   var normalized = [];
@@ -20986,8 +20957,8 @@ function renderReportIssues(block) {
   if (!bad.length) return "";
   return '<ul class="lab-bulk-preview-issues">' + bad.map(function(r, idx) {
     var msg = r.error || "No se pudo parsear el reporte";
-    var label5 = r.expediente ? "Exp. " + r.expediente : "Reporte " + (idx + 1);
-    return "<li><strong>" + esc3(label5) + ":</strong> " + esc3(msg) + "</li>";
+    var label = r.expediente ? "Exp. " + r.expediente : "Reporte " + (idx + 1);
+    return "<li><strong>" + esc3(label) + ":</strong> " + esc3(msg) + "</li>";
   }).join("") + "</ul>";
 }
 function renderStatusCell(block, idx) {
@@ -21423,11 +21394,11 @@ function labRowSectionKey2(row) {
 function labRowRichnessScore2(row) {
   var s = normalizeLabLine(String(row == null ? "" : row));
   if (!s) return 0;
-  var score5 = s.length;
-  score5 += (s.match(/\b(?:AG|DELTA-DELTA|ICA|LACTATO|BICA|PCO2|PO2)\b/gi) || []).length * 8;
-  score5 += (s.match(/\d/g) || []).length;
-  if (/INTERPRETACI[ÓO]N\s+GASOMETR[IÍ]A/i.test(s)) score5 += 20;
-  return score5;
+  var score = s.length;
+  score += (s.match(/\b(?:AG|DELTA-DELTA|ICA|LACTATO|BICA|PCO2|PO2)\b/gi) || []).length * 8;
+  score += (s.match(/\d/g) || []).length;
+  if (/INTERPRETACI[ÓO]N\s+GASOMETR[IÍ]A/i.test(s)) score += 20;
+  return score;
 }
 function dedupeConsolidatedRowsBySection(rows, tipo) {
   var normalized = [];
@@ -21667,13 +21638,13 @@ function buildLabDedupeChecklistSections(patientId) {
   var rows = [];
   var exactRemoveIds = /* @__PURE__ */ new Set();
   findExactDuplicateLabGroups(sets).forEach(function(g3) {
-    g3.removeIds.forEach(function(id5) {
-      exactRemoveIds.add(id5);
-      var s = byId[id5];
+    g3.removeIds.forEach(function(id) {
+      exactRemoveIds.add(id);
+      var s = byId[id];
       if (!s) return;
       rows.push({
         patientId,
-        id: id5,
+        id,
         kind: "exact",
         checked: true,
         summary: labDedupeSummaryLine(s)
@@ -22175,6 +22146,56 @@ function isDuplicateInPatientHistory(patientId, payload) {
   return list.some(function(existing) {
     return areDuplicateLabSets(existing, incoming);
   });
+}
+async function applyDriveImportLabSets(patient, labSets) {
+  if (!patient || !patient.id || !labSets || !labSets.length) {
+    return { added: 0, skipped: 0 };
+  }
+  var patientId = patient.id;
+  var added = 0;
+  var skipped = 0;
+  labSets.forEach(function(set, idx) {
+    var payload = {
+      fecha: set.fecha,
+      hora: set.hora || "",
+      resLabs: set.resLabs || [],
+      sourceText: set.sourceText || ""
+    };
+    if (!payload.resLabs.length) return;
+    if (isDuplicateInPatientHistory(patientId, payload)) {
+      skipped += 1;
+      return;
+    }
+    pushLabHistory(
+      patientId,
+      payload.resLabs,
+      payload.fecha,
+      payload.hora,
+      payload.sourceText,
+      set.bhExtras || {},
+      {},
+      "drive-import-" + idx
+    );
+    added += 1;
+  });
+  if (!added) return { added: 0, skipped };
+  rt6.rebuildEstudiosFromLabHistory(patientId);
+  rt6.ensureParsedLabHistory(patientId);
+  var hist = labHistory[patientId] || [];
+  var lastSet = hist.length ? hist[hist.length - 1] : null;
+  if (lastSet) {
+    applyManejoPending(
+      patientId,
+      lastSet.parsed,
+      lastSet.parsedBySection,
+      lastSet.id,
+      lastSet.fecha
+    );
+    applyLabClinicalSuggestions(patientId, lastSet.resLabs, lastSet.fecha, lastSet.bhExtras);
+  }
+  renderLabHistoryPanel();
+  rt6.refreshTendenciasOrCultivosPanel();
+  return { added, skipped };
 }
 function storeBulkLabBlocks(blocks, processable) {
   if (processable.length > 1 && typeof rt6.pushUndoSnapshot === "function") {
@@ -22819,17 +22840,17 @@ function mountRpcDateInput(input) {
   btn.className = "rpc-date-field__trigger profile-input";
   btn.setAttribute("aria-haspopup", "dialog");
   btn.setAttribute("aria-expanded", "false");
-  var label5 = document.createElement("span");
-  label5.className = "rpc-date-field__label";
+  var label = document.createElement("span");
+  label.className = "rpc-date-field__label";
   var icon = document.createElement("span");
   icon.className = "rpc-date-field__icon";
   icon.innerHTML = CALENDAR_SVG;
-  btn.appendChild(label5);
+  btn.appendChild(label);
   btn.appendChild(icon);
   wrap.insertBefore(btn, input);
   function syncLabel() {
     var iso = String(input.value || "").trim();
-    label5.textContent = iso ? formatIsoDateDisplay(iso) : "Elegir fecha";
+    label.textContent = iso ? formatIsoDateDisplay(iso) : "Elegir fecha";
     btn.classList.toggle("is-placeholder", !iso);
   }
   syncLabel();
@@ -24209,9 +24230,9 @@ function buildPatientSections(patient, ctx) {
   return sections;
 }
 function flattenRowForCompactPdf(patient, sections) {
-  var pick2 = function(label5) {
+  var pick2 = function(label) {
     var sec = sections.find(function(s) {
-      return s.label === label5;
+      return s.label === label;
     });
     return sec ? sec.lines.join("\n") : "";
   };
@@ -24391,9 +24412,9 @@ function renderCensoPreviewHtml(payload) {
     }).join("<br>");
   }
   function camaCellHtml(camaText) {
-    var label5 = formatCamaCellLabel(parseCamaCellForCenso(camaText));
-    if (label5 === "\u2014") return "\u2014";
-    return '<span class="censo-cama-vline">' + esc30(label5) + "</span>";
+    var label = formatCamaCellLabel(parseCamaCellForCenso(camaText));
+    if (label === "\u2014") return "\u2014";
+    return '<span class="censo-cama-vline">' + esc30(label) + "</span>";
   }
   function cell(row, key, fallbackLabel) {
     var v = row[key];
@@ -24500,14 +24521,14 @@ var CENSO_EXPORT_BUTTON_IDS = [
 ];
 function syncCensoExportButtonVisibility() {
   var show = isModeSala(rt7.getSettings());
-  CENSO_EXPORT_BUTTON_IDS.forEach(function(id5) {
-    var btn = document.getElementById(id5);
+  CENSO_EXPORT_BUTTON_IDS.forEach(function(id) {
+    var btn = document.getElementById(id);
     if (!btn) return;
     if (!show) {
       btn.style.display = "none";
       return;
     }
-    btn.style.display = id5 === "btn-export-censo-header" ? "inline-flex" : "";
+    btn.style.display = id === "btn-export-censo-header" ? "inline-flex" : "";
   });
   var wrap = document.getElementById("sidebar-censo-export-wrap");
   if (wrap) wrap.style.display = show ? "" : "none";
@@ -24902,12 +24923,12 @@ function getTourDemoAdmitDefaults(registro) {
   if (r === DEMO_REGISTRO_2) return { cuarto: "214", cama: "4" };
   return null;
 }
-function isTourDemoPatientId(id5, patientsList) {
-  if (!id5) return false;
-  if (id5 === DEMO_PATIENT_ID || id5 === DEMO_PATIENT_ID_2) return true;
+function isTourDemoPatientId(id, patientsList) {
+  if (!id) return false;
+  if (id === DEMO_PATIENT_ID || id === DEMO_PATIENT_ID_2) return true;
   if (!patientsList) return false;
   var p = patientsList.find(function(x) {
-    return x && x.id === id5;
+    return x && x.id === id;
   });
   return !!(p && p.isDemo);
 }
@@ -24984,10 +25005,10 @@ function writeTodosMap2(map) {
   } catch (_e) {
   }
 }
-function todoEntry2(id5, text, priority, completed) {
+function todoEntry2(id, text, priority, completed) {
   const now = (/* @__PURE__ */ new Date()).toISOString();
   return {
-    id: id5,
+    id,
     text,
     priority,
     completed: !!completed,
@@ -25215,11 +25236,11 @@ function appendEventualidad(store, text, clientId, atIso) {
   return { entries };
 }
 function updateEventualidad(store, entryId, patch) {
-  const id5 = String(entryId || "").trim();
-  if (!id5) return store || { entries: [] };
+  const id = String(entryId || "").trim();
+  if (!id) return store || { entries: [] };
   const entries = Array.isArray(store && store.entries) ? store.entries.slice() : [];
   const idx = entries.findIndex(function(e) {
-    return e && String(e.id) === id5;
+    return e && String(e.id) === id;
   });
   if (idx === -1) return { entries };
   const cur = entries[idx];
@@ -25230,17 +25251,17 @@ function updateEventualidad(store, entryId, patch) {
   return { entries };
 }
 function findEventualidadEntry(store, entryId) {
-  const id5 = String(entryId || "").trim();
-  if (!id5) return null;
+  const id = String(entryId || "").trim();
+  if (!id) return null;
   return (Array.isArray(store && store.entries) ? store.entries : []).find(function(e) {
-    return e && String(e.id) === id5;
+    return e && String(e.id) === id;
   }) || null;
 }
 function removeEventualidad(store, entryId) {
-  const id5 = String(entryId || "").trim();
-  if (!id5) return store || { entries: [] };
+  const id = String(entryId || "").trim();
+  if (!id) return store || { entries: [] };
   const entries = (Array.isArray(store && store.entries) ? store.entries : []).filter(function(e) {
-    return e && String(e.id) !== id5;
+    return e && String(e.id) !== id;
   });
   return { entries };
 }
@@ -25375,10 +25396,10 @@ function renderComposeBlock(editingEntry) {
   return '<footer class="ev-compose"><div class="ev-compose__card' + (isEdit ? " ev-compose__card--edit" : "") + '"><div class="ev-compose__top"><label class="ev-compose__label" for="eventualidades-input">' + (isEdit ? "Editar eventualidad" : "Nueva eventualidad") + '</label><div class="ev-compose__date-slot"><input type="date" id="eventualidades-at" class="rpc-date-input" value="' + esc10(atValue) + '" title="Fecha de la eventualidad" aria-label="Fecha de la eventualidad"></div></div><textarea id="eventualidades-input" class="ev-compose__input" rows="2" placeholder="Describe lo ocurrido\u2026">' + esc10(textValue) + '</textarea><div class="ev-compose__actions"><span class="ev-compose__hint">' + (isEdit ? "Puedes cambiar la fecha y el texto" : "Elige una fecha anterior si aplica") + '</span><div class="ev-compose__btns">' + (isEdit ? '<button type="button" class="btn-secondary ev-compose__cancel" id="eventualidades-cancel">Cancelar</button>' : "") + '<button type="button" class="btn-generate ev-compose__submit" id="eventualidades-add">' + (isEdit ? "Guardar" : "Agregar") + "</button></div></div></div></footer>";
 }
 function activePatient3() {
-  const id5 = rt8.getActiveId();
-  if (!id5) return null;
+  const id = rt8.getActiveId();
+  if (!id) return null;
   return patients.find(function(p) {
-    return String(p.id) === String(id5);
+    return String(p.id) === String(id);
   });
 }
 function ensureEventualidades(patient) {
@@ -25395,8 +25416,8 @@ function hostPatientMutationBase(patient, hostRow) {
   return Object.assign({}, patient, { version: 0 });
 }
 async function persistEventualidades(patient, store) {
+  patient.eventualidades = store;
   if (!isLanSessionConfiguredForRest()) {
-    patient.eventualidades = store;
     saveState();
     return { ok: true };
   }
@@ -25404,7 +25425,12 @@ async function persistEventualidades(patient, store) {
   const mutation = createMutationBuilder("patient", patient.id).captureBase(hostPatientMutationBase(patient, hostRow)).set("eventualidades", store).build();
   const out = await lanPushPatientVersioned(patient.id, mutation);
   if (!out.ok) {
-    if (!out.conflict) {
+    if (out.conflict) {
+      saveState({ immediate: true });
+      if (out.conflictDeferred) {
+        return { ok: true, conflictDeferred: true };
+      }
+    } else if (!out.conflict) {
       const msg = out.status === 401 || out.status === 403 ? "No se pudo autenticar con el host LAN. Revisa el c\xF3digo de equipo." : "No se pudo guardar la eventualidad en el host LAN.";
       rt8.showToast(msg, "error");
     }
@@ -25496,9 +25522,9 @@ function renderEventualidadesPanel(mountEl) {
       }
       const btn = ev.target.closest("[data-ev-edit]");
       if (!btn) return;
-      const id5 = btn.getAttribute("data-ev-edit");
-      if (!id5) return;
-      _editingEntryId = id5;
+      const id = btn.getAttribute("data-ev-edit");
+      if (!id) return;
+      _editingEntryId = id;
       renderEventualidadesPanel(mountEl);
       const compose = mountEl.querySelector(".ev-compose");
       if (compose && compose.scrollIntoView) {
@@ -25522,16 +25548,41 @@ function invalidateEventualidadesPanel() {
   _editingEntryId = null;
   _dayOpenPrefs.clear();
 }
+var DRIVE_IMPORT_LAN_MS = 8e3;
+function driveImportLanTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise(function(_, reject) {
+      setTimeout(function() {
+        reject(new Error("lan-timeout"));
+      }, ms);
+    })
+  ]);
+}
 async function applyDriveImportEventualidades(patient, incoming) {
   if (!patient) return { ok: false, added: 0, skipped: 0 };
-  const store = ensureEventualidades(patient);
+  let store = ensureEventualidades(patient);
   const { toAdd, skipped } = filterNewEventualidades(store.entries, incoming || []);
   for (let i = 0; i < toAdd.length; i += 1) {
-    appendEventualidad(store, toAdd[i].text, "", toAdd[i].at);
+    store = appendEventualidad(store, toAdd[i].text, "", toAdd[i].at);
   }
   if (!toAdd.length) return { ok: true, added: 0, skipped };
-  const out = await persistEventualidades(patient, store);
-  return { ok: !!(out && out.ok), added: toAdd.length, skipped };
+  patient.eventualidades = store;
+  saveState({ immediate: true });
+  if (!isLanSessionConfiguredForRest()) {
+    return { ok: true, added: toAdd.length, skipped };
+  }
+  const mutation = createMutationBuilder("patient", patient.id).captureBase(hostPatientMutationBase(patient, null)).set("eventualidades", store).build();
+  try {
+    const out = await driveImportLanTimeout(lanPushPatientVersioned(patient.id, mutation), DRIVE_IMPORT_LAN_MS);
+    if (out && out.ok) {
+      if (out.data) Object.assign(patient, out.data);
+      saveState();
+      return { ok: true, added: toAdd.length, skipped };
+    }
+  } catch (_e) {
+  }
+  return { ok: true, added: toAdd.length, skipped, lanDeferred: true };
 }
 
 // public/js/tour-demo-eventualidades.mjs
@@ -26940,20 +26991,20 @@ function vitalLayerBoxKey(baseKey, layerIdx) {
 }
 function buildVitalChipHtml(baseKey, labelOverride, opts) {
   opts = opts || {};
-  var label5 = labelOverride || VITAL_LABELS2[baseKey] || baseKey;
+  var label = labelOverride || VITAL_LABELS2[baseKey] || baseKey;
   var layerIdx = opts.layerIdx != null ? opts.layerIdx : 0;
   var boxKey = vitalLayerBoxKey(baseKey, layerIdx);
   var unit = VITAL_UNITS[baseKey] || "";
-  var labelHtml = '<div class="vital-label"><span class="ea-vital-name">' + label5 + '</span><span class="ea-vital-unit">' + unit + "</span></div>";
-  return '<div class="vital-box ea-vital-box ea-vital-chip" data-ea-vital-box="' + boxKey + '">' + labelHtml + '<div class="ea-vital-value-wrap"><input type="number" class="ea-vital-input" data-ea-vital="' + baseKey + '" data-ea-layer-idx="' + layerIdx + '" step="any" inputmode="decimal" placeholder="\u2014" aria-label="' + label5 + '"></div><div class="ea-altered-slot ea-altered-slot--hidden" data-ea-altered-wrap="' + boxKey + '" hidden><span class="ea-altered-label">Alterado</span><input type="time" class="ea-altered-time-input" data-ea-altered="' + boxKey + '" aria-label="Hora ' + label5 + ' alterado"></div></div>';
+  var labelHtml = '<div class="vital-label"><span class="ea-vital-name">' + label + '</span><span class="ea-vital-unit">' + unit + "</span></div>";
+  return '<div class="vital-box ea-vital-box ea-vital-chip" data-ea-vital-box="' + boxKey + '">' + labelHtml + '<div class="ea-vital-value-wrap"><input type="number" class="ea-vital-input" data-ea-vital="' + baseKey + '" data-ea-layer-idx="' + layerIdx + '" step="any" inputmode="decimal" placeholder="\u2014" aria-label="' + label + '"></div><div class="ea-altered-slot ea-altered-slot--hidden" data-ea-altered-wrap="' + boxKey + '" hidden><span class="ea-altered-label">Alterado</span><input type="time" class="ea-altered-time-input" data-ea-altered="' + boxKey + '" aria-label="Hora ' + label + ' alterado"></div></div>';
 }
 function buildVitalStackHtml(vitalKey) {
-  var label5 = VITAL_LABELS2[vitalKey] || vitalKey;
+  var label = VITAL_LABELS2[vitalKey] || vitalKey;
   var slots = "";
   for (var li = 0; li < MAX_VITAL_LAYERS_IN_FORM; li++) {
-    slots += '<div class="ea-vital-slot" data-ea-layer="' + li + '"' + (li > 0 ? " hidden" : "") + ">" + buildVitalChipHtml(vitalKey, label5, { layerIdx: li }) + "</div>";
+    slots += '<div class="ea-vital-slot" data-ea-layer="' + li + '"' + (li > 0 ? " hidden" : "") + ">" + buildVitalChipHtml(vitalKey, label, { layerIdx: li }) + "</div>";
   }
-  return '<div class="ea-vital-stack" data-ea-vital-stack="' + vitalKey + '" data-ea-layer-count="1">' + slots + '<button type="button" class="ea-vital-add-btn ea-temp-add-btn" data-ea-vital-add="' + vitalKey + '" hidden title="Otra lectura de ' + label5 + " (m\xE1x. " + MAX_VITAL_READINGS_PER_DAY + '/d\xEDa)">+1</button><div class="ea-vital-prev-badge" data-ea-vital-prev-view hidden><span class="ea-vital-prev-summary" data-ea-vital-prev-summary></span></div></div>';
+  return '<div class="ea-vital-stack" data-ea-vital-stack="' + vitalKey + '" data-ea-layer-count="1">' + slots + '<button type="button" class="ea-vital-add-btn ea-temp-add-btn" data-ea-vital-add="' + vitalKey + '" hidden title="Otra lectura de ' + label + " (m\xE1x. " + MAX_VITAL_READINGS_PER_DAY + '/d\xEDa)">+1</button><div class="ea-vital-prev-badge" data-ea-vital-prev-view hidden><span class="ea-vital-prev-summary" data-ea-vital-prev-summary></span></div></div>';
 }
 function getVitalStackLayerCount(stack) {
   return Math.min(
@@ -27490,11 +27541,11 @@ function ensureEaRegistroModalForm() {
   }
   wireEaRegistroForm();
 }
-function eliminarEstadoActualMedicion(id5) {
+function eliminarEstadoActualMedicion(id) {
   var patient = findActivePatient();
-  if (!patient || !id5) return;
+  if (!patient || !id) return;
   ensureMonitoreo(patient);
-  removeMedicion(patient.monitoreo, id5);
+  removeMedicion(patient.monitoreo, id);
   saveState();
   renderEstadoActualPanel({ syncHeavy: true });
   rt9.showToast("Medici\xF3n eliminada", "success");
@@ -28915,15 +28966,15 @@ function createTendGroupModal(deps) {
     var esc30 = deps.esc;
     var chips = [];
     hidden.cols.forEach(function(ck) {
-      var label5 = ck;
+      var label = ck;
       for (var i = 0; i < raw.columns.length; i++) {
         if (colKeyForSet(raw.columns[i]) === ck) {
-          label5 = columnHeader(raw.columns[i], raw.columns);
+          label = columnHeader(raw.columns[i], raw.columns);
           break;
         }
       }
       chips.push(
-        '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-col="' + esc30(ck) + '">' + esc30(label5) + ' <span aria-hidden="true">\xD7</span></button>'
+        '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-col="' + esc30(ck) + '">' + esc30(label) + ' <span aria-hidden="true">\xD7</span></button>'
       );
     });
     hidden.rows.forEach(function(fk) {
@@ -29218,12 +29269,12 @@ function createTendGroupModal(deps) {
       var t2 = tMap[String(type || "").toLowerCase()] || "";
       return t2 ? d + " \xB7 " + t2 : d;
     }
-    function metricChip(label5, value, tone) {
+    function metricChip(label, value, tone) {
       var chip = document.createElement("span");
       chip.className = "tend-gaso-chip" + (tone ? " tend-gaso-chip--" + tone : "");
       var lbl = document.createElement("span");
       lbl.className = "tend-gaso-chip-label";
-      lbl.textContent = label5;
+      lbl.textContent = label;
       var val2 = document.createElement("strong");
       val2.className = "tend-gaso-chip-val";
       val2.textContent = value;
@@ -29231,12 +29282,12 @@ function createTendGroupModal(deps) {
       chip.appendChild(val2);
       return chip;
     }
-    function subMetric(label5, value) {
+    function subMetric(label, value) {
       var sub = document.createElement("div");
       sub.className = "tend-gaso-sub";
       var lbl = document.createElement("span");
       lbl.className = "tend-gaso-sub-label";
-      lbl.textContent = label5;
+      lbl.textContent = label;
       var val2 = document.createElement("span");
       val2.className = "tend-gaso-sub-val";
       val2.textContent = value;
@@ -29584,14 +29635,14 @@ function createTendGroupModal(deps) {
       var datasets = [];
       items.forEach(function(item) {
         var fk = item.spec.fieldKey;
-        var label5 = legendLabelForSpec(sectionKey, item.spec);
+        var label = legendLabelForSpec(sectionKey, item.spec);
         var color = seriesColor(sectionKey, fk, item.index);
         var data = axisMeta.points.map(function(p) {
           var v = getSetTrendValueForSeries(p.set, sectionKey, fk);
           return v != null && isFinite(v) ? v : null;
         });
         datasets.push({
-          label: label5,
+          label,
           data,
           borderColor: color,
           backgroundColor: hexToRgba(color, 0.12),
@@ -29606,7 +29657,7 @@ function createTendGroupModal(deps) {
         });
         var legItem = document.createElement("label");
         legItem.className = "tend-group-legend-item";
-        legItem.innerHTML = '<input type="checkbox" class="tend-group-legend-check" data-field="' + fk + '"' + (isLegendFieldVisible(fk) ? " checked" : "") + '> <input type="color" class="tend-group-legend-color" data-field="' + fk + '" value="' + color + '"> <span>' + label5 + "</span>";
+        legItem.innerHTML = '<input type="checkbox" class="tend-group-legend-check" data-field="' + fk + '"' + (isLegendFieldVisible(fk) ? " checked" : "") + '> <input type="color" class="tend-group-legend-color" data-field="' + fk + '" value="' + color + '"> <span>' + label + "</span>";
         legend.appendChild(legItem);
       });
       block.appendChild(legend);
@@ -29922,13 +29973,13 @@ function listSelectablePanels(history, patientId) {
     if (!tendEligibleSectionKey(sectionKey)) continue;
     const unit = rt12.unitForField(spec.fieldKey);
     const family = classifyTendPanelFamily(sectionKey, spec.fieldKey, unit);
-    const id5 = panelId(sectionKey, family);
-    if (seenFamilies.has(id5)) continue;
-    seenFamilies.add(id5);
+    const id = panelId(sectionKey, family);
+    if (seenFamilies.has(id)) continue;
+    seenFamilies.add(id);
     const chart = buildPanelChart(sectionKey, family, histAsc, histDesc, catalog, patientId);
     if (!chart) continue;
     panels.push({
-      id: id5,
+      id,
       sectionKey,
       sectionLabel: rt12.sectionLabel(sectionKey),
       title: chart.title,
@@ -29953,10 +30004,10 @@ function buildLabTrendsPayload(history, patientLabel, { panelIds = null, patient
     if (!tendEligibleSectionKey(sectionKey)) continue;
     const unit = rt12.unitForField(spec.fieldKey);
     const family = classifyTendPanelFamily(sectionKey, spec.fieldKey, unit);
-    const id5 = panelId(sectionKey, family);
-    if (idSet && !idSet.has(id5)) continue;
-    if (seenPanels.has(id5)) continue;
-    seenPanels.add(id5);
+    const id = panelId(sectionKey, family);
+    if (idSet && !idSet.has(id)) continue;
+    if (seenPanels.has(id)) continue;
+    seenPanels.add(id);
     const chart = buildPanelChart(sectionKey, family, histAsc, histDesc, catalog, pid);
     if (!chart) continue;
     if (!sectionMap.has(sectionKey)) {
@@ -31027,9 +31078,9 @@ function buildTendHiddenChipsHtml() {
   for (var i = 0; i < desc.length; i++) {
     var sk = desc[i].sectionKey;
     var fk = desc[i].fieldKey;
-    var label5 = esc11(tendFindSeriesSpec(sk, fk).cardTitle || fk);
+    var label = esc11(tendFindSeriesSpec(sk, fk).cardTitle || fk);
     chips.push(
-      '<button type="button" class="tend-hidden-chip" data-series-key="' + esc11(tendCatalogSeriesKey(sk, fk)) + '" title="Volver a mostrar ' + label5 + '" aria-label="Mostrar de nuevo ' + label5 + '"><span class="tend-hidden-chip-label">' + label5 + '</span><span class="tend-hidden-chip-eye" aria-hidden="true">' + svg + "</span></button>"
+      '<button type="button" class="tend-hidden-chip" data-series-key="' + esc11(tendCatalogSeriesKey(sk, fk)) + '" title="Volver a mostrar ' + label + '" aria-label="Mostrar de nuevo ' + label + '"><span class="tend-hidden-chip-label">' + label + '</span><span class="tend-hidden-chip-eye" aria-hidden="true">' + svg + "</span></button>"
     );
   }
   return chips.join("");
@@ -31100,10 +31151,10 @@ function formatDMYDate(d) {
 }
 function inferFechaLabSetFromId(set) {
   if (!set || set.fecha === "Anterior") return "";
-  var id5 = String(set.id || "");
-  if (!/^\d{10,}$/.test(id5)) return "";
-  var ms = parseInt(id5, 10);
-  if (id5.length === 10) ms *= 1e3;
+  var id = String(set.id || "");
+  if (!/^\d{10,}$/.test(id)) return "";
+  var ms = parseInt(id, 10);
+  if (id.length === 10) ms *= 1e3;
   return formatDMYDate(new Date(ms));
 }
 function tendFinishRangeVbars(container) {
@@ -32533,8 +32584,8 @@ function openTourEstadoActualRegistroDemo() {
     recorded.value = toDatetimeLocalValue(atShift);
   }
 }
-function isEstadoActualPostRegistroTourStep(id5) {
-  return id5 === "estado_actual_snapshot" || id5 === "estado_actual_charts" || id5 === "estado_actual_historial";
+function isEstadoActualPostRegistroTourStep(id) {
+  return id === "estado_actual_snapshot" || id === "estado_actual_charts" || id === "estado_actual_historial";
 }
 function prepareEstadoActualPanelForTour(onPanelReady) {
   ensureTourPrimaryDemoPatientActive();
@@ -32597,19 +32648,19 @@ function syncTourDockPlacement() {
   if (useLeft) d.classList.add("tour-dock-pos-left");
   else d.classList.remove("tour-dock-pos-left");
 }
-function tourApplySpotlightForStep(id5, t2, scrollDelayMs) {
+function tourApplySpotlightForStep(id, t2, scrollDelayMs) {
   if (!t2 || !t2.selector) return;
   var scrollDelay = scrollDelayMs != null ? scrollDelayMs : 140;
   setTimeout(function() {
-    if (!guidedTourActive2 || tourStepId2 !== id5) return;
-    if (id5 === "listado_problemas") rt15.renderListadoForm();
+    if (!guidedTourActive2 || tourStepId2 !== id) return;
+    if (id === "listado_problemas") rt15.renderListadoForm();
     var el = document.querySelector(t2.selector);
     if (!el) return;
     try {
       el.scrollIntoView({ behavior: "smooth", block: "center" });
     } catch (e) {
     }
-    var spotlightCls = t2.spotlightClass || (stepRequiresUserAction(id5) ? "tour-spotlight-soap" : null);
+    var spotlightCls = t2.spotlightClass || (stepRequiresUserAction(id) ? "tour-spotlight-soap" : null);
     if (spotlightCls) el.classList.add(spotlightCls);
     if (t2.focus && typeof el.focus === "function") {
       try {
@@ -32623,27 +32674,27 @@ function tourApplySpotlightForStep(id5, t2, scrollDelayMs) {
     }
   }, scrollDelay);
 }
-function applyTourTargetForStep(id5) {
+function applyTourTargetForStep(id) {
   if (guidedTourActive2) {
     setUiDensity("normal");
   }
-  var t2 = getTourTarget(id5, guidedTourBranch === "interconsulta" ? "interconsulta" : "sala");
+  var t2 = getTourTarget(id, guidedTourBranch === "interconsulta" ? "interconsulta" : "sala");
   if (!t2) return;
-  if (TOUR_STEPS_USE_DEMO_PEREZ[id5]) {
+  if (TOUR_STEPS_USE_DEMO_PEREZ[id]) {
     ensureTourPrimaryDemoPatientActive();
   }
-  if (id5 === "listado_problemas") {
+  if (id === "listado_problemas") {
     seedDemoListadoProblemas();
   }
-  if (id5 === "estado_actual" || id5 === "estado_actual_registro" || isEstadoActualPostRegistroTourStep(id5)) {
+  if (id === "estado_actual" || id === "estado_actual_registro" || isEstadoActualPostRegistroTourStep(id)) {
     seedDemoMonitoreoOnActivePatient();
   }
-  if (id5 === "eventualidades") {
+  if (id === "eventualidades") {
     seedDemoEventualidadesOnActivePatient();
   }
   if (t2.appTab) rt15.switchAppTab(t2.appTab);
   if (t2.innerTab) {
-    if (id5 === "listado_problemas") {
+    if (id === "listado_problemas") {
       rt15.switchInnerTab("listado", { forceRender: true });
       rt15.renderListadoForm();
     } else {
@@ -32662,14 +32713,14 @@ function applyTourTargetForStep(id5) {
     if (typeof closeSettingsDropdown === "function") closeSettingsDropdown();
     if (typeof closeConnectionDropdown === "function") closeConnectionDropdown();
   }
-  if (id5 === "sala_med") rt15.renderMedRecetaPanel();
-  if (id5 === "estado_actual" && guidedTourBranch !== "interconsulta") {
+  if (id === "sala_med") rt15.renderMedRecetaPanel();
+  if (id === "estado_actual" && guidedTourBranch !== "interconsulta") {
     setTimeout(function() {
       if (!guidedTourActive2 || tourStepId2 !== "estado_actual") return;
       prepareEstadoActualPanelForTour();
     }, 160);
   }
-  if (id5 === "estado_actual_registro" && guidedTourBranch !== "interconsulta") {
+  if (id === "estado_actual_registro" && guidedTourBranch !== "interconsulta") {
     setTimeout(function() {
       if (!guidedTourActive2 || tourStepId2 !== "estado_actual_registro") return;
       prepareEstadoActualPanelForTour(function() {
@@ -32678,10 +32729,10 @@ function applyTourTargetForStep(id5) {
       });
     }, 160);
   }
-  if (isEstadoActualPostRegistroTourStep(id5) && guidedTourBranch !== "interconsulta") {
+  if (isEstadoActualPostRegistroTourStep(id) && guidedTourBranch !== "interconsulta") {
     clearAllTourSpotlights();
     if (!t2.selector) return;
-    var postRegStepId = id5;
+    var postRegStepId = id;
     var spotlightDelay = postRegStepId === "estado_actual_charts" ? 520 : 340;
     setTimeout(function() {
       if (!guidedTourActive2 || tourStepId2 !== postRegStepId) return;
@@ -32691,26 +32742,26 @@ function applyTourTargetForStep(id5) {
     }, 160);
     return;
   }
-  if (id5 === "map_lab_teaser" || id5 === "lab_parse") {
+  if (id === "map_lab_teaser" || id === "lab_parse") {
     ensureTourDemoLabInputBoth();
   }
-  if (id5 === "sala_casiopea_lab") {
+  if (id === "sala_casiopea_lab") {
     closeLabSomeTablesModal();
   }
-  if (id5 === "sala_casiopea_trends") {
+  if (id === "sala_casiopea_trends") {
     closeTendGroupModal();
     closeSesionIngresoTrendsSendModal();
   }
-  if (id5 === "sala_med" || id5 === "listado_problemas") {
+  if (id === "sala_med" || id === "listado_problemas") {
     closeSOAPModal();
   }
   clearAllTourSpotlights();
   if (!t2.selector) return;
-  var scrollDelay = id5 === "listado_problemas" ? 280 : 140;
-  tourApplySpotlightForStep(id5, t2, scrollDelay);
+  var scrollDelay = id === "listado_problemas" ? 280 : 140;
+  tourApplySpotlightForStep(id, t2, scrollDelay);
 }
-function applyTourNavigationForStep(id5) {
-  applyTourTargetForStep(id5);
+function applyTourNavigationForStep(id) {
+  applyTourTargetForStep(id);
 }
 function renderTourStep() {
   if (!guidedTourActive2) return;
@@ -33399,12 +33450,12 @@ function renderHelpArticles(query) {
     selectHelpArticle(filtered[0].id);
   }
 }
-function selectHelpArticle(id5) {
+function selectHelpArticle(id) {
   var article = HELP_ARTICLES.find(function(a) {
-    return a.id === id5;
+    return a.id === id;
   });
   if (!article) return;
-  helpCurrentArticleId = id5;
+  helpCurrentArticleId = id;
   var contentEl = document.getElementById("help-article-content");
   if (contentEl) {
     contentEl.innerHTML = "<h4>" + esc12(article.title) + "</h4>" + article.html;
@@ -33412,7 +33463,7 @@ function selectHelpArticle(id5) {
   var list = document.getElementById("help-articles-list");
   if (list) {
     Array.prototype.forEach.call(list.querySelectorAll(".help-article-item"), function(btn) {
-      if (btn.getAttribute("data-article-id") === id5) btn.classList.add("active");
+      if (btn.getAttribute("data-article-id") === id) btn.classList.add("active");
       else btn.classList.remove("active");
     });
   }
@@ -34583,8 +34634,8 @@ var idleLockDebounceId = null;
 var idleLockIsActive = false;
 var idleLockEnabledMinutes = 0;
 function resetUpdateCheckButtons() {
-  ["settings-check-updates-btn", "min-version-check-btn"].forEach(function(id5) {
-    setAsyncButtonLoading(document.getElementById(id5), false);
+  ["settings-check-updates-btn", "min-version-check-btn"].forEach(function(id) {
+    setAsyncButtonLoading(document.getElementById(id), false);
   });
 }
 function checkForAppUpdates() {
@@ -34640,8 +34691,8 @@ function decrementPendingJobs() {
 var rpcOffline = false;
 function syncOfflineButtonStates() {
   try {
-    ["btn-gen", "btn-gen-ind"].forEach(function(id5) {
-      var b = document.getElementById(id5);
+    ["btn-gen", "btn-gen-ind"].forEach(function(id) {
+      var b = document.getElementById(id);
       if (!b) return;
       if (rpcOffline) {
         b.disabled = true;
@@ -34749,8 +34800,8 @@ async function computeSha256Hex(text) {
   return hex;
 }
 async function promptForIdleLockPinSetup(reason) {
-  var label5 = reason === "change" ? "Ingresa un nuevo PIN de 4 a 8 d\xEDgitos para el bloqueo:" : "Elige un PIN de 4 a 8 d\xEDgitos para el bloqueo por inactividad:";
-  var p1 = prompt(label5, "");
+  var label = reason === "change" ? "Ingresa un nuevo PIN de 4 a 8 d\xEDgitos para el bloqueo:" : "Elige un PIN de 4 a 8 d\xEDgitos para el bloqueo por inactividad:";
+  var p1 = prompt(label, "");
   if (p1 == null) return { ok: false, cancelled: true };
   if (!isIdleLockPinFormatValid(p1)) {
     rt16.showToast("PIN inv\xE1lido (solo 4-8 d\xEDgitos).", "error");
@@ -35640,11 +35691,11 @@ function patientInDateRange(entry2, range) {
   var max = range.to.getTime();
   return nMs !== null && nMs >= min && nMs <= max || iMs !== null && iMs >= min && iMs <= max;
 }
-function askConflictAction(label5) {
+function askConflictAction(label) {
   if (typeof window !== "undefined" && window.__rpcPreferImportOverwrite === true) {
     return "overwrite";
   }
-  var answer = prompt('Conflicto detectado para "' + label5 + '". Escribe: O = sobrescribir, D = duplicar, C = cancelar.', "O");
+  var answer = prompt('Conflicto detectado para "' + label + '". Escribe: O = sobrescribir, D = duplicar, C = cancelar.', "O");
   var v = String(answer || "").trim().toUpperCase();
   if (v === "O") return "overwrite";
   if (v === "D") return "duplicate";
@@ -36347,7 +36398,7 @@ function renderUpdateError(msg) {
   var box = document.getElementById("update-modal-error");
   var state = document.getElementById("update-modal-state");
   var wrap = document.getElementById("update-modal-progress-wrap");
-  var label5 = document.getElementById("update-modal-progress-label");
+  var label = document.getElementById("update-modal-progress-label");
   var pill = document.getElementById("update-modal-version-pill");
   var notes2 = document.getElementById("update-modal-notes");
   if (box) {
@@ -36356,7 +36407,7 @@ function renderUpdateError(msg) {
   }
   if (state) state.textContent = "";
   if (wrap) wrap.style.display = "none";
-  if (label5) label5.textContent = "";
+  if (label) label.textContent = "";
   if (pill) pill.style.display = "none";
   if (notes2) notes2.textContent = "";
   var title = document.getElementById("update-modal-title");
@@ -36411,8 +36462,8 @@ if (typeof window !== "undefined" && window.electronAPI) {
       if (state) state.textContent = "Conectando\u2026 La descarga comenzar\xE1 en breve.";
       var fill = document.getElementById("update-modal-progress-fill");
       if (fill) fill.style.width = "0%";
-      var label5 = document.getElementById("update-modal-progress-label");
-      if (label5) label5.textContent = "";
+      var label = document.getElementById("update-modal-progress-label");
+      if (label) label.textContent = "";
       var actions = document.getElementById("update-modal-actions-primary");
       if (actions) {
         actions.innerHTML = "";
@@ -36457,16 +36508,16 @@ if (typeof window !== "undefined" && window.electronAPI) {
       if (state) state.textContent = "Descargando\u2026";
       var fill = document.getElementById("update-modal-progress-fill");
       if (fill) fill.style.width = pct + "%";
-      var label5 = document.getElementById("update-modal-progress-label");
-      if (label5) {
+      var label = document.getElementById("update-modal-progress-label");
+      if (label) {
         if (transferred != null && total != null) {
-          label5.textContent = formatProgressLine({
+          label.textContent = formatProgressLine({
             transferred,
             total,
             bytesPerSecond: bps
           });
         } else {
-          label5.textContent = "Progreso: " + pct + "%";
+          label.textContent = "Progreso: " + pct + "%";
         }
       }
       showUpdateModal();
@@ -36490,8 +36541,8 @@ if (typeof window !== "undefined" && window.electronAPI) {
       }
       var fill = document.getElementById("update-modal-progress-fill");
       if (fill) fill.style.width = "100%";
-      var label5 = document.getElementById("update-modal-progress-label");
-      if (label5) label5.textContent = "Descarga completa.";
+      var label = document.getElementById("update-modal-progress-label");
+      if (label) label.textContent = "Descarga completa.";
       var actions = document.getElementById("update-modal-actions-primary");
       if (actions) {
         actions.innerHTML = "";
@@ -38275,12 +38326,12 @@ function bindListadoTextareaPointerIsolation(root) {
 function _renderListadoRow(seccion, p, idx) {
   return '<div class="listado-row" data-id="' + esc13(p.id) + '" data-seccion="' + seccion + '"><div class="listado-num listado-drag-handle" title="Arrastra para reordenar" aria-label="Arrastrar para reordenar">' + (idx + 1) + '</div><input type="date" class="rpc-date-input" value="' + esc13(p.fecha || "") + `" oninput="updateProblemaField('` + seccion + "','" + esc13(p.id) + `','fecha',this.value)" aria-label="Fecha del problema"><textarea rows="1" placeholder="Descripci\xF3n del problema" oninput="updateProblemaField('` + seccion + "','" + esc13(p.id) + `','descripcion',this.value); _autoGrowTextarea(this)" aria-label="Descripci\xF3n">` + esc13(p.descripcion || "") + `</textarea><button class="btn-remove-listado" onclick="removeProblemaUI('` + seccion + "','" + esc13(p.id) + `')" aria-label="Quitar problema" title="Quitar">\xD7</button></div>`;
 }
-function _renderListadoSeccion(seccion, label5, lst) {
+function _renderListadoSeccion(seccion, label, lst) {
   var arr = lst[seccion] || [];
   var rows = arr.length ? arr.map(function(p, i) {
     return _renderListadoRow(seccion, p, i);
-  }).join("") : '<div class="listado-empty">Sin problemas ' + label5.toLowerCase() + ".</div>";
-  return '<div class="listado-section"><div class="listado-section-header ' + seccion + '"><span>' + label5 + " (" + arr.length + ')</span></div><div class="listado-section-body listado-sort-zone" data-seccion-rows="' + seccion + '">' + rows + `</div><div class="listado-section-body" style="padding-top:0;"><button class="listado-add-row" onclick="addProblemaUI('` + seccion + `')">+ Agregar problema ` + label5.toLowerCase() + "</button></div></div>";
+  }).join("") : '<div class="listado-empty">Sin problemas ' + label.toLowerCase() + ".</div>";
+  return '<div class="listado-section"><div class="listado-section-header ' + seccion + '"><span>' + label + " (" + arr.length + ')</span></div><div class="listado-section-body listado-sort-zone" data-seccion-rows="' + seccion + '">' + rows + `</div><div class="listado-section-body" style="padding-top:0;"><button class="listado-add-row" onclick="addProblemaUI('` + seccion + `')">+ Agregar problema ` + label.toLowerCase() + "</button></div></div>";
 }
 function destroyListadoSortables() {
   _listadoSortables.forEach(function(s) {
@@ -38303,8 +38354,8 @@ function syncListadoOrderFromDom(seccion) {
   for (var i = 0; i < arr.length; i++) byId[arr[i].id] = arr[i];
   var newArr = [];
   zone.querySelectorAll(".listado-row[data-id]").forEach(function(row) {
-    var id5 = row.getAttribute("data-id");
-    if (id5 && byId[id5]) newArr.push(byId[id5]);
+    var id = row.getAttribute("data-id");
+    if (id && byId[id]) newArr.push(byId[id]);
   });
   if (!newArr.length || newArr.length !== arr.length) return;
   listadoProblemas[aid3()] = Object.assign({}, lst, { [seccion]: newArr });
@@ -38385,12 +38436,12 @@ function updateListadoMeta(field, value) {
   lst[field] = value;
   saveState();
 }
-function updateProblemaField(seccion, id5, field, value) {
+function updateProblemaField(seccion, id, field, value) {
   var lst = ensureListadoForActive();
   if (!lst) return;
   var arr = lst[seccion] || [];
   var p = arr.find(function(x) {
-    return x.id === id5;
+    return x.id === id;
   });
   if (!p) return;
   p[field] = value;
@@ -38407,17 +38458,17 @@ function addProblemaUI(seccion) {
     if (rows.length) rows[rows.length - 1].focus();
   }, 0);
 }
-function removeProblemaUI(seccion, id5) {
+function removeProblemaUI(seccion, id) {
   var lst = ensureListadoForActive();
   if (!lst) return;
-  listadoProblemas[aid3()] = removeProblema(lst, seccion, id5);
+  listadoProblemas[aid3()] = removeProblema(lst, seccion, id);
   saveState();
   renderListadoForm();
 }
 function _renderListadoMedicosCard(lst) {
   var meds = getMedicosForListado(lst);
-  function row(key, label5) {
-    return '<div class="field-group"><label>' + label5 + '</label><input type="text" value="' + esc13(meds[key] || "") + `" oninput="updateListadoMedico('` + key + `', this.value)"></div>`;
+  function row(key, label) {
+    return '<div class="field-group"><label>' + label + '</label><input type="text" value="' + esc13(meds[key] || "") + `" oninput="updateListadoMedico('` + key + `', this.value)"></div>`;
   }
   return '<div class="card"><div class="card-header card-header--tone-teal-md card-header-row"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>M\xE9dicos (firma)<span class="card-header-subhint">Pre-llena desde Mi Perfil. Edita aqu\xED para este paciente.</span></div><div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' + row("profesor", "Profesor") + row("r4", "R4") + row("r2", "R2") + row("r1a", "R1 (1)") + row("r1b", "R1 (2)") + "</div></div>";
 }
@@ -38598,8 +38649,8 @@ function applyTodoPrioChip(chip, prio, pulse) {
   chip.classList.remove("prio-alta", "prio-media", "prio-baja");
   chip.classList.add("prio-" + valid);
   chip.dataset.priority = valid;
-  var label5 = chip.querySelector(".todo-prio-label");
-  if (label5) label5.textContent = todoPriorityLabel(valid);
+  var label = chip.querySelector(".todo-prio-label");
+  if (label) label.textContent = todoPriorityLabel(valid);
   chip.setAttribute("aria-label", "Prioridad " + todoPriorityLabel(valid) + ". Clic para cambiar.");
   chip.title = "Clic: cambiar prioridad (" + todoPriorityLabel(valid) + ")";
   if (pulse) pulseTodoPrioChip(chip);
@@ -38612,10 +38663,10 @@ function createTodoPrioChip(prio, onCycle) {
   var dot = document.createElement("span");
   dot.className = "todo-prio-dot";
   dot.setAttribute("aria-hidden", "true");
-  var label5 = document.createElement("span");
-  label5.className = "todo-prio-label";
+  var label = document.createElement("span");
+  label.className = "todo-prio-label";
   chip.appendChild(dot);
-  chip.appendChild(label5);
+  chip.appendChild(label);
   applyTodoPrioChip(chip, prio, false);
   chip.addEventListener("click", function() {
     var next = nextTodoPriority(chip.dataset.priority || "media");
@@ -38846,11 +38897,11 @@ function addTodo(idPrefix, priorityOverride) {
   input.value = "";
   refreshAllTodoUIs();
 }
-function toggleTodo(id5) {
+function toggleTodo(id) {
   if (!aid4()) return;
   var todos = storage.getTodos(aid4());
   var found = todos.find(function(t2) {
-    return t2.id === id5;
+    return t2.id === id;
   });
   if (!found) return;
   found.completed = !found.completed;
@@ -38860,29 +38911,29 @@ function toggleTodo(id5) {
   emitLiveSyncTodoUpsert(aid4(), found);
   refreshAllTodoUIs();
 }
-function deleteTodo(id5) {
+function deleteTodo(id) {
   if (!aid4()) return;
   var delAt = (/* @__PURE__ */ new Date()).toISOString();
   var todos = storage.getTodos(aid4());
   var victim = todos.find(function(t2) {
-    return t2.id === id5;
+    return t2.id === id;
   });
   if (victim) dismissManejoTodoFromTodo(aid4(), victim);
   todos = todos.filter(function(t2) {
-    return t2.id !== id5;
+    return t2.id !== id;
   });
   storage.saveTodos(aid4(), todos);
   if (victim) emitLiveSyncTodoDelete(aid4(), victim);
-  else emitLiveSyncTodoDelete(aid4(), { id: id5, updatedAt: delAt });
+  else emitLiveSyncTodoDelete(aid4(), { id, updatedAt: delAt });
   refreshAllTodoUIs();
 }
-function setTodoPriority(id5, priority, opts) {
+function setTodoPriority(id, priority, opts) {
   if (!aid4()) return;
   opts = opts || {};
   var valid = normalizeTodoPriority(priority);
   var todos = storage.getTodos(aid4());
   var found = todos.find(function(t2) {
-    return t2.id === id5;
+    return t2.id === id;
   });
   if (!found) return;
   found.priority = valid;
@@ -38895,13 +38946,13 @@ function setTodoPriority(id5, priority, opts) {
   }
   refreshAllTodoUIs();
 }
-function updateTodoText(id5, text) {
+function updateTodoText(id, text) {
   if (!aid4()) return;
   var trimmed = String(text || "").trim();
   if (!trimmed) return;
   var todos = storage.getTodos(aid4());
   var found = todos.find(function(t2) {
-    return t2.id === id5;
+    return t2.id === id;
   });
   if (!found || String(found.text || "") === trimmed) return;
   found.text = trimmed;
@@ -40837,13 +40888,13 @@ var MANEJO_SOME_COPY_UI = false;
 function isManejoSomeCopyUiEnabled() {
   return MANEJO_SOME_COPY_UI;
 }
-function buildKvBlock(label5, value, opts) {
+function buildKvBlock(label, value, opts) {
   opts = opts || {};
   var kv = document.createElement("div");
   kv.className = "manejo-kv" + (opts.wide ? " manejo-kv--wide" : "");
   var lbl = document.createElement("span");
   lbl.className = "manejo-kv-label";
-  lbl.textContent = label5;
+  lbl.textContent = label;
   var val2 = document.createElement("div");
   val2.className = "manejo-kv-val" + (opts.mono ? " manejo-kv-val--mono" : "");
   val2.textContent = value || "\u2014";
@@ -40893,7 +40944,7 @@ function buildIndicationChips(items, familyId, opts) {
     return row;
   }
   tokens.forEach(function(text, idx) {
-    var label5 = formatIndicationChipLabel(text);
+    var label = formatIndicationChipLabel(text);
     var norm = normalizeAtbHintToken(text);
     var isActive = opts.activeHint && opts.activeHint.token === norm && (!opts.activeHint.familyId || opts.activeHint.familyId === familyId);
     var toneClass = opts.sectionChips ? "" : " manejo-indication-chip--tone-" + idx % 3;
@@ -40902,7 +40953,7 @@ function buildIndicationChips(items, familyId, opts) {
       var btn = document.createElement("button");
       btn.type = "button";
       btn.className = "manejo-indication-chip manejo-indication-chip--clickable" + toneClass + activeClass;
-      btn.textContent = label5;
+      btn.textContent = label;
       btn.setAttribute("aria-pressed", isActive ? "true" : "false");
       btn.addEventListener("click", function() {
         opts.onHintClick(text, familyId);
@@ -40911,7 +40962,7 @@ function buildIndicationChips(items, familyId, opts) {
     } else {
       var chip = document.createElement("span");
       chip.className = "manejo-indication-chip" + toneClass + activeClass;
-      chip.textContent = label5;
+      chip.textContent = label;
       row.appendChild(chip);
     }
   });
@@ -40919,14 +40970,14 @@ function buildIndicationChips(items, familyId, opts) {
 }
 function createManejoSomeUi(deps) {
   var attachCopy3 = deps.attachCopy;
-  function buildSomeField(label5, text, copyText2, fieldOpts) {
+  function buildSomeField(label, text, copyText2, fieldOpts) {
     var allowCopy = fieldOpts && fieldOpts.forceCopy ? true : isManejoSomeCopyUiEnabled();
     if (!allowCopy) copyText2 = null;
     var field = document.createElement("div");
-    field.className = "manejo-some-field" + (label5 === "Medicamento" || label5 === "Estudio" || label5 === "Recomendaci\xF3n" || label5 === "Criterios" || label5 === "Indicaci\xF3n" ? " manejo-some-field--wide" : "");
+    field.className = "manejo-some-field" + (label === "Medicamento" || label === "Estudio" || label === "Recomendaci\xF3n" || label === "Criterios" || label === "Indicaci\xF3n" ? " manejo-some-field--wide" : "");
     var lbl = document.createElement("span");
     lbl.className = "manejo-some-field-label";
-    lbl.textContent = label5;
+    lbl.textContent = label;
     field.appendChild(lbl);
     var row = document.createElement("div");
     row.className = "manejo-some-field-row";
@@ -40977,12 +41028,12 @@ function createManejoSomeUi(deps) {
     var grid = document.createElement("div");
     grid.className = "manejo-some-grid";
     var adaKind = blockOpts.adaDisplayKind || "treatment";
-    function appendField(label5, getVal) {
+    function appendField(label, getVal) {
       var val2 = getVal(order);
       if (val2 == null || val2 === "") return;
       grid.appendChild(
         buildSomeField(
-          label5,
+          label,
           toSomeUpper(val2),
           function() {
             return toSomeUpper(getVal(resolveOrder()) || "");
@@ -41145,17 +41196,17 @@ function getAtbSelectedId() {
     return "";
   }
 }
-function setAtbSelectedId(id5) {
+function setAtbSelectedId(id) {
   try {
-    if (id5) sessionStorage.setItem(ATB_SELECTED_KEY, id5);
+    if (id) sessionStorage.setItem(ATB_SELECTED_KEY, id);
     else sessionStorage.removeItem(ATB_SELECTED_KEY);
   } catch (_e2) {
   }
 }
-function findAtbDrugById(id5) {
-  if (!id5) return null;
+function findAtbDrugById(id) {
+  if (!id) return null;
   return MANEJO_ATB_DRUGS.find(function(d) {
-    return d.id === id5;
+    return d.id === id;
   }) || null;
 }
 function atbStatusLabel(classification, drug) {
@@ -41267,23 +41318,23 @@ function getAtbFamilyFilter() {
   }
   return "all";
 }
-function setAtbFamilyFilter(id5) {
+function setAtbFamilyFilter(id) {
   try {
-    sessionStorage.setItem(ATB_FAMILY_KEY, id5 || "all");
+    sessionStorage.setItem(ATB_FAMILY_KEY, id || "all");
   } catch (_e2) {
   }
 }
 function defaultAtbRerender() {
   if (typeof readingPanelDeps.renderManejo === "function") readingPanelDeps.renderManejo();
 }
-function applyAtbFamilyFilter(id5, rerenderFn) {
+function applyAtbFamilyFilter(id, rerenderFn) {
   clearAtbHintFilter();
-  setAtbFamilyFilter(id5);
-  if (id5 !== "all") {
+  setAtbFamilyFilter(id);
+  if (id !== "all") {
     var sid = getAtbSelectedId();
     if (sid) {
       var drug = findAtbDrugById(sid);
-      if (drug && drug.family !== id5) setAtbSelectedId("");
+      if (drug && drug.family !== id) setAtbSelectedId("");
     }
   }
   if (typeof rerenderFn === "function") rerenderFn();
@@ -42609,10 +42660,10 @@ function pathologyBranchLabelFor(branchId) {
   });
   return hit ? hit.label : branchId;
 }
-function findPathologyById(id5) {
-  if (!id5) return null;
+function findPathologyById(id) {
+  if (!id) return null;
   return MANEJO_PATHOLOGIES.find(function(p) {
-    return p.id === id5;
+    return p.id === id;
   }) || null;
 }
 function pathologyMatchesSearch(entry2, q) {
@@ -43450,21 +43501,21 @@ function normalizeAdminView(view) {
   var via = "";
   var noteParts = trim(view.note) ? [trim(view.note)] : [];
   (view.rows || []).forEach(function(row) {
-    var label5 = trim(row.label).toLowerCase();
+    var label = trim(row.label).toLowerCase();
     var value = humanizeAdminValue(row.value);
     if (row.lines && row.lines.length) {
       row.lines.forEach(function(line) {
         var lineText = humanizeAdminValue(line.text);
         if (!lineText) return;
-        if (label5 === "dosis") doseParts.push(lineText);
+        if (label === "dosis") doseParts.push(lineText);
         else appendNotePart(noteParts, line.tag && line.tag !== "Detalle" ? line.tag + ": " + lineText : lineText);
       });
       return;
     }
     if (!value) return;
-    if (label5 === "dosis") doseParts.push(value);
-    else if (label5 === "diluci\xF3n" || label5 === "dilucion") doseParts.push(value);
-    else if (label5 === "v\xEDa" || label5 === "via") via = value;
+    if (label === "dosis") doseParts.push(value);
+    else if (label === "diluci\xF3n" || label === "dilucion") doseParts.push(value);
+    else if (label === "v\xEDa" || label === "via") via = value;
     else appendNotePart(noteParts, value);
   });
   var rows = [];
@@ -43526,8 +43577,8 @@ function rowsFromSomeBlock(text) {
       drug = humanizeDrugName(val2);
       return;
     }
-    var label5 = SOME_LABELS[key] || humanizeAdminValue(key);
-    rows.push({ label: label5, value: val2 });
+    var label = SOME_LABELS[key] || humanizeAdminValue(key);
+    rows.push({ label, value: val2 });
   });
   return { drug, rows };
 }
@@ -43698,7 +43749,7 @@ function resolveClinicalTextAdminView(text, opts) {
   }
   return view;
 }
-function appendAdminRow(grid, label5, value, lines) {
+function appendAdminRow(grid, label, value, lines) {
   value = trim(value);
   lines = lines || null;
   if ((!value || value === "\u2014") && !(lines && lines.length)) return;
@@ -43707,7 +43758,7 @@ function appendAdminRow(grid, label5, value, lines) {
   if (lines && lines.length) row.className += " manejo-proto-admin-row--stacked";
   var lbl = document.createElement("span");
   lbl.className = "manejo-proto-admin-label";
-  lbl.textContent = label5;
+  lbl.textContent = label;
   var val2 = document.createElement("div");
   val2.className = "manejo-proto-admin-val";
   if (lines && lines.length) {
@@ -43938,23 +43989,23 @@ function expandClinicalCriteria(text, sectionTitle) {
   });
   return out;
 }
-function resolveLinkForLabel(label5, opts) {
-  if (!opts || !opts.linkDrugs || !label5) return null;
+function resolveLinkForLabel(label, opts) {
+  if (!opts || !opts.linkDrugs || !label) return null;
   if (typeof opts.resolveDrugLink === "function") {
-    return opts.resolveDrugLink(label5);
+    return opts.resolveDrugLink(label);
   }
   if (opts.allProtocols) {
-    return resolveClinicalDrugLink(label5, opts.allProtocols);
+    return resolveClinicalDrugLink(label, opts.allProtocols);
   }
   return null;
 }
-function appendDrugLabel(parent, label5, opts) {
-  var link = resolveLinkForLabel(label5, opts);
+function appendDrugLabel(parent, label, opts) {
+  var link = resolveLinkForLabel(label, opts);
   if (link && typeof opts.onDrugLink === "function") {
     var btn = document.createElement("button");
     btn.type = "button";
     btn.className = "manejo-clinical-drug-link";
-    btn.textContent = label5;
+    btn.textContent = label;
     btn.addEventListener("click", function(e) {
       e.stopPropagation();
       opts.onDrugLink(link);
@@ -43963,7 +44014,7 @@ function appendDrugLabel(parent, label5, opts) {
     return;
   }
   var span = document.createElement("span");
-  span.textContent = label5;
+  span.textContent = label;
   parent.appendChild(span);
 }
 function buildDefinitionBoxes(lines, opts) {
@@ -44086,19 +44137,19 @@ function recommendationCardTitle(item, sectionTitle, opts) {
   }
   return clinicalTextPreview(item.text, 72, sectionTitle);
 }
-function buildClinicalKvBlock(label5, value, opts) {
+function buildClinicalKvBlock(label, value, opts) {
   opts = opts || {};
   var kv = document.createElement("div");
   kv.className = "manejo-kv" + (opts.wide ? " manejo-kv--wide" : "");
   var lbl = document.createElement("span");
   lbl.className = "manejo-kv-label";
-  lbl.textContent = label5;
+  lbl.textContent = label;
   var val2 = document.createElement("div");
   val2.className = "manejo-kv-val";
   val2.appendChild(
     buildClinicalTextElement(value, {
       compact: opts.compact !== false,
-      sectionTitle: label5,
+      sectionTitle: label,
       linkDrugs: opts.linkDrugs,
       allProtocols: opts.allProtocols,
       resolveDrugLink: opts.resolveDrugLink,
@@ -44124,22 +44175,22 @@ function getPathologyBranchFilter() {
   }
   return "all";
 }
-function setPathologyBranchFilter(id5) {
+function setPathologyBranchFilter(id) {
   try {
-    sessionStorage.setItem(BRANCH_FILTER_KEY, id5 || "all");
+    sessionStorage.setItem(BRANCH_FILTER_KEY, id || "all");
   } catch (_e2) {
   }
 }
-function setPathologySelectedId(id5) {
+function setPathologySelectedId(id) {
   try {
-    if (id5) sessionStorage.setItem(SELECTED_KEY, id5);
+    if (id) sessionStorage.setItem(SELECTED_KEY, id);
     else sessionStorage.removeItem(SELECTED_KEY);
   } catch (_e4) {
   }
 }
-function branchFilterLabel(id5) {
-  if (id5 === "all") return "Todas las ramas";
-  return pathologyBranchLabelFor(id5);
+function branchFilterLabel(id) {
+  if (id === "all") return "Todas las ramas";
+  return pathologyBranchLabelFor(id);
 }
 function buildPathologyBranchMenu(activeBranch, onSelect) {
   var selectedBranch = activeBranch;
@@ -44187,23 +44238,23 @@ function buildPathologyBranchMenu(activeBranch, onSelect) {
       }
     }
   }
-  function makeOption(id5, label5) {
+  function makeOption(id, label) {
     var btn = document.createElement("button");
     btn.type = "button";
     btn.className = "manejo-pathology-branch-option";
-    if (id5 !== "all") btn.className += " " + pathologyBranchCssClass(id5);
-    if (activeBranch === id5) btn.className += " manejo-pathology-branch-option--active";
+    if (id !== "all") btn.className += " " + pathologyBranchCssClass(id);
+    if (activeBranch === id) btn.className += " manejo-pathology-branch-option--active";
     btn.setAttribute("role", "option");
-    btn.setAttribute("data-branch-id", id5);
-    btn.setAttribute("aria-selected", activeBranch === id5 ? "true" : "false");
+    btn.setAttribute("data-branch-id", id);
+    btn.setAttribute("aria-selected", activeBranch === id ? "true" : "false");
     var dot = document.createElement("span");
-    dot.className = "manejo-pathology-branch-option-dot" + (id5 === "all" ? " manejo-pathology-branch-option-dot--all" : "");
+    dot.className = "manejo-pathology-branch-option-dot" + (id === "all" ? " manejo-pathology-branch-option-dot--all" : "");
     btn.appendChild(dot);
     var txt = document.createElement("span");
     txt.className = "manejo-pathology-branch-option-label";
-    txt.textContent = label5;
+    txt.textContent = label;
     btn.appendChild(txt);
-    if (activeBranch === id5) {
+    if (activeBranch === id) {
       var check = document.createElement("span");
       check.className = "manejo-pathology-branch-option-check";
       check.textContent = "\u2713";
@@ -44211,7 +44262,7 @@ function buildPathologyBranchMenu(activeBranch, onSelect) {
     }
     btn.addEventListener("click", function() {
       setOpen(false);
-      if (id5 !== selectedBranch && typeof onSelect === "function") onSelect(id5);
+      if (id !== selectedBranch && typeof onSelect === "function") onSelect(id);
     });
     panel.appendChild(btn);
   }
@@ -44238,15 +44289,15 @@ function buildPathologyBranchMenu(activeBranch, onSelect) {
   });
   wrap.appendChild(trigger);
   wrap.appendChild(panel);
-  wrap.syncBranch = function(id5) {
-    selectedBranch = id5;
+  wrap.syncBranch = function(id) {
+    selectedBranch = id;
     wrap.className = "manejo-pathology-branch-menu";
-    if (id5 !== "all") wrap.className += " " + pathologyBranchCssClass(id5);
-    triggerText.textContent = branchFilterLabel(id5);
-    triggerDot.hidden = id5 === "all";
+    if (id !== "all") wrap.className += " " + pathologyBranchCssClass(id);
+    triggerText.textContent = branchFilterLabel(id);
+    triggerDot.hidden = id === "all";
     panel.querySelectorAll(".manejo-pathology-branch-option").forEach(function(btn) {
       var optId = btn.getAttribute("data-branch-id");
-      var isActive = optId === id5;
+      var isActive = optId === id;
       btn.classList.toggle("manejo-pathology-branch-option--active", isActive);
       btn.setAttribute("aria-selected", isActive ? "true" : "false");
       var check = btn.querySelector(".manejo-pathology-branch-option-check");
@@ -44319,14 +44370,14 @@ function setGuiaView(view) {
 function getGuiaEntityId() {
   return read(KEYS.entityId) || "";
 }
-function setGuiaEntityId(id5) {
-  write(KEYS.entityId, id5 || "");
+function setGuiaEntityId(id) {
+  write(KEYS.entityId, id || "");
 }
 function getGuiaFromPathologyId() {
   return read(KEYS.fromPathologyId) || "";
 }
-function setGuiaFromPathologyId(id5) {
-  write(KEYS.fromPathologyId, id5 || "");
+function setGuiaFromPathologyId(id) {
+  write(KEYS.fromPathologyId, id || "");
 }
 function navigateGuia(patch) {
   patch = patch || {};
@@ -45544,8 +45595,8 @@ function openManejoProtocolEditorModal(opts, deps) {
       },
       category
     );
-    patch.linkedPathologyIds = Object.keys(pathChecks).filter(function(id5) {
-      return pathChecks[id5].checked;
+    patch.linkedPathologyIds = Object.keys(pathChecks).filter(function(id) {
+      return pathChecks[id].checked;
     });
     if (mode === "add") {
       addCustomProtocol(patch);
@@ -45744,10 +45795,10 @@ function buildProtocolCopyText(entry2, calcResult, doseMode, weightKg) {
 function buildManejoDoseUnitSwitch(entry2, patient, onChange) {
   var wrap = document.createElement("div");
   wrap.className = "manejo-dose-unit-switch";
-  var label5 = document.createElement("span");
-  label5.className = "manejo-dose-unit-switch-label";
-  label5.textContent = "Indicar dosis como:";
-  wrap.appendChild(label5);
+  var label = document.createElement("span");
+  label.className = "manejo-dose-unit-switch-label";
+  label.textContent = "Indicar dosis como:";
+  wrap.appendChild(label);
   var seg = document.createElement("div");
   seg.className = "manejo-dose-unit-switch-seg";
   seg.setAttribute("role", "group");
@@ -45962,10 +46013,10 @@ function getAllManejoProtocols() {
     })
   );
 }
-function findProtocolEntryById(id5, allProtocols) {
-  if (!id5) return null;
+function findProtocolEntryById(id, allProtocols) {
+  if (!id) return null;
   return (allProtocols || getAllManejoProtocols()).find(function(p) {
-    return p.id === id5;
+    return p.id === id;
   }) || null;
 }
 function buildStanfordDetailPanel(entry2) {
@@ -46181,11 +46232,11 @@ function buildProtocolDetailPanel(entry2, patient, panelOpts) {
     wrap.appendChild(
       buildKvBlock(
         "Categor\xEDa de uso",
-        entry2.useCategories.map(function(id5) {
+        entry2.useCategories.map(function(id) {
           var hit = MANEJO_PROTOCOL_USE_CATEGORIES.find(function(c) {
-            return c.id === id5;
+            return c.id === id;
           });
-          return hit ? hit.label : id5;
+          return hit ? hit.label : id;
         }).join(" \xB7 "),
         { wide: true }
       )
@@ -46281,9 +46332,9 @@ function getProtoCategoryFilter() {
   }
   return "all";
 }
-function setProtoCategoryFilter(id5) {
+function setProtoCategoryFilter(id) {
   try {
-    sessionStorage.setItem(PROTO_FILTER_KEY, id5 || "all");
+    sessionStorage.setItem(PROTO_FILTER_KEY, id || "all");
   } catch (_e) {
   }
 }
@@ -46305,13 +46356,13 @@ function filterProtocolEntries(entries, opts) {
   var q = opts.query || "";
   var extra = opts.extra || getProtoExtraFilters();
   var favSet = {};
-  loadProtoFavorites().forEach(function(id5) {
-    favSet[id5] = true;
+  loadProtoFavorites().forEach(function(id) {
+    favSet[id] = true;
   });
   var recentOrder = loadProtoRecentIds();
   var recentRank = {};
-  recentOrder.forEach(function(id5, i) {
-    recentRank[id5] = i;
+  recentOrder.forEach(function(id, i) {
+    recentRank[id] = i;
   });
   var out = entries.filter(function(entry2) {
     if (extra.calcOnly && !entry2.calculatorId) return false;
@@ -46358,22 +46409,22 @@ function buildManejoProtoSegmentGroup(ariaLabel) {
   seg.setAttribute("aria-label", ariaLabel);
   return seg;
 }
-function buildManejoProtoSegmentChip(label5, isActive, onClick, opts) {
+function buildManejoProtoSegmentChip(label, isActive, onClick, opts) {
   opts = opts || {};
   var btn = document.createElement("button");
   btn.type = "button";
   btn.className = "manejo-proto-chip manejo-proto-chip--segment" + (opts.extraClass ? " " + opts.extraClass : "") + (isActive ? " manejo-proto-chip--active" : "");
-  btn.textContent = label5;
+  btn.textContent = label;
   if (opts.title) btn.title = opts.title;
   btn.setAttribute("aria-pressed", isActive ? "true" : "false");
   btn.addEventListener("click", onClick);
   return btn;
 }
-function buildManejoProtoToggleChip(label5, isActive, onClick) {
+function buildManejoProtoToggleChip(label, isActive, onClick) {
   var btn = document.createElement("button");
   btn.type = "button";
   btn.className = "manejo-proto-toggle" + (isActive ? " manejo-proto-toggle--active" : "");
-  btn.textContent = label5;
+  btn.textContent = label;
   btn.setAttribute("aria-pressed", isActive ? "true" : "false");
   btn.addEventListener("click", onClick);
   return btn;
@@ -46382,9 +46433,9 @@ function buildManejoProtoFilterMenu(opts) {
   opts = opts || {};
   var activeId2 = opts.activeId == null ? "all" : opts.activeId;
   var selectedId = activeId2;
-  function labelFor(id5) {
+  function labelFor(id) {
     var hit = (opts.options || []).find(function(o) {
-      return o.id === id5;
+      return o.id === id;
     });
     if (hit) return hit.label;
     return opts.defaultOptionLabel || "Todos";
@@ -46501,20 +46552,20 @@ function buildManejoProtoFilterMenu(opts) {
   menu.appendChild(trigger);
   menu.appendChild(panel);
   wrap.appendChild(menu);
-  wrap.syncActive = function(id5, accentClass) {
-    selectedId = id5;
-    triggerText.textContent = labelFor(id5);
-    triggerDot.hidden = id5 === "all";
+  wrap.syncActive = function(id, accentClass) {
+    selectedId = id;
+    triggerText.textContent = labelFor(id);
+    triggerDot.hidden = id === "all";
     wrap.className = "manejo-proto-filter";
     if (opts.wrapClass) wrap.className += " " + opts.wrapClass;
     menu.className = "manejo-proto-filter-menu";
-    if (id5 !== "all" && accentClass) {
+    if (id !== "all" && accentClass) {
       wrap.className += " " + accentClass;
       menu.className += " " + accentClass;
     }
     panel.querySelectorAll(".manejo-proto-filter-option").forEach(function(btn) {
       var optId = btn.getAttribute("data-filter-id");
-      var isActive = optId === id5;
+      var isActive = optId === id;
       btn.classList.toggle("manejo-proto-filter-option--active", isActive);
       btn.setAttribute("aria-selected", isActive ? "true" : "false");
       var check = btn.querySelector(".manejo-proto-filter-option-check");
@@ -46568,10 +46619,10 @@ function buildInsulinPumpReferenceTable(algorithmIndex, glucoseMgDl) {
   table.className = "manejo-pump-ref-table";
   var thead = document.createElement("thead");
   var headRow = document.createElement("tr");
-  ["Glucosa (mg/dL)", "U/h"].forEach(function(label5) {
+  ["Glucosa (mg/dL)", "U/h"].forEach(function(label) {
     var th = document.createElement("th");
     th.scope = "col";
-    th.textContent = label5;
+    th.textContent = label;
     headRow.appendChild(th);
   });
   thead.appendChild(headRow);
@@ -46940,10 +46991,10 @@ function buildAdaPotassiumSection(kGuide, opts) {
   table.className = "manejo-cad-k-table";
   var headRow = document.createElement("div");
   headRow.className = "manejo-cad-k-row manejo-cad-k-row--head";
-  ["Rango K\u207A", "Recomendaci\xF3n ADA"].forEach(function(label5) {
+  ["Rango K\u207A", "Recomendaci\xF3n ADA"].forEach(function(label) {
     var cell = document.createElement("span");
     cell.className = "manejo-cad-k-cell manejo-cad-k-cell--range";
-    cell.textContent = label5;
+    cell.textContent = label;
     headRow.appendChild(cell);
   });
   table.appendChild(headRow);
@@ -46969,9 +47020,9 @@ var CAD_FOOTER_IDS = ["cad-resolution", "cad-transition"];
 var EHH_FLUIDS_INSULIN_IDS = ["ehh-fluids", "ehh-insulin"];
 var EHH_FOOTER_IDS = ["ehh-precipitant"];
 function filterChecklistByIds(checklist, ids) {
-  return (ids || []).map(function(id5) {
+  return (ids || []).map(function(id) {
     return (checklist || []).find(function(item) {
-      return item.id === id5;
+      return item.id === id;
     });
   }).filter(Boolean);
 }
@@ -47474,8 +47525,8 @@ function buildRecommendationStep(item, sectionTitle, linkOpts) {
 }
 function appendLinkedInfusions(wrap, entry2, allProtocols, patient, ui, ctx) {
   var embeddedProtoIds = {};
-  protocolIdsInPathologySections(entry2).forEach(function(id5) {
-    embeddedProtoIds[id5] = true;
+  protocolIdsInPathologySections(entry2).forEach(function(id) {
+    embeddedProtoIds[id] = true;
   });
   var linked = protocolsLinkedToPathology(allProtocols, entry2.id).filter(function(proto) {
     return !embeddedProtoIds[proto.id];
@@ -47624,8 +47675,8 @@ function renderGuiaInfusionIndex(host, ctx) {
           };
         }).filter(Boolean)
       ),
-      onSelect: function(id5) {
-        ui.setProtoCategoryFilter(id5);
+      onSelect: function(id) {
+        ui.setProtoCategoryFilter(id);
         ctx.rerender();
       }
     })
@@ -47651,8 +47702,8 @@ function renderGuiaInfusionIndex(host, ctx) {
           };
         }).filter(Boolean)
       ),
-      onSelect: function(id5) {
-        ui.setProtoExtraFilters({ useCategory: id5 });
+      onSelect: function(id) {
+        ui.setProtoExtraFilters({ useCategory: id });
         ctx.rerender();
       }
     })
@@ -47987,8 +48038,8 @@ function renderGuiaAtbIndex(host, ctx) {
           };
         }).filter(Boolean)
       ),
-      onSelect: function(id5) {
-        ui.applyAtbFamilyFilter(id5, ctx.rerender);
+      onSelect: function(id) {
+        ui.applyAtbFamilyFilter(id, ctx.rerender);
       }
     })
   );
@@ -48493,15 +48544,15 @@ function getActiveManejoSubtab() {
   }
   return "electrolitos";
 }
-function setActiveManejoSubtab(id5) {
+function setActiveManejoSubtab(id) {
   try {
-    var legacyMode = migrateLegacyManejoSubtab(id5);
+    var legacyMode = migrateLegacyManejoSubtab(id);
     if (legacyMode) {
       sessionStorage.setItem(MANEJO_SUBTAB_KEY2, "guia");
       navigateGuia({ mode: legacyMode, view: "indice" });
       return;
     }
-    sessionStorage.setItem(MANEJO_SUBTAB_KEY2, id5);
+    sessionStorage.setItem(MANEJO_SUBTAB_KEY2, id);
   } catch (_e2) {
   }
 }
@@ -48652,8 +48703,8 @@ function syncManejoSubtabChrome(activeId2) {
   var nav = document.querySelector("#manejo-container .manejo-subtabs");
   if (!nav) return;
   nav.querySelectorAll(".manejo-subtab").forEach(function(btn) {
-    var id5 = btn.getAttribute("data-subtab");
-    var on = id5 === activeId2;
+    var id = btn.getAttribute("data-subtab");
+    var on = id === activeId2;
     btn.classList.toggle("manejo-subtab--active", on);
     btn.classList.toggle("active", on);
     btn.setAttribute("aria-selected", on ? "true" : "false");
@@ -49168,9 +49219,9 @@ function buildAppTextForSafety(data, catalogs) {
   if (app.descripcionDetallada) parts.push(String(app.descripcionDetallada));
   var conditions = Array.isArray(app.conditions) ? app.conditions : [];
   for (var i = 0; i < conditions.length; i++) {
-    var id5 = conditions[i];
-    var label5 = appConditions[id5] || id5;
-    if (label5) parts.push(String(label5));
+    var id = conditions[i];
+    var label = appConditions[id] || id;
+    if (label) parts.push(String(label));
   }
   return parts.join("\n");
 }
@@ -49242,8 +49293,8 @@ init_lan_sync();
 var HC_INTERROGADO_NEGADO = "Interrogado y negado";
 function defaultIpasBlocks(ipasSystems = {}) {
   const ipas = {};
-  for (const id5 of Object.keys(ipasSystems)) {
-    ipas[id5] = { checks: [], descripcion: HC_INTERROGADO_NEGADO, negado: true };
+  for (const id of Object.keys(ipasSystems)) {
+    ipas[id] = { checks: [], descripcion: HC_INTERROGADO_NEGADO, negado: true };
   }
   return ipas;
 }
@@ -49762,9 +49813,9 @@ function formatToxicomaniasEntries(entries) {
   entries = entries || [];
   if (!entries.length) return "Negado";
   return entries.map(function(e) {
-    const label5 = substanceLabel(e);
-    if (!label5) return "";
-    const parts = [label5];
+    const label = substanceLabel(e);
+    if (!label) return "";
+    const parts = [label];
     if (trim5(e.frequency)) parts.push("frecuencia: " + trim5(e.frequency));
     if (trim5(e.years)) parts.push(trim5(e.years) + " a\xF1os de uso");
     return parts.join("; ");
@@ -49923,10 +49974,10 @@ function trim7(s) {
 function labelsFromCatalog(ids, catalog, customConditions) {
   const custom = Array.isArray(customConditions) ? customConditions : [];
   const customMap = Object.fromEntries(custom.map((c) => [c.id, c.label]));
-  return (ids || []).map(function(id5) {
-    if (catalog && catalog[id5]) return catalog[id5];
-    if (customMap[id5]) return customMap[id5];
-    return id5;
+  return (ids || []).map(function(id) {
+    if (catalog && catalog[id]) return catalog[id];
+    if (customMap[id]) return customMap[id];
+    return id;
   }).filter(Boolean);
 }
 function formatAppSection(app, catalog) {
@@ -49940,12 +49991,12 @@ function formatAppSection(app, catalog) {
   });
   if (ids.length) {
     const details = app.conditionDetails || {};
-    ids.forEach(function(id5) {
-      let line = labelsFromCatalog([id5], catalog, custom)[0] || id5;
-      const d = details[id5];
+    ids.forEach(function(id) {
+      let line = labelsFromCatalog([id], catalog, custom)[0] || id;
+      const d = details[id];
       if (d && typeof d === "object") {
         let suffix = "";
-        if (id5 === ERC_CONDITION_ID) {
+        if (id === ERC_CONDITION_ID) {
           suffix = formatErcConditionSuffix(d, formatFlexibleDate);
         } else {
           const parts = [];
@@ -50062,8 +50113,8 @@ var AHF_RELATIVES = [
   { id: "hija", label: "Hija", group: "hijos" }
 ];
 var RELATIVE_LABELS = Object.fromEntries(AHF_RELATIVES.map((r) => [r.id, r.label]));
-function ahfRelativeLabel(id5) {
-  return RELATIVE_LABELS[id5] || id5;
+function ahfRelativeLabel(id) {
+  return RELATIVE_LABELS[id] || id;
 }
 
 // lib/historia-clinica/compile-ahf.mjs
@@ -50232,8 +50283,8 @@ function trim10(s) {
   return String(s || "").trim();
 }
 function labelsFromCatalog2(ids, catalog) {
-  return (ids || []).map(function(id5) {
-    return catalog && catalog[id5] ? catalog[id5] : id5;
+  return (ids || []).map(function(id) {
+    return catalog && catalog[id] ? catalog[id] : id;
   }).filter(Boolean);
 }
 function formatChecklist(ids, catalog, descripcion, negado) {
@@ -50246,10 +50297,10 @@ function formatChecklist(ids, catalog, descripcion, negado) {
   if (parts.length) return parts.join(", ");
   return detail;
 }
-function pushSection(out, id5, title, body) {
+function pushSection(out, id, title, body) {
   const b = trim10(body);
   if (!b) return;
-  out.push({ id: id5, title, body: b });
+  out.push({ id, title, body: b });
 }
 function formatApnp(apnp, ctx) {
   if (!apnp || typeof apnp !== "object") return "";
@@ -50269,19 +50320,19 @@ function formatApnp(apnp, ctx) {
     return row[0] + ": " + trim10(row[1]);
   }).join("\n");
 }
-function formatIdentificacion(id5) {
-  if (!id5 || typeof id5 !== "object") return "";
+function formatIdentificacion(id) {
+  if (!id || typeof id !== "object") return "";
   const lines = [
-    ["Informante", id5.informante],
-    ["Lugar de nacimiento", id5.lugarNacimiento],
-    ["Ocupaci\xF3n actual", id5.ocupacionActual],
-    ["Ocupaci\xF3n anterior", id5.ocupacionAnterior],
-    ["Escolaridad", id5.escolaridad],
-    ["Estado civil", id5.estadoCivil],
-    ["Religi\xF3n", id5.religion],
-    ["Cama", id5.cama],
-    ["Registro", id5.registro],
-    ["DX", id5.dx]
+    ["Informante", id.informante],
+    ["Lugar de nacimiento", id.lugarNacimiento],
+    ["Ocupaci\xF3n actual", id.ocupacionActual],
+    ["Ocupaci\xF3n anterior", id.ocupacionAnterior],
+    ["Escolaridad", id.escolaridad],
+    ["Estado civil", id.estadoCivil],
+    ["Religi\xF3n", id.religion],
+    ["Cama", id.cama],
+    ["Registro", id.registro],
+    ["DX", id.dx]
   ];
   return lines.filter(function(row) {
     return trim10(row[1]);
@@ -50592,8 +50643,8 @@ function renderChecklistBlock(container, spec, value, onChange) {
   function emit() {
     const nextIds = [];
     container.querySelectorAll(".hc-check-chip-input:checked").forEach(function(c) {
-      const id5 = c.getAttribute("data-opt-id");
-      if (id5) nextIds.push(id5);
+      const id = c.getAttribute("data-opt-id");
+      if (id) nextIds.push(id);
     });
     const detailEl = container.querySelector(".hc-checklist-detail");
     const detailText = detailEl ? toClinicalHistoryText(detailEl.value) : "";
@@ -50623,9 +50674,9 @@ function renderChecklistBlock(container, spec, value, onChange) {
 function esc15(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-function numInput(name, value, label5, attrs) {
+function numInput(name, value, label, attrs) {
   attrs = attrs || "";
-  return '<div class="field-group hc-calc-field"><label>' + esc15(label5) + '</label><input type="number" min="0" step="1" data-hc-calc="' + esc15(name) + '" value="' + esc15(value != null && value !== "" ? value : "") + '" ' + attrs + "></div>";
+  return '<div class="field-group hc-calc-field"><label>' + esc15(label) + '</label><input type="number" min="0" step="1" data-hc-calc="' + esc15(name) + '" value="' + esc15(value != null && value !== "" ? value : "") + '" ' + attrs + "></div>";
 }
 function alertBanner(result, kind) {
   if (!result || !result.alert) return "";
@@ -50732,8 +50783,8 @@ function esc16(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function catalogOptions() {
-  return Object.keys(TOXICOMANIAS_SUBSTANCES).map(function(id5) {
-    return { id: id5, label: TOXICOMANIAS_SUBSTANCES[id5] };
+  return Object.keys(TOXICOMANIAS_SUBSTANCES).map(function(id) {
+    return { id, label: TOXICOMANIAS_SUBSTANCES[id] };
   });
 }
 function entryForSubstance(entries, substanceId) {
@@ -50741,8 +50792,8 @@ function entryForSubstance(entries, substanceId) {
     return e.substanceId === substanceId;
   });
 }
-function entryHtml(entry2, label5) {
-  return '<div class="hc-tox-entry" data-tox-entry-id="' + esc16(entry2.id) + '"><div class="hc-tox-entry-title">' + esc16(label5) + '</div><div class="hc-tox-entry-fields"><div class="field-group"><label>Frecuencia de uso</label><input type="text" data-tox-field="frequency" value="' + esc16(entry2.frequency || "") + '" placeholder="Diario, semanal, ocasional\u2026"></div><div class="field-group"><label>A\xF1os de uso</label><input type="number" min="0" max="80" step="1" data-tox-field="years" value="' + esc16(entry2.years || "") + '" placeholder="0"></div></div><button type="button" class="btn-remove" data-tox-remove="' + esc16(entry2.id) + '" aria-label="Quitar">\xD7</button></div>';
+function entryHtml(entry2, label) {
+  return '<div class="hc-tox-entry" data-tox-entry-id="' + esc16(entry2.id) + '"><div class="hc-tox-entry-title">' + esc16(label) + '</div><div class="hc-tox-entry-fields"><div class="field-group"><label>Frecuencia de uso</label><input type="text" data-tox-field="frequency" value="' + esc16(entry2.frequency || "") + '" placeholder="Diario, semanal, ocasional\u2026"></div><div class="field-group"><label>A\xF1os de uso</label><input type="number" min="0" max="80" step="1" data-tox-field="years" value="' + esc16(entry2.years || "") + '" placeholder="0"></div></div><button type="button" class="btn-remove" data-tox-remove="' + esc16(entry2.id) + '" aria-label="Quitar">\xD7</button></div>';
 }
 function mountToxicomaniasPanel(container, apnp, onChange) {
   if (!container) return;
@@ -50764,8 +50815,8 @@ function mountToxicomaniasPanel(container, apnp, onChange) {
   html += "</div>";
   html += '<div class="hc-tox-entries" id="hc-tox-entries-host">';
   entries.forEach(function(entry2) {
-    const label5 = entry2.substanceId ? TOXICOMANIAS_SUBSTANCES[entry2.substanceId] : entry2.customLabel;
-    if (label5) html += entryHtml(entry2, label5);
+    const label = entry2.substanceId ? TOXICOMANIAS_SUBSTANCES[entry2.substanceId] : entry2.customLabel;
+    if (label) html += entryHtml(entry2, label);
   });
   html += "</div>";
   html += '<div class="hc-app-custom-row hc-tox-custom-row"><div class="field-group hc-app-custom-field"><label>Otra sustancia</label><input type="text" id="hc-tox-custom-label" placeholder="Nombre de la sustancia"></div><button type="button" class="btn-med-secondary" id="hc-tox-add-custom">Agregar</button></div></div>';
@@ -50778,8 +50829,8 @@ function mountToxicomaniasPanel(container, apnp, onChange) {
     const host = container.querySelector("#hc-tox-entries-host");
     if (!host) return;
     host.innerHTML = entries.map(function(entry2) {
-      const label5 = entry2.substanceId ? TOXICOMANIAS_SUBSTANCES[entry2.substanceId] : entry2.customLabel;
-      return label5 ? entryHtml(entry2, label5) : "";
+      const label = entry2.substanceId ? TOXICOMANIAS_SUBSTANCES[entry2.substanceId] : entry2.customLabel;
+      return label ? entryHtml(entry2, label) : "";
     }).join("");
     wireEntries();
   }
@@ -50787,9 +50838,9 @@ function mountToxicomaniasPanel(container, apnp, onChange) {
     container.querySelectorAll("[data-tox-field]").forEach(function(el) {
       el.oninput = function() {
         const row = el.closest("[data-tox-entry-id]");
-        const id5 = row.getAttribute("data-tox-entry-id");
+        const id = row.getAttribute("data-tox-entry-id");
         const entry2 = entries.find(function(e) {
-          return e.id === id5;
+          return e.id === id;
         });
         if (!entry2) return;
         entry2[el.getAttribute("data-tox-field")] = el.value;
@@ -50798,12 +50849,12 @@ function mountToxicomaniasPanel(container, apnp, onChange) {
     });
     container.querySelectorAll("[data-tox-remove]").forEach(function(btn) {
       btn.onclick = function() {
-        const id5 = btn.getAttribute("data-tox-remove");
+        const id = btn.getAttribute("data-tox-remove");
         const removed = entries.find(function(e) {
-          return e.id === id5;
+          return e.id === id;
         });
         entries = entries.filter(function(e) {
-          return e.id !== id5;
+          return e.id !== id;
         });
         if (removed && removed.substanceId) {
           const chip = container.querySelector(
@@ -50842,12 +50893,12 @@ function mountToxicomaniasPanel(container, apnp, onChange) {
   if (addCustom) {
     addCustom.onclick = function() {
       const input = container.querySelector("#hc-tox-custom-label");
-      const label5 = String(input && input.value || "").trim();
-      if (!label5) return;
+      const label = String(input && input.value || "").trim();
+      if (!label) return;
       entries.push({
         id: newToxicomaniaEntryId(),
         substanceId: "",
-        customLabel: label5,
+        customLabel: label,
         frequency: "",
         years: ""
       });
@@ -50878,8 +50929,8 @@ function normalizeAppData(app, defaults) {
   if (!Array.isArray(app.cirugias)) app.cirugias = [];
   if (!Array.isArray(app.hospitalizaciones)) app.hospitalizaciones = [];
   if (!Array.isArray(app.conditions)) app.conditions = [];
-  app.conditions = app.conditions.filter(function(id5) {
-    return id5 && !APP_DEDICATED_IDS.has(id5);
+  app.conditions = app.conditions.filter(function(id) {
+    return id && !APP_DEDICATED_IDS.has(id);
   });
   if (!Array.isArray(app.alergiaMedicamentos)) app.alergiaMedicamentos = [];
   if (!Array.isArray(app.traumaticosEntries)) app.traumaticosEntries = [];
@@ -50924,8 +50975,8 @@ function normalizeAppData(app, defaults) {
   if (app.alergiasNegado !== false && !app.alergiaMedicamentos.length) {
     app.alergiasNegado = app.alergiasNegado === true;
   }
-  Object.keys(app.conditionDetails).forEach(function(id5) {
-    if (APP_DEDICATED_IDS.has(id5)) delete app.conditionDetails[id5];
+  Object.keys(app.conditionDetails).forEach(function(id) {
+    if (APP_DEDICATED_IDS.has(id)) delete app.conditionDetails[id];
   });
   if ((app.conditions || []).indexOf(ERC_CONDITION_ID) >= 0) {
     app.conditionDetails[ERC_CONDITION_ID] = normalizeErcDetail(
@@ -50943,10 +50994,10 @@ function newRowId(prefix) {
   return prefix + "_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 6);
 }
 function catalogOptions2(map) {
-  return Object.keys(map || {}).filter(function(id5) {
-    return !APP_DEDICATED_IDS.has(id5);
-  }).map(function(id5) {
-    return { id: id5, label: map[id5] };
+  return Object.keys(map || {}).filter(function(id) {
+    return !APP_DEDICATED_IDS.has(id);
+  }).map(function(id) {
+    return { id, label: map[id] };
   });
 }
 function flexibleDateHtml(prefix, date) {
@@ -50998,15 +51049,15 @@ function allConditionIds(app, catalog) {
   (app.customConditions || []).forEach(function(c) {
     if (c && c.id && ids.indexOf(c.id) < 0) ids.push(c.id);
   });
-  return ids.filter(function(id5) {
-    return !APP_DEDICATED_IDS.has(id5);
-  }).map(function(id5) {
+  return ids.filter(function(id) {
+    return !APP_DEDICATED_IDS.has(id);
+  }).map(function(id) {
     return {
-      id: id5,
-      label: catalog && catalog[id5] || ((app.customConditions || []).find(function(c) {
-        return c && c.id === id5;
-      }) || {}).label || id5,
-      custom: !(catalog && catalog[id5])
+      id,
+      label: catalog && catalog[id] || ((app.customConditions || []).find(function(c) {
+        return c && c.id === id;
+      }) || {}).label || id,
+      custom: !(catalog && catalog[id])
     };
   });
 }
@@ -51379,20 +51430,20 @@ function mountHistoriaAppPanel(container, app, catalog, onChange) {
   }
   container.querySelectorAll(".hc-check-chip-input").forEach(function(el) {
     el.addEventListener("change", function() {
-      const id5 = el.getAttribute("data-app-cond");
+      const id = el.getAttribute("data-app-cond");
       const set = new Set(app.conditions || []);
       if (el.checked) {
-        set.add(id5);
-        if (id5 === ERC_CONDITION_ID) {
+        set.add(id);
+        if (id === ERC_CONDITION_ID) {
           app.conditionDetails = app.conditionDetails || {};
           app.conditionDetails[ERC_CONDITION_ID] = normalizeErcDetail(
             app.conditionDetails[ERC_CONDITION_ID]
           );
         }
       } else {
-        set.delete(id5);
-        if (id5 === ERC_CONDITION_ID) purgeErcMedicationsFromApp(app);
-        else if (app.conditionDetails && app.conditionDetails[id5]) delete app.conditionDetails[id5];
+        set.delete(id);
+        if (id === ERC_CONDITION_ID) purgeErcMedicationsFromApp(app);
+        else if (app.conditionDetails && app.conditionDetails[id]) delete app.conditionDetails[id];
       }
       app.conditions = Array.from(set);
       mountHistoriaAppPanel(container, app, catalog, onChange);
@@ -51403,23 +51454,23 @@ function mountHistoriaAppPanel(container, app, catalog, onChange) {
   if (addCustom) {
     addCustom.onclick = function() {
       const input = container.querySelector("#hc-app-custom-label");
-      const label5 = input && input.value ? input.value.trim() : "";
-      if (!label5) return;
-      const id5 = newRowId("custom");
-      app.customConditions.push({ id: id5, label: label5 });
-      app.conditions.push(id5);
-      app.conditionDetails[id5] = { treatment: "" };
+      const label = input && input.value ? input.value.trim() : "";
+      if (!label) return;
+      const id = newRowId("custom");
+      app.customConditions.push({ id, label });
+      app.conditions.push(id);
+      app.conditionDetails[id] = { treatment: "" };
       if (input) input.value = "";
       mountHistoriaAppPanel(container, app, catalog, onChange);
       emit();
     };
   }
   container.querySelectorAll(".hc-app-cond-card:not(.hc-app-cond-card--erc)").forEach(function(card) {
-    const id5 = card.getAttribute("data-cond-id");
+    const id = card.getAttribute("data-cond-id");
     card.querySelectorAll("[data-cond-field]").forEach(function(el) {
       el.addEventListener("input", function() {
-        app.conditionDetails[id5] = app.conditionDetails[id5] || {};
-        app.conditionDetails[id5][el.getAttribute("data-cond-field")] = el.value;
+        app.conditionDetails[id] = app.conditionDetails[id] || {};
+        app.conditionDetails[id][el.getAttribute("data-cond-field")] = el.value;
         emit();
       });
     });
@@ -51427,8 +51478,8 @@ function mountHistoriaAppPanel(container, app, catalog, onChange) {
     if (flex) {
       flex.querySelectorAll("input,select").forEach(function(el) {
         el.addEventListener("change", function() {
-          app.conditionDetails[id5] = app.conditionDetails[id5] || {};
-          app.conditionDetails[id5].diagnosedAt = readFlexibleDate(flex);
+          app.conditionDetails[id] = app.conditionDetails[id] || {};
+          app.conditionDetails[id].diagnosedAt = readFlexibleDate(flex);
           emit();
         });
       });
@@ -51519,8 +51570,8 @@ function esc18(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function catalogOptions3(map) {
-  return Object.keys(map || {}).map(function(id5) {
-    return { id: id5, label: map[id5] };
+  return Object.keys(map || {}).map(function(id) {
+    return { id, label: map[id] };
   });
 }
 function defaultAhf() {
@@ -51537,12 +51588,12 @@ function ensureAhf(ahf) {
 function newEntryId() {
   return "ahf_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 7);
 }
-function conditionLabel2(id5, catalog, customConditions) {
-  if (catalog && catalog[id5]) return catalog[id5];
+function conditionLabel2(id, catalog, customConditions) {
+  if (catalog && catalog[id]) return catalog[id];
   const c = (customConditions || []).find(function(row) {
-    return row && row.id === id5;
+    return row && row.id === id;
   });
-  return c && c.label || id5;
+  return c && c.label || id;
 }
 function entriesForCondition(ahf, conditionId) {
   return (ahf.entries || []).filter(function(e) {
@@ -51559,10 +51610,10 @@ function relativeSelectHtml(entryId, value) {
 }
 function entryRowHtml(entry2) {
   const e = entry2 || {};
-  const id5 = e.id || newEntryId();
+  const id = e.id || newEntryId();
   const vital = e.vitalStatus || "desconocido";
   const deadFields = vital === "fallecido";
-  return '<div class="hc-ahf-entry" data-entry-id="' + esc18(id5) + '"><div class="field-group"><label>Familiar</label>' + relativeSelectHtml(id5, e.relativeId) + '</div><div class="field-group"><label>Diagn\xF3stico</label><input type="text" data-ahf-field="diagnosis" value="' + esc18(e.diagnosis || "") + '"></div><div class="field-group"><label>Tratamiento</label><input type="text" data-ahf-field="treatment" value="' + esc18(e.treatment || "") + '"></div><div class="field-group"><label>Estado</label><select data-ahf-field="vitalStatus"><option value="vivo"' + (vital === "vivo" ? " selected" : "") + '>Vivo/a</option><option value="fallecido"' + (vital === "fallecido" ? " selected" : "") + '>Fallecido/a</option><option value="desconocido"' + (vital === "desconocido" ? " selected" : "") + '>No especificado</option></select></div><div class="hc-ahf-death-fields' + (deadFields ? "" : " hc-ahf-death-fields--hidden") + '"><div class="field-group"><label>Edad al fallecer</label><input type="number" min="0" max="120" data-ahf-field="ageAtDeath" value="' + esc18(e.ageAtDeath != null ? e.ageAtDeath : "") + '"></div><div class="field-group"><label>Causa de muerte</label><input type="text" data-ahf-field="causeOfDeath" value="' + esc18(e.causeOfDeath || "") + '"></div></div><button type="button" class="btn-remove" data-ahf-remove aria-label="Quitar familiar">\xD7</button></div>';
+  return '<div class="hc-ahf-entry" data-entry-id="' + esc18(id) + '"><div class="field-group"><label>Familiar</label>' + relativeSelectHtml(id, e.relativeId) + '</div><div class="field-group"><label>Diagn\xF3stico</label><input type="text" data-ahf-field="diagnosis" value="' + esc18(e.diagnosis || "") + '"></div><div class="field-group"><label>Tratamiento</label><input type="text" data-ahf-field="treatment" value="' + esc18(e.treatment || "") + '"></div><div class="field-group"><label>Estado</label><select data-ahf-field="vitalStatus"><option value="vivo"' + (vital === "vivo" ? " selected" : "") + '>Vivo/a</option><option value="fallecido"' + (vital === "fallecido" ? " selected" : "") + '>Fallecido/a</option><option value="desconocido"' + (vital === "desconocido" ? " selected" : "") + '>No especificado</option></select></div><div class="hc-ahf-death-fields' + (deadFields ? "" : " hc-ahf-death-fields--hidden") + '"><div class="field-group"><label>Edad al fallecer</label><input type="number" min="0" max="120" data-ahf-field="ageAtDeath" value="' + esc18(e.ageAtDeath != null ? e.ageAtDeath : "") + '"></div><div class="field-group"><label>Causa de muerte</label><input type="text" data-ahf-field="causeOfDeath" value="' + esc18(e.causeOfDeath || "") + '"></div></div><button type="button" class="btn-remove" data-ahf-remove aria-label="Quitar familiar">\xD7</button></div>';
 }
 function mountHistoriaAhfPanel(container, ahf, catalog, onChange) {
   if (!container) return;
@@ -51600,9 +51651,9 @@ function mountHistoriaAhfPanel(container, ahf, catalog, onChange) {
   function emit() {
     onChange(ensureAhf(ahf));
   }
-  function findEntry(id5) {
+  function findEntry(id) {
     return (ahf.entries || []).find(function(e) {
-      return e && e.id === id5;
+      return e && e.id === id;
     });
   }
   container.querySelectorAll(".hc-check-chip-input[data-ahf-cond]").forEach(function(el) {
@@ -51624,8 +51675,8 @@ function mountHistoriaAhfPanel(container, ahf, catalog, onChange) {
           });
         }
       } else {
-        ahf.conditions = (ahf.conditions || []).filter(function(id5) {
-          return id5 !== cid;
+        ahf.conditions = (ahf.conditions || []).filter(function(id) {
+          return id !== cid;
         });
         ahf.entries = (ahf.entries || []).filter(function(e) {
           return e.conditionId !== cid;
@@ -51639,16 +51690,16 @@ function mountHistoriaAhfPanel(container, ahf, catalog, onChange) {
   if (addCustom) {
     addCustom.onclick = function() {
       const input = container.querySelector("#hc-ahf-custom-label");
-      const label5 = input && input.value ? input.value.trim() : "";
-      if (!label5) return;
-      const id5 = "custom_" + Date.now().toString(36);
+      const label = input && input.value ? input.value.trim() : "";
+      if (!label) return;
+      const id = "custom_" + Date.now().toString(36);
       ahf.customConditions = ahf.customConditions || [];
-      ahf.customConditions.push({ id: id5, label: label5 });
-      ahf.conditions = (ahf.conditions || []).concat([id5]);
+      ahf.customConditions.push({ id, label });
+      ahf.conditions = (ahf.conditions || []).concat([id]);
       ahf.entries = ahf.entries || [];
       ahf.entries.push({
         id: newEntryId(),
-        conditionId: id5,
+        conditionId: id,
         relativeId: "",
         diagnosis: "",
         treatment: "",
@@ -51717,8 +51768,8 @@ function mountHistoriaAhfPanel(container, ahf, catalog, onChange) {
           return e.id !== entryId;
         });
         if (!entriesForCondition(ahf, entry2.conditionId).length) {
-          ahf.conditions = (ahf.conditions || []).filter(function(id5) {
-            return id5 !== entry2.conditionId;
+          ahf.conditions = (ahf.conditions || []).filter(function(id) {
+            return id !== entry2.conditionId;
           });
         }
         mountHistoriaAhfPanel(container, ahf, catalog, onChange);
@@ -51870,9 +51921,9 @@ function bodyHtmlForSpec(spec, val2) {
 }
 function readFieldFromDom(spec, row) {
   if (!row || spec.kind === "medications") return {};
-  const id5 = spec.id;
+  const id = spec.id;
   const out = {};
-  row.querySelectorAll('[data-genero-part][data-genero-id="' + id5 + '"]').forEach(function(el) {
+  row.querySelectorAll('[data-genero-part][data-genero-id="' + id + '"]').forEach(function(el) {
     const part = el.getAttribute("data-genero-part");
     if (part) out[part] = el.value;
   });
@@ -51992,10 +52043,10 @@ function esc21(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function activePatient4() {
-  var id5 = rt25.getActiveId();
-  if (!id5) return null;
+  var id = rt25.getActiveId();
+  if (!id) return null;
   return patients.find(function(p) {
-    return String(p.id) === String(id5);
+    return String(p.id) === String(id);
   });
 }
 function lookbackHours() {
@@ -52007,18 +52058,18 @@ function lookbackHours() {
 function prefillFromPatient(data, patient) {
   if (!data || !patient) return data;
   data.genero = normalizeGeneroBlock(data.genero, patient.sexo);
-  var id5 = data.identificacion || {};
-  if (!id5.informante && patient.nombre) id5.informante = String(patient.nombre);
-  if (!id5.registro && patient.registro) id5.registro = String(patient.registro);
-  if (!id5.cama && patient.cama) id5.cama = String(patient.cama);
-  if (!id5.dx && patient.diagnosticosText) id5.dx = String(patient.diagnosticosText);
-  if (!id5.dx && Array.isArray(patient.diagnosticosList) && patient.diagnosticosList[0]) {
-    id5.dx = String(patient.diagnosticosList[0]);
+  var id = data.identificacion || {};
+  if (!id.informante && patient.nombre) id.informante = String(patient.nombre);
+  if (!id.registro && patient.registro) id.registro = String(patient.registro);
+  if (!id.cama && patient.cama) id.cama = String(patient.cama);
+  if (!id.dx && patient.diagnosticosText) id.dx = String(patient.diagnosticosText);
+  if (!id.dx && Array.isArray(patient.diagnosticosList) && patient.diagnosticosList[0]) {
+    id.dx = String(patient.diagnosticosList[0]);
   }
   if (patient.edad != null && patient.edad !== "") {
-    id5.edad = String(patient.edad);
+    id.edad = String(patient.edad);
   }
-  data.identificacion = id5;
+  data.identificacion = id;
   return data;
 }
 function normalizeData(raw, patientId, patient) {
@@ -52175,18 +52226,30 @@ function buildLabAnchorFromSet(set) {
     capturedAt: (/* @__PURE__ */ new Date()).toISOString()
   };
 }
-async function fetchHistoria(patientId, roomId) {
-  if (!isLanSessionConfiguredForRest() || !roomId) {
-    var p = activePatient4();
-    if (p && p.historiaClinica && p.historiaClinica.data) {
-      return { version: Number(p.historiaClinica.version || 1), data: p.historiaClinica.data };
-    }
+function readLocalHistoria(patient) {
+  if (!patient || !patient.historiaClinica || !patient.historiaClinica.data) return null;
+  return {
+    version: Number(patient.historiaClinica.version || 0),
+    data: patient.historiaClinica.data,
+    pendingLanSync: !!patient.historiaClinica.pendingLanSync
+  };
+}
+async function fetchHistoriaRemote(patientId, roomId) {
+  if (!isLanSessionConfiguredForRest() || !roomId) return null;
+  try {
+    var res = await Promise.race([
+      lanFetchHistoriaClinica(patientId, roomId),
+      new Promise(function(_, reject) {
+        setTimeout(function() {
+          reject(new Error("historia_fetch_timeout"));
+        }, 4e3);
+      })
+    ]);
+    if (!res || !res.ok || res.missing) return null;
+    return { version: Number(res.version || 0), data: res.data };
+  } catch (_e) {
     return null;
   }
-  var res = await lanFetchHistoriaClinica(patientId, roomId);
-  if (!res.ok) throw new Error("historia_fetch_failed");
-  if (res.missing) return null;
-  return { version: res.version, data: res.data };
 }
 function stepComplete(n) {
   if (!_data) return false;
@@ -52208,14 +52271,14 @@ function renderSafetyBanner(rules) {
 }
 function renderStepperHeader() {
   var labels = ["Antecedentes", "Padecimiento e IPAS", "Ingreso y labs"];
-  return '<nav class="hc-stepper" aria-label="Pasos historia cl\xEDnica">' + labels.map(function(label5, i) {
+  return '<nav class="hc-stepper" aria-label="Pasos historia cl\xEDnica">' + labels.map(function(label, i) {
     var n = i + 1;
     var cls = "hc-step" + (n === _step ? " hc-step--active" : "") + (stepComplete(n) ? " hc-step--done" : "");
-    return '<button type="button" class="' + cls + '" data-hc-step="' + n + '">' + esc21(label5) + "</button>";
+    return '<button type="button" class="' + cls + '" data-hc-step="' + n + '">' + esc21(label) + "</button>";
   }).join("") + "</nav>";
 }
-function fieldRow(label5, html) {
-  return '<div class="field-group"><label>' + esc21(label5) + "</label>" + html + "</div>";
+function fieldRow(label, html) {
+  return '<div class="field-group"><label>' + esc21(label) + "</label>" + html + "</div>";
 }
 function textInput(path, value, placeholder) {
   return '<input type="text" data-hc-path="' + esc21(path) + '" value="' + esc21(toClinicalHistoryText(value)) + '" placeholder="' + esc21(placeholder ? toClinicalHistoryText(placeholder) : "") + '">';
@@ -52230,9 +52293,9 @@ function renderLecturaView(root, patient) {
   }).join("") + (sections.length ? "" : '<p class="tend-empty">Historia sin contenido.</p>') + "</div>";
 }
 function renderStep1() {
-  var id5 = _data && _data.identificacion || {};
+  var id = _data && _data.identificacion || {};
   var apnp = _data && _data.apnp || {};
-  return '<div class="hc-step-body"><h3 class="hc-step-title">Identificaci\xF3n y antecedentes</h3>' + fieldRow("Motivo de consulta", textArea("motivoConsulta", _data.motivoConsulta, 2)) + '<details class="card" open><summary class="card-header">Identificaci\xF3n</summary><div class="card-body hc-grid">' + fieldRow("Informante", textInput("identificacion.informante", id5.informante)) + fieldRow("Lugar de nacimiento", textInput("identificacion.lugarNacimiento", id5.lugarNacimiento)) + fieldRow("Ocupaci\xF3n actual", textInput("identificacion.ocupacionActual", id5.ocupacionActual)) + fieldRow("Ocupaci\xF3n anterior", textInput("identificacion.ocupacionAnterior", id5.ocupacionAnterior)) + fieldRow("Escolaridad", textInput("identificacion.escolaridad", id5.escolaridad)) + fieldRow("Estado civil", textInput("identificacion.estadoCivil", id5.estadoCivil)) + fieldRow("Religi\xF3n", textInput("identificacion.religion", id5.religion)) + '</div></details><details class="card" open><summary class="card-header">APNP</summary><div class="card-body"><div class="hc-apnp-habits"><div class="card hc-calc-wrap"><div class="card-header card-header--tone-slate">Tabaquismo</div><div class="card-body" id="hc-mount-tabaquismo"></div></div><div class="card hc-calc-wrap"><div class="card-header card-header--tone-slate">Alcoholismo</div><div class="card-body" id="hc-mount-alcoholismo"></div></div></div><div class="card hc-apnp-toxicomanias" style="margin-top:12px"><div class="card-header card-header--tone-slate">Toxicoman\xEDas</div><div class="card-body" id="hc-mount-toxicomanias"></div></div><div class="hc-grid" style="margin-top:12px">' + fieldRow("Tatuajes", textInput("apnp.tatuajes", apnp.tatuajes)) + fieldRow("Deportes/pasatiempos/mascotas", textInput("apnp.deportesPasatiemposMascotas", apnp.deportesPasatiemposMascotas)) + fieldRow("Dieta", textInput("apnp.dieta", apnp.dieta)) + '</div></details><details class="card" open><summary class="card-header">APP</summary><div class="card-body" id="hc-mount-app"></div></details><details class="card" open><summary class="card-header">AHF</summary><div class="card-body" id="hc-mount-ahf"></div></details></div>';
+  return '<div class="hc-step-body"><h3 class="hc-step-title">Identificaci\xF3n y antecedentes</h3>' + fieldRow("Motivo de consulta", textArea("motivoConsulta", _data.motivoConsulta, 2)) + '<details class="card" open><summary class="card-header">Identificaci\xF3n</summary><div class="card-body hc-grid">' + fieldRow("Informante", textInput("identificacion.informante", id.informante)) + fieldRow("Lugar de nacimiento", textInput("identificacion.lugarNacimiento", id.lugarNacimiento)) + fieldRow("Ocupaci\xF3n actual", textInput("identificacion.ocupacionActual", id.ocupacionActual)) + fieldRow("Ocupaci\xF3n anterior", textInput("identificacion.ocupacionAnterior", id.ocupacionAnterior)) + fieldRow("Escolaridad", textInput("identificacion.escolaridad", id.escolaridad)) + fieldRow("Estado civil", textInput("identificacion.estadoCivil", id.estadoCivil)) + fieldRow("Religi\xF3n", textInput("identificacion.religion", id.religion)) + '</div></details><details class="card" open><summary class="card-header">APNP</summary><div class="card-body"><div class="hc-apnp-habits"><div class="card hc-calc-wrap"><div class="card-header card-header--tone-slate">Tabaquismo</div><div class="card-body" id="hc-mount-tabaquismo"></div></div><div class="card hc-calc-wrap"><div class="card-header card-header--tone-slate">Alcoholismo</div><div class="card-body" id="hc-mount-alcoholismo"></div></div></div><div class="card hc-apnp-toxicomanias" style="margin-top:12px"><div class="card-header card-header--tone-slate">Toxicoman\xEDas</div><div class="card-body" id="hc-mount-toxicomanias"></div></div><div class="hc-grid" style="margin-top:12px">' + fieldRow("Tatuajes", textInput("apnp.tatuajes", apnp.tatuajes)) + fieldRow("Deportes/pasatiempos/mascotas", textInput("apnp.deportesPasatiemposMascotas", apnp.deportesPasatiemposMascotas)) + fieldRow("Dieta", textInput("apnp.dieta", apnp.dieta)) + '</div></details><details class="card" open><summary class="card-header">APP</summary><div class="card-body" id="hc-mount-app"></div></details><details class="card" open><summary class="card-header">AHF</summary><div class="card-body" id="hc-mount-ahf"></div></details></div>';
 }
 function renderStep2(patient) {
   var sexual = _data && _data.sexual || {};
@@ -52504,10 +52567,10 @@ function openLabPickModal(patient, isResync) {
     );
     if (!ok) return;
   }
-  var label5 = sets.map(function(s, i) {
+  var label = sets.map(function(s, i) {
     return i + 1 + ": " + (s.fecha || "") + " " + (s.hora || "");
   }).join("\n");
-  var choice = prompt("Elige n\xFAmero de set:\n" + label5, "1");
+  var choice = prompt("Elige n\xFAmero de set:\n" + label, "1");
   var idx = parseInt(choice, 10) - 1;
   if (!Number.isFinite(idx) || idx < 0 || idx >= sets.length) return;
   applyLabSet(sets[idx], !isResync && needConfirm);
@@ -52574,6 +52637,8 @@ async function saveHistoria(root, patient, skipAckCheck) {
     if (out && out.ok) {
       _version = out.version;
       _data = migrateLegacyHistoriaData(out.data, CATALOGS);
+      patient.historiaClinica = { version: _version, data: Object.assign({}, _data) };
+      saveState();
       _editMode = false;
       _pendingAck = [];
       _dirtyKeys = /* @__PURE__ */ new Set();
@@ -52601,24 +52666,21 @@ async function renderHistoriaClinicaPanel(opts) {
     if (opts.onReady) opts.onReady();
     return;
   }
+  var local = readLocalHistoria(patient);
+  if (local) {
+    _version = local.version || 1;
+    _data = normalizeData(local.data, patient.id, patient);
+  } else {
+    _version = 0;
+    _data = normalizeData(null, patient.id, patient);
+  }
   var roomId = getActiveLiveSyncRoomId() || "";
-  try {
-    var remote = await fetchHistoria(patient.id, roomId);
-    if (remote) {
+  if (isLanSessionConfiguredForRest() && roomId && !(local && local.pendingLanSync)) {
+    var remote = await fetchHistoriaRemote(patient.id, roomId);
+    if (remote && (!local || remote.version >= local.version)) {
       _version = remote.version;
       _data = normalizeData(remote.data, patient.id, patient);
-    } else if (!patient.historiaClinica) {
-      _data = normalizeData(null, patient.id, patient);
-      _version = 0;
-    } else {
-      _version = Number(patient.historiaClinica.version || 1);
-      _data = normalizeData(patient.historiaClinica.data, patient.id, patient);
     }
-  } catch (_e) {
-    console.error("renderHistoriaClinicaPanel failed", _e);
-    root.innerHTML = '<p class="tend-empty">No se pudo cargar la historia cl\xEDnica.</p>';
-    if (opts.onReady) opts.onReady();
-    return;
   }
   _editMode = false;
   _step = _data.meta && _data.meta.lastStep || 1;
@@ -52633,21 +52695,39 @@ function invalidateHistoriaClinicaPanel() {
   _pendingAck = [];
   _dirtyKeys = /* @__PURE__ */ new Set();
 }
-async function applyDriveImportHcPatch(patient, patch, mode) {
-  if (!patient || mode === "eventos") return { ok: true };
+var DRIVE_IMPORT_LAN_MS2 = 8e3;
+function driveImportLanTimeout2(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise(function(_, reject) {
+      setTimeout(function() {
+        reject(new Error("lan-timeout"));
+      }, ms);
+    })
+  ]);
+}
+async function resolveDriveImportHcBase(patient) {
   var data = normalizeData(patient.historiaClinica && patient.historiaClinica.data, patient.id, patient);
   var version = patient.historiaClinica ? Number(patient.historiaClinica.version || 0) : 0;
-  var mergeMode = mode === "replace" ? "replace" : "fill";
-  var merged = mergeHcPatch(data, patch || {}, mergeMode);
-  applyClinicalHistoryUppercase(merged);
+  return { data, version };
+}
+async function applyDriveImportHcPatch(patient, patch, mode, opts) {
+  opts = opts || {};
+  if (!patient || mode === "eventos") return { ok: true };
   var roomId = getActiveLiveSyncRoomId() || "";
+  var mergeMode = opts.fromReview || mode === "replace" ? "replace" : "fill";
   var dirty = Object.keys(patch || {}).filter(function(k) {
     return !String(k).startsWith("_");
   });
-  if (isLanSessionConfiguredForRest() && roomId && dirty.length) {
+  async function pushMergedHc(base2) {
+    var merged = mergeHcPatch(base2.data, patch || {}, mergeMode);
+    applyClinicalHistoryUppercase(merged);
+    if (!isLanSessionConfiguredForRest() || !roomId || !dirty.length) {
+      return { ok: true, merged, version: base2.version, localOnly: true };
+    }
     var builder = createMutationBuilder("historiaClinica", patient.id).captureBase({
-      version,
-      data
+      version: base2.version,
+      data: base2.data
     });
     dirty.forEach(function(k) {
       if (merged[k] !== void 0) builder.set(k, merged[k]);
@@ -52658,19 +52738,40 @@ async function applyDriveImportHcPatch(patient, patch, mode) {
       clientId: localStorage.getItem("rpc-lan-client-id") || "local",
       audit: { sections: dirty, source: "drive-import" }
     });
-    var out = await lanPushHistoriaClinica(patient.id, mutation);
-    if (out && out.conflict) return { ok: false };
-    if (out && out.ok) {
-      patient.historiaClinica = { version: out.version, data: migrateLegacyHistoriaData(out.data, CATALOGS) };
-      saveState();
-      invalidateHistoriaClinicaPanel();
-      return { ok: true };
+    var out;
+    try {
+      out = await driveImportLanTimeout2(lanPushHistoriaClinica(patient.id, mutation), DRIVE_IMPORT_LAN_MS2);
+    } catch (_e) {
+      return { ok: true, merged, version: base2.version, localOnly: true, lanDeferred: true };
     }
+    if (out && out.conflict) {
+      return { ok: true, merged, version: base2.version, localOnly: true, lanDeferred: true };
+    }
+    if (out && out.ok) {
+      return {
+        ok: true,
+        merged: migrateLegacyHistoriaData(out.data, CATALOGS),
+        version: out.version,
+        localOnly: false
+      };
+    }
+    return { ok: true, merged, version: base2.version, localOnly: true, lanDeferred: true };
   }
-  patient.historiaClinica = { version: version + 1, data: merged };
+  var base = await resolveDriveImportHcBase(patient);
+  var result = await pushMergedHc(base);
+  if (!result.ok) return { ok: false };
+  patient.historiaClinica = {
+    version: result.localOnly ? Number(result.version || 0) + 1 : result.version,
+    data: result.merged
+  };
+  if (result.lanDeferred) {
+    patient.historiaClinica.pendingLanSync = true;
+  } else if (patient.historiaClinica.pendingLanSync) {
+    delete patient.historiaClinica.pendingLanSync;
+  }
   saveState();
   invalidateHistoriaClinicaPanel();
-  return { ok: true };
+  return { ok: true, lanDeferred: !!result.lanDeferred };
 }
 
 // public/js/features/vpo-panel.mjs
@@ -52730,8 +52831,8 @@ var PROCEDURES = [
 function normSearch(s) {
   return String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
-function getProcedureById(id5) {
-  return PROCEDURES.find((p) => p.id === id5) || null;
+function getProcedureById(id) {
+  return PROCEDURES.find((p) => p.id === id) || null;
 }
 function getAsaByKey(key) {
   return ASA_OPTIONS.find((a) => a.key === key) || null;
@@ -53232,14 +53333,14 @@ function scheduleSave() {
     saveState();
   }, 400);
 }
-function copyText(label5, text) {
+function copyText(label, text) {
   var t2 = String(text || "").trim();
   if (!t2) {
-    rt26.showToast("Nada que copiar en " + label5, "error");
+    rt26.showToast("Nada que copiar en " + label, "error");
     return;
   }
   copyToClipboardSafe(t2).then(function(ok) {
-    rt26.showToast(ok ? label5 + " copiado" : "No se pudo copiar", ok ? "success" : "error");
+    rt26.showToast(ok ? label + " copiado" : "No se pudo copiar", ok ? "success" : "error");
   });
 }
 function renderAhaBadges(state) {
@@ -53473,9 +53574,9 @@ function isFlagChecked(state, fieldPath) {
   var parts = fieldPath.split(".");
   return !!(state[parts[0]] && state[parts[0]][parts[1]]);
 }
-function renderFlagChip(state, fieldPath, label5) {
+function renderFlagChip(state, fieldPath, label) {
   var checked = isFlagChecked(state, fieldPath);
-  return '<label class="vpo-chip"><input type="checkbox" data-vpo-field="' + esc22(fieldPath) + '"' + (checked ? " checked" : "") + "><span>" + esc22(label5) + "</span></label>";
+  return '<label class="vpo-chip"><input type="checkbox" data-vpo-field="' + esc22(fieldPath) + '"' + (checked ? " checked" : "") + "><span>" + esc22(label) + "</span></label>";
 }
 function renderFlagGroups(state) {
   return '<div class="vpo-flag-groups">' + FLAG_GROUPS.map(function(group) {
@@ -54482,8 +54583,8 @@ function abbreviatePaseMedDosisCore(core) {
   var n = parseInt(m[1], 10);
   if (!Number.isFinite(n) || n < 1e6) return t2;
   var mil = n / 1e6;
-  var label5 = mil % 1 === 0 ? String(mil) : String(Math.round(mil * 10) / 10).replace(".", ",");
-  return label5 + "M " + m[2].toUpperCase();
+  var label = mil % 1 === 0 ? String(mil) : String(Math.round(mil * 10) / 10).replace(".", ",");
+  return label + "M " + m[2].toUpperCase();
 }
 function splitPaseMedDosisForDisplay(dosisClean) {
   var s = String(dosisClean || "").trim();
@@ -55006,8 +55107,8 @@ function syncInnerTabVisualOnly() {
 function syncConsolidatedInnerTabButtons(granularTab, settings2) {
   var composite = consolidatedInnerTabButtonId(granularTab, settings2).replace(/^itab-/, "");
   document.querySelectorAll(".exp-consolidated-tab").forEach(function(btn) {
-    var id5 = btn.id || "";
-    var name = id5.replace(/^itab-/, "");
+    var id = btn.id || "";
+    var name = id.replace(/^itab-/, "");
     btn.classList.toggle("active", name === composite);
   });
 }
@@ -55199,12 +55300,12 @@ function renderInnerTabs() {
   var settings2 = rt29.getSettings();
   var sala = isModeSala(settings2);
   var consolidated = useConsolidatedExpedienteTabs(settings2);
-  function show(id5, visible) {
-    var el = document.getElementById(id5);
+  function show(id, visible) {
+    var el = document.getElementById(id);
     if (el) el.style.display = visible ? "" : "none";
   }
-  function setOrder(id5, order2) {
-    var el = document.getElementById(id5);
+  function setOrder(id, order2) {
+    var el = document.getElementById(id);
     if (el) el.style.order = String(order2);
   }
   resetExpedientePaneLayoutCache();
@@ -55764,8 +55865,8 @@ function buildAdhTriggerHtml(row, stats, daysInMonth) {
   if (!stats.indicated) {
     return '<span class="med-pharm-adh-trigger med-pharm-adh-trigger--empty">\u2014</span>';
   }
-  var label5 = stats.missed > 0 ? stats.effective + " efect. \xB7 " + stats.missed + " no" : stats.effective + " d efectivos";
-  return '<span class="med-pharm-adh-wrap"><button type="button" class="med-pharm-adh-trigger' + (stats.missed > 0 ? " med-pharm-adh-trigger--miss" : "") + '" data-row-key="' + esc25(row.rowKey) + '" aria-haspopup="dialog">' + esc25(label5) + '</button><div class="med-pharm-adh-panel" role="dialog" aria-hidden="true">' + buildAdhPanelHtml(row, daysInMonth) + "</div></span>";
+  var label = stats.missed > 0 ? stats.effective + " efect. \xB7 " + stats.missed + " no" : stats.effective + " d efectivos";
+  return '<span class="med-pharm-adh-wrap"><button type="button" class="med-pharm-adh-trigger' + (stats.missed > 0 ? " med-pharm-adh-trigger--miss" : "") + '" data-row-key="' + esc25(row.rowKey) + '" aria-haspopup="dialog">' + esc25(label) + '</button><div class="med-pharm-adh-panel" role="dialog" aria-hidden="true">' + buildAdhPanelHtml(row, daysInMonth) + "</div></span>";
 }
 function buildMedCellInner(row, stats, daysInMonth) {
   return '<div class="med-cell-name">' + esc25(row.med) + '</div><div class="med-cell-adh">' + buildAdhTriggerHtml(row, stats, daysInMonth) + "</div>";
@@ -56055,11 +56156,11 @@ function buildSomeGridTable(month, rows) {
   var thead = document.createElement("thead");
   var hdr1 = document.createElement("tr");
   hdr1.className = "hdr-row-1";
-  ["Medicamento", "Dosis", "Freq", "V\xEDa"].forEach(function(label5, i) {
+  ["Medicamento", "Dosis", "Freq", "V\xEDa"].forEach(function(label, i) {
     var th = document.createElement("th");
     th.className = "col-meta-hdr col-" + ["med", "dosis", "freq", "via"][i];
     th.rowSpan = 2;
-    th.textContent = label5;
+    th.textContent = label;
     hdr1.appendChild(th);
   });
   appendDayHeader(hdr1, 1, Math.min(splitAt, total), month.year, month.monthIndex);
@@ -56123,8 +56224,8 @@ function buildSomeGridTable(month, rows) {
 }
 var MED_PHARM_MODAL_IDS = ["med-pharm-paste-modal", "med-pharm-modal-one", "med-pharm-modal-full"];
 function closeModals() {
-  MED_PHARM_MODAL_IDS.forEach(function(id5) {
-    var el = document.getElementById(id5);
+  MED_PHARM_MODAL_IDS.forEach(function(id) {
+    var el = document.getElementById(id);
     if (el) {
       el.classList.remove("open");
       el.setAttribute("hidden", "");
@@ -56134,9 +56235,9 @@ function closeModals() {
   document.body.classList.remove("rpc-med-pharm-modal-open");
   openRowKey = null;
 }
-function openMedPharmModal(id5) {
+function openMedPharmModal(id) {
   closeModals();
-  var el = document.getElementById(id5);
+  var el = document.getElementById(id);
   if (!el) return;
   el.removeAttribute("hidden");
   el.setAttribute("aria-hidden", "false");
@@ -56154,8 +56255,8 @@ function wireMedPharmModalDismiss() {
     function(ev) {
       if (ev.key !== "Escape") return;
       var open = false;
-      MED_PHARM_MODAL_IDS.forEach(function(id5) {
-        var el = document.getElementById(id5);
+      MED_PHARM_MODAL_IDS.forEach(function(id) {
+        var el = document.getElementById(id);
         if (el && el.classList.contains("open")) open = true;
       });
       if (!open) return;
@@ -56165,8 +56266,8 @@ function wireMedPharmModalDismiss() {
     },
     true
   );
-  MED_PHARM_MODAL_IDS.forEach(function(id5) {
-    var bd = document.getElementById(id5);
+  MED_PHARM_MODAL_IDS.forEach(function(id) {
+    var bd = document.getElementById(id);
     if (!bd) return;
     bd.addEventListener("click", function(ev) {
       if (!bd.classList.contains("open")) return;
@@ -56279,7 +56380,7 @@ function renderMedPharmProfilePanel() {
   onActivePatientChangedForPharm(pid);
   var hint = document.getElementById("med-pharm-hint");
   var list = document.getElementById("med-pharm-list");
-  var label5 = document.getElementById("med-pharm-month-label");
+  var label = document.getElementById("med-pharm-month-label");
   if (!list) return;
   if (!pid) {
     if (hint) {
@@ -56290,7 +56391,7 @@ function renderMedPharmProfilePanel() {
     return;
   }
   if (hint) hint.style.display = "none";
-  if (label5) label5.textContent = monthLabel(viewYear, viewMonthIndex);
+  if (label) label.textContent = monthLabel(viewYear, viewMonthIndex);
   var lastPasteEl = document.getElementById("med-pharm-last-paste");
   var month = reclassifyMonthIfLegacy(pid, getViewMonth(pid));
   if (lastPasteEl) {
@@ -56622,11 +56723,11 @@ function renderMedRecetaPanel() {
   }
   var rows = block.items.map(function(it) {
     var sid = String(it.id || "");
-    var label5 = esc26((it.nombreRaw || "").slice(0, 120));
+    var label = esc26((it.nombreRaw || "").slice(0, 120));
     var chk = it.suspendido ? " checked" : "";
     var paraNota = isMedNotaSelected(activeId2, sid) ? " checked" : "";
     var diaCell = it.diaTratamiento != null ? '<span class="med-receta-dia">D\xEDa ' + esc26(String(it.diaTratamiento)) + "</span>" : "";
-    return '<div class="med-receta-row"><div class="med-receta-checkcell"><input type="checkbox"' + chk + ` title="Excluir del texto de egreso" onchange="toggleMedRecetaSuspendido('` + safeAttrJsString(sid) + `', this.checked)"/></div><div class="med-receta-checkcell"><input type="checkbox"` + paraNota + ` title="Incluir en Tratamiento y campos SOAP (Analgesia / ABX / AntiHTA)" onchange="toggleMedRecetaParaNota('` + safeAttrJsString(sid) + `', this.checked)"/></div><div class="med-receta-name">` + label5 + "</div>" + diaCell + "</div>";
+    return '<div class="med-receta-row"><div class="med-receta-checkcell"><input type="checkbox"' + chk + ` title="Excluir del texto de egreso" onchange="toggleMedRecetaSuspendido('` + safeAttrJsString(sid) + `', this.checked)"/></div><div class="med-receta-checkcell"><input type="checkbox"` + paraNota + ` title="Incluir en Tratamiento y campos SOAP (Analgesia / ABX / AntiHTA)" onchange="toggleMedRecetaParaNota('` + safeAttrJsString(sid) + `', this.checked)"/></div><div class="med-receta-name">` + label + "</div>" + diaCell + "</div>";
   });
   listEl.innerHTML = '<div class="med-receta-wrap"><div class="med-receta-head"><span>Excl.</span><span>SOAP</span><span>Medicamento</span><span>D\xEDa</span></div>' + rows.join("") + "</div>";
   renderMedNotaFooter();
@@ -57871,9 +57972,9 @@ function syncClinicalCensusFiltersBar() {
     const teams = clinicalSessionContext.teams || [];
     const prev = elevatedPatientFilters.teamId;
     teamSel.innerHTML = '<option value="">Todos</option>' + teams.map((t2) => {
-      const id5 = String(t2.team_id || "");
-      const label5 = String(t2.name || id5).slice(0, 40);
-      return `<option value="${id5}">${label5}</option>`;
+      const id = String(t2.team_id || "");
+      const label = String(t2.name || id).slice(0, 40);
+      return `<option value="${id}">${label}</option>`;
     }).join("");
     teamSel.value = prev;
   }
@@ -58060,13 +58161,13 @@ function movePatientBefore(targetId, beforeId) {
   if (from < to) to -= 1;
   patients.splice(to, 0, moved);
 }
-function movePatientByOffset(ev, id5, dir) {
+function movePatientByOffset(ev, id, dir) {
   if (ev) {
     ev.preventDefault();
     ev.stopPropagation();
   }
   var p = patients.find(function(x) {
-    return x.id === id5;
+    return x.id === id;
   });
   if (!p) return;
   var sec = patientSectionKey(p);
@@ -58075,21 +58176,21 @@ function movePatientByOffset(ev, id5, dir) {
   }).map(function(x) {
     return x.id;
   });
-  var idx = ids.indexOf(id5);
+  var idx = ids.indexOf(id);
   if (idx < 0) return;
   var next = idx + dir;
   if (next < 0 || next >= ids.length) return;
-  movePatientBefore(id5, ids[next]);
+  movePatientBefore(id, ids[next]);
   saveState();
   renderPatientList();
 }
-function togglePatientPinned(ev, id5) {
+function togglePatientPinned(ev, id) {
   if (ev) {
     ev.preventDefault();
     ev.stopPropagation();
   }
   var p = patients.find(function(x) {
-    return x.id === id5;
+    return x.id === id;
   });
   if (!p) return;
   p.pinned = !p.pinned;
@@ -58097,13 +58198,13 @@ function togglePatientPinned(ev, id5) {
   saveState();
   renderPatientList();
 }
-function togglePatientArchived(ev, id5) {
+function togglePatientArchived(ev, id) {
   if (ev) {
     ev.preventDefault();
     ev.stopPropagation();
   }
   var p = patients.find(function(x) {
-    return x.id === id5;
+    return x.id === id;
   });
   if (!p) return;
   p.archived = !p.archived;
@@ -58261,10 +58362,10 @@ function togglePatientRoundSeen(ev, patientId) {
     ev.preventDefault();
   }
   var s = getRoundSeenSet();
-  var id5 = String(patientId);
-  var idx = s.ids.indexOf(id5);
+  var id = String(patientId);
+  var idx = s.ids.indexOf(id);
   if (idx >= 0) s.ids.splice(idx, 1);
-  else s.ids.push(id5);
+  else s.ids.push(id);
   persistRoundSeenSet(s);
   renderPatientList();
 }
@@ -58574,16 +58675,16 @@ function formatIncomingEffectiveLabel(iso) {
     minute: "2-digit"
   });
 }
-function blockIncomingPreviewChartOpen(id5) {
+function blockIncomingPreviewChartOpen(id) {
   if (!clinicalSessionContext.user) return false;
-  const patient = patients.find((p) => p && String(p.id) === String(id5));
+  const patient = patients.find((p) => p && String(p.id) === String(id));
   const mapped = patient ? {
     id: String(patient.id),
     service: String(patient.servicio || patient.area || ""),
     sub_area: String(patient.area || ""),
     interconsult_type: patient.interconsult_type
-  } : { id: String(id5) };
-  const guardia = clinicalSessionContext.guardiasMap.get(String(id5)) || null;
+  } : { id: String(id) };
+  const guardia = clinicalSessionContext.guardiasMap.get(String(id)) || null;
   const scope = evaluateClinicalScope(
     clinicalSessionContext.user,
     mapped,
@@ -58592,7 +58693,7 @@ function blockIncomingPreviewChartOpen(id5) {
   );
   if (!scope.writable && scope.incomingPreview) {
     const assignment = (getClinicalScopeContextForEvaluate().assignments || []).find(
-      (a) => String(a.patient_id) === String(id5)
+      (a) => String(a.patient_id) === String(id)
     );
     const when = formatIncomingEffectiveLabel(
       String(assignment?.effective_at || "")
@@ -58602,29 +58703,29 @@ function blockIncomingPreviewChartOpen(id5) {
   }
   return false;
 }
-function selectPatient(id5) {
-  if (id5 == null || id5 === "") return;
+function selectPatient(id) {
+  if (id == null || id === "") return;
   try {
-    if (blockIncomingPreviewChartOpen(id5)) return;
-    selectPatientCore(id5);
+    if (blockIncomingPreviewChartOpen(id)) return;
+    selectPatientCore(id);
   } catch (err) {
     console.error("[R+] selectPatient:", err && err.message ? err.message : err);
   }
 }
-function selectPatientCore(id5) {
+function selectPatientCore(id) {
   var prevId = rt32.getActiveId();
   var wasOnLab = rt32.getActiveAppTab() === "lab";
   var appTab = rt32.getActiveAppTab();
-  var patientChanged = prevId != null && String(prevId) !== String(id5);
+  var patientChanged = prevId != null && String(prevId) !== String(id);
   if (patientChanged) {
     flushRecetaHuDraftIfMountedFor(prevId);
     stashMedInputForPatient(prevId);
     stashVpoForPatient(prevId);
     flushSaveState();
   }
-  rt32.setActiveId(id5);
+  rt32.setActiveId(id);
   if (patientChanged) rt32.invalidateInnerTabRenderCache();
-  if (!patientChanged || !patchPatientListActiveHighlight(id5)) {
+  if (!patientChanged || !patchPatientListActiveHighlight(id)) {
     renderPatientList();
   }
   var emptyState = document.getElementById("empty-state");
@@ -58658,7 +58759,7 @@ function selectPatientCore(id5) {
     }
     if (!isPaseMode() && getUiDensity() === "normal") {
       var pmanejo = patients.find(function(p) {
-        return p && String(p.id) === String(id5);
+        return p && String(p.id) === String(id);
       });
       if (pmanejo && pmanejo.manejoPending && pmanejo.manejoPending.labSetId && !isManejoSectionHidden(settings2)) {
         rt32.switchInnerTab("manejo");
@@ -58722,20 +58823,20 @@ function ensurePatientListClickDelegation() {
     if (pid) selectPatient(pid);
   });
 }
-function deletePatient(e, id5) {
+function deletePatient(e, id) {
   e.stopPropagation();
   var target = patients.find(function(p) {
-    return p.id === id5;
+    return p.id === id;
   });
   if (!target || !target.archived) {
     if (!confirm("\xBFEliminar este paciente y sus notas?")) return;
   }
-  var label5 = target ? "Eliminar " + (target.nombre || "paciente") : "Eliminar paciente";
-  if (typeof rt32.pushUndoSnapshot === "function") rt32.pushUndoSnapshot(label5);
-  if (!removePatientLocally(id5)) return;
-  var snap = target || { id: id5, registro: "" };
+  var label = target ? "Eliminar " + (target.nombre || "paciente") : "Eliminar paciente";
+  if (typeof rt32.pushUndoSnapshot === "function") rt32.pushUndoSnapshot(label);
+  if (!removePatientLocally(id)) return;
+  var snap = target || { id, registro: "" };
   if (getActiveLiveSyncRoomId()) {
-    stagePatientDelete(id5, snap, function(p) {
+    stagePatientDelete(id, snap, function(p) {
       emitLiveSyncPatientDelete(p);
       scheduleLiveSyncPush();
     });
@@ -58896,8 +58997,8 @@ function closeModal() {
   document.getElementById("modal").classList.remove("open");
 }
 function confirmCloseAddPatientModal() {
-  var hasData = ["m-area", "m-servicio", "m-cuarto", "m-cama"].some(function(id5) {
-    var el = document.getElementById(id5);
+  var hasData = ["m-area", "m-servicio", "m-cuarto", "m-cama"].some(function(id) {
+    var el = document.getElementById(id);
     return el && el.value.trim();
   });
   if (hasData && !confirm("\xBFCerrar sin guardar?")) return false;
@@ -59264,8 +59365,8 @@ function getDemoState() {
     getActiveId: function() {
       return rt33.getActiveId();
     },
-    setActiveId: function(id5) {
-      rt33.setActiveId(id5);
+    setActiveId: function(id) {
+      rt33.setActiveId(id);
     }
   };
 }
@@ -59999,9 +60100,9 @@ function cloneForUndo(value) {
     return null;
   }
 }
-function buildUndoSnapshotPayload(label5) {
+function buildUndoSnapshotPayload(label) {
   return {
-    label: label5 || "operaci\xF3n",
+    label: label || "operaci\xF3n",
     at: (/* @__PURE__ */ new Date()).toISOString(),
     theme: localStorage.getItem("theme") || "light",
     activeId: rt35.getActiveId(),
@@ -60031,8 +60132,8 @@ function saveUndoStack(stack) {
   } catch (_e) {
   }
 }
-function pushUndoSnapshot2(label5) {
-  var snap = buildUndoSnapshotPayload(label5);
+function pushUndoSnapshot2(label) {
+  var snap = buildUndoSnapshotPayload(label);
   var stack = getUndoStack();
   stack.unshift(snap);
   saveUndoStack(stack);
@@ -60261,8 +60362,8 @@ function renderExtraTemplatesList() {
     return;
   }
   list.innerHTML = arr.map(function(tmpl) {
-    var id5 = esc29(tmpl.id || "");
-    return '<div class="extra-tmpl-row"><span class="etr-label" title="' + esc29(tmpl.label || "") + '">' + esc29(tmpl.label || "(sin nombre)") + `</span><div class="etr-actions"><button type="button" onclick="editExtraTemplate('` + id5 + `')">Editar</button><button type="button" class="etr-del" onclick="deleteExtraTemplate('` + id5 + `')">Eliminar</button></div></div>`;
+    var id = esc29(tmpl.id || "");
+    return '<div class="extra-tmpl-row"><span class="etr-label" title="' + esc29(tmpl.label || "") + '">' + esc29(tmpl.label || "(sin nombre)") + `</span><div class="etr-actions"><button type="button" onclick="editExtraTemplate('` + id + `')">Editar</button><button type="button" class="etr-del" onclick="deleteExtraTemplate('` + id + `')">Eliminar</button></div></div>`;
   }).join("");
 }
 function startNewExtraTemplate() {
@@ -60281,13 +60382,13 @@ function startNewExtraTemplate() {
     if (elLabel) elLabel.focus();
   }, 30);
 }
-function editExtraTemplate(id5) {
+function editExtraTemplate(id) {
   var arr = ensureExtraTemplatesArray();
   var tmpl = arr.find(function(t2) {
-    return t2.id === id5;
+    return t2.id === id;
   });
   if (!tmpl) return;
-  _extraTemplateEditing = id5;
+  _extraTemplateEditing = id;
   var ed = document.getElementById("extra-template-editor");
   if (ed) ed.style.display = "flex";
   document.getElementById("extra-tmpl-label").value = tmpl.label || "";
@@ -60301,8 +60402,8 @@ function cancelExtraTemplateEdit() {
   if (ed) ed.style.display = "none";
 }
 function saveExtraTemplateFromEditor() {
-  var label5 = (document.getElementById("extra-tmpl-label").value || "").trim();
-  if (!label5) {
+  var label = (document.getElementById("extra-tmpl-label").value || "").trim();
+  if (!label) {
     rt35.showToast("Ingresa un nombre para la plantilla", "error");
     return;
   }
@@ -60315,7 +60416,7 @@ function saveExtraTemplateFromEditor() {
       return t2.id === _extraTemplateEditing;
     });
     if (tmpl) {
-      tmpl.label = label5;
+      tmpl.label = label;
       tmpl.dieta = dieta;
       tmpl.cuidados = cuidados;
       tmpl.medicamentos = meds;
@@ -60323,29 +60424,29 @@ function saveExtraTemplateFromEditor() {
   } else {
     arr.push({
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-      label: label5,
+      label,
       dieta,
       cuidados,
       medicamentos: meds
     });
   }
   persistSettings();
-  rt35.addAuditEntry("extra-template-save", "ok", arr.length, label5);
+  rt35.addAuditEntry("extra-template-save", "ok", arr.length, label);
   rt35.showToast("Plantilla guardada", "success");
   renderExtraTemplatesList();
   cancelExtraTemplateEdit();
   if (rt35.getActiveId()) rt35.renderIndicaForm();
 }
-function deleteExtraTemplate(id5) {
+function deleteExtraTemplate(id) {
   var arr = ensureExtraTemplatesArray();
   var tmpl = arr.find(function(t2) {
-    return t2.id === id5;
+    return t2.id === id;
   });
   if (!tmpl) return;
   if (!confirm('\xBFEliminar la plantilla "' + (tmpl.label || "") + '"?')) return;
   var settings2 = rt35.getSettings();
   settings2.extraTemplates = arr.filter(function(t2) {
-    return t2.id !== id5;
+    return t2.id !== id;
   });
   persistSettings();
   rt35.addAuditEntry(
@@ -60636,8 +60737,8 @@ function initModalDismiss() {
     "exp-advice-backdrop",
     "tend-gaso-ext-backdrop"
   ];
-  function el(id5) {
-    return document.getElementById(id5);
+  function el(id) {
+    return document.getElementById(id);
   }
   modalDismiss.register({
     isOpen: function() {
@@ -60890,16 +60991,16 @@ function initModalDismiss() {
   });
   modalDismiss.register({
     isOpen: function() {
-      return dynamicBackdropIds.some(function(id5) {
-        var node = el(id5);
+      return dynamicBackdropIds.some(function(id) {
+        var node = el(id);
         return isRpcOverlayVisible(node);
       });
     },
     close: function() {
       var top = null;
       var bestZ = -1;
-      dynamicBackdropIds.forEach(function(id5) {
-        var node = el(id5);
+      dynamicBackdropIds.forEach(function(id) {
+        var node = el(id);
         var z = getOverlayZIndex(node);
         if (z > bestZ) {
           bestZ = z;
@@ -60918,8 +61019,8 @@ function initModalDismiss() {
     backdropEl: function() {
       var best = null;
       var bestZ = -1;
-      dynamicBackdropIds.forEach(function(id5) {
-        var node = el(id5);
+      dynamicBackdropIds.forEach(function(id) {
+        var node = el(id);
         var z = getOverlayZIndex(node);
         if (z > bestZ) {
           bestZ = z;
@@ -61070,8 +61171,8 @@ function buildClinicalTextExport(bundle) {
     });
     if (!toLines(note.diagnosticos || []).length) blocks.push("(sin contenido)");
   }
-  function pushBlock(label5, value) {
-    blocks.push(label5 + ":");
+  function pushBlock(label, value) {
+    blocks.push(label + ":");
     var lines = toLines(value);
     if (!lines.length) blocks.push("(sin contenido)");
     lines.forEach(function(l) {
@@ -61274,18 +61375,19 @@ var SECTION_MARKERS = [
   { key: "estadoActual", re: /^ESTADO ACTUAL\b/i, exclusive: true },
   { key: "historiaClinica", re: /^HISTORIA\s+CL[IÍ]NICA\s*$/i },
   { key: "ficha", re: /^FICHA\s+DE\s+IDENTIFICACI[ÓO]N\s*$/i },
-  { key: "interrogatorio", re: /^INTERROGATORIO\s*$/i },
+  { key: "interrogatorio", re: /^INTERROGATORIO\s*:?\s*$/i },
   { key: "dx", re: /^DX\s*:?\s*$/i },
   { key: "motivoConsulta", re: /^MOTIVO\s+DE\s+CONSULTA\s*:?\s*$/i },
   { key: "signosVitales", re: /^SIGNOS\s+VITALES(\s+DE\s+TRIAGE)?\s*:?\s*$/i },
   { key: "fechaIngreso", re: /^FECHA\s+DE\s+INGRESO\b/i },
-  { key: "ahf", re: /^ANTECEDENTES\s+HEREDOFAMILIARES\s*$/i },
-  { key: "apnp", re: /^ANTECEDENTES\s+PERSONALES(\s+NO\s+PATOL[ÓO]GICOS)?\s*$/i },
-  { key: "app", re: /^ANTECEDENTES\s+PERSONALES\s+PATOL[ÓO]GICOS\s*$/i },
+  { key: "ahf", re: /^(?:ANTECEDENTES\s+HEREDOFAMILIARES|AHF)\s*:?\s*$/i },
+  { key: "apnp", re: /^(?:ANTECEDENTES\s+PERSONALES(?:\s+NO\s+PATOL[ÓO]GICOS)?|APNP)\s*:?\s*$/i },
+  { key: "app", re: /^(?:ANTECEDENTES\s+PERSONALES\s+PATOL[ÓO]GICOS|APP)\s*:?\s*$/i },
   { key: "ecd", re: /^ENFERMEDADES\s+CR[ÓO]NICO-?DEGENERATIVAS\s*$/i },
   { key: "medicamentos", re: /^MEDICAMENTOS(\s+ACTUALES|\s+HABITUALES)?\s*$/i },
   { key: "peea", re: /^(PADECIMIENTO\s+ACTUAL\s*\/\s*PEEA|PEEA)\s*$/i },
-  { key: "pendientes", re: /^PENDIENTES\s*$/i }
+  { key: "pendientes", re: /^PENDIENTES\s*$/i },
+  { key: "laboratorios", re: /^LABORATORIOS\s*$/i }
 ];
 var INLINE_SECTIONS = [
   { key: "motivoConsulta", re: /^MOTIVO\s+DE\s+CONSULTA\s*:\s*(.+)$/i },
@@ -61361,8 +61463,11 @@ function splitDocumentSections(rawText) {
     if (hit) {
       flushSection();
       if (hit.key === "estadoActual") {
+        if (inEventualidades) {
+          flushEventualidadesBlock();
+          inEventualidades = false;
+        }
         inEstadoActual = true;
-        inEventualidades = false;
         currentKey = "estadoActual";
         warnings.push("ESTADO ACTUAL detectado: no se importar\xE1 en v1.");
         continue;
@@ -61389,11 +61494,12 @@ function splitDocumentSections(rawText) {
   }
   flushSection();
   if (inEventualidades) flushEventualidadesBlock();
+  else if (evBuffer.some(Boolean)) flushEventualidadesBlock();
   return { headerLines, sections, eventualidadesBlocks, warnings };
 }
 
 // lib/drive-import/parse-header.mjs
-var PIPE_RE = /^(\d+-\d+)\s*\|\s*(.+?)\s*\|\s*(\d+)\s*AÑOS\s*\|\s*([\d-]+)\s*\|\s*(.+)$/i;
+var PIPE_RE = /^(\d+-\d+)\s*\|+\s*(.+?)\s*\|+\s*(\d+)\s*AÑOS\s*\|+\s*([\d-]+)\s*\|+\s*(.+)$/i;
 var FICHA_KV_RE = /^([A-ZÁÉÍÓÚÑ\s]+)\s*:\s*(.+)$/i;
 function parsePipeHeader(firstLines) {
   const lines = Array.isArray(firstLines) ? firstLines : String(firstLines || "").split("\n");
@@ -61436,9 +61542,9 @@ function parseFichaIdentificacion(block) {
     if (!line) continue;
     const m = FICHA_KV_RE.exec(line);
     if (!m) continue;
-    const label5 = m[1].trim().toUpperCase();
+    const label = m[1].trim().toUpperCase();
     const value = m[2].trim();
-    const field = keyMap[label5];
+    const field = keyMap[label];
     if (field) {
       identificacion[field] = value;
       if (field === "sexo") {
@@ -61453,27 +61559,18 @@ function parseFichaIdentificacion(block) {
   return { identificacion, sexo };
 }
 function mergeHeader(pipe, ficha) {
-  const id5 = ficha.identificacion || {};
-  const edadMatch = /(\d+)/.exec(String(id5.edad || ""));
+  const id = ficha.identificacion || {};
+  const edadMatch = /(\d+)/.exec(String(id.edad || ""));
   return {
     cama: pipe?.cama || "",
-    nombre: id5.nombre || pipe?.nombre || "",
+    nombre: id.nombre || pipe?.nombre || "",
     edad: edadMatch ? edadMatch[1] : pipe?.edad || "",
     registro: pipe?.registro || "",
     resumenDx: pipe?.resumenDx || "",
     sexo: ficha.sexo || "",
-    identificacion: Object.assign({}, id5)
+    identificacion: Object.assign({}, id)
   };
 }
-
-// lib/drive-import/profiles/drive-ficha-hc-v1.mjs
-var drive_ficha_hc_v1_exports = {};
-__export(drive_ficha_hc_v1_exports, {
-  id: () => id,
-  label: () => label,
-  mapHc: () => mapHc,
-  score: () => score
-});
 
 // lib/drive-import/hc-field-parsers.mjs
 var KV_RE = /^([A-ZÁÉÍÓÚÑ0-9\s]+)\s*[:;]\s*(.+)$/i;
@@ -61494,9 +61591,9 @@ function parseKeyValueBlock(block) {
     if (!line) continue;
     const m = KV_RE.exec(line);
     if (!m) continue;
-    const label5 = m[1].trim().toUpperCase();
+    const label = m[1].trim().toUpperCase();
     const value = m[2].trim();
-    const field = keyMap[label5] || label5.toLowerCase().replace(/\s+/g, "_");
+    const field = keyMap[label] || label.toLowerCase().replace(/\s+/g, "_");
     out[field] = value;
   }
   return out;
@@ -61521,8 +61618,8 @@ function parseApnpLines(block) {
     if (!line) continue;
     const m = KV_RE.exec(line);
     if (!m) continue;
-    const label5 = m[1].trim().toUpperCase();
-    const field = map[label5];
+    const label = m[1].trim().toUpperCase();
+    const field = map[label];
     if (field) apnp[field] = m[2].trim();
   }
   return apnp;
@@ -61555,18 +61652,6 @@ function buildAppFromSections(sections) {
 }
 
 // lib/drive-import/profiles/drive-ficha-hc-v1.mjs
-var id = "drive-ficha-hc-v1";
-var label = "Guardia \u2014 ficha + APNP/APPP";
-function score(sections, header) {
-  let s = 0;
-  if (header) s += 20;
-  if (sections.ficha) s += 45;
-  if (sections.app) s += 25;
-  if (sections.apnp) s += 15;
-  if (sections.peea) s += 15;
-  if (sections.historiaClinica && !sections.ficha) s -= 15;
-  return s;
-}
 function mapHc(doc) {
   const sections = doc.sections || {};
   const ficha = parseFichaIdentificacion(sections.ficha || "");
@@ -61592,25 +61677,6 @@ function mapHc(doc) {
 }
 
 // lib/drive-import/profiles/drive-pipe-hc-v1.mjs
-var drive_pipe_hc_v1_exports = {};
-__export(drive_pipe_hc_v1_exports, {
-  id: () => id2,
-  label: () => label2,
-  mapHc: () => mapHc2,
-  score: () => score2
-});
-var id2 = "drive-pipe-hc-v1";
-var label2 = "Guardia \u2014 encabezado | y HC cl\xE1sica";
-function score2(sections, header) {
-  let s = 0;
-  if (header) s += 30;
-  if (sections.historiaClinica) s += 25;
-  if (sections.peea) s += 20;
-  if (sections.motivoConsulta) s += 10;
-  if (sections.ficha) s -= 50;
-  if (sections.app) s -= 20;
-  return s;
-}
 function mapHc2(doc) {
   const sections = doc.sections || {};
   const identificacion = parseKeyValueBlock(sections.historiaClinica || "");
@@ -61636,71 +61702,64 @@ function mapHc2(doc) {
   };
 }
 
-// lib/drive-import/profiles/drive-eventos-only-v1.mjs
-var drive_eventos_only_v1_exports = {};
-__export(drive_eventos_only_v1_exports, {
-  id: () => id3,
-  label: () => label3,
-  mapHc: () => mapHc3,
-  score: () => score3
-});
-var id3 = "drive-eventos-only-v1";
-var label3 = "Solo eventualidades";
-function score3(sections, header) {
-  const hcKeys = ["ficha", "historiaClinica", "peea", "app", "apnp", "ahf", "motivoConsulta"];
-  const hasHc = hcKeys.some((k) => sections[k] && String(sections[k]).trim());
-  if (hasHc) return 0;
-  let s = 10;
-  if (!header) s += 15;
-  return s;
-}
-function mapHc3() {
-  return {};
-}
-
-// lib/drive-import/profiles/drive-fragment-v1.mjs
-var drive_fragment_v1_exports = {};
-__export(drive_fragment_v1_exports, {
-  id: () => id4,
-  label: () => label4,
-  mapHc: () => mapHc4,
-  score: () => score4
-});
-var id4 = "drive-fragment-v1";
-var label4 = "Fragmento (revisar)";
-function score4() {
-  return 1;
-}
-function mapHc4() {
-  return {};
-}
-
-// lib/drive-import/registry.mjs
-var PROFILES = [drive_ficha_hc_v1_exports, drive_pipe_hc_v1_exports, drive_eventos_only_v1_exports, drive_fragment_v1_exports];
-var SPECIFICITY = {
-  "drive-ficha-hc-v1": 4,
-  "drive-pipe-hc-v1": 3,
-  "drive-eventos-only-v1": 2,
-  "drive-fragment-v1": 1
-};
-function detectProfile(sections, header) {
-  const scored = PROFILES.map((p) => ({
-    id: p.id,
-    label: p.label,
-    score: p.score(sections, header)
-  })).sort((a, b) => {
-    if (b.score !== a.score) return b.score - a.score;
-    return (SPECIFICITY[b.id] || 0) - (SPECIFICITY[a.id] || 0);
+// lib/drive-import/map-universal-hc.mjs
+var HC_SECTION_KEYS = [
+  "ficha",
+  "historiaClinica",
+  "peea",
+  "app",
+  "apnp",
+  "ahf",
+  "motivoConsulta",
+  "signosVitales",
+  "interrogatorio",
+  "dx",
+  "medicamentos",
+  "ecd",
+  "fechaIngreso"
+];
+function hasDriveHcSections(sections) {
+  return HC_SECTION_KEYS.some(function(k) {
+    return sections[k] && String(sections[k]).trim();
   });
-  const top = scored[0];
-  const profileId = top && top.score >= 40 ? top.id : "drive-fragment-v1";
-  return { profileId, scored };
 }
-function getProfile2(profileId) {
-  return PROFILES.find((p) => p.id === profileId) || drive_fragment_v1_exports;
+function textLength(value) {
+  if (value == null) return 0;
+  if (typeof value === "string") return String(value).trim().length;
+  if (typeof value === "object" && !Array.isArray(value)) {
+    return Object.values(value).reduce(function(sum, v) {
+      return sum + textLength(v);
+    }, 0);
+  }
+  if (Array.isArray(value)) {
+    return value.reduce(function(sum, v) {
+      return sum + textLength(v);
+    }, 0);
+  }
+  return 0;
 }
-function listProfiles() {
-  return PROFILES.map((p) => ({ id: p.id, label: p.label }));
+function listHcPatchSectionKeys(patch) {
+  return Object.keys(patch || {}).filter(function(k) {
+    if (String(k).startsWith("_")) return false;
+    return textLength(patch[k]) > 0;
+  });
+}
+function mapUniversalHc(doc) {
+  const sections = doc.sections || {};
+  if (!hasDriveHcSections(sections)) return {};
+  let patch = {};
+  const useFicha = sections.ficha || sections.app || sections.apnp && sections.app !== void 0 || sections.peea && sections.ficha;
+  const usePipe = sections.historiaClinica || sections.peea || sections.apnp || sections.ahf || sections.motivoConsulta || sections.signosVitales || sections.ecd;
+  if (useFicha || sections.ficha) {
+    patch = mergeHcPatch(patch, mapHc(doc), "fill");
+  }
+  if (usePipe || !useFicha) {
+    patch = mergeHcPatch(patch, mapHc2(doc), "fill");
+  }
+  if (!listHcPatchSectionKeys(patch).length) {
+    patch = mergeHcPatch(mapHc(doc), mapHc2(doc), "fill");
+  }
+  return patch;
 }
 
 // lib/drive-import/eventualidad-dates.mjs
@@ -61780,86 +61839,537 @@ function mapSectionsToEventualidades(input) {
   return { entries, warnings };
 }
 
-// lib/drive-import/parse-drive-document.mjs
-function formatDriveImportPreview(parsed) {
-  const lines = [];
-  lines.push("Perfil: " + parsed.profileLabel + " (" + parsed.profileId + ")");
-  if (parsed.header?.nombre) {
-    lines.push(
-      "Paciente: " + parsed.header.nombre + (parsed.header.registro ? " \xB7 Reg " + parsed.header.registro : "") + (parsed.header.cama ? " \xB7 Cama " + parsed.header.cama : "")
-    );
+// lib/drive-import/parse-drive-labs.mjs
+var PANEL_PREFIX_RE = /^(BH|QS|ES|ESC|PFH|PFHs|GV|GASES|COAG|PIE|LCR|EGO|CUANTORINA|PltCit|FROTIS)[\s\t]+/i;
+var INFER_PANEL_RULES = [
+  { panel: "BH", re: /^(?:Hb|Hto|VCM|HCM|Leu|Neu|Eos|Plt|RBC|Ret)\b/i },
+  { panel: "QS", re: /^(?:Glu|Cr|BUN|eTFG|AU|TGL|COL|PCR)\b/i },
+  { panel: "ESC", re: /^(?:Na|Cl|K|Ca|F|Mg)\b/i },
+  { panel: "PFHs", re: /^(?:Alb|AST|ALT|FA|BT|BD|BI|LDH|Amil)\b/i },
+  { panel: "GASES", re: /^(?:pH|pCO2|pO2|Lactato|Bica|HCO3|BE)\b/i },
+  { panel: "COAG", re: /^(?:TP|TTP|INR|Fib|DD)\b/i }
+];
+var LAB_SECTION_STOP_RE = /^(EVENTUALIDADES|ESTADO ACTUAL|HISTORIA\s+CL[IÍ]NICA|PENDIENTES|DX\s*:|FICHA\s+DE\s+IDENTIFICACI[ÓO]N|MOTIVO\s+DE\s+CONSULTA)\b/i;
+function normalizeDriveLabPanel(token) {
+  const u = String(token || "").trim().toUpperCase();
+  if (u === "ES" || u === "ESC") return "ESC";
+  if (u === "PFH" || u === "PFHS") return "PFHs";
+  if (u === "GV" || u === "GASES" || u === "GASE") return "GASES";
+  if (u === "BH") return "BH";
+  if (u === "QS") return "QS";
+  return String(token || "").trim();
+}
+function isDriveLabDateLine(line) {
+  return !!parseDateLine(line);
+}
+function isDriveLabPanelLine(line) {
+  const t2 = String(line || "").trim();
+  if (!t2) return false;
+  if (isDriveLabDateLine(t2)) return false;
+  if (PANEL_PREFIX_RE.test(t2)) return true;
+  return INFER_PANEL_RULES.some((r) => r.re.test(t2));
+}
+function collapseLabWhitespace(content) {
+  return String(content || "").replace(/\t/g, " ").replace(/\s+/g, " ").trim();
+}
+function driveLabPanelLineToResLab(line) {
+  const collapsed = collapseLabWhitespace(line);
+  if (!collapsed) return null;
+  const prefixHit = PANEL_PREFIX_RE.exec(collapsed);
+  if (prefixHit) {
+    const panel = normalizeDriveLabPanel(prefixHit[1]);
+    const rest = collapseLabWhitespace(collapsed.slice(prefixHit[0].length));
+    if (!rest) return null;
+    return panel + "	" + rest;
   }
-  const hcKeys = Object.keys(parsed.hcPatch || {}).filter((k) => !String(k).startsWith("_"));
-  lines.push("HC: " + (hcKeys.length ? hcKeys.join(", ") : "sin cambios detectados"));
-  lines.push(
-    "Eventualidades: " + parsed.eventualidades.entries.length + " detectadas" + (parsed.eventualidades.skippedEstimate ? " \xB7 ~" + parsed.eventualidades.skippedEstimate + " posibles duplicados" : "")
-  );
-  if (parsed.warnings.length) {
+  for (const rule of INFER_PANEL_RULES) {
+    if (rule.re.test(collapsed)) {
+      return rule.panel + "	" + collapsed;
+    }
+  }
+  return null;
+}
+function formatDriveLabFecha(partial, documentYear) {
+  const y = resolveYear(partial, { documentYear, referenceYear: documentYear });
+  const dd = String(partial.day).padStart(2, "0");
+  const mm = String(partial.month).padStart(2, "0");
+  return dd + "/" + mm + "/" + y;
+}
+function parseDriveLaboratorios(body, opts) {
+  opts = opts || {};
+  const text = normalizeDrivePaste(body);
+  const warnings = [];
+  if (!text.trim()) return { sets: [], warnings };
+  const documentYear = opts.documentYear != null ? opts.documentYear : inferDocumentYearFromText(text);
+  const sets = [];
+  let currentDate = "";
+  let currentLines = [];
+  let currentSource = [];
+  function flushDay() {
+    const resLabs = [];
+    currentLines.forEach(function(ln) {
+      const chunk = driveLabPanelLineToResLab(ln);
+      if (chunk) resLabs.push(chunk);
+    });
+    if (!resLabs.length) {
+      currentLines = [];
+      currentSource = [];
+      return;
+    }
+    if (!currentDate) {
+      warnings.push("Bloque de laboratorio sin fecha reconocible; se omiti\xF3.");
+      currentLines = [];
+      currentSource = [];
+      return;
+    }
+    sets.push({
+      fecha: currentDate,
+      hora: "",
+      resLabs,
+      sourceText: currentSource.join("\n").trim()
+    });
+    currentLines = [];
+    currentSource = [];
+  }
+  text.split("\n").forEach(function(rawLine) {
+    const line = rawLine.trim();
+    if (!line) return;
+    if (LAB_SECTION_STOP_RE.test(line)) return;
+    const dateParts = parseDateLine(line);
+    if (dateParts) {
+      flushDay();
+      currentDate = formatDriveLabFecha(dateParts, documentYear);
+      currentSource = [line];
+      return;
+    }
+    if (!isDriveLabPanelLine(line)) return;
+    if (!currentDate) {
+      warnings.push("L\xEDnea de laboratorio antes de la primera fecha: " + line.slice(0, 48));
+      return;
+    }
+    currentLines.push(line);
+    currentSource.push(line);
+  });
+  flushDay();
+  return { sets, warnings };
+}
+function extractLaboratoriosBody(rawText, sectionBody) {
+  const fromSection = String(sectionBody || "").trim();
+  if (fromSection) return fromSection;
+  const text = normalizeDrivePaste(rawText);
+  const m = /\nLABORATORIOS\s*\n/i.exec("\n" + text);
+  if (!m) return "";
+  const after = text.slice(m.index + m[0].length - 1);
+  const lines = after.split("\n");
+  const out = [];
+  for (const line of lines) {
+    const t2 = line.trim();
+    if (LAB_SECTION_STOP_RE.test(t2)) break;
+    out.push(line);
+  }
+  return out.join("\n").trim();
+}
+
+// lib/drive-import/merge-drive-labs.mjs
+function normalizeFecha(fecha) {
+  return String(fecha || "").trim();
+}
+function normalizeLabLines2(lines) {
+  return (Array.isArray(lines) ? lines : []).map(function(line) {
+    return String(line || "").trim().replace(/\s+/g, " ");
+  }).filter(Boolean);
+}
+function areDriveLabSetsEquivalent(a, b) {
+  const aa = normalizeLabLines2(a);
+  const bb = normalizeLabLines2(b);
+  if (aa.length !== bb.length) return false;
+  for (let i = 0; i < aa.length; i += 1) {
+    if (aa[i] !== bb[i]) return false;
+  }
+  return true;
+}
+function isDuplicateDriveLabSet(existing, incoming) {
+  if (!existing || !incoming) return false;
+  if (normalizeFecha(existing.fecha) !== normalizeFecha(incoming.fecha)) return false;
+  const eh = String(existing.hora || "").trim();
+  const ih = String(incoming.hora || "").trim();
+  if (eh !== ih) return false;
+  return areDriveLabSetsEquivalent(existing.resLabs || [], incoming.resLabs || []);
+}
+function filterNewDriveLabSets(existingHistory, incomingSets) {
+  let skipped = 0;
+  const fresh = [];
+  (incomingSets || []).forEach(function(set) {
+    const dup = (existingHistory || []).some(function(ex) {
+      return isDuplicateDriveLabSet(ex, set);
+    });
+    if (dup) skipped += 1;
+    else fresh.push(set);
+  });
+  return { sets: fresh, skipped };
+}
+
+// lib/drive-import/drive-import-hc-edit.mjs
+var HC_SECTION_LABELS = {
+  identificacion: "Identificaci\xF3n",
+  motivoConsulta: "Motivo de consulta",
+  signosVitalesIngreso: "Signos vitales de ingreso",
+  apnp: "Antecedentes no patol\xF3gicos",
+  ahf: "Antecedentes heredofamiliares",
+  app: "Antecedentes patol\xF3gicos",
+  padecimientoActual: "Padecimiento actual / PEEA"
+};
+var IDENT_LABELS = {
+  lugarNacimiento: "ORIGEN",
+  residencia: "RESIDENCIA",
+  estadoCivil: "ESTADO CIVIL",
+  religion: "RELIGI\xD3N",
+  escolaridad: "ESCOLARIDAD",
+  ocupacionActual: "OCUPACI\xD3N",
+  informante: "INFORMANTE",
+  registro: "REGISTRO",
+  cama: "CAMA",
+  dx: "DX",
+  edad: "EDAD"
+};
+var APNP_LABELS = {
+  tabaquismo: "TABAQUISMO",
+  alcoholismo: "ETILISMO",
+  toxicomanias: "TOXICOMAN\xCDAS",
+  tatuajes: "TATUAJES",
+  deportesPasatiemposMascotas: "ZOONOSIS",
+  dieta: "DIETA / COMBE"
+};
+function hcPatchValueToEditText(key, value) {
+  if (value == null) return "";
+  if (key === "motivoConsulta" || key === "padecimientoActual" || key === "signosVitalesIngreso") {
+    return String(value).trim();
+  }
+  if (key === "identificacion" && typeof value === "object" && !Array.isArray(value)) {
+    return Object.entries(
+      /** @type {Record<string, string>} */
+      value
+    ).filter(function(entry2) {
+      return entry2[1] != null && String(entry2[1]).trim();
+    }).map(function(entry2) {
+      const label = IDENT_LABELS[entry2[0]] || entry2[0].toUpperCase();
+      return label + ": " + String(entry2[1]).trim();
+    }).join("\n");
+  }
+  if (key === "ahf" && typeof value === "object" && value) {
+    return String(
+      /** @type {{ descripcionDetallada?: string }} */
+      value.descripcionDetallada || ""
+    ).trim();
+  }
+  if (key === "app" && typeof value === "object" && value) {
+    return String(
+      /** @type {{ descripcionDetallada?: string }} */
+      value.descripcionDetallada || ""
+    ).trim();
+  }
+  if (key === "apnp" && typeof value === "object" && value) {
+    return Object.entries(
+      /** @type {Record<string, string>} */
+      value
+    ).filter(function(entry2) {
+      return entry2[1] != null && String(entry2[1]).trim();
+    }).map(function(entry2) {
+      const label = APNP_LABELS[entry2[0]] || entry2[0].toUpperCase();
+      return label + ": " + String(entry2[1]).trim();
+    }).join("\n");
+  }
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch (_e) {
+    return String(value);
+  }
+}
+function parseLabeledLines(block, labelToField) {
+  const out = {};
+  const reverse = {};
+  Object.keys(labelToField).forEach(function(field) {
+    reverse[String(labelToField[field]).toUpperCase()] = field;
+  });
+  for (const raw of String(block || "").split("\n")) {
+    const line = raw.trim();
+    if (!line) continue;
+    const idx = line.indexOf(":");
+    if (idx < 1) continue;
+    const label = line.slice(0, idx).trim().toUpperCase();
+    const value = line.slice(idx + 1).trim();
+    const field = reverse[label] || label.toLowerCase().replace(/\s+/g, "_");
+    out[field] = value;
+  }
+  return out;
+}
+function editTextToHcPatchValue(key, text, original) {
+  const trimmed = String(text || "").trim();
+  if (key === "motivoConsulta" || key === "padecimientoActual" || key === "signosVitalesIngreso") {
+    return trimmed;
+  }
+  if (key === "identificacion") {
+    const base = original && typeof original === "object" && !Array.isArray(original) ? Object.assign(
+      {},
+      /** @type {Record<string, unknown>} */
+      original
+    ) : {};
+    return Object.assign(base, parseLabeledLines(trimmed, IDENT_LABELS));
+  }
+  if (key === "ahf") {
+    const base = original && typeof original === "object" && !Array.isArray(original) ? Object.assign(
+      {},
+      /** @type {Record<string, unknown>} */
+      original
+    ) : { conditions: [], customConditions: [], entries: [] };
+    base.descripcionDetallada = trimmed;
+    return base;
+  }
+  if (key === "app") {
+    const base = original && typeof original === "object" && !Array.isArray(original) ? Object.assign(
+      {},
+      /** @type {Record<string, unknown>} */
+      original
+    ) : { conditions: [], customConditions: [], entries: [] };
+    base.descripcionDetallada = trimmed;
+    return base;
+  }
+  if (key === "apnp") {
+    const base = original && typeof original === "object" && !Array.isArray(original) ? Object.assign(
+      {},
+      /** @type {Record<string, unknown>} */
+      original
+    ) : {};
+    return Object.assign(base, parseLabeledLines(trimmed, APNP_LABELS));
+  }
+  if (!trimmed) return original;
+  try {
+    return JSON.parse(trimmed);
+  } catch (_e) {
+    return trimmed;
+  }
+}
+
+// lib/drive-import/format-drive-import-preview.mjs
+function summarizeHcValue(value) {
+  if (value == null) return "vac\xEDo";
+  if (typeof value === "string") {
+    const t2 = value.trim();
+    if (!t2) return "vac\xEDo";
+    if (t2.length <= 72) return '"' + t2.replace(/\s+/g, " ") + '"';
+    return t2.slice(0, 70).replace(/\s+/g, " ") + "\u2026 (" + t2.length + " caracteres)";
+  }
+  if (Array.isArray(value)) {
+    return value.length + " elemento" + (value.length === 1 ? "" : "s");
+  }
+  if (typeof value === "object") {
+    const parts = [];
+    const desc = value.descripcionDetallada || value.descripcion;
+    if (desc && String(desc).trim()) {
+      const d = String(desc).trim();
+      parts.push(
+        d.length <= 60 ? d : d.slice(0, 58).replace(/\s+/g, " ") + "\u2026 (" + d.length + " car.)"
+      );
+    }
+    const conds = value.conditions || value.entries;
+    if (Array.isArray(conds) && conds.length) {
+      parts.push(conds.length + " condici\xF3n" + (conds.length === 1 ? "" : "es"));
+    }
+    if (value.tabaquismo || value.alcoholismo) {
+      parts.push("h\xE1bitos");
+    }
+    return parts.length ? parts.join(" \xB7 ") : "bloque estructurado";
+  }
+  return "contenido";
+}
+function formatEvDate(iso) {
+  if (!iso) return "sin fecha";
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return "sin fecha";
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yy = d.getFullYear();
+  return dd + "/" + mm + "/" + yy;
+}
+function clipLine(text, max) {
+  const t2 = String(text || "").trim().replace(/\s+/g, " ");
+  if (!t2) return "(vac\xEDa)";
+  if (t2.length <= max) return t2;
+  return t2.slice(0, max - 1) + "\u2026";
+}
+function summarizeLabPanels(resLabs) {
+  const panels = [];
+  (resLabs || []).forEach(function(chunk) {
+    const first = String(chunk || "").split("\n")[0].trim();
+    const tok = first.split(/\s+/)[0].replace(":", "");
+    if (tok && panels.indexOf(tok) === -1) panels.push(tok);
+  });
+  return panels.length ? panels.join(", ") : "sin paneles";
+}
+function formatDriveImportPreview(parsed, opts) {
+  opts = opts || {};
+  const mode = opts.applyMode || "fill";
+  const lines = [];
+  lines.push("Vista previa de importaci\xF3n");
+  lines.push("");
+  if (parsed.header && (parsed.header.nombre || parsed.header.registro)) {
+    lines.push("Paciente en documento");
+    const bits = [];
+    if (parsed.header.nombre) bits.push(parsed.header.nombre);
+    if (parsed.header.registro) bits.push("Reg. " + parsed.header.registro);
+    if (parsed.header.edad) bits.push(parsed.header.edad);
+    if (parsed.header.cama) bits.push("Cama " + parsed.header.cama);
+    if (parsed.header.sexo) bits.push(parsed.header.sexo);
+    lines.push("  " + bits.join(" \xB7 "));
     lines.push("");
-    lines.push("Advertencias:");
-    parsed.warnings.forEach((w) => lines.push("\u2022 " + w));
+  }
+  const hcKeys = listHcPatchSectionKeys(parsed.hcPatch || {});
+  lines.push("Historia cl\xEDnica");
+  if (mode === "eventos") {
+    lines.push("  Omitida (modo solo eventualidades)");
+  } else if (!hcKeys.length) {
+    lines.push("  Sin secciones detectadas en el pegado");
+  } else {
+    const modeLabel = mode === "replace" ? "Reemplazar\xE1 secciones presentes en el documento" : "Completar\xE1 solo campos vac\xEDos en HC";
+    lines.push("  " + modeLabel);
+    hcKeys.forEach(function(key) {
+      const label = HC_SECTION_LABELS[key] || key;
+      lines.push("  \u2022 " + label + ": " + summarizeHcValue(parsed.hcPatch[key]));
+    });
+  }
+  lines.push("");
+  const allEv = parsed.eventualidades.entries || [];
+  const evFiltered = filterNewEventualidades(opts.existingEventualidades || [], allEv);
+  const evNew = evFiltered.toAdd || [];
+  const evSkipped = parsed.eventualidades.skippedEstimate ?? evFiltered.skipped ?? 0;
+  lines.push("Eventualidades");
+  if (!allEv.length) {
+    lines.push("  Ninguna detectada");
+  } else {
+    lines.push(
+      "  " + evNew.length + " nueva" + (evNew.length === 1 ? "" : "s") + (evSkipped ? " \xB7 " + evSkipped + " duplicada" + (evSkipped === 1 ? "" : "s") + " omitida" + (evSkipped === 1 ? "" : "s") : "")
+    );
+    const show = evNew.slice(0, 12);
+    show.forEach(function(entry2, idx) {
+      const date = formatEvDate(entry2.at);
+      const firstLine = clipLine(String(entry2.text || "").split("\n")[0], 64);
+      lines.push("  " + (idx + 1) + ". " + date + " \u2014 " + firstLine);
+    });
+    if (evNew.length > show.length) {
+      lines.push("  \u2026 y " + (evNew.length - show.length) + " m\xE1s");
+    }
+    if (evSkipped) {
+      lines.push("  (" + evSkipped + " ya en expediente, no se repetir\xE1n)");
+    }
+  }
+  lines.push("");
+  const labAll = parsed.laboratorios.allSets || parsed.laboratorios.sets || [];
+  const labNew = parsed.laboratorios.sets || [];
+  const labSkipped = parsed.laboratorios.skippedEstimate || 0;
+  lines.push("Laboratorios");
+  if (!labAll.length) {
+    lines.push("  Ning\xFAn bloque con fecha detectado");
+  } else {
+    lines.push(
+      "  " + labNew.length + " fecha" + (labNew.length === 1 ? "" : "s") + " a agregar al historial" + (labSkipped ? " \xB7 " + labSkipped + " duplicada" + (labSkipped === 1 ? "" : "s") + " omitida" + (labSkipped === 1 ? "" : "s") : "")
+    );
+    labNew.slice(0, 10).forEach(function(set, idx) {
+      lines.push(
+        "  " + (idx + 1) + ". " + (set.fecha || "?") + " \u2014 " + summarizeLabPanels(set.resLabs)
+      );
+    });
+    if (labNew.length > 10) {
+      lines.push("  \u2026 y " + (labNew.length - 10) + " fechas m\xE1s");
+    }
+  }
+  lines.push("");
+  if (parsed.warnings && parsed.warnings.length) {
+    lines.push("Advertencias");
+    parsed.warnings.forEach(function(w) {
+      lines.push("  \u2022 " + w);
+    });
   }
   return lines.join("\n");
 }
-function parseDriveDocument(rawText, profileIdOverride, opts) {
+
+// lib/drive-import/parse-drive-document.mjs
+function parseDriveDocument(rawText, opts) {
   opts = opts || {};
   const split = splitDocumentSections(rawText);
   const pipe = parsePipeHeader(split.headerLines);
   const ficha = parseFichaIdentificacion(split.sections.ficha || "");
   const header = mergeHeader(pipe, ficha);
-  const detected = detectProfile(split.sections, pipe);
-  const profileId = profileIdOverride || detected.profileId;
-  const profile = getProfile2(profileId);
   const doc = { sections: split.sections, headerLines: split.headerLines };
-  let hcPatch = profile.mapHc(doc) || {};
+  let hcPatch = mapUniversalHc(doc) || {};
   const sexo = hcPatch._sexo;
   if (sexo) delete hcPatch._sexo;
   if (sexo && !header.sexo) header.sexo = sexo;
   const documentYear = inferDocumentYearFromText(rawText);
   let evBlocks = split.eventualidadesBlocks;
-  if (profileId === "drive-eventos-only-v1" && !evBlocks.length) {
-    evBlocks = [String(rawText || "").trim()];
+  const hasHc = hasDriveHcSections(split.sections);
+  if (!evBlocks.length && !hasHc) {
+    const trimmed = String(rawText || "").trim();
+    if (trimmed) evBlocks = [trimmed];
   }
   const { entries, warnings: evWarn } = mapSectionsToEventualidades({
     eventualidadesBlocks: evBlocks,
     referenceYear: documentYear,
     documentYear
   });
-  const { skipped } = filterNewEventualidades(opts.existingEventualidades || [], entries);
+  const { skipped: evSkipped } = filterNewEventualidades(opts.existingEventualidades || [], entries);
+  const labBody = extractLaboratoriosBody(rawText, split.sections.laboratorios || "");
+  const labParsed = parseDriveLaboratorios(labBody, { documentYear });
+  const labFiltered = filterNewDriveLabSets(opts.existingLabHistory || [], labParsed.sets);
   const warnings = split.warnings.slice();
-  if (profileId === "drive-fragment-v1") {
-    warnings.push("No se reconoci\xF3 un formato con confianza; revisa el perfil manualmente.");
+  if (!hasHc && !split.eventualidadesBlocks.length && evBlocks.length === 1 && evBlocks[0] === String(rawText || "").trim()) {
+    warnings.push("Texto interpretado como fragmento de eventualidades (sin encabezados de secci\xF3n).");
   }
-  if (!split.eventualidadesBlocks.length) {
+  if (!split.eventualidadesBlocks.length && !evBlocks.length) {
     warnings.push("No se encontr\xF3 secci\xF3n EVENTUALIDADES.");
   }
   warnings.push(...evWarn);
+  warnings.push(...labParsed.warnings);
+  if (labBody && !labParsed.sets.length) {
+    warnings.push("Secci\xF3n LABORATORIOS sin bloques de fecha reconocibles.");
+  }
   const result = {
-    profileId,
-    profileLabel: profile.label,
-    detected,
     header,
     hcPatch,
     eventualidades: {
       entries,
-      skippedEstimate: skipped
+      skippedEstimate: evSkipped
+    },
+    laboratorios: {
+      sets: labFiltered.sets,
+      allSets: labParsed.sets,
+      skippedEstimate: labFiltered.skipped
     },
     warnings
   };
-  result.previewText = formatDriveImportPreview(result);
+  result.previewText = formatDriveImportPreview(result, {
+    applyMode: opts.applyMode,
+    existingEventualidades: opts.existingEventualidades
+  });
   return result;
 }
 
 // public/js/features/drive-import-apply.mjs
 init_app_state();
+init_lan_sync();
 async function applyDriveImport(parsed, options) {
+  return withSuppressedLanConflictViewer(async function() {
+    return applyDriveImportInner(parsed, options);
+  });
+}
+async function applyDriveImportInner(parsed, options) {
   const mode = options.mode || "fill";
   let patient = options.activePatient;
+  let lanSyncDeferred = false;
   if (options.createNew) {
     const h = parsed.header || {};
-    const id5 = generatePatientId();
+    const id = generatePatientId();
     patient = {
-      id: id5,
+      id,
       nombre: ensureUniquePatientName(h.nombre || "PACIENTE SIN NOMBRE"),
       edad: h.edad || "",
       sexo: h.sexo === "F" ? "F" : "M",
@@ -61872,31 +62382,227 @@ async function applyDriveImport(parsed, options) {
     };
     applyDefaultsToNewPatient(patient);
     patients.unshift(patient);
-    selectPatient(id5);
+    selectPatient(id);
   }
   if (!patient) {
     return { ok: false, error: "no-patient" };
   }
   let hcOk = true;
   if (mode !== "eventos") {
-    const hcRes = await applyDriveImportHcPatch(patient, parsed.hcPatch || {}, mode);
+    const hcRes = await applyDriveImportHcPatch(patient, parsed.hcPatch || {}, mode, {
+      fromReview: !!options.fromReview
+    });
     hcOk = hcRes.ok;
+    if (hcRes.lanDeferred) lanSyncDeferred = true;
     if (!hcOk) return { ok: false, error: "hc-conflict" };
   }
   const evRes = await applyDriveImportEventualidades(patient, parsed.eventualidades.entries || []);
+  if (evRes.lanDeferred) lanSyncDeferred = true;
   invalidateEventualidadesPanel();
-  await saveState();
+  const evMount = document.getElementById("exp-pane-eventualidades");
+  if (evMount && evRes.added) {
+    renderEventualidadesPanel(evMount);
+  }
+  let labRes = { added: 0, skipped: 0 };
+  const labSets = parsed.laboratorios && parsed.laboratorios.sets ? parsed.laboratorios.sets : [];
+  if (labSets.length) {
+    labRes = await applyDriveImportLabSets(patient, labSets);
+  }
+  await saveState({ immediate: true });
   const hcKeys = Object.keys(parsed.hcPatch || {}).filter(function(k) {
     return !String(k).startsWith("_");
   });
-  const navigateTo = mode === "eventos" || !hcKeys.length ? "eventualidades" : "historia";
+  let navigateTo = mode === "eventos" || !hcKeys.length ? "eventualidades" : "historia";
+  if (labRes.added && navigateTo === "eventualidades" && mode === "eventos") {
+    navigateTo = "lab";
+  }
   return {
     ok: true,
     navigateTo,
     evAdded: evRes.added,
     evSkipped: evRes.skipped,
-    patientId: patient.id
+    labAdded: labRes.added,
+    labSkipped: labRes.skipped,
+    patientId: patient.id,
+    lanSyncDeferred
   };
+}
+
+// public/js/features/drive-import-modal.mjs
+init_app_state();
+
+// lib/drive-import/drive-import-review.mjs
+function summarizeLabPanels2(resLabs) {
+  const panels = [];
+  (resLabs || []).forEach(function(chunk) {
+    const first = String(chunk || "").split("\n")[0].trim();
+    const tok = first.split(/\s+/)[0].replace(":", "");
+    if (tok && panels.indexOf(tok) === -1) panels.push(tok);
+  });
+  return panels.length ? panels.join(", ") : "sin paneles";
+}
+function buildDriveImportReviewSteps(parsed, opts) {
+  opts = opts || {};
+  const mode = opts.applyMode || "fill";
+  const steps = [];
+  if (opts.createNew && parsed.header && (parsed.header.nombre || parsed.header.registro)) {
+    steps.push({
+      kind: "header",
+      label: "Datos del paciente (nuevo)",
+      include: true,
+      header: Object.assign({}, parsed.header)
+    });
+  }
+  if (mode !== "eventos") {
+    listHcPatchSectionKeys(parsed.hcPatch || {}).forEach(function(key) {
+      const value = parsed.hcPatch[key];
+      steps.push({
+        kind: "hc",
+        key,
+        label: HC_SECTION_LABELS[key] || key,
+        include: true,
+        editText: hcPatchValueToEditText(key, value),
+        originalValue: value
+      });
+    });
+  }
+  const allEv = parsed.eventualidades.entries || [];
+  const evFiltered = filterNewEventualidades(opts.existingEventualidades || [], allEv);
+  const evNew = evFiltered.toAdd || [];
+  if (evNew.length) {
+    steps.push({
+      kind: "eventos",
+      label: "Eventualidades (" + evNew.length + " nueva" + (evNew.length === 1 ? "" : "s") + ")",
+      entries: evNew.map(function(entry2) {
+        return { at: entry2.at, text: entry2.text, include: true };
+      })
+    });
+  }
+  const allLabSets = (parsed.laboratorios.allSets && parsed.laboratorios.allSets.length ? parsed.laboratorios.allSets : parsed.laboratorios.sets) || [];
+  const existingLabs = opts.existingLabHistory || [];
+  if (allLabSets.length) {
+    let dupCount = 0;
+    const sets = allLabSets.map(function(set) {
+      const isDuplicate = existingLabs.some(function(ex) {
+        return isDuplicateDriveLabSet(ex, set);
+      });
+      if (isDuplicate) dupCount += 1;
+      const panels = summarizeLabPanels2(set.resLabs);
+      return {
+        fecha: set.fecha || "",
+        hora: set.hora || "",
+        resLabs: set.resLabs || [],
+        sourceText: set.sourceText,
+        bhExtras: set.bhExtras,
+        include: !isDuplicate,
+        isDuplicate,
+        summary: (set.fecha || "?") + " \u2014 " + panels
+      };
+    });
+    const newCount = sets.length - dupCount;
+    let label = "Laboratorios (" + sets.length + " fecha" + (sets.length === 1 ? "" : "s") + ")";
+    if (dupCount && newCount) {
+      label += " \xB7 " + newCount + " nueva" + (newCount === 1 ? "" : "s") + ", " + dupCount + " en historial";
+    } else if (dupCount && !newCount) {
+      label += " \xB7 todas en historial";
+    }
+    steps.push({
+      kind: "labs",
+      label,
+      sets
+    });
+  }
+  return steps;
+}
+function patchReviewStep(step, patch) {
+  if (step.kind === "hc") {
+    if (patch.include != null) step.include = !!patch.include;
+    if (patch.editText != null) step.editText = patch.editText;
+    return;
+  }
+  if (step.kind === "header" && patch.include != null) {
+    step.include = !!patch.include;
+    return;
+  }
+  if (step.kind === "eventos" && patch.entries) {
+    patch.entries.forEach(function(row, idx) {
+      if (!step.entries[idx]) return;
+      if (row.include != null) step.entries[idx].include = !!row.include;
+      if (row.text != null) step.entries[idx].text = row.text;
+    });
+    return;
+  }
+  if (step.kind === "labs" && patch.sets) {
+    patch.sets.forEach(function(row, idx) {
+      if (!step.sets[idx]) return;
+      if (row.include != null) step.sets[idx].include = !!row.include;
+    });
+  }
+}
+function applyReviewStepsToParsed(parsed, steps, opts) {
+  opts = opts || {};
+  const out = Object.assign({}, parsed, {
+    hcPatch: Object.assign({}, parsed.hcPatch || {}),
+    eventualidades: {
+      entries: (parsed.eventualidades.entries || []).slice(),
+      skippedEstimate: parsed.eventualidades.skippedEstimate
+    },
+    laboratorios: Object.assign({}, parsed.laboratorios, {
+      sets: (parsed.laboratorios.sets || []).slice()
+    }),
+    header: Object.assign({}, parsed.header || {})
+  });
+  steps.forEach(function(step) {
+    if (step.kind === "header") {
+      if (opts.createNew && step.include) out.header = Object.assign({}, step.header);
+      return;
+    }
+    if (step.kind === "hc") {
+      if (!step.include) {
+        delete out.hcPatch[step.key];
+        return;
+      }
+      out.hcPatch[step.key] = editTextToHcPatchValue(step.key, step.editText, step.originalValue);
+      return;
+    }
+    if (step.kind === "eventos") {
+      out.eventualidades.entries = step.entries.filter(function(e) {
+        return e.include && String(e.text || "").trim();
+      }).map(function(e) {
+        return { at: e.at, text: String(e.text).trim() };
+      });
+      return;
+    }
+    if (step.kind === "labs") {
+      out.laboratorios.sets = step.sets.filter(function(s) {
+        return s.include && s.resLabs && s.resLabs.length;
+      }).map(function(s) {
+        return {
+          fecha: s.fecha,
+          hora: s.hora,
+          resLabs: s.resLabs,
+          sourceText: s.sourceText,
+          bhExtras: s.bhExtras
+        };
+      });
+    }
+  });
+  return out;
+}
+function reviewStepHint(step) {
+  if (step.kind === "hc") {
+    return "Edita el texto si hace falta. Desmarca \xABIncluir\xBB para omitir esta secci\xF3n en la importaci\xF3n.";
+  }
+  if (step.kind === "header") {
+    return "Estos datos se usar\xE1n al crear el paciente nuevo.";
+  }
+  if (step.kind === "eventos") {
+    return "Marca o desmarca cada nota. Puedes corregir el texto antes de importar.";
+  }
+  if (step.kind === "labs") {
+    return "Marca las fechas que quieras agregar. Las que ya est\xE1n en el historial vienen desmarcadas.";
+  }
+  return "";
 }
 
 // public/js/features/drive-import-modal.mjs
@@ -61919,7 +62625,11 @@ var rt36 = {
   }
 };
 var _debounceId = null;
-var _profilesPopulated = false;
+var _autoReviewPending = false;
+var _importBusy = false;
+var _modalStep = "paste";
+var _reviewSteps = [];
+var _reviewIndex = 0;
 function registerDriveImportRuntime(partial) {
   if (partial && typeof partial === "object") Object.assign(rt36, partial);
 }
@@ -61932,14 +62642,11 @@ function getTextarea2() {
     document.getElementById("drive-import-input")
   );
 }
-function getProfileSelect() {
-  return (
-    /** @type {HTMLSelectElement | null} */
-    document.getElementById("drive-import-profile")
-  );
+function getParseHintEl() {
+  return document.getElementById("drive-import-parse-hint");
 }
-function getPreviewEl2() {
-  return document.getElementById("drive-import-preview");
+function getModalEl() {
+  return document.querySelector(".drive-import-modal");
 }
 function getWarningEl() {
   return document.getElementById("drive-import-warning");
@@ -61950,52 +62657,79 @@ function getApplyMode() {
   if (v === "replace" || v === "eventos") return v;
   return "fill";
 }
-function populateProfileSelect(selectedId) {
-  const sel = getProfileSelect();
-  if (!sel) return;
-  if (!_profilesPopulated) {
-    sel.innerHTML = "";
-    listProfiles().forEach(function(p) {
-      const opt = document.createElement("option");
-      opt.value = p.id;
-      opt.textContent = p.label;
-      sel.appendChild(opt);
-    });
-    _profilesPopulated = true;
-  }
-  if (selectedId) sel.value = selectedId;
-}
 function getParsed() {
   const ta = getTextarea2();
-  const sel = getProfileSelect();
   const patient = rt36.getActivePatient();
   const existing = patient && patient.eventualidades && Array.isArray(patient.eventualidades.entries) ? patient.eventualidades.entries : [];
-  return parseDriveDocument(ta ? ta.value : "", sel ? sel.value : void 0, {
-    existingEventualidades: existing
+  const existingLabs = patient && patient.id && labHistory[patient.id] ? labHistory[patient.id] : [];
+  return parseDriveDocument(ta ? ta.value : "", {
+    existingEventualidades: existing,
+    existingLabHistory: existingLabs,
+    applyMode: getApplyMode()
   });
 }
+function hasImportableContent(parsed, mode) {
+  const hcKeys = listHcPatchSectionKeys(parsed.hcPatch || {});
+  const evTotal = (parsed.eventualidades.entries || []).length;
+  const evSkipped = parsed.eventualidades.skippedEstimate || 0;
+  const evWillAdd = Math.max(0, evTotal - evSkipped);
+  const labsWillAdd = (parsed.laboratorios.sets || []).length;
+  const willTouchHc = mode !== "eventos" && hcKeys.length > 0;
+  return willTouchHc || evWillAdd > 0 || labsWillAdd > 0;
+}
+function updateDocSummary() {
+  const ta = getTextarea2();
+  const el = document.getElementById("drive-import-doc-summary");
+  if (!el || !ta) return;
+  const text = String(ta.value || "");
+  if (!text.trim()) {
+    el.textContent = "";
+    return;
+  }
+  const lines = text.split(/\r?\n/).length;
+  el.textContent = "Documento pegado \xB7 " + lines + " l\xEDnea" + (lines === 1 ? "" : "s") + " \xB7 " + text.length + " caracteres";
+}
 function refreshPreview2() {
-  const preview = getPreviewEl2();
+  const parseHint = getParseHintEl();
   const warn = getWarningEl();
   const confirmBtn = document.getElementById("drive-import-confirm");
-  if (!preview) return;
+  const fastBtn = document.getElementById("drive-import-apply-fast");
   const ta = getTextarea2();
   if (!ta || !String(ta.value || "").trim()) {
-    preview.textContent = "Pega el documento de Drive para ver la vista previa.";
+    if (parseHint) {
+      parseHint.hidden = true;
+      parseHint.textContent = "";
+    }
     if (warn) warn.hidden = true;
     if (confirmBtn) confirmBtn.disabled = true;
+    if (fastBtn) fastBtn.disabled = true;
+    updateDocSummary();
     return;
   }
   let parsed;
   try {
     parsed = getParsed();
   } catch (err) {
-    preview.textContent = "Error al analizar: " + (err && err.message ? err.message : String(err));
+    if (parseHint) {
+      parseHint.hidden = false;
+      parseHint.textContent = "Error al analizar: " + (err && err.message ? err.message : String(err));
+    }
     if (confirmBtn) confirmBtn.disabled = true;
+    if (fastBtn) fastBtn.disabled = true;
+    updateDocSummary();
     return;
   }
-  populateProfileSelect(parsed.profileId);
-  preview.textContent = parsed.previewText || "";
+  const mode = getApplyMode();
+  const canImport = hasImportableContent(parsed, mode);
+  if (parseHint) {
+    if (canImport) {
+      parseHint.hidden = true;
+      parseHint.textContent = "";
+    } else {
+      parseHint.hidden = false;
+      parseHint.textContent = "No se detect\xF3 contenido importable con el modo seleccionado.";
+    }
+  }
   const patient = rt36.getActivePatient();
   if (warn && patient && parsed.header && parsed.header.registro) {
     const mismatch = String(parsed.header.registro).trim() && String(patient.registro || "").trim() && String(parsed.header.registro).trim() !== String(patient.registro).trim();
@@ -62004,19 +62738,346 @@ function refreshPreview2() {
   } else if (warn) {
     warn.hidden = true;
   }
-  const hasHc = Object.keys(parsed.hcPatch || {}).some(function(k) {
-    return !String(k).startsWith("_");
-  });
-  const hasEv = (parsed.eventualidades.entries || []).length > 0;
-  if (confirmBtn) confirmBtn.disabled = !hasHc && !hasEv;
+  if (confirmBtn) confirmBtn.disabled = !canImport;
+  if (fastBtn) fastBtn.disabled = !canImport;
+  updateDocSummary();
+}
+function setReviewImportBusy(busy) {
+  _importBusy = busy;
+  const nextBtn = document.getElementById("drive-import-review-next");
+  const fastBtn = document.getElementById("drive-import-apply-fast");
+  const confirmBtn = document.getElementById("drive-import-confirm");
+  if (nextBtn) {
+    nextBtn.disabled = busy;
+    if (busy) nextBtn.textContent = "Importando\u2026";
+    else if (_modalStep === "review") renderReviewStep();
+  }
+  if (fastBtn) fastBtn.disabled = busy;
+  if (confirmBtn && busy) confirmBtn.disabled = true;
+  if (!busy) refreshPreview2();
+}
+function confirmDriveImportChoice(message) {
+  const bd = getBackdrop2();
+  const wasOpen = !!(bd && bd.classList.contains("open"));
+  if (bd && wasOpen) {
+    bd.classList.remove("open");
+    bd.setAttribute("aria-hidden", "true");
+  }
+  let ok = false;
+  try {
+    ok = confirm(message);
+  } finally {
+    if (bd && wasOpen) {
+      bd.classList.add("open");
+      bd.setAttribute("aria-hidden", "false");
+    }
+  }
+  return ok;
+}
+function hasApprovedReviewContent(parsed) {
+  const hcKeys = listHcPatchSectionKeys(parsed.hcPatch || {});
+  const evCount = (parsed.eventualidades.entries || []).length;
+  const labCount = (parsed.laboratorios.sets || []).length;
+  return hcKeys.length > 0 || evCount > 0 || labCount > 0;
+}
+function getReviewBuildOpts(parsed) {
+  const patient = rt36.getActivePatient();
+  return {
+    applyMode: getApplyMode(),
+    existingEventualidades: patient && patient.eventualidades && Array.isArray(patient.eventualidades.entries) ? patient.eventualidades.entries : [],
+    existingLabHistory: patient && patient.id && labHistory[patient.id] ? labHistory[patient.id] : [],
+    createNew: !patient
+  };
+}
+function tryAutoStartReview() {
+  if (_modalStep !== "paste" || !_autoReviewPending) return;
+  _autoReviewPending = false;
+  const ta = getTextarea2();
+  if (!ta || !String(ta.value || "").trim()) return;
+  let parsed;
+  try {
+    parsed = getParsed();
+  } catch (_err) {
+    return;
+  }
+  const mode = getApplyMode();
+  if (!hasImportableContent(parsed, mode)) return;
+  const patient = rt36.getActivePatient();
+  const steps = buildDriveImportReviewSteps(parsed, getReviewBuildOpts(parsed));
+  if (!steps.length) return;
+  _reviewSteps = steps;
+  _reviewIndex = 0;
+  setModalStep("review");
+  renderReviewStep();
+  const editor = document.getElementById("drive-import-review-editor");
+  if (editor && !editor.hidden) editor.focus();
+}
+function onPasteInputChanged() {
+  const ta = getTextarea2();
+  const hasText = !!(ta && String(ta.value || "").trim());
+  if (!hasText) {
+    _autoReviewPending = false;
+    refreshPreview2();
+    return;
+  }
+  _autoReviewPending = true;
+  refreshPreview2();
+  if (_debounceId) clearTimeout(_debounceId);
+  _debounceId = setTimeout(function() {
+    _debounceId = null;
+    tryAutoStartReview();
+  }, 320);
 }
 function syncConfirmLabel() {
   const btn = document.getElementById("drive-import-confirm");
   const modeFs = document.getElementById("drive-import-mode-fieldset");
   const patient = rt36.getActivePatient();
   if (modeFs) modeFs.style.display = patient ? "" : "none";
-  if (!btn) return;
-  btn.textContent = patient ? "Aplicar a " + (patient.nombre || "paciente") : "Crear paciente e importar";
+  if (!btn || _modalStep !== "paste") return;
+  btn.textContent = "Revisar secciones\u2026";
+}
+function setModalStep(step) {
+  _modalStep = step;
+  const modal = getModalEl();
+  const pasteEl = document.getElementById("drive-import-step-paste");
+  const reviewEl = document.getElementById("drive-import-step-review");
+  const actionsPaste = document.getElementById("drive-import-actions-paste");
+  const actionsReview = document.getElementById("drive-import-actions-review");
+  const prevBtn = document.getElementById("drive-import-review-prev");
+  const title = document.getElementById("drive-import-title");
+  const hint = document.getElementById("drive-import-hint");
+  const modeFs = document.getElementById("drive-import-mode-fieldset");
+  if (modal) modal.setAttribute("data-drive-step", step);
+  if (pasteEl) pasteEl.hidden = step !== "paste";
+  if (reviewEl) reviewEl.hidden = step !== "review";
+  if (actionsPaste) actionsPaste.hidden = step !== "paste";
+  if (actionsReview) actionsReview.hidden = step !== "review";
+  if (modeFs) modeFs.hidden = step === "review";
+  if (title) {
+    title.textContent = step === "review" ? "Revisar importaci\xF3n" : "Importar desde Drive";
+  }
+  if (hint) {
+    hint.textContent = step === "review" ? "Confirma o edita cada secci\xF3n antes de importar." : "Pega el documento copiado desde Google Docs. Revisar\xE1s cada secci\xF3n antes de importar.";
+  }
+  if (step === "review") updateDocSummary();
+  syncConfirmLabel();
+}
+function escapeHtml6(s) {
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function formatEvDate2(iso) {
+  if (!iso) return "sin fecha";
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return "sin fecha";
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yy = d.getFullYear();
+  return dd + "/" + mm + "/" + yy;
+}
+function syncCurrentReviewStepFromUi() {
+  const step = _reviewSteps[_reviewIndex];
+  if (!step) return;
+  const includeEl = (
+    /** @type {HTMLInputElement | null} */
+    document.getElementById("drive-import-review-include")
+  );
+  const editor = (
+    /** @type {HTMLTextAreaElement | null} */
+    document.getElementById("drive-import-review-editor")
+  );
+  if (step.kind === "hc") {
+    patchReviewStep(step, {
+      include: includeEl ? includeEl.checked : true,
+      editText: editor ? editor.value : step.editText
+    });
+    return;
+  }
+  if (step.kind === "header") {
+    patchReviewStep(step, { include: includeEl ? includeEl.checked : true });
+    return;
+  }
+  if (step.kind === "eventos") {
+    const rows = document.querySelectorAll("[data-drive-ev-idx]");
+    const entries = [];
+    rows.forEach(function(row) {
+      const idx = Number(row.getAttribute("data-drive-ev-idx"));
+      const cb = row.querySelector('input[type="checkbox"]');
+      const ta = row.querySelector("textarea");
+      entries[idx] = {
+        include: cb ? cb.checked : true,
+        text: ta ? ta.value : ""
+      };
+    });
+    patchReviewStep(step, { entries });
+    return;
+  }
+  if (step.kind === "labs") {
+    const rows = document.querySelectorAll("[data-drive-lab-idx]");
+    const sets = [];
+    rows.forEach(function(row) {
+      const idx = Number(row.getAttribute("data-drive-lab-idx"));
+      const cb = row.querySelector('input[type="checkbox"]');
+      sets[idx] = { include: cb ? cb.checked : true };
+    });
+    patchReviewStep(step, { sets });
+  }
+}
+function renderReviewDots() {
+  const dots = document.getElementById("drive-import-review-dots");
+  if (!dots) return;
+  dots.innerHTML = "";
+  _reviewSteps.forEach(function(step, idx) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "drive-import-review-dot" + (idx === _reviewIndex ? " is-active" : "");
+    btn.title = step.label;
+    btn.setAttribute("aria-label", step.label + " (" + (idx + 1) + " de " + _reviewSteps.length + ")");
+    btn.setAttribute("aria-current", idx === _reviewIndex ? "step" : "false");
+    btn.addEventListener("click", function() {
+      syncCurrentReviewStepFromUi();
+      _reviewIndex = idx;
+      renderReviewStep();
+    });
+    dots.appendChild(btn);
+  });
+}
+function renderReviewStep() {
+  const step = _reviewSteps[_reviewIndex];
+  const progress = document.getElementById("drive-import-review-progress");
+  const titleEl = document.getElementById("drive-import-review-title");
+  const hintEl = document.getElementById("drive-import-review-hint");
+  const includeWrap = document.getElementById("drive-import-review-include-wrap");
+  const includeEl = (
+    /** @type {HTMLInputElement | null} */
+    document.getElementById("drive-import-review-include")
+  );
+  const editor = (
+    /** @type {HTMLTextAreaElement | null} */
+    document.getElementById("drive-import-review-editor")
+  );
+  const listEl = document.getElementById("drive-import-review-list");
+  const nextBtn = document.getElementById("drive-import-review-next");
+  const prevBtn = document.getElementById("drive-import-review-prev");
+  if (!step) return;
+  if (progress) {
+    progress.textContent = "Secci\xF3n " + (_reviewIndex + 1) + " de " + _reviewSteps.length + " \xB7 " + step.label;
+  }
+  if (titleEl) titleEl.textContent = step.label;
+  if (hintEl) hintEl.textContent = reviewStepHint(step);
+  if (prevBtn) prevBtn.disabled = _reviewIndex <= 0;
+  if (nextBtn) {
+    nextBtn.textContent = _reviewIndex >= _reviewSteps.length - 1 ? "Importar lo aprobado" : "Siguiente secci\xF3n";
+  }
+  renderReviewDots();
+  const isList = step.kind === "eventos" || step.kind === "labs";
+  const isHeader = step.kind === "header";
+  if (includeWrap) includeWrap.hidden = isList;
+  if (editor) {
+    editor.hidden = isList || isHeader;
+    editor.style.display = isList || isHeader ? "none" : "";
+  }
+  if (listEl) listEl.hidden = !isList && !isHeader;
+  if (step.kind === "hc" && includeEl && editor) {
+    includeEl.checked = step.include;
+    editor.value = step.editText;
+    editor.readOnly = false;
+    return;
+  }
+  if (step.kind === "header" && includeEl && listEl) {
+    includeEl.checked = step.include;
+    const h = step.header || {};
+    const bits = [];
+    if (h.nombre) bits.push("Nombre: " + h.nombre);
+    if (h.registro) bits.push("Registro: " + h.registro);
+    if (h.edad) bits.push("Edad: " + h.edad);
+    if (h.cama) bits.push("Cama: " + h.cama);
+    if (h.sexo) bits.push("Sexo: " + h.sexo);
+    listEl.hidden = false;
+    listEl.innerHTML = '<pre class="drive-import-review-header-pre">' + escapeHtml6(bits.join("\n")) + "</pre>";
+    return;
+  }
+  if (step.kind === "eventos" && listEl) {
+    listEl.hidden = false;
+    let html = "";
+    step.entries.forEach(function(entry2, idx) {
+      const date = formatEvDate2(entry2.at);
+      html += '<div class="drive-import-review-row" data-drive-ev-idx="' + idx + '"><label class="drive-import-review-row-check"><input type="checkbox"' + (entry2.include ? " checked" : "") + ' aria-label="Incluir eventualidad ' + (idx + 1) + '" /><span class="drive-import-review-row-date">' + escapeHtml6(date) + '</span></label><textarea class="drive-import-review-row-text" rows="3" spellcheck="true">' + escapeHtml6(entry2.text) + "</textarea></div>";
+    });
+    listEl.innerHTML = html;
+    return;
+  }
+  if (step.kind === "labs" && listEl) {
+    listEl.hidden = false;
+    let html = '<div class="drive-import-labs-table-wrap"><table class="drive-import-labs-table"><thead><tr><th scope="col" class="drive-import-labs-col-check">Incluir</th><th scope="col">Fecha</th><th scope="col">Paneles</th><th scope="col">Estado</th></tr></thead><tbody>';
+    step.sets.forEach(function(set, idx) {
+      const panels = escapeHtml6(String(set.summary || "").replace(/^[^—]+—\s*/, ""));
+      const statusClass2 = set.isDuplicate ? "drive-import-lab-status drive-import-lab-status--dup" : "drive-import-lab-status drive-import-lab-status--new";
+      const statusText = set.isDuplicate ? "En historial" : "Nueva";
+      html += '<tr class="drive-import-labs-row' + (set.isDuplicate ? " is-duplicate" : "") + '" data-drive-lab-idx="' + idx + '"><td class="drive-import-labs-col-check"><input type="checkbox"' + (set.include ? " checked" : "") + ' aria-label="Incluir laboratorio ' + escapeHtml6(set.fecha || "") + '" /></td><td class="drive-import-labs-fecha">' + escapeHtml6(set.fecha || "") + '</td><td class="drive-import-labs-panels">' + panels + '</td><td><span class="' + statusClass2 + '">' + statusText + "</span></td></tr>";
+    });
+    html += "</tbody></table></div>";
+    listEl.innerHTML = html;
+  }
+}
+function driveImportBackToPaste() {
+  syncCurrentReviewStepFromUi();
+  _autoReviewPending = false;
+  setModalStep("paste");
+  const ta = getTextarea2();
+  if (ta) {
+    ta.focus();
+    try {
+      ta.setSelectionRange(ta.value.length, ta.value.length);
+    } catch (_e) {
+    }
+  }
+}
+function driveImportReviewPrev() {
+  if (_reviewIndex <= 0) return;
+  syncCurrentReviewStepFromUi();
+  _reviewIndex -= 1;
+  renderReviewStep();
+}
+async function driveImportReviewNext() {
+  if (_importBusy) return;
+  try {
+    syncCurrentReviewStepFromUi();
+    if (_reviewIndex >= _reviewSteps.length - 1) {
+      await finishReviewAndImport();
+      return;
+    }
+    _reviewIndex += 1;
+    renderReviewStep();
+  } catch (err) {
+    console.error("[drive-import] review next failed", err);
+    rt36.showToast("No se pudo completar la revisi\xF3n", "error");
+    setReviewImportBusy(false);
+  }
+}
+function startDriveImportReview() {
+  const ta = getTextarea2();
+  if (!ta || !String(ta.value || "").trim()) {
+    rt36.showToast("Pega el contenido del documento", "error");
+    return;
+  }
+  let parsed;
+  try {
+    parsed = getParsed();
+  } catch (_err) {
+    rt36.showToast("No se pudo analizar el texto", "error");
+    return;
+  }
+  _reviewSteps = buildDriveImportReviewSteps(parsed, getReviewBuildOpts(parsed));
+  if (!_reviewSteps.length) {
+    rt36.showToast("No hay secciones para revisar en este pegado", "info");
+    return;
+  }
+  _reviewIndex = 0;
+  _autoReviewPending = false;
+  setModalStep("review");
+  renderReviewStep();
+  const editor = document.getElementById("drive-import-review-editor");
+  if (editor && !editor.hidden) editor.focus();
 }
 function openDriveImportModal() {
   const bd = getBackdrop2();
@@ -62026,8 +63087,11 @@ function openDriveImportModal() {
   }
   const ta = getTextarea2();
   if (ta) ta.value = "";
-  _profilesPopulated = false;
-  populateProfileSelect("drive-pipe-hc-v1");
+  _reviewSteps = [];
+  _reviewIndex = 0;
+  _autoReviewPending = false;
+  _importBusy = false;
+  setModalStep("paste");
   syncConfirmLabel();
   refreshPreview2();
   bd.classList.add("open");
@@ -62037,39 +63101,95 @@ function openDriveImportModal() {
 function closeDriveImportModal() {
   const bd = getBackdrop2();
   if (!bd) return;
+  if (_modalStep === "review") syncCurrentReviewStepFromUi();
   bd.classList.remove("open");
   bd.setAttribute("aria-hidden", "true");
+  setModalStep("paste");
+  _reviewSteps = [];
+  _reviewIndex = 0;
+  _importBusy = false;
+}
+async function finishReviewAndImport() {
+  if (_importBusy) return;
+  setReviewImportBusy(true);
+  try {
+    syncCurrentReviewStepFromUi();
+    let parsed;
+    try {
+      parsed = getParsed();
+    } catch (_err) {
+      rt36.showToast("No se pudo analizar el texto", "error");
+      return;
+    }
+    parsed = applyReviewStepsToParsed(parsed, _reviewSteps, { createNew: !rt36.getActivePatient() });
+    if (!hasApprovedReviewContent(parsed)) {
+      rt36.showToast("No hay secciones marcadas para importar", "info");
+      return;
+    }
+    await Promise.race([
+      runDriveImport(parsed, { fromReview: true }),
+      new Promise(function(_, reject) {
+        setTimeout(function() {
+          reject(new Error("import-timeout"));
+        }, 45e3);
+      })
+    ]);
+  } catch (err) {
+    console.error("[drive-import] import failed", err);
+    if (err && err.message === "import-timeout") {
+      rt36.showToast("La importaci\xF3n tard\xF3 demasiado. Revisa si los datos se guardaron.", "error");
+    } else {
+      rt36.showToast("Error al importar desde Drive", "error");
+    }
+  } finally {
+    setReviewImportBusy(false);
+  }
 }
 async function confirmDriveImport() {
-  const ta = getTextarea2();
-  if (!ta || !String(ta.value || "").trim()) {
-    rt36.showToast("Pega el contenido del documento", "error");
-    return;
-  }
-  let parsed;
+  if (_importBusy) return;
+  setReviewImportBusy(true);
   try {
-    parsed = getParsed();
+    const ta = getTextarea2();
+    if (!ta || !String(ta.value || "").trim()) {
+      rt36.showToast("Pega el contenido del documento", "error");
+      return;
+    }
+    let parsed;
+    try {
+      parsed = getParsed();
+    } catch (_err) {
+      rt36.showToast("No se pudo analizar el texto", "error");
+      return;
+    }
+    await runDriveImport(parsed, { fromReview: false });
   } catch (err) {
-    rt36.showToast("No se pudo analizar el texto", "error");
-    return;
+    console.error("[drive-import] fast import failed", err);
+    rt36.showToast("Error al importar desde Drive", "error");
+  } finally {
+    setReviewImportBusy(false);
   }
+}
+async function runDriveImport(parsed, opts) {
+  opts = opts || {};
   const mode = getApplyMode();
   const patient = rt36.getActivePatient();
   const createNew = !patient;
   if (patient && parsed.header && parsed.header.registro && patient.registro && String(parsed.header.registro).trim() !== String(patient.registro).trim()) {
-    if (!confirm(
+    if (!confirmDriveImportChoice(
       "El registro del documento (" + parsed.header.registro + ") no coincide con " + patient.registro + ". \xBFContinuar de todos modos?"
     )) {
       return;
     }
   }
-  if (mode === "replace") {
-    if (!confirm("Se sobrescribir\xE1n las secciones de Historia cl\xEDnica presentes en el documento. \xBFContinuar?")) {
+  if (!opts.fromReview && mode === "replace") {
+    if (!confirmDriveImportChoice(
+      "Se sobrescribir\xE1n las secciones de Historia cl\xEDnica presentes en el documento. \xBFContinuar?"
+    )) {
       return;
     }
   }
   if (createNew && (!parsed.header || !parsed.header.nombre)) {
-    if (!confirm("No se detect\xF3 nombre en el encabezado. \xBFCrear paciente igualmente?")) {
+    if (!confirmDriveImportChoice("No se detect\xF3 nombre en el encabezado. \xBFCrear paciente igualmente?")) {
       return;
     }
   }
@@ -62079,7 +63199,8 @@ async function confirmDriveImport() {
   const result = await applyDriveImport(parsed, {
     mode,
     activePatient: patient,
-    createNew
+    createNew,
+    fromReview: !!opts.fromReview
   });
   if (!result.ok) {
     if (result.error === "hc-conflict") {
@@ -62095,10 +63216,12 @@ async function confirmDriveImport() {
       "ok",
       result.evAdded || 0,
       JSON.stringify({
-        profileId: parsed.profileId,
         mode,
         skipped: result.evSkipped,
-        createNew
+        labAdded: result.labAdded,
+        labSkipped: result.labSkipped,
+        createNew,
+        reviewed: !!opts.fromReview
       })
     );
   }
@@ -62109,31 +63232,81 @@ async function confirmDriveImport() {
     (result.evAdded || 0) + " eventualidad" + (result.evAdded === 1 ? "" : "es") + " nueva" + (result.evAdded === 1 ? "" : "s")
   );
   if (result.evSkipped) {
-    parts.push(result.evSkipped + " duplicada" + (result.evSkipped === 1 ? "" : "s") + " omitida" + (result.evSkipped === 1 ? "" : "s"));
+    parts.push(
+      result.evSkipped + " duplicada" + (result.evSkipped === 1 ? "" : "s") + " omitida" + (result.evSkipped === 1 ? "" : "s")
+    );
+  }
+  if (result.labAdded) {
+    parts.push(
+      result.labAdded + " fecha" + (result.labAdded === 1 ? "" : "s") + " de laboratorio nueva" + (result.labAdded === 1 ? "" : "s")
+    );
+  }
+  if (result.labSkipped) {
+    parts.push(
+      result.labSkipped + " lab" + (result.labSkipped === 1 ? "" : "s") + " duplicado" + (result.labSkipped === 1 ? "" : "s") + " omitido" + (result.labSkipped === 1 ? "" : "s")
+    );
+  }
+  if (result.lanSyncDeferred) {
+    parts.push("sincronizaci\xF3n con la sala en segundo plano");
   }
   rt36.showToast(parts.join(" \xB7 "), "success");
-  if (typeof rt36.switchAppTab === "function") rt36.switchAppTab("clinico");
-  if (typeof rt36.switchInnerTab === "function") rt36.switchInnerTab(result.navigateTo || "historia");
+  if (result.navigateTo === "lab") {
+    if (typeof rt36.switchAppTab === "function") rt36.switchAppTab("lab");
+  } else {
+    if (typeof rt36.switchAppTab === "function") rt36.switchAppTab("clinico");
+    if (typeof rt36.switchInnerTab === "function") {
+      rt36.switchInnerTab(result.navigateTo || "historia", { forceRender: true });
+    }
+  }
+}
+function wireDriveImportActionButtons() {
+  const actions = [
+    ["drive-import-confirm", startDriveImportReview],
+    ["drive-import-apply-fast", confirmDriveImport],
+    ["drive-import-review-next", driveImportReviewNext],
+    ["drive-import-review-prev", driveImportReviewPrev],
+    ["drive-import-back-paste", driveImportBackToPaste]
+  ];
+  actions.forEach(function(pair) {
+    const btn = document.getElementById(pair[0]);
+    const fn = pair[1];
+    if (!btn || btn.dataset.driveImportActionWired) return;
+    btn.dataset.driveImportActionWired = "1";
+    btn.addEventListener("click", function(e) {
+      e.preventDefault();
+      void Promise.resolve(fn()).catch(function(err) {
+        console.error("[drive-import] action failed", pair[0], err);
+        rt36.showToast("No se pudo completar la acci\xF3n de importaci\xF3n", "error");
+        setReviewImportBusy(false);
+      });
+    });
+  });
 }
 function wireDriveImportModal() {
   const ta = getTextarea2();
-  const sel = getProfileSelect();
   const bd = getBackdrop2();
+  wireDriveImportActionButtons();
   if (ta && !ta.dataset.driveImportWired) {
     ta.dataset.driveImportWired = "1";
-    ta.addEventListener("input", function() {
-      if (_debounceId) clearTimeout(_debounceId);
-      _debounceId = setTimeout(refreshPreview2, 200);
+    ta.addEventListener("input", onPasteInputChanged);
+    ta.addEventListener("paste", function() {
+      setTimeout(onPasteInputChanged, 0);
     });
-  }
-  if (sel && !sel.dataset.driveImportWired) {
-    sel.dataset.driveImportWired = "1";
-    sel.addEventListener("change", refreshPreview2);
   }
   document.querySelectorAll('input[name="drive-import-mode"]').forEach(function(el) {
     if (el.dataset.driveImportWired) return;
     el.dataset.driveImportWired = "1";
-    el.addEventListener("change", syncConfirmLabel);
+    el.addEventListener("change", function() {
+      syncConfirmLabel();
+      refreshPreview2();
+      if (_modalStep === "paste" && _autoReviewPending) {
+        if (_debounceId) clearTimeout(_debounceId);
+        _debounceId = setTimeout(function() {
+          _debounceId = null;
+          tryAutoStartReview();
+        }, 320);
+      }
+    });
   });
   if (bd && !bd.dataset.driveImportWired) {
     bd.dataset.driveImportWired = "1";
@@ -62145,7 +63318,11 @@ function wireDriveImportModal() {
 var windowHandlers16 = {
   openDriveImportModal,
   closeDriveImportModal,
-  confirmDriveImport
+  confirmDriveImport,
+  startDriveImportReview,
+  driveImportBackToPaste,
+  driveImportReviewPrev,
+  driveImportReviewNext
 };
 
 // public/js/app-runtimes.mjs
@@ -62264,8 +63441,8 @@ function registerAllFeatureRuntimes() {
     getActiveId: function() {
       return rt37.getActiveId();
     },
-    setActiveId: function(id5) {
-      rt37.setActiveId(id5);
+    setActiveId: function(id) {
+      rt37.setActiveId(id);
     },
     getActiveAppTab: function() {
       return rt37.getActiveAppTab();
@@ -62343,8 +63520,8 @@ function registerAllFeatureRuntimes() {
     getActiveId: function() {
       return rt37.getActiveId();
     },
-    setActiveId: function(id5) {
-      rt37.setActiveId(id5);
+    setActiveId: function(id) {
+      rt37.setActiveId(id);
     },
     getSettings: function() {
       return rt37.getSettings();
@@ -62426,8 +63603,8 @@ function registerAllFeatureRuntimes() {
     getActiveId: function() {
       return rt37.getActiveId();
     },
-    setActiveId: function(id5) {
-      rt37.setActiveId(id5);
+    setActiveId: function(id) {
+      rt37.setActiveId(id);
     },
     switchInnerTab,
     renderInnerTabs,
@@ -62562,10 +63739,10 @@ function registerAllFeatureRuntimes() {
       return rt37.getActiveId();
     },
     getActivePatient: function() {
-      var id5 = rt37.getActiveId();
-      if (!id5) return null;
+      var id = rt37.getActiveId();
+      if (!id) return null;
       return patients.find(function(p) {
-        return String(p.id) === String(id5);
+        return String(p.id) === String(id);
       }) || null;
     },
     showToast,
@@ -62617,8 +63794,8 @@ function registerAllFeatureRuntimes() {
     getActiveId: function() {
       return rt37.getActiveId();
     },
-    setActiveId: function(id5) {
-      rt37.setActiveId(id5);
+    setActiveId: function(id) {
+      rt37.setActiveId(id);
     },
     selectPatient,
     renderRoundOverviewPanels,
@@ -62693,8 +63870,8 @@ function registerAllFeatureRuntimes() {
     getActiveId: function() {
       return rt37.getActiveId();
     },
-    setActiveId: function(id5) {
-      rt37.setActiveId(id5);
+    setActiveId: function(id) {
+      rt37.setActiveId(id);
     },
     getActiveAppTab: function() {
       return rt37.getActiveAppTab();
@@ -62831,8 +64008,8 @@ registerAppRuntimeContext({
   getActiveId: function() {
     return activeId;
   },
-  setActiveId: function(id5) {
-    activeId = id5;
+  setActiveId: function(id) {
+    activeId = id;
   },
   getActiveAppTab: function() {
     return activeAppTab;
@@ -62875,6 +64052,26 @@ function getClinicalClientId() {
   }
   return "desktop-host";
 }
+function syncHeaderTodayDate() {
+  var todayEl = document.getElementById("today-date");
+  if (!todayEl) return;
+  var d = /* @__PURE__ */ new Date();
+  var long = d.toLocaleDateString("es-MX", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric"
+  });
+  var compact = d.toLocaleDateString("es-MX", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  });
+  var narrow = typeof window.matchMedia === "function" && window.matchMedia("(max-width: 920px)").matches;
+  todayEl.textContent = narrow ? compact : long;
+  todayEl.title = long;
+}
 function runDomBoot() {
   appStateReady.then(function() {
     runDomBootAfterState();
@@ -62888,14 +64085,10 @@ function runDomBootAfterState() {
       showToast("Se restaur\xF3 tu lista de pacientes tras el modo presentaci\xF3n.", "info");
     }
     initModalDismiss();
-    var todayEl = document.getElementById("today-date");
-    if (todayEl) {
-      todayEl.textContent = (/* @__PURE__ */ new Date()).toLocaleDateString("es-MX", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric"
-      });
+    syncHeaderTodayDate();
+    if (!window._rpcHeaderDateResizeWired) {
+      window._rpcHeaderDateResizeWired = true;
+      window.addEventListener("resize", syncHeaderTodayDate);
     }
     renderPatientList();
     if (patients.length > 0) selectPatient(patients[0].id);

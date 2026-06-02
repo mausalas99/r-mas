@@ -1,11 +1,12 @@
 /**
- * Prominent Mi rotación entry points (sidebar + Mi Perfil).
+ * Mi rotación entry (barra superior clínica).
  */
 import { isDbMode } from '../db-storage-bridge.mjs';
 import { clinicalSessionContext } from '../clinical-access-runtime.mjs';
 import { normalizeUsername } from '../clinical-username.mjs';
 import { filterJoinedTeams } from './clinical-teams.mjs';
-import { needsClinicalOnboarding } from './clinical-onboarding.mjs';
+import { needsClinicalOnboarding, needsTeamOnboarding } from './clinical-onboarding.mjs';
+import { syncClinicalContextBarVisibility } from './clinical-context-bar.mjs';
 
 let entryControlsWired = false;
 
@@ -26,15 +27,14 @@ export async function openMiRotacion() {
 }
 
 /**
- * @returns {{ primary: string, sub: string, pending: boolean, ctaLabel: string }}
+ * @returns {{ primary: string, sub: string, pending: boolean }}
  */
 function buildEntryStatus() {
   if (needsClinicalOnboarding()) {
     return {
       primary: 'Configura tu rotación',
-      sub: 'Usuario LAN, sala y equipo — obligatorio para guardia',
+      sub: 'Usuario LAN, rango y sala — equipos después en Mi rotación',
       pending: true,
-      ctaLabel: 'Continuar configuración',
     };
   }
 
@@ -44,7 +44,6 @@ function buildEntryStatus() {
       primary: 'Mi rotación',
       sub: 'Desbloquea la base de datos para continuar',
       pending: true,
-      ctaLabel: 'Abrir Mi rotación',
     };
   }
 
@@ -61,38 +60,35 @@ function buildEntryStatus() {
   let sub = name || 'Equipos, entregas y perfil clínico';
   if (teams.length === 1) sub = `Equipo: ${String(teams[0].name || '—')}`;
   else if (teams.length > 1) sub = `${teams.length} equipos`;
-  return { primary, sub, pending: false, ctaLabel: 'Abrir Mi rotación' };
+  else if (needsTeamOnboarding()) sub = 'Sin equipo — abre para buscar en tu sala o unirte';
+  return { primary, sub, pending: false };
 }
 
 export function syncClinicalRotationEntryChrome() {
-  const sidebarSection = document.getElementById('clinical-rotation-section');
-  const profileBlock = document.getElementById('profile-clinical-rotation-block');
+  const rotationSection = document.getElementById('clinical-rotation-section');
   const show = isDbMode();
 
-  if (sidebarSection) sidebarSection.hidden = !show;
-  if (profileBlock) profileBlock.hidden = !show;
-  if (!show) return;
+  if (rotationSection) rotationSection.hidden = !show;
+  if (!show) {
+    syncClinicalContextBarVisibility();
+    return;
+  }
 
   const status = buildEntryStatus();
 
-  const sidebarBtn = document.getElementById('btn-sidebar-mi-rotacion');
-  const sidebarPrimary = document.getElementById('clinical-rotation-entry-primary');
-  const sidebarSub = document.getElementById('clinical-rotation-entry-sub');
-  if (sidebarBtn) {
-    sidebarBtn.classList.toggle('is-pending', status.pending);
-    sidebarBtn.setAttribute(
-      'title',
-      status.pending ? 'Completa usuario y equipo' : 'Usuario LAN, equipos y entregas'
-    );
+  const entryBtn = document.getElementById('btn-sidebar-mi-rotacion');
+  const entryPrimary = document.getElementById('clinical-rotation-entry-primary');
+  const entrySub = document.getElementById('clinical-rotation-entry-sub');
+  if (entryBtn) {
+    entryBtn.classList.toggle('is-pending', status.pending);
+    const base = status.pending
+      ? 'Completa rango y rotación (sala)'
+      : 'Usuario LAN, equipos y entregas';
+    entryBtn.setAttribute('title', `${base} — ${status.primary}: ${status.sub}`);
   }
-  if (sidebarPrimary) sidebarPrimary.textContent = status.primary;
-  if (sidebarSub) sidebarSub.textContent = status.sub;
-
-  const profileCta = document.getElementById('btn-profile-mi-rotacion');
-  const profileStatus = document.getElementById('profile-clinical-rotation-status');
-  if (profileCta) profileCta.textContent = status.ctaLabel;
-  if (profileStatus) profileStatus.textContent = `${status.primary} — ${status.sub}`;
-  if (profileBlock) profileBlock.classList.toggle('is-pending', status.pending);
+  if (entryPrimary) entryPrimary.textContent = status.primary;
+  if (entrySub) entrySub.textContent = status.sub;
+  syncClinicalContextBarVisibility();
 }
 
 export function wireClinicalRotationEntryControls() {
@@ -107,7 +103,6 @@ export function wireClinicalRotationEntryControls() {
   };
 
   bind('btn-sidebar-mi-rotacion');
-  bind('btn-profile-mi-rotacion');
 
   if (typeof document !== 'undefined') {
     document.addEventListener('rpc-clinical-teams-changed', () => {

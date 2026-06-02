@@ -52,6 +52,7 @@ import {
   resetProfileTemplatesToBlank,
 } from "../profile-templates.mjs";
 import { syncClinicalRotationEntryChrome } from "./clinical-rotation-entry.mjs";
+import { isDbMode } from "../db-storage-bridge.mjs";
 import {
   setFormatsEditMode,
   clearFormatsEditMode,
@@ -171,6 +172,7 @@ export function loadSettings() {
     syncAppModeRadioControls();
     syncCensoExportButtonVisibility();
     syncClinicalRotationEntryChrome();
+    syncProfileModalLayout();
     rt.syncWorkContextChrome();
     return;
   }
@@ -209,15 +211,22 @@ export function loadSettings() {
     if (el) el.value = medTpl[k] || "";
   });
   var lbl = document.getElementById("profile-toggle-label");
+  var profileTitle = "Mi Perfil";
   if (lbl) {
     if (st.doctorName || st.grado) {
       var parts = [];
       if (st.doctorName) parts.push(st.doctorName);
       if (st.grado) parts.push(st.grado);
-      lbl.textContent = parts.join(" · ");
+      profileTitle = parts.join(" · ");
+      lbl.textContent = profileTitle;
     } else {
-      lbl.textContent = "Mi Perfil";
+      lbl.textContent = profileTitle;
     }
+  }
+  var profileBtn = document.getElementById("profile-toggle-btn");
+  if (profileBtn) {
+    profileBtn.setAttribute("title", profileTitle);
+    profileBtn.setAttribute("aria-label", profileTitle);
   }
   var dirEl = document.getElementById("settings-output-dir");
   if (dirEl) {
@@ -302,7 +311,20 @@ export function loadSettings() {
   if (typeof syncSettingsLanHostDiskSection === "function") syncSettingsLanHostDiskSection();
   syncCensoExportButtonVisibility();
   syncClinicalRotationEntryChrome();
+  syncProfileModalLayout();
   rt.syncWorkContextChrome();
+}
+
+/** Oculta secciones de Sala / clínica según modo y base de datos. */
+export function syncProfileModalLayout() {
+  var st = settingsRef();
+  var sala = isModeSala(st);
+  var salida = document.getElementById("profile-salida-section");
+  var bridge = document.getElementById("profile-clinical-bridge");
+  var servicioWrap = document.getElementById("profile-default-servicio-wrap");
+  if (salida) salida.hidden = !sala;
+  if (bridge) bridge.hidden = !isDbMode();
+  if (servicioWrap) servicioWrap.hidden = !sala;
 }
 
 export function saveSettings() {
@@ -386,6 +408,7 @@ export function onAppModeChange() {
   var st = settingsRef();
   st.appMode = sala && sala.checked ? "sala" : "interconsulta";
   invalidateLoadSettingsSnapshot();
+  syncProfileModalLayout();
   persistSettingsToLocalStorage();
   applyAppModeSwitchEffects();
 }
@@ -403,9 +426,12 @@ export function openProfileModal() {
   var modal = document.getElementById("profile-modal");
   if (!modal) return;
   loadSettings();
+  syncProfileModalLayout();
   modal.classList.add("open");
   setTimeout(function () {
-    var first = document.getElementById("profile-doctor");
+    var first =
+      document.getElementById("app-mode-sala") ||
+      document.getElementById("profile-doctor");
     if (first) first.focus();
   }, 80);
 }
