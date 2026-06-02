@@ -27,7 +27,7 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [6.5.5](https://github.com/mausalas99/r-mas/releases/tag/v6.5.5) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.5.6](https://github.com/mausalas99/r-mas/releases/tag/v6.5.6) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
@@ -364,6 +364,14 @@ Notas: `docs/RELEASE_NOTES_3.0.1.txt`.
 
 ---
 
+
+## R+ 6.5.6 (estable — Mi rotación, conflictos LAN y modal HC)
+
+- **Mi rotación** — Equipos visibles por sala; ciclo propio por integrante (R1/R2); agregar compañeros por usuario LAN; invitación por **código** (app Mac, no Safari).
+- **Conflictos LAN** — El comparador ya no salta en cada refresco; borradores en **Ajustes → LAN**; alineación automática si el texto visible coincide; modal más ancho y mensajes más claros.
+- **Historia clínica en sala** — Sync pendiente sin bucle al recargar; «Usar versión del servidor» actualiza la HC local correctamente.
+
+Notas: `docs/RELEASE_NOTES_6.5.6.txt`.
 ## R+ 3.0.0 (modos Sala/Interconsulta, Estado Actual, Listado de Problemas, anion gap)
 
 - **Modos** — Sala oculta Nota/Indicaciones y expone **Estado Actual** y **Listado de Problemas**; Interconsulta mantiene el comportamiento original. Default: Sala. En Sala, el alta de paciente usa **Servicio** (con default configurable en Mi Perfil) en lugar de Área.

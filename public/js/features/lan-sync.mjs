@@ -48,7 +48,10 @@ import {
   listDraftConflicts,
   getDraftConflict,
 } from "../draft-conflict-store.mjs";
-import { openClinicalConflictViewer } from "./clinical-conflict-viewer.mjs";
+import {
+  conflictSnapshotsMatchForAutoResolve,
+  openClinicalConflictViewer,
+} from "./clinical-conflict-viewer.mjs";
 import {
   hostBundlePutBodyFromEnvelope,
   getHostBundleBases,
@@ -91,9 +94,23 @@ import {
 
 /** Evita modal de conflicto durante importaciones masivas (p. ej. Drive). */
 let _suppressClinicalConflictViewer = 0;
+/** Tras refrescar: guardar borrador pero no abrir el comparador hasta que el usuario lo pida. */
+let _deferLanConflictModalUntil = 0;
+let _deferredConflictToastShown = false;
 
 export function isLanConflictViewerSuppressed() {
   return _suppressClinicalConflictViewer > 0;
+}
+
+export function deferLanConflictModalForMs(ms) {
+  const n = Number(ms);
+  if (!Number.isFinite(n) || n <= 0) return;
+  _deferLanConflictModalUntil = Date.now() + n;
+  _deferredConflictToastShown = false;
+}
+
+function shouldDeferLanConflictModal() {
+  return Date.now() < _deferLanConflictModalUntil;
 }
 
 /**
@@ -793,6 +810,14 @@ function wireLanPanelDelegation() {
   var root = document.getElementById('lan-connection-panel-root');
   if (!root) return;
   _lanPanelDelegationWired = true;
+  if (!document._rpcClinicalOpsSyncedLanWired) {
+    document._rpcClinicalOpsSyncedLanWired = true;
+    document.addEventListener('rpc-clinical-ops-synced', function () {
+      void refreshClinicalSessionTeams().then(function () {
+        if (typeof renderLanPanel === 'function') renderLanPanel();
+      });
+    });
+  }
   root.addEventListener('click', function (ev) {
     var btn = /** @type {HTMLElement | null} */ (
       ev.target && ev.target.closest ? ev.target.closest('[data-lan-action]') : null
@@ -972,18 +997,39 @@ async function applyRoomBundleServerChoice(draft) {
 async function applyConflictUseServer(payload) {
   var server = payload && payload.serverSnapshot;
   if (server && server.data) {
-    applyLiveSyncApplied({
-      roomId: payload.roomId || activeLiveSyncRoomId,
-      entityType: payload.entityType,
-      entityId: payload.entityId,
-      patientId: payload.patientId,
-      version: server.version,
-      data: server.data,
-    });
+    if (payload.entityType === 'historiaClinica' && payload.patientId) {
+      var hcRow = patients.find(function (p) {
+        return p && String(p.id) === String(payload.patientId);
+      });
+      if (hcRow) {
+        var mod = await import('../historia-clinica-lan-sync.mjs');
+        mod.applyServerHistoriaClinicaToPatient(hcRow, server.version, server.data);
+      }
+    } else {
+      applyLiveSyncApplied({
+        roomId: payload.roomId || activeLiveSyncRoomId,
+        entityType: payload.entityType,
+        entityId: payload.entityId,
+        patientId: payload.patientId,
+        version: server.version,
+        data: server.data,
+      });
+    }
   }
   if (payload.draftId) {
     await clearConflictDraft(payload.draftId);
   }
+}
+
+function clearHistoriaPendingAfterConflict(payload) {
+  if (!payload || payload.entityType !== 'historiaClinica' || !payload.patientId) return;
+  var row = patients.find(function (p) {
+    return p && String(p.id) === String(payload.patientId);
+  });
+  if (!row || !row.historiaClinica) return;
+  delete row.historiaClinica.pendingLanSync;
+  delete row.historiaClinica.lanSyncPending;
+  saveState();
 }
 
 function formatConflictDraftLabel(draft) {
@@ -1218,7 +1264,8 @@ async function appendLanConflictDraftsSection(root) {
   root.appendChild(card);
 }
 
-async function handleSyncConflict(payload) {
+async function handleSyncConflict(payload, options) {
+  options = options || {};
   if (isLanConflictViewerSuppressed()) {
     return;
   }
@@ -1226,6 +1273,21 @@ async function handleSyncConflict(payload) {
     await discardDraftsForConflictEntity(payload);
     void renderLanPanel();
     runtime.showToast('Pendiente alineado con la sala', 'info');
+    return;
+  }
+  var viewerData = conflictDataForViewer(payload);
+  if (
+    conflictSnapshotsMatchForAutoResolve({
+      conflictingKeys: payload.conflictingKeys,
+      localData: viewerData.localData,
+      serverData: viewerData.serverData,
+    })
+  ) {
+    await applyConflictUseServer(payload);
+    await discardDraftsForConflictEntity(payload);
+    clearHistoriaPendingAfterConflict(payload);
+    void renderLanPanel();
+    runtime.showToast('Historia alineada con la sala (mismo contenido visible).', 'info');
     return;
   }
   var draftId = await saveDraftConflict({
@@ -1238,7 +1300,18 @@ async function handleSyncConflict(payload) {
     serverSnapshot: payload.serverSnapshot,
     conflictingKeys: payload.conflictingKeys,
   });
-  var viewerData = conflictDataForViewer(payload);
+  var deferModal = !!(options.background || shouldDeferLanConflictModal());
+  if (deferModal) {
+    void renderLanPanel();
+    if (!_deferredConflictToastShown) {
+      _deferredConflictToastShown = true;
+      runtime.showToast(
+        'Hay un conflicto de sincronización guardado. Ábrelo en Ajustes → LAN cuando quieras decidir.',
+        'info'
+      );
+    }
+    return;
+  }
   openClinicalConflictViewer({
     draftId: draftId,
     conflictingKeys: payload.conflictingKeys,
@@ -1311,7 +1384,8 @@ export async function lanPushPatientVersioned(patientId, mutation) {
     if (isLanConflictViewerSuppressed()) {
       return { ok: false, conflict: true, conflictDeferred: true, body: body };
     }
-    await handleSyncConflict({
+    await handleSyncConflict(
+      {
       transport: 'http',
       entityType: body.entityType || 'patient',
       entityId: body.entityId || pid,
@@ -1326,7 +1400,9 @@ export async function lanPushPatientVersioned(patientId, mutation) {
         op: mutation.op,
       },
       serverSnapshot: { version: body.serverVersion, data: body.serverData },
-    });
+    },
+      { background: shouldDeferLanConflictModal() }
+    );
     return { ok: false, conflict: true, body: body };
   }
   if (!resp.ok) {
@@ -1361,22 +1437,25 @@ export async function lanPushHistoriaClinica(patientId, mutation) {
     if (isLanConflictViewerSuppressed()) {
       return { ok: false, conflict: true, conflictDeferred: true, body: body };
     }
-    await handleSyncConflict({
-      transport: 'http',
-      entityType: body.entityType || 'historiaClinica',
-      entityId: body.entityId || pid,
-      roomId: mutation.roomId || null,
-      patientId: pid,
-      conflictingKeys: body.conflictingKeys || [],
-      localSnapshot: {
-        expectedVersion: mutation.expectedVersion,
-        changedKeys: mutation.changedKeys,
-        baseData: mutation.baseData,
-        data: mutation.data,
-        op: mutation.op,
+    await handleSyncConflict(
+      {
+        transport: 'http',
+        entityType: body.entityType || 'historiaClinica',
+        entityId: body.entityId || pid,
+        roomId: mutation.roomId || null,
+        patientId: pid,
+        conflictingKeys: body.conflictingKeys || [],
+        localSnapshot: {
+          expectedVersion: mutation.expectedVersion,
+          changedKeys: mutation.changedKeys,
+          baseData: mutation.baseData,
+          data: mutation.data,
+          op: mutation.op,
+        },
+        serverSnapshot: { version: body.serverVersion, data: body.serverData },
       },
-      serverSnapshot: { version: body.serverVersion, data: body.serverData },
-    });
+      { background: shouldDeferLanConflictModal() }
+    );
     return { ok: false, conflict: true, body: body };
   }
   if (!resp.ok) {
@@ -1945,7 +2024,9 @@ function applyLiveSyncMerged(merged) {
     void applyClinicalOpsLanSnapshot(merged.clinicalOps).then(function (ok) {
       if (ok) {
         void refreshClinicalOpsSnapshotCache();
-        document.dispatchEvent(new CustomEvent('rpc-clinical-ops-synced'));
+        void refreshClinicalSessionTeams().then(function () {
+          document.dispatchEvent(new CustomEvent('rpc-clinical-ops-synced'));
+        });
       }
     });
   }
@@ -1973,7 +2054,9 @@ function liveSyncBundleHasPayload(bundle) {
       (Array.isArray(clinicalOps.patient_team_assignment) &&
         clinicalOps.patient_team_assignment.length > 0) ||
       (Array.isArray(clinicalOps.team_guardia_today) && clinicalOps.team_guardia_today.length > 0) ||
-      (Array.isArray(clinicalOps.active_guardias) && clinicalOps.active_guardias.length > 0)
+      (Array.isArray(clinicalOps.active_guardias) && clinicalOps.active_guardias.length > 0) ||
+      (Array.isArray(clinicalOps.teams) && clinicalOps.teams.length > 0) ||
+      (Array.isArray(clinicalOps.team_membership) && clinicalOps.team_membership.length > 0)
     ) {
       return true;
     }
@@ -2025,22 +2108,30 @@ function pushRoomSyncBundleToHost(roomId, envelope) {
               roomId: rid,
               serverBundle: body && body.bundle ? body.bundle : null,
             };
-            openClinicalConflictViewer({
-              draftId: draftId,
-              conflictingKeys: bundleConflictKeys,
-              localData: envelope,
-              serverData: body && body.bundle ? body.bundle : {},
-              context: {
-                entityType: 'roomBundle',
-                roomId: rid,
-                transport: 'http',
-              },
-              onUseServer: function () {
-                void applyRoomBundleServerChoice(roomDraft);
-              },
-              onEditDraft: function () {},
-              onClose: function () {},
-            });
+            if (!shouldDeferLanConflictModal()) {
+              openClinicalConflictViewer({
+                draftId: draftId,
+                conflictingKeys: bundleConflictKeys,
+                localData: envelope,
+                serverData: body && body.bundle ? body.bundle : {},
+                context: {
+                  entityType: 'roomBundle',
+                  roomId: rid,
+                  transport: 'http',
+                },
+                onUseServer: function () {
+                  void applyRoomBundleServerChoice(roomDraft);
+                },
+                onEditDraft: function () {},
+                onClose: function () {},
+              });
+            } else if (!_deferredConflictToastShown) {
+              _deferredConflictToastShown = true;
+              runtime.showToast(
+                'Hay un conflicto de sincronización guardado. Ábrelo en Ajustes → LAN cuando quieras decidir.',
+                'info'
+              );
+            }
             void renderLanPanel();
             return false;
           });
@@ -2139,6 +2230,7 @@ export function bootLanRoomMembership() {
   migrateLastRoomToMembership();
   var m = getRoomMembership();
   if (!m || !m.roomId || !isLanSessionConfiguredForRest()) return;
+  deferLanConflictModalForMs(20000);
   activeLiveSyncRoomId = m.roomId;
   activeLiveSyncRoomLabel = m.label;
   scheduleLiveSyncOutboxFlush();
@@ -2152,6 +2244,9 @@ export function bootLanRoomMembership() {
         if (!lanClient.connected) lanClient.connectSyncChannel();
         lanClient.connectLiveChannel(m.roomId);
       } catch (_e) {}
+      void import('../historia-clinica-lan-sync.mjs').then(function (mod) {
+        return mod.scheduleFlushAllPendingHistoriaClinicaLanSync();
+      });
       startLiveSyncReconnectLoop();
       syncLiveSyncStatusChrome();
     });
@@ -2476,6 +2571,9 @@ function syncLiveSyncAfterRoomJoin(roomId) {
     runtime.renderProcedureAgendaPanel();
     runtime.refreshAllTodoUIs();
     runtime.renderPatientList();
+    void import('../historia-clinica-lan-sync.mjs').then(function (m) {
+      return m.scheduleFlushAllPendingHistoriaClinicaLanSync();
+    });
   });
 }
 function leaveLiveSyncRoom(opts) {
@@ -2524,6 +2622,9 @@ lanClient.addEventListener('lan-live-status', function (ev) {
   if (ev.detail.connected && activeLiveSyncRoomId) {
     syncLiveSyncAfterRoomJoin(activeLiveSyncRoomId);
     flushLiveSyncOutbox(activeLiveSyncRoomId);
+    void import('../historia-clinica-lan-sync.mjs').then(function (m) {
+      return m.scheduleFlushAllPendingHistoriaClinicaLanSync();
+    });
     void maybeRevertSurrogateToPrimary();
   } else if (!ev.detail.connected && activeLiveSyncRoomId) {
     saveLocalRoomSnapshot(activeLiveSyncRoomId);
@@ -2908,7 +3009,7 @@ function buildR4Section(root) {
 
   salas.forEach(function (salaName) {
     var salaTeams = teams.filter(function (t) {
-      return String(t.sala || '') === salaName;
+      return teamSalaKey(t) === salaName;
     });
     var salaPatientCount = allPatients.filter(function (p) {
       return p && String(p.sala || '') === salaName;
@@ -2978,14 +3079,19 @@ function buildR4Section(root) {
   root.appendChild(rotCard);
 }
 
+function teamSalaKey(team) {
+  return String(team && team.sala || '').trim();
+}
+
 function buildAvailableTeamsSection(root, userSala) {
   var teams = clinicalSessionContext.teams || [];
   var userId = getClinicalUserUserId();
+  var salaKey = String(userSala || '').trim();
   var alreadyInIds = teams.filter(function (t) {
     return (t.members || []).some(function (m) { return String(m.user_id) === userId; });
   }).map(function (t) { return String(t.team_id); });
   var available = teams.filter(function (t) {
-    return String(t.sala || '') === userSala && !t.archived_at && alreadyInIds.indexOf(String(t.team_id)) === -1;
+    return teamSalaKey(t) === salaKey && !t.archived_at && alreadyInIds.indexOf(String(t.team_id)) === -1;
   });
 
   if (!available.length) {
@@ -3010,7 +3116,12 @@ function buildAvailableTeamsSection(root, userSala) {
     var info = document.createElement('span');
     info.style.flex = '1';
     info.style.fontSize = '12px';
-    info.textContent = (t.name || 'Equipo') + ' · ' + (t.service || '') + ' · día ' + (t.on_call_day_index || 0);
+    var cycle = t.sub_area_fraction ? String(t.sub_area_fraction) : '';
+    info.textContent =
+      (t.name || 'Equipo') +
+      ' · ' +
+      (t.service || '') +
+      (cycle ? ' · ciclo ' + cycle : '');
 
     var joinBtn = document.createElement('button');
     joinBtn.type = 'button';
@@ -3062,11 +3173,23 @@ async function joinClinicalTeam(teamId) {
 
 async function refreshClinicalSessionTeams() {
   var api = typeof window !== 'undefined' ? (window.rplusDb || window.electronAPI) : null;
-  if (!api || typeof api.dbClinicalScopeContext !== 'function') return;
-  var userId = getClinicalUserUserId();
-  var res = await api.dbClinicalScopeContext({ userId: userId });
-  if (res && res.ok && Array.isArray(res.context?.teams)) {
-    clinicalSessionContext.teams = res.context.teams;
+  if (!api) return;
+  if (typeof api.dbClinicalScopeContext === 'function') {
+    var userId = getClinicalUserUserId();
+    var res = await api.dbClinicalScopeContext({ userId: userId });
+    if (res && res.ok && Array.isArray(res.context?.teams)) {
+      clinicalSessionContext.teams = res.context.teams;
+      if (res.context && typeof res.context === 'object') {
+        clinicalSessionContext.scopeContext = res.context;
+      }
+      return;
+    }
+  }
+  if (typeof api.dbClinicalTeamsList === 'function') {
+    var listRes = await api.dbClinicalTeamsList();
+    if (listRes && listRes.ok && Array.isArray(listRes.teams)) {
+      clinicalSessionContext.teams = listRes.teams;
+    }
   }
 }
 
@@ -3415,6 +3538,9 @@ async function saveLanSettingsFromUi(opts) {
     copiedOk = await copyLanInviteLinkFromUi({ silent: true });
   }
   if (pingOk) {
+    void import('../historia-clinica-lan-sync.mjs').then(function (m) {
+      return m.scheduleFlushAllPendingHistoriaClinicaLanSync();
+    });
     void maybeShowLanMigrationNotice();
     if (copyInviteAfter) {
       runtime.showToast(

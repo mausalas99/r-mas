@@ -9,6 +9,8 @@ import {
   primaryTipoForLabSet,
   buildLabSetDateLine,
   dayKeyFromLabSet,
+  labSetIsFromSome,
+  formatLabHistoryListMeta,
   rebuildEstudiosFromLabHistory,
   ensureParsedLabHistory,
   ensureParsedLabHistoryCached,
@@ -322,6 +324,9 @@ registerPaseBoardRuntime({
   ensureParsedLabHistoryCached: ensureParsedLabHistoryCached,
   splitResLabsByTipo: splitResLabsByTipo,
   primaryTipoForLabSet: primaryTipoForLabSet,
+  formatLabHistoryListMeta: function (set) {
+    return formatLabHistoryListMeta(set, inferFechaLabSetFromId);
+  },
 });
 
 registerChromeRuntime({
@@ -748,6 +753,10 @@ registerLabPanelRuntime({
   rebuildEstudiosFromLabHistory: rebuildEstudiosFromLabHistory,
   inferFechaLabSetFromId: inferFechaLabSetFromId,
   dayKeyFromLabSet: dayKeyFromLabSet,
+  labSetIsFromSome: labSetIsFromSome,
+  formatLabHistoryListMeta: function (set) {
+    return formatLabHistoryListMeta(set, inferFechaLabSetFromId);
+  },
   primaryTipoForLabSet: primaryTipoForLabSet,
   refreshAllTodoUIs: refreshAllTodoUIs,
   emitLiveSyncTodoUpsert: emitLiveSyncTodoUpsert,

@@ -8,6 +8,7 @@ import {
   patchReviewStep,
   reviewStepHint,
 } from '../../../lib/drive-import/drive-import-review.mjs';
+import { enrichHcPatchWithStructuredSuggestions } from '../../../lib/drive-import/hc-structured-extract.mjs';
 
 let rt = {
   getActiveId() {
@@ -343,6 +344,7 @@ function syncCurrentReviewStepFromUi() {
     patchReviewStep(step, {
       include: includeEl ? includeEl.checked : true,
       editText: editor ? editor.value : step.editText,
+      structuredSuggestions: readStructuredSuggestionsFromUi(),
     });
     return;
   }
@@ -399,6 +401,48 @@ function renderReviewDots() {
   });
 }
 
+function readStructuredSuggestionsFromUi() {
+  /** @type {Array<{ include?: boolean }>} */
+  const rows = [];
+  document.querySelectorAll('[data-drive-struct-idx]').forEach(function (row) {
+    const idx = Number(row.getAttribute('data-drive-struct-idx'));
+    const cb = row.querySelector('input[type="checkbox"]');
+    rows[idx] = { include: cb ? cb.checked : true };
+  });
+  return rows;
+}
+
+function renderStructuredSuggestions(step) {
+  const host = document.getElementById('drive-import-review-structured');
+  if (!host) return;
+  const suggestions = step.structuredSuggestions || [];
+  if (!suggestions.length) {
+    host.hidden = true;
+    host.innerHTML = '';
+    return;
+  }
+  host.hidden = false;
+  let html =
+    '<div class="drive-import-structured-head">Campos detectados — marcar para agregar a casillas estructuradas</div>' +
+    '<div class="drive-import-structured-list">';
+  suggestions.forEach(function (s, idx) {
+    html +=
+      '<label class="drive-import-structured-row" data-drive-struct-idx="' +
+      idx +
+      '">' +
+      '<input type="checkbox"' +
+      (s.include !== false ? ' checked' : '') +
+      ' aria-label="' +
+      escapeHtml(s.label) +
+      '" />' +
+      '<span class="drive-import-structured-label">' +
+      escapeHtml(s.label) +
+      '</span></label>';
+  });
+  html += '</div>';
+  host.innerHTML = html;
+}
+
 function renderReviewStep() {
   const step = _reviewSteps[_reviewIndex];
   const progress = document.getElementById('drive-import-review-progress');
@@ -445,7 +489,16 @@ function renderReviewStep() {
     includeEl.checked = step.include;
     editor.value = step.editText;
     editor.readOnly = false;
+    renderStructuredSuggestions(step);
     return;
+  }
+
+  if (isList || isHeader) {
+    const structHost = document.getElementById('drive-import-review-structured');
+    if (structHost) {
+      structHost.hidden = true;
+      structHost.innerHTML = '';
+    }
   }
 
   if (step.kind === 'header' && includeEl && listEl) {
@@ -653,7 +706,7 @@ async function finishReviewAndImport() {
       new Promise(function (_, reject) {
         setTimeout(function () {
           reject(new Error('import-timeout'));
-        }, 45000);
+        }, 12000);
       }),
     ]);
   } catch (err) {
@@ -741,6 +794,12 @@ async function runDriveImport(parsed, opts) {
 
   if (typeof rt.pushUndoSnapshot === 'function') {
     rt.pushUndoSnapshot('Importar desde Drive');
+  }
+
+  if (!opts.fromReview) {
+    parsed = Object.assign({}, parsed, {
+      hcPatch: enrichHcPatchWithStructuredSuggestions(parsed.hcPatch || {}, parsed.driveSections || {}),
+    });
   }
 
   const result = await applyDriveImport(parsed, {

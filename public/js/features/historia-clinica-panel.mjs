@@ -22,6 +22,10 @@ import {
 } from '../../../lib/historia-clinica/defaults.mjs';
 import { migrateLegacyHistoriaData } from '../../../lib/historia-clinica/migrate-legacy.mjs';
 import { mergeHcPatch } from '../../../lib/drive-import/merge-hc-patch.mjs';
+import {
+  markHistoriaPendingLanSync,
+  schedulePendingHistoriaClinicaLanSync,
+} from '../historia-clinica-lan-sync.mjs';
 import appConditions from '../../../lib/historia-clinica/catalogs/app-conditions.json' with { type: 'json' };
 import ahfConditions from '../../../lib/historia-clinica/catalogs/ahf-conditions.json' with { type: 'json' };
 import ipasSystems from '../../../lib/historia-clinica/catalogs/ipas-systems.json' with { type: 'json' };
@@ -993,21 +997,8 @@ export function invalidateHistoriaClinicaPanel() {
  * @param {'fill' | 'replace' | 'eventos'} mode
  * @returns {Promise<{ ok: boolean }>}
  */
-var DRIVE_IMPORT_LAN_MS = 8000;
-
-function driveImportLanTimeout(promise, ms) {
-  return Promise.race([
-    promise,
-    new Promise(function (_, reject) {
-      setTimeout(function () {
-        reject(new Error('lan-timeout'));
-      }, ms);
-    }),
-  ]);
-}
-
-/** Drive import uses local HC as merge base — remote fetch can hang without timeout. */
-async function resolveDriveImportHcBase(patient) {
+/** Drive import: local patient HC only (no remote GET — keeps import instant). */
+function resolveDriveImportHcBase(patient) {
   var data = normalizeData(patient.historiaClinica && patient.historiaClinica.data, patient.id, patient);
   var version = patient.historiaClinica ? Number(patient.historiaClinica.version || 0) : 0;
   return { data: data, version: version };
@@ -1022,59 +1013,30 @@ export async function applyDriveImportHcPatch(patient, patch, mode, opts) {
     return !String(k).startsWith('_');
   });
 
-  async function pushMergedHc(base) {
-    var merged = mergeHcPatch(base.data, patch || {}, mergeMode);
-    applyClinicalHistoryUppercase(merged);
-    if (!isLanSessionConfiguredForRest() || !roomId || !dirty.length) {
-      return { ok: true, merged: merged, version: base.version, localOnly: true };
-    }
-    var builder = createMutationBuilder('historiaClinica', patient.id).captureBase({
-      version: base.version,
-      data: base.data,
-    });
-    dirty.forEach(function (k) {
-      if (merged[k] !== undefined) builder.set(k, merged[k]);
-    });
-    var mutation = builder.build({
-      roomId: roomId,
-      patientId: patient.id,
-      clientId: localStorage.getItem('rpc-lan-client-id') || 'local',
-      audit: { sections: dirty, source: 'drive-import' },
-    });
-    var out;
-    try {
-      out = await driveImportLanTimeout(lanPushHistoriaClinica(patient.id, mutation), DRIVE_IMPORT_LAN_MS);
-    } catch (_e) {
-      return { ok: true, merged: merged, version: base.version, localOnly: true, lanDeferred: true };
-    }
-    if (out && out.conflict) {
-      return { ok: true, merged: merged, version: base.version, localOnly: true, lanDeferred: true };
-    }
-    if (out && out.ok) {
-      return {
-        ok: true,
-        merged: migrateLegacyHistoriaData(out.data, CATALOGS),
-        version: out.version,
-        localOnly: false,
-      };
-    }
-    return { ok: true, merged: merged, version: base.version, localOnly: true, lanDeferred: true };
-  }
-
-  var base = await resolveDriveImportHcBase(patient);
-  var result = await pushMergedHc(base);
-  if (!result.ok) return { ok: false };
+  var base = resolveDriveImportHcBase(patient);
+  var merged = mergeHcPatch(base.data, patch || {}, mergeMode);
+  applyClinicalHistoryUppercase(merged);
 
   patient.historiaClinica = {
-    version: result.localOnly ? Number(result.version || 0) + 1 : result.version,
-    data: result.merged,
+    version: Number(base.version || 0) + 1,
+    data: merged,
   };
-  if (result.lanDeferred) {
-    patient.historiaClinica.pendingLanSync = true;
+
+  var needsBackgroundLan = !!(isLanSessionConfiguredForRest() && roomId && dirty.length);
+  if (needsBackgroundLan) {
+    markHistoriaPendingLanSync(patient, {
+      expectedVersion: base.version,
+      baseData: base.data,
+      changedKeys: dirty,
+      source: 'drive-import',
+    });
   } else if (patient.historiaClinica.pendingLanSync) {
     delete patient.historiaClinica.pendingLanSync;
+    delete patient.historiaClinica.lanSyncPending;
   }
-  saveState();
+
+  saveState({ immediate: true });
   invalidateHistoriaClinicaPanel();
-  return { ok: true, lanDeferred: !!result.lanDeferred };
+  if (needsBackgroundLan) schedulePendingHistoriaClinicaLanSync(patient);
+  return { ok: true, lanDeferred: needsBackgroundLan };
 }

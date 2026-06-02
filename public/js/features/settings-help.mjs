@@ -1956,6 +1956,18 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '6.5.6': [
+    {
+      title: 'Mi rotación',
+      body:
+        'Equipos por sala, <strong>tu ciclo</strong> en cada equipo (R1/R2), agregar integrantes por usuario LAN e <strong>invitación por código</strong> para la app del Mac (no Safari).',
+    },
+    {
+      title: 'Conflictos de sincronización',
+      body:
+        'Al refrescar ya no se abre el comparador una y otra vez: el conflicto queda en <strong>Ajustes → LAN</strong>. Si el texto se ve igual, R+ se alinea con la sala; si no, el modal es más claro y ancho.',
+    },
+  ],
   '6.5.5': [
     {
       title: 'Reparación para 6.5.4',

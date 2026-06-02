@@ -20,6 +20,10 @@
 
 .ea-panel-header {
   padding: calc(10px * var(--density-space, 1)) calc(12px * var(--density-space, 1));
+  border: 1px solid color-mix(in oklab, var(--border) 92%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
+  box-shadow: var(--shadow-sm);
 }
 
 .ea-empty {
@@ -57,6 +61,10 @@
   gap: 8px;
 }
 
+.ea-action-bar .ea-btn {
+  flex: 0 0 auto;
+}
+
 .ea-panel-header .ea-action-bar {
   padding-bottom: 0;
   border-bottom: none;
@@ -75,16 +83,17 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
+  box-sizing: border-box;
   border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   background: var(--surface);
   color: var(--text);
   font: inherit;
   font-size: calc(12px * var(--density-font, 1));
   font-weight: 600;
   line-height: 1.2;
-  padding: 8px 14px;
-  min-height: 36px;
+  padding: 0 14px;
+  min-height: 40px;
   cursor: pointer;
   transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
   box-shadow: 0 1px 2px color-mix(in oklab, var(--color-ink) 4%, transparent);
@@ -231,9 +240,14 @@
 .ea-snapshot-strip-head {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.ea-snapshot-strip-head-text {
+  flex: 1 1 12rem;
+  min-width: 0;
 }
 
 .ea-snapshot-actions {
@@ -241,6 +255,9 @@
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+  justify-content: flex-end;
+  flex: 0 1 auto;
+  margin-left: auto;
 }
 
 .ea-charts-section .ea-section-title {

@@ -436,19 +436,7 @@ export function renderLabHistoryPanel() {
     hiddenCount = hist.length - LAB_HISTORY_LIST_CAP;
   }
   var rowsHtml = visible.map(function(set, idx) {
-    var n = (set.resLabs && set.resLabs.length) ? set.resLabs.length : 0;
-    var rawFe = set.fecha === 'Anterior' ? '' : (normalizeFechaLabHistory(set.fecha) || String(set.fecha || '').trim() || rt.inferFechaLabSetFromId(set) || '');
-    var fe;
-    if (set.id === 'migrated-anterior') {
-      fe = rawFe ? ('Anterior · ' + rawFe) : 'Anterior (sin fecha en bloque)';
-    } else {
-      fe = rawFe || (set.fecha === 'Anterior' ? 'Anterior' : '—');
-    }
-    var ho = (set.hora && String(set.hora).trim()) ? String(set.hora).trim().slice(0, 8) : '';
-    var parts = [fe];
-    if (ho) parts.push(ho);
-    parts.push(n + ' bloque' + (n === 1 ? '' : 's'));
-    var meta = parts.join(' · ');
+    var meta = rt.formatLabHistoryListMeta(set);
     var sid = safeAttrJsString(
       set.id != null && String(set.id).trim() !== '' ? set.id : '__idx_' + idx
     );
@@ -588,18 +576,7 @@ function removeDuplicateLabSetsForPatient(patientId) {
 
 function labDedupeSummaryLine(set) {
   if (!set) return '—';
-  var rawFe =
-    set.fecha === 'Anterior'
-      ? ''
-      : normalizeFechaLabHistory(set.fecha) || String(set.fecha || '').trim() || rt.inferFechaLabSetFromId(set) || '';
-  var fe = set.id === 'migrated-anterior' ? (rawFe ? 'Anterior · ' + rawFe : 'Anterior (sin fecha en bloque)') : rawFe || (set.fecha === 'Anterior' ? 'Anterior' : '—');
-  var ho = set.hora && String(set.hora).trim() ? String(set.hora).trim().slice(0, 8) : '';
-  var n = set.resLabs && set.resLabs.length ? set.resLabs.length : 0;
-  var parts = [fe];
-  if (ho) parts.push(ho);
-  parts.push(n + ' línea' + (n === 1 ? '' : 's'));
-  parts.push('id ' + String(set.id).slice(-12));
-  return parts.join(' · ');
+  return rt.formatLabHistoryListMeta(set) + ' · id ' + String(set.id).slice(-12);
 }
 
 function labParsedFingerprintForDedupe(set) {
@@ -617,14 +594,11 @@ function labParsedFingerprintForDedupe(set) {
 
 function labLooseDupeKey(set) {
   if (!set) return '';
-  var ms = parseFechaLabToMs(set.fecha, set.hora);
-  var timePart =
-    typeof ms === 'number' && isFinite(ms)
-      ? 't:' + ms
-      : 'f:' + normalizeFechaLabHistory(set.fecha) + '|h:' + normalizeHoraLabHistory(set.hora);
+  var dk = rt.dayKeyFromLabSet(set);
+  if (!dk || dk === 'unknown' || dk === 'Anterior') return '';
   var fp = labParsedFingerprintForDedupe(set);
   if (!fp) return '';
-  return timePart + '||' + fp;
+  return 'd:' + dk + '||' + fp;
 }
 
 function buildLabDedupeChecklistSections(patientId) {
@@ -917,7 +891,8 @@ function consolidateLabHistoryByDayAndTipo() {
         '1) Varios envíos que traen únicamente laboratorio (sin bloque de cultivos) ese día → se unen en una sola entrada.\n\n' +
         '2) Varios envíos que traen únicamente cultivos ese día → se unen en una sola entrada.\n\n' +
         '3) Si un envío mezcla laboratorio y cultivos en el mismo conjunto, no se fusiona con otros ni se modifica.\n\n' +
-        'En cada grupo se conserva la entrada más antigua (id más viejo), se combinan todos los renglones y las líneas de texto idénticas se guardan una sola vez.'
+        'En cada grupo se conserva la entrada más antigua (id más viejo), se combinan todos los renglones y las líneas de texto idénticas se guardan una sola vez.\n\n' +
+        'Si hay varios envíos del mismo día (aunque la hora difiera), se unen. Ante el mismo panel (BH, QS, …), se priorizan los datos tomados desde SOME.'
     )
   ) {
     return;
@@ -942,32 +917,35 @@ function consolidateLabHistoryByDayAndTipo() {
     var tipoGrupo = gk.split('\x01')[1] || 'labs';
     arr.sort(compareLabSetIdForDedupe);
     var keeper = arr[0];
-    var merged = (keeper.resLabs || []).slice();
+    var mergeOrder = arr.slice().sort(function (a, b) {
+      var sa = rt.labSetIsFromSome(a) ? 1 : 0;
+      var sb = rt.labSetIsFromSome(b) ? 1 : 0;
+      if (sa !== sb) return sa - sb;
+      return compareLabSetIdForDedupe(a, b);
+    });
+    var merged = [];
     var sourceParts = [];
-    if (keeper.sourceText && String(keeper.sourceText).trim()) sourceParts.push(String(keeper.sourceText).trim());
-    for (var i = 1; i < arr.length; i++) {
-      var other = arr[i].resLabs || [];
+    mergeOrder.forEach(function (set, idx) {
+      var other = set.resLabs || [];
       if (merged.length && other.length) merged.push('');
       merged = merged.concat(other);
-      if (arr[i].sourceText && String(arr[i].sourceText).trim()) sourceParts.push(String(arr[i].sourceText).trim());
-    }
+      if (set.sourceText && String(set.sourceText).trim()) sourceParts.push(String(set.sourceText).trim());
+    });
     var deduped = dedupeConsolidatedRowsBySection(merged, tipoGrupo);
     keeper.resLabs = deduped;
     keeper.parsed = rt.extractParsedValues(deduped);
     var mergedBhExtras = {};
-    for (var mi = 0; mi < arr.length; mi++) {
-      var sMerge = arr[mi];
+    mergeOrder.forEach(function (sMerge) {
       if (sMerge && sMerge.bhExtras && typeof sMerge.bhExtras === 'object') {
         Object.keys(sMerge.bhExtras).forEach(function (bk) {
           mergedBhExtras[bk] = sMerge.bhExtras[bk];
         });
       }
-    }
+    });
     keeper.bhExtras = mergedBhExtras;
     keeper.parsedBySection = rt.buildParsedBySectionFromResLabs(deduped, keeper.bhExtras);
     if (sourceParts.length) keeper.sourceText = sourceParts.join('\n\n---\n\n');
-    var newest = arr[arr.length - 1];
-    if (newest.hora) keeper.hora = newest.hora;
+    keeper.hora = '';
     for (var j = 1; j < arr.length; j++) {
       todo.push(String(arr[j].id));
     }

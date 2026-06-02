@@ -241,6 +241,7 @@
           <input type="checkbox" id="drive-import-review-include" checked />
           <span>Incluir al importar</span>
         </label>
+        <div id="drive-import-review-structured" class="drive-import-review-structured" hidden></div>
         <textarea
           id="drive-import-review-editor"
           class="drive-import-review-editor"
@@ -935,7 +936,7 @@
               <details class="lab-history-more">
                 <summary class="lab-history-more-btn" aria-label="Más acciones del historial">⋯</summary>
                 <div class="lab-history-more-menu" role="menu">
-                  <button type="button" class="lab-history-more-item" role="menuitem" onclick="closeLabHistoryMoreMenu(); consolidateLabHistoryByDayAndTipo();" title="Une en una sola entrada los envíos del mismo día si todos son solo laboratorio o todos solo cultivos; los conjuntos mixtos no se tocan.">Consolidar</button>
+                  <button type="button" class="lab-history-more-item" role="menuitem" onclick="closeLabHistoryMoreMenu(); consolidateLabHistoryByDayAndTipo();" title="Une en una sola entrada los envíos del mismo día (aunque la hora difiera) si todos son solo laboratorio o todos solo cultivos; ante el mismo panel se prioriza SOME; los conjuntos mixtos no se tocan.">Consolidar</button>
                   <button type="button" class="lab-history-more-item" role="menuitem" onclick="closeLabHistoryMoreMenu(); openLabHistoryDedupeReview('active');" title="Abrir checklist: duplicados exactos y posibles coincidencias por fecha/hora y valores">Sincronizar</button>
                 </div>
               </details>
@@ -1753,14 +1754,14 @@
       </div>
     </div><!-- /soap-modal-body -->
     <div class="soap-modal-footer">
-      <button class="btn-soap-insert" onclick="insertSOAPText()" style="background:#065F46;color:white;border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:5px;">
+      <button type="button" class="btn-soap-insert" onclick="insertSOAPText()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         Insertar en evolución
       </button>
-      <button class="btn-soap-only-copy" onclick="estadoActualOnlyCopy()" style="display:none;background:white;border:1px solid var(--border);color:var(--text-muted);border-radius:6px;padding:7px 14px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">
-        Solo copiar
+      <button type="button" class="btn-soap-only-copy" onclick="estadoActualOnlyCopy()" style="display:none;">
+        Copiar
       </button>
-      <button class="btn-soap-save-copy" onclick="estadoActualSaveAndCopy()" style="display:none;background:#065F46;color:white;border:none;border-radius:6px;padding:7px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;align-items:center;gap:5px;">
+      <button type="button" class="btn-soap-save-copy" onclick="estadoActualSaveAndCopy()" style="display:none;">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
         Guardar y copiar
       </button>

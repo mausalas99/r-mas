@@ -65,6 +65,7 @@ import {
   syncClinicalRotationEntryChrome,
 } from './features/clinical-rotation-entry.mjs';
 import { wireClinicalTeamsControls } from './features/clinical-teams.mjs';
+import { tryMountClinicalTeamInviteBrowserGate } from './clinical-team-invite.mjs';
 import { syncGuardiaModeButtonVisibility } from './features/guardia-board.mjs';
 
 const allWindowHandlers = Object.assign(
@@ -255,6 +256,7 @@ function runDomBoot() {
 
 function runDomBootAfterState() {
   try {
+    tryMountClinicalTeamInviteBrowserGate();
     if (recoverPresentationPatientsOnBoot()) {
       showToast('Se restauró tu lista de pacientes tras el modo presentación.', 'info');
     }
@@ -301,6 +303,12 @@ function runDomBootAfterState() {
           wireClinicalTeamsControls();
           syncClinicalRotationEntryChrome();
           syncGuardiaModeButtonVisibility();
+          return import('./features/clinical-teams.mjs');
+        })
+        .then(function (teamsMod) {
+          if (teamsMod && typeof teamsMod.consumeClinicalTeamJoinFromUrl === 'function') {
+            return teamsMod.consumeClinicalTeamJoinFromUrl();
+          }
         })
         .catch(function (err) {
           console.warn('[R+] Clinical access runtime init:', err && err.message);

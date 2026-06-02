@@ -338,9 +338,9 @@ function renderComposeBlock(editingEntry) {
     '</span>' +
     '<div class="ev-compose__btns">' +
     (isEdit
-      ? '<button type="button" class="btn-secondary ev-compose__cancel" id="eventualidades-cancel">Cancelar</button>'
+      ? '<button type="button" class="ea-btn ea-btn--ghost ev-compose__cancel" id="eventualidades-cancel">Cancelar</button>'
       : '') +
-    '<button type="button" class="btn-generate ev-compose__submit" id="eventualidades-add">' +
+    '<button type="button" class="ea-btn ea-btn--primary ev-compose__submit" id="eventualidades-add">' +
     (isEdit ? 'Guardar' : 'Agregar') +
     '</button>' +
     '</div></div></div></footer>'
@@ -372,35 +372,36 @@ function hostPatientMutationBase(patient, hostRow) {
 
 async function persistEventualidades(patient, store) {
   patient.eventualidades = store;
+  saveState({ immediate: true });
   if (!isLanSessionConfiguredForRest()) {
-    saveState();
     return { ok: true };
   }
-  const hostRow = await lanFetchHostPatientRow(patient.id);
-  const mutation = createMutationBuilder('patient', patient.id)
-    .captureBase(hostPatientMutationBase(patient, hostRow))
-    .set('eventualidades', store)
-    .build();
-  const out = await lanPushPatientVersioned(patient.id, mutation);
-  if (!out.ok) {
-    if (out.conflict) {
-      saveState({ immediate: true });
-      if (out.conflictDeferred) {
-        return { ok: true, conflictDeferred: true };
+  void (async function () {
+    try {
+      const hostRow = await lanFetchHostPatientRow(patient.id);
+      const mutation = createMutationBuilder('patient', patient.id)
+        .captureBase(hostPatientMutationBase(patient, hostRow))
+        .set('eventualidades', store)
+        .build();
+      const out = await lanPushPatientVersioned(patient.id, mutation);
+      if (out && out.ok) {
+        if (out.data) Object.assign(patient, out.data);
+        else patient.eventualidades = store;
+        saveState();
+        return;
       }
-    } else if (!out.conflict) {
-      const msg =
-        out.status === 401 || out.status === 403
-          ? 'No se pudo autenticar con el host LAN. Revisa el código de equipo.'
-          : 'No se pudo guardar la eventualidad en el host LAN.';
-      rt.showToast(msg, 'error');
+      if (out && !out.ok && !out.conflict) {
+        const msg =
+          out.status === 401 || out.status === 403
+            ? 'No se pudo autenticar con el host LAN. Revisa el código de equipo.'
+            : 'No se pudo sincronizar la eventualidad con el host LAN.';
+        rt.showToast(msg, 'error');
+      }
+    } catch (_e) {
+      /* local copy already saved */
     }
-    return out;
-  }
-  if (out.data) Object.assign(patient, out.data);
-  else patient.eventualidades = store;
-  saveState();
-  return out;
+  })();
+  return { ok: true, lanDeferred: true };
 }
 
 export function renderEventualidadesPanel(mountEl) {
@@ -582,16 +583,16 @@ export async function applyDriveImportEventualidades(patient, incoming) {
     .captureBase(hostPatientMutationBase(patient, null))
     .set('eventualidades', store)
     .build();
-  try {
-    const out = await driveImportLanTimeout(lanPushPatientVersioned(patient.id, mutation), DRIVE_IMPORT_LAN_MS);
-    if (out && out.ok) {
-      if (out.data) Object.assign(patient, out.data);
-      saveState();
-      return { ok: true, added: toAdd.length, skipped };
-    }
-  } catch (_e) {
-    /* local copy already saved */
-  }
+  void driveImportLanTimeout(lanPushPatientVersioned(patient.id, mutation), DRIVE_IMPORT_LAN_MS)
+    .then(function (out) {
+      if (out && out.ok) {
+        if (out.data) Object.assign(patient, out.data);
+        saveState();
+      }
+    })
+    .catch(function () {
+      /* local copy already saved */
+    });
   return { ok: true, added: toAdd.length, skipped, lanDeferred: true };
 }
 

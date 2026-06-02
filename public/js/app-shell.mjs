@@ -9,6 +9,7 @@ import { isRpcDatePopoverOpen, closeRpcDatePopover } from './rpc-date-picker.mjs
 import { parseLanJoinQuery } from './lan-join-link.mjs';
 import { renderGuardiaCensusGrid, syncGuardiaCensusPanelVisibility } from './clinical-access-runtime.mjs';
 import { isMobileWeb, blockIfMobileDocExport, mobileDocExportToast } from './mobile-web.mjs';
+import { tryMountClinicalTeamInviteBrowserGate } from './clinical-team-invite.mjs';
 import { resolveQuickOutputAction } from './quick-output.mjs';
 import { handleOutputDirFallback } from './output-dir-fallback.mjs';
 import { syncApprovedOutputDir } from './document-export-client.mjs';
@@ -228,6 +229,7 @@ function guardMobileDocExport() {
 }
 
 async function initMobileWebBoot() {
+  tryMountClinicalTeamInviteBrowserGate();
   if (!isMobileWeb()) return;
   try {
     document.title = 'R+ Móvil';

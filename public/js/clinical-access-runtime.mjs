@@ -220,9 +220,21 @@ export async function refreshClinicalUserProfile() {
  * @param {Record<string, unknown>|null|undefined} settings
  * @param {string} clientId
  */
+export function wireClinicalOpsSyncRefresh() {
+  if (typeof document === 'undefined' || document._rpcClinicalOpsSyncedRefreshWired) return;
+  document._rpcClinicalOpsSyncedRefreshWired = true;
+  document.addEventListener('rpc-clinical-ops-synced', () => {
+    void (async () => {
+      await fetchClinicalTeamsFromDb();
+      await fetchClinicalScopeContextFromDb();
+    })();
+  });
+}
+
 export async function initClinicalAccessRuntime(settings, clientId) {
   const ok = await bootstrapClinicalAccess(settings, clientId);
   if (!ok) return;
+  wireClinicalOpsSyncRefresh();
 
   if (vitalsLoop) vitalsLoop.stop();
   vitalsLoop = new BackgroundVitalsMonitorLoop(

@@ -242,8 +242,8 @@ export function todoCompareForSort(a, b) {
 }
 
 export function refreshAllTodoUIs() {
-  var elClassic = document.getElementById('todo-form');
-  if (elClassic) renderTodoFormIn(elClassic, '');
+  var todoForm = document.getElementById('todo-form');
+  if (todoForm) renderTodoFormIn(todoForm, '');
   var overview = document.getElementById('patient-ronda-overview');
   var ronda = document.getElementById('patient-ronda-todos-mount');
   if (!ronda) return;

@@ -1,19 +1,27 @@
 {
   "schema": 1,
-  "updatedAt": "2026-06-03",
+  "updatedAt": "2026-06-02",
   "entries": [
+    {
+      "version": "6.5.5",
+      "label": "6.5.5",
+      "publishedAt": "2026-06-02",
+      "summary": "Release estable 6.5.5",
+      "recommended": true
+    },
     {
       "version": "6.5.0",
       "label": "6.5.0",
       "publishedAt": "2026-05-31",
       "summary": "Última 6.5.x publicada en GitHub (Historia Clínica · expediente Sala).",
-      "recommended": true
+      "recommended": false
     },
     {
       "version": "6.4.2",
       "label": "6.4.2",
       "publishedAt": "2026-05-30",
-      "summary": "Estable anterior si necesitas volver más atrás."
+      "summary": "Estable anterior si necesitas volver más atrás.",
+      "recommended": false
     }
   ]
 }

@@ -129,6 +129,50 @@ export function getCycleConfig(service, rank) {
   return CYCLE_CONFIGS.default;
 }
 
+/**
+ * Letters offered when creating a team — depends on creator rank, not a single team-wide slot.
+ * Sala R1: first half A1–D1 (R1 primera línea) or second half A2–D2 (R1 segunda línea).
+ *
+ * @param {string} service
+ * @param {string} rank
+ * @param {0|1} [r1LineIndex]
+ */
+export function getCycleLettersForTeamCreate(service, rank, r1LineIndex = 0) {
+  const cfg = getCycleConfig(service, rank);
+  const svc = normalizeServiceKey(service);
+  if (rank === 'R1' && svc.includes('sala')) {
+    const half = Math.floor(cfg.letters.length / 2);
+    return r1LineIndex === 1 ? cfg.letters.slice(half) : cfg.letters.slice(0, half);
+  }
+  return cfg.letters;
+}
+
+/**
+ * @param {string} service
+ * @param {string} rank
+ * @param {0|1} [r1LineIndex]
+ */
+export function getCycleFieldMetaForTeamCreate(service, rank, r1LineIndex = 0) {
+  const svc = normalizeServiceKey(service);
+  if (svc.includes('sala') && rank === 'R2') {
+    return {
+      label: 'Tu letra de ciclo (R2)',
+      hint: 'Cada equipo de sala tiene tres puestos: R2 (A–F), R1 primera línea (A1–D1) y R1 segunda línea (A2–D2). Como R2 eliges tu letra A–F.',
+    };
+  }
+  if (svc.includes('sala') && rank === 'R1') {
+    const line = r1LineIndex === 1 ? 'segunda línea (A2–D2)' : 'primera línea (A1–D1)';
+    return {
+      label: `Tu subciclo R1 · ${line}`,
+      hint: 'No es la posición del equipo completo: cada R1 lleva su subciclo (A1–D1 o A2–D2) dentro del mismo equipo de sala.',
+    };
+  }
+  return {
+    label: 'Posición en ciclo',
+    hint: 'Letra de rotación para este servicio.',
+  };
+}
+
 export function letterIndexForTeam(team, rank) {
   const frac = String(team?.sub_area_fraction || '').trim().toUpperCase();
   if (!frac) return -1;
@@ -378,8 +422,69 @@ export function patientInUserSala(patient, userSala) {
   return ps !== '' && ps === String(userSala || '').trim();
 }
 
-/** @param {object} patient @param {object[]} joinedTeams */
-export function patientMatchesAnyJoinedTeam(patient, joinedTeams) {
+/**
+ * Team row scoped to one member's cycle letter (membership sub_area_fraction).
+ *
+ * @param {object} team
+ * @param {string} [userId]
+ */
+export function teamForMemberCycle(team, userId) {
+  if (!team || !userId) return team;
+  const member = (team.members || []).find((m) => String(m.user_id) === String(userId));
+  const frac = String(member?.sub_area_fraction || '').trim();
+  if (!frac) {
+    if (String(member?.rank || '') === 'R2') {
+      const teamFrac = String(team.sub_area_fraction || '').trim();
+      if (teamFrac) return { ...team, sub_area_fraction: teamFrac };
+    }
+    return team;
+  }
+  return { ...team, sub_area_fraction: frac };
+}
+
+/** @param {{ sub_area_fraction?: string, rank?: string }} member */
+/**
+ * Default cycle letter when joining/creating membership without explicit pick.
+ *
+ * @param {{ service?: string, members?: object[], sub_area_fraction?: string }} team
+ * @param {string} userRank
+ */
+export function inferMembershipCycleForJoin(team, userRank) {
+  const rank = String(userRank || 'R1');
+  const svc = normalizeServiceKey(team?.service);
+  if (!svc.includes('sala')) {
+    const letters = getCycleLettersForTeamCreate(team?.service, rank);
+    return letters[0] || 'A';
+  }
+  if (rank === 'R2') {
+    return getCycleLettersForTeamCreate('Sala', 'R2')[0] || 'A';
+  }
+  const used = new Set(
+    (team?.members || [])
+      .filter((m) => String(m?.rank) === 'R1')
+      .map((m) => String(m?.sub_area_fraction || '').trim())
+      .filter(Boolean)
+  );
+  for (const letter of getCycleLettersForTeamCreate('Sala', 'R1', 0)) {
+    if (!used.has(letter)) return letter;
+  }
+  for (const letter of getCycleLettersForTeamCreate('Sala', 'R1', 1)) {
+    if (!used.has(letter)) return letter;
+  }
+  return 'A1';
+}
+
+export function formatMemberCycleLabel(member) {
+  const frac = String(member?.sub_area_fraction || '').trim();
+  if (!frac) return '';
+  const rank = String(member?.rank || '');
+  if (rank === 'R2' || /^[A-F]$/i.test(frac)) return `Ciclo R2 · ${frac}`;
+  if (rank === 'R1' || /[12]$/i.test(frac)) return `Subciclo R1 · ${frac}`;
+  return `Ciclo · ${frac}`;
+}
+
+/** @param {object} patient @param {object[]} joinedTeams @param {string} [userId] */
+export function patientMatchesAnyJoinedTeam(patient, joinedTeams, userId) {
   const mapped = {
     id: patient?.id,
     service: String(patient?.service || patient?.servicio || ''),
@@ -387,7 +492,10 @@ export function patientMatchesAnyJoinedTeam(patient, joinedTeams) {
     interconsult_type: patient?.interconsult_type,
     sala: patient?.sala,
   };
-  return (joinedTeams || []).some((team) => patientMatchesTeam(mapped, team));
+  return (joinedTeams || []).some((team) => {
+    const scoped = userId ? teamForMemberCycle(team, userId) : team;
+    return patientMatchesTeam(mapped, scoped);
+  });
 }
 
 /** @param {object} user @param {object} patient @param {object[]} joinedTeams */
@@ -559,14 +667,14 @@ export function evaluateClinicalScope(currentUser, targetPatient, activeGuardia 
     if (patientCoveredByGuardia(patientId, userId, guardias)) {
       return allow('R2: paciente entregado');
     }
-    if (patientMatchesAnyJoinedTeam(targetPatient, joinedTeams)) {
+    if (patientMatchesAnyJoinedTeam(targetPatient, joinedTeams, userId)) {
       return allow('R2: paciente de mi equipo');
     }
     return deny('R2: sin equipo ni entrega');
   }
 
   if (rank === 'R3') {
-    if (patientMatchesAnyJoinedTeam(targetPatient, joinedTeams)) {
+    if (patientMatchesAnyJoinedTeam(targetPatient, joinedTeams, userId)) {
       return allow('R3: paciente de mi equipo');
     }
     if (r3ExtendedStructuralAccess(currentUser, targetPatient, joinedTeams)) {

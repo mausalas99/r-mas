@@ -287,12 +287,21 @@ export function buildBulkLabPreview(text, opts) {
 }
 
 function buildMergedPayloadFromGroup(items, tipo) {
+  var mergeOrder = (items || []).slice().sort(function (a, b) {
+    var sa =
+      a && a.reportText && looksLikeSomeLabReport(a.reportText) ? 1 : 0;
+    var sb =
+      b && b.reportText && looksLikeSomeLabReport(b.reportText) ? 1 : 0;
+    if (sa !== sb) return sa - sb;
+    return 0;
+  });
   var merged = [];
   var sourceParts = [];
   var mergedBhExtras = {};
   var mergedRefs = {};
   var newestHora = '';
-  items.forEach(function (item, idx) {
+  var horaSome = '';
+  mergeOrder.forEach(function (item, idx) {
     var result = item.result;
     var rows = (result.resLabs || []).slice();
     if (merged.length && rows.length) merged.push('');
@@ -310,14 +319,15 @@ function buildMergedPayloadFromGroup(items, tipo) {
     }
     var h = normalizeHoraLabHistory(result.patient && result.patient.hora);
     if (h) newestHora = h;
+    if (item.reportText && looksLikeSomeLabReport(item.reportText) && h) horaSome = h;
   });
   var deduped = dedupeConsolidatedLabRows(merged, tipo);
-  var first = items[0].result;
+  var first = mergeOrder[0].result;
   var fecha = normalizeFechaLabHistory(first.patient && first.patient.fecha) || '';
   return {
     resLabs: deduped,
     fecha: fecha,
-    hora: newestHora,
+    hora: horaSome || newestHora,
     sourceText: sourceParts.join('\n\n---\n\n'),
     bhExtras: mergedBhExtras,
     refsBySection: mergedRefs,

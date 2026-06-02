@@ -10,6 +10,10 @@ import {
   patientAssignedToTeam,
   patientCoveredByGuardia,
   getCycleConfig,
+  getCycleLettersForTeamCreate,
+  getCycleFieldMetaForTeamCreate,
+  inferMembershipCycleForJoin,
+  formatMemberCycleLabel,
   letterIndexForTeam,
   isOnCallToday,
   salaLetterForTeamOrArea,
@@ -267,6 +271,32 @@ test('getCycleConfig returns Sala R1 config', () => {
   const cfg = getCycleConfig('Sala', 'R1');
   assert.deepEqual(cfg.letters, ['A1','B1','C1','D1','A2','B2','C2','D2']);
   assert.equal(cfg.length, 8);
+});
+
+test('getCycleLettersForTeamCreate splits Sala R1 lines', () => {
+  assert.deepEqual(getCycleLettersForTeamCreate('Sala', 'R1', 0), ['A1', 'B1', 'C1', 'D1']);
+  assert.deepEqual(getCycleLettersForTeamCreate('Sala', 'R1', 1), ['A2', 'B2', 'C2', 'D2']);
+  assert.deepEqual(getCycleLettersForTeamCreate('Sala', 'R2', 0), ['A', 'B', 'C', 'D', 'E', 'F']);
+});
+
+test('getCycleFieldMetaForTeamCreate describes R2 vs R1', () => {
+  assert.match(getCycleFieldMetaForTeamCreate('Sala', 'R2').label, /R2/i);
+  assert.match(getCycleFieldMetaForTeamCreate('Sala', 'R1', 1).label, /segunda/i);
+});
+
+test('inferMembershipCycleForJoin assigns free R1 subcycle', () => {
+  const team = {
+    service: 'Sala',
+    members: [{ rank: 'R1', sub_area_fraction: 'D2' }],
+  };
+  assert.equal(inferMembershipCycleForJoin(team, 'R1'), 'A1');
+});
+
+test('formatMemberCycleLabel shows R1 subcycle', () => {
+  assert.equal(
+    formatMemberCycleLabel({ rank: 'R1', sub_area_fraction: 'D1' }),
+    'Subciclo R1 · D1'
+  );
 });
 
 test('getCycleConfig returns ABCD for non-Sala service', () => {

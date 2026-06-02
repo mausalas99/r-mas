@@ -28,7 +28,11 @@ import {
   clinicalSessionContext,
   getClinicalScopeContextForEvaluate,
 } from '../clinical-access-runtime.mjs';
-import { evaluateClinicalScope, patientMatchesTeam } from '../clinico-access.mjs';
+import {
+  evaluateClinicalScope,
+  patientMatchesTeam,
+  teamForMemberCycle,
+} from '../clinico-access.mjs';
 import { hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
 import {
   applyElevatedPatientFilters,
@@ -71,12 +75,14 @@ var elevatedPatientFilters = { sala: '__all__', teamId: '', service: '' };
 
 function tagPatientsForTeamFilter(list) {
   const teams = clinicalSessionContext.teams || [];
+  const userId = String(clinicalSessionContext.user?.user_id || '');
   for (const p of list) {
     if (!p) continue;
     const mapped = patientForScopeEvaluate(p);
     let teamId = '';
     for (const team of teams) {
-      if (patientMatchesTeam(mapped, team)) {
+      const scoped = userId ? teamForMemberCycle(team, userId) : team;
+      if (patientMatchesTeam(mapped, scoped)) {
         teamId = String(team.team_id || '');
         break;
       }

@@ -8,6 +8,7 @@ import {
   reprocessLabResultLines_,
   isParsedCultivoHeaderLine,
   isAscitisInterpretacionResLabChunk,
+  looksLikeSomeLabReport,
 } from './labs.js';
 import {
   findExactDuplicateLabGroups,
@@ -152,6 +153,38 @@ export function splitResLabsByTipo(rows) {
     labs.push(raw);
   });
   return { labs: labs, cultivo: cultivo };
+}
+
+/** Conjunto guardado desde informe SOME (pegado o reprocesado), no panel compacto de Drive. */
+/** Etiqueta del historial: fecha y número de bloques (sin hora). */
+export function formatLabHistoryListMeta(set, inferFechaLabSetFromId) {
+  if (!set) return '—';
+  var infer = typeof inferFechaLabSetFromId === 'function' ? inferFechaLabSetFromId : function () {
+    return '';
+  };
+  var rawFe =
+    set.fecha === 'Anterior'
+      ? ''
+      : normalizeFechaLabHistory(set.fecha) ||
+        String(set.fecha || '').trim() ||
+        infer(set) ||
+        '';
+  var fe;
+  if (set.id === 'migrated-anterior') {
+    fe = rawFe ? 'Anterior · ' + rawFe : 'Anterior (sin fecha en bloque)';
+  } else {
+    fe = rawFe || (set.fecha === 'Anterior' ? 'Anterior' : '—');
+  }
+  var n = set.resLabs && set.resLabs.length ? set.resLabs.length : 0;
+  return fe + ' · ' + n + ' bloque' + (n === 1 ? '' : 's');
+}
+
+export function labSetIsFromSome(set) {
+  if (!set) return false;
+  var src = String(set.sourceText || '').trim();
+  if (!src) return false;
+  if (/^Expediente\s*:/im.test(src)) return true;
+  return looksLikeSomeLabReport(src);
 }
 
 export function dayKeyFromLabSet(set) {

@@ -25,9 +25,9 @@ const ENTITY_LABELS = {
 const FIELD_LABELS = {
   identificacion: 'Identificación',
   motivoConsulta: 'Motivo de consulta',
-  apnp: 'APNP',
-  app: 'APP',
-  ahf: 'AHF',
+  apnp: 'Antecedentes no patológicos',
+  app: 'Antecedentes patológicos',
+  ahf: 'Antecedentes heredofamiliares',
   genero: 'Género',
   sexual: 'Salud sexual',
   padecimientoActual: 'Padecimiento actual',
@@ -77,25 +77,144 @@ function valuesEqual(a, b) {
   return false;
 }
 
-function formatConflictValue(value) {
+const HC_STRUCTURED_KEYS = new Set(['ahf', 'app', 'apnp', 'ipas', 'genero', 'identificacion', 'signosVitalesIngreso']);
+
+function trimCollapse(text, maxLen) {
+  const max = maxLen == null ? 140 : maxLen;
+  const t = String(text || '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!t) return '';
+  if (t.length <= max) return t;
+  return t.slice(0, Math.max(0, max - 1)) + '…';
+}
+
+function summarizeEntryRow(entry) {
+  if (!entry || typeof entry !== 'object') return '';
+  const bits = [];
+  if (entry.descripcionDetallada) bits.push(trimCollapse(entry.descripcionDetallada, 90));
+  if (entry.diagnosis) bits.push('dx: ' + trimCollapse(entry.diagnosis, 50));
+  if (entry.treatment) bits.push('tto: ' + trimCollapse(entry.treatment, 50));
+  if (entry.description) bits.push(trimCollapse(entry.description, 60));
+  if (entry.medication) bits.push(trimCollapse(entry.medication, 40));
+  if (entry.relativeId && !bits.length) bits.push('familiar ' + String(entry.relativeId));
+  return bits.join(' · ');
+}
+
+function summarizeIpasBlock(ipas) {
+  if (!ipas || typeof ipas !== 'object') return '';
+  const lines = [];
+  for (const block of Object.values(ipas)) {
+    if (!block || typeof block !== 'object') continue;
+    const desc = trimCollapse(block.descripcion, 72);
+    const checks = Array.isArray(block.checks) ? block.checks.length : 0;
+    if (desc && desc.toLowerCase() !== 'interrogado y negado') {
+      lines.push(desc);
+    } else if (checks > 0) {
+      lines.push(checks + ' hallazgo' + (checks === 1 ? '' : 's'));
+    }
+    if (lines.length >= 2) break;
+  }
+  if (!lines.length) return 'interrogado y negado';
+  return lines.join(' · ');
+}
+
+/**
+ * Human-readable one-line preview for conflict diff (no raw JSON).
+ * @param {string} [fieldKey]
+ * @param {unknown} value
+ * @returns {string}
+ */
+export function summarizeConflictFieldValue(fieldKey, value) {
+  const key = String(fieldKey || '').trim();
   if (value === null || value === undefined) return '—';
-  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value)) {
-    try {
-      return new Date(value).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' });
-    } catch (_e) {
-      return value;
+  if (typeof value === 'boolean') return value ? 'Sí' : 'No';
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  if (typeof value === 'string') {
+    if (/^\d{4}-\d{2}-\d{2}T/.test(value)) {
+      try {
+        return new Date(value).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' });
+      } catch (_e) {
+        return trimCollapse(value) || '—';
+      }
+    }
+    const t = trimCollapse(value);
+    return t || '—';
+  }
+  if (Array.isArray(value)) {
+    if (!value.length) return 'vacío';
+    const previews = value
+      .slice(0, 2)
+      .map((item) => (typeof item === 'object' ? summarizeEntryRow(item) : trimCollapse(item, 60)))
+      .filter(Boolean);
+    const tail = value.length > 2 ? ' (+' + (value.length - 2) + ' más)' : '';
+    return (previews.length ? previews.join('; ') : value.length + ' elemento' + (value.length === 1 ? '' : 's')) + tail;
+  }
+  if (typeof value !== 'object') return String(value);
+
+  if (key === 'ipas') return summarizeIpasBlock(value) || '—';
+
+  const parts = [];
+  const desc = value.descripcionDetallada || value.descripcion;
+  if (desc && String(desc).trim()) parts.push(trimCollapse(desc, 110));
+
+  const entries = value.entries;
+  if (Array.isArray(entries) && entries.length) {
+    const rowText = entries
+      .slice(0, 3)
+      .map(summarizeEntryRow)
+      .filter(Boolean)
+      .join('; ');
+    if (rowText) parts.push(rowText);
+    if (entries.length > 3) parts.push('+' + (entries.length - 3) + ' registro' + (entries.length - 3 === 1 ? '' : 's'));
+  }
+
+  const condCount = Array.isArray(value.conditions) ? value.conditions.length : 0;
+  if (condCount && !entries?.length) {
+    parts.push(condCount + ' condición' + (condCount === 1 ? '' : 'es'));
+  }
+
+  for (const habitKey of ['tabaquismo', 'alcoholismo', 'toxicomanias', 'dieta', 'tatuajes', 'deportesPasatiemposMascotas']) {
+    if (value[habitKey] && String(value[habitKey]).trim()) {
+      parts.push(trimCollapse(value[habitKey], 55));
     }
   }
-  if (typeof value === 'object') {
-    try {
-      const raw = JSON.stringify(value, null, 0);
-      if (raw.length > 240) return raw.slice(0, 237) + '…';
-      return raw;
-    } catch (_e2) {
-      return String(value);
+
+  if (value.medicamentosActuales && String(value.medicamentosActuales).trim()) {
+    parts.push('Meds: ' + trimCollapse(value.medicamentosActuales, 70));
+  }
+  if (value.hospitalizacionesPrevias && String(value.hospitalizacionesPrevias).trim()) {
+    parts.push('Hosp. prev.: ' + trimCollapse(value.hospitalizacionesPrevias, 60));
+  }
+
+  if (key === 'genero') {
+    for (const gKey of ['menarquia', 'gestas', 'partos', 'cesareas', 'abortos', 'notas', 'ultimaMenstruacion']) {
+      if (value[gKey] != null && String(value[gKey]).trim()) {
+        parts.push(formatFieldLabel(gKey) + ': ' + trimCollapse(value[gKey], 40));
+      }
     }
   }
-  return String(value);
+
+  if (key === 'identificacion' && typeof value === 'object') {
+    const idBits = ['lugarNacimiento', 'residencia', 'ocupacionActual', 'dx', 'cama']
+      .map((k) => (value[k] ? formatFieldLabel(k) + ': ' + trimCollapse(value[k], 35) : ''))
+      .filter(Boolean);
+    if (idBits.length) parts.push(idBits.slice(0, 3).join(' · '));
+  }
+
+  if (parts.length) return parts.join(' · ');
+
+  if (HC_STRUCTURED_KEYS.has(key)) return 'bloque sin texto legible';
+  try {
+    const raw = JSON.stringify(value);
+    return raw.length > 120 ? trimCollapse(raw, 117) : raw;
+  } catch (_e2) {
+    return '—';
+  }
+}
+
+function formatConflictValue(value, fieldKey) {
+  return summarizeConflictFieldValue(fieldKey, value);
 }
 
 export function formatFieldLabel(key) {
@@ -204,7 +323,7 @@ function buildConflictActionCopy(context) {
     secondaryTitle: 'Seguir con mi borrador',
     secondaryHint:
       'Cierra el comparador y mantén tus cambios en pantalla. El borrador queda en Ajustes → LAN.',
-    tagline: 'Elige qué copia conservar antes de seguir editando.',
+    tagline: 'Otro equipo guardó antes. Elige la copia de la sala o sigue con lo que tienes en pantalla.',
   };
 }
 
@@ -262,11 +381,10 @@ export function buildConflictContextHtml(context) {
       '</div>';
   }
 
+  const showLead = ctx.entityType !== 'historiaClinica' || !patientRef;
   return (
     '<div class="clinical-conflict-context">' +
-    '<p class="clinical-conflict-context-lead"><strong>' +
-    lead +
-    '</strong></p>' +
+    (showLead ? '<p class="clinical-conflict-context-lead"><strong>' + lead + '</strong></p>' : '') +
     (patientRef ? '<p class="clinical-conflict-context-patient">' + patientRef + '</p>' : '') +
     '<p class="clinical-conflict-context-body">' +
     escHtml(cause) +
@@ -278,59 +396,103 @@ export function buildConflictContextHtml(context) {
 
 /**
  * @param {{ conflictingKeys?: string[], localData?: Record<string, unknown>, serverData?: Record<string, unknown> }} opts
- * @returns {string}
+ * @returns {{ summaryHtml: string, detailHtml: string, keyCount: number }}
  */
-export function buildConflictDiffHtml({ conflictingKeys, localData, serverData }) {
+/**
+ * Si el resumen legible coincide en todas las secciones en conflicto, se puede alinear con la sala sin modal.
+ * @param {{ conflictingKeys?: string[], localData?: Record<string, unknown>, serverData?: Record<string, unknown> }} opts
+ */
+export function conflictSnapshotsMatchForAutoResolve({ conflictingKeys, localData, serverData }) {
+  const keys = pickDiffKeys(conflictingKeys, localData, serverData);
+  if (!keys.length) return false;
+  for (let i = 0; i < keys.length; i += 1) {
+    const key = keys[i];
+    const localVal = summarizeConflictFieldValue(key, localData?.[key]);
+    const serverVal = summarizeConflictFieldValue(key, serverData?.[key]);
+    if (localVal !== serverVal || localVal === '—') return false;
+  }
+  return true;
+}
+
+export function buildConflictDiffParts({ conflictingKeys, localData, serverData }) {
   const conflictSet = new Set(conflictingKeys || []);
   const keys = pickDiffKeys(conflictingKeys, localData, serverData);
 
   if (!keys.length) {
-    return (
-      '<p class="clinical-conflict-diff-empty">' +
-      'No hay detalle campo por campo para este conflicto (suele pasar al eliminar o por desfase de versión). ' +
-      'Lee las dos opciones de abajo: una conserva lo de la sala, la otra reintenta tu acción.' +
-      '</p>'
-    );
+    return {
+      keyCount: 0,
+      summaryHtml:
+        '<p class="clinical-conflict-summary-empty">No hay detalle por sección (común al eliminar o por desfase de versión). Elige abajo si conservas la sala o tu borrador.</p>',
+      detailHtml: '',
+    };
   }
 
-  const rows = keys
+  const labels = keys.map((key) => formatFieldLabel(key));
+  const conflictOnly = keys.filter((key) => conflictSet.has(key) || conflictSet.has('*'));
+  const summaryLead =
+    conflictOnly.length === keys.length
+      ? keys.length === 1
+        ? 'Chocó <strong>1 sección</strong>:'
+        : 'Chocaron <strong>' + keys.length + ' secciones</strong>:'
+      : 'Hay <strong>' + keys.length + ' diferencia' + (keys.length === 1 ? '' : 's') + '</strong> respecto a la sala:';
+
+  const summaryHtml =
+    '<div class="clinical-conflict-summary">' +
+    '<p class="clinical-conflict-summary-lead">' +
+    summaryLead +
+    '</p>' +
+    '<ul class="clinical-conflict-affected">' +
+    labels.map((label) => '<li>' + escHtml(label) + '</li>').join('') +
+    '</ul></div>';
+
+  const cards = keys
     .map((key) => {
-      const rowClass = conflictSet.has(key) || conflictSet.has('*') ? 'conflict-field' : '';
-      const localVal = formatConflictValue(localData?.[key]);
-      const serverVal = formatConflictValue(serverData?.[key]);
+      const isConflict = conflictSet.has(key) || conflictSet.has('*');
+      const localVal = formatConflictValue(localData?.[key], key);
+      const serverVal = formatConflictValue(serverData?.[key], key);
       const serverMissing = serverData?.[key] === undefined || serverData?.[key] === null;
+      const samePreview = localVal === serverVal && localVal !== '—';
       return (
-        '<tr' +
-        (rowClass ? ' class="' + rowClass + '"' : '') +
-        '>' +
-        '<th scope="row">' +
-        escHtml(formatFieldLabel(key)) +
-        '<span class="clinical-conflict-key-muted">' +
-        escHtml(key) +
-        '</span></th>' +
-        '<td class="clinical-conflict-val--local">' +
-        escHtml(localVal) +
-        '</td>' +
-        '<td class="clinical-conflict-val--server' +
-        (serverMissing ? ' clinical-conflict-val--missing' : '') +
+        '<article class="clinical-conflict-field-card' +
+        (isConflict ? ' clinical-conflict-field-card--hot' : '') +
         '">' +
-        escHtml(serverVal) +
-        '</td>' +
-        '</tr>'
+        '<h4 class="clinical-conflict-field-title">' +
+        escHtml(formatFieldLabel(key)) +
+        '</h4>' +
+        (samePreview
+          ? '<p class="clinical-conflict-field-same">En este resumen se ve igual en tu borrador y en la sala; aun así el registro del host no coincide del todo (versión, metadatos u otro campo que aquí no mostramos).</p>'
+          : '<div class="clinical-conflict-compare">' +
+            '<div class="clinical-conflict-side clinical-conflict-side--local">' +
+            '<span class="clinical-conflict-side-label">Tu intento</span>' +
+            '<p>' +
+            escHtml(localVal) +
+            '</p></div>' +
+            '<div class="clinical-conflict-side clinical-conflict-side--server' +
+            (serverMissing ? ' clinical-conflict-side--missing' : '') +
+            '">' +
+            '<span class="clinical-conflict-side-label">En la sala</span>' +
+            '<p>' +
+            escHtml(serverVal) +
+            '</p></div></div>') +
+        '</article>'
       );
     })
     .join('');
 
-  return (
-    '<table class="clinical-conflict-diff">' +
-    '<thead><tr>' +
-    '<th scope="col">Campo</th>' +
-    '<th scope="col">Tu intento de guardado</th>' +
-    '<th scope="col">En la sala ahora</th>' +
-    '</tr></thead><tbody>' +
-    rows +
-    '</tbody></table>'
-  );
+  return {
+    keyCount: keys.length,
+    summaryHtml,
+    detailHtml: '<div class="clinical-conflict-diff-cards">' + cards + '</div>',
+  };
+}
+
+/**
+ * @param {{ conflictingKeys?: string[], localData?: Record<string, unknown>, serverData?: Record<string, unknown> }} opts
+ * @returns {string}
+ */
+export function buildConflictDiffHtml(opts) {
+  const parts = buildConflictDiffParts(opts);
+  return parts.summaryHtml + parts.detailHtml;
 }
 
 function closeClinicalConflictViewer() {
@@ -369,7 +531,14 @@ export function openClinicalConflictViewer(opts) {
   const contextHtml = buildConflictContextHtml(context);
   const actions = buildConflictActionCopy(context);
   const modalTitle = buildConflictModalTitle(context);
-  const diffHtml = buildConflictDiffHtml({ conflictingKeys, localData, serverData });
+  const diffParts = buildConflictDiffParts({ conflictingKeys, localData, serverData });
+  const detailBlock = diffParts.detailHtml
+    ? '<details class="clinical-conflict-details">' +
+      '<summary>Ver comparación por sección</summary>' +
+      '<div class="clinical-conflict-diff-wrap">' +
+      diffParts.detailHtml +
+      '</div></details>'
+    : '';
   const backdrop = document.createElement('div');
   backdrop.className = 'lab-conflict-backdrop clinical-conflict-backdrop';
   backdrop.id = BACKDROP_ID;
@@ -387,10 +556,7 @@ export function openClinicalConflictViewer(opts) {
     '</p>' +
     '</div></header>' +
     contextHtml +
-    '<p class="clinical-conflict-diff-intro">Detalle del choque (si aplica):</p>' +
-    '<div class="clinical-conflict-diff-wrap">' +
-    diffHtml +
-    '</div>' +
+    diffParts.summaryHtml +
     '<div class="lab-conflict-actions clinical-conflict-actions">' +
     '<button type="button" class="btn-conflict-primary" id="clinical-conflict-use-server">' +
     escHtml(actions.primaryTitle) +
@@ -403,7 +569,9 @@ export function openClinicalConflictViewer(opts) {
     escHtml(actions.secondaryHint) +
     '</span></button>' +
     '<button type="button" class="btn-conflict-cancel" id="clinical-conflict-close">Cerrar sin decidir</button>' +
-    '</div></div>';
+    '</div>' +
+    detailBlock +
+    '</div>';
 
   document.body.appendChild(backdrop);
 

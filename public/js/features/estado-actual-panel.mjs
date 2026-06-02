@@ -1743,7 +1743,7 @@ export function renderEstadoActualPanel(opts) {
 
   mount.innerHTML =
     '<div class="estado-actual-panel">' +
-    '<header class="ea-panel-header ea-card">' +
+    '<header class="ea-panel-header">' +
     '<div class="ea-action-bar">' +
     '<button type="button" class="ea-btn" onclick="estadoActualCopiar()">Copiar</button>' +
     '<button type="button" class="ea-btn ea-btn--primary" onclick="estadoActualGuardarCopiar()">Guardar y copiar</button>' +

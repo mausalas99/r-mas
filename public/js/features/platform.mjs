@@ -9,6 +9,7 @@ import {
   initStableDowngradeSettings,
   openSettingsDowngradeSection,
 } from '../stable-downgrade-ui.mjs';
+import { fetchMinVersionPayload } from '../min-version-fetch.mjs';
 import { setAsyncButtonLoading } from '../ui-motion.mjs';
 import { applyMedCatalogOverlay } from '../med-receta-core.mjs';
 import { applySomePharmCatalogOverlay } from '../med-pharm-some-catalog.mjs';
@@ -1772,7 +1773,6 @@ function onSyncBundleFileChosen(ev) {
 // ── Auto-updater UI (modal) ───────────────────────────────────────
 var UPDATE_SNOOZE_KEY = 'rplus-update-snooze-until';
 var UPDATE_DISMISS_VER_KEY = 'rplus-update-dismiss-version';
-var MIN_VERSION_URL = 'https://raw.githubusercontent.com/mausalas99/r-mas/main/min-version.json';
 var UPDATE_TELEMETRY_URL = 'https://example.invalid/r-plus-update';
 var RELEASES_LATEST_URL = 'https://github.com/mausalas99/r-mas/releases/latest';
 var pendingUpdaterTargetVersion = null;
@@ -2001,15 +2001,9 @@ function checkMinVersionGate() {
   var currentVersionPromise = (window.electronAPI && typeof window.electronAPI.getAppVersion === 'function')
     ? window.electronAPI.getAppVersion().catch(function () { return null; })
     : Promise.resolve(null);
-  var payloadPromise;
-  try {
-    payloadPromise = fetch(MIN_VERSION_URL, { cache: 'no-store' }).then(function (r) {
-      if (!r || !r.ok) throw new Error('bad response');
-      return r.json();
-    }).catch(function () { return null; });
-  } catch (_e) {
-    payloadPromise = Promise.resolve(null);
-  }
+  var payloadPromise = fetchMinVersionPayload().catch(function () {
+    return null;
+  });
   Promise.all([currentVersionPromise, payloadPromise]).then(function (res) {
     var currentVersion = res[0];
     var payload = res[1];

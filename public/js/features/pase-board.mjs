@@ -87,6 +87,23 @@ export function invalidateInnerTabRenderCache(tab) {
   innerTabRenderCache = Object.create(null);
 }
 
+function granularMountIsEmpty(tab) {
+  if (tab === "estadoActual") {
+    var ea = document.getElementById("exp-pane-estado-actual");
+    return !!ea && !ea.querySelector(".estado-actual-panel");
+  }
+  if (tab === "eventualidades") {
+    var ev = document.getElementById("exp-pane-eventualidades");
+    return !!ev && !ev.querySelector(".ev-panel");
+  }
+  if (tab === "todo") {
+    var tf = document.getElementById("todo-form");
+    if (!tf) return true;
+    return !tf.querySelector(".todo-add-row") && !tf.querySelector(".todo-list");
+  }
+  return false;
+}
+
 function estadoActualCacheSuffix(patientId) {
   var p = patients.find(function (x) {
     return String(x.id) === String(patientId);
@@ -412,22 +429,7 @@ function findPaseLatestLabSend(patientId) {
       return String(x || "").trim();
     });
     if (!labChunks.length) continue;
-    var rawFe =
-      set.fecha === "Anterior"
-        ? ""
-        : normalizeFechaLabHistory(set.fecha) ||
-          String(set.fecha || "").trim() ||
-          inferFechaLabSetFromId(set) ||
-          "";
-    var fe =
-      set.id === "migrated-anterior"
-        ? rawFe
-          ? "Anterior · " + rawFe
-          : "Anterior"
-        : rawFe || (set.fecha === "Anterior" ? "Anterior" : "—");
-    var ho =
-      set.hora && String(set.hora).trim() ? String(set.hora).trim().slice(0, 8) : "";
-    var meta = ho ? fe + " · " + ho : fe;
+    var meta = rt.formatLabHistoryListMeta(set);
     return { meta: meta, labChunks: labChunks };
   }
   return null;
@@ -1189,6 +1191,10 @@ export function switchInnerTab(tab, opts) {
       if (pane) pane.classList.toggle("active", tab === t);
     });
   }
+  if (granularMountIsEmpty(tab)) {
+    opts.forceRender = true;
+    invalidateInnerTabRenderCache(tab);
+  }
   var needsContentRender =
     (prevInner !== tab || opts.forceRender) &&
     (opts.forceRender || !isInnerTabContentFresh(tab, settings));
@@ -1210,6 +1216,13 @@ export function switchInnerTab(tab, opts) {
     });
   } else if (prevInner !== tab && consolidated) {
     syncExpedienteSegmentIndicators(settings, tab);
+  } else if (granularMountIsEmpty(tab)) {
+    scheduleAfterPaint(function () {
+      if (migrateGranularInner(rt.getActiveInner() || "todo", settings) !== tab) return;
+      invalidateInnerTabRenderCache(tab);
+      renderGranularInnerTab(tab, { force: true });
+      if (consolidated) syncExpedienteSegmentIndicators(settings, tab);
+    });
   }
   if (prevInner !== tab && isModeSala(settings) && (tab === "estadoActual" || tab === "tend")) {
     warmExpedienteHeavyTabs();

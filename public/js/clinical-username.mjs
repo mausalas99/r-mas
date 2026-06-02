@@ -2,7 +2,10 @@
 const USERNAME_RE = /^[a-z][a-z0-9_]{2,31}$/;
 
 export function normalizeUsername(raw) {
-  return String(raw || '').trim().toLowerCase();
+  return String(raw || '')
+    .trim()
+    .replace(/^@+/, '')
+    .toLowerCase();
 }
 
 export function isValidUsernameFormat(raw) {

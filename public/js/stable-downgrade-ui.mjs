@@ -5,8 +5,7 @@ import {
   buildManualInstallerUrl,
 } from '../../lib/update-downgrade.mjs';
 
-const MIN_VERSION_URL =
-  'https://raw.githubusercontent.com/mausalas99/r-mas/main/min-version.json';
+import { fetchMinVersionPayload } from './min-version-fetch.mjs';
 
 const RELEASES_PAGE = 'https://github.com/mausalas99/r-mas/releases';
 
@@ -145,15 +144,8 @@ export async function fetchStableVersionsCatalog() {
 }
 
 export async function fetchMinVersion() {
-  if (typeof fetch !== 'function') return null;
-  try {
-    const res = await fetch(MIN_VERSION_URL, { cache: 'no-store' });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data && data.minVersion ? String(data.minVersion) : null;
-  } catch (_e) {
-    return null;
-  }
+  const data = await fetchMinVersionPayload();
+  return data?.minVersion ? String(data.minVersion) : null;
 }
 
 function openExternal(url) {

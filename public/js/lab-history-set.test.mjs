@@ -23,7 +23,11 @@ globalThis.window = {
 };
 
 const appState = await import('./app-state.mjs');
-const { ensureParsedLabHistory, rebuildEstudiosFromLabHistory } = await import('./lab-history-set.mjs');
+const {
+  ensureParsedLabHistory,
+  rebuildEstudiosFromLabHistory,
+  labSetIsFromSome,
+} = await import('./lab-history-set.mjs');
 
 const PATIENT_ID = 'lab-loop-patient';
 const SOURCE_TEXT =
@@ -84,5 +88,16 @@ describe('lab-history-set', () => {
     });
     ensureParsedLabHistory(PATIENT_ID, { readOnly: true });
     assert.equal(saveCount, 0);
+  });
+
+  it('labSetIsFromSome detecta informe SOME por sourceText', () => {
+    assert.equal(
+      labSetIsFromSome({ sourceText: SOURCE_TEXT, resLabs: [] }),
+      true,
+    );
+    assert.equal(
+      labSetIsFromSome({ sourceText: '02/06\nBH Hb 8.95*', resLabs: [] }),
+      false,
+    );
   });
 });

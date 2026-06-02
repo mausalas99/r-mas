@@ -6,6 +6,29 @@ export function parseWsPayload(s) {
   }
 }
 
+/** Avoid "closed before connection is established" when replacing a CONNECTING socket. */
+function safeCloseWebSocket(ws) {
+  if (!ws) return;
+  try {
+    const state = ws.readyState;
+    if (state === WebSocket.CONNECTING) {
+      ws.onopen = () => {
+        try {
+          ws.close();
+        } catch (_e) {
+          /* ignore */
+        }
+      };
+      return;
+    }
+    if (state === WebSocket.OPEN) {
+      ws.close();
+    }
+  } catch (_e) {
+    /* ignore */
+  }
+}
+
 export class LanClient extends EventTarget {
   constructor() {
     super();
@@ -86,11 +109,7 @@ export class LanClient extends EventTarget {
 
   disconnectLiveChannel() {
     if (this._liveWs) {
-      try {
-        this._liveWs.close();
-      } catch (_e) {
-        /* ignore */
-      }
+      safeCloseWebSocket(this._liveWs);
       this._liveWs = null;
     }
     this._liveConnected = false;
@@ -100,11 +119,7 @@ export class LanClient extends EventTarget {
   disconnect() {
     this.disconnectLiveChannel();
     if (this._syncWs) {
-      try {
-        this._syncWs.close();
-      } catch (_e) {
-        /* ignore */
-      }
+      safeCloseWebSocket(this._syncWs);
       this._syncWs = null;
     }
     this._syncConnected = false;
@@ -123,11 +138,7 @@ export class LanClient extends EventTarget {
   _openChannelWs(channel, prop, kind) {
     const prev = this[prop];
     if (prev) {
-      try {
-        prev.close();
-      } catch (_e) {
-        /* ignore */
-      }
+      safeCloseWebSocket(prev);
     }
     const base = this.baseUrl().replace(/^http/, 'ws');
     const u = `${base}/api/lan/v1/ws?channel=${encodeURIComponent(channel)}`;

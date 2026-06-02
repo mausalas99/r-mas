@@ -478,6 +478,7 @@ html.dark .dcard svg text { fill: var(--diagram-label); }
   flex: 1;
   min-height: 0;
   overflow: auto;
+  padding: calc(4px * var(--density-space, 1)) calc(4px * var(--density-space, 1)) calc(12px * var(--density-space, 1));
 }
 
 /* Hallmark · unify · expediente sub-tabs · design.md Quiet workbench
@@ -615,6 +616,35 @@ html.tab-bar-indicators-ready html.dark .manejo-subtab[aria-selected='true'] {
 
 .exp-segment-panel.active {
   display: flex;
+}
+
+/* Paneles granulares montados dentro del composite (Estado actual, Eventualidades, Pendientes) */
+.exp-segment-panel.active > #exp-pane-estado-actual,
+.exp-segment-panel.active > #exp-pane-eventualidades,
+.exp-pendientes-mount > .exp-segment-panel.active {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.exp-pendientes-mount > .exp-segment-panel {
+  display: none;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.exp-pendientes-mount > .exp-segment-panel.active {
+  display: flex;
+}
+
+.exp-pendientes-mount > .exp-segment-panel.active > #todo-form {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Menos trabajo de layout en paneles ocultos del expediente */
@@ -1116,4 +1146,41 @@ html.dark .drive-import-lab-status--new {
   line-height: 1.45;
   resize: vertical;
   min-height: 4.5rem;
+}
+
+.drive-import-review-structured {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in oklab, var(--accent, #3b82f6) 35%, var(--border));
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--accent, #3b82f6) 8%, var(--surface, #fff));
+}
+
+.drive-import-structured-head {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text-muted, #5c6570);
+}
+
+.drive-import-structured-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.drive-import-structured-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+  background: var(--surface, #fff);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.drive-import-structured-label {
+  line-height: 1.3;
 }

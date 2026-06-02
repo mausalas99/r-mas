@@ -151,6 +151,8 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
   background: color-mix(in oklab, var(--surface) 82%, transparent);
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
   transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  overflow: hidden;
+  isolation: isolate;
 }
 .patient-card::before {
   content: '';
@@ -171,7 +173,9 @@ html.sidebar-auto-hide .btn-sidebar-auto-hide {
 .patient-card.active {
   background: color-mix(in oklab, var(--surface) 70%, var(--lab-chip-bg));
   border-color: color-mix(in oklab, var(--action) 38%, var(--border));
-  box-shadow: 0 4px 16px rgba(79, 86, 255, 0.1);
+  box-shadow:
+    0 4px 16px rgba(79, 86, 255, 0.1),
+    inset 0 0 0 1px color-mix(in oklab, var(--action) 22%, transparent);
 }
 .patient-card.active::before { background: var(--action); }
 html.dark .patient-card {
@@ -188,6 +192,8 @@ html.dark .patient-card.active {
   border-color: color-mix(in oklab, var(--action) 40%, var(--border));
 }
 .patient-card-toolbar {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;

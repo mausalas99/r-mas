@@ -1,3 +1,8 @@
+// Dev-only: Electron CSP warning (unsafe-eval from bundled renderer); packaged builds omit it.
+if (process.env.NODE_ENV !== 'production' && !process.env.ELECTRON_DISABLE_SECURITY_WARNINGS) {
+  process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
+}
+
 const { app, BrowserWindow, Menu, shell, dialog, ipcMain, clipboard, safeStorage } = require('electron');
 const fs = require('fs');
 const path = require('path');
