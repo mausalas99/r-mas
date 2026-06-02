@@ -589,9 +589,11 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
   );
 }
 
-.clinical-teams-modal {
-  width: min(96vw, 820px);
-  max-height: min(88dvh, calc(100vh - 24px));
+/* lab.css define .modal { width: 500px } después — hace falta mayor especificidad */
+#clinical-teams-backdrop .modal.clinical-teams-modal {
+  width: min(94vw, 960px);
+  max-width: none;
+  max-height: min(90dvh, calc(100vh - 24px));
   margin: auto;
   flex-shrink: 0;
   overflow: hidden;
@@ -604,6 +606,7 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
   border-radius: var(--radius-xl);
   border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
   box-shadow: var(--shadow-md);
+  animation: modal-in var(--dur-normal) var(--ease-out);
 }
 
 .clinical-teams-modal-head {
@@ -666,15 +669,73 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
   outline-offset: 2px;
 }
 
-.clinical-teams-panel-body {
+#clinical-teams-backdrop .clinical-teams-panel-body {
   overflow-y: auto;
   flex: 1;
   min-height: 8rem;
   display: flex;
   flex-direction: column;
-  gap: 1.75rem;
-  padding: 20px;
+  gap: 1.5rem;
+  padding: clamp(18px, 2.5vw, 28px);
   scrollbar-gutter: stable;
+}
+
+@media (min-width: 720px) {
+  #clinical-teams-backdrop .clinical-teams-panel-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: clamp(20px, 3vw, 28px);
+    row-gap: 1.25rem;
+    align-items: start;
+  }
+
+  #clinical-teams-backdrop .clinical-teams-panel-body > .clinical-teams-handle-hint,
+  #clinical-teams-backdrop .clinical-teams-panel-body > .clinical-teams-section--more {
+    grid-column: 1 / -1;
+  }
+
+  #clinical-teams-backdrop .clinical-teams-panel-body > .clinical-teams-section--joined {
+    grid-column: 1;
+  }
+
+  #clinical-teams-backdrop .clinical-teams-panel-body > .clinical-teams-section--directory {
+    grid-column: 2;
+  }
+}
+
+#clinical-teams-backdrop .clinical-teams-panel-body .clinical-teams-profile-panel .clinical-teams-create-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 20px;
+  row-gap: 12px;
+}
+
+#clinical-teams-backdrop
+  .clinical-teams-panel-body
+  .clinical-teams-profile-panel
+  .clinical-teams-create-form
+  .field-group {
+  margin-bottom: 0;
+}
+
+#clinical-teams-backdrop
+  .clinical-teams-panel-body
+  .clinical-teams-profile-panel
+  .clinical-teams-profile-save,
+#clinical-teams-backdrop
+  .clinical-teams-panel-body
+  .clinical-teams-profile-panel
+  .clinical-teams-legacy-banner {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 719px) {
+  #clinical-teams-backdrop
+    .clinical-teams-panel-body
+    .clinical-teams-profile-panel
+    .clinical-teams-create-form {
+    grid-template-columns: 1fr;
+  }
 }
 
 .clinical-teams-lead {
@@ -1153,7 +1214,7 @@ html.dark .clinical-teams-profile-panel {
   background: color-mix(in oklab, var(--surface) 96%, #0f172a);
 }
 
-html.dark .clinical-teams-modal {
+html.dark #clinical-teams-backdrop .modal.clinical-teams-modal {
   border-color: color-mix(in oklab, var(--border) 120%, transparent);
 }
 
