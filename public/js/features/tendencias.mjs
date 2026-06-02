@@ -420,6 +420,15 @@ function isGasoInterpretacionResLabChunk(text) {
   return /^INTERPRETACI[ÓO]N\s+GASOMETR[IÍ]A\s*:/i.test(head);
 }
 
+function isAscitisInterpretacionResLabChunk(text) {
+  var head = String(text || '').split('\n')[0].trim();
+  return /^INTERPRETACI[ÓO]N\s+ASCITIS\s*:/i.test(head);
+}
+
+function ascitisInterpretacionBody_(text) {
+  return String(text || '').replace(/^INTERPRETACI[ÓO]N\s+ASCITIS\s*:\t?/i, '').trim();
+}
+
 function isBhMainResLabChunk(text) {
   if (!text) return false;
   var head = String(text).split('\n')[0].trim();
@@ -2099,6 +2108,8 @@ export {
   getLabOutputPrefs,
   setLabOutputPrefs,
   isGasoInterpretacionResLabChunk,
+  isAscitisInterpretacionResLabChunk,
+  ascitisInterpretacionBody_,
   isBhMainResLabChunk,
   formatBhExtendedTabLine,
   openLabDisplayPrefsModal,

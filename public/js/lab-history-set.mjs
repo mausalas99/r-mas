@@ -7,6 +7,7 @@ import {
   extractLabReportHora,
   reprocessLabResultLines_,
   isParsedCultivoHeaderLine,
+  isAscitisInterpretacionResLabChunk,
 } from './labs.js';
 import {
   findExactDuplicateLabGroups,
@@ -232,7 +233,7 @@ export function rebuildEstudiosFromLabHistory(patientId) {
       var sp = splitResLabsByTipo(set.resLabs);
       sp.labs.forEach(function (row) {
         var clean = String(row == null ? '' : row).trim();
-        if (!clean) return;
+        if (!clean || isAscitisInterpretacionResLabChunk(clean)) return;
         var norm = normalizeLabLine(clean);
         if (seenLab[norm]) return;
         seenLab[norm] = true;

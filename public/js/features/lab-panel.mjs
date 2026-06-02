@@ -103,6 +103,12 @@ let rt = {
   isGasoInterpretacionResLabChunk() {
     return false;
   },
+  isAscitisInterpretacionResLabChunk() {
+    return false;
+  },
+  ascitisInterpretacionBody_(text) {
+    return String(text || '');
+  },
   formatBhExtendedTabLine() {
     return "";
   },
@@ -1077,6 +1083,7 @@ function buildLabLines() {
   var bhExtDone = false;
   activeLab.resLabs.forEach(function(entry) {
     if (prefs.hideGasoAdvInterp && rt.isGasoInterpretacionResLabChunk(entry)) return;
+    if (rt.isAscitisInterpretacionResLabChunk(entry)) return;
     entry.split(/\r?\n/).forEach(function(subline) {
       var cleaned = subline.replace(/\t/g, ' ').replace(/  +/g, ' ').trim();
       if (cleaned) lines.push(cleaned);
@@ -1535,6 +1542,7 @@ function finalizeBulkLabPaste(text, blocks, totalOkReports) {
   }
 
   renderOutput(displayResult);
+  toastAscitisAlertsFromResult(displayResult);
   rt.renderDiagramas(displayResult.resLabs);
 
   var multi = blocks.length > 1 || totalOkReports > 1 || processable.length > 1;
@@ -1639,6 +1647,15 @@ function procesarReporte() {
   }
 }
 
+function toastAscitisAlertsFromResult(result) {
+  if (!result || !result.resLabs || !result.resLabs.length) return;
+  result.resLabs.forEach(function (chunk) {
+    if (!rt.isAscitisInterpretacionResLabChunk(chunk)) return;
+    var msg = rt.ascitisInterpretacionBody_(chunk);
+    if (msg) rt.showToast(msg, 'warn');
+  });
+}
+
 function renderOutput(result) {
   var patient = result.patient, resLabs = result.resLabs;
   activeLab = result;
@@ -1676,6 +1693,14 @@ function renderOutput(result) {
   var labDisp = rt.getLabOutputPrefs();
   resLabs.forEach(function (text) {
     if (labDisp.hideGasoAdvInterp && rt.isGasoInterpretacionResLabChunk(text)) return;
+    if (rt.isAscitisInterpretacionResLabChunk(text)) {
+      var alertDiv = document.createElement('div');
+      alertDiv.className = 'lab-out-ascitis-alert out-line';
+      alertDiv.setAttribute('role', 'status');
+      alertDiv.textContent = rt.ascitisInterpretacionBody_(text);
+      box.appendChild(alertDiv);
+      return;
+    }
     if (rt.isResLabChunkPureCultivo(text)) {
       var wrap = document.createElement('div');
       wrap.className = 'lab-out-cultivo-chunk';

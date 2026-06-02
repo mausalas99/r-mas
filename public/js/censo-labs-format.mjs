@@ -1,6 +1,6 @@
 import { sortLabHistoryChronological } from './tend-core.mjs';
 import { splitResLabsByTipo } from './censo-cultivo-format.mjs';
-import { formatBhExtrasDisplayLine } from './labs.js';
+import { formatBhExtrasDisplayLine, isAscitisInterpretacionResLabChunk } from './labs.js';
 
 var PANEL_ORDER = ['BH', 'QS', 'ELECTROLITOS', 'PFHs', 'GASES', 'COAG', 'ORINA', 'OTRO'];
 
@@ -147,6 +147,7 @@ export function formatLabsForCensoCompact(sets) {
   if (hasLabChunks) {
     var bhExtDone = false;
     sp.labs.forEach(function (chunk) {
+      if (isAscitisInterpretacionResLabChunk(chunk)) return;
       pushLabTextLines(lines, chunk);
       if (!bhExtDone && set.bhExtras && typeof set.bhExtras === 'object') {
         var ext = formatBhExtrasDisplayLine(set.bhExtras, set.sourceText);
