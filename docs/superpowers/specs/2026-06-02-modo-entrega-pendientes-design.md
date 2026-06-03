@@ -1,7 +1,7 @@
 # Modo Entrega — Pendientes estructurados y flujo a guardia / internos
 
 **Date:** 2026-06-02  
-**Status:** Draft (pending user review)  
+**Status:** Approved  
 **Dependencies:** [2026-05-31-clinical-teams-handoff-v2-design.md](./2026-05-31-clinical-teams-handoff-v2-design.md), [2026-06-01-sala-guardia-v3-design.md](./2026-06-01-sala-guardia-v3-design.md), [2026-06-02-interno-guardia-mobile-design.md](./2026-06-02-interno-guardia-mobile-design.md)  
 **Amends:** Interno board pendientes behavior; `active_guardias.pendientes_json` shape
 
