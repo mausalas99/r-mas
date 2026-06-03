@@ -217,10 +217,19 @@ async function handleUsernameStepSubmit(ev) {
   await refreshClinicalUserProfile();
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
 
-  const { flushClinicalProfileToLan, LAN_PROFILE_PUSH_FAILED_MSG, isBenignLanPushSkipCode } =
-    await import('../clinical-profile-lan-sync.mjs');
+  const {
+    flushClinicalProfileToLan,
+    LAN_PROFILE_PUSH_FAILED_MSG,
+    isBenignLanPushSkipCode,
+    notifyLanProfilePushResult,
+  } = await import('../clinical-profile-lan-sync.mjs');
   const lanPush = await flushClinicalProfileToLan();
-  if (!lanPush.ok && !isBenignLanPushSkipCode(lanPush.code)) {
+  notifyLanProfilePushResult(lanPush, toast);
+  if (
+    !lanPush.ok &&
+    !isBenignLanPushSkipCode(lanPush.code) &&
+    !(lanPush.channels && lanPush.channels.outbox)
+  ) {
     toast(LAN_PROFILE_PUSH_FAILED_MSG, 'warning');
   } else if (lanPush.ok && needsClaim) {
     toast('Perfil guardado y @usuario publicado en la sala ⇄.', 'success');

@@ -82,6 +82,31 @@ function createLanRouter({ store, broadcast, resolver }) {
     res.json({ bundle });
   });
 
+  r.get('/rooms/:id/clinical-ops', (req, res) => {
+    const bundle = store.getRoomSyncBundle(req.params.id);
+    if (!bundle) return res.status(404).json({ error: 'no bundle' });
+    const snapshot =
+      bundle.clinicalOps && typeof bundle.clinicalOps === 'object' ? bundle.clinicalOps : null;
+    res.json({ snapshot, revision: Number(bundle.revision || 0) });
+  });
+
+  r.put('/rooms/:id/clinical-ops', express.json({ limit: '1mb' }), async (req, res) => {
+    try {
+      const out = await store.putRoomClinicalOps(req.params.id, req.body || {});
+      res.json(out);
+    } catch (e) {
+      if (e.code === 'CONFLICT') {
+        return res.status(409).json({
+          error: 'conflict',
+          snapshot: e.serverSnapshot,
+          revision: e.revision,
+          conflicts: e.conflicts || [],
+        });
+      }
+      res.status(400).json({ error: e.message });
+    }
+  });
+
   r.get('/patients/:patientId/historia-clinica', (req, res) => {
     const roomId = String(req.query.roomId || '').trim();
     if (!roomId) return res.status(400).json({ error: 'roomId_required' });
