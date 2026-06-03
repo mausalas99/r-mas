@@ -4,10 +4,15 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const lanSyncSrc = readFileSync(
-  join(dirname(fileURLToPath(import.meta.url)), 'lan-sync.mjs'),
-  'utf8'
-);
+const jsDir = join(dirname(fileURLToPath(import.meta.url)), '..');
+const lanSyncSrc = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'lan-sync.mjs'), 'utf8');
+const lanSyncRoomSrc = readFileSync(join(jsDir, 'lan-sync-room.mjs'), 'utf8');
+const lanSyncTransportSrc = readFileSync(join(jsDir, 'lan-sync-transport.mjs'), 'utf8');
+const lanSyncPanelSrc = readFileSync(join(jsDir, 'lan-sync-panel.mjs'), 'utf8');
+const lanSyncFeatureSrc =
+  lanSyncSrc + '\n' + lanSyncRoomSrc + '\n' + lanSyncTransportSrc + '\n' + lanSyncPanelSrc;
+const lanSyncPushSrc = readFileSync(join(jsDir, 'lan-sync-push.mjs'), 'utf8');
+const lanSyncPushAndFeatureSrc = lanSyncFeatureSrc + '\n' + lanSyncPushSrc;
 const clinicalOpsLanSrc = readFileSync(
   join(dirname(fileURLToPath(import.meta.url)), '../clinical-ops-lan.mjs'),
   'utf8'
@@ -19,17 +24,17 @@ describe('lan-sync clinical ops', () => {
   });
 
   it('refreshes clinical ops before building LiveSync bundles', () => {
-    assert.match(lanSyncSrc, /async function buildLiveSyncBundleEnvelope/);
-    assert.match(lanSyncSrc, /await prepareClinicalOpsForLanSync\(\)/);
+    assert.match(lanSyncRoomSrc, /async function buildLiveSyncBundleEnvelope/);
+    assert.match(lanSyncRoomSrc, /await prepareClinicalOpsForLanSync\(\)/);
   });
 
   it('includes local clinicalOps when merging peer bundles', () => {
-    assert.match(lanSyncSrc, /function buildLiveSyncLocalMergeSource/);
-    assert.match(lanSyncSrc, /buildLiveSyncLocalMergeSource\(\)/);
+    assert.match(lanSyncFeatureSrc, /function buildLiveSyncLocalMergeSource/);
+    assert.match(lanSyncFeatureSrc, /buildLiveSyncLocalMergeSource\(\)/);
   });
 
   it('pushes clinical ops after joining a room', () => {
-    assert.match(lanSyncSrc, /syncLiveSyncAfterRoomJoin[\s\S]*scheduleLiveSyncPush\(\)/);
+    assert.match(lanSyncRoomSrc, /syncLiveSyncAfterRoomJoin[\s\S]*scheduleLiveSyncPush\(\)/);
   });
 
   it('shows toast when clinical ops merge fails', () => {
@@ -37,49 +42,56 @@ describe('lan-sync clinical ops', () => {
   });
 
   it('exports immediate clinical ops push after @usuario registration', () => {
-    assert.match(lanSyncSrc, /export async function pushClinicalOpsLanNow/);
+    assert.match(lanSyncPushSrc, /export async function pushClinicalOpsLanNow/);
+    assert.match(lanSyncSrc, /pushClinicalOpsLanNow/);
   });
 
   it('always attaches fresh clinicalOps on immediate profile push', () => {
-    assert.match(lanSyncSrc, /envelope\.clinicalOps = snap/);
-    assert.doesNotMatch(lanSyncSrc, /if \(!liveSyncBundleHasPayload\(envelope\)\) \{\s*envelope\.clinicalOps = snap/);
+    assert.match(lanSyncPushSrc, /envelope\.clinicalOps = snap/);
+    assert.doesNotMatch(
+      lanSyncPushSrc,
+      /if \(!liveSyncBundleHasPayload\(envelope\)\) \{\s*envelope\.clinicalOps = snap/
+    );
   });
 
   it('directory refresh uses sticky room membership when active room is empty', () => {
-    assert.match(lanSyncSrc, /function ensureEffectiveLiveSyncRoomId/);
-    assert.match(lanSyncSrc, /refreshLanClinicalDirectoryFromRoom[\s\S]*ensureEffectiveLiveSyncRoomId/);
+    assert.match(lanSyncPushSrc, /export function ensureEffectiveLiveSyncRoomId/);
+    assert.match(lanSyncRoomSrc, /refreshLanClinicalDirectoryFromRoom[\s\S]*ensureEffectiveLiveSyncRoomId/);
   });
 
   it('mints a fresh LAN ticket when copying iPad or invite links', () => {
-    assert.match(lanSyncSrc, /ensureLanPairingForShare\(\{ forceNew: true \}\)/);
+    assert.match(lanSyncPanelSrc, /ensureLanPairingForShare\(\{ forceNew: true \}\)/);
   });
 
   it('does not reconnect live WS inside pushClinicalOpsLanNow', () => {
-    assert.match(lanSyncSrc, /function sendLiveBundleIfOpen/);
-    assert.match(lanSyncSrc, /pushedLive = sendLiveBundleIfOpen\(roomId, envelope\)/);
+    assert.match(lanSyncPushSrc, /export function sendLiveBundleIfOpen/);
+    assert.match(lanSyncPushSrc, /pushedLive = sendLiveBundleIfOpen\(roomId, envelope\)/);
     assert.doesNotMatch(
-      lanSyncSrc,
+      lanSyncPushAndFeatureSrc,
       /if \(lanClient\.liveConnected\)[\s\S]{0,120}connectLiveChannel\(roomId\)/
     );
   });
 
   it('returns structured channels from pushClinicalOpsLanNow', () => {
-    assert.match(lanSyncSrc, /function lanPushResult/);
-    assert.match(lanSyncSrc, /lanPushResult\(true, undefined, \{ http: !!okHttp, live: pushedLive \}\)/);
-    assert.match(lanSyncSrc, /\/clinical-ops/);
+    assert.match(lanSyncPushSrc, /export function lanPushResult/);
+    assert.match(
+      lanSyncPushSrc,
+      /lanPushResult\(true, undefined, \{ http: !!okHttp, live: pushedLive \}\)/
+    );
+    assert.match(lanSyncPushSrc, /\/clinical-ops/);
   });
 
   it('uses HTTP-primary debounced push without WS bundle', () => {
-    assert.match(lanSyncSrc, /HTTP sync-bundle is authoritative/);
+    assert.match(lanSyncPushSrc, /HTTP sync-bundle is authoritative/);
     assert.doesNotMatch(
-      lanSyncSrc,
+      lanSyncPushSrc,
       /scheduleLiveSyncPush[\s\S]{0,400}lanClient\.sendLive\(bundle\)/
     );
   });
 
   it('handles livesync revision hints from peers', () => {
-    assert.match(lanSyncSrc, /livesync:revision/);
-    assert.match(lanSyncSrc, /scheduleReconcileFromRevisionHint/);
+    assert.match(lanSyncPushAndFeatureSrc, /livesync:revision/);
+    assert.match(lanSyncPushAndFeatureSrc, /scheduleReconcileFromRevisionHint/);
   });
 });
 

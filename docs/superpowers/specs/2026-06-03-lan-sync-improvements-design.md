@@ -3,7 +3,7 @@
 > **For implementation:** Use **superpowers:executing-plans** (or subagent-driven-development) with the task-by-task plan below. Ship in phases; do not big-bang rewrite.
 
 **Date:** 2026-06-03  
-**Status:** Approved — **Phases 0–2 implemented** on `cursor/lan-sync-improvements-spec-4d31`; Phase 3 (module split, merge registry, host DB) pending. **Plan:** [`docs/superpowers/plans/2026-06-03-lan-sync-improvements.md`](../plans/2026-06-03-lan-sync-improvements.md).  
+**Status:** Approved — **Phases 0–3 implemented** (IM-01–IM-13). Phase 4 (IM-14–16) remains future specs only. **Plan:** [`docs/superpowers/plans/2026-06-03-lan-sync-improvements.md`](../plans/2026-06-03-lan-sync-improvements.md).  
 **Scope:** Reliability, UX, and maintainability of guardia LAN / LiveSync — **without** replacing hub-and-spoke topology or SQLCipher local-first model.
 
 ## Related work

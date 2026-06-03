@@ -64,7 +64,7 @@ docs/superpowers/     Specs and implementation plans (design before big features
 |-------|-------------------|
 | Clinical DB / schema | `lib/db/schema.mjs`, `lib/db/db-manager.mjs`, `lib/db/ipc-handlers.mjs` |
 | Roles / privileges | `lib/db/clinical-privileges.mjs`, `public/js/clinical-privileges.mjs` |
-| LAN sync / rooms | `lan-squad/`, `public/js/features/lan-sync.mjs`, `public/js/lan-client.mjs`; improvements spec `docs/superpowers/specs/2026-06-03-lan-sync-improvements-design.md` |
+| LAN sync / rooms | `lan-squad/`, `public/js/features/lan-sync.mjs` (facade), `lan-sync-{push,room,transport,panel,runtime}.mjs`, `lan-merge-registry.mjs`, `lan-sync-state.mjs`; host clinical ops DB in `host-store.js` |
 | Clinical teams / guardia | `public/js/features/clinical-teams.mjs`, `clinical-rotation.mjs` |
 | Modo entrega | `lib/entrega/`, `public/js/features/clinical-entrega.mjs`, `entrega-modal-ui.mjs` |
 | Interno mobile | `lib/interno/`, `public/interno/`, `server.js` interno routes |
@@ -112,8 +112,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
 - **2026-06-03** `lan-host-clinical-ops-db`: host PUT clinical-ops → SQLCipher when unlocked; bundle `clinicalOps` cache from DB export (IM-13a/b); `lan-squad/host-store.js`.
-- **2026-06-03** `lan-sync-improvements`: Phases 0–2 shipped — profile push WS fix, SQL outbox v9, clinical-ops route, sync FSM, HTTP-primary push, pin host, diagnostics; `lan-sync-state.mjs`, `lan-host-pin.mjs`, `lan-sync-diagnostics.mjs`, schema v9.
-- **2026-06-03** `lan-sync-improvements-spec`: design spec + plan (IM-11–16 pending); `docs/superpowers/specs/2026-06-03-lan-sync-improvements-design.md`.
+- **2026-06-03** `lan-sync-improvements`: Phases 0–3 — modular sync (`lan-sync-push/room/transport/panel`), merge registry, SQL outbox v9, host DB `clinicalOps`, pin/diagnostics; `docs/superpowers/specs/2026-06-03-lan-sync-improvements-design.md`.
 - **2026-06-03** `release-6.6.0`: @usuario sin ⇄ obligatorio; merges cloud (directorio LAN, iPad ticket, labs batch-copy); `clinical-profile-lan-sync.mjs`, `lab-history-batch-copy-modal.mjs`.
 - **2026-06-03** `release-6.5.9`: LAN directorio, fusión `clinical_users`, entrega/equipos; `pushClinicalOpsLanNow`.
 - **2026-06-03** `release-6.5.8`: interno móvil QR, entrega pendientes v2, downgrade a estable; `public/interno/`, `lib/interno/`, `lib/entrega/`, `lib/update-downgrade.mjs`, `stable-versions.json`.

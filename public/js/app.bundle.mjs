@@ -11104,6 +11104,160 @@ var init_lan_client = __esm({
   }
 });
 
+// public/js/lan-sync-runtime.mjs
+function getActiveLiveSyncRoomId() {
+  return activeLiveSyncRoomId;
+}
+function setActiveLiveSyncRoom(roomId, label) {
+  activeLiveSyncRoomId = String(roomId || "").trim();
+  if (label !== void 0) {
+    activeLiveSyncRoomLabel = String(label || "").trim();
+  }
+}
+function clearActiveLiveSyncRoom() {
+  activeLiveSyncRoomId = "";
+  activeLiveSyncRoomLabel = "";
+}
+function getLiveSyncPushTimer() {
+  return liveSyncPushTimer;
+}
+function setLiveSyncPushTimer(timer) {
+  liveSyncPushTimer = timer;
+}
+function getLiveSyncRevisionReconcileTimer() {
+  return liveSyncRevisionReconcileTimer;
+}
+function setLiveSyncRevisionReconcileTimer(timer) {
+  liveSyncRevisionReconcileTimer = timer;
+}
+function getLiveSyncOutboxFlushTimer() {
+  return liveSyncOutboxFlushTimer;
+}
+function setLiveSyncOutboxFlushTimer(timer) {
+  liveSyncOutboxFlushTimer = timer;
+}
+function getLanClientId2() {
+  try {
+    var id = localStorage.getItem("rpc-lan-client-id");
+    if (id && String(id).trim()) return String(id).trim();
+    var gen = "lc_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 10);
+    localStorage.setItem("rpc-lan-client-id", gen);
+    return gen;
+  } catch (_e) {
+    return "lc_anon";
+  }
+}
+var lanClient, activeLiveSyncRoomId, activeLiveSyncRoomLabel, liveSyncPushTimer, liveSyncRevisionReconcileTimer, liveSyncOutboxFlushTimer, LIVE_SYNC_PUSH_DEBOUNCE_MS, LIVE_SYNC_OUTBOX_FLUSH_MS;
+var init_lan_sync_runtime = __esm({
+  "public/js/lan-sync-runtime.mjs"() {
+    init_lan_client();
+    lanClient = new LanClient();
+    activeLiveSyncRoomId = "";
+    activeLiveSyncRoomLabel = "";
+    liveSyncPushTimer = null;
+    liveSyncRevisionReconcileTimer = null;
+    liveSyncOutboxFlushTimer = null;
+    LIVE_SYNC_PUSH_DEBOUNCE_MS = 900;
+    LIVE_SYNC_OUTBOX_FLUSH_MS = 6e4;
+  }
+});
+
+// public/js/live-sync-outbox.mjs
+function getApi() {
+  if (typeof window === "undefined") return null;
+  return window.rplusDb || window.electronAPI || null;
+}
+function readAll() {
+  try {
+    const raw = localStorage.getItem(OUTBOX_KEY);
+    if (!raw) return {};
+    const o = JSON.parse(raw);
+    return o && typeof o === "object" ? o : {};
+  } catch (_e) {
+    return {};
+  }
+}
+function writeAll(map) {
+  localStorage.setItem(OUTBOX_KEY, JSON.stringify(map));
+}
+function enqueueLocal(roomId, item) {
+  const rid = String(roomId || "").trim();
+  if (!rid || !item || !item.payload) return;
+  const all = readAll();
+  const list = Array.isArray(all[rid]) ? all[rid].slice() : [];
+  const kind = item.kind === "patch" ? "patch" : item.kind === "clinical_ops" ? "clinical_ops" : "bundle";
+  list.push({
+    kind,
+    payload: item.payload,
+    enqueuedAt: item.enqueuedAt || (/* @__PURE__ */ new Date()).toISOString()
+  });
+  while (list.length > MAX_ITEMS_PER_ROOM) list.shift();
+  all[rid] = list;
+  writeAll(all);
+}
+function drainLocal(roomId) {
+  const rid = String(roomId || "").trim();
+  if (!rid) return [];
+  const all = readAll();
+  const list = Array.isArray(all[rid]) ? all[rid].slice() : [];
+  delete all[rid];
+  writeAll(all);
+  return list;
+}
+function sizeLocal(roomId) {
+  const rid = String(roomId || "").trim();
+  if (!rid) return 0;
+  const all = readAll();
+  const list = all[rid];
+  return Array.isArray(list) ? list.length : 0;
+}
+function logIpcFallbackOnce() {
+  if (_ipcFallbackLogged) return;
+  _ipcFallbackLogged = true;
+  if (typeof console !== "undefined" && console.warn) {
+    console.warn("[lan-outbox] DB IPC unavailable; using localStorage fallback");
+  }
+}
+async function enqueueOutbox(roomId, item) {
+  const api3 = getApi();
+  if (api3?.dbLanOutboxEnqueue) {
+    return api3.dbLanOutboxEnqueue({
+      roomId,
+      kind: item.kind,
+      payload: item.payload
+    });
+  }
+  logIpcFallbackOnce();
+  enqueueLocal(roomId, item);
+}
+async function drainOutbox(roomId) {
+  const api3 = getApi();
+  if (api3?.dbLanOutboxDrain) {
+    const res = await api3.dbLanOutboxDrain({ roomId });
+    if (res?.ok && Array.isArray(res.items)) return res.items;
+    return [];
+  }
+  logIpcFallbackOnce();
+  return drainLocal(roomId);
+}
+async function outboxSize(roomId) {
+  const api3 = getApi();
+  if (api3?.dbLanOutboxCount) {
+    const res = await api3.dbLanOutboxCount({ roomId });
+    if (res?.ok && typeof res.count === "number") return res.count;
+    return 0;
+  }
+  return sizeLocal(roomId);
+}
+var OUTBOX_KEY, MAX_ITEMS_PER_ROOM, _ipcFallbackLogged;
+var init_live_sync_outbox = __esm({
+  "public/js/live-sync-outbox.mjs"() {
+    OUTBOX_KEY = "rpc-lan-sync-outbox";
+    MAX_ITEMS_PER_ROOM = 50;
+    _ipcFallbackLogged = false;
+  }
+});
+
 // public/js/live-sync-room.mjs
 function compareIso(a, b) {
   const x = String(a || "");
@@ -11115,7 +11269,7 @@ function compareIso(a, b) {
 function agendaEntityKey(id) {
   return "a:" + String(id || "");
 }
-function todoEntityKey(patientId, id) {
+function todoEntityKey2(patientId, id) {
   return "t:" + String(patientId || "") + ":" + String(id || "");
 }
 function patientEntityKey(id, registro) {
@@ -11182,7 +11336,7 @@ function mergeLiveSyncBundles(sources) {
   }
   function upsertTodo(patientId, item, deleted, entityVersion, updatedAt, src) {
     if (!item || !item.id || isDemoPatientId(patientId)) return;
-    const k = todoEntityKey(patientId, item.id);
+    const k = todoEntityKey2(patientId, item.id);
     const ver = entityVersion != null ? entityVersion : versionFromSource(src, k) ?? (item.version != null ? Number(item.version) : null);
     const at = String(updatedAt || item.updatedAt || item.createdAt || "");
     const cur = todos.get(k);
@@ -11245,7 +11399,7 @@ function mergeLiveSyncBundles(sources) {
       const pid = String(patch.patientId || "");
       if (pid) todoTouchedPatientIds.add(pid);
       if (patch.op === "delete") {
-        const k = todoEntityKey(pid, patch.id);
+        const k = todoEntityKey2(pid, patch.id);
         const cur = todos.get(k);
         if (shouldAcceptEntry(cur, patchVer, at)) {
           todos.set(k, {
@@ -11333,6 +11487,714 @@ function isLiveSyncEnvelope(msg) {
 }
 var init_live_sync_room = __esm({
   "public/js/live-sync-room.mjs"() {
+  }
+});
+
+// public/js/host-bundle-bases.mjs
+function readAll2() {
+  try {
+    const raw = localStorage.getItem(BASES_KEY);
+    if (!raw) return {};
+    const o = JSON.parse(raw);
+    return o && typeof o === "object" ? o : {};
+  } catch (_e) {
+    return {};
+  }
+}
+function writeAll2(map) {
+  localStorage.setItem(BASES_KEY, JSON.stringify(map));
+}
+function getHostBundleBases(roomId) {
+  const rid = String(roomId || "").trim();
+  if (!rid) return { revision: 0, entityVersions: {} };
+  const row = readAll2()[rid];
+  if (!row || typeof row !== "object") return { revision: 0, entityVersions: {} };
+  return {
+    revision: Number(row.revision || 0),
+    entityVersions: row.entityVersions && typeof row.entityVersions === "object" ? row.entityVersions : {}
+  };
+}
+function setHostBundleBases2(roomId, bundle) {
+  const rid = String(roomId || "").trim();
+  if (!rid || !bundle) return;
+  const all = readAll2();
+  all[rid] = {
+    revision: Number(bundle.revision || 0),
+    entityVersions: bundle.entityVersions && typeof bundle.entityVersions === "object" ? bundle.entityVersions : {}
+  };
+  writeAll2(all);
+}
+function collectKeysFromEnvelope(envelope) {
+  const keys = /* @__PURE__ */ new Set();
+  if (!envelope || typeof envelope !== "object") return keys;
+  const agenda = Array.isArray(envelope.agenda) ? envelope.agenda : [];
+  for (const ev of agenda) {
+    if (ev && ev.id) keys.add(agendaEntityKey(ev.id));
+  }
+  const todos = envelope.todos && typeof envelope.todos === "object" ? envelope.todos : {};
+  for (const pid of Object.keys(todos)) {
+    const arr = Array.isArray(todos[pid]) ? todos[pid] : [];
+    for (const t2 of arr) {
+      if (t2 && t2.id) keys.add(todoEntityKey2(pid, t2.id));
+    }
+  }
+  if (envelope.manejo && typeof envelope.manejo === "object") keys.add("manejo");
+  if (envelope.clinicalOps && typeof envelope.clinicalOps === "object") keys.add("clinicalOps");
+  return keys;
+}
+function buildBaseEntityVersionsForEnvelope(envelope, serverEntityVersions) {
+  const versions = serverEntityVersions || {};
+  const baseEntityVersions = {};
+  for (const key of collectKeysFromEnvelope(envelope)) {
+    baseEntityVersions[key] = versions[key] != null ? Number(versions[key]) : 0;
+  }
+  return baseEntityVersions;
+}
+function hostBundlePutBodyFromEnvelope(roomId, envelope) {
+  const bases = getHostBundleBases(roomId);
+  return {
+    baseRevision: bases.revision,
+    baseEntityVersions: buildBaseEntityVersionsForEnvelope(envelope, bases.entityVersions),
+    uploadedByClientId: envelope.clientId || "",
+    agenda: envelope.agenda || [],
+    todos: envelope.todos || {},
+    entries: envelope.entries || [],
+    manejo: envelope.manejo != null ? envelope.manejo : null,
+    clinicalOps: envelope.clinicalOps != null ? envelope.clinicalOps : null
+  };
+}
+var BASES_KEY;
+var init_host_bundle_bases = __esm({
+  "public/js/host-bundle-bases.mjs"() {
+    init_live_sync_room();
+    BASES_KEY = "rpc-lan-host-bundle-bases";
+  }
+});
+
+// public/js/manejo-custom-protocols.mjs
+function getProtocolOverridesMap() {
+  if (overridesCache) return overridesCache;
+  overridesCache = loadProtocolOverridesFromStorage();
+  return overridesCache;
+}
+function safeParseArray2(raw) {
+  try {
+    var parsed = JSON.parse(raw || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_e) {
+    return [];
+  }
+}
+function loadCustomProtocols() {
+  if (customProtocolsCache) return customProtocolsCache.slice();
+  try {
+    customProtocolsCache = safeParseArray2(localStorage.getItem(STORAGE_KEY));
+  } catch (_e2) {
+    customProtocolsCache = [];
+  }
+  return customProtocolsCache.slice();
+}
+function saveCustomProtocols(entries) {
+  customProtocolsCache = Array.isArray(entries) ? entries.slice() : [];
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(customProtocolsCache));
+  } catch (_e3) {
+  }
+}
+function addCustomProtocol(entry2) {
+  var list = loadCustomProtocols();
+  var id = "custom-" + Date.now();
+  list.push({
+    id,
+    category: entry2.category || "otros",
+    title: entry2.title || "Protocolo personalizado",
+    indicationText: entry2.indicationText || "",
+    calculatorId: null,
+    copyTemplate: entry2.copyTemplate || entry2.indicationText || "",
+    notes: entry2.notes || [],
+    linkedPathologyIds: entry2.linkedPathologyIds || [],
+    isCustom: true
+  });
+  saveCustomProtocols(list);
+  return id;
+}
+function updateCustomProtocol(id, patch) {
+  var list = loadCustomProtocols();
+  var idx = list.findIndex(function(p) {
+    return p.id === id;
+  });
+  if (idx < 0) return false;
+  list[idx] = Object.assign({}, list[idx], patch, { id, isCustom: true });
+  saveCustomProtocols(list);
+  return true;
+}
+function deleteCustomProtocol(id) {
+  var list = loadCustomProtocols().filter(function(p) {
+    return p.id !== id;
+  });
+  saveCustomProtocols(list);
+}
+function safeParseObject2(raw) {
+  try {
+    var parsed = JSON.parse(raw || "{}");
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch (_e4) {
+    return {};
+  }
+}
+function loadProtocolOverridesFromStorage() {
+  try {
+    return safeParseObject2(localStorage.getItem(OVERRIDES_KEY));
+  } catch (_e5) {
+    return {};
+  }
+}
+function loadProtocolOverrides() {
+  var cached = getProtocolOverridesMap();
+  return Object.assign({}, cached);
+}
+function saveProtocolOverride(id, patch) {
+  if (!id) return;
+  var all = getProtocolOverridesMap();
+  all[id] = Object.assign({}, all[id] || {}, patch, { id });
+  try {
+    localStorage.setItem(OVERRIDES_KEY, JSON.stringify(all));
+  } catch (_e6) {
+  }
+}
+function removeProtocolOverride(id) {
+  if (!id) return;
+  var all = getProtocolOverridesMap();
+  delete all[id];
+  try {
+    localStorage.setItem(OVERRIDES_KEY, JSON.stringify(all));
+  } catch (_e7) {
+  }
+}
+function applyEntryOverrides(entry2) {
+  if (!entry2 || entry2.isCustom) return entry2;
+  var o = getProtocolOverridesMap()[entry2.id];
+  if (!o) return entry2;
+  return Object.assign({}, entry2, o);
+}
+function hasProtocolOverride(id) {
+  return !!getProtocolOverridesMap()[id];
+}
+var STORAGE_KEY, OVERRIDES_KEY, overridesCache, customProtocolsCache;
+var init_manejo_custom_protocols = __esm({
+  "public/js/manejo-custom-protocols.mjs"() {
+    STORAGE_KEY = "rpc-manejo-custom-protocols";
+    OVERRIDES_KEY = "rpc-manejo-protocol-overrides";
+    overridesCache = null;
+    customProtocolsCache = null;
+  }
+});
+
+// public/js/manejo-protocol-favorites.mjs
+function safeParseArray3(raw) {
+  try {
+    var parsed = JSON.parse(raw || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_e) {
+    return [];
+  }
+}
+function getFavoritesSet() {
+  if (favoritesCache) return favoritesCache;
+  favoritesCache = new Set(loadProtoFavoritesFromStorage());
+  return favoritesCache;
+}
+function loadProtoFavoritesFromStorage() {
+  try {
+    return safeParseArray3(localStorage.getItem(FAV_KEY));
+  } catch (_e2) {
+    return [];
+  }
+}
+function loadProtoFavorites() {
+  return Array.from(getFavoritesSet());
+}
+function saveProtoFavorites(ids) {
+  favoritesCache = new Set(ids || []);
+  try {
+    localStorage.setItem(FAV_KEY, JSON.stringify(Array.from(favoritesCache)));
+  } catch (_e3) {
+  }
+}
+function isProtoFavorite(id) {
+  if (!id) return false;
+  return getFavoritesSet().has(id);
+}
+function toggleProtoFavorite(id) {
+  if (!id) return false;
+  var set = getFavoritesSet();
+  if (set.has(id)) {
+    set.delete(id);
+    saveProtoFavorites(Array.from(set));
+    return false;
+  }
+  var list = [id].concat(Array.from(set));
+  saveProtoFavorites(list);
+  return true;
+}
+function loadProtoRecentIds() {
+  try {
+    return safeParseArray3(localStorage.getItem(RECENT_KEY));
+  } catch (_e4) {
+    return [];
+  }
+}
+var FAV_KEY, RECENT_KEY, favoritesCache;
+var init_manejo_protocol_favorites = __esm({
+  "public/js/manejo-protocol-favorites.mjs"() {
+    FAV_KEY = "rpc-manejo-protocol-favorites";
+    RECENT_KEY = "rpc-manejo-protocol-recent";
+    favoritesCache = null;
+  }
+});
+
+// public/js/manejo-room-data.mjs
+function cloneManejoBlock(block) {
+  if (!block || typeof block !== "object") return null;
+  return {
+    customProtocols: Array.isArray(block.customProtocols) ? block.customProtocols.map((p) => ({ ...p })) : [],
+    overrides: block.overrides && typeof block.overrides === "object" ? { ...block.overrides } : {},
+    favorites: Array.isArray(block.favorites) ? block.favorites.slice() : [],
+    recent: Array.isArray(block.recent) ? block.recent.slice() : [],
+    updatedAt: String(block.updatedAt || "")
+  };
+}
+function isLanManejoRoomSyncEnabled() {
+  return !isManejoTabGloballyHidden();
+}
+function collectManejoRoomPayload() {
+  if (!isLanManejoRoomSyncEnabled()) return null;
+  return {
+    customProtocols: loadCustomProtocols(),
+    overrides: loadProtocolOverrides(),
+    favorites: loadProtoFavorites(),
+    recent: loadProtoRecentIds(),
+    updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+function protocolUpdatedAt(p) {
+  return String(p && p.updatedAt || "");
+}
+function mergeProtocolLists(aList, bList) {
+  const map = /* @__PURE__ */ new Map();
+  for (const arr of [aList, bList]) {
+    for (const p of arr || []) {
+      if (!p || !p.id) continue;
+      const id = String(p.id);
+      const cur = map.get(id);
+      if (!cur || compareIso(protocolUpdatedAt(p), protocolUpdatedAt(cur)) >= 0) {
+        map.set(id, { ...p });
+      }
+    }
+  }
+  return Array.from(map.values());
+}
+function mergeOverrides(a, b) {
+  const out = {};
+  const keys = /* @__PURE__ */ new Set([...Object.keys(a || {}), ...Object.keys(b || {})]);
+  for (const k of keys) {
+    const av = a && a[k];
+    const bv = b && b[k];
+    if (!av) {
+      out[k] = bv ? { ...bv } : void 0;
+      continue;
+    }
+    if (!bv) {
+      out[k] = { ...av };
+      continue;
+    }
+    const at = String(av.updatedAt || "");
+    const bt = String(bv.updatedAt || "");
+    out[k] = compareIso(bt, at) >= 0 ? { ...bv } : { ...av };
+  }
+  return out;
+}
+function mergeIdLists(aList, bList) {
+  const seen = /* @__PURE__ */ new Set();
+  const out = [];
+  for (const arr of [aList, bList]) {
+    for (const id of arr || []) {
+      const s = String(id || "").trim();
+      if (!s || seen.has(s)) continue;
+      seen.add(s);
+      out.push(s);
+    }
+  }
+  return out;
+}
+function mergeManejoRoomData(a, b) {
+  if (!a && !b) return null;
+  if (!a) return cloneManejoBlock(b);
+  if (!b) return cloneManejoBlock(a);
+  const ca = cloneManejoBlock(a);
+  const cb = cloneManejoBlock(b);
+  const at = ca.updatedAt;
+  const bt = cb.updatedAt;
+  const newerFirst = compareIso(bt, at) >= 0;
+  const first = newerFirst ? cb : ca;
+  const second = newerFirst ? ca : cb;
+  return {
+    customProtocols: mergeProtocolLists(first.customProtocols, second.customProtocols),
+    overrides: mergeOverrides(first.overrides, second.overrides),
+    favorites: mergeIdLists(first.favorites, second.favorites),
+    recent: mergeIdLists(first.recent, second.recent),
+    updatedAt: compareIso(bt, at) >= 0 ? bt : at
+  };
+}
+function applyManejoRoomDataToLocal(merged) {
+  if (!isLanManejoRoomSyncEnabled()) return;
+  if (!merged || typeof merged !== "object") return;
+  if (Array.isArray(merged.customProtocols)) {
+    saveCustomProtocols(merged.customProtocols);
+  }
+  if (merged.overrides && typeof merged.overrides === "object") {
+    try {
+      localStorage.setItem(OVERRIDES_KEY2, JSON.stringify(merged.overrides));
+    } catch (_e) {
+    }
+  }
+  if (Array.isArray(merged.favorites)) {
+    try {
+      localStorage.setItem(FAV_KEY2, JSON.stringify(merged.favorites));
+    } catch (_e2) {
+    }
+  }
+  if (Array.isArray(merged.recent)) {
+    try {
+      localStorage.setItem(RECENT_KEY2, JSON.stringify(merged.recent));
+    } catch (_e3) {
+    }
+  }
+}
+function mergeManejoFromSources(sources) {
+  if (!isLanManejoRoomSyncEnabled()) return null;
+  let merged = null;
+  for (let i = 0; i < (sources || []).length; i += 1) {
+    const src = sources[i];
+    const block = src && src.manejo;
+    if (!block) continue;
+    merged = mergeManejoRoomData(merged, block);
+  }
+  return merged;
+}
+var FAV_KEY2, RECENT_KEY2, OVERRIDES_KEY2;
+var init_manejo_room_data = __esm({
+  "public/js/manejo-room-data.mjs"() {
+    init_live_sync_room();
+    init_clinical_product_policy();
+    init_manejo_custom_protocols();
+    init_manejo_protocol_favorites();
+    FAV_KEY2 = "rpc-manejo-protocol-favorites";
+    RECENT_KEY2 = "rpc-manejo-protocol-recent";
+    OVERRIDES_KEY2 = "rpc-manejo-protocol-overrides";
+  }
+});
+
+// public/js/clinical-ops-bundle-merge.mjs
+function indexBy(rows, key) {
+  const map = /* @__PURE__ */ new Map();
+  for (const row of rows || []) {
+    if (row && row[key] != null) map.set(String(row[key]), row);
+  }
+  return map;
+}
+function pickLastWriteRow(localRow, incomingRow, tsField) {
+  if (!localRow) return incomingRow || null;
+  if (!incomingRow) return localRow;
+  const a = String(localRow[tsField] || "");
+  const b = String(incomingRow[tsField] || "");
+  return b >= a ? incomingRow : localRow;
+}
+function mergeTeamsData(localRows, incomingRows) {
+  const localById = indexBy(localRows, "team_id");
+  const incomingById = indexBy(incomingRows, "team_id");
+  const allIds = /* @__PURE__ */ new Set([...localById.keys(), ...incomingById.keys()]);
+  const out = [];
+  for (const teamId of allIds) {
+    const winner = pickLastWriteRow(localById.get(teamId), incomingById.get(teamId), "created_at");
+    if (winner) out.push({ ...winner });
+  }
+  return out;
+}
+function mergeTeamMembershipData(localRows, incomingRows) {
+  const map = /* @__PURE__ */ new Map();
+  for (const row of localRows || []) {
+    if (!row?.team_id || !row?.user_id) continue;
+    map.set(`${row.team_id}\0${row.user_id}`, { ...row });
+  }
+  for (const row of incomingRows || []) {
+    if (!row?.team_id || !row?.user_id) continue;
+    const key = `${row.team_id}\0${row.user_id}`;
+    const prev = map.get(key);
+    if (!prev) {
+      map.set(key, { ...row });
+      continue;
+    }
+    const fraction = row.sub_area_fraction != null && String(row.sub_area_fraction).trim() ? String(row.sub_area_fraction).trim() : prev.sub_area_fraction ?? null;
+    map.set(key, { ...prev, ...row, sub_area_fraction: fraction });
+  }
+  return [...map.values()];
+}
+function mergeRotationCyclesData(localRows, incomingRows) {
+  const byId = indexBy(localRows, "cycle_id");
+  for (const row of incomingRows || []) {
+    if (row && row.cycle_id) byId.set(String(row.cycle_id), { ...row });
+  }
+  return [...byId.values()];
+}
+function mergePatientTeamAssignmentsData(localRows, incomingRows) {
+  const map = /* @__PURE__ */ new Map();
+  for (const row of localRows || []) {
+    if (!row?.patient_id || !row?.team_id) continue;
+    map.set(`${row.patient_id}\0${row.team_id}`, { ...row });
+  }
+  for (const row of incomingRows || []) {
+    if (!row?.patient_id || !row?.team_id) continue;
+    const key = `${row.patient_id}\0${row.team_id}`;
+    if (!map.has(key)) map.set(key, { ...row });
+  }
+  return [...map.values()];
+}
+function mergeTeamGuardiaTodayData(localRows, incomingRows) {
+  const localByTeam = indexBy(localRows, "team_id");
+  const incomingByTeam = indexBy(incomingRows, "team_id");
+  const allTeams = /* @__PURE__ */ new Set([...localByTeam.keys(), ...incomingByTeam.keys()]);
+  const out = [];
+  for (const teamId of allTeams) {
+    const winner = pickLastWriteRow(localByTeam.get(teamId), incomingByTeam.get(teamId), "declared_at");
+    if (winner) out.push({ ...winner });
+  }
+  return out;
+}
+function mergeActiveGuardiasData(localRows, incomingRows) {
+  const localByPatient = indexBy(localRows, "patient_id");
+  const incomingByPatient = indexBy(incomingRows, "patient_id");
+  const allPatients = /* @__PURE__ */ new Set([...localByPatient.keys(), ...incomingByPatient.keys()]);
+  const out = [];
+  for (const patientId of allPatients) {
+    const winner = pickLastWriteRow(
+      localByPatient.get(patientId),
+      incomingByPatient.get(patientId),
+      "assigned_at"
+    );
+    if (winner) out.push({ ...winner });
+  }
+  return out;
+}
+function normalizeUsername2(raw) {
+  return String(raw || "").trim().replace(/^@+/, "").toLowerCase();
+}
+function isValidUsernameFormat2(raw) {
+  return /^[a-z][a-z0-9_]{2,31}$/.test(normalizeUsername2(raw));
+}
+function mergeClinicalUsersDeletedData(localIds, incomingIds) {
+  const set = /* @__PURE__ */ new Set();
+  for (const id of localIds || []) {
+    const uid = String(id || "").trim();
+    if (uid) set.add(uid);
+  }
+  for (const id of incomingIds || []) {
+    const uid = String(id || "").trim();
+    if (uid) set.add(uid);
+  }
+  return [...set];
+}
+function mergeClinicalUsersData(localRows, incomingRows) {
+  const byUsername = /* @__PURE__ */ new Map();
+  const byUserId = /* @__PURE__ */ new Map();
+  for (const row of localRows || []) {
+    if (!row?.user_id) continue;
+    byUserId.set(String(row.user_id), { ...row });
+    const handle = normalizeUsername2(row.username);
+    if (handle && isValidUsernameFormat2(handle)) byUsername.set(handle, { ...row });
+  }
+  for (const row of incomingRows || []) {
+    if (!row?.user_id) continue;
+    const handle = normalizeUsername2(row.username);
+    if (!handle || !isValidUsernameFormat2(handle)) continue;
+    const uid = String(row.user_id);
+    const existingByHandle = byUsername.get(handle);
+    if (existingByHandle && existingByHandle.user_id !== uid) continue;
+    const prev = byUserId.get(uid) || existingByHandle || null;
+    const merged = prev ? {
+      ...prev,
+      username: handle,
+      rank: row.rank ?? prev.rank,
+      clinical_name: row.clinical_name ?? prev.clinical_name,
+      sala: row.sala ?? prev.sala,
+      is_program_admin: row.is_program_admin != null ? row.is_program_admin : prev.is_program_admin
+    } : { ...row, username: handle };
+    byUserId.set(uid, merged);
+    byUsername.set(handle, merged);
+  }
+  return [...byUserId.values()];
+}
+function mergeClinicalOpsSnapshotsData(local, incoming) {
+  if (!local) return incoming && typeof incoming === "object" ? { ...incoming } : null;
+  if (!incoming || typeof incoming !== "object") return { ...local };
+  const remoteNueva = incoming.rotationNuevaAt ? String(incoming.rotationNuevaAt) : "";
+  const localNueva = local.rotationNuevaAt ? String(local.rotationNuevaAt) : "";
+  if (remoteNueva && (!localNueva || remoteNueva > localNueva)) {
+    const clinical_users_deleted2 = mergeClinicalUsersDeletedData(
+      local.clinical_users_deleted || [],
+      incoming.clinical_users_deleted || []
+    );
+    const deletedSet2 = new Set(clinical_users_deleted2);
+    return {
+      ...incoming,
+      exportedAt: String(incoming.exportedAt || "") >= String(local.exportedAt || "") ? incoming.exportedAt : local.exportedAt,
+      clinical_users_deleted: clinical_users_deleted2,
+      clinical_users: mergeClinicalUsersData(
+        local.clinical_users || [],
+        incoming.clinical_users || []
+      ).filter((row) => !deletedSet2.has(String(row?.user_id || "")))
+    };
+  }
+  const exportedAt = String(incoming.exportedAt || "") >= String(local.exportedAt || "") ? incoming.exportedAt : local.exportedAt;
+  const clinical_users_deleted = mergeClinicalUsersDeletedData(
+    local.clinical_users_deleted || [],
+    incoming.clinical_users_deleted || []
+  );
+  const deletedSet = new Set(clinical_users_deleted);
+  return {
+    version: Math.max(Number(local.version || 1), Number(incoming.version || 1)),
+    exportedAt,
+    rotationNuevaAt: localNueva || remoteNueva || null,
+    rotation_cycles: mergeRotationCyclesData(
+      local.rotation_cycles || [],
+      incoming.rotation_cycles || []
+    ),
+    patient_team_assignment: mergePatientTeamAssignmentsData(
+      local.patient_team_assignment || [],
+      incoming.patient_team_assignment || []
+    ),
+    team_guardia_today: mergeTeamGuardiaTodayData(
+      local.team_guardia_today || [],
+      incoming.team_guardia_today || []
+    ),
+    teams: mergeTeamsData(local.teams || [], incoming.teams || []),
+    team_membership: mergeTeamMembershipData(
+      local.team_membership || [],
+      incoming.team_membership || []
+    ),
+    active_guardias: mergeActiveGuardiasData(
+      local.active_guardias || [],
+      incoming.active_guardias || []
+    ),
+    clinical_users: mergeClinicalUsersData(
+      local.clinical_users || [],
+      incoming.clinical_users || []
+    ).filter((row) => !deletedSet.has(String(row?.user_id || ""))),
+    clinical_users_deleted
+  };
+}
+function mergeClinicalOpsFromSourcesData(sources) {
+  let merged = null;
+  for (const src of sources || []) {
+    const snap = src && src.clinicalOps;
+    if (!snap || typeof snap !== "object") continue;
+    merged = merged ? mergeClinicalOpsSnapshotsData(merged, snap) : { ...snap };
+  }
+  return merged;
+}
+var init_clinical_ops_bundle_merge = __esm({
+  "public/js/clinical-ops-bundle-merge.mjs"() {
+  }
+});
+
+// public/js/clinical-ops-lan.mjs
+function dbApi2() {
+  if (typeof window === "undefined") return null;
+  return window.rplusDb || window.electronAPI || null;
+}
+function isClinicalOpsLanAvailable() {
+  const api3 = dbApi2();
+  return !!(api3 && typeof api3.dbClinicalOpsExport === "function" && typeof api3.dbClinicalOpsMerge === "function");
+}
+async function refreshClinicalOpsSnapshotCache() {
+  cachedSnapshot = await collectClinicalOpsForLanSync();
+  return cachedSnapshot;
+}
+async function prepareClinicalOpsForLanSync() {
+  if (!isClinicalOpsLanAvailable()) return null;
+  return refreshClinicalOpsSnapshotCache();
+}
+function getCachedClinicalOpsSnapshot() {
+  return cachedSnapshot;
+}
+async function collectClinicalOpsForLanSync() {
+  const api3 = dbApi2();
+  if (!api3 || typeof api3.dbClinicalOpsExport !== "function") return null;
+  const res = await api3.dbClinicalOpsExport();
+  if (!res || res.ok === false) return null;
+  return res.snapshot && typeof res.snapshot === "object" ? res.snapshot : null;
+}
+async function applyClinicalOpsLanSnapshot(snapshot) {
+  if (!snapshot || typeof snapshot !== "object") return false;
+  const api3 = dbApi2();
+  if (!api3 || typeof api3.dbClinicalOpsMerge !== "function") return false;
+  const res = await api3.dbClinicalOpsMerge({ snapshot });
+  return !!(res && res.ok !== false);
+}
+function mergeClinicalOpsFromSources(sources) {
+  return mergeClinicalOpsFromSourcesData(sources);
+}
+var cachedSnapshot;
+var init_clinical_ops_lan = __esm({
+  "public/js/clinical-ops-lan.mjs"() {
+    init_clinical_ops_bundle_merge();
+    cachedSnapshot = null;
+  }
+});
+
+// public/js/lan-sync-state.mjs
+function notify(roomId, phase, meta) {
+  const detail = { roomId, phase, meta: meta ?? null };
+  listeners.forEach(function(cb) {
+    try {
+      cb(detail);
+    } catch (_e) {
+    }
+  });
+}
+function getRoomSyncPhase(roomId) {
+  const id = roomId != null ? String(roomId).trim() : "";
+  if (!id) return RoomSyncPhase.offline;
+  const entry2 = phaseByRoom.get(id);
+  return entry2 ? entry2.phase : RoomSyncPhase.offline;
+}
+function setRoomSyncPhase(roomId, phase, meta) {
+  const id = String(roomId || "").trim();
+  const p = String(phase || "").trim();
+  if (!id || !VALID_PHASES.has(p)) return;
+  phaseByRoom.set(id, { phase: p, meta: meta ?? null });
+  notify(id, p, meta);
+}
+function clearRoomSyncPhase(roomId) {
+  const id = String(roomId || "").trim();
+  if (!id || !phaseByRoom.has(id)) return;
+  phaseByRoom.delete(id);
+  notify(id, RoomSyncPhase.offline, null);
+}
+var RoomSyncPhase, VALID_PHASES, phaseByRoom, listeners;
+var init_lan_sync_state = __esm({
+  "public/js/lan-sync-state.mjs"() {
+    RoomSyncPhase = Object.freeze({
+      offline: "offline",
+      configured: "configured",
+      joining: "joining",
+      catching_up: "catching_up",
+      live: "live",
+      degraded: "degraded"
+    });
+    VALID_PHASES = new Set(Object.values(RoomSyncPhase));
+    phaseByRoom = /* @__PURE__ */ new Map();
+    listeners = /* @__PURE__ */ new Set();
   }
 });
 
@@ -11996,423 +12858,381 @@ var init_lan_patient_merge = __esm({
   }
 });
 
-// public/js/live-sync-outbox.mjs
-function getApi() {
-  if (typeof window === "undefined") return null;
-  return window.rplusDb || window.electronAPI || null;
-}
-function readAll() {
-  try {
-    const raw = localStorage.getItem(OUTBOX_KEY);
-    if (!raw) return {};
-    const o = JSON.parse(raw);
-    return o && typeof o === "object" ? o : {};
-  } catch (_e) {
-    return {};
+// public/js/lan-merge-registry.mjs
+function mergeLiveSyncFullBundles(sources) {
+  const list = Array.isArray(sources) ? sources : [];
+  const base = domainMergers.agendaTodosPatients(list);
+  let entries = domainMergers.patientEntries(list);
+  entries = filterEntriesByPatientDeletes(entries, base.patientDeletes || []);
+  base.entries = attachTodosMapToPatientEntries(entries, base.todos);
+  if (isLanManejoRoomSyncEnabled()) {
+    base.manejo = domainMergers.manejo(list);
   }
+  base.clinicalOps = domainMergers.clinicalOps(list);
+  return base;
 }
-function writeAll(map) {
-  localStorage.setItem(OUTBOX_KEY, JSON.stringify(map));
+var domainMergers;
+var init_lan_merge_registry = __esm({
+  "public/js/lan-merge-registry.mjs"() {
+    init_live_sync_room();
+    init_lan_patient_merge();
+    init_livesync_patient_ids();
+    init_manejo_room_data();
+    init_clinical_ops_lan();
+    domainMergers = {
+      agendaTodosPatients(sources) {
+        return mergeLiveSyncBundles(sources);
+      },
+      patientEntries(sources) {
+        return mergeLanPatientEntrySources(sources);
+      },
+      clinicalOps(sources) {
+        return mergeClinicalOpsFromSources(sources);
+      },
+      manejo(sources) {
+        return mergeManejoFromSources(sources);
+      }
+    };
+  }
+});
+
+// public/js/lan-sync-push.mjs
+function registerLanSyncPushBridge(deps2) {
+  pushBridge = deps2 && typeof deps2 === "object" ? deps2 : null;
 }
-function enqueueLocal(roomId, item) {
-  const rid = String(roomId || "").trim();
-  if (!rid || !item || !item.payload) return;
-  const all = readAll();
-  const list = Array.isArray(all[rid]) ? all[rid].slice() : [];
-  const kind = item.kind === "patch" ? "patch" : item.kind === "clinical_ops" ? "clinical_ops" : "bundle";
-  list.push({
-    kind,
-    payload: item.payload,
-    enqueuedAt: item.enqueuedAt || (/* @__PURE__ */ new Date()).toISOString()
+function bridge() {
+  if (!pushBridge) {
+    throw new Error("lan-sync-push: registerLanSyncPushBridge() not called");
+  }
+  return pushBridge;
+}
+function ensureEffectiveLiveSyncRoomId() {
+  var roomId = String(activeLiveSyncRoomId || "").trim();
+  if (roomId) return roomId;
+  var mem = getRoomMembership();
+  if (!mem || !mem.roomId) return "";
+  roomId = String(mem.roomId).trim();
+  setActiveLiveSyncRoom(roomId, mem.label || roomId);
+  return roomId;
+}
+function liveSyncBundleHasPayload(bundle) {
+  if (!bundle) return false;
+  if (Array.isArray(bundle.entries) && bundle.entries.length > 0) return true;
+  if (Array.isArray(bundle.agenda) && bundle.agenda.length > 0) return true;
+  var todos = bundle.todos;
+  if (!todos || typeof todos !== "object") return false;
+  var keys = Object.keys(todos);
+  for (var i = 0; i < keys.length; i += 1) {
+    if (Array.isArray(todos[keys[i]]) && todos[keys[i]].length > 0) return true;
+  }
+  var manejo = bundle.manejo;
+  if (isLanManejoRoomSyncEnabled() && manejo && typeof manejo === "object") {
+    if (Array.isArray(manejo.customProtocols) && manejo.customProtocols.length > 0) return true;
+    if (manejo.overrides && Object.keys(manejo.overrides).length > 0) return true;
+    if (Array.isArray(manejo.favorites) && manejo.favorites.length > 0) return true;
+  }
+  var clinicalOps = bundle.clinicalOps;
+  if (clinicalOps && typeof clinicalOps === "object") {
+    if (Array.isArray(clinicalOps.rotation_cycles) && clinicalOps.rotation_cycles.length > 0 || Array.isArray(clinicalOps.patient_team_assignment) && clinicalOps.patient_team_assignment.length > 0 || Array.isArray(clinicalOps.team_guardia_today) && clinicalOps.team_guardia_today.length > 0 || Array.isArray(clinicalOps.active_guardias) && clinicalOps.active_guardias.length > 0 || Array.isArray(clinicalOps.teams) && clinicalOps.teams.length > 0 || Array.isArray(clinicalOps.team_membership) && clinicalOps.team_membership.length > 0 || Array.isArray(clinicalOps.clinical_users) && clinicalOps.clinical_users.length > 0) {
+      return true;
+    }
+  }
+  return false;
+}
+function hostBundleBodyFromEnvelope(envelope, roomId) {
+  var body = hostBundlePutBodyFromEnvelope(roomId, envelope);
+  body.uploadedByClientId = envelope.clientId || getLanClientId2();
+  return body;
+}
+function pushRoomSyncBundleToHost(roomId, envelope) {
+  var b = bridge();
+  if (typeof b.isLanSessionConfiguredForRest !== "function" || !b.isLanSessionConfiguredForRest()) {
+    return Promise.resolve(false);
+  }
+  var rid = String(roomId || "").trim();
+  if (!rid || !envelope || !liveSyncBundleHasPayload(envelope)) return Promise.resolve(false);
+  return lanClient.fetch("/api/lan/v1/rooms/" + encodeURIComponent(rid) + "/sync-bundle", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      bundle: hostBundleBodyFromEnvelope(envelope, rid)
+    })
+  }).then(function(resp) {
+    if (!resp) return false;
+    if (resp.status === 409) {
+      return resp.json().then(function(body) {
+        if (typeof b.isLanConflictViewerSuppressed === "function" && b.isLanConflictViewerSuppressed()) {
+          enqueueOutbox(rid, { kind: "bundle", payload: envelope });
+          return false;
+        }
+        var conflicts = body && Array.isArray(body.conflicts) ? body.conflicts : [];
+        var conflictKeys = conflicts.map(function(c) {
+          return c && c.key ? String(c.key) : "";
+        }).filter(Boolean);
+        var bundleConflictKeys = conflictKeys.length ? conflictKeys : ["*"];
+        return b.saveDraftConflict({
+          scope: "room:" + rid,
+          entityType: "roomBundle",
+          transport: "http",
+          roomId: rid,
+          localBundle: envelope,
+          serverBundle: body && body.bundle ? body.bundle : null,
+          conflicts,
+          conflictingKeys: bundleConflictKeys
+        }).then(function(draftId) {
+          var roomDraft = {
+            id: draftId,
+            roomId: rid,
+            serverBundle: body && body.bundle ? body.bundle : null
+          };
+          if (typeof b.shouldDeferLanConflictModal !== "function" || !b.shouldDeferLanConflictModal()) {
+            b.openClinicalConflictViewer({
+              draftId,
+              conflictingKeys: bundleConflictKeys,
+              localData: envelope,
+              serverData: body && body.bundle ? body.bundle : {},
+              context: {
+                entityType: "roomBundle",
+                roomId: rid,
+                transport: "http"
+              },
+              onUseServer: function() {
+                void b.applyRoomBundleServerChoice(roomDraft);
+              },
+              onEditDraft: function() {
+              },
+              onClose: function() {
+              }
+            });
+          } else if (typeof b.markDeferredConflictToastShown === "function") {
+            b.markDeferredConflictToastShown();
+          }
+          if (typeof b.renderLanPanel === "function") void b.renderLanPanel();
+          return false;
+        });
+      });
+    }
+    if (resp.ok) {
+      return resp.json().then(function(body) {
+        if (body && body.bundle) {
+          setHostBundleBases2(rid, body.bundle);
+          emitLiveSyncRevisionHint(rid, body.bundle.revision);
+        }
+        return true;
+      });
+    }
+    return false;
+  }).catch(function() {
+    return false;
   });
-  while (list.length > MAX_ITEMS_PER_ROOM) list.shift();
-  all[rid] = list;
-  writeAll(all);
 }
-function drainLocal(roomId) {
-  const rid = String(roomId || "").trim();
-  if (!rid) return [];
-  const all = readAll();
-  const list = Array.isArray(all[rid]) ? all[rid].slice() : [];
-  delete all[rid];
-  writeAll(all);
-  return list;
-}
-function sizeLocal(roomId) {
-  const rid = String(roomId || "").trim();
-  if (!rid) return 0;
-  const all = readAll();
-  const list = all[rid];
-  return Array.isArray(list) ? list.length : 0;
-}
-function logIpcFallbackOnce() {
-  if (_ipcFallbackLogged) return;
-  _ipcFallbackLogged = true;
-  if (typeof console !== "undefined" && console.warn) {
-    console.warn("[lan-outbox] DB IPC unavailable; using localStorage fallback");
+function flushLiveSyncOutbox(roomId) {
+  var b = bridge();
+  var rid = String(roomId || "").trim();
+  if (!rid || typeof b.isLanSessionConfiguredForRest !== "function" || !b.isLanSessionConfiguredForRest()) {
+    return Promise.resolve();
   }
-}
-async function enqueueOutbox(roomId, item) {
-  const api3 = getApi();
-  if (api3?.dbLanOutboxEnqueue) {
-    return api3.dbLanOutboxEnqueue({
-      roomId,
-      kind: item.kind,
-      payload: item.payload
+  return drainOutbox(rid).then(function(items) {
+    if (!items || !items.length) return;
+    var chain = Promise.resolve();
+    items.forEach(function(item) {
+      chain = chain.then(function() {
+        if (!item || item.kind !== "bundle" || !item.payload) return;
+        return pushRoomSyncBundleToHost(rid, item.payload).then(function(ok) {
+          if (!ok) return enqueueOutbox(rid, item);
+        });
+      });
     });
-  }
-  logIpcFallbackOnce();
-  enqueueLocal(roomId, item);
+    return chain;
+  });
 }
-async function drainOutbox(roomId) {
-  const api3 = getApi();
-  if (api3?.dbLanOutboxDrain) {
-    const res = await api3.dbLanOutboxDrain({ roomId });
-    if (res?.ok && Array.isArray(res.items)) return res.items;
-    return [];
-  }
-  logIpcFallbackOnce();
-  return drainLocal(roomId);
+function scheduleLiveSyncOutboxFlush() {
+  if (getLiveSyncOutboxFlushTimer()) return;
+  setLiveSyncOutboxFlushTimer(
+    setInterval(function() {
+      var m = getRoomMembership();
+      if (!m || !m.roomId) return;
+      flushLiveSyncOutbox(m.roomId);
+    }, LIVE_SYNC_OUTBOX_FLUSH_MS)
+  );
 }
-async function outboxSize(roomId) {
-  const api3 = getApi();
-  if (api3?.dbLanOutboxCount) {
-    const res = await api3.dbLanOutboxCount({ roomId });
-    if (res?.ok && typeof res.count === "number") return res.count;
-    return 0;
-  }
-  return sizeLocal(roomId);
+function scheduleReconcileFromRevisionHint(roomId) {
+  var rid = String(roomId || "").trim();
+  if (!rid || rid !== activeLiveSyncRoomId) return;
+  var prev = getLiveSyncRevisionReconcileTimer();
+  if (prev) clearTimeout(prev);
+  setLiveSyncRevisionReconcileTimer(
+    setTimeout(function() {
+      setLiveSyncRevisionReconcileTimer(null);
+      void reconcileLiveSyncRoom(rid);
+    }, 500)
+  );
 }
-var OUTBOX_KEY, MAX_ITEMS_PER_ROOM, _ipcFallbackLogged;
-var init_live_sync_outbox = __esm({
-  "public/js/live-sync-outbox.mjs"() {
-    OUTBOX_KEY = "rpc-lan-sync-outbox";
-    MAX_ITEMS_PER_ROOM = 50;
-    _ipcFallbackLogged = false;
-  }
-});
-
-// public/js/manejo-custom-protocols.mjs
-function getProtocolOverridesMap() {
-  if (overridesCache) return overridesCache;
-  overridesCache = loadProtocolOverridesFromStorage();
-  return overridesCache;
-}
-function safeParseArray2(raw) {
+function emitLiveSyncRevisionHint(roomId, revision) {
+  if (!lanClient.liveConnected) return;
   try {
-    var parsed = JSON.parse(raw || "[]");
-    return Array.isArray(parsed) ? parsed : [];
+    lanClient.sendLive({
+      type: "livesync:revision",
+      roomId: String(roomId || "").trim(),
+      revision: Number(revision || 0),
+      clientId: getLanClientId2()
+    });
   } catch (_e) {
-    return [];
   }
 }
-function loadCustomProtocols() {
-  if (customProtocolsCache) return customProtocolsCache.slice();
+function scheduleLiveSyncPush() {
+  if (!activeLiveSyncRoomId) return;
+  if (isPitchPatientIsolationActive()) return;
+  var prev = getLiveSyncPushTimer();
+  if (prev) clearTimeout(prev);
+  setLiveSyncPushTimer(
+    setTimeout(function() {
+      setLiveSyncPushTimer(null);
+      var roomId = activeLiveSyncRoomId;
+      if (!roomId) return;
+      void (async function() {
+        var b = bridge();
+        var bundle = await b.buildLiveSyncBundleEnvelope(roomId);
+        b.saveLocalRoomSnapshot(roomId);
+        if (!b.isLanSessionConfiguredForRest()) return;
+        var ok = await pushRoomSyncBundleToHost(roomId, bundle);
+        if (!ok) void enqueueOutbox(roomId, { kind: "bundle", payload: bundle });
+      })();
+    }, LIVE_SYNC_PUSH_DEBOUNCE_MS)
+  );
+}
+function sendLiveBundleIfOpen(roomId, envelope) {
+  var rid = String(roomId || "").trim();
+  if (!rid || !envelope) return false;
+  var ws = lanClient._liveWs;
+  if (!lanClient.liveConnected || String(lanClient.liveRoomId || "").trim() !== rid) return false;
+  if (!ws || ws.readyState !== 1) return false;
   try {
-    customProtocolsCache = safeParseArray2(localStorage.getItem(STORAGE_KEY));
-  } catch (_e2) {
-    customProtocolsCache = [];
-  }
-  return customProtocolsCache.slice();
-}
-function saveCustomProtocols(entries) {
-  customProtocolsCache = Array.isArray(entries) ? entries.slice() : [];
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(customProtocolsCache));
-  } catch (_e3) {
-  }
-}
-function addCustomProtocol(entry2) {
-  var list = loadCustomProtocols();
-  var id = "custom-" + Date.now();
-  list.push({
-    id,
-    category: entry2.category || "otros",
-    title: entry2.title || "Protocolo personalizado",
-    indicationText: entry2.indicationText || "",
-    calculatorId: null,
-    copyTemplate: entry2.copyTemplate || entry2.indicationText || "",
-    notes: entry2.notes || [],
-    linkedPathologyIds: entry2.linkedPathologyIds || [],
-    isCustom: true
-  });
-  saveCustomProtocols(list);
-  return id;
-}
-function updateCustomProtocol(id, patch) {
-  var list = loadCustomProtocols();
-  var idx = list.findIndex(function(p) {
-    return p.id === id;
-  });
-  if (idx < 0) return false;
-  list[idx] = Object.assign({}, list[idx], patch, { id, isCustom: true });
-  saveCustomProtocols(list);
-  return true;
-}
-function deleteCustomProtocol(id) {
-  var list = loadCustomProtocols().filter(function(p) {
-    return p.id !== id;
-  });
-  saveCustomProtocols(list);
-}
-function safeParseObject2(raw) {
-  try {
-    var parsed = JSON.parse(raw || "{}");
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
-  } catch (_e4) {
-    return {};
-  }
-}
-function loadProtocolOverridesFromStorage() {
-  try {
-    return safeParseObject2(localStorage.getItem(OVERRIDES_KEY));
-  } catch (_e5) {
-    return {};
-  }
-}
-function loadProtocolOverrides() {
-  var cached = getProtocolOverridesMap();
-  return Object.assign({}, cached);
-}
-function saveProtocolOverride(id, patch) {
-  if (!id) return;
-  var all = getProtocolOverridesMap();
-  all[id] = Object.assign({}, all[id] || {}, patch, { id });
-  try {
-    localStorage.setItem(OVERRIDES_KEY, JSON.stringify(all));
-  } catch (_e6) {
-  }
-}
-function removeProtocolOverride(id) {
-  if (!id) return;
-  var all = getProtocolOverridesMap();
-  delete all[id];
-  try {
-    localStorage.setItem(OVERRIDES_KEY, JSON.stringify(all));
-  } catch (_e7) {
-  }
-}
-function applyEntryOverrides(entry2) {
-  if (!entry2 || entry2.isCustom) return entry2;
-  var o = getProtocolOverridesMap()[entry2.id];
-  if (!o) return entry2;
-  return Object.assign({}, entry2, o);
-}
-function hasProtocolOverride(id) {
-  return !!getProtocolOverridesMap()[id];
-}
-var STORAGE_KEY, OVERRIDES_KEY, overridesCache, customProtocolsCache;
-var init_manejo_custom_protocols = __esm({
-  "public/js/manejo-custom-protocols.mjs"() {
-    STORAGE_KEY = "rpc-manejo-custom-protocols";
-    OVERRIDES_KEY = "rpc-manejo-protocol-overrides";
-    overridesCache = null;
-    customProtocolsCache = null;
-  }
-});
-
-// public/js/manejo-protocol-favorites.mjs
-function safeParseArray3(raw) {
-  try {
-    var parsed = JSON.parse(raw || "[]");
-    return Array.isArray(parsed) ? parsed : [];
+    return lanClient.sendLive(envelope) === true;
   } catch (_e) {
-    return [];
-  }
-}
-function getFavoritesSet() {
-  if (favoritesCache) return favoritesCache;
-  favoritesCache = new Set(loadProtoFavoritesFromStorage());
-  return favoritesCache;
-}
-function loadProtoFavoritesFromStorage() {
-  try {
-    return safeParseArray3(localStorage.getItem(FAV_KEY));
-  } catch (_e2) {
-    return [];
-  }
-}
-function loadProtoFavorites() {
-  return Array.from(getFavoritesSet());
-}
-function saveProtoFavorites(ids) {
-  favoritesCache = new Set(ids || []);
-  try {
-    localStorage.setItem(FAV_KEY, JSON.stringify(Array.from(favoritesCache)));
-  } catch (_e3) {
-  }
-}
-function isProtoFavorite(id) {
-  if (!id) return false;
-  return getFavoritesSet().has(id);
-}
-function toggleProtoFavorite(id) {
-  if (!id) return false;
-  var set = getFavoritesSet();
-  if (set.has(id)) {
-    set.delete(id);
-    saveProtoFavorites(Array.from(set));
     return false;
   }
-  var list = [id].concat(Array.from(set));
-  saveProtoFavorites(list);
-  return true;
 }
-function loadProtoRecentIds() {
+function lanPushResult(ok, code, channels) {
+  return { ok: !!ok, code: code || void 0, channels: channels || {} };
+}
+async function pushClinicalOpsLanNow(opts) {
+  if (isPitchPatientIsolationActive()) return lanPushResult(false, "PITCH_DEMO");
+  if (!isClinicalOpsLanAvailable()) return lanPushResult(false, "NO_CLINICAL_OPS");
+  await prepareClinicalOpsForLanSync();
+  var snap = getCachedClinicalOpsSnapshot();
+  if (!snap) return lanPushResult(false, "NO_SNAPSHOT");
+  var roomId = ensureEffectiveLiveSyncRoomId();
+  if (!roomId) {
+    return lanPushResult(false, "NO_ROOM");
+  }
+  var b = bridge();
+  if (!b.isLanSessionConfiguredForRest()) {
+    return lanPushResult(false, "NO_LAN");
+  }
   try {
-    return safeParseArray3(localStorage.getItem(RECENT_KEY));
-  } catch (_e4) {
-    return [];
+    if (!lanClient.connected) lanClient.connectSyncChannel();
+  } catch (_e) {
   }
-}
-var FAV_KEY, RECENT_KEY, favoritesCache;
-var init_manejo_protocol_favorites = __esm({
-  "public/js/manejo-protocol-favorites.mjs"() {
-    FAV_KEY = "rpc-manejo-protocol-favorites";
-    RECENT_KEY = "rpc-manejo-protocol-recent";
-    favoritesCache = null;
+  var envelope = await b.buildLiveSyncBundleEnvelope(roomId);
+  envelope.clinicalOps = snap;
+  var bases = getHostBundleBases(roomId);
+  var okHttp = false;
+  try {
+    var opsResp = await lanClient.fetch(
+      "/api/lan/v1/rooms/" + encodeURIComponent(roomId) + "/clinical-ops",
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          snapshot: snap,
+          baseRevision: bases && bases.revision != null ? bases.revision : 0,
+          clientId: getLanClientId2()
+        })
+      }
+    );
+    if (opsResp && opsResp.ok) {
+      var opsBody = await opsResp.json();
+      if (opsBody && opsBody.revision != null) {
+        var prevBases = bases || {};
+        setHostBundleBases2(roomId, {
+          revision: opsBody.revision,
+          entityVersions: prevBases.entityVersions || {}
+        });
+        emitLiveSyncRevisionHint(roomId, opsBody.revision);
+      }
+      okHttp = true;
+    } else if (!opsResp || opsResp.status !== 409) {
+      okHttp = await pushRoomSyncBundleToHost(roomId, envelope);
+    } else {
+      okHttp = await pushRoomSyncBundleToHost(roomId, envelope);
+    }
+  } catch (_opsErr) {
+    okHttp = await pushRoomSyncBundleToHost(roomId, envelope);
   }
-});
-
-// public/js/manejo-room-data.mjs
-function cloneManejoBlock(block) {
-  if (!block || typeof block !== "object") return null;
-  return {
-    customProtocols: Array.isArray(block.customProtocols) ? block.customProtocols.map((p) => ({ ...p })) : [],
-    overrides: block.overrides && typeof block.overrides === "object" ? { ...block.overrides } : {},
-    favorites: Array.isArray(block.favorites) ? block.favorites.slice() : [],
-    recent: Array.isArray(block.recent) ? block.recent.slice() : [],
-    updatedAt: String(block.updatedAt || "")
-  };
+  var pushedLive = sendLiveBundleIfOpen(roomId, envelope);
+  b.saveLocalRoomSnapshot(roomId);
+  if (typeof b.syncLiveSyncStatusChrome === "function") b.syncLiveSyncStatusChrome();
+  if (okHttp || pushedLive) {
+    return lanPushResult(true, void 0, { http: !!okHttp, live: pushedLive });
+  }
+  void enqueueOutbox(roomId, { kind: "bundle", payload: envelope });
+  return lanPushResult(false, "PUSH_FAILED", { outbox: true });
 }
-function isLanManejoRoomSyncEnabled() {
-  return !isManejoTabGloballyHidden();
-}
-function collectManejoRoomPayload() {
-  if (!isLanManejoRoomSyncEnabled()) return null;
-  return {
-    customProtocols: loadCustomProtocols(),
-    overrides: loadProtocolOverrides(),
-    favorites: loadProtoFavorites(),
-    recent: loadProtoRecentIds(),
-    updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-  };
-}
-function protocolUpdatedAt(p) {
-  return String(p && p.updatedAt || "");
-}
-function mergeProtocolLists(aList, bList) {
-  const map = /* @__PURE__ */ new Map();
-  for (const arr of [aList, bList]) {
-    for (const p of arr || []) {
-      if (!p || !p.id) continue;
-      const id = String(p.id);
-      const cur = map.get(id);
-      if (!cur || compareIso(protocolUpdatedAt(p), protocolUpdatedAt(cur)) >= 0) {
-        map.set(id, { ...p });
+async function reconcileLiveSyncRoom(roomId) {
+  var b = bridge();
+  var rid = String(roomId || "").trim();
+  if (rid && activeLiveSyncRoomId === rid) {
+    setRoomSyncPhase(rid, RoomSyncPhase.catching_up);
+    if (typeof b.syncLiveSyncStatusChrome === "function") b.syncLiveSyncStatusChrome();
+  }
+  if (isClinicalOpsLanAvailable()) {
+    await prepareClinicalOpsForLanSync();
+  }
+  var sources = [];
+  var local = storage.getLanRoomSnapshot(roomId);
+  if (local) sources.push(local);
+  sources.push(b.buildLiveSyncLocalMergeSource());
+  try {
+    const syncPath = "/api/lan/v1/rooms/" + encodeURIComponent(roomId) + "/sync-bundle";
+    const ac = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const timer = ac && setTimeout(() => {
+      ac.abort();
+    }, 5e3);
+    var resp = await lanClient.fetch(syncPath, ac ? { signal: ac.signal } : {});
+    if (timer) clearTimeout(timer);
+    if (resp.ok) {
+      var j = await resp.json();
+      if (j && j.bundle) {
+        setHostBundleBases2(roomId, j.bundle);
+        sources.push(j.bundle);
       }
     }
+  } catch (_e) {
   }
-  return Array.from(map.values());
+  if (sources.length) {
+    b.applyLiveSyncMerged(mergeLiveSyncFullBundles(sources));
+  }
+  if (typeof b.applyRoomSyncPhaseAfterReconcile === "function") {
+    b.applyRoomSyncPhaseAfterReconcile(rid || roomId);
+  }
+  if (typeof b.syncLiveSyncStatusChrome === "function") b.syncLiveSyncStatusChrome();
+  return flushLiveSyncOutbox(roomId);
 }
-function mergeOverrides(a, b) {
-  const out = {};
-  const keys = /* @__PURE__ */ new Set([...Object.keys(a || {}), ...Object.keys(b || {})]);
-  for (const k of keys) {
-    const av = a && a[k];
-    const bv = b && b[k];
-    if (!av) {
-      out[k] = bv ? { ...bv } : void 0;
-      continue;
-    }
-    if (!bv) {
-      out[k] = { ...av };
-      continue;
-    }
-    const at = String(av.updatedAt || "");
-    const bt = String(bv.updatedAt || "");
-    out[k] = compareIso(bt, at) >= 0 ? { ...bv } : { ...av };
-  }
-  return out;
-}
-function mergeIdLists(aList, bList) {
-  const seen = /* @__PURE__ */ new Set();
-  const out = [];
-  for (const arr of [aList, bList]) {
-    for (const id of arr || []) {
-      const s = String(id || "").trim();
-      if (!s || seen.has(s)) continue;
-      seen.add(s);
-      out.push(s);
-    }
-  }
-  return out;
-}
-function mergeManejoRoomData(a, b) {
-  if (!a && !b) return null;
-  if (!a) return cloneManejoBlock(b);
-  if (!b) return cloneManejoBlock(a);
-  const ca = cloneManejoBlock(a);
-  const cb = cloneManejoBlock(b);
-  const at = ca.updatedAt;
-  const bt = cb.updatedAt;
-  const newerFirst = compareIso(bt, at) >= 0;
-  const first = newerFirst ? cb : ca;
-  const second = newerFirst ? ca : cb;
-  return {
-    customProtocols: mergeProtocolLists(first.customProtocols, second.customProtocols),
-    overrides: mergeOverrides(first.overrides, second.overrides),
-    favorites: mergeIdLists(first.favorites, second.favorites),
-    recent: mergeIdLists(first.recent, second.recent),
-    updatedAt: compareIso(bt, at) >= 0 ? bt : at
-  };
-}
-function applyManejoRoomDataToLocal(merged) {
-  if (!isLanManejoRoomSyncEnabled()) return;
-  if (!merged || typeof merged !== "object") return;
-  if (Array.isArray(merged.customProtocols)) {
-    saveCustomProtocols(merged.customProtocols);
-  }
-  if (merged.overrides && typeof merged.overrides === "object") {
-    try {
-      localStorage.setItem(OVERRIDES_KEY2, JSON.stringify(merged.overrides));
-    } catch (_e) {
-    }
-  }
-  if (Array.isArray(merged.favorites)) {
-    try {
-      localStorage.setItem(FAV_KEY2, JSON.stringify(merged.favorites));
-    } catch (_e2) {
-    }
-  }
-  if (Array.isArray(merged.recent)) {
-    try {
-      localStorage.setItem(RECENT_KEY2, JSON.stringify(merged.recent));
-    } catch (_e3) {
-    }
-  }
-}
-function mergeManejoFromSources(sources) {
-  if (!isLanManejoRoomSyncEnabled()) return null;
-  let merged = null;
-  for (let i = 0; i < (sources || []).length; i += 1) {
-    const src = sources[i];
-    const block = src && src.manejo;
-    if (!block) continue;
-    merged = mergeManejoRoomData(merged, block);
-  }
-  return merged;
-}
-var FAV_KEY2, RECENT_KEY2, OVERRIDES_KEY2;
-var init_manejo_room_data = __esm({
-  "public/js/manejo-room-data.mjs"() {
-    init_live_sync_room();
-    init_clinical_product_policy();
-    init_manejo_custom_protocols();
-    init_manejo_protocol_favorites();
-    FAV_KEY2 = "rpc-manejo-protocol-favorites";
-    RECENT_KEY2 = "rpc-manejo-protocol-recent";
-    OVERRIDES_KEY2 = "rpc-manejo-protocol-overrides";
+var pushBridge;
+var init_lan_sync_push = __esm({
+  "public/js/lan-sync-push.mjs"() {
+    init_storage();
+    init_tour_pitch_demo_seed();
+    init_live_sync_outbox();
+    init_live_sync_membership();
+    init_host_bundle_bases();
+    init_manejo_room_data();
+    init_clinical_ops_lan();
+    init_lan_sync_state();
+    init_lan_merge_registry();
+    init_lan_sync_runtime();
+    pushBridge = null;
   }
 });
 
@@ -12450,6 +13270,2046 @@ function wrapLiveSyncPatch(roomId, clientId, mutation) {
 }
 var init_versioned_mutation = __esm({
   "public/js/versioned-mutation.mjs"() {
+  }
+});
+
+// public/js/draft-conflict-store.mjs
+function memoryStore() {
+  return __test._memory;
+}
+function openDraftDb() {
+  const idb = globalThis.indexedDB;
+  if (!idb) {
+    return Promise.reject(new Error("indexedDB_unavailable"));
+  }
+  return new Promise((resolve, reject) => {
+    const req = idb.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(STORE)) {
+        const os = db.createObjectStore(STORE, { keyPath: "id" });
+        os.createIndex("savedAt", "savedAt");
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbPut(row) {
+  const db = await openDraftDb();
+  await new Promise((res, rej) => {
+    const tx = db.transaction(STORE, "readwrite");
+    tx.objectStore(STORE).put(row);
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error);
+  });
+  db.close();
+}
+async function idbGetAll() {
+  const db = await openDraftDb();
+  const rows = await new Promise((res, rej) => {
+    const tx = db.transaction(STORE, "readonly");
+    const req = tx.objectStore(STORE).getAll();
+    req.onsuccess = () => res(req.result || []);
+    req.onerror = () => rej(req.error);
+    tx.onerror = () => rej(tx.error);
+  });
+  db.close();
+  return rows;
+}
+async function idbDelete(id) {
+  const db = await openDraftDb();
+  await new Promise((res, rej) => {
+    const tx = db.transaction(STORE, "readwrite");
+    tx.objectStore(STORE).delete(id);
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error);
+  });
+  db.close();
+}
+function sortBySavedAtDesc(rows) {
+  return rows.sort((a, b) => String(b.savedAt).localeCompare(String(a.savedAt)));
+}
+async function saveDraftConflict(record) {
+  const id = globalThis.crypto.randomUUID();
+  const row = { ...record, id, savedAt: (/* @__PURE__ */ new Date()).toISOString() };
+  const mem = memoryStore();
+  if (mem) {
+    mem.set(id, row);
+    return id;
+  }
+  await idbPut(row);
+  return id;
+}
+async function listDraftConflicts() {
+  const mem = memoryStore();
+  if (mem) {
+    return sortBySavedAtDesc([...mem.values()]);
+  }
+  return sortBySavedAtDesc(await idbGetAll());
+}
+async function deleteDraftConflict(id) {
+  if (!id) return;
+  const mem = memoryStore();
+  if (mem) {
+    mem.delete(id);
+    return;
+  }
+  await idbDelete(id);
+}
+var DB_NAME, STORE, DB_VERSION, __test;
+var init_draft_conflict_store = __esm({
+  "public/js/draft-conflict-store.mjs"() {
+    DB_NAME = "rplus-clinical";
+    STORE = "draft-conflicts";
+    DB_VERSION = 1;
+    __test = {
+      _memory: null,
+      useMemoryBackend(enabled = true) {
+        __test._memory = enabled ? /* @__PURE__ */ new Map() : null;
+      },
+      resetMemory() {
+        __test._memory?.clear();
+      }
+    };
+  }
+});
+
+// public/js/features/clinical-conflict-viewer.mjs
+function escHtml(s) {
+  return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function valuesEqual(a, b) {
+  if (a === b) return true;
+  if (a == null && b == null) return true;
+  if (typeof a === "object" || typeof b === "object") {
+    try {
+      return JSON.stringify(a) === JSON.stringify(b);
+    } catch (_e) {
+      return false;
+    }
+  }
+  return false;
+}
+function trimCollapse(text, maxLen) {
+  const max = maxLen == null ? 140 : maxLen;
+  const t2 = String(text || "").replace(/\s+/g, " ").trim();
+  if (!t2) return "";
+  if (t2.length <= max) return t2;
+  return t2.slice(0, Math.max(0, max - 1)) + "\u2026";
+}
+function summarizeEntryRow(entry2) {
+  if (!entry2 || typeof entry2 !== "object") return "";
+  const bits = [];
+  if (entry2.descripcionDetallada) bits.push(trimCollapse(entry2.descripcionDetallada, 90));
+  if (entry2.diagnosis) bits.push("dx: " + trimCollapse(entry2.diagnosis, 50));
+  if (entry2.treatment) bits.push("tto: " + trimCollapse(entry2.treatment, 50));
+  if (entry2.description) bits.push(trimCollapse(entry2.description, 60));
+  if (entry2.medication) bits.push(trimCollapse(entry2.medication, 40));
+  if (entry2.relativeId && !bits.length) bits.push("familiar " + String(entry2.relativeId));
+  return bits.join(" \xB7 ");
+}
+function summarizeIpasBlock(ipas) {
+  if (!ipas || typeof ipas !== "object") return "";
+  const lines = [];
+  for (const block of Object.values(ipas)) {
+    if (!block || typeof block !== "object") continue;
+    const desc = trimCollapse(block.descripcion, 72);
+    const checks = Array.isArray(block.checks) ? block.checks.length : 0;
+    if (desc && desc.toLowerCase() !== "interrogado y negado") {
+      lines.push(desc);
+    } else if (checks > 0) {
+      lines.push(checks + " hallazgo" + (checks === 1 ? "" : "s"));
+    }
+    if (lines.length >= 2) break;
+  }
+  if (!lines.length) return "interrogado y negado";
+  return lines.join(" \xB7 ");
+}
+function summarizeConflictFieldValue(fieldKey, value) {
+  const key = String(fieldKey || "").trim();
+  if (value === null || value === void 0) return "\u2014";
+  if (typeof value === "boolean") return value ? "S\xED" : "No";
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  if (typeof value === "string") {
+    if (/^\d{4}-\d{2}-\d{2}T/.test(value)) {
+      try {
+        return new Date(value).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" });
+      } catch (_e) {
+        return trimCollapse(value) || "\u2014";
+      }
+    }
+    const t2 = trimCollapse(value);
+    return t2 || "\u2014";
+  }
+  if (Array.isArray(value)) {
+    if (!value.length) return "vac\xEDo";
+    const previews = value.slice(0, 2).map((item) => typeof item === "object" ? summarizeEntryRow(item) : trimCollapse(item, 60)).filter(Boolean);
+    const tail = value.length > 2 ? " (+" + (value.length - 2) + " m\xE1s)" : "";
+    return (previews.length ? previews.join("; ") : value.length + " elemento" + (value.length === 1 ? "" : "s")) + tail;
+  }
+  if (typeof value !== "object") return String(value);
+  if (key === "ipas") return summarizeIpasBlock(value) || "\u2014";
+  const parts = [];
+  const desc = value.descripcionDetallada || value.descripcion;
+  if (desc && String(desc).trim()) parts.push(trimCollapse(desc, 110));
+  const entries = value.entries;
+  if (Array.isArray(entries) && entries.length) {
+    const rowText = entries.slice(0, 3).map(summarizeEntryRow).filter(Boolean).join("; ");
+    if (rowText) parts.push(rowText);
+    if (entries.length > 3) parts.push("+" + (entries.length - 3) + " registro" + (entries.length - 3 === 1 ? "" : "s"));
+  }
+  const condCount = Array.isArray(value.conditions) ? value.conditions.length : 0;
+  if (condCount && !entries?.length) {
+    parts.push(condCount + " condici\xF3n" + (condCount === 1 ? "" : "es"));
+  }
+  for (const habitKey of ["tabaquismo", "alcoholismo", "toxicomanias", "dieta", "tatuajes", "deportesPasatiemposMascotas"]) {
+    if (value[habitKey] && String(value[habitKey]).trim()) {
+      parts.push(trimCollapse(value[habitKey], 55));
+    }
+  }
+  if (value.medicamentosActuales && String(value.medicamentosActuales).trim()) {
+    parts.push("Meds: " + trimCollapse(value.medicamentosActuales, 70));
+  }
+  if (value.hospitalizacionesPrevias && String(value.hospitalizacionesPrevias).trim()) {
+    parts.push("Hosp. prev.: " + trimCollapse(value.hospitalizacionesPrevias, 60));
+  }
+  if (key === "genero") {
+    for (const gKey of ["menarquia", "gestas", "partos", "cesareas", "abortos", "notas", "ultimaMenstruacion"]) {
+      if (value[gKey] != null && String(value[gKey]).trim()) {
+        parts.push(formatFieldLabel(gKey) + ": " + trimCollapse(value[gKey], 40));
+      }
+    }
+  }
+  if (key === "identificacion" && typeof value === "object") {
+    const idBits = ["lugarNacimiento", "residencia", "ocupacionActual", "dx", "cama"].map((k) => value[k] ? formatFieldLabel(k) + ": " + trimCollapse(value[k], 35) : "").filter(Boolean);
+    if (idBits.length) parts.push(idBits.slice(0, 3).join(" \xB7 "));
+  }
+  if (parts.length) return parts.join(" \xB7 ");
+  if (HC_STRUCTURED_KEYS.has(key)) return "bloque sin texto legible";
+  try {
+    const raw = JSON.stringify(value);
+    return raw.length > 120 ? trimCollapse(raw, 117) : raw;
+  } catch (_e2) {
+    return "\u2014";
+  }
+}
+function formatConflictValue(value, fieldKey) {
+  return summarizeConflictFieldValue(fieldKey, value);
+}
+function formatFieldLabel(key) {
+  const k = String(key || "").trim();
+  if (!k) return "";
+  if (FIELD_LABELS[k]) return FIELD_LABELS[k];
+  return k.replace(/([A-Z])/g, " $1").replace(/_/g, " ").trim().replace(/^\w/, (c) => c.toUpperCase());
+}
+function isInternalNoiseKey(key, localData, serverData) {
+  if (!INTERNAL_DIFF_KEYS.has(key)) return false;
+  const serverVal = serverData?.[key];
+  if (serverVal === void 0 || serverVal === null) return true;
+  return valuesEqual(localData?.[key], serverVal);
+}
+function keysThatDiffer(localData, serverData) {
+  const keys = /* @__PURE__ */ new Set([...Object.keys(localData || {}), ...Object.keys(serverData || {})]);
+  keys.delete("_deleted");
+  return [...keys].filter((key) => !isInternalNoiseKey(key, localData, serverData)).filter((key) => !valuesEqual(localData?.[key], serverData?.[key])).sort((a, b) => a.localeCompare(b));
+}
+function pickDiffKeys(conflictingKeys, localData, serverData) {
+  const raw = Array.isArray(conflictingKeys) ? conflictingKeys.filter(Boolean) : [];
+  const onlyStar = raw.length === 1 && raw[0] === "*";
+  if (raw.length && !onlyStar) {
+    return raw.filter((key) => !isInternalNoiseKey(key, localData, serverData)).sort((a, b) => a.localeCompare(b));
+  }
+  return keysThatDiffer(localData, serverData).filter((key) => {
+    if (!INTERNAL_DIFF_KEYS.has(key)) return true;
+    return !valuesEqual(localData?.[key], serverData?.[key]);
+  });
+}
+function buildConflictModalTitle(context) {
+  const ctx = context || {};
+  if (ctx.entityType === "todo") return "Pendiente en la sala";
+  if (ctx.entityType === "historiaClinica") return "Historia cl\xEDnica en la sala";
+  if (ctx.entityType === "patient") return "Paciente en la sala";
+  return "Cambio en la sala";
+}
+function buildConflictActionCopy(context) {
+  const ctx = context || {};
+  if (ctx.intent === "todo-delete") {
+    return {
+      primaryTitle: "No eliminar \u2014 conservar sala",
+      primaryHint: "El pendiente sigue en la sala para todos. En tu pantalla volver\xE1 a aparecer si ya lo hab\xEDas quitado.",
+      secondaryTitle: "S\xED eliminar \u2014 reenviar borrado",
+      secondaryHint: "Intenta de nuevo el borrado con la versi\xF3n actual de la sala. \xDAsalo si est\xE1s seguro de que debe desaparecer.",
+      tagline: "Conflicto al eliminar un pendiente en la sala."
+    };
+  }
+  if (ctx.intent === "todo-complete") {
+    return {
+      primaryTitle: "Marcar como en la sala",
+      primaryHint: "Aplica el estado completado que ya tiene el host (si aplica).",
+      secondaryTitle: "Dejar como lo tengo",
+      secondaryHint: "Cierra sin cambiar; revisa el pendiente en tu lista.",
+      tagline: "El pendiente ya estaba completado o se marc\xF3 en otro equipo."
+    };
+  }
+  if (ctx.entityType === "todo") {
+    return {
+      primaryTitle: "Usar lo que tiene la sala",
+      primaryHint: "Aplica el texto y estado del pendiente tal como est\xE1 guardado en el host.",
+      secondaryTitle: "Mantener mi cambio local",
+      secondaryHint: "Cierra el comparador sin sobrescribir; revisa el texto en pantalla.",
+      tagline: "El mismo pendiente cambi\xF3 en otro equipo."
+    };
+  }
+  return {
+    primaryTitle: "Usar versi\xF3n del servidor",
+    primaryHint: "Descarta este intento de guardado y carga lo que ya guard\xF3 la sala o el host. Se elimina el borrador guardado.",
+    secondaryTitle: "Seguir con mi borrador",
+    secondaryHint: "Cierra el comparador y mant\xE9n tus cambios en pantalla. El borrador queda en Ajustes \u2192 LAN.",
+    tagline: "Otro equipo guard\xF3 antes. Elige la copia de la sala o sigue con lo que tienes en pantalla."
+  };
+}
+function buildConflictContextHtml(context) {
+  const ctx = context || {};
+  const entityLabel = ENTITY_LABELS[ctx.entityType] || formatFieldLabel(ctx.entityType) || "Registro cl\xEDnico";
+  const patientName = ctx.patientDisplayName ? String(ctx.patientDisplayName) : "";
+  const patientRef = patientName ? "Paciente: " + escHtml(patientName) : ctx.patientId ? "Paciente (id interno)" : "";
+  let lead = entityLabel;
+  if (ctx.entityType === "todo" && ctx.itemPreview) {
+    lead = "Pendiente: \xAB" + escHtml(ctx.itemPreview) + "\xBB";
+  }
+  let cause = "Otro guardado lleg\xF3 antes que el tuyo y ambos tocaron los mismos campos.";
+  if (ctx.intent === "todo-delete") {
+    cause = "Quisiste eliminar este pendiente, pero la sala tiene una versi\xF3n distinta (otro equipo lo edit\xF3 o tu copia local estaba desactualizada).";
+  } else if (ctx.transport === "ws") {
+    cause = "La sala LAN recibi\xF3 un cambio en vivo (otro equipo conectado) mientras t\xFA editabas o guardabas.";
+  } else if (ctx.transport === "http") {
+    cause = "El host de la sala ya ten\xEDa una versi\xF3n m\xE1s reciente cuando intentaste guardar por red.";
+  }
+  const localV = ctx.localVersion != null && ctx.localVersion !== "" ? Number(ctx.localVersion) : null;
+  const serverV = ctx.serverVersion != null && ctx.serverVersion !== "" ? Number(ctx.serverVersion) : null;
+  let versionHtml = "";
+  if (localV != null || serverV != null) {
+    const localBadge = localV != null && Number.isFinite(localV) ? '<span class="clinical-conflict-version-pill clinical-conflict-version-pill--local">Tu base: v' + escHtml(localV) + "</span>" : "";
+    const serverBadge = serverV != null && Number.isFinite(serverV) ? '<span class="clinical-conflict-version-pill clinical-conflict-version-pill--server">Sala: v' + escHtml(serverV) + "</span>" : "";
+    versionHtml = '<div class="clinical-conflict-versions">' + localBadge + serverBadge + (localV != null && serverV != null && localV !== serverV ? '<span class="clinical-conflict-version-note">El n\xFAmero de versi\xF3n confirma que no partiste del mismo estado.</span>' : "") + "</div>";
+  }
+  const showLead = ctx.entityType !== "historiaClinica" || !patientRef;
+  return '<div class="clinical-conflict-context">' + (showLead ? '<p class="clinical-conflict-context-lead"><strong>' + lead + "</strong></p>" : "") + (patientRef ? '<p class="clinical-conflict-context-patient">' + patientRef + "</p>" : "") + '<p class="clinical-conflict-context-body">' + escHtml(cause) + "</p>" + versionHtml + "</div>";
+}
+function conflictSnapshotsMatchForAutoResolve({ conflictingKeys, localData, serverData }) {
+  const keys = pickDiffKeys(conflictingKeys, localData, serverData);
+  if (!keys.length) return false;
+  for (let i = 0; i < keys.length; i += 1) {
+    const key = keys[i];
+    const localVal = summarizeConflictFieldValue(key, localData?.[key]);
+    const serverVal = summarizeConflictFieldValue(key, serverData?.[key]);
+    if (localVal !== serverVal || localVal === "\u2014") return false;
+  }
+  return true;
+}
+function buildConflictDiffParts({ conflictingKeys, localData, serverData }) {
+  const conflictSet = new Set(conflictingKeys || []);
+  const keys = pickDiffKeys(conflictingKeys, localData, serverData);
+  if (!keys.length) {
+    return {
+      keyCount: 0,
+      summaryHtml: '<p class="clinical-conflict-summary-empty">No hay detalle por secci\xF3n (com\xFAn al eliminar o por desfase de versi\xF3n). Elige abajo si conservas la sala o tu borrador.</p>',
+      detailHtml: ""
+    };
+  }
+  const labels = keys.map((key) => formatFieldLabel(key));
+  const conflictOnly = keys.filter((key) => conflictSet.has(key) || conflictSet.has("*"));
+  const summaryLead = conflictOnly.length === keys.length ? keys.length === 1 ? "Choc\xF3 <strong>1 secci\xF3n</strong>:" : "Chocaron <strong>" + keys.length + " secciones</strong>:" : "Hay <strong>" + keys.length + " diferencia" + (keys.length === 1 ? "" : "s") + "</strong> respecto a la sala:";
+  const summaryHtml = '<div class="clinical-conflict-summary"><p class="clinical-conflict-summary-lead">' + summaryLead + '</p><ul class="clinical-conflict-affected">' + labels.map((label) => "<li>" + escHtml(label) + "</li>").join("") + "</ul></div>";
+  const cards = keys.map((key) => {
+    const isConflict = conflictSet.has(key) || conflictSet.has("*");
+    const localVal = formatConflictValue(localData?.[key], key);
+    const serverVal = formatConflictValue(serverData?.[key], key);
+    const serverMissing = serverData?.[key] === void 0 || serverData?.[key] === null;
+    const samePreview = localVal === serverVal && localVal !== "\u2014";
+    return '<article class="clinical-conflict-field-card' + (isConflict ? " clinical-conflict-field-card--hot" : "") + '"><h4 class="clinical-conflict-field-title">' + escHtml(formatFieldLabel(key)) + "</h4>" + (samePreview ? '<p class="clinical-conflict-field-same">En este resumen se ve igual en tu borrador y en la sala; aun as\xED el registro del host no coincide del todo (versi\xF3n, metadatos u otro campo que aqu\xED no mostramos).</p>' : '<div class="clinical-conflict-compare"><div class="clinical-conflict-side clinical-conflict-side--local"><span class="clinical-conflict-side-label">Tu intento</span><p>' + escHtml(localVal) + '</p></div><div class="clinical-conflict-side clinical-conflict-side--server' + (serverMissing ? " clinical-conflict-side--missing" : "") + '"><span class="clinical-conflict-side-label">En la sala</span><p>' + escHtml(serverVal) + "</p></div></div>") + "</article>";
+  }).join("");
+  return {
+    keyCount: keys.length,
+    summaryHtml,
+    detailHtml: '<div class="clinical-conflict-diff-cards">' + cards + "</div>"
+  };
+}
+function closeClinicalConflictViewer() {
+  if (typeof document === "undefined") return;
+  const prev = document.getElementById(BACKDROP_ID);
+  if (prev) prev.remove();
+}
+function openClinicalConflictViewer(opts) {
+  if (typeof document === "undefined") return;
+  const {
+    draftId,
+    conflictingKeys,
+    localData,
+    serverData,
+    context,
+    onUseServer,
+    onEditDraft,
+    onClose
+  } = opts || {};
+  closeClinicalConflictViewer();
+  const contextHtml = buildConflictContextHtml(context);
+  const actions = buildConflictActionCopy(context);
+  const modalTitle = buildConflictModalTitle(context);
+  const diffParts = buildConflictDiffParts({ conflictingKeys, localData, serverData });
+  const detailBlock = diffParts.detailHtml ? '<details class="clinical-conflict-details"><summary>Ver comparaci\xF3n por secci\xF3n</summary><div class="clinical-conflict-diff-wrap">' + diffParts.detailHtml + "</div></details>" : "";
+  const backdrop = document.createElement("div");
+  backdrop.className = "lab-conflict-backdrop clinical-conflict-backdrop";
+  backdrop.id = BACKDROP_ID;
+  if (draftId) backdrop.dataset.draftId = String(draftId);
+  backdrop.innerHTML = '<div class="lab-conflict-modal clinical-conflict-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-conflict-title"><header class="clinical-conflict-header clinical-conflict-header--plain"><div class="clinical-conflict-header-text"><h3 id="clinical-conflict-title">' + escHtml(modalTitle) + '</h3><p class="clinical-conflict-tagline">' + escHtml(actions.tagline) + "</p></div></header>" + contextHtml + diffParts.summaryHtml + '<div class="lab-conflict-actions clinical-conflict-actions"><button type="button" class="btn-conflict-primary" id="clinical-conflict-use-server">' + escHtml(actions.primaryTitle) + '<span class="btn-conflict-hint">' + escHtml(actions.primaryHint) + '</span></button><button type="button" class="btn-conflict-secondary" id="clinical-conflict-edit-draft">' + escHtml(actions.secondaryTitle) + '<span class="btn-conflict-hint">' + escHtml(actions.secondaryHint) + '</span></button><button type="button" class="btn-conflict-cancel" id="clinical-conflict-close">Cerrar sin decidir</button></div>' + detailBlock + "</div>";
+  document.body.appendChild(backdrop);
+  const dismiss = (cb) => {
+    closeClinicalConflictViewer();
+    if (typeof cb === "function") cb();
+  };
+  const useServer = backdrop.querySelector("#clinical-conflict-use-server");
+  const editDraft = backdrop.querySelector("#clinical-conflict-edit-draft");
+  const closeBtn = backdrop.querySelector("#clinical-conflict-close");
+  if (useServer) {
+    useServer.addEventListener("click", () => dismiss(onUseServer));
+  }
+  if (editDraft) {
+    editDraft.addEventListener("click", () => dismiss(onEditDraft));
+  }
+  if (closeBtn) {
+    closeBtn.addEventListener("click", () => dismiss(onClose));
+  }
+  backdrop.addEventListener("click", (ev) => {
+    if (ev.target === backdrop) dismiss(onClose);
+  });
+}
+var BACKDROP_ID, INTERNAL_DIFF_KEYS, ENTITY_LABELS, FIELD_LABELS, HC_STRUCTURED_KEYS;
+var init_clinical_conflict_viewer = __esm({
+  "public/js/features/clinical-conflict-viewer.mjs"() {
+    BACKDROP_ID = "clinical-conflict-backdrop";
+    INTERNAL_DIFF_KEYS = /* @__PURE__ */ new Set([
+      "id",
+      "patientId",
+      "updatedAt",
+      "version",
+      "expectedVersion",
+      "_deleted",
+      "entityType",
+      "entityId",
+      "roomId",
+      "clientId",
+      "audit"
+    ]);
+    ENTITY_LABELS = {
+      historiaClinica: "Historia cl\xEDnica",
+      patient: "Datos del paciente",
+      todo: "Pendiente",
+      agenda: "Evento de agenda",
+      roomBundle: "Sala (agenda y pendientes)"
+    };
+    FIELD_LABELS = {
+      identificacion: "Identificaci\xF3n",
+      motivoConsulta: "Motivo de consulta",
+      apnp: "Antecedentes no patol\xF3gicos",
+      app: "Antecedentes patol\xF3gicos",
+      ahf: "Antecedentes heredofamiliares",
+      genero: "G\xE9nero",
+      sexual: "Salud sexual",
+      padecimientoActual: "Padecimiento actual",
+      datosNegados: "Datos negados",
+      ipas: "IPAS",
+      signosVitalesIngreso: "Signos vitales de ingreso",
+      labsAtAdmission: "Labs de ingreso",
+      labAnchor: "Ancla de laboratorio",
+      meta: "Metadatos",
+      labLookbackHours: "Ventana de labs (h)",
+      eventualidades: "Eventualidades",
+      nombre: "Nombre",
+      cuarto: "Cuarto",
+      cama: "Cama",
+      sexo: "Sexo",
+      edad: "Edad",
+      agenda: "Agenda",
+      todos: "Pendientes",
+      text: "Descripci\xF3n",
+      completed: "Completado",
+      priority: "Prioridad",
+      createdAt: "Fecha de creaci\xF3n",
+      updatedAt: "\xDAltima actualizaci\xF3n",
+      _deleted: "Eliminado",
+      entries: "Entradas",
+      manejo: "Manejo"
+    };
+    HC_STRUCTURED_KEYS = /* @__PURE__ */ new Set(["ahf", "app", "apnp", "ipas", "genero", "identificacion", "signosVitalesIngreso"]);
+  }
+});
+
+// public/js/lan-surrogate-host.mjs
+function rememberPrimaryHostUrl(hostUrl) {
+  const url = String(hostUrl || "").trim().replace(/\/+$/, "");
+  if (!url) return;
+  try {
+    localStorage.setItem(PRIMARY_HOST_KEY, url);
+  } catch (_e) {
+  }
+}
+function getPrimaryHostUrl() {
+  try {
+    return String(localStorage.getItem(PRIMARY_HOST_KEY) || "").trim().replace(/\/+$/, "");
+  } catch (_e) {
+    return "";
+  }
+}
+function readPeersRaw() {
+  try {
+    const raw = localStorage.getItem(PEERS_KEY);
+    if (!raw) return {};
+    const o = JSON.parse(raw);
+    return o && typeof o === "object" ? o : {};
+  } catch (_e) {
+    return {};
+  }
+}
+function writePeersRaw(map) {
+  try {
+    localStorage.setItem(PEERS_KEY, JSON.stringify(map || {}));
+  } catch (_e) {
+  }
+}
+function pruneLivePeers(nowMs) {
+  const now = nowMs != null ? nowMs : Date.now();
+  const map = readPeersRaw();
+  let changed = false;
+  Object.keys(map).forEach((id) => {
+    const row = map[id];
+    if (!row || now - Number(row.seenAt || 0) > PEER_TTL_MS) {
+      delete map[id];
+      changed = true;
+    }
+  });
+  if (changed) writePeersRaw(map);
+  return map;
+}
+function recordLivePeer(clientId, meta) {
+  const id = String(clientId || "").trim();
+  const hostUrl = String(meta && meta.hostUrl ? meta.hostUrl : "").trim().replace(/\/+$/, "");
+  if (!id || !hostUrl) return;
+  const map = pruneLivePeers();
+  map[id] = {
+    hostUrl,
+    canHost: !!(meta && meta.canHost),
+    seenAt: Date.now(),
+    clientId: id
+  };
+  writePeersRaw(map);
+}
+function listLivePeerHostUrls(excludeClientId) {
+  const skip = String(excludeClientId || "").trim();
+  const map = pruneLivePeers();
+  const urls = [];
+  const seen = /* @__PURE__ */ new Set();
+  Object.keys(map).forEach((id) => {
+    if (id === skip) return;
+    const row = map[id];
+    if (!row || !row.canHost || !row.hostUrl) return;
+    if (seen.has(row.hostUrl)) return;
+    seen.add(row.hostUrl);
+    urls.push(row.hostUrl);
+  });
+  urls.sort();
+  return urls;
+}
+function surrogateElectionDelayMs(clientId) {
+  const s = String(clientId || "lc");
+  let h = 0;
+  for (let i = 0; i < s.length; i += 1) h = h * 31 + s.charCodeAt(i) >>> 0;
+  return 400 + h % 2400;
+}
+async function pingLanHostUrl(hostUrl, teamCode) {
+  const url = String(hostUrl || "").trim().replace(/\/+$/, "");
+  if (!url) return false;
+  const code = String(teamCode || "").trim();
+  try {
+    const r = await fetch(`${url}/api/lan/v1/ping`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${code}` }
+    });
+    return !!(r && r.ok);
+  } catch (_e) {
+    return false;
+  }
+}
+function getSurrogateHostState() {
+  try {
+    const raw = localStorage.getItem(SURROGATE_KEY);
+    if (!raw) return null;
+    const o = JSON.parse(raw);
+    if (!o || !String(o.formerHostUrl || "").trim()) return null;
+    return {
+      formerHostUrl: String(o.formerHostUrl).trim().replace(/\/+$/, ""),
+      formerTeamCode: String(o.formerTeamCode || "").trim(),
+      localHostUrl: String(o.localHostUrl || "").trim().replace(/\/+$/, ""),
+      promotedAt: String(o.promotedAt || ""),
+      roomId: String(o.roomId || "").trim()
+    };
+  } catch (_e) {
+    return null;
+  }
+}
+function setSurrogateHostState(state) {
+  if (!state || !state.formerHostUrl) {
+    clearSurrogateHostState();
+    return;
+  }
+  try {
+    localStorage.setItem(
+      SURROGATE_KEY,
+      JSON.stringify({
+        formerHostUrl: String(state.formerHostUrl).trim().replace(/\/+$/, ""),
+        formerTeamCode: String(state.formerTeamCode || "").trim(),
+        localHostUrl: String(state.localHostUrl || "").trim().replace(/\/+$/, ""),
+        promotedAt: state.promotedAt || (/* @__PURE__ */ new Date()).toISOString(),
+        roomId: String(state.roomId || "").trim()
+      })
+    );
+  } catch (_e) {
+  }
+}
+function clearSurrogateHostState() {
+  try {
+    localStorage.removeItem(SURROGATE_KEY);
+  } catch (_e) {
+  }
+}
+function isSurrogateHostActive() {
+  return !!getSurrogateHostState();
+}
+var PEERS_KEY, SURROGATE_KEY, PRIMARY_HOST_KEY, PEER_TTL_MS;
+var init_lan_surrogate_host = __esm({
+  "public/js/lan-surrogate-host.mjs"() {
+    PEERS_KEY = "rpc-lan-live-peers";
+    SURROGATE_KEY = "rpc-lan-surrogate-host";
+    PRIMARY_HOST_KEY = "rpc-lan-primary-host-url";
+    PEER_TTL_MS = 5 * 60 * 1e3;
+  }
+});
+
+// public/js/lan-host-pin.mjs
+function getPinnedHostUrl() {
+  try {
+    return String(localStorage.getItem(PINNED_HOST_KEY) || "").trim().replace(/\/+$/, "");
+  } catch (_e) {
+    return "";
+  }
+}
+function setPinnedHostUrl(hostUrl) {
+  const url = String(hostUrl || "").trim().replace(/\/+$/, "");
+  if (!url) {
+    clearPinnedHostUrl();
+    return;
+  }
+  try {
+    localStorage.setItem(PINNED_HOST_KEY, url);
+  } catch (_e) {
+  }
+}
+function clearPinnedHostUrl() {
+  try {
+    localStorage.removeItem(PINNED_HOST_KEY);
+  } catch (_e) {
+  }
+}
+var PINNED_HOST_KEY;
+var init_lan_host_pin = __esm({
+  "public/js/lan-host-pin.mjs"() {
+    PINNED_HOST_KEY = "rpc-lan-pinned-host-url";
+  }
+});
+
+// public/js/lan-sync-transport.mjs
+function registerLanSyncTransportDeps(deps2) {
+  transportDeps = deps2 && typeof deps2 === "object" ? deps2 : null;
+}
+function deps() {
+  if (!transportDeps) throw new Error("lan-sync-transport: registerLanSyncTransportDeps() not called");
+  return transportDeps;
+}
+function runtime3() {
+  return deps().runtime || { showToast() {
+  } };
+}
+function esc(s) {
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function isLanSessionConfiguredForRest() {
+  try {
+    var c = typeof storage.getLanConfig === "function" ? storage.getLanConfig() : null;
+    return !!(c && String(c.hostUrl || "").trim());
+  } catch (_e) {
+    return false;
+  }
+}
+function trimStoredLanBearer(code) {
+  return String(code || "").trim();
+}
+function persistLanClientConfig(hostUrl, teamCode) {
+  var url = String(hostUrl || "").trim().replace(/\/+$/, "");
+  var code = trimStoredLanBearer(teamCode);
+  if (!url || !code) return false;
+  var prev = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
+  var prevUrl = String(prev.hostUrl || "").trim().replace(/\/+$/, "");
+  var prevCode = trimStoredLanBearer(prev.teamCode);
+  var changed = prevUrl !== url || prevCode !== code;
+  storage.saveLanConfig({ hostUrl: url, teamCode: code });
+  lanClient.configure({ hostUrl: url, teamCode: code });
+  if (isLanRemoteJoinMode()) rememberPrimaryHostUrl(url);
+  if (changed) {
+    try {
+      lanClient.disconnect();
+      lanClient.connectSyncChannel();
+    } catch (_e) {
+    }
+  }
+  return changed;
+}
+async function ensureLanClientTeamCodeAligned() {
+  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
+  var hostUrl = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
+  var uiRole = typeof storage.getLanUiRole === "function" ? storage.getLanUiRole() : "client";
+  if (uiRole === "host" && window.electronAPI && typeof window.electronAPI.getLanEffectiveTeamCode === "function") {
+    return !!await syncLanSavedTeamCodeWithEffectiveHostCode();
+  }
+  if (!hostUrl) return false;
+  return persistLanClientConfig(hostUrl, cfg.teamCode);
+}
+async function lanFetchAuthed(path, opts) {
+  await ensureLanClientTeamCodeAligned();
+  var resp = await lanClient.fetch(path, opts);
+  if (resp.status !== 401) return resp;
+  if (window.electronAPI && typeof window.electronAPI.getLanEffectiveTeamCode === "function") {
+    await syncLanSavedTeamCodeWithEffectiveHostCode();
+  }
+  return lanClient.fetch(path, opts);
+}
+async function resolveHostBearerToken() {
+  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
+  var fromCfg = trimStoredLanBearer(cfg.teamCode);
+  if (fromCfg.length >= 32) return fromCfg;
+  if (window.electronAPI && typeof window.electronAPI.getLanEffectiveTeamCode === "function") {
+    try {
+      var info = await window.electronAPI.getLanEffectiveTeamCode();
+      if (info && info.ok && info.code) return String(info.code).trim();
+    } catch (_e) {
+    }
+  }
+  return "";
+}
+async function mintLanPairingTicket() {
+  await ensureLanClientTeamCodeAligned();
+  var bearer = await resolveHostBearerToken();
+  if (!bearer) {
+    var err = new Error("no_host_bearer");
+    err.code = "no_host_bearer";
+    throw err;
+  }
+  var resp = await lanFetchAuthed("/api/lan/v1/auth/tickets", { method: "POST" });
+  if (!resp.ok) {
+    var errHttp = new Error("ticket_mint_failed");
+    errHttp.status = resp.status;
+    throw errHttp;
+  }
+  var body = await resp.json();
+  var ticketId = String(body.ticketId || "");
+  var shareHost = await resolveLanShareBaseUrl();
+  _lastLanPairing = {
+    ticketId,
+    pin: String(body.pin || ""),
+    joinUrl: shareHost && ticketId ? buildShareJoinUrl(shareHost, ticketId) : String(body.joinUrl || ""),
+    expiresAt: body.expiresAt
+  };
+  return _lastLanPairing;
+}
+function showLanMigrationNoticeModal() {
+  if (typeof document === "undefined") return;
+  if (document.getElementById("lan-migration-notice-backdrop")) return;
+  var backdrop = document.createElement("div");
+  backdrop.id = "lan-migration-notice-backdrop";
+  backdrop.className = "modal-backdrop open";
+  backdrop.style.zIndex = "10050";
+  backdrop.innerHTML = '<div class="lab-conflict-modal" style="max-width:420px;"><h3>Seguridad de red del equipo</h3><p>El c\xF3digo LAN d\xE9bil (<code>1234</code> u otro antiguo) se sustituy\xF3 por un token seguro en esta Mac anfitriona. Tus pacientes y salas LAN se conservaron.</p><p style="font-size:12px;color:var(--text-muted);">Quienes se unan deben usar un <strong>enlace o PIN nuevo</strong> que generes aqu\xED (\u21C4). Los enlaces viejos con <code>?code=</code> ya no funcionan.</p><div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;"><button type="button" id="lan-migration-notice-ok" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Entendido</button></div></div>';
+  document.body.appendChild(backdrop);
+  var ok = backdrop.querySelector("#lan-migration-notice-ok");
+  if (ok) {
+    ok.onclick = function() {
+      backdrop.remove();
+    };
+  }
+  backdrop.addEventListener("click", function(ev) {
+    if (ev.target === backdrop) backdrop.remove();
+  });
+}
+async function maybeShowLanMigrationNotice2() {
+  if (typeof sessionStorage === "undefined") return;
+  try {
+    if (sessionStorage.getItem(LAN_MIGRATION_NOTICE_KEY)) return;
+  } catch (_e) {
+  }
+  if (!isLanSessionConfiguredForRest()) return;
+  var resp;
+  try {
+    resp = await lanFetchAuthed("/api/lan/v1/host-status");
+  } catch (_eNet) {
+    return;
+  }
+  if (!resp || !resp.ok) return;
+  var data;
+  try {
+    data = await resp.json();
+  } catch (_eJson) {
+    return;
+  }
+  if (!data || !data.requiresMigrationNotice) return;
+  try {
+    sessionStorage.setItem(LAN_MIGRATION_NOTICE_KEY, "1");
+  } catch (_eSet) {
+  }
+  showLanMigrationNoticeModal();
+}
+async function persistGuestBearerFromExchange(data) {
+  if (!data || !data.persist || data.storageTarget !== "userData") return;
+  if (!window.electronAPI || typeof window.electronAPI.lanGuestWriteBearer !== "function") return;
+  var token = trimStoredLanBearer(data.token);
+  if (!token) return;
+  try {
+    await window.electronAPI.lanGuestWriteBearer({ token });
+  } catch (_e) {
+  }
+}
+async function exchangeLanJoinFromInvite(hostUrl, ticketId, roomId) {
+  var base = String(hostUrl || "").trim().replace(/\/+$/, "");
+  var tid = String(ticketId || "").trim();
+  if (!base || !tid) {
+    runtime3().showToast("Falta la direcci\xF3n del servidor o el ticket de invitaci\xF3n.", "error");
+    return;
+  }
+  var res;
+  try {
+    res = await fetch(base + "/api/lan/v1/auth/exchange", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ticket: tid })
+    });
+  } catch (_e) {
+    runtime3().showToast("Error de red al unirse. Revisa Wi\u2011Fi y que R+ siga abierto en el anfitri\xF3n.", "error");
+    return;
+  }
+  if (!res.ok) {
+    runtime3().showToast(
+      "Este enlace o PIN ya no es v\xE1lido. Pide al anfitri\xF3n un nuevo enlace o PIN.",
+      "error"
+    );
+    return;
+  }
+  var data;
+  try {
+    data = await res.json();
+  } catch (_eJson) {
+    runtime3().showToast("Respuesta inv\xE1lida del servidor.", "error");
+    return;
+  }
+  await persistGuestBearerFromExchange(data);
+  configureLanFromMobileJoin(String(data.hostUrl || base), data.token, roomId);
+}
+async function syncLanSavedTeamCodeWithEffectiveHostCode() {
+  if (!window.electronAPI || typeof window.electronAPI.getLanEffectiveTeamCode !== "function") {
+    return false;
+  }
+  var info;
+  try {
+    info = await window.electronAPI.getLanEffectiveTeamCode();
+  } catch (_e) {
+    return false;
+  }
+  if (!info || !info.ok || !info.code) return false;
+  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
+  var hostUrl = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
+  if (!hostUrl && window.electronAPI && typeof window.electronAPI.getLanCandidateBaseUrl === "function") {
+    try {
+      hostUrl = String(await window.electronAPI.getLanCandidateBaseUrl() || "").trim().replace(/\/+$/, "");
+    } catch (_eUrl) {
+    }
+  }
+  persistLanClientConfig(hostUrl || String(cfg.hostUrl || "").trim().replace(/\/+$/, ""), info.code);
+  return true;
+}
+function isLanElectronDesktop() {
+  return !!(typeof window !== "undefined" && window.electronAPI && typeof window.electronAPI.getLanCandidateBaseUrl === "function");
+}
+function isLanRemoteJoinMode() {
+  return typeof storage.getLanUiRole === "function" && storage.getLanUiRole() === "client";
+}
+function isLocalLoopbackLanUrl(url) {
+  try {
+    const u = new URL(String(url || "").trim());
+    return /^(localhost|127\.0\.0\.1)$/i.test(u.hostname);
+  } catch (_e) {
+    return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/i.test(String(url || "").trim());
+  }
+}
+async function resolveLanShareBaseUrl() {
+  if (isLanElectronDesktop() && window.electronAPI && typeof window.electronAPI.getLanCandidateBaseUrl === "function") {
+    try {
+      var fromElectron = String(await window.electronAPI.getLanCandidateBaseUrl() || "").trim().replace(/\/+$/, "");
+      if (fromElectron && !isLocalLoopbackLanUrl(fromElectron)) return fromElectron;
+    } catch (_e) {
+    }
+  }
+  var el = document.getElementById("lan-input-host-url");
+  var fromInput = el && String(el.value || "").trim().replace(/\/+$/, "");
+  if (fromInput && !isLocalLoopbackLanUrl(fromInput)) return fromInput;
+  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
+  var fromCfg = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
+  if (fromCfg && !isLocalLoopbackLanUrl(fromCfg)) return fromCfg;
+  return "";
+}
+function buildShareJoinUrl(hostUrl, ticketId) {
+  return buildLanJoinUrls(hostUrl, ticketId).joinUrl;
+}
+async function resolveLanHostUrlAuto2() {
+  var shareUrl = await resolveLanShareBaseUrl();
+  if (shareUrl) return shareUrl;
+  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
+  var fromCfg = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
+  if (fromCfg) return fromCfg;
+  if (!isLanElectronDesktop()) return "";
+  return "http://127.0.0.1:3738";
+}
+function migrateLanElectronStaleClientRole() {
+  if (!isLanElectronDesktop() || !isLanRemoteJoinMode()) return;
+  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() : null;
+  if (cfg && String(cfg.hostUrl || "").trim()) return;
+  if (typeof storage.saveLanUiRole === "function") storage.saveLanUiRole("host");
+}
+async function ensureLanElectronHostReady(opts) {
+  opts = opts || {};
+  migrateLanElectronStaleClientRole();
+  if (!isLanElectronDesktop()) return false;
+  if (opts.forceLocal) {
+    if (typeof storage.saveLanUiRole === "function") storage.saveLanUiRole("host");
+  } else if (isLanRemoteJoinMode()) {
+    return false;
+  }
+  await syncLanSavedTeamCodeWithEffectiveHostCode();
+  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
+  var url = opts.forceLocal ? "" : String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
+  var autoUrl = await resolveLanHostUrlAuto2();
+  var bearer = await resolveHostBearerToken();
+  if (!bearer) return false;
+  if (url) {
+    var isLocalUrl = autoUrl && url === autoUrl || isLocalLoopbackLanUrl(url);
+    if (!isLocalUrl) {
+      var reachable = await pingLanHostUrl(url, cfg.teamCode || bearer);
+      if (!reachable) url = "";
+    }
+  }
+  if (!url) url = autoUrl || "http://127.0.0.1:3738";
+  var shareUrl = await resolveLanShareBaseUrl();
+  if (shareUrl && isLocalLoopbackLanUrl(url)) url = shareUrl;
+  persistLanClientConfig(url, bearer);
+  try {
+    lanClient.connectSyncChannel();
+  } catch (_e) {
+  }
+  return true;
+}
+async function promoteThisMacToLanHost(opts) {
+  opts = opts || {};
+  if (!isLanElectronDesktop()) {
+    runtime3().showToast("Solo disponible en la app de escritorio.", "info");
+    return false;
+  }
+  var wasRemoteClient = isLanRemoteJoinMode();
+  if (typeof storage.saveLanUiRole === "function") storage.saveLanUiRole("host");
+  storage.saveLanConfig(null);
+  lanClient.disconnect();
+  if (wasRemoteClient) {
+    clearActiveLiveSyncRoom();
+    clearRoomMembership();
+  }
+  var ok = await ensureLanElectronHostReady({ forceLocal: true });
+  deps().renderLanPanel();
+  if (ok && !opts.skipToast) {
+    runtime3().showToast("Esta Mac ahora es el servidor del turno.", "success");
+  }
+  if (!ok) {
+    runtime3().showToast("No se pudo activar el servidor local. Reinicia R+ e int\xE9ntalo de nuevo.", "error");
+  }
+  return ok;
+}
+async function initLanHostPlugAndPlay() {
+  if (!isLanElectronDesktop() || isLanRemoteJoinMode()) return;
+  await ensureLanElectronHostReady();
+}
+async function resolveLanTeamCodeForShare() {
+  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
+  var uiRole = typeof storage.getLanUiRole === "function" ? storage.getLanUiRole() : "client";
+  if (uiRole === "host") {
+    var hostBearer = await resolveHostBearerToken();
+    if (hostBearer) return hostBearer;
+  }
+  var teamInput = document.getElementById("lan-input-team-code");
+  var fromInput = teamInput && teamInput.value != null ? String(teamInput.value).trim() : "";
+  if (fromInput) return fromInput;
+  return trimStoredLanBearer(cfg.teamCode);
+}
+function getLanTeamCodeFromConfig() {
+  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
+  return trimStoredLanBearer(cfg.teamCode);
+}
+function applyLanHostUrlSwitch(hostUrl, teamCode, opts) {
+  opts = opts || {};
+  var url = String(hostUrl || "").trim().replace(/\/+$/, "");
+  var code = trimStoredLanBearer(teamCode);
+  if (!url) return false;
+  if (!opts.skipRememberPrimary && isLanRemoteJoinMode()) rememberPrimaryHostUrl(url);
+  persistLanClientConfig(url, code);
+  try {
+    if (!lanClient.connected) lanClient.connectSyncChannel();
+  } catch (_e) {
+  }
+  return true;
+}
+function maybeApplyLanHostUrlSwitch(hostUrl, teamCode, opts) {
+  opts = opts || {};
+  var url = String(hostUrl || "").trim().replace(/\/+$/, "");
+  if (!url) return false;
+  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
+  var currentUrl = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
+  var pinned = getPinnedHostUrl();
+  if (url === currentUrl) return applyLanHostUrlSwitch(url, teamCode, opts);
+  if (opts.blockSwitch) return false;
+  if (pinned) {
+    if (url === pinned) return applyLanHostUrlSwitch(url, teamCode, opts);
+    runtime3().showToast("Anfitri\xF3n fijado: " + pinned + ".", "info");
+    return false;
+  }
+  if (opts.requireConfirm) {
+    var msg = opts.confirmMessage || "\xBFCambiar al anfitri\xF3n " + url + "?";
+    if (typeof confirm === "function" && !confirm(msg)) return false;
+  }
+  return applyLanHostUrlSwitch(url, teamCode, opts);
+}
+function formatLanTicketExpiryLabel(expiresAt) {
+  var raw = String(expiresAt || "").trim();
+  if (!raw) return "";
+  var d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return "";
+  try {
+    return d.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+  } catch (_e) {
+    return d.toISOString().slice(11, 16);
+  }
+}
+function lanTicketExpirySoon(expiresAt) {
+  var raw = String(expiresAt || "").trim();
+  if (!raw) return false;
+  var d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return false;
+  return d.getTime() - Date.now() < 6e4;
+}
+async function ensureLanPairingForShare(opts) {
+  opts = opts || {};
+  var hostUrl = await resolveLanHostUrlForShare();
+  if (!hostUrl) {
+    var errUrl = new Error("no_host_url");
+    errUrl.code = "no_host_url";
+    throw errUrl;
+  }
+  if (opts.forceNew || !_lastLanPairing || !_lastLanPairing.ticketId) {
+    await mintLanPairingTicket();
+  }
+  if (!_lastLanPairing || !_lastLanPairing.ticketId) {
+    var errTicket = new Error("no_ticket");
+    errTicket.code = "no_ticket";
+    throw errTicket;
+  }
+  return { hostUrl, pairing: _lastLanPairing };
+}
+function configureLanFromMobileJoin(hostUrl, teamCode, roomId) {
+  var resolvedHost = resolveLanJoinHostUrl(hostUrl, typeof location !== "undefined" ? location.origin : "") || String(hostUrl || "").trim().replace(/\/+$/, "");
+  var cfg = { hostUrl: resolvedHost, teamCode: String(teamCode || "").trim() };
+  if (!cfg.teamCode) return;
+  if (isLanElectronDesktop() && typeof storage.saveLanUiRole === "function") {
+    storage.saveLanUiRole("client");
+  }
+  storage.saveLanConfig(cfg);
+  rememberPrimaryHostUrl(cfg.hostUrl);
+  lanClient.configure(cfg);
+  try {
+    lanClient.connectSyncChannel();
+  } catch (_e) {
+  }
+  lanClient.fetch("/api/lan/v1/ping").then(function(r) {
+    if (!r || !r.ok) {
+      runtime3().showToast(
+        "No se pudo conectar al servidor. Revisa Wi\u2011Fi y que R+ est\xE9 abierto en el anfitri\xF3n.",
+        "error"
+      );
+      deps().renderLanPanel();
+      setTimeout(function() {
+        if (typeof deps().openConnectionDropdown === "function") deps().openConnectionDropdown();
+      }, 400);
+      return;
+    }
+    void maybeShowLanMigrationNotice2();
+    var rid = deps().resolveAutoJoinRoomId(roomId);
+    if (rid) {
+      deps().joinLanRoom(rid, liveSyncRoomLabel(rid));
+      runtime3().showToast(
+        "Sincronizando pacientes de " + liveSyncRoomLabel(rid) + "\u2026",
+        "success"
+      );
+      return;
+    }
+    runtime3().showToast(
+      "Conectado al servidor, pero el enlace no trae sala. Pide un enlace nuevo desde \u21C4 en la Mac.",
+      "warn"
+    );
+    deps().renderLanPanel();
+    setTimeout(function() {
+      if (typeof deps().openConnectionDropdown === "function") deps().openConnectionDropdown();
+    }, 500);
+  }).catch(function() {
+    runtime3().showToast("Error de red al conectar con el anfitri\xF3n", "error");
+    deps().renderLanPanel();
+  });
+}
+async function resolveLanHostUrlForShare() {
+  return resolveLanShareBaseUrl();
+}
+function updateLanPairingDisplay(root) {
+  if (!root) return;
+  var box = root.querySelector("#lan-pairing-display");
+  if (!box) return;
+  if (!_lastLanPairing || !_lastLanPairing.ticketId) {
+    box.hidden = true;
+    box.textContent = "";
+    return;
+  }
+  box.hidden = false;
+  var p = _lastLanPairing;
+  var joinLine = p.joinUrl ? '<div><strong>Enlace:</strong> <code style="word-break:break-all;">' + esc(p.joinUrl) + "</code></div>" : "";
+  var expiryLabel = formatLanTicketExpiryLabel(p.expiresAt);
+  var expirySoon = lanTicketExpirySoon(p.expiresAt);
+  var expiryLine = expiryLabel ? '<p class="lan-pairing-expiry' + (expirySoon ? " lan-pairing-expiry--soon" : "") + '" style="margin:8px 0 0;font-size:12px;">V\xE1lido hasta <strong>' + esc(expiryLabel) + "</strong></p>" : "";
+  box.innerHTML = '<p style="margin:0 0 6px;font-size:12px;color:var(--text-muted);">Comparte el PIN o el enlace (un solo uso por ticket):</p><div><strong>PIN:</strong> <code>' + esc(p.pin) + "</code></div><div><strong>Ticket:</strong> <code>" + esc(p.ticketId) + "</code></div>" + joinLine + expiryLine;
+}
+async function mintLanPairingFromUi() {
+  try {
+    await mintLanPairingTicket();
+    var root = document.getElementById("lan-connection-panel-root");
+    updateLanPairingDisplay(root);
+    runtime3().showToast("Enlace y PIN generados. Comp\xE1rtelos con el equipo.", "success");
+  } catch (e) {
+    if (e && e.code === "no_host_bearer") {
+      runtime3().showToast(
+        "No hay token seguro del servidor en esta Mac. Reinicia R+ como anfitri\xF3n o revisa lan-team-code.txt.",
+        "error"
+      );
+      return;
+    }
+    if (e && e.status === 401) {
+      runtime3().showToast("No autorizado para generar invitaci\xF3n. Revisa el token del anfitri\xF3n.", "error");
+      return;
+    }
+    runtime3().showToast("No se pudo generar enlace / PIN. Intenta de nuevo.", "error");
+  }
+}
+function initLanClientFromStorage() {
+  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() : null;
+  if (!cfg || !String(cfg.hostUrl || "").trim()) return;
+  persistLanClientConfig(cfg.hostUrl, cfg.teamCode);
+  try {
+    lanClient.connectSyncChannel();
+  } catch (_e) {
+  }
+  setTimeout(function() {
+    var boot = deps().bootLanRoomMembership;
+    if (typeof boot === "function") boot();
+  }, 0);
+}
+var LAN_MIGRATION_NOTICE_KEY, _lastLanPairing, transportDeps;
+var init_lan_sync_transport = __esm({
+  "public/js/lan-sync-transport.mjs"() {
+    init_storage();
+    init_lan_join_link();
+    init_lan_surrogate_host();
+    init_lan_host_pin();
+    init_lan_sync_runtime();
+    init_live_sync_membership();
+    LAN_MIGRATION_NOTICE_KEY = "rplus.lan.migrationNoticeShown";
+    _lastLanPairing = null;
+    transportDeps = null;
+  }
+});
+
+// lib/historia-clinica/migrate-legacy.mjs
+function migrateLegacyHistoriaData(legacy) {
+  if (!legacy || typeof legacy !== "object") return legacy;
+  const hasLegacyFlat = typeof legacy.ficha === "string" || typeof legacy.ahf === "string" || typeof legacy.app === "string" || typeof legacy.apnp === "string" || typeof legacy.peea === "string";
+  if (!hasLegacyFlat) return { ...legacy };
+  const out = { ...legacy };
+  if (typeof legacy.ficha === "string" && legacy.ficha.trim()) {
+    out.identificacion = {
+      ...out.identificacion && typeof out.identificacion === "object" ? out.identificacion : {},
+      informante: legacy.ficha.trim()
+    };
+  }
+  if (typeof legacy.app === "string") {
+    out.app = {
+      conditions: [],
+      descripcionDetallada: legacy.app,
+      hospitalizacionesPrevias: "",
+      medicamentosActuales: []
+    };
+  } else if (!out.app || typeof out.app !== "object" || Array.isArray(out.app)) {
+    out.app = {
+      conditions: [],
+      descripcionDetallada: "",
+      hospitalizacionesPrevias: "",
+      medicamentosActuales: []
+    };
+  }
+  if (typeof legacy.ahf === "string") {
+    out.ahf = {
+      conditions: [],
+      descripcionDetallada: legacy.ahf
+    };
+  } else if (!out.ahf || typeof out.ahf !== "object" || Array.isArray(out.ahf)) {
+    out.ahf = { conditions: [], customConditions: [], entries: [], descripcionDetallada: "" };
+  } else {
+    if (!Array.isArray(out.ahf.entries)) out.ahf.entries = [];
+    if (!Array.isArray(out.ahf.customConditions)) out.ahf.customConditions = [];
+    if (!Array.isArray(out.ahf.conditions)) out.ahf.conditions = [];
+  }
+  if (typeof legacy.apnp === "string" && legacy.apnp.trim()) {
+    out.apnp = {
+      ...out.apnp && typeof out.apnp === "object" ? out.apnp : {},
+      tabaquismo: legacy.apnp.trim()
+    };
+  } else if (!out.apnp || typeof out.apnp !== "object" || Array.isArray(out.apnp)) {
+    out.apnp = {};
+  }
+  if (typeof legacy.peea === "string") {
+    out.padecimientoActual = legacy.peea;
+  }
+  delete out.ficha;
+  delete out.peea;
+  return out;
+}
+var init_migrate_legacy = __esm({
+  "lib/historia-clinica/migrate-legacy.mjs"() {
+  }
+});
+
+// lib/historia-clinica/catalogs/app-conditions.json
+var app_conditions_default;
+var init_app_conditions = __esm({
+  "lib/historia-clinica/catalogs/app-conditions.json"() {
+    app_conditions_default = {
+      parotiditis: "Parotiditis",
+      paperas: "Paperas",
+      sarampion: "Sarampi\xF3n",
+      varicela: "Varicela",
+      rubeola: "Rub\xE9ola",
+      tuberculosis: "Tuberculosis",
+      hepatitis: "Hepatitis",
+      vih: "VIH/SIDA",
+      hipertension: "Hipertensi\xF3n arterial",
+      diabetes: "Diabetes mellitus",
+      cardiopatia: "Cardiopat\xEDa",
+      enfermedadRenal: "Enfermedad renal cr\xF3nica",
+      enfermedadPulmonar: "Enfermedad pulmonar cr\xF3nica",
+      cancer: "Neoplasia",
+      transfusiones: "Transfusiones previas",
+      cirugias: "Cirug\xEDas previas",
+      traumaticos: "Antecedentes traum\xE1ticos",
+      alergias: "Alergias medicamentosas",
+      otro: "Otro"
+    };
+  }
+});
+
+// lib/historia-clinica/catalogs/ahf-conditions.json
+var ahf_conditions_default;
+var init_ahf_conditions = __esm({
+  "lib/historia-clinica/catalogs/ahf-conditions.json"() {
+    ahf_conditions_default = {
+      diabetes: "Diabetes mellitus",
+      hipertension: "Hipertensi\xF3n arterial",
+      neoplasia: "Neoplasia",
+      cardiopatia: "Cardiopat\xEDa isqu\xE9mica",
+      enfermedadRenal: "Enfermedad renal",
+      enfermedadPulmonar: "Enfermedad pulmonar",
+      tuberculosis: "Tuberculosis",
+      hepatitis: "Hepatitis",
+      vih: "VIH/SIDA",
+      epilepsia: "Epilepsia",
+      psiquiatrico: "Trastorno psiqui\xE1trico",
+      tiroideo: "Enfermedad tiroidea",
+      otro: "Otro"
+    };
+  }
+});
+
+// lib/historia-clinica/catalogs/ipas-systems.json
+var ipas_systems_default;
+var init_ipas_systems = __esm({
+  "lib/historia-clinica/catalogs/ipas-systems.json"() {
+    ipas_systems_default = {
+      general: "General",
+      tegumentos: "Tegumentos",
+      respiratorio: "Respiratorio",
+      cardiovascular: "Cardiovascular",
+      digestivo: "Digestivo",
+      genitourinario: "Genitourinario",
+      hemolinfopoietico: "Hemolinfopoy\xE9tico",
+      endocrino: "Endocrino",
+      nervioso: "Nervioso",
+      musculoesqueletico: "Musculoesquel\xE9tico"
+    };
+  }
+});
+
+// public/js/historia-clinica-lan-sync.mjs
+var historia_clinica_lan_sync_exports = {};
+__export(historia_clinica_lan_sync_exports, {
+  applyServerHistoriaClinicaToPatient: () => applyServerHistoriaClinicaToPatient,
+  flushAllPendingHistoriaClinicaLanSync: () => flushAllPendingHistoriaClinicaLanSync,
+  flushPendingHistoriaClinicaLanSync: () => flushPendingHistoriaClinicaLanSync,
+  markHistoriaPendingLanSync: () => markHistoriaPendingLanSync,
+  scheduleFlushAllPendingHistoriaClinicaLanSync: () => scheduleFlushAllPendingHistoriaClinicaLanSync,
+  schedulePendingHistoriaClinicaLanSync: () => schedulePendingHistoriaClinicaLanSync
+});
+function markHistoriaPendingLanSync(patient, pending2) {
+  if (!patient) return;
+  if (!patient.historiaClinica) patient.historiaClinica = { version: 0, data: {} };
+  patient.historiaClinica.pendingLanSync = true;
+  patient.historiaClinica.lanSyncPending = {
+    expectedVersion: Number(pending2.expectedVersion || 0),
+    baseData: pending2.baseData,
+    changedKeys: (pending2.changedKeys || []).slice(),
+    source: pending2.source ? String(pending2.source) : "pending-lan-sync"
+  };
+}
+async function flushPendingHistoriaClinicaLanSync(patient) {
+  if (!patient || !patient.historiaClinica || !patient.historiaClinica.pendingLanSync) {
+    return { ok: true, skipped: true };
+  }
+  const roomId = getActiveLiveSyncRoomId() || "";
+  if (!isLanSessionConfiguredForRest() || !roomId) {
+    return { ok: false, deferred: true };
+  }
+  const hc = patient.historiaClinica;
+  const snap = hc.lanSyncPending;
+  const changedKeys = snap && snap.changedKeys && snap.changedKeys.length ? snap.changedKeys.slice() : HC_SYNC_KEYS.filter(function(k) {
+    return hc.data && hc.data[k] !== void 0;
+  });
+  if (!changedKeys.length) {
+    delete hc.pendingLanSync;
+    delete hc.lanSyncPending;
+    return { ok: true, skipped: true };
+  }
+  const expectedVersion = snap && snap.expectedVersion != null ? Number(snap.expectedVersion) : Math.max(0, Number(hc.version || 1) - 1);
+  const baseData = snap && snap.baseData != null ? snap.baseData : expectedVersion > 0 ? {} : {};
+  const builder = createMutationBuilder("historiaClinica", patient.id).captureBase({
+    version: expectedVersion,
+    data: baseData
+  });
+  changedKeys.forEach(function(k) {
+    if (hc.data[k] !== void 0) builder.set(k, hc.data[k]);
+  });
+  const mutation = builder.build({
+    roomId,
+    patientId: patient.id,
+    clientId: localStorage.getItem("rpc-lan-client-id") || "local",
+    audit: {
+      sections: changedKeys,
+      source: snap && snap.source ? snap.source : "pending-lan-sync"
+    }
+  });
+  try {
+    const out = await lanPushHistoriaClinica(patient.id, mutation);
+    if (out && out.conflict) {
+      const body = out.body && typeof out.body === "object" ? out.body : {};
+      if (body.serverVersion != null || body.serverData) {
+        applyServerHistoriaClinicaToPatient(
+          patient,
+          body.serverVersion != null ? body.serverVersion : hc.version,
+          body.serverData || hc.data
+        );
+      } else {
+        delete hc.pendingLanSync;
+        delete hc.lanSyncPending;
+        saveState();
+      }
+      return { ok: false, conflict: true, deferred: true };
+    }
+    if (out && out.ok) {
+      hc.version = out.version;
+      hc.data = migrateLegacyHistoriaData(out.data, CATALOGS);
+      delete hc.pendingLanSync;
+      delete hc.lanSyncPending;
+      saveState();
+      return { ok: true };
+    }
+  } catch (_e) {
+  }
+  return { ok: false, deferred: true };
+}
+function schedulePendingHistoriaClinicaLanSync(patient) {
+  const id = String(patient && patient.id ? patient.id : "").trim();
+  if (!id || !patient.historiaClinica || !patient.historiaClinica.pendingLanSync) return;
+  if (_inFlight.has(id)) return;
+  const run = flushPendingHistoriaClinicaLanSync(patient).finally(function() {
+    _inFlight.delete(id);
+    const p = patients.find(function(x) {
+      return x.id === id;
+    });
+    if (p && p.historiaClinica && p.historiaClinica.pendingLanSync) {
+      schedulePendingHistoriaClinicaLanSync(p);
+    }
+  });
+  _inFlight.set(id, run);
+}
+async function flushAllPendingHistoriaClinicaLanSync() {
+  if (!isLanSessionConfiguredForRest() || !getActiveLiveSyncRoomId()) return;
+  const pending2 = patients.filter(function(p) {
+    return p.historiaClinica && p.historiaClinica.pendingLanSync;
+  });
+  for (let i = 0; i < pending2.length; i += 1) {
+    await flushPendingHistoriaClinicaLanSync(pending2[i]);
+  }
+}
+function scheduleFlushAllPendingHistoriaClinicaLanSync() {
+  void flushAllPendingHistoriaClinicaLanSync();
+}
+function applyServerHistoriaClinicaToPatient(patient, serverVersion, serverData) {
+  if (!patient) return;
+  if (!patient.historiaClinica) patient.historiaClinica = { version: 0, data: {} };
+  const hc = patient.historiaClinica;
+  hc.version = Number(serverVersion != null ? serverVersion : hc.version || 0);
+  if (serverData && typeof serverData === "object") {
+    hc.data = migrateLegacyHistoriaData(serverData, CATALOGS);
+  }
+  delete hc.pendingLanSync;
+  delete hc.lanSyncPending;
+  saveState();
+}
+var CATALOGS, HC_SYNC_KEYS, _inFlight;
+var init_historia_clinica_lan_sync = __esm({
+  "public/js/historia-clinica-lan-sync.mjs"() {
+    init_app_state();
+    init_versioned_mutation();
+    init_migrate_legacy();
+    init_app_conditions();
+    init_ahf_conditions();
+    init_ipas_systems();
+    init_lan_sync();
+    CATALOGS = { appConditions: app_conditions_default, ahfConditions: ahf_conditions_default, ipasSystems: ipas_systems_default };
+    HC_SYNC_KEYS = [
+      "identificacion",
+      "motivoConsulta",
+      "apnp",
+      "app",
+      "ahf",
+      "genero",
+      "sexual",
+      "padecimientoActual",
+      "datosNegados",
+      "ipas",
+      "signosVitalesIngreso",
+      "labsAtAdmission",
+      "labAnchor",
+      "meta",
+      "labLookbackHours"
+    ];
+    _inFlight = /* @__PURE__ */ new Map();
+  }
+});
+
+// public/js/lan-sync-room.mjs
+function registerLanSyncRoomBridge(deps2) {
+  roomBridge = deps2 && typeof deps2 === "object" ? deps2 : null;
+}
+function bridge2() {
+  if (!roomBridge) throw new Error("lan-sync-room: registerLanSyncRoomBridge() not called");
+  return roomBridge;
+}
+function runtime4() {
+  return bridge2().runtime || { showToast() {
+  } };
+}
+async function resolveSelfLanAdvertiseHostUrl() {
+  if (!isLanElectronDesktop() || isLanRemoteJoinMode()) return "";
+  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
+  var fromCfg = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
+  if (fromCfg) return fromCfg;
+  return resolveLanHostUrlAuto2();
+}
+function buildLiveSyncHelloPayload(roomId) {
+  var rid = String(roomId || "").trim();
+  var prev = storage.getLanRoomSnapshot(rid);
+  var payload = {
+    type: "livesync:hello",
+    roomId: rid,
+    clientId: getLanClientId2(),
+    snapshotAt: prev && prev.savedAt ? prev.savedAt : null,
+    generation: prev && prev.generation != null ? prev.generation : 0,
+    canHost: isLanElectronDesktop(),
+    isSurrogate: isSurrogateHostActive()
+  };
+  return payload;
+}
+async function enrichLiveSyncHelloPayload(payload) {
+  if (!payload || !payload.canHost) return payload;
+  var url = await resolveSelfLanAdvertiseHostUrl();
+  if (url) payload.hostUrl = url;
+  return payload;
+}
+function stopSurrogateFailoverTimer() {
+  if (_surrogateFailoverTimer) {
+    clearTimeout(_surrogateFailoverTimer);
+    _surrogateFailoverTimer = null;
+  }
+}
+function scheduleSurrogateFailoverCheck() {
+  if (!activeLiveSyncRoomId || !getRoomMembership()) return;
+  stopSurrogateFailoverTimer();
+  _surrogateFailoverTimer = setTimeout(function() {
+    _surrogateFailoverTimer = null;
+    void runSurrogateFailoverCheck();
+  }, 1200);
+}
+async function tryReconnectLanToHostUrl(hostUrl, teamCode) {
+  var targetUrl = String(hostUrl || "").trim().replace(/\/+$/, "");
+  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
+  var currentUrl = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
+  var pinned = getPinnedHostUrl();
+  var switchOpts = { skipRememberPrimary: true };
+  if (targetUrl && targetUrl !== currentUrl) {
+    if (pinned) {
+      if (targetUrl !== pinned) {
+        var pinMsg = "Se detect\xF3 otro anfitri\xF3n (" + targetUrl + "). Tienes fijado " + pinned + ". \xBFCambiar de todos modos?";
+        if (typeof confirm !== "function" || !confirm(pinMsg)) return false;
+      }
+    } else if (typeof confirm === "function") {
+      if (!confirm(
+        "\xBFReconectar al anfitri\xF3n " + targetUrl + "?"
+      )) {
+        return false;
+      }
+    }
+  }
+  if (!applyLanHostUrlSwitch(hostUrl, teamCode, switchOpts)) return false;
+  var ok = await pingLanHostUrl(hostUrl, teamCode);
+  if (!ok) return false;
+  var rid = activeLiveSyncRoomId;
+  if (rid) {
+    try {
+      lanClient.connectLiveChannel(rid);
+    } catch (_e) {
+    }
+    await syncLiveSyncAfterRoomJoin(rid);
+    startLiveSyncReconnectLoop();
+  }
+  syncLiveSyncStatusChrome2();
+  bridge2().patchLanPanelJoinButtons();
+  return true;
+}
+async function promoteSelfToSurrogateHost() {
+  if (!isLanElectronDesktop() || !isLanRemoteJoinMode()) return false;
+  if (!activeLiveSyncRoomId) return false;
+  if (isSurrogateHostActive()) return false;
+  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
+  var formerUrl = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
+  var formerCode = getLanTeamCodeFromConfig();
+  var localUrl = await resolveLanHostUrlAuto2();
+  if (!localUrl) return false;
+  if (formerUrl && await pingLanHostUrl(formerUrl, formerCode)) return false;
+  setSurrogateHostState({
+    formerHostUrl: formerUrl || getPrimaryHostUrl(),
+    formerTeamCode: formerCode,
+    localHostUrl: localUrl,
+    roomId: activeLiveSyncRoomId,
+    promotedAt: (/* @__PURE__ */ new Date()).toISOString()
+  });
+  applyLanHostUrlSwitch(localUrl, formerCode, { skipRememberPrimary: true });
+  var bundle = await buildLiveSyncBundleEnvelope(activeLiveSyncRoomId);
+  await pushRoomSyncBundleToHost(activeLiveSyncRoomId, bundle);
+  try {
+    if (!lanClient.connected) lanClient.connectSyncChannel();
+    lanClient.connectLiveChannel(activeLiveSyncRoomId);
+  } catch (_e) {
+  }
+  await syncLiveSyncAfterRoomJoin(activeLiveSyncRoomId);
+  startLiveSyncReconnectLoop();
+  var handoff = await enrichLiveSyncHelloPayload(buildLiveSyncHelloPayload(activeLiveSyncRoomId));
+  handoff.type = "livesync:host-handoff";
+  handoff.newHostUrl = localUrl;
+  handoff.reason = "surrogate-promoted";
+  try {
+    lanClient.sendLive(handoff);
+  } catch (_e2) {
+  }
+  runtime4().showToast(
+    "El anfitri\xF3n se desconect\xF3: esta Mac asume el servidor hasta que vuelva. Comparte de nuevo la invitaci\xF3n si alguien no reconecta solo.",
+    "success"
+  );
+  bridge2().renderLanPanel();
+  return true;
+}
+async function maybeRevertSurrogateToPrimary() {
+  var st = getSurrogateHostState();
+  if (!st || !st.formerHostUrl) return false;
+  var code = st.formerTeamCode || getLanTeamCodeFromConfig();
+  if (!await pingLanHostUrl(st.formerHostUrl, code)) return false;
+  if (activeLiveSyncRoomId) {
+    var bundle = await buildLiveSyncBundleEnvelope(activeLiveSyncRoomId);
+    var prevUrl = lanClient.baseUrl();
+    applyLanHostUrlSwitch(st.formerHostUrl, code, { skipRememberPrimary: true });
+    await pushRoomSyncBundleToHost(activeLiveSyncRoomId, bundle);
+    if (!await pingLanHostUrl(st.formerHostUrl, code)) {
+      applyLanHostUrlSwitch(prevUrl, code, { skipRememberPrimary: true });
+      return false;
+    }
+  }
+  clearSurrogateHostState();
+  applyLanHostUrlSwitch(st.formerHostUrl, code, { skipRememberPrimary: false });
+  if (activeLiveSyncRoomId) {
+    try {
+      lanClient.connectLiveChannel(activeLiveSyncRoomId);
+    } catch (_e) {
+    }
+    await syncLiveSyncAfterRoomJoin(activeLiveSyncRoomId);
+  }
+  runtime4().showToast("El anfitri\xF3n original volvi\xF3: esta Mac dej\xF3 de ser servidor temporal.", "success");
+  bridge2().renderLanPanel();
+  return true;
+}
+async function runSurrogateFailoverCheck() {
+  if (!activeLiveSyncRoomId || !getRoomMembership()) return;
+  if (lanClient.connected && lanClient.liveConnected) return;
+  var teamCode = getLanTeamCodeFromConfig();
+  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
+  var currentUrl = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
+  if (currentUrl && await pingLanHostUrl(currentUrl, teamCode)) {
+    try {
+      if (!lanClient.connected) lanClient.connectSyncChannel();
+      if (activeLiveSyncRoomId) lanClient.connectLiveChannel(activeLiveSyncRoomId);
+    } catch (_pingOk) {
+    }
+    if (isSurrogateHostActive()) void maybeRevertSurrogateToPrimary();
+    return;
+  }
+  if (isSurrogateHostActive()) {
+    if (await maybeRevertSurrogateToPrimary()) return;
+  }
+  var targets = [];
+  var primary = getPrimaryHostUrl();
+  if (primary && primary !== currentUrl) targets.push(primary);
+  listLivePeerHostUrls(getLanClientId2()).forEach(function(u) {
+    if (u && targets.indexOf(u) === -1 && u !== currentUrl) targets.push(u);
+  });
+  for (var i = 0; i < targets.length; i += 1) {
+    if (await tryReconnectLanToHostUrl(targets[i], teamCode)) {
+      if (targets[i] !== primary) {
+        runtime4().showToast("Reconectado al nuevo anfitri\xF3n de la sala.", "success");
+      } else if (!isSurrogateHostActive()) {
+        runtime4().showToast("Anfitri\xF3n original de vuelta.", "success");
+      }
+      return;
+    }
+  }
+  if (!isLanElectronDesktop() || !isLanRemoteJoinMode()) return;
+  await new Promise(function(r) {
+    setTimeout(r, surrogateElectionDelayMs(getLanClientId2()));
+  });
+  if (lanClient.connected && lanClient.liveConnected) return;
+  if (primary && await pingLanHostUrl(primary, teamCode)) {
+    await tryReconnectLanToHostUrl(primary, teamCode);
+    return;
+  }
+  for (var j = 0; j < targets.length; j += 1) {
+    if (await pingLanHostUrl(targets[j], teamCode)) {
+      await tryReconnectLanToHostUrl(targets[j], teamCode);
+      return;
+    }
+  }
+  await promoteSelfToSurrogateHost();
+}
+function saveLocalRoomSnapshot(roomId) {
+  var rid = String(roomId || "").trim();
+  if (!rid) return;
+  var snap = buildRoomSnapshotFromStorage(storage, bridge2().collectPatientIdsForLiveSync());
+  var prev = storage.getLanRoomSnapshot(rid);
+  var entries = bridge2().collectPatientEntriesForLanSync();
+  storage.saveLanRoomSnapshot(rid, {
+    savedAt: snap.savedAt,
+    generation: nextRoomSnapshotGeneration(prev),
+    agenda: snap.agenda,
+    todos: snap.todos,
+    entries,
+    ...isLanManejoRoomSyncEnabled() ? { manejo: collectManejoRoomPayload() } : {},
+    clinicalOps: getCachedClinicalOpsSnapshot()
+  });
+}
+async function buildLiveSyncBundleEnvelope(roomId) {
+  if (isClinicalOpsLanAvailable()) {
+    await prepareClinicalOpsForLanSync();
+  }
+  var rid = String(roomId || "").trim();
+  var snap = buildRoomSnapshotFromStorage(storage, bridge2().collectPatientIdsForLiveSync());
+  var prev = storage.getLanRoomSnapshot(rid);
+  var entries = bridge2().collectPatientEntriesForLanSync();
+  return {
+    type: "livesync:bundle",
+    roomId: rid,
+    clientId: getLanClientId2(),
+    savedAt: snap.savedAt,
+    generation: nextRoomSnapshotGeneration(prev),
+    agenda: snap.agenda,
+    todos: snap.todos,
+    entries,
+    ...isLanManejoRoomSyncEnabled() ? { manejo: collectManejoRoomPayload() } : {},
+    clinicalOps: getCachedClinicalOpsSnapshot()
+  };
+}
+function applyRoomSyncPhaseAfterReconcile(roomId) {
+  var rid = String(roomId || "").trim();
+  if (!rid || activeLiveSyncRoomId !== rid) return;
+  if (lanClient.liveConnected && String(lanClient.liveRoomId || "").trim() === rid) {
+    setRoomSyncPhase(rid, RoomSyncPhase.live);
+  } else if (getRoomMembership() && getRoomMembership().roomId === rid) {
+    setRoomSyncPhase(rid, RoomSyncPhase.degraded);
+  } else if (isLanSessionConfiguredForRest()) {
+    setRoomSyncPhase(rid, RoomSyncPhase.configured);
+  } else {
+    setRoomSyncPhase(rid, RoomSyncPhase.offline);
+  }
+}
+function syncLiveSyncStatusChrome2() {
+  var el = document.getElementById("lan-livesync-status");
+  if (!el) return;
+  if (!activeLiveSyncRoomId) {
+    el.style.display = "none";
+    el.textContent = "";
+    return;
+  }
+  el.style.display = "block";
+  var label = activeLiveSyncRoomLabel || activeLiveSyncRoomId;
+  var prefix = "Sala: " + label + " \xB7 ";
+  var phase = getRoomSyncPhase(activeLiveSyncRoomId);
+  if (phase === RoomSyncPhase.live) {
+    el.textContent = prefix + "sincronizando pacientes, equipos, labs, agenda y pendientes";
+  } else if (phase === RoomSyncPhase.catching_up) {
+    el.textContent = prefix + "sincronizando\u2026";
+  } else if (phase === RoomSyncPhase.joining) {
+    el.textContent = prefix + "conectando\u2026";
+  } else if (phase === RoomSyncPhase.degraded) {
+    el.textContent = prefix + "reconectando\u2026";
+  } else {
+    el.textContent = prefix + "solo local (sin sync en vivo)";
+  }
+}
+function stopLiveSyncReconnectLoop() {
+  if (_liveSyncReconnectTimer) {
+    clearTimeout(_liveSyncReconnectTimer);
+    _liveSyncReconnectTimer = null;
+  }
+}
+function startLiveSyncReconnectLoop() {
+  stopLiveSyncReconnectLoop();
+  var m = getRoomMembership();
+  if (!m || !m.roomId) return;
+  function tick() {
+    var mem = getRoomMembership();
+    if (!mem || !mem.roomId) {
+      stopLiveSyncReconnectLoop();
+      return;
+    }
+    if (!activeLiveSyncRoomId) {
+      setActiveLiveSyncRoom(mem.roomId, mem.label);
+    }
+    if (lanClient.liveConnected && String(lanClient.liveRoomId || "") === mem.roomId) {
+      _liveSyncReconnectAttempt = 0;
+      syncLiveSyncStatusChrome2();
+      scheduleReconnect();
+      return;
+    }
+    if (typeof lanClient.isLiveChannelBusy === "function" && lanClient.isLiveChannelBusy(mem.roomId)) {
+      syncLiveSyncStatusChrome2();
+      scheduleReconnect();
+      return;
+    }
+    if (isLanSessionConfiguredForRest()) {
+      try {
+        if (!lanClient.connected) lanClient.connectSyncChannel();
+        lanClient.connectLiveChannel(mem.roomId);
+        syncLiveSyncAfterRoomJoin(mem.roomId);
+      } catch (_e) {
+      }
+    }
+    _liveSyncReconnectAttempt += 1;
+    if (_liveSyncReconnectAttempt >= 3) scheduleSurrogateFailoverCheck();
+    syncLiveSyncStatusChrome2();
+    scheduleReconnect();
+  }
+  function scheduleReconnect() {
+    var delay = Math.min(3e4, 1e3 * Math.pow(2, Math.min(_liveSyncReconnectAttempt, 5)));
+    _liveSyncReconnectTimer = setTimeout(tick, delay);
+  }
+  tick();
+}
+function bootLanRoomMembership() {
+  migrateLastRoomToMembership();
+  var m = getRoomMembership();
+  if (!m || !m.roomId || !isLanSessionConfiguredForRest()) return;
+  bridge2().deferLanConflictModalForMs(2e4);
+  setActiveLiveSyncRoom(m.roomId, m.label);
+  setRoomSyncPhase(m.roomId, RoomSyncPhase.catching_up);
+  scheduleLiveSyncOutboxFlush();
+  reconcileLiveSyncRoom(m.roomId).then(function() {
+    return flushLiveSyncOutbox(m.roomId);
+  }).then(function() {
+    if (!getRoomMembership()) return;
+    try {
+      if (!lanClient.connected) lanClient.connectSyncChannel();
+      lanClient.connectLiveChannel(m.roomId);
+    } catch (_e) {
+    }
+    applyRoomSyncPhaseAfterReconcile(m.roomId);
+    void Promise.resolve().then(() => (init_historia_clinica_lan_sync(), historia_clinica_lan_sync_exports)).then(function(mod) {
+      return mod.scheduleFlushAllPendingHistoriaClinicaLanSync();
+    });
+    startLiveSyncReconnectLoop();
+    syncLiveSyncStatusChrome2();
+  });
+}
+function onLiveSyncWireMessage(data) {
+  if (!data || !isLiveSyncEnvelope(data)) return;
+  if (data.roomId && activeLiveSyncRoomId && data.roomId !== activeLiveSyncRoomId) return;
+  var myId = getLanClientId2();
+  if (data.type === "livesync:hello" || data.type === "livesync:host-handoff") {
+    if (data.clientId !== myId) {
+      recordLivePeer(data.clientId, {
+        hostUrl: data.newHostUrl || data.hostUrl,
+        canHost: !!data.canHost
+      });
+      if (data.type === "livesync:host-handoff" && data.newHostUrl) {
+        var newUrl = String(data.newHostUrl || "").trim().replace(/\/+$/, "");
+        var cfgNow = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
+        var curUrl = String(cfgNow.hostUrl || "").trim().replace(/\/+$/, "");
+        if (newUrl && newUrl !== curUrl && isLanRemoteJoinMode()) {
+          void tryReconnectLanToHostUrl(newUrl, getLanTeamCodeFromConfig());
+        }
+      }
+    }
+    if (data.type === "livesync:hello" && data.clientId !== myId && activeLiveSyncRoomId) {
+      void (async function() {
+        try {
+          lanClient.sendLive(await buildLiveSyncBundleEnvelope(activeLiveSyncRoomId));
+        } catch (_eHelloBundle) {
+        }
+      })();
+    }
+    return;
+  }
+  if (data.type === "livesync:leave" && data.bundle && data.clientId !== myId) {
+    bridge2().applyLiveSyncMerged(
+      mergeLiveSyncFullBundles([bridge2().buildLiveSyncLocalMergeSource(), data.bundle])
+    );
+    return;
+  }
+  if (data.type === "livesync:revision" && data.clientId !== myId) {
+    scheduleReconcileFromRevisionHint(data.roomId);
+    return;
+  }
+  if (data.clientId === myId && data.type !== "livesync:hello") return;
+  if (data.type === "livesync:bundle") {
+    var mergedBundle = mergeLiveSyncFullBundles([bridge2().buildLiveSyncLocalMergeSource(), data]);
+    bridge2().applyLiveSyncMerged(mergedBundle);
+    return;
+  }
+  if (data.type === "livesync:applied") {
+    bridge2().applyLiveSyncApplied(data);
+    return;
+  }
+}
+function syncLiveSyncAfterRoomJoin(roomId) {
+  var rid = String(roomId || "").trim();
+  if (!rid) return Promise.resolve();
+  return reconcileLiveSyncRoom(rid).then(function() {
+    if (activeLiveSyncRoomId !== rid) return;
+    applyRoomSyncPhaseAfterReconcile(rid);
+    scheduleLiveSyncPush();
+    if (lanClient.liveConnected) {
+      void enrichLiveSyncHelloPayload(buildLiveSyncHelloPayload(rid)).then(function(hello) {
+        if (activeLiveSyncRoomId !== rid) return;
+        try {
+          lanClient.sendLive(hello);
+        } catch (_hello) {
+        }
+      });
+    }
+    syncLiveSyncStatusChrome2();
+    runtime4().renderProcedureAgendaPanel();
+    runtime4().refreshAllTodoUIs();
+    runtime4().renderPatientList();
+    void Promise.resolve().then(() => (init_historia_clinica_lan_sync(), historia_clinica_lan_sync_exports)).then(function(m) {
+      return m.scheduleFlushAllPendingHistoriaClinicaLanSync();
+    });
+  });
+}
+function leaveLiveSyncRoom(opts) {
+  opts = opts || {};
+  var roomId = activeLiveSyncRoomId;
+  if (roomId) {
+    void (async function() {
+      var bundle = await buildLiveSyncBundleEnvelope(roomId);
+      if (!opts.silentLeave) {
+        lanClient.sendLive({
+          type: "livesync:leave",
+          roomId,
+          clientId: getLanClientId2(),
+          bundle
+        });
+      }
+      saveLocalRoomSnapshot(roomId);
+      if (liveSyncBundleHasPayload(bundle)) {
+        pushRoomSyncBundleToHost(roomId, bundle);
+      }
+    })();
+  }
+  clearActiveLiveSyncRoom();
+  if (roomId) clearRoomSyncPhase(roomId);
+  clearRoomMembership();
+  stopLiveSyncReconnectLoop();
+  lanClient.disconnectLiveChannel();
+  syncLiveSyncStatusChrome2();
+  bridge2().patchLanPanelJoinButtons();
+  if (typeof renderLanPanel === "function") bridge2().renderLanPanel();
+}
+function joinLanRoom(roomId, displayName) {
+  var id = String(roomId || "").trim();
+  if (!id) {
+    runtime4().showToast("No se pudo identificar la sala. Vuelve a abrir \u21C4 e int\xE9ntalo.", "error");
+    return;
+  }
+  if (!isLanSessionConfiguredForRest()) {
+    runtime4().showToast(
+      "Primero conecta al servidor del equipo (Activar sala en vivo o pega el enlace de invitaci\xF3n).",
+      "error"
+    );
+    return;
+  }
+  if (!lanClient.baseUrl()) {
+    try {
+      bridge2().initLanClientFromStorage();
+    } catch (_boot) {
+    }
+  }
+  if (!lanClient.baseUrl()) {
+    runtime4().showToast("Falta la direcci\xF3n del servidor LAN. Config\xFArala en \u21C4 antes de unirte.", "error");
+    return;
+  }
+  if (activeLiveSyncRoomId === id && String(lanClient.liveRoomId || "") === id && lanClient.liveConnected) {
+    setRoomSyncPhase(id, RoomSyncPhase.joining);
+    syncLiveSyncAfterRoomJoin(id);
+    syncLiveSyncStatusChrome2();
+    bridge2().patchLanPanelJoinButtons();
+    runtime4().showToast("Ya est\xE1s en esta sala", "success");
+    return;
+  }
+  if (activeLiveSyncRoomId && activeLiveSyncRoomId !== id) {
+    leaveLiveSyncRoom({ silentLeave: false });
+  }
+  setActiveLiveSyncRoom(id, displayName != null ? String(displayName) : id);
+  setRoomSyncPhase(id, RoomSyncPhase.joining);
+  syncLiveSyncStatusChrome2();
+  try {
+    if (!lanClient.connected) {
+      try {
+        lanClient.connectSyncChannel();
+      } catch (_sync) {
+      }
+    }
+    lanClient.connectLiveChannel(id);
+    setRoomMembership({ roomId: id, label: activeLiveSyncRoomLabel });
+    bridge2().rememberLanRoomJoined(id, activeLiveSyncRoomLabel);
+    scheduleLiveSyncOutboxFlush();
+    startLiveSyncReconnectLoop();
+  } catch (_e) {
+    clearActiveLiveSyncRoom();
+    clearRoomSyncPhase(id);
+    runtime4().showToast("No se pudo activar relay de sala", "error");
+    return;
+  }
+  runtime4().showToast("Sala: sincronizando expediente, agenda y pendientes", "success");
+  syncLiveSyncStatusChrome2();
+  bridge2().patchLanPanelJoinButtons();
+  syncLiveSyncAfterRoomJoin(id);
+}
+function registerLanSyncRoomWireHandlers() {
+  lanClient.addEventListener("lan-live", function(ev) {
+    onLiveSyncWireMessage(ev.detail);
+  });
+  lanClient.addEventListener("lan-live-status", function(ev) {
+    if (!ev.detail) return;
+    if (ev.detail.connected && activeLiveSyncRoomId) {
+      syncLiveSyncAfterRoomJoin(activeLiveSyncRoomId);
+      flushLiveSyncOutbox(activeLiveSyncRoomId);
+      void Promise.resolve().then(() => (init_historia_clinica_lan_sync(), historia_clinica_lan_sync_exports)).then(function(m) {
+        return m.scheduleFlushAllPendingHistoriaClinicaLanSync();
+      });
+      void maybeRevertSurrogateToPrimary();
+    } else if (!ev.detail.connected && activeLiveSyncRoomId) {
+      setRoomSyncPhase(activeLiveSyncRoomId, RoomSyncPhase.degraded);
+      saveLocalRoomSnapshot(activeLiveSyncRoomId);
+      startLiveSyncReconnectLoop();
+      if (!lanClient.connected) scheduleSurrogateFailoverCheck();
+    }
+    syncLiveSyncStatusChrome2();
+  });
+  lanClient.addEventListener("lan-status", function(ev) {
+    if (!ev.detail || ev.detail.connected) return;
+    if (activeLiveSyncRoomId && getRoomMembership()) scheduleSurrogateFailoverCheck();
+  });
+}
+var roomBridge, _liveSyncReconnectTimer, _liveSyncReconnectAttempt, _surrogateFailoverTimer;
+var init_lan_sync_room = __esm({
+  "public/js/lan-sync-room.mjs"() {
+    init_storage();
+    init_tour_pitch_demo_seed();
+    init_live_sync_room();
+    init_live_sync_membership();
+    init_lan_merge_registry();
+    init_manejo_room_data();
+    init_clinical_ops_lan();
+    init_host_bundle_bases();
+    init_lan_sync_state();
+    init_lan_surrogate_host();
+    init_lan_host_pin();
+    init_lan_sync_push();
+    init_lan_sync_runtime();
+    init_lan_sync_transport();
+    init_app_state();
+    roomBridge = null;
+    _liveSyncReconnectTimer = null;
+    _liveSyncReconnectAttempt = 0;
+    _surrogateFailoverTimer = null;
   }
 });
 
@@ -14236,7 +17096,7 @@ var init_interno_qr_render = __esm({
 });
 
 // public/js/features/interno-qr-panel.mjs
-function dbApi2() {
+function dbApi3() {
   if (typeof window === "undefined") return null;
   return window.rplusDb || window.electronAPI || null;
 }
@@ -14265,7 +17125,7 @@ async function resolveHostBase(fallback) {
   return fb;
 }
 async function appendInternoQrPanel(root, opts = {}) {
-  const api3 = dbApi2();
+  const api3 = dbApi3();
   const userId = String(opts.userId || "");
   if (!api3 || !userId || typeof api3.dbInternoAccessList !== "function") return;
   const details = document.createElement("details");
@@ -14433,1045 +17293,6 @@ var init_interno_qr_panel = __esm({
   }
 });
 
-// public/js/draft-conflict-store.mjs
-function memoryStore() {
-  return __test._memory;
-}
-function openDraftDb() {
-  const idb = globalThis.indexedDB;
-  if (!idb) {
-    return Promise.reject(new Error("indexedDB_unavailable"));
-  }
-  return new Promise((resolve, reject) => {
-    const req = idb.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(STORE)) {
-        const os = db.createObjectStore(STORE, { keyPath: "id" });
-        os.createIndex("savedAt", "savedAt");
-      }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-async function idbPut(row) {
-  const db = await openDraftDb();
-  await new Promise((res, rej) => {
-    const tx = db.transaction(STORE, "readwrite");
-    tx.objectStore(STORE).put(row);
-    tx.oncomplete = () => res();
-    tx.onerror = () => rej(tx.error);
-  });
-  db.close();
-}
-async function idbGetAll() {
-  const db = await openDraftDb();
-  const rows = await new Promise((res, rej) => {
-    const tx = db.transaction(STORE, "readonly");
-    const req = tx.objectStore(STORE).getAll();
-    req.onsuccess = () => res(req.result || []);
-    req.onerror = () => rej(req.error);
-    tx.onerror = () => rej(tx.error);
-  });
-  db.close();
-  return rows;
-}
-async function idbDelete(id) {
-  const db = await openDraftDb();
-  await new Promise((res, rej) => {
-    const tx = db.transaction(STORE, "readwrite");
-    tx.objectStore(STORE).delete(id);
-    tx.oncomplete = () => res();
-    tx.onerror = () => rej(tx.error);
-  });
-  db.close();
-}
-function sortBySavedAtDesc(rows) {
-  return rows.sort((a, b) => String(b.savedAt).localeCompare(String(a.savedAt)));
-}
-async function saveDraftConflict(record) {
-  const id = globalThis.crypto.randomUUID();
-  const row = { ...record, id, savedAt: (/* @__PURE__ */ new Date()).toISOString() };
-  const mem = memoryStore();
-  if (mem) {
-    mem.set(id, row);
-    return id;
-  }
-  await idbPut(row);
-  return id;
-}
-async function listDraftConflicts() {
-  const mem = memoryStore();
-  if (mem) {
-    return sortBySavedAtDesc([...mem.values()]);
-  }
-  return sortBySavedAtDesc(await idbGetAll());
-}
-async function deleteDraftConflict(id) {
-  if (!id) return;
-  const mem = memoryStore();
-  if (mem) {
-    mem.delete(id);
-    return;
-  }
-  await idbDelete(id);
-}
-var DB_NAME, STORE, DB_VERSION, __test;
-var init_draft_conflict_store = __esm({
-  "public/js/draft-conflict-store.mjs"() {
-    DB_NAME = "rplus-clinical";
-    STORE = "draft-conflicts";
-    DB_VERSION = 1;
-    __test = {
-      _memory: null,
-      useMemoryBackend(enabled = true) {
-        __test._memory = enabled ? /* @__PURE__ */ new Map() : null;
-      },
-      resetMemory() {
-        __test._memory?.clear();
-      }
-    };
-  }
-});
-
-// public/js/features/clinical-conflict-viewer.mjs
-function escHtml(s) {
-  return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
-function valuesEqual(a, b) {
-  if (a === b) return true;
-  if (a == null && b == null) return true;
-  if (typeof a === "object" || typeof b === "object") {
-    try {
-      return JSON.stringify(a) === JSON.stringify(b);
-    } catch (_e) {
-      return false;
-    }
-  }
-  return false;
-}
-function trimCollapse(text, maxLen) {
-  const max = maxLen == null ? 140 : maxLen;
-  const t2 = String(text || "").replace(/\s+/g, " ").trim();
-  if (!t2) return "";
-  if (t2.length <= max) return t2;
-  return t2.slice(0, Math.max(0, max - 1)) + "\u2026";
-}
-function summarizeEntryRow(entry2) {
-  if (!entry2 || typeof entry2 !== "object") return "";
-  const bits = [];
-  if (entry2.descripcionDetallada) bits.push(trimCollapse(entry2.descripcionDetallada, 90));
-  if (entry2.diagnosis) bits.push("dx: " + trimCollapse(entry2.diagnosis, 50));
-  if (entry2.treatment) bits.push("tto: " + trimCollapse(entry2.treatment, 50));
-  if (entry2.description) bits.push(trimCollapse(entry2.description, 60));
-  if (entry2.medication) bits.push(trimCollapse(entry2.medication, 40));
-  if (entry2.relativeId && !bits.length) bits.push("familiar " + String(entry2.relativeId));
-  return bits.join(" \xB7 ");
-}
-function summarizeIpasBlock(ipas) {
-  if (!ipas || typeof ipas !== "object") return "";
-  const lines = [];
-  for (const block of Object.values(ipas)) {
-    if (!block || typeof block !== "object") continue;
-    const desc = trimCollapse(block.descripcion, 72);
-    const checks = Array.isArray(block.checks) ? block.checks.length : 0;
-    if (desc && desc.toLowerCase() !== "interrogado y negado") {
-      lines.push(desc);
-    } else if (checks > 0) {
-      lines.push(checks + " hallazgo" + (checks === 1 ? "" : "s"));
-    }
-    if (lines.length >= 2) break;
-  }
-  if (!lines.length) return "interrogado y negado";
-  return lines.join(" \xB7 ");
-}
-function summarizeConflictFieldValue(fieldKey, value) {
-  const key = String(fieldKey || "").trim();
-  if (value === null || value === void 0) return "\u2014";
-  if (typeof value === "boolean") return value ? "S\xED" : "No";
-  if (typeof value === "number" && Number.isFinite(value)) return String(value);
-  if (typeof value === "string") {
-    if (/^\d{4}-\d{2}-\d{2}T/.test(value)) {
-      try {
-        return new Date(value).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" });
-      } catch (_e) {
-        return trimCollapse(value) || "\u2014";
-      }
-    }
-    const t2 = trimCollapse(value);
-    return t2 || "\u2014";
-  }
-  if (Array.isArray(value)) {
-    if (!value.length) return "vac\xEDo";
-    const previews = value.slice(0, 2).map((item) => typeof item === "object" ? summarizeEntryRow(item) : trimCollapse(item, 60)).filter(Boolean);
-    const tail = value.length > 2 ? " (+" + (value.length - 2) + " m\xE1s)" : "";
-    return (previews.length ? previews.join("; ") : value.length + " elemento" + (value.length === 1 ? "" : "s")) + tail;
-  }
-  if (typeof value !== "object") return String(value);
-  if (key === "ipas") return summarizeIpasBlock(value) || "\u2014";
-  const parts = [];
-  const desc = value.descripcionDetallada || value.descripcion;
-  if (desc && String(desc).trim()) parts.push(trimCollapse(desc, 110));
-  const entries = value.entries;
-  if (Array.isArray(entries) && entries.length) {
-    const rowText = entries.slice(0, 3).map(summarizeEntryRow).filter(Boolean).join("; ");
-    if (rowText) parts.push(rowText);
-    if (entries.length > 3) parts.push("+" + (entries.length - 3) + " registro" + (entries.length - 3 === 1 ? "" : "s"));
-  }
-  const condCount = Array.isArray(value.conditions) ? value.conditions.length : 0;
-  if (condCount && !entries?.length) {
-    parts.push(condCount + " condici\xF3n" + (condCount === 1 ? "" : "es"));
-  }
-  for (const habitKey of ["tabaquismo", "alcoholismo", "toxicomanias", "dieta", "tatuajes", "deportesPasatiemposMascotas"]) {
-    if (value[habitKey] && String(value[habitKey]).trim()) {
-      parts.push(trimCollapse(value[habitKey], 55));
-    }
-  }
-  if (value.medicamentosActuales && String(value.medicamentosActuales).trim()) {
-    parts.push("Meds: " + trimCollapse(value.medicamentosActuales, 70));
-  }
-  if (value.hospitalizacionesPrevias && String(value.hospitalizacionesPrevias).trim()) {
-    parts.push("Hosp. prev.: " + trimCollapse(value.hospitalizacionesPrevias, 60));
-  }
-  if (key === "genero") {
-    for (const gKey of ["menarquia", "gestas", "partos", "cesareas", "abortos", "notas", "ultimaMenstruacion"]) {
-      if (value[gKey] != null && String(value[gKey]).trim()) {
-        parts.push(formatFieldLabel(gKey) + ": " + trimCollapse(value[gKey], 40));
-      }
-    }
-  }
-  if (key === "identificacion" && typeof value === "object") {
-    const idBits = ["lugarNacimiento", "residencia", "ocupacionActual", "dx", "cama"].map((k) => value[k] ? formatFieldLabel(k) + ": " + trimCollapse(value[k], 35) : "").filter(Boolean);
-    if (idBits.length) parts.push(idBits.slice(0, 3).join(" \xB7 "));
-  }
-  if (parts.length) return parts.join(" \xB7 ");
-  if (HC_STRUCTURED_KEYS.has(key)) return "bloque sin texto legible";
-  try {
-    const raw = JSON.stringify(value);
-    return raw.length > 120 ? trimCollapse(raw, 117) : raw;
-  } catch (_e2) {
-    return "\u2014";
-  }
-}
-function formatConflictValue(value, fieldKey) {
-  return summarizeConflictFieldValue(fieldKey, value);
-}
-function formatFieldLabel(key) {
-  const k = String(key || "").trim();
-  if (!k) return "";
-  if (FIELD_LABELS[k]) return FIELD_LABELS[k];
-  return k.replace(/([A-Z])/g, " $1").replace(/_/g, " ").trim().replace(/^\w/, (c) => c.toUpperCase());
-}
-function isInternalNoiseKey(key, localData, serverData) {
-  if (!INTERNAL_DIFF_KEYS.has(key)) return false;
-  const serverVal = serverData?.[key];
-  if (serverVal === void 0 || serverVal === null) return true;
-  return valuesEqual(localData?.[key], serverVal);
-}
-function keysThatDiffer(localData, serverData) {
-  const keys = /* @__PURE__ */ new Set([...Object.keys(localData || {}), ...Object.keys(serverData || {})]);
-  keys.delete("_deleted");
-  return [...keys].filter((key) => !isInternalNoiseKey(key, localData, serverData)).filter((key) => !valuesEqual(localData?.[key], serverData?.[key])).sort((a, b) => a.localeCompare(b));
-}
-function pickDiffKeys(conflictingKeys, localData, serverData) {
-  const raw = Array.isArray(conflictingKeys) ? conflictingKeys.filter(Boolean) : [];
-  const onlyStar = raw.length === 1 && raw[0] === "*";
-  if (raw.length && !onlyStar) {
-    return raw.filter((key) => !isInternalNoiseKey(key, localData, serverData)).sort((a, b) => a.localeCompare(b));
-  }
-  return keysThatDiffer(localData, serverData).filter((key) => {
-    if (!INTERNAL_DIFF_KEYS.has(key)) return true;
-    return !valuesEqual(localData?.[key], serverData?.[key]);
-  });
-}
-function buildConflictModalTitle(context) {
-  const ctx = context || {};
-  if (ctx.entityType === "todo") return "Pendiente en la sala";
-  if (ctx.entityType === "historiaClinica") return "Historia cl\xEDnica en la sala";
-  if (ctx.entityType === "patient") return "Paciente en la sala";
-  return "Cambio en la sala";
-}
-function buildConflictActionCopy(context) {
-  const ctx = context || {};
-  if (ctx.intent === "todo-delete") {
-    return {
-      primaryTitle: "No eliminar \u2014 conservar sala",
-      primaryHint: "El pendiente sigue en la sala para todos. En tu pantalla volver\xE1 a aparecer si ya lo hab\xEDas quitado.",
-      secondaryTitle: "S\xED eliminar \u2014 reenviar borrado",
-      secondaryHint: "Intenta de nuevo el borrado con la versi\xF3n actual de la sala. \xDAsalo si est\xE1s seguro de que debe desaparecer.",
-      tagline: "Conflicto al eliminar un pendiente en la sala."
-    };
-  }
-  if (ctx.intent === "todo-complete") {
-    return {
-      primaryTitle: "Marcar como en la sala",
-      primaryHint: "Aplica el estado completado que ya tiene el host (si aplica).",
-      secondaryTitle: "Dejar como lo tengo",
-      secondaryHint: "Cierra sin cambiar; revisa el pendiente en tu lista.",
-      tagline: "El pendiente ya estaba completado o se marc\xF3 en otro equipo."
-    };
-  }
-  if (ctx.entityType === "todo") {
-    return {
-      primaryTitle: "Usar lo que tiene la sala",
-      primaryHint: "Aplica el texto y estado del pendiente tal como est\xE1 guardado en el host.",
-      secondaryTitle: "Mantener mi cambio local",
-      secondaryHint: "Cierra el comparador sin sobrescribir; revisa el texto en pantalla.",
-      tagline: "El mismo pendiente cambi\xF3 en otro equipo."
-    };
-  }
-  return {
-    primaryTitle: "Usar versi\xF3n del servidor",
-    primaryHint: "Descarta este intento de guardado y carga lo que ya guard\xF3 la sala o el host. Se elimina el borrador guardado.",
-    secondaryTitle: "Seguir con mi borrador",
-    secondaryHint: "Cierra el comparador y mant\xE9n tus cambios en pantalla. El borrador queda en Ajustes \u2192 LAN.",
-    tagline: "Otro equipo guard\xF3 antes. Elige la copia de la sala o sigue con lo que tienes en pantalla."
-  };
-}
-function buildConflictContextHtml(context) {
-  const ctx = context || {};
-  const entityLabel = ENTITY_LABELS[ctx.entityType] || formatFieldLabel(ctx.entityType) || "Registro cl\xEDnico";
-  const patientName = ctx.patientDisplayName ? String(ctx.patientDisplayName) : "";
-  const patientRef = patientName ? "Paciente: " + escHtml(patientName) : ctx.patientId ? "Paciente (id interno)" : "";
-  let lead = entityLabel;
-  if (ctx.entityType === "todo" && ctx.itemPreview) {
-    lead = "Pendiente: \xAB" + escHtml(ctx.itemPreview) + "\xBB";
-  }
-  let cause = "Otro guardado lleg\xF3 antes que el tuyo y ambos tocaron los mismos campos.";
-  if (ctx.intent === "todo-delete") {
-    cause = "Quisiste eliminar este pendiente, pero la sala tiene una versi\xF3n distinta (otro equipo lo edit\xF3 o tu copia local estaba desactualizada).";
-  } else if (ctx.transport === "ws") {
-    cause = "La sala LAN recibi\xF3 un cambio en vivo (otro equipo conectado) mientras t\xFA editabas o guardabas.";
-  } else if (ctx.transport === "http") {
-    cause = "El host de la sala ya ten\xEDa una versi\xF3n m\xE1s reciente cuando intentaste guardar por red.";
-  }
-  const localV = ctx.localVersion != null && ctx.localVersion !== "" ? Number(ctx.localVersion) : null;
-  const serverV = ctx.serverVersion != null && ctx.serverVersion !== "" ? Number(ctx.serverVersion) : null;
-  let versionHtml = "";
-  if (localV != null || serverV != null) {
-    const localBadge = localV != null && Number.isFinite(localV) ? '<span class="clinical-conflict-version-pill clinical-conflict-version-pill--local">Tu base: v' + escHtml(localV) + "</span>" : "";
-    const serverBadge = serverV != null && Number.isFinite(serverV) ? '<span class="clinical-conflict-version-pill clinical-conflict-version-pill--server">Sala: v' + escHtml(serverV) + "</span>" : "";
-    versionHtml = '<div class="clinical-conflict-versions">' + localBadge + serverBadge + (localV != null && serverV != null && localV !== serverV ? '<span class="clinical-conflict-version-note">El n\xFAmero de versi\xF3n confirma que no partiste del mismo estado.</span>' : "") + "</div>";
-  }
-  const showLead = ctx.entityType !== "historiaClinica" || !patientRef;
-  return '<div class="clinical-conflict-context">' + (showLead ? '<p class="clinical-conflict-context-lead"><strong>' + lead + "</strong></p>" : "") + (patientRef ? '<p class="clinical-conflict-context-patient">' + patientRef + "</p>" : "") + '<p class="clinical-conflict-context-body">' + escHtml(cause) + "</p>" + versionHtml + "</div>";
-}
-function conflictSnapshotsMatchForAutoResolve({ conflictingKeys, localData, serverData }) {
-  const keys = pickDiffKeys(conflictingKeys, localData, serverData);
-  if (!keys.length) return false;
-  for (let i = 0; i < keys.length; i += 1) {
-    const key = keys[i];
-    const localVal = summarizeConflictFieldValue(key, localData?.[key]);
-    const serverVal = summarizeConflictFieldValue(key, serverData?.[key]);
-    if (localVal !== serverVal || localVal === "\u2014") return false;
-  }
-  return true;
-}
-function buildConflictDiffParts({ conflictingKeys, localData, serverData }) {
-  const conflictSet = new Set(conflictingKeys || []);
-  const keys = pickDiffKeys(conflictingKeys, localData, serverData);
-  if (!keys.length) {
-    return {
-      keyCount: 0,
-      summaryHtml: '<p class="clinical-conflict-summary-empty">No hay detalle por secci\xF3n (com\xFAn al eliminar o por desfase de versi\xF3n). Elige abajo si conservas la sala o tu borrador.</p>',
-      detailHtml: ""
-    };
-  }
-  const labels = keys.map((key) => formatFieldLabel(key));
-  const conflictOnly = keys.filter((key) => conflictSet.has(key) || conflictSet.has("*"));
-  const summaryLead = conflictOnly.length === keys.length ? keys.length === 1 ? "Choc\xF3 <strong>1 secci\xF3n</strong>:" : "Chocaron <strong>" + keys.length + " secciones</strong>:" : "Hay <strong>" + keys.length + " diferencia" + (keys.length === 1 ? "" : "s") + "</strong> respecto a la sala:";
-  const summaryHtml = '<div class="clinical-conflict-summary"><p class="clinical-conflict-summary-lead">' + summaryLead + '</p><ul class="clinical-conflict-affected">' + labels.map((label) => "<li>" + escHtml(label) + "</li>").join("") + "</ul></div>";
-  const cards = keys.map((key) => {
-    const isConflict = conflictSet.has(key) || conflictSet.has("*");
-    const localVal = formatConflictValue(localData?.[key], key);
-    const serverVal = formatConflictValue(serverData?.[key], key);
-    const serverMissing = serverData?.[key] === void 0 || serverData?.[key] === null;
-    const samePreview = localVal === serverVal && localVal !== "\u2014";
-    return '<article class="clinical-conflict-field-card' + (isConflict ? " clinical-conflict-field-card--hot" : "") + '"><h4 class="clinical-conflict-field-title">' + escHtml(formatFieldLabel(key)) + "</h4>" + (samePreview ? '<p class="clinical-conflict-field-same">En este resumen se ve igual en tu borrador y en la sala; aun as\xED el registro del host no coincide del todo (versi\xF3n, metadatos u otro campo que aqu\xED no mostramos).</p>' : '<div class="clinical-conflict-compare"><div class="clinical-conflict-side clinical-conflict-side--local"><span class="clinical-conflict-side-label">Tu intento</span><p>' + escHtml(localVal) + '</p></div><div class="clinical-conflict-side clinical-conflict-side--server' + (serverMissing ? " clinical-conflict-side--missing" : "") + '"><span class="clinical-conflict-side-label">En la sala</span><p>' + escHtml(serverVal) + "</p></div></div>") + "</article>";
-  }).join("");
-  return {
-    keyCount: keys.length,
-    summaryHtml,
-    detailHtml: '<div class="clinical-conflict-diff-cards">' + cards + "</div>"
-  };
-}
-function closeClinicalConflictViewer() {
-  if (typeof document === "undefined") return;
-  const prev = document.getElementById(BACKDROP_ID);
-  if (prev) prev.remove();
-}
-function openClinicalConflictViewer(opts) {
-  if (typeof document === "undefined") return;
-  const {
-    draftId,
-    conflictingKeys,
-    localData,
-    serverData,
-    context,
-    onUseServer,
-    onEditDraft,
-    onClose
-  } = opts || {};
-  closeClinicalConflictViewer();
-  const contextHtml = buildConflictContextHtml(context);
-  const actions = buildConflictActionCopy(context);
-  const modalTitle = buildConflictModalTitle(context);
-  const diffParts = buildConflictDiffParts({ conflictingKeys, localData, serverData });
-  const detailBlock = diffParts.detailHtml ? '<details class="clinical-conflict-details"><summary>Ver comparaci\xF3n por secci\xF3n</summary><div class="clinical-conflict-diff-wrap">' + diffParts.detailHtml + "</div></details>" : "";
-  const backdrop = document.createElement("div");
-  backdrop.className = "lab-conflict-backdrop clinical-conflict-backdrop";
-  backdrop.id = BACKDROP_ID;
-  if (draftId) backdrop.dataset.draftId = String(draftId);
-  backdrop.innerHTML = '<div class="lab-conflict-modal clinical-conflict-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-conflict-title"><header class="clinical-conflict-header clinical-conflict-header--plain"><div class="clinical-conflict-header-text"><h3 id="clinical-conflict-title">' + escHtml(modalTitle) + '</h3><p class="clinical-conflict-tagline">' + escHtml(actions.tagline) + "</p></div></header>" + contextHtml + diffParts.summaryHtml + '<div class="lab-conflict-actions clinical-conflict-actions"><button type="button" class="btn-conflict-primary" id="clinical-conflict-use-server">' + escHtml(actions.primaryTitle) + '<span class="btn-conflict-hint">' + escHtml(actions.primaryHint) + '</span></button><button type="button" class="btn-conflict-secondary" id="clinical-conflict-edit-draft">' + escHtml(actions.secondaryTitle) + '<span class="btn-conflict-hint">' + escHtml(actions.secondaryHint) + '</span></button><button type="button" class="btn-conflict-cancel" id="clinical-conflict-close">Cerrar sin decidir</button></div>' + detailBlock + "</div>";
-  document.body.appendChild(backdrop);
-  const dismiss = (cb) => {
-    closeClinicalConflictViewer();
-    if (typeof cb === "function") cb();
-  };
-  const useServer = backdrop.querySelector("#clinical-conflict-use-server");
-  const editDraft = backdrop.querySelector("#clinical-conflict-edit-draft");
-  const closeBtn = backdrop.querySelector("#clinical-conflict-close");
-  if (useServer) {
-    useServer.addEventListener("click", () => dismiss(onUseServer));
-  }
-  if (editDraft) {
-    editDraft.addEventListener("click", () => dismiss(onEditDraft));
-  }
-  if (closeBtn) {
-    closeBtn.addEventListener("click", () => dismiss(onClose));
-  }
-  backdrop.addEventListener("click", (ev) => {
-    if (ev.target === backdrop) dismiss(onClose);
-  });
-}
-var BACKDROP_ID, INTERNAL_DIFF_KEYS, ENTITY_LABELS, FIELD_LABELS, HC_STRUCTURED_KEYS;
-var init_clinical_conflict_viewer = __esm({
-  "public/js/features/clinical-conflict-viewer.mjs"() {
-    BACKDROP_ID = "clinical-conflict-backdrop";
-    INTERNAL_DIFF_KEYS = /* @__PURE__ */ new Set([
-      "id",
-      "patientId",
-      "updatedAt",
-      "version",
-      "expectedVersion",
-      "_deleted",
-      "entityType",
-      "entityId",
-      "roomId",
-      "clientId",
-      "audit"
-    ]);
-    ENTITY_LABELS = {
-      historiaClinica: "Historia cl\xEDnica",
-      patient: "Datos del paciente",
-      todo: "Pendiente",
-      agenda: "Evento de agenda",
-      roomBundle: "Sala (agenda y pendientes)"
-    };
-    FIELD_LABELS = {
-      identificacion: "Identificaci\xF3n",
-      motivoConsulta: "Motivo de consulta",
-      apnp: "Antecedentes no patol\xF3gicos",
-      app: "Antecedentes patol\xF3gicos",
-      ahf: "Antecedentes heredofamiliares",
-      genero: "G\xE9nero",
-      sexual: "Salud sexual",
-      padecimientoActual: "Padecimiento actual",
-      datosNegados: "Datos negados",
-      ipas: "IPAS",
-      signosVitalesIngreso: "Signos vitales de ingreso",
-      labsAtAdmission: "Labs de ingreso",
-      labAnchor: "Ancla de laboratorio",
-      meta: "Metadatos",
-      labLookbackHours: "Ventana de labs (h)",
-      eventualidades: "Eventualidades",
-      nombre: "Nombre",
-      cuarto: "Cuarto",
-      cama: "Cama",
-      sexo: "Sexo",
-      edad: "Edad",
-      agenda: "Agenda",
-      todos: "Pendientes",
-      text: "Descripci\xF3n",
-      completed: "Completado",
-      priority: "Prioridad",
-      createdAt: "Fecha de creaci\xF3n",
-      updatedAt: "\xDAltima actualizaci\xF3n",
-      _deleted: "Eliminado",
-      entries: "Entradas",
-      manejo: "Manejo"
-    };
-    HC_STRUCTURED_KEYS = /* @__PURE__ */ new Set(["ahf", "app", "apnp", "ipas", "genero", "identificacion", "signosVitalesIngreso"]);
-  }
-});
-
-// public/js/host-bundle-bases.mjs
-function readAll2() {
-  try {
-    const raw = localStorage.getItem(BASES_KEY);
-    if (!raw) return {};
-    const o = JSON.parse(raw);
-    return o && typeof o === "object" ? o : {};
-  } catch (_e) {
-    return {};
-  }
-}
-function writeAll2(map) {
-  localStorage.setItem(BASES_KEY, JSON.stringify(map));
-}
-function getHostBundleBases(roomId) {
-  const rid = String(roomId || "").trim();
-  if (!rid) return { revision: 0, entityVersions: {} };
-  const row = readAll2()[rid];
-  if (!row || typeof row !== "object") return { revision: 0, entityVersions: {} };
-  return {
-    revision: Number(row.revision || 0),
-    entityVersions: row.entityVersions && typeof row.entityVersions === "object" ? row.entityVersions : {}
-  };
-}
-function setHostBundleBases(roomId, bundle) {
-  const rid = String(roomId || "").trim();
-  if (!rid || !bundle) return;
-  const all = readAll2();
-  all[rid] = {
-    revision: Number(bundle.revision || 0),
-    entityVersions: bundle.entityVersions && typeof bundle.entityVersions === "object" ? bundle.entityVersions : {}
-  };
-  writeAll2(all);
-}
-function collectKeysFromEnvelope(envelope) {
-  const keys = /* @__PURE__ */ new Set();
-  if (!envelope || typeof envelope !== "object") return keys;
-  const agenda = Array.isArray(envelope.agenda) ? envelope.agenda : [];
-  for (const ev of agenda) {
-    if (ev && ev.id) keys.add(agendaEntityKey(ev.id));
-  }
-  const todos = envelope.todos && typeof envelope.todos === "object" ? envelope.todos : {};
-  for (const pid of Object.keys(todos)) {
-    const arr = Array.isArray(todos[pid]) ? todos[pid] : [];
-    for (const t2 of arr) {
-      if (t2 && t2.id) keys.add(todoEntityKey(pid, t2.id));
-    }
-  }
-  if (envelope.manejo && typeof envelope.manejo === "object") keys.add("manejo");
-  if (envelope.clinicalOps && typeof envelope.clinicalOps === "object") keys.add("clinicalOps");
-  return keys;
-}
-function buildBaseEntityVersionsForEnvelope(envelope, serverEntityVersions) {
-  const versions = serverEntityVersions || {};
-  const baseEntityVersions = {};
-  for (const key of collectKeysFromEnvelope(envelope)) {
-    baseEntityVersions[key] = versions[key] != null ? Number(versions[key]) : 0;
-  }
-  return baseEntityVersions;
-}
-function hostBundlePutBodyFromEnvelope(roomId, envelope) {
-  const bases = getHostBundleBases(roomId);
-  return {
-    baseRevision: bases.revision,
-    baseEntityVersions: buildBaseEntityVersionsForEnvelope(envelope, bases.entityVersions),
-    uploadedByClientId: envelope.clientId || "",
-    agenda: envelope.agenda || [],
-    todos: envelope.todos || {},
-    entries: envelope.entries || [],
-    manejo: envelope.manejo != null ? envelope.manejo : null,
-    clinicalOps: envelope.clinicalOps != null ? envelope.clinicalOps : null
-  };
-}
-var BASES_KEY;
-var init_host_bundle_bases = __esm({
-  "public/js/host-bundle-bases.mjs"() {
-    init_live_sync_room();
-    BASES_KEY = "rpc-lan-host-bundle-bases";
-  }
-});
-
-// public/js/clinical-ops-bundle-merge.mjs
-function indexBy(rows, key) {
-  const map = /* @__PURE__ */ new Map();
-  for (const row of rows || []) {
-    if (row && row[key] != null) map.set(String(row[key]), row);
-  }
-  return map;
-}
-function pickLastWriteRow(localRow, incomingRow, tsField) {
-  if (!localRow) return incomingRow || null;
-  if (!incomingRow) return localRow;
-  const a = String(localRow[tsField] || "");
-  const b = String(incomingRow[tsField] || "");
-  return b >= a ? incomingRow : localRow;
-}
-function mergeTeamsData(localRows, incomingRows) {
-  const localById = indexBy(localRows, "team_id");
-  const incomingById = indexBy(incomingRows, "team_id");
-  const allIds = /* @__PURE__ */ new Set([...localById.keys(), ...incomingById.keys()]);
-  const out = [];
-  for (const teamId of allIds) {
-    const winner = pickLastWriteRow(localById.get(teamId), incomingById.get(teamId), "created_at");
-    if (winner) out.push({ ...winner });
-  }
-  return out;
-}
-function mergeTeamMembershipData(localRows, incomingRows) {
-  const map = /* @__PURE__ */ new Map();
-  for (const row of localRows || []) {
-    if (!row?.team_id || !row?.user_id) continue;
-    map.set(`${row.team_id}\0${row.user_id}`, { ...row });
-  }
-  for (const row of incomingRows || []) {
-    if (!row?.team_id || !row?.user_id) continue;
-    const key = `${row.team_id}\0${row.user_id}`;
-    const prev = map.get(key);
-    if (!prev) {
-      map.set(key, { ...row });
-      continue;
-    }
-    const fraction = row.sub_area_fraction != null && String(row.sub_area_fraction).trim() ? String(row.sub_area_fraction).trim() : prev.sub_area_fraction ?? null;
-    map.set(key, { ...prev, ...row, sub_area_fraction: fraction });
-  }
-  return [...map.values()];
-}
-function mergeRotationCyclesData(localRows, incomingRows) {
-  const byId = indexBy(localRows, "cycle_id");
-  for (const row of incomingRows || []) {
-    if (row && row.cycle_id) byId.set(String(row.cycle_id), { ...row });
-  }
-  return [...byId.values()];
-}
-function mergePatientTeamAssignmentsData(localRows, incomingRows) {
-  const map = /* @__PURE__ */ new Map();
-  for (const row of localRows || []) {
-    if (!row?.patient_id || !row?.team_id) continue;
-    map.set(`${row.patient_id}\0${row.team_id}`, { ...row });
-  }
-  for (const row of incomingRows || []) {
-    if (!row?.patient_id || !row?.team_id) continue;
-    const key = `${row.patient_id}\0${row.team_id}`;
-    if (!map.has(key)) map.set(key, { ...row });
-  }
-  return [...map.values()];
-}
-function mergeTeamGuardiaTodayData(localRows, incomingRows) {
-  const localByTeam = indexBy(localRows, "team_id");
-  const incomingByTeam = indexBy(incomingRows, "team_id");
-  const allTeams = /* @__PURE__ */ new Set([...localByTeam.keys(), ...incomingByTeam.keys()]);
-  const out = [];
-  for (const teamId of allTeams) {
-    const winner = pickLastWriteRow(localByTeam.get(teamId), incomingByTeam.get(teamId), "declared_at");
-    if (winner) out.push({ ...winner });
-  }
-  return out;
-}
-function mergeActiveGuardiasData(localRows, incomingRows) {
-  const localByPatient = indexBy(localRows, "patient_id");
-  const incomingByPatient = indexBy(incomingRows, "patient_id");
-  const allPatients = /* @__PURE__ */ new Set([...localByPatient.keys(), ...incomingByPatient.keys()]);
-  const out = [];
-  for (const patientId of allPatients) {
-    const winner = pickLastWriteRow(
-      localByPatient.get(patientId),
-      incomingByPatient.get(patientId),
-      "assigned_at"
-    );
-    if (winner) out.push({ ...winner });
-  }
-  return out;
-}
-function normalizeUsername2(raw) {
-  return String(raw || "").trim().replace(/^@+/, "").toLowerCase();
-}
-function isValidUsernameFormat2(raw) {
-  return /^[a-z][a-z0-9_]{2,31}$/.test(normalizeUsername2(raw));
-}
-function mergeClinicalUsersDeletedData(localIds, incomingIds) {
-  const set = /* @__PURE__ */ new Set();
-  for (const id of localIds || []) {
-    const uid = String(id || "").trim();
-    if (uid) set.add(uid);
-  }
-  for (const id of incomingIds || []) {
-    const uid = String(id || "").trim();
-    if (uid) set.add(uid);
-  }
-  return [...set];
-}
-function mergeClinicalUsersData(localRows, incomingRows) {
-  const byUsername = /* @__PURE__ */ new Map();
-  const byUserId = /* @__PURE__ */ new Map();
-  for (const row of localRows || []) {
-    if (!row?.user_id) continue;
-    byUserId.set(String(row.user_id), { ...row });
-    const handle = normalizeUsername2(row.username);
-    if (handle && isValidUsernameFormat2(handle)) byUsername.set(handle, { ...row });
-  }
-  for (const row of incomingRows || []) {
-    if (!row?.user_id) continue;
-    const handle = normalizeUsername2(row.username);
-    if (!handle || !isValidUsernameFormat2(handle)) continue;
-    const uid = String(row.user_id);
-    const existingByHandle = byUsername.get(handle);
-    if (existingByHandle && existingByHandle.user_id !== uid) continue;
-    const prev = byUserId.get(uid) || existingByHandle || null;
-    const merged = prev ? {
-      ...prev,
-      username: handle,
-      rank: row.rank ?? prev.rank,
-      clinical_name: row.clinical_name ?? prev.clinical_name,
-      sala: row.sala ?? prev.sala,
-      is_program_admin: row.is_program_admin != null ? row.is_program_admin : prev.is_program_admin
-    } : { ...row, username: handle };
-    byUserId.set(uid, merged);
-    byUsername.set(handle, merged);
-  }
-  return [...byUserId.values()];
-}
-function mergeClinicalOpsSnapshotsData(local, incoming) {
-  if (!local) return incoming && typeof incoming === "object" ? { ...incoming } : null;
-  if (!incoming || typeof incoming !== "object") return { ...local };
-  const remoteNueva = incoming.rotationNuevaAt ? String(incoming.rotationNuevaAt) : "";
-  const localNueva = local.rotationNuevaAt ? String(local.rotationNuevaAt) : "";
-  if (remoteNueva && (!localNueva || remoteNueva > localNueva)) {
-    const clinical_users_deleted2 = mergeClinicalUsersDeletedData(
-      local.clinical_users_deleted || [],
-      incoming.clinical_users_deleted || []
-    );
-    const deletedSet2 = new Set(clinical_users_deleted2);
-    return {
-      ...incoming,
-      exportedAt: String(incoming.exportedAt || "") >= String(local.exportedAt || "") ? incoming.exportedAt : local.exportedAt,
-      clinical_users_deleted: clinical_users_deleted2,
-      clinical_users: mergeClinicalUsersData(
-        local.clinical_users || [],
-        incoming.clinical_users || []
-      ).filter((row) => !deletedSet2.has(String(row?.user_id || "")))
-    };
-  }
-  const exportedAt = String(incoming.exportedAt || "") >= String(local.exportedAt || "") ? incoming.exportedAt : local.exportedAt;
-  const clinical_users_deleted = mergeClinicalUsersDeletedData(
-    local.clinical_users_deleted || [],
-    incoming.clinical_users_deleted || []
-  );
-  const deletedSet = new Set(clinical_users_deleted);
-  return {
-    version: Math.max(Number(local.version || 1), Number(incoming.version || 1)),
-    exportedAt,
-    rotationNuevaAt: localNueva || remoteNueva || null,
-    rotation_cycles: mergeRotationCyclesData(
-      local.rotation_cycles || [],
-      incoming.rotation_cycles || []
-    ),
-    patient_team_assignment: mergePatientTeamAssignmentsData(
-      local.patient_team_assignment || [],
-      incoming.patient_team_assignment || []
-    ),
-    team_guardia_today: mergeTeamGuardiaTodayData(
-      local.team_guardia_today || [],
-      incoming.team_guardia_today || []
-    ),
-    teams: mergeTeamsData(local.teams || [], incoming.teams || []),
-    team_membership: mergeTeamMembershipData(
-      local.team_membership || [],
-      incoming.team_membership || []
-    ),
-    active_guardias: mergeActiveGuardiasData(
-      local.active_guardias || [],
-      incoming.active_guardias || []
-    ),
-    clinical_users: mergeClinicalUsersData(
-      local.clinical_users || [],
-      incoming.clinical_users || []
-    ).filter((row) => !deletedSet.has(String(row?.user_id || ""))),
-    clinical_users_deleted
-  };
-}
-function mergeClinicalOpsFromSourcesData(sources) {
-  let merged = null;
-  for (const src of sources || []) {
-    const snap = src && src.clinicalOps;
-    if (!snap || typeof snap !== "object") continue;
-    merged = merged ? mergeClinicalOpsSnapshotsData(merged, snap) : { ...snap };
-  }
-  return merged;
-}
-var init_clinical_ops_bundle_merge = __esm({
-  "public/js/clinical-ops-bundle-merge.mjs"() {
-  }
-});
-
-// public/js/clinical-ops-lan.mjs
-function dbApi3() {
-  if (typeof window === "undefined") return null;
-  return window.rplusDb || window.electronAPI || null;
-}
-function isClinicalOpsLanAvailable() {
-  const api3 = dbApi3();
-  return !!(api3 && typeof api3.dbClinicalOpsExport === "function" && typeof api3.dbClinicalOpsMerge === "function");
-}
-async function refreshClinicalOpsSnapshotCache() {
-  cachedSnapshot = await collectClinicalOpsForLanSync();
-  return cachedSnapshot;
-}
-async function prepareClinicalOpsForLanSync() {
-  if (!isClinicalOpsLanAvailable()) return null;
-  return refreshClinicalOpsSnapshotCache();
-}
-function getCachedClinicalOpsSnapshot() {
-  return cachedSnapshot;
-}
-async function collectClinicalOpsForLanSync() {
-  const api3 = dbApi3();
-  if (!api3 || typeof api3.dbClinicalOpsExport !== "function") return null;
-  const res = await api3.dbClinicalOpsExport();
-  if (!res || res.ok === false) return null;
-  return res.snapshot && typeof res.snapshot === "object" ? res.snapshot : null;
-}
-async function applyClinicalOpsLanSnapshot(snapshot) {
-  if (!snapshot || typeof snapshot !== "object") return false;
-  const api3 = dbApi3();
-  if (!api3 || typeof api3.dbClinicalOpsMerge !== "function") return false;
-  const res = await api3.dbClinicalOpsMerge({ snapshot });
-  return !!(res && res.ok !== false);
-}
-function mergeClinicalOpsFromSources(sources) {
-  return mergeClinicalOpsFromSourcesData(sources);
-}
-var cachedSnapshot;
-var init_clinical_ops_lan = __esm({
-  "public/js/clinical-ops-lan.mjs"() {
-    init_clinical_ops_bundle_merge();
-    cachedSnapshot = null;
-  }
-});
-
-// public/js/lan-surrogate-host.mjs
-function rememberPrimaryHostUrl(hostUrl) {
-  const url = String(hostUrl || "").trim().replace(/\/+$/, "");
-  if (!url) return;
-  try {
-    localStorage.setItem(PRIMARY_HOST_KEY, url);
-  } catch (_e) {
-  }
-}
-function getPrimaryHostUrl() {
-  try {
-    return String(localStorage.getItem(PRIMARY_HOST_KEY) || "").trim().replace(/\/+$/, "");
-  } catch (_e) {
-    return "";
-  }
-}
-function readPeersRaw() {
-  try {
-    const raw = localStorage.getItem(PEERS_KEY);
-    if (!raw) return {};
-    const o = JSON.parse(raw);
-    return o && typeof o === "object" ? o : {};
-  } catch (_e) {
-    return {};
-  }
-}
-function writePeersRaw(map) {
-  try {
-    localStorage.setItem(PEERS_KEY, JSON.stringify(map || {}));
-  } catch (_e) {
-  }
-}
-function pruneLivePeers(nowMs) {
-  const now = nowMs != null ? nowMs : Date.now();
-  const map = readPeersRaw();
-  let changed = false;
-  Object.keys(map).forEach((id) => {
-    const row = map[id];
-    if (!row || now - Number(row.seenAt || 0) > PEER_TTL_MS) {
-      delete map[id];
-      changed = true;
-    }
-  });
-  if (changed) writePeersRaw(map);
-  return map;
-}
-function recordLivePeer(clientId, meta) {
-  const id = String(clientId || "").trim();
-  const hostUrl = String(meta && meta.hostUrl ? meta.hostUrl : "").trim().replace(/\/+$/, "");
-  if (!id || !hostUrl) return;
-  const map = pruneLivePeers();
-  map[id] = {
-    hostUrl,
-    canHost: !!(meta && meta.canHost),
-    seenAt: Date.now(),
-    clientId: id
-  };
-  writePeersRaw(map);
-}
-function listLivePeerHostUrls(excludeClientId) {
-  const skip = String(excludeClientId || "").trim();
-  const map = pruneLivePeers();
-  const urls = [];
-  const seen = /* @__PURE__ */ new Set();
-  Object.keys(map).forEach((id) => {
-    if (id === skip) return;
-    const row = map[id];
-    if (!row || !row.canHost || !row.hostUrl) return;
-    if (seen.has(row.hostUrl)) return;
-    seen.add(row.hostUrl);
-    urls.push(row.hostUrl);
-  });
-  urls.sort();
-  return urls;
-}
-function surrogateElectionDelayMs(clientId) {
-  const s = String(clientId || "lc");
-  let h = 0;
-  for (let i = 0; i < s.length; i += 1) h = h * 31 + s.charCodeAt(i) >>> 0;
-  return 400 + h % 2400;
-}
-async function pingLanHostUrl(hostUrl, teamCode) {
-  const url = String(hostUrl || "").trim().replace(/\/+$/, "");
-  if (!url) return false;
-  const code = String(teamCode || "").trim();
-  try {
-    const r = await fetch(`${url}/api/lan/v1/ping`, {
-      method: "GET",
-      headers: { Authorization: `Bearer ${code}` }
-    });
-    return !!(r && r.ok);
-  } catch (_e) {
-    return false;
-  }
-}
-function getSurrogateHostState() {
-  try {
-    const raw = localStorage.getItem(SURROGATE_KEY);
-    if (!raw) return null;
-    const o = JSON.parse(raw);
-    if (!o || !String(o.formerHostUrl || "").trim()) return null;
-    return {
-      formerHostUrl: String(o.formerHostUrl).trim().replace(/\/+$/, ""),
-      formerTeamCode: String(o.formerTeamCode || "").trim(),
-      localHostUrl: String(o.localHostUrl || "").trim().replace(/\/+$/, ""),
-      promotedAt: String(o.promotedAt || ""),
-      roomId: String(o.roomId || "").trim()
-    };
-  } catch (_e) {
-    return null;
-  }
-}
-function setSurrogateHostState(state) {
-  if (!state || !state.formerHostUrl) {
-    clearSurrogateHostState();
-    return;
-  }
-  try {
-    localStorage.setItem(
-      SURROGATE_KEY,
-      JSON.stringify({
-        formerHostUrl: String(state.formerHostUrl).trim().replace(/\/+$/, ""),
-        formerTeamCode: String(state.formerTeamCode || "").trim(),
-        localHostUrl: String(state.localHostUrl || "").trim().replace(/\/+$/, ""),
-        promotedAt: state.promotedAt || (/* @__PURE__ */ new Date()).toISOString(),
-        roomId: String(state.roomId || "").trim()
-      })
-    );
-  } catch (_e) {
-  }
-}
-function clearSurrogateHostState() {
-  try {
-    localStorage.removeItem(SURROGATE_KEY);
-  } catch (_e) {
-  }
-}
-function isSurrogateHostActive() {
-  return !!getSurrogateHostState();
-}
-var PEERS_KEY, SURROGATE_KEY, PRIMARY_HOST_KEY, PEER_TTL_MS;
-var init_lan_surrogate_host = __esm({
-  "public/js/lan-surrogate-host.mjs"() {
-    PEERS_KEY = "rpc-lan-live-peers";
-    SURROGATE_KEY = "rpc-lan-surrogate-host";
-    PRIMARY_HOST_KEY = "rpc-lan-primary-host-url";
-    PEER_TTL_MS = 5 * 60 * 1e3;
-  }
-});
-
-// public/js/lan-sync-state.mjs
-function notify(roomId, phase, meta) {
-  const detail = { roomId, phase, meta: meta ?? null };
-  listeners.forEach(function(cb) {
-    try {
-      cb(detail);
-    } catch (_e) {
-    }
-  });
-}
-function getRoomSyncPhase(roomId) {
-  const id = roomId != null ? String(roomId).trim() : "";
-  if (!id) return RoomSyncPhase.offline;
-  const entry2 = phaseByRoom.get(id);
-  return entry2 ? entry2.phase : RoomSyncPhase.offline;
-}
-function setRoomSyncPhase(roomId, phase, meta) {
-  const id = String(roomId || "").trim();
-  const p = String(phase || "").trim();
-  if (!id || !VALID_PHASES.has(p)) return;
-  phaseByRoom.set(id, { phase: p, meta: meta ?? null });
-  notify(id, p, meta);
-}
-function clearRoomSyncPhase(roomId) {
-  const id = String(roomId || "").trim();
-  if (!id || !phaseByRoom.has(id)) return;
-  phaseByRoom.delete(id);
-  notify(id, RoomSyncPhase.offline, null);
-}
-var RoomSyncPhase, VALID_PHASES, phaseByRoom, listeners;
-var init_lan_sync_state = __esm({
-  "public/js/lan-sync-state.mjs"() {
-    RoomSyncPhase = Object.freeze({
-      offline: "offline",
-      configured: "configured",
-      joining: "joining",
-      catching_up: "catching_up",
-      live: "live",
-      degraded: "degraded"
-    });
-    VALID_PHASES = new Set(Object.values(RoomSyncPhase));
-    phaseByRoom = /* @__PURE__ */ new Map();
-    listeners = /* @__PURE__ */ new Set();
-  }
-});
-
-// public/js/lan-host-pin.mjs
-function getPinnedHostUrl() {
-  try {
-    return String(localStorage.getItem(PINNED_HOST_KEY) || "").trim().replace(/\/+$/, "");
-  } catch (_e) {
-    return "";
-  }
-}
-function setPinnedHostUrl(hostUrl) {
-  const url = String(hostUrl || "").trim().replace(/\/+$/, "");
-  if (!url) {
-    clearPinnedHostUrl();
-    return;
-  }
-  try {
-    localStorage.setItem(PINNED_HOST_KEY, url);
-  } catch (_e) {
-  }
-}
-function clearPinnedHostUrl() {
-  try {
-    localStorage.removeItem(PINNED_HOST_KEY);
-  } catch (_e) {
-  }
-}
-var PINNED_HOST_KEY;
-var init_lan_host_pin = __esm({
-  "public/js/lan-host-pin.mjs"() {
-    PINNED_HOST_KEY = "rpc-lan-pinned-host-url";
-  }
-});
-
 // public/js/lan-sync-diagnostics.mjs
 function recordLanSyncError(entry2) {
   const row = {
@@ -15483,8 +17304,8 @@ function recordLanSyncError(entry2) {
   lastErrors.unshift(row);
   if (lastErrors.length > MAX_ERRORS) lastErrors.length = MAX_ERRORS;
 }
-function getLanSyncDiagnostics(deps) {
-  const d = deps && typeof deps === "object" ? deps : {};
+function getLanSyncDiagnostics(deps2) {
+  const d = deps2 && typeof deps2 === "object" ? deps2 : {};
   return {
     hostUrl: String(d.hostUrl || ""),
     pingAt: d.pingAt != null ? d.pingAt : null,
@@ -15518,353 +17339,18 @@ var init_lan_sync_diagnostics = __esm({
   }
 });
 
-// lib/historia-clinica/migrate-legacy.mjs
-function migrateLegacyHistoriaData(legacy) {
-  if (!legacy || typeof legacy !== "object") return legacy;
-  const hasLegacyFlat = typeof legacy.ficha === "string" || typeof legacy.ahf === "string" || typeof legacy.app === "string" || typeof legacy.apnp === "string" || typeof legacy.peea === "string";
-  if (!hasLegacyFlat) return { ...legacy };
-  const out = { ...legacy };
-  if (typeof legacy.ficha === "string" && legacy.ficha.trim()) {
-    out.identificacion = {
-      ...out.identificacion && typeof out.identificacion === "object" ? out.identificacion : {},
-      informante: legacy.ficha.trim()
-    };
-  }
-  if (typeof legacy.app === "string") {
-    out.app = {
-      conditions: [],
-      descripcionDetallada: legacy.app,
-      hospitalizacionesPrevias: "",
-      medicamentosActuales: []
-    };
-  } else if (!out.app || typeof out.app !== "object" || Array.isArray(out.app)) {
-    out.app = {
-      conditions: [],
-      descripcionDetallada: "",
-      hospitalizacionesPrevias: "",
-      medicamentosActuales: []
-    };
-  }
-  if (typeof legacy.ahf === "string") {
-    out.ahf = {
-      conditions: [],
-      descripcionDetallada: legacy.ahf
-    };
-  } else if (!out.ahf || typeof out.ahf !== "object" || Array.isArray(out.ahf)) {
-    out.ahf = { conditions: [], customConditions: [], entries: [], descripcionDetallada: "" };
-  } else {
-    if (!Array.isArray(out.ahf.entries)) out.ahf.entries = [];
-    if (!Array.isArray(out.ahf.customConditions)) out.ahf.customConditions = [];
-    if (!Array.isArray(out.ahf.conditions)) out.ahf.conditions = [];
-  }
-  if (typeof legacy.apnp === "string" && legacy.apnp.trim()) {
-    out.apnp = {
-      ...out.apnp && typeof out.apnp === "object" ? out.apnp : {},
-      tabaquismo: legacy.apnp.trim()
-    };
-  } else if (!out.apnp || typeof out.apnp !== "object" || Array.isArray(out.apnp)) {
-    out.apnp = {};
-  }
-  if (typeof legacy.peea === "string") {
-    out.padecimientoActual = legacy.peea;
-  }
-  delete out.ficha;
-  delete out.peea;
-  return out;
-}
-var init_migrate_legacy = __esm({
-  "lib/historia-clinica/migrate-legacy.mjs"() {
-  }
-});
-
-// lib/historia-clinica/catalogs/app-conditions.json
-var app_conditions_default;
-var init_app_conditions = __esm({
-  "lib/historia-clinica/catalogs/app-conditions.json"() {
-    app_conditions_default = {
-      parotiditis: "Parotiditis",
-      paperas: "Paperas",
-      sarampion: "Sarampi\xF3n",
-      varicela: "Varicela",
-      rubeola: "Rub\xE9ola",
-      tuberculosis: "Tuberculosis",
-      hepatitis: "Hepatitis",
-      vih: "VIH/SIDA",
-      hipertension: "Hipertensi\xF3n arterial",
-      diabetes: "Diabetes mellitus",
-      cardiopatia: "Cardiopat\xEDa",
-      enfermedadRenal: "Enfermedad renal cr\xF3nica",
-      enfermedadPulmonar: "Enfermedad pulmonar cr\xF3nica",
-      cancer: "Neoplasia",
-      transfusiones: "Transfusiones previas",
-      cirugias: "Cirug\xEDas previas",
-      traumaticos: "Antecedentes traum\xE1ticos",
-      alergias: "Alergias medicamentosas",
-      otro: "Otro"
-    };
-  }
-});
-
-// lib/historia-clinica/catalogs/ahf-conditions.json
-var ahf_conditions_default;
-var init_ahf_conditions = __esm({
-  "lib/historia-clinica/catalogs/ahf-conditions.json"() {
-    ahf_conditions_default = {
-      diabetes: "Diabetes mellitus",
-      hipertension: "Hipertensi\xF3n arterial",
-      neoplasia: "Neoplasia",
-      cardiopatia: "Cardiopat\xEDa isqu\xE9mica",
-      enfermedadRenal: "Enfermedad renal",
-      enfermedadPulmonar: "Enfermedad pulmonar",
-      tuberculosis: "Tuberculosis",
-      hepatitis: "Hepatitis",
-      vih: "VIH/SIDA",
-      epilepsia: "Epilepsia",
-      psiquiatrico: "Trastorno psiqui\xE1trico",
-      tiroideo: "Enfermedad tiroidea",
-      otro: "Otro"
-    };
-  }
-});
-
-// lib/historia-clinica/catalogs/ipas-systems.json
-var ipas_systems_default;
-var init_ipas_systems = __esm({
-  "lib/historia-clinica/catalogs/ipas-systems.json"() {
-    ipas_systems_default = {
-      general: "General",
-      tegumentos: "Tegumentos",
-      respiratorio: "Respiratorio",
-      cardiovascular: "Cardiovascular",
-      digestivo: "Digestivo",
-      genitourinario: "Genitourinario",
-      hemolinfopoietico: "Hemolinfopoy\xE9tico",
-      endocrino: "Endocrino",
-      nervioso: "Nervioso",
-      musculoesqueletico: "Musculoesquel\xE9tico"
-    };
-  }
-});
-
-// public/js/historia-clinica-lan-sync.mjs
-var historia_clinica_lan_sync_exports = {};
-__export(historia_clinica_lan_sync_exports, {
-  applyServerHistoriaClinicaToPatient: () => applyServerHistoriaClinicaToPatient,
-  flushAllPendingHistoriaClinicaLanSync: () => flushAllPendingHistoriaClinicaLanSync,
-  flushPendingHistoriaClinicaLanSync: () => flushPendingHistoriaClinicaLanSync,
-  markHistoriaPendingLanSync: () => markHistoriaPendingLanSync,
-  scheduleFlushAllPendingHistoriaClinicaLanSync: () => scheduleFlushAllPendingHistoriaClinicaLanSync,
-  schedulePendingHistoriaClinicaLanSync: () => schedulePendingHistoriaClinicaLanSync
-});
-function markHistoriaPendingLanSync(patient, pending2) {
-  if (!patient) return;
-  if (!patient.historiaClinica) patient.historiaClinica = { version: 0, data: {} };
-  patient.historiaClinica.pendingLanSync = true;
-  patient.historiaClinica.lanSyncPending = {
-    expectedVersion: Number(pending2.expectedVersion || 0),
-    baseData: pending2.baseData,
-    changedKeys: (pending2.changedKeys || []).slice(),
-    source: pending2.source ? String(pending2.source) : "pending-lan-sync"
-  };
-}
-async function flushPendingHistoriaClinicaLanSync(patient) {
-  if (!patient || !patient.historiaClinica || !patient.historiaClinica.pendingLanSync) {
-    return { ok: true, skipped: true };
-  }
-  const roomId = getActiveLiveSyncRoomId() || "";
-  if (!isLanSessionConfiguredForRest() || !roomId) {
-    return { ok: false, deferred: true };
-  }
-  const hc = patient.historiaClinica;
-  const snap = hc.lanSyncPending;
-  const changedKeys = snap && snap.changedKeys && snap.changedKeys.length ? snap.changedKeys.slice() : HC_SYNC_KEYS.filter(function(k) {
-    return hc.data && hc.data[k] !== void 0;
-  });
-  if (!changedKeys.length) {
-    delete hc.pendingLanSync;
-    delete hc.lanSyncPending;
-    return { ok: true, skipped: true };
-  }
-  const expectedVersion = snap && snap.expectedVersion != null ? Number(snap.expectedVersion) : Math.max(0, Number(hc.version || 1) - 1);
-  const baseData = snap && snap.baseData != null ? snap.baseData : expectedVersion > 0 ? {} : {};
-  const builder = createMutationBuilder("historiaClinica", patient.id).captureBase({
-    version: expectedVersion,
-    data: baseData
-  });
-  changedKeys.forEach(function(k) {
-    if (hc.data[k] !== void 0) builder.set(k, hc.data[k]);
-  });
-  const mutation = builder.build({
-    roomId,
-    patientId: patient.id,
-    clientId: localStorage.getItem("rpc-lan-client-id") || "local",
-    audit: {
-      sections: changedKeys,
-      source: snap && snap.source ? snap.source : "pending-lan-sync"
-    }
-  });
-  try {
-    const out = await lanPushHistoriaClinica(patient.id, mutation);
-    if (out && out.conflict) {
-      const body = out.body && typeof out.body === "object" ? out.body : {};
-      if (body.serverVersion != null || body.serverData) {
-        applyServerHistoriaClinicaToPatient(
-          patient,
-          body.serverVersion != null ? body.serverVersion : hc.version,
-          body.serverData || hc.data
-        );
-      } else {
-        delete hc.pendingLanSync;
-        delete hc.lanSyncPending;
-        saveState();
-      }
-      return { ok: false, conflict: true, deferred: true };
-    }
-    if (out && out.ok) {
-      hc.version = out.version;
-      hc.data = migrateLegacyHistoriaData(out.data, CATALOGS);
-      delete hc.pendingLanSync;
-      delete hc.lanSyncPending;
-      saveState();
-      return { ok: true };
-    }
-  } catch (_e) {
-  }
-  return { ok: false, deferred: true };
-}
-function schedulePendingHistoriaClinicaLanSync(patient) {
-  const id = String(patient && patient.id ? patient.id : "").trim();
-  if (!id || !patient.historiaClinica || !patient.historiaClinica.pendingLanSync) return;
-  if (_inFlight.has(id)) return;
-  const run = flushPendingHistoriaClinicaLanSync(patient).finally(function() {
-    _inFlight.delete(id);
-    const p = patients.find(function(x) {
-      return x.id === id;
-    });
-    if (p && p.historiaClinica && p.historiaClinica.pendingLanSync) {
-      schedulePendingHistoriaClinicaLanSync(p);
-    }
-  });
-  _inFlight.set(id, run);
-}
-async function flushAllPendingHistoriaClinicaLanSync() {
-  if (!isLanSessionConfiguredForRest() || !getActiveLiveSyncRoomId()) return;
-  const pending2 = patients.filter(function(p) {
-    return p.historiaClinica && p.historiaClinica.pendingLanSync;
-  });
-  for (let i = 0; i < pending2.length; i += 1) {
-    await flushPendingHistoriaClinicaLanSync(pending2[i]);
-  }
-}
-function scheduleFlushAllPendingHistoriaClinicaLanSync() {
-  void flushAllPendingHistoriaClinicaLanSync();
-}
-function applyServerHistoriaClinicaToPatient(patient, serverVersion, serverData) {
-  if (!patient) return;
-  if (!patient.historiaClinica) patient.historiaClinica = { version: 0, data: {} };
-  const hc = patient.historiaClinica;
-  hc.version = Number(serverVersion != null ? serverVersion : hc.version || 0);
-  if (serverData && typeof serverData === "object") {
-    hc.data = migrateLegacyHistoriaData(serverData, CATALOGS);
-  }
-  delete hc.pendingLanSync;
-  delete hc.lanSyncPending;
-  saveState();
-}
-var CATALOGS, HC_SYNC_KEYS, _inFlight;
-var init_historia_clinica_lan_sync = __esm({
-  "public/js/historia-clinica-lan-sync.mjs"() {
-    init_app_state();
-    init_versioned_mutation();
-    init_migrate_legacy();
-    init_app_conditions();
-    init_ahf_conditions();
-    init_ipas_systems();
-    init_lan_sync();
-    CATALOGS = { appConditions: app_conditions_default, ahfConditions: ahf_conditions_default, ipasSystems: ipas_systems_default };
-    HC_SYNC_KEYS = [
-      "identificacion",
-      "motivoConsulta",
-      "apnp",
-      "app",
-      "ahf",
-      "genero",
-      "sexual",
-      "padecimientoActual",
-      "datosNegados",
-      "ipas",
-      "signosVitalesIngreso",
-      "labsAtAdmission",
-      "labAnchor",
-      "meta",
-      "labLookbackHours"
-    ];
-    _inFlight = /* @__PURE__ */ new Map();
-  }
-});
-
-// public/js/features/lan-sync.mjs
-var lan_sync_exports = {};
-__export(lan_sync_exports, {
-  bootLanRoomMembership: () => bootLanRoomMembership,
-  closeConnectionDropdown: () => closeConnectionDropdown,
-  configureLanFromMobileJoin: () => configureLanFromMobileJoin,
-  deferLanConflictModalForMs: () => deferLanConflictModalForMs,
-  emitLiveSyncAgendaDelete: () => emitLiveSyncAgendaDelete,
-  emitLiveSyncAgendaUpsert: () => emitLiveSyncAgendaUpsert,
-  emitLiveSyncPatientDelete: () => emitLiveSyncPatientDelete,
-  emitLiveSyncTodoDelete: () => emitLiveSyncTodoDelete,
-  emitLiveSyncTodoUpsert: () => emitLiveSyncTodoUpsert,
-  getActiveLiveSyncRoomId: () => getActiveLiveSyncRoomId,
-  isLanConflictViewerSuppressed: () => isLanConflictViewerSuppressed,
-  isLanSessionConfiguredForRest: () => isLanSessionConfiguredForRest,
-  joinLanRoom: () => joinLanRoom,
-  lanFetchHistoriaClinica: () => lanFetchHistoriaClinica,
-  lanFetchHostPatientRow: () => lanFetchHostPatientRow,
-  lanPushHistoriaClinica: () => lanPushHistoriaClinica,
-  lanPushPatientVersioned: () => lanPushPatientVersioned,
-  lanSyncPatientArchivedFlag: () => lanSyncPatientArchivedFlag,
-  openConnectionDropdown: () => openConnectionDropdown,
-  persistLanClientConfig: () => persistLanClientConfig,
-  pushClinicalOpsLanNow: () => pushClinicalOpsLanNow,
-  refreshLanClinicalDirectoryFromRoom: () => refreshLanClinicalDirectoryFromRoom,
-  registerLanRuntime: () => registerLanRuntime,
-  registerLanSaveHooks: () => registerLanSaveHooks,
-  removePatientLocally: () => removePatientLocally,
-  renderLanPanel: () => renderLanPanel,
-  scheduleLiveSyncPush: () => scheduleLiveSyncPush,
-  syncLanHostFirstTimeHintUi: () => syncLanHostFirstTimeHintUi,
-  syncLanHostTeamCodeSettingsInput: () => syncLanHostTeamCodeSettingsInput,
-  syncSettingsLanHostDiskSection: () => syncSettingsLanHostDiskSection,
-  touchPatientLanUpdatedAt: () => touchPatientLanUpdatedAt,
-  windowHandlers: () => windowHandlers3,
-  withSuppressedLanConflictViewer: () => withSuppressedLanConflictViewer
-});
-function isLanConflictViewerSuppressed() {
-  return _suppressClinicalConflictViewer > 0;
-}
-function deferLanConflictModalForMs(ms) {
-  const n = Number(ms);
-  if (!Number.isFinite(n) || n <= 0) return;
-  _deferLanConflictModalUntil = Date.now() + n;
-  _deferredConflictToastShown = false;
-}
-function shouldDeferLanConflictModal() {
-  return Date.now() < _deferLanConflictModalUntil;
-}
-function withSuppressedLanConflictViewer(fn) {
-  _suppressClinicalConflictViewer += 1;
-  return Promise.resolve().then(fn).finally(function() {
-    _suppressClinicalConflictViewer -= 1;
-  });
-}
-function registerLanRuntime(partial) {
+// public/js/lan-sync-panel.mjs
+function registerLanSyncPanelRuntime(partial) {
   if (!partial || typeof partial !== "object") return;
-  Object.assign(runtime3, partial);
-  void initLanHostPlugAndPlay();
+  panelRuntime = Object.assign(panelRuntime || {}, partial);
 }
-function esc(s) {
-  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+function runtime5() {
+  return panelRuntime || { showToast() {
+  }, isMobileWeb() {
+    return false;
+  }, renderPatientList() {
+  }, closeSettingsDropdown() {
+  } };
 }
 function readLanKnownRooms() {
   try {
@@ -15905,378 +17391,6 @@ function rememberLanRoomJoined(roomId, displayName) {
     if (r.id !== id) next.push(r);
   });
   writeLanKnownRooms(next);
-}
-function isLanSessionConfiguredForRest() {
-  try {
-    var c = typeof storage.getLanConfig === "function" ? storage.getLanConfig() : null;
-    return !!(c && String(c.hostUrl || "").trim());
-  } catch (_e) {
-    return false;
-  }
-}
-function trimStoredLanBearer(code) {
-  return String(code || "").trim();
-}
-function persistLanClientConfig(hostUrl, teamCode) {
-  var url = String(hostUrl || "").trim().replace(/\/+$/, "");
-  var code = trimStoredLanBearer(teamCode);
-  if (!url || !code) return false;
-  var prev = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
-  var prevUrl = String(prev.hostUrl || "").trim().replace(/\/+$/, "");
-  var prevCode = trimStoredLanBearer(prev.teamCode);
-  var changed = prevUrl !== url || prevCode !== code;
-  storage.saveLanConfig({ hostUrl: url, teamCode: code });
-  lanClient.configure({ hostUrl: url, teamCode: code });
-  if (isLanRemoteJoinMode()) rememberPrimaryHostUrl(url);
-  if (changed) {
-    try {
-      lanClient.disconnect();
-      lanClient.connectSyncChannel();
-    } catch (_e) {
-    }
-  }
-  return changed;
-}
-async function ensureLanClientTeamCodeAligned() {
-  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
-  var hostUrl = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
-  var uiRole = typeof storage.getLanUiRole === "function" ? storage.getLanUiRole() : "client";
-  if (uiRole === "host" && window.electronAPI && typeof window.electronAPI.getLanEffectiveTeamCode === "function") {
-    return !!await syncLanSavedTeamCodeWithEffectiveHostCode();
-  }
-  if (!hostUrl) return false;
-  return persistLanClientConfig(hostUrl, cfg.teamCode);
-}
-async function lanFetchAuthed(path, opts) {
-  await ensureLanClientTeamCodeAligned();
-  var resp = await lanClient.fetch(path, opts);
-  if (resp.status !== 401) return resp;
-  if (window.electronAPI && typeof window.electronAPI.getLanEffectiveTeamCode === "function") {
-    await syncLanSavedTeamCodeWithEffectiveHostCode();
-  }
-  return lanClient.fetch(path, opts);
-}
-async function resolveHostBearerToken() {
-  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
-  var fromCfg = trimStoredLanBearer(cfg.teamCode);
-  if (fromCfg.length >= 32) return fromCfg;
-  if (window.electronAPI && typeof window.electronAPI.getLanEffectiveTeamCode === "function") {
-    try {
-      var info = await window.electronAPI.getLanEffectiveTeamCode();
-      if (info && info.ok && info.code) return String(info.code).trim();
-    } catch (_e) {
-    }
-  }
-  return "";
-}
-async function mintLanPairingTicket() {
-  await ensureLanClientTeamCodeAligned();
-  var bearer = await resolveHostBearerToken();
-  if (!bearer) {
-    var err = new Error("no_host_bearer");
-    err.code = "no_host_bearer";
-    throw err;
-  }
-  var resp = await lanFetchAuthed("/api/lan/v1/auth/tickets", { method: "POST" });
-  if (!resp.ok) {
-    var errHttp = new Error("ticket_mint_failed");
-    errHttp.status = resp.status;
-    throw errHttp;
-  }
-  var body = await resp.json();
-  var ticketId = String(body.ticketId || "");
-  var shareHost = await resolveLanShareBaseUrl();
-  _lastLanPairing = {
-    ticketId,
-    pin: String(body.pin || ""),
-    joinUrl: shareHost && ticketId ? buildShareJoinUrl(shareHost, ticketId) : String(body.joinUrl || ""),
-    expiresAt: body.expiresAt
-  };
-  return _lastLanPairing;
-}
-function showLanMigrationNoticeModal() {
-  if (typeof document === "undefined") return;
-  if (document.getElementById("lan-migration-notice-backdrop")) return;
-  var backdrop = document.createElement("div");
-  backdrop.id = "lan-migration-notice-backdrop";
-  backdrop.className = "modal-backdrop open";
-  backdrop.style.zIndex = "10050";
-  backdrop.innerHTML = '<div class="lab-conflict-modal" style="max-width:420px;"><h3>Seguridad de red del equipo</h3><p>El c\xF3digo LAN d\xE9bil (<code>1234</code> u otro antiguo) se sustituy\xF3 por un token seguro en esta Mac anfitriona. Tus pacientes y salas LAN se conservaron.</p><p style="font-size:12px;color:var(--text-muted);">Quienes se unan deben usar un <strong>enlace o PIN nuevo</strong> que generes aqu\xED (\u21C4). Los enlaces viejos con <code>?code=</code> ya no funcionan.</p><div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;"><button type="button" id="lan-migration-notice-ok" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Entendido</button></div></div>';
-  document.body.appendChild(backdrop);
-  var ok = backdrop.querySelector("#lan-migration-notice-ok");
-  if (ok) {
-    ok.onclick = function() {
-      backdrop.remove();
-    };
-  }
-  backdrop.addEventListener("click", function(ev) {
-    if (ev.target === backdrop) backdrop.remove();
-  });
-}
-async function maybeShowLanMigrationNotice() {
-  if (typeof sessionStorage === "undefined") return;
-  try {
-    if (sessionStorage.getItem(LAN_MIGRATION_NOTICE_KEY)) return;
-  } catch (_e) {
-  }
-  if (!isLanSessionConfiguredForRest()) return;
-  var resp;
-  try {
-    resp = await lanFetchAuthed("/api/lan/v1/host-status");
-  } catch (_eNet) {
-    return;
-  }
-  if (!resp || !resp.ok) return;
-  var data;
-  try {
-    data = await resp.json();
-  } catch (_eJson) {
-    return;
-  }
-  if (!data || !data.requiresMigrationNotice) return;
-  try {
-    sessionStorage.setItem(LAN_MIGRATION_NOTICE_KEY, "1");
-  } catch (_eSet) {
-  }
-  showLanMigrationNoticeModal();
-}
-function updateLanPairingDisplay(root) {
-  if (!root) return;
-  var box = root.querySelector("#lan-pairing-display");
-  if (!box) return;
-  if (!_lastLanPairing || !_lastLanPairing.ticketId) {
-    box.hidden = true;
-    box.textContent = "";
-    return;
-  }
-  box.hidden = false;
-  var p = _lastLanPairing;
-  var joinLine = p.joinUrl ? '<div><strong>Enlace:</strong> <code style="word-break:break-all;">' + esc(p.joinUrl) + "</code></div>" : "";
-  var expiryLabel = formatLanTicketExpiryLabel(p.expiresAt);
-  var expirySoon = lanTicketExpirySoon(p.expiresAt);
-  var expiryLine = expiryLabel ? '<p class="lan-pairing-expiry' + (expirySoon ? " lan-pairing-expiry--soon" : "") + '" style="margin:8px 0 0;font-size:12px;">V\xE1lido hasta <strong>' + esc(expiryLabel) + "</strong></p>" : "";
-  box.innerHTML = '<p style="margin:0 0 6px;font-size:12px;color:var(--text-muted);">Comparte el PIN o el enlace (un solo uso por ticket):</p><div><strong>PIN:</strong> <code>' + esc(p.pin) + "</code></div><div><strong>Ticket:</strong> <code>" + esc(p.ticketId) + "</code></div>" + joinLine + expiryLine;
-}
-async function mintLanPairingFromUi() {
-  try {
-    await mintLanPairingTicket();
-    var root = document.getElementById("lan-connection-panel-root");
-    updateLanPairingDisplay(root);
-    runtime3.showToast("Enlace y PIN generados. Comp\xE1rtelos con el equipo.", "success");
-  } catch (e) {
-    if (e && e.code === "no_host_bearer") {
-      runtime3.showToast(
-        "No hay token seguro del servidor en esta Mac. Reinicia R+ como anfitri\xF3n o revisa lan-team-code.txt.",
-        "error"
-      );
-      return;
-    }
-    if (e && e.status === 401) {
-      runtime3.showToast("No autorizado para generar invitaci\xF3n. Revisa el token del anfitri\xF3n.", "error");
-      return;
-    }
-    runtime3.showToast("No se pudo generar enlace / PIN. Intenta de nuevo.", "error");
-  }
-}
-async function persistGuestBearerFromExchange(data) {
-  if (!data || !data.persist || data.storageTarget !== "userData") return;
-  if (!window.electronAPI || typeof window.electronAPI.lanGuestWriteBearer !== "function") return;
-  var token = trimStoredLanBearer(data.token);
-  if (!token) return;
-  try {
-    await window.electronAPI.lanGuestWriteBearer({ token });
-  } catch (_e) {
-  }
-}
-async function exchangeLanJoinFromInvite(hostUrl, ticketId, roomId) {
-  var base = String(hostUrl || "").trim().replace(/\/+$/, "");
-  var tid = String(ticketId || "").trim();
-  if (!base || !tid) {
-    runtime3.showToast("Falta la direcci\xF3n del servidor o el ticket de invitaci\xF3n.", "error");
-    return;
-  }
-  var res;
-  try {
-    res = await fetch(base + "/api/lan/v1/auth/exchange", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ticket: tid })
-    });
-  } catch (_e) {
-    runtime3.showToast("Error de red al unirse. Revisa Wi\u2011Fi y que R+ siga abierto en el anfitri\xF3n.", "error");
-    return;
-  }
-  if (!res.ok) {
-    runtime3.showToast(
-      "Este enlace o PIN ya no es v\xE1lido. Pide al anfitri\xF3n un nuevo enlace o PIN.",
-      "error"
-    );
-    return;
-  }
-  var data;
-  try {
-    data = await res.json();
-  } catch (_eJson) {
-    runtime3.showToast("Respuesta inv\xE1lida del servidor.", "error");
-    return;
-  }
-  await persistGuestBearerFromExchange(data);
-  configureLanFromMobileJoin(String(data.hostUrl || base), data.token, roomId);
-}
-async function syncLanSavedTeamCodeWithEffectiveHostCode() {
-  if (!window.electronAPI || typeof window.electronAPI.getLanEffectiveTeamCode !== "function") {
-    return false;
-  }
-  var info;
-  try {
-    info = await window.electronAPI.getLanEffectiveTeamCode();
-  } catch (_e) {
-    return false;
-  }
-  if (!info || !info.ok || !info.code) return false;
-  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
-  var hostUrl = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
-  if (!hostUrl && window.electronAPI && typeof window.electronAPI.getLanCandidateBaseUrl === "function") {
-    try {
-      hostUrl = String(await window.electronAPI.getLanCandidateBaseUrl() || "").trim().replace(/\/+$/, "");
-    } catch (_eUrl) {
-    }
-  }
-  persistLanClientConfig(hostUrl || String(cfg.hostUrl || "").trim().replace(/\/+$/, ""), info.code);
-  return true;
-}
-function isLanElectronDesktop() {
-  return !!(typeof window !== "undefined" && window.electronAPI && typeof window.electronAPI.getLanCandidateBaseUrl === "function");
-}
-function isLanRemoteJoinMode() {
-  return typeof storage.getLanUiRole === "function" && storage.getLanUiRole() === "client";
-}
-function isLocalLoopbackLanUrl(url) {
-  try {
-    const u = new URL(String(url || "").trim());
-    return /^(localhost|127\.0\.0\.1)$/i.test(u.hostname);
-  } catch (_e) {
-    return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/i.test(String(url || "").trim());
-  }
-}
-async function resolveLanShareBaseUrl() {
-  if (isLanElectronDesktop() && window.electronAPI && typeof window.electronAPI.getLanCandidateBaseUrl === "function") {
-    try {
-      var fromElectron = String(await window.electronAPI.getLanCandidateBaseUrl() || "").trim().replace(/\/+$/, "");
-      if (fromElectron && !isLocalLoopbackLanUrl(fromElectron)) return fromElectron;
-    } catch (_e) {
-    }
-  }
-  var el = document.getElementById("lan-input-host-url");
-  var fromInput = el && String(el.value || "").trim().replace(/\/+$/, "");
-  if (fromInput && !isLocalLoopbackLanUrl(fromInput)) return fromInput;
-  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
-  var fromCfg = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
-  if (fromCfg && !isLocalLoopbackLanUrl(fromCfg)) return fromCfg;
-  return "";
-}
-function buildShareJoinUrl(hostUrl, ticketId) {
-  return buildLanJoinUrls(hostUrl, ticketId).joinUrl;
-}
-async function resolveLanHostUrlAuto() {
-  var shareUrl = await resolveLanShareBaseUrl();
-  if (shareUrl) return shareUrl;
-  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
-  var fromCfg = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
-  if (fromCfg) return fromCfg;
-  if (!isLanElectronDesktop()) return "";
-  return "http://127.0.0.1:3738";
-}
-function migrateLanElectronStaleClientRole() {
-  if (!isLanElectronDesktop() || !isLanRemoteJoinMode()) return;
-  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() : null;
-  if (cfg && String(cfg.hostUrl || "").trim()) return;
-  if (typeof storage.saveLanUiRole === "function") storage.saveLanUiRole("host");
-}
-async function ensureLanElectronHostReady(opts) {
-  opts = opts || {};
-  migrateLanElectronStaleClientRole();
-  if (!isLanElectronDesktop()) return false;
-  if (opts.forceLocal) {
-    if (typeof storage.saveLanUiRole === "function") storage.saveLanUiRole("host");
-  } else if (isLanRemoteJoinMode()) {
-    return false;
-  }
-  await syncLanSavedTeamCodeWithEffectiveHostCode();
-  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
-  var url = opts.forceLocal ? "" : String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
-  var autoUrl = await resolveLanHostUrlAuto();
-  var bearer = await resolveHostBearerToken();
-  if (!bearer) return false;
-  if (url) {
-    var isLocalUrl = autoUrl && url === autoUrl || isLocalLoopbackLanUrl(url);
-    if (!isLocalUrl) {
-      var reachable = await pingLanHostUrl(url, cfg.teamCode || bearer);
-      if (!reachable) url = "";
-    }
-  }
-  if (!url) url = autoUrl || "http://127.0.0.1:3738";
-  var shareUrl = await resolveLanShareBaseUrl();
-  if (shareUrl && isLocalLoopbackLanUrl(url)) url = shareUrl;
-  persistLanClientConfig(url, bearer);
-  try {
-    lanClient.connectSyncChannel();
-  } catch (_e) {
-  }
-  return true;
-}
-async function promoteThisMacToLanHost(opts) {
-  opts = opts || {};
-  if (!isLanElectronDesktop()) {
-    runtime3.showToast("Solo disponible en la app de escritorio.", "info");
-    return false;
-  }
-  var wasRemoteClient = isLanRemoteJoinMode();
-  if (typeof storage.saveLanUiRole === "function") storage.saveLanUiRole("host");
-  storage.saveLanConfig(null);
-  lanClient.disconnect();
-  if (wasRemoteClient) {
-    activeLiveSyncRoomId = "";
-    activeLiveSyncRoomLabel = "";
-    clearRoomMembership();
-  }
-  var ok = await ensureLanElectronHostReady({ forceLocal: true });
-  renderLanPanel();
-  if (ok && !opts.skipToast) {
-    runtime3.showToast("Esta Mac ahora es el servidor del turno.", "success");
-  }
-  if (!ok) {
-    runtime3.showToast("No se pudo activar el servidor local. Reinicia R+ e int\xE9ntalo de nuevo.", "error");
-  }
-  return ok;
-}
-async function initLanHostPlugAndPlay() {
-  if (!isLanElectronDesktop() || isLanRemoteJoinMode()) return;
-  await ensureLanElectronHostReady();
-}
-async function resolveLanTeamCodeForShare() {
-  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
-  var uiRole = typeof storage.getLanUiRole === "function" ? storage.getLanUiRole() : "client";
-  if (uiRole === "host") {
-    var hostBearer = await resolveHostBearerToken();
-    if (hostBearer) return hostBearer;
-  }
-  var teamInput = document.getElementById("lan-input-team-code");
-  var fromInput = teamInput && teamInput.value != null ? String(teamInput.value).trim() : "";
-  if (fromInput) return fromInput;
-  return trimStoredLanBearer(cfg.teamCode);
-}
-function initLanClientFromStorage() {
-  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() : null;
-  if (!cfg || !String(cfg.hostUrl || "").trim()) return;
-  persistLanClientConfig(cfg.hostUrl, cfg.teamCode);
-  try {
-    lanClient.connectSyncChannel();
-  } catch (_e) {
-  }
-  setTimeout(function() {
-    bootLanRoomMembership();
-  }, 0);
 }
 function readLanHideDisconnectBanner() {
   return typeof storage.getLanHideDisconnectBanner === "function" && storage.getLanHideDisconnectBanner();
@@ -16326,8 +17440,8 @@ function wireClinicalOpsLanSyncEvents() {
   if (!document._rpcClinicalOpsSyncedLanWired) {
     document._rpcClinicalOpsSyncedLanWired = true;
     document.addEventListener("rpc-clinical-ops-synced", function() {
-      void refreshClinicalSessionTeams().then(function() {
-        if (typeof renderLanPanel === "function") renderLanPanel();
+      void refreshClinicalSessionTeams2().then(function() {
+        renderLanPanel2();
       });
     });
   }
@@ -16360,7 +17474,7 @@ function wireLanPanelDelegation() {
       joinLanRoom(btn.getAttribute("data-room-id"), btn.getAttribute("data-room-label"));
     } else if (action === "forget-known") {
       forgetLanRoomSession(btn.getAttribute("data-room-id"));
-      renderLanPanel();
+      renderLanPanel2();
     } else if (action === "delete-room") {
       deleteLanRoom(btn.getAttribute("data-room-id"));
     } else if (action === "join-invite") {
@@ -16374,6 +17488,1240 @@ function wireLanPanelDelegation() {
       void mintLanPairingFromUi();
     }
   });
+}
+function appendLanMobileJoinSection(root) {
+  if (!root || !runtime5().isMobileWeb()) return;
+  var card = document.createElement("div");
+  card.className = "lan-connect-card lan-mobile-join-card";
+  card.innerHTML = '<div class="lan-connect-card-title">Unirte a la guardia</div><p class="lan-connect-card-hint">Pega el <strong>enlace para iPad</strong> que gener\xF3 quien tiene R+ en la Mac (\u21C4 \u2192 Copiar enlace). Al abrirlo se conecta y bajan tus pacientes de la sala.</p>';
+  var inputInvite = document.createElement("textarea");
+  inputInvite.className = "profile-input";
+  inputInvite.id = "lan-input-invite-link";
+  inputInvite.rows = 2;
+  inputInvite.autocomplete = "off";
+  inputInvite.placeholder = "http://192.168.x.x:3738/join/req_\u2026";
+  card.appendChild(inputInvite);
+  var row = document.createElement("div");
+  row.className = "lan-connect-actions-row";
+  row.style.marginTop = "8px";
+  var btnJoin = document.createElement("button");
+  btnJoin.type = "button";
+  btnJoin.className = "btn-lan-primary";
+  btnJoin.style.flex = "1";
+  btnJoin.textContent = "Conectar";
+  btnJoin.setAttribute("data-lan-action", "join-invite");
+  row.appendChild(btnJoin);
+  card.appendChild(row);
+  root.insertBefore(card, root.firstChild);
+}
+function lanPanelRenderStale(gen) {
+  return gen !== _lanPanelRenderGen;
+}
+function renderLanPanel2() {
+  _lanPanelRenderChain = _lanPanelRenderChain.catch(function() {
+  }).then(function() {
+    return renderLanPanelOnce();
+  });
+  return _lanPanelRenderChain;
+}
+function getClinicalSettings() {
+  try {
+    return JSON.parse(localStorage.getItem("rpc-settings") || "{}");
+  } catch (_e) {
+    return {};
+  }
+}
+function getClinicalRank() {
+  var s = getClinicalSettings();
+  return String(s.clinicalRank || "").trim();
+}
+function getUserSala() {
+  var s = getClinicalSettings();
+  return String(s.clinicalSala || "").trim();
+}
+function isClinicalRegistered() {
+  var s = getClinicalSettings();
+  return s.clinicalRegistered === true;
+}
+function isLanHostActive() {
+  return !!lanClient.connected;
+}
+function lanHostUrl() {
+  return lanClient.baseUrl() || "";
+}
+function maybeAppendInternoQrPanel(root) {
+  if (!isLanElectronDesktop() || !isLanHostActive()) return;
+  if (!canManageInternoQr(clinicalSessionContext.user)) return;
+  void resolveLanHostUrlAuto().then(function(hostBaseUrl) {
+    void appendInternoQrPanel(root, {
+      hostBaseUrl,
+      userId: getClinicalUserUserId(),
+      showToast: runtime5().showToast
+    });
+  });
+}
+function getClinicalUserUserId() {
+  try {
+    var user = typeof clinicalSessionContext !== "undefined" ? clinicalSessionContext.user : null;
+    return user ? String(user.user_id || "") : "";
+  } catch (_e) {
+    return "";
+  }
+}
+async function renderLanPanelOnce() {
+  var gen = ++_lanPanelRenderGen;
+  var root = document.getElementById("lan-connection-panel-root");
+  if (!root) return;
+  await ensureLanElectronHostReady();
+  if (lanPanelRenderStale(gen)) return;
+  root.innerHTML = "";
+  var registered = isClinicalRegistered();
+  var userSala = getUserSala();
+  var rank = getClinicalRank();
+  var clinicalUserId = getClinicalUserUserId();
+  if (!registered && !clinicalUserId) {
+    var unregCard = document.createElement("div");
+    unregCard.className = "lan-connect-card";
+    unregCard.innerHTML = '<p class="lan-connect-card-hint">Desbloquea la base de datos y completa <strong>Configura tu rotaci\xF3n</strong> para acceder a la red del hospital.</p>';
+    root.appendChild(unregCard);
+    return;
+  }
+  if (!registered && clinicalUserId) {
+    var preRegCard = document.createElement("div");
+    preRegCard.className = "lan-connect-card";
+    preRegCard.innerHTML = '<p class="lan-connect-card-hint">Opcional: activa la red del turno y pulsa <strong>Unirse</strong> en tu sala para sincronizar con el equipo. Puedes registrar <strong>@usuario</strong> sin \u21C4 si no hay red.</p>';
+    root.appendChild(preRegCard);
+  }
+  if (registered && !userSala && !hasElevatedTeamPrivileges(clinicalSessionContext.user)) {
+    var noSalaCard = document.createElement("div");
+    noSalaCard.className = "lan-connect-card";
+    noSalaCard.innerHTML = '<p class="lan-connect-card-hint">No tienes una Sala asignada. Contacta a un R4 o Admin.</p>';
+    root.appendChild(noSalaCard);
+    return;
+  }
+  var isElevated = hasElevatedTeamPrivileges(clinicalSessionContext.user);
+  var connected = isLanHostActive();
+  appendLanHubStatusCard(root, {
+    connected,
+    isElectronDesktop: isLanElectronDesktop(),
+    onBecomeHost: function() {
+      void promoteThisMacToLanHost();
+    }
+  });
+  if (runtime5().isMobileWeb() && !connected) {
+    appendLanMobileJoinSection(root);
+  }
+  var salaDefs = [
+    { id: "sala-1", label: "Sala 1", key: "Sala 1" },
+    { id: "sala-2", label: "Sala 2", key: "Sala 2" },
+    { id: "sala-e", label: "Sala E", key: "Sala E" }
+  ];
+  var visibleSalaDefs;
+  if (isElevated) {
+    visibleSalaDefs = salaDefs;
+  } else if (userSala) {
+    visibleSalaDefs = salaDefs.filter(function(d) {
+      return d.key === userSala;
+    });
+    if (!visibleSalaDefs.length) visibleSalaDefs = salaDefs;
+  } else if (!registered && clinicalUserId) {
+    visibleSalaDefs = salaDefs;
+  } else {
+    visibleSalaDefs = [];
+  }
+  appendLanHubRoomsCard(root, {
+    visibleSalaDefs,
+    activeRoomId: activeLiveSyncRoomId
+  });
+  if (rank === "R1") {
+    buildR1Section(root);
+  } else if (rank === "R2") {
+    buildR2Section(root);
+  } else if (isElevated) {
+    buildR4Section(root);
+  }
+  appendLanHostPinSection(root);
+  void appendLanSyncDiagnosticsSection(root);
+  maybeAppendInternoQrPanel(root);
+}
+function appendLanHostPinSection(root) {
+  if (!root || !isLanElectronDesktop() || isLanRemoteJoinMode()) return;
+  var hostUrl = lanHostUrl();
+  if (!hostUrl) return;
+  var wrap = document.createElement("div");
+  wrap.className = "lan-connect-card lan-host-pin-card";
+  var label = document.createElement("label");
+  label.className = "lan-host-pin-label";
+  label.setAttribute("for", "lan-pin-host-checkbox");
+  var cb = document.createElement("input");
+  cb.type = "checkbox";
+  cb.id = "lan-pin-host-checkbox";
+  var pinned = getPinnedHostUrl();
+  cb.checked = !!pinned && pinned === hostUrl.replace(/\/+$/, "");
+  cb.onchange = function() {
+    if (cb.checked) {
+      setPinnedHostUrl(hostUrl);
+      runtime5().showToast("Anfitri\xF3n fijado para el turno: " + hostUrl, "success");
+    } else {
+      clearPinnedHostUrl();
+      runtime5().showToast("Anfitri\xF3n ya no est\xE1 fijado; la red puede sugerir otro servidor.", "info");
+    }
+    void renderLanPanel2();
+  };
+  label.appendChild(cb);
+  label.appendChild(document.createTextNode(" Fijar anfitri\xF3n del turno"));
+  wrap.appendChild(label);
+  if (pinned && pinned !== hostUrl.replace(/\/+$/, "")) {
+    var hint = document.createElement("p");
+    hint.className = "lan-connect-card-hint";
+    hint.style.marginTop = "6px";
+    hint.textContent = "Fijado: " + pinned + " (distinto del servidor actual).";
+    wrap.appendChild(hint);
+  }
+  root.appendChild(wrap);
+}
+async function buildLanSyncDiagnosticsDeps() {
+  var roomId = String(activeLiveSyncRoomId || "").trim();
+  var bases = roomId ? getHostBundleBases(roomId) : { revision: 0 };
+  var outCount = 0;
+  if (roomId) {
+    try {
+      outCount = await outboxSize(roomId);
+    } catch (_e) {
+    }
+  }
+  var aligned = false;
+  try {
+    aligned = !!await ensureLanClientTeamCodeAligned();
+  } catch (_e2) {
+  }
+  return {
+    hostUrl: lanHostUrl(),
+    pingAt: _lanLastPingAt,
+    pingStatus: _lanLastPingStatus,
+    wsSync: !!lanClient.connected,
+    wsLive: !!lanClient.liveConnected,
+    liveRoomId: String(lanClient.liveRoomId || ""),
+    roomId,
+    phase: getRoomSyncPhase(roomId),
+    bundleRevision: Number(bases.revision || 0),
+    outboxCount: outCount,
+    pinnedHost: getPinnedHostUrl(),
+    teamCodeAligned: aligned
+  };
+}
+async function appendLanSyncDiagnosticsSection(root) {
+  if (!root) return;
+  var deps2 = await buildLanSyncDiagnosticsDeps();
+  var diag = getLanSyncDiagnostics(deps2);
+  var existing = root.querySelector(".lan-sync-diagnostics-panel");
+  if (existing) existing.remove();
+  var details = document.createElement("details");
+  details.className = "lan-connect-card lan-sync-diagnostics-panel";
+  var sum = document.createElement("summary");
+  sum.textContent = "Estado de sincronizaci\xF3n";
+  sum.style.cursor = "pointer";
+  sum.style.fontWeight = "600";
+  details.appendChild(sum);
+  var pre = document.createElement("pre");
+  pre.className = "lan-sync-diagnostics-pre";
+  pre.style.fontSize = "11px";
+  pre.style.whiteSpace = "pre-wrap";
+  pre.style.marginTop = "8px";
+  pre.style.maxHeight = "200px";
+  pre.style.overflow = "auto";
+  pre.textContent = formatDiagnosticsReport(diag);
+  details.appendChild(pre);
+  var copyBtn = document.createElement("button");
+  copyBtn.type = "button";
+  copyBtn.className = "btn-lan-secondary";
+  copyBtn.style.marginTop = "8px";
+  copyBtn.style.width = "100%";
+  copyBtn.textContent = "Copiar informe";
+  copyBtn.onclick = function() {
+    var report = formatDiagnosticsReport(getLanSyncDiagnostics(deps2));
+    void copyToClipboardSafe(report).then(function(ok) {
+      runtime5().showToast(
+        ok ? "Informe copiado (c\xF3digos redactados)." : "No se pudo copiar el informe.",
+        ok ? "success" : "error"
+      );
+    });
+  };
+  details.appendChild(copyBtn);
+  root.appendChild(details);
+}
+function buildR1Section(root) {
+  var userSala = getUserSala();
+  var card = document.createElement("div");
+  card.className = "lan-connect-card lan-hub-team-card";
+  card.innerHTML = '<div class="lan-connect-card-title">Mi equipo</div>';
+  var userId = String(getClinicalUserUserId());
+  var teams = clinicalSessionContext.teams || [];
+  var myTeam = teams.find(function(t2) {
+    return (t2.members || []).some(function(m) {
+      return String(m.user_id) === userId;
+    });
+  });
+  if (myTeam) {
+    var teamName = document.createElement("p");
+    teamName.className = "lan-hub-team-name";
+    teamName.textContent = "Mi equipo: " + (myTeam.name || "Sin nombre");
+    card.appendChild(teamName);
+  } else {
+    var noTeam = document.createElement("p");
+    noTeam.className = "lan-connect-card-hint";
+    noTeam.innerHTML = 'Sin equipo \u2014 <button type="button" class="lan-hub-link-btn" id="lan-hub-join-team">Unirse a un equipo</button>';
+    card.appendChild(noTeam);
+  }
+  root.appendChild(card);
+  var joinTeamBtn = card.querySelector("#lan-hub-join-team");
+  if (joinTeamBtn) {
+    joinTeamBtn.onclick = function() {
+      var availCard = document.getElementById("lan-hub-available-teams");
+      if (availCard) {
+        availCard.remove();
+        return;
+      }
+      var avail = document.createElement("div");
+      avail.id = "lan-hub-available-teams";
+      avail.className = "lan-connect-card";
+      avail.innerHTML = '<div class="lan-connect-card-title">Equipos disponibles</div>';
+      buildAvailableTeamsSection(avail, userSala);
+      card.parentNode.insertBefore(avail, card.nextSibling);
+    };
+  }
+  appendLanHubGuardiaModeCard(root);
+  if (isLanElectronDesktop() && isLanHostActive()) {
+    var mobileCard = document.createElement("div");
+    mobileCard.className = "lan-connect-card lan-hub-mobile-card";
+    mobileCard.innerHTML = '<div class="lan-connect-card-title">Enlace m\xF3vil</div>';
+    var mobileBtn = document.createElement("button");
+    mobileBtn.type = "button";
+    mobileBtn.className = "btn-lan-primary";
+    mobileBtn.style.width = "100%";
+    mobileBtn.textContent = "Copiar enlace para iPad";
+    mobileBtn.onclick = function() {
+      void generateMobilePairingLink().then(function(url) {
+        if (url) {
+          copyToClipboardSafe(url);
+          runtime5().showToast("Enlace m\xF3vil copiado. P\xE9galo en Safari en el iPad.", "success");
+        }
+      });
+    };
+    mobileCard.appendChild(mobileBtn);
+    root.appendChild(mobileCard);
+  }
+}
+function buildR2Section(root) {
+  buildR1Section(root);
+  var userId = String(getClinicalUserUserId());
+  var teams = clinicalSessionContext.teams || [];
+  var myTeam = teams.find(function(t2) {
+    return (t2.members || []).some(function(m) {
+      return String(m.user_id) === userId;
+    });
+  });
+  if (!myTeam) return;
+  var entregaCard = document.createElement("div");
+  entregaCard.className = "lan-connect-card lan-hub-entrega-card";
+  entregaCard.innerHTML = '<div class="lan-connect-card-title">Solicitar entrega</div>';
+  var guardiasForTeam = (clinicalSessionContext.guardias || []).filter(function(g3) {
+    return g3 && String(g3.source_team_id) === String(myTeam.team_id);
+  });
+  if (!guardiasForTeam.length) {
+    var emptyHint3 = document.createElement("p");
+    emptyHint3.className = "lan-connect-card-hint";
+    emptyHint3.textContent = "No hay pacientes entregados por tu equipo.";
+    entregaCard.appendChild(emptyHint3);
+  } else {
+    var entregaList = document.createElement("ul");
+    entregaList.style.listStyle = "none";
+    entregaList.style.padding = "0";
+    entregaList.style.margin = "0";
+    guardiasForTeam.forEach(function(g3) {
+      var li = document.createElement("li");
+      li.style.marginBottom = "6px";
+      li.style.fontSize = "12px";
+      li.textContent = "Paciente " + String(g3.patient_id || "").slice(0, 8) + "\u2026 \u2014 " + (g3.covering_user_id || "");
+      entregaList.appendChild(li);
+    });
+    entregaCard.appendChild(entregaList);
+  }
+  root.appendChild(entregaCard);
+}
+async function openR4TeamCreationModal() {
+  try {
+    var mod = await import("./clinical-teams.mjs");
+    if (typeof mod.openClinicalTeamsPanel === "function") {
+      mod.openClinicalTeamsPanel();
+    } else {
+      runtime5().showToast("Panel de equipos no disponible.", "error");
+    }
+  } catch (_e) {
+    runtime5().showToast("Panel de equipos no disponible.", "error");
+  }
+}
+async function handleFinalizarRotacion() {
+  var api3 = typeof window !== "undefined" ? window.rplusDb || window.electronAPI : null;
+  if (!api3 || typeof api3.dbRotationNueva !== "function") {
+    runtime5().showToast("Operaci\xF3n no disponible.", "error");
+    return;
+  }
+  var user = typeof clinicalSessionContext !== "undefined" ? clinicalSessionContext.user : null;
+  var userId = user ? String(user.user_id || "") : "";
+  var res = await api3.dbRotationNueva({ userId });
+  if (res && res.ok) {
+    runtime5().showToast("Rotaci\xF3n finalizada. Crea nuevos equipos para el siguiente mes.", "success");
+    document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
+    renderLanPanel2();
+  } else {
+    runtime5().showToast(res && res.error || "No se pudo finalizar la rotaci\xF3n.", "error");
+  }
+}
+function buildR4Section(root) {
+  var teamCard = document.createElement("div");
+  teamCard.className = "lan-connect-card lan-hub-team-create-card";
+  teamCard.innerHTML = '<div class="lan-connect-card-title">Crear equipos del mes</div>';
+  var btnCreate = document.createElement("button");
+  btnCreate.type = "button";
+  btnCreate.className = "btn-lan-primary";
+  btnCreate.style.width = "100%";
+  btnCreate.textContent = "Crear equipos del mes";
+  btnCreate.onclick = function() {
+    openR4TeamCreationModal();
+  };
+  teamCard.appendChild(btnCreate);
+  root.appendChild(teamCard);
+  var censusCard = document.createElement("div");
+  censusCard.className = "lan-connect-card lan-hub-census-card";
+  censusCard.innerHTML = '<div class="lan-connect-card-title">Censo global</div>';
+  var teams = clinicalSessionContext.teams || [];
+  var allPatients = patients || [];
+  var salas = ["Sala 1", "Sala 2", "Sala E"];
+  salas.forEach(function(salaName) {
+    var salaTeams = teams.filter(function(t2) {
+      return teamSalaKey(t2) === salaName;
+    });
+    var salaPatientCount = allPatients.filter(function(p) {
+      return p && String(p.sala || "") === salaName;
+    }).length;
+    var row = document.createElement("p");
+    row.className = "lan-connect-card-hint";
+    row.style.marginBottom = "4px";
+    row.textContent = salaName + ": " + salaTeams.length + " equipos \xB7 " + salaPatientCount + " pacientes";
+    censusCard.appendChild(row);
+  });
+  var viewBtn = document.createElement("button");
+  viewBtn.type = "button";
+  viewBtn.className = "btn-lan-secondary";
+  viewBtn.style.width = "100%";
+  viewBtn.style.marginTop = "8px";
+  viewBtn.textContent = "Ver censo en lista de pacientes";
+  viewBtn.onclick = function() {
+    try {
+      localStorage.setItem("clinical.browseSala", "__all__");
+      localStorage.setItem("clinical.censusFilterSala", "__all__");
+    } catch (_e) {
+    }
+    document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
+    if (typeof runtime5().renderPatientList === "function") runtime5().renderPatientList();
+    runtime5().showToast("Censo global \u2014 usa los filtros en la lista de pacientes.", "info");
+  };
+  censusCard.appendChild(viewBtn);
+  root.appendChild(censusCard);
+  if (isLanElectronDesktop() && isLanHostActive()) {
+    var mobileCard = document.createElement("div");
+    mobileCard.className = "lan-connect-card lan-hub-mobile-card";
+    mobileCard.innerHTML = '<div class="lan-connect-card-title">Enlace m\xF3vil</div>';
+    var mobileBtn = document.createElement("button");
+    mobileBtn.type = "button";
+    mobileBtn.className = "btn-lan-primary";
+    mobileBtn.style.width = "100%";
+    mobileBtn.textContent = "Copiar enlace para iPad";
+    mobileBtn.onclick = function() {
+      void generateMobilePairingLink().then(function(url) {
+        if (url) {
+          copyToClipboardSafe(url);
+          runtime5().showToast("Enlace m\xF3vil copiado. P\xE9galo en Safari en el iPad.", "success");
+        }
+      });
+    };
+    mobileCard.appendChild(mobileBtn);
+    root.appendChild(mobileCard);
+  }
+  var rotCard = document.createElement("div");
+  rotCard.className = "lan-connect-card lan-hub-rotation-card";
+  rotCard.innerHTML = '<div class="lan-connect-card-title">Rotaci\xF3n</div>';
+  var btnFinalizar = document.createElement("button");
+  btnFinalizar.type = "button";
+  btnFinalizar.className = "btn-lan-secondary";
+  btnFinalizar.style.width = "100%";
+  btnFinalizar.style.color = "var(--danger)";
+  btnFinalizar.textContent = "Finalizar rotaci\xF3n (archivar equipos)";
+  btnFinalizar.onclick = function() {
+    void handleFinalizarRotacion();
+  };
+  rotCard.appendChild(btnFinalizar);
+  root.appendChild(rotCard);
+}
+function teamSalaKey(team) {
+  return String(team && team.sala || "").trim();
+}
+function buildAvailableTeamsSection(root, userSala) {
+  var teams = clinicalSessionContext.teams || [];
+  var userId = getClinicalUserUserId();
+  var salaKey = String(userSala || "").trim();
+  var alreadyInIds = teams.filter(function(t2) {
+    return (t2.members || []).some(function(m) {
+      return String(m.user_id) === userId;
+    });
+  }).map(function(t2) {
+    return String(t2.team_id);
+  });
+  var available = teams.filter(function(t2) {
+    return teamSalaKey(t2) === salaKey && !t2.archived_at && alreadyInIds.indexOf(String(t2.team_id)) === -1;
+  });
+  if (!available.length) {
+    var empty = document.createElement("p");
+    empty.className = "lan-connect-card-hint";
+    empty.textContent = "No hay equipos disponibles en tu Sala.";
+    root.appendChild(empty);
+    return;
+  }
+  var list = document.createElement("ul");
+  list.style.listStyle = "none";
+  list.style.padding = "0";
+  list.style.margin = "0";
+  available.forEach(function(t2) {
+    var li = document.createElement("li");
+    li.style.display = "flex";
+    li.style.gap = "8px";
+    li.style.alignItems = "center";
+    li.style.marginBottom = "6px";
+    var info = document.createElement("span");
+    info.style.flex = "1";
+    info.style.fontSize = "12px";
+    var cycle = t2.sub_area_fraction ? String(t2.sub_area_fraction) : "";
+    info.textContent = (t2.name || "Equipo") + " \xB7 " + (t2.service || "") + (cycle ? " \xB7 ciclo " + cycle : "");
+    var joinBtn = document.createElement("button");
+    joinBtn.type = "button";
+    joinBtn.className = "btn-lan-secondary";
+    joinBtn.style.flex = "0 0 auto";
+    joinBtn.textContent = "Unirse";
+    joinBtn.onclick = function() {
+      void joinClinicalTeam(String(t2.team_id));
+    };
+    li.appendChild(info);
+    li.appendChild(joinBtn);
+    list.appendChild(li);
+  });
+  root.appendChild(list);
+}
+async function joinClinicalTeam(teamId) {
+  var api3 = typeof window !== "undefined" ? window.rplusDb || window.electronAPI : null;
+  if (!api3 || typeof api3.dbClinicalTeamsMemberAdd !== "function") {
+    runtime5().showToast("Base de datos no disponible.", "error");
+    return;
+  }
+  var userId = getClinicalUserUserId();
+  if (!userId) {
+    runtime5().showToast("No hay sesi\xF3n cl\xEDnica activa.", "error");
+    return;
+  }
+  var addRes = await api3.dbClinicalTeamsMemberAdd({ teamId, userId });
+  if (!addRes || addRes.ok === false) {
+    runtime5().showToast(addRes?.error || "No se pudo unir al equipo.", "error");
+    return;
+  }
+  var rank = getClinicalRank();
+  if (rank === "R2" && api3 && typeof api3.dbClinicalTeamsPromoteLeader === "function") {
+    var promoteRes = await api3.dbClinicalTeamsPromoteLeader({ teamId, userId });
+    if (!promoteRes || promoteRes.ok === false) {
+      runtime5().showToast("Unido al equipo pero no se pudo asignar como l\xEDder.", "warn");
+    }
+  }
+  runtime5().showToast("Unido al equipo.", "success");
+  document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
+  await refreshClinicalSessionTeams2();
+  renderLanPanel2();
+}
+async function refreshClinicalSessionTeams2() {
+  var api3 = typeof window !== "undefined" ? window.rplusDb || window.electronAPI : null;
+  if (!api3) return;
+  if (typeof api3.dbClinicalScopeContext === "function") {
+    var userId = getClinicalUserUserId();
+    var res = await api3.dbClinicalScopeContext({ userId });
+    if (res && res.ok && Array.isArray(res.context?.teams)) {
+      clinicalSessionContext.teams = res.context.teams;
+      if (res.context && typeof res.context === "object") {
+        clinicalSessionContext.scopeContext = res.context;
+      }
+      return;
+    }
+  }
+  if (typeof api3.dbClinicalTeamsList === "function") {
+    var listRes = await api3.dbClinicalTeamsList();
+    if (listRes && listRes.ok && Array.isArray(listRes.teams)) {
+      clinicalSessionContext.teams = listRes.teams;
+    }
+  }
+}
+function resolveMobilePairingRoomId() {
+  var rid = String(activeLiveSyncRoomId || "").trim();
+  if (rid) return rid;
+  var mem = getRoomMembership();
+  if (mem && mem.roomId) return String(mem.roomId).trim();
+  try {
+    var s = JSON.parse(localStorage.getItem("rpc-settings") || "{}");
+    return resolveLiveSyncRoomIdFromSala(s.clinicalSala);
+  } catch (_e) {
+    return "";
+  }
+}
+function appendMobileLanJoinHintParams(url) {
+  var s = {};
+  try {
+    s = JSON.parse(localStorage.getItem("rpc-settings") || "{}");
+  } catch (_e) {
+  }
+  try {
+    var u = new URL(url);
+    if (s.clinicalDisplayName) u.searchParams.set("name", s.clinicalDisplayName);
+    if (s.clinicalRank) u.searchParams.set("rank", s.clinicalRank);
+    if (s.clinicalSala) u.searchParams.set("sala", s.clinicalSala);
+    var roomId = resolveMobilePairingRoomId();
+    if (roomId) u.searchParams.set("room", roomId);
+    return u.toString();
+  } catch (_eUrl) {
+    return url;
+  }
+}
+function classifyAutoJoinSource() {
+  if (typeof location !== "undefined") {
+    var parsedUrl = parseLanJoinQuery(location.search, location.origin);
+    if (String(parsedUrl.roomId || "").trim()) return "url";
+  }
+  var mem = getRoomMembership();
+  if (mem && mem.roomId) return "membership";
+  try {
+    var s = JSON.parse(localStorage.getItem("rpc-settings") || "{}");
+    if (resolveLiveSyncRoomIdFromSala(s.clinicalSala)) return "settings_sala";
+  } catch (_e) {
+    return "none";
+  }
+  return "none";
+}
+function resolveAutoJoinRoomId(explicitRoomId) {
+  var rid = String(explicitRoomId || "").trim();
+  if (rid) return rid;
+  if (typeof location !== "undefined") {
+    var parsed = parseLanJoinQuery(location.search, location.origin);
+    rid = String(parsed.roomId || "").trim();
+    if (rid) return rid;
+  }
+  var mem = getRoomMembership();
+  if (mem && mem.roomId) return String(mem.roomId).trim();
+  try {
+    var s = JSON.parse(localStorage.getItem("rpc-settings") || "{}");
+    return resolveLiveSyncRoomIdFromSala(s.clinicalSala);
+  } catch (_e) {
+    return "";
+  }
+}
+function lanAutoJoinConfirmedSessionKey(roomId) {
+  return "rpc-lan-auto-join-confirmed-" + String(roomId || "").trim();
+}
+function hasLanAutoJoinConfirmed(roomId) {
+  try {
+    return sessionStorage.getItem(lanAutoJoinConfirmedSessionKey(roomId)) === "1";
+  } catch (_e) {
+    return false;
+  }
+}
+function setLanAutoJoinConfirmed(roomId) {
+  try {
+    sessionStorage.setItem(lanAutoJoinConfirmedSessionKey(roomId), "1");
+  } catch (_e) {
+  }
+}
+async function generateMobilePairingLink() {
+  var hostUrl = await resolveLanShareBaseUrl();
+  if (!hostUrl) {
+    runtime5().showToast(
+      "No detectamos la IP de esta Mac en la red. Revisa Wi\u2011Fi y vuelve a copiar el enlace.",
+      "error"
+    );
+    return "";
+  }
+  try {
+    var share = await ensureLanPairingForShare({ forceNew: true });
+    return appendMobileLanJoinHintParams(
+      buildShareJoinUrl(share.hostUrl, share.pairing.ticketId)
+    );
+  } catch (_ticket) {
+  }
+  if (!hostUrl || isLocalLoopbackLanUrl(hostUrl)) return "";
+  var teamCode = getLanTeamCodeFromConfig();
+  if (!teamCode) return "";
+  var params = new URLSearchParams();
+  params.set("host", hostUrl.replace(/\/+$/, ""));
+  params.set("code", teamCode);
+  var roomId = resolveMobilePairingRoomId();
+  if (roomId) params.set("room", roomId);
+  return appendMobileLanJoinHintParams(hostUrl + "/?" + params.toString());
+}
+function startLanAutoDiscovery() {
+  if (_lanScanTimer) return;
+  _lanScanTimer = setInterval(function() {
+    void scanLanHosts();
+  }, LAN_SCAN_INTERVAL_MS);
+  void scanLanHosts();
+}
+async function scanLanHosts() {
+  if (!isLanElectronDesktop()) return;
+  if (isLanRemoteJoinMode()) return;
+  var teamCode = getLanTeamCodeFromConfig();
+  if (!teamCode) return;
+  try {
+    var clientId = typeof getLanClientId === "function" ? getLanClientId() : "";
+    var peers = typeof listLivePeerHostUrls === "function" ? listLivePeerHostUrls(clientId) : [];
+    var currentRank = getClinicalRank();
+    for (var i = 0; i < peers.length; i += 1) {
+      var peerUrl = peers[i];
+      if (!peerUrl) continue;
+      var alive = typeof pingLanHostUrl === "function" ? await pingLanHostUrl(peerUrl, teamCode) : false;
+      if (!alive) continue;
+      try {
+        var resp = await fetch(peerUrl + "/api/lan/v1/host-rank", {
+          headers: { "Authorization": "Bearer " + teamCode },
+          signal: AbortSignal.timeout(3e3)
+        });
+        if (resp.ok) {
+          var data = await resp.json();
+          var peerRank = String(data.rank || "").trim();
+          if (shouldSupersede(peerRank, currentRank)) {
+            if (isLanElectronDesktop() && typeof maybeApplyLanHostUrlSwitch === "function") {
+              var pinnedScan = getPinnedHostUrl();
+              if (pinnedScan) {
+                runtime5().showToast(
+                  "Anfitri\xF3n fijado: " + pinnedScan + ". No se cambi\xF3 a " + peerUrl + " (" + peerRank + ").",
+                  "info"
+                );
+                continue;
+              }
+              var supersedeMsg = "Un host de mayor rango (" + peerRank + ") est\xE1 en " + peerUrl + ". \xBFConectar como cliente?";
+              if (maybeApplyLanHostUrlSwitch(peerUrl, teamCode, {
+                skipRememberPrimary: true,
+                requireConfirm: true,
+                confirmMessage: supersedeMsg
+              })) {
+                runtime5().showToast("Conectado al anfitri\xF3n de mayor rango (" + peerRank + ").", "info");
+                renderLanPanel2();
+                return;
+              }
+            }
+          }
+        }
+      } catch (_peerErr) {
+      }
+    }
+  } catch (_scanErr) {
+  }
+}
+function shouldSupersede(peerRank, myRank) {
+  var priority = { Admin: 5, R4: 4, R3: 3, R2: 2, R1: 1 };
+  return (priority[peerRank] || 0) > (priority[myRank] || 0);
+}
+async function saveLanHostTeamCodeFromUi() {
+  if (!window.electronAPI || typeof window.electronAPI.writeLanHostTeamCode !== "function") {
+    runtime5().showToast("Solo disponible en la app Electron", "error");
+    return;
+  }
+  var input = document.getElementById("settings-lan-host-team-code-input");
+  var plain = input && input.value;
+  var res;
+  try {
+    res = await window.electronAPI.writeLanHostTeamCode(plain);
+  } catch (e) {
+    runtime5().showToast(e && e.message ? e.message : "Error al guardar", "error");
+    return;
+  }
+  if (res && res.ok) {
+    var plainTrim = String(plain || "").trim();
+    if (!plainTrim) {
+      runtime5().showToast("Escribe un token de al menos 32 caracteres.", "error");
+      return;
+    }
+    var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
+    var hostUrl = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
+    if (hostUrl && plainTrim) {
+      storage.saveLanConfig({ hostUrl, teamCode: plainTrim });
+      lanClient.configure({ hostUrl, teamCode: plainTrim });
+      try {
+        lanClient.disconnect();
+        lanClient.connectSyncChannel();
+      } catch (_e) {
+      }
+    }
+    runtime5().showToast("Guardado. Reinicia R+ para que el proceso del servidor relea el archivo.", "success");
+  } else {
+    runtime5().showToast(res && res.error ? res.error : "Error al guardar", "error");
+  }
+}
+async function resetLanSquadHostStateFromUi() {
+  if (!window.electronAPI || typeof window.electronAPI.resetLanSquadHostState !== "function") {
+    runtime5().showToast("Solo disponible en la app de escritorio.", "error");
+    return;
+  }
+  if (!confirm(
+    "Se borrar\xE1 el archivo lan-squad-host-state.json en esta computadora (salas, pacientes del host LAN y la cach\xE9 clinicalOps del bundle). Los equipos, directorio y guardias en la base cl\xEDnica SQLCipher no se borran. \xBFSeguir?"
+  )) {
+    return;
+  }
+  var res;
+  try {
+    res = await window.electronAPI.resetLanSquadHostState();
+  } catch (e) {
+    runtime5().showToast(e && e.message ? e.message : "Error al restablecer", "error");
+    return;
+  }
+  if (res && res.ok) {
+    var synced = await syncLanSavedTeamCodeWithEffectiveHostCode();
+    runtime5().showToast(
+      synced ? "Estado LAN del host borrado. El \xABC\xF3digo del equipo\xBB guardado en esta R+ qued\xF3 alineado con archivo / variable de entorno / valor por defecto del servidor." : "Estado LAN del host borrado. Si sigues con error 401, escribe en \xABC\xF3digo del equipo\xBB el mismo texto que el servidor (o reinicia R+ tras cambiar el archivo).",
+      "success"
+    );
+    renderLanPanel2();
+  } else {
+    runtime5().showToast(res && res.error ? res.error : "No se pudo borrar el archivo.", "error");
+  }
+}
+async function copyLanInviteLinkFromUi(opts) {
+  opts = opts || {};
+  var silent = !!opts.silent;
+  var share;
+  try {
+    share = await ensureLanPairingForShare({ forceNew: true });
+  } catch (e) {
+    if (!silent) {
+      if (e && e.code === "no_host_url") {
+        runtime5().showToast(
+          "Falta la direcci\xF3n del servidor (o no pudimos detectar la IP en esta computadora).",
+          "error"
+        );
+      } else {
+        runtime5().showToast("Genera primero un enlace / PIN o revisa el token del anfitri\xF3n.", "error");
+      }
+    }
+    return false;
+  }
+  var link = buildShareJoinUrl(share.hostUrl, share.pairing.ticketId);
+  var copied = await copyToClipboardSafe(link);
+  if (copied) {
+    var root = document.getElementById("lan-connection-panel-root");
+    updateLanPairingDisplay(root);
+    if (!silent) {
+      var pinHint = share.pairing.pin ? " PIN: " + share.pairing.pin + "." : "";
+      var inviteExpiry = formatLanTicketExpiryLabel(share.pairing.expiresAt);
+      runtime5().showToast(
+        "Enlace de invitaci\xF3n copiado." + pinHint + (inviteExpiry ? " V\xE1lido hasta " + inviteExpiry + "." : ""),
+        "success"
+      );
+    }
+    return true;
+  }
+  if (!silent) runtime5().showToast("No se pudo copiar al portapapeles.", "error");
+  return false;
+}
+function joinLanFromInviteUi() {
+  var input = document.getElementById("lan-input-invite-link");
+  var raw = String(input && input.value ? input.value : "").trim();
+  if (!raw) {
+    runtime5().showToast("Pega el enlace de invitaci\xF3n que te envi\xF3 el anfitri\xF3n.", "error");
+    return;
+  }
+  var parsed = parseLanInviteInput(raw);
+  if (parsed.legacyInvite) {
+    runtime5().showToast(
+      "Este enlace ya no es v\xE1lido. Pide al anfitri\xF3n un nuevo enlace o PIN.",
+      "error"
+    );
+    return;
+  }
+  var ticketId = String(parsed.ticketId || "").trim();
+  if (ticketId) {
+    var hostUrl = String(parsed.hostUrl || "").trim().replace(/\/+$/, "");
+    if (!hostUrl) {
+      var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
+      hostUrl = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
+    }
+    if (!hostUrl) {
+      runtime5().showToast(
+        "Pega el enlace completo (http://\u2026/join/req_\u2026) con la direcci\xF3n del anfitri\xF3n.",
+        "error"
+      );
+      return;
+    }
+    void exchangeLanJoinFromInvite(hostUrl, ticketId, parsed.roomId);
+    return;
+  }
+  runtime5().showToast(
+    "No reconocimos un enlace v\xE1lido. Pide al anfitri\xF3n un enlace /join/req_\u2026 o el PIN actual.",
+    "error"
+  );
+}
+async function saveLanSettingsFromUi(opts) {
+  opts = opts || {};
+  var copyInviteAfter = !!opts.copyInviteAfter;
+  var uiRole = typeof storage.getLanUiRole === "function" ? storage.getLanUiRole() : "client";
+  var hostInput = document.getElementById("lan-input-host-url");
+  if (hostInput && !String(hostInput.value || "").trim()) {
+    var autoHost = await resolveLanHostUrlForShare();
+    if (autoHost) hostInput.value = autoHost;
+  }
+  var hostUrl = String(hostInput && hostInput.value ? hostInput.value : "").trim().replace(/\/+$/, "");
+  var teamCode = "";
+  if (uiRole === "host") {
+    teamCode = String(await resolveHostBearerToken()).trim();
+  } else {
+    teamCode = String(await resolveLanTeamCodeForShare()).trim();
+  }
+  if (!hostUrl || !teamCode) {
+    runtime5().showToast(
+      !hostUrl ? uiRole === "host" ? "No pudimos detectar la IP. Escribe la direcci\xF3n http://\u2026 que ver\xE1n las otras R+." : "Escribe la direcci\xF3n del servidor que te dio el anfitri\xF3n." : uiRole === "host" ? "No hay token seguro del servidor en esta Mac. Reinicia R+ como anfitri\xF3n." : "\xDAnete con el enlace o PIN que te dio quien abri\xF3 la sala.",
+      "error"
+    );
+    return;
+  }
+  var cfg = { hostUrl: hostUrl.replace(/\/+$/, ""), teamCode };
+  storage.saveLanConfig(cfg);
+  lanClient.configure(cfg);
+  lanClient.disconnect();
+  try {
+    lanClient.connectSyncChannel();
+  } catch (_e) {
+  }
+  var pingOk = false;
+  var pingStatus = 0;
+  try {
+    var r = await lanClient.fetch("/api/lan/v1/ping");
+    pingStatus = r && r.status ? r.status : 0;
+    pingOk = !!(r && r.ok);
+    _lanLastPingAt = (/* @__PURE__ */ new Date()).toISOString();
+    _lanLastPingStatus = pingStatus;
+  } catch (pingErr) {
+    _lanLastPingAt = (/* @__PURE__ */ new Date()).toISOString();
+    _lanLastPingStatus = 0;
+    recordLanSyncError({
+      op: "ping",
+      code: "NETWORK",
+      message: pingErr && pingErr.message ? pingErr.message : "ping failed"
+    });
+  }
+  var copiedOk = false;
+  if (copyInviteAfter && pingStatus !== 401) {
+    copiedOk = await copyLanInviteLinkFromUi({ silent: true });
+  }
+  if (pingStatus === 401) {
+    recordLanSyncError({ op: "ping", code: "401", message: "team code rejected" });
+  }
+  if (pingOk) {
+    var autoRoomId = resolveAutoJoinRoomId("");
+    if (autoRoomId) {
+      var joinSource = classifyAutoJoinSource();
+      var needsConfirm = joinSource === "settings_sala" && !hasLanAutoJoinConfirmed(autoRoomId);
+      if (needsConfirm) {
+        var salaLabel = liveSyncRoomLabel(autoRoomId);
+        if (typeof confirm !== "function" || !confirm("\xBFUnirte a " + salaLabel + "?")) {
+          renderLanPanel2();
+          return;
+        }
+        setLanAutoJoinConfirmed(autoRoomId);
+      }
+      joinLanRoom(autoRoomId, liveSyncRoomLabel(autoRoomId));
+    }
+    void Promise.resolve().then(() => (init_historia_clinica_lan_sync(), historia_clinica_lan_sync_exports)).then(function(m) {
+      return m.scheduleFlushAllPendingHistoriaClinicaLanSync();
+    });
+    void maybeShowLanMigrationNotice();
+    if (copyInviteAfter) {
+      runtime5().showToast(
+        copiedOk ? "Anfitri\xF3n listo. La invitaci\xF3n ya est\xE1 en el portapapeles; comp\xE1rtela por WhatsApp o correo." : "Anfitri\xF3n listo, pero no se pudo copiar solo. Pulsa \xABGenerar enlace / PIN\xBB o \xABCopiar enlace de invitaci\xF3n\xBB.",
+        copiedOk ? "success" : "error"
+      );
+    } else {
+      runtime5().showToast("Listo: ya iniciaste sesi\xF3n en la sala del equipo.", "success");
+    }
+  } else if (pingStatus === 401) {
+    runtime5().showToast("El c\xF3digo no coincide con el del servidor. Pide el c\xF3digo correcto a quien tiene la computadora anfitriona.", "error");
+  } else {
+    if (copyInviteAfter && copiedOk) {
+      runtime5().showToast(
+        "Invitaci\xF3n copiada al portapapeles. Aun as\xED no hubo respuesta del servidor: revisa el Wi\u2011Fi o que R+ siga abierto en el anfitri\xF3n.",
+        "error"
+      );
+    } else {
+      runtime5().showToast(
+        "Guardamos los datos, pero no hubo respuesta del servidor. Revisa la direcci\xF3n y que ambas computadoras est\xE9n en el mismo Wi\u2011Fi.",
+        "error"
+      );
+    }
+  }
+  renderLanPanel2();
+}
+async function createLanRoomFromUi() {
+  if (!isLanSessionConfiguredForRest()) {
+    runtime5().showToast("Falta la direcci\xF3n LAN. Configura la conexi\xF3n en \u21C4 y vuelve a intentar.", "error");
+    return;
+  }
+  await ensureLanClientTeamCodeAligned();
+  var input = document.getElementById("lan-input-room-name");
+  var displayName = String(input && input.value ? input.value : "").trim();
+  if (!displayName) {
+    runtime5().showToast("Escribe un nombre de sala", "error");
+    return;
+  }
+  var resp;
+  try {
+    resp = await lanFetchAuthed("/api/lan/v1/rooms", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ displayName })
+    });
+  } catch (_e) {
+    runtime5().showToast("No se pudo crear la sala", "error");
+    return;
+  }
+  if (!resp.ok) {
+    if (resp.status === 401) {
+      runtime5().showToast(
+        "El c\xF3digo del equipo no coincide con el servidor. Igual\xE1lo al conectar y en lan-team-code.txt; reinicia R+ en el anfitri\xF3n si cambiaste el archivo.",
+        "error"
+      );
+    } else {
+      runtime5().showToast("No se pudo crear la sala", "error");
+    }
+    return;
+  }
+  var created;
+  try {
+    created = await resp.json();
+  } catch (_eJson) {
+    created = null;
+  }
+  var newRoom = created && created.room;
+  if (newRoom && newRoom.id) {
+    joinLanRoom(newRoom.id, newRoom.displayName || displayName);
+  }
+  if (input) input.value = "";
+  runtime5().showToast(
+    newRoom && newRoom.id ? "Sala creada y conectada" : "Sala creada \u2014 pulsa Unirse",
+    "success"
+  );
+  renderLanPanel2();
+}
+async function deleteLanRoom(roomId) {
+  if (!isLanSessionConfiguredForRest()) {
+    runtime5().showToast("Falta configuraci\xF3n LAN para eliminar salas.", "error");
+    return;
+  }
+  await ensureLanClientTeamCodeAligned();
+  var id = String(roomId || "").trim();
+  if (!id) return;
+  if (activeLiveSyncRoomId === id) {
+    leaveLiveSyncRoom({ silentLeave: true });
+  }
+  var resp;
+  try {
+    resp = await lanFetchAuthed("/api/lan/v1/rooms/" + encodeURIComponent(id), { method: "DELETE" });
+  } catch (_e) {
+    runtime5().showToast("No se pudo eliminar la sala", "error");
+    return;
+  }
+  if (!resp.ok) {
+    if (resp.status === 401) {
+      runtime5().showToast("El c\xF3digo del equipo no coincide con el servidor; no se pudo eliminar la sala.", "error");
+    } else {
+      runtime5().showToast("No se pudo eliminar la sala", "error");
+    }
+    return;
+  }
+  runtime5().showToast("Sala eliminada", "success");
+  renderLanPanel2();
+}
+function syncLanHostFirstTimeHintUi() {
+  var hint = document.getElementById("lan-host-first-time-hint");
+  if (hint) hint.style.display = "none";
+}
+function dismissLanHostFirstTimeHint() {
+  try {
+    localStorage.setItem(LAN_HOST_CODE_HINT_SEEN_KEY, "1");
+  } catch (_e) {
+  }
+  syncLanHostFirstTimeHintUi();
+}
+function syncSettingsLanHostDiskSection() {
+  var acc = document.getElementById("settings-accordion-lan-host-disk");
+  if (!acc) return;
+  var desktop = isLanElectronDesktop();
+  acc.style.display = desktop && !isLanRemoteJoinMode() ? "" : "none";
+  if (desktop && !isLanRemoteJoinMode()) {
+    syncLanHostTeamCodeSettingsInput();
+    syncLanHostFirstTimeHintUi();
+    if (!acc.dataset.lanHostToggleBound) {
+      acc.dataset.lanHostToggleBound = "1";
+      acc.addEventListener("toggle", function() {
+        if (acc.open) {
+          syncLanHostTeamCodeSettingsInput();
+          syncLanHostFirstTimeHintUi();
+        }
+      });
+    }
+  }
+}
+async function syncLanHostTeamCodeSettingsInput() {
+  var input = document.getElementById("settings-lan-host-team-code-input");
+  if (!input) return;
+  var code = await resolveHostBearerToken();
+  if (!String(input.value || "").trim() && code) input.value = code;
+}
+function closeConnectionDropdown() {
+  var dd = document.getElementById("connection-dropdown");
+  var bg = document.getElementById("connection-dropdown-backdrop");
+  if (dd) dd.classList.remove("open");
+  if (bg) bg.classList.remove("open");
+  var syncBtn = document.getElementById("btn-header-team-sync");
+  if (syncBtn) syncBtn.setAttribute("aria-expanded", "false");
+}
+function openConnectionDropdown() {
+  runtime5().closeSettingsDropdown();
+  var dd = document.getElementById("connection-dropdown");
+  var bg = document.getElementById("connection-dropdown-backdrop");
+  if (!dd) return;
+  dd.classList.add("open");
+  if (bg) bg.classList.add("open");
+  var syncBtn = document.getElementById("btn-header-team-sync");
+  if (syncBtn) syncBtn.setAttribute("aria-expanded", "true");
+  wireLanPanelDelegation();
+  renderLanPanel2();
+}
+function toggleConnectionDropdown(ev) {
+  if (ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+  }
+  var dd = document.getElementById("connection-dropdown");
+  if (!dd) return;
+  if (dd.classList.contains("open")) closeConnectionDropdown();
+  else openConnectionDropdown();
+}
+function openTeamSyncFromHeader() {
+  openConnectionDropdown();
+}
+var LAN_KNOWN_ROOMS_LS, LAN_HOST_CODE_HINT_SEEN_KEY, _lanPanelRenderGen, _lanPanelRenderChain, _lanPanelDelegationWired, _lanScanTimer, LAN_SCAN_INTERVAL_MS, _lanLastPingAt, _lanLastPingStatus, LAN_DISCONNECT_BANNER_MSG, _lanLastConnected, panelRuntime, LAN_DISCONNECT_BANNER_MSG, _lanLastConnected, _lanPanelDelegationWired;
+var init_lan_sync_panel = __esm({
+  "public/js/lan-sync-panel.mjs"() {
+    init_storage();
+    init_app_state();
+    init_soap_estado();
+    init_clinical_privileges();
+    init_clinical_access_runtime();
+    init_lan_hub_guardia_mode();
+    init_lan_hub_panel_shell();
+    init_interno_qr_panel();
+    init_lan_join_link();
+    init_live_sync_outbox();
+    init_host_bundle_bases();
+    init_live_sync_membership();
+    init_lan_host_pin();
+    init_lan_sync_diagnostics();
+    init_lan_surrogate_host();
+    init_lan_sync_runtime();
+    init_lan_sync_state();
+    init_lan_sync_transport();
+    init_lan_sync_room();
+    init_lan_sync_push();
+    init_lan_sync_diagnostics();
+    LAN_KNOWN_ROOMS_LS = "rpc-lan-known-rooms";
+    LAN_HOST_CODE_HINT_SEEN_KEY = "rpc-lan-host-code-hint-seen";
+    _lanPanelRenderGen = 0;
+    _lanPanelRenderChain = Promise.resolve();
+    _lanPanelDelegationWired = false;
+    _lanScanTimer = null;
+    LAN_SCAN_INTERVAL_MS = 5e3;
+    _lanLastPingAt = null;
+    _lanLastPingStatus = 0;
+    LAN_DISCONNECT_BANNER_MSG = "Sin conexi\xF3n al host LAN. LiveSync (salas y relay) puede estar limitado hasta reconectar.";
+    _lanLastConnected = true;
+    panelRuntime = null;
+    LAN_DISCONNECT_BANNER_MSG = "Sin conexi\xF3n al host LAN. LiveSync (salas y relay) puede estar limitado hasta reconectar.";
+    _lanLastConnected = true;
+    lanClient.addEventListener("lan-status", function(ev) {
+      updateLanConnectionBanner(!!(ev.detail && ev.detail.connected));
+    });
+    lanClient.addEventListener("lan-patch", function() {
+      syncLiveSyncStatusChrome();
+    });
+    _lanPanelDelegationWired = false;
+  }
+});
+
+// public/js/features/lan-sync.mjs
+var lan_sync_exports = {};
+__export(lan_sync_exports, {
+  closeConnectionDropdown: () => closeConnectionDropdown,
+  configureLanFromMobileJoin: () => configureLanFromMobileJoin,
+  deferLanConflictModalForMs: () => deferLanConflictModalForMs,
+  emitLiveSyncAgendaDelete: () => emitLiveSyncAgendaDelete,
+  emitLiveSyncAgendaUpsert: () => emitLiveSyncAgendaUpsert,
+  emitLiveSyncPatientDelete: () => emitLiveSyncPatientDelete,
+  emitLiveSyncTodoDelete: () => emitLiveSyncTodoDelete,
+  emitLiveSyncTodoUpsert: () => emitLiveSyncTodoUpsert,
+  getActiveLiveSyncRoomId: () => getActiveLiveSyncRoomId,
+  isLanConflictViewerSuppressed: () => isLanConflictViewerSuppressed,
+  isLanSessionConfiguredForRest: () => isLanSessionConfiguredForRest,
+  joinLanRoom: () => joinLanRoom,
+  lanFetchHistoriaClinica: () => lanFetchHistoriaClinica,
+  lanFetchHostPatientRow: () => lanFetchHostPatientRow,
+  lanPushHistoriaClinica: () => lanPushHistoriaClinica,
+  lanPushPatientVersioned: () => lanPushPatientVersioned,
+  lanSyncPatientArchivedFlag: () => lanSyncPatientArchivedFlag,
+  openConnectionDropdown: () => openConnectionDropdown,
+  persistLanClientConfig: () => persistLanClientConfig,
+  pushClinicalOpsLanNow: () => pushClinicalOpsLanNow,
+  registerLanRuntime: () => registerLanRuntime,
+  registerLanSaveHooks: () => registerLanSaveHooks,
+  removePatientLocally: () => removePatientLocally,
+  renderLanPanel: () => renderLanPanel2,
+  scheduleLiveSyncPush: () => scheduleLiveSyncPush,
+  syncLanHostTeamCodeSettingsInput: () => syncLanHostTeamCodeSettingsInput,
+  syncSettingsLanHostDiskSection: () => syncSettingsLanHostDiskSection,
+  touchPatientLanUpdatedAt: () => touchPatientLanUpdatedAt,
+  windowHandlers: () => windowHandlers3,
+  withSuppressedLanConflictViewer: () => withSuppressedLanConflictViewer
+});
+function isLanConflictViewerSuppressed() {
+  return _suppressClinicalConflictViewer > 0;
+}
+function deferLanConflictModalForMs(ms) {
+  const n = Number(ms);
+  if (!Number.isFinite(n) || n <= 0) return;
+  _deferLanConflictModalUntil = Date.now() + n;
+  _deferredConflictToastShown = false;
+}
+function shouldDeferLanConflictModal() {
+  return Date.now() < _deferLanConflictModalUntil;
+}
+function withSuppressedLanConflictViewer(fn) {
+  _suppressClinicalConflictViewer += 1;
+  return Promise.resolve().then(fn).finally(function() {
+    _suppressClinicalConflictViewer -= 1;
+  });
+}
+function registerLanRuntime(partial) {
+  if (!partial || typeof partial !== "object") return;
+  Object.assign(runtime6, partial);
+  void initLanHostPlugAndPlay();
 }
 function readLiveSyncEntityMap() {
   try {
@@ -16451,12 +18799,12 @@ function buildLiveSyncMutationFromDesired(entityType, entityId, desired, extra) 
 }
 function sendLiveSyncMutation(mutation) {
   if (!activeLiveSyncRoomId || !lanClient.liveConnected || !mutation) return;
-  var envelope = wrapLiveSyncPatch(activeLiveSyncRoomId, getLanClientId(), mutation);
+  var envelope = wrapLiveSyncPatch(activeLiveSyncRoomId, getLanClientId2(), mutation);
   void guardAndSignLiveSyncMutation(mutation, envelope).then(function() {
     lanClient.sendLive(envelope);
   }).catch(function(err) {
     if (err && err.code === "CLINICAL_ACCESS_DENIED") {
-      runtime3.showToast(String(err.message || "Acceso cl\xEDnico denegado"), "error");
+      runtime6.showToast(String(err.message || "Acceso cl\xEDnico denegado"), "error");
     }
   });
 }
@@ -16469,7 +18817,7 @@ async function clearConflictDraft(draftId) {
     await deleteDraftConflict(draftId);
   } catch (_e) {
   }
-  void renderLanPanel();
+  void renderLanPanel2();
 }
 async function discardDraftsForConflictEntity(payload) {
   if (!payload || !payload.entityType || !payload.entityId) return;
@@ -16636,8 +18984,8 @@ async function handleSyncConflict(payload, options) {
   }
   if (shouldAutoResolveTodoConflict(payload) && tryAutoResolveTodoConflict(payload)) {
     await discardDraftsForConflictEntity(payload);
-    void renderLanPanel();
-    runtime3.showToast("Pendiente alineado con la sala", "info");
+    void renderLanPanel2();
+    runtime6.showToast("Pendiente alineado con la sala", "info");
     return;
   }
   var viewerData = conflictDataForViewer(payload);
@@ -16649,8 +18997,8 @@ async function handleSyncConflict(payload, options) {
     await applyConflictUseServer(payload);
     await discardDraftsForConflictEntity(payload);
     clearHistoriaPendingAfterConflict(payload);
-    void renderLanPanel();
-    runtime3.showToast("Historia alineada con la sala (mismo contenido visible).", "info");
+    void renderLanPanel2();
+    runtime6.showToast("Historia alineada con la sala (mismo contenido visible).", "info");
     return;
   }
   var draftId = await saveDraftConflict({
@@ -16665,10 +19013,10 @@ async function handleSyncConflict(payload, options) {
   });
   var deferModal = !!(options.background || shouldDeferLanConflictModal());
   if (deferModal) {
-    void renderLanPanel();
+    void renderLanPanel2();
     if (!_deferredConflictToastShown) {
       _deferredConflictToastShown = true;
-      runtime3.showToast(
+      runtime6.showToast(
         "Hay un conflicto de sincronizaci\xF3n guardado. \xC1brelo en Ajustes \u2192 LAN cuando quieras decidir.",
         "info"
       );
@@ -16690,7 +19038,7 @@ async function handleSyncConflict(payload, options) {
     onClose: function() {
     }
   });
-  void renderLanPanel();
+  void renderLanPanel2();
 }
 function wsConflictDetailToPayload(detail) {
   return {
@@ -16867,252 +19215,6 @@ async function lanFetchHistoriaClinica(patientId, roomId) {
   var body = await resp.json();
   return { ok: true, version: body.version, data: body.data };
 }
-function getLanClientId() {
-  try {
-    var id = localStorage.getItem("rpc-lan-client-id");
-    if (id && String(id).trim()) return String(id).trim();
-    var gen = "lc_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 10);
-    localStorage.setItem("rpc-lan-client-id", gen);
-    return gen;
-  } catch (_e) {
-    return "lc_anon";
-  }
-}
-function getLanTeamCodeFromConfig() {
-  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
-  return trimStoredLanBearer(cfg.teamCode);
-}
-async function resolveSelfLanAdvertiseHostUrl() {
-  if (!isLanElectronDesktop() || isLanRemoteJoinMode()) return "";
-  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
-  var fromCfg = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
-  if (fromCfg) return fromCfg;
-  return resolveLanHostUrlAuto();
-}
-function buildLiveSyncHelloPayload(roomId) {
-  var rid = String(roomId || "").trim();
-  var prev = storage.getLanRoomSnapshot(rid);
-  var payload = {
-    type: "livesync:hello",
-    roomId: rid,
-    clientId: getLanClientId(),
-    snapshotAt: prev && prev.savedAt ? prev.savedAt : null,
-    generation: prev && prev.generation != null ? prev.generation : 0,
-    canHost: isLanElectronDesktop(),
-    isSurrogate: isSurrogateHostActive()
-  };
-  return payload;
-}
-async function enrichLiveSyncHelloPayload(payload) {
-  if (!payload || !payload.canHost) return payload;
-  var url = await resolveSelfLanAdvertiseHostUrl();
-  if (url) payload.hostUrl = url;
-  return payload;
-}
-function applyLanHostUrlSwitch(hostUrl, teamCode, opts) {
-  opts = opts || {};
-  var url = String(hostUrl || "").trim().replace(/\/+$/, "");
-  var code = trimStoredLanBearer(teamCode);
-  if (!url) return false;
-  if (!opts.skipRememberPrimary && isLanRemoteJoinMode()) rememberPrimaryHostUrl(url);
-  persistLanClientConfig(url, code);
-  try {
-    if (!lanClient.connected) lanClient.connectSyncChannel();
-  } catch (_e) {
-  }
-  return true;
-}
-function maybeApplyLanHostUrlSwitch(hostUrl, teamCode, opts) {
-  opts = opts || {};
-  var url = String(hostUrl || "").trim().replace(/\/+$/, "");
-  if (!url) return false;
-  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
-  var currentUrl = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
-  var pinned = getPinnedHostUrl();
-  if (url === currentUrl) return applyLanHostUrlSwitch(url, teamCode, opts);
-  if (opts.blockSwitch) return false;
-  if (pinned) {
-    if (url === pinned) return applyLanHostUrlSwitch(url, teamCode, opts);
-    runtime3.showToast("Anfitri\xF3n fijado: " + pinned + ".", "info");
-    return false;
-  }
-  if (opts.requireConfirm) {
-    var msg = opts.confirmMessage || "\xBFCambiar al anfitri\xF3n " + url + "?";
-    if (typeof confirm === "function" && !confirm(msg)) return false;
-  }
-  return applyLanHostUrlSwitch(url, teamCode, opts);
-}
-function stopSurrogateFailoverTimer() {
-  if (_surrogateFailoverTimer) {
-    clearTimeout(_surrogateFailoverTimer);
-    _surrogateFailoverTimer = null;
-  }
-}
-function scheduleSurrogateFailoverCheck() {
-  if (!activeLiveSyncRoomId || !getRoomMembership()) return;
-  stopSurrogateFailoverTimer();
-  _surrogateFailoverTimer = setTimeout(function() {
-    _surrogateFailoverTimer = null;
-    void runSurrogateFailoverCheck();
-  }, 1200);
-}
-async function tryReconnectLanToHostUrl(hostUrl, teamCode) {
-  var targetUrl = String(hostUrl || "").trim().replace(/\/+$/, "");
-  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
-  var currentUrl = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
-  var pinned = getPinnedHostUrl();
-  var switchOpts = { skipRememberPrimary: true };
-  if (targetUrl && targetUrl !== currentUrl) {
-    if (pinned) {
-      if (targetUrl !== pinned) {
-        var pinMsg = "Se detect\xF3 otro anfitri\xF3n (" + targetUrl + "). Tienes fijado " + pinned + ". \xBFCambiar de todos modos?";
-        if (typeof confirm !== "function" || !confirm(pinMsg)) return false;
-      }
-    } else if (typeof confirm === "function") {
-      if (!confirm(
-        "\xBFReconectar al anfitri\xF3n " + targetUrl + "?"
-      )) {
-        return false;
-      }
-    }
-  }
-  if (!applyLanHostUrlSwitch(hostUrl, teamCode, switchOpts)) return false;
-  var ok = await pingLanHostUrl(hostUrl, teamCode);
-  if (!ok) return false;
-  var rid = activeLiveSyncRoomId;
-  if (rid) {
-    try {
-      lanClient.connectLiveChannel(rid);
-    } catch (_e) {
-    }
-    await syncLiveSyncAfterRoomJoin(rid);
-    startLiveSyncReconnectLoop();
-  }
-  syncLiveSyncStatusChrome();
-  patchLanPanelJoinButtons();
-  return true;
-}
-async function promoteSelfToSurrogateHost() {
-  if (!isLanElectronDesktop() || !isLanRemoteJoinMode()) return false;
-  if (!activeLiveSyncRoomId) return false;
-  if (isSurrogateHostActive()) return false;
-  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
-  var formerUrl = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
-  var formerCode = getLanTeamCodeFromConfig();
-  var localUrl = await resolveLanHostUrlAuto();
-  if (!localUrl) return false;
-  if (formerUrl && await pingLanHostUrl(formerUrl, formerCode)) return false;
-  setSurrogateHostState({
-    formerHostUrl: formerUrl || getPrimaryHostUrl(),
-    formerTeamCode: formerCode,
-    localHostUrl: localUrl,
-    roomId: activeLiveSyncRoomId,
-    promotedAt: (/* @__PURE__ */ new Date()).toISOString()
-  });
-  applyLanHostUrlSwitch(localUrl, formerCode, { skipRememberPrimary: true });
-  var bundle = await buildLiveSyncBundleEnvelope(activeLiveSyncRoomId);
-  await pushRoomSyncBundleToHost(activeLiveSyncRoomId, bundle);
-  try {
-    if (!lanClient.connected) lanClient.connectSyncChannel();
-    lanClient.connectLiveChannel(activeLiveSyncRoomId);
-  } catch (_e) {
-  }
-  await syncLiveSyncAfterRoomJoin(activeLiveSyncRoomId);
-  startLiveSyncReconnectLoop();
-  var handoff = await enrichLiveSyncHelloPayload(buildLiveSyncHelloPayload(activeLiveSyncRoomId));
-  handoff.type = "livesync:host-handoff";
-  handoff.newHostUrl = localUrl;
-  handoff.reason = "surrogate-promoted";
-  try {
-    lanClient.sendLive(handoff);
-  } catch (_e2) {
-  }
-  runtime3.showToast(
-    "El anfitri\xF3n se desconect\xF3: esta Mac asume el servidor hasta que vuelva. Comparte de nuevo la invitaci\xF3n si alguien no reconecta solo.",
-    "success"
-  );
-  renderLanPanel();
-  return true;
-}
-async function maybeRevertSurrogateToPrimary() {
-  var st = getSurrogateHostState();
-  if (!st || !st.formerHostUrl) return false;
-  var code = st.formerTeamCode || getLanTeamCodeFromConfig();
-  if (!await pingLanHostUrl(st.formerHostUrl, code)) return false;
-  if (activeLiveSyncRoomId) {
-    var bundle = await buildLiveSyncBundleEnvelope(activeLiveSyncRoomId);
-    var prevUrl = lanClient.baseUrl();
-    applyLanHostUrlSwitch(st.formerHostUrl, code, { skipRememberPrimary: true });
-    await pushRoomSyncBundleToHost(activeLiveSyncRoomId, bundle);
-    if (!await pingLanHostUrl(st.formerHostUrl, code)) {
-      applyLanHostUrlSwitch(prevUrl, code, { skipRememberPrimary: true });
-      return false;
-    }
-  }
-  clearSurrogateHostState();
-  applyLanHostUrlSwitch(st.formerHostUrl, code, { skipRememberPrimary: false });
-  if (activeLiveSyncRoomId) {
-    try {
-      lanClient.connectLiveChannel(activeLiveSyncRoomId);
-    } catch (_e) {
-    }
-    await syncLiveSyncAfterRoomJoin(activeLiveSyncRoomId);
-  }
-  runtime3.showToast("El anfitri\xF3n original volvi\xF3: esta Mac dej\xF3 de ser servidor temporal.", "success");
-  renderLanPanel();
-  return true;
-}
-async function runSurrogateFailoverCheck() {
-  if (!activeLiveSyncRoomId || !getRoomMembership()) return;
-  if (lanClient.connected && lanClient.liveConnected) return;
-  var teamCode = getLanTeamCodeFromConfig();
-  var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
-  var currentUrl = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
-  if (currentUrl && await pingLanHostUrl(currentUrl, teamCode)) {
-    try {
-      if (!lanClient.connected) lanClient.connectSyncChannel();
-      if (activeLiveSyncRoomId) lanClient.connectLiveChannel(activeLiveSyncRoomId);
-    } catch (_pingOk) {
-    }
-    if (isSurrogateHostActive()) void maybeRevertSurrogateToPrimary();
-    return;
-  }
-  if (isSurrogateHostActive()) {
-    if (await maybeRevertSurrogateToPrimary()) return;
-  }
-  var targets = [];
-  var primary = getPrimaryHostUrl();
-  if (primary && primary !== currentUrl) targets.push(primary);
-  listLivePeerHostUrls(getLanClientId()).forEach(function(u) {
-    if (u && targets.indexOf(u) === -1 && u !== currentUrl) targets.push(u);
-  });
-  for (var i = 0; i < targets.length; i += 1) {
-    if (await tryReconnectLanToHostUrl(targets[i], teamCode)) {
-      if (targets[i] !== primary) {
-        runtime3.showToast("Reconectado al nuevo anfitri\xF3n de la sala.", "success");
-      } else if (!isSurrogateHostActive()) {
-        runtime3.showToast("Anfitri\xF3n original de vuelta.", "success");
-      }
-      return;
-    }
-  }
-  if (!isLanElectronDesktop() || !isLanRemoteJoinMode()) return;
-  await new Promise(function(r) {
-    setTimeout(r, surrogateElectionDelayMs(getLanClientId()));
-  });
-  if (lanClient.connected && lanClient.liveConnected) return;
-  if (primary && await pingLanHostUrl(primary, teamCode)) {
-    await tryReconnectLanToHostUrl(primary, teamCode);
-    return;
-  }
-  for (var j = 0; j < targets.length; j += 1) {
-    if (await pingLanHostUrl(targets[j], teamCode)) {
-      await tryReconnectLanToHostUrl(targets[j], teamCode);
-      return;
-    }
-  }
-  await promoteSelfToSurrogateHost();
-}
 function collectPatientIdsForLiveSync() {
   return patients.filter(function(p) {
     return p && p.id && String(p.id).indexOf("demo-") !== 0;
@@ -17132,21 +19234,18 @@ function collectPatientEntriesForLanSync() {
   var out = [];
   patients.forEach(function(p) {
     if (!p || !p.id || String(p.id).indexOf("demo-") === 0) return;
-    var entry2 = runtime3.buildPatientEntry(p.id);
+    var entry2 = runtime6.buildPatientEntry(p.id);
     if (entry2) out.push(entry2);
   });
   return out;
 }
-function mergeLiveSyncFullBundles(sources) {
-  var base = mergeLiveSyncBundles(sources);
-  var entries = mergeLanPatientEntrySources(sources);
-  entries = filterEntriesByPatientDeletes(entries, base.patientDeletes || []);
-  base.entries = attachTodosMapToPatientEntries(entries, base.todos);
-  if (isLanManejoRoomSyncEnabled()) {
-    base.manejo = mergeManejoFromSources(sources);
-  }
-  base.clinicalOps = mergeClinicalOpsFromSources(sources);
-  return base;
+function buildLiveSyncLocalMergeSource() {
+  return {
+    agenda: storage.getScheduledProcedures(),
+    todos: collectTodosMapForLiveSync(),
+    entries: collectPatientEntriesForLanSync(),
+    clinicalOps: getCachedClinicalOpsSnapshot()
+  };
 }
 function touchPatientLanUpdatedAt(patientId) {
   var p = patients.find(function(x) {
@@ -17174,7 +19273,7 @@ function applyLanPatientEntries(entries) {
     var entry2 = entries[i];
     if (!entry2 || !entry2.patient) continue;
     var reg = String(entry2.patient.registro || "").trim();
-    var existing = reg ? runtime3.findPatientByRegistro(reg) : null;
+    var existing = reg ? runtime6.findPatientByRegistro(reg) : null;
     if (!existing && entry2.patient.id) {
       existing = patients.find(function(p) {
         return p && p.id === entry2.patient.id;
@@ -17229,7 +19328,7 @@ function applyLanPatientEntries(entries) {
       if (remoteId && !idTaken) {
         var newPat = {
           id: remoteId,
-          nombre: runtime3.ensureUniquePatientName(entry2.patient.nombre || "PACIENTE SIN NOMBRE"),
+          nombre: runtime6.ensureUniquePatientName(entry2.patient.nombre || "PACIENTE SIN NOMBRE"),
           area: entry2.patient.area || "",
           servicio: entry2.patient.servicio || "",
           cuarto: entry2.patient.cuarto || "",
@@ -17259,7 +19358,7 @@ function applyLanPatientEntries(entries) {
         if (entry2.vpo) vpoByPatient[remoteId] = entry2.vpo;
         newId = remoteId;
       } else {
-        newId = runtime3.applyImportEntry(entry2, "duplicate", null);
+        newId = runtime6.applyImportEntry(entry2, "duplicate", null);
       }
       if (entry2.listadoProblemas && newId) listadoProblemas[newId] = entry2.listadoProblemas;
       saveEntryTodosOnLocalPatient(newId, entry2);
@@ -17268,14 +19367,14 @@ function applyLanPatientEntries(entries) {
   }
   if (added || updated) {
     saveState({ immediate: true });
-    runtime3.renderPatientList();
-    if (runtime3.getActiveId()) {
+    runtime6.renderPatientList();
+    if (runtime6.getActiveId()) {
       try {
-        runtime3.renderNoteForm();
+        runtime6.renderNoteForm();
       } catch (_e) {
       }
       try {
-        runtime3.renderLabHistoryPanel();
+        runtime6.renderLabHistoryPanel();
       } catch (_e2) {
       }
     }
@@ -17317,7 +19416,7 @@ function removePatientLocally(patientId) {
     if (storage.removeScheduledProceduresForPatient) storage.removeScheduledProceduresForPatient(pid);
   } catch (_eAg) {
   }
-  if (runtime3.getActiveId() === pid) runtime3.setActiveId(patients.length ? patients[0].id : null);
+  if (runtime6.getActiveId() === pid) runtime6.setActiveId(patients.length ? patients[0].id : null);
   return true;
 }
 function applyLiveSyncPatientDeletes(deletes, idMap) {
@@ -17334,7 +19433,7 @@ function applyLiveSyncPatientDeletes(deletes, idMap) {
     }
     var reg = String(d.registro || "").trim();
     if (reg) {
-      var existing = runtime3.findPatientByRegistro(reg);
+      var existing = runtime6.findPatientByRegistro(reg);
       if (existing && removePatientLocally(existing.id)) changed = true;
     }
   }
@@ -17369,27 +19468,27 @@ function applyLiveSyncMerged(merged) {
     storage.saveTodos(pid, filterTodosRespectingDismissals(pid, todoList));
   });
   if (patientRemoved) {
-    runtime3.renderPatientList();
-    if (runtime3.getActiveId()) runtime3.selectPatient(runtime3.getActiveId());
+    runtime6.renderPatientList();
+    if (runtime6.getActiveId()) runtime6.selectPatient(runtime6.getActiveId());
     else {
       var pv = document.getElementById("patient-view");
       var es = document.getElementById("empty-state");
       if (pv) pv.style.display = "none";
       if (es) es.style.display = "flex";
-      runtime3.syncWorkContextChrome();
+      runtime6.syncWorkContextChrome();
     }
   }
-  if (runtime3.getActiveAppTab() === "agenda" || runtime3.isMobileWeb()) {
-    runtime3.renderProcedureAgendaPanel();
+  if (runtime6.getActiveAppTab() === "agenda" || runtime6.isMobileWeb()) {
+    runtime6.renderProcedureAgendaPanel();
   }
-  runtime3.refreshAllTodoUIs();
-  if (runtime3.getActiveId()) {
+  runtime6.refreshAllTodoUIs();
+  if (runtime6.getActiveId()) {
     try {
-      runtime3.renderNoteForm();
+      runtime6.renderNoteForm();
     } catch (_eNote) {
     }
     try {
-      runtime3.renderLabHistoryPanel();
+      runtime6.renderLabHistoryPanel();
     } catch (_eLab) {
     }
   }
@@ -17404,7 +19503,7 @@ function applyLiveSyncMerged(merged) {
           document.dispatchEvent(new CustomEvent("rpc-clinical-ops-synced"));
         });
       } else {
-        runtime3.showToast(
+        runtime6.showToast(
           "No se pudieron sincronizar equipos ni usuarios LAN. Desbloquea la sesi\xF3n cl\xEDnica e intenta de nuevo.",
           "warn"
         );
@@ -17413,446 +19512,93 @@ function applyLiveSyncMerged(merged) {
   }
   migrateLocalPatientsClinicalSala();
 }
-function liveSyncBundleHasPayload(bundle) {
-  if (!bundle) return false;
-  if (Array.isArray(bundle.entries) && bundle.entries.length > 0) return true;
-  if (Array.isArray(bundle.agenda) && bundle.agenda.length > 0) return true;
-  var todos = bundle.todos;
-  if (!todos || typeof todos !== "object") return false;
-  var keys = Object.keys(todos);
-  for (var i = 0; i < keys.length; i += 1) {
-    if (Array.isArray(todos[keys[i]]) && todos[keys[i]].length > 0) return true;
-  }
-  var manejo = bundle.manejo;
-  if (isLanManejoRoomSyncEnabled() && manejo && typeof manejo === "object") {
-    if (Array.isArray(manejo.customProtocols) && manejo.customProtocols.length > 0) return true;
-    if (manejo.overrides && Object.keys(manejo.overrides).length > 0) return true;
-    if (Array.isArray(manejo.favorites) && manejo.favorites.length > 0) return true;
-  }
-  var clinicalOps = bundle.clinicalOps;
-  if (clinicalOps && typeof clinicalOps === "object") {
-    if (Array.isArray(clinicalOps.rotation_cycles) && clinicalOps.rotation_cycles.length > 0 || Array.isArray(clinicalOps.patient_team_assignment) && clinicalOps.patient_team_assignment.length > 0 || Array.isArray(clinicalOps.team_guardia_today) && clinicalOps.team_guardia_today.length > 0 || Array.isArray(clinicalOps.active_guardias) && clinicalOps.active_guardias.length > 0 || Array.isArray(clinicalOps.teams) && clinicalOps.teams.length > 0 || Array.isArray(clinicalOps.team_membership) && clinicalOps.team_membership.length > 0 || Array.isArray(clinicalOps.clinical_users) && clinicalOps.clinical_users.length > 0) {
-      return true;
-    }
-  }
-  return false;
+function markDeferredConflictToastShown() {
+  if (_deferredConflictToastShown) return;
+  _deferredConflictToastShown = true;
+  runtime6.showToast(
+    "Hay un conflicto de sincronizaci\xF3n guardado. \xC1brelo en Ajustes \u2192 LAN cuando quieras decidir.",
+    "info"
+  );
 }
-function hostBundleBodyFromEnvelope(envelope, roomId) {
-  var body = hostBundlePutBodyFromEnvelope(roomId, envelope);
-  body.uploadedByClientId = envelope.clientId || getLanClientId();
-  return body;
-}
-function pushRoomSyncBundleToHost(roomId, envelope) {
-  if (!isLanSessionConfiguredForRest()) return Promise.resolve(false);
-  var rid = String(roomId || "").trim();
-  if (!rid || !envelope || !liveSyncBundleHasPayload(envelope)) return Promise.resolve(false);
-  return lanClient.fetch("/api/lan/v1/rooms/" + encodeURIComponent(rid) + "/sync-bundle", {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      bundle: hostBundleBodyFromEnvelope(envelope, rid)
-    })
-  }).then(function(resp) {
-    if (!resp) return false;
-    if (resp.status === 409) {
-      return resp.json().then(function(body) {
-        if (isLanConflictViewerSuppressed()) {
-          enqueueOutbox(rid, { kind: "bundle", payload: envelope });
-          return false;
-        }
-        var conflicts = body && Array.isArray(body.conflicts) ? body.conflicts : [];
-        var conflictKeys = conflicts.map(function(c) {
-          return c && c.key ? String(c.key) : "";
-        }).filter(Boolean);
-        var bundleConflictKeys = conflictKeys.length ? conflictKeys : ["*"];
-        return saveDraftConflict({
-          scope: "room:" + rid,
-          entityType: "roomBundle",
-          transport: "http",
-          roomId: rid,
-          localBundle: envelope,
-          serverBundle: body && body.bundle ? body.bundle : null,
-          conflicts,
-          conflictingKeys: bundleConflictKeys
-        }).then(function(draftId) {
-          var roomDraft = {
-            id: draftId,
-            roomId: rid,
-            serverBundle: body && body.bundle ? body.bundle : null
-          };
-          if (!shouldDeferLanConflictModal()) {
-            openClinicalConflictViewer({
-              draftId,
-              conflictingKeys: bundleConflictKeys,
-              localData: envelope,
-              serverData: body && body.bundle ? body.bundle : {},
-              context: {
-                entityType: "roomBundle",
-                roomId: rid,
-                transport: "http"
-              },
-              onUseServer: function() {
-                void applyRoomBundleServerChoice(roomDraft);
-              },
-              onEditDraft: function() {
-              },
-              onClose: function() {
-              }
-            });
-          } else if (!_deferredConflictToastShown) {
-            _deferredConflictToastShown = true;
-            runtime3.showToast(
-              "Hay un conflicto de sincronizaci\xF3n guardado. \xC1brelo en Ajustes \u2192 LAN cuando quieras decidir.",
-              "info"
-            );
-          }
-          void renderLanPanel();
-          return false;
-        });
+function applyLiveSyncApplied(msg) {
+  if (!msg || isPitchPatientIsolationActive()) return;
+  if (msg.roomId && activeLiveSyncRoomId && msg.roomId !== activeLiveSyncRoomId) return;
+  var entityType = msg.entityType;
+  var entityId = String(msg.entityId || "").trim();
+  var patientId = msg.patientId;
+  var version = Number(msg.version || 1);
+  var entityData = msg.data || {};
+  if (!entityType || !entityId) return;
+  rememberLiveSyncEntity(entityType, entityId, patientId, version, entityData);
+  if (entityType === "agenda") {
+    var agenda = storage.getScheduledProcedures();
+    if (entityData._deleted) {
+      agenda = agenda.filter(function(ev) {
+        return ev && ev.id !== entityId;
       });
-    }
-    if (resp.ok) {
-      return resp.json().then(function(body) {
-        if (body && body.bundle) {
-          setHostBundleBases(rid, body.bundle);
-          emitLiveSyncRevisionHint(rid, body.bundle.revision);
-        }
-        return true;
-      });
-    }
-    return false;
-  }).catch(function() {
-    return false;
-  });
-}
-function flushLiveSyncOutbox(roomId) {
-  var rid = String(roomId || "").trim();
-  if (!rid || !isLanSessionConfiguredForRest()) return Promise.resolve();
-  return drainOutbox(rid).then(function(items) {
-    if (!items || !items.length) return;
-    var chain = Promise.resolve();
-    items.forEach(function(item) {
-      chain = chain.then(function() {
-        if (!item || item.kind !== "bundle" || !item.payload) return;
-        return pushRoomSyncBundleToHost(rid, item.payload).then(function(ok) {
-          if (!ok) return enqueueOutbox(rid, item);
-        });
-      });
-    });
-    return chain;
-  });
-}
-function scheduleLiveSyncOutboxFlush() {
-  if (_liveSyncOutboxFlushTimer) return;
-  _liveSyncOutboxFlushTimer = setInterval(function() {
-    var m = getRoomMembership();
-    if (!m || !m.roomId) return;
-    flushLiveSyncOutbox(m.roomId);
-  }, LIVE_SYNC_OUTBOX_FLUSH_MS);
-}
-function stopLiveSyncReconnectLoop() {
-  if (_liveSyncReconnectTimer) {
-    clearTimeout(_liveSyncReconnectTimer);
-    _liveSyncReconnectTimer = null;
-  }
-}
-function startLiveSyncReconnectLoop() {
-  stopLiveSyncReconnectLoop();
-  var m = getRoomMembership();
-  if (!m || !m.roomId) return;
-  function tick() {
-    var mem = getRoomMembership();
-    if (!mem || !mem.roomId) {
-      stopLiveSyncReconnectLoop();
-      return;
-    }
-    if (!activeLiveSyncRoomId) {
-      activeLiveSyncRoomId = mem.roomId;
-      activeLiveSyncRoomLabel = mem.label;
-    }
-    if (lanClient.liveConnected && String(lanClient.liveRoomId || "") === mem.roomId) {
-      _liveSyncReconnectAttempt = 0;
-      syncLiveSyncStatusChrome();
-      scheduleReconnect();
-      return;
-    }
-    if (typeof lanClient.isLiveChannelBusy === "function" && lanClient.isLiveChannelBusy(mem.roomId)) {
-      syncLiveSyncStatusChrome();
-      scheduleReconnect();
-      return;
-    }
-    if (isLanSessionConfiguredForRest()) {
-      try {
-        if (!lanClient.connected) lanClient.connectSyncChannel();
-        lanClient.connectLiveChannel(mem.roomId);
-        syncLiveSyncAfterRoomJoin(mem.roomId);
-      } catch (_e) {
-      }
-    }
-    _liveSyncReconnectAttempt += 1;
-    if (_liveSyncReconnectAttempt >= 3) scheduleSurrogateFailoverCheck();
-    syncLiveSyncStatusChrome();
-    scheduleReconnect();
-  }
-  function scheduleReconnect() {
-    var delay = Math.min(3e4, 1e3 * Math.pow(2, Math.min(_liveSyncReconnectAttempt, 5)));
-    _liveSyncReconnectTimer = setTimeout(tick, delay);
-  }
-  tick();
-}
-function getActiveLiveSyncRoomId() {
-  return activeLiveSyncRoomId;
-}
-function ensureEffectiveLiveSyncRoomId() {
-  var roomId = String(activeLiveSyncRoomId || "").trim();
-  if (roomId) return roomId;
-  var mem = getRoomMembership();
-  if (!mem || !mem.roomId) return "";
-  roomId = String(mem.roomId).trim();
-  activeLiveSyncRoomId = roomId;
-  activeLiveSyncRoomLabel = mem.label || roomId;
-  return roomId;
-}
-function bootLanRoomMembership() {
-  migrateLastRoomToMembership();
-  var m = getRoomMembership();
-  if (!m || !m.roomId || !isLanSessionConfiguredForRest()) return;
-  deferLanConflictModalForMs(2e4);
-  activeLiveSyncRoomId = m.roomId;
-  activeLiveSyncRoomLabel = m.label;
-  setRoomSyncPhase(m.roomId, RoomSyncPhase.catching_up);
-  scheduleLiveSyncOutboxFlush();
-  reconcileLiveSyncRoom(m.roomId).then(function() {
-    return flushLiveSyncOutbox(m.roomId);
-  }).then(function() {
-    if (!getRoomMembership()) return;
-    try {
-      if (!lanClient.connected) lanClient.connectSyncChannel();
-      lanClient.connectLiveChannel(m.roomId);
-    } catch (_e) {
-    }
-    applyRoomSyncPhaseAfterReconcile(m.roomId);
-    void Promise.resolve().then(() => (init_historia_clinica_lan_sync(), historia_clinica_lan_sync_exports)).then(function(mod) {
-      return mod.scheduleFlushAllPendingHistoriaClinicaLanSync();
-    });
-    startLiveSyncReconnectLoop();
-    syncLiveSyncStatusChrome();
-  });
-}
-function saveLocalRoomSnapshot(roomId) {
-  var rid = String(roomId || "").trim();
-  if (!rid) return;
-  var snap = buildRoomSnapshotFromStorage(storage, collectPatientIdsForLiveSync());
-  var prev = storage.getLanRoomSnapshot(rid);
-  var entries = collectPatientEntriesForLanSync();
-  storage.saveLanRoomSnapshot(rid, {
-    savedAt: snap.savedAt,
-    generation: nextRoomSnapshotGeneration(prev),
-    agenda: snap.agenda,
-    todos: snap.todos,
-    entries,
-    ...isLanManejoRoomSyncEnabled() ? { manejo: collectManejoRoomPayload() } : {},
-    clinicalOps: getCachedClinicalOpsSnapshot()
-  });
-}
-function buildLiveSyncLocalMergeSource() {
-  return {
-    agenda: storage.getScheduledProcedures(),
-    todos: collectTodosMapForLiveSync(),
-    entries: collectPatientEntriesForLanSync(),
-    clinicalOps: getCachedClinicalOpsSnapshot()
-  };
-}
-async function buildLiveSyncBundleEnvelope(roomId) {
-  if (isClinicalOpsLanAvailable()) {
-    await prepareClinicalOpsForLanSync();
-  }
-  var rid = String(roomId || "").trim();
-  var snap = buildRoomSnapshotFromStorage(storage, collectPatientIdsForLiveSync());
-  var prev = storage.getLanRoomSnapshot(rid);
-  var entries = collectPatientEntriesForLanSync();
-  return {
-    type: "livesync:bundle",
-    roomId: rid,
-    clientId: getLanClientId(),
-    savedAt: snap.savedAt,
-    generation: nextRoomSnapshotGeneration(prev),
-    agenda: snap.agenda,
-    todos: snap.todos,
-    entries,
-    ...isLanManejoRoomSyncEnabled() ? { manejo: collectManejoRoomPayload() } : {},
-    clinicalOps: getCachedClinicalOpsSnapshot()
-  };
-}
-function scheduleReconcileFromRevisionHint(roomId) {
-  var rid = String(roomId || "").trim();
-  if (!rid || rid !== activeLiveSyncRoomId) return;
-  if (_liveSyncRevisionReconcileTimer) clearTimeout(_liveSyncRevisionReconcileTimer);
-  _liveSyncRevisionReconcileTimer = setTimeout(function() {
-    _liveSyncRevisionReconcileTimer = null;
-    void reconcileLiveSyncRoom(rid);
-  }, 500);
-}
-function emitLiveSyncRevisionHint(roomId, revision) {
-  if (!lanClient.liveConnected) return;
-  try {
-    lanClient.sendLive({
-      type: "livesync:revision",
-      roomId: String(roomId || "").trim(),
-      revision: Number(revision || 0),
-      clientId: getLanClientId()
-    });
-  } catch (_e) {
-  }
-}
-function scheduleLiveSyncPush() {
-  if (!activeLiveSyncRoomId) return;
-  if (isPitchPatientIsolationActive()) return;
-  if (_liveSyncPushTimer) clearTimeout(_liveSyncPushTimer);
-  _liveSyncPushTimer = setTimeout(function() {
-    _liveSyncPushTimer = null;
-    var roomId = activeLiveSyncRoomId;
-    if (!roomId) return;
-    void (async function() {
-      var bundle = await buildLiveSyncBundleEnvelope(roomId);
-      saveLocalRoomSnapshot(roomId);
-      if (!isLanSessionConfiguredForRest()) return;
-      var ok = await pushRoomSyncBundleToHost(roomId, bundle);
-      if (!ok) void enqueueOutbox(roomId, { kind: "bundle", payload: bundle });
-    })();
-  }, LIVE_SYNC_PUSH_DEBOUNCE_MS);
-}
-function sendLiveBundleIfOpen(roomId, envelope) {
-  var rid = String(roomId || "").trim();
-  if (!rid || !envelope) return false;
-  var ws = lanClient._liveWs;
-  if (!lanClient.liveConnected || String(lanClient.liveRoomId || "").trim() !== rid) return false;
-  if (!ws || ws.readyState !== 1) return false;
-  try {
-    return lanClient.sendLive(envelope) === true;
-  } catch (_e) {
-    return false;
-  }
-}
-function lanPushResult(ok, code, channels) {
-  return { ok: !!ok, code: code || void 0, channels: channels || {} };
-}
-function formatLanTicketExpiryLabel(expiresAt) {
-  var raw = String(expiresAt || "").trim();
-  if (!raw) return "";
-  var d = new Date(raw);
-  if (Number.isNaN(d.getTime())) return "";
-  try {
-    return d.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
-  } catch (_e) {
-    return d.toISOString().slice(11, 16);
-  }
-}
-function lanTicketExpirySoon(expiresAt) {
-  var raw = String(expiresAt || "").trim();
-  if (!raw) return false;
-  var d = new Date(raw);
-  if (Number.isNaN(d.getTime())) return false;
-  return d.getTime() - Date.now() < 6e4;
-}
-async function pushClinicalOpsLanNow(opts) {
-  if (isPitchPatientIsolationActive()) return lanPushResult(false, "PITCH_DEMO");
-  if (!isClinicalOpsLanAvailable()) return lanPushResult(false, "NO_CLINICAL_OPS");
-  await prepareClinicalOpsForLanSync();
-  var snap = getCachedClinicalOpsSnapshot();
-  if (!snap) return lanPushResult(false, "NO_SNAPSHOT");
-  var requireMembership = opts.requireMembership !== false;
-  var roomId = ensureEffectiveLiveSyncRoomId();
-  if (!roomId) {
-    return lanPushResult(false, "NO_ROOM");
-  }
-  if (!isLanSessionConfiguredForRest()) {
-    return lanPushResult(false, "NO_LAN");
-  }
-  try {
-    if (!lanClient.connected) lanClient.connectSyncChannel();
-  } catch (_e) {
-  }
-  var envelope = await buildLiveSyncBundleEnvelope(roomId);
-  envelope.clinicalOps = snap;
-  var bases = getHostBundleBases(roomId);
-  var okHttp = false;
-  try {
-    var opsResp = await lanClient.fetch(
-      "/api/lan/v1/rooms/" + encodeURIComponent(roomId) + "/clinical-ops",
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          snapshot: snap,
-          baseRevision: bases && bases.revision != null ? bases.revision : 0,
-          clientId: getLanClientId()
-        })
-      }
-    );
-    if (opsResp && opsResp.ok) {
-      var opsBody = await opsResp.json();
-      if (opsBody && opsBody.revision != null) {
-        var prevBases = bases || {};
-        setHostBundleBases(roomId, {
-          revision: opsBody.revision,
-          entityVersions: prevBases.entityVersions || {}
-        });
-        emitLiveSyncRevisionHint(roomId, opsBody.revision);
-      }
-      okHttp = true;
-    } else if (!opsResp || opsResp.status !== 409) {
-      okHttp = await pushRoomSyncBundleToHost(roomId, envelope);
     } else {
-      okHttp = await pushRoomSyncBundleToHost(roomId, envelope);
+      var agendaFound = false;
+      agenda = agenda.map(function(ev) {
+        if (ev && ev.id === entityId) {
+          agendaFound = true;
+          return Object.assign({}, ev, entityData, { id: entityId, version });
+        }
+        return ev;
+      });
+      if (!agendaFound) {
+        agenda.push(Object.assign({}, entityData, { id: entityId, version }));
+      }
     }
-  } catch (_opsErr) {
-    okHttp = await pushRoomSyncBundleToHost(roomId, envelope);
+    storage.saveScheduledProcedures(agenda);
+    if (runtime6.getActiveAppTab() === "agenda" || runtime6.isMobileWeb()) {
+      runtime6.renderProcedureAgendaPanel();
+    }
+  } else if (entityType === "todo" && patientId) {
+    var pid = String(patientId);
+    if (pid.indexOf("demo-") !== 0) {
+      var todos = storage.getTodos(pid);
+      if (entityData._deleted) {
+        todos = todos.filter(function(t2) {
+          return t2 && t2.id !== entityId;
+        });
+      } else {
+        var todoFound = false;
+        todos = todos.map(function(t2) {
+          if (t2 && t2.id === entityId) {
+            todoFound = true;
+            return Object.assign({}, t2, entityData, { id: entityId, version });
+          }
+          return t2;
+        });
+        if (!todoFound) {
+          todos.push(Object.assign({}, entityData, { id: entityId, version }));
+        }
+      }
+      storage.saveTodos(pid, filterTodosRespectingDismissals(pid, todos));
+    }
+    runtime6.refreshAllTodoUIs();
+  } else if (entityType === "patient") {
+    var row = patients.find(function(p) {
+      return p && p.id === entityId;
+    });
+    if (row && !entityData._deleted) {
+      Object.assign(row, entityData, { version });
+      saveState({ immediate: true });
+      runtime6.renderPatientList();
+      if (runtime6.getActiveId() === entityId) {
+        try {
+          runtime6.renderNoteForm();
+        } catch (_eNote) {
+        }
+        try {
+          runtime6.renderLabHistoryPanel();
+        } catch (_eLab) {
+        }
+      }
+    }
   }
-  var pushedLive = sendLiveBundleIfOpen(roomId, envelope);
-  saveLocalRoomSnapshot(roomId);
-  syncLiveSyncStatusChrome();
-  if (okHttp || pushedLive) {
-    return lanPushResult(true, void 0, { http: !!okHttp, live: pushedLive });
-  }
-  void enqueueOutbox(roomId, { kind: "bundle", payload: envelope });
-  return lanPushResult(false, "PUSH_FAILED", { outbox: true });
-}
-function applyRoomSyncPhaseAfterReconcile(roomId) {
-  var rid = String(roomId || "").trim();
-  if (!rid || activeLiveSyncRoomId !== rid) return;
-  if (lanClient.liveConnected && String(lanClient.liveRoomId || "").trim() === rid) {
-    setRoomSyncPhase(rid, RoomSyncPhase.live);
-  } else if (getRoomMembership() && getRoomMembership().roomId === rid) {
-    setRoomSyncPhase(rid, RoomSyncPhase.degraded);
-  } else if (isLanSessionConfiguredForRest()) {
-    setRoomSyncPhase(rid, RoomSyncPhase.configured);
-  } else {
-    setRoomSyncPhase(rid, RoomSyncPhase.offline);
-  }
-}
-function syncLiveSyncStatusChrome() {
-  var el = document.getElementById("lan-livesync-status");
-  if (!el) return;
-  if (!activeLiveSyncRoomId) {
-    el.style.display = "none";
-    el.textContent = "";
-    return;
-  }
-  el.style.display = "block";
-  var label = activeLiveSyncRoomLabel || activeLiveSyncRoomId;
-  var prefix = "Sala: " + label + " \xB7 ";
-  var phase = getRoomSyncPhase(activeLiveSyncRoomId);
-  if (phase === RoomSyncPhase.live) {
-    el.textContent = prefix + "sincronizando pacientes, equipos, labs, agenda y pendientes";
-  } else if (phase === RoomSyncPhase.catching_up) {
-    el.textContent = prefix + "sincronizando\u2026";
-  } else if (phase === RoomSyncPhase.joining) {
-    el.textContent = prefix + "conectando\u2026";
-  } else if (phase === RoomSyncPhase.degraded) {
-    el.textContent = prefix + "reconectando\u2026";
-  } else {
-    el.textContent = prefix + "solo local (sin sync en vivo)";
+  if (msg.autoMerged) {
+    runtime6.showToast("Cambios fusionados autom\xE1ticamente con el servidor.", "success");
   }
 }
 function emitLiveSyncAgendaUpsert(eventObj) {
@@ -17904,1526 +19650,12 @@ function emitLiveSyncPatientDelete(patient) {
   );
   sendLiveSyncMutation(mutation);
 }
-function applyLiveSyncApplied(msg) {
-  if (!msg || isPitchPatientIsolationActive()) return;
-  if (msg.roomId && activeLiveSyncRoomId && msg.roomId !== activeLiveSyncRoomId) return;
-  var entityType = msg.entityType;
-  var entityId = String(msg.entityId || "").trim();
-  var patientId = msg.patientId;
-  var version = Number(msg.version || 1);
-  var entityData = msg.data || {};
-  if (!entityType || !entityId) return;
-  rememberLiveSyncEntity(entityType, entityId, patientId, version, entityData);
-  if (entityType === "agenda") {
-    var agenda = storage.getScheduledProcedures();
-    if (entityData._deleted) {
-      agenda = agenda.filter(function(ev) {
-        return ev && ev.id !== entityId;
-      });
-    } else {
-      var agendaFound = false;
-      agenda = agenda.map(function(ev) {
-        if (ev && ev.id === entityId) {
-          agendaFound = true;
-          return Object.assign({}, ev, entityData, { id: entityId, version });
-        }
-        return ev;
-      });
-      if (!agendaFound) {
-        agenda.push(Object.assign({}, entityData, { id: entityId, version }));
-      }
-    }
-    storage.saveScheduledProcedures(agenda);
-    if (runtime3.getActiveAppTab() === "agenda" || runtime3.isMobileWeb()) {
-      runtime3.renderProcedureAgendaPanel();
-    }
-  } else if (entityType === "todo" && patientId) {
-    var pid = String(patientId);
-    if (pid.indexOf("demo-") !== 0) {
-      var todos = storage.getTodos(pid);
-      if (entityData._deleted) {
-        todos = todos.filter(function(t2) {
-          return t2 && t2.id !== entityId;
-        });
-      } else {
-        var todoFound = false;
-        todos = todos.map(function(t2) {
-          if (t2 && t2.id === entityId) {
-            todoFound = true;
-            return Object.assign({}, t2, entityData, { id: entityId, version });
-          }
-          return t2;
-        });
-        if (!todoFound) {
-          todos.push(Object.assign({}, entityData, { id: entityId, version }));
-        }
-      }
-      storage.saveTodos(pid, filterTodosRespectingDismissals(pid, todos));
-    }
-    runtime3.refreshAllTodoUIs();
-  } else if (entityType === "patient") {
-    var row = patients.find(function(p) {
-      return p && p.id === entityId;
-    });
-    if (row && !entityData._deleted) {
-      Object.assign(row, entityData, { version });
-      saveState({ immediate: true });
-      runtime3.renderPatientList();
-      if (runtime3.getActiveId() === entityId) {
-        try {
-          runtime3.renderNoteForm();
-        } catch (_eNote) {
-        }
-        try {
-          runtime3.renderLabHistoryPanel();
-        } catch (_eLab) {
-        }
-      }
-    }
-  }
-  if (msg.autoMerged) {
-    runtime3.showToast("Cambios fusionados autom\xE1ticamente con el servidor.", "success");
-  }
-}
-function onLiveSyncWireMessage(data) {
-  if (!data || !isLiveSyncEnvelope(data)) return;
-  if (data.roomId && activeLiveSyncRoomId && data.roomId !== activeLiveSyncRoomId) return;
-  var myId = getLanClientId();
-  if (data.type === "livesync:hello" || data.type === "livesync:host-handoff") {
-    if (data.clientId !== myId) {
-      recordLivePeer(data.clientId, {
-        hostUrl: data.newHostUrl || data.hostUrl,
-        canHost: !!data.canHost
-      });
-      if (data.type === "livesync:host-handoff" && data.newHostUrl) {
-        var newUrl = String(data.newHostUrl || "").trim().replace(/\/+$/, "");
-        var cfgNow = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
-        var curUrl = String(cfgNow.hostUrl || "").trim().replace(/\/+$/, "");
-        if (newUrl && newUrl !== curUrl && isLanRemoteJoinMode()) {
-          void tryReconnectLanToHostUrl(newUrl, getLanTeamCodeFromConfig());
-        }
-      }
-    }
-    if (data.type === "livesync:hello" && data.clientId !== myId && activeLiveSyncRoomId) {
-      void (async function() {
-        try {
-          lanClient.sendLive(await buildLiveSyncBundleEnvelope(activeLiveSyncRoomId));
-        } catch (_eHelloBundle) {
-        }
-      })();
-    }
-    return;
-  }
-  if (data.type === "livesync:leave" && data.bundle && data.clientId !== myId) {
-    applyLiveSyncMerged(
-      mergeLiveSyncFullBundles([buildLiveSyncLocalMergeSource(), data.bundle])
-    );
-    return;
-  }
-  if (data.type === "livesync:revision" && data.clientId !== myId) {
-    scheduleReconcileFromRevisionHint(data.roomId);
-    return;
-  }
-  if (data.clientId === myId && data.type !== "livesync:hello") return;
-  if (data.type === "livesync:bundle") {
-    var mergedBundle = mergeLiveSyncFullBundles([buildLiveSyncLocalMergeSource(), data]);
-    applyLiveSyncMerged(mergedBundle);
-    return;
-  }
-  if (data.type === "livesync:applied") {
-    applyLiveSyncApplied(data);
-    return;
-  }
-}
-async function refreshLanClinicalDirectoryFromRoom(options = {}) {
-  const roomId = ensureEffectiveLiveSyncRoomId();
-  if (!roomId || !isClinicalOpsLanAvailable() || !isLanSessionConfiguredForRest()) {
-    return false;
-  }
-  const timeoutMs = Math.max(1e3, Number(options.timeoutMs) || 5e3);
-  try {
-    if (!lanClient.connected) {
-      try {
-        lanClient.connectSyncChannel();
-      } catch (_e) {
-      }
-    }
-    await Promise.race([
-      reconcileLiveSyncRoom(roomId),
-      new Promise((resolve) => {
-        setTimeout(resolve, timeoutMs);
-      })
-    ]);
-    return true;
-  } catch (_e) {
-    return false;
-  }
-}
-async function reconcileLiveSyncRoom(roomId) {
-  var rid = String(roomId || "").trim();
-  if (rid && activeLiveSyncRoomId === rid) {
-    setRoomSyncPhase(rid, RoomSyncPhase.catching_up);
-    syncLiveSyncStatusChrome();
-  }
-  if (isClinicalOpsLanAvailable()) {
-    await prepareClinicalOpsForLanSync();
-  }
-  var sources = [];
-  var local = storage.getLanRoomSnapshot(roomId);
-  if (local) sources.push(local);
-  sources.push(buildLiveSyncLocalMergeSource());
-  try {
-    const syncPath = "/api/lan/v1/rooms/" + encodeURIComponent(roomId) + "/sync-bundle";
-    const ac = typeof AbortController !== "undefined" ? new AbortController() : null;
-    const timer = ac && setTimeout(() => {
-      ac.abort();
-    }, 5e3);
-    var resp = await lanClient.fetch(syncPath, ac ? { signal: ac.signal } : {});
-    if (timer) clearTimeout(timer);
-    if (resp.ok) {
-      var j = await resp.json();
-      if (j && j.bundle) {
-        setHostBundleBases(roomId, j.bundle);
-        sources.push(j.bundle);
-      }
-    }
-  } catch (_e) {
-  }
-  if (sources.length) {
-    applyLiveSyncMerged(mergeLiveSyncFullBundles(sources));
-  }
-  applyRoomSyncPhaseAfterReconcile(rid || roomId);
-  syncLiveSyncStatusChrome();
-  return flushLiveSyncOutbox(roomId);
-}
-function syncLiveSyncAfterRoomJoin(roomId) {
-  var rid = String(roomId || "").trim();
-  if (!rid) return Promise.resolve();
-  return reconcileLiveSyncRoom(rid).then(function() {
-    if (activeLiveSyncRoomId !== rid) return;
-    applyRoomSyncPhaseAfterReconcile(rid);
-    scheduleLiveSyncPush();
-    if (lanClient.liveConnected) {
-      void enrichLiveSyncHelloPayload(buildLiveSyncHelloPayload(rid)).then(function(hello) {
-        if (activeLiveSyncRoomId !== rid) return;
-        try {
-          lanClient.sendLive(hello);
-        } catch (_hello) {
-        }
-      });
-    }
-    syncLiveSyncStatusChrome();
-    runtime3.renderProcedureAgendaPanel();
-    runtime3.refreshAllTodoUIs();
-    runtime3.renderPatientList();
-    void Promise.resolve().then(() => (init_historia_clinica_lan_sync(), historia_clinica_lan_sync_exports)).then(function(m) {
-      return m.scheduleFlushAllPendingHistoriaClinicaLanSync();
-    });
-  });
-}
-function leaveLiveSyncRoom(opts) {
-  opts = opts || {};
-  var roomId = activeLiveSyncRoomId;
-  if (roomId) {
-    void (async function() {
-      var bundle = await buildLiveSyncBundleEnvelope(roomId);
-      if (!opts.silentLeave) {
-        lanClient.sendLive({
-          type: "livesync:leave",
-          roomId,
-          clientId: getLanClientId(),
-          bundle
-        });
-      }
-      saveLocalRoomSnapshot(roomId);
-      if (liveSyncBundleHasPayload(bundle)) {
-        pushRoomSyncBundleToHost(roomId, bundle);
-      }
-    })();
-  }
-  activeLiveSyncRoomId = "";
-  activeLiveSyncRoomLabel = "";
-  if (roomId) clearRoomSyncPhase(roomId);
-  clearRoomMembership();
-  stopLiveSyncReconnectLoop();
-  lanClient.disconnectLiveChannel();
-  syncLiveSyncStatusChrome();
-  patchLanPanelJoinButtons();
-  if (typeof renderLanPanel === "function") renderLanPanel();
-}
-function appendLanMobileJoinSection(root) {
-  if (!root || !runtime3.isMobileWeb()) return;
-  var card = document.createElement("div");
-  card.className = "lan-connect-card lan-mobile-join-card";
-  card.innerHTML = '<div class="lan-connect-card-title">Unirte a la guardia</div><p class="lan-connect-card-hint">Pega el <strong>enlace para iPad</strong> que gener\xF3 quien tiene R+ en la Mac (\u21C4 \u2192 Copiar enlace). Al abrirlo se conecta y bajan tus pacientes de la sala.</p>';
-  var inputInvite = document.createElement("textarea");
-  inputInvite.className = "profile-input";
-  inputInvite.id = "lan-input-invite-link";
-  inputInvite.rows = 2;
-  inputInvite.autocomplete = "off";
-  inputInvite.placeholder = "http://192.168.x.x:3738/join/req_\u2026";
-  card.appendChild(inputInvite);
-  var row = document.createElement("div");
-  row.className = "lan-connect-actions-row";
-  row.style.marginTop = "8px";
-  var btnJoin = document.createElement("button");
-  btnJoin.type = "button";
-  btnJoin.className = "btn-lan-primary";
-  btnJoin.style.flex = "1";
-  btnJoin.textContent = "Conectar";
-  btnJoin.setAttribute("data-lan-action", "join-invite");
-  row.appendChild(btnJoin);
-  card.appendChild(row);
-  root.insertBefore(card, root.firstChild);
-}
-function lanPanelRenderStale(gen) {
-  return gen !== _lanPanelRenderGen;
-}
-function renderLanPanel() {
-  _lanPanelRenderChain = _lanPanelRenderChain.catch(function() {
-  }).then(function() {
-    return renderLanPanelOnce();
-  });
-  return _lanPanelRenderChain;
-}
-function getClinicalSettings() {
-  try {
-    return JSON.parse(localStorage.getItem("rpc-settings") || "{}");
-  } catch (_e) {
-    return {};
-  }
-}
-function getClinicalRank() {
-  var s = getClinicalSettings();
-  return String(s.clinicalRank || "").trim();
-}
-function getUserSala() {
-  var s = getClinicalSettings();
-  return String(s.clinicalSala || "").trim();
-}
-function isClinicalRegistered() {
-  var s = getClinicalSettings();
-  return s.clinicalRegistered === true;
-}
-function isLanHostActive() {
-  return !!lanClient.connected;
-}
-function lanHostUrl() {
-  return lanClient.baseUrl() || "";
-}
-function maybeAppendInternoQrPanel(root) {
-  if (!isLanElectronDesktop() || !isLanHostActive()) return;
-  if (!canManageInternoQr(clinicalSessionContext.user)) return;
-  void resolveLanHostUrlAuto().then(function(hostBaseUrl) {
-    void appendInternoQrPanel(root, {
-      hostBaseUrl,
-      userId: getClinicalUserUserId(),
-      showToast: runtime3.showToast
-    });
-  });
-}
-function getClinicalUserUserId() {
-  try {
-    var user = typeof clinicalSessionContext !== "undefined" ? clinicalSessionContext.user : null;
-    return user ? String(user.user_id || "") : "";
-  } catch (_e) {
-    return "";
-  }
-}
-async function renderLanPanelOnce() {
-  var gen = ++_lanPanelRenderGen;
-  var root = document.getElementById("lan-connection-panel-root");
-  if (!root) return;
-  await ensureLanElectronHostReady();
-  if (lanPanelRenderStale(gen)) return;
-  root.innerHTML = "";
-  var registered = isClinicalRegistered();
-  var userSala = getUserSala();
-  var rank = getClinicalRank();
-  var clinicalUserId = getClinicalUserUserId();
-  if (!registered && !clinicalUserId) {
-    var unregCard = document.createElement("div");
-    unregCard.className = "lan-connect-card";
-    unregCard.innerHTML = '<p class="lan-connect-card-hint">Desbloquea la base de datos y completa <strong>Configura tu rotaci\xF3n</strong> para acceder a la red del hospital.</p>';
-    root.appendChild(unregCard);
-    return;
-  }
-  if (!registered && clinicalUserId) {
-    var preRegCard = document.createElement("div");
-    preRegCard.className = "lan-connect-card";
-    preRegCard.innerHTML = '<p class="lan-connect-card-hint">Opcional: activa la red del turno y pulsa <strong>Unirse</strong> en tu sala para sincronizar con el equipo. Puedes registrar <strong>@usuario</strong> sin \u21C4 si no hay red.</p>';
-    root.appendChild(preRegCard);
-  }
-  if (registered && !userSala && !hasElevatedTeamPrivileges(clinicalSessionContext.user)) {
-    var noSalaCard = document.createElement("div");
-    noSalaCard.className = "lan-connect-card";
-    noSalaCard.innerHTML = '<p class="lan-connect-card-hint">No tienes una Sala asignada. Contacta a un R4 o Admin.</p>';
-    root.appendChild(noSalaCard);
-    return;
-  }
-  var isElevated = hasElevatedTeamPrivileges(clinicalSessionContext.user);
-  var connected = isLanHostActive();
-  appendLanHubStatusCard(root, {
-    connected,
-    isElectronDesktop: isLanElectronDesktop(),
-    onBecomeHost: function() {
-      void promoteThisMacToLanHost();
-    }
-  });
-  if (runtime3.isMobileWeb() && !connected) {
-    appendLanMobileJoinSection(root);
-  }
-  var salaDefs = [
-    { id: "sala-1", label: "Sala 1", key: "Sala 1" },
-    { id: "sala-2", label: "Sala 2", key: "Sala 2" },
-    { id: "sala-e", label: "Sala E", key: "Sala E" }
-  ];
-  var visibleSalaDefs;
-  if (isElevated) {
-    visibleSalaDefs = salaDefs;
-  } else if (userSala) {
-    visibleSalaDefs = salaDefs.filter(function(d) {
-      return d.key === userSala;
-    });
-    if (!visibleSalaDefs.length) visibleSalaDefs = salaDefs;
-  } else if (!registered && clinicalUserId) {
-    visibleSalaDefs = salaDefs;
-  } else {
-    visibleSalaDefs = [];
-  }
-  appendLanHubRoomsCard(root, {
-    visibleSalaDefs,
-    activeRoomId: activeLiveSyncRoomId
-  });
-  if (rank === "R1") {
-    buildR1Section(root);
-  } else if (rank === "R2") {
-    buildR2Section(root);
-  } else if (isElevated) {
-    buildR4Section(root);
-  }
-  appendLanHostPinSection(root);
-  void appendLanSyncDiagnosticsSection(root);
-  maybeAppendInternoQrPanel(root);
-}
-function appendLanHostPinSection(root) {
-  if (!root || !isLanElectronDesktop() || isLanRemoteJoinMode()) return;
-  var hostUrl = lanHostUrl();
-  if (!hostUrl) return;
-  var wrap = document.createElement("div");
-  wrap.className = "lan-connect-card lan-host-pin-card";
-  var label = document.createElement("label");
-  label.className = "lan-host-pin-label";
-  label.setAttribute("for", "lan-pin-host-checkbox");
-  var cb = document.createElement("input");
-  cb.type = "checkbox";
-  cb.id = "lan-pin-host-checkbox";
-  var pinned = getPinnedHostUrl();
-  cb.checked = !!pinned && pinned === hostUrl.replace(/\/+$/, "");
-  cb.onchange = function() {
-    if (cb.checked) {
-      setPinnedHostUrl(hostUrl);
-      runtime3.showToast("Anfitri\xF3n fijado para el turno: " + hostUrl, "success");
-    } else {
-      clearPinnedHostUrl();
-      runtime3.showToast("Anfitri\xF3n ya no est\xE1 fijado; la red puede sugerir otro servidor.", "info");
-    }
-    void renderLanPanel();
-  };
-  label.appendChild(cb);
-  label.appendChild(document.createTextNode(" Fijar anfitri\xF3n del turno"));
-  wrap.appendChild(label);
-  if (pinned && pinned !== hostUrl.replace(/\/+$/, "")) {
-    var hint = document.createElement("p");
-    hint.className = "lan-connect-card-hint";
-    hint.style.marginTop = "6px";
-    hint.textContent = "Fijado: " + pinned + " (distinto del servidor actual).";
-    wrap.appendChild(hint);
-  }
-  root.appendChild(wrap);
-}
-async function buildLanSyncDiagnosticsDeps() {
-  var roomId = String(activeLiveSyncRoomId || "").trim();
-  var bases = roomId ? getHostBundleBases(roomId) : { revision: 0 };
-  var outCount = 0;
-  if (roomId) {
-    try {
-      outCount = await outboxSize(roomId);
-    } catch (_e) {
-    }
-  }
-  var aligned = false;
-  try {
-    aligned = !!await ensureLanClientTeamCodeAligned();
-  } catch (_e2) {
-  }
-  return {
-    hostUrl: lanHostUrl(),
-    pingAt: _lanLastPingAt,
-    pingStatus: _lanLastPingStatus,
-    wsSync: !!lanClient.connected,
-    wsLive: !!lanClient.liveConnected,
-    liveRoomId: String(lanClient.liveRoomId || ""),
-    roomId,
-    phase: getRoomSyncPhase(roomId),
-    bundleRevision: Number(bases.revision || 0),
-    outboxCount: outCount,
-    pinnedHost: getPinnedHostUrl(),
-    teamCodeAligned: aligned
-  };
-}
-async function appendLanSyncDiagnosticsSection(root) {
-  if (!root) return;
-  var deps = await buildLanSyncDiagnosticsDeps();
-  var diag = getLanSyncDiagnostics(deps);
-  var existing = root.querySelector(".lan-sync-diagnostics-panel");
-  if (existing) existing.remove();
-  var details = document.createElement("details");
-  details.className = "lan-connect-card lan-sync-diagnostics-panel";
-  var sum = document.createElement("summary");
-  sum.textContent = "Estado de sincronizaci\xF3n";
-  sum.style.cursor = "pointer";
-  sum.style.fontWeight = "600";
-  details.appendChild(sum);
-  var pre = document.createElement("pre");
-  pre.className = "lan-sync-diagnostics-pre";
-  pre.style.fontSize = "11px";
-  pre.style.whiteSpace = "pre-wrap";
-  pre.style.marginTop = "8px";
-  pre.style.maxHeight = "200px";
-  pre.style.overflow = "auto";
-  pre.textContent = formatDiagnosticsReport(diag);
-  details.appendChild(pre);
-  var copyBtn = document.createElement("button");
-  copyBtn.type = "button";
-  copyBtn.className = "btn-lan-secondary";
-  copyBtn.style.marginTop = "8px";
-  copyBtn.style.width = "100%";
-  copyBtn.textContent = "Copiar informe";
-  copyBtn.onclick = function() {
-    var report = formatDiagnosticsReport(getLanSyncDiagnostics(deps));
-    void copyToClipboardSafe(report).then(function(ok) {
-      runtime3.showToast(
-        ok ? "Informe copiado (c\xF3digos redactados)." : "No se pudo copiar el informe.",
-        ok ? "success" : "error"
-      );
-    });
-  };
-  details.appendChild(copyBtn);
-  root.appendChild(details);
-}
-function buildR1Section(root) {
-  var userSala = getUserSala();
-  var card = document.createElement("div");
-  card.className = "lan-connect-card lan-hub-team-card";
-  card.innerHTML = '<div class="lan-connect-card-title">Mi equipo</div>';
-  var userId = String(getClinicalUserUserId());
-  var teams = clinicalSessionContext.teams || [];
-  var myTeam = teams.find(function(t2) {
-    return (t2.members || []).some(function(m) {
-      return String(m.user_id) === userId;
-    });
-  });
-  if (myTeam) {
-    var teamName = document.createElement("p");
-    teamName.className = "lan-hub-team-name";
-    teamName.textContent = "Mi equipo: " + (myTeam.name || "Sin nombre");
-    card.appendChild(teamName);
-  } else {
-    var noTeam = document.createElement("p");
-    noTeam.className = "lan-connect-card-hint";
-    noTeam.innerHTML = 'Sin equipo \u2014 <button type="button" class="lan-hub-link-btn" id="lan-hub-join-team">Unirse a un equipo</button>';
-    card.appendChild(noTeam);
-  }
-  root.appendChild(card);
-  var joinTeamBtn = card.querySelector("#lan-hub-join-team");
-  if (joinTeamBtn) {
-    joinTeamBtn.onclick = function() {
-      var availCard = document.getElementById("lan-hub-available-teams");
-      if (availCard) {
-        availCard.remove();
-        return;
-      }
-      var avail = document.createElement("div");
-      avail.id = "lan-hub-available-teams";
-      avail.className = "lan-connect-card";
-      avail.innerHTML = '<div class="lan-connect-card-title">Equipos disponibles</div>';
-      buildAvailableTeamsSection(avail, userSala);
-      card.parentNode.insertBefore(avail, card.nextSibling);
-    };
-  }
-  appendLanHubGuardiaModeCard(root);
-  if (isLanElectronDesktop() && isLanHostActive()) {
-    var mobileCard = document.createElement("div");
-    mobileCard.className = "lan-connect-card lan-hub-mobile-card";
-    mobileCard.innerHTML = '<div class="lan-connect-card-title">Enlace m\xF3vil</div>';
-    var mobileBtn = document.createElement("button");
-    mobileBtn.type = "button";
-    mobileBtn.className = "btn-lan-primary";
-    mobileBtn.style.width = "100%";
-    mobileBtn.textContent = "Copiar enlace para iPad";
-    mobileBtn.onclick = function() {
-      void generateMobilePairingLink().then(function(url) {
-        if (url) {
-          copyToClipboardSafe(url);
-          runtime3.showToast("Enlace m\xF3vil copiado. P\xE9galo en Safari en el iPad.", "success");
-        }
-      });
-    };
-    mobileCard.appendChild(mobileBtn);
-    root.appendChild(mobileCard);
-  }
-}
-function buildR2Section(root) {
-  buildR1Section(root);
-  var userId = String(getClinicalUserUserId());
-  var teams = clinicalSessionContext.teams || [];
-  var myTeam = teams.find(function(t2) {
-    return (t2.members || []).some(function(m) {
-      return String(m.user_id) === userId;
-    });
-  });
-  if (!myTeam) return;
-  var entregaCard = document.createElement("div");
-  entregaCard.className = "lan-connect-card lan-hub-entrega-card";
-  entregaCard.innerHTML = '<div class="lan-connect-card-title">Solicitar entrega</div>';
-  var guardiasForTeam = (clinicalSessionContext.guardias || []).filter(function(g3) {
-    return g3 && String(g3.source_team_id) === String(myTeam.team_id);
-  });
-  if (!guardiasForTeam.length) {
-    var emptyHint3 = document.createElement("p");
-    emptyHint3.className = "lan-connect-card-hint";
-    emptyHint3.textContent = "No hay pacientes entregados por tu equipo.";
-    entregaCard.appendChild(emptyHint3);
-  } else {
-    var entregaList = document.createElement("ul");
-    entregaList.style.listStyle = "none";
-    entregaList.style.padding = "0";
-    entregaList.style.margin = "0";
-    guardiasForTeam.forEach(function(g3) {
-      var li = document.createElement("li");
-      li.style.marginBottom = "6px";
-      li.style.fontSize = "12px";
-      li.textContent = "Paciente " + String(g3.patient_id || "").slice(0, 8) + "\u2026 \u2014 " + (g3.covering_user_id || "");
-      entregaList.appendChild(li);
-    });
-    entregaCard.appendChild(entregaList);
-  }
-  root.appendChild(entregaCard);
-}
-async function openR4TeamCreationModal() {
-  try {
-    var mod = await Promise.resolve().then(() => (init_clinical_teams(), clinical_teams_exports));
-    if (typeof mod.openClinicalTeamsPanel === "function") {
-      mod.openClinicalTeamsPanel();
-    } else {
-      runtime3.showToast("Panel de equipos no disponible.", "error");
-    }
-  } catch (_e) {
-    runtime3.showToast("Panel de equipos no disponible.", "error");
-  }
-}
-async function handleFinalizarRotacion() {
-  var api3 = typeof window !== "undefined" ? window.rplusDb || window.electronAPI : null;
-  if (!api3 || typeof api3.dbRotationNueva !== "function") {
-    runtime3.showToast("Operaci\xF3n no disponible.", "error");
-    return;
-  }
-  var user = typeof clinicalSessionContext !== "undefined" ? clinicalSessionContext.user : null;
-  var userId = user ? String(user.user_id || "") : "";
-  var res = await api3.dbRotationNueva({ userId });
-  if (res && res.ok) {
-    runtime3.showToast("Rotaci\xF3n finalizada. Crea nuevos equipos para el siguiente mes.", "success");
-    document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
-    renderLanPanel();
-  } else {
-    runtime3.showToast(res && res.error || "No se pudo finalizar la rotaci\xF3n.", "error");
-  }
-}
-function buildR4Section(root) {
-  var teamCard = document.createElement("div");
-  teamCard.className = "lan-connect-card lan-hub-team-create-card";
-  teamCard.innerHTML = '<div class="lan-connect-card-title">Crear equipos del mes</div>';
-  var btnCreate = document.createElement("button");
-  btnCreate.type = "button";
-  btnCreate.className = "btn-lan-primary";
-  btnCreate.style.width = "100%";
-  btnCreate.textContent = "Crear equipos del mes";
-  btnCreate.onclick = function() {
-    openR4TeamCreationModal();
-  };
-  teamCard.appendChild(btnCreate);
-  root.appendChild(teamCard);
-  var censusCard = document.createElement("div");
-  censusCard.className = "lan-connect-card lan-hub-census-card";
-  censusCard.innerHTML = '<div class="lan-connect-card-title">Censo global</div>';
-  var teams = clinicalSessionContext.teams || [];
-  var allPatients = patients || [];
-  var salas = ["Sala 1", "Sala 2", "Sala E"];
-  salas.forEach(function(salaName) {
-    var salaTeams = teams.filter(function(t2) {
-      return teamSalaKey(t2) === salaName;
-    });
-    var salaPatientCount = allPatients.filter(function(p) {
-      return p && String(p.sala || "") === salaName;
-    }).length;
-    var row = document.createElement("p");
-    row.className = "lan-connect-card-hint";
-    row.style.marginBottom = "4px";
-    row.textContent = salaName + ": " + salaTeams.length + " equipos \xB7 " + salaPatientCount + " pacientes";
-    censusCard.appendChild(row);
-  });
-  var viewBtn = document.createElement("button");
-  viewBtn.type = "button";
-  viewBtn.className = "btn-lan-secondary";
-  viewBtn.style.width = "100%";
-  viewBtn.style.marginTop = "8px";
-  viewBtn.textContent = "Ver censo en lista de pacientes";
-  viewBtn.onclick = function() {
-    try {
-      localStorage.setItem("clinical.browseSala", "__all__");
-      localStorage.setItem("clinical.censusFilterSala", "__all__");
-    } catch (_e) {
-    }
-    document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
-    if (typeof runtime3.renderPatientList === "function") runtime3.renderPatientList();
-    runtime3.showToast("Censo global \u2014 usa los filtros en la lista de pacientes.", "info");
-  };
-  censusCard.appendChild(viewBtn);
-  root.appendChild(censusCard);
-  if (isLanElectronDesktop() && isLanHostActive()) {
-    var mobileCard = document.createElement("div");
-    mobileCard.className = "lan-connect-card lan-hub-mobile-card";
-    mobileCard.innerHTML = '<div class="lan-connect-card-title">Enlace m\xF3vil</div>';
-    var mobileBtn = document.createElement("button");
-    mobileBtn.type = "button";
-    mobileBtn.className = "btn-lan-primary";
-    mobileBtn.style.width = "100%";
-    mobileBtn.textContent = "Copiar enlace para iPad";
-    mobileBtn.onclick = function() {
-      void generateMobilePairingLink().then(function(url) {
-        if (url) {
-          copyToClipboardSafe(url);
-          runtime3.showToast("Enlace m\xF3vil copiado. P\xE9galo en Safari en el iPad.", "success");
-        }
-      });
-    };
-    mobileCard.appendChild(mobileBtn);
-    root.appendChild(mobileCard);
-  }
-  var rotCard = document.createElement("div");
-  rotCard.className = "lan-connect-card lan-hub-rotation-card";
-  rotCard.innerHTML = '<div class="lan-connect-card-title">Rotaci\xF3n</div>';
-  var btnFinalizar = document.createElement("button");
-  btnFinalizar.type = "button";
-  btnFinalizar.className = "btn-lan-secondary";
-  btnFinalizar.style.width = "100%";
-  btnFinalizar.style.color = "var(--danger)";
-  btnFinalizar.textContent = "Finalizar rotaci\xF3n (archivar equipos)";
-  btnFinalizar.onclick = function() {
-    void handleFinalizarRotacion();
-  };
-  rotCard.appendChild(btnFinalizar);
-  root.appendChild(rotCard);
-}
-function teamSalaKey(team) {
-  return String(team && team.sala || "").trim();
-}
-function buildAvailableTeamsSection(root, userSala) {
-  var teams = clinicalSessionContext.teams || [];
-  var userId = getClinicalUserUserId();
-  var salaKey = String(userSala || "").trim();
-  var alreadyInIds = teams.filter(function(t2) {
-    return (t2.members || []).some(function(m) {
-      return String(m.user_id) === userId;
-    });
-  }).map(function(t2) {
-    return String(t2.team_id);
-  });
-  var available = teams.filter(function(t2) {
-    return teamSalaKey(t2) === salaKey && !t2.archived_at && alreadyInIds.indexOf(String(t2.team_id)) === -1;
-  });
-  if (!available.length) {
-    var empty = document.createElement("p");
-    empty.className = "lan-connect-card-hint";
-    empty.textContent = "No hay equipos disponibles en tu Sala.";
-    root.appendChild(empty);
-    return;
-  }
-  var list = document.createElement("ul");
-  list.style.listStyle = "none";
-  list.style.padding = "0";
-  list.style.margin = "0";
-  available.forEach(function(t2) {
-    var li = document.createElement("li");
-    li.style.display = "flex";
-    li.style.gap = "8px";
-    li.style.alignItems = "center";
-    li.style.marginBottom = "6px";
-    var info = document.createElement("span");
-    info.style.flex = "1";
-    info.style.fontSize = "12px";
-    var cycle = t2.sub_area_fraction ? String(t2.sub_area_fraction) : "";
-    info.textContent = (t2.name || "Equipo") + " \xB7 " + (t2.service || "") + (cycle ? " \xB7 ciclo " + cycle : "");
-    var joinBtn = document.createElement("button");
-    joinBtn.type = "button";
-    joinBtn.className = "btn-lan-secondary";
-    joinBtn.style.flex = "0 0 auto";
-    joinBtn.textContent = "Unirse";
-    joinBtn.onclick = function() {
-      void joinClinicalTeam(String(t2.team_id));
-    };
-    li.appendChild(info);
-    li.appendChild(joinBtn);
-    list.appendChild(li);
-  });
-  root.appendChild(list);
-}
-async function joinClinicalTeam(teamId) {
-  var api3 = typeof window !== "undefined" ? window.rplusDb || window.electronAPI : null;
-  if (!api3 || typeof api3.dbClinicalTeamsMemberAdd !== "function") {
-    runtime3.showToast("Base de datos no disponible.", "error");
-    return;
-  }
-  var userId = getClinicalUserUserId();
-  if (!userId) {
-    runtime3.showToast("No hay sesi\xF3n cl\xEDnica activa.", "error");
-    return;
-  }
-  var addRes = await api3.dbClinicalTeamsMemberAdd({ teamId, userId });
-  if (!addRes || addRes.ok === false) {
-    runtime3.showToast(addRes?.error || "No se pudo unir al equipo.", "error");
-    return;
-  }
-  var rank = getClinicalRank();
-  if (rank === "R2" && api3 && typeof api3.dbClinicalTeamsPromoteLeader === "function") {
-    var promoteRes = await api3.dbClinicalTeamsPromoteLeader({ teamId, userId });
-    if (!promoteRes || promoteRes.ok === false) {
-      runtime3.showToast("Unido al equipo pero no se pudo asignar como l\xEDder.", "warn");
-    }
-  }
-  runtime3.showToast("Unido al equipo.", "success");
-  document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
-  await refreshClinicalSessionTeams();
-  renderLanPanel();
-}
-async function refreshClinicalSessionTeams() {
-  var api3 = typeof window !== "undefined" ? window.rplusDb || window.electronAPI : null;
-  if (!api3) return;
-  if (typeof api3.dbClinicalScopeContext === "function") {
-    var userId = getClinicalUserUserId();
-    var res = await api3.dbClinicalScopeContext({ userId });
-    if (res && res.ok && Array.isArray(res.context?.teams)) {
-      clinicalSessionContext.teams = res.context.teams;
-      if (res.context && typeof res.context === "object") {
-        clinicalSessionContext.scopeContext = res.context;
-      }
-      return;
-    }
-  }
-  if (typeof api3.dbClinicalTeamsList === "function") {
-    var listRes = await api3.dbClinicalTeamsList();
-    if (listRes && listRes.ok && Array.isArray(listRes.teams)) {
-      clinicalSessionContext.teams = listRes.teams;
-    }
-  }
-}
-function resolveMobilePairingRoomId() {
-  var rid = String(activeLiveSyncRoomId || "").trim();
-  if (rid) return rid;
-  var mem = getRoomMembership();
-  if (mem && mem.roomId) return String(mem.roomId).trim();
-  try {
-    var s = JSON.parse(localStorage.getItem("rpc-settings") || "{}");
-    return resolveLiveSyncRoomIdFromSala(s.clinicalSala);
-  } catch (_e) {
-    return "";
-  }
-}
-function appendMobileLanJoinHintParams(url) {
-  var s = {};
-  try {
-    s = JSON.parse(localStorage.getItem("rpc-settings") || "{}");
-  } catch (_e) {
-  }
-  try {
-    var u = new URL(url);
-    if (s.clinicalDisplayName) u.searchParams.set("name", s.clinicalDisplayName);
-    if (s.clinicalRank) u.searchParams.set("rank", s.clinicalRank);
-    if (s.clinicalSala) u.searchParams.set("sala", s.clinicalSala);
-    var roomId = resolveMobilePairingRoomId();
-    if (roomId) u.searchParams.set("room", roomId);
-    return u.toString();
-  } catch (_eUrl) {
-    return url;
-  }
-}
-function classifyAutoJoinSource() {
-  if (typeof location !== "undefined") {
-    var parsedUrl = parseLanJoinQuery(location.search, location.origin);
-    if (String(parsedUrl.roomId || "").trim()) return "url";
-  }
-  var mem = getRoomMembership();
-  if (mem && mem.roomId) return "membership";
-  try {
-    var s = JSON.parse(localStorage.getItem("rpc-settings") || "{}");
-    if (resolveLiveSyncRoomIdFromSala(s.clinicalSala)) return "settings_sala";
-  } catch (_e) {
-    return "none";
-  }
-  return "none";
-}
-function resolveAutoJoinRoomId(explicitRoomId) {
-  var rid = String(explicitRoomId || "").trim();
-  if (rid) return rid;
-  if (typeof location !== "undefined") {
-    var parsed = parseLanJoinQuery(location.search, location.origin);
-    rid = String(parsed.roomId || "").trim();
-    if (rid) return rid;
-  }
-  var mem = getRoomMembership();
-  if (mem && mem.roomId) return String(mem.roomId).trim();
-  try {
-    var s = JSON.parse(localStorage.getItem("rpc-settings") || "{}");
-    return resolveLiveSyncRoomIdFromSala(s.clinicalSala);
-  } catch (_e) {
-    return "";
-  }
-}
-function lanAutoJoinConfirmedSessionKey(roomId) {
-  return "rpc-lan-auto-join-confirmed-" + String(roomId || "").trim();
-}
-function hasLanAutoJoinConfirmed(roomId) {
-  try {
-    return sessionStorage.getItem(lanAutoJoinConfirmedSessionKey(roomId)) === "1";
-  } catch (_e) {
-    return false;
-  }
-}
-function setLanAutoJoinConfirmed(roomId) {
-  try {
-    sessionStorage.setItem(lanAutoJoinConfirmedSessionKey(roomId), "1");
-  } catch (_e) {
-  }
-}
-async function generateMobilePairingLink() {
-  var hostUrl = await resolveLanShareBaseUrl();
-  if (!hostUrl) {
-    runtime3.showToast(
-      "No detectamos la IP de esta Mac en la red. Revisa Wi\u2011Fi y vuelve a copiar el enlace.",
-      "error"
-    );
-    return "";
-  }
-  try {
-    var share = await ensureLanPairingForShare({ forceNew: true });
-    return appendMobileLanJoinHintParams(
-      buildShareJoinUrl(share.hostUrl, share.pairing.ticketId)
-    );
-  } catch (_ticket) {
-  }
-  if (!hostUrl || isLocalLoopbackLanUrl(hostUrl)) return "";
-  var teamCode = getLanTeamCodeFromConfig();
-  if (!teamCode) return "";
-  var params = new URLSearchParams();
-  params.set("host", hostUrl.replace(/\/+$/, ""));
-  params.set("code", teamCode);
-  var roomId = resolveMobilePairingRoomId();
-  if (roomId) params.set("room", roomId);
-  return appendMobileLanJoinHintParams(hostUrl + "/?" + params.toString());
-}
-async function resolveLanHostUrlForShare() {
-  return resolveLanShareBaseUrl();
-}
-function startLanAutoDiscovery() {
-  if (_lanScanTimer) return;
-  _lanScanTimer = setInterval(function() {
-    void scanLanHosts();
-  }, LAN_SCAN_INTERVAL_MS);
-  void scanLanHosts();
-}
-function stopLanAutoDiscovery() {
-  if (_lanScanTimer) {
-    clearInterval(_lanScanTimer);
-    _lanScanTimer = null;
-  }
-}
-async function scanLanHosts() {
-  if (!isLanElectronDesktop()) return;
-  if (isLanRemoteJoinMode()) return;
-  var teamCode = getLanTeamCodeFromConfig();
-  if (!teamCode) return;
-  try {
-    var clientId = typeof getLanClientId === "function" ? getLanClientId() : "";
-    var peers = typeof listLivePeerHostUrls === "function" ? listLivePeerHostUrls(clientId) : [];
-    var currentRank = getClinicalRank();
-    for (var i = 0; i < peers.length; i += 1) {
-      var peerUrl = peers[i];
-      if (!peerUrl) continue;
-      var alive = typeof pingLanHostUrl === "function" ? await pingLanHostUrl(peerUrl, teamCode) : false;
-      if (!alive) continue;
-      try {
-        var resp = await fetch(peerUrl + "/api/lan/v1/host-rank", {
-          headers: { "Authorization": "Bearer " + teamCode },
-          signal: AbortSignal.timeout(3e3)
-        });
-        if (resp.ok) {
-          var data = await resp.json();
-          var peerRank = String(data.rank || "").trim();
-          if (shouldSupersede(peerRank, currentRank)) {
-            if (isLanElectronDesktop() && typeof maybeApplyLanHostUrlSwitch === "function") {
-              var pinnedScan = getPinnedHostUrl();
-              if (pinnedScan) {
-                runtime3.showToast(
-                  "Anfitri\xF3n fijado: " + pinnedScan + ". No se cambi\xF3 a " + peerUrl + " (" + peerRank + ").",
-                  "info"
-                );
-                continue;
-              }
-              var supersedeMsg = "Un host de mayor rango (" + peerRank + ") est\xE1 en " + peerUrl + ". \xBFConectar como cliente?";
-              if (maybeApplyLanHostUrlSwitch(peerUrl, teamCode, {
-                skipRememberPrimary: true,
-                requireConfirm: true,
-                confirmMessage: supersedeMsg
-              })) {
-                runtime3.showToast("Conectado al anfitri\xF3n de mayor rango (" + peerRank + ").", "info");
-                renderLanPanel();
-                return;
-              }
-            }
-          }
-        }
-      } catch (_peerErr) {
-      }
-    }
-  } catch (_scanErr) {
-  }
-}
-function shouldSupersede(peerRank, myRank) {
-  var priority = { Admin: 5, R4: 4, R3: 3, R2: 2, R1: 1 };
-  return (priority[peerRank] || 0) > (priority[myRank] || 0);
-}
-async function saveLanHostTeamCodeFromUi() {
-  if (!window.electronAPI || typeof window.electronAPI.writeLanHostTeamCode !== "function") {
-    runtime3.showToast("Solo disponible en la app Electron", "error");
-    return;
-  }
-  var input = document.getElementById("settings-lan-host-team-code-input");
-  var plain = input && input.value;
-  var res;
-  try {
-    res = await window.electronAPI.writeLanHostTeamCode(plain);
-  } catch (e) {
-    runtime3.showToast(e && e.message ? e.message : "Error al guardar", "error");
-    return;
-  }
-  if (res && res.ok) {
-    var plainTrim = String(plain || "").trim();
-    if (!plainTrim) {
-      runtime3.showToast("Escribe un token de al menos 32 caracteres.", "error");
-      return;
-    }
-    var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
-    var hostUrl = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
-    if (hostUrl && plainTrim) {
-      storage.saveLanConfig({ hostUrl, teamCode: plainTrim });
-      lanClient.configure({ hostUrl, teamCode: plainTrim });
-      try {
-        lanClient.disconnect();
-        lanClient.connectSyncChannel();
-      } catch (_e) {
-      }
-    }
-    runtime3.showToast("Guardado. Reinicia R+ para que el proceso del servidor relea el archivo.", "success");
-  } else {
-    runtime3.showToast(res && res.error ? res.error : "Error al guardar", "error");
-  }
-}
-async function resetLanSquadHostStateFromUi() {
-  if (!window.electronAPI || typeof window.electronAPI.resetLanSquadHostState !== "function") {
-    runtime3.showToast("Solo disponible en la app de escritorio.", "error");
-    return;
-  }
-  if (!confirm(
-    "Se borrar\xE1 el archivo lan-squad-host-state.json en esta computadora (salas y datos de pacientes del host LAN guardados ah\xED). \xBFSeguir?"
-  )) {
-    return;
-  }
-  var res;
-  try {
-    res = await window.electronAPI.resetLanSquadHostState();
-  } catch (e) {
-    runtime3.showToast(e && e.message ? e.message : "Error al restablecer", "error");
-    return;
-  }
-  if (res && res.ok) {
-    var synced = await syncLanSavedTeamCodeWithEffectiveHostCode();
-    runtime3.showToast(
-      synced ? "Estado LAN del host borrado. El \xABC\xF3digo del equipo\xBB guardado en esta R+ qued\xF3 alineado con archivo / variable de entorno / valor por defecto del servidor." : "Estado LAN del host borrado. Si sigues con error 401, escribe en \xABC\xF3digo del equipo\xBB el mismo texto que el servidor (o reinicia R+ tras cambiar el archivo).",
-      "success"
-    );
-    if (typeof renderLanPanel === "function") renderLanPanel();
-  } else {
-    runtime3.showToast(res && res.error ? res.error : "No se pudo borrar el archivo.", "error");
-  }
-}
-async function ensureLanPairingForShare(opts) {
-  opts = opts || {};
-  var hostUrl = await resolveLanHostUrlForShare();
-  if (!hostUrl) {
-    var errUrl = new Error("no_host_url");
-    errUrl.code = "no_host_url";
-    throw errUrl;
-  }
-  if (opts.forceNew || !_lastLanPairing || !_lastLanPairing.ticketId) {
-    await mintLanPairingTicket();
-  }
-  if (!_lastLanPairing || !_lastLanPairing.ticketId) {
-    var errTicket = new Error("no_ticket");
-    errTicket.code = "no_ticket";
-    throw errTicket;
-  }
-  return { hostUrl, pairing: _lastLanPairing };
-}
-async function copyLanInviteLinkFromUi(opts) {
-  opts = opts || {};
-  var silent = !!opts.silent;
-  var share;
-  try {
-    share = await ensureLanPairingForShare({ forceNew: true });
-  } catch (e) {
-    if (!silent) {
-      if (e && e.code === "no_host_url") {
-        runtime3.showToast(
-          "Falta la direcci\xF3n del servidor (o no pudimos detectar la IP en esta computadora).",
-          "error"
-        );
-      } else {
-        runtime3.showToast("Genera primero un enlace / PIN o revisa el token del anfitri\xF3n.", "error");
-      }
-    }
-    return false;
-  }
-  var link = buildShareJoinUrl(share.hostUrl, share.pairing.ticketId);
-  var copied = await copyToClipboardSafe(link);
-  if (copied) {
-    var root = document.getElementById("lan-connection-panel-root");
-    updateLanPairingDisplay(root);
-    if (!silent) {
-      var pinHint = share.pairing.pin ? " PIN: " + share.pairing.pin + "." : "";
-      var inviteExpiry = formatLanTicketExpiryLabel(share.pairing.expiresAt);
-      runtime3.showToast(
-        "Enlace de invitaci\xF3n copiado." + pinHint + (inviteExpiry ? " V\xE1lido hasta " + inviteExpiry + "." : ""),
-        "success"
-      );
-    }
-    return true;
-  }
-  if (!silent) runtime3.showToast("No se pudo copiar al portapapeles.", "error");
-  return false;
-}
-function joinLanFromInviteUi() {
-  var input = document.getElementById("lan-input-invite-link");
-  var raw = String(input && input.value ? input.value : "").trim();
-  if (!raw) {
-    runtime3.showToast("Pega el enlace de invitaci\xF3n que te envi\xF3 el anfitri\xF3n.", "error");
-    return;
-  }
-  var parsed = parseLanInviteInput(raw);
-  if (parsed.legacyInvite) {
-    runtime3.showToast(
-      "Este enlace ya no es v\xE1lido. Pide al anfitri\xF3n un nuevo enlace o PIN.",
-      "error"
-    );
-    return;
-  }
-  var ticketId = String(parsed.ticketId || "").trim();
-  if (ticketId) {
-    var hostUrl = String(parsed.hostUrl || "").trim().replace(/\/+$/, "");
-    if (!hostUrl) {
-      var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
-      hostUrl = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
-    }
-    if (!hostUrl) {
-      runtime3.showToast(
-        "Pega el enlace completo (http://\u2026/join/req_\u2026) con la direcci\xF3n del anfitri\xF3n.",
-        "error"
-      );
-      return;
-    }
-    void exchangeLanJoinFromInvite(hostUrl, ticketId, parsed.roomId);
-    return;
-  }
-  runtime3.showToast(
-    "No reconocimos un enlace v\xE1lido. Pide al anfitri\xF3n un enlace /join/req_\u2026 o el PIN actual.",
-    "error"
-  );
-}
-async function saveLanSettingsFromUi(opts) {
-  opts = opts || {};
-  var copyInviteAfter = !!opts.copyInviteAfter;
-  var uiRole = typeof storage.getLanUiRole === "function" ? storage.getLanUiRole() : "client";
-  var hostInput = document.getElementById("lan-input-host-url");
-  if (hostInput && !String(hostInput.value || "").trim()) {
-    var autoHost = await resolveLanHostUrlForShare();
-    if (autoHost) hostInput.value = autoHost;
-  }
-  var hostUrl = String(hostInput && hostInput.value ? hostInput.value : "").trim().replace(/\/+$/, "");
-  var teamCode = "";
-  if (uiRole === "host") {
-    teamCode = String(await resolveHostBearerToken()).trim();
-  } else {
-    teamCode = String(await resolveLanTeamCodeForShare()).trim();
-  }
-  if (!hostUrl || !teamCode) {
-    runtime3.showToast(
-      !hostUrl ? uiRole === "host" ? "No pudimos detectar la IP. Escribe la direcci\xF3n http://\u2026 que ver\xE1n las otras R+." : "Escribe la direcci\xF3n del servidor que te dio el anfitri\xF3n." : uiRole === "host" ? "No hay token seguro del servidor en esta Mac. Reinicia R+ como anfitri\xF3n." : "\xDAnete con el enlace o PIN que te dio quien abri\xF3 la sala.",
-      "error"
-    );
-    return;
-  }
-  var cfg = { hostUrl: hostUrl.replace(/\/+$/, ""), teamCode };
-  storage.saveLanConfig(cfg);
-  lanClient.configure(cfg);
-  lanClient.disconnect();
-  try {
-    lanClient.connectSyncChannel();
-  } catch (_e) {
-  }
-  var pingOk = false;
-  var pingStatus = 0;
-  try {
-    var r = await lanClient.fetch("/api/lan/v1/ping");
-    pingStatus = r && r.status ? r.status : 0;
-    pingOk = !!(r && r.ok);
-    _lanLastPingAt = (/* @__PURE__ */ new Date()).toISOString();
-    _lanLastPingStatus = pingStatus;
-  } catch (pingErr) {
-    _lanLastPingAt = (/* @__PURE__ */ new Date()).toISOString();
-    _lanLastPingStatus = 0;
-    recordLanSyncError({
-      op: "ping",
-      code: "NETWORK",
-      message: pingErr && pingErr.message ? pingErr.message : "ping failed"
-    });
-  }
-  var copiedOk = false;
-  if (copyInviteAfter && pingStatus !== 401) {
-    copiedOk = await copyLanInviteLinkFromUi({ silent: true });
-  }
-  if (pingStatus === 401) {
-    recordLanSyncError({ op: "ping", code: "401", message: "team code rejected" });
-  }
-  if (pingOk) {
-    var autoRoomId = resolveAutoJoinRoomId("");
-    if (autoRoomId) {
-      var joinSource = classifyAutoJoinSource();
-      var needsConfirm = joinSource === "settings_sala" && !hasLanAutoJoinConfirmed(autoRoomId);
-      if (needsConfirm) {
-        var salaLabel = liveSyncRoomLabel(autoRoomId);
-        if (typeof confirm !== "function" || !confirm("\xBFUnirte a " + salaLabel + "?")) {
-          renderLanPanel();
-          return;
-        }
-        setLanAutoJoinConfirmed(autoRoomId);
-      }
-      joinLanRoom(autoRoomId, liveSyncRoomLabel(autoRoomId));
-    }
-    void Promise.resolve().then(() => (init_historia_clinica_lan_sync(), historia_clinica_lan_sync_exports)).then(function(m) {
-      return m.scheduleFlushAllPendingHistoriaClinicaLanSync();
-    });
-    void maybeShowLanMigrationNotice();
-    if (copyInviteAfter) {
-      runtime3.showToast(
-        copiedOk ? "Anfitri\xF3n listo. La invitaci\xF3n ya est\xE1 en el portapapeles; comp\xE1rtela por WhatsApp o correo." : "Anfitri\xF3n listo, pero no se pudo copiar solo. Pulsa \xABGenerar enlace / PIN\xBB o \xABCopiar enlace de invitaci\xF3n\xBB.",
-        copiedOk ? "success" : "error"
-      );
-    } else {
-      runtime3.showToast("Listo: ya iniciaste sesi\xF3n en la sala del equipo.", "success");
-    }
-  } else if (pingStatus === 401) {
-    runtime3.showToast("El c\xF3digo no coincide con el del servidor. Pide el c\xF3digo correcto a quien tiene la computadora anfitriona.", "error");
-  } else {
-    if (copyInviteAfter && copiedOk) {
-      runtime3.showToast(
-        "Invitaci\xF3n copiada al portapapeles. Aun as\xED no hubo respuesta del servidor: revisa el Wi\u2011Fi o que R+ siga abierto en el anfitri\xF3n.",
-        "error"
-      );
-    } else {
-      runtime3.showToast(
-        "Guardamos los datos, pero no hubo respuesta del servidor. Revisa la direcci\xF3n y que ambas computadoras est\xE9n en el mismo Wi\u2011Fi.",
-        "error"
-      );
-    }
-  }
-  renderLanPanel();
-}
-function joinLanRoom(roomId, displayName) {
-  var id = String(roomId || "").trim();
-  if (!id) {
-    runtime3.showToast("No se pudo identificar la sala. Vuelve a abrir \u21C4 e int\xE9ntalo.", "error");
-    return;
-  }
-  if (!isLanSessionConfiguredForRest()) {
-    runtime3.showToast(
-      "Primero conecta al servidor del equipo (Activar sala en vivo o pega el enlace de invitaci\xF3n).",
-      "error"
-    );
-    return;
-  }
-  if (!lanClient.baseUrl()) {
-    try {
-      initLanClientFromStorage();
-    } catch (_boot) {
-    }
-  }
-  if (!lanClient.baseUrl()) {
-    runtime3.showToast("Falta la direcci\xF3n del servidor LAN. Config\xFArala en \u21C4 antes de unirte.", "error");
-    return;
-  }
-  if (activeLiveSyncRoomId === id && String(lanClient.liveRoomId || "") === id && lanClient.liveConnected) {
-    setRoomSyncPhase(id, RoomSyncPhase.joining);
-    syncLiveSyncAfterRoomJoin(id);
-    syncLiveSyncStatusChrome();
-    patchLanPanelJoinButtons();
-    runtime3.showToast("Ya est\xE1s en esta sala", "success");
-    return;
-  }
-  if (activeLiveSyncRoomId && activeLiveSyncRoomId !== id) {
-    leaveLiveSyncRoom({ silentLeave: false });
-  }
-  activeLiveSyncRoomId = id;
-  activeLiveSyncRoomLabel = displayName != null ? String(displayName) : id;
-  setRoomSyncPhase(id, RoomSyncPhase.joining);
-  syncLiveSyncStatusChrome();
-  try {
-    if (!lanClient.connected) {
-      try {
-        lanClient.connectSyncChannel();
-      } catch (_sync) {
-      }
-    }
-    lanClient.connectLiveChannel(id);
-    setRoomMembership({ roomId: id, label: activeLiveSyncRoomLabel });
-    rememberLanRoomJoined(id, activeLiveSyncRoomLabel);
-    scheduleLiveSyncOutboxFlush();
-    startLiveSyncReconnectLoop();
-  } catch (_e) {
-    activeLiveSyncRoomId = "";
-    activeLiveSyncRoomLabel = "";
-    clearRoomSyncPhase(id);
-    runtime3.showToast("No se pudo activar relay de sala", "error");
-    return;
-  }
-  runtime3.showToast("Sala: sincronizando expediente, agenda y pendientes", "success");
-  syncLiveSyncStatusChrome();
-  patchLanPanelJoinButtons();
-  syncLiveSyncAfterRoomJoin(id);
-}
-async function createLanRoomFromUi() {
-  if (!isLanSessionConfiguredForRest()) {
-    runtime3.showToast("Falta la direcci\xF3n LAN. Configura la conexi\xF3n en \u21C4 y vuelve a intentar.", "error");
-    return;
-  }
-  await ensureLanClientTeamCodeAligned();
-  var input = document.getElementById("lan-input-room-name");
-  var displayName = String(input && input.value ? input.value : "").trim();
-  if (!displayName) {
-    runtime3.showToast("Escribe un nombre de sala", "error");
-    return;
-  }
-  var resp;
-  try {
-    resp = await lanFetchAuthed("/api/lan/v1/rooms", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ displayName })
-    });
-  } catch (_e) {
-    runtime3.showToast("No se pudo crear la sala", "error");
-    return;
-  }
-  if (!resp.ok) {
-    if (resp.status === 401) {
-      runtime3.showToast(
-        "El c\xF3digo del equipo no coincide con el servidor. Igual\xE1lo al conectar y en lan-team-code.txt; reinicia R+ en el anfitri\xF3n si cambiaste el archivo.",
-        "error"
-      );
-    } else {
-      runtime3.showToast("No se pudo crear la sala", "error");
-    }
-    return;
-  }
-  var created;
-  try {
-    created = await resp.json();
-  } catch (_eJson) {
-    created = null;
-  }
-  var newRoom = created && created.room;
-  if (newRoom && newRoom.id) {
-    joinLanRoom(newRoom.id, newRoom.displayName || displayName);
-  }
-  if (input) input.value = "";
-  runtime3.showToast(
-    newRoom && newRoom.id ? "Sala creada y conectada" : "Sala creada \u2014 pulsa Unirse",
-    "success"
-  );
-  renderLanPanel();
-}
-async function deleteLanRoom(roomId) {
-  if (!isLanSessionConfiguredForRest()) {
-    runtime3.showToast("Falta configuraci\xF3n LAN para eliminar salas.", "error");
-    return;
-  }
-  await ensureLanClientTeamCodeAligned();
-  var id = String(roomId || "").trim();
-  if (!id) return;
-  if (activeLiveSyncRoomId === id) {
-    leaveLiveSyncRoom({ silentLeave: true });
-  }
-  var resp;
-  try {
-    resp = await lanFetchAuthed("/api/lan/v1/rooms/" + encodeURIComponent(id), { method: "DELETE" });
-  } catch (_e) {
-    runtime3.showToast("No se pudo eliminar la sala", "error");
-    return;
-  }
-  if (!resp.ok) {
-    if (resp.status === 401) {
-      runtime3.showToast("El c\xF3digo del equipo no coincide con el servidor; no se pudo eliminar la sala.", "error");
-    } else {
-      runtime3.showToast("No se pudo eliminar la sala", "error");
-    }
-    return;
-  }
-  runtime3.showToast("Sala eliminada", "success");
-  renderLanPanel();
-}
-function syncLanHostFirstTimeHintUi() {
-  var hint = document.getElementById("lan-host-first-time-hint");
-  if (hint) hint.style.display = "none";
-}
-function dismissLanHostFirstTimeHint() {
-  try {
-    localStorage.setItem(LAN_HOST_CODE_HINT_SEEN_KEY, "1");
-  } catch (_e) {
-  }
-  syncLanHostFirstTimeHintUi();
-}
-function syncSettingsLanHostDiskSection() {
-  var acc = document.getElementById("settings-accordion-lan-host-disk");
-  if (!acc) return;
-  var desktop = isLanElectronDesktop();
-  acc.style.display = desktop && !isLanRemoteJoinMode() ? "" : "none";
-  if (desktop && !isLanRemoteJoinMode()) {
-    syncLanHostTeamCodeSettingsInput();
-    syncLanHostFirstTimeHintUi();
-    if (!acc.dataset.lanHostToggleBound) {
-      acc.dataset.lanHostToggleBound = "1";
-      acc.addEventListener("toggle", function() {
-        if (acc.open) {
-          syncLanHostTeamCodeSettingsInput();
-          syncLanHostFirstTimeHintUi();
-        }
-      });
-    }
-  }
-}
-async function syncLanHostTeamCodeSettingsInput() {
-  var input = document.getElementById("settings-lan-host-team-code-input");
-  if (!input) return;
-  var code = await resolveHostBearerToken();
-  if (!String(input.value || "").trim() && code) input.value = code;
-}
-function closeConnectionDropdown() {
-  var dd = document.getElementById("connection-dropdown");
-  var bg = document.getElementById("connection-dropdown-backdrop");
-  if (dd) dd.classList.remove("open");
-  if (bg) bg.classList.remove("open");
-  var syncBtn = document.getElementById("btn-header-team-sync");
-  if (syncBtn) syncBtn.setAttribute("aria-expanded", "false");
-}
-function openConnectionDropdown() {
-  runtime3.closeSettingsDropdown();
-  var dd = document.getElementById("connection-dropdown");
-  var bg = document.getElementById("connection-dropdown-backdrop");
-  if (!dd) return;
-  dd.classList.add("open");
-  if (bg) bg.classList.add("open");
-  var syncBtn = document.getElementById("btn-header-team-sync");
-  if (syncBtn) syncBtn.setAttribute("aria-expanded", "true");
-  wireLanPanelDelegation();
-  if (typeof renderLanPanel === "function") renderLanPanel();
-}
-function toggleConnectionDropdown(ev) {
-  if (ev) {
-    ev.preventDefault();
-    ev.stopPropagation();
-  }
-  var dd = document.getElementById("connection-dropdown");
-  if (!dd) return;
-  if (dd.classList.contains("open")) closeConnectionDropdown();
-  else openConnectionDropdown();
-}
-function openTeamSyncFromHeader() {
-  openConnectionDropdown();
-}
-function configureLanFromMobileJoin(hostUrl, teamCode, roomId) {
-  var resolvedHost = resolveLanJoinHostUrl(hostUrl, typeof location !== "undefined" ? location.origin : "") || String(hostUrl || "").trim().replace(/\/+$/, "");
-  var cfg = { hostUrl: resolvedHost, teamCode: String(teamCode || "").trim() };
-  if (!cfg.teamCode) return;
-  if (isLanElectronDesktop() && typeof storage.saveLanUiRole === "function") {
-    storage.saveLanUiRole("client");
-  }
-  storage.saveLanConfig(cfg);
-  rememberPrimaryHostUrl(cfg.hostUrl);
-  lanClient.configure(cfg);
-  try {
-    lanClient.connectSyncChannel();
-  } catch (_e) {
-  }
-  lanClient.fetch("/api/lan/v1/ping").then(function(r) {
-    if (!r || !r.ok) {
-      runtime3.showToast(
-        "No se pudo conectar al servidor. Revisa Wi\u2011Fi y que R+ est\xE9 abierto en el anfitri\xF3n.",
-        "error"
-      );
-      renderLanPanel();
-      setTimeout(function() {
-        if (typeof openConnectionDropdown === "function") openConnectionDropdown();
-      }, 400);
-      return;
-    }
-    void maybeShowLanMigrationNotice();
-    var rid = resolveAutoJoinRoomId(roomId);
-    if (rid) {
-      joinLanRoom(rid, liveSyncRoomLabel(rid));
-      runtime3.showToast(
-        "Sincronizando pacientes de " + liveSyncRoomLabel(rid) + "\u2026",
-        "success"
-      );
-      return;
-    }
-    runtime3.showToast(
-      "Conectado al servidor, pero el enlace no trae sala. Pide un enlace nuevo desde \u21C4 en la Mac.",
-      "warn"
-    );
-    renderLanPanel();
-    setTimeout(function() {
-      if (typeof openConnectionDropdown === "function") openConnectionDropdown();
-    }, 500);
-  }).catch(function() {
-    runtime3.showToast("Error de red al conectar con el anfitri\xF3n", "error");
-    renderLanPanel();
-  });
-}
-function registerLanSaveHooks(deps) {
-  var post = deps && typeof deps.scheduleLabHistoryPostSaveMaintenance === "function" ? deps.scheduleLabHistoryPostSaveMaintenance : function() {
+function registerLanSaveHooks(deps2) {
+  var post = deps2 && typeof deps2.scheduleLabHistoryPostSaveMaintenance === "function" ? deps2.scheduleLabHistoryPostSaveMaintenance : function() {
   };
   setSaveStateHooks({
     before() {
-      var aid7 = runtime3.getActiveId();
+      var aid7 = runtime6.getActiveId();
       if (activeLiveSyncRoomId && aid7) touchPatientLanUpdatedAt(aid7);
     },
     after() {
@@ -19432,44 +19664,35 @@ function registerLanSaveHooks(deps) {
     }
   });
 }
-var _lanLastPingAt, _lanLastPingStatus, _suppressClinicalConflictViewer, _deferLanConflictModalUntil, _deferredConflictToastShown, runtime3, lanClient, activeLiveSyncRoomId, activeLiveSyncRoomLabel, _liveSyncPushTimer, LIVE_SYNC_PUSH_DEBOUNCE_MS, LIVE_SYNC_OUTBOX_FLUSH_MS, _liveSyncReconnectTimer, _liveSyncReconnectAttempt, _liveSyncOutboxFlushTimer, _surrogateFailoverTimer, _lanPanelRenderGen, _lanPanelRenderChain, LIVE_SYNC_ENTITIES_LS, LAN_HOST_CODE_HINT_SEEN_KEY, LAN_MIGRATION_NOTICE_KEY, LAN_KNOWN_ROOMS_LS, _lastLanPairing, LAN_DISCONNECT_BANNER_MSG, _lanLastConnected, _lanPanelDelegationWired, _liveSyncRevisionReconcileTimer, _lanScanTimer, LAN_SCAN_INTERVAL_MS, windowHandlers3;
+var _suppressClinicalConflictViewer, _deferLanConflictModalUntil, _deferredConflictToastShown, runtime6, LIVE_SYNC_ENTITIES_LS, windowHandlers3;
 var init_lan_sync = __esm({
   "public/js/features/lan-sync.mjs"() {
     init_storage();
     init_tour_pitch_demo_seed();
-    init_lan_client();
-    init_live_sync_room();
+    init_lan_sync_runtime();
+    init_lan_sync_push();
+    init_lan_merge_registry();
     init_lan_patient_merge();
     init_livesync_patient_ids();
-    init_live_sync_membership();
-    init_live_sync_outbox();
+    init_host_bundle_bases();
+    init_clinical_ops_lan();
     init_manejo_room_data();
     init_estado_actual_data();
     init_patient_diagnosticos();
     init_manejo_todo_dismiss();
-    init_soap_estado();
-    init_lan_join_link();
     init_versioned_mutation();
     init_clinical_access_runtime();
-    init_clinical_privileges();
-    init_lan_hub_guardia_mode();
-    init_lan_hub_panel_shell();
-    init_interno_qr_panel();
     init_draft_conflict_store();
     init_clinical_conflict_viewer();
-    init_host_bundle_bases();
-    init_clinical_ops_lan();
-    init_lan_surrogate_host();
-    init_lan_sync_state();
-    init_lan_host_pin();
-    init_lan_sync_diagnostics();
     init_app_state();
-    _lanLastPingAt = null;
-    _lanLastPingStatus = 0;
+    init_lan_sync_transport();
+    init_lan_sync_room();
+    init_lan_sync_transport();
+    init_lan_sync_panel();
     _suppressClinicalConflictViewer = 0;
     _deferLanConflictModalUntil = 0;
     _deferredConflictToastShown = false;
-    runtime3 = {
+    runtime6 = {
       showToast() {
       },
       renderPatientList() {
@@ -19514,23 +19737,60 @@ var init_lan_sync = __esm({
       closeSettingsDropdown() {
       }
     };
-    lanClient = new LanClient();
-    activeLiveSyncRoomId = "";
-    activeLiveSyncRoomLabel = "";
-    _liveSyncPushTimer = null;
-    LIVE_SYNC_PUSH_DEBOUNCE_MS = 900;
-    LIVE_SYNC_OUTBOX_FLUSH_MS = 6e4;
-    _liveSyncReconnectTimer = null;
-    _liveSyncReconnectAttempt = 0;
-    _liveSyncOutboxFlushTimer = null;
-    _surrogateFailoverTimer = null;
-    _lanPanelRenderGen = 0;
-    _lanPanelRenderChain = Promise.resolve();
     LIVE_SYNC_ENTITIES_LS = "rpc-lan-live-entities";
-    LAN_HOST_CODE_HINT_SEEN_KEY = "rpc-lan-host-code-hint-seen";
-    LAN_MIGRATION_NOTICE_KEY = "rplus.lan.migrationNoticeShown";
-    LAN_KNOWN_ROOMS_LS = "rpc-lan-known-rooms";
-    _lastLanPairing = null;
+    registerLanSyncTransportDeps({
+      get runtime() {
+        return runtime6;
+      },
+      renderLanPanel: renderLanPanel2,
+      joinLanRoom,
+      resolveAutoJoinRoomId,
+      openConnectionDropdown,
+      bootLanRoomMembership
+    });
+    registerLanSyncPanelRuntime(runtime6);
+    registerLanSyncRoomBridge({
+      runtime: runtime6,
+      renderLanPanel: renderLanPanel2,
+      patchLanPanelJoinButtons,
+      rememberLanRoomJoined,
+      initLanClientFromStorage,
+      applyLiveSyncMerged,
+      applyLiveSyncApplied,
+      buildLiveSyncLocalMergeSource,
+      collectPatientEntriesForLanSync,
+      collectPatientIdsForLiveSync,
+      collectTodosMapForLiveSync,
+      maybeRevertSurrogateToPrimary,
+      deferLanConflictModalForMs
+    });
+    registerLanSyncPushBridge({
+      isLanSessionConfiguredForRest,
+      buildLiveSyncBundleEnvelope,
+      saveLocalRoomSnapshot,
+      buildLiveSyncLocalMergeSource,
+      applyLiveSyncMerged,
+      applyRoomSyncPhaseAfterReconcile,
+      syncLiveSyncStatusChrome: syncLiveSyncStatusChrome2,
+      isLanConflictViewerSuppressed,
+      shouldDeferLanConflictModal,
+      markDeferredConflictToastShown,
+      saveDraftConflict,
+      openClinicalConflictViewer,
+      applyRoomBundleServerChoice,
+      renderLanPanel: renderLanPanel2
+    });
+    registerLanSyncRoomWireHandlers();
+    lanClient.addEventListener("lan-applied", function(ev) {
+      applyLiveSyncApplied(ev.detail);
+    });
+    lanClient.addEventListener("lan-conflict", function(ev) {
+      if (!ev.detail) return;
+      void handleSyncConflict(wsConflictDetailToPayload(ev.detail));
+    });
+    lanClient.addEventListener("lan-patch", function() {
+      syncLiveSyncStatusChrome2();
+    });
     if (typeof document !== "undefined") {
       initLanClientFromStorage();
       wireClinicalOpsLanSyncEvents();
@@ -19539,55 +19799,6 @@ var init_lan_sync = __esm({
     if (typeof document !== "undefined" && isLanElectronDesktop()) {
       startLanAutoDiscovery();
     }
-    LAN_DISCONNECT_BANNER_MSG = "Sin conexi\xF3n al host LAN. LiveSync (salas y relay) puede estar limitado hasta reconectar.";
-    _lanLastConnected = true;
-    lanClient.addEventListener("lan-status", function(ev) {
-      updateLanConnectionBanner(!!(ev.detail && ev.detail.connected));
-    });
-    lanClient.addEventListener("lan-patch", function() {
-      syncLiveSyncStatusChrome();
-    });
-    _lanPanelDelegationWired = false;
-    _liveSyncRevisionReconcileTimer = null;
-    lanClient.addEventListener("lan-live", function(ev) {
-      onLiveSyncWireMessage(ev.detail);
-    });
-    lanClient.addEventListener("lan-applied", function(ev) {
-      applyLiveSyncApplied(ev.detail);
-    });
-    lanClient.addEventListener("lan-conflict", function(ev) {
-      if (!ev.detail) return;
-      void handleSyncConflict(wsConflictDetailToPayload(ev.detail));
-    });
-    lanClient.addEventListener("lan-status", function(ev) {
-      if (!ev.detail || ev.detail.connected) return;
-      if (activeLiveSyncRoomId && getRoomMembership()) scheduleSurrogateFailoverCheck();
-    });
-    lanClient.addEventListener("lan-live-status", function(ev) {
-      if (!ev.detail) return;
-      if (ev.detail.connected && activeLiveSyncRoomId) {
-        syncLiveSyncAfterRoomJoin(activeLiveSyncRoomId);
-        flushLiveSyncOutbox(activeLiveSyncRoomId);
-        void Promise.resolve().then(() => (init_historia_clinica_lan_sync(), historia_clinica_lan_sync_exports)).then(function(m) {
-          return m.scheduleFlushAllPendingHistoriaClinicaLanSync();
-        });
-        void maybeRevertSurrogateToPrimary();
-      } else if (!ev.detail.connected && activeLiveSyncRoomId) {
-        setRoomSyncPhase(activeLiveSyncRoomId, RoomSyncPhase.degraded);
-        saveLocalRoomSnapshot(activeLiveSyncRoomId);
-        startLiveSyncReconnectLoop();
-        if (!lanClient.connected) scheduleSurrogateFailoverCheck();
-      }
-      syncLiveSyncStatusChrome();
-    });
-    if (typeof window !== "undefined") {
-      window.addEventListener("beforeunload", function() {
-        stopLanAutoDiscovery();
-        if (activeLiveSyncRoomId) saveLocalRoomSnapshot(activeLiveSyncRoomId);
-      });
-    }
-    _lanScanTimer = null;
-    LAN_SCAN_INTERVAL_MS = 5e3;
     windowHandlers3 = {
       toggleConnectionDropdown,
       closeConnectionDropdown,
@@ -26367,7 +26578,7 @@ function populateDowngradeSelect(select, entries) {
   });
   select.value = pickDefaultDowngradeVersion(entries);
 }
-async function refreshStableDowngradeSettings(deps) {
+async function refreshStableDowngradeSettings(deps2) {
   const section = document.getElementById("settings-downgrade-section");
   const select = document.getElementById("rpc-stable-downgrade-select");
   const btn = document.getElementById("settings-downgrade-stable-btn");
@@ -26415,7 +26626,7 @@ async function refreshStableDowngradeSettings(deps) {
     const version = select.value;
     if (!version) return;
     if (isBlockedByMinVersion(version, minVersion)) {
-      deps.showToast(
+      deps2.showToast(
         "Esa versi\xF3n ya no es compatible con tus datos (m\xEDnimo v" + minVersion + ").",
         "error"
       );
@@ -26424,7 +26635,7 @@ async function refreshStableDowngradeSettings(deps) {
     const entry2 = entries.find(function(e) {
       return e.version === version;
     });
-    deps.confirmDowngrade(version, entry2);
+    deps2.confirmDowngrade(version, entry2);
   };
   if (githubBtn) {
     githubBtn.disabled = false;
@@ -26436,20 +26647,20 @@ async function refreshStableDowngradeSettings(deps) {
   }
   return { entries, source };
 }
-function wireSettingsDowngradeAccordion(deps) {
+function wireSettingsDowngradeAccordion(deps2) {
   if (downgradeUiWired) return;
   const acc = document.getElementById("settings-accordion-updates");
   if (!acc) return;
   downgradeUiWired = true;
   acc.addEventListener("toggle", function() {
     if (!acc.open) return;
-    void refreshStableDowngradeSettings(deps);
+    void refreshStableDowngradeSettings(deps2);
   });
 }
-async function initStableDowngradeSettings(deps) {
-  downgradeDeps = deps;
-  wireSettingsDowngradeAccordion(deps);
-  await refreshStableDowngradeSettings(deps);
+async function initStableDowngradeSettings(deps2) {
+  downgradeDeps = deps2;
+  wireSettingsDowngradeAccordion(deps2);
+  await refreshStableDowngradeSettings(deps2);
 }
 function openSettingsDowngradeSection() {
   const settingsBtn = document.getElementById("settings-btn");
@@ -32210,7 +32421,7 @@ function hexToRgba(hex, alpha) {
   var b = parseInt(h.slice(4, 6), 16);
   return "rgba(" + r + "," + g3 + "," + b + "," + alpha + ")";
 }
-function createTendGroupModal(deps) {
+function createTendGroupModal(deps2) {
   var state = {
     sectionKey: null,
     patientId: null,
@@ -32290,7 +32501,7 @@ function createTendGroupModal(deps) {
       bar.className = "tend-group-table-hidden-bar tend-group-panels-hidden-bar";
       panelEl.insertBefore(bar, panelEl.firstChild);
     }
-    var esc31 = deps.esc;
+    var esc31 = deps2.esc;
     if (!hiddenFams.length) {
       bar.style.display = "none";
       bar.innerHTML = "";
@@ -32350,15 +32561,15 @@ function createTendGroupModal(deps) {
     if (wrap) wrap.innerHTML = "";
   }
   function requestCloseFromUi() {
-    if (typeof deps.onRequestClose === "function") {
-      deps.onRequestClose();
+    if (typeof deps2.onRequestClose === "function") {
+      deps2.onRequestClose();
     } else {
       closeModal2();
     }
   }
   function isAbnormal(set, sectionKey, fieldKey, val2, historyDesc) {
     if (val2 == null || !isFinite(val2)) return false;
-    var ref = deps.tendRefFromLabSet(set, sectionKey, fieldKey) || deps.tendRefForSeries(historyDesc, sectionKey, fieldKey, set);
+    var ref = deps2.tendRefFromLabSet(set, sectionKey, fieldKey) || deps2.tendRefForSeries(historyDesc, sectionKey, fieldKey, set);
     if (!ref) return false;
     return val2 < ref[0] || val2 > ref[1];
   }
@@ -32374,7 +32585,7 @@ function createTendGroupModal(deps) {
       bar.className = "tend-group-table-hidden-bar";
       wrap.insertBefore(bar, wrap.firstChild);
     }
-    var esc31 = deps.esc;
+    var esc31 = deps2.esc;
     var chips = [];
     hidden.cols.forEach(function(ck) {
       var label = ck;
@@ -32446,7 +32657,7 @@ function createTendGroupModal(deps) {
     return saved.indexOf(fieldKey) >= 0;
   }
   function eligibleSpecs(sectionKey, historyDesc) {
-    var catalog = deps.getCatalogSpecs(sectionKey, historyDesc) || [];
+    var catalog = deps2.getCatalogSpecs(sectionKey, historyDesc) || [];
     return catalog.filter(function(sp) {
       var raw = historyDesc.filter(function(s) {
         return getSetTrendValueForSeries(s, sectionKey, sp.fieldKey) != null;
@@ -32518,7 +32729,7 @@ function createTendGroupModal(deps) {
       }
     );
     state.tableModel = buildTableExportModel(sectionKey, raw, hidden);
-    var esc31 = deps.esc;
+    var esc31 = deps2.esc;
     var html = ['<div class="cultivos-table-wrap"><table id="tend-group-table" class="cultivos-table tend-group-table">'];
     html.push("<thead><tr><th>Analito</th>");
     raw.columns.forEach(function(set) {
@@ -32533,7 +32744,7 @@ function createTendGroupModal(deps) {
     raw.rows.forEach(function(row) {
       var rowHidden = hidden.rows.indexOf(row.fieldKey) >= 0;
       var spRow = state.specsByField[row.fieldKey];
-      var rowUnit = deps.tendUnitForSeries(sectionKey, row.fieldKey);
+      var rowUnit = deps2.tendUnitForSeries(sectionKey, row.fieldKey);
       var rowDisp = spRow ? formatTendSeriesLabel(spRow.cardTitle || row.fieldKey, row.fieldKey, rowUnit) : formatTendSeriesLabel(row.label, row.fieldKey, row.unit || rowUnit);
       var rowLabel = rowDisp.unit && rowDisp.unit !== "%" ? rowDisp.name + " (" + rowDisp.unit + ")" : rowDisp.name;
       html.push(
@@ -32586,7 +32797,7 @@ function createTendGroupModal(deps) {
     return readSeriesColor(sectionKey, fieldKey) || defaultSeriesColor(index);
   }
   function formatTooltipLine(sectionKey, spec, value) {
-    var unit = deps.tendUnitForSeries(sectionKey, spec.fieldKey);
+    var unit = deps2.tendUnitForSeries(sectionKey, spec.fieldKey);
     var parts = formatTendSeriesLabel(spec.cardTitle || spec.fieldKey, spec.fieldKey, unit);
     var valStr = formatTrendDisplayValue(value);
     if (parts.unit === "%") return parts.name + " \xB7 " + valStr + (valStr !== "\u2014" ? " %" : "");
@@ -32594,7 +32805,7 @@ function createTendGroupModal(deps) {
     return parts.name + " \xB7 " + valStr;
   }
   function legendLabelForSpec(sectionKey, spec) {
-    var unit = deps.tendUnitForSeries(sectionKey, spec.fieldKey);
+    var unit = deps2.tendUnitForSeries(sectionKey, spec.fieldKey);
     return formatTendSeriesLabel(spec.cardTitle || spec.fieldKey, spec.fieldKey, unit).name;
   }
   function specHasTrendPoints2(sectionKey, fieldKey) {
@@ -32605,7 +32816,7 @@ function createTendGroupModal(deps) {
   }
   function catalogSpecsForCharts(sectionKey) {
     if (sectionKey === "BH") {
-      return deps.getCatalogSpecs(sectionKey, state.historyDesc) || [];
+      return deps2.getCatalogSpecs(sectionKey, state.historyDesc) || [];
     }
     return Object.keys(state.specsByField).map(function(fk) {
       return state.specsByField[fk];
@@ -32618,7 +32829,7 @@ function createTendGroupModal(deps) {
   function ensureGasoExtendedDialog() {
     var bd = document.getElementById("tend-gaso-ext-backdrop");
     if (bd) return bd;
-    var escHtml7 = deps.esc || function(t2) {
+    var escHtml7 = deps2.esc || function(t2) {
       return String(t2 == null ? "" : t2);
     };
     bd = document.createElement("div");
@@ -32647,7 +32858,7 @@ function createTendGroupModal(deps) {
     return Math.min(Math.max(n, 0.08), 1);
   }
   function refillGasoExtendedSlot(slot, latest) {
-    var escHtml7 = deps.esc || function(t2) {
+    var escHtml7 = deps2.esc || function(t2) {
       return String(t2 == null ? "" : t2);
     };
     if (!slot) return;
@@ -32866,14 +33077,14 @@ function createTendGroupModal(deps) {
   }
   function openGasoExtended() {
     if (isAbgAnalysisHidden()) {
-      if (deps.showToast) deps.showToast("El an\xE1lisis de gasometr\xEDa no est\xE1 disponible en R+.", "info");
+      if (deps2.showToast) deps2.showToast("El an\xE1lisis de gasometr\xEDa no est\xE1 disponible en R+.", "info");
       return;
     }
-    var patientId = deps.getActiveId();
+    var patientId = deps2.getActiveId();
     if (!patientId) return;
-    var historyDesc = sortLabHistoryChronological(deps.getHistory() || []);
+    var historyDesc = sortLabHistoryChronological(deps2.getHistory() || []);
     if (!historyDesc.length) {
-      if (deps.showToast) deps.showToast("Sin laboratorio reciente para gasometr\xEDa.", "warn");
+      if (deps2.showToast) deps2.showToast("Sin laboratorio reciente para gasometr\xEDa.", "warn");
       return;
     }
     state.patientId = patientId;
@@ -32881,7 +33092,7 @@ function createTendGroupModal(deps) {
     var latest = historyDesc[0];
     var hasGaso = latest && latest.parsedBySection && latest.parsedBySection.GASES && serieNumFromLabSet(latest, "GASES", "pH") != null;
     if (!hasGaso) {
-      if (deps.showToast) deps.showToast("No hay gasometr\xEDa en el \xFAltimo estudio.", "warn");
+      if (deps2.showToast) deps2.showToast("No hay gasometr\xEDa en el \xFAltimo estudio.", "warn");
       return;
     }
     var bd = ensureGasoExtendedDialog();
@@ -32902,7 +33113,7 @@ function createTendGroupModal(deps) {
     catalogSpecs.forEach(function(sp, idx) {
       if (!sp) return;
       var fk = sp.fieldKey;
-      var unit = deps.tendUnitForSeries(sectionKey, fk);
+      var unit = deps2.tendUnitForSeries(sectionKey, fk);
       var fam = classifyTendPanelFamily(sectionKey, fk, unit);
       if (!families[fam]) families[fam] = [];
       families[fam].push({ spec: sp, index: idx });
@@ -33093,7 +33304,7 @@ function createTendGroupModal(deps) {
         yScale.grace = "5%";
       }
       try {
-        var chart = new deps.Chart(canvas, {
+        var chart = new deps2.Chart(canvas, {
           type: "line",
           data: { labels: chartLabels, datasets },
           options: {
@@ -33191,9 +33402,9 @@ function createTendGroupModal(deps) {
   }
   return {
     open: function(sectionKey) {
-      var patientId = deps.getActiveId();
+      var patientId = deps2.getActiveId();
       if (!patientId || !sectionKey) return;
-      var historyDesc = sortLabHistoryChronological(deps.getHistory() || []);
+      var historyDesc = sortLabHistoryChronological(deps2.getHistory() || []);
       if (historyDesc.length < 2) return;
       var eligible = eligibleSpecs(sectionKey, historyDesc);
       if (sectionKey === "BH") {
@@ -33210,14 +33421,14 @@ function createTendGroupModal(deps) {
       state.historyDesc = historyDesc;
       state.historyAsc = toAscendingHistory(historyDesc);
       state.specsByField = /* @__PURE__ */ Object.create(null);
-      var specsForModal = sectionKey === "BH" ? deps.getCatalogSpecs(sectionKey, historyDesc) || [] : eligible;
+      var specsForModal = sectionKey === "BH" ? deps2.getCatalogSpecs(sectionKey, historyDesc) || [] : eligible;
       specsForModal.forEach(function(sp) {
         state.specsByField[sp.fieldKey] = sp;
       });
       state.visibleFields = resolveVisibleFields(patientId, sectionKey, eligible.length ? eligible : specsForModal);
       var titleEl = document.getElementById("tend-group-title");
       if (titleEl) {
-        titleEl.textContent = (deps.getSectionLabel(sectionKey) || sectionKey) + " \u2014 Gr\xE1fica del estudio";
+        titleEl.textContent = (deps2.getSectionLabel(sectionKey) || sectionKey) + " \u2014 Gr\xE1fica del estudio";
       }
       var bd = backdropEl2();
       if (bd) {
@@ -33246,7 +33457,7 @@ function createTendGroupModal(deps) {
     setTab,
     copyTablePng: function() {
       if (!state.tableModel) {
-        if (deps.showToast) deps.showToast("No hay tabla para copiar", "error");
+        if (deps2.showToast) deps2.showToast("No hay tabla para copiar", "error");
         return;
       }
       var visibleCols = state.tableModel.columns.filter(function(c) {
@@ -33256,15 +33467,15 @@ function createTendGroupModal(deps) {
         return !r.hidden;
       });
       if (!visibleCols.length || !visibleRows.length) {
-        if (deps.showToast) {
-          deps.showToast("Muestra al menos una fila y una columna", "error");
+        if (deps2.showToast) {
+          deps2.showToast("Muestra al menos una fila y una columna", "error");
         }
         return;
       }
-      var title = (deps.getSectionLabel(state.sectionKey) || state.sectionKey || "Tabla") + " \u2014 Tendencias";
+      var title = (deps2.getSectionLabel(state.sectionKey) || state.sectionKey || "Tabla") + " \u2014 Tendencias";
       copyTableModelAsPng(state.tableModel, title, function(ok) {
-        if (deps.showToast) {
-          deps.showToast(
+        if (deps2.showToast) {
+          deps2.showToast(
             ok ? "Tabla copiada como imagen \u2713" : "No se pudo copiar la imagen",
             ok ? "success" : "error"
           );
@@ -33275,8 +33486,8 @@ function createTendGroupModal(deps) {
       if (!state.tableModel) return;
       var tsv = buildTableTsv(state.tableModel);
       copyTableText(tsv, function(ok) {
-        if (deps.showToast) {
-          deps.showToast(
+        if (deps2.showToast) {
+          deps2.showToast(
             ok ? "Tabla copiada al portapapeles" : "No se pudo copiar el texto",
             ok ? "success" : "error"
           );
@@ -41145,10 +41356,10 @@ function syncProfileModalLayout() {
   var st = settingsRef();
   var sala = isModeSala(st);
   var salida = document.getElementById("profile-salida-section");
-  var bridge = document.getElementById("profile-clinical-bridge");
+  var bridge3 = document.getElementById("profile-clinical-bridge");
   var servicioWrap = document.getElementById("profile-default-servicio-wrap");
   if (salida) salida.hidden = !sala;
-  if (bridge) bridge.hidden = !isDbMode();
+  if (bridge3) bridge3.hidden = !isDbMode();
   if (servicioWrap) servicioWrap.hidden = !sala;
 }
 function saveSettings() {
@@ -44970,8 +45181,8 @@ function buildIndicationChips(items, familyId, opts) {
   });
   return row;
 }
-function createManejoSomeUi(deps) {
-  var attachCopy3 = deps.attachCopy;
+function createManejoSomeUi(deps2) {
+  var attachCopy3 = deps2.attachCopy;
   function buildSomeField(label, text, copyText2, fieldOpts) {
     var allowCopy = fieldOpts && fieldOpts.forceCopy ? true : isManejoSomeCopyUiEnabled();
     if (!allowCopy) copyText2 = null;
@@ -45184,8 +45395,8 @@ var init_manejo_some_ui = __esm({
 function registerManejoAtbUiRuntime(partial) {
   if (partial && typeof partial === "object") Object.assign(atbRuntime, partial);
 }
-function configureManejoAtbReadingPanel(deps) {
-  readingPanelDeps = deps && typeof deps === "object" ? deps : {};
+function configureManejoAtbReadingPanel(deps2) {
+  readingPanelDeps = deps2 && typeof deps2 === "object" ? deps2 : {};
 }
 function getAtbSelectedId() {
   try {
@@ -48496,8 +48707,8 @@ var init_manejo_guia_state = __esm({
 function createManejoGuiaContext(api3) {
   return api3 && typeof api3 === "object" ? api3 : {};
 }
-function openManejoPathology(pathologyId, deps) {
-  deps = deps || {};
+function openManejoPathology(pathologyId, deps2) {
+  deps2 = deps2 || {};
   setPathologySelectedId(pathologyId || "");
   try {
     sessionStorage.setItem(MANEJO_SUBTAB_KEY, "guia");
@@ -48508,17 +48719,17 @@ function openManejoPathology(pathologyId, deps) {
     view: "lectura",
     entityId: String(pathologyId || "")
   });
-  if (typeof deps.renderManejo === "function") deps.renderManejo();
+  if (typeof deps2.renderManejo === "function") deps2.renderManejo();
 }
-function openManejoAtbDrug(drugId, deps) {
-  deps = deps || {};
+function openManejoAtbDrug(drugId, deps2) {
+  deps2 = deps2 || {};
   setAtbSelectedId(drugId || "");
   try {
     sessionStorage.setItem(MANEJO_SUBTAB_KEY, "guia");
   } catch (_eAtb) {
   }
   navigateGuia({ mode: "atb", view: "lectura", entityId: String(drugId || "") });
-  if (typeof deps.renderManejo === "function") deps.renderManejo();
+  if (typeof deps2.renderManejo === "function") deps2.renderManejo();
 }
 var MANEJO_SUBTAB_KEY;
 var init_manejo_guia_context = __esm({
@@ -49484,11 +49695,11 @@ function buildManejoProtoEditorSection(titleText) {
   sec.appendChild(grid);
   return { section: sec, grid };
 }
-function openManejoProtocolEditorModal(opts, deps) {
+function openManejoProtocolEditorModal(opts, deps2) {
   opts = opts || {};
-  deps = deps || {};
-  var renderManejo2 = deps.renderManejo;
-  var setProtoCategoryFilter2 = deps.setProtoCategoryFilter;
+  deps2 = deps2 || {};
+  var renderManejo2 = deps2.renderManejo;
+  var setProtoCategoryFilter2 = deps2.setProtoCategoryFilter;
   var existingBackdrop = document.querySelector(".manejo-proto-editor-backdrop");
   if (existingBackdrop) existingBackdrop.remove();
   var mode = opts.mode === "edit" ? "edit" : "add";
@@ -49812,8 +50023,8 @@ var init_manejo_dose_units = __esm({
 function registerManejoProtoDetailRuntime(partial) {
   if (partial && typeof partial === "object") Object.assign(rt23, partial);
 }
-function configureManejoProtoDetail(deps) {
-  protoDetailDeps = deps && typeof deps === "object" ? deps : {};
+function configureManejoProtoDetail(deps2) {
+  protoDetailDeps = deps2 && typeof deps2 === "object" ? deps2 : {};
   refreshSomeUi();
 }
 function refreshSomeUi() {
@@ -50405,8 +50616,8 @@ var init_manejo_proto_detail = __esm({
 });
 
 // public/js/features/manejo-proto-toolbar.mjs
-function configureManejoProtoToolbar(deps) {
-  toolbarDeps = deps && typeof deps === "object" ? deps : {};
+function configureManejoProtoToolbar(deps2) {
+  toolbarDeps = deps2 && typeof deps2 === "object" ? deps2 : {};
 }
 function copyToClipboard2(txt) {
   if (typeof toolbarDeps.copyToClipboard === "function") {
@@ -50885,8 +51096,8 @@ var init_manejo_proto_toolbar = __esm({
 function registerManejoCadAdaRuntime(partial) {
   if (partial && typeof partial === "object") Object.assign(rt24, partial);
 }
-function configureManejoCadAda(deps) {
-  cadAdaDeps = deps && typeof deps === "object" ? deps : {};
+function configureManejoCadAda(deps2) {
+  cadAdaDeps = deps2 && typeof deps2 === "object" ? deps2 : {};
   refreshCadSomeUi();
 }
 function refreshCadSomeUi() {
@@ -68464,11 +68675,11 @@ async function applyClinicalDbUnlockCompletion() {
   }
   try {
     var settingsMod = await Promise.resolve().then(() => (init_clinical_settings(), clinical_settings_exports));
-    var runtime4 = await Promise.resolve().then(() => (init_clinical_access_runtime(), clinical_access_runtime_exports));
+    var runtime7 = await Promise.resolve().then(() => (init_clinical_access_runtime(), clinical_access_runtime_exports));
     var settings2 = settingsMod.readRpcSettings();
     var clientId = settingsMod.resolveClinicalClientId(settings2);
-    if (runtime4 && typeof runtime4.initClinicalAccessRuntime === "function") {
-      await runtime4.initClinicalAccessRuntime(settings2, clientId);
+    if (runtime7 && typeof runtime7.initClinicalAccessRuntime === "function") {
+      await runtime7.initClinicalAccessRuntime(settings2, clientId);
     }
   } catch (err) {
     console.warn("[R+] Clinical runtime after unlock:", err && err.message);
