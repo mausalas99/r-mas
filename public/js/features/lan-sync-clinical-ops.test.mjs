@@ -49,6 +49,10 @@ describe('lan-sync clinical ops', () => {
     assert.match(lanSyncSrc, /function ensureEffectiveLiveSyncRoomId/);
     assert.match(lanSyncSrc, /refreshLanClinicalDirectoryFromRoom[\s\S]*ensureEffectiveLiveSyncRoomId/);
   });
+
+  it('mints a fresh LAN ticket when copying iPad or invite links', () => {
+    assert.match(lanSyncSrc, /ensureLanPairingForShare\(\{ forceNew: true \}\)/);
+  });
 });
 
 describe('clinical-profile-lan-sync', () => {

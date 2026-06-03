@@ -883,7 +883,7 @@
       "format": "esm"
     },
     "public/js/features/lan-sync.mjs": {
-      "bytes": 144502,
+      "bytes": 144598,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -6222,7 +6222,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 5088236
+      "bytes": 5088409
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -6473,7 +6473,7 @@
           "bytesInOutput": 5855
         },
         "public/js/features/lan-sync.mjs": {
-          "bytesInOutput": 128994
+          "bytesInOutput": 129072
         },
         "public/js/clinical-profile-lan-sync.mjs": {
           "bytesInOutput": 2470
@@ -7061,7 +7061,7 @@
           "bytesInOutput": 950
         }
       },
-      "bytes": 2875625
+      "bytes": 2875703
     }
   }
 }

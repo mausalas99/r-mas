@@ -18336,7 +18336,7 @@ async function generateMobilePairingLink() {
     return "";
   }
   try {
-    var share = await ensureLanPairingForShare();
+    var share = await ensureLanPairingForShare({ forceNew: true });
     return appendMobileLanJoinHintParams(
       buildShareJoinUrl(share.hostUrl, share.pairing.ticketId)
     );
@@ -18473,14 +18473,15 @@ async function resetLanSquadHostStateFromUi() {
     runtime2.showToast(res && res.error ? res.error : "No se pudo borrar el archivo.", "error");
   }
 }
-async function ensureLanPairingForShare() {
+async function ensureLanPairingForShare(opts) {
+  opts = opts || {};
   var hostUrl = await resolveLanHostUrlForShare();
   if (!hostUrl) {
     var errUrl = new Error("no_host_url");
     errUrl.code = "no_host_url";
     throw errUrl;
   }
-  if (!_lastLanPairing || !_lastLanPairing.ticketId) {
+  if (opts.forceNew || !_lastLanPairing || !_lastLanPairing.ticketId) {
     await mintLanPairingTicket();
   }
   if (!_lastLanPairing || !_lastLanPairing.ticketId) {
@@ -18495,7 +18496,7 @@ async function copyLanInviteLinkFromUi(opts) {
   var silent = !!opts.silent;
   var share;
   try {
-    share = await ensureLanPairingForShare();
+    share = await ensureLanPairingForShare({ forceNew: true });
   } catch (e) {
     if (!silent) {
       if (e && e.code === "no_host_url") {
