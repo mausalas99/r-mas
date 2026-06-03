@@ -39,6 +39,10 @@ describe('lan-sync clinical ops', () => {
   it('exports immediate clinical ops push after @usuario registration', () => {
     assert.match(lanSyncSrc, /export async function pushClinicalOpsLanNow/);
   });
+
+  it('mints a fresh LAN ticket when copying iPad or invite links', () => {
+    assert.match(lanSyncSrc, /ensureLanPairingForShare\(\{ forceNew: true \}\)/);
+  });
 });
 
 describe('clinical-profile-lan-sync', () => {
