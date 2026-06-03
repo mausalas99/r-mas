@@ -26723,6 +26723,7 @@ var init_unified_patient_grid_board = __esm({
         const name = String(p.name || "").toUpperCase();
         const dx = String(p.dxText || "Sin diagn\xF3stico registrado");
         const pending2 = Number(p.pendingCount || 0);
+        const pendingLabel = pending2 > 0 ? `<span class="patient-chip-tasks">\u{1F4CB} ${pending2} Pendiente${pending2 === 1 ? "" : "s"}</span>` : "";
         const labs = String(p.labsSnippet || "\u2014");
         const dotClass = critical ? "dot-alta" : "dot-media";
         card.innerHTML = `
@@ -26737,7 +26738,7 @@ var init_unified_patient_grid_board = __esm({
         <div class="vitals-banner ${vitals.cls}">${vitals.str}${alteredBadge}</div>
       </div>
       <div class="patient-chip-footer">
-        <span class="patient-chip-tasks">\u{1F4CB} ${pending2} Pendiente${pending2 === 1 ? "" : "s"}</span>
+        ${pendingLabel}
         <span class="patient-chip-labs">${labs}</span>
       </div>`;
         card.addEventListener("click", () => {
@@ -26806,6 +26807,11 @@ function normalizePendientesJson(raw) {
 }
 function serializePendientesJson(doc) {
   return JSON.stringify(normalizePendientesJson(doc));
+}
+function listActiveProcedimientos(doc) {
+  return normalizePendientesJson(doc).items.filter(
+    (it) => (it.type === "procedimiento" || it.type === "legacy_text") && !it.completedAt
+  );
 }
 function pendingRequirementBadges(item) {
   const badges = [];
@@ -27676,12 +27682,13 @@ function enrichPatientForGuardiaCard(p, guardiasMap) {
   const dxList = Array.isArray(p.diagnosticosList) ? p.diagnosticosList : [];
   const dxText = diagnosticosTextForCenso(dxList, { max: 2 }) || String(p.diagnosticosText || p.motivo || "").trim() || "Sin diagn\xF3stico registrado";
   const openTodos = pendingTodoCount(base.id);
+  const pendingCount = g3?.pendientes_json ? listActiveProcedimientos(normalizePendientesJson(g3.pendientes_json)).length : 0;
   const vitalsAltered = lastMedicionHasAlterations(p);
   const isCritical = !!(g3?.is_critical || vitalsAltered || openTodos > 0 && storage.getTodos(base.id).some((t2) => !t2.completed && t2.priority === "alta"));
   return {
     ...base,
     dxText: dxText.toUpperCase(),
-    pendingCount: openTodos,
+    pendingCount,
     labsSnippet: labsSnippetForPatient(base.id),
     isCritical,
     vitalsAltered,
@@ -27808,6 +27815,7 @@ var init_guardia_board = __esm({
     init_clinical_teams();
     init_clinical_entrega();
     init_clinical_access_runtime();
+    init_entrega_pendientes();
     gridBoard = null;
     gridModeControlsWired = false;
     appShellInstalled = false;

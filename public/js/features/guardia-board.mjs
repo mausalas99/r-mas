@@ -18,11 +18,16 @@ import { UnifiedPatientGridBoard } from './unified-patient-grid-board.mjs';
 import { syncGuardiaIncomingStrip, syncRotationConfigButton } from './clinical-rotation.mjs';
 import { wireClinicalTeamsControls } from './clinical-teams.mjs';
 import {
+  getEntregaPhase,
   loadGuardiaGridViewContext,
   openEntregaModal,
-  saveGuardiaGridMode,
+  toggleEntregaPhase,
 } from './clinical-entrega.mjs';
 import { refreshGuardiaCensusFromDb } from '../clinical-access-runtime.mjs';
+import {
+  listActiveProcedimientos,
+  normalizePendientesJson,
+} from '../../../lib/entrega/entrega-pendientes.mjs';
 
 /** @type {UnifiedPatientGridBoard|null} */
 let gridBoard = null;
@@ -36,35 +41,48 @@ function installGuardiaAppShell() {
   window.appShell.openEntregaModal = openEntregaModal;
 }
 
-function wireGuardiaGridModeToggle(settings) {
+function syncEntregaPhaseChrome() {
+  const btn = document.getElementById('btn-guardia-entrega-phase');
+  const status = document.getElementById('guardia-entrega-phase-status');
+  const phase = getEntregaPhase();
+  const active = !!phase?.active;
+
+  if (btn) {
+    btn.classList.toggle('is-active', active);
+    btn.setAttribute('aria-pressed', String(active));
+    btn.textContent = active ? 'Salir de entrega' : 'Entrega';
+    btn.title = active
+      ? 'Terminar fase de entrega y volver al censo'
+      : 'Iniciar entrega al R1 de guardia de tu sala';
+  }
+
+  if (status) {
+    if (active && phase?.coveringLabel) {
+      status.hidden = false;
+      status.textContent = `Entregando a ${phase.coveringLabel} · toca un paciente en el censo`;
+    } else {
+      status.hidden = true;
+      status.textContent = '';
+    }
+  }
+}
+
+function wireGuardiaEntregaPhaseButton(settings) {
   if (gridModeControlsWired) return;
   gridModeControlsWired = true;
 
-  const censoBtn = document.getElementById('guardia-grid-mode-censo');
-  const entregaBtn = document.getElementById('guardia-grid-mode-entrega');
-  if (!censoBtn || !entregaBtn) return;
+  const btn = document.getElementById('btn-guardia-entrega-phase');
+  if (!btn) return;
 
-  const syncButtons = (mode) => {
-    const isEntrega = mode === 'entrega';
-    censoBtn.classList.toggle('is-active', !isEntrega);
-    entregaBtn.classList.toggle('is-active', isEntrega);
-    censoBtn.setAttribute('aria-pressed', String(!isEntrega));
-    entregaBtn.setAttribute('aria-pressed', String(isEntrega));
-  };
+  syncEntregaPhaseChrome();
 
-  const applyMode = (mode) => {
-    saveGuardiaGridMode(mode);
-    syncButtons(mode);
-    if (gridBoard) {
-      gridBoard.setViewContext(mode === 'entrega' ? 'HANDOFF' : 'GUARDIA');
-    }
-    renderGuardiaBoard(settings);
-  };
-
-  syncButtons(loadGuardiaGridViewContext() === 'HANDOFF' ? 'entrega' : 'censo');
-
-  censoBtn.addEventListener('click', () => applyMode('censo'));
-  entregaBtn.addEventListener('click', () => applyMode('entrega'));
+  btn.addEventListener('click', () => {
+    toggleEntregaPhase({
+      settings,
+      renderGuardiaBoard,
+    });
+    syncEntregaPhaseChrome();
+  });
 }
 
 /** @param {string} pid */
@@ -88,6 +106,18 @@ function labsSnippetForPatient(pid) {
  * @param {Record<string, unknown>} p
  * @param {Map<string, object>} guardiasMap
  */
+function lastMedicionHasAlterations(p) {
+  const hist = p?.monitoreo?.historial;
+  if (!Array.isArray(hist) || !hist.length) return false;
+  const last = hist[hist.length - 1];
+  const alt = last && typeof last === 'object' ? /** @type {any} */ (last).alteredAt : null;
+  return !!(alt && typeof alt === 'object' && Object.keys(alt).length > 0);
+}
+
+/**
+ * @param {Record<string, unknown>} p
+ * @param {Map<string, object>} guardiasMap
+ */
 function enrichPatientForGuardiaCard(p, guardiasMap) {
   const base = mapPatientForGuardiaGrid(p);
   const g = guardiasMap.get(base.id);
@@ -97,13 +127,22 @@ function enrichPatientForGuardiaCard(p, guardiasMap) {
     String(p.diagnosticosText || p.motivo || '').trim() ||
     'Sin diagnóstico registrado';
   const openTodos = pendingTodoCount(base.id);
-  const isCritical = !!(g?.is_critical || openTodos > 0 && storage.getTodos(base.id).some((t) => !t.completed && t.priority === 'alta'));
+  const pendingCount = g?.pendientes_json
+    ? listActiveProcedimientos(normalizePendientesJson(g.pendientes_json)).length
+    : 0;
+  const vitalsAltered = lastMedicionHasAlterations(p);
+  const isCritical = !!(
+    g?.is_critical ||
+    vitalsAltered ||
+    (openTodos > 0 && storage.getTodos(base.id).some((t) => !t.completed && t.priority === 'alta'))
+  );
   return {
     ...base,
     dxText: dxText.toUpperCase(),
-    pendingCount: openTodos,
+    pendingCount,
     labsSnippet: labsSnippetForPatient(base.id),
     isCritical,
+    vitalsAltered,
     guardiaMeta: g,
   };
 }
@@ -180,7 +219,8 @@ export function renderGuardiaBoard(settings) {
     .map((p) => enrichPatientForGuardiaCard(p, guardiasMap));
 
   const gridViewContext = loadGuardiaGridViewContext();
-  wireGuardiaGridModeToggle(settings);
+  wireGuardiaEntregaPhaseButton(settings);
+  syncEntregaPhaseChrome();
   wireGuardiaModeToggle(settings);
   syncRotationConfigButton();
 

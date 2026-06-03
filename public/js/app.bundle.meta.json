@@ -1567,7 +1567,7 @@
       "format": "esm"
     },
     "public/js/features/unified-patient-grid-board.mjs": {
-      "bytes": 6870,
+      "bytes": 6955,
       "imports": [],
       "format": "esm"
     },
@@ -1629,7 +1629,7 @@
       "format": "esm"
     },
     "public/js/features/guardia-board.mjs": {
-      "bytes": 9981,
+      "bytes": 10221,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -1695,6 +1695,11 @@
           "path": "public/js/clinical-access-runtime.mjs",
           "kind": "import-statement",
           "original": "../clinical-access-runtime.mjs"
+        },
+        {
+          "path": "lib/entrega/entrega-pendientes.mjs",
+          "kind": "import-statement",
+          "original": "../../../lib/entrega/entrega-pendientes.mjs"
         }
       ],
       "format": "esm"
@@ -5969,7 +5974,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 4930705
+      "bytes": 4931289
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -6280,10 +6285,10 @@
           "bytesInOutput": 15535
         },
         "public/js/features/unified-patient-grid-board.mjs": {
-          "bytesInOutput": 6993
+          "bytesInOutput": 7061
         },
         "lib/entrega/entrega-pendientes.mjs": {
-          "bytesInOutput": 2424
+          "bytesInOutput": 2614
         },
         "public/js/features/entrega-modal-ui.mjs": {
           "bytesInOutput": 16121
@@ -6292,7 +6297,7 @@
           "bytesInOutput": 14599
         },
         "public/js/features/guardia-board.mjs": {
-          "bytesInOutput": 8566
+          "bytesInOutput": 8713
         },
         "public/js/rpc-date-picker.mjs": {
           "bytesInOutput": 11416
@@ -6787,7 +6792,7 @@
           "bytesInOutput": 950
         }
       },
-      "bytes": 2783255
+      "bytes": 2783660
     }
   }
 }

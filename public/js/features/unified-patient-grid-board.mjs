@@ -146,10 +146,17 @@ export class UnifiedPatientGridBoard {
 
     const dnr = p.negativa_maniobras_firmada ? '<span class="dnr-badge">DNR</span>' : '';
     const vitals = calcVitalsBanner(meta?.last_vitals_check, meta?.vitals_frequency);
+    const alteredBadge = p.vitalsAltered
+      ? '<span class="vitals-altered-badge" title="Signos alterados (interno)">⚠ Alterado</span>'
+      : '';
     const bed = p.bed_label ? `Cama ${p.bed_label}` : 'Sin cama';
     const name = String(p.name || '').toUpperCase();
     const dx = String(p.dxText || 'Sin diagnóstico registrado');
     const pending = Number(p.pendingCount || 0);
+    const pendingLabel =
+      pending > 0
+        ? `<span class="patient-chip-tasks">📋 ${pending} Pendiente${pending === 1 ? '' : 's'}</span>`
+        : '';
     const labs = String(p.labsSnippet || '—');
     const dotClass = critical ? 'dot-alta' : 'dot-media';
 
@@ -162,10 +169,10 @@ export class UnifiedPatientGridBoard {
       <div class="patient-chip-body">
         ${dnr ? `<div class="patient-chip-dnr-row">${dnr}</div>` : ''}
         <p class="patient-chip-dx">${dx}</p>
-        <div class="vitals-banner ${vitals.cls}">${vitals.str}</div>
+        <div class="vitals-banner ${vitals.cls}">${vitals.str}${alteredBadge}</div>
       </div>
       <div class="patient-chip-footer">
-        <span class="patient-chip-tasks">📋 ${pending} Pendiente${pending === 1 ? '' : 's'}</span>
+        ${pendingLabel}
         <span class="patient-chip-labs">${labs}</span>
       </div>`;
 
