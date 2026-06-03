@@ -941,6 +941,7 @@
               <details class="lab-history-more">
                 <summary class="lab-history-more-btn" aria-label="Más acciones del historial">⋯</summary>
                 <div class="lab-history-more-menu" role="menu">
+                  <button type="button" class="lab-history-more-item" role="menuitem" onclick="closeLabHistoryMoreMenu(); openLabHistoryBatchCopyModal();" title="Elegir varios días del historial y copiar el texto de estudios al portapapeles">Copiar varios días…</button>
                   <button type="button" class="lab-history-more-item" role="menuitem" onclick="closeLabHistoryMoreMenu(); consolidateLabHistoryByDayAndTipo();" title="Une en una sola entrada los envíos del mismo día (aunque la hora difiera) si todos son solo laboratorio o todos solo cultivos; ante el mismo panel se prioriza SOME; los conjuntos mixtos no se tocan.">Consolidar</button>
                   <button type="button" class="lab-history-more-item" role="menuitem" onclick="closeLabHistoryMoreMenu(); openLabHistoryDedupeReview('active');" title="Abrir checklist: duplicados exactos y posibles coincidencias por fecha/hora y valores">Sincronizar</button>
                 </div>

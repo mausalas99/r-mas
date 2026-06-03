@@ -27,6 +27,8 @@ const {
   ensureParsedLabHistory,
   rebuildEstudiosFromLabHistory,
   labSetIsFromSome,
+  groupLabHistoryByDay,
+  buildEstudiosCopyLinesFromLabSets,
 } = await import('./lab-history-set.mjs');
 
 const PATIENT_ID = 'lab-loop-patient';
@@ -99,5 +101,22 @@ describe('lab-history-set', () => {
       labSetIsFromSome({ sourceText: '02/06\nBH Hb 8.95*', resLabs: [] }),
       false,
     );
+  });
+
+  it('groupLabHistoryByDay y buildEstudiosCopyLinesFromLabSets filtran días', () => {
+    const sets = [
+      { id: '1', fecha: '01/06/2026', hora: '08:00', resLabs: ['BH\tHb 10'] },
+      { id: '2', fecha: '01/06/2026', hora: '14:00', resLabs: ['QS\tGlu 100'] },
+      { id: '3', fecha: '02/06/2026', hora: '09:00', resLabs: ['BH\tHb 12'] },
+    ];
+    const groups = groupLabHistoryByDay(sets);
+    assert.equal(groups.length, 2);
+    assert.equal(groups[1].sets.length, 2);
+    const dk = groups[1].dayKey;
+    const lines = buildEstudiosCopyLinesFromLabSets(sets, { onlyDayKeys: [dk] });
+    const text = lines.join('\n');
+    assert.match(text, /Hb 10/);
+    assert.match(text, /Glu 100/);
+    assert.doesNotMatch(text, /Hb 12/);
   });
 });

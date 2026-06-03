@@ -31,6 +31,7 @@ import {
 } from './features/patients.mjs';
 import { windowHandlers as labPanelWindowHandlers, renderLabHistoryPanel } from './features/lab-panel.mjs';
 import { windowHandlers as labBulkPreviewWindowHandlers } from './features/lab-bulk-preview-modal.mjs';
+import { windowHandlers as labHistoryBatchCopyWindowHandlers } from './features/lab-history-batch-copy-modal.mjs';
 import { windowHandlers as soapEstadoWindowHandlers } from './features/soap-estado.mjs';
 import { windowHandlers as estadoActualPanelWindowHandlers } from './features/estado-actual-panel.mjs';
 import { windowHandlers as estadoActualPasteWindowHandlers } from './features/estado-actual-paste-modal.mjs';
@@ -77,6 +78,7 @@ const allWindowHandlers = Object.assign(
   patientsWindowHandlers,
   labPanelWindowHandlers,
   labBulkPreviewWindowHandlers,
+  labHistoryBatchCopyWindowHandlers,
   soapEstadoWindowHandlers,
   estadoActualPanelWindowHandlers,
   estadoActualPasteWindowHandlers,

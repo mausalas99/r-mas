@@ -228,36 +228,67 @@ export function primaryTipoForLabSet(resLabs) {
   return 'labs';
 }
 
-export function rebuildEstudiosFromLabHistory(patientId) {
-  if (!patientId) return;
-  if (!notes[patientId]) notes[patientId] = {};
-  var ordered = sortLabHistoryChronological(
-    ensureParsedLabHistory(patientId, { skipRebuildNota: true })
-  );
-  if (!ordered.length) {
-    notes[patientId].estudios = '';
-    return;
+function sortLabSetsWithinDay(a, b) {
+  var ta = parseFechaLabToMs(a.fecha, a.hora);
+  var tb = parseFechaLabToMs(b.fecha, b.hora);
+  if (typeof ta === 'number' && typeof tb === 'number' && isFinite(ta) && isFinite(tb) && ta !== tb) {
+    return tb - ta;
   }
+  return compareLabSetIdForDedupe(a, b);
+}
+
+function sortLabHistoryDayKeys(a, b) {
+  if (a === 'Anterior') return 1;
+  if (b === 'Anterior') return -1;
+  return dayKeyToSortMs(b) - dayKeyToSortMs(a);
+}
+
+function dayGroupLabel(dayKey, sets) {
+  if (dayKey === 'Anterior') return 'Anterior';
+  var header = sets[0];
+  var dateLine = buildLabSetDateLineForNota(header) || dayKey;
+  if (sets.length > 1) return dateLine + ' · ' + sets.length + ' envíos';
+  return dateLine;
+}
+
+/**
+ * Agrupa conjuntos de historial por día calendario (más reciente primero).
+ * @param {unknown[]} orderedSets
+ * @returns {Array<{ dayKey: string, sets: unknown[], label: string }>}
+ */
+export function groupLabHistoryByDay(orderedSets) {
   var byDay = Object.create(null);
-  ordered.forEach(function (set) {
+  (orderedSets || []).forEach(function (set) {
     if (!set || !set.resLabs || !set.resLabs.length) return;
     var dk = dayKeyFromLabSet(set);
-    if (!byDay[dk]) byDay[dk] = { sets: [] };
+    if (!byDay[dk]) byDay[dk] = { dayKey: dk, sets: [] };
     byDay[dk].sets.push(set);
   });
-  var dayKeys = Object.keys(byDay).sort(function (a, b) {
-    if (a === 'Anterior') return 1;
-    if (b === 'Anterior') return -1;
-    return dayKeyToSortMs(b) - dayKeyToSortMs(a);
-  });
-  var lines = [];
-  dayKeys.forEach(function (dk) {
-    var sets = byDay[dk].sets.slice().sort(function (a, b) {
-      var ta = parseFechaLabToMs(a.fecha, a.hora);
-      var tb = parseFechaLabToMs(b.fecha, b.hora);
-      if (typeof ta === 'number' && typeof tb === 'number' && isFinite(ta) && isFinite(tb) && ta !== tb) return tb - ta;
-      return compareLabSetIdForDedupe(a, b);
+  return Object.keys(byDay)
+    .sort(sortLabHistoryDayKeys)
+    .map(function (dk) {
+      var sets = byDay[dk].sets.slice().sort(sortLabSetsWithinDay);
+      return { dayKey: dk, sets: sets, label: dayGroupLabel(dk, sets) };
     });
+}
+
+/**
+ * Texto de estudios (mismo formato que expediente) para uno o más días del historial.
+ * @param {unknown[]} orderedSets
+ * @param {{ onlyDayKeys?: Set<string>|string[] }} [options]
+ * @returns {string[]}
+ */
+export function buildEstudiosCopyLinesFromLabSets(orderedSets, options) {
+  var only = options && options.onlyDayKeys;
+  var allowDay = null;
+  if (only) {
+    allowDay = only instanceof Set ? only : new Set(only);
+  }
+  var groups = groupLabHistoryByDay(orderedSets);
+  var lines = [];
+  groups.forEach(function (group) {
+    if (allowDay && !allowDay.has(group.dayKey)) return;
+    var sets = group.sets;
     var labsAcc = [];
     var cultAcc = [];
     var seenLab = Object.create(null);
@@ -282,8 +313,7 @@ export function rebuildEstudiosFromLabHistory(patientId) {
       });
     });
     if (!labsAcc.length && !cultAcc.length) return;
-    var headerSet = sets[0];
-    var dateLine = buildLabSetDateLineForNota(headerSet);
+    var dateLine = buildLabSetDateLineForNota(sets[0]);
     if (dateLine) lines.push(dateLine);
     if (labsAcc.length) {
       labsAcc.forEach(function (row) {
@@ -302,7 +332,20 @@ export function rebuildEstudiosFromLabHistory(patientId) {
     lines.push('');
   });
   while (lines.length && !String(lines[lines.length - 1]).trim()) lines.pop();
-  notes[patientId].estudios = lines.join('\n');
+  return lines;
+}
+
+export function rebuildEstudiosFromLabHistory(patientId) {
+  if (!patientId) return;
+  if (!notes[patientId]) notes[patientId] = {};
+  var ordered = sortLabHistoryChronological(
+    ensureParsedLabHistory(patientId, { skipRebuildNota: true })
+  );
+  if (!ordered.length) {
+    notes[patientId].estudios = '';
+    return;
+  }
+  notes[patientId].estudios = buildEstudiosCopyLinesFromLabSets(ordered).join('\n');
 }
 
 export function ensureParsedLabHistory(patientId, options) {
