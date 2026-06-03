@@ -373,7 +373,7 @@
       "format": "esm"
     },
     "public/js/clinical-privileges.mjs": {
-      "bytes": 1832,
+      "bytes": 2004,
       "imports": [],
       "format": "esm"
     },
@@ -783,7 +783,7 @@
       "format": "esm"
     },
     "public/js/clinical-ops-bundle-merge.mjs": {
-      "bytes": 7188,
+      "bytes": 8250,
       "imports": [],
       "format": "esm"
     },
@@ -4692,7 +4692,7 @@
       "format": "esm"
     },
     "public/js/features/clinical-teams.mjs": {
-      "bytes": 86998,
+      "bytes": 89668,
       "imports": [
         {
           "path": "public/js/clinical-access-runtime.mjs",
@@ -4763,6 +4763,11 @@
           "path": "public/js/features/clinical-rotation-entry.mjs",
           "kind": "dynamic-import",
           "original": "./clinical-rotation-entry.mjs"
+        },
+        {
+          "path": "public/js/clinical-profile-lan-sync.mjs",
+          "kind": "dynamic-import",
+          "original": "../clinical-profile-lan-sync.mjs"
         },
         {
           "path": "public/js/features/lan-sync.mjs",
@@ -6217,7 +6222,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 5081923
+      "bytes": 5088236
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -6327,7 +6332,7 @@
           "bytesInOutput": 7697
         },
         "public/js/clinical-privileges.mjs": {
-          "bytesInOutput": 1134
+          "bytesInOutput": 1215
         },
         "public/js/features/clinical-rotation.mjs": {
           "bytesInOutput": 9176
@@ -6444,7 +6449,7 @@
           "bytesInOutput": 2908
         },
         "public/js/clinical-ops-bundle-merge.mjs": {
-          "bytesInOutput": 7162
+          "bytesInOutput": 8267
         },
         "public/js/clinical-ops-lan.mjs": {
           "bytesInOutput": 1570
@@ -6951,7 +6956,7 @@
           "bytesInOutput": 59778
         },
         "public/js/features/clinical-teams.mjs": {
-          "bytesInOutput": 84805
+          "bytesInOutput": 87375
         },
         "public/js/features/entrega-modal-ui.mjs": {
           "bytesInOutput": 48393
@@ -7056,7 +7061,7 @@
           "bytesInOutput": 950
         }
       },
-      "bytes": 2871869
+      "bytes": 2875625
     }
   }
 }

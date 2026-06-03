@@ -110,6 +110,19 @@ function isValidUsernameFormat(raw) {
   return /^[a-z][a-z0-9_]{2,31}$/.test(normalizeUsername(raw));
 }
 
+function mergeClinicalUsersDeletedData(localIds, incomingIds) {
+  const set = new Set();
+  for (const id of localIds || []) {
+    const uid = String(id || '').trim();
+    if (uid) set.add(uid);
+  }
+  for (const id of incomingIds || []) {
+    const uid = String(id || '').trim();
+    if (uid) set.add(uid);
+  }
+  return [...set];
+}
+
 function mergeClinicalUsersData(localRows, incomingRows) {
   const byUsername = new Map();
   const byUserId = new Map();
@@ -152,12 +165,22 @@ export function mergeClinicalOpsSnapshotsData(local, incoming) {
   const remoteNueva = incoming.rotationNuevaAt ? String(incoming.rotationNuevaAt) : '';
   const localNueva = local.rotationNuevaAt ? String(local.rotationNuevaAt) : '';
   if (remoteNueva && (!localNueva || remoteNueva > localNueva)) {
+    const clinical_users_deleted = mergeClinicalUsersDeletedData(
+      local.clinical_users_deleted || [],
+      incoming.clinical_users_deleted || []
+    );
+    const deletedSet = new Set(clinical_users_deleted);
     return {
       ...incoming,
       exportedAt:
         String(incoming.exportedAt || '') >= String(local.exportedAt || '')
           ? incoming.exportedAt
           : local.exportedAt,
+      clinical_users_deleted,
+      clinical_users: mergeClinicalUsersData(
+        local.clinical_users || [],
+        incoming.clinical_users || []
+      ).filter((row) => !deletedSet.has(String(row?.user_id || ''))),
     };
   }
 
@@ -165,6 +188,12 @@ export function mergeClinicalOpsSnapshotsData(local, incoming) {
     String(incoming.exportedAt || '') >= String(local.exportedAt || '')
       ? incoming.exportedAt
       : local.exportedAt;
+
+  const clinical_users_deleted = mergeClinicalUsersDeletedData(
+    local.clinical_users_deleted || [],
+    incoming.clinical_users_deleted || []
+  );
+  const deletedSet = new Set(clinical_users_deleted);
 
   return {
     version: Math.max(Number(local.version || 1), Number(incoming.version || 1)),
@@ -194,7 +223,8 @@ export function mergeClinicalOpsSnapshotsData(local, incoming) {
     clinical_users: mergeClinicalUsersData(
       local.clinical_users || [],
       incoming.clinical_users || []
-    ),
+    ).filter((row) => !deletedSet.has(String(row?.user_id || ''))),
+    clinical_users_deleted,
   };
 }
 

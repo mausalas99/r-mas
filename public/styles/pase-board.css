@@ -2859,6 +2859,20 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
   white-space: nowrap;
 }
 
+.clinical-lan-users-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.clinical-lan-users-table--assign .clinical-lan-delete-user-btn {
+  min-height: 34px;
+  padding-inline: 10px;
+  white-space: nowrap;
+}
+
 .clinical-teams-create-form--elevated {
   grid-template-columns: 1fr !important;
 }

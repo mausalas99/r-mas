@@ -206,6 +206,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbClinicalUsersList: function(opts) {
     return ipcRenderer.invoke('db:clinical-users-list', opts);
   },
+  dbClinicalUserDelete: function(opts) {
+    return ipcRenderer.invoke('db:clinical-user-delete', opts);
+  },
   dbClinicalTeamResolveCode: function(opts) {
     return ipcRenderer.invoke('db:clinical-team-resolve-code', opts);
   },

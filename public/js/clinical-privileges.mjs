@@ -48,3 +48,8 @@ export function canViewLanUserDirectory(user) {
 export function canManageTeamRoster(user) {
   return hasElevatedTeamPrivileges(user);
 }
+
+/** Remove LAN directory users from the clinical DB (R4, Admin, program admin). */
+export function canDeleteLanDirectoryUser(user) {
+  return canManageTeamRoster(user);
+}

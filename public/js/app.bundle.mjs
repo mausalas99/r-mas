@@ -6008,6 +6008,9 @@ function canViewLanUserDirectory(user) {
 function canManageTeamRoster(user) {
   return hasElevatedTeamPrivileges(user);
 }
+function canDeleteLanDirectoryUser(user) {
+  return canManageTeamRoster(user);
+}
 var CLINICAL_RANKS;
 var init_clinical_privileges = __esm({
   "public/js/clinical-privileges.mjs"() {
@@ -15030,6 +15033,18 @@ function normalizeUsername2(raw) {
 function isValidUsernameFormat2(raw) {
   return /^[a-z][a-z0-9_]{2,31}$/.test(normalizeUsername2(raw));
 }
+function mergeClinicalUsersDeletedData(localIds, incomingIds) {
+  const set = /* @__PURE__ */ new Set();
+  for (const id of localIds || []) {
+    const uid = String(id || "").trim();
+    if (uid) set.add(uid);
+  }
+  for (const id of incomingIds || []) {
+    const uid = String(id || "").trim();
+    if (uid) set.add(uid);
+  }
+  return [...set];
+}
 function mergeClinicalUsersData(localRows, incomingRows) {
   const byUsername = /* @__PURE__ */ new Map();
   const byUserId = /* @__PURE__ */ new Map();
@@ -15066,12 +15081,27 @@ function mergeClinicalOpsSnapshotsData(local, incoming) {
   const remoteNueva = incoming.rotationNuevaAt ? String(incoming.rotationNuevaAt) : "";
   const localNueva = local.rotationNuevaAt ? String(local.rotationNuevaAt) : "";
   if (remoteNueva && (!localNueva || remoteNueva > localNueva)) {
+    const clinical_users_deleted2 = mergeClinicalUsersDeletedData(
+      local.clinical_users_deleted || [],
+      incoming.clinical_users_deleted || []
+    );
+    const deletedSet2 = new Set(clinical_users_deleted2);
     return {
       ...incoming,
-      exportedAt: String(incoming.exportedAt || "") >= String(local.exportedAt || "") ? incoming.exportedAt : local.exportedAt
+      exportedAt: String(incoming.exportedAt || "") >= String(local.exportedAt || "") ? incoming.exportedAt : local.exportedAt,
+      clinical_users_deleted: clinical_users_deleted2,
+      clinical_users: mergeClinicalUsersData(
+        local.clinical_users || [],
+        incoming.clinical_users || []
+      ).filter((row) => !deletedSet2.has(String(row?.user_id || "")))
     };
   }
   const exportedAt = String(incoming.exportedAt || "") >= String(local.exportedAt || "") ? incoming.exportedAt : local.exportedAt;
+  const clinical_users_deleted = mergeClinicalUsersDeletedData(
+    local.clinical_users_deleted || [],
+    incoming.clinical_users_deleted || []
+  );
+  const deletedSet = new Set(clinical_users_deleted);
   return {
     version: Math.max(Number(local.version || 1), Number(incoming.version || 1)),
     exportedAt,
@@ -15100,7 +15130,8 @@ function mergeClinicalOpsSnapshotsData(local, incoming) {
     clinical_users: mergeClinicalUsersData(
       local.clinical_users || [],
       incoming.clinical_users || []
-    )
+    ).filter((row) => !deletedSet.has(String(row?.user_id || ""))),
+    clinical_users_deleted
   };
 }
 function mergeClinicalOpsFromSourcesData(sources) {
@@ -63943,8 +63974,10 @@ function formatLanCycleOptionLabel(letter, userRank) {
   if (rank === "R1" || /[12]$/i.test(frac)) return `Subciclo R1 \xB7 ${frac}`;
   return `Ciclo \xB7 ${frac}`;
 }
-function renderLanUserRowHtml(u, teamList) {
+function renderLanUserRowHtml(u, teamList, opts = {}) {
   const userId = escapeAttr3(String(u.user_id || ""));
+  const rawUserId = String(u.user_id || "").trim();
+  const canDelete = !!opts.canDelete && rawUserId && rawUserId !== String(opts.callerUserId || "").trim();
   const rawHandle = normalizeUsername(u.username || "");
   const handleValid = isValidUsernameFormat(rawHandle) && !u.lanDirectoryPending;
   const handleCell = handleValid ? `<span class="clinical-lan-users-handle">@${escapeHtml5(rawHandle)}</span>` : `<span class="clinical-lan-users-handle clinical-lan-users-handle--pending" title="Falta registrar @usuario en Mi rotaci\xF3n">sin @usuario</span>`;
@@ -63977,13 +64010,20 @@ function renderLanUserRowHtml(u, teamList) {
       </select>
     </td>
     <td class="clinical-lan-users-col-action">
-      <button type="button" class="btn-save clinical-lan-assign-btn" data-user-id="${userId}">Asignar</button>
+      <div class="clinical-lan-users-action-row">
+        <button type="button" class="btn-save clinical-lan-assign-btn" data-user-id="${userId}">Asignar</button>
+        ${canDelete ? `<button type="button" class="btn-med-secondary clinical-lan-delete-user-btn" data-user-id="${userId}" data-user-label="${escapeAttr3(String(u.clinical_name || rawHandle || rawUserId))}" title="Quitar de la base cl\xEDnica en esta Mac y sincronizar en \u21C4">Eliminar</button>` : ""}
+      </div>
     </td>
   </tr>`;
 }
-function renderLanUsersModalBodyHtml(users, teams) {
+function renderLanUsersModalBodyHtml(users, teams, opts = {}) {
   const list = Array.isArray(users) ? users : [];
   const teamList = Array.isArray(teams) ? teams : [];
+  const rowOpts = {
+    canDelete: !!opts.canDelete,
+    callerUserId: String(opts.callerUserId || "")
+  };
   if (!list.length) {
     return `<p class="clinical-teams-empty">A\xFAn no hay otros usuarios en esta Mac. Pide a tus compa\xF1eros que guarden <strong>Mi rotaci\xF3n \u2192 Guardar perfil</strong> con su @usuario y que est\xE9n en la misma sala <strong>\u21C4</strong> (sincronizaci\xF3n en vivo).</p>`;
   }
@@ -64008,7 +64048,7 @@ function renderLanUsersModalBodyHtml(users, teams) {
       <div class="clinical-lan-users-table-wrap">
         <table class="clinical-lan-users-table clinical-lan-users-table--assign">
           ${tableHead}
-          <tbody>${usersInRank.map((u) => renderLanUserRowHtml(u, teamList)).join("")}</tbody>
+          <tbody>${usersInRank.map((u) => renderLanUserRowHtml(u, teamList, rowOpts)).join("")}</tbody>
         </table>
       </div>
     </details>`;
@@ -64021,7 +64061,7 @@ function renderLanUsersModalBodyHtml(users, teams) {
         <div class="clinical-lan-users-table-wrap">
           <table class="clinical-lan-users-table clinical-lan-users-table--assign">
             ${tableHead}
-            <tbody>${other.map((u) => renderLanUserRowHtml(u, teamList)).join("")}</tbody>
+            <tbody>${other.map((u) => renderLanUserRowHtml(u, teamList, rowOpts)).join("")}</tbody>
           </table>
         </div>
       </details>` : "";
@@ -64081,6 +64121,43 @@ async function handleLanAssignUserToTeam(userId, teamId, subAreaFraction) {
   }
   return true;
 }
+async function handleLanDeleteDirectoryUserClick(btn) {
+  const userId = String(btn.dataset.userId || "").trim();
+  if (!userId) return;
+  const label = String(btn.dataset.userLabel || "").trim() || userId;
+  const api3 = dbApi5();
+  if (!api3 || typeof api3.dbClinicalUserDelete !== "function") {
+    toast3("Eliminar usuarios requiere R+ de escritorio con base cl\xEDnica desbloqueada.", "error");
+    return;
+  }
+  const confirmed = window.confirm(
+    `\xBFEliminar a \xAB${label}\xBB de la base cl\xEDnica en esta Mac?
+
+Desaparecer\xE1 del directorio LAN. Las dem\xE1s R+ en la misma sala \u21C4 lo quitar\xE1n al sincronizar.`
+  );
+  if (!confirmed) return;
+  btn.disabled = true;
+  const res = await api3.dbClinicalUserDelete({
+    targetUserId: userId,
+    callerUserId: currentUserId()
+  });
+  btn.disabled = false;
+  if (!res?.ok) {
+    toast3(res?.error || "No se pudo eliminar el usuario.", "error");
+    return;
+  }
+  toast3("Usuario eliminado de esta Mac.", "success");
+  const { flushClinicalProfileToLan: flushClinicalProfileToLan2 } = await Promise.resolve().then(() => (init_clinical_profile_lan_sync(), clinical_profile_lan_sync_exports));
+  const lanPush = await flushClinicalProfileToLan2();
+  if (!lanPush.ok && lanPush.code !== "NO_LAN") {
+    toast3(
+      "Usuario eliminado aqu\xED, pero no se pudo publicar el cambio a la sala \u21C4. Revisa la conexi\xF3n.",
+      "warning"
+    );
+  }
+  document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
+  await openLanUsersDirectoryModal();
+}
 async function handleLanAssignButtonClick(btn) {
   if (!(btn instanceof HTMLButtonElement)) return;
   const row = btn.closest(".clinical-lan-user-row");
@@ -64131,7 +64208,11 @@ async function loadLanUsersDirectoryIntoHost(host) {
     return;
   }
   _lanUsersModalTeams = teamsRes?.ok && Array.isArray(teamsRes.teams) ? teamsRes.teams : [];
-  host.innerHTML = renderLanUsersModalBodyHtml(usersRes.users, _lanUsersModalTeams);
+  const sessionUser = clinicalSessionContext.user || {};
+  host.innerHTML = renderLanUsersModalBodyHtml(usersRes.users, _lanUsersModalTeams, {
+    canDelete: canDeleteLanDirectoryUser(sessionUser),
+    callerUserId: currentUserId()
+  });
   host.querySelectorAll(".clinical-lan-user-row").forEach((row) => initLanUserRowAssignState(row));
   const title = document.getElementById("clinical-lan-users-title");
   if (title) {
@@ -64211,6 +64292,11 @@ function wireLanUsersDirectoryControls() {
       if (teamSelect) syncLanAssignCycleSelect(teamSelect);
     });
     host.addEventListener("click", (ev) => {
+      const delBtn = ev.target instanceof Element ? ev.target.closest(".clinical-lan-delete-user-btn") : null;
+      if (delBtn) {
+        void handleLanDeleteDirectoryUserClick(delBtn);
+        return;
+      }
       const btn = ev.target instanceof Element ? ev.target.closest(".clinical-lan-assign-btn") : null;
       if (btn) void handleLanAssignButtonClick(btn);
     });

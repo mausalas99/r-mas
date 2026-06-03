@@ -29,6 +29,7 @@ import {
   hasProgramAdminPrivileges,
   canViewLanUserDirectory,
   canManageTeamRoster,
+  canDeleteLanDirectoryUser,
 } from '../clinical-privileges.mjs';
 import {
   isLegacyMachineUsername,
@@ -1019,9 +1020,14 @@ function formatLanCycleOptionLabel(letter, userRank) {
   return `Ciclo · ${frac}`;
 }
 
-/** @param {object} u @param {object[]} teamList */
-function renderLanUserRowHtml(u, teamList) {
+/** @param {object} u @param {object[]} teamList @param {{ canDelete?: boolean, callerUserId?: string }} [opts] */
+function renderLanUserRowHtml(u, teamList, opts = {}) {
   const userId = escapeAttr(String(u.user_id || ''));
+  const rawUserId = String(u.user_id || '').trim();
+  const canDelete =
+    !!opts.canDelete &&
+    rawUserId &&
+    rawUserId !== String(opts.callerUserId || '').trim();
   const rawHandle = normalizeUsername(u.username || '');
   const handleValid = isValidUsernameFormat(rawHandle) && !u.lanDirectoryPending;
   const handleCell = handleValid
@@ -1059,15 +1065,26 @@ function renderLanUserRowHtml(u, teamList) {
       </select>
     </td>
     <td class="clinical-lan-users-col-action">
-      <button type="button" class="btn-save clinical-lan-assign-btn" data-user-id="${userId}">Asignar</button>
+      <div class="clinical-lan-users-action-row">
+        <button type="button" class="btn-save clinical-lan-assign-btn" data-user-id="${userId}">Asignar</button>
+        ${
+          canDelete
+            ? `<button type="button" class="btn-med-secondary clinical-lan-delete-user-btn" data-user-id="${userId}" data-user-label="${escapeAttr(String(u.clinical_name || rawHandle || rawUserId))}" title="Quitar de la base clínica en esta Mac y sincronizar en ⇄">Eliminar</button>`
+            : ''
+        }
+      </div>
     </td>
   </tr>`;
 }
 
-/** @param {object[]} users @param {object[]} teams */
-function renderLanUsersModalBodyHtml(users, teams) {
+/** @param {object[]} users @param {object[]} teams @param {{ canDelete?: boolean, callerUserId?: string }} [opts] */
+function renderLanUsersModalBodyHtml(users, teams, opts = {}) {
   const list = Array.isArray(users) ? users : [];
   const teamList = Array.isArray(teams) ? teams : [];
+  const rowOpts = {
+    canDelete: !!opts.canDelete,
+    callerUserId: String(opts.callerUserId || ''),
+  };
 
   if (!list.length) {
     return `<p class="clinical-teams-empty">Aún no hay otros usuarios en esta Mac. Pide a tus compañeros que guarden <strong>Mi rotación → Guardar perfil</strong> con su @usuario y que estén en la misma sala <strong>⇄</strong> (sincronización en vivo).</p>`;
@@ -1095,7 +1112,7 @@ function renderLanUsersModalBodyHtml(users, teams) {
       <div class="clinical-lan-users-table-wrap">
         <table class="clinical-lan-users-table clinical-lan-users-table--assign">
           ${tableHead}
-          <tbody>${usersInRank.map((u) => renderLanUserRowHtml(u, teamList)).join('')}</tbody>
+          <tbody>${usersInRank.map((u) => renderLanUserRowHtml(u, teamList, rowOpts)).join('')}</tbody>
         </table>
       </div>
     </details>`;
@@ -1110,7 +1127,7 @@ function renderLanUsersModalBodyHtml(users, teams) {
         <div class="clinical-lan-users-table-wrap">
           <table class="clinical-lan-users-table clinical-lan-users-table--assign">
             ${tableHead}
-            <tbody>${other.map((u) => renderLanUserRowHtml(u, teamList)).join('')}</tbody>
+            <tbody>${other.map((u) => renderLanUserRowHtml(u, teamList, rowOpts)).join('')}</tbody>
           </table>
         </div>
       </details>`
@@ -1185,6 +1202,44 @@ async function handleLanAssignUserToTeam(userId, teamId, subAreaFraction) {
   return true;
 }
 
+async function handleLanDeleteDirectoryUserClick(btn) {
+  const userId = String(btn.dataset.userId || '').trim();
+  if (!userId) return;
+  const label = String(btn.dataset.userLabel || '').trim() || userId;
+  const api = dbApi();
+  if (!api || typeof api.dbClinicalUserDelete !== 'function') {
+    toast('Eliminar usuarios requiere R+ de escritorio con base clínica desbloqueada.', 'error');
+    return;
+  }
+  const confirmed = window.confirm(
+    `¿Eliminar a «${label}» de la base clínica en esta Mac?\n\nDesaparecerá del directorio LAN. Las demás R+ en la misma sala ⇄ lo quitarán al sincronizar.`
+  );
+  if (!confirmed) return;
+
+  btn.disabled = true;
+  const res = await api.dbClinicalUserDelete({
+    targetUserId: userId,
+    callerUserId: currentUserId(),
+  });
+  btn.disabled = false;
+  if (!res?.ok) {
+    toast(res?.error || 'No se pudo eliminar el usuario.', 'error');
+    return;
+  }
+
+  toast('Usuario eliminado de esta Mac.', 'success');
+  const { flushClinicalProfileToLan } = await import('../clinical-profile-lan-sync.mjs');
+  const lanPush = await flushClinicalProfileToLan();
+  if (!lanPush.ok && lanPush.code !== 'NO_LAN') {
+    toast(
+      'Usuario eliminado aquí, pero no se pudo publicar el cambio a la sala ⇄. Revisa la conexión.',
+      'warning'
+    );
+  }
+  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
+  await openLanUsersDirectoryModal();
+}
+
 async function handleLanAssignButtonClick(btn) {
   if (!(btn instanceof HTMLButtonElement)) return;
   const row = btn.closest('.clinical-lan-user-row');
@@ -1251,7 +1306,11 @@ async function loadLanUsersDirectoryIntoHost(host) {
   _lanUsersModalTeams =
     teamsRes?.ok && Array.isArray(teamsRes.teams) ? teamsRes.teams : [];
 
-  host.innerHTML = renderLanUsersModalBodyHtml(usersRes.users, _lanUsersModalTeams);
+  const sessionUser = clinicalSessionContext.user || {};
+  host.innerHTML = renderLanUsersModalBodyHtml(usersRes.users, _lanUsersModalTeams, {
+    canDelete: canDeleteLanDirectoryUser(sessionUser),
+    callerUserId: currentUserId(),
+  });
   host.querySelectorAll('.clinical-lan-user-row').forEach((row) => initLanUserRowAssignState(row));
 
   const title = document.getElementById('clinical-lan-users-title');
@@ -1346,6 +1405,12 @@ function wireLanUsersDirectoryControls() {
       if (teamSelect) syncLanAssignCycleSelect(teamSelect);
     });
     host.addEventListener('click', (ev) => {
+      const delBtn =
+        ev.target instanceof Element ? ev.target.closest('.clinical-lan-delete-user-btn') : null;
+      if (delBtn) {
+        void handleLanDeleteDirectoryUserClick(delBtn);
+        return;
+      }
       const btn = ev.target instanceof Element ? ev.target.closest('.clinical-lan-assign-btn') : null;
       if (btn) void handleLanAssignButtonClick(btn);
     });
