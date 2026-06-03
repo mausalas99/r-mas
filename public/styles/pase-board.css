@@ -254,6 +254,37 @@ html.ui-density-guardia #header-app-mode-chip {
   outline-offset: -2px;
 }
 
+.entrega-proc-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.entrega-proc-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.entrega-proc-header label {
+  flex: 1 1 auto;
+  margin: 0;
+}
+
+.entrega-proc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.entrega-proc-form.hidden {
+  display: none;
+}
+
 .guardia-incoming-strip {
   margin: 0 0 1rem;
 }

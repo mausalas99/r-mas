@@ -1859,9 +1859,14 @@
         <label for="entrega-source-team">Equipo de origen</label>
         <select id="entrega-source-team" class="profile-input" required></select>
       </div>
-      <div class="field-group">
-        <label for="entrega-pendientes">Pendientes (uno por línea)</label>
-        <textarea id="entrega-pendientes" class="profile-input" rows="4" placeholder="Pendientes de la entrega…"></textarea>
+      <div class="field-group entrega-proc-block">
+        <div class="entrega-proc-header">
+          <label>Procedimientos y estudios</label>
+          <button type="button" id="btn-entrega-apply-template" class="btn-secondary">Aplicar plantilla</button>
+          <button type="button" id="btn-entrega-add-proc" class="btn-secondary">+ Agregar</button>
+        </div>
+        <ul id="entrega-proc-list" class="entrega-proc-list"></ul>
+        <div id="entrega-proc-form" class="entrega-proc-form hidden" aria-hidden="true"></div>
       </div>
       <div class="field-group">
         <label>
