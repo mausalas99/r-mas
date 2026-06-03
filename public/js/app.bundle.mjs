@@ -36760,12 +36760,16 @@ var init_settings_help = __esm({
       ],
       "5.6.3": [
         {
-          title: "TODO",
-          body: "Completar antes de publicar."
+          title: "Laboratorio y pacientes",
+          body: "Al cambiar de paciente el laboratorio se limpia y el historial se expande. Orden de tarjetas por <strong>arrastre</strong> (SortableJS) y vista de ronda m\xE1s compacta."
         },
         {
-          title: "TODO",
-          body: "Completar antes de publicar."
+          title: "Modo Pase y receta",
+          body: "Vista <strong>Pase</strong> con agenda y pendientes en fila; dosis de medicaci\xF3n solo antes de <code>//</code>; chips compactos en UI grandes."
+        },
+        {
+          title: "Actualizaciones",
+          body: "Canal <strong>Estable</strong> por defecto; pre-releases solo si lo activas en Ajustes."
         }
       ],
       "6.5.2": [

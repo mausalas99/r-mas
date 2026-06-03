@@ -369,7 +369,10 @@ Notas: `docs/RELEASE_NOTES_3.2.0.txt`.
 
 ## R+ 5.6.3 (estable — release 5.6.3)
 
-- **TODO:** completar bullets en README.
+- **Laboratorio** — Al cambiar de paciente: limpiar resultados, expandir historial y scroll a la tarjeta.
+- **Pacientes** — Orden por arrastre (SortableJS); tarjetas y modo ronda más compactos.
+- **Pase** — Agenda + pendientes en fila; dosis solo antes de `//`; chips compactos en UI grandes.
+- **Actualizaciones** — Canal Estable por defecto; pre-releases opcional en Ajustes.
 
 Notas: `docs/RELEASE_NOTES_5.6.3.txt`.
 ## R+ 3.0.2 (laboratorio, listado docx, tutorial, Python Mac)
@@ -424,12 +427,6 @@ Notas: `docs/RELEASE_NOTES_3.0.0.txt`.
 
 ---
 
-
-## R+ 6.6.0 (LAN sin bloqueo @usuario, iPad y labs)
-
-- **TODO:** completar bullets en README.
-
-Notas: `docs/RELEASE_NOTES_6.6.0.txt`.
 ## R+ 2.4.1 (parche — medicamentos compactos y tooltip de tendencias)
 
 - **Medicamentos** — En la salida resumida «nombre + día», el formato ahora es compacto: `MEDICAMENTO + DOSIS + VÍA abreviada + FRECUENCIA abreviada + DÍA de uso` (por ejemplo: `MEROPENEM 2G IV C/8H DIA 2`).

@@ -2335,7 +2335,7 @@
       "format": "esm"
     },
     "public/js/features/settings-help.mjs": {
-      "bytes": 132972,
+      "bytes": 133431,
       "imports": [
         {
           "path": "public/js/tour-targets.mjs",
@@ -6258,7 +6258,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 5109023
+      "bytes": 5109547
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -6710,7 +6710,7 @@
           "bytesInOutput": 69768
         },
         "public/js/features/settings-help.mjs": {
-          "bytesInOutput": 127644
+          "bytesInOutput": 128098
         },
         "public/js/patient-export-format.mjs": {
           "bytesInOutput": 4460
@@ -7100,7 +7100,7 @@
           "bytesInOutput": 950
         }
       },
-      "bytes": 2888238
+      "bytes": 2888692
     }
   }
 }
