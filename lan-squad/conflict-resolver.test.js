@@ -5,7 +5,7 @@ const path = require('node:path');
 const os = require('node:os');
 const fs = require('node:fs');
 const { createHostStore } = require('./host-store.js');
-const { createConflictResolver, ConflictError } = require('./conflict-resolver.js');
+const { createConflictResolver } = require('./conflict-resolver.js');
 
 test('auto-merge disjoint keys on version mismatch', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cr-merge-'));
@@ -67,23 +67,32 @@ test('historiaClinica auto-merge disjoint section keys', () => {
   assert.strictEqual(out.data.app, 'B');
 });
 
-test('structural conflict when keys overlap', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cr-conf-'));
+test('overlap keys resolve with LWW (incoming newer wins)', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cr-lww-'));
   const filePath = path.join(dir, 's.json');
   const store = createHostStore({ filePath, teamCodePlain: 'tok' });
-  store.upsertPatient({ id: 'p1', nombre: 'Ana', cuarto: '101' }, null);
+  store.upsertPatient({ id: 'p1', nombre: 'Ana', cuarto: '101', lanUpdatedAt: '2026-06-03T09:00:00.000Z' }, null);
   const resolver = createConflictResolver({ store });
-  store.upsertPatient({ id: 'p1', nombre: 'Ana', cuarto: '201' }, 1);
-  assert.throws(
-    () =>
-      resolver.applyMutation({
-        entityType: 'patient',
-        entityId: 'p1',
-        expectedVersion: 1,
-        baseData: { id: 'p1', nombre: 'Ana', cuarto: '101' },
-        changedKeys: ['cuarto'],
-        data: { id: 'p1', nombre: 'Ana', cuarto: '102' },
-      }),
-    (e) => e instanceof ConflictError && e.conflictingKeys.includes('cuarto')
-  );
+  store.upsertPatient({
+    id: 'p1',
+    nombre: 'Ana',
+    cuarto: '201',
+    lanUpdatedAt: '2026-06-03T09:30:00.000Z',
+  }, 1);
+  const out = resolver.applyMutation({
+    entityType: 'patient',
+    entityId: 'p1',
+    expectedVersion: 1,
+    baseData: { id: 'p1', nombre: 'Ana', cuarto: '101', lanUpdatedAt: '2026-06-03T09:00:00.000Z' },
+    changedKeys: ['cuarto'],
+    data: {
+      id: 'p1',
+      nombre: 'Ana',
+      cuarto: '102',
+      lanUpdatedAt: '2026-06-03T10:00:00.000Z',
+    },
+  });
+  assert.strictEqual(out.lwwApplied, true);
+  assert.strictEqual(out.data.cuarto, '102');
+  assert.ok(out.overwrittenKeys.includes('cuarto'));
 });

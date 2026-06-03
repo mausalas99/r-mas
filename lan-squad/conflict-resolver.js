@@ -1,5 +1,7 @@
 'use strict';
 
+const { mergeRecordsLww } = require('./lww-utils.js');
+
 class ConflictError extends Error {
   constructor(details) {
     super('conflict');
@@ -80,22 +82,39 @@ function createConflictResolver({ store }) {
     }
 
     if (!baseData || !changedKeys.length) {
-      if (mutation.op === 'delete') {
-        throw new ConflictError({
-          conflictingKeys: ['_deleted'],
-          serverData: server.data,
-          clientData: { ...(server.data || {}), _deleted: true },
-          serverVersion: server.version,
-          expectedVersion,
-        });
-      }
-      throw new ConflictError({
-        conflictingKeys: changedKeys.length ? changedKeys : ['*'],
-        serverData: server.data,
-        clientData: data,
-        serverVersion: server.version,
-        expectedVersion,
+      const incomingData =
+        mutation.op === 'delete'
+          ? { ...(server.data || {}), _deleted: true, updatedAt: data.updatedAt || data.lanUpdatedAt }
+          : { ...(server.data || {}), ...data };
+      const keysToMerge = changedKeys.length ? changedKeys : Object.keys(data || {});
+      const { merged } = mergeRecordsLww(server.data, incomingData, {
+        changedKeys: keysToMerge.length ? keysToMerge : Object.keys(incomingData),
+        timestampFields: ['lanUpdatedAt', 'updatedAt'],
       });
+      const version = server.version + 1;
+      store.setEntity(
+        {
+          roomId,
+          entityType,
+          entityId,
+          patientId,
+          version,
+          data: merged,
+          deleted: mutation.op === 'delete',
+        },
+        setOpts
+      );
+      if (roomId) store.materializeRoomViews(roomId, setOpts);
+      return {
+        ok: true,
+        entityType,
+        entityId,
+        version,
+        data: merged,
+        autoMerged: false,
+        lwwApplied: true,
+        overwrittenKeys: ['*'],
+      };
     }
 
     const serverChangedKeys = keysChanged(server.data, baseData);
@@ -119,13 +138,38 @@ function createConflictResolver({ store }) {
       return { ok: true, entityType, entityId, version, data: merged, autoMerged: true };
     }
 
-    throw new ConflictError({
-      conflictingKeys: overlap,
-      serverData: server.data,
-      clientData: { ...(server.data || {}), ...(data || {}) },
-      serverVersion: server.version,
-      expectedVersion,
+    const incomingData =
+      mutation.op === 'delete'
+        ? { ...(server.data || {}), _deleted: true, updatedAt: data.updatedAt || data.lanUpdatedAt }
+        : { ...(server.data || {}), ...data };
+    const { merged, overwrittenKeys } = mergeRecordsLww(server.data, incomingData, {
+      changedKeys: overlap,
+      timestampFields: ['lanUpdatedAt', 'updatedAt'],
     });
+    const version = server.version + 1;
+    store.setEntity(
+      {
+        roomId,
+        entityType,
+        entityId,
+        patientId,
+        version,
+        data: merged,
+        deleted: mutation.op === 'delete',
+      },
+      setOpts
+    );
+    if (roomId) store.materializeRoomViews(roomId, setOpts);
+    return {
+      ok: true,
+      entityType,
+      entityId,
+      version,
+      data: merged,
+      autoMerged: false,
+      lwwApplied: true,
+      overwrittenKeys,
+    };
   }
 
   return { applyMutation, ConflictError };
