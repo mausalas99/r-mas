@@ -64,7 +64,7 @@ docs/superpowers/     Specs and implementation plans (design before big features
 |-------|-------------------|
 | Clinical DB / schema | `lib/db/schema.mjs`, `lib/db/db-manager.mjs`, `lib/db/ipc-handlers.mjs` |
 | Roles / privileges | `lib/db/clinical-privileges.mjs`, `public/js/clinical-privileges.mjs` |
-| LAN sync / rooms | `lan-squad/`, `public/js/features/lan-sync.mjs`, `public/js/lan-client.mjs` |
+| LAN sync / rooms | `lan-squad/`, `public/js/features/lan-sync.mjs`, `public/js/lan-client.mjs`; improvements spec `docs/superpowers/specs/2026-06-03-lan-sync-improvements-design.md` |
 | Clinical teams / guardia | `public/js/features/clinical-teams.mjs`, `clinical-rotation.mjs` |
 | Modo entrega | `lib/entrega/`, `public/js/features/clinical-entrega.mjs`, `entrega-modal-ui.mjs` |
 | Interno mobile | `lib/interno/`, `public/interno/`, `server.js` interno routes |
@@ -111,6 +111,7 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
+- **2026-06-03** `lan-sync-improvements-spec`: design spec (P0–P4) — profile push WS fix, SQL outbox, clinical-ops endpoint, state machine, host pin, diagnostics; `docs/superpowers/specs/2026-06-03-lan-sync-improvements-design.md`.
 - **2026-06-03** `release-6.6.0`: @usuario sin ⇄ obligatorio; merges cloud (directorio LAN, iPad ticket, labs batch-copy); `clinical-profile-lan-sync.mjs`, `lab-history-batch-copy-modal.mjs`.
 - **2026-06-03** `release-6.5.9`: LAN directorio, fusión `clinical_users`, entrega/equipos; `pushClinicalOpsLanNow`.
 - **2026-06-03** `release-6.5.8`: interno móvil QR, entrega pendientes v2, downgrade a estable; `public/interno/`, `lib/interno/`, `lib/entrega/`, `lib/update-downgrade.mjs`, `stable-versions.json`.
