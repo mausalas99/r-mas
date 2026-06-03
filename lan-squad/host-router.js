@@ -90,9 +90,9 @@ function createLanRouter({ store, broadcast, resolver }) {
     res.json({ snapshot, revision: Number(bundle.revision || 0) });
   });
 
-  r.put('/rooms/:id/clinical-ops', express.json({ limit: '1mb' }), (req, res) => {
+  r.put('/rooms/:id/clinical-ops', express.json({ limit: '1mb' }), async (req, res) => {
     try {
-      const out = store.putRoomClinicalOps(req.params.id, req.body || {});
+      const out = await store.putRoomClinicalOps(req.params.id, req.body || {});
       res.json(out);
     } catch (e) {
       if (e.code === 'CONFLICT') {

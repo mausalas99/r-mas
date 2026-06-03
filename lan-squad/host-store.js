@@ -18,7 +18,54 @@ const { readJson, writeJsonAtomic } = require('./atomic-json.js');
 const { migrateHostStateIfNeeded } = require('./migrate-host-state.js');
 const { mergeBundlePut } = require('./bundle-merge.js');
 const { mergeClinicalOpsSnapshotsData } = require('../lib/db/clinical-ops-bundle-merge.cjs');
+const {
+  mergeClinicalOpsSnapshot,
+  exportClinicalOpsSnapshot,
+} = createRequire(__filename)('../lib/db/clinical-ops-sync.mjs');
 const { appendAudit } = require('./audit-log.js');
+
+function getGlobalClinicalDbManager() {
+  const mgr =
+    typeof globalThis !== 'undefined' && globalThis.__rplusDbManager
+      ? globalThis.__rplusDbManager
+      : null;
+  return mgr && typeof mgr.isUnlocked === 'function' && mgr.isUnlocked() ? mgr : null;
+}
+
+function clinicalOpsCacheStale(cached, exported) {
+  if (!exported || typeof exported !== 'object') return false;
+  if (!cached || typeof cached !== 'object') return true;
+  const cacheAt = cached.exportedAt ? String(cached.exportedAt) : '';
+  const dbAt = exported.exportedAt ? String(exported.exportedAt) : '';
+  return dbAt > cacheAt;
+}
+
+function refreshBundleClinicalOpsCacheIfStale(bundle) {
+  const mgr = getGlobalClinicalDbManager();
+  if (!mgr || !bundle) return;
+  const db = mgr.getDb();
+  if (!db) return;
+  const exported = exportClinicalOpsSnapshot(db);
+  if (clinicalOpsCacheStale(bundle.clinicalOps, exported)) {
+    bundle.clinicalOps = exported;
+  }
+}
+
+async function mergeBundleClinicalOpsIntoHostDb(snapshot, { roomId, revision } = {}) {
+  const mgr = getGlobalClinicalDbManager();
+  if (!mgr || !snapshot || typeof snapshot !== 'object') return null;
+  let exported = null;
+  await mgr.withTransaction((db, { audit }) => {
+    mergeClinicalOpsSnapshot(db, snapshot);
+    exported = exportClinicalOpsSnapshot(db);
+    audit('host', 'lan.clinical_ops.put', {
+      roomId: roomId || null,
+      revision: revision != null ? revision : null,
+      exportedAt: exported.exportedAt || null,
+    });
+  });
+  return exported;
+}
 
 function nowIso() {
   return new Date().toISOString();
@@ -324,7 +371,9 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     const state = ensureLoadedSync();
     const rid = String(roomId || '');
     const b = state.roomSyncBundles && state.roomSyncBundles[rid];
-    return b && typeof b === 'object' ? b : null;
+    if (!b || typeof b !== 'object') return null;
+    refreshBundleClinicalOpsCacheIfStale(b);
+    return b;
   }
 
   function ensureRoomRecord(state, roomId, displayName) {
@@ -408,7 +457,7 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     return result.bundle;
   }
 
-  function putRoomClinicalOps(roomId, body) {
+  async function putRoomClinicalOps(roomId, body) {
     const state = ensureLoadedSync();
     const rid = String(roomId || '');
     if (!rid) throw new Error('room id required');
@@ -420,6 +469,7 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     const serverRevision = Number(bundle.revision || 0);
 
     if (serverRevision > 0 && baseRevision !== serverRevision) {
+      refreshBundleClinicalOpsCacheIfStale(bundle);
       const err = new Error('conflict');
       err.code = 'CONFLICT';
       err.serverSnapshot =
@@ -468,6 +518,14 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
       },
       bundle.audit_log
     );
+
+    if (bundle.clinicalOps && typeof bundle.clinicalOps === 'object') {
+      const authoritative = await mergeBundleClinicalOpsIntoHostDb(bundle.clinicalOps, {
+        roomId: rid,
+        revision: bundle.revision,
+      });
+      if (authoritative) bundle.clinicalOps = authoritative;
+    }
 
     state.roomSyncBundles[rid] = bundle;
     persistState();
