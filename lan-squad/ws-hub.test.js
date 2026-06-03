@@ -109,8 +109,8 @@ test('WebSocket joins channel after valid auth frame', async () => {
   }
 });
 
-test('livesync:patch overlap unicasts conflict to sender only', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-ws-conflict-'));
+test('livesync:patch overlap broadcasts applied with lwwApplied', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-ws-lww-'));
   const filePath = path.join(dir, 'state.json');
   const token = 'd'.repeat(64);
   const store = createHostStore({ filePath, teamCodePlain: token });
@@ -125,10 +125,9 @@ test('livesync:patch overlap unicasts conflict to sender only', async () => {
   try {
     const wsA = await connectAuthedLiveWs(port, token, channel);
     const wsB = await connectAuthedLiveWs(port, token, channel);
-    const bMessages = [];
-    wsB.on('message', (raw) => bMessages.push(JSON.parse(String(raw))));
 
-    const conflictPromise = waitForMessage(wsA, (m) => m.type === 'livesync:conflict');
+    const appliedPromise = waitForMessage(wsA, (m) => m.type === 'livesync:applied');
+    const appliedBPromise = waitForMessage(wsB, (m) => m.type === 'livesync:applied');
     wsA.send(
       JSON.stringify({
         type: 'livesync:patch',
@@ -144,11 +143,12 @@ test('livesync:patch overlap unicasts conflict to sender only', async () => {
         },
       })
     );
-    const conflict = await conflictPromise;
-    assert.strictEqual(conflict.type, 'livesync:conflict');
-    assert.ok(conflict.conflictingKeys.includes('cuarto'));
-    await new Promise((r) => setTimeout(r, 150));
-    assert.strictEqual(bMessages.length, 0);
+    const applied = await appliedPromise;
+    const appliedB = await appliedBPromise;
+    assert.strictEqual(applied.lwwApplied, true);
+    assert.strictEqual(applied.data.cuarto, '102');
+    assert.strictEqual(appliedB.lwwApplied, true);
+    assert.strictEqual(appliedB.data.cuarto, '102');
     wsA.close();
     wsB.close();
   } finally {

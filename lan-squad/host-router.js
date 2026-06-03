@@ -187,14 +187,18 @@ function createLanRouter({ store, broadcast, resolver }) {
     try {
       const body = req.body && req.body.bundle ? req.body.bundle : req.body;
       const out = store.putRoomSyncBundle(req.params.id, body);
-      if (out) {
+      if (out && out.bundle) {
         broadcastLiveRevision(
           req.params.id,
-          out.revision,
+          out.bundle.revision,
           body.uploadedByClientId || body.clientId
         );
       }
-      res.json({ bundle: out, merged: true });
+      const payload = { bundle: out.bundle, merged: true };
+      if (Array.isArray(out.lwwAppliedKeys) && out.lwwAppliedKeys.length) {
+        payload.lwwAppliedKeys = out.lwwAppliedKeys;
+      }
+      res.json(payload);
     } catch (e) {
       if (e.code === 'CONFLICT') {
         return res.status(409).json({

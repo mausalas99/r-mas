@@ -454,7 +454,10 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
 
     state.roomSyncBundles[rid] = result.bundle;
     persistState();
-    return result.bundle;
+    return {
+      bundle: result.bundle,
+      lwwAppliedKeys: Array.isArray(result.lwwAppliedKeys) ? result.lwwAppliedKeys : [],
+    };
   }
 
   async function putRoomClinicalOps(roomId, body) {
@@ -467,25 +470,12 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     const clientId = String(incoming.clientId || incoming.uploadedByClientId || '');
     const baseRevision = Number(incoming.baseRevision != null ? incoming.baseRevision : 0);
     const serverRevision = Number(bundle.revision || 0);
+    const lwwAppliedKeys = [];
+    const revisionSkew = serverRevision > 0 && baseRevision !== serverRevision;
 
-    if (serverRevision > 0 && baseRevision !== serverRevision) {
+    if (revisionSkew) {
       refreshBundleClinicalOpsCacheIfStale(bundle);
-      const err = new Error('conflict');
-      err.code = 'CONFLICT';
-      err.serverSnapshot =
-        bundle.clinicalOps && typeof bundle.clinicalOps === 'object' ? bundle.clinicalOps : null;
-      err.revision = serverRevision;
-      err.conflicts = [
-        {
-          key: 'clinicalOps',
-          kind: 'clinicalOps',
-          localBaseVersion: baseRevision,
-          serverVersion: serverRevision,
-          local: { baseRevision },
-          server: { revision: serverRevision },
-        },
-      ];
-      throw err;
+      lwwAppliedKeys.push('clinicalOps');
     }
 
     const incomingSnapshot =
@@ -529,10 +519,12 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
 
     state.roomSyncBundles[rid] = bundle;
     persistState();
-    return {
+    const out = {
       snapshot: bundle.clinicalOps,
       revision: bundle.revision,
     };
+    if (lwwAppliedKeys.length) out.lwwAppliedKeys = lwwAppliedKeys;
+    return out;
   }
 
   function ensureRoomBundle(state, roomId) {

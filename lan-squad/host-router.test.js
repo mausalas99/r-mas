@@ -212,7 +212,7 @@ test('PUT /rooms/:id/clinical-ops broadcasts livesync:revision on live room chan
   }
 });
 
-test('PUT /rooms/:id/clinical-ops stale revision returns 409', async () => {
+test('PUT /rooms/:id/clinical-ops stale revision applies LWW', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-clinical-ops-stale-'));
   const statePath = path.join(dir, 'state.json');
   const code = 'test-team-' + Date.now() + '-'.repeat(20);
@@ -247,14 +247,14 @@ test('PUT /rooms/:id/clinical-ops stale revision returns 409', async () => {
         },
       }),
     });
-    assert.strictEqual(res.status, 409);
+    assert.strictEqual(res.status, 200);
     const body = await res.json();
-    assert.strictEqual(body.error, 'conflict');
-    assert.ok(Array.isArray(body.conflicts));
-    assert.ok(body.conflicts.length >= 1);
-    assert.strictEqual(body.snapshot.teams.length, 1);
-    assert.strictEqual(body.snapshot.teams[0].team_id, 'team-a');
-    assert.strictEqual(store.getRoomSyncBundle(room.id).clinicalOps.teams[0].team_id, 'team-a');
+    assert.ok(Array.isArray(body.lwwAppliedKeys));
+    assert.ok(body.lwwAppliedKeys.includes('clinicalOps'));
+    assert.ok(body.snapshot);
+    assert.ok(Array.isArray(body.snapshot.teams));
+    assert.ok(body.snapshot.teams.some((t) => t.team_id === 'team-b'));
+    assert.ok(store.getRoomSyncBundle(room.id).clinicalOps.teams.some((t) => t.team_id === 'team-b'));
   } finally {
     await tearDownLanTest({ server, dir, store });
   }
@@ -309,7 +309,7 @@ test('PUT /rooms/:id/sync-bundle broadcasts livesync:revision without clinicalOp
   }
 });
 
-test('PUT /rooms/:id/sync-bundle stale entity version returns 409', async () => {
+test('PUT /rooms/:id/sync-bundle stale entity version applies LWW', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-bundle-conf-'));
   const statePath = path.join(dir, 'state.json');
   const code = 'test-team-' + Date.now() + '-'.repeat(20);
@@ -340,13 +340,12 @@ test('PUT /rooms/:id/sync-bundle stale entity version returns 409', async () => 
         },
       }),
     });
-    assert.strictEqual(res.status, 409);
+    assert.strictEqual(res.status, 200);
     const body = await res.json();
-    assert.strictEqual(body.error, 'conflict');
-    assert.ok(Array.isArray(body.conflicts));
-    assert.ok(body.conflicts.length >= 1);
     assert.ok(body.bundle);
-    assert.strictEqual(store.getRoomSyncBundle(room.id).agenda[0].procedure, 'A');
+    assert.ok(Array.isArray(body.lwwAppliedKeys));
+    assert.ok(body.lwwAppliedKeys.includes('a:e1'));
+    assert.strictEqual(store.getRoomSyncBundle(room.id).agenda[0].procedure, 'STALE');
   } finally {
     await tearDownLanTest({ server, dir, store });
   }
@@ -471,7 +470,7 @@ test('PUT /patients/:id/historia-clinica accepts nested app shape', async () => 
   }
 });
 
-test('PUT /patients/:id overlap returns 409 conflict body', async () => {
+test('PUT /patients/:id overlap returns 200 with lwwApplied', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-put-conf-'));
   const statePath = path.join(dir, 'state.json');
   const code = 'test-team-' + Date.now() + '-'.repeat(20);
@@ -494,11 +493,10 @@ test('PUT /patients/:id overlap returns 409 conflict body', async () => {
         data: { id: 'p1', nombre: 'Ana', cuarto: '102' },
       }),
     });
-    assert.strictEqual(res.status, 409);
+    assert.strictEqual(res.status, 200);
     const body = await res.json();
-    assert.strictEqual(body.error, 'conflict');
-    assert.ok(body.conflictingKeys.includes('cuarto'));
-    assert.strictEqual(body.serverData.cuarto, '201');
+    assert.strictEqual(body.lwwApplied, true);
+    assert.strictEqual(body.data.cuarto, '102');
   } finally {
     await tearDownLanTest({ server, dir, store });
   }

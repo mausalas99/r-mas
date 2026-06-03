@@ -124,7 +124,7 @@ function attachWsHub(httpServer, { getState, resolver, pathName = '/api/lan/v1/w
             clientId: msg.clientId,
             roomId: msg.roomId,
           });
-          broadcast(channel, {
+          const applied = {
             type: 'livesync:applied',
             roomId: msg.roomId,
             entityType: out.entityType,
@@ -133,7 +133,12 @@ function attachWsHub(httpServer, { getState, resolver, pathName = '/api/lan/v1/w
             data: out.data,
             autoMerged: out.autoMerged,
             patientId: msg.mutation.patientId,
-          });
+          };
+          if (out.lwwApplied) applied.lwwApplied = true;
+          if (Array.isArray(out.overwrittenKeys) && out.overwrittenKeys.length) {
+            applied.overwrittenKeys = out.overwrittenKeys;
+          }
+          broadcast(channel, applied);
         } catch (e) {
           if (e.code === 'CONFLICT') {
             ws.send(
