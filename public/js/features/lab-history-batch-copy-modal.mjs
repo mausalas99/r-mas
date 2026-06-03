@@ -59,22 +59,32 @@ function selectedDayKeysFromBackdrop(backdrop) {
   return keys;
 }
 
-function updateBatchCopyPreview(backdrop, ordered) {
+function syncBatchCopyActions(backdrop, ordered) {
   var ta = backdrop.querySelector('#lab-batch-copy-preview');
   var countEl = backdrop.querySelector('#lab-batch-copy-count');
+  var copyBtn = backdrop.querySelector('#lab-batch-copy-ok');
   if (!ta) return;
   var keys = selectedDayKeysFromBackdrop(backdrop);
-  if (!keys.length) {
-    ta.value = '';
-    if (countEl) countEl.textContent = '0 días seleccionados';
-    return;
-  }
-  var lines = buildEstudiosCopyLinesFromLabSets(ordered, { onlyDayKeys: keys });
-  ta.value = lines.join('\n');
+  var n = keys.length;
   if (countEl) {
     countEl.textContent =
-      keys.length + ' día' + (keys.length === 1 ? '' : 's') + ' seleccionado' + (keys.length === 1 ? '' : 's');
+      n === 0
+        ? 'Ningún día seleccionado — marca al menos uno para copiar'
+        : n + ' día' + (n === 1 ? '' : 's') + ' seleccionado' + (n === 1 ? '' : 's');
   }
+  if (copyBtn) {
+    copyBtn.disabled = n === 0;
+    copyBtn.setAttribute('aria-disabled', n === 0 ? 'true' : 'false');
+    copyBtn.style.opacity = n === 0 ? '0.55' : '';
+    copyBtn.style.cursor = n === 0 ? 'not-allowed' : 'pointer';
+  }
+  if (!n) {
+    ta.value = '';
+    ta.placeholder = 'La vista previa aparece al seleccionar uno o más días arriba.';
+    return;
+  }
+  ta.placeholder = '';
+  ta.value = buildEstudiosCopyLinesFromLabSets(ordered, { onlyDayKeys: keys }).join('\n');
 }
 
 function closeBatchCopyModal(backdrop) {
@@ -106,7 +116,7 @@ export function openLabHistoryBatchCopyModal() {
         '<label style="cursor:pointer;display:flex;gap:8px;align-items:flex-start;">' +
         '<input type="checkbox" class="lab-batch-copy-cb" data-day-key="' +
         esc(group.dayKey) +
-        '" checked style="margin-top:3px;flex-shrink:0;" />' +
+        '" style="margin-top:3px;flex-shrink:0;" />' +
         '<span>' +
         esc(group.label) +
         '</span></label></li>'
@@ -117,30 +127,24 @@ export function openLabHistoryBatchCopyModal() {
   backdrop.innerHTML =
     '<div class="lab-conflict-modal" style="max-width:560px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;">' +
     '<h3 style="margin:0 0 8px;">Copiar varios días</h3>' +
-    '<p style="font-size:13px;line-height:1.45;margin:0 0 10px;color:var(--text-muted);">Elige los días del historial. El texto usa el mismo formato que el bloque <strong>Estudios</strong> del expediente (laboratorio y cultivos por día).</p>' +
+    '<p style="font-size:13px;line-height:1.45;margin:0 0 10px;color:var(--text-muted);">Marca los días que quieres copiar. El texto usa el mismo formato que el bloque <strong>Estudios</strong> del expediente (laboratorio y cultivos por día).</p>' +
     '<div style="overflow-y:auto;flex:0 1 auto;max-height:28vh;padding-right:4px;">' +
     '<ul style="margin:0;padding-left:0;list-style:none;font-size:13px;">' +
     listHtml +
     '</ul></div>' +
-    '<p id="lab-batch-copy-count" style="font-size:12px;color:var(--text-muted);margin:10px 0 6px;">' +
-    loaded.groups.length +
-    ' día' +
-    (loaded.groups.length === 1 ? '' : 's') +
-    ' seleccionado' +
-    (loaded.groups.length === 1 ? '' : 's') +
-    '</p>' +
-    '<textarea id="lab-batch-copy-preview" readonly rows="8" style="width:100%;box-sizing:border-box;font-family:ui-monospace,monospace;font-size:12px;line-height:1.4;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);resize:vertical;flex:1;min-height:120px;"></textarea>' +
+    '<p id="lab-batch-copy-count" style="font-size:12px;color:var(--text-muted);margin:10px 0 6px;">Ningún día seleccionado — marca al menos uno para copiar</p>' +
+    '<textarea id="lab-batch-copy-preview" readonly rows="8" placeholder="La vista previa aparece al seleccionar uno o más días arriba." style="width:100%;box-sizing:border-box;font-family:ui-monospace,monospace;font-size:12px;line-height:1.4;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);resize:vertical;flex:1;min-height:120px;"></textarea>' +
     '<div style="display:flex;gap:10px;margin-top:14px;justify-content:flex-end;flex-wrap:wrap;">' +
     '<button type="button" id="lab-batch-copy-none" style="background:transparent;border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Quitar todas</button>' +
     '<button type="button" id="lab-batch-copy-all" style="background:transparent;border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Seleccionar todas</button>' +
     '<button type="button" id="lab-batch-copy-cancel" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Cancelar</button>' +
-    '<button type="button" id="lab-batch-copy-ok" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Copiar al portapapeles</button>' +
+    '<button type="button" id="lab-batch-copy-ok" disabled aria-disabled="true" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:not-allowed;opacity:0.55;">Copiar al portapapeles</button>' +
     '</div></div>';
 
   document.body.appendChild(backdrop);
 
   function refreshPreview() {
-    updateBatchCopyPreview(backdrop, loaded.ordered);
+    syncBatchCopyActions(backdrop, loaded.ordered);
   }
 
   backdrop.querySelectorAll('.lab-batch-copy-cb').forEach(function (cb) {
