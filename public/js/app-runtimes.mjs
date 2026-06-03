@@ -45,6 +45,9 @@ import {
 import {
   registerLabBulkPreviewModalRuntime,
 } from './features/lab-bulk-preview-modal.mjs';
+import {
+  registerLabHistoryBatchCopyRuntime,
+} from './features/lab-history-batch-copy-modal.mjs';
 import { buildBulkLabPreview } from './lab-bulk-paste.mjs';
 import {
   registerTendenciasRuntime,
@@ -781,6 +784,16 @@ registerLabBulkPreviewModalRuntime({
   },
   openAddModalFromLabPatient,
   tourOnBulkPreviewPatientSaved,
+});
+
+registerLabHistoryBatchCopyRuntime({
+  showToast,
+  copyToClipboardSafe,
+  getActiveId: function () {
+    return rt.getActiveId();
+  },
+  ensureParsedLabHistory,
+  ensureParsedLabHistoryCached,
 });
 
 registerProductivityRuntime({

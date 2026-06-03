@@ -4510,7 +4510,7 @@
       "format": "esm"
     },
     "public/js/lab-history-set.mjs": {
-      "bytes": 19663,
+      "bytes": 20974,
       "imports": [
         {
           "path": "public/js/labs.js",
@@ -5326,6 +5326,22 @@
       ],
       "format": "esm"
     },
+    "public/js/features/lab-history-batch-copy-modal.mjs": {
+      "bytes": 8062,
+      "imports": [
+        {
+          "path": "public/js/tend-core.mjs",
+          "kind": "import-statement",
+          "original": "../tend-core.mjs"
+        },
+        {
+          "path": "public/js/lab-history-set.mjs",
+          "kind": "import-statement",
+          "original": "../lab-history-set.mjs"
+        }
+      ],
+      "format": "esm"
+    },
     "lib/drive-import/normalize.mjs": {
       "bytes": 269,
       "imports": [],
@@ -5730,7 +5746,7 @@
       "format": "esm"
     },
     "public/js/app-runtimes.mjs": {
-      "bytes": 24296,
+      "bytes": 24596,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -5786,6 +5802,11 @@
           "path": "public/js/features/lab-bulk-preview-modal.mjs",
           "kind": "import-statement",
           "original": "./features/lab-bulk-preview-modal.mjs"
+        },
+        {
+          "path": "public/js/features/lab-history-batch-copy-modal.mjs",
+          "kind": "import-statement",
+          "original": "./features/lab-history-batch-copy-modal.mjs"
         },
         {
           "path": "public/js/lab-bulk-paste.mjs",
@@ -6001,7 +6022,7 @@
       "format": "esm"
     },
     "public/js/app.js": {
-      "bytes": 11364,
+      "bytes": 11516,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -6072,6 +6093,11 @@
           "path": "public/js/features/lab-bulk-preview-modal.mjs",
           "kind": "import-statement",
           "original": "./features/lab-bulk-preview-modal.mjs"
+        },
+        {
+          "path": "public/js/features/lab-history-batch-copy-modal.mjs",
+          "kind": "import-statement",
+          "original": "./features/lab-history-batch-copy-modal.mjs"
         },
         {
           "path": "public/js/features/soap-estado.mjs",
@@ -6222,7 +6248,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 5088409
+      "bytes": 5102672
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -6947,7 +6973,7 @@
           "bytesInOutput": 131
         },
         "public/js/lab-history-set.mjs": {
-          "bytesInOutput": 18616
+          "bytesInOutput": 19484
         },
         "public/js/patient-delete-sync.mjs": {
           "bytesInOutput": 1175
@@ -6977,10 +7003,10 @@
           "bytesInOutput": 26344
         },
         "public/js/app.js": {
-          "bytesInOutput": 8155
+          "bytesInOutput": 8175
         },
         "public/js/app-runtimes.mjs": {
-          "bytesInOutput": 15523
+          "bytesInOutput": 15739
         },
         "public/js/app-shell.mjs": {
           "bytesInOutput": 30959
@@ -6999,6 +7025,9 @@
         },
         "public/js/features/productivity.mjs": {
           "bytesInOutput": 16192
+        },
+        "public/js/features/lab-history-batch-copy-modal.mjs": {
+          "bytesInOutput": 7277
         },
         "lib/drive-import/normalize.mjs": {
           "bytesInOutput": 183
@@ -7061,7 +7090,7 @@
           "bytesInOutput": 950
         }
       },
-      "bytes": 2875703
+      "bytes": 2884171
     }
   }
 }

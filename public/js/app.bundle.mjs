@@ -7772,10 +7772,10 @@ function rebuildGasesFromResults_(rows) {
     values[k] = valueFromSectionLine_(base, k);
   });
   var qs = pickBestSectionLine_(rows, "QS");
-  var esc30 = pickBestSectionLine_(rows, "ESC");
+  var esc31 = pickBestSectionLine_(rows, "ESC");
   var pfhs = pickBestSectionLine_(rows, "PFHS");
-  var na = valueFromSectionLine_(qs, "Na") || valueFromSectionLine_(esc30, "Na") || values.Na;
-  var cl = valueFromSectionLine_(qs, "Cl") || valueFromSectionLine_(esc30, "Cl");
+  var na = valueFromSectionLine_(qs, "Na") || valueFromSectionLine_(esc31, "Na") || values.Na;
+  var cl = valueFromSectionLine_(qs, "Cl") || valueFromSectionLine_(esc31, "Cl");
   var alb = valueFromSectionLine_(pfhs, "Alb");
   var bica = values.Bica;
   orderedKeys.forEach(function(k) {
@@ -9642,8 +9642,8 @@ function procesarLabs(textoBruto) {
       sexo: sexoRaw
     });
     if (qs) resLabs.push(qs);
-    var esc30 = parseESC_(textoQS);
-    if (esc30) resLabs.push(esc30);
+    var esc31 = parseESC_(textoQS);
+    if (esc31) resLabs.push(esc31);
     var pfh = parsePFH_(textoParaBh);
     if (pfh) resLabs.push(pfh);
     var pltCit = parsePlaquetasCitrato_(textoBruto, tNorm);
@@ -27588,7 +27588,7 @@ function renderCensoPreviewHtml(payload) {
   var rows = payload.rows || [];
   var titleLine = header.titleLine || "Censo de Sala";
   var equipoLine = header.equipoLine || "";
-  function esc30(s) {
+  function esc31(s) {
     return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
   function pacienteCell(row) {
@@ -27599,33 +27599,33 @@ function renderCensoPreviewHtml(payload) {
       lines.push(l);
     });
     return lines.map(function(l) {
-      return '<span class="meta">' + esc30(l) + "</span>";
+      return '<span class="meta">' + esc31(l) + "</span>";
     }).join("<br>");
   }
   function camaCellHtml(camaText) {
     var label = formatCamaCellLabel(parseCamaCellForCenso(camaText));
     if (label === "\u2014") return "\u2014";
-    return '<span class="censo-cama-vline">' + esc30(label) + "</span>";
+    return '<span class="censo-cama-vline">' + esc31(label) + "</span>";
   }
   function cell(row, key, fallbackLabel) {
     var v = row[key];
-    if (v) return esc30(v).replace(/\n/g, "<br>");
+    if (v) return esc31(v).replace(/\n/g, "<br>");
     var sec = (row.sections || []).find(function(s) {
       return s.label === fallbackLabel;
     });
-    return sec ? esc30(sec.lines.join("\n")).replace(/\n/g, "<br>") : "\u2014";
+    return sec ? esc31(sec.lines.join("\n")).replace(/\n/g, "<br>") : "\u2014";
   }
   function colMultiline(row, key) {
     var v = String(row[key] || "").trim();
     if (!v) return "\u2014";
     return v.split("\n").map(function(l) {
-      return esc30(l);
+      return esc31(l);
     }).join("<br>");
   }
   var body = rows.map(function(row, idx) {
-    return '<tr class="' + (idx % 2 ? "alt" : "") + '"><td class="censo-center censo-bold censo-num"><span class="censo-num-val">' + esc30(row.num) + '</span></td><td class="censo-center censo-bold censo-cama">' + camaCellHtml(row.cama) + '</td><td class="censo-center censo-paciente">' + pacienteCell(row) + '</td><td class="censo-center censo-bold">' + cell(row, "dx", "Diagn\xF3sticos") + '</td><td class="censo-center">' + cell(row, "meds", "ATB / Medicamentos") + '</td><td class="censo-labs">' + cell(row, "labs", "Laboratorios") + '</td><td class="censo-signos">' + colMultiline(row, "signosCol") + '</td><td class="censo-io">' + colMultiline(row, "ioCol") + "</td><td>" + cell(row, "accesos", "Accesos") + "</td><td>" + cell(row, "cultivos", "Cultivos") + '</td><td class="censo-pend">' + cell(row, "pendientes", "Pendientes") + "</td></tr>";
+    return '<tr class="' + (idx % 2 ? "alt" : "") + '"><td class="censo-center censo-bold censo-num"><span class="censo-num-val">' + esc31(row.num) + '</span></td><td class="censo-center censo-bold censo-cama">' + camaCellHtml(row.cama) + '</td><td class="censo-center censo-paciente">' + pacienteCell(row) + '</td><td class="censo-center censo-bold">' + cell(row, "dx", "Diagn\xF3sticos") + '</td><td class="censo-center">' + cell(row, "meds", "ATB / Medicamentos") + '</td><td class="censo-labs">' + cell(row, "labs", "Laboratorios") + '</td><td class="censo-signos">' + colMultiline(row, "signosCol") + '</td><td class="censo-io">' + colMultiline(row, "ioCol") + "</td><td>" + cell(row, "accesos", "Accesos") + "</td><td>" + cell(row, "cultivos", "Cultivos") + '</td><td class="censo-pend">' + cell(row, "pendientes", "Pendientes") + "</td></tr>";
   }).join("");
-  return '<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Censo ' + esc30(header.fecha) + "</title><style>@page{size:legal landscape;margin:10mm}body{font-family:system-ui,sans-serif;font-size:11px;line-height:1.4;color:#1a1d24;margin:0;padding:12px 14px}h1{margin:0 0 2px;font-size:16px}.sub{color:#5c6370;font-size:8px;margin-bottom:8px}.mes{text-align:center;font-weight:700;color:#1e4d72;font-size:12px;margin:-22px 0 8px}table{width:100%;max-width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #d0d4dc;padding:3px 4px;vertical-align:middle;word-wrap:break-word}td.censo-labs{vertical-align:top;white-space:pre-wrap;line-height:1.2;font-size:7px}td.censo-signos,td.censo-io,td.censo-pend{vertical-align:top;white-space:pre-wrap;line-height:1.25;font-size:8px;text-align:left}td.censo-paciente{vertical-align:middle;text-align:center;line-height:1.2;font-size:10px}th{background:#eef1f5;font-size:9px;text-transform:uppercase;color:#1e4d72}tr.alt td{background:#f8f9fb}.meta{color:#5c6370;font-weight:400}.censo-center{text-align:center;vertical-align:middle}.censo-bold{font-weight:700}td.censo-num,td.censo-cama{padding:4px 2px;text-align:center;vertical-align:middle}td.censo-num .censo-num-val,td.censo-cama .censo-cama-vline{display:block;margin:0 auto}.censo-cama-vline{font-weight:700;writing-mode:vertical-rl;text-orientation:mixed;line-height:1;white-space:nowrap}th.censo-center{text-align:center;vertical-align:middle}col.num{width:2.5%}col.cama{width:2%}col.pac{width:5%}col.dx{width:10%}col.med{width:6.5%}col.lab{width:20%}col.signos{width:9%}col.io{width:8%}col.acc{width:4%}col.cult{width:8%}col.pend{width:11%}</style></head><body><h1>" + esc30(titleLine) + "</h1>" + (header.mes ? '<div class="mes">' + esc30(header.mes) + "</div>" : "") + '<div class="sub">' + (equipoLine ? esc30(equipoLine) : "") + (equipoLine && header.fecha ? " \xB7 " : "") + (header.fecha ? esc30(header.fecha) : "") + '</div><table><colgroup><col class="num"><col class="cama"><col class="pac"><col class="dx"><col class="med"><col class="lab"><col class="signos"><col class="io"><col class="acc"><col class="cult"><col class="pend"></colgroup><thead><tr><th class="censo-center">#</th><th class="censo-center censo-bold">Cama</th><th class="censo-center">Paciente</th><th class="censo-center censo-bold">Dx</th><th class="censo-center">ATB/Meds</th><th>Labs</th><th>Signos</th><th>I/E/B</th><th>Accesos</th><th>Cultivos</th><th>Pend.</th></tr></thead><tbody>' + body + "</tbody></table></body></html>";
+  return '<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Censo ' + esc31(header.fecha) + "</title><style>@page{size:legal landscape;margin:10mm}body{font-family:system-ui,sans-serif;font-size:11px;line-height:1.4;color:#1a1d24;margin:0;padding:12px 14px}h1{margin:0 0 2px;font-size:16px}.sub{color:#5c6370;font-size:8px;margin-bottom:8px}.mes{text-align:center;font-weight:700;color:#1e4d72;font-size:12px;margin:-22px 0 8px}table{width:100%;max-width:100%;border-collapse:collapse;table-layout:fixed}th,td{border:1px solid #d0d4dc;padding:3px 4px;vertical-align:middle;word-wrap:break-word}td.censo-labs{vertical-align:top;white-space:pre-wrap;line-height:1.2;font-size:7px}td.censo-signos,td.censo-io,td.censo-pend{vertical-align:top;white-space:pre-wrap;line-height:1.25;font-size:8px;text-align:left}td.censo-paciente{vertical-align:middle;text-align:center;line-height:1.2;font-size:10px}th{background:#eef1f5;font-size:9px;text-transform:uppercase;color:#1e4d72}tr.alt td{background:#f8f9fb}.meta{color:#5c6370;font-weight:400}.censo-center{text-align:center;vertical-align:middle}.censo-bold{font-weight:700}td.censo-num,td.censo-cama{padding:4px 2px;text-align:center;vertical-align:middle}td.censo-num .censo-num-val,td.censo-cama .censo-cama-vline{display:block;margin:0 auto}.censo-cama-vline{font-weight:700;writing-mode:vertical-rl;text-orientation:mixed;line-height:1;white-space:nowrap}th.censo-center{text-align:center;vertical-align:middle}col.num{width:2.5%}col.cama{width:2%}col.pac{width:5%}col.dx{width:10%}col.med{width:6.5%}col.lab{width:20%}col.signos{width:9%}col.io{width:8%}col.acc{width:4%}col.cult{width:8%}col.pend{width:11%}</style></head><body><h1>" + esc31(titleLine) + "</h1>" + (header.mes ? '<div class="mes">' + esc31(header.mes) + "</div>" : "") + '<div class="sub">' + (equipoLine ? esc31(equipoLine) : "") + (equipoLine && header.fecha ? " \xB7 " : "") + (header.fecha ? esc31(header.fecha) : "") + '</div><table><colgroup><col class="num"><col class="cama"><col class="pac"><col class="dx"><col class="med"><col class="lab"><col class="signos"><col class="io"><col class="acc"><col class="cult"><col class="pend"></colgroup><thead><tr><th class="censo-center">#</th><th class="censo-center censo-bold">Cama</th><th class="censo-center">Paciente</th><th class="censo-center censo-bold">Dx</th><th class="censo-center">ATB/Meds</th><th>Labs</th><th>Signos</th><th>I/E/B</th><th>Accesos</th><th>Cultivos</th><th>Pend.</th></tr></thead><tbody>' + body + "</tbody></table></body></html>";
 }
 function ensureCensoPreviewModal() {
   var existing = document.getElementById("censo-preview-backdrop");
@@ -31670,14 +31670,14 @@ function createTendGroupModal(deps) {
       bar.className = "tend-group-table-hidden-bar tend-group-panels-hidden-bar";
       panelEl.insertBefore(bar, panelEl.firstChild);
     }
-    var esc30 = deps.esc;
+    var esc31 = deps.esc;
     if (!hiddenFams.length) {
       bar.style.display = "none";
       bar.innerHTML = "";
       return;
     }
     var chips = hiddenFams.map(function(fam) {
-      return '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-panel="' + esc30(fam) + '">' + esc30(resolvePanelTitle(state.patientId, sectionKey, fam)) + ' <span aria-hidden="true">\xD7</span></button>';
+      return '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-panel="' + esc31(fam) + '">' + esc31(resolvePanelTitle(state.patientId, sectionKey, fam)) + ' <span aria-hidden="true">\xD7</span></button>';
     });
     bar.style.display = "";
     bar.innerHTML = '<span class="tend-group-hidden-label">Paneles ocultos:</span>' + chips.join("") + '<button type="button" class="tend-toolbar-btn tend-group-show-all-btn tend-group-panels-show-all">Mostrar todo</button>';
@@ -31754,7 +31754,7 @@ function createTendGroupModal(deps) {
       bar.className = "tend-group-table-hidden-bar";
       wrap.insertBefore(bar, wrap.firstChild);
     }
-    var esc30 = deps.esc;
+    var esc31 = deps.esc;
     var chips = [];
     hidden.cols.forEach(function(ck) {
       var label = ck;
@@ -31765,14 +31765,14 @@ function createTendGroupModal(deps) {
         }
       }
       chips.push(
-        '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-col="' + esc30(ck) + '">' + esc30(label) + ' <span aria-hidden="true">\xD7</span></button>'
+        '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-col="' + esc31(ck) + '">' + esc31(label) + ' <span aria-hidden="true">\xD7</span></button>'
       );
     });
     hidden.rows.forEach(function(fk) {
       var sp = state.specsByField[fk];
       var lab = sp ? legendLabelForSpec(sectionKey, sp) : fk;
       chips.push(
-        '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-row="' + esc30(fk) + '">' + esc30(lab) + ' <span aria-hidden="true">\xD7</span></button>'
+        '<button type="button" class="tend-hidden-chip tend-group-restore-chip" data-restore-row="' + esc31(fk) + '">' + esc31(lab) + ' <span aria-hidden="true">\xD7</span></button>'
       );
     });
     if (!chips.length) {
@@ -31898,7 +31898,7 @@ function createTendGroupModal(deps) {
       }
     );
     state.tableModel = buildTableExportModel(sectionKey, raw, hidden);
-    var esc30 = deps.esc;
+    var esc31 = deps.esc;
     var html = ['<div class="cultivos-table-wrap"><table id="tend-group-table" class="cultivos-table tend-group-table">'];
     html.push("<thead><tr><th>Analito</th>");
     raw.columns.forEach(function(set) {
@@ -31906,7 +31906,7 @@ function createTendGroupModal(deps) {
       var colHidden = hidden.cols.indexOf(ck) >= 0;
       var colLabel = columnHeader(set, raw.columns);
       html.push(
-        '<th class="' + (colHidden ? "is-hidden" : "") + '"><label class="tend-group-col-toggle"><input type="checkbox" data-col-key="' + esc30(ck) + '"' + (colHidden ? " checked" : "") + ' aria-label="Ocultar columna"> ' + esc30(colLabel) + "</label></th>"
+        '<th class="' + (colHidden ? "is-hidden" : "") + '"><label class="tend-group-col-toggle"><input type="checkbox" data-col-key="' + esc31(ck) + '"' + (colHidden ? " checked" : "") + ' aria-label="Ocultar columna"> ' + esc31(colLabel) + "</label></th>"
       );
     });
     html.push("</tr></thead><tbody>");
@@ -31917,7 +31917,7 @@ function createTendGroupModal(deps) {
       var rowDisp = spRow ? formatTendSeriesLabel(spRow.cardTitle || row.fieldKey, row.fieldKey, rowUnit) : formatTendSeriesLabel(row.label, row.fieldKey, row.unit || rowUnit);
       var rowLabel = rowDisp.unit && rowDisp.unit !== "%" ? rowDisp.name + " (" + rowDisp.unit + ")" : rowDisp.name;
       html.push(
-        '<tr data-field="' + esc30(row.fieldKey) + '" class="' + (rowHidden ? " tend-group-row--data-hidden" : "") + '"><td><label class="tend-group-row-toggle"><input type="checkbox" data-field-key="' + esc30(row.fieldKey) + '"' + (rowHidden ? " checked" : "") + ' aria-label="Ocultar valores de fila (la fila sigue visible)"> ' + esc30(rowLabel) + "</label></td>"
+        '<tr data-field="' + esc31(row.fieldKey) + '" class="' + (rowHidden ? " tend-group-row--data-hidden" : "") + '"><td><label class="tend-group-row-toggle"><input type="checkbox" data-field-key="' + esc31(row.fieldKey) + '"' + (rowHidden ? " checked" : "") + ' aria-label="Ocultar valores de fila (la fila sigue visible)"> ' + esc31(rowLabel) + "</label></td>"
       );
       raw.columns.forEach(function(set, ci) {
         var ck = colKeyForSet(set);
@@ -31925,7 +31925,7 @@ function createTendGroupModal(deps) {
         var val2 = row.values[ci];
         var ab = isAbnormal(set, sectionKey, row.fieldKey, val2, state.historyDesc);
         html.push(
-          '<td class="' + (colHidden ? "is-hidden" : "") + (ab ? " tend-abnormal" : "") + '">' + esc30(formatCellValue(val2, ab)) + "</td>"
+          '<td class="' + (colHidden ? "is-hidden" : "") + (ab ? " tend-abnormal" : "") + '">' + esc31(formatCellValue(val2, ab)) + "</td>"
         );
       });
       html.push("</tr>");
@@ -47976,7 +47976,7 @@ function renderManejoElectrolitos(panelEl, pid, patient, ui) {
     panelEl.appendChild(off);
     return;
   }
-  var esc30 = ui.esc || function(s) {
+  var esc31 = ui.esc || function(s) {
     return String(s || "");
   };
   var buildKvBlock2 = ui.buildKvBlock;
@@ -48082,7 +48082,7 @@ function renderManejoElectrolitos(panelEl, pid, patient, ui) {
   }
   var meta = document.createElement("p");
   meta.className = "manejo-meta";
-  meta.innerHTML = "Laboratorio m\xE1s reciente: <strong>" + esc30(String(latest.fecha || labFechaNorm || "\u2014")) + "</strong>" + (latest.hora ? " \xB7 <span>" + esc30(String(latest.hora).slice(0, 8)) + "</span>" : "");
+  meta.innerHTML = "Laboratorio m\xE1s reciente: <strong>" + esc31(String(latest.fecha || labFechaNorm || "\u2014")) + "</strong>" + (latest.hora ? " \xB7 <span>" + esc31(String(latest.hora).slice(0, 8)) + "</span>" : "");
   root.appendChild(meta);
   if (evalOut.crossAlerts && evalOut.crossAlerts.length) {
     var xc = document.createElement("aside");
@@ -61211,36 +61211,50 @@ function primaryTipoForLabSet(resLabs) {
   if (hasC) return "cultivo";
   return "labs";
 }
-function rebuildEstudiosFromLabHistory(patientId) {
-  if (!patientId) return;
-  if (!notes[patientId]) notes[patientId] = {};
-  var ordered = sortLabHistoryChronological(
-    ensureParsedLabHistory(patientId, { skipRebuildNota: true })
-  );
-  if (!ordered.length) {
-    notes[patientId].estudios = "";
-    return;
+function sortLabSetsWithinDay(a, b) {
+  var ta = parseFechaLabToMs(a.fecha, a.hora);
+  var tb = parseFechaLabToMs(b.fecha, b.hora);
+  if (typeof ta === "number" && typeof tb === "number" && isFinite(ta) && isFinite(tb) && ta !== tb) {
+    return tb - ta;
   }
+  return compareLabSetIdForDedupe(a, b);
+}
+function sortLabHistoryDayKeys(a, b) {
+  if (a === "Anterior") return 1;
+  if (b === "Anterior") return -1;
+  return dayKeyToSortMs(b) - dayKeyToSortMs(a);
+}
+function dayGroupLabel(dayKey, sets) {
+  if (dayKey === "Anterior") return "Anterior";
+  var header = sets[0];
+  var dateLine = buildLabSetDateLineForNota(header) || dayKey;
+  if (sets.length > 1) return dateLine + " \xB7 " + sets.length + " env\xEDos";
+  return dateLine;
+}
+function groupLabHistoryByDay(orderedSets) {
   var byDay = /* @__PURE__ */ Object.create(null);
-  ordered.forEach(function(set) {
+  (orderedSets || []).forEach(function(set) {
     if (!set || !set.resLabs || !set.resLabs.length) return;
     var dk = dayKeyFromLabSet(set);
-    if (!byDay[dk]) byDay[dk] = { sets: [] };
+    if (!byDay[dk]) byDay[dk] = { dayKey: dk, sets: [] };
     byDay[dk].sets.push(set);
   });
-  var dayKeys = Object.keys(byDay).sort(function(a, b) {
-    if (a === "Anterior") return 1;
-    if (b === "Anterior") return -1;
-    return dayKeyToSortMs(b) - dayKeyToSortMs(a);
+  return Object.keys(byDay).sort(sortLabHistoryDayKeys).map(function(dk) {
+    var sets = byDay[dk].sets.slice().sort(sortLabSetsWithinDay);
+    return { dayKey: dk, sets, label: dayGroupLabel(dk, sets) };
   });
+}
+function buildEstudiosCopyLinesFromLabSets(orderedSets, options) {
+  var only = options && options.onlyDayKeys;
+  var allowDay = null;
+  if (only) {
+    allowDay = only instanceof Set ? only : new Set(only);
+  }
+  var groups = groupLabHistoryByDay(orderedSets);
   var lines = [];
-  dayKeys.forEach(function(dk) {
-    var sets = byDay[dk].sets.slice().sort(function(a, b) {
-      var ta = parseFechaLabToMs(a.fecha, a.hora);
-      var tb = parseFechaLabToMs(b.fecha, b.hora);
-      if (typeof ta === "number" && typeof tb === "number" && isFinite(ta) && isFinite(tb) && ta !== tb) return tb - ta;
-      return compareLabSetIdForDedupe(a, b);
-    });
+  groups.forEach(function(group) {
+    if (allowDay && !allowDay.has(group.dayKey)) return;
+    var sets = group.sets;
     var labsAcc = [];
     var cultAcc = [];
     var seenLab = /* @__PURE__ */ Object.create(null);
@@ -61265,8 +61279,7 @@ function rebuildEstudiosFromLabHistory(patientId) {
       });
     });
     if (!labsAcc.length && !cultAcc.length) return;
-    var headerSet = sets[0];
-    var dateLine = buildLabSetDateLineForNota(headerSet);
+    var dateLine = buildLabSetDateLineForNota(sets[0]);
     if (dateLine) lines.push(dateLine);
     if (labsAcc.length) {
       labsAcc.forEach(function(row) {
@@ -61285,7 +61298,19 @@ function rebuildEstudiosFromLabHistory(patientId) {
     lines.push("");
   });
   while (lines.length && !String(lines[lines.length - 1]).trim()) lines.pop();
-  notes[patientId].estudios = lines.join("\n");
+  return lines;
+}
+function rebuildEstudiosFromLabHistory(patientId) {
+  if (!patientId) return;
+  if (!notes[patientId]) notes[patientId] = {};
+  var ordered = sortLabHistoryChronological(
+    ensureParsedLabHistory(patientId, { skipRebuildNota: true })
+  );
+  if (!ordered.length) {
+    notes[patientId].estudios = "";
+    return;
+  }
+  notes[patientId].estudios = buildEstudiosCopyLinesFromLabSets(ordered).join("\n");
 }
 function ensureParsedLabHistory(patientId, options) {
   var skipRebuildNota = !!(options && options.skipRebuildNota);
@@ -70076,6 +70101,144 @@ init_lan_sync();
 init_patients();
 init_lab_panel();
 init_lab_bulk_preview_modal();
+
+// public/js/features/lab-history-batch-copy-modal.mjs
+init_tend_core();
+init_lab_history_set();
+var rt36 = {
+  getActiveId() {
+    return null;
+  },
+  ensureParsedLabHistory() {
+    return [];
+  },
+  showToast() {
+  },
+  copyToClipboardSafe() {
+    return Promise.resolve(false);
+  }
+};
+function registerLabHistoryBatchCopyRuntime(partial) {
+  if (partial && typeof partial === "object") Object.assign(rt36, partial);
+}
+function esc30(s) {
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function loadPatientHistory() {
+  var pid = rt36.getActiveId();
+  if (!pid) return { pid: null, ordered: [], groups: [] };
+  var ordered;
+  if (rt36.ensureParsedLabHistoryCached) {
+    ordered = sortLabHistoryChronological(rt36.ensureParsedLabHistoryCached(pid));
+  } else {
+    ordered = sortLabHistoryChronological(
+      rt36.ensureParsedLabHistory(pid, { readOnly: true })
+    );
+  }
+  return { pid, ordered, groups: groupLabHistoryByDay(ordered) };
+}
+function selectedDayKeysFromBackdrop(backdrop) {
+  var keys = [];
+  backdrop.querySelectorAll(".lab-batch-copy-cb:checked").forEach(function(cb) {
+    var dk = cb.getAttribute("data-day-key");
+    if (dk) keys.push(dk);
+  });
+  return keys;
+}
+function syncBatchCopyActions(backdrop, ordered) {
+  var ta = backdrop.querySelector("#lab-batch-copy-preview");
+  var countEl = backdrop.querySelector("#lab-batch-copy-count");
+  var copyBtn = backdrop.querySelector("#lab-batch-copy-ok");
+  if (!ta) return;
+  var keys = selectedDayKeysFromBackdrop(backdrop);
+  var n = keys.length;
+  if (countEl) {
+    countEl.textContent = n === 0 ? "Ning\xFAn d\xEDa seleccionado \u2014 marca al menos uno para copiar" : n + " d\xEDa" + (n === 1 ? "" : "s") + " seleccionado" + (n === 1 ? "" : "s");
+  }
+  if (copyBtn) {
+    copyBtn.disabled = n === 0;
+    copyBtn.setAttribute("aria-disabled", n === 0 ? "true" : "false");
+    copyBtn.style.opacity = n === 0 ? "0.55" : "";
+    copyBtn.style.cursor = n === 0 ? "not-allowed" : "pointer";
+  }
+  if (!n) {
+    ta.value = "";
+    ta.placeholder = "La vista previa aparece al seleccionar uno o m\xE1s d\xEDas arriba.";
+    return;
+  }
+  ta.placeholder = "";
+  ta.value = buildEstudiosCopyLinesFromLabSets(ordered, { onlyDayKeys: keys }).join("\n");
+}
+function closeBatchCopyModal(backdrop) {
+  if (backdrop && backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+}
+function openLabHistoryBatchCopyModal() {
+  if (!rt36.getActiveId()) {
+    rt36.showToast("Selecciona un paciente primero", "error");
+    return;
+  }
+  var loaded = loadPatientHistory();
+  if (!loaded.groups.length) {
+    rt36.showToast("No hay laboratorios en el historial de este paciente", "error");
+    return;
+  }
+  var backdrop = document.createElement("div");
+  backdrop.className = "lab-conflict-backdrop";
+  backdrop.id = "lab-batch-copy-backdrop";
+  var listHtml = loaded.groups.map(function(group) {
+    return '<li style="margin:6px 0;"><label style="cursor:pointer;display:flex;gap:8px;align-items:flex-start;"><input type="checkbox" class="lab-batch-copy-cb" data-day-key="' + esc30(group.dayKey) + '" style="margin-top:3px;flex-shrink:0;" /><span>' + esc30(group.label) + "</span></label></li>";
+  }).join("");
+  backdrop.innerHTML = '<div class="lab-conflict-modal" style="max-width:560px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;"><h3 style="margin:0 0 8px;">Copiar varios d\xEDas</h3><p style="font-size:13px;line-height:1.45;margin:0 0 10px;color:var(--text-muted);">Marca los d\xEDas que quieres copiar. El texto usa el mismo formato que el bloque <strong>Estudios</strong> del expediente (laboratorio y cultivos por d\xEDa).</p><div style="overflow-y:auto;flex:0 1 auto;max-height:28vh;padding-right:4px;"><ul style="margin:0;padding-left:0;list-style:none;font-size:13px;">' + listHtml + '</ul></div><p id="lab-batch-copy-count" style="font-size:12px;color:var(--text-muted);margin:10px 0 6px;">Ning\xFAn d\xEDa seleccionado \u2014 marca al menos uno para copiar</p><textarea id="lab-batch-copy-preview" readonly rows="8" placeholder="La vista previa aparece al seleccionar uno o m\xE1s d\xEDas arriba." style="width:100%;box-sizing:border-box;font-family:ui-monospace,monospace;font-size:12px;line-height:1.4;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);resize:vertical;flex:1;min-height:120px;"></textarea><div style="display:flex;gap:10px;margin-top:14px;justify-content:flex-end;flex-wrap:wrap;"><button type="button" id="lab-batch-copy-none" style="background:transparent;border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Quitar todas</button><button type="button" id="lab-batch-copy-all" style="background:transparent;border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Seleccionar todas</button><button type="button" id="lab-batch-copy-cancel" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--text);">Cancelar</button><button type="button" id="lab-batch-copy-ok" disabled aria-disabled="true" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:not-allowed;opacity:0.55;">Copiar al portapapeles</button></div></div>';
+  document.body.appendChild(backdrop);
+  function refreshPreview3() {
+    syncBatchCopyActions(backdrop, loaded.ordered);
+  }
+  backdrop.querySelectorAll(".lab-batch-copy-cb").forEach(function(cb) {
+    cb.addEventListener("change", refreshPreview3);
+  });
+  backdrop.querySelector("#lab-batch-copy-none").onclick = function() {
+    backdrop.querySelectorAll(".lab-batch-copy-cb").forEach(function(cb) {
+      cb.checked = false;
+    });
+    refreshPreview3();
+  };
+  backdrop.querySelector("#lab-batch-copy-all").onclick = function() {
+    backdrop.querySelectorAll(".lab-batch-copy-cb").forEach(function(cb) {
+      cb.checked = true;
+    });
+    refreshPreview3();
+  };
+  backdrop.querySelector("#lab-batch-copy-cancel").onclick = function() {
+    closeBatchCopyModal(backdrop);
+  };
+  backdrop.addEventListener("click", function(e) {
+    if (e.target === backdrop) closeBatchCopyModal(backdrop);
+  });
+  backdrop.querySelector("#lab-batch-copy-ok").onclick = async function() {
+    var keys = selectedDayKeysFromBackdrop(backdrop);
+    if (!keys.length) {
+      rt36.showToast("Selecciona al menos un d\xEDa", "error");
+      return;
+    }
+    var text = buildEstudiosCopyLinesFromLabSets(loaded.ordered, { onlyDayKeys: keys }).join("\n");
+    if (!text.trim()) {
+      rt36.showToast("No hay texto para copiar en los d\xEDas elegidos", "error");
+      return;
+    }
+    var ok = await rt36.copyToClipboardSafe(text);
+    rt36.showToast(
+      ok ? "Copiados " + keys.length + " d\xEDa" + (keys.length === 1 ? "" : "s") + " al portapapeles \u2713" : "Error al copiar al portapapeles",
+      ok ? "success" : "error"
+    );
+    if (ok) closeBatchCopyModal(backdrop);
+  };
+  refreshPreview3();
+}
+var windowHandlers16 = {
+  openLabHistoryBatchCopyModal
+};
+
+// public/js/app-runtimes.mjs
 init_lab_bulk_paste();
 init_tendencias();
 init_todos();
@@ -72224,7 +72387,7 @@ function reviewStepHint(step) {
 }
 
 // public/js/features/drive-import-modal.mjs
-var rt36 = {
+var rt37 = {
   getActiveId() {
     return null;
   },
@@ -72249,7 +72412,7 @@ var _modalStep = "paste";
 var _reviewSteps = [];
 var _reviewIndex = 0;
 function registerDriveImportRuntime(partial) {
-  if (partial && typeof partial === "object") Object.assign(rt36, partial);
+  if (partial && typeof partial === "object") Object.assign(rt37, partial);
 }
 function getBackdrop2() {
   return document.getElementById("drive-import-backdrop");
@@ -72277,7 +72440,7 @@ function getApplyMode() {
 }
 function getParsed() {
   const ta = getTextarea2();
-  const patient = rt36.getActivePatient();
+  const patient = rt37.getActivePatient();
   const existing = patient && patient.eventualidades && Array.isArray(patient.eventualidades.entries) ? patient.eventualidades.entries : [];
   const existingLabs = patient && patient.id && labHistory[patient.id] ? labHistory[patient.id] : [];
   return parseDriveDocument(ta ? ta.value : "", {
@@ -72348,7 +72511,7 @@ function refreshPreview2() {
       parseHint.textContent = "No se detect\xF3 contenido importable con el modo seleccionado.";
     }
   }
-  const patient = rt36.getActivePatient();
+  const patient = rt37.getActivePatient();
   if (warn && patient && parsed.header && parsed.header.registro) {
     const mismatch = String(parsed.header.registro).trim() && String(patient.registro || "").trim() && String(parsed.header.registro).trim() !== String(patient.registro).trim();
     warn.hidden = !mismatch;
@@ -72399,7 +72562,7 @@ function hasApprovedReviewContent(parsed) {
   return hcKeys.length > 0 || evCount > 0 || labCount > 0;
 }
 function getReviewBuildOpts(parsed) {
-  const patient = rt36.getActivePatient();
+  const patient = rt37.getActivePatient();
   return {
     applyMode: getApplyMode(),
     existingEventualidades: patient && patient.eventualidades && Array.isArray(patient.eventualidades.entries) ? patient.eventualidades.entries : [],
@@ -72420,7 +72583,7 @@ function tryAutoStartReview() {
   }
   const mode = getApplyMode();
   if (!hasImportableContent(parsed, mode)) return;
-  const patient = rt36.getActivePatient();
+  const patient = rt37.getActivePatient();
   const steps = buildDriveImportReviewSteps(parsed, getReviewBuildOpts(parsed));
   if (!steps.length) return;
   _reviewSteps = steps;
@@ -72449,7 +72612,7 @@ function onPasteInputChanged() {
 function syncConfirmLabel() {
   const btn = document.getElementById("drive-import-confirm");
   const modeFs = document.getElementById("drive-import-mode-fieldset");
-  const patient = rt36.getActivePatient();
+  const patient = rt37.getActivePatient();
   if (modeFs) modeFs.style.display = patient ? "" : "none";
   if (!btn || _modalStep !== "paste") return;
   btn.textContent = "Revisar secciones\u2026";
@@ -72703,26 +72866,26 @@ async function driveImportReviewNext() {
     renderReviewStep();
   } catch (err) {
     console.error("[drive-import] review next failed", err);
-    rt36.showToast("No se pudo completar la revisi\xF3n", "error");
+    rt37.showToast("No se pudo completar la revisi\xF3n", "error");
     setReviewImportBusy(false);
   }
 }
 function startDriveImportReview() {
   const ta = getTextarea2();
   if (!ta || !String(ta.value || "").trim()) {
-    rt36.showToast("Pega el contenido del documento", "error");
+    rt37.showToast("Pega el contenido del documento", "error");
     return;
   }
   let parsed;
   try {
     parsed = getParsed();
   } catch (_err) {
-    rt36.showToast("No se pudo analizar el texto", "error");
+    rt37.showToast("No se pudo analizar el texto", "error");
     return;
   }
   _reviewSteps = buildDriveImportReviewSteps(parsed, getReviewBuildOpts(parsed));
   if (!_reviewSteps.length) {
-    rt36.showToast("No hay secciones para revisar en este pegado", "info");
+    rt37.showToast("No hay secciones para revisar en este pegado", "info");
     return;
   }
   _reviewIndex = 0;
@@ -72735,7 +72898,7 @@ function startDriveImportReview() {
 function openDriveImportModal() {
   const bd = getBackdrop2();
   if (!bd) {
-    rt36.showToast("Importaci\xF3n desde Drive no disponible", "error");
+    rt37.showToast("Importaci\xF3n desde Drive no disponible", "error");
     return;
   }
   const ta = getTextarea2();
@@ -72771,12 +72934,12 @@ async function finishReviewAndImport() {
     try {
       parsed = getParsed();
     } catch (_err) {
-      rt36.showToast("No se pudo analizar el texto", "error");
+      rt37.showToast("No se pudo analizar el texto", "error");
       return;
     }
-    parsed = applyReviewStepsToParsed(parsed, _reviewSteps, { createNew: !rt36.getActivePatient() });
+    parsed = applyReviewStepsToParsed(parsed, _reviewSteps, { createNew: !rt37.getActivePatient() });
     if (!hasApprovedReviewContent(parsed)) {
-      rt36.showToast("No hay secciones marcadas para importar", "info");
+      rt37.showToast("No hay secciones marcadas para importar", "info");
       return;
     }
     await Promise.race([
@@ -72790,9 +72953,9 @@ async function finishReviewAndImport() {
   } catch (err) {
     console.error("[drive-import] import failed", err);
     if (err && err.message === "import-timeout") {
-      rt36.showToast("La importaci\xF3n tard\xF3 demasiado. Revisa si los datos se guardaron.", "error");
+      rt37.showToast("La importaci\xF3n tard\xF3 demasiado. Revisa si los datos se guardaron.", "error");
     } else {
-      rt36.showToast("Error al importar desde Drive", "error");
+      rt37.showToast("Error al importar desde Drive", "error");
     }
   } finally {
     setReviewImportBusy(false);
@@ -72804,20 +72967,20 @@ async function confirmDriveImport() {
   try {
     const ta = getTextarea2();
     if (!ta || !String(ta.value || "").trim()) {
-      rt36.showToast("Pega el contenido del documento", "error");
+      rt37.showToast("Pega el contenido del documento", "error");
       return;
     }
     let parsed;
     try {
       parsed = getParsed();
     } catch (_err) {
-      rt36.showToast("No se pudo analizar el texto", "error");
+      rt37.showToast("No se pudo analizar el texto", "error");
       return;
     }
     await runDriveImport(parsed, { fromReview: false });
   } catch (err) {
     console.error("[drive-import] fast import failed", err);
-    rt36.showToast("Error al importar desde Drive", "error");
+    rt37.showToast("Error al importar desde Drive", "error");
   } finally {
     setReviewImportBusy(false);
   }
@@ -72825,7 +72988,7 @@ async function confirmDriveImport() {
 async function runDriveImport(parsed, opts) {
   opts = opts || {};
   const mode = getApplyMode();
-  const patient = rt36.getActivePatient();
+  const patient = rt37.getActivePatient();
   const createNew = !patient;
   if (patient && parsed.header && parsed.header.registro && patient.registro && String(parsed.header.registro).trim() !== String(patient.registro).trim()) {
     if (!confirmDriveImportChoice(
@@ -72846,8 +73009,8 @@ async function runDriveImport(parsed, opts) {
       return;
     }
   }
-  if (typeof rt36.pushUndoSnapshot === "function") {
-    rt36.pushUndoSnapshot("Importar desde Drive");
+  if (typeof rt37.pushUndoSnapshot === "function") {
+    rt37.pushUndoSnapshot("Importar desde Drive");
   }
   if (!opts.fromReview) {
     parsed = Object.assign({}, parsed, {
@@ -72862,14 +73025,14 @@ async function runDriveImport(parsed, opts) {
   });
   if (!result.ok) {
     if (result.error === "hc-conflict") {
-      rt36.showToast("Conflicto al guardar Historia cl\xEDnica en LAN. Recarga e intenta de nuevo.", "error");
+      rt37.showToast("Conflicto al guardar Historia cl\xEDnica en LAN. Recarga e intenta de nuevo.", "error");
     } else {
-      rt36.showToast("No se pudo aplicar la importaci\xF3n", "error");
+      rt37.showToast("No se pudo aplicar la importaci\xF3n", "error");
     }
     return;
   }
-  if (typeof rt36.addAuditEntry === "function") {
-    rt36.addAuditEntry(
+  if (typeof rt37.addAuditEntry === "function") {
+    rt37.addAuditEntry(
       "drive-import",
       "ok",
       result.evAdded || 0,
@@ -72907,13 +73070,13 @@ async function runDriveImport(parsed, opts) {
   if (result.lanSyncDeferred) {
     parts.push("sincronizaci\xF3n con la sala en segundo plano");
   }
-  rt36.showToast(parts.join(" \xB7 "), "success");
+  rt37.showToast(parts.join(" \xB7 "), "success");
   if (result.navigateTo === "lab") {
-    if (typeof rt36.switchAppTab === "function") rt36.switchAppTab("lab");
+    if (typeof rt37.switchAppTab === "function") rt37.switchAppTab("lab");
   } else {
-    if (typeof rt36.switchAppTab === "function") rt36.switchAppTab("clinico");
-    if (typeof rt36.switchInnerTab === "function") {
-      rt36.switchInnerTab(result.navigateTo || "historia", { forceRender: true });
+    if (typeof rt37.switchAppTab === "function") rt37.switchAppTab("clinico");
+    if (typeof rt37.switchInnerTab === "function") {
+      rt37.switchInnerTab(result.navigateTo || "historia", { forceRender: true });
     }
   }
 }
@@ -72934,7 +73097,7 @@ function wireDriveImportActionButtons() {
       e.preventDefault();
       void Promise.resolve(fn()).catch(function(err) {
         console.error("[drive-import] action failed", pair[0], err);
-        rt36.showToast("No se pudo completar la acci\xF3n de importaci\xF3n", "error");
+        rt37.showToast("No se pudo completar la acci\xF3n de importaci\xF3n", "error");
         setReviewImportBusy(false);
       });
     });
@@ -72973,7 +73136,7 @@ function wireDriveImportModal() {
     });
   }
 }
-var windowHandlers16 = {
+var windowHandlers17 = {
   openDriveImportModal,
   closeDriveImportModal,
   confirmDriveImport,
@@ -73013,7 +73176,7 @@ init_expediente();
 init_settings_help();
 init_patients();
 init_chrome();
-var rt37 = {
+var rt38 = {
   getActiveId() {
     return null;
   },
@@ -73040,22 +73203,22 @@ function wasV3MigratedThisBoot() {
   return v3MigratedThisBoot;
 }
 function registerAppRuntimeContext(partial) {
-  if (partial && typeof partial === "object") Object.assign(rt37, partial);
+  if (partial && typeof partial === "object") Object.assign(rt38, partial);
 }
 function registerAllFeatureRuntimes() {
   registerMedicationsRuntime({
     getActiveId: function() {
-      return rt37.getActiveId();
+      return rt38.getActiveId();
     },
     showToast,
     getSettings: function() {
-      return rt37.getSettings();
+      return rt38.getSettings();
     },
     navigateToEstadoActualPanel
   });
   registerMedPharmProfileRuntime({
     getActiveId: function() {
-      return rt37.getActiveId();
+      return rt38.getActiveId();
     },
     showToast,
     refreshMedPanel: function() {
@@ -73065,28 +73228,28 @@ function registerAllFeatureRuntimes() {
   registerProfileRuntime({
     showToast,
     getActiveId: function() {
-      return rt37.getActiveId();
+      return rt38.getActiveId();
     },
     syncWorkContextChrome
   });
   registerPaseBoardRuntime({
     getActiveAppTab: function() {
-      return rt37.getActiveAppTab();
+      return rt38.getActiveAppTab();
     },
     setActiveAppTab: function(v) {
-      rt37.setActiveAppTab(v);
+      rt38.setActiveAppTab(v);
     },
     getActiveInner: function() {
-      return rt37.getActiveInner();
+      return rt38.getActiveInner();
     },
     setActiveInner: function(v) {
-      rt37.setActiveInner(v);
+      rt38.setActiveInner(v);
     },
     getActiveId: function() {
-      return rt37.getActiveId();
+      return rt38.getActiveId();
     },
     getSettings: function() {
-      return rt37.getSettings();
+      return rt38.getSettings();
     },
     renderMedRecetaPanel,
     renderLabHistoryPanel,
@@ -73107,39 +73270,39 @@ function registerAllFeatureRuntimes() {
     scrollActiveRondaCardIntoView,
     renderProcedureAgendaPanel,
     getActiveAppTab: function() {
-      return rt37.getActiveAppTab();
+      return rt38.getActiveAppTab();
     },
     getActiveInner: function() {
-      return rt37.getActiveInner();
+      return rt38.getActiveInner();
     },
     getActiveId: function() {
-      return rt37.getActiveId();
+      return rt38.getActiveId();
     },
     setRoundOverviewMode,
     renderPaseBoard,
     renderGuardiaBoard: function() {
-      return renderGuardiaBoard(rt37.getSettings());
+      return renderGuardiaBoard(rt38.getSettings());
     },
     syncLabOutputChrome
   });
   registerPatientsRuntime({
     getActiveId: function() {
-      return rt37.getActiveId();
+      return rt38.getActiveId();
     },
     setActiveId: function(id) {
-      rt37.setActiveId(id);
+      rt38.setActiveId(id);
     },
     getActiveAppTab: function() {
-      return rt37.getActiveAppTab();
+      return rt38.getActiveAppTab();
     },
     getActiveInner: function() {
-      return rt37.getActiveInner();
+      return rt38.getActiveInner();
     },
     setActiveInner: function(v) {
-      rt37.setActiveInner(v);
+      rt38.setActiveInner(v);
     },
     getSettings: function() {
-      return rt37.getSettings();
+      return rt38.getSettings();
     },
     getActiveLab: function() {
       return getActiveLab();
@@ -73190,11 +73353,11 @@ function registerAllFeatureRuntimes() {
     primaryTipoForLabSet,
     normalizeFechaLabHistory
   });
-  v3MigratedThisBoot = migrateToV3(rt37.getSettings());
-  if (v3MigratedThisBoot) storage.saveSettings(rt37.getSettings());
+  v3MigratedThisBoot = migrateToV3(rt38.getSettings());
+  if (v3MigratedThisBoot) storage.saveSettings(rt38.getSettings());
   registerLabHistoryMaintRuntime({
     getActiveId: function() {
-      return rt37.getActiveId();
+      return rt38.getActiveId();
     },
     renderLabHistoryPanel,
     refreshTendenciasOrCultivosPanel
@@ -73203,13 +73366,13 @@ function registerAllFeatureRuntimes() {
   registerLanSaveHooks({ scheduleLabHistoryPostSaveMaintenance });
   registerPlatformRuntime({
     getActiveId: function() {
-      return rt37.getActiveId();
+      return rt38.getActiveId();
     },
     setActiveId: function(id) {
-      rt37.setActiveId(id);
+      rt38.setActiveId(id);
     },
     getSettings: function() {
-      return rt37.getSettings();
+      return rt38.getSettings();
     },
     showToast,
     syncTeamSyncHeaderButton: syncTeamSyncHeaderButton2,
@@ -73217,7 +73380,7 @@ function registerAllFeatureRuntimes() {
   });
   registerTendenciasRuntime({
     getActiveId: function() {
-      return rt37.getActiveId();
+      return rt38.getActiveId();
     },
     ensureParsedLabHistory,
     ensureParsedLabHistoryCached,
@@ -73228,17 +73391,17 @@ function registerAllFeatureRuntimes() {
   });
   registerTodosRuntime({
     getActiveId: function() {
-      return rt37.getActiveId();
+      return rt38.getActiveId();
     },
     getActiveAppTab: function() {
-      return rt37.getActiveAppTab();
+      return rt38.getActiveAppTab();
     },
     getRoundOverviewMode,
     renderPaseBoard
   });
   registerManejoRuntime({
     getActiveId: function() {
-      return rt37.getActiveId();
+      return rt38.getActiveId();
     },
     ensureParsedLabHistory,
     ensureParsedLabHistoryCached,
@@ -73249,23 +73412,23 @@ function registerAllFeatureRuntimes() {
   });
   registerVpoRuntime({
     getActiveId: function() {
-      return rt37.getActiveId();
+      return rt38.getActiveId();
     },
     showToast,
     switchAppTab
   });
   registerRecetaHuRuntime({
     getActiveId: function() {
-      return rt37.getActiveId();
+      return rt38.getActiveId();
     },
     getActiveAppTab: function() {
-      return rt37.getActiveAppTab();
+      return rt38.getActiveAppTab();
     },
     getActiveInner: function() {
-      return rt37.getActiveInner();
+      return rt38.getActiveInner();
     },
     getSettings: function() {
-      return rt37.getSettings();
+      return rt38.getSettings();
     },
     switchAppTab,
     switchInnerTab,
@@ -73280,16 +73443,16 @@ function registerAllFeatureRuntimes() {
   });
   registerSettingsHelpRuntime({
     getSettings: function() {
-      return rt37.getSettings();
+      return rt38.getSettings();
     },
     getActiveInner: function() {
-      return rt37.getActiveInner();
+      return rt38.getActiveInner();
     },
     getActiveId: function() {
-      return rt37.getActiveId();
+      return rt38.getActiveId();
     },
     setActiveId: function(id) {
-      rt37.setActiveId(id);
+      rt38.setActiveId(id);
     },
     switchInnerTab,
     renderInnerTabs,
@@ -73310,7 +73473,7 @@ function registerAllFeatureRuntimes() {
   });
   registerCensoRuntime({
     getSettings: function() {
-      return rt37.getSettings();
+      return rt38.getSettings();
     },
     showToast,
     requestDocumentJson,
@@ -73323,10 +73486,10 @@ function registerAllFeatureRuntimes() {
   });
   registerHistoriaClinicaRuntime({
     getActiveId: function() {
-      return rt37.getActiveId();
+      return rt38.getActiveId();
     },
     getSettings: function() {
-      return rt37.getSettings();
+      return rt38.getSettings();
     },
     showToast,
     copyToClipboardSafe,
@@ -73334,22 +73497,22 @@ function registerAllFeatureRuntimes() {
   });
   registerEventualidadesRuntime({
     getActiveId: function() {
-      return rt37.getActiveId();
+      return rt38.getActiveId();
     },
     showToast
   });
   registerExpedienteRuntime({
     getActiveId: function() {
-      return rt37.getActiveId();
+      return rt38.getActiveId();
     },
     getActiveAppTab: function() {
-      return rt37.getActiveAppTab();
+      return rt38.getActiveAppTab();
     },
     getActiveInner: function() {
-      return rt37.getActiveInner();
+      return rt38.getActiveInner();
     },
     getSettings: function() {
-      return rt37.getSettings();
+      return rt38.getSettings();
     },
     showToast,
     renderTendencias,
@@ -73369,10 +73532,10 @@ function registerAllFeatureRuntimes() {
   });
   registerNotesIndicacionesRuntime({
     getActiveId: function() {
-      return rt37.getActiveId();
+      return rt38.getActiveId();
     },
     getSettings: function() {
-      return rt37.getSettings();
+      return rt38.getSettings();
     },
     showToast,
     renderRoundOverviewPanels,
@@ -73389,28 +73552,28 @@ function registerAllFeatureRuntimes() {
   });
   registerProcedureAgendaRuntime({
     getActiveId: function() {
-      return rt37.getActiveId();
+      return rt38.getActiveId();
     },
     showToast,
     renderPaseBoard
   });
   registerSoapEstadoRuntime({
     getActiveId: function() {
-      return rt37.getActiveId();
+      return rt38.getActiveId();
     },
     showToast,
     getSettings: function() {
-      return rt37.getSettings();
+      return rt38.getSettings();
     },
     navigateToEstadoActualPanel
   });
   registerEstadoActualPanelRuntime({
     getActiveId: function() {
-      return rt37.getActiveId();
+      return rt38.getActiveId();
     },
     showToast,
     getSettings: function() {
-      return rt37.getSettings();
+      return rt38.getSettings();
     },
     switchConsolidatedTab,
     copyToClipboardSafe,
@@ -73421,10 +73584,10 @@ function registerAllFeatureRuntimes() {
   });
   registerDriveImportRuntime({
     getActiveId: function() {
-      return rt37.getActiveId();
+      return rt38.getActiveId();
     },
     getActivePatient: function() {
-      var id = rt37.getActiveId();
+      var id = rt38.getActiveId();
       if (!id) return null;
       return patients.find(function(p) {
         return String(p.id) === String(id);
@@ -73466,7 +73629,7 @@ function registerAllFeatureRuntimes() {
     ensureForm: ensureEaRegistroModalForm,
     syncGluMode: syncEaRegistroGluMode,
     resetForm: function() {
-      var activeId2 = rt37.getActiveId();
+      var activeId2 = rt38.getActiveId();
       var patient = activeId2 && patients.find(function(p) {
         return p.id === activeId2;
       });
@@ -73477,10 +73640,10 @@ function registerAllFeatureRuntimes() {
     showToast,
     copyToClipboardSafe,
     getActiveId: function() {
-      return rt37.getActiveId();
+      return rt38.getActiveId();
     },
     setActiveId: function(id) {
-      rt37.setActiveId(id);
+      rt38.setActiveId(id);
     },
     selectPatient,
     renderRoundOverviewPanels,
@@ -73533,12 +73696,21 @@ function registerAllFeatureRuntimes() {
     openAddModalFromLabPatient,
     tourOnBulkPreviewPatientSaved
   });
+  registerLabHistoryBatchCopyRuntime({
+    showToast,
+    copyToClipboardSafe,
+    getActiveId: function() {
+      return rt38.getActiveId();
+    },
+    ensureParsedLabHistory,
+    ensureParsedLabHistoryCached
+  });
   registerProductivityRuntime({
     getActiveId: function() {
-      return rt37.getActiveId();
+      return rt38.getActiveId();
     },
     getSettings: function() {
-      return rt37.getSettings();
+      return rt38.getSettings();
     },
     selectPatient,
     switchAppTab,
@@ -73557,13 +73729,13 @@ function registerAllFeatureRuntimes() {
     renderNoteForm,
     renderLabHistoryPanel,
     getActiveId: function() {
-      return rt37.getActiveId();
+      return rt38.getActiveId();
     },
     setActiveId: function(id) {
-      rt37.setActiveId(id);
+      rt38.setActiveId(id);
     },
     getActiveAppTab: function() {
-      return rt37.getActiveAppTab();
+      return rt38.getActiveAppTab();
     },
     selectPatient,
     isMobileWeb,
@@ -73625,10 +73797,11 @@ var allWindowHandlers = Object.assign(
   windowHandlers14,
   windowHandlers8,
   windowHandlers7,
+  windowHandlers16,
   windowHandlers2,
   windowHandlers9,
   windowHandlers10,
-  windowHandlers16,
+  windowHandlers17,
   windowHandlers11,
   windowHandlers15,
   windowHandlers12,
