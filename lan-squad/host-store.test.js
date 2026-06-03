@@ -86,29 +86,42 @@ describe('host-store', () => {
     assert.strictEqual(preserved.patients.length, 1);
   });
 
-  it('putRoomSyncBundle rejects stale entity version with CONFLICT', () => {
+  it('putRoomSyncBundle applies LWW on stale entity version', () => {
     const store = createHostStore({ filePath, teamCodePlain: 'b' });
     const r = store.createRoom('Sala sync');
     store.putRoomSyncBundle(r.id, {
       baseRevision: 0,
       baseEntityVersions: {},
-      agenda: [{ id: 'e1', patientId: 'p1', procedure: 'A', location: 'X' }],
+      agenda: [
+        {
+          id: 'e1',
+          patientId: 'p1',
+          procedure: 'A',
+          location: 'X',
+          updatedAt: '2026-06-03T09:00:00.000Z',
+        },
+      ],
       todos: {},
       uploadedByClientId: 'a',
     });
     const cur = store.getRoomSyncBundle(r.id);
-    assert.throws(
-      () =>
-        store.putRoomSyncBundle(r.id, {
-          baseRevision: cur.revision,
-          baseEntityVersions: { 'a:e1': 0 },
-          agenda: [{ id: 'e1', patientId: 'p1', procedure: 'STALE', location: 'Y' }],
-          todos: {},
-          uploadedByClientId: 'b',
-        }),
-      (e) => e.code === 'CONFLICT'
-    );
-    assert.strictEqual(store.getRoomSyncBundle(r.id).agenda[0].procedure, 'A');
+    const out = store.putRoomSyncBundle(r.id, {
+      baseRevision: cur.revision,
+      baseEntityVersions: { 'a:e1': 0 },
+      agenda: [
+        {
+          id: 'e1',
+          patientId: 'p1',
+          procedure: 'STALE',
+          location: 'Y',
+          updatedAt: '2026-06-03T10:00:00.000Z',
+        },
+      ],
+      todos: {},
+      uploadedByClientId: 'b',
+    });
+    assert.ok(Array.isArray(out.lwwAppliedKeys) && out.lwwAppliedKeys.includes('a:e1'));
+    assert.strictEqual(store.getRoomSyncBundle(r.id).agenda[0].procedure, 'STALE');
   });
 
   it('putRoomSyncBundle merges disjoint todo keys', () => {

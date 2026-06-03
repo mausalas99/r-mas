@@ -112,12 +112,9 @@ describe('LAN event and handler wiring', () => {
     assert.doesNotMatch(body, /todoEntityKey\(/);
   });
 
-  it('bulk conflict button calls resolveAllConflictDraftsUseServer', () => {
-    assert.match(lanSyncFeature, /resolveAllConflictDraftsUseServer/);
-    assert.match(
-      lanSyncFeature,
-      /Usar servidor para todos[\s\S]*resolveAllConflictDraftsUseServer/
-    );
+  it('legacy conflict drafts section offers discard all', () => {
+    assert.match(lanSyncFeature, /clearAllDraftConflicts/);
+    assert.match(lanSyncFeature, /Conflictos antiguos[\s\S]*Descartar todos/);
   });
 });
 
