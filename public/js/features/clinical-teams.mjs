@@ -11,6 +11,7 @@ import {
   getCycleFieldMetaForTeamCreate,
   formatMemberCycleLabel,
   inferMembershipCycleForJoin,
+  resolveMembershipCycleForUser,
 } from '../clinico-access.mjs';
 import {
   buildClinicalTeamInviteMessage,
@@ -26,6 +27,8 @@ import {
   effectiveClinicalRank,
   hasElevatedTeamPrivileges,
   hasProgramAdminPrivileges,
+  canViewLanUserDirectory,
+  canManageTeamRoster,
 } from '../clinical-privileges.mjs';
 import {
   isLegacyMachineUsername,
@@ -35,6 +38,7 @@ import {
 import { syncRotationConfigButton, wireNuevaRotacionControl } from './clinical-rotation.mjs';
 import { persistClinicalUserBinding, readRpcSettings } from '../clinical-settings.mjs';
 import { resumeClinicalIdentityByUsername } from '../clinical-access-runtime.mjs';
+import { verifyAdminAccessCode } from '../../../lib/admin-access-code.mjs';
 import {
   ensureClinicalPanelSession,
   getClinicalTeamsPanelHost,
@@ -54,6 +58,101 @@ export const CLINICAL_TEAM_SERVICES = [
 export const CLINICAL_SALAS = ['Sala 1', 'Sala 2', 'Sala E'];
 
 const BROWSE_SALA_LS = 'clinical.browseSala';
+
+/** @type {boolean} */
+let adminAccessGrantedThisSession = false;
+/** @type {string|null} */
+let verifiedAdminAccessCode = null;
+/** @type {((value: string|null) => void)|null} */
+let adminCodePromptResolve = null;
+
+function adminCodeModalBackdropEl() {
+  return document.getElementById('clinical-admin-code-backdrop');
+}
+
+function closeAdminCodeModal() {
+  const bd = adminCodeModalBackdropEl();
+  if (!bd) return;
+  bd.classList.remove('open');
+  bd.setAttribute('aria-hidden', 'true');
+}
+
+function promptAdminAccessCode() {
+  const bd = adminCodeModalBackdropEl();
+  const input = document.getElementById('clinical-admin-code-input');
+  const err = document.getElementById('clinical-admin-code-error');
+  if (!bd || !(input instanceof HTMLInputElement)) return Promise.resolve(null);
+
+  input.value = '';
+  if (err) {
+    err.hidden = true;
+    err.textContent = '';
+  }
+  bd.classList.add('open');
+  bd.setAttribute('aria-hidden', 'false');
+  input.focus();
+
+  return new Promise((resolve) => {
+    adminCodePromptResolve = resolve;
+  });
+}
+
+function finishAdminCodePrompt(code) {
+  closeAdminCodeModal();
+  const resolve = adminCodePromptResolve;
+  adminCodePromptResolve = null;
+  resolve?.(code);
+}
+
+function submitAdminCodeModal() {
+  const input = document.getElementById('clinical-admin-code-input');
+  const err = document.getElementById('clinical-admin-code-error');
+  const code = input instanceof HTMLInputElement ? input.value : '';
+  if (!verifyAdminAccessCode(code)) {
+    if (err) {
+      err.textContent = 'Código incorrecto.';
+      err.hidden = false;
+    }
+    if (input instanceof HTMLInputElement) input.focus();
+    return;
+  }
+  finishAdminCodePrompt(String(code).trim());
+}
+
+function cancelAdminCodeModal() {
+  finishAdminCodePrompt(null);
+}
+
+function wireAdminCodeModalControls() {
+  const bd = adminCodeModalBackdropEl();
+  if (bd && !bd._rpcAdminCodeBackdropWired) {
+    bd._rpcAdminCodeBackdropWired = true;
+    bd.addEventListener('click', (ev) => {
+      if (ev.target === bd) cancelAdminCodeModal();
+    });
+  }
+
+  const form = document.getElementById('clinical-admin-code-form');
+  if (form && !form._rpcAdminCodeFormWired) {
+    form._rpcAdminCodeFormWired = true;
+    form.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      submitAdminCodeModal();
+    });
+  }
+
+  const cancelBtn = document.getElementById('btn-clinical-admin-code-cancel');
+  if (cancelBtn && !cancelBtn._rpcAdminCodeCancelWired) {
+    cancelBtn._rpcAdminCodeCancelWired = true;
+    cancelBtn.addEventListener('click', () => cancelAdminCodeModal());
+  }
+
+  const closeBtn = document.getElementById('btn-clinical-admin-code-close');
+  if (closeBtn && !closeBtn._rpcAdminCodeCloseWired) {
+    closeBtn._rpcAdminCodeCloseWired = true;
+    closeBtn.addEventListener('click', () => cancelAdminCodeModal());
+  }
+}
 
 function dbApi() {
   if (typeof window === 'undefined') return null;
@@ -147,6 +246,7 @@ export async function openClinicalTeamsPanel() {
   if (!bd) return;
   bd.classList.add('open');
   bd.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('clinical-teams-modal-open');
 
   const sessionOk = await ensureClinicalPanelSession();
   if (!sessionOk) {
@@ -180,6 +280,7 @@ export function closeClinicalTeamsPanel() {
   if (!bd) return;
   bd.classList.remove('open');
   bd.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('clinical-teams-modal-open');
 }
 
 function syncCreateTeamCycleField() {
@@ -206,6 +307,45 @@ function syncCreateTeamCycleField() {
 }
 
 export function renderCreateTeamForm() {
+  const user = clinicalSessionContext.user || {};
+  if (canManageTeamRoster(user)) {
+    return renderCreateTeamFormElevated(user);
+  }
+  return renderCreateTeamFormStandard();
+}
+
+function renderCreateTeamFormElevated(user) {
+  const homeSala = String(user?.sala || '').trim();
+  return `
+    <details class="clinical-teams-details" open>
+      <summary>Crear equipo vacío</summary>
+      <div class="clinical-teams-details-body">
+        <form id="clinical-team-create-form" class="clinical-teams-create-form clinical-teams-create-form--elevated">
+          <div class="field-group">
+            <label for="clinical-team-create-name">Nombre del equipo</label>
+            <input id="clinical-team-create-name" type="text" class="profile-input" placeholder="Equipo A · Dr. Gutiérrez" required>
+            ${hintHtml('Solo el nombre; sin integrantes todavía.')}
+          </div>
+          <div class="field-group">
+            <label for="clinical-team-create-sala">Sala</label>
+            <select id="clinical-team-create-sala" class="profile-input" required>
+              <option value="">— Seleccionar sala —</option>
+              ${CLINICAL_SALAS.map(
+                (s) =>
+                  `<option value="${escapeAttr(s)}" ${homeSala === s ? 'selected' : ''}>${escapeHtml(s)}</option>`
+              ).join('')}
+            </select>
+          </div>
+          <p class="clinical-teams-hint clinical-teams-create-elevated-hint">Asigna residentes después desde <strong>Directorio de usuarios LAN</strong>.</p>
+          <div class="modal-actions clinical-teams-create-submit-wrap">
+            <button type="submit" class="btn-save">Crear equipo vacío</button>
+          </div>
+        </form>
+      </div>
+    </details>`;
+}
+
+function renderCreateTeamFormStandard() {
   const serviceOptions = CLINICAL_TEAM_SERVICES.map(
     (svc) => `<option value="${escapeAttr(svc)}">${escapeHtml(svc)}</option>`
   ).join('');
@@ -504,6 +644,14 @@ async function tryReconcileTeamMemberships() {
   return joined.length > 0;
 }
 
+function resolveDisplayLanHandle(user, usernameForInput) {
+  const saved = normalizeUsername(user?.username || '');
+  if (saved && isValidUsernameFormat(saved)) return saved;
+  const draft = normalizeUsername(usernameForInput || '');
+  if (draft && isValidUsernameFormat(draft)) return draft;
+  return '';
+}
+
 async function renderClinicalTeamsPanelInto(host) {
   const userId = currentUserId();
   if (!userId) {
@@ -517,18 +665,6 @@ async function renderClinicalTeamsPanelInto(host) {
   const user = clinicalSessionContext.user || {};
   const joined = filterJoinedTeams(clinicalSessionContext.teams, user);
 
-  const savedHandle = normalizeUsername(user.username || '');
-  const handleHint = savedHandle
-    ? `<p class="clinical-teams-lead clinical-teams-handle-hint">Tu usuario LAN: <strong>@${escapeHtml(savedHandle)}</strong> — compártelo para que te agreguen a un equipo.</p>`
-    : '';
-
-  const joinedHtml = joined.length
-    ? joined.map((team) => renderJoinedTeamCard(team)).join('')
-    : `<p class="clinical-teams-empty clinical-teams-empty--section">Aún no perteneces a ningún equipo. ${savedHandle ? 'Pide que te agreguen con tu @usuario o ' : ''}explora equipos en tu sala abajo.</p>`;
-  const rank = effectiveClinicalRank(user);
-  const programAdmin = hasProgramAdminPrivileges(user);
-  const elevated = hasElevatedTeamPrivileges(user);
-  const sala = String(user.sala || '').trim();
   let clientId = '';
   let settings = {};
   try {
@@ -541,16 +677,41 @@ async function renderClinicalTeamsPanelInto(host) {
   const usernameForInput = legacyUsername
     ? String(settings.clinicalUsername || '').trim()
     : rawUsername;
+  const displayHandle = resolveDisplayLanHandle(user, usernameForInput);
+  const savedHandle = normalizeUsername(user.username || '');
+  const handleHint = displayHandle
+    ? `<p class="clinical-teams-lead clinical-teams-handle-hint">Tu usuario LAN: <strong>@${escapeHtml(displayHandle)}</strong> — compártelo para que te agreguen a un equipo.${savedHandle !== displayHandle ? ' Pulsa <strong>Guardar perfil</strong> para registrarlo en la red.' : ''}</p>`
+    : '';
+
+  const joinedHtml = joined.length
+    ? joined.map((team) => renderJoinedTeamCard(team)).join('')
+    : `<p class="clinical-teams-empty clinical-teams-empty--section">Aún no perteneces a ningún equipo. ${displayHandle ? 'Pide que te agreguen con tu @usuario o ' : ''}explora equipos en tu sala abajo.</p>`;
+  const rank = effectiveClinicalRank(user);
+  const programAdmin = hasProgramAdminPrivileges(user);
+  const elevated = hasElevatedTeamPrivileges(user);
+  const canViewLanUsers = canViewLanUserDirectory(user);
+  const sala = String(user.sala || '').trim();
+
   const clinicalName = escapeHtml(user.clinical_name || '');
 
   const legacyBanner = legacyUsername
     ? '<p class="clinical-teams-legacy-banner">Registra tu usuario LAN (obligatorio). Sin esto no apareces en equipos ni entregas.</p>'
     : '';
 
+  const lanDirectoryNote = canViewLanUsers
+    ? ''
+    : `<p class="clinical-teams-lan-directory-note">El directorio completo de usuarios LAN lo abren <strong>R4</strong>, <strong>Admin</strong> o quien tenga <strong>privilegios de administración</strong>. Tu @usuario se sincroniza al guardar perfil y usar la sala en vivo (⇄).</p>`;
+
+  const profileHandleBanner = displayHandle
+    ? `<p class="clinical-teams-profile-handle">Visible en la red como <strong>@${escapeHtml(displayHandle)}</strong></p>`
+    : '';
+
   const profileSection = `
     <div class="clinical-teams-profile-panel clinical-teams-rank-section">
       <h5 class="clinical-teams-subsection-title">Mi perfil y rango</h5>
       ${legacyBanner}
+      ${profileHandleBanner}
+      ${lanDirectoryNote}
       <form id="clinical-profile-form" class="clinical-teams-create-form">
         <div class="field-group">
           <label for="clinical-profile-username">Usuario LAN *</label>
@@ -581,7 +742,7 @@ async function renderClinicalTeamsPanelInto(host) {
             <input type="checkbox" id="clinical-profile-admin" ${programAdmin ? 'checked' : ''}>
             <span>Privilegios de administración</span>
           </label>
-          ${hintHtml('Rotación del programa y acceso amplio.')}
+          ${hintHtml('Requiere tu código al activar. Acceso total al programa: rotación, censo global y directorio LAN.')}
         </div>
         <div class="field-group">
           <label for="clinical-profile-sala">${programAdmin ? 'Mi sala (rango clínico)' : 'Sala'}</label>
@@ -602,6 +763,7 @@ async function renderClinicalTeamsPanelInto(host) {
 
   const browseSala = resolveBrowseSala(elevated, sala);
   const joinCodeSection = renderJoinWithCodeSectionHtml();
+  const lanUsersEntry = renderLanUsersDirectoryEntryHtml(user);
   const directorySection = await renderDirectorySectionHtml({
     userId,
     elevated,
@@ -619,6 +781,7 @@ async function renderClinicalTeamsPanelInto(host) {
       <div class="clinical-teams-list">${joinedHtml}</div>
     </section>
     ${directorySection}
+    ${lanUsersEntry}
     ${joinCodeSection}
     <section class="clinical-teams-section clinical-teams-section--more">
       <div class="clinical-teams-section-intro">
@@ -637,6 +800,7 @@ async function renderClinicalTeamsPanelInto(host) {
     </section>`;
 
   wireClinicalTeamsPanelInteractions();
+  wireLanUsersDirectoryControls();
   wireNuevaRotacionControl(host);
   wireJoinButtons();
   wireCopyInviteButtons();
@@ -675,6 +839,413 @@ function resolveBrowseSala(elevated, homeSala) {
   } catch (_e) {}
   if (!homeSala) return '__all__';
   return homeSala;
+}
+
+/**
+ * Compact entry point — full directory opens in a separate modal.
+ * @param {object} user
+ */
+function renderLanUsersDirectoryEntryHtml(user) {
+  if (!canViewLanUserDirectory(user)) return '';
+  return `
+    <div class="clinical-teams-lan-users-entry">
+      <button type="button" class="btn-med-secondary clinical-teams-open-lan-users-btn" id="btn-open-lan-users-directory">
+        Abrir directorio de usuarios LAN
+      </button>
+      <p class="clinical-teams-section-desc">Crea equipos vacíos y asigna integrantes desde aquí (ventana aparte).</p>
+    </div>`;
+}
+
+function lanUsersModalBackdropEl() {
+  return document.getElementById('clinical-lan-users-backdrop');
+}
+
+function lanUsersModalBodyEl() {
+  return document.getElementById('clinical-lan-users-panel-body');
+}
+
+/** @type {object[]} */
+let _lanUsersModalTeams = [];
+
+function cycleLettersForAssign(team, userRank) {
+  const service = String(team?.service || 'Sala');
+  const rank = String(userRank || 'R1');
+  const svcKey = service.trim().toLowerCase();
+  if (svcKey.includes('sala') && rank === 'R2') {
+    return getCycleLettersForTeamCreate('Sala', 'R2');
+  }
+  if (svcKey.includes('sala') && rank === 'R1') {
+    return [
+      ...getCycleLettersForTeamCreate('Sala', 'R1', 0),
+      ...getCycleLettersForTeamCreate('Sala', 'R1', 1),
+    ];
+  }
+  return getCycleLettersForTeamCreate(service, rank);
+}
+
+function renderLanAssignTeamOptionsHtml(teams, selectedTeamId) {
+  const list = Array.isArray(teams) ? teams : [];
+  const selected = String(selectedTeamId || '').trim();
+  if (!list.length) {
+    return '<option value="">— Sin equipos —</option>';
+  }
+  return (
+    '<option value="">— Equipo —</option>' +
+    list
+      .map((team) => {
+        const id = escapeAttr(String(team.team_id || ''));
+        const label = escapeHtml(
+          `${String(team.name || 'Equipo').trim()} · ${String(team.sala || '').trim() || 'Sala'}`
+        );
+        const members = Array.isArray(team.members) ? team.members.length : 0;
+        const isSelected = selected && id === selected ? ' selected' : '';
+        return `<option value="${id}"${isSelected}>${label} (${members})</option>`;
+      })
+      .join('')
+  );
+}
+
+/** @param {string} userId @param {object[]} teams */
+function resolveLanUserPlacement(userId, teams) {
+  const uid = String(userId || '').trim();
+  if (!uid) return null;
+  for (const team of teams || []) {
+    const member = (team.members || []).find((m) => String(m.user_id || '') === uid);
+    if (!member) continue;
+    return {
+      teamId: String(team.team_id || ''),
+      teamName: String(team.name || 'Equipo').trim(),
+      teamSala: String(team.sala || '').trim(),
+      cycle: String(member.sub_area_fraction || '').trim(),
+      rank: String(member.rank || ''),
+    };
+  }
+  return null;
+}
+
+/** @param {ReturnType<typeof resolveLanUserPlacement>} placement @param {string} userRank */
+function formatLanUserPlacementLabel(placement, userRank) {
+  if (!placement?.teamId) return 'Sin equipo asignado';
+  const parts = [placement.teamName || 'Equipo'];
+  if (placement.teamSala) parts.push(placement.teamSala);
+  if (placement.cycle) {
+    parts.push(formatLanCycleOptionLabel(placement.cycle, userRank || placement.rank));
+  }
+  return parts.join(' · ');
+}
+
+const LAN_USER_RANK_ORDER = ['R1', 'R2', 'R3', 'R4', 'Admin'];
+
+/** @param {object[]} users */
+function groupLanUsersByRank(users) {
+  /** @type {Map<string, object[]>} */
+  const groups = new Map(LAN_USER_RANK_ORDER.map((rank) => [rank, []]));
+  /** @type {object[]} */
+  const other = [];
+  for (const user of users) {
+    const rank = String(user?.rank || 'R1');
+    if (groups.has(rank)) groups.get(rank).push(user);
+    else other.push(user);
+  }
+  return { groups, other };
+}
+
+/** @param {string} letter @param {string} userRank */
+function formatLanCycleOptionLabel(letter, userRank) {
+  const frac = String(letter || '').trim();
+  if (!frac) return '— Ciclo —';
+  const rank = String(userRank || 'R1');
+  if (rank === 'R2' || /^[A-F]$/i.test(frac)) return `Ciclo R2 · ${frac}`;
+  if (rank === 'R1' || /[12]$/i.test(frac)) return `Subciclo R1 · ${frac}`;
+  return `Ciclo · ${frac}`;
+}
+
+/** @param {object} u @param {object[]} teamList */
+function renderLanUserRowHtml(u, teamList) {
+  const userId = escapeAttr(String(u.user_id || ''));
+  const handle = escapeHtml(normalizeUsername(u.username || ''));
+  const name = escapeHtml(String(u.clinical_name || '').trim() || 'Sin nombre');
+  const rankRaw = escapeAttr(String(u.rank || 'R1'));
+  const salaLabel = escapeHtml(String(u.sala || '').trim() || '—');
+  const placement = resolveLanUserPlacement(u.user_id, teamList);
+  const placementLabel = escapeHtml(formatLanUserPlacementLabel(placement, String(u.rank || 'R1')));
+  const teamOptions = renderLanAssignTeamOptionsHtml(teamList, placement?.teamId);
+  const cycleOptions = placement?.cycle
+    ? `<option value="${escapeAttr(placement.cycle)}" selected>${escapeHtml(formatLanCycleOptionLabel(placement.cycle, String(u.rank || 'R1')))}</option>`
+    : '<option value="">— Ciclo —</option>';
+
+  return `<tr class="clinical-lan-user-row" data-user-id="${userId}" data-user-rank="${rankRaw}" data-preferred-cycle="${escapeAttr(placement?.cycle || '')}">
+    <td class="clinical-lan-users-col-handle">
+      <span class="clinical-lan-users-handle">@${handle}</span>
+    </td>
+    <td class="clinical-lan-users-col-name">
+      <span class="clinical-lan-users-name" title="${name}">${name}</span>
+    </td>
+    <td class="clinical-lan-users-col-placement">
+      <span class="clinical-lan-users-placement" title="${placementLabel}">${placementLabel}</span>
+    </td>
+    <td class="clinical-lan-users-col-sala">${salaLabel}</td>
+    <td class="clinical-lan-users-col-team">
+      <label class="visually-hidden" for="clinical-lan-team-${userId}">Equipo</label>
+      <select id="clinical-lan-team-${userId}" class="profile-input clinical-lan-assign-team">${teamOptions}</select>
+    </td>
+    <td class="clinical-lan-users-col-cycle">
+      <label class="visually-hidden" for="clinical-lan-cycle-${userId}">Ciclo</label>
+      <select id="clinical-lan-cycle-${userId}" class="profile-input clinical-lan-assign-cycle" ${placement?.teamId ? '' : 'disabled'}>
+        ${cycleOptions}
+      </select>
+    </td>
+    <td class="clinical-lan-users-col-action">
+      <button type="button" class="btn-save clinical-lan-assign-btn" data-user-id="${userId}">Asignar</button>
+    </td>
+  </tr>`;
+}
+
+/** @param {object[]} users @param {object[]} teams */
+function renderLanUsersModalBodyHtml(users, teams) {
+  const list = Array.isArray(users) ? users : [];
+  const teamList = Array.isArray(teams) ? teams : [];
+
+  if (!list.length) {
+    return `<p class="clinical-teams-empty">Aún no hay usuarios LAN en esta base. Se sincronizan al guardar perfil y conectar la sala en vivo (⇄).</p>`;
+  }
+
+  const { groups, other } = groupLanUsersByRank(list);
+  const tableHead = `<thead><tr>
+    <th scope="col">@usuario</th>
+    <th scope="col">Nombre</th>
+    <th scope="col">Ubicación actual</th>
+    <th scope="col">Sala</th>
+    <th scope="col">Asignar equipo</th>
+    <th scope="col">Ciclo</th>
+    <th scope="col"><span class="visually-hidden">Acción</span></th>
+  </tr></thead>`;
+
+  const rankSections = LAN_USER_RANK_ORDER.map((rank) => {
+    const usersInRank = groups.get(rank) || [];
+    if (!usersInRank.length) return '';
+    return `<details class="clinical-lan-rank-group" open>
+      <summary class="clinical-lan-rank-group-summary">
+        <span class="clinical-lan-rank-group-title">${escapeHtml(rank)}</span>
+        <span class="clinical-lan-rank-group-count">${usersInRank.length}</span>
+      </summary>
+      <div class="clinical-lan-users-table-wrap">
+        <table class="clinical-lan-users-table clinical-lan-users-table--assign">
+          ${tableHead}
+          <tbody>${usersInRank.map((u) => renderLanUserRowHtml(u, teamList)).join('')}</tbody>
+        </table>
+      </div>
+    </details>`;
+  }).join('');
+
+  const otherSection = other.length
+    ? `<details class="clinical-lan-rank-group" open>
+        <summary class="clinical-lan-rank-group-summary">
+          <span class="clinical-lan-rank-group-title">Otros</span>
+          <span class="clinical-lan-rank-group-count">${other.length}</span>
+        </summary>
+        <div class="clinical-lan-users-table-wrap">
+          <table class="clinical-lan-users-table clinical-lan-users-table--assign">
+            ${tableHead}
+            <tbody>${other.map((u) => renderLanUserRowHtml(u, teamList)).join('')}</tbody>
+          </table>
+        </div>
+      </details>`
+    : '';
+
+  const teamsHint = teamList.length
+    ? ''
+    : '<p class="clinical-teams-empty">Crea un equipo vacío en Mi rotación para poder asignar residentes.</p>';
+
+  return `
+    <p class="clinical-lan-users-modal-lead">${list.length} usuario${list.length === 1 ? '' : 's'} · asigna a equipos vacíos o existentes.</p>
+    ${teamsHint}
+    <div class="clinical-lan-rank-groups">${rankSections}${otherSection}</div>`;
+}
+
+function syncLanAssignCycleSelect(teamSelect, preferredCycle = '') {
+  if (!(teamSelect instanceof HTMLSelectElement)) return;
+  const row = teamSelect.closest('.clinical-lan-user-row');
+  const cycleSelect = row?.querySelector('.clinical-lan-assign-cycle');
+  if (!(cycleSelect instanceof HTMLSelectElement)) return;
+
+  const teamId = String(teamSelect.value || '').trim();
+  if (!teamId) {
+    cycleSelect.innerHTML = '<option value="">— Ciclo —</option>';
+    cycleSelect.disabled = true;
+    return;
+  }
+
+  const team = _lanUsersModalTeams.find((t) => String(t.team_id) === teamId);
+  const userId = String(row?.dataset.userId || '').trim();
+  const userRank = String(row?.dataset.userRank || 'R1');
+  const letters = team ? cycleLettersForAssign(team, userRank) : [];
+  const rowPreferred = String(preferredCycle || row?.dataset.preferredCycle || '').trim();
+  let defaultCycle = team ? resolveMembershipCycleForUser(team, userId, userRank) : letters[0] || 'A';
+  if (rowPreferred && letters.includes(rowPreferred)) {
+    defaultCycle = rowPreferred;
+  }
+
+  cycleSelect.innerHTML = letters
+    .map((letter) => {
+      const label = formatLanCycleOptionLabel(letter, userRank);
+      return `<option value="${escapeAttr(letter)}" ${letter === defaultCycle ? 'selected' : ''}>${escapeHtml(label)}</option>`;
+    })
+    .join('');
+  cycleSelect.disabled = letters.length === 0;
+  cycleSelect.value = defaultCycle;
+}
+
+/** @param {Element} row */
+function initLanUserRowAssignState(row) {
+  const teamSelect = row.querySelector('.clinical-lan-assign-team');
+  if (!(teamSelect instanceof HTMLSelectElement)) return;
+  const preferred = String(row.dataset.preferredCycle || '').trim();
+  syncLanAssignCycleSelect(teamSelect, preferred);
+}
+
+async function handleLanAssignUserToTeam(userId, teamId, subAreaFraction) {
+  const api = dbApi();
+  if (!api || typeof api.dbClinicalTeamsMemberAdd !== 'function') {
+    toast('No se pudo asignar.', 'error');
+    return false;
+  }
+  const res = await api.dbClinicalTeamsMemberAdd({
+    teamId,
+    userId,
+    subAreaFraction,
+  });
+  if (!res || res.ok === false) {
+    toast(res?.error || 'No se asignó al equipo.', 'error');
+    return false;
+  }
+  return true;
+}
+
+async function handleLanAssignButtonClick(btn) {
+  if (!(btn instanceof HTMLButtonElement)) return;
+  const row = btn.closest('.clinical-lan-user-row');
+  if (!row) return;
+
+  const userId = String(btn.dataset.userId || row.dataset.userId || '').trim();
+  const teamSelect = row.querySelector('.clinical-lan-assign-team');
+  const cycleSelect = row.querySelector('.clinical-lan-assign-cycle');
+  const teamId =
+    teamSelect instanceof HTMLSelectElement ? String(teamSelect.value || '').trim() : '';
+  let subAreaFraction =
+    cycleSelect instanceof HTMLSelectElement ? String(cycleSelect.value || '').trim() : '';
+
+  if (!userId || !teamId) {
+    toast('Elige un equipo.', 'error');
+    return;
+  }
+
+  const team = _lanUsersModalTeams.find((t) => String(t.team_id) === teamId);
+  const userRank = String(row.dataset.userRank || 'R1');
+  if (!subAreaFraction && team) {
+    subAreaFraction = resolveMembershipCycleForUser(team, userId, userRank);
+  }
+  if (!subAreaFraction) {
+    toast('Elige el ciclo del integrante.', 'error');
+    return;
+  }
+
+  const wasMember = Boolean(
+    team?.members?.some((m) => String(m.user_id || '') === userId)
+  );
+
+  btn.disabled = true;
+  const ok = await handleLanAssignUserToTeam(userId, teamId, subAreaFraction);
+  btn.disabled = false;
+  if (!ok) return;
+
+  toast(wasMember ? 'Ciclo actualizado.' : 'Integrante asignado al equipo.', 'success');
+  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
+  await fetchClinicalTeamsFromDb();
+  await openLanUsersDirectoryModal();
+}
+
+export async function openLanUsersDirectoryModal() {
+  const user = clinicalSessionContext.user || {};
+  if (!canViewLanUserDirectory(user)) return;
+
+  const bd = lanUsersModalBackdropEl();
+  const host = lanUsersModalBodyEl();
+  if (!bd || !host) return;
+
+  host.innerHTML = '<p class="clinical-teams-empty">Cargando directorio…</p>';
+  bd.classList.add('open');
+  bd.setAttribute('aria-hidden', 'false');
+
+  const api = dbApi();
+  if (!api || typeof api.dbClinicalUsersList !== 'function') {
+    host.innerHTML = '<p class="clinical-teams-empty">Directorio no disponible.</p>';
+    return;
+  }
+
+  const callerUserId = currentUserId();
+  const [usersRes, teamsRes] = await Promise.all([
+    api.dbClinicalUsersList({ callerUserId }),
+    typeof api.dbClinicalTeamsList === 'function' ? api.dbClinicalTeamsList() : Promise.resolve(null),
+  ]);
+
+  if (!usersRes?.ok) {
+    host.innerHTML = `<p class="clinical-teams-empty">${escapeHtml(usersRes?.error || 'No se pudo cargar el directorio.')}</p>`;
+    return;
+  }
+
+  _lanUsersModalTeams =
+    teamsRes?.ok && Array.isArray(teamsRes.teams) ? teamsRes.teams : [];
+
+  host.innerHTML = renderLanUsersModalBodyHtml(usersRes.users, _lanUsersModalTeams);
+  host.querySelectorAll('.clinical-lan-user-row').forEach((row) => initLanUserRowAssignState(row));
+
+  const title = document.getElementById('clinical-lan-users-title');
+  if (title) {
+    const n = Array.isArray(usersRes.users) ? usersRes.users.length : 0;
+    title.textContent = `Directorio de usuarios LAN (${n})`;
+  }
+}
+
+export function closeLanUsersDirectoryModal() {
+  const bd = lanUsersModalBackdropEl();
+  if (!bd) return;
+  bd.classList.remove('open');
+  bd.setAttribute('aria-hidden', 'true');
+}
+
+function wireLanUsersDirectoryControls() {
+  const openBtn = document.getElementById('btn-open-lan-users-directory');
+  if (openBtn) {
+    openBtn.onclick = () => void openLanUsersDirectoryModal();
+  }
+
+  const bd = lanUsersModalBackdropEl();
+  if (bd && !bd._rpcLanUsersBackdropWired) {
+    bd._rpcLanUsersBackdropWired = true;
+    bd.addEventListener('click', (ev) => {
+      if (ev.target === bd) closeLanUsersDirectoryModal();
+    });
+  }
+
+  const closeBtn = document.getElementById('btn-clinical-lan-users-close');
+  if (closeBtn && !closeBtn._rpcLanUsersCloseWired) {
+    closeBtn._rpcLanUsersCloseWired = true;
+    closeBtn.addEventListener('click', () => closeLanUsersDirectoryModal());
+  }
+
+  const host = lanUsersModalBodyEl();
+  if (host && !host._rpcLanUsersAssignWired) {
+    host._rpcLanUsersAssignWired = true;
+    host.addEventListener('change', (ev) => {
+      const teamSelect = ev.target instanceof Element ? ev.target.closest('.clinical-lan-assign-team') : null;
+      if (teamSelect) syncLanAssignCycleSelect(teamSelect);
+    });
+    host.addEventListener('click', (ev) => {
+      const btn = ev.target instanceof Element ? ev.target.closest('.clinical-lan-assign-btn') : null;
+      if (btn) void handleLanAssignButtonClick(btn);
+    });
+  }
 }
 
 /**
@@ -779,10 +1350,30 @@ async function handleProfileFormSubmit(ev) {
   let rank = String(document.getElementById('clinical-profile-rank')?.value || 'R1');
   const sala = String(document.getElementById('clinical-profile-sala')?.value || '');
   const clinicalName = String(document.getElementById('clinical-profile-name')?.value || '').trim();
-  let isProgramAdmin = !!document.getElementById('clinical-profile-admin')?.checked;
-  if (rank === 'Admin') {
-    rank = 'R1';
-    isProgramAdmin = true;
+  const adminCb = document.getElementById('clinical-profile-admin');
+  const wantsProgramAdmin = adminCb instanceof HTMLInputElement ? adminCb.checked : false;
+  const wasProgramAdmin = hasProgramAdminPrivileges(clinicalSessionContext.user);
+
+  /** @type {boolean|undefined} */
+  let isProgramAdmin;
+  /** @type {string|null} */
+  let adminAccessCode = null;
+
+  if (wantsProgramAdmin !== wasProgramAdmin) {
+    isProgramAdmin = wantsProgramAdmin;
+    if (wantsProgramAdmin) {
+      if (!adminAccessGrantedThisSession) {
+        const code = await promptAdminAccessCode();
+        if (!code || !verifyAdminAccessCode(code)) {
+          if (adminCb instanceof HTMLInputElement) adminCb.checked = wasProgramAdmin;
+          if (code != null) toast('Código incorrecto.', 'error');
+          return;
+        }
+        adminAccessGrantedThisSession = true;
+        verifiedAdminAccessCode = code;
+      }
+      adminAccessCode = verifiedAdminAccessCode;
+    }
   }
 
   if (!isValidUsernameFormat(username)) {
@@ -848,15 +1439,26 @@ async function handleProfileFormSubmit(ev) {
     }
   }
 
-  const ok = await persistProfileFromPanel({ rank, sala, clinicalName, isProgramAdmin, username });
+  const ok = await persistProfileFromPanel({
+    rank,
+    sala,
+    clinicalName,
+    isProgramAdmin,
+    username,
+    adminAccessCode,
+  });
   if (!ok) return;
   await refreshClinicalUserProfile();
-  const msg = isProgramAdmin
-    ? 'Perfil guardado. Privilegios de administración activos.'
-    : 'Perfil guardado.';
+  const msg =
+    wantsProgramAdmin && (isProgramAdmin === true || wasProgramAdmin)
+      ? 'Perfil guardado. Privilegios de administración activos.'
+      : 'Perfil guardado.';
   toast(msg, 'success');
   syncRotationConfigButton();
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
+  void import('./patients.mjs')
+    .then((m) => m.renderPatientList())
+    .catch(() => {});
 }
 
 function clientIdFromSettings() {
@@ -923,7 +1525,14 @@ function wireCopyInviteButtons() {
   });
 }
 
-async function persistProfileFromPanel({ rank, sala, clinicalName, isProgramAdmin, username }) {
+async function persistProfileFromPanel({
+  rank,
+  sala,
+  clinicalName,
+  isProgramAdmin,
+  username,
+  adminAccessCode,
+}) {
   const userId = currentUserId();
   const api = dbApi();
   if (!userId || !api || typeof api.dbClinicalProfileUpsert !== 'function') {
@@ -936,6 +1545,7 @@ async function persistProfileFromPanel({ rank, sala, clinicalName, isProgramAdmi
     rank: rank || effectiveClinicalRank(clinicalSessionContext.user),
     sala: sala ?? clinicalSessionContext.user?.sala ?? null,
     isProgramAdmin,
+    adminAccessCode: adminAccessCode ?? undefined,
   });
   if (!res || res.ok === false) {
     toast(res?.error || 'No se guardó el perfil.', 'error');
@@ -974,6 +1584,7 @@ async function persistProfileFromPanel({ rank, sala, clinicalName, isProgramAdmi
 
 export function wireClinicalTeamsPanelInteractions() {
   syncSalaFieldVisibility();
+  wireAdminCheckboxGate();
 
   const serviceSelect = document.getElementById('clinical-team-create-service');
   if (serviceSelect && !serviceSelect._rpcServiceWired) {
@@ -989,7 +1600,39 @@ export function wireClinicalTeamsPanelInteractions() {
     r1LineSelect._rpcR1LineWired = true;
     r1LineSelect.addEventListener('change', () => syncCreateTeamCycleField());
   }
+}
 
+function wireAdminCheckboxGate() {
+  const cb = document.getElementById('clinical-profile-admin');
+  if (!(cb instanceof HTMLInputElement) || cb._rpcAdminGateWired) return;
+  cb._rpcAdminGateWired = true;
+
+  const hadAdminOnLoad =
+    cb.checked || hasProgramAdminPrivileges(clinicalSessionContext.user);
+  if (hadAdminOnLoad) {
+    adminAccessGrantedThisSession = true;
+  }
+
+  cb.addEventListener('click', (ev) => {
+    if (cb.checked) {
+      adminAccessGrantedThisSession = false;
+      verifiedAdminAccessCode = null;
+      return;
+    }
+    if (adminAccessGrantedThisSession) return;
+
+    ev.preventDefault();
+    void promptAdminAccessCode().then((code) => {
+      if (code && verifyAdminAccessCode(code)) {
+        cb.checked = true;
+        adminAccessGrantedThisSession = true;
+        verifiedAdminAccessCode = code;
+        return;
+      }
+      cb.checked = false;
+      if (code != null) toast('Código incorrecto.', 'error');
+    });
+  });
 }
 
 /** @param {Event} ev */
@@ -1002,21 +1645,46 @@ async function handleCreateTeamSubmit(ev) {
   }
 
   const name = String(document.getElementById('clinical-team-create-name')?.value || '').trim();
-  const service = String(document.getElementById('clinical-team-create-service')?.value || '').trim();
-  let sala = String(document.getElementById('clinical-team-create-sala')?.value || '').trim();
-  const cycleLetter = String(document.getElementById('clinical-team-create-day')?.value || 'A').trim();
   const userId = currentUserId();
+  const elevated = canManageTeamRoster(clinicalSessionContext.user);
 
-  if (!name || !service) {
-    toast('Indica nombre y servicio.', 'error');
+  if (!name) {
+    toast('Indica el nombre del equipo.', 'error');
     return;
   }
 
+  let sala = String(document.getElementById('clinical-team-create-sala')?.value || '').trim();
   if (!sala) {
     sala = String(clinicalSessionContext.user?.sala || '').trim();
   }
   if (!sala) {
-    toast('Configura tu Sala en el perfil (o selecciónala al crear) para que el equipo aparezca en la sala.', 'error');
+    toast('Selecciona la sala del equipo.', 'error');
+    return;
+  }
+
+  if (elevated) {
+    const res = await api.dbClinicalTeamsCreate({
+      name,
+      service: 'Sala',
+      onCallDayIndex: 0,
+      sala,
+      teamLeaderName: name,
+      createdBy: userId,
+    });
+    if (!res || res.ok === false) {
+      toast(res?.error || 'No se creó el equipo.', 'error');
+      return;
+    }
+    toast('Equipo vacío creado. Asigna integrantes desde el directorio LAN.', 'success');
+    document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
+    return;
+  }
+
+  const service = String(document.getElementById('clinical-team-create-service')?.value || '').trim();
+  const cycleLetter = String(document.getElementById('clinical-team-create-day')?.value || 'A').trim();
+
+  if (!service) {
+    toast('Indica nombre y servicio.', 'error');
     return;
   }
 
@@ -1314,10 +1982,23 @@ export function wireClinicalTeamsModalChrome() {
     document._rpcClinicalTeamsEscapeWired = true;
     document.addEventListener('keydown', (ev) => {
       if (ev.key !== 'Escape') return;
+      const lanBd = lanUsersModalBackdropEl();
+      if (lanBd?.classList.contains('open')) {
+        closeLanUsersDirectoryModal();
+        return;
+      }
+      const adminBd = adminCodeModalBackdropEl();
+      if (adminBd?.classList.contains('open')) {
+        cancelAdminCodeModal();
+        return;
+      }
       const bd = teamsModalEl();
       if (bd?.classList.contains('open')) closeClinicalTeamsPanel();
     });
   }
+
+  wireLanUsersDirectoryControls();
+  wireAdminCodeModalControls();
 }
 
 function syncSalaFieldVisibility() {
@@ -1355,6 +2036,8 @@ export function wireClinicalTeamsControls() {
     document._rpcClinicalOpsSyncedTeamsWired = true;
     document.addEventListener('rpc-clinical-ops-synced', () => {
       void refreshTeamsUiAfterChange();
+      const lanBd = lanUsersModalBackdropEl();
+      if (lanBd?.classList.contains('open')) void openLanUsersDirectoryModal();
     });
   }
 }

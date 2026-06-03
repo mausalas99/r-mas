@@ -1228,11 +1228,144 @@ export function formatAscitisInterpretacionLine_(alerts) {
   return ASCITIS_INTERPRETACION_HEADER + '\t' + list.join(' · ');
 }
 
+/** Texto del informe sin citoquímico de líquidos (misma lógica que PFHs / QS). */
+function serumTextWithoutCitoBlock_(textoBruto) {
+  if (!textoBruto) return '';
+  var bloqueCito = bloqueCitoquimicoLiquidosFull(textoBruto);
+  if (!bloqueCito) return String(textoBruto);
+  var tNorm = String(textoBruto).replace(/\s+/g, ' ');
+  var bloqueNorm = bloqueCito.replace(/\r/g, '').replace(/\s+/g, ' ');
+  return tNorm.replace(bloqueNorm, ' ');
+}
+
 function extraerAlbuminaSueroParaGasa_(textoBruto, bloqueCito) {
-  var t = textoBruto || '';
-  if (bloqueCito) t = t.replace(bloqueCito, ' ');
+  var t = serumTextWithoutCitoBlock_(textoBruto);
+  if (!t) return null;
   var albData = extraerConRangoSuero(['ALBUMINA'], t);
   return toNum_(albData.valor);
+}
+
+/**
+ * Albúmina sérica ya parseada en renglones PFHs (p. ej. otro envío del mismo día).
+ * @param {string[]} resLabs
+ */
+export function extractSerumAlbuminGdlFromResLabs_(resLabs) {
+  var rows = resLabs || [];
+  for (var i = 0; i < rows.length; i++) {
+    var line = String(rows[i] || '');
+    if (labSectionKey_(line) !== 'PFHS') continue;
+    var m = line.match(/\bAlb\s+([0-9]+(?:[.,][0-9]+)?)\*?/i);
+    if (m) return toNum_(m[1]);
+  }
+  return null;
+}
+
+/**
+ * @param {string} textoBruto
+ * @param {string} bloqueCito
+ * @param {{ extraSourceTexts?: string[], extraResLabs?: string[][] }} [serumOpts]
+ */
+export function resolveSerumAlbuminForGasa_(textoBruto, bloqueCito, serumOpts) {
+  var alb = extraerAlbuminaSueroParaGasa_(textoBruto, bloqueCito);
+  if (alb != null) return alb;
+  var opts = serumOpts || {};
+  var extras = opts.extraSourceTexts || [];
+  for (var i = 0; i < extras.length; i++) {
+    var txt = String(extras[i] || '').trim();
+    if (!txt) continue;
+    alb = extraerAlbuminaSueroParaGasa_(txt, bloqueCitoquimicoLiquidosFull(txt));
+    if (alb != null) return alb;
+  }
+  var labGroups = opts.extraResLabs || [];
+  for (var j = 0; j < labGroups.length; j++) {
+    alb = extractSerumAlbuminGdlFromResLabs_(labGroups[j]);
+    if (alb != null) return alb;
+  }
+  return null;
+}
+
+function ascitisParsedFromResLabsLiq_(resLabs) {
+  var rows = resLabs || [];
+  for (var i = 0; i < rows.length; i++) {
+    var line = String(rows[i] || '');
+    if (labSectionKey_(line) !== 'LIQ:') continue;
+    var mAlb = line.match(/\bAlb\s+([0-9]+(?:[.,][0-9]+)?)\*?/i);
+    if (!mAlb) return null;
+    var asciticAlb = toNum_(mAlb[1]);
+    if (asciticAlb == null) return null;
+    var esAsc = /\bASCIT|PERITONEAL|L[IÍ]QUIDO\s+ASCIT/i.test(line);
+    return {
+      esAscitico: esAsc,
+      alb: asciticAlb,
+      serumAlb: null,
+      gasaVal: null,
+      protGdl: null,
+      tgl: null,
+      amil: null,
+      citologia: null,
+      line: line,
+    };
+  }
+  return null;
+}
+
+export function resLabsHasAsciticFluid_(resLabs) {
+  return !!(resLabs || []).some(function (row) {
+    var line = String(row || '');
+    return labSectionKey_(line) === 'LIQ:' && /\bASCIT|PERITONEAL/i.test(line);
+  });
+}
+
+/**
+ * Actualiza línea Liq y bloque INTERPRETACIÓN ASCITIS con albúmina sérica de otros envíos del día.
+ * @param {string[]} resLabs
+ * @param {string} textoBruto
+ * @param {{ extraSourceTexts?: string[], extraResLabs?: string[][] }} [serumOpts]
+ */
+export function refreshAscitisInterpretacionInResLabs_(resLabs, textoBruto, serumOpts) {
+  var rows = resLabs || [];
+  var src = String(textoBruto || '').trim();
+  var parsed = src
+    ? parseCitoquimicoLiquidosParsed_(src, serumOpts)
+    : ascitisParsedFromResLabsLiq_(rows);
+  if (!parsed || !parsed.esAscitico) return rows.slice();
+
+  if (parsed.alb != null && parsed.serumAlb == null) {
+    var serumAlb = resolveSerumAlbuminForGasa_(src, src ? bloqueCitoquimicoLiquidosFull(src) : '', serumOpts);
+    if (serumAlb != null) {
+      parsed.serumAlb = serumAlb;
+      parsed.gasaVal = computeGasaValue_(serumAlb, parsed.alb);
+    }
+  }
+
+  var out = rows.filter(function (r) {
+    return !isAscitisInterpretacionResLabChunk(r);
+  });
+  if (src) {
+    var newLiq = parsearCitoquimicoLiquidos(src, serumOpts);
+    if (newLiq) {
+      out = out.filter(function (r) {
+        return labSectionKey_(r) !== 'LIQ:';
+      });
+      out.push(newLiq);
+    }
+  } else if (parsed.gasaVal != null && parsed.line) {
+    var liqLine = parsed.line;
+    if (!/\bGASA\b/.test(liqLine)) {
+      liqLine = liqLine + ' GASA ' + String(parsed.gasaVal);
+    } else {
+      liqLine = liqLine.replace(/\bGASA\s+[0-9]+(?:[.,][0-9]+)?/, 'GASA ' + String(parsed.gasaVal));
+    }
+    out = out.filter(function (r) {
+      return labSectionKey_(r) !== 'LIQ:';
+    });
+    out.push(liqLine);
+  }
+
+  var alerts = buildAscitisLabAlerts_(src, serumOpts, parsed);
+  var interp = formatAscitisInterpretacionLine_(alerts);
+  if (interp) out.push(interp);
+  return dedupeSingletonSections_(out);
 }
 
 /** Citología de líquido ascítico/peritoneal en el mismo reporte (POSITIVO/NEGATIVO). */
@@ -1278,8 +1411,8 @@ export function evaluarAscitisNoPortal_(gasa, protGdl, tglMgdl, amilUl, citologi
 }
 
 /** Alertas clínicas de ascitis (no van a resultados copiables). */
-export function buildAscitisLabAlerts_(textoBruto) {
-  var parsed = parseCitoquimicoLiquidosParsed_(textoBruto);
+export function buildAscitisLabAlerts_(textoBruto, serumOpts, parsedIn) {
+  var parsed = parsedIn || parseCitoquimicoLiquidosParsed_(textoBruto, serumOpts);
   if (!parsed || !parsed.esAscitico) return [];
   var alerts = [];
   if (parsed.alb && parsed.serumAlb == null) {
@@ -1392,7 +1525,7 @@ function buildLightPleural_(bloque, pleuralProtRaw, pleuralLdhRaw, textoBruto) {
  * Citoquímico de líquidos corporales (ascitis, pleural, peritoneal, etc.).
  * No confundir con LCR (parsearLCR).
  */
-function parseCitoquimicoLiquidosParsed_(textoBruto) {
+function parseCitoquimicoLiquidosParsed_(textoBruto, serumOpts) {
   var bloque = bloqueCitoquimicoLiquidosFull(textoBruto);
   if (!bloque) return { line: '', esAscitico: false };
   var lineas = bloque.split(/\r?\n/).map(function(l) { return l.trim(); });
@@ -1539,7 +1672,7 @@ function parseCitoquimicoLiquidosParsed_(textoBruto) {
   var asciticAlb = null;
   if (esAscitico && alb) {
     asciticAlb = toNum_(alb);
-    serumAlb = extraerAlbuminaSueroParaGasa_(textoBruto, bloque);
+    serumAlb = resolveSerumAlbuminForGasa_(textoBruto, bloque, serumOpts);
     gasaVal = computeGasaValue_(serumAlb, asciticAlb);
   }
 
@@ -1576,8 +1709,8 @@ function parseCitoquimicoLiquidosParsed_(textoBruto) {
   };
 }
 
-export function parsearCitoquimicoLiquidos(textoBruto) {
-  return parseCitoquimicoLiquidosParsed_(textoBruto).line;
+export function parsearCitoquimicoLiquidos(textoBruto, serumOpts) {
+  return parseCitoquimicoLiquidosParsed_(textoBruto, serumOpts).line;
 }
 
 export function parseFisicoquimicoHeces_(textoBruto) {

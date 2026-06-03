@@ -57,4 +57,30 @@ describe('clinical-teams', () => {
     assert.equal(clinicalTeamsSrc.includes('Guardia hoy'), false);
     assert.equal(clinicalTeamsSrc.includes('handleGuardiaCheck'), false);
   });
+
+  it('Mi rotación opens LAN user directory in separate modal', () => {
+    assert.match(clinicalTeamsSrc, /canViewLanUserDirectory/);
+    assert.match(clinicalTeamsSrc, /openLanUsersDirectoryModal/);
+    assert.match(clinicalTeamsSrc, /clinical-lan-users-backdrop/);
+    assert.match(clinicalTeamsSrc, /Abrir directorio de usuarios LAN/);
+    assert.match(clinicalTeamsSrc, /clinical-lan-rank-group/);
+    assert.equal(clinicalTeamsSrc.includes('clinical-teams-section--lan-users'), false);
+  });
+
+  it('elevated roster managers get empty team create flow', () => {
+    assert.match(clinicalTeamsSrc, /canManageTeamRoster/);
+    assert.match(clinicalTeamsSrc, /Crear equipo vacío/);
+    assert.match(clinicalTeamsSrc, /clinical-lan-assign-btn/);
+    assert.match(clinicalTeamsSrc, /clinical-lan-users-placement/);
+    assert.match(clinicalTeamsSrc, /resolveMembershipCycleForUser/);
+    assert.match(clinicalTeamsSrc, /rpc-clinical-ops-synced/);
+  });
+
+  it('program admin checkbox requires access code', () => {
+    assert.match(clinicalTeamsSrc, /wireAdminCheckboxGate/);
+    assert.match(clinicalTeamsSrc, /verifyAdminAccessCode/);
+    assert.match(clinicalTeamsSrc, /clinical-admin-code-backdrop/);
+    assert.match(clinicalTeamsSrc, /promptAdminAccessCode/);
+    assert.equal(clinicalTeamsSrc.includes('window.prompt('), false);
+  });
 });

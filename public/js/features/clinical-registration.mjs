@@ -4,13 +4,17 @@
 import { persistLanClientConfig } from './lan-sync.mjs';
 import { isDbMode } from '../db-storage-bridge.mjs';
 import { isValidUsernameFormat, normalizeUsername } from '../clinical-username.mjs';
-import { persistClinicalUserBinding } from '../clinical-settings.mjs';
+import {
+  needsClinicalLanProfileGate,
+  persistClinicalUserBinding,
+} from '../clinical-settings.mjs';
 
 const RANKS = ['R1', 'R2', 'R3', 'R4', 'Admin'];
 
 /** @param {Record<string, unknown>|null|undefined} settings */
 export function needsClinicalRegistration(settings) {
   if (!isDbMode()) return false;
+  if (needsClinicalLanProfileGate(settings)) return true;
   return !settings || settings.clinicalRegistered !== true;
 }
 
@@ -175,6 +179,7 @@ function wireRegistrationFormOnce() {
       rank: safeRank,
       sala: sala || '',
       registered: true,
+      lanProfileGateComplete: true,
     });
 
     if (errEl) errEl.hidden = true;

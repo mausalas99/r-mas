@@ -5,6 +5,8 @@ import {
   buildRefsBySectionFromReport,
   looksLikeSomeLabReport,
   reprocessLabResultLines_,
+  refreshAscitisInterpretacionInResLabs_,
+  resLabsHasAsciticFluid_,
   renderEntry,
 } from "../labs.js";
 import { parseSomeReportTables } from "../labs-some-table.mjs";
@@ -512,12 +514,30 @@ function reprocessLabHistorySet(setId) {
     return;
   }
   try {
-    var repro = reprocessLabResultLines_(set.resLabs);
+    var ctx = buildSameDaySerumContext(rt.getActiveId(), set);
+    var srcParts = [];
+    if (set.sourceText && String(set.sourceText).trim()) srcParts.push(String(set.sourceText).trim());
+    (ctx.extraSourceTexts || []).forEach(function (t) {
+      if (t && srcParts.indexOf(t) === -1) srcParts.push(t);
+    });
+    var repro;
+    if (srcParts.length) {
+      var mergedSrc = srcParts.join('\n\n---\n\n');
+      var parsed = procesarLabs(mergedSrc);
+      repro = reprocessLabResultLines_(parsed.resLabs || []);
+      if (parsed.bhExtras && typeof parsed.bhExtras === 'object') {
+        set.bhExtras = Object.assign({}, set.bhExtras || {}, parsed.bhExtras);
+      }
+    } else {
+      repro = reprocessLabResultLines_(set.resLabs);
+    }
     if (!repro || !repro.length) {
       rt.showToast('No se pudieron regenerar resultados desde el bloque guardado', 'error');
       return;
     }
+    repro = refreshAscitisInterpretacionInResLabs_(repro, set.sourceText || '', ctx);
     set.resLabs = repro.slice();
+    refreshSameDayAscitisForPatient(rt.getActiveId(), set.id);
     set.parsed = rt.extractParsedValues(set.resLabs);
     set.parsedBySection = rt.buildParsedBySectionFromResLabs(set.resLabs, set.bhExtras);
     delete set._parseFingerprint;
@@ -945,6 +965,7 @@ function consolidateLabHistoryByDayAndTipo() {
     keeper.bhExtras = mergedBhExtras;
     keeper.parsedBySection = rt.buildParsedBySectionFromResLabs(deduped, keeper.bhExtras);
     if (sourceParts.length) keeper.sourceText = sourceParts.join('\n\n---\n\n');
+    refreshSameDayAscitisForPatient(rt.getActiveId(), keeper.id);
     keeper.hora = '';
     for (var j = 1; j < arr.length; j++) {
       todo.push(String(arr[j].id));
@@ -1092,6 +1113,75 @@ function checkStudiosAndInsertLabs() {
   }
 }
 
+function buildSameDaySerumContext(patientId, targetSet) {
+  if (!patientId || !targetSet) return {};
+  var dk = rt.dayKeyFromLabSet(targetSet);
+  if (!dk || dk === 'unknown' || dk === 'Anterior') return {};
+  var sets = labHistory[patientId] || [];
+  var extraSourceTexts = [];
+  var extraResLabs = [];
+  sets.forEach(function (other) {
+    if (!other || String(other.id) === String(targetSet.id)) return;
+    if (rt.dayKeyFromLabSet(other) !== dk) return;
+    if (rt.primaryTipoForLabSet(other.resLabs || []) === 'cultivo') return;
+    var src = String(other.sourceText || '').trim();
+    if (src) extraSourceTexts.push(src);
+    if (other.resLabs && other.resLabs.length) extraResLabs.push(other.resLabs);
+  });
+  return { extraSourceTexts: extraSourceTexts, extraResLabs: extraResLabs };
+}
+
+function refreshSameDayAscitisForPatient(patientId, triggerSetId) {
+  if (!patientId) return false;
+  var sets = labHistory[patientId];
+  if (!Array.isArray(sets) || !sets.length) return false;
+  var trigger =
+    triggerSetId != null
+      ? sets.find(function (s) {
+          return s && String(s.id) === String(triggerSetId);
+        })
+      : null;
+  var dayKeys = Object.create(null);
+  if (trigger) {
+    var tdk = rt.dayKeyFromLabSet(trigger);
+    if (tdk && tdk !== 'unknown' && tdk !== 'Anterior') dayKeys[tdk] = true;
+  } else {
+    sets.forEach(function (s) {
+      var dk = rt.dayKeyFromLabSet(s);
+      if (dk && dk !== 'unknown' && dk !== 'Anterior') dayKeys[dk] = true;
+    });
+  }
+  var changed = false;
+  Object.keys(dayKeys).forEach(function (dk) {
+    sets.forEach(function (set) {
+      if (!set || rt.dayKeyFromLabSet(set) !== dk) return;
+      var src = String(set.sourceText || '').trim();
+      var hasAscitis = resLabsHasAsciticFluid_(set.resLabs) || (src && /\bCITOQUIMICO DE LIQUIDOS CORPORALES\b/i.test(src));
+      if (!hasAscitis) return;
+      var ctx = buildSameDaySerumContext(patientId, set);
+      var next = refreshAscitisInterpretacionInResLabs_(set.resLabs || [], src, ctx);
+      var prevStr = '';
+      var nextStr = '';
+      try {
+        prevStr = JSON.stringify(set.resLabs || []);
+        nextStr = JSON.stringify(next);
+      } catch (_e) {
+        set.resLabs = next;
+        changed = true;
+        return;
+      }
+      if (prevStr !== nextStr) {
+        set.resLabs = next;
+        set.parsed = rt.extractParsedValues(next);
+        set.parsedBySection = rt.buildParsedBySectionFromResLabs(next, set.bhExtras);
+        delete set._parseFingerprint;
+        changed = true;
+      }
+    });
+  });
+  return changed;
+}
+
 function pushLabHistory(patientId, resLabs, fecha, hora, sourceText, bhExtras, refsBySection, idSeed) {
   if (!patientId || !resLabs || !resLabs.length) return;
   if (!labHistory[patientId]) labHistory[patientId] = [];
@@ -1123,6 +1213,7 @@ function pushLabHistory(patientId, resLabs, fecha, hora, sourceText, bhExtras, r
   var raw = String(sourceText || '').trim();
   if (raw) set.sourceText = raw;
   labHistory[patientId].push(set);
+  refreshSameDayAscitisForPatient(patientId, set.id);
   bumpLabHistoryRevision(patientId);
 }
 

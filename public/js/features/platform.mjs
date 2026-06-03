@@ -93,10 +93,14 @@ function resetUpdateCheckButtons() {
 }
 
 /**
- * Para usuarios en 6.5.4 (instalador sin módulos nativos): fuerza canal Estable y busca 6.5.5+.
+ * Re-descarga e instala la build publicada del tag de la versión instalada (mismo número en GitHub).
+ * Útil tras subir un fix sin bump: reemplaza el binario sin borrar userData.
  */
 function checkForRepairUpdate() {
-  if (!window.electronAPI || typeof window.electronAPI.checkForUpdates !== 'function') {
+  if (
+    !window.electronAPI ||
+    typeof window.electronAPI.reinstallCurrentRelease !== 'function'
+  ) {
     rt.showToast('Las actualizaciones automáticas solo están en la app de escritorio.', 'error');
     return;
   }
@@ -116,15 +120,29 @@ function checkForRepairUpdate() {
   setAsyncButtonLoading(document.getElementById('settings-repair-update-btn'), true, {
     loadingText: 'Buscando…',
   });
+  var versionLabel = 'actual';
+  if (typeof window.electronAPI.getAppVersion === 'function') {
+    window.electronAPI.getAppVersion().then(function (v) {
+      if (v) versionLabel = 'v' + v;
+    }).catch(function () {});
+  }
   rt.showToast(
-    'Buscando actualización de reparación en el canal Estable (p. ej. 6.5.5). No borra tus datos.',
+    'Reinstalando ' + versionLabel + ' desde GitHub (canal Estable). No borra tus datos.',
     'info'
   );
   setTimeout(function () {
     try {
-      window.electronAPI.checkForUpdates();
+      window.electronAPI.reinstallCurrentRelease();
     } catch (_e) {}
   }, 150);
+}
+
+function syncRepairUpdateButtonLabel() {
+  var btn = document.getElementById('settings-repair-update-btn');
+  if (!btn || !window.electronAPI || typeof window.electronAPI.getAppVersion !== 'function') return;
+  window.electronAPI.getAppVersion().then(function (v) {
+    if (v) btn.textContent = 'Reinstalar versión actual (v' + v + ')…';
+  }).catch(function () {});
 }
 
 function checkForAppUpdates() {
@@ -1820,6 +1838,7 @@ function syncUpdateModalChannelPill(isPrerelease) {
 }
 
 function syncUpdateChannelUI() {
+  syncRepairUpdateButtonLabel();
   var sel = document.getElementById('rpc-update-channel');
   if (sel) sel.value = getUpdateChannel();
   syncUpdateModalChannelPill(pendingUpdaterIsPrerelease);
@@ -2032,7 +2051,7 @@ function showNativeRuntimeRecoveryModal(status) {
   var state = document.getElementById('update-modal-state');
   if (state) {
     state.textContent =
-      'Usa Ajustes → Reinstalar actualización de reparación (6.5.5), restaurar 6.5.0 en GitHub, o el instalador en Releases.';
+      'Usa Ajustes → Reinstalar versión actual, Restaurar versión estable, o descarga el instalador desde GitHub Releases.';
   }
   var wrap = document.getElementById('update-modal-progress-wrap');
   if (wrap) wrap.style.display = 'none';
@@ -2410,7 +2429,7 @@ if (typeof window !== 'undefined' && window.electronAPI) {
     }
   });
 
-  window.electronAPI.onUpdateNotAvailable(function() {
+  window.electronAPI.onUpdateNotAvailable(function(payload) {
     try {
       resetUpdateCheckButtons();
       var wasRepair = pendingRepairUpdateCheck;
@@ -2418,11 +2437,16 @@ if (typeof window !== 'undefined' && window.electronAPI) {
       pendingUpdaterTargetVersion = null;
       pendingUpdaterIsPrerelease = false;
       syncUpdateModalChannelPill(false);
-      if (wasRepair) {
-        rt.showToast(
-          'No hay actualización de reparación en el servidor aún. Cuando publiquemos 6.5.5, vuelve a intentar o descarga el instalador desde GitHub (Ajustes → Abrir instalador en GitHub).',
-          'error'
-        );
+      if (wasRepair || (payload && payload.reinstallFailed)) {
+        var v = payload && payload.version ? String(payload.version) : '';
+        var detail = payload && payload.detail ? String(payload.detail) : '';
+        var msg =
+          'No se encontró en GitHub una build reinstalable' +
+          (v ? ' para v' + v : '') +
+          '. Publica o actualiza el release en GitHub (latest-mac.yml / latest.yml e instaladores) y vuelve a intentar.';
+        if (detail) msg += ' Detalle: ' + detail;
+        msg += ' También puedes usar «Abrir instalador en GitHub» en Restaurar versión estable.';
+        rt.showToast(msg, 'error');
       } else {
         rt.showToast('R+ está actualizado.', 'success');
       }

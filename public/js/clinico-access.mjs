@@ -423,6 +423,41 @@ export function patientInUserSala(patient, userSala) {
 }
 
 /**
+ * Tag a new chart row with the creator's sala so LAN peers can see it without admin.
+ * @param {Record<string, unknown>} patient
+ * @param {{ sala?: string|null|undefined }|null|undefined} user
+ */
+export function stampPatientClinicalSala(patient, user) {
+  if (!patient || typeof patient !== 'object') return patient;
+  const profileSala = String(user?.sala || '').trim();
+  if (profileSala) {
+    patient.sala = profileSala;
+    return patient;
+  }
+  const inferred = resolvePatientSala(patient);
+  if (inferred) patient.sala = inferred;
+  return patient;
+}
+
+/**
+ * Backfill explicit sala on legacy charts (idempotent).
+ * @param {object[]|null|undefined} patients
+ * @param {{ sala?: string|null|undefined }|null|undefined} user
+ * @returns {number}
+ */
+export function migratePatientsClinicalSala(patients, user) {
+  if (!Array.isArray(patients) || !user) return 0;
+  let migrated = 0;
+  for (const patient of patients) {
+    if (!patient || typeof patient !== 'object' || patient.isDemo) continue;
+    if (String(patient.sala || '').trim()) continue;
+    stampPatientClinicalSala(patient, user);
+    if (String(patient.sala || '').trim()) migrated += 1;
+  }
+  return migrated;
+}
+
+/**
  * Team row scoped to one member's cycle letter (membership sub_area_fraction).
  *
  * @param {object} team
@@ -472,6 +507,23 @@ export function inferMembershipCycleForJoin(team, userRank) {
     if (!used.has(letter)) return letter;
   }
   return 'A1';
+}
+
+/**
+ * Prefer a member's saved subcycle; otherwise suggest the next free slot.
+ *
+ * @param {{ service?: string, members?: object[], sub_area_fraction?: string }|null|undefined} team
+ * @param {string} userId
+ * @param {string} userRank
+ */
+export function resolveMembershipCycleForUser(team, userId, userRank) {
+  const uid = String(userId || '').trim();
+  if (uid && team) {
+    const member = (team.members || []).find((m) => String(m.user_id || '') === uid);
+    const existing = String(member?.sub_area_fraction || '').trim();
+    if (existing) return existing;
+  }
+  return inferMembershipCycleForJoin(team || {}, userRank);
 }
 
 export function formatMemberCycleLabel(member) {
@@ -656,10 +708,11 @@ export function evaluateClinicalScope(currentUser, targetPatient, activeGuardia 
     return allow('R4: acceso global');
   }
 
+  if (patientInUserSala(targetPatient, userSala)) {
+    return allow('Censo compartido de sala');
+  }
+
   if (rank === 'R1') {
-    if (patientInUserSala(targetPatient, userSala)) {
-      return allow('R1: paciente en mi sala');
-    }
     return deny('R1: fuera de mi sala');
   }
 

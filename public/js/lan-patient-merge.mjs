@@ -4,6 +4,7 @@ import { compareIso } from './live-sync-room.mjs';
 import { mergeTodoListsById } from './livesync-patient-ids.mjs';
 import { mergeMonitoreo } from './features/estado-actual-data.mjs';
 import { bumpLabHistoryRevision } from './lab-history-cache.mjs';
+import { filterNewEventualidades, dedupeEventualidadKey } from '../../lib/drive-import/merge-eventualidades.mjs';
 
 export function isDemoPatientId(patientId) {
   return String(patientId || '').indexOf('demo-') === 0;
@@ -53,6 +54,88 @@ function listadoTimestamp(lst) {
   if (!lst || typeof lst !== 'object') return '';
   if (lst.updatedAt) return String(lst.updatedAt);
   return docTimestamp(lst.fecha, lst.hora);
+}
+
+/** @param {unknown} store */
+export function eventualidadesUpdatedAt(store) {
+  if (!store || typeof store !== 'object') return '';
+  /** @type {{ entries?: object[], updatedAt?: string }} */
+  const s = store;
+  let best = s.updatedAt ? String(s.updatedAt) : '';
+  const entries = Array.isArray(s.entries) ? s.entries : [];
+  for (let i = 0; i < entries.length; i += 1) {
+    const row = entries[i];
+    if (!row || typeof row !== 'object') continue;
+    const at = String(/** @type {{ at?: string, updatedAt?: string }} */ (row).at || /** @type {{ updatedAt?: string }} */ (row).updatedAt || '');
+    if (compareIso(at, best) > 0) best = at;
+  }
+  return best;
+}
+
+/** @param {unknown} a @param {unknown} b */
+export function mergeEventualidades(a, b) {
+  const left = a && typeof a === 'object' ? /** @type {{ entries?: object[] }} */ (a) : null;
+  const right = b && typeof b === 'object' ? /** @type {{ entries?: object[] }} */ (b) : null;
+  if (!left && !right) return undefined;
+  const leftEntries = left && Array.isArray(left.entries) ? left.entries : [];
+  const rightEntries = right && Array.isArray(right.entries) ? right.entries : [];
+  const byId = new Map();
+  for (const row of leftEntries) {
+    if (!row || typeof row !== 'object') continue;
+    const id = String(/** @type {{ id?: string }} */ (row).id || '').trim();
+    if (id) byId.set(id, { ...row });
+  }
+  for (const row of rightEntries) {
+    if (!row || typeof row !== 'object') continue;
+    const id = String(/** @type {{ id?: string }} */ (row).id || '').trim();
+    if (id) {
+      const cur = byId.get(id);
+      const at = String(/** @type {{ at?: string }} */ (row).at || '');
+      const curAt = cur ? String(/** @type {{ at?: string }} */ (cur).at || '') : '';
+      if (!cur || compareIso(at, curAt) >= 0) byId.set(id, { ...row });
+      continue;
+    }
+  }
+  const { toAdd } = filterNewEventualidades(
+    Array.from(byId.values()),
+    rightEntries.filter((row) => !String(/** @type {{ id?: string }} */ (row).id || '').trim())
+  );
+  for (const row of toAdd) {
+    byId.set('anon:' + dedupeEventualidadKey(row), { ...row });
+  }
+  const entries = Array.from(byId.values()).sort(function (x, y) {
+    return compareIso(String(/** @type {{ at?: string }} */ (y).at || ''), String(/** @type {{ at?: string }} */ (x).at || ''));
+  });
+  return { entries };
+}
+
+/** @param {unknown} hc */
+export function historiaClinicaUpdatedAt(hc) {
+  if (!hc || typeof hc !== 'object') return '';
+  /** @type {{ data?: { meta?: { updatedAt?: string } } }} */
+  const row = hc;
+  return row.data?.meta?.updatedAt ? String(row.data.meta.updatedAt) : '';
+}
+
+/** @param {unknown} a @param {unknown} b */
+export function mergeHistoriaClinica(a, b) {
+  if (!a && !b) return undefined;
+  if (!a) return structuredClone(/** @type {object} */ (b));
+  if (!b) return structuredClone(/** @type {object} */ (a));
+  const av = Number(/** @type {{ version?: number }} */ (a).version || 0);
+  const bv = Number(/** @type {{ version?: number }} */ (b).version || 0);
+  let winner = bv >= av ? b : a;
+  if (av === bv) {
+    const at = historiaClinicaUpdatedAt(a);
+    const bt = historiaClinicaUpdatedAt(b);
+    if (compareIso(bt, at) > 0) winner = b;
+    else if (compareIso(at, bt) > 0) winner = a;
+  }
+  const out = {
+    version: Number(/** @type {{ version?: number }} */ (winner).version || 0),
+    data: structuredClone(/** @type {{ data?: object }} */ (winner).data || {}),
+  };
+  return out;
 }
 
 function medRecetaTimestamp(med) {
@@ -111,6 +194,8 @@ export function entryUpdatedAt(entry) {
     medRecetaTimestamp(entry.medReceta),
     listadoTimestamp(entry.listadoProblemas),
     monitoreoUpdatedAt(p.monitoreo),
+    eventualidadesUpdatedAt(p.eventualidades),
+    historiaClinicaUpdatedAt(p.historiaClinica),
   ];
   const labs = Array.isArray(entry.labHistory) ? entry.labHistory : [];
   for (let i = 0; i < labs.length; i += 1) {
@@ -250,6 +335,12 @@ export function mergePatientEntry(a, b) {
     delete patient.monitoreo;
   }
 
+  const mergedEventualidades = mergeEventualidades(first.patient?.eventualidades, second.patient?.eventualidades);
+  if (mergedEventualidades) patient.eventualidades = mergedEventualidades;
+
+  const mergedHc = mergeHistoriaClinica(first.patient?.historiaClinica, second.patient?.historiaClinica);
+  if (mergedHc) patient.historiaClinica = mergedHc;
+
   if (patient.id) bumpLabHistoryRevision(patient.id);
 
   return {
@@ -284,6 +375,9 @@ export function cloneEntry(entry) {
   const monSrc = patient.monitoreo;
   if (monSrc != null && typeof monSrc === 'object') {
     patient.monitoreo = structuredClone(monSrc);
+  }
+  if (patient.historiaClinica != null && typeof patient.historiaClinica === 'object') {
+    patient.historiaClinica = structuredClone(patient.historiaClinica);
   }
   return {
     patient,

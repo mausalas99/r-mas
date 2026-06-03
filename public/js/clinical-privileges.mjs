@@ -33,3 +33,13 @@ export function hasElevatedTeamPrivileges(user) {
   if (hasProgramAdminPrivileges(user)) return true;
   return effectiveClinicalRank(user) === 'R4';
 }
+
+/** @param {{ rank?: string, is_program_admin?: number|boolean }|null|undefined} user */
+export function canViewLanUserDirectory(user) {
+  return hasElevatedTeamPrivileges(user);
+}
+
+/** @param {{ rank?: string, is_program_admin?: number|boolean }|null|undefined} user */
+export function canManageTeamRoster(user) {
+  return hasElevatedTeamPrivileges(user);
+}

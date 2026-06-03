@@ -2,6 +2,9 @@
  * Persist clinical identity binding in rpc-settings (device ↔ DB user).
  */
 
+/** Bump when every device must re-confirm LAN profile (admin directory / team assign). */
+export const CLINICAL_LAN_PROFILE_GATE_VERSION = '5.5.7';
+
 /** @returns {Record<string, unknown>} */
 export function readRpcSettings() {
   try {
@@ -9,6 +12,22 @@ export function readRpcSettings() {
   } catch (_e) {
     return {};
   }
+}
+
+/** @param {Record<string, unknown>|null|undefined} [settings] */
+export function needsClinicalLanProfileGate(settings = readRpcSettings()) {
+  return (
+    String(settings?.clinicalLanProfileGateVersion || '') !== CLINICAL_LAN_PROFILE_GATE_VERSION
+  );
+}
+
+/** @param {Record<string, unknown>|null|undefined} [settings] */
+export function markClinicalLanProfileGateComplete(settings = readRpcSettings()) {
+  settings.clinicalLanProfileGateVersion = CLINICAL_LAN_PROFILE_GATE_VERSION;
+  try {
+    localStorage.setItem('rpc-settings', JSON.stringify(settings));
+  } catch (_e) {}
+  return settings;
 }
 
 /**
@@ -34,6 +53,9 @@ export function persistClinicalUserBinding(patch) {
   if (patch.rank) settings.clinicalRank = String(patch.rank);
   if (patch.sala != null) settings.clinicalSala = String(patch.sala);
   if (patch.registered === true) settings.clinicalRegistered = true;
+  if (patch.lanProfileGateComplete === true) {
+    settings.clinicalLanProfileGateVersion = CLINICAL_LAN_PROFILE_GATE_VERSION;
+  }
   if (patch.isProgramAdmin !== undefined) {
     settings.clinicalProgramAdmin = !!patch.isProgramAdmin;
   }

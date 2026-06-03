@@ -3,8 +3,8 @@
  */
 import { isDbMode } from './db-storage-bridge.mjs';
 import { isGuardiaMode } from './features/chrome.mjs';
-import { patients } from './app-state.mjs';
-import { evaluateClinicalScope } from './clinico-access.mjs';
+import { patients, saveState } from './app-state.mjs';
+import { evaluateClinicalScope, migratePatientsClinicalSala } from './clinico-access.mjs';
 import { signClinicalChange, verifyIncomingPeerChange } from './features/crypto-signer.mjs';
 import { renderGuardiaBoard } from './features/guardia-board.mjs';
 import {
@@ -117,6 +117,37 @@ async function applyBootstrapResult(res) {
   await refreshClinicalUserProfile();
   await fetchClinicalTeamsFromDb();
   await fetchClinicalScopeContextFromDb();
+  if (typeof document !== 'undefined') {
+    void import('./clinical-ops-lan.mjs')
+      .then((mod) => mod.prepareClinicalOpsForLanSync?.())
+      .then(() => import('./features/lan-sync.mjs'))
+      .then((mod) => {
+        if (typeof mod.scheduleLiveSyncPush === 'function') mod.scheduleLiveSyncPush();
+      })
+      .catch(() => {});
+  }
+  migrateLocalPatientsClinicalSala();
+}
+
+/** @returns {number} patients tagged with sala */
+export function migrateLocalPatientsClinicalSala() {
+  const user = clinicalSessionContext.user;
+  const settings = readRpcSettings();
+  const sala =
+    String(user?.sala || '').trim() || String(settings.clinicalSala || '').trim();
+  if (!sala) return 0;
+
+  const actor = user ? { ...user, sala } : { sala };
+  const migrated = migratePatientsClinicalSala(patients, actor);
+  if (migrated > 0) {
+    void saveState({ immediate: true });
+    if (typeof document !== 'undefined') {
+      void import('./features/patients.mjs')
+        .then((mod) => mod.renderPatientList())
+        .catch(() => {});
+    }
+  }
+  return migrated;
 }
 
 export async function bootstrapClinicalAccess(settings, clientId) {
@@ -214,6 +245,7 @@ export async function refreshClinicalUserProfile() {
     clinicalSessionContext.user.is_program_admin =
       profile.is_program_admin === 1 ? 1 : 0;
   } catch (_e) {}
+  migrateLocalPatientsClinicalSala();
 }
 
 /**

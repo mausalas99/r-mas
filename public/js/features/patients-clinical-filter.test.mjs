@@ -27,3 +27,12 @@ test('R4 sidebar includes all patients', () => {
   );
   assert.equal(out.length, 2);
 });
+
+test('R2 sidebar includes same-sala census without admin', () => {
+  const out = filterPatientsForClinicalSidebar(
+    patients,
+    { user_id: 'r2', rank: 'R2', sala: 'Sala 1', is_program_admin: 0 },
+    { teams: [], guardias: [], assignments: [], cycle: null, now: '2026-06-01T12:00:00Z' }
+  );
+  assert.deepEqual(out.map((p) => p.id), ['p1']);
+});

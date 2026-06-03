@@ -1,6 +1,7 @@
 'use strict';
 const { todoEntityKey, collectKeysFromBundlePayload } = require('./entity-keys.js');
 const { appendAudit } = require('./audit-log.js');
+const { mergeClinicalOpsSnapshotsData } = require('../lib/db/clinical-ops-bundle-merge.cjs');
 
 function emptyBundle(nowIso) {
   return {
@@ -160,9 +161,7 @@ function mergeBundlePut(serverBundle, incoming, opts) {
     } else if (!serverOps) {
       bundle.clinicalOps = incomingOps;
     } else {
-      const a = String(incomingOps.exportedAt || '');
-      const b = String(serverOps.exportedAt || '');
-      bundle.clinicalOps = a >= b ? incomingOps : serverOps;
+      bundle.clinicalOps = mergeClinicalOpsSnapshotsData(serverOps, incomingOps);
     }
   }
 

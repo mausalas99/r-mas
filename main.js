@@ -62,7 +62,44 @@ function applyUpdateChannel(channel) {
 }
 
 let downgradeSession = null;
+let reinstallSession = null;
 let defaultUpdaterFeed = null;
+
+function clearReinstallSession() {
+  if (!reinstallSession) return;
+  if (reinstallSession.originalIsUpdateAvailable) {
+    autoUpdater.isUpdateAvailable = reinstallSession.originalIsUpdateAvailable;
+  }
+  reinstallSession = null;
+}
+
+/** Re-descarga e instala el tag de release de la versión instalada (mismo semver en latest.yml). */
+function beginReinstallCurrentVersion() {
+  clearReinstallSession();
+  const current = app.getVersion();
+  reinstallSession = {
+    version: current,
+    originalIsUpdateAvailable: autoUpdater.isUpdateAvailable.bind(autoUpdater),
+  };
+  const originalIsUpdateAvailable = reinstallSession.originalIsUpdateAvailable;
+  autoUpdater.isUpdateAvailable = async function (updateInfo) {
+    const session = reinstallSession;
+    const remote = String((updateInfo && updateInfo.version) || '').replace(/^v/i, '');
+    if (session && remote && remote === session.version) {
+      return true;
+    }
+    if (originalIsUpdateAvailable) {
+      return originalIsUpdateAvailable(updateInfo);
+    }
+    return false;
+  };
+  autoUpdater.allowDowngrade = true;
+  autoUpdater.autoDownload = true;
+  autoUpdater.setFeedURL({
+    provider: 'generic',
+    url: buildGenericFeedUrl(current),
+  });
+}
 
 function captureDefaultUpdaterFeed() {
   if (defaultUpdaterFeed) return defaultUpdaterFeed;
@@ -76,6 +113,7 @@ function captureDefaultUpdaterFeed() {
 
 function resetUpdaterFeedToDefault() {
   downgradeSession = null;
+  clearReinstallSession();
   autoUpdater.allowDowngrade = false;
   applyUpdateChannel(readUpdateChannelFromDisk());
   const feed = captureDefaultUpdaterFeed();
@@ -270,7 +308,14 @@ autoUpdater.on('update-not-available', () => {
       );
       return;
     }
-    safeSendToRenderer('update-not-available');
+    if (reinstallSession) {
+      const v = reinstallSession.version;
+      clearReinstallSession();
+      resetUpdaterFeedToDefault();
+      safeSendToRenderer('update-not-available', { reinstallFailed: true, version: v });
+      return;
+    }
+    safeSendToRenderer('update-not-available', {});
   } catch (e) {
     console.error('update-not-available handler error:', e && e.message);
   }
@@ -289,13 +334,34 @@ autoUpdater.on('error', (err) => {
       sendDowngradeFailedFromSession('updater-error', msg);
       return;
     }
+    if (reinstallSession) {
+      const v = reinstallSession.version;
+      clearReinstallSession();
+      resetUpdaterFeedToDefault();
+      safeSendToRenderer('update-not-available', { reinstallFailed: true, version: v, detail: msg });
+      return;
+    }
     safeSendToRenderer('update-error', msg);
   } catch (e) {
     console.error('updater error handler crashed:', e && e.message);
   }
 });
 
-ipcMain.on('install-update', () => autoUpdater.quitAndInstall());
+ipcMain.on('install-update', () => {
+  clearReinstallSession();
+  autoUpdater.quitAndInstall();
+});
+
+ipcMain.on('reinstall-current-release', () => {
+  try {
+    beginReinstallCurrentVersion();
+    scheduleUpdateCheck(80);
+  } catch (err) {
+    clearReinstallSession();
+    resetUpdaterFeedToDefault();
+    safeSendToRenderer('update-error', err && err.message ? err.message : String(err));
+  }
+});
 
 let updateCheckTimer = null;
 function scheduleUpdateCheck(delayMs) {

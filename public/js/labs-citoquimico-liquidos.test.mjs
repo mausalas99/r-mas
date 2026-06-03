@@ -13,6 +13,9 @@ import {
   esLiquidoAscitico_,
   normalizarProteinasFluidoGdl_,
   esLiquidoPleural_,
+  resolveSerumAlbuminForGasa_,
+  extractSerumAlbuminGdlFromResLabs_,
+  refreshAscitisInterpretacionInResLabs_,
 } from './labs.js';
 
 const MUESTRA_PERITONEAL = `
@@ -391,4 +394,62 @@ test('evaluarAscitisNoPortal — ramas del algoritmo', () => {
 test('parsearCitoquimicoLiquidos — sin albúmina sérica no muestra GASA', () => {
   const out = parsearCitoquimicoLiquidos(MUESTRA_PERITONEAL);
   assert.ok(!/GASA/.test(out));
+});
+
+const MUESTRA_ALB_SERUM_DESPUES_CITO =
+  MUESTRA_WENDY_ASCITIS.replace(
+    /QUIMICA CLINICA\nALBUMINA[\s\S]*?3\.2 - 5\.5\n\n/,
+    ''
+  ) +
+  `
+QUIMICA CLINICA
+ALBUMINA
+Estudio		Resultado	Unidades	Valor de Referencia
+ALBUMINA
+B
+3.4
+g/dL	3.2 - 5.5
+`;
+
+test('GASA — albúmina sérica después del bloque citoquímico en el mismo informe', () => {
+  const out = parsearCitoquimicoLiquidos(MUESTRA_ALB_SERUM_DESPUES_CITO);
+  assert.match(out, /\bGASA 1\.3\b/);
+  const alerts = buildAscitisLabAlerts_(MUESTRA_ALB_SERUM_DESPUES_CITO);
+  assert.match(alerts.join(' '), /hipertensión portal/);
+});
+
+test('GASA — albúmina sérica en otro envío del mismo día (PFHs parseado)', () => {
+  const soloAscitis = parsearCitoquimicoLiquidos(MUESTRA_WENDY_ASCITIS.replace(
+    /QUIMICA CLINICA\nALBUMINA[\s\S]*?3\.2 - 5\.5\n\n/,
+    ''
+  ));
+  assert.ok(!/\bGASA\b/.test(soloAscitis));
+  const serumLabs = ['PFHs\tAlb 3.4 GOT 20 ALT 18'];
+  const opts = { extraResLabs: [serumLabs] };
+  const out = parsearCitoquimicoLiquidos(
+    MUESTRA_WENDY_ASCITIS.replace(/QUIMICA CLINICA\nALBUMINA[\s\S]*?3\.2 - 5\.5\n\n/, ''),
+    opts
+  );
+  assert.match(out, /\bGASA 1\.3\b/);
+  assert.equal(extractSerumAlbuminGdlFromResLabs_(serumLabs), 3.4);
+  assert.equal(
+    resolveSerumAlbuminForGasa_(MUESTRA_PERITONEAL, '', { extraResLabs: [serumLabs] }),
+    3.4
+  );
+});
+
+test('refreshAscitisInterpretacionInResLabs_ — une PFHs de otro bloque guardado', () => {
+  const ascitisOnly = MUESTRA_WENDY_ASCITIS.replace(
+    /QUIMICA CLINICA\nALBUMINA[\s\S]*?3\.2 - 5\.5\n\n/,
+    ''
+  );
+  const liqOnly = parsearCitoquimicoLiquidos(ascitisOnly);
+  const resLabs = [liqOnly, 'INTERPRETACIÓN ASCITIS:\tIncluir albúmina sérica del mismo día para calcular GASA'];
+  const next = refreshAscitisInterpretacionInResLabs_(resLabs, ascitisOnly, {
+    extraResLabs: [['PFHs\tAlb 3.4']],
+  });
+  const liq = next.find((l) => l.startsWith('Liq:\t'));
+  const interp = next.find((l) => isAscitisInterpretacionResLabChunk(l));
+  assert.match(liq, /\bGASA 1\.3\b/);
+  assert.match(interp, /hipertensión portal/);
 });

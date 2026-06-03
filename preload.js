@@ -11,7 +11,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('update-ready', function(_e, payload) { cb(payload); });
   },
   onUpdateNotAvailable: function(cb) {
-    ipcRenderer.on('update-not-available', function() { cb(); });
+    ipcRenderer.on('update-not-available', function(_e, payload) { cb(payload); });
   },
   onUpdateError: function(cb) {
     ipcRenderer.on('update-error', function(_e, msg) { cb(msg); });
@@ -27,6 +27,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   checkForUpdates: function() {
     ipcRenderer.send('check-for-updates');
+  },
+  reinstallCurrentRelease: function() {
+    ipcRenderer.send('reinstall-current-release');
   },
   downgradeToStable: function(version) {
     ipcRenderer.send('downgrade-to-stable', version);
@@ -181,6 +184,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   dbClinicalUserLookup: function(opts) {
     return ipcRenderer.invoke('db:clinical-user-lookup', opts);
+  },
+  dbClinicalUsersList: function(opts) {
+    return ipcRenderer.invoke('db:clinical-users-list', opts);
   },
   dbClinicalTeamResolveCode: function(opts) {
     return ipcRenderer.invoke('db:clinical-team-resolve-code', opts);

@@ -381,6 +381,10 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
           todos: incoming.todos && typeof incoming.todos === 'object' ? incoming.todos : {},
           entries: Array.isArray(incoming.entries) ? incoming.entries : [],
           manejo: incoming.manejo,
+          clinicalOps:
+            incoming.clinicalOps && typeof incoming.clinicalOps === 'object'
+              ? incoming.clinicalOps
+              : null,
           clientId: incoming.uploadedByClientId || incoming.clientId || '',
         }
       : { ...incoming, clientId: incoming.uploadedByClientId || incoming.clientId || '' };

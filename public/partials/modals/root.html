@@ -494,6 +494,37 @@
   </div>
 </div>
 
+<div id="clinical-lan-users-backdrop" class="modal-backdrop clinical-lan-users-backdrop" aria-hidden="true">
+  <div class="modal clinical-lan-users-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-lan-users-title" onclick="event.stopPropagation()">
+    <header class="clinical-lan-users-modal-head">
+      <h3 id="clinical-lan-users-title">Directorio de usuarios LAN</h3>
+      <button type="button" class="clinical-teams-dismiss" id="btn-clinical-lan-users-close" aria-label="Cerrar">×</button>
+    </header>
+    <div id="clinical-lan-users-panel-body" class="clinical-lan-users-panel-body"></div>
+  </div>
+</div>
+
+<div id="clinical-admin-code-backdrop" class="modal-backdrop clinical-admin-code-backdrop" aria-hidden="true">
+  <div class="modal clinical-admin-code-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-admin-code-title" onclick="event.stopPropagation()">
+    <header class="clinical-lan-users-modal-head">
+      <h3 id="clinical-admin-code-title">Privilegios de administración</h3>
+      <button type="button" class="clinical-teams-dismiss" id="btn-clinical-admin-code-close" aria-label="Cerrar">×</button>
+    </header>
+    <p class="clinical-admin-code-lead">Introduce tu código personal para activar acceso de administración.</p>
+    <form id="clinical-admin-code-form">
+      <div class="field-group">
+        <label for="clinical-admin-code-input">Código</label>
+        <input id="clinical-admin-code-input" type="password" class="profile-input" autocomplete="off" required>
+      </div>
+      <p id="clinical-admin-code-error" class="clinical-admin-code-error" hidden></p>
+      <div class="modal-actions">
+        <button type="button" class="btn-med-secondary" id="btn-clinical-admin-code-cancel">Cancelar</button>
+        <button type="submit" class="btn-save">Activar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div id="clinical-registration-backdrop" class="modal-backdrop" aria-hidden="true">
   <div class="modal clinical-registration-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-registration-title" onclick="event.stopPropagation()">
     <h3 id="clinical-registration-title">Registro de guardia</h3>

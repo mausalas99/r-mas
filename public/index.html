@@ -649,8 +649,8 @@
           </label>
           <p class="settings-acc-hint settings-acc-hint--tight">Solo versión, resultado y plataforma. <strong>No</strong> incluye datos clínicos. Desactivado por defecto.</p>
           <button type="button" class="btn-edit-templates" id="settings-check-updates-btn" style="margin-top:8px;" onclick="checkForAppUpdates()" data-i18n="settings.checkUpdates">Buscar actualizaciones…</button>
-          <p class="settings-acc-hint settings-acc-hint--tight">Si instalaste <strong>6.5.4</strong> (u otra retirada de GitHub) y ves «native binding», usa <strong>reparación 6.5.5</strong> o restaura <strong>6.5.0</strong> (la única 6.5.x publicada hoy).</p>
-          <button type="button" class="btn-edit-templates" id="settings-repair-update-btn" style="margin-top:4px;" onclick="checkForRepairUpdate()">Reinstalar actualización de reparación (6.5.5)…</button>
+          <p class="settings-acc-hint settings-acc-hint--tight">Si ves «native binding» o una build defectuosa, usa <strong>Reinstalar versión actual</strong> (vuelve a bajar el instalador del mismo número desde GitHub) o <strong>Restaurar versión estable</strong> más abajo.</p>
+          <button type="button" class="btn-edit-templates" id="settings-repair-update-btn" style="margin-top:4px;" onclick="checkForRepairUpdate()">Reinstalar versión actual…</button>
           <div id="settings-downgrade-section" class="settings-downgrade-section" hidden>
             <hr class="profile-divider settings-acc-divider">
             <label for="rpc-stable-downgrade-select" class="profile-field-label settings-acc-label-spaced--xs">Restaurar versión estable</label>
@@ -1919,6 +1919,37 @@
       <button type="button" class="clinical-teams-dismiss" id="btn-clinical-teams-close" aria-label="Cerrar">×</button>
     </header>
     <div id="clinical-teams-panel-body" class="clinical-teams-panel-body"></div>
+  </div>
+</div>
+
+<div id="clinical-lan-users-backdrop" class="modal-backdrop clinical-lan-users-backdrop" aria-hidden="true">
+  <div class="modal clinical-lan-users-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-lan-users-title" onclick="event.stopPropagation()">
+    <header class="clinical-lan-users-modal-head">
+      <h3 id="clinical-lan-users-title">Directorio de usuarios LAN</h3>
+      <button type="button" class="clinical-teams-dismiss" id="btn-clinical-lan-users-close" aria-label="Cerrar">×</button>
+    </header>
+    <div id="clinical-lan-users-panel-body" class="clinical-lan-users-panel-body"></div>
+  </div>
+</div>
+
+<div id="clinical-admin-code-backdrop" class="modal-backdrop clinical-admin-code-backdrop" aria-hidden="true">
+  <div class="modal clinical-admin-code-modal" role="dialog" aria-modal="true" aria-labelledby="clinical-admin-code-title" onclick="event.stopPropagation()">
+    <header class="clinical-lan-users-modal-head">
+      <h3 id="clinical-admin-code-title">Privilegios de administración</h3>
+      <button type="button" class="clinical-teams-dismiss" id="btn-clinical-admin-code-close" aria-label="Cerrar">×</button>
+    </header>
+    <p class="clinical-admin-code-lead">Introduce tu código personal para activar acceso de administración.</p>
+    <form id="clinical-admin-code-form">
+      <div class="field-group">
+        <label for="clinical-admin-code-input">Código</label>
+        <input id="clinical-admin-code-input" type="password" class="profile-input" autocomplete="off" required>
+      </div>
+      <p id="clinical-admin-code-error" class="clinical-admin-code-error" hidden></p>
+      <div class="modal-actions">
+        <button type="button" class="btn-med-secondary" id="btn-clinical-admin-code-cancel">Cancelar</button>
+        <button type="submit" class="btn-save">Activar</button>
+      </div>
+    </form>
   </div>
 </div>
 

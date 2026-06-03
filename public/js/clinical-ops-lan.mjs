@@ -2,6 +2,11 @@
  * LAN LiveSync helpers for V2 clinical ops SQL tables (rotation, assignments, guardia).
  */
 
+import {
+  mergeClinicalOpsFromSourcesData,
+  mergeClinicalOpsSnapshotsData,
+} from './clinical-ops-bundle-merge.mjs';
+
 let cachedSnapshot = null;
 
 function dbApi() {
@@ -22,6 +27,12 @@ export function isClinicalOpsLanAvailable() {
 export async function refreshClinicalOpsSnapshotCache() {
   cachedSnapshot = await collectClinicalOpsForLanSync();
   return cachedSnapshot;
+}
+
+/** Refresh export cache when LAN bundles are built or clinical session starts. */
+export async function prepareClinicalOpsForLanSync() {
+  if (!isClinicalOpsLanAvailable()) return null;
+  return refreshClinicalOpsSnapshotCache();
 }
 
 /** @returns {object|null} */
@@ -47,22 +58,9 @@ export async function applyClinicalOpsLanSnapshot(snapshot) {
   return !!(res && res.ok !== false);
 }
 
-/**
- * Last-write-wins pick across LAN bundle sources by exportedAt.
- * @param {object[]} sources
- */
+/** @param {object[]} sources */
 export function mergeClinicalOpsFromSources(sources) {
-  let winner = null;
-  for (const src of sources || []) {
-    const snap = src && src.clinicalOps;
-    if (!snap || typeof snap !== 'object') continue;
-    if (!winner) {
-      winner = snap;
-      continue;
-    }
-    const a = String(snap.exportedAt || '');
-    const b = String(winner.exportedAt || '');
-    if (a > b) winner = snap;
-  }
-  return winner;
+  return mergeClinicalOpsFromSourcesData(sources);
 }
+
+export { mergeClinicalOpsSnapshotsData };

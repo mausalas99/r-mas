@@ -12,6 +12,8 @@ import {
 import {
   mergeLanPatientEntrySources,
   filterEntriesByPatientDeletes,
+  mergeEventualidades,
+  mergeHistoriaClinica,
 } from "../lan-patient-merge.mjs";
 import {
   buildLiveSyncPatientIdMap,
@@ -31,6 +33,7 @@ import {
   collectManejoRoomPayload,
   mergeManejoFromSources,
   applyManejoRoomDataToLocal,
+  isLanManejoRoomSyncEnabled,
 } from "../manejo-room-data.mjs";
 import { mergePatientMonitoreoFromImported } from "./estado-actual-data.mjs";
 import { mergeCensoPatientFields } from "../patient-diagnosticos.mjs";
@@ -38,7 +41,7 @@ import { filterTodosRespectingDismissals } from "../manejo-todo-dismiss.mjs";
 import { copyToClipboardSafe } from "./soap-estado.mjs";
 import { buildLanJoinUrls, parseLanInviteInput } from "../lan-join-link.mjs";
 import { createMutationBuilder, wrapLiveSyncPatch } from "../versioned-mutation.mjs";
-import { guardAndSignLiveSyncMutation, clinicalSessionContext } from "../clinical-access-runtime.mjs";
+import { guardAndSignLiveSyncMutation, clinicalSessionContext, migrateLocalPatientsClinicalSala } from "../clinical-access-runtime.mjs";
 import { hasElevatedTeamPrivileges } from "../clinical-privileges.mjs";
 import { appendLanHubGuardiaModeCard } from "./lan-hub-guardia-mode.mjs";
 import { appendLanHubStatusCard, appendLanHubRoomsCard } from "./lan-hub-panel-shell.mjs";
@@ -63,6 +66,7 @@ import {
   isClinicalOpsLanAvailable,
   mergeClinicalOpsFromSources,
   refreshClinicalOpsSnapshotCache,
+  prepareClinicalOpsForLanSync,
 } from "../clinical-ops-lan.mjs";
 import {
   rememberPrimaryHostUrl,
@@ -714,6 +718,7 @@ function initLanClientFromStorage() {
 }
 if (typeof document !== 'undefined') {
   initLanClientFromStorage();
+  wireClinicalOpsLanSyncEvents();
   wireLanPanelDelegation();
 }
 if (typeof document !== 'undefined' && isLanElectronDesktop()) {
@@ -803,13 +808,8 @@ function patchLanPanelJoinButtons() {
   });
 }
 
-var _lanPanelDelegationWired = false;
-function wireLanPanelDelegation() {
-  if (_lanPanelDelegationWired) return;
+function wireClinicalOpsLanSyncEvents() {
   if (typeof document === 'undefined') return;
-  var root = document.getElementById('lan-connection-panel-root');
-  if (!root) return;
-  _lanPanelDelegationWired = true;
   if (!document._rpcClinicalOpsSyncedLanWired) {
     document._rpcClinicalOpsSyncedLanWired = true;
     document.addEventListener('rpc-clinical-ops-synced', function () {
@@ -818,6 +818,22 @@ function wireLanPanelDelegation() {
       });
     });
   }
+  if (!document._rpcClinicalTeamsChangedLanWired) {
+    document._rpcClinicalTeamsChangedLanWired = true;
+    document.addEventListener('rpc-clinical-teams-changed', function () {
+      scheduleLiveSyncPush();
+    });
+  }
+}
+
+var _lanPanelDelegationWired = false;
+function wireLanPanelDelegation() {
+  if (_lanPanelDelegationWired) return;
+  if (typeof document === 'undefined') return;
+  var root = document.getElementById('lan-connection-panel-root');
+  if (!root) return;
+  _lanPanelDelegationWired = true;
+  wireClinicalOpsLanSyncEvents();
   root.addEventListener('click', function (ev) {
     var btn = /** @type {HTMLElement | null} */ (
       ev.target && ev.target.closest ? ev.target.closest('[data-lan-action]') : null
@@ -1628,7 +1644,7 @@ async function promoteSelfToSurrogateHost() {
     promotedAt: new Date().toISOString(),
   });
   applyLanHostUrlSwitch(localUrl, formerCode, { skipRememberPrimary: true });
-  var bundle = buildLiveSyncBundleEnvelope(activeLiveSyncRoomId);
+  var bundle = await buildLiveSyncBundleEnvelope(activeLiveSyncRoomId);
   await pushRoomSyncBundleToHost(activeLiveSyncRoomId, bundle);
   try {
     if (!lanClient.connected) lanClient.connectSyncChannel();
@@ -1657,7 +1673,7 @@ async function maybeRevertSurrogateToPrimary() {
   var code = st.formerTeamCode || getLanTeamCodeFromConfig();
   if (!(await pingLanHostUrl(st.formerHostUrl, code))) return false;
   if (activeLiveSyncRoomId) {
-    var bundle = buildLiveSyncBundleEnvelope(activeLiveSyncRoomId);
+    var bundle = await buildLiveSyncBundleEnvelope(activeLiveSyncRoomId);
     var prevUrl = lanClient.baseUrl();
     applyLanHostUrlSwitch(st.formerHostUrl, code, { skipRememberPrimary: true });
     await pushRoomSyncBundleToHost(activeLiveSyncRoomId, bundle);
@@ -1779,7 +1795,9 @@ function mergeLiveSyncFullBundles(sources) {
   var entries = mergeLanPatientEntrySources(sources);
   entries = filterEntriesByPatientDeletes(entries, base.patientDeletes || []);
   base.entries = attachTodosMapToPatientEntries(entries, base.todos);
-  base.manejo = mergeManejoFromSources(sources);
+  if (isLanManejoRoomSyncEnabled()) {
+    base.manejo = mergeManejoFromSources(sources);
+  }
   base.clinicalOps = mergeClinicalOpsFromSources(sources);
   return base;
 }
@@ -1833,7 +1851,17 @@ function applyLanPatientEntries(entries) {
       existing.registro = entry.patient.registro || existing.registro;
       if (entry.patient.fromLab) existing.fromLab = true;
       if (entry.patient.eventualidades && typeof entry.patient.eventualidades === 'object') {
-        existing.eventualidades = entry.patient.eventualidades;
+        existing.eventualidades = mergeEventualidades(
+          existing.eventualidades,
+          entry.patient.eventualidades
+        ) || entry.patient.eventualidades;
+      }
+      if (entry.patient.historiaClinica && typeof entry.patient.historiaClinica === 'object') {
+        const mergedHc = mergeHistoriaClinica(
+          existing.historiaClinica,
+          entry.patient.historiaClinica
+        );
+        if (mergedHc) existing.historiaClinica = mergedHc;
       }
       notes[existing.id] = entry.note || {};
       indicaciones[existing.id] = entry.indicaciones || {};
@@ -1876,6 +1904,9 @@ function applyLanPatientEntries(entries) {
         mergeCensoPatientFields(newPat, entry.patient);
         if (entry.patient.eventualidades && typeof entry.patient.eventualidades === 'object') {
           newPat.eventualidades = entry.patient.eventualidades;
+        }
+        if (entry.patient.historiaClinica && typeof entry.patient.historiaClinica === 'object') {
+          newPat.historiaClinica = structuredClone(entry.patient.historiaClinica);
         }
         patients.unshift(newPat);
         notes[remoteId] = entry.note || {};
@@ -2017,7 +2048,7 @@ function applyLiveSyncMerged(merged) {
       runtime.renderLabHistoryPanel();
     } catch (_eLab) {}
   }
-  if (merged.manejo) {
+  if (merged.manejo && isLanManejoRoomSyncEnabled()) {
     applyManejoRoomDataToLocal(merged.manejo);
   }
   if (merged.clinicalOps && isClinicalOpsLanAvailable()) {
@@ -2027,9 +2058,15 @@ function applyLiveSyncMerged(merged) {
         void refreshClinicalSessionTeams().then(function () {
           document.dispatchEvent(new CustomEvent('rpc-clinical-ops-synced'));
         });
+      } else {
+        runtime.showToast(
+          'No se pudieron sincronizar equipos ni usuarios LAN. Desbloquea la sesión clínica e intenta de nuevo.',
+          'warn'
+        );
       }
     });
   }
+  migrateLocalPatientsClinicalSala();
 }
 function liveSyncBundleHasPayload(bundle) {
   if (!bundle) return false;
@@ -2042,7 +2079,7 @@ function liveSyncBundleHasPayload(bundle) {
     if (Array.isArray(todos[keys[i]]) && todos[keys[i]].length > 0) return true;
   }
   var manejo = bundle.manejo;
-  if (manejo && typeof manejo === 'object') {
+  if (isLanManejoRoomSyncEnabled() && manejo && typeof manejo === 'object') {
     if (Array.isArray(manejo.customProtocols) && manejo.customProtocols.length > 0) return true;
     if (manejo.overrides && Object.keys(manejo.overrides).length > 0) return true;
     if (Array.isArray(manejo.favorites) && manejo.favorites.length > 0) return true;
@@ -2056,7 +2093,8 @@ function liveSyncBundleHasPayload(bundle) {
       (Array.isArray(clinicalOps.team_guardia_today) && clinicalOps.team_guardia_today.length > 0) ||
       (Array.isArray(clinicalOps.active_guardias) && clinicalOps.active_guardias.length > 0) ||
       (Array.isArray(clinicalOps.teams) && clinicalOps.teams.length > 0) ||
-      (Array.isArray(clinicalOps.team_membership) && clinicalOps.team_membership.length > 0)
+      (Array.isArray(clinicalOps.team_membership) && clinicalOps.team_membership.length > 0) ||
+      (Array.isArray(clinicalOps.clinical_users) && clinicalOps.clinical_users.length > 0)
     ) {
       return true;
     }
@@ -2263,11 +2301,23 @@ function saveLocalRoomSnapshot(roomId) {
     agenda: snap.agenda,
     todos: snap.todos,
     entries: entries,
-    manejo: collectManejoRoomPayload(),
+    ...(isLanManejoRoomSyncEnabled() ? { manejo: collectManejoRoomPayload() } : {}),
     clinicalOps: getCachedClinicalOpsSnapshot(),
   });
 }
-function buildLiveSyncBundleEnvelope(roomId) {
+function buildLiveSyncLocalMergeSource() {
+  return {
+    agenda: storage.getScheduledProcedures(),
+    todos: collectTodosMapForLiveSync(),
+    entries: collectPatientEntriesForLanSync(),
+    clinicalOps: getCachedClinicalOpsSnapshot(),
+  };
+}
+
+async function buildLiveSyncBundleEnvelope(roomId) {
+  if (isClinicalOpsLanAvailable()) {
+    await prepareClinicalOpsForLanSync();
+  }
   var rid = String(roomId || '').trim();
   var snap = buildRoomSnapshotFromStorage(storage, collectPatientIdsForLiveSync());
   var prev = storage.getLanRoomSnapshot(rid);
@@ -2281,7 +2331,7 @@ function buildLiveSyncBundleEnvelope(roomId) {
     agenda: snap.agenda,
     todos: snap.todos,
     entries: entries,
-    manejo: collectManejoRoomPayload(),
+    ...(isLanManejoRoomSyncEnabled() ? { manejo: collectManejoRoomPayload() } : {}),
     clinicalOps: getCachedClinicalOpsSnapshot(),
   };
 }
@@ -2294,10 +2344,7 @@ function scheduleLiveSyncPush() {
     var roomId = activeLiveSyncRoomId;
     if (!roomId) return;
     void (async function () {
-      if (isClinicalOpsLanAvailable()) {
-        await refreshClinicalOpsSnapshotCache();
-      }
-      var bundle = buildLiveSyncBundleEnvelope(roomId);
+      var bundle = await buildLiveSyncBundleEnvelope(roomId);
       if (lanClient.liveConnected) {
         try {
           lanClient.sendLive(bundle);
@@ -2324,7 +2371,7 @@ function syncLiveSyncStatusChrome() {
   el.style.display = 'block';
   var label = activeLiveSyncRoomLabel || activeLiveSyncRoomId;
   if (lanClient.liveConnected) {
-    el.textContent = 'Sala: ' + label + ' · sincronizando pacientes, labs, agenda y pendientes';
+    el.textContent = 'Sala: ' + label + ' · sincronizando pacientes, equipos, labs, agenda y pendientes';
   } else if (getRoomMembership() && getRoomMembership().roomId === activeLiveSyncRoomId) {
     el.textContent = 'Sala: ' + label + ' · reconectando…';
   } else {
@@ -2493,33 +2540,23 @@ function onLiveSyncWireMessage(data) {
       }
     }
     if (data.type === 'livesync:hello' && data.clientId !== myId && activeLiveSyncRoomId) {
-      lanClient.sendLive(buildLiveSyncBundleEnvelope(activeLiveSyncRoomId));
+      void (async function () {
+        try {
+          lanClient.sendLive(await buildLiveSyncBundleEnvelope(activeLiveSyncRoomId));
+        } catch (_eHelloBundle) {}
+      })();
     }
     return;
   }
   if (data.type === 'livesync:leave' && data.bundle && data.clientId !== myId) {
     applyLiveSyncMerged(
-      mergeLiveSyncFullBundles([
-        {
-          agenda: storage.getScheduledProcedures(),
-          todos: collectTodosMapForLiveSync(),
-          entries: collectPatientEntriesForLanSync(),
-        },
-        data.bundle,
-      ])
+      mergeLiveSyncFullBundles([buildLiveSyncLocalMergeSource(), data.bundle])
     );
     return;
   }
   if (data.clientId === myId && data.type !== 'livesync:hello') return;
   if (data.type === 'livesync:bundle') {
-    var mergedBundle = mergeLiveSyncFullBundles([
-      {
-        agenda: storage.getScheduledProcedures(),
-        todos: collectTodosMapForLiveSync(),
-        entries: collectPatientEntriesForLanSync(),
-      },
-      data,
-    ]);
+    var mergedBundle = mergeLiveSyncFullBundles([buildLiveSyncLocalMergeSource(), data]);
     applyLiveSyncMerged(mergedBundle);
     return;
   }
@@ -2529,14 +2566,13 @@ function onLiveSyncWireMessage(data) {
   }
 }
 async function reconcileLiveSyncRoom(roomId) {
+  if (isClinicalOpsLanAvailable()) {
+    await prepareClinicalOpsForLanSync();
+  }
   var sources = [];
   var local = storage.getLanRoomSnapshot(roomId);
   if (local) sources.push(local);
-  sources.push({
-    agenda: storage.getScheduledProcedures(),
-    todos: collectTodosMapForLiveSync(),
-    entries: collectPatientEntriesForLanSync(),
-  });
+  sources.push(buildLiveSyncLocalMergeSource());
   try {
     var resp = await lanClient.fetch(
       '/api/lan/v1/rooms/' + encodeURIComponent(roomId) + '/sync-bundle'
@@ -2559,6 +2595,7 @@ function syncLiveSyncAfterRoomJoin(roomId) {
   if (!rid) return Promise.resolve();
   return reconcileLiveSyncRoom(rid).then(function () {
     if (activeLiveSyncRoomId !== rid) return;
+    scheduleLiveSyncPush();
     if (lanClient.liveConnected) {
       void enrichLiveSyncHelloPayload(buildLiveSyncHelloPayload(rid)).then(function (hello) {
         if (activeLiveSyncRoomId !== rid) return;
@@ -2580,19 +2617,21 @@ function leaveLiveSyncRoom(opts) {
   opts = opts || {};
   var roomId = activeLiveSyncRoomId;
   if (roomId) {
-    var bundle = buildLiveSyncBundleEnvelope(roomId);
-    if (!opts.silentLeave) {
-      lanClient.sendLive({
-        type: 'livesync:leave',
-        roomId: roomId,
-        clientId: getLanClientId(),
-        bundle: bundle,
-      });
-    }
-    saveLocalRoomSnapshot(roomId);
-    if (liveSyncBundleHasPayload(bundle)) {
-      pushRoomSyncBundleToHost(roomId, bundle);
-    }
+    void (async function () {
+      var bundle = await buildLiveSyncBundleEnvelope(roomId);
+      if (!opts.silentLeave) {
+        lanClient.sendLive({
+          type: 'livesync:leave',
+          roomId: roomId,
+          clientId: getLanClientId(),
+          bundle: bundle,
+        });
+      }
+      saveLocalRoomSnapshot(roomId);
+      if (liveSyncBundleHasPayload(bundle)) {
+        pushRoomSyncBundleToHost(roomId, bundle);
+      }
+    })();
   }
   activeLiveSyncRoomId = '';
   activeLiveSyncRoomLabel = '';
@@ -3844,6 +3883,7 @@ export {
   emitLiveSyncTodoDelete,
   emitLiveSyncPatientDelete,
   scheduleLiveSyncPush,
+  touchPatientLanUpdatedAt,
   renderLanPanel,
   configureLanFromMobileJoin,
   syncLanHostTeamCodeSettingsInput,

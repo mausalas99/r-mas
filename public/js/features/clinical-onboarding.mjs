@@ -8,7 +8,12 @@ import {
   refreshClinicalUserProfile,
   resumeClinicalIdentityByUsername,
 } from '../clinical-access-runtime.mjs';
-import { persistClinicalUserBinding, readRpcSettings } from '../clinical-settings.mjs';
+import {
+  needsClinicalLanProfileGate,
+  persistClinicalUserBinding,
+  readRpcSettings,
+} from '../clinical-settings.mjs';
+import { isDbMode } from '../db-storage-bridge.mjs';
 import { safeRenderClinicalTeamsPanel } from './clinical-panel-host.mjs';
 import {
   isLegacyMachineUsername,
@@ -61,8 +66,12 @@ export function needsTeamOnboarding() {
 
 /** Falta perfil clínico mínimo antes de usar guardia / Mi rotación con datos. */
 export function needsProfileOnboarding() {
+  if (!isDbMode()) return false;
   if (!clinicalSessionContext.user?.user_id) return true;
+  if (needsClinicalLanProfileGate(readRpcSettings())) return true;
   if (needsUsernameClaim()) return true;
+  const name = String(clinicalSessionContext.user?.clinical_name || '').trim();
+  if (!name) return true;
   const sala = String(clinicalSessionContext.user?.sala || '').trim();
   if (!sala) return true;
   return false;
@@ -90,8 +99,6 @@ async function handleUsernameStepSubmit(ev) {
   );
   const name = String(document.getElementById('onboard-clinical-name')?.value || '').trim();
   let rank = String(document.getElementById('onboard-rank')?.value || 'R1');
-  const isProgramAdmin = rank === 'Admin';
-  if (isProgramAdmin) rank = 'R1';
   const sala = String(document.getElementById('onboard-sala')?.value || '').trim();
   const errEl = document.getElementById('onboard-error');
 
@@ -173,7 +180,7 @@ async function handleUsernameStepSubmit(ev) {
       clinicalName: name,
       rank,
       sala: sala || null,
-      isProgramAdmin,
+      isProgramAdmin: false,
     });
     if (!profileRes?.ok) {
       if (errEl) {
@@ -186,7 +193,7 @@ async function handleUsernameStepSubmit(ev) {
       clinicalSessionContext.user.rank = rank;
       clinicalSessionContext.user.clinical_name = name;
       clinicalSessionContext.user.sala = sala || null;
-      clinicalSessionContext.user.is_program_admin = isProgramAdmin ? 1 : 0;
+      clinicalSessionContext.user.is_program_admin = 0;
     }
   }
 
@@ -197,7 +204,8 @@ async function handleUsernameStepSubmit(ev) {
     rank,
     sala: sala || '',
     registered: true,
-    isProgramAdmin,
+    lanProfileGateComplete: true,
+    isProgramAdmin: false,
   });
 
   if (errEl) errEl.hidden = true;
@@ -298,7 +306,12 @@ export async function renderOnboardingPanelInto(host) {
 
   let settings = readRpcSettings();
   const cachedUsername = normalizeUsername(String(settings.clinicalUsername || ''));
-  if (needsUsernameClaim() && cachedUsername && isValidUsernameFormat(cachedUsername)) {
+  if (
+    !needsClinicalLanProfileGate(settings) &&
+    needsUsernameClaim() &&
+    cachedUsername &&
+    isValidUsernameFormat(cachedUsername)
+  ) {
     try {
       await resumeClinicalIdentityByUsername(cachedUsername, settings, getClientId());
       await refreshClinicalUserProfile();
@@ -330,7 +343,7 @@ export async function renderOnboardingPanelInto(host) {
     host.innerHTML = `
       <h3 class="clinical-onboarding-title">Configura tu rotación</h3>
       <h4 class="clinical-teams-section-title">Rango y rotación</h4>
-      <p class="clinical-teams-lead">Registra tu usuario LAN, rango y sala. Para <strong>unirte a un equipo</strong> o crear uno, abre <strong>Mi rotación</strong> después (verás equipos de tu sala y tu @usuario guardado).</p>
+      <p class="clinical-teams-lead">Confirma tu <strong>usuario LAN</strong>, nombre en guardia, rango y sala para aparecer en el directorio y que el admin pueda asignarte a equipos. Es obligatorio tras actualizar a 5.5.7. Para equipos, abre <strong>Mi rotación</strong> después.</p>
       <form id="clinical-onboard-username-form" class="clinical-teams-create-form clinical-onboard-form">
         <div class="field-group">
           <label for="onboard-username">Usuario LAN *</label>
@@ -349,7 +362,6 @@ export async function renderOnboardingPanelInto(host) {
             <option value="R2" ${rank === 'R2' ? 'selected' : ''}>R2</option>
             <option value="R3" ${rank === 'R3' ? 'selected' : ''}>R3</option>
             <option value="R4" ${rank === 'R4' ? 'selected' : ''}>R4</option>
-            <option value="Admin" ${rank === 'Admin' ? 'selected' : ''}>Admin</option>
           </select>
         </div>
         <div class="field-group">

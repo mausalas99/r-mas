@@ -4,6 +4,7 @@ import { applySomePharmCatalogOverlay } from './med-pharm-some-catalog.mjs';
 import { repairLabHistoryMapInPlace } from './lab-history-repair.mjs';
 import { migratePatientMonitoreo } from './features/estado-actual-data.mjs';
 import { syncManejoTodoDismissalsOnBoot } from './manejo-todo-dismiss.mjs';
+import { migratePatientsClinicalSala } from './clinico-access.mjs';
 
 export let patients = [];
 export let notes = {};
@@ -144,9 +145,17 @@ export function initAppState() {
   for (var pi = 0; pi < patients.length; pi += 1) {
     if (migratePatientMonitoreo(patients[pi])) monitoreoMigrated = true;
   }
+  var salaMigrated = 0;
+  try {
+    var rpcSettings = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
+    var clinicalSala = String(rpcSettings.clinicalSala || '').trim();
+    if (clinicalSala) {
+      salaMigrated = migratePatientsClinicalSala(patients, { sala: clinicalSala });
+    }
+  } catch (_e) {}
   if (syncManejoTodoDismissalsOnBoot(patients, labHistory, storage)) {
     saveState({ immediate: true });
-  } else if (repairLabHistoryInMemory() || monitoreoMigrated) {
+  } else if (repairLabHistoryInMemory() || monitoreoMigrated || salaMigrated > 0) {
     saveState({ immediate: true });
   }
 }

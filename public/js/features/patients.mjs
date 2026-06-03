@@ -32,6 +32,7 @@ import {
   evaluateClinicalScope,
   patientMatchesTeam,
   teamForMemberCycle,
+  stampPatientClinicalSala,
 } from '../clinico-access.mjs';
 import { hasElevatedTeamPrivileges } from '../clinical-privileges.mjs';
 import {
@@ -1661,6 +1662,7 @@ function commitPatient(nombre, registro, edad, sexo, area, servicio, cuarto, cam
   };
   var adoptResult = adoptTourPatientOnCommit(patient, registro);
   patient = adoptResult.patient;
+  stampPatientClinicalSala(patient, clinicalSessionContext.user);
   notes[patient.id] = {
     fecha: fecha,
     hora: hora,
@@ -1765,6 +1767,12 @@ export function buildPatientEntry(patientId) {
   ensureMonitoreo(patientSnap);
   if (patient.monitoreo != null && typeof patient.monitoreo === 'object') {
     patientSnap.monitoreo = structuredClone(patient.monitoreo);
+  }
+  if (patientSnap.historiaClinica != null && typeof patientSnap.historiaClinica === 'object') {
+    const hc = structuredClone(patientSnap.historiaClinica);
+    delete hc.pendingLanSync;
+    delete hc.lanSyncPending;
+    patientSnap.historiaClinica = hc;
   }
   return {
     patient: patientSnap,

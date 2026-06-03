@@ -79,4 +79,30 @@ describe('bundle-merge', () => {
     assert.equal(r.bundle.todos.p1[0].text, 'keep');
     assert.equal(r.bundle.agenda.length, 1);
   });
+
+  it('clinicalOps union keeps teams from both peers', () => {
+    let bundle = emptyBundle(now());
+    bundle.revision = 1;
+    bundle.entityVersions = { clinicalOps: 1 };
+    bundle.clinicalOps = {
+      exportedAt: '2020-01-01T00:00:00',
+      teams: [{ team_id: 'team-a', name: 'A', created_at: '2020-01-01T00:00:00' }],
+      team_membership: [],
+    };
+    const r = mergeBundlePut(
+      bundle,
+      {
+        baseRevision: 1,
+        baseEntityVersions: { clinicalOps: 1 },
+        clinicalOps: {
+          exportedAt: '2025-01-01T00:00:00',
+          teams: [{ team_id: 'team-b', name: 'B', created_at: '2025-01-01T00:00:00' }],
+          team_membership: [],
+        },
+      },
+      { nowIso: now, clientId: 'c2' }
+    );
+    assert.equal(r.ok, true);
+    assert.equal(r.bundle.clinicalOps.teams.length, 2);
+  });
 });

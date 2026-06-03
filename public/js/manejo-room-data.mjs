@@ -1,6 +1,7 @@
 /** Datos de Manejo compartidos por sala (protocolos custom, overrides, favoritos). */
 
 import { compareIso } from './live-sync-room.mjs';
+import { isManejoTabGloballyHidden } from './clinical-product-policy.mjs';
 import { loadCustomProtocols, saveCustomProtocols, loadProtocolOverrides } from './manejo-custom-protocols.mjs';
 import { loadProtoFavorites, loadProtoRecentIds } from './manejo-protocol-favorites.mjs';
 
@@ -20,8 +21,14 @@ function cloneManejoBlock(block) {
   };
 }
 
+/** Manejo está oculto en producto; no participa en sync LAN ni bundles de sala. */
+export function isLanManejoRoomSyncEnabled() {
+  return !isManejoTabGloballyHidden();
+}
+
 /** @returns {object|null} */
 export function collectManejoRoomPayload() {
+  if (!isLanManejoRoomSyncEnabled()) return null;
   return {
     customProtocols: loadCustomProtocols(),
     overrides: loadProtocolOverrides(),
@@ -108,6 +115,7 @@ export function mergeManejoRoomData(a, b) {
 
 /** @param {object|null|undefined} merged */
 export function applyManejoRoomDataToLocal(merged) {
+  if (!isLanManejoRoomSyncEnabled()) return;
   if (!merged || typeof merged !== 'object') return;
   if (Array.isArray(merged.customProtocols)) {
     saveCustomProtocols(merged.customProtocols);
@@ -131,6 +139,7 @@ export function applyManejoRoomDataToLocal(merged) {
 
 /** @param {Array<{ manejo?: object }>} sources */
 export function mergeManejoFromSources(sources) {
+  if (!isLanManejoRoomSyncEnabled()) return null;
   let merged = null;
   for (let i = 0; i < (sources || []).length; i += 1) {
     const src = sources[i];

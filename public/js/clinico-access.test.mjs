@@ -13,6 +13,7 @@ import {
   getCycleLettersForTeamCreate,
   getCycleFieldMetaForTeamCreate,
   inferMembershipCycleForJoin,
+  resolveMembershipCycleForUser,
   formatMemberCycleLabel,
   letterIndexForTeam,
   isOnCallToday,
@@ -20,6 +21,8 @@ import {
   salaOnCallR1,
   salaOnCallR2,
   teamGuardiaOverride,
+  stampPatientClinicalSala,
+  migratePatientsClinicalSala,
 } from './clinico-access.mjs';
 
 test('matchesClinicoUnlockPhrase accepts exact phrase', () => {
@@ -110,6 +113,49 @@ test('normal mode: R1 sees patient in same sala', () => {
   assert.equal(scope.readable, true);
   assert.equal(scope.writable, true);
   assert.match(scope.reasoning, /sala/i);
+});
+
+test('normal mode: R2 sees patient in same sala without team or handoff', () => {
+  const scope = evaluateClinicalScope(
+    { user_id: 'r2', rank: 'R2', sala: 'Sala 2' },
+    { id: 'p1', service: 'Sala', sala: 'Sala 2' },
+    null,
+    {
+      teams: [],
+      assignments: [],
+      guardias: [],
+      now: '2026-06-01T12:00:00Z',
+    }
+  );
+  assert.equal(scope.readable, true);
+  assert.match(scope.reasoning, /sala/i);
+});
+
+test('stampPatientClinicalSala uses creator profile sala', () => {
+  const patient = { id: 'p1', servicio: 'Sala', area: 'A' };
+  stampPatientClinicalSala(patient, { sala: 'Sala 2' });
+  assert.equal(patient.sala, 'Sala 2');
+});
+
+test('resolveMembershipCycleForUser keeps saved member subcycle', () => {
+  const team = {
+    service: 'Sala',
+    members: [{ user_id: 'u1', rank: 'R1', sub_area_fraction: 'D2' }],
+  };
+  assert.equal(resolveMembershipCycleForUser(team, 'u1', 'R1'), 'D2');
+  assert.equal(resolveMembershipCycleForUser(team, 'u2', 'R1'), 'A1');
+});
+
+test('migratePatientsClinicalSala backfills only untagged charts', () => {
+  const list = [
+    { id: 'p1', servicio: 'Sala' },
+    { id: 'p2', servicio: 'Sala', sala: 'Sala 1' },
+    { id: 'demo-pitch', servicio: 'Sala', isDemo: true },
+  ];
+  const n = migratePatientsClinicalSala(list, { sala: 'Sala 2' });
+  assert.equal(n, 1);
+  assert.equal(list[0].sala, 'Sala 2');
+  assert.equal(list[1].sala, 'Sala 1');
 });
 
 test('normal mode: R1 denied patient outside sala', () => {

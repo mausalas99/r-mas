@@ -8,6 +8,8 @@ import {
   filterEntriesByPatientDeletes,
   entryUpdatedAt,
   monitoreoUpdatedAt,
+  mergeEventualidades,
+  mergeHistoriaClinica,
   cloneEntry,
 } from './lan-patient-merge.mjs';
 
@@ -215,4 +217,68 @@ test('filterEntriesByPatientDeletes quita entrada si delete es más reciente', (
     },
   ]);
   assert.equal(filtered.length, 0);
+});
+
+test('mergeEventualidades une entradas de ambos lados por id', () => {
+  const merged = mergeEventualidades(
+    { entries: [{ id: 'ev_a', at: '2026-06-01T10:00:00.000Z', text: 'A' }] },
+    { entries: [{ id: 'ev_b', at: '2026-06-02T10:00:00.000Z', text: 'B' }] }
+  );
+  assert.equal(merged.entries.length, 2);
+});
+
+test('mergePatientEntry conserva eventualidades de ambos peers', () => {
+  const a = {
+    patient: {
+      id: 'p1',
+      registro: 'R1',
+      eventualidades: { entries: [{ id: 'ev_a', at: '2026-06-01T10:00:00.000Z', text: 'A' }] },
+    },
+    note: { fecha: '01/06/2026' },
+    labHistory: [],
+  };
+  const b = {
+    patient: {
+      id: 'p1',
+      registro: 'R1',
+      eventualidades: { entries: [{ id: 'ev_b', at: '2026-06-02T10:00:00.000Z', text: 'B' }] },
+    },
+    note: { fecha: '02/06/2026' },
+    labHistory: [],
+  };
+  const m = mergePatientEntry(a, b);
+  assert.equal(m.patient.eventualidades.entries.length, 2);
+});
+
+test('mergeHistoriaClinica gana la versión más alta', () => {
+  const merged = mergeHistoriaClinica(
+    { version: 2, data: { meta: { updatedAt: '2026-06-01T10:00:00.000Z' }, dx: 'old' } },
+    { version: 3, data: { meta: { updatedAt: '2026-06-02T10:00:00.000Z' }, dx: 'new' } }
+  );
+  assert.equal(merged.version, 3);
+  assert.equal(merged.data.dx, 'new');
+});
+
+test('mergePatientEntry fusiona historia clínica por versión', () => {
+  const a = {
+    patient: {
+      id: 'p1',
+      registro: 'R1',
+      historiaClinica: { version: 1, data: { meta: { updatedAt: '2026-06-01T10:00:00.000Z' } } },
+    },
+    note: { fecha: '01/06/2026' },
+    labHistory: [],
+  };
+  const b = {
+    patient: {
+      id: 'p1',
+      registro: 'R1',
+      historiaClinica: { version: 2, data: { meta: { updatedAt: '2026-06-02T10:00:00.000Z' }, dx: 'peer' } },
+    },
+    note: { fecha: '02/06/2026' },
+    labHistory: [],
+  };
+  const m = mergePatientEntry(a, b);
+  assert.equal(m.patient.historiaClinica.version, 2);
+  assert.equal(m.patient.historiaClinica.data.dx, 'peer');
 });
