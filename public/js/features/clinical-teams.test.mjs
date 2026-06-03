@@ -64,6 +64,15 @@ describe('clinical-teams', () => {
     assert.match(clinicalTeamsSrc, /dbClinicalTeamsMemberRemove/);
   });
 
+  it('handleMyCycleSubmit publishes to LAN after cycle save', () => {
+    const idx = clinicalTeamsSrc.indexOf('async function handleMyCycleSubmit');
+    assert.ok(idx >= 0);
+    const end = clinicalTeamsSrc.indexOf('async function resolveTeamIdForInviteInput', idx);
+    const body = clinicalTeamsSrc.slice(idx, end > idx ? end : idx + 1200);
+    assert.match(body, /publishClinicalTeamsToLan/);
+    assert.match(body, /rpc-clinical-teams-changed/);
+  });
+
   it('renderJoinedTeamCard defines user before cycle edit block', () => {
     const fnStart = clinicalTeamsSrc.indexOf('function renderJoinedTeamCard(team)');
     assert.ok(fnStart >= 0);

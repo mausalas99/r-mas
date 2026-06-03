@@ -2270,6 +2270,8 @@ async function handleMyCycleSubmit(ev, form) {
   }
 
   toast('Ciclo actualizado.', 'success');
+  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
+  await publishClinicalTeamsToLan();
   await refreshTeamsUiAfterChange();
 }
 
