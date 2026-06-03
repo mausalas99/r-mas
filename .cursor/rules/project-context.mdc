@@ -111,8 +111,8 @@ Packaged files list: `npm run release:sync-pack` updates electron-builder `build
 
 Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
 
-- **2026-06-03** `lab-history-batch-copy`: menú historial de labs → «Copiar varios días…»; modal multi-día al portapapeles (`lab-history-batch-copy-modal.mjs`, `buildEstudiosCopyLinesFromLabSets`).
-- **2026-06-03** `release-6.5.9`: LAN directorio, fusión `clinical_users`, @usuario obliga push ⇄; `clinical-profile-lan-sync.mjs`, `pushClinicalOpsLanNow`, entrega/equipos.
+- **2026-06-03** `release-6.6.0`: @usuario sin ⇄ obligatorio; merges cloud (directorio LAN, iPad ticket, labs batch-copy); `clinical-profile-lan-sync.mjs`, `lab-history-batch-copy-modal.mjs`.
+- **2026-06-03** `release-6.5.9`: LAN directorio, fusión `clinical_users`, entrega/equipos; `pushClinicalOpsLanNow`.
 - **2026-06-03** `release-6.5.8`: interno móvil QR, entrega pendientes v2, downgrade a estable; `public/interno/`, `lib/interno/`, `lib/entrega/`, `lib/update-downgrade.mjs`, `stable-versions.json`.
 - **2026-06-02** `interno-guardia-mobile`: mobile board, host discovery, QR panel (`interno-qr-panel.mjs`), vitals, interno routes in `server.js`.
 - **2026-06-02** `entrega-pendientes-v2`: schema v8 templates; `lib/entrega/`, `entrega-modal-ui.mjs`, `clinical-entrega.mjs`.

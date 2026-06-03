@@ -27,10 +27,21 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [6.5.9](https://github.com/mausalas99/r-mas/releases/tag/v6.5.9) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.6.0](https://github.com/mausalas99/r-mas/releases/tag/v6.6.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 6.6.0 (LAN sin bloqueo @usuario, iPad y labs)
+
+- **@usuario sin ⇄ obligatorio** — Registro y perfil guardan en la Mac aunque falle internet o no haya sala en vivo; sync al turno cuando ⇄ vuelva.
+- **⇄ antes del registro** — Panel de conexión disponible durante onboarding; unirse a sala es opcional.
+- **Directorio LAN** — Push de perfiles, fusión de usuarios, eliminar en directorio (admin); hereda fixes 6.5.9.
+- **iPad** — Ticket nuevo al copiar enlace de invitación.
+- **Labs** — Copiar varios días desde el historial.
+- **Turno homogéneo** — Mac y Windows en **6.6.0**; firewall **3738** en Windows la primera vez.
+
+Notas: `docs/RELEASE_NOTES_6.6.0.txt`.
 
 ## R+ 6.5.9 (LAN, entrega y directorio — paridad Mac/Windows)
 
@@ -413,6 +424,12 @@ Notas: `docs/RELEASE_NOTES_3.0.0.txt`.
 
 ---
 
+
+## R+ 6.6.0 (LAN sin bloqueo @usuario, iPad y labs)
+
+- **TODO:** completar bullets en README.
+
+Notas: `docs/RELEASE_NOTES_6.6.0.txt`.
 ## R+ 2.4.1 (parche — medicamentos compactos y tooltip de tendencias)
 
 - **Medicamentos** — En la salida resumida «nombre + día», el formato ahora es compacto: `MEDICAMENTO + DOSIS + VÍA abreviada + FRECUENCIA abreviada + DÍA de uso` (por ejemplo: `MEROPENEM 2G IV C/8H DIA 2`).
@@ -662,7 +679,7 @@ Al iniciar, R+ intenta leer `min-version.json` desde el repositorio oficial (`ma
 
 Si la versión instalada es menor a `minVersion`, se muestra un modal **bloqueante no descartable** (no se puede cerrar con Escape ni haciendo clic fuera) con dos acciones: **Buscar actualización** (usa el autoupdater) y **Descargar desde GitHub** (abre Releases). Si el fetch falla o el archivo no existe, no se bloquea al usuario.
 
-### Restaurar versión estable anterior (6.5.9+)
+### Restaurar versión estable anterior (6.5.8+)
 
 En **Ajustes → Aplicación y actualizaciones**, **Restaurar versión estable anterior** lista releases curadas en `stable-versions.json` (solo versiones **menores** que la instalada). R+ intenta descargar e instalar in-app; si falla (red, firma macOS), ofrece abrir el instalador correcto en GitHub. Tus datos en `userData` y la base clínica **no se borran**.
 

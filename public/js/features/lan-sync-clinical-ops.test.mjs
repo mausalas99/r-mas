@@ -61,13 +61,20 @@ describe('clinical-profile-lan-sync', () => {
     'utf8'
   );
 
-  it('gates username register when LAN is configured without a room', () => {
+  it('does not block username register when LAN has no room', () => {
     assert.match(profileLanSrc, /assertLanRoomForUsernameRegister/);
-    assert.match(profileLanSrc, /LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG/);
+    assert.match(profileLanSrc, /allowed: true/);
+    assert.doesNotMatch(profileLanSrc, /allowed: false,\s*lanConfigured: true,\s*code: 'NO_ROOM'/);
   });
 
   it('applies invite URL before username gate', () => {
     assert.match(profileLanSrc, /applyPendingLanInviteFromPage/);
     assert.match(profileLanSrc, /parseLanJoinQuery/);
+  });
+
+  it('resolves LiveSync room from clinical Sala when LAN is available (optional)', () => {
+    assert.match(profileLanSrc, /ensureLiveSyncRoomForUsernameRegister/);
+    assert.match(profileLanSrc, /resolveLiveSyncRoomIdFromSala\(opts\.sala\)/);
+    assert.match(profileLanSrc, /isBenignLanPushSkipCode/);
   });
 });

@@ -883,7 +883,7 @@
       "format": "esm"
     },
     "public/js/features/lan-sync.mjs": {
-      "bytes": 144598,
+      "bytes": 145688,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -1049,8 +1049,13 @@
       "format": "esm"
     },
     "public/js/clinical-profile-lan-sync.mjs": {
-      "bytes": 2435,
+      "bytes": 5401,
       "imports": [
+        {
+          "path": "public/js/clinical-access-runtime.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-access-runtime.mjs"
+        },
         {
           "path": "public/js/live-sync-membership.mjs",
           "kind": "import-statement",
@@ -1075,12 +1080,17 @@
           "path": "public/js/features/lan-sync.mjs",
           "kind": "dynamic-import",
           "original": "./features/lan-sync.mjs"
+        },
+        {
+          "path": "public/js/features/lan-sync.mjs",
+          "kind": "dynamic-import",
+          "original": "./features/lan-sync.mjs"
         }
       ],
       "format": "esm"
     },
     "public/js/features/clinical-registration.mjs": {
-      "bytes": 8340,
+      "bytes": 8052,
       "imports": [
         {
           "path": "public/js/features/lan-sync.mjs",
@@ -1142,7 +1152,7 @@
       "format": "esm"
     },
     "public/js/features/clinical-onboarding.mjs": {
-      "bytes": 14423,
+      "bytes": 14154,
       "imports": [
         {
           "path": "public/js/clinical-access-runtime.mjs",
@@ -2325,7 +2335,7 @@
       "format": "esm"
     },
     "public/js/features/settings-help.mjs": {
-      "bytes": 132083,
+      "bytes": 132972,
       "imports": [
         {
           "path": "public/js/tour-targets.mjs",
@@ -4692,7 +4702,7 @@
       "format": "esm"
     },
     "public/js/features/clinical-teams.mjs": {
-      "bytes": 89668,
+      "bytes": 89508,
       "imports": [
         {
           "path": "public/js/clinical-access-runtime.mjs",
@@ -6248,7 +6258,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 5102672
+      "bytes": 5109023
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -6499,10 +6509,10 @@
           "bytesInOutput": 5855
         },
         "public/js/features/lan-sync.mjs": {
-          "bytesInOutput": 129072
+          "bytesInOutput": 130182
         },
         "public/js/clinical-profile-lan-sync.mjs": {
-          "bytesInOutput": 2470
+          "bytesInOutput": 4982
         },
         "public/js/features/clinical-registration.mjs": {
           "bytesInOutput": 1993
@@ -6511,7 +6521,7 @@
           "bytesInOutput": 3823
         },
         "public/js/features/clinical-onboarding.mjs": {
-          "bytesInOutput": 14816
+          "bytesInOutput": 14508
         },
         "public/js/features/clinical-context-bar.mjs": {
           "bytesInOutput": 666
@@ -6700,7 +6710,7 @@
           "bytesInOutput": 69768
         },
         "public/js/features/settings-help.mjs": {
-          "bytesInOutput": 126710
+          "bytesInOutput": 127644
         },
         "public/js/patient-export-format.mjs": {
           "bytesInOutput": 4460
@@ -6982,7 +6992,7 @@
           "bytesInOutput": 59778
         },
         "public/js/features/clinical-teams.mjs": {
-          "bytesInOutput": 87375
+          "bytesInOutput": 87194
         },
         "public/js/features/entrega-modal-ui.mjs": {
           "bytesInOutput": 48393
@@ -7090,7 +7100,7 @@
           "bytesInOutput": 950
         }
       },
-      "bytes": 2884171
+      "bytes": 2888238
     }
   }
 }

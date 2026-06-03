@@ -129,17 +129,8 @@ async function handleUsernameStepSubmit(ev) {
   const needsClaim = currentHandle !== username;
 
   if (needsClaim) {
-    const { applyPendingLanInviteFromPage, assertLanRoomForUsernameRegister, LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG } =
-      await import('../clinical-profile-lan-sync.mjs');
-    await applyPendingLanInviteFromPage();
-    const lanGate = await assertLanRoomForUsernameRegister();
-    if (!lanGate.allowed) {
-      if (errEl) {
-        errEl.textContent = LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG;
-        errEl.hidden = false;
-      }
-      return;
-    }
+    const { assertLanRoomForUsernameRegister } = await import('../clinical-profile-lan-sync.mjs');
+    await assertLanRoomForUsernameRegister({ sala });
   }
 
   if (needsClaim && typeof api.dbClinicalUsernameClaim === 'function') {
@@ -226,11 +217,10 @@ async function handleUsernameStepSubmit(ev) {
   await refreshClinicalUserProfile();
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
 
-  const { flushClinicalProfileToLan, LAN_PROFILE_PUSH_FAILED_MSG } = await import(
-    '../clinical-profile-lan-sync.mjs'
-  );
+  const { flushClinicalProfileToLan, LAN_PROFILE_PUSH_FAILED_MSG, isBenignLanPushSkipCode } =
+    await import('../clinical-profile-lan-sync.mjs');
   const lanPush = await flushClinicalProfileToLan();
-  if (!lanPush.ok && lanPush.code !== 'NO_LAN') {
+  if (!lanPush.ok && !isBenignLanPushSkipCode(lanPush.code)) {
     toast(LAN_PROFILE_PUSH_FAILED_MSG, 'warning');
   } else if (lanPush.ok && needsClaim) {
     toast('Perfil guardado y @usuario publicado en la sala ⇄.', 'success');

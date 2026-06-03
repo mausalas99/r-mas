@@ -2,14 +2,101 @@
  * LAN push when registering @usuario / saving clinical profile.
  */
 
+import { clinicalSessionContext } from './clinical-access-runtime.mjs';
 import { getRoomMembership, setRoomMembership } from './live-sync-membership.mjs';
-import { liveSyncRoomLabel, parseLanJoinQuery } from './lan-join-link.mjs';
+import { liveSyncRoomLabel, parseLanJoinQuery, resolveLiveSyncRoomIdFromSala } from './lan-join-link.mjs';
 
+/** @deprecated Registration no longer requires ⇄; kept for tests / copy references. */
 export const LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG =
-  'Antes de registrar @usuario: activa la sala en vivo (⇄) o únete con el enlace de invitación del turno.';
+  'Sin sala ⇄ activa el perfil queda solo en esta Mac hasta que te unas o vuelva la red.';
 
 export const LAN_PROFILE_PUSH_FAILED_MSG =
   'Perfil guardado en esta Mac, pero no se pudo publicar a la sala. Revisa conexión ⇄ e intenta Guardar perfil de nuevo.';
+
+/** LAN push codes that are expected offline / sin sala — no toast de error. */
+export function isBenignLanPushSkipCode(code) {
+  const c = String(code || '');
+  return c === 'NO_LAN' || c === 'NO_ROOM' || c === 'NO_CLINICAL_OPS' || c === 'PITCH_DEMO';
+}
+
+/** @param {string} roomId @param {string} [label] */
+export function rememberLiveSyncRoomMembership(roomId, label) {
+  const id = String(roomId || '').trim();
+  if (!id) return false;
+  setRoomMembership({
+    roomId: id,
+    label: String(label || '').trim() || liveSyncRoomLabel(id) || id,
+    joinedAt: new Date().toISOString(),
+  });
+  return true;
+}
+
+/**
+ * @param {{ roomId?: string, sala?: string }} [opts]
+ * @returns {string}
+ */
+export function resolveRoomIdForUsernameRegister(opts = {}) {
+  const explicit = String(opts.roomId || '').trim();
+  if (explicit) return explicit;
+  const fromSala = resolveLiveSyncRoomIdFromSala(opts.sala);
+  if (fromSala) return fromSala;
+
+  try {
+    const mem = getRoomMembership();
+    const fromMem = String(mem?.roomId || '').trim();
+    if (fromMem) return fromMem;
+  } catch (_e) {
+    /* ignore */
+  }
+
+  if (typeof location !== 'undefined') {
+    const parsed = parseLanJoinQuery(location.search, location.origin);
+    const fromUrl = String(parsed.roomId || '').trim();
+    if (fromUrl) return fromUrl;
+  }
+
+  try {
+    const settings = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
+    const fromSettings = resolveLiveSyncRoomIdFromSala(settings.clinicalSala);
+    if (fromSettings) return fromSettings;
+  } catch (_e2) {
+    /* ignore */
+  }
+
+  return resolveLiveSyncRoomIdFromSala(clinicalSessionContext.user?.sala);
+}
+
+/**
+ * Maps clinical Sala / invite / membership to LiveSync room before @usuario gate.
+ * @param {{ roomId?: string, sala?: string, joinLive?: boolean }} [opts]
+ */
+export async function ensureLiveSyncRoomForUsernameRegister(opts = {}) {
+  const lan = await import('./features/lan-sync.mjs');
+  if (!lan.isLanSessionConfiguredForRest()) {
+    return { roomId: '', lanConfigured: false };
+  }
+
+  let roomId = resolveRoomIdForUsernameRegister(opts);
+  if (!roomId) {
+    const active = String(lan.getActiveLiveSyncRoomId?.() || '').trim();
+    if (active) roomId = active;
+  }
+  if (!roomId) {
+    return { roomId: '', lanConfigured: true };
+  }
+
+  rememberLiveSyncRoomMembership(roomId);
+
+  if (opts.joinLive !== false && typeof lan.joinLanRoom === 'function') {
+    try {
+      lan.joinLanRoom(roomId, liveSyncRoomLabel(roomId));
+    } catch (_e) {
+      /* membership alone satisfies registration gate */
+    }
+  }
+
+  return { roomId, lanConfigured: true };
+}
 
 /** Apply host/code/room from invite URL before username registration gate. */
 export async function applyPendingLanInviteFromPage() {
@@ -25,30 +112,36 @@ export async function applyPendingLanInviteFromPage() {
   }
   const roomId = String(parsed.roomId || '').trim();
   if (roomId) {
-    setRoomMembership({
-      roomId,
-      label: liveSyncRoomLabel(roomId) || roomId,
-      joinedAt: new Date().toISOString(),
-    });
+    rememberLiveSyncRoomMembership(roomId);
   }
 }
 
 /**
- * When LAN host is configured, @usuario registration requires an active or remembered room.
+ * Best-effort LAN context before @usuario (invite URL, sala → membership). Never blocks registration.
+ * @param {{ roomId?: string, sala?: string, joinLive?: boolean }} [opts]
  * @returns {Promise<{ allowed: boolean, lanConfigured: boolean, roomId?: string, code?: string }>}
  */
-export async function assertLanRoomForUsernameRegister() {
+export async function assertLanRoomForUsernameRegister(opts = {}) {
   const lan = await import('./features/lan-sync.mjs');
-  if (!lan.isLanSessionConfiguredForRest()) {
-    return { allowed: true, lanConfigured: false };
-  }
+  const lanConfigured = !!lan.isLanSessionConfiguredForRest?.();
+
+  await applyPendingLanInviteFromPage();
+  const ensured = await ensureLiveSyncRoomForUsernameRegister({
+    ...opts,
+    joinLive: opts.joinLive === true,
+  });
+
   const roomId =
-    String(lan.getActiveLiveSyncRoomId() || '').trim() ||
+    String(lan.getActiveLiveSyncRoomId?.() || '').trim() ||
+    String(ensured.roomId || '').trim() ||
     String(getRoomMembership()?.roomId || '').trim();
-  if (!roomId) {
-    return { allowed: false, lanConfigured: true, code: 'NO_ROOM' };
-  }
-  return { allowed: true, lanConfigured: true, roomId };
+
+  return {
+    allowed: true,
+    lanConfigured,
+    roomId: roomId || undefined,
+    code: roomId ? undefined : lanConfigured ? 'NO_ROOM' : undefined,
+  };
 }
 
 /**

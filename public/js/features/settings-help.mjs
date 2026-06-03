@@ -1956,6 +1956,23 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '6.6.0': [
+    {
+      title: '@usuario sin depender de ⇄',
+      body:
+        'Puedes <strong>registrar @usuario</strong> y guardar tu perfil <strong>sin sala en vivo</strong> si no hay red. Cuando vuelva el Wi‑Fi, abre <strong>⇄</strong>, únete a tu sala y guarda de nuevo para publicar en el directorio del turno.',
+    },
+    {
+      title: 'Directorio LAN e iPad',
+      body:
+        'Mejoras de <strong>directorio</strong> y sync de perfiles (6.5.9 + cloud). Al <strong>copiar enlace para iPad</strong> se genera un ticket nuevo. En <strong>labs</strong>, copia varios días desde el menú del historial.',
+    },
+    {
+      title: 'Recomendación de turno',
+      body:
+        'Actualiza <strong>todas</strong> las Macs y PCs del turno a <strong>6.6.0</strong>. En Windows, permite R+ en el firewall (puerto <strong>3738</strong>) la primera vez en sala.',
+    },
+  ],
   '6.5.9': [
     {
       title: 'Directorio y sync LAN (Mac y Windows)',

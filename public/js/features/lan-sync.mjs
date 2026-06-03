@@ -2991,17 +2991,26 @@ async function renderLanPanelOnce() {
   var registered = isClinicalRegistered();
   var userSala = getUserSala();
   var rank = getClinicalRank();
+  var clinicalUserId = getClinicalUserUserId();
 
-  if (!registered) {
+  if (!registered && !clinicalUserId) {
     var unregCard = document.createElement('div');
     unregCard.className = 'lan-connect-card';
     unregCard.innerHTML =
-      '<p class="lan-connect-card-hint">Completa el <strong>Registro de guardia</strong> para acceder a la red del hospital.</p>';
+      '<p class="lan-connect-card-hint">Desbloquea la base de datos y completa <strong>Configura tu rotación</strong> para acceder a la red del hospital.</p>';
     root.appendChild(unregCard);
     return;
   }
 
-  if (!userSala && !hasElevatedTeamPrivileges(clinicalSessionContext.user)) {
+  if (!registered && clinicalUserId) {
+    var preRegCard = document.createElement('div');
+    preRegCard.className = 'lan-connect-card';
+    preRegCard.innerHTML =
+      '<p class="lan-connect-card-hint">Opcional: activa la red del turno y pulsa <strong>Unirse</strong> en tu sala para sincronizar con el equipo. Puedes registrar <strong>@usuario</strong> sin ⇄ si no hay red.</p>';
+    root.appendChild(preRegCard);
+  }
+
+  if (registered && !userSala && !hasElevatedTeamPrivileges(clinicalSessionContext.user)) {
     var noSalaCard = document.createElement('div');
     noSalaCard.className = 'lan-connect-card';
     noSalaCard.innerHTML =
@@ -3039,6 +3048,8 @@ async function renderLanPanelOnce() {
       return d.key === userSala;
     });
     if (!visibleSalaDefs.length) visibleSalaDefs = salaDefs;
+  } else if (!registered && clinicalUserId) {
+    visibleSalaDefs = salaDefs;
   } else {
     visibleSalaDefs = [];
   }
@@ -3811,6 +3822,10 @@ async function saveLanSettingsFromUi(opts) {
     copiedOk = await copyLanInviteLinkFromUi({ silent: true });
   }
   if (pingOk) {
+    var autoRoomId = resolveAutoJoinRoomId('');
+    if (autoRoomId) {
+      joinLanRoom(autoRoomId, liveSyncRoomLabel(autoRoomId));
+    }
     void import('../historia-clinica-lan-sync.mjs').then(function (m) {
       return m.scheduleFlushAllPendingHistoriaClinicaLanSync();
     });
@@ -3938,8 +3953,21 @@ async function createLanRoomFromUi() {
     }
     return;
   }
+  var created;
+  try {
+    created = await resp.json();
+  } catch (_eJson) {
+    created = null;
+  }
+  var newRoom = created && created.room;
+  if (newRoom && newRoom.id) {
+    joinLanRoom(newRoom.id, newRoom.displayName || displayName);
+  }
   if (input) input.value = '';
-  runtime.showToast('Sala creada', 'success');
+  runtime.showToast(
+    newRoom && newRoom.id ? 'Sala creada y conectada' : 'Sala creada — pulsa Unirse',
+    'success'
+  );
   renderLanPanel();
 }
 
@@ -4136,6 +4164,7 @@ export {
   closeConnectionDropdown,
   openConnectionDropdown,
   isLanSessionConfiguredForRest,
+  joinLanRoom,
 };
 
 export const windowHandlers = {

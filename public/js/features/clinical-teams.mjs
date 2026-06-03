@@ -1228,9 +1228,11 @@ async function handleLanDeleteDirectoryUserClick(btn) {
   }
 
   toast('Usuario eliminado de esta Mac.', 'success');
-  const { flushClinicalProfileToLan } = await import('../clinical-profile-lan-sync.mjs');
+  const { flushClinicalProfileToLan, isBenignLanPushSkipCode } = await import(
+    '../clinical-profile-lan-sync.mjs'
+  );
   const lanPush = await flushClinicalProfileToLan();
-  if (!lanPush.ok && lanPush.code !== 'NO_LAN') {
+  if (!lanPush.ok && !isBenignLanPushSkipCode(lanPush.code)) {
     toast(
       'Usuario eliminado aquí, pero no se pudo publicar el cambio a la sala ⇄. Revisa la conexión.',
       'warning'
@@ -1690,14 +1692,8 @@ async function handleProfileFormSubmit(ev) {
   const currentUsername = normalizeUsername(clinicalSessionContext.user?.username || '');
   const usernameWillChange = username !== currentUsername;
   if (usernameWillChange) {
-    const { applyPendingLanInviteFromPage, assertLanRoomForUsernameRegister, LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG } =
-      await import('../clinical-profile-lan-sync.mjs');
-    await applyPendingLanInviteFromPage();
-    const lanGate = await assertLanRoomForUsernameRegister();
-    if (!lanGate.allowed) {
-      toast(LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG, 'error');
-      return;
-    }
+    const { assertLanRoomForUsernameRegister } = await import('../clinical-profile-lan-sync.mjs');
+    await assertLanRoomForUsernameRegister({ sala });
     if (currentUsername && !isLegacyMachineUsername(currentUsername, clientIdFromSettings())) {
       const ok = window.confirm(
         `¿Cambiar tu usuario de @${currentUsername} a @${username}? Los equipos verán el nuevo nombre.`
@@ -1757,11 +1753,10 @@ async function handleProfileFormSubmit(ev) {
     wantsProgramAdmin && (isProgramAdmin === true || wasProgramAdmin)
       ? 'Perfil guardado. Privilegios de administración activos.'
       : 'Perfil guardado.';
-  const { flushClinicalProfileToLan, LAN_PROFILE_PUSH_FAILED_MSG } = await import(
-    '../clinical-profile-lan-sync.mjs'
-  );
+  const { flushClinicalProfileToLan, LAN_PROFILE_PUSH_FAILED_MSG, isBenignLanPushSkipCode } =
+    await import('../clinical-profile-lan-sync.mjs');
   const lanPush = await flushClinicalProfileToLan();
-  if (!lanPush.ok && lanPush.code !== 'NO_LAN') {
+  if (!lanPush.ok && !isBenignLanPushSkipCode(lanPush.code)) {
     toast(LAN_PROFILE_PUSH_FAILED_MSG, 'warning');
   } else if (usernameWillChange && lanPush.ok) {
     toast(`${msg} @usuario publicado en la sala ⇄.`, 'success');

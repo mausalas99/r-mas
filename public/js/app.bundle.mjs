@@ -15643,6 +15643,7 @@ __export(lan_sync_exports, {
   getActiveLiveSyncRoomId: () => getActiveLiveSyncRoomId,
   isLanConflictViewerSuppressed: () => isLanConflictViewerSuppressed,
   isLanSessionConfiguredForRest: () => isLanSessionConfiguredForRest,
+  joinLanRoom: () => joinLanRoom,
   lanFetchHistoriaClinica: () => lanFetchHistoriaClinica,
   lanFetchHostPatientRow: () => lanFetchHostPatientRow,
   lanPushHistoriaClinica: () => lanPushHistoriaClinica,
@@ -17908,14 +17909,21 @@ async function renderLanPanelOnce() {
   var registered = isClinicalRegistered();
   var userSala = getUserSala();
   var rank = getClinicalRank();
-  if (!registered) {
+  var clinicalUserId = getClinicalUserUserId();
+  if (!registered && !clinicalUserId) {
     var unregCard = document.createElement("div");
     unregCard.className = "lan-connect-card";
-    unregCard.innerHTML = '<p class="lan-connect-card-hint">Completa el <strong>Registro de guardia</strong> para acceder a la red del hospital.</p>';
+    unregCard.innerHTML = '<p class="lan-connect-card-hint">Desbloquea la base de datos y completa <strong>Configura tu rotaci\xF3n</strong> para acceder a la red del hospital.</p>';
     root.appendChild(unregCard);
     return;
   }
-  if (!userSala && !hasElevatedTeamPrivileges(clinicalSessionContext.user)) {
+  if (!registered && clinicalUserId) {
+    var preRegCard = document.createElement("div");
+    preRegCard.className = "lan-connect-card";
+    preRegCard.innerHTML = '<p class="lan-connect-card-hint">Opcional: activa la red del turno y pulsa <strong>Unirse</strong> en tu sala para sincronizar con el equipo. Puedes registrar <strong>@usuario</strong> sin \u21C4 si no hay red.</p>';
+    root.appendChild(preRegCard);
+  }
+  if (registered && !userSala && !hasElevatedTeamPrivileges(clinicalSessionContext.user)) {
     var noSalaCard = document.createElement("div");
     noSalaCard.className = "lan-connect-card";
     noSalaCard.innerHTML = '<p class="lan-connect-card-hint">No tienes una Sala asignada. Contacta a un R4 o Admin.</p>';
@@ -17947,6 +17955,8 @@ async function renderLanPanelOnce() {
       return d.key === userSala;
     });
     if (!visibleSalaDefs.length) visibleSalaDefs = salaDefs;
+  } else if (!registered && clinicalUserId) {
+    visibleSalaDefs = salaDefs;
   } else {
     visibleSalaDefs = [];
   }
@@ -18605,6 +18615,10 @@ async function saveLanSettingsFromUi(opts) {
     copiedOk = await copyLanInviteLinkFromUi({ silent: true });
   }
   if (pingOk) {
+    var autoRoomId = resolveAutoJoinRoomId("");
+    if (autoRoomId) {
+      joinLanRoom(autoRoomId, liveSyncRoomLabel(autoRoomId));
+    }
     void Promise.resolve().then(() => (init_historia_clinica_lan_sync(), historia_clinica_lan_sync_exports)).then(function(m) {
       return m.scheduleFlushAllPendingHistoriaClinicaLanSync();
     });
@@ -18726,8 +18740,21 @@ async function createLanRoomFromUi() {
     }
     return;
   }
+  var created;
+  try {
+    created = await resp.json();
+  } catch (_eJson) {
+    created = null;
+  }
+  var newRoom = created && created.room;
+  if (newRoom && newRoom.id) {
+    joinLanRoom(newRoom.id, newRoom.displayName || displayName);
+  }
   if (input) input.value = "";
-  runtime2.showToast("Sala creada", "success");
+  runtime2.showToast(
+    newRoom && newRoom.id ? "Sala creada y conectada" : "Sala creada \u2014 pulsa Unirse",
+    "success"
+  );
   renderLanPanel();
 }
 async function deleteLanRoom(roomId) {
@@ -19067,8 +19094,72 @@ __export(clinical_profile_lan_sync_exports, {
   LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG: () => LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG,
   applyPendingLanInviteFromPage: () => applyPendingLanInviteFromPage,
   assertLanRoomForUsernameRegister: () => assertLanRoomForUsernameRegister,
-  flushClinicalProfileToLan: () => flushClinicalProfileToLan
+  ensureLiveSyncRoomForUsernameRegister: () => ensureLiveSyncRoomForUsernameRegister,
+  flushClinicalProfileToLan: () => flushClinicalProfileToLan,
+  isBenignLanPushSkipCode: () => isBenignLanPushSkipCode,
+  rememberLiveSyncRoomMembership: () => rememberLiveSyncRoomMembership,
+  resolveRoomIdForUsernameRegister: () => resolveRoomIdForUsernameRegister
 });
+function isBenignLanPushSkipCode(code) {
+  const c = String(code || "");
+  return c === "NO_LAN" || c === "NO_ROOM" || c === "NO_CLINICAL_OPS" || c === "PITCH_DEMO";
+}
+function rememberLiveSyncRoomMembership(roomId, label) {
+  const id = String(roomId || "").trim();
+  if (!id) return false;
+  setRoomMembership({
+    roomId: id,
+    label: String(label || "").trim() || liveSyncRoomLabel(id) || id,
+    joinedAt: (/* @__PURE__ */ new Date()).toISOString()
+  });
+  return true;
+}
+function resolveRoomIdForUsernameRegister(opts = {}) {
+  const explicit = String(opts.roomId || "").trim();
+  if (explicit) return explicit;
+  const fromSala = resolveLiveSyncRoomIdFromSala(opts.sala);
+  if (fromSala) return fromSala;
+  try {
+    const mem = getRoomMembership();
+    const fromMem = String(mem?.roomId || "").trim();
+    if (fromMem) return fromMem;
+  } catch (_e) {
+  }
+  if (typeof location !== "undefined") {
+    const parsed = parseLanJoinQuery(location.search, location.origin);
+    const fromUrl = String(parsed.roomId || "").trim();
+    if (fromUrl) return fromUrl;
+  }
+  try {
+    const settings2 = JSON.parse(localStorage.getItem("rpc-settings") || "{}");
+    const fromSettings = resolveLiveSyncRoomIdFromSala(settings2.clinicalSala);
+    if (fromSettings) return fromSettings;
+  } catch (_e2) {
+  }
+  return resolveLiveSyncRoomIdFromSala(clinicalSessionContext.user?.sala);
+}
+async function ensureLiveSyncRoomForUsernameRegister(opts = {}) {
+  const lan = await Promise.resolve().then(() => (init_lan_sync(), lan_sync_exports));
+  if (!lan.isLanSessionConfiguredForRest()) {
+    return { roomId: "", lanConfigured: false };
+  }
+  let roomId = resolveRoomIdForUsernameRegister(opts);
+  if (!roomId) {
+    const active = String(lan.getActiveLiveSyncRoomId?.() || "").trim();
+    if (active) roomId = active;
+  }
+  if (!roomId) {
+    return { roomId: "", lanConfigured: true };
+  }
+  rememberLiveSyncRoomMembership(roomId);
+  if (opts.joinLive !== false && typeof lan.joinLanRoom === "function") {
+    try {
+      lan.joinLanRoom(roomId, liveSyncRoomLabel(roomId));
+    } catch (_e) {
+    }
+  }
+  return { roomId, lanConfigured: true };
+}
 async function applyPendingLanInviteFromPage() {
   if (typeof window === "undefined") return;
   const parsed = parseLanJoinQuery(window.location.search, window.location.origin);
@@ -19081,23 +19172,24 @@ async function applyPendingLanInviteFromPage() {
   }
   const roomId = String(parsed.roomId || "").trim();
   if (roomId) {
-    setRoomMembership({
-      roomId,
-      label: liveSyncRoomLabel(roomId) || roomId,
-      joinedAt: (/* @__PURE__ */ new Date()).toISOString()
-    });
+    rememberLiveSyncRoomMembership(roomId);
   }
 }
-async function assertLanRoomForUsernameRegister() {
+async function assertLanRoomForUsernameRegister(opts = {}) {
   const lan = await Promise.resolve().then(() => (init_lan_sync(), lan_sync_exports));
-  if (!lan.isLanSessionConfiguredForRest()) {
-    return { allowed: true, lanConfigured: false };
-  }
-  const roomId = String(lan.getActiveLiveSyncRoomId() || "").trim() || String(getRoomMembership()?.roomId || "").trim();
-  if (!roomId) {
-    return { allowed: false, lanConfigured: true, code: "NO_ROOM" };
-  }
-  return { allowed: true, lanConfigured: true, roomId };
+  const lanConfigured = !!lan.isLanSessionConfiguredForRest?.();
+  await applyPendingLanInviteFromPage();
+  const ensured = await ensureLiveSyncRoomForUsernameRegister({
+    ...opts,
+    joinLive: opts.joinLive === true
+  });
+  const roomId = String(lan.getActiveLiveSyncRoomId?.() || "").trim() || String(ensured.roomId || "").trim() || String(getRoomMembership()?.roomId || "").trim();
+  return {
+    allowed: true,
+    lanConfigured,
+    roomId: roomId || void 0,
+    code: roomId ? void 0 : lanConfigured ? "NO_ROOM" : void 0
+  };
 }
 async function flushClinicalProfileToLan(opts = {}) {
   const lan = await Promise.resolve().then(() => (init_lan_sync(), lan_sync_exports));
@@ -19106,9 +19198,10 @@ async function flushClinicalProfileToLan(opts = {}) {
 var LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG, LAN_PROFILE_PUSH_FAILED_MSG;
 var init_clinical_profile_lan_sync = __esm({
   "public/js/clinical-profile-lan-sync.mjs"() {
+    init_clinical_access_runtime();
     init_live_sync_membership();
     init_lan_join_link();
-    LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG = "Antes de registrar @usuario: activa la sala en vivo (\u21C4) o \xFAnete con el enlace de invitaci\xF3n del turno.";
+    LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG = "Sin sala \u21C4 activa el perfil queda solo en esta Mac hasta que te unas o vuelva la red.";
     LAN_PROFILE_PUSH_FAILED_MSG = "Perfil guardado en esta Mac, pero no se pudo publicar a la sala. Revisa conexi\xF3n \u21C4 e intenta Guardar perfil de nuevo.";
   }
 });
@@ -19361,16 +19454,8 @@ async function handleUsernameStepSubmit(ev) {
   const currentHandle = normalizeUsername(clinicalSessionContext.user?.username || "");
   const needsClaim = currentHandle !== username;
   if (needsClaim) {
-    const { applyPendingLanInviteFromPage: applyPendingLanInviteFromPage2, assertLanRoomForUsernameRegister: assertLanRoomForUsernameRegister2, LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG: LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG2 } = await Promise.resolve().then(() => (init_clinical_profile_lan_sync(), clinical_profile_lan_sync_exports));
-    await applyPendingLanInviteFromPage2();
-    const lanGate = await assertLanRoomForUsernameRegister2();
-    if (!lanGate.allowed) {
-      if (errEl) {
-        errEl.textContent = LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG2;
-        errEl.hidden = false;
-      }
-      return;
-    }
+    const { assertLanRoomForUsernameRegister: assertLanRoomForUsernameRegister2 } = await Promise.resolve().then(() => (init_clinical_profile_lan_sync(), clinical_profile_lan_sync_exports));
+    await assertLanRoomForUsernameRegister2({ sala });
   }
   if (needsClaim && typeof api3.dbClinicalUsernameClaim === "function") {
     const claimRes = await api3.dbClinicalUsernameClaim({ userId: sessionUserId, username });
@@ -19452,9 +19537,9 @@ async function handleUsernameStepSubmit(ev) {
   if (errEl) errEl.hidden = true;
   await refreshClinicalUserProfile();
   document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
-  const { flushClinicalProfileToLan: flushClinicalProfileToLan2, LAN_PROFILE_PUSH_FAILED_MSG: LAN_PROFILE_PUSH_FAILED_MSG2 } = await Promise.resolve().then(() => (init_clinical_profile_lan_sync(), clinical_profile_lan_sync_exports));
+  const { flushClinicalProfileToLan: flushClinicalProfileToLan2, LAN_PROFILE_PUSH_FAILED_MSG: LAN_PROFILE_PUSH_FAILED_MSG2, isBenignLanPushSkipCode: isBenignLanPushSkipCode2 } = await Promise.resolve().then(() => (init_clinical_profile_lan_sync(), clinical_profile_lan_sync_exports));
   const lanPush = await flushClinicalProfileToLan2();
-  if (!lanPush.ok && lanPush.code !== "NO_LAN") {
+  if (!lanPush.ok && !isBenignLanPushSkipCode2(lanPush.code)) {
     toast2(LAN_PROFILE_PUSH_FAILED_MSG2, "warning");
   } else if (lanPush.ok && needsClaim) {
     toast2("Perfil guardado y @usuario publicado en la sala \u21C4.", "success");
@@ -36587,6 +36672,20 @@ var init_settings_help = __esm({
       }
     ];
     RELEASE_NOTES_HIGHLIGHTS = {
+      "6.6.0": [
+        {
+          title: "@usuario sin depender de \u21C4",
+          body: "Puedes <strong>registrar @usuario</strong> y guardar tu perfil <strong>sin sala en vivo</strong> si no hay red. Cuando vuelva el Wi\u2011Fi, abre <strong>\u21C4</strong>, \xFAnete a tu sala y guarda de nuevo para publicar en el directorio del turno."
+        },
+        {
+          title: "Directorio LAN e iPad",
+          body: "Mejoras de <strong>directorio</strong> y sync de perfiles (6.5.9 + cloud). Al <strong>copiar enlace para iPad</strong> se genera un ticket nuevo. En <strong>labs</strong>, copia varios d\xEDas desde el men\xFA del historial."
+        },
+        {
+          title: "Recomendaci\xF3n de turno",
+          body: "Actualiza <strong>todas</strong> las Macs y PCs del turno a <strong>6.6.0</strong>. En Windows, permite R+ en el firewall (puerto <strong>3738</strong>) la primera vez en sala."
+        }
+      ],
       "6.5.9": [
         {
           title: "Directorio y sync LAN (Mac y Windows)",
@@ -64173,9 +64272,9 @@ Desaparecer\xE1 del directorio LAN. Las dem\xE1s R+ en la misma sala \u21C4 lo q
     return;
   }
   toast3("Usuario eliminado de esta Mac.", "success");
-  const { flushClinicalProfileToLan: flushClinicalProfileToLan2 } = await Promise.resolve().then(() => (init_clinical_profile_lan_sync(), clinical_profile_lan_sync_exports));
+  const { flushClinicalProfileToLan: flushClinicalProfileToLan2, isBenignLanPushSkipCode: isBenignLanPushSkipCode2 } = await Promise.resolve().then(() => (init_clinical_profile_lan_sync(), clinical_profile_lan_sync_exports));
   const lanPush = await flushClinicalProfileToLan2();
-  if (!lanPush.ok && lanPush.code !== "NO_LAN") {
+  if (!lanPush.ok && !isBenignLanPushSkipCode2(lanPush.code)) {
     toast3(
       "Usuario eliminado aqu\xED, pero no se pudo publicar el cambio a la sala \u21C4. Revisa la conexi\xF3n.",
       "warning"
@@ -64540,13 +64639,8 @@ async function handleProfileFormSubmit(ev) {
   const currentUsername = normalizeUsername(clinicalSessionContext.user?.username || "");
   const usernameWillChange = username !== currentUsername;
   if (usernameWillChange) {
-    const { applyPendingLanInviteFromPage: applyPendingLanInviteFromPage2, assertLanRoomForUsernameRegister: assertLanRoomForUsernameRegister2, LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG: LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG2 } = await Promise.resolve().then(() => (init_clinical_profile_lan_sync(), clinical_profile_lan_sync_exports));
-    await applyPendingLanInviteFromPage2();
-    const lanGate = await assertLanRoomForUsernameRegister2();
-    if (!lanGate.allowed) {
-      toast3(LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG2, "error");
-      return;
-    }
+    const { assertLanRoomForUsernameRegister: assertLanRoomForUsernameRegister2 } = await Promise.resolve().then(() => (init_clinical_profile_lan_sync(), clinical_profile_lan_sync_exports));
+    await assertLanRoomForUsernameRegister2({ sala });
     if (currentUsername && !isLegacyMachineUsername(currentUsername, clientIdFromSettings())) {
       const ok2 = window.confirm(
         `\xBFCambiar tu usuario de @${currentUsername} a @${username}? Los equipos ver\xE1n el nuevo nombre.`
@@ -64604,9 +64698,9 @@ async function handleProfileFormSubmit(ev) {
   if (!ok) return;
   await refreshClinicalUserProfile();
   const msg = wantsProgramAdmin && (isProgramAdmin === true || wasProgramAdmin) ? "Perfil guardado. Privilegios de administraci\xF3n activos." : "Perfil guardado.";
-  const { flushClinicalProfileToLan: flushClinicalProfileToLan2, LAN_PROFILE_PUSH_FAILED_MSG: LAN_PROFILE_PUSH_FAILED_MSG2 } = await Promise.resolve().then(() => (init_clinical_profile_lan_sync(), clinical_profile_lan_sync_exports));
+  const { flushClinicalProfileToLan: flushClinicalProfileToLan2, LAN_PROFILE_PUSH_FAILED_MSG: LAN_PROFILE_PUSH_FAILED_MSG2, isBenignLanPushSkipCode: isBenignLanPushSkipCode2 } = await Promise.resolve().then(() => (init_clinical_profile_lan_sync(), clinical_profile_lan_sync_exports));
   const lanPush = await flushClinicalProfileToLan2();
-  if (!lanPush.ok && lanPush.code !== "NO_LAN") {
+  if (!lanPush.ok && !isBenignLanPushSkipCode2(lanPush.code)) {
     toast3(LAN_PROFILE_PUSH_FAILED_MSG2, "warning");
   } else if (usernameWillChange && lanPush.ok) {
     toast3(`${msg} @usuario publicado en la sala \u21C4.`, "success");
