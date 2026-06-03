@@ -1,5 +1,10 @@
 'use strict';
-const { todoEntityKey, collectKeysFromBundlePayload } = require('./entity-keys.js');
+const {
+  todoEntityKey,
+  agendaEntityKey,
+  collectKeysFromBundlePayload,
+} = require('./entity-keys.js');
+const { compareUpdatedAt, recordTimestamp } = require('./lww-utils.js');
 const { appendAudit } = require('./audit-log.js');
 const { mergeClinicalOpsSnapshotsData } = require('../lib/db/clinical-ops-bundle-merge.cjs');
 
@@ -47,6 +52,16 @@ function materializeTodos(map) {
   return todos;
 }
 
+function mergeEntityLww(serverRec, incomingRec) {
+  const cmp = compareUpdatedAt(recordTimestamp(serverRec), recordTimestamp(incomingRec));
+  if (cmp < 0) return { winner: incomingRec, overwritten: true };
+  if (cmp > 0) return { winner: serverRec, overwritten: false };
+  return {
+    winner: incomingRec,
+    overwritten: JSON.stringify(serverRec) !== JSON.stringify(incomingRec),
+  };
+}
+
 /**
  * @param {object | null} serverBundle
  * @param {object} incoming
@@ -71,7 +86,12 @@ function mergeBundlePut(serverBundle, incoming, opts) {
       ? { ...bundle.entityVersions }
       : {};
 
-  if (serverRevision > 0 && baseRevision !== serverRevision) {
+  const payloadKeys = collectKeysFromBundlePayload(base);
+  const payloadKeyList = [...payloadKeys];
+  const lwwAppliedKeys = [];
+  const revisionSkew = serverRevision > 0 && baseRevision !== serverRevision;
+
+  if (revisionSkew && payloadKeyList.length === 0) {
     return {
       ok: false,
       bundle,
@@ -87,8 +107,10 @@ function mergeBundlePut(serverBundle, incoming, opts) {
       ],
     };
   }
+  if (revisionSkew) {
+    lwwAppliedKeys.push('*');
+  }
 
-  const payloadKeys = collectKeysFromBundlePayload(base);
   const conflicts = [];
   const autoMergedKeys = [];
 
@@ -114,15 +136,22 @@ function mergeBundlePut(serverBundle, incoming, opts) {
     }
   }
 
-  if (conflicts.length) {
-    return { ok: false, bundle, conflicts };
-  }
+  const conflictKeys = new Set(conflicts.map((c) => c.key));
 
   if ('agenda' in base) {
     const agendaMap = agendaById(Array.isArray(bundle.agenda) ? bundle.agenda : []);
     const incomingAgenda = Array.isArray(base.agenda) ? base.agenda : [];
     for (const ev of incomingAgenda) {
-      if (ev && ev.id) agendaMap.set(ev.id, { ...ev });
+      if (!ev || !ev.id) continue;
+      const key = agendaEntityKey(ev.id);
+      const serverEv = agendaMap.get(ev.id);
+      if (conflictKeys.has(key) && serverEv) {
+        const { winner, overwritten } = mergeEntityLww(serverEv, ev);
+        agendaMap.set(ev.id, { ...winner });
+        if (overwritten) lwwAppliedKeys.push(key);
+      } else {
+        agendaMap.set(ev.id, { ...ev });
+      }
     }
     bundle.agenda = [...agendaMap.values()];
   }
@@ -132,7 +161,16 @@ function mergeBundlePut(serverBundle, incoming, opts) {
     for (const pid of Object.keys(base.todos)) {
       const arr = Array.isArray(base.todos[pid]) ? base.todos[pid] : [];
       for (const t of arr) {
-        if (t && t.id) todoMap.set(todoEntityKey(pid, t.id), { patientId: pid, item: { ...t } });
+        if (!t || !t.id) continue;
+        const key = todoEntityKey(pid, t.id);
+        const existing = todoMap.get(key);
+        if (conflictKeys.has(key) && existing?.item) {
+          const { winner, overwritten } = mergeEntityLww(existing.item, t);
+          todoMap.set(key, { patientId: pid, item: { ...winner } });
+          if (overwritten) lwwAppliedKeys.push(key);
+        } else {
+          todoMap.set(key, { patientId: pid, item: { ...t } });
+        }
       }
     }
     bundle.todos = materializeTodos(todoMap);
@@ -184,7 +222,7 @@ function mergeBundlePut(serverBundle, incoming, opts) {
     bundle.audit_log
   );
 
-  return { ok: true, bundle, autoMergedKeys };
+  return { ok: true, bundle, autoMergedKeys, lwwAppliedKeys };
 }
 
 function extractPayloadForKey(payload, key) {

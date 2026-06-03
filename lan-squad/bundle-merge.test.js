@@ -42,23 +42,44 @@ describe('bundle-merge', () => {
     assert.equal(r.bundle.entityVersions['t:p1:t2'], 1);
   });
 
-  it('stale entity version yields conflict', () => {
+  it('stale entity version applies LWW instead of conflict', () => {
     let bundle = emptyBundle(now());
     bundle.revision = 1;
     bundle.entityVersions = { 'a:e1': 2 };
-    bundle.agenda = [{ id: 'e1', procedure: 'Server' }];
+    bundle.agenda = [{ id: 'e1', procedure: 'Server', updatedAt: '2026-06-03T09:00:00.000Z' }];
     const r = mergeBundlePut(
       bundle,
       {
         baseRevision: 1,
         baseEntityVersions: { 'a:e1': 1 },
-        agenda: [{ id: 'e1', procedure: 'Stale' }],
+        agenda: [{ id: 'e1', procedure: 'Incoming', updatedAt: '2026-06-03T10:00:00.000Z' }],
       },
       { nowIso: now }
     );
-    assert.equal(r.ok, false);
-    assert.equal(r.conflicts.length, 1);
-    assert.equal(r.conflicts[0].key, 'a:e1');
+    assert.equal(r.ok, true);
+    assert.equal(r.bundle.agenda[0].procedure, 'Incoming');
+    assert.ok(Array.isArray(r.lwwAppliedKeys));
+    assert.ok(r.lwwAppliedKeys.includes('a:e1'));
+  });
+
+  it('revision skew still merges when payload has keys', () => {
+    let bundle = emptyBundle(now());
+    bundle.revision = 5;
+    bundle.entityVersions = {};
+    bundle.agenda = [];
+    const r = mergeBundlePut(
+      bundle,
+      {
+        baseRevision: 1,
+        baseEntityVersions: {},
+        agenda: [{ id: 'e1', procedure: 'New', updatedAt: '2026-06-03T10:00:00.000Z' }],
+      },
+      { nowIso: now }
+    );
+    assert.equal(r.ok, true);
+    assert.equal(r.bundle.agenda.length, 1);
+    assert.equal(r.bundle.agenda[0].procedure, 'New');
+    assert.equal(r.bundle.revision, 6);
   });
 
   it('partial PUT keeps todos when only agenda sent', () => {
