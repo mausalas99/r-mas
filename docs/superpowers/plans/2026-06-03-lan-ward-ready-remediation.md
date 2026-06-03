@@ -12,6 +12,8 @@
 
 **Debt gate:** `npm test` green; `npm run metrics` if available — no baseline regression.
 
+**Plan review (2026-06-03):** Outbox drain aborts on first failure; `QUEUED` + `ok: true` for outbox toasts; reconcile ops fallback wrapped in try/catch.
+
 ---
 
 ## File map
@@ -225,38 +227,59 @@ To:
 
 (`snap` and `bases` already in scope in `pushClinicalOpsLanNow`.)
 
-- [ ] **Step 3: Extend `flushLiveSyncOutbox`**
+- [ ] **Step 3: Extend `flushLiveSyncOutbox` (sequential drain, abort on first failure)**
 
-Replace the `items.forEach` body with sorted processing — ops first:
+`drainOutbox` removes all items up front. On the first failed PUT, **stop the chain** and re-enqueue **that item plus every not-yet-processed item** so nothing is lost and order is preserved. Do **not** keep sending requests while the host is down (avoids thrashing).
+
+Replace the `items.forEach` body with:
 
 ```javascript
   return drainOutbox(rid).then(function (items) {
     if (!items || !items.length) return;
     var sorted = items.slice().sort(function (a, b) {
       var score = function (k) {
-        return k === 'clinical_ops' ? 0 : 1;
+        return k === 'clinical_ops' ? 0 : k === 'bundle' ? 1 : 2;
       };
       return score(a && a.kind) - score(b && b.kind);
     });
-    var chain = Promise.resolve();
-    sorted.forEach(function (item) {
-      chain = chain.then(function () {
-        if (!item || !item.payload) return;
-        if (item.kind === 'clinical_ops') {
-          return pushClinicalOpsPayloadToHost(rid, item.payload).then(function (ok) {
-            if (!ok) return enqueueOutbox(rid, item);
-          });
-        }
-        if (item.kind === 'bundle') {
-          return pushRoomSyncBundleToHost(rid, item.payload).then(function (ok) {
-            if (!ok) return enqueueOutbox(rid, item);
-          });
-        }
+
+    function pushOutboxItem(item) {
+      if (!item || !item.payload) return Promise.resolve(true);
+      if (item.kind === 'clinical_ops') {
+        return pushClinicalOpsPayloadToHost(rid, item.payload);
+      }
+      if (item.kind === 'bundle') {
+        return pushRoomSyncBundleToHost(rid, item.payload);
+      }
+      return Promise.resolve(true);
+    }
+
+    function reenqueueSlice(slice) {
+      var chain = Promise.resolve();
+      slice.forEach(function (it) {
+        chain = chain.then(function () {
+          return enqueueOutbox(rid, { kind: it.kind, payload: it.payload });
+        });
       });
-    });
-    return chain;
+      return chain;
+    }
+
+    function drainFromIndex(index) {
+      if (index >= sorted.length) return Promise.resolve();
+      var item = sorted[index];
+      return pushOutboxItem(item).then(function (ok) {
+        if (!ok) {
+          return reenqueueSlice(sorted.slice(index));
+        }
+        return drainFromIndex(index + 1);
+      });
+    }
+
+    return drainFromIndex(0);
   });
 ```
+
+**Note:** Same abort semantics should replace the existing bundle-only `forEach` chain (do not re-enqueue one item and continue to the next).
 
 - [ ] **Step 4: Contract test for flush**
 
@@ -264,8 +287,16 @@ In `lan-sync-clinical-ops.test.mjs`:
 
 ```javascript
   it('flushLiveSyncOutbox drains clinical_ops kind', () => {
-    assert.match(lanSyncPushSrc, /item\.kind === 'clinical_ops'/);
     assert.match(lanSyncPushSrc, /pushClinicalOpsPayloadToHost/);
+    assert.match(lanSyncPushSrc, /drainFromIndex|reenqueueSlice/);
+  });
+
+  it('flushLiveSyncOutbox aborts chain on first failure (no continue after reenqueue)', () => {
+    assert.match(lanSyncPushSrc, /if \(!ok\)[\s\S]*reenqueueSlice\(sorted\.slice\(index\)\)/);
+    assert.doesNotMatch(
+      lanSyncPushSrc,
+      /if \(!ok\) return enqueueOutbox\(rid, item\);[\s\S]*return drainFromIndex/
+    );
   });
 ```
 
@@ -321,12 +352,33 @@ With:
 
 (Only after `acceptServerClinicalOpsConflict` runs.)
 
-- [ ] **Step 2: Extend `toastTeamLanPublishResult`**
+- [ ] **Step 2: Extend `toastTeamLanPublishResult` (outbox is deferred success)**
+
+`channels.outbox` must not sit only under `if (lanPush.ok)` when enqueue returns `ok: false` — users would never see the cola message.
+
+**Push return when enqueued** (deferred success — local save OK, LAN publish pending):
+
+```javascript
+  await enqueueOutbox(roomId, { kind: 'clinical_ops', payload: { ... } });
+  return lanPushResult(true, 'QUEUED', { outbox: true });
+```
+
+**Toast helper** — handle `QUEUED` / `channels.outbox` before generic failure:
 
 ```javascript
 function toastTeamLanPublishResult(lanPush, localOkMessage) {
   if (!lanPush) {
     toast(localOkMessage, 'success');
+    return;
+  }
+  if (
+    lanPush.ok &&
+    (lanPush.code === 'QUEUED' || (lanPush.channels && lanPush.channels.outbox))
+  ) {
+    toast(
+      `${localOkMessage} Se publicará a la sala cuando vuelva la red (cola ⇄).`,
+      'info'
+    );
     return;
   }
   if (lanPush.ok) {
@@ -338,25 +390,18 @@ function toastTeamLanPublishResult(lanPush, localOkMessage) {
       toast(`${localOkMessage} Publicado en sala ⇄.`, 'success');
       return;
     }
-    if (lanPush.channels && lanPush.channels.outbox) {
-      toast(
-        `${localOkMessage} Se publicará a la sala cuando vuelva la red (cola ⇄).`,
-        'info'
-      );
-      return;
-    }
     toast(localOkMessage, 'success');
     return;
   }
-  // ... existing benign / outbox / warn branches unchanged
+  if (isBenignLanPushSkipCode(lanPush.code)) {
+    toast(`${localOkMessage} (solo en esta Mac hasta conectar sala ⇄).`, 'info');
+    return;
+  }
+  toast(LAN_PROFILE_PUSH_FAILED_MSG, 'warn');
 }
 ```
 
-Ensure `pushClinicalOpsLanNow` sets `channels: { outbox: true }` on enqueue failure path:
-
-```javascript
-  return lanPushResult(false, 'PUSH_FAILED', { outbox: true });
-```
+Apply the same `QUEUED` pattern anywhere else that enqueues ops and calls this toast (optional: `clinical-profile-lan-sync.mjs`).
 
 - [ ] **Step 3: Contract test**
 
@@ -435,17 +480,24 @@ git commit -m "fix(lan-host): broadcast revision on every successful sync-bundle
 **Files:**
 - Modify: `public/js/lan-sync-push.mjs` (`reconcileLiveSyncRoom`)
 
-- [ ] **Step 1: After failed bundle GET, try clinical-ops GET**
+- [ ] **Step 1: After failed bundle GET, try clinical-ops GET (isolated try/catch)**
 
-In `reconcileLiveSyncRoom`, inside `try` after `catch (_eBundle)`:
+In `reconcileLiveSyncRoom`, after the `sync-bundle` GET `catch (_eBundle)` — **do not** let an offline host throw through reconcile. Wrap the ops fallback:
 
 ```javascript
-    if (isClinicalOpsLanAvailable() && typeof b.fetchAndApplyClinicalOpsFromHost === 'function') {
-      await b.fetchAndApplyClinicalOpsFromHost(rid);
+    try {
+      if (
+        isClinicalOpsLanAvailable() &&
+        typeof b.fetchAndApplyClinicalOpsFromHost === 'function'
+      ) {
+        await b.fetchAndApplyClinicalOpsFromHost(rid);
+      }
+    } catch (_eOps) {
+      /* host offline — phase still cleared in finally */
     }
 ```
 
-Ensure `registerLanSyncPushBridge` / facade exposes `fetchAndApplyClinicalOpsFromHost` on bridge (wire from `lan-sync.mjs` if missing).
+Ensure `registerLanSyncPushBridge` / facade exposes `fetchAndApplyClinicalOpsFromHost` on bridge (wire from `lan-sync.mjs` if missing). The outer `finally { applyRoomSyncPhaseAfterReconcile }` must still run.
 
 - [ ] **Step 2: Run tests + commit**
 

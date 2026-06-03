@@ -119,14 +119,15 @@ flowchart TB
 
 - Remove `pushRoomSyncBundleToHost` from the `clinical-ops` non-OK and `catch` paths.
 - On network/HTTP failure: enqueue **`{ kind: 'clinical_ops', payload: { snapshot, baseRevision, clientId } }`** only.
-- Return `lanPushResult(false, 'PUSH_FAILED', { outbox: true })` without attempting bundle.
+- Return **`lanPushResult(true, 'QUEUED', { outbox: true })`** (deferred success — local data saved; LAN publish pending). Toasts must treat `QUEUED` / `channels.outbox` as the “cola ⇄” path, not bury it under `ok: false`.
 
 **IM-OPS-2 — `clinical_ops` outbox drain**
 
 - Extend `flushLiveSyncOutbox` to process `kind === 'clinical_ops'`:
   - `PUT /rooms/:id/clinical-ops` with stored payload.
   - On success: update `setHostBundleBases`, `emitLiveSyncRevisionHint` if WS open.
-  - On failure: re-enqueue same item (increment attempts via DB layer if available).
+  - **Sequential drain:** `drainOutbox` empties the queue first; process sorted items one-by-one (`clinical_ops` before `bundle`).
+  - **On first failure:** re-enqueue **failed item + all remaining** unprocessed items, then **abort** the chain (no further PUTs while host is down — avoids thrashing and out-of-order apply).
 - Order: drain **clinical_ops** items before **bundle** items for the same room.
 
 **IM-OPS-3 — 409 on clinical-ops = success for publish UX**
@@ -138,7 +139,7 @@ flowchart TB
 **IM-OPS-4 — Reconcile phase (keep + harden)**
 
 - Keep `finally { applyRoomSyncPhaseAfterReconcile }`.
-- If `fetch sync-bundle` fails but `fetchAndApplyClinicalOpsFromHost` succeeds, still call `applyRoomSyncPhaseAfterReconcile` (may require bridge hook from `lan-sync-room.mjs`).
+- If `fetch sync-bundle` fails, try `fetchAndApplyClinicalOpsFromHost` inside its **own try/catch** so an offline host does not reject the whole reconcile; `finally` still calls `applyRoomSyncPhaseAfterReconcile`.
 
 **IM-OPS-5 — Revision hint when WS down**
 
