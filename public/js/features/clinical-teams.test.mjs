@@ -58,6 +58,15 @@ describe('clinical-teams', () => {
     assert.equal(clinicalTeamsSrc.includes('handleGuardiaCheck'), false);
   });
 
+  it('renderJoinedTeamCard defines user before cycle edit block', () => {
+    const fnStart = clinicalTeamsSrc.indexOf('function renderJoinedTeamCard(team)');
+    assert.ok(fnStart >= 0);
+    const fnEnd = clinicalTeamsSrc.indexOf('\nfunction renderDirectoryTeamCard', fnStart);
+    const fnBody = clinicalTeamsSrc.slice(fnStart, fnEnd > fnStart ? fnEnd : fnStart + 2500);
+    assert.match(fnBody, /const user = clinicalSessionContext\.user/);
+    assert.match(fnBody, /renderMyCycleEditBlock\(team, user\)/);
+  });
+
   it('Mi rotación opens LAN user directory in separate modal', () => {
     assert.match(clinicalTeamsSrc, /canViewLanUserDirectory/);
     assert.match(clinicalTeamsSrc, /openLanUsersDirectoryModal/);
@@ -74,6 +83,13 @@ describe('clinical-teams', () => {
     assert.match(clinicalTeamsSrc, /clinical-lan-users-placement/);
     assert.match(clinicalTeamsSrc, /resolveMembershipCycleForUser/);
     assert.match(clinicalTeamsSrc, /rpc-clinical-ops-synced/);
+  });
+
+  it('elevated roster managers can edit and delete teams', () => {
+    assert.match(clinicalTeamsSrc, /clinical-teams-edit-btn/);
+    assert.match(clinicalTeamsSrc, /clinical-teams-delete-btn/);
+    assert.match(clinicalTeamsSrc, /dbClinicalTeamsUpdate/);
+    assert.match(clinicalTeamsSrc, /dbClinicalTeamsArchive/);
   });
 
   it('program admin checkbox requires access code', () => {

@@ -148,7 +148,7 @@ Replaces free-text `entrega-pendientes` textarea.
 4. **Aplicar plantilla:** picker Mis plantillas | Del equipo → prefill form → adjust time → add.
 5. **Confirmar entrega / Guardar:** upsert `active_guardias` with v2 JSON.
 
-**Modo Guardia grid (HANDOFF):** chip shows count of non-completed procedimientos; click opens modal with role-aware controls.
+**Modo Guardia:** el censo abre el expediente al tocar un chip. El botón **Entrega** (no toggle Censo|Entrega) activa la fase de entrega: resuelve el R1 de guardia de la sala, muestra estado «Entregando a …» y hace que cada chip abra el modal de entrega con ese cubridor preseleccionado. **Salir de entrega** restaura el censo normal.
 
 **Eventualidades:** separate expediente tab; not stored in `pendientes_json`.
 

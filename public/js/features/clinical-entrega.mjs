@@ -1,6 +1,7 @@
 /**
  * Entrega (handoff) modal — assign active_guardias with rank-based eligibility.
  */
+import { patients } from '../app-state.mjs';
 import {
   clinicalSessionContext,
   refreshGuardiaCensusFromDb,
@@ -15,10 +16,14 @@ import {
 } from '../clinico-access.mjs';
 import { effectiveClinicalRank } from '../clinical-privileges.mjs';
 import { serializePendientesJson } from '../../../lib/entrega/entrega-pendientes.mjs';
+import { vitalsFrequencyForDb } from '../../../lib/entrega/entrega-vitals-plan.mjs';
 import { scheduleLiveSyncPush } from './lan-sync.mjs';
 import {
   getEntregaDraftItems,
+  readEntregaHandoffContext,
   mountEntregaPendientesUi,
+  readEntregaCriticalFromHandoff,
+  readEntregaVitalsPlan,
   resetEntregaModalUi,
   resolveEntregaActorRole as resolveEntregaActorRoleImpl,
 } from './entrega-modal-ui.mjs';
@@ -59,6 +64,53 @@ function uniqueByUserId(list) {
     seen.add(u.user_id);
     return true;
   });
+}
+
+/**
+ * Ensure a covering user appears in the entrega target dropdown (avoids blank select).
+ * @param {object[]} targetList
+ * @param {object[]} users
+ * @param {string} userId
+ * @param {string} [fallbackLabel]
+ */
+export function ensureEntregaTargetUser(targetList, users, userId, fallbackLabel = '') {
+  const id = String(userId || '').trim();
+  if (!id || targetList.some((u) => u.user_id === id)) return targetList;
+  const match = normalizeUsers(users).find((u) => u.user_id === id);
+  if (match) return [match, ...targetList];
+  return [
+    {
+      user_id: id,
+      username: fallbackLabel || 'Residente de guardia',
+      rank: 'R1',
+      clinical_name: '',
+    },
+    ...targetList,
+  ];
+}
+
+/**
+ * Users available for entrega labels — scope context, team rosters, and session user.
+ * @param {object|null|undefined} scopeContext
+ * @param {object[]} teams
+ * @param {object|null|undefined} sessionUser
+ */
+export function collectEntregaScopeUsers(scopeContext, teams, sessionUser = null) {
+  const parts = [];
+  if (Array.isArray(scopeContext?.users)) parts.push(...scopeContext.users);
+  for (const team of teams || []) {
+    for (const m of team.members || []) {
+      if (!m?.user_id) continue;
+      parts.push({
+        user_id: m.user_id,
+        username: m.username,
+        rank: m.rank,
+        clinical_name: m.clinical_name,
+      });
+    }
+  }
+  if (sessionUser?.user_id) parts.push(sessionUser);
+  return uniqueByUserId(normalizeUsers(parts));
 }
 
 /**
@@ -104,11 +156,24 @@ export function listEntregaTargets(rank, teams, users, salaDeficit, opts = {}) {
   }
 
   if (rankNorm === 'R1') {
+    let userSala = '';
+    for (const t of joinedTeams) {
+      const sala = String(t.sala || '').trim();
+      if (sala) {
+        userSala = sala;
+        break;
+      }
+    }
+    const onCallIds = new Set(
+      (userSala ? salaOnCallR1(teamList, userSala, now) : []).map((r) => String(r.user_id))
+    );
+    const onCallTargets = all.filter((u) => u.rank === 'R1' && onCallIds.has(u.user_id));
+
     const joinedIds = new Set(joinedTeams.map((t) => String(t.team_id)));
     const fractions = new Set(
       joinedTeams.map((t) => String(t.sub_area_fraction || '').trim()).filter(Boolean)
     );
-    const targets = all.filter((u) => {
+    const peerTargets = all.filter((u) => {
       if (u.rank !== 'R1') return false;
       return teamList.some((team) => {
         const member = (team.members || []).some((m) => String(m.user_id) === u.user_id);
@@ -118,7 +183,8 @@ export function listEntregaTargets(rank, teams, users, salaDeficit, opts = {}) {
         return frac && fractions.has(frac);
       });
     });
-    return { flow: 'r1', targets: targets.length ? uniqueByUserId(targets) : all };
+    const targets = uniqueByUserId([...onCallTargets, ...peerTargets]);
+    return { flow: 'r1', targets: targets.length ? targets : all };
   }
 
   return { flow: 'generic', targets: all };
@@ -133,6 +199,19 @@ function toast(msg, type = 'info') {
   if (typeof window !== 'undefined' && typeof window.showToast === 'function') {
     window.showToast(msg, type);
   }
+}
+
+/** @param {string} patientId */
+function resolveEntregaPatientRow(patientId) {
+  const id = String(patientId || '');
+  if (!id) return null;
+  return (
+    (patients || []).find((p) => String(p.id) === id) ||
+    (clinicalSessionContext.scopeContext?.patients || []).find(
+      (p) => String(p.id || p.patient_id) === id
+    ) ||
+    null
+  );
 }
 
 function entregaModalEl() {
@@ -220,24 +299,33 @@ function wireEntregaFormOnce() {
     ev.preventDefault();
     const patientId = String(form.dataset.patientId || '');
     const guardiaId = form.dataset.guardiaId ? String(form.dataset.guardiaId) : undefined;
+    const phaseCovering = getEntregaPhaseCoveringUserId();
+    const existingGuardia = guardiaId
+      ? clinicalSessionContext.guardias.find((g) => String(g.guardia_id) === guardiaId)
+      : clinicalSessionContext.guardiasMap.get(patientId);
     const coveringUserId = String(
-      document.getElementById('entrega-covering-user')?.value || ''
+      document.getElementById('entrega-covering-user')?.value ||
+        phaseCovering ||
+        existingGuardia?.covering_user_id ||
+        ''
     );
     const sourceTeamId =
       String(document.getElementById('entrega-source-team')?.value || '') ||
       resolveDefaultSourceTeamId();
-    const isCritical = !!document.getElementById('entrega-critical')?.checked;
-    const vitalsFrequency = String(
-      document.getElementById('entrega-vitals-frequency')?.value || 'None'
-    );
+    const isCritical = readEntregaCriticalFromHandoff();
+    const vitalsPlan = readEntregaVitalsPlan();
+    const vitalsFrequency = vitalsFrequencyForDb(vitalsPlan.frequency);
+    const handoffContext = readEntregaHandoffContext();
 
     if (!patientId || !coveringUserId || !sourceTeamId) {
-      toast('Selecciona usuario cubridor y equipo de origen.', 'error');
+      toast('Selecciona R1 de guardia y equipo de origen.', 'error');
       return;
     }
 
     const pendientesJson = serializePendientesJson({
       version: 2,
+      vitalsPlan,
+      handoffContext,
       items: getEntregaDraftItems(),
     });
 
@@ -286,7 +374,7 @@ export function openEntregaModal(opts) {
 
   const ctx = clinicalSessionContext.scopeContext || {};
   const teams = clinicalSessionContext.teams || ctx.teams || [];
-  const users = Array.isArray(ctx.users) ? ctx.users : [];
+  const users = collectEntregaScopeUsers(ctx, teams, clinicalSessionContext.user);
   const salaGuardiaToday = Array.isArray(ctx.salaGuardiaToday) ? ctx.salaGuardiaToday : [];
   const userId = String(clinicalSessionContext.user?.user_id || '');
   const rank = effectiveClinicalRank(clinicalSessionContext.user);
@@ -306,16 +394,52 @@ export function openEntregaModal(opts) {
   const hint = document.getElementById('entrega-flow-hint');
 
   if (select) {
-    select.innerHTML = targets
-      .map(
-        (u) => `<option value="${u.user_id}">${userOptionLabel(u)}</option>`
-      )
-      .join('');
+    const phase = getEntregaPhase();
     const phaseCovering = getEntregaPhaseCoveringUserId();
-    const preferred = existing?.covering_user_id
+    let preferred = existing?.covering_user_id
       ? String(existing.covering_user_id)
-      : phaseCovering || targets[0]?.user_id || '';
+      : phaseCovering || '';
+    if (
+      !existing &&
+      clinicalSessionContext.guardiaMode &&
+      !phase?.active
+    ) {
+      const sala = resolveUserSalaForEntrega(teams, userId);
+      const selfCovering = sala ? resolveR1GuardiaCovering(teams, users, sala) : null;
+      if (selfCovering?.coveringUserId === userId) {
+        preferred = userId;
+      }
+    }
+    let targetList = [...targets];
+    for (const id of [preferred, phaseCovering]) {
+      targetList = ensureEntregaTargetUser(
+        targetList,
+        users,
+        id,
+        phase?.coveringLabel || ''
+      );
+    }
+    if (!preferred && targetList[0]?.user_id) preferred = targetList[0].user_id;
+    select.innerHTML = targetList
+      .map((u) => `<option value="${u.user_id}">${userOptionLabel(u)}</option>`)
+      .join('');
     if (preferred) select.value = preferred;
+    if (phase?.active && phaseCovering) {
+      select.disabled = true;
+      select.removeAttribute('required');
+      const coverHint = document.getElementById('entrega-covering-hint');
+      if (coverHint) {
+        coverHint.textContent = `Entrega activa → ${phase.coveringLabel || 'R1 de guardia'}. Este paciente se entregará a esa persona.`;
+      }
+    } else {
+      select.disabled = false;
+      select.setAttribute('required', '');
+      const coverHint = document.getElementById('entrega-covering-hint');
+      if (coverHint) {
+        coverHint.textContent =
+          'Residente de guardia que asumirá la cobertura nocturna de este paciente.';
+      }
+    }
   }
 
   if (teamSelect) {
@@ -330,31 +454,44 @@ export function openEntregaModal(opts) {
 
   if (hint) {
     const flowLabels = {
-      r1: 'R1: mismos equipo o fracción de sub-área.',
       r2: 'R2: mismo servicio, R4, o cubridores Sala en déficit.',
       r2_handoff: 'R2: selecciona R4 de Sala y R2 de guardia (dos entregas separadas).',
       r3_suggest: 'R3: sugeridos por día de guardia del equipo (confirma).',
       generic: 'Cualquier usuario registrado.',
     };
-    hint.textContent = flowLabels[flow] || flowLabels.generic;
+    if (flow === 'r1') {
+      hint.textContent = '';
+      hint.hidden = true;
+    } else {
+      hint.textContent = flowLabels[flow] || flowLabels.generic;
+      hint.hidden = false;
+    }
   }
-
-  const criticalEl = document.getElementById('entrega-critical');
-  const vitalsEl = document.getElementById('entrega-vitals-frequency');
-  if (criticalEl) criticalEl.checked = !!(existing?.is_critical);
-  if (vitalsEl) vitalsEl.value = String(existing?.vitals_frequency || 'None');
 
   const actor = resolveEntregaActorRole(clinicalSessionContext.user, existing);
   const srcTeam =
     existing?.source_team_id || resolveDefaultSourceTeamId();
+  const patientRow = resolveEntregaPatientRow(patientId);
   void mountEntregaPendientesUi({
     actor,
     pendientesJson: existing?.pendientes_json,
     sourceTeamId: srcTeam,
+    vitalsFrequency: existing?.vitals_frequency,
+    isCritical: !!(existing?.is_critical),
+    signedRefusal: !!Number(patientRow?.negativa_maniobras_firmada),
   });
 
   const title = document.getElementById('entrega-modal-title');
-  if (title) title.textContent = guardiaId ? 'Actualizar entrega' : 'Nueva entrega';
+  if (title) {
+    if (guardiaId || existing?.guardia_id) {
+      title.textContent =
+        actor.role === 'guardia' ? 'Pendientes de guardia' : 'Actualizar entrega';
+    } else if (clinicalSessionContext.guardiaMode) {
+      title.textContent = 'Entrega / pendientes';
+    } else {
+      title.textContent = 'Nueva entrega';
+    }
+  }
 
   bd.classList.add('open');
   bd.setAttribute('aria-hidden', 'false');
@@ -476,7 +613,7 @@ export function toggleEntregaPhase(opts = {}) {
 
   const ctx = clinicalSessionContext.scopeContext || {};
   const teams = clinicalSessionContext.teams || ctx.teams || [];
-  const users = Array.isArray(ctx.users) ? ctx.users : [];
+  const users = collectEntregaScopeUsers(ctx, teams, clinicalSessionContext.user);
   const userId = String(clinicalSessionContext.user?.user_id || '');
   const sala = resolveUserSalaForEntrega(teams, userId);
 

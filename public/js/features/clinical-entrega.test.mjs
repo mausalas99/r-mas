@@ -7,6 +7,8 @@ import {
   loadGuardiaGridViewContext,
   startEntregaPhase,
   endEntregaPhase,
+  ensureEntregaTargetUser,
+  collectEntregaScopeUsers,
 } from './clinical-entrega.mjs';
 import { isOnCallToday, getCycleConfig, salaOnCallR2 } from '../clinico-access.mjs';
 
@@ -20,6 +22,33 @@ const users = [
 ];
 
 describe('listEntregaTargets', () => {
+  it('R1 targets on-call guardia for sala even from another team', () => {
+    const now = '2026-06-01T12:00:00Z';
+    const teams = [
+      {
+        team_id: 't1',
+        service: 'Sala',
+        sala: 'Sala 1',
+        sub_area_fraction: 'A1',
+        members: [{ user_id: 'r1a', rank: 'R1' }],
+      },
+      {
+        team_id: 't2',
+        service: 'Sala',
+        sala: 'Sala 1',
+        sub_area_fraction: 'B1',
+        members: [{ user_id: 'r1b', rank: 'R1' }],
+      },
+    ];
+    const { targets, flow } = listEntregaTargets('R1', teams, users, false, {
+      currentUserId: 'r1b',
+      now,
+    });
+    assert.equal(flow, 'r1');
+    const ids = targets.map((u) => u.user_id);
+    assert.ok(ids.includes('r1a'), 'on-call R1 for the sala must be an entrega target');
+  });
+
   it('R1 targets same team or sub_area_fraction', () => {
     const teams = [
       {
@@ -129,15 +158,62 @@ describe('resolveEntregaActorRole', () => {
     });
   });
 
-  it('guardia when updating existing handoff', () => {
+  it('guardia when updating own coverage', () => {
     assert.equal(
-      resolveEntregaActorRole({ user_id: 'u1' }, { guardia_id: 'g-1' }).role,
+      resolveEntregaActorRole(
+        { user_id: 'u1' },
+        { guardia_id: 'g-1', covering_user_id: 'u1' }
+      ).role,
       'guardia'
     );
     assert.equal(
-      resolveEntregaActorRole({ user_id: 'u1' }, { guardiaId: 'g-2' }).role,
+      resolveEntregaActorRole({ user_id: 'u1' }, { guardiaId: 'g-2', covering_user_id: 'u1' })
+        .role,
       'guardia'
     );
+  });
+
+  it('diurno when handoff belongs to another covering user', () => {
+    assert.equal(
+      resolveEntregaActorRole(
+        { user_id: 'u1' },
+        { guardia_id: 'g-1', covering_user_id: 'u2' }
+      ).role,
+      'diurno'
+    );
+  });
+});
+
+describe('collectEntregaScopeUsers', () => {
+  it('includes session user and team members when scope users missing', () => {
+    const roster = collectEntregaScopeUsers(
+      {},
+      [
+        {
+          team_id: 't1',
+          members: [{ user_id: 'r1b', username: 'r1b', rank: 'R1', clinical_name: 'Ana' }],
+        },
+      ],
+      { user_id: 'self1', username: 'msalas', rank: 'R1', clinical_name: 'Mauricio' }
+    );
+    const ids = roster.map((u) => u.user_id);
+    assert.ok(ids.includes('self1'));
+    assert.ok(ids.includes('r1b'));
+  });
+});
+
+describe('ensureEntregaTargetUser', () => {
+  it('adds existing covering user when absent from rank-based targets', () => {
+    const targets = [{ user_id: 'r4x', username: 'r4x', rank: 'R4', clinical_name: '' }];
+    const merged = ensureEntregaTargetUser(targets, users, 'r1b');
+    assert.equal(merged.length, 2);
+    assert.equal(merged[0].user_id, 'r1b');
+  });
+
+  it('does not duplicate when user already in list', () => {
+    const targets = [{ user_id: 'r1b', username: 'r1b', rank: 'R1', clinical_name: '' }];
+    const merged = ensureEntregaTargetUser(targets, users, 'r1b');
+    assert.equal(merged.length, 1);
   });
 });
 

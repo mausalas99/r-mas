@@ -16,6 +16,18 @@
   letter-spacing: 0.02em;
 }
 
+#appcontent-guardia .r4-section-divider,
+.guardia-census-panel .r4-section-divider {
+  padding: 0.5rem 0 0.35rem;
+  margin-top: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  border-bottom-width: 1px;
+  color: var(--text-muted);
+}
+
 .dnr-badge {
   background: var(--surface);
   color: var(--error);
@@ -32,9 +44,13 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .priority-critical {
+  .priority-critical:not(#appcontent-guardia .priority-critical) {
     animation: criticalPulseHighlight 2.5s infinite;
   }
+}
+
+#appcontent-guardia .priority-critical {
+  animation: none !important;
 }
 
 @keyframes criticalPulseHighlight {
@@ -64,7 +80,7 @@
   flex-shrink: 0;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
-  max-height: min(42vh, 420px);
+  max-height: min(68vh, 680px);
   overflow: auto;
 }
 
@@ -224,34 +240,39 @@ html.ui-density-guardia #header-app-mode-chip {
   align-items: center;
 }
 
-.guardia-grid-mode-toggle {
-  display: inline-flex;
+.btn-guardia-entrega-phase {
   margin-left: auto;
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in oklab, var(--action) 45%, var(--border));
   border-radius: var(--radius-md);
-  overflow: hidden;
-  background: color-mix(in oklab, var(--surface) 88%, var(--bg));
-}
-
-.guardia-grid-mode-btn {
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
+  background: color-mix(in oklab, var(--action) 10%, var(--surface));
+  color: var(--text);
   font: inherit;
   font-size: 0.85rem;
-  font-weight: 600;
-  padding: 8px 14px;
+  font-weight: 700;
+  padding: 8px 16px;
   cursor: pointer;
 }
 
-.guardia-grid-mode-btn.is-active {
-  background: color-mix(in oklab, var(--action) 12%, var(--surface));
-  color: var(--text);
+.btn-guardia-entrega-phase.is-active {
+  background: color-mix(in oklab, var(--action) 22%, var(--surface));
+  border-color: var(--action);
 }
 
-.guardia-grid-mode-btn:focus-visible {
+.btn-guardia-entrega-phase:focus-visible {
   outline: 2px solid var(--action);
-  outline-offset: -2px;
+  outline-offset: 2px;
+}
+
+.guardia-entrega-phase-status {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+.guardia-entrega-phase-status[hidden] {
+  display: none !important;
 }
 
 .entrega-proc-block {
@@ -360,42 +381,1402 @@ html.ui-density-guardia #header-app-mode-chip {
   font-size: 0.85rem;
 }
 
-.entrega-proc-form-inner {
+#entrega-modal-backdrop.entrega-modal-backdrop {
+  background: color-mix(in oklab, var(--color-ink, #1a2332) 52%, transparent);
+}
+
+#entrega-modal-backdrop.entrega-modal-backdrop.open {
+  align-items: center;
+  justify-content: center;
+  padding: max(10px, env(safe-area-inset-top, 0px)) 14px
+    max(10px, env(safe-area-inset-bottom, 0px));
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+#entrega-modal-backdrop .modal.entrega-modal {
+  --entrega-modal-h: min(86dvh, calc(100vh - 28px));
+  width: min(96vw, 1180px);
+  max-width: none;
+  height: var(--entrega-modal-h);
+  min-height: var(--entrega-modal-h);
+  max-height: var(--entrega-modal-h);
+  margin: 0;
+  flex-shrink: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  gap: 0;
+  background: var(--surface);
+  color: var(--text);
+  border-radius: var(--radius-xl);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 0.75rem;
+  box-shadow: var(--shadow-md);
+  animation: modal-in var(--dur-normal) var(--ease-out);
+}
+
+#entrega-modal-backdrop .entrega-modal-head__text {
+  min-width: 0;
+  flex: 1;
+}
+
+#entrega-modal-backdrop .entrega-modal-head {
+  flex-shrink: 0;
+  align-items: flex-start;
+  position: relative;
+  z-index: 2;
+  min-height: 0;
+  padding: 18px clamp(18px, 2.5vw, 28px) 16px;
+  overflow: visible;
+  border-bottom: 1px solid var(--divider);
+  background: var(--surface);
+}
+
+#entrega-modal-backdrop .entrega-modal-head h3,
+#entrega-modal-backdrop .entrega-modal-head h3#entrega-modal-title {
+  margin: 0 0 6px;
+  padding: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.45;
+  letter-spacing: -0.015em;
+  color: var(--text);
+}
+
+#entrega-modal-backdrop .entrega-modal-lead {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+#entrega-modal-backdrop .entrega-modal-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+#entrega-modal-backdrop .entrega-form-body {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: clamp(18px, 2.5vw, 28px);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 2vw, 24px);
+  -webkit-overflow-scrolling: touch;
+}
+
+#entrega-modal-backdrop .entrega-handoff-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  column-gap: 20px;
+  row-gap: 12px;
+  align-items: end;
   margin: 0;
 }
 
-.entrega-proc-form-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 0.75rem;
-  margin-bottom: 0.5rem;
+#entrega-modal-backdrop .entrega-handoff-grid .field-group {
+  margin-bottom: 0;
 }
 
-.entrega-proc-form-row label {
+#entrega-modal-backdrop .entrega-handoff-grid .field-group label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+#entrega-modal-backdrop .entrega-handoff-grid .entrega-field-hint {
+  margin: 0 0 6px;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+#entrega-modal-backdrop .entrega-patient-context {
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+#entrega-modal-backdrop .entrega-patient-context__summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+  padding: 2px 0 12px;
+  margin: 0;
+  border-bottom: 1px solid var(--divider);
+  user-select: none;
+}
+
+#entrega-modal-backdrop .entrega-patient-context__summary::-webkit-details-marker {
+  display: none;
+}
+
+#entrega-modal-backdrop .entrega-patient-context__summary::before {
+  content: '▸';
+  flex-shrink: 0;
+  width: 1rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+
+#entrega-modal-backdrop .entrega-patient-context[open] .entrega-patient-context__summary::before {
+  transform: rotate(90deg);
+}
+
+#entrega-modal-backdrop .entrega-patient-context__summary-main {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
-  font-size: 0.85rem;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
 }
 
-.entrega-proc-form-checks {
+#entrega-modal-backdrop .entrega-patient-context__summary .clinical-teams-section-title {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+#entrega-modal-backdrop .entrega-handoff-summary-inline {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#entrega-modal-backdrop .entrega-patient-context[open] .entrega-handoff-summary-inline {
+  display: none;
+}
+
+#entrega-modal-backdrop .entrega-patient-context:not([open]) .entrega-handoff-summary--body {
+  display: none;
+}
+
+#entrega-modal-backdrop .entrega-patient-context__body {
+  padding-top: 12px;
+}
+
+#entrega-modal-backdrop .entrega-patient-context__lead {
+  margin: 0 0 12px;
+  font-size: 0.75rem;
+}
+
+#entrega-modal-backdrop select.profile-input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  max-width: min(100%, 17.5rem);
+  min-height: 36px;
+  padding: 7px 2.1rem 7px 10px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2394a3b8' d='M1.5 1.5 6 6 10.5 1.5' stroke='%2394a3b8' stroke-width='1.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px 8px;
+}
+
+#entrega-modal-backdrop .entrega-handoff-grid,
+#entrega-modal-backdrop .entrega-handoff-context-grid {
+  justify-items: start;
+}
+
+#entrega-modal-backdrop .entrega-handoff-grid .field-group,
+#entrega-modal-backdrop .entrega-handoff-context-grid .field-group {
+  width: 100%;
+  max-width: 17.5rem;
+}
+
+#entrega-modal-backdrop .entrega-handoff-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+#entrega-modal-backdrop .entrega-handoff-context-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 17.5rem) minmax(0, 1fr);
+  gap: 14px 18px;
+  align-items: start;
+  width: 100%;
+}
+
+#entrega-modal-backdrop .entrega-handoff-context-grid .entrega-handoff-flags {
+  max-width: none;
+}
+
+#entrega-modal-backdrop .entrega-handoff-context-grid .field-group label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+#entrega-modal-backdrop .entrega-handoff-flags .entrega-check-section {
+  margin: 0;
+}
+
+#entrega-modal-backdrop .entrega-handoff-support {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+#entrega-modal-backdrop .entrega-handoff-support-card {
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--divider);
+  background: color-mix(in oklab, var(--bg) 40%, var(--surface));
+}
+
+#entrega-modal-backdrop .entrega-handoff-support-card.is-active {
+  border-color: color-mix(in oklab, var(--action) 26%, var(--border));
+  background: color-mix(in oklab, var(--action) 6%, var(--surface));
+  box-shadow: none;
+}
+
+#entrega-modal-backdrop .entrega-handoff-support-card__head {
+  margin-bottom: 0;
+}
+
+#entrega-modal-backdrop .entrega-handoff-support-detail {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--divider);
+}
+
+#entrega-modal-backdrop .entrega-handoff-support-detail.is-hidden {
+  display: none;
+}
+
+#entrega-modal-backdrop .entrega-handoff-support-detail .field-group {
+  margin: 0;
+}
+
+#entrega-modal-backdrop .entrega-vaso-dose {
+  display: grid;
+  gap: 10px;
+}
+
+#entrega-modal-backdrop .entrega-vaso-dose-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+
+#entrega-modal-backdrop .entrega-vaso-dose-input {
+  flex: 0 1 5.25rem;
+  width: 5.25rem;
+  min-width: 4.5rem;
+  max-width: 6rem;
+}
+
+#entrega-modal-backdrop .entrega-handoff-support-card select.profile-input {
+  max-width: 100%;
+}
+
+#entrega-modal-backdrop .entrega-vaso-unit-inline {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+#entrega-modal-backdrop .entrega-vaso-unit-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+}
+
+#entrega-modal-backdrop .entrega-vaso-unit-pill {
+  padding: 0.35rem 0.55rem;
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+#entrega-modal-backdrop .entrega-vaso-unit-pill-fixed {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid color-mix(in oklab, var(--action) 28%, var(--border));
+  background: var(--lab-chip-bg);
+  color: var(--action);
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+#entrega-modal-backdrop .entrega-vaso-unit-chips.is-hidden,
+#entrega-modal-backdrop .entrega-vaso-unit-pill-fixed.is-hidden {
+  display: none;
+}
+
+#entrega-modal-backdrop .entrega-handoff-notes {
+  margin: 0;
+}
+
+#entrega-modal-backdrop .entrega-handoff-summary {
+  margin: 10px 0 0;
+  padding: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+  border: none;
+  background: transparent;
+}
+
+#entrega-modal-backdrop .entrega-check-pill--alert input:checked + span {
+  border-color: color-mix(in oklab, var(--danger, #c53030) 45%, var(--border));
+  background: color-mix(in oklab, var(--danger, #c53030) 14%, var(--surface));
+  color: var(--danger, #c53030);
+}
+
+@media (max-width: 720px) {
+  #entrega-modal-backdrop .entrega-handoff-context-grid,
+  #entrega-modal-backdrop .entrega-handoff-support {
+    grid-template-columns: 1fr;
+  }
+}
+
+#entrega-modal-backdrop .entrega-form-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: clamp(20px, 2.5vw, 28px);
+  row-gap: 1.25rem;
+  align-items: start;
+  align-content: start;
+  flex: 0 1 auto;
+  min-height: 0;
+}
+
+#entrega-modal-backdrop .clinical-teams-section.entrega-panel {
+  border: none;
+  background: transparent;
+  padding: 0;
+  gap: 10px;
+}
+
+#entrega-modal-backdrop .entrega-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+}
+
+#entrega-modal-backdrop .entrega-panel-body {
+  flex: 1;
+  min-height: 0;
+}
+
+#entrega-modal-backdrop .entrega-panel--pendientes .entrega-panel-body.entrega-proc-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+#entrega-modal-backdrop .entrega-panel--pendientes .entrega-proc-list {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+#entrega-modal-backdrop .entrega-panel--pendientes .entrega-proc-form:not(.hidden) {
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+#entrega-modal-backdrop .entrega-panel--pendientes:has(.entrega-proc-form:not(.hidden)) .entrega-proc-list {
+  flex: 0 0 auto;
+  max-height: 9rem;
+}
+
+#entrega-modal-backdrop .entrega-inline-form {
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+}
+
+#entrega-modal-backdrop .entrega-inline-form__foot {
+  flex-shrink: 0;
+}
+
+#entrega-modal-backdrop .entrega-panel--vitals {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0;
+  gap: 10px;
+}
+
+#entrega-modal-backdrop .entrega-panel--vitals .entrega-panel-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#entrega-modal-backdrop .entrega-vitals-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: none;
+  padding: 0;
+  background: transparent;
+}
+
+#entrega-modal-backdrop .entrega-panel--pendientes .clinical-teams-section-head-row {
+  margin-bottom: 2px;
+}
+
+#entrega-modal-backdrop .entrega-proc-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   align-items: center;
 }
 
-.entrega-proc-form-checks label {
+#entrega-modal-backdrop .entrega-proc-toolbar .btn-med-secondary {
+  min-height: 36px;
+  font-size: 0.8125rem;
+}
+
+/* Vitals: stacked sections, label → controls, detail card for interval/shift */
+#entrega-modal-backdrop .entrega-vitals-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  gap: 0;
+}
+
+#entrega-modal-backdrop .entrega-vitals-form__scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-bottom: 8px;
+}
+
+#entrega-modal-backdrop .entrega-vitals-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+#entrega-modal-backdrop .entrega-vitals-section__title {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+#entrega-modal-backdrop .entrega-vitals-metrics {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+#entrega-modal-backdrop .entrega-vitals-metrics .entrega-check-pill {
+  flex: 1 1 auto;
+  min-width: 2.75rem;
+  max-width: calc(33.333% - 4px);
+}
+
+#entrega-modal-backdrop .entrega-vitals-metrics .entrega-check-pill span {
+  width: 100%;
+  text-align: center;
+}
+
+#entrega-modal-backdrop .entrega-vitals-freq {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  margin: 0;
+  min-width: 0;
+}
+
+#entrega-modal-backdrop .entrega-vitals-freq-detail-slot {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+#entrega-modal-backdrop .entrega-vitals-freq-detail-slot[aria-hidden='true'] {
+  display: none;
+}
+
+#entrega-modal-backdrop .entrega-vitals-freq-detail-slot .entrega-freq-panel {
+  margin: 0;
+}
+
+#entrega-modal-backdrop .entrega-vitals-freq-detail-slot .entrega-freq-panel.is-hidden {
+  display: none;
+}
+
+#entrega-modal-backdrop .entrega-freq-segment {
+  display: flex;
+  width: 100%;
+  margin: 0;
+  padding: 2px;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--bg) 88%, var(--surface));
+}
+
+#entrega-modal-backdrop .entrega-freq-segment .entrega-freq-mode-pill {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+#entrega-modal-backdrop .entrega-freq-segment .entrega-freq-mode-pill span {
+  width: 100%;
+  min-width: 0;
+  padding: 0.4rem 0.5rem;
+  border: none;
+  border-radius: calc(var(--radius-pill) - 2px);
+  background: transparent;
+  text-align: center;
+}
+
+#entrega-modal-backdrop .entrega-freq-segment .entrega-freq-mode-pill input:checked + span {
+  background: var(--surface);
+  box-shadow: 0 1px 2px color-mix(in oklab, var(--color-ink, #1a2332) 12%, transparent);
+}
+
+#entrega-modal-backdrop .entrega-freq-detail-card {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--bg) 45%, var(--surface));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#entrega-modal-backdrop .entrega-freq-detail__row {
+  display: grid;
+  grid-template-columns: 3.5rem minmax(0, 1fr);
+  gap: 8px 10px;
+  align-items: center;
+}
+
+#entrega-modal-backdrop .entrega-freq-detail__row-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+#entrega-modal-backdrop .entrega-freq-detail__row-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px 12px;
+  align-items: center;
+}
+
+#entrega-modal-backdrop .entrega-freq-detail__cell {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+#entrega-modal-backdrop .entrega-freq-detail__cell-label {
+  flex: 0 0 100%;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+#entrega-modal-backdrop .entrega-freq-detail__row-split .entrega-freq-detail__cell-label {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+#entrega-modal-backdrop .entrega-freq-detail__row-split .entrega-freq-detail__cell:first-child {
+  flex-wrap: nowrap;
+}
+
+#entrega-modal-backdrop .entrega-freq-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+#entrega-modal-backdrop .entrega-freq-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+#entrega-modal-backdrop .entrega-freq-interval-suffix {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+#entrega-modal-backdrop .entrega-freq-detail__cell--until .entrega-freq-until {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  width: 100%;
+}
+
+#entrega-modal-backdrop .entrega-freq-until-toggle span {
+  white-space: nowrap;
+}
+
+#entrega-modal-backdrop .entrega-freq-until .entrega-time-picker {
+  width: auto;
+  min-width: 0;
+  flex-shrink: 0;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 8px);
+  background: var(--surface);
+}
+
+#entrega-modal-backdrop .entrega-freq-until .entrega-time-picker--compact {
+  display: inline-flex;
+  align-items: center;
+}
+
+#entrega-modal-backdrop .entrega-freq-until .entrega-time-picker--compact .entrega-time-picker__part {
   flex-direction: row;
   align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+#entrega-modal-backdrop .entrega-freq-until .entrega-time-picker--compact .entrega-time-picker__hint {
+  flex: 0 0 auto;
+  font-size: 0.65rem;
+  text-align: center;
+  min-width: 0.85rem;
+}
+
+#entrega-modal-backdrop .entrega-freq-until .entrega-time-picker--compact .entrega-time-select {
+  flex: 0 0 auto;
+  width: 2.85rem;
+  min-width: 2.85rem;
+  min-height: 2rem;
+  padding-block: 0.2rem;
+  padding-inline: 1.1rem;
+  text-align: center;
+  text-align-last: center;
+  font-size: 0.8125rem;
+  background-position: right 0.3rem center;
+}
+
+#entrega-modal-backdrop .entrega-freq-until .entrega-time-sep {
+  padding-top: 0;
+  font-size: 0.95rem;
+}
+
+#entrega-modal-backdrop .entrega-freq-until-time.is-disabled {
+  opacity: 0.45;
+}
+
+#entrega-modal-backdrop .entrega-check-pill span {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.8125rem;
+}
+
+#entrega-modal-backdrop .entrega-freq-chip {
+  min-height: 2rem;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.8125rem;
+}
+
+#entrega-modal-backdrop .entrega-freq-step {
+  width: 2rem;
+  height: 2rem;
+  font-size: 1rem;
+}
+
+#entrega-modal-backdrop .entrega-freq-hours-input {
+  width: 2.75rem;
+  min-width: 2.75rem;
+  height: 2rem;
+  font-size: 0.875rem;
+}
+
+#entrega-modal-backdrop .entrega-vitals-summary {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in oklab, var(--border) 90%, transparent);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: 0 -6px 14px color-mix(in oklab, var(--surface) 88%, transparent);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 520px) {
+  #entrega-modal-backdrop .entrega-vitals-metrics .entrega-check-pill {
+    max-width: calc(50% - 4px);
+  }
+
+  #entrega-modal-backdrop .entrega-freq-detail__row-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+#entrega-modal-backdrop .entrega-modal-foot {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 14px clamp(18px, 2.5vw, 28px) 18px;
+  border-top: 1px solid var(--divider);
+  background: var(--surface);
+}
+
+/* lab.css .modal h3 — no aplicar margen/color legacy dentro de entrega */
+#entrega-modal-backdrop .modal.entrega-modal h3 {
+  margin-bottom: 6px;
+  color: var(--text);
+}
+
+#entrega-modal-backdrop .entrega-proc-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+#entrega-modal-backdrop .entrega-proc-delete.btn-med-secondary {
+  min-height: 32px;
+  padding: 6px 12px;
+  font-size: 0.75rem;
+}
+
+#entrega-modal-backdrop .entrega-check-section__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0.01em;
+  color: var(--text-muted);
+}
+
+#entrega-modal-backdrop .entrega-check-pill input:checked + span {
+  border-color: color-mix(in oklab, var(--action) 28%, var(--border));
+  background: var(--lab-chip-bg);
+  color: var(--action);
+}
+
+#entrega-modal-backdrop .entrega-freq-chip.is-selected {
+  border-color: color-mix(in oklab, var(--action) 28%, var(--border));
+  background: var(--lab-chip-bg);
+  color: var(--action);
+}
+
+#entrega-modal-backdrop .entrega-inline-form {
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+#entrega-modal-backdrop .entrega-inline-form__head {
+  background: color-mix(in oklab, var(--surface) 98%, var(--bg));
+}
+
+#entrega-modal-backdrop .entrega-inline-form__grid .field-group label {
+  text-transform: none;
+  letter-spacing: 0.01em;
+  font-size: 0.75rem;
+}
+
+html.dark #entrega-modal-backdrop.entrega-modal-backdrop {
+  background: color-mix(in oklab, #000 58%, transparent);
+}
+
+html.dark #entrega-modal-backdrop .modal.entrega-modal {
+  border-color: color-mix(in oklab, var(--color-ink, #0f172a) 35%, var(--border));
+  box-shadow: 0 28px 56px color-mix(in oklab, #000 48%, transparent);
+}
+
+html.dark #entrega-modal-backdrop .entrega-modal-head {
+  background: var(--surface);
+  border-bottom-color: var(--divider);
+}
+
+html.dark #entrega-modal-backdrop .entrega-modal-foot {
+  background: var(--surface);
+  border-top-color: var(--divider);
+}
+
+@media (max-width: 960px) {
+  #entrega-modal-backdrop .entrega-handoff-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 780px) {
+  #entrega-modal-backdrop .entrega-handoff-grid,
+  #entrega-modal-backdrop .entrega-form-main {
+    grid-template-columns: 1fr;
+  }
+
+  #entrega-modal-backdrop .entrega-form-main {
+    min-height: 0;
+  }
+}
+
+.entrega-inline-form {
+  margin-top: 0.35rem;
+  border: 1px solid color-mix(in oklab, var(--action) 22%, var(--border));
+  border-radius: var(--radius-lg, 12px);
+  background: color-mix(in oklab, var(--surface) 94%, var(--bg));
+  overflow: hidden;
+}
+
+.entrega-inline-form__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in oklab, var(--action) 6%, var(--surface));
+}
+
+.entrega-inline-form__title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.entrega-inline-form__close {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.35rem;
+  line-height: 1;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.entrega-inline-form__close:hover {
+  color: var(--text);
+  background: color-mix(in oklab, var(--text) 8%, transparent);
+}
+
+.entrega-inline-form__grid {
+  display: grid;
+  grid-template-columns: minmax(7.5rem, auto) minmax(0, 1fr) minmax(10.5rem, auto);
+  gap: 0.65rem 0.75rem;
+  padding: 0.75rem 0.75rem 0.35rem;
+  align-items: end;
+}
+
+.entrega-inline-form__grid .field-group {
+  margin: 0;
+}
+
+.entrega-inline-form__grid .field-group label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.entrega-inline-form__label-wide {
+  grid-column: span 1;
+}
+
+@media (max-width: 480px) {
+  .entrega-inline-form__grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .entrega-inline-form__label-wide {
+    grid-column: 1 / -1;
+  }
+  .entrega-inline-form__time {
+    grid-column: span 1;
+  }
+}
+
+.entrega-field-label-block {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.entrega-time-combo,
+.entrega-time-picker {
+  display: flex;
+  align-items: stretch;
+  gap: 0.3rem;
+  width: 100%;
+}
+
+.entrega-time-picker {
+  box-sizing: border-box;
+  min-width: 10rem;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 8px);
+  background: var(--surface);
+}
+
+.entrega-time-picker__part {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.1rem;
+  min-width: 3.35rem;
+}
+
+.entrega-time-picker__hint {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1;
+}
+
+.entrega-time-select {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 3.1rem;
+  min-height: 2.15rem;
+  padding-block: 0.3rem;
+  padding-inline: 1.35rem;
+  text-align: center;
+  text-align-last: center;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  border: none;
+  background-color: transparent;
+  color: var(--text);
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.35rem center;
+  background-size: 0.75rem;
+}
+
+.entrega-time-picker .entrega-time-select {
+  border-radius: var(--radius-sm, 6px);
+}
+
+.entrega-time-picker .entrega-time-select:hover {
+  background-color: color-mix(in oklab, var(--action) 6%, transparent);
+}
+
+.entrega-time-picker .entrega-time-select:focus {
+  outline: 2px solid color-mix(in oklab, var(--action) 45%, transparent);
+  outline-offset: 1px;
+}
+
+.entrega-inline-form__time .entrega-time-picker {
+  min-width: 10.25rem;
+}
+
+.entrega-inline-form__grid .field-group select.profile-input {
+  min-width: 0;
+  width: 100%;
+}
+
+.entrega-time-sep {
+  flex: 0 0 auto;
+  align-self: center;
+  padding-top: 0.85rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  line-height: 1;
+  user-select: none;
+}
+
+.entrega-check-section {
+  padding: 0.35rem 0.75rem 0.55rem;
+}
+
+.entrega-check-section__label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.entrega-check-pills {
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.35rem;
 }
 
-.entrega-proc-form-actions {
+.entrega-check-pill {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
+  user-select: none;
+}
+
+.entrega-check-pill input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.entrega-check-pill span {
+  display: inline-block;
+  padding: 0.3rem 0.65rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
+}
+
+.entrega-check-pill input:checked + span {
+  border-color: color-mix(in oklab, var(--action) 50%, var(--border));
+  background: color-mix(in oklab, var(--action) 16%, var(--surface));
+  color: var(--text);
+}
+
+.entrega-check-pill input:focus-visible + span {
+  outline: 2px solid var(--action);
+  outline-offset: 2px;
+}
+
+.entrega-inline-form__foot {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border-top: 1px solid var(--border);
+  background: color-mix(in oklab, var(--surface) 88%, var(--bg));
+}
+
+.entrega-inline-form__foot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
   gap: 0.5rem;
-  margin-top: 0.5rem;
+  margin-left: auto;
+}
+
+.entrega-inline-form__foot-actions--end {
+  width: 100%;
+}
+
+.entrega-foot-muted {
+  border: none;
+  background: none;
+  padding: 0.35rem 0.25rem;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.entrega-foot-muted:hover {
+  color: var(--action);
+}
+
+.entrega-inline-form__foot .btn-cancel,
+.entrega-inline-form__foot .btn-save {
+  min-height: 38px;
+  padding: 0.4rem 1.1rem;
+  font-size: 0.875rem;
+}
+
+.entrega-field-hint {
+  margin: 0 0 0.35rem;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+.entrega-proc-toolbar {
+  display: inline-flex;
+  gap: 0.35rem;
+  margin-left: auto;
+}
+
+.entrega-toolbar-btn {
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.35rem 0.65rem;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.entrega-toolbar-btn--ghost {
+  background: transparent;
+  color: var(--text-muted);
+  border-color: transparent;
+}
+
+.entrega-toolbar-btn--ghost:hover {
+  color: var(--text);
+  background: color-mix(in oklab, var(--action) 8%, var(--surface));
+}
+
+.entrega-toolbar-btn--primary {
+  border-color: color-mix(in oklab, var(--action) 40%, var(--border));
+  background: color-mix(in oklab, var(--action) 12%, var(--surface));
+}
+
+.entrega-vitals-panel {
+  border: 1px solid color-mix(in oklab, var(--action) 18%, var(--border));
+  border-radius: var(--radius-lg, 12px);
+  padding: 0.65rem 0.75rem;
+  background: color-mix(in oklab, var(--surface) 94%, var(--bg));
+}
+
+.entrega-vitals-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.65rem;
+}
+
+.entrega-vitals-metrics .entrega-check-pill span {
+  min-width: 4.5rem;
+  text-align: center;
+}
+
+.entrega-vitals-freq {
+  margin-top: 0.35rem;
+}
+
+.entrega-freq-modes {
+  margin-bottom: 0.5rem;
+}
+
+.entrega-freq-mode-pill span {
+  min-width: 5.5rem;
+  text-align: center;
+}
+
+.entrega-freq-panel {
+  margin-top: 0.35rem;
+}
+
+.entrega-freq-panel.is-hidden {
+  display: none;
+}
+
+.entrega-freq-interval-card {
+  border: 1px solid color-mix(in oklab, var(--border) 85%, transparent);
+  border-radius: var(--radius-lg, 12px);
+  padding: 0.6rem 0.65rem;
+  background: color-mix(in oklab, var(--surface) 96%, var(--bg));
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.entrega-freq-interval-hint {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.entrega-freq-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.entrega-freq-chip {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.entrega-freq-chip:hover {
+  border-color: color-mix(in oklab, var(--action) 35%, var(--border));
+}
+
+.entrega-freq-chip.is-selected {
+  border-color: color-mix(in oklab, var(--action) 50%, var(--border));
+  background: color-mix(in oklab, var(--action) 14%, var(--surface));
+  color: var(--action);
+}
+
+.entrega-freq-interval-custom {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.65rem;
+}
+
+.entrega-freq-interval-label,
+.entrega-freq-interval-suffix {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.entrega-freq-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.entrega-freq-step {
+  width: 2.1rem;
+  height: 2.1rem;
+  flex-shrink: 0;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.entrega-freq-step:hover {
+  border-color: color-mix(in oklab, var(--action) 35%, var(--border));
+}
+
+.entrega-freq-hours-input {
+  box-sizing: border-box;
+  width: 3.75rem;
+  min-width: 3.75rem;
+  height: 2.1rem;
+  flex-shrink: 0;
+  text-align: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 8px);
+  padding: 0 0.35rem;
+  font-size: 1rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  background: var(--surface);
+  color: var(--text);
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.entrega-freq-hours-input::-webkit-outer-spin-button,
+.entrega-freq-hours-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.entrega-freq-until {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+}
+
+.entrega-freq-until-toggle {
+  cursor: pointer;
+  user-select: none;
+}
+
+.entrega-freq-until-time.is-disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.entrega-freq-until .entrega-time-picker {
+  min-width: 9.5rem;
+}
+
+.entrega-vitals-summary {
+  margin: 0.5rem 0 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
 }
 
 .entrega-proc-delete {
@@ -491,110 +1872,208 @@ html.ui-density-guardia #header-app-mode-chip {
   line-height: 1.2;
 }
 
-.guardia-summary {
-  display: flex;
-  gap: 15px;
-  margin: 0 0 1rem;
-  flex-wrap: wrap;
+/* Hallmark · guardia census — quiet workbench, high density (#appcontent-guardia) */
+#appcontent-guardia .guardia-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 14px;
 }
 
-.guardia-summary-tile {
+#appcontent-guardia .guardia-summary-tile {
   background: var(--surface);
   border-radius: var(--radius-md);
-  padding: 12px 20px;
-  flex: 1;
-  min-width: 180px;
+  padding: 10px 14px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   border: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
 }
 
-.guardia-summary-tile--critical {
-  border-color: color-mix(in oklab, var(--error) 42%, var(--border));
-  background: color-mix(in oklab, var(--error) 5%, var(--surface));
+#appcontent-guardia .guardia-summary-tile--critical {
+  border-left: 3px solid var(--error);
+  padding-left: 11px;
 }
 
-.guardia-summary-label {
+#appcontent-guardia .guardia-summary-label {
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+#appcontent-guardia .guardia-summary-value {
+  font-size: 1.375rem;
   font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
-.guardia-summary-value {
-  font-size: 1.6rem;
-  font-weight: 700;
   font-family: var(--font-mono, ui-monospace, monospace);
-  line-height: 1.1;
-  margin-top: 4px;
+  line-height: 1.15;
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
 }
 
-.guardia-summary-value--critical {
+#appcontent-guardia .guardia-summary-value--critical {
   color: var(--error);
 }
 
-.guardia-summary-value--muted {
-  color: var(--text-muted);
-}
-
-.guardia-summary-icon {
+#appcontent-guardia .guardia-summary-icon {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  opacity: 0.72;
   color: var(--text-muted);
 }
 
-.guardia-summary-tile--critical .guardia-summary-icon {
+#appcontent-guardia .guardia-summary-tile--critical .guardia-summary-icon {
   color: var(--error);
+  opacity: 1;
 }
 
-.patient-chips-grid {
+#appcontent-guardia .patient-chips-grid,
+.guardia-census-panel .patient-chips-grid {
+  padding: 0;
+}
+
+#appcontent-guardia .patient-chips-grid--guardia,
+.guardia-census-panel .patient-chips-grid--guardia {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 15px;
+  grid-template-columns: repeat(auto-fill, minmax(224px, 1fr));
+  gap: 8px;
+  align-items: stretch;
 }
 
-.patient-chips-grid .patient-chip-card {
-  padding: 12px;
+#appcontent-guardia .patient-chips-grid--guardia .patient-chip-card,
+.guardia-census-panel .patient-chips-grid--guardia .patient-chip-card {
+  position: relative;
+  padding: 10px 11px 9px;
+  min-height: 122px;
+  height: 100%;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+  gap: 5px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-left-color: color-mix(in oklab, var(--border) 80%, transparent);
+  background: var(--surface);
+  box-shadow: none;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
 }
 
-.patient-chips-grid .patient-chip-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow);
+#appcontent-guardia .patient-chips-grid--guardia .patient-chip-card:hover,
+.guardia-census-panel .patient-chips-grid--guardia .patient-chip-card:hover {
+  transform: none;
+  border-color: color-mix(in oklab, var(--action) 28%, var(--border));
+  box-shadow: var(--shadow-sm);
 }
 
-.patient-chip-header {
+#appcontent-guardia .patient-chips-grid--guardia .patient-chip-card:focus-visible,
+.guardia-census-panel .patient-chips-grid--guardia .patient-chip-card:focus-visible {
+  outline: 2px solid var(--color-focus-ring, color-mix(in oklab, var(--action) 35%, transparent));
+  outline-offset: 2px;
+}
+
+#appcontent-guardia .patient-chips-grid--guardia .priority-critical,
+.guardia-census-panel .patient-chips-grid--guardia .priority-critical {
+  border-left-color: var(--error);
+  border-color: color-mix(in oklab, var(--error) 22%, var(--border));
+}
+
+#appcontent-guardia .patient-chip-head,
+.guardia-census-panel .patient-chip-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 8px;
+  min-height: 18px;
   min-width: 0;
 }
 
-.patient-chip-location {
+#appcontent-guardia .patient-chip-bed,
+.guardia-census-panel .patient-chip-bed {
   font-family: var(--font-mono);
-  font-size: 0.85rem;
-  background: color-mix(in oklab, var(--surface) 88%, var(--bg));
-  padding: 3px 8px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  flex-shrink: 0;
-}
-
-.patient-chip-name {
-  font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex: 1;
+  max-width: 58%;
+}
+
+#appcontent-guardia .patient-chip-badges,
+.guardia-census-panel .patient-chip-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 5px;
+  min-height: 18px;
   min-width: 0;
+  flex: 1;
+}
+
+#appcontent-guardia .patient-chip-badges .patient-chip-symbols,
+.guardia-census-panel .patient-chip-badges .patient-chip-symbols {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+#appcontent-guardia .patient-chip-badges .dnr-badge,
+.guardia-census-panel .patient-chip-badges .dnr-badge {
+  margin: 0;
+  padding: 0 5px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--error) 8%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--error) 35%, var(--border));
+}
+
+#appcontent-guardia .patient-chip-symbol,
+.guardia-census-panel .patient-chip-symbol {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+#appcontent-guardia .patient-chip-critical-hint,
+.guardia-census-panel .patient-chip-critical-hint {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--error);
+  flex-shrink: 0;
+}
+
+.patient-chip-symbol--critico {
+  border-color: color-mix(in oklab, var(--error) 45%, var(--border));
+  color: var(--error);
+}
+
+.patient-chip-symbol--negativas {
+  border-color: color-mix(in oklab, var(--todo-prio-media, #c9a227) 40%, var(--border));
+  color: var(--todo-prio-media, #c9a227);
+}
+
+.patient-chip-symbol--show {
+  border-color: color-mix(in oklab, var(--action) 35%, var(--border));
+  color: var(--action);
 }
 
 .priority-dot {
@@ -612,8 +2091,24 @@ html.ui-density-guardia #header-app-mode-chip {
   background: var(--todo-prio-media);
 }
 
-.patient-chip-dx {
-  font-size: 0.8rem;
+#appcontent-guardia .patient-chip-name,
+.guardia-census-panel .patient-chip-name {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  color: var(--text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+#appcontent-guardia .patient-chip-dx,
+.guardia-census-panel .patient-chip-dx {
+  font-size: 0.75rem;
   color: var(--text-muted);
   margin: 0;
   line-height: 1.35;
@@ -621,7 +2116,66 @@ html.ui-density-guardia #header-app-mode-chip {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 2.2em;
+  flex: 1 1 auto;
+}
+
+#appcontent-guardia .patient-chip-vitals,
+.guardia-census-panel .patient-chip-vitals {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  width: 100%;
+  margin-top: auto;
+  padding: 5px 8px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.2;
+  border-radius: var(--radius-sm);
+  box-sizing: border-box;
+}
+
+#appcontent-guardia .patient-chip-vitals__text,
+.guardia-census-panel .patient-chip-vitals__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1;
+}
+
+#appcontent-guardia .patient-chip-vitals.nominal,
+.guardia-census-panel .patient-chip-vitals.nominal {
+  background: color-mix(in oklab, var(--success) 10%, var(--surface));
+  color: var(--success);
+}
+
+#appcontent-guardia .patient-chip-vitals.breached,
+.guardia-census-panel .patient-chip-vitals.breached {
+  background: color-mix(in oklab, var(--error) 10%, var(--surface));
+  color: var(--error);
+}
+
+#appcontent-guardia .patient-chip-vitals.warning,
+.guardia-census-panel .patient-chip-vitals.warning {
+  background: color-mix(in oklab, var(--todo-prio-media, #c9a227) 12%, var(--surface));
+  color: var(--todo-prio-media, #c9a227);
+  animation: none;
+}
+
+#appcontent-guardia .patient-chip-vitals.nominal-gray,
+.guardia-census-panel .patient-chip-vitals.nominal-gray {
+  background: color-mix(in oklab, var(--text-muted) 8%, var(--surface));
+  color: var(--text-muted);
+}
+
+.vitals-altered-badge {
+  margin-left: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--todo-prio-media);
 }
 
 .vitals-banner {
@@ -672,33 +2226,68 @@ html.ui-density-guardia #header-app-mode-chip {
   }
 }
 
-.patient-chip-footer {
-  border-top: 1px solid var(--divider);
-  padding-top: 8px;
+#appcontent-guardia .patient-chip-footer,
+.guardia-census-panel .patient-chip-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-  font-size: 0.75rem;
+  padding-top: 5px;
+  border-top: 1px solid var(--divider);
+  font-size: 0.6875rem;
+  min-width: 0;
 }
 
-.patient-chip-tasks {
+#appcontent-guardia .patient-chip-tasks,
+.guardia-census-panel .patient-chip-tasks {
   color: var(--text-muted);
-  background: color-mix(in oklab, var(--surface) 88%, var(--bg));
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.patient-chip-labs {
+#appcontent-guardia .patient-chip-labs,
+.guardia-census-panel .patient-chip-labs {
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: 0.6875rem;
   color: var(--error);
   text-align: right;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 55%;
+  flex: 1;
+  min-width: 0;
+}
+
+#appcontent-guardia .vitals-altered-badge,
+.guardia-census-panel .vitals-altered-badge {
+  flex-shrink: 0;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--todo-prio-media, #c9a227);
+  text-transform: none;
+}
+
+@media (min-width: 1400px) {
+  #appcontent-guardia .patient-chips-grid--guardia,
+  .guardia-census-panel .patient-chips-grid--guardia {
+    grid-template-columns: repeat(auto-fill, minmax(208px, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  #appcontent-guardia .patient-chips-grid--guardia,
+  .guardia-census-panel .patient-chips-grid--guardia {
+    grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
+    gap: 7px;
+  }
+
+  #appcontent-guardia .patient-chips-grid--guardia .patient-chip-card,
+  .guardia-census-panel .patient-chips-grid--guardia .patient-chip-card {
+    min-height: 116px;
+  }
 }
 
 .clinical-registration-modal {

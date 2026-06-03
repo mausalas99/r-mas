@@ -1,5 +1,7 @@
 import { describe, it, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
+import { serializePendientesJson } from '../../../lib/entrega/entrega-pendientes.mjs';
+import { defaultHandoffContext } from '../../../lib/entrega/entrega-handoff-context.mjs';
 import {
   calcVitalsBanner,
   filterR4FollowUpPinPatients,
@@ -10,7 +12,7 @@ import {
 describe('calcVitalsBanner', () => {
   it('returns Rutina for None frequency', () => {
     const r = calcVitalsBanner(new Date().toISOString(), 'None');
-    assert.equal(r.str, 'Rutina');
+    assert.match(r.str, /Rutina/);
     assert.equal(r.cls, 'nominal-gray');
   });
 
@@ -121,6 +123,41 @@ describe('UnifiedPatientGridBoard', () => {
     assert.equal(dividers[1].textContent, 'Eme');
   });
 
+  it('renders entrega marker symbols CR NF SH without emoji', () => {
+    if (typeof document === 'undefined') return;
+    const handoff = defaultHandoffContext();
+    handoff.signedRefusal = true;
+    handoff.show = true;
+    const json = serializePendientesJson({ version: 2, handoffContext: handoff, items: [] });
+    const board = new UnifiedPatientGridBoard('test-guardia-grid');
+    board.drawCensusGrid(
+      [
+        {
+          id: 'p1',
+          name: 'Test',
+          entregaMarkers: ['critico', 'negativas', 'show'],
+        },
+      ],
+      new Map([['p1', { is_critical: 1, pendientes_json: json }]])
+    );
+    const symbols = host.querySelectorAll('.patient-chip-symbol');
+    assert.equal(symbols.length, 3);
+    assert.equal(symbols[0].textContent, 'CR');
+    assert.equal(symbols[1].textContent, 'NF');
+    assert.equal(symbols[2].textContent, 'SH');
+  });
+
+  it('always renders meta row for uniform chip layout', () => {
+    if (typeof document === 'undefined') return;
+    const board = new UnifiedPatientGridBoard('test-guardia-grid');
+    board.drawCensusGrid([{ id: 'p1', name: 'WENDY BERENICE ORTIZ RODRIGUEZ' }], new Map());
+    assert.ok(host.classList.contains('patient-chips-grid--guardia'));
+    const badges = host.querySelector('.patient-chip-badges');
+    assert.ok(badges);
+    assert.equal(badges.querySelectorAll('.patient-chip-symbol').length, 0);
+    assert.ok(host.querySelector('.patient-chip-vitals'));
+  });
+
   it('shows DNR badge when negativa_maniobras_firmada is set', () => {
     if (typeof document === 'undefined') return;
     const board = new UnifiedPatientGridBoard('test-guardia-grid');
@@ -157,6 +194,26 @@ describe('UnifiedPatientGridBoard', () => {
     try {
       board.handleChipClick('p9');
       assert.equal(selected, 'p9');
+    } finally {
+      if (originalSelect === undefined) delete globalThis.selectPatient;
+      else globalThis.selectPatient = originalSelect;
+    }
+  });
+
+  it('GUARDIA context with chipOpensEntrega invokes entrega callback', () => {
+    let entregaCalled = false;
+    const board = new UnifiedPatientGridBoard('test-guardia-grid', 'GUARDIA');
+    board.chipOpensEntrega = true;
+    board.onChipClick = (id) => {
+      entregaCalled = id === 'p1';
+    };
+    const originalSelect = globalThis.selectPatient;
+    globalThis.selectPatient = () => {
+      throw new Error('selectPatient should not run when chipOpensEntrega');
+    };
+    try {
+      board.handleChipClick('p1');
+      assert.equal(entregaCalled, true);
     } finally {
       if (originalSelect === undefined) delete globalThis.selectPatient;
       else globalThis.selectPatient = originalSelect;

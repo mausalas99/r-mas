@@ -535,21 +535,76 @@ function renderMyCycleEditBlock(team, user) {
     </div>`;
 }
 
+/** @param {object} team */
+function renderTeamManageActionsHtml(team) {
+  const teamId = escapeAttr(String(team.team_id || ''));
+  const teamNameAttr = escapeAttr(String(team.name || 'Equipo'));
+  return `
+    <div class="clinical-teams-manage-actions">
+      <button type="button" class="btn-med-secondary clinical-teams-edit-btn" data-team-id="${teamId}">Editar</button>
+      <button type="button" class="btn-med-secondary clinical-teams-delete-btn" data-team-id="${teamId}" data-team-name="${teamNameAttr}">Eliminar</button>
+    </div>`;
+}
+
+/** @param {object} team */
+function renderTeamEditPanelHtml(team) {
+  const teamId = escapeAttr(String(team.team_id || ''));
+  const name = escapeHtml(String(team.name || ''));
+  const sala = String(team.sala || '').trim();
+  return `
+    <div class="clinical-teams-edit-panel" hidden data-team-id="${teamId}">
+      <form class="clinical-teams-edit-form" data-team-id="${teamId}">
+        <div class="field-group">
+          <label for="clinical-edit-name-${teamId}">Nombre del equipo</label>
+          <input id="clinical-edit-name-${teamId}" type="text" class="profile-input clinical-teams-edit-name" value="${name}" required>
+        </div>
+        <div class="field-group">
+          <label for="clinical-edit-sala-${teamId}">Sala</label>
+          <select id="clinical-edit-sala-${teamId}" class="profile-input clinical-teams-edit-sala" required>
+            ${CLINICAL_SALAS.map(
+              (s) =>
+                `<option value="${escapeAttr(s)}" ${sala === s ? 'selected' : ''}>${escapeHtml(s)}</option>`
+            ).join('')}
+          </select>
+        </div>
+        <div class="clinical-teams-edit-form-actions">
+          <button type="submit" class="btn-save">Guardar cambios</button>
+          <button type="button" class="btn-med-secondary clinical-teams-edit-cancel">Cancelar</button>
+        </div>
+      </form>
+    </div>`;
+}
+
+/** @param {object} team */
+function renderTeamManageBlock(team) {
+  const user = clinicalSessionContext.user || {};
+  if (!canManageTeamRoster(user)) return { actionsHtml: '', editPanelHtml: '' };
+  return {
+    actionsHtml: renderTeamManageActionsHtml(team),
+    editPanelHtml: renderTeamEditPanelHtml(team),
+  };
+}
+
 /**
  * @param {object} team
  */
 function renderJoinedTeamCard(team) {
+  const user = clinicalSessionContext.user || {};
   const teamId = String(team.team_id || '');
   const members = Array.isArray(team.members) ? team.members : [];
-  const user = clinicalSessionContext.user || {};
+  const manage = renderTeamManageBlock(team);
 
   return `
     <article class="clinical-teams-card clinical-teams-card--mine" data-team-id="${escapeAttr(teamId)}">
-      <div class="clinical-teams-card-top">
-        <p class="clinical-teams-card-eyebrow">Residente líder</p>
-        <h5 class="clinical-teams-card-title">${escapeHtml(team.name || 'Equipo')}</h5>
-        ${renderTeamMetaLine(team)}
+      <div class="clinical-teams-card-top${manage.actionsHtml ? ' clinical-teams-card-top--directory' : ''}">
+        <div class="clinical-teams-card-top-text">
+          <p class="clinical-teams-card-eyebrow">Residente líder</p>
+          <h5 class="clinical-teams-card-title">${escapeHtml(team.name || 'Equipo')}</h5>
+          ${renderTeamMetaLine(team)}
+        </div>
+        ${manage.actionsHtml ? `<div class="clinical-teams-card-actions">${manage.actionsHtml}</div>` : ''}
       </div>
+      ${manage.editPanelHtml}
       ${renderMembersBlock(members)}
       ${renderMyCycleEditBlock(team, user)}
       <div class="clinical-teams-invite-box">
@@ -579,23 +634,27 @@ function renderJoinedTeamCard(team) {
 
 /**
  * @param {object} team
- * @param {{ actionHtml?: string }} [opts]
+ * @param {{ actionHtml?: string, manageHtml?: string, editPanelHtml?: string }} [opts]
  */
 function renderDirectoryTeamCard(team, opts = {}) {
   const teamId = String(team.team_id || '');
   const members = Array.isArray(team.members) ? team.members : [];
   const action = opts.actionHtml || '';
+  const manage = opts.manageHtml || '';
+  const editPanel = opts.editPanelHtml || '';
+  const sideActions = [action, manage].filter(Boolean).join('');
 
   return `
-    <article class="clinical-teams-card clinical-teams-card--directory">
+    <article class="clinical-teams-card clinical-teams-card--directory" data-team-id="${escapeAttr(teamId)}">
       <div class="clinical-teams-card-top clinical-teams-card-top--directory">
         <div class="clinical-teams-card-top-text">
           <p class="clinical-teams-card-eyebrow">Equipo en sala</p>
           <h5 class="clinical-teams-card-title">${escapeHtml(team.name || '')}</h5>
           ${renderTeamMetaLine(team)}
         </div>
-        ${action ? `<div class="clinical-teams-card-actions">${action}</div>` : ''}
+        ${sideActions ? `<div class="clinical-teams-card-actions">${sideActions}</div>` : ''}
       </div>
+      ${editPanel}
       ${renderMembersBlock(members, { compact: true })}
     </article>`;
 }
@@ -1264,20 +1323,6 @@ async function renderDirectorySectionHtml(opts) {
   const res = await api.dbClinicalTeamsListBySala(listOpts);
   let directory = res?.ok && Array.isArray(res.teams) ? res.teams : [];
   directory = directory.filter((t) => !t.isMember);
-  if (!directory.length) {
-    const label =
-      browseSala === '__all__' ? 'ninguna sala' : escapeHtml(String(browseSala || homeSala));
-    const emptyMsg = elevated
-      ? `No hay otros equipos en ${label}. Los tuyos aparecen arriba.`
-      : `No hay otros equipos disponibles en ${label}.`;
-    return `<section class="clinical-teams-section clinical-teams-section--directory">
-      <div class="clinical-teams-section-intro">
-        <h4 class="clinical-teams-section-title">${elevated ? 'Explorar sala' : `Otros equipos · ${escapeHtml(browseSala || homeSala)}`}</h4>
-        <p class="clinical-teams-section-desc">Equipos de la sala a los que puedes unirte.</p>
-      </div>
-      <p class="clinical-teams-empty">${emptyMsg}</p>
-    </section>`;
-  }
 
   const browseControl = elevated
     ? `<label class="clinical-teams-browse-label" for="clinical-browse-sala">Sala</label>
@@ -1289,19 +1334,6 @@ async function renderDirectorySectionHtml(opts) {
           <option value="__all__" ${browseSala === '__all__' ? 'selected' : ''}>Todas las salas</option>
         </select>`
     : '';
-
-  const cards = directory
-    .map((team) => {
-      const teamId = String(team.team_id || '');
-      let action = '';
-      if (team.joinEligible) {
-        action = `<button type="button" class="btn-med-secondary clinical-teams-join-btn" data-team-id="${escapeAttr(teamId)}">Unirme</button>`;
-      } else if (team.joinReason) {
-        action = `<span class="clinical-teams-join-hint">${escapeHtml(team.joinReason)}</span>`;
-      }
-      return renderDirectoryTeamCard(team, { actionHtml: action });
-    })
-    .join('');
 
   const sectionTitle = elevated
     ? browseSala === '__all__'
@@ -1322,6 +1354,36 @@ async function renderDirectorySectionHtml(opts) {
         <p class="clinical-teams-section-desc">Equipos de la sala a los que puedes unirte.</p>
       </div>`;
 
+  if (!directory.length) {
+    const label =
+      browseSala === '__all__' ? 'ninguna sala' : escapeHtml(String(browseSala || homeSala));
+    const emptyMsg = elevated
+      ? `No hay otros equipos en ${label}. Los tuyos aparecen arriba.`
+      : `No hay otros equipos disponibles en ${label}.`;
+    return `<section class="clinical-teams-section clinical-teams-section--directory">
+      ${headRow}
+      <p class="clinical-teams-empty">${emptyMsg}</p>
+    </section>`;
+  }
+
+  const cards = directory
+    .map((team) => {
+      const teamId = String(team.team_id || '');
+      let action = '';
+      if (team.joinEligible) {
+        action = `<button type="button" class="btn-med-secondary clinical-teams-join-btn" data-team-id="${escapeAttr(teamId)}">Unirme</button>`;
+      } else if (team.joinReason) {
+        action = `<span class="clinical-teams-join-hint">${escapeHtml(team.joinReason)}</span>`;
+      }
+      const manage = elevated ? renderTeamManageBlock(team) : { actionsHtml: '', editPanelHtml: '' };
+      return renderDirectoryTeamCard(team, {
+        actionHtml: action,
+        manageHtml: manage.actionsHtml,
+        editPanelHtml: manage.editPanelHtml,
+      });
+    })
+    .join('');
+
   return `
     <section class="clinical-teams-section clinical-teams-section--directory">
       ${headRow}
@@ -1340,6 +1402,121 @@ function wireBrowseSalaControl(elevated) {
     } catch (_e) {}
     void renderClinicalTeamsPanel({ silent: true });
   });
+}
+
+function closeTeamEditPanels(exceptPanel) {
+  document.querySelectorAll('.clinical-teams-edit-panel').forEach((panel) => {
+    if (exceptPanel && panel === exceptPanel) return;
+    panel.hidden = true;
+  });
+}
+
+function wireTeamManageModalDelegation() {
+  const bd = teamsModalEl();
+  if (!bd || bd._rpcTeamManageDelegated) return;
+  bd._rpcTeamManageDelegated = true;
+
+  bd.addEventListener('click', (ev) => {
+    if (!canManageTeamRoster(clinicalSessionContext.user)) return;
+    const target = ev.target instanceof Element ? ev.target : null;
+    if (!target) return;
+
+    const editBtn = target.closest('.clinical-teams-edit-btn');
+    if (editBtn) {
+      const card = editBtn.closest('.clinical-teams-card');
+      const panel = card?.querySelector('.clinical-teams-edit-panel');
+      if (panel instanceof HTMLElement) {
+        closeTeamEditPanels(panel);
+        panel.hidden = !panel.hidden;
+      }
+      return;
+    }
+
+    const cancelBtn = target.closest('.clinical-teams-edit-cancel');
+    if (cancelBtn) {
+      const panel = cancelBtn.closest('.clinical-teams-edit-panel');
+      if (panel instanceof HTMLElement) panel.hidden = true;
+      return;
+    }
+
+    const deleteBtn = target.closest('.clinical-teams-delete-btn');
+    if (deleteBtn instanceof HTMLButtonElement) {
+      void handleDeleteTeamClick(deleteBtn);
+    }
+  });
+}
+
+/** @param {HTMLButtonElement} btn */
+async function handleDeleteTeamClick(btn) {
+  const teamId = String(btn.dataset.teamId || '').trim();
+  const teamName = String(btn.dataset.teamName || 'este equipo').trim();
+  if (!teamId) return;
+
+  const ok = window.confirm(
+    `¿Eliminar el equipo «${teamName}»?\n\nSe quitarán sus integrantes. Esta acción no se puede deshacer.`
+  );
+  if (!ok) return;
+
+  const userId = currentUserId();
+  const api = dbApi();
+  if (!userId || !api || typeof api.dbClinicalTeamsArchive !== 'function') {
+    toast('No se pudo eliminar el equipo.', 'error');
+    return;
+  }
+
+  btn.disabled = true;
+  const res = await api.dbClinicalTeamsArchive({ teamId, callerUserId: userId });
+  btn.disabled = false;
+
+  if (!res || res.ok === false) {
+    toast(res?.error || 'No se eliminó el equipo.', 'error');
+    return;
+  }
+
+  toast('Equipo eliminado.', 'success');
+  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
+}
+
+/** @param {Event} ev @param {HTMLFormElement} form */
+async function handleEditTeamSubmit(ev, form) {
+  ev.preventDefault();
+  const teamId = String(form.dataset.teamId || '').trim();
+  const nameInput = form.querySelector('.clinical-teams-edit-name');
+  const salaSelect = form.querySelector('.clinical-teams-edit-sala');
+  const name =
+    nameInput instanceof HTMLInputElement ? String(nameInput.value || '').trim() : '';
+  const sala =
+    salaSelect instanceof HTMLSelectElement ? String(salaSelect.value || '').trim() : '';
+
+  if (!teamId || !name || !sala) {
+    toast('Indica nombre y sala.', 'error');
+    return;
+  }
+
+  const userId = currentUserId();
+  const api = dbApi();
+  if (!userId || !api || typeof api.dbClinicalTeamsUpdate !== 'function') {
+    toast('No se pudo guardar el equipo.', 'error');
+    return;
+  }
+
+  const submitBtn = form.querySelector('button[type="submit"]');
+  if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = true;
+  const res = await api.dbClinicalTeamsUpdate({
+    teamId,
+    name,
+    sala,
+    callerUserId: userId,
+  });
+  if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = false;
+
+  if (!res || res.ok === false) {
+    toast(res?.error || 'No se guardó el equipo.', 'error');
+    return;
+  }
+
+  toast('Equipo actualizado.', 'success');
+  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
 }
 
 async function handleProfileFormSubmit(ev) {
@@ -1967,6 +2144,9 @@ export function wireClinicalTeamsModalChrome() {
         } else if (form.id === 'clinical-team-join-code-form') {
           ev.preventDefault();
           void handleJoinWithCodeSubmit(ev);
+        } else if (form.classList.contains('clinical-teams-edit-form')) {
+          ev.preventDefault();
+          void handleEditTeamSubmit(ev, form);
         }
       });
     }
@@ -1999,6 +2179,7 @@ export function wireClinicalTeamsModalChrome() {
 
   wireLanUsersDirectoryControls();
   wireAdminCodeModalControls();
+  wireTeamManageModalDelegation();
 }
 
 function syncSalaFieldVisibility() {

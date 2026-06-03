@@ -418,48 +418,86 @@
   </div>
 </div>
 
-<div id="entrega-modal-backdrop" class="modal-backdrop" aria-hidden="true">
+<div id="entrega-modal-backdrop" class="modal-backdrop entrega-modal-backdrop" aria-hidden="true">
   <div class="modal entrega-modal" id="entrega-modal" role="dialog" aria-modal="true" aria-labelledby="entrega-modal-title" onclick="event.stopPropagation()">
-    <h3 id="entrega-modal-title">Nueva entrega</h3>
-    <p id="entrega-flow-hint" class="clinical-registration-lead"></p>
-    <form id="entrega-form">
-      <div class="field-group">
-        <label for="entrega-covering-user">Usuario cubridor</label>
-        <select id="entrega-covering-user" class="profile-input" required></select>
+    <header class="clinical-teams-modal-head entrega-modal-head">
+      <div class="entrega-modal-head__text">
+        <h3 id="entrega-modal-title">Nueva entrega</h3>
+        <p id="entrega-flow-hint" class="clinical-teams-section-desc entrega-modal-lead"></p>
       </div>
-      <div class="field-group">
-        <label for="entrega-source-team">Equipo de origen</label>
-        <select id="entrega-source-team" class="profile-input" required></select>
-      </div>
-      <div class="field-group entrega-proc-block">
-        <div class="entrega-proc-header">
-          <label>Procedimientos y estudios</label>
-          <button type="button" id="btn-entrega-apply-template" class="btn-secondary">Aplicar plantilla</button>
-          <button type="button" id="btn-entrega-add-proc" class="btn-secondary">+ Agregar</button>
+    </header>
+    <form id="entrega-form" class="entrega-modal-form">
+      <div class="entrega-form-body">
+        <section class="entrega-handoff-grid clinical-teams-create-form" aria-label="Datos de entrega">
+          <div class="field-group">
+            <label for="entrega-covering-user">R1 de guardia (recibe al paciente)</label>
+            <p id="entrega-covering-hint" class="clinical-teams-section-desc entrega-field-hint">
+              Residente de guardia que asumirá la cobertura nocturna de este paciente.
+            </p>
+            <select id="entrega-covering-user" class="profile-input" required></select>
+          </div>
+          <div class="field-group">
+            <label for="entrega-source-team">Equipo de origen</label>
+            <select id="entrega-source-team" class="profile-input" required></select>
+          </div>
+        </section>
+
+        <details class="entrega-patient-context" id="entrega-patient-context" open>
+          <summary class="entrega-patient-context__summary">
+            <span class="entrega-patient-context__summary-main">
+              <span class="clinical-teams-section-title">Estado del paciente</span>
+              <span
+                id="entrega-handoff-summary-collapsed"
+                class="entrega-handoff-summary-inline"
+                aria-live="polite"
+              ></span>
+            </span>
+          </summary>
+          <div class="entrega-patient-context__body">
+            <p class="clinical-teams-section-desc entrega-patient-context__lead">
+              Resumen clínico para quien recibe la guardia.
+            </p>
+            <div id="entrega-handoff-panel" class="entrega-handoff-panel"></div>
+            <p id="entrega-handoff-summary" class="entrega-handoff-summary entrega-handoff-summary--body" aria-live="polite"></p>
+          </div>
+        </details>
+
+        <div class="entrega-form-main">
+          <section class="clinical-teams-section clinical-teams-section--directory entrega-panel entrega-panel--pendientes" aria-label="Procedimientos y estudios">
+            <div class="clinical-teams-section-head-row">
+              <div class="clinical-teams-section-intro">
+                <h4 class="clinical-teams-section-title">Procedimientos y estudios</h4>
+              </div>
+              <div class="entrega-proc-toolbar">
+                <button type="button" id="btn-entrega-apply-template" class="btn-med-secondary">
+                  Plantillas
+                </button>
+                <button type="button" id="btn-entrega-add-proc" class="btn-med-secondary">
+                  + Procedimiento
+                </button>
+              </div>
+            </div>
+            <div class="entrega-panel-body entrega-proc-block">
+              <ul id="entrega-proc-list" class="entrega-proc-list"></ul>
+              <div id="entrega-proc-form" class="entrega-proc-form hidden" aria-hidden="true"></div>
+            </div>
+          </section>
+
+          <section class="clinical-teams-section clinical-teams-section--directory entrega-panel entrega-panel--vitals" aria-label="Signos vitales en guardia">
+            <div class="clinical-teams-section-intro">
+              <h4 class="clinical-teams-section-title">Signos vitales en guardia</h4>
+              <p class="clinical-teams-section-desc">Elige qué parámetros pedirá el interno y cada cuánto.</p>
+            </div>
+            <div class="entrega-panel-body">
+              <div id="entrega-vitals-panel" class="entrega-vitals-panel"></div>
+            </div>
+          </section>
         </div>
-        <ul id="entrega-proc-list" class="entrega-proc-list"></ul>
-        <div id="entrega-proc-form" class="entrega-proc-form hidden" aria-hidden="true"></div>
       </div>
-      <div class="field-group">
-        <label>
-          <input type="checkbox" id="entrega-critical">
-          Paciente crítico
-        </label>
-      </div>
-      <div class="field-group">
-        <label for="entrega-vitals-frequency">Frecuencia de signos</label>
-        <select id="entrega-vitals-frequency" class="profile-input">
-          <option value="None">Rutina (None)</option>
-          <option value="1h">Cada 1 h</option>
-          <option value="2h">Cada 2 h</option>
-          <option value="4h">Cada 4 h</option>
-          <option value="Shift_Once">Una vez por turno</option>
-        </select>
-      </div>
-      <div class="modal-actions">
+      <footer class="modal-actions entrega-modal-foot">
         <button type="button" class="btn-cancel" id="btn-entrega-cancel">Cancelar</button>
         <button type="submit" class="btn-save">Confirmar entrega</button>
-      </div>
+      </footer>
     </form>
   </div>
 </div>

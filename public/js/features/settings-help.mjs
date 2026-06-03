@@ -1956,6 +1956,30 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '6.5.8': [
+    {
+      title: 'Interno móvil (QR de sala)',
+      body:
+        'Admin/R4 generan un <strong>QR por sala</strong> para que los MIP registren signos y glucometrías en el celular. Los datos llegan a <strong>Estado actual</strong> y al <strong>Modo Guardia</strong> del residente.',
+    },
+    {
+      title: 'Entrega y rollback',
+      body:
+        '<strong>Modo Entrega</strong> con pendientes estructurados (estudios/procedimientos y plantillas). Si una actualización falla, en <strong>Ajustes → Aplicación</strong> puedes <strong>restaurar una versión estable anterior</strong> sin perder tu base clínica.',
+    },
+  ],
+  '6.5.7': [
+    {
+      title: 'Sync LAN de equipos',
+      body:
+        'Al conectar la sala ⇄ se sincronizan <strong>equipos</strong>, <strong>usuarios LAN</strong> y <strong>eventualidades</strong> entre Macs. Compatible con una Mac en 6.5.6 (stubs de usuario hasta el perfil completo).',
+    },
+    {
+      title: 'Eventualidades en vivo',
+      body:
+        'Las eventualidades de ambas Macs se fusionan por paciente; al guardar una se dispara sync ⇄ además del host REST.',
+    },
+  ],
   '6.5.6': [
     {
       title: 'Mi rotación',

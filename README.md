@@ -27,10 +27,25 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [6.5.6](https://github.com/mausalas99/r-mas/releases/tag/v6.5.6) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.5.8](https://github.com/mausalas99/r-mas/releases/tag/v6.5.8) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+## R+ 6.5.8 (interno móvil QR, entrega pendientes v2 y rollback a estable)
+
+- **Interno móvil (MIP)** — QR por sala; board web para signos y glucometrías; sync a Estado actual y Modo Guardia (Admin/R4 gestionan el QR en guardia).
+- **Modo Entrega pendientes v2** — Plantillas y procedimientos/estudios estructurados; flags para R1 guardia; internos ven estudios y marcan realizados.
+- **Restaurar versión estable** — En Ajustes, volver a una release anterior curada sin perder datos locales (in-app + enlace a GitHub si falla).
+- **Nativos en release** — Verificación de Argon2/SQLCipher al empaquetar.
+
+Notas: `docs/RELEASE_NOTES_6.5.8.txt`.
+
+## R+ 6.5.7 (sync LAN de equipos, usuarios y eventualidades)
+
+- **Sync LAN** — Equipos, directorio de usuarios LAN y eventualidades entre Macs; compatible con peers en 6.5.6.
+- **Eventualidades** — Fusión en bundle LAN y push LiveSync al guardar.
+
+Notas: `docs/RELEASE_NOTES_6.5.7.txt`.
 
 ## R+ 6.5.4 (Identidad LAN · equipos persistentes · arranque sin contraseña)
 
@@ -635,9 +650,13 @@ Al iniciar, R+ intenta leer `min-version.json` desde el repositorio oficial (`ma
 
 Si la versión instalada es menor a `minVersion`, se muestra un modal **bloqueante no descartable** (no se puede cerrar con Escape ni haciendo clic fuera) con dos acciones: **Buscar actualización** (usa el autoupdater) y **Descargar desde GitHub** (abre Releases). Si el fetch falla o el archivo no existe, no se bloquea al usuario.
 
+### Restaurar versión estable anterior (6.5.8+)
+
+En **Ajustes → Aplicación y actualizaciones**, **Restaurar versión estable anterior** lista releases curadas en `stable-versions.json` (solo versiones **menores** que la instalada). R+ intenta descargar e instalar in-app; si falla (red, firma macOS), ofrece abrir el instalador correcto en GitHub. Tus datos en `userData` y la base clínica **no se borran**.
+
 ### Volver a una versión anterior (rollback manual)
 
-No hay reversión automática del binario instalado. Si una versión nueva introduce un problema, puedes reinstalar una versión previa siguiendo estos pasos.
+Si prefieres instalar a mano o la versión no está en el catálogo curado, reinstala desde Releases siguiendo estos pasos.
 
 **Antes de empezar (recomendado):**
 

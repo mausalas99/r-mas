@@ -42,9 +42,10 @@ import { copyToClipboardSafe } from "./soap-estado.mjs";
 import { buildLanJoinUrls, parseLanInviteInput } from "../lan-join-link.mjs";
 import { createMutationBuilder, wrapLiveSyncPatch } from "../versioned-mutation.mjs";
 import { guardAndSignLiveSyncMutation, clinicalSessionContext, migrateLocalPatientsClinicalSala } from "../clinical-access-runtime.mjs";
-import { hasElevatedTeamPrivileges } from "../clinical-privileges.mjs";
+import { hasElevatedTeamPrivileges, canManageInternoQr } from "../clinical-privileges.mjs";
 import { appendLanHubGuardiaModeCard } from "./lan-hub-guardia-mode.mjs";
 import { appendLanHubStatusCard, appendLanHubRoomsCard } from "./lan-hub-panel-shell.mjs";
+import { appendInternoQrPanel } from "./interno-qr-panel.mjs";
 import {
   saveDraftConflict,
   deleteDraftConflict,
@@ -2795,6 +2796,18 @@ function lanHostUrl() {
   return lanClient.baseUrl() || '';
 }
 
+function maybeAppendInternoQrPanel(root) {
+  if (!isLanElectronDesktop() || !isLanHostActive()) return;
+  if (!canManageInternoQr(clinicalSessionContext.user)) return;
+  void resolveLanHostUrlAuto().then(function (hostBaseUrl) {
+    void appendInternoQrPanel(root, {
+      hostBaseUrl: hostBaseUrl,
+      userId: getClinicalUserUserId(),
+      showToast: runtime.showToast,
+    });
+  });
+}
+
 function getClinicalUserUserId() {
   try {
     var user = typeof clinicalSessionContext !== 'undefined' ? clinicalSessionContext.user : null;
@@ -2877,6 +2890,8 @@ async function renderLanPanelOnce() {
   } else if (isElevated) {
     buildR4Section(root);
   }
+
+  maybeAppendInternoQrPanel(root);
 }
 
 function buildR1Section(root) {

@@ -1566,23 +1566,123 @@
       ],
       "format": "esm"
     },
-    "public/js/features/unified-patient-grid-board.mjs": {
-      "bytes": 6955,
+    "lib/entrega/entrega-handoff-context.mjs": {
+      "bytes": 6910,
+      "imports": [],
+      "format": "esm"
+    },
+    "lib/entrega/entrega-vitals-plan.mjs": {
+      "bytes": 6787,
       "imports": [],
       "format": "esm"
     },
     "lib/entrega/entrega-pendientes.mjs": {
-      "bytes": 3360,
-      "imports": [],
+      "bytes": 4301,
+      "imports": [
+        {
+          "path": "lib/entrega/entrega-handoff-context.mjs",
+          "kind": "import-statement",
+          "original": "./entrega-handoff-context.mjs"
+        },
+        {
+          "path": "lib/entrega/entrega-vitals-plan.mjs",
+          "kind": "import-statement",
+          "original": "./entrega-vitals-plan.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "lib/entrega/entrega-chip-markers.mjs": {
+      "bytes": 1894,
+      "imports": [
+        {
+          "path": "lib/entrega/entrega-handoff-context.mjs",
+          "kind": "import-statement",
+          "original": "./entrega-handoff-context.mjs"
+        },
+        {
+          "path": "lib/entrega/entrega-pendientes.mjs",
+          "kind": "import-statement",
+          "original": "./entrega-pendientes.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "lib/interno/vitals-banner.mjs": {
+      "bytes": 1527,
+      "imports": [
+        {
+          "path": "lib/entrega/entrega-vitals-plan.mjs",
+          "kind": "import-statement",
+          "original": "../entrega/entrega-vitals-plan.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "lib/interno/interno-board.mjs": {
+      "bytes": 3630,
+      "imports": [
+        {
+          "path": "lib/entrega/entrega-handoff-context.mjs",
+          "kind": "import-statement",
+          "original": "../entrega/entrega-handoff-context.mjs"
+        },
+        {
+          "path": "lib/entrega/entrega-pendientes.mjs",
+          "kind": "import-statement",
+          "original": "../entrega/entrega-pendientes.mjs"
+        },
+        {
+          "path": "lib/interno/vitals-banner.mjs",
+          "kind": "import-statement",
+          "original": "./vitals-banner.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/features/unified-patient-grid-board.mjs": {
+      "bytes": 8002,
+      "imports": [
+        {
+          "path": "lib/entrega/entrega-chip-markers.mjs",
+          "kind": "import-statement",
+          "original": "../../../lib/entrega/entrega-chip-markers.mjs"
+        },
+        {
+          "path": "lib/entrega/entrega-pendientes.mjs",
+          "kind": "import-statement",
+          "original": "../../../lib/entrega/entrega-pendientes.mjs"
+        },
+        {
+          "path": "lib/interno/interno-board.mjs",
+          "kind": "import-statement",
+          "original": "../../../lib/interno/interno-board.mjs"
+        },
+        {
+          "path": "lib/interno/vitals-banner.mjs",
+          "kind": "import-statement",
+          "original": "../../../lib/interno/vitals-banner.mjs"
+        }
+      ],
       "format": "esm"
     },
     "public/js/features/entrega-modal-ui.mjs": {
-      "bytes": 16959,
+      "bytes": 51290,
       "imports": [
         {
           "path": "lib/entrega/entrega-pendientes.mjs",
           "kind": "import-statement",
           "original": "../../../lib/entrega/entrega-pendientes.mjs"
+        },
+        {
+          "path": "lib/entrega/entrega-handoff-context.mjs",
+          "kind": "import-statement",
+          "original": "../../../lib/entrega/entrega-handoff-context.mjs"
+        },
+        {
+          "path": "lib/entrega/entrega-vitals-plan.mjs",
+          "kind": "import-statement",
+          "original": "../../../lib/entrega/entrega-vitals-plan.mjs"
         },
         {
           "path": "public/js/clinical-access-runtime.mjs",
@@ -1593,8 +1693,13 @@
       "format": "esm"
     },
     "public/js/features/clinical-entrega.mjs": {
-      "bytes": 16767,
+      "bytes": 21298,
       "imports": [
+        {
+          "path": "public/js/app-state.mjs",
+          "kind": "import-statement",
+          "original": "../app-state.mjs"
+        },
         {
           "path": "public/js/clinical-access-runtime.mjs",
           "kind": "import-statement",
@@ -1616,6 +1721,11 @@
           "original": "../../../lib/entrega/entrega-pendientes.mjs"
         },
         {
+          "path": "lib/entrega/entrega-vitals-plan.mjs",
+          "kind": "import-statement",
+          "original": "../../../lib/entrega/entrega-vitals-plan.mjs"
+        },
+        {
           "path": "public/js/features/lan-sync.mjs",
           "kind": "import-statement",
           "original": "./lan-sync.mjs"
@@ -1629,7 +1739,7 @@
       "format": "esm"
     },
     "public/js/features/guardia-board.mjs": {
-      "bytes": 10221,
+      "bytes": 10507,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -1695,6 +1805,11 @@
           "path": "public/js/clinical-access-runtime.mjs",
           "kind": "import-statement",
           "original": "../clinical-access-runtime.mjs"
+        },
+        {
+          "path": "lib/entrega/entrega-chip-markers.mjs",
+          "kind": "import-statement",
+          "original": "../../../lib/entrega/entrega-chip-markers.mjs"
         },
         {
           "path": "lib/entrega/entrega-pendientes.mjs",
@@ -5974,7 +6089,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 4931289
+      "bytes": 5026032
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -6284,20 +6399,35 @@
         "public/js/clinical-access-runtime.mjs": {
           "bytesInOutput": 15535
         },
-        "public/js/features/unified-patient-grid-board.mjs": {
-          "bytesInOutput": 7061
+        "lib/entrega/entrega-handoff-context.mjs": {
+          "bytesInOutput": 6364
+        },
+        "lib/entrega/entrega-vitals-plan.mjs": {
+          "bytesInOutput": 5744
         },
         "lib/entrega/entrega-pendientes.mjs": {
-          "bytesInOutput": 2614
+          "bytesInOutput": 3322
+        },
+        "lib/entrega/entrega-chip-markers.mjs": {
+          "bytesInOutput": 1492
+        },
+        "lib/interno/vitals-banner.mjs": {
+          "bytesInOutput": 864
+        },
+        "lib/interno/interno-board.mjs": {
+          "bytesInOutput": 536
+        },
+        "public/js/features/unified-patient-grid-board.mjs": {
+          "bytesInOutput": 7697
         },
         "public/js/features/entrega-modal-ui.mjs": {
-          "bytesInOutput": 16121
+          "bytesInOutput": 47806
         },
         "public/js/features/clinical-entrega.mjs": {
-          "bytesInOutput": 14599
+          "bytesInOutput": 18391
         },
         "public/js/features/guardia-board.mjs": {
-          "bytesInOutput": 8713
+          "bytesInOutput": 8937
         },
         "public/js/rpc-date-picker.mjs": {
           "bytesInOutput": 11416
@@ -6387,7 +6517,7 @@
           "bytesInOutput": 20227
         },
         "public/js/features/estado-actual-panel.mjs": {
-          "bytesInOutput": 60646
+          "bytesInOutput": 60655
         },
         "public/js/features/estado-actual-parse-variants.mjs": {
           "bytesInOutput": 1141
@@ -6792,7 +6922,7 @@
           "bytesInOutput": 950
         }
       },
-      "bytes": 2783660
+      "bytes": 2835907
     }
   }
 }

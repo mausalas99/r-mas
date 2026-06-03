@@ -24,6 +24,7 @@ import {
   toggleEntregaPhase,
 } from './clinical-entrega.mjs';
 import { refreshGuardiaCensusFromDb } from '../clinical-access-runtime.mjs';
+import { entregaChipMarkerIds } from '../../../lib/entrega/entrega-chip-markers.mjs';
 import {
   listActiveProcedimientos,
   normalizePendientesJson,
@@ -136,6 +137,7 @@ function enrichPatientForGuardiaCard(p, guardiasMap) {
     vitalsAltered ||
     (openTodos > 0 && storage.getTodos(base.id).some((t) => !t.completed && t.priority === 'alta'))
   );
+  const entregaMarkers = g ? entregaChipMarkerIds(g) : [];
   return {
     ...base,
     dxText: dxText.toUpperCase(),
@@ -143,6 +145,7 @@ function enrichPatientForGuardiaCard(p, guardiasMap) {
     labsSnippet: labsSnippetForPatient(base.id),
     isCritical,
     vitalsAltered,
+    entregaMarkers,
     guardiaMeta: g,
   };
 }
@@ -231,11 +234,11 @@ export function renderGuardiaBoard(settings) {
     salaGuardiaToday: clinicalSessionContext.salaGuardiaToday || [],
     guardiaMode: clinicalSessionContext.guardiaMode,
     now: new Date(),
+    users: Array.isArray(clinicalSessionContext.scopeContext?.users)
+      ? clinicalSessionContext.scopeContext.users
+      : [],
+    cycle: clinicalSessionContext.scopeContext?.cycle ?? null,
   };
-
-  if (guardiasMap.size > 0 && gridViewContext === 'GUARDIA') {
-    censusPatients = censusPatients.filter((p) => guardiasMap.has(p.id));
-  }
 
   if (!clinicalSessionContext.guardiaMode && gridViewContext === 'GUARDIA') {
     clinicalSessionContext.scopeContext = clinicalSessionContext.scopeContext || {};
@@ -261,6 +264,7 @@ export function renderGuardiaBoard(settings) {
   } else {
     gridBoard.setViewContext(gridViewContext);
   }
+  gridBoard.chipOpensEntrega = !!clinicalSessionContext.guardiaMode;
 
   gridBoard.onChipClick = (patientId) => {
     const guardia = guardiasMap.get(patientId);

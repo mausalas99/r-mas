@@ -24,6 +24,11 @@ export function canConfigureRotation(user) {
   return hasProgramAdminPrivileges(user);
 }
 
+/** @param {{ rank?: string, is_program_admin?: number|boolean }|null|undefined} user */
+export function canManageInternoQr(user) {
+  return canConfigureRotation(user);
+}
+
 /**
  * Cross-sala team browse and global patient census (R4, Admin, program admin).
  * @param {{ rank?: string, is_program_admin?: number|boolean }|null|undefined} user

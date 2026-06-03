@@ -76,10 +76,15 @@
         <div class="guardia-rotation-toolbar" aria-label="Rotación de guardia">
           <button type="button" id="btn-guardia-mi-rotacion" class="btn-med-secondary">Mi rotación</button>
           <button type="button" id="btn-guardia-rotation-config" class="btn-med-secondary btn-med-secondary--muted">Configuración rotación</button>
-          <div class="guardia-grid-mode-toggle" role="group" aria-label="Vista del censo">
-            <button type="button" id="guardia-grid-mode-censo" class="guardia-grid-mode-btn is-active" data-mode="censo" aria-pressed="true">Censo</button>
-            <button type="button" id="guardia-grid-mode-entrega" class="guardia-grid-mode-btn" data-mode="entrega" aria-pressed="false">Entrega</button>
-          </div>
+          <button
+            type="button"
+            id="btn-guardia-entrega-phase"
+            class="btn-guardia-entrega-phase"
+            aria-pressed="false"
+          >
+            Entrega
+          </button>
+          <p id="guardia-entrega-phase-status" class="guardia-entrega-phase-status" hidden></p>
         </div>
         <div id="guardia-incoming-strip" class="guardia-incoming-strip" hidden aria-label="Pacientes entrantes (preview)"></div>
         <div id="guardia-summary" class="guardia-summary" aria-label="Resumen de guardia"></div>

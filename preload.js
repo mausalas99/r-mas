@@ -191,6 +191,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   dbClinicalTeamsCreate: function(opts) {
     return ipcRenderer.invoke('db:clinical-teams-create', opts);
   },
+  dbClinicalTeamsUpdate: function(opts) {
+    return ipcRenderer.invoke('db:clinical-teams-update', opts);
+  },
+  dbClinicalTeamsArchive: function(opts) {
+    return ipcRenderer.invoke('db:clinical-teams-archive', opts);
+  },
   dbClinicalTeamsMemberAdd: function(opts) {
     return ipcRenderer.invoke('db:clinical-teams-member-add', opts);
   },
@@ -253,5 +259,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   dbClinicalProfileGet: function(opts) {
     return ipcRenderer.invoke('db:clinical-profile-get', opts);
+  },
+  dbInternoAccessList: function(opts) {
+    return ipcRenderer.invoke('db:interno-access-list', opts);
+  },
+  dbInternoAccessRotate: function(opts) {
+    return ipcRenderer.invoke('db:interno-access-rotate', opts);
+  },
+  dbInternoAccessSetActive: function(opts) {
+    return ipcRenderer.invoke('db:interno-access-set-active', opts);
   },
 });

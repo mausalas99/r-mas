@@ -26596,13 +26596,487 @@ var init_clinical_access_runtime = __esm({
   }
 });
 
-// public/js/features/unified-patient-grid-board.mjs
-function calcVitalsBanner(last, freq) {
-  if (!freq || freq === "None") return { str: "Rutina", cls: "nominal-gray" };
-  let ms = 4 * 36e5;
-  if (freq === "1h") ms = 36e5;
-  if (freq === "2h") ms = 72e5;
-  if (freq === "Shift_Once") ms = 8 * 36e5;
+// lib/entrega/entrega-handoff-context.mjs
+function normalizeVasopressorAgent(agent) {
+  const key = String(agent || "").trim().toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
+  if (key.includes("vasopres")) return "vasopresina";
+  if (key.includes("nore") || key.includes("levophed")) return "norepinefrina";
+  return AGENT_ALIASES[key] || "";
+}
+function defaultVasopressorInfusion(agent) {
+  const norm = normalizeVasopressorAgent(agent);
+  return VASOPRESSOR_INFUSION_DEFAULTS[norm] || {
+    dose: "",
+    unit: "mcg_kg_min"
+  };
+}
+function coerceVasopressorUnit(agent, unit) {
+  const normAgent = normalizeVasopressorAgent(agent);
+  if (normAgent === "vasopresina") return "ui_min";
+  if (unit === "mcg_min" || unit === "mcg_kg_min") return unit;
+  return "mcg_kg_min";
+}
+function parseVasopressorRate(rate) {
+  const raw = String(rate || "").trim();
+  if (!raw) return { dose: "", unit: "mcg_kg_min" };
+  const ui = raw.match(/([\d.]+)\s*UI\s*\/\s*min/i);
+  if (ui) return { dose: ui[1], unit: "ui_min" };
+  const perKg = raw.match(/([\d.]+)\s*mcg\s*\/\s*kg\s*\/\s*min/i);
+  if (perKg) return { dose: perKg[1], unit: "mcg_kg_min" };
+  const perMin = raw.match(/([\d.]+)\s*mcg\s*\/\s*min/i);
+  if (perMin) return { dose: perMin[1], unit: "mcg_min" };
+  const num4 = raw.match(/([\d.]+)/);
+  return { dose: num4 ? num4[1] : "", unit: "mcg_kg_min" };
+}
+function formatVasopressorInfusion(vas) {
+  const agent = normalizeVasopressorAgent(vas?.agent);
+  const dose = String(vas?.dose || "").trim();
+  const unit = coerceVasopressorUnit(agent, vas?.unit);
+  if (!dose) return "";
+  const agentLabel = VASOPRESSOR_AGENTS.find((a) => a.value === agent)?.short || VASOPRESSOR_AGENTS.find((a) => a.value === agent)?.label || "";
+  const unitLabel = VASOPRESSOR_UNIT_LABELS[unit] || "";
+  return [agentLabel, dose, unitLabel].filter(Boolean).join(" ");
+}
+function normalizeVasopressor(vas) {
+  const active = !!(vas?.active || vas?.agent || vas?.dose || vas?.rate);
+  let agent = normalizeVasopressorAgent(vas?.agent);
+  let dose = String(vas?.dose || "").trim();
+  let unit = coerceVasopressorUnit(agent, vas?.unit);
+  if (!dose && vas?.rate) {
+    const parsed = parseVasopressorRate(vas.rate);
+    dose = parsed.dose;
+    if (!vas?.unit) unit = parsed.unit;
+  }
+  if (active && agent && !dose) {
+    const defaults = defaultVasopressorInfusion(agent);
+    dose = defaults.dose;
+    unit = defaults.unit;
+  }
+  if (active && !agent) {
+    agent = "norepinefrina";
+    const defaults = defaultVasopressorInfusion(agent);
+    if (!dose) dose = defaults.dose;
+    unit = defaults.unit;
+  }
+  unit = coerceVasopressorUnit(agent, unit);
+  return {
+    active,
+    agent,
+    dose,
+    unit,
+    rate: formatVasopressorInfusion({ agent, dose, unit })
+  };
+}
+function defaultHandoffContext() {
+  const vaso = normalizeVasopressor({ active: false, agent: "norepinefrina" });
+  return {
+    clinicalStatus: "",
+    signedRefusal: false,
+    show: false,
+    vasopressor: vaso,
+    ventilation: { active: false, mode: "", fio2: "", settings: "" },
+    notes: ""
+  };
+}
+function normalizeHandoffContext(raw, hints = {}) {
+  const base = defaultHandoffContext();
+  if (!raw || typeof raw !== "object") {
+    if (hints.signedRefusal) base.signedRefusal = true;
+    return base;
+  }
+  const vent = raw.ventilation && typeof raw.ventilation === "object" ? raw.ventilation : {};
+  const status = String(raw.clinicalStatus || "");
+  const allowed = new Set(CLINICAL_STATUS_OPTIONS.map((o) => o.value));
+  return {
+    clinicalStatus: allowed.has(status) ? status : "",
+    signedRefusal: !!(raw.signedRefusal ?? hints.signedRefusal),
+    show: !!(raw.show ?? raw.shock),
+    vasopressor: normalizeVasopressor(raw.vasopressor),
+    ventilation: {
+      active: !!(vent.active || vent.mode || vent.fio2 || vent.settings),
+      mode: String(vent.mode || "").trim(),
+      fio2: String(vent.fio2 || "").trim(),
+      settings: String(vent.settings || "").trim()
+    },
+    notes: String(raw.notes || "").trim()
+  };
+}
+function handoffContextSummary(ctx) {
+  const norm = normalizeHandoffContext(ctx);
+  const parts = [];
+  const statusLabel = CLINICAL_STATUS_OPTIONS.find((o) => o.value === norm.clinicalStatus)?.label;
+  if (statusLabel && norm.clinicalStatus) parts.push(statusLabel);
+  if (norm.signedRefusal) parts.push("Negativas firmadas");
+  if (norm.show) parts.push("Show");
+  if (norm.vasopressor.active) {
+    const v = formatVasopressorInfusion(norm.vasopressor);
+    parts.push(v ? `Vasopresor: ${v}` : "Vasopresor");
+  }
+  if (norm.ventilation.active) {
+    const modeLabel = VENTILATION_MODES.find((m) => m.value === norm.ventilation.mode)?.label;
+    const v = [modeLabel, norm.ventilation.fio2 && `FiO\u2082 ${norm.ventilation.fio2}`].filter(Boolean).join(" \xB7 ");
+    parts.push(v || "Ventilaci\xF3n");
+  }
+  if (norm.notes) parts.push(norm.notes);
+  return parts.length ? parts.join(" \xB7 ") : "Sin resumen cl\xEDnico";
+}
+var CLINICAL_STATUS_OPTIONS, VASOPRESSOR_AGENTS, VASOPRESSOR_UNIT_LABELS, VASOPRESSOR_INFUSION_DEFAULTS, AGENT_ALIASES, VENTILATION_MODES;
+var init_entrega_handoff_context = __esm({
+  "lib/entrega/entrega-handoff-context.mjs"() {
+    CLINICAL_STATUS_OPTIONS = [
+      { value: "", label: "\u2014 Seleccionar \u2014" },
+      { value: "stable", label: "Estable" },
+      { value: "unstable", label: "Inestable" },
+      { value: "critical", label: "Cr\xEDtico / deterioro" },
+      { value: "postop", label: "Postoperatorio inmediato" }
+    ];
+    VASOPRESSOR_AGENTS = [
+      { value: "norepinefrina", label: "Norepinefrina", short: "Nore" },
+      { value: "vasopresina", label: "Vasopresina", short: "Vasopresina" }
+    ];
+    VASOPRESSOR_UNIT_LABELS = {
+      mcg_kg_min: "mcg/kg/min",
+      mcg_min: "mcg/min",
+      ui_min: "UI/min"
+    };
+    VASOPRESSOR_INFUSION_DEFAULTS = {
+      norepinefrina: { dose: "0.05", unit: "mcg_kg_min" },
+      vasopresina: { dose: "0.03", unit: "ui_min" }
+    };
+    AGENT_ALIASES = {
+      norepinefrina: "norepinefrina",
+      nore: "norepinefrina",
+      vasopresina: "vasopresina"
+    };
+    VENTILATION_MODES = [
+      { value: "", label: "\u2014 Sin especificar \u2014" },
+      { value: "room_air", label: "Ambiente / c\xE1nula nasal" },
+      { value: "hfnc", label: "Alto flujo (LAF)" },
+      { value: "niv", label: "VMNI" },
+      { value: "invasive", label: "VMI" },
+      { value: "other", label: "Otro soporte" }
+    ];
+  }
+});
+
+// lib/entrega/entrega-vitals-plan.mjs
+function defaultFrequencySpec() {
+  return { mode: "routine" };
+}
+function defaultVitalsPlan() {
+  return { frequency: defaultFrequencySpec(), metrics: { ...DEFAULT_METRICS } };
+}
+function clampHours(n) {
+  const h = Math.round(Number(n));
+  if (!Number.isFinite(h)) return 2;
+  return Math.min(24, Math.max(1, h));
+}
+function normalizeUntilTime(raw) {
+  if (raw == null || raw === "") return null;
+  const m = String(raw).trim().match(/^(\d{1,2}):(\d{1,2})$/);
+  if (!m) return null;
+  const hh = Math.min(23, Math.max(0, Number(m[1])));
+  const mm = Math.min(59, Math.max(0, Number(m[2])));
+  return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+}
+function isVitalsFrequencyPaused(spec, now = /* @__PURE__ */ new Date()) {
+  const norm = normalizeFrequencySpec(spec);
+  if (!norm.untilTime) return false;
+  const [hh, mm] = norm.untilTime.split(":").map(Number);
+  const untilMins = hh * 60 + mm;
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  if (untilMins < 12 * 60 && nowMins >= 12 * 60) return false;
+  return nowMins >= untilMins;
+}
+function clampShiftTimes(n) {
+  const t2 = Math.round(Number(n));
+  if (!Number.isFinite(t2)) return 1;
+  return Math.min(3, Math.max(1, t2));
+}
+function normalizeFrequencySpec(raw) {
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    const o = (
+      /** @type {{ mode?: string, hours?: number, timesPerShift?: number, untilTime?: string|null }} */
+      raw
+    );
+    const mode = String(o.mode || "routine");
+    const untilTime = normalizeUntilTime(o.untilTime);
+    if (mode === "interval") {
+      return {
+        mode: "interval",
+        hours: clampHours(o.hours ?? 2),
+        ...untilTime ? { untilTime } : {}
+      };
+    }
+    if (mode === "shift") {
+      return {
+        mode: "shift",
+        timesPerShift: clampShiftTimes(o.timesPerShift ?? 1),
+        ...untilTime ? { untilTime } : {}
+      };
+    }
+    return defaultFrequencySpec();
+  }
+  const t2 = String(raw ?? "").trim();
+  if (!t2 || t2 === "None") return defaultFrequencySpec();
+  if (t2 === "Shift_Once") return { mode: "shift", timesPerShift: 1 };
+  if (STRUCTURED_DB.has(t2) && t2.endsWith("h")) {
+    return { mode: "interval", hours: clampHours(Number(t2.replace("h", ""))) };
+  }
+  const lower = t2.toLowerCase();
+  if (/turno|por\s+turno/i.test(lower)) {
+    const m = lower.match(/(\d+)\s*[x×]/);
+    return { mode: "shift", timesPerShift: clampShiftTimes(m ? Number(m[1]) : 1) };
+  }
+  const cada = lower.match(/cada\s*(\d+)\s*h|(\d+)\s*h|q\s*(\d+)\s*h|q(\d+)h/);
+  if (cada) {
+    const n = Number(cada[1] || cada[2] || cada[3] || cada[4]);
+    return { mode: "interval", hours: clampHours(n) };
+  }
+  if (/rutina|evoluci[oó]n/i.test(lower)) return defaultFrequencySpec();
+  return defaultFrequencySpec();
+}
+function frequencyIntervalMs(spec) {
+  const norm = normalizeFrequencySpec(spec);
+  if (norm.mode === "interval") return clampHours(norm.hours ?? 2) * 36e5;
+  if (norm.mode === "shift") {
+    const times = clampShiftTimes(norm.timesPerShift ?? 1);
+    return Math.floor(8 * 36e5 / times);
+  }
+  return null;
+}
+function vitalsFrequencyForDb(spec) {
+  const norm = normalizeFrequencySpec(spec);
+  if (norm.mode === "routine") return "None";
+  if (norm.mode === "shift") return "Shift_Once";
+  const h = clampHours(norm.hours ?? 2);
+  if (h === 1) return "1h";
+  if (h === 2) return "2h";
+  if (h === 4) return "4h";
+  return "None";
+}
+function untilSuffix(untilTime) {
+  return untilTime ? ` \xB7 hasta ${untilTime}` : "";
+}
+function frequencyDisplayLabel(spec) {
+  const norm = normalizeFrequencySpec(spec);
+  if (isVitalsFrequencyPaused(norm)) {
+    return `Finalizado${norm.untilTime ? ` (${norm.untilTime})` : ""}`;
+  }
+  if (norm.mode === "routine") return "Rutina / seg\xFAn evoluci\xF3n";
+  if (norm.mode === "interval") {
+    return `Cada ${clampHours(norm.hours ?? 2)} h${untilSuffix(norm.untilTime)}`;
+  }
+  const times = clampShiftTimes(norm.timesPerShift ?? 1);
+  const base = times === 1 ? "1\xD7 por turno" : `${times}\xD7 por turno`;
+  return `${base}${untilSuffix(norm.untilTime)}`;
+}
+function normalizeVitalsPlan(plan) {
+  const base = defaultVitalsPlan();
+  if (!plan || typeof plan !== "object") return base;
+  const p = (
+    /** @type {{ frequency?: unknown, metrics?: Record<string, boolean> }} */
+    plan
+  );
+  base.frequency = normalizeFrequencySpec(p.frequency);
+  for (const key of VITALS_METRIC_KEYS) {
+    if (p.metrics && typeof p.metrics[key] === "boolean") {
+      base.metrics[key] = p.metrics[key];
+    }
+  }
+  return base;
+}
+function vitalsPlanSummary(plan) {
+  const norm = normalizeVitalsPlan(plan);
+  const enabled = VITALS_METRIC_KEYS.filter((k) => norm.metrics[k]);
+  if (!enabled.length) return "Sin signos solicitados";
+  const freqLabel = norm.frequency.mode === "routine" ? "rutina / seg\xFAn evoluci\xF3n" : frequencyDisplayLabel(norm.frequency).toLowerCase();
+  return `${enabled.map((k) => VITALS_METRIC_LABELS[k]).join(", ")} \xB7 ${freqLabel}`;
+}
+var STRUCTURED_DB, HOUR_PRESETS, VITALS_FREQ_HOUR_PRESETS, VITALS_FREQ_SHIFT_OPTIONS, VITALS_METRIC_KEYS, VITALS_METRIC_LABELS, DEFAULT_METRICS;
+var init_entrega_vitals_plan = __esm({
+  "lib/entrega/entrega-vitals-plan.mjs"() {
+    STRUCTURED_DB = /* @__PURE__ */ new Set(["None", "1h", "2h", "4h", "Shift_Once"]);
+    HOUR_PRESETS = [1, 2, 3, 4, 6, 8];
+    VITALS_FREQ_HOUR_PRESETS = HOUR_PRESETS;
+    VITALS_FREQ_SHIFT_OPTIONS = [1, 2, 3];
+    VITALS_METRIC_KEYS = ["ta", "fc", "fr", "temp", "sat", "glu"];
+    VITALS_METRIC_LABELS = {
+      ta: "TA",
+      fc: "FC",
+      fr: "FR",
+      temp: "Temp",
+      sat: "Sat O\u2082",
+      glu: "Glucometr\xEDa"
+    };
+    DEFAULT_METRICS = Object.fromEntries(VITALS_METRIC_KEYS.map((k) => [k, true]));
+  }
+});
+
+// lib/entrega/entrega-pendientes.mjs
+function newItemId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+function createProcedimientoItem(partial) {
+  const now = (/* @__PURE__ */ new Date()).toISOString();
+  return {
+    id: newItemId(),
+    type: "procedimiento",
+    kind: partial.kind === "imagen" ? "imagen" : "otro",
+    label: String(partial.label || "").trim(),
+    scheduledAt: partial.scheduledAt || null,
+    comentado: !!partial.comentado,
+    autorizado: !!partial.autorizado,
+    agendado: !!partial.agendado,
+    requires: {
+      familiar: !!partial.requires?.familiar,
+      consentimiento: !!partial.requires?.consentimiento,
+      anestesia: !!partial.requires?.anestesia
+    },
+    lockedBase: !!partial.lockedBase,
+    createdBy: partial.createdBy || null,
+    updatedAt: now,
+    completedAt: null,
+    completedBy: null
+  };
+}
+function normalizePendientesJson(raw) {
+  if (raw == null || raw === "") {
+    return {
+      version: 2,
+      vitalsPlan: defaultVitalsPlan(),
+      handoffContext: defaultHandoffContext(),
+      items: []
+    };
+  }
+  let parsed;
+  try {
+    parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+  } catch {
+    return {
+      version: 2,
+      vitalsPlan: defaultVitalsPlan(),
+      handoffContext: defaultHandoffContext(),
+      items: []
+    };
+  }
+  if (parsed && parsed.version === 2 && Array.isArray(parsed.items)) {
+    return {
+      version: 2,
+      vitalsPlan: normalizeVitalsPlan(parsed.vitalsPlan),
+      handoffContext: normalizeHandoffContext(parsed.handoffContext),
+      items: parsed.items.filter(Boolean)
+    };
+  }
+  if (Array.isArray(parsed)) {
+    return {
+      version: 2,
+      vitalsPlan: defaultVitalsPlan(),
+      handoffContext: defaultHandoffContext(),
+      items: parsed.map((line) => String(line).trim()).filter(Boolean).map((text) => ({
+        id: newItemId(),
+        type: "legacy_text",
+        text,
+        updatedAt: (/* @__PURE__ */ new Date()).toISOString(),
+        completedAt: null
+      }))
+    };
+  }
+  return {
+    version: 2,
+    vitalsPlan: defaultVitalsPlan(),
+    handoffContext: defaultHandoffContext(),
+    items: []
+  };
+}
+function serializePendientesJson(doc) {
+  return JSON.stringify(normalizePendientesJson(doc));
+}
+function listActiveProcedimientos(doc) {
+  return normalizePendientesJson(doc).items.filter(
+    (it) => (it.type === "procedimiento" || it.type === "legacy_text") && !it.completedAt
+  );
+}
+function pendingRequirementBadges(item) {
+  const badges = [];
+  if (item.requires?.consentimiento && !item.autorizado) badges.push("consentimiento");
+  if (item.requires?.anestesia && !item.agendado) badges.push("anestesia");
+  if (item.requires?.familiar && !item.comentado) badges.push("familiar");
+  return badges;
+}
+function canDeletePendienteItem(item, actor) {
+  if (actor.role === "diurno") return true;
+  if (actor.role === "guardia") return !item.lockedBase;
+  return false;
+}
+var EMPTY;
+var init_entrega_pendientes = __esm({
+  "lib/entrega/entrega-pendientes.mjs"() {
+    init_entrega_handoff_context();
+    init_entrega_vitals_plan();
+    EMPTY = {
+      version: 2,
+      vitalsPlan: defaultVitalsPlan(),
+      handoffContext: defaultHandoffContext(),
+      items: []
+    };
+  }
+});
+
+// lib/entrega/entrega-chip-markers.mjs
+function entregaChipMarkerIds(guardia) {
+  const critical = !!(guardia?.is_critical === 1 || guardia?.is_critical === true);
+  const handoff = normalizeHandoffContext(
+    normalizePendientesJson(guardia?.pendientes_json).handoffContext
+  );
+  const ids = [];
+  if (critical) ids.push("critico");
+  if (handoff.signedRefusal) ids.push("negativas");
+  if (handoff.show) ids.push("show");
+  return ids;
+}
+function resolveEntregaChipMarkers(markerIds) {
+  const set = new Set(markerIds);
+  return ENTREGA_CHIP_MARKERS.filter((m) => set.has(m.id));
+}
+function escAttr(s) {
+  return String(s ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+}
+function buildEntregaMarkerSymbolsHtml(markerIds) {
+  const markers = resolveEntregaChipMarkers(markerIds);
+  if (!markers.length) return "";
+  const chips = markers.map(
+    (m) => `<span class="patient-chip-symbol patient-chip-symbol--${m.id}" title="${escAttr(m.title)}">${m.label}</span>`
+  ).join("");
+  return `<div class="patient-chip-symbols" role="group" aria-label="Marcadores de entrega">${chips}</div>`;
+}
+var ENTREGA_CHIP_MARKERS;
+var init_entrega_chip_markers = __esm({
+  "lib/entrega/entrega-chip-markers.mjs"() {
+    init_entrega_handoff_context();
+    init_entrega_pendientes();
+    ENTREGA_CHIP_MARKERS = [
+      { id: "critico", label: "CR", title: "Paciente cr\xEDtico" },
+      { id: "negativas", label: "NF", title: "Negativas firmadas" },
+      { id: "show", label: "SH", title: "Show" }
+    ];
+  }
+});
+
+// lib/interno/vitals-banner.mjs
+function calcVitalsBannerForSpec(last, frequencySpec) {
+  const spec = normalizeFrequencySpec(frequencySpec);
+  const label = frequencyDisplayLabel(spec);
+  if (isVitalsFrequencyPaused(spec)) {
+    return { str: label, cls: "nominal-gray" };
+  }
+  const ms = frequencyIntervalMs(spec);
+  if (!ms) {
+    return { str: label, cls: "nominal-gray" };
+  }
   const due = new Date(last || Date.now()).getTime() + ms;
   const diff = due - Date.now();
   if (diff <= 0) return { str: "Signos vencidos", cls: "breached" };
@@ -26614,6 +27088,41 @@ function calcVitalsBanner(last, freq) {
   const m = mins % 60;
   return { str: `Toca en: ${h}h ${m}m`, cls: "nominal" };
 }
+var init_vitals_banner = __esm({
+  "lib/interno/vitals-banner.mjs"() {
+    init_entrega_vitals_plan();
+  }
+});
+
+// lib/interno/interno-board.mjs
+function abbreviatePatientName(name) {
+  const raw = String(name || "").trim().toUpperCase();
+  if (!raw) return "\u2014";
+  const parts = raw.split(/\s+/).filter(Boolean);
+  if (parts.length === 1) return parts[0].slice(0, 12);
+  const last = parts[0];
+  const firstInitial = parts[parts.length - 1].charAt(0);
+  return `${last} ${firstInitial}.`.slice(0, 18);
+}
+var init_interno_board = __esm({
+  "lib/interno/interno-board.mjs"() {
+    init_entrega_handoff_context();
+    init_entrega_pendientes();
+    init_vitals_banner();
+  }
+});
+
+// public/js/features/unified-patient-grid-board.mjs
+function escapeChipAttr(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+}
+function vitalsBannerForGuardia(meta) {
+  const doc = normalizePendientesJson(meta?.pendientes_json);
+  return calcVitalsBannerForSpec(
+    meta?.last_vitals_check,
+    doc.vitalsPlan?.frequency ?? meta?.vitals_frequency
+  );
+}
 function filterR4FollowUpPinPatients(patients2) {
   return patients2.filter(
     (p) => p.interconsult_type === "Follow-up" && p.interconsult_status !== "Resolved"
@@ -26622,6 +27131,10 @@ function filterR4FollowUpPinPatients(patients2) {
 var R4_FOLLOWUP_PIN_LABEL, UnifiedPatientGridBoard;
 var init_unified_patient_grid_board = __esm({
   "public/js/features/unified-patient-grid-board.mjs"() {
+    init_entrega_chip_markers();
+    init_entrega_pendientes();
+    init_interno_board();
+    init_vitals_banner();
     R4_FOLLOWUP_PIN_LABEL = "Interconsultas \u2014 Seguimiento";
     UnifiedPatientGridBoard = class {
       /**
@@ -26631,6 +27144,7 @@ var init_unified_patient_grid_board = __esm({
       constructor(domGridContainerId, appViewContext = "GUARDIA") {
         this.container = typeof document !== "undefined" ? document.getElementById(domGridContainerId) : null;
         this.context = appViewContext;
+        this.chipOpensEntrega = false;
         this.onChipClick = null;
       }
       /**
@@ -26645,7 +27159,7 @@ var init_unified_patient_grid_board = __esm({
       handleChipClick(patientId) {
         const id = String(patientId || "");
         if (!id) return;
-        if (this.context === "HANDOFF") {
+        if (this.context === "HANDOFF" || this.chipOpensEntrega) {
           if (typeof this.onChipClick === "function") {
             this.onChipClick(id);
           }
@@ -26662,7 +27176,7 @@ var init_unified_patient_grid_board = __esm({
       drawCensusGrid(patients2, guardiasMap, userRank = "R1") {
         if (!this.container) return;
         this.container.innerHTML = "";
-        this.container.classList.add("patient-chips-grid");
+        this.container.classList.add("patient-chips-grid", "patient-chips-grid--guardia");
         if (userRank === "R4") {
           const followUpPatients = filterR4FollowUpPinPatients(patients2);
           const followUpIds = new Set(followUpPatients.map((p) => p.id));
@@ -26716,119 +27230,49 @@ var init_unified_patient_grid_board = __esm({
         const critical = !!(p.isCritical || meta?.is_critical);
         card.className = `patient-chip-card ${critical ? "priority-critical" : ""}`;
         card.setAttribute("data-patient-id", p.id);
+        card.setAttribute("role", "button");
+        card.tabIndex = 0;
         const dnr = p.negativa_maniobras_firmada ? '<span class="dnr-badge">DNR</span>' : "";
-        const vitals = calcVitalsBanner(meta?.last_vitals_check, meta?.vitals_frequency);
-        const alteredBadge = p.vitalsAltered ? '<span class="vitals-altered-badge" title="Signos alterados (interno)">\u26A0 Alterado</span>' : "";
-        const bed = p.bed_label ? `Cama ${p.bed_label}` : "Sin cama";
-        const name = String(p.name || "").toUpperCase();
+        const vitals = vitalsBannerForGuardia(meta);
+        const alteredBadge = p.vitalsAltered ? '<span class="vitals-altered-badge" title="Signos alterados (interno)">Alterado</span>' : "";
+        const bed = p.bed_label ? p.bed_label : "\u2014";
+        const nameRaw = String(p.name || "").trim();
+        const nameDisplay = nameRaw ? abbreviatePatientName(nameRaw) : "\u2014";
+        const nameTitle = nameRaw ? escapeChipAttr(nameRaw) : "";
         const dx = String(p.dxText || "Sin diagn\xF3stico registrado");
         const pending2 = Number(p.pendingCount || 0);
-        const pendingLabel = pending2 > 0 ? `<span class="patient-chip-tasks">\u{1F4CB} ${pending2} Pendiente${pending2 === 1 ? "" : "s"}</span>` : "";
+        const pendingLabel = pending2 > 0 ? `<span class="patient-chip-tasks">${pending2} pend.${pending2 === 1 ? "" : "s"}</span>` : "";
         const labs = String(p.labsSnippet || "\u2014");
-        const dotClass = critical ? "dot-alta" : "dot-media";
+        const markerIds = Array.isArray(p.entregaMarkers) ? p.entregaMarkers : entregaChipMarkerIds(meta);
+        const markerSymbols = buildEntregaMarkerSymbolsHtml(markerIds);
+        const vitalsTitle = escapeChipAttr(vitals.str);
+        const criticalHint = critical ? '<span class="patient-chip-critical-hint" title="Paciente cr\xEDtico" aria-hidden="true"></span>' : "";
         card.innerHTML = `
-      <div class="patient-chip-header">
-        <span class="patient-chip-location">${bed}</span>
-        <span class="patient-chip-name">${name}</span>
-        <span class="priority-dot ${dotClass}" aria-hidden="true"></span>
+      <div class="patient-chip-head">
+        <span class="patient-chip-bed">Cama ${bed}</span>
+        <div class="patient-chip-badges">${markerSymbols}${dnr}${criticalHint}</div>
       </div>
-      <div class="patient-chip-body">
-        ${dnr ? `<div class="patient-chip-dnr-row">${dnr}</div>` : ""}
-        <p class="patient-chip-dx">${dx}</p>
-        <div class="vitals-banner ${vitals.cls}">${vitals.str}${alteredBadge}</div>
+      <p class="patient-chip-name"${nameTitle ? ` title="${nameTitle}"` : ""}>${nameDisplay}</p>
+      <p class="patient-chip-dx">${dx}</p>
+      <div class="patient-chip-vitals vitals-banner ${vitals.cls}" title="${vitalsTitle}">
+        <span class="patient-chip-vitals__text">${vitals.str}</span>${alteredBadge}
       </div>
       <div class="patient-chip-footer">
         ${pendingLabel}
-        <span class="patient-chip-labs">${labs}</span>
+        <span class="patient-chip-labs" title="${escapeChipAttr(labs)}">${labs}</span>
       </div>`;
         card.addEventListener("click", () => {
           this.handleChipClick(p.id);
         });
+        card.addEventListener("keydown", (ev) => {
+          if (ev.key === "Enter" || ev.key === " ") {
+            ev.preventDefault();
+            this.handleChipClick(p.id);
+          }
+        });
         return card;
       }
     };
-  }
-});
-
-// lib/entrega/entrega-pendientes.mjs
-function newItemId() {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
-function createProcedimientoItem(partial) {
-  const now = (/* @__PURE__ */ new Date()).toISOString();
-  return {
-    id: newItemId(),
-    type: "procedimiento",
-    kind: partial.kind === "imagen" ? "imagen" : "otro",
-    label: String(partial.label || "").trim(),
-    scheduledAt: partial.scheduledAt || null,
-    comentado: !!partial.comentado,
-    autorizado: !!partial.autorizado,
-    agendado: !!partial.agendado,
-    requires: {
-      familiar: !!partial.requires?.familiar,
-      consentimiento: !!partial.requires?.consentimiento,
-      anestesia: !!partial.requires?.anestesia
-    },
-    lockedBase: !!partial.lockedBase,
-    createdBy: partial.createdBy || null,
-    updatedAt: now,
-    completedAt: null,
-    completedBy: null
-  };
-}
-function normalizePendientesJson(raw) {
-  if (raw == null || raw === "") return { version: 2, items: [] };
-  let parsed;
-  try {
-    parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-  } catch {
-    return { version: 2, items: [] };
-  }
-  if (parsed && parsed.version === 2 && Array.isArray(parsed.items)) {
-    return { version: 2, items: parsed.items.filter(Boolean) };
-  }
-  if (Array.isArray(parsed)) {
-    return {
-      version: 2,
-      items: parsed.map((line) => String(line).trim()).filter(Boolean).map((text) => ({
-        id: newItemId(),
-        type: "legacy_text",
-        text,
-        updatedAt: (/* @__PURE__ */ new Date()).toISOString(),
-        completedAt: null
-      }))
-    };
-  }
-  return { ...EMPTY, items: [] };
-}
-function serializePendientesJson(doc) {
-  return JSON.stringify(normalizePendientesJson(doc));
-}
-function listActiveProcedimientos(doc) {
-  return normalizePendientesJson(doc).items.filter(
-    (it) => (it.type === "procedimiento" || it.type === "legacy_text") && !it.completedAt
-  );
-}
-function pendingRequirementBadges(item) {
-  const badges = [];
-  if (item.requires?.consentimiento && !item.autorizado) badges.push("consentimiento");
-  if (item.requires?.anestesia && !item.agendado) badges.push("anestesia");
-  if (item.requires?.familiar && !item.comentado) badges.push("familiar");
-  return badges;
-}
-function canDeletePendienteItem(item, actor) {
-  if (actor.role === "diurno") return true;
-  if (actor.role === "guardia") return !item.lockedBase;
-  return false;
-}
-var EMPTY;
-var init_entrega_pendientes = __esm({
-  "lib/entrega/entrega-pendientes.mjs"() {
-    EMPTY = { version: 2, items: [] };
   }
 });
 
@@ -26860,11 +27304,86 @@ function scheduledAtFromTimeInput(hhmm) {
   d.setHours(h, m, 0, 0);
   return d.toISOString();
 }
-function resolveEntregaActorRole(currentUser, existingGuardia) {
-  const hasGuardia = !!(existingGuardia?.guardia_id || existingGuardia?.guardiaId);
+function defaultProcedureTimeHHmm() {
+  const d = /* @__PURE__ */ new Date();
+  let mins = Math.ceil(d.getMinutes() / 5) * 5;
+  if (mins >= 60) {
+    d.setHours(d.getHours() + 1);
+    mins = 0;
+  }
+  d.setMinutes(mins, 0, 0);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+function parseTimeParts(hhmm) {
+  const t2 = formatHHmm(hhmm) || String(hhmm || "").trim();
+  if (!t2 || !/^\d{1,2}:\d{1,2}$/.test(t2)) return { hour: "", minute: "" };
+  const [hour, minute] = t2.split(":");
   return {
-    role: hasGuardia ? "guardia" : "diurno",
-    userId: String(currentUser?.user_id || currentUser?.userId || ""),
+    hour: String(hour).padStart(2, "0"),
+    minute: String(minute).padStart(2, "0")
+  };
+}
+function buildHourSelectOptions(selected, opts = {}) {
+  const allowBlank = opts.allowBlank !== false;
+  let html = allowBlank ? '<option value="">\u2014</option>' : "";
+  for (let h = 0; h < 24; h += 1) {
+    const v = String(h).padStart(2, "0");
+    html += `<option value="${v}"${v === selected ? " selected" : ""}>${v}</option>`;
+  }
+  return html;
+}
+function buildMinuteSelectOptions(selected, opts = {}) {
+  const allowBlank = opts.allowBlank !== false;
+  let html = allowBlank ? '<option value="">\u2014</option>' : "";
+  const stepSet = /* @__PURE__ */ new Set();
+  for (let m = 0; m < 60; m += 5) {
+    const v = String(m).padStart(2, "0");
+    stepSet.add(v);
+    html += `<option value="${v}"${v === selected ? " selected" : ""}>${v}</option>`;
+  }
+  if (selected && !stepSet.has(selected)) {
+    html += `<option value="${selected}" selected>${selected}</option>`;
+  }
+  return html;
+}
+function buildTimeSelectMarkup(hhmm, opts = {}) {
+  const resolved = hhmm || (opts.allowBlank === false ? defaultProcedureTimeHHmm() : "");
+  const { hour, minute } = parseTimeParts(resolved);
+  const hourName = opts.hourName || "entrega-proc-hour";
+  const minuteName = opts.minuteName || "entrega-proc-minute";
+  const ariaLabel = opts.ariaLabel || "Hora programada";
+  const selectOpts = { allowBlank: opts.allowBlank !== false };
+  const disabled = opts.disabled ? " disabled" : "";
+  const wrapClass = [opts.picker ? "entrega-time-picker" : "entrega-time-combo", opts.wrapperClass].filter(Boolean).join(" ");
+  const wrapId = opts.wrapperId ? ` id="${opts.wrapperId}"` : "";
+  return `<div class="${wrapClass}"${wrapId} role="group" aria-label="${escapeHtml6(ariaLabel)}">
+    <div class="entrega-time-picker__part">
+      <span class="entrega-time-picker__hint">H</span>
+      <select name="${hourName}" class="profile-input entrega-time-select" aria-label="Hora"${disabled}>${buildHourSelectOptions(hour, selectOpts)}</select>
+    </div>
+    <span class="entrega-time-sep" aria-hidden="true">:</span>
+    <div class="entrega-time-picker__part">
+      <span class="entrega-time-picker__hint">M</span>
+      <select name="${minuteName}" class="profile-input entrega-time-select" aria-label="Minutos"${disabled}>${buildMinuteSelectOptions(minute, selectOpts)}</select>
+    </div>
+  </div>`;
+}
+function readTimeFromForm(formEl) {
+  const hour = String(formEl.querySelector('[name="entrega-proc-hour"]')?.value || "").trim();
+  const minute = String(formEl.querySelector('[name="entrega-proc-minute"]')?.value || "").trim();
+  if (!hour && !minute) return "";
+  if (hour && minute) return `${hour}:${minute}`;
+  if (hour) return `${hour}:00`;
+  return `00:${minute}`;
+}
+function resolveEntregaActorRole(currentUser, existingGuardia) {
+  const userId = String(currentUser?.user_id || currentUser?.userId || "");
+  const coveringUserId = String(existingGuardia?.covering_user_id || "");
+  const hasGuardia = !!(existingGuardia?.guardia_id || existingGuardia?.guardiaId);
+  const isCoveringReceiver = hasGuardia && coveringUserId !== "" && coveringUserId === userId;
+  return {
+    role: isCoveringReceiver ? "guardia" : "diurno",
+    userId,
     rank: String(currentUser?.rank || "")
   };
 }
@@ -26876,6 +27395,12 @@ function resetEntregaModalUi() {
   draftActor = null;
   templateCatalog = { user: [], team: [] };
   draftSourceTeamId = "";
+  draftVitalsPlan = defaultVitalsPlan();
+  draftHandoffContext = defaultHandoffContext();
+  const handoffPanel = document.getElementById("entrega-handoff-panel");
+  if (handoffPanel) handoffPanel.innerHTML = "";
+  const handoffSummary = document.getElementById("entrega-handoff-summary");
+  if (handoffSummary) handoffSummary.textContent = "";
   const list = document.getElementById("entrega-proc-list");
   const formWrap = document.getElementById("entrega-proc-form");
   if (list) list.innerHTML = "";
@@ -26918,7 +27443,7 @@ function renderProcList() {
             <span class="entrega-proc-label">${escapeHtml6(item.text || "")}</span>
             <span class="entrega-proc-meta">Texto legado</span>
           </div>
-          ${canDel2 ? `<button type="button" class="btn-secondary entrega-proc-delete" data-action="delete">Eliminar</button>` : ""}
+          ${canDel2 ? `<button type="button" class="btn-med-secondary entrega-proc-delete" data-action="delete">Eliminar</button>` : ""}
         </li>`;
     }
     if (item.type !== "procedimiento") return "";
@@ -26941,7 +27466,7 @@ function renderProcList() {
           <div class="entrega-proc-chips">${renderStatusChips(item)}${renderBadgeChips(item)}</div>
           ${flagRow}
         </div>
-        ${canDel ? `<button type="button" class="btn-secondary entrega-proc-delete" data-action="delete">Eliminar</button>` : ""}
+        ${canDel ? `<button type="button" class="btn-med-secondary entrega-proc-delete" data-action="delete">Eliminar</button>` : ""}
       </li>`;
   }).join("");
 }
@@ -26966,9 +27491,10 @@ function deleteItem(itemId) {
   renderProcList();
 }
 function readFormFields(formEl) {
-  const kind = formEl.querySelector('[name="entrega-proc-kind"]')?.value === "imagen" ? "imagen" : "otro";
+  const kindRaw = formEl.querySelector('[name="entrega-proc-kind"]')?.value;
+  const kind = kindRaw === "otro" ? "otro" : "imagen";
   const label = String(formEl.querySelector('[name="entrega-proc-label"]')?.value || "").trim();
-  const time = String(formEl.querySelector('[name="entrega-proc-time"]')?.value || "").trim();
+  const time = readTimeFromForm(formEl);
   return {
     kind,
     label,
@@ -26983,43 +27509,280 @@ function readFormFields(formEl) {
     }
   };
 }
+function checkPill(name, label, checked, extraClass = "", inputId = "") {
+  const cls = ["entrega-check-pill", extraClass].filter(Boolean).join(" ");
+  const idAttr = inputId ? ` id="${escapeHtml6(inputId)}"` : "";
+  return `<label class="${cls}">
+    <input type="checkbox" name="${name}"${idAttr} ${checked ? "checked" : ""}>
+    <span>${escapeHtml6(label)}</span>
+  </label>`;
+}
+function updateHandoffSummaryLine() {
+  const text = handoffContextSummary(draftHandoffContext);
+  const summary = document.getElementById("entrega-handoff-summary");
+  const collapsed = document.getElementById("entrega-handoff-summary-collapsed");
+  const display = text === "Sin resumen cl\xEDnico" ? "" : text;
+  if (summary) summary.textContent = display;
+  if (collapsed) collapsed.textContent = display;
+}
+function syncHandoffSupportCards(host) {
+  const vasoOn = !!host.querySelector('[name="entrega-vaso-active"]')?.checked;
+  const ventOn = !!host.querySelector('[name="entrega-vent-active"]')?.checked;
+  host.querySelector('[data-handoff-card="vasopressor"]')?.classList.toggle("is-active", vasoOn);
+  host.querySelector('[data-handoff-card="ventilation"]')?.classList.toggle("is-active", ventOn);
+  host.querySelector('[data-handoff-detail="vasopressor"]')?.classList.toggle("is-hidden", !vasoOn);
+  host.querySelector('[data-handoff-detail="ventilation"]')?.classList.toggle("is-hidden", !ventOn);
+}
+function readVasoUnitFromDom(host) {
+  const agent = normalizeVasopressorAgent(
+    host.querySelector("#entrega-vaso-agent")?.value || ""
+  );
+  if (agent === "vasopresina") return "ui_min";
+  const selected = host.querySelector("[data-vaso-unit].is-selected");
+  const unit = selected?.getAttribute("data-vaso-unit");
+  if (unit === "mcg_min" || unit === "mcg_kg_min") return unit;
+  return "mcg_kg_min";
+}
+function syncVasoUnitUi(host, unit) {
+  const agent = normalizeVasopressorAgent(
+    host.querySelector("#entrega-vaso-agent")?.value || ""
+  );
+  const coerced = coerceVasopressorUnit(agent, unit);
+  const chipsRow = host.querySelector("[data-vaso-unit-chips]");
+  const fixedRow = host.querySelector("[data-vaso-unit-fixed]");
+  const isVaso = agent === "vasopresina";
+  chipsRow?.classList.toggle("is-hidden", isVaso);
+  fixedRow?.classList.toggle("is-hidden", !isVaso);
+  host.querySelectorAll("[data-vaso-unit]").forEach((btn) => {
+    const u = btn.getAttribute("data-vaso-unit");
+    btn.classList.toggle("is-selected", !isVaso && u === coerced);
+  });
+}
+function applyVasoAgentDefaults(host, opts = {}) {
+  const agent = normalizeVasopressorAgent(
+    host.querySelector("#entrega-vaso-agent")?.value || "norepinefrina"
+  );
+  const doseInp = host.querySelector("#entrega-vaso-dose");
+  const defaults = defaultVasopressorInfusion(agent);
+  if (opts.applyDefaults || !String(doseInp?.value || "").trim()) {
+    if (doseInp) doseInp.value = defaults.dose;
+  }
+  syncVasoUnitUi(host, defaults.unit);
+}
+function buildVasoDoseMarkup(vas) {
+  const agent = normalizeVasopressorAgent(vas.agent) || "norepinefrina";
+  const unit = coerceVasopressorUnit(agent, vas.unit);
+  const dose = String(vas.dose || defaultVasopressorInfusion(agent).dose);
+  const agentOpts = VASOPRESSOR_AGENTS.map(
+    (a) => `<option value="${escapeHtml6(a.value)}"${a.value === agent ? " selected" : ""}>${escapeHtml6(a.label)}</option>`
+  ).join("");
+  const unitChips = ["mcg_kg_min", "mcg_min"].map((u) => {
+    const label = VASOPRESSOR_UNIT_LABELS[u];
+    return `<button type="button" class="entrega-freq-chip entrega-vaso-unit-pill${unit === u && agent !== "vasopresina" ? " is-selected" : ""}" data-vaso-unit="${u}">${escapeHtml6(label)}</button>`;
+  }).join("");
+  const isVaso = agent === "vasopresina";
+  return `
+    <div class="entrega-vaso-dose">
+      <div class="field-group">
+        <label for="entrega-vaso-agent">Agente</label>
+        <select id="entrega-vaso-agent" class="profile-input">${agentOpts}</select>
+      </div>
+      <div class="field-group entrega-vaso-dose-row">
+        <label for="entrega-vaso-dose">Infusi\xF3n</label>
+        <div class="entrega-vaso-dose-input-wrap">
+          <input id="entrega-vaso-dose" class="profile-input entrega-vaso-dose-input" type="number"
+            inputmode="decimal" step="0.01" min="0" placeholder="${escapeHtml6(
+    VASOPRESSOR_INFUSION_DEFAULTS[agent]?.dose || "0.05"
+  )}" value="${escapeHtml6(dose)}">
+          <div class="entrega-vaso-unit-inline" role="group" aria-label="Unidad de infusi\xF3n">
+            <div class="entrega-vaso-unit-chips${isVaso ? " is-hidden" : ""}" data-vaso-unit-chips>${unitChips}</div>
+            <span class="entrega-vaso-unit-pill-fixed${isVaso ? "" : " is-hidden"}" data-vaso-unit-fixed>${escapeHtml6(VASOPRESSOR_UNIT_LABELS.ui_min)}</span>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+function syncHandoffDraftFromDom(host) {
+  const status = String(host.querySelector("#entrega-clinical-status")?.value || "");
+  draftHandoffContext = normalizeHandoffContext({
+    clinicalStatus: status,
+    signedRefusal: !!host.querySelector("#entrega-signed-refusal")?.checked,
+    show: !!host.querySelector("#entrega-show")?.checked,
+    vasopressor: {
+      active: !!host.querySelector('[name="entrega-vaso-active"]')?.checked,
+      agent: normalizeVasopressorAgent(host.querySelector("#entrega-vaso-agent")?.value || ""),
+      dose: String(host.querySelector("#entrega-vaso-dose")?.value || "").trim(),
+      unit: readVasoUnitFromDom(host)
+    },
+    ventilation: {
+      active: !!host.querySelector('[name="entrega-vent-active"]')?.checked,
+      mode: String(host.querySelector("#entrega-vent-mode")?.value || "").trim(),
+      fio2: String(host.querySelector("#entrega-vent-fio2")?.value || "").trim(),
+      settings: String(host.querySelector("#entrega-vent-settings")?.value || "").trim()
+    },
+    notes: String(host.querySelector("#entrega-handoff-notes")?.value || "").trim()
+  });
+  syncHandoffSupportCards(host);
+  updateHandoffSummaryLine();
+}
+function buildHandoffPanelMarkup(ctx, isCritical) {
+  const norm = normalizeHandoffContext(ctx);
+  const statusOpts = CLINICAL_STATUS_OPTIONS.map(
+    (o) => `<option value="${escapeHtml6(o.value)}"${o.value === norm.clinicalStatus ? " selected" : ""}>${escapeHtml6(o.label)}</option>`
+  ).join("");
+  const ventModes = VENTILATION_MODES.map(
+    (m) => `<option value="${escapeHtml6(m.value)}"${m.value === norm.ventilation.mode ? " selected" : ""}>${escapeHtml6(m.label)}</option>`
+  ).join("");
+  return `
+    <div class="entrega-handoff-context-grid">
+      <div class="field-group">
+        <label for="entrega-clinical-status">Estado general</label>
+        <select id="entrega-clinical-status" class="profile-input">${statusOpts}</select>
+      </div>
+      <div class="entrega-handoff-flags">
+        <div class="entrega-check-section">
+          <span class="entrega-check-section__label">Marcadores</span>
+          <div class="entrega-check-pills">
+            ${checkPill("entrega-critical", "Paciente cr\xEDtico", isCritical, "entrega-check-pill--alert", "entrega-critical")}
+            ${checkPill("entrega-signed-refusal", "Negativas firmadas", norm.signedRefusal, "entrega-check-pill--alert", "entrega-signed-refusal")}
+            ${checkPill("entrega-show", "Show", norm.show, "entrega-check-pill--alert", "entrega-show")}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="entrega-handoff-support">
+      <div class="entrega-handoff-support-card${norm.vasopressor.active ? " is-active" : ""}" data-handoff-card="vasopressor">
+        <div class="entrega-handoff-support-card__head">
+          ${checkPill("entrega-vaso-active", "Vasopresor", norm.vasopressor.active)}
+        </div>
+        <div class="entrega-handoff-support-detail${norm.vasopressor.active ? "" : " is-hidden"}" data-handoff-detail="vasopressor">
+          ${buildVasoDoseMarkup(norm.vasopressor)}
+        </div>
+      </div>
+      <div class="entrega-handoff-support-card${norm.ventilation.active ? " is-active" : ""}" data-handoff-card="ventilation">
+        <div class="entrega-handoff-support-card__head">
+          ${checkPill("entrega-vent-active", "Ventilaci\xF3n / soporte resp.", norm.ventilation.active)}
+        </div>
+        <div class="entrega-handoff-support-detail${norm.ventilation.active ? "" : " is-hidden"}" data-handoff-detail="ventilation">
+          <div class="field-group">
+            <label for="entrega-vent-mode">Modalidad</label>
+            <select id="entrega-vent-mode" class="profile-input">${ventModes}</select>
+          </div>
+          <div class="field-group">
+            <label for="entrega-vent-fio2">FiO\u2082 / flujo</label>
+            <input id="entrega-vent-fio2" class="profile-input" type="text" placeholder="ej. 40% \xB7 50 L/min" value="${escapeHtml6(norm.ventilation.fio2)}">
+          </div>
+          <div class="field-group">
+            <label for="entrega-vent-settings">Par\xE1metros</label>
+            <input id="entrega-vent-settings" class="profile-input" type="text" placeholder="PEEP, VT, presiones\u2026" value="${escapeHtml6(norm.ventilation.settings)}">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="field-group entrega-handoff-notes">
+      <label for="entrega-handoff-notes">Notas breves de entrega</label>
+      <input id="entrega-handoff-notes" class="profile-input" type="text" maxlength="240" placeholder="Antecedentes relevantes para la guardia\u2026" value="${escapeHtml6(norm.notes)}">
+    </div>`;
+}
+function wireHandoffPanelOnce() {
+  if (handoffUiWired) return;
+  handoffUiWired = true;
+  const host = document.getElementById("entrega-handoff-panel");
+  if (!host) return;
+  host.addEventListener("change", (ev) => {
+    if (ev.target?.id === "entrega-vaso-agent") {
+      applyVasoAgentDefaults(host, { applyDefaults: true });
+    }
+    if (ev.target?.name === "entrega-vaso-active" && ev.target.checked) {
+      applyVasoAgentDefaults(host, { applyDefaults: true });
+    }
+    syncHandoffDraftFromDom(host);
+  });
+  host.addEventListener("input", () => syncHandoffDraftFromDom(host));
+  host.addEventListener("click", (ev) => {
+    const unitBtn = ev.target.closest("[data-vaso-unit]");
+    if (!unitBtn || unitBtn.classList.contains("is-hidden")) return;
+    host.querySelectorAll("[data-vaso-unit]").forEach((btn) => {
+      btn.classList.toggle("is-selected", btn === unitBtn);
+    });
+    syncVasoUnitUi(host, unitBtn.getAttribute("data-vaso-unit") || "mcg_kg_min");
+    syncHandoffDraftFromDom(host);
+  });
+}
+function mountEntregaHandoffPanel(handoffContext, opts = {}) {
+  wireHandoffPanelOnce();
+  const host = document.getElementById("entrega-handoff-panel");
+  if (!host) return;
+  draftHandoffContext = normalizeHandoffContext(handoffContext, {
+    signedRefusal: !!opts.signedRefusal
+  });
+  host.innerHTML = buildHandoffPanelMarkup(draftHandoffContext, !!opts.isCritical);
+  syncHandoffSupportCards(host);
+  applyVasoAgentDefaults(host);
+  updateHandoffSummaryLine();
+}
+function readEntregaHandoffContext() {
+  const host = document.getElementById("entrega-handoff-panel");
+  if (host?.innerHTML) syncHandoffDraftFromDom(host);
+  return normalizeHandoffContext(draftHandoffContext);
+}
+function readEntregaCriticalFromHandoff() {
+  const host = document.getElementById("entrega-handoff-panel");
+  if (!host) return false;
+  const input = host.querySelector("#entrega-critical");
+  return input instanceof HTMLInputElement ? input.checked : false;
+}
 function buildAddFormMarkup(prefill = null) {
   const p = prefill || {};
   const timeVal = p.scheduledAt ? formatHHmm(p.scheduledAt) : "";
+  const kindIsOtro = p.kind === "otro";
   return `
-    <fieldset class="entrega-proc-form-inner">
-      <legend>Agregar procedimiento</legend>
-      <div class="entrega-proc-form-row">
-        <label>Tipo
-          <select name="entrega-proc-kind" class="profile-input">
-            <option value="imagen" ${p.kind === "imagen" ? "selected" : ""}>Imagen</option>
-            <option value="otro" ${p.kind !== "imagen" ? "selected" : ""}>Otro</option>
+    <div class="entrega-inline-form" role="group" aria-label="Agregar procedimiento">
+      <div class="entrega-inline-form__head">
+        <h4 class="entrega-inline-form__title">Nuevo procedimiento</h4>
+        <button type="button" class="entrega-inline-form__close" data-action="cancel-form" aria-label="Cerrar">\xD7</button>
+      </div>
+      <div class="entrega-inline-form__grid">
+        <div class="field-group">
+          <label for="entrega-proc-kind">Tipo</label>
+          <select id="entrega-proc-kind" name="entrega-proc-kind" class="profile-input">
+            <option value="imagen" ${kindIsOtro ? "" : "selected"}>Imagen</option>
+            <option value="otro" ${kindIsOtro ? "selected" : ""}>Otro</option>
           </select>
-        </label>
-        <label>Etiqueta
-          <input name="entrega-proc-label" class="profile-input" type="text" required value="${escapeHtml6(p.label || "")}">
-        </label>
-        <label>Hora
-          <input name="entrega-proc-time" class="profile-input" type="time" value="${escapeHtml6(timeVal)}">
-        </label>
+        </div>
+        <div class="field-group entrega-inline-form__label-wide">
+          <label for="entrega-proc-label">Descripci\xF3n</label>
+          <input id="entrega-proc-label" name="entrega-proc-label" class="profile-input" type="text" required placeholder="Ej. TAC t\xF3rax, endoscopia\u2026" value="${escapeHtml6(p.label || "")}">
+        </div>
+        <div class="field-group entrega-inline-form__time">
+          <span class="entrega-field-label-block">Hora</span>
+          ${buildTimeSelectMarkup(timeVal, { allowBlank: false, picker: true })}
+        </div>
       </div>
-      <div class="entrega-proc-form-row entrega-proc-form-checks">
-        <label><input type="checkbox" name="entrega-proc-comentado" ${p.comentado ? "checked" : ""}> Comentado</label>
-        <label><input type="checkbox" name="entrega-proc-autorizado" ${p.autorizado ? "checked" : ""}> Autorizado</label>
-        <label><input type="checkbox" name="entrega-proc-agendado" ${p.agendado ? "checked" : ""}> Agendado</label>
+      <div class="entrega-check-section">
+        <span class="entrega-check-section__label">Estado</span>
+        <div class="entrega-check-pills">
+          ${checkPill("entrega-proc-comentado", "Comentado", p.comentado)}
+          ${checkPill("entrega-proc-autorizado", "Autorizado", p.autorizado)}
+          ${checkPill("entrega-proc-agendado", "Agendado", p.agendado)}
+        </div>
       </div>
-      <div class="entrega-proc-form-row entrega-proc-form-checks">
-        <span class="entrega-proc-req-label">Requiere:</span>
-        <label><input type="checkbox" name="entrega-req-familiar" ${p.requires?.familiar ? "checked" : ""}> Familiar</label>
-        <label><input type="checkbox" name="entrega-req-consentimiento" ${p.requires?.consentimiento ? "checked" : ""}> Consentimiento</label>
-        <label><input type="checkbox" name="entrega-req-anestesia" ${p.requires?.anestesia ? "checked" : ""}> Anestesia</label>
+      <div class="entrega-check-section">
+        <span class="entrega-check-section__label">Requiere</span>
+        <div class="entrega-check-pills">
+          ${checkPill("entrega-req-familiar", "Familiar", p.requires?.familiar)}
+          ${checkPill("entrega-req-consentimiento", "Consentimiento", p.requires?.consentimiento)}
+          ${checkPill("entrega-req-anestesia", "Anestesia", p.requires?.anestesia)}
+        </div>
       </div>
-      <div class="entrega-proc-form-actions">
-        <button type="button" class="btn-secondary" data-action="cancel-form">Cancelar</button>
-        <button type="button" class="btn-secondary" data-action="save-template">Guardar plantilla</button>
-        <button type="button" class="btn-save" data-action="add-item">A\xF1adir a lista</button>
+      <div class="entrega-inline-form__foot">
+        <button type="button" class="entrega-foot-muted" data-action="save-template">Guardar plantilla</button>
+        <div class="entrega-inline-form__foot-actions">
+          <button type="button" class="btn-cancel" data-action="cancel-form">Cancelar</button>
+          <button type="button" class="btn-save" data-action="add-item">A\xF1adir</button>
+        </div>
       </div>
-    </fieldset>`;
+    </div>`;
 }
 function showAddForm(prefill = null) {
   const wrap = document.getElementById("entrega-proc-form");
@@ -27114,16 +27877,22 @@ function showTemplatePicker() {
     (t2, i) => `<option value="${i}">[${escapeHtml6(t2.scopeLabel)}] ${escapeHtml6(t2.name)}</option>`
   ).join("");
   wrap.innerHTML = `
-    <fieldset class="entrega-proc-form-inner">
-      <legend>Aplicar plantilla</legend>
-      <label>Plantilla
-        <select id="entrega-template-pick" class="profile-input">${options}</select>
-      </label>
-      <div class="entrega-proc-form-actions">
-        <button type="button" class="btn-secondary" data-action="cancel-form">Cancelar</button>
-        <button type="button" class="btn-save" data-action="apply-template">Prefill formulario</button>
+    <div class="entrega-inline-form entrega-inline-form--picker" role="group" aria-label="Aplicar plantilla">
+      <div class="entrega-inline-form__head">
+        <h4 class="entrega-inline-form__title">Plantillas</h4>
+        <button type="button" class="entrega-inline-form__close" data-action="cancel-form" aria-label="Cerrar">\xD7</button>
       </div>
-    </fieldset>`;
+      <div class="field-group">
+        <label for="entrega-template-pick">Elegir plantilla</label>
+        <select id="entrega-template-pick" class="profile-input">${options}</select>
+      </div>
+      <div class="entrega-inline-form__foot">
+        <div class="entrega-inline-form__foot-actions entrega-inline-form__foot-actions--end">
+          <button type="button" class="btn-cancel" data-action="cancel-form">Cancelar</button>
+          <button type="button" class="btn-save" data-action="apply-template">Continuar</button>
+        </div>
+      </div>
+    </div>`;
   wrap.classList.remove("hidden");
   wrap.setAttribute("aria-hidden", "false");
   wrap.querySelector('[data-action="apply-template"]')?.addEventListener("click", () => {
@@ -27185,7 +27954,7 @@ function wireProcUiOnce() {
       const btn = ev.target.closest("[data-action]");
       if (!btn) return;
       const action = btn.getAttribute("data-action");
-      const inner = formWrap.querySelector(".entrega-proc-form-inner");
+      const inner = formWrap.querySelector(".entrega-inline-form");
       if (action === "cancel-form") {
         hideAddForm();
         return;
@@ -27202,21 +27971,374 @@ function wireProcUiOnce() {
     });
   });
 }
+function updateVitalsSummary() {
+  const summary = document.getElementById("entrega-vitals-summary");
+  if (summary) summary.textContent = vitalsPlanSummary(draftVitalsPlan);
+}
+function mergeIntervalFrequency(patch) {
+  const cur = normalizeFrequencySpec(draftVitalsPlan.frequency);
+  const base = cur.mode === "interval" ? cur : { mode: "interval", hours: 2 };
+  return normalizeFrequencySpec({ ...base, mode: "interval", ...patch });
+}
+function buildVitalsUntilTimeMarkup(hhmm, scope) {
+  const enabled = !!hhmm;
+  return `
+    <div class="entrega-freq-until">
+      <label class="entrega-check-pill entrega-freq-until-toggle">
+        <input type="checkbox" data-vitals-until-enable${enabled ? " checked" : ""}>
+        <span>Detener a las</span>
+      </label>
+      ${buildTimeSelectMarkup(hhmm || "07:00", {
+    hourName: `entrega-vitals-until-hour-${scope}`,
+    minuteName: `entrega-vitals-until-minute-${scope}`,
+    ariaLabel: "Hora de fin",
+    allowBlank: false,
+    picker: true,
+    wrapperClass: `entrega-freq-until-time entrega-time-picker--compact${enabled ? "" : " is-disabled"}`,
+    disabled: !enabled
+  })}
+    </div>`;
+}
+function activeVitalsFreqPanel(host) {
+  return host.querySelector("#entrega-freq-interval-panel:not(.is-hidden)") || host.querySelector("#entrega-freq-shift-panel:not(.is-hidden)");
+}
+function readVitalsUntilTimeFromHost(host) {
+  const panel = activeVitalsFreqPanel(host);
+  if (!panel) return null;
+  if (!panel.querySelector("[data-vitals-until-enable]")?.checked) return null;
+  const hour = String(
+    panel.querySelector('[name^="entrega-vitals-until-hour"]')?.value || ""
+  ).trim();
+  const minute = String(
+    panel.querySelector('[name^="entrega-vitals-until-minute"]')?.value || ""
+  ).trim();
+  if (!hour || !minute) return null;
+  return normalizeUntilTime(`${hour}:${minute}`);
+}
+function wireVitalsUntilPanel(host, panel) {
+  if (!panel) return;
+  const untilEnable = panel.querySelector("[data-vitals-until-enable]");
+  const untilTimeWrap = panel.querySelector(".entrega-freq-until-time");
+  const setUntilEnabled = (on) => {
+    untilTimeWrap?.classList.toggle("is-disabled", !on);
+    untilTimeWrap?.querySelectorAll("select").forEach((sel) => {
+      sel.disabled = !on;
+    });
+    if (on) {
+      const hSel = panel.querySelector('[name^="entrega-vitals-until-hour"]');
+      const mSel = panel.querySelector('[name^="entrega-vitals-until-minute"]');
+      if (hSel && !hSel.value) hSel.value = "07";
+      if (mSel && !mSel.value) mSel.value = "00";
+    }
+    syncFrequencyDraftFromDom(host);
+  };
+  untilEnable?.addEventListener("change", () => setUntilEnabled(!!untilEnable.checked));
+  untilTimeWrap?.querySelectorAll("select").forEach((sel) => {
+    sel.addEventListener("change", () => syncFrequencyDraftFromDom(host));
+  });
+}
+function readFrequencyFromDom(host) {
+  const mode = String(
+    host.querySelector('input[name="entrega-freq-mode"]:checked')?.value || "routine"
+  );
+  const untilTime = readVitalsUntilTimeFromHost(host);
+  if (mode === "interval") {
+    const hours = Number(host.querySelector("#entrega-vitals-hours")?.value || 2);
+    return normalizeFrequencySpec({
+      mode: "interval",
+      hours,
+      untilTime
+    });
+  }
+  if (mode === "shift") {
+    const chip = host.querySelector("[data-freq-shift].is-selected");
+    const times = Number(chip?.getAttribute("data-freq-shift") || 1);
+    return normalizeFrequencySpec({
+      mode: "shift",
+      timesPerShift: times,
+      untilTime
+    });
+  }
+  return { mode: "routine" };
+}
+function syncFrequencyDraftFromDom(host) {
+  draftVitalsPlan = normalizeVitalsPlan({
+    ...draftVitalsPlan,
+    frequency: readFrequencyFromDom(host)
+  });
+  updateVitalsSummary();
+}
+function syncVitalsFreqUi(host) {
+  const freq = normalizeFrequencySpec(draftVitalsPlan.frequency);
+  const mode = freq.mode;
+  host.querySelectorAll('input[name="entrega-freq-mode"]').forEach((input) => {
+    if (input instanceof HTMLInputElement) input.checked = input.value === mode;
+  });
+  host.querySelector("#entrega-freq-interval-panel")?.classList.toggle("is-hidden", mode !== "interval");
+  host.querySelector("#entrega-freq-shift-panel")?.classList.toggle("is-hidden", mode !== "shift");
+  const slot = host.querySelector(".entrega-vitals-freq-detail-slot");
+  slot?.setAttribute("aria-hidden", mode === "routine" ? "true" : "false");
+  if (mode === "interval") {
+    const hours = freq.mode === "interval" ? freq.hours ?? 2 : 2;
+    const hoursInp = host.querySelector("#entrega-vitals-hours");
+    if (hoursInp instanceof HTMLInputElement) hoursInp.value = String(hours);
+    host.querySelectorAll("[data-freq-hours]").forEach((chip) => {
+      chip.classList.toggle(
+        "is-selected",
+        Number(chip.getAttribute("data-freq-hours")) === hours
+      );
+    });
+  }
+  if (mode === "shift") {
+    const times = freq.mode === "shift" ? freq.timesPerShift ?? 1 : 1;
+    host.querySelectorAll("[data-freq-shift]").forEach((chip) => {
+      chip.classList.toggle(
+        "is-selected",
+        Number(chip.getAttribute("data-freq-shift")) === times
+      );
+    });
+  }
+  updateVitalsSummary();
+}
+function renderVitalsPanel() {
+  const host = document.getElementById("entrega-vitals-panel");
+  if (!host) return;
+  const plan = normalizeVitalsPlan(draftVitalsPlan);
+  draftVitalsPlan = plan;
+  const freq = plan.frequency;
+  const metricChecks = VITALS_METRIC_KEYS.map(
+    (key) => `<label class="entrega-check-pill"><input type="checkbox" data-vital-metric="${key}" ${plan.metrics[key] ? "checked" : ""}><span>${escapeHtml6(VITALS_METRIC_LABELS[key])}</span></label>`
+  ).join("");
+  const modeLabels = { routine: "Rutina", interval: "Intervalo", shift: "Por turno" };
+  const modePills = ["routine", "interval", "shift"].map(
+    (mode) => `<label class="entrega-check-pill entrega-freq-mode-pill">
+          <input type="radio" name="entrega-freq-mode" value="${mode}" ${freq.mode === mode ? "checked" : ""}>
+          <span>${modeLabels[mode]}</span>
+        </label>`
+  ).join("");
+  const hourChips = VITALS_FREQ_HOUR_PRESETS.map(
+    (h) => `<button type="button" class="entrega-freq-chip${freq.mode === "interval" && freq.hours === h ? " is-selected" : ""}" data-freq-hours="${h}">${h} h</button>`
+  ).join("");
+  const shiftChips = VITALS_FREQ_SHIFT_OPTIONS.map(
+    (t2) => `<button type="button" class="entrega-freq-chip${freq.mode === "shift" && freq.timesPerShift === t2 ? " is-selected" : ""}" data-freq-shift="${t2}">${t2}\xD7</button>`
+  ).join("");
+  const hoursVal = freq.mode === "interval" ? freq.hours ?? 2 : 2;
+  const untilInterval = buildVitalsUntilTimeMarkup(
+    freq.mode === "interval" ? freq.untilTime : null,
+    "interval"
+  );
+  const untilShift = buildVitalsUntilTimeMarkup(
+    freq.mode === "shift" ? freq.untilTime : null,
+    "shift"
+  );
+  host.innerHTML = `
+    <div class="entrega-vitals-form">
+      <div class="entrega-vitals-form__scroll">
+        <section class="entrega-vitals-section" aria-labelledby="entrega-vitals-metrics-label">
+          <h5 class="entrega-vitals-section__title" id="entrega-vitals-metrics-label">Par\xE1metros</h5>
+          <div
+            class="entrega-check-pills entrega-vitals-metrics"
+            role="group"
+            aria-labelledby="entrega-vitals-metrics-label"
+          >${metricChecks}</div>
+        </section>
+        <section class="entrega-vitals-section" aria-labelledby="entrega-vitals-freq-label">
+          <h5 class="entrega-vitals-section__title" id="entrega-vitals-freq-label">Frecuencia</h5>
+          <div class="entrega-vitals-freq" role="group" aria-labelledby="entrega-vitals-freq-label">
+            <div class="entrega-freq-segment entrega-check-pills entrega-freq-modes" role="radiogroup" aria-label="Modo de frecuencia">
+              ${modePills}
+            </div>
+            <div class="entrega-vitals-freq-detail-slot" aria-hidden="${freq.mode === "routine"}">
+              <div class="entrega-freq-panel${freq.mode === "interval" ? "" : " is-hidden"}" id="entrega-freq-interval-panel">
+                <div class="entrega-freq-detail-card">
+                  <div class="entrega-freq-detail__row">
+                    <span class="entrega-freq-detail__row-label">Atajos</span>
+                    <div class="entrega-freq-chips" role="group" aria-label="Atajos cada N horas">${hourChips}</div>
+                  </div>
+                  <div class="entrega-freq-detail__row-split">
+                    <div class="entrega-freq-detail__cell">
+                      <span class="entrega-freq-detail__cell-label">Cada</span>
+                      <div class="entrega-freq-stepper" role="group" aria-label="Intervalo en horas">
+                        <button type="button" class="entrega-freq-step" data-hours-dec aria-label="Menos horas">\u2212</button>
+                        <input
+                          type="number"
+                          id="entrega-vitals-hours"
+                          class="entrega-freq-hours-input"
+                          min="1"
+                          max="24"
+                          step="1"
+                          inputmode="numeric"
+                          value="${hoursVal}"
+                          aria-label="Cada cu\xE1ntas horas"
+                        >
+                        <button type="button" class="entrega-freq-step" data-hours-inc aria-label="M\xE1s horas">+</button>
+                      </div>
+                      <span class="entrega-freq-interval-suffix">horas</span>
+                    </div>
+                    <div class="entrega-freq-detail__cell entrega-freq-detail__cell--until">
+                      ${untilInterval}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="entrega-freq-panel${freq.mode === "shift" ? "" : " is-hidden"}" id="entrega-freq-shift-panel">
+                <div class="entrega-freq-detail-card">
+                  <div class="entrega-freq-detail__row">
+                    <span class="entrega-freq-detail__row-label">Veces</span>
+                    <div class="entrega-freq-chips" role="group" aria-label="Veces por turno">${shiftChips}</div>
+                  </div>
+                  <div class="entrega-freq-detail__row">
+                    <span class="entrega-freq-detail__row-label">Fin</span>
+                    <div class="entrega-freq-detail__cell entrega-freq-detail__cell--until">
+                      ${untilShift}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <p class="entrega-vitals-summary" id="entrega-vitals-summary" role="status">${escapeHtml6(vitalsPlanSummary(plan))}</p>
+    </div>`;
+  host.querySelectorAll("[data-vital-metric]").forEach((input) => {
+    input.addEventListener("change", () => {
+      const key = input.getAttribute("data-vital-metric");
+      if (!key) return;
+      draftVitalsPlan = normalizeVitalsPlan({
+        ...draftVitalsPlan,
+        metrics: {
+          ...draftVitalsPlan.metrics,
+          [key]: input.checked
+        }
+      });
+      updateVitalsSummary();
+    });
+  });
+  host.querySelectorAll('input[name="entrega-freq-mode"]').forEach((input) => {
+    input.addEventListener("change", () => {
+      const mode = String(input.value || "routine");
+      if (mode === "interval") {
+        draftVitalsPlan = normalizeVitalsPlan({
+          ...draftVitalsPlan,
+          frequency: mergeIntervalFrequency({ hours: 2 })
+        });
+      } else if (mode === "shift") {
+        const cur = normalizeFrequencySpec(draftVitalsPlan.frequency);
+        draftVitalsPlan = normalizeVitalsPlan({
+          ...draftVitalsPlan,
+          frequency: normalizeFrequencySpec({
+            mode: "shift",
+            timesPerShift: 1,
+            untilTime: cur.untilTime
+          })
+        });
+      } else {
+        draftVitalsPlan = normalizeVitalsPlan({
+          ...draftVitalsPlan,
+          frequency: { mode: "routine" }
+        });
+      }
+      syncVitalsFreqUi(host);
+    });
+  });
+  host.querySelectorAll("[data-freq-hours]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const hours = Number(btn.getAttribute("data-freq-hours") || 2);
+      draftVitalsPlan = normalizeVitalsPlan({
+        ...draftVitalsPlan,
+        frequency: mergeIntervalFrequency({ hours })
+      });
+      syncVitalsFreqUi(host);
+    });
+  });
+  host.querySelectorAll("[data-freq-shift]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const timesPerShift = Number(btn.getAttribute("data-freq-shift") || 1);
+      const cur = normalizeFrequencySpec(draftVitalsPlan.frequency);
+      draftVitalsPlan = normalizeVitalsPlan({
+        ...draftVitalsPlan,
+        frequency: normalizeFrequencySpec({
+          mode: "shift",
+          timesPerShift,
+          untilTime: cur.untilTime
+        })
+      });
+      syncVitalsFreqUi(host);
+    });
+  });
+  wireVitalsUntilPanel(host, host.querySelector("#entrega-freq-interval-panel"));
+  wireVitalsUntilPanel(host, host.querySelector("#entrega-freq-shift-panel"));
+  const hoursInp = host.querySelector("#entrega-vitals-hours");
+  const bumpHours = (delta) => {
+    const cur = Number(hoursInp?.value || 2);
+    const next = Math.min(24, Math.max(1, cur + delta));
+    if (hoursInp) hoursInp.value = String(next);
+    draftVitalsPlan = normalizeVitalsPlan({
+      ...draftVitalsPlan,
+      frequency: mergeIntervalFrequency({ hours: next })
+    });
+    host.querySelectorAll("[data-freq-hours]").forEach((chip) => {
+      chip.classList.toggle(
+        "is-selected",
+        Number(chip.getAttribute("data-freq-hours")) === next
+      );
+    });
+    updateVitalsSummary();
+  };
+  host.querySelector("[data-hours-dec]")?.addEventListener("click", () => bumpHours(-1));
+  host.querySelector("[data-hours-inc]")?.addEventListener("click", () => bumpHours(1));
+  hoursInp?.addEventListener("change", () => syncFrequencyDraftFromDom(host));
+  hoursInp?.addEventListener("input", () => syncFrequencyDraftFromDom(host));
+}
+function readEntregaVitalsPlan() {
+  const host = document.getElementById("entrega-vitals-panel");
+  if (!host) return normalizeVitalsPlan(draftVitalsPlan);
+  const metrics = { ...draftVitalsPlan.metrics };
+  host.querySelectorAll("[data-vital-metric]").forEach((input) => {
+    const key = input.getAttribute("data-vital-metric");
+    if (key) metrics[key] = !!input.checked;
+  });
+  return normalizeVitalsPlan({ frequency: readFrequencyFromDom(host), metrics });
+}
+function mountEntregaVitalsPanel(opts = {}) {
+  if (opts.vitalsPlan) {
+    draftVitalsPlan = normalizeVitalsPlan(opts.vitalsPlan);
+  } else if (opts.vitalsFrequency) {
+    draftVitalsPlan = normalizeVitalsPlan({
+      ...defaultVitalsPlan(),
+      frequency: normalizeFrequencySpec(opts.vitalsFrequency)
+    });
+  } else {
+    draftVitalsPlan = defaultVitalsPlan();
+  }
+  renderVitalsPanel();
+}
 async function mountEntregaPendientesUi(opts) {
   wireProcUiOnce();
   draftActor = opts.actor;
   draftSourceTeamId = String(opts.sourceTeamId || "");
   const doc = normalizePendientesJson(opts.pendientesJson || "");
   draftItems = doc.items.slice();
+  mountEntregaHandoffPanel(doc.handoffContext, {
+    isCritical: !!opts.isCritical,
+    signedRefusal: !!opts.signedRefusal
+  });
+  mountEntregaVitalsPanel({
+    vitalsPlan: doc.vitalsPlan,
+    vitalsFrequency: opts.vitalsFrequency
+  });
   hideAddForm();
   renderProcList();
   const userId = String(clinicalSessionContext.user?.user_id || "");
   await refreshTemplateCatalog(userId);
 }
-var BADGE_LABELS, draftItems, draftActor, templateCatalog, draftSourceTeamId, uiWired;
+var BADGE_LABELS, draftItems, draftActor, templateCatalog, draftSourceTeamId, draftVitalsPlan, draftHandoffContext, uiWired, handoffUiWired;
 var init_entrega_modal_ui = __esm({
   "public/js/features/entrega-modal-ui.mjs"() {
     init_entrega_pendientes();
+    init_entrega_handoff_context();
+    init_entrega_vitals_plan();
     init_clinical_access_runtime();
     BADGE_LABELS = {
       consentimiento: "Consent",
@@ -27227,7 +28349,10 @@ var init_entrega_modal_ui = __esm({
     draftActor = null;
     templateCatalog = { user: [], team: [] };
     draftSourceTeamId = "";
+    draftVitalsPlan = defaultVitalsPlan();
+    draftHandoffContext = defaultHandoffContext();
     uiWired = false;
+    handoffUiWired = false;
   }
 });
 
@@ -27256,6 +28381,38 @@ function uniqueByUserId(list) {
     seen.add(u.user_id);
     return true;
   });
+}
+function ensureEntregaTargetUser(targetList, users, userId, fallbackLabel = "") {
+  const id = String(userId || "").trim();
+  if (!id || targetList.some((u) => u.user_id === id)) return targetList;
+  const match = normalizeUsers(users).find((u) => u.user_id === id);
+  if (match) return [match, ...targetList];
+  return [
+    {
+      user_id: id,
+      username: fallbackLabel || "Residente de guardia",
+      rank: "R1",
+      clinical_name: ""
+    },
+    ...targetList
+  ];
+}
+function collectEntregaScopeUsers(scopeContext, teams, sessionUser = null) {
+  const parts = [];
+  if (Array.isArray(scopeContext?.users)) parts.push(...scopeContext.users);
+  for (const team of teams || []) {
+    for (const m of team.members || []) {
+      if (!m?.user_id) continue;
+      parts.push({
+        user_id: m.user_id,
+        username: m.username,
+        rank: m.rank,
+        clinical_name: m.clinical_name
+      });
+    }
+  }
+  if (sessionUser?.user_id) parts.push(sessionUser);
+  return uniqueByUserId(normalizeUsers(parts));
 }
 function listEntregaTargets(rank, teams, users, salaDeficit, opts = {}) {
   const currentUserId2 = String(opts.currentUserId || "");
@@ -27287,11 +28444,23 @@ function listEntregaTargets(rank, teams, users, salaDeficit, opts = {}) {
     return { flow: "r2_handoff", targets: targets.length ? targets : all };
   }
   if (rankNorm === "R1") {
+    let userSala = "";
+    for (const t2 of joinedTeams) {
+      const sala = String(t2.sala || "").trim();
+      if (sala) {
+        userSala = sala;
+        break;
+      }
+    }
+    const onCallIds = new Set(
+      (userSala ? salaOnCallR1(teamList, userSala, now) : []).map((r) => String(r.user_id))
+    );
+    const onCallTargets = all.filter((u) => u.rank === "R1" && onCallIds.has(u.user_id));
     const joinedIds = new Set(joinedTeams.map((t2) => String(t2.team_id)));
     const fractions = new Set(
       joinedTeams.map((t2) => String(t2.sub_area_fraction || "").trim()).filter(Boolean)
     );
-    const targets = all.filter((u) => {
+    const peerTargets = all.filter((u) => {
       if (u.rank !== "R1") return false;
       return teamList.some((team) => {
         const member = (team.members || []).some((m) => String(m.user_id) === u.user_id);
@@ -27301,7 +28470,8 @@ function listEntregaTargets(rank, teams, users, salaDeficit, opts = {}) {
         return frac && fractions.has(frac);
       });
     });
-    return { flow: "r1", targets: targets.length ? uniqueByUserId(targets) : all };
+    const targets = uniqueByUserId([...onCallTargets, ...peerTargets]);
+    return { flow: "r1", targets: targets.length ? targets : all };
   }
   return { flow: "generic", targets: all };
 }
@@ -27313,6 +28483,13 @@ function toast5(msg, type = "info") {
   if (typeof window !== "undefined" && typeof window.showToast === "function") {
     window.showToast(msg, type);
   }
+}
+function resolveEntregaPatientRow(patientId) {
+  const id = String(patientId || "");
+  if (!id) return null;
+  return (patients || []).find((p) => String(p.id) === id) || (clinicalSessionContext.scopeContext?.patients || []).find(
+    (p) => String(p.id || p.patient_id) === id
+  ) || null;
 }
 function entregaModalEl() {
   return document.getElementById("entrega-modal-backdrop");
@@ -27373,20 +28550,24 @@ function wireEntregaFormOnce() {
     ev.preventDefault();
     const patientId = String(form.dataset.patientId || "");
     const guardiaId = form.dataset.guardiaId ? String(form.dataset.guardiaId) : void 0;
+    const phaseCovering = getEntregaPhaseCoveringUserId();
+    const existingGuardia = guardiaId ? clinicalSessionContext.guardias.find((g3) => String(g3.guardia_id) === guardiaId) : clinicalSessionContext.guardiasMap.get(patientId);
     const coveringUserId = String(
-      document.getElementById("entrega-covering-user")?.value || ""
+      document.getElementById("entrega-covering-user")?.value || phaseCovering || existingGuardia?.covering_user_id || ""
     );
     const sourceTeamId = String(document.getElementById("entrega-source-team")?.value || "") || resolveDefaultSourceTeamId();
-    const isCritical = !!document.getElementById("entrega-critical")?.checked;
-    const vitalsFrequency = String(
-      document.getElementById("entrega-vitals-frequency")?.value || "None"
-    );
+    const isCritical = readEntregaCriticalFromHandoff();
+    const vitalsPlan = readEntregaVitalsPlan();
+    const vitalsFrequency = vitalsFrequencyForDb(vitalsPlan.frequency);
+    const handoffContext = readEntregaHandoffContext();
     if (!patientId || !coveringUserId || !sourceTeamId) {
-      toast5("Selecciona usuario cubridor y equipo de origen.", "error");
+      toast5("Selecciona R1 de guardia y equipo de origen.", "error");
       return;
     }
     const pendientesJson = serializePendientesJson({
       version: 2,
+      vitalsPlan,
+      handoffContext,
       items: getEntregaDraftItems()
     });
     try {
@@ -27424,7 +28605,7 @@ function openEntregaModal(opts) {
   form._entregaOnConfirm = typeof opts?.onConfirm === "function" ? opts.onConfirm : null;
   const ctx = clinicalSessionContext.scopeContext || {};
   const teams = clinicalSessionContext.teams || ctx.teams || [];
-  const users = Array.isArray(ctx.users) ? ctx.users : [];
+  const users = collectEntregaScopeUsers(ctx, teams, clinicalSessionContext.user);
   const salaGuardiaToday = Array.isArray(ctx.salaGuardiaToday) ? ctx.salaGuardiaToday : [];
   const userId = String(clinicalSessionContext.user?.user_id || "");
   const rank = effectiveClinicalRank(clinicalSessionContext.user);
@@ -27441,12 +28622,43 @@ function openEntregaModal(opts) {
   const teamSelect = document.getElementById("entrega-source-team");
   const hint = document.getElementById("entrega-flow-hint");
   if (select) {
-    select.innerHTML = targets.map(
-      (u) => `<option value="${u.user_id}">${userOptionLabel(u)}</option>`
-    ).join("");
+    const phase = getEntregaPhase();
     const phaseCovering = getEntregaPhaseCoveringUserId();
-    const preferred = existing?.covering_user_id ? String(existing.covering_user_id) : phaseCovering || targets[0]?.user_id || "";
+    let preferred = existing?.covering_user_id ? String(existing.covering_user_id) : phaseCovering || "";
+    if (!existing && clinicalSessionContext.guardiaMode && !phase?.active) {
+      const sala = resolveUserSalaForEntrega(teams, userId);
+      const selfCovering = sala ? resolveR1GuardiaCovering(teams, users, sala) : null;
+      if (selfCovering?.coveringUserId === userId) {
+        preferred = userId;
+      }
+    }
+    let targetList = [...targets];
+    for (const id of [preferred, phaseCovering]) {
+      targetList = ensureEntregaTargetUser(
+        targetList,
+        users,
+        id,
+        phase?.coveringLabel || ""
+      );
+    }
+    if (!preferred && targetList[0]?.user_id) preferred = targetList[0].user_id;
+    select.innerHTML = targetList.map((u) => `<option value="${u.user_id}">${userOptionLabel(u)}</option>`).join("");
     if (preferred) select.value = preferred;
+    if (phase?.active && phaseCovering) {
+      select.disabled = true;
+      select.removeAttribute("required");
+      const coverHint = document.getElementById("entrega-covering-hint");
+      if (coverHint) {
+        coverHint.textContent = `Entrega activa \u2192 ${phase.coveringLabel || "R1 de guardia"}. Este paciente se entregar\xE1 a esa persona.`;
+      }
+    } else {
+      select.disabled = false;
+      select.setAttribute("required", "");
+      const coverHint = document.getElementById("entrega-covering-hint");
+      if (coverHint) {
+        coverHint.textContent = "Residente de guardia que asumir\xE1 la cobertura nocturna de este paciente.";
+      }
+    }
   }
   if (teamSelect) {
     const joined = getJoinedTeams(teams, userId);
@@ -27457,27 +28669,40 @@ function openEntregaModal(opts) {
   }
   if (hint) {
     const flowLabels = {
-      r1: "R1: mismos equipo o fracci\xF3n de sub-\xE1rea.",
       r2: "R2: mismo servicio, R4, o cubridores Sala en d\xE9ficit.",
       r2_handoff: "R2: selecciona R4 de Sala y R2 de guardia (dos entregas separadas).",
       r3_suggest: "R3: sugeridos por d\xEDa de guardia del equipo (confirma).",
       generic: "Cualquier usuario registrado."
     };
-    hint.textContent = flowLabels[flow] || flowLabels.generic;
+    if (flow === "r1") {
+      hint.textContent = "";
+      hint.hidden = true;
+    } else {
+      hint.textContent = flowLabels[flow] || flowLabels.generic;
+      hint.hidden = false;
+    }
   }
-  const criticalEl = document.getElementById("entrega-critical");
-  const vitalsEl = document.getElementById("entrega-vitals-frequency");
-  if (criticalEl) criticalEl.checked = !!existing?.is_critical;
-  if (vitalsEl) vitalsEl.value = String(existing?.vitals_frequency || "None");
   const actor = resolveEntregaActorRole2(clinicalSessionContext.user, existing);
   const srcTeam = existing?.source_team_id || resolveDefaultSourceTeamId();
+  const patientRow = resolveEntregaPatientRow(patientId);
   void mountEntregaPendientesUi({
     actor,
     pendientesJson: existing?.pendientes_json,
-    sourceTeamId: srcTeam
+    sourceTeamId: srcTeam,
+    vitalsFrequency: existing?.vitals_frequency,
+    isCritical: !!existing?.is_critical,
+    signedRefusal: !!Number(patientRow?.negativa_maniobras_firmada)
   });
   const title = document.getElementById("entrega-modal-title");
-  if (title) title.textContent = guardiaId ? "Actualizar entrega" : "Nueva entrega";
+  if (title) {
+    if (guardiaId || existing?.guardia_id) {
+      title.textContent = actor.role === "guardia" ? "Pendientes de guardia" : "Actualizar entrega";
+    } else if (clinicalSessionContext.guardiaMode) {
+      title.textContent = "Entrega / pendientes";
+    } else {
+      title.textContent = "Nueva entrega";
+    }
+  }
   bd.classList.add("open");
   bd.setAttribute("aria-hidden", "false");
   select?.focus();
@@ -27567,7 +28792,7 @@ function toggleEntregaPhase(opts = {}) {
   }
   const ctx = clinicalSessionContext.scopeContext || {};
   const teams = clinicalSessionContext.teams || ctx.teams || [];
-  const users = Array.isArray(ctx.users) ? ctx.users : [];
+  const users = collectEntregaScopeUsers(ctx, teams, clinicalSessionContext.user);
   const userId = String(clinicalSessionContext.user?.user_id || "");
   const sala = resolveUserSalaForEntrega(teams, userId);
   if (!sala) {
@@ -27599,10 +28824,12 @@ function loadGuardiaGridViewContext() {
 var GUARDIA_GRID_MODE_KEY, ENTREGA_PHASE_KEY, entregaFormWired;
 var init_clinical_entrega = __esm({
   "public/js/features/clinical-entrega.mjs"() {
+    init_app_state();
     init_clinical_access_runtime();
     init_clinico_access();
     init_clinical_privileges();
     init_entrega_pendientes();
+    init_entrega_vitals_plan();
     init_lan_sync();
     init_entrega_modal_ui();
     GUARDIA_GRID_MODE_KEY = "guardia.gridMode";
@@ -27685,6 +28912,7 @@ function enrichPatientForGuardiaCard(p, guardiasMap) {
   const pendingCount = g3?.pendientes_json ? listActiveProcedimientos(normalizePendientesJson(g3.pendientes_json)).length : 0;
   const vitalsAltered = lastMedicionHasAlterations(p);
   const isCritical = !!(g3?.is_critical || vitalsAltered || openTodos > 0 && storage.getTodos(base.id).some((t2) => !t2.completed && t2.priority === "alta"));
+  const entregaMarkers = g3 ? entregaChipMarkerIds(g3) : [];
   return {
     ...base,
     dxText: dxText.toUpperCase(),
@@ -27692,6 +28920,7 @@ function enrichPatientForGuardiaCard(p, guardiasMap) {
     labsSnippet: labsSnippetForPatient(base.id),
     isCritical,
     vitalsAltered,
+    entregaMarkers,
     guardiaMeta: g3
   };
 }
@@ -27755,11 +28984,10 @@ function renderGuardiaBoard(settings2) {
     assignments: clinicalSessionContext.assignments || [],
     salaGuardiaToday: clinicalSessionContext.salaGuardiaToday || [],
     guardiaMode: clinicalSessionContext.guardiaMode,
-    now: /* @__PURE__ */ new Date()
+    now: /* @__PURE__ */ new Date(),
+    users: Array.isArray(clinicalSessionContext.scopeContext?.users) ? clinicalSessionContext.scopeContext.users : [],
+    cycle: clinicalSessionContext.scopeContext?.cycle ?? null
   };
-  if (guardiasMap.size > 0 && gridViewContext === "GUARDIA") {
-    censusPatients = censusPatients.filter((p) => guardiasMap.has(p.id));
-  }
   if (!clinicalSessionContext.guardiaMode && gridViewContext === "GUARDIA") {
     clinicalSessionContext.scopeContext = clinicalSessionContext.scopeContext || {};
     censusPatients = censusPatients.filter((p) => {
@@ -27781,6 +29009,7 @@ function renderGuardiaBoard(settings2) {
   } else {
     gridBoard.setViewContext(gridViewContext);
   }
+  gridBoard.chipOpensEntrega = !!clinicalSessionContext.guardiaMode;
   gridBoard.onChipClick = (patientId) => {
     const guardia = guardiasMap.get(patientId);
     openEntregaModal({
@@ -27815,6 +29044,7 @@ var init_guardia_board = __esm({
     init_clinical_teams();
     init_clinical_entrega();
     init_clinical_access_runtime();
+    init_entrega_chip_markers();
     init_entrega_pendientes();
     gridBoard = null;
     gridModeControlsWired = false;
@@ -31888,7 +33118,7 @@ function displayBalance(n) {
 function escHtml4(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-function escAttr(s) {
+function escAttr2(s) {
   return escHtml4(s).replace(/'/g, "&#39;");
 }
 function hasPendingMedProposals(pendienteReceta) {
@@ -31919,15 +33149,15 @@ function renderEstadoClinicoSection(monitoreo, activeId2, patient) {
     var badge = pendingVal ? '<span class="ea-pendiente-badge">Propuesta receta</span>' : monitoreo.confirmado && monitoreo.confirmado[key] ? '<span class="ea-confirmed-badge">Confirmado</span>' : "";
     var selectOpts = '<option value="">\u2014 Seleccionar de receta \u2014</option>' + options.map(function(opt) {
       var sel = opt === currentVal ? " selected" : "";
-      return '<option value="' + escAttr(opt) + '"' + sel + ">" + escHtml4(opt) + "</option>";
+      return '<option value="' + escAttr2(opt) + '"' + sel + ">" + escHtml4(opt) + "</option>";
     }).join("");
-    return '<div class="ea-clinico-med-field" data-ea-med-key="' + key + '"><div class="ea-clinico-med-head"><span class="ea-label">' + MED_FIELD_LABELS[key] + "</span>" + badge + '</div><select class="ea-input" data-ea-med-select="' + key + '">' + selectOpts + '</select><input type="text" class="ea-input" data-ea-med-input="' + key + '" value="' + escAttr(currentVal) + '" placeholder="Texto manual">' + (pendingVal ? '<div class="ea-pendiente-preview" title="Propuesta pendiente">' + escHtml4(pendingVal) + `</div><div class="ea-clinico-med-actions"><button type="button" class="ea-btn ea-btn--primary" onclick="confirmEaMedField('` + key + `')">Confirmar</button><button type="button" class="ea-btn ea-btn--ghost" onclick="discardEaMedProposal('` + key + `')">Descartar</button></div>` : "") + "</div>";
+    return '<div class="ea-clinico-med-field" data-ea-med-key="' + key + '"><div class="ea-clinico-med-head"><span class="ea-label">' + MED_FIELD_LABELS[key] + "</span>" + badge + '</div><select class="ea-input" data-ea-med-select="' + key + '">' + selectOpts + '</select><input type="text" class="ea-input" data-ea-med-input="' + key + '" value="' + escAttr2(currentVal) + '" placeholder="Texto manual">' + (pendingVal ? '<div class="ea-pendiente-preview" title="Propuesta pendiente">' + escHtml4(pendingVal) + `</div><div class="ea-clinico-med-actions"><button type="button" class="ea-btn ea-btn--primary" onclick="confirmEaMedField('` + key + `')">Confirmar</button><button type="button" class="ea-btn ea-btn--ghost" onclick="discardEaMedProposal('` + key + `')">Descartar</button></div>` : "") + "</div>";
   }).join("");
   var soporteOpts = SOPORTE_OPTIONS.map(function(opt) {
     var sel = ec.soporte === opt ? " selected" : "";
-    return '<option value="' + escAttr(opt) + '"' + sel + ">" + escHtml4(opt) + "</option>";
+    return '<option value="' + escAttr2(opt) + '"' + sel + ">" + escHtml4(opt) + "</option>";
   }).join("");
-  return '<details class="ea-estado-clinico ea-card"' + (anyPending ? " open" : "") + '><summary>Estado cl\xEDnico general</summary><div class="ea-clinico-body"><div class="ea-clinico-grid"><label class="ea-field"><span class="ea-label">FOUR (/16)</span><input type="number" class="ea-input" data-ea-ec="four" min="0" max="16" step="1" value="' + escAttr(ec.four) + '"></label><label class="ea-field"><span class="ea-label">Esferas</span><input type="number" class="ea-input" data-ea-ec="esferas" min="0" step="1" value="' + escAttr(ec.esferas) + '"></label><label class="ea-field ea-field--full"><span class="ea-label">Soporte respiratorio</span><select class="ea-input" data-ea-ec="soporte">' + soporteOpts + '</select></label><label class="ea-field"><span class="ea-label">Dieta</span><input type="text" class="ea-input" data-ea-ec="dieta" value="' + escAttr(ec.dieta) + '"></label><label class="ea-field"><span class="ea-label">Kcal/kg</span><input type="number" class="ea-input" data-ea-ec="kcalKg" step="any" value="' + escAttr(ec.kcalKg) + '"></label><label class="ea-field"><span class="ea-label">Kcal total</span><input type="number" class="ea-input" data-ea-ec="kcal" step="any" min="0" value="' + escAttr(ec.kcal) + '" placeholder="Total"></label></div><p class="ea-diet-weight-hint">' + escHtml4(dietWeightHint) + '</p><div class="ea-clinico-med-grid">' + medFieldsHtml + "</div>" + (anyPending ? '<div class="ea-clinico-actions"><button type="button" class="ea-btn ea-btn--primary" onclick="confirmAllEaMedProposals()">Confirmar todas las propuestas</button></div>' : "") + "</div></details>";
+  return '<details class="ea-estado-clinico ea-card"' + (anyPending ? " open" : "") + '><summary>Estado cl\xEDnico general</summary><div class="ea-clinico-body"><div class="ea-clinico-grid"><label class="ea-field"><span class="ea-label">FOUR (/16)</span><input type="number" class="ea-input" data-ea-ec="four" min="0" max="16" step="1" value="' + escAttr2(ec.four) + '"></label><label class="ea-field"><span class="ea-label">Esferas</span><input type="number" class="ea-input" data-ea-ec="esferas" min="0" step="1" value="' + escAttr2(ec.esferas) + '"></label><label class="ea-field ea-field--full"><span class="ea-label">Soporte respiratorio</span><select class="ea-input" data-ea-ec="soporte">' + soporteOpts + '</select></label><label class="ea-field"><span class="ea-label">Dieta</span><input type="text" class="ea-input" data-ea-ec="dieta" value="' + escAttr2(ec.dieta) + '"></label><label class="ea-field"><span class="ea-label">Kcal/kg</span><input type="number" class="ea-input" data-ea-ec="kcalKg" step="any" value="' + escAttr2(ec.kcalKg) + '"></label><label class="ea-field"><span class="ea-label">Kcal total</span><input type="number" class="ea-input" data-ea-ec="kcal" step="any" min="0" value="' + escAttr2(ec.kcal) + '" placeholder="Total"></label></div><p class="ea-diet-weight-hint">' + escHtml4(dietWeightHint) + '</p><div class="ea-clinico-med-grid">' + medFieldsHtml + "</div>" + (anyPending ? '<div class="ea-clinico-actions"><button type="button" class="ea-btn ea-btn--primary" onclick="confirmAllEaMedProposals()">Confirmar todas las propuestas</button></div>' : "") + "</div></details>";
 }
 function syncEstadoActualTextarea(monitoreo, patient) {
   var texto = generateEstadoActualText(monitoreo, patient);

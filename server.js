@@ -21,6 +21,7 @@ const { createAuthRouter } = require('./lan-squad/auth-router.js');
 const { redactUrlSecrets, redactForLog } = require('./lan-squad/redact-secrets.js');
 const { createDocumentExportAuthMiddleware } = require('./lib/server-http-security.js');
 const { resolveAllowedOutputDir } = require('./lib/output-dir-policy.js');
+const { createInternoRouter } = require('./lib/interno/interno-router.js');
 const rateLimit = require('express-rate-limit');
 
 const appExpress = express();
@@ -58,6 +59,18 @@ appExpress.use((req, _res, next) => {
 
 const LAN_HTTP_PORT = 3738;
 
+function isPrivateIpv4Host(host) {
+  const h = String(host || '').split(':')[0];
+  const m = /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(h);
+  if (!m) return false;
+  const a = +m[1];
+  const b = +m[2];
+  if (a === 10) return true;
+  if (a === 192 && b === 168) return true;
+  if (a === 172 && b >= 16 && b <= 31) return true;
+  return false;
+}
+
 /** Permite fetch/WebSocket desde el mismo host (p. ej. iPad en http://192.168.x.x:3738). */
 function isAllowedLanCorsOrigin(originUrl, requestHost) {
   if (!originUrl || !requestHost) return false;
@@ -65,6 +78,9 @@ function isAllowedLanCorsOrigin(originUrl, requestHost) {
   const rh = String(requestHost || '').toLowerCase();
   if (oh === rh) return true;
   if (oh === `localhost:${LAN_HTTP_PORT}` || oh === `127.0.0.1:${LAN_HTTP_PORT}`) return true;
+  const reqIp = rh.split(':')[0];
+  const originIp = String(originUrl.hostname || '').toLowerCase();
+  if (isPrivateIpv4Host(originIp) && isPrivateIpv4Host(reqIp)) return true;
   return false;
 }
 
@@ -77,7 +93,7 @@ appExpress.use((req, res, next) => {
         res.setHeader('Access-Control-Allow-Origin', rawOrigin);
         res.setHeader('Vary', 'Origin');
         res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,POST,PATCH,DELETE,OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Interno-Token, X-Interno-Sala');
       }
     } catch (_e) {
       // Ignore malformed Origin headers and continue normal handling.
@@ -97,6 +113,14 @@ appExpress.get('/join/:ticketId', (req, res) => {
   }
   res.sendFile(path.join(__dirname, 'public', 'mobile', 'join.html'));
 });
+
+const INTERNO_SLUGS = ['sala-1', 'sala-2', 'sala-e'];
+for (const slug of INTERNO_SLUGS) {
+  appExpress.get(`/interno/${slug}`, (_req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'interno', 'index.html'));
+  });
+}
+
 appExpress.get('/health', (_req, res) => {
   try {
     res.json({ ok: true, app: 'r-plus' });
@@ -339,6 +363,22 @@ appExpress.use('/api/lan/v1', (req, res, next) => {
 });
 appExpress.use('/api/lan/v1', authRouter);
 appExpress.use('/api/lan/v1', createLanRouter({ store: lanStore, broadcast, resolver: lanResolver }));
+
+function getClinicalDbForInterno() {
+  if (!lanDbManager || typeof lanDbManager.isUnlocked !== 'function') return null;
+  if (!lanDbManager.isUnlocked()) return null;
+  return typeof lanDbManager.getDb === 'function' ? lanDbManager.getDb() : null;
+}
+
+appExpress.use(
+  '/api/interno/v1',
+  createInternoRouter({
+    store: lanStore,
+    getDb: getClinicalDbForInterno,
+    broadcastSync: broadcast,
+    httpServer: httpServer,
+  })
+);
 
 appExpress.use((err, req, res, _next) => {
   console.error('[express]', redactForLog({
