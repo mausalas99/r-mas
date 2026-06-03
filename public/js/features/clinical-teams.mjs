@@ -7,6 +7,10 @@ import {
   refreshClinicalUserProfile,
 } from '../clinical-access-runtime.mjs';
 import {
+  isBenignLanPushSkipCode,
+  LAN_PROFILE_PUSH_FAILED_MSG,
+} from '../clinical-profile-lan-sync.mjs';
+import {
   getCycleLettersForTeamCreate,
   getCycleFieldMetaForTeamCreate,
   formatMemberCycleLabel,
@@ -15,6 +19,8 @@ import {
 } from '../clinico-access.mjs';
 import {
   buildClinicalTeamInviteMessage,
+  diagnoseInviteCodeFailure,
+  inviteCodeFailureMessage,
   isClinicalTeamJoinDesktopApp,
   normalizeTeamInviteCode,
   parseClinicalTeamJoinQuery,
@@ -183,6 +189,74 @@ function hintHtml(text) {
 
 function currentUserId() {
   return String(clinicalSessionContext.user?.user_id || '');
+}
+
+/** Push teams/membership to sala ⇄ (same path as @usuario; uses sticky room membership). */
+async function publishClinicalTeamsToLan() {
+  try {
+    const mod = await import('./lan-sync.mjs');
+    if (typeof mod.pushClinicalOpsLanNow === 'function') {
+      return mod.pushClinicalOpsLanNow();
+    }
+    if (typeof mod.scheduleLiveSyncPush === 'function') mod.scheduleLiveSyncPush();
+  } catch (_e) {
+    /* LAN optional */
+  }
+  return { ok: false, code: 'NO_LAN' };
+}
+
+/** @param {{ ok?: boolean, code?: string }} lanPush */
+function toastTeamLanPublishResult(lanPush, localOkMessage) {
+  if (!lanPush) {
+    toast(localOkMessage, 'success');
+    return;
+  }
+  if (
+    lanPush.ok &&
+    (lanPush.code === 'QUEUED' || (lanPush.channels && lanPush.channels.outbox))
+  ) {
+    toast(
+      `${localOkMessage} Se publicará a la sala cuando vuelva la red (cola ⇄).`,
+      'info'
+    );
+    return;
+  }
+  if (lanPush.ok) {
+    if (lanPush.code === 'CONFLICT_RESOLVED') {
+      toast(`${localOkMessage} Directorio alineado con el servidor.`, 'success');
+      return;
+    }
+    if (lanPush.channels && lanPush.channels.http) {
+      toast(`${localOkMessage} Publicado en sala ⇄.`, 'success');
+      return;
+    }
+    toast(localOkMessage, 'success');
+    return;
+  }
+  if (isBenignLanPushSkipCode(lanPush.code)) {
+    toast(`${localOkMessage} (solo en esta Mac hasta conectar sala ⇄).`, 'info');
+    return;
+  }
+  toast(LAN_PROFILE_PUSH_FAILED_MSG, 'warn');
+}
+
+/** Pull host clinicalOps into this Mac so partner @usuario and teams exist locally. */
+async function pullClinicalOpsFromLanRoom() {
+  try {
+    const lan = await import('./lan-sync.mjs');
+    if (typeof lan.refreshLanClinicalDirectoryFromRoom !== 'function') return false;
+    return !!(await lan.refreshLanClinicalDirectoryFromRoom({ timeoutMs: 8000 }));
+  } catch (_e) {
+    return false;
+  }
+}
+
+/** @param {string} handle — normalized @usuario without @ */
+async function resolveLocalUserIdByLanHandle(handle) {
+  const api = dbApi();
+  if (!api || typeof api.dbClinicalUserLookup !== 'function') return '';
+  const res = await api.dbClinicalUserLookup({ username: handle });
+  return res?.ok && res.user?.user_id ? String(res.user.user_id) : '';
 }
 
 /**
@@ -537,6 +611,18 @@ function renderMyCycleEditBlock(team, user) {
 }
 
 /** @param {object} team */
+function renderLeaveTeamBox(team) {
+  const teamId = escapeAttr(String(team.team_id || ''));
+  const teamName = escapeAttr(String(team.name || 'este equipo'));
+  return `
+    <div class="clinical-teams-leave-box">
+      <button type="button" class="btn-med-secondary clinical-teams-leave-btn" data-team-id="${teamId}" data-team-name="${teamName}">
+        Salir del equipo
+      </button>
+    </div>`;
+}
+
+/** @param {object} team */
 function renderTeamManageActionsHtml(team) {
   const teamId = escapeAttr(String(team.team_id || ''));
   const teamNameAttr = escapeAttr(String(team.name || 'Equipo'));
@@ -608,6 +694,7 @@ function renderJoinedTeamCard(team) {
       ${manage.editPanelHtml}
       ${renderMembersBlock(members)}
       ${renderMyCycleEditBlock(team, user)}
+      ${renderLeaveTeamBox(team)}
       <div class="clinical-teams-invite-box">
         <p class="clinical-teams-invite-code-line">Código para invitar: <code class="clinical-teams-invite-code">${escapeHtml(teamInviteCode(teamId))}</code></p>
         <div class="clinical-teams-invite-link-row">
@@ -720,6 +807,7 @@ async function renderClinicalTeamsPanelInto(host) {
     return;
   }
 
+  await pullClinicalOpsFromLanRoom();
   await fetchClinicalTeamsFromDb();
   await tryReconcileTeamMemberships();
   const user = clinicalSessionContext.user || {};
@@ -1281,6 +1369,7 @@ async function handleLanAssignButtonClick(btn) {
 
   toast(wasMember ? 'Ciclo actualizado.' : 'Integrante asignado al equipo.', 'success');
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
+  await publishClinicalTeamsToLan();
   await fetchClinicalTeamsFromDb();
   await openLanUsersDirectoryModal();
 }
@@ -1537,9 +1626,16 @@ function wireTeamManageModalDelegation() {
   root._rpcTeamManageDelegated = true;
 
   root.addEventListener('click', (ev) => {
-    if (!canManageTeamRoster(clinicalSessionContext.user)) return;
     const target = ev.target instanceof Element ? ev.target : null;
     if (!target) return;
+
+    const leaveBtn = target.closest('.clinical-teams-leave-btn');
+    if (leaveBtn instanceof HTMLButtonElement) {
+      void handleLeaveTeamClick(leaveBtn);
+      return;
+    }
+
+    if (!canManageTeamRoster(clinicalSessionContext.user)) return;
 
     const editBtn = target.closest('.clinical-teams-edit-btn');
     if (editBtn) {
@@ -1564,6 +1660,38 @@ function wireTeamManageModalDelegation() {
       void handleDeleteTeamClick(deleteBtn);
     }
   });
+}
+
+/** @param {HTMLButtonElement} btn */
+async function handleLeaveTeamClick(btn) {
+  const teamId = String(btn.dataset.teamId || '').trim();
+  const teamName = String(btn.dataset.teamName || 'este equipo').trim();
+  const userId = currentUserId();
+  if (!teamId || !userId) return;
+
+  const ok = window.confirm(
+    `¿Salir del equipo «${teamName}»?\n\nDejarás de ver los pacientes asignados a ese equipo en Mi rotación.`
+  );
+  if (!ok) return;
+
+  const api = dbApi();
+  if (!api || typeof api.dbClinicalTeamsMemberRemove !== 'function') {
+    toast('No se pudo salir del equipo.', 'error');
+    return;
+  }
+
+  btn.disabled = true;
+  const res = await api.dbClinicalTeamsMemberRemove({ teamId, userId });
+  btn.disabled = false;
+  if (!res || res.ok === false) {
+    toast(res?.error || 'No se pudo salir del equipo.', 'error');
+    return;
+  }
+
+  toast('Saliste del equipo.', 'success');
+  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
+  await publishClinicalTeamsToLan();
+  await refreshTeamsUiAfterChange();
 }
 
 /** @param {HTMLButtonElement} btn */
@@ -1595,6 +1723,7 @@ async function handleDeleteTeamClick(btn) {
 
   toast('Equipo eliminado.', 'success');
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
+  await publishClinicalTeamsToLan();
 }
 
 /** @param {Event} ev @param {HTMLFormElement} form */
@@ -1637,6 +1766,7 @@ async function handleEditTeamSubmit(ev, form) {
 
   toast('Equipo actualizado.', 'success');
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
+  await publishClinicalTeamsToLan();
 }
 
 async function handleProfileFormSubmit(ev) {
@@ -1811,6 +1941,7 @@ function wireJoinButtons() {
       }
       toast('Te uniste al equipo.', 'success');
       document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
+      void publishClinicalTeamsToLan();
     });
   });
 }
@@ -1989,8 +2120,12 @@ async function handleCreateTeamSubmit(ev) {
       toast(res?.error || 'No se creó el equipo.', 'error');
       return;
     }
-    toast('Equipo vacío creado. Asigna integrantes desde el directorio LAN.', 'success');
     document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
+    const lanPush = await publishClinicalTeamsToLan();
+    toastTeamLanPublishResult(
+      lanPush,
+      'Equipo vacío creado. Asigna integrantes desde el directorio LAN.'
+    );
     return;
   }
 
@@ -2029,8 +2164,9 @@ async function handleCreateTeamSubmit(ev) {
     }
   }
 
-  toast('Equipo creado.', 'success');
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
+  const lanPush = await publishClinicalTeamsToLan();
+  toastTeamLanPublishResult(lanPush, 'Equipo creado.');
 }
 
 /**
@@ -2062,6 +2198,20 @@ async function handleAddMemberSubmit(ev, form) {
     return;
   }
 
+  let partnerUserId = await resolveLocalUserIdByLanHandle(handle);
+  if (!partnerUserId) {
+    await pullClinicalOpsFromLanRoom();
+    await fetchClinicalTeamsFromDb();
+    partnerUserId = await resolveLocalUserIdByLanHandle(handle);
+  }
+  if (!partnerUserId) {
+    toast(
+      `No encontramos a @${handle} en esta Mac. En su R+: Mi rotación → @usuario → Guardar perfil (con la misma sala ⇄). Luego abre Directorio LAN aquí o reintenta.`,
+      'error'
+    );
+    return;
+  }
+
   const cycleEl = form.querySelector('.clinical-teams-add-member-cycle');
   const subAreaFraction =
     cycleEl instanceof HTMLSelectElement ? String(cycleEl.value || '').trim() : '';
@@ -2072,7 +2222,7 @@ async function handleAddMemberSubmit(ev, form) {
 
   const res = await api.dbClinicalTeamsMemberAdd({
     teamId,
-    username: handle,
+    userId: partnerUserId,
     subAreaFraction,
   });
   if (!res || res.ok === false) {
@@ -2082,6 +2232,8 @@ async function handleAddMemberSubmit(ev, form) {
 
   toast('Miembro agregado.', 'success');
   if (usernameInput instanceof HTMLInputElement) usernameInput.value = '';
+  document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
+  await publishClinicalTeamsToLan();
   await refreshTeamsUiAfterChange();
 }
 
@@ -2129,6 +2281,19 @@ async function resolveTeamIdForInviteInput(codeOrId) {
   let teamId = raw.includes('-') && raw.length > 20 ? raw : '';
   if (!teamId) {
     teamId = resolveTeamIdFromInviteCode(raw, clinicalSessionContext.teams || []);
+  }
+
+  if (!teamId) {
+    try {
+      const lan = await import('./lan-sync.mjs');
+      if (typeof lan.refreshLanClinicalDirectoryFromRoom === 'function') {
+        await lan.refreshLanClinicalDirectoryFromRoom({ timeoutMs: 8000 });
+        await fetchClinicalTeamsFromDb();
+        teamId = resolveTeamIdFromInviteCode(raw, clinicalSessionContext.teams || []);
+      }
+    } catch (_eLan) {
+      /* offline */
+    }
   }
 
   const api = dbApi();
@@ -2179,6 +2344,7 @@ async function joinTeamById(teamId, subAreaFraction) {
   }
   toast(`Te uniste al equipo ${team.name || ''} (ciclo ${cycle}).`, 'success');
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
+  await publishClinicalTeamsToLan();
   await refreshTeamsUiAfterChange();
   return true;
 }
@@ -2194,7 +2360,9 @@ async function handleJoinWithCodeSubmit(ev) {
 
   const teamId = await resolveTeamIdForInviteInput(code);
   if (!teamId) {
-    toast('Código no válido o equipo no está en esta base. Pide al R2 que confirme el código.', 'error');
+    await fetchClinicalTeamsFromDb();
+    const diag = diagnoseInviteCodeFailure(code, clinicalSessionContext.teams || []);
+    toast(inviteCodeFailureMessage(diag), 'error');
     return;
   }
   await joinTeamById(teamId, subAreaFraction);

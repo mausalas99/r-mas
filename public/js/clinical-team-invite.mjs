@@ -73,6 +73,47 @@ export function resolveTeamIdFromInviteCode(code, teams) {
 }
 
 /**
+ * @param {string} code
+ * @param {Array<{ team_id?: string }>} teams
+ * @returns {{ reason: 'empty'|'lan_bearer'|'too_short'|'ambiguous'|'not_in_db'|'ok', teamId?: string, matchCount?: number }}
+ */
+export function diagnoseInviteCodeFailure(code, teams) {
+  const norm = normalizeTeamInviteCode(code);
+  if (!norm) return { reason: 'empty' };
+  if (isLikelyLanBearerToken(norm)) return { reason: 'lan_bearer' };
+  if (norm.length < INVITE_CODE_MIN_LEN) return { reason: 'too_short' };
+  const fullUuid = norm.length >= 32 ? norm.slice(0, 32) : norm;
+  const list = Array.isArray(teams) ? teams : [];
+  const matches = list.filter((t) => {
+    const id = String(t?.team_id || '')
+      .replace(/-/g, '')
+      .toLowerCase();
+    return id === fullUuid || id.startsWith(norm);
+  });
+  if (matches.length > 1) return { reason: 'ambiguous', matchCount: matches.length };
+  if (matches.length === 1) return { reason: 'ok', teamId: String(matches[0].team_id || '') };
+  return { reason: 'not_in_db' };
+}
+
+/** @param {{ reason: string, matchCount?: number }} diag */
+export function inviteCodeFailureMessage(diag) {
+  switch (diag?.reason) {
+    case 'lan_bearer':
+      return 'Ese valor es el código LAN de la sala (Wi‑Fi), no el código de equipo. En la invitación busca «Código de equipo» (8 caracteres, p. ej. 2017936e).';
+    case 'too_short':
+      return 'Código demasiado corto. Copia los 8 caracteres del recuadro «Código de equipo» en Mi rotación.';
+    case 'ambiguous':
+      return `Hay ${diag.matchCount || 2} equipos con ese prefijo en esta Mac. Pide al R2 el código completo o que te agregue desde el directorio LAN.`;
+    case 'not_in_db':
+      return 'Este equipo aún no está en tu base. Conéctate a la misma sala ⇄, abre Mi rotación de nuevo (sincroniza) y reintenta; o pide que te agreguen por @usuario.';
+    case 'empty':
+      return 'Escribe el código de equipo.';
+    default:
+      return 'Código no válido o equipo no está en esta base.';
+  }
+}
+
+/**
  * LAN host URL for optional hint (never localhost).
  */
 export function resolveClinicalInviteLanHostUrl() {

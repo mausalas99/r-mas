@@ -7,6 +7,18 @@ function createLanRouter({ store, broadcast, resolver }) {
   const r = express.Router();
   const getState = () => store.getState();
 
+  /** Notify all peers on the live room WS channel (6.6.1 HTTP-primary push). */
+  function broadcastLiveRevision(roomId, revision, clientId) {
+    const rid = String(roomId || '').trim();
+    if (!rid || typeof broadcast !== 'function') return;
+    broadcast(`live:${encodeURIComponent(rid)}`, {
+      type: 'livesync:revision',
+      roomId: rid,
+      revision: Number(revision || 0),
+      clientId: String(clientId || 'host'),
+    });
+  }
+
   r.use(createBearerAuthMiddleware(getState));
 
   r.get('/ping', (_req, res) => {
@@ -92,7 +104,13 @@ function createLanRouter({ store, broadcast, resolver }) {
 
   r.put('/rooms/:id/clinical-ops', express.json({ limit: '1mb' }), async (req, res) => {
     try {
-      const out = await store.putRoomClinicalOps(req.params.id, req.body || {});
+      const body = req.body && typeof req.body === 'object' ? req.body : {};
+      const out = await store.putRoomClinicalOps(req.params.id, body);
+      broadcastLiveRevision(
+        req.params.id,
+        out && out.revision,
+        body.clientId || body.uploadedByClientId
+      );
       res.json(out);
     } catch (e) {
       if (e.code === 'CONFLICT') {
@@ -169,6 +187,13 @@ function createLanRouter({ store, broadcast, resolver }) {
     try {
       const body = req.body && req.body.bundle ? req.body.bundle : req.body;
       const out = store.putRoomSyncBundle(req.params.id, body);
+      if (out) {
+        broadcastLiveRevision(
+          req.params.id,
+          out.revision,
+          body.uploadedByClientId || body.clientId
+        );
+      }
       res.json({ bundle: out, merged: true });
     } catch (e) {
       if (e.code === 'CONFLICT') {

@@ -5,6 +5,8 @@ import {
   normalizeTeamInviteCode,
   parseClinicalTeamJoinQuery,
   resolveTeamIdFromInviteCode,
+  diagnoseInviteCodeFailure,
+  inviteCodeFailureMessage,
   buildClinicalTeamInviteMessage,
   isLikelyLanBearerToken,
 } from './clinical-team-invite.mjs';
@@ -38,6 +40,20 @@ describe('clinical-team-invite', () => {
 
   it('normalizeTeamInviteCode strips @ and dashes', () => {
     assert.equal(normalizeTeamInviteCode('@2017936e'), '2017936e');
+  });
+
+  it('diagnoseInviteCodeFailure detects LAN bearer mistaken for team code', () => {
+    const bearer = 'a'.repeat(64);
+    assert.equal(diagnoseInviteCodeFailure(bearer, []).reason, 'lan_bearer');
+    assert.match(inviteCodeFailureMessage({ reason: 'lan_bearer' }), /código LAN/);
+  });
+
+  it('diagnoseInviteCodeFailure detects ambiguous prefix', () => {
+    const teams = [
+      { team_id: '2017936e-aaaa-476a-8aef-4c018799c75d' },
+      { team_id: '2017936e-bbbb-476a-8aef-4c018799c75d' },
+    ];
+    assert.equal(diagnoseInviteCodeFailure('2017936e', teams).reason, 'ambiguous');
   });
 
   it('parseClinicalTeamJoinQuery ignores LAN bearer in code param', () => {

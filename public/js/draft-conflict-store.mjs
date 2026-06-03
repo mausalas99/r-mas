@@ -97,6 +97,31 @@ export async function listDraftConflicts() {
   return sortBySavedAtDesc(await idbGetAll());
 }
 
+/** Count drafts without loading full records (safe for large stores). */
+export async function countDraftConflicts() {
+  const mem = memoryStore();
+  if (mem) return mem.size;
+  const db = await openDraftDb();
+  const n = await new Promise((res, rej) => {
+    const tx = db.transaction(STORE, 'readonly');
+    const req = tx.objectStore(STORE).count();
+    req.onsuccess = () => res(Number(req.result || 0));
+    req.onerror = () => rej(req.error);
+    tx.onerror = () => rej(tx.error);
+  });
+  db.close();
+  return n;
+}
+
+function isRoomBundleDraftRow(d, roomId) {
+  if (!d) return false;
+  const isRoom =
+    d.entityType === 'roomBundle' || (d.scope && String(d.scope).startsWith('room:'));
+  if (!isRoom) return false;
+  if (!roomId) return true;
+  return String(d.roomId || '').trim() === String(roomId).trim();
+}
+
 export async function getDraftConflict(id) {
   if (!id) return null;
   const mem = memoryStore();
@@ -114,6 +139,65 @@ export async function deleteDraftConflict(id) {
     return;
   }
   await idbDelete(id);
+}
+
+/** Remove every saved conflict draft (IndexedDB or test memory backend). */
+export async function clearAllDraftConflicts() {
+  const mem = memoryStore();
+  if (mem) {
+    const n = mem.size;
+    mem.clear();
+    return n;
+  }
+  const n = await countDraftConflicts();
+  if (!n) return 0;
+  const db = await openDraftDb();
+  await new Promise((res, rej) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    tx.objectStore(STORE).clear();
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error);
+  });
+  db.close();
+  return n;
+}
+
+/** Keep at most one room-bundle draft per sala (cursor delete; no full load). */
+export async function clearRoomBundleDrafts(roomId) {
+  const rid = String(roomId || '').trim();
+  if (!rid) return 0;
+  const mem = memoryStore();
+  if (mem) {
+    let removed = 0;
+    for (const [id, d] of [...mem.entries()]) {
+      if (isRoomBundleDraftRow(d, rid)) {
+        mem.delete(id);
+        removed += 1;
+      }
+    }
+    return removed;
+  }
+  const db = await openDraftDb();
+  let removed = 0;
+  await new Promise((res, rej) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    const store = tx.objectStore(STORE);
+    const req = store.openCursor();
+    req.onsuccess = () => {
+      const cursor = req.result;
+      if (!cursor) return;
+      if (isRoomBundleDraftRow(cursor.value, rid)) {
+        cursor.delete();
+        removed += 1;
+      }
+      cursor.continue();
+    };
+    req.onerror = () => rej(req.error);
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error);
+  });
+  db.close();
+  return removed;
 }
 
 /** @internal Test hooks — in-memory backend when IndexedDB is unavailable in node:test. */

@@ -25,7 +25,7 @@ import {
   attachTodosMapToPatientEntries,
   mergeTodoListsById,
 } from "../livesync-patient-ids.mjs";
-import { getHostBundleBases } from "../host-bundle-bases.mjs";
+import { getHostBundleBases, setHostBundleBases } from "../host-bundle-bases.mjs";
 import {
   applyClinicalOpsLanSnapshot,
   getCachedClinicalOpsSnapshot,
@@ -46,7 +46,12 @@ import {
   deleteDraftConflict,
   listDraftConflicts,
   getDraftConflict,
+  clearAllDraftConflicts,
+  countDraftConflicts,
 } from "../draft-conflict-store.mjs";
+import { pauseBundlePushForRoom } from "../lan-sync-bundle-push.mjs";
+import { getRoomMembership } from "../live-sync-membership.mjs";
+import { drainOutbox } from "../live-sync-outbox.mjs";
 import {
   conflictSnapshotsMatchForAutoResolve,
   openClinicalConflictViewer,
@@ -87,6 +92,8 @@ import {
   getActiveLiveSyncRoomId,
   joinLanRoom,
   leaveLiveSyncRoom,
+  refreshLanClinicalDirectoryFromRoom,
+  fetchAndApplyClinicalOpsFromHost,
 } from "../lan-sync-room.mjs";
 import { registerLanSyncTransportDeps } from "../lan-sync-transport.mjs";
 import {
@@ -328,9 +335,73 @@ async function discardDraftsForConflictEntity(payload) {
   }
 }
 
+async function fetchServerBundleForRoom(roomId) {
+  var rid = String(roomId || '').trim();
+  if (!rid || !isLanSessionConfiguredForRest()) return null;
+  try {
+    if (!lanClient.connected) lanClient.connectSyncChannel();
+  } catch (_eSync) {}
+  try {
+    var resp = await lanClient.fetch(
+      '/api/lan/v1/rooms/' + encodeURIComponent(rid) + '/sync-bundle'
+    );
+    if (!resp || !resp.ok) return null;
+    var body = await resp.json();
+    return body && body.bundle ? body.bundle : null;
+  } catch (_eFetch) {
+    return null;
+  }
+}
+
+/**
+ * Align revision + clinicalOps from host without merging full census (fast, non-blocking).
+ * @returns {boolean}
+ */
+export function acceptServerBundleConflict(opts) {
+  opts = opts || {};
+  var rid = String(opts.roomId || '').trim();
+  var bundle = opts.serverBundle;
+  if (!rid || !bundle || typeof bundle !== 'object') return false;
+  setHostBundleBases(rid, bundle);
+  if (bundle.clinicalOps && isClinicalOpsLanAvailable()) {
+    void applyClinicalOpsLanSnapshot(bundle.clinicalOps).then(function (ok) {
+      if (ok) {
+        void refreshClinicalOpsSnapshotCache();
+        document.dispatchEvent(new CustomEvent('rpc-clinical-ops-synced'));
+      }
+    });
+  }
+  applyRoomSyncPhaseAfterReconcile(rid);
+  return true;
+}
+
+export function acceptServerClinicalOpsConflict(roomId, snapshot, revision) {
+  var rid = String(roomId || '').trim();
+  if (!rid) return;
+  if (revision != null) {
+    var bases = getHostBundleBases(rid) || { entityVersions: {} };
+    setHostBundleBases(rid, {
+      revision: Number(revision),
+      entityVersions: bases.entityVersions || {},
+    });
+  }
+  if (snapshot && isClinicalOpsLanAvailable()) {
+    void applyClinicalOpsLanSnapshot(snapshot).then(function (ok) {
+      if (ok) {
+        void refreshClinicalOpsSnapshotCache();
+        document.dispatchEvent(new CustomEvent('rpc-clinical-ops-synced'));
+      }
+    });
+  }
+  applyRoomSyncPhaseAfterReconcile(rid);
+}
+
 async function applyRoomBundleServerChoice(draft) {
   var bundle = draft && draft.serverBundle;
   var rid = draft && draft.roomId;
+  if (rid && !bundle) {
+    bundle = await fetchServerBundleForRoom(rid);
+  }
   if (rid && bundle) {
     setHostBundleBases(rid, bundle);
     applyLiveSyncMerged(
@@ -346,6 +417,87 @@ async function applyRoomBundleServerChoice(draft) {
     );
   }
   await clearConflictDraft(draft && draft.id);
+}
+
+/** Fast server alignment: revision + clinicalOps via dedicated host endpoint. */
+async function applyServerAuthorityLight(roomId) {
+  var rid = String(roomId || '').trim();
+  if (!rid) return false;
+  var bundle = await fetchServerBundleForRoom(rid);
+  if (bundle) {
+    setHostBundleBases(rid, bundle);
+  }
+  if (isClinicalOpsLanAvailable()) {
+    var ok = await fetchAndApplyClinicalOpsFromHost(rid);
+    if (ok) {
+      applyRoomSyncPhaseAfterReconcile(rid);
+      return true;
+    }
+  }
+  if (bundle) {
+    return acceptServerBundleConflict({ roomId: rid, serverBundle: bundle, conflicts: [] });
+  }
+  return false;
+}
+
+/**
+ * Discard all conflict drafts without loading them; align revision/clinicalOps from host.
+ */
+export async function resolveAllConflictDraftsUseServer() {
+  return withSuppressedLanConflictViewer(async function () {
+    var draftCount = 0;
+    try {
+      draftCount = await countDraftConflicts();
+    } catch (_eCount) {
+      draftCount = 0;
+    }
+    if (!draftCount) {
+      runtime.showToast('No hay borradores de conflicto.', 'info');
+      return { cleared: 0, rooms: 0 };
+    }
+
+    var rid =
+      String(activeLiveSyncRoomId || '').trim() ||
+      String((getRoomMembership() && getRoomMembership().roomId) || '').trim();
+
+    pauseBundlePushForRoom(rid || '*', 120000);
+    deferLanConflictModalForMs(120000);
+
+    var cleared = 0;
+    try {
+      cleared = await clearAllDraftConflicts();
+    } catch (_eClear) {
+      cleared = draftCount;
+    }
+
+    var applied = false;
+    if (rid) {
+      try {
+        await drainOutbox(rid);
+      } catch (_eOut) {}
+      applied = await applyServerAuthorityLight(rid);
+      if (!applied) {
+        applied = await fetchAndApplyClinicalOpsFromHost(rid);
+      }
+    }
+
+    setTimeout(function () {
+      void renderLanPanel();
+      syncLiveSyncStatusChrome();
+    }, 0);
+
+    runtime.showToast(
+      applied
+        ? 'Se eliminaron ' +
+          cleared +
+          ' borradores y se alineó la sala con el servidor (revisión y equipos).'
+        : 'Se eliminaron ' +
+          cleared +
+          ' borradores. Revisa la conexión LAN si la sala no se actualizó.',
+      applied ? 'success' : 'warn'
+    );
+    return { cleared: cleared, rooms: applied ? 1 : 0 };
+  });
 }
 
 async function applyConflictUseServer(payload) {
@@ -526,15 +678,28 @@ async function reopenConflictDraftFromStore(draftId) {
     return;
   }
   if (isRoomBundleConflictDraft(draft)) {
+    var serverBundle = draft.serverBundle;
+    if (!serverBundle && draft.roomId) {
+      serverBundle = (await fetchServerBundleForRoom(draft.roomId)) || {};
+    }
+    var localBundle = draft.localBundle || {};
     openClinicalConflictViewer({
       draftId: draft.id,
-      conflictingKeys: draft.conflictingKeys || ['*'],
-      localData: draft.localBundle || {},
-      serverData: draft.serverBundle || {},
+      conflictingKeys: ['revision'],
+      localData: {
+        revision: localBundle.revision != null ? localBundle.revision : null,
+        entryCount: Array.isArray(localBundle.entries) ? localBundle.entries.length : 0,
+      },
+      serverData: {
+        revision: serverBundle.revision != null ? serverBundle.revision : null,
+        entryCount: Array.isArray(serverBundle.entries) ? serverBundle.entries.length : 0,
+      },
       context: {
         entityType: 'roomBundle',
         roomId: draft.roomId,
         transport: draft.transport || 'http',
+        localVersion: localBundle.revision,
+        serverVersion: serverBundle.revision,
       },
       onUseServer: function () {
         void applyRoomBundleServerChoice(draft);
@@ -564,11 +729,11 @@ async function reopenConflictDraftFromStore(draftId) {
 
 async function appendLanConflictDraftsSection(root) {
   if (!root) return;
-  var drafts = [];
+  var draftCount = 0;
   try {
-    drafts = await listDraftConflicts();
+    draftCount = await countDraftConflicts();
   } catch (_eList) {
-    drafts = [];
+    draftCount = 0;
   }
   var prev = root.querySelector('#lan-conflict-drafts-card');
   if (prev) prev.remove();
@@ -579,25 +744,72 @@ async function appendLanConflictDraftsSection(root) {
 
   var title = document.createElement('div');
   title.className = 'lan-connect-card-title';
-  title.textContent = 'Borradores de conflicto (' + drafts.length + ')';
+  title.textContent = 'Borradores de conflicto (' + draftCount + ')';
   card.appendChild(title);
 
-  if (!drafts.length) {
+  if (!draftCount) {
     var empty = document.createElement('p');
     empty.className = 'lan-connect-card-hint';
     empty.textContent =
-      'No hay borradores guardados. Si cierras el visor tras un conflicto de sincronización, vuelve aquí para retomarlo.';
+      'No hay borradores guardados. Un conflicto puede bloquear la cola aun sin borrador; revisa Estado de sincronización.';
     card.appendChild(empty);
   } else {
+    var bulkRow = document.createElement('div');
+    bulkRow.className = 'lan-connect-actions-row';
+    bulkRow.style.marginTop = '4px';
+    var bulkBtn = document.createElement('button');
+    bulkBtn.type = 'button';
+    bulkBtn.className = 'btn-lan-primary';
+    bulkBtn.style.flex = '1';
+    bulkBtn.textContent = 'Usar servidor para todos y limpiar';
+    bulkBtn.onclick = function () {
+      if (
+        typeof confirm === 'function' &&
+        !confirm(
+          '¿Descartar los ' +
+            draftCount +
+            ' borradores y alinear con el servidor? Se vacía la cola local y se pausan reintentos automáticos un momento.'
+        )
+      ) {
+        return;
+      }
+      bulkBtn.disabled = true;
+      bulkBtn.textContent = 'Limpiando…';
+      void resolveAllConflictDraftsUseServer().finally(function () {
+        bulkBtn.disabled = false;
+        bulkBtn.textContent = 'Usar servidor para todos y limpiar';
+      });
+    };
+    bulkRow.appendChild(bulkBtn);
+    card.appendChild(bulkRow);
+
     var hint = document.createElement('p');
     hint.className = 'lan-connect-card-hint';
-    hint.textContent = 'Toca un borrador para volver a abrir el comparador y resolver el conflicto.';
+    hint.textContent =
+      draftCount > 15
+        ? 'Hay muchos borradores duplicados (conflictos clinicalOps). Usa el botón de arriba; no hace falta abrirlos uno por uno.'
+        : 'Toca un borrador para volver a abrir el comparador y resolver el conflicto.';
     card.appendChild(hint);
+
+    if (draftCount > 15) {
+      root.appendChild(card);
+      return;
+    }
+
+    var drafts = [];
+    try {
+      drafts = await listDraftConflicts();
+    } catch (_eLoad) {
+      drafts = [];
+    }
     var list = document.createElement('ul');
     list.style.listStyle = 'none';
     list.style.padding = '0';
     list.style.margin = '8px 0 0';
-    drafts.forEach(function (draft) {
+    list.style.maxHeight = '240px';
+    list.style.overflowY = 'auto';
+    var DRAFT_LIST_CAP = 15;
+    drafts.slice(0, DRAFT_LIST_CAP).forEach(function (draft) {
       if (!draft || !draft.id) return;
       var li = document.createElement('li');
       li.style.marginBottom = '6px';
@@ -614,6 +826,14 @@ async function appendLanConflictDraftsSection(root) {
       list.appendChild(li);
     });
     card.appendChild(list);
+    if (drafts.length > DRAFT_LIST_CAP) {
+      var more = document.createElement('p');
+      more.className = 'lan-connect-card-hint';
+      more.style.marginTop = '6px';
+      more.textContent =
+        '… y ' + (drafts.length - DRAFT_LIST_CAP) + ' borradores más.';
+      card.appendChild(more);
+    }
   }
   root.appendChild(card);
 }
@@ -660,7 +880,7 @@ async function handleSyncConflict(payload, options) {
     if (!_deferredConflictToastShown) {
       _deferredConflictToastShown = true;
       runtime.showToast(
-        'Hay un conflicto de sincronización guardado. Ábrelo en Ajustes → LAN cuando quieras decidir.',
+        'Conflicto de sincronización guardado. Abre ⇄ → Borradores de conflicto.',
         'info'
       );
     }
@@ -1187,7 +1407,7 @@ function markDeferredConflictToastShown() {
   if (_deferredConflictToastShown) return;
   _deferredConflictToastShown = true;
   runtime.showToast(
-    'Hay un conflicto de sincronización guardado. Ábrelo en Ajustes → LAN cuando quieras decidir.',
+    'Conflicto de sincronización de sala. Abre ⇄ y revisa «Borradores de conflicto».',
     'info'
   );
 }
@@ -1340,7 +1560,11 @@ registerLanSyncTransportDeps({
   bootLanRoomMembership,
 });
 
-registerLanSyncPanelRuntime(runtime);
+registerLanSyncPanelRuntime(
+  Object.assign(runtime, {
+    appendLanConflictDraftsSection: appendLanConflictDraftsSection,
+  })
+);
 
 registerLanSyncRoomBridge({
   runtime: runtime,
@@ -1365,6 +1589,7 @@ registerLanSyncPushBridge({
   buildLiveSyncLocalMergeSource,
   applyLiveSyncMerged,
   applyRoomSyncPhaseAfterReconcile,
+  fetchAndApplyClinicalOpsFromHost,
   syncLiveSyncStatusChrome,
   isLanConflictViewerSuppressed,
   shouldDeferLanConflictModal,
@@ -1372,7 +1597,12 @@ registerLanSyncPushBridge({
   saveDraftConflict,
   openClinicalConflictViewer,
   applyRoomBundleServerChoice,
+  acceptServerBundleConflict,
+  acceptServerClinicalOpsConflict,
   renderLanPanel,
+  showToast: function (msg, type) {
+    runtime.showToast(msg, type);
+  },
 });
 
 registerLanSyncRoomWireHandlers();
@@ -1415,7 +1645,10 @@ export function registerLanSaveHooks(deps) {
 }
 
 export {
+  appendLanConflictDraftsSection,
   pushClinicalOpsLanNow,
+  refreshLanClinicalDirectoryFromRoom,
+  fetchAndApplyClinicalOpsFromHost,
   emitLiveSyncAgendaUpsert,
   emitLiveSyncAgendaDelete,
   emitLiveSyncTodoUpsert,

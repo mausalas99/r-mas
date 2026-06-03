@@ -6249,567 +6249,6 @@ var init_clinical_rotation = __esm({
   }
 });
 
-// public/js/clinical-team-invite.mjs
-function teamInviteCode(teamId) {
-  return String(teamId || "").replace(/-/g, "").slice(0, 8).toLowerCase();
-}
-function normalizeTeamInviteCode(raw) {
-  return String(raw || "").trim().toLowerCase().replace(/[^a-f0-9-]/g, "").replace(/-/g, "");
-}
-function isLikelyLanBearerToken(raw) {
-  const norm = normalizeTeamInviteCode(raw);
-  return norm.length >= 32;
-}
-function parseClinicalTeamJoinQuery(search) {
-  const params = new URLSearchParams(String(search || "").replace(/^\?/, ""));
-  const codeParam = String(params.get("code") || "").trim();
-  if (codeParam && isLikelyLanBearerToken(codeParam)) {
-    return { teamId: "", inviteCode: "" };
-  }
-  const joinCode = normalizeTeamInviteCode(
-    params.get("joinCode") || params.get("teamCode") || params.get("code") || ""
-  );
-  if (joinCode.length >= INVITE_CODE_MIN_LEN) {
-    return { teamId: "", inviteCode: joinCode };
-  }
-  const teamId = String(params.get("joinTeam") || params.get("clinicalTeam") || "").trim();
-  return {
-    teamId,
-    inviteCode: teamId ? teamInviteCode(teamId) : ""
-  };
-}
-function resolveTeamIdFromInviteCode(code, teams) {
-  const norm = normalizeTeamInviteCode(code);
-  if (norm.length < INVITE_CODE_MIN_LEN) return "";
-  const fullUuid = norm.length >= 32 ? norm.slice(0, 32) : norm;
-  const list = Array.isArray(teams) ? teams : [];
-  const matches = list.filter((t2) => {
-    const id = String(t2?.team_id || "").replace(/-/g, "").toLowerCase();
-    return id === fullUuid || id.startsWith(norm);
-  });
-  if (matches.length === 1) return String(matches[0].team_id || "");
-  return "";
-}
-function resolveClinicalInviteLanHostUrl() {
-  if (typeof window === "undefined") return "";
-  try {
-    const cfg = JSON.parse(localStorage.getItem("rpc-lan-config") || "{}");
-    const host = String(cfg?.hostUrl || "").trim().replace(/\/+$/, "");
-    if (!host) return "";
-    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(host)) return "";
-    return host;
-  } catch (_e) {
-    return "";
-  }
-}
-function isClinicalTeamJoinDesktopApp() {
-  if (typeof window === "undefined") return false;
-  return !!(window.electronAPI || window.rplusDb);
-}
-function buildClinicalTeamInviteMessage(team) {
-  const name = String(team?.name || "Equipo").trim();
-  const sala = String(team?.sala || "").trim();
-  const code = teamInviteCode(team?.team_id);
-  const lanHost = resolveClinicalInviteLanHostUrl();
-  const lines = [
-    `Invitaci\xF3n al equipo \xAB${name}\xBB${sala ? ` \xB7 ${sala}` : ""} en R+`,
-    "",
-    `C\xF3digo de equipo: ${code}`,
-    "",
-    "En la app R+ del Mac (no Safari):",
-    "1. Abre Mi rotaci\xF3n",
-    "2. \xABUnirte con c\xF3digo de equipo\xBB \u2192 pega el c\xF3digo",
-    "3. Elige tu subciclo (R1) o letra (R2) y confirma",
-    "",
-    "El enlace web no une al equipo cl\xEDnico; Safari/iPad solo sirve para censo LAN."
-  ];
-  if (lanHost) {
-    lines.push("", `Sala en vivo (opcional): ${lanHost}`);
-  }
-  return lines.join("\n");
-}
-function mountClinicalTeamInviteBrowserGate(code) {
-  if (typeof document === "undefined") return;
-  const normalized = normalizeTeamInviteCode(code);
-  if (!normalized || isClinicalTeamJoinDesktopApp()) return;
-  if (document.getElementById(BROWSER_GATE_ID)) return;
-  const wrap = document.createElement("div");
-  wrap.id = BROWSER_GATE_ID;
-  wrap.className = "clinical-team-invite-browser-gate";
-  wrap.setAttribute("role", "alertdialog");
-  wrap.setAttribute("aria-modal", "true");
-  wrap.innerHTML = `
-    <div class="clinical-team-invite-browser-gate-card">
-      <h2>\xDAnete desde la app R+ en Mac</h2>
-      <p>Los enlaces en Safari no agregan al equipo cl\xEDnico (solo la app de escritorio con tu base de datos).</p>
-      <p class="clinical-team-invite-browser-gate-code">C\xF3digo: <strong>${normalized}</strong></p>
-      <ol>
-        <li>Abre la aplicaci\xF3n <strong>R+</strong> en tu Mac (no el navegador).</li>
-        <li>Ve a <strong>Mi rotaci\xF3n</strong>.</li>
-        <li>En <strong>Unirte con c\xF3digo de equipo</strong>, pega: <code>${normalized}</code></li>
-      </ol>
-      <button type="button" class="btn-save" id="clinical-team-invite-browser-gate-dismiss">Entendido</button>
-    </div>`;
-  document.body.appendChild(wrap);
-  const btn = document.getElementById("clinical-team-invite-browser-gate-dismiss");
-  if (btn) {
-    btn.addEventListener("click", () => {
-      wrap.remove();
-      try {
-        const url = new URL(window.location.href);
-        url.searchParams.delete("joinTeam");
-        url.searchParams.delete("joinCode");
-        url.searchParams.delete("clinicalTeam");
-        window.history.replaceState({}, "", url.pathname + url.search + url.hash);
-      } catch (_e) {
-      }
-    });
-  }
-}
-function tryMountClinicalTeamInviteBrowserGate(search) {
-  const parsed = parseClinicalTeamJoinQuery(search || (typeof location !== "undefined" ? location.search : ""));
-  const code = parsed.inviteCode || (parsed.teamId ? teamInviteCode(parsed.teamId) : "");
-  if (code) mountClinicalTeamInviteBrowserGate(code);
-}
-var INVITE_CODE_MIN_LEN, BROWSER_GATE_ID;
-var init_clinical_team_invite = __esm({
-  "public/js/clinical-team-invite.mjs"() {
-    INVITE_CODE_MIN_LEN = 6;
-    BROWSER_GATE_ID = "clinical-team-invite-browser-gate";
-  }
-});
-
-// public/js/mode-features.mjs
-function isModeSala(settings2) {
-  if (!settings2) return true;
-  return (settings2.appMode || "sala") === "sala";
-}
-function getDefaultServicio(settings2) {
-  if (!settings2) return "";
-  return String(settings2.defaultServicio || "").trim();
-}
-function getDefaultCuarto(settings2) {
-  if (!settings2) return "";
-  return String(settings2.defaultCuarto || "").trim();
-}
-function getDefaultCama(settings2) {
-  if (!settings2) return "";
-  return String(settings2.defaultCama || "").trim();
-}
-function migrateToV3(settings2) {
-  if (!settings2 || settings2._v3MigrationDone) return false;
-  if (settings2.appMode == null) settings2.appMode = "sala";
-  if (settings2.defaultServicio == null) settings2.defaultServicio = "";
-  if (settings2.defaultCuarto == null) settings2.defaultCuarto = "";
-  if (settings2.defaultCama == null) settings2.defaultCama = "";
-  settings2._v3MigrationDone = true;
-  return true;
-}
-var init_mode_features = __esm({
-  "public/js/mode-features.mjs"() {
-  }
-});
-
-// public/js/features/soap-estado.mjs
-function registerSoapEstadoRuntime(partial) {
-  if (!partial || typeof partial !== "object") return;
-  Object.assign(rt, partial);
-}
-function mergeSoapMedField(fieldId, fragment) {
-  var el = document.getElementById(fieldId);
-  if (!el || !fragment) return;
-  var f = String(fragment).trim();
-  if (!f) return;
-  var cur = el.value.trim();
-  el.value = cur ? cur + " | " + f : f;
-}
-function openSOAPModalDirect() {
-  var bd = document.getElementById("soap-modal-backdrop");
-  if (bd) bd.classList.add("open");
-}
-async function copyToClipboardSafe(text) {
-  var t2 = text == null ? "" : String(text);
-  if (typeof window !== "undefined" && window.electronAPI && typeof window.electronAPI.writeClipboardText === "function") {
-    try {
-      if (await window.electronAPI.writeClipboardText(t2)) return true;
-    } catch (_eElectron) {
-    }
-  }
-  try {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(t2);
-      return true;
-    }
-  } catch (_e) {
-  }
-  try {
-    var ta = document.createElement("textarea");
-    ta.value = t2;
-    ta.setAttribute("readonly", "");
-    ta.style.position = "fixed";
-    ta.style.left = "-9999px";
-    document.body.appendChild(ta);
-    ta.select();
-    var ok = document.execCommand("copy");
-    document.body.removeChild(ta);
-    return ok;
-  } catch (_e) {
-    return false;
-  }
-}
-function openSOAPModal() {
-  var activeId2 = rt.getActiveId();
-  if (!activeId2) {
-    rt.showToast("Selecciona un paciente primero", "error");
-    return;
-  }
-  var existing = notes[activeId2] && notes[activeId2].evolucion ? notes[activeId2].evolucion.trim() : "";
-  if (existing) {
-    var backdrop = document.createElement("div");
-    backdrop.className = "lab-conflict-backdrop";
-    backdrop.id = "soap-confirm-backdrop";
-    backdrop.innerHTML = `<div class="lab-conflict-modal"><h3>\xBFReemplazar evoluci\xF3n?</h3><p>La evoluci\xF3n ya tiene contenido. \xBFReemplazarlo con la plantilla?</p><div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;"><button onclick="document.getElementById('soap-confirm-backdrop').remove()" style="background:#F3F4F6;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Cancelar</button><button onclick="document.getElementById('soap-confirm-backdrop').remove();document.getElementById('soap-modal-backdrop').classList.add('open')" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Reemplazar</button></div></div>`;
-    document.body.appendChild(backdrop);
-  } else {
-    document.getElementById("soap-modal-backdrop").classList.add("open");
-  }
-}
-function closeSOAPModal() {
-  document.getElementById("soap-modal-backdrop").classList.remove("open");
-  [
-    "soap-s",
-    "soap-four",
-    "soap-esferas",
-    "soap-analgesia",
-    "soap-fr",
-    "soap-sat",
-    "soap-tas",
-    "soap-tad",
-    "soap-fc",
-    "soap-antihta",
-    "soap-vasop",
-    "soap-temp",
-    "soap-abx",
-    "soap-dieta",
-    "soap-kcalkg",
-    "soap-kcal",
-    "soap-peso",
-    "soap-ing",
-    "soap-egr",
-    "soap-balance",
-    "soap-glu1",
-    "soap-glu2",
-    "soap-glu3"
-  ].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.value = "";
-  });
-  var sel = document.getElementById("soap-soporte");
-  if (sel) sel.selectedIndex = 0;
-  document.body.removeAttribute("data-estado-actual-mode");
-  var title = document.getElementById("soap-modal-title-text");
-  if (title) title.textContent = "Plantilla de Evoluci\xF3n";
-}
-function openEstadoActualModal() {
-  var activeId2 = rt.getActiveId();
-  if (!activeId2) {
-    rt.showToast("Selecciona un paciente primero", "error");
-    return;
-  }
-  if (isModeSala(rt.getSettings())) {
-    if (typeof rt.navigateToEstadoActualPanel === "function") {
-      rt.navigateToEstadoActualPanel();
-    }
-    return;
-  }
-  document.body.setAttribute("data-estado-actual-mode", "true");
-  var title = document.getElementById("soap-modal-title-text");
-  if (title) title.textContent = "Estado Actual";
-  var s = document.getElementById("soap-s");
-  if (s) s.value = "";
-  document.getElementById("soap-modal-backdrop").classList.add("open");
-}
-function estadoActualTextForCopy() {
-  var s = document.getElementById("soap-s");
-  if (s) s.value = "";
-  return buildSOAPText().replace(/^\s*\n+/, "");
-}
-async function estadoActualOnlyCopy() {
-  if (!rt.getActiveId()) return;
-  if (isModeSala(rt.getSettings())) {
-    var gCopy = typeof globalThis !== "undefined" ? globalThis : {};
-    if (typeof gCopy.estadoActualCopiar === "function") {
-      await gCopy.estadoActualCopiar();
-      closeSOAPModal();
-      return;
-    }
-  }
-  var text = estadoActualTextForCopy();
-  var ok = await copyToClipboardSafe(text);
-  rt.showToast(ok ? "Estado Actual copiado al portapapeles \u2713" : "No se pudo copiar", ok ? "success" : "error");
-  closeSOAPModal();
-}
-async function estadoActualSaveAndCopy() {
-  var activeId2 = rt.getActiveId();
-  if (!activeId2) return;
-  if (isModeSala(rt.getSettings())) {
-    var gSave = typeof globalThis !== "undefined" ? globalThis : {};
-    if (typeof gSave.estadoActualGuardarCopiar === "function") {
-      await gSave.estadoActualGuardarCopiar();
-      closeSOAPModal();
-      return;
-    }
-  }
-  var patient = patients.find(function(p) {
-    return p.id === activeId2;
-  });
-  if (!patient) return;
-  var text = estadoActualTextForCopy();
-  migratePatientMonitoreo(patient);
-  ensureMonitoreo(patient);
-  patient.monitoreo.textoGuardado = {
-    text,
-    savedAt: (/* @__PURE__ */ new Date()).toISOString()
-  };
-  saveState();
-  renderEstadoActualBar();
-  var ok = await copyToClipboardSafe(text);
-  rt.showToast(
-    ok ? "Estado Actual guardado y copiado \u2713" : "Guardado, pero no se pudo copiar",
-    ok ? "success" : "error"
-  );
-  closeSOAPModal();
-}
-function renderEstadoActualBar() {
-  var meta = document.getElementById("estado-actual-meta");
-  if (!meta) return;
-  var sala = isModeSala(rt.getSettings());
-  var activeId2 = rt.getActiveId();
-  if (!sala || !activeId2) {
-    meta.textContent = "";
-    return;
-  }
-  var patient = patients.find(function(p) {
-    return p.id === activeId2;
-  });
-  if (patient) {
-    migratePatientMonitoreo(patient);
-  }
-  var tg = patient && patient.monitoreo && patient.monitoreo.textoGuardado;
-  if (tg && tg.savedAt) {
-    var d = new Date(tg.savedAt);
-    if (!isNaN(d.getTime())) {
-      var label = String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0") + "/" + d.getFullYear() + " \xB7 " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
-      meta.textContent = "Guardado " + label;
-      return;
-    }
-  }
-  meta.textContent = "";
-}
-function updateSOAPBalance() {
-  var ing = parseFloat(document.getElementById("soap-ing").value);
-  var egr = parseFloat(document.getElementById("soap-egr").value);
-  var bal = document.getElementById("soap-balance");
-  if (!isNaN(ing) && !isNaN(egr)) {
-    var diff = ing - egr;
-    bal.value = (diff > 0 ? "+" : "") + diff;
-  } else {
-    bal.value = "";
-  }
-}
-function buildSOAPText() {
-  function g3(id) {
-    var el = document.getElementById(id);
-    return el ? el.value.trim() : "";
-  }
-  function val2(v) {
-    return v ? v.toUpperCase() : "___";
-  }
-  function num4(v) {
-    return v !== "" ? v : "___";
-  }
-  var soporteMap = {
-    "Aire ambiente": "AL AIRE AMBIENTE",
-    "Puntillas nasales": "POR PUNTILLAS NASALES",
-    "Alto flujo": "POR ALTO FLUJO",
-    "VM no invasiva": "CON VENTILACI\xD3N MEC\xC1NICA NO INVASIVA"
-  };
-  var soporte = soporteMap[g3("soap-soporte")] || "AL AIRE AMBIENTE";
-  var ing = g3("soap-ing");
-  var egr = g3("soap-egr");
-  var balance = ing && egr ? (function() {
-    var d = parseFloat(ing) - parseFloat(egr);
-    return (d > 0 ? "+" : "") + d;
-  })() : "___";
-  var lines = [];
-  var subj = g3("soap-s");
-  if (subj) {
-    lines.push("S: " + subj);
-    lines.push("");
-  }
-  lines.push(
-    "N: FOUR " + num4(g3("soap-four")) + "/16 PUNTOS, SIN DATOS DE FOCALIZACI\xD3N, ORIENTADO EN " + num4(g3("soap-esferas")) + " ESFERAS, ALERTA || ANALGESIA CON " + val2(g3("soap-analgesia"))
-  );
-  lines.push(
-    "V: FR " + num4(g3("soap-fr")) + " RPM, SATO2 " + num4(g3("soap-sat")) + "% " + soporte + " | SIN DATOS DE DIFICULTAD RESPIRATORIA || CAMPOS PULMONARES BIEN VENTILADOS"
-  );
-  lines.push(
-    "HD: ESTABLE, TA " + num4(g3("soap-tas")) + "/" + num4(g3("soap-tad")) + " MMHG, FC " + num4(g3("soap-fc")) + " LPM || ANTIHIPERTENSIVOS: " + val2(g3("soap-antihta") || "NINGUNO") + " || VASOPRESORES: " + val2(g3("soap-vasop") || "NINGUNO")
-  );
-  lines.push(
-    "HI: AFEBRIL, TEMPERATURA " + num4(g3("soap-temp")) + " \xB0C || ANTIBI\xD3TICOS: " + val2(g3("soap-abx") || "NINGUNO")
-  );
-  lines.push(
-    "NM: DIETA " + val2(g3("soap-dieta")) + " CALCULADA A " + num4(g3("soap-kcalkg")) + " KCAL/KG (" + num4(g3("soap-kcal")) + " KCAL) PARA PESO DE " + num4(g3("soap-peso")) + " KG || INGRESOS " + num4(ing) + " CC, EGRESOS " + num4(egr) + " CC, BALANCE " + balance + " CC || GLUCOMETR\xCDAS CAPILARES (" + num4(g3("soap-glu1")) + ", " + num4(g3("soap-glu2")) + ", " + num4(g3("soap-glu3")) + " MG/DL)"
-  );
-  return lines.join("\n");
-}
-function insertSOAPText() {
-  var activeId2 = rt.getActiveId();
-  if (!activeId2) {
-    rt.showToast("Selecciona un paciente primero", "error");
-    return;
-  }
-  var text = buildSOAPText();
-  if (!notes[activeId2]) notes[activeId2] = {};
-  notes[activeId2].evolucion = text;
-  saveState();
-  var el = document.querySelector('#note-form textarea[oninput*="evolucion"]');
-  if (el) el.value = text;
-  closeSOAPModal();
-  rt.showToast("Plantilla insertada \u2713", "success");
-}
-function renderEstadoActualButton() {
-}
-var rt, windowHandlers2;
-var init_soap_estado = __esm({
-  "public/js/features/soap-estado.mjs"() {
-    init_app_state();
-    init_mode_features();
-    init_estado_actual_data();
-    rt = {
-      getActiveId() {
-        return null;
-      },
-      showToast() {
-      },
-      getSettings() {
-        return {};
-      }
-    };
-    windowHandlers2 = {
-      closeSOAPModal,
-      insertSOAPText,
-      updateSOAPBalance,
-      openSOAPModal,
-      openEstadoActualModal,
-      estadoActualOnlyCopy,
-      estadoActualSaveAndCopy
-    };
-  }
-});
-
-// public/js/clinical-username.mjs
-function normalizeUsername(raw) {
-  return String(raw || "").trim().replace(/^@+/, "").toLowerCase();
-}
-function isValidUsernameFormat(raw) {
-  return USERNAME_RE.test(normalizeUsername(raw));
-}
-function isLegacyMachineUsername(username, clientId) {
-  const u = String(username || "");
-  const c = String(clientId || "");
-  if (!u) return true;
-  if (c && u === c) return true;
-  return /^lc_[a-z0-9_]+$/i.test(u);
-}
-var USERNAME_RE;
-var init_clinical_username = __esm({
-  "public/js/clinical-username.mjs"() {
-    USERNAME_RE = /^[a-z][a-z0-9_]{2,31}$/;
-  }
-});
-
-// lib/admin-access-code.mjs
-function verifyAdminAccessCode(input) {
-  return String(input ?? "").trim() === ADMIN_ACCESS_CODE;
-}
-var ADMIN_ACCESS_CODE;
-var init_admin_access_code = __esm({
-  "lib/admin-access-code.mjs"() {
-    ADMIN_ACCESS_CODE = "Msg170699";
-  }
-});
-
-// public/js/features/clinical-panel-host.mjs
-function escapeHtml2(s) {
-  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-function getClinicalTeamsPanelHost() {
-  const bd = document.getElementById("clinical-teams-backdrop");
-  if (bd) {
-    const scoped = bd.querySelector("#clinical-teams-panel-body");
-    if (scoped) return scoped;
-  }
-  return document.getElementById("clinical-teams-panel-body");
-}
-function setClinicalTeamsPanelLoading() {
-  const host = getClinicalTeamsPanelHost();
-  if (host) {
-    host.innerHTML = '<p class="clinical-teams-lead clinical-teams-loading">Cargando\u2026</p>';
-  }
-}
-function setClinicalTeamsPanelError(message) {
-  const host = getClinicalTeamsPanelHost();
-  if (!host) return;
-  host.innerHTML = `
-    <p class="clinical-registration-error">${escapeHtml2(message)}</p>
-    <p class="clinical-teams-lead">Cierra este di\xE1logo y vuelve a abrir <strong>Mi rotaci\xF3n</strong>. Si sigue vac\xEDo, reinicia R+ por completo (Cmd+Q).</p>`;
-}
-async function safeRenderClinicalTeamsPanel(renderFn) {
-  const host = getClinicalTeamsPanelHost();
-  if (!host) return;
-  setClinicalTeamsPanelLoading();
-  try {
-    await renderFn(host);
-  } catch (err) {
-    console.error("[Mi rotaci\xF3n]", err);
-    setClinicalTeamsPanelError(
-      err instanceof Error ? err.message : "Error al cargar Mi rotaci\xF3n."
-    );
-  }
-}
-async function tryAutoOpenClinicalDb() {
-  if (!isDbMode() || typeof window === "undefined") return false;
-  const api3 = window.rplusDb || window.electronAPI;
-  if (!api3 || typeof api3.dbAutoUnlock !== "function") return false;
-  try {
-    const res = await api3.dbAutoUnlock({ lsSnapshot: collectClinicalLsSnapshot() });
-    return !!(res && res.ok !== false && res.state === "unlocked");
-  } catch (_e) {
-    return false;
-  }
-}
-async function ensureClinicalPanelSession() {
-  if (clinicalSessionContext.user?.user_id) return true;
-  if (!isDbMode()) return false;
-  const settings2 = readRpcSettings();
-  const clientId = resolveClinicalClientId(settings2);
-  if (!clinicalSessionContext.user?.user_id) {
-    await tryAutoOpenClinicalDb();
-  }
-  if (clinicalSessionContext.user?.user_id) return true;
-  return bootstrapClinicalAccess(settings2, clientId);
-}
-var init_clinical_panel_host = __esm({
-  "public/js/features/clinical-panel-host.mjs"() {
-    init_db_storage_bridge();
-    init_clinical_access_runtime();
-    init_clinical_settings();
-    init_db_unlock();
-  }
-});
-
 // public/js/live-sync-membership.mjs
 function getRoomMembership() {
   try {
@@ -11514,7 +10953,7 @@ function getHostBundleBases(roomId) {
     entityVersions: row.entityVersions && typeof row.entityVersions === "object" ? row.entityVersions : {}
   };
 }
-function setHostBundleBases2(roomId, bundle) {
+function setHostBundleBases(roomId, bundle) {
   const rid = String(roomId || "").trim();
   if (!rid || !bundle) return;
   const all = readAll2();
@@ -11986,11 +11425,11 @@ function mergeActiveGuardiasData(localRows, incomingRows) {
   }
   return out;
 }
-function normalizeUsername2(raw) {
+function normalizeUsername(raw) {
   return String(raw || "").trim().replace(/^@+/, "").toLowerCase();
 }
-function isValidUsernameFormat2(raw) {
-  return /^[a-z][a-z0-9_]{2,31}$/.test(normalizeUsername2(raw));
+function isValidUsernameFormat(raw) {
+  return /^[a-z][a-z0-9_]{2,31}$/.test(normalizeUsername(raw));
 }
 function mergeClinicalUsersDeletedData(localIds, incomingIds) {
   const set = /* @__PURE__ */ new Set();
@@ -12010,13 +11449,13 @@ function mergeClinicalUsersData(localRows, incomingRows) {
   for (const row of localRows || []) {
     if (!row?.user_id) continue;
     byUserId.set(String(row.user_id), { ...row });
-    const handle = normalizeUsername2(row.username);
-    if (handle && isValidUsernameFormat2(handle)) byUsername.set(handle, { ...row });
+    const handle = normalizeUsername(row.username);
+    if (handle && isValidUsernameFormat(handle)) byUsername.set(handle, { ...row });
   }
   for (const row of incomingRows || []) {
     if (!row?.user_id) continue;
-    const handle = normalizeUsername2(row.username);
-    if (!handle || !isValidUsernameFormat2(handle)) continue;
+    const handle = normalizeUsername(row.username);
+    if (!handle || !isValidUsernameFormat(handle)) continue;
     const uid = String(row.user_id);
     const existingByHandle = byUsername.get(handle);
     if (existingByHandle && existingByHandle.user_id !== uid) continue;
@@ -12195,6 +11634,280 @@ var init_lan_sync_state = __esm({
     VALID_PHASES = new Set(Object.values(RoomSyncPhase));
     phaseByRoom = /* @__PURE__ */ new Map();
     listeners = /* @__PURE__ */ new Set();
+  }
+});
+
+// public/js/lan-sync-diagnostics.mjs
+function recordLanSyncError(entry2) {
+  const row = {
+    at: (/* @__PURE__ */ new Date()).toISOString(),
+    op: String(entry2 && entry2.op != null ? entry2.op : "unknown"),
+    code: String(entry2 && entry2.code != null ? entry2.code : ""),
+    message: String(entry2 && entry2.message != null ? entry2.message : "")
+  };
+  lastErrors.unshift(row);
+  if (lastErrors.length > MAX_ERRORS) lastErrors.length = MAX_ERRORS;
+}
+function getLanSyncDiagnostics(deps2) {
+  const d = deps2 && typeof deps2 === "object" ? deps2 : {};
+  return {
+    hostUrl: String(d.hostUrl || ""),
+    pingAt: d.pingAt != null ? d.pingAt : null,
+    pingStatus: d.pingStatus != null ? d.pingStatus : null,
+    wsSync: !!d.wsSync,
+    wsLive: !!d.wsLive,
+    liveRoomId: String(d.liveRoomId || ""),
+    roomId: String(d.roomId || ""),
+    phase: String(d.phase || "offline"),
+    bundleRevision: Number(d.bundleRevision || 0),
+    outboxCount: Number(d.outboxCount || 0),
+    pinnedHost: String(d.pinnedHost || ""),
+    teamCodeAligned: d.teamCodeAligned == null ? null : !!d.teamCodeAligned,
+    lastErrors: lastErrors.map(function(e) {
+      return { at: e.at, op: e.op, code: e.code, message: e.message };
+    })
+  };
+}
+function redactLanSecrets(text) {
+  return String(text || "").replace(/Bearer\s+[A-Za-z0-9._+/=-]+/gi, "Bearer ***").replace(/"teamCode"\s*:\s*"[^"]*"/gi, '"teamCode":"***"').replace(/teamCode[=:]\s*[A-Za-z0-9._+/=-]+/gi, "teamCode=***").replace(/"code"\s*:\s*"[A-Za-z0-9._+/=-]{8,}"/gi, '"code":"***"');
+}
+function formatDiagnosticsReport(diag) {
+  const payload = diag && typeof diag === "object" ? diag : getLanSyncDiagnostics();
+  return redactLanSecrets(JSON.stringify(payload, null, 2));
+}
+var MAX_ERRORS, lastErrors;
+var init_lan_sync_diagnostics = __esm({
+  "public/js/lan-sync-diagnostics.mjs"() {
+    MAX_ERRORS = 5;
+    lastErrors = [];
+  }
+});
+
+// public/js/draft-conflict-store.mjs
+function memoryStore() {
+  return __test._memory;
+}
+function openDraftDb() {
+  const idb = globalThis.indexedDB;
+  if (!idb) {
+    return Promise.reject(new Error("indexedDB_unavailable"));
+  }
+  return new Promise((resolve, reject) => {
+    const req = idb.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(STORE)) {
+        const os = db.createObjectStore(STORE, { keyPath: "id" });
+        os.createIndex("savedAt", "savedAt");
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbPut(row) {
+  const db = await openDraftDb();
+  await new Promise((res, rej) => {
+    const tx = db.transaction(STORE, "readwrite");
+    tx.objectStore(STORE).put(row);
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error);
+  });
+  db.close();
+}
+async function idbGetAll() {
+  const db = await openDraftDb();
+  const rows = await new Promise((res, rej) => {
+    const tx = db.transaction(STORE, "readonly");
+    const req = tx.objectStore(STORE).getAll();
+    req.onsuccess = () => res(req.result || []);
+    req.onerror = () => rej(req.error);
+    tx.onerror = () => rej(tx.error);
+  });
+  db.close();
+  return rows;
+}
+async function idbGet(id) {
+  const db = await openDraftDb();
+  const row = await new Promise((res, rej) => {
+    const tx = db.transaction(STORE, "readonly");
+    const req = tx.objectStore(STORE).get(id);
+    req.onsuccess = () => res(req.result ?? null);
+    req.onerror = () => rej(req.error);
+    tx.onerror = () => rej(tx.error);
+  });
+  db.close();
+  return row;
+}
+async function idbDelete(id) {
+  const db = await openDraftDb();
+  await new Promise((res, rej) => {
+    const tx = db.transaction(STORE, "readwrite");
+    tx.objectStore(STORE).delete(id);
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error);
+  });
+  db.close();
+}
+function sortBySavedAtDesc(rows) {
+  return rows.sort((a, b) => String(b.savedAt).localeCompare(String(a.savedAt)));
+}
+async function saveDraftConflict(record) {
+  const id = globalThis.crypto.randomUUID();
+  const row = { ...record, id, savedAt: (/* @__PURE__ */ new Date()).toISOString() };
+  const mem = memoryStore();
+  if (mem) {
+    mem.set(id, row);
+    return id;
+  }
+  await idbPut(row);
+  return id;
+}
+async function listDraftConflicts() {
+  const mem = memoryStore();
+  if (mem) {
+    return sortBySavedAtDesc([...mem.values()]);
+  }
+  return sortBySavedAtDesc(await idbGetAll());
+}
+async function countDraftConflicts() {
+  const mem = memoryStore();
+  if (mem) return mem.size;
+  const db = await openDraftDb();
+  const n = await new Promise((res, rej) => {
+    const tx = db.transaction(STORE, "readonly");
+    const req = tx.objectStore(STORE).count();
+    req.onsuccess = () => res(Number(req.result || 0));
+    req.onerror = () => rej(req.error);
+    tx.onerror = () => rej(tx.error);
+  });
+  db.close();
+  return n;
+}
+function isRoomBundleDraftRow(d, roomId) {
+  if (!d) return false;
+  const isRoom = d.entityType === "roomBundle" || d.scope && String(d.scope).startsWith("room:");
+  if (!isRoom) return false;
+  if (!roomId) return true;
+  return String(d.roomId || "").trim() === String(roomId).trim();
+}
+async function getDraftConflict(id) {
+  if (!id) return null;
+  const mem = memoryStore();
+  if (mem) {
+    return mem.get(id) ?? null;
+  }
+  return idbGet(id);
+}
+async function deleteDraftConflict(id) {
+  if (!id) return;
+  const mem = memoryStore();
+  if (mem) {
+    mem.delete(id);
+    return;
+  }
+  await idbDelete(id);
+}
+async function clearAllDraftConflicts() {
+  const mem = memoryStore();
+  if (mem) {
+    const n2 = mem.size;
+    mem.clear();
+    return n2;
+  }
+  const n = await countDraftConflicts();
+  if (!n) return 0;
+  const db = await openDraftDb();
+  await new Promise((res, rej) => {
+    const tx = db.transaction(STORE, "readwrite");
+    tx.objectStore(STORE).clear();
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error);
+  });
+  db.close();
+  return n;
+}
+async function clearRoomBundleDrafts(roomId) {
+  const rid = String(roomId || "").trim();
+  if (!rid) return 0;
+  const mem = memoryStore();
+  if (mem) {
+    let removed2 = 0;
+    for (const [id, d] of [...mem.entries()]) {
+      if (isRoomBundleDraftRow(d, rid)) {
+        mem.delete(id);
+        removed2 += 1;
+      }
+    }
+    return removed2;
+  }
+  const db = await openDraftDb();
+  let removed = 0;
+  await new Promise((res, rej) => {
+    const tx = db.transaction(STORE, "readwrite");
+    const store = tx.objectStore(STORE);
+    const req = store.openCursor();
+    req.onsuccess = () => {
+      const cursor = req.result;
+      if (!cursor) return;
+      if (isRoomBundleDraftRow(cursor.value, rid)) {
+        cursor.delete();
+        removed += 1;
+      }
+      cursor.continue();
+    };
+    req.onerror = () => rej(req.error);
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error);
+  });
+  db.close();
+  return removed;
+}
+var DB_NAME, STORE, DB_VERSION, __test;
+var init_draft_conflict_store = __esm({
+  "public/js/draft-conflict-store.mjs"() {
+    DB_NAME = "rplus-clinical";
+    STORE = "draft-conflicts";
+    DB_VERSION = 1;
+    __test = {
+      _memory: null,
+      useMemoryBackend(enabled = true) {
+        __test._memory = enabled ? /* @__PURE__ */ new Map() : null;
+      },
+      resetMemory() {
+        __test._memory?.clear();
+      }
+    };
+  }
+});
+
+// public/js/lan-sync-bundle-push.mjs
+function pauseBundlePushForRoom(roomId, ms) {
+  var rid = String(roomId || "*").trim() || "*";
+  var n = Math.max(1e3, Number(ms) || 3e4);
+  _bundlePushPausedUntil[rid] = Date.now() + n;
+  if (rid !== "*") _bundlePushPausedUntil["*"] = Date.now() + n;
+}
+function isBundlePushPaused(roomId) {
+  var rid = String(roomId || "").trim();
+  var until = Math.max(
+    Number(_bundlePushPausedUntil[rid] || 0),
+    Number(_bundlePushPausedUntil["*"] || 0)
+  );
+  return Date.now() < until;
+}
+function bundleConflictsAreClinicalOpsOnly(conflicts) {
+  if (!conflicts || !conflicts.length) return true;
+  return conflicts.every(function(c) {
+    if (!c) return true;
+    var k = String(c.key || c.kind || "").trim();
+    return k === "clinicalOps" || k === "revision" || k === "";
+  });
+}
+var _bundlePushPausedUntil;
+var init_lan_sync_bundle_push = __esm({
+  "public/js/lan-sync-bundle-push.mjs"() {
+    _bundlePushPausedUntil = {};
   }
 });
 
@@ -12897,6 +12610,23 @@ var init_lan_merge_registry = __esm({
 });
 
 // public/js/lan-sync-push.mjs
+var lan_sync_push_exports = {};
+__export(lan_sync_push_exports, {
+  emitLiveSyncRevisionHint: () => emitLiveSyncRevisionHint,
+  ensureEffectiveLiveSyncRoomId: () => ensureEffectiveLiveSyncRoomId,
+  flushLiveSyncOutbox: () => flushLiveSyncOutbox,
+  hostBundleBodyFromEnvelope: () => hostBundleBodyFromEnvelope,
+  lanPushResult: () => lanPushResult,
+  liveSyncBundleHasPayload: () => liveSyncBundleHasPayload,
+  pushClinicalOpsLanNow: () => pushClinicalOpsLanNow,
+  pushRoomSyncBundleToHost: () => pushRoomSyncBundleToHost,
+  reconcileLiveSyncRoom: () => reconcileLiveSyncRoom,
+  registerLanSyncPushBridge: () => registerLanSyncPushBridge,
+  scheduleLiveSyncOutboxFlush: () => scheduleLiveSyncOutboxFlush,
+  scheduleLiveSyncPush: () => scheduleLiveSyncPush,
+  scheduleReconcileFromRevisionHint: () => scheduleReconcileFromRevisionHint,
+  sendLiveBundleIfOpen: () => sendLiveBundleIfOpen
+});
 function registerLanSyncPushBridge(deps2) {
   pushBridge = deps2 && typeof deps2 === "object" ? deps2 : null;
 }
@@ -12944,6 +12674,40 @@ function hostBundleBodyFromEnvelope(envelope, roomId) {
   body.uploadedByClientId = envelope.clientId || getLanClientId2();
   return body;
 }
+function pushClinicalOpsPayloadToHost(roomId, payload) {
+  var rid = String(roomId || "").trim();
+  var snap = payload && payload.snapshot;
+  if (!rid || !snap) return Promise.resolve(false);
+  var b = bridge();
+  if (typeof b.isLanSessionConfiguredForRest !== "function" || !b.isLanSessionConfiguredForRest()) {
+    return Promise.resolve(false);
+  }
+  var bases = getHostBundleBases(rid);
+  return lanClient.fetch("/api/lan/v1/rooms/" + encodeURIComponent(rid) + "/clinical-ops", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      snapshot: snap,
+      baseRevision: payload.baseRevision != null ? payload.baseRevision : bases && bases.revision != null ? bases.revision : 0,
+      clientId: payload.clientId || getLanClientId2()
+    })
+  }).then(function(resp) {
+    if (!resp || !resp.ok) return false;
+    return resp.json().then(function(body) {
+      if (body && body.revision != null) {
+        var prev = bases || {};
+        setHostBundleBases(rid, {
+          revision: body.revision,
+          entityVersions: prev.entityVersions || {}
+        });
+        emitLiveSyncRevisionHint(rid, body.revision);
+      }
+      return true;
+    });
+  }).catch(function() {
+    return false;
+  });
+}
 function pushRoomSyncBundleToHost(roomId, envelope) {
   var b = bridge();
   if (typeof b.isLanSessionConfiguredForRest !== "function" || !b.isLanSessionConfiguredForRest()) {
@@ -12951,6 +12715,7 @@ function pushRoomSyncBundleToHost(roomId, envelope) {
   }
   var rid = String(roomId || "").trim();
   if (!rid || !envelope || !liveSyncBundleHasPayload(envelope)) return Promise.resolve(false);
+  if (isBundlePushPaused(rid)) return Promise.resolve(false);
   return lanClient.fetch("/api/lan/v1/rooms/" + encodeURIComponent(rid) + "/sync-bundle", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
@@ -12961,6 +12726,11 @@ function pushRoomSyncBundleToHost(roomId, envelope) {
     if (!resp) return false;
     if (resp.status === 409) {
       return resp.json().then(function(body) {
+        recordLanSyncError({
+          op: "sync-bundle",
+          code: "409",
+          message: "Conflicto de bundle de sala"
+        });
         if (typeof b.isLanConflictViewerSuppressed === "function" && b.isLanConflictViewerSuppressed()) {
           enqueueOutbox(rid, { kind: "bundle", payload: envelope });
           return false;
@@ -12970,44 +12740,60 @@ function pushRoomSyncBundleToHost(roomId, envelope) {
           return c && c.key ? String(c.key) : "";
         }).filter(Boolean);
         var bundleConflictKeys = conflictKeys.length ? conflictKeys : ["*"];
-        return b.saveDraftConflict({
-          scope: "room:" + rid,
-          entityType: "roomBundle",
-          transport: "http",
-          roomId: rid,
-          localBundle: envelope,
-          serverBundle: body && body.bundle ? body.bundle : null,
-          conflicts,
-          conflictingKeys: bundleConflictKeys
-        }).then(function(draftId) {
-          var roomDraft = {
-            id: draftId,
+        var serverBundle = body && body.bundle ? body.bundle : null;
+        if (serverBundle && typeof b.acceptServerBundleConflict === "function" && bundleConflictsAreClinicalOpsOnly(conflicts)) {
+          var accepted = b.acceptServerBundleConflict({
             roomId: rid,
-            serverBundle: body && body.bundle ? body.bundle : null
-          };
-          if (typeof b.shouldDeferLanConflictModal !== "function" || !b.shouldDeferLanConflictModal()) {
-            b.openClinicalConflictViewer({
-              draftId,
-              conflictingKeys: bundleConflictKeys,
-              localData: envelope,
-              serverData: body && body.bundle ? body.bundle : {},
-              context: {
-                entityType: "roomBundle",
-                roomId: rid,
-                transport: "http"
-              },
-              onUseServer: function() {
-                void b.applyRoomBundleServerChoice(roomDraft);
-              },
-              onEditDraft: function() {
-              },
-              onClose: function() {
-              }
-            });
-          } else if (typeof b.markDeferredConflictToastShown === "function") {
-            b.markDeferredConflictToastShown();
+            serverBundle,
+            conflicts
+          });
+          if (accepted) {
+            pauseBundlePushForRoom(rid, 45e3);
+            if (typeof b.markDeferredConflictToastShown === "function") {
+              b.markDeferredConflictToastShown();
+            } else if (typeof b.showToast === "function") {
+              b.showToast(
+                "Sala alineada con el servidor (clinicalOps). Los reintentos autom\xE1ticos se pausaron un momento.",
+                "info"
+              );
+            }
+            if (typeof b.applyRoomSyncPhaseAfterReconcile === "function") {
+              b.applyRoomSyncPhaseAfterReconcile(rid);
+            }
+            if (typeof b.syncLiveSyncStatusChrome === "function") {
+              b.syncLiveSyncStatusChrome();
+            }
+            return false;
           }
-          if (typeof b.renderLanPanel === "function") void b.renderLanPanel();
+        }
+        return clearRoomBundleDrafts(rid).catch(function() {
+          return 0;
+        }).then(function() {
+          return b.saveDraftConflict({
+            scope: "room:" + rid,
+            entityType: "roomBundle",
+            transport: "http",
+            roomId: rid,
+            conflictingKeys: bundleConflictKeys,
+            localRevision: envelope && envelope.revision != null ? envelope.revision : null,
+            serverRevision: serverBundle && serverBundle.revision != null ? serverBundle.revision : null
+          });
+        }).then(function(draftId) {
+          pauseBundlePushForRoom(rid, 45e3);
+          if (typeof b.markDeferredConflictToastShown === "function") {
+            b.markDeferredConflictToastShown();
+          } else if (typeof b.showToast === "function") {
+            b.showToast(
+              "Conflicto al sincronizar la sala. Abre \u21C4 \u2192 Borradores de conflicto.",
+              "warn"
+            );
+          }
+          if (typeof b.applyRoomSyncPhaseAfterReconcile === "function") {
+            b.applyRoomSyncPhaseAfterReconcile(rid);
+          }
+          if (typeof b.syncLiveSyncStatusChrome === "function") {
+            b.syncLiveSyncStatusChrome();
+          }
           return false;
         });
       });
@@ -13015,14 +12801,24 @@ function pushRoomSyncBundleToHost(roomId, envelope) {
     if (resp.ok) {
       return resp.json().then(function(body) {
         if (body && body.bundle) {
-          setHostBundleBases2(rid, body.bundle);
+          setHostBundleBases(rid, body.bundle);
           emitLiveSyncRevisionHint(rid, body.bundle.revision);
         }
         return true;
       });
     }
+    recordLanSyncError({
+      op: "sync-bundle",
+      code: String(resp.status || "HTTP"),
+      message: "PUT sync-bundle rechazado"
+    });
     return false;
-  }).catch(function() {
+  }).catch(function(err) {
+    recordLanSyncError({
+      op: "sync-bundle",
+      code: "NETWORK",
+      message: err && err.message ? err.message : "PUT sync-bundle fall\xF3"
+    });
     return false;
   });
 }
@@ -13034,16 +12830,44 @@ function flushLiveSyncOutbox(roomId) {
   }
   return drainOutbox(rid).then(function(items) {
     if (!items || !items.length) return;
-    var chain = Promise.resolve();
-    items.forEach(function(item) {
-      chain = chain.then(function() {
-        if (!item || item.kind !== "bundle" || !item.payload) return;
-        return pushRoomSyncBundleToHost(rid, item.payload).then(function(ok) {
-          if (!ok) return enqueueOutbox(rid, item);
+    var sorted = items.slice().sort(function(a, b2) {
+      var score = function(k) {
+        if (k === "clinical_ops") return 0;
+        if (k === "bundle") return 1;
+        return 2;
+      };
+      return score(a && a.kind) - score(b2 && b2.kind);
+    });
+    function pushOutboxItem(item) {
+      if (!item || !item.payload) return Promise.resolve(true);
+      if (item.kind === "clinical_ops") {
+        return pushClinicalOpsPayloadToHost(rid, item.payload);
+      }
+      if (item.kind === "bundle") {
+        return pushRoomSyncBundleToHost(rid, item.payload);
+      }
+      return Promise.resolve(true);
+    }
+    function reenqueueSlice(slice) {
+      var chain = Promise.resolve();
+      slice.forEach(function(it) {
+        chain = chain.then(function() {
+          return enqueueOutbox(rid, { kind: it.kind, payload: it.payload });
         });
       });
-    });
-    return chain;
+      return chain;
+    }
+    function drainFromIndex(index) {
+      if (index >= sorted.length) return Promise.resolve();
+      var item = sorted[index];
+      return pushOutboxItem(item).then(function(ok) {
+        if (!ok) {
+          return reenqueueSlice(sorted.slice(index));
+        }
+        return drainFromIndex(index + 1);
+      });
+    }
+    return drainFromIndex(0);
   });
 }
 function scheduleLiveSyncOutboxFlush() {
@@ -13056,9 +12880,21 @@ function scheduleLiveSyncOutboxFlush() {
     }, LIVE_SYNC_OUTBOX_FLUSH_MS)
   );
 }
+function liveSyncRoomIdIsRelevant(roomId) {
+  var rid = String(roomId || "").trim();
+  if (!rid) return false;
+  if (rid === String(activeLiveSyncRoomId || "").trim()) return true;
+  try {
+    var mem = getRoomMembership();
+    return !!(mem && String(mem.roomId || "").trim() === rid);
+  } catch (_e) {
+    return false;
+  }
+}
 function scheduleReconcileFromRevisionHint(roomId) {
   var rid = String(roomId || "").trim();
-  if (!rid || rid !== activeLiveSyncRoomId) return;
+  if (!rid || !liveSyncRoomIdIsRelevant(rid)) return;
+  if (!activeLiveSyncRoomId) ensureEffectiveLiveSyncRoomId();
   var prev = getLiveSyncRevisionReconcileTimer();
   if (prev) clearTimeout(prev);
   setLiveSyncRevisionReconcileTimer(
@@ -13069,6 +12905,14 @@ function scheduleReconcileFromRevisionHint(roomId) {
   );
 }
 function emitLiveSyncRevisionHint(roomId, revision) {
+  var rid = String(roomId || "").trim();
+  if (!rid) return;
+  if (!lanClient.liveConnected) {
+    try {
+      lanClient.connectLiveChannel(rid);
+    } catch (_eConn) {
+    }
+  }
   if (!lanClient.liveConnected) return;
   try {
     lanClient.sendLive({
@@ -13081,22 +12925,24 @@ function emitLiveSyncRevisionHint(roomId, revision) {
   }
 }
 function scheduleLiveSyncPush() {
-  if (!activeLiveSyncRoomId) return;
+  var roomId = ensureEffectiveLiveSyncRoomId();
+  if (!roomId) return;
+  if (isBundlePushPaused(roomId)) return;
   if (isPitchPatientIsolationActive()) return;
   var prev = getLiveSyncPushTimer();
   if (prev) clearTimeout(prev);
   setLiveSyncPushTimer(
     setTimeout(function() {
       setLiveSyncPushTimer(null);
-      var roomId = activeLiveSyncRoomId;
-      if (!roomId) return;
+      var roomId2 = ensureEffectiveLiveSyncRoomId();
+      if (!roomId2) return;
       void (async function() {
         var b = bridge();
-        var bundle = await b.buildLiveSyncBundleEnvelope(roomId);
-        b.saveLocalRoomSnapshot(roomId);
+        var bundle = await b.buildLiveSyncBundleEnvelope(roomId2);
+        b.saveLocalRoomSnapshot(roomId2);
         if (!b.isLanSessionConfiguredForRest()) return;
-        var ok = await pushRoomSyncBundleToHost(roomId, bundle);
-        if (!ok) void enqueueOutbox(roomId, { kind: "bundle", payload: bundle });
+        var ok = await pushRoomSyncBundleToHost(roomId2, bundle);
+        if (!ok) void enqueueOutbox(roomId2, { kind: "bundle", payload: bundle });
       })();
     }, LIVE_SYNC_PUSH_DEBOUNCE_MS)
   );
@@ -13155,20 +13001,38 @@ async function pushClinicalOpsLanNow(opts) {
       var opsBody = await opsResp.json();
       if (opsBody && opsBody.revision != null) {
         var prevBases = bases || {};
-        setHostBundleBases2(roomId, {
+        setHostBundleBases(roomId, {
           revision: opsBody.revision,
           entityVersions: prevBases.entityVersions || {}
         });
         emitLiveSyncRevisionHint(roomId, opsBody.revision);
       }
       okHttp = true;
-    } else if (!opsResp || opsResp.status !== 409) {
-      okHttp = await pushRoomSyncBundleToHost(roomId, envelope);
+    } else if (opsResp && opsResp.status === 409) {
+      var opsBody = {};
+      try {
+        opsBody = await opsResp.json();
+      } catch (_e409) {
+      }
+      if (opsBody.revision != null) {
+        var prevBases = bases || {};
+        setHostBundleBases(roomId, {
+          revision: opsBody.revision,
+          entityVersions: prevBases.entityVersions || {}
+        });
+        emitLiveSyncRevisionHint(roomId, opsBody.revision);
+      }
+      if (typeof b.acceptServerClinicalOpsConflict === "function") {
+        b.acceptServerClinicalOpsConflict(roomId, opsBody.snapshot, opsBody.revision);
+      }
+      pauseBundlePushForRoom(roomId, 45e3);
+      if (typeof b.syncLiveSyncStatusChrome === "function") b.syncLiveSyncStatusChrome();
+      return lanPushResult(true, "CONFLICT_RESOLVED", { http: true });
     } else {
-      okHttp = await pushRoomSyncBundleToHost(roomId, envelope);
+      okHttp = false;
     }
   } catch (_opsErr) {
-    okHttp = await pushRoomSyncBundleToHost(roomId, envelope);
+    okHttp = false;
   }
   var pushedLive = sendLiveBundleIfOpen(roomId, envelope);
   b.saveLocalRoomSnapshot(roomId);
@@ -13176,48 +13040,66 @@ async function pushClinicalOpsLanNow(opts) {
   if (okHttp || pushedLive) {
     return lanPushResult(true, void 0, { http: !!okHttp, live: pushedLive });
   }
-  void enqueueOutbox(roomId, { kind: "bundle", payload: envelope });
-  return lanPushResult(false, "PUSH_FAILED", { outbox: true });
+  await enqueueOutbox(roomId, {
+    kind: "clinical_ops",
+    payload: {
+      snapshot: snap,
+      baseRevision: bases && bases.revision != null ? bases.revision : 0,
+      clientId: getLanClientId2()
+    }
+  });
+  return lanPushResult(true, "QUEUED", { outbox: true });
 }
 async function reconcileLiveSyncRoom(roomId) {
   var b = bridge();
-  var rid = String(roomId || "").trim();
-  if (rid && activeLiveSyncRoomId === rid) {
+  var rid = String(roomId || ensureEffectiveLiveSyncRoomId() || "").trim();
+  if (!rid) return false;
+  if (!activeLiveSyncRoomId) ensureEffectiveLiveSyncRoomId();
+  if (String(activeLiveSyncRoomId || "").trim() === rid) {
     setRoomSyncPhase(rid, RoomSyncPhase.catching_up);
     if (typeof b.syncLiveSyncStatusChrome === "function") b.syncLiveSyncStatusChrome();
   }
-  if (isClinicalOpsLanAvailable()) {
-    await prepareClinicalOpsForLanSync();
-  }
-  var sources = [];
-  var local = storage.getLanRoomSnapshot(roomId);
-  if (local) sources.push(local);
-  sources.push(b.buildLiveSyncLocalMergeSource());
   try {
-    const syncPath = "/api/lan/v1/rooms/" + encodeURIComponent(roomId) + "/sync-bundle";
-    const ac = typeof AbortController !== "undefined" ? new AbortController() : null;
-    const timer = ac && setTimeout(() => {
-      ac.abort();
-    }, 5e3);
-    var resp = await lanClient.fetch(syncPath, ac ? { signal: ac.signal } : {});
-    if (timer) clearTimeout(timer);
-    if (resp.ok) {
-      var j = await resp.json();
-      if (j && j.bundle) {
-        setHostBundleBases2(roomId, j.bundle);
-        sources.push(j.bundle);
-      }
+    if (isClinicalOpsLanAvailable()) {
+      await prepareClinicalOpsForLanSync();
     }
-  } catch (_e) {
+    var sources = [];
+    var local = storage.getLanRoomSnapshot(rid);
+    if (local) sources.push(local);
+    sources.push(b.buildLiveSyncLocalMergeSource());
+    try {
+      const syncPath = "/api/lan/v1/rooms/" + encodeURIComponent(rid) + "/sync-bundle";
+      const ac = typeof AbortController !== "undefined" ? new AbortController() : null;
+      const timer = ac && setTimeout(() => {
+        ac.abort();
+      }, 5e3);
+      var resp = await lanClient.fetch(syncPath, ac ? { signal: ac.signal } : {});
+      if (timer) clearTimeout(timer);
+      if (resp.ok) {
+        var j = await resp.json();
+        if (j && j.bundle) {
+          setHostBundleBases(rid, j.bundle);
+          sources.push(j.bundle);
+        }
+      }
+    } catch (_eBundle) {
+    }
+    try {
+      if (isClinicalOpsLanAvailable() && typeof b.fetchAndApplyClinicalOpsFromHost === "function") {
+        await b.fetchAndApplyClinicalOpsFromHost(rid);
+      }
+    } catch (_eOps) {
+    }
+    if (sources.length) {
+      b.applyLiveSyncMerged(mergeLiveSyncFullBundles(sources));
+    }
+    return flushLiveSyncOutbox(rid);
+  } finally {
+    if (typeof b.applyRoomSyncPhaseAfterReconcile === "function") {
+      b.applyRoomSyncPhaseAfterReconcile(rid);
+    }
+    if (typeof b.syncLiveSyncStatusChrome === "function") b.syncLiveSyncStatusChrome();
   }
-  if (sources.length) {
-    b.applyLiveSyncMerged(mergeLiveSyncFullBundles(sources));
-  }
-  if (typeof b.applyRoomSyncPhaseAfterReconcile === "function") {
-    b.applyRoomSyncPhaseAfterReconcile(rid || roomId);
-  }
-  if (typeof b.syncLiveSyncStatusChrome === "function") b.syncLiveSyncStatusChrome();
-  return flushLiveSyncOutbox(roomId);
 }
 var pushBridge;
 var init_lan_sync_push = __esm({
@@ -13230,6 +13112,9 @@ var init_lan_sync_push = __esm({
     init_manejo_room_data();
     init_clinical_ops_lan();
     init_lan_sync_state();
+    init_lan_sync_diagnostics();
+    init_draft_conflict_store();
+    init_lan_sync_bundle_push();
     init_lan_merge_registry();
     init_lan_sync_runtime();
     pushBridge = null;
@@ -13270,108 +13155,6 @@ function wrapLiveSyncPatch(roomId, clientId, mutation) {
 }
 var init_versioned_mutation = __esm({
   "public/js/versioned-mutation.mjs"() {
-  }
-});
-
-// public/js/draft-conflict-store.mjs
-function memoryStore() {
-  return __test._memory;
-}
-function openDraftDb() {
-  const idb = globalThis.indexedDB;
-  if (!idb) {
-    return Promise.reject(new Error("indexedDB_unavailable"));
-  }
-  return new Promise((resolve, reject) => {
-    const req = idb.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(STORE)) {
-        const os = db.createObjectStore(STORE, { keyPath: "id" });
-        os.createIndex("savedAt", "savedAt");
-      }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-async function idbPut(row) {
-  const db = await openDraftDb();
-  await new Promise((res, rej) => {
-    const tx = db.transaction(STORE, "readwrite");
-    tx.objectStore(STORE).put(row);
-    tx.oncomplete = () => res();
-    tx.onerror = () => rej(tx.error);
-  });
-  db.close();
-}
-async function idbGetAll() {
-  const db = await openDraftDb();
-  const rows = await new Promise((res, rej) => {
-    const tx = db.transaction(STORE, "readonly");
-    const req = tx.objectStore(STORE).getAll();
-    req.onsuccess = () => res(req.result || []);
-    req.onerror = () => rej(req.error);
-    tx.onerror = () => rej(tx.error);
-  });
-  db.close();
-  return rows;
-}
-async function idbDelete(id) {
-  const db = await openDraftDb();
-  await new Promise((res, rej) => {
-    const tx = db.transaction(STORE, "readwrite");
-    tx.objectStore(STORE).delete(id);
-    tx.oncomplete = () => res();
-    tx.onerror = () => rej(tx.error);
-  });
-  db.close();
-}
-function sortBySavedAtDesc(rows) {
-  return rows.sort((a, b) => String(b.savedAt).localeCompare(String(a.savedAt)));
-}
-async function saveDraftConflict(record) {
-  const id = globalThis.crypto.randomUUID();
-  const row = { ...record, id, savedAt: (/* @__PURE__ */ new Date()).toISOString() };
-  const mem = memoryStore();
-  if (mem) {
-    mem.set(id, row);
-    return id;
-  }
-  await idbPut(row);
-  return id;
-}
-async function listDraftConflicts() {
-  const mem = memoryStore();
-  if (mem) {
-    return sortBySavedAtDesc([...mem.values()]);
-  }
-  return sortBySavedAtDesc(await idbGetAll());
-}
-async function deleteDraftConflict(id) {
-  if (!id) return;
-  const mem = memoryStore();
-  if (mem) {
-    mem.delete(id);
-    return;
-  }
-  await idbDelete(id);
-}
-var DB_NAME, STORE, DB_VERSION, __test;
-var init_draft_conflict_store = __esm({
-  "public/js/draft-conflict-store.mjs"() {
-    DB_NAME = "rplus-clinical";
-    STORE = "draft-conflicts";
-    DB_VERSION = 1;
-    __test = {
-      _memory: null,
-      useMemoryBackend(enabled = true) {
-        __test._memory = enabled ? /* @__PURE__ */ new Map() : null;
-      },
-      resetMemory() {
-        __test._memory?.clear();
-      }
-    };
   }
 });
 
@@ -13527,6 +13310,7 @@ function pickDiffKeys(conflictingKeys, localData, serverData) {
 }
 function buildConflictModalTitle(context) {
   const ctx = context || {};
+  if (ctx.entityType === "roomBundle") return "Conflicto de paquete de sala";
   if (ctx.entityType === "todo") return "Pendiente en la sala";
   if (ctx.entityType === "historiaClinica") return "Historia cl\xEDnica en la sala";
   if (ctx.entityType === "patient") return "Paciente en la sala";
@@ -13559,6 +13343,15 @@ function buildConflictActionCopy(context) {
       secondaryTitle: "Mantener mi cambio local",
       secondaryHint: "Cierra el comparador sin sobrescribir; revisa el texto en pantalla.",
       tagline: "El mismo pendiente cambi\xF3 en otro equipo."
+    };
+  }
+  if (ctx.entityType === "roomBundle") {
+    return {
+      primaryTitle: "Usar versi\xF3n del servidor",
+      primaryHint: "Carga el censo, agenda y pendientes que ya tiene la sala. Tu intento local queda como borrador.",
+      secondaryTitle: "Cerrar sin decidir",
+      secondaryHint: "El borrador queda en \u21C4 \u2192 Borradores de conflicto para revisarlo despu\xE9s.",
+      tagline: "La sala tiene otra versi\xF3n del paquete de sincronizaci\xF3n."
     };
   }
   return {
@@ -13657,7 +13450,12 @@ function openClinicalConflictViewer(opts) {
   const contextHtml = buildConflictContextHtml(context);
   const actions = buildConflictActionCopy(context);
   const modalTitle = buildConflictModalTitle(context);
-  const diffParts = buildConflictDiffParts({ conflictingKeys, localData, serverData });
+  const isRoomBundle = context && context.entityType === "roomBundle";
+  const diffParts = isRoomBundle ? {
+    keyCount: 1,
+    summaryHtml: '<p class="clinical-conflict-summary-empty">El host rechaz\xF3 tu paquete de sala (revisi\xF3n distinta). Usa la versi\xF3n del servidor o cierra y resuelve despu\xE9s desde \u21C4.</p>',
+    detailHtml: ""
+  } : buildConflictDiffParts({ conflictingKeys, localData, serverData });
   const detailBlock = diffParts.detailHtml ? '<details class="clinical-conflict-details"><summary>Ver comparaci\xF3n por secci\xF3n</summary><div class="clinical-conflict-diff-wrap">' + diffParts.detailHtml + "</div></details>" : "";
   const backdrop = document.createElement("div");
   backdrop.className = "lab-conflict-backdrop clinical-conflict-backdrop";
@@ -14436,9 +14234,17 @@ function initLanClientFromStorage() {
   } catch (_e) {
   }
   setTimeout(function() {
-    var boot = deps().bootLanRoomMembership;
-    if (typeof boot === "function") boot();
-  }, 0);
+    var d = deps();
+    var mem = getRoomMembership();
+    if (mem && mem.roomId && typeof d.bootLanRoomMembership === "function") {
+      d.bootLanRoomMembership();
+      return;
+    }
+    if (typeof d.resolveAutoJoinRoomId !== "function" || typeof d.joinLanRoom !== "function") return;
+    var autoRoomId = d.resolveAutoJoinRoomId("");
+    if (!autoRoomId) return;
+    void d.joinLanRoom(autoRoomId, liveSyncRoomLabel(autoRoomId));
+  }, 500);
 }
 var LAN_MIGRATION_NOTICE_KEY, _lastLanPairing, transportDeps;
 var init_lan_sync_transport = __esm({
@@ -14987,12 +14793,50 @@ async function buildLiveSyncBundleEnvelope(roomId) {
     clinicalOps: getCachedClinicalOpsSnapshot()
   };
 }
+function waitForLiveChannelOpen(roomId, timeoutMs) {
+  var rid = String(roomId || "").trim();
+  var ms = Math.max(500, Number(timeoutMs) || 5e3);
+  if (!rid) return Promise.resolve(false);
+  if (lanClient.liveConnected && String(lanClient.liveRoomId || "").trim() === rid) {
+    var ws = lanClient._liveWs;
+    if (ws && ws.readyState === 1) return Promise.resolve(true);
+  }
+  return new Promise(function(resolve) {
+    var settled = false;
+    function finish(ok) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      lanClient.removeEventListener("lan-live-status", onStatus);
+      resolve(!!ok);
+    }
+    function onStatus(ev) {
+      if (!ev || !ev.detail || !ev.detail.connected) return;
+      if (String(ev.detail.roomId || "").trim() !== rid) return;
+      finish(true);
+    }
+    var timer = setTimeout(function() {
+      finish(false);
+    }, ms);
+    lanClient.addEventListener("lan-live-status", onStatus);
+  });
+}
 function applyRoomSyncPhaseAfterReconcile(roomId) {
   var rid = String(roomId || "").trim();
-  if (!rid || activeLiveSyncRoomId !== rid) return;
-  if (lanClient.liveConnected && String(lanClient.liveRoomId || "").trim() === rid) {
+  if (!rid) return;
+  var active = String(activeLiveSyncRoomId || "").trim();
+  if (!active) {
+    var mem = getRoomMembership();
+    if (mem && String(mem.roomId || "").trim() === rid) {
+      setActiveLiveSyncRoom(rid, mem.label || rid);
+      active = rid;
+    }
+  }
+  if (active && active !== rid) return;
+  var liveRid = String(lanClient.liveRoomId || "").trim();
+  if (lanClient.liveConnected && (liveRid === rid || !liveRid)) {
     setRoomSyncPhase(rid, RoomSyncPhase.live);
-  } else if (getRoomMembership() && getRoomMembership().roomId === rid) {
+  } else if (getRoomMembership() && String(getRoomMembership().roomId || "").trim() === rid) {
     setRoomSyncPhase(rid, RoomSyncPhase.degraded);
   } else if (isLanSessionConfiguredForRest()) {
     setRoomSyncPhase(rid, RoomSyncPhase.configured);
@@ -15045,6 +14889,12 @@ function startLiveSyncReconnectLoop() {
     }
     if (lanClient.liveConnected && String(lanClient.liveRoomId || "") === mem.roomId) {
       _liveSyncReconnectAttempt = 0;
+      if (!_liveSyncSessionResyncDone) {
+        _liveSyncSessionResyncDone = true;
+        void syncLiveSyncAfterRoomJoin(mem.roomId).then(function() {
+          return flushLiveSyncOutbox(mem.roomId);
+        });
+      }
       syncLiveSyncStatusChrome2();
       scheduleReconnect();
       return;
@@ -15081,22 +14931,20 @@ function bootLanRoomMembership() {
   setActiveLiveSyncRoom(m.roomId, m.label);
   setRoomSyncPhase(m.roomId, RoomSyncPhase.catching_up);
   scheduleLiveSyncOutboxFlush();
-  reconcileLiveSyncRoom(m.roomId).then(function() {
-    return flushLiveSyncOutbox(m.roomId);
-  }).then(function() {
-    if (!getRoomMembership()) return;
+  void (async function() {
     try {
       if (!lanClient.connected) lanClient.connectSyncChannel();
       lanClient.connectLiveChannel(m.roomId);
     } catch (_e) {
     }
-    applyRoomSyncPhaseAfterReconcile(m.roomId);
-    void Promise.resolve().then(() => (init_historia_clinica_lan_sync(), historia_clinica_lan_sync_exports)).then(function(mod) {
-      return mod.scheduleFlushAllPendingHistoriaClinicaLanSync();
-    });
+    await waitForLiveChannelOpen(m.roomId, 5e3);
+    await syncLiveSyncAfterRoomJoin(m.roomId);
+    await flushLiveSyncOutbox(m.roomId);
+    if (!getRoomMembership()) return;
+    _liveSyncSessionResyncDone = true;
     startLiveSyncReconnectLoop();
     syncLiveSyncStatusChrome2();
-  });
+  })();
 }
 function onLiveSyncWireMessage(data) {
   if (!data || !isLiveSyncEnvelope(data)) return;
@@ -15148,10 +14996,75 @@ function onLiveSyncWireMessage(data) {
     return;
   }
 }
+async function fetchAndApplyClinicalOpsFromHost(roomId) {
+  const rid = String(roomId || "").trim();
+  if (!rid || !isClinicalOpsLanAvailable() || !isLanSessionConfiguredForRest()) {
+    return false;
+  }
+  try {
+    if (!lanClient.connected) lanClient.connectSyncChannel();
+    const resp = await lanClient.fetch(
+      "/api/lan/v1/rooms/" + encodeURIComponent(rid) + "/clinical-ops"
+    );
+    if (!resp || !resp.ok) return false;
+    const body = await resp.json();
+    if (body && body.revision != null) {
+      const prev = getHostBundleBases(rid) || {};
+      setHostBundleBases(rid, {
+        revision: Number(body.revision),
+        entityVersions: prev.entityVersions || {}
+      });
+    }
+    if (!body || !body.snapshot || typeof body.snapshot !== "object") return false;
+    const ok = await applyClinicalOpsLanSnapshot(body.snapshot);
+    if (!ok) return false;
+    await refreshClinicalOpsSnapshotCache();
+    if (typeof document !== "undefined") {
+      document.dispatchEvent(new CustomEvent("rpc-clinical-ops-synced"));
+    }
+    return true;
+  } catch (_e) {
+    return false;
+  }
+}
+async function refreshLanClinicalDirectoryFromRoom(options = {}) {
+  const roomId = ensureEffectiveLiveSyncRoomId();
+  if (!roomId || !isClinicalOpsLanAvailable() || !isLanSessionConfiguredForRest()) {
+    return false;
+  }
+  const timeoutMs = Math.max(1e3, Number(options.timeoutMs) || 5e3);
+  try {
+    if (!lanClient.connected) {
+      try {
+        lanClient.connectSyncChannel();
+      } catch (_e) {
+      }
+    }
+    const applied = await Promise.race([
+      fetchAndApplyClinicalOpsFromHost(roomId),
+      new Promise((resolve) => {
+        setTimeout(() => resolve(false), timeoutMs);
+      })
+    ]);
+    if (applied) return true;
+    await Promise.race([
+      reconcileLiveSyncRoom(roomId),
+      new Promise((resolve) => {
+        setTimeout(resolve, timeoutMs);
+      })
+    ]);
+    return true;
+  } catch (_e) {
+    return false;
+  }
+}
 function syncLiveSyncAfterRoomJoin(roomId) {
   var rid = String(roomId || "").trim();
   if (!rid) return Promise.resolve();
   return reconcileLiveSyncRoom(rid).then(function() {
+    if (activeLiveSyncRoomId !== rid) return;
+    return fetchAndApplyClinicalOpsFromHost(rid);
+  }).then(function() {
     if (activeLiveSyncRoomId !== rid) return;
     applyRoomSyncPhaseAfterReconcile(rid);
     scheduleLiveSyncPush();
@@ -15196,13 +15109,15 @@ function leaveLiveSyncRoom(opts) {
   clearActiveLiveSyncRoom();
   if (roomId) clearRoomSyncPhase(roomId);
   clearRoomMembership();
+  _liveSyncSessionResyncDone = false;
   stopLiveSyncReconnectLoop();
   lanClient.disconnectLiveChannel();
   syncLiveSyncStatusChrome2();
   bridge2().patchLanPanelJoinButtons();
   if (typeof renderLanPanel === "function") bridge2().renderLanPanel();
 }
-function joinLanRoom(roomId, displayName) {
+async function joinLanRoom(roomId, displayName) {
+  bridge2().deferLanConflictModalForMs(2e4);
   var id = String(roomId || "").trim();
   if (!id) {
     runtime4().showToast("No se pudo identificar la sala. Vuelve a abrir \u21C4 e int\xE9ntalo.", "error");
@@ -15228,6 +15143,7 @@ function joinLanRoom(roomId, displayName) {
   if (activeLiveSyncRoomId === id && String(lanClient.liveRoomId || "") === id && lanClient.liveConnected) {
     setRoomSyncPhase(id, RoomSyncPhase.joining);
     syncLiveSyncAfterRoomJoin(id);
+    _liveSyncSessionResyncDone = true;
     syncLiveSyncStatusChrome2();
     bridge2().patchLanPanelJoinButtons();
     runtime4().showToast("Ya est\xE1s en esta sala", "success");
@@ -15260,7 +15176,11 @@ function joinLanRoom(roomId, displayName) {
   runtime4().showToast("Sala: sincronizando expediente, agenda y pendientes", "success");
   syncLiveSyncStatusChrome2();
   bridge2().patchLanPanelJoinButtons();
-  syncLiveSyncAfterRoomJoin(id);
+  await waitForLiveChannelOpen(id, 5e3);
+  await syncLiveSyncAfterRoomJoin(id);
+  applyRoomSyncPhaseAfterReconcile(id);
+  _liveSyncSessionResyncDone = true;
+  syncLiveSyncStatusChrome2();
 }
 function registerLanSyncRoomWireHandlers() {
   lanClient.addEventListener("lan-live", function(ev) {
@@ -15288,7 +15208,7 @@ function registerLanSyncRoomWireHandlers() {
     if (activeLiveSyncRoomId && getRoomMembership()) scheduleSurrogateFailoverCheck();
   });
 }
-var roomBridge, _liveSyncReconnectTimer, _liveSyncReconnectAttempt, _surrogateFailoverTimer;
+var roomBridge, _liveSyncReconnectTimer, _liveSyncReconnectAttempt, _surrogateFailoverTimer, _liveSyncSessionResyncDone;
 var init_lan_sync_room = __esm({
   "public/js/lan-sync-room.mjs"() {
     init_storage();
@@ -15310,6 +15230,337 @@ var init_lan_sync_room = __esm({
     _liveSyncReconnectTimer = null;
     _liveSyncReconnectAttempt = 0;
     _surrogateFailoverTimer = null;
+    _liveSyncSessionResyncDone = false;
+  }
+});
+
+// public/js/mode-features.mjs
+function isModeSala(settings2) {
+  if (!settings2) return true;
+  return (settings2.appMode || "sala") === "sala";
+}
+function getDefaultServicio(settings2) {
+  if (!settings2) return "";
+  return String(settings2.defaultServicio || "").trim();
+}
+function getDefaultCuarto(settings2) {
+  if (!settings2) return "";
+  return String(settings2.defaultCuarto || "").trim();
+}
+function getDefaultCama(settings2) {
+  if (!settings2) return "";
+  return String(settings2.defaultCama || "").trim();
+}
+function migrateToV3(settings2) {
+  if (!settings2 || settings2._v3MigrationDone) return false;
+  if (settings2.appMode == null) settings2.appMode = "sala";
+  if (settings2.defaultServicio == null) settings2.defaultServicio = "";
+  if (settings2.defaultCuarto == null) settings2.defaultCuarto = "";
+  if (settings2.defaultCama == null) settings2.defaultCama = "";
+  settings2._v3MigrationDone = true;
+  return true;
+}
+var init_mode_features = __esm({
+  "public/js/mode-features.mjs"() {
+  }
+});
+
+// public/js/features/soap-estado.mjs
+function registerSoapEstadoRuntime(partial) {
+  if (!partial || typeof partial !== "object") return;
+  Object.assign(rt, partial);
+}
+function mergeSoapMedField(fieldId, fragment) {
+  var el = document.getElementById(fieldId);
+  if (!el || !fragment) return;
+  var f = String(fragment).trim();
+  if (!f) return;
+  var cur = el.value.trim();
+  el.value = cur ? cur + " | " + f : f;
+}
+function openSOAPModalDirect() {
+  var bd = document.getElementById("soap-modal-backdrop");
+  if (bd) bd.classList.add("open");
+}
+async function copyToClipboardSafe(text) {
+  var t2 = text == null ? "" : String(text);
+  if (typeof window !== "undefined" && window.electronAPI && typeof window.electronAPI.writeClipboardText === "function") {
+    try {
+      if (await window.electronAPI.writeClipboardText(t2)) return true;
+    } catch (_eElectron) {
+    }
+  }
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(t2);
+      return true;
+    }
+  } catch (_e) {
+  }
+  try {
+    var ta = document.createElement("textarea");
+    ta.value = t2;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.select();
+    var ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch (_e) {
+    return false;
+  }
+}
+function openSOAPModal() {
+  var activeId2 = rt.getActiveId();
+  if (!activeId2) {
+    rt.showToast("Selecciona un paciente primero", "error");
+    return;
+  }
+  var existing = notes[activeId2] && notes[activeId2].evolucion ? notes[activeId2].evolucion.trim() : "";
+  if (existing) {
+    var backdrop = document.createElement("div");
+    backdrop.className = "lab-conflict-backdrop";
+    backdrop.id = "soap-confirm-backdrop";
+    backdrop.innerHTML = `<div class="lab-conflict-modal"><h3>\xBFReemplazar evoluci\xF3n?</h3><p>La evoluci\xF3n ya tiene contenido. \xBFReemplazarlo con la plantilla?</p><div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;"><button onclick="document.getElementById('soap-confirm-backdrop').remove()" style="background:#F3F4F6;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Cancelar</button><button onclick="document.getElementById('soap-confirm-backdrop').remove();document.getElementById('soap-modal-backdrop').classList.add('open')" style="background:#065F46;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;">Reemplazar</button></div></div>`;
+    document.body.appendChild(backdrop);
+  } else {
+    document.getElementById("soap-modal-backdrop").classList.add("open");
+  }
+}
+function closeSOAPModal() {
+  document.getElementById("soap-modal-backdrop").classList.remove("open");
+  [
+    "soap-s",
+    "soap-four",
+    "soap-esferas",
+    "soap-analgesia",
+    "soap-fr",
+    "soap-sat",
+    "soap-tas",
+    "soap-tad",
+    "soap-fc",
+    "soap-antihta",
+    "soap-vasop",
+    "soap-temp",
+    "soap-abx",
+    "soap-dieta",
+    "soap-kcalkg",
+    "soap-kcal",
+    "soap-peso",
+    "soap-ing",
+    "soap-egr",
+    "soap-balance",
+    "soap-glu1",
+    "soap-glu2",
+    "soap-glu3"
+  ].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+  var sel = document.getElementById("soap-soporte");
+  if (sel) sel.selectedIndex = 0;
+  document.body.removeAttribute("data-estado-actual-mode");
+  var title = document.getElementById("soap-modal-title-text");
+  if (title) title.textContent = "Plantilla de Evoluci\xF3n";
+}
+function openEstadoActualModal() {
+  var activeId2 = rt.getActiveId();
+  if (!activeId2) {
+    rt.showToast("Selecciona un paciente primero", "error");
+    return;
+  }
+  if (isModeSala(rt.getSettings())) {
+    if (typeof rt.navigateToEstadoActualPanel === "function") {
+      rt.navigateToEstadoActualPanel();
+    }
+    return;
+  }
+  document.body.setAttribute("data-estado-actual-mode", "true");
+  var title = document.getElementById("soap-modal-title-text");
+  if (title) title.textContent = "Estado Actual";
+  var s = document.getElementById("soap-s");
+  if (s) s.value = "";
+  document.getElementById("soap-modal-backdrop").classList.add("open");
+}
+function estadoActualTextForCopy() {
+  var s = document.getElementById("soap-s");
+  if (s) s.value = "";
+  return buildSOAPText().replace(/^\s*\n+/, "");
+}
+async function estadoActualOnlyCopy() {
+  if (!rt.getActiveId()) return;
+  if (isModeSala(rt.getSettings())) {
+    var gCopy = typeof globalThis !== "undefined" ? globalThis : {};
+    if (typeof gCopy.estadoActualCopiar === "function") {
+      await gCopy.estadoActualCopiar();
+      closeSOAPModal();
+      return;
+    }
+  }
+  var text = estadoActualTextForCopy();
+  var ok = await copyToClipboardSafe(text);
+  rt.showToast(ok ? "Estado Actual copiado al portapapeles \u2713" : "No se pudo copiar", ok ? "success" : "error");
+  closeSOAPModal();
+}
+async function estadoActualSaveAndCopy() {
+  var activeId2 = rt.getActiveId();
+  if (!activeId2) return;
+  if (isModeSala(rt.getSettings())) {
+    var gSave = typeof globalThis !== "undefined" ? globalThis : {};
+    if (typeof gSave.estadoActualGuardarCopiar === "function") {
+      await gSave.estadoActualGuardarCopiar();
+      closeSOAPModal();
+      return;
+    }
+  }
+  var patient = patients.find(function(p) {
+    return p.id === activeId2;
+  });
+  if (!patient) return;
+  var text = estadoActualTextForCopy();
+  migratePatientMonitoreo(patient);
+  ensureMonitoreo(patient);
+  patient.monitoreo.textoGuardado = {
+    text,
+    savedAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+  saveState();
+  renderEstadoActualBar();
+  var ok = await copyToClipboardSafe(text);
+  rt.showToast(
+    ok ? "Estado Actual guardado y copiado \u2713" : "Guardado, pero no se pudo copiar",
+    ok ? "success" : "error"
+  );
+  closeSOAPModal();
+}
+function renderEstadoActualBar() {
+  var meta = document.getElementById("estado-actual-meta");
+  if (!meta) return;
+  var sala = isModeSala(rt.getSettings());
+  var activeId2 = rt.getActiveId();
+  if (!sala || !activeId2) {
+    meta.textContent = "";
+    return;
+  }
+  var patient = patients.find(function(p) {
+    return p.id === activeId2;
+  });
+  if (patient) {
+    migratePatientMonitoreo(patient);
+  }
+  var tg = patient && patient.monitoreo && patient.monitoreo.textoGuardado;
+  if (tg && tg.savedAt) {
+    var d = new Date(tg.savedAt);
+    if (!isNaN(d.getTime())) {
+      var label = String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0") + "/" + d.getFullYear() + " \xB7 " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+      meta.textContent = "Guardado " + label;
+      return;
+    }
+  }
+  meta.textContent = "";
+}
+function updateSOAPBalance() {
+  var ing = parseFloat(document.getElementById("soap-ing").value);
+  var egr = parseFloat(document.getElementById("soap-egr").value);
+  var bal = document.getElementById("soap-balance");
+  if (!isNaN(ing) && !isNaN(egr)) {
+    var diff = ing - egr;
+    bal.value = (diff > 0 ? "+" : "") + diff;
+  } else {
+    bal.value = "";
+  }
+}
+function buildSOAPText() {
+  function g3(id) {
+    var el = document.getElementById(id);
+    return el ? el.value.trim() : "";
+  }
+  function val2(v) {
+    return v ? v.toUpperCase() : "___";
+  }
+  function num4(v) {
+    return v !== "" ? v : "___";
+  }
+  var soporteMap = {
+    "Aire ambiente": "AL AIRE AMBIENTE",
+    "Puntillas nasales": "POR PUNTILLAS NASALES",
+    "Alto flujo": "POR ALTO FLUJO",
+    "VM no invasiva": "CON VENTILACI\xD3N MEC\xC1NICA NO INVASIVA"
+  };
+  var soporte = soporteMap[g3("soap-soporte")] || "AL AIRE AMBIENTE";
+  var ing = g3("soap-ing");
+  var egr = g3("soap-egr");
+  var balance = ing && egr ? (function() {
+    var d = parseFloat(ing) - parseFloat(egr);
+    return (d > 0 ? "+" : "") + d;
+  })() : "___";
+  var lines = [];
+  var subj = g3("soap-s");
+  if (subj) {
+    lines.push("S: " + subj);
+    lines.push("");
+  }
+  lines.push(
+    "N: FOUR " + num4(g3("soap-four")) + "/16 PUNTOS, SIN DATOS DE FOCALIZACI\xD3N, ORIENTADO EN " + num4(g3("soap-esferas")) + " ESFERAS, ALERTA || ANALGESIA CON " + val2(g3("soap-analgesia"))
+  );
+  lines.push(
+    "V: FR " + num4(g3("soap-fr")) + " RPM, SATO2 " + num4(g3("soap-sat")) + "% " + soporte + " | SIN DATOS DE DIFICULTAD RESPIRATORIA || CAMPOS PULMONARES BIEN VENTILADOS"
+  );
+  lines.push(
+    "HD: ESTABLE, TA " + num4(g3("soap-tas")) + "/" + num4(g3("soap-tad")) + " MMHG, FC " + num4(g3("soap-fc")) + " LPM || ANTIHIPERTENSIVOS: " + val2(g3("soap-antihta") || "NINGUNO") + " || VASOPRESORES: " + val2(g3("soap-vasop") || "NINGUNO")
+  );
+  lines.push(
+    "HI: AFEBRIL, TEMPERATURA " + num4(g3("soap-temp")) + " \xB0C || ANTIBI\xD3TICOS: " + val2(g3("soap-abx") || "NINGUNO")
+  );
+  lines.push(
+    "NM: DIETA " + val2(g3("soap-dieta")) + " CALCULADA A " + num4(g3("soap-kcalkg")) + " KCAL/KG (" + num4(g3("soap-kcal")) + " KCAL) PARA PESO DE " + num4(g3("soap-peso")) + " KG || INGRESOS " + num4(ing) + " CC, EGRESOS " + num4(egr) + " CC, BALANCE " + balance + " CC || GLUCOMETR\xCDAS CAPILARES (" + num4(g3("soap-glu1")) + ", " + num4(g3("soap-glu2")) + ", " + num4(g3("soap-glu3")) + " MG/DL)"
+  );
+  return lines.join("\n");
+}
+function insertSOAPText() {
+  var activeId2 = rt.getActiveId();
+  if (!activeId2) {
+    rt.showToast("Selecciona un paciente primero", "error");
+    return;
+  }
+  var text = buildSOAPText();
+  if (!notes[activeId2]) notes[activeId2] = {};
+  notes[activeId2].evolucion = text;
+  saveState();
+  var el = document.querySelector('#note-form textarea[oninput*="evolucion"]');
+  if (el) el.value = text;
+  closeSOAPModal();
+  rt.showToast("Plantilla insertada \u2713", "success");
+}
+function renderEstadoActualButton() {
+}
+var rt, windowHandlers2;
+var init_soap_estado = __esm({
+  "public/js/features/soap-estado.mjs"() {
+    init_app_state();
+    init_mode_features();
+    init_estado_actual_data();
+    rt = {
+      getActiveId() {
+        return null;
+      },
+      showToast() {
+      },
+      getSettings() {
+        return {};
+      }
+    };
+    windowHandlers2 = {
+      closeSOAPModal,
+      insertSOAPText,
+      updateSOAPBalance,
+      openSOAPModal,
+      openEstadoActualModal,
+      estadoActualOnlyCopy,
+      estadoActualSaveAndCopy
+    };
   }
 });
 
@@ -17293,64 +17544,24 @@ var init_interno_qr_panel = __esm({
   }
 });
 
-// public/js/lan-sync-diagnostics.mjs
-function recordLanSyncError(entry2) {
-  const row = {
-    at: (/* @__PURE__ */ new Date()).toISOString(),
-    op: String(entry2 && entry2.op != null ? entry2.op : "unknown"),
-    code: String(entry2 && entry2.code != null ? entry2.code : ""),
-    message: String(entry2 && entry2.message != null ? entry2.message : "")
-  };
-  lastErrors.unshift(row);
-  if (lastErrors.length > MAX_ERRORS) lastErrors.length = MAX_ERRORS;
-}
-function getLanSyncDiagnostics(deps2) {
-  const d = deps2 && typeof deps2 === "object" ? deps2 : {};
-  return {
-    hostUrl: String(d.hostUrl || ""),
-    pingAt: d.pingAt != null ? d.pingAt : null,
-    pingStatus: d.pingStatus != null ? d.pingStatus : null,
-    wsSync: !!d.wsSync,
-    wsLive: !!d.wsLive,
-    liveRoomId: String(d.liveRoomId || ""),
-    roomId: String(d.roomId || ""),
-    phase: String(d.phase || "offline"),
-    bundleRevision: Number(d.bundleRevision || 0),
-    outboxCount: Number(d.outboxCount || 0),
-    pinnedHost: String(d.pinnedHost || ""),
-    teamCodeAligned: d.teamCodeAligned == null ? null : !!d.teamCodeAligned,
-    lastErrors: lastErrors.map(function(e) {
-      return { at: e.at, op: e.op, code: e.code, message: e.message };
-    })
-  };
-}
-function redactLanSecrets(text) {
-  return String(text || "").replace(/Bearer\s+[A-Za-z0-9._+/=-]+/gi, "Bearer ***").replace(/"teamCode"\s*:\s*"[^"]*"/gi, '"teamCode":"***"').replace(/teamCode[=:]\s*[A-Za-z0-9._+/=-]+/gi, "teamCode=***").replace(/"code"\s*:\s*"[A-Za-z0-9._+/=-]{8,}"/gi, '"code":"***"');
-}
-function formatDiagnosticsReport(diag) {
-  const payload = diag && typeof diag === "object" ? diag : getLanSyncDiagnostics();
-  return redactLanSecrets(JSON.stringify(payload, null, 2));
-}
-var MAX_ERRORS, lastErrors;
-var init_lan_sync_diagnostics = __esm({
-  "public/js/lan-sync-diagnostics.mjs"() {
-    MAX_ERRORS = 5;
-    lastErrors = [];
-  }
-});
-
 // public/js/lan-sync-panel.mjs
 function registerLanSyncPanelRuntime(partial) {
   if (!partial || typeof partial !== "object") return;
   panelRuntime = Object.assign(panelRuntime || {}, partial);
 }
 function runtime5() {
-  return panelRuntime || { showToast() {
-  }, isMobileWeb() {
-    return false;
-  }, renderPatientList() {
-  }, closeSettingsDropdown() {
-  } };
+  return panelRuntime || {
+    showToast() {
+    },
+    isMobileWeb() {
+      return false;
+    },
+    renderPatientList() {
+    },
+    closeSettingsDropdown() {
+    },
+    appendLanConflictDraftsSection: null
+  };
 }
 function readLanKnownRooms() {
   try {
@@ -17448,6 +17659,10 @@ function wireClinicalOpsLanSyncEvents() {
   if (!document._rpcClinicalTeamsChangedLanWired) {
     document._rpcClinicalTeamsChangedLanWired = true;
     document.addEventListener("rpc-clinical-teams-changed", function() {
+      void Promise.resolve().then(() => (init_lan_sync_push(), lan_sync_push_exports)).then(function(m) {
+        if (typeof m.pushClinicalOpsLanNow === "function") return m.pushClinicalOpsLanNow();
+      }).catch(function() {
+      });
       scheduleLiveSyncPush();
     });
   }
@@ -17641,6 +17856,10 @@ async function renderLanPanelOnce() {
     buildR4Section(root);
   }
   appendLanHostPinSection(root);
+  var appendConflictDrafts = runtime5().appendLanConflictDraftsSection;
+  if (typeof appendConflictDrafts === "function") {
+    void appendConflictDrafts(root);
+  }
   void appendLanSyncDiagnosticsSection(root);
   maybeAppendInternoQrPanel(root);
 }
@@ -17748,6 +17967,24 @@ async function appendLanSyncDiagnosticsSection(root) {
     });
   };
   details.appendChild(copyBtn);
+  var retryBtn = document.createElement("button");
+  retryBtn.type = "button";
+  retryBtn.className = "btn-lan-secondary";
+  retryBtn.style.marginTop = "6px";
+  retryBtn.style.width = "100%";
+  retryBtn.textContent = "Reintentar cola de sincronizaci\xF3n";
+  retryBtn.onclick = function() {
+    var rid = String(activeLiveSyncRoomId || "").trim() || String(getRoomMembership() && getRoomMembership().roomId || "").trim();
+    if (!rid) {
+      runtime5().showToast("No hay sala activa para reintentar.", "warn");
+      return;
+    }
+    void flushLiveSyncOutbox(rid).then(function() {
+      runtime5().showToast("Cola reintentada. Revisa el informe abajo.", "info");
+      void renderLanPanel2();
+    });
+  };
+  details.appendChild(retryBtn);
   root.appendChild(details);
 }
 function buildR1Section(root) {
@@ -17755,13 +17992,9 @@ function buildR1Section(root) {
   var card = document.createElement("div");
   card.className = "lan-connect-card lan-hub-team-card";
   card.innerHTML = '<div class="lan-connect-card-title">Mi equipo</div>';
-  var userId = String(getClinicalUserUserId());
-  var teams = clinicalSessionContext.teams || [];
-  var myTeam = teams.find(function(t2) {
-    return (t2.members || []).some(function(m) {
-      return String(m.user_id) === userId;
-    });
-  });
+  var user = clinicalSessionContext.user || {};
+  var joined = filterJoinedTeams(clinicalSessionContext.teams || [], user);
+  var myTeam = joined[0] || null;
   if (myTeam) {
     var teamName = document.createElement("p");
     teamName.className = "lan-hub-team-name";
@@ -17814,13 +18047,8 @@ function buildR1Section(root) {
 }
 function buildR2Section(root) {
   buildR1Section(root);
-  var userId = String(getClinicalUserUserId());
-  var teams = clinicalSessionContext.teams || [];
-  var myTeam = teams.find(function(t2) {
-    return (t2.members || []).some(function(m) {
-      return String(m.user_id) === userId;
-    });
-  });
+  var user = clinicalSessionContext.user || {};
+  var myTeam = filterJoinedTeams(clinicalSessionContext.teams || [], user)[0] || null;
   if (!myTeam) return;
   var entregaCard = document.createElement("div");
   entregaCard.className = "lan-connect-card lan-hub-entrega-card";
@@ -17969,13 +18197,9 @@ function teamSalaKey(team) {
 }
 function buildAvailableTeamsSection(root, userSala) {
   var teams = clinicalSessionContext.teams || [];
-  var userId = getClinicalUserUserId();
+  var user = clinicalSessionContext.user || {};
   var salaKey = String(userSala || "").trim();
-  var alreadyInIds = teams.filter(function(t2) {
-    return (t2.members || []).some(function(m) {
-      return String(m.user_id) === userId;
-    });
-  }).map(function(t2) {
+  var alreadyInIds = filterJoinedTeams(teams, user).map(function(t2) {
     return String(t2.team_id);
   });
   var available = teams.filter(function(t2) {
@@ -18626,6 +18850,7 @@ var init_lan_sync_panel = __esm({
     init_soap_estado();
     init_clinical_privileges();
     init_clinical_access_runtime();
+    init_clinical_teams();
     init_lan_hub_guardia_mode();
     init_lan_hub_panel_shell();
     init_interno_qr_panel();
@@ -18669,6 +18894,9 @@ var init_lan_sync_panel = __esm({
 // public/js/features/lan-sync.mjs
 var lan_sync_exports = {};
 __export(lan_sync_exports, {
+  acceptServerBundleConflict: () => acceptServerBundleConflict,
+  acceptServerClinicalOpsConflict: () => acceptServerClinicalOpsConflict,
+  appendLanConflictDraftsSection: () => appendLanConflictDraftsSection,
   closeConnectionDropdown: () => closeConnectionDropdown,
   configureLanFromMobileJoin: () => configureLanFromMobileJoin,
   deferLanConflictModalForMs: () => deferLanConflictModalForMs,
@@ -18677,6 +18905,7 @@ __export(lan_sync_exports, {
   emitLiveSyncPatientDelete: () => emitLiveSyncPatientDelete,
   emitLiveSyncTodoDelete: () => emitLiveSyncTodoDelete,
   emitLiveSyncTodoUpsert: () => emitLiveSyncTodoUpsert,
+  fetchAndApplyClinicalOpsFromHost: () => fetchAndApplyClinicalOpsFromHost,
   getActiveLiveSyncRoomId: () => getActiveLiveSyncRoomId,
   isLanConflictViewerSuppressed: () => isLanConflictViewerSuppressed,
   isLanSessionConfiguredForRest: () => isLanSessionConfiguredForRest,
@@ -18689,10 +18918,12 @@ __export(lan_sync_exports, {
   openConnectionDropdown: () => openConnectionDropdown,
   persistLanClientConfig: () => persistLanClientConfig,
   pushClinicalOpsLanNow: () => pushClinicalOpsLanNow,
+  refreshLanClinicalDirectoryFromRoom: () => refreshLanClinicalDirectoryFromRoom,
   registerLanRuntime: () => registerLanRuntime,
   registerLanSaveHooks: () => registerLanSaveHooks,
   removePatientLocally: () => removePatientLocally,
   renderLanPanel: () => renderLanPanel2,
+  resolveAllConflictDraftsUseServer: () => resolveAllConflictDraftsUseServer,
   scheduleLiveSyncPush: () => scheduleLiveSyncPush,
   syncLanHostTeamCodeSettingsInput: () => syncLanHostTeamCodeSettingsInput,
   syncSettingsLanHostDiskSection: () => syncSettingsLanHostDiskSection,
@@ -18839,9 +19070,67 @@ async function discardDraftsForConflictEntity(payload) {
     }
   }
 }
+async function fetchServerBundleForRoom(roomId) {
+  var rid = String(roomId || "").trim();
+  if (!rid || !isLanSessionConfiguredForRest()) return null;
+  try {
+    if (!lanClient.connected) lanClient.connectSyncChannel();
+  } catch (_eSync) {
+  }
+  try {
+    var resp = await lanClient.fetch(
+      "/api/lan/v1/rooms/" + encodeURIComponent(rid) + "/sync-bundle"
+    );
+    if (!resp || !resp.ok) return null;
+    var body = await resp.json();
+    return body && body.bundle ? body.bundle : null;
+  } catch (_eFetch) {
+    return null;
+  }
+}
+function acceptServerBundleConflict(opts) {
+  opts = opts || {};
+  var rid = String(opts.roomId || "").trim();
+  var bundle = opts.serverBundle;
+  if (!rid || !bundle || typeof bundle !== "object") return false;
+  setHostBundleBases(rid, bundle);
+  if (bundle.clinicalOps && isClinicalOpsLanAvailable()) {
+    void applyClinicalOpsLanSnapshot(bundle.clinicalOps).then(function(ok) {
+      if (ok) {
+        void refreshClinicalOpsSnapshotCache();
+        document.dispatchEvent(new CustomEvent("rpc-clinical-ops-synced"));
+      }
+    });
+  }
+  applyRoomSyncPhaseAfterReconcile(rid);
+  return true;
+}
+function acceptServerClinicalOpsConflict(roomId, snapshot, revision) {
+  var rid = String(roomId || "").trim();
+  if (!rid) return;
+  if (revision != null) {
+    var bases = getHostBundleBases(rid) || { entityVersions: {} };
+    setHostBundleBases(rid, {
+      revision: Number(revision),
+      entityVersions: bases.entityVersions || {}
+    });
+  }
+  if (snapshot && isClinicalOpsLanAvailable()) {
+    void applyClinicalOpsLanSnapshot(snapshot).then(function(ok) {
+      if (ok) {
+        void refreshClinicalOpsSnapshotCache();
+        document.dispatchEvent(new CustomEvent("rpc-clinical-ops-synced"));
+      }
+    });
+  }
+  applyRoomSyncPhaseAfterReconcile(rid);
+}
 async function applyRoomBundleServerChoice(draft2) {
   var bundle = draft2 && draft2.serverBundle;
   var rid = draft2 && draft2.roomId;
+  if (rid && !bundle) {
+    bundle = await fetchServerBundleForRoom(rid);
+  }
   if (rid && bundle) {
     setHostBundleBases(rid, bundle);
     applyLiveSyncMerged(
@@ -18857,6 +19146,68 @@ async function applyRoomBundleServerChoice(draft2) {
     );
   }
   await clearConflictDraft(draft2 && draft2.id);
+}
+async function applyServerAuthorityLight(roomId) {
+  var rid = String(roomId || "").trim();
+  if (!rid) return false;
+  var bundle = await fetchServerBundleForRoom(rid);
+  if (bundle) {
+    setHostBundleBases(rid, bundle);
+  }
+  if (isClinicalOpsLanAvailable()) {
+    var ok = await fetchAndApplyClinicalOpsFromHost(rid);
+    if (ok) {
+      applyRoomSyncPhaseAfterReconcile(rid);
+      return true;
+    }
+  }
+  if (bundle) {
+    return acceptServerBundleConflict({ roomId: rid, serverBundle: bundle, conflicts: [] });
+  }
+  return false;
+}
+async function resolveAllConflictDraftsUseServer() {
+  return withSuppressedLanConflictViewer(async function() {
+    var draftCount = 0;
+    try {
+      draftCount = await countDraftConflicts();
+    } catch (_eCount) {
+      draftCount = 0;
+    }
+    if (!draftCount) {
+      runtime6.showToast("No hay borradores de conflicto.", "info");
+      return { cleared: 0, rooms: 0 };
+    }
+    var rid = String(activeLiveSyncRoomId || "").trim() || String(getRoomMembership() && getRoomMembership().roomId || "").trim();
+    pauseBundlePushForRoom(rid || "*", 12e4);
+    deferLanConflictModalForMs(12e4);
+    var cleared = 0;
+    try {
+      cleared = await clearAllDraftConflicts();
+    } catch (_eClear) {
+      cleared = draftCount;
+    }
+    var applied = false;
+    if (rid) {
+      try {
+        await drainOutbox(rid);
+      } catch (_eOut) {
+      }
+      applied = await applyServerAuthorityLight(rid);
+      if (!applied) {
+        applied = await fetchAndApplyClinicalOpsFromHost(rid);
+      }
+    }
+    setTimeout(function() {
+      void renderLanPanel2();
+      syncLiveSyncStatusChrome2();
+    }, 0);
+    runtime6.showToast(
+      applied ? "Se eliminaron " + cleared + " borradores y se aline\xF3 la sala con el servidor (revisi\xF3n y equipos)." : "Se eliminaron " + cleared + " borradores. Revisa la conexi\xF3n LAN si la sala no se actualiz\xF3.",
+      applied ? "success" : "warn"
+    );
+    return { cleared, rooms: applied ? 1 : 0 };
+  });
 }
 async function applyConflictUseServer(payload) {
   var server = payload && payload.serverSnapshot;
@@ -18893,6 +19244,32 @@ function clearHistoriaPendingAfterConflict(payload) {
   delete row.historiaClinica.pendingLanSync;
   delete row.historiaClinica.lanSyncPending;
   saveState();
+}
+function formatConflictDraftLabel(draft2) {
+  var type = "entidad";
+  if (draft2 && draft2.entityType === "roomBundle") type = "sala";
+  else if (draft2 && draft2.entityType) type = String(draft2.entityType);
+  else if (isRoomBundleConflictDraft(draft2)) type = "sala";
+  var id = draft2 && draft2.entityId ? String(draft2.entityId) : "";
+  var keys = draft2 && Array.isArray(draft2.conflictingKeys) && draft2.conflictingKeys.length ? " \xB7 " + draft2.conflictingKeys.slice(0, 3).join(", ") : "";
+  var when = "";
+  try {
+    when = new Date(draft2.savedAt).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" });
+  } catch (_eWhen) {
+  }
+  return type + (id ? " " + id : "") + keys + (when ? " \u2014 " + when : "");
+}
+function draftRecordToConflictPayload(draft2) {
+  return {
+    transport: draft2.transport,
+    entityType: draft2.entityType,
+    entityId: draft2.entityId,
+    roomId: draft2.roomId,
+    patientId: draft2.patientId,
+    conflictingKeys: draft2.conflictingKeys || [],
+    localSnapshot: draft2.localSnapshot,
+    serverSnapshot: draft2.serverSnapshot
+  };
 }
 function mergeConflictSnapshotData(snap) {
   if (!snap) return {};
@@ -18977,6 +19354,159 @@ function conflictEditDraftHandler(payload) {
     void clearConflictDraft(payload.draftId);
   }
 }
+async function reopenConflictDraftFromStore(draftId) {
+  var draft2 = await getDraftConflict(draftId);
+  if (!draft2) {
+    runtime6.showToast("No se encontr\xF3 el borrador de conflicto", "error");
+    void renderLanPanel2();
+    return;
+  }
+  if (isRoomBundleConflictDraft(draft2)) {
+    var serverBundle = draft2.serverBundle;
+    if (!serverBundle && draft2.roomId) {
+      serverBundle = await fetchServerBundleForRoom(draft2.roomId) || {};
+    }
+    var localBundle = draft2.localBundle || {};
+    openClinicalConflictViewer({
+      draftId: draft2.id,
+      conflictingKeys: ["revision"],
+      localData: {
+        revision: localBundle.revision != null ? localBundle.revision : null,
+        entryCount: Array.isArray(localBundle.entries) ? localBundle.entries.length : 0
+      },
+      serverData: {
+        revision: serverBundle.revision != null ? serverBundle.revision : null,
+        entryCount: Array.isArray(serverBundle.entries) ? serverBundle.entries.length : 0
+      },
+      context: {
+        entityType: "roomBundle",
+        roomId: draft2.roomId,
+        transport: draft2.transport || "http",
+        localVersion: localBundle.revision,
+        serverVersion: serverBundle.revision
+      },
+      onUseServer: function() {
+        void applyRoomBundleServerChoice(draft2);
+      },
+      onEditDraft: function() {
+      },
+      onClose: function() {
+      }
+    });
+    return;
+  }
+  var payload = draftRecordToConflictPayload(draft2);
+  var viewerData = conflictDataForViewer(payload);
+  openClinicalConflictViewer({
+    draftId: draft2.id,
+    conflictingKeys: payload.conflictingKeys,
+    localData: viewerData.localData,
+    serverData: viewerData.serverData,
+    context: conflictViewerContext(payload),
+    onUseServer: function() {
+      void applyConflictUseServer(Object.assign({}, payload, { draftId: draft2.id }));
+    },
+    onEditDraft: function() {
+      conflictEditDraftHandler(Object.assign({}, payload, { draftId: draft2.id }));
+    },
+    onClose: function() {
+    }
+  });
+}
+async function appendLanConflictDraftsSection(root) {
+  if (!root) return;
+  var draftCount = 0;
+  try {
+    draftCount = await countDraftConflicts();
+  } catch (_eList) {
+    draftCount = 0;
+  }
+  var prev = root.querySelector("#lan-conflict-drafts-card");
+  if (prev) prev.remove();
+  var card = document.createElement("div");
+  card.id = "lan-conflict-drafts-card";
+  card.className = "lan-connect-card";
+  var title = document.createElement("div");
+  title.className = "lan-connect-card-title";
+  title.textContent = "Borradores de conflicto (" + draftCount + ")";
+  card.appendChild(title);
+  if (!draftCount) {
+    var empty = document.createElement("p");
+    empty.className = "lan-connect-card-hint";
+    empty.textContent = "No hay borradores guardados. Un conflicto puede bloquear la cola aun sin borrador; revisa Estado de sincronizaci\xF3n.";
+    card.appendChild(empty);
+  } else {
+    var bulkRow = document.createElement("div");
+    bulkRow.className = "lan-connect-actions-row";
+    bulkRow.style.marginTop = "4px";
+    var bulkBtn = document.createElement("button");
+    bulkBtn.type = "button";
+    bulkBtn.className = "btn-lan-primary";
+    bulkBtn.style.flex = "1";
+    bulkBtn.textContent = "Usar servidor para todos y limpiar";
+    bulkBtn.onclick = function() {
+      if (typeof confirm === "function" && !confirm(
+        "\xBFDescartar los " + draftCount + " borradores y alinear con el servidor? Se vac\xEDa la cola local y se pausan reintentos autom\xE1ticos un momento."
+      )) {
+        return;
+      }
+      bulkBtn.disabled = true;
+      bulkBtn.textContent = "Limpiando\u2026";
+      void resolveAllConflictDraftsUseServer().finally(function() {
+        bulkBtn.disabled = false;
+        bulkBtn.textContent = "Usar servidor para todos y limpiar";
+      });
+    };
+    bulkRow.appendChild(bulkBtn);
+    card.appendChild(bulkRow);
+    var hint = document.createElement("p");
+    hint.className = "lan-connect-card-hint";
+    hint.textContent = draftCount > 15 ? "Hay muchos borradores duplicados (conflictos clinicalOps). Usa el bot\xF3n de arriba; no hace falta abrirlos uno por uno." : "Toca un borrador para volver a abrir el comparador y resolver el conflicto.";
+    card.appendChild(hint);
+    if (draftCount > 15) {
+      root.appendChild(card);
+      return;
+    }
+    var drafts = [];
+    try {
+      drafts = await listDraftConflicts();
+    } catch (_eLoad) {
+      drafts = [];
+    }
+    var list = document.createElement("ul");
+    list.style.listStyle = "none";
+    list.style.padding = "0";
+    list.style.margin = "8px 0 0";
+    list.style.maxHeight = "240px";
+    list.style.overflowY = "auto";
+    var DRAFT_LIST_CAP = 15;
+    drafts.slice(0, DRAFT_LIST_CAP).forEach(function(draft2) {
+      if (!draft2 || !draft2.id) return;
+      var li = document.createElement("li");
+      li.style.marginBottom = "6px";
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn-lan-secondary";
+      btn.style.width = "100%";
+      btn.style.textAlign = "left";
+      btn.textContent = formatConflictDraftLabel(draft2);
+      btn.addEventListener("click", function() {
+        void reopenConflictDraftFromStore(draft2.id);
+      });
+      li.appendChild(btn);
+      list.appendChild(li);
+    });
+    card.appendChild(list);
+    if (drafts.length > DRAFT_LIST_CAP) {
+      var more = document.createElement("p");
+      more.className = "lan-connect-card-hint";
+      more.style.marginTop = "6px";
+      more.textContent = "\u2026 y " + (drafts.length - DRAFT_LIST_CAP) + " borradores m\xE1s.";
+      card.appendChild(more);
+    }
+  }
+  root.appendChild(card);
+}
 async function handleSyncConflict(payload, options) {
   options = options || {};
   if (isLanConflictViewerSuppressed()) {
@@ -19017,7 +19547,7 @@ async function handleSyncConflict(payload, options) {
     if (!_deferredConflictToastShown) {
       _deferredConflictToastShown = true;
       runtime6.showToast(
-        "Hay un conflicto de sincronizaci\xF3n guardado. \xC1brelo en Ajustes \u2192 LAN cuando quieras decidir.",
+        "Conflicto de sincronizaci\xF3n guardado. Abre \u21C4 \u2192 Borradores de conflicto.",
         "info"
       );
     }
@@ -19516,7 +20046,7 @@ function markDeferredConflictToastShown() {
   if (_deferredConflictToastShown) return;
   _deferredConflictToastShown = true;
   runtime6.showToast(
-    "Hay un conflicto de sincronizaci\xF3n guardado. \xC1brelo en Ajustes \u2192 LAN cuando quieras decidir.",
+    "Conflicto de sincronizaci\xF3n de sala. Abre \u21C4 y revisa \xABBorradores de conflicto\xBB.",
     "info"
   );
 }
@@ -19683,6 +20213,9 @@ var init_lan_sync = __esm({
     init_versioned_mutation();
     init_clinical_access_runtime();
     init_draft_conflict_store();
+    init_lan_sync_bundle_push();
+    init_live_sync_membership();
+    init_live_sync_outbox();
     init_clinical_conflict_viewer();
     init_app_state();
     init_lan_sync_transport();
@@ -19748,7 +20281,11 @@ var init_lan_sync = __esm({
       openConnectionDropdown,
       bootLanRoomMembership
     });
-    registerLanSyncPanelRuntime(runtime6);
+    registerLanSyncPanelRuntime(
+      Object.assign(runtime6, {
+        appendLanConflictDraftsSection
+      })
+    );
     registerLanSyncRoomBridge({
       runtime: runtime6,
       renderLanPanel: renderLanPanel2,
@@ -19771,6 +20308,7 @@ var init_lan_sync = __esm({
       buildLiveSyncLocalMergeSource,
       applyLiveSyncMerged,
       applyRoomSyncPhaseAfterReconcile,
+      fetchAndApplyClinicalOpsFromHost,
       syncLiveSyncStatusChrome: syncLiveSyncStatusChrome2,
       isLanConflictViewerSuppressed,
       shouldDeferLanConflictModal,
@@ -19778,7 +20316,12 @@ var init_lan_sync = __esm({
       saveDraftConflict,
       openClinicalConflictViewer,
       applyRoomBundleServerChoice,
-      renderLanPanel: renderLanPanel2
+      acceptServerBundleConflict,
+      acceptServerClinicalOpsConflict,
+      renderLanPanel: renderLanPanel2,
+      showToast: function(msg, type) {
+        runtime6.showToast(msg, type);
+      }
     });
     registerLanSyncRoomWireHandlers();
     lanClient.addEventListener("lan-applied", function(ev) {
@@ -19943,6 +20486,268 @@ var init_clinical_profile_lan_sync = __esm({
     init_lan_join_link();
     LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG = "Sin sala \u21C4 activa el perfil queda solo en esta Mac hasta que te unas o vuelva la red.";
     LAN_PROFILE_PUSH_FAILED_MSG = "Perfil guardado en esta Mac, pero no se pudo publicar a la sala. Revisa conexi\xF3n \u21C4 e intenta Guardar perfil de nuevo.";
+  }
+});
+
+// public/js/clinical-team-invite.mjs
+function teamInviteCode(teamId) {
+  return String(teamId || "").replace(/-/g, "").slice(0, 8).toLowerCase();
+}
+function normalizeTeamInviteCode(raw) {
+  return String(raw || "").trim().toLowerCase().replace(/[^a-f0-9-]/g, "").replace(/-/g, "");
+}
+function isLikelyLanBearerToken(raw) {
+  const norm = normalizeTeamInviteCode(raw);
+  return norm.length >= 32;
+}
+function parseClinicalTeamJoinQuery(search) {
+  const params = new URLSearchParams(String(search || "").replace(/^\?/, ""));
+  const codeParam = String(params.get("code") || "").trim();
+  if (codeParam && isLikelyLanBearerToken(codeParam)) {
+    return { teamId: "", inviteCode: "" };
+  }
+  const joinCode = normalizeTeamInviteCode(
+    params.get("joinCode") || params.get("teamCode") || params.get("code") || ""
+  );
+  if (joinCode.length >= INVITE_CODE_MIN_LEN) {
+    return { teamId: "", inviteCode: joinCode };
+  }
+  const teamId = String(params.get("joinTeam") || params.get("clinicalTeam") || "").trim();
+  return {
+    teamId,
+    inviteCode: teamId ? teamInviteCode(teamId) : ""
+  };
+}
+function resolveTeamIdFromInviteCode(code, teams) {
+  const norm = normalizeTeamInviteCode(code);
+  if (norm.length < INVITE_CODE_MIN_LEN) return "";
+  const fullUuid = norm.length >= 32 ? norm.slice(0, 32) : norm;
+  const list = Array.isArray(teams) ? teams : [];
+  const matches = list.filter((t2) => {
+    const id = String(t2?.team_id || "").replace(/-/g, "").toLowerCase();
+    return id === fullUuid || id.startsWith(norm);
+  });
+  if (matches.length === 1) return String(matches[0].team_id || "");
+  return "";
+}
+function diagnoseInviteCodeFailure(code, teams) {
+  const norm = normalizeTeamInviteCode(code);
+  if (!norm) return { reason: "empty" };
+  if (isLikelyLanBearerToken(norm)) return { reason: "lan_bearer" };
+  if (norm.length < INVITE_CODE_MIN_LEN) return { reason: "too_short" };
+  const fullUuid = norm.length >= 32 ? norm.slice(0, 32) : norm;
+  const list = Array.isArray(teams) ? teams : [];
+  const matches = list.filter((t2) => {
+    const id = String(t2?.team_id || "").replace(/-/g, "").toLowerCase();
+    return id === fullUuid || id.startsWith(norm);
+  });
+  if (matches.length > 1) return { reason: "ambiguous", matchCount: matches.length };
+  if (matches.length === 1) return { reason: "ok", teamId: String(matches[0].team_id || "") };
+  return { reason: "not_in_db" };
+}
+function inviteCodeFailureMessage(diag) {
+  switch (diag?.reason) {
+    case "lan_bearer":
+      return "Ese valor es el c\xF3digo LAN de la sala (Wi\u2011Fi), no el c\xF3digo de equipo. En la invitaci\xF3n busca \xABC\xF3digo de equipo\xBB (8 caracteres, p. ej. 2017936e).";
+    case "too_short":
+      return "C\xF3digo demasiado corto. Copia los 8 caracteres del recuadro \xABC\xF3digo de equipo\xBB en Mi rotaci\xF3n.";
+    case "ambiguous":
+      return `Hay ${diag.matchCount || 2} equipos con ese prefijo en esta Mac. Pide al R2 el c\xF3digo completo o que te agregue desde el directorio LAN.`;
+    case "not_in_db":
+      return "Este equipo a\xFAn no est\xE1 en tu base. Con\xE9ctate a la misma sala \u21C4, abre Mi rotaci\xF3n de nuevo (sincroniza) y reintenta; o pide que te agreguen por @usuario.";
+    case "empty":
+      return "Escribe el c\xF3digo de equipo.";
+    default:
+      return "C\xF3digo no v\xE1lido o equipo no est\xE1 en esta base.";
+  }
+}
+function resolveClinicalInviteLanHostUrl() {
+  if (typeof window === "undefined") return "";
+  try {
+    const cfg = JSON.parse(localStorage.getItem("rpc-lan-config") || "{}");
+    const host = String(cfg?.hostUrl || "").trim().replace(/\/+$/, "");
+    if (!host) return "";
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(host)) return "";
+    return host;
+  } catch (_e) {
+    return "";
+  }
+}
+function isClinicalTeamJoinDesktopApp() {
+  if (typeof window === "undefined") return false;
+  return !!(window.electronAPI || window.rplusDb);
+}
+function buildClinicalTeamInviteMessage(team) {
+  const name = String(team?.name || "Equipo").trim();
+  const sala = String(team?.sala || "").trim();
+  const code = teamInviteCode(team?.team_id);
+  const lanHost = resolveClinicalInviteLanHostUrl();
+  const lines = [
+    `Invitaci\xF3n al equipo \xAB${name}\xBB${sala ? ` \xB7 ${sala}` : ""} en R+`,
+    "",
+    `C\xF3digo de equipo: ${code}`,
+    "",
+    "En la app R+ del Mac (no Safari):",
+    "1. Abre Mi rotaci\xF3n",
+    "2. \xABUnirte con c\xF3digo de equipo\xBB \u2192 pega el c\xF3digo",
+    "3. Elige tu subciclo (R1) o letra (R2) y confirma",
+    "",
+    "El enlace web no une al equipo cl\xEDnico; Safari/iPad solo sirve para censo LAN."
+  ];
+  if (lanHost) {
+    lines.push("", `Sala en vivo (opcional): ${lanHost}`);
+  }
+  return lines.join("\n");
+}
+function mountClinicalTeamInviteBrowserGate(code) {
+  if (typeof document === "undefined") return;
+  const normalized = normalizeTeamInviteCode(code);
+  if (!normalized || isClinicalTeamJoinDesktopApp()) return;
+  if (document.getElementById(BROWSER_GATE_ID)) return;
+  const wrap = document.createElement("div");
+  wrap.id = BROWSER_GATE_ID;
+  wrap.className = "clinical-team-invite-browser-gate";
+  wrap.setAttribute("role", "alertdialog");
+  wrap.setAttribute("aria-modal", "true");
+  wrap.innerHTML = `
+    <div class="clinical-team-invite-browser-gate-card">
+      <h2>\xDAnete desde la app R+ en Mac</h2>
+      <p>Los enlaces en Safari no agregan al equipo cl\xEDnico (solo la app de escritorio con tu base de datos).</p>
+      <p class="clinical-team-invite-browser-gate-code">C\xF3digo: <strong>${normalized}</strong></p>
+      <ol>
+        <li>Abre la aplicaci\xF3n <strong>R+</strong> en tu Mac (no el navegador).</li>
+        <li>Ve a <strong>Mi rotaci\xF3n</strong>.</li>
+        <li>En <strong>Unirte con c\xF3digo de equipo</strong>, pega: <code>${normalized}</code></li>
+      </ol>
+      <button type="button" class="btn-save" id="clinical-team-invite-browser-gate-dismiss">Entendido</button>
+    </div>`;
+  document.body.appendChild(wrap);
+  const btn = document.getElementById("clinical-team-invite-browser-gate-dismiss");
+  if (btn) {
+    btn.addEventListener("click", () => {
+      wrap.remove();
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("joinTeam");
+        url.searchParams.delete("joinCode");
+        url.searchParams.delete("clinicalTeam");
+        window.history.replaceState({}, "", url.pathname + url.search + url.hash);
+      } catch (_e) {
+      }
+    });
+  }
+}
+function tryMountClinicalTeamInviteBrowserGate(search) {
+  const parsed = parseClinicalTeamJoinQuery(search || (typeof location !== "undefined" ? location.search : ""));
+  const code = parsed.inviteCode || (parsed.teamId ? teamInviteCode(parsed.teamId) : "");
+  if (code) mountClinicalTeamInviteBrowserGate(code);
+}
+var INVITE_CODE_MIN_LEN, BROWSER_GATE_ID;
+var init_clinical_team_invite = __esm({
+  "public/js/clinical-team-invite.mjs"() {
+    INVITE_CODE_MIN_LEN = 6;
+    BROWSER_GATE_ID = "clinical-team-invite-browser-gate";
+  }
+});
+
+// public/js/clinical-username.mjs
+function normalizeUsername2(raw) {
+  return String(raw || "").trim().replace(/^@+/, "").toLowerCase();
+}
+function isValidUsernameFormat2(raw) {
+  return USERNAME_RE.test(normalizeUsername2(raw));
+}
+function isLegacyMachineUsername(username, clientId) {
+  const u = String(username || "");
+  const c = String(clientId || "");
+  if (!u) return true;
+  if (c && u === c) return true;
+  return /^lc_[a-z0-9_]+$/i.test(u);
+}
+var USERNAME_RE;
+var init_clinical_username = __esm({
+  "public/js/clinical-username.mjs"() {
+    USERNAME_RE = /^[a-z][a-z0-9_]{2,31}$/;
+  }
+});
+
+// lib/admin-access-code.mjs
+function verifyAdminAccessCode(input) {
+  return String(input ?? "").trim() === ADMIN_ACCESS_CODE;
+}
+var ADMIN_ACCESS_CODE;
+var init_admin_access_code = __esm({
+  "lib/admin-access-code.mjs"() {
+    ADMIN_ACCESS_CODE = "Msg170699";
+  }
+});
+
+// public/js/features/clinical-panel-host.mjs
+function escapeHtml2(s) {
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function getClinicalTeamsPanelHost() {
+  const bd = document.getElementById("clinical-teams-backdrop");
+  if (bd) {
+    const scoped = bd.querySelector("#clinical-teams-panel-body");
+    if (scoped) return scoped;
+  }
+  return document.getElementById("clinical-teams-panel-body");
+}
+function setClinicalTeamsPanelLoading() {
+  const host = getClinicalTeamsPanelHost();
+  if (host) {
+    host.innerHTML = '<p class="clinical-teams-lead clinical-teams-loading">Cargando\u2026</p>';
+  }
+}
+function setClinicalTeamsPanelError(message) {
+  const host = getClinicalTeamsPanelHost();
+  if (!host) return;
+  host.innerHTML = `
+    <p class="clinical-registration-error">${escapeHtml2(message)}</p>
+    <p class="clinical-teams-lead">Cierra este di\xE1logo y vuelve a abrir <strong>Mi rotaci\xF3n</strong>. Si sigue vac\xEDo, reinicia R+ por completo (Cmd+Q).</p>`;
+}
+async function safeRenderClinicalTeamsPanel(renderFn) {
+  const host = getClinicalTeamsPanelHost();
+  if (!host) return;
+  setClinicalTeamsPanelLoading();
+  try {
+    await renderFn(host);
+  } catch (err) {
+    console.error("[Mi rotaci\xF3n]", err);
+    setClinicalTeamsPanelError(
+      err instanceof Error ? err.message : "Error al cargar Mi rotaci\xF3n."
+    );
+  }
+}
+async function tryAutoOpenClinicalDb() {
+  if (!isDbMode() || typeof window === "undefined") return false;
+  const api3 = window.rplusDb || window.electronAPI;
+  if (!api3 || typeof api3.dbAutoUnlock !== "function") return false;
+  try {
+    const res = await api3.dbAutoUnlock({ lsSnapshot: collectClinicalLsSnapshot() });
+    return !!(res && res.ok !== false && res.state === "unlocked");
+  } catch (_e) {
+    return false;
+  }
+}
+async function ensureClinicalPanelSession() {
+  if (clinicalSessionContext.user?.user_id) return true;
+  if (!isDbMode()) return false;
+  const settings2 = readRpcSettings();
+  const clientId = resolveClinicalClientId(settings2);
+  if (!clinicalSessionContext.user?.user_id) {
+    await tryAutoOpenClinicalDb();
+  }
+  if (clinicalSessionContext.user?.user_id) return true;
+  return bootstrapClinicalAccess(settings2, clientId);
+}
+var init_clinical_panel_host = __esm({
+  "public/js/features/clinical-panel-host.mjs"() {
+    init_db_storage_bridge();
+    init_clinical_access_runtime();
+    init_clinical_settings();
+    init_db_unlock();
   }
 });
 
@@ -20129,12 +20934,12 @@ function needsUsernameClaim() {
   try {
     const settings2 = JSON.parse(localStorage.getItem("rpc-settings") || "{}");
     const cached = String(settings2.clinicalUsername || "").trim();
-    if (cached && !isValidUsernameFormat(normalizeUsername(cached))) return true;
+    if (cached && !isValidUsernameFormat2(normalizeUsername2(cached))) return true;
     if (cached && isLegacyMachineUsername(user.username, getClientId())) return true;
   } catch (_e) {
   }
-  const handle = normalizeUsername(user.username || "");
-  return !isValidUsernameFormat(handle);
+  const handle = normalizeUsername2(user.username || "");
+  return !isValidUsernameFormat2(handle);
 }
 function needsTeamOnboarding() {
   if (!clinicalSessionContext.user?.user_id) return true;
@@ -20163,14 +20968,14 @@ function escapeAttr2(s) {
 }
 async function handleUsernameStepSubmit(ev) {
   ev.preventDefault();
-  const username = normalizeUsername(
+  const username = normalizeUsername2(
     String(document.getElementById("onboard-username")?.value || "")
   );
   const name = String(document.getElementById("onboard-clinical-name")?.value || "").trim();
   let rank = String(document.getElementById("onboard-rank")?.value || "R1");
   const sala = String(document.getElementById("onboard-sala")?.value || "").trim();
   const errEl = document.getElementById("onboard-error");
-  if (!isValidUsernameFormat(username)) {
+  if (!isValidUsernameFormat2(username)) {
     if (errEl) {
       errEl.textContent = "Usuario inv\xE1lido (3\u201332 caracteres, min\xFAsculas).";
       errEl.hidden = false;
@@ -20191,7 +20996,7 @@ async function handleUsernameStepSubmit(ev) {
     toast2("Sesi\xF3n cl\xEDnica no disponible.", "error");
     return;
   }
-  const currentHandle = normalizeUsername(clinicalSessionContext.user?.username || "");
+  const currentHandle = normalizeUsername2(clinicalSessionContext.user?.username || "");
   const needsClaim = currentHandle !== username;
   if (needsClaim) {
     const { assertLanRoomForUsernameRegister: assertLanRoomForUsernameRegister2 } = await Promise.resolve().then(() => (init_clinical_profile_lan_sync(), clinical_profile_lan_sync_exports));
@@ -20202,7 +21007,7 @@ async function handleUsernameStepSubmit(ev) {
     if (!claimRes?.ok) {
       const errMsg = String(claimRes?.error || "");
       if (/ya está en uso/i.test(errMsg)) {
-        const cached = normalizeUsername(String(settings2.clinicalUsername || ""));
+        const cached = normalizeUsername2(String(settings2.clinicalUsername || ""));
         const autoResume = cached === username;
         const resume = autoResume || window.confirm(
           `El usuario @${username} ya est\xE1 registrado en esta base de datos.
@@ -20299,12 +21104,12 @@ async function handleUsernameStepSubmit(ev) {
   await refreshMainClinicalOnboardingIfNeeded2();
 }
 async function handleResumeIdentityClick() {
-  const username = normalizeUsername(
+  const username = normalizeUsername2(
     String(document.getElementById("onboard-username")?.value || "")
   );
   const errEl = document.getElementById("onboard-error");
   const resumeBtn = document.getElementById("clinical-onboard-resume-btn");
-  if (!isValidUsernameFormat(username)) {
+  if (!isValidUsernameFormat2(username)) {
     if (errEl) {
       errEl.textContent = "Escribe tu usuario LAN para recuperarlo.";
       errEl.hidden = false;
@@ -20372,8 +21177,8 @@ async function renderOnboardingPanelInto(host) {
   }
   await fetchClinicalTeamsFromDb();
   let settings2 = readRpcSettings();
-  const cachedUsername = normalizeUsername(String(settings2.clinicalUsername || ""));
-  if (!needsClinicalLanProfileGate(settings2) && needsUsernameClaim() && cachedUsername && isValidUsernameFormat(cachedUsername)) {
+  const cachedUsername = normalizeUsername2(String(settings2.clinicalUsername || ""));
+  if (!needsClinicalLanProfileGate(settings2) && needsUsernameClaim() && cachedUsername && isValidUsernameFormat2(cachedUsername)) {
     try {
       await resumeClinicalIdentityByUsername(cachedUsername, settings2, getClientId());
       await refreshClinicalUserProfile();
@@ -20508,7 +21313,7 @@ function buildEntryStatus() {
       pending: true
     };
   }
-  const handle = normalizeUsername(user.username || "");
+  const handle = normalizeUsername2(user.username || "");
   const rank = String(user.rank || "").trim();
   const sala = String(user.sala || "").trim();
   const name = String(user.clinical_name || "").trim();
@@ -64176,31 +64981,87 @@ function hintHtml(text) {
 function currentUserId() {
   return String(clinicalSessionContext.user?.user_id || "");
 }
+async function publishClinicalTeamsToLan() {
+  try {
+    const mod = await Promise.resolve().then(() => (init_lan_sync(), lan_sync_exports));
+    if (typeof mod.pushClinicalOpsLanNow === "function") {
+      return mod.pushClinicalOpsLanNow();
+    }
+    if (typeof mod.scheduleLiveSyncPush === "function") mod.scheduleLiveSyncPush();
+  } catch (_e) {
+  }
+  return { ok: false, code: "NO_LAN" };
+}
+function toastTeamLanPublishResult(lanPush, localOkMessage) {
+  if (!lanPush) {
+    toast3(localOkMessage, "success");
+    return;
+  }
+  if (lanPush.ok && (lanPush.code === "QUEUED" || lanPush.channels && lanPush.channels.outbox)) {
+    toast3(
+      `${localOkMessage} Se publicar\xE1 a la sala cuando vuelva la red (cola \u21C4).`,
+      "info"
+    );
+    return;
+  }
+  if (lanPush.ok) {
+    if (lanPush.code === "CONFLICT_RESOLVED") {
+      toast3(`${localOkMessage} Directorio alineado con el servidor.`, "success");
+      return;
+    }
+    if (lanPush.channels && lanPush.channels.http) {
+      toast3(`${localOkMessage} Publicado en sala \u21C4.`, "success");
+      return;
+    }
+    toast3(localOkMessage, "success");
+    return;
+  }
+  if (isBenignLanPushSkipCode(lanPush.code)) {
+    toast3(`${localOkMessage} (solo en esta Mac hasta conectar sala \u21C4).`, "info");
+    return;
+  }
+  toast3(LAN_PROFILE_PUSH_FAILED_MSG, "warn");
+}
+async function pullClinicalOpsFromLanRoom() {
+  try {
+    const lan = await Promise.resolve().then(() => (init_lan_sync(), lan_sync_exports));
+    if (typeof lan.refreshLanClinicalDirectoryFromRoom !== "function") return false;
+    return !!await lan.refreshLanClinicalDirectoryFromRoom({ timeoutMs: 8e3 });
+  } catch (_e) {
+    return false;
+  }
+}
+async function resolveLocalUserIdByLanHandle(handle) {
+  const api3 = dbApi5();
+  if (!api3 || typeof api3.dbClinicalUserLookup !== "function") return "";
+  const res = await api3.dbClinicalUserLookup({ username: handle });
+  return res?.ok && res.user?.user_id ? String(res.user.user_id) : "";
+}
 function filterJoinedTeams(teams, userOrUserId, usernameHint) {
   let uid = "";
   let handle = "";
   if (userOrUserId && typeof userOrUserId === "object") {
     uid = String(userOrUserId.user_id || "");
-    handle = normalizeUsername(userOrUserId.username || "");
+    handle = normalizeUsername2(userOrUserId.username || "");
   } else {
     uid = String(userOrUserId || "");
-    handle = normalizeUsername(usernameHint || "");
+    handle = normalizeUsername2(usernameHint || "");
   }
   if (!uid && !handle) return [];
   return (teams || []).filter(
     (team) => (team.members || []).some((m) => {
       if (uid && String(m.user_id) === uid) return true;
-      if (handle && normalizeUsername(m.username || "") === handle) return true;
+      if (handle && normalizeUsername2(m.username || "") === handle) return true;
       return false;
     })
   );
 }
 function isUserTeamMember(team, user) {
   const uid = String(user?.user_id || "");
-  const handle = normalizeUsername(user?.username || "");
+  const handle = normalizeUsername2(user?.username || "");
   return (team.members || []).some((m) => {
     if (uid && String(m.user_id) === uid) return true;
-    if (handle && normalizeUsername(m.username || "") === handle) return true;
+    if (handle && normalizeUsername2(m.username || "") === handle) return true;
     return false;
   });
 }
@@ -64440,11 +65301,11 @@ function renderMembersBlock(members, { compact = false } = {}) {
 function renderMyCycleEditBlock(team, user) {
   const teamId = String(team.team_id || "");
   const userId = String(user?.user_id || "");
-  const handle = normalizeUsername(user?.username || "");
+  const handle = normalizeUsername2(user?.username || "");
   const members = Array.isArray(team.members) ? team.members : [];
   const me = members.find((m) => {
     if (userId && String(m.user_id) === userId) return true;
-    if (handle && normalizeUsername(m.username || "") === handle) return true;
+    if (handle && normalizeUsername2(m.username || "") === handle) return true;
     return false;
   });
   if (!me) return "";
@@ -64463,6 +65324,16 @@ function renderMyCycleEditBlock(team, user) {
           <button type="submit" class="btn-save">Guardar</button>
         </div>
       </form>
+    </div>`;
+}
+function renderLeaveTeamBox(team) {
+  const teamId = escapeAttr3(String(team.team_id || ""));
+  const teamName = escapeAttr3(String(team.name || "este equipo"));
+  return `
+    <div class="clinical-teams-leave-box">
+      <button type="button" class="btn-med-secondary clinical-teams-leave-btn" data-team-id="${teamId}" data-team-name="${teamName}">
+        Salir del equipo
+      </button>
     </div>`;
 }
 function renderTeamManageActionsHtml(team) {
@@ -64526,6 +65397,7 @@ function renderJoinedTeamCard(team) {
       ${manage.editPanelHtml}
       ${renderMembersBlock(members)}
       ${renderMyCycleEditBlock(team, user)}
+      ${renderLeaveTeamBox(team)}
       <div class="clinical-teams-invite-box">
         <p class="clinical-teams-invite-code-line">C\xF3digo para invitar: <code class="clinical-teams-invite-code">${escapeHtml5(teamInviteCode(teamId))}</code></p>
         <div class="clinical-teams-invite-link-row">
@@ -64608,10 +65480,10 @@ async function tryReconcileTeamMemberships() {
   return joined.length > 0;
 }
 function resolveDisplayLanHandle(user, usernameForInput) {
-  const saved = normalizeUsername(user?.username || "");
-  if (saved && isValidUsernameFormat(saved)) return saved;
-  const draft2 = normalizeUsername(usernameForInput || "");
-  if (draft2 && isValidUsernameFormat(draft2)) return draft2;
+  const saved = normalizeUsername2(user?.username || "");
+  if (saved && isValidUsernameFormat2(saved)) return saved;
+  const draft2 = normalizeUsername2(usernameForInput || "");
+  if (draft2 && isValidUsernameFormat2(draft2)) return draft2;
   return "";
 }
 async function renderClinicalTeamsPanelInto(host) {
@@ -64620,6 +65492,7 @@ async function renderClinicalTeamsPanelInto(host) {
     host.innerHTML = '<p class="clinical-teams-lead">Activa la sesi\xF3n cl\xEDnica para gestionar equipos.</p>';
     return;
   }
+  await pullClinicalOpsFromLanRoom();
   await fetchClinicalTeamsFromDb();
   await tryReconcileTeamMemberships();
   const user = clinicalSessionContext.user || {};
@@ -64635,7 +65508,7 @@ async function renderClinicalTeamsPanelInto(host) {
   const legacyUsername = isLegacyMachineUsername(rawUsername, clientId);
   const usernameForInput = legacyUsername ? String(settings2.clinicalUsername || "").trim() : rawUsername;
   const displayHandle = resolveDisplayLanHandle(user, usernameForInput);
-  const savedHandle = normalizeUsername(user.username || "");
+  const savedHandle = normalizeUsername2(user.username || "");
   const handleHint = displayHandle ? `<p class="clinical-teams-lead clinical-teams-handle-hint">Tu usuario LAN: <strong>@${escapeHtml5(displayHandle)}</strong> \u2014 comp\xE1rtelo para que te agreguen a un equipo.${savedHandle !== displayHandle ? " Pulsa <strong>Guardar perfil</strong> para registrarlo en la red." : ""}</p>` : "";
   const joinedHtml = joined.length ? joined.map((team) => renderJoinedTeamCard(team)).join("") : `<p class="clinical-teams-empty clinical-teams-empty--section">A\xFAn no perteneces a ning\xFAn equipo. ${displayHandle ? "Pide que te agreguen con tu @usuario o " : ""}explora equipos en tu sala abajo.</p>`;
   const rank = effectiveClinicalRank(user);
@@ -64867,8 +65740,8 @@ function renderLanUserRowHtml(u, teamList, opts = {}) {
   const userId = escapeAttr3(String(u.user_id || ""));
   const rawUserId = String(u.user_id || "").trim();
   const canDelete = !!opts.canDelete && rawUserId && rawUserId !== String(opts.callerUserId || "").trim();
-  const rawHandle = normalizeUsername(u.username || "");
-  const handleValid = isValidUsernameFormat(rawHandle) && !u.lanDirectoryPending;
+  const rawHandle = normalizeUsername2(u.username || "");
+  const handleValid = isValidUsernameFormat2(rawHandle) && !u.lanDirectoryPending;
   const handleCell = handleValid ? `<span class="clinical-lan-users-handle">@${escapeHtml5(rawHandle)}</span>` : `<span class="clinical-lan-users-handle clinical-lan-users-handle--pending" title="Falta registrar @usuario en Mi rotaci\xF3n">sin @usuario</span>`;
   const name = escapeHtml5(String(u.clinical_name || "").trim() || "Sin nombre");
   const rankRaw = escapeAttr3(String(u.rank || "R1"));
@@ -65078,6 +65951,7 @@ async function handleLanAssignButtonClick(btn) {
   if (!ok) return;
   toast3(wasMember ? "Ciclo actualizado." : "Integrante asignado al equipo.", "success");
   document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
+  await publishClinicalTeamsToLan();
   await fetchClinicalTeamsFromDb();
   await openLanUsersDirectoryModal();
 }
@@ -65273,9 +66147,14 @@ function wireTeamManageModalDelegation() {
   if (!root || root._rpcTeamManageDelegated) return;
   root._rpcTeamManageDelegated = true;
   root.addEventListener("click", (ev) => {
-    if (!canManageTeamRoster(clinicalSessionContext.user)) return;
     const target = ev.target instanceof Element ? ev.target : null;
     if (!target) return;
+    const leaveBtn = target.closest(".clinical-teams-leave-btn");
+    if (leaveBtn instanceof HTMLButtonElement) {
+      void handleLeaveTeamClick(leaveBtn);
+      return;
+    }
+    if (!canManageTeamRoster(clinicalSessionContext.user)) return;
     const editBtn = target.closest(".clinical-teams-edit-btn");
     if (editBtn) {
       const card = editBtn.closest(".clinical-teams-card");
@@ -65297,6 +66176,34 @@ function wireTeamManageModalDelegation() {
       void handleDeleteTeamClick(deleteBtn);
     }
   });
+}
+async function handleLeaveTeamClick(btn) {
+  const teamId = String(btn.dataset.teamId || "").trim();
+  const teamName = String(btn.dataset.teamName || "este equipo").trim();
+  const userId = currentUserId();
+  if (!teamId || !userId) return;
+  const ok = window.confirm(
+    `\xBFSalir del equipo \xAB${teamName}\xBB?
+
+Dejar\xE1s de ver los pacientes asignados a ese equipo en Mi rotaci\xF3n.`
+  );
+  if (!ok) return;
+  const api3 = dbApi5();
+  if (!api3 || typeof api3.dbClinicalTeamsMemberRemove !== "function") {
+    toast3("No se pudo salir del equipo.", "error");
+    return;
+  }
+  btn.disabled = true;
+  const res = await api3.dbClinicalTeamsMemberRemove({ teamId, userId });
+  btn.disabled = false;
+  if (!res || res.ok === false) {
+    toast3(res?.error || "No se pudo salir del equipo.", "error");
+    return;
+  }
+  toast3("Saliste del equipo.", "success");
+  document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
+  await publishClinicalTeamsToLan();
+  await refreshTeamsUiAfterChange();
 }
 async function handleDeleteTeamClick(btn) {
   const teamId = String(btn.dataset.teamId || "").trim();
@@ -65323,6 +66230,7 @@ Se quitar\xE1n sus integrantes. Esta acci\xF3n no se puede deshacer.`
   }
   toast3("Equipo eliminado.", "success");
   document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
+  await publishClinicalTeamsToLan();
 }
 async function handleEditTeamSubmit(ev, form) {
   ev.preventDefault();
@@ -65356,10 +66264,11 @@ async function handleEditTeamSubmit(ev, form) {
   }
   toast3("Equipo actualizado.", "success");
   document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
+  await publishClinicalTeamsToLan();
 }
 async function handleProfileFormSubmit(ev) {
   ev.preventDefault();
-  const username = normalizeUsername(
+  const username = normalizeUsername2(
     String(document.getElementById("clinical-profile-username")?.value || "")
   );
   let rank = String(document.getElementById("clinical-profile-rank")?.value || "R1");
@@ -65386,7 +66295,7 @@ async function handleProfileFormSubmit(ev) {
       adminAccessCode = verifiedAdminAccessCode;
     }
   }
-  if (!isValidUsernameFormat(username)) {
+  if (!isValidUsernameFormat2(username)) {
     toast3("Usuario inv\xE1lido. Usa 3\u201332 caracteres en min\xFAsculas: letras, n\xFAmeros y _.", "error");
     return;
   }
@@ -65400,7 +66309,7 @@ async function handleProfileFormSubmit(ev) {
     toast3("Sesi\xF3n cl\xEDnica no disponible. Desbloquea la base de datos.", "error");
     return;
   }
-  const currentUsername = normalizeUsername(clinicalSessionContext.user?.username || "");
+  const currentUsername = normalizeUsername2(clinicalSessionContext.user?.username || "");
   const usernameWillChange = username !== currentUsername;
   if (usernameWillChange) {
     const { assertLanRoomForUsernameRegister: assertLanRoomForUsernameRegister2 } = await Promise.resolve().then(() => (init_clinical_profile_lan_sync(), clinical_profile_lan_sync_exports));
@@ -65515,6 +66424,7 @@ function wireJoinButtons() {
       }
       toast3("Te uniste al equipo.", "success");
       document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
+      void publishClinicalTeamsToLan();
     });
   });
 }
@@ -65677,8 +66587,12 @@ async function handleCreateTeamSubmit(ev) {
       toast3(res2?.error || "No se cre\xF3 el equipo.", "error");
       return;
     }
-    toast3("Equipo vac\xEDo creado. Asigna integrantes desde el directorio LAN.", "success");
     document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
+    const lanPush2 = await publishClinicalTeamsToLan();
+    toastTeamLanPublishResult(
+      lanPush2,
+      "Equipo vac\xEDo creado. Asigna integrantes desde el directorio LAN."
+    );
     return;
   }
   const service = String(document.getElementById("clinical-team-create-service")?.value || "").trim();
@@ -65711,8 +66625,9 @@ async function handleCreateTeamSubmit(ev) {
       toast3(addRes?.error || "Equipo creado pero no se pudo unir autom\xE1ticamente.", "error");
     }
   }
-  toast3("Equipo creado.", "success");
   document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
+  const lanPush = await publishClinicalTeamsToLan();
+  toastTeamLanPublishResult(lanPush, "Equipo creado.");
 }
 async function handleAddMemberSubmit(ev, form) {
   ev.preventDefault();
@@ -65728,9 +66643,22 @@ async function handleAddMemberSubmit(ev, form) {
     toast3("Base de datos no disponible.", "error");
     return;
   }
-  const handle = normalizeUsername(username);
-  if (!isValidUsernameFormat(handle)) {
+  const handle = normalizeUsername2(username);
+  if (!isValidUsernameFormat2(handle)) {
     toast3("Usuario inv\xE1lido. Usa 3\u201332 caracteres: letras min\xFAsculas, n\xFAmeros y _ (sin @).", "error");
+    return;
+  }
+  let partnerUserId = await resolveLocalUserIdByLanHandle(handle);
+  if (!partnerUserId) {
+    await pullClinicalOpsFromLanRoom();
+    await fetchClinicalTeamsFromDb();
+    partnerUserId = await resolveLocalUserIdByLanHandle(handle);
+  }
+  if (!partnerUserId) {
+    toast3(
+      `No encontramos a @${handle} en esta Mac. En su R+: Mi rotaci\xF3n \u2192 @usuario \u2192 Guardar perfil (con la misma sala \u21C4). Luego abre Directorio LAN aqu\xED o reintenta.`,
+      "error"
+    );
     return;
   }
   const cycleEl = form.querySelector(".clinical-teams-add-member-cycle");
@@ -65741,7 +66669,7 @@ async function handleAddMemberSubmit(ev, form) {
   }
   const res = await api3.dbClinicalTeamsMemberAdd({
     teamId,
-    username: handle,
+    userId: partnerUserId,
     subAreaFraction
   });
   if (!res || res.ok === false) {
@@ -65750,6 +66678,8 @@ async function handleAddMemberSubmit(ev, form) {
   }
   toast3("Miembro agregado.", "success");
   if (usernameInput instanceof HTMLInputElement) usernameInput.value = "";
+  document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
+  await publishClinicalTeamsToLan();
   await refreshTeamsUiAfterChange();
 }
 async function handleMyCycleSubmit(ev, form) {
@@ -65786,6 +66716,17 @@ async function resolveTeamIdForInviteInput(codeOrId) {
   let teamId = raw.includes("-") && raw.length > 20 ? raw : "";
   if (!teamId) {
     teamId = resolveTeamIdFromInviteCode(raw, clinicalSessionContext.teams || []);
+  }
+  if (!teamId) {
+    try {
+      const lan = await Promise.resolve().then(() => (init_lan_sync(), lan_sync_exports));
+      if (typeof lan.refreshLanClinicalDirectoryFromRoom === "function") {
+        await lan.refreshLanClinicalDirectoryFromRoom({ timeoutMs: 8e3 });
+        await fetchClinicalTeamsFromDb();
+        teamId = resolveTeamIdFromInviteCode(raw, clinicalSessionContext.teams || []);
+      }
+    } catch (_eLan) {
+    }
   }
   const api3 = dbApi5();
   if (!teamId && api3 && typeof api3.dbClinicalTeamResolveCode === "function") {
@@ -65829,6 +66770,7 @@ async function joinTeamById(teamId, subAreaFraction) {
   }
   toast3(`Te uniste al equipo ${team.name || ""} (ciclo ${cycle}).`, "success");
   document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
+  await publishClinicalTeamsToLan();
   await refreshTeamsUiAfterChange();
   return true;
 }
@@ -65840,7 +66782,9 @@ async function handleJoinWithCodeSubmit(ev) {
   const subAreaFraction = cycleEl instanceof HTMLSelectElement ? String(cycleEl.value || "").trim() : "";
   const teamId = await resolveTeamIdForInviteInput(code);
   if (!teamId) {
-    toast3("C\xF3digo no v\xE1lido o equipo no est\xE1 en esta base. Pide al R2 que confirme el c\xF3digo.", "error");
+    await fetchClinicalTeamsFromDb();
+    const diag = diagnoseInviteCodeFailure(code, clinicalSessionContext.teams || []);
+    toast3(inviteCodeFailureMessage(diag), "error");
     return;
   }
   await joinTeamById(teamId, subAreaFraction);
@@ -65984,6 +66928,7 @@ var CLINICAL_TEAM_SERVICES, CLINICAL_SALAS, BROWSE_SALA_LS, adminAccessGrantedTh
 var init_clinical_teams = __esm({
   "public/js/features/clinical-teams.mjs"() {
     init_clinical_access_runtime();
+    init_clinical_profile_lan_sync();
     init_clinico_access();
     init_clinical_team_invite();
     init_soap_estado();
@@ -68068,7 +69013,7 @@ async function resumeClinicalIdentityByUsername(username, settings2, clientId) {
   void clientId;
   if (!isDbMode()) return { ok: false, error: "Base de datos no activa." };
   const api3 = electronApi();
-  const handle = normalizeUsername(username);
+  const handle = normalizeUsername2(username);
   if (!api3) {
     return { ok: false, error: "Sesi\xF3n cl\xEDnica no disponible." };
   }
@@ -68106,7 +69051,7 @@ async function resumeClinicalIdentityByUsername(username, settings2, clientId) {
   if (!res || res.ok === false) {
     return { ok: false, error: res?.error || "No se pudo recuperar la cuenta." };
   }
-  if (normalizeUsername(res.user.username) !== handle) {
+  if (normalizeUsername2(res.user.username) !== handle) {
     return {
       ok: false,
       error: "No encontramos ese usuario en esta base de datos."

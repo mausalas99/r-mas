@@ -6,6 +6,9 @@ import {
   listDraftConflicts,
   getDraftConflict,
   deleteDraftConflict,
+  clearAllDraftConflicts,
+  clearRoomBundleDrafts,
+  countDraftConflicts,
   __test,
 } from './draft-conflict-store.mjs';
 
@@ -150,4 +153,37 @@ test('openDraftDb exercises IndexedDB transaction path', async () => {
   const id = await saveDraftConflict({ entityType: 'patient', entityId: 'p2' });
   assert.ok(await getDraftConflict(id));
   await deleteDraftConflict(id);
+});
+
+test('clearAllDraftConflicts removes every row', async () => {
+  await saveDraftConflict({ entityType: 'todo', entityId: 'a' });
+  await saveDraftConflict({ entityType: 'todo', entityId: 'b' });
+  assert.strictEqual(await clearAllDraftConflicts(), 2);
+  assert.strictEqual((await listDraftConflicts()).length, 0);
+});
+
+test('clearRoomBundleDrafts keeps other entity drafts', async () => {
+  const roomDraft = await saveDraftConflict({
+    entityType: 'roomBundle',
+    roomId: 'sala-2',
+    conflictingKeys: ['clinicalOps'],
+  });
+  const todoDraft = await saveDraftConflict({
+    entityType: 'todo',
+    entityId: 't1',
+    roomId: 'sala-2',
+  });
+  assert.strictEqual(await clearRoomBundleDrafts('sala-2'), 1);
+  const list = await listDraftConflicts();
+  assert.ok(!list.some((d) => d.id === roomDraft));
+  assert.ok(list.some((d) => d.id === todoDraft));
+  await deleteDraftConflict(todoDraft);
+});
+
+test('countDraftConflicts matches list length', async () => {
+  await saveDraftConflict({ entityType: 'todo', entityId: 'c1' });
+  await saveDraftConflict({ entityType: 'todo', entityId: 'c2' });
+  assert.strictEqual(await countDraftConflicts(), 2);
+  assert.strictEqual(await clearAllDraftConflicts(), 2);
+  assert.strictEqual(await countDraftConflicts(), 0);
 });

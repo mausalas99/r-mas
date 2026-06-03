@@ -58,6 +58,12 @@ describe('clinical-teams', () => {
     assert.equal(clinicalTeamsSrc.includes('handleGuardiaCheck'), false);
   });
 
+  it('joined team card offers leave team for any member', () => {
+    assert.match(clinicalTeamsSrc, /clinical-teams-leave-btn/);
+    assert.match(clinicalTeamsSrc, /handleLeaveTeamClick/);
+    assert.match(clinicalTeamsSrc, /dbClinicalTeamsMemberRemove/);
+  });
+
   it('renderJoinedTeamCard defines user before cycle edit block', () => {
     const fnStart = clinicalTeamsSrc.indexOf('function renderJoinedTeamCard(team)');
     assert.ok(fnStart >= 0);

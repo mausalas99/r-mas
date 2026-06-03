@@ -17,6 +17,10 @@ const clinicalOpsLanSrc = readFileSync(
   join(dirname(fileURLToPath(import.meta.url)), '../clinical-ops-lan.mjs'),
   'utf8'
 );
+const clinicalTeamsSrc = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), 'clinical-teams.mjs'),
+  'utf8'
+);
 
 describe('lan-sync clinical ops', () => {
   it('exports prepareClinicalOpsForLanSync helper', () => {
@@ -89,9 +93,128 @@ describe('lan-sync clinical ops', () => {
     );
   });
 
+  it('debounced push uses sticky room membership like profile push', () => {
+    assert.match(
+      lanSyncPushSrc,
+      /export function scheduleLiveSyncPush\(\) \{[\s\S]*ensureEffectiveLiveSyncRoomId\(\)/
+    );
+    assert.doesNotMatch(
+      lanSyncPushSrc,
+      /export function scheduleLiveSyncPush\(\) \{\s*if \(!activeLiveSyncRoomId\) return;/
+    );
+  });
+
+  it('revision hints reconcile when room matches membership without active room', () => {
+    assert.match(lanSyncPushSrc, /liveSyncRoomIdIsRelevant/);
+    assert.match(
+      lanSyncPushSrc,
+      /scheduleReconcileFromRevisionHint[\s\S]*liveSyncRoomIdIsRelevant/
+    );
+  });
+
+  it('team changes trigger immediate clinical-ops push not only debounced bundle', () => {
+    assert.match(
+      lanSyncPanelSrc,
+      /rpc-clinical-teams-changed[\s\S]*pushClinicalOpsLanNow/
+    );
+  });
+
+  it('Mi rotación pulls clinical ops from host before listing teams', () => {
+    assert.match(clinicalTeamsSrc, /renderClinicalTeamsPanelInto[\s\S]*pullClinicalOpsFromLanRoom/);
+  });
+
   it('handles livesync revision hints from peers', () => {
     assert.match(lanSyncPushAndFeatureSrc, /livesync:revision/);
     assert.match(lanSyncPushAndFeatureSrc, /scheduleReconcileFromRevisionHint/);
+  });
+
+  it('shows conflict drafts in LAN panel after host pin section', () => {
+    assert.match(lanSyncPanelSrc, /appendLanConflictDraftsSection/);
+    assert.match(lanSyncFeatureSrc, /registerLanSyncPanelRuntime[\s\S]*appendLanConflictDraftsSection/);
+  });
+
+  it('waits for live WS before reconcile on boot and join', () => {
+    assert.match(lanSyncRoomSrc, /waitForLiveChannelOpen/);
+    assert.match(lanSyncRoomSrc, /bootLanRoomMembership[\s\S]*waitForLiveChannelOpen[\s\S]*syncLiveSyncAfterRoomJoin/);
+    assert.match(lanSyncRoomSrc, /joinLanRoom[\s\S]*waitForLiveChannelOpen[\s\S]*syncLiveSyncAfterRoomJoin/);
+  });
+
+  it('auto-joins sala from settings on boot when membership is absent', () => {
+    assert.match(
+      lanSyncTransportSrc,
+      /initLanClientFromStorage[\s\S]*resolveAutoJoinRoomId[\s\S]*joinLanRoom/
+    );
+  });
+
+  it('reconnect loop resyncs once per session when live WS already open', () => {
+    assert.match(lanSyncRoomSrc, /_liveSyncSessionResyncDone/);
+    assert.match(
+      lanSyncRoomSrc,
+      /liveConnected[\s\S]*_liveSyncSessionResyncDone[\s\S]*syncLiveSyncAfterRoomJoin/
+    );
+  });
+
+  it('records sync-bundle failures in diagnostics lastErrors', () => {
+    assert.match(lanSyncPushSrc, /recordLanSyncError[\s\S]*sync-bundle/);
+  });
+
+  it('dedupes room-bundle drafts per sala before saving another', () => {
+    assert.match(lanSyncPushSrc, /clearRoomBundleDrafts\(rid\)/);
+  });
+
+  it('auto-accepts clinicalOps-only bundle 409 without saving heavy drafts', () => {
+    assert.match(lanSyncPushSrc, /acceptServerBundleConflict/);
+    assert.match(lanSyncPushSrc, /bundleConflictsAreClinicalOpsOnly/);
+    assert.match(lanSyncPushSrc, /pauseBundlePushForRoom/);
+    assert.doesNotMatch(
+      lanSyncPushSrc,
+      /saveDraftConflict\([\s\S]{0,200}localBundle:/
+    );
+  });
+
+  it('pauses debounced bundle push while cooldown active', () => {
+    assert.match(lanSyncPushSrc, /isBundlePushPaused\(roomId\)/);
+  });
+
+  it('exports clinical directory refresh for Mi rotación directorio', () => {
+    assert.match(lanSyncFeatureSrc, /export[\s\S]*refreshLanClinicalDirectoryFromRoom/);
+    assert.match(lanSyncFeatureSrc, /fetchAndApplyClinicalOpsFromHost/);
+  });
+
+  it('pushClinicalOpsLanNow does not fall back to pushRoomSyncBundleToHost', () => {
+    const start = lanSyncPushSrc.indexOf('export async function pushClinicalOpsLanNow');
+    assert.ok(start >= 0);
+    const end = lanSyncPushSrc.indexOf('export async function reconcileLiveSyncRoom', start);
+    const body = lanSyncPushSrc.slice(start, end);
+    assert.doesNotMatch(body, /pushRoomSyncBundleToHost/);
+  });
+
+  it('flushLiveSyncOutbox drains clinical_ops and aborts on first failure', () => {
+    assert.match(lanSyncPushSrc, /pushClinicalOpsPayloadToHost/);
+    assert.match(lanSyncPushSrc, /drainFromIndex/);
+    assert.match(lanSyncPushSrc, /reenqueueSlice\(sorted\.slice\(index\)\)/);
+  });
+
+  it('clinical-ops 409 returns CONFLICT_RESOLVED success', () => {
+    assert.match(lanSyncPushSrc, /CONFLICT_RESOLVED/);
+    assert.match(
+      lanSyncPushSrc,
+      /acceptServerClinicalOpsConflict[\s\S]*lanPushResult\(true,\s*'CONFLICT_RESOLVED'/
+    );
+  });
+
+  it('clinical-ops enqueue returns QUEUED deferred success', () => {
+    assert.match(lanSyncPushSrc, /kind:\s*'clinical_ops'/);
+    assert.match(lanSyncPushSrc, /lanPushResult\(true,\s*'QUEUED'/);
+  });
+
+  it('reconcile wraps fetchAndApplyClinicalOpsFromHost in try/catch', () => {
+    assert.match(lanSyncPushSrc, /catch \(_eOps\)/);
+    assert.match(lanSyncPushSrc, /fetchAndApplyClinicalOpsFromHost/);
+  });
+
+  it('push bridge wires fetchAndApplyClinicalOpsFromHost', () => {
+    assert.match(lanSyncFeatureSrc, /registerLanSyncPushBridge\([\s\S]*fetchAndApplyClinicalOpsFromHost/);
   });
 });
 

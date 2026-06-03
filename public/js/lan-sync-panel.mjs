@@ -7,6 +7,7 @@ import { patients } from './app-state.mjs';
 import { copyToClipboardSafe } from './features/soap-estado.mjs';
 import { hasElevatedTeamPrivileges, canManageInternoQr } from './clinical-privileges.mjs';
 import { clinicalSessionContext } from './clinical-access-runtime.mjs';
+import { filterJoinedTeams } from './features/clinical-teams.mjs';
 import { appendLanHubGuardiaModeCard } from './features/lan-hub-guardia-mode.mjs';
 import { appendLanHubStatusCard, appendLanHubRoomsCard } from './features/lan-hub-panel-shell.mjs';
 import { appendInternoQrPanel } from './features/interno-qr-panel.mjs';
@@ -59,7 +60,7 @@ import {
   joinLanRoom,
   leaveLiveSyncRoom,
 } from './lan-sync-room.mjs';
-import { scheduleLiveSyncPush } from './lan-sync-push.mjs';
+import { scheduleLiveSyncPush, flushLiveSyncOutbox } from './lan-sync-push.mjs';
 import { recordLanSyncError } from './lan-sync-diagnostics.mjs';
 
 const LAN_KNOWN_ROOMS_LS = 'rpc-lan-known-rooms';
@@ -84,7 +85,17 @@ export function registerLanSyncPanelRuntime(partial) {
 }
 
 function runtime() {
-  return panelRuntime || { showToast() {}, isMobileWeb() { return false; }, renderPatientList() {}, closeSettingsDropdown() {} };
+  return (
+    panelRuntime || {
+      showToast() {},
+      isMobileWeb() {
+        return false;
+      },
+      renderPatientList() {},
+      closeSettingsDropdown() {},
+      appendLanConflictDraftsSection: null,
+    }
+  );
 }
 
 function esc(s) {
@@ -309,6 +320,11 @@ export function wireClinicalOpsLanSyncEvents() {
   if (!document._rpcClinicalTeamsChangedLanWired) {
     document._rpcClinicalTeamsChangedLanWired = true;
     document.addEventListener('rpc-clinical-teams-changed', function () {
+      void import('./lan-sync-push.mjs')
+        .then(function (m) {
+          if (typeof m.pushClinicalOpsLanNow === 'function') return m.pushClinicalOpsLanNow();
+        })
+        .catch(function () {});
       scheduleLiveSyncPush();
     });
   }
@@ -604,6 +620,10 @@ async function renderLanPanelOnce() {
   }
 
   appendLanHostPinSection(root);
+  var appendConflictDrafts = runtime().appendLanConflictDraftsSection;
+  if (typeof appendConflictDrafts === 'function') {
+    void appendConflictDrafts(root);
+  }
   void appendLanSyncDiagnosticsSection(root);
   maybeAppendInternoQrPanel(root);
 }
@@ -712,6 +732,26 @@ async function appendLanSyncDiagnosticsSection(root) {
     });
   };
   details.appendChild(copyBtn);
+  var retryBtn = document.createElement('button');
+  retryBtn.type = 'button';
+  retryBtn.className = 'btn-lan-secondary';
+  retryBtn.style.marginTop = '6px';
+  retryBtn.style.width = '100%';
+  retryBtn.textContent = 'Reintentar cola de sincronización';
+  retryBtn.onclick = function () {
+    var rid =
+      String(activeLiveSyncRoomId || '').trim() ||
+      String((getRoomMembership() && getRoomMembership().roomId) || '').trim();
+    if (!rid) {
+      runtime().showToast('No hay sala activa para reintentar.', 'warn');
+      return;
+    }
+    void flushLiveSyncOutbox(rid).then(function () {
+      runtime().showToast('Cola reintentada. Revisa el informe abajo.', 'info');
+      void renderLanPanel();
+    });
+  };
+  details.appendChild(retryBtn);
   root.appendChild(details);
 }
 function buildR1Section(root) {
@@ -720,13 +760,9 @@ function buildR1Section(root) {
   card.className = 'lan-connect-card lan-hub-team-card';
   card.innerHTML = '<div class="lan-connect-card-title">Mi equipo</div>';
 
-  var userId = String(getClinicalUserUserId());
-  var teams = clinicalSessionContext.teams || [];
-  var myTeam = teams.find(function (t) {
-    return (t.members || []).some(function (m) {
-      return String(m.user_id) === userId;
-    });
-  });
+  var user = clinicalSessionContext.user || {};
+  var joined = filterJoinedTeams(clinicalSessionContext.teams || [], user);
+  var myTeam = joined[0] || null;
 
   if (myTeam) {
     var teamName = document.createElement('p');
@@ -785,13 +821,8 @@ function buildR1Section(root) {
 function buildR2Section(root) {
   buildR1Section(root);
 
-  var userId = String(getClinicalUserUserId());
-  var teams = clinicalSessionContext.teams || [];
-  var myTeam = teams.find(function (t) {
-    return (t.members || []).some(function (m) {
-      return String(m.user_id) === userId;
-    });
-  });
+  var user = clinicalSessionContext.user || {};
+  var myTeam = filterJoinedTeams(clinicalSessionContext.teams || [], user)[0] || null;
 
   if (!myTeam) return;
 
@@ -959,11 +990,11 @@ function teamSalaKey(team) {
 
 function buildAvailableTeamsSection(root, userSala) {
   var teams = clinicalSessionContext.teams || [];
-  var userId = getClinicalUserUserId();
+  var user = clinicalSessionContext.user || {};
   var salaKey = String(userSala || '').trim();
-  var alreadyInIds = teams.filter(function (t) {
-    return (t.members || []).some(function (m) { return String(m.user_id) === userId; });
-  }).map(function (t) { return String(t.team_id); });
+  var alreadyInIds = filterJoinedTeams(teams, user).map(function (t) {
+    return String(t.team_id);
+  });
   var available = teams.filter(function (t) {
     return teamSalaKey(t) === salaKey && !t.archived_at && alreadyInIds.indexOf(String(t.team_id)) === -1;
   });

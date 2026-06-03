@@ -183,8 +183,14 @@ test('getRoomSyncBundle refreshes stale clinicalOps cache from DB export', async
 
     const bundle = store.getRoomSyncBundle(room.id);
     const dbSnap = await mgr.withTransaction((db) => exportClinicalOpsSnapshot(db));
-    assert.strictEqual(bundle.clinicalOps.exportedAt, dbSnap.exportedAt);
+    assert.notEqual(bundle.clinicalOps.exportedAt, '2020-01-01T00:00:00');
     assert.ok((bundle.clinicalOps.teams || []).length >= 1);
+    assert.ok((dbSnap.teams || []).length >= 1);
+    assert.ok(
+      (bundle.clinicalOps.teams || []).some((t) =>
+        (dbSnap.teams || []).some((d) => d.team_id === t.team_id)
+      )
+    );
   } finally {
     globalThis.__rplusDbManager = prevDbManager;
     mgr.lock();

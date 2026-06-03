@@ -279,6 +279,7 @@ export function pickDiffKeys(conflictingKeys, localData, serverData) {
  */
 export function buildConflictModalTitle(context) {
   const ctx = context || {};
+  if (ctx.entityType === 'roomBundle') return 'Conflicto de paquete de sala';
   if (ctx.entityType === 'todo') return 'Pendiente en la sala';
   if (ctx.entityType === 'historiaClinica') return 'Historia clínica en la sala';
   if (ctx.entityType === 'patient') return 'Paciente en la sala';
@@ -314,6 +315,16 @@ function buildConflictActionCopy(context) {
       secondaryTitle: 'Mantener mi cambio local',
       secondaryHint: 'Cierra el comparador sin sobrescribir; revisa el texto en pantalla.',
       tagline: 'El mismo pendiente cambió en otro equipo.',
+    };
+  }
+  if (ctx.entityType === 'roomBundle') {
+    return {
+      primaryTitle: 'Usar versión del servidor',
+      primaryHint:
+        'Carga el censo, agenda y pendientes que ya tiene la sala. Tu intento local queda como borrador.',
+      secondaryTitle: 'Cerrar sin decidir',
+      secondaryHint: 'El borrador queda en ⇄ → Borradores de conflicto para revisarlo después.',
+      tagline: 'La sala tiene otra versión del paquete de sincronización.',
     };
   }
   return {
@@ -531,7 +542,15 @@ export function openClinicalConflictViewer(opts) {
   const contextHtml = buildConflictContextHtml(context);
   const actions = buildConflictActionCopy(context);
   const modalTitle = buildConflictModalTitle(context);
-  const diffParts = buildConflictDiffParts({ conflictingKeys, localData, serverData });
+  const isRoomBundle = context && context.entityType === 'roomBundle';
+  const diffParts = isRoomBundle
+    ? {
+        keyCount: 1,
+        summaryHtml:
+          '<p class="clinical-conflict-summary-empty">El host rechazó tu paquete de sala (revisión distinta). Usa la versión del servidor o cierra y resuelve después desde ⇄.</p>',
+        detailHtml: '',
+      }
+    : buildConflictDiffParts({ conflictingKeys, localData, serverData });
   const detailBlock = diffParts.detailHtml
     ? '<details class="clinical-conflict-details">' +
       '<summary>Ver comparación por sección</summary>' +

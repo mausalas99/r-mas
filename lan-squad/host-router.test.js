@@ -163,6 +163,55 @@ test('PUT /rooms/:id/clinical-ops merges snapshot', async () => {
   }
 });
 
+test('PUT /rooms/:id/clinical-ops broadcasts livesync:revision on live room channel', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-clinical-ops-bcast-'));
+  const statePath = path.join(dir, 'state.json');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({ filePath: statePath, teamCodePlain: code });
+  const room = store.createRoom('Sala broadcast');
+  store.putRoomSyncBundle(room.id, {
+    baseRevision: 0,
+    baseEntityVersions: {},
+    clinicalOps: { exportedAt: '2020-01-01T00:00:00', teams: [], team_membership: [] },
+  });
+  const baseRevision = store.getRoomSyncBundle(room.id).revision;
+  /** @type {{ ch: string, msg: object }[]} */
+  const broadcasts = [];
+  const app = mountLanRouter(store, (ch, msg) => broadcasts.push({ ch, msg }));
+  const server = http.createServer(app);
+  await listenServer(server);
+  try {
+    const { port } = server.address();
+    const url = `http://127.0.0.1:${port}/api/lan/v1/rooms/${encodeURIComponent(room.id)}/clinical-ops`;
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: { ...bearerHeaders(code), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        baseRevision,
+        clientId: 'peer-b',
+        snapshot: {
+          exportedAt: '2025-06-03T00:00:00',
+          teams: [{ team_id: 'team-x', name: 'X', created_at: '2025-06-03T00:00:00' }],
+          team_membership: [],
+        },
+      }),
+    });
+    assert.strictEqual(res.status, 200);
+    const liveCh = `live:${encodeURIComponent(room.id)}`;
+    assert.ok(
+      broadcasts.some(
+        (b) =>
+          b.ch === liveCh &&
+          b.msg &&
+          b.msg.type === 'livesync:revision' &&
+          b.msg.roomId === room.id
+      )
+    );
+  } finally {
+    await tearDownLanTest({ server, dir, store });
+  }
+});
+
 test('PUT /rooms/:id/clinical-ops stale revision returns 409', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-clinical-ops-stale-'));
   const statePath = path.join(dir, 'state.json');
@@ -206,6 +255,55 @@ test('PUT /rooms/:id/clinical-ops stale revision returns 409', async () => {
     assert.strictEqual(body.snapshot.teams.length, 1);
     assert.strictEqual(body.snapshot.teams[0].team_id, 'team-a');
     assert.strictEqual(store.getRoomSyncBundle(room.id).clinicalOps.teams[0].team_id, 'team-a');
+  } finally {
+    await tearDownLanTest({ server, dir, store });
+  }
+});
+
+test('PUT /rooms/:id/sync-bundle broadcasts livesync:revision without clinicalOps in body', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-bundle-bcast-'));
+  const statePath = path.join(dir, 'state.json');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({ filePath: statePath, teamCodePlain: code });
+  const room = store.createRoom('Sala bundle bcast');
+  store.putRoomSyncBundle(room.id, {
+    baseRevision: 0,
+    baseEntityVersions: {},
+    agenda: [],
+    todos: {},
+  });
+  const cur = store.getRoomSyncBundle(room.id);
+  /** @type {{ ch: string, msg: object }[]} */
+  const broadcasts = [];
+  const app = mountLanRouter(store, (ch, msg) => broadcasts.push({ ch, msg }));
+  const server = http.createServer(app);
+  await listenServer(server);
+  try {
+    const { port } = server.address();
+    const url = `http://127.0.0.1:${port}/api/lan/v1/rooms/${encodeURIComponent(room.id)}/sync-bundle`;
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: { ...bearerHeaders(code), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        bundle: {
+          baseRevision: cur.revision,
+          baseEntityVersions: {},
+          agenda: [{ id: 'e2', patientId: 'p1', procedure: 'B' }],
+          todos: {},
+        },
+      }),
+    });
+    assert.strictEqual(res.status, 200);
+    const liveCh = `live:${encodeURIComponent(room.id)}`;
+    assert.ok(
+      broadcasts.some(
+        (b) =>
+          b.ch === liveCh &&
+          b.msg &&
+          b.msg.type === 'livesync:revision' &&
+          b.msg.roomId === room.id
+      )
+    );
   } finally {
     await tearDownLanTest({ server, dir, store });
   }

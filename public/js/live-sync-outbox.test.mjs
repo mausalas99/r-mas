@@ -42,3 +42,14 @@ test('peek does not drain', async () => {
   assert.equal(peekOutbox('r').length, 1);
   assert.equal(await outboxSize('r'), 1);
 });
+
+test('enqueue clinical_ops kind round-trip', async () => {
+  mockLocalStorage();
+  await enqueueOutbox('room1', {
+    kind: 'clinical_ops',
+    payload: { snapshot: { teams: [] }, baseRevision: 0 },
+  });
+  const items = await drainOutbox('room1');
+  assert.equal(items.length, 1);
+  assert.equal(items[0].kind, 'clinical_ops');
+});

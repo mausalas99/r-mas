@@ -13,7 +13,7 @@ import {
   lanClient,
   clearActiveLiveSyncRoom,
 } from './lan-sync-runtime.mjs';
-import { clearRoomMembership } from './live-sync-membership.mjs';
+import { clearRoomMembership, getRoomMembership } from './live-sync-membership.mjs';
 
 const LAN_MIGRATION_NOTICE_KEY = 'rplus.lan.migrationNoticeShown';
 let _lastLanPairing = null;
@@ -621,7 +621,15 @@ export function initLanClientFromStorage() {
     lanClient.connectSyncChannel();
   } catch (_e) {}
   setTimeout(function () {
-    var boot = deps().bootLanRoomMembership;
-    if (typeof boot === 'function') boot();
-  }, 0);
+    var d = deps();
+    var mem = getRoomMembership();
+    if (mem && mem.roomId && typeof d.bootLanRoomMembership === 'function') {
+      d.bootLanRoomMembership();
+      return;
+    }
+    if (typeof d.resolveAutoJoinRoomId !== 'function' || typeof d.joinLanRoom !== 'function') return;
+    var autoRoomId = d.resolveAutoJoinRoomId('');
+    if (!autoRoomId) return;
+    void d.joinLanRoom(autoRoomId, liveSyncRoomLabel(autoRoomId));
+  }, 500);
 }
