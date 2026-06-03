@@ -1102,7 +1102,7 @@
       "format": "esm"
     },
     "public/js/lan-sync-panel.mjs": {
-      "bytes": 60921,
+      "bytes": 60974,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -1233,7 +1233,7 @@
       "format": "esm"
     },
     "public/js/features/lan-sync.mjs": {
-      "bytes": 56174,
+      "bytes": 56222,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -5063,7 +5063,7 @@
       "format": "esm"
     },
     "public/js/features/clinical-teams.mjs": {
-      "bytes": 95063,
+      "bytes": 95173,
       "imports": [
         {
           "path": "public/js/clinical-access-runtime.mjs",
@@ -6639,7 +6639,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 5216263
+      "bytes": 5216268
     },
     "public/js/app.bundle.mjs": {
       "imports": [
@@ -6806,10 +6806,10 @@
           "bytesInOutput": 2724
         },
         "public/js/live-sync-room.mjs": {
-          "bytesInOutput": 7845
+          "bytesInOutput": 7842
         },
         "public/js/host-bundle-bases.mjs": {
-          "bytesInOutput": 2909
+          "bytesInOutput": 2908
         },
         "public/js/manejo-custom-protocols.mjs": {
           "bytesInOutput": 3370
@@ -6869,7 +6869,7 @@
           "bytesInOutput": 657
         },
         "public/js/lan-sync-transport.mjs": {
-          "bytesInOutput": 21054
+          "bytesInOutput": 21052
         },
         "lib/historia-clinica/migrate-legacy.mjs": {
           "bytesInOutput": 2094
@@ -6887,7 +6887,7 @@
           "bytesInOutput": 5855
         },
         "public/js/lan-sync-room.mjs": {
-          "bytesInOutput": 24992
+          "bytesInOutput": 24977
         },
         "public/js/mode-features.mjs": {
           "bytesInOutput": 987
@@ -6911,10 +6911,10 @@
           "bytesInOutput": 7731
         },
         "public/js/lan-sync-panel.mjs": {
-          "bytesInOutput": 50735
+          "bytesInOutput": 50732
         },
         "public/js/features/lan-sync.mjs": {
-          "bytesInOutput": 53668
+          "bytesInOutput": 53656
         },
         "public/js/clinical-profile-lan-sync.mjs": {
           "bytesInOutput": 5378
@@ -7409,7 +7409,7 @@
           "bytesInOutput": 59778
         },
         "public/js/features/clinical-teams.mjs": {
-          "bytesInOutput": 92365
+          "bytesInOutput": 92475
         },
         "public/js/features/entrega-modal-ui.mjs": {
           "bytesInOutput": 48393
@@ -7517,7 +7517,7 @@
           "bytesInOutput": 950
         }
       },
-      "bytes": 2949700
+      "bytes": 2949774
     }
   }
 }

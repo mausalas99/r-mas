@@ -54,11 +54,13 @@ import {
   syncLanSavedTeamCodeWithEffectiveHostCode,
   isLocalLoopbackLanUrl,
   resolveLanHostUrlForShare,
+  resolveLanHostUrlAuto,
   updateLanPairingDisplay,
 } from './lan-sync-transport.mjs';
 import {
   joinLanRoom,
   leaveLiveSyncRoom,
+  syncLiveSyncStatusChrome,
 } from './lan-sync-room.mjs';
 import { scheduleLiveSyncPush, flushLiveSyncOutbox } from './lan-sync-push.mjs';
 import { recordLanSyncError } from './lan-sync-diagnostics.mjs';

@@ -80,6 +80,38 @@ describe('LAN event and handler wiring', () => {
     );
   });
 
+  it('lan-sync-panel imports syncLiveSyncStatusChrome and resolveLanHostUrlAuto', () => {
+    assert.match(
+      lanSyncPanel,
+      /import\s*\{[\s\S]*?syncLiveSyncStatusChrome[\s\S]*?\}\s*from '\.\/lan-sync-room\.mjs'/
+    );
+    assert.match(
+      lanSyncPanel,
+      /import\s*\{[\s\S]*?resolveLanHostUrlAuto[\s\S]*?\}\s*from '\.\/lan-sync-transport\.mjs'/
+    );
+  });
+
+  it('lan-sync imports refreshClinicalSessionTeams for clinicalOps merge', () => {
+    assert.match(
+      lanSyncFeature,
+      /import\s*\{[\s\S]*?refreshClinicalSessionTeams[\s\S]*?\}\s*from "\.\.\/lan-sync-panel\.mjs"/
+    );
+    const applyBlock = lanSyncFeature.slice(
+      lanSyncFeature.indexOf('if (merged.clinicalOps && isClinicalOpsLanAvailable())'),
+      lanSyncFeature.indexOf('migrateLocalPatientsClinicalSala();', lanSyncFeature.indexOf('if (merged.clinicalOps'))
+    );
+    assert.match(applyBlock, /refreshClinicalSessionTeams\(\)/);
+  });
+
+  it('stampTodosWithEntityVersions uses liveSyncEntityStoreKey not bare todoEntityKey', () => {
+    const fnStart = lanSyncFeature.indexOf('function stampTodosWithEntityVersions');
+    assert.ok(fnStart >= 0);
+    const fnEnd = lanSyncFeature.indexOf('function rememberTodosFromMap', fnStart);
+    const body = lanSyncFeature.slice(fnStart, fnEnd > fnStart ? fnEnd : fnStart + 400);
+    assert.match(body, /liveSyncEntityStoreKey\('todo'/);
+    assert.doesNotMatch(body, /todoEntityKey\(/);
+  });
+
   it('bulk conflict button calls resolveAllConflictDraftsUseServer', () => {
     assert.match(lanSyncFeature, /resolveAllConflictDraftsUseServer/);
     assert.match(

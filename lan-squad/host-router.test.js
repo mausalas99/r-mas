@@ -352,6 +352,44 @@ test('PUT /rooms/:id/sync-bundle stale entity version returns 409', async () => 
   }
 });
 
+test('GET /patients/:id/historia-clinica reads HC from bundle.entries when no hc entity', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-hc-get-'));
+  const statePath = path.join(dir, 'state.json');
+  const code = 'test-team-' + Date.now() + '-'.repeat(20);
+  const store = createHostStore({ filePath: statePath, teamCodePlain: code });
+  const room = store.createRoom('Sala');
+  store.putRoomSyncBundle(room.id, {
+    baseRevision: 0,
+    baseEntityVersions: {},
+    agenda: [],
+    todos: {},
+    entries: [
+      {
+        patient: {
+          id: 'p1',
+          nombre: 'TEST',
+          historiaClinica: { version: 2, data: { motivoConsulta: 'cefalea' } },
+        },
+      },
+    ],
+  });
+  const app = mountLanRouter(store);
+  const server = http.createServer(app);
+  await listenServer(server);
+  try {
+    const { port } = server.address();
+    const url =
+      `http://127.0.0.1:${port}/api/lan/v1/patients/p1/historia-clinica?roomId=${encodeURIComponent(room.id)}`;
+    const res = await fetch(url, { headers: bearerHeaders(code) });
+    assert.strictEqual(res.status, 200);
+    const body = await res.json();
+    assert.strictEqual(body.version, 2);
+    assert.strictEqual(body.data.motivoConsulta, 'cefalea');
+  } finally {
+    await tearDownLanTest({ server, dir, store });
+  }
+});
+
 test('PUT /patients/:id/historia-clinica creates entity and appends audit', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lan-hc-'));
   const statePath = path.join(dir, 'state.json');

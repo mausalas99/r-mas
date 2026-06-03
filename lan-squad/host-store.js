@@ -580,11 +580,25 @@ function createHostStore({ filePath, teamCodePlain, dbManager = null, getClientI
     }
     if (type === 'historiaClinica') {
       const bundle = getRoomSyncBundle(roomId);
-      if (!bundle || !bundle.entities) return null;
-      const key = historiaClinicaEntityKey(patientId || id);
-      const rec = bundle.entities[key];
-      if (!rec || rec.deleted) return null;
-      return { version: Number(rec.version || 1), data: rec.data };
+      if (!bundle) return null;
+      const pid = String(patientId || id || '').trim();
+      const key = historiaClinicaEntityKey(pid);
+      if (bundle.entities) {
+        const rec = bundle.entities[key];
+        if (rec && !rec.deleted) {
+          return { version: Number(rec.version || 1), data: rec.data };
+        }
+      }
+      const entries = Array.isArray(bundle.entries) ? bundle.entries : [];
+      for (const ent of entries) {
+        const p = ent && ent.patient;
+        if (!p || String(p.id || '').trim() !== pid) continue;
+        const hc = p.historiaClinica;
+        if (!hc || typeof hc !== 'object') return null;
+        const data = hc.data && typeof hc.data === 'object' ? hc.data : hc;
+        return { version: Number(hc.version || 1), data };
+      }
+      return null;
     }
     return null;
   }

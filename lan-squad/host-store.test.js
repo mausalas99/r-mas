@@ -183,6 +183,37 @@ describe('host-store', () => {
     assert.strictEqual(missing, null);
   });
 
+  it('getEntity historiaClinica falls back to bundle.entries patient snapshot', () => {
+    const store = createHostStore({ filePath, teamCodePlain: 'hc-entries' });
+    const r = store.createRoom('Sala');
+    store.putRoomSyncBundle(r.id, {
+      baseRevision: 0,
+      baseEntityVersions: {},
+      agenda: [],
+      todos: {},
+      entries: [
+        {
+          patient: {
+            id: 'p1',
+            nombre: 'TEST',
+            historiaClinica: {
+              version: 3,
+              data: { motivoConsulta: 'dolor', meta: { updatedAt: '2026-06-01T10:00:00.000Z' } },
+            },
+          },
+        },
+      ],
+    });
+    const got = store.getEntity({
+      roomId: r.id,
+      entityType: 'historiaClinica',
+      entityId: 'p1',
+      patientId: 'p1',
+    });
+    assert.strictEqual(got.version, 3);
+    assert.strictEqual(got.data.motivoConsulta, 'dolor');
+  });
+
   it('putRoomSyncBundle persiste manejo', () => {
     const store = createHostStore({ filePath, teamCodePlain: 'b' });
     const r = store.createRoom('Sala');

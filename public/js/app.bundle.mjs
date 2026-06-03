@@ -10708,7 +10708,7 @@ function compareIso(a, b) {
 function agendaEntityKey(id) {
   return "a:" + String(id || "");
 }
-function todoEntityKey2(patientId, id) {
+function todoEntityKey(patientId, id) {
   return "t:" + String(patientId || "") + ":" + String(id || "");
 }
 function patientEntityKey(id, registro) {
@@ -10775,7 +10775,7 @@ function mergeLiveSyncBundles(sources) {
   }
   function upsertTodo(patientId, item, deleted, entityVersion, updatedAt, src) {
     if (!item || !item.id || isDemoPatientId(patientId)) return;
-    const k = todoEntityKey2(patientId, item.id);
+    const k = todoEntityKey(patientId, item.id);
     const ver = entityVersion != null ? entityVersion : versionFromSource(src, k) ?? (item.version != null ? Number(item.version) : null);
     const at = String(updatedAt || item.updatedAt || item.createdAt || "");
     const cur = todos.get(k);
@@ -10838,7 +10838,7 @@ function mergeLiveSyncBundles(sources) {
       const pid = String(patch.patientId || "");
       if (pid) todoTouchedPatientIds.add(pid);
       if (patch.op === "delete") {
-        const k = todoEntityKey2(pid, patch.id);
+        const k = todoEntityKey(pid, patch.id);
         const cur = todos.get(k);
         if (shouldAcceptEntry(cur, patchVer, at)) {
           todos.set(k, {
@@ -10974,7 +10974,7 @@ function collectKeysFromEnvelope(envelope) {
   for (const pid of Object.keys(todos)) {
     const arr = Array.isArray(todos[pid]) ? todos[pid] : [];
     for (const t2 of arr) {
-      if (t2 && t2.id) keys.add(todoEntityKey2(pid, t2.id));
+      if (t2 && t2.id) keys.add(todoEntityKey(pid, t2.id));
     }
   }
   if (envelope.manejo && typeof envelope.manejo === "object") keys.add("manejo");
@@ -13975,7 +13975,7 @@ async function resolveLanShareBaseUrl() {
 function buildShareJoinUrl(hostUrl, ticketId) {
   return buildLanJoinUrls(hostUrl, ticketId).joinUrl;
 }
-async function resolveLanHostUrlAuto2() {
+async function resolveLanHostUrlAuto() {
   var shareUrl = await resolveLanShareBaseUrl();
   if (shareUrl) return shareUrl;
   var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
@@ -14002,7 +14002,7 @@ async function ensureLanElectronHostReady(opts) {
   await syncLanSavedTeamCodeWithEffectiveHostCode();
   var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
   var url = opts.forceLocal ? "" : String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
-  var autoUrl = await resolveLanHostUrlAuto2();
+  var autoUrl = await resolveLanHostUrlAuto();
   var bearer = await resolveHostBearerToken();
   if (!bearer) return false;
   if (url) {
@@ -14563,7 +14563,7 @@ async function resolveSelfLanAdvertiseHostUrl() {
   var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
   var fromCfg = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
   if (fromCfg) return fromCfg;
-  return resolveLanHostUrlAuto2();
+  return resolveLanHostUrlAuto();
 }
 function buildLiveSyncHelloPayload(roomId) {
   var rid = String(roomId || "").trim();
@@ -14631,7 +14631,7 @@ async function tryReconnectLanToHostUrl(hostUrl, teamCode) {
     await syncLiveSyncAfterRoomJoin(rid);
     startLiveSyncReconnectLoop();
   }
-  syncLiveSyncStatusChrome2();
+  syncLiveSyncStatusChrome();
   bridge2().patchLanPanelJoinButtons();
   return true;
 }
@@ -14642,7 +14642,7 @@ async function promoteSelfToSurrogateHost() {
   var cfg = typeof storage.getLanConfig === "function" ? storage.getLanConfig() || {} : {};
   var formerUrl = String(cfg.hostUrl || "").trim().replace(/\/+$/, "");
   var formerCode = getLanTeamCodeFromConfig();
-  var localUrl = await resolveLanHostUrlAuto2();
+  var localUrl = await resolveLanHostUrlAuto();
   if (!localUrl) return false;
   if (formerUrl && await pingLanHostUrl(formerUrl, formerCode)) return false;
   setSurrogateHostState({
@@ -14844,7 +14844,7 @@ function applyRoomSyncPhaseAfterReconcile(roomId) {
     setRoomSyncPhase(rid, RoomSyncPhase.offline);
   }
 }
-function syncLiveSyncStatusChrome2() {
+function syncLiveSyncStatusChrome() {
   var el = document.getElementById("lan-livesync-status");
   if (!el) return;
   if (!activeLiveSyncRoomId) {
@@ -14895,12 +14895,12 @@ function startLiveSyncReconnectLoop() {
           return flushLiveSyncOutbox(mem.roomId);
         });
       }
-      syncLiveSyncStatusChrome2();
+      syncLiveSyncStatusChrome();
       scheduleReconnect();
       return;
     }
     if (typeof lanClient.isLiveChannelBusy === "function" && lanClient.isLiveChannelBusy(mem.roomId)) {
-      syncLiveSyncStatusChrome2();
+      syncLiveSyncStatusChrome();
       scheduleReconnect();
       return;
     }
@@ -14914,7 +14914,7 @@ function startLiveSyncReconnectLoop() {
     }
     _liveSyncReconnectAttempt += 1;
     if (_liveSyncReconnectAttempt >= 3) scheduleSurrogateFailoverCheck();
-    syncLiveSyncStatusChrome2();
+    syncLiveSyncStatusChrome();
     scheduleReconnect();
   }
   function scheduleReconnect() {
@@ -14943,7 +14943,7 @@ function bootLanRoomMembership() {
     if (!getRoomMembership()) return;
     _liveSyncSessionResyncDone = true;
     startLiveSyncReconnectLoop();
-    syncLiveSyncStatusChrome2();
+    syncLiveSyncStatusChrome();
   })();
 }
 function onLiveSyncWireMessage(data) {
@@ -15077,7 +15077,7 @@ function syncLiveSyncAfterRoomJoin(roomId) {
         }
       });
     }
-    syncLiveSyncStatusChrome2();
+    syncLiveSyncStatusChrome();
     runtime4().renderProcedureAgendaPanel();
     runtime4().refreshAllTodoUIs();
     runtime4().renderPatientList();
@@ -15112,7 +15112,7 @@ function leaveLiveSyncRoom(opts) {
   _liveSyncSessionResyncDone = false;
   stopLiveSyncReconnectLoop();
   lanClient.disconnectLiveChannel();
-  syncLiveSyncStatusChrome2();
+  syncLiveSyncStatusChrome();
   bridge2().patchLanPanelJoinButtons();
   if (typeof renderLanPanel === "function") bridge2().renderLanPanel();
 }
@@ -15144,7 +15144,7 @@ async function joinLanRoom(roomId, displayName) {
     setRoomSyncPhase(id, RoomSyncPhase.joining);
     syncLiveSyncAfterRoomJoin(id);
     _liveSyncSessionResyncDone = true;
-    syncLiveSyncStatusChrome2();
+    syncLiveSyncStatusChrome();
     bridge2().patchLanPanelJoinButtons();
     runtime4().showToast("Ya est\xE1s en esta sala", "success");
     return;
@@ -15154,7 +15154,7 @@ async function joinLanRoom(roomId, displayName) {
   }
   setActiveLiveSyncRoom(id, displayName != null ? String(displayName) : id);
   setRoomSyncPhase(id, RoomSyncPhase.joining);
-  syncLiveSyncStatusChrome2();
+  syncLiveSyncStatusChrome();
   try {
     if (!lanClient.connected) {
       try {
@@ -15174,13 +15174,13 @@ async function joinLanRoom(roomId, displayName) {
     return;
   }
   runtime4().showToast("Sala: sincronizando expediente, agenda y pendientes", "success");
-  syncLiveSyncStatusChrome2();
+  syncLiveSyncStatusChrome();
   bridge2().patchLanPanelJoinButtons();
   await waitForLiveChannelOpen(id, 5e3);
   await syncLiveSyncAfterRoomJoin(id);
   applyRoomSyncPhaseAfterReconcile(id);
   _liveSyncSessionResyncDone = true;
-  syncLiveSyncStatusChrome2();
+  syncLiveSyncStatusChrome();
 }
 function registerLanSyncRoomWireHandlers() {
   lanClient.addEventListener("lan-live", function(ev) {
@@ -15201,7 +15201,7 @@ function registerLanSyncRoomWireHandlers() {
       startLiveSyncReconnectLoop();
       if (!lanClient.connected) scheduleSurrogateFailoverCheck();
     }
-    syncLiveSyncStatusChrome2();
+    syncLiveSyncStatusChrome();
   });
   lanClient.addEventListener("lan-status", function(ev) {
     if (!ev.detail || ev.detail.connected) return;
@@ -17651,7 +17651,7 @@ function wireClinicalOpsLanSyncEvents() {
   if (!document._rpcClinicalOpsSyncedLanWired) {
     document._rpcClinicalOpsSyncedLanWired = true;
     document.addEventListener("rpc-clinical-ops-synced", function() {
-      void refreshClinicalSessionTeams2().then(function() {
+      void refreshClinicalSessionTeams().then(function() {
         renderLanPanel2();
       });
     });
@@ -18266,10 +18266,10 @@ async function joinClinicalTeam(teamId) {
   }
   runtime5().showToast("Unido al equipo.", "success");
   document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
-  await refreshClinicalSessionTeams2();
+  await refreshClinicalSessionTeams();
   renderLanPanel2();
 }
-async function refreshClinicalSessionTeams2() {
+async function refreshClinicalSessionTeams() {
   var api3 = typeof window !== "undefined" ? window.rplusDb || window.electronAPI : null;
   if (!api3) return;
   if (typeof api3.dbClinicalScopeContext === "function") {
@@ -18988,7 +18988,7 @@ function stampTodosWithEntityVersions(todosMap, entityVersions) {
   Object.keys(todosMap || {}).forEach(function(pid) {
     out[pid] = (todosMap[pid] || []).map(function(t2) {
       if (!t2 || !t2.id) return t2;
-      var key = todoEntityKey(pid, t2.id);
+      var key = liveSyncEntityStoreKey("todo", t2.id, pid);
       if (versions[key] == null) return t2;
       return Object.assign({}, t2, { version: Number(versions[key]) });
     });
@@ -19200,7 +19200,7 @@ async function resolveAllConflictDraftsUseServer() {
     }
     setTimeout(function() {
       void renderLanPanel2();
-      syncLiveSyncStatusChrome2();
+      syncLiveSyncStatusChrome();
     }, 0);
     runtime6.showToast(
       applied ? "Se eliminaron " + cleared + " borradores y se aline\xF3 la sala con el servidor (revisi\xF3n y equipos)." : "Se eliminaron " + cleared + " borradores. Revisa la conexi\xF3n LAN si la sala no se actualiz\xF3.",
@@ -20309,7 +20309,7 @@ var init_lan_sync = __esm({
       applyLiveSyncMerged,
       applyRoomSyncPhaseAfterReconcile,
       fetchAndApplyClinicalOpsFromHost,
-      syncLiveSyncStatusChrome: syncLiveSyncStatusChrome2,
+      syncLiveSyncStatusChrome,
       isLanConflictViewerSuppressed,
       shouldDeferLanConflictModal,
       markDeferredConflictToastShown,
@@ -20332,7 +20332,7 @@ var init_lan_sync = __esm({
       void handleSyncConflict(wsConflictDetailToPayload(ev.detail));
     });
     lanClient.addEventListener("lan-patch", function() {
-      syncLiveSyncStatusChrome2();
+      syncLiveSyncStatusChrome();
     });
     if (typeof document !== "undefined") {
       initLanClientFromStorage();
@@ -66707,6 +66707,8 @@ async function handleMyCycleSubmit(ev, form) {
     return;
   }
   toast3("Ciclo actualizado.", "success");
+  document.dispatchEvent(new CustomEvent("rpc-clinical-teams-changed"));
+  await publishClinicalTeamsToLan();
   await refreshTeamsUiAfterChange();
 }
 async function resolveTeamIdForInviteInput(codeOrId) {

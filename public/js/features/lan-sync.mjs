@@ -123,6 +123,7 @@ import {
   syncSettingsLanHostDiskSection,
   syncLanHostTeamCodeSettingsInput,
   registerLanSyncPanelRuntime,
+  refreshClinicalSessionTeams,
 } from "../lan-sync-panel.mjs";
 
 
@@ -244,7 +245,7 @@ function stampTodosWithEntityVersions(todosMap, entityVersions) {
   Object.keys(todosMap || {}).forEach(function (pid) {
     out[pid] = (todosMap[pid] || []).map(function (t) {
       if (!t || !t.id) return t;
-      var key = todoEntityKey(pid, t.id);
+      var key = liveSyncEntityStoreKey('todo', t.id, pid);
       if (versions[key] == null) return t;
       return Object.assign({}, t, { version: Number(versions[key]) });
     });
