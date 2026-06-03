@@ -891,6 +891,8 @@ async function appendLanConflictDraftsSection(root) {
   } catch (_eList) {
     draftCount = 0;
   }
+  if (!draftCount) return;
+
   var prev = root.querySelector('#lan-conflict-drafts-card');
   if (prev) prev.remove();
 
@@ -900,97 +902,53 @@ async function appendLanConflictDraftsSection(root) {
 
   var title = document.createElement('div');
   title.className = 'lan-connect-card-title';
-  title.textContent = 'Borradores de conflicto (' + draftCount + ')';
+  title.textContent = 'Conflictos antiguos';
   card.appendChild(title);
 
-  if (!draftCount) {
-    var empty = document.createElement('p');
-    empty.className = 'lan-connect-card-hint';
-    empty.textContent =
-      'No hay borradores guardados. Un conflicto puede bloquear la cola aun sin borrador; revisa Estado de sincronización.';
-    card.appendChild(empty);
-  } else {
-    var bulkRow = document.createElement('div');
-    bulkRow.className = 'lan-connect-actions-row';
-    bulkRow.style.marginTop = '4px';
-    var bulkBtn = document.createElement('button');
-    bulkBtn.type = 'button';
-    bulkBtn.className = 'btn-lan-primary';
-    bulkBtn.style.flex = '1';
-    bulkBtn.textContent = 'Usar servidor para todos y limpiar';
-    bulkBtn.onclick = function () {
-      if (
-        typeof confirm === 'function' &&
-        !confirm(
-          '¿Descartar los ' +
-            draftCount +
-            ' borradores y alinear con el servidor? Se vacía la cola local y se pausan reintentos automáticos un momento.'
-        )
-      ) {
-        return;
-      }
-      bulkBtn.disabled = true;
-      bulkBtn.textContent = 'Limpiando…';
-      void resolveAllConflictDraftsUseServer().finally(function () {
-        bulkBtn.disabled = false;
-        bulkBtn.textContent = 'Usar servidor para todos y limpiar';
-      });
-    };
-    bulkRow.appendChild(bulkBtn);
-    card.appendChild(bulkRow);
+  var hint = document.createElement('p');
+  hint.className = 'lan-connect-card-hint';
+  hint.textContent =
+    draftCount +
+    ' borrador(es) de conflictos anteriores. La sala ya resuelve cambios concurrentes automáticamente.';
+  card.appendChild(hint);
 
-    var hint = document.createElement('p');
-    hint.className = 'lan-connect-card-hint';
-    hint.textContent =
-      draftCount > 15
-        ? 'Hay muchos borradores duplicados (conflictos clinicalOps). Usa el botón de arriba; no hace falta abrirlos uno por uno.'
-        : 'Toca un borrador para volver a abrir el comparador y resolver el conflicto.';
-    card.appendChild(hint);
-
-    if (draftCount > 15) {
-      root.appendChild(card);
+  var bulkRow = document.createElement('div');
+  bulkRow.className = 'lan-connect-actions-row';
+  bulkRow.style.marginTop = '4px';
+  var bulkBtn = document.createElement('button');
+  bulkBtn.type = 'button';
+  bulkBtn.className = 'btn-lan-primary';
+  bulkBtn.style.flex = '1';
+  bulkBtn.textContent = 'Descartar todos';
+  bulkBtn.onclick = function () {
+    if (
+      typeof confirm === 'function' &&
+      !confirm('¿Descartar los ' + draftCount + ' borradores de conflicto antiguos?')
+    ) {
       return;
     }
-
-    var drafts = [];
-    try {
-      drafts = await listDraftConflicts();
-    } catch (_eLoad) {
-      drafts = [];
-    }
-    var list = document.createElement('ul');
-    list.style.listStyle = 'none';
-    list.style.padding = '0';
-    list.style.margin = '8px 0 0';
-    list.style.maxHeight = '240px';
-    list.style.overflowY = 'auto';
-    var DRAFT_LIST_CAP = 15;
-    drafts.slice(0, DRAFT_LIST_CAP).forEach(function (draft) {
-      if (!draft || !draft.id) return;
-      var li = document.createElement('li');
-      li.style.marginBottom = '6px';
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'btn-lan-secondary';
-      btn.style.width = '100%';
-      btn.style.textAlign = 'left';
-      btn.textContent = formatConflictDraftLabel(draft);
-      btn.addEventListener('click', function () {
-        void reopenConflictDraftFromStore(draft.id);
+    bulkBtn.disabled = true;
+    bulkBtn.textContent = 'Descartando…';
+    void clearAllDraftConflicts()
+      .then(function (cleared) {
+        runtime.showToast(
+          cleared
+            ? 'Se descartaron ' + cleared + ' conflictos antiguos.'
+            : 'No había borradores que descartar.',
+          cleared ? 'success' : 'info'
+        );
+      })
+      .catch(function () {
+        runtime.showToast('No se pudieron descartar los borradores.', 'error');
+      })
+      .finally(function () {
+        bulkBtn.disabled = false;
+        bulkBtn.textContent = 'Descartar todos';
+        void renderLanPanel();
       });
-      li.appendChild(btn);
-      list.appendChild(li);
-    });
-    card.appendChild(list);
-    if (drafts.length > DRAFT_LIST_CAP) {
-      var more = document.createElement('p');
-      more.className = 'lan-connect-card-hint';
-      more.style.marginTop = '6px';
-      more.textContent =
-        '… y ' + (drafts.length - DRAFT_LIST_CAP) + ' borradores más.';
-      card.appendChild(more);
-    }
-  }
+  };
+  bulkRow.appendChild(bulkBtn);
+  card.appendChild(bulkRow);
   root.appendChild(card);
 }
 

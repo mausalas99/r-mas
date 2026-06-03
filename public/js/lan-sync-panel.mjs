@@ -252,6 +252,32 @@ export function syncLanDisconnectBannerPrefUi() {
   if (cb) cb.checked = readLanHideDisconnectBanner();
 }
 
+function readLanLwwOverwriteToast() {
+  return typeof storage.getLanLwwOverwriteToast === 'function' && storage.getLanLwwOverwriteToast();
+}
+
+export function syncLanLwwOverwriteToastPrefUi() {
+  var cb = document.getElementById('settings-lan-lww-toast');
+  if (cb) cb.checked = readLanLwwOverwriteToast();
+}
+
+export function setLanLwwOverwriteToastFromUi(enabled) {
+  if (typeof storage.setLanLwwOverwriteToast === 'function') {
+    storage.setLanLwwOverwriteToast(!!enabled);
+  }
+}
+
+var _lanLwwToastPrefWired = false;
+function wireLanLwwToastPref() {
+  if (_lanLwwToastPrefWired) return;
+  var cb = document.getElementById('settings-lan-lww-toast');
+  if (!cb) return;
+  _lanLwwToastPrefWired = true;
+  cb.addEventListener('change', function () {
+    setLanLwwOverwriteToastFromUi(cb.checked);
+  });
+}
+
 export function dismissLanDisconnectBanner() {
   if (typeof storage.saveLanHideDisconnectBanner === 'function') {
     storage.saveLanHideDisconnectBanner(true);
@@ -1736,6 +1762,8 @@ export function openConnectionDropdown() {
   var syncBtn = document.getElementById('btn-header-team-sync');
   if (syncBtn) syncBtn.setAttribute('aria-expanded', 'true');
   wireLanPanelDelegation();
+  wireLanLwwToastPref();
+  syncLanLwwOverwriteToastPrefUi();
   renderLanPanel();
 }
 
