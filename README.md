@@ -27,10 +27,19 @@ Instalación silenciosa (`/S`) y códigos de salida del instalador NSIS: [`docs/
 
 ---
 
-**Versión estable actual:** [6.6.0](https://github.com/mausalas99/r-mas/releases/tag/v6.6.0) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
+**Versión estable actual:** [6.6.1](https://github.com/mausalas99/r-mas/releases/tag/v6.6.1) — en *Releases* verás siempre el instalador más reciente con el número de versión en el nombre del archivo.
 
 ---
 
+
+## R+ 6.6.1 (LiveSync LAN — fiabilidad Phases 0–3)
+
+- **LiveSync** — Push HTTP principal; avisos `livesync:revision`; cola offline SQL (schema v9); endpoint `clinical-ops`; menos drops WS al guardar @usuario.
+- **⇄ operación** — Anfitrión fijado, panel de diagnóstico, confirmación antes de auto-unir sala inferida.
+- **Host** — `clinicalOps` en SQLCipher del anfitrión cuando DB desbloqueada; merges centralizados.
+- **Turno homogéneo** — **Todas** las estaciones en **6.6.1** el mismo día; no mezclar con 6.6.0 en guardia.
+
+Notas: `docs/RELEASE_NOTES_6.6.1.txt` · Riesgos LiveSync: `docs/LAN_SYNC_6.6.1_RISK_ANALYSIS.md`.
 
 ## R+ 6.6.0 (LAN sin bloqueo @usuario, iPad y labs)
 

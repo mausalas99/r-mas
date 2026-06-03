@@ -1956,6 +1956,23 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '6.6.1': [
+    {
+      title: 'LiveSync más fiable',
+      body:
+        'El censo y datos de sala se publican por <strong>HTTP</strong> con menos bundles duplicados por Wi‑Fi. La cola offline vive en la <strong>base cifrada</strong> cuando está desbloqueada. Al guardar <strong>@usuario</strong> ya no se corta el WebSocket en vivo.',
+    },
+    {
+      title: '⇄ diagnóstico y anfitrión',
+      body:
+        'Panel <strong>Estado de sincronización</strong> en ⇄. Puedes <strong>fijar el anfitrión</strong> del turno. Si la sala solo se infiere de Ajustes, R+ pide confirmación antes de unirte.',
+    },
+    {
+      title: 'Actualiza todo el turno',
+      body:
+        'Instala <strong>6.6.1 en todas</strong> las Macs y PCs del turno el mismo día. No mezcles <strong>6.6.0</strong> y <strong>6.6.1</strong> en la misma guardia — el censo puede no verse en equipos viejos.',
+    },
+  ],
   '6.6.0': [
     {
       title: '@usuario sin depender de ⇄',
