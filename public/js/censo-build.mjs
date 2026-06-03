@@ -10,6 +10,7 @@ import {
 import { formatCultivosForCenso } from './censo-cultivo-format.mjs';
 import { formatAccesosForCenso } from './patient-accesos.mjs';
 import { buildCensoDocumentHeader, resolveCensoEquipoMembers } from './censo-header-format.mjs';
+import { formatCensoSignosIoFromPatient } from './censo-signos-format.mjs';
 
 /** @param {Date} [date] */
 export function formatCensusMonthLabel(date) {
@@ -83,9 +84,13 @@ function buildPatientSections(patient, ctx) {
     sections.push({ label: 'ATB / Medicamentos', lines: medLines });
   }
 
-  var signos = formatSignosCell(patient);
-  if (signos) {
-    sections.push({ label: 'Signos / Estado actual', lines: [signos] });
+  var signosIo = formatCensoSignosIoFromPatient(patient);
+  if (signosIo.signosCol || signosIo.ioCol) {
+    /** @type {string[]} */
+    var signosLines = [];
+    if (signosIo.signosCol) signosLines.push(signosIo.signosCol);
+    if (signosIo.ioCol) signosLines.push(signosIo.ioCol);
+    sections.push({ label: 'Signos / I-O', lines: signosLines });
   }
 
   var labLines = formatLabsForCensoCompact(ctx.labHistoryByPatient[pid] || []);
@@ -113,11 +118,11 @@ function buildPatientSections(patient, ctx) {
     });
   }
 
-  return sections;
+  return { sections: sections, signosIo: signosIo };
 }
 
-/** @param {Record<string, unknown>} patient @param {ReturnType<typeof buildPatientSections>} sections */
-function flattenRowForCompactPdf(patient, sections) {
+/** @param {Array<{ label: string, lines: string[] }>} sections */
+function flattenRowForCompactPdf(sections) {
   var pick = function (label) {
     var sec = sections.find(function (s) {
       return s.label === label;
@@ -127,7 +132,9 @@ function flattenRowForCompactPdf(patient, sections) {
   return {
     dx: pick('Diagnósticos'),
     meds: pick('ATB / Medicamentos'),
-    signos: pick('Signos / Estado actual'),
+    signos: pick('Signos / I-O'),
+    signosCol: '',
+    ioCol: '',
     labs: pick('Laboratorios'),
     accesos: pick('Accesos'),
     cultivos: pick('Cultivos'),
@@ -137,13 +144,6 @@ function flattenRowForCompactPdf(patient, sections) {
 
 function formatAccesosCell(patient) {
   return formatAccesosForCenso(patient);
-}
-
-function formatSignosCell(patient) {
-  var mon = patient.monitoreo;
-  var tg = mon && mon.textoGuardado;
-  var texto = tg && tg.texto != null ? String(tg.texto) : '';
-  return texto.replace(/\s+/g, ' ').trim();
 }
 
 function formatPendientesCell(todos) {
@@ -306,17 +306,19 @@ export function buildCensusPayload(opts) {
   var rows = sorted.map(function (patient, idx) {
     ensurePatientDiagnosticos(patient);
     var cama = formatCamaCellForCenso(patient);
-    var sections = buildPatientSections(patient, ctx);
-    var flat = flattenRowForCompactPdf(patient, sections);
+    var built = buildPatientSections(patient, ctx);
+    var flat = flattenRowForCompactPdf(built.sections);
     return {
       num: String(idx + 1),
       cama: cama,
       pacienteNombre: abbreviatePatientNameToInitials(patient.nombre),
       pacienteMeta: formatPacienteMetaForCenso(patient, settings),
-      sections: sections,
+      sections: built.sections,
       dx: flat.dx,
       meds: flat.meds,
       signos: flat.signos,
+      signosCol: built.signosIo.signosCol,
+      ioCol: built.signosIo.ioCol,
       labs: flat.labs,
       accesos: flat.accesos,
       cultivos: flat.cultivos,

@@ -1,11 +1,36 @@
 /** Mobile /join/:ticketId — exchange ticket, persist Bearer, clean URL. */
 
+import { resolveLanJoinHostUrl } from './lan-join-link.mjs';
+
 const BEARER_KEY = 'rplus.lan.bearer';
 const HOST_KEY = 'rplus.lan.hostUrl';
+const LAN_CONFIG_KEY = 'rpc-lan-config';
 
 function ticketIdFromPath() {
   const m = String(location.pathname || '').match(/\/join\/(req_[a-f0-9]{12})\/?$/i);
   return m ? m[1] : '';
+}
+
+export function persistLanJoinCredentials(hostUrl, token) {
+  const url = String(hostUrl || '')
+    .trim()
+    .replace(/\/+$/, '');
+  const bearer = String(token || '').trim();
+  if (bearer) {
+    try {
+      localStorage.setItem(BEARER_KEY, bearer);
+    } catch (_e) {}
+  }
+  if (url) {
+    try {
+      localStorage.setItem(HOST_KEY, url);
+    } catch (_eHost) {}
+  }
+  if (url && bearer) {
+    try {
+      localStorage.setItem(LAN_CONFIG_KEY, JSON.stringify({ hostUrl: url, teamCode: bearer }));
+    } catch (_eCfg) {}
+  }
 }
 
 export async function runJoinTicketExchange(ticketId) {
@@ -16,10 +41,14 @@ export async function runJoinTicketExchange(ticketId) {
   });
   if (!res.ok) throw new Error('join_failed');
   const data = await res.json();
-  if (data.token) localStorage.setItem(BEARER_KEY, data.token);
-  if (data.hostUrl) localStorage.setItem(HOST_KEY, data.hostUrl);
+  const hostUrl =
+    resolveLanJoinHostUrl(data.hostUrl, location.origin) ||
+    `${location.protocol}//${location.host}`;
+  persistLanJoinCredentials(hostUrl, data.token);
+  const params = new URLSearchParams(location.search);
+  params.set('rpc-mobile', '1');
   history.replaceState({}, '', '/mobile');
-  location.replace('/mobile/?rpc-mobile=1');
+  location.replace('/mobile/?' + params.toString());
 }
 
 const ticketId = ticketIdFromPath();

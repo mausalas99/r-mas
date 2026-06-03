@@ -117,6 +117,24 @@ function wireRegistrationFormOnce() {
 
     const safeRank = RANKS.includes(rank) ? rank : 'R1';
     let savedUserId = String(settings.clinicalUserId || '');
+
+    const {
+      applyPendingLanInviteFromPage,
+      assertLanRoomForUsernameRegister,
+      flushClinicalProfileToLan,
+      LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG,
+      LAN_PROFILE_PUSH_FAILED_MSG,
+    } = await import('../clinical-profile-lan-sync.mjs');
+    await applyPendingLanInviteFromPage();
+    const lanGate = await assertLanRoomForUsernameRegister();
+    if (!lanGate.allowed) {
+      if (errEl) {
+        errEl.textContent = LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG;
+        errEl.hidden = false;
+      }
+      return;
+    }
+
     const api = dbApi();
     if (api && typeof api.dbClinicalAccessBootstrap === 'function') {
       try {
@@ -183,6 +201,11 @@ function wireRegistrationFormOnce() {
     });
 
     if (errEl) errEl.hidden = true;
+    const lanPush = await flushClinicalProfileToLan();
+    if (!lanPush.ok && lanPush.code !== 'NO_LAN' && errEl) {
+      errEl.textContent = LAN_PROFILE_PUSH_FAILED_MSG;
+      errEl.hidden = false;
+    }
     closeClinicalRegistrationModal();
     const params = new URLSearchParams(window.location.search);
     const host = params.get('host') || '';

@@ -290,4 +290,28 @@ describe('storage SQLCipher db mode', () => {
     assert.strictEqual(store['rpc-patients'], undefined);
     assert.deepStrictEqual(storage.getPatients(), [{ id: 'p-save', nombre: 'Persist' }]);
   });
+
+  it('saveTodos updates blob cache and persists todos in db mode', async () => {
+    ipcBlobs.todos = JSON.stringify({});
+    await ensureStorageHydrated();
+    storage.saveTodos('p1', [
+      {
+        id: 't1',
+        text: 'Reposición',
+        completed: false,
+        priority: 'alta',
+        createdAt: '2026-06-03T12:00:00.000Z',
+        updatedAt: '2026-06-03T12:00:00.000Z',
+      },
+    ]);
+    assert.strictEqual(storage.getTodos('p1').length, 1);
+    assert.strictEqual(storage.getTodos('p1')[0].text, 'Reposición');
+    assert.strictEqual(store['rpc-todos'], undefined);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.ok(lastSavePayload);
+    assert.strictEqual(lastSavePayload.auditMeta.eventType, 'clinical.todos_save');
+    const saved = JSON.parse(lastSavePayload.blobs.todos);
+    assert.strictEqual(saved.p1.length, 1);
+    assert.strictEqual(saved.p1[0].id, 't1');
+  });
 });

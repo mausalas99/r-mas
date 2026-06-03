@@ -759,7 +759,7 @@ async function renderClinicalTeamsPanelInto(host) {
 
   const lanDirectoryNote = canViewLanUsers
     ? ''
-    : `<p class="clinical-teams-lan-directory-note">El directorio completo de usuarios LAN lo abren <strong>R4</strong>, <strong>Admin</strong> o quien tenga <strong>privilegios de administración</strong>. Tu @usuario se sincroniza al guardar perfil y usar la sala en vivo (⇄).</p>`;
+    : `<p class="clinical-teams-lan-directory-note">El directorio completo de usuarios LAN lo abren <strong>R4</strong>, <strong>Admin</strong> o quien tenga <strong>privilegios de administración</strong>. Al registrar <strong>@usuario</strong> debes tener la sala <strong>⇄</strong> activa (o haberte unido con invitación); R+ publica tu perfil al guardar.</p>`;
 
   const profileHandleBanner = displayHandle
     ? `<p class="clinical-teams-profile-handle">Visible en la red como <strong>@${escapeHtml(displayHandle)}</strong></p>`
@@ -1022,7 +1022,11 @@ function formatLanCycleOptionLabel(letter, userRank) {
 /** @param {object} u @param {object[]} teamList */
 function renderLanUserRowHtml(u, teamList) {
   const userId = escapeAttr(String(u.user_id || ''));
-  const handle = escapeHtml(normalizeUsername(u.username || ''));
+  const rawHandle = normalizeUsername(u.username || '');
+  const handleValid = isValidUsernameFormat(rawHandle) && !u.lanDirectoryPending;
+  const handleCell = handleValid
+    ? `<span class="clinical-lan-users-handle">@${escapeHtml(rawHandle)}</span>`
+    : `<span class="clinical-lan-users-handle clinical-lan-users-handle--pending" title="Falta registrar @usuario en Mi rotación">sin @usuario</span>`;
   const name = escapeHtml(String(u.clinical_name || '').trim() || 'Sin nombre');
   const rankRaw = escapeAttr(String(u.rank || 'R1'));
   const salaLabel = escapeHtml(String(u.sala || '').trim() || '—');
@@ -1035,7 +1039,7 @@ function renderLanUserRowHtml(u, teamList) {
 
   return `<tr class="clinical-lan-user-row" data-user-id="${userId}" data-user-rank="${rankRaw}" data-preferred-cycle="${escapeAttr(placement?.cycle || '')}">
     <td class="clinical-lan-users-col-handle">
-      <span class="clinical-lan-users-handle">@${handle}</span>
+      ${handleCell}
     </td>
     <td class="clinical-lan-users-col-name">
       <span class="clinical-lan-users-name" title="${name}">${name}</span>
@@ -1066,7 +1070,7 @@ function renderLanUsersModalBodyHtml(users, teams) {
   const teamList = Array.isArray(teams) ? teams : [];
 
   if (!list.length) {
-    return `<p class="clinical-teams-empty">Aún no hay usuarios LAN en esta base. Se sincronizan al guardar perfil y conectar la sala en vivo (⇄).</p>`;
+    return `<p class="clinical-teams-empty">Aún no hay otros usuarios en esta Mac. Pide a tus compañeros que guarden <strong>Mi rotación → Guardar perfil</strong> con su @usuario y que estén en la misma sala <strong>⇄</strong> (sincronización en vivo).</p>`;
   }
 
   const { groups, other } = groupLanUsersByRank(list);
@@ -1117,7 +1121,7 @@ function renderLanUsersModalBodyHtml(users, teams) {
     : '<p class="clinical-teams-empty">Crea un equipo vacío en Mi rotación para poder asignar residentes.</p>';
 
   return `
-    <p class="clinical-lan-users-modal-lead">${list.length} usuario${list.length === 1 ? '' : 's'} · asigna a equipos vacíos o existentes.</p>
+    <p class="clinical-lan-users-modal-lead">${list.length} usuario${list.length === 1 ? '' : 's'} · <strong>todas las salas</strong> en esta Mac (no filtra por tu sala). Asigna a cualquier equipo activo.</p>
     ${teamsHint}
     <div class="clinical-lan-rank-groups">${rankSections}${otherSection}</div>`;
 }
@@ -1224,21 +1228,12 @@ async function handleLanAssignButtonClick(btn) {
   await openLanUsersDirectoryModal();
 }
 
-export async function openLanUsersDirectoryModal() {
-  const user = clinicalSessionContext.user || {};
-  if (!canViewLanUserDirectory(user)) return;
-
-  const bd = lanUsersModalBackdropEl();
-  const host = lanUsersModalBodyEl();
-  if (!bd || !host) return;
-
-  host.innerHTML = '<p class="clinical-teams-empty">Cargando directorio…</p>';
-  bd.classList.add('open');
-  bd.setAttribute('aria-hidden', 'false');
-
+/** @param {HTMLElement} host */
+async function loadLanUsersDirectoryIntoHost(host) {
   const api = dbApi();
   if (!api || typeof api.dbClinicalUsersList !== 'function') {
-    host.innerHTML = '<p class="clinical-teams-empty">Directorio no disponible.</p>';
+    host.innerHTML =
+      '<p class="clinical-teams-empty">Directorio solo en la app de escritorio R+ (base clínica desbloqueada). En iPad/móvil usa el censo LAN; Mi rotación con directorio requiere Mac.</p>';
     return;
   }
 
@@ -1264,6 +1259,46 @@ export async function openLanUsersDirectoryModal() {
     const n = Array.isArray(usersRes.users) ? usersRes.users.length : 0;
     title.textContent = `Directorio de usuarios LAN (${n})`;
   }
+}
+
+function backgroundRefreshLanUsersDirectory() {
+  void import('./lan-sync.mjs')
+    .then((lanMod) => {
+      if (typeof lanMod.refreshLanClinicalDirectoryFromRoom !== 'function') return false;
+      return lanMod.refreshLanClinicalDirectoryFromRoom({ timeoutMs: 5000 });
+    })
+    .then((refreshed) => {
+      if (!refreshed) return;
+      const host = lanUsersModalBodyEl();
+      const bd = lanUsersModalBackdropEl();
+      if (!host || !bd?.classList.contains('open')) return;
+      return loadLanUsersDirectoryIntoHost(host);
+    })
+    .catch(() => {});
+}
+
+export async function openLanUsersDirectoryModal() {
+  const user = clinicalSessionContext.user || {};
+  if (!canViewLanUserDirectory(user)) return;
+
+  const bd = lanUsersModalBackdropEl();
+  const host = lanUsersModalBodyEl();
+  if (!bd || !host) return;
+
+  host.innerHTML = '<p class="clinical-teams-empty">Cargando directorio…</p>';
+  bd.classList.add('open');
+  bd.setAttribute('aria-hidden', 'false');
+
+  try {
+    await loadLanUsersDirectoryIntoHost(host);
+  } catch (err) {
+    console.error('[Directorio LAN]', err);
+    host.innerHTML = `<p class="clinical-teams-empty">${escapeHtml(
+      err instanceof Error ? err.message : 'No se pudo cargar el directorio.'
+    )}</p>`;
+  }
+
+  backgroundRefreshLanUsersDirectory();
 }
 
 export function closeLanUsersDirectoryModal() {
@@ -1411,12 +1446,20 @@ function closeTeamEditPanels(exceptPanel) {
   });
 }
 
-function wireTeamManageModalDelegation() {
-  const bd = teamsModalEl();
-  if (!bd || bd._rpcTeamManageDelegated) return;
-  bd._rpcTeamManageDelegated = true;
+function teamManageDelegationRoot() {
+  return (
+    document.getElementById('clinical-teams-panel-body') ||
+    teamsModalEl()?.querySelector('.clinical-teams-modal') ||
+    null
+  );
+}
 
-  bd.addEventListener('click', (ev) => {
+function wireTeamManageModalDelegation() {
+  const root = teamManageDelegationRoot();
+  if (!root || root._rpcTeamManageDelegated) return;
+  root._rpcTeamManageDelegated = true;
+
+  root.addEventListener('click', (ev) => {
     if (!canManageTeamRoster(clinicalSessionContext.user)) return;
     const target = ev.target instanceof Element ? ev.target : null;
     if (!target) return;
@@ -1570,7 +1613,16 @@ async function handleProfileFormSubmit(ev) {
   }
 
   const currentUsername = normalizeUsername(clinicalSessionContext.user?.username || '');
-  if (username !== currentUsername) {
+  const usernameWillChange = username !== currentUsername;
+  if (usernameWillChange) {
+    const { applyPendingLanInviteFromPage, assertLanRoomForUsernameRegister, LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG } =
+      await import('../clinical-profile-lan-sync.mjs');
+    await applyPendingLanInviteFromPage();
+    const lanGate = await assertLanRoomForUsernameRegister();
+    if (!lanGate.allowed) {
+      toast(LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG, 'error');
+      return;
+    }
     if (currentUsername && !isLegacyMachineUsername(currentUsername, clientIdFromSettings())) {
       const ok = window.confirm(
         `¿Cambiar tu usuario de @${currentUsername} a @${username}? Los equipos verán el nuevo nombre.`
@@ -1630,9 +1682,24 @@ async function handleProfileFormSubmit(ev) {
     wantsProgramAdmin && (isProgramAdmin === true || wasProgramAdmin)
       ? 'Perfil guardado. Privilegios de administración activos.'
       : 'Perfil guardado.';
-  toast(msg, 'success');
+  const { flushClinicalProfileToLan, LAN_PROFILE_PUSH_FAILED_MSG } = await import(
+    '../clinical-profile-lan-sync.mjs'
+  );
+  const lanPush = await flushClinicalProfileToLan();
+  if (!lanPush.ok && lanPush.code !== 'NO_LAN') {
+    toast(LAN_PROFILE_PUSH_FAILED_MSG, 'warning');
+  } else if (usernameWillChange && lanPush.ok) {
+    toast(`${msg} @usuario publicado en la sala ⇄.`, 'success');
+  } else {
+    toast(msg, 'success');
+  }
   syncRotationConfigButton();
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
+  void import('./lan-sync.mjs')
+    .then((mod) => {
+      if (typeof mod.scheduleLiveSyncPush === 'function') mod.scheduleLiveSyncPush();
+    })
+    .catch(() => {});
   void import('./patients.mjs')
     .then((m) => m.renderPatientList())
     .catch(() => {});
@@ -2218,7 +2285,8 @@ export function wireClinicalTeamsControls() {
     document.addEventListener('rpc-clinical-ops-synced', () => {
       void refreshTeamsUiAfterChange();
       const lanBd = lanUsersModalBackdropEl();
-      if (lanBd?.classList.contains('open')) void openLanUsersDirectoryModal();
+      const host = lanUsersModalBodyEl();
+      if (lanBd?.classList.contains('open') && host) void loadLanUsersDirectoryIntoHost(host);
     });
   }
 }

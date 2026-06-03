@@ -75,6 +75,26 @@ function readClinicalBlob(blobKey, lsKey, parseFromRaw) {
   return parseFromRaw(localStorage.getItem(lsKey));
 }
 
+function readTodosMap() {
+  return readClinicalBlob('todos', 'rpc-todos', safeParseObject);
+}
+
+/** @param {Record<string, unknown>} map */
+function writeTodosMap(map) {
+  const json = JSON.stringify(map);
+  if (_blobCache) {
+    _blobCache.todos = json;
+    if (isDbMode()) {
+      void persistSaveAll(
+        { todos: map },
+        { eventType: 'clinical.todos_save', meta: { source: 'storage.saveTodos' } }
+      );
+      return;
+    }
+  }
+  localStorage.setItem('rpc-todos', json);
+}
+
 /**
  * Load clinical blobs from SQLCipher once (no-op if locked, not db mode, or already hydrated).
  * @returns {Promise<void>}
@@ -404,7 +424,7 @@ export const storage = {
   saveTodos(patientId, todos) {
     if (typeof patientId !== 'string') return;
     if (patientId.indexOf('demo-') === 0) return;
-    const map = safeParseObject(localStorage.getItem('rpc-todos')) || {};
+    const map = readTodosMap();
     const now = new Date().toISOString();
     map[patientId] = (Array.isArray(todos) ? todos : []).map(function (t) {
       var createdAt = String(t && t.createdAt != null ? t.createdAt : now);
@@ -420,7 +440,7 @@ export const storage = {
         updatedAt: String(t && t.updatedAt != null ? t.updatedAt : createdAt || now)
       };
     });
-    localStorage.setItem('rpc-todos', JSON.stringify(map));
+    writeTodosMap(map);
   },
 
   getLanRoomSnapshots() {

@@ -116,35 +116,6 @@
   box-shadow: var(--shadow-sm);
 }
 
-#rpc-clinical-session-lock {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 12000;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.55);
-}
-
-#rpc-clinical-session-lock.active-lock-view-overlay {
-  display: flex;
-}
-
-.clinical-session-lock-panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 1.25rem 1.5rem;
-  max-width: 360px;
-  text-align: center;
-}
-
-.clinical-session-lock-panel p {
-  color: var(--text-muted);
-  font-size: 0.875rem;
-  margin: 0.5rem 0 1rem;
-}
-
 /* —— Modo Guardia (full dashboard) —— */
 .header-guardia-mode-chip {
   display: inline-flex;
@@ -2848,6 +2819,12 @@ html.electron-macos-inset-bar #clinical-teams-backdrop.clinical-teams-backdrop.o
   font-size: 0.8125rem;
   font-weight: 600;
   white-space: nowrap;
+}
+
+.clinical-lan-users-handle--pending {
+  font-weight: 500;
+  color: var(--text-muted, #8a8a8a);
+  font-style: italic;
 }
 
 .clinical-lan-users-name,

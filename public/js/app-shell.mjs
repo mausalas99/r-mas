@@ -10,6 +10,7 @@ import { parseLanJoinQuery } from './lan-join-link.mjs';
 import { renderGuardiaCensusGrid, syncGuardiaCensusPanelVisibility } from './clinical-access-runtime.mjs';
 import { isMobileWeb, blockIfMobileDocExport, mobileDocExportToast } from './mobile-web.mjs';
 import { tryMountClinicalTeamInviteBrowserGate } from './clinical-team-invite.mjs';
+import { prefillRegistrationFromUrlParams } from './features/clinical-registration.mjs';
 import { resolveQuickOutputAction } from './quick-output.mjs';
 import { handleOutputDirFallback } from './output-dir-fallback.mjs';
 import { syncApprovedOutputDir } from './document-export-client.mjs';
@@ -231,6 +232,7 @@ function guardMobileDocExport() {
 async function initMobileWebBoot() {
   tryMountClinicalTeamInviteBrowserGate();
   if (!isMobileWeb()) return;
+  prefillRegistrationFromUrlParams();
   try {
     document.title = 'R+ Móvil';
   } catch (_e) {}
@@ -247,6 +249,15 @@ async function initMobileWebBoot() {
   }
   var parsed = parseLanJoinQuery(location.search, location.origin);
   if (!parsed.teamCode) {
+    var savedCfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() : null;
+    if (savedCfg && savedCfg.teamCode && savedCfg.hostUrl) {
+      configureLanFromMobileJoin(
+        savedCfg.hostUrl,
+        savedCfg.teamCode,
+        parsed.roomId || ''
+      );
+      return;
+    }
     setTimeout(function () {
       if (typeof openConnectionDropdown === 'function') openConnectionDropdown();
     }, 600);

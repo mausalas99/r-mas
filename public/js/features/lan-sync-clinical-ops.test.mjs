@@ -35,4 +35,25 @@ describe('lan-sync clinical ops', () => {
   it('shows toast when clinical ops merge fails', () => {
     assert.match(lanSyncSrc, /No se pudieron sincronizar equipos ni usuarios LAN/);
   });
+
+  it('exports immediate clinical ops push after @usuario registration', () => {
+    assert.match(lanSyncSrc, /export async function pushClinicalOpsLanNow/);
+  });
+});
+
+describe('clinical-profile-lan-sync', () => {
+  const profileLanSrc = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), '../clinical-profile-lan-sync.mjs'),
+    'utf8'
+  );
+
+  it('gates username register when LAN is configured without a room', () => {
+    assert.match(profileLanSrc, /assertLanRoomForUsernameRegister/);
+    assert.match(profileLanSrc, /LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG/);
+  });
+
+  it('applies invite URL before username gate', () => {
+    assert.match(profileLanSrc, /applyPendingLanInviteFromPage/);
+    assert.match(profileLanSrc, /parseLanJoinQuery/);
+  });
 });

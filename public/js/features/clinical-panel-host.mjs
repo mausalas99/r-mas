@@ -6,7 +6,8 @@ import {
   bootstrapClinicalAccess,
   clinicalSessionContext,
 } from '../clinical-access-runtime.mjs';
-import { readRpcSettings } from '../clinical-settings.mjs';
+import { readRpcSettings, resolveClinicalClientId } from '../clinical-settings.mjs';
+import { collectClinicalLsSnapshot } from './db-unlock.mjs';
 
 function escapeHtml(s) {
   return String(s || '')
@@ -58,12 +59,27 @@ export async function safeRenderClinicalTeamsPanel(renderFn) {
   }
 }
 
+async function tryAutoOpenClinicalDb() {
+  if (!isDbMode() || typeof window === 'undefined') return false;
+  const api = window.rplusDb || window.electronAPI;
+  if (!api || typeof api.dbAutoUnlock !== 'function') return false;
+  try {
+    const res = await api.dbAutoUnlock({ lsSnapshot: collectClinicalLsSnapshot() });
+    return !!(res && res.ok !== false && res.state === 'unlocked');
+  } catch (_e) {
+    return false;
+  }
+}
+
 /** Ensure DB clinical session exists before rendering the panel. */
 export async function ensureClinicalPanelSession() {
   if (clinicalSessionContext.user?.user_id) return true;
   if (!isDbMode()) return false;
   const settings = readRpcSettings();
-  const clientId = String(settings.clientId || '').trim();
-  if (!clientId) return false;
+  const clientId = resolveClinicalClientId(settings);
+  if (!clinicalSessionContext.user?.user_id) {
+    await tryAutoOpenClinicalDb();
+  }
+  if (clinicalSessionContext.user?.user_id) return true;
   return bootstrapClinicalAccess(settings, clientId);
 }

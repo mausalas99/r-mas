@@ -91,12 +91,33 @@
   min-width: 2.75rem;
 }
 
-.interno-name {
+.interno-row-main {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.interno-name {
   font-size: 0.85rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.interno-handoff-markers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+}
+
+.interno-detail-markers {
+  margin: 0.35rem 0 0;
+}
+
+.interno-detail-markers .interno-handoff-markers {
+  gap: 0.3rem;
 }
 
 .interno-chip {
@@ -286,6 +307,21 @@
 .interno-badge--familiar {
   background: rgba(229, 83, 75, 0.15);
   color: #f0a09a;
+}
+
+.interno-badge--critico {
+  background: rgba(229, 83, 75, 0.22);
+  color: #f5b0ab;
+}
+
+.interno-badge--negativas {
+  background: rgba(230, 170, 40, 0.2);
+  color: #e6c06a;
+}
+
+.interno-badge--show {
+  background: rgba(100, 149, 237, 0.2);
+  color: #9ec5ff;
 }
 
 .interno-estudio-done {

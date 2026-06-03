@@ -118,12 +118,8 @@ async function applyBootstrapResult(res) {
   await fetchClinicalTeamsFromDb();
   await fetchClinicalScopeContextFromDb();
   if (typeof document !== 'undefined') {
-    void import('./clinical-ops-lan.mjs')
-      .then((mod) => mod.prepareClinicalOpsForLanSync?.())
-      .then(() => import('./features/lan-sync.mjs'))
-      .then((mod) => {
-        if (typeof mod.scheduleLiveSyncPush === 'function') mod.scheduleLiveSyncPush();
-      })
+    void import('./clinical-profile-lan-sync.mjs')
+      .then((mod) => mod.flushClinicalProfileToLan())
       .catch(() => {});
   }
   migrateLocalPatientsClinicalSala();
@@ -279,7 +275,17 @@ export async function initClinicalAccessRuntime(settings, clientId) {
         return Array.isArray(census.guardias) ? census.guardias : [];
       },
     },
-    String(clinicalSessionContext.user?.user_id || clientId)
+    String(clinicalSessionContext.user?.user_id || clientId),
+    {
+      resolvePatientLabel: (patientId) => {
+        const p = patients.find((row) => String(row.id) === String(patientId));
+        if (!p) return '';
+        const name = String(p.nombre || '').trim();
+        const bed = [p.cuarto, p.cama].filter(Boolean).join('-');
+        if (name && bed) return `${name} (${bed})`;
+        return name || bed || '';
+      },
+    }
   );
   vitalsLoop.start();
 

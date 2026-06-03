@@ -1,0 +1,121 @@
+---
+description: Living project map for R+ — read before exploring the codebase
+alwaysApply: true
+---
+
+# R+ Project Context
+
+**Read this first.** Use this map instead of broad codebase exploration. Only search or read files when this map lacks the detail you need for the task.
+
+Design tokens and UI conventions: `design.md`, `public/tokens.css`.
+
+---
+
+## Stack
+
+Electron 41 desktop app (Mac arm64/x64, Windows x64). Renderer: ES modules bundled with esbuild (`public/js/app.bundle.mjs`). Main process: `main.js`. LAN HTTP/WS server: `server.js` on port **3738**. Clinical DB: SQLCipher via `better-sqlite3-multiple-ciphers` + Argon2 (`lib/db/`). Tests: `node --test` (colocated `*.test.mjs` / `*.test.js`).
+
+---
+
+## Entry points
+
+| Layer | File | Role |
+|-------|------|------|
+| Electron main | `main.js` | Window, auto-updater, IPC, spawns LAN server |
+| Preload bridge | `preload.js` | `window.electronAPI` IPC surface |
+| LAN server | `server.js` | Express routes, doc export, interno mobile, WS hub |
+| Renderer boot | `public/js/app.js` → `app.bundle.mjs` | Feature registration via `app-runtimes.mjs` |
+| UI shell | `public/index.html` + `public/partials/` | Markup assembled by `scripts/build-ui.mjs` |
+| Release | `scripts/release.js` | bump, test, build, publish |
+
+---
+
+## Directory map
+
+```
+lib/                  Node-side shared logic (importable from main/server)
+  db/                 SQLCipher schema, crypto, clinical access, IPC handlers
+  doc-generators/     Native .docx (note, indicaciones, listado)
+  entrega/            Modo entrega pendientes (v2 templates + completion)
+  interno/            Mobile interno/guardia board, QR, vitals, scope
+  historia-clinica/   HC compile, defaults, migration
+  drive-import/       Google Drive HC/labs import parsers
+  clinical-safety-rules/  Calculator safety evaluation
+
+lan-squad/            LAN sync host: WS hub, host-store, conflict resolver,
+                      auth-router, ticket-store, write-queue, team-code
+
+public/js/            Renderer modules (pre-bundle)
+  features/           UI feature modules (*.mjs) — primary place for new UI work
+  app-state.mjs       Patient/state hydration
+  clinical-access-runtime.mjs  Session + privileges
+  storage.js          Legacy localStorage (non-DB paths)
+
+public/interno/       Mobile web client (guardia/interno board)
+scripts/              build-ui, bundle-renderer, release, native rebuild
+docs/superpowers/     Specs and implementation plans (design before big features)
+```
+
+---
+
+## Domain index (where to look)
+
+| Topic | Primary locations |
+|-------|-------------------|
+| Clinical DB / schema | `lib/db/schema.mjs`, `lib/db/db-manager.mjs`, `lib/db/ipc-handlers.mjs` |
+| Roles / privileges | `lib/db/clinical-privileges.mjs`, `public/js/clinical-privileges.mjs` |
+| LAN sync / rooms | `lan-squad/`, `public/js/features/lan-sync.mjs`, `public/js/lan-client.mjs` |
+| Clinical teams / guardia | `public/js/features/clinical-teams.mjs`, `clinical-rotation.mjs` |
+| Modo entrega | `lib/entrega/`, `public/js/features/clinical-entrega.mjs`, `entrega-modal-ui.mjs` |
+| Interno mobile | `lib/interno/`, `public/interno/`, `server.js` interno routes |
+| Historia clínica | `lib/historia-clinica/`, expediente features |
+| Estado actual / monitoreo | `public/js/features/estado-actual-*.mjs` |
+| Labs / tendencias | `public/js/labs*.mjs`, `features/tendencias.mjs`, `lab-panel.mjs` |
+| Manejo / guías clínicas | `public/js/features/manejo.mjs`, `manejo-guia-*.mjs` |
+| Document export | `lib/doc-generators/`, `lib/doc-export-http.js`, `server.js` |
+| Updates / downgrade | `lib/update-downgrade.mjs`, `stable-versions.json`, `min-version.json`, `main.js`, Ajustes |
+| Debt metrics | `scripts/metrics/baseline.json`, `npm run metrics` (when wired) |
+| Onboarding / tour | `clinical-onboarding*.mjs`, `tour-targets.mjs`, `settings-help.mjs` |
+| UI shell / pase board | `features/pase-board.mjs`, `public/styles/pase-board.css` |
+
+---
+
+## Build & test
+
+```bash
+npm run build:ui          # assemble index.html + bundle renderer
+npm start                 # electron (prestart rebuilds natives + bundle)
+npm test                  # full test suite (pretest ensures native db for node)
+npm run release:publish   # release pipeline (see README § Desarrollo)
+```
+
+New renderer code: edit `public/js/**/*.mjs`, then `npm run build:ui` (or `npm start` which bundles). Do not edit `app.bundle.mjs` by hand.
+
+Packaged files list: `npm run release:sync-pack` updates electron-builder `build.files`.
+
+---
+
+## Conventions
+
+- **ESM** in renderer and most `lib/` (`.mjs`); CommonJS in `main.js`, `server.js`, `lan-squad/`.
+- **Features pattern**: module exports `windowHandlers`, registered in `app-runtimes.mjs`.
+- **IPC**: add channel in `preload.js` + handler in `main.js` or `lib/db/ipc-handlers.mjs`.
+- **LAN routes**: add to `lan-squad/host-router.js` or `server.js`; auth via `auth-router.js`.
+- **Schema changes**: bump in `lib/db/schema.mjs`, migration + test in `lib/db/schema.test.mjs`.
+- **Spanish UI** copy; code/comments mix EN/ES like surrounding files.
+- **No scope creep**: match existing patterns; minimal diffs.
+
+---
+
+## Changelog (newest first)
+
+Maintained incrementally — see `sync-context-on-commit.mdc`. Max ~20 entries.
+
+- **2026-06-03** `release-6.5.9`: LAN directorio, fusión `clinical_users`, @usuario obliga push ⇄; `clinical-profile-lan-sync.mjs`, `pushClinicalOpsLanNow`, entrega/equipos.
+- **2026-06-03** `release-6.5.8`: interno móvil QR, entrega pendientes v2, downgrade a estable; `public/interno/`, `lib/interno/`, `lib/entrega/`, `lib/update-downgrade.mjs`, `stable-versions.json`.
+- **2026-06-02** `interno-guardia-mobile`: mobile board, host discovery, QR panel (`interno-qr-panel.mjs`), vitals, interno routes in `server.js`.
+- **2026-06-02** `entrega-pendientes-v2`: schema v8 templates; `lib/entrega/`, `entrega-modal-ui.mjs`, `clinical-entrega.mjs`.
+- **2026-06-02** `stable-downgrade`: catálogo curado + UI Ajustes; `stable-versions-catalog.js`, `min-version.json`.
+- **2026-06-01** `lan-teams-decoupled`: persistent clinical teams decoupled from daily guardia; `clinical-teams.mjs`, `effective-team-code.js`.
+- **2026-06-01** `guardia-lan-hub`: guardia connection panel, host discovery, mobile join link, census scope by role.
+- **2026-05-31** `clinical-db`: SQLCipher clinical store, unlock flow (`db-unlock.mjs`), forensic audit chain, privileges by rotation rank.

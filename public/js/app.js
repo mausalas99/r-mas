@@ -67,6 +67,7 @@ import {
 import { wireClinicalTeamsControls } from './features/clinical-teams.mjs';
 import { tryMountClinicalTeamInviteBrowserGate } from './clinical-team-invite.mjs';
 import { syncGuardiaModeButtonVisibility } from './features/guardia-board.mjs';
+import { resolveClinicalClientId } from './clinical-settings.mjs';
 
 const allWindowHandlers = Object.assign(
   {},
@@ -218,11 +219,7 @@ appStateReady
   });
 
 function getClinicalClientId() {
-  try {
-    var raw = localStorage.getItem('rpc-lan-client-id');
-    if (raw) return raw;
-  } catch (_e) {}
-  return 'desktop-host';
+  return resolveClinicalClientId(settings);
 }
 
 function syncHeaderTodayDate() {

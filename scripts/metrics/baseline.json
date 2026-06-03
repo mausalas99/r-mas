@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "updatedAt": null,
+  "totalScore": null,
+  "bootGraphHash": null,
+  "byFile": {},
+  "changelog": [
+    {
+      "date": "2026-06-02",
+      "note": "Initial debt contract; run npm run metrics:baseline to populate scores."
+    }
+  ]
+}

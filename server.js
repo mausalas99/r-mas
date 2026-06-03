@@ -16,6 +16,7 @@ const { createLanRouter } = require('./lan-squad/host-router.js');
 const { attachWsHub } = require('./lan-squad/ws-hub.js');
 const { createConflictResolver } = require('./lan-squad/conflict-resolver.js');
 const { bootstrapLanTeamCode } = require('./lan-squad/effective-team-code.js');
+const { pickLanCandidateBaseUrl } = require('./lan-squad/lan-candidate-url.js');
 const { createTicketStore } = require('./lan-squad/ticket-store.js');
 const { createAuthRouter } = require('./lan-squad/auth-router.js');
 const { redactUrlSecrets, redactForLog } = require('./lan-squad/redact-secrets.js');
@@ -159,7 +160,8 @@ const lanStore = createHostStore({
   dbManager: lanDbManager,
 });
 const ticketStore = createTicketStore({ getHostToken: () => LAN_TEAM_CODE });
-const getLanHostUrl = () => `http://localhost:${LAN_HTTP_PORT}`;
+const getLanHostUrl = () =>
+  pickLanCandidateBaseUrl(LAN_HTTP_PORT) || `http://localhost:${LAN_HTTP_PORT}`;
 
 const documentExportAuth = createDocumentExportAuthMiddleware(() => lanStore.getState());
 
@@ -261,16 +263,12 @@ appExpress.post('/generate-censo', generateLimiter, documentExportAuth, async (r
     return res.status(400).json({ error: (e && e.message) || 'Carpeta no válida.' });
   }
   try {
+    const { censoFileName, writeCensoPdfForToday } = await import('./lib/censo-export-file.mjs');
     const buf = await renderCensusPdf({ header: header || {}, rows });
     const now = new Date();
-    const stamp = [
-      now.getFullYear(),
-      String(now.getMonth() + 1).padStart(2, '0'),
-      String(now.getDate()).padStart(2, '0'),
-    ].join('-');
-    const fileName = `Censo_${safeName(servicio || (header && header.servicio) || 'guardia')}_${stamp}.pdf`;
-    fs.writeFileSync(path.join(dest, fileName), buf);
-    res.json({ ok: true, fileName });
+    const fileName = censoFileName(servicio || (header && header.servicio) || 'guardia', now);
+    const saved = writeCensoPdfForToday(dest, fileName, buf, now);
+    res.json({ ok: true, fileName: saved.fileName, replaced: saved.replaced });
   } catch (e) {
     res.status(500).json({ error: 'No se pudo generar el documento. Intenta de nuevo.' });
   }

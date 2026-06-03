@@ -128,6 +128,20 @@ async function handleUsernameStepSubmit(ev) {
   const currentHandle = normalizeUsername(clinicalSessionContext.user?.username || '');
   const needsClaim = currentHandle !== username;
 
+  if (needsClaim) {
+    const { applyPendingLanInviteFromPage, assertLanRoomForUsernameRegister, LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG } =
+      await import('../clinical-profile-lan-sync.mjs');
+    await applyPendingLanInviteFromPage();
+    const lanGate = await assertLanRoomForUsernameRegister();
+    if (!lanGate.allowed) {
+      if (errEl) {
+        errEl.textContent = LAN_USERNAME_REGISTER_REQUIRES_ROOM_MSG;
+        errEl.hidden = false;
+      }
+      return;
+    }
+  }
+
   if (needsClaim && typeof api.dbClinicalUsernameClaim === 'function') {
     const claimRes = await api.dbClinicalUsernameClaim({ userId: sessionUserId, username });
     if (!claimRes?.ok) {
@@ -211,10 +225,22 @@ async function handleUsernameStepSubmit(ev) {
   if (errEl) errEl.hidden = true;
   await refreshClinicalUserProfile();
   document.dispatchEvent(new CustomEvent('rpc-clinical-teams-changed'));
-  toast(
-    'Perfil guardado. Abre Mi rotación cuando quieras buscar equipos o crear el tuyo.',
-    'success'
+
+  const { flushClinicalProfileToLan, LAN_PROFILE_PUSH_FAILED_MSG } = await import(
+    '../clinical-profile-lan-sync.mjs'
   );
+  const lanPush = await flushClinicalProfileToLan();
+  if (!lanPush.ok && lanPush.code !== 'NO_LAN') {
+    toast(LAN_PROFILE_PUSH_FAILED_MSG, 'warning');
+  } else if (lanPush.ok && needsClaim) {
+    toast('Perfil guardado y @usuario publicado en la sala ⇄.', 'success');
+  } else {
+    toast(
+      'Perfil guardado. Abre Mi rotación cuando quieras buscar equipos o crear el tuyo.',
+      'success'
+    );
+  }
+
   const { refreshMainClinicalOnboardingIfNeeded } = await import('./clinical-onboarding-main.mjs');
   await refreshMainClinicalOnboardingIfNeeded();
 }

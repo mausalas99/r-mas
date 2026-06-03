@@ -2,6 +2,59 @@
 
 const JOIN_TICKET_PATH_RE = /\/join\/(req_[a-f0-9]{12})\b/i;
 
+/** roomId usados en LiveSync (coinciden con ⇄ Salas de guardia). */
+export const LIVE_SYNC_SALA_DEFS = [
+  { id: 'sala-1', label: 'Sala 1', key: 'Sala 1' },
+  { id: 'sala-2', label: 'Sala 2', key: 'Sala 2' },
+  { id: 'sala-e', label: 'Sala E', key: 'Sala E' },
+];
+
+/**
+ * @param {string} [salaOrRoom] — "Sala 1", sala-1, etc.
+ * @returns {string} roomId o ''
+ */
+export function resolveLiveSyncRoomIdFromSala(salaOrRoom) {
+  const raw = String(salaOrRoom || '').trim();
+  if (!raw) return '';
+  const lower = raw.toLowerCase();
+  if (/^sala-[12e]$/i.test(lower)) return lower;
+  const hit = LIVE_SYNC_SALA_DEFS.find(
+    (d) => d.id === lower || d.key === raw || d.label === raw
+  );
+  return hit ? hit.id : '';
+}
+
+/** @param {string} roomId */
+export function liveSyncRoomLabel(roomId) {
+  const id = String(roomId || '').trim();
+  const hit = LIVE_SYNC_SALA_DEFS.find((d) => d.id === id);
+  return hit ? hit.label : id;
+}
+
+/** Prefer page origin when server/config points at localhost (iPad cannot reach loopback). */
+export function resolveLanJoinHostUrl(fromServer, pageOrigin) {
+  try {
+    const u = new URL(String(fromServer || '').trim());
+    if (u.hostname && !/^(localhost|127\.0\.0\.1)$/i.test(u.hostname)) {
+      return `${u.protocol}//${u.host}`;
+    }
+  } catch (_e) {
+    /* fall through */
+  }
+  const origin = String(pageOrigin || '').trim();
+  if (origin) {
+    try {
+      const o = new URL(origin);
+      if (o.hostname && !/^(localhost|127\.0\.0\.1)$/i.test(o.hostname)) {
+        return `${o.protocol}//${o.host}`;
+      }
+    } catch (_e2) {
+      /* ignore */
+    }
+  }
+  return '';
+}
+
 /**
  * @param {string} hostUrl
  * @param {string} ticketId — p. ej. req_a1b2c3d4e5f6
@@ -24,17 +77,16 @@ export function buildLanJoinUrls(hostUrl, ticketId) {
 export function parseLanJoinQuery(search, origin) {
   const params = new URLSearchParams(String(search || '').replace(/^\?/, ''));
   const code = String(params.get('code') || params.get('token') || '').trim();
-  const room = String(params.get('room') || '').trim();
-  let hostUrl = String(params.get('host') || '').trim().replace(/\/+$/, '');
-  if (!hostUrl && origin) {
-    try {
-      const u = new URL(origin);
-      hostUrl = `${u.protocol}//${u.host}`;
-    } catch (_e) {
-      hostUrl = '';
-    }
-  }
-  return { hostUrl, teamCode: code, roomId: room };
+  const roomParam = String(params.get('room') || '').trim();
+  const salaParam = String(params.get('sala') || '').trim();
+  const roomId =
+    resolveLiveSyncRoomIdFromSala(roomParam) ||
+    resolveLiveSyncRoomIdFromSala(salaParam) ||
+    roomParam;
+  const hostParam = String(params.get('host') || '').trim().replace(/\/+$/, '');
+  let hostUrl = resolveLanJoinHostUrl(hostParam, origin);
+  if (!hostUrl && hostParam) hostUrl = hostParam;
+  return { hostUrl, teamCode: code, roomId, sala: salaParam };
 }
 
 function hostFromUrl(u) {

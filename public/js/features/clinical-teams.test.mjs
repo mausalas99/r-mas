@@ -90,6 +90,8 @@ describe('clinical-teams', () => {
     assert.match(clinicalTeamsSrc, /clinical-teams-delete-btn/);
     assert.match(clinicalTeamsSrc, /dbClinicalTeamsUpdate/);
     assert.match(clinicalTeamsSrc, /dbClinicalTeamsArchive/);
+    assert.match(clinicalTeamsSrc, /clinical-teams-panel-body/);
+    assert.match(clinicalTeamsSrc, /teamManageDelegationRoot/);
   });
 
   it('program admin checkbox requires access code', () => {

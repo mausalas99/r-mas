@@ -2,6 +2,8 @@ import { describe, it, mock, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   vitalsIntervalMs,
+  vitalsFrequencyNotifyLabel,
+  resolvePatientLabelForNotify,
   BackgroundVitalsMonitorLoop,
   ClientSessionInactivityLocker,
 } from './session-manager.mjs';
@@ -12,6 +14,23 @@ describe('vitalsIntervalMs', () => {
     assert.equal(vitalsIntervalMs('2h'), 7200000);
     assert.equal(vitalsIntervalMs('Shift_Once'), 8 * 3600000);
     assert.equal(vitalsIntervalMs('unknown'), 4 * 3600000);
+  });
+});
+
+describe('vitalsFrequencyNotifyLabel', () => {
+  it('maps DB enums to readable Spanish labels', () => {
+    assert.match(vitalsFrequencyNotifyLabel('1h'), /1 h/);
+    assert.match(vitalsFrequencyNotifyLabel('Shift_Once'), /turno/i);
+  });
+});
+
+describe('resolvePatientLabelForNotify', () => {
+  it('prefers resolver over raw patient_id', () => {
+    const label = resolvePatientLabelForNotify(
+      { patient_id: 'mpwm7dmu' },
+      () => 'García López (401-A)'
+    );
+    assert.equal(label, 'García López (401-A)');
   });
 });
 
@@ -29,10 +48,13 @@ describe('BackgroundVitalsMonitorLoop', () => {
     };
     const loop = new BackgroundVitalsMonitorLoop(db, 'user-1', {
       notify: (title, body) => notifications.push({ title, body }),
+      resolvePatientLabel: () => 'Ana Pérez (12-A)',
     });
     await loop.scan();
     assert.equal(notifications.length, 1);
     assert.match(notifications[0].title, /Overdue/);
+    assert.match(notifications[0].body, /Ana Pérez \(12-A\)/);
+    assert.doesNotMatch(notifications[0].body, /pat-1/);
   });
 
   it('skips None frequency rows', async () => {

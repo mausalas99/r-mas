@@ -15,6 +15,9 @@ const BADGE_LABELS = {
   consentimiento: 'Consent',
   anestesia: 'Anest',
   familiar: 'Familiar',
+  critico: 'Crítico',
+  negativas: 'Negativas',
+  show: 'Show',
 };
 
 /** @type {Record<string, string>} */
@@ -269,9 +272,13 @@ function render() {
     html += '<ul class="interno-list">';
     for (const p of patients) {
       const crit = p.isCritical ? ' is-critical' : '';
+      const markers = renderPatientMarkers(p);
       html += `<li class="interno-row${crit}" data-id="${escapeAttr(p.id)}">
         <span class="interno-bed">${escapeHtml(p.bedLabel)}</span>
-        <span class="interno-name">${escapeHtml(p.nameShort)}</span>
+        <span class="interno-row-main">
+          <span class="interno-name">${escapeHtml(p.nameShort)}</span>
+          ${markers}
+        </span>
         <span class="interno-chip ${escapeAttr(p.vitals?.cls || 'nominal')}">${escapeHtml(p.vitals?.banner || '')}</span>
         <span class="interno-pending">${p.pendingCount || 0}</span>
       </li>`;
@@ -328,6 +335,21 @@ function renderBadgeChips(badges) {
     .join('');
 }
 
+/** @param {{ isCritical?: boolean, signedRefusal?: boolean, show?: boolean }} p */
+function patientMarkerKeys(p) {
+  const keys = [];
+  if (p.isCritical) keys.push('critico');
+  if (p.signedRefusal) keys.push('negativas');
+  if (p.show) keys.push('show');
+  return keys;
+}
+
+/** @param {{ isCritical?: boolean, signedRefusal?: boolean, show?: boolean }} p */
+function renderPatientMarkers(p) {
+  const chips = renderBadgeChips(patientMarkerKeys(p));
+  return chips ? `<span class="interno-handoff-markers">${chips}</span>` : '';
+}
+
 /** @param {object[]} items */
 function sortEstudios(items) {
   return [...items].sort((a, b) => {
@@ -346,7 +368,10 @@ function renderDetail(p) {
     ? `<ul class="interno-estudios-list">${pend.map((item) => renderEstudioRow(p.id, item)).join('')}</ul>`
     : '<p class="interno-summary interno-estudios-empty">Sin estudios ni procedimientos.</p>';
 
+  const handoffMarkers = renderPatientMarkers(p);
+
   return `<h2>${escapeHtml(p.bedLabel)} · ${escapeHtml(p.nameShort)}</h2>
+    ${handoffMarkers ? `<div class="interno-detail-markers">${handoffMarkers}</div>` : ''}
     <button type="button" class="interno-vitals-banner interno-chip ${vitalsCls}" data-vitals-banner="${escapeAttr(p.id)}" aria-label="Registrar signos vitales">
       <span class="interno-vitals-banner__label">Signos</span>
       <span class="interno-vitals-banner__text">${escapeHtml(p.vitals?.banner || '')}</span>

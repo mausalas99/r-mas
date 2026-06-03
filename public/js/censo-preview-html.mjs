@@ -51,13 +51,19 @@ export function renderCensoPreviewHtml(payload) {
     return sec ? esc(sec.lines.join('\n')).replace(/\n/g, '<br>') : '—';
   }
 
+  function colMultiline(row, key) {
+    var v = String(row[key] || '').trim();
+    if (!v) return '—';
+    return v
+      .split('\n')
+      .map(function (l) {
+        return esc(l);
+      })
+      .join('<br>');
+  }
+
   var body = rows
     .map(function (row, idx) {
-      var pend = cell(row, 'pendientes', 'Pendientes');
-      if (row.signos) {
-        var sig = esc(row.signos).replace(/\n/g, '<br>');
-        pend = sig + (pend !== '—' ? '<br>' + pend : '');
-      }
       return (
         '<tr class="' +
         (idx % 2 ? 'alt' : '') +
@@ -81,14 +87,20 @@ export function renderCensoPreviewHtml(payload) {
         '<td class="censo-labs">' +
         cell(row, 'labs', 'Laboratorios') +
         '</td>' +
+        '<td class="censo-signos">' +
+        colMultiline(row, 'signosCol') +
+        '</td>' +
+        '<td class="censo-io">' +
+        colMultiline(row, 'ioCol') +
+        '</td>' +
         '<td>' +
         cell(row, 'accesos', 'Accesos') +
         '</td>' +
         '<td>' +
         cell(row, 'cultivos', 'Cultivos') +
         '</td>' +
-        '<td>' +
-        pend +
+        '<td class="censo-pend">' +
+        cell(row, 'pendientes', 'Pendientes') +
         '</td>' +
         '</tr>'
       );
@@ -108,7 +120,8 @@ export function renderCensoPreviewHtml(payload) {
     '.mes{text-align:center;font-weight:700;color:#1e4d72;font-size:12px;margin:-22px 0 8px}' +
     'table{width:100%;max-width:100%;border-collapse:collapse;table-layout:fixed}' +
     'th,td{border:1px solid #d0d4dc;padding:3px 4px;vertical-align:middle;word-wrap:break-word}' +
-    'td.censo-labs{vertical-align:top;white-space:pre-wrap;line-height:1.25;font-size:10px}' +
+    'td.censo-labs{vertical-align:top;white-space:pre-wrap;line-height:1.2;font-size:7px}' +
+    'td.censo-signos,td.censo-io,td.censo-pend{vertical-align:top;white-space:pre-wrap;line-height:1.25;font-size:8px;text-align:left}' +
     'td.censo-paciente{vertical-align:middle;text-align:center;line-height:1.2;font-size:10px}' +
     'th{background:#eef1f5;font-size:9px;text-transform:uppercase;color:#1e4d72}' +
     'tr.alt td{background:#f8f9fb}' +
@@ -119,7 +132,7 @@ export function renderCensoPreviewHtml(payload) {
     'td.censo-num .censo-num-val,td.censo-cama .censo-cama-vline{display:block;margin:0 auto}' +
     '.censo-cama-vline{font-weight:700;writing-mode:vertical-rl;text-orientation:mixed;line-height:1;white-space:nowrap}' +
     'th.censo-center{text-align:center;vertical-align:middle}' +
-    'col.num{width:3%}col.cama{width:2.5%}col.pac{width:6%}col.dx{width:13%}col.med{width:8%}col.lab{width:33%}col.acc{width:5%}col.cult{width:11%}col.pend{width:18%}' +
+    'col.num{width:2.5%}col.cama{width:2%}col.pac{width:5%}col.dx{width:10%}col.med{width:6.5%}col.lab{width:20%}col.signos{width:9%}col.io{width:8%}col.acc{width:4%}col.cult{width:8%}col.pend{width:11%}' +
     '</style></head><body>' +
     '<h1>' +
     esc(titleLine) +
@@ -130,8 +143,8 @@ export function renderCensoPreviewHtml(payload) {
     (equipoLine && header.fecha ? ' · ' : '') +
     (header.fecha ? esc(header.fecha) : '') +
     '</div>' +
-    '<table><colgroup><col class="num"><col class="cama"><col class="pac"><col class="dx"><col class="med"><col class="lab"><col class="acc"><col class="cult"><col class="pend"></colgroup>' +
-    '<thead><tr><th class="censo-center">#</th><th class="censo-center censo-bold">Cama</th><th class="censo-center">Paciente</th><th class="censo-center censo-bold">Dx</th><th class="censo-center">ATB/Meds</th><th>Labs</th><th>Accesos</th><th>Cultivos</th><th>Pend.</th></tr></thead>' +
+    '<table><colgroup><col class="num"><col class="cama"><col class="pac"><col class="dx"><col class="med"><col class="lab"><col class="signos"><col class="io"><col class="acc"><col class="cult"><col class="pend"></colgroup>' +
+    '<thead><tr><th class="censo-center">#</th><th class="censo-center censo-bold">Cama</th><th class="censo-center">Paciente</th><th class="censo-center censo-bold">Dx</th><th class="censo-center">ATB/Meds</th><th>Labs</th><th>Signos</th><th>I/E/B</th><th>Accesos</th><th>Cultivos</th><th>Pend.</th></tr></thead>' +
     '<tbody>' +
     body +
     '</tbody></table></body></html>'

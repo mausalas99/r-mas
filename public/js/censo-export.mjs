@@ -192,7 +192,9 @@ export function exportCensoPdf(includeArchived) {
         url: '/generate-censo',
         buildPayload: buildBody,
         onSuccess: function (data) {
-          rt.showToast('Censo guardado: ' + (data && data.fileName ? data.fileName : 'PDF'), 'success');
+          var name = data && data.fileName ? data.fileName : 'PDF';
+          var msg = data && data.replaced ? 'Censo actualizado: ' + name : 'Censo guardado: ' + name;
+          rt.showToast(msg, 'success');
         },
         onError: function (message) {
           rt.showToast('Error: ' + message, 'error');

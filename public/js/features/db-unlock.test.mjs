@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { needsPassphraseConfirm, __test } from './db-unlock.mjs';
+import { needsPassphraseConfirm, isSqlcipherNativeReady, __test } from './db-unlock.mjs';
 
 describe('db-unlock', () => {
   it('requires confirm when migration is pending and db does not exist yet', () => {
@@ -36,6 +36,24 @@ describe('db-unlock', () => {
     assert.equal(
       needsPassphraseConfirm({ migrationPending: false, dbFileExists: false }, { needed: true }),
       true
+    );
+  });
+
+  it('isSqlcipherNativeReady allows auto-unlock when only argon2 fails', () => {
+    assert.equal(isSqlcipherNativeReady({ nativeReady: true }), true);
+    assert.equal(
+      isSqlcipherNativeReady({
+        nativeReady: false,
+        nativeFailures: [{ module: 'argon2', message: 'missing' }],
+      }),
+      true
+    );
+    assert.equal(
+      isSqlcipherNativeReady({
+        nativeReady: false,
+        nativeFailures: [{ module: 'sqlcipher', message: 'missing' }],
+      }),
+      false
     );
   });
 

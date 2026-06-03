@@ -209,6 +209,7 @@ function finishUnlockFlow(result) {
     unlockWaitResolve = null;
     done(result);
   }
+  void applyClinicalDbUnlockCompletion();
 }
 
 export function showRecoveryCodeReveal(code) {
@@ -244,6 +245,7 @@ export function dismissRecoveryCodeReveal() {
     unlockWaitResolve = null;
     done(result);
   }
+  void applyClinicalDbUnlockCompletion();
 }
 
 function setUnlockError(msg) {
@@ -332,6 +334,63 @@ async function tryAutoUnlockDb(electron) {
   }
 }
 
+/** SQLCipher is required to open the DB; argon2 is only needed for passphrase KDF. */
+export function isSqlcipherNativeReady(status) {
+  if (!status || status.nativeReady !== false) return true;
+  var failures = status.nativeFailures;
+  if (!Array.isArray(failures) || !failures.length) return false;
+  return !failures.some(function (f) {
+    return f && f.module === 'sqlcipher';
+  });
+}
+
+function waitForUnlockOverlay() {
+  return new Promise(function (resolve) {
+    unlockWaitResolve = resolve;
+  });
+}
+
+async function presentDbUnlockGate(status) {
+  var electron = api();
+  var probe = await runMigrationProbe(electron);
+  lastMigrationProbe = probe;
+  configureUnlockForm(status, probe);
+  setOverlayVisible(true);
+  var passInput = document.getElementById('rpc-db-unlock-pass');
+  if (passInput) passInput.focus();
+  return waitForUnlockOverlay();
+}
+
+/** Rehydrate clinical session after a late DB unlock (overlay / recovery). */
+export async function applyClinicalDbUnlockCompletion() {
+  if (!isDbMode() || typeof window === 'undefined') return;
+  try {
+    var appState = await import('../app-state.mjs');
+    if (appState && typeof appState.bootHydrateFromDb === 'function') {
+      await appState.bootHydrateFromDb();
+    }
+  } catch (err) {
+    console.warn('[R+] DB hydrate after unlock:', err && err.message);
+  }
+  try {
+    var settingsMod = await import('../clinical-settings.mjs');
+    var runtime = await import('../clinical-access-runtime.mjs');
+    var settings = settingsMod.readRpcSettings();
+    var clientId = settingsMod.resolveClinicalClientId(settings);
+    if (runtime && typeof runtime.initClinicalAccessRuntime === 'function') {
+      await runtime.initClinicalAccessRuntime(settings, clientId);
+    }
+  } catch (err) {
+    console.warn('[R+] Clinical runtime after unlock:', err && err.message);
+  }
+  try {
+    var onboardingMain = await import('./clinical-onboarding-main.mjs');
+    if (onboardingMain && typeof onboardingMain.refreshMainClinicalOnboardingIfNeeded === 'function') {
+      await onboardingMain.refreshMainClinicalOnboardingIfNeeded();
+    }
+  } catch (_e) {}
+}
+
 function handleUnlockSuccess(res) {
   if (res && res.clearKeys && res.clearKeys.length) {
     clearMigratedLocalStorageKeys(res.clearKeys);
@@ -366,7 +425,7 @@ export async function waitForDbUnlock() {
     return { unlocked: true, status: status || {} };
   }
 
-  if (status.nativeReady === false) {
+  if (!isSqlcipherNativeReady(status)) {
     var nativeMsg = unlockErrorMessage(
       { code: 'DB_NATIVE_ABI_MISMATCH' },
       { nativeError: status.nativeError }
@@ -381,6 +440,15 @@ export async function waitForDbUnlock() {
   if (autoRes && autoRes.ok !== false && autoRes.state === 'unlocked') {
     handleUnlockSuccess(autoRes);
     return { unlocked: true, status: autoRes };
+  }
+
+  if (status.dbFileExists && status.hasKdfSalt) {
+    var overlayResult = await presentDbUnlockGate(status);
+    if (overlayResult && overlayResult.unlocked) {
+      handleUnlockSuccess(overlayResult.status || {});
+      return { unlocked: true, status: overlayResult.status || status };
+    }
+    return { unlocked: false, status: overlayResult?.status || autoRes || status };
   }
 
   var errMsg =

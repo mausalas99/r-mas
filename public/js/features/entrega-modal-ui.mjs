@@ -583,9 +583,9 @@ function buildHandoffPanelMarkup(ctx, isCritical) {
 
 function wireHandoffPanelOnce() {
   if (handoffUiWired) return;
-  handoffUiWired = true;
   const host = document.getElementById('entrega-handoff-panel');
   if (!host) return;
+  handoffUiWired = true;
 
   host.addEventListener('change', (ev) => {
     if (ev.target?.id === 'entrega-vaso-agent') {
@@ -783,9 +783,17 @@ async function refreshTemplateCatalog(userId) {
   }
   const teamIds = draftSourceTeamId ? [draftSourceTeamId] : [];
   const res = await api.dbEntregaTemplateList({ userId, teamIds });
+  if (!res?.ok) {
+    templateCatalog = { user: [], team: [] };
+    return;
+  }
+  const pack =
+    res.templates && typeof res.templates === 'object' && !Array.isArray(res.templates)
+      ? res.templates
+      : res;
   templateCatalog = {
-    user: Array.isArray(res?.user) ? res.user : [],
-    team: Array.isArray(res?.team) ? res.team : [],
+    user: Array.isArray(pack?.user) ? pack.user : [],
+    team: Array.isArray(pack?.team) ? pack.team : [],
   };
 }
 
@@ -842,7 +850,10 @@ function showTemplatePicker() {
 }
 
 function addItemFromForm(formEl) {
-  if (!draftActor) return;
+  if (!draftActor) {
+    toast('No se pudo agregar el procedimiento. Cierra y vuelve a abrir la entrega.', 'error');
+    return;
+  }
   const fields = readFormFields(formEl);
   if (!fields.label) {
     toast('Indica la etiqueta del procedimiento.', 'error');
@@ -862,57 +873,64 @@ function addItemFromForm(formEl) {
 
 function wireProcUiOnce() {
   if (uiWired) return;
+  const root = document.getElementById('entrega-modal-backdrop');
+  if (!root) return;
   uiWired = true;
 
-  document.getElementById('btn-entrega-add-proc')?.addEventListener('click', () => {
-    showAddForm();
+  root.addEventListener('click', (ev) => {
+    if (ev.target.closest('#btn-entrega-add-proc')) {
+      ev.preventDefault();
+      showAddForm();
+      return;
+    }
+    if (ev.target.closest('#btn-entrega-apply-template')) {
+      ev.preventDefault();
+      showTemplatePicker();
+    }
   });
 
-  document.getElementById('btn-entrega-apply-template')?.addEventListener('click', () => {
-    showTemplatePicker();
+  root.addEventListener('click', (ev) => {
+    const delBtn = ev.target.closest('#entrega-proc-list [data-action="delete"]');
+    if (!delBtn) return;
+    const card = delBtn.closest('[data-item-id]');
+    const id = card?.getAttribute('data-item-id');
+    if (id) deleteItem(id);
   });
 
-  const list = document.getElementById('entrega-proc-list');
-  if (list) {
-    list.addEventListener('click', (ev) => {
-      const btn = ev.target.closest('[data-action="delete"]');
-      if (!btn) return;
-      const card = btn.closest('[data-item-id]');
-      const id = card?.getAttribute('data-item-id');
-      if (id) deleteItem(id);
-    });
+  root.addEventListener('change', (ev) => {
+    const input = ev.target;
+    if (!(input instanceof HTMLInputElement) || !input.dataset.flag) return;
+    if (!input.closest('#entrega-proc-list')) return;
+    const card = input.closest('[data-item-id]');
+    const id = card?.getAttribute('data-item-id');
+    if (id) updateItemFlags(id, input.dataset.flag, input.checked);
+  });
 
-    list.addEventListener('change', (ev) => {
-      const input = ev.target;
-      if (!(input instanceof HTMLInputElement) || !input.dataset.flag) return;
-      const card = input.closest('[data-item-id]');
-      const id = card?.getAttribute('data-item-id');
-      if (id) updateItemFlags(id, input.dataset.flag, input.checked);
+  root.addEventListener('click', (ev) => {
+    const btn = ev.target.closest('#entrega-proc-form [data-action]');
+    if (!btn) return;
+    const formWrap = document.getElementById('entrega-proc-form');
+    if (!formWrap) return;
+    const action = btn.getAttribute('data-action');
+    const inner = formWrap.querySelector('.entrega-inline-form');
+    if (action === 'cancel-form') {
+      hideAddForm();
+      return;
+    }
+    if (!inner) return;
+    if (action === 'add-item') addItemFromForm(inner);
+    if (action === 'save-template') void saveTemplateFromForm(inner);
+  });
+
+  const teamSelect = document.getElementById('entrega-source-team');
+  if (teamSelect && !teamSelect._rpcEntregaTeamWired) {
+    teamSelect._rpcEntregaTeamWired = true;
+    teamSelect.addEventListener('change', (ev) => {
+      draftSourceTeamId = String(ev.target?.value || '');
+      const userId = String(clinicalSessionContext.user?.user_id || '');
+      refreshTemplateCatalog(userId).catch(() => {});
     });
   }
-
-  const formWrap = document.getElementById('entrega-proc-form');
-  if (formWrap) {
-    formWrap.addEventListener('click', (ev) => {
-      const btn = ev.target.closest('[data-action]');
-      if (!btn) return;
-      const action = btn.getAttribute('data-action');
-      const inner = formWrap.querySelector('.entrega-inline-form');
-      if (action === 'cancel-form') {
-        hideAddForm();
-        return;
-      }
-      if (!inner) return;
-      if (action === 'add-item') addItemFromForm(inner);
-      if (action === 'save-template') saveTemplateFromForm(inner);
-    });
-  }
-
-  document.getElementById('entrega-source-team')?.addEventListener('change', (ev) => {
-    draftSourceTeamId = String(ev.target?.value || '');
-    const userId = String(clinicalSessionContext.user?.user_id || '');
-    refreshTemplateCatalog(userId).catch(() => {});
-  });
 }
 
 /**

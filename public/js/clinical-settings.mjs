@@ -14,6 +14,18 @@ export function readRpcSettings() {
   }
 }
 
+/** Device id for clinical bootstrap (rpc-settings → LAN id → desktop default). */
+export function resolveClinicalClientId(settings = readRpcSettings()) {
+  const fromSettings = String(settings?.clientId || '').trim();
+  if (fromSettings) return fromSettings;
+  try {
+    const raw = localStorage.getItem('rpc-lan-client-id');
+    const fromLan = String(raw || '').trim();
+    if (fromLan) return fromLan;
+  } catch (_e) {}
+  return 'desktop-host';
+}
+
 /** @param {Record<string, unknown>|null|undefined} [settings] */
 export function needsClinicalLanProfileGate(settings = readRpcSettings()) {
   return (

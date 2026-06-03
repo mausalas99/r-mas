@@ -39,7 +39,14 @@ import { mergePatientMonitoreoFromImported } from "./estado-actual-data.mjs";
 import { mergeCensoPatientFields } from "../patient-diagnosticos.mjs";
 import { filterTodosRespectingDismissals } from "../manejo-todo-dismiss.mjs";
 import { copyToClipboardSafe } from "./soap-estado.mjs";
-import { buildLanJoinUrls, parseLanInviteInput } from "../lan-join-link.mjs";
+import {
+  buildLanJoinUrls,
+  parseLanInviteInput,
+  parseLanJoinQuery,
+  resolveLanJoinHostUrl,
+  resolveLiveSyncRoomIdFromSala,
+  liveSyncRoomLabel,
+} from "../lan-join-link.mjs";
 import { createMutationBuilder, wrapLiveSyncPatch } from "../versioned-mutation.mjs";
 import { guardAndSignLiveSyncMutation, clinicalSessionContext, migrateLocalPatientsClinicalSala } from "../clinical-access-runtime.mjs";
 import { hasElevatedTeamPrivileges, canManageInternoQr } from "../clinical-privileges.mjs";
@@ -330,10 +337,12 @@ async function mintLanPairingTicket() {
     throw errHttp;
   }
   var body = await resp.json();
+  var ticketId = String(body.ticketId || '');
+  var shareHost = await resolveLanShareBaseUrl();
   _lastLanPairing = {
-    ticketId: String(body.ticketId || ''),
+    ticketId: ticketId,
     pin: String(body.pin || ''),
-    joinUrl: String(body.joinUrl || ''),
+    joinUrl: shareHost && ticketId ? buildShareJoinUrl(shareHost, ticketId) : String(body.joinUrl || ''),
     expiresAt: body.expiresAt,
   };
   return _lastLanPairing;
@@ -522,24 +531,50 @@ function isLanRemoteJoinMode() {
   return typeof storage.getLanUiRole === 'function' && storage.getLanUiRole() === 'client';
 }
 
+function isLocalLoopbackLanUrl(url) {
+  try {
+    const u = new URL(String(url || '').trim());
+    return /^(localhost|127\.0\.0\.1)$/i.test(u.hostname);
+  } catch (_e) {
+    return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/i.test(String(url || '').trim());
+  }
+}
+
+/** IP LAN para compartir con iPad / otras R+ (nunca localhost si hay interfaz). */
+async function resolveLanShareBaseUrl() {
+  if (isLanElectronDesktop() && window.electronAPI && typeof window.electronAPI.getLanCandidateBaseUrl === 'function') {
+    try {
+      var fromElectron = String((await window.electronAPI.getLanCandidateBaseUrl()) || '')
+        .trim()
+        .replace(/\/+$/, '');
+      if (fromElectron && !isLocalLoopbackLanUrl(fromElectron)) return fromElectron;
+    } catch (_e) {}
+  }
+  var el = document.getElementById('lan-input-host-url');
+  var fromInput = el && String(el.value || '').trim().replace(/\/+$/, '');
+  if (fromInput && !isLocalLoopbackLanUrl(fromInput)) return fromInput;
+  var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
+  var fromCfg = String(cfg.hostUrl || '')
+    .trim()
+    .replace(/\/+$/, '');
+  if (fromCfg && !isLocalLoopbackLanUrl(fromCfg)) return fromCfg;
+  return '';
+}
+
+function buildShareJoinUrl(hostUrl, ticketId) {
+  return buildLanJoinUrls(hostUrl, ticketId).joinUrl;
+}
+
 async function resolveLanHostUrlAuto() {
+  var shareUrl = await resolveLanShareBaseUrl();
+  if (shareUrl) return shareUrl;
   var cfg = typeof storage.getLanConfig === 'function' ? storage.getLanConfig() || {} : {};
   var fromCfg = String(cfg.hostUrl || '')
     .trim()
     .replace(/\/+$/, '');
   if (fromCfg) return fromCfg;
   if (!isLanElectronDesktop()) return '';
-  try {
-    var fromElectron = String((await window.electronAPI.getLanCandidateBaseUrl()) || '')
-      .trim()
-      .replace(/\/+$/, '');
-    if (fromElectron) return fromElectron;
-  } catch (_e) {}
   return 'http://127.0.0.1:3738';
-}
-
-function isLocalLoopbackLanUrl(url) {
-  return /^https?:\/\/(localhost|127\.0\.0\.1):3738\/?$/i.test(String(url || '').trim());
 }
 
 /** Corrige rol «cliente» en escritorio sin URL guardada (UI antigua con pestañas). */
@@ -580,6 +615,8 @@ async function ensureLanElectronHostReady(opts) {
   }
 
   if (!url) url = autoUrl || 'http://127.0.0.1:3738';
+  var shareUrl = await resolveLanShareBaseUrl();
+  if (shareUrl && isLocalLoopbackLanUrl(url)) url = shareUrl;
   persistLanClientConfig(url, bearer);
   try {
     lanClient.connectSyncChannel();
@@ -2361,6 +2398,63 @@ function scheduleLiveSyncPush() {
   }, LIVE_SYNC_PUSH_DEBOUNCE_MS);
 }
 
+/**
+ * Push clinical profile / @usuario to LAN immediately (no debounce).
+ * Used after registering @usuario so peers see the handle in the directory.
+ *
+ * @param {{ requireMembership?: boolean }} [opts]
+ * @returns {Promise<{ ok: boolean, code?: string }>}
+ */
+export async function pushClinicalOpsLanNow(opts) {
+  if (isPitchPatientIsolationActive()) return { ok: false, code: 'PITCH_DEMO' };
+  if (!isClinicalOpsLanAvailable()) return { ok: false, code: 'NO_CLINICAL_OPS' };
+
+  await prepareClinicalOpsForLanSync();
+  var snap = getCachedClinicalOpsSnapshot();
+  if (!snap) return { ok: false, code: 'NO_SNAPSHOT' };
+
+  var requireMembership = opts.requireMembership !== false;
+  var roomId = String(activeLiveSyncRoomId || '').trim();
+  var mem = getRoomMembership();
+  if (!roomId && mem && mem.roomId) {
+    roomId = String(mem.roomId).trim();
+    activeLiveSyncRoomId = roomId;
+    activeLiveSyncRoomLabel = mem.label || roomId;
+  }
+  if (!roomId) {
+    return requireMembership ? { ok: false, code: 'NO_ROOM' } : { ok: false, code: 'NO_ROOM' };
+  }
+  if (!isLanSessionConfiguredForRest()) {
+    return { ok: false, code: 'NO_LAN' };
+  }
+
+  try {
+    if (!lanClient.connected) lanClient.connectSyncChannel();
+  } catch (_e) {}
+
+  var envelope = await buildLiveSyncBundleEnvelope(roomId);
+  if (!liveSyncBundleHasPayload(envelope)) {
+    envelope.clinicalOps = snap;
+  }
+
+  var pushedLive = false;
+  if (lanClient.liveConnected) {
+    try {
+      lanClient.connectLiveChannel(roomId);
+      lanClient.sendLive(envelope);
+      pushedLive = true;
+    } catch (_e2) {}
+  }
+
+  var okHttp = await pushRoomSyncBundleToHost(roomId, envelope);
+  saveLocalRoomSnapshot(roomId);
+  syncLiveSyncStatusChrome();
+
+  if (okHttp || pushedLive) return { ok: true };
+  enqueueOutbox(roomId, { kind: 'bundle', payload: envelope });
+  return { ok: false, code: 'PUSH_FAILED' };
+}
+
 function syncLiveSyncStatusChrome() {
   var el = document.getElementById('lan-livesync-status');
   if (!el) return;
@@ -2566,6 +2660,27 @@ function onLiveSyncWireMessage(data) {
     return;
   }
 }
+/**
+ * Pull host/LAN clinical ops (teams + users). Never block UI indefinitely.
+ * @param {{ timeoutMs?: number }} [options]
+ */
+export async function refreshLanClinicalDirectoryFromRoom(options = {}) {
+  const roomId = String(activeLiveSyncRoomId || '').trim();
+  if (!roomId || !isClinicalOpsLanAvailable()) return false;
+  const timeoutMs = Math.max(1000, Number(options.timeoutMs) || 5000);
+  try {
+    await Promise.race([
+      reconcileLiveSyncRoom(roomId),
+      new Promise((_resolve, reject) => {
+        setTimeout(() => reject(new Error('LAN sync timeout')), timeoutMs);
+      }),
+    ]);
+    return true;
+  } catch (_e) {
+    return false;
+  }
+}
+
 async function reconcileLiveSyncRoom(roomId) {
   if (isClinicalOpsLanAvailable()) {
     await prepareClinicalOpsForLanSync();
@@ -2575,9 +2690,15 @@ async function reconcileLiveSyncRoom(roomId) {
   if (local) sources.push(local);
   sources.push(buildLiveSyncLocalMergeSource());
   try {
-    var resp = await lanClient.fetch(
-      '/api/lan/v1/rooms/' + encodeURIComponent(roomId) + '/sync-bundle'
-    );
+    const syncPath = '/api/lan/v1/rooms/' + encodeURIComponent(roomId) + '/sync-bundle';
+    const ac = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer =
+      ac &&
+      setTimeout(() => {
+        ac.abort();
+      }, 5000);
+    var resp = await lanClient.fetch(syncPath, ac ? { signal: ac.signal } : {});
+    if (timer) clearTimeout(timer);
     if (resp.ok) {
       var j = await resp.json();
       if (j && j.bundle) {
@@ -2686,6 +2807,34 @@ function resetLanToLocalHostFromUi() {
     if (!ok) return;
     runtime.showToast('Esta Mac vuelve a ser el servidor del turno. Crea o únete a una sala.', 'success');
   });
+}
+
+function appendLanMobileJoinSection(root) {
+  if (!root || !runtime.isMobileWeb()) return;
+  var card = document.createElement('div');
+  card.className = 'lan-connect-card lan-mobile-join-card';
+  card.innerHTML =
+    '<div class="lan-connect-card-title">Unirte a la guardia</div>' +
+    '<p class="lan-connect-card-hint">Pega el <strong>enlace para iPad</strong> que generó quien tiene R+ en la Mac (⇄ → Copiar enlace). Al abrirlo se conecta y bajan tus pacientes de la sala.</p>';
+  var inputInvite = document.createElement('textarea');
+  inputInvite.className = 'profile-input';
+  inputInvite.id = 'lan-input-invite-link';
+  inputInvite.rows = 2;
+  inputInvite.autocomplete = 'off';
+  inputInvite.placeholder = 'http://192.168.x.x:3738/join/req_…';
+  card.appendChild(inputInvite);
+  var row = document.createElement('div');
+  row.className = 'lan-connect-actions-row';
+  row.style.marginTop = '8px';
+  var btnJoin = document.createElement('button');
+  btnJoin.type = 'button';
+  btnJoin.className = 'btn-lan-primary';
+  btnJoin.style.flex = '1';
+  btnJoin.textContent = 'Conectar';
+  btnJoin.setAttribute('data-lan-action', 'join-invite');
+  row.appendChild(btnJoin);
+  card.appendChild(row);
+  root.insertBefore(card, root.firstChild);
 }
 
 function appendLanJoinOtherMacSection(root) {
@@ -2859,6 +3008,10 @@ async function renderLanPanelOnce() {
       void promoteThisMacToLanHost();
     },
   });
+
+  if (runtime.isMobileWeb() && !connected) {
+    appendLanMobileJoinSection(root);
+  }
 
   var salaDefs = [
     { id: 'sala-1', label: 'Sala 1', key: 'Sala 1' },
@@ -3247,30 +3400,85 @@ async function refreshClinicalSessionTeams() {
   }
 }
 
+function resolveMobilePairingRoomId() {
+  var rid = String(activeLiveSyncRoomId || '').trim();
+  if (rid) return rid;
+  var mem = getRoomMembership();
+  if (mem && mem.roomId) return String(mem.roomId).trim();
+  try {
+    var s = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
+    return resolveLiveSyncRoomIdFromSala(s.clinicalSala);
+  } catch (_e) {
+    return '';
+  }
+}
+
+function appendMobileLanJoinHintParams(url) {
+  var s = {};
+  try {
+    s = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
+  } catch (_e) {}
+  try {
+    var u = new URL(url);
+    if (s.clinicalDisplayName) u.searchParams.set('name', s.clinicalDisplayName);
+    if (s.clinicalRank) u.searchParams.set('rank', s.clinicalRank);
+    if (s.clinicalSala) u.searchParams.set('sala', s.clinicalSala);
+    var roomId = resolveMobilePairingRoomId();
+    if (roomId) u.searchParams.set('room', roomId);
+    return u.toString();
+  } catch (_eUrl) {
+    return url;
+  }
+}
+
+function resolveAutoJoinRoomId(explicitRoomId) {
+  var rid = String(explicitRoomId || '').trim();
+  if (rid) return rid;
+  if (typeof location !== 'undefined') {
+    var parsed = parseLanJoinQuery(location.search, location.origin);
+    rid = String(parsed.roomId || '').trim();
+    if (rid) return rid;
+  }
+  var mem = getRoomMembership();
+  if (mem && mem.roomId) return String(mem.roomId).trim();
+  try {
+    var s = JSON.parse(localStorage.getItem('rpc-settings') || '{}');
+    return resolveLiveSyncRoomIdFromSala(s.clinicalSala);
+  } catch (_e) {
+    return '';
+  }
+}
+
 async function generateMobilePairingLink() {
-  var hostUrl = lanClient.baseUrl();
-  if (!hostUrl) return '';
+  var hostUrl = await resolveLanShareBaseUrl();
+  if (!hostUrl) {
+    runtime.showToast(
+      'No detectamos la IP de esta Mac en la red. Revisa Wi‑Fi y vuelve a copiar el enlace.',
+      'error'
+    );
+    return '';
+  }
+  try {
+    var share = await ensureLanPairingForShare();
+    return appendMobileLanJoinHintParams(
+      buildShareJoinUrl(share.hostUrl, share.pairing.ticketId)
+    );
+  } catch (_ticket) {
+    /* fallback: legacy query link with LAN IP */
+  }
+  if (!hostUrl || isLocalLoopbackLanUrl(hostUrl)) return '';
   var teamCode = getLanTeamCodeFromConfig();
   if (!teamCode) return '';
-
-  var s = {};
-  try { s = JSON.parse(localStorage.getItem('rpc-settings') || '{}'); } catch (_e) {}
   var params = new URLSearchParams();
   params.set('host', hostUrl.replace(/\/+$/, ''));
   params.set('code', teamCode);
-
-  if (s.clinicalDisplayName) params.set('name', s.clinicalDisplayName);
-  if (s.clinicalRank) params.set('rank', s.clinicalRank);
-  if (s.clinicalSala) params.set('sala', s.clinicalSala);
-
-  return hostUrl + '/?' + params.toString();
+  var roomId = resolveMobilePairingRoomId();
+  if (roomId) params.set('room', roomId);
+  return appendMobileLanJoinHintParams(hostUrl + '/?' + params.toString());
 }
 
 async function resolveLanHostUrlForShare() {
-  var el = document.getElementById('lan-input-host-url');
-  var fromInput = el && String(el.value || '').trim();
-  if (fromInput) return fromInput.replace(/\/+$/, '');
-  return resolveLanHostUrlAuto();
+  return resolveLanShareBaseUrl();
 }
 
 var _lanScanTimer = null;
@@ -3447,15 +3655,14 @@ async function copyMobileLanLinkFromUi(opts) {
     }
     return false;
   }
-  var urls = buildLanJoinUrls(share.hostUrl, share.pairing.ticketId);
-  var link = share.pairing.joinUrl || urls.mobileUrl;
-  var copied = await copyToClipboardSafe(link);
+  var link = buildShareJoinUrl(share.hostUrl, share.pairing.ticketId);
+  var copied = await copyToClipboardSafe(appendMobileLanJoinHintParams(link));
   if (copied) {
     var root = document.getElementById('lan-connection-panel-root');
     updateLanPairingDisplay(root);
     if (!silent) {
       runtime.showToast(
-        'Enlace móvil copiado. Ábrelo en Safari en la misma Wi‑Fi; luego elige la sala LiveSync.',
+        'Enlace móvil copiado. Ábrelo en Safari en la misma Wi‑Fi; tus pacientes deberían sincronizar solos.',
         'success'
       );
     }
@@ -3484,8 +3691,7 @@ async function copyLanInviteLinkFromUi(opts) {
     }
     return false;
   }
-  var urls = buildLanJoinUrls(share.hostUrl, share.pairing.ticketId);
-  var link = share.pairing.joinUrl || urls.joinUrl;
+  var link = buildShareJoinUrl(share.hostUrl, share.pairing.ticketId);
   var copied = await copyToClipboardSafe(link);
   if (copied) {
     var root = document.getElementById('lan-connection-panel-root');
@@ -3830,7 +4036,12 @@ function openTeamSyncFromHeader() {
   openConnectionDropdown();
 }
 function configureLanFromMobileJoin(hostUrl, teamCode, roomId) {
-  var cfg = { hostUrl: hostUrl.replace(/\/+$/, ''), teamCode: String(teamCode || '').trim() };
+  var resolvedHost =
+    resolveLanJoinHostUrl(hostUrl, typeof location !== 'undefined' ? location.origin : '') ||
+    String(hostUrl || '')
+      .trim()
+      .replace(/\/+$/, '');
+  var cfg = { hostUrl: resolvedHost, teamCode: String(teamCode || '').trim() };
   if (!cfg.teamCode) return;
   if (isLanElectronDesktop() && typeof storage.saveLanUiRole === 'function') {
     storage.saveLanUiRole('client');
@@ -3856,13 +4067,19 @@ function configureLanFromMobileJoin(hostUrl, teamCode, roomId) {
         return;
       }
       void maybeShowLanMigrationNotice();
-      var rid = String(roomId || '').trim();
+      var rid = resolveAutoJoinRoomId(roomId);
       if (rid) {
-        joinLanRoom(rid, '');
-        runtime.showToast('Sincronizando con la sala LiveSync del equipo', 'success');
+        joinLanRoom(rid, liveSyncRoomLabel(rid));
+        runtime.showToast(
+          'Sincronizando pacientes de ' + liveSyncRoomLabel(rid) + '…',
+          'success'
+        );
         return;
       }
-      runtime.showToast('Conectado al servidor. Elige la misma sala LiveSync en ⇄', 'success');
+      runtime.showToast(
+        'Conectado al servidor, pero el enlace no trae sala. Pide un enlace nuevo desde ⇄ en la Mac.',
+        'warn'
+      );
       renderLanPanel();
       setTimeout(function () {
         if (typeof openConnectionDropdown === 'function') openConnectionDropdown();

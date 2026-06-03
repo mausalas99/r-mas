@@ -1,6 +1,6 @@
 /**
  * Censo PDF compacto — tabla landscape (1–2 páginas para ~7–15 pacientes).
- * @typedef {{ num: string, cama: string, pacienteNombre: string, pacienteMeta?: string, dx?: string, meds?: string, signos?: string, labs?: string, accesos?: string, cultivos?: string, accCult?: string, pendientes?: string, sections?: { label: string, lines: string[] }[] }} CensoRow
+ * @typedef {{ num: string, cama: string, pacienteNombre: string, pacienteMeta?: string, dx?: string, meds?: string, signos?: string, signosCol?: string, ioCol?: string, labs?: string, accesos?: string, cultivos?: string, accCult?: string, pendientes?: string, sections?: { label: string, lines: string[] }[] }} CensoRow
  * @typedef {{ servicio?: string, mes?: string, fecha?: string, equipo?: string, rows?: CensoRow[] }} CensoPayload
  */
 
@@ -15,6 +15,7 @@ const DOC_HEADER_H = 40;
 const FOOTER_H = 10;
 const TABLE_HEAD_H = 20;
 const FONT = 8;
+const FONT_LABS = 6.5;
 const FONT_HEAD = 8.5;
 const FONT_TITLE = 10;
 const LINE_H = 8.2;
@@ -33,22 +34,30 @@ const COLORS = {
 /** Pesos relativos de columnas (se escalan al ancho útil de la hoja). */
 const COL_WEIGHTS = [
   { key: 'num', title: '#', weight: 8 },
-  { key: 'cama', title: 'Cama', weight: 18 },
-  { key: 'paciente', title: 'Paciente', weight: 44 },
-  { key: 'dx', title: 'Dx', weight: 68 },
-  { key: 'meds', title: 'ATB / Meds', weight: 56 },
-  { key: 'labs', title: 'Labs', weight: 276 },
-  { key: 'accesos', title: 'Accesos', weight: 32 },
-  { key: 'cultivos', title: 'Cultivos', weight: 68 },
-  { key: 'pend', title: 'Pend.', weight: 130 },
+  { key: 'cama', title: 'Cama', weight: 16 },
+  { key: 'paciente', title: 'Paciente', weight: 40 },
+  { key: 'dx', title: 'Dx', weight: 62 },
+  { key: 'meds', title: 'ATB / Meds', weight: 50 },
+  { key: 'labs', title: 'Labs', weight: 168 },
+  { key: 'signos', title: 'Signos', weight: 88 },
+  { key: 'io', title: 'I / E / B', weight: 72 },
+  { key: 'accesos', title: 'Accesos', weight: 28 },
+  { key: 'cultivos', title: 'Cultivos', weight: 58 },
+  { key: 'pend', title: 'Pend.', weight: 78 },
 ];
 
 /** Centrado horizontal en cuerpo de tabla. */
 const CENTER_COLS = { num: true, cama: true, paciente: true, dx: true, meds: true };
-/** Alineado arriba (labs multilínea en filas altas). */
-const TOP_ALIGN_COLS = { labs: true };
+/** Alineado arriba (multilínea en filas altas). */
+const TOP_ALIGN_COLS = { labs: true, signos: true, io: true, pend: true };
 /** Diagnósticos y cama en negrita. */
 const BOLD_COLS = { dx: true, cama: true };
+
+/** @param {string} colKey */
+function colFontSize(colKey) {
+  if (colKey === 'labs') return FONT_LABS;
+  return FONT;
+}
 
 /**
  * pdf-lib StandardFonts (WinAnsi) no admiten \\n ni controles en drawText.
@@ -145,7 +154,8 @@ function wrapText(font, text, maxWidth, fontSize) {
  * @param {number} [maxLines] — sin límite si es ≤ 0
  * @returns {string[]}
  */
-function wrapCell(font, text, maxWidth, maxLines) {
+function wrapCell(font, text, maxWidth, maxLines, fontSize) {
+  var size = fontSize != null ? fontSize : FONT;
   var raw = String(text || '')
     .replace(/\r/g, '')
     .split('\n')
@@ -156,7 +166,7 @@ function wrapCell(font, text, maxWidth, maxLines) {
   if (!raw.length) return ['—'];
   var lines = [];
   raw.forEach(function (block) {
-    wrapText(font, pdfSafeLine(block), maxWidth, FONT).forEach(function (ln) {
+    wrapText(font, pdfSafeLine(block), maxWidth, size).forEach(function (ln) {
       lines.push(pdfSafeLine(ln));
     });
   });
@@ -215,8 +225,11 @@ function rowCells(row) {
     accesos = row.accCult;
   }
   var pend = row.pendientes || pickSection(row, 'Pendientes');
-  var signos = row.signos || pickSection(row, 'Signos / Estado actual');
-  if (signos) pend = signos + (pend && pend !== '—' ? '\n' + pend : '');
+  var signos = String(row.signosCol || '').trim();
+  var io = String(row.ioCol || '').trim();
+  if (!signos) {
+    signos = row.signos || pickSection(row, 'Signos / I-O') || pickSection(row, 'Signos / Estado actual');
+  }
 
   return {
     num: String(row.num || ''),
@@ -225,6 +238,8 @@ function rowCells(row) {
     dx: row.dx || pickSection(row, 'Diagnósticos'),
     meds: row.meds || pickSection(row, 'ATB / Medicamentos'),
     labs: row.labs || pickSection(row, 'Laboratorios'),
+    signos: signos,
+    io: io,
     accesos: accesos,
     cultivos: cultivos,
     pend: pend,
@@ -259,20 +274,12 @@ function maxLinesInRow(rowH) {
  */
 function cellLines(font, fontBold, text, innerW, rowH, colKey) {
   var measureFont = BOLD_COLS[colKey] ? fontBold : font;
-  return wrapCell(measureFont, text, innerW, maxLinesInRow(rowH));
+  return wrapCell(measureFont, text, innerW, maxLinesInRow(rowH), colFontSize(colKey));
 }
 
-/**
- * Líneas envueltas sin truncar (para medir altura de fila).
- * @param {import('pdf-lib').PDFFont} font
- * @param {import('pdf-lib').PDFFont} fontBold
- * @param {string} text
- * @param {number} innerW
- * @param {string} colKey
- */
 function cellLinesUnbounded(font, fontBold, text, innerW, colKey) {
   var measureFont = BOLD_COLS[colKey] ? fontBold : font;
-  return wrapCell(measureFont, text, innerW, 0);
+  return wrapCell(measureFont, text, innerW, 0, colFontSize(colKey));
 }
 
 /**
@@ -440,29 +447,30 @@ function drawCellText(page, lines, tx, colW, innerW, yTop, rowH, font, fontBold,
   var vCenter = centered && !topAlign;
   var useBold = !!BOLD_COLS[colKey] || colKey === 'num';
   var cellFont = useBold ? fontBold : font;
+  var fontSize = colFontSize(colKey);
   var minY = yTop - rowH + ROW_PAD;
   var maxLines = maxLinesInRow(rowH);
   var toDraw = [];
   lines.forEach(function (ln) {
     if (toDraw.length >= maxLines) return;
-    var fitted = fitLineToWidth(cellFont, ln, innerW, FONT);
+    var fitted = fitLineToWidth(cellFont, ln, innerW, fontSize);
     toDraw.push({
       fitted: fitted,
-      textW: cellFont.widthOfTextAtSize(fitted, FONT),
+      textW: cellFont.widthOfTextAtSize(fitted, fontSize),
     });
   });
   var blockH = toDraw.length * LINE_H;
   var innerH = rowH - ROW_PAD * 2;
   var y = topAlign || !vCenter
-    ? yTop - ROW_PAD - FONT
-    : yTop - ROW_PAD - (innerH - blockH) / 2 - FONT;
+    ? yTop - ROW_PAD - fontSize
+    : yTop - ROW_PAD - (innerH - blockH) / 2 - fontSize;
   toDraw.forEach(function (item) {
     if (y < minY) return;
     var x = centered ? tx + (colW - item.textW) / 2 : tx + 2;
     safeDrawText(page, item.fitted, {
       x: x,
       y: y,
-      size: FONT,
+      size: fontSize,
       font: cellFont,
       color: colKey === 'num' ? COLORS.accent : COLORS.ink,
     });

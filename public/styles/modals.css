@@ -823,6 +823,64 @@ html.dark #rpc-idle-lock-overlay { background: rgba(0,0,0,0.82); }
   font-weight: 700; font-family: inherit; cursor: pointer;
 }
 .rpc-idle-lock-actions .btn-unlock:hover { background: var(--action-hover); }
+
+/* ── Sesión clínica (clave de firma en memoria) ───────────── */
+#rpc-clinical-session-lock {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.88);
+}
+html.dark #rpc-clinical-session-lock { background: rgba(0, 0, 0, 0.82); }
+#rpc-clinical-session-lock.active-lock-view-overlay { display: flex; }
+.clinical-session-lock-panel {
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 16px;
+  max-width: 380px;
+  width: 100%;
+  padding: 26px 24px 22px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: center;
+}
+.clinical-session-lock-panel h2 {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+.clinical-session-lock-panel p {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+.clinical-session-lock-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 4px;
+}
+.clinical-session-lock-actions .btn-unlock {
+  background: var(--action);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+.clinical-session-lock-actions .btn-unlock:hover { background: var(--action-hover); }
+
 /* ── Borrado de datos ──────────────────────────────────────── */
 #rpc-wipe-modal {
   display: none; position: fixed; inset: 0; z-index: 200000;

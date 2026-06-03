@@ -11,7 +11,7 @@
       "format": "esm"
     },
     "public/js/storage.js": {
-      "bytes": 27143,
+      "bytes": 27555,
       "imports": [
         {
           "path": "public/js/storage-quota.mjs",
@@ -22,17 +22,6 @@
           "path": "public/js/db-storage-bridge.mjs",
           "kind": "import-statement",
           "original": "./db-storage-bridge.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/features/db-unlock.mjs": {
-      "bytes": 24572,
-      "imports": [
-        {
-          "path": "public/js/db-storage-bridge.mjs",
-          "kind": "import-statement",
-          "original": "../db-storage-bridge.mjs"
         }
       ],
       "format": "esm"
@@ -214,6 +203,273 @@
       ],
       "format": "esm"
     },
+    "public/js/clinical-settings.mjs": {
+      "bytes": 2702,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/features/chrome.mjs": {
+      "bytes": 14255,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/features/crypto-signer.mjs": {
+      "bytes": 1258,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/guardia-mode-sync.mjs": {
+      "bytes": 1962,
+      "imports": [
+        {
+          "path": "public/js/clinical-access-runtime.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-access-runtime.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/vpo-dx-inference.mjs": {
+      "bytes": 5228,
+      "imports": [
+        {
+          "path": "public/js/clinical-product-policy.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-product-policy.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/patient-date-fields.mjs": {
+      "bytes": 987,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/patient-accesos.mjs": {
+      "bytes": 2962,
+      "imports": [
+        {
+          "path": "public/js/patient-date-fields.mjs",
+          "kind": "import-statement",
+          "original": "./patient-date-fields.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/patient-diagnosticos.mjs": {
+      "bytes": 3783,
+      "imports": [
+        {
+          "path": "public/js/vpo-dx-inference.mjs",
+          "kind": "import-statement",
+          "original": "./vpo-dx-inference.mjs"
+        },
+        {
+          "path": "public/js/patient-accesos.mjs",
+          "kind": "import-statement",
+          "original": "./patient-accesos.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "lib/entrega/entrega-handoff-context.mjs": {
+      "bytes": 6910,
+      "imports": [],
+      "format": "esm"
+    },
+    "lib/entrega/entrega-vitals-plan.mjs": {
+      "bytes": 6787,
+      "imports": [],
+      "format": "esm"
+    },
+    "lib/entrega/entrega-pendientes.mjs": {
+      "bytes": 4301,
+      "imports": [
+        {
+          "path": "lib/entrega/entrega-handoff-context.mjs",
+          "kind": "import-statement",
+          "original": "./entrega-handoff-context.mjs"
+        },
+        {
+          "path": "lib/entrega/entrega-vitals-plan.mjs",
+          "kind": "import-statement",
+          "original": "./entrega-vitals-plan.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "lib/entrega/entrega-chip-markers.mjs": {
+      "bytes": 1894,
+      "imports": [
+        {
+          "path": "lib/entrega/entrega-handoff-context.mjs",
+          "kind": "import-statement",
+          "original": "./entrega-handoff-context.mjs"
+        },
+        {
+          "path": "lib/entrega/entrega-pendientes.mjs",
+          "kind": "import-statement",
+          "original": "./entrega-pendientes.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "lib/interno/vitals-banner.mjs": {
+      "bytes": 1527,
+      "imports": [
+        {
+          "path": "lib/entrega/entrega-vitals-plan.mjs",
+          "kind": "import-statement",
+          "original": "../entrega/entrega-vitals-plan.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "lib/interno/interno-board.mjs": {
+      "bytes": 3630,
+      "imports": [
+        {
+          "path": "lib/entrega/entrega-handoff-context.mjs",
+          "kind": "import-statement",
+          "original": "../entrega/entrega-handoff-context.mjs"
+        },
+        {
+          "path": "lib/entrega/entrega-pendientes.mjs",
+          "kind": "import-statement",
+          "original": "../entrega/entrega-pendientes.mjs"
+        },
+        {
+          "path": "lib/interno/vitals-banner.mjs",
+          "kind": "import-statement",
+          "original": "./vitals-banner.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/features/unified-patient-grid-board.mjs": {
+      "bytes": 8002,
+      "imports": [
+        {
+          "path": "lib/entrega/entrega-chip-markers.mjs",
+          "kind": "import-statement",
+          "original": "../../../lib/entrega/entrega-chip-markers.mjs"
+        },
+        {
+          "path": "lib/entrega/entrega-pendientes.mjs",
+          "kind": "import-statement",
+          "original": "../../../lib/entrega/entrega-pendientes.mjs"
+        },
+        {
+          "path": "lib/interno/interno-board.mjs",
+          "kind": "import-statement",
+          "original": "../../../lib/interno/interno-board.mjs"
+        },
+        {
+          "path": "lib/interno/vitals-banner.mjs",
+          "kind": "import-statement",
+          "original": "../../../lib/interno/vitals-banner.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/clinical-privileges.mjs": {
+      "bytes": 1832,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/features/clinical-rotation.mjs": {
+      "bytes": 9983,
+      "imports": [
+        {
+          "path": "public/js/clinical-access-runtime.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-access-runtime.mjs"
+        },
+        {
+          "path": "public/js/clinical-privileges.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-privileges.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/clinical-team-invite.mjs": {
+      "bytes": 5957,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/mode-features.mjs": {
+      "bytes": 1286,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/features/soap-estado.mjs": {
+      "bytes": 11050,
+      "imports": [
+        {
+          "path": "public/js/app-state.mjs",
+          "kind": "import-statement",
+          "original": "../app-state.mjs"
+        },
+        {
+          "path": "public/js/mode-features.mjs",
+          "kind": "import-statement",
+          "original": "../mode-features.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-data.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-data.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/clinical-username.mjs": {
+      "bytes": 614,
+      "imports": [],
+      "format": "esm"
+    },
+    "lib/admin-access-code.mjs": {
+      "bytes": 267,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/features/clinical-panel-host.mjs": {
+      "bytes": 2844,
+      "imports": [
+        {
+          "path": "public/js/db-storage-bridge.mjs",
+          "kind": "import-statement",
+          "original": "../db-storage-bridge.mjs"
+        },
+        {
+          "path": "public/js/clinical-access-runtime.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-access-runtime.mjs"
+        },
+        {
+          "path": "public/js/clinical-settings.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-settings.mjs"
+        },
+        {
+          "path": "public/js/features/db-unlock.mjs",
+          "kind": "import-statement",
+          "original": "./db-unlock.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/live-sync-membership.mjs": {
+      "bytes": 1392,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/lan-join-link.mjs": {
+      "bytes": 4823,
+      "imports": [],
+      "format": "esm"
+    },
     "public/js/labs.js": {
       "bytes": 130800,
       "imports": [
@@ -349,33 +605,660 @@
       ],
       "format": "esm"
     },
-    "public/js/mode-features.mjs": {
-      "bytes": 1286,
+    "public/js/lan-client.mjs": {
+      "bytes": 5289,
       "imports": [],
       "format": "esm"
     },
-    "public/js/features/chrome.mjs": {
-      "bytes": 14255,
+    "public/js/live-sync-room.mjs": {
+      "bytes": 8839,
       "imports": [],
       "format": "esm"
     },
-    "public/js/features/soap-estado.mjs": {
-      "bytes": 11050,
+    "public/js/livesync-patient-ids.mjs": {
+      "bytes": 3978,
+      "imports": [],
+      "format": "esm"
+    },
+    "lib/historia-clinica/clinical-text.mjs": {
+      "bytes": 3240,
+      "imports": [],
+      "format": "esm"
+    },
+    "lib/drive-import/merge-eventualidades.mjs": {
+      "bytes": 1084,
       "imports": [
+        {
+          "path": "lib/historia-clinica/clinical-text.mjs",
+          "kind": "import-statement",
+          "original": "../historia-clinica/clinical-text.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/lan-patient-merge.mjs": {
+      "bytes": 15671,
+      "imports": [
+        {
+          "path": "public/js/live-sync-room.mjs",
+          "kind": "import-statement",
+          "original": "./live-sync-room.mjs"
+        },
+        {
+          "path": "public/js/livesync-patient-ids.mjs",
+          "kind": "import-statement",
+          "original": "./livesync-patient-ids.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-data.mjs",
+          "kind": "import-statement",
+          "original": "./features/estado-actual-data.mjs"
+        },
+        {
+          "path": "public/js/lab-history-cache.mjs",
+          "kind": "import-statement",
+          "original": "./lab-history-cache.mjs"
+        },
+        {
+          "path": "lib/drive-import/merge-eventualidades.mjs",
+          "kind": "import-statement",
+          "original": "../../lib/drive-import/merge-eventualidades.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/live-sync-outbox.mjs": {
+      "bytes": 1803,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/manejo-custom-protocols.mjs": {
+      "bytes": 3615,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/manejo-protocol-favorites.mjs": {
+      "bytes": 1949,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/manejo-room-data.mjs": {
+      "bytes": 4872,
+      "imports": [
+        {
+          "path": "public/js/live-sync-room.mjs",
+          "kind": "import-statement",
+          "original": "./live-sync-room.mjs"
+        },
+        {
+          "path": "public/js/clinical-product-policy.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-product-policy.mjs"
+        },
+        {
+          "path": "public/js/manejo-custom-protocols.mjs",
+          "kind": "import-statement",
+          "original": "./manejo-custom-protocols.mjs"
+        },
+        {
+          "path": "public/js/manejo-protocol-favorites.mjs",
+          "kind": "import-statement",
+          "original": "./manejo-protocol-favorites.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/versioned-mutation.mjs": {
+      "bytes": 1255,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/features/lan-hub-guardia-mode.mjs": {
+      "bytes": 1223,
+      "imports": [
+        {
+          "path": "public/js/clinical-access-runtime.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-access-runtime.mjs"
+        },
+        {
+          "path": "public/js/guardia-mode-sync.mjs",
+          "kind": "import-statement",
+          "original": "../guardia-mode-sync.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/features/lan-hub-panel-shell.mjs": {
+      "bytes": 2907,
+      "imports": [],
+      "format": "esm"
+    },
+    "node_modules/qrcode-generator/dist/qrcode.mjs": {
+      "bytes": 51907,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/interno-qr-render.mjs": {
+      "bytes": 2796,
+      "imports": [
+        {
+          "path": "node_modules/qrcode-generator/dist/qrcode.mjs",
+          "kind": "import-statement",
+          "original": "qrcode-generator"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/features/interno-qr-panel.mjs": {
+      "bytes": 8083,
+      "imports": [
+        {
+          "path": "public/js/interno-qr-render.mjs",
+          "kind": "import-statement",
+          "original": "../interno-qr-render.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/draft-conflict-store.mjs": {
+      "bytes": 3251,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/features/clinical-conflict-viewer.mjs": {
+      "bytes": 21725,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/host-bundle-bases.mjs": {
+      "bytes": 3256,
+      "imports": [
+        {
+          "path": "public/js/live-sync-room.mjs",
+          "kind": "import-statement",
+          "original": "./live-sync-room.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/clinical-ops-bundle-merge.mjs": {
+      "bytes": 7188,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/clinical-ops-lan.mjs": {
+      "bytes": 2008,
+      "imports": [
+        {
+          "path": "public/js/clinical-ops-bundle-merge.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-ops-bundle-merge.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/lan-surrogate-host.mjs": {
+      "bytes": 4422,
+      "imports": [],
+      "format": "esm"
+    },
+    "lib/historia-clinica/migrate-legacy.mjs": {
+      "bytes": 2231,
+      "imports": [],
+      "format": "esm"
+    },
+    "lib/historia-clinica/catalogs/app-conditions.json": {
+      "bytes": 649,
+      "imports": [],
+      "format": "esm",
+      "with": {
+        "type": "json"
+      }
+    },
+    "lib/historia-clinica/catalogs/ahf-conditions.json": {
+      "bytes": 453,
+      "imports": [],
+      "format": "esm",
+      "with": {
+        "type": "json"
+      }
+    },
+    "lib/historia-clinica/catalogs/ipas-systems.json": {
+      "bytes": 341,
+      "imports": [],
+      "format": "esm",
+      "with": {
+        "type": "json"
+      }
+    },
+    "public/js/historia-clinica-lan-sync.mjs": {
+      "bytes": 6149,
+      "imports": [
+        {
+          "path": "public/js/app-state.mjs",
+          "kind": "import-statement",
+          "original": "./app-state.mjs"
+        },
+        {
+          "path": "public/js/versioned-mutation.mjs",
+          "kind": "import-statement",
+          "original": "./versioned-mutation.mjs"
+        },
+        {
+          "path": "lib/historia-clinica/migrate-legacy.mjs",
+          "kind": "import-statement",
+          "original": "../../lib/historia-clinica/migrate-legacy.mjs"
+        },
+        {
+          "path": "lib/historia-clinica/catalogs/app-conditions.json",
+          "kind": "import-statement",
+          "original": "../../lib/historia-clinica/catalogs/app-conditions.json",
+          "with": {
+            "type": "json"
+          }
+        },
+        {
+          "path": "lib/historia-clinica/catalogs/ahf-conditions.json",
+          "kind": "import-statement",
+          "original": "../../lib/historia-clinica/catalogs/ahf-conditions.json",
+          "with": {
+            "type": "json"
+          }
+        },
+        {
+          "path": "lib/historia-clinica/catalogs/ipas-systems.json",
+          "kind": "import-statement",
+          "original": "../../lib/historia-clinica/catalogs/ipas-systems.json",
+          "with": {
+            "type": "json"
+          }
+        },
+        {
+          "path": "public/js/features/lan-sync.mjs",
+          "kind": "import-statement",
+          "original": "./features/lan-sync.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/features/lan-sync.mjs": {
+      "bytes": 144137,
+      "imports": [
+        {
+          "path": "public/js/storage.js",
+          "kind": "import-statement",
+          "original": "../storage.js"
+        },
+        {
+          "path": "public/js/tour-pitch-demo-seed.mjs",
+          "kind": "import-statement",
+          "original": "../tour-pitch-demo-seed.mjs"
+        },
+        {
+          "path": "public/js/lan-client.mjs",
+          "kind": "import-statement",
+          "original": "../lan-client.mjs"
+        },
+        {
+          "path": "public/js/live-sync-room.mjs",
+          "kind": "import-statement",
+          "original": "../live-sync-room.mjs"
+        },
+        {
+          "path": "public/js/lan-patient-merge.mjs",
+          "kind": "import-statement",
+          "original": "../lan-patient-merge.mjs"
+        },
+        {
+          "path": "public/js/livesync-patient-ids.mjs",
+          "kind": "import-statement",
+          "original": "../livesync-patient-ids.mjs"
+        },
+        {
+          "path": "public/js/live-sync-membership.mjs",
+          "kind": "import-statement",
+          "original": "../live-sync-membership.mjs"
+        },
+        {
+          "path": "public/js/live-sync-outbox.mjs",
+          "kind": "import-statement",
+          "original": "../live-sync-outbox.mjs"
+        },
+        {
+          "path": "public/js/manejo-room-data.mjs",
+          "kind": "import-statement",
+          "original": "../manejo-room-data.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-data.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-data.mjs"
+        },
+        {
+          "path": "public/js/patient-diagnosticos.mjs",
+          "kind": "import-statement",
+          "original": "../patient-diagnosticos.mjs"
+        },
+        {
+          "path": "public/js/manejo-todo-dismiss.mjs",
+          "kind": "import-statement",
+          "original": "../manejo-todo-dismiss.mjs"
+        },
+        {
+          "path": "public/js/features/soap-estado.mjs",
+          "kind": "import-statement",
+          "original": "./soap-estado.mjs"
+        },
+        {
+          "path": "public/js/lan-join-link.mjs",
+          "kind": "import-statement",
+          "original": "../lan-join-link.mjs"
+        },
+        {
+          "path": "public/js/versioned-mutation.mjs",
+          "kind": "import-statement",
+          "original": "../versioned-mutation.mjs"
+        },
+        {
+          "path": "public/js/clinical-access-runtime.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-access-runtime.mjs"
+        },
+        {
+          "path": "public/js/clinical-privileges.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-privileges.mjs"
+        },
+        {
+          "path": "public/js/features/lan-hub-guardia-mode.mjs",
+          "kind": "import-statement",
+          "original": "./lan-hub-guardia-mode.mjs"
+        },
+        {
+          "path": "public/js/features/lan-hub-panel-shell.mjs",
+          "kind": "import-statement",
+          "original": "./lan-hub-panel-shell.mjs"
+        },
+        {
+          "path": "public/js/features/interno-qr-panel.mjs",
+          "kind": "import-statement",
+          "original": "./interno-qr-panel.mjs"
+        },
+        {
+          "path": "public/js/draft-conflict-store.mjs",
+          "kind": "import-statement",
+          "original": "../draft-conflict-store.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-conflict-viewer.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-conflict-viewer.mjs"
+        },
+        {
+          "path": "public/js/host-bundle-bases.mjs",
+          "kind": "import-statement",
+          "original": "../host-bundle-bases.mjs"
+        },
+        {
+          "path": "public/js/clinical-ops-lan.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-ops-lan.mjs"
+        },
+        {
+          "path": "public/js/lan-surrogate-host.mjs",
+          "kind": "import-statement",
+          "original": "../lan-surrogate-host.mjs"
+        },
         {
           "path": "public/js/app-state.mjs",
           "kind": "import-statement",
           "original": "../app-state.mjs"
         },
         {
-          "path": "public/js/mode-features.mjs",
-          "kind": "import-statement",
-          "original": "../mode-features.mjs"
+          "path": "public/js/historia-clinica-lan-sync.mjs",
+          "kind": "dynamic-import",
+          "original": "../historia-clinica-lan-sync.mjs"
         },
         {
-          "path": "public/js/features/estado-actual-data.mjs",
+          "path": "public/js/historia-clinica-lan-sync.mjs",
+          "kind": "dynamic-import",
+          "original": "../historia-clinica-lan-sync.mjs"
+        },
+        {
+          "path": "public/js/historia-clinica-lan-sync.mjs",
+          "kind": "dynamic-import",
+          "original": "../historia-clinica-lan-sync.mjs"
+        },
+        {
+          "path": "public/js/historia-clinica-lan-sync.mjs",
+          "kind": "dynamic-import",
+          "original": "../historia-clinica-lan-sync.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-teams.mjs",
+          "kind": "dynamic-import",
+          "original": "./clinical-teams.mjs"
+        },
+        {
+          "path": "public/js/historia-clinica-lan-sync.mjs",
+          "kind": "dynamic-import",
+          "original": "../historia-clinica-lan-sync.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/clinical-profile-lan-sync.mjs": {
+      "bytes": 2435,
+      "imports": [
+        {
+          "path": "public/js/live-sync-membership.mjs",
           "kind": "import-statement",
-          "original": "./estado-actual-data.mjs"
+          "original": "./live-sync-membership.mjs"
+        },
+        {
+          "path": "public/js/lan-join-link.mjs",
+          "kind": "import-statement",
+          "original": "./lan-join-link.mjs"
+        },
+        {
+          "path": "public/js/features/lan-sync.mjs",
+          "kind": "dynamic-import",
+          "original": "./features/lan-sync.mjs"
+        },
+        {
+          "path": "public/js/features/lan-sync.mjs",
+          "kind": "dynamic-import",
+          "original": "./features/lan-sync.mjs"
+        },
+        {
+          "path": "public/js/features/lan-sync.mjs",
+          "kind": "dynamic-import",
+          "original": "./features/lan-sync.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/features/clinical-registration.mjs": {
+      "bytes": 8340,
+      "imports": [
+        {
+          "path": "public/js/features/lan-sync.mjs",
+          "kind": "import-statement",
+          "original": "./lan-sync.mjs"
+        },
+        {
+          "path": "public/js/db-storage-bridge.mjs",
+          "kind": "import-statement",
+          "original": "../db-storage-bridge.mjs"
+        },
+        {
+          "path": "public/js/clinical-username.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-username.mjs"
+        },
+        {
+          "path": "public/js/clinical-settings.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-settings.mjs"
+        },
+        {
+          "path": "public/js/clinical-profile-lan-sync.mjs",
+          "kind": "dynamic-import",
+          "original": "../clinical-profile-lan-sync.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-onboarding-main.mjs",
+          "kind": "dynamic-import",
+          "original": "./clinical-onboarding-main.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/features/clinical-onboarding-main.mjs": {
+      "bytes": 3312,
+      "imports": [
+        {
+          "path": "public/js/features/clinical-panel-host.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-panel-host.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-onboarding.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-onboarding.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-registration.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-registration.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-rotation-entry.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-rotation-entry.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/features/clinical-onboarding.mjs": {
+      "bytes": 14423,
+      "imports": [
+        {
+          "path": "public/js/clinical-access-runtime.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-access-runtime.mjs"
+        },
+        {
+          "path": "public/js/clinical-settings.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-settings.mjs"
+        },
+        {
+          "path": "public/js/db-storage-bridge.mjs",
+          "kind": "import-statement",
+          "original": "../db-storage-bridge.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-panel-host.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-panel-host.mjs"
+        },
+        {
+          "path": "public/js/clinical-username.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-username.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-teams.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-teams.mjs"
+        },
+        {
+          "path": "public/js/clinical-profile-lan-sync.mjs",
+          "kind": "dynamic-import",
+          "original": "../clinical-profile-lan-sync.mjs"
+        },
+        {
+          "path": "public/js/clinical-profile-lan-sync.mjs",
+          "kind": "dynamic-import",
+          "original": "../clinical-profile-lan-sync.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-onboarding-main.mjs",
+          "kind": "dynamic-import",
+          "original": "./clinical-onboarding-main.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-onboarding-main.mjs",
+          "kind": "dynamic-import",
+          "original": "./clinical-onboarding-main.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-onboarding-main.mjs",
+          "kind": "dynamic-import",
+          "original": "./clinical-onboarding-main.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-onboarding-main.mjs",
+          "kind": "dynamic-import",
+          "original": "./clinical-onboarding-main.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-teams.mjs",
+          "kind": "dynamic-import",
+          "original": "./clinical-teams.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/features/clinical-context-bar.mjs": {
+      "bytes": 712,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/features/clinical-rotation-entry.mjs": {
+      "bytes": 3951,
+      "imports": [
+        {
+          "path": "public/js/db-storage-bridge.mjs",
+          "kind": "import-statement",
+          "original": "../db-storage-bridge.mjs"
+        },
+        {
+          "path": "public/js/clinical-access-runtime.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-access-runtime.mjs"
+        },
+        {
+          "path": "public/js/clinical-username.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-username.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-teams.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-teams.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-onboarding.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-onboarding.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-context-bar.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-context-bar.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-onboarding-main.mjs",
+          "kind": "dynamic-import",
+          "original": "./clinical-onboarding-main.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-teams.mjs",
+          "kind": "dynamic-import",
+          "original": "./clinical-teams.mjs"
         }
       ],
       "format": "esm"
@@ -413,49 +1296,6 @@
           "path": "public/js/profile-templates.mjs",
           "kind": "import-statement",
           "original": "./profile-templates.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/vpo-dx-inference.mjs": {
-      "bytes": 5228,
-      "imports": [
-        {
-          "path": "public/js/clinical-product-policy.mjs",
-          "kind": "import-statement",
-          "original": "./clinical-product-policy.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/patient-date-fields.mjs": {
-      "bytes": 987,
-      "imports": [],
-      "format": "esm"
-    },
-    "public/js/patient-accesos.mjs": {
-      "bytes": 2962,
-      "imports": [
-        {
-          "path": "public/js/patient-date-fields.mjs",
-          "kind": "import-statement",
-          "original": "./patient-date-fields.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/patient-diagnosticos.mjs": {
-      "bytes": 3783,
-      "imports": [
-        {
-          "path": "public/js/vpo-dx-inference.mjs",
-          "kind": "import-statement",
-          "original": "./vpo-dx-inference.mjs"
-        },
-        {
-          "path": "public/js/patient-accesos.mjs",
-          "kind": "import-statement",
-          "original": "./patient-accesos.mjs"
         }
       ],
       "format": "esm"
@@ -709,1116 +1549,6 @@
       ],
       "format": "esm"
     },
-    "public/js/features/crypto-signer.mjs": {
-      "bytes": 1258,
-      "imports": [],
-      "format": "esm"
-    },
-    "public/js/features/session-manager.mjs": {
-      "bytes": 3374,
-      "imports": [],
-      "format": "esm"
-    },
-    "public/js/clinical-settings.mjs": {
-      "bytes": 2246,
-      "imports": [],
-      "format": "esm"
-    },
-    "public/js/clinical-username.mjs": {
-      "bytes": 614,
-      "imports": [],
-      "format": "esm"
-    },
-    "public/js/clinical-ops-bundle-merge.mjs": {
-      "bytes": 7188,
-      "imports": [],
-      "format": "esm"
-    },
-    "public/js/clinical-ops-lan.mjs": {
-      "bytes": 2008,
-      "imports": [
-        {
-          "path": "public/js/clinical-ops-bundle-merge.mjs",
-          "kind": "import-statement",
-          "original": "./clinical-ops-bundle-merge.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/lan-client.mjs": {
-      "bytes": 5289,
-      "imports": [],
-      "format": "esm"
-    },
-    "public/js/live-sync-room.mjs": {
-      "bytes": 8839,
-      "imports": [],
-      "format": "esm"
-    },
-    "public/js/livesync-patient-ids.mjs": {
-      "bytes": 3978,
-      "imports": [],
-      "format": "esm"
-    },
-    "lib/historia-clinica/clinical-text.mjs": {
-      "bytes": 3240,
-      "imports": [],
-      "format": "esm"
-    },
-    "lib/drive-import/merge-eventualidades.mjs": {
-      "bytes": 1084,
-      "imports": [
-        {
-          "path": "lib/historia-clinica/clinical-text.mjs",
-          "kind": "import-statement",
-          "original": "../historia-clinica/clinical-text.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/lan-patient-merge.mjs": {
-      "bytes": 15671,
-      "imports": [
-        {
-          "path": "public/js/live-sync-room.mjs",
-          "kind": "import-statement",
-          "original": "./live-sync-room.mjs"
-        },
-        {
-          "path": "public/js/livesync-patient-ids.mjs",
-          "kind": "import-statement",
-          "original": "./livesync-patient-ids.mjs"
-        },
-        {
-          "path": "public/js/features/estado-actual-data.mjs",
-          "kind": "import-statement",
-          "original": "./features/estado-actual-data.mjs"
-        },
-        {
-          "path": "public/js/lab-history-cache.mjs",
-          "kind": "import-statement",
-          "original": "./lab-history-cache.mjs"
-        },
-        {
-          "path": "lib/drive-import/merge-eventualidades.mjs",
-          "kind": "import-statement",
-          "original": "../../lib/drive-import/merge-eventualidades.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/live-sync-membership.mjs": {
-      "bytes": 1392,
-      "imports": [],
-      "format": "esm"
-    },
-    "public/js/live-sync-outbox.mjs": {
-      "bytes": 1803,
-      "imports": [],
-      "format": "esm"
-    },
-    "public/js/manejo-custom-protocols.mjs": {
-      "bytes": 3615,
-      "imports": [],
-      "format": "esm"
-    },
-    "public/js/manejo-protocol-favorites.mjs": {
-      "bytes": 1949,
-      "imports": [],
-      "format": "esm"
-    },
-    "public/js/manejo-room-data.mjs": {
-      "bytes": 4872,
-      "imports": [
-        {
-          "path": "public/js/live-sync-room.mjs",
-          "kind": "import-statement",
-          "original": "./live-sync-room.mjs"
-        },
-        {
-          "path": "public/js/clinical-product-policy.mjs",
-          "kind": "import-statement",
-          "original": "./clinical-product-policy.mjs"
-        },
-        {
-          "path": "public/js/manejo-custom-protocols.mjs",
-          "kind": "import-statement",
-          "original": "./manejo-custom-protocols.mjs"
-        },
-        {
-          "path": "public/js/manejo-protocol-favorites.mjs",
-          "kind": "import-statement",
-          "original": "./manejo-protocol-favorites.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/lan-join-link.mjs": {
-      "bytes": 3053,
-      "imports": [],
-      "format": "esm"
-    },
-    "public/js/versioned-mutation.mjs": {
-      "bytes": 1255,
-      "imports": [],
-      "format": "esm"
-    },
-    "public/js/clinical-privileges.mjs": {
-      "bytes": 1832,
-      "imports": [],
-      "format": "esm"
-    },
-    "public/js/guardia-mode-sync.mjs": {
-      "bytes": 1962,
-      "imports": [
-        {
-          "path": "public/js/clinical-access-runtime.mjs",
-          "kind": "import-statement",
-          "original": "./clinical-access-runtime.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/features/lan-hub-guardia-mode.mjs": {
-      "bytes": 1223,
-      "imports": [
-        {
-          "path": "public/js/clinical-access-runtime.mjs",
-          "kind": "import-statement",
-          "original": "../clinical-access-runtime.mjs"
-        },
-        {
-          "path": "public/js/guardia-mode-sync.mjs",
-          "kind": "import-statement",
-          "original": "../guardia-mode-sync.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/features/lan-hub-panel-shell.mjs": {
-      "bytes": 2907,
-      "imports": [],
-      "format": "esm"
-    },
-    "node_modules/qrcode-generator/dist/qrcode.mjs": {
-      "bytes": 51907,
-      "imports": [],
-      "format": "esm"
-    },
-    "public/js/interno-qr-render.mjs": {
-      "bytes": 2796,
-      "imports": [
-        {
-          "path": "node_modules/qrcode-generator/dist/qrcode.mjs",
-          "kind": "import-statement",
-          "original": "qrcode-generator"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/features/interno-qr-panel.mjs": {
-      "bytes": 8083,
-      "imports": [
-        {
-          "path": "public/js/interno-qr-render.mjs",
-          "kind": "import-statement",
-          "original": "../interno-qr-render.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/draft-conflict-store.mjs": {
-      "bytes": 3251,
-      "imports": [],
-      "format": "esm"
-    },
-    "public/js/features/clinical-conflict-viewer.mjs": {
-      "bytes": 21725,
-      "imports": [],
-      "format": "esm"
-    },
-    "public/js/host-bundle-bases.mjs": {
-      "bytes": 3256,
-      "imports": [
-        {
-          "path": "public/js/live-sync-room.mjs",
-          "kind": "import-statement",
-          "original": "./live-sync-room.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/lan-surrogate-host.mjs": {
-      "bytes": 4422,
-      "imports": [],
-      "format": "esm"
-    },
-    "lib/historia-clinica/migrate-legacy.mjs": {
-      "bytes": 2231,
-      "imports": [],
-      "format": "esm"
-    },
-    "lib/historia-clinica/catalogs/app-conditions.json": {
-      "bytes": 649,
-      "imports": [],
-      "format": "esm",
-      "with": {
-        "type": "json"
-      }
-    },
-    "lib/historia-clinica/catalogs/ahf-conditions.json": {
-      "bytes": 453,
-      "imports": [],
-      "format": "esm",
-      "with": {
-        "type": "json"
-      }
-    },
-    "lib/historia-clinica/catalogs/ipas-systems.json": {
-      "bytes": 341,
-      "imports": [],
-      "format": "esm",
-      "with": {
-        "type": "json"
-      }
-    },
-    "public/js/historia-clinica-lan-sync.mjs": {
-      "bytes": 6149,
-      "imports": [
-        {
-          "path": "public/js/app-state.mjs",
-          "kind": "import-statement",
-          "original": "./app-state.mjs"
-        },
-        {
-          "path": "public/js/versioned-mutation.mjs",
-          "kind": "import-statement",
-          "original": "./versioned-mutation.mjs"
-        },
-        {
-          "path": "lib/historia-clinica/migrate-legacy.mjs",
-          "kind": "import-statement",
-          "original": "../../lib/historia-clinica/migrate-legacy.mjs"
-        },
-        {
-          "path": "lib/historia-clinica/catalogs/app-conditions.json",
-          "kind": "import-statement",
-          "original": "../../lib/historia-clinica/catalogs/app-conditions.json",
-          "with": {
-            "type": "json"
-          }
-        },
-        {
-          "path": "lib/historia-clinica/catalogs/ahf-conditions.json",
-          "kind": "import-statement",
-          "original": "../../lib/historia-clinica/catalogs/ahf-conditions.json",
-          "with": {
-            "type": "json"
-          }
-        },
-        {
-          "path": "lib/historia-clinica/catalogs/ipas-systems.json",
-          "kind": "import-statement",
-          "original": "../../lib/historia-clinica/catalogs/ipas-systems.json",
-          "with": {
-            "type": "json"
-          }
-        },
-        {
-          "path": "public/js/features/lan-sync.mjs",
-          "kind": "import-statement",
-          "original": "./features/lan-sync.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/clinical-team-invite.mjs": {
-      "bytes": 5594,
-      "imports": [],
-      "format": "esm"
-    },
-    "public/js/features/clinical-rotation.mjs": {
-      "bytes": 9983,
-      "imports": [
-        {
-          "path": "public/js/clinical-access-runtime.mjs",
-          "kind": "import-statement",
-          "original": "../clinical-access-runtime.mjs"
-        },
-        {
-          "path": "public/js/clinical-privileges.mjs",
-          "kind": "import-statement",
-          "original": "../clinical-privileges.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "lib/admin-access-code.mjs": {
-      "bytes": 267,
-      "imports": [],
-      "format": "esm"
-    },
-    "public/js/features/clinical-panel-host.mjs": {
-      "bytes": 2221,
-      "imports": [
-        {
-          "path": "public/js/db-storage-bridge.mjs",
-          "kind": "import-statement",
-          "original": "../db-storage-bridge.mjs"
-        },
-        {
-          "path": "public/js/clinical-access-runtime.mjs",
-          "kind": "import-statement",
-          "original": "../clinical-access-runtime.mjs"
-        },
-        {
-          "path": "public/js/clinical-settings.mjs",
-          "kind": "import-statement",
-          "original": "../clinical-settings.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/features/clinical-registration.mjs": {
-      "bytes": 7592,
-      "imports": [
-        {
-          "path": "public/js/features/lan-sync.mjs",
-          "kind": "import-statement",
-          "original": "./lan-sync.mjs"
-        },
-        {
-          "path": "public/js/db-storage-bridge.mjs",
-          "kind": "import-statement",
-          "original": "../db-storage-bridge.mjs"
-        },
-        {
-          "path": "public/js/clinical-username.mjs",
-          "kind": "import-statement",
-          "original": "../clinical-username.mjs"
-        },
-        {
-          "path": "public/js/clinical-settings.mjs",
-          "kind": "import-statement",
-          "original": "../clinical-settings.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-onboarding-main.mjs",
-          "kind": "dynamic-import",
-          "original": "./clinical-onboarding-main.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/features/clinical-onboarding-main.mjs": {
-      "bytes": 3312,
-      "imports": [
-        {
-          "path": "public/js/features/clinical-panel-host.mjs",
-          "kind": "import-statement",
-          "original": "./clinical-panel-host.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-onboarding.mjs",
-          "kind": "import-statement",
-          "original": "./clinical-onboarding.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-registration.mjs",
-          "kind": "import-statement",
-          "original": "./clinical-registration.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-rotation-entry.mjs",
-          "kind": "import-statement",
-          "original": "./clinical-rotation-entry.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/features/clinical-onboarding.mjs": {
-      "bytes": 13517,
-      "imports": [
-        {
-          "path": "public/js/clinical-access-runtime.mjs",
-          "kind": "import-statement",
-          "original": "../clinical-access-runtime.mjs"
-        },
-        {
-          "path": "public/js/clinical-settings.mjs",
-          "kind": "import-statement",
-          "original": "../clinical-settings.mjs"
-        },
-        {
-          "path": "public/js/db-storage-bridge.mjs",
-          "kind": "import-statement",
-          "original": "../db-storage-bridge.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-panel-host.mjs",
-          "kind": "import-statement",
-          "original": "./clinical-panel-host.mjs"
-        },
-        {
-          "path": "public/js/clinical-username.mjs",
-          "kind": "import-statement",
-          "original": "../clinical-username.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-teams.mjs",
-          "kind": "import-statement",
-          "original": "./clinical-teams.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-onboarding-main.mjs",
-          "kind": "dynamic-import",
-          "original": "./clinical-onboarding-main.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-onboarding-main.mjs",
-          "kind": "dynamic-import",
-          "original": "./clinical-onboarding-main.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-onboarding-main.mjs",
-          "kind": "dynamic-import",
-          "original": "./clinical-onboarding-main.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-onboarding-main.mjs",
-          "kind": "dynamic-import",
-          "original": "./clinical-onboarding-main.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-teams.mjs",
-          "kind": "dynamic-import",
-          "original": "./clinical-teams.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/features/clinical-context-bar.mjs": {
-      "bytes": 712,
-      "imports": [],
-      "format": "esm"
-    },
-    "public/js/features/clinical-rotation-entry.mjs": {
-      "bytes": 3951,
-      "imports": [
-        {
-          "path": "public/js/db-storage-bridge.mjs",
-          "kind": "import-statement",
-          "original": "../db-storage-bridge.mjs"
-        },
-        {
-          "path": "public/js/clinical-access-runtime.mjs",
-          "kind": "import-statement",
-          "original": "../clinical-access-runtime.mjs"
-        },
-        {
-          "path": "public/js/clinical-username.mjs",
-          "kind": "import-statement",
-          "original": "../clinical-username.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-teams.mjs",
-          "kind": "import-statement",
-          "original": "./clinical-teams.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-onboarding.mjs",
-          "kind": "import-statement",
-          "original": "./clinical-onboarding.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-context-bar.mjs",
-          "kind": "import-statement",
-          "original": "./clinical-context-bar.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-onboarding-main.mjs",
-          "kind": "dynamic-import",
-          "original": "./clinical-onboarding-main.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-teams.mjs",
-          "kind": "dynamic-import",
-          "original": "./clinical-teams.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/features/clinical-teams.mjs": {
-      "bytes": 83650,
-      "imports": [
-        {
-          "path": "public/js/clinical-access-runtime.mjs",
-          "kind": "import-statement",
-          "original": "../clinical-access-runtime.mjs"
-        },
-        {
-          "path": "public/js/clinico-access.mjs",
-          "kind": "import-statement",
-          "original": "../clinico-access.mjs"
-        },
-        {
-          "path": "public/js/clinical-team-invite.mjs",
-          "kind": "import-statement",
-          "original": "../clinical-team-invite.mjs"
-        },
-        {
-          "path": "public/js/features/soap-estado.mjs",
-          "kind": "import-statement",
-          "original": "./soap-estado.mjs"
-        },
-        {
-          "path": "public/js/clinical-privileges.mjs",
-          "kind": "import-statement",
-          "original": "../clinical-privileges.mjs"
-        },
-        {
-          "path": "public/js/clinical-username.mjs",
-          "kind": "import-statement",
-          "original": "../clinical-username.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-rotation.mjs",
-          "kind": "import-statement",
-          "original": "./clinical-rotation.mjs"
-        },
-        {
-          "path": "public/js/clinical-settings.mjs",
-          "kind": "import-statement",
-          "original": "../clinical-settings.mjs"
-        },
-        {
-          "path": "public/js/clinical-access-runtime.mjs",
-          "kind": "import-statement",
-          "original": "../clinical-access-runtime.mjs"
-        },
-        {
-          "path": "lib/admin-access-code.mjs",
-          "kind": "import-statement",
-          "original": "../../../lib/admin-access-code.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-panel-host.mjs",
-          "kind": "import-statement",
-          "original": "./clinical-panel-host.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-rotation-entry.mjs",
-          "kind": "dynamic-import",
-          "original": "./clinical-rotation-entry.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-onboarding.mjs",
-          "kind": "dynamic-import",
-          "original": "./clinical-onboarding.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-rotation-entry.mjs",
-          "kind": "dynamic-import",
-          "original": "./clinical-rotation-entry.mjs"
-        },
-        {
-          "path": "public/js/features/patients.mjs",
-          "kind": "dynamic-import",
-          "original": "./patients.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-rotation-entry.mjs",
-          "kind": "dynamic-import",
-          "original": "./clinical-rotation-entry.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/features/lan-sync.mjs": {
-      "bytes": 136667,
-      "imports": [
-        {
-          "path": "public/js/storage.js",
-          "kind": "import-statement",
-          "original": "../storage.js"
-        },
-        {
-          "path": "public/js/tour-pitch-demo-seed.mjs",
-          "kind": "import-statement",
-          "original": "../tour-pitch-demo-seed.mjs"
-        },
-        {
-          "path": "public/js/lan-client.mjs",
-          "kind": "import-statement",
-          "original": "../lan-client.mjs"
-        },
-        {
-          "path": "public/js/live-sync-room.mjs",
-          "kind": "import-statement",
-          "original": "../live-sync-room.mjs"
-        },
-        {
-          "path": "public/js/lan-patient-merge.mjs",
-          "kind": "import-statement",
-          "original": "../lan-patient-merge.mjs"
-        },
-        {
-          "path": "public/js/livesync-patient-ids.mjs",
-          "kind": "import-statement",
-          "original": "../livesync-patient-ids.mjs"
-        },
-        {
-          "path": "public/js/live-sync-membership.mjs",
-          "kind": "import-statement",
-          "original": "../live-sync-membership.mjs"
-        },
-        {
-          "path": "public/js/live-sync-outbox.mjs",
-          "kind": "import-statement",
-          "original": "../live-sync-outbox.mjs"
-        },
-        {
-          "path": "public/js/manejo-room-data.mjs",
-          "kind": "import-statement",
-          "original": "../manejo-room-data.mjs"
-        },
-        {
-          "path": "public/js/features/estado-actual-data.mjs",
-          "kind": "import-statement",
-          "original": "./estado-actual-data.mjs"
-        },
-        {
-          "path": "public/js/patient-diagnosticos.mjs",
-          "kind": "import-statement",
-          "original": "../patient-diagnosticos.mjs"
-        },
-        {
-          "path": "public/js/manejo-todo-dismiss.mjs",
-          "kind": "import-statement",
-          "original": "../manejo-todo-dismiss.mjs"
-        },
-        {
-          "path": "public/js/features/soap-estado.mjs",
-          "kind": "import-statement",
-          "original": "./soap-estado.mjs"
-        },
-        {
-          "path": "public/js/lan-join-link.mjs",
-          "kind": "import-statement",
-          "original": "../lan-join-link.mjs"
-        },
-        {
-          "path": "public/js/versioned-mutation.mjs",
-          "kind": "import-statement",
-          "original": "../versioned-mutation.mjs"
-        },
-        {
-          "path": "public/js/clinical-access-runtime.mjs",
-          "kind": "import-statement",
-          "original": "../clinical-access-runtime.mjs"
-        },
-        {
-          "path": "public/js/clinical-privileges.mjs",
-          "kind": "import-statement",
-          "original": "../clinical-privileges.mjs"
-        },
-        {
-          "path": "public/js/features/lan-hub-guardia-mode.mjs",
-          "kind": "import-statement",
-          "original": "./lan-hub-guardia-mode.mjs"
-        },
-        {
-          "path": "public/js/features/lan-hub-panel-shell.mjs",
-          "kind": "import-statement",
-          "original": "./lan-hub-panel-shell.mjs"
-        },
-        {
-          "path": "public/js/features/interno-qr-panel.mjs",
-          "kind": "import-statement",
-          "original": "./interno-qr-panel.mjs"
-        },
-        {
-          "path": "public/js/draft-conflict-store.mjs",
-          "kind": "import-statement",
-          "original": "../draft-conflict-store.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-conflict-viewer.mjs",
-          "kind": "import-statement",
-          "original": "./clinical-conflict-viewer.mjs"
-        },
-        {
-          "path": "public/js/host-bundle-bases.mjs",
-          "kind": "import-statement",
-          "original": "../host-bundle-bases.mjs"
-        },
-        {
-          "path": "public/js/clinical-ops-lan.mjs",
-          "kind": "import-statement",
-          "original": "../clinical-ops-lan.mjs"
-        },
-        {
-          "path": "public/js/lan-surrogate-host.mjs",
-          "kind": "import-statement",
-          "original": "../lan-surrogate-host.mjs"
-        },
-        {
-          "path": "public/js/app-state.mjs",
-          "kind": "import-statement",
-          "original": "../app-state.mjs"
-        },
-        {
-          "path": "public/js/historia-clinica-lan-sync.mjs",
-          "kind": "dynamic-import",
-          "original": "../historia-clinica-lan-sync.mjs"
-        },
-        {
-          "path": "public/js/historia-clinica-lan-sync.mjs",
-          "kind": "dynamic-import",
-          "original": "../historia-clinica-lan-sync.mjs"
-        },
-        {
-          "path": "public/js/historia-clinica-lan-sync.mjs",
-          "kind": "dynamic-import",
-          "original": "../historia-clinica-lan-sync.mjs"
-        },
-        {
-          "path": "public/js/historia-clinica-lan-sync.mjs",
-          "kind": "dynamic-import",
-          "original": "../historia-clinica-lan-sync.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-teams.mjs",
-          "kind": "dynamic-import",
-          "original": "./clinical-teams.mjs"
-        },
-        {
-          "path": "public/js/historia-clinica-lan-sync.mjs",
-          "kind": "dynamic-import",
-          "original": "../historia-clinica-lan-sync.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/clinical-access-runtime.mjs": {
-      "bytes": 18597,
-      "imports": [
-        {
-          "path": "public/js/db-storage-bridge.mjs",
-          "kind": "import-statement",
-          "original": "./db-storage-bridge.mjs"
-        },
-        {
-          "path": "public/js/features/chrome.mjs",
-          "kind": "import-statement",
-          "original": "./features/chrome.mjs"
-        },
-        {
-          "path": "public/js/app-state.mjs",
-          "kind": "import-statement",
-          "original": "./app-state.mjs"
-        },
-        {
-          "path": "public/js/clinico-access.mjs",
-          "kind": "import-statement",
-          "original": "./clinico-access.mjs"
-        },
-        {
-          "path": "public/js/features/crypto-signer.mjs",
-          "kind": "import-statement",
-          "original": "./features/crypto-signer.mjs"
-        },
-        {
-          "path": "public/js/features/guardia-board.mjs",
-          "kind": "import-statement",
-          "original": "./features/guardia-board.mjs"
-        },
-        {
-          "path": "public/js/features/session-manager.mjs",
-          "kind": "import-statement",
-          "original": "./features/session-manager.mjs"
-        },
-        {
-          "path": "public/js/clinical-settings.mjs",
-          "kind": "import-statement",
-          "original": "./clinical-settings.mjs"
-        },
-        {
-          "path": "public/js/clinical-username.mjs",
-          "kind": "import-statement",
-          "original": "./clinical-username.mjs"
-        },
-        {
-          "path": "public/js/clinical-ops-lan.mjs",
-          "kind": "dynamic-import",
-          "original": "./clinical-ops-lan.mjs"
-        },
-        {
-          "path": "public/js/features/lan-sync.mjs",
-          "kind": "dynamic-import",
-          "original": "./features/lan-sync.mjs"
-        },
-        {
-          "path": "public/js/features/patients.mjs",
-          "kind": "dynamic-import",
-          "original": "./features/patients.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "lib/entrega/entrega-handoff-context.mjs": {
-      "bytes": 6910,
-      "imports": [],
-      "format": "esm"
-    },
-    "lib/entrega/entrega-vitals-plan.mjs": {
-      "bytes": 6787,
-      "imports": [],
-      "format": "esm"
-    },
-    "lib/entrega/entrega-pendientes.mjs": {
-      "bytes": 4301,
-      "imports": [
-        {
-          "path": "lib/entrega/entrega-handoff-context.mjs",
-          "kind": "import-statement",
-          "original": "./entrega-handoff-context.mjs"
-        },
-        {
-          "path": "lib/entrega/entrega-vitals-plan.mjs",
-          "kind": "import-statement",
-          "original": "./entrega-vitals-plan.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "lib/entrega/entrega-chip-markers.mjs": {
-      "bytes": 1894,
-      "imports": [
-        {
-          "path": "lib/entrega/entrega-handoff-context.mjs",
-          "kind": "import-statement",
-          "original": "./entrega-handoff-context.mjs"
-        },
-        {
-          "path": "lib/entrega/entrega-pendientes.mjs",
-          "kind": "import-statement",
-          "original": "./entrega-pendientes.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "lib/interno/vitals-banner.mjs": {
-      "bytes": 1527,
-      "imports": [
-        {
-          "path": "lib/entrega/entrega-vitals-plan.mjs",
-          "kind": "import-statement",
-          "original": "../entrega/entrega-vitals-plan.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "lib/interno/interno-board.mjs": {
-      "bytes": 3630,
-      "imports": [
-        {
-          "path": "lib/entrega/entrega-handoff-context.mjs",
-          "kind": "import-statement",
-          "original": "../entrega/entrega-handoff-context.mjs"
-        },
-        {
-          "path": "lib/entrega/entrega-pendientes.mjs",
-          "kind": "import-statement",
-          "original": "../entrega/entrega-pendientes.mjs"
-        },
-        {
-          "path": "lib/interno/vitals-banner.mjs",
-          "kind": "import-statement",
-          "original": "./vitals-banner.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/features/unified-patient-grid-board.mjs": {
-      "bytes": 8002,
-      "imports": [
-        {
-          "path": "lib/entrega/entrega-chip-markers.mjs",
-          "kind": "import-statement",
-          "original": "../../../lib/entrega/entrega-chip-markers.mjs"
-        },
-        {
-          "path": "lib/entrega/entrega-pendientes.mjs",
-          "kind": "import-statement",
-          "original": "../../../lib/entrega/entrega-pendientes.mjs"
-        },
-        {
-          "path": "lib/interno/interno-board.mjs",
-          "kind": "import-statement",
-          "original": "../../../lib/interno/interno-board.mjs"
-        },
-        {
-          "path": "lib/interno/vitals-banner.mjs",
-          "kind": "import-statement",
-          "original": "../../../lib/interno/vitals-banner.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/features/entrega-modal-ui.mjs": {
-      "bytes": 51290,
-      "imports": [
-        {
-          "path": "lib/entrega/entrega-pendientes.mjs",
-          "kind": "import-statement",
-          "original": "../../../lib/entrega/entrega-pendientes.mjs"
-        },
-        {
-          "path": "lib/entrega/entrega-handoff-context.mjs",
-          "kind": "import-statement",
-          "original": "../../../lib/entrega/entrega-handoff-context.mjs"
-        },
-        {
-          "path": "lib/entrega/entrega-vitals-plan.mjs",
-          "kind": "import-statement",
-          "original": "../../../lib/entrega/entrega-vitals-plan.mjs"
-        },
-        {
-          "path": "public/js/clinical-access-runtime.mjs",
-          "kind": "import-statement",
-          "original": "../clinical-access-runtime.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/features/clinical-entrega.mjs": {
-      "bytes": 21298,
-      "imports": [
-        {
-          "path": "public/js/app-state.mjs",
-          "kind": "import-statement",
-          "original": "../app-state.mjs"
-        },
-        {
-          "path": "public/js/clinical-access-runtime.mjs",
-          "kind": "import-statement",
-          "original": "../clinical-access-runtime.mjs"
-        },
-        {
-          "path": "public/js/clinico-access.mjs",
-          "kind": "import-statement",
-          "original": "../clinico-access.mjs"
-        },
-        {
-          "path": "public/js/clinical-privileges.mjs",
-          "kind": "import-statement",
-          "original": "../clinical-privileges.mjs"
-        },
-        {
-          "path": "lib/entrega/entrega-pendientes.mjs",
-          "kind": "import-statement",
-          "original": "../../../lib/entrega/entrega-pendientes.mjs"
-        },
-        {
-          "path": "lib/entrega/entrega-vitals-plan.mjs",
-          "kind": "import-statement",
-          "original": "../../../lib/entrega/entrega-vitals-plan.mjs"
-        },
-        {
-          "path": "public/js/features/lan-sync.mjs",
-          "kind": "import-statement",
-          "original": "./lan-sync.mjs"
-        },
-        {
-          "path": "public/js/features/entrega-modal-ui.mjs",
-          "kind": "import-statement",
-          "original": "./entrega-modal-ui.mjs"
-        }
-      ],
-      "format": "esm"
-    },
-    "public/js/features/guardia-board.mjs": {
-      "bytes": 10507,
-      "imports": [
-        {
-          "path": "public/js/storage.js",
-          "kind": "import-statement",
-          "original": "../storage.js"
-        },
-        {
-          "path": "public/js/app-state.mjs",
-          "kind": "import-statement",
-          "original": "../app-state.mjs"
-        },
-        {
-          "path": "public/js/db-storage-bridge.mjs",
-          "kind": "import-statement",
-          "original": "../db-storage-bridge.mjs"
-        },
-        {
-          "path": "public/js/features/chrome.mjs",
-          "kind": "import-statement",
-          "original": "./chrome.mjs"
-        },
-        {
-          "path": "public/js/clinical-access-runtime.mjs",
-          "kind": "import-statement",
-          "original": "../clinical-access-runtime.mjs"
-        },
-        {
-          "path": "public/js/clinico-access.mjs",
-          "kind": "import-statement",
-          "original": "../clinico-access.mjs"
-        },
-        {
-          "path": "public/js/guardia-mode-sync.mjs",
-          "kind": "import-statement",
-          "original": "../guardia-mode-sync.mjs"
-        },
-        {
-          "path": "public/js/patient-diagnosticos.mjs",
-          "kind": "import-statement",
-          "original": "../patient-diagnosticos.mjs"
-        },
-        {
-          "path": "public/js/features/unified-patient-grid-board.mjs",
-          "kind": "import-statement",
-          "original": "./unified-patient-grid-board.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-rotation.mjs",
-          "kind": "import-statement",
-          "original": "./clinical-rotation.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-teams.mjs",
-          "kind": "import-statement",
-          "original": "./clinical-teams.mjs"
-        },
-        {
-          "path": "public/js/features/clinical-entrega.mjs",
-          "kind": "import-statement",
-          "original": "./clinical-entrega.mjs"
-        },
-        {
-          "path": "public/js/clinical-access-runtime.mjs",
-          "kind": "import-statement",
-          "original": "../clinical-access-runtime.mjs"
-        },
-        {
-          "path": "lib/entrega/entrega-chip-markers.mjs",
-          "kind": "import-statement",
-          "original": "../../../lib/entrega/entrega-chip-markers.mjs"
-        },
-        {
-          "path": "lib/entrega/entrega-pendientes.mjs",
-          "kind": "import-statement",
-          "original": "../../../lib/entrega/entrega-pendientes.mjs"
-        }
-      ],
-      "format": "esm"
-    },
     "public/js/rpc-date-picker.mjs": {
       "bytes": 11873,
       "imports": [
@@ -1976,6 +1706,42 @@
       ],
       "format": "esm"
     },
+    "public/js/presentation-mode.mjs": {
+      "bytes": 4899,
+      "imports": [
+        {
+          "path": "public/js/tour-pitch-demo-seed.mjs",
+          "kind": "import-statement",
+          "original": "./tour-pitch-demo-seed.mjs"
+        },
+        {
+          "path": "public/js/app-state.mjs",
+          "kind": "import-statement",
+          "original": "./app-state.mjs"
+        },
+        {
+          "path": "public/js/app-state.mjs",
+          "kind": "import-statement",
+          "original": "./app-state.mjs"
+        },
+        {
+          "path": "public/js/features/patients.mjs",
+          "kind": "import-statement",
+          "original": "./features/patients.mjs"
+        },
+        {
+          "path": "public/js/features/expediente.mjs",
+          "kind": "import-statement",
+          "original": "./features/expediente.mjs"
+        },
+        {
+          "path": "public/js/features/lab-panel.mjs",
+          "kind": "import-statement",
+          "original": "./features/lab-panel.mjs"
+        }
+      ],
+      "format": "esm"
+    },
     "public/js/censo-cultivo-format.mjs": {
       "bytes": 10413,
       "imports": [
@@ -2013,8 +1779,55 @@
       ],
       "format": "esm"
     },
+    "public/js/features/estado-actual-parse-variants.mjs": {
+      "bytes": 1507,
+      "imports": [],
+      "format": "esm"
+    },
+    "public/js/features/estado-actual-parser.mjs": {
+      "bytes": 13016,
+      "imports": [
+        {
+          "path": "public/js/features/estado-actual-io.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-io.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-parse-variants.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-parse-variants.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-io.mjs",
+          "kind": "import-statement",
+          "original": "./estado-actual-io.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/censo-signos-format.mjs": {
+      "bytes": 8420,
+      "imports": [
+        {
+          "path": "public/js/features/estado-actual-data.mjs",
+          "kind": "import-statement",
+          "original": "./features/estado-actual-data.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-parser.mjs",
+          "kind": "import-statement",
+          "original": "./features/estado-actual-parser.mjs"
+        },
+        {
+          "path": "public/js/features/estado-actual-io.mjs",
+          "kind": "import-statement",
+          "original": "./features/estado-actual-io.mjs"
+        }
+      ],
+      "format": "esm"
+    },
     "public/js/censo-build.mjs": {
-      "bytes": 10091,
+      "bytes": 10258,
       "imports": [
         {
           "path": "public/js/tend-core.mjs",
@@ -2060,12 +1873,17 @@
           "path": "public/js/censo-header-format.mjs",
           "kind": "import-statement",
           "original": "./censo-header-format.mjs"
+        },
+        {
+          "path": "public/js/censo-signos-format.mjs",
+          "kind": "import-statement",
+          "original": "./censo-signos-format.mjs"
         }
       ],
       "format": "esm"
     },
     "public/js/censo-preview-html.mjs": {
-      "bytes": 8555,
+      "bytes": 9046,
       "imports": [
         {
           "path": "public/js/censo-build.mjs",
@@ -2076,7 +1894,7 @@
       "format": "esm"
     },
     "public/js/censo-export.mjs": {
-      "bytes": 8547,
+      "bytes": 8652,
       "imports": [
         {
           "path": "public/js/mode-features.mjs",
@@ -2324,32 +2142,6 @@
       ],
       "format": "esm"
     },
-    "public/js/features/estado-actual-parse-variants.mjs": {
-      "bytes": 1507,
-      "imports": [],
-      "format": "esm"
-    },
-    "public/js/features/estado-actual-parser.mjs": {
-      "bytes": 13016,
-      "imports": [
-        {
-          "path": "public/js/features/estado-actual-io.mjs",
-          "kind": "import-statement",
-          "original": "./estado-actual-io.mjs"
-        },
-        {
-          "path": "public/js/features/estado-actual-parse-variants.mjs",
-          "kind": "import-statement",
-          "original": "./estado-actual-parse-variants.mjs"
-        },
-        {
-          "path": "public/js/features/estado-actual-io.mjs",
-          "kind": "import-statement",
-          "original": "./estado-actual-io.mjs"
-        }
-      ],
-      "format": "esm"
-    },
     "public/js/features/estado-actual-paste-modal.mjs": {
       "bytes": 3270,
       "imports": [
@@ -2533,7 +2325,7 @@
       "format": "esm"
     },
     "public/js/features/settings-help.mjs": {
-      "bytes": 129995,
+      "bytes": 132083,
       "imports": [
         {
           "path": "public/js/tour-targets.mjs",
@@ -4899,38 +4691,364 @@
       ],
       "format": "esm"
     },
-    "public/js/presentation-mode.mjs": {
-      "bytes": 4899,
+    "public/js/features/clinical-teams.mjs": {
+      "bytes": 86597,
       "imports": [
         {
-          "path": "public/js/tour-pitch-demo-seed.mjs",
+          "path": "public/js/clinical-access-runtime.mjs",
           "kind": "import-statement",
-          "original": "./tour-pitch-demo-seed.mjs"
+          "original": "../clinical-access-runtime.mjs"
         },
         {
-          "path": "public/js/app-state.mjs",
+          "path": "public/js/clinico-access.mjs",
           "kind": "import-statement",
-          "original": "./app-state.mjs"
+          "original": "../clinico-access.mjs"
         },
         {
-          "path": "public/js/app-state.mjs",
+          "path": "public/js/clinical-team-invite.mjs",
           "kind": "import-statement",
-          "original": "./app-state.mjs"
+          "original": "../clinical-team-invite.mjs"
+        },
+        {
+          "path": "public/js/features/soap-estado.mjs",
+          "kind": "import-statement",
+          "original": "./soap-estado.mjs"
+        },
+        {
+          "path": "public/js/clinical-privileges.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-privileges.mjs"
+        },
+        {
+          "path": "public/js/clinical-username.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-username.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-rotation.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-rotation.mjs"
+        },
+        {
+          "path": "public/js/clinical-settings.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-settings.mjs"
+        },
+        {
+          "path": "public/js/clinical-access-runtime.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-access-runtime.mjs"
+        },
+        {
+          "path": "lib/admin-access-code.mjs",
+          "kind": "import-statement",
+          "original": "../../../lib/admin-access-code.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-panel-host.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-panel-host.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-rotation-entry.mjs",
+          "kind": "dynamic-import",
+          "original": "./clinical-rotation-entry.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-onboarding.mjs",
+          "kind": "dynamic-import",
+          "original": "./clinical-onboarding.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-rotation-entry.mjs",
+          "kind": "dynamic-import",
+          "original": "./clinical-rotation-entry.mjs"
+        },
+        {
+          "path": "public/js/features/lan-sync.mjs",
+          "kind": "dynamic-import",
+          "original": "./lan-sync.mjs"
+        },
+        {
+          "path": "public/js/clinical-profile-lan-sync.mjs",
+          "kind": "dynamic-import",
+          "original": "../clinical-profile-lan-sync.mjs"
+        },
+        {
+          "path": "public/js/clinical-profile-lan-sync.mjs",
+          "kind": "dynamic-import",
+          "original": "../clinical-profile-lan-sync.mjs"
+        },
+        {
+          "path": "public/js/features/lan-sync.mjs",
+          "kind": "dynamic-import",
+          "original": "./lan-sync.mjs"
         },
         {
           "path": "public/js/features/patients.mjs",
+          "kind": "dynamic-import",
+          "original": "./patients.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-rotation-entry.mjs",
+          "kind": "dynamic-import",
+          "original": "./clinical-rotation-entry.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/features/entrega-modal-ui.mjs": {
+      "bytes": 51885,
+      "imports": [
+        {
+          "path": "lib/entrega/entrega-pendientes.mjs",
           "kind": "import-statement",
+          "original": "../../../lib/entrega/entrega-pendientes.mjs"
+        },
+        {
+          "path": "lib/entrega/entrega-handoff-context.mjs",
+          "kind": "import-statement",
+          "original": "../../../lib/entrega/entrega-handoff-context.mjs"
+        },
+        {
+          "path": "lib/entrega/entrega-vitals-plan.mjs",
+          "kind": "import-statement",
+          "original": "../../../lib/entrega/entrega-vitals-plan.mjs"
+        },
+        {
+          "path": "public/js/clinical-access-runtime.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-access-runtime.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/features/clinical-entrega.mjs": {
+      "bytes": 21298,
+      "imports": [
+        {
+          "path": "public/js/app-state.mjs",
+          "kind": "import-statement",
+          "original": "../app-state.mjs"
+        },
+        {
+          "path": "public/js/clinical-access-runtime.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-access-runtime.mjs"
+        },
+        {
+          "path": "public/js/clinico-access.mjs",
+          "kind": "import-statement",
+          "original": "../clinico-access.mjs"
+        },
+        {
+          "path": "public/js/clinical-privileges.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-privileges.mjs"
+        },
+        {
+          "path": "lib/entrega/entrega-pendientes.mjs",
+          "kind": "import-statement",
+          "original": "../../../lib/entrega/entrega-pendientes.mjs"
+        },
+        {
+          "path": "lib/entrega/entrega-vitals-plan.mjs",
+          "kind": "import-statement",
+          "original": "../../../lib/entrega/entrega-vitals-plan.mjs"
+        },
+        {
+          "path": "public/js/features/lan-sync.mjs",
+          "kind": "import-statement",
+          "original": "./lan-sync.mjs"
+        },
+        {
+          "path": "public/js/features/entrega-modal-ui.mjs",
+          "kind": "import-statement",
+          "original": "./entrega-modal-ui.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/features/guardia-board.mjs": {
+      "bytes": 10507,
+      "imports": [
+        {
+          "path": "public/js/storage.js",
+          "kind": "import-statement",
+          "original": "../storage.js"
+        },
+        {
+          "path": "public/js/app-state.mjs",
+          "kind": "import-statement",
+          "original": "../app-state.mjs"
+        },
+        {
+          "path": "public/js/db-storage-bridge.mjs",
+          "kind": "import-statement",
+          "original": "../db-storage-bridge.mjs"
+        },
+        {
+          "path": "public/js/features/chrome.mjs",
+          "kind": "import-statement",
+          "original": "./chrome.mjs"
+        },
+        {
+          "path": "public/js/clinical-access-runtime.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-access-runtime.mjs"
+        },
+        {
+          "path": "public/js/clinico-access.mjs",
+          "kind": "import-statement",
+          "original": "../clinico-access.mjs"
+        },
+        {
+          "path": "public/js/guardia-mode-sync.mjs",
+          "kind": "import-statement",
+          "original": "../guardia-mode-sync.mjs"
+        },
+        {
+          "path": "public/js/patient-diagnosticos.mjs",
+          "kind": "import-statement",
+          "original": "../patient-diagnosticos.mjs"
+        },
+        {
+          "path": "public/js/features/unified-patient-grid-board.mjs",
+          "kind": "import-statement",
+          "original": "./unified-patient-grid-board.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-rotation.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-rotation.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-teams.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-teams.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-entrega.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-entrega.mjs"
+        },
+        {
+          "path": "public/js/clinical-access-runtime.mjs",
+          "kind": "import-statement",
+          "original": "../clinical-access-runtime.mjs"
+        },
+        {
+          "path": "lib/entrega/entrega-chip-markers.mjs",
+          "kind": "import-statement",
+          "original": "../../../lib/entrega/entrega-chip-markers.mjs"
+        },
+        {
+          "path": "lib/entrega/entrega-pendientes.mjs",
+          "kind": "import-statement",
+          "original": "../../../lib/entrega/entrega-pendientes.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/features/session-manager.mjs": {
+      "bytes": 4398,
+      "imports": [
+        {
+          "path": "lib/entrega/entrega-vitals-plan.mjs",
+          "kind": "import-statement",
+          "original": "../../../lib/entrega/entrega-vitals-plan.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/clinical-access-runtime.mjs": {
+      "bytes": 18805,
+      "imports": [
+        {
+          "path": "public/js/db-storage-bridge.mjs",
+          "kind": "import-statement",
+          "original": "./db-storage-bridge.mjs"
+        },
+        {
+          "path": "public/js/features/chrome.mjs",
+          "kind": "import-statement",
+          "original": "./features/chrome.mjs"
+        },
+        {
+          "path": "public/js/app-state.mjs",
+          "kind": "import-statement",
+          "original": "./app-state.mjs"
+        },
+        {
+          "path": "public/js/clinico-access.mjs",
+          "kind": "import-statement",
+          "original": "./clinico-access.mjs"
+        },
+        {
+          "path": "public/js/features/crypto-signer.mjs",
+          "kind": "import-statement",
+          "original": "./features/crypto-signer.mjs"
+        },
+        {
+          "path": "public/js/features/guardia-board.mjs",
+          "kind": "import-statement",
+          "original": "./features/guardia-board.mjs"
+        },
+        {
+          "path": "public/js/features/session-manager.mjs",
+          "kind": "import-statement",
+          "original": "./features/session-manager.mjs"
+        },
+        {
+          "path": "public/js/clinical-settings.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-settings.mjs"
+        },
+        {
+          "path": "public/js/clinical-username.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-username.mjs"
+        },
+        {
+          "path": "public/js/clinical-profile-lan-sync.mjs",
+          "kind": "dynamic-import",
+          "original": "./clinical-profile-lan-sync.mjs"
+        },
+        {
+          "path": "public/js/features/patients.mjs",
+          "kind": "dynamic-import",
           "original": "./features/patients.mjs"
+        }
+      ],
+      "format": "esm"
+    },
+    "public/js/features/db-unlock.mjs": {
+      "bytes": 27157,
+      "imports": [
+        {
+          "path": "public/js/db-storage-bridge.mjs",
+          "kind": "import-statement",
+          "original": "../db-storage-bridge.mjs"
         },
         {
-          "path": "public/js/features/expediente.mjs",
-          "kind": "import-statement",
-          "original": "./features/expediente.mjs"
+          "path": "public/js/app-state.mjs",
+          "kind": "dynamic-import",
+          "original": "../app-state.mjs"
         },
         {
-          "path": "public/js/features/lab-panel.mjs",
-          "kind": "import-statement",
-          "original": "./features/lab-panel.mjs"
+          "path": "public/js/clinical-settings.mjs",
+          "kind": "dynamic-import",
+          "original": "../clinical-settings.mjs"
+        },
+        {
+          "path": "public/js/clinical-access-runtime.mjs",
+          "kind": "dynamic-import",
+          "original": "../clinical-access-runtime.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-onboarding-main.mjs",
+          "kind": "dynamic-import",
+          "original": "./clinical-onboarding-main.mjs"
         }
       ],
       "format": "esm"
@@ -5013,7 +5131,7 @@
       "format": "esm"
     },
     "public/js/app-shell.mjs": {
-      "bytes": 34747,
+      "bytes": 35174,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -5059,6 +5177,11 @@
           "path": "public/js/clinical-team-invite.mjs",
           "kind": "import-statement",
           "original": "./clinical-team-invite.mjs"
+        },
+        {
+          "path": "public/js/features/clinical-registration.mjs",
+          "kind": "import-statement",
+          "original": "./features/clinical-registration.mjs"
         },
         {
           "path": "public/js/quick-output.mjs",
@@ -5873,7 +5996,7 @@
       "format": "esm"
     },
     "public/js/app.js": {
-      "bytes": 11386,
+      "bytes": 11364,
       "imports": [
         {
           "path": "public/js/storage.js",
@@ -6071,6 +6194,11 @@
           "original": "./features/guardia-board.mjs"
         },
         {
+          "path": "public/js/clinical-settings.mjs",
+          "kind": "import-statement",
+          "original": "./clinical-settings.mjs"
+        },
+        {
           "path": "public/js/features/clinical-onboarding-main.mjs",
           "kind": "dynamic-import",
           "original": "./features/clinical-onboarding-main.mjs"
@@ -6089,7 +6217,7 @@
       "imports": [],
       "exports": [],
       "inputs": {},
-      "bytes": 5026032
+      "bytes": 5080781
     },
     "public/js/app.bundle.mjs": {
       "imports": [],
@@ -6103,10 +6231,7 @@
           "bytesInOutput": 2293
         },
         "public/js/storage.js": {
-          "bytesInOutput": 27385
-        },
-        "public/js/features/db-unlock.mjs": {
-          "bytesInOutput": 23728
+          "bytesInOutput": 27751
         },
         "public/js/med-receta-core.mjs": {
           "bytesInOutput": 20705
@@ -6154,7 +6279,82 @@
           "bytesInOutput": 19206
         },
         "public/js/app-state.mjs": {
-          "bytesInOutput": 5879
+          "bytesInOutput": 7160
+        },
+        "public/js/clinical-settings.mjs": {
+          "bytesInOutput": 2585
+        },
+        "public/js/features/chrome.mjs": {
+          "bytesInOutput": 14491
+        },
+        "public/js/features/crypto-signer.mjs": {
+          "bytesInOutput": 959
+        },
+        "public/js/guardia-mode-sync.mjs": {
+          "bytesInOutput": 1506
+        },
+        "public/js/vpo-dx-inference.mjs": {
+          "bytesInOutput": 4292
+        },
+        "public/js/patient-date-fields.mjs": {
+          "bytesInOutput": 853
+        },
+        "public/js/patient-accesos.mjs": {
+          "bytesInOutput": 2650
+        },
+        "public/js/patient-diagnosticos.mjs": {
+          "bytesInOutput": 3010
+        },
+        "lib/entrega/entrega-handoff-context.mjs": {
+          "bytesInOutput": 6364
+        },
+        "lib/entrega/entrega-vitals-plan.mjs": {
+          "bytesInOutput": 5744
+        },
+        "lib/entrega/entrega-pendientes.mjs": {
+          "bytesInOutput": 3322
+        },
+        "lib/entrega/entrega-chip-markers.mjs": {
+          "bytesInOutput": 1492
+        },
+        "lib/interno/vitals-banner.mjs": {
+          "bytesInOutput": 864
+        },
+        "lib/interno/interno-board.mjs": {
+          "bytesInOutput": 536
+        },
+        "public/js/features/unified-patient-grid-board.mjs": {
+          "bytesInOutput": 7697
+        },
+        "public/js/clinical-privileges.mjs": {
+          "bytesInOutput": 1134
+        },
+        "public/js/features/clinical-rotation.mjs": {
+          "bytesInOutput": 9176
+        },
+        "public/js/clinical-team-invite.mjs": {
+          "bytesInOutput": 5227
+        },
+        "public/js/mode-features.mjs": {
+          "bytesInOutput": 987
+        },
+        "public/js/features/soap-estado.mjs": {
+          "bytesInOutput": 10357
+        },
+        "public/js/clinical-username.mjs": {
+          "bytesInOutput": 563
+        },
+        "lib/admin-access-code.mjs": {
+          "bytesInOutput": 240
+        },
+        "public/js/features/clinical-panel-host.mjs": {
+          "bytesInOutput": 2432
+        },
+        "public/js/live-sync-membership.mjs": {
+          "bytesInOutput": 1374
+        },
+        "public/js/lan-join-link.mjs": {
+          "bytesInOutput": 4036
         },
         "public/js/labs.js": {
           "bytesInOutput": 122352
@@ -6181,19 +6381,112 @@
           "bytesInOutput": 3094
         },
         "public/js/tour-pitch-demo-todos.mjs": {
-          "bytesInOutput": 2033
+          "bytesInOutput": 2039
         },
         "public/js/tour-pitch-demo-seed.mjs": {
           "bytesInOutput": 17053
         },
-        "public/js/mode-features.mjs": {
-          "bytesInOutput": 987
+        "public/js/lan-client.mjs": {
+          "bytesInOutput": 5805
         },
-        "public/js/features/chrome.mjs": {
-          "bytesInOutput": 14491
+        "public/js/live-sync-room.mjs": {
+          "bytesInOutput": 7842
         },
-        "public/js/features/soap-estado.mjs": {
-          "bytesInOutput": 10357
+        "public/js/livesync-patient-ids.mjs": {
+          "bytesInOutput": 3894
+        },
+        "lib/historia-clinica/clinical-text.mjs": {
+          "bytesInOutput": 2914
+        },
+        "lib/drive-import/merge-eventualidades.mjs": {
+          "bytesInOutput": 797
+        },
+        "public/js/lan-patient-merge.mjs": {
+          "bytesInOutput": 14427
+        },
+        "public/js/live-sync-outbox.mjs": {
+          "bytesInOutput": 1223
+        },
+        "public/js/manejo-custom-protocols.mjs": {
+          "bytesInOutput": 3370
+        },
+        "public/js/manejo-protocol-favorites.mjs": {
+          "bytesInOutput": 1519
+        },
+        "public/js/manejo-room-data.mjs": {
+          "bytesInOutput": 4455
+        },
+        "public/js/versioned-mutation.mjs": {
+          "bytesInOutput": 884
+        },
+        "public/js/features/lan-hub-guardia-mode.mjs": {
+          "bytesInOutput": 1072
+        },
+        "public/js/features/lan-hub-panel-shell.mjs": {
+          "bytesInOutput": 2578
+        },
+        "node_modules/qrcode-generator/dist/qrcode.mjs": {
+          "bytesInOutput": 53077
+        },
+        "public/js/interno-qr-render.mjs": {
+          "bytesInOutput": 1805
+        },
+        "public/js/features/interno-qr-panel.mjs": {
+          "bytesInOutput": 7731
+        },
+        "public/js/draft-conflict-store.mjs": {
+          "bytesInOutput": 2756
+        },
+        "public/js/features/clinical-conflict-viewer.mjs": {
+          "bytesInOutput": 19679
+        },
+        "public/js/host-bundle-bases.mjs": {
+          "bytesInOutput": 2908
+        },
+        "public/js/clinical-ops-bundle-merge.mjs": {
+          "bytesInOutput": 7162
+        },
+        "public/js/clinical-ops-lan.mjs": {
+          "bytesInOutput": 1570
+        },
+        "public/js/lan-surrogate-host.mjs": {
+          "bytesInOutput": 4230
+        },
+        "lib/historia-clinica/migrate-legacy.mjs": {
+          "bytesInOutput": 2094
+        },
+        "lib/historia-clinica/catalogs/app-conditions.json": {
+          "bytesInOutput": 865
+        },
+        "lib/historia-clinica/catalogs/ahf-conditions.json": {
+          "bytesInOutput": 649
+        },
+        "lib/historia-clinica/catalogs/ipas-systems.json": {
+          "bytesInOutput": 519
+        },
+        "public/js/historia-clinica-lan-sync.mjs": {
+          "bytesInOutput": 5855
+        },
+        "public/js/features/lan-sync.mjs": {
+          "bytesInOutput": 128806
+        },
+        "public/js/clinical-profile-lan-sync.mjs": {
+          "bytesInOutput": 2470
+        },
+        "public/js/features/clinical-registration.mjs": {
+          "bytesInOutput": 1993
+        },
+        "public/js/features/clinical-onboarding-main.mjs": {
+          "bytesInOutput": 3823
+        },
+        "public/js/features/clinical-onboarding.mjs": {
+          "bytesInOutput": 14816
+        },
+        "public/js/features/clinical-context-bar.mjs": {
+          "bytesInOutput": 666
+        },
+        "public/js/features/clinical-rotation-entry.mjs": {
+          "bytesInOutput": 4175
         },
         "public/js/features/estado-actual-meds.mjs": {
           "bytesInOutput": 3758
@@ -6205,19 +6498,7 @@
           "bytesInOutput": 2159
         },
         "public/js/profile-formats-editor.mjs": {
-          "bytesInOutput": 4925
-        },
-        "public/js/vpo-dx-inference.mjs": {
-          "bytesInOutput": 4292
-        },
-        "public/js/patient-date-fields.mjs": {
-          "bytesInOutput": 853
-        },
-        "public/js/patient-accesos.mjs": {
-          "bytesInOutput": 2650
-        },
-        "public/js/patient-diagnosticos.mjs": {
-          "bytesInOutput": 3010
+          "bytesInOutput": 4933
         },
         "public/js/output-dir-fallback.mjs": {
           "bytesInOutput": 1593
@@ -6232,7 +6513,7 @@
           "bytesInOutput": 14017
         },
         "public/js/labs-some-table.mjs": {
-          "bytesInOutput": 37310
+          "bytesInOutput": 37330
         },
         "public/js/tour-guards.mjs": {
           "bytesInOutput": 518
@@ -6257,177 +6538,6 @@
         },
         "public/js/features/lab-panel.mjs": {
           "bytesInOutput": 64251
-        },
-        "public/js/features/crypto-signer.mjs": {
-          "bytesInOutput": 566
-        },
-        "public/js/features/session-manager.mjs": {
-          "bytesInOutput": 3533
-        },
-        "public/js/clinical-settings.mjs": {
-          "bytesInOutput": 1478
-        },
-        "public/js/clinical-username.mjs": {
-          "bytesInOutput": 563
-        },
-        "public/js/clinical-ops-bundle-merge.mjs": {
-          "bytesInOutput": 7162
-        },
-        "public/js/clinical-ops-lan.mjs": {
-          "bytesInOutput": 2183
-        },
-        "public/js/lan-client.mjs": {
-          "bytesInOutput": 5805
-        },
-        "public/js/live-sync-room.mjs": {
-          "bytesInOutput": 7842
-        },
-        "public/js/livesync-patient-ids.mjs": {
-          "bytesInOutput": 3894
-        },
-        "lib/historia-clinica/clinical-text.mjs": {
-          "bytesInOutput": 2914
-        },
-        "lib/drive-import/merge-eventualidades.mjs": {
-          "bytesInOutput": 797
-        },
-        "public/js/lan-patient-merge.mjs": {
-          "bytesInOutput": 14427
-        },
-        "public/js/live-sync-membership.mjs": {
-          "bytesInOutput": 1374
-        },
-        "public/js/live-sync-outbox.mjs": {
-          "bytesInOutput": 1223
-        },
-        "public/js/manejo-custom-protocols.mjs": {
-          "bytesInOutput": 3370
-        },
-        "public/js/manejo-protocol-favorites.mjs": {
-          "bytesInOutput": 1519
-        },
-        "public/js/manejo-room-data.mjs": {
-          "bytesInOutput": 4455
-        },
-        "public/js/lan-join-link.mjs": {
-          "bytesInOutput": 2614
-        },
-        "public/js/versioned-mutation.mjs": {
-          "bytesInOutput": 884
-        },
-        "public/js/clinical-privileges.mjs": {
-          "bytesInOutput": 1134
-        },
-        "public/js/guardia-mode-sync.mjs": {
-          "bytesInOutput": 1506
-        },
-        "public/js/features/lan-hub-guardia-mode.mjs": {
-          "bytesInOutput": 1072
-        },
-        "public/js/features/lan-hub-panel-shell.mjs": {
-          "bytesInOutput": 2578
-        },
-        "node_modules/qrcode-generator/dist/qrcode.mjs": {
-          "bytesInOutput": 53077
-        },
-        "public/js/interno-qr-render.mjs": {
-          "bytesInOutput": 1805
-        },
-        "public/js/features/interno-qr-panel.mjs": {
-          "bytesInOutput": 7731
-        },
-        "public/js/draft-conflict-store.mjs": {
-          "bytesInOutput": 2756
-        },
-        "public/js/features/clinical-conflict-viewer.mjs": {
-          "bytesInOutput": 19695
-        },
-        "public/js/host-bundle-bases.mjs": {
-          "bytesInOutput": 2908
-        },
-        "public/js/lan-surrogate-host.mjs": {
-          "bytesInOutput": 4230
-        },
-        "lib/historia-clinica/migrate-legacy.mjs": {
-          "bytesInOutput": 2094
-        },
-        "lib/historia-clinica/catalogs/app-conditions.json": {
-          "bytesInOutput": 865
-        },
-        "lib/historia-clinica/catalogs/ahf-conditions.json": {
-          "bytesInOutput": 649
-        },
-        "lib/historia-clinica/catalogs/ipas-systems.json": {
-          "bytesInOutput": 519
-        },
-        "public/js/historia-clinica-lan-sync.mjs": {
-          "bytesInOutput": 5855
-        },
-        "public/js/clinical-team-invite.mjs": {
-          "bytesInOutput": 4949
-        },
-        "public/js/features/clinical-rotation.mjs": {
-          "bytesInOutput": 9179
-        },
-        "lib/admin-access-code.mjs": {
-          "bytesInOutput": 240
-        },
-        "public/js/features/clinical-panel-host.mjs": {
-          "bytesInOutput": 1870
-        },
-        "public/js/features/clinical-registration.mjs": {
-          "bytesInOutput": 1993
-        },
-        "public/js/features/clinical-onboarding-main.mjs": {
-          "bytesInOutput": 3823
-        },
-        "public/js/features/clinical-onboarding.mjs": {
-          "bytesInOutput": 13636
-        },
-        "public/js/features/clinical-context-bar.mjs": {
-          "bytesInOutput": 666
-        },
-        "public/js/features/clinical-rotation-entry.mjs": {
-          "bytesInOutput": 4175
-        },
-        "public/js/features/clinical-teams.mjs": {
-          "bytesInOutput": 81184
-        },
-        "public/js/features/lan-sync.mjs": {
-          "bytesInOutput": 121920
-        },
-        "public/js/clinical-access-runtime.mjs": {
-          "bytesInOutput": 15535
-        },
-        "lib/entrega/entrega-handoff-context.mjs": {
-          "bytesInOutput": 6364
-        },
-        "lib/entrega/entrega-vitals-plan.mjs": {
-          "bytesInOutput": 5744
-        },
-        "lib/entrega/entrega-pendientes.mjs": {
-          "bytesInOutput": 3322
-        },
-        "lib/entrega/entrega-chip-markers.mjs": {
-          "bytesInOutput": 1492
-        },
-        "lib/interno/vitals-banner.mjs": {
-          "bytesInOutput": 864
-        },
-        "lib/interno/interno-board.mjs": {
-          "bytesInOutput": 536
-        },
-        "public/js/features/unified-patient-grid-board.mjs": {
-          "bytesInOutput": 7697
-        },
-        "public/js/features/entrega-modal-ui.mjs": {
-          "bytesInOutput": 47806
-        },
-        "public/js/features/clinical-entrega.mjs": {
-          "bytesInOutput": 18391
-        },
-        "public/js/features/guardia-board.mjs": {
-          "bytesInOutput": 8937
         },
         "public/js/rpc-date-picker.mjs": {
           "bytesInOutput": 11416
@@ -6474,20 +6584,32 @@
         "public/js/onboarding-progress.mjs": {
           "bytesInOutput": 1141
         },
+        "public/js/presentation-mode.mjs": {
+          "bytesInOutput": 4363
+        },
         "public/js/censo-cultivo-format.mjs": {
           "bytesInOutput": 9819
         },
         "public/js/censo-labs-format.mjs": {
           "bytesInOutput": 2995
         },
+        "public/js/features/estado-actual-parse-variants.mjs": {
+          "bytesInOutput": 1141
+        },
+        "public/js/features/estado-actual-parser.mjs": {
+          "bytesInOutput": 10565
+        },
+        "public/js/censo-signos-format.mjs": {
+          "bytesInOutput": 6845
+        },
         "public/js/censo-build.mjs": {
-          "bytesInOutput": 8208
+          "bytesInOutput": 8333
         },
         "public/js/censo-preview-html.mjs": {
-          "bytesInOutput": 7164
+          "bytesInOutput": 7571
         },
         "public/js/censo-export.mjs": {
-          "bytesInOutput": 7991
+          "bytesInOutput": 8092
         },
         "public/js/tour-demo-monitoreo.mjs": {
           "bytesInOutput": 3951
@@ -6502,7 +6624,7 @@
           "bytesInOutput": 1982
         },
         "public/js/features/eventualidades-panel.mjs": {
-          "bytesInOutput": 18083
+          "bytesInOutput": 18086
         },
         "public/js/tour-demo-eventualidades.mjs": {
           "bytesInOutput": 1310
@@ -6517,13 +6639,7 @@
           "bytesInOutput": 20227
         },
         "public/js/features/estado-actual-panel.mjs": {
-          "bytesInOutput": 60655
-        },
-        "public/js/features/estado-actual-parse-variants.mjs": {
-          "bytesInOutput": 1141
-        },
-        "public/js/features/estado-actual-parser.mjs": {
-          "bytesInOutput": 10570
+          "bytesInOutput": 60683
         },
         "public/js/features/estado-actual-paste-modal.mjs": {
           "bytesInOutput": 2906
@@ -6553,7 +6669,7 @@
           "bytesInOutput": 69768
         },
         "public/js/features/settings-help.mjs": {
-          "bytesInOutput": 124509
+          "bytesInOutput": 126710
         },
         "public/js/patient-export-format.mjs": {
           "bytesInOutput": 4460
@@ -6805,7 +6921,7 @@
           "bytesInOutput": 10484
         },
         "public/js/features/med-pharm-profile-panel.mjs": {
-          "bytesInOutput": 34828
+          "bytesInOutput": 34824
         },
         "public/js/features/medications.mjs": {
           "bytesInOutput": 16550
@@ -6834,17 +6950,35 @@
         "public/js/features/patients.mjs": {
           "bytesInOutput": 59778
         },
-        "public/js/presentation-mode.mjs": {
-          "bytesInOutput": 4374
+        "public/js/features/clinical-teams.mjs": {
+          "bytesInOutput": 84400
+        },
+        "public/js/features/entrega-modal-ui.mjs": {
+          "bytesInOutput": 48393
+        },
+        "public/js/features/clinical-entrega.mjs": {
+          "bytesInOutput": 18391
+        },
+        "public/js/features/guardia-board.mjs": {
+          "bytesInOutput": 8937
+        },
+        "public/js/features/session-manager.mjs": {
+          "bytesInOutput": 4314
+        },
+        "public/js/clinical-access-runtime.mjs": {
+          "bytesInOutput": 18283
+        },
+        "public/js/features/db-unlock.mjs": {
+          "bytesInOutput": 26344
         },
         "public/js/app.js": {
-          "bytesInOutput": 8221
+          "bytesInOutput": 8155
         },
         "public/js/app-runtimes.mjs": {
           "bytesInOutput": 15523
         },
         "public/js/app-shell.mjs": {
-          "bytesInOutput": 30591
+          "bytesInOutput": 30959
         },
         "public/js/quick-output.mjs": {
           "bytesInOutput": 881
@@ -6922,7 +7056,7 @@
           "bytesInOutput": 950
         }
       },
-      "bytes": 2835907
+      "bytes": 2871276
     }
   }
 }

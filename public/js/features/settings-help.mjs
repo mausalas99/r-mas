@@ -1956,6 +1956,23 @@ var RELEASE_NOTES_HIGHLIGHTS_DEFAULT = [
 ];
 
 var RELEASE_NOTES_HIGHLIGHTS = {
+  '6.5.9': [
+    {
+      title: 'Directorio y sync LAN (Mac y Windows)',
+      body:
+        'El <strong>directorio LAN</strong> muestra usuarios de <strong>todas las salas</strong>, carga sin quedarse en «Cargando…», y al sincronizar ⇄ <strong>no se pierden</strong> los @usuario entre versiones o PCs Windows.',
+    },
+    {
+      title: '@usuario publicado al guardar',
+      body:
+        'Si ya tienes LAN, debes tener la sala <strong>⇄</strong> activa (o unirte por invitación) <strong>antes</strong> de registrar @usuario. Al guardar perfil, R+ lo <strong>publica al turno</strong> de inmediato — no solo en tu Mac.',
+    },
+    {
+      title: 'Entrega, equipos y Windows',
+      body:
+        '<strong>Modo Entrega</strong>: plantillas y + procedimiento. <strong>Mi rotación</strong>: eliminar equipo corregido. En <strong>Windows</strong>, todo el turno en 6.5.9 y firewall (3738) la primera vez en sala.',
+    },
+  ],
   '6.5.8': [
     {
       title: 'Interno móvil (QR de sala)',

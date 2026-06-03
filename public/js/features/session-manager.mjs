@@ -1,6 +1,10 @@
 /**
  * Background vitals monitoring and client session inactivity lock.
  */
+import {
+  frequencyDisplayLabel,
+  normalizeFrequencySpec,
+} from '../../../lib/entrega/entrega-vitals-plan.mjs';
 
 const FREQ_MS = {
   '1h': 3600000,
@@ -14,15 +18,33 @@ export function vitalsIntervalMs(freq) {
   return FREQ_MS[freq] ?? 4 * 3600000;
 }
 
+/** @param {string} freq DB enum from active_guardias */
+export function vitalsFrequencyNotifyLabel(freq) {
+  if (!freq || freq === 'None') return 'signos vitales';
+  return frequencyDisplayLabel(normalizeFrequencySpec(freq));
+}
+
+/**
+ * @param {{ patient_id?: string }} row
+ * @param {(patientId: string, row: object) => string} [resolveLabel]
+ */
+export function resolvePatientLabelForNotify(row, resolveLabel) {
+  const id = String(row?.patient_id || '');
+  const resolved =
+    typeof resolveLabel === 'function' ? String(resolveLabel(id, row) || '').trim() : '';
+  return resolved || id;
+}
+
 export class BackgroundVitalsMonitorLoop {
   /**
    * @param {{ all: (sql: string, params?: unknown[]) => Promise<Array<{ patient_id: string, last_vitals_check: string, vitals_frequency: string }>> }} db
    * @param {string} userId
-   * @param {{ notify?: (title: string, body: string) => void, intervalMs?: number }} [opts]
+   * @param {{ notify?: (title: string, body: string) => void, intervalMs?: number, resolvePatientLabel?: (patientId: string, row: object) => string }} [opts]
    */
   constructor(db, userId, opts = {}) {
     this.db = db;
     this.userId = userId;
+    this.resolvePatientLabel = opts.resolvePatientLabel;
     this.notify = opts.notify || ((title, body) => {
       if (typeof Notification !== 'undefined') {
         new Notification(title, { body });
@@ -58,10 +80,19 @@ export class BackgroundVitalsMonitorLoop {
       const due = new Date(r.last_vitals_check).getTime() + ms;
       const diff = due - Date.now();
 
+      const who = resolvePatientLabelForNotify(r, this.resolvePatientLabel);
+      const freqLabel = vitalsFrequencyNotifyLabel(freq);
+
       if (diff <= 0) {
-        this.notify('CRITICAL: Overdue', `Patient ${r.patient_id}: ${freq} check breached.`);
+        this.notify(
+          'CRITICAL: Overdue',
+          `${who}: control de signos (${freqLabel}) vencido.`
+        );
       } else if (diff <= 15 * 60000) {
-        this.notify('Warning: Check Soon', `Patient ${r.patient_id}: ${freq} window closes in 15m.`);
+        this.notify(
+          'Warning: Check Soon',
+          `${who}: ventana (${freqLabel}) cierra en 15 min.`
+        );
       }
     });
   }

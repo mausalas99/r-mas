@@ -6,6 +6,7 @@ import {
   parseClinicalTeamJoinQuery,
   resolveTeamIdFromInviteCode,
   buildClinicalTeamInviteMessage,
+  isLikelyLanBearerToken,
 } from './clinical-team-invite.mjs';
 
 describe('clinical-team-invite', () => {
@@ -37,5 +38,13 @@ describe('clinical-team-invite', () => {
 
   it('normalizeTeamInviteCode strips @ and dashes', () => {
     assert.equal(normalizeTeamInviteCode('@2017936e'), '2017936e');
+  });
+
+  it('parseClinicalTeamJoinQuery ignores LAN bearer in code param', () => {
+    const bearer = 'a'.repeat(64);
+    assert.equal(isLikelyLanBearerToken(bearer), true);
+    const p = parseClinicalTeamJoinQuery(`?code=${bearer}&host=http://10.0.0.2:3738`);
+    assert.equal(p.inviteCode, '');
+    assert.equal(p.teamId, '');
   });
 });

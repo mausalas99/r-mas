@@ -3,11 +3,18 @@
   "updatedAt": "2026-06-03",
   "entries": [
     {
+      "version": "6.5.9",
+      "label": "6.5.9",
+      "publishedAt": "2026-06-03",
+      "summary": "LAN directorio, fusión usuarios Mac/Windows, entrega y equipos.",
+      "recommended": true
+    },
+    {
       "version": "6.5.8",
       "label": "6.5.8",
       "publishedAt": "2026-06-03",
-      "summary": "Interno móvil QR, entrega pendientes v2, restaurar versión estable.",
-      "recommended": true
+      "summary": "Release estable 6.5.8",
+      "recommended": false
     },
     {
       "version": "6.5.7",

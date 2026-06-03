@@ -28,8 +28,18 @@ export function normalizeTeamInviteCode(raw) {
 /**
  * @param {string} [search]
  */
+/** LAN bearer tokens are 64 hex; clinical invite codes are short (≤8). */
+export function isLikelyLanBearerToken(raw) {
+  const norm = normalizeTeamInviteCode(raw);
+  return norm.length >= 32;
+}
+
 export function parseClinicalTeamJoinQuery(search) {
   const params = new URLSearchParams(String(search || '').replace(/^\?/, ''));
+  const codeParam = String(params.get('code') || '').trim();
+  if (codeParam && isLikelyLanBearerToken(codeParam)) {
+    return { teamId: '', inviteCode: '' };
+  }
   const joinCode = normalizeTeamInviteCode(
     params.get('joinCode') || params.get('teamCode') || params.get('code') || ''
   );

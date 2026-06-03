@@ -1,6 +1,13 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildLanJoinUrls, parseLanJoinQuery, parseLanInviteInput } from './lan-join-link.mjs';
+import {
+  buildLanJoinUrls,
+  parseLanJoinQuery,
+  parseLanInviteInput,
+  resolveLanJoinHostUrl,
+  resolveLiveSyncRoomIdFromSala,
+  liveSyncRoomLabel,
+} from './lan-join-link.mjs';
 
 describe('lan-join-link', () => {
   it('buildLanJoinUrls usa ruta /join/req_ sin code en query', () => {
@@ -16,6 +23,32 @@ describe('lan-join-link', () => {
     assert.equal(p.teamCode, 'xyz');
     assert.equal(p.roomId, 'r1');
     assert.equal(p.hostUrl, 'http://10.0.0.2:3738');
+  });
+
+  it('parseLanJoinQuery reemplaza host localhost por origin del iPad', () => {
+    const p = parseLanJoinQuery(
+      '?code=abc&host=http://127.0.0.1:3738',
+      'http://192.168.0.44:3738'
+    );
+    assert.equal(p.hostUrl, 'http://192.168.0.44:3738');
+  });
+
+  it('parseLanJoinQuery resuelve room desde sala', () => {
+    const p = parseLanJoinQuery('?code=x&sala=Sala%202', 'http://10.0.0.2:3738');
+    assert.equal(p.roomId, 'sala-2');
+  });
+
+  it('resolveLiveSyncRoomIdFromSala mapea etiquetas', () => {
+    assert.equal(resolveLiveSyncRoomIdFromSala('Sala E'), 'sala-e');
+    assert.equal(liveSyncRoomLabel('sala-1'), 'Sala 1');
+  });
+
+  it('resolveLanJoinHostUrl prefiere IP LAN sobre localhost', () => {
+    assert.equal(
+      resolveLanJoinHostUrl('http://127.0.0.1:3738', 'http://192.168.1.10:3738'),
+      'http://192.168.1.10:3738'
+    );
+    assert.equal(resolveLanJoinHostUrl('http://10.0.0.5:3738', ''), 'http://10.0.0.5:3738');
   });
 
   it('parseLanJoinQuery acepta alias token', () => {
